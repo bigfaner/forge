@@ -51,8 +51,7 @@ Agent(
   subagent_type="task-executor",
   prompt="TASK_KEY: {{KEY}}
 TASK_ID: {{ID}}
-TASK_FILE: {{FILE}}",
-  isolation="worktree"
+TASK_FILE: {{FILE}}"
 )
 ```
 

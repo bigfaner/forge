@@ -40,9 +40,8 @@ Run project-specific verification commands.
 
 ## Step 4: Record Task (MANDATORY)
 
-```bash
-echo '{"summary":"..."}' > docs/features/<slug>/tasks/process/record.json
-task record <TASK_ID> -data docs/features/<slug>/tasks/process/record.json
+```
+Skill(skill="record-task")
 ```
 
 ## Step 5: Commit

@@ -9,14 +9,6 @@ description: Use after completing a task to create its execution record and upda
 
 任务完成后的收尾操作：创建执行记录 + 更新任务状态。
 
-## Usage
-
-```bash
-# 使用 JSON 文件
-echo '{"summary":"...","filesCreated":[...],"filesModified":[...]}' > docs/features/{slug}/tasks/process/record.json
-task record <TASK_ID> -data docs/features/{slug}/tasks/process/record.json
-```
-
 ## JSON Data Format
 
 ```json
@@ -47,6 +39,14 @@ task record <TASK_ID> -data docs/features/{slug}/tasks/process/record.json
 | `testsFailed`        | int    | 失败测试数                 |
 | `coverage`           | float  | 覆盖率                     |
 | `acceptanceCriteria` | array  | `{criterion, met}` 对象    |
+
+## Usage
+
+```bash
+# 使用 JSON 文件
+echo '{"summary":"...","filesCreated":[...],"filesModified":[...]}' > docs/features/{slug}/tasks/process/record.json
+task record <TASK_ID> -data docs/features/{slug}/tasks/process/record.json
+```
 
 ## Related
 

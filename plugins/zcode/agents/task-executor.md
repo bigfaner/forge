@@ -69,16 +69,11 @@ Output: `Step 3/5: Verification... DONE (coverage: N%)`
 
 ### Step 4: Record Task (MANDATORY)
 
-Use task-cli to record task completion:
+Use the Skill tool to invoke record-task:
 
-```bash
-echo '{"summary":"<one-line-summary>","filesCreated":[...],"filesModified":[...],"testsPassed":N,"coverage":N}' > docs/features/<slug>/tasks/process/record.json
-task record {{TASK_ID}} -data docs/features/<slug>/tasks/process/record.json
 ```
-
-Verify:
-- Record file exists in `docs/features/<slug>/records/`
-- Task status is `completed` in index.json
+Skill(skill="record-task")
+```
 
 Output: `Step 4/5: Recording task... DONE`
 
@@ -119,7 +114,7 @@ DONE: {{TASK_ID}} | ✅ | <commit-hash> | <one-line-summary>
 | Build fails | Fix, then retry verification |
 | Test fails | Fix, then retry verification |
 | Coverage < 80% | Add tests, then retry |
-| task record fails | Fix JSON data, retry |
+| record-task fails | Follow skill guidance, retry |
 
 ## Rules
 
