@@ -137,7 +137,7 @@ func TestVerifyTaskCompletion(t *testing.T) {
 		task.SaveIndex(indexPath, index)
 
 		// Create record file
-		recordsDir := filepath.Join(dir, feature.FeaturesDir, "test", feature.RecordsDirName)
+		recordsDir := filepath.Join(dir, feature.FeaturesDir, "test", feature.TasksDirName, feature.RecordsDirName)
 		os.MkdirAll(recordsDir, 0755)
 		recordFile := filepath.Join(recordsDir, "1.1.md")
 		os.WriteFile(recordFile, []byte("record content"), 0644)

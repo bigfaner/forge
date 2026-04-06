@@ -141,6 +141,9 @@ func TestCheckExistingTaskState(t *testing.T) {
 }
 
 func TestPrintTaskDetails(t *testing.T) {
+	testRoot := filepath.Join("/", "test-root")
+	testFeature := "test-feature"
+
 	tests := []struct {
 		name         string
 		key          string
@@ -155,8 +158,8 @@ func TestPrintTaskDetails(t *testing.T) {
 				Title:    "Test Task",
 				Priority: "P0",
 				Status:   "in_progress",
-				File:     "tasks/1.1.md",
-				Record:   "records/1.1.md",
+				File:     "1.1.md",
+				Record:   "1.1.md",
 			},
 			wantContains: []string{
 				"KEY: task1",
@@ -164,8 +167,8 @@ func TestPrintTaskDetails(t *testing.T) {
 				"TITLE: Test Task",
 				"PRIORITY: P0",
 				"STATUS: in_progress",
-				"FILE: tasks/1.1.md",
-				"RECORD: records/1.1.md",
+				"FILE: " + filepath.Join(testRoot, feature.GetTaskFile(testFeature, "1.1.md")),
+				"RECORD: " + filepath.Join(testRoot, feature.GetRecordFile(testFeature, "1.1.md")),
 			},
 		},
 		{
@@ -178,8 +181,8 @@ func TestPrintTaskDetails(t *testing.T) {
 				Status:        "pending",
 				EstimatedTime: "2h",
 				Dependencies:  []string{"1.1", "1.2"},
-				File:          "tasks/2.1.md",
-				Record:        "records/2.1.md",
+				File:          "2.1.md",
+				Record:        "2.1.md",
 			},
 			wantContains: []string{
 				"ESTIMATED_TIME: 2h",
@@ -196,7 +199,7 @@ func TestPrintTaskDetails(t *testing.T) {
 			r, w, _ := os.Pipe()
 			os.Stdout = w
 
-			printTaskDetails(tt.key, tt.task)
+			printTaskDetails(tt.key, tt.task, testRoot, testFeature)
 
 			w.Close()
 			os.Stdout = old
@@ -213,6 +216,9 @@ func TestPrintTaskDetails(t *testing.T) {
 }
 
 func TestPrintContinueTask(t *testing.T) {
+	const testRoot = "/test-root"
+	const testFeature = "test-feature"
+
 	var buf bytes.Buffer
 	old := os.Stdout
 	r, w, _ := os.Pipe()
@@ -232,7 +238,7 @@ func TestPrintContinueTask(t *testing.T) {
 		Status:   "in_progress",
 	}
 
-	printContinueTask(state, tt)
+	printContinueTask(state, tt, testRoot, testFeature)
 
 	w.Close()
 	os.Stdout = old
@@ -248,6 +254,9 @@ func TestPrintContinueTask(t *testing.T) {
 }
 
 func TestPrintNewTask(t *testing.T) {
+	const testRoot = "/test-root"
+	const testFeature = "test-feature"
+
 	var buf bytes.Buffer
 	old := os.Stdout
 	r, w, _ := os.Pipe()
@@ -258,7 +267,7 @@ func TestPrintNewTask(t *testing.T) {
 		Title:    "New Task",
 		Priority: "P0",
 		Status:   "in_progress",
-	})
+	}, testRoot, testFeature)
 
 	w.Close()
 	os.Stdout = old
@@ -292,8 +301,8 @@ func TestClaimCommand_Integration(t *testing.T) {
 		index := &task.TaskIndex{
 
 			Tasks: map[string]task.Task{
-				"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "tasks/1.1.md"},
-				"task2": {ID: "1.2", Title: "Task 2", Status: "pending", Priority: "P1", File: "tasks/1.2.md"},
+				"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md"},
+				"task2": {ID: "1.2", Title: "Task 2", Status: "pending", Priority: "P1", File: "1.2.md"},
 			},
 			StatusEnum:   []string{"pending", "in_progress", "completed"},
 			PriorityEnum: []string{"P0", "P1", "P2"},

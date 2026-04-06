@@ -13,20 +13,24 @@ import (
 func TestValidator_IndirectRun(t *testing.T) {
 	t.Run("complete validation flow", func(t *testing.T) {
 		dir := t.TempDir()
+		featureSlug := "test-feature"
+
+		// Create correct directory structure: .../docs/features/<slug>/tasks/
+		tasksDir := filepath.Join(dir, "docs", "features", featureSlug, "tasks")
+		os.MkdirAll(tasksDir, 0755)
 
 		// Create task file
-		taskFile := filepath.Join(dir, "tasks", "1.1.md")
-		os.MkdirAll(filepath.Dir(taskFile), 0755)
+		taskFile := filepath.Join(tasksDir, "1.1.md")
 		os.WriteFile(taskFile, []byte("task content"), 0644)
 
-		// Create index
-		indexPath := filepath.Join(dir, "index.json")
+		// Create index at correct location
+		indexPath := filepath.Join(tasksDir, "index.json")
 		index := &task.TaskIndex{
-			Feature: "test",
+			Feature: featureSlug,
 			PRD:     "prd.md",
 			Design:  "design.md",
 			Tasks: map[string]task.Task{
-				"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "tasks/1.1.md"},
+				"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md"},
 			},
 		}
 		data, _ := encodeIndex(index)
@@ -36,7 +40,7 @@ func TestValidator_IndirectRun(t *testing.T) {
 		v.validateTasks(index.Tasks)
 		v.validateDependencies(index.Tasks)
 		v.validateCircularDeps(index.Tasks)
-		v.validateFilesExist(index.Tasks)
+		v.validateFilesExist(featureSlug, index.Tasks)
 
 		if len(v.errors) != 0 {
 			t.Errorf("unexpected errors: %v", v.errors)
@@ -75,12 +79,17 @@ func TestValidator_PrintResults(t *testing.T) {
 func TestValidator_ValidateFilesExist_Integration(t *testing.T) {
 	t.Run("files exist check", func(t *testing.T) {
 		dir := t.TempDir()
+		featureSlug := "test-feature"
+
+		// Create correct directory structure: .../docs/features/<slug>/tasks/
+		tasksDir := filepath.Join(dir, "docs", "features", featureSlug, "tasks")
+		os.MkdirAll(tasksDir, 0755)
 
 		// Create existing file
-		existingFile := filepath.Join(dir, "existing.md")
+		existingFile := filepath.Join(tasksDir, "existing.md")
 		os.WriteFile(existingFile, []byte("content"), 0644)
 
-		v := &validator{filePath: filepath.Join(dir, "index.json")}
+		v := &validator{filePath: filepath.Join(dir, "docs", "features", featureSlug, "tasks", "index.json")}
 
 		tasks := map[string]task.Task{
 			"task1": {ID: "1.1", File: "existing.md"},
@@ -88,7 +97,7 @@ func TestValidator_ValidateFilesExist_Integration(t *testing.T) {
 			"task3": {ID: "1.3", File: ""}, // empty file - should be skipped
 		}
 
-		v.validateFilesExist(tasks)
+		v.validateFilesExist(featureSlug, tasks)
 
 		if len(v.warnings) != 1 {
 			t.Errorf("expected 1 warning for missing file, got %d: %v", len(v.warnings), v.warnings)

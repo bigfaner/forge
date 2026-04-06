@@ -235,13 +235,21 @@ func TestValidator_ValidateCircularDeps(t *testing.T) {
 func TestValidator_ValidateFilesExist(t *testing.T) {
 	t.Run("file exists", func(t *testing.T) {
 		dir := t.TempDir()
-		taskFile := filepath.Join(dir, "task.md")
+		featureSlug := "test-feature"
+
+		// Create correct directory structure: .../docs/features/test-feature/tasks/
+		tasksDir := filepath.Join(dir, "docs", "features", featureSlug, "tasks")
+		if err := os.MkdirAll(tasksDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		taskFile := filepath.Join(tasksDir, "task.md")
 		if err := os.WriteFile(taskFile, []byte("content"), 0644); err != nil {
 			t.Fatal(err)
 		}
 
-		v := &validator{filePath: filepath.Join(dir, "index.json")}
-		v.validateFilesExist(map[string]task.Task{
+		// FilePath must be in format: .../docs/features/<slug>/tasks/index.json
+		v := &validator{filePath: filepath.Join(dir, "docs", "features", featureSlug, "tasks", "index.json")}
+		v.validateFilesExist(featureSlug, map[string]task.Task{
 			"task1": {ID: "1.1", File: "task.md"},
 		})
 		if len(v.warnings) != 0 {
@@ -251,9 +259,11 @@ func TestValidator_ValidateFilesExist(t *testing.T) {
 
 	t.Run("file missing", func(t *testing.T) {
 		dir := t.TempDir()
+		featureSlug := "test-feature"
 
-		v := &validator{filePath: filepath.Join(dir, "index.json")}
-		v.validateFilesExist(map[string]task.Task{
+		// FilePath must be in format: .../docs/features/<slug>/tasks/index.json
+		v := &validator{filePath: filepath.Join(dir, "docs", "features", featureSlug, "tasks", "index.json")}
+		v.validateFilesExist(featureSlug, map[string]task.Task{
 			"task1": {ID: "1.1", File: "missing.md"},
 		})
 		if len(v.warnings) != 1 {
@@ -263,7 +273,7 @@ func TestValidator_ValidateFilesExist(t *testing.T) {
 
 	t.Run("empty file field skipped", func(t *testing.T) {
 		v := &validator{}
-		v.validateFilesExist(map[string]task.Task{
+		v.validateFilesExist("test-feature", map[string]task.Task{
 			"task1": {ID: "1.1", File: ""},
 		})
 		if len(v.warnings) != 0 {

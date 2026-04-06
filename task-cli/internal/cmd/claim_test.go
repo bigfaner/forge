@@ -494,7 +494,7 @@ func TestExecuteClaim(t *testing.T) {
 		StatusEnum:   []string{"pending", "in_progress", "completed"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
 		Tasks: map[string]task.Task{
-			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "tasks/1.1.md", Record: "records/1.1.md"},
+			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md", Record: "1.1.md"},
 		},
 	}
 
@@ -562,7 +562,7 @@ func TestExecuteClaim_Continue(t *testing.T) {
 		StatusEnum:   []string{"pending", "in_progress", "completed"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
 		Tasks: map[string]task.Task{
-			"task1": {ID: "1.1", Title: "Task 1", Status: "in_progress", Priority: "P0", File: "tasks/1.1.md", Record: "records/1.1.md"},
+			"task1": {ID: "1.1", Title: "Task 1", Status: "in_progress", Priority: "P0", File: "1.1.md", Record: "1.1.md"},
 		},
 	}
 

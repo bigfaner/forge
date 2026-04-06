@@ -192,7 +192,7 @@ func TestRunQuery(t *testing.T) {
 		StatusEnum:   []string{"pending", "in_progress", "completed"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
 		Tasks: map[string]task.Task{
-			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "tasks/1.1.md", Record: "records/1.1.md", EstimatedTime: "30m", Dependencies: []string{"1.0"}},
+			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md", Record: "1.1.md", EstimatedTime: "30m", Dependencies: []string{"1.0"}},
 		},
 	}
 
@@ -260,7 +260,7 @@ func TestRunStatus(t *testing.T) {
 		StatusEnum:   []string{"pending", "in_progress", "completed"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
 		Tasks: map[string]task.Task{
-			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "tasks/1.1.md", Record: "records/1.1.md"},
+			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md", Record: "1.1.md"},
 		},
 	}
 
@@ -323,8 +323,8 @@ func TestRunCheck(t *testing.T) {
 		StatusEnum:   []string{"pending", "in_progress", "completed"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
 		Tasks: map[string]task.Task{
-			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "tasks/1.1.md", Record: "records/1.1.md"},
-			"task2": {ID: "1.2", Title: "Task 2", Status: "pending", Priority: "P1", File: "tasks/1.2.md", Record: "records/1.2.md", Dependencies: []string{"1.1"}},
+			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md", Record: "1.1.md"},
+			"task2": {ID: "1.2", Title: "Task 2", Status: "pending", Priority: "P1", File: "1.2.md", Record: "1.2.md", Dependencies: []string{"1.1"}},
 		},
 	}
 

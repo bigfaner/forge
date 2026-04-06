@@ -38,9 +38,9 @@ func runClaim(cmd *cobra.Command, args []string) {
 
 	// Print result
 	if result.Action == "CONTINUE" {
-		printContinueTask(result.State, result.Task)
+		printContinueTask(result.State, result.Task, result.ProjectRoot, result.FeatureSlug)
 	} else {
-		printNewTask(result.Key, result.Task)
+		printNewTask(result.Key, result.Task, result.ProjectRoot, result.FeatureSlug)
 	}
 }
 
@@ -51,6 +51,8 @@ type ClaimResult struct {
 	Task        *task.Task
 	State       *task.TaskState
 	StartedTime string // for CONTINUE action
+	ProjectRoot string
+	FeatureSlug string
 }
 
 // executeClaim contains the core logic for the claim command, testable
@@ -88,6 +90,8 @@ func executeClaim() (*ClaimResult, error) {
 			Task:        &t,
 			State:       state,
 			StartedTime: state.StartedTime,
+			ProjectRoot: projectRoot,
+			FeatureSlug: featureSlug,
 		}, nil
 	}
 
@@ -119,10 +123,12 @@ func executeClaim() (*ClaimResult, error) {
 	}
 
 	return &ClaimResult{
-		Action: "CLAIMED",
-		Key:    key,
-		Task:   t,
-		State:  state,
+		Action:      "CLAIMED",
+		Key:         key,
+		Task:        t,
+		State:       state,
+		ProjectRoot: projectRoot,
+		FeatureSlug: featureSlug,
 	}, nil
 }
 
@@ -269,7 +275,7 @@ func compareVersionIDs(a, b string) bool {
 	return false
 }
 
-func printTaskDetails(key string, t *task.Task) {
+func printTaskDetails(key string, t *task.Task, projectRoot, featureSlug string) {
 	PrintField("KEY", key)
 	PrintField("ID", t.ID)
 	PrintField("TITLE", t.Title)
@@ -277,21 +283,21 @@ func printTaskDetails(key string, t *task.Task) {
 	PrintField("STATUS", t.Status)
 	PrintFieldIfNotEmpty("ESTIMATED_TIME", t.EstimatedTime)
 	PrintFieldIfNotEmptySlice("DEPENDENCIES", t.Dependencies)
-	PrintField("FILE", t.File)
-	PrintField("RECORD", t.Record)
+	PrintField("FILE", filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, t.File)))
+	PrintField("RECORD", filepath.Join(projectRoot, feature.GetRecordFile(featureSlug, t.Record)))
 }
 
-func printContinueTask(state *task.TaskState, t *task.Task) {
+func printContinueTask(state *task.TaskState, t *task.Task, projectRoot, featureSlug string) {
 	PrintBlockStart()
 	PrintField("ACTION", "CONTINUE")
-	printTaskDetails(state.Key, t)
+	printTaskDetails(state.Key, t, projectRoot, featureSlug)
 	PrintField("STARTED_AT", state.StartedTime)
 	PrintBlockEnd()
 }
 
-func printNewTask(key string, t *task.Task) {
+func printNewTask(key string, t *task.Task, projectRoot, featureSlug string) {
 	PrintBlockStart()
 	PrintField("ACTION", "CLAIMED")
-	printTaskDetails(key, t)
+	printTaskDetails(key, t, projectRoot, featureSlug)
 	PrintBlockEnd()
 }

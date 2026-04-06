@@ -95,7 +95,7 @@ func (v *validator) run() error {
 	v.validateTasks(idx.Tasks)
 	v.validateDependencies(idx.Tasks)
 	v.validateCircularDeps(idx.Tasks)
-	v.validateFilesExist(idx.Tasks)
+	v.validateFilesExist(idx.Feature, idx.Tasks)
 
 	if !v.printResults() {
 		return fmt.Errorf("validation failed with %d errors", len(v.errors))
@@ -195,13 +195,17 @@ func (v *validator) validateCircularDeps(tasks map[string]task.Task) {
 	}
 }
 
-func (v *validator) validateFilesExist(tasks map[string]task.Task) {
-	dir := filepath.Dir(v.filePath)
+func (v *validator) validateFilesExist(featureSlug string, tasks map[string]task.Task) {
+	// Get project root from filePath (which is .../docs/features/<slug>/tasks/index.json)
+	// Go up 4 levels: index.json -> tasks -> <slug> -> features -> docs -> projectRoot
+	projectRoot := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(v.filePath)))))
+	tasksDir := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug))
+
 	for key, t := range tasks {
 		if t.File == "" {
 			continue
 		}
-		taskFile := filepath.Join(dir, t.File)
+		taskFile := filepath.Join(tasksDir, t.File)
 		if _, err := os.Stat(taskFile); os.IsNotExist(err) {
 			v.warnings = append(v.warnings, fmt.Sprintf("Task '%s': file '%s' missing", key, t.File))
 		}
