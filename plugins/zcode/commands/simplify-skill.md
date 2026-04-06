@@ -55,9 +55,9 @@ Use `AskUserQuestion` with multiSelect for which content to extract.
 
 ## Iron Law
 
-```
+<EXTREMELY-IMPORTANT>
 NEVER extract without user approval
 NEVER remove content, only relocate
 ALWAYS add file references
 KEEP workflow steps intact
-```
+</EXTREMELY-IMPORTANT>

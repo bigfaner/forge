@@ -1,18 +1,18 @@
 {
-  "name": "zcode-marketplace",
-  "owner": {
-    "name": "zcode"
-  },
-  "metadata": {
-    "description": "Claude Code productivity tools for task management and workflow"
-  },
-  "plugins": [
-    {
-      "name": "zcode",
-      "source": "./plugins/zcode",
-      "description": "Task management and workflow helper tools for Claude Code",
-      "version": "1.0.0",
-      "keywords": ["task", "workflow", "productivity", "prd", "git"]
-    }
-  ]
+	"name": "zcode-marketplace",
+	"owner": {
+		"name": "zcode"
+	},
+	"metadata": {
+		"description": "Claude Code productivity tools for task management and workflow"
+	},
+	"plugins": [
+		{
+			"name": "zcode",
+			"source": "./plugins/zcode",
+			"description": "Task management and workflow helper tools for Claude Code",
+			"version": "1.0.1",
+			"keywords": ["task", "workflow", "productivity", "prd", "git"]
+		}
+	]
 }

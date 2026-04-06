@@ -59,9 +59,15 @@ Skill(skill="git-commit")
 
 ## Rules
 
-- **record-task is mandatory** - No completion without it
-- **All verifications must pass**
-- **Commit only after record**
+<EXTREMELY-IMPORTANT>
+- record-task is mandatory - No completion without it
+- All verifications must pass
+- Commit only after record
+</EXTREMELY-IMPORTANT>
+
+<HARD-GATE>
+Task is NOT complete until record-task CLI command succeeds. Commit is blocked until record exists.
+</HARD-GATE>
 
 ## Related Commands
 

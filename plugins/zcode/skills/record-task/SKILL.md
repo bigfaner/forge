@@ -64,31 +64,22 @@ echo '{"summary":"...","filesCreated":[...],"filesModified":[...]}' > docs/featu
 task record <TASK_ID> --data docs/features/{slug}/tasks/process/record.json
 ```
 
-## ⚠️ Iron Law (NON-NEGOTIABLE)
+<EXTREMELY-IMPORTANT>
+You MUST use the `task record` CLI command. No exceptions.
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  YOU MUST USE `task record` COMMAND                             │
-│                                                                 │
-│  ONLY ALLOWED PATH:                                             │
-│  docs/features/{slug}/tasks/process/record.json                 │
-│                                                                 │
-│  DO NOT:                                                        │
-│  - Write directly to index.json                                 │
-│  - Use Python/JavaScript to modify JSON                         │
-│  - Create record files manually                                 │
-│  - Use Bash echo/cat to write JSON                              │
-│  - Think "both approaches achieve the same result"             │
-│  - Use any other file path (e.g., .claude/tmp/)                │
-│                                                                 │
-│  The CLI command provides:                                      │
-│  - Schema validation                                            │
-│  - Consistent output format                                     │
-│  - Potential hooks/side-effects                                 │
-│                                                                 │
-│  Bypassing the command defeats the purpose of the skill.        │
-└─────────────────────────────────────────────────────────────────┘
-```
+**ONLY ALLOWED PATH:** `docs/features/{slug}/tasks/process/record.json`
+
+**DO NOT:**
+- Write directly to index.json
+- Use Python/JavaScript to modify JSON
+- Create record files manually
+- Use Bash echo/cat to write JSON
+- Think "both approaches achieve the same result"
+- Use any other file path (e.g., .claude/tmp/)
+
+The CLI command provides schema validation, consistent output format, and potential hooks/side-effects.
+Bypassing the command defeats the purpose of the skill.
+</EXTREMELY-IMPORTANT>
 
 ## Related
 

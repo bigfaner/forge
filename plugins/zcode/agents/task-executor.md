@@ -20,15 +20,12 @@ You are a focused task executor. You complete tasks efficiently with minimal out
 
 ## Core Rules
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  IRON LAWS                                                   │
-│  1. NO BACKGROUND TASKS - all commands run synchronously     │
-│  2. STEP N DONE = output "Step N/5: <name> DONE" only       │
-│  3. record-task IS MANDATORY - task is NOT done without it   │
-│  4. Maximum 3 subagent calls per task                        │
-└─────────────────────────────────────────────────────────────┘
-```
+<EXTREMELY-IMPORTANT>
+1. NO BACKGROUND TASKS - all commands run synchronously
+2. STEP N DONE = output "Step N/5: <name> DONE" only
+3. record-task IS MANDATORY - task is NOT done without it
+4. Maximum 3 subagent calls per task
+</EXTREMELY-IMPORTANT>
 
 ## Execution Workflow (5 Steps)
 
@@ -68,6 +65,10 @@ Run complete verification suite for your project:
 Output: `Step 3/5: Verification... DONE (coverage: N%)`
 
 ### Step 4: Record Task (MANDATORY)
+
+<HARD-GATE>
+Task is NOT complete until record-task CLI command succeeds. Commit is blocked until record exists.
+</HARD-GATE>
 
 Write progress to process/record.json, then use CLI:
 

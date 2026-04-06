@@ -23,13 +23,13 @@ MAIN SESSION (Dispatcher)
 
 ## Dispatcher Iron Laws
 
-```
+<EXTREMELY-IMPORTANT>
 1. Only 3 actions: claim → dispatch → verify
 2. NO code reading, NO code writing
 3. NO running tests directly
 4. 30-minute timeout per task
 5. 3 consecutive failures → STOP
-```
+</EXTREMELY-IMPORTANT>
 
 ## Execution Loop
 
