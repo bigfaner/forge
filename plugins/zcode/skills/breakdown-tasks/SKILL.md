@@ -77,7 +77,31 @@ Read `docs/features/<slug>/design.md`:
 
 ## Step 5: Create index.json
 
-Create `docs/features/<slug>/index.json` with task definitions.
+Create `docs/features/<slug>/tasks/index.json` with task definitions.
+
+**Schema reference:** [templates/index.schema.json](templates/index.schema.json)
+
+### Required Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `version` | string | Semver format (e.g., `1.0.0`) |
+| `lastUpdated` | date | ISO date (e.g., `2026-04-06`) |
+| `tasks` | object | Map of task ID → task definition |
+
+### Task Fields
+
+| Field | Required | Type | Description |
+|-------|----------|------|-------------|
+| `id` | ✓ | string | Task identifier (e.g., `1.1`) |
+| `phase` | ✓ | int | Phase number (≥1) |
+| `title` | ✓ | string | Task title |
+| `priority` | ✓ | enum | `P0` / `P1` / `P2` |
+| `status` | ✓ | enum | `pending` / `in_progress` / `completed` / `blocked` / `skipped` |
+| `file` | ✓ | string | Task file path |
+| `dependencies` | | array | Task IDs this depends on |
+| `estimatedTime` | | string | Time estimate |
+| `record` | | string | Record file path |
 
 ## Step 6: Validate
 
