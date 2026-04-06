@@ -43,9 +43,29 @@ description: Use after completing a task to create its execution record and upda
 ## Usage
 
 ```bash
-# 使用 JSON 文件
+# Step 1: 准备 JSON 数据
 echo '{"summary":"...","filesCreated":[...],"filesModified":[...]}' > docs/features/{slug}/tasks/process/record.json
-task record <TASK_ID> -data docs/features/{slug}/tasks/process/record.json
+
+# Step 2: 使用 CLI 命令（必须）
+task record <TASK_ID> --data docs/features/{slug}/tasks/process/record.json
+```
+
+## ⚠️ Iron Law
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  YOU MUST USE `task record` COMMAND                             │
+│                                                                 │
+│  DO NOT:                                                        │
+│  - Write directly to index.json                                 │
+│  - Use Python/JavaScript to modify JSON                         │
+│  - Create record files manually                                 │
+│                                                                 │
+│  The CLI command provides:                                      │
+│  - Schema validation                                            │
+│  - Consistent output format                                     │
+│  - Potential hooks/side-effects                                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ## Related
