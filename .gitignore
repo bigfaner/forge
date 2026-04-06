@@ -1,0 +1,16 @@
+.claude/settings.local.json
+
+# Coverage
+coverages/
+coverage*
+cover.outfile
+
+# Temporary
+tmp/
+
+# Binaries
+*.exe
+bin/
+
+# Go
+*.test

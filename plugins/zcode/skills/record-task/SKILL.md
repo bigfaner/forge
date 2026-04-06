@@ -1,0 +1,53 @@
+---
+name: record-task
+description: Use after completing a task to create its execution record and update task status.
+---
+
+# Record Task
+
+## Overview
+
+任务完成后的收尾操作：创建执行记录 + 更新任务状态。
+
+## Usage
+
+```bash
+# 使用 JSON 文件
+echo '{"summary":"...","filesCreated":[...],"filesModified":[...]}' > docs/features/{slug}/tasks/record.json
+task record <TASK_ID> -data docs/features/{slug}/tasks/record.json
+```
+
+## JSON Data Format
+
+```json
+{
+	"status": "completed",
+	"summary": "实现了什么",
+	"filesCreated": ["src/components/Button.tsx"],
+	"filesModified": ["src/utils/helpers.ts"],
+	"keyDecisions": ["决策 1"],
+	"testsPassed": 12,
+	"testsFailed": 0,
+	"coverage": 85.6,
+	"acceptanceCriteria": [{ "criterion": "验收标准 1", "met": true }]
+}
+```
+
+## Fields
+
+| 字段                 | 类型   | 说明                       |
+| -------------------- | ------ | -------------------------- |
+| `status`             | string | 任务状态，默认 `completed` |
+| `summary`            | string | 实现摘要                   |
+| `filesCreated`       | array  | 新建文件列表               |
+| `filesModified`      | array  | 修改文件列表               |
+| `keyDecisions`       | array  | 关键设计决策               |
+| `testsPassed`        | int    | 通过测试数                 |
+| `testsFailed`        | int    | 失败测试数                 |
+| `coverage`           | float  | 覆盖率                     |
+| `acceptanceCriteria` | array  | `{criterion, met}` 对象    |
+
+## Related
+
+- `/claim-task` - Claim next available task
+- `/set-task-status` - Direct status update only
