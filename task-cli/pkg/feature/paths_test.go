@@ -68,7 +68,7 @@ func TestGetFeatureTasksDir(t *testing.T) {
 
 func TestGetFeatureRecordsDir(t *testing.T) {
 	feature := "test-feature"
-	want := filepath.Join("docs/features", "test-feature", "records")
+	want := filepath.Join("docs/features", "test-feature", "tasks", "records")
 	if got := GetFeatureRecordsDir(feature); got != want {
 		t.Errorf("GetFeatureRecordsDir(%q) = %q, want %q", feature, got, want)
 	}
@@ -86,7 +86,7 @@ func TestGetTaskFile(t *testing.T) {
 func TestGetRecordFile(t *testing.T) {
 	feature := "test-feature"
 	filename := "1.1.md"
-	want := filepath.Join("docs/features", "test-feature", "records", "1.1.md")
+	want := filepath.Join("docs/features", "test-feature", "tasks", "records", "1.1.md")
 	if got := GetRecordFile(feature, filename); got != want {
 		t.Errorf("GetRecordFile(%q, %q) = %q, want %q", feature, filename, got, want)
 	}

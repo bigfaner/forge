@@ -29,9 +29,9 @@ func GetFeatureTasksDir(feature string) string {
 	return filepath.Join(FeaturesDir, feature, TasksDirName)
 }
 
-// GetFeatureRecordsDir returns the path to the feature's records directory.
+// GetFeatureRecordsDir returns the path to the feature's records directory (under tasks).
 func GetFeatureRecordsDir(feature string) string {
-	return filepath.Join(FeaturesDir, feature, RecordsDirName)
+	return filepath.Join(FeaturesDir, feature, TasksDirName, RecordsDirName)
 }
 
 // GetTaskFile returns the path to a specific task file.
@@ -39,9 +39,9 @@ func GetTaskFile(feature, filename string) string {
 	return filepath.Join(FeaturesDir, feature, TasksDirName, filename)
 }
 
-// GetRecordFile returns the path to a specific record file (final record).
+// GetRecordFile returns the path to a specific record file (under tasks/records).
 func GetRecordFile(feature, filename string) string {
-	return filepath.Join(FeaturesDir, feature, RecordsDirName, filename)
+	return filepath.Join(FeaturesDir, feature, TasksDirName, RecordsDirName, filename)
 }
 
 // GetTaskStatePath returns the absolute path to state.json for a feature.
