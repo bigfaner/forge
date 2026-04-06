@@ -40,9 +40,16 @@ Run project-specific verification commands.
 
 ## Step 4: Record Task (MANDATORY)
 
+Invoke the skill (it contains file location details):
+
 ```
 Skill(skill="record-task")
 ```
+
+The skill provides complete workflow including:
+- File locations (process/record.json vs tmp/)
+- JSON format and fields
+- CLI command usage
 
 ## Step 5: Commit
 

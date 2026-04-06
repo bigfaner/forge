@@ -9,6 +9,20 @@ description: Use after completing a task to create its execution record and upda
 
 任务完成后的收尾操作：创建执行记录 + 更新任务状态。
 
+## File Locations
+
+| Location | Purpose | Git Status |
+|----------|---------|------------|
+| `docs/features/{slug}/tasks/process/record.json` | In-progress execution notes | Not committed |
+| `docs/features/{slug}/tasks/records/*.md` | Final completed record | Committed to repo |
+
+**Workflow:**
+```
+1. task claim           → writes process/state.json (current task)
+2. During execution     → write progress to process/record.json
+3. task record --data   → reads JSON, generates records/*.md, clears process/
+```
+
 ## JSON Data Format
 
 ```json
@@ -43,10 +57,10 @@ description: Use after completing a task to create its execution record and upda
 ## Usage
 
 ```bash
-# Step 1: 准备 JSON 数据
+# Step 1: Write progress to process/record.json
 echo '{"summary":"...","filesCreated":[...],"filesModified":[...]}' > docs/features/{slug}/tasks/process/record.json
 
-# Step 2: 使用 CLI 命令（必须）
+# Step 2: Use CLI command (mandatory)
 task record <TASK_ID> --data docs/features/{slug}/tasks/process/record.json
 ```
 
@@ -56,12 +70,16 @@ task record <TASK_ID> --data docs/features/{slug}/tasks/process/record.json
 ┌─────────────────────────────────────────────────────────────────┐
 │  YOU MUST USE `task record` COMMAND                             │
 │                                                                 │
+│  ONLY ALLOWED PATH:                                             │
+│  docs/features/{slug}/tasks/process/record.json                 │
+│                                                                 │
 │  DO NOT:                                                        │
 │  - Write directly to index.json                                 │
 │  - Use Python/JavaScript to modify JSON                         │
 │  - Create record files manually                                 │
 │  - Use Bash echo/cat to write JSON                              │
 │  - Think "both approaches achieve the same result"             │
+│  - Use any other file path (e.g., .claude/tmp/)                │
 │                                                                 │
 │  The CLI command provides:                                      │
 │  - Schema validation                                            │

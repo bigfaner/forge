@@ -106,14 +106,22 @@ FIXED: {{TASK_ID}} | ❌ | <reason-why-unfixable>
 | Test fails | Analyze assertion, fix logic |
 | Coverage < 80% | Add missing tests |
 | Lint fails | Fix reported issues |
-| Task record missing | Use `Skill(skill="record-task")` to create record |
+| Task record missing | Write to `docs/features/{slug}/tasks/process/record.json`, then `task record` CLI |
 
 ## After Fixing Task Errors
 
-If this fix completes a previously failed task, you MUST use:
+If this fix completes a previously failed task, create execution record:
 
+### Step 1: Write JSON to process location
+
+```bash
+echo '{"summary":"fix description","filesModified":["path/to/file"]}' > docs/features/{slug}/tasks/process/record.json
 ```
-Skill(skill="record-task")
+
+### Step 2: Use CLI command (mandatory)
+
+```bash
+task record {{TASK_ID}} --data docs/features/{slug}/tasks/process/record.json
 ```
 
 **DO NOT** write directly to index.json or use Python/JavaScript to modify JSON. The `task record` CLI command is mandatory for consistency.

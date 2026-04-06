@@ -29,7 +29,7 @@ escape_for_json() {
 }
 
 guide_escaped=$(escape_for_json "$guide_content")
-session_context="<ZCODE_CONTEXT>\n${guide_escaped}\n</ZCODE_CONTEXT>"
+session_context="<EXTREAMLY_IMPORTANT>\n<zcode-guide>\n${guide_escaped}\n</zcode-guide>\n</EXTREAMLY_IMPORTANT>"
 
 # Output context injection as JSON
 if [ -n "${CURSOR_PLUGIN_ROOT:-}" ]; then
@@ -39,5 +39,7 @@ elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ]; then
 else
     printf '{\n  "additional_context": "%s"\n}\n' "$session_context"
 fi
+
+echo 'Loaded zcode guide'
 
 exit 0

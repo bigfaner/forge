@@ -69,10 +69,14 @@ Output: `Step 3/5: Verification... DONE (coverage: N%)`
 
 ### Step 4: Record Task (MANDATORY)
 
-Use the Skill tool to invoke record-task:
+Write progress to process/record.json, then use CLI:
 
-```
-Skill(skill="record-task")
+```bash
+# Write execution data to process location (for ongoing tracking)
+echo '{"summary":"...","filesCreated":[...],"filesModified":[...]}' > docs/features/{slug}/tasks/process/record.json
+
+# Use CLI command (mandatory)
+task record {{TASK_ID}} --data docs/features/{slug}/tasks/process/record.json
 ```
 
 Output: `Step 4/5: Recording task... DONE`
