@@ -50,7 +50,7 @@ echo '{"summary":"...","filesCreated":[...],"filesModified":[...]}' > docs/featu
 task record <TASK_ID> --data docs/features/{slug}/tasks/process/record.json
 ```
 
-## ⚠️ Iron Law
+## ⚠️ Iron Law (NON-NEGOTIABLE)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -60,11 +60,15 @@ task record <TASK_ID> --data docs/features/{slug}/tasks/process/record.json
 │  - Write directly to index.json                                 │
 │  - Use Python/JavaScript to modify JSON                         │
 │  - Create record files manually                                 │
+│  - Use Bash echo/cat to write JSON                              │
+│  - Think "both approaches achieve the same result"             │
 │                                                                 │
 │  The CLI command provides:                                      │
 │  - Schema validation                                            │
 │  - Consistent output format                                     │
 │  - Potential hooks/side-effects                                 │
+│                                                                 │
+│  Bypassing the command defeats the purpose of the skill.        │
 └─────────────────────────────────────────────────────────────────┘
 ```
 

@@ -71,8 +71,21 @@ Return to Step 1.
 |-----------|--------|
 | No available task | End loop, print summary |
 | Agent timeout | Mark blocked, continue next |
-| Record missing | Dispatch error-fixer |
+| Record missing | Dispatch error-fixer (include: "Use /record-task skill to create record") |
 | 3 consecutive failures | STOP dispatcher |
+
+### Error-Fixer Dispatch
+
+When dispatching error-fixer for missing record, include explicit instruction:
+
+```
+Agent(
+  subagent_type="error-fixer",
+  prompt="TASK_ID: {{ID}}
+  ERROR_MESSAGES: Missing task record
+  INSTRUCTION: Use /record-task skill to create the record (task record CLI is mandatory)"
+)
+```
 
 ## Related Commands
 

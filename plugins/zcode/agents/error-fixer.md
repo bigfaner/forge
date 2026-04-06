@@ -106,6 +106,17 @@ FIXED: {{TASK_ID}} | ❌ | <reason-why-unfixable>
 | Test fails | Analyze assertion, fix logic |
 | Coverage < 80% | Add missing tests |
 | Lint fails | Fix reported issues |
+| Task record missing | Use `Skill(skill="record-task")` to create record |
+
+## After Fixing Task Errors
+
+If this fix completes a previously failed task, you MUST use:
+
+```
+Skill(skill="record-task")
+```
+
+**DO NOT** write directly to index.json or use Python/JavaScript to modify JSON. The `task record` CLI command is mandatory for consistency.
 
 ## Persistent Agent Memory
 
