@@ -75,13 +75,42 @@
 
 ### 安装
 
+#### 方式一：通过 Plugin Marketplace 安装（推荐）
+
+ZCode 可作为 Claude Code plugin marketplace 使用，支持标准化安装和自动更新：
+
+```bash
+# 1. 添加 marketplace
+/plugin marketplace git@github.com:bigfaner/zcode.git
+
+# 2. 安装 zcode plugin（--scope project 与团队共享）
+/plugin install zcode@zcode-marketplace --scope project
+
+# 3. 编译安装 task-cli
+/init-zcode
+
+# 4. 验证
+task --version
+```
+
+**安装范围说明**：
+
+| 范围 | 设置文件 | 用例 |
+|------|----------|------|
+| `user` | `~/.claude/settings.json` | 个人使用（默认） |
+| `project` | `.claude/settings.json` | 团队共享（推荐） |
+| `local` | `.claude/settings.local.json` | 本地开发，gitignored |
+
+#### 方式二：本地安装
+
 ```bash
 # 1. 克隆仓库
 git clone git@github.com:bigfaner/zcode.git
 cd zcode
 
-# 2. 在 Claude Code 中安装插件
-# 将 plugins/zcode 目录链接或复制到你的项目
+# 2. 添加本地 marketplace 并安装
+/plugin marketplace add .
+/plugin install zcode@zcode-marketplace
 
 # 3. 编译安装 task-cli
 /init-zcode
@@ -335,6 +364,73 @@ rm docs/features/<slug>/tasks/process/state.json
 
 ---
 
+## Plugin Marketplace 架构
+
+ZCode 遵循 [Claude Code plugin 规范](docs/official-references/plugin.md)，可作为 marketplace 分发。
+
+### 目录结构
+
+```
+zcode/                              # Marketplace 根目录
+├── .claude-plugin/
+│   └── marketplace.json            # Marketplace 清单
+├── plugins/
+│   └── zcode/                      # ZCode plugin
+│       ├── .claude-plugin/
+│       │   └── plugin.json         # Plugin 清单
+│       ├── skills/                 # Skills（命令）
+│       ├── agents/                 # Subagents
+│       └── hooks/                  # Hooks 配置
+└── task-cli/                       # CLI 工具源码
+```
+
+### marketplace.json
+
+```json
+{
+  "name": "zcode",
+  "owner": { "name": "bigfaner" },
+  "plugins": [
+    {
+      "name": "zcode",
+      "source": "./plugins/zcode",
+      "description": "Claude Code 工作流增强工具集"
+    }
+  ]
+}
+```
+
+### Plugin 组件
+
+ZCode plugin 包含以下组件：
+
+| 组件 | 目录 | 用途 |
+|------|------|------|
+| **Skills** | `skills/` | `/write-prd`、`/run-tasks` 等命令 |
+| **Agents** | `agents/` | `task-executor`、`error-fixer` 子代理 |
+| **Hooks** | `hooks/hooks.json` | 自动验证和清理 |
+
+### 相关 CLI 命令
+
+```bash
+# Marketplace 管理
+/plugin marketplace add <owner/repo>   # 添加 marketplace
+/plugin marketplace list               # 列出已添加的 marketplaces
+/plugin marketplace update zcode       # 更新 marketplace
+
+# Plugin 管理
+/plugin install zcode@zcode            # 安装 plugin
+/plugin update zcode@zcode             # 更新到最新版本
+/plugin uninstall zcode@zcode          # 卸载
+/plugin enable zcode@zcode             # 启用
+/plugin disable zcode@zcode            # 禁用
+
+# 验证
+/plugin validate .                     # 验证本地 marketplace
+```
+
+---
+
 ## 架构约束（团队内部）
 
 ```
@@ -391,8 +487,8 @@ docs(readme): add troubleshooting section
 |------|------|
 | [task-cli/docs/OVERVIEW.md](task-cli/docs/OVERVIEW.md) | CLI 功能详解 |
 | [task-cli/docs/WORKFLOW.md](task-cli/docs/WORKFLOW.md) | 内部流程图解 |
-| [docs/official-references/plugin.md](docs/official-references/plugin.md) | Claude Code 插件规范 |
-| [docs/official-references/plugin-marketplace.md](docs/official-references/plugin-marketplace.md) | 插件市场指南 |
+| [docs/official-references/plugin.md](docs/official-references/plugin.md) | Claude Code 插件系统完整技术参考 |
+| [docs/official-references/plugin-marketplace.md](docs/official-references/plugin-marketplace.md) | Plugin marketplace 创建与分发指南 |
 
 ---
 
