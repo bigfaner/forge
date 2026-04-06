@@ -41,8 +41,8 @@ Run project-specific verification commands.
 ## Step 4: Record Task (MANDATORY)
 
 ```bash
-echo '{"summary":"..."}' > .claude/process/record.json
-task record <TASK_ID> -data .claude/process/record.json
+echo '{"summary":"..."}' > docs/features/<slug>/tasks/process/record.json
+task record <TASK_ID> -data docs/features/<slug>/tasks/process/record.json
 ```
 
 ## Step 5: Commit

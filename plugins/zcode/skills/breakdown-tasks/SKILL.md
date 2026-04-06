@@ -26,17 +26,19 @@ docs/features/<feature-slug>/
 ├── prd.md              # PRD document
 ├── design.md           # Technical design (input)
 ├── index.json          # Task index for this feature
-├── tasks/              # Task definitions
-└── records/            # Execution records
+└── tasks/              # Task definitions
+    └── records/        # Execution records
 ```
 
 ## When to Use
 
 **Trigger conditions:**
+
 - Design document exists at `docs/features/<slug>/design.md`
 - User asks to "break down" or "split" a design into tasks
 
 **Skip when:**
+
 - No design.md exists (use `/design-tech` first)
 - Tasks already exist for the feature
 
@@ -49,18 +51,19 @@ docs/features/<feature-slug>/
 ## Step 1: Read Design
 
 Read `docs/features/<slug>/design.md`:
+
 - Understand architecture and component structure
 - Map interfaces to implementation tasks
 - Identify data models and their tasks
 
 ## Step 2: Map Interfaces to Tasks
 
-| Design Element | Task Type |
-|----------------|-----------|
-| Interface definition | Interface task |
-| Data model | Model task |
-| Component | Implementation task |
-| Error type | Error handling task |
+| Design Element       | Task Type           |
+| -------------------- | ------------------- |
+| Interface definition | Interface task      |
+| Data model           | Model task          |
+| Component            | Implementation task |
+| Error type           | Error handling task |
 
 ## Step 3: Define Task Order
 
@@ -71,6 +74,7 @@ Read `docs/features/<slug>/design.md`:
 ## Step 4: Create Task Files
 
 **Naming convention:**
+
 ```
 <sequence>.<sub-sequence>-<slug>.md
 ```
@@ -83,35 +87,36 @@ Create `docs/features/<slug>/tasks/index.json` with task definitions.
 
 ### Required Fields
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `version` | string | Semver format (e.g., `1.0.0`) |
-| `lastUpdated` | date | ISO date (e.g., `2026-04-06`) |
-| `tasks` | object | Map of task ID → task definition |
+| Field         | Type   | Description                      |
+| ------------- | ------ | -------------------------------- |
+| `version`     | string | Semver format (e.g., `1.0.0`)    |
+| `lastUpdated` | date   | ISO date (e.g., `2026-04-06`)    |
+| `tasks`       | object | Map of task ID → task definition |
 
 ### Task Fields
 
-| Field | Required | Type | Description |
-|-------|----------|------|-------------|
-| `id` | ✓ | string | Task identifier (e.g., `1.1`) |
-| `phase` | ✓ | int | Phase number (≥1) |
-| `title` | ✓ | string | Task title |
-| `priority` | ✓ | enum | `P0` / `P1` / `P2` |
-| `status` | ✓ | enum | `pending` / `in_progress` / `completed` / `blocked` / `skipped` |
-| `file` | ✓ | string | Task file path |
-| `dependencies` | | array | Task IDs this depends on |
-| `estimatedTime` | | string | Time estimate |
-| `record` | | string | Record file path |
+| Field           | Required | Type   | Description                                                     |
+| --------------- | -------- | ------ | --------------------------------------------------------------- |
+| `id`            | ✓        | string | Task identifier (e.g., `1.1`)                                   |
+| `phase`         | ✓        | int    | Phase number (≥1)                                               |
+| `title`         | ✓        | string | Task title                                                      |
+| `priority`      | ✓        | enum   | `P0` / `P1` / `P2`                                              |
+| `status`        | ✓        | enum   | `pending` / `in_progress` / `completed` / `blocked` / `skipped` |
+| `file`          | ✓        | string | Task file path                                                  |
+| `dependencies`  |          | array  | Task IDs this depends on                                        |
+| `estimatedTime` |          | string | Time estimate                                                   |
+| `record`        |          | string | Record file path                                                |
 
 ## Step 6: Validate
 
 ```bash
-task validate -file docs/features/<slug>/index.json
+task validate -file docs/features/\<slug\>/tasks/index.json
 ```
 
 ## Integration
 
 Works well with:
+
 - `/design-tech` - Creates the design.md input
 - `/claim-task` - Starts working on tasks
 - `/record-task` - Records task completion

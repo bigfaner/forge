@@ -13,14 +13,15 @@ description: Use after completing a task to create its execution record and upda
 
 ```bash
 # 使用 JSON 文件
-echo '{"summary":"...","filesCreated":[...],"filesModified":[...]}' > docs/features/{slug}/tasks/record.json
-task record <TASK_ID> -data docs/features/{slug}/tasks/record.json
+echo '{"summary":"...","filesCreated":[...],"filesModified":[...]}' > docs/features/{slug}/tasks/process/record.json
+task record <TASK_ID> -data docs/features/{slug}/tasks/process/record.json
 ```
 
 ## JSON Data Format
 
 ```json
 {
+	"taskId": "3.3.1",
 	"status": "completed",
 	"summary": "实现了什么",
 	"filesCreated": ["src/components/Button.tsx"],

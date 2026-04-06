@@ -121,14 +121,14 @@ project-root/
 │   ├── features/<slug>/           # Feature 工作区
 │   │   ├── prd.md                 # 需求文档
 │   │   ├── design.md              # 设计文档
-│   │   ├── tasks/
-│   │   │   ├── index.json         # 任务定义（核心）
-│   │   │   ├── process/           # 运行时状态（不提交）
-│   │   │   │   ├── state.json     # 当前任务状态
-│   │   │   │   └── record.json    # 进行中的记录
-│   │   │   └── 1.1-<title>.md     # 任务详情
-│   │   └── records/               # 执行记录
-│   │       └── 1.1-<title>.md
+│   │   └── tasks/
+│   │       ├── index.json         # 任务定义（核心）
+│   │       ├── process/           # 运行时状态（不提交）
+│   │       │   ├── state.json     # 当前任务状态
+│   │       │   └── record.json    # 进行中的记录
+│   │       ├── 1.1-<title>.md     # 任务详情
+│   │       └── records/               # 执行记录
+│   │           └── 1.1-<title>.md
 │   └── lessons/                   # 经验教训
 ├── task-cli/                      # CLI 工具源码
 └── plugins/zcode/                 # 插件定义
@@ -277,6 +277,7 @@ Step 5: Git commit
 
 ```json
 {
+  "taskId":"3.3.1",
   "status": "completed",
   "summary": "实现 AuthService 接口定义",
   "filesCreated": ["internal/auth/service.go"],

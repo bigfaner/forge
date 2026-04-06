@@ -72,8 +72,8 @@ Output: `Step 3/5: Verification... DONE (coverage: N%)`
 Use task-cli to record task completion:
 
 ```bash
-echo '{"summary":"<one-line-summary>","filesCreated":[...],"filesModified":[...],"testsPassed":N,"coverage":N}' > .claude/process/record.json
-task record {{TASK_ID}} -data .claude/process/record.json
+echo '{"summary":"<one-line-summary>","filesCreated":[...],"filesModified":[...],"testsPassed":N,"coverage":N}' > docs/features/<slug>/tasks/process/record.json
+task record {{TASK_ID}} -data docs/features/<slug>/tasks/process/record.json
 ```
 
 Verify:
