@@ -69,7 +69,7 @@
 
 ### 前提条件
 
-- [Go 1.21+](https://golang.org/dl/)
+- [Go 1.26.1+](https://golang.org/dl/)
 - [Claude Code CLI](https://github.com/anthropics/claude-code)
 - Git
 
@@ -77,7 +77,7 @@
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/your-org/zcode.git
+git clone git@github.com:bigfaner/zcode.git
 cd zcode
 
 # 2. 在 Claude Code 中安装插件
@@ -352,7 +352,7 @@ TDD 流程: RED → GREEN → REFACTOR
 
 ```bash
 # 克隆
-git clone https://github.com/your-org/zcode.git
+git clone git@github.com:bigfaner/zcode.git
 cd zcode
 
 # 安装依赖
