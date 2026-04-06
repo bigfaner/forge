@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# SessionStart hook for zcode plugin
+# Injects guide.md content into context
+
+set -euo pipefail
+
+# Determine plugin root directory
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+GUIDE_FILE="${PLUGIN_ROOT}/hooks/guide.md"
+
+# Check if guide.md exists
+if [ ! -f "$GUIDE_FILE" ]; then
+    exit 0
+fi
+
+# Read guide.md content
+guide_content=$(cat "$GUIDE_FILE" 2>&1) || exit 0
+
+# Escape string for JSON embedding
+escape_for_json() {
+    local s="$1"
+    s="${s//\\/\\\\}"
+    s="${s//\"/\\\"}"
+    s="${s//$'\n'/\\n}"
+    s="${s//$'\r'/\\r}"
+    s="${s//$'\t'/\\t}"
+    printf '%s' "$s"
+}
+
+guide_escaped=$(escape_for_json "$guide_content")
+session_context="<ZCODE_CONTEXT>\n${guide_escaped}\n</ZCODE_CONTEXT>"
+
+# Output context injection as JSON
+if [ -n "${CURSOR_PLUGIN_ROOT:-}" ]; then
+    printf '{\n  "additional_context": "%s"\n}\n' "$session_context"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ]; then
+    printf '{\n  "hookSpecificOutput": {\n    "hookEventName": "SessionStart",\n    "additionalContext": "%s"\n  }\n}\n' "$session_context"
+else
+    printf '{\n  "additional_context": "%s"\n}\n' "$session_context"
+fi
+
+exit 0
