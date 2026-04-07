@@ -32,4 +32,5 @@ func init() {
 	rootCmd.AddCommand(validateCmd)
 	rootCmd.AddCommand(verifyCompletionCmd)
 	rootCmd.AddCommand(cleanupCmd)
+	rootCmd.AddCommand(versionCmd)
 }

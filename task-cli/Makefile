@@ -1,25 +1,34 @@
-.PHONY: default target
-all:
+.PHONY: all build install test lint clean-coverage coverage
 
 GO := go
-GOTEST := go test -race -v ./...
-GOCOVER := golangci-lint run ./...
+BINARY_NAME := task
+MAIN_PATH := ./cmd/task
+VERSION_PKG := task-cli/pkg/version
+VERSION_FILE := scripts/version.txt
 
-COVER:
+# Version is read from version.txt, injected via ldflags
+VERSION ?= $(shell cat $(VERSION_FILE) 2>/dev/null | tr -d '[:space:]' || echo "dev")
+
+# Build flags
+LDFLAGS := -ldflags "-s -w -X $(VERSION_PKG).Version=$(VERSION)"
+
+all: build
+
+build:
+	$(GO) build $(LDFLAGS) -o bin/$(BINARY_NAME) $(MAIN_PATH)
+
+install:
+	$(GO) install $(LDFLAGS) $(MAIN_PATH)
+
+test:
+	$(GO) test -race -v ./...
+
+lint:
+	golangci-lint run ./...
+
+coverage:
 	mkdir -p coverages
-	go test -race -coverprofile=coverages/coverage.out ./internal/... ./pkg/...
+	$(GO) test -race -coverprofile=coverages/coverage.out ./internal/... ./pkg/...
 
-.PHONY: clean-coverage
+clean-coverage:
 	rm -f coverages/coverage.out
-
-.PHONY: report
-	go tool-cover -func=cover ./... > coverages/coverage.out 2>&1
-	@echo "Coverage Report:"
-	@echo "=================="
-	@go tool-cover -html=coverprofile=coverages/coverage.out ./internal/... ./pkg/ 2>&1 | tail -1 | \
-	@echo ""
-	@echo "Note: cmd/task (main package) is excluded from coverage."
-	@echo "Main packages are Go conventionally excluded from unit test coverage."
-	@echo "The entry points are tested via internal/cmd tests."
-
-report:

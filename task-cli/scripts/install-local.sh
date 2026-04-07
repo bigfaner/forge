@@ -47,6 +47,18 @@ detect_platform() {
     log_info "Detected platform: ${OS}/${ARCH}"
 }
 
+# Read version from version.txt
+get_version() {
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    VERSION_FILE="${SCRIPT_DIR}/version.txt"
+    if [ -f "$VERSION_FILE" ]; then
+        VERSION=$(tr -d '[:space:]' < "$VERSION_FILE")
+    else
+        VERSION="dev"
+    fi
+    log_info "Version: ${VERSION}"
+}
+
 # Build the executable
 build() {
     log_info "Building ${APP_NAME} for ${OS}/${ARCH}..."
@@ -60,13 +72,14 @@ build() {
     # Create bin directory
     mkdir -p "${BIN_DIR}"
 
-    # Build
+    # Build with version injection
     OUTPUT="${BIN_DIR}/${APP_NAME}"
     if [ "$OS" = "windows" ]; then
         OUTPUT="${OUTPUT}.exe"
     fi
 
-    CGO_ENABLED=0 GOOS="$OS" GOARCH="$ARCH" go build -ldflags="-s -w" -o "$OUTPUT" ./cmd/task
+    LDFLAGS="-s -w -X task-cli/pkg/version.Version=${VERSION}"
+    CGO_ENABLED=0 GOOS="$OS" GOARCH="$ARCH" go build -ldflags="$LDFLAGS" -o "$OUTPUT" ./cmd/task
 
     log_info "Build complete: ${OUTPUT}"
 }
@@ -122,6 +135,7 @@ add_to_path() {
 # Main
 main() {
     log_info "Starting local installation..."
+    get_version
     detect_platform
     build
     install

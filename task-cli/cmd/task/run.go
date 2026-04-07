@@ -4,13 +4,8 @@ import (
 	"os"
 
 	"task-cli/internal/cmd"
+	"task-cli/pkg/version"
 )
-
-// Version returns the version of the CLI.
-var Version = "dev"
-
-// Name returns the name of the CLI.
-var Name = "task"
 
 // Run executes the main entry point. This function is testable.
 func Run() {
@@ -19,12 +14,12 @@ func Run() {
 
 // GetVersion returns the CLI version.
 func GetVersion() string {
-	return Version
+	return version.GetVersion()
 }
 
 // GetName returns the CLI name.
 func GetName() string {
-	return Name
+	return version.GetName()
 }
 
 // IsTestMode checks if running in test mode.

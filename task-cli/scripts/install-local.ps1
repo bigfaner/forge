@@ -47,6 +47,22 @@ function Get-Platform {
     return $GoArch
 }
 
+# Read version from version.txt
+function Get-Version {
+    $ScriptDir = Split-Path -Parent $MyInvocation.ScriptName
+    if (-not $ScriptDir) {
+        $ScriptDir = $PSScriptRoot
+    }
+    $VersionFile = Join-Path $ScriptDir "version.txt"
+
+    if (Test-Path $VersionFile) {
+        $script:Version = (Get-Content $VersionFile -Raw).Trim()
+    } else {
+        $script:Version = "dev"
+    }
+    Write-Info "Version: $script:Version"
+}
+
 # Build the executable
 function Build-App {
     param([string]$Arch)
@@ -73,7 +89,8 @@ function Build-App {
         $env:GOOS = "windows"
         $env:GOARCH = $Arch
 
-        go build -ldflags="-s -w" -o $Output ./cmd/task
+        $LdFlags = "-s -w -X task-cli/pkg/version.Version=$script:Version"
+        go build -ldflags="$LdFlags" -o $Output ./cmd/task
 
         Write-Info "Build complete: $Output"
     }
@@ -139,6 +156,7 @@ function Add-ToPath {
 function Main {
     Write-Info "Starting local installation..."
 
+    Get-Version
     $Arch = Get-Platform
     Build-App -Arch $Arch
     Install-App
