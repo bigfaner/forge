@@ -89,33 +89,28 @@ func runRecord(cmd *cobra.Command, args []string) {
 
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		Exit(ErrProjectNotFound())
 	}
 
 	featureSlug, err := feature.RequireFeature(projectRoot)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		Exit(ErrFeatureNotSet())
 	}
 
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
 	index, err := task.LoadIndex(indexPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		Exit(ErrFileNotFound(indexPath))
 	}
 
 	key, t, err := findTask(index, taskIDArg)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		Exit(ErrTaskNotFound(taskIDArg))
 	}
 
 	rd, err := readRecordData(recordDataPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		Exit(ErrNoInput(err.Error()))
 	}
 
 	if rd.Status == "" {
@@ -131,8 +126,7 @@ func runRecord(cmd *cobra.Command, args []string) {
 		}
 	}
 	if !validStatus {
-		fmt.Fprintf(os.Stderr, "Error: invalid status '%s'\n", rd.Status)
-		os.Exit(1)
+		Exit(ErrInvalidStatus(rd.Status, index.StatusEnum))
 	}
 
 	// Read startedTime from task-state.json
@@ -148,20 +142,17 @@ func runRecord(cmd *cobra.Command, args []string) {
 	// Write record file
 	recordPath := filepath.Join(projectRoot, feature.GetRecordFile(featureSlug, t.Record))
 	if err := os.MkdirAll(filepath.Dir(recordPath), 0755); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		Exit(NewAIError(ErrValidation, "Failed to create record directory", err.Error(), "Check directory permissions", "mkdir -p "+filepath.Dir(recordPath)))
 	}
 	if err := os.WriteFile(recordPath, []byte(content), 0644); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		Exit(NewAIError(ErrValidation, "Failed to write record file", err.Error(), "Check file permissions", "cat "+recordPath))
 	}
 
 	// Update task status in index
 	t.Status = rd.Status
 	index.Tasks[key] = *t
 	if err := task.SaveIndex(indexPath, index); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		Exit(NewAIError(ErrConflict, "Failed to update task index", err.Error(), "Check index.json is writable", "cat "+indexPath))
 	}
 
 	if recordJSON {

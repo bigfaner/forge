@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
 	"path/filepath"
 	"slices"
 
@@ -19,9 +17,7 @@ var statusCmd = &cobra.Command{
 	Long: `Query or update the status of a task.
 
 Without status argument: query current status.
-With status argument: update to new status.
-
-Valid statuses: pending, in_progress, completed, blocked, skipped`,
+With status argument: update to new status.`,
 	Args: cobra.RangeArgs(1, 2),
 	Run:  runStatus,
 }
@@ -31,27 +27,23 @@ func runStatus(cmd *cobra.Command, args []string) {
 
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		Exit(ErrProjectNotFound())
 	}
 
 	featureSlug, err := feature.RequireFeature(projectRoot)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		Exit(ErrFeatureNotSet())
 	}
 
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
 	index, err := task.LoadIndex(indexPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		Exit(ErrFileNotFound(indexPath))
 	}
 
 	key, t, err := findTask(index, taskIDArg)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		Exit(ErrTaskNotFound(taskIDArg))
 	}
 
 	// Query mode: only one argument
@@ -61,6 +53,7 @@ func runStatus(cmd *cobra.Command, args []string) {
 		PrintField("ID", t.ID)
 		PrintField("STATUS", t.Status)
 		PrintField("TITLE", t.Title)
+		PrintFieldIfNotEmptySlice("DEPENDENCIES", t.Dependencies)
 		PrintBlockEnd()
 		return
 	}
@@ -70,16 +63,14 @@ func runStatus(cmd *cobra.Command, args []string) {
 
 	// Validate status
 	if !slices.Contains(index.StatusEnum, newStatus) {
-		fmt.Fprintf(os.Stderr, "Error: invalid status '%s' (valid: %v)\n", newStatus, index.StatusEnum)
-		os.Exit(1)
+		Exit(ErrInvalidStatus(newStatus, index.StatusEnum))
 	}
 
 	t.Status = newStatus
 	index.Tasks[key] = *t
 
 	if err := task.SaveIndex(indexPath, index); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		Exit(NewAIError(ErrConflict, "Failed to save index", err.Error(), "Check index.json is writable", "cat "+indexPath))
 	}
 
 	PrintBlockStart()

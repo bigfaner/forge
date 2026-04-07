@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
 	"path/filepath"
 
 	"task-cli/pkg/feature"
@@ -29,27 +27,23 @@ func runQuery(cmd *cobra.Command, args []string) {
 
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		Exit(ErrProjectNotFound())
 	}
 
 	featureSlug, err := feature.RequireFeature(projectRoot)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		Exit(ErrFeatureNotSet())
 	}
 
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
 	index, err := task.LoadIndex(indexPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		Exit(ErrFileNotFound(indexPath))
 	}
 
 	key, t, err := findTask(index, taskIDArg)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		Exit(ErrTaskNotFound(taskIDArg))
 	}
 
 	PrintBlockStart()

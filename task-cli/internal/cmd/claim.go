@@ -32,8 +32,7 @@ The task is selected based on:
 func runClaim(cmd *cobra.Command, args []string) {
 	result, err := executeClaim()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		Exit(err)
 	}
 
 	// Print result
@@ -59,18 +58,18 @@ type ClaimResult struct {
 func executeClaim() (*ClaimResult, error) {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		return nil, err
+		return nil, ErrProjectNotFound()
 	}
 
 	featureSlug, err := feature.RequireFeature(projectRoot)
 	if err != nil {
-		return nil, err
+		return nil, ErrFeatureNotSet()
 	}
 
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
 	index, err := task.LoadIndex(indexPath)
 	if err != nil {
-		return nil, err
+		return nil, NewAIError(ErrNotFound, "Failed to load task index", err.Error(), "Check index.json exists and is valid", "cat "+indexPath)
 	}
 
 	// Check for existing task state
@@ -78,7 +77,7 @@ func executeClaim() (*ClaimResult, error) {
 	continueTask, hasIssues, issues := checkExistingTaskState(projectRoot, index, statePath)
 
 	if hasIssues {
-		return nil, fmt.Errorf("task data integrity issues: %v", issues)
+		return nil, ErrDataIntegrity(issues)
 	}
 
 	if continueTask {
@@ -168,7 +167,7 @@ func claimNextTask(index *task.TaskIndex) (string, *task.Task, error) {
 
 	minPhase := getMinPendingPhase(index)
 	if minPhase == -1 {
-		return "", nil, fmt.Errorf("no pending tasks available")
+		return "", nil, ErrNoPendingTasks()
 	}
 
 	for key, t := range index.Tasks {

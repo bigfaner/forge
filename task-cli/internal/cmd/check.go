@@ -25,24 +25,29 @@ Validates:
 	Run: runCheck,
 }
 
+type depInfo struct {
+	taskKey    string
+	taskID     string
+	dependency string
+	matches    []string
+	isWildcard bool
+}
+
 func runCheck(cmd *cobra.Command, args []string) {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		Exit(ErrProjectNotFound())
 	}
 
 	featureSlug, err := feature.RequireFeature(projectRoot)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		Exit(ErrFeatureNotSet())
 	}
 
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
 	index, err := task.LoadIndex(indexPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		Exit(ErrFileNotFound(indexPath))
 	}
 
 	// Collect all task IDs
@@ -110,12 +115,13 @@ func runCheck(cmd *cobra.Command, args []string) {
 		PrintListItem(id)
 	}
 
+	// Output dependencies section
 	PrintSection("DEPENDENCIES")
 	for _, di := range depInfos {
 		if di.isWildcard {
-			fmt.Printf("  %s -> %s (wildcard, matches: %s)\n", di.taskID, di.dependency, strings.Join(di.matches, ", "))
+			fmt.Printf("  %s -> [%s] (wildcard)\n", di.taskID, di.dependency)
 		} else {
-			fmt.Printf("  %s -> %s (exact)\n", di.taskID, di.dependency)
+			fmt.Printf("  %s -> %s\n", di.taskID, di.dependency)
 		}
 	}
 
@@ -124,17 +130,9 @@ func runCheck(cmd *cobra.Command, args []string) {
 		for _, e := range errors {
 			PrintListItem(e)
 		}
-		PrintResult("FAIL", fmt.Sprintf("%d errors", len(errors)))
+		PrintResult("FAIL", fmt.Sprintf("%d error(s)", len(errors)))
 		os.Exit(1)
 	}
 
-	PrintResult("PASS", "")
-}
-
-type depInfo struct {
-	taskKey    string
-	taskID     string
-	dependency string
-	matches    []string
-	isWildcard bool
+	PrintResult("PASS", fmt.Sprintf("%d tasks checked", len(taskIDs)))
 }

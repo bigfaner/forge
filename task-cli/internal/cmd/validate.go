@@ -42,21 +42,18 @@ func runValidate(cmd *cobra.Command, args []string) {
 	} else {
 		projectRoot, err := project.FindProjectRoot()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
+			Exit(ErrProjectNotFound())
 		}
 		slug, err := feature.RequireFeature(projectRoot)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
+			Exit(ErrFeatureNotSet())
 		}
 		filePath = filepath.Join(projectRoot, feature.GetFeatureIndexFile(slug))
 	}
 
 	v := &validator{filePath: filePath}
 	if err := v.run(); err != nil {
-		fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
-		os.Exit(1)
+		Exit(err)
 	}
 }
 
@@ -70,16 +67,16 @@ type validator struct {
 func (v *validator) run() error {
 	data, err := os.ReadFile(v.filePath)
 	if err != nil {
-		return fmt.Errorf("cannot read file: %w", err)
+		return ErrFileNotFound(v.filePath)
 	}
 
 	var idx task.TaskIndex
 	if err := json.Unmarshal(data, &idx); err != nil {
-		return fmt.Errorf("invalid JSON: %w", err)
+		return ErrInvalidJSON(v.filePath, err.Error())
 	}
 
 	if idx.Feature == "" {
-		return fmt.Errorf("missing 'feature' field")
+		return NewAIError(ErrValidation, "Missing required field", "'feature' field is empty", "Add feature name to index.json", "Add \"feature\": \"<name>\" to index.json")
 	}
 
 	v.info = append(v.info, fmt.Sprintf("Feature: %s", idx.Feature))
@@ -98,7 +95,7 @@ func (v *validator) run() error {
 	v.validateFilesExist(idx.Feature, idx.Tasks)
 
 	if !v.printResults() {
-		return fmt.Errorf("validation failed with %d errors", len(v.errors))
+		return NewAIError(ErrValidation, "Validation failed", fmt.Sprintf("%d errors found", len(v.errors)), "Fix errors in index.json", "cat "+v.filePath)
 	}
 	return nil
 }
