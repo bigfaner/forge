@@ -26,7 +26,7 @@ description: Use when you have solved an error or discovered a useful pattern. E
 ## Workflow
 
 ```
-1. Identify lesson → 2. Classify category → 3. Write doc → 4. Commit
+1. Identify lesson → 2. Classify category → 3. Write doc → 4. User review → 5. Commit
 ```
 
 ## Step 1: Identify Lesson
@@ -67,7 +67,14 @@ Template:
 <!-- 可复用的知识点 -->
 ```
 
-## Step 4: Commit
+## Step 4: User Review
+
+**不要直接提交。** 展示生成的 lesson 文档内容，等待用户确认：
+
+- 用户确认内容无误后，再执行 commit
+- 用户要求修改时，调整后重新展示
+
+仅在用户明确同意后才执行：
 
 ```bash
 git add docs/lessons/<filename>.md
