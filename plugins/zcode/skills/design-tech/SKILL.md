@@ -26,10 +26,12 @@ Do NOT write any implementation code until design.md is approved. The output of 
 ## When to Use
 
 **Trigger conditions:**
+
 - PRD document exists at `docs/features/<slug>/prd.md`
 - PRD is approved and ready for technical design
 
 **Skip when:**
+
 - No PRD exists (use `/write-prd` first)
 - Design already exists for the feature
 
@@ -42,30 +44,31 @@ Do NOT write any implementation code until design.md is approved. The output of 
 ## Step 1: Read PRD
 
 Read `docs/features/<slug>/prd.md`:
+
 - Understand requirements
 - Note non-functional requirements
 - Identify acceptance criteria
 
 ## Step 2: Explore Context
 
-| Source | What to Look For |
-|--------|------------------|
-| `docs/ARCHITECTURE.md` | Layer constraints |
-| `docs/DECISIONS.md` | Existing decisions |
-| Package manager files | Current dependencies (package.json, go.mod, etc.) |
-| Source directories | Existing patterns (src/, internal/, lib/, etc.) |
+| Source                 | What to Look For                                  |
+| ---------------------- | ------------------------------------------------- |
+| `docs/ARCHITECTURE.md` | Layer constraints                                 |
+| `docs/DECISIONS.md`    | Existing decisions                                |
+| Package manager files  | Current dependencies (package.json, go.mod, etc.) |
+| Source directories     | Existing patterns (src/, internal/, lib/, etc.)   |
 
 ## Step 3: Identify Decisions
 
-| Decision Type | Example Questions |
-|---------------|-------------------|
-| Architecture | Where does this fit? |
-| Interface | What interfaces needed? |
-| Data Model | What structures needed? |
-| Dependencies | New dependencies? |
-| Error Handling | How to handle errors? |
-| Testing | Test strategy? |
-| Security | Security considerations? |
+| Decision Type  | Example Questions        |
+| -------------- | ------------------------ |
+| Architecture   | Where does this fit?     |
+| Interface      | What interfaces needed?  |
+| Data Model     | What structures needed?  |
+| Dependencies   | New dependencies?        |
+| Error Handling | How to handle errors?    |
+| Testing        | Test strategy?           |
+| Security       | Security considerations? |
 
 ## Step 4: Ask Questions
 
@@ -75,15 +78,15 @@ Use `AskUserQuestion` for ALL uncertain areas.
 
 Present incrementally, section by section:
 
-| Section | Content |
-|---------|---------|
-| Overview | High-level approach |
-| Architecture | Component diagram |
-| Interfaces | Interface definitions |
-| Data Models | Struct definitions |
-| Error Handling | Error strategy |
-| Testing | Test strategy |
-| Security | Security considerations |
+| Section        | Content                 |
+| -------------- | ----------------------- |
+| Overview       | High-level approach     |
+| Architecture   | Component diagram       |
+| Interfaces     | Interface definitions   |
+| Data Models    | Struct definitions      |
+| Error Handling | Error strategy          |
+| Testing        | Test strategy           |
+| Security       | Security considerations |
 
 ## Step 6: Get Approval
 
@@ -95,6 +98,7 @@ Save to `docs/features/<slug>/design.md`
 
 ## Integration
 
-Works well with:
+Works well with skills:
+
 - `/write-prd` - Creates PRD input
 - `/breakdown-tasks` - Uses design.md to create tasks

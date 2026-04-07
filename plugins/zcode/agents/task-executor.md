@@ -76,9 +76,18 @@ Write progress to process/record.json, then use CLI:
 # Write execution data to process location (for ongoing tracking)
 echo '{"summary":"...","filesCreated":[...],"filesModified":[...]}' > docs/features/{slug}/tasks/process/record.json
 
-# Use CLI command (mandatory)
+# Use CLI command (mandatory) - this handles EVERYTHING:
+# 1. Generates records/*.md
+# 2. Updates index.json status
 task record {{TASK_ID}} --data docs/features/{slug}/tasks/process/record.json
 ```
+
+<FORBIDDEN>
+After calling `task record`, DO NOT:
+- Write to `records/*.md` directly (CLI already generated it)
+- Modify `index.json` (CLI already updated it)
+- Call `task status` (CLI already set status to completed)
+</FORBIDDEN>
 
 Output: `Step 4/5: Recording task... DONE`
 

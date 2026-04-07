@@ -26,44 +26,27 @@ project-root/
 
 Task CLI 管理 feature 生命周期中的任务流转。
 
-**典型场景**: 开始工作前 `task feature` → `task claim` 认领任务 → 完成后 `task record` 记录。
+**典型场景**: 开始工作前 `task feature` → `task claim` 认领任务 →  `task record` 记录任务结果 + 更新任务状态。
 
 ### Key Commands
 
-| Command | When to Use |
-|---------|-------------|
-| `task feature <slug>` | 切换或设置当前 feature 上下文 |
-| `task claim` | 认领下一个可用任务（自动选择依赖已满足的最高优先级任务） |
-| `task record <id> --data docs/features/{slug}/tasks/process/record.json` | 任务完成后，生成执行记录并更新状态 |
+| 操作 | 命令 | 说明 |
+|------|------|------|
+| 切换 feature | `task feature <slug>` | 设置当前工作上下文 |
+| 认领任务 | `task claim` | 获取下一个可用任务 |
+| 完成任务 | `task record <id> --data docs/features/{slug}/tasks/process/record.json` | **一步完成记录+状态更新** |
 
-### record.json 生成机制
+### `task record` 工作流
 
-**工作流程：**
 ```
-1. task claim           → 写入 process/state.json（当前任务状态）
-2. 任务执行期间         → 写入 process/record.json（执行记录）
-3. task record --data   → 读取 JSON，生成 records/*.md，清空 process/
-```
-
-**生成方式：** 在任务执行过程中，agent 将执行信息写入 `docs/features/{slug}/tasks/process/record.json`：
-
-```json
-{
-  "taskId": "3.3.1",
-  "status": "completed",
-  "summary": "实现了什么功能",
-  "filesCreated": ["src/components/Button.tsx"],
-  "filesModified": ["src/utils/helpers.ts"],
-  "keyDecisions": ["使用 useCallback 优化性能"],
-  "testsPassed": 12,
-  "testsFailed": 0,
-  "coverage": 85.6,
-  "acceptanceCriteria": [
-    { "criterion": "按钮点击响应正确", "met": true }
-  ]
-}
+1. task claim           → 写入 process/state.json
+2. 任务执行期间          → 写入 process/record.json
+3. task record --data docs/features/{slug}/tasks/process/record.json  → 生成 records/*.md + 更新 index.json
 ```
 
+**一条命令完成2件事：** 生成并输出记录文件 → 更新任务状态。
+
+### record.json
 **字段说明：**
 
 | 字段 | 类型 | 必填 | 说明 |
@@ -79,8 +62,27 @@ Task CLI 管理 feature 生命周期中的任务流转。
 | `coverage` | float | | 覆盖率 |
 | `acceptanceCriteria` | array | | `{criterion, met}` 对象数组 |
 
-**⚠️ 强制规则：**
-- 唯一允许路径：`docs/features/{slug}/tasks/process/record.json`
-- 必须使用 `task record` CLI 命令，禁止直接写入 `index.json` 或手动创建记录文件
+**示例**
+```json
+{
+  "taskId": "3.3.1",
+  "status": "completed",
+  "summary": "实现了什么功能",
+  "filesCreated": ["src/components/Button.tsx"],
+  "filesModified": ["src/utils/helpers.ts"],
+  "keyDecisions": ["关键决策"],
+  "testsPassed": 12,
+  "testsFailed": 0,
+  "coverage": 85.6,
+  "acceptanceCriteria": [{ "criterion": "验收标准", "met": true }]
+}
+```
 
-> 完整命令列表和参数说明请运行 `task -h` 或 `task [command] -h`
+### 强制规则
+
+**禁止操作：**
+- ❌ 直接写入 `records/*.md` 或 `index.json`
+- ❌ 用 Python/JavaScript/Node 修改 JSON
+- ❌ 写入格式错误的 `process/record.json`
+
+> 完整命令说明请运行 `task -h` 或 `task [command] -h`

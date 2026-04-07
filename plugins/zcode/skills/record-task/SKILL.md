@@ -11,12 +11,13 @@ description: Use after completing a task to create its execution record and upda
 
 ## File Locations
 
-| Location | Purpose | Git Status |
-|----------|---------|------------|
-| `docs/features/{slug}/tasks/process/record.json` | In-progress execution notes | Not committed |
-| `docs/features/{slug}/tasks/records/*.md` | Final completed record | Committed to repo |
+| Location                                         | Purpose                     | Git Status        |
+| ------------------------------------------------ | --------------------------- | ----------------- |
+| `docs/features/{slug}/tasks/process/record.json` | In-progress execution notes | Not committed     |
+| `docs/features/{slug}/tasks/records/*.md`        | Final completed record      | Committed to repo |
 
 **Workflow:**
+
 ```
 1. task claim           → writes process/state.json (current task)
 2. During execution     → write progress to process/record.json
@@ -70,6 +71,7 @@ You MUST use the `task record` CLI command. No exceptions.
 **ONLY ALLOWED PATH:** `docs/features/{slug}/tasks/process/record.json`
 
 **DO NOT:**
+
 - Write directly to index.json
 - Use Python/JavaScript to modify JSON
 - Create record files manually
@@ -81,7 +83,43 @@ The CLI command provides schema validation, consistent output format, and potent
 Bypassing the command defeats the purpose of the skill.
 </EXTREMELY-IMPORTANT>
 
-## Related
+## What `task record` Does (One Command = 3 Operations)
+
+```
+task record <TASK_ID> --data docs/features/{slug}/tasks/process/record.json
+```
+
+This single command automatically:
+
+1. ✅ Generates `records/*.md` from JSON
+2. ✅ Updates `index.json` status to `completed`
+
+**You don't need to do anything else after calling this command.**
+
+## Forbidden Operations
+
+<EXTREMELY-IMPORTANT>
+These actions will corrupt task state:
+
+| Operation                    | Why Forbidden                              |
+| ---------------------------- | ------------------------------------------ |
+| `Write("records/*.md")`      | Bypasses CLI validation and hooks          |
+| Direct edit to `index.json`  | State becomes inconsistent                 |
+| `task status <id> completed` | Only for recovery when `task record` fails |
+| Writing to wrong path        | CLI only reads from `process/record.json`  |
+
+</EXTREMELY-IMPORTANT>
+
+## Recovery (Only when `task record` fails)
+
+If `task record` fails and cannot be fixed:
+
+```bash
+# Manual status fix (last resort only)
+task status <TASK_ID> completed
+```
+
+## Related Skills
 
 - `/claim-task` - Claim next available task
-- `/set-task-status` - Direct status update only
+- `/set-task-status` - Direct status update (recovery only)

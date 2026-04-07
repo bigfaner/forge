@@ -17,13 +17,13 @@ task status <task-id-or-key> <status>
 
 ## Valid Statuses
 
-| Status | When to Use |
-|--------|-------------|
-| `pending` | Task not started (default) |
-| `in_progress` | Currently working on it |
-| `completed` | Task finished successfully |
-| `blocked` | Cannot proceed due to external issue |
-| `skipped` | Task not needed |
+| Status        | When to Use                          |
+| ------------- | ------------------------------------ |
+| `pending`     | Task not started (default)           |
+| `in_progress` | Currently working on it              |
+| `completed`   | Task finished successfully           |
+| `blocked`     | Cannot proceed due to external issue |
+| `skipped`     | Task not needed                      |
 
 ## Workflow
 
@@ -35,7 +35,7 @@ pending → in_progress → completed
               skipped
 ```
 
-## Related
+## Related Skills
 
 - `/claim-task` - Claim next available task
 - `/run-tasks` - Auto-execute all tasks

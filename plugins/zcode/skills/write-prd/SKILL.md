@@ -18,11 +18,13 @@ Do NOT write any code, scaffold any project, or take any implementation action u
 ## When to Use
 
 **Trigger conditions:**
+
 - User describes a feature/requirement without clear specifications
 - User says "I want to..." or "We need..." without details
 - Starting a new phase or major feature
 
 **Skip when:**
+
 - Clear task definitions already exist
 - Simple bug fix or small tweak
 
@@ -45,6 +47,7 @@ Explore context → Assess scope → Ask questions → Propose approaches → Pr
 ## Step 1: Explore Project Context
 
 Before asking questions, understand the current state:
+
 - Read `docs/ARCHITECTURE.md` for architecture constraints
 - Read `docs/DECISIONS.md` for existing technical decisions
 - Check `docs/features/<slug>/tasks/index.json` for related tasks
@@ -53,6 +56,7 @@ Before asking questions, understand the current state:
 ## Step 2: Assess Scope
 
 Evaluate if the request is appropriately scoped:
+
 - If request describes multiple independent subsystems → **Decompose first**
 - If single focused feature → **Proceed with questions**
 
@@ -70,6 +74,7 @@ Evaluate if the request is appropriately scoped:
 ## Step 4: Propose Approaches
 
 After understanding requirements, propose 2-3 implementation approaches:
+
 1. **Present options conversationally** with your recommendation
 2. **Lead with your recommended option** and explain why
 3. **Include trade-offs** for each approach
@@ -78,17 +83,18 @@ After understanding requirements, propose 2-3 implementation approaches:
 
 Present incrementally, getting approval after each section:
 
-| Section | Content | When to Present |
-|---------|---------|-----------------|
-| Background | Problem statement, context | First |
-| Goals | Primary goals, success metrics | After background approved |
-| Scope | In/out of scope items | After goals approved |
-| Requirements | Functional requirements | After scope approved |
-| Acceptance Criteria | Testable conditions | Last |
+| Section             | Content                        | When to Present           |
+| ------------------- | ------------------------------ | ------------------------- |
+| Background          | Problem statement, context     | First                     |
+| Goals               | Primary goals, success metrics | After background approved |
+| Scope               | In/out of scope items          | After goals approved      |
+| Requirements        | Functional requirements        | After scope approved      |
+| Acceptance Criteria | Testable conditions            | Last                      |
 
 ## Step 6: Write PRD Document
 
 **Directory structure:**
+
 ```
 docs/features/<feature-slug>/
 ├── prd.md           # The PRD document
@@ -98,6 +104,7 @@ docs/features/<feature-slug>/
 
 ## Integration
 
-Works well with:
+Works well with skills:
+
 - `/breakdown-tasks` - After PRD is finalized, break into tasks
 - `docs/DECISIONS.md` - Record key decisions during PRD creation

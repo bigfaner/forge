@@ -115,7 +115,7 @@ task validate -file docs/features/\<slug\>/tasks/index.json
 
 ## Integration
 
-Works well with:
+Works well with skills:
 
 - `/design-tech` - Creates the design.md input
 - `/claim-task` - Starts working on tasks

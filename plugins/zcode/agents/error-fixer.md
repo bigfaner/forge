@@ -118,11 +118,19 @@ echo '{"summary":"fix description","filesModified":["path/to/file"]}' > docs/fea
 ### Step 2: Use CLI command (mandatory)
 
 ```bash
+# This single command handles EVERYTHING:
+# 1. Generates records/*.md from JSON
+# 2. Updates index.json status to completed
 task record {{TASK_ID}} --data docs/features/{slug}/tasks/process/record.json
 ```
 
 <EXTREMELY-IMPORTANT>
-You MUST use the `task record` CLI command. DO NOT write directly to index.json or use Python/JavaScript to modify JSON.
+You MUST use the `task record` CLI command. DO NOT:
+- Write directly to index.json
+- Write directly to records/*.md
+- Use Python/JavaScript/Node to modify JSON
+
+After `task record` succeeds, the task is fully recorded. No additional steps needed.
 </EXTREMELY-IMPORTANT>
 
 ## Persistent Agent Memory

@@ -30,7 +30,7 @@ FILE: <task-file>
 3. Update record: `/record-task <TASK_ID>`
 4. Mark complete: `/set-task-status <ID> completed`
 
-## Related
+## Related Skills
 
 - `/set-task-status` - Update task status
 - `/run-tasks` - Auto-execute all tasks
