@@ -31,7 +31,7 @@ Do NOT write any code, scaffold any project, or take any implementation action u
 ## Process Flow
 
 ```
-Explore context → Assess scope → Ask questions → Propose approaches → Present PRD → Write doc → Commit
+Explore context → Assess scope → Ask questions → Propose approaches → Present PRD sections → Write PRD + User Stories → Commit
 ```
 
 ## Checklist
@@ -42,7 +42,17 @@ Explore context → Assess scope → Ask questions → Propose approaches → Pr
 4. **Propose 2-3 approaches** — with trade-offs and your recommendation
 5. **Present PRD sections** — get approval after each section
 6. **Write PRD document** — save to `docs/features/<feature-slug>/prd.md`
-7. **Commit** — commit the PRD document
+7. **Write User Stories** — save to `docs/features/<feature-slug>/user-stories.md`
+8. **Commit** — commit both documents
+
+## Output Documents
+
+PRD 完成后输出两个独立文件：
+
+| 文件 | 模板 | 说明 |
+|------|------|------|
+| `prd.md` | `templates/prd.md` | 产品需求文档，包含背景、目标、Scope、流程、功能描述等 |
+| `user-stories.md` | `templates/user-stories.md` | 用户故事，从 PRD 背景中识别的用户角色推导而出 |
 
 ## Step 1: Explore Project Context
 
@@ -71,6 +81,8 @@ Evaluate if the request is appropriately scoped:
 - **Focus on understanding**: user roles, purpose, constraints, success criteria
 - **Go back when needed** — if something doesn't make sense, clarify
 
+See `examples/ask-questions.md` for concrete examples.
+
 ## Step 4: Propose Approaches
 
 After understanding requirements, propose 2-3 implementation approaches:
@@ -79,22 +91,39 @@ After understanding requirements, propose 2-3 implementation approaches:
 2. **Lead with your recommended option** and explain why
 3. **Include trade-offs** for each approach
 
+See `examples/propose-approaches.md` for structure and tips.
+
 ## Step 5: Present PRD Sections
 
 Present incrementally, getting approval after each section:
 
-| Section             | Content                                      | When to Present           |
-| ------------------- | -------------------------------------------- | ------------------------- |
-| Background          | Problem statement, context                   | First                     |
-| Goals               | Primary goals, success metrics               | After background approved |
-| Scope               | In/out of scope items                        | After goals approved      |
-| User Stories        | As a [role], I want [action], so that [goal] | After scope approved      |
-| Requirements        | Functional requirements per story            | After stories approved    |
-| Acceptance Criteria | Testable conditions per story                | Last                      |
+| Section | Content | Key Points |
+|---------|---------|------------|
+| 需求背景 | 原因、对象、人员 | 必须包含三个维度 |
+| 需求目标 | 目标 + 量化指标 | 尽可能量化收益 |
+| Scope | In Scope / Out of Scope | 明确边界 |
+| 流程说明 | 业务流程 + Mermaid 流程图 | 流程图必填 |
+| 功能描述 | 列表页 / 按钮 / 表单 / 关联改动 | 快速/详细模式按需选择，表格必填 |
+| 其他说明 | 性能 / 数据 / 监控 / 安全 | 非功能性需求 |
+| User Stories | As a / I want / So that + AC | 输出到独立文件 |
 
-### Writing User Stories
+## Step 6: Write PRD Document
 
-For each target user identified in Background, write at least one story:
+使用 `templates/prd.md` 模板填写。
+
+**目录结构：**
+
+```
+docs/features/<feature-slug>/
+├── prd.md              # PRD 文档
+├── user-stories.md     # 用户故事（独立文件）
+├── tasks/              # Task definitions (created by /breakdown-tasks)
+└── records/            # Execution records (created by /record-task)
+```
+
+## Step 7: Write User Stories
+
+从 PRD 背景中识别的用户角色推导用户故事，输出到 `user-stories.md`。
 
 ```
 As a [user role from Background]
@@ -102,20 +131,9 @@ I want to [specific action]
 So that [concrete benefit/goal]
 ```
 
-**Acceptance Criteria** (Given/When/Then) must follow each story — these become the basis for the final AC section. Do NOT skip this section even if the user only described APIs or technical requirements.
+**Acceptance Criteria** (Given/When/Then) 必须跟随每个故事。
 
 See `examples/user-stories.md` for a concrete example.
-
-## Step 6: Write PRD Document
-
-**Directory structure:**
-
-```
-docs/features/<feature-slug>/
-├── prd.md           # The PRD document
-├── tasks/           # Task definitions (created by /breakdown-tasks)
-└── records/         # Execution records (created by /record-task)
-```
 
 ## Integration
 
