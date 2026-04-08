@@ -14,9 +14,9 @@ description: Use when design.md is finalized to break down into executable tasks
 ## Position in Workflow
 
 ```
-/write-prd → /design-tech → /breakdown-tasks
-     ↓              ↓              ↓
-   prd.md      design.md      tasks/*.md
+/write-prd → /eval-prd → /design-tech → /eval-design → /breakdown-tasks
+     ↓             ↓            ↓              ↓               ↓
+   prd.md      prd-eval.md  design.md    design-eval.md    tasks/*.md
 ```
 
 ## Directory Structure
@@ -118,5 +118,6 @@ task validate -file docs/features/\<slug\>/tasks/index.json
 Works well with skills:
 
 - `/design-tech` - Creates the design.md input
+- `/eval-design` - Evaluate design.md before breakdown (recommended gate)
 - `/claim-task` - Starts working on tasks
 - `/record-task` - Records task completion

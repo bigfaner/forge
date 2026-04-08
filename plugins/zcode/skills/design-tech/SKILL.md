@@ -18,9 +18,9 @@ Do NOT write any implementation code until design.md is approved. The output of 
 ## Position in Workflow
 
 ```
-/write-prd → /design-tech → /breakdown-tasks
-     ↓              ↓              ↓
-   prd.md      design.md      tasks/*.md
+/write-prd → /design-tech → /eval-design → /breakdown-tasks
+     ↓              ↓              ↓               ↓
+   prd.md      design.md    design-eval.md     tasks/*.md
 ```
 
 ## When to Use
@@ -101,4 +101,5 @@ Save to `docs/features/<slug>/design.md`
 Works well with skills:
 
 - `/write-prd` - Creates PRD input
+- `/eval-design` - Evaluate design.md quality before handing off to breakdown-tasks
 - `/breakdown-tasks` - Uses design.md to create tasks

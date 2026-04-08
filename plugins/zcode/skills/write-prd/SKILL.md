@@ -68,7 +68,7 @@ Evaluate if the request is appropriately scoped:
 
 - **One question at a time** — never batch questions
 - **Prefer multiple choice** — easier to answer than open-ended
-- **Focus on understanding**: purpose, constraints, success criteria
+- **Focus on understanding**: user roles, purpose, constraints, success criteria
 - **Go back when needed** — if something doesn't make sense, clarify
 
 ## Step 4: Propose Approaches
@@ -83,13 +83,28 @@ After understanding requirements, propose 2-3 implementation approaches:
 
 Present incrementally, getting approval after each section:
 
-| Section             | Content                        | When to Present           |
-| ------------------- | ------------------------------ | ------------------------- |
-| Background          | Problem statement, context     | First                     |
-| Goals               | Primary goals, success metrics | After background approved |
-| Scope               | In/out of scope items          | After goals approved      |
-| Requirements        | Functional requirements        | After scope approved      |
-| Acceptance Criteria | Testable conditions            | Last                      |
+| Section             | Content                                      | When to Present           |
+| ------------------- | -------------------------------------------- | ------------------------- |
+| Background          | Problem statement, context                   | First                     |
+| Goals               | Primary goals, success metrics               | After background approved |
+| Scope               | In/out of scope items                        | After goals approved      |
+| User Stories        | As a [role], I want [action], so that [goal] | After scope approved      |
+| Requirements        | Functional requirements per story            | After stories approved    |
+| Acceptance Criteria | Testable conditions per story                | Last                      |
+
+### Writing User Stories
+
+For each target user identified in Background, write at least one story:
+
+```
+As a [user role from Background]
+I want to [specific action]
+So that [concrete benefit/goal]
+```
+
+**Acceptance Criteria** (Given/When/Then) must follow each story — these become the basis for the final AC section. Do NOT skip this section even if the user only described APIs or technical requirements.
+
+See `examples/user-stories.md` for a concrete example.
 
 ## Step 6: Write PRD Document
 
@@ -106,5 +121,6 @@ docs/features/<feature-slug>/
 
 Works well with skills:
 
-- `/breakdown-tasks` - After PRD is finalized, break into tasks
+- `/eval-prd` - Evaluate PRD quality before handing off to breakdown-tasks
+- `/breakdown-tasks` - After PRD passes evaluation, break into tasks
 - `docs/DECISIONS.md` - Record key decisions during PRD creation
