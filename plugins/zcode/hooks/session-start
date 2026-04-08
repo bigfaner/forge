@@ -40,6 +40,6 @@ else
     printf '{\n  "additional_context": "%s"\n}\n' "$session_context"
 fi
 
-echo 'Loaded zcode guide'
+echo 'Loaded zcode guide' >&2
 
 exit 0

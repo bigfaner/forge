@@ -1,6 +1,6 @@
 {
 	"name": "zcode",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"description": "Task management and workflow helper tools for Claude Code",
 	"keywords": ["task", "workflow", "productivity", "prd", "git"]
 }
