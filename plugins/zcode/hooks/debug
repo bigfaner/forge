@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# Debug script: verify session-start hook output
+# Usage: bash hooks/debug [hook-name]
+#   hook-name defaults to "session-start"
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+HOOK="${1:-session-start}"
+HOOK_FILE="${SCRIPT_DIR}/${HOOK}"
+
+export CLAUDE_PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+echo "=== Hook Debug ==="
+echo "Hook:        ${HOOK_FILE}"
+echo "PLUGIN_ROOT: ${CLAUDE_PLUGIN_ROOT}"
+echo ""
+
+if [ ! -f "$HOOK_FILE" ]; then
+    echo "ERROR: hook file not found: ${HOOK_FILE}" >&2
+    exit 1
+fi
+
+# Run hook, capture stdout and stderr separately
+STDOUT_FILE=$(mktemp)
+STDERR_FILE=$(mktemp)
+trap "rm -f $STDOUT_FILE $STDERR_FILE" EXIT
+
+bash "$HOOK_FILE" >"$STDOUT_FILE" 2>"$STDERR_FILE"
+EXIT_CODE=$?
+
+echo "--- stderr (logs) ---"
+if [ -s "$STDERR_FILE" ]; then
+    cat "$STDERR_FILE"
+else
+    echo "(empty)"
+fi
+
+echo ""
+echo "--- stdout (JSON) ---"
+if [ -s "$STDOUT_FILE" ]; then
+    if command -v jq &>/dev/null; then
+        if jq . "$STDOUT_FILE" 2>/dev/null; then
+            echo ""
+            echo "✓ Valid JSON"
+        else
+            echo "✗ INVALID JSON:"
+            cat "$STDOUT_FILE"
+        fi
+    else
+        cat "$STDOUT_FILE"
+    fi
+else
+    echo "(empty)"
+fi
+
+echo ""
+echo "--- exit code: ${EXIT_CODE} ---"
