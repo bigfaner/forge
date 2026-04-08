@@ -20,7 +20,7 @@ description: Evaluate a design.md document against quality standards. Checks str
 ## Workflow
 
 ```
-1. 定位 design.md → 2. 检查结构 → 3. 检查内容质量 → 4. 生成报告
+1. 定位 design.md → 2. 启动评估 Agent → 3. 汇报结果
 ```
 
 ## Step 1: Locate design.md
@@ -30,137 +30,124 @@ Check in order:
 2. `docs/features/<current-feature>/design.md`
 3. Ask user for path if not found
 
-Also check if a PRD exists at `docs/features/<slug>/prd.md` — used for traceability checks.
+Determine `<feature-slug>` from the path. Also check if a PRD exists at `docs/features/<slug>/prd.md` — used for traceability checks.
 
-## Step 2: Check Structure Completeness
+## Step 2: Launch Evaluation Agent
 
-Required sections — mark missing ones as F immediately:
+Use the **Agent tool** to spawn a subagent. Pass the full prompt below, substituting `{{DESIGN_PATH}}`, `{{PRD_PATH}}`, and `{{FEATURE_SLUG}}`:
 
-| Section               | Required | Notes                                      |
-| --------------------- | -------- | ------------------------------------------ |
-| Overview              | ✓        | High-level approach + tech stack           |
-| Architecture          | ✓        | Layer placement + component diagram        |
-| Interfaces            | ✓        | At least one interface with method sigs    |
-| Data Models           | ✓        | Concrete struct/type definitions           |
-| Error Handling        | ✓        | Error types + propagation strategy         |
-| Testing Strategy      | ✓        | Per-layer plan + coverage target           |
-| Security Considerations | ○      | Required if PRD has auth/data requirements |
-| Open Questions        | ○        | Optional but recommended                   |
-| Alternatives Considered | ○      | Optional but recommended                   |
+---
 
-## Step 3: Check Content Quality
+**Agent prompt template:**
 
-### Dimension 1: Architecture Clarity (架构清晰度)
+```
+You are a technical design quality evaluator. Your job: read the design doc, apply the rubric, write the report, return a summary.
 
-| Check | Criteria |
-|-------|----------|
-| Layer placement | Explicitly states which layer(s) this feature belongs to |
-| Component diagram | ASCII or text diagram showing components and data flow |
-| Dependencies | Lists internal modules and external packages used |
-| Consistency | Architecture matches project's existing patterns (check ARCHITECTURE.md if present) |
+## Inputs
+- Design path: {{DESIGN_PATH}}
+- PRD path: {{PRD_PATH}} (read if it exists, skip if not)
+- Feature slug: {{FEATURE_SLUG}}
+- Report output: docs/features/{{FEATURE_SLUG}}/design-eval.md
+- Report template: plugins/zcode/skills/eval-design/templates/report.md
 
-**Grading:**
+## Steps
+1. Read {{DESIGN_PATH}}
+2. If {{PRD_PATH}} exists, read it (needed for traceability checks)
+3. Read the report template
+4. Apply the rubric below to every dimension
+5. Fill in the template and write to docs/features/{{FEATURE_SLUG}}/design-eval.md
+6. Return: overall grade, top 2-3 issues, Breakdown-Readiness grade, and whether it can proceed to /breakdown-tasks
+
+## Structure Check
+
+Required sections — mark missing as F:
+
+| Section                 | Required | Notes                                      |
+|-------------------------|----------|--------------------------------------------|
+| Overview                | ✓        | High-level approach + tech stack           |
+| Architecture            | ✓        | Layer placement + component diagram        |
+| Interfaces              | ✓        | At least one interface with method sigs    |
+| Data Models             | ✓        | Concrete struct/type definitions           |
+| Error Handling          | ✓        | Error types + propagation strategy         |
+| Testing Strategy        | ✓        | Per-layer plan + coverage target           |
+| Security Considerations | ○        | Required if PRD has auth/data requirements |
+| Open Questions          | ○        | Optional                                   |
+| Alternatives Considered | ○        | Optional                                   |
+
+## Dimension 1: Architecture Clarity
+
+Checks: layer placement (explicitly states which layer), component diagram (ASCII or text), dependencies (internal modules + external packages), consistency with project patterns.
+
 - A: Layer placement explicit, diagram present, dependencies listed, consistent with project
 - B: Diagram present, minor gaps in dependencies or layer description
 - C: Prose description only, no diagram, or missing layer placement
 - F: No architecture section
 
-### Dimension 2: Interface & Model Definitions (接口与模型定义)
+## Dimension 2: Interface & Model Definitions
 
-| Check | Criteria |
-|-------|----------|
-| Interface signatures | Methods have typed parameters and return values (not just names) |
-| Model fields | Structs have field names, types, and constraints (not just descriptions) |
-| Completeness | All major components have interfaces or models defined |
-| Implementable | A developer can write code directly from these definitions without guessing |
+Checks: interface signatures (typed params + return values), model fields (names, types, constraints), completeness (all major components defined), implementable (developer can code directly without guessing).
 
-**Grading:**
 - A: All interfaces typed, all models concrete, directly implementable
 - B: Most defined, 1-2 missing types or constraints
 - C: Interfaces/models described in prose, not as code definitions
 - F: No interface or model definitions
 
-### Dimension 3: Error Handling (错误处理)
+## Dimension 3: Error Handling
 
-| Check | Criteria |
-|-------|----------|
-| Error types | Custom error types or error codes defined |
-| Propagation | Clear strategy for how errors flow between layers |
-| HTTP mapping | If API: HTTP status codes mapped to error types |
-| Client behavior | What callers should do on each error |
+Checks: error types (custom types or codes defined), propagation (clear strategy between layers), HTTP mapping (if API: status codes mapped), client behavior (what callers do on each error).
 
-**Grading:**
 - A: Error types defined, propagation strategy clear, HTTP codes mapped
 - B: Error types defined, propagation implicit
 - C: Only mentions "handle errors" without specifics
 - F: No error handling section
 
-### Dimension 4: Testing Strategy (测试策略)
+## Dimension 4: Testing Strategy
 
-| Check | Criteria |
-|-------|----------|
-| Per-layer plan | Each layer (service, API, CLI, frontend, etc.) has a test approach |
-| Test types | Specifies unit vs integration vs e2e per layer |
-| Coverage target | Numeric coverage target stated |
-| Test tooling | Testing libraries/frameworks named |
+Checks: per-layer plan (each layer has a test approach), test types (unit/integration/e2e specified per layer), coverage target (numeric), test tooling (libraries named).
 
-**Grading:**
 - A: Per-layer plan, test types specified, coverage target, tooling named
 - B: Per-layer plan, coverage target missing or no tooling
 - C: Generic "write tests" without layer breakdown
 - F: No testing strategy section
 
-### Dimension 5: Breakdown-Readiness (可拆解性)
+## Dimension 5: Breakdown-Readiness ★ (critical gate)
 
-This is the most critical dimension — design.md is the direct input to `/breakdown-tasks`.
+Checks: enumerable components (can be listed and counted), interface tasks derivable (each interface → at least one impl task), model tasks derivable (each model → at least one schema/migration task), no ambiguous ownership, PRD traceability (if PRD exists: all AC addressed in design).
 
-| Check | Criteria |
-|-------|----------|
-| Enumerable components | Components/modules can be listed and counted |
-| Interface tasks derivable | Each interface → at least one implementation task |
-| Model tasks derivable | Each data model → at least one schema/migration task |
-| No ambiguous ownership | Each component has a clear boundary (not "shared logic") |
-| PRD traceability | If PRD exists: all acceptance criteria are addressed in design |
-
-**Grading:**
 - A: All components enumerable, tasks clearly derivable, PRD fully covered
 - B: Most components clear, 1-2 ambiguous areas, PRD mostly covered
 - C: Components described but not enumerable, or significant PRD gaps
-- F: Design is too high-level to derive tasks from
+- F: Design too high-level to derive tasks from
 
-### Dimension 6: Security Considerations (安全考量)
+## Dimension 6: Security Considerations
 
-*Only required if PRD has auth, data privacy, or multi-user requirements.*
+Only required if PRD has auth, data privacy, or multi-user requirements.
 
-| Check | Criteria |
-|-------|----------|
-| Threat model | Identifies what could go wrong (injection, unauthorized access, etc.) |
-| Mitigations | Concrete countermeasures for each threat |
-| Scope-appropriate | Depth matches the feature's actual risk surface |
+Checks: threat model (identifies what could go wrong), mitigations (concrete countermeasures), scope-appropriate (depth matches actual risk surface).
 
-**Grading:**
 - A: Threats identified, mitigations concrete
 - B: Threats identified, mitigations vague
 - C: Section exists but only says "will add auth later"
-- N/A: Feature has no security surface (mark as N/A, not F)
+- N/A: Feature has no security surface (mark N/A, not F)
 
-## Step 4: Generate Report
+## Overall Grade
 
-### Grading Rules
+| Grade | Condition                                                        |
+|-------|------------------------------------------------------------------|
+| A     | All required dimensions A/B, at least 3 A's, Breakdown-Readiness ≥ B |
+| B     | No F on required dimensions, Breakdown-Readiness ≥ B            |
+| C     | 1 F on non-critical dimension, or Breakdown-Readiness = C        |
+| D     | Breakdown-Readiness = F, or 2 F's on required dimensions         |
+| F     | 3+ F's, or Interfaces + Models both F                            |
 
-**Overall:**
+Breakdown-Readiness is weighted higher — it is the direct gate to /breakdown-tasks.
+```
 
-| Grade | Condition |
-|-------|-----------|
-| A | All required dimensions A/B, at least 3 A's, Breakdown-Readiness ≥ B |
-| B | No F on required dimensions, Breakdown-Readiness ≥ B |
-| C | 1 F on non-critical dimension, or Breakdown-Readiness = C |
-| D | Breakdown-Readiness = F, or 2 F's on required dimensions |
-| F | 3+ F's, or Interfaces + Models both F |
+---
 
-> Breakdown-Readiness is weighted higher because it's the direct gate to `/breakdown-tasks`.
+## Step 3: Report to User
 
-Save report to `docs/features/<feature-slug>/design-eval.md` using `templates/report.md`.
+After the agent completes, relay its summary: overall grade, Breakdown-Readiness grade, top issues, and next step recommendation.
 
 ## Related
 
