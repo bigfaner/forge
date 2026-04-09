@@ -31,12 +31,12 @@ docs/
     <slug>/
       manifest.md                    # Feature index & linkage map (auto-generated)
       prd/
-        prd-overview.md              # PRD overview (was prd.md)
+        prd-spec.md                  # Complete feature spec: background, goals, business flows (was prd.md)
         prd-user-stories.md          # User stories
         prd-ui-functions.md          # UI function requirements (NEW)
       design/
-        design-overview.md           # Technical design (was design.md)
-        design-api.md                # API documentation (NEW)
+        tech-design.md               # Technical design, all aspects except API (was design.md)
+        api-handbook.md              # API reference: paths, request/response schemas (NEW)
       ui/
         ui-design.md                 # UI component specs (NEW)
         *.pen                        # External design tool artifacts
@@ -51,7 +51,7 @@ docs/
 
 | Decision | Rationale |
 |----------|-----------|
-| `prd-overview.md` not `overview.md` | Source-prefixed names prevent grep ambiguity; AI can glob `prd-*` or `design-*` |
+| `prd-spec.md` — complete feature spec | Carries background, goals, key business flows. Not just an "overview" — it's the authoritative source for what the feature is and why it exists. |
 | `ui/` at feature level (NOT nested under `design/`) | Parallel to `design/`, mirrors the `/ui-design` skill's independence. Overrides parent plan's `design/ui/`. |
 | `manifest.md` at feature root | Single entry point for AI context; auto-generated and maintained by skills |
 | No `tech/` dir | Renamed to `design/` for consistency with skill naming (`/design-tech`) |
@@ -75,18 +75,18 @@ Current: <stage>
 
 | Document | Path | Summary |
 |----------|------|---------|
-| PRD Overview | prd/prd-overview.md | <1-line auto-generated summary> |
+| PRD Spec | prd/prd-spec.md | <1-line auto-generated summary> |
 | User Stories | prd/prd-user-stories.md | <1-line auto-generated summary> |
 | UI Functions | prd/prd-ui-functions.md | <1-line auto-generated summary> |
-| Design Overview | design/design-overview.md | <1-line auto-generated summary> |
-| API Design | design/design-api.md | <1-line auto-generated summary> |
+| Tech Design | design/tech-design.md | <1-line auto-generated summary> |
+| API Handbook | design/api-handbook.md | <1-line auto-generated summary> |
 | UI Design | ui/ui-design.md | <1-line auto-generated summary> |
 
 ## Traceability
 
 | PRD Section | Design Section | Tasks |
 |-------------|----------------|-------|
-| "Functional Requirements > User Auth" | "Architecture > Auth Middleware" | 1.2, 1.3 |
+| "Functional Requirements > User Auth" (prd-spec §3) | "Architecture > Auth Middleware" (tech-design §2) | 1.2, 1.3 |
 | "UI Functions > Login Form" | "UI Design > Login Component" | 2.1 |
 ```
 
@@ -149,9 +149,9 @@ proposal.md  prd/*.{3}   eval report  design/*.{2}  eval report      tasks/*
 | `/brainstorm` | project codebase | `proposals/<slug>/proposal.md` |
 | `/write-prd` | proposal.md (optional) | `prd/prd-*.md` (3 files), `manifest.md` |
 | `/eval-prd` | `manifest.md` → `prd/prd-*.md` | eval report (in-memory) |
-| `/design-tech` | `manifest.md` → `prd/prd-overview.md` | `design/design-*.md` (2 files), `manifest.md` |
+| `/design-tech` | `manifest.md` → `prd/prd-spec.md` | `design/tech-design.md`, `design/api-handbook.md`, `manifest.md` |
 | `/ui-design` | `manifest.md` → `prd/prd-ui-functions.md` | `ui/ui-design.md`, `manifest.md` |
-| `/eval-design` | `manifest.md` → `design/design-*.md`, `ui/ui-design.md` | eval report (in-memory) |
+| `/eval-design` | `manifest.md` → `design/tech-design.md`, `design/api-handbook.md`, `ui/ui-design.md` | eval report (in-memory) |
 | `/breakdown-tasks` | `manifest.md` → all docs | `tasks/<N.N>-*.md`, `index.json`, `manifest.md` |
 
 Every skill reads `manifest.md` first, then loads only the specific documents it needs.
@@ -174,16 +174,16 @@ Every skill reads `manifest.md` first, then loads only the specific documents it
 
 ### Phase 0: Task-CLI Constants
 
-- **Rename** `PRDFileName` → `PRDOverviewFile`: value `"prd-overview.md"` (constant renamed + value changed)
-- **Rename** `DesignFileName` → `DesignOverviewFile`: value `"design-overview.md"` (constant renamed + value changed)
+- **Rename** `PRDFileName` → `PRDSpecFile`: value `"prd-spec.md"` (constant renamed + value changed)
+- **Rename** `DesignFileName` → `TechDesignFile`: value `"tech-design.md"` (constant renamed + value changed)
 - Downstream Go code referencing the old constant names will need updating.
 - New constants:
   ```go
-  PRDOverviewFile    = "prd-overview.md"
+  PRDSpecFile        = "prd-spec.md"
   PRDUserStoriesFile = "prd-user-stories.md"
   PRDUIFunctionsFile = "prd-ui-functions.md"
-  DesignOverviewFile = "design-overview.md"
-  DesignAPIFile      = "design-api.md"
+  TechDesignFile     = "tech-design.md"
+  APIHandbookFile    = "api-handbook.md"
   UIDesignDir        = "ui"
   UIDesignFile       = "ui-design.md"
   ManifestFileName   = "manifest.md"
@@ -195,12 +195,12 @@ Every skill reads `manifest.md` first, then loads only the specific documents it
 
 ### Phase 1: Templates
 
-- `write-prd/templates/prd-overview.md` (renamed from prd.md, content updated for new format)
+- `write-prd/templates/prd-spec.md` (renamed from prd.md, content updated for new format)
 - `write-prd/templates/prd-user-stories.md` (unchanged)
 - `write-prd/templates/prd-ui-functions.md` (NEW)
 - `write-prd/templates/manifest.md` (NEW — manifest template with PRD section)
-- `design-tech/templates/design-overview.md` (renamed from design.md)
-- `design-tech/templates/design-api.md` (NEW)
+- `design-tech/templates/tech-design.md` (renamed from design.md)
+- `design-tech/templates/api-handbook.md` (NEW)
 - `design-tech/templates/manifest-update-design.md` (NEW — manifest update snippet)
 - `brainstorm/templates/proposal.md` (NEW)
 - `ui-design/templates/ui-design.md` (NEW)
@@ -220,11 +220,11 @@ Create `plugins/zcode/skills/ui-design/SKILL.md` with output path `ui/ui-design.
 
 All skill modifications use the new filenames. Key changes:
 
-- **write-prd**: Output to `prd/prd-overview.md`, `prd/prd-user-stories.md`, `prd/prd-ui-functions.md`; create `manifest.md`
-- **design-tech**: Read from `prd/prd-overview.md` (via manifest); output to `design/design-overview.md`, `design/design-api.md`; update `manifest.md`
+- **write-prd**: Output to `prd/prd-spec.md`, `prd/prd-user-stories.md`, `prd/prd-ui-functions.md`; create `manifest.md`
+- **design-tech**: Read from `prd/prd-spec.md` (via manifest); output to `design/tech-design.md`, `design/api-handbook.md`; update `manifest.md`
 - **ui-design**: Read from `prd/prd-ui-functions.md` (via manifest); output to `ui/ui-design.md`; update `manifest.md`
 - **eval-prd**: Locate via `manifest.md`; evaluate `prd/prd-*.md`; no manifest update
-- **eval-design**: Locate via `manifest.md`; evaluate `design/design-*.md`, `ui/ui-design.md`; no manifest update
+- **eval-design**: Locate via `manifest.md`; evaluate `design/tech-design.md`, `design/api-handbook.md`, `ui/ui-design.md`; no manifest update
 - **breakdown-tasks**: Read `manifest.md` → all docs; output tasks; update `manifest.md` traceability section
 
 ### Phase 5: Guide and Hooks
