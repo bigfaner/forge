@@ -29,16 +29,16 @@ docs/
       proposal.md                    # /brainstorm output
   features/
     <slug>/
-      manifest.md                    # Feature index & linkage map (auto-generated)
+      manifest.md                    # Feature index & traceability map (auto-generated)
       prd/
-        prd-spec.md                  # Complete feature spec: background, goals, business flows (was prd.md)
-        prd-user-stories.md          # User stories
-        prd-ui-functions.md          # UI function requirements (NEW)
+        prd-spec.md                  # PRD Spec (was prd.md)
+        prd-user-stories.md          # User Stories
+        prd-ui-functions.md          # UI Functions (NEW)
       design/
-        tech-design.md               # Technical design, all aspects except API (was design.md)
-        api-handbook.md              # API reference: paths, request/response schemas (NEW)
+        tech-design.md               # Tech Design (was design.md)
+        api-handbook.md              # API Handbook (NEW)
       ui/
-        ui-design.md                 # UI component specs (NEW)
+        ui-design.md                 # UI Design (NEW)
         *.pen                        # External design tool artifacts
       tasks/
         index.json                   # Task definitions
@@ -51,7 +51,7 @@ docs/
 
 | Decision | Rationale |
 |----------|-----------|
-| `prd-spec.md` — complete feature spec | Carries background, goals, key business flows. Not just an "overview" — it's the authoritative source for what the feature is and why it exists. |
+| `prd-spec.md` — PRD Spec | Carries background, goals, key business flows. Not just an "overview" — it's the authoritative source for what the feature is and why it exists. |
 | `ui/` at feature level (NOT nested under `design/`) | Parallel to `design/`, mirrors the `/ui-design` skill's independence. Overrides parent plan's `design/ui/`. |
 | `manifest.md` at feature root | Single entry point for AI context; auto-generated and maintained by skills |
 | No `tech/` dir | Renamed to `design/` for consistency with skill naming (`/design-tech`) |
@@ -69,7 +69,7 @@ docs/
 <!-- Auto-updated by skills. Do not edit manually. -->
 prd -> design -> tasks -> in-progress -> done
 
-Current: <stage>
+Current: <status>
 
 ## Documents
 
