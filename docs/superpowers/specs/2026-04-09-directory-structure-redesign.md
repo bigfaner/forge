@@ -2,7 +2,7 @@
 
 **Date**: 2026-04-09
 **Status**: Approved
-**Affects**: zcode plugin v2.0.0 redesign plan (`docs/zcode-redesign-plan.md`)
+**Supersedes**: The directory structure section of `docs/zcode-redesign-plan.md`. This spec's structure takes precedence — the parent plan must be updated to match.
 
 ---
 
@@ -52,17 +52,24 @@ docs/
 | Decision | Rationale |
 |----------|-----------|
 | `prd-overview.md` not `overview.md` | Source-prefixed names prevent grep ambiguity; AI can glob `prd-*` or `design-*` |
-| `ui/` at feature level | Parallel to `design/`, not nested under it; mirrors the `/ui-design` skill's independence |
+| `ui/` at feature level (NOT nested under `design/`) | Parallel to `design/`, mirrors the `/ui-design` skill's independence. Overrides parent plan's `design/ui/`. |
 | `manifest.md` at feature root | Single entry point for AI context; auto-generated and maintained by skills |
 | No `tech/` dir | Renamed to `design/` for consistency with skill naming (`/design-tech`) |
-| `proposals/` stays separate | Brainstorm is pre-feature; merging it into feature dirs would pollute the feature namespace |
+| `proposals/` (plural) | Convention: directory names are plural. Overrides parent plan's `proposal/` (singular). |
+| `proposals/` stays separate from `features/` | Brainstorm is pre-feature; merging it into feature dirs would pollute the feature namespace |
+| `prd-ui-functions.md` (requirements) vs `ui/ui-design.md` (spec) | `prd-ui-functions.md` defines WHAT the UI must do (requirements layer). `ui-design.md` defines HOW it looks and behaves (design layer). Clear separation of concerns. |
 
 ## Manifest File Format
 
 ```markdown
 # Feature: <slug>
 
-## Status: prd | design | tasks | in-progress | done
+## Status
+
+<!-- Auto-updated by skills. Do not edit manually. -->
+prd -> design -> tasks -> in-progress -> done
+
+Current: <stage>
 
 ## Documents
 
@@ -77,25 +84,52 @@ docs/
 
 ## Traceability
 
-| PRD Section → | Design Section → | Tasks |
-|---------------|-------------------|-------|
-| <prd ref> | <design ref> | <task IDs> |
+| PRD Section | Design Section | Tasks |
+|-------------|----------------|-------|
+| "Functional Requirements > User Auth" | "Architecture > Auth Middleware" | 1.2, 1.3 |
+| "UI Functions > Login Form" | "UI Design > Login Component" | 2.1 |
 ```
+
+References use **section headings** from the source documents. AI agents parse the heading text to locate the corresponding section.
+
+### Status State Machine
+
+```
+prd ──(/write-prd completes)──→ design ──(/design-tech + /ui-design complete)──→ tasks ──(/breakdown-tasks completes)──→ in-progress ──(first task claimed)──→ done ──(all tasks completed)──→
+```
+
+| Current Status | Advances When | Set By |
+|---------------|----------------|--------|
+| (none) | `/write-prd` completes | `/write-prd` |
+| `prd` | `/design-tech` completes (and `/ui-design` if applicable) | `/design-tech` or `/ui-design` (last to complete) |
+| `design` | `/breakdown-tasks` completes | `/breakdown-tasks` |
+| `tasks` | First task is claimed via `/claim-task` | `/claim-task` |
+| `in-progress` | All tasks in `index.json` have status `done` | `/set-task-status` (on last task) |
 
 ### Auto-generation Rules
 
 | Skill | Action on manifest.md |
 |-------|----------------------|
-| `/write-prd` | Create manifest with PRD entries + summaries |
-| `/design-tech` | Add design entries + traceability links to PRD sections |
-| `/ui-design` | Add UI entry + traceability links to PRD UI functions |
-| `/breakdown-tasks` | Update Tasks column with task IDs linked to design sections |
-| Status field | Updated automatically: exists when documents are created |
+| `/brainstorm` | Does not touch manifest (writes to `proposals/` only) |
+| `/write-prd` | Create manifest with PRD entries + summaries; set status to `prd` |
+| `/eval-prd` | Reads manifest only; no manifest update. Eval report is returned in-memory to user, not written to disk. |
+| `/design-tech` | Add design entries + traceability links to PRD sections; advance status to `design` if `/ui-design` already completed (or if UI is not applicable) |
+| `/ui-design` | Add UI entry + traceability links to PRD UI functions; advance status to `design` if `/design-tech` already completed |
+| `/eval-design` | Reads manifest only; no manifest update. Eval report is returned in-memory to user. |
+| `/breakdown-tasks` | Update Tasks column with task IDs linked to design sections; advance status to `tasks` |
+| `/claim-task` | Advance status to `in-progress` on first claim |
+| `/set-task-status` | Advance status to `done` when last task completes |
+
+### Manifest Update Semantics
+
+- **Idempotent**: Re-running a skill merges new content into existing manifest sections. Existing entries are updated (summary text), not duplicated.
+- **Manual edits**: The `Documents` and `Traceability` sections are auto-generated. Adding comments (`<!-- -->`) is safe. Manual restructuring may be overwritten on next skill run.
+- **Missing files**: If a document referenced in manifest is deleted, the next skill run removes the entry.
 
 ## Workflow Mapping
 
 ```
-/brainstorm → /write-prd → /eval-prd → /design-tech → /eval-design → /breakdown-tasks
+/brainstorm → /write-prd → /eval-prd → /design-tech ─→ /eval-design → /breakdown-tasks
      ↓            ↓            ↓            ↓              ↓                ↓
 proposal.md  prd/*.{3}   eval report  design/*.{2}  eval report      tasks/*
               manifest.md              manifest.md                   manifest.md
@@ -115,12 +149,25 @@ proposal.md  prd/*.{3}   eval report  design/*.{2}  eval report      tasks/*
 | `/eval-prd` | `manifest.md` → `prd/prd-*.md` | eval report (in-memory) |
 | `/design-tech` | `manifest.md` → `prd/prd-overview.md` | `design/design-*.md` (2 files), `manifest.md` |
 | `/ui-design` | `manifest.md` → `prd/prd-ui-functions.md` | `ui/ui-design.md`, `manifest.md` |
-| `/eval-design` | `manifest.md` → `design/design-*.md`, `ui/ui-design.md` | eval report |
+| `/eval-design` | `manifest.md` → `design/design-*.md`, `ui/ui-design.md` | eval report (in-memory) |
 | `/breakdown-tasks` | `manifest.md` → all docs | `tasks/<N.N>-*.md`, `index.json`, `manifest.md` |
 
 Every skill reads `manifest.md` first, then loads only the specific documents it needs.
 
 ## Impact on Redesign Plan (docs/zcode-redesign-plan.md)
+
+**This spec supersedes the directory structure defined in `zcode-redesign-plan.md`.** The parent plan must be updated to reflect these changes:
+
+### Changes to Parent Plan
+
+| Parent Plan Location | Current Value | Updated Value |
+|---------------------|---------------|---------------|
+| Target structure (line ~19) | `design/ui/` | `ui/` at feature level |
+| `ProposalBaseDir` (line ~53) | `"docs/proposal"` (singular) | `"docs/proposals"` (plural) |
+| `EnsureFeatureDir` (line ~63) | `prd/`, `design/`, `design/ui/` | `prd/`, `design/`, `ui/`, `tasks/` |
+| Phase 2 brainstorm output (line ~119) | `docs/proposal/<slug>/proposal.md` | `docs/proposals/<slug>/proposal.md` |
+| Phase 3 ui-design output (line ~133) | `design/ui/` | `ui/` |
+| Phase 6 e2e verification (line ~223) | "design/ui/ content" | "ui/ content" |
 
 ### Phase 0: Task-CLI Constants
 
@@ -128,7 +175,7 @@ Every skill reads `manifest.md` first, then loads only the specific documents it
 - `DesignFileName`: `"overview.md"` → `"design-overview.md"`
 - New constants:
   ```go
-  PRDOverviewFile   = "prd-overview.md"
+  PRDOverviewFile    = "prd-overview.md"
   PRDUserStoriesFile = "prd-user-stories.md"
   PRDUIFunctionsFile = "prd-ui-functions.md"
   DesignOverviewFile = "design-overview.md"
@@ -157,6 +204,14 @@ Every skill reads `manifest.md` first, then loads only the specific documents it
 - `breakdown-tasks/templates/index.json` — update `prd` and `design` paths
 - `breakdown-tasks/templates/manifest-update-tasks.md` (NEW — manifest update snippet)
 
+### Phase 2: Brainstorm Skill
+
+Create `plugins/zcode/skills/brainstorm/SKILL.md` with output path `docs/proposals/<slug>/proposal.md` (plural).
+
+### Phase 3: UI-Design Skill
+
+Create `plugins/zcode/skills/ui-design/SKILL.md` with output path `ui/ui-design.md` (top-level, not nested under `design/`).
+
 ### Phase 4: Skill Refactoring
 
 All skill modifications use the new filenames. Key changes:
@@ -164,8 +219,8 @@ All skill modifications use the new filenames. Key changes:
 - **write-prd**: Output to `prd/prd-overview.md`, `prd/prd-user-stories.md`, `prd/prd-ui-functions.md`; create `manifest.md`
 - **design-tech**: Read from `prd/prd-overview.md` (via manifest); output to `design/design-overview.md`, `design/design-api.md`; update `manifest.md`
 - **ui-design**: Read from `prd/prd-ui-functions.md` (via manifest); output to `ui/ui-design.md`; update `manifest.md`
-- **eval-prd**: Locate via `manifest.md`; evaluate `prd/prd-*.md`
-- **eval-design**: Locate via `manifest.md`; evaluate `design/design-*.md`, `ui/ui-design.md`
+- **eval-prd**: Locate via `manifest.md`; evaluate `prd/prd-*.md`; no manifest update
+- **eval-design**: Locate via `manifest.md`; evaluate `design/design-*.md`, `ui/ui-design.md`; no manifest update
 - **breakdown-tasks**: Read `manifest.md` → all docs; output tasks; update `manifest.md` traceability section
 
 ### Phase 5: Guide and Hooks
