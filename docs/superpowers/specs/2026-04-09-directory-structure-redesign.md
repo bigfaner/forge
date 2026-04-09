@@ -92,6 +92,8 @@ Current: <stage>
 
 References use **section headings** from the source documents. AI agents parse the heading text to locate the corresponding section.
 
+**UI-not-applicable features**: For backend/API/CLI features with no UI surface, the `ui/` directory and its manifest entries are omitted entirely. The status advances from `prd` to `design` when `/design-tech` completes, without waiting for `/ui-design`.
+
 ### Status State Machine
 
 ```
@@ -162,17 +164,19 @@ Every skill reads `manifest.md` first, then loads only the specific documents it
 
 | Parent Plan Location | Current Value | Updated Value |
 |---------------------|---------------|---------------|
-| Target structure (line ~19) | `design/ui/` | `ui/` at feature level |
-| `ProposalBaseDir` (line ~53) | `"docs/proposal"` (singular) | `"docs/proposals"` (plural) |
+| Target structure `tech/` (line ~16) | `tech/` | `design/` (tree is inconsistent with Phase 0 constants) |
 | `EnsureFeatureDir` (line ~63) | `prd/`, `design/`, `design/ui/` | `prd/`, `design/`, `ui/`, `tasks/` |
+| `ProposalBaseDir` (line ~53) | `"docs/proposal"` (singular) | `"docs/proposals"` (plural) |
 | Phase 2 brainstorm output (line ~119) | `docs/proposal/<slug>/proposal.md` | `docs/proposals/<slug>/proposal.md` |
 | Phase 3 ui-design output (line ~133) | `design/ui/` | `ui/` |
+| Phase 4.2 design-tech prose (line ~166) | "`design/ui/` 由 `/ui-design` skill 填充" | "`ui/` 由 `/ui-design` skill 填充" |
 | Phase 6 e2e verification (line ~223) | "design/ui/ content" | "ui/ content" |
 
 ### Phase 0: Task-CLI Constants
 
-- `PRDFileName`: `"overview.md"` → `"prd-overview.md"`
-- `DesignFileName`: `"overview.md"` → `"design-overview.md"`
+- **Rename** `PRDFileName` → `PRDOverviewFile`: value `"prd-overview.md"` (constant renamed + value changed)
+- **Rename** `DesignFileName` → `DesignOverviewFile`: value `"design-overview.md"` (constant renamed + value changed)
+- Downstream Go code referencing the old constant names will need updating.
 - New constants:
   ```go
   PRDOverviewFile    = "prd-overview.md"
