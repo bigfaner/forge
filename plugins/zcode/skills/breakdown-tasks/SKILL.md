@@ -16,25 +16,37 @@ description: Use when design.md is finalized to break down into executable tasks
 ```
 /write-prd → /eval-prd → /design-tech → /eval-design → /breakdown-tasks
      ↓             ↓            ↓              ↓               ↓
-   prd.md      prd-eval.md  design.md    design-eval.md    tasks/*.md
+  prd/*.{3}   eval report  design/*.{2}  eval report    tasks/*.md
+  manifest.md              manifest.md                  manifest.md
 ```
 
 ## Directory Structure
 
 ```
 docs/features/<feature-slug>/
-├── prd.md              # PRD document
-├── design.md           # Technical design (input)
-├── index.json          # Task index for this feature
-└── tasks/              # Task definitions
-    └── records/        # Execution records
+├── manifest.md                    # Feature index & traceability
+├── prd/
+│   ├── prd-spec.md
+│   ├── prd-user-stories.md
+│   └── prd-ui-functions.md
+├── design/
+│   ├── tech-design.md             # Technical design (input)
+│   └── api-handbook.md
+├── ui/
+│   └── ui-design.md               # (if applicable)
+├── tasks/
+│   ├── index.json                 # Task index
+│   ├── 1.1-<title>.md            # Task detail files
+│   ├── process/
+│   └── records/
 ```
 
 ## When to Use
 
 **Trigger conditions:**
 
-- Design document exists at `docs/features/<slug>/design.md`
+- Manifest exists at `docs/features/<slug>/manifest.md` with status `design` or `tasks`
+- Design document exists at `design/tech-design.md`
 - User asks to "break down" or "split" a design into tasks
 
 **Skip when:**
@@ -48,13 +60,14 @@ docs/features/<feature-slug>/
 1. Read Design → 2. Map interfaces → 3. Define order → 4. Create task files → 5. Create index.json → 6. Validate
 ```
 
-## Step 1: Read Design
+## Step 1: Read Manifest → All Documents
 
-Read `docs/features/<slug>/design.md`:
-
-- Understand architecture and component structure
-- Map interfaces to implementation tasks
-- Identify data models and their tasks
+1. Read `manifest.md` to locate all documents
+2. Read `prd/prd-spec.md` — understand WHAT
+3. Read `design/tech-design.md` — understand HOW
+4. Read `design/api-handbook.md` — understand interfaces (if exists)
+5. Read `ui/ui-design.md` — understand UI components (if exists)
+6. Read `prd/prd-user-stories.md` — understand user scenarios (if exists)
 
 ## Step 2: Map Interfaces to Tasks
 
@@ -112,6 +125,12 @@ Create `docs/features/<slug>/tasks/index.json` with task definitions.
 ```bash
 task validate -file docs/features/\<slug\>/tasks/index.json
 ```
+
+## Step 7: Update Manifest
+
+Update `manifest.md`:
+- Fill Tasks column in Traceability table with task IDs linked to design sections
+- Advance status to `tasks`
 
 ## Integration
 
