@@ -76,17 +76,27 @@
 
 ```
 project-root/
-├── docs/features/<slug>/           # Feature 工作区
-│   ├── prd.md                      # 需求文档
-│   ├── design.md                   # 设计文档
-│   ├── tasks/                      # 任务目录
-│   │   ├── index.json              # 任务定义
-│   │   ├── process/                # 运行时状态
-│   │   │   ├── state.json          # 当前任务状态
-│   │   │   └── record.json         # 进行中的记录
-│   │   └── 1.1-<task-title>.md     # 任务详情
-│   └── records/                    # 执行记录
-│       └── 1.1-<task-title>.md
+├── docs/
+│   ├── proposals/<slug>/           # /brainstorm 产出
+│   │   └── proposal.md
+│   └── features/<slug>/            # Feature 工作区
+│       ├── manifest.md             # Feature 索引 & 可追溯性映射
+│       ├── prd/
+│       │   ├── prd-spec.md         # PRD Spec
+│       │   ├── prd-user-stories.md # 用户故事
+│       │   └── prd-ui-functions.md # UI 功能要点（可选）
+│       ├── design/
+│       │   ├── tech-design.md      # 技术设计
+│       │   └── api-handbook.md     # API 文档
+│       ├── ui/
+│       │   └── ui-design.md        # UI 设计规格（可选）
+│       └── tasks/
+│           ├── index.json          # 任务定义
+│           ├── process/            # 运行时状态
+│           │   ├── state.json
+│           │   └── record.json
+│           ├── 1.1-<title>.md     # 任务详情
+│           └── records/            # 执行记录
 ```
 
 ### 项目根目录检测
