@@ -1,5 +1,7 @@
 # ZCode Plugin Redesign Plan
 
+> **Note:** Directory structure superseded by `docs/superpowers/specs/2026-04-09-directory-structure-redesign.md`. The structure below reflects the approved spec.
+
 ## Context
 
 根据 `docs/proposal/new-workflow/proposal.md`，将 zcode 插件从扁平文件结构升级为嵌套目录结构，新增 brainstorm 和 ui-design 两个 skill，重构现有 skill 的输入输出路径。这是一个 breaking change（v1.0.5 → v2.0.0）。
@@ -7,19 +9,20 @@
 **目标目录结构：**
 ```
 docs/
-  proposal/<slug>/proposal.md
+  proposals/<slug>/proposal.md
   features/<slug>/
+    manifest.md                    # Feature 索引 & 可追溯性映射
     prd/
-      overview.md            # PRD 总览
-      user-stories.md        # 用户故事
-      ui-functions.md        # UI 功能要点（需求层）
+      prd-spec.md                  # PRD Spec
+      prd-user-stories.md          # 用户故事
+      prd-ui-functions.md          # UI 功能要点（需求层）
     design/
-      overview.md            # 技术设计总览
-      api.md                 # API 文档
-      ui/                    # UI 设计产出
-        *.md                 # Markdown 组件规格
-        *.pen                # 外部设计工具产出（如 pencil.dev）
-    tasks/                   # 不变
+      tech-design.md               # 技术设计
+      api-handbook.md              # API 文档
+    ui/                            # UI 设计产出（顶层，非 design/ui/）
+      ui-design.md                 # UI 设计规格
+      *.pen                        # 外部设计工具产出
+    tasks/                         # 不变
 ```
 
 **新工作流：**
@@ -40,27 +43,31 @@ proposal.md  prd/*.{3}   prd-eval.md  design/*.{2+}  design-eval.md   tasks/*
 ### 修改文件
 
 1. **`task-cli/pkg/feature/constants.go`**
-   - `PRDFileName`: `"prd.md"` → `"overview.md"`
-   - `DesignFileName`: `"design.md"` → `"overview.md"`
+   - `PRDFileName` → `PRDSpecFile`: value `"prd-spec.md"` (renamed + value changed)
+   - `DesignFileName` → `TechDesignFile`: value `"tech-design.md"` (renamed + value changed)
    - 新增常量：
      ```go
      PRDDirName         = "prd"
      DesignDirName      = "design"
-     UserStoriesFile    = "user-stories.md"
-     UIFunctionsFile    = "ui-functions.md"
-     APIDesignFile      = "api.md"
-     UIDesignDir        = "ui"
-     ProposalBaseDir    = "docs/proposal"
+     UIDirName          = "ui"
+     PRDSpecFile        = "prd-spec.md"
+     PRDUserStoriesFile = "prd-user-stories.md"
+     PRDUIFunctionsFile = "prd-ui-functions.md"
+     TechDesignFile     = "tech-design.md"
+     APIHandbookFile    = "api-handbook.md"
+     UIDesignFile       = "ui-design.md"
+     ManifestFileName   = "manifest.md"
+     ProposalBaseDir    = "docs/proposals"
      ProposalFileName   = "proposal.md"
      ```
 
 2. **`task-cli/pkg/feature/paths.go`**
-   - `GetFeaturePRDFile`: 改为 `filepath.Join(FeaturesDir, feature, PRDDirName, PRDFileName)`
-   - `GetFeatureDesignFile`: 改为 `filepath.Join(FeaturesDir, feature, DesignDirName, DesignFileName)`
-   - 新增函数：`GetFeaturePRDDir`, `GetFeatureDesignDir`, `GetFeatureUserStoriesFile`, `GetFeatureUIFunctionsFile`, `GetFeatureAPIDesignFile`, `GetFeatureUIDesignDir`, `GetProposalDir`, `GetProposalFile`
+   - `GetFeaturePRDFile`: 改为 `filepath.Join(FeaturesDir, feature, PRDDirName, PRDSpecFile)`
+   - `GetFeatureDesignFile`: 改为 `filepath.Join(FeaturesDir, feature, DesignDirName, TechDesignFile)`
+   - 新增函数：`GetFeatureManifest`, `GetFeaturePRDDir`, `GetFeatureDesignDir`, `GetFeatureUserStoriesFile`, `GetFeatureUIFunctionsFile`, `GetFeatureAPIHandbookFile`, `GetFeatureUIDesignDir`, `GetFeatureUIDesignFile`, `GetProposalDir`, `GetProposalFile`
 
 3. **`task-cli/pkg/feature/feature.go`**
-   - `EnsureFeatureDir`: 增加 `prd/`、`design/`、`design/ui/` 目录创建
+   - `EnsureFeatureDir`: 增加 `prd/`、`design/`、`ui/`、`tasks/` 目录创建
 
 4. **测试文件更新**（路径从 `"prd.md"` → `"prd/overview.md"` 等）：
    - `task-cli/pkg/feature/paths_test.go`
@@ -88,16 +95,21 @@ proposal.md  prd/*.{3}   prd-eval.md  design/*.{2+}  design-eval.md   tasks/*
 | 文件 | 说明 |
 |------|------|
 | `plugins/zcode/skills/brainstorm/templates/proposal.md` | proposal 模板 |
-| `plugins/zcode/skills/ui-design/templates/ui-design.md` | UI 组件规格模板 |
-| `plugins/zcode/skills/write-prd/templates/ui-functions.md` | UI 功能要点模板 |
-| `plugins/zcode/skills/design-tech/templates/api.md` | API 文档模板 |
+| `plugins/zcode/skills/ui-design/templates/ui-design.md` | UI 设计规格模板 |
+| `plugins/zcode/skills/write-prd/templates/prd-ui-functions.md` | UI 功能要点模板 |
+| `plugins/zcode/skills/design-tech/templates/api-handbook.md` | API 文档模板 |
+| `plugins/zcode/skills/write-prd/templates/manifest.md` | manifest 模板 |
+| `plugins/zcode/skills/design-tech/templates/manifest-update-design.md` | manifest 更新片段 |
+| `plugins/zcode/skills/ui-design/templates/manifest-update-ui.md` | manifest 更新片段 |
+| `plugins/zcode/skills/breakdown-tasks/templates/manifest-update-tasks.md` | manifest 更新片段 |
 
 ### 重命名/创建文件
 
 | 现有文件 | 新文件 | 说明 |
 |---------|--------|------|
-| `write-prd/templates/prd.md` | `write-prd/templates/prd-overview.md` | 模板内容基本不变，重命名以明确语义 |
-| `design-tech/templates/design.md` | `design-tech/templates/design-overview.md` | 同上 |
+| `write-prd/templates/prd.md` | `write-prd/templates/prd-spec.md` | 模板重命名，首行标题更新 |
+| `write-prd/templates/user-stories.md` | `write-prd/templates/prd-user-stories.md` | 模板重命名 |
+| `design-tech/templates/design.md` | `design-tech/templates/tech-design.md` | 模板重命名，PRD 引用路径更新 |
 
 ### 修改文件
 
@@ -112,7 +124,7 @@ proposal.md  prd/*.{3}   prd-eval.md  design/*.{2+}  design-eval.md   tasks/*
 ### 新建文件
 
 1. **`plugins/zcode/skills/brainstorm/SKILL.md`**
-   - 从用户模糊想法出发，通过协作对话产出 `docs/proposal/<slug>/proposal.md`
+   - 从用户模糊想法出发，通过协作对话产出 `docs/proposals/<slug>/proposal.md`
    - HARD-GATE：不写代码，只产出提案
    - 流程：探索上下文 → 讨论愿景 → 识别约束 → 提出范围 → 写提案 → 提交
    - 输入：用户口头/文字描述
@@ -130,7 +142,7 @@ proposal.md  prd/*.{3}   prd-eval.md  design/*.{2+}  design-eval.md   tasks/*
 ### 新建文件
 
 1. **`plugins/zcode/skills/ui-design/SKILL.md`**
-   - 读取 `prd/ui-functions.md`，产出 UI 设计到 `design/ui/`
+   - 读取 `prd/prd-ui-functions.md`，产出 UI 设计到 `ui/`
    - 产出格式：
      - Markdown `.md` 文件：组件规格（布局结构、交互状态、组件层级、数据绑定）
      - 外部工具产出（如 `.pen` 文件）：引用或存放
@@ -148,11 +160,12 @@ proposal.md  prd/*.{3}   prd-eval.md  design/*.{2+}  design-eval.md   tasks/*
 **文件**：`plugins/zcode/skills/write-prd/SKILL.md`
 
 改动点：
-- Step 1：增加 `docs/proposal/<slug>/proposal.md` 可选输入检测
-- Step 6：输出路径 `prd.md` → `prd/overview.md`
-- Step 7：输出路径 `user-stories.md` → `prd/user-stories.md`
-- 新增 Step 8：输出 `prd/ui-functions.md`（UI 功能要点，非设计稿）
-- 更新 Output Documents 表（3 个文件）
+- Step 1：增加 `docs/proposals/<slug>/proposal.md` 可选输入检测
+- Step 6：输出路径 `prd.md` → `prd/prd-spec.md`
+- Step 7：输出路径 `user-stories.md` → `prd/prd-user-stories.md`
+- 新增 Step 8：输出 `prd/prd-ui-functions.md`（UI 功能要点，非设计稿）
+- 新增 Step 9：创建 `manifest.md`（Feature 索引和可追溯性映射）
+- 更新 Output Documents 表（4 个文件 + manifest）
 - 更新目录结构图
 - 模板引用更新
 
@@ -161,9 +174,10 @@ proposal.md  prd/*.{3}   prd-eval.md  design/*.{2+}  design-eval.md   tasks/*
 **文件**：`plugins/zcode/skills/design-tech/SKILL.md`
 
 改动点：
-- Step 1：读取路径 `prd.md` → `prd/overview.md`
-- Step 7：输出拆分为 `design/overview.md` + `design/api.md`
-- 说明 `design/ui/` 由 `/ui-design` skill 填充
+- Step 1：读取路径 `prd.md` → `prd/prd-spec.md`（via manifest）
+- Step 7：输出拆分为 `design/tech-design.md` + `design/api-handbook.md`
+- 新增 Step 8：更新 `manifest.md`
+- 说明 `ui/` 由 `/ui-design` skill 填充
 - 更新目录结构图和 Integration 节
 
 ### 4.3 eval-prd
@@ -171,8 +185,8 @@ proposal.md  prd/*.{3}   prd-eval.md  design/*.{2+}  design-eval.md   tasks/*
 **文件**：`plugins/zcode/skills/eval-prd/SKILL.md` + `templates/report.md`
 
 改动点：
-- 定位文档路径全部更新（`prd.md` → `prd/overview.md` 等）
-- 增加 `prd/ui-functions.md` 可选检查维度
+- 定位文档路径全部更新（`prd.md` → `prd/prd-spec.md` 等），via manifest
+- 增加 `prd/prd-ui-functions.md` 可选检查维度
 - 更新 agent prompt 中的路径替换
 
 ### 4.4 eval-design
@@ -180,8 +194,8 @@ proposal.md  prd/*.{3}   prd-eval.md  design/*.{2+}  design-eval.md   tasks/*
 **文件**：`plugins/zcode/skills/eval-design/SKILL.md` + `templates/report.md`
 
 改动点：
-- 定位文档路径全部更新
-- 增加 `design/api.md` 和 `design/ui/` 存在性检查
+- 定位文档路径全部更新（via manifest）
+- 增加 `design/api-handbook.md` 和 `ui/ui-design.md` 存在性检查
 - 更新 agent prompt 中的路径替换
 
 ### 4.5 breakdown-tasks
@@ -189,8 +203,9 @@ proposal.md  prd/*.{3}   prd-eval.md  design/*.{2+}  design-eval.md   tasks/*
 **文件**：`plugins/zcode/skills/breakdown-tasks/SKILL.md`
 
 改动点：
-- Step 1 扩展：读取所有可用文档（`prd/overview.md`、`prd/user-stories.md`、`prd/ui-functions.md`、`design/overview.md`、`design/api.md`、`design/ui/*`）
+- Step 1 扩展：读取 `manifest.md` → 所有可用文档（`prd/prd-spec.md`、`prd/prd-user-stories.md`、`prd/prd-ui-functions.md`、`design/tech-design.md`、`design/api-handbook.md`、`ui/ui-design.md`）
 - 每个任务标注来源文档段落（可追溯性）
+- 新增 Step 7：更新 `manifest.md` traceability
 - 更新目录结构图和 trigger 条件
 
 ---
@@ -199,8 +214,8 @@ proposal.md  prd/*.{3}   prd-eval.md  design/*.{2+}  design-eval.md   tasks/*
 
 ### 修改文件
 
-1. **`plugins/zcode/hooks/guide.md`** — 替换 Document Index 为新的嵌套目录结构，增加 workflow 说明
-2. **`plugins/zcode/.claude-plugin/plugin.json`** — version `1.0.5` → `2.0.0`，keywords 增加 `"brainstorm"`, `"ui-design"`
+1. **`plugins/zcode/hooks/guide.md`** — 替换 Document Index 为新的嵌套目录结构，增加 manifest 说明
+2. **`plugins/zcode/.claude-plugin/plugin.json`** — version `1.0.5` → `2.0.0`，keywords 增加 `"brainstorm"`, `"ui-design"`, `"manifest"`
 
 ### 不变文件
 
@@ -220,7 +235,7 @@ proposal.md  prd/*.{3}   prd-eval.md  design/*.{2+}  design-eval.md   tasks/*
    - `/write-prd` → 产出 prd/ 目录下 3 个文件
    - `/eval-prd` → 能定位并评估新路径文件
    - `/design-tech` → 产出 design/ 目录
-   - `/ui-design` → 产出 design/ui/ 内容
+   - `/ui-design` → 产出 ui/ 内容
    - `/eval-design` → 能定位并评估新路径文件
    - `/breakdown-tasks` → 读取所有输入文档，产出 tasks/
    - `/claim-task` → 正常认领任务
