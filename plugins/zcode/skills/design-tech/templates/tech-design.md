@@ -2,7 +2,7 @@
 
 ## Metadata
 - Created: YYYY-MM-DD
-- PRD: prd.md
+- PRD: prd/prd-spec.md
 - Status: Draft | Review | Approved
 
 ## Overview
