@@ -323,8 +323,8 @@ func setupClaimTestProject(t *testing.T) string {
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test-feature"))
 	index := &task.TaskIndex{
 		Feature:      "test-feature",
-		PRD:          "prd.md",
-		Design:       "design.md",
+		PRD:          "prd/prd-spec.md",
+		Design:       "design/tech-design.md",
 		StatusEnum:   []string{"pending", "in_progress", "completed"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
 		Tasks: map[string]task.Task{

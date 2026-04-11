@@ -27,8 +27,8 @@ func TestValidator_IndirectRun(t *testing.T) {
 		indexPath := filepath.Join(tasksDir, "index.json")
 		index := &task.TaskIndex{
 			Feature: featureSlug,
-			PRD:     "prd.md",
-			Design:  "design.md",
+			PRD:     "prd/prd-spec.md",
+			Design:  "design/tech-design.md",
 			Tasks: map[string]task.Task{
 				"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md"},
 			},

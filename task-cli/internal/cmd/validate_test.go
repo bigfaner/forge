@@ -288,8 +288,8 @@ func TestValidator_Run(t *testing.T) {
 
 		index := &task.TaskIndex{
 			Feature:      "test-feature",
-			PRD:          "prd.md",
-			Design:       "design.md",
+			PRD:          "prd/prd-spec.md",
+			Design:       "design/tech-design.md",
 			StatusEnum:   []string{"pending", "completed"},
 			PriorityEnum: []string{"P0", "P1", "P2"},
 			Tasks: map[string]task.Task{

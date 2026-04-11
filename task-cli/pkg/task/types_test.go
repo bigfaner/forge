@@ -90,8 +90,8 @@ func TestTaskJSONRoundTrip(t *testing.T) {
 func TestTaskIndexJSONRoundTrip(t *testing.T) {
 	index := &TaskIndex{
 		Feature: "test-feature",
-		PRD:     "prd.md",
-		Design:  "design.md",
+		PRD:     "prd/prd-spec.md",
+		Design:  "design/tech-design.md",
 		Created: "2024-01-01",
 		Status:  "in_progress",
 		Tasks: map[string]Task{
