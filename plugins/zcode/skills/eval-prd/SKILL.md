@@ -27,8 +27,9 @@ description: Evaluate a PRD document against quality standards. Checks structure
 
 Check in order:
 1. Path provided by user
-2. `docs/features/<current-feature>/prd.md` + `docs/features/<current-feature>/user-stories.md`
-3. Ask user for path if not found
+2. Read `docs/features/<current-feature>/manifest.md` → locate PRD documents
+3. Fall back to `docs/features/<current-feature>/prd/prd-spec.md` + `prd/prd-user-stories.md`
+4. Ask user for path if not found
 
 Determine `<feature-slug>` from the path (e.g. `docs/features/auth-flow/prd.md` → slug is `auth-flow`).
 
@@ -44,8 +45,9 @@ Use the **Agent tool** to spawn a subagent. Pass the full prompt below, substitu
 You are a PRD quality evaluator. Your job: read the PRD and User Stories, apply the rubric, write the report, return a summary.
 
 ## Inputs
-- PRD path: {{PRD_PATH}}
-- User Stories path: {{USER_STORIES_PATH}}
+- PRD path: {{PRD_PATH}} (default: prd/prd-spec.md)
+- User Stories path: {{USER_STORIES_PATH}} (default: prd/prd-user-stories.md)
+- UI Functions path: {{UI_FUNCTIONS_PATH}} (optional: prd/prd-ui-functions.md)
 - Feature slug: {{FEATURE_SLUG}}
 - Report output: docs/features/{{FEATURE_SLUG}}/prd-eval.md
 - Report template: plugins/zcode/skills/eval-prd/templates/report.md
@@ -53,14 +55,15 @@ You are a PRD quality evaluator. Your job: read the PRD and User Stories, apply 
 ## Steps
 1. Read {{PRD_PATH}}
 2. Read {{USER_STORIES_PATH}} (if exists)
-3. Read the report template
-4. Apply the rubric below to every dimension
-5. Fill in the template and write to docs/features/{{FEATURE_SLUG}}/prd-eval.md
-6. Return: overall grade, top 2-3 issues, and whether it can proceed to /breakdown-tasks
+3. Read {{UI_FUNCTIONS_PATH}} (if exists)
+4. Read the report template
+5. Apply the rubric below to every dimension
+6. Fill in the template and write to docs/features/{{FEATURE_SLUG}}/prd-eval.md
+7. Return: overall grade, top 2-3 issues, and whether it can proceed to /breakdown-tasks
 
 ## Structure Check
 
-Required sections in prd.md — mark missing as F:
+Required sections in prd-spec.md — mark missing as F:
 
 | Section | Required | Notes |
 |---------|----------|-------|
@@ -123,6 +126,17 @@ Checks: in-scope (concrete deliverables), out-of-scope (deferred items listed), 
 - B: Both defined, minor vagueness
 - C: Only in-scope defined, or items vague
 - F: No scope section
+
+## Dimension 6: UI Functions (optional)
+
+Only checked if `prd/prd-ui-functions.md` exists.
+
+Checks: each UI function has description, interaction flow, data requirements, states, validation.
+
+- A: All functions fully specified with all sub-sections
+- B: Most specified, 1-2 missing sub-sections
+- C: Functions listed but incomplete
+- N/A: File doesn't exist (not an F)
 
 ## Overall Grade
 
