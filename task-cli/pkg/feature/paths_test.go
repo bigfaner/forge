@@ -24,6 +24,86 @@ func TestGetFeatureDir(t *testing.T) {
 	}
 }
 
+func TestGetFeatureManifest(t *testing.T) {
+	feature := "test-feature"
+	want := filepath.Join("docs/features", "test-feature", "manifest.md")
+	if got := GetFeatureManifest(feature); got != want {
+		t.Errorf("GetFeatureManifest(%q) = %q, want %q", feature, got, want)
+	}
+}
+
+func TestGetFeaturePRDDir(t *testing.T) {
+	feature := "test-feature"
+	want := filepath.Join("docs/features", "test-feature", "prd")
+	if got := GetFeaturePRDDir(feature); got != want {
+		t.Errorf("GetFeaturePRDDir(%q) = %q, want %q", feature, got, want)
+	}
+}
+
+func TestGetFeaturePRDFile(t *testing.T) {
+	feature := "test-feature"
+	want := filepath.Join("docs/features", "test-feature", "prd", "prd-spec.md")
+	if got := GetFeaturePRDFile(feature); got != want {
+		t.Errorf("GetFeaturePRDFile(%q) = %q, want %q", feature, got, want)
+	}
+}
+
+func TestGetFeatureUserStoriesFile(t *testing.T) {
+	feature := "test-feature"
+	want := filepath.Join("docs/features", "test-feature", "prd", "prd-user-stories.md")
+	if got := GetFeatureUserStoriesFile(feature); got != want {
+		t.Errorf("GetFeatureUserStoriesFile(%q) = %q, want %q", feature, got, want)
+	}
+}
+
+func TestGetFeatureUIFunctionsFile(t *testing.T) {
+	feature := "test-feature"
+	want := filepath.Join("docs/features", "test-feature", "prd", "prd-ui-functions.md")
+	if got := GetFeatureUIFunctionsFile(feature); got != want {
+		t.Errorf("GetFeatureUIFunctionsFile(%q) = %q, want %q", feature, got, want)
+	}
+}
+
+func TestGetFeatureDesignDir(t *testing.T) {
+	feature := "test-feature"
+	want := filepath.Join("docs/features", "test-feature", "design")
+	if got := GetFeatureDesignDir(feature); got != want {
+		t.Errorf("GetFeatureDesignDir(%q) = %q, want %q", feature, got, want)
+	}
+}
+
+func TestGetFeatureDesignFile(t *testing.T) {
+	feature := "test-feature"
+	want := filepath.Join("docs/features", "test-feature", "design", "tech-design.md")
+	if got := GetFeatureDesignFile(feature); got != want {
+		t.Errorf("GetFeatureDesignFile(%q) = %q, want %q", feature, got, want)
+	}
+}
+
+func TestGetFeatureAPIHandbookFile(t *testing.T) {
+	feature := "test-feature"
+	want := filepath.Join("docs/features", "test-feature", "design", "api-handbook.md")
+	if got := GetFeatureAPIHandbookFile(feature); got != want {
+		t.Errorf("GetFeatureAPIHandbookFile(%q) = %q, want %q", feature, got, want)
+	}
+}
+
+func TestGetFeatureUIDesignDir(t *testing.T) {
+	feature := "test-feature"
+	want := filepath.Join("docs/features", "test-feature", "ui")
+	if got := GetFeatureUIDesignDir(feature); got != want {
+		t.Errorf("GetFeatureUIDesignDir(%q) = %q, want %q", feature, got, want)
+	}
+}
+
+func TestGetFeatureUIDesignFile(t *testing.T) {
+	feature := "test-feature"
+	want := filepath.Join("docs/features", "test-feature", "ui", "ui-design.md")
+	if got := GetFeatureUIDesignFile(feature); got != want {
+		t.Errorf("GetFeatureUIDesignFile(%q) = %q, want %q", feature, got, want)
+	}
+}
+
 func TestGetFeatureIndexFile(t *testing.T) {
 	tests := []struct {
 		feature string
@@ -39,22 +119,6 @@ func TestGetFeatureIndexFile(t *testing.T) {
 				t.Errorf("GetFeatureIndexFile(%q) = %q, want %q", tt.feature, got, tt.want)
 			}
 		})
-	}
-}
-
-func TestGetFeaturePRDFile(t *testing.T) {
-	feature := "test-feature"
-	want := filepath.Join("docs/features", "test-feature", "prd.md")
-	if got := GetFeaturePRDFile(feature); got != want {
-		t.Errorf("GetFeaturePRDFile(%q) = %q, want %q", feature, got, want)
-	}
-}
-
-func TestGetFeatureDesignFile(t *testing.T) {
-	feature := "test-feature"
-	want := filepath.Join("docs/features", "test-feature", "design.md")
-	if got := GetFeatureDesignFile(feature); got != want {
-		t.Errorf("GetFeatureDesignFile(%q) = %q, want %q", feature, got, want)
 	}
 }
 
@@ -149,5 +213,21 @@ func TestGetProcessDir(t *testing.T) {
 				t.Errorf("GetProcessDir(%q, %q) = %q, want %q", tt.projectRoot, tt.feature, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestGetProposalDir(t *testing.T) {
+	slug := "my-idea"
+	want := filepath.Join("docs", "proposals", "my-idea")
+	if got := GetProposalDir(slug); got != want {
+		t.Errorf("GetProposalDir(%q) = %q, want %q", slug, got, want)
+	}
+}
+
+func TestGetProposalFile(t *testing.T) {
+	slug := "my-idea"
+	want := filepath.Join("docs", "proposals", "my-idea", "proposal.md")
+	if got := GetProposalFile(slug); got != want {
+		t.Errorf("GetProposalFile(%q) = %q, want %q", slug, got, want)
 	}
 }
