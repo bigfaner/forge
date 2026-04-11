@@ -1,4 +1,6 @@
-# {{FEATURE_NAME}}
+# {{FEATURE_NAME}} — PRD Spec
+
+> PRD Spec: defines WHAT the feature is and why it exists.
 
 ## 需求背景
 
