@@ -31,28 +31,33 @@ Do NOT write any code, scaffold any project, or take any implementation action u
 ## Process Flow
 
 ```
-Explore context → Assess scope → Ask questions → Propose approaches → Present PRD sections → Write PRD + User Stories → Commit
+Explore context → Check proposal → Assess scope → Ask questions → Propose approaches → Present PRD sections → Write PRD Spec + User Stories + UI Functions → Create Manifest → Commit
 ```
 
 ## Checklist
 
 1. **Explore project context** — check files, docs, recent commits
-2. **Assess scope** — determine if request needs decomposition
-3. **Ask clarifying questions** — one at a time via AskUserQuestion tool
-4. **Propose 2-3 approaches** — with trade-offs and your recommendation
-5. **Present PRD sections** — get approval after each section
-6. **Write PRD document** — save to `docs/features/<feature-slug>/prd.md`
-7. **Write User Stories** — save to `docs/features/<feature-slug>/user-stories.md`
-8. **Commit** — commit both documents
+2. **Check for existing proposal** — read `docs/proposals/<slug>/proposal.md` if it exists
+3. **Assess scope** — determine if request needs decomposition
+4. **Ask clarifying questions** — one at a time via AskUserQuestion tool
+5. **Propose 2-3 approaches** — with trade-offs and your recommendation
+6. **Present PRD sections** — get approval after each section
+7. **Write PRD Spec** — save to `docs/features/<feature-slug>/prd/prd-spec.md`
+8. **Write User Stories** — save to `docs/features/<feature-slug>/prd/prd-user-stories.md`
+9. **Write UI Functions** (if applicable) — save to `docs/features/<feature-slug>/prd/prd-ui-functions.md`
+10. **Create Manifest** — save to `docs/features/<feature-slug>/manifest.md`
+11. **Commit** — commit all documents
 
 ## Output Documents
 
-PRD 完成后输出两个独立文件：
+PRD 完成后输出以下文件：
 
 | 文件 | 模板 | 说明 |
 |------|------|------|
-| `prd.md` | `templates/prd.md` | 产品需求文档，包含背景、目标、Scope、流程、功能描述等 |
-| `user-stories.md` | `templates/user-stories.md` | 用户故事，从 PRD 背景中识别的用户角色推导而出 |
+| `prd/prd-spec.md` | `templates/prd-spec.md` | 产品需求文档，包含背景、目标、Scope、流程、功能描述等 |
+| `prd/prd-user-stories.md` | `templates/prd-user-stories.md` | 用户故事，从 PRD 背景中识别的用户角色推导而出 |
+| `prd/prd-ui-functions.md` | `templates/prd-ui-functions.md` | UI 功能要点（需求层，仅适用于有 UI 表面的功能） |
+| `manifest.md` | `templates/manifest.md` | Feature 索引和可追溯性映射 |
 
 ## Step 1: Explore Project Context
 
@@ -107,23 +112,28 @@ Present incrementally, getting approval after each section:
 | 其他说明 | 性能 / 数据 / 监控 / 安全 | 非功能性需求 |
 | User Stories | As a / I want / So that + AC | 输出到独立文件 |
 
-## Step 6: Write PRD Document
+## Step 6: Write PRD Spec
 
-使用 `templates/prd.md` 模板填写。
+使用 `templates/prd-spec.md` 模板填写。
 
 **目录结构：**
 
 ```
 docs/features/<feature-slug>/
-├── prd.md              # PRD 文档
-├── user-stories.md     # 用户故事（独立文件）
-├── tasks/              # Task definitions (created by /breakdown-tasks)
-└── records/            # Execution records (created by /record-task)
+├── manifest.md                # Feature index & traceability
+├── prd/
+│   ├── prd-spec.md            # PRD Spec
+│   ├── prd-user-stories.md    # 用户故事
+│   └── prd-ui-functions.md    # UI 功能要点（可选）
+├── design/                    # (created by /design-tech)
+├── ui/                        # (created by /ui-design)
+└── tasks/                     # (created by /breakdown-tasks)
+    └── records/
 ```
 
 ## Step 7: Write User Stories
 
-从 PRD 背景中识别的用户角色推导用户故事，输出到 `user-stories.md`。
+从 PRD 背景中识别的用户角色推导用户故事，输出到 `prd/prd-user-stories.md`。
 
 ```
 As a [user role from Background]
@@ -133,7 +143,24 @@ So that [concrete benefit/goal]
 
 **Acceptance Criteria** (Given/When/Then) 必须跟随每个故事。
 
-See `examples/user-stories.md` for a concrete example.
+## Step 8: Write UI Functions (if applicable)
+
+For features with UI surfaces, create `prd/prd-ui-functions.md` using `templates/prd-ui-functions.md`.
+Skip this step for backend/API/CLI features with no UI surface.
+
+## Step 9: Create Manifest
+
+Create `manifest.md` at the feature root using `templates/manifest.md`:
+- Fill in PRD entries and summaries
+- Set status to `prd`
+- Include UI Functions row only if `prd/prd-ui-functions.md` was created
+
+## Step 10: Commit
+
+```bash
+git add docs/features/<feature-slug>/
+git commit -m "docs: add PRD for <feature-slug>"
+```
 
 ## Integration
 
