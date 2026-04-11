@@ -18,8 +18,8 @@ type Task struct {
 // TaskIndex represents the index.json structure for a feature.
 type TaskIndex struct {
 	Feature      string          `json:"feature"`
-	PRD          string          `json:"prd,omitempty"`
-	Design       string          `json:"design,omitempty"`
+	PRD          string          `json:"prd,omitempty"`     // e.g. "prd/prd-spec.md"
+	Design       string          `json:"design,omitempty"`  // e.g. "design/tech-design.md"
 	Created      string          `json:"created,omitempty"`
 	Status       string          `json:"status,omitempty"`
 	Tasks        map[string]Task `json:"tasks"`

@@ -1,7 +1,7 @@
 {
   "feature": "<feature-slug>",
-  "prd": "prd.md",
-  "design": "design.md",
+  "prd": "prd/prd-spec.md",
+  "design": "design/tech-design.md",
   "created": "YYYY-MM-DD",
   "status": "planning",
   "tasks": {
