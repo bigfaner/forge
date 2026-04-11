@@ -12,7 +12,7 @@ description: Use after PRD is finalized to create technical design with architec
 **核心原则**：在设计阶段解决技术不确定性，避免实现时的返工。
 
 <HARD-GATE>
-Do NOT write any implementation code until design.md is approved. The output of this skill is a design document, not code.
+Do NOT write any implementation code until tech-design.md is approved. The output of this skill is a design document, not code.
 </HARD-GATE>
 
 ## Position in Workflow
@@ -20,14 +20,16 @@ Do NOT write any implementation code until design.md is approved. The output of 
 ```
 /write-prd → /design-tech → /eval-design → /breakdown-tasks
      ↓              ↓              ↓               ↓
-   prd.md      design.md    design-eval.md     tasks/*.md
+  prd/*.{3}    design/*.{2}  eval report     tasks/*.md
+  manifest.md  manifest.md                  manifest.md
 ```
 
 ## When to Use
 
 **Trigger conditions:**
 
-- PRD document exists at `docs/features/<slug>/prd.md`
+- Manifest exists at `docs/features/<slug>/manifest.md` with status `prd`
+- PRD Spec exists at `prd/prd-spec.md`
 - PRD is approved and ready for technical design
 
 **Skip when:**
@@ -41,13 +43,13 @@ Do NOT write any implementation code until design.md is approved. The output of 
 1. Read PRD → 2. Explore context → 3. Identify decisions → 4. Ask questions → 5. Draft design → 6. Review → 7. Finalize
 ```
 
-## Step 1: Read PRD
+## Step 1: Read Manifest → PRD
 
-Read `docs/features/<slug>/prd.md`:
-
-- Understand requirements
-- Note non-functional requirements
-- Identify acceptance criteria
+1. Read `manifest.md` to locate documents
+2. Read `prd/prd-spec.md`:
+   - Understand requirements
+   - Note non-functional requirements
+   - Identify acceptance criteria
 
 ## Step 2: Explore Context
 
@@ -92,14 +94,24 @@ Present incrementally, section by section:
 
 For each section, wait for user approval.
 
-## Step 7: Write design.md
+## Step 7: Write Design Documents
 
-Save to `docs/features/<slug>/design.md`
+Save to:
+- `docs/features/<slug>/design/tech-design.md` — using `templates/tech-design.md`
+- `docs/features/<slug>/design/api-handbook.md` — using `templates/api-handbook.md` (if feature has API surface)
+
+## Step 8: Update Manifest
+
+Update `manifest.md`:
+- Add Tech Design and API Handbook rows to Documents table
+- Add traceability links from PRD sections to design sections
+- Advance status to `design` if `/ui-design` already completed or if UI is not applicable
 
 ## Integration
 
 Works well with skills:
 
-- `/write-prd` - Creates PRD input
-- `/eval-design` - Evaluate design.md quality before handing off to breakdown-tasks
-- `/breakdown-tasks` - Uses design.md to create tasks
+- `/write-prd` - Creates PRD input and manifest
+- `/ui-design` - Parallel skill for UI features
+- `/eval-design` - Evaluate tech-design.md quality before handing off to breakdown-tasks
+- `/breakdown-tasks` - Uses tech-design.md to create tasks
