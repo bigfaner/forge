@@ -161,5 +161,9 @@ evaluator: Claude (automated)
 
 ## 结论
 
-- **可以进入 `/breakdown-tasks`**: 是 / 否（需先修复 P0 问题）
+- **可以进入 `/design-tech`**: 是 / 否（需先修复 P0 问题）
+- **下一步建议**:
+  - 执行 `/design-tech` 产出技术设计文档（架构、接口、数据模型）
+  - 若存在 `prd-ui-functions.md`，同时执行 `/ui-design` 产出 UI 设计规格
+  - 设计文档定稿后，再执行 `/breakdown-tasks` 将设计拆解为可执行任务
 - **建议**: <一句话总结>

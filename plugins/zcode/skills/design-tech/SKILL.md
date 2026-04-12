@@ -15,14 +15,17 @@ description: Use after PRD is finalized to create technical design with architec
 Do NOT write any implementation code until tech-design.md is approved. The output of this skill is a design document, not code.
 </HARD-GATE>
 
-## Position in Workflow
+## Prerequisites
 
+检查上一阶段产物，缺失则中止并提示用户：
+
+```bash
+ls docs/features/<slug>/prd/prd-spec.md
 ```
-/write-prd → /design-tech → /eval-design → /breakdown-tasks
-     ↓              ↓              ↓               ↓
-  prd/*.{3}    design/*.{2}  eval report     tasks/*.md
-  manifest.md  manifest.md                  manifest.md
-```
+
+| 产物 | 缺失时提示 |
+|------|-----------|
+| `prd/prd-spec.md` | 先执行 `/write-prd`，再执行 `/eval-prd` |
 
 ## When to Use
 

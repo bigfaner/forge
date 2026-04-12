@@ -11,6 +11,10 @@ description: Use when a user has a vague idea or feature request and needs to ex
 
 **核心原则**：在投入 PRD 之前，先确认问题值得解决、方案值得投入。
 
+## Prerequisites
+
+无前置产物。这是流程入口。
+
 <HARD-GATE>
 Do NOT write any code or take implementation action. This skill produces a proposal document only.
 </HARD-GATE>

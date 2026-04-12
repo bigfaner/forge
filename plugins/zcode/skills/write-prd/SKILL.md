@@ -11,6 +11,14 @@ description: Use when user provides requirements or feature requests that need t
 
 **核心原则**：在编码前先澄清 "做什么" 和 "为什么做"，避免方向性错误。
 
+## Prerequisites
+
+无强制前置产物。若有 brainstorm 提案，作为可选输入：
+
+```bash
+ls docs/proposals/<slug>/proposal.md 2>/dev/null  # 可选，不阻塞
+```
+
 <HARD-GATE>
 Do NOT write any code, scaffold any project, or take any implementation action until the PRD is finalized and approved. Present the PRD and get user approval first.
 </HARD-GATE>
@@ -186,6 +194,7 @@ git commit -m "docs: add PRD for <feature-slug>"
 
 Works well with skills:
 
-- `/eval-prd` - Evaluate PRD quality before handing off to breakdown-tasks
-- `/breakdown-tasks` - After PRD passes evaluation, break into tasks
+- `/eval-prd` - Evaluate PRD quality before proceeding to design phase
+- `/design-tech` - After PRD passes evaluation, produce technical design document
+- `/ui-design` - After PRD passes evaluation, produce UI design spec (if prd-ui-functions.md exists)
 - `docs/DECISIONS.md` - Record key decisions during PRD creation

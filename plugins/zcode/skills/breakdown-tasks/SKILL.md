@@ -11,14 +11,17 @@ description: Use when design.md is finalized to break down into executable tasks
 
 **核心原则**：任务粒度适中（1-4 小时），依赖关系明确，验收标准可测试。
 
-## Position in Workflow
+## Prerequisites
 
+检查上一阶段产物，缺失则中止并提示用户：
+
+```bash
+ls docs/features/<slug>/design/tech-design.md
 ```
-/write-prd → /eval-prd → /design-tech → /eval-design → /breakdown-tasks
-     ↓             ↓            ↓              ↓               ↓
-  prd/*.{3}   eval report  design/*.{2}  eval report    tasks/*.md
-  manifest.md              manifest.md                  manifest.md
-```
+
+| 产物 | 缺失时提示 |
+|------|-----------|
+| `design/tech-design.md` | 先执行 `/design-tech`，再执行 `/eval-design` |
 
 ## Directory Structure
 

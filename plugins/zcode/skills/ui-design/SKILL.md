@@ -15,17 +15,17 @@ description: Use after PRD ui-functions are defined to create UI design specific
 Do NOT write any implementation code. This skill produces a design specification document only.
 </HARD-GATE>
 
-## Position in Workflow
+## Prerequisites
 
-```
-/write-prd → /design-tech ─→ /breakdown-tasks
-     ↓            ↓
-     ↓       /ui-design ──→ /breakdown-tasks
-     ↓
-prd/prd-ui-functions.md → ui/ui-design.md
+检查上一阶段产物，缺失则中止并提示用户：
+
+```bash
+ls docs/features/<slug>/prd/prd-ui-functions.md
 ```
 
-Parallel to `/design-tech`. Both must complete before `/breakdown-tasks`.
+| 产物 | 缺失时提示 |
+|------|-----------|
+| `prd/prd-ui-functions.md` | 先执行 `/write-prd` 并补充 UI 功能要点 |
 
 ## When to Use
 

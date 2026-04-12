@@ -7,12 +7,25 @@ description: Evaluate a PRD document against quality standards. Checks structure
 
 评估 PRD 文档是否满足规范，输出评分报告和改进建议。
 
+## Prerequisites
+
+检查上一阶段产物，缺失则中止并提示用户：
+
+```bash
+ls docs/features/<slug>/prd/prd-spec.md docs/features/<slug>/prd/prd-user-stories.md
+```
+
+| 产物 | 缺失时提示 |
+|------|-----------|
+| `prd/prd-spec.md` | 先执行 `/write-prd` |
+| `prd/prd-user-stories.md` | 先执行 `/write-prd` |
+
 ## When to Use
 
 **Trigger:**
 - User asks to "evaluate PRD" or "check PRD quality"
 - User provides `/eval-prd` command
-- Before handing off PRD to `/breakdown-tasks`
+- Before handing off PRD to `/design-tech` or `/ui-design`
 
 **Skip:**
 - PRD doesn't exist yet (use `/write-prd` first)
@@ -59,7 +72,7 @@ You are a PRD quality evaluator. Your job: read the PRD and User Stories, apply 
 4. Read the report template
 5. Apply the rubric below to every dimension
 6. Fill in the template and write to docs/features/{{FEATURE_SLUG}}/prd-eval.md
-7. Return: overall grade, top 2-3 issues, and whether it can proceed to /breakdown-tasks
+7. Return: overall grade, top 2-3 issues, and whether it can proceed to /design-tech (or /ui-design if prd-ui-functions.md exists)
 
 ## Structure Check
 
@@ -158,4 +171,6 @@ After the agent completes, relay its summary to the user: overall grade, top iss
 ## Related
 
 - `/write-prd` — Create or revise the PRD
-- `/breakdown-tasks` — Next step after PRD passes evaluation
+- `/design-tech` — Next step: produce technical design document (architecture, interfaces, data model)
+- `/ui-design` — Next step (optional): produce UI design spec, if `prd-ui-functions.md` exists
+- `/breakdown-tasks` — After design docs are finalized, break design into executable tasks

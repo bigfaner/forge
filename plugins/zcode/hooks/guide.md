@@ -32,6 +32,20 @@ project-root/
     └── lessons/                    # 经验教训
 ```
 
+## Skill Workflow
+
+```
+/brainstorm → /write-prd → /eval-prd → /design-tech ─→ /eval-design → /breakdown-tasks
+     ↓             ↓            ↓            ↓              ↓               ↓
+ proposal.md   prd/*.{3}  eval report  design/*.{2}   eval report     tasks/*.md
+               manifest.md             manifest.md                   manifest.md
+                            ↘ /ui-design ─→ /eval-design ↗
+                                 ↓
+                            ui/ui-design.md
+```
+
+每个 skill 执行前会 `ls` 检查上一阶段产物是否存在；缺失则中止并提示用户先完成上一步。
+
 ### Manifest
 
 `manifest.md` 是 Feature 的单一入口，AI agent 读取此文件即可了解完整上下文：
