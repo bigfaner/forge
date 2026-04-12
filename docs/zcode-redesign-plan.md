@@ -4,7 +4,7 @@
 
 ## Context
 
-根据 `docs/proposal/new-workflow/proposal.md`，将 zcode 插件从扁平文件结构升级为嵌套目录结构，新增 brainstorm 和 ui-design 两个 skill，重构现有 skill 的输入输出路径。这是一个 breaking change（v1.0.5 → v2.0.0）。
+根据 `docs/proposals/new-workflow/proposal.md`，将 zcode 插件从扁平文件结构升级为嵌套目录结构，新增 brainstorm 和 ui-design 两个 skill，重构现有 skill 的输入输出路径。这是一个 breaking change（v1.0.5 → v2.0.0）。
 
 **目标目录结构：**
 ```
@@ -69,7 +69,7 @@ proposal.md  prd/*.{3}   prd-eval.md  design/*.{2+}  design-eval.md   tasks/*
 3. **`task-cli/pkg/feature/feature.go`**
    - `EnsureFeatureDir`: 增加 `prd/`、`design/`、`ui/`、`tasks/` 目录创建
 
-4. **测试文件更新**（路径从 `"prd.md"` → `"prd/overview.md"` 等）：
+4. **测试文件更新**（路径从 `"prd.md"` → `"prd/prd-spec.md"` 等）：
    - `task-cli/pkg/feature/paths_test.go`
    - `task-cli/pkg/feature/feature_test.go`
    - `task-cli/internal/cmd/check_test.go`
@@ -128,7 +128,7 @@ proposal.md  prd/*.{3}   prd-eval.md  design/*.{2+}  design-eval.md   tasks/*
    - HARD-GATE：不写代码，只产出提案
    - 流程：探索上下文 → 讨论愿景 → 识别约束 → 提出范围 → 写提案 → 提交
    - 输入：用户口头/文字描述
-   - 输出：`docs/proposal/<slug>/proposal.md`
+   - 输出：`docs/proposals/<slug>/proposal.md`
    - 衔接：`/write-prd` 可选读取 proposal.md 作为输入
 
 2. **`plugins/zcode/skills/brainstorm/examples/`** — 示例文件
@@ -247,5 +247,5 @@ proposal.md  prd/*.{3}   prd-eval.md  design/*.{2+}  design-eval.md   tasks/*
 | 风险 | 缓解 |
 |------|------|
 | 旧 flat-file feature 不兼容 | v2.0.0 breaking change，guide.md 中提供迁移说明 |
-| breakdown-tasks 上下文消耗增加（读 5-6 个文档） | 明确优先级：prd/overview.md 定义 WHAT，design/overview.md 定义 HOW，其余为补充 |
+| breakdown-tasks 上下文消耗增加（读 5-6 个文档） | 明确优先级：prd/prd-spec.md 定义 WHAT，design/tech-design.md 定义 HOW，其余为补充 |
 | 外部设计文件（.pen 等）的二进制格式 | skill 只负责引用和存放路径管理，不解析二进制内容 |

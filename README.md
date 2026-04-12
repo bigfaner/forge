@@ -31,7 +31,8 @@
 
 | ZCode 提供 | 解决的问题 |
 |-----------|-----------|
-| **PRD → 设计 → 任务** 流程 | 防止方向漂移 |
+| **brainstorm → PRD → 设计 → 任务** 流程 | 防止方向漂移 |
+| **manifest.md** 可追溯性映射 | PRD → 设计 → 任务全链路追溯 |
 | **task-cli** 任务声明与追踪 | 上下文不丢失 |
 | **强制 record-task** | 知识沉淀，可回溯 |
 | **TDD workflow** | 质量保证（覆盖率 80%+） |
@@ -51,17 +52,23 @@
 ## 核心概念
 
 ```
-/write-prd → /design-tech → /breakdown-tasks → /run-tasks
-     ↓              ↓              ↓               ↓
-   prd.md      design.md      index.json       自动执行
+/brainstorm → /write-prd → /design-tech ──→ /breakdown-tasks → /run-tasks
+     ↓             ↓              ↓    ↘         ↓                ↓
+ proposal.md    prd/*.{3}    design/*.{2}  ui/  index.json     自动执行
+               manifest.md  manifest.md       manifest.md
+                                        /ui-design ↗
 ```
 
 | 阶段 | 命令 | 产出物 | 说明 |
 |------|------|--------|------|
-| 需求 | `/write-prd` | `prd.md` | 协作式澄清需求，防止 XY 问题 |
-| 设计 | `/design-tech` | `design.md` | 技术决策，避免实现时返工 |
+| 探索 | `/brainstorm` | `proposal.md` | 从模糊想法到结构化提案 |
+| 需求 | `/write-prd` | `prd/*.{3}` + `manifest.md` | 协作式澄清需求，防止 XY 问题 |
+| 设计 | `/design-tech` | `design/*.{2}` | 技术决策，避免实现时返工 |
+| UI | `/ui-design` | `ui/ui-design.md` | UI 设计规格（可选，与设计并行） |
 | 拆分 | `/breakdown-tasks` | `index.json` | 任务粒度 1-4 小时 |
 | 执行 | `/run-tasks` | 代码 + 记录 | 自动 TDD 循环 |
+
+> **manifest.md** 是 Feature 的单一入口，自动维护 PRD → Design → Tasks 的可追溯性映射。每个 skill 完成后自动更新。
 
 ---
 
@@ -122,14 +129,15 @@ task --version
 ### 5 分钟体验
 
 ```bash
-# 1. 创建 feature 目录
-mkdir -p docs/features/demo/{tasks,records}
+# 1. 探索想法（可选，适合模糊需求）
+/brainstorm
 
-# 2. 开始写 PRD（Claude 会引导你）
+# 2. 写 PRD（Claude 会引导你）
 /write-prd
 
-# 3. 技术设计
+# 3. 技术设计 + UI 设计（可并行）
 /design-tech
+/ui-design          # 仅适用于有 UI 表面的功能
 
 # 4. 拆分任务
 /breakdown-tasks
@@ -146,22 +154,46 @@ mkdir -p docs/features/demo/{tasks,records}
 
 ```
 project-root/
-├── docs/
-│   ├── features/<slug>/           # Feature 工作区
-│   │   ├── prd.md                 # 需求文档
-│   │   ├── design.md              # 设计文档
-│   │   └── tasks/
-│   │       ├── index.json         # 任务定义（核心）
-│   │       ├── process/           # 运行时状态（不提交）
-│   │       │   ├── state.json     # 当前任务状态
-│   │       │   └── record.json    # 进行中的记录
-│   │       ├── 1.1-<title>.md     # 任务详情
-│   │       └── records/               # 执行记录
-│   │           └── 1.1-<title>.md
-│   └── lessons/                   # 经验教训
-├── task-cli/                      # CLI 工具源码
-└── plugins/zcode/                 # 插件定义
+└── docs/
+    ├── proposals/<slug>/           # /brainstorm 产出
+    │   └── proposal.md
+    ├── features/<slug>/            # Feature 工作区
+    │   ├── manifest.md             # Feature 索引 & 可追溯性映射（自动维护）
+    │   ├── prd/
+    │   │   ├── prd-spec.md         # PRD Spec（需求文档）
+    │   │   ├── prd-user-stories.md # 用户故事
+    │   │   └── prd-ui-functions.md # UI 功能要点（可选）
+    │   ├── design/
+    │   │   ├── tech-design.md      # 技术设计
+    │   │   └── api-handbook.md     # API 文档
+    │   ├── ui/
+    │   │   └── ui-design.md        # UI 设计规格（可选）
+    │   └── tasks/
+    │       ├── index.json          # 任务定义（核心）
+    │       ├── process/            # 运行时状态（不提交）
+    │       │   ├── state.json      # 当前任务状态
+    │       │   └── record.json     # 进行中的记录
+    │       ├── 1.1-<title>.md     # 任务详情
+    │       └── records/            # 执行记录
+    │           └── 1.1-<title>.md
+    └── lessons/                    # 经验教训
 ```
+
+### Manifest
+
+`manifest.md` 是 Feature 的单一入口，AI agent 读取此文件即可了解完整上下文：
+
+- **Documents** 表：列出所有文档路径和自动生成的摘要
+- **Traceability** 表：PRD → Design → Tasks 的追溯映射
+- **Status**：`prd → design → tasks → in-progress → done`
+
+| 当前状态 | 推进条件 | 设置者 |
+|---------|---------|--------|
+| (none) | `/write-prd` 完成 | `/write-prd` |
+| `prd` | `/design-tech` + `/ui-design`（如适用）完成 | 后完成者 |
+| `design` | `/breakdown-tasks` 完成 | `/breakdown-tasks` |
+| `tasks` | 首次 `/claim-task` | `/claim-task` |
+| `in-progress` | 所有任务完成 | `/set-task-status` |
 
 ### task-cli 命令
 
@@ -221,9 +253,18 @@ pending → in_progress → completed
 
 | Skill | 用途 | 何时使用 |
 |-------|------|----------|
-| `/write-prd` | 产出 PRD | 用户描述需求但细节不明 |
+| `/brainstorm` | 产出提案 `proposals/<slug>/proposal.md` | 模糊想法，需要探索后再正式化 |
+| `/write-prd` | 产出 PRD + manifest | 用户描述需求但细节不明 |
 | `/design-tech` | 产出设计文档 | PRD 已完成，需要技术方案 |
+| `/ui-design` | 产出 UI 设计规格 | PRD 定义了 UI 功能，需要 UI 设计 |
 | `/breakdown-tasks` | 产出任务列表 | 设计完成，需要拆分执行 |
+
+### 评估工具
+
+| Skill | 用途 | 何时使用 |
+|-------|------|----------|
+| `/eval-prd` | PRD 质量评估 | PRD 完成后，需要检查完整性 |
+| `/eval-design` | 设计质量评估 | 设计完成后，需要检查架构合理性 |
 
 ### 执行阶段
 
@@ -277,7 +318,10 @@ Step 5: Git commit
 ```json
 {
   "feature": "auth-login",
-  "title": "用户登录功能",
+  "prd": "prd/prd-spec.md",
+  "design": "design/tech-design.md",
+  "created": "2026-04-12",
+  "status": "planning",
   "tasks": {
     "1.1": {
       "id": "1.1",
@@ -306,7 +350,7 @@ Step 5: Git commit
 
 ```json
 {
-  "taskId":"3.3.1",
+  "taskId": "3.3.1",
   "status": "completed",
   "summary": "实现 AuthService 接口定义",
   "filesCreated": ["internal/auth/service.go"],
@@ -379,9 +423,16 @@ zcode/                              # Marketplace 根目录
 │       ├── .claude-plugin/
 │       │   └── plugin.json         # Plugin 清单
 │       ├── skills/                 # Skills（命令）
+│       │   ├── brainstorm/         # 探索想法
+│       │   ├── write-prd/          # 写 PRD
+│       │   ├── design-tech/        # 技术设计
+│       │   ├── ui-design/          # UI 设计
+│       │   ├── breakdown-tasks/    # 拆分任务
+│       │   └── ...
 │       ├── agents/                 # Subagents
 │       └── hooks/                  # Hooks 配置
-└── task-cli/                       # CLI 工具源码
+├── task-cli/                       # CLI 工具源码
+└── web/                            # Web 看板前端
 ```
 
 ### marketplace.json
@@ -489,6 +540,7 @@ docs(readme): add troubleshooting section
 | [task-cli/docs/WORKFLOW.md](task-cli/docs/WORKFLOW.md) | 内部流程图解 |
 | [docs/official-references/plugin.md](docs/official-references/plugin.md) | Claude Code 插件系统完整技术参考 |
 | [docs/official-references/plugin-marketplace.md](docs/official-references/plugin-marketplace.md) | Plugin marketplace 创建与分发指南 |
+| [docs/official-references/hooks.md](docs/official-references/hooks.md) | Claude Code Hooks 完整技术参考 |
 
 ---
 
