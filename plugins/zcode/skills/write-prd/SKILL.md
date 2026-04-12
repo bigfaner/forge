@@ -155,7 +155,15 @@ Create `manifest.md` at the feature root using `templates/manifest.md`:
 - Set status to `prd`
 - Include UI Functions row only if `prd/prd-ui-functions.md` was created
 
-## Step 10: Commit
+## Step 10: Review & Commit
+
+<HARD-RULE>
+Do NOT commit documents automatically. Present all generated documents to the user for review and wait for explicit approval before committing.
+</HARD-RULE>
+
+1. Present the full PRD spec, user stories, and UI functions (if any) to the user
+2. Wait for the user to review and approve (or request changes)
+3. Only commit after explicit user approval:
 
 ```bash
 git add docs/features/<feature-slug>/
