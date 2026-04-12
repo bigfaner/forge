@@ -15,6 +15,15 @@ description: Use when a user has a vague idea or feature request and needs to ex
 Do NOT write any code or take implementation action. This skill produces a proposal document only.
 </HARD-GATE>
 
+<HARD-RULE>
+**禁止技术选型，允许技术约束**：
+
+- **允许**：描述非功能性约束——性能要求（响应时间、并发量）、平台要求（浏览器、移动端）、兼容性、安全合规等。这些是业务级需求。
+- **禁止**：提及具体技术栈——框架名称、编程语言、数据库、库、中间件、架构模式（如微服务、事件驱动）等。这些是技术选型，留给 `/design-tech` 阶段。
+
+**判断标准**：如果描述的是"需要达到什么效果"→ 允许；如果描述的是"用什么工具实现"→ 禁止。
+</HARD-RULE>
+
 ## When to Use
 
 **Trigger conditions:**
@@ -59,7 +68,7 @@ Run these analyses in parallel:
 | Action                   | Tool                                  | Purpose                                          |
 | ------------------------ | ------------------------------------- | ------------------------------------------------ |
 | Find related features    | `Grep` keywords across codebase       | Is this already implemented?                     |
-| Find related docs        | `Glob` `docs/**/*.md`                 | Are there architecture constraints or decisions? |
+| Find related docs        | `Glob` `docs/**/*.md`                 | Are there existing decisions or proposals?       |
 | Check existing proposals | `Glob` `docs/proposals/**/*.md`       | Has someone already proposed this?               |
 | Check existing PRDs      | `Glob` `docs/features/**/prd-spec.md` | Is there a related PRD?                          |
 | Review recent commits    | `Bash` `git log --oneline -20`        | Any related recent work?                         |
@@ -110,8 +119,8 @@ Use the three-phase flow as a guide for question ordering, but let findings driv
 | Phase         | Goal                      | What to ask                                       |
 | ------------- | ------------------------- | ------------------------------------------------- |
 | **Problem**   | Understand what & why     | Questions derived from gaps and overlaps          |
-| **Solution**  | Validate direction        | Questions derived from architecture constraints   |
-| **Challenge** | Pressure-test assumptions | Questions derived from alternatives found in code |
+| **Solution**  | Validate business direction | Questions derived from user needs and workflows  |
+| **Challenge** | Pressure-test assumptions | Questions derived from alternatives and edge cases |
 
 Move through phases naturally. If a Phase 2 question reveals the problem isn't well understood, go back to Phase 1.
 
@@ -121,23 +130,25 @@ If analysis yields no useful findings (e.g., greenfield project, empty repo), fa
 
 ## Step 3: Propose Approaches
 
-After understanding the problem and solution direction, propose 2-3 approaches:
+After understanding the problem and solution direction, propose 2-3 **business approaches** (not technical implementations):
 
 1. **Present options conversationally** with your recommendation
 2. **Lead with your recommended option** and explain why
-3. **Include trade-offs** for each approach
+3. **Include trade-offs** for each approach (business impact, user experience, scope)
 4. **Let user make the final decision**
+
+**禁止**：方案中不得涉及具体技术选型。方案应描述"做什么"（功能、流程、用户体验）而非"怎么做"（技术实现）。但可以提及非功能性约束（如"响应时间 < 200ms"、"需支持离线使用"）。
 
 ```
 Based on our discussion, I see 3 approaches:
 
-**Approach A (Recommended):** [Description]
-- Pros: ...
-- Cons: ...
+**Approach A (Recommended):** [Business-level description of what to build]
+- Business value: ...
+- Trade-offs: ...
 
-**Approach B:** [Description]
-- Pros: ...
-- Cons: ...
+**Approach B:** [Business-level description]
+- Business value: ...
+- Trade-offs: ...
 ```
 
 ## Step 4: Define Scope

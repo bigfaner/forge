@@ -15,6 +15,15 @@ description: Use when user provides requirements or feature requests that need t
 Do NOT write any code, scaffold any project, or take any implementation action until the PRD is finalized and approved. Present the PRD and get user approval first.
 </HARD-GATE>
 
+<HARD-RULE>
+**禁止技术选型，允许技术约束**：
+
+- **允许**：描述非功能性约束——性能要求（响应时间、并发量）、平台要求（浏览器、移动端）、兼容性、安全合规等。这些是业务级需求。
+- **禁止**：提及具体技术栈——框架名称、编程语言、数据库、库、中间件、架构模式（如微服务、事件驱动）等。这些是技术选型，留给 `/design-tech` 阶段。
+
+**判断标准**：如果描述的是"需要达到什么效果"→ 允许；如果描述的是"用什么工具实现"→ 禁止。
+</HARD-RULE>
+
 ## When to Use
 
 **Trigger conditions:**
@@ -63,10 +72,11 @@ PRD 完成后输出以下文件：
 
 Before asking questions, understand the current state:
 
-- Read `docs/ARCHITECTURE.md` for architecture constraints
-- Read `docs/DECISIONS.md` for existing technical decisions
+- Check `docs/proposals/<slug>/proposal.md` if a proposal exists — carry forward business context
 - Check `docs/features/<slug>/tasks/index.json` for related tasks
-- Review recent git commits
+- Review recent git commits for related work
+
+**禁止**：不得读取 `ARCHITECTURE.md`、`DECISIONS.md` 等技术文档来引导需求讨论。技术约束不属于 PRD 范畴。
 
 ## Step 2: Assess Scope
 
@@ -90,11 +100,13 @@ See `examples/ask-questions.md` for concrete examples.
 
 ## Step 4: Propose Approaches
 
-After understanding requirements, propose 2-3 implementation approaches:
+After understanding requirements, propose 2-3 **business approaches** (not technical implementations):
 
 1. **Present options conversationally** with your recommendation
 2. **Lead with your recommended option** and explain why
-3. **Include trade-offs** for each approach
+3. **Include trade-offs** for each approach (business impact, user experience, scope)
+
+**禁止**：方案中不得涉及具体技术选型。方案应描述不同的业务功能组合或用户流程，而非技术实现路径。但可以提及非功能性约束（如性能要求、平台要求、安全合规）。
 
 See `examples/propose-approaches.md` for structure and tips.
 

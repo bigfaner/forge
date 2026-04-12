@@ -48,8 +48,10 @@ Do NOT write any implementation code until tech-design.md is approved. The outpu
 1. Read `manifest.md` to locate documents
 2. Read `prd/prd-spec.md`:
    - Understand requirements
-   - Note non-functional requirements
+   - Note non-functional requirements — these are the **technical constraints** that drive your decisions
    - Identify acceptance criteria
+
+> **Note**: PRD 故意不含技术选型（brainstorm 和 write-prd 阶段禁止引入）。所有技术决策从本阶段开始。用 PRD 中的非功能性约束作为技术选型的输入条件。
 
 ## Step 2: Explore Context
 

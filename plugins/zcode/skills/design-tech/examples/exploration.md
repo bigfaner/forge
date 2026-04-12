@@ -1,31 +1,24 @@
 # Exploration Commands
 
-Commands for exploring project context during technical design.
+Explore project context during technical design using dedicated tools.
 
 ## Architecture & Decisions
 
-```bash
-# Check architecture constraints
-cat docs/ARCHITECTURE.md
-
-# Check existing decisions
-cat docs/DECISIONS.md
-
-# Check dependencies
-cat package.json  # or go.mod, Cargo.toml, etc.
+```text
+Read docs/ARCHITECTURE.md     → layer constraints
+Read docs/DECISIONS.md        → existing decisions
+Read package.json / go.mod    → current dependencies
 ```
 
 ## Code Patterns
 
 ### Pattern: Find similar implementations
-```bash
-find <path> -name "*.<ext>" | xargs grep -l "<pattern>"
-```
+
+Use `Grep` tool with pattern and path to find related code.
 
 ### Example: Find authentication-related code in TypeScript project
-```bash
-find src -name "*.ts" | xargs grep -l "authenticate\|auth"
-```
+
+Use `Grep` tool with pattern `authenticate|auth` and glob `*.ts` in `src/`.
 
 ## Recent Changes
 

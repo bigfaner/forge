@@ -72,16 +72,16 @@ When analysis finds concrete facts, derive questions that reference them. Below 
 </function_calls>
 ```
 
-## Example 3: Architecture Constraint
+## Example 3: User Workflow Overlap
 
-**User's idea:** "I want skills to communicate with each other via a shared state store."
+**User's idea:** "I want to add a batch import feature for task records."
 
 **Analysis results:**
-- `Read docs/ARCHITECTURE.md` → skills are designed to be stateless and composable
-- `Grep "state"` across skills → skills pass data through manifest files, not runtime state
-- `Grep "shared"` → no shared state mechanism exists
+- `Grep "import"` → found existing single-record creation flow in task CLI
+- `Grep "batch"` → no batch operation exists
+- `Glob docs/features/**/prd-spec.md` → found a PRD mentioning bulk operations as out-of-scope
 
-**Finding:** Architecture explicitly favors stateless skills communicating through files (manifests), not runtime state.
+**Finding:** Single-record creation exists; a previous PRD explicitly excluded batch operations, suggesting this was considered but deferred.
 
 **Derived question:**
 
@@ -90,14 +90,14 @@ When analysis finds concrete facts, derive questions that reference them. Below 
 <invoke name="AskUserQuestion">
 <parameter name="questions">[
   {
-    "question": "The current architecture keeps skills stateless — they communicate through manifest files, not runtime state. Does your idea intentionally challenge that constraint, or could it work within the file-based approach?",
-    "header": "Architecture",
+    "question": "I found that a previous PRD explicitly excluded batch operations (listed as out-of-scope). Is your idea addressing the same need that was deferred, or a different batch scenario?",
+    "header": "Deferred Need",
     "multiSelect": false,
     "options": [
-      {"label": "Needs runtime state", "description": "File-based communication is insufficient for this use case"},
-      {"label": "File-based works", "description": "Could extend the manifest pattern to achieve the same goal"},
-      {"label": "Hybrid approach", "description": "Some state via files, some via a lightweight runtime mechanism"},
-      {"label": "Need to think about it", "description": "Not sure yet, want to explore both options"}
+      {"label": "Same deferred need", "description": "The deferred batch import is now a priority"},
+      {"label": "Different scenario", "description": "Your batch import targets a different workflow or user role"},
+      {"label": "Broader than before", "description": "Covers the deferred case plus additional scenarios"},
+      {"label": "Unaware of it", "description": "Let me review that PRD first"}
     ]
   }
 ]
@@ -105,6 +105,8 @@ When analysis finds concrete facts, derive questions that reference them. Below 
 </invoke>
 </function_calls>
 ```
+
+**Note:** This question focuses on business context (why it was deferred, whether the need has changed) rather than technical details (file format, import mechanism).
 
 ## Example 4: Greenfield / No Findings
 
