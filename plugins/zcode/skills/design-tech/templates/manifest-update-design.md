@@ -13,6 +13,6 @@ Add entries linking PRD sections to design sections:
 |-------------|----------------|-------|
 | "{{PRD_SECTION}}" (prd-spec §N) | "{{DESIGN_SECTION}}" (tech-design §N) | <!-- task IDs added by /breakdown-tasks --> |
 
-## Status
+## Frontmatter
 
-Advance to "design" if /ui-design already completed or if UI is not applicable.
+Update `status` to `design` if /ui-design already completed or if UI is not applicable.

@@ -1,3 +1,7 @@
+---
+feature: "{{FEATURE_NAME}}"
+---
+
 # {{FEATURE_NAME}} — UI Functions
 
 > Requirements layer: defines WHAT the UI must do. Not HOW it looks (that's ui-design.md).

@@ -1,11 +1,11 @@
+---
+feature: "{{FEATURE_SLUG}}"
+status: prd
+---
+
 # Feature: {{FEATURE_SLUG}}
 
-## Status
-
-<!-- Auto-updated by skills. Do not edit manually. -->
-prd -> design -> tasks -> in-progress -> done
-
-Current: prd
+<!-- Status flow: prd → design → tasks → in-progress → done -->
 
 ## Documents
 

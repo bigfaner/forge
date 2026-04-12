@@ -1,9 +1,10 @@
-# Proposal: {{PROPOSAL_TITLE}}
+---
+created: YYYY-MM-DD
+author: "<!-- who proposed this -->"
+status: Draft
+---
 
-## Metadata
-- Created: YYYY-MM-DD
-- Author: <!-- who proposed this -->
-- Status: Draft | Reviewed | Approved | Rejected
+# Proposal: {{PROPOSAL_TITLE}}
 
 ## Problem
 

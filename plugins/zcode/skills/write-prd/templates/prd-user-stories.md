@@ -1,3 +1,7 @@
+---
+feature: "{{FEATURE_NAME}}"
+---
+
 # User Stories: {{FEATURE_NAME}}
 
 ## Story 1: <!-- 用户故事标题 -->

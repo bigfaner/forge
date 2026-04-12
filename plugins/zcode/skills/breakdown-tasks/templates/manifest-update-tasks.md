@@ -7,6 +7,6 @@ Fill Tasks column with task IDs linked to design sections:
 |-------------|----------------|-------|
 | "{{PRD_SECTION}}" (prd-spec §N) | "{{DESIGN_SECTION}}" (tech-design §N) | {{TASK_IDS}} |
 
-## Status
+## Frontmatter
 
-Advance to "tasks".
+Update `status` to `tasks`.

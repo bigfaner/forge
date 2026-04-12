@@ -1,9 +1,11 @@
-# PRD 评估报告
+---
+date: "{{DATE}}"
+prd_path: "{{PRD_PATH}}"
+user_stories_path: "{{USER_STORIES_PATH}}"
+evaluator: Claude (automated)
+---
 
-> 评估日期: {{DATE}}
-> PRD 路径: {{PRD_PATH}}
-> User Stories 路径: {{USER_STORIES_PATH}}
-> 评估人: Claude (automated)
+# PRD 评估报告
 
 ---
 

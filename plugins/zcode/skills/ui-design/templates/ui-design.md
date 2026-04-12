@@ -1,9 +1,10 @@
-# UI Design: {{FEATURE_NAME}}
+---
+created: YYYY-MM-DD
+source: prd/prd-ui-functions.md
+status: Draft
+---
 
-## Metadata
-- Created: YYYY-MM-DD
-- Source: prd/prd-ui-functions.md
-- Status: Draft | Review | Approved
+# UI Design: {{FEATURE_NAME}}
 
 ## Design System
 

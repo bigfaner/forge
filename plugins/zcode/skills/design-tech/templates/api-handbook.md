@@ -1,8 +1,9 @@
-# API Handbook: <Feature Name>
+---
+created: YYYY-MM-DD
+related: design/tech-design.md
+---
 
-## Metadata
-- Created: YYYY-MM-DD
-- Related: design/tech-design.md
+# API Handbook: <Feature Name>
 
 ## API Overview
 

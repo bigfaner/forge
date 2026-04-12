@@ -12,6 +12,6 @@ Add entries linking PRD UI functions to UI design sections:
 |-------------|----------------|-------|
 | "UI Functions > {{Function Name}}" | "UI Design > {{Component Name}}" | <!-- task IDs added by /breakdown-tasks --> |
 
-## Status
+## Frontmatter
 
-Advance to "design" if /design-tech already completed.
+Update `status` to `design` if /design-tech already completed.

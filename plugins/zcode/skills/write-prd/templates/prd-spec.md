@@ -1,3 +1,8 @@
+---
+feature: "{{FEATURE_NAME}}"
+status: Draft
+---
+
 # {{FEATURE_NAME}} — PRD Spec
 
 > PRD Spec: defines WHAT the feature is and why it exists.

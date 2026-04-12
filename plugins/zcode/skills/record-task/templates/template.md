@@ -1,10 +1,11 @@
-# Task Record: {{TASK_ID}} {{TASK_TITLE}}
+---
+status: "{{STATUS}}"
+started: "{{STARTED_TIME}}"
+completed: "{{COMPLETED_TIME}}"
+time_spent: "{{TIME_SPENT}}"
+---
 
-## Execution Summary
-- **Status**: {{STATUS}}
-- **Started**: {{STARTED_TIME}}
-- **Completed**: {{COMPLETED_TIME}}
-- **Time Spent**: {{TIME_SPENT}}
+# Task Record: {{TASK_ID}} {{TASK_TITLE}}
 
 ## Summary
 {{SUMMARY}}

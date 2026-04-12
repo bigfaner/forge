@@ -1,8 +1,10 @@
-# Harness 评估报告
+---
+date: YYYY-MM-DD
+evaluator: Claude (automated)
+language: "[Auto-detected]"
+---
 
-> 评估日期: YYYY-MM-DD
-> 评估人: Claude (automated)
-> 项目语言: [Auto-detected]
+# Harness 评估报告
 
 ---
 

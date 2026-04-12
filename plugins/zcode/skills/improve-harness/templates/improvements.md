@@ -1,8 +1,10 @@
-# Harness 改进记录
+---
+date: YYYY-MM-DD
+report: "harness-reports/YYYY-MM-DD.md"
+language: "[Auto-detected]"
+---
 
-> 日期: YYYY-MM-DD
-> 基于报告: [harness-reports/YYYY-MM-DD.md](../YYYY-MM-DD.md)
-> 项目语言: [Auto-detected]
+# Harness 改进记录
 
 ## 已完成
 
