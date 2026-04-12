@@ -1,0 +1,91 @@
+{
+  "feature": "raycast-ui",
+  "prd": "prd.md",
+  "design": "design.md",
+  "created": "2026-04-10",
+  "status": "in_progress",
+  "statusEnum": ["pending", "in_progress", "completed", "blocked", "skipped"],
+  "priorityEnum": ["P0", "P1", "P2"],
+  "tasks": {
+    "T001": {
+      "id": "T001",
+      "title": "研究 DESIGN.md Raycast 设计规范并输出实现方案",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [],
+      "status": "completed",
+      "file": "tasks/T001.md",
+      "record": "records/T001.md"
+    },
+    "T002": {
+      "id": "T002",
+      "title": "fork web/ 为 web-raycast/，隔离改动",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": ["T001"],
+      "status": "completed",
+      "file": "tasks/T002.md",
+      "record": "records/T002.md"
+    },
+    "T003": {
+      "id": "T003",
+      "title": "重写 CSS token：#07080a 背景、Inter 字体、multi-layer shadow",
+      "priority": "P0",
+      "estimatedTime": "3h",
+      "dependencies": ["T002"],
+      "status": "completed",
+      "file": "tasks/T003.md",
+      "record": "records/T003.md"
+    },
+    "T004": {
+      "id": "T004",
+      "title": "重写 AppLayout：Raycast 暗色侧栏 + 红色品牌 Logo",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": ["T003"],
+      "status": "completed",
+      "file": "tasks/T004.md",
+      "record": "records/T004.md"
+    },
+    "T005": {
+      "id": "T005",
+      "title": "重写所有页面组件为 Raycast 风格内联样式",
+      "priority": "P1",
+      "estimatedTime": "8h",
+      "dependencies": ["T004"],
+      "status": "in_progress",
+      "file": "tasks/T005.md",
+      "record": ""
+    },
+    "T006": {
+      "id": "T006",
+      "title": "配置 vite port 7301 独立部署",
+      "priority": "P2",
+      "estimatedTime": "0.5h",
+      "dependencies": ["T002"],
+      "status": "completed",
+      "file": "tasks/T006.md",
+      "record": "records/T006.md"
+    },
+    "T007": {
+      "id": "T007",
+      "title": "视觉 QA：对比 DESIGN.md checklist 逐项验证",
+      "priority": "P1",
+      "estimatedTime": "3h",
+      "dependencies": ["T005"],
+      "status": "pending",
+      "file": "tasks/T007.md",
+      "record": ""
+    },
+    "T008": {
+      "id": "T008",
+      "title": "响应式适配：移动端断点 600px / 768px",
+      "priority": "P2",
+      "estimatedTime": "4h",
+      "dependencies": ["T005"],
+      "status": "blocked",
+      "file": "tasks/T008.md",
+      "record": ""
+    }
+  }
+}

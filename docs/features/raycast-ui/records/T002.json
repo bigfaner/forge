@@ -1,0 +1,14 @@
+{
+  "taskId": "T002",
+  "status": "completed",
+  "summary": "cp -r web/ web-raycast/，修改 package.json name 为 zcode-dashboard-raycast，vite.config port 改为 7301。",
+  "filesCreated": [],
+  "filesModified": ["web-raycast/package.json", "web-raycast/vite.config.ts"],
+  "keyDecisions": ["直接 cp 而非 git subtree，更简单且改动可 diff 对比"],
+  "testsPassed": 0,
+  "testsFailed": 0,
+  "coverage": 0,
+  "notes": "node_modules/.bin/tsc symlink 在 cp 后需重新 npm install",
+  "completedAt": "2026-04-10T11:30:00Z",
+  "commitHash": "f6a7b8c"
+}

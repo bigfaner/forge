@@ -1,0 +1,14 @@
+{
+  "taskId": "T003",
+  "status": "completed",
+  "summary": "Dashboard 页面实现完成：4 个统计卡片 + Active Features 网格 + All Features 分组展示，数据通过 TanStack Query 每 30s 自动刷新。",
+  "filesCreated": ["web/src/pages/Dashboard.tsx", "web/src/components/FeatureCard.tsx"],
+  "filesModified": [],
+  "keyDecisions": ["FeatureCard 进度条用 completed/total 而非百分比计算", "StatCard 图标使用 lucide-react 语义颜色"],
+  "testsPassed": 3,
+  "testsFailed": 0,
+  "coverage": 78.5,
+  "notes": "进度百分比计算逻辑提取到 utils.progressPercent",
+  "completedAt": "2026-03-18T09:15:00Z",
+  "commitHash": "c3d4e5f"
+}
