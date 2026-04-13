@@ -267,31 +267,33 @@ func fillRecordTemplate(t *task.Task, rd *RecordData, startedTime string) string
 		notes = "无"
 	}
 
-	return fmt.Sprintf(`# Task Record: %s
+	return fmt.Sprintf(`---
+status: "%s"
+started: "%s"
+completed: "%s"
+time_spent: "%s"
+---
+
+# Task Record: %s %s
 
 ## Summary
 %s
 
-## Status
-- Status: %s
-- Started: %s
-- Completed: %s
-- Time Spent: %s
+## Changes
 
-## Files
-### Created: 
+### Files Created
 %s
 
-### Modified: 
+### Files Modified
 %s
 
-## Key Decisions
+### Key Decisions
 %s
 
-## Testing
-- Tests Passed: %d
-- Tests Failed: %d
-- Coverage: %.1f%%
+## Test Results
+- **Passed**: %d
+- **Failed**: %d
+- **Coverage**: %.1f%%
 
 ## Acceptance Criteria
 %s
@@ -299,9 +301,9 @@ func fillRecordTemplate(t *task.Task, rd *RecordData, startedTime string) string
 ## Notes
 %s
 `,
-		t.Title,
-		rd.Summary,
 		status, started, completed, timeSpent,
+		t.ID, t.Title,
+		rd.Summary,
 		formatList(rd.FilesCreated),
 		formatList(rd.FilesModified),
 		formatList(rd.KeyDecisions),

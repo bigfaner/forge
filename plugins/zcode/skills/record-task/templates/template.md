@@ -18,7 +18,7 @@ time_spent: "{{TIME_SPENT}}"
 ### Files Modified
 {{FILES_MODIFIED}}
 
-### Key Decisions
+## Key Decisions
 {{KEY_DECISIONS}}
 
 ## Test Results

@@ -338,13 +338,14 @@ func TestFillRecordTemplate(t *testing.T) {
 			},
 			startedTime: "2026-04-06 10:00",
 			checkContains: []string{
+				"1.1",
 				"Implement feature X",
 				"Implemented the feature",
 				"completed",
 				"2026-04-06 10:00",
 				"main.go",
-				"Tests Passed: 5",
-				"Coverage: 85.5%",
+				"**Passed**: 5",
+				"**Coverage**: 85.5%",
 			},
 		},
 		{
@@ -376,9 +377,9 @@ func TestFillRecordTemplate(t *testing.T) {
 				"b.go",
 				"c.go",
 				"Used pattern X",
-				"Tests Passed: 10",
-				"Tests Failed: 2",
-				"Coverage: 90.0%",
+				"**Passed**: 10",
+				"**Failed**: 2",
+				"**Coverage**: 90.0%",
 				"[x] AC1",
 				"[ ] AC2",
 				"Some notes",
@@ -396,8 +397,8 @@ func TestFillRecordTemplate(t *testing.T) {
 			},
 			startedTime: "2026-04-06 10:00",
 			checkContains: []string{
-				"Status: in_progress",
-				"Completed: N/A",
+				"status: \"in_progress\"",
+				"completed: \"N/A\"",
 			},
 		},
 		{
@@ -428,8 +429,8 @@ func TestFillRecordTemplate(t *testing.T) {
 			},
 			startedTime: "",
 			checkContains: []string{
-				"Started:",
-				"Completed:",
+				"started:",
+				"completed:",
 			},
 		},
 		{
@@ -444,7 +445,7 @@ func TestFillRecordTemplate(t *testing.T) {
 			},
 			startedTime: "2026-04-06 10:00",
 			checkContains: []string{
-				"Time Spent:",
+				"time_spent:",
 			},
 		},
 		{
@@ -459,7 +460,7 @@ func TestFillRecordTemplate(t *testing.T) {
 			},
 			startedTime: "2026-04-06 15:00", // Started after current time would be
 			checkNotContains: []string{
-				"Time Spent: ~",
+				"time_spent: ~",
 			},
 		},
 	}
