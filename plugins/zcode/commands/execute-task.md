@@ -63,11 +63,22 @@ Skill(skill="git-commit")
 - record-task is mandatory - No completion without it
 - All verifications must pass
 - Commit only after record
+- Execute EXACTLY ONE task per invocation - after Step 5, STOP immediately
+- Do NOT run "task claim" or read index.json after completing your task
 </EXTREMELY-IMPORTANT>
 
 <HARD-GATE>
 Task is NOT complete until record-task CLI command succeeds. Commit is blocked until record exists.
 </HARD-GATE>
+
+## STOP
+
+After Step 5, your task is complete. Do NOT:
+- Run `task claim`
+- Read the next task file
+- Continue with any additional work
+
+Output your final summary and STOP.
 
 ## Related Commands
 
