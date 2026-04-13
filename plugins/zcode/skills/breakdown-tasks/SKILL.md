@@ -64,13 +64,14 @@ docs/features/<feature-slug>/
 ```
 
 ## Step 1: Read Manifest → All Documents
-
+<IMPORTANT>
 1. Read `manifest.md` to locate all documents
 2. Read `prd/prd-spec.md` — understand WHAT
 3. Read `design/tech-design.md` — understand HOW
 4. Read `design/api-handbook.md` — understand interfaces (if exists)
 5. Read `ui/ui-design.md` — understand UI components (if exists)
 6. Read `prd/prd-user-stories.md` — understand user scenarios (if exists)
+</IMPORTANT>
 
 ## Step 2: Map Interfaces to Tasks
 
@@ -88,6 +89,8 @@ docs/features/<feature-slug>/
 ```
 
 ## Step 4: Create Task Files
+
+<HARD-RULE>Read `templates/task.md` before writing any task file.</HARD-RULE>
 
 **Naming convention:**
 
