@@ -88,6 +88,9 @@ func (v *validator) run() error {
 	if idx.Design == "" {
 		v.warnings = append(v.warnings, "Missing 'design' field")
 	}
+	if len(idx.StatusEnum) == 0 {
+		v.warnings = append(v.warnings, "Missing 'statusEnum' field — task record/status commands may fail")
+	}
 
 	v.validateTasks(idx.Tasks)
 	v.validateDependencies(idx.Tasks)

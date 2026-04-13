@@ -369,6 +369,31 @@ func TestValidator_Run(t *testing.T) {
 		}
 	})
 
+	t.Run("missing statusEnum warns", func(t *testing.T) {
+		dir := t.TempDir()
+		indexFile := filepath.Join(dir, "index.json")
+		data, _ := json.Marshal(map[string]interface{}{
+			"feature": "test-feature",
+			"tasks":   map[string]interface{}{},
+		})
+		if err := os.WriteFile(indexFile, data, 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		v := &validator{filePath: indexFile}
+		_ = v.run()
+		found := false
+		for _, w := range v.warnings {
+			if contains(w, "statusEnum") {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("expected warning about missing statusEnum, got warnings: %v", v.warnings)
+		}
+	})
+
 	t.Run("missing feature field", func(t *testing.T) {
 		dir := t.TempDir()
 		indexFile := filepath.Join(dir, "index.json")

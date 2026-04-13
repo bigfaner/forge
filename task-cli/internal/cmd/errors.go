@@ -180,12 +180,20 @@ func ErrDataIntegrity(issues []string) *AIError {
 
 // ErrInvalidStatus creates an invalid status error.
 func ErrInvalidStatus(status string, validStatuses []string) *AIError {
+	action := "task status <id> <valid-status>"
+	if len(validStatuses) > 0 {
+		action = fmt.Sprintf("task status <id> %s", validStatuses[0])
+	}
+	cause := "statusEnum is not defined in index.json"
+	if len(validStatuses) > 0 {
+		cause = fmt.Sprintf("Valid statuses: %s", strings.Join(validStatuses, ", "))
+	}
 	return NewAIError(
 		ErrValidation,
 		fmt.Sprintf("Invalid status: %s", status),
-		fmt.Sprintf("Valid statuses: %s", strings.Join(validStatuses, ", ")),
+		cause,
 		"Use one of the valid status values",
-		fmt.Sprintf("task status <id> %s", validStatuses[0]),
+		action,
 	)
 }
 
