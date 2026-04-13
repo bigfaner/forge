@@ -10,14 +10,13 @@
 
 | 维度 | 优先级规则 |
 |------|-----------|
-| Phase | 低 phase 编号优先 |
 | Priority | P0 > P1 > P2 |
 | Dependencies | 仅声明依赖已满足的任务 |
 | In-Progress | 自动恢复进行中的任务 |
 
 **依赖语法支持：**
 - 精确匹配：`1.1`, `1.2`
-- 通配符匹配：`1.x`（phase 级别依赖）
+- 通配符匹配：`1.x`（前缀级别依赖）
 
 ### 2. 任务记录生成 (`task record`)
 
@@ -134,14 +133,14 @@ project-root/
 
 ```go
 type Task struct {
-    ID           string   `json:"id"`           // 任务ID (如 "1.1")
-    Title        string   `json:"title"`        // 任务标题
-    Description  string   `json:"description"`  // 任务描述
-    Phase        int      `json:"phase"`        // 阶段编号
-    Priority     string   `json:"priority"`     // P0/P1/P2
-    Status       string   `json:"status"`       // pending/in_progress/completed/blocked/skipped
-    Dependencies []string `json:"dependencies"` // 依赖任务ID列表
-    Files        []string `json:"files"`        // 相关文件路径
+    ID            string   `json:"id"`                      // 任务ID (如 "1.1")
+    Title         string   `json:"title"`                   // 任务标题
+    Priority      string   `json:"priority"`                // P0/P1/P2
+    EstimatedTime string   `json:"estimatedTime,omitempty"` // 预估时间
+    Dependencies  []string `json:"dependencies,omitempty"`  // 依赖任务ID列表
+    Status        string   `json:"status"`                  // pending/in_progress/completed/blocked/skipped
+    File          string   `json:"file"`                    // 任务文件
+    Record        string   `json:"record"`                  // 记录文件
 }
 ```
 
@@ -149,11 +148,14 @@ type Task struct {
 
 ```go
 type TaskIndex struct {
-    Feature   string           `json:"feature"`   // Feature 标识
-    Title     string           `json:"title"`     // Feature 标题
-    Tasks     map[string]Task  `json:"tasks"`     // 任务映射
-    Enums     map[string][]string `json:"enums"`  // 枚举定义
-    Metadata  map[string]any   `json:"metadata"`  // 元数据
+    Feature      string          `json:"feature"`
+    PRD          string          `json:"prd,omitempty"`
+    Design       string          `json:"design,omitempty"`
+    Created      string          `json:"created,omitempty"`
+    Status       string          `json:"status,omitempty"`
+    Tasks        map[string]Task `json:"tasks"`
+    StatusEnum   []string        `json:"statusEnum,omitempty"`
+    PriorityEnum []string        `json:"priorityEnum,omitempty"`
 }
 ```
 
