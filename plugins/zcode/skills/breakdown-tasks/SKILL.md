@@ -19,8 +19,8 @@ description: Use when design.md is finalized to break down into executable tasks
 ls docs/features/<slug>/design/tech-design.md
 ```
 
-| 产物 | 缺失时提示 |
-|------|-----------|
+| 产物                    | 缺失时提示                                   |
+| ----------------------- | -------------------------------------------- |
 | `design/tech-design.md` | 先执行 `/design-tech`，再执行 `/eval-design` |
 
 ## Directory Structure
@@ -64,6 +64,7 @@ docs/features/<feature-slug>/
 ```
 
 ## Step 1: Read Manifest → All Documents
+
 <IMPORTANT>
 1. Read `manifest.md` to locate all documents
 2. Read `prd/prd-spec.md` — understand WHAT
@@ -100,31 +101,9 @@ docs/features/<feature-slug>/
 
 ## Step 5: Create index.json
 
-Create `docs/features/<slug>/tasks/index.json` with task definitions.
+<HARD-RULE>Read `templates/index.json` before writing. Path fields (`file`, `record`) are relative to `docs/features/<slug>/tasks` directory.</HARD-RULE>
 
-**Schema reference:** [templates/index.schema.json](templates/index.schema.json)
-
-### Required Fields
-
-| Field         | Type   | Description                      |
-| ------------- | ------ | -------------------------------- |
-| `version`     | string | Semver format (e.g., `1.0.0`)    |
-| `lastUpdated` | date   | ISO date (e.g., `2026-04-06`)    |
-| `tasks`       | object | Map of task ID → task definition |
-
-### Task Fields
-
-| Field           | Required | Type   | Description                                                     |
-| --------------- | -------- | ------ | --------------------------------------------------------------- |
-| `id`            | ✓        | string | Task identifier (e.g., `1.1`)                                   |
-| `phase`         | ✓        | int    | Phase number (≥1)                                               |
-| `title`         | ✓        | string | Task title                                                      |
-| `priority`      | ✓        | enum   | `P0` / `P1` / `P2`                                              |
-| `status`        | ✓        | enum   | `pending` / `in_progress` / `completed` / `blocked` / `skipped` |
-| `file`          | ✓        | string | Task file path                                                  |
-| `dependencies`  |          | array  | Task IDs this depends on                                        |
-| `estimatedTime` |          | string | Time estimate                                                   |
-| `record`        |          | string | Record file path                                                |
+**Reference:** [templates/index.json](templates/index.json) | Schema: [templates/index.schema.json](templates/index.schema.json)
 
 ## Step 6: Validate
 
@@ -135,6 +114,7 @@ task validate -file docs/features/\<slug\>/tasks/index.json
 ## Step 7: Update Manifest
 
 Update `manifest.md`:
+
 - Fill Tasks column in Traceability table with task IDs linked to design sections
 - Advance status to `tasks`
 
