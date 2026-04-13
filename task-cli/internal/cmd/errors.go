@@ -197,6 +197,25 @@ func ErrInvalidStatus(status string, validStatuses []string) *AIError {
 	)
 }
 
+// ErrMissingFields creates an error for missing required fields in record data.
+func ErrMissingFields(missing []string) *AIError {
+	return NewAIError(
+		ErrValidation,
+		fmt.Sprintf("Missing required fields: %s", strings.Join(missing, ", ")),
+		fmt.Sprintf("The following fields are required but empty: %s", strings.Join(missing, ", ")),
+		"Include all required fields in record.json",
+		"See record.json schema: taskId, summary, keyDecisions, testsPassed, testsFailed, coverage, acceptanceCriteria",
+	)
+}
+
+// WarnMissingFields prints a warning for recommended but non-required fields.
+func WarnMissingFields(missing []string) {
+	fmt.Fprintln(os.Stderr, "---")
+	fmt.Fprintf(os.Stderr, "WARNING: Missing recommended fields: %s\n", strings.Join(missing, ", "))
+	fmt.Fprintf(os.Stderr, "HINT: Include these fields for complete records. Record will still be saved.\n")
+	fmt.Fprintln(os.Stderr, "---")
+}
+
 // ErrFeatureNotFound creates a feature not found error.
 func ErrFeatureNotFound(slug string) *AIError {
 	return NewAIError(

@@ -117,6 +117,9 @@ func runRecord(cmd *cobra.Command, args []string) {
 		rd.Status = "completed"
 	}
 
+	// Validate required and recommended fields
+	validateRecordData(rd)
+
 	// Validate status
 	validStatus := false
 	for _, s := range index.StatusEnum {
@@ -205,6 +208,40 @@ func readRecordData(dataPath string) (*RecordData, error) {
 	return &rd, nil
 }
 
+// validateRecordData checks required and recommended fields in RecordData.
+// Hard-required fields (missing = error): summary
+// Recommended fields for "completed" status (missing = warning):
+//   - keyDecisions, testsPassed/testsFailed/coverage, acceptanceCriteria
+func validateRecordData(rd *RecordData) {
+	var missing []string
+
+	// Hard-required fields
+	if strings.TrimSpace(rd.Summary) == "" {
+		missing = append(missing, "summary")
+	}
+
+	if len(missing) > 0 {
+		Exit(ErrMissingFields(missing))
+	}
+
+	// Recommended fields for completed tasks
+	if rd.Status == "completed" {
+		var recommended []string
+		if len(rd.KeyDecisions) == 0 {
+			recommended = append(recommended, "keyDecisions")
+		}
+		if rd.TestsPassed == 0 && rd.TestsFailed == 0 && rd.Coverage == 0 {
+			recommended = append(recommended, "testsPassed/testsFailed/coverage")
+		}
+		if len(rd.AcceptanceCriteria) == 0 {
+			recommended = append(recommended, "acceptanceCriteria")
+		}
+		if len(recommended) > 0 {
+			WarnMissingFields(recommended)
+		}
+	}
+}
+
 func fillRecordTemplate(t *task.Task, rd *RecordData, startedTime string) string {
 	status := rd.Status
 	started := startedTime
@@ -242,8 +279,11 @@ func fillRecordTemplate(t *task.Task, rd *RecordData, startedTime string) string
 - Time Spent: %s
 
 ## Files
-- Created: %s
-- Modified: %s
+### Created: 
+%s
+
+### Modified: 
+%s
 
 ## Key Decisions
 %s
