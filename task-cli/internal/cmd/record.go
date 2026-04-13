@@ -140,7 +140,7 @@ func runRecord(cmd *cobra.Command, args []string) {
 	content := fillRecordTemplate(t, rd, startedTime)
 
 	// Write record file
-	recordPath := filepath.Join(projectRoot, feature.GetRecordFile(featureSlug, t.Record))
+	recordPath := filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, t.Record))
 	if err := os.MkdirAll(filepath.Dir(recordPath), 0755); err != nil {
 		Exit(NewAIError(ErrValidation, "Failed to create record directory", err.Error(), "Check directory permissions", "mkdir -p "+filepath.Dir(recordPath)))
 	}

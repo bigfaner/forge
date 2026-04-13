@@ -55,6 +55,6 @@ func runQuery(cmd *cobra.Command, args []string) {
 	PrintFieldIfNotEmpty("ESTIMATED_TIME", t.EstimatedTime)
 	PrintFieldIfNotEmptySlice("DEPENDENCIES", t.Dependencies)
 	PrintField("FILE", filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, t.File)))
-	PrintField("RECORD", filepath.Join(projectRoot, feature.GetRecordFile(featureSlug, t.Record)))
+	PrintField("RECORD", filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, t.Record)))
 	PrintBlockEnd()
 }

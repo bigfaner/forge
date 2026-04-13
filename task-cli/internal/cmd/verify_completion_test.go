@@ -106,7 +106,7 @@ func TestVerifyTaskCompletion(t *testing.T) {
 			Feature:    "test",
 			StatusEnum: []string{"pending", "in_progress", "completed"},
 			Tasks: map[string]task.Task{
-				"task1": {ID: "1.1", Title: "Task 1", Status: "completed", Record: "1.1.md"},
+				"task1": {ID: "1.1", Title: "Task 1", Status: "completed", Record: "records/1.1.md"},
 			},
 		}
 		task.SaveIndex(indexPath, index)
@@ -131,7 +131,7 @@ func TestVerifyTaskCompletion(t *testing.T) {
 			Feature:    "test",
 			StatusEnum: []string{"pending", "in_progress", "completed"},
 			Tasks: map[string]task.Task{
-				"task1": {ID: "1.1", Title: "Task 1", Status: "completed", Record: "1.1.md"},
+				"task1": {ID: "1.1", Title: "Task 1", Status: "completed", Record: "records/1.1.md"},
 			},
 		}
 		task.SaveIndex(indexPath, index)

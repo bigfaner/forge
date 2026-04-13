@@ -159,7 +159,7 @@ func TestPrintTaskDetails(t *testing.T) {
 				Priority: "P0",
 				Status:   "in_progress",
 				File:     "1.1.md",
-				Record:   "1.1.md",
+				Record:   "records/1.1.md",
 			},
 			wantContains: []string{
 				"KEY: task1",
@@ -168,7 +168,7 @@ func TestPrintTaskDetails(t *testing.T) {
 				"PRIORITY: P0",
 				"STATUS: in_progress",
 				"FILE: " + filepath.Join(testRoot, feature.GetTaskFile(testFeature, "1.1.md")),
-				"RECORD: " + filepath.Join(testRoot, feature.GetRecordFile(testFeature, "1.1.md")),
+				"RECORD: " + filepath.Join(testRoot, feature.GetTaskFile(testFeature, "records/1.1.md")),
 			},
 		},
 		{
