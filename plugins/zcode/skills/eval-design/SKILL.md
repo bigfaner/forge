@@ -5,14 +5,14 @@ description: Evaluate a design.md document against quality standards. Checks str
 
 # Eval Design
 
-评估 design.md 是否满足规范，重点检查能否直接驱动 `/breakdown-tasks`。
+评估 tech-design.md 是否满足规范，重点检查能否直接驱动 `/breakdown-tasks`。
 
 ## When to Use
 
 **Trigger:**
 - User asks to "evaluate design" or "check design quality"
 - User provides `/eval-design` command
-- Before handing off design.md to `/breakdown-tasks`
+- Before handing off tech-design.md to `/breakdown-tasks`
 
 **Skip:**
 - design.md doesn't exist yet (use `/design-tech` first)
@@ -23,14 +23,15 @@ description: Evaluate a design.md document against quality standards. Checks str
 1. 定位 design.md → 2. 启动评估 Agent → 3. 汇报结果
 ```
 
-## Step 1: Locate design.md
+## Step 1: Locate Design Documents
 
 Check in order:
 1. Path provided by user
-2. `docs/features/<current-feature>/design.md`
-3. Ask user for path if not found
+2. Read `docs/features/<current-feature>/manifest.md` → locate design documents
+3. Fall back to `design/tech-design.md`, `design/api-handbook.md`, `ui/ui-design.md`
+4. Ask user for path if not found
 
-Determine `<feature-slug>` from the path. Also check if a PRD exists at `docs/features/<slug>/prd.md` — used for traceability checks.
+Determine `<feature-slug>` from the path. Also check if a PRD exists at `prd/prd-spec.md` — used for traceability checks.
 
 ## Step 2: Launch Evaluation Agent
 
@@ -44,19 +45,23 @@ Use the **Agent tool** to spawn a subagent. Pass the full prompt below, substitu
 You are a technical design quality evaluator. Your job: read the design doc, apply the rubric, write the report, return a summary.
 
 ## Inputs
-- Design path: {{DESIGN_PATH}}
-- PRD path: {{PRD_PATH}} (read if it exists, skip if not)
+- Design path: {{DESIGN_PATH}} (default: design/tech-design.md)
+- API Handbook path: {{API_HANDBOOK_PATH}} (default: design/api-handbook.md)
+- UI Design path: {{UI_DESIGN_PATH}} (default: ui/ui-design.md)
+- PRD path: {{PRD_PATH}} (default: prd/prd-spec.md, read if it exists)
 - Feature slug: {{FEATURE_SLUG}}
 - Report output: docs/features/{{FEATURE_SLUG}}/design-eval.md
 - Report template: plugins/zcode/skills/eval-design/templates/report.md
 
 ## Steps
 1. Read {{DESIGN_PATH}}
-2. If {{PRD_PATH}} exists, read it (needed for traceability checks)
-3. Read the report template
-4. Apply the rubric below to every dimension
-5. Fill in the template and write to docs/features/{{FEATURE_SLUG}}/design-eval.md
-6. Return: overall grade, top 2-3 issues, Breakdown-Readiness grade, and whether it can proceed to /breakdown-tasks
+2. Read {{API_HANDBOOK_PATH}} (if exists)
+3. Read {{UI_DESIGN_PATH}} (if exists)
+4. If {{PRD_PATH}} exists, read it (needed for traceability checks)
+5. Read the report template
+6. Apply the rubric below to every dimension
+7. Fill in the template and write to docs/features/{{FEATURE_SLUG}}/design-eval.md
+8. Return: overall grade, top 2-3 issues, Breakdown-Readiness grade, and whether it can proceed to /breakdown-tasks
 
 ## Structure Check
 

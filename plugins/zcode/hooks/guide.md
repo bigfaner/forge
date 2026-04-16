@@ -5,22 +5,53 @@
 ```
 project-root/
 └── docs/
-    ├── features/<slug>/           # Feature 工作区
-    │   ├── prd.md                 # 需求文档
-    │   ├── design.md              # 设计文档
+    ├── proposals/<slug>/           # /brainstorm 产出
+    │   └── proposal.md
+    ├── features/<slug>/            # Feature 工作区
+    │   ├── manifest.md             # Feature 索引 & 可追溯性映射
+    │   ├── prd/
+    │   │   ├── prd-spec.md         # PRD Spec (需求文档)
+    │   │   ├── prd-user-stories.md # 用户故事
+    │   │   └── prd-ui-functions.md # UI 功能要点（可选）
+    │   ├── design/
+    │   │   ├── tech-design.md      # 技术设计
+    │   │   └── api-handbook.md     # API 文档
+    │   ├── ui/
+    │   │   └── ui-design.md        # UI 设计规格（可选）
     │   └── tasks/
-    │       ├── index.json         # 任务定义（核心）
-    │       ├── process/           # 运行时状态（不提交）
-    │       │   ├── state.json     # 当前任务状态
-    │       │   └── record.json    # 进行中的记录
+    │       ├── index.json          # 任务定义（核心）
+    │       ├── process/            # 运行时状态（不提交）
+    │       │   ├── state.json      # 当前任务状态
+    │       │   └── record.json     # 进行中的记录
     │       ├── 1.1-<title>.md     # 任务详情
-    │       └── records/               # 执行记录
+    │       └── records/            # 执行记录
     │           └── 1.1-<title>.md
     ├── README.md                   # 知识库索引 (本文件)
     ├── ARCHITECTURE.md             # 分层架构
     ├── DECISIONS.md                # 技术决策
     └── lessons/                    # 经验教训
 ```
+
+## Skill Workflow
+
+```
+/brainstorm → /write-prd → /eval-prd → /design-tech ─→ /eval-design → /breakdown-tasks
+     ↓             ↓            ↓            ↓              ↓               ↓
+ proposal.md   prd/*.{3}  eval report  design/*.{2}   eval report     tasks/*.md
+               manifest.md             manifest.md                   manifest.md
+                            ↘ /ui-design ─→ /eval-design ↗
+                                 ↓
+                            ui/ui-design.md
+```
+
+每个 skill 执行前会 `ls` 检查上一阶段产物是否存在；缺失则中止并提示用户先完成上一步。
+
+### Manifest
+
+`manifest.md` 是 Feature 的单一入口，AI agent 读取此文件即可了解完整上下文：
+- **Documents** 表：列出所有文档路径和自动生成的摘要
+- **Traceability** 表：PRD → Design → Tasks 的追溯映射
+- **Status**：prd → design → tasks → in-progress → done
 
 ## Task-CLI
 

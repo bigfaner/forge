@@ -59,7 +59,7 @@ description: Use after completing a task to create its execution record and upda
 
 ```bash
 # Step 1: Write progress to process/record.json
-echo '{"summary":"...","filesCreated":[...],"filesModified":[...]}' > docs/features/{slug}/tasks/process/record.json
+echo '{"taskId":"3.3.1","status":"completed","summary":"...","filesCreated":["..."],"filesModified":["..."],"keyDecisions":["..."],"testsPassed":0,"testsFailed":0,"coverage":0.0,"acceptanceCriteria":[{"criterion":"...","met":true}]}' > docs/features/{slug}/tasks/process/record.json
 
 # Step 2: Use CLI command (mandatory)
 task record <TASK_ID> --data docs/features/{slug}/tasks/process/record.json

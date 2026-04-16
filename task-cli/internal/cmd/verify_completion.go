@@ -86,10 +86,10 @@ func verifyTaskCompletion() error {
 
 	// Verify record file exists
 	if foundTask.Record != "" {
-		recordPath := filepath.Join(projectRoot, feature.GetRecordFile(featureSlug, foundTask.Record))
+		recordPath := filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, foundTask.Record))
 		if _, err := os.Stat(recordPath); os.IsNotExist(err) {
 			return fmt.Errorf("record file missing: %s. Create it before committing",
-				feature.GetRecordFile(featureSlug, foundTask.Record))
+				feature.GetTaskFile(featureSlug, foundTask.Record))
 		}
 	}
 

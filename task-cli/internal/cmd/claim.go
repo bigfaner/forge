@@ -22,10 +22,9 @@ var claimCmd = &cobra.Command{
 	Long: `Claim the next available task from the current feature's task list.
 
 The task is selected based on:
-1. Minimum phase with pending tasks
-2. All dependencies must be met
-3. Priority (P0 > P1 > P2)
-4. Task ID (semantic version ordering)`,
+1. All dependencies must be met
+2. Priority (P0 > P1 > P2)
+3. Task ID (semantic version ordering)`,
 	Run: runClaim,
 }
 
@@ -283,7 +282,7 @@ func printTaskDetails(key string, t *task.Task, projectRoot, featureSlug string)
 	PrintFieldIfNotEmpty("ESTIMATED_TIME", t.EstimatedTime)
 	PrintFieldIfNotEmptySlice("DEPENDENCIES", t.Dependencies)
 	PrintField("FILE", filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, t.File)))
-	PrintField("RECORD", filepath.Join(projectRoot, feature.GetRecordFile(featureSlug, t.Record)))
+	PrintField("RECORD", filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, t.Record)))
 }
 
 func printContinueTask(state *task.TaskState, t *task.Task, projectRoot, featureSlug string) {

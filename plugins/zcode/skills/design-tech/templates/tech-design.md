@@ -1,9 +1,10 @@
-# Technical Design: <Feature Name>
+---
+created: YYYY-MM-DD
+prd: prd/prd-spec.md
+status: Draft
+---
 
-## Metadata
-- Created: YYYY-MM-DD
-- PRD: prd.md
-- Status: Draft | Review | Approved
+# Technical Design: <Feature Name>
 
 ## Overview
 <!-- High-level technical approach -->

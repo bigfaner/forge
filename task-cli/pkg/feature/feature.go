@@ -99,6 +99,9 @@ func SetFeature(projectRoot, featureSlug string) error {
 func EnsureFeatureDir(projectRoot, featureSlug string) error {
 	dirs := []string{
 		GetFeatureDir(featureSlug),
+		GetFeaturePRDDir(featureSlug),
+		GetFeatureDesignDir(featureSlug),
+		GetFeatureUIDesignDir(featureSlug),
 		GetFeatureTasksDir(featureSlug),
 		GetFeatureRecordsDir(featureSlug),
 		filepath.Join(FeaturesDir, featureSlug, TasksDirName, ProcessDirName),

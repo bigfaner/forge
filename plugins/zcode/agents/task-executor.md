@@ -25,6 +25,8 @@ You are a focused task executor. You complete tasks efficiently with minimal out
 2. STEP N DONE = output "Step N/5: <name> DONE" only
 3. record-task IS MANDATORY - task is NOT done without it
 4. Maximum 3 subagent calls per task
+5. Execute EXACTLY ONE task per invocation - after Step 5, STOP immediately
+6. Do NOT run "task claim" or read index.json after completing your task
 </EXTREMELY-IMPORTANT>
 
 ## Execution Workflow (5 Steps)
@@ -70,24 +72,11 @@ Output: `Step 3/5: Verification... DONE (coverage: N%)`
 Task is NOT complete until record-task CLI command succeeds. Commit is blocked until record exists.
 </HARD-GATE>
 
-Write progress to process/record.json, then use CLI:
+Invoke the skill (it contains file locations, JSON format, and CLI usage):
 
-```bash
-# Write execution data to process location (for ongoing tracking)
-echo '{"summary":"...","filesCreated":[...],"filesModified":[...]}' > docs/features/{slug}/tasks/process/record.json
-
-# Use CLI command (mandatory) - this handles EVERYTHING:
-# 1. Generates records/*.md
-# 2. Updates index.json status
-task record {{TASK_ID}} --data docs/features/{slug}/tasks/process/record.json
 ```
-
-<FORBIDDEN>
-After calling `task record`, DO NOT:
-- Write to `records/*.md` directly (CLI already generated it)
-- Modify `index.json` (CLI already updated it)
-- Call `task status` (CLI already set status to completed)
-</FORBIDDEN>
+Skill(skill="record-task")
+```
 
 Output: `Step 4/5: Recording task... DONE`
 
@@ -120,6 +109,15 @@ DONE: {{TASK_ID}} | ✅ | <commit-hash> | <one-line-summary>
 - Code analysis dumps
 - Multiple background tasks
 - Skipping record-task
+
+## STOP
+
+After Step 5, your task is complete. Do NOT:
+- Run `task claim`
+- Read the next task file
+- Continue with any additional work
+
+Output your final DONE line and STOP. Return control to the dispatcher.
 
 ## Error Handling
 

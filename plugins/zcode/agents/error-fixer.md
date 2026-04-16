@@ -103,35 +103,17 @@ FIXED: {{TASK_ID}} | ❌ | <reason-why-unfixable>
 | Test fails | Analyze assertion, fix logic |
 | Coverage < 80% | Add missing tests |
 | Lint fails | Fix reported issues |
-| Task record missing | Write to `docs/features/{slug}/tasks/process/record.json`, then `task record` CLI |
+| Task record missing | Invoke `Skill(skill="record-task")` |
 
 ## After Fixing Task Errors
 
-If this fix completes a previously failed task, create execution record:
+If this fix completes a previously failed task, create execution record by invoking the skill:
 
-### Step 1: Write JSON to process location
-
-```bash
-echo '{"summary":"fix description","filesModified":["path/to/file"]}' > docs/features/{slug}/tasks/process/record.json
+```
+Skill(skill="record-task")
 ```
 
-### Step 2: Use CLI command (mandatory)
-
-```bash
-# This single command handles EVERYTHING:
-# 1. Generates records/*.md from JSON
-# 2. Updates index.json status to completed
-task record {{TASK_ID}} --data docs/features/{slug}/tasks/process/record.json
-```
-
-<EXTREMELY-IMPORTANT>
-You MUST use the `task record` CLI command. DO NOT:
-- Write directly to index.json
-- Write directly to records/*.md
-- Use Python/JavaScript/Node to modify JSON
-
-After `task record` succeeds, the task is fully recorded. No additional steps needed.
-</EXTREMELY-IMPORTANT>
+The skill provides complete workflow including file locations, JSON format, and CLI usage.
 
 ## Persistent Agent Memory
 

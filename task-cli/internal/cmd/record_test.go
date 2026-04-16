@@ -2,12 +2,123 @@ package cmd
 
 import (
 	"os"
+	"os/exec"
 	"strings"
 	"testing"
 	"time"
 
 	"task-cli/pkg/task"
 )
+
+func TestValidateRecordData(t *testing.T) {
+	t.Run("empty summary triggers hard error", func(t *testing.T) {
+		rd := &RecordData{
+			Status: "completed",
+			Summary: "",
+		}
+		// validateRecordData calls Exit() which calls os.Exit(1)
+		// We test the logic by catching the exit via a subprocess
+		// Instead, let's test the validation logic directly
+		// Since validateRecordData calls Exit, we test via subprocess
+		if os.Getenv("TEST_VALIDATE_EMPTY_SUMMARY") == "1" {
+			validateRecordData(rd)
+			return
+		}
+		cmd := exec.Command(os.Args[0], "-test.run=TestValidateRecordData/empty_summary_triggers_hard_error")
+		cmd.Env = append(os.Environ(), "TEST_VALIDATE_EMPTY_SUMMARY=1")
+		err := cmd.Run()
+		if err == nil {
+			t.Error("expected non-zero exit for empty summary")
+		}
+	})
+
+	t.Run("whitespace-only summary triggers hard error", func(t *testing.T) {
+		if os.Getenv("TEST_VALIDATE_WS_SUMMARY") == "1" {
+			validateRecordData(&RecordData{Status: "completed", Summary: "   "})
+			return
+		}
+		cmd := exec.Command(os.Args[0], "-test.run=TestValidateRecordData/whitespace-only_summary_triggers_hard_error")
+		cmd.Env = append(os.Environ(), "TEST_VALIDATE_WS_SUMMARY=1")
+		err := cmd.Run()
+		if err == nil {
+			t.Error("expected non-zero exit for whitespace-only summary")
+		}
+	})
+
+	t.Run("completed without recommended fields warns", func(t *testing.T) {
+		rd := &RecordData{
+			Status:  "completed",
+			Summary: "Did the work",
+		}
+		// Capture stderr for warning
+		old := os.Stderr
+		r, w, _ := os.Pipe()
+		os.Stderr = w
+		validateRecordData(rd)
+		w.Close()
+		os.Stderr = old
+
+		buf := make([]byte, 1024)
+		n, _ := r.Read(buf)
+		output := string(buf[:n])
+
+		if !strings.Contains(output, "WARNING") {
+			t.Errorf("expected warning in stderr, got: %s", output)
+		}
+		// Should warn about keyDecisions, tests, acceptanceCriteria
+		for _, field := range []string{"keyDecisions", "coverage", "acceptanceCriteria"} {
+			if !strings.Contains(output, field) {
+				t.Errorf("expected warning to mention %q, got: %s", field, output)
+			}
+		}
+	})
+
+	t.Run("completed with all fields produces no warning", func(t *testing.T) {
+		rd := &RecordData{
+			Status:             "completed",
+			Summary:            "Full record",
+			KeyDecisions:       []string{"decision"},
+			TestsPassed:        5,
+			Coverage:           80.0,
+			AcceptanceCriteria: []AcceptanceCriterion{{Criterion: "works", Met: true}},
+		}
+		old := os.Stderr
+		r, w, _ := os.Pipe()
+		os.Stderr = w
+		validateRecordData(rd)
+		w.Close()
+		os.Stderr = old
+
+		buf := make([]byte, 1024)
+		n, _ := r.Read(buf)
+		output := string(buf[:n])
+
+		if strings.Contains(output, "WARNING") {
+			t.Errorf("unexpected warning for complete record: %s", output)
+		}
+	})
+
+	t.Run("non-completed status skips recommended checks", func(t *testing.T) {
+		rd := &RecordData{
+			Status:  "blocked",
+			Summary: "Blocked with reason",
+		}
+		old := os.Stderr
+		r, w, _ := os.Pipe()
+		os.Stderr = w
+		validateRecordData(rd)
+		w.Close()
+		os.Stderr = old
+
+		buf := make([]byte, 1024)
+		n, _ := r.Read(buf)
+		output := string(buf[:n])
+
+		if strings.Contains(output, "WARNING") {
+			t.Errorf("non-completed status should not produce warnings: %s", output)
+		}
+	})
+}
 
 func TestFindTask(t *testing.T) {
 	tests := []struct {
@@ -227,13 +338,14 @@ func TestFillRecordTemplate(t *testing.T) {
 			},
 			startedTime: "2026-04-06 10:00",
 			checkContains: []string{
+				"1.1",
 				"Implement feature X",
 				"Implemented the feature",
 				"completed",
 				"2026-04-06 10:00",
 				"main.go",
-				"Tests Passed: 5",
-				"Coverage: 85.5%",
+				"**Passed**: 5",
+				"**Coverage**: 85.5%",
 			},
 		},
 		{
@@ -265,9 +377,9 @@ func TestFillRecordTemplate(t *testing.T) {
 				"b.go",
 				"c.go",
 				"Used pattern X",
-				"Tests Passed: 10",
-				"Tests Failed: 2",
-				"Coverage: 90.0%",
+				"**Passed**: 10",
+				"**Failed**: 2",
+				"**Coverage**: 90.0%",
 				"[x] AC1",
 				"[ ] AC2",
 				"Some notes",
@@ -285,8 +397,8 @@ func TestFillRecordTemplate(t *testing.T) {
 			},
 			startedTime: "2026-04-06 10:00",
 			checkContains: []string{
-				"Status: in_progress",
-				"Completed: N/A",
+				"status: \"in_progress\"",
+				"completed: \"N/A\"",
 			},
 		},
 		{
@@ -317,8 +429,8 @@ func TestFillRecordTemplate(t *testing.T) {
 			},
 			startedTime: "",
 			checkContains: []string{
-				"Started:",
-				"Completed:",
+				"started:",
+				"completed:",
 			},
 		},
 		{
@@ -333,7 +445,7 @@ func TestFillRecordTemplate(t *testing.T) {
 			},
 			startedTime: "2026-04-06 10:00",
 			checkContains: []string{
-				"Time Spent:",
+				"time_spent:",
 			},
 		},
 		{
@@ -348,7 +460,7 @@ func TestFillRecordTemplate(t *testing.T) {
 			},
 			startedTime: "2026-04-06 15:00", // Started after current time would be
 			checkNotContains: []string{
-				"Time Spent: ~",
+				"time_spent: ~",
 			},
 		},
 	}

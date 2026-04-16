@@ -155,6 +155,9 @@ func TestSetFeature(t *testing.T) {
 
 		expectedDirs := []string{
 			filepath.Join(dir, GetFeatureDir("test-feature")),
+			filepath.Join(dir, GetFeaturePRDDir("test-feature")),
+			filepath.Join(dir, GetFeatureDesignDir("test-feature")),
+			filepath.Join(dir, GetFeatureUIDesignDir("test-feature")),
 			filepath.Join(dir, GetFeatureTasksDir("test-feature")),
 			filepath.Join(dir, GetFeatureRecordsDir("test-feature")),
 			filepath.Join(dir, FeaturesDir, "test-feature", TasksDirName, ProcessDirName),
@@ -212,6 +215,9 @@ func TestEnsureFeatureDir(t *testing.T) {
 
 		expectedDirs := []string{
 			filepath.Join(dir, GetFeatureDir(featureSlug)),
+			filepath.Join(dir, GetFeaturePRDDir(featureSlug)),
+			filepath.Join(dir, GetFeatureDesignDir(featureSlug)),
+			filepath.Join(dir, GetFeatureUIDesignDir(featureSlug)),
 			filepath.Join(dir, GetFeatureTasksDir(featureSlug)),
 			filepath.Join(dir, GetFeatureRecordsDir(featureSlug)),
 			filepath.Join(dir, FeaturesDir, featureSlug, TasksDirName, ProcessDirName),

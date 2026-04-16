@@ -288,8 +288,8 @@ func TestValidator_Run(t *testing.T) {
 
 		index := &task.TaskIndex{
 			Feature:      "test-feature",
-			PRD:          "prd.md",
-			Design:       "design.md",
+			PRD:          "prd/prd-spec.md",
+			Design:       "design/tech-design.md",
 			StatusEnum:   []string{"pending", "completed"},
 			PriorityEnum: []string{"P0", "P1", "P2"},
 			Tasks: map[string]task.Task{
@@ -366,6 +366,31 @@ func TestValidator_Run(t *testing.T) {
 		err := v.run()
 		if err == nil {
 			t.Error("expected error for invalid JSON")
+		}
+	})
+
+	t.Run("missing statusEnum warns", func(t *testing.T) {
+		dir := t.TempDir()
+		indexFile := filepath.Join(dir, "index.json")
+		data, _ := json.Marshal(map[string]interface{}{
+			"feature": "test-feature",
+			"tasks":   map[string]interface{}{},
+		})
+		if err := os.WriteFile(indexFile, data, 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		v := &validator{filePath: indexFile}
+		_ = v.run()
+		found := false
+		for _, w := range v.warnings {
+			if contains(w, "statusEnum") {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("expected warning about missing statusEnum, got warnings: %v", v.warnings)
 		}
 	})
 

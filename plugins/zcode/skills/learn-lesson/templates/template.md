@@ -1,3 +1,7 @@
+---
+created: "<DATE>"
+---
+
 # <Title>
 
 ## Problem
@@ -21,5 +25,3 @@
 ## References
 <!-- 相关文档或链接 -->
 
----
-*Created: <DATE>*

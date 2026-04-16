@@ -180,13 +180,40 @@ func ErrDataIntegrity(issues []string) *AIError {
 
 // ErrInvalidStatus creates an invalid status error.
 func ErrInvalidStatus(status string, validStatuses []string) *AIError {
+	action := "task status <id> <valid-status>"
+	if len(validStatuses) > 0 {
+		action = fmt.Sprintf("task status <id> %s", validStatuses[0])
+	}
+	cause := "statusEnum is not defined in index.json"
+	if len(validStatuses) > 0 {
+		cause = fmt.Sprintf("Valid statuses: %s", strings.Join(validStatuses, ", "))
+	}
 	return NewAIError(
 		ErrValidation,
 		fmt.Sprintf("Invalid status: %s", status),
-		fmt.Sprintf("Valid statuses: %s", strings.Join(validStatuses, ", ")),
+		cause,
 		"Use one of the valid status values",
-		fmt.Sprintf("task status <id> %s", validStatuses[0]),
+		action,
 	)
+}
+
+// ErrMissingFields creates an error for missing required fields in record data.
+func ErrMissingFields(missing []string) *AIError {
+	return NewAIError(
+		ErrValidation,
+		fmt.Sprintf("Missing required fields: %s", strings.Join(missing, ", ")),
+		fmt.Sprintf("The following fields are required but empty: %s", strings.Join(missing, ", ")),
+		"Include all required fields in record.json",
+		"See record.json schema: taskId, summary, keyDecisions, testsPassed, testsFailed, coverage, acceptanceCriteria",
+	)
+}
+
+// WarnMissingFields prints a warning for recommended but non-required fields.
+func WarnMissingFields(missing []string) {
+	fmt.Fprintln(os.Stderr, "---")
+	fmt.Fprintf(os.Stderr, "WARNING: Missing recommended fields: %s\n", strings.Join(missing, ", "))
+	fmt.Fprintf(os.Stderr, "HINT: Include these fields for complete records. Record will still be saved.\n")
+	fmt.Fprintln(os.Stderr, "---")
 }
 
 // ErrFeatureNotFound creates a feature not found error.

@@ -21,20 +21,36 @@ const (
 	// IndexFileName is the name of the task index file
 	IndexFileName = "index.json"
 
-	// PRDFileName is the name of the PRD file
-	PRDFileName = "prd.md"
+	// Subdirectory names within a feature directory
+	PRDDirName    = "prd"
+	DesignDirName = "design"
+	UIDirName     = "ui"
 
-	// DesignFileName is the name of the design file
-	DesignFileName = "design.md"
+	// PRD file names (source-prefixed to prevent naming collisions)
+	PRDSpecFile        = "prd-spec.md"
+	PRDUserStoriesFile = "prd-user-stories.md"
+	PRDUIFunctionsFile = "prd-ui-functions.md"
 
-	// TasksDirName is the name of the tasks subdirectory
-	TasksDirName = "tasks"
+	// Design file names
+	TechDesignFile  = "tech-design.md"
+	APIHandbookFile = "api-handbook.md"
 
-	// RecordsDirName is the name of the records subdirectory
+	// UI design file names
+	UIDesignFile = "ui-design.md"
+
+	// Manifest file
+	ManifestFileName = "manifest.md"
+
+	// Tasks subdirectory names
+	TasksDirName   = "tasks"
 	RecordsDirName = "records"
 
-	// TemplateFileName is the name of the task template
+	// Template file
 	TemplateFileName = "template.md"
+
+	// Proposals directory
+	ProposalBaseDir  = "docs/proposals"
+	ProposalFileName = "proposal.md"
 )
 
 // Task status values

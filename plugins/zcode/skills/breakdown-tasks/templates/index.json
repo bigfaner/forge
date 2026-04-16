@@ -1,9 +1,11 @@
 {
   "feature": "<feature-slug>",
-  "prd": "prd.md",
-  "design": "design.md",
+  "prd": "prd/prd-spec.md",
+  "design": "design/tech-design.md",
   "created": "YYYY-MM-DD",
   "status": "planning",
+  "statusEnum": ["pending", "in_progress", "completed", "blocked", "skipped"],
+  "priorityEnum": ["P0", "P1", "P2"],
   "tasks": {
     "1.1-interface": {
       "id": "1.1",
@@ -12,7 +14,7 @@
       "estimatedTime": "2-3h",
       "dependencies": [],
       "status": "pending",
-      "file": "tasks/1.1-interface.md",
+      "file": "1.1-interface.md",
       "record": "records/1.1-interface.md"
     },
     "3.1-implementation": {
@@ -22,7 +24,7 @@
       "estimatedTime": "4h",
       "dependencies": ["1.1", "2.1"],
       "status": "pending",
-      "file": "tasks/3.1-implementation.md",
+      "file": "3.1-implementation.md",
       "record": "records/3.1-implementation.md"
     }
   }

@@ -3,7 +3,7 @@
   "title": "Task Index Schema",
   "description": "Schema for claude-code-go task index file",
   "type": "object",
-  "required": ["version", "lastUpdated", "phases", "tasks"],
+  "required": ["tasks"],
   "properties": {
     "$schema": {
       "type": "string"
@@ -23,10 +23,9 @@
       "type": "object",
       "additionalProperties": {
         "type": "object",
-        "required": ["id", "phase", "title", "priority", "status", "file"],
+        "required": ["id", "title", "priority", "status", "file"],
         "properties": {
           "id": { "type": "string" },
-          "phase": { "type": "integer", "minimum": 1 },
           "title": { "type": "string" },
           "priority": { "type": "string", "enum": ["P0", "P1", "P2"] },
           "estimatedTime": { "type": "string" },

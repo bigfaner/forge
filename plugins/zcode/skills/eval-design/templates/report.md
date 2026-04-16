@@ -1,9 +1,11 @@
-# Design 评估报告
+---
+date: "{{DATE}}"
+design_path: "{{DESIGN_PATH}}"
+prd_path: "{{PRD_PATH}}"
+evaluator: Claude (automated)
+---
 
-> 评估日期: {{DATE}}
-> Design 路径: {{DESIGN_PATH}}
-> PRD 路径: {{PRD_PATH}} (如存在)
-> 评估人: Claude (automated)
+# Design 评估报告
 
 ---
 
