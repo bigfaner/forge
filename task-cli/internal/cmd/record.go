@@ -230,7 +230,9 @@ func validateRecordData(rd *RecordData) {
 		if len(rd.KeyDecisions) == 0 {
 			recommended = append(recommended, "keyDecisions")
 		}
-		if rd.TestsPassed == 0 && rd.TestsFailed == 0 && rd.Coverage == 0 {
+		// coverage=-1.0 means "no tests" — intentionally set, not missing.
+			// Real 0% coverage with tests run would have testsPassed/testsFailed > 0.
+			if rd.Coverage >= 0 && rd.TestsPassed == 0 && rd.TestsFailed == 0 {
 			recommended = append(recommended, "testsPassed/testsFailed/coverage")
 		}
 		if len(rd.AcceptanceCriteria) == 0 {
@@ -293,7 +295,7 @@ time_spent: "%s"
 ## Test Results
 - **Passed**: %d
 - **Failed**: %d
-- **Coverage**: %.1f%%
+- **Coverage**: %s
 
 ## Acceptance Criteria
 %s
@@ -307,10 +309,17 @@ time_spent: "%s"
 		formatList(rd.FilesCreated),
 		formatList(rd.FilesModified),
 		formatList(rd.KeyDecisions),
-		rd.TestsPassed, rd.TestsFailed, rd.Coverage,
+		rd.TestsPassed, rd.TestsFailed, formatCoverage(rd.Coverage),
 		formatCriteria(rd.AcceptanceCriteria),
 		notes,
 	)
+}
+
+func formatCoverage(c float64) string {
+	if c < 0 {
+		return "N/A (task has no tests)"
+	}
+	return fmt.Sprintf("%.1f%%", c)
 }
 
 func formatList(items []string) string {

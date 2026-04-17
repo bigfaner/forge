@@ -52,14 +52,35 @@ description: Use after completing a task to create its execution record and upda
 | `keyDecisions`       | array  | 关键设计决策               |
 | `testsPassed`        | int    | 通过测试数                 |
 | `testsFailed`        | int    | 失败测试数                 |
-| `coverage`           | float  | 覆盖率                     |
+| `coverage`           | float  | 覆盖率（须从测试工具采集） |
 | `acceptanceCriteria` | array  | `{criterion, met}` 对象    |
+
+## Metrics Collection (MANDATORY before writing record.json)
+
+<HARD-RULE>
+Before writing `record.json`, you MUST collect real metrics from the project's test runner. All numeric fields (`coverage`, `testsPassed`, `testsFailed`) must come from actual output, never guessed or defaulted.
+
+Coverage rules:
+
+- `coverage` = actual percentage from test runner output
+- `coverage` = `-1.0` when task has no tests
+- Never write `0.0` unless the runner actually reported 0%
+
+Example commands (use whatever matches the project's toolchain):
+
+```
+Go:        go test -cover ./changed/package/...
+TypeScript: npm test -- --coverage --watchAll=false
+Python:    pytest --cov=<module> --cov-report=term-missing
+```
+
+</HARD-RULE>
 
 ## Usage
 
 ```bash
-# Step 1: Write progress to process/record.json
-echo '{"taskId":"3.3.1","status":"completed","summary":"...","filesCreated":["..."],"filesModified":["..."],"keyDecisions":["..."],"testsPassed":0,"testsFailed":0,"coverage":0.0,"acceptanceCriteria":[{"criterion":"...","met":true}]}' > docs/features/{slug}/tasks/process/record.json
+# Step 1: Write progress to process/record.json (replace sample values with real metrics from above)
+echo '{"taskId":"3.3.1","status":"completed","summary":"...","filesCreated":["..."],"filesModified":["..."],"keyDecisions":["..."],"testsPassed":12,"testsFailed":0,"coverage":85.6,"acceptanceCriteria":[{"criterion":"...","met":true}]}' > docs/features/{slug}/tasks/process/record.json
 
 # Step 2: Use CLI command (mandatory)
 task record <TASK_ID> --data docs/features/{slug}/tasks/process/record.json
@@ -118,8 +139,3 @@ If `task record` fails and cannot be fixed:
 # Manual status fix (last resort only)
 task status <TASK_ID> completed
 ```
-
-## Related Skills
-
-- `/claim-task` - Claim next available task
-- `/set-task-status` - Direct status update (recovery only)
