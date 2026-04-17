@@ -51,7 +51,9 @@ Agent(
   subagent_type="task-executor",
   prompt="TASK_KEY: {{KEY}}
 TASK_ID: {{ID}}
-TASK_FILE: {{FILE}}"
+TASK_FILE: {{FILE}}
+
+IMPORTANT: Do NOT claim or start any other tasks after completing this one. Stop after recording the task result."
 )
 ```
 
