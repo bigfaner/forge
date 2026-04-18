@@ -64,7 +64,7 @@
 | 探索 | `/brainstorm` | `proposal.md` | 从模糊想法到结构化提案 |
 | 需求 | `/write-prd` | `prd/*.{3}` + `manifest.md` | 协作式澄清需求，防止 XY 问题 |
 | 设计 | `/design-tech` | `design/*.{2}` | 技术决策，避免实现时返工 |
-| UI | `/ui-design` | `ui/ui-design.md` | UI 设计规格（可选，与设计并行） |
+| UI | `/ui-design` | `ui/ui-design.md` + `ui/prototype/` | UI 设计规格 + 可选 HTML 原型（与设计并行） |
 | 拆分 | `/breakdown-tasks` | `index.json` | 任务粒度 1-4 小时 |
 | 执行 | `/run-tasks` | 代码 + 记录 | 自动 TDD 循环 |
 
@@ -167,7 +167,13 @@ project-root/
     │   │   ├── tech-design.md      # 技术设计
     │   │   └── api-handbook.md     # API 文档
     │   ├── ui/
-    │   │   └── ui-design.md        # UI 设计规格（可选）
+    │   │   ├── ui-design.md        # UI 设计规格（可选）
+    │   │   ├── DESIGN.md           # 自定义设计风格（可选，优先于内置风格）
+    │   │   └── prototype/          # HTML 原型（可选，/ui-design 生成）
+    │   │       ├── index.html      #   导航总览
+    │   │       ├── styles.css      #   共享样式
+    │   │       ├── app.js          #   共享交互
+    │   │       └── *.html          #   各页面原型
     │   └── tasks/
     │       ├── index.json          # 任务定义（核心）
     │       ├── process/            # 运行时状态（不提交）
@@ -256,7 +262,7 @@ pending → in_progress → completed
 | `/brainstorm` | 产出提案 `proposals/<slug>/proposal.md` | 模糊想法，需要探索后再正式化 |
 | `/write-prd` | 产出 PRD + manifest | 用户描述需求但细节不明 |
 | `/design-tech` | 产出设计文档 | PRD 已完成，需要技术方案 |
-| `/ui-design` | 产出 UI 设计规格 | PRD 定义了 UI 功能，需要 UI 设计 |
+| `/ui-design` | 产出 UI 设计规格 + 可选 HTML 原型 | PRD 定义了 UI 功能，需要 UI 设计。支持 5 种内置风格（Vercel/Shadcn/Tailwind UI/Stripe/Apple）或用户自定义 DESIGN.md |
 | `/breakdown-tasks` | 产出任务列表 | 设计完成，需要拆分执行 |
 
 ### 评估工具
