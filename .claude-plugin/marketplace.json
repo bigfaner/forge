@@ -11,7 +11,7 @@
 			"name": "zcode",
 			"source": "./plugins/zcode",
 			"description": "Task management and workflow helper tools for Claude Code",
-			"version": "2.0.2",
+			"version": "2.1.0",
 			"keywords": [
 				"task",
 				"workflow",
