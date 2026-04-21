@@ -89,6 +89,17 @@ Agent(
 )
 ```
 
+## Post-Completion: E2E Verification
+
+After all tasks are completed (loop ends with "No available task"):
+
+```
+Suggest to user:
+"All tasks completed. Run `/run-e2e-tests` to verify against PRD acceptance criteria."
+```
+
+Do NOT run e2e tests automatically — the dispatcher must not execute tests. Only suggest.
+
 ## Related Commands
 
 | Command | Usage |
@@ -96,3 +107,4 @@ Agent(
 | `/execute-task` | Manual single task |
 | `/claim-task` | Claim task only |
 | `/record-task` | Create record + update status |
+| `/run-e2e-tests` | E2E verification against PRD |

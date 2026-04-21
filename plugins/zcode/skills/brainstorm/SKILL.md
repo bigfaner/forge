@@ -180,8 +180,22 @@ git add docs/proposals/<slug>/
 git commit -m "docs: add proposal for <feature-slug>"
 ```
 
+## Step 7: Adversarial Eval Prompt
+
+After committing, ask the user:
+
+> 提案已提交。是否进行对抗性评估（`/eval-proposal`）？
+> - 评分器会对提案进行百分制评分，找出弱点后自动修订，多轮迭代直到达到目标分数。
+> - 可指定目标分数和迭代次数，如 `/eval-proposal --target 85 --iterations 5`
+
+Use `AskUserQuestion` with options:
+- **Yes (default 80/3)** — run `/eval-proposal`
+- **Custom** — specify target score and iterations
+- **No** — proceed to `/write-prd`
+
 ## Integration
 
 Works well with:
 
+- `/eval-proposal` — Adversarial evaluation loop after proposal is created
 - `/write-prd` — Takes proposal as optional input to formalize into PRD
