@@ -11,15 +11,8 @@
 			"name": "zcode",
 			"source": "./plugins/zcode",
 			"description": "Task management and workflow helper tools for Claude Code",
-			"version": "2.1.2",
-			"keywords": [
-				"task",
-				"workflow",
-				"productivity",
-				"prd",
-				"git",
-				"eval-proposal"
-			]
+			"version": "2.2.0",
+			"keywords": ["task", "workflow", "productivity", "prd", "git", "eval"]
 		}
 	]
 }

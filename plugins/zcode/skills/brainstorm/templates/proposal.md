@@ -8,7 +8,13 @@ status: Draft
 
 ## Problem
 
-<!-- What problem are we solving? Why now? -->
+<!-- State the core problem in one unambiguous sentence. Two readers should interpret it the same way. -->
+
+### Evidence
+<!-- Data, user feedback, or concrete examples proving this problem exists. Avoid "we think..." — cite specifics. -->
+
+### Urgency
+<!-- Why solve this now? What happens if we don't? What's the cost of delay? -->
 
 ## Proposed Solution
 
@@ -18,6 +24,7 @@ status: Draft
 
 | Approach | Pros | Cons | Verdict |
 |----------|------|------|---------|
+| Do nothing | <!-- cost of inaction --> | <!-- --> | Rejected: <!-- why --> |
 | <!-- --> | <!-- --> | <!-- --> | <!-- --> |
 
 ## Scope
@@ -36,7 +43,7 @@ status: Draft
 
 ## Success Criteria
 
-- [ ] <!-- measurable outcome -->
+- [ ] <!-- Each criterion must include a number, percentage, or observable behavior that can be objectively verified -->
 
 ## Next Steps
 
