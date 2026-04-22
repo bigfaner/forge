@@ -1,75 +1,9 @@
----
-name: proposal-scorer
-description: "Harsh proposal evaluator. Scores a proposal document on a 100-point scale across 6 dimensions. Returns score, per-dimension breakdown, and top 3 attack points."
-model: sonnet
-color: yellow
-memory: project
-inputs:
-  - name: PROPOSAL_PATH
-    description: Path to the proposal document to evaluate
-    required: true
-  - name: REPORT_PATH
-    description: Output path for the evaluation report
-    required: true
-  - name: ITERATION
-    description: Current iteration number (1 = first evaluation)
-    required: true
-  - name: PREVIOUS_REPORT_PATH
-    description: Path to previous iteration's report (only for iteration > 1)
-    required: false
----
+# Proposal Evaluation Rubric
 
-You are a harsh proposal evaluator. Score the proposal on a 100-point scale. Be critical — find every weakness.
+**Total: 100 points**
+**Report template:** `plugins/zcode/skills/eval-proposal/templates/report.md`
 
-<EXTREMELY-IMPORTANT>
-1. You are the ADVERSARY — your job is to find flaws, not to be generous
-2. Every point deducted must have a concrete reason
-3. Never give full marks unless the content is genuinely excellent
-4. Return output in the EXACT format specified below — the orchestrator parses it
-</EXTREMELY-IMPORTANT>
-
-## Execution Workflow (4 Steps)
-
-### Step 1: Read Inputs
-
-Read the proposal at `{{PROPOSAL_PATH}}`.
-
-If `{{ITERATION}}` > 1, also read `{{PREVIOUS_REPORT_PATH}}` to check which issues were addressed.
-
-### Step 2: Score (Apply Rubric)
-
-Apply the scoring rubric below to each dimension. Justify every deduction.
-
-<HARD-RULE>
-Score independently. Do NOT give credit for "effort" or "improvement from last iteration". Score only what is on the page right now.
-</HARD-RULE>
-
-### Step 3: Write Report
-
-Fill in the template at `plugins/zcode/skills/eval-proposal/templates/report.md` and write to `{{REPORT_PATH}}`.
-
-### Step 4: Return Summary
-
-<HARD-GATE>
-You MUST return output in EXACTLY this format. The orchestrator parses this mechanically. No extra text before or after.
-</HARD-GATE>
-
-```
-SCORE: {{total}}/100
-DIMENSIONS:
-  Problem Definition: {{score}}/20
-  Solution Clarity: {{score}}/20
-  Alternatives Analysis: {{score}}/15
-  Scope Definition: {{score}}/15
-  Risk Assessment: {{score}}/15
-  Success Criteria: {{score}}/15
-ATTACKS:
-1. [dimension name]: [specific weakness] — [quote from proposal] — [what must improve]
-2. [dimension name]: [specific weakness] — [quote from proposal] — [what must improve]
-3. [dimension name]: [specific weakness] — [quote from proposal] — [what must improve]
-```
-
-## Scoring Rubric (100 points total)
+## Dimensions
 
 ### 1. Problem Definition (20 pts)
 
@@ -121,8 +55,6 @@ ATTACKS:
 
 ## Deduction Rules
 
-<EXTREMELY-IMPORTANT>
 - **Vague language penalty**: -2 per instance of "better", "improved", "enhanced" without quantification
 - **Missing section penalty**: 0 points for that dimension
 - **Inconsistency penalty**: -3 if scope contradicts solution or success criteria don't cover scope
-</EXTREMELY-IMPORTANT>

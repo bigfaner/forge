@@ -1,169 +1,95 @@
 ---
 date: "{{DATE}}"
-prd_path: "{{PRD_PATH}}"
-user_stories_path: "{{USER_STORIES_PATH}}"
-evaluator: Claude (automated)
+doc_dir: "{{DOC_DIR}}"
+iteration: "{{ITERATION}}"
+target_score: "{{TARGET}}"
+evaluator: Claude (automated, adversarial)
 ---
 
-# PRD 评估报告
+# PRD Eval — Iteration {{ITERATION}}
 
----
-
-## 总评: [A/B/C/D/F]
+**Score: {{SCORE}}/100** (target: {{TARGET}})
 
 ```
-╔═══════════════════════════════════════════════════════════════════╗
-║                        PRD QUALITY REPORT                         ║
-╠═══════════════════════════════════════════════════════════════════╣
-║                                                                   ║
-║  1. 背景与目标 (Background & Goals)                   Grade: _   ║
-║     ├── 背景三要素（原因/对象/人员）                  [A/B/C/F]   ║
-║     ├── 目标量化                                     [A/B/C/F]   ║
-║     └── 背景与目标逻辑一致                           [A/B/C/F]   ║
-║                                                                   ║
-║  2. 流程说明 (Flow)                                   Grade: _   ║
-║     ├── Mermaid 流程图存在                           [A/B/C/F]   ║
-║     ├── 主流程完整                                   [A/B/C/F]   ║
-║     └── 决策点 + 异常分支覆盖                        [A/B/C/F]   ║
-║                                                                   ║
-║  3. 功能描述 (Functional Specs)                       Grade: _   ║
-║     ├── 列表页（7要素）                              [A/B/C/F]   ║
-║     ├── 按钮（权限/状态/校验/逻辑）                   [A/B/C/F]   ║
-║     ├── 表单（字段 + 校验规则）                       [A/B/C/F]   ║
-║     └── 关联性需求覆盖                               [A/B/C/F]   ║
-║                                                                   ║
-║  4. 用户故事 (User Stories)                           Grade: _   ║
-║     ├── 用户覆盖                                     [A/B/C/F]   ║
-║     ├── 格式规范 (As a/I want/So that)               [A/B/C/F]   ║
-║     └── 每个故事有 AC (Given/When/Then)              [A/B/C/F]   ║
-║                                                                   ║
-║  5. 范围清晰度 (Scope Clarity)                        Grade: _   ║
-║     ├── In-scope 具体                                [A/B/C/F]   ║
-║     ├── Out-of-scope 明确                            [A/B/C/F]   ║
-║     └── 与功能描述和用户故事一致                      [A/B/C/F]   ║
-║                                                                   ║
-╚═══════════════════════════════════════════════════════════════════╝
+┌─────────────────────────────────────────────────────────────────┐
+│                       PRD QUALITY SCORECARD                      │
+├──────────────────────────────┬──────────┬──────────┬────────────┤
+│ Dimension                    │ Score    │ Max      │ Status     │
+├──────────────────────────────┼──────────┼──────────┼────────────┤
+│ 1. Background & Goals        │  ___     │  20      │ ✅/⚠️/❌    │
+│    Background three elements │  ___/7   │          │            │
+│    Goals quantified          │  ___/7   │          │            │
+│    Logical consistency       │  ___/6   │          │            │
+├──────────────────────────────┼──────────┼──────────┼────────────┤
+│ 2. Flow Diagrams             │  ___     │  20      │ ✅/⚠️/❌    │
+│    Mermaid diagram exists    │  ___/7   │          │            │
+│    Main path complete        │  ___/7   │          │            │
+│    Decision + error branches │  ___/6   │          │            │
+├──────────────────────────────┼──────────┼──────────┼────────────┤
+│ 3. Functional Specs          │  ___     │  20      │ ✅/⚠️/❌    │
+│    Tables complete           │  ___/7   │          │            │
+│    Field descriptions clear  │  ___/7   │          │            │
+│    Validation rules explicit │  ___/6   │          │            │
+├──────────────────────────────┼──────────┼──────────┼────────────┤
+│ 4. User Stories              │  ___     │  20      │ ✅/⚠️/❌    │
+│    Coverage per user type    │  ___/7   │          │            │
+│    Format correct            │  ___/7   │          │            │
+│    AC per story              │  ___/6   │          │            │
+├──────────────────────────────┼──────────┼──────────┼────────────┤
+│ 5. Scope Clarity             │  ___     │  20      │ ✅/⚠️/❌    │
+│    In-scope concrete         │  ___/7   │          │            │
+│    Out-of-scope explicit     │  ___/7   │          │            │
+│    Consistent with specs     │  ___/6   │          │            │
+├──────────────────────────────┼──────────┼──────────┼────────────┤
+│ TOTAL                        │  ___     │  100     │            │
+└──────────────────────────────┴──────────┴──────────┴────────────┘
 ```
 
 ---
 
-## 结构完整性
+## Deductions
 
-**prd.md:**
-
-| Section | 状态 | 备注 |
-|---------|------|------|
-| 需求背景（原因/对象/人员） | ✅/❌ | |
-| 需求目标 + 量化指标 | ✅/❌ | |
-| Scope（In + Out） | ✅/❌ | |
-| 流程说明 + Mermaid 流程图 | ✅/❌ | |
-| 功能描述（列表页/按钮/表单） | ✅/❌ | |
-| 其他说明（性能/数据/监控/安全） | ✅/⚠️/❌ | |
-| 关联性需求改动 | ✅/⚠️/❌ | |
-
-**user-stories.md:**
-
-| Section | 状态 | 备注 |
-|---------|------|------|
-| User Stories | ✅/❌ | |
-| Acceptance Criteria | ✅/❌ | |
+| Location | Issue | Penalty |
+|----------|-------|---------|
+| <!-- section:line --> | <!-- vague language / missing content / inconsistency --> | <!-- -N pts --> |
 
 ---
 
-## 1. 背景与目标 - Grade: _
+## Attack Points
 
-| 检查项 | 状态 | 问题 |
-|--------|------|------|
-| 背景包含原因 | ✅/❌ | |
-| 背景包含对象 | ✅/❌ | |
-| 背景包含人员 | ✅/❌ | |
-| 目标有量化指标 | ✅/❌ | |
-| 背景与目标逻辑一致 | ✅/❌ | |
+### Attack 1: [dimension — specific weakness]
 
-**问题**: <列出具体问题>
-**建议**: <列出改进建议>
+**Where**: <!-- quote from document -->
+**Why it's weak**: <!-- concrete critique -->
+**What must improve**: <!-- actionable fix -->
 
----
+### Attack 2: [dimension — specific weakness]
 
-## 2. 流程说明 - Grade: _
+**Where**: <!-- quote from document -->
+**Why it's weak**: <!-- concrete critique -->
+**What must improve**: <!-- actionable fix -->
 
-| 检查项 | 状态 | 问题 |
-|--------|------|------|
-| Mermaid 流程图存在 | ✅/❌ | |
-| 主流程路径完整（开始→结束） | ✅/❌ | |
-| 关键决策点（菱形节点） | ✅/❌ | |
-| 异常分支覆盖 | ✅/❌ | |
-| 多系统时有数据流说明 | ✅/⚠️/N/A | |
+### Attack 3: [dimension — specific weakness]
 
-**问题**: <列出具体问题>
-**建议**: <列出改进建议>
+**Where**: <!-- quote from document -->
+**Why it's weak**: <!-- concrete critique -->
+**What must improve**: <!-- actionable fix -->
 
 ---
 
-## 3. 功能描述 - Grade: _
+## Previous Issues Check
 
-| 检查项 | 状态 | 问题 |
-|--------|------|------|
-| 列表页：数据来源 | ✅/❌/N/A | |
-| 列表页：显示范围 + 权限 | ✅/❌/N/A | |
-| 列表页：排序 + 翻页 | ✅/❌/N/A | |
-| 列表页：字段表格 | ✅/❌/N/A | |
-| 列表页：搜索条件 | ✅/❌/N/A | |
-| 按钮：权限 + 状态条件 | ✅/❌/N/A | |
-| 按钮：校验规则 | ✅/❌/N/A | |
-| 按钮：数据逻辑 | ✅/❌/N/A | |
-| 表单：字段说明 | ✅/❌/N/A | |
-| 表单：校验规则 | ✅/❌/N/A | |
-| 关联性需求改动 | ✅/❌/N/A | |
+<!-- Only for iteration > 1 -->
 
-**问题**: <列出具体问题>
-**建议**: <列出改进建议>
+| Previous Attack | Addressed? | Evidence |
+|----------------|------------|----------|
+| <!-- attack from iter N-1 --> | ✅/❌ | <!-- what changed / what didn't --> |
 
 ---
 
-## 4. 用户故事 - Grade: _
+## Verdict
 
-| 检查项 | 目标 | 实际 | 状态 |
-|--------|------|------|------|
-| 目标用户数 | 背景中每个用户有故事 | X 个用户 / Y 个故事 | ✅/❌ |
-| 格式正确 | As a / I want / So that | N/M 个符合 | ✅/❌ |
-| 行为具体 | 无模糊动词 | 发现问题: ... | ✅/❌ |
-| 每个故事有 AC | Given/When/Then | N/M 个有 | ✅/❌ |
-
-**问题**: <列出具体问题>
-**建议**: <列出改进建议>
-
----
-
-## 5. 范围清晰度 - Grade: _
-
-| 检查项 | 状态 | 备注 |
-|--------|------|------|
-| In-scope 每项是具体交付物 | ✅/❌ | |
-| Out-of-scope 明确列出延期项 | ✅/❌ | |
-| Scope 与功能描述一致 | ✅/❌ | |
-| Scope 与用户故事一致 | ✅/❌ | |
-
-**问题**: <列出具体问题>
-**建议**: <列出改进建议>
-
----
-
-## 优先改进项
-
-| 优先级 | 维度 | 问题 | 建议操作 |
-|--------|------|------|----------|
-| P0 | | | |
-| P1 | | | |
-| P2 | | | |
-
----
-
-## 结论
-
-- **可以进入 `/design-tech`**: 是 / 否（需先修复 P0 问题）
-- **下一步建议**:
-  - 执行 `/design-tech` 产出技术设计文档（架构、接口、数据模型）
-  - 若存在 `prd-ui-functions.md`，同时执行 `/ui-design` 产出 UI 设计规格
-  - 设计文档定稿后，再执行 `/breakdown-tasks` 将设计拆解为可执行任务
-- **建议**: <一句话总结>
+- **Score**: {{SCORE}}/100
+- **Target**: {{TARGET}}/100
+- **Gap**: {{GAP}} points
+- **Action**: {{Continue to iteration N+1 / Target reached / Iterations exhausted}}
