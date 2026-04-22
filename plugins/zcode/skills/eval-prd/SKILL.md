@@ -144,10 +144,3 @@ Increment iteration counter. Return to Step 2.
 ```
 
 Save the final report to `docs/features/<slug>/prd/eval/report.md`.
-
-## Related
-
-- `/write-prd` — Create or revise the PRD
-- `/design-tech` — Next step after PRD passes evaluation
-- `/ui-design` — Next step (optional) if prd-ui-functions.md exists
-- `/breakdown-tasks` — After design docs are finalized

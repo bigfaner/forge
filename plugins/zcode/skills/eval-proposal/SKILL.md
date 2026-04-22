@@ -138,6 +138,3 @@ Increment iteration counter. Return to Step 2.
 
 Save the final report to `docs/proposals/<slug>/eval/report.md`.
 
-## Related
-
-- `/brainstorm` — Creates or revises the proposal document

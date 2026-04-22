@@ -139,9 +139,3 @@ Increment iteration counter. Return to Step 2.
 ```
 
 Save the final report to `docs/features/<slug>/design/eval/report.md`.
-
-## Related
-
-- `/design-tech` — Create or revise the design.md
-- `/eval-prd` — Evaluate PRD before design starts
-- `/breakdown-tasks` — Next step after design passes evaluation
