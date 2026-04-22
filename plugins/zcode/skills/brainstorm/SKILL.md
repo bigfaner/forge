@@ -139,7 +139,8 @@ After understanding the problem and solution direction, propose 2-3 **business a
 1. **Present options conversationally** with your recommendation
 2. **Lead with your recommended option** and explain why
 3. **Include trade-offs** for each approach (business impact, user experience, scope)
-4. **Let user make the final decision**
+4. **Always include "do nothing"** (status quo) as one alternative — it forces honest assessment of whether the problem warrants action
+5. **Let user make the final decision**
 
 **禁止**：方案中不得涉及具体技术选型。方案应描述"做什么"（功能、流程、用户体验）而非"怎么做"（技术实现）。但可以提及非功能性约束（如"响应时间 < 200ms"、"需支持离线使用"）。
 
@@ -165,6 +166,19 @@ If scope is too large, suggest decomposing into multiple proposals.
 
 Save to `docs/proposals/<slug>/proposal.md` using `templates/proposal.md`.
 
+### Quality Standards
+
+Before presenting, verify each section meets these standards:
+
+| Section | Standard | Red Flag |
+|---------|----------|----------|
+| Problem | Specific statement + evidence + urgency | "We need to improve X" |
+| Solution | Concrete user-facing behavior | "Build a system that..." |
+| Alternatives | Honest trade-offs including "do nothing" | Straw-man alternatives with only pros |
+| Scope | Deliverable-level items, bounded | Vague areas, open-ended |
+| Risks | 3+ specific risks with actionable mitigations | "We'll handle it" |
+| Success Criteria | Measurable, testable, covers all scope | "Works well" or "Better UX" |
+
 <HARD-RULE>
 Do NOT commit the proposal automatically. Present the document to the user for review and wait for explicit approval before committing.
 </HARD-RULE>
@@ -182,16 +196,13 @@ git commit -m "docs: add proposal for <feature-slug>"
 
 ## Step 7: Adversarial Eval Prompt
 
-After committing, ask the user:
+After committing, use `AskUserQuestion` to ask:
 
-> 提案已提交。是否进行对抗性评估（`/eval-proposal`）？
-> - 评分器会对提案进行百分制评分，找出弱点后自动修订，多轮迭代直到达到目标分数。
-> - 可指定目标分数和迭代次数，如 `/eval-proposal --target 85 --iterations 5`
+> 是否运行 `/eval-proposal` 对提案进行对抗性评估？（默认 80 分 / 3 轮）
 
-Use `AskUserQuestion` with options:
-- **Yes (default 80/3)** — run `/eval-proposal`
-- **Custom** — specify target score and iterations
-- **No** — proceed to `/write-prd`
+- **Yes** → invoke `/eval-proposal` via `Skill` tool
+- **Custom** → invoke `/eval-proposal --target X --iterations Y` via `Skill` tool
+- **No** → proceed to `/write-prd`
 
 ## Integration
 

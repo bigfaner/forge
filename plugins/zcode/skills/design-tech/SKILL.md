@@ -53,6 +53,8 @@ ls docs/features/<slug>/prd/prd-spec.md
    - Understand requirements
    - Note non-functional requirements — these are the **technical constraints** that drive your decisions
    - Identify acceptance criteria
+3. Read `prd/prd-user-stories.md` — extract all Given/When/Then acceptance criteria into a checklist
+   - Keep this AC list visible throughout the design process — every AC must map to a design element
 
 > **Note**: PRD 故意不含技术选型（brainstorm 和 write-prd 阶段禁止引入）。所有技术决策从本阶段开始。用 PRD 中的非功能性约束作为技术选型的输入条件。
 
@@ -95,6 +97,27 @@ Present incrementally, section by section:
 | Testing        | Test strategy           |
 | Security       | Security considerations |
 
+### 5.1 PRD Coverage Verification
+
+After drafting each section, verify every PRD acceptance criterion is addressed:
+
+1. For each AC from `prd-user-stories.md`, identify which interface, model, or component handles it
+2. If an AC has no corresponding design element, add one
+3. Document the mapping in the "PRD Coverage Map" section of the template
+
+### 5.2 Breakdown-Readiness Check
+
+Before seeking approval, verify the design can be directly decomposed into implementation tasks:
+
+| Check | Requirement |
+|-------|-------------|
+| Components enumerable | Can you list and count all components/modules by name? |
+| Interfaces → tasks | Does each interface map to at least one implementation task? |
+| Models → tasks | Does each data model map to at least one schema/migration task? |
+| PRD AC coverage | Are all acceptance criteria from user stories addressed? |
+
+If any check fails, add the missing detail before presenting to the user.
+
 ## Step 6: Get Approval
 
 For each section, wait for user approval.
@@ -111,6 +134,16 @@ Update `manifest.md`:
 - Add Tech Design and API Handbook rows to Documents table
 - Add traceability links from PRD sections to design sections
 - Advance status to `design` if `/ui-design` already completed or if UI is not applicable
+
+## Step 9: Adversarial Eval Prompt
+
+After committing, use `AskUserQuestion` to ask:
+
+> 是否运行 `/eval-design` 对技术设计进行对抗性评估？（默认 80 分 / 3 轮）
+
+- **Yes** → invoke `/eval-design` via `Skill` tool
+- **Custom** → invoke `/eval-design --target X --iterations Y` via `Skill` tool
+- **No** → proceed to `/breakdown-tasks`
 
 ## Integration
 

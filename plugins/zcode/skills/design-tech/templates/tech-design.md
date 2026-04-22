@@ -26,42 +26,51 @@ status: Draft
 
 ## Interfaces
 
-### Interface 1
+### Interface 1: <!-- Name -->
+
+<!-- Each interface must have typed parameters and return values.
+   A developer should be able to implement it without guessing any types or shapes. -->
 ```
-// Define key interfaces here
-interface SomeInterface {
-    method(arg: Type): Result
-}
+// Full typed signature
+methodName(param1: Type, param2: Type): ReturnType
 ```
 
 ## Data Models
 
-### Model 1
+### Model 1: <!-- Name -->
+
+<!-- Every field must have name, type, and constraint. No prose-only descriptions. -->
 ```
-// Define data structures here
-type SomeStruct = {
-    field: string
+ModelName = {
+    fieldName: Type       // constraint or note
+    fieldName: Type       // constraint or note
 }
 ```
 
 ## Error Handling
 
-### Error Types
-<!-- Define custom error types -->
+### Error Types & Codes
 
-### Handling Strategy
-<!-- How errors are propagated and handled -->
+| Error Code | Name | Description | HTTP Status |
+|------------|------|-------------|-------------|
+| <!-- e.g. ERR_NOT_FOUND --> | <!-- e.g. ResourceNotFoundError --> | <!-- when it occurs --> | <!-- e.g. 404 --> |
+
+### Propagation Strategy
+<!-- How errors flow between layers. Who catches what? How are internal errors translated to API responses? -->
 
 ## Testing Strategy
 
-### Unit Tests
-<!-- What to test at unit level -->
+### Per-Layer Test Plan
 
-### Integration Tests
-<!-- What to test at integration level -->
+| Layer | Test Type | Tool | What to Test | Coverage Target |
+|-------|-----------|------|--------------|-----------------|
+| <!-- e.g. API --> | <!-- Integration --> | <!-- e.g. supertest --> | <!-- endpoint contracts --> | <!-- e.g. 80% --> |
 
-### Coverage Target
-<!-- Expected coverage percentage -->
+### Key Test Scenarios
+<!-- Critical scenarios that MUST pass: happy path, error paths, edge cases -->
+
+### Overall Coverage Target
+<!-- Single numeric target, e.g., 80% -->
 
 ## Security Considerations
 
@@ -70,6 +79,15 @@ type SomeStruct = {
 
 ### Mitigations
 <!-- How risks are addressed -->
+
+## PRD Coverage Map
+
+<!-- Map each PRD acceptance criterion to a design component.
+   Ensures /breakdown-tasks can derive tasks for every requirement. -->
+
+| PRD Requirement / AC | Design Component | Interface / Model |
+|----------------------|------------------|-------------------|
+| <!-- from prd-spec or user-stories --> | <!-- module/component --> | <!-- specific interface or model --> |
 
 ## Open Questions
 - [ ] Question 1

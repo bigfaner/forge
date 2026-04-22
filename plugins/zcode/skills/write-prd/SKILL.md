@@ -161,7 +161,11 @@ I want to [specific action]
 So that [concrete benefit/goal]
 ```
 
-**Acceptance Criteria** (Given/When/Then) 必须跟随每个故事。
+**Coverage rules:**
+- Every user type from 需求背景 must have at least one story
+- Actions must be concrete — not "manage" or "handle" but "create X", "filter by Y"
+
+**Acceptance Criteria** (Given/When/Then) 必须跟随每个故事，每条 AC 必须可客观验证。
 
 ## Step 8: Write UI Functions (if applicable)
 
@@ -174,6 +178,20 @@ Create `manifest.md` at the feature root using `templates/manifest.md`:
 - Fill in PRD entries and summaries
 - Set status to `prd`
 - Include UI Functions row only if `prd/prd-ui-functions.md` was created
+
+## Step 9.5: Self-Check
+
+Before presenting to the user, verify the PRD passes these checks:
+
+| Check | What to verify |
+|-------|----------------|
+| Background completeness | 原因 + 对象 + 人员 all present and specific |
+| Goals quantified | At least one numeric target (% , count, time) |
+| Flow diagram | Mermaid flowchart with decision points (diamond nodes) and at least one error/exception branch |
+| Functional specs | All applicable tables filled — no placeholder rows |
+| User stories | One story per user role, each with Given/When/Then AC |
+| Scope consistency | In-scope items match what's described in 功能描述 and user stories |
+| No vague language | No "better", "faster", "improved" without quantification |
 
 ## Step 10: Review & Commit
 
@@ -189,6 +207,16 @@ Do NOT commit documents automatically. Present all generated documents to the us
 git add docs/features/<feature-slug>/
 git commit -m "docs: add PRD for <feature-slug>"
 ```
+
+## Step 11: Adversarial Eval Prompt
+
+After committing, use `AskUserQuestion` to ask:
+
+> 是否运行 `/eval-prd` 对 PRD 进行对抗性评估？（默认 80 分 / 3 轮）
+
+- **Yes** → invoke `/eval-prd` via `Skill` tool
+- **Custom** → invoke `/eval-prd --target X --iterations Y` via `Skill` tool
+- **No** → proceed to `/design-tech`
 
 ## Integration
 
