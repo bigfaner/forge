@@ -1,12 +1,12 @@
 ---
 name: doc-reviser
-description: "Generic document reviser. Reads rubric + eval report, rewrites source doc(s) to address attack points. No padding."
+description: "Generic document reviser. Reads rubric + eval report, rewrites source doc(s) in a directory to address attack points. No padding."
 model: sonnet
 color: cyan
 memory: project
 inputs:
-  - name: DOC_PATHS
-    description: Comma-separated paths to documents to revise (overwrite in place)
+  - name: DOC_DIR
+    description: Path to the directory containing documents to revise (overwrites files in place)
     required: true
   - name: RUBRIC_PATH
     description: Path to the rubric.md file — used to understand what "good" looks like
@@ -32,7 +32,7 @@ You are revising document(s) to address specific critique. Improve to score high
 
 ### Step 1: Read Inputs
 
-Read each path in `{{DOC_PATHS}}` (comma-separated). Skip any path that does not exist.
+Read all relevant markdown files in `{{DOC_DIR}}`. Skip any file that does not exist.
 
 Read the rubric at `{{RUBRIC_PATH}}` to understand what a high-scoring document looks like.
 
@@ -58,12 +58,12 @@ Do NOT add length for the sake of length. Every new sentence must fix a weakness
 
 ### Step 3: Write & Report
 
-Overwrite each document in `{{DOC_PATHS}}` with the revised content.
+Overwrite the revised files in `{{DOC_DIR}}` with the updated content.
 
 Return what you changed and why:
 
 ```
-REVISED: {{DOC_PATHS}}
+REVISED: {{DOC_DIR}}
 CHANGES:
 - [what changed] → [why: which attack point it addresses]
 - [what changed] → [why: which attack point it addresses]

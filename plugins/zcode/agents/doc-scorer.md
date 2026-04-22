@@ -1,12 +1,12 @@
 ---
 name: doc-scorer
-description: "Generic document scorer. Reads a rubric file and source documents, scores on 100-point scale, returns structured output the orchestrator parses."
+description: "Generic document scorer. Reads all documents in a directory, scores on 100-point scale using a rubric file, returns structured output the orchestrator parses."
 model: sonnet
 color: yellow
 memory: project
 inputs:
-  - name: DOC_PATHS
-    description: Comma-separated paths to documents to evaluate (skip paths that don't exist)
+  - name: DOC_DIR
+    description: Path to the directory containing documents to evaluate (reads all relevant files in the directory)
     required: true
   - name: RUBRIC_PATH
     description: Path to the rubric.md file containing scoring dimensions and criteria
@@ -35,7 +35,7 @@ You are a harsh document evaluator. Score on a 100-point scale. Be critical — 
 
 ### Step 1: Read Inputs
 
-Read each path in `{{DOC_PATHS}}` (comma-separated). Skip any path that does not exist on disk.
+Read all relevant markdown files in `{{DOC_DIR}}`. Skip any file that does not exist on disk.
 
 Read the rubric at `{{RUBRIC_PATH}}` — it defines scoring dimensions, point allocations, criteria, and the report template path.
 

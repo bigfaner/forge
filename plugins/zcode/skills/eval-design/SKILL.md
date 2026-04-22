@@ -57,7 +57,7 @@ Check in order:
 3. Fall back to `design/tech-design.md`, `design/api-handbook.md`, `ui/ui-design.md`
 4. Ask user for path if not found
 
-Determine `<feature-slug>` from the path. Build `DOC_PATHS` as a comma-separated list of all design files that exist on disk (tech-design.md, api-handbook.md, ui-design.md).
+Determine `<feature-slug>` from the path. The design directory is `docs/features/<slug>/design/` (or wherever the design files live).
 
 ## Step 2: Invoke Scorer Subagent
 
@@ -65,7 +65,7 @@ Spawn `doc-scorer` agent via **Agent tool** (subagent_type: `zcode:doc-scorer` i
 
 <HARD-RULE>
 Pass these inputs to the scorer:
-- `DOC_PATHS` = comma-separated paths of existing design files
+- `DOC_DIR` = `docs/features/<slug>/design/`
 - `RUBRIC_PATH` = `plugins/zcode/skills/eval-design/templates/rubric.md`
 - `REPORT_PATH` = `docs/features/<slug>/design-eval-iteration-{{N}}.md`
 - `ITERATION` = current iteration number (1-based)
@@ -103,7 +103,7 @@ Spawn `doc-reviser` agent via **Agent tool** (subagent_type: `zcode:doc-reviser`
 
 <HARD-RULE>
 Pass these inputs to the reviser:
-- `DOC_PATHS` = same comma-separated paths as scorer
+- `DOC_DIR` = `docs/features/<slug>/design/`
 - `RUBRIC_PATH` = `plugins/zcode/skills/eval-design/templates/rubric.md`
 - `EVAL_REPORT_PATH` = `docs/features/<slug>/design-eval-iteration-{{N}}.md`
 - `ATTACK_POINTS` = the 3 attack points extracted from scorer output

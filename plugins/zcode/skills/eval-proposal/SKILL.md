@@ -76,7 +76,7 @@ Spawn `doc-scorer` agent via **Agent tool** (subagent_type: `zcode:doc-scorer` i
 
 <HARD-RULE>
 Pass these inputs to the scorer:
-- `DOC_PATHS` = `docs/proposals/<slug>/proposal.md`
+- `DOC_DIR` = `docs/proposals/<slug>/`
 - `RUBRIC_PATH` = `plugins/zcode/skills/eval-proposal/templates/rubric.md`
 - `REPORT_PATH` = `docs/proposals/<slug>/eval-iteration-{{N}}.md`
 - `ITERATION` = current iteration number (1-based)
@@ -114,7 +114,7 @@ Spawn `doc-reviser` agent via **Agent tool** (subagent_type: `zcode:doc-reviser`
 
 <HARD-RULE>
 Pass these inputs to the reviser:
-- `DOC_PATHS` = `docs/proposals/<slug>/proposal.md`
+- `DOC_DIR` = `docs/proposals/<slug>/`
 - `RUBRIC_PATH` = `plugins/zcode/skills/eval-proposal/templates/rubric.md`
 - `EVAL_REPORT_PATH` = `docs/proposals/<slug>/eval-iteration-{{N}}.md`
 - `ATTACK_POINTS` = the 3 attack points extracted from scorer output

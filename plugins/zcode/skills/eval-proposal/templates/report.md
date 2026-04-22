@@ -1,6 +1,6 @@
 ---
 date: "{{DATE}}"
-proposal_path: "{{PROPOSAL_PATH}}"
+doc_dir: "{{DOC_DIR}}"
 iteration: "{{ITERATION}}"
 target_score: "{{TARGET}}"
 evaluator: Claude (automated, adversarial)

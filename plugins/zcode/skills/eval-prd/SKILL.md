@@ -66,7 +66,7 @@ Check in order:
 3. Fall back to `docs/features/<current-feature>/prd/prd-spec.md` + `prd/prd-user-stories.md`
 4. Ask user for path if not found
 
-Determine `<feature-slug>` from the path. Build `DOC_PATHS` as a comma-separated list of all PRD files that exist on disk (prd-spec.md, prd-user-stories.md, prd-ui-functions.md).
+Determine `<feature-slug>` from the path. The PRD directory is `docs/features/<slug>/prd/`.
 
 ## Step 2: Invoke Scorer Subagent
 
@@ -74,7 +74,7 @@ Spawn `doc-scorer` agent via **Agent tool** (subagent_type: `zcode:doc-scorer` i
 
 <HARD-RULE>
 Pass these inputs to the scorer:
-- `DOC_PATHS` = comma-separated paths of existing PRD files
+- `DOC_DIR` = `docs/features/<slug>/prd/`
 - `RUBRIC_PATH` = `plugins/zcode/skills/eval-prd/templates/rubric.md`
 - `REPORT_PATH` = `docs/features/<slug>/prd-eval-iteration-{{N}}.md`
 - `ITERATION` = current iteration number (1-based)
@@ -112,7 +112,7 @@ Spawn `doc-reviser` agent via **Agent tool** (subagent_type: `zcode:doc-reviser`
 
 <HARD-RULE>
 Pass these inputs to the reviser:
-- `DOC_PATHS` = same comma-separated paths as scorer
+- `DOC_DIR` = `docs/features/<slug>/prd/`
 - `RUBRIC_PATH` = `plugins/zcode/skills/eval-prd/templates/rubric.md`
 - `EVAL_REPORT_PATH` = `docs/features/<slug>/prd-eval-iteration-{{N}}.md`
 - `ATTACK_POINTS` = the 3 attack points extracted from scorer output
