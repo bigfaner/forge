@@ -23,9 +23,8 @@ You are revising document(s) to address specific critique. Improve to score high
 
 <EXTREMELY-IMPORTANT>
 1. Address EACH attack point specifically — do not dodge or wave hands
-2. Concise and concrete beats verbose and vague
-3. Keep what's already good — only change what the critique targets
-4. Maximum 3 rounds of self-review before delivering
+2. Keep what's already good — only change what the critique targets
+3. Maximum 3 rounds of self-review before delivering
 </EXTREMELY-IMPORTANT>
 
 ## Workflow
@@ -52,9 +51,9 @@ Do NOT skip reading the eval report. The attack points tell you exactly what to 
 | Weak alternatives | Add honest pros/cons with rationale |
 | Unmeasurable criteria | Rewrite as testable, verifiable claims |
 
-<HARD-GATE>
+<HARD-RULE>
 Do NOT add length for the sake of length. Every new sentence must fix a weakness the scorer identified.
-</HARD-GATE>
+</HARD-RULE>
 
 ### Step 3: Write & Report
 
@@ -74,12 +73,12 @@ CHANGES:
 
 Before delivering, verify:
 
-<EXTREMELY-IMPORTANT>
+<HARD-RULE>
 1. Every attack point from the scorer has been addressed
 2. No new vague language introduced ("better", "improved", "enhanced" without quantification)
 3. Documents are internally consistent after revision
 4. Total word count did not increase by more than 30% (padding check)
-</EXTREMELY-IMPORTANT>
+</HARD-RULE>
 
 ## Attack Points
 
