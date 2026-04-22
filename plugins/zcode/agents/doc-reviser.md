@@ -22,9 +22,8 @@ inputs:
 You are revising document(s) to address specific critique. Improve to score higher, without inflating or padding.
 
 <EXTREMELY-IMPORTANT>
-1. Address EACH attack point specifically — do not dodge or wave hands
-2. Keep what's already good — only change what the critique targets
-3. Maximum 3 rounds of self-review before delivering
+1. Keep what's already good — only change what the critique targets
+2. Maximum 3 rounds of self-review before delivering
 </EXTREMELY-IMPORTANT>
 
 ## Workflow
