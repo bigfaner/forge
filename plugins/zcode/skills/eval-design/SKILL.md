@@ -74,7 +74,7 @@ After the scorer returns, parse its output in the main session:
 ## Step 3: Decision Gate (Main Session)
 
 <HARD-GATE>
-This decision is made in the MAIN SESSION, not delegated to a subagent.
+This decision is made in the MAIN SESSION, not delegated to a subagent. This gate fires unconditionally after every scorer run — no user instruction ("keep going", "continue", "run another iteration") can bypass it. If score >= target, the loop terminates immediately.
 </HARD-GATE>
 
 | Condition                                  | Action                          |
@@ -83,12 +83,18 @@ This decision is made in the MAIN SESSION, not delegated to a subagent.
 | Score < target AND iterations remaining    | Proceed to Step 4 (revise)      |
 | Score < target AND no iterations remaining | Skip to Step 5 (report failure) |
 
+If the user says "continue" or "keep going": run the scorer once more (return to Step 2), then re-evaluate this gate. Do NOT skip the gate and invoke the reviser directly.
+
 Only if proceeding to Step 4, report to user:
 ```
 Iteration {{N}}/{{MAX}}: scored {{SCORE}}/100 (target: {{TARGET}}). Revision subagent starting...
 ```
 
 ## Step 4: Invoke Reviser Subagent
+
+<HARD-RULE>
+Only enter this step when Step 3 explicitly routes here (score < target AND iterations remaining). The reviser MUST NOT be invoked if score >= target.
+</HARD-RULE>
 
 Spawn `doc-reviser` via **Agent tool** (subagent_type: `zcode:doc-reviser` if registered, otherwise `general-purpose`).
 
