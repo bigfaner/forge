@@ -42,7 +42,7 @@ ls docs/features/<slug>/prd/prd-ui-functions.md
 ## Process Flow
 
 ```
-1. Read manifest → 2. Read UI functions → 3. Select design style → 4. Draft design → 5. Write design → 6. Update manifest → 7. Ask about prototype → 8. Generate prototype (optional)
+1. Read manifest → 2. Read UI functions → 3. Select design style → 4. Draft design → 5. Write design → 6. Update manifest → 7. Eval prompt → 8. Prototype prompt → 9. Generate prototype (optional)
 ```
 
 ## Step 1: Read Manifest
@@ -127,20 +127,26 @@ Update `manifest.md`:
 
 Use `templates/manifest-update-ui.md` for the update pattern.
 
-## Step 7: Ask About Prototype
+## Step 7: Adversarial Eval Prompt
 
-`ui-design.md` 写完后，使用 `AskUserQuestion` 询问用户：
+After updating manifest, use `AskUserQuestion` to ask:
 
-**Question**: "UI 设计规格已完成。是否要生成 HTML/CSS/JS 交互原型？"
+> Run `/eval-ui` for adversarial evaluation of the UI design? (default 80/3)
 
-| Option                 | Description                                  |
-| ---------------------- | -------------------------------------------- |
-| **Generate prototype** | 生成多文件 HTML 原型（共享 CSS/JS + 每页独立 HTML） |
-| **Skip for now**       | 仅保留设计规格文档，后续再生成原型           |
+- **Yes** → invoke `/eval-ui` via `Skill` tool
+- **Custom** → invoke `/eval-ui --target X --iterations Y` via `Skill` tool
+- **No** → proceed to prototype prompt
 
-如果用户选择生成原型，进入 Step 8。
+## Step 8: Prototype Prompt
 
-## Step 8: Generate Prototype (Optional)
+Use `AskUserQuestion`:
+
+> Generate HTML/CSS/JS interactive prototype from the UI design?
+
+- **Yes** → proceed to Step 9
+- **No** → done
+
+## Step 9: Generate Prototype (Optional)
 
 根据 `ui-design.md` 和选定的 design style 生成 HTML 原型：
 
@@ -158,4 +164,4 @@ Works well with:
 
 - `/write-prd` — Produces `prd/prd-ui-functions.md` input
 - `/design-tech` — Parallel skill; both must complete before breakdown
-- `/eval-design` — Evaluates UI design alongside tech design
+- `/eval-ui` — Adversarial evaluation after UI design is created
