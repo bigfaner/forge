@@ -1,7 +1,6 @@
 ---
 date: "{{DATE}}"
-design_path: "{{DESIGN_PATH}}"
-prd_path: "{{PRD_PATH}}"
+doc_paths: "{{DOC_PATHS}}"
 iteration: "{{ITERATION}}"
 target_score: "{{TARGET}}"
 evaluator: Claude (automated, adversarial)
