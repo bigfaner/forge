@@ -2,169 +2,102 @@
 date: "{{DATE}}"
 design_path: "{{DESIGN_PATH}}"
 prd_path: "{{PRD_PATH}}"
-evaluator: Claude (automated)
+iteration: "{{ITERATION}}"
+target_score: "{{TARGET}}"
+evaluator: Claude (automated, adversarial)
 ---
 
-# Design 评估报告
+# Design Eval — Iteration {{ITERATION}}
 
----
-
-## 总评: [A/B/C/D/F]
+**Score: {{SCORE}}/100** (target: {{TARGET}})
 
 ```
-╔═══════════════════════════════════════════════════════════════════╗
-║                      DESIGN QUALITY REPORT                        ║
-╠═══════════════════════════════════════════════════════════════════╣
-║                                                                   ║
-║  1. 架构清晰度 (Architecture Clarity)               Grade: _     ║
-║     ├── 层级归属明确                                [A/B/C/F]    ║
-║     ├── 组件图存在                                  [A/B/C/F]    ║
-║     └── 依赖关系列出                                [A/B/C/F]    ║
-║                                                                   ║
-║  2. 接口与模型定义 (Interface & Model)               Grade: _     ║
-║     ├── 接口有类型签名                              [A/B/C/F]    ║
-║     ├── 模型有字段类型和约束                         [A/B/C/F]    ║
-║     └── 可直接驱动实现                              [A/B/C/F]    ║
-║                                                                   ║
-║  3. 错误处理 (Error Handling)                        Grade: _     ║
-║     ├── 错误类型定义                                [A/B/C/F]    ║
-║     ├── 传播策略清晰                                [A/B/C/F]    ║
-║     └── HTTP 状态码映射                             [A/B/C/F]    ║
-║                                                                   ║
-║  4. 测试策略 (Testing Strategy)                      Grade: _     ║
-║     ├── 按层级分解                                  [A/B/C/F]    ║
-║     ├── 覆盖率目标                                  [A/B/C/F]    ║
-║     └── 测试工具指定                                [A/B/C/F]    ║
-║                                                                   ║
-║  5. 可拆解性 (Breakdown-Readiness) ★                Grade: _     ║
-║     ├── 组件可枚举                                  [A/B/C/F]    ║
-║     ├── 任务可推导                                  [A/B/C/F]    ║
-║     └── PRD 验收标准覆盖                            [A/B/C/F]    ║
-║                                                                   ║
-║  6. 安全考量 (Security)                              Grade: _     ║
-║     ├── 威胁模型                                    [A/B/C/N/A]  ║
-║     └── 缓解措施                                    [A/B/C/N/A]  ║
-║                                                                   ║
-╚═══════════════════════════════════════════════════════════════════╝
+┌─────────────────────────────────────────────────────────────────┐
+│                     DESIGN QUALITY SCORECARD                     │
+├──────────────────────────────┬──────────┬──────────┬────────────┤
+│ Dimension                    │ Score    │ Max      │ Status     │
+├──────────────────────────────┼──────────┼──────────┼────────────┤
+│ 1. Architecture Clarity      │  ___     │  20      │ ✅/⚠️/❌    │
+│    Layer placement explicit  │  ___/7   │          │            │
+│    Component diagram present │  ___/7   │          │            │
+│    Dependencies listed       │  ___/6   │          │            │
+├──────────────────────────────┼──────────┼──────────┼────────────┤
+│ 2. Interface & Model Defs    │  ___     │  20      │ ✅/⚠️/❌    │
+│    Interface signatures typed│  ___/7   │          │            │
+│    Models concrete           │  ___/7   │          │            │
+│    Directly implementable    │  ___/6   │          │            │
+├──────────────────────────────┼──────────┼──────────┼────────────┤
+│ 3. Error Handling            │  ___     │  15      │ ✅/⚠️/❌    │
+│    Error types defined       │  ___/5   │          │            │
+│    Propagation strategy clear│  ___/5   │          │            │
+│    HTTP status codes mapped  │  ___/5   │          │            │
+├──────────────────────────────┼──────────┼──────────┼────────────┤
+│ 4. Testing Strategy          │  ___     │  15      │ ✅/⚠️/❌    │
+│    Per-layer test plan       │  ___/5   │          │            │
+│    Coverage target numeric   │  ___/5   │          │            │
+│    Test tooling named        │  ___/5   │          │            │
+├──────────────────────────────┼──────────┼──────────┼────────────┤
+│ 5. Breakdown-Readiness ★     │  ___     │  20      │ ✅/⚠️/❌    │
+│    Components enumerable     │  ___/7   │          │            │
+│    Tasks derivable           │  ___/7   │          │            │
+│    PRD AC coverage           │  ___/6   │          │            │
+├──────────────────────────────┼──────────┼──────────┼────────────┤
+│ 6. Security Considerations   │  ___     │  10      │ ✅/⚠️/N/A  │
+│    Threat model present      │  ___/5   │          │            │
+│    Mitigations concrete      │  ___/5   │          │            │
+├──────────────────────────────┼──────────┼──────────┼────────────┤
+│ TOTAL                        │  ___     │  100     │            │
+└──────────────────────────────┴──────────┴──────────┴────────────┘
 ```
 
-★ Breakdown-Readiness 是关键门控维度，直接决定能否进入 `/breakdown-tasks`
+★ Breakdown-Readiness < 12/20 blocks progression to `/breakdown-tasks`
 
 ---
 
-## 结构完整性
+## Deductions
 
-| Section                  | 状态      | 备注 |
-| ------------------------ | --------- | ---- |
-| Overview + 技术栈        | ✅/❌     |      |
-| Architecture (层级+图)   | ✅/❌     |      |
-| Interfaces               | ✅/❌     |      |
-| Data Models              | ✅/❌     |      |
-| Error Handling           | ✅/❌     |      |
-| Testing Strategy         | ✅/❌     |      |
-| Security Considerations  | ✅/⚠️/N/A |      |
-| Open Questions           | ✅/⚠️/❌  |      |
-| Alternatives Considered  | ✅/⚠️/❌  |      |
+| Location | Issue | Penalty |
+|----------|-------|---------|
+| <!-- section:line --> | <!-- vague language / missing content / inconsistency --> | <!-- -N pts --> |
 
 ---
 
-## 1. 架构清晰度 - Grade: _
+## Attack Points
 
-| 检查项 | 状态 | 备注 |
-|--------|------|------|
-| 明确说明所属层级 | ✅/❌ | |
-| 有组件图（ASCII/文字） | ✅/❌ | |
-| 数据流向可追踪 | ✅/❌ | |
-| 内外部依赖列出 | ✅/❌ | |
-| 与项目现有架构一致 | ✅/❌ | |
+### Attack 1: [dimension — specific weakness]
 
-**问题**: <列出具体问题>
-**建议**: <列出改进建议>
+**Where**: <!-- quote from document -->
+**Why it's weak**: <!-- concrete critique -->
+**What must improve**: <!-- actionable fix -->
 
----
+### Attack 2: [dimension — specific weakness]
 
-## 2. 接口与模型定义 - Grade: _
+**Where**: <!-- quote from document -->
+**Why it's weak**: <!-- concrete critique -->
+**What must improve**: <!-- actionable fix -->
 
-| 检查项 | 状态 | 备注 |
-|--------|------|------|
-| 接口方法有参数类型 | ✅/❌ | |
-| 接口方法有返回类型 | ✅/❌ | |
-| 模型字段有类型 | ✅/❌ | |
-| 模型字段有约束（not null、index 等） | ✅/❌ | |
-| 所有主要组件都有定义 | ✅/❌ | |
-| 开发者可直接编码，无需猜测 | ✅/❌ | |
+### Attack 3: [dimension — specific weakness]
 
-**问题**: <列出具体问题>
-**建议**: <列出改进建议>
+**Where**: <!-- quote from document -->
+**Why it's weak**: <!-- concrete critique -->
+**What must improve**: <!-- actionable fix -->
 
 ---
 
-## 3. 错误处理 - Grade: _
+## Previous Issues Check
 
-| 检查项 | 状态 | 备注 |
-|--------|------|------|
-| 自定义错误类型或错误码定义 | ✅/❌ | |
-| 层间传播策略明确 | ✅/❌ | |
-| HTTP 状态码与错误类型映射 | ✅/❌ | |
-| 调用方行为说明 | ✅/❌ | |
+<!-- Only for iteration > 1 -->
 
-**问题**: <列出具体问题>
-**建议**: <列出改进建议>
+| Previous Attack | Addressed? | Evidence |
+|----------------|------------|----------|
+| <!-- attack from iter N-1 --> | ✅/❌ | <!-- what changed / what didn't --> |
 
 ---
 
-## 4. 测试策略 - Grade: _
+## Verdict
 
-| 层级 | 测试类型 | 工具 | 覆盖率目标 | 状态 |
-|------|----------|------|------------|------|
-| | | | | ✅/❌ |
-| | | | | ✅/❌ |
-
-**问题**: <列出具体问题>
-**建议**: <列出改进建议>
-
----
-
-## 5. 可拆解性 - Grade: _ ★
-
-| 检查项 | 状态 | 备注 |
-|--------|------|------|
-| 组件/模块可枚举（能列出清单） | ✅/❌ | |
-| 每个接口 → 可推导出实现任务 | ✅/❌ | |
-| 每个数据模型 → 可推导出 schema/迁移任务 | ✅/❌ | |
-| 无模糊边界（"共享逻辑"等） | ✅/❌ | |
-| PRD 验收标准在设计中均有体现 | ✅/❌/N/A | |
-
-**未覆盖的 PRD 验收标准** (如有):
-- <列出 PRD AC 中未在 design 中体现的项>
-
-**问题**: <列出具体问题>
-**建议**: <列出改进建议>
-
----
-
-## 6. 安全考量 - Grade: _
-
-| 检查项 | 状态 | 备注 |
-|--------|------|------|
-| 威胁模型识别 | ✅/❌/N/A | |
-| 缓解措施具体 | ✅/❌/N/A | |
-| 与功能风险面匹配 | ✅/❌/N/A | |
-
----
-
-## 优先改进项
-
-| 优先级 | 维度 | 问题 | 建议操作 |
-|--------|------|------|----------|
-| P0 | 可拆解性 | | |
-| P1 | | | |
-| P2 | | | |
-
----
-
-## 结论
-
-- **可以进入 `/breakdown-tasks`**: 是 / 否（需先修复 P0 问题）
-- **预计可拆解任务数**: ~N 个
-- **建议**: <一句话总结>
+- **Score**: {{SCORE}}/100
+- **Target**: {{TARGET}}/100
+- **Gap**: {{GAP}} points
+- **Breakdown-Readiness**: {{BR_SCORE}}/20 — {{can/cannot proceed to /breakdown-tasks}}
+- **Action**: {{Continue to iteration N+1 / Target reached / Iterations exhausted}}
