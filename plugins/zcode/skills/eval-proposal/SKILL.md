@@ -78,7 +78,7 @@ Spawn `doc-scorer` agent via **Agent tool** (subagent_type: `zcode:doc-scorer` i
 Pass these inputs to the scorer:
 - `DOC_DIR` = `docs/proposals/<slug>/`
 - `RUBRIC_PATH` = `plugins/zcode/skills/eval-proposal/templates/rubric.md`
-- `REPORT_PATH` = `docs/proposals/<slug>/eval-iteration-{{N}}.md`
+- `REPORT_PATH` = `docs/proposals/<slug>/eval/iteration-{{N}}.md`
 - `ITERATION` = current iteration number (1-based)
 - `PREVIOUS_REPORT_PATH` = previous iteration report path (only if iteration > 1)
 </HARD-RULE>
@@ -116,7 +116,7 @@ Spawn `doc-reviser` agent via **Agent tool** (subagent_type: `zcode:doc-reviser`
 Pass these inputs to the reviser:
 - `DOC_DIR` = `docs/proposals/<slug>/`
 - `RUBRIC_PATH` = `plugins/zcode/skills/eval-proposal/templates/rubric.md`
-- `EVAL_REPORT_PATH` = `docs/proposals/<slug>/eval-iteration-{{N}}.md`
+- `EVAL_REPORT_PATH` = `docs/proposals/<slug>/eval/iteration-{{N}}.md`
 - `ATTACK_POINTS` = the 3 attack points extracted from scorer output
 </HARD-RULE>
 
@@ -162,14 +162,14 @@ When the loop ends, assemble and report to the user:
 {{If not reached: "Largest gaps: [dimension names]. Consider manual revision or increasing iterations."}}
 ```
 
-Save the final report to `docs/proposals/<slug>/eval-report.md`.
+Save the final report to `docs/proposals/<slug>/eval/report.md`.
 
 ## Report Path Convention
 
 | File               | Path                                            |
 | ------------------ | ----------------------------------------------- |
-| Iteration N report | `docs/proposals/<slug>/eval-iteration-{{N}}.md` |
-| Final report       | `docs/proposals/<slug>/eval-report.md`          |
+| Iteration N report | `docs/proposals/<slug>/eval/iteration-{{N}}.md` |
+| Final report       | `docs/proposals/<slug>/eval/report.md`          |
 
 ## Related
 

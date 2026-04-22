@@ -67,7 +67,7 @@ Spawn `doc-scorer` agent via **Agent tool** (subagent_type: `zcode:doc-scorer` i
 Pass these inputs to the scorer:
 - `DOC_DIR` = `docs/features/<slug>/design/`
 - `RUBRIC_PATH` = `plugins/zcode/skills/eval-design/templates/rubric.md`
-- `REPORT_PATH` = `docs/features/<slug>/design-eval-iteration-{{N}}.md`
+- `REPORT_PATH` = `docs/features/<slug>/design/eval/iteration-{{N}}.md`
 - `ITERATION` = current iteration number (1-based)
 - `PREVIOUS_REPORT_PATH` = previous iteration report path (only if iteration > 1)
 </HARD-RULE>
@@ -105,7 +105,7 @@ Spawn `doc-reviser` agent via **Agent tool** (subagent_type: `zcode:doc-reviser`
 Pass these inputs to the reviser:
 - `DOC_DIR` = `docs/features/<slug>/design/`
 - `RUBRIC_PATH` = `plugins/zcode/skills/eval-design/templates/rubric.md`
-- `EVAL_REPORT_PATH` = `docs/features/<slug>/design-eval-iteration-{{N}}.md`
+- `EVAL_REPORT_PATH` = `docs/features/<slug>/design/eval/iteration-{{N}}.md`
 - `ATTACK_POINTS` = the 3 attack points extracted from scorer output
 </HARD-RULE>
 
@@ -152,14 +152,14 @@ When the loop ends, assemble and report to the user:
 {{If not reached: "Largest gaps: [dimension names]. Consider manual revision or increasing iterations."}}
 ```
 
-Save the final report to `docs/features/<slug>/design-eval.md`.
+Save the final report to `docs/features/<slug>/design/eval/report.md`.
 
 ## Report Path Convention
 
 | File               | Path                                                   |
 | ------------------ | ------------------------------------------------------ |
-| Iteration N report | `docs/features/<slug>/design-eval-iteration-{{N}}.md` |
-| Final report       | `docs/features/<slug>/design-eval.md`                 |
+| Iteration N report | `docs/features/<slug>/design/eval/iteration-{{N}}.md` |
+| Final report       | `docs/features/<slug>/design/eval/report.md`          |
 
 ## Related
 
