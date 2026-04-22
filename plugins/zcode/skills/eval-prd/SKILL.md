@@ -1,19 +1,17 @@
 ---
 name: eval-prd
-description: Evaluate a PRD document against quality standards. Checks structure completeness, user story quality, flow diagrams, functional specs, and scope clarity. Outputs a scored report with actionable improvements.
+description: Evaluate a PRD document with 100-point scoring, then run adversarial iterations until target score is met. Main session orchestrates doc-scorer and doc-reviser subagents.
 ---
 
 # Eval PRD
 
-评估 PRD 文档是否满足规范，输出评分报告和改进建议。
+评估 PRD 文档质量（百分制），通过 doc-scorer / doc-reviser subagent 多轮对抗迭代，直到达到目标分数或耗尽迭代次数。
+
+**架构**：主会话调度循环，独立 subagent 负责评分和修订。
 
 ## Prerequisites
 
 检查上一阶段产物，缺失则中止并提示用户：
-
-```bash
-ls docs/features/<slug>/prd/prd-spec.md docs/features/<slug>/prd/prd-user-stories.md
-```
 
 | 产物 | 缺失时提示 |
 |------|-----------|
@@ -30,11 +28,35 @@ ls docs/features/<slug>/prd/prd-spec.md docs/features/<slug>/prd/prd-user-storie
 **Skip:**
 - PRD doesn't exist yet (use `/write-prd` first)
 
-## Workflow
+## Parameters
+
+| Parameter      | Default | Description                                           |
+| -------------- | ------- | ----------------------------------------------------- |
+| `--target`     | 80      | Target score (0-100). Loop stops when score >= target |
+| `--iterations` | 3       | Max adversarial iterations                            |
+
+Parse from user input. Examples:
+
+- `/eval-prd` → target=80, iterations=3
+- `/eval-prd --target 90` → target=90, iterations=3
+- `/eval-prd --target 85 --iterations 5` → target=85, iterations=5
+
+## Architecture
 
 ```
-1. 定位 PRD + User Stories → 2. 启动评估 Agent → 3. 汇报结果
+Main Session (orchestrator)
+  │
+  ├─ iteration N:
+  │   ├── Agent (doc-scorer)  ──→ score + attack points
+  │   ├── score >= target? ──→ yes: stop
+  │   └── Agent (doc-reviser) ──→ revised PRD doc(s)
+  │
+  └─ Final report to user
 ```
+
+<EXTREMELY-IMPORTANT>
+Scorer and reviser are **independent subagents** defined in `plugins/zcode/agents/`. Do NOT inline their prompts. Invoke them via Agent tool with the correct inputs.
+</EXTREMELY-IMPORTANT>
 
 ## Step 1: Locate Documents
 
@@ -44,133 +66,111 @@ Check in order:
 3. Fall back to `docs/features/<current-feature>/prd/prd-spec.md` + `prd/prd-user-stories.md`
 4. Ask user for path if not found
 
-Determine `<feature-slug>` from the path (e.g. `docs/features/auth-flow/prd.md` → slug is `auth-flow`).
+Determine `<feature-slug>` from the path. Build `DOC_PATHS` as a comma-separated list of all PRD files that exist on disk (prd-spec.md, prd-user-stories.md, prd-ui-functions.md).
 
-## Step 2: Launch Evaluation Agent
+## Step 2: Invoke Scorer Subagent
 
-Use the **Agent tool** to spawn a subagent. Pass the full prompt below, substituting `{{PRD_PATH}}`, `{{USER_STORIES_PATH}}`, and `{{FEATURE_SLUG}}`:
+Spawn `doc-scorer` agent via **Agent tool** (subagent_type: `zcode:doc-scorer` if registered, otherwise `general-purpose`).
 
----
+<HARD-RULE>
+Pass these inputs to the scorer:
+- `DOC_PATHS` = comma-separated paths of existing PRD files
+- `RUBRIC_PATH` = `plugins/zcode/skills/eval-prd/templates/rubric.md`
+- `REPORT_PATH` = `docs/features/<slug>/prd-eval-iteration-{{N}}.md`
+- `ITERATION` = current iteration number (1-based)
+- `PREVIOUS_REPORT_PATH` = previous iteration report path (only if iteration > 1)
+</HARD-RULE>
 
-**Agent prompt template:**
+After the scorer returns, **parse its output in the main session**:
+
+1. Extract `SCORE: X/100` line
+2. Extract per-dimension scores from `DIMENSIONS:` section
+3. Extract attack points from `ATTACKS:` section
+4. Record score in iteration tracker
+
+## Step 3: Decision Gate (Main Session)
+
+<HARD-GATE>
+This decision is made in the MAIN SESSION, not delegated to a subagent. The orchestrator (you) controls the loop.
+</HARD-GATE>
+
+| Condition                                  | Action                          |
+| ------------------------------------------ | ------------------------------- |
+| Score >= target                            | Skip to Step 6 (final report)   |
+| Score < target AND iterations remaining    | Proceed to Step 4               |
+| Score < target AND no iterations remaining | Skip to Step 6 (report failure) |
+
+Report current status to user:
 
 ```
-You are a PRD quality evaluator. Your job: read the PRD and User Stories, apply the rubric, write the report, return a summary.
-
-## Inputs
-- PRD path: {{PRD_PATH}} (default: prd/prd-spec.md)
-- User Stories path: {{USER_STORIES_PATH}} (default: prd/prd-user-stories.md)
-- UI Functions path: {{UI_FUNCTIONS_PATH}} (optional: prd/prd-ui-functions.md)
-- Feature slug: {{FEATURE_SLUG}}
-- Report output: docs/features/{{FEATURE_SLUG}}/prd-eval.md
-- Report template: plugins/zcode/skills/eval-prd/templates/report.md
-
-## Steps
-1. Read {{PRD_PATH}}
-2. Read {{USER_STORIES_PATH}} (if exists)
-3. Read {{UI_FUNCTIONS_PATH}} (if exists)
-4. Read the report template
-5. Apply the rubric below to every dimension
-6. Fill in the template and write to docs/features/{{FEATURE_SLUG}}/prd-eval.md
-7. Return: overall grade, top 2-3 issues, and whether it can proceed to /design-tech (or /ui-design if prd-ui-functions.md exists)
-
-## Structure Check
-
-Required sections in prd-spec.md — mark missing as F:
-
-| Section | Required | Notes |
-|---------|----------|-------|
-| 需求背景（原因/对象/人员） | ✓ | 必须包含三个维度 |
-| 需求目标 | ✓ | 必须包含量化指标 |
-| Scope（In/Out） | ✓ | 两者都必须有 |
-| 流程说明 + 业务流程图 | ✓ | Mermaid 流程图必填 |
-| 功能描述 | ✓ | 至少包含列表页/按钮/表单之一 |
-| 其他说明 | ○ | 可选但建议有 |
-| 质量检查 | ○ | 可选 |
-
-User Stories file:
-
-| Section | Required | Notes |
-|---------|----------|-------|
-| User Stories (独立文件) | ✓ | 至少每个目标用户一个故事 |
-| Acceptance Criteria | ✓ | Given/When/Then 格式 |
-
-## Dimension 1: 背景与目标
-
-Checks: 背景三要素（原因、对象、人员），目标量化，背景与目标逻辑一致。
-
-- A: 背景含三要素，目标量化，逻辑一致
-- B: 背景缺一个要素，或目标部分量化
-- C: 背景模糊，目标无量化的
-- F: 无背景或无目标
-
-## Dimension 2: 流程说明
-
-Checks: 流程图存在（Mermaid），主流程完整，决策点明确，异常分支覆盖。
-
-- A: 流程图完整，含主流程+决策点+异常分支
-- B: 流程图存在，缺异常分支或部分决策点
-- C: 仅文字描述，无流程图
-- F: 无流程说明
-
-## Dimension 3: 功能描述
-
-Checks: 表格完整性（列表页7要素、按钮4要素、表单2要素），字段说明清晰，校验规则明确。
-
-- A: 所有表格完整填写，字段和校验规则清晰
-- B: 大部分完整，1-2处缺失
-- C: 表格存在但内容不完整
-- F: 无功能描述或仅有文字无表格
-
-## Dimension 4: User Stories
-
-Checks: coverage (one story per target user), format (As a/I want/So that), specificity (concrete action), AC per story (Given/When/Then).
-
-- A: All stories present, correct format, specific, AC attached
-- B: All present, minor format issues or 1 missing AC
-- C: Stories vague, or AC missing on most
-- F: No user stories, or only one user covered when multiple exist
-
-## Dimension 5: Scope Clarity
-
-Checks: in-scope (concrete deliverables), out-of-scope (deferred items listed), consistency (aligns with 功能描述 and user stories).
-
-- A: Both in/out defined, items concrete, consistent with 功能描述
-- B: Both defined, minor vagueness
-- C: Only in-scope defined, or items vague
-- F: No scope section
-
-## Dimension 6: UI Functions (optional)
-
-Only checked if `prd/prd-ui-functions.md` exists.
-
-Checks: each UI function has description, interaction flow, data requirements, states, validation.
-
-- A: All functions fully specified with all sub-sections
-- B: Most specified, 1-2 missing sub-sections
-- C: Functions listed but incomplete
-- N/A: File doesn't exist (not an F)
-
-## Overall Grade
-
-| Grade | Condition |
-|-------|-----------|
-| A | All 5 dimensions A/B, at least 3 A's |
-| B | No F, max 1 C |
-| C | 1 F or 2+ C's |
-| D | 2 F's |
-| F | 3+ F's or User Stories missing entirely |
+Iteration {{N}}/{{MAX}}: scored {{SCORE}}/100 (target: {{TARGET}}). Revision subagent starting...
 ```
 
----
+## Step 4: Invoke Reviser Subagent
 
-## Step 3: Report to User
+Spawn `doc-reviser` agent via **Agent tool** (subagent_type: `zcode:doc-reviser` if registered, otherwise `general-purpose`).
 
-After the agent completes, relay its summary to the user: overall grade, top issues, and next step recommendation.
+<HARD-RULE>
+Pass these inputs to the reviser:
+- `DOC_PATHS` = same comma-separated paths as scorer
+- `RUBRIC_PATH` = `plugins/zcode/skills/eval-prd/templates/rubric.md`
+- `EVAL_REPORT_PATH` = `docs/features/<slug>/prd-eval-iteration-{{N}}.md`
+- `ATTACK_POINTS` = the 3 attack points extracted from scorer output
+</HARD-RULE>
+
+The reviser will overwrite the PRD file(s) in place.
+
+## Step 5: Loop
+
+Increment iteration counter. Return to Step 2.
+
+<EXTREMELY-IMPORTANT>
+The scorer must NEVER be told what changes the reviser made. It evaluates the PRD as-is. Only the `PREVIOUS_REPORT_PATH` input carries forward for "previous issues addressed" checking.
+</EXTREMELY-IMPORTANT>
+
+## Step 6: Final Report (Main Session)
+
+When the loop ends, assemble and report to the user:
+
+```
+## Eval-PRD Complete
+
+**Final Score**: {{SCORE}}/100 (target: {{TARGET}})
+**Iterations Used**: {{N}}/{{MAX}}
+
+### Score Progression
+| Iteration | Score | Delta |
+|-----------|-------|-------|
+| 1 | {{s1}} | - |
+| 2 | {{s2}} | +{{d2}} |
+| ... | ... | ... |
+
+### Dimension Breakdown (final)
+| Dimension | Score | Max |
+|-----------|-------|-----|
+| Background & Goals | {{d1}} | 20 |
+| Flow Diagrams | {{d2}} | 20 |
+| Functional Specs | {{d3}} | 20 |
+| User Stories | {{d4}} | 20 |
+| Scope Clarity | {{d5}} | 20 |
+
+### Outcome
+{{"Target reached" / "Target NOT reached — N iterations exhausted"}}
+{{If not reached: "Largest gaps: [dimension names]. Consider manual revision or increasing iterations."}}
+```
+
+Save the final report to `docs/features/<slug>/prd-eval.md`.
+
+## Report Path Convention
+
+| File               | Path                                                |
+| ------------------ | --------------------------------------------------- |
+| Iteration N report | `docs/features/<slug>/prd-eval-iteration-{{N}}.md` |
+| Final report       | `docs/features/<slug>/prd-eval.md`                 |
 
 ## Related
 
 - `/write-prd` — Create or revise the PRD
-- `/design-tech` — Next step: produce technical design document (architecture, interfaces, data model)
-- `/ui-design` — Next step (optional): produce UI design spec, if `prd-ui-functions.md` exists
-- `/breakdown-tasks` — After design docs are finalized, break design into executable tasks
+- `/design-tech` — Next step after PRD passes evaluation
+- `/ui-design` — Next step (optional) if prd-ui-functions.md exists
+- `/breakdown-tasks` — After design docs are finalized
