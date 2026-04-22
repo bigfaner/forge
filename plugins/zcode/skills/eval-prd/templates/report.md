@@ -1,7 +1,6 @@
 ---
 date: "{{DATE}}"
-prd_path: "{{PRD_PATH}}"
-user_stories_path: "{{USER_STORIES_PATH}}"
+doc_paths: "{{DOC_PATHS}}"
 iteration: "{{ITERATION}}"
 target_score: "{{TARGET}}"
 evaluator: Claude (automated, adversarial)
