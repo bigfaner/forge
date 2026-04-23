@@ -28,14 +28,14 @@ project-root/
     │           └── 1.1-<title>.md
     ├── README.md                   # 知识库索引 (本文件)
     ├── ARCHITECTURE.md             # 分层架构
-    ├── DECISIONS.md                # 技术决策
+    ├── decisions/                  # 技术决策（按类别分目录）
     └── lessons/                    # 经验教训
 ```
 
 ## Skill Workflow
 
 ```
-/brainstorm → /write-prd → /eval-prd → /design-tech ─→ /eval-design → /breakdown-tasks
+/brainstorm → /write-prd → /eval-prd → /tech-design ─→ /eval-design → /breakdown-tasks
      ↓             ↓            ↓            ↓              ↓               ↓
  proposal.md   prd/*.{3}  eval report  design/*.{2}   eval report     tasks/*.md
                manifest.md             manifest.md                   manifest.md

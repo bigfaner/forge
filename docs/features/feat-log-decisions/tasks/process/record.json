@@ -1,0 +1,19 @@
+{
+  "taskId": "5.1",
+  "status": "completed",
+  "summary": "Created scripts/validate-manifest.sh CI script that validates manifest.md counts against actual type file row counts",
+  "filesCreated": ["scripts/validate-manifest.sh"],
+  "filesModified": [],
+  "keyDecisions": ["Placed script in scripts/ (project root) per task implementation notes", "Used parallel arrays instead of associative array to avoid bash syntax errors with space-containing keys"],
+  "testsPassed": -1,
+  "testsFailed": 0,
+  "coverage": -1.0,
+  "acceptanceCriteria": [
+    {"criterion": "scripts/validate-manifest.sh exists and is executable", "met": true},
+    {"criterion": "Script counts data rows excluding header and separator", "met": true},
+    {"criterion": "Script reads manifest Decisions count", "met": true},
+    {"criterion": "Exit 0 on match with manifest OK message", "met": true},
+    {"criterion": "Exit 1 on mismatch with specific category and diff", "met": true},
+    {"criterion": "Exit 0 on empty directory", "met": true}
+  ]
+}

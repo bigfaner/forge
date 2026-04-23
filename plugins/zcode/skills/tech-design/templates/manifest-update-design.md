@@ -1,4 +1,4 @@
-<!-- Snippet to append/update in manifest.md after /design-tech completes -->
+<!-- Snippet to append/update in manifest.md after /tech-design completes -->
 
 ## Documents (updated)
 
