@@ -3,7 +3,7 @@ id: "{{ID}}"
 title: "{{TITLE}}"
 priority: "{{PRIORITY}}"
 estimated_time: "{{ESTIMATED_TIME}}"
-dependencies: "{{DEPENDENCIES}}"
+dependencies: [{{DEPENDENCIES}}]
 status: pending
 ---
 
@@ -17,6 +17,9 @@ status: pending
 
 ## Acceptance Criteria
 {{ACCEPTANCE_CRITERIA}}
+
+## User Stories
+{{USER_STORIES}}
 
 ## Implementation Notes
 {{NOTES}}

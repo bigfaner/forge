@@ -1,23 +1,34 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Task Index Schema",
-  "description": "Schema for claude-code-go task index file",
+  "description": "Schema for task index file",
   "type": "object",
-  "required": ["tasks"],
+  "required": ["feature", "prd", "design", "created", "status", "tasks"],
   "properties": {
-    "$schema": {
+    "feature": {
       "type": "string"
     },
-    "version": {
-      "type": "string",
-      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    "prd": {
+      "type": "string"
     },
-    "lastUpdated": {
+    "design": {
+      "type": "string"
+    },
+    "created": {
       "type": "string",
       "format": "date"
     },
-    "description": {
-      "type": "string"
+    "status": {
+      "type": "string",
+      "enum": ["planning", "in-progress", "completed"]
+    },
+    "statusEnum": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "priorityEnum": {
+      "type": "array",
+      "items": { "type": "string" }
     },
     "tasks": {
       "type": "object",
