@@ -5,124 +5,135 @@ description: Use when design.md is finalized to break down into executable tasks
 
 # Breakdown Tasks
 
-## Overview
-
-从技术设计文档拆解成可执行的任务。
-
-**核心原则**：任务粒度适中（1-4 小时），依赖关系明确，验收标准可测试。
+Break a technical design into executable tasks (1-4h each, clear dependencies, testable acceptance criteria).
 
 ## Prerequisites
 
-检查上一阶段产物，缺失则中止并提示用户：
+| Artifact                | Missing? Run                    |
+| ----------------------- | ------------------------------- |
+| `prd/prd-spec.md`       | `/write-prd`                    |
+| `design/tech-design.md` | `/tech-design` → `/eval-design` |
 
-```bash
-ls docs/features/<slug>/design/tech-design.md
-```
+## Step 1: Read All Documents
 
-| 产物                    | 缺失时提示                                   |
-| ----------------------- | -------------------------------------------- |
-| `design/tech-design.md` | 先执行 `/tech-design`，再执行 `/eval-design` |
+Read `manifest.md` to locate documents, then read all available files:
 
-## Directory Structure
+- `prd/prd-spec.md` — WHAT to build
+- `design/tech-design.md` — HOW to build it
+- `design/api-handbook.md` — interfaces (if exists)
+- `prd/prd-user-stories.md` — user scenarios with Given/When/Then AC (if exists)
+- `prd/prd-ui-functions.md` — UI function requirements (if exists)
+- `ui/ui-design.md` — UI component specs (if exists)
 
-```
-docs/features/<feature-slug>/
-├── manifest.md                    # Feature index & traceability
-├── prd/
-│   ├── prd-spec.md
-│   ├── prd-user-stories.md
-│   └── prd-ui-functions.md
-├── design/
-│   ├── tech-design.md             # Technical design (input)
-│   └── api-handbook.md
-├── ui/
-│   └── ui-design.md               # (if applicable)
-├── tasks/
-│   ├── index.json                 # Task index
-│   ├── 1.1-<title>.md            # Task detail files
-│   ├── process/
-│   └── records/
-```
+<HAS_UI>
+If `ui/ui-design.md` exists, also list `ui/prototype/` files and read `ui/prototype/index.html` for page inventory (skip if no prototype directory).
+</HAS_UI>
 
-## When to Use
+## Step 2: Map → Tasks
 
-**Trigger conditions:**
+### Element Mapping
 
-- Manifest exists at `docs/features/<slug>/manifest.md` with status `design` or `tasks`
-- Design document exists at `design/tech-design.md`
-- User asks to "break down" or "split" a design into tasks
+| Design Element       | Source         | Task Type                |
+| -------------------- | -------------- | ------------------------ |
+| Interface definition | tech-design.md | Interface task           |
+| Data model           | tech-design.md | Model task               |
+| Backend component    | tech-design.md | Implementation (Backend) |
+| Error type           | tech-design.md | Error handling task      |
 
-**Skip when:**
+<UI_ONLY>
+| UI Component (Layout + States + Interactions + Binding) | ui-design.md | Implementation (UI) |
+</UI_ONLY>
 
-- No design.md exists (use `/tech-design` first)
-- Tasks already exist for the feature
+<RULE>
+- Each `ui-design.md` Component → **one** UI task (split only if >4h)
+</RULE>
 
-## Workflow
+### PRD Coverage Verification
 
-```
-1. Read Design → 2. Map interfaces → 3. Define order → 4. Create task files → 5. Create index.json → 6. Validate
-```
+Read the **PRD Coverage Map** from `tech-design.md`. Every PRD acceptance criterion must map to at least one task. UI-facing requirements → UI tasks, not generic Implementation.
 
-## Step 1: Read Manifest → All Documents
+Fallback: if Coverage Map is incomplete, use `prd/prd-user-stories.md` acceptance criteria directly.
 
-<IMPORTANT>
-1. Read `manifest.md` to locate all documents
-2. Read `prd/prd-spec.md` — understand WHAT
-3. Read `design/tech-design.md` — understand HOW
-4. Read `design/api-handbook.md` — understand interfaces (if exists)
-5. Read `ui/ui-design.md` — understand UI components (if exists)
-6. Read `prd/prd-user-stories.md` — understand user scenarios (if exists)
-</IMPORTANT>
+## Step 3: Task Order & Dependencies
 
-## Step 2: Map Interfaces to Tasks
-
-| Design Element       | Task Type           |
-| -------------------- | ------------------- |
-| Interface definition | Interface task      |
-| Data model           | Model task          |
-| Component            | Implementation task |
-| Error type           | Error handling task |
-
-## Step 3: Define Task Order
+<NO_UI>
 
 ```
 1.x Interfaces → 2.x Models → 3.x Implementation → 4.x Integration → 5.x Tests
 ```
 
+</NO_UI>
+
+<HAS_UI>
+
+```
+1.x Interfaces → 2.x Models → 3.x Implementation (Backend) → 4.x Implementation (UI) → 5.x Integration → 6.x Tests
+```
+
+**Dependency rules:**
+
+- Phase 3.x (Backend) → depends on 1.x + 2.x
+- Phase 4.x (UI) → depends on 1.x interfaces + 2.x models (can mock backend; does NOT need 3.x)
+- Phase 5.x (Integration) → depends on 3.x + 4.x
+- Phase 6.x (Tests) → depends on 5.x
+</HAS_UI>
+
 ## Step 4: Create Task Files
 
-<HARD-RULE>Read `templates/task.md` before writing any task file.</HARD-RULE>
+<HARD-RULE>
+Read `templates/task.md` before writing any task file.
+Naming: `<sequence>.<sub-sequence>-<slug>.md`
+</HARD-RULE>
 
-**Naming convention:**
+<HAS_UI>
+
+### UI Task Reference Files
+
+For each Phase 4.x task, **Reference Files** must include:
+
+1. Matching `ui-design.md` Component section
+2. Corresponding `ui/prototype/<page>.html` (or note "No HTML prototype available")
+3. Data binding table for this component
+4. Relevant `tech-design.md` interfaces
+
+Example:
 
 ```
-<sequence>.<sub-sequence>-<slug>.md
+- ui/ui-design.md Component "Dashboard" — layout, states, interactions
+- ui/prototype/dashboard.html — interactive prototype
+- design/tech-design.md Interfaces — data contracts
 ```
+
+</HAS_UI>
+
+### User Stories
+
+For each task, populate the **User Stories** section with matching stories from `prd/prd-user-stories.md`. Include full Given/When/Then acceptance criteria — this enables direct test generation. If no match, note "No direct user story mapping."
 
 ## Step 5: Create index.json
 
-<HARD-RULE>Read `templates/index.json` before writing. Path fields (`file`, `record`) are relative to `docs/features/<slug>/tasks` directory.</HARD-RULE>
+<HARD-RULE>Read `templates/index.json` before writing. Paths (`file`, `record`) are relative to `tasks/` directory. Populate `dependencies` per Step 3 rules.
+</HARD-RULE>
 
-**Reference:** [templates/index.json](templates/index.json) | Schema: [templates/index.schema.json](templates/index.schema.json)
+Reference: [templates/index.json](templates/index.json) | Schema: [templates/index.schema.json](templates/index.schema.json)
 
 ## Step 6: Validate
 
 ```bash
-task validate -file docs/features/\<slug\>/tasks/index.json
+task validate -file docs/features/<slug>/tasks/index.json
 ```
 
 ## Step 7: Update Manifest
 
-Update `manifest.md`:
-
-- Fill Tasks column in Traceability table with task IDs linked to design sections
+- Fill traceability table (4-column: PRD Section | Design Section | UI Component | Tasks); use "—" for UI Component when no UI
 - Advance status to `tasks`
 
-## Integration
+## Output Checklist
 
-Works well with skills:
-
-- `/tech-design` - Creates the design.md input
-- `/eval-design` - Evaluate design.md before breakdown (recommended gate)
-- `/claim-task` - Starts working on tasks
-- `/record-task` - Records task completion
+- [ ] All task files created with `<id>-<slug>.md` naming
+- [ ] `index.json` valid per schema, `task validate` passes
+- [ ] Every PRD AC covered by ≥1 task
+- [ ] Dependencies follow Step 3 rules (no cycles)
+- [ ] UI tasks reference prototype files (if applicable)
+- [ ] User Stories populated from `prd-user-stories.md`
+- [ ] `manifest.md` updated with traceability + `status: tasks`

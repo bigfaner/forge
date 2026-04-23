@@ -2,10 +2,9 @@
 
 ## Traceability (updated)
 
-Fill Tasks column with task IDs linked to design sections:
-| PRD Section | Design Section | Tasks |
-|-------------|----------------|-------|
-| "{{PRD_SECTION}}" (prd-spec §N) | "{{DESIGN_SECTION}}" (tech-design §N) | {{TASK_IDS}} |
+| PRD Section | Design Section | UI Component | Tasks |
+|-------------|----------------|--------------|-------|
+| "{{PRD_SECTION}}" (prd-spec §N) | "{{DESIGN_SECTION}}" (tech-design §N) | "{{UI_COMPONENT}}" (ui-design §N, or "—") | {{TASK_IDS}} |
 
 ## Frontmatter
 

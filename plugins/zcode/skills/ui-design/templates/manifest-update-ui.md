@@ -8,9 +8,9 @@ Add row:
 ## Traceability (updated)
 
 Add entries linking PRD UI functions to UI design sections:
-| PRD Section | Design Section | Tasks |
-|-------------|----------------|-------|
-| "UI Functions > {{Function Name}}" | "UI Design > {{Component Name}}" | <!-- task IDs added by /breakdown-tasks --> |
+| PRD Section | Design Section | UI Component | Tasks |
+|-------------|----------------|--------------|-------|
+| "UI Functions > {{Function Name}}" | "UI Design > {{Component Name}}" | "{{Component Name}}" (ui-design §N) | <!-- task IDs added by /breakdown-tasks --> |
 
 ## Frontmatter
 
