@@ -63,7 +63,7 @@ ls docs/features/<slug>/prd/prd-spec.md
 | Source                 | What to Look For                                  |
 | ---------------------- | ------------------------------------------------- |
 | `docs/ARCHITECTURE.md` | Layer constraints                                 |
-| `docs/DECISIONS.md`    | Existing decisions                                |
+| `docs/decisions/`      | Existing decisions (category-based directory)     |
 | Package manager files  | Current dependencies (package.json, go.mod, etc.) |
 | Source directories     | Existing patterns (src/, internal/, lib/, etc.)   |
 

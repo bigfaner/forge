@@ -225,4 +225,4 @@ Works well with skills:
 - `/eval-prd` - Evaluate PRD quality before proceeding to design phase
 - `/tech-design` - After PRD passes evaluation, produce technical design document
 - `/ui-design` - After PRD passes evaluation, produce UI design spec (if prd-ui-functions.md exists)
-- `docs/DECISIONS.md` - Record key decisions during PRD creation
+- `docs/decisions/` - Record key decisions during PRD creation (category-based directory)

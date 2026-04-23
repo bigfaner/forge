@@ -1,13 +1,13 @@
 {
-  "taskId": "4.2",
+  "taskId": "4.3",
   "status": "completed",
-  "summary": "Registered record-decision skill in SKILLS.md and confirmed CLAUDE.md skill index is up to date",
+  "summary": "Updated docs/DECISIONS.md references to docs/decisions/ in hooks guide and exploration example",
   "filesCreated": [],
-  "filesModified": ["plugins/zcode/SKILLS.md", "zcode/CLAUDE.md"],
+  "filesModified": ["plugins/zcode/hooks/guide.md", "plugins/zcode/skills/tech-design/examples/exploration.md"],
   "keyDecisions": [],
   "acceptanceCriteria": [
-    {"criterion": "SKILLS.md has record-decision entry", "met": true},
-    {"criterion": "CLAUDE.md skill index has record-decision row", "met": true},
-    {"criterion": "CLAUDE.md shows tech-design not design-tech", "met": true}
+    {"criterion": "hooks/guide.md has no docs/DECISIONS.md references", "met": true},
+    {"criterion": "exploration.md has no docs/DECISIONS.md references", "met": true},
+    {"criterion": "grep -r docs/DECISIONS.md plugins/ returns empty", "met": true}
   ]
 }

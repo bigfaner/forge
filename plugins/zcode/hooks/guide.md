@@ -28,7 +28,7 @@ project-root/
     │           └── 1.1-<title>.md
     ├── README.md                   # 知识库索引 (本文件)
     ├── ARCHITECTURE.md             # 分层架构
-    ├── DECISIONS.md                # 技术决策
+    ├── decisions/                  # 技术决策（按类别分目录）
     └── lessons/                    # 经验教训
 ```
 

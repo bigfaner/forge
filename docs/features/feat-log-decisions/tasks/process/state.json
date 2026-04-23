@@ -1,14 +1,14 @@
 {
-  "task_id": "4.2",
-  "key": "4.2-register-record-decision-skill",
-  "title": "Register record-decision in SKILLS.md and CLAUDE.md",
+  "task_id": "4.3",
+  "key": "4.3-update-reference-links",
+  "title": "Update reference links in hooks guide and exploration example",
   "priority": "P1",
   "estimatedTime": "0.5h",
   "dependencies": [
     "1.1",
-    "4.1"
+    "2.1"
   ],
-  "file": "4.2-register-record-decision-skill.md",
-  "record": "records/4.2-register-record-decision-skill.md",
-  "startedTime": "2026-04-23 11:14"
+  "file": "4.3-update-reference-links.md",
+  "record": "records/4.3-update-reference-links.md",
+  "startedTime": "2026-04-23 11:15"
 }
