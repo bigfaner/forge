@@ -28,7 +28,7 @@ Evaluates UI design from four independent stakeholder perspectives.
 
 | Parameter      | Default | Description                                           |
 | -------------- | ------- | ----------------------------------------------------- |
-| `--target`     | 80      | Target score (0-100). Loop stops when score >= target |
+| `--target`     | 90      | Target score (0-100). Loop stops when score >= target |
 | `--iterations` | 3       | Max adversarial iterations                            |
 
 ## Architecture
