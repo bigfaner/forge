@@ -15,7 +15,7 @@ description: Evaluate a tech design document with 100-point scoring, then run ad
 - Before handing off tech-design.md to `/breakdown-tasks`
 
 **Skip:**
-- design.md doesn't exist yet (use `/design-tech` first)
+- design.md doesn't exist yet (use `/tech-design` first)
 
 ## Parameters
 

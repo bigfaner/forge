@@ -6,7 +6,7 @@ Explore project context during technical design using dedicated tools.
 
 ```text
 Read docs/ARCHITECTURE.md     → layer constraints
-Read docs/DECISIONS.md        → existing decisions
+Read docs/decisions/          → existing decisions (category-based directory)
 Read package.json / go.mod    → current dependencies
 ```
 

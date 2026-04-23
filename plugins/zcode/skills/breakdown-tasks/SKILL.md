@@ -21,7 +21,7 @@ ls docs/features/<slug>/design/tech-design.md
 
 | 产物                    | 缺失时提示                                   |
 | ----------------------- | -------------------------------------------- |
-| `design/tech-design.md` | 先执行 `/design-tech`，再执行 `/eval-design` |
+| `design/tech-design.md` | 先执行 `/tech-design`，再执行 `/eval-design` |
 
 ## Directory Structure
 
@@ -54,7 +54,7 @@ docs/features/<feature-slug>/
 
 **Skip when:**
 
-- No design.md exists (use `/design-tech` first)
+- No design.md exists (use `/tech-design` first)
 - Tasks already exist for the feature
 
 ## Workflow
@@ -122,7 +122,7 @@ Update `manifest.md`:
 
 Works well with skills:
 
-- `/design-tech` - Creates the design.md input
+- `/tech-design` - Creates the design.md input
 - `/eval-design` - Evaluate design.md before breakdown (recommended gate)
 - `/claim-task` - Starts working on tasks
 - `/record-task` - Records task completion
