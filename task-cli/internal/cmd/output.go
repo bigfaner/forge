@@ -3,6 +3,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"strings"
 )
 
@@ -113,4 +114,11 @@ func PrintWarning(msg string) {
 // PrintListItem prints an indented list item.
 func PrintListItem(item string) {
 	fmt.Printf("  %s\n", item)
+}
+
+// Debugf prints a debug line to stderr if verbose is true.
+func Debugf(verbose bool, format string, args ...any) {
+	if verbose {
+		fmt.Fprintf(os.Stderr, "[debug] "+format+"\n", args...)
+	}
 }

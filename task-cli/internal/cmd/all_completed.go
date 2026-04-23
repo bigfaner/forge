@@ -42,38 +42,32 @@ type AllCompletedResult struct {
 // checkAllCompleted verifies all tasks are done and returns test context.
 // Returns nil (no error) when tasks are not all done — caller should exit 1.
 func checkAllCompleted(verbose bool) (*AllCompletedResult, error) {
-	debugf := func(format string, args ...any) {
-		if verbose {
-			fmt.Fprintf(os.Stderr, "[debug] "+format+"\n", args...)
-		}
-	}
-
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		debugf("project root not found: %v", err)
+		Debugf(verbose, "project root not found: %v", err)
 		return nil, nil //nolint:nilerr
 	}
-	debugf("project root: %s", projectRoot)
+	Debugf(verbose, "project root: %s", projectRoot)
 
 	featureSlug, err := feature.GetCurrentFeature(projectRoot)
 	if err != nil {
-		debugf("feature not found: %v", err)
+		Debugf(verbose, "feature not found: %v", err)
 		return nil, nil //nolint:nilerr
 	}
-	debugf("feature: %s", featureSlug)
+	Debugf(verbose, "feature: %s", featureSlug)
 
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
 	index, err := task.LoadIndex(indexPath)
 	if err != nil {
-		debugf("index.json not found: %s (%v)", indexPath, err)
+		Debugf(verbose, "index.json not found: %s (%v)", indexPath, err)
 		return nil, nil //nolint:nilerr
 	}
-	debugf("loaded index: %d tasks", len(index.Tasks))
+	Debugf(verbose, "loaded index: %d tasks", len(index.Tasks))
 
 	// All tasks must be completed or skipped
 	for _, t := range index.Tasks {
 		if t.Status != feature.StatusCompleted && t.Status != feature.StatusSkipped {
-			debugf("task %s is %s — not all done", t.ID, t.Status)
+			Debugf(verbose, "task %s is %s — not all done", t.ID, t.Status)
 			return nil, nil
 		}
 	}
@@ -82,10 +76,10 @@ func checkAllCompleted(verbose bool) (*AllCompletedResult, error) {
 	e2eRelDir := feature.GetFeatureTestingScriptsDir(featureSlug)
 	e2eAbsDir := filepath.Join(projectRoot, e2eRelDir)
 	if _, err := os.Stat(e2eAbsDir); err != nil {
-		debugf("e2e scripts dir not found: %s", e2eAbsDir)
+		Debugf(verbose, "e2e scripts dir not found: %s", e2eAbsDir)
 		e2eAbsDir = ""
 	} else {
-		debugf("e2e scripts dir: %s", e2eAbsDir)
+		Debugf(verbose, "e2e scripts dir: %s", e2eAbsDir)
 	}
 
 	return &AllCompletedResult{
