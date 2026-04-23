@@ -1,13 +1,19 @@
 {
-  "taskId": "4.3",
+  "taskId": "5.1",
   "status": "completed",
-  "summary": "Updated docs/DECISIONS.md references to docs/decisions/ in hooks guide and exploration example",
-  "filesCreated": [],
-  "filesModified": ["plugins/zcode/hooks/guide.md", "plugins/zcode/skills/tech-design/examples/exploration.md"],
-  "keyDecisions": [],
+  "summary": "Created scripts/validate-manifest.sh CI script that validates manifest.md counts against actual type file row counts",
+  "filesCreated": ["scripts/validate-manifest.sh"],
+  "filesModified": [],
+  "keyDecisions": ["Placed script in scripts/ (project root) per task implementation notes", "Used parallel arrays instead of associative array to avoid bash syntax errors with space-containing keys"],
+  "testsPassed": -1,
+  "testsFailed": 0,
+  "coverage": -1.0,
   "acceptanceCriteria": [
-    {"criterion": "hooks/guide.md has no docs/DECISIONS.md references", "met": true},
-    {"criterion": "exploration.md has no docs/DECISIONS.md references", "met": true},
-    {"criterion": "grep -r docs/DECISIONS.md plugins/ returns empty", "met": true}
+    {"criterion": "scripts/validate-manifest.sh exists and is executable", "met": true},
+    {"criterion": "Script counts data rows excluding header and separator", "met": true},
+    {"criterion": "Script reads manifest Decisions count", "met": true},
+    {"criterion": "Exit 0 on match with manifest OK message", "met": true},
+    {"criterion": "Exit 1 on mismatch with specific category and diff", "met": true},
+    {"criterion": "Exit 0 on empty directory", "met": true}
   ]
 }

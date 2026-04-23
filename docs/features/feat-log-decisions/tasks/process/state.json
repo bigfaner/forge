@@ -1,14 +1,13 @@
 {
-  "task_id": "4.3",
-  "key": "4.3-update-reference-links",
-  "title": "Update reference links in hooks guide and exploration example",
+  "task_id": "5.1",
+  "key": "5.1-create-validate-manifest-script",
+  "title": "Create validate-manifest CI script",
   "priority": "P1",
-  "estimatedTime": "0.5h",
+  "estimatedTime": "1-2h",
   "dependencies": [
-    "1.1",
     "2.1"
   ],
-  "file": "4.3-update-reference-links.md",
-  "record": "records/4.3-update-reference-links.md",
-  "startedTime": "2026-04-23 11:15"
+  "file": "5.1-create-validate-manifest-script.md",
+  "record": "records/5.1-create-validate-manifest-script.md",
+  "startedTime": "2026-04-23 11:18"
 }
