@@ -1,32 +1,30 @@
 {
-  "taskId": "1.1",
+  "taskId": "2.1",
   "status": "completed",
-  "summary": "Renamed plugins/zcode/skills/design-tech/ to tech-design/ via git mv, updated name field in SKILL.md, updated all /design-tech references in plugins/ to /tech-design, created plugins/zcode/SKILLS.md with tech-design and record-decision placeholder entries, added skill index to CLAUDE.md",
-  "filesCreated": ["plugins/zcode/SKILLS.md"],
-  "filesModified": [
-    "plugins/zcode/skills/tech-design/SKILL.md",
-    "plugins/zcode/skills/tech-design/templates/manifest-update-design.md",
-    "plugins/zcode/skills/ui-design/SKILL.md",
-    "plugins/zcode/skills/ui-design/templates/manifest-update-ui.md",
-    "plugins/zcode/skills/eval-prd/SKILL.md",
-    "plugins/zcode/skills/breakdown-tasks/SKILL.md",
-    "plugins/zcode/skills/brainstorm/SKILL.md",
-    "plugins/zcode/skills/eval-design/SKILL.md",
-    "plugins/zcode/skills/write-prd/SKILL.md",
-    "plugins/zcode/hooks/guide.md",
-    "CLAUDE.md"
+  "summary": "Created docs/decisions/ directory with manifest.md and 8 category type files (architecture, interface, data-model, dependencies, error-handling, testing, security, local-dev-deployment)",
+  "filesCreated": [
+    "docs/decisions/manifest.md",
+    "docs/decisions/architecture.md",
+    "docs/decisions/interface.md",
+    "docs/decisions/data-model.md",
+    "docs/decisions/dependencies.md",
+    "docs/decisions/error-handling.md",
+    "docs/decisions/testing.md",
+    "docs/decisions/security.md",
+    "docs/decisions/local-dev-deployment.md"
   ],
-  "keyDecisions": [
-    "Used git mv to preserve git history for the directory rename",
-    "Created SKILLS.md at plugins/zcode/SKILLS.md (did not exist before)",
-    "Added record-decision as placeholder entry in SKILLS.md per task instructions",
-    "Added skill index to root CLAUDE.md since no zcode/CLAUDE.md exists"
-  ],
+  "filesModified": [],
+  "keyDecisions": [],
   "acceptanceCriteria": [
-    {"criterion": "plugins/zcode/skills/tech-design/ exists, design-tech/ does not", "met": true},
-    {"criterion": "plugins/zcode/skills/tech-design/SKILL.md name field is tech-design", "met": true},
-    {"criterion": "plugins/zcode/SKILLS.md registration updated to tech-design", "met": true},
-    {"criterion": "CLAUDE.md skill index updated from design-tech to tech-design", "met": true},
-    {"criterion": "grep -r design-tech plugins/ docs/ zcode/ returns empty", "met": true}
+    {"criterion": "docs/decisions/manifest.md exists with frontmatter, Categories table (8 rows), empty Recent Decisions table", "met": true},
+    {"criterion": "architecture.md exists with title and empty table", "met": true},
+    {"criterion": "interface.md exists with title and empty table", "met": true},
+    {"criterion": "data-model.md exists with title and empty table", "met": true},
+    {"criterion": "dependencies.md exists with title and empty table", "met": true},
+    {"criterion": "error-handling.md exists with title and empty table", "met": true},
+    {"criterion": "testing.md exists with title and empty table", "met": true},
+    {"criterion": "security.md exists with title and empty table", "met": true},
+    {"criterion": "local-dev-deployment.md exists with title and empty table", "met": true},
+    {"criterion": "manifest.md Categories table: Decisions column initial value 0, Last Updated is -", "met": true}
   ]
 }

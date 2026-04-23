@@ -19,7 +19,7 @@
       "title": "Create docs/decisions/ directory structure",
       "priority": "P0",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "2.1-create-decisions-directory.md",
       "record": "records/2.1-create-decisions-directory.md"
     },

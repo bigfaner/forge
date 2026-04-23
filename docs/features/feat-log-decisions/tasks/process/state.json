@@ -1,10 +1,10 @@
 {
-  "task_id": "1.1",
-  "key": "1.1-rename-design-tech-skill",
-  "title": "Rename design-tech skill directory to tech-design",
+  "task_id": "2.1",
+  "key": "2.1-create-decisions-directory",
+  "title": "Create docs/decisions/ directory structure",
   "priority": "P0",
-  "estimatedTime": "1-2h",
-  "file": "1.1-rename-design-tech-skill.md",
-  "record": "records/1.1-rename-design-tech-skill.md",
-  "startedTime": "2026-04-23 10:53"
+  "estimatedTime": "1h",
+  "file": "2.1-create-decisions-directory.md",
+  "record": "records/2.1-create-decisions-directory.md",
+  "startedTime": "2026-04-23 11:00"
 }
