@@ -60,14 +60,19 @@
 |------|------|------|
 | `task verifyCompletion` | PreToolUse (git commit) | 验证任务完成状态，阻止未完成任务提交 |
 | `task cleanup` | Stop | 清理已完成任务的状态文件 |
+| `task all-completed` | Stop hook | 检查所有任务是否完成，若完成则自动运行测试 |
 
-**verifyCompletion 检查项：**
-- 任务状态为 "completed"
-- Record 文件存在（如指定）
+**all-completed 行为：**
+- 所有任务均为 `completed` 或 `skipped` → 运行 feature e2e 测试 + 项目级测试，exit 0
+- 任意任务为 `pending`/`in_progress`/`blocked` → 静默退出，exit 1
+- 无 feature 或无 project root → 静默退出，exit 1
 
-**cleanup 清理项：**
-- `docs/features/<feature>/tasks/process/state.json`
-- `docs/features/<feature>/tasks/process/record.json`（如存在）
+**测试命令自动检测顺序（项目级）：**
+1. `index.json` 中的 `testCommand` 字段（显式配置）
+2. `go.mod` 存在 → `go test ./...`
+3. `package.json` 含 `scripts.test` → `npm test`
+4. `Makefile` 含 `test:` target → `make test`
+5. `pytest.ini` / `pyproject.toml` 存在 → `pytest`
 
 ---
 

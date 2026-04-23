@@ -25,6 +25,7 @@ type TaskIndex struct {
 	Tasks        map[string]Task `json:"tasks"`
 	StatusEnum   []string        `json:"statusEnum,omitempty"`
 	PriorityEnum []string        `json:"priorityEnum,omitempty"`
+	TestCommand  string          `json:"testCommand,omitempty"`
 }
 
 // TaskState represents the current in-progress task state.

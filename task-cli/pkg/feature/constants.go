@@ -45,6 +45,10 @@ const (
 	TasksDirName   = "tasks"
 	RecordsDirName = "records"
 
+	// Testing subdirectory names
+	TestingDirName        = "testing"
+	TestingScriptsDirName = "testing/scripts"
+
 	// Template file
 	TemplateFileName = "template.md"
 
