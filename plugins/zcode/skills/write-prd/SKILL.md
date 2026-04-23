@@ -27,7 +27,7 @@ Do NOT write any code, scaffold any project, or take any implementation action u
 **禁止技术选型，允许技术约束**：
 
 - **允许**：描述非功能性约束——性能要求（响应时间、并发量）、平台要求（浏览器、移动端）、兼容性、安全合规等。这些是业务级需求。
-- **禁止**：提及具体技术栈——框架名称、编程语言、数据库、库、中间件、架构模式（如微服务、事件驱动）等。这些是技术选型，留给 `/design-tech` 阶段。
+- **禁止**：提及具体技术栈——框架名称、编程语言、数据库、库、中间件、架构模式（如微服务、事件驱动）等。这些是技术选型，留给 `/tech-design` 阶段。
 
 **判断标准**：如果描述的是"需要达到什么效果"→ 允许；如果描述的是"用什么工具实现"→ 禁止。
 </HARD-RULE>
@@ -145,7 +145,7 @@ docs/features/<feature-slug>/
 │   ├── prd-spec.md            # PRD Spec
 │   ├── prd-user-stories.md    # 用户故事
 │   └── prd-ui-functions.md    # UI 功能要点（可选）
-├── design/                    # (created by /design-tech)
+├── design/                    # (created by /tech-design)
 ├── ui/                        # (created by /ui-design)
 └── tasks/                     # (created by /breakdown-tasks)
     └── records/
@@ -216,13 +216,13 @@ After committing, use `AskUserQuestion` to ask:
 
 - **Yes** → invoke `/eval-prd` via `Skill` tool
 - **Custom** → invoke `/eval-prd --target X --iterations Y` via `Skill` tool
-- **No** → proceed to `/design-tech`
+- **No** → proceed to `/tech-design`
 
 ## Integration
 
 Works well with skills:
 
 - `/eval-prd` - Evaluate PRD quality before proceeding to design phase
-- `/design-tech` - After PRD passes evaluation, produce technical design document
+- `/tech-design` - After PRD passes evaluation, produce technical design document
 - `/ui-design` - After PRD passes evaluation, produce UI design spec (if prd-ui-functions.md exists)
 - `docs/DECISIONS.md` - Record key decisions during PRD creation

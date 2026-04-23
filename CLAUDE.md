@@ -19,3 +19,20 @@
 |------|------|
 | [docs/official-references/plugin marketplace.md](docs/official-references/plugin-marketplace.md) | 构建和托管 plugin marketplace，以在团队和社区中分发 Claude Code 扩展 |
 | [docs/official-references/plugin.md](docs/official-references/plugin.md) | Claude Code 插件系统的完整技术参考，包括架构、CLI 命令和组件规范。 |
+| [plugins/zcode/SKILLS.md](plugins/zcode/SKILLS.md) | zcode skill 注册表，列出所有可用 skill 及说明 |
+
+## Skills
+
+| Skill | 用途 |
+|-------|------|
+| `/zcode:brainstorm` | 探索模糊想法，产出结构化提案 |
+| `/zcode:write-prd` | 将需求形式化为 PRD 文档 |
+| `/zcode:eval-prd` | 评估 PRD 质量 |
+| `/zcode:tech-design` | PRD 完成后创建技术设计文档 |
+| `/zcode:ui-design` | 为 UI 功能创建 UI 设计规范 |
+| `/zcode:eval-design` | 评估技术设计质量 |
+| `/zcode:breakdown-tasks` | 将设计拆解为可执行任务 |
+| `/zcode:claim-task` | 认领下一个可用任务 |
+| `/zcode:record-task` | 记录任务执行结果 |
+| `/zcode:record-decision` | 记录架构/技术决策到 docs/decisions/ |
+| `/zcode:git-commit` | 创建符合 Conventional Commits 格式的提交 |

@@ -1,5 +1,5 @@
 ---
-name: design-tech
+name: tech-design
 description: Use after PRD is finalized to create technical design with architecture and implementation details.
 ---
 

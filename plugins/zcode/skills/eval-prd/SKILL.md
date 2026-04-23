@@ -19,7 +19,7 @@ description: Evaluate a PRD document with 100-point scoring, then run adversaria
 **Trigger:**
 - User asks to "evaluate PRD" or "check PRD quality"
 - User provides `/eval-prd` command
-- Before handing off PRD to `/design-tech` or `/ui-design`
+- Before handing off PRD to `/tech-design` or `/ui-design`
 
 **Skip:**
 - PRD doesn't exist yet (use `/write-prd` first)

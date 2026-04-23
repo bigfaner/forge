@@ -123,7 +123,7 @@ Update `manifest.md`:
 
 - Add UI Design row to Documents table
 - Add traceability links from UI Functions to UI Design sections
-- Advance status to `design` if `/design-tech` already completed
+- Advance status to `design` if `/tech-design` already completed
 
 Use `templates/manifest-update-ui.md` for the update pattern.
 
@@ -163,5 +163,5 @@ Save to: `docs/features/<slug>/ui/prototype/`
 Works well with:
 
 - `/write-prd` — Produces `prd/prd-ui-functions.md` input
-- `/design-tech` — Parallel skill; both must complete before breakdown
+- `/tech-design` — Parallel skill; both must complete before breakdown
 - `/eval-ui` — Adversarial evaluation after UI design is created

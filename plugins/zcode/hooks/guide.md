@@ -35,7 +35,7 @@ project-root/
 ## Skill Workflow
 
 ```
-/brainstorm → /write-prd → /eval-prd → /design-tech ─→ /eval-design → /breakdown-tasks
+/brainstorm → /write-prd → /eval-prd → /tech-design ─→ /eval-design → /breakdown-tasks
      ↓             ↓            ↓            ↓              ↓               ↓
  proposal.md   prd/*.{3}  eval report  design/*.{2}   eval report     tasks/*.md
                manifest.md             manifest.md                   manifest.md

@@ -14,4 +14,4 @@ Add entries linking PRD UI functions to UI design sections:
 
 ## Frontmatter
 
-Update `status` to `design` if /design-tech already completed.
+Update `status` to `design` if /tech-design already completed.
