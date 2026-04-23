@@ -28,24 +28,33 @@ Evaluates UI design from four independent stakeholder perspectives.
 
 | Parameter      | Default | Description                                           |
 | -------------- | ------- | ----------------------------------------------------- |
-| `--target`     | 80      | Target score (0-100). Loop stops when score >= target |
+| `--target`     | 90      | Target score (0-100). Loop stops when score >= target |
 | `--iterations` | 3       | Max adversarial iterations                            |
 
 ## Architecture
 
-```
-Main Session (orchestrator)
-  |
-  |- iteration N:
-  |   |-- Agent (doc-scorer)  --> score + attack points
-  |   |-- score >= target? --> yes: stop
-  |   +-- Agent (doc-reviser) --> revised ui-design.md
-  |
-  +- Final report to user
+```mermaid
+flowchart TD
+    A([Start]) --> B["1. Score (subagent)"]
+    B --> C{"2. Gate (main session)"}
+    C -->|"score >= target"| E(["Final Report ✅"])
+    C -->|"score < target no iterations left"| F(["Final Report ❌"])
+    C -->|"score < target iterations remaining"| D["3. Revise (subagent)"]
+    D --> B
+
 ```
 
+## Orchestrator Iron Laws
+
 <EXTREMELY-IMPORTANT>
-Scorer and reviser are **independent subagents** in `plugins/zcode/agents/`. Do NOT inline their prompts. Invoke via Agent tool only.
+1. Main session controls the loop — NEVER delegate the entire eval to a single agent
+2. Only 3 actions per iteration: score → gate → revise
+3. Gate (Step 3) runs in main session — never inside a subagent
+4. `--target` / `--iterations` are meaningless unless main session owns the loop
+5. Scorer and reviser are independent subagents — invoke via Agent tool, never inline
+
+❌ Wrong: `Agent(general-purpose, "evaluate this UI design and iterate until score >= 80")`
+✅ Right: Main session calls scorer → parses score → gates → calls reviser → loops
 </EXTREMELY-IMPORTANT>
 
 ## Step 1: Locate UI Design Documents
