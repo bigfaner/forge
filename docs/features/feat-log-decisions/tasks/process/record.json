@@ -1,30 +1,13 @@
 {
-  "taskId": "2.1",
+  "taskId": "2.2",
   "status": "completed",
-  "summary": "Created docs/decisions/ directory with manifest.md and 8 category type files (architecture, interface, data-model, dependencies, error-handling, testing, security, local-dev-deployment)",
-  "filesCreated": [
-    "docs/decisions/manifest.md",
-    "docs/decisions/architecture.md",
-    "docs/decisions/interface.md",
-    "docs/decisions/data-model.md",
-    "docs/decisions/dependencies.md",
-    "docs/decisions/error-handling.md",
-    "docs/decisions/testing.md",
-    "docs/decisions/security.md",
-    "docs/decisions/local-dev-deployment.md"
-  ],
+  "summary": "Created decision-entry.md template in tech-design/templates/",
+  "filesCreated": ["plugins/zcode/skills/tech-design/templates/decision-entry.md"],
   "filesModified": [],
   "keyDecisions": [],
   "acceptanceCriteria": [
-    {"criterion": "docs/decisions/manifest.md exists with frontmatter, Categories table (8 rows), empty Recent Decisions table", "met": true},
-    {"criterion": "architecture.md exists with title and empty table", "met": true},
-    {"criterion": "interface.md exists with title and empty table", "met": true},
-    {"criterion": "data-model.md exists with title and empty table", "met": true},
-    {"criterion": "dependencies.md exists with title and empty table", "met": true},
-    {"criterion": "error-handling.md exists with title and empty table", "met": true},
-    {"criterion": "testing.md exists with title and empty table", "met": true},
-    {"criterion": "security.md exists with title and empty table", "met": true},
-    {"criterion": "local-dev-deployment.md exists with title and empty table", "met": true},
-    {"criterion": "manifest.md Categories table: Decisions column initial value 0, Last Updated is -", "met": true}
+    {"criterion": "decision-entry.md exists in tech-design/templates/", "met": true},
+    {"criterion": "File contains table row template with Date/Feature/Decision/Rationale/Source", "met": true},
+    {"criterion": "Field constraints documented", "met": true}
   ]
 }

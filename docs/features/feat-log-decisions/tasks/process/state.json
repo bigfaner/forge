@@ -1,10 +1,10 @@
 {
-  "task_id": "2.1",
-  "key": "2.1-create-decisions-directory",
-  "title": "Create docs/decisions/ directory structure",
-  "priority": "P0",
-  "estimatedTime": "1h",
-  "file": "2.1-create-decisions-directory.md",
-  "record": "records/2.1-create-decisions-directory.md",
-  "startedTime": "2026-04-23 11:00"
+  "task_id": "2.2",
+  "key": "2.2-create-decision-entry-template",
+  "title": "Create decision-entry.md template",
+  "priority": "P1",
+  "estimatedTime": "0.5h",
+  "file": "2.2-create-decision-entry-template.md",
+  "record": "records/2.2-create-decision-entry-template.md",
+  "startedTime": "2026-04-23 11:02"
 }
