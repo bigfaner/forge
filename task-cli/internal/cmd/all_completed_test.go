@@ -128,7 +128,7 @@ func TestCheckAllCompleted(t *testing.T) {
 				}
 			}
 
-			result, err := checkAllCompleted()
+			result, err := checkAllCompleted(false)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -173,7 +173,7 @@ func TestCheckAllCompleted_NoFeature(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	result, err := checkAllCompleted()
+	result, err := checkAllCompleted(false)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -185,7 +185,7 @@ func TestCheckAllCompleted_NoFeature(t *testing.T) {
 func TestCheckAllCompleted_NoProject(t *testing.T) {
 	t.Setenv("CLAUDE_PROJECT_DIR", "")
 
-	result, err := checkAllCompleted()
+	result, err := checkAllCompleted(false)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

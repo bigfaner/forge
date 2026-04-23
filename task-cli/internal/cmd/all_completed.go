@@ -14,13 +14,21 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var allCompletedVerbose bool
+
 var allCompletedCmd = &cobra.Command{
 	Use:   "all-completed",
 	Short: "Check if all tasks are done, then run tests",
 	Long: `Checks if every task in the current feature is completed or skipped.
 Exits 1 silently if any task is still pending, in_progress, or blocked.
-If all done: runs feature e2e tests, then project-wide tests.`,
+If all done: runs feature e2e tests, then project-wide tests.
+
+Use -v to see why the command exits early (useful for debugging).`,
 	Run: runAllCompleted,
+}
+
+func init() {
+	allCompletedCmd.Flags().BoolVarP(&allCompletedVerbose, "verbose", "v", false, "print debug info when exiting early")
 }
 
 // AllCompletedResult holds context for running tests after all tasks complete.
@@ -33,26 +41,39 @@ type AllCompletedResult struct {
 
 // checkAllCompleted verifies all tasks are done and returns test context.
 // Returns nil (no error) when tasks are not all done — caller should exit 1.
-func checkAllCompleted() (*AllCompletedResult, error) {
+func checkAllCompleted(verbose bool) (*AllCompletedResult, error) {
+	debugf := func(format string, args ...any) {
+		if verbose {
+			fmt.Fprintf(os.Stderr, "[debug] "+format+"\n", args...)
+		}
+	}
+
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
+		debugf("project root not found: %v", err)
 		return nil, nil //nolint:nilerr
 	}
+	debugf("project root: %s", projectRoot)
 
 	featureSlug, err := feature.GetCurrentFeature(projectRoot)
 	if err != nil {
+		debugf("feature not found: %v", err)
 		return nil, nil //nolint:nilerr
 	}
+	debugf("feature: %s", featureSlug)
 
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
 	index, err := task.LoadIndex(indexPath)
 	if err != nil {
+		debugf("index.json not found: %s (%v)", indexPath, err)
 		return nil, nil //nolint:nilerr
 	}
+	debugf("loaded index: %d tasks", len(index.Tasks))
 
 	// All tasks must be completed or skipped
 	for _, t := range index.Tasks {
 		if t.Status != feature.StatusCompleted && t.Status != feature.StatusSkipped {
+			debugf("task %s is %s — not all done", t.ID, t.Status)
 			return nil, nil
 		}
 	}
@@ -61,7 +82,10 @@ func checkAllCompleted() (*AllCompletedResult, error) {
 	e2eRelDir := feature.GetFeatureTestingScriptsDir(featureSlug)
 	e2eAbsDir := filepath.Join(projectRoot, e2eRelDir)
 	if _, err := os.Stat(e2eAbsDir); err != nil {
+		debugf("e2e scripts dir not found: %s", e2eAbsDir)
 		e2eAbsDir = ""
+	} else {
+		debugf("e2e scripts dir: %s", e2eAbsDir)
 	}
 
 	return &AllCompletedResult{
@@ -73,7 +97,7 @@ func checkAllCompleted() (*AllCompletedResult, error) {
 }
 
 func runAllCompleted(cmd *cobra.Command, args []string) {
-	result, err := checkAllCompleted()
+	result, err := checkAllCompleted(allCompletedVerbose)
 	if err != nil || result == nil {
 		os.Exit(1)
 	}
