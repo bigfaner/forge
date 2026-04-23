@@ -1,10 +1,14 @@
 {
-  "task_id": "2.2",
-  "key": "2.2-create-decision-entry-template",
-  "title": "Create decision-entry.md template",
-  "priority": "P1",
-  "estimatedTime": "0.5h",
-  "file": "2.2-create-decision-entry-template.md",
-  "record": "records/2.2-create-decision-entry-template.md",
-  "startedTime": "2026-04-23 11:02"
+  "task_id": "3.1",
+  "key": "3.1-create-decision-logging-shared",
+  "title": "Create plugins/zcode/references/shared/decision-logging.md",
+  "priority": "P0",
+  "estimatedTime": "2-3h",
+  "dependencies": [
+    "2.1",
+    "2.2"
+  ],
+  "file": "3.1-create-decision-logging-shared.md",
+  "record": "records/3.1-create-decision-logging-shared.md",
+  "startedTime": "2026-04-23 11:04"
 }

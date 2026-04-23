@@ -1,13 +1,17 @@
 {
-  "taskId": "2.2",
+  "taskId": "3.1",
   "status": "completed",
-  "summary": "Created decision-entry.md template in tech-design/templates/",
-  "filesCreated": ["plugins/zcode/skills/tech-design/templates/decision-entry.md"],
+  "summary": "Created shared decision-logging.md reference defining archiving protocol for both tech-design and record-decision skills",
+  "filesCreated": ["plugins/zcode/references/shared/decision-logging.md"],
   "filesModified": [],
-  "keyDecisions": [],
+  "keyDecisions": ["Placed shared logic in plugins/zcode/references/shared/ for symmetric access by both skills"],
   "acceptanceCriteria": [
-    {"criterion": "decision-entry.md exists in tech-design/templates/", "met": true},
-    {"criterion": "File contains table row template with Date/Feature/Decision/Rationale/Source", "met": true},
-    {"criterion": "Field constraints documented", "met": true}
+    {"criterion": "File exists at plugins/zcode/references/shared/decision-logging.md", "met": true},
+    {"criterion": "Defines 8 type mappings", "met": true},
+    {"criterion": "Defines tech-design archiving steps", "met": true},
+    {"criterion": "Defines record-decision 4-round interaction", "met": true},
+    {"criterion": "Defines edit sub-flow", "met": true},
+    {"criterion": "Defines skip logic", "met": true},
+    {"criterion": "Defines error handling", "met": true}
   ]
 }
