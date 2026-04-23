@@ -110,7 +110,7 @@ If skipped, set Feature to `-`.
 ### Auto-filled fields
 
 - `Date`: today's date in ISO 8601 format (YYYY-MM-DD)
-- `Source`: `<feature-slug>/tech-design.md` if invoked from tech-design flow; `manual` if invoked directly via `/zcode:record-decision`
+- `Source`: `<feature-slug>/tech-design.md` if invoked from tech-design flow; `manual` if invoked directly via `/record-decision`
 
 After Round 4, write the entry (Section 6) and update the manifest (Section 7).
 
