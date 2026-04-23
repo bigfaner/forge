@@ -1,6 +1,6 @@
 # Decision Logging — Shared Archiving Protocol
 
-This file defines the shared decision archiving logic used by both `tech-design` and `record-decision` skills. Read this file and follow the steps described below when archiving decisions.
+This file defines the shared decision archiving logic used by the `tech-design` skill and the `/record-decision` command. Read this file and follow the steps described below when archiving decisions.
 
 ---
 
