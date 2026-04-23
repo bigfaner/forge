@@ -43,7 +43,7 @@ ls docs/features/<slug>/prd/prd-spec.md
 ## Process Flow
 
 ```
-1. Read PRD → 2. Explore context → 3. Identify decisions → 4. Ask questions → 5. Draft design → 6. Review → 7. Finalize
+1. Read PRD → 2. Explore context → 3. Identify decisions → 4. Ask questions → 5. Draft design → 6. Review → 7. Archive decisions (optional) → 8. Finalize
 ```
 
 ## Step 1: Read Manifest → PRD
@@ -122,20 +122,30 @@ If any check fails, add the missing detail before presenting to the user.
 
 For each section, wait for user approval.
 
-## Step 7: Write Design Documents
+## Step 7: Archive Decisions (Optional)
+
+Triggered automatically after user approves the tech-design in Step 6.
+
+Follow the tech-design archiving flow defined in `plugins/zcode/references/shared/decision-logging.md` (Section 2).
+
+- If the approved document contains key decisions, display the candidate list and prompt the user to select which to archive.
+- User may enter `none` to skip archiving entirely.
+- If no key decisions exist in the document, skip this step silently.
+
+## Step 8: Write Design Documents
 
 Save to:
 - `docs/features/<slug>/design/tech-design.md` — using `templates/tech-design.md`
 - `docs/features/<slug>/design/api-handbook.md` — using `templates/api-handbook.md` (if feature has API surface)
 
-## Step 8: Update Manifest
+## Step 9: Update Manifest
 
 Update `manifest.md`:
 - Add Tech Design and API Handbook rows to Documents table
 - Add traceability links from PRD sections to design sections
 - Advance status to `design` if `/ui-design` already completed or if UI is not applicable
 
-## Step 9: Adversarial Eval Prompt
+## Step 10: Adversarial Eval Prompt
 
 After committing, use `AskUserQuestion` to ask:
 
