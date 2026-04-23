@@ -33,15 +33,15 @@ Evaluates UI design from four independent stakeholder perspectives.
 
 ## Architecture
 
-```
-MAIN SESSION (Orchestrator)
-   ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-   │ 1. Score    │───▶│ 2. Gate     │───▶│ 3. Revise   │
-   │  (subagent) │    │ (main only) │    │  (subagent) │
-   └─────────────┘    └─────────────┘    └─────────────┘
-          ▲                                    │
-          └────────────────────────────────────┘
-                         LOOP
+```mermaid
+flowchart TD
+    A([Start]) --> B["1. Score\n(subagent)"]
+    B --> C{"2. Gate\n(main session)"}
+    C -->|"score >= target"| E(["Final Report ✅"])
+    C -->|"score < target\nno iterations left"| F(["Final Report ❌"])
+    C -->|"score < target\niterations remaining"| D["3. Revise\n(subagent)"]
+    D --> B
+
 ```
 
 ## Orchestrator Iron Laws
