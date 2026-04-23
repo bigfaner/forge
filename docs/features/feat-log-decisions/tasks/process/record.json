@@ -1,14 +1,15 @@
 {
-  "taskId": "3.2",
+  "taskId": "4.1",
   "status": "completed",
-  "summary": "Added optional decision archiving step to tech-design SKILL.md, referencing shared decision-logging.md protocol",
-  "filesCreated": [],
-  "filesModified": ["plugins/zcode/skills/tech-design/SKILL.md"],
+  "summary": "Created record-decision skill SKILL.md with 4-round interaction flow referencing shared decision-logging.md",
+  "filesCreated": ["plugins/zcode/skills/record-decision/SKILL.md"],
+  "filesModified": [],
   "keyDecisions": [],
   "acceptanceCriteria": [
-    {"criterion": "SKILL.md name field is tech-design", "met": true},
-    {"criterion": "New decision archiving step added after approval", "met": true},
-    {"criterion": "Step references plugins/zcode/references/shared/decision-logging.md", "met": true},
-    {"criterion": "Step marked as optional", "met": true}
+    {"criterion": "SKILL.md exists at plugins/zcode/skills/record-decision/SKILL.md", "met": true},
+    {"criterion": "name field is record-decision", "met": true},
+    {"criterion": "Defines 4-round interaction", "met": true},
+    {"criterion": "References shared/decision-logging.md", "met": true},
+    {"criterion": "Auto-fills Date and Source", "met": true}
   ]
 }
