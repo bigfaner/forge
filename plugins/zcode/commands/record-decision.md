@@ -1,21 +1,18 @@
 ---
 name: record-decision
 description: Record an architecture/technical decision to docs/decisions/ at any stage of development.
+allowed_tools: ["Read", "Write", "Edit", "Bash", "AskUserQuestion"]
 ---
 
-# Record Decision
+# /record-decision
 
-## Overview
-
-`/zcode:record-decision` archives a single technical or architectural decision into `docs/decisions/` through a 4-round interactive flow. It can be invoked at any point in the development lifecycle — not just during tech-design.
-
-Decisions are stored by type (architecture, interface, data model, etc.) and indexed in `docs/decisions/manifest.md` for cross-feature traceability.
+Archives a single technical or architectural decision into `docs/decisions/` through a 4-round interactive flow. Can be invoked at any point in the development lifecycle.
 
 ## When to Use
 
-- Mid-implementation decisions: a choice made during coding that wasn't captured in the design phase
-- Historical supplements: backfilling decisions that were made informally and never documented
-- Brainstorm or PRD phase: important technical constraints that emerge before a formal tech-design exists
+- Mid-implementation decisions not captured in the design phase
+- Historical supplements: backfilling informally-made decisions
+- Brainstorm or PRD phase: important technical constraints before a formal tech-design exists
 
 ## Process
 

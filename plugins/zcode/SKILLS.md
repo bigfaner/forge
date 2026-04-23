@@ -12,7 +12,6 @@
 | claim-task | Claim the next available task |
 | set-task-status | Update task status |
 | record-task | Record task execution result |
-| record-decision | Record architectural/technical decisions to docs/decisions/ |
 | git-commit | Create git commits with Conventional Commits format |
 | eval-harness | Evaluate harness health |
 | eval-proposal | Evaluate a proposal document with scoring |

@@ -34,5 +34,5 @@
 | `/zcode:breakdown-tasks` | 将设计拆解为可执行任务 |
 | `/zcode:claim-task` | 认领下一个可用任务 |
 | `/zcode:record-task` | 记录任务执行结果 |
-| `/zcode:record-decision` | 记录架构/技术决策到 docs/decisions/ |
+| `/record-decision` | 记录架构/技术决策到 docs/decisions/ |
 | `/zcode:git-commit` | 创建符合 Conventional Commits 格式的提交 |
