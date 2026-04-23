@@ -1,15 +1,13 @@
 {
-  "taskId": "4.1",
+  "taskId": "4.2",
   "status": "completed",
-  "summary": "Created record-decision skill SKILL.md with 4-round interaction flow referencing shared decision-logging.md",
-  "filesCreated": ["plugins/zcode/skills/record-decision/SKILL.md"],
-  "filesModified": [],
+  "summary": "Registered record-decision skill in SKILLS.md and confirmed CLAUDE.md skill index is up to date",
+  "filesCreated": [],
+  "filesModified": ["plugins/zcode/SKILLS.md", "zcode/CLAUDE.md"],
   "keyDecisions": [],
   "acceptanceCriteria": [
-    {"criterion": "SKILL.md exists at plugins/zcode/skills/record-decision/SKILL.md", "met": true},
-    {"criterion": "name field is record-decision", "met": true},
-    {"criterion": "Defines 4-round interaction", "met": true},
-    {"criterion": "References shared/decision-logging.md", "met": true},
-    {"criterion": "Auto-fills Date and Source", "met": true}
+    {"criterion": "SKILLS.md has record-decision entry", "met": true},
+    {"criterion": "CLAUDE.md skill index has record-decision row", "met": true},
+    {"criterion": "CLAUDE.md shows tech-design not design-tech", "met": true}
   ]
 }

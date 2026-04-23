@@ -1,13 +1,14 @@
 {
-  "task_id": "4.1",
-  "key": "4.1-create-record-decision-skill",
-  "title": "Create record-decision skill",
-  "priority": "P0",
-  "estimatedTime": "1-2h",
+  "task_id": "4.2",
+  "key": "4.2-register-record-decision-skill",
+  "title": "Register record-decision in SKILLS.md and CLAUDE.md",
+  "priority": "P1",
+  "estimatedTime": "0.5h",
   "dependencies": [
-    "3.1"
+    "1.1",
+    "4.1"
   ],
-  "file": "4.1-create-record-decision-skill.md",
-  "record": "records/4.1-create-record-decision-skill.md",
-  "startedTime": "2026-04-23 11:11"
+  "file": "4.2-register-record-decision-skill.md",
+  "record": "records/4.2-register-record-decision-skill.md",
+  "startedTime": "2026-04-23 11:14"
 }
