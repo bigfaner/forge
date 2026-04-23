@@ -28,11 +28,11 @@ description: Evaluate a tech design document with 100-point scoring, then run ad
 
 ```mermaid
 flowchart TD
-    A([Start]) --> B["1. Score\n(subagent)"]
-    B --> C{"2. Gate\n(main session)"}
+    A([Start]) --> B["1. Score (subagent)"]
+    B --> C{"2. Gate (main session)"}
     C -->|"score >= target"| E(["Final Report ✅"])
-    C -->|"score < target\nno iterations left"| F(["Final Report ❌"])
-    C -->|"score < target\niterations remaining"| D["3. Revise\n(subagent)"]
+    C -->|"score < target no iterations left"| F(["Final Report ❌"])
+    C -->|"score < target iterations remaining"| D["3. Revise (subagent)"]
     D --> B
 
 ```
