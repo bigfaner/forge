@@ -1,4 +1,4 @@
-<!-- Snippet to append/update in manifest.md after /design-tech completes -->
+<!-- Snippet to append/update in manifest.md after /tech-design completes -->
 
 ## Documents (updated)
 
@@ -9,9 +9,9 @@ Add rows:
 ## Traceability (updated)
 
 Add entries linking PRD sections to design sections:
-| PRD Section | Design Section | Tasks |
-|-------------|----------------|-------|
-| "{{PRD_SECTION}}" (prd-spec §N) | "{{DESIGN_SECTION}}" (tech-design §N) | <!-- task IDs added by /breakdown-tasks --> |
+| PRD Section | Design Section | UI Component | Tasks |
+|-------------|----------------|--------------|-------|
+| "{{PRD_SECTION}}" (prd-spec §N) | "{{DESIGN_SECTION}}" (tech-design §N) | — | <!-- task IDs added by /breakdown-tasks --> |
 
 ## Frontmatter
 
