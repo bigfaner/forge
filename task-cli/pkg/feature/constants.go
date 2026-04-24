@@ -48,6 +48,12 @@ const (
 	// Testing subdirectory names
 	TestingDirName        = "testing"
 	TestingScriptsDirName = "testing/scripts"
+	TestingResultsDirName = "testing/results"
+	TestCasesFileName     = "testing/test-cases.md"
+
+	// E2E graduation paths
+	E2ETestsBaseDir = "tests/e2e"
+	E2EGraduatedDir = "tests/e2e/.graduated"
 
 	// Template file
 	TemplateFileName = "template.md"

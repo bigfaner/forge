@@ -209,6 +209,25 @@ func (v *validator) validateFilesExist(featureSlug string, tasks map[string]task
 		if _, err := os.Stat(taskFile); os.IsNotExist(err) {
 			v.warnings = append(v.warnings, fmt.Sprintf("Task '%s': file '%s' missing", key, t.File))
 		}
+
+		// Check for unresolved template placeholders in T-test-1 task file
+		if t.ID == "T-test-1" {
+			v.validateTTest1Template(taskFile, t)
+		}
+	}
+}
+
+// validateTTest1Template checks if T-test-1 task file has unresolved {{LAST_BUSINESS_TASK_ID}} placeholder.
+func (v *validator) validateTTest1Template(taskFile string, t task.Task) {
+	data, err := os.ReadFile(taskFile)
+	if err != nil {
+		return // File existence already checked above
+	}
+
+	content := string(data)
+	if strings.Contains(content, "{{LAST_BUSINESS_TASK_ID}}") {
+		v.errors = append(v.errors,
+			fmt.Sprintf("Task 'T-test-1': file contains unresolved placeholder {{LAST_BUSINESS_TASK_ID}} — replace with actual last business task ID"))
 	}
 }
 

@@ -22,6 +22,8 @@ description: Generate executable TypeScript e2e test scripts from test cases. Us
 |------|-----------|
 | `testing/test-cases.md` | 先执行 `/gen-test-cases` |
 
+**注意**：本 skill 既可以手动调用，也可以作为 `/breakdown-tasks` 追加的标准任务 T-test-2 被 agent 调用。
+
 ```bash
 ls docs/features/<slug>/testing/test-cases.md
 ```

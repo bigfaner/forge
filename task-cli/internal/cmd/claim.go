@@ -164,8 +164,14 @@ func claimNextTask(index *task.TaskIndex) (string, *task.Task, error) {
 	}
 	var eligibleTasks []taskWithKey
 
-	minPhase := getMinPendingPhase(index)
-	if minPhase == -1 {
+	hasPending := false
+	for _, t := range index.Tasks {
+		if t.Status == "pending" {
+			hasPending = true
+			break
+		}
+	}
+	if !hasPending {
 		return "", nil, ErrNoPendingTasks()
 	}
 

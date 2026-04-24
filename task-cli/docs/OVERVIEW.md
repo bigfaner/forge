@@ -67,6 +67,23 @@
 - 任意任务为 `pending`/`in_progress`/`blocked` → 静默退出，exit 1
 - 无 feature 或无 project root → 静默退出，exit 1
 
+**e2e 测试失败恢复：**
+- e2e 测试失败时，自动向 `index.json` 追加 `fix-e2e-N` 任务（N 从 1 开始）
+- fix-e2e 任务格式：
+  - id: `fix-e2e-N`
+  - title: "修复 e2e 测试失败"
+  - priority: `P0`
+  - file: `testing/results/latest.md`（指向失败详情）
+- 若已有 pending 的 fix-e2e 任务，则跳过追加（避免重复）
+- fix-e2e 任务上限为 3 个，超过后打印警告并 exit 0（避免无限循环）
+- 追加后 exit 1，触发 agent 继续工作并认领 fix-e2e 任务
+
+**e2e 测试脚本毕业模型：**
+- e2e 测试首次成功时，按测试用例的 `target` 字段将脚本迁移到 `tests/e2e/<type>/<target>/`
+- 毕业标记：`tests/e2e/.graduated/<slug>`（内容为时间戳）
+- 若毕业标记已存在，则跳过迁移（非首次成功）
+- `docs/features/<slug>/testing/scripts/` 保留不删除（作为可追溯性记录）
+
 **测试命令自动检测顺序（项目级）：**
 1. `index.json` 中的 `testCommand` 字段（显式配置）
 2. `justfile`/`Justfile` 含 `test` recipe → `just test`
@@ -100,6 +117,14 @@ project-root/
 │       │   └── api-handbook.md     # API 文档
 │       ├── ui/
 │       │   └── ui-design.md        # UI 设计规格（可选）
+│       ├── testing/
+│       │   ├── test-cases.md      # 测试用例（含 target 字段）
+│       │   ├── scripts/           # 开发期测试脚本
+│       │   │   ├── ui.spec.ts
+│       │   │   ├── api.spec.ts
+│       │   │   └── cli.spec.ts
+│       │   └── results/
+│       │       └── latest.md      # e2e 测试结果报告
 │       └── tasks/
 │           ├── index.json          # 任务定义
 │           ├── process/            # 运行时状态
@@ -107,6 +132,16 @@ project-root/
 │           │   └── record.json
 │           ├── 1.1-<title>.md     # 任务详情
 │           └── records/            # 执行记录
+├── tests/
+│   └── e2e/                       # 毕业后的回归测试套件
+│       ├── .graduated/            # 毕业标记文件
+│       │   └── <slug>             # 时间戳
+│       ├── ui/<page>/             # UI 测试（按页面聚合）
+│       │   └── ui.spec.ts
+│       ├── api/<resource>/        # API 测试（按资源聚合）
+│       │   └── api.spec.ts
+│       └── cli/<command>/         # CLI 测试（按命令聚合）
+│           └── cli.spec.ts
 ```
 
 ### 项目根目录检测

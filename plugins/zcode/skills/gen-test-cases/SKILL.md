@@ -23,6 +23,8 @@ description: Generate structured test cases from PRD acceptance criteria. Classi
 | `prd/prd-user-stories.md` | 先执行 `/write-prd` |
 | `prd/prd-spec.md` | 先执行 `/write-prd` |
 
+**注意**：本 skill 既可以手动调用，也可以作为 `/breakdown-tasks` 追加的标准任务 T-test-1 被 agent 调用。
+
 ```bash
 task feature
 ls docs/features/<slug>/prd/prd-user-stories.md
@@ -85,6 +87,12 @@ From each source, extract every verifiable criterion：
 
 For each extracted criterion, classify by type and generate a test case.
 
+<HARD-RULE>
+每个测试用例必须包含 `Target` 和 `Test ID` 字段：
+- **Target**: `<type>/<page-or-resource>` (例如 `ui/login`、`api/auth`、`cli/deploy`)
+- **Test ID**: `<target>/<title-slug>`，其中 title-slug = 标题小写 + 空格转连字符 + 去除标点
+</HARD-RULE>
+
 **Type classification rules:**
 
 | Type | Indicators |
@@ -104,6 +112,8 @@ For each criterion, generate：
 ## TC-{NNN}: {Title}
 - **Source**: {Story N / AC-N} or {Spec Section X.Y} or {UI Function Name}
 - **Type**: UI | API | CLI
+- **Target**: <type>/<page-or-resource>          ← NEW: e.g. ui/login, api/auth, cli/deploy
+- **Test ID**: <target>/<title-slug>            ← NEW: e.g. ui/login/login-with-valid-credentials
 - **Pre-conditions**: {What must be true before testing}
 - **Steps**:
   1. {Step 1}
@@ -116,7 +126,14 @@ For each criterion, generate：
 <HARD-RULE>
 **Numbering**: Start from TC-001, sequential. Group by type (UI first, then API, then CLI).
 
-**Traceability**: 每个测试用例的 `Source` 字段必须指向 PRD 中的具体位置（Story 编号、Spec 章节号、UI Function 名称）。文件末尾必须包含完整的追溯表（TC ID → Source → Type → Priority）。
+**Traceability**: 每个测试用例的 `Source` 字段必须指向 PRD 中的具体位置（Story 编号、Spec 章节号、UI Function 名称）。文件末尾必须包含完整的追溯表（TC ID → Source → Type → Target → Priority）。
+
+**Target 推导规则**：
+- UI 测试：`ui/<page-name>`（从 URL 或组件名推导，如 login 页 → `ui/login`）
+- API 测试：`api/<resource>`（从端点推导，如 `/api/auth` → `api/auth`）
+- CLI 测试：`cli/<command>`（从命令名推导，如 `task claim` → `cli/claim`）
+
+**Test ID 生成规则**：`<target>/<title-slug>`，其中 title-slug = 标题小写 + 空格转连字符 + 去除标点符号。
 </HARD-RULE>
 
 ### Step 4: Write Output

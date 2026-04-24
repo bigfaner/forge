@@ -280,7 +280,73 @@ func TestValidator_ValidateFilesExist(t *testing.T) {
 			t.Errorf("expected no warnings for empty file, got %v", v.warnings)
 		}
 	})
+
+	t.Run("T-test-1 with unresolved placeholder", func(t *testing.T) {
+		dir := t.TempDir()
+		featureSlug := "test-feature"
+
+		// Create correct directory structure
+		tasksDir := filepath.Join(dir, "docs", "features", featureSlug, "tasks")
+		if err := os.MkdirAll(tasksDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+
+		// Create T-test-1.md with unresolved placeholder
+		taskFile := filepath.Join(tasksDir, "T-test-1.md")
+		content := `---
+id: "T-test-1"
+dependencies: [{{LAST_BUSINESS_TASK_ID}}]
+---
+`
+		if err := os.WriteFile(taskFile, []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		v := &validator{filePath: filepath.Join(dir, "docs", "features", featureSlug, "tasks", "index.json")}
+		v.validateFilesExist(featureSlug, map[string]task.Task{
+			"t-test-1": {ID: "T-test-1", File: "T-test-1.md"},
+		})
+
+		if len(v.errors) != 1 {
+			t.Errorf("expected 1 error for unresolved placeholder, got %d: %v", len(v.errors), v.errors)
+		}
+		if len(v.errors) > 0 && !contains(v.errors[0], "{{LAST_BUSINESS_TASK_ID}}") {
+			t.Errorf("error should mention placeholder, got: %s", v.errors[0])
+		}
+	})
+
+	t.Run("T-test-1 with resolved placeholder", func(t *testing.T) {
+		dir := t.TempDir()
+		featureSlug := "test-feature"
+
+		// Create correct directory structure
+		tasksDir := filepath.Join(dir, "docs", "features", featureSlug, "tasks")
+		if err := os.MkdirAll(tasksDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+
+		// Create T-test-1.md with resolved placeholder
+		taskFile := filepath.Join(tasksDir, "T-test-1.md")
+		content := `---
+id: "T-test-1"
+dependencies: ["1.5"]
+---
+`
+		if err := os.WriteFile(taskFile, []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		v := &validator{filePath: filepath.Join(dir, "docs", "features", featureSlug, "tasks", "index.json")}
+		v.validateFilesExist(featureSlug, map[string]task.Task{
+			"t-test-1": {ID: "T-test-1", File: "T-test-1.md"},
+		})
+
+		if len(v.errors) != 0 {
+			t.Errorf("expected no errors for resolved placeholder, got: %v", v.errors)
+		}
+	})
 }
+
 
 func TestValidator_Run(t *testing.T) {
 	t.Run("valid index", func(t *testing.T) {

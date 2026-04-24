@@ -110,6 +110,22 @@ Example:
 
 For each task, populate the **User Stories** section with matching stories from `prd/prd-user-stories.md`. Include full Given/When/Then acceptance criteria — this enables direct test generation. If no match, note "No direct user story mapping."
 
+## Step 4b: Append Standard Test Tasks
+
+After all business tasks are created, append two fixed test tasks to ensure e2e coverage.
+
+<HARD-RULE>
+Read the templates and create task files:
+- `templates/gen-test-cases.md` — Generate e2e test cases
+- `templates/gen-test-scripts.md` — Generate e2e test scripts
+
+Replace `{{LAST_BUSINESS_TASK_ID}}` in gen-test-cases.md with the ID of the last business task.
+Add both tasks to `index.json` in Step 5.
+</HARD-RULE>
+
+**T-test-1** (gen-test-cases.md): Calls `/gen-test-cases` skill, depends on last business task
+**T-test-2** (gen-test-scripts.md): Calls `/gen-test-scripts` skill, depends on T-test-1
+
 ## Step 5: Create index.json
 
 <HARD-RULE>Read `templates/index.json` before writing. Paths (`file`, `record`) are relative to `tasks/` directory. Populate `dependencies` per Step 3 rules.
@@ -136,4 +152,5 @@ task validate -file docs/features/<slug>/tasks/index.json
 - [ ] Dependencies follow Step 3 rules (no cycles)
 - [ ] UI tasks reference prototype files (if applicable)
 - [ ] User Stories populated from `prd-user-stories.md`
+- [ ] index.json 末尾包含 T-test-1 和 T-test-2，依赖关系正确
 - [ ] `manifest.md` updated with traceability + `status: tasks`
