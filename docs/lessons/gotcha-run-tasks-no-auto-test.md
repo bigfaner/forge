@@ -16,23 +16,37 @@ Dispatcher 的职责只有三个动作：claim → dispatch → verify record。
 Skill Iron Laws > CLAUDE.md > 用户对话指令
 ```
 
-如果规则配置为 Claude Code Hook（settings.json），Hook 由 harness 执行，不受 Iron Laws 约束，
-但需要确认：
-- Hook 绑定的是 `Stop` 事件（不是 `PostToolUse`）
-- Hook 的触发条件（matcher）能匹配 dispatcher 的最终输出
-- Hook 命令本身执行无误
+## Solution（已实现）
 
-## Solution
-所有任务完成后，手动运行：
-```
-/run-e2e-tests
+使用 `task all-completed` + Claude Code `Stop` hook 实现真正的自动化：
+
+### 1. `task all-completed` 命令
+检查当前 feature 所有任务是否均为 `completed` 或 `skipped`：
+- 若未全部完成 → 静默退出 exit 1（无输出）
+- 若全部完成 → 依次运行：
+  1. Feature e2e 测试（`docs/features/{slug}/testing/scripts/`，若存在）
+  2. 项目级测试（自动检测：`go.mod` → `package.json` → `Makefile` → `pytest`，或 `index.json` 中的 `testCommand` 字段）
+
+### 2. Stop hook 配置（`.claude/settings.local.json`）
+```json
+"hooks": {
+  "Stop": [{
+    "hooks": [{"type": "command", "command": "task all-completed"}]
+  }]
+}
 ```
 
-如需真正自动化，有两个可行方案：
-1. **修改 `/run-tasks` skill 本身**，在循环结束后加显式测试触发步骤（需移除对应 Iron Law）
-2. **配置 `Stop` hook**，在 dispatcher 输出包含 `"All tasks completed"` 时触发测试脚本
+Hook 由 harness 执行，不受 Iron Laws 约束。每次 Claude stop 时触发，
+`task all-completed` 内部判断是否需要运行测试，未完成时静默退出，无性能损耗。
+
+### 3. 可选：在 `index.json` 中指定测试命令
+```json
+{
+  "testCommand": "make test"
+}
+```
 
 ## Key Takeaway
-`/run-tasks` 是纯粹的任务编排器，其 Iron Laws 优先级高于任何外部配置的规则或 hook。
-测试执行永远是用户的显式动作，不会被 dispatcher 代劳。
-想要真正自动化，必须修改 skill 本身或使用正确事件的 Hook，而不是依赖对话级别的规则。
+`/run-tasks` 是纯粹的任务编排器，其 Iron Laws 优先级高于任何外部配置的规则。
+真正自动化的正确方式：**修改 task-cli 命令本身 + Stop hook**，而不是依赖对话级别的规则。
+Hook 执行在 Iron Laws 之外，是唯一可靠的自动化入口。

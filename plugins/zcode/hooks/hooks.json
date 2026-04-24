@@ -54,6 +54,16 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "task all-completed"
+          }
+        ]
+      }
     ]
   }
 }

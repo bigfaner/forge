@@ -25,7 +25,7 @@ func TestRootCmd_Structure(t *testing.T) {
 		}
 	}
 
-	expectedCommands := []string{"claim", "record", "status", "query", "feature", "check", "validate", "verify-completion", "cleanup"}
+	expectedCommands := []string{"claim", "record", "status", "query", "feature", "check", "validate", "verify-completion", "cleanup", "all-completed"}
 	for _, expected := range expectedCommands {
 		if !commandNames[expected] {
 			t.Errorf("missing subcommand: %s (have: %v)", expected, commandNames)
@@ -58,9 +58,10 @@ func TestInit_RegistersCommands(t *testing.T) {
 	testRoot.AddCommand(validateCmd)
 	testRoot.AddCommand(verifyCompletionCmd)
 	testRoot.AddCommand(cleanupCmd)
+	testRoot.AddCommand(allCompletedCmd)
 
 	// Verify commands are registered
-	if len(testRoot.Commands()) != 9 {
-		t.Errorf("expected 8 commands, got %d", len(testRoot.Commands()))
+	if len(testRoot.Commands()) != 10 {
+		t.Errorf("expected 10 commands, got %d", len(testRoot.Commands()))
 	}
 }
