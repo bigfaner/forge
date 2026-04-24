@@ -69,10 +69,16 @@
 
 **测试命令自动检测顺序（项目级）：**
 1. `index.json` 中的 `testCommand` 字段（显式配置）
-2. `go.mod` 存在 → `go test ./...`
-3. `package.json` 含 `scripts.test` → `npm test`
-4. `Makefile` 含 `test:` target → `make test`
-5. `pytest.ini` / `pyproject.toml` 存在 → `pytest`
+2. `justfile`/`Justfile` 含 `test` recipe → `just test`
+3. `Makefile` 含 `test:` target → `make test`
+4. `go.mod` 存在 → `go test ./...`
+5. `package.json` 含 `scripts.test` → `npm test`
+6. `pytest.ini` / `pyproject.toml` 存在 → `pytest`
+
+**e2e 测试检测顺序：**
+1. `justfile`/`Justfile` 含 `test-e2e` recipe → `just test-e2e`
+2. `Makefile` 含 `test-e2e:` target → `make test-e2e`
+3. `testing/scripts/package.json` 存在 → `npm run test:all --if-present`
 
 ---
 

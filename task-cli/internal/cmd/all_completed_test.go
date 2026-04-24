@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -192,4 +193,88 @@ func TestCheckAllCompleted_NoProject(t *testing.T) {
 	if result != nil {
 		t.Errorf("expected nil result when no project root, got %+v", result)
 	}
+}
+
+func TestHasJustfile(t *testing.T) {
+	tests := []struct {
+		name     string
+		files    []string // files to create in temp dir
+		want     bool
+	}{
+		{
+			name:  "no justfile",
+			files: []string{},
+			want:  false,
+		},
+		{
+			name:  "lowercase justfile",
+			files: []string{"justfile"},
+			want:  true,
+		},
+		{
+			name:  "capitalized Justfile",
+			files: []string{"Justfile"},
+			want:  true,
+		},
+		{
+			name:  "both present",
+			files: []string{"justfile", "Justfile"},
+			want:  true,
+		},
+		{
+			name:  "unrelated files only",
+			files: []string{"Makefile", "go.mod"},
+			want:  false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			for _, f := range tc.files {
+				if err := os.WriteFile(filepath.Join(dir, f), []byte("test:\n    echo ok\n"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if got := hasJustfile(dir); got != tc.want {
+				t.Errorf("hasJustfile() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestHasJustRecipe(t *testing.T) {
+	// Skip if just is not installed
+	if _, err := exec.LookPath("just"); err != nil {
+		t.Skip("just not installed, skipping")
+	}
+
+	t.Run("recipe exists", func(t *testing.T) {
+		dir := t.TempDir()
+		content := "test:\n    echo ok\n"
+		if err := os.WriteFile(filepath.Join(dir, "justfile"), []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+		if !hasJustRecipe(dir, "test") {
+			t.Error("hasJustRecipe() = false, want true for existing recipe")
+		}
+	})
+
+	t.Run("recipe does not exist", func(t *testing.T) {
+		dir := t.TempDir()
+		content := "build:\n    echo build\n"
+		if err := os.WriteFile(filepath.Join(dir, "justfile"), []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+		if hasJustRecipe(dir, "test") {
+			t.Error("hasJustRecipe() = true, want false for missing recipe")
+		}
+	})
+
+	t.Run("no justfile", func(t *testing.T) {
+		dir := t.TempDir()
+		if hasJustRecipe(dir, "test") {
+			t.Error("hasJustRecipe() = true, want false when no justfile")
+		}
+	})
 }

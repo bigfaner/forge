@@ -99,7 +99,14 @@ func runAllCompleted(cmd *cobra.Command, args []string) {
 	fmt.Printf("=== All tasks completed for feature: %s ===\n", result.FeatureSlug)
 
 	// Step 1: Feature e2e tests
-	if result.E2EScriptsDir != "" {
+	switch {
+	case hasJustfile(result.ProjectRoot) && hasJustRecipe(result.ProjectRoot, "test-e2e"):
+		fmt.Println("--- Running feature e2e tests (just test-e2e) ---")
+		runCmd(result.ProjectRoot, "just", "test-e2e")
+	case fileExists(filepath.Join(result.ProjectRoot, "Makefile")) && hasMakeTarget(result.ProjectRoot, "test-e2e"):
+		fmt.Println("--- Running feature e2e tests (make test-e2e) ---")
+		runCmd(result.ProjectRoot, "make", "test-e2e")
+	case result.E2EScriptsDir != "":
 		pkgJSON := filepath.Join(result.E2EScriptsDir, "package.json")
 		if _, err := os.Stat(pkgJSON); err == nil {
 			fmt.Println("--- Running feature e2e tests ---")
@@ -121,12 +128,14 @@ func runProjectTests(projectRoot, testCommand string) {
 	}
 
 	switch {
+	case hasJustfile(projectRoot) && hasJustRecipe(projectRoot, "test"):
+		runCmd(projectRoot, "just", "test")
+	case fileExists(filepath.Join(projectRoot, "Makefile")) && hasMakeTarget(projectRoot, "test"):
+		runCmd(projectRoot, "make", "test")
 	case fileExists(filepath.Join(projectRoot, "go.mod")):
 		runCmd(projectRoot, "go", "test", "./...")
 	case fileExists(filepath.Join(projectRoot, "package.json")) && hasNpmTestScript(projectRoot):
 		runCmd(projectRoot, "npm", "test")
-	case fileExists(filepath.Join(projectRoot, "Makefile")) && hasMakeTarget(projectRoot, "test"):
-		runCmd(projectRoot, "make", "test")
 	case fileExists(filepath.Join(projectRoot, "pytest.ini")) || fileExists(filepath.Join(projectRoot, "pyproject.toml")):
 		runCmd(projectRoot, "pytest")
 	default:
@@ -177,5 +186,16 @@ func hasNpmTestScript(projectRoot string) bool {
 func hasMakeTarget(projectRoot, target string) bool {
 	c := exec.Command("make", "-n", target)
 	c.Dir = projectRoot
+	return c.Run() == nil
+}
+
+func hasJustfile(dir string) bool {
+	return fileExists(filepath.Join(dir, "justfile")) ||
+		fileExists(filepath.Join(dir, "Justfile"))
+}
+
+func hasJustRecipe(dir, recipe string) bool {
+	c := exec.Command("just", "--dry-run", recipe)
+	c.Dir = dir
 	return c.Run() == nil
 }

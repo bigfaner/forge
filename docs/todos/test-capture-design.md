@@ -133,3 +133,42 @@ Failures (2): docs/features/my-feat/testing/results/failures/
 1. Replace `runCmd`/`runShell` with `runCmdCapture()` — captures stdout+stderr, no streaming
 2. Go tests: use `go test -json ./...` for structured output
 3. After both runs: parse → write files → print summary
+
+## Runner Detection
+
+`runProjectTests()` and the e2e block use this priority order before falling back to language-specific detection:
+
+### Project-wide tests (`test` target)
+
+| Priority | Condition | Command |
+|----------|-----------|---------|
+| 1 | `index.json` `testCommand` set | `sh -c <testCommand>` |
+| 2 | `justfile`/`Justfile` has `test` recipe | `just test` |
+| 3 | `Makefile` has `test` target | `make test` |
+| 4 | `go.mod` exists | `go test -json ./...` |
+| 5 | `package.json` has `scripts.test` | `npm test` |
+| 6 | `pytest.ini` / `pyproject.toml` exists | `pytest` |
+| 7 | fallback | WARNING message |
+
+### Feature e2e tests (`test-e2e` target)
+
+| Priority | Condition | Command |
+|----------|-----------|---------|
+| 1 | `justfile`/`Justfile` has `test-e2e` recipe | `just test-e2e` |
+| 2 | `Makefile` has `test-e2e` target | `make test-e2e` |
+| 3 | `testing/scripts/package.json` exists | `npm run test:all --if-present` |
+
+### Justfile/Makefile Contract
+
+zcode defines these standard target names. Users provide the implementations:
+
+| Target | Required | Purpose |
+|--------|----------|---------|
+| `test` | yes | unit + integration tests |
+| `test-e2e` | no | feature e2e tests |
+| `build` | no | compile/bundle |
+| `lint` | no | static analysis |
+
+Use `/init-justfile` to scaffold a Justfile with these targets pre-filled for your project type.
+
+`TestStats.Framework` valid values: `"go"`, `"npm"`, `"just"`, `"make"`, `"pytest"`, `"unknown"`
