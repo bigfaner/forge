@@ -9,6 +9,8 @@
     "test:all": "tsx ui.spec.ts && tsx api.spec.ts && tsx cli.spec.ts"
   },
   "devDependencies": {
-    "tsx": "^4.19.0"
+    "tsx": "^4.19.0",
+    "playwright": "^1.44.0",
+    "yaml": "^2.7.0"
   }
 }
