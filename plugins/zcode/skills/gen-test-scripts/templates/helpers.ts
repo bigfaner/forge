@@ -33,7 +33,7 @@ const SCREENSHOTS_DIR = join(__dirname, '..', 'results', 'screenshots');
 
 interface E2EConfig {
   baseUrl?: string;
-  apiUrl?: string;
+  apiBaseUrl?: string;
   timeout?: number | string;
   username?: string;
   password?: string;
@@ -56,7 +56,7 @@ function toNumber(val: unknown, fallback: number): number {
 }
 
 export const baseUrl = _config.baseUrl ?? 'http://localhost:3456';
-export const apiUrl = _config.apiUrl ?? 'http://localhost:8080';
+export const apiBaseUrl = _config.apiBaseUrl ?? 'http://localhost:8080';
 const DEFAULT_TIMEOUT = toNumber(_config.timeout, 30000);
 
 // ── Browser lifecycle ──────────────────────────────────────────────
@@ -161,8 +161,10 @@ export async function loginViaUI(page: Page, creds: UICredentials = defaultCreds
   await page.waitForURL((url) => !url.pathname.includes('login'), { timeout: DEFAULT_TIMEOUT });
 }
 
-export async function getApiToken(apiUrl: string, creds: UICredentials = defaultCreds): Promise<string> {
-  const res = await curl('POST', `${apiUrl}/api/auth/login`, {
+export async function getApiToken(apiBaseUrl: string, creds: UICredentials = defaultCreds): Promise<string> {
+  // IMPORTANT: apiBaseUrl contains no path prefix. The path below (/v1/auth/login) is a placeholder.
+  // Check backend router (e.g. r.Group(...) in router.go) for the actual auth endpoint path.
+  const res = await curl('POST', `${apiBaseUrl}/v1/auth/login`, {
     body: JSON.stringify({ username: creds.username, password: creds.password }),
   });
   if (res.status !== 200) throw new Error(`Auth failed: ${res.status} ${res.body}`);
@@ -173,11 +175,11 @@ export async function getApiToken(apiUrl: string, creds: UICredentials = default
 }
 
 export function createAuthCurl(
-  apiUrl: string,
+  apiBaseUrl: string,
   token: string,
 ): (method: string, path: string, opts?: { body?: string; headers?: Record<string, string>; timeout?: number }) => Promise<CurlResponse> {
   return (method, path, opts) =>
-    curl(method, new URL(path, apiUrl).toString(), {
+    curl(method, new URL(path, apiBaseUrl).toString(), {
       ...opts,
       headers: { Authorization: `Bearer ${token}`, ...opts?.headers },
     });

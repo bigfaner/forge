@@ -5,6 +5,9 @@ argument-hints:
   - name: base-url
     description: 待探索的应用基础 URL（如 http://localhost:3456），config.yaml 存在时可省略
     required: false
+  - name: api-base-url
+    description: 后端 API 基础 URL（如 http://localhost:8080），config.yaml 存在时可省略
+    required: false
 ---
 
 # /gen-sitemap
@@ -42,13 +45,16 @@ npx agent-browser install
 ```
 已创建 tests/e2e/config.yaml（模板），请根据实际环境填写配置后重新运行。
   baseUrl: 当前应用的实际地址
+  apiBaseUrl: 后端 API 的实际地址
   username/password: 测试账号凭据（若应用需要认证）
   loginLocators: 若登录页定位器与默认值不匹配，取消注释并自定义
 ```
 
-3. **若已存在**：读取 `baseUrl`、`username`、`password` 等字段
+3. **若已存在**：读取 `baseUrl`、`apiBaseUrl`、`username`、`password` 等字段
 
 **base-url 优先级**：命令行参数 > config.yaml 中的 `baseUrl` > 报错中止
+
+**apiBaseUrl 规则**：`apiBaseUrl` 是后端的原始基础地址（如 `http://localhost:8080`），**不含任何路径前缀**。构造请求 URL 时，路径前缀（如 `/v1`）必须从后端路由定义中读取（如 `backend/internal/handler/router.go` 中的 `r.Group(...)`），不得凭假设添加 `/api` 或其他前缀。正确做法：`${apiBaseUrl}/v1/auth/login`，而非 `${apiBaseUrl}/api/v1/auth/login`。
 
 **认证页面探索**：若 config.yaml 中 `username` 和 `password` 非空，在 Step 3 探索每个页面前先执行登录：
 
