@@ -28,7 +28,7 @@ var allCompletedCmd = &cobra.Command{
 	Use:   "all-completed",
 	Short: "Check if all tasks are done, then run tests",
 	Long: `Checks if every task in the current feature is completed or skipped.
-Exits 1 silently if any task is still pending, in_progress, or blocked.
+Exits 0 silently if any task is still pending, in_progress, or blocked (no-op).
 If all done: runs feature e2e tests, then project-wide tests.
 
 Use -v to see why the command exits early (useful for debugging).`,
@@ -104,7 +104,7 @@ func checkAllCompleted(verbose bool) (*AllCompletedResult, error) {
 func runAllCompleted(cmd *cobra.Command, args []string) {
 	result, err := checkAllCompleted(allCompletedVerbose)
 	if err != nil || result == nil {
-		os.Exit(1)
+		os.Exit(0) // not all done is normal, exit silently
 	}
 
 	fmt.Printf("=== All tasks completed for feature: %s ===\n", result.FeatureSlug)
