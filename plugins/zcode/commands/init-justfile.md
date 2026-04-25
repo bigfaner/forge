@@ -7,6 +7,27 @@ description: Scaffold a Justfile with standard zcode targets for the current pro
 
 生成包含 zcode 标准 target 的 Justfile，作为测试/构建命令的抽象层。
 
+## Prerequisites
+
+**安装 just（>= 1.46.0）**
+
+| 平台 | 命令 |
+|------|------|
+| macOS / Linux | `brew install just` |
+| Windows (Scoop) | `scoop install just` |
+| Windows (winget) | `winget install --id Casey.Just --exact` |
+| Windows (Chocolatey) | `choco install just` |
+| Cargo (通用) | `cargo install just` |
+
+验证版本：
+
+```bash
+just --version
+# 需要 >= 1.46.0（支持 [arg] flag 语法）
+```
+
+若版本低于 1.46.0，通过 Cargo 安装最新版：`cargo install just`
+
 ## 标准 Target 契约
 
 | Target | 必须 | 用途 |
@@ -324,6 +345,7 @@ task all-completed will now use `just test` automatically.
 
 ## 注意事项
 
+- **just 版本要求 >= 1.46.0**（`test-e2e` 使用 `[arg("feature", long)]` flag 语法）
 - `just test-e2e`（默认）运行毕业后迁移到 `tests/e2e/` 的所有 spec 文件，用于日常回归
 - `just test-e2e --feature` 运行当前 feature 开发阶段的测试脚本，由 `task all-completed` 调用
 - 两种模式都逐个运行 spec 文件，确保即使部分失败也能收集完整结果
