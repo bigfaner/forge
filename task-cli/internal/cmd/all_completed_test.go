@@ -333,11 +333,13 @@ func TestAppendFixTask(t *testing.T) {
 		name          string
 		existingTasks map[string]task.Task
 		failures      []TestFailure
+		e2eRound      int
 		wantErr       error
+		wantAdded     int
 		verifyFunc    func(t *testing.T, indexPath string)
 	}{
 		{
-			name: "first failure appends fix-e2e-1",
+			name: "first failure appends fix-e2e-1-1",
 			existingTasks: map[string]task.Task{
 				"biz-1": {ID: "1.1", Status: "completed"},
 			},
@@ -348,7 +350,8 @@ func TestAppendFixTask(t *testing.T) {
 					ErrorMessage: "Expected status 401, got 500",
 				},
 			},
-			wantErr: nil,
+			wantErr:   nil,
+			wantAdded: 1,
 			verifyFunc: func(t *testing.T, indexPath string) {
 				index, err := task.LoadIndex(indexPath)
 				if err != nil {
@@ -357,15 +360,12 @@ func TestAppendFixTask(t *testing.T) {
 				if len(index.Tasks) != 2 {
 					t.Errorf("expected 2 tasks, got %d", len(index.Tasks))
 				}
-				fixTask, ok := index.Tasks["fix-e2e-1"]
+				fixTask, ok := index.Tasks["fix-e2e-1-1"]
 				if !ok {
-					t.Error("fix-e2e-1 task not found")
+					t.Error("fix-e2e-1-1 task not found")
 				} else {
-					if fixTask.ID != "fix-e2e-1" {
-						t.Errorf("ID = %q, want fix-e2e-1", fixTask.ID)
-					}
-					if fixTask.Title != "修复 e2e 测试失败" {
-						t.Errorf("Title = %q", fixTask.Title)
+					if fixTask.ID != "fix-e2e-1-1" {
+						t.Errorf("ID = %q, want fix-e2e-1-1", fixTask.ID)
 					}
 					if fixTask.Priority != "P0" {
 						t.Errorf("Priority = %q, want P0", fixTask.Priority)
@@ -373,59 +373,81 @@ func TestAppendFixTask(t *testing.T) {
 					if fixTask.Status != "pending" {
 						t.Errorf("Status = %q, want pending", fixTask.Status)
 					}
-					if fixTask.File != "fix-e2e-1.md" {
-						t.Errorf("File = %q, want fix-e2e-1.md", fixTask.File)
+					if fixTask.File != "fix-e2e-1-1.md" {
+						t.Errorf("File = %q, want fix-e2e-1-1.md", fixTask.File)
 					}
+				}
+			},
+		},
+		{
+			name: "two failures create two tasks",
+			existingTasks: map[string]task.Task{
+				"biz-1": {ID: "1.1", Status: "completed"},
+			},
+			failures: []TestFailure{
+				{TestName: "Test A", TestCaseID: "tc-a"},
+				{TestName: "Test B", TestCaseID: "tc-b"},
+			},
+			wantErr:   nil,
+			wantAdded: 2,
+			verifyFunc: func(t *testing.T, indexPath string) {
+				index, err := task.LoadIndex(indexPath)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if len(index.Tasks) != 3 {
+					t.Errorf("expected 3 tasks, got %d", len(index.Tasks))
+				}
+				if _, ok := index.Tasks["fix-e2e-1-1"]; !ok {
+					t.Error("fix-e2e-1-1 not found")
+				}
+				if _, ok := index.Tasks["fix-e2e-1-2"]; !ok {
+					t.Error("fix-e2e-1-2 not found")
 				}
 			},
 		},
 		{
 			name: "pending fix-e2e exists, skip append",
 			existingTasks: map[string]task.Task{
-				"biz-1":     {ID: "1.1", Status: "completed"},
-				"fix-e2e-1": {ID: "fix-e2e-1", Status: "pending", Priority: "P0"},
+				"biz-1":       {ID: "1.1", Status: "completed"},
+				"fix-e2e-1-1": {ID: "fix-e2e-1-1", Status: "pending", Priority: "P0"},
 			},
 			failures: []TestFailure{
-				{
-					TestName:     "Login with invalid credentials",
-					TestCaseID:   "ui-login-login-with-invalid-credentials",
-					ErrorMessage: "Expected status 401, got 500",
-				},
+				{TestName: "Login with invalid credentials", TestCaseID: "ui-login"},
 			},
-			wantErr: nil,
+			wantErr:   nil,
+			wantAdded: 1,
 			verifyFunc: func(t *testing.T, indexPath string) {
 				index, err := task.LoadIndex(indexPath)
 				if err != nil {
 					t.Fatal(err)
 				}
 				if len(index.Tasks) != 2 {
-					t.Errorf("expected 2 tasks, got %d", len(index.Tasks))
+					t.Errorf("expected 2 tasks (no new ones added), got %d", len(index.Tasks))
 				}
 			},
 		},
 		{
-			name: "fix-e2e limit (3) reached, returns sentinel",
+			name: "fix-e2e round limit (3) reached, returns sentinel",
 			existingTasks: map[string]task.Task{
-				"biz-1":     {ID: "1.1", Status: "completed"},
-				"fix-e2e-1": {ID: "fix-e2e-1", Status: "completed", Priority: "P0"},
-				"fix-e2e-2": {ID: "fix-e2e-2", Status: "completed", Priority: "P0"},
-				"fix-e2e-3": {ID: "fix-e2e-3", Status: "completed", Priority: "P0"},
+				"biz-1":       {ID: "1.1", Status: "completed"},
+				"fix-e2e-1-1": {ID: "fix-e2e-1-1", Status: "completed", Priority: "P0"},
+				"fix-e2e-2-1": {ID: "fix-e2e-2-1", Status: "completed", Priority: "P0"},
+				"fix-e2e-3-1": {ID: "fix-e2e-3-1", Status: "completed", Priority: "P0"},
 			},
+			e2eRound: 3,
 			failures: []TestFailure{
-				{
-					TestName:     "Login with invalid credentials",
-					TestCaseID:   "ui-login-login-with-invalid-credentials",
-					ErrorMessage: "Expected status 401, got 500",
-				},
+				{TestName: "Login with invalid credentials", TestCaseID: "ui-login"},
 			},
-			wantErr: errFixLimitExceeded,
+			wantErr:   errFixLimitExceeded,
+			wantAdded: 0,
 			verifyFunc: func(t *testing.T, indexPath string) {
 				index, err := task.LoadIndex(indexPath)
 				if err != nil {
 					t.Fatal(err)
 				}
 				if len(index.Tasks) != 4 {
-					t.Errorf("expected 4 tasks, got %d", len(index.Tasks))
+					t.Errorf("expected 4 tasks (unchanged), got %d", len(index.Tasks))
 				}
 			},
 		},
@@ -447,13 +469,14 @@ func TestAppendFixTask(t *testing.T) {
 				Feature:    "test",
 				StatusEnum: []string{"pending", "in_progress", "completed", "blocked", "skipped"},
 				Tasks:      tt.existingTasks,
+				E2ERound:   tt.e2eRound,
 			}
 			if err := task.SaveIndex(indexPath, index); err != nil {
 				t.Fatal(err)
 			}
 
 			// Run appendFixTask
-			err := appendFixTask(dir, "test", tt.failures)
+			added, err := appendFixTask(dir, "test", tt.failures)
 
 			if tt.wantErr != nil {
 				if err != tt.wantErr {
@@ -461,6 +484,10 @@ func TestAppendFixTask(t *testing.T) {
 				}
 			} else if err != nil {
 				t.Fatalf("appendFixTask() unexpected error = %v", err)
+			}
+
+			if err == nil && added != tt.wantAdded {
+				t.Errorf("appendFixTask() added = %d, want %d", added, tt.wantAdded)
 			}
 
 			if tt.verifyFunc != nil {

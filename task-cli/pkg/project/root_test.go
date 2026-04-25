@@ -139,7 +139,7 @@ func TestFindProjectRoot(t *testing.T) {
 
 func TestFindRootInfo(t *testing.T) {
 	t.Run("returns detailed info for Go project", func(t *testing.T) {
-		tempDir := t.TempDir()
+		tempDir, _ := filepath.EvalSymlinks(t.TempDir())
 		goModPath := filepath.Join(tempDir, "go.mod")
 		os.WriteFile(goModPath, []byte("module test\n"), 0644)
 
@@ -318,7 +318,7 @@ func TestGitWorktree(t *testing.T) {
 
 func TestFindVCSRoot(t *testing.T) {
 	t.Run("finds .git directory", func(t *testing.T) {
-		tempDir := t.TempDir()
+		tempDir, _ := filepath.EvalSymlinks(t.TempDir())
 		gitDir := filepath.Join(tempDir, ".git")
 		os.MkdirAll(gitDir, 0755)
 
@@ -336,7 +336,7 @@ func TestFindVCSRoot(t *testing.T) {
 	})
 
 	t.Run("finds .git in parent", func(t *testing.T) {
-		tempDir := t.TempDir()
+		tempDir, _ := filepath.EvalSymlinks(t.TempDir())
 		subDir := filepath.Join(tempDir, "subdir")
 		os.MkdirAll(subDir, 0755)
 		gitDir := filepath.Join(tempDir, ".git")
@@ -358,7 +358,7 @@ func TestFindVCSRoot(t *testing.T) {
 
 func TestMonorepoDetection(t *testing.T) {
 	t.Run("pnpm monorepo returns workspace root", func(t *testing.T) {
-		tempDir := t.TempDir()
+		tempDir, _ := filepath.EvalSymlinks(t.TempDir())
 
 		// Create pnpm workspace at root
 		pnpmWorkspace := filepath.Join(tempDir, "pnpm-workspace.yaml")

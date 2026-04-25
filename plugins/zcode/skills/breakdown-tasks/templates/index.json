@@ -6,6 +6,7 @@
   "status": "planning",
   "statusEnum": ["pending", "in_progress", "completed", "blocked", "skipped"],
   "priorityEnum": ["P0", "P1", "P2"],
+  "e2eRound": 0,
   "tasks": {
     "1.1-interface": {
       "id": "1.1",

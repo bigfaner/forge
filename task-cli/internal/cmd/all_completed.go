@@ -107,7 +107,7 @@ func runAllCompleted(cmd *cobra.Command, args []string) {
 		os.Exit(0) // not all done is normal, exit silently
 	}
 
-	fmt.Printf("=== All tasks completed for feature: %s ===\n", result.FeatureSlug)
+	fmt.Fprintf(os.Stderr, "=== All tasks completed for feature: %s ===\n", result.FeatureSlug)
 
 	// Step 1: Feature e2e tests
 	var e2eOutput string
@@ -115,18 +115,18 @@ func runAllCompleted(cmd *cobra.Command, args []string) {
 
 	switch {
 	case hasJustfile(result.ProjectRoot) && hasJustRecipe(result.ProjectRoot, "test-e2e"):
-		fmt.Println("--- Running feature e2e tests (just test-e2e --feature) ---")
-		e2eOutput, e2eSuccess = runCmdCapture(result.ProjectRoot, "just", "test-e2e", "--feature")
+		fmt.Fprintf(os.Stderr, "--- Running feature e2e tests (just test-e2e --feature %s) ---\n", result.FeatureSlug)
+		e2eOutput, e2eSuccess = runCmdCapture(result.ProjectRoot, "just", "test-e2e", "--feature", result.FeatureSlug)
 	case fileExists(filepath.Join(result.ProjectRoot, "Makefile")) && hasMakeTarget(result.ProjectRoot, "test-e2e"):
-		fmt.Println("--- Running feature e2e tests (make test-e2e) ---")
-		e2eOutput, e2eSuccess = runCmdCapture(result.ProjectRoot, "make", "test-e2e")
+		fmt.Fprintf(os.Stderr, "--- Running feature e2e tests (make test-e2e FEATURE=%s) ---\n", result.FeatureSlug)
+		e2eOutput, e2eSuccess = runCmdCapture(result.ProjectRoot, "make", "test-e2e", "FEATURE="+result.FeatureSlug)
 	case result.E2EScriptsDir != "":
 		pkgJSON := filepath.Join(result.E2EScriptsDir, "package.json")
 		if _, err := os.Stat(pkgJSON); err == nil {
-			fmt.Println("--- Running feature e2e tests (individual specs) ---")
+			fmt.Fprintln(os.Stderr, "--- Running feature e2e tests (individual specs) ---")
 			e2eOutput, e2eSuccess = runSpecsIndividually(result.E2EScriptsDir)
 		} else {
-			fmt.Printf("WARNING: %s has no package.json — skipping e2e tests\n", result.E2EScriptsDir)
+			fmt.Fprintf(os.Stderr, "WARNING: %s has no package.json — skipping e2e tests\n", result.E2EScriptsDir)
 			e2eSuccess = true // no scripts to run, treat as success
 		}
 	default:
@@ -163,15 +163,26 @@ func runAllCompleted(cmd *cobra.Command, args []string) {
 
 	if !e2eSuccess {
 		fmt.Fprintln(os.Stderr, "ERROR: e2e tests failed")
-		appendErr := appendFixTask(result.ProjectRoot, result.FeatureSlug, failures)
+		pendingCount, appendErr := appendFixTask(result.ProjectRoot, result.FeatureSlug, failures)
 		if appendErr == errFixLimitExceeded {
-			fmt.Println("WARNING: fix-e2e task limit (3) reached — skipping fix task append")
-			// exit 0 so the Stop hook doesn't loop forever
+			fmt.Fprintf(os.Stderr, "e2e tests failed — fix-e2e task limit (3) reached. Manual intervention required.\n")
+			// Stop the agent entirely — no more retries
+			printHookJSON(map[string]any{
+				"continue":   false,
+				"stopReason": "e2e tests failed 3 times. Manual intervention required.",
+			})
+			os.Exit(0)
 		} else if appendErr != nil {
 			fmt.Fprintf(os.Stderr, "WARNING: failed to append fix task: %v\n", appendErr)
 			os.Exit(1)
 		} else {
-			os.Exit(1)
+			fmt.Fprintf(os.Stderr, "e2e tests failed — %d fix-e2e task(s) pending.\n", pendingCount)
+			// Block Stop: tell Claude to claim and fix the e2e task
+			printHookJSON(map[string]any{
+				"decision": "block",
+				"reason":   fmt.Sprintf("e2e tests failed. %d fix-e2e task(s) added. Run `task claim` to claim the fix-e2e task and fix the failures.", pendingCount),
+			})
+			os.Exit(0)
 		}
 		return
 	}
@@ -182,94 +193,109 @@ func runAllCompleted(cmd *cobra.Command, args []string) {
 	}
 
 	// Step 2: Project-wide unit tests
-	fmt.Println("--- Running project-wide tests ---")
+	fmt.Fprintln(os.Stderr, "--- Running project-wide tests ---")
 	runProjectTests(result.ProjectRoot, result.TestCommand)
 
 	// Step 3: Full e2e regression (graduated scripts in tests/e2e/)
 	if hasJustfile(result.ProjectRoot) && hasJustRecipe(result.ProjectRoot, "test-e2e") {
-		fmt.Println("--- Running full e2e regression (just test-e2e) ---")
+		fmt.Fprintln(os.Stderr, "--- Running full e2e regression (just test-e2e) ---")
 		_, regSuccess := runCmdCapture(result.ProjectRoot, "just", "test-e2e")
 		if !regSuccess {
-			fmt.Fprintf(os.Stderr, "ERROR: e2e regression failed: see output above")
+			fmt.Fprintln(os.Stderr, "ERROR: e2e regression failed: see output above")
 			os.Exit(1)
 		}
 	}
 }
 
-// appendFixTask appends a fix-e2e-N task to index.json when e2e tests fail.
-// Returns errFixLimitExceeded if the limit (3) is reached.
-func appendFixTask(projectRoot, featureSlug string, failures []TestFailure) error {
+// appendFixTask appends one fix-e2e task per failure to index.json when e2e tests fail.
+// IDs use the format fix-e2e-{round}-{index}. Returns the number of tasks appended
+// and errFixLimitExceeded if 3 rounds have already been attempted.
+func appendFixTask(projectRoot, featureSlug string, failures []TestFailure) (int, error) {
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
 	index, err := task.LoadIndex(indexPath)
 	if err != nil {
-		return fmt.Errorf("load index: %w", err)
+		return 0, fmt.Errorf("load index: %w", err)
 	}
 
-	// Count existing fix-e2e tasks and check for pending ones
-	fixCount := 0
+	// Check for pending/in-progress fix-e2e tasks from the current round
+	pendingCount := 0
 	for _, t := range index.Tasks {
-		if strings.HasPrefix(t.ID, "fix-e2e-") {
-			fixCount++
-			if t.Status == feature.StatusPending {
-				fmt.Println("INFO: pending fix-e2e task already exists — skipping append")
-				return nil
-			}
+		if strings.HasPrefix(t.ID, "fix-e2e-") &&
+			(t.Status == feature.StatusPending || t.Status == feature.StatusInProgress) {
+			pendingCount++
 		}
 	}
 
-	if fixCount >= 3 {
-		return errFixLimitExceeded
+	if pendingCount > 0 {
+		fmt.Fprintf(os.Stderr, "INFO: %d pending fix-e2e task(s) already exist — skipping append\n", pendingCount)
+		return pendingCount, nil
 	}
 
-	n := fixCount + 1
-	id := fmt.Sprintf("fix-e2e-%d", n)
-	key := id
+	if index.E2ERound >= 3 {
+		return 0, errFixLimitExceeded
+	}
 
-	// Create task file from template
+	index.E2ERound++
+	round := index.E2ERound
 	tasksDir := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug))
-	taskFile := fmt.Sprintf("%s.md", id)
-	taskFilePath := filepath.Join(tasksDir, taskFile)
 
-	if err := createFixTaskFile(taskFilePath, n, failures); err != nil {
-		return fmt.Errorf("create task file: %w", err)
+	// Ensure at least one task even if no failures were parsed
+	if len(failures) == 0 {
+		failures = []TestFailure{{TestName: "unknown", TestCaseID: "unknown"}}
 	}
 
-	newTask := task.Task{
-		ID:       id,
-		Title:    "修复 e2e 测试失败",
-		Priority: feature.PriorityP0,
-		Status:   feature.StatusPending,
-		File:     taskFile,
-		Record:   fmt.Sprintf("records/%s.md", id),
-	}
-	index.Tasks[key] = newTask
+	added := 0
+	for i, f := range failures {
+		idx := i + 1
+		id := fmt.Sprintf("fix-e2e-%d-%d", round, idx)
+		taskFile := fmt.Sprintf("%s.md", id)
+		taskFilePath := filepath.Join(tasksDir, taskFile)
 
-	return saveIndexAtomic(indexPath, index)
+		if err := createFixTaskFile(taskFilePath, round, idx, f); err != nil {
+			return added, fmt.Errorf("create task file %s: %w", id, err)
+		}
+
+		index.Tasks[id] = task.Task{
+			ID:       id,
+			Title:    fmt.Sprintf("修复 e2e 测试失败: %s", f.TestName),
+			Priority: feature.PriorityP0,
+			Status:   feature.StatusPending,
+			File:     taskFile,
+			Record:   fmt.Sprintf("records/%s.md", id),
+		}
+		added++
+	}
+
+	if err := saveIndexAtomic(indexPath, index); err != nil {
+		return 0, err
+	}
+	return added, nil
 }
 
-// createFixTaskFile creates a fix-e2e task file from template.
-func createFixTaskFile(filePath string, n int, failures []TestFailure) error {
-	// Build failure references section
-	var failureRefs strings.Builder
-	for _, f := range failures {
-		failureRefs.WriteString(fmt.Sprintf("- `testing/results/failures/failure-%s.md` — %s\n",
-			f.TestCaseID, f.TestName))
-	}
+// createFixTaskFile creates a fix-e2e task file for a single failure.
+func createFixTaskFile(filePath string, round, idx int, f TestFailure) error {
+	id := fmt.Sprintf("fix-e2e-%d-%d", round, idx)
+	failureRef := fmt.Sprintf("- `testing/results/failures/failure-%s.md` — %s\n", f.TestCaseID, f.TestName)
 
-	template := fmt.Sprintf(`---
-id: "fix-e2e-%d"
-title: "修复 e2e 测试失败"
+	content := fmt.Sprintf(`---
+id: "%s"
+title: "修复 e2e 测试失败: %s"
 priority: "P0"
 estimated_time: "30min-2h"
 dependencies: []
 status: pending
 ---
 
-# fix-e2e-%d: 修复 e2e 测试失败
+# %s: 修复 e2e 测试失败
 
 ## Description
 
-e2e 测试失败，需要分析失败原因并修复代码。
+这是第 %d 轮修复尝试。修复步骤：
+
+1. 读取 `+"`testing/results/latest.md`"+` 查看失败概览
+2. 读取 `+"`testing/results/failures/failure-%s.md`"+` 了解具体失败详情
+3. 定位根本原因（代码逻辑 / 测试脚本 / 环境配置）
+4. 修复并验证
 
 ## Reference Files
 
@@ -280,36 +306,12 @@ e2e 测试失败，需要分析失败原因并修复代码。
 
 ## Acceptance Criteria
 
-- [ ] 已读取 `+"`testing/results/latest.md`"+` 了解失败概览
-- [ ] 已读取 failure 文件了解具体失败详情
 - [ ] 已定位失败的根本原因
 - [ ] 已修复代码或测试脚本
-- [ ] 本地验证测试通过（可选）
-- [ ] `+"`task all-completed`"+` 再次运行时测试通过
+- [ ] 单元测试全部通过
+`, id, f.TestName, id, round, f.TestCaseID, failureRef)
 
-## User Stories
-
-No direct user story mapping. This is a test fix task.
-
-## Implementation Notes
-
-1. 读取 `+"`testing/results/latest.md`"+` 查看失败概览
-2. 读取对应的 failure-{test-case-id}.md 文件了解具体失败详情
-3. 分析失败原因：
-   - 代码逻辑错误？
-   - 测试脚本问题？
-   - 环境配置问题？
-4. 修复问题
-5. 如果需要，可运行 `+"`npm run test:all`"+` 本地验证
-6. 完成后执行 `+"`task record`"+` 记录修复内容
-
-## Context
-
-这是第 %d 次尝试修复 e2e 测试失败。如果修复后测试仍失败，会创建 fix-e2e-%d 任务。
-最多允许 3 次修复尝试。
-`, n, n, failureRefs.String(), n, n+1)
-
-	return os.WriteFile(filePath, []byte(template), 0644)
+	return os.WriteFile(filePath, []byte(content), 0644)
 }
 
 // graduateTestScripts migrates test scripts to tests/e2e/<target>/ on first success.
@@ -353,10 +355,10 @@ func graduateTestScripts(projectRoot, featureSlug string) error {
 	// Run npm install in tests/e2e/ if node_modules doesn't exist
 	nodeModules := filepath.Join(e2eBaseDir, "node_modules")
 	if !fileExists(nodeModules) && fileExists(filepath.Join(e2eBaseDir, "package.json")) {
-		fmt.Println("INFO: running npm install in tests/e2e/ ...")
+		fmt.Fprintln(os.Stderr, "INFO: running npm install in tests/e2e/ ...")
 		c := exec.Command("npm", "install")
 		c.Dir = e2eBaseDir
-		c.Stdout = os.Stdout
+		c.Stdout = os.Stderr
 		c.Stderr = os.Stderr
 		if err := c.Run(); err != nil {
 			return fmt.Errorf("npm install in tests/e2e/: %w", err)
@@ -512,23 +514,35 @@ func runProjectTests(projectRoot, testCommand string) {
 	}
 }
 
-// runCmdCapture runs a command, streams output to stdout/stderr, and returns
+// runCmdCapture runs a command, streams output to stderr, and returns
 // the combined output as a string along with whether the command succeeded.
+// Output goes to stderr so stdout remains clean for hook JSON decisions.
 func runCmdCapture(dir string, name string, args ...string) (string, bool) {
 	c := exec.Command(name, args...)
 	c.Dir = dir
 	var buf bytes.Buffer
-	mw := io.MultiWriter(os.Stdout, &buf)
+	mw := io.MultiWriter(os.Stderr, &buf)
 	c.Stdout = mw
 	c.Stderr = mw
 	err := c.Run()
 	return buf.String(), err == nil
 }
 
+// printHookJSON writes a Claude Code hook decision as JSON to stdout.
+// Stdout must contain only this JSON for Claude Code to parse it correctly.
+func printHookJSON(v any) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "WARNING: failed to marshal hook JSON: %v\n", err)
+		return
+	}
+	fmt.Println(string(data))
+}
+
 func runCmd(dir string, name string, args ...string) {
 	c := exec.Command(name, args...)
 	c.Dir = dir
-	c.Stdout = os.Stdout
+	c.Stdout = os.Stderr
 	c.Stderr = os.Stderr
 	if err := c.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: %s failed: %v\n", name, err)
@@ -543,7 +557,7 @@ func runShell(dir, command string) {
 		c = exec.Command("sh", "-c", command)
 	}
 	c.Dir = dir
-	c.Stdout = os.Stdout
+	c.Stdout = os.Stderr
 	c.Stderr = os.Stderr
 	if err := c.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: command failed: %v\n", err)

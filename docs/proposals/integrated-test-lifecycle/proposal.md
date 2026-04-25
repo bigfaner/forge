@@ -68,21 +68,22 @@ task all-completed 首次成功（毕业）：
 
 **3. `task all-completed` 失败时追加修复任务**
 
-e2e 测试失败后，自动向 `index.json` 追加一个修复任务：
+e2e 测试失败后，每个失败的测试用例独立创建一个修复任务，ID 格式为 `fix-e2e-{round}-{index}`：
 
 ```json
 {
-  "id": "fix-e2e-1",
-  "title": "修复 e2e 测试失败",
+  "id": "fix-e2e-1-1",
+  "title": "修复 e2e 测试失败: Login with invalid credentials",
   "priority": "P0",
   "dependencies": [],
   "status": "pending",
-  "file": "docs/features/<slug>/testing/results/latest.md"
+  "file": "fix-e2e-1-1.md"
 }
 ```
 
-- 修复任务的 `file` 指向 `latest.md`，agent 读取失败详情后决定修复策略
-- 追加后 `task all-completed` exit 1，触发 agent 继续工作
+- `e2eRound` 字段持久化到 `index.json`，记录当前修复轮次（0 = 尚未失败）
+- 每轮最多 3 次，超限后 agent 停止并提示人工介入
+- 追加后通过 Stop hook JSON `{"decision": "block", "reason": "..."}` 驱动 agent 继续工作
 - agent 完成修复后再次触发 `task all-completed`，形成闭环
 
 **4. `run-e2e-tests` skill 保留，用于手动深度分析**
