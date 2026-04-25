@@ -91,7 +91,7 @@ ZCode 可作为 Claude Code plugin marketplace 使用，支持标准化安装和
 /plugin marketplace git@github.com:bigfaner/forge.git
 
 # 2. 安装 forge plugin（--scope project 与团队共享）
-/plugin install forge@forge-marketplace --scope project
+/plugin install forge@forge --scope project
 
 # 3. 编译安装 task-cli
 /init-forge
@@ -117,7 +117,7 @@ cd zcode
 
 # 2. 添加本地 marketplace 并安装
 /plugin marketplace add .
-/plugin install forge@forge-marketplace
+/plugin install forge@forge
 
 # 3. 编译安装 task-cli
 /init-forge
