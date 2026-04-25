@@ -1,4 +1,4 @@
-# ZCode
+# Forge
 
 > Claude Code 工作流增强工具集：让 AI 编程从"聊天"变成"工程"
 
@@ -7,7 +7,7 @@
 
 ---
 
-## 为什么选择 ZCode？
+## 为什么选择 Forge？
 
 ### 问题
 
@@ -21,7 +21,7 @@
 | **上下文丢失** | 长会话中 Claude 忘记之前的决策 |
 | **协作困难** | 多人开发时任务状态不透明 |
 
-### ZCode 的解法
+### Forge 的解法
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -29,7 +29,7 @@
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-| ZCode 提供 | 解决的问题 |
+| Forge 提供 | 解决的问题 |
 |-----------|-----------|
 | **brainstorm → PRD → 设计 → 任务** 流程 | 防止方向漂移 |
 | **manifest.md** 可追溯性映射 | PRD → 设计 → 任务全链路追溯 |
@@ -45,7 +45,7 @@
 | **直接用 Claude Code** | 灵活、快速 | 无结构、难追溯、质量不稳定 |
 | **GitHub Projects/Jira** | 成熟的任务管理 | 与 AI 开发脱节，需要人工同步 |
 | **Cursor Rules** | 轻量级指导 | 仅有规则，无执行流程 |
-| **ZCode** | AI 原生工作流 + 任务管理 + 知识沉淀 | 需要 Go 环境，学习成本 |
+| **Forge** | AI 原生工作流 + 任务管理 + 知识沉淀 | 需要 Go 环境，学习成本 |
 
 ---
 
@@ -84,11 +84,11 @@
 
 #### 方式一：通过 Plugin Marketplace 安装（推荐）
 
-ZCode 可作为 Claude Code plugin marketplace 使用，支持标准化安装和自动更新：
+Forge 可作为 Claude Code plugin marketplace 使用，支持标准化安装和自动更新：
 
 ```bash
 # 1. 添加 marketplace
-/plugin marketplace git@github.com:bigfaner/forge.git
+/plugin marketplace add git@github.com:bigfaner/forge.git
 
 # 2. 安装 forge plugin（--scope project 与团队共享）
 /plugin install forge@forge --scope project
@@ -113,7 +113,7 @@ task --version
 ```bash
 # 1. 克隆仓库
 git clone git@github.com:bigfaner/forge.git
-cd zcode
+cd forge
 
 # 2. 添加本地 marketplace 并安装
 /plugin marketplace add .
@@ -198,8 +198,8 @@ project-root/
 | (none) | `/write-prd` 完成 | `/write-prd` |
 | `prd` | `/design-tech` + `/ui-design`（如适用）完成 | 后完成者 |
 | `design` | `/breakdown-tasks` 完成 | `/breakdown-tasks` |
-| `tasks` | 首次 `/claim-task` | `/claim-task` |
-| `in-progress` | 所有任务完成 | `/set-task-status` |
+| `tasks` | 首次 `task claim` | `/execute-task` / `/run-tasks` |
+| `in-progress` | 所有任务完成 | `/record-task` |
 
 ### task-cli 命令
 
@@ -276,11 +276,9 @@ pending → in_progress → completed
 
 | Skill | 用途 | 何时使用 |
 |-------|------|----------|
-| `/claim-task` | 声明任务 | 手动领取下一个任务 |
 | `/execute-task` | 执行单任务 | 手动执行一个任务 |
 | `/run-tasks` | 自动循环执行 | 自动化批量执行 |
 | `/record-task` | 记录完成 | 任务完成后必须调用 |
-| `/set-task-status` | 更新状态 | 手动修改任务状态 |
 
 ### 辅助工具
 
@@ -416,7 +414,7 @@ rm docs/features/<slug>/tasks/process/state.json
 
 ## Plugin Marketplace 架构
 
-ZCode 遵循 [Claude Code plugin 规范](docs/official-references/plugin.md)，可作为 marketplace 分发。
+Forge 遵循 [Claude Code plugin 规范](docs/official-references/plugin.md)，可作为 marketplace 分发。
 
 ### 目录结构
 
@@ -425,7 +423,7 @@ forge/                              # Marketplace 根目录
 ├── .claude-plugin/
 │   └── marketplace.json            # Marketplace 清单
 ├── plugins/
-│   └── forge/                      # ZCode plugin
+│   └── forge/                      # Forge plugin
 │       ├── .claude-plugin/
 │       │   └── plugin.json         # Plugin 清单
 │       ├── skills/                 # Skills（命令）
@@ -459,7 +457,7 @@ forge/                              # Marketplace 根目录
 
 ### Plugin 组件
 
-ZCode plugin 包含以下组件：
+Forge plugin 包含以下组件：
 
 | 组件 | 目录 | 用途 |
 |------|------|------|
@@ -506,7 +504,7 @@ TDD 流程: RED → GREEN → REFACTOR
 ```bash
 # 克隆
 git clone git@github.com:bigfaner/forge.git
-cd zcode
+cd Forge
 
 # 安装依赖
 cd task-cli && go mod download

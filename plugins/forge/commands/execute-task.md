@@ -92,5 +92,4 @@ Output your final summary and STOP.
 | Command | Usage |
 |---------|-------|
 | `/run-tasks` | Auto-execute all tasks |
-| `/claim-task` | Claim task only |
 | `/record-task` | Create record + update status |
