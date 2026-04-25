@@ -14,7 +14,7 @@ status: pending
 调用 `/gen-test-scripts` skill，从测试用例生成可执行的 TypeScript e2e 测试脚本。
 
 生成的脚本使用：
-- UI 测试：`agent-browser` CLI
+- UI 测试：Playwright Locator API（语义化定位器）
 - API 测试：Node.js 内置 `fetch`
 - CLI 测试：`child_process.execSync`
 - 测试框架：`node:test` + `node:assert`
@@ -22,6 +22,8 @@ status: pending
 ## Reference Files
 
 - `testing/test-cases.md` — 测试用例文档（由 T-test-1 生成）
+- `docs/sitemap/sitemap.json` — 页面元素定位数据（UI 测试必需，由 `/gen-sitemap` 生成）
+- `tests/e2e/config.yaml` — 测试环境配置（由 `/gen-sitemap` 或手动创建）
 
 ## Acceptance Criteria
 

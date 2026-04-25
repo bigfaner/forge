@@ -31,6 +31,8 @@ description: Execute e2e test scripts and generate a results report. Runs UI tes
 ls docs/features/<slug>/testing/scripts/
 ```
 
+**注意**：`<slug>` 为当前 feature 名称，通过 `task feature` 命令获取。
+
 ## When to Use
 
 **Trigger:**
@@ -48,6 +50,14 @@ ls docs/features/<slug>/testing/scripts/
 ```
 
 ### Step 1: Setup Environment
+
+**Verify config** (must exist before any test runs):
+
+```bash
+ls tests/e2e/config.yaml
+```
+
+若缺失，提示用户先运行 `/gen-sitemap` 或手动创建。
 
 **Install dependencies** (if `node_modules` doesn't exist):
 

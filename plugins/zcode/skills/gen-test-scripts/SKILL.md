@@ -28,8 +28,10 @@ description: Generate executable TypeScript e2e test scripts from test cases. Us
 
 ```bash
 ls docs/features/<slug>/testing/test-cases.md
-ls docs/sitemap/sitemap.json  # 仅 UI 测试需要
+ls docs/sitemap/sitemap.json  # 仅 UI 测试需要（项目级文件，非 feature 级）
 ```
+
+**注意**：`<slug>` 为当前 feature 名称，通过 `task feature` 命令获取。`docs/sitemap/sitemap.json` 是项目级文件（一个应用只有一份），不是按 feature 隔离的。
 
 ### Sitemap
 
@@ -50,7 +52,7 @@ UI 测试的 locator 原料来自 `docs/sitemap/sitemap.json`。由 `/gen-sitema
 | `states[].trigger`            | → 点击触发元素进入动态状态                      |
 | `states[].elements`           | → 动态状态内的元素 locator                      |
 
-测试用例中通过 `Route` 和 `Element` 字段引用 sitemap 中的路由和元素 ID（E-NNN / L-NNN）。
+测试用例中通过 `Route` 字段匹配 sitemap 页面。`Element` 字段（引用元素 ID 如 E-NNN / L-NNN）为可选——存在时精确映射，不存在时使用页面全部元素。
 
 ## When to Use
 
@@ -100,14 +102,15 @@ Login test 和 authenticated test 不得混在同一个 `describe` 块中。
 
 **仅当存在 UI 类型测试用例时执行。**
 
-读取 `docs/sitemap/sitemap.json`。对测试用例中涉及的每个路由和元素 ID：
+读取 `docs/sitemap/sitemap.json`。对测试用例中涉及的每个路由：
 
-1. 按 `Route` 字段匹配 `sitemap.json` 中的 `pages[].route`
-2. 按 `Element` 字段匹配页面内的 `elements[].id`（含 states 内元素）
-3. 收集所需页面的全部元素数据（base elements + 相关 states）
-4. **若 sitemap 包含 `layout` 字段**：对每个被 `layout.wraps` 包裹的路由，将 `layout.elements` 合并为可用元素（布局元素在该页面的 locator 映射中也可用）
+1. 按 `Route` 字段匹配 `sitemap.json` 中的 `pages[].route`（动态路由如 `/tasks/:id` 匹配具体路径 `/tasks/123`）
+2. 收集匹配页面的全部元素数据（base elements + 相关 states）
+3. **若测试用例含 `Element` 字段**（引用 sitemap 元素 ID 如 E-NNN / L-NNN）：仅使用指定的元素，精确映射测试步骤到 sitemap 元素
+4. **若测试用例无 `Element` 字段**：使用该页面的所有可用元素构建 locator 映射，agent 根据测试步骤描述自行匹配最合适的元素
+5. **若 sitemap 包含 `layout` 字段**：对每个被 `layout.wraps` 包裹的路由，将 `layout.elements` 合并为可用元素（布局元素在该页面的 locator 映射中也可用）
 
-若测试用例引用的 route 或 element ID 在 sitemap 中不存在，报告缺失并建议重新运行 `/gen-sitemap`。
+若测试用例引用的 route 在 sitemap 中不存在，报告缺失并建议重新运行 `/gen-sitemap`。
 
 ### Step 3: Map Locators
 
@@ -130,6 +133,8 @@ Login test 和 authenticated test 不得混在同一个 `describe` 块中。
 ### Step 4: Generate Spec Files
 
 For each type group, generate a spec file from the corresponding template.
+
+**模板使用方式**：模板中包含 `CONDITIONAL` 注释块，标记了按 auth 分类需要启用/禁用的代码段。根据 Step 1 的 auth 分类结果，**取消注释**对应的 CONDITIONAL 块，移除不匹配的块，然后填充测试数据。不要从头重写模板结构。
 
 <EXTREMELY-IMPORTANT>
 **UI 测试使用 Playwright Locator API**（仅作浏览器驱动库），禁止使用 agent-browser 在生成的 spec 文件中。

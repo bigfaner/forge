@@ -21,3 +21,10 @@
 | gen-test-cases | Generate test cases from PRD acceptance criteria |
 | gen-test-scripts | Generate executable e2e test scripts |
 | run-e2e-tests | Execute e2e test scripts and generate results report |
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| gen-sitemap | Auto-generate and maintain sitemap.json for web apps |
+| init-justfile | Scaffold a Justfile with standard zcode test targets |

@@ -1,15 +1,20 @@
 import { execSync } from 'node:child_process';
-import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'node:fs';
+import { readFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
 import { chromium, type Browser, type Page } from 'playwright';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const SCREENSHOTS_DIR = join(__dirname, '..', 'results', 'screenshots');
 
 // ── Config ─────────────────────────────────────────────────────────
+const _configPath = findConfigPath();
+
 function findConfigPath(): string {
+  // Allow explicit override via environment variable
+  const envPath = process.env.E2E_CONFIG_PATH;
+  if (envPath && existsSync(envPath)) return resolve(envPath);
+
   let dir = __dirname;
   for (let i = 0; i < 10; i++) {
     const candidate = resolve(dir, 'tests', 'e2e', 'config.yaml');
@@ -18,18 +23,41 @@ function findConfigPath(): string {
     if (parent === dir) break;
     dir = parent;
   }
-  throw new Error(`tests/e2e/config.yaml not found. Searched upward from ${__dirname}. Run /gen-sitemap first.`);
+  throw new Error(`tests/e2e/config.yaml not found. Searched upward from ${__dirname}. Set E2E_CONFIG_PATH or run /gen-sitemap first.`);
 }
 
-function readConfig(): Record<string, any> {
+// Screenshots go to <helpers-dir>/../results/screenshots
+// During development: testing/scripts/ → testing/results/screenshots/
+// After graduation:   tests/e2e/       → tests/e2e/results/screenshots/
+const SCREENSHOTS_DIR = join(__dirname, '..', 'results', 'screenshots');
+
+interface E2EConfig {
+  baseUrl?: string;
+  apiUrl?: string;
+  timeout?: number | string;
+  username?: string;
+  password?: string;
+  loginLocators?: { usernameField?: string; passwordField?: string; submitButton?: string };
+}
+
+function readConfig(): E2EConfig {
   return parseYaml(readFileSync(findConfigPath(), 'utf-8'));
 }
 
 const _config = readConfig();
 
+function toNumber(val: unknown, fallback: number): number {
+  if (typeof val === 'number' && Number.isFinite(val)) return val;
+  if (typeof val === 'string') {
+    const n = parseInt(val, 10);
+    return Number.isFinite(n) ? n : fallback;
+  }
+  return fallback;
+}
+
 export const baseUrl = _config.baseUrl ?? 'http://localhost:3456';
 export const apiUrl = _config.apiUrl ?? 'http://localhost:8080';
-const DEFAULT_TIMEOUT = parseInt(_config.timeout ?? '30000');
+const DEFAULT_TIMEOUT = toNumber(_config.timeout, 30000);
 
 // ── Browser lifecycle ──────────────────────────────────────────────
 let _browser: Browser | null = null;
@@ -118,12 +146,18 @@ export const defaultCreds: UICredentials = {
   password: _config.password ?? 'password',
 };
 
+const _loginLocators = _config.loginLocators;
+
+// TEMPLATE: Replace regex with actual locator from sitemap when generating
 export async function loginViaUI(page: Page, creds: UICredentials = defaultCreds): Promise<void> {
   await page.goto(`${baseUrl}/login`);
   await page.waitForLoadState('networkidle');
-  await page.getByRole('textbox', { name: /username|email/i }).fill(creds.username);
-  await page.getByRole('textbox', { name: /password/i }).fill(creds.password);
-  await page.getByRole('button', { name: /login|sign in|submit/i }).click();
+  const uPat = new RegExp(_loginLocators?.usernameField ?? 'username|email', 'i');
+  const pPat = new RegExp(_loginLocators?.passwordField ?? 'password', 'i');
+  const bPat = new RegExp(_loginLocators?.submitButton ?? 'login|sign in|submit', 'i');
+  await page.getByRole('textbox', { name: uPat }).fill(creds.username);
+  await page.getByRole('textbox', { name: pPat }).fill(creds.password);
+  await page.getByRole('button', { name: bPat }).click();
   await page.waitForURL((url) => !url.pathname.includes('login'), { timeout: DEFAULT_TIMEOUT });
 }
 
@@ -143,7 +177,7 @@ export function createAuthCurl(
   token: string,
 ): (method: string, path: string, opts?: { body?: string; headers?: Record<string, string>; timeout?: number }) => Promise<CurlResponse> {
   return (method, path, opts) =>
-    curl(method, `${apiUrl}${path}`, {
+    curl(method, new URL(path, apiUrl).toString(), {
       ...opts,
       headers: { Authorization: `Bearer ${token}`, ...opts?.headers },
     });

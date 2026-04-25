@@ -8,3 +8,10 @@ timeout: 30000
 # Shared auth credentials
 username: admin
 password: password
+
+# Login page locators (regex patterns for Playwright getByRole)
+# Override these for non-English UIs. Omit to use defaults.
+# loginLocators:
+#   usernameField: "username|email"
+#   passwordField: "password"
+#   submitButton: "login|sign in|submit"

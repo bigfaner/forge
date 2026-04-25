@@ -30,6 +30,10 @@
       "type": "array",
       "items": { "type": "string" }
     },
+    "testCommand": {
+      "type": "string",
+      "description": "Shell command for running project-wide tests (overrides auto-detection)"
+    },
     "tasks": {
       "type": "object",
       "additionalProperties": {
@@ -49,14 +53,6 @@
           "record": { "type": "string" }
         }
       }
-    },
-    "statusEnum": {
-      "type": "array",
-      "items": { "type": "string" }
-    },
-    "priorityEnum": {
-      "type": "array",
-      "items": { "type": "string" }
     }
   }
 }

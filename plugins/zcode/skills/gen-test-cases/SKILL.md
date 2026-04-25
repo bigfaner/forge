@@ -22,6 +22,7 @@ description: Generate structured test cases from PRD acceptance criteria. Classi
 |------|-----------|
 | `prd/prd-user-stories.md` | 先执行 `/write-prd` |
 | `prd/prd-spec.md` | 先执行 `/write-prd` |
+| `docs/sitemap/sitemap.json`（可选，仅 UI 测试） | 先执行 `/gen-sitemap` 可获得更精确的元素引用 |
 
 **注意**：本 skill 既可以手动调用，也可以作为 `/breakdown-tasks` 追加的标准任务 T-test-1 被 agent 调用。
 
@@ -112,9 +113,11 @@ For each criterion, generate：
 ## TC-{NNN}: {Title}
 - **Source**: {Story N / AC-N} or {Spec Section X.Y} or {UI Function Name}
 - **Type**: UI | API | CLI
-- **Target**: <type>/<page-or-resource>          ← NEW: e.g. ui/login, api/auth, cli/deploy
-- **Test ID**: <target>/<title-slug>            ← NEW: e.g. ui/login/login-with-valid-credentials
+- **Target**: <type>/<page-or-resource>          ← e.g. ui/login, api/auth, cli/deploy
+- **Test ID**: <target>/<title-slug>            ← e.g. ui/login/login-with-valid-credentials
 - **Pre-conditions**: {What must be true before testing}
+- **Route**: {Page route for UI tests}            ← e.g. /login, /settings
+- **Element**: {Optional: sitemap element IDs}    ← e.g. E-001, L-003 (only if sitemap exists)
 - **Steps**:
   1. {Step 1}
   2. {Step 2}
@@ -122,6 +125,12 @@ For each criterion, generate：
 - **Expected**: {What the correct result looks like}
 - **Priority**: P0 | P1 | P2
 ```
+
+**Element 字段规则**：
+- 仅当 `docs/sitemap/sitemap.json` 存在时生成
+- 引用 sitemap 中的元素 ID（E-NNN 为页面元素，L-NNN 为布局元素）
+- 列出测试步骤中直接操作的元素 ID，多个用逗号分隔
+- 无 sitemap 时省略此字段，gen-test-scripts 会使用页面全部元素
 
 <HARD-RULE>
 **Numbering**: Start from TC-001, sequential. Group by type (UI first, then API, then CLI).

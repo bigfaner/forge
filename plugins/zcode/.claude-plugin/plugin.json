@@ -11,6 +11,11 @@
 		"brainstorm",
 		"ui-design",
 		"eval",
-		"manifest"
+		"manifest",
+		"e2e",
+		"playwright",
+		"sitemap",
+		"justfile",
+		"test-lifecycle"
 	]
 }

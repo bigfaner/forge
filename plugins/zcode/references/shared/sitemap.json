@@ -1,5 +1,5 @@
 {
-	"baseUrl": "http://localhost:5173",
+	"baseUrl": "http://localhost:3456",
 	"updatedAt": "2026-04-25T10:00:00Z",
 	"layout": {
 		"name": "AppLayout",
@@ -13,6 +13,16 @@
 		]
 	},
 	"pages": [
+		{
+			"route": "/login",
+			"title": "Login",
+			"elements": [
+				{ "id": "E-030", "role": "heading", "name": "Sign In", "level": 1 },
+				{ "id": "E-031", "role": "textbox", "name": "Username", "label": "Username", "placeholder": "Enter username" },
+				{ "id": "E-032", "role": "textbox", "name": "Password", "label": "Password", "placeholder": "Enter password" },
+				{ "id": "E-033", "role": "button", "name": "Login" }
+			]
+		},
 		{
 			"route": "/",
 			"title": "Dashboard",

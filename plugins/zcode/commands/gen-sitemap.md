@@ -3,7 +3,7 @@ name: gen-sitemap
 description: Auto-generate and maintain sitemap.json for a web app. Uses agent-browser to explore routes, capture accessibility tree, and discover dynamic states. Preserves element IDs across runs.
 argument-hints:
   - name: base-url
-    description: 待探索的应用基础 URL（如 http://localhost:5173），config.yaml 存在时可省略
+    description: 待探索的应用基础 URL（如 http://localhost:3456），config.yaml 存在时可省略
     required: false
 ---
 
@@ -16,7 +16,21 @@ argument-hints:
 ## Prerequisites
 
 - Web 应用已启动并可访问
-- agent-browser 已安装（`npx agent-browser install`）
+- agent-browser 已安装（可选工具，用于自动探索页面结构和动态状态）
+
+**验证 agent-browser 安装**：
+
+```bash
+npx agent-browser --version
+```
+
+若失败，先安装：
+
+```bash
+npx agent-browser install
+```
+
+安装完成后再重新运行本命令。
 
 ## Config Resolution
 
@@ -29,6 +43,7 @@ argument-hints:
 已创建 tests/e2e/config.yaml（模板），请根据实际环境填写配置后重新运行。
   baseUrl: 当前应用的实际地址
   username/password: 测试账号凭据（若应用需要认证）
+  loginLocators: 若登录页定位器与默认值不匹配，取消注释并自定义
 ```
 
 3. **若已存在**：读取 `baseUrl`、`username`、`password` 等字段
@@ -55,6 +70,8 @@ ab('wait --load networkidle')
 
 | 字段 | 说明 |
 |------|------|
+| `baseUrl` | 应用基础 URL（如 `http://localhost:3456`） |
+| `updatedAt` | 最后更新时间（RFC3339 格式） |
 | `layout.name` | 布局组件名（如 `AppLayout`） |
 | `layout.wraps` | 共享此布局的路由列表 |
 | `layout.elements[]` | 布局级共享元素（侧边栏、顶部导航等），ID 格式 `L-NNN` |
@@ -121,7 +138,7 @@ snapshot = abJson('snapshot -i')
 
 从 snapshot 中识别布局区域（通常为 `role=navigation`、`role=banner`、侧边栏容器等），提取其中的元素归入 `layout.elements`。
 
-**若无法读取路由代码**（纯 HTML 项目或无源码访问）：跳过此步骤，所有元素按页面级处理。首次探索两个页面后，对比 snapshot 中的重复元素作为布局候选项。
+**若无法读取路由代码**（纯 HTML 项目或无源码访问）：跳过此步骤，所有元素按页面级处理。在 Step 4 探索前两个页面后，对比两次 snapshot 中 `role + name` 完全相同的元素作为布局候选项，归入 `layout.elements`，后续页面探索时过滤掉这些候选项。
 
 ### Step 3: Discover Routes
 
@@ -138,7 +155,15 @@ links = abJson('snapshot -i')  // 提取所有 role=link 节点的 href
 3. 对每个新路由递归提取链接（广度优先，最大深度 3）
 4. 合并现有 sitemap 中手动添加的路由
 
-**动态路由处理**：带参数的路由（如 `/tasks/123`）记录为模板形式 `/tasks/:id`（去除 URL 中的数字和 UUID 段）。
+**动态路由处理**：带参数的路由（如 `/tasks/123`）记录为模板形式 `/tasks/:id`。参数化规则：
+
+| URL 段模式 | 替换为 | 示例 |
+|-----------|--------|------|
+| 纯数字 | `:id` | `/tasks/42` → `/tasks/:id` |
+| UUID 格式 | `:uuid` | `/orders/550e8400-...` → `/orders/:uuid` |
+| 32 位 hex | `:hash` | `/files/a1b2c3d4e5f6...` → `/files/:hash` |
+
+去重时，模板相同的路由只保留一个条目。`layout.wraps` 中也使用模板形式。
 
 ### Step 4: Explore Pages
 
@@ -186,6 +211,8 @@ ab('press Escape')  // 或 ab('click @close_btn') 重置
 2. 记录为 `states` 条目：`{ name, trigger: "<元素ID>", elements: [...] }`
 3. `trigger` 引用触发元素的 E-NNN ID（如 `"E-002"`）
 4. 状态内元素同样分配 E-NNN ID
+
+> **注意**：`@eN` 是 agent-browser CLI 的元素引用语法，仅在 sitemap 生成过程中使用。生成的测试脚本（`*.spec.ts`）中禁止使用 `@eN`，必须使用 Playwright Locator API。
 
 ```
 ab('close')

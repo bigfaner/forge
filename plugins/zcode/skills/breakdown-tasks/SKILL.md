@@ -9,6 +9,8 @@ Break a technical design into executable tasks (1-4h each, clear dependencies, t
 
 ## Prerequisites
 
+**Conditional Tags**: `<HAS_UI>`, `<NO_UI>`, `<UI_ONLY>`, `<RULE>` are inclusion markers. If `ui/ui-design.md` exists, include `<HAS_UI>` and `<UI_ONLY>` blocks and exclude `<NO_UI>` blocks. If not, include `<NO_UI>` blocks and exclude `<HAS_UI>`/`<UI_ONLY>`/`<RULE>` blocks.
+
 | Artifact                | Missing? Run                    |
 | ----------------------- | ------------------------------- |
 | `prd/prd-spec.md`       | `/write-prd`                    |

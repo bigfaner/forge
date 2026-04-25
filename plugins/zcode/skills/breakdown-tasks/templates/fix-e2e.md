@@ -39,7 +39,7 @@ No direct user story mapping. This is a test fix task.
    - 测试脚本问题？
    - 环境配置问题？
 3. 修复问题
-4. 如果需要，可运行 `npm run test:all` 本地验证
+4. 如果需要，可从 `testing/scripts/` 目录运行 `npm run test:all` 本地验证
 5. 完成后执行 `task record` 记录修复内容
 
 ## Context

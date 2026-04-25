@@ -40,6 +40,6 @@ generated: "{{DATE}}"
 
 ## Traceability
 
-| TC ID | Source | Type | Priority |
-|-------|--------|------|----------|
+| TC ID | Source | Type | Target | Priority |
+|-------|--------|------|--------|----------|
 {{TRACEABILITY_ROWS}}
