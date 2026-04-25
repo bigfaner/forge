@@ -105,6 +105,5 @@ Do NOT run e2e tests automatically — the dispatcher must not execute tests. On
 | Command | Usage |
 |---------|-------|
 | `/execute-task` | Manual single task |
-| `/claim-task` | Claim task only |
 | `/record-task` | Create record + update status |
 | `/run-e2e-tests` | E2E verification against PRD |

@@ -32,7 +32,6 @@
 | `/forge:ui-design` | 为 UI 功能创建 UI 设计规范 |
 | `/forge:eval-design` | 评估技术设计质量 |
 | `/forge:breakdown-tasks` | 将设计拆解为可执行任务 |
-| `/forge:claim-task` | 认领下一个可用任务 |
 | `/forge:record-task` | 记录任务执行结果 |
 | `/record-decision` | 记录架构/技术决策到 docs/decisions/ |
 | `/forge:git-commit` | 创建符合 Conventional Commits 格式的提交 |

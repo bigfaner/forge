@@ -9,8 +9,6 @@
 | ui-design | Create UI design specifications for UI features |
 | eval-design | Evaluate tech-design.md quality |
 | breakdown-tasks | Break down design into executable tasks |
-| claim-task | Claim the next available task |
-| set-task-status | Update task status |
 | record-task | Record task execution result |
 | git-commit | Create git commits with Conventional Commits format |
 | eval-harness | Evaluate harness health |

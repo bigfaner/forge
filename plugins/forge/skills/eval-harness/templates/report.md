@@ -67,7 +67,6 @@ language: "[Auto-detected]"
 
 | 检查项 | 状态 |
 |--------|------|
-| 任务领取工具 (claim-task) | ✅/❌ |
 | 任务记录工具 (record-task) | ✅/❌ |
 | 代码审查 agent | ✅/❌ |
 | 安全审查 agent | ✅/❌ |
