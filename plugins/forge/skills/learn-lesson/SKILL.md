@@ -7,9 +7,9 @@ description: Use when you have solved an error or discovered a useful pattern. E
 
 ## Overview
 
-从当前会话中提取可复用的知识点，记录到 `docs/lessons/`。
+Extract reusable knowledge from the current session and record it to `docs/lessons/`.
 
-**核心原则**：记录"下次遇到类似问题可以怎么处理"，不是"我做了什么"。
+**Core principle**: Record "what to do next time you encounter a similar problem", not "what I did".
 
 ## When to Use
 
@@ -31,10 +31,24 @@ description: Use when you have solved an error or discovered a useful pattern. E
 
 ## Step 1: Identify Lesson
 
-- 遇到的问题（症状）
-- 根本原因
-- 解决方案
-- **可复用的知识点**
+- The problem encountered (symptoms)
+- Root cause
+- Solution
+- **Reusable takeaway**
+
+### Root Cause Investigation (Mandatory)
+
+When an error occurs, **you must dig deep into the root cause** — never stop at surface symptoms. This is especially critical for errors related to Claude Code or agent behavior itself:
+
+- **Don't accept the first explanation**: tool call failures, output truncation, context loss, etc. almost always have a deeper cause
+- **Distinguish symptoms from root cause**: `tool call failed` is a symptom; *why* it failed is the root cause
+- **Agent-related errors — key areas to investigate**:
+  - Claude Code tool permissions / sandbox restrictions
+  - Information loss due to context window compression
+  - Hook interception or configuration conflicts
+  - State desync between sub-agent and main agent
+  - Mismatch between model output format and tool expectations
+- **Causal chain**: symptom → direct cause → root cause → trigger condition — trace at least 3 levels deep
 
 ## Step 2: Classify Category
 
@@ -55,26 +69,26 @@ Template:
 # <Title>
 
 ## Problem
-<!-- 症状描述 -->
+<!-- Symptom description -->
 
 ## Root Cause
-<!-- 根本原因 -->
+<!-- Why it happened -->
 
 ## Solution
-<!-- 解决方案 -->
+<!-- How to fix it -->
 
 ## Key Takeaway
-<!-- 可复用的知识点 -->
+<!-- Reusable insight for next time -->
 ```
 
 ## Step 4: User Review
 
-**不要直接提交。** 展示生成的 lesson 文档内容，等待用户确认：
+**Do not commit directly.** Show the generated lesson document and wait for user confirmation:
 
-- 用户确认内容无误后，再执行 commit
-- 用户要求修改时，调整后重新展示
+- Commit only after the user confirms the content is correct
+- If the user requests changes, revise and show again
 
-仅在用户明确同意后才执行：
+Only execute after explicit user approval:
 
 ```bash
 git add docs/lessons/<filename>.md
@@ -88,3 +102,4 @@ git commit -m "docs(lessons): add <title>"
 | Recording "what I did" | Focus on "what to do next time" |
 | Too specific | Generalize to reusable pattern |
 | Missing root cause | Always include why |
+| Stopping at surface symptoms | Trace the causal chain at least 3 levels deep |
