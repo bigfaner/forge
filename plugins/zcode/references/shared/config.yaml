@@ -2,7 +2,7 @@
 # Read by helpers.ts at module load time
 
 baseUrl: http://localhost:3456
-apiUrl: http://localhost:8080
+apiBaseUrl: http://localhost:8080
 timeout: 30000
 
 # Shared auth credentials

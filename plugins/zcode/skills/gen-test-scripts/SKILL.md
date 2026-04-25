@@ -169,7 +169,7 @@ For each type group, generate a spec file from the corresponding template.
 
 - Read template: `plugins/zcode/skills/gen-test-scripts/templates/api.spec.ts`
 - **Auth setup**（顶层 `before` 钩子）：
-  - 若存在 `auth-required-test`：调用 `const token = await getApiToken(apiUrl)` 并创建 `authCurl = createAuthCurl(apiUrl, token)`
+  - 若存在 `auth-required-test`：调用 `const token = await getApiToken(apiBaseUrl)` 并创建 `authCurl = createAuthCurl(apiBaseUrl, token)`
   - 若仅有 `public-test` 和/或 `login-test`：不设置 auth
 - **Login/auth API test cases**：使用原始 `curl()`（无 Bearer header）
 - **Authenticated test cases**：使用 `authCurl(method, path)`（自动注入 Bearer token）
