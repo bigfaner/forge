@@ -1,57 +1,95 @@
 import { execSync } from 'node:child_process';
-import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { readFileSync, mkdirSync, existsSync } from 'node:fs';
+import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parse as parseYaml } from 'yaml';
+import { chromium, type Browser, type Page } from 'playwright';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const DEFAULT_TIMEOUT = 30000;
+// ── Config ─────────────────────────────────────────────────────────
+const _configPath = findConfigPath();
+
+function findConfigPath(): string {
+  // Allow explicit override via environment variable
+  const envPath = process.env.E2E_CONFIG_PATH;
+  if (envPath && existsSync(envPath)) return resolve(envPath);
+
+  let dir = __dirname;
+  for (let i = 0; i < 10; i++) {
+    const candidate = resolve(dir, 'tests', 'e2e', 'config.yaml');
+    if (existsSync(candidate)) return candidate;
+    const parent = resolve(dir, '..');
+    if (parent === dir) break;
+    dir = parent;
+  }
+  throw new Error(`tests/e2e/config.yaml not found. Searched upward from ${__dirname}. Set E2E_CONFIG_PATH or run /gen-sitemap first.`);
+}
+
+// Screenshots go to <helpers-dir>/../results/screenshots
+// During development: testing/scripts/ → testing/results/screenshots/
+// After graduation:   tests/e2e/       → tests/e2e/results/screenshots/
 const SCREENSHOTS_DIR = join(__dirname, '..', 'results', 'screenshots');
 
-export const baseUrl = process.env.E2E_BASE_URL ?? 'http://localhost:3456';
-
-export function ab(cmd: string): string {
-  return execSync(`agent-browser ${cmd}`, {
-    encoding: 'utf-8',
-    timeout: DEFAULT_TIMEOUT,
-  });
+interface E2EConfig {
+  baseUrl?: string;
+  apiUrl?: string;
+  timeout?: number | string;
+  username?: string;
+  password?: string;
+  loginLocators?: { usernameField?: string; passwordField?: string; submitButton?: string };
 }
 
-export function abJson(cmd: string): any {
-  const raw = ab(`${cmd} --json`);
-  try {
-    return JSON.parse(raw);
-  } catch {
-    throw new Error(`Failed to parse agent-browser JSON output: ${raw.slice(0, 200)}`);
+function readConfig(): E2EConfig {
+  return parseYaml(readFileSync(findConfigPath(), 'utf-8'));
+}
+
+const _config = readConfig();
+
+function toNumber(val: unknown, fallback: number): number {
+  if (typeof val === 'number' && Number.isFinite(val)) return val;
+  if (typeof val === 'string') {
+    const n = parseInt(val, 10);
+    return Number.isFinite(n) ? n : fallback;
   }
+  return fallback;
 }
 
-export function snapshotContains(text: string): boolean {
-  const result = abJson('snapshot');
-  return result?.data?.snapshot?.includes(text) ?? false;
+export const baseUrl = _config.baseUrl ?? 'http://localhost:3456';
+export const apiUrl = _config.apiUrl ?? 'http://localhost:8080';
+const DEFAULT_TIMEOUT = toNumber(_config.timeout, 30000);
+
+// ── Browser lifecycle ──────────────────────────────────────────────
+let _browser: Browser | null = null;
+let _page: Page | null = null;
+
+export async function setupBrowser(): Promise<Page> {
+  _browser = await chromium.launch();
+  _page = await _browser.newPage();
+  _page.setDefaultTimeout(DEFAULT_TIMEOUT);
+  return _page;
 }
 
-export function findElement(role: string, name?: string): string | null {
-  const cmd = name
-    ? `find role ${role} --name "${name}" --json`
-    : `find role ${role} --json`;
-  try {
-    const result = abJson(cmd);
-    return result?.data?.ref ?? result?.ref ?? null;
-  } catch {
-    return null;
-  }
+export async function teardownBrowser(): Promise<void> {
+  await _browser?.close();
+  _browser = null;
+  _page = null;
 }
 
-export function screenshot(tcId: string): string {
-  if (!existsSync(SCREENSHOTS_DIR)) {
-    mkdirSync(SCREENSHOTS_DIR, { recursive: true });
-  }
+export function getPage(): Page {
+  if (!_page) throw new Error('Browser not initialized. Call setupBrowser() first.');
+  return _page;
+}
+
+// ── Evidence ───────────────────────────────────────────────────────
+export async function screenshot(page: Page, tcId: string): Promise<string> {
+  if (!existsSync(SCREENSHOTS_DIR)) mkdirSync(SCREENSHOTS_DIR, { recursive: true });
   const path = join(SCREENSHOTS_DIR, `${tcId}.png`);
-  ab(`screenshot "${path}"`);
+  await page.screenshot({ path, fullPage: true });
   return path;
 }
 
+// ── HTTP ───────────────────────────────────────────────────────────
 export interface CurlResponse {
   status: number;
   headers: Record<string, string>;
@@ -97,6 +135,55 @@ export async function curl(
   }
 }
 
+// ── Auth ────────────────────────────────────────────────────────────
+export interface UICredentials {
+  username: string;
+  password: string;
+}
+
+export const defaultCreds: UICredentials = {
+  username: _config.username ?? 'admin',
+  password: _config.password ?? 'password',
+};
+
+const _loginLocators = _config.loginLocators;
+
+// TEMPLATE: Replace regex with actual locator from sitemap when generating
+export async function loginViaUI(page: Page, creds: UICredentials = defaultCreds): Promise<void> {
+  await page.goto(`${baseUrl}/login`);
+  await page.waitForLoadState('networkidle');
+  const uPat = new RegExp(_loginLocators?.usernameField ?? 'username|email', 'i');
+  const pPat = new RegExp(_loginLocators?.passwordField ?? 'password', 'i');
+  const bPat = new RegExp(_loginLocators?.submitButton ?? 'login|sign in|submit', 'i');
+  await page.getByRole('textbox', { name: uPat }).fill(creds.username);
+  await page.getByRole('textbox', { name: pPat }).fill(creds.password);
+  await page.getByRole('button', { name: bPat }).click();
+  await page.waitForURL((url) => !url.pathname.includes('login'), { timeout: DEFAULT_TIMEOUT });
+}
+
+export async function getApiToken(apiUrl: string, creds: UICredentials = defaultCreds): Promise<string> {
+  const res = await curl('POST', `${apiUrl}/api/auth/login`, {
+    body: JSON.stringify({ username: creds.username, password: creds.password }),
+  });
+  if (res.status !== 200) throw new Error(`Auth failed: ${res.status} ${res.body}`);
+  const data = JSON.parse(res.body);
+  const token = data.token ?? data.access_token ?? data.data?.token;
+  if (!token) throw new Error(`No token in auth response. Keys: ${Object.keys(data).join(', ')}`);
+  return token;
+}
+
+export function createAuthCurl(
+  apiUrl: string,
+  token: string,
+): (method: string, path: string, opts?: { body?: string; headers?: Record<string, string>; timeout?: number }) => Promise<CurlResponse> {
+  return (method, path, opts) =>
+    curl(method, new URL(path, apiUrl).toString(), {
+      ...opts,
+      headers: { Authorization: `Bearer ${token}`, ...opts?.headers },
+    });
+}
+
+// ── CLI ────────────────────────────────────────────────────────────
 export interface CliResult {
   stdout: string;
   stderr: string;

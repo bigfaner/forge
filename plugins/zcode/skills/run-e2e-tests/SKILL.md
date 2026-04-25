@@ -1,6 +1,6 @@
 ---
 name: run-e2e-tests
-description: Execute e2e test scripts and generate a results report. Runs UI tests via agent-browser, API tests via fetch, CLI tests via child_process. Produces evidence-backed pass/fail report.
+description: Execute e2e test scripts and generate a results report. Runs UI tests via Playwright, API tests via fetch, CLI tests via child_process. Produces evidence-backed pass/fail report.
 ---
 
 # Run E2E Tests
@@ -25,10 +25,13 @@ description: Execute e2e test scripts and generate a results report. Runs UI tes
 | `testing/scripts/` 目录 | 先执行 `/gen-test-scripts` |
 | `testing/scripts/helpers.ts` | 先执行 `/gen-test-scripts` |
 | 至少一个 `.spec.ts` 文件 | 先执行 `/gen-test-scripts` |
+| `tests/e2e/config.yaml` | 先执行 `/gen-sitemap` 或手动创建 |
 
 ```bash
 ls docs/features/<slug>/testing/scripts/
 ```
+
+**注意**：`<slug>` 为当前 feature 名称，通过 `task feature` 命令获取。
 
 ## When to Use
 
@@ -48,22 +51,30 @@ ls docs/features/<slug>/testing/scripts/
 
 ### Step 1: Setup Environment
 
+**Verify config** (must exist before any test runs):
+
+```bash
+ls tests/e2e/config.yaml
+```
+
+若缺失，提示用户先运行 `/gen-sitemap` 或手动创建。
+
 **Install dependencies** (if `node_modules` doesn't exist):
 
 ```bash
 cd docs/features/<slug>/testing/scripts && npm install
 ```
 
-**Install agent-browser** (if not installed):
+**Install Playwright browser** (if not installed):
 
 ```bash
-npx agent-browser install
+npx playwright install chromium
 ```
 
 Verify installation:
 
 ```bash
-agent-browser --version
+npx playwright --version
 ```
 
 **Start servers** (if needed):
@@ -105,7 +116,7 @@ npx tsx cli.spec.ts 2>&1 | tee ../results/cli-output.txt
 npx tsx api.spec.ts 2>&1 | tee ../results/api-output.txt
 ```
 
-**UI tests** (run last — requires agent-browser):
+**UI tests** (run last — requires Playwright browser):
 
 ```bash
 npx tsx ui.spec.ts 2>&1 | tee ../results/ui-output.txt
@@ -149,11 +160,10 @@ Skill(skill="mcp__zai-mcp-server__analyze_image", image_source="<screenshot_path
 <HARD-RULE>
 **Teardown 是强制步骤**，即使测试失败也必须执行：
 
-1. `agent-browser close --all` — 关闭所有浏览器实例
-2. `kill <server_pid>` — 终止所有在 Step 1 启动的服务器
-3. 清理临时文件
+1. `kill <server_pid>` — 终止所有在 Step 1 启动的服务器
+2. 清理临时文件
 
-跳过 Teardown 会导致浏览器进程和服务器端口泄漏。
+Playwright 浏览器实例由 spec 文件中的 `after()` 钩子自动关闭，无需手动清理。
 </HARD-RULE>
 
 ## Output
@@ -181,19 +191,11 @@ Report: docs/features/<slug>/testing/results/latest.md
 
 | Situation | Action |
 |-----------|--------|
-| `agent-browser` not installed | Run `npx agent-browser install`, retry |
+| Playwright browser not installed | Run `npx playwright install chromium`, retry |
 | Server won't start | Report error, skip tests that need it |
 | Test timeout | Kill test process, mark as FAIL with timeout reason |
 | `node_modules` missing | Run `npm install`, retry |
 | Spec file doesn't compile | Report TypeScript error, skip that spec |
-
-## Environment Variables
-
-| Variable | Purpose | Default |
-|----------|---------|---------|
-| `E2E_BASE_URL` | Base URL for UI tests | `http://localhost:3456` |
-| `E2E_API_URL` | Base URL for API tests | `http://localhost:8080` |
-| `AGENT_BROWSER_DEFAULT_TIMEOUT` | agent-browser timeout (ms) | `25000` |
 
 ## Related Skills
 

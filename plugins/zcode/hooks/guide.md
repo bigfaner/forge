@@ -4,32 +4,46 @@
 
 ```
 project-root/
-└── docs/
-    ├── proposals/<slug>/           # /brainstorm 产出
-    │   └── proposal.md
-    ├── features/<slug>/            # Feature 工作区
-    │   ├── manifest.md             # Feature 索引 & 可追溯性映射
-    │   ├── prd/
-    │   │   ├── prd-spec.md         # PRD Spec (需求文档)
-    │   │   ├── prd-user-stories.md # 用户故事
-    │   │   └── prd-ui-functions.md # UI 功能要点（可选）
-    │   ├── design/
-    │   │   ├── tech-design.md      # 技术设计
-    │   │   └── api-handbook.md     # API 文档
-    │   ├── ui/
-    │   │   └── ui-design.md        # UI 设计规格（可选）
-    │   └── tasks/
-    │       ├── index.json          # 任务定义（核心）
-    │       ├── process/            # 运行时状态（不提交）
-    │       │   ├── state.json      # 当前任务状态
-    │       │   └── record.json     # 进行中的记录
-    │       ├── 1.1-<title>.md     # 任务详情
-    │       └── records/            # 执行记录
-    │           └── 1.1-<title>.md
-    ├── README.md                   # 知识库索引 (本文件)
-    ├── ARCHITECTURE.md             # 分层架构
-    ├── decisions/                  # 技术决策（按类别分目录）
-    └── lessons/                    # 经验教训
+├── docs/
+│   ├── proposals/<slug>/           # /brainstorm 产出
+│   │   └── proposal.md
+│   ├── features/<slug>/            # Feature 工作区
+│   │   ├── manifest.md             # Feature 索引 & 可追溯性映射
+│   │   ├── prd/
+│   │   │   ├── prd-spec.md         # PRD Spec (需求文档)
+│   │   │   ├── prd-user-stories.md # 用户故事
+│   │   │   └── prd-ui-functions.md # UI 功能要点（可选）
+│   │   ├── design/
+│   │   │   ├── tech-design.md      # 技术设计
+│   │   │   └── api-handbook.md     # API 文档
+│   │   ├── ui/
+│   │   │   └── ui-design.md        # UI 设计规格（可选）
+│   │   ├── testing/                # 测试产物（由标准任务生成）
+│   │   │   ├── test-cases.md       # 测试用例
+│   │   │   ├── scripts/            # 可执行测试脚本
+│   │   │   └── results/            # 测试结果和截图
+│   │   └── tasks/
+│   │       ├── index.json          # 任务定义（核心）
+│   │       ├── process/            # 运行时状态（不提交）
+│   │       │   ├── state.json      # 当前任务状态
+│   │       │   └── record.json     # 进行中的记录
+│   │       ├── 1.1-<title>.md     # 任务详情
+│   │       └── records/            # 执行记录
+│   │           └── 1.1-<title>.md
+│   ├── sitemap/
+│   │   └── sitemap.json            # 页面元素地图（项目级，由 /gen-sitemap 生成）
+│   ├── README.md                   # 知识库索引 (本文件)
+│   ├── ARCHITECTURE.md             # 分层架构
+│   ├── decisions/                  # 技术决策（按类别分目录）
+│   └── lessons/                    # 经验教训
+├── tests/e2e/                      # 已毕业的 e2e 测试（回归套件）
+│   ├── .graduated/                 # 毕业标记（每 feature 一个）
+│   │   └── <slug>                  # 包含毕业时间戳
+│   ├── config.yaml                 # 测试环境配置
+│   ├── helpers.ts                  # 共享测试工具
+│   ├── package.json                # e2e 测试依赖
+│   ├── tsconfig.json               # TypeScript 配置
+│   └── <target>/                   # 按 target 组织的 spec 文件
 ```
 
 ## Skill Workflow
@@ -42,6 +56,11 @@ project-root/
                             ↘ /ui-design ─→ /eval-design ↗
                                  ↓
                             ui/ui-design.md
+
+/breakdown-tasks 追加标准测试任务（T-test-1, T-test-2），执行时依次调用：
+/gen-sitemap → /gen-test-cases → /gen-test-scripts → /run-e2e-tests
+     ↓              ↓                  ↓                   ↓
+ sitemap.json  test-cases.md    testing/scripts/*    testing/results/
 ```
 
 每个 skill 执行前会 `ls` 检查上一阶段产物是否存在；缺失则中止并提示用户先完成上一步。

@@ -1,0 +1,17 @@
+# E2E test configuration
+# Read by helpers.ts at module load time
+
+baseUrl: http://localhost:3456
+apiUrl: http://localhost:8080
+timeout: 30000
+
+# Shared auth credentials
+username: admin
+password: password
+
+# Login page locators (regex patterns for Playwright getByRole)
+# Override these for non-English UIs. Omit to use defaults.
+# loginLocators:
+#   usernameField: "username|email"
+#   passwordField: "password"
+#   submitButton: "login|sign in|submit"

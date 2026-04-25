@@ -538,6 +538,76 @@ func TestExecuteClaim(t *testing.T) {
 	}
 }
 
+func TestClaimNextTask_NonNumericID(t *testing.T) {
+	tests := []struct {
+		name    string
+		tasks   map[string]task.Task
+		wantKey string
+	}{
+		{
+			name: "non-numeric T-test-1 claimable after all numeric tasks done",
+			tasks: map[string]task.Task{
+				"biz-1":    {ID: "1.1", Priority: "P0", Status: "completed"},
+				"t-test-1": {ID: "T-test-1", Priority: "P1", Status: "pending", Dependencies: []string{"1.1"}},
+			},
+			wantKey: "t-test-1",
+		},
+		{
+			name: "only non-numeric pending task with no deps is claimable",
+			tasks: map[string]task.Task{
+				"t-test-1": {ID: "T-test-1", Priority: "P1", Status: "pending"},
+			},
+			wantKey: "t-test-1",
+		},
+		{
+			name: "T-test-2 claimable after T-test-1 completed",
+			tasks: map[string]task.Task{
+				"biz-1":    {ID: "1.1", Priority: "P0", Status: "completed"},
+				"t-test-1": {ID: "T-test-1", Priority: "P1", Status: "completed", Dependencies: []string{"1.1"}},
+				"t-test-2": {ID: "T-test-2", Priority: "P1", Status: "pending", Dependencies: []string{"T-test-1"}},
+			},
+			wantKey: "t-test-2",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			index := &task.TaskIndex{
+				Tasks:        tt.tasks,
+				StatusEnum:   []string{"pending", "in_progress", "completed"},
+				PriorityEnum: []string{"P0", "P1", "P2"},
+			}
+			key, _, err := claimNextTask(index)
+			if err != nil {
+				t.Fatalf("claimNextTask() error = %v", err)
+			}
+			if key != tt.wantKey {
+				t.Errorf("expected key %q, got %q", tt.wantKey, key)
+			}
+		})
+	}
+}
+
+func TestClaimNextTask_NonNumericBlocked(t *testing.T) {
+	// T-test-1 blocked because its dependency (1.1) is still pending
+	index := &task.TaskIndex{
+		Tasks: map[string]task.Task{
+			"biz-1":    {ID: "1.1", Priority: "P0", Status: "pending"},
+			"t-test-1": {ID: "T-test-1", Priority: "P1", Status: "pending", Dependencies: []string{"1.1"}},
+		},
+		StatusEnum:   []string{"pending", "in_progress", "completed"},
+		PriorityEnum: []string{"P0", "P1", "P2"},
+	}
+	key, _, err := claimNextTask(index)
+	if err != nil {
+		t.Fatalf("claimNextTask() error = %v", err)
+	}
+	// biz-1 should be claimed, not t-test-1
+	if key != "biz-1" {
+		t.Errorf("expected key 'biz-1', got %q", key)
+	}
+}
+
 func TestExecuteClaim_Continue(t *testing.T) {
 	// Setup test project structure
 	dir := t.TempDir()

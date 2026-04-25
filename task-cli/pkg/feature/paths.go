@@ -104,7 +104,25 @@ func GetFeatureTestingScriptsDir(featureSlug string) string {
 	return filepath.Join(FeaturesDir, featureSlug, TestingScriptsDirName)
 }
 
-// GetProposalDir returns the path to a proposal directory.
+// GetFeatureTestingResultsDir returns the path to docs/features/{slug}/testing/results/.
+func GetFeatureTestingResultsDir(featureSlug string) string {
+	return filepath.Join(FeaturesDir, featureSlug, TestingResultsDirName)
+}
+
+// GetFeatureTestCasesFile returns the path to docs/features/{slug}/testing/test-cases.md.
+func GetFeatureTestCasesFile(featureSlug string) string {
+	return filepath.Join(FeaturesDir, featureSlug, TestCasesFileName)
+}
+
+// GetE2EGraduatedMarker returns the path to tests/e2e/.graduated/<slug>.
+func GetE2EGraduatedMarker(projectRoot, featureSlug string) string {
+	return filepath.Join(projectRoot, E2EGraduatedDir, featureSlug)
+}
+
+// GetE2ETargetDir returns the path to tests/e2e/<target> (e.g. tests/e2e/ui/login).
+func GetE2ETargetDir(projectRoot, target string) string {
+	return filepath.Join(projectRoot, E2ETestsBaseDir, target)
+}
 func GetProposalDir(slug string) string {
 	return filepath.Join(ProposalBaseDir, slug)
 }

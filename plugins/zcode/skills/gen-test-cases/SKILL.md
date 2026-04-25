@@ -22,6 +22,9 @@ description: Generate structured test cases from PRD acceptance criteria. Classi
 |------|-----------|
 | `prd/prd-user-stories.md` | 先执行 `/write-prd` |
 | `prd/prd-spec.md` | 先执行 `/write-prd` |
+| `docs/sitemap/sitemap.json`（可选，仅 UI 测试） | 先执行 `/gen-sitemap` 可获得更精确的元素引用 |
+
+**注意**：本 skill 既可以手动调用，也可以作为 `/breakdown-tasks` 追加的标准任务 T-test-1 被 agent 调用。
 
 ```bash
 task feature
@@ -85,6 +88,12 @@ From each source, extract every verifiable criterion：
 
 For each extracted criterion, classify by type and generate a test case.
 
+<HARD-RULE>
+每个测试用例必须包含 `Target` 和 `Test ID` 字段：
+- **Target**: `<type>/<page-or-resource>` (例如 `ui/login`、`api/auth`、`cli/deploy`)
+- **Test ID**: `<target>/<title-slug>`，其中 title-slug = 标题小写 + 空格转连字符 + 去除标点
+</HARD-RULE>
+
 **Type classification rules:**
 
 | Type | Indicators |
@@ -104,7 +113,11 @@ For each criterion, generate：
 ## TC-{NNN}: {Title}
 - **Source**: {Story N / AC-N} or {Spec Section X.Y} or {UI Function Name}
 - **Type**: UI | API | CLI
+- **Target**: <type>/<page-or-resource>          ← e.g. ui/login, api/auth, cli/deploy
+- **Test ID**: <target>/<title-slug>            ← e.g. ui/login/login-with-valid-credentials
 - **Pre-conditions**: {What must be true before testing}
+- **Route**: {Page route for UI tests}            ← e.g. /login, /settings
+- **Element**: {Optional: sitemap element IDs}    ← e.g. E-001, L-003 (only if sitemap exists)
 - **Steps**:
   1. {Step 1}
   2. {Step 2}
@@ -113,10 +126,23 @@ For each criterion, generate：
 - **Priority**: P0 | P1 | P2
 ```
 
+**Element 字段规则**：
+- 仅当 `docs/sitemap/sitemap.json` 存在时生成
+- 引用 sitemap 中的元素 ID（E-NNN 为页面元素，L-NNN 为布局元素）
+- 列出测试步骤中直接操作的元素 ID，多个用逗号分隔
+- 无 sitemap 时省略此字段，gen-test-scripts 会使用页面全部元素
+
 <HARD-RULE>
 **Numbering**: Start from TC-001, sequential. Group by type (UI first, then API, then CLI).
 
-**Traceability**: 每个测试用例的 `Source` 字段必须指向 PRD 中的具体位置（Story 编号、Spec 章节号、UI Function 名称）。文件末尾必须包含完整的追溯表（TC ID → Source → Type → Priority）。
+**Traceability**: 每个测试用例的 `Source` 字段必须指向 PRD 中的具体位置（Story 编号、Spec 章节号、UI Function 名称）。文件末尾必须包含完整的追溯表（TC ID → Source → Type → Target → Priority）。
+
+**Target 推导规则**：
+- UI 测试：`ui/<page-name>`（从 URL 或组件名推导，如 login 页 → `ui/login`）
+- API 测试：`api/<resource>`（从端点推导，如 `/api/auth` → `api/auth`）
+- CLI 测试：`cli/<command>`（从命令名推导，如 `task claim` → `cli/claim`）
+
+**Test ID 生成规则**：`<target>/<title-slug>`，其中 title-slug = 标题小写 + 空格转连字符 + 去除标点符号。
 </HARD-RULE>
 
 ### Step 4: Write Output
