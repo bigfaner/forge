@@ -34,6 +34,12 @@
       "type": "string",
       "description": "Shell command for running project-wide tests (overrides auto-detection)"
     },
+    "e2eRound": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3,
+      "description": "Current fix-e2e round counter. 0 = no failures yet. Incremented each time e2e tests fail and fix tasks are appended. Max 3 rounds."
+    },
     "tasks": {
       "type": "object",
       "additionalProperties": {
