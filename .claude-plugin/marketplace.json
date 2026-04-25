@@ -1,15 +1,15 @@
 {
-	"name": "zcode-marketplace",
+	"name": "forge-marketplace",
 	"owner": {
-		"name": "zcode"
+		"name": "forge"
 	},
 	"metadata": {
 		"description": "Claude Code productivity tools for task management and workflow"
 	},
 	"plugins": [
 		{
-			"name": "zcode",
-			"source": "./plugins/zcode",
+			"name": "forge",
+			"source": "./plugins/forge",
 			"description": "Task management and workflow helper tools for Claude Code",
 			"version": "2.3.1",
 			"keywords": ["task", "workflow", "productivity", "prd", "git", "eval"]
