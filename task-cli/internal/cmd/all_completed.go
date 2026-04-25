@@ -10,6 +10,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"runtime"
 	"strings"
 	"time"
 
@@ -113,16 +115,16 @@ func runAllCompleted(cmd *cobra.Command, args []string) {
 
 	switch {
 	case hasJustfile(result.ProjectRoot) && hasJustRecipe(result.ProjectRoot, "test-e2e"):
-		fmt.Println("--- Running feature e2e tests (just test-e2e) ---")
-		e2eOutput, e2eSuccess = runCmdCapture(result.ProjectRoot, "just", "test-e2e")
+		fmt.Println("--- Running feature e2e tests (just test-e2e --feature) ---")
+		e2eOutput, e2eSuccess = runCmdCapture(result.ProjectRoot, "just", "test-e2e", "--feature")
 	case fileExists(filepath.Join(result.ProjectRoot, "Makefile")) && hasMakeTarget(result.ProjectRoot, "test-e2e"):
 		fmt.Println("--- Running feature e2e tests (make test-e2e) ---")
 		e2eOutput, e2eSuccess = runCmdCapture(result.ProjectRoot, "make", "test-e2e")
 	case result.E2EScriptsDir != "":
 		pkgJSON := filepath.Join(result.E2EScriptsDir, "package.json")
 		if _, err := os.Stat(pkgJSON); err == nil {
-			fmt.Println("--- Running feature e2e tests ---")
-			e2eOutput, e2eSuccess = runCmdCapture(result.E2EScriptsDir, "npm", "run", "test:all", "--if-present")
+			fmt.Println("--- Running feature e2e tests (individual specs) ---")
+			e2eOutput, e2eSuccess = runSpecsIndividually(result.E2EScriptsDir)
 		} else {
 			fmt.Printf("WARNING: %s has no package.json — skipping e2e tests\n", result.E2EScriptsDir)
 			e2eSuccess = true // no scripts to run, treat as success
@@ -145,7 +147,7 @@ func runAllCompleted(cmd *cobra.Command, args []string) {
 		// Calculate stats
 		stats := TestStats{
 			Framework: "unknown",
-			Total:     len(failures) + strings.Count(e2eOutput, "✓") + strings.Count(e2eOutput, "ok"),
+			Total:     len(failures) + countPassingTests(e2eOutput),
 			Fail:      len(failures),
 		}
 		stats.Pass = stats.Total - stats.Fail
@@ -179,9 +181,19 @@ func runAllCompleted(cmd *cobra.Command, args []string) {
 		fmt.Fprintf(os.Stderr, "WARNING: graduation failed: %v\n", err)
 	}
 
-	// Step 2: Project-wide tests
+	// Step 2: Project-wide unit tests
 	fmt.Println("--- Running project-wide tests ---")
 	runProjectTests(result.ProjectRoot, result.TestCommand)
+
+	// Step 3: Full e2e regression (graduated scripts in tests/e2e/)
+	if hasJustfile(result.ProjectRoot) && hasJustRecipe(result.ProjectRoot, "test-e2e") {
+		fmt.Println("--- Running full e2e regression (just test-e2e) ---")
+		_, regSuccess := runCmdCapture(result.ProjectRoot, "just", "test-e2e")
+		if !regSuccess {
+			fmt.Fprintf(os.Stderr, "ERROR: e2e regression failed: see output above")
+			os.Exit(1)
+		}
+	}
 }
 
 // appendFixTask appends a fix-e2e-N task to index.json when e2e tests fail.
@@ -322,7 +334,36 @@ func graduateTestScripts(projectRoot, featureSlug string) error {
 		return nil // no targets defined, skip graduation
 	}
 
-	// Copy spec files to tests/e2e/<target>/ for each target
+	// Copy shared infrastructure to tests/e2e/ (helpers, config, types)
+	e2eBaseDir := filepath.Join(projectRoot, feature.E2ETestsBaseDir)
+	if err := os.MkdirAll(e2eBaseDir, 0755); err != nil {
+		return fmt.Errorf("mkdir %s: %w", e2eBaseDir, err)
+	}
+	for _, shared := range []string{"helpers.ts", "package.json", "tsconfig.json"} {
+		srcPath := filepath.Join(scriptsDir, shared)
+		destPath := filepath.Join(e2eBaseDir, shared)
+		if fileExists(srcPath) && !fileExists(destPath) {
+			if err := copyFile(srcPath, destPath); err != nil {
+				return fmt.Errorf("copy shared %s: %w", shared, err)
+			}
+			fmt.Printf("INFO: graduated shared %s → %s\n", shared, destPath)
+		}
+	}
+
+	// Run npm install in tests/e2e/ if node_modules doesn't exist
+	nodeModules := filepath.Join(e2eBaseDir, "node_modules")
+	if !fileExists(nodeModules) && fileExists(filepath.Join(e2eBaseDir, "package.json")) {
+		fmt.Println("INFO: running npm install in tests/e2e/ ...")
+		c := exec.Command("npm", "install")
+		c.Dir = e2eBaseDir
+		c.Stdout = os.Stdout
+		c.Stderr = os.Stderr
+		if err := c.Run(); err != nil {
+			return fmt.Errorf("npm install in tests/e2e/: %w", err)
+		}
+	}
+
+	// Copy spec files to tests/e2e/<target>/ and rewrite imports
 	typeToSpec := map[string]string{
 		"ui":  "ui.spec.ts",
 		"api": "api.spec.ts",
@@ -340,7 +381,7 @@ func graduateTestScripts(projectRoot, featureSlug string) error {
 				return fmt.Errorf("mkdir %s: %w", destDir, err)
 			}
 			destPath := filepath.Join(destDir, specFile)
-			if err := copyFile(srcPath, destPath); err != nil {
+			if err := copyAndRewriteImports(srcPath, destPath); err != nil {
 				return fmt.Errorf("copy %s → %s: %w", srcPath, destPath, err)
 			}
 			fmt.Printf("INFO: graduated %s → %s\n", specFile, destPath)
@@ -410,6 +451,10 @@ func saveIndexAtomic(path string, index *task.TaskIndex) error {
 	if err := os.WriteFile(tmpPath, data, 0644); err != nil {
 		return fmt.Errorf("write temp file: %w", err)
 	}
+	// On Windows, os.Rename cannot overwrite an existing file
+	if runtime.GOOS == "windows" {
+		os.Remove(path)
+	}
 	return os.Rename(tmpPath, path)
 }
 
@@ -429,6 +474,20 @@ func copyFile(src, dst string) error {
 
 	_, err = io.Copy(out, in)
 	return err
+}
+
+// helpersImportRe matches import paths like './helpers.js', "./helpers", '../helpers'
+var helpersImportRe = regexp.MustCompile(`['"]\.\./?helpers(?:\.js)?['"]`)
+
+// copyAndRewriteImports copies src to dst, rewriting "./helpers.js" → "../helpers.js"
+// so graduated specs can import shared helpers from tests/e2e/helpers.ts.
+func copyAndRewriteImports(src, dst string) error {
+	data, err := os.ReadFile(src)
+	if err != nil {
+		return err
+	}
+	rewritten := helpersImportRe.ReplaceAllString(string(data), "'../helpers.js'")
+	return os.WriteFile(dst, []byte(rewritten), 0644)
 }
 
 func runProjectTests(projectRoot, testCommand string) {
@@ -477,13 +536,57 @@ func runCmd(dir string, name string, args ...string) {
 }
 
 func runShell(dir, command string) {
-	c := exec.Command("sh", "-c", command)
+	var c *exec.Cmd
+	if runtime.GOOS == "windows" {
+		c = exec.Command("cmd", "/C", command)
+	} else {
+		c = exec.Command("sh", "-c", command)
+	}
 	c.Dir = dir
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
 	if err := c.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: command failed: %v\n", err)
 	}
+}
+
+// countPassingTests counts passing tests from node:test TAP output.
+// Matches lines starting with "ok " or "✓" at line start.
+func countPassingTests(output string) int {
+	count := 0
+	for _, line := range strings.Split(output, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "ok ") || strings.HasPrefix(trimmed, "✓") {
+			count++
+		}
+	}
+	return count
+}
+
+// runSpecsIndividually runs each .spec.ts in dir sequentially, collecting all output.
+// Unlike npm run test:all, this runs all specs regardless of individual failures.
+func runSpecsIndividually(dir string) (string, bool) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return fmt.Sprintf("ERROR: read dir %s: %v", dir, err), false
+	}
+
+	var allOutput strings.Builder
+	allSuccess := true
+
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".spec.ts") {
+			continue
+		}
+		specPath := filepath.Join(dir, entry.Name())
+		output, success := runCmdCapture(dir, "npx", "tsx", specPath)
+		allOutput.WriteString(output)
+		if !success {
+			allSuccess = false
+		}
+	}
+
+	return allOutput.String(), allSuccess
 }
 
 func fileExists(path string) bool {

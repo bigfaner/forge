@@ -9,12 +9,20 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const SCREENSHOTS_DIR = join(__dirname, '..', 'results', 'screenshots');
 
 // ── Config ─────────────────────────────────────────────────────────
-function readConfig(): Record<string, any> {
-  const configPath = resolve('tests/e2e/config.yaml');
-  if (!existsSync(configPath)) {
-    throw new Error(`Config not found: ${configPath}. Create it with required fields.`);
+function findConfigPath(): string {
+  let dir = __dirname;
+  for (let i = 0; i < 10; i++) {
+    const candidate = resolve(dir, 'tests', 'e2e', 'config.yaml');
+    if (existsSync(candidate)) return candidate;
+    const parent = resolve(dir, '..');
+    if (parent === dir) break;
+    dir = parent;
   }
-  return parseYaml(readFileSync(configPath, 'utf-8'));
+  throw new Error(`tests/e2e/config.yaml not found. Searched upward from ${__dirname}. Run /gen-sitemap first.`);
+}
+
+function readConfig(): Record<string, any> {
+  return parseYaml(readFileSync(findConfigPath(), 'utf-8'));
 }
 
 const _config = readConfig();
@@ -125,7 +133,9 @@ export async function getApiToken(apiUrl: string, creds: UICredentials = default
   });
   if (res.status !== 200) throw new Error(`Auth failed: ${res.status} ${res.body}`);
   const data = JSON.parse(res.body);
-  return data.token ?? data.access_token ?? data.data?.token ?? '';
+  const token = data.token ?? data.access_token ?? data.data?.token;
+  if (!token) throw new Error(`No token in auth response. Keys: ${Object.keys(data).join(', ')}`);
+  return token;
 }
 
 export function createAuthCurl(

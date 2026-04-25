@@ -3,8 +3,8 @@ name: gen-sitemap
 description: Auto-generate and maintain sitemap.json for a web app. Uses agent-browser to explore routes, capture accessibility tree, and discover dynamic states. Preserves element IDs across runs.
 argument-hints:
   - name: base-url
-    description: 待探索的应用基础 URL（如 http://localhost:5173）
-    required: true
+    description: 待探索的应用基础 URL（如 http://localhost:5173），config.yaml 存在时可省略
+    required: false
 ---
 
 # /gen-sitemap
@@ -15,8 +15,37 @@ argument-hints:
 
 ## Prerequisites
 
-- Web 应用已启动并可访问（通过 `base-url` 参数指定）
+- Web 应用已启动并可访问
 - agent-browser 已安装（`npx agent-browser install`）
+
+## Config Resolution
+
+在执行 workflow 之前，解析配置源：
+
+1. 检查 `tests/e2e/config.yaml` 是否存在
+2. **若不存在**：从模板 `plugins/zcode/references/shared/config.yaml` 复制到 `tests/e2e/config.yaml`，然后**中止并提示用户**：
+
+```
+已创建 tests/e2e/config.yaml（模板），请根据实际环境填写配置后重新运行。
+  baseUrl: 当前应用的实际地址
+  username/password: 测试账号凭据（若应用需要认证）
+```
+
+3. **若已存在**：读取 `baseUrl`、`username`、`password` 等字段
+
+**base-url 优先级**：命令行参数 > config.yaml 中的 `baseUrl` > 报错中止
+
+**认证页面探索**：若 config.yaml 中 `username` 和 `password` 非空，在 Step 3 探索每个页面前先执行登录：
+
+```
+ab('open <baseUrl>/login')
+ab('wait --load networkidle')
+// 使用 config.yaml 中的 username/password 填充登录表单
+ab('click <login_button>')
+ab('wait --load networkidle')
+```
+
+这确保 agent-browser 能访问需要认证的页面，避免因未登录导致探索中断。
 
 ## Schema
 
@@ -26,6 +55,9 @@ argument-hints:
 
 | 字段 | 说明 |
 |------|------|
+| `layout.name` | 布局组件名（如 `AppLayout`） |
+| `layout.wraps` | 共享此布局的路由列表 |
+| `layout.elements[]` | 布局级共享元素（侧边栏、顶部导航等），ID 格式 `L-NNN` |
 | `pages[].elements[].role` | 可访问角色（button, heading 等） |
 | `pages[].elements[].name` | 可访问名称 |
 | `pages[].elements[].level` | heading 层级（仅 heading 角色） |
@@ -35,10 +67,16 @@ argument-hints:
 | `pages[].states[].trigger` | 触发元素 ID（如 `"E-002"`） |
 | `pages[].states[].elements` | 状态内的元素（同样带 E-NNN ID） |
 
+**布局元素 vs 页面元素**：
+
+- `layout.elements`：所有被布局包裹的页面共享的元素（导航栏、侧边栏、页脚），ID 格式 `L-NNN`
+- `pages[].elements`：仅属于当前页面的特有元素，ID 格式 `E-NNN`
+- 测试脚本生成时，布局元素可用在任何被包裹的页面中
+
 ## Workflow
 
 ```
-1. Load existing sitemap → 2. Discover routes → 3. Explore pages → 4. Merge & write
+1. Load existing sitemap → 2. Analyze layout → 3. Discover routes → 4. Explore pages → 5. Merge & write
 ```
 
 ### Step 1: Load Existing Sitemap
@@ -49,7 +87,43 @@ argument-hints:
 
 若无现有 sitemap，从 `E-001` 开始编号。
 
-### Step 2: Discover Routes
+### Step 2: Analyze Layout
+
+<EXTREMELY-IMPORTANT>
+**此步骤必须在页面探索前执行。** 目标是识别共享布局，避免在每个页面重复提取布局元素。
+
+**先读代码，再探索。** 不要先无脑探索再回头去重。
+</EXTREMELY-IMPORTANT>
+
+**2a. 读取路由定义**：查找应用的路由配置文件（如 `App.tsx`、`router.ts`、`routes.tsx`），识别布局嵌套：
+
+```
+<Route element={<AppLayout />}>      ← 共享布局
+  <Route path="/" element={<Dashboard />} />
+  <Route path="/settings" element={<Settings />} />
+  ...
+</Route>
+<Route path="/login">                ← 无布局（独立页面）
+```
+
+记录：
+- `layout.name`：布局组件名（如 `AppLayout`）
+- `layout.wraps`：被布局包裹的路由列表
+- 不被任何布局包裹的路由（如 `/login`）为独立页面
+
+**2b. 探索布局元素**：对布局包裹的第一个页面做 snapshot，提取**仅属于布局层**的元素：
+
+```
+ab('open <baseUrl><first_wrapped_route>')
+ab('wait --load networkidle')
+snapshot = abJson('snapshot -i')
+```
+
+从 snapshot 中识别布局区域（通常为 `role=navigation`、`role=banner`、侧边栏容器等），提取其中的元素归入 `layout.elements`。
+
+**若无法读取路由代码**（纯 HTML 项目或无源码访问）：跳过此步骤，所有元素按页面级处理。首次探索两个页面后，对比 snapshot 中的重复元素作为布局候选项。
+
+### Step 3: Discover Routes
 
 使用 agent-browser 导航到用户提供的 `base-url`，提取页面中所有链接：
 
@@ -66,7 +140,7 @@ links = abJson('snapshot -i')  // 提取所有 role=link 节点的 href
 
 **动态路由处理**：带参数的路由（如 `/tasks/123`）记录为模板形式 `/tasks/:id`（去除 URL 中的数字和 UUID 段）。
 
-### Step 3: Explore Pages
+### Step 4: Explore Pages
 
 对每个路由逐一用 agent-browser 探索：
 
@@ -76,10 +150,19 @@ ab('wait --load networkidle')
 snapshot = abJson('snapshot -i')
 ```
 
+#### 布局元素过滤
+
+<HARD-RULE>
+若 Step 2 识别了共享布局，此步骤**必须跳过布局元素**。
+对比 snapshot 与 `layout.elements`，过滤掉 `role + name` 匹配的元素。
+只有页面特有的内容区元素才归入 `pages[].elements`。
+</HARD-RULE>
+
 #### 基础元素提取
 
 1. 获取页面 title
 2. 从 snapshot 提取元素，过滤条件：
+   - 排除已归入 `layout.elements` 的元素（按 `role + name` 匹配）
    - `role` ∈ {button, link, heading, textbox, checkbox, radio, combobox, tab, dialog, alert, navigation, search, form, menuitem, switch}
    - `name` 非空
 3. 对每个元素记录完整属性：
@@ -108,9 +191,9 @@ ab('press Escape')  // 或 ab('click @close_btn') 重置
 ab('close')
 ```
 
-### Step 4: Merge & Write
+### Step 5: Merge & Write
 
-对每个元素（含 states 内元素），用 `route + role + name` 三元组匹配现有 sitemap：
+对每个元素（含 layout 和 states 内元素），用 `route + role + name` 三元组匹配现有 sitemap：
 
 - **匹配成功** → 保留原有 ID
 - **无匹配** → 分配新 ID（当前最大 ID + 1）
@@ -122,15 +205,17 @@ ab('close')
 
 ```
 Sitemap updated: docs/sitemap/sitemap.json
-  3 pages, 18 elements (base) + 8 elements (states)
+  Layout: AppLayout (5 shared elements, L-001..L-005)
+  3 pages, 12 elements (page-specific) + 8 elements (states)
   +4 new elements (E-015..E-018)
   -2 removed elements (previously on /settings)
-  22 unchanged
+  17 unchanged
 ```
 
 ## Element ID 分配规则
 
-- 格式：`E-NNN`（三位数字），全局唯一（base 和 states 共享 ID 空间）
-- 首次生成：从 `E-001` 顺序分配
+- **布局元素**：格式 `L-NNN`，全局唯一，独立编号空间
+- **页面元素**：格式 `E-NNN`，全局唯一（base 和 states 共享 ID 空间）
+- 首次生成：分别从 `L-001` 和 `E-001` 顺序分配
 - 增量更新：新元素从当前最大 ID + 1 开始
 - ID 永不重复使用（删除的 ID 不回收）

@@ -22,6 +22,7 @@ description: Generate executable TypeScript e2e test scripts from test cases. Us
 | ---------------------------------------- | --------------------------------------------- |
 | `testing/test-cases.md`                | 先执行 `/gen-test-cases`  |
 | `docs/sitemap/sitemap.json`（仅 UI 测试需要） | 先执行 `/gen-sitemap` |
+| `tests/e2e/config.yaml` | 先执行 `/gen-sitemap` 或手动创建 |
 
 **注意**：本 skill 既可以手动调用，也可以作为 `/breakdown-tasks` 追加的标准任务 T-test-2 被 agent 调用。
 
@@ -41,6 +42,7 @@ UI 测试的 locator 原料来自 `docs/sitemap/sitemap.json`。由 `/gen-sitema
 
 | 字段                          | 用途                                            |
 | ----------------------------- | ----------------------------------------------- |
+| `layout.elements[].role` + `name` | → 布局级共享元素（导航栏等），可用于所有被 `layout.wraps` 包裹的页面 |
 | `elements[].role` + `name`    | → `page.getByRole(role, { name })` (优先级 0)  |
 | `elements[].level`            | → `getByRole('heading', { level })` 精确定位    |
 | `elements[].label`            | → `page.getByLabel(label)` (优先级 1)           |
@@ -48,7 +50,7 @@ UI 测试的 locator 原料来自 `docs/sitemap/sitemap.json`。由 `/gen-sitema
 | `states[].trigger`            | → 点击触发元素进入动态状态                      |
 | `states[].elements`           | → 动态状态内的元素 locator                      |
 
-测试用例中通过 `Route` 和 `Element` 字段引用 sitemap 中的路由和元素 ID（E-NNN）。
+测试用例中通过 `Route` 和 `Element` 字段引用 sitemap 中的路由和元素 ID（E-NNN / L-NNN）。
 
 ## When to Use
 
@@ -103,6 +105,7 @@ Login test 和 authenticated test 不得混在同一个 `describe` 块中。
 1. 按 `Route` 字段匹配 `sitemap.json` 中的 `pages[].route`
 2. 按 `Element` 字段匹配页面内的 `elements[].id`（含 states 内元素）
 3. 收集所需页面的全部元素数据（base elements + 相关 states）
+4. **若 sitemap 包含 `layout` 字段**：对每个被 `layout.wraps` 包裹的路由，将 `layout.elements` 合并为可用元素（布局元素在该页面的 locator 映射中也可用）
 
 若测试用例引用的 route 或 element ID 在 sitemap 中不存在，报告缺失并建议重新运行 `/gen-sitemap`。
 

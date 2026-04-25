@@ -1,0 +1,10 @@
+# E2E test configuration
+# Read by helpers.ts at module load time
+
+baseUrl: http://localhost:3456
+apiUrl: http://localhost:8080
+timeout: 30000
+
+# Shared auth credentials
+username: admin
+password: password

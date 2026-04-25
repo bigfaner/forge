@@ -1,6 +1,17 @@
 {
 	"baseUrl": "http://localhost:5173",
 	"updatedAt": "2026-04-25T10:00:00Z",
+	"layout": {
+		"name": "AppLayout",
+		"wraps": ["/", "/settings", "/tasks/:id"],
+		"elements": [
+			{ "id": "L-001", "role": "navigation", "name": "Main nav" },
+			{ "id": "L-002", "role": "link", "name": "Dashboard" },
+			{ "id": "L-003", "role": "link", "name": "Settings" },
+			{ "id": "L-004", "role": "link", "name": "Profile" },
+			{ "id": "L-005", "role": "button", "name": "Logout" }
+		]
+	},
 	"pages": [
 		{
 			"route": "/",
@@ -8,19 +19,17 @@
 			"elements": [
 				{ "id": "E-001", "role": "heading", "name": "Dashboard", "level": 1 },
 				{ "id": "E-002", "role": "button", "name": "Add Task" },
-				{ "id": "E-003", "role": "textbox", "label": "Search", "placeholder": "Search tasks..." },
-				{ "id": "E-004", "role": "link", "name": "Settings" },
-				{ "id": "E-005", "role": "link", "name": "Profile" }
+				{ "id": "E-003", "role": "textbox", "label": "Search", "placeholder": "Search tasks..." }
 			],
 			"states": [
 				{
 					"name": "add-task-modal",
 					"trigger": "E-002",
 					"elements": [
-						{ "id": "E-006", "role": "dialog", "name": "Add Task" },
-						{ "id": "E-007", "role": "textbox", "label": "Task Title" },
-						{ "id": "E-008", "role": "button", "name": "Save" },
-						{ "id": "E-009", "role": "button", "name": "Cancel" }
+						{ "id": "E-004", "role": "dialog", "name": "Add Task" },
+						{ "id": "E-005", "role": "textbox", "label": "Task Title" },
+						{ "id": "E-006", "role": "button", "name": "Save" },
+						{ "id": "E-007", "role": "button", "name": "Cancel" }
 					]
 				}
 			]

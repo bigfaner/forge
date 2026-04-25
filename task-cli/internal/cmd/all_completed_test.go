@@ -613,3 +613,66 @@ func TestRunCmdCapture(t *testing.T) {
 		t.Errorf("runCmdCapture() output = %q, want contain hello", output)
 	}
 }
+
+func TestCountPassingTests(t *testing.T) {
+	tests := []struct {
+		name   string
+		output string
+		want   int
+	}{
+		{
+			name:   "TAP ok lines",
+			output: "ok 1 - test one\nok 2 - test two\nnot ok 3 - test three",
+			want:   2,
+		},
+		{
+			name:   "checkmark lines",
+			output: "✓ test one\n✓ test two\n✗ test three",
+			want:   2,
+		},
+		{
+			name:   "mixed with noise",
+			output: "ok 1\nsome noise ok here\n✓ another\n  ok 2\n",
+			want:   3,
+		},
+		{
+			name:   "empty output",
+			output: "",
+			want:   0,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := countPassingTests(tc.output)
+			if got != tc.want {
+				t.Errorf("countPassingTests() = %d, want %d", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestRunSpecsIndividually(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create a passing spec
+	passSpec := `import { test } from 'node:test';
+test('pass', () => {});
+`
+	if err := os.WriteFile(filepath.Join(dir, "a.spec.ts"), []byte(passSpec), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a non-spec file (should be ignored)
+	if err := os.WriteFile(filepath.Join(dir, "helper.ts"), []byte("// not a spec"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	output, success := runSpecsIndividually(dir)
+	if !success {
+		t.Errorf("expected success, got failure. Output: %s", output)
+	}
+	if !strings.Contains(output, "pass") {
+		t.Errorf("output should contain test name, got: %s", output)
+	}
+}

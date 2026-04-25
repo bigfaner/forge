@@ -1,14 +1,14 @@
 import { describe, test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import type { Page } from 'playwright';
-import { setupBrowser, teardownBrowser, screenshot, loginViaUI, baseUrl } from './helpers.js';
+import { setupBrowser, teardownBrowser, screenshot, loginViaUI, defaultCreds, baseUrl } from './helpers.js';
 
 describe('UI E2E Tests', () => {
   let page: Page;
 
   before(async () => {
     page = await setupBrowser();
-    // Shared auth: login once for all non-login tests
+    // CONDITIONAL: Keep only if auth-required-test exists; remove if only public-test/login-test
     await loginViaUI(page);
   });
 
@@ -17,11 +17,11 @@ describe('UI E2E Tests', () => {
   });
 
   // ── Login Tests (no shared auth) ────────────────────────────────
+  // CONDITIONAL: Remove this block if no login-test exists
   describe('Login', () => {
     let loginPage: Page;
 
     before(async () => {
-      // Fresh page without auth cookies
       loginPage = await page.context().newPage();
     });
 
@@ -33,11 +33,12 @@ describe('UI E2E Tests', () => {
     test('TC-001: Login with valid credentials', async () => {
       await loginPage.goto(`${baseUrl}/login`);
       await loginPage.waitForLoadState('networkidle');
-      await loginPage.getByRole('textbox', { name: 'Username' }).fill('admin');
-      await loginPage.getByRole('textbox', { name: 'Password' }).fill('password');
+      await loginPage.getByRole('textbox', { name: 'Username' }).fill(defaultCreds.username);
+      await loginPage.getByRole('textbox', { name: 'Password' }).fill(defaultCreds.password);
       await loginPage.getByRole('button', { name: 'Login' }).click();
+      // Replace '**/dashboard' with actual post-login route
       await loginPage.waitForURL('**/dashboard');
-      assert.ok(true, 'Redirected to dashboard after login');
+      assert.match(loginPage.url(), /dashboard/, 'Redirected to dashboard after login');
       await screenshot(loginPage, 'TC-001');
     });
   });
@@ -48,7 +49,6 @@ describe('UI E2E Tests', () => {
     await page.goto(`${baseUrl}/index.html`);
     await page.waitForLoadState('networkidle');
     await page.getByRole('heading', { name: 'Dashboard' }).waitFor({ state: 'visible' });
-    assert.ok(true, 'Heading visible');
     await screenshot(page, 'TC-002');
   });
 });

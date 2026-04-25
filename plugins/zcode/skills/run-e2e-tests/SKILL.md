@@ -25,6 +25,7 @@ description: Execute e2e test scripts and generate a results report. Runs UI tes
 | `testing/scripts/` 目录 | 先执行 `/gen-test-scripts` |
 | `testing/scripts/helpers.ts` | 先执行 `/gen-test-scripts` |
 | 至少一个 `.spec.ts` 文件 | 先执行 `/gen-test-scripts` |
+| `tests/e2e/config.yaml` | 先执行 `/gen-sitemap` 或手动创建 |
 
 ```bash
 ls docs/features/<slug>/testing/scripts/
