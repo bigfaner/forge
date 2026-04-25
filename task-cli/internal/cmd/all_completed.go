@@ -115,11 +115,11 @@ func runAllCompleted(cmd *cobra.Command, args []string) {
 
 	switch {
 	case hasJustfile(result.ProjectRoot) && hasJustRecipe(result.ProjectRoot, "test-e2e"):
-		fmt.Fprintln(os.Stderr, "--- Running feature e2e tests (just test-e2e --feature) ---")
-		e2eOutput, e2eSuccess = runCmdCapture(result.ProjectRoot, "just", "test-e2e", "--feature")
+		fmt.Fprintf(os.Stderr, "--- Running feature e2e tests (just test-e2e --feature %s) ---\n", result.FeatureSlug)
+		e2eOutput, e2eSuccess = runCmdCapture(result.ProjectRoot, "just", "test-e2e", "--feature", result.FeatureSlug)
 	case fileExists(filepath.Join(result.ProjectRoot, "Makefile")) && hasMakeTarget(result.ProjectRoot, "test-e2e"):
-		fmt.Fprintln(os.Stderr, "--- Running feature e2e tests (make test-e2e) ---")
-		e2eOutput, e2eSuccess = runCmdCapture(result.ProjectRoot, "make", "test-e2e")
+		fmt.Fprintf(os.Stderr, "--- Running feature e2e tests (make test-e2e FEATURE=%s) ---\n", result.FeatureSlug)
+		e2eOutput, e2eSuccess = runCmdCapture(result.ProjectRoot, "make", "test-e2e", "FEATURE="+result.FeatureSlug)
 	case result.E2EScriptsDir != "":
 		pkgJSON := filepath.Join(result.E2EScriptsDir, "package.json")
 		if _, err := os.Stat(pkgJSON); err == nil {
