@@ -1,7 +1,7 @@
 {
-	"name": "forge-marketplace",
+	"name": "forge",
 	"owner": {
-		"name": "forge"
+		"name": "HuiFeng Fan"
 	},
 	"metadata": {
 		"description": "Claude Code productivity tools for task management and workflow"
