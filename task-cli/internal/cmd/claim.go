@@ -104,6 +104,13 @@ func executeClaim() (*ClaimResult, error) {
 		return nil, err
 	}
 
+	// Bootstrap .forge/state.json as workspace marker so subagents in subdirectories
+	// (e.g., backend/) can find the project root via FindProjectRoot().
+	// Placed after all validation to avoid creating artifacts in error paths.
+	if err := feature.EnsureForgeState(projectRoot, featureSlug); err != nil {
+		fmt.Fprintf(os.Stderr, "WARNING: failed to write .forge/state.json: %v\n", err)
+	}
+
 	// Save state
 	state := &task.TaskState{
 		TaskID:        t.ID,

@@ -644,6 +644,59 @@ func TestClaimNextTask_NonNumericBlocked(t *testing.T) {
 	}
 }
 
+func TestExecuteClaim_CreatesForgeState(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create go.mod to simulate project root
+	goMod := filepath.Join(dir, "go.mod")
+	if err := os.WriteFile(goMod, []byte("module test-project\n\ngo 1.21\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	feature.EnsureFeatureDir(dir, "test-feature")
+
+	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test-feature"))
+	index := &task.TaskIndex{
+		Feature:      "test-feature",
+		StatusEnum:   []string{"pending", "in_progress", "completed"},
+		PriorityEnum: []string{"P0", "P1", "P2"},
+		Tasks: map[string]task.Task{
+			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md", Record: "1.1.md"},
+		},
+	}
+	task.SaveIndex(indexPath, index)
+
+	taskFile := filepath.Join(dir, "docs", "features", "test-feature", "tasks", "1.1.md")
+	os.WriteFile(taskFile, []byte("# Task content"), 0644)
+
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { os.Chdir(origWd) })
+	os.Chdir(dir)
+
+	// .forge/state.json should not exist before claim
+	forgeStatePath := filepath.Join(dir, ".forge", "state.json")
+	if _, err := os.Stat(forgeStatePath); err == nil {
+		t.Fatal(".forge/state.json should not exist before claim")
+	}
+
+	_, err := executeClaim()
+	if err != nil {
+		t.Fatalf("executeClaim() error = %v", err)
+	}
+
+	// .forge/state.json should exist after claim with allCompleted=false
+	state := feature.ReadForgeState(dir)
+	if state == nil {
+		t.Fatal(".forge/state.json should exist after claim")
+	}
+	if state.AllCompleted {
+		t.Error("allCompleted should be false after claim")
+	}
+	if state.Feature != "test-feature" {
+		t.Errorf("feature = %q, want %q", state.Feature, "test-feature")
+	}
+}
+
 func TestExecuteClaim_Continue(t *testing.T) {
 	// Setup test project structure
 	dir := t.TempDir()

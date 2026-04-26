@@ -33,6 +33,34 @@ func WriteForgeState(projectRoot, featureSlug string) error {
 	return os.WriteFile(statePath, data, 0644)
 }
 
+// EnsureForgeDir creates the .forge/ directory at project root if it doesn't exist.
+// This bootstraps the forge workspace marker so that subagents running from
+// subdirectories can find the project root via FindProjectRoot().
+func EnsureForgeDir(projectRoot string) error {
+	forgeDir := filepath.Join(projectRoot, ForgeDir)
+	return os.MkdirAll(forgeDir, 0755)
+}
+
+// EnsureForgeState writes .forge/state.json with allCompleted=false.
+// Called by task claim to create the workspace marker and active session state.
+// Overwrites any existing file (e.g., after fix-e2e tasks reset completion).
+func EnsureForgeState(projectRoot, featureSlug string) error {
+	statePath := GetForgeStatePath(projectRoot)
+	if err := os.MkdirAll(filepath.Dir(statePath), 0755); err != nil {
+		return err
+	}
+	state := ForgeState{
+		Feature:      featureSlug,
+		AllCompleted: false,
+		UpdatedAt:    time.Now().Format(time.RFC3339),
+	}
+	data, err := json.Marshal(state)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(statePath, data, 0644)
+}
+
 // ReadForgeState reads .forge/state.json. Returns nil if the file doesn't exist.
 func ReadForgeState(projectRoot string) *ForgeState {
 	statePath := GetForgeStatePath(projectRoot)

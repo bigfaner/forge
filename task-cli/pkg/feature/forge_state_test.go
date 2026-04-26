@@ -101,3 +101,72 @@ func TestClearForgeState(t *testing.T) {
 		}
 	})
 }
+
+func TestEnsureForgeState(t *testing.T) {
+	t.Run("creates state.json with allCompleted=false", func(t *testing.T) {
+		dir := t.TempDir()
+
+		if err := EnsureForgeState(dir, "my-feature"); err != nil {
+			t.Fatalf("EnsureForgeState() error = %v", err)
+		}
+
+		statePath := GetForgeStatePath(dir)
+		data, err := os.ReadFile(statePath)
+		if err != nil {
+			t.Fatalf("state.json not created: %v", err)
+		}
+
+		var state ForgeState
+		if err := json.Unmarshal(data, &state); err != nil {
+			t.Fatalf("failed to parse state: %v", err)
+		}
+
+		if state.Feature != "my-feature" {
+			t.Errorf("feature = %q, want %q", state.Feature, "my-feature")
+		}
+		if state.AllCompleted {
+			t.Error("allCompleted = true, want false")
+		}
+		if state.UpdatedAt == "" {
+			t.Error("updatedAt is empty")
+		}
+	})
+
+	t.Run("creates .forge/ directory if missing", func(t *testing.T) {
+		dir := t.TempDir()
+
+		if err := EnsureForgeState(dir, "test"); err != nil {
+			t.Fatalf("EnsureForgeState() error = %v", err)
+		}
+
+		forgeDir := filepath.Join(dir, ForgeDir)
+		info, err := os.Stat(forgeDir)
+		if err != nil {
+			t.Fatalf(".forge/ directory not created: %v", err)
+		}
+		if !info.IsDir() {
+			t.Error(".forge is not a directory")
+		}
+	})
+
+	t.Run("overwrites existing allCompleted=true", func(t *testing.T) {
+		dir := t.TempDir()
+
+		// Simulate: all tasks were done, then fix-e2e tasks added
+		WriteForgeState(dir, "my-feature")
+		state := ReadForgeState(dir)
+		if !state.AllCompleted {
+			t.Fatal("setup: WriteForgeState should set allCompleted=true")
+		}
+
+		// Claim overwrites with false
+		if err := EnsureForgeState(dir, "my-feature"); err != nil {
+			t.Fatalf("EnsureForgeState() error = %v", err)
+		}
+
+		state = ReadForgeState(dir)
+		if state.AllCompleted {
+			t.Error("allCompleted should be false after EnsureForgeState overwrite")
+		}
+	})
+}

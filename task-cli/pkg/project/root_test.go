@@ -357,6 +357,92 @@ func TestFindVCSRoot(t *testing.T) {
 }
 
 func TestMonorepoDetection(t *testing.T) {
+	t.Run(".forge dir overrides go.mod in subdirectory", func(t *testing.T) {
+		tempDir, _ := filepath.EvalSymlinks(t.TempDir())
+
+		// Create .forge/ at project root (simulates task claim bootstrap)
+		forgeDir := filepath.Join(tempDir, ".forge")
+		os.MkdirAll(forgeDir, 0755)
+
+		// Create go.mod in backend/ subdirectory
+		backendDir := filepath.Join(tempDir, "backend")
+		os.MkdirAll(backendDir, 0755)
+		goModPath := filepath.Join(backendDir, "go.mod")
+		os.WriteFile(goModPath, []byte("module backend\n"), 0644)
+
+		originalDir, _ := os.Getwd()
+		defer os.Chdir(originalDir)
+		os.Chdir(backendDir)
+
+		info, err := FindRootInfo()
+		if err != nil {
+			t.Fatalf("FindRootInfo() error = %v", err)
+		}
+		if info.Path != tempDir {
+			t.Errorf("Path = %q, want %q (project root, not backend/)", info.Path, tempDir)
+		}
+		if info.Type != RootTypeWorkspace {
+			t.Errorf("Type = %v, want %v", info.Type, RootTypeWorkspace)
+		}
+		if info.Marker != ".forge" {
+			t.Errorf("Marker = %q, want %q", info.Marker, ".forge")
+		}
+	})
+
+	t.Run(".forge dir overrides package.json in subdirectory", func(t *testing.T) {
+		tempDir, _ := filepath.EvalSymlinks(t.TempDir())
+
+		forgeDir := filepath.Join(tempDir, ".forge")
+		os.MkdirAll(forgeDir, 0755)
+
+		frontendDir := filepath.Join(tempDir, "frontend")
+		os.MkdirAll(frontendDir, 0755)
+		pkgJson := filepath.Join(frontendDir, "package.json")
+		os.WriteFile(pkgJson, []byte(`{"name": "frontend"}`), 0644)
+
+		originalDir, _ := os.Getwd()
+		defer os.Chdir(originalDir)
+		os.Chdir(frontendDir)
+
+		info, err := FindRootInfo()
+		if err != nil {
+			t.Fatalf("FindRootInfo() error = %v", err)
+		}
+		if info.Path != tempDir {
+			t.Errorf("Path = %q, want %q (project root, not frontend/)", info.Path, tempDir)
+		}
+		if info.Type != RootTypeWorkspace {
+			t.Errorf("Type = %v, want %v", info.Type, RootTypeWorkspace)
+		}
+		if info.Marker != ".forge" {
+			t.Errorf("Marker = %q, want %q", info.Marker, ".forge")
+		}
+	})
+
+	t.Run(".forge and go.mod both at root — .forge wins", func(t *testing.T) {
+		tempDir, _ := filepath.EvalSymlinks(t.TempDir())
+
+		forgeDir := filepath.Join(tempDir, ".forge")
+		os.MkdirAll(forgeDir, 0755)
+		goModPath := filepath.Join(tempDir, "go.mod")
+		os.WriteFile(goModPath, []byte("module test\n"), 0644)
+
+		originalDir, _ := os.Getwd()
+		defer os.Chdir(originalDir)
+		os.Chdir(tempDir)
+
+		info, err := FindRootInfo()
+		if err != nil {
+			t.Fatalf("FindRootInfo() error = %v", err)
+		}
+		if info.Path != tempDir {
+			t.Errorf("Path = %q, want %q", info.Path, tempDir)
+		}
+		if info.Type != RootTypeWorkspace {
+			t.Errorf("Type = %v, want %v", info.Type, RootTypeWorkspace)
+		}
+	})
+
 	t.Run("pnpm monorepo returns workspace root", func(t *testing.T) {
 		tempDir, _ := filepath.EvalSymlinks(t.TempDir())
 
