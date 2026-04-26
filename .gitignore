@@ -16,5 +16,6 @@ bin/
 
 # Go
 *.test
+bin/
 todo.txt
 *.DS_Store

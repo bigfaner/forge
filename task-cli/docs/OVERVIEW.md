@@ -1,35 +1,35 @@
-# claude-task-cli 功能概览
+# claude-task-cli Feature Overview
 
-> 基于 features 目录结构的任务管理 CLI 工具，为 Claude Code 工作流提供智能任务声明与依赖管理。
+> A task management CLI tool based on the features directory structure, providing intelligent task claiming and dependency management for Claude Code workflows.
 
-## 核心功能
+## Core Features
 
-### 1. 智能任务声明 (`task claim`)
+### 1. Intelligent Task Claiming (`task claim`)
 
-基于多维度策略自动选择下一个可用任务：
+Automatically selects the next available task based on a multi-dimensional strategy:
 
-| 维度 | 优先级规则 |
-|------|-----------|
+| Dimension | Priority Rule |
+|-----------|--------------|
 | Priority | P0 > P1 > P2 |
-| Dependencies | 仅声明依赖已满足的任务 |
-| In-Progress | 自动恢复进行中的任务 |
+| Dependencies | Only claim tasks whose dependencies are satisfied |
+| In-Progress | Automatically resume in-progress tasks |
 
-**依赖语法支持：**
-- 精确匹配：`1.1`, `1.2`
-- 通配符匹配：`1.x`（前缀级别依赖）
+**Dependency syntax support:**
+- Exact match: `1.1`, `1.2`
+- Wildcard match: `1.x` (prefix-level dependency)
 
-### 2. 任务记录生成 (`task record`)
+### 2. Task Record Generation (`task record`)
 
-从 JSON 输入生成结构化 markdown 执行记录，包含：
+Generate structured markdown execution records from JSON input, including:
 
-- 任务摘要与状态
-- 时间追踪
-- 创建/修改的文件清单
-- 关键决策
-- 测试结果
-- 验收标准确认
+- Task summary and status
+- Time tracking
+- List of created/modified files
+- Key decisions
+- Test results
+- Acceptance criteria confirmation
 
-**验证规则（hard validation）：**
+**Validation rules (hard validation):**
 
 | Condition | Error | Fix |
 |-----------|-------|-----|
@@ -39,132 +39,132 @@
 
 Override with `--force`: `task record <id> --data record.json --force`
 
-### 3. 状态管理
+### 3. Status Management
 
-| 命令 | 功能 |
-|------|------|
-| `task status <id>` | 查询任务状态 |
-| `task status <id> <status>` | 更新任务状态 |
-| `task query <id>` | 查询任务详情 |
-| `task feature [slug]` | 设置/显示当前 feature |
+| Command | Function |
+|---------|----------|
+| `task status <id>` | Query task status |
+| `task status <id> <status>` | Update task status |
+| `task query <id>` | Query task details |
+| `task feature [slug]` | Set/display current feature |
 
-**状态值：** `pending`, `in_progress`, `completed`, `blocked`, `skipped`
+**Status values:** `pending`, `in_progress`, `completed`, `blocked`, `skipped`
 
-### 4. 校验与验证
+### 4. Validation and Verification
 
-| 命令 | 功能 |
-|------|------|
-| `task validate [file]` | 验证 index.json 结构 |
-| `task check` | 检查所有任务依赖 |
+| Command | Function |
+|---------|----------|
+| `task validate [file]` | Validate index.json structure |
+| `task check` | Check all task dependencies |
 
-**验证规则：**
-- JSON 语法检查
-- 必填字段验证
-- 依赖引用有效性
-- 循环依赖检测
-- 文件存在性检查
+**Validation rules:**
+- JSON syntax check
+- Required field validation
+- Dependency reference validity
+- Circular dependency detection
+- File existence check
 
-### 5. Claude Code 集成命令
+### 5. Claude Code Integration Commands
 
-| 命令 | 用途 | 功能 |
-|------|------|------|
-| `task verifyCompletion` | PreToolUse (git commit) | 验证任务完成状态，阻止未完成任务提交 |
-| `task cleanup` | Stop | 清理已完成任务的状态文件 |
-| `task all-completed` | Stop hook | 检查所有任务是否完成，若完成则自动运行测试 |
+| Command | Purpose | Function |
+|---------|---------|----------|
+| `task verifyCompletion` | PreToolUse (git commit) | Verify task completion status, block commits for incomplete tasks |
+| `task cleanup` | Stop | Clean up state files for completed tasks |
+| `task all-completed` | Stop hook | Check if all tasks are completed, and if so, automatically run tests |
 
-**all-completed 行为：**
-- 所有任务均为 `completed` 或 `skipped` → 运行 feature e2e 测试 + 项目级测试，exit 0
-- 任意任务为 `pending`/`in_progress`/`blocked` → 静默退出，exit 1
-- 无 feature 或无 project root → 静默退出，exit 1
+**all-completed behavior:**
+- All tasks are `completed` or `skipped` -> run feature e2e tests + project-level tests, exit 0
+- Any task is `pending`/`in_progress`/`blocked` -> silent exit, exit 1
+- No feature or no project root -> silent exit, exit 1
 
-**e2e 测试失败恢复：**
-- e2e 测试失败时，自动向 `index.json` 追加 `fix-e2e-N` 任务（N 从 1 开始）
-- fix-e2e 任务格式：
+**e2e test failure recovery:**
+- When e2e tests fail, automatically append a `fix-e2e-N` task to `index.json` (N starts from 1)
+- fix-e2e task format:
   - id: `fix-e2e-N`
-  - title: "修复 e2e 测试失败"
+  - title: "Fix e2e test failures"
   - priority: `P0`
-  - file: `testing/results/latest.md`（指向失败详情）
-- 若已有 pending 的 fix-e2e 任务，则跳过追加（避免重复）
-- fix-e2e 任务上限为 3 个，超过后打印警告并 exit 0（避免无限循环）
-- 追加后 exit 1，触发 agent 继续工作并认领 fix-e2e 任务
+  - file: `testing/results/latest.md` (points to failure details)
+- If a pending fix-e2e task already exists, skip appending (avoid duplicates)
+- fix-e2e task limit is 3; after exceeding, print a warning and exit 0 (avoid infinite loops)
+- After appending, exit 1, triggering the agent to continue working and claim the fix-e2e task
 
-**e2e 测试脚本毕业模型：**
-- e2e 测试首次成功时，按测试用例的 `target` 字段将脚本迁移到 `tests/e2e/<type>/<target>/`
-- 毕业标记：`tests/e2e/.graduated/<slug>`（内容为时间戳）
-- 若毕业标记已存在，则跳过迁移（非首次成功）
-- `docs/features/<slug>/testing/scripts/` 保留不删除（作为可追溯性记录）
+**e2e test script graduation model:**
+- On first successful e2e test, migrate scripts to `tests/e2e/<type>/<target>/` based on the test case's `target` field
+- Graduation marker: `tests/e2e/.graduated/<slug>` (content is a timestamp)
+- If graduation marker already exists, skip migration (not first success)
+- `docs/features/<slug>/testing/scripts/` is preserved (as traceability record)
 
-**测试命令自动检测顺序（项目级）：**
-1. `index.json` 中的 `testCommand` 字段（显式配置）
-2. `justfile`/`Justfile` 含 `test` recipe → `just test`
-3. `Makefile` 含 `test:` target → `make test`
-4. `go.mod` 存在 → `go test ./...`
-5. `package.json` 含 `scripts.test` → `npm test`
-6. `pytest.ini` / `pyproject.toml` 存在 → `pytest`
+**Test command auto-detection order (project-level):**
+1. `testCommand` field in `index.json` (explicit configuration)
+2. `justfile`/`Justfile` contains `test` recipe -> `just test`
+3. `Makefile` contains `test:` target -> `make test`
+4. `go.mod` exists -> `go test ./...`
+5. `package.json` contains `scripts.test` -> `npm test`
+6. `pytest.ini` / `pyproject.toml` exists -> `pytest`
 
-**e2e 测试检测顺序：**
-1. `justfile`/`Justfile` 含 `test-e2e` recipe → `just test-e2e`
-2. `Makefile` 含 `test-e2e:` target → `make test-e2e`
-3. `testing/scripts/package.json` 存在 → `npm run test:all --if-present`
+**e2e test detection order:**
+1. `justfile`/`Justfile` contains `test-e2e` recipe -> `just test-e2e`
+2. `Makefile` contains `test-e2e:` target -> `make test-e2e`
+3. `testing/scripts/package.json` exists -> `npm run test:all --if-present`
 
 ---
 
-## 目录结构约定
+## Directory Structure Convention
 
 ```
 project-root/
 ├── docs/
-│   ├── proposals/<slug>/           # /brainstorm 产出
+│   ├── proposals/<slug>/           # /brainstorm output
 │   │   └── proposal.md
-│   └── features/<slug>/            # Feature 工作区
-│       ├── manifest.md             # Feature 索引 & 可追溯性映射
+│   └── features/<slug>/            # Feature workspace
+│       ├── manifest.md             # Feature index & traceability mapping
 │       ├── prd/
 │       │   ├── prd-spec.md         # PRD Spec
-│       │   ├── prd-user-stories.md # 用户故事
-│       │   └── prd-ui-functions.md # UI 功能要点（可选）
+│       │   ├── prd-user-stories.md # User stories
+│       │   └── prd-ui-functions.md # UI function highlights (optional)
 │       ├── design/
-│       │   ├── tech-design.md      # 技术设计
-│       │   └── api-handbook.md     # API 文档
+│       │   ├── tech-design.md      # Technical design
+│       │   └── api-handbook.md     # API documentation
 │       ├── ui/
-│       │   └── ui-design.md        # UI 设计规格（可选）
+│       │   └── ui-design.md        # UI design specification (optional)
 │       ├── testing/
-│       │   ├── test-cases.md      # 测试用例（含 target 字段）
-│       │   ├── scripts/           # 开发期测试脚本
+│       │   ├── test-cases.md      # Test cases (with target field)
+│       │   ├── scripts/           # Development-phase test scripts
 │       │   │   ├── ui.spec.ts
 │       │   │   ├── api.spec.ts
 │       │   │   └── cli.spec.ts
 │       │   └── results/
-│       │       └── latest.md      # e2e 测试结果报告
+│       │       └── latest.md      # e2e test results report
 │       └── tasks/
-│           ├── index.json          # 任务定义
-│           ├── process/            # 运行时状态
+│           ├── index.json          # Task definitions
+│           ├── process/            # Runtime state
 │           │   ├── state.json
 │           │   └── record.json
-│           ├── 1.1-<title>.md     # 任务详情
-│           └── records/            # 执行记录
+│           ├── 1.1-<title>.md     # Task details
+│           └── records/            # Execution records
 ├── tests/
-│   └── e2e/                       # 毕业后的回归测试套件
-│       ├── .graduated/            # 毕业标记文件
-│       │   └── <slug>             # 时间戳
-│       ├── ui/<page>/             # UI 测试（按页面聚合）
+│   └── e2e/                       # Post-graduation regression test suite
+│       ├── .graduated/            # Graduation marker files
+│       │   └── <slug>             # Timestamp
+│       ├── ui/<page>/             # UI tests (aggregated by page)
 │       │   └── ui.spec.ts
-│       ├── api/<resource>/        # API 测试（按资源聚合）
+│       ├── api/<resource>/        # API tests (aggregated by resource)
 │       │   └── api.spec.ts
-│       └── cli/<command>/         # CLI 测试（按命令聚合）
+│       └── cli/<command>/         # CLI tests (aggregated by command)
 │           └── cli.spec.ts
 ```
 
-### 项目根目录检测
+### Project Root Detection
 
-工具自动检测项目根目录，支持多种项目类型和 monorepo 结构：
+The tool automatically detects the project root, supporting multiple project types and monorepo structures:
 
-**检测优先级**（从高到低）：
-1. 环境变量：`CLAUDE_PROJECT_DIR` > `PROJECT_ROOT`
-2. Workspace 标记：`go.work`, `pnpm-workspace.yaml`, `lerna.json`, `turbo.json`, `nx.json`, `WORKSPACE`, `settings.gradle*`
-3. Project 标记：`go.mod`, `package.json`, `Cargo.toml`, `pyproject.toml`, `pom.xml`, `build.gradle*`
-4. VCS 边界：`.git`, `.hg`
+**Detection priority** (from highest to lowest):
+1. Environment variables: `CLAUDE_PROJECT_DIR` > `PROJECT_ROOT`
+2. Workspace markers: `go.work`, `pnpm-workspace.yaml`, `lerna.json`, `turbo.json`, `nx.json`, `WORKSPACE`, `settings.gradle*`
+3. Project markers: `go.mod`, `package.json`, `Cargo.toml`, `pyproject.toml`, `pom.xml`, `build.gradle*`
+4. VCS boundary: `.git`, `.hg`
 
-**支持的项目类型**：
+**Supported project types**:
 - Go (`go.mod`, `go.work`)
 - Node.js (`package.json`)
 - Rust (`Cargo.toml`)
@@ -172,32 +172,32 @@ project-root/
 - Java/Maven (`pom.xml`)
 - Java/Gradle (`build.gradle`, `settings.gradle`)
 - Bazel (`WORKSPACE`)
-- 通用 Git 仓库 (`.git`)
+- General Git repository (`.git`)
 
-**Feature 自动识别**：
-- Git worktree 名称 → feature slug
-- Git 分支名称 (如 `feature/auth-login`) → auth-login
-- 目录扫描（有 `tasks/process/state.json` 的 feature 优先）
+**Feature auto-detection**:
+- Git worktree name -> feature slug
+- Git branch name (e.g. `feature/auth-login`) -> auth-login
+- Directory scan (features with `tasks/process/state.json` take priority)
 
-**状态隔离**：每个 feature 的运行时状态存放在独立的 `docs/features/<slug>/tasks/process/` 目录下，避免多个 feature 状态冲突。
+**State isolation**: Each feature's runtime state is stored in its own `docs/features/<slug>/tasks/process/` directory, avoiding state conflicts across multiple features.
 
 ---
 
-## 数据模型
+## Data Models
 
 ### Task
 
 ```go
 type Task struct {
-    ID            string   `json:"id"`                      // 任务ID (如 "1.1")
-    Title         string   `json:"title"`                   // 任务标题
+    ID            string   `json:"id"`                      // Task ID (e.g. "1.1")
+    Title         string   `json:"title"`                   // Task title
     Priority      string   `json:"priority"`                // P0/P1/P2
-    EstimatedTime string   `json:"estimatedTime,omitempty"` // 预估时间
-    Dependencies  []string `json:"dependencies,omitempty"`  // 依赖任务ID列表
+    EstimatedTime string   `json:"estimatedTime,omitempty"` // Estimated time
+    Dependencies  []string `json:"dependencies,omitempty"`  // List of dependency task IDs
     Status        string   `json:"status"`                  // pending/in_progress/completed/blocked/skipped
-    File          string   `json:"file"`                    // 任务文件
-    Record        string   `json:"record"`                  // 记录文件
-    Breaking      bool     `json:"breaking,omitempty"`      // 全局性变更标记，完成后触发全量测试
+    File          string   `json:"file"`                    // Task file
+    Record        string   `json:"record"`                  // Record file
+    Breaking      bool     `json:"breaking,omitempty"`      // Global change flag; triggers full test suite on completion
 }
 ```
 
@@ -220,35 +220,35 @@ type TaskIndex struct {
 
 ---
 
-## 技术栈
+## Tech Stack
 
-| 组件 | 技术 |
-|------|------|
-| 语言 | Go 1.21 |
-| CLI 框架 | github.com/spf13/cobra |
-| 外部依赖 | 仅 cobra (极轻量) |
+| Component | Technology |
+|-----------|-----------|
+| Language | Go 1.21 |
+| CLI Framework | github.com/spf13/cobra |
+| External Dependencies | Only cobra (minimal footprint) |
 
 ---
 
-## 架构约束
+## Architecture Constraints
 
 ```
-依赖方向: cmd → internal → pkg (严禁反向)
-模块交互: 通过接口/类型定义，不直接依赖内部实现
+Dependency direction: cmd -> internal -> pkg (reverse strictly forbidden)
+Module interaction: via interfaces/type definitions, no direct dependency on internal implementations
 ```
 
-## 命令速查
+## Command Quick Reference
 
 ```bash
-task claim              # 声明下一个任务
-task record 1.1         # 生成任务记录
-task record 1.1 --force # 生成任务记录（跳过验证）
-task status 1.1         # 查询任务状态
-task status 1.1 done    # 更新状态
-task query 1.1          # 查询任务详情
-task feature auth       # 切换 feature
-task check              # 依赖检查
-task validate           # 验证 index.json
-task verifyCompletion   # 验证任务完成（git commit hook）
-task cleanup            # 清理已完成任务状态（stop hook）
+task claim              # Claim the next task
+task record 1.1         # Generate task record
+task record 1.1 --force # Generate task record (skip validation)
+task status 1.1         # Query task status
+task status 1.1 done    # Update status
+task query 1.1          # Query task details
+task feature auth       # Switch feature
+task check              # Dependency check
+task validate           # Validate index.json
+task verifyCompletion   # Verify task completion (git commit hook)
+task cleanup            # Clean up completed task state (stop hook)
 ```

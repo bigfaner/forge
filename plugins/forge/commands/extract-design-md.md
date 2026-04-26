@@ -3,15 +3,15 @@ name: extract-design-md
 description: Analyze a web app's visual style and generate a DESIGN.md for use with ui-design skill.
 argument-hints:
   - name: url
-    description: 要分析的 web 应用 URL（如 https://stripe.com）
+    description: Web application URL to analyze (e.g. https://stripe.com)
     required: false
 ---
 
 # /extract-design-md
 
-从 web 应用自动提取视觉风格，生成符合 forge 规范的 `DESIGN.md`，供 `ui-design` skill 直接消费。
+Auto-extract visual style from a web application and generate a forge-compatible `DESIGN.md` for direct consumption by the `ui-design` skill.
 
-**核心原则**：观察真实产品的视觉语言，提炼为可复用的设计系统规范。
+**Core principle**: Observe a real product's visual language and distill it into a reusable design system specification.
 
 ## Process Flow
 
@@ -21,49 +21,49 @@ argument-hints:
 
 ## Step 1: Get URL
 
-从命令参数或用户消息中提取目标 URL。若未提供，使用 `AskUserQuestion` 询问：
+Extract the target URL from command arguments or user message. If not provided, use `AskUserQuestion`:
 
-> 请提供要分析的 web 应用 URL（例如 https://stripe.com）
+> Please provide the web application URL to analyze (e.g. https://stripe.com)
 
-检查项目根目录是否已存在 `DESIGN.md`：
+Check if `DESIGN.md` already exists in the project root:
 
 ```bash
 ls DESIGN.md
 ```
 
-若已存在，使用 `AskUserQuestion` 询问是否覆盖：
+If it exists, use `AskUserQuestion` to ask whether to overwrite:
 
-> 项目根目录已存在 `DESIGN.md`，是否覆盖？
+> DESIGN.md already exists in the project root. Overwrite?
 
-- **Yes** → 继续
-- **No** → 中止，提示用户当前 `DESIGN.md` 将被 `ui-design` skill 自动使用
+- **Yes** → continue
+- **No** → abort, inform user that the current `DESIGN.md` will be used automatically by the `ui-design` skill
 
 ## Step 2: Analyze Visual Style
 
-目标维度：
+Target dimensions:
 
-| 维度 | 提取内容 |
-|------|---------|
-| Color palette | 背景色、主色/强调色、文字色（primary/secondary/tertiary）、边框色、语义色（success/warning/error） |
-| Typography | 字体族（font-family）、字重层级、字号层级（display/h1-h3/body/caption）、行高、字间距 |
-| Components | 按钮（形状/颜色/hover）、卡片（背景/边框/圆角/阴影）、输入框（边框/focus 状态）、导航（布局/active 状态） |
-| Layout | 最大内容宽度、网格列数、间距系统、section padding |
-| Depth & elevation | 阴影层级、模糊值、透明度用法 |
-| Design philosophy | 整体风格关键词（minimal/bold/elegant/playful/corporate 等） |
+| Dimension | What to Extract |
+|-----------|----------------|
+| Color palette | Background, primary/accent, text (primary/secondary/tertiary), border, semantic colors (success/warning/error) |
+| Typography | Font family, weight scale, size scale (display/h1-h3/body/caption), line height, letter spacing |
+| Components | Buttons (shape/color/hover), cards (background/border/radius/shadow), inputs (border/focus state), navigation (layout/active state) |
+| Layout | Max content width, grid columns, spacing system, section padding |
+| Depth & elevation | Shadow levels, blur values, opacity usage |
+| Design philosophy | Overall style keywords (minimal/bold/elegant/playful/corporate, etc.) |
 
-### 提取策略（按优先级）
+### Extraction Strategy (by priority)
 
-SPA（React/Vue 等）的样式不在 HTML 源码中，需按以下层次逐步提取，**每层成功则停止，不必执行后续层**：
+SPAs (React/Vue, etc.) have styles not in HTML source. Extract layer by layer — **stop at the first successful layer, no need to proceed further**:
 
-#### 层次 1：追踪 CSS bundle
+#### Layer 1: Trace CSS bundle
 
-用 `WebFetch` 抓取页面 HTML，从 `<link rel="stylesheet">` 提取 CSS 文件 URL（React 构建产物通常为 `/static/css/main.xxxxxx.css`），再 fetch 该 CSS 文件。
+Use `WebFetch` to get page HTML, extract CSS file URLs from `<link rel="stylesheet">` (React build output is typically `/static/css/main.xxxxxx.css`), then fetch that CSS file.
 
-CSS bundle 包含完整样式规则，是最直接的信息源。
+The CSS bundle contains complete style rules — the most direct information source.
 
-#### 层次 2：提取 CSS 自定义属性（设计 token）
+#### Layer 2: Extract CSS custom properties (design tokens)
 
-在 CSS bundle 中搜索 `:root` 块，现代设计系统几乎都用 CSS variables 存储 token：
+Search for `:root` blocks in the CSS bundle. Modern design systems almost always use CSS variables for tokens:
 
 ```css
 :root {
@@ -73,105 +73,105 @@ CSS bundle 包含完整样式规则，是最直接的信息源。
 }
 ```
 
-这些变量直接映射到 DESIGN.md 的各字段，是最高质量的信息源。
+These variables map directly to DESIGN.md fields — the highest quality information source.
 
-#### 层次 3：多页面采样
+#### Layer 3: Multi-page sampling
 
-单页可能只有 landing，缺少 form、card、table 等组件样式。额外 fetch 以下路径（若可公开访问）：
+A single page may only have landing content, missing form, card, table component styles. Fetch additional paths (if publicly accessible):
 
-- `/login` — 输入框、按钮
-- `/dashboard` 或 `/app` — 卡片、导航、数据展示
-- `/settings` — 表单、开关、分组
+- `/login` — inputs, buttons
+- `/dashboard` or `/app` — cards, navigation, data display
+- `/settings` — forms, toggles, grouped sections
 
-对比多页面提取结果，补全缺失的组件规范。
+Compare multi-page extraction results to fill in missing component specs.
 
-#### 层次 4：agent-browser 运行时提取（本地应用）
+#### Layer 4: agent-browser runtime extraction (local apps)
 
-若目标为本地运行的 SPA（如 `http://localhost:3000`），用 agent-browser 执行 JS 提取运行时计算样式：
+If the target is a locally running SPA (e.g. `http://localhost:3000`), use agent-browser to execute JS for runtime computed styles:
 
 ```
 ab('open <url>')
 ab('wait --load networkidle')
-// 提取 CSS 自定义属性
-ab('eval document.documentElement 获取 getComputedStyle 中所有 --color-* --font-* --radius-* 变量')
-// 提取关键组件的计算样式
-ab('eval 查找 button[class*="primary"] 并获取 backgroundColor borderRadius padding')
-ab('eval 查找 [class*="card"] 并获取 background border boxShadow borderRadius')
+// Extract CSS custom properties
+ab('eval document.documentElement getComputedStyle --color-* --font-* --radius-* variables')
+// Extract key component computed styles
+ab('eval find button[class*="primary"] get backgroundColor borderRadius padding')
+ab('eval find [class*="card"] get background border boxShadow borderRadius')
 ```
 
-#### 层次 5：视觉推断（兜底）
+#### Layer 5: Visual inference (fallback)
 
-前四层均无法获取具体值时，从页面的视觉描述、截图或 HTML 结构中推断。
+When none of the above layers can obtain specific values, infer from page visual descriptions, screenshots, or HTML structure.
 
-记录不确定的值，在输出中标注 `(estimated)`。
+Mark uncertain values with `(estimated)` in the output.
 
 ## Step 3: Match Strategy
 
-使用 `AskUserQuestion` 让用户选择生成策略：
+Use `AskUserQuestion` to let the user choose a generation strategy:
 
-| 选项 | 说明 |
-|------|------|
-| 匹配最接近的内置风格，基于它生成 | 识别最接近的内置风格（vercel/shadcn/tailwind-ui/stripe/apple），用提取的实际 token 覆盖差异 |
-| 完全从 web 应用提取，生成全新自定义风格 | 不参考内置风格，完全基于分析结果生成独立 DESIGN.md |
+| Option | Description |
+|--------|-------------|
+| Match closest built-in style, customize on top | Identify the closest built-in style (vercel/shadcn/tailwind-ui/stripe/apple), override differences with extracted actual tokens |
+| Fully custom from web app extraction | Generate an independent DESIGN.md entirely from analysis results, no built-in style reference |
 
-**若选"匹配内置"：**
+**If "match built-in" is chosen:**
 
-根据 Step 2 的分析结果，对照以下特征识别最接近的内置风格：
+Based on Step 2 analysis, match against these characteristics to identify the closest built-in style:
 
-| 内置风格 | 识别特征 |
-|---------|---------|
-| Vercel | 黑色背景、Geist 字体、无阴影、边框深度 |
-| Shadcn | Zinc 中性色、CSS 变量、深色模式支持、Tailwind 间距 |
-| Tailwind UI | Indigo 主色、白色背景、shadow-sm 系统、Inter 字体 |
-| Stripe | 紫色渐变按钮、浅灰背景(#f6f9fc)、weight-300 display |
-| Apple | 纯白背景、极大留白、SF Pro、圆角胶囊按钮 |
+| Built-in Style | Identifying Characteristics |
+|---------------|----------------------------|
+| Vercel | Black background, Geist font, no shadows, border depth |
+| Shadcn | Zinc neutrals, CSS variables, dark mode support, Tailwind spacing |
+| Tailwind UI | Indigo primary, white background, shadow-sm system, Inter font |
+| Stripe | Purple gradient buttons, light gray background (#f6f9fc), weight-300 display |
+| Apple | Pure white background, generous whitespace, SF Pro, rounded capsule buttons |
 
-读取对应的内置 style 文件：`plugins/forge/skills/ui-design/templates/styles/<name>.md`
+Read the corresponding built-in style file: `plugins/forge/skills/ui-design/templates/styles/<name>.md`
 
 ## Step 4: Build Design Tokens
 
-**若选"匹配内置"：**
+**If "match built-in" is chosen:**
 
-以内置 style 文件为基础，用 Step 2 提取的实际值覆盖差异项：
-- 替换颜色值为实际提取的 hex/rgb
-- 替换字体族为实际使用的字体
-- 替换圆角、间距等具体数值
-- 保留内置风格的 Do's/Don'ts 和 Signature Patterns 结构（可补充网站特有模式）
-- 在文件顶部注明：`Based on: <内置风格名> (customized from <URL>)`
+Use the built-in style file as a base, override differences with actual values from Step 2:
+- Replace color values with extracted hex/rgb
+- Replace font families with actually used fonts
+- Replace border-radius, spacing, and other specific values
+- Preserve the built-in style's Do's/Don'ts and Signature Patterns structure (can add site-specific patterns)
+- Add a note at the top: `Based on: <built-in style name> (customized from <URL>)`
 
-**若选"全新自定义"：**
+**If "fully custom" is chosen:**
 
-完全基于 Step 2 的分析结果构建所有 section，遵循内置 style 文件的结构规范。
+Build all sections entirely from Step 2 analysis results, following the structure conventions of built-in style files.
 
 ## Step 5: Write DESIGN.md
 
-将生成的设计系统写入项目根目录 `DESIGN.md`，格式如下：
+Write the design system to `DESIGN.md` in the project root:
 
 ```markdown
 # Design System: {{App Name or Domain}}
 
 > Extracted from: {{URL}}
 > Date: {{YYYY-MM-DD}}
-> Based on: {{内置风格名 or "Custom"}}
+> Based on: {{Built-in style name or "Custom"}}
 
 ## Visual Theme & Atmosphere
 
-{{2-3 句描述整体视觉风格、氛围和设计哲学}}
+{{2-3 sentences describing overall visual style, atmosphere, and design philosophy}}
 
 ## Color Palette
 
 | Role | Value | Usage |
 |------|-------|-------|
-| Background | #... | 页面主背景 |
-| Surface | #... | 卡片、面板背景 |
-| Border | #... | 分割线、输入框边框 |
-| Text Primary | #... | 主要文字 |
-| Text Secondary | #... | 次要文字、说明文字 |
-| Text Tertiary | #... | 占位符、禁用文字 |
-| Accent | #... | 主要交互色、CTA 按钮 |
-| Success | #... | 成功状态 |
-| Warning | #... | 警告状态 |
-| Error | #... | 错误状态 |
+| Background | #... | Page main background |
+| Surface | #... | Card, panel background |
+| Border | #... | Dividers, input borders |
+| Text Primary | #... | Primary text |
+| Text Secondary | #... | Secondary text, descriptions |
+| Text Tertiary | #... | Placeholders, disabled text |
+| Accent | #... | Primary interaction color, CTA buttons |
+| Success | #... | Success state |
+| Warning | #... | Warning state |
+| Error | #... | Error state |
 
 ## Typography
 
@@ -189,74 +189,74 @@ ab('eval 查找 [class*="card"] 并获取 background border boxShadow borderRadi
 
 ### Buttons
 
-- **Primary**: {{背景色、文字色、圆角、padding、hover 效果}}
-- **Secondary**: {{样式描述}}
-- **Ghost**: {{样式描述}}
-- **Sizes**: sm / md / lg 对应的 padding 和字号
+- **Primary**: {{background color, text color, border radius, padding, hover effect}}
+- **Secondary**: {{style description}}
+- **Ghost**: {{style description}}
+- **Sizes**: sm / md / lg corresponding padding and font size
 
 ### Cards
 
-- Background: {{值}}
-- Border: {{值}}
-- Border Radius: {{值}}
-- Padding: {{值}}
-- Shadow: {{值}}
-- Hover: {{hover 效果}}
+- Background: {{value}}
+- Border: {{value}}
+- Border Radius: {{value}}
+- Padding: {{value}}
+- Shadow: {{value}}
+- Hover: {{hover effect}}
 
 ### Inputs
 
-- Background: {{值}}
-- Border: {{值}}
-- Border Radius: {{值}}
-- Height: {{值}}
-- Padding: {{值}}
-- Focus: {{focus 状态描述}}
+- Background: {{value}}
+- Border: {{value}}
+- Border Radius: {{value}}
+- Height: {{value}}
+- Padding: {{value}}
+- Focus: {{focus state description}}
 
 ### Navigation
 
-- Layout: {{顶部导航 / 侧边栏 / 其他}}
-- Background: {{值}}
-- Active state: {{active 项样式}}
-- Responsive: {{移动端行为}}
+- Layout: {{top nav / sidebar / other}}
+- Background: {{value}}
+- Active state: {{active item style}}
+- Responsive: {{mobile behavior}}
 
 ## Layout
 
-- Max content width: {{值}}
-- Grid: {{列数}} columns, {{gap}} gap
+- Max content width: {{value}}
+- Grid: {{columns}} columns, {{gap}} gap
 - Section padding: {{desktop}} desktop / {{mobile}} mobile
-- Component spacing: {{间距系统描述}}
+- Component spacing: {{spacing system description}}
 
 ## Depth & Elevation
 
 | Level | Shadow | Usage |
 |-------|--------|-------|
-| 0 | none | 平面元素 |
-| 1 | {{值}} | 卡片、下拉菜单 |
-| 2 | {{值}} | 模态框、弹出层 |
+| 0 | none | Flat elements |
+| 1 | {{value}} | Cards, dropdowns |
+| 2 | {{value}} | Modals, popovers |
 
 ## Do's and Don'ts
 
 | Do | Don't |
 |----|-------|
-| {{正确做法}} | {{错误做法}} |
+| {{correct practice}} | {{incorrect practice}} |
 
 ## Responsive Behavior
 
 | Breakpoint | Behavior |
 |-----------|---------|
-| Mobile (<768px) | {{描述}} |
-| Tablet (768-1024px) | {{描述}} |
-| Desktop (>1024px) | {{描述}} |
+| Mobile (<768px) | {{description}} |
+| Tablet (768-1024px) | {{description}} |
+| Desktop (>1024px) | {{description}} |
 
 ## Signature Patterns
 
-{{该设计系统的标志性视觉模式，2-5 条}}
+{{2-5 signature visual patterns of this design system}}
 ```
 
 ## Step 6: Confirm & Next Step
 
-输出完成提示：
+Output completion message:
 
 ```
-✓ DESIGN.md 已写入项目根目录
+DESIGN.md written to project root
 ```
