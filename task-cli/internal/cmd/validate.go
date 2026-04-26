@@ -289,43 +289,44 @@ func (v *validator) validateGateIntegrity(tasks map[string]task.Task) {
 			continue
 		}
 
-		// Gate must depend on previous phase's summary
-		prevSummary := fmt.Sprintf("%d.summary", phase-1)
-		hasPrevSummary := false
+		// Gate N.gate is phase N's exit gate — must depend on N.summary
+		ownSummary := fmt.Sprintf("%d.summary", phase)
+		hasOwnSummary := false
 		for _, t := range tasks {
-			if t.ID == prevSummary {
-				hasPrevSummary = true
+			if t.ID == ownSummary {
+				hasOwnSummary = true
 				break
 			}
 		}
-		if hasPrevSummary {
+		if hasOwnSummary {
 			found := false
 			for _, dep := range tasks[g.key].Dependencies {
-				if dep == prevSummary {
+				if dep == ownSummary {
 					found = true
 					break
 				}
-				// Also accept wildcard that covers the previous phase summary
+				// Also accept wildcard that covers own phase summary
 				if strings.HasSuffix(dep, ".x") {
 					prefix := strings.TrimSuffix(dep, ".x") + "."
-					if strings.HasPrefix(prevSummary, prefix) {
+					if strings.HasPrefix(ownSummary, prefix) {
 						found = true
 						break
 					}
 				}
 			}
 			if !found {
-				v.errors = append(v.errors, fmt.Sprintf("Gate '%s' (%s): must depend on previous phase summary '%s'", g.key, g.id, prevSummary))
+				v.errors = append(v.errors, fmt.Sprintf("Gate '%s' (%s): must depend on own phase summary '%s'", g.key, g.id, ownSummary))
 			}
 		}
 
 		// Next phase's business tasks must depend on this gate
 		gateID := g.id
+		nextPhase := phase + 1
 		for key, t := range tasks {
 			if !isBusinessTask(t.ID) {
 				continue
 			}
-			if getTaskPhase(t.ID) != phase {
+			if getTaskPhase(t.ID) != nextPhase {
 				continue
 			}
 			// Check if this business task depends on the gate
@@ -371,8 +372,8 @@ func (v *validator) validatePhaseOrder(tasks map[string]task.Task) {
 		}
 		hasCrossPhaseDep := false
 		for _, dep := range t.Dependencies {
-			// Depending on a gate in the same phase satisfies cross-phase ordering
-			// because V2 ensures gates depend on the previous phase's summary.
+			// Depending on a gate satisfies cross-phase ordering because gate N.gate
+			// (phase N) depends on N.summary, and the current task is in a later phase.
 			if gateIDs[dep] {
 				hasCrossPhaseDep = true
 				break
