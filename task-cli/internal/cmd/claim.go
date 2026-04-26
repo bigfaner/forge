@@ -239,7 +239,7 @@ func checkDependenciesMet(index *task.TaskIndex, selfID string, t task.Task) (bo
 				if other.ID == selfID {
 					continue
 				}
-				if strings.HasPrefix(other.ID, prefixWithDot) && other.Status != "completed" {
+				if strings.HasPrefix(other.ID, prefixWithDot) && isBusinessTask(other.ID) && other.Status != "completed" {
 					unmet = append(unmet, other.ID)
 					found = true
 				}

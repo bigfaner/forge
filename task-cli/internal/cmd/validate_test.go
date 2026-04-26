@@ -139,7 +139,7 @@ func TestValidator_ValidateDependencies(t *testing.T) {
 				"task1": {ID: "1.1", Dependencies: []string{"9.x"}},
 			},
 			wantErrors:      1,
-			wantErrContains: []string{"wildcard '9.x' matches nothing"},
+			wantErrContains: []string{"wildcard '9.x' matches no business tasks"},
 		},
 		{
 			name: "multiple missing dependencies",
@@ -147,6 +147,37 @@ func TestValidator_ValidateDependencies(t *testing.T) {
 				"task1": {ID: "1.1", Dependencies: []string{"0.1", "0.2"}},
 			},
 			wantErrors: 2,
+		},
+		{
+			name: "wildcard skips .gate and .summary tasks",
+			tasks: map[string]task.Task{
+				"task1":   {ID: "1.1"},
+				"gate":    {ID: "1.gate", Breaking: true},
+				"summary": {ID: "1.summary"},
+				"task2":   {ID: "2.1", Dependencies: []string{"1.x"}},
+			},
+			wantErrors: 0,
+		},
+		{
+			name: "wildcard matches nothing when only .gate and .summary exist",
+			tasks: map[string]task.Task{
+				"gate":    {ID: "1.gate", Breaking: true},
+				"summary": {ID: "1.summary"},
+				"task2":   {ID: "2.1", Dependencies: []string{"1.x"}},
+			},
+			wantErrors:      1,
+			wantErrContains: []string{"wildcard '1.x' matches no business tasks"},
+		},
+		{
+			name: "wildcard matches only business tasks even with gate/summary present",
+			tasks: map[string]task.Task{
+				"task1":   {ID: "1.1"},
+				"task1b":  {ID: "1.2"},
+				"gate":    {ID: "1.gate", Breaking: true},
+				"summary": {ID: "1.summary"},
+				"task2":   {ID: "2.1", Dependencies: []string{"1.x"}},
+			},
+			wantErrors: 0,
 		},
 	}
 
@@ -555,19 +586,19 @@ func TestValidator_ValidateWildcardSelfDeps(t *testing.T) {
 			wantWarnings: 0,
 		},
 		{
-			name:            "single task with self-only wildcard -> ERROR",
+			name:            "single business task with self-only wildcard -> ERROR",
 			tasks:           map[string]task.Task{
-				"summary": {ID: "1.summary", Dependencies: []string{"1.x"}},
+				"task1": {ID: "1.1", Dependencies: []string{"1.x"}},
 			},
 			wantErrors:      1,
 			wantWarnings:    0,
-			wantErrContains: []string{"only matches itself", "1.summary", "1.x"},
+			wantErrContains: []string{"only matches itself", "1.1", "1.x"},
 		},
 		{
 			name:             "wildcard matches self + 1 other -> WARNING",
 			tasks:            map[string]task.Task{
-				"task1":   {ID: "1.1"},
-				"summary": {ID: "1.summary", Dependencies: []string{"1.x"}},
+				"task1": {ID: "1.1", Dependencies: []string{"1.x"}},
+				"task2": {ID: "1.2"},
 			},
 			wantErrors:       0,
 			wantWarnings:     1,
@@ -576,10 +607,10 @@ func TestValidator_ValidateWildcardSelfDeps(t *testing.T) {
 		{
 			name:             "wildcard matches self + many others -> WARNING",
 			tasks:            map[string]task.Task{
-				"task1":   {ID: "1.1"},
-				"task2":   {ID: "1.2"},
-				"task3":   {ID: "1.3"},
-				"summary": {ID: "1.summary", Dependencies: []string{"1.x"}},
+				"task1": {ID: "1.1", Dependencies: []string{"1.x"}},
+				"task2": {ID: "1.2"},
+				"task3": {ID: "1.3"},
+				"task4": {ID: "1.4"},
 			},
 			wantErrors:       0,
 			wantWarnings:     1,
@@ -588,8 +619,8 @@ func TestValidator_ValidateWildcardSelfDeps(t *testing.T) {
 		{
 			name: "multiple tasks with wildcard self-match -> multiple errors",
 			tasks: map[string]task.Task{
-				"s1": {ID: "1.summary", Dependencies: []string{"1.x"}},
-				"s2": {ID: "2.summary", Dependencies: []string{"2.x"}},
+				"s1": {ID: "1.1", Dependencies: []string{"1.x"}},
+				"s2": {ID: "2.1", Dependencies: []string{"2.x"}},
 			},
 			wantErrors:   2,
 			wantWarnings: 0,
@@ -597,31 +628,30 @@ func TestValidator_ValidateWildcardSelfDeps(t *testing.T) {
 		{
 			name: "mixed: exact + wildcard deps, wildcard self-matches",
 			tasks: map[string]task.Task{
-				"task1":   {ID: "1.1"},
-				"summary": {ID: "1.summary", Dependencies: []string{"1.1", "1.x"}},
+				"task1": {ID: "1.1"},
+				"task2": {ID: "1.2", Dependencies: []string{"1.1", "1.x"}},
 			},
 			wantErrors:   0,
 			wantWarnings: 1,
 		},
-		// Gate/summary compat: gate as wildcard match target
+		// Non-business tasks using wildcard: excluded from self-dep check
 		{
-			name:             "summary wildcard with gate as other match -> WARNING",
-			tasks:            map[string]task.Task{
-				"task1":   {ID: "1.1", Dependencies: []string{}},
-				"gate":    {ID: "1.gate", Breaking: true, Dependencies: []string{}},
+			name: "summary with wildcard -> no self-match (non-business)",
+			tasks: map[string]task.Task{
+				"task1":   {ID: "1.1"},
 				"summary": {ID: "1.summary", Dependencies: []string{"1.x"}},
 			},
-			wantErrors:       0,
-			wantWarnings:     1,
-			wantWarnContains: []string{"matches itself plus 2 others"},
+			wantErrors:   0,
+			wantWarnings: 0,
 		},
 		{
-			name: "gate with wildcard on own phase -> self-only ERROR",
+			name: "gate with wildcard -> no self-match (non-business)",
 			tasks: map[string]task.Task{
-				"gate": {ID: "2.gate", Breaking: true, Dependencies: []string{"2.x"}},
+				"task1": {ID: "1.1"},
+				"gate":  {ID: "1.gate", Breaking: true, Dependencies: []string{"1.x"}},
 			},
-			wantErrors:      1,
-			wantErrContains: []string{"only matches itself"},
+			wantErrors:   0,
+			wantWarnings: 0,
 		},
 	}
 
@@ -739,14 +769,15 @@ func TestValidator_ValidateGateIntegrity(t *testing.T) {
 			wantErrors: 0,
 		},
 		{
-			name: "next phase task uses wildcard including gate -> PASS",
+			name: "next phase task wildcard does NOT satisfy gate dep -> ERROR",
 			tasks: map[string]task.Task{
 				"summary1": {ID: "1.summary"},
 				"summary2": {ID: "2.summary"},
 				"gate":     {ID: "2.gate", Breaking: true, Dependencies: []string{"2.summary"}},
 				"task3":    {ID: "3.1", Dependencies: []string{"2.x"}},
 			},
-			wantErrors: 0,
+			wantErrors:      1,
+			wantErrContains: []string{"must depend on gate '2.gate'"},
 		},
 		{
 			name: "multiple gates at different phases",
@@ -785,14 +816,15 @@ func TestValidator_ValidateGateIntegrity(t *testing.T) {
 		},
 		// Wildcard dep on own phase summary
 		{
-			name: "gate depends on own phase via wildcard covering summary -> PASS",
+			name: "gate wildcard does NOT satisfy own summary dep -> ERROR",
 			tasks: map[string]task.Task{
 				"task1":    {ID: "1.1"},
 				"summary1": {ID: "1.summary"},
 				"gate":     {ID: "1.gate", Breaking: true, Dependencies: []string{"1.x"}},
 				"task2":    {ID: "2.1", Dependencies: []string{"1.gate"}},
 			},
-			wantErrors: 0,
+			wantErrors:      1,
+			wantErrContains: []string{"must depend on own phase summary '1.summary'"},
 		},
 		{
 			name: "gate depends on unrelated wildcard but not own summary -> ERROR",
@@ -804,6 +836,37 @@ func TestValidator_ValidateGateIntegrity(t *testing.T) {
 			},
 			wantErrors:      1,
 			wantErrContains: []string{"must depend on own phase summary '1.summary'"},
+		},
+		{
+			name: "gate with explicit summary dep + wildcard on same phase -> PASS",
+			tasks: map[string]task.Task{
+				"task1":    {ID: "1.1"},
+				"summary1": {ID: "1.summary"},
+				"gate":     {ID: "1.gate", Breaking: true, Dependencies: []string{"1.summary", "1.x"}},
+				"task2":    {ID: "2.1", Dependencies: []string{"1.gate"}},
+			},
+			wantErrors: 0,
+		},
+		{
+			name: "next phase task must have explicit gate dep, wildcard alone fails",
+			tasks: map[string]task.Task{
+				"task1":    {ID: "1.1"},
+				"summary1": {ID: "1.summary"},
+				"gate":     {ID: "1.gate", Breaking: true, Dependencies: []string{"1.summary"}},
+				"task2":    {ID: "2.1", Dependencies: []string{"1.x"}},
+			},
+			wantErrors:      1,
+			wantErrContains: []string{"must depend on gate '1.gate'"},
+		},
+		{
+			name: "next phase task with explicit gate + wildcard -> PASS",
+			tasks: map[string]task.Task{
+				"task1":    {ID: "1.1"},
+				"summary1": {ID: "1.summary"},
+				"gate":     {ID: "1.gate", Breaking: true, Dependencies: []string{"1.summary"}},
+				"task2":    {ID: "2.1", Dependencies: []string{"1.gate", "1.x"}},
+			},
+			wantErrors: 0,
 		},
 	}
 
@@ -978,6 +1041,25 @@ func TestValidator_ValidatePhaseOrder(t *testing.T) {
 				"task2b":   {ID: "2.2", Dependencies: []string{"1.gate"}},
 			},
 			wantWarnings: 0,
+		},
+		{
+			name:         "phase 2 wildcard skips gate and summary in matching",
+			tasks:        map[string]task.Task{
+				"task1":    {ID: "1.1"},
+				"summary1": {ID: "1.summary"},
+				"gate1":    {ID: "1.gate", Breaking: true, Dependencies: []string{"1.summary"}},
+				"task2":    {ID: "2.1", Dependencies: []string{"1.x"}},
+			},
+			wantWarnings: 0,
+		},
+		{
+			name:         "phase 2 with same-phase wildcard only -> WARNING",
+			tasks:        map[string]task.Task{
+				"task2a": {ID: "2.1"},
+				"task2b": {ID: "2.2", Dependencies: []string{"2.x"}},
+			},
+			wantWarnings:     2,
+			wantWarnContains: []string{"no dependency on previous phase"},
 		},
 	}
 
