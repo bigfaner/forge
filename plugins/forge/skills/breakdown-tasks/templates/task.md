@@ -5,6 +5,7 @@ priority: "{{PRIORITY}}"
 estimated_time: "{{ESTIMATED_TIME}}"
 dependencies: [{{DEPENDENCIES}}]
 status: pending
+breaking: false
 ---
 
 # {{ID}}: {{TITLE}}
