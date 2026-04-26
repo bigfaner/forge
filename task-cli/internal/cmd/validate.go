@@ -142,12 +142,12 @@ func (v *validator) validateDependencies(tasks map[string]task.Task) {
 				prefix := strings.TrimSuffix(dep, ".x") + "."
 				var matches []string
 				for id := range taskIDs {
-					if strings.HasPrefix(id, prefix) {
+					if strings.HasPrefix(id, prefix) && isBusinessTask(id) {
 						matches = append(matches, id)
 					}
 				}
 				if len(matches) == 0 {
-					v.errors = append(v.errors, fmt.Sprintf("Task '%s': wildcard '%s' matches nothing", key, dep))
+					v.errors = append(v.errors, fmt.Sprintf("Task '%s': wildcard '%s' matches no business tasks", key, dep))
 				}
 			} else {
 				if !taskIDs[dep] {
@@ -249,13 +249,13 @@ func (v *validator) validateWildcardSelfDeps(tasks map[string]task.Task) {
 				continue
 			}
 			prefix := strings.TrimSuffix(dep, ".x") + "."
-			if !strings.HasPrefix(t.ID, prefix) {
+			if !strings.HasPrefix(t.ID, prefix) || !isBusinessTask(t.ID) {
 				continue
 			}
-			// This task's own ID matches the wildcard. Check if other tasks also match.
+			// This task's own ID matches the wildcard. Check if other business tasks also match.
 			others := 0
 			for _, other := range tasks {
-				if other.ID != t.ID && strings.HasPrefix(other.ID, prefix) {
+				if other.ID != t.ID && strings.HasPrefix(other.ID, prefix) && isBusinessTask(other.ID) {
 					others++
 				}
 			}
@@ -305,14 +305,6 @@ func (v *validator) validateGateIntegrity(tasks map[string]task.Task) {
 					found = true
 					break
 				}
-				// Also accept wildcard that covers own phase summary
-				if strings.HasSuffix(dep, ".x") {
-					prefix := strings.TrimSuffix(dep, ".x") + "."
-					if strings.HasPrefix(ownSummary, prefix) {
-						found = true
-						break
-					}
-				}
 			}
 			if !found {
 				v.errors = append(v.errors, fmt.Sprintf("Gate '%s' (%s): must depend on own phase summary '%s'", g.key, g.id, ownSummary))
@@ -335,14 +327,6 @@ func (v *validator) validateGateIntegrity(tasks map[string]task.Task) {
 				if dep == gateID {
 					dependsOnGate = true
 					break
-				}
-				// Also check wildcard that would include the gate
-				if strings.HasSuffix(dep, ".x") {
-					prefix := strings.TrimSuffix(dep, ".x") + "."
-					if strings.HasPrefix(gateID, prefix) {
-						dependsOnGate = true
-						break
-					}
 				}
 			}
 			if !dependsOnGate {
@@ -383,19 +367,8 @@ func (v *validator) validatePhaseOrder(tasks map[string]task.Task) {
 				hasCrossPhaseDep = true
 				break
 			}
-			// Check wildcard deps for cross-phase or gate inclusion
+			// Check wildcard deps for cross-phase ordering
 			if strings.HasSuffix(dep, ".x") {
-				prefix := strings.TrimSuffix(dep, ".x") + "."
-				// Wildcard covers a gate in the same phase
-				for gateID := range gateIDs {
-					if strings.HasPrefix(gateID, prefix) {
-						hasCrossPhaseDep = true
-						break
-					}
-				}
-				if hasCrossPhaseDep {
-					break
-				}
 				if wp, err := strconv.Atoi(strings.TrimSuffix(dep, ".x")); err == nil && wp < phase {
 					hasCrossPhaseDep = true
 					break

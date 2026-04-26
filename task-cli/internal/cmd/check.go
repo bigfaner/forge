@@ -69,7 +69,7 @@ func runCheck(cmd *cobra.Command, args []string) {
 
 				var matches []string
 				for id := range taskIDs {
-					if strings.HasPrefix(id, prefixWithDot) {
+					if strings.HasPrefix(id, prefixWithDot) && isBusinessTask(id) {
 						matches = append(matches, id)
 					}
 				}

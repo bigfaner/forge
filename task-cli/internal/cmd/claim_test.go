@@ -217,6 +217,34 @@ func TestCheckDependenciesMet(t *testing.T) {
 			},
 			false,
 		},
+		{
+			"wildcard skips .gate and .summary tasks",
+			task.Task{ID: "2.1", Dependencies: []string{"1.x"}},
+			map[string]task.Task{
+				"task1":   {ID: "1.1", Status: "completed"},
+				"gate":    {ID: "1.gate", Breaking: true, Status: "pending"},
+				"summary": {ID: "1.summary", Status: "pending"},
+			},
+			true,
+		},
+		{
+			"wildcard skips .gate even when gate is unmet",
+			task.Task{ID: "2.1", Dependencies: []string{"1.x"}},
+			map[string]task.Task{
+				"task1": {ID: "1.1", Status: "completed"},
+				"gate":  {ID: "1.gate", Breaking: true, Status: "pending"},
+			},
+			true,
+		},
+		{
+			"wildcard fails when business task is unmet despite gate completed",
+			task.Task{ID: "2.1", Dependencies: []string{"1.x"}},
+			map[string]task.Task{
+				"task1": {ID: "1.1", Status: "pending"},
+				"gate":  {ID: "1.gate", Breaking: true, Status: "completed"},
+			},
+			false,
+		},
 	}
 
 	for _, tt := range tests {
