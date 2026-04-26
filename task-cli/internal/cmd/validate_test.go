@@ -498,6 +498,614 @@ func TestValidStatusAndPriority(t *testing.T) {
 	}
 }
 
+func TestIsBusinessTask(t *testing.T) {
+	tests := []struct {
+		id   string
+		want bool
+	}{
+		{"1.1", true},
+		{"2.3.1", true},
+		{"1.gate", false},
+		{"1.summary", false},
+		{"10.gate", false},
+		{"10.summary", false},
+	}
+	for _, tt := range tests {
+		if got := isBusinessTask(tt.id); got != tt.want {
+			t.Errorf("isBusinessTask(%q) = %v, want %v", tt.id, got, tt.want)
+		}
+	}
+}
+
+// --- V1: Wildcard self-dependency ---
+
+func TestValidator_ValidateWildcardSelfDeps(t *testing.T) {
+	tests := []struct {
+		name             string
+		tasks            map[string]task.Task
+		wantErrors       int
+		wantWarnings     int
+		wantErrContains  []string
+		wantWarnContains []string
+	}{
+		{
+			name:         "no deps at all",
+			tasks:        map[string]task.Task{
+				"task1": {ID: "1.1"},
+			},
+			wantErrors:   0,
+			wantWarnings: 0,
+		},
+		{
+			name:         "only non-wildcard deps",
+			tasks:        map[string]task.Task{
+				"task1": {ID: "1.1", Dependencies: []string{"1.0"}},
+				"task0": {ID: "1.0"},
+			},
+			wantErrors:   0,
+			wantWarnings: 0,
+		},
+		{
+			name:         "wildcard on different phase -> skip",
+			tasks:        map[string]task.Task{
+				"task1": {ID: "1.1", Dependencies: []string{"2.x"}},
+				"task2": {ID: "2.1"},
+			},
+			wantErrors:   0,
+			wantWarnings: 0,
+		},
+		{
+			name:            "single task with self-only wildcard -> ERROR",
+			tasks:           map[string]task.Task{
+				"summary": {ID: "1.summary", Dependencies: []string{"1.x"}},
+			},
+			wantErrors:      1,
+			wantWarnings:    0,
+			wantErrContains: []string{"only matches itself", "1.summary", "1.x"},
+		},
+		{
+			name:             "wildcard matches self + 1 other -> WARNING",
+			tasks:            map[string]task.Task{
+				"task1":   {ID: "1.1"},
+				"summary": {ID: "1.summary", Dependencies: []string{"1.x"}},
+			},
+			wantErrors:       0,
+			wantWarnings:     1,
+			wantWarnContains: []string{"matches itself plus 1 others"},
+		},
+		{
+			name:             "wildcard matches self + many others -> WARNING",
+			tasks:            map[string]task.Task{
+				"task1":   {ID: "1.1"},
+				"task2":   {ID: "1.2"},
+				"task3":   {ID: "1.3"},
+				"summary": {ID: "1.summary", Dependencies: []string{"1.x"}},
+			},
+			wantErrors:       0,
+			wantWarnings:     1,
+			wantWarnContains: []string{"matches itself plus 3 others"},
+		},
+		{
+			name: "multiple tasks with wildcard self-match -> multiple errors",
+			tasks: map[string]task.Task{
+				"s1": {ID: "1.summary", Dependencies: []string{"1.x"}},
+				"s2": {ID: "2.summary", Dependencies: []string{"2.x"}},
+			},
+			wantErrors:   2,
+			wantWarnings: 0,
+		},
+		{
+			name: "mixed: exact + wildcard deps, wildcard self-matches",
+			tasks: map[string]task.Task{
+				"task1":   {ID: "1.1"},
+				"summary": {ID: "1.summary", Dependencies: []string{"1.1", "1.x"}},
+			},
+			wantErrors:   0,
+			wantWarnings: 1,
+		},
+		// Gate/summary compat: gate as wildcard match target
+		{
+			name:             "summary wildcard with gate as other match -> WARNING",
+			tasks:            map[string]task.Task{
+				"task1":   {ID: "1.1", Dependencies: []string{}},
+				"gate":    {ID: "1.gate", Breaking: true, Dependencies: []string{}},
+				"summary": {ID: "1.summary", Dependencies: []string{"1.x"}},
+			},
+			wantErrors:       0,
+			wantWarnings:     1,
+			wantWarnContains: []string{"matches itself plus 2 others"},
+		},
+		{
+			name: "gate with wildcard on own phase -> self-only ERROR",
+			tasks: map[string]task.Task{
+				"gate": {ID: "2.gate", Breaking: true, Dependencies: []string{"2.x"}},
+			},
+			wantErrors:      1,
+			wantErrContains: []string{"only matches itself"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := &validator{}
+			v.validateWildcardSelfDeps(tt.tasks)
+			if len(v.errors) != tt.wantErrors {
+				t.Errorf("errors: got %d, want %d\n%v", len(v.errors), tt.wantErrors, v.errors)
+			}
+			if len(v.warnings) != tt.wantWarnings {
+				t.Errorf("warnings: got %d, want %d\n%v", len(v.warnings), tt.wantWarnings, v.warnings)
+			}
+			for _, want := range tt.wantErrContains {
+				found := false
+				for _, e := range v.errors {
+					if contains(e, want) {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("missing error containing %q in %v", want, v.errors)
+				}
+			}
+			for _, want := range tt.wantWarnContains {
+				found := false
+				for _, w := range v.warnings {
+					if contains(w, want) {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("missing warning containing %q in %v", want, v.warnings)
+				}
+			}
+		})
+	}
+}
+
+// --- V2: Gate integrity ---
+
+func TestValidator_ValidateGateIntegrity(t *testing.T) {
+	tests := []struct {
+		name            string
+		tasks           map[string]task.Task
+		wantErrors      int
+		wantErrContains []string
+	}{
+		{
+			name:  "no gates at all -> PASS",
+			tasks: map[string]task.Task{
+				"task1": {ID: "1.1"},
+			},
+			wantErrors: 0,
+		},
+		{
+			name: "gate without ID suffix is ignored",
+			tasks: map[string]task.Task{
+				"notgate": {ID: "2.something", Breaking: true},
+			},
+			wantErrors: 0,
+		},
+		{
+			name: "gate not breaking is ignored",
+			tasks: map[string]task.Task{
+				"gate":  {ID: "2.gate", Breaking: false},
+				"task2": {ID: "2.1", Dependencies: []string{}},
+			},
+			wantErrors: 0,
+		},
+		{
+			name: "gate at phase 1 has no prev summary -> no summary error",
+			tasks: map[string]task.Task{
+				"gate":  {ID: "1.gate", Breaking: true, Dependencies: []string{}},
+				"task1": {ID: "1.1", Dependencies: []string{"1.gate"}},
+			},
+			wantErrors: 0,
+		},
+		{
+			name: "gate missing prev summary dep -> ERROR",
+			tasks: map[string]task.Task{
+				"summary1": {ID: "1.summary"},
+				"gate":     {ID: "2.gate", Breaking: true, Dependencies: []string{}},
+			},
+			wantErrors:      1,
+			wantErrContains: []string{"must depend on previous phase summary '1.summary'"},
+		},
+		{
+			name: "gate depends on prev summary -> OK, but business task missing gate -> ERROR",
+			tasks: map[string]task.Task{
+				"summary1": {ID: "1.summary"},
+				"gate":     {ID: "2.gate", Breaking: true, Dependencies: []string{"1.summary"}},
+				"task2a":   {ID: "2.1", Dependencies: []string{}},
+				"task2b":   {ID: "2.2", Dependencies: []string{"2.gate"}},
+			},
+			wantErrors:      1,
+			wantErrContains: []string{"must depend on gate '2.gate'", "2.1"},
+		},
+		{
+			name: "fully correct chain -> PASS",
+			tasks: map[string]task.Task{
+				"task1":    {ID: "1.1"},
+				"summary1": {ID: "1.summary"},
+				"gate":     {ID: "2.gate", Breaking: true, Dependencies: []string{"1.summary"}},
+				"task2":    {ID: "2.1", Dependencies: []string{"2.gate"}},
+				"summary2": {ID: "2.summary"},
+			},
+			wantErrors: 0,
+		},
+		{
+			name: "business task uses wildcard including gate -> PASS",
+			tasks: map[string]task.Task{
+				"summary1": {ID: "1.summary"},
+				"gate":     {ID: "2.gate", Breaking: true, Dependencies: []string{"1.summary"}},
+				"task2":    {ID: "2.1", Dependencies: []string{"2.x"}},
+			},
+			wantErrors: 0,
+		},
+		{
+			name: "multiple gates at different phases",
+			tasks: map[string]task.Task{
+				"summary1": {ID: "1.summary"},
+				"gate2":    {ID: "2.gate", Breaking: true, Dependencies: []string{"1.summary"}},
+				"task2":    {ID: "2.1", Dependencies: []string{"2.gate"}},
+				"summary2": {ID: "2.summary"},
+				"gate3":    {ID: "3.gate", Breaking: true, Dependencies: []string{"2.summary"}},
+				"task3":    {ID: "3.1", Dependencies: []string{"3.gate"}},
+			},
+			wantErrors: 0,
+		},
+		{
+			name: "multiple gates, second gate broken",
+			tasks: map[string]task.Task{
+				"summary1": {ID: "1.summary"},
+				"gate2":    {ID: "2.gate", Breaking: true, Dependencies: []string{"1.summary"}},
+				"task2":    {ID: "2.1", Dependencies: []string{"2.gate"}},
+				"summary2": {ID: "2.summary"},
+				"gate3":    {ID: "3.gate", Breaking: true, Dependencies: []string{}},
+				"task3":    {ID: "3.1", Dependencies: []string{}},
+			},
+			wantErrors:      2,
+			wantErrContains: []string{"must depend on previous phase summary '2.summary'", "must depend on gate '3.gate'"},
+		},
+		{
+			name: "gate phase 0 -> skipped (non-numeric prefix)",
+			tasks: map[string]task.Task{
+				"gate":  {ID: "abc.gate", Breaking: true, Dependencies: []string{}},
+				"task1": {ID: "abc.1", Dependencies: []string{}},
+			},
+			wantErrors: 0,
+		},
+		// Gate/summary compat: wildcard dep on prev phase
+		{
+			name: "gate depends on prev phase via wildcard covering summary -> PASS",
+			tasks: map[string]task.Task{
+				"task1":    {ID: "1.1"},
+				"summary1": {ID: "1.summary"},
+				"gate":     {ID: "2.gate", Breaking: true, Dependencies: []string{"1.x"}},
+				"task2":    {ID: "2.1", Dependencies: []string{"2.gate"}},
+			},
+			wantErrors: 0,
+		},
+		{
+			name: "gate depends on unrelated wildcard but not summary -> ERROR",
+			tasks: map[string]task.Task{
+				"task1":    {ID: "1.1"},
+				"summary1": {ID: "1.summary"},
+				"gate":     {ID: "2.gate", Breaking: true, Dependencies: []string{"3.x"}},
+				"task2":    {ID: "2.1", Dependencies: []string{"2.gate"}},
+			},
+			wantErrors:      1,
+			wantErrContains: []string{"must depend on previous phase summary '1.summary'"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := &validator{}
+			v.validateGateIntegrity(tt.tasks)
+			if len(v.errors) != tt.wantErrors {
+				t.Errorf("errors: got %d, want %d\n%v", len(v.errors), tt.wantErrors, v.errors)
+			}
+			for _, want := range tt.wantErrContains {
+				found := false
+				for _, e := range v.errors {
+					if contains(e, want) {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("missing error containing %q in %v", want, v.errors)
+				}
+			}
+		})
+	}
+}
+
+// --- V3: Phase order sanity ---
+
+func TestValidator_ValidatePhaseOrder(t *testing.T) {
+	tests := []struct {
+		name             string
+		tasks            map[string]task.Task
+		wantWarnings     int
+		wantWarnContains []string
+	}{
+		{
+			name:         "phase 1 with empty deps -> no warning",
+			tasks:        map[string]task.Task{
+				"task1": {ID: "1.1", Dependencies: []string{}},
+			},
+			wantWarnings: 0,
+		},
+		{
+			name:         "phase 1 with deps -> no warning",
+			tasks:        map[string]task.Task{
+				"task0": {ID: "1.0"},
+				"task1": {ID: "1.1", Dependencies: []string{"1.0"}},
+			},
+			wantWarnings: 0,
+		},
+		{
+			name:         "phase 2 with cross-phase exact dep -> no warning",
+			tasks:        map[string]task.Task{
+				"task1": {ID: "1.1"},
+				"task2": {ID: "2.1", Dependencies: []string{"1.1"}},
+			},
+			wantWarnings: 0,
+		},
+		{
+			name:         "phase 2 with cross-phase wildcard dep -> no warning",
+			tasks:        map[string]task.Task{
+				"task1": {ID: "1.1"},
+				"task2": {ID: "2.1", Dependencies: []string{"1.x"}},
+			},
+			wantWarnings: 0,
+		},
+		{
+			name:         "phase 3 with wildcard on phase 1 -> no warning",
+			tasks:        map[string]task.Task{
+				"task1": {ID: "1.1"},
+				"task3": {ID: "3.1", Dependencies: []string{"1.x"}},
+			},
+			wantWarnings: 0,
+		},
+		{
+			name:         "phase 2 with only same-phase dep -> WARNING for both",
+			tasks:        map[string]task.Task{
+				"task2a": {ID: "2.1"},
+				"task2b": {ID: "2.2", Dependencies: []string{"2.1"}},
+			},
+			wantWarnings:     2,
+		},
+		{
+			name:         "phase 2 with no deps at all -> WARNING",
+			tasks:        map[string]task.Task{
+				"task2": {ID: "2.1", Dependencies: []string{}},
+			},
+			wantWarnings:     1,
+			wantWarnContains: []string{"2.1"},
+		},
+		{
+			name:         "multiple phases, all missing cross-phase deps -> multiple warnings",
+			tasks:        map[string]task.Task{
+				"task2": {ID: "2.1", Dependencies: []string{}},
+				"task3": {ID: "3.1", Dependencies: []string{}},
+			},
+			wantWarnings: 2,
+		},
+		{
+			name:         "gate task skipped",
+			tasks:        map[string]task.Task{
+				"gate": {ID: "2.gate", Breaking: true, Dependencies: []string{}},
+			},
+			wantWarnings: 0,
+		},
+		{
+			name:         "summary task skipped",
+			tasks:        map[string]task.Task{
+				"summary": {ID: "2.summary", Dependencies: []string{}},
+			},
+			wantWarnings: 0,
+		},
+		{
+			name:         "mixed: same-phase + cross-phase dep -> no warning",
+			tasks:        map[string]task.Task{
+				"task1":  {ID: "1.1"},
+				"task2a": {ID: "2.1", Dependencies: []string{"1.1"}},
+				"task2b": {ID: "2.2", Dependencies: []string{"2.1", "1.1"}},
+			},
+			wantWarnings: 0,
+		},
+		{
+			name:         "non-numeric phase ID -> skipped (phase=0)",
+			tasks:        map[string]task.Task{
+				"task": {ID: "abc.1", Dependencies: []string{}},
+			},
+			wantWarnings: 0,
+		},
+		{
+			name:         "non-numeric wildcard dep -> fallback branch",
+			tasks:        map[string]task.Task{
+				"task1": {ID: "1.1"},
+				"task2": {ID: "2.1", Dependencies: []string{"abc.x"}},
+			},
+			wantWarnings:     1,
+			wantWarnContains: []string{"no dependency on previous phase"},
+		},
+		{
+			name:         "task with nil deps -> WARNING",
+			tasks:        map[string]task.Task{
+				"task2": {ID: "2.1", Dependencies: nil},
+			},
+			wantWarnings: 1,
+		},
+		// Gate/summary compat: gate dependency satisfies cross-phase ordering
+		{
+			name:         "business depends on gate in same phase -> no warning (transitive)",
+			tasks:        map[string]task.Task{
+				"task1":    {ID: "1.1"},
+				"summary1": {ID: "1.summary", Dependencies: []string{"1.x"}},
+				"gate":     {ID: "2.gate", Breaking: true, Dependencies: []string{"1.summary"}},
+				"task2":    {ID: "2.1", Dependencies: []string{"2.gate"}},
+			},
+			wantWarnings: 0,
+		},
+		{
+			name:         "business depends on gate via wildcard -> no warning",
+			tasks:        map[string]task.Task{
+				"task1":    {ID: "1.1"},
+				"summary1": {ID: "1.summary"},
+				"gate":     {ID: "2.gate", Breaking: true, Dependencies: []string{"1.summary"}},
+				"task2":    {ID: "2.1", Dependencies: []string{"2.x"}},
+			},
+			wantWarnings: 0,
+		},
+		{
+			name:         "business depends on gate only, no other cross-phase -> no warning",
+			tasks:        map[string]task.Task{
+				"summary1": {ID: "1.summary"},
+				"gate":     {ID: "2.gate", Breaking: true, Dependencies: []string{"1.summary"}},
+				"task2":    {ID: "2.1", Dependencies: []string{"2.gate"}},
+				"task2b":   {ID: "2.2", Dependencies: []string{"2.gate"}},
+			},
+			wantWarnings: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := &validator{}
+			v.validatePhaseOrder(tt.tasks)
+			if len(v.warnings) != tt.wantWarnings {
+				t.Errorf("warnings: got %d, want %d\n%v", len(v.warnings), tt.wantWarnings, v.warnings)
+			}
+			for _, want := range tt.wantWarnContains {
+				found := false
+				for _, w := range v.warnings {
+					if contains(w, want) {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("missing warning containing %q in %v", want, v.warnings)
+				}
+			}
+		})
+	}
+}
+
+// --- V4: Phase summary existence ---
+
+func TestValidator_ValidatePhaseSummaries(t *testing.T) {
+	tests := []struct {
+		name             string
+		tasks            map[string]task.Task
+		wantWarnings     int
+		wantWarnContains []string
+	}{
+		{
+			name:         "empty tasks -> no warning",
+			tasks:        map[string]task.Task{},
+			wantWarnings: 0,
+		},
+		{
+			name: "phase with summary -> no warning",
+			tasks: map[string]task.Task{
+				"task1":   {ID: "1.1"},
+				"summary": {ID: "1.summary"},
+			},
+			wantWarnings: 0,
+		},
+		{
+			name: "phase without summary -> WARNING",
+			tasks: map[string]task.Task{
+				"task1": {ID: "1.1"},
+			},
+			wantWarnings:     1,
+			wantWarnContains: []string{"no '1.summary' task"},
+		},
+		{
+			name: "only summary and gate, no business tasks -> no warning",
+			tasks: map[string]task.Task{
+				"summary": {ID: "1.summary"},
+				"gate":    {ID: "1.gate", Breaking: true},
+			},
+			wantWarnings: 0,
+		},
+		{
+			name: "multiple phases, one missing summary",
+			tasks: map[string]task.Task{
+				"task1":    {ID: "1.1"},
+				"summary1": {ID: "1.summary"},
+				"task2":    {ID: "2.1"},
+			},
+			wantWarnings:     1,
+			wantWarnContains: []string{"no '2.summary' task"},
+		},
+		{
+			name: "multiple phases, all missing summaries",
+			tasks: map[string]task.Task{
+				"task1": {ID: "1.1"},
+				"task2": {ID: "2.1"},
+			},
+			wantWarnings: 2,
+		},
+		{
+			name: "multiple phases, all have summaries -> no warning",
+			tasks: map[string]task.Task{
+				"task1":    {ID: "1.1"},
+				"summary1": {ID: "1.summary"},
+				"task2":    {ID: "2.1"},
+				"summary2": {ID: "2.summary"},
+			},
+			wantWarnings: 0,
+		},
+		// Gate/summary compat: gate doesn't count as business task
+		{
+			name: "phase with only gate and summary, no business -> no warning",
+			tasks: map[string]task.Task{
+				"gate":    {ID: "1.gate", Breaking: true},
+				"summary": {ID: "1.summary"},
+			},
+			wantWarnings: 0,
+		},
+		{
+			name: "phase has gate+summary+business but no summary for gate phase",
+			tasks: map[string]task.Task{
+				"summary1": {ID: "1.summary"},
+				"gate2":    {ID: "2.gate", Breaking: true},
+				"task2":    {ID: "2.1"},
+			},
+			wantWarnings:     1,
+			wantWarnContains: []string{"no '2.summary' task"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := &validator{}
+			v.validatePhaseSummaries(tt.tasks)
+			if len(v.warnings) != tt.wantWarnings {
+				t.Errorf("warnings: got %d, want %d\n%v", len(v.warnings), tt.wantWarnings, v.warnings)
+			}
+			for _, want := range tt.wantWarnContains {
+				found := false
+				for _, w := range v.warnings {
+					if contains(w, want) {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("missing warning containing %q in %v", want, v.warnings)
+				}
+			}
+		})
+	}
+}
+
 // helper function
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsHelper(s, substr))
@@ -510,4 +1118,19 @@ func containsHelper(s, substr string) bool {
 		}
 	}
 	return false
+}
+
+func TestRunValidate_WithFileArg(t *testing.T) {
+	t.Run("valid file via arg", func(t *testing.T) {
+		dir := t.TempDir()
+		indexFile := filepath.Join(dir, "index.json")
+		data, _ := json.Marshal(map[string]interface{}{
+			"feature": "test",
+			"tasks":   map[string]interface{}{},
+		})
+		os.WriteFile(indexFile, data, 0644)
+
+		// Should not exit (would kill test process)
+		runValidate(nil, []string{indexFile})
+	})
 }
