@@ -10,6 +10,10 @@ var vcsMarkers = []Marker{
 // Workspace markers identify monorepo/workspace roots.
 // These take priority over project markers when present.
 var workspaceMarkers = []Marker{
+	// Forge project root — created by task claim on first use.
+	// Subagents walking up from subdirectories (e.g., backend/) find .forge/
+	// and resolve to the correct project root (workspace > project priority).
+	{Name: ".forge", Type: RootTypeWorkspace, IsDirectory: true},
 	// Go multi-module workspace
 	{Name: "go.work", Type: RootTypeWorkspace, Languages: []string{"go"}},
 	// Node.js monorepo tools

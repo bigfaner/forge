@@ -64,6 +64,35 @@ func TestCleanupCompletedTaskState(t *testing.T) {
 			t.Errorf("record.json should be deleted")
 		}
 	})
+
+	t.Run("preserves .forge/state.json during cleanup", func(t *testing.T) {
+		dir := setupCompletedTaskProject(t)
+
+		// Simulate .forge/state.json created by task claim
+		feature.EnsureForgeState(dir, "test")
+
+		cleanupCompletedTaskState()
+
+		// .forge/state.json should NOT be deleted
+		forgeState := feature.ReadForgeState(dir)
+		if forgeState == nil {
+			t.Error(".forge/state.json should NOT be deleted by cleanup")
+		}
+	})
+
+	t.Run("preserves .forge/state.json with in_progress task", func(t *testing.T) {
+		dir := setupInProgressTaskProject(t)
+
+		// Simulate .forge/state.json created by task claim
+		feature.EnsureForgeState(dir, "test")
+
+		cleanupCompletedTaskState()
+
+		forgeState := feature.ReadForgeState(dir)
+		if forgeState == nil {
+			t.Error(".forge/state.json should NOT be deleted by cleanup")
+		}
+	})
 }
 
 // setupCompletedTaskProject creates a test project with a completed task.

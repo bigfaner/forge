@@ -1,0 +1,2 @@
+1、增加一个系统化修复Bug的slash command或skill，先复现问题，补充单元测试和e2e测试，再修复问题，最后验证
+2、优化独立agent占用token的问题

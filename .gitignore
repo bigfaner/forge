@@ -17,5 +17,5 @@ bin/
 # Go
 *.test
 bin/
-todo.txt
 *.DS_Store
+task-cli/check.out

@@ -1658,3 +1658,78 @@ func TestGraduateTestScripts_ApiSpecOnly(t *testing.T) {
 		t.Error("api/auth/api.spec.ts not graduated")
 	}
 }
+
+// TestForgeStateLifecycle verifies the full .forge/state.json lifecycle:
+// claim (creates allCompleted=false) → record (overwrites to true) → all-completed (deletes)
+func TestForgeStateLifecycle(t *testing.T) {
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644)
+	feature.EnsureFeatureDir(dir, "lf")
+
+	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("lf"))
+	index := &task.TaskIndex{
+		Feature:      "lf",
+		StatusEnum:   []string{"pending", "in_progress", "completed"},
+		PriorityEnum: []string{"P0"},
+		Tasks: map[string]task.Task{
+			"t1": {ID: "1.1", Title: "T1", Status: "pending", Priority: "P0", File: "1.1.md", Record: "1.1.md"},
+		},
+	}
+	task.SaveIndex(indexPath, index)
+	os.WriteFile(filepath.Join(dir, "docs", "features", "lf", "tasks", "1.1.md"), []byte("# T1"), 0644)
+	os.MkdirAll(filepath.Join(dir, "docs", "features", "lf", "tasks", "records"), 0755)
+
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { os.Chdir(origWd) })
+	os.Chdir(dir)
+
+	// Phase 1: claim creates state.json with allCompleted=false
+	claimResult, err := executeClaim()
+	if err != nil {
+		t.Fatalf("claim failed: %v", err)
+	}
+	state := feature.ReadForgeState(dir)
+	if state == nil {
+		t.Fatal("state.json should exist after claim")
+	}
+	if state.AllCompleted {
+		t.Error("allCompleted should be false after claim")
+	}
+
+	// Phase 2: record overwrites state.json with allCompleted=true
+	recordDataPath := filepath.Join(dir, "docs", "features", "lf", "tasks", "process", "record.json")
+	rd := map[string]any{
+		"taskId":      "1.1",
+		"status":      "completed",
+		"summary":     "done",
+		"coverage":    -1.0,
+		"testsPassed": 0,
+		"testsFailed": 0,
+	}
+	rdJSON, _ := json.Marshal(rd)
+	os.WriteFile(recordDataPath, rdJSON, 0644)
+
+	rootCmd.SetArgs([]string{"record", claimResult.Task.ID, "--data", recordDataPath})
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("record failed: %v", err)
+	}
+
+	state = feature.ReadForgeState(dir)
+	if state == nil {
+		t.Fatal("state.json should exist after record")
+	}
+	if !state.AllCompleted {
+		t.Error("allCompleted should be true after all tasks recorded")
+	}
+
+	// Phase 3: all-completed reads and deletes state.json
+	result, err := checkAllCompleted(false)
+	if err != nil || result == nil {
+		t.Fatal("checkAllCompleted should return result when all done with state")
+	}
+
+	state = feature.ReadForgeState(dir)
+	if state != nil {
+		t.Error("state.json should be deleted after all-completed consumes it")
+	}
+}
