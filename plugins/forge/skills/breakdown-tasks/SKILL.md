@@ -128,10 +128,95 @@ Add both tasks to `index.json` in Step 5.
 **T-test-1** (gen-test-cases.md): Calls `/gen-test-cases` skill, depends on last business task
 **T-test-2** (gen-test-scripts.md): Calls `/gen-test-scripts` skill, depends on T-test-1
 
+## Step 4c: Append Phase Summary Tasks
+
+For each business phase (1.x through 5.x, excluding the test phase), insert a phase summary task at the end of that phase.
+
+<HARD-RULE>
+Read `templates/phase-summary-task.md` before writing any phase summary task file.
+</HARD-RULE>
+
+**ID scheme**: `<phase>.summary` — the `.summary` suffix ensures:
+- Correct sort order (alphabetic segments sort after numeric, so `.summary` runs after `.1`–`.N` business tasks)
+- Wildcard `<phase>.x` dependency works without self-blocking (selfID exclusion in claim logic)
+
+Phase summary task naming: `<phase>.summary-phase-summary.md`
+Phase summary task ID: `<phase>.summary`
+Dependencies: `["<phase>.x"]` (all tasks in that phase)
+
+Example for phase 1:
+```
+"1.summary-phase-summary": {
+  "id": "1.summary",
+  "title": "Phase 1 Summary",
+  "priority": "P0",
+  "estimatedTime": "15min",
+  "dependencies": ["1.x"],
+  "status": "pending",
+  "file": "1.summary-phase-summary.md",
+  "record": "records/1.summary-phase-summary.md"
+}
+```
+
+<HARD-RULE>
+When writing the phase summary task to index.json, use `.summary` as the sub-ID. The CLI's sort algorithm handles alphabetic segments: numeric segments sort before alphabetic, and `gate` sorts before `summary`.
+</HARD-RULE>
+
+Add phase summary tasks to `index.json` in Step 5.
+
+## Step 4d: Insert Gate Tasks (Cross-Layer Features Only)
+
+If the feature spans multiple layers (detected from the Cross-Layer Data Map or architecture diagram), insert a gate task at each phase boundary where a new layer begins.
+
+<HARD-RULE>
+Read `templates/gate-task.md` before writing any gate task file.
+</HARD-RULE>
+
+**ID scheme**: `<phase>.gate` — sorts before `.summary` in the same phase (`gate` < `summary` in alphabetic ordering), so the gate runs after business tasks but before the phase summary.
+
+A gate task:
+- Has `breaking: true` set
+- Depends on the **preceding phase's summary task** (e.g., `["1.summary"]` for a gate before phase 2)
+- The **next phase's business tasks** must list the gate as a dependency (e.g., `["2.gate"]`)
+
+Gate task naming: `<phase>.gate-gate-<description>.md`
+Gate task ID: `<phase>.gate`
+
+Example dependency chain for a 2-phase cross-layer feature:
+```
+Phase 1: 1.1, 1.2                 (dependencies: none or earlier phases)
+Phase 1 summary: 1.summary         (dependencies: ["1.x"])
+Gate: 2.gate-gate-consistency      (dependencies: ["1.summary"])
+Phase 2: 2.1, 2.2                  (dependencies: ["2.gate"])  ← must depend on gate!
+Phase 2 summary: 2.summary         (dependencies: ["2.x"])
+```
+
+<HARD-RULE>
+When a gate task is inserted at a phase boundary, the next phase's business tasks MUST list the gate as an explicit dependency. Do NOT rely on wildcard dependencies for gate ordering.
+</HARD-RULE>
+
+Add gate tasks to `index.json` in Step 5.
+
 ## Step 5: Create index.json
 
 <HARD-RULE>Read `templates/index.json` before writing. Paths (`file`, `record`) are relative to `tasks/` directory. Populate `dependencies` per Step 3 rules.
 </HARD-RULE>
+
+### Breaking Task Detection
+
+For each task, assess whether it modifies shared interfaces, data models, or API contracts. If yes, set `breaking: true` in the task definition.
+
+Examples of breaking tasks:
+- Modifying a database schema column type
+- Changing an API response shape
+- Renaming a field in a shared type definition
+- Altering an interface method signature
+
+Non-breaking tasks:
+- Adding a new endpoint (additive)
+- Implementing a new UI component
+- Writing documentation
+- Adding tests
 
 Reference: [templates/index.json](templates/index.json) | Schema: [templates/index.schema.json](templates/index.schema.json)
 
@@ -154,5 +239,5 @@ task validate -file docs/features/<slug>/tasks/index.json
 - [ ] Dependencies follow Step 3 rules (no cycles)
 - [ ] UI tasks reference prototype files (if applicable)
 - [ ] User Stories populated from `prd-user-stories.md`
-- [ ] index.json 末尾包含 T-test-1 和 T-test-2，依赖关系正确
+- [ ] `index.json` ends with T-test-1 and T-test-2 with correct dependencies
 - [ ] `manifest.md` updated with traceability + `status: tasks`

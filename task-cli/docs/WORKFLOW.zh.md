@@ -1,6 +1,6 @@
-# claude-task-cli Key Workflows
+# claude-task-cli 关键流程
 
-## 1. Feature Identification Workflow
+## 1. Feature 识别流程
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -9,7 +9,7 @@
                               │
                               ▼
                     ┌─────────────────┐
-                    │ Get Git context │
+                    │ 获取 Git 上下文 │
                     │ (worktree/branch)│
                     └────────┬────────┘
                               │
@@ -17,29 +17,29 @@
               │                               │
               ▼                               ▼
     ┌─────────────────┐             ┌─────────────────┐
-    │ Git context      │             │ No Git context   │
-    │ exists: check    │             │ Scan process/    │
-    │ feature dir      │             │ directory        │
+    │ Git 上下文存在   │             │ 无 Git 上下文    │
+    │ 检查 feature    │             │ 扫描 process/   │
+    │ 目录是否存在    │             │ 目录            │
     └────────┬────────┘             └────────┬────────┘
               │                               │
               ▼                               ▼
     ┌─────────────────┐             ┌─────────────────┐
-    │ Exists: return   │             │ Has task-state:  │
-    │ Not exists:      │             │ Return that      │
-    │ create & return  │             │ feature          │
+    │ 存在: 返回      │             │ 有 task-state:  │
+    │ 不存在: 创建    │             │ 返回该 feature  │
+    │ 并返回          │             │                 │
     └─────────────────┘             └─────────────────┘
 
-Feature identification priority:
-1. Git Worktree name (e.g.: feature-auth-login)
-2. Git branch name (extract xxx from feature/xxx)
-3. Feature in the features directory that has tasks/process/state.json
-4. Only feature in the features directory that has index.json
+Feature 识别优先级:
+1. Git Worktree 名称 (如: feature-auth-login)
+2. Git 分支名称 (提取 feature/xxx 中的 xxx)
+3. Features 目录中有 tasks/process/state.json 的 feature
+4. Features 目录中唯一有 index.json 的 feature
 ```
 
-### Git Branch → Feature Mapping
+### Git 分支 → Feature 映射
 
 ```
-Branch Name                 → Feature Slug
+分支名称                    → Feature Slug
 ─────────────────────────────────────────────
 feature/auth-login         → auth-login
 feat/user-registration     → user-registration
@@ -47,13 +47,13 @@ fix/null-pointer           → null-pointer
 bugfix/memory-leak         → memory-leak
 hotfix/security-issue      → security-issue
 chore/update-deps          → update-deps
-main/master/HEAD           → (ignored, fallback to directory scan)
+main/master/HEAD           → (忽略，回退到目录扫描)
 custom-branch              → custom-branch
 ```
 
 ---
 
-## 2. Task Claim Workflow
+## 2. 任务声明流程 (task claim)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -62,84 +62,83 @@ custom-branch              → custom-branch
                               │
                               ▼
                     ┌─────────────────┐
-                    │ Call            │
+                    │ 调用            │
                     │ GetCurrentFeature│
                     └────────┬────────┘
                               │
                               ▼
                     ┌─────────────────┐
-                    │ Load task-state │
-                    │ Check active    │
-                    │ task            │
+                    │ 加载 task-state │
+                    │ 检查进行中任务   │
                     └────────┬────────┘
                               │
               ┌───────────────┴───────────────┐
               │                               │
               ▼                               ▼
     ┌─────────────────┐             ┌─────────────────┐
-    │ Has active task  │             │ No active task   │
-    │ Return it        │             │ Search next task │
+    │ 有进行中任务     │             │ 无进行中任务     │
+    │ 直接返回该任务   │             │ 搜索下一个任务   │
     └─────────────────┘             └────────┬────────┘
                                               │
                                               ▼
                                     ┌─────────────────┐
-                                    │ Load index.json │
-                                    │ Get all tasks   │
+                                    │ 加载 index.json │
+                                    │ 获取所有任务     │
                                     └────────┬────────┘
                                               │
                                               ▼
                                     ┌─────────────────┐
-                                    │ Filter pending  │
-                                    │ status tasks    │
+                                    │ 过滤 pending    │
+                                    │ 状态任务        │
                                     └────────┬────────┘
                                               │
                                               ▼
                                     ┌─────────────────┐
-                                    │ Exclude tasks   │
-                                    │ with unmet deps │
+                                    │ 排除依赖未满足   │
+                                    │ 的任务          │
                                     └────────┬────────┘
                                               │
                                               ▼
                               ┌─────────────────────────┐
-                              │ Sort by Phase → Priority│
-                              │                         │
+                              │ 按 Phase → Priority     │
+                              │ 排序                    │
                               └────────────┬────────────┘
                                               │
                                               ▼
                                     ┌─────────────────┐
-                                    │ Select top-ranked│
-                                    │ Update status    │
+                                    │ 选择排名第一    │
+                                    │ 更新状态        │
                                     └────────┬────────┘
                                               │
                                               ▼
                                     ┌─────────────────┐
-                                    │ Save state.json │
-                                    │ to tasks/process│
+                                    │ 保存 state.json │
+                                    │ 到 tasks/process│
                                     └─────────────────┘
 ```
 
-### Dependency Check Logic
+### 依赖检查逻辑
 
 ```
-Check if task T's dependencies are satisfied:
+检查任务 T 的依赖是否满足:
 
 for each dep in T.Dependencies:
-    if dep contains ".x":           # Wildcard dependency (e.g. "1.x")
-        phase = extract phase number
-        if all tasks in that phase are completed:
-            dependency satisfied
+    if dep 包含 ".x":           # 通配符依赖 (如 "1.x")
+        phase = 提取 phase 编号
+        if 该 phase 下所有任务都已完成:
+            依赖满足
         else:
-            dependency not satisfied
-    else:                        # Exact dependency (e.g. "1.1")
-        if dep task status == completed:
-            dependency satisfied
+            依赖不满足
+    else:                        # 精确依赖 (如 "1.1")
+        if dep 任务状态 == completed:
+            依赖满足
         else:
-            dependency not satisfied
+            依赖不满足
 ```
 
 ---
 
-## 2. Task Record Generation Workflow
+## 2. 任务记录生成流程 (task record)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -148,53 +147,50 @@ for each dep in T.Dependencies:
                               │
                               ▼
                     ┌─────────────────┐
-                    │ Read from stdin │
-                    │ JSON data       │
+                    │ 从 stdin 读取   │
+                    │ JSON 数据       │
                     └────────┬────────┘
                               │
                               ▼
                     ┌─────────────────┐
-                    │ Parse RecordData│
-                    │ Validate        │
-                    │ required fields │
+                    │ 解析 RecordData │
+                    │ 验证必填字段    │
                     └────────┬────────┘
                               │
                               ▼
                     ┌─────────────────┐
-                    │ Generate from   │
-                    │ template        │
-                    │ Markdown content│
+                    │ 从模板生成      │
+                    │ Markdown 内容   │
                     └────────┬────────┘
                               │
                               ▼
                     ┌─────────────────┐
-                    │ Write to        │
-                    │ records/        │
+                    │ 写入 records/   │
                     │ <task-id>.md    │
                     └─────────────────┘
 ```
 
-### RecordData Structure
+### RecordData 结构
 
 ```json
 {
-    "summary": "Task execution summary",
+    "summary": "任务执行摘要",
     "status": "completed",
     "time_spent": "2h",
     "files_created": ["path/to/new.go"],
     "files_modified": ["path/to/existing.go"],
-    "key_decisions": ["Decision 1", "Decision 2"],
-    "test_results": "All tests passed",
+    "key_decisions": ["决策1", "决策2"],
+    "test_results": "所有测试通过",
     "acceptance_criteria": [
-        {"criteria": "Criterion 1", "met": true},
-        {"criteria": "Criterion 2", "met": true}
+        {"criteria": "标准1", "met": true},
+        {"criteria": "标准2", "met": true}
     ]
 }
 ```
 
 ---
 
-## 3. verifyCompletion Workflow
+## 3. verifyCompletion 流程
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -203,41 +199,40 @@ for each dep in T.Dependencies:
                               │
                               ▼
                     ┌─────────────────┐
-                    │ Check if        │
-                    │ task-state      │
-                    │ exists          │
+                    │ 检查 task-state │
+                    │ 是否存在        │
                     └────────┬────────┘
                               │
               ┌───────────────┴───────────────┐
               │                               │
               ▼                               ▼
     ┌─────────────────┐             ┌─────────────────┐
-    │ No task-state   │             │ Has task-state   │
-    │ Return success(0)│             │ Check task status│
+    │ 无 task-state   │             │ 有 task-state   │
+    │ 返回成功(0)     │             │ 检查任务状态    │
     └─────────────────┘             └────────┬────────┘
                                               │
                               ┌───────────────┴───────────────┐
                               │                               │
                               ▼                               ▼
                     ┌─────────────────┐             ┌─────────────────┐
-                    │ Task completed   │             │ Task not         │
-                    │ Check record file│             │ completed       │
-                    └────────┬────────┘             │ Return failure(2)│
-                              │                      └─────────────────┘
+                    │ 任务已完成      │             │ 任务未完成      │
+                    │ 检查记录文件    │             │ 返回失败(2)     │
+                    └────────┬────────┘             └─────────────────┘
+                              │
               ┌───────────────┴───────────────┐
               │                               │
               ▼                               ▼
     ┌─────────────────┐             ┌─────────────────┐
-    │ Has record file  │             │ No record file   │
-    │ Return success(0)│             │ Return failure(2)│
+    │ 有记录文件      │             │ 无记录文件      │
+    │ 返回成功(0)     │             │ 返回失败(2)     │
     └─────────────────┘             └─────────────────┘
 
-Note: verifyCompletion only validates status; it does not delete any files.
+注意: verifyCompletion 只验证状态，不删除任何文件。
 ```
 
 ---
 
-## 4. Cleanup Workflow
+## 4. cleanup 流程
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -246,39 +241,38 @@ Note: verifyCompletion only validates status; it does not delete any files.
                               │
                               ▼
                     ┌─────────────────┐
-                    │ Check if        │
-                    │ task-state      │
-                    │ exists          │
+                    │ 检查 task-state │
+                    │ 是否存在        │
                     └────────┬────────┘
                               │
               ┌───────────────┴───────────────┐
               │                               │
               ▼                               ▼
     ┌─────────────────┐             ┌─────────────────┐
-    │ No task-state   │             │ Has task-state   │
-    │ Exit(0)         │             │ Check task status│
+    │ 无 task-state   │             │ 有 task-state   │
+    │ 直接退出(0)     │             │ 检查任务状态    │
     └─────────────────┘             └────────┬────────┘
                                               │
                               ┌───────────────┴───────────────┐
                               │                               │
                               ▼                               ▼
                     ┌─────────────────┐             ┌─────────────────┐
-                    │ Task completed   │             │ Task not         │
-                    │ Delete state file│             │ completed       │
-                    └────────┬────────┘             │ Keep state file  │
-                              │                      └─────────────────┘
+                    │ 任务已完成      │             │ 任务未完成      │
+                    │ 删除状态文件    │             │ 保留状态文件    │
+                    └────────┬────────┘             └─────────────────┘
+                              │
                               ▼
                     ┌─────────────────┐
-                    │ Delete:         │
+                    │ 删除:           │
                     │ - state.json    │
                     │ - record.json   │
-                    │   (if exists)   │
+                    │   (如存在)      │
                     └─────────────────┘
 ```
 
 ---
 
-## 5. All-Completed Workflow
+## 5. all-completed 流程
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -287,52 +281,50 @@ Note: verifyCompletion only validates status; it does not delete any files.
                               │
                               ▼
                     ┌─────────────────┐
-                    │ Load index.json │
-                    │ Get all tasks   │
+                    │ 加载 index.json │
+                    │ 获取所有任务    │
                     └────────┬────────┘
                               │
               ┌───────────────┴───────────────┐
               │                               │
               ▼                               ▼
     ┌─────────────────┐             ┌─────────────────┐
-    │ All completed   │             │ Has incomplete   │
-    │ or skipped      │             │ tasks            │
-    └────────┬────────┘             │ Silent exit(1)   │
-              │                      └─────────────────┘
+    │ 全部 completed  │             │ 有未完成任务     │
+    │ 或 skipped      │             │ 静默退出(1)     │
+    └────────┬────────┘             └─────────────────┘
+              │
               ▼
     ┌─────────────────┐
-    │ Check if e2e    │
-    │ test script dir │
-    │ exists          │
+    │ 检查 e2e 测试   │
+    │ 脚本目录是否存在 │
     └────────┬────────┘
               │
     ┌─────────┴──────────┐
     │                    │
     ▼                    ▼
 ┌──────────┐      ┌──────────────┐
-│ Exists:  │      │ Not exists:  │
-│ Run      │      │ Skip e2e     │
-│ e2e tests│      └──────────────┘
+│ 存在:    │      │ 不存在:      │
+│ 运行     │      │ 跳过 e2e     │
+│ e2e 测试 │      └──────────────┘
 └────┬─────┘
      │
      ▼
 ┌─────────────────┐
-│ Run project-level│
-│ tests            │
-│ (auto-detect cmd)│
+│ 运行项目级测试  │
+│ (自动检测命令)  │
 └─────────────────┘
 ```
 
-**Test command detection order:**
-1. `testCommand` field in `index.json`
+**测试命令检测顺序：**
+1. `index.json` 中的 `testCommand` 字段
 2. `go.mod` → `go test ./...`
-3. `package.json` (with scripts.test) → `npm test`
-4. `Makefile` (with test: target) → `make test`
+3. `package.json` (含 scripts.test) → `npm test`
+4. `Makefile` (含 test: target) → `make test`
 5. `pytest.ini` / `pyproject.toml` → `pytest`
 
 ---
 
-## 6. Validation Workflow
+## 6. 验证流程 (task validate)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -341,61 +333,50 @@ Note: verifyCompletion only validates status; it does not delete any files.
                               │
                               ▼
                     ┌─────────────────┐
-                    │ Load index.json │
+                    │ 加载 index.json │
                     └────────┬────────┘
                               │
                               ▼
                     ┌─────────────────┐
-                    │ JSON syntax     │
-                    │ validation      │
+                    │ JSON 语法验证   │
                     └────────┬────────┘
                               │
                               ▼
                     ┌─────────────────┐
-                    │ Required field  │
-                    │ check           │
+                    │ 必填字段检查    │
                     │ (id, title)     │
                     └────────┬────────┘
                               │
                               ▼
                     ┌─────────────────┐
-                    │ Dependency      │
-                    │ reference       │
-                    │ validation      │
-                    │ (refs must have │
-                    │  existing IDs)  │
+                    │ 依赖引用验证    │
+                    │ (引用存在的ID)  │
                     └────────┬────────┘
                               │
                               ▼
                     ┌─────────────────┐
-                    │ Circular        │
-                    │ dependency      │
-                    │ detection       │
-                    │ (DFS topological│
-                    │  sort)          │
+                    │ 循环依赖检测    │
+                    │ (DFS 拓扑排序)  │
                     └────────┬────────┘
                               │
                               ▼
                     ┌─────────────────┐
-                    │ File existence  │
-                    │ check           │
+                    │ 文件存在性检查  │
                     │ (tasks/*.md)    │
                     └────────┬────────┘
                               │
                               ▼
                     ┌─────────────────┐
-                    │ Output          │
-                    │ validation      │
-                    │ results         │
+                    │ 输出验证结果    │
                     └─────────────────┘
 ```
 
 ---
 
-## 5. Circular Dependency Detection Algorithm
+## 5. 循环依赖检测算法
 
 ```go
-// Depth-first search to detect cycles
+// 深度优先搜索检测循环
 func detectCycle(tasks map[string]Task) []string {
     visited := make(map[string]bool)
     recStack := make(map[string]bool)
@@ -435,127 +416,126 @@ func detectCycle(tasks map[string]Task) []string {
 
 ---
 
-## 7. Typical Development Workflow
+## 7. 典型开发工作流
 
-### Option 1: Using Git Branch (Recommended)
+### 方式一：使用 Git 分支（推荐）
 
 ```bash
-# 1. Create feature branch
+# 1. 创建 feature 分支
 $ git checkout -b feature/auth-login
 
-# 2. Claim task (auto-detects feature: auth-login)
+# 2. 领取任务（自动识别 feature: auth-login）
 $ task claim
-> Claimed task 1.1: Implement user authentication
+> Claimed task 1.1: 实现用户认证
 
-# 3. Develop task
-# ... write code, tests ...
+# 3. 开发任务
+# ... 编写代码、测试 ...
 
-# 4. Generate record
+# 4. 生成记录
 $ task record 1.1 < record.json
 
-# 5. Update status
+# 5. 更新状态
 $ task status 1.1 completed
 
-# 6. Commit code (verifyCompletion auto-validates)
+# 6. 提交代码（verifyCompletion 自动验证）
 $ git commit -m "feat(auth): implement login"
-> verifyCompletion: Task completed with record → commit allowed
+> verifyCompletion: 任务已完成且有记录 → 允许提交
 
-# 7. Loop
+# 7. 循环
 $ task claim
-> Claimed task 1.2: Implement permission check
+> Claimed task 1.2: 实现权限检查
 ```
 
-### Option 2: Using Git Worktree
+### 方式二：使用 Git Worktree
 
 ```bash
-# 1. Create worktree (auto-detects feature)
+# 1. 创建 worktree（自动识别 feature）
 $ git worktree add ../auth-login feature/auth-login
 
-# 2. Work in the worktree
+# 2. 在 worktree 中工作
 $ cd ../auth-login
 $ task claim
-> Claimed task 1.1: Implement user authentication
+> Claimed task 1.1: 实现用户认证
 
-# 3. Develop, record, commit ...
+# 3. 开发、记录、提交 ...
 ```
 
-### Option 3: Manual Feature Setup
+### 方式三：手动设置 Feature
 
 ```bash
-# 1. Manually set feature
+# 1. 手动设置 feature
 $ task feature auth-login
 
-# 2. Claim task
+# 2. 领取任务
 $ task claim
 
-# 3. Develop, record, commit ...
+# 3. 开发、记录、提交 ...
 ```
 
 ---
 
-## 8. Error Handling Workflow
+## 8. 错误处理流程
 
 ```
-Error Type              Handling
+错误类型              处理方式
 ─────────────────────────────────────────────────
-Feature not found       Return error, suggest running: task feature <slug>
-Multiple active         Return error, list active features,
-Features                suggest switching
-Task-state corrupted    Return error, suggest manual deletion
-index.json syntax error Return detailed error location
-Dependency not found    Return error, list invalid dependencies
-Circular dependency     Return error, show cycle path
-File not found          Return warning, does not block operation
+Feature 不存在        返回错误，提示运行: task feature <slug>
+多个活跃 Feature      返回错误，列出活跃 feature，提示切换
+Task-state 损坏       返回错误，建议手动删除
+index.json 语法错误   返回详细错误位置
+依赖不存在            返回错误，列出无效依赖
+循环依赖              返回错误，显示循环路径
+文件不存在            返回警告，不阻止操作
 ```
 
 ---
 
-## 9. Feature State Management
+## 9. Feature 状态管理
 
-### Set Feature
+### 设置 Feature
 
 ```bash
 $ task feature <slug>
 ```
 
-Creates the `docs/features/<slug>/tasks/process/` directory as the feature's runtime state storage.
+创建 `docs/features/<slug>/tasks/process/` 目录作为 feature 的运行时状态存储。
 
-### Show Current Feature
+### 显示当前 Feature
 
 ```bash
 $ task feature
 > Current feature: auth-login
 ```
 
-### Feature Identification Priority
+### Feature 识别优先级
 
 ```
-Priority  Source                           Example
+优先级    来源                              示例
 ─────────────────────────────────────────────────────────────────
-1         Git Worktree                     worktrees/auth-login → auth-login
-2         Git branch name                  feature/auth-login → auth-login
-3         State file                       docs/features/auth-login/tasks/process/state.json
-4         Unique feature directory         Used when only one feature has index.json
+1        Git Worktree                      worktrees/auth-login → auth-login
+2        Git 分支名称                       feature/auth-login → auth-login
+3        State 文件                         docs/features/auth-login/tasks/process/state.json
+4        唯一 feature 目录                  只有一个 feature 有 index.json 时使用
 
 ```
 
-### Rules for Inferring Feature from Git
+### 从 Git 推断 Feature 的规则
 
 ```
-Branch Prefix       → Action
+分支前缀           → 移除前缀
 ───────────────────────────────────
-feature/            → Remove prefix
-feat/               → Remove prefix
-fix/                → Remove prefix
-bugfix/             → Remove prefix
-hotfix/             → Remove prefix
-chore/              → Remove prefix
-main/master/HEAD    → Ignore, use directory scan
-Other               → Replace / with -
+feature/           → 移除
+feat/              → 移除
+fix/               → 移除
+bugfix/            → 移除
+hotfix/            → 移除
+chore/             → 移除
+main/master/HEAD   → 忽略，使用目录扫描
+其他               → 替换 / 为 -
 ```
 
-Examples:
+示例：
 - `feature/user-auth` → `user-auth`
 - `custom/branch/name` → `custom-branch-name`
-- `main` → use directory scan
+- `main` → 使用目录扫描
 ```

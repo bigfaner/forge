@@ -58,6 +58,16 @@ ModelName = {
 ### Propagation Strategy
 <!-- How errors flow between layers. Who catches what? How are internal errors translated to API responses? -->
 
+## Cross-Layer Data Map
+
+<!-- Required when the feature spans multiple architectural layers (e.g., database ↔ API ↔ UI).
+     Skip with "Single-layer feature — not applicable." when the feature is confined to one layer.
+     Every data field that crosses layer boundaries MUST appear here. -->
+
+| Field Name | Storage Layer | Backend Model | API/DTO | Frontend Type | Validation Rule |
+|------------|---------------|---------------|---------|---------------|-----------------|
+| <!-- e.g. user_id --> | <!-- e.g. UUID, NOT NULL --> | <!-- e.g. User.ID uuid.UUID --> | <!-- e.g. json:"userId" --> | <!-- e.g. userId: string --> | <!-- e.g. required, UUID format --> |
+
 ## Testing Strategy
 
 ### Per-Layer Test Plan

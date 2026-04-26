@@ -5,7 +5,7 @@ description: Improve project harness based on evaluation report priorities. Impl
 
 # Improve Harness
 
-基于 `/eval-harness` 评估报告，系统性改进项目 harness。
+Systematically improve project harness based on `/eval-harness` evaluation reports.
 
 ## When to Use
 
@@ -21,8 +21,8 @@ description: Improve project harness based on evaluation report priorities. Impl
 ## Workflow
 
 ```
-1. 读取最新评估报告 ──▶ 2. 解析优先级 ──▶ 3. 逐项执行 ──▶ 4. 验证改进
-   docs/harness-reports/     P0→P1→P2       确认后执行      测试确认
+1. Read latest report → 2. Parse priorities → 3. Execute one by one → 4. Verify improvement
+   docs/harness-reports/     P0→P1→P2       Confirm then execute    Test confirmation
 ```
 
 ### Step 1: Read Latest Report
@@ -35,7 +35,7 @@ If not found, prompt user to run `/eval-harness` first.
 
 ### Step 2: Parse Priority Items
 
-Extract the "优先改进项" table from report:
+Extract the "Priority Improvements" table from the report:
 
 | Priority | Tasks |
 |----------|-------|
@@ -56,8 +56,8 @@ For each item (P0 → P1 → P2 order):
 
 After each improvement, run project-specific verification:
 
-| 语言 | 验证命令 |
-|------|----------|
+| Language | Verification Command |
+|----------|---------------------|
 | Go | `go build ./... && go test ./...` |
 | Node.js | `npm run build && npm test` |
 | Python | `pytest` |

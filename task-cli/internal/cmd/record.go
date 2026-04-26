@@ -20,6 +20,7 @@ var (
 	recordDataPath string
 	recordJSON     bool
 	recordQuiet    bool
+	recordForce    bool
 )
 
 var recordCmd = &cobra.Command{
@@ -62,6 +63,7 @@ func init() {
 	recordCmd.Flags().StringVar(&recordDataPath, "data", "", "Path to JSON data file")
 	recordCmd.Flags().BoolVar(&recordJSON, "json", false, "Output result as JSON")
 	recordCmd.Flags().BoolVar(&recordQuiet, "quiet", false, "Minimal output")
+	recordCmd.Flags().BoolVar(&recordForce, "force", false, "Override validation errors (use with caution)")
 }
 
 // AcceptanceCriterion represents a single acceptance criterion.
@@ -118,7 +120,7 @@ func runRecord(cmd *cobra.Command, args []string) {
 	}
 
 	// Validate required and recommended fields
-	validateRecordData(rd)
+	validateRecordData(rd, recordForce)
 
 	// Validate status
 	validStatus := false
@@ -229,9 +231,12 @@ func readRecordData(dataPath string) (*RecordData, error) {
 
 // validateRecordData checks required and recommended fields in RecordData.
 // Hard-required fields (missing = error): summary
+// Hard validation for completed tasks (overridable with --force):
+//   - testsPassed=0 && testsFailed=0 with coverage >= 0
+//   - any acceptanceCriteria with met=false
 // Recommended fields for "completed" status (missing = warning):
-//   - keyDecisions, testsPassed/testsFailed/coverage, acceptanceCriteria
-func validateRecordData(rd *RecordData) {
+//   - keyDecisions, acceptanceCriteria
+func validateRecordData(rd *RecordData, force bool) {
 	var missing []string
 
 	// Hard-required fields
@@ -243,22 +248,41 @@ func validateRecordData(rd *RecordData) {
 		Exit(ErrMissingFields(missing))
 	}
 
-	// Recommended fields for completed tasks
-	if rd.Status == "completed" {
-		var recommended []string
-		if len(rd.KeyDecisions) == 0 {
-			recommended = append(recommended, "keyDecisions")
-		}
-		// coverage=-1.0 means "no tests" — intentionally set, not missing.
+	if rd.Status != "completed" {
+		return
+	}
+
+	// Hard validation for completed tasks (unless --force)
+	if !force {
+		// Reject completed with no test evidence (unless coverage=-1.0 signals "no tests")
 		if rd.Coverage >= 0 && rd.TestsPassed == 0 && rd.TestsFailed == 0 {
-			recommended = append(recommended, "testsPassed/testsFailed/coverage")
+			Exit(ErrNoTestEvidence())
 		}
-		if len(rd.AcceptanceCriteria) == 0 {
-			recommended = append(recommended, "acceptanceCriteria")
+
+		// Reject completed with unmet acceptance criteria
+		if len(rd.AcceptanceCriteria) > 0 {
+			var unmet []string
+			for _, ac := range rd.AcceptanceCriteria {
+				if !ac.Met {
+					unmet = append(unmet, ac.Criterion)
+				}
+			}
+			if len(unmet) > 0 {
+				Exit(ErrUnmetAcceptanceCriteria(unmet))
+			}
 		}
-		if len(recommended) > 0 {
-			WarnMissingFields(recommended)
-		}
+	}
+
+	// Recommended fields for completed tasks
+	var recommended []string
+	if len(rd.KeyDecisions) == 0 {
+		recommended = append(recommended, "keyDecisions")
+	}
+	if len(rd.AcceptanceCriteria) == 0 {
+		recommended = append(recommended, "acceptanceCriteria")
+	}
+	if len(recommended) > 0 {
+		WarnMissingFields(recommended)
 	}
 }
 

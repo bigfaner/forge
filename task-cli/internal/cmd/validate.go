@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"task-cli/pkg/feature"
@@ -96,6 +97,10 @@ func (v *validator) run() error {
 	v.validateDependencies(idx.Tasks)
 	v.validateCircularDeps(idx.Tasks)
 	v.validateFilesExist(idx.Feature, idx.Tasks)
+	v.validateWildcardSelfDeps(idx.Tasks)
+	v.validateGateIntegrity(idx.Tasks)
+	v.validatePhaseOrder(idx.Tasks)
+	v.validatePhaseSummaries(idx.Tasks)
 
 	if !v.printResults() {
 		return NewAIError(ErrValidation, "Validation failed", fmt.Sprintf("%d errors found", len(v.errors)), "Fix errors in index.json", "cat "+v.filePath)
@@ -212,13 +217,13 @@ func (v *validator) validateFilesExist(featureSlug string, tasks map[string]task
 
 		// Check for unresolved template placeholders in T-test-1 task file
 		if t.ID == "T-test-1" {
-			v.validateTTest1Template(taskFile, t)
+			v.validateTTest1Template(taskFile)
 		}
 	}
 }
 
 // validateTTest1Template checks if T-test-1 task file has unresolved {{LAST_BUSINESS_TASK_ID}} placeholder.
-func (v *validator) validateTTest1Template(taskFile string, t task.Task) {
+func (v *validator) validateTTest1Template(taskFile string) {
 	data, err := os.ReadFile(taskFile)
 	if err != nil {
 		return // File existence already checked above
@@ -228,6 +233,205 @@ func (v *validator) validateTTest1Template(taskFile string, t task.Task) {
 	if strings.Contains(content, "{{LAST_BUSINESS_TASK_ID}}") {
 		v.errors = append(v.errors,
 			fmt.Sprintf("Task 'T-test-1': file contains unresolved placeholder {{LAST_BUSINESS_TASK_ID}} — replace with actual last business task ID"))
+	}
+}
+
+// isBusinessTask returns true for tasks that are neither gate nor summary.
+func isBusinessTask(id string) bool {
+	return !strings.HasSuffix(id, ".gate") && !strings.HasSuffix(id, ".summary")
+}
+
+// V1: Wildcard self-dependency detection
+func (v *validator) validateWildcardSelfDeps(tasks map[string]task.Task) {
+	for key, t := range tasks {
+		for _, dep := range t.Dependencies {
+			if !strings.HasSuffix(dep, ".x") {
+				continue
+			}
+			prefix := strings.TrimSuffix(dep, ".x") + "."
+			if !strings.HasPrefix(t.ID, prefix) {
+				continue
+			}
+			// This task's own ID matches the wildcard. Check if other tasks also match.
+			others := 0
+			for _, other := range tasks {
+				if other.ID != t.ID && strings.HasPrefix(other.ID, prefix) {
+					others++
+				}
+			}
+			if others == 0 {
+				v.errors = append(v.errors, fmt.Sprintf("Task '%s' (%s): wildcard '%s' only matches itself (self-dependency deadlock)", key, t.ID, dep))
+			} else {
+				v.warnings = append(v.warnings, fmt.Sprintf("Task '%s' (%s): wildcard '%s' matches itself plus %d others (self excluded at runtime, but verify intent)", key, t.ID, dep, others))
+			}
+		}
+	}
+}
+
+// V2: Gate integrity
+func (v *validator) validateGateIntegrity(tasks map[string]task.Task) {
+	type gateInfo struct {
+		key string
+		id  string
+	}
+
+	// Find all gate tasks
+	var gates []gateInfo
+	for key, t := range tasks {
+		if strings.HasSuffix(t.ID, ".gate") && t.Breaking {
+			gates = append(gates, gateInfo{key: key, id: t.ID})
+		}
+	}
+
+	for _, g := range gates {
+		phase := getTaskPhase(g.id)
+		if phase <= 0 {
+			continue
+		}
+
+		// Gate must depend on previous phase's summary
+		prevSummary := fmt.Sprintf("%d.summary", phase-1)
+		hasPrevSummary := false
+		for _, t := range tasks {
+			if t.ID == prevSummary {
+				hasPrevSummary = true
+				break
+			}
+		}
+		if hasPrevSummary {
+			found := false
+			for _, dep := range tasks[g.key].Dependencies {
+				if dep == prevSummary {
+					found = true
+					break
+				}
+				// Also accept wildcard that covers the previous phase summary
+				if strings.HasSuffix(dep, ".x") {
+					prefix := strings.TrimSuffix(dep, ".x") + "."
+					if strings.HasPrefix(prevSummary, prefix) {
+						found = true
+						break
+					}
+				}
+			}
+			if !found {
+				v.errors = append(v.errors, fmt.Sprintf("Gate '%s' (%s): must depend on previous phase summary '%s'", g.key, g.id, prevSummary))
+			}
+		}
+
+		// Next phase's business tasks must depend on this gate
+		gateID := g.id
+		for key, t := range tasks {
+			if !isBusinessTask(t.ID) {
+				continue
+			}
+			if getTaskPhase(t.ID) != phase {
+				continue
+			}
+			// Check if this business task depends on the gate
+			dependsOnGate := false
+			for _, dep := range t.Dependencies {
+				if dep == gateID {
+					dependsOnGate = true
+					break
+				}
+				// Also check wildcard that would include the gate
+				if strings.HasSuffix(dep, ".x") {
+					prefix := strings.TrimSuffix(dep, ".x") + "."
+					if strings.HasPrefix(gateID, prefix) {
+						dependsOnGate = true
+						break
+					}
+				}
+			}
+			if !dependsOnGate {
+				v.errors = append(v.errors, fmt.Sprintf("Task '%s' (%s): must depend on gate '%s'", key, t.ID, gateID))
+			}
+		}
+	}
+}
+
+// V3: Phase order sanity
+func (v *validator) validatePhaseOrder(tasks map[string]task.Task) {
+	// Build a lookup for gate tasks (used to recognize transitive cross-phase deps)
+	gateIDs := make(map[string]bool)
+	for _, t := range tasks {
+		if strings.HasSuffix(t.ID, ".gate") && t.Breaking {
+			gateIDs[t.ID] = true
+		}
+	}
+
+	for key, t := range tasks {
+		if !isBusinessTask(t.ID) {
+			continue
+		}
+		phase := getTaskPhase(t.ID)
+		if phase <= 1 {
+			continue // Phase 1 has no previous phase
+		}
+		hasCrossPhaseDep := false
+		for _, dep := range t.Dependencies {
+			// Depending on a gate in the same phase satisfies cross-phase ordering
+			// because V2 ensures gates depend on the previous phase's summary.
+			if gateIDs[dep] {
+				hasCrossPhaseDep = true
+				break
+			}
+			depPhase := getTaskPhase(dep)
+			if depPhase > 0 && depPhase < phase {
+				hasCrossPhaseDep = true
+				break
+			}
+			// Check wildcard deps for cross-phase or gate inclusion
+			if strings.HasSuffix(dep, ".x") {
+				prefix := strings.TrimSuffix(dep, ".x") + "."
+				// Wildcard covers a gate in the same phase
+				for gateID := range gateIDs {
+					if strings.HasPrefix(gateID, prefix) {
+						hasCrossPhaseDep = true
+						break
+					}
+				}
+				if hasCrossPhaseDep {
+					break
+				}
+				if wp, err := strconv.Atoi(strings.TrimSuffix(dep, ".x")); err == nil && wp < phase {
+					hasCrossPhaseDep = true
+					break
+				}
+			}
+		}
+		if !hasCrossPhaseDep {
+			v.warnings = append(v.warnings, fmt.Sprintf("Task '%s' (%s): no dependency on previous phase (may be claimed too early)", key, t.ID))
+		}
+	}
+}
+
+// V4: Phase summary existence
+func (v *validator) validatePhaseSummaries(tasks map[string]task.Task) {
+	// Collect phases that have business tasks
+	phasesWithBusiness := make(map[int]bool)
+	for _, t := range tasks {
+		if isBusinessTask(t.ID) {
+			if p := getTaskPhase(t.ID); p > 0 {
+				phasesWithBusiness[p] = true
+			}
+		}
+	}
+
+	// Check each such phase has a .summary task
+	for phase := range phasesWithBusiness {
+		summaryID := fmt.Sprintf("%d.summary", phase)
+		found := false
+		for _, t := range tasks {
+			if t.ID == summaryID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			v.warnings = append(v.warnings, fmt.Sprintf("Phase %d has business tasks but no '%d.summary' task", phase, phase))
+		}
 	}
 }
 

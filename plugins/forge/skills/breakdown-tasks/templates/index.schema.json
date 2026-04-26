@@ -56,7 +56,12 @@
           },
           "status": { "type": "string", "enum": ["pending", "in_progress", "completed", "blocked", "skipped"] },
           "file": { "type": "string" },
-          "record": { "type": "string" }
+          "record": { "type": "string" },
+          "breaking": {
+            "type": "boolean",
+            "description": "When true, task completion triggers full test suite across all layers",
+            "default": false
+          }
         }
       }
     }

@@ -343,3 +343,40 @@ func setupClaimTestProject(t *testing.T) string {
 
 	return dir
 }
+
+func TestRunStatus_QueryMode(t *testing.T) {
+	dir := setupClaimTestProject(t)
+	origWd, _ := os.Getwd()
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(origWd)
+
+	// First claim to set up state
+	rootCmd.SetArgs([]string{"claim"})
+	rootCmd.Execute()
+
+	output, err := captureOutput(func() error {
+		rootCmd.SetArgs([]string{"status", "1.1"})
+		return rootCmd.Execute()
+	})
+	if err != nil {
+		t.Fatalf("status command failed: %v", err)
+	}
+	if !strings.Contains(output, "STATUS:") {
+		t.Errorf("expected STATUS in output, got %q", output)
+	}
+}
+
+func TestRunVersion(t *testing.T) {
+	output, err := captureOutput(func() error {
+		rootCmd.SetArgs([]string{"version"})
+		return rootCmd.Execute()
+	})
+	if err != nil {
+		t.Fatalf("version command failed: %v", err)
+	}
+	if !strings.Contains(output, "VERSION:") {
+		t.Errorf("expected VERSION in output, got %q", output)
+	}
+}

@@ -3,98 +3,98 @@ name: gen-sitemap
 description: Auto-generate and maintain sitemap.json for a web app. Uses agent-browser to explore routes, capture accessibility tree, and discover dynamic states. Preserves element IDs across runs.
 argument-hints:
   - name: base-url
-    description: 待探索的应用基础 URL（如 http://localhost:3456），config.yaml 存在时可省略
+    description: Application base URL to explore (e.g. http://localhost:3456). Optional if config.yaml exists.
     required: false
   - name: api-base-url
-    description: 后端 API 基础 URL（如 http://localhost:8080），config.yaml 存在时可省略
+    description: Backend API base URL (e.g. http://localhost:8080). Optional if config.yaml exists.
     required: false
 ---
 
 # /gen-sitemap
 
-自动生成并维护 web 应用的 `docs/sitemap/sitemap.json`。
+Auto-generate and maintain `docs/sitemap/sitemap.json` for web applications.
 
-**核心原则**：sitemap 是 web 应用的完整结构化地图，作为 Playwright locator 生成的唯一原料。元素 ID（E-NNN）是稳定标识，跨生成保持不变。
+**Core principle**: The sitemap is a complete structural map of the web application, serving as the sole input source for Playwright locator generation. Element IDs (E-NNN) are stable identifiers preserved across runs.
 
 ## Prerequisites
 
-- Web 应用已启动并可访问
-- agent-browser 已安装（可选工具，用于自动探索页面结构和动态状态）
+- Web application is running and accessible
+- agent-browser is installed (optional tool for auto-exploring page structure and dynamic states)
 
-**验证 agent-browser 安装**：
+**Verify agent-browser installation:**
 
 ```bash
 npx agent-browser --version
 ```
 
-若失败，先安装：
+If it fails, install first:
 
 ```bash
 npx agent-browser install
 ```
 
-安装完成后再重新运行本命令。
+After installation, re-run this command.
 
 ## Config Resolution
 
-在执行 workflow 之前，解析配置源：
+Before executing the workflow, resolve configuration sources:
 
-1. 检查 `tests/e2e/config.yaml` 是否存在
-2. **若不存在**：从模板 `plugins/forge/references/shared/config.yaml` 复制到 `tests/e2e/config.yaml`，然后**中止并提示用户**：
+1. Check if `tests/e2e/config.yaml` exists
+2. **If not found**: copy from template `plugins/forge/references/shared/config.yaml` to `tests/e2e/config.yaml`, then **abort and prompt the user**:
 
 ```
-已创建 tests/e2e/config.yaml（模板），请根据实际环境填写配置后重新运行。
-  baseUrl: 当前应用的实际地址
-  apiBaseUrl: 后端 API 的实际地址
-  username/password: 测试账号凭据（若应用需要认证）
-  loginLocators: 若登录页定位器与默认值不匹配，取消注释并自定义
+Created tests/e2e/config.yaml (template). Please fill in values for your environment and re-run.
+  baseUrl: actual application URL
+  apiBaseUrl: actual backend API URL
+  username/password: test account credentials (if app requires auth)
+  loginLocators: uncomment and customize if login page locators differ from defaults
 ```
 
-3. **若已存在**：读取 `baseUrl`、`apiBaseUrl`、`username`、`password` 等字段
+3. **If exists**: read `baseUrl`, `apiBaseUrl`, `username`, `password` fields
 
-**base-url 优先级**：命令行参数 > config.yaml 中的 `baseUrl` > 报错中止
+**base-url priority**: command-line argument > `baseUrl` from config.yaml > abort with error
 
-**apiBaseUrl 规则**：`apiBaseUrl` 是后端的原始基础地址（如 `http://localhost:8080`），**不含任何路径前缀**。构造请求 URL 时，路径前缀（如 `/v1`）必须从后端路由定义中读取（如 `backend/internal/handler/router.go` 中的 `r.Group(...)`），不得凭假设添加 `/api` 或其他前缀。正确做法：`${apiBaseUrl}/v1/auth/login`，而非 `${apiBaseUrl}/api/v1/auth/login`。
+**apiBaseUrl rule**: `apiBaseUrl` is the backend's raw base address (e.g. `http://localhost:8080`), **without any path prefix**. When constructing request URLs, path prefixes (e.g. `/v1`) must be read from backend route definitions (e.g. `backend/internal/handler/router.go` `r.Group(...)`), not assumed. Correct: `${apiBaseUrl}/v1/auth/login`, not `${apiBaseUrl}/api/v1/auth/login`.
 
-**认证页面探索**：若 config.yaml 中 `username` 和 `password` 非空，在 Step 3 探索每个页面前先执行登录：
+**Authenticated page exploration**: If config.yaml has non-empty `username` and `password`, log in before exploring each page in Step 3:
 
 ```
 ab('open <baseUrl>/login')
 ab('wait --load networkidle')
-// 使用 config.yaml 中的 username/password 填充登录表单
+// Fill login form with username/password from config.yaml
 ab('click <login_button>')
 ab('wait --load networkidle')
 ```
 
-这确保 agent-browser 能访问需要认证的页面，避免因未登录导致探索中断。
+This ensures agent-browser can access authenticated pages without exploration interruptions.
 
 ## Schema
 
-完整示例见 `plugins/forge/references/shared/sitemap.json`。
+See `plugins/forge/references/shared/sitemap.json` for a full example.
 
-**关键字段**:
+**Key fields:**
 
-| 字段 | 说明 |
-|------|------|
-| `baseUrl` | 应用基础 URL（如 `http://localhost:3456`） |
-| `updatedAt` | 最后更新时间（RFC3339 格式） |
-| `layout.name` | 布局组件名（如 `AppLayout`） |
-| `layout.wraps` | 共享此布局的路由列表 |
-| `layout.elements[]` | 布局级共享元素（侧边栏、顶部导航等），ID 格式 `L-NNN` |
-| `pages[].elements[].role` | 可访问角色（button, heading 等） |
-| `pages[].elements[].name` | 可访问名称 |
-| `pages[].elements[].level` | heading 层级（仅 heading 角色） |
-| `pages[].elements[].label` | 关联 label 文本（仅 textbox 等表单元素） |
-| `pages[].elements[].placeholder` | 占位文本（仅 textbox） |
-| `pages[].states[]` | 动态状态（modal、tab panel、dropdown 等） |
-| `pages[].states[].trigger` | 触发元素 ID（如 `"E-002"`） |
-| `pages[].states[].elements` | 状态内的元素（同样带 E-NNN ID） |
+| Field | Description |
+|-------|-------------|
+| `baseUrl` | Application base URL (e.g. `http://localhost:3456`) |
+| `updatedAt` | Last update time (RFC3339 format) |
+| `layout.name` | Layout component name (e.g. `AppLayout`) |
+| `layout.wraps` | List of routes sharing this layout |
+| `layout.elements[]` | Layout-level shared elements (sidebar, top nav, etc.), ID format `L-NNN` |
+| `pages[].elements[].role` | Accessibility role (button, heading, etc.) |
+| `pages[].elements[].name` | Accessibility name |
+| `pages[].elements[].level` | Heading level (heading role only) |
+| `pages[].elements[].label` | Associated label text (form elements like textbox only) |
+| `pages[].elements[].placeholder` | Placeholder text (textbox only) |
+| `pages[].states[]` | Dynamic states (modal, tab panel, dropdown, etc.) |
+| `pages[].states[].trigger` | Trigger element ID (e.g. `"E-002"`) |
+| `pages[].states[].elements` | Elements within the state (also with E-NNN IDs) |
 
-**布局元素 vs 页面元素**：
+**Layout elements vs page elements:**
 
-- `layout.elements`：所有被布局包裹的页面共享的元素（导航栏、侧边栏、页脚），ID 格式 `L-NNN`
-- `pages[].elements`：仅属于当前页面的特有元素，ID 格式 `E-NNN`
-- 测试脚本生成时，布局元素可用在任何被包裹的页面中
+- `layout.elements`: Elements shared across all wrapped pages (navbar, sidebar, footer), ID format `L-NNN`
+- `pages[].elements`: Elements unique to the current page, ID format `E-NNN`
+- During test script generation, layout elements are available in any wrapped page
 
 ## Workflow
 
@@ -104,37 +104,37 @@ ab('wait --load networkidle')
 
 ### Step 1: Load Existing Sitemap
 
-读取 `docs/sitemap/sitemap.json`（如果存在）。
+Read `docs/sitemap/sitemap.json` if it exists.
 
-构建 ID 索引：以 `route + role + name` 为 key，映射到已有 ID。
+Build an ID index: use `route + role + name` as key, mapping to existing IDs.
 
-若无现有 sitemap，从 `E-001` 开始编号。
+If no existing sitemap, start numbering from `E-001`.
 
 ### Step 2: Analyze Layout
 
 <EXTREMELY-IMPORTANT>
-**此步骤必须在页面探索前执行。** 目标是识别共享布局，避免在每个页面重复提取布局元素。
+**This step MUST execute before page exploration.** The goal is to identify shared layout to avoid extracting layout elements on every page.
 
-**先读代码，再探索。** 不要先无脑探索再回头去重。
+**Read code first, then explore.** Do not blindly explore first and then go back to deduplicate.
 </EXTREMELY-IMPORTANT>
 
-**2a. 读取路由定义**：查找应用的路由配置文件（如 `App.tsx`、`router.ts`、`routes.tsx`），识别布局嵌套：
+**2a. Read route definitions**: Find the application's route configuration files (e.g. `App.tsx`, `router.ts`, `routes.tsx`), identify layout nesting:
 
 ```
-<Route element={<AppLayout />}>      ← 共享布局
+<Route element={<AppLayout />}>      ← shared layout
   <Route path="/" element={<Dashboard />} />
   <Route path="/settings" element={<Settings />} />
   ...
 </Route>
-<Route path="/login">                ← 无布局（独立页面）
+<Route path="/login">                ← no layout (standalone page)
 ```
 
-记录：
-- `layout.name`：布局组件名（如 `AppLayout`）
-- `layout.wraps`：被布局包裹的路由列表
-- 不被任何布局包裹的路由（如 `/login`）为独立页面
+Record:
+- `layout.name`: layout component name (e.g. `AppLayout`)
+- `layout.wraps`: list of routes wrapped by the layout
+- Routes not wrapped by any layout (e.g. `/login`) are standalone pages
 
-**2b. 探索布局元素**：对布局包裹的第一个页面做 snapshot，提取**仅属于布局层**的元素：
+**2b. Explore layout elements**: Take a snapshot of the first wrapped page, extracting **only layout-level** elements:
 
 ```
 ab('open <baseUrl><first_wrapped_route>')
@@ -142,38 +142,38 @@ ab('wait --load networkidle')
 snapshot = abJson('snapshot -i')
 ```
 
-从 snapshot 中识别布局区域（通常为 `role=navigation`、`role=banner`、侧边栏容器等），提取其中的元素归入 `layout.elements`。
+From the snapshot, identify layout regions (typically `role=navigation`, `role=banner`, sidebar containers, etc.) and extract their elements into `layout.elements`.
 
-**若无法读取路由代码**（纯 HTML 项目或无源码访问）：跳过此步骤，所有元素按页面级处理。在 Step 4 探索前两个页面后，对比两次 snapshot 中 `role + name` 完全相同的元素作为布局候选项，归入 `layout.elements`，后续页面探索时过滤掉这些候选项。
+**If route code cannot be read** (pure HTML project or no source access): skip this step and treat all elements as page-level. After exploring the first two pages in Step 4, compare snapshots for elements with identical `role + name` as layout candidates, assign them to `layout.elements`, and filter them out during subsequent page exploration.
 
 ### Step 3: Discover Routes
 
-使用 agent-browser 导航到用户提供的 `base-url`，提取页面中所有链接：
+Use agent-browser to navigate to the user-provided `base-url` and extract all links from the page:
 
 ```
 ab('open <base-url>')
 ab('wait --load networkidle')
-links = abJson('snapshot -i')  // 提取所有 role=link 节点的 href
+links = abJson('snapshot -i')  // extract all role=link nodes' href
 ```
 
-1. 过滤为同源路径（排除外部链接、`mailto:`、`javascript:`）
-2. 去重得到路由列表
-3. 对每个新路由递归提取链接（广度优先，最大深度 3）
-4. 合并现有 sitemap 中手动添加的路由
+1. Filter to same-origin paths (exclude external links, `mailto:`, `javascript:`)
+2. Deduplicate to get a route list
+3. Recursively extract links from each new route (breadth-first, max depth 3)
+4. Merge manually added routes from existing sitemap
 
-**动态路由处理**：带参数的路由（如 `/tasks/123`）记录为模板形式 `/tasks/:id`。参数化规则：
+**Dynamic route handling**: Routes with parameters (e.g. `/tasks/123`) are recorded as template form `/tasks/:id`. Parameterization rules:
 
-| URL 段模式 | 替换为 | 示例 |
-|-----------|--------|------|
-| 纯数字 | `:id` | `/tasks/42` → `/tasks/:id` |
-| UUID 格式 | `:uuid` | `/orders/550e8400-...` → `/orders/:uuid` |
-| 32 位 hex | `:hash` | `/files/a1b2c3d4e5f6...` → `/files/:hash` |
+| URL segment pattern | Replace with | Example |
+|---------------------|-------------|---------|
+| Pure numeric | `:id` | `/tasks/42` → `/tasks/:id` |
+| UUID format | `:uuid` | `/orders/550e8400-...` → `/orders/:uuid` |
+| 32-char hex | `:hash` | `/files/a1b2c3d4e5f6...` → `/files/:hash` |
 
-去重时，模板相同的路由只保留一个条目。`layout.wraps` 中也使用模板形式。
+During deduplication, routes with the same template keep only one entry. `layout.wraps` also uses template form.
 
 ### Step 4: Explore Pages
 
-对每个路由逐一用 agent-browser 探索：
+For each route, explore with agent-browser one by one:
 
 ```
 ab('open <baseUrl><route>')
@@ -181,44 +181,44 @@ ab('wait --load networkidle')
 snapshot = abJson('snapshot -i')
 ```
 
-#### 布局元素过滤
+#### Layout Element Filtering
 
 <HARD-RULE>
-若 Step 2 识别了共享布局，此步骤**必须跳过布局元素**。
-对比 snapshot 与 `layout.elements`，过滤掉 `role + name` 匹配的元素。
-只有页面特有的内容区元素才归入 `pages[].elements`。
+If Step 2 identified a shared layout, this step **MUST skip layout elements**.
+Compare the snapshot against `layout.elements`, filtering out elements matching by `role + name`.
+Only page-specific content area elements are included in `pages[].elements`.
 </HARD-RULE>
 
-#### 基础元素提取
+#### Base Element Extraction
 
-1. 获取页面 title
-2. 从 snapshot 提取元素，过滤条件：
-   - 排除已归入 `layout.elements` 的元素（按 `role + name` 匹配）
+1. Get page title
+2. Extract elements from snapshot with filters:
+   - Exclude elements already in `layout.elements` (matched by `role + name`)
    - `role` ∈ {button, link, heading, textbox, checkbox, radio, combobox, tab, dialog, alert, navigation, search, form, menuitem, switch}
-   - `name` 非空
-3. 对每个元素记录完整属性：
-   - 通用：`{ role, name }`
-   - heading：额外记录 `level`
-   - textbox/combobox：额外记录 `label`（关联 label 文本）和 `placeholder`
+   - `name` is non-empty
+3. For each element, record full attributes:
+   - Common: `{ role, name }`
+   - heading: additionally record `level`
+   - textbox/combobox: additionally record `label` (associated label text) and `placeholder`
 
-#### 动态状态探索
+#### Dynamic State Exploration
 
-对基础元素中 role=button/tab/disclosure 且 name 非空的触发元素：
+For trigger elements with role=button/tab/disclosure and non-empty name:
 
 ```
 ab('click @eN')
 ab('wait --load networkidle')
 state_snapshot = abJson('snapshot -i')
-// 提取新增元素（对比基础 snapshot）
-ab('press Escape')  // 或 ab('click @close_btn') 重置
+// Extract new elements (compare with base snapshot)
+ab('press Escape')  // or ab('click @close_btn') to reset
 ```
 
-1. 比较状态 snapshot 与基础 snapshot，提取新增元素
-2. 记录为 `states` 条目：`{ name, trigger: "<元素ID>", elements: [...] }`
-3. `trigger` 引用触发元素的 E-NNN ID（如 `"E-002"`）
-4. 状态内元素同样分配 E-NNN ID
+1. Compare state snapshot with base snapshot, extract new elements
+2. Record as `states` entry: `{ name, trigger: "<elementID>", elements: [...] }`
+3. `trigger` references the trigger element's E-NNN ID (e.g. `"E-002"`)
+4. In-state elements also receive E-NNN IDs
 
-> **注意**：`@eN` 是 agent-browser CLI 的元素引用语法，仅在 sitemap 生成过程中使用。生成的测试脚本（`*.spec.ts`）中禁止使用 `@eN`，必须使用 Playwright Locator API。
+> **Note**: `@eN` is agent-browser CLI's element reference syntax, used only during sitemap generation. Generated test scripts (`*.spec.ts`) must NOT use `@eN`; they must use Playwright Locator API.
 
 ```
 ab('close')
@@ -226,15 +226,15 @@ ab('close')
 
 ### Step 5: Merge & Write
 
-对每个元素（含 layout 和 states 内元素），用 `route + role + name` 三元组匹配现有 sitemap：
+For each element (including layout and in-states elements), match against existing sitemap using the `route + role + name` triplet:
 
-- **匹配成功** → 保留原有 ID
-- **无匹配** → 分配新 ID（当前最大 ID + 1）
-- **现有 ID 无匹配** → 元素已移除，从 sitemap 中删除
+- **Match found** → preserve existing ID
+- **No match** → assign new ID (current max ID + 1)
+- **Existing ID has no match** → element was removed, delete from sitemap
 
-写入 `docs/sitemap/sitemap.json`。
+Write to `docs/sitemap/sitemap.json`.
 
-**报告变更**：
+**Report changes:**
 
 ```
 Sitemap updated: docs/sitemap/sitemap.json
@@ -245,10 +245,10 @@ Sitemap updated: docs/sitemap/sitemap.json
   17 unchanged
 ```
 
-## Element ID 分配规则
+## Element ID Assignment Rules
 
-- **布局元素**：格式 `L-NNN`，全局唯一，独立编号空间
-- **页面元素**：格式 `E-NNN`，全局唯一（base 和 states 共享 ID 空间）
-- 首次生成：分别从 `L-001` 和 `E-001` 顺序分配
-- 增量更新：新元素从当前最大 ID + 1 开始
-- ID 永不重复使用（删除的 ID 不回收）
+- **Layout elements**: format `L-NNN`, globally unique, independent numbering space
+- **Page elements**: format `E-NNN`, globally unique (base and states share ID space)
+- First generation: start from `L-001` and `E-001` respectively
+- Incremental update: new elements start from current max ID + 1
+- IDs are never reused (deleted IDs are not recycled)

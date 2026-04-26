@@ -1,51 +1,51 @@
-# 思维方式
+# Mindset
 
-秉持`第一性原理`思考，拒绝经验主义与路径依赖，保持审慎。从原始需求出发，若目标模糊则停下讨论；若目标清晰但路径非最优，则直言更简捷的方案。
+Think from `first principles`, rejecting empiricism and path dependency. Stay cautious. Start from raw requirements — if the goal is unclear, stop and discuss; if the goal is clear but the path is suboptimal, suggest a more direct approach.
 
-所有回答须包含两部分：
+All responses must include two parts:
 
-**直接执行**——按当前要求直接给出结果。
+**Direct execution** — deliver the requested result.
 
-**深度交互**——对原始需求进行`审慎挑战`：
-  - 质疑动机是否偏离目标（XY问题）
-  - 分析当前路径的弊端
-  - 给出更优雅的替代方案
+**Deep interaction** — `critically challenge` the original request:
+  - Question whether the motivation diverges from the goal (XY problem)
+  - Analyze drawbacks of the current path
+  - Suggest more elegant alternatives
 
-## 开发规则
+## Development Rules
 
-### TDD (必须遵循)
+### TDD (mandatory)
 
-RED → GREEN → REFACTOR 循环。覆盖率目标 **80%+**。表驱动测试。Mock 外部依赖。
+RED → GREEN → REFACTOR cycle. Coverage target **80%+**. Table-driven tests. Mock external dependencies.
 
-### 提交规范
+### Commit Convention
 
-使用 `/git-commit` SKILL
+Use the `/git-commit` SKILL
 
-### 依赖方向
+### Dependency Direction
 
-`cmd → internal → pkg`，严禁反向。模块间通过接口交互。
+`cmd → internal → pkg`, reverse is strictly forbidden. Modules interact through interfaces.
 
-## 常用命令
+## Common Commands
 
 ```bash
-go build ./...                  # 编译检查
-go vet ./...                    # 静态分析
-go test -race -cover ./...      # 测试 (含竞态检测和覆盖率)
+go build ./...                  # Compile check
+go vet ./...                    # Static analysis
+go test -race -cover ./...      # Tests (with race detection and coverage)
 golangci-lint run ./...         # Lint
-bash ../claude-code-go/scripts/lint-arch.sh       # 架构约束验证
+bash ../claude-code-go/scripts/lint-arch.sh       # Architecture constraint verification
 ```
 
-## 文档
+## Documentation
 
-### 索引
+### Index
 
-| 文档 | 说明 |
-|------|------|
-| [docs/OVERVIEW.md](docs/OVERVIEW.md) | 功能概览：核心功能、目录结构、数据模型 |
-| [docs/WORKFLOW.md](docs/WORKFLOW.md) | 关键流程：任务声明、Hook、验证、工作流 |
+| Document | Description |
+|----------|-------------|
+| [docs/OVERVIEW.md](docs/OVERVIEW.md) | Feature overview: core functionality, directory structure, data models |
+| [docs/WORKFLOW.md](docs/WORKFLOW.md) | Key workflows: task claiming, hooks, validation, workflows |
 
-### 同步规则
+### Sync Rules
 
-1. **功能变更必更文档**：新增/修改/删除功能时，同步更新 `docs/OVERVIEW.md`
-2. **流程变更必更文档**：修改核心逻辑或工作流时，同步更新 `docs/WORKFLOW.md`
-3. **提交前检查**：代码变更涉及文档范围时，确认文档已同步
+1. **Feature changes must update docs**: when adding/modifying/removing features, sync `docs/OVERVIEW.md`
+2. **Workflow changes must update docs**: when modifying core logic or workflows, sync `docs/WORKFLOW.md`
+3. **Pre-commit check**: when code changes affect documented areas, confirm docs are synced

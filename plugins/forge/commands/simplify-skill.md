@@ -7,16 +7,16 @@ allowed_tools: ["Read", "AskUserQuestion"]
 
 # /simplify-skill
 
-重构 skill 文件：**拆分非核心内容**，保持主流程清晰。
+Refactor skill files: **extract non-core content** to keep the main workflow clear.
 
 ## Core Principle
 
 ```
 MAIN FILE = WORKFLOW ONLY
 
-skill.md     → 流程步骤、决策点
-templates/   → JSON 模板、输出格式示例
-examples/    → 完整用例、边界情况
+skill.md     → Process steps, decision points
+templates/   → JSON templates, output format examples
+examples/    → Full use cases, edge cases
 ```
 
 ## Workflow

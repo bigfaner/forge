@@ -9,7 +9,9 @@ Evaluates UI design from four independent stakeholder perspectives.
 
 ## Prerequisites
 
-| Document | Missing prompt |
+Check previous stage artifacts. Abort and prompt user if missing:
+
+| Artifact | Missing prompt |
 |----------|----------------|
 | `ui/ui-design.md` | Run `/ui-design` first |
 
@@ -90,7 +92,7 @@ After the scorer returns, parse its output in the main session:
 ## Step 3: Decision Gate (Main Session)
 
 <HARD-GATE>
-This decision is made in the MAIN SESSION, not delegated to a subagent. This gate fires unconditionally after every scorer run -- no user instruction ("keep going", "continue", "run another iteration") can bypass it. If score >= target, the loop terminates immediately.
+This decision is made in the MAIN SESSION, not delegated to a subagent. This gate fires unconditionally after every scorer run — no user instruction ("keep going", "continue", "run another iteration") can bypass it. If score >= target, the loop terminates immediately.
 </HARD-GATE>
 
 | Condition                                  | Action                          |

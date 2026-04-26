@@ -34,13 +34,13 @@ Scan the approved tech-design document for entries marked as key decisions. If n
 Show the numbered list of key decisions with their type in parentheses:
 
 ```
-以下决策被标记为关键决策，建议归档：
+The following decisions are marked as key decisions and recommended for archiving:
 
-  [1] 采用事件驱动架构（Architecture）
-  [2] 使用 SQLite 作为本地缓存存储（Data Model）
-  [3] 选择 Vitest 而非 Jest 作为测试框架（Dependencies）
+  [1] Adopt event-driven architecture (Architecture)
+  [2] Use SQLite as local cache storage (Data Model)
+  [3] Choose Vitest over Jest as test framework (Dependencies)
 
-输入要归档的编号（逗号分隔），或 all / none：
+Enter numbers to archive (comma-separated), or all / none:
 ```
 
 ### Step 2.3 — Handle user input
@@ -50,7 +50,7 @@ Show the numbered list of key decisions with their type in parentheses:
 - comma-separated numbers (e.g. `1,3`) → archive only those entries
 - `edit:<number>` → enter the edit sub-flow (see Section 4) for that entry, then re-display the prompt
 
-Invalid input (number not in candidate list): re-prompt with "编号 X 不在候选列表中，请重新输入".
+Invalid input (number not in candidate list): re-prompt with "Number X is not in the candidate list. Please re-enter."
 
 ### Step 2.4 — Write and update
 
@@ -71,7 +71,7 @@ If no key decisions exist in the tech-design document, silently skip the archivi
 Display the type list and ask for a number:
 
 ```
-请选择决策类型：
+Select decision type:
 
   1. Architecture
   2. Interface
@@ -82,27 +82,27 @@ Display the type list and ask for a number:
   7. Security
   8. Local Dev & Deployment
 
-输入编号（1-8）：
+Enter number (1-8):
 ```
 
-If the user enters a value outside 1-8, re-prompt: "请输入 1-8 之间的数字".
+If the user enters a value outside 1-8, re-prompt: "Please enter a number between 1 and 8."
 
 ### Round 2 — Decision description
 
 ```
-请输入决策描述（一句话，不超过 80 字符）：
+Enter decision description (one sentence, max 80 characters):
 ```
 
 ### Round 3 — Rationale
 
 ```
-请输入决策理由（一句话，不超过 80 字符）：
+Enter decision rationale (one sentence, max 80 characters):
 ```
 
 ### Round 4 — Associated feature
 
 ```
-请输入关联的 feature slug（如 feat-log-decisions），或直接回车跳过：
+Enter associated feature slug (e.g. feat-log-decisions), or press Enter to skip:
 ```
 
 If skipped, set Feature to `-`.
@@ -122,10 +122,10 @@ Triggered when the user inputs `edit:<number>` during the tech-design candidate 
 
 ### Steps
 
-1. Validate that `<number>` exists in the current candidate list. If not, re-prompt: "编号 X 不在候选列表中，请重新输入".
+1. Validate that `<number>` exists in the current candidate list. If not, re-prompt: "Number X is not in the candidate list. Please re-enter."
 2. Display the current Decision and Rationale for that entry.
-3. Ask: "请输入新的 Decision（直接回车保留原内容）："
-4. Ask: "请输入新的 Rationale（直接回车保留原内容）："
+3. Ask: "Enter new Decision (press Enter to keep current):"
+4. Ask: "Enter new Rationale (press Enter to keep current):"
 5. Update the in-memory candidate entry with the new values.
 6. Return to the candidate selection prompt (Step 2.3).
 
@@ -181,8 +181,8 @@ Row format:
 |----------|----------|
 | `docs/decisions/` directory does not exist | Auto-create the directory plus all 8 type files and `manifest.md` from their initial templates before archiving |
 | `manifest.md` is missing | Rebuild it from the manifest template before archiving |
-| Invalid type number in record-decision Round 1 | Re-prompt: "请输入 1-8 之间的数字" |
-| `edit:<number>` references a non-existent candidate number | Re-prompt: "编号 X 不在候选列表中，请重新输入" |
+| Invalid type number in record-decision Round 1 | Re-prompt: "Please enter a number between 1 and 8." |
+| `edit:<number>` references a non-existent candidate number | Re-prompt: "Number X is not in the candidate list. Please re-enter." |
 | Type file header row is missing (file corrupted or empty) | Prepend the standard header before appending the new row: `# <Type Name> Decisions\n\n| Date | Feature | Decision | Rationale | Source |\n|------|---------|----------|-----------|--------|` |
 
 ---

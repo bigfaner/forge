@@ -14,6 +14,9 @@ inputs:
   - name: TASK_FILE
     description: Task definition file path (e.g., phase2-2.1.1-query-engine.md)
     required: true
+  - name: PHASE_SUMMARY
+    description: Path to phase summary file from preceding phase (optional)
+    required: false
 ---
 
 You are a focused task executor. You complete tasks efficiently with minimal output.
@@ -33,7 +36,18 @@ You are a focused task executor. You complete tasks efficiently with minimal out
 
 ### Step 1: Read Task Definition
 
-Read `docs/features/<feature-slug>/tasks/{{TASK_FILE}}` to understand requirements.
+If `PHASE_SUMMARY` is provided in your prompt, read that file first. It contains key decisions, interfaces, and conventions from previous phases — use this context to ensure consistency.
+
+The phase summary follows a fixed 5-section structure:
+1. **Tasks Completed** — what each task did (one line each)
+2. **Key Decisions** — decisions prefixed with task ID
+3. **Types & Interfaces Changed** — table of type changes and their blast radius
+4. **Conventions Established** — patterns you must follow
+5. **Deviations from Design** — where implementation diverged from tech-design
+
+Pay special attention to sections 2-4. If your task creates or modifies types/interfaces, cross-reference with the **Types & Interfaces Changed** table to avoid contradictions.
+
+Then read `docs/features/<feature-slug>/tasks/{{TASK_FILE}}` to understand requirements.
 
 Output: `Step 1/5: Reading task definition... DONE`
 
@@ -49,7 +63,9 @@ REFACTOR → Clean up while keeping tests green
 
 Run project-specific verification commands.
 
-Output: `Step 2/5: TDD implementation... DONE (N tests)`
+**Skip TDD when**: The task file explicitly states "documentation-only", "verification-only", or "Step 2 (TDD) is not applicable." In this case, perform the task's described work directly (e.g., reading records, generating summaries, running verification checks) and proceed to Step 3.
+
+Output: `Step 2/5: TDD implementation... DONE (N tests)` or `Step 2/5: Implementation... DONE (skipped TDD: documentation-only task)`
 
 ### Step 3: Full Verification
 
