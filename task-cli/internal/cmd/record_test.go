@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -16,12 +17,8 @@ func TestValidateRecordData(t *testing.T) {
 			Status: "completed",
 			Summary: "",
 		}
-		// validateRecordData calls Exit() which calls os.Exit(1)
-		// We test the logic by catching the exit via a subprocess
-		// Instead, let's test the validation logic directly
-		// Since validateRecordData calls Exit, we test via subprocess
 		if os.Getenv("TEST_VALIDATE_EMPTY_SUMMARY") == "1" {
-			validateRecordData(rd)
+			validateRecordData(rd, false)
 			return
 		}
 		cmd := exec.Command(os.Args[0], "-test.run=TestValidateRecordData/empty_summary_triggers_hard_error")
@@ -34,7 +31,7 @@ func TestValidateRecordData(t *testing.T) {
 
 	t.Run("whitespace-only summary triggers hard error", func(t *testing.T) {
 		if os.Getenv("TEST_VALIDATE_WS_SUMMARY") == "1" {
-			validateRecordData(&RecordData{Status: "completed", Summary: "   "})
+			validateRecordData(&RecordData{Status: "completed", Summary: "   "}, false)
 			return
 		}
 		cmd := exec.Command(os.Args[0], "-test.run=TestValidateRecordData/whitespace-only_summary_triggers_hard_error")
@@ -45,16 +42,31 @@ func TestValidateRecordData(t *testing.T) {
 		}
 	})
 
-	t.Run("completed without recommended fields warns", func(t *testing.T) {
-		rd := &RecordData{
-			Status:  "completed",
-			Summary: "Did the work",
+	t.Run("completed without test evidence triggers hard error", func(t *testing.T) {
+		if os.Getenv("TEST_VALIDATE_NO_TESTS") == "1" {
+			validateRecordData(&RecordData{Status: "completed", Summary: "Did the work", TestsPassed: 0, TestsFailed: 0, Coverage: 0}, false)
+			return
 		}
-		// Capture stderr for warning
+		cmd := exec.Command(os.Args[0], "-test.run=TestValidateRecordData/completed_without_test_evidence_triggers_hard_error")
+		cmd.Env = append(os.Environ(), "TEST_VALIDATE_NO_TESTS=1")
+		err := cmd.Run()
+		if err == nil {
+			t.Error("expected non-zero exit for completed with no test evidence")
+		}
+	})
+
+	t.Run("completed with coverage=-1 skips test evidence check", func(t *testing.T) {
+		rd := &RecordData{
+			Status:      "completed",
+			Summary:     "Doc task",
+			Coverage:    -1.0,
+			TestsPassed: 0,
+			TestsFailed: 0,
+		}
 		old := os.Stderr
 		r, w, _ := os.Pipe()
 		os.Stderr = w
-		validateRecordData(rd)
+		validateRecordData(rd, false)
 		w.Close()
 		os.Stderr = old
 
@@ -62,18 +74,12 @@ func TestValidateRecordData(t *testing.T) {
 		n, _ := r.Read(buf)
 		output := string(buf[:n])
 
-		if !strings.Contains(output, "WARNING") {
-			t.Errorf("expected warning in stderr, got: %s", output)
-		}
-		// Should warn about keyDecisions, tests, acceptanceCriteria
-		for _, field := range []string{"keyDecisions", "coverage", "acceptanceCriteria"} {
-			if !strings.Contains(output, field) {
-				t.Errorf("expected warning to mention %q, got: %s", field, output)
-			}
+		if strings.Contains(output, "ERROR") {
+			t.Errorf("coverage=-1.0 should skip test evidence check, got: %s", output)
 		}
 	})
 
-	t.Run("completed with all fields produces no warning", func(t *testing.T) {
+	t.Run("completed with tests passes test evidence check", func(t *testing.T) {
 		rd := &RecordData{
 			Status:             "completed",
 			Summary:            "Full record",
@@ -85,7 +91,7 @@ func TestValidateRecordData(t *testing.T) {
 		old := os.Stderr
 		r, w, _ := os.Pipe()
 		os.Stderr = w
-		validateRecordData(rd)
+		validateRecordData(rd, false)
 		w.Close()
 		os.Stderr = old
 
@@ -98,7 +104,108 @@ func TestValidateRecordData(t *testing.T) {
 		}
 	})
 
-	t.Run("non-completed status skips recommended checks", func(t *testing.T) {
+	t.Run("completed with unmet AC triggers hard error", func(t *testing.T) {
+		if os.Getenv("TEST_VALIDATE_UNMET_AC") == "1" {
+			validateRecordData(&RecordData{
+				Status:      "completed",
+				Summary:     "Partial",
+				TestsPassed: 1,
+				Coverage:    50.0,
+				AcceptanceCriteria: []AcceptanceCriterion{
+					{Criterion: "works", Met: true},
+					{Criterion: "edge case", Met: false},
+				},
+			}, false)
+			return
+		}
+		cmd := exec.Command(os.Args[0], "-test.run=TestValidateRecordData/completed_with_unmet_AC_triggers_hard_error")
+		cmd.Env = append(os.Environ(), "TEST_VALIDATE_UNMET_AC=1")
+		err := cmd.Run()
+		if err == nil {
+			t.Error("expected non-zero exit for completed with unmet AC")
+		}
+	})
+
+	t.Run("blocked with unmet AC is allowed", func(t *testing.T) {
+		rd := &RecordData{
+			Status:      "blocked",
+			Summary:     "Blocked",
+			TestsPassed: 0,
+			TestsFailed: 0,
+			Coverage:    0,
+			AcceptanceCriteria: []AcceptanceCriterion{
+				{Criterion: "works", Met: false},
+			},
+		}
+		old := os.Stderr
+		r, w, _ := os.Pipe()
+		os.Stderr = w
+		validateRecordData(rd, false)
+		w.Close()
+		os.Stderr = old
+
+		buf := make([]byte, 1024)
+		n, _ := r.Read(buf)
+		output := string(buf[:n])
+
+		if strings.Contains(output, "ERROR") {
+			t.Errorf("blocked status should allow unmet AC, got: %s", output)
+		}
+	})
+
+	t.Run("force overrides test evidence check", func(t *testing.T) {
+		rd := &RecordData{
+			Status:      "completed",
+			Summary:     "Force override",
+			TestsPassed: 0,
+			TestsFailed: 0,
+			Coverage:    0,
+		}
+		old := os.Stderr
+		r, w, _ := os.Pipe()
+		os.Stderr = w
+		validateRecordData(rd, true)
+		w.Close()
+		os.Stderr = old
+
+		buf := make([]byte, 1024)
+		n, _ := r.Read(buf)
+		output := string(buf[:n])
+
+		if strings.Contains(output, "ERROR") {
+			t.Errorf("force should override test evidence check, got: %s", output)
+		}
+	})
+
+	t.Run("completed without recommended fields warns", func(t *testing.T) {
+		rd := &RecordData{
+			Status:      "completed",
+			Summary:     "Did the work",
+			TestsPassed: 1,
+			Coverage:    50.0,
+		}
+		old := os.Stderr
+		r, w, _ := os.Pipe()
+		os.Stderr = w
+		validateRecordData(rd, false)
+		w.Close()
+		os.Stderr = old
+
+		buf := make([]byte, 1024)
+		n, _ := r.Read(buf)
+		output := string(buf[:n])
+
+		if !strings.Contains(output, "WARNING") {
+			t.Errorf("expected warning in stderr, got: %s", output)
+		}
+		for _, field := range []string{"keyDecisions", "acceptanceCriteria"} {
+			if !strings.Contains(output, field) {
+				t.Errorf("expected warning to mention %q, got: %s", field, output)
+			}
+		}
+	})
+
+	t.Run("non-completed status skips all checks", func(t *testing.T) {
 		rd := &RecordData{
 			Status:  "blocked",
 			Summary: "Blocked with reason",
@@ -106,7 +213,7 @@ func TestValidateRecordData(t *testing.T) {
 		old := os.Stderr
 		r, w, _ := os.Pipe()
 		os.Stderr = w
-		validateRecordData(rd)
+		validateRecordData(rd, false)
 		w.Close()
 		os.Stderr = old
 
@@ -408,9 +515,11 @@ func TestFillRecordTemplate(t *testing.T) {
 				Title: "Task with no notes",
 			},
 			recordData: &RecordData{
-				Status:  "completed",
-				Summary: "Done",
-				Notes:   "",
+				Status:       "completed",
+				Summary:      "Done",
+				TestsPassed:  1,
+				Coverage:     50.0,
+				Notes:        "",
 			},
 			startedTime: "2026-04-06 10:00",
 			checkContains: []string{
@@ -424,8 +533,10 @@ func TestFillRecordTemplate(t *testing.T) {
 				Title: "Task",
 			},
 			recordData: &RecordData{
-				Status:  "completed",
-				Summary: "Done",
+				Status:       "completed",
+				Summary:      "Done",
+				TestsPassed:  1,
+				Coverage:     50.0,
 			},
 			startedTime: "",
 			checkContains: []string{
@@ -440,8 +551,10 @@ func TestFillRecordTemplate(t *testing.T) {
 				Title: "Timed Task",
 			},
 			recordData: &RecordData{
-				Status:  "completed",
-				Summary: "Done",
+				Status:       "completed",
+				Summary:      "Done",
+				TestsPassed:  1,
+				Coverage:     50.0,
 			},
 			startedTime: "2026-04-06 10:00",
 			checkContains: []string{
@@ -455,10 +568,12 @@ func TestFillRecordTemplate(t *testing.T) {
 				Title: "Backward Time Task",
 			},
 			recordData: &RecordData{
-				Status:  "completed",
-				Summary: "Done",
+				Status:       "completed",
+				Summary:      "Done",
+				TestsPassed:  1,
+				Coverage:     50.0,
 			},
-			startedTime: "2026-04-06 15:00", // Started after current time would be
+			startedTime: "2026-04-06 15:00",
 			checkNotContains: []string{
 				"time_spent: ~",
 			},
@@ -479,7 +594,6 @@ func TestFillRecordTemplate(t *testing.T) {
 
 func TestReadRecordData(t *testing.T) {
 	t.Run("read from file", func(t *testing.T) {
-		// Create temp file with JSON data
 		dir := t.TempDir()
 		dataPath := dir + "/data.json"
 		jsonData := `{"status":"completed","summary":"Done","testsPassed":5,"coverage":80.5}`
@@ -526,14 +640,89 @@ func TestReadRecordData(t *testing.T) {
 	})
 
 	t.Run("no input without data flag", func(t *testing.T) {
-		// When dataPath is empty and stdin is not a pipe, should error
-		// This test verifies the error message
 		_, err := readRecordData("")
 		if err == nil {
 			t.Error("expected error when no data provided")
 		}
 		if !strings.Contains(err.Error(), "no input") {
 			t.Errorf("error should mention 'no input', got: %v", err)
+		}
+	})
+}
+
+func TestFormatCoverage(t *testing.T) {
+	tests := []struct {
+		input float64
+		want  string
+	}{
+		{-1.0, "N/A (task has no tests)"},
+		{85.5, "85.5%"},
+		{0.0, "0.0%"},
+		{100.0, "100.0%"},
+	}
+	for _, tt := range tests {
+		got := formatCoverage(tt.input)
+		if got != tt.want {
+			t.Errorf("formatCoverage(%v) = %q, want %q", tt.input, got, tt.want)
+		}
+	}
+}
+
+func TestSaveIndexAndSignalCompletion(t *testing.T) {
+	t.Run("all tasks completed writes forge state", func(t *testing.T) {
+		dir := t.TempDir()
+		featureDir := filepath.Join(dir, "docs", "features", "test-f")
+		tasksDir := filepath.Join(featureDir, "tasks")
+		os.MkdirAll(tasksDir, 0755)
+
+		indexPath := filepath.Join(tasksDir, "index.json")
+		index := &task.TaskIndex{
+			Feature: "test-f",
+			Tasks: map[string]task.Task{
+				"t1": {ID: "1.1", Title: "Done", Status: "completed", Priority: "P0", File: "1.1.md"},
+				"t2": {ID: "1.2", Title: "Skipped", Status: "skipped", Priority: "P1", File: "1.2.md"},
+			},
+		}
+
+		saveIndexAndSignalCompletion(indexPath, dir, "test-f", index)
+
+		// Verify index was saved
+		data, err := os.ReadFile(indexPath)
+		if err != nil {
+			t.Fatalf("index not saved: %v", err)
+		}
+		if !strings.Contains(string(data), "completed") {
+			t.Error("index should contain completed status")
+		}
+
+		// Verify forge state was written
+		statePath := filepath.Join(dir, ".forge", "state.json")
+		if _, err := os.Stat(statePath); os.IsNotExist(err) {
+			t.Error("forge state should be written when all tasks done")
+		}
+	})
+
+	t.Run("incomplete tasks does not write forge state", func(t *testing.T) {
+		dir := t.TempDir()
+		featureDir := filepath.Join(dir, "docs", "features", "test-f")
+		tasksDir := filepath.Join(featureDir, "tasks")
+		os.MkdirAll(tasksDir, 0755)
+
+		indexPath := filepath.Join(tasksDir, "index.json")
+		index := &task.TaskIndex{
+			Feature: "test-f",
+			Tasks: map[string]task.Task{
+				"t1": {ID: "1.1", Title: "Done", Status: "completed", Priority: "P0", File: "1.1.md"},
+				"t2": {ID: "1.2", Title: "Pending", Status: "pending", Priority: "P1", File: "1.2.md"},
+			},
+		}
+
+		saveIndexAndSignalCompletion(indexPath, dir, "test-f", index)
+
+		// Verify forge state was NOT written
+		statePath := filepath.Join(dir, ".forge", "state.json")
+		if _, err := os.Stat(statePath); err == nil {
+			t.Error("forge state should NOT be written when tasks are pending")
 		}
 	})
 }

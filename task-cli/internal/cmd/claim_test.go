@@ -227,7 +227,7 @@ func TestCheckDependenciesMet(t *testing.T) {
 				StatusEnum:   []string{"pending", "in_progress", "completed"},
 				PriorityEnum: []string{"P0", "P1", "P2"},
 			}
-			gotMet, _ := checkDependenciesMet(index, tt.task)
+			gotMet, _ := checkDependenciesMet(index, tt.task.ID, tt.task)
 			if gotMet != tt.wantMet {
 				t.Errorf("checkDependenciesMet() = %v, want %v", gotMet, tt.wantMet)
 			}
@@ -338,6 +338,14 @@ func TestCompareVersionIDs(t *testing.T) {
 		{"1.1", "1.0.2", false},     // 1.1 > 1.0.2
 		{"1.0.2.1", "1.0.2", false}, // 1.0.2.1 > 1.0.2
 		{"1.0.2", "1.0.2.1", true},  // 1.0.2 < 1.0.2.1
+		{"1.1", "1.summary", true},    // numeric before alphabetic
+		{"1.summary", "1.1", false},   // alphabetic after numeric
+		{"1.gate", "1.summary", true}, // gate before summary
+		{"1.summary", "1.gate", false},
+		{"1.5", "1.gate", true},       // numeric before alphabetic
+		{"1.gate", "2.1", true},       // gate in phase 1 before phase 2
+		{"1.summary", "2.1", true},    // summary in phase 1 before phase 2
+		{"1.summary", "1.summary", false}, // equal
 	}
 
 	for _, tt := range tests {
@@ -445,7 +453,7 @@ func TestCheckDependenciesMet_WildcardMatchesCompleted(t *testing.T) {
 		PriorityEnum: []string{"P0", "P1", "P2"},
 	}
 	task := task.Task{ID: "1.1", Dependencies: []string{"0.x"}}
-	met, unmet := checkDependenciesMet(index, task)
+	met, unmet := checkDependenciesMet(index, task.ID, task)
 	if !met {
 		t.Errorf("expected dependencies met, got unmet: %v", unmet)
 	}
@@ -462,7 +470,7 @@ func TestCheckDependenciesMet_UnknownDependency(t *testing.T) {
 		PriorityEnum: []string{"P0", "P1", "P2"},
 	}
 	task := task.Task{ID: "1.1", Dependencies: []string{"9.9"}}
-	met, unmet := checkDependenciesMet(index, task)
+	met, unmet := checkDependenciesMet(index, task.ID, task)
 	// Unknown dependency doesn't fail - it just doesn't block
 	if !met {
 		t.Errorf("expected dependencies met for unknown dep, got unmet: %v", unmet)

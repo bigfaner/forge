@@ -54,6 +54,9 @@ func runQuery(cmd *cobra.Command, args []string) {
 	PrintField("PRIORITY", t.Priority)
 	PrintFieldIfNotEmpty("ESTIMATED_TIME", t.EstimatedTime)
 	PrintFieldIfNotEmptySlice("DEPENDENCIES", t.Dependencies)
+	if t.Breaking {
+		PrintField("BREAKING", "true")
+	}
 	PrintField("FILE", filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, t.File)))
 	PrintField("RECORD", filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, t.Record)))
 	PrintBlockEnd()

@@ -115,6 +115,7 @@ func executeClaim() (*ClaimResult, error) {
 		File:          t.File,
 		Record:        t.Record,
 		StartedTime:   time.Now().Format("2006-01-02 15:04"),
+		Breaking:      t.Breaking,
 	}
 	if err := task.SaveState(statePath, state); err != nil {
 		return nil, err
@@ -177,7 +178,7 @@ func claimNextTask(index *task.TaskIndex) (string, *task.Task, error) {
 
 	for key, t := range index.Tasks {
 		if t.Status == "pending" {
-			if met, _ := checkDependenciesMet(index, t); met {
+			if met, _ := checkDependenciesMet(index, t.ID, t); met {
 				eligibleTasks = append(eligibleTasks, taskWithKey{key: key, t: t})
 			}
 		}
@@ -227,7 +228,7 @@ func getTaskPhase(id string) int {
 	return -1
 }
 
-func checkDependenciesMet(index *task.TaskIndex, t task.Task) (bool, []string) {
+func checkDependenciesMet(index *task.TaskIndex, selfID string, t task.Task) (bool, []string) {
 	var unmet []string
 	for _, dep := range t.Dependencies {
 		if strings.HasSuffix(dep, ".x") || strings.HasSuffix(dep, "x") {
@@ -235,6 +236,9 @@ func checkDependenciesMet(index *task.TaskIndex, t task.Task) (bool, []string) {
 			found := false
 			prefixWithDot := prefix + "."
 			for _, other := range index.Tasks {
+				if other.ID == selfID {
+					continue
+				}
 				if strings.HasPrefix(other.ID, prefixWithDot) && other.Status != "completed" {
 					unmet = append(unmet, other.ID)
 					found = true
@@ -265,18 +269,37 @@ func compareVersionIDs(a, b string) bool {
 		maxLen = len(partsB)
 	}
 	for i := 0; i < maxLen; i++ {
-		var numA, numB int
-		if i < len(partsA) {
-			numA, _ = strconv.Atoi(partsA[i])
+		na, aIsNum := parseSegment(partsA, i)
+		nb, bIsNum := parseSegment(partsB, i)
+		if aIsNum != bIsNum {
+			return aIsNum // numeric sorts before alphabetic
 		}
-		if i < len(partsB) {
-			numB, _ = strconv.Atoi(partsB[i])
-		}
-		if numA != numB {
-			return numA < numB
+		if na != nb {
+			return na < nb
 		}
 	}
 	return false
+}
+
+// parseSegment returns the numeric value of a segment and whether it's numeric.
+// Numeric segments (e.g., "1", "12") return their int value with true.
+// Alphabetic segments (e.g., "summary", "gate") return a lexicographic rank with false.
+func parseSegment(parts []string, i int) (int, bool) {
+	if i >= len(parts) {
+		return -1, true // missing segments sort before everything
+	}
+	if n, err := strconv.Atoi(parts[i]); err == nil {
+		return n, true
+	}
+	// Alphabetic segments: sort after all numeric, with deterministic order
+	switch parts[i] {
+	case "gate":
+		return 1, false
+	case "summary":
+		return 2, false
+	default:
+		return 0, false
+	}
 }
 
 func printTaskDetails(key string, t *task.Task, projectRoot, featureSlug string) {
@@ -287,6 +310,9 @@ func printTaskDetails(key string, t *task.Task, projectRoot, featureSlug string)
 	PrintField("STATUS", t.Status)
 	PrintFieldIfNotEmpty("ESTIMATED_TIME", t.EstimatedTime)
 	PrintFieldIfNotEmptySlice("DEPENDENCIES", t.Dependencies)
+	if t.Breaking {
+		PrintField("BREAKING", "true")
+	}
 	PrintField("FILE", filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, t.File)))
 	PrintField("RECORD", filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, t.Record)))
 }

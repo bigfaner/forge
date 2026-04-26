@@ -226,3 +226,25 @@ func ErrFeatureNotFound(slug string) *AIError {
 		"ls docs/features/",
 	)
 }
+
+// ErrNoTestEvidence creates an error for completed tasks with no test evidence.
+func ErrNoTestEvidence() *AIError {
+	return NewAIError(
+		ErrValidation,
+		"Cannot mark task completed with no test evidence",
+		"testsPassed=0 and testsFailed=0 with status=completed suggests tests were not actually run",
+		"Either (1) run tests and report results, (2) set coverage=-1.0 for tasks without tests, or (3) use --force to override",
+		"task record <id> --data record.json  (with real test metrics)\ntask record <id> --data record.json --force  (override, use cautiously)",
+	)
+}
+
+// ErrUnmetAcceptanceCriteria creates an error for completed tasks with unmet acceptance criteria.
+func ErrUnmetAcceptanceCriteria(unmet []string) *AIError {
+	return NewAIError(
+		ErrValidation,
+		fmt.Sprintf("Cannot mark task completed with %d unmet acceptance criteria", len(unmet)),
+		fmt.Sprintf("Unmet criteria: %s", strings.Join(unmet, "; ")),
+		"Fix the issues and re-run tests, or set status to 'blocked' with an explanation",
+		"Fix issues, then: task record <id> --data record.json\nOr set status 'blocked': change \"status\" to \"blocked\" in record.json",
+	)
+}
