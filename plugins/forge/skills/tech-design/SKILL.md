@@ -115,8 +115,19 @@ Before seeking approval, verify the design can be directly decomposed into imple
 | Interfaces → tasks | Does each interface map to at least one implementation task? |
 | Models → tasks | Does each data model map to at least one schema/migration task? |
 | PRD AC coverage | Are all acceptance criteria from user stories addressed? |
+| Cross-layer consistency | If feature spans layers, does the Data Map cover every field that crosses boundaries? |
 
 If any check fails, add the missing detail before presenting to the user.
+
+### 5.3 Cross-Layer Data Map
+
+If the feature touches more than one architectural layer (database, API, UI, CLI, etc.):
+- Complete the "Cross-Layer Data Map" table in the template
+- Every field that appears in multiple layers must have a row showing its type/shape at each layer
+- This becomes the Ground Truth for type decisions during task execution
+
+If the feature is single-layer (e.g., only affects CLI output formatting):
+- Write "Single-layer feature. Cross-Layer Data Map not applicable." in the section
 
 ## Step 6: Get Approval
 

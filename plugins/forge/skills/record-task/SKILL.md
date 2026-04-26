@@ -117,6 +117,23 @@ This single command automatically:
 
 **You don't need to do anything else after calling this command.**
 
+## Validation Rules (enforced by CLI)
+
+`task record` will reject the following combinations:
+
+| Condition | Error | Fix |
+|-----------|-------|-----|
+| `status=completed` + `testsPassed=0` + `testsFailed=0` + `coverage >= 0` | No test evidence | Run tests and report results, or set `coverage: -1.0` for no-test tasks |
+| `status=completed` + any `acceptanceCriteria.met=false` | Unmet acceptance criteria | Fix the issue, or set `status: "blocked"` |
+| `summary` is empty or whitespace | Missing summary | Provide a summary |
+
+Override any validation error with `--force`:
+```bash
+task record <TASK_ID> --data record.json --force
+```
+
+Use `--force` only when you have a specific reason (document it in `notes`).
+
 ## Forbidden Operations
 
 <EXTREMELY-IMPORTANT>

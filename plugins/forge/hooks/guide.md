@@ -135,4 +135,19 @@ Task CLI 管理 feature 生命周期中的任务流转。
 - ❌ 用 Python/JavaScript/Node 修改 JSON
 - ❌ 写入格式错误的 `process/record.json`
 
+### Validation Rules（enforced by CLI）
+
+`task record` 会拒绝以下组合：
+
+| Condition | Error | Fix |
+|-----------|-------|-----|
+| `status=completed` + `testsPassed=0` + `testsFailed=0` + `coverage >= 0` | No test evidence | Run tests, or set `coverage: -1.0` for no-test tasks |
+| `status=completed` + any `acceptanceCriteria.met=false` | Unmet AC | Fix the issue, or set `status: "blocked"` |
+| `summary` is empty or whitespace | Missing summary | Provide a summary |
+
+Override any validation error with `--force`:
+```bash
+task record <TASK_ID> --data record.json --force
+```
+
 > 完整命令说明请运行 `task -h` 或 `task [command] -h`
