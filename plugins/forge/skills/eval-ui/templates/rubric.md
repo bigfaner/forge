@@ -1,6 +1,7 @@
 # UI Design Evaluation Rubric
 
 **Total: 100 points**
+**Report template:** `plugins/forge/skills/eval-ui/templates/report.md`
 
 ## Perspectives
 

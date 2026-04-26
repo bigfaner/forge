@@ -1,190 +1,141 @@
 ---
 date: YYYY-MM-DD
-evaluator: Claude (automated)
+evaluator: doc-scorer
 language: "[Auto-detected]"
 ---
 
-# Harness 评估报告
+# Harness Evaluation Report — YYYY-MM-DD
 
----
-
-## 总评: [A/B/C/D/F]
+## Overall Score: X/100
 
 ```
-╔═══════════════════════════════════════════════════════════════════════════╗
-║                      HARNESS ENGINEERING HEALTH REPORT                    ║
-╠═══════════════════════════════════════════════════════════════════════════╣
-║                                                                           ║
-║  1. 设计环境 (Design Environment)                              Grade: _   ║
-║     ├── 渐进式披露                                            [A/B/C/F]  ║
-║     ├── 架构边界                                              [A/B/C/F]  ║
-║     ├── 工具与抽象                                            [A/B/C/F]  ║
-║     └── Agent 可读性                                          [A/B/C/F]  ║
-║                                                                           ║
-║  2. 明确意图 (Clarify Intent)                                  Grade: _   ║
-║     ├── 黄金原则                                              [A/B/C/F]  ║
-║     ├── 计划即工件                                            [A/B/C/F]  ║
-║     └── 不变量声明                                            [A/B/C/F]  ║
-║                                                                           ║
-║  3. 构建反馈回路 (Build Feedback Loops)                        Grade: _   ║
-║     ├── 即时反馈                                              [A/B/C/F]  ║
-║     ├── 自动修复                                              [A/B/C/F]  ║
-║     ├── 技术债务 GC                                           [A/B/C/F]  ║
-║     └── 可观测性                                              [A/B/C/F]  ║
-║                                                                           ║
-╚═══════════════════════════════════════════════════════════════════════════╝
+╔══════════════════════════════════════════════════════════════╗
+║              HARNESS ENGINEERING HEALTH REPORT                ║
+╠══════════════════════════════════════════════════════════════╣
+║                                                               ║
+║  1. Progressive Disclosure                        XX/25       ║
+║     ├── Entry point concise                      [0-8]        ║
+║     ├── Knowledge base structured                [0-9]        ║
+║     └── Doc validation mechanized                [0-8]        ║
+║                                                               ║
+║  2. Architectural Boundaries                      XX/25       ║
+║     ├── Dependency direction defined             [0-9]        ║
+║     ├── Boundaries mechanically enforced         [0-8]        ║
+║     └── Error messages guide remediation         [0-8]        ║
+║                                                               ║
+║  3. Golden Principles                             XX/25       ║
+║     ├── Shared tools over ad-hoc                 [0-9]        ║
+║     ├── Boundary validation                      [0-8]        ║
+║     └── Tech debt GC process                     [0-8]        ║
+║                                                               ║
+║  4. Plan Artifacts & Feedback                     XX/25       ║
+║     ├── Plans are versioned artifacts            [0-9]        ║
+║     ├── Execution records structured             [0-8]        ║
+║     └── Test results structured & observable     [0-8]        ║
+║                                                               ║
+╚══════════════════════════════════════════════════════════════╝
 ```
 
 ---
 
-## 1. 设计环境 (Design Environment) - Grade: _
+## 1. Progressive Disclosure — XX/25
 
-### 1.1 渐进式披露 [A/B/C/F]
+### 1.1 Entry Point Concise — X/8
 
-| 检查项 | 目标 | 实际 | 状态 |
-|--------|------|------|------|
-| CLAUDE.md 行数 | < 100 | XX 行 | ✅/❌ |
-| 作为目录指向深层文档 | ✅ | 指向 docs/ | ✅/❌ |
-| 知识库总索引 | ✅ | 有/缺 docs/README.md | ✅/❌ |
-| 规则有 paths frontmatter | ✅ | N/M 文件有 | ✅/❌ |
+**Evidence:** <specific observation from snapshot, e.g., "CLAUDE.md is 42 lines, structured as index table with 4 document links">
 
-**问题**: <列出发现的问题>
-**建议**: <列出改进建议>
+**Finding:** <what was found — good or bad>
 
-### 1.2 架构边界 [A/B/C/F]
+### 1.2 Knowledge Base Structured — X/9
 
-| 检查项 | 强制方式 | 状态 |
-|--------|----------|------|
-| 依赖方向定义 | docs + lint script | ✅/❌ |
-| 自动化边界检查 | lint script | ✅ 手动/自动 |
-| 层级划分明确 | 目录结构 | ✅/❌ |
-| 接口定义行为 | 约定 | ✅/❌ |
+**Evidence:** <specific observation>
 
-**问题**: <列出发现的问题>
-**建议**: <列出改进建议>
+**Finding:** <what was found>
 
-### 1.3 工具与抽象 [A/B/C/F]
+### 1.3 Doc Validation Mechanized — X/8
 
-| 检查项 | 状态 |
-|--------|------|
-| 任务记录工具 (record-task) | ✅/❌ |
-| 代码审查 agent | ✅/❌ |
-| 安全审查 agent | ✅/❌ |
-| 错误修复 agent (error-fixer) | ✅/❌ |
+**Evidence:** <specific observation>
 
-### 1.4 Agent 可读性 [A/B/C/F]
-
-| 检查项 | 状态 |
-|--------|------|
-| 架构在代码中可见 | ✅/❌ |
-| 依赖可机械发现 | ✅/❌ |
-| 错误消息含修复提示 | ✅/❌ |
-| 测试作为行为文档 | ✅/❌ |
+**Finding:** <what was found>
 
 ---
 
-## 2. 明确意图 (Clarify Intent) - Grade: _
+## 2. Architectural Boundaries — XX/25
 
-### 2.1 黄金原则 [A/B/C/F]
+### 2.1 Dependency Direction Defined — X/9
 
-| 原则 | 定义 | 强制 | 状态 |
-|------|------|------|------|
-| 共享工具优先 | ✅/❌ | ✅/❌ | ✅/⚠️/❌ |
-| 边界验证 | ✅/❌ | ✅/❌ | ✅/⚠️/❌ |
-| 接口定义行为 | ✅/❌ | ✅/❌ | ✅/⚠️/❌ |
-| 错误携带上下文 | ✅/❌ | ✅/❌ | ✅/⚠️/❌ |
-| 约束编码为工具 | ✅/❌ | ✅/❌ | ✅/⚠️/❌ |
-| 文档同步 | ✅/❌ | ✅/❌ | ✅/⚠️/❌ |
-| 技术债务零容忍 | ✅/❌ | ✅/❌ | ✅/⚠️/❌ |
+**Evidence:** <specific observation>
 
-**问题**: <列出发现的问题>
-**建议**: <列出改进建议>
+**Finding:** <what was found>
 
-### 2.2 计划即工件 [A/B/C/F]
+### 2.2 Boundaries Mechanically Enforced — X/8
 
-| 检查项 | 状态 |
-|--------|------|
-| 任务有固定定义格式 | ✅/❌ |
-| 任务有依赖关系声明 | ✅/❌ |
-| 执行记录有固定模板 | ✅/❌ |
-| 记录有 schema 验证 | ✅/❌ |
-| 技术债务有追踪 | ✅/❌ |
+**Evidence:** <specific observation>
 
-### 2.3 不变量声明 [A/B/C/F]
+**Finding:** <what was found>
 
-| 检查项 | 声明位置 | 强制 | 状态 |
-|--------|----------|------|------|
-| 代码格式 | formatter config | 自动/手动 | ✅/⚠️/❌ |
-| 静态分析 | linter config | 自动/手动 | ✅/⚠️/❌ |
-| Lint 规则 | linter config | 自动/手动 | ✅/⚠️/❌ |
-| 测试覆盖 | CI config | 自动/手动 | ✅/⚠️/❌ |
-| 提交格式 | commit hook | 自动/手动 | ✅/⚠️/❌ |
-| 架构依赖 | lint script | 自动/手动 | ✅/⚠️/❌ |
+### 2.3 Error Messages Guide Remediation — X/8
+
+**Evidence:** <specific observation>
+
+**Finding:** <what was found>
 
 ---
 
-## 3. 构建反馈回路 (Build Feedback Loops) - Grade: _
+## 3. Golden Principles — XX/25
 
-### 3.1 即时反馈 [A/B/C/F]
+### 3.1 Shared Tools Over Ad-Hoc — X/9
 
-| 检查项 | 延迟 | 状态 |
-|--------|------|------|
-| 语法错误检测 | 秒级 | ✅/❌ |
-| 单元测试反馈 | 分钟级 | ✅/❌ |
-| Lint 反馈 | 分钟级 | ✅/❌ |
-| 集成测试反馈 | 分钟级 | ✅/❌ |
+**Evidence:** <specific observation>
 
-### 3.2 自动修复 [A/B/C/F]
+**Finding:** <what was found>
 
-| 检查项 | 状态 |
-|--------|------|
-| 错误自动修复 agent | ✅/❌ |
-| 代码简化 skill | ✅/❌ |
-| Lint 错误有修复提示 | ✅/❌ |
-| 常见错误有文档 | ✅/❌ |
+### 3.2 Boundary Validation — X/8
 
-### 3.3 技术债务 GC [A/B/C/F]
+**Evidence:** <specific observation>
 
-| 检查项 | 频率 | 状态 |
-|--------|------|------|
-| 代码质量扫描 | 手动/自动 | ✅/⚠️/❌ |
-| 过时文档检测 | 手动/自动 | ✅/⚠️/❌ |
-| 重复代码检测 | 手动/自动 | ✅/⚠️/❌ |
-| 后台清理任务 | 手动/自动 | ✅/⚠️/❌ |
+**Finding:** <what was found>
 
-**问题**: <列出发现的问题>
-**建议**: <列出改进建议>
+### 3.3 Tech Debt GC Process — X/8
 
-### 3.4 可观测性 [A/B/C/F]
+**Evidence:** <specific observation>
 
-| 检查项 | 状态 |
-|--------|------|
-| 测试结果结构化 | ✅/❌ |
-| 覆盖率报告可解析 | ✅/❌ |
-| 任务进度可查询 | ✅/❌ |
-| 错误可分类 | ✅/❌ |
+**Finding:** <what was found>
 
 ---
 
-## 优先改进项
+## 4. Plan Artifacts & Feedback — XX/25
 
-| 优先级 | 原则 | 任务 | 影响 |
-|--------|------|------|------|
-| P0 | 反馈 | <具体任务> | <预期影响> |
-| P1 | 环境 | <具体任务> | <预期影响> |
-| P2 | 意图 | <具体任务> | <预期影响> |
+### 4.1 Plans Are Versioned Artifacts — X/9
+
+**Evidence:** <specific observation>
+
+**Finding:** <what was found>
+
+### 4.2 Execution Records Structured — X/8
+
+**Evidence:** <specific observation>
+
+**Finding:** <what was found>
+
+### 4.3 Test Results Structured & Observable — X/8
+
+**Evidence:** <specific observation>
+
+**Finding:** <what was found>
 
 ---
 
-## 变更历史
+## Priority Improvements
 
-| 日期 | 变更 |
-|------|------|
-| YYYY-MM-DD | 初始评估 |
+| Priority | Dimension | Criterion | Finding | Suggested Fix |
+|----------|-----------|-----------|---------|---------------|
+| P0 | ... | ... | ... | ... |
+| P1 | ... | ... | ... | ... |
+| P2 | ... | ... | ... | ... |
 
 ---
 
-## 参考
+## Reference
 
 - [OpenAI: Harness Engineering](https://openai.com/index/harness-engineering/)
-- 上次评估: [YYYY-MM-DD](./YYYY-MM-DD.md)

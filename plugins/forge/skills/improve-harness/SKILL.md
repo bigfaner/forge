@@ -1,102 +1,158 @@
 ---
 name: improve-harness
-description: Improve project harness based on evaluation report priorities. Implements P0/P1/P2 improvements from docs/harness-reports/.
+description: Dynamically implement harness improvements from eval-harness report. Reads P0/P1/P2 priorities and fixes each finding.
 ---
 
 # Improve Harness
 
-Systematically improve project harness based on `/eval-harness` evaluation reports.
+Read the latest `/eval-harness` report and implement improvements for each finding.
+
+## Prerequisites
+
+| Artifact | Missing prompt |
+|----------|----------------|
+| `docs/harness-reports/YYYY-MM-DD.md` (eval report) | Run `/eval-harness` first |
 
 ## When to Use
 
 **Trigger:**
 - After running `/eval-harness`
-- User asks to "fix harness issues" or "implement P0 improvements"
+- User asks to "fix harness issues" or "implement improvements"
 - User provides `/improve-harness` command
 
 **Skip:**
 - No evaluation report exists (run `/eval-harness` first)
-- All improvements already implemented
+- All findings already resolved
+
+## Document Context
+
+| Document | Path | Purpose |
+|----------|------|---------|
+| Rubric (scoring criteria) | `plugins/forge/skills/eval-harness/templates/rubric.md` | Defines the 4 dimensions and 12 criteria that findings are scored against |
+| Eval report | `docs/harness-reports/YYYY-MM-DD.md` | Scored report with Priority Improvements table |
+| Snapshot (raw evidence) | `docs/harness-reports/YYYY-MM-DD-snapshot.md` | Original context the scorer evaluated; useful when investigating findings |
+| P0/P1/P2 classification | Defined in `eval-harness/SKILL.md` Step 4 | P0 = score 0 on any criterion; P1 = < 50%; P2 = < 80% |
 
 ## Workflow
 
 ```
-1. Read latest report → 2. Parse priorities → 3. Execute one by one → 4. Verify improvement
-   docs/harness-reports/     P0→P1→P2       Confirm then execute    Test confirmation
+1. Read report → 2. Extract findings → 3. Init record → 4. Fix one by one (append record after each) → 5. Finalize
 ```
 
-### Step 1: Read Latest Report
+## Step 1: Read Latest Report
 
 ```bash
-latest=$(ls -t docs/harness-reports/*.md 2>/dev/null | head -1)
+latest=$(ls -t docs/harness-reports/????-??-??.md 2>/dev/null | grep -v -e snapshot -e improvements | head -1)
 ```
 
 If not found, prompt user to run `/eval-harness` first.
 
-### Step 2: Parse Priority Items
+Read the report and extract all rows from the **Priority Improvements** table.
 
-Extract the "Priority Improvements" table from the report:
+## Step 2: Extract Findings
 
-| Priority | Tasks |
-|----------|-------|
-| P0 | Blocking improvements |
-| P1 | High priority |
-| P2 | Medium priority |
+From the report, parse each priority item into:
 
-### Step 3: Execute Improvements
+| Field | Source |
+|-------|--------|
+| Priority | P0 / P1 / P2 |
+| Dimension | Which rubric dimension |
+| Criterion | Which specific criterion |
+| Finding | What's wrong |
+| Suggested Fix | What the report recommends |
 
-For each item (P0 → P1 → P2 order):
+Sort by priority (P0 first, then P1, then P2).
 
-1. **Show task description**
-2. **Ask confirmation**: `Execute <TASK_ID>? [Y/n/e(xplain)]`
-3. **Implement the improvement**
-4. **Verify with tests**
+### 2.5: Skip Already-Completed Findings
 
-### Step 4: Verify
+If `docs/harness-reports/YYYY-MM-DD-improvements.md` already exists (from a previous interrupted run), read it and extract all completed findings from the "Completed" table. Match findings by the triple `(Priority, Dimension, Criterion)` — these three fields uniquely identify each finding. Do not match by Finding text, as wording may differ. Remove matched findings from the list.
 
-After each improvement, run project-specific verification:
+Report to user:
+```
+Found existing improvement record with N completed fixes.
+Remaining: X P0, Y P1, Z P2 findings to address.
+```
 
-| Language | Verification Command |
-|----------|---------------------|
-| Go | `go build ./... && go test ./...` |
-| Node.js | `npm run build && npm test` |
-| Python | `pytest` |
-| Rust | `cargo build && cargo test` |
-| Java | `mvn test` |
+## Step 3: Initialize Improvement Record
 
-## Common Improvement Tasks
+Create the improvement record file with header only, before starting any fixes. This ensures partial progress survives interruption.
 
-### P0 - Blocking
+**Path:** `docs/harness-reports/YYYY-MM-DD-improvements.md`
 
-| ID | Task | Output |
-|----|------|--------|
-| P0.1 | Document freshness detection | `scripts/check-doc-freshness.sh` |
-| P0.2 | Duplicate code detection | `scripts/check-duplicates.sh` |
+**Template:** See `templates/improvements.md`
 
-### P1 - High Priority
+Fill in the header (date, baseline score, report link) and leave tables empty.
 
-| ID | Task | Output |
-|----|------|--------|
-| P1.1 | Knowledge base index | `docs/README.md` |
-| P1.2 | Principle enforcement mapping | Update project rules |
+## Step 4: Fix Findings
 
-### P2 - Medium Priority
+For each finding in priority order:
 
-| ID | Task | Output |
-|----|------|--------|
-| P2.1 | Architecture lint in CI | Update CI config |
-| P2.2 | Lint error fix hints | `docs/LINT-FIXES.md` |
+### 4.1 Present to User
 
-## Output
+```
+## [P0] Architectural Boundaries > Boundaries mechanically enforced
 
-After completion, create improvement record:
+**Finding:** No linter or CI check enforces dependency direction.
+**Fix plan:** Create a lint script that validates import/dependency rules.
 
-**Path**: `docs/harness-reports/YYYY-MM-DD-improvements.md`
+Execute? [Y/n/e(xplain)/s(kip)]
+```
 
-**Template**: See `templates/improvements.md`
+- **Y (default)**: Proceed with fix
+- **n**: Skip this finding, add to Skipped table with reason "user declined"
+- **e(xplain)**: Explain the fix plan in more detail, then re-ask the same question
+- **s(kip)**: Skip permanently, add to Skipped table with reason "user skipped"
+
+### 4.2 Implement Fix
+
+Based on the finding, dynamically design and implement the fix. Common fix patterns:
+
+| Finding Pattern | Fix Pattern |
+|----------------|-------------|
+| No doc validation | Create freshness detection script or CI check |
+| No boundary enforcement | Create architecture lint script |
+| No shared tools | Extract reusable skill/agent/script |
+| No execution records | Set up task record schema and templates |
+| Errors lack remediation | Add fix hints to linter/test output |
+| No docs index | Create docs/README.md with catalog |
+| Ad-hoc patterns | Centralize into shared utility |
+
+### 4.3 Verify Fix
+
+After implementing, verify the fix addresses the specific finding:
+
+1. **For scripts**: Run the script, confirm it detects violations
+2. **For docs**: Check file exists, content is correct
+3. **For config**: Parse config, confirm setting is applied
+4. **For project tests**: Run project test suite to ensure nothing broke
+
+### 4.4 Append to Record Immediately
+
+After each verified fix (or skip), append a row to the improvement record's "Completed" or "Skipped" table. Do NOT wait until all fixes are done — this ensures partial progress survives interruption.
+
+## Step 5: Finalize Record
+
+After all findings are processed (or user stops), update the improvement record:
+
+- Fill in the **Verification** section with all check results
+- Fill in the **Files Changed** section
+- Fill in the **Follow-up** section
+
+Report to user:
+```
+Improvements complete. N fixes applied, M skipped.
+Record: docs/harness-reports/YYYY-MM-DD-improvements.md
+Re-run `/eval-harness` to verify score improvement.
+```
+
+## Guidelines
+
+- **Fix the finding, not the symptom.** If the report says "no boundary enforcement," don't just create a file — create a script that actually detects violations.
+- **Prefer mechanical enforcement over documentation.** A linter beats a comment. A CI check beats a README note.
+- **Keep fixes project-appropriate.** Don't create Go scripts for a Python project. Use the project's language and tooling.
+- **One finding = one atomic fix.** Don't bundle multiple fixes into one step. Each should be independently verifiable.
 
 ## Related
 
 - `/eval-harness` - Generate evaluation report
-- `docs/HARNESS-EVALUATION.md` - Current evaluation summary
-- `docs/harness-reports/` - Historical reports
+- `docs/harness-reports/` - Reports and improvement records
