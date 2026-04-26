@@ -1,37 +1,37 @@
 ---
 id: "T-test-1"
-title: "生成 e2e 测试用例"
+title: "Generate e2e Test Cases"
 priority: "P1"
 estimated_time: "1-2h"
-dependencies: [{{LAST_BUSINESS_TASK_ID}}]
+dependencies: [{{T_TEST_1_DEP}}]
 status: pending
 ---
 
-# T-test-1: 生成 e2e 测试用例
+# T-test-1: Generate e2e Test Cases
 
 ## Description
 
-调用 `/gen-test-cases` skill，从 PRD 验收标准生成结构化测试用例文档。
+Call `/gen-test-cases` skill to generate structured test case documentation from PRD acceptance criteria.
 
-每个测试用例包含：
-- Source: PRD 中的具体验收标准
+Each test case includes:
+- Source: Specific acceptance criterion from PRD
 - Type: UI / API / CLI
-- Target: 测试目标路径（如 ui/login, api/auth）
-- Test ID: 唯一标识符（如 ui/login/login-with-valid-credentials）
+- Target: Test target path (e.g., ui/login, api/auth)
+- Test ID: Unique identifier (e.g., ui/login/login-with-valid-credentials)
 - Pre-conditions, Steps, Expected, Priority
 
 ## Reference Files
 
-- `prd/prd-spec.md` — PRD 规格文档
-- `prd/prd-user-stories.md` — 用户故事（含 Given/When/Then 验收标准）
-- `prd/prd-ui-functions.md` — UI 功能要点（可选）
+- `prd/prd-spec.md` — PRD specification
+- `prd/prd-user-stories.md` — User stories (with Given/When/Then acceptance criteria)
+- `prd/prd-ui-functions.md` — UI function requirements (optional)
 
 ## Acceptance Criteria
 
-- [ ] `testing/test-cases.md` 文件已创建
-- [ ] 每个测试用例包含 Target 和 Test ID 字段
-- [ ] 所有测试用例可追溯到 PRD 验收标准
-- [ ] 测试用例按类型分组（UI → API → CLI）
+- [ ] `testing/test-cases.md` file created
+- [ ] Each test case includes Target and Test ID fields
+- [ ] All test cases traceable to PRD acceptance criteria
+- [ ] Test cases grouped by type (UI → API → CLI)
 
 ## User Stories
 
@@ -39,6 +39,6 @@ No direct user story mapping. This is a standard test generation task.
 
 ## Implementation Notes
 
-1. 运行 `/gen-test-cases` skill
-2. 验证生成的 `testing/test-cases.md` 包含 Target 和 Test ID 字段
-3. 如果 PRD 无 UI/API/CLI 需求，将任务标记为 skipped 并说明原因
+1. Run `/gen-test-cases` skill
+2. Verify generated `testing/test-cases.md` contains Target and Test ID fields
+3. If PRD has no UI/API/CLI requirements, mark task as skipped with explanation

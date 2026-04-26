@@ -8,24 +8,97 @@
   "priorityEnum": ["P0", "P1", "P2"],
   "e2eRound": 0,
   "tasks": {
-    "1.1-interface": {
+    "1.1-interfaces": {
       "id": "1.1",
-      "title": "Interface Definition",
+      "title": "Define Interfaces",
       "priority": "P0",
-      "estimatedTime": "2-3h",
+      "estimatedTime": "2h",
       "status": "pending",
-      "file": "1.1-interface.md",
-      "record": "records/1.1-interface.md"
+      "breaking": true,
+      "file": "1.1-interfaces.md",
+      "record": "records/1.1-interfaces.md"
     },
-    "3.1-implementation": {
-      "id": "3.1",
+    "1.2-models": {
+      "id": "1.2",
+      "title": "Define Data Models",
+      "priority": "P0",
+      "estimatedTime": "3h",
+      "dependencies": ["1.1"],
+      "status": "pending",
+      "file": "1.2-models.md",
+      "record": "records/1.2-models.md"
+    },
+    "1-summary": {
+      "id": "1.summary",
+      "title": "Phase 1 Summary",
+      "priority": "P0",
+      "estimatedTime": "15min",
+      "dependencies": ["1.x"],
+      "status": "pending",
+      "file": "1-summary.md",
+      "record": "records/1-summary.md"
+    },
+    "1-gate": {
+      "id": "1.gate",
+      "title": "Phase 1 Exit Gate",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": ["1.summary"],
+      "status": "pending",
+      "breaking": true,
+      "file": "1-gate.md",
+      "record": "records/1-gate.md"
+    },
+    "2.1-implementation": {
+      "id": "2.1",
       "title": "Core Implementation",
       "priority": "P0",
       "estimatedTime": "4h",
-      "dependencies": ["1.1", "2.1"],
+      "dependencies": ["1.gate"],
       "status": "pending",
-      "file": "3.1-implementation.md",
-      "record": "records/3.1-implementation.md"
+      "file": "2.1-implementation.md",
+      "record": "records/2.1-implementation.md"
+    },
+    "2-summary": {
+      "id": "2.summary",
+      "title": "Phase 2 Summary",
+      "priority": "P0",
+      "estimatedTime": "15min",
+      "dependencies": ["2.x"],
+      "status": "pending",
+      "file": "2-summary.md",
+      "record": "records/2-summary.md"
+    },
+    "2-gate": {
+      "id": "2.gate",
+      "title": "Phase 2 Exit Gate",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": ["2.summary"],
+      "status": "pending",
+      "breaking": true,
+      "file": "2-gate.md",
+      "record": "records/2-gate.md"
+    },
+    "T-test-1": {
+      "id": "T-test-1",
+      "title": "Generate e2e Test Cases",
+      "priority": "P1",
+      "estimatedTime": "1-2h",
+      "dependencies": ["2.gate"],
+      "status": "pending",
+      "file": "T-test-1.md",
+      "record": "records/T-test-1.md"
+    },
+    "T-test-2": {
+      "id": "T-test-2",
+      "title": "Generate e2e Test Scripts",
+      "priority": "P1",
+      "estimatedTime": "1-2h",
+      "dependencies": ["T-test-1"],
+      "status": "pending",
+      "file": "T-test-2.md",
+      "record": "records/T-test-2.md"
     }
   }
 }

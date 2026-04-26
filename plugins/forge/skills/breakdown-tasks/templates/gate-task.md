@@ -12,26 +12,26 @@ breaking: true
 
 ## Description
 
-Cross-layer consistency gate. Verify that all outputs from the preceding phase are internally consistent and match the design specification before proceeding to the next phase.
+Exit verification gate for this phase. Confirms that all outputs are complete, internally consistent, and match the design specification before the next phase begins.
 
 ## Verification Checklist
 
-1. [ ] All interfaces from preceding phase compile without errors
-2. [ ] Data models match the Cross-Layer Data Map in `design/tech-design.md`
-3. [ ] No type mismatches between adjacent layers
-4. [ ] Project builds successfully (`go build ./...` or equivalent)
+1. [ ] All interfaces from this phase compile without errors
+2. [ ] Data models match `design/tech-design.md` (skip if single-layer feature — mark N/A)
+3. [ ] No type mismatches between adjacent layers (skip if single-layer feature — mark N/A)
+4. [ ] Project builds successfully
 5. [ ] All existing tests pass
 6. [ ] No deviations from design spec (or deviations are documented as decisions)
 
 ## Reference Files
 
-- `design/tech-design.md` — Cross-Layer Data Map section
-- Preceding phase task records — `records/*.md`
-- Preceding phase summary — `records/{{PREV_PHASE}}.summary-phase-summary.md` (if exists)
+- `design/tech-design.md` — Cross-Layer Data Map section (if exists)
+- This phase's task records — `records/{{PHASE}}.*.md`
+- This phase's summary — `records/{{PHASE}}-summary.md`
 
 ## Acceptance Criteria
 
-- [ ] All verification checklist items pass
+- [ ] All applicable verification checklist items pass
 - [ ] Any deviations from design are documented as decisions in the record
 - [ ] Record created via `/record-task` with test evidence
 

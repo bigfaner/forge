@@ -82,6 +82,6 @@ The `summary` field in `record.json` MUST follow this exact template. Copy it ve
 ## Implementation Notes
 
 This is a documentation-only task. No code should be written.
-- Step 2 (TDD) is not applicable — skip directly to generating the summary
+- Skip the normal TDD cycle — proceed directly to generating the summary
 - Set `coverage: -1.0` in the record to indicate no tests expected
 - The summary MUST be structured — subsequent phase tasks depend on parsing it
