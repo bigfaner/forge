@@ -231,3 +231,21 @@ func TestGetProposalFile(t *testing.T) {
 		t.Errorf("GetProposalFile(%q) = %q, want %q", slug, got, want)
 	}
 }
+
+func TestGetForgeStatePath(t *testing.T) {
+	tests := []struct {
+		name        string
+		projectRoot string
+		want        string
+	}{
+		{"basic", "/project", filepath.Join("/project", ".forge", "state.json")},
+		{"windows style", "C:\\project", filepath.Join("C:\\project", ".forge", "state.json")},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := GetForgeStatePath(tt.projectRoot); got != tt.want {
+				t.Errorf("GetForgeStatePath(%q) = %q, want %q", tt.projectRoot, got, tt.want)
+			}
+		})
+	}
+}

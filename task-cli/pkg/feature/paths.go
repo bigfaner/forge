@@ -123,6 +123,11 @@ func GetE2EGraduatedMarker(projectRoot, featureSlug string) string {
 func GetE2ETargetDir(projectRoot, target string) string {
 	return filepath.Join(projectRoot, E2ETestsBaseDir, target)
 }
+// GetForgeStatePath returns the absolute path to .forge/state.json.
+func GetForgeStatePath(projectRoot string) string {
+	return filepath.Join(projectRoot, ForgeDir, ForgeStateFileName)
+}
+
 func GetProposalDir(slug string) string {
 	return filepath.Join(ProposalBaseDir, slug)
 }

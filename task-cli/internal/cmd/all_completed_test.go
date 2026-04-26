@@ -17,40 +17,45 @@ func TestCheckAllCompleted(t *testing.T) {
 		tasks        map[string]task.Task
 		testCommand  string
 		createE2EDir bool
+		forgeState   bool // whether .forge/state.json with allCompleted=true exists
 		wantNil      bool
 		wantE2EDir   bool
 		wantTestCmd  string
 	}{
 		{
-			name: "all completed returns result",
+			name: "all completed with forge state returns result",
 			tasks: map[string]task.Task{
 				"t1": {ID: "1.1", Status: "completed"},
 				"t2": {ID: "1.2", Status: "completed"},
 			},
-			wantNil: false,
+			forgeState: true,
+			wantNil:    false,
 		},
 		{
-			name: "all skipped returns result",
+			name: "all skipped with forge state returns result",
 			tasks: map[string]task.Task{
 				"t1": {ID: "1.1", Status: "skipped"},
 			},
-			wantNil: false,
+			forgeState: true,
+			wantNil:    false,
 		},
 		{
-			name: "mixed completed and skipped returns result",
+			name: "mixed completed and skipped with forge state returns result",
 			tasks: map[string]task.Task{
 				"t1": {ID: "1.1", Status: "completed"},
 				"t2": {ID: "1.2", Status: "skipped"},
 			},
-			wantNil: false,
+			forgeState: true,
+			wantNil:    false,
 		},
 		{
-			name: "one pending task returns nil",
+			name: "one pending task returns nil even with forge state",
 			tasks: map[string]task.Task{
 				"t1": {ID: "1.1", Status: "completed"},
 				"t2": {ID: "1.2", Status: "pending"},
 			},
-			wantNil: true,
+			forgeState: true,
+			wantNil:    true,
 		},
 		{
 			name: "in_progress task returns nil",
@@ -67,9 +72,10 @@ func TestCheckAllCompleted(t *testing.T) {
 			wantNil: true,
 		},
 		{
-			name:    "empty task list returns result (vacuously all done)",
-			tasks:   map[string]task.Task{},
-			wantNil: false,
+			name:       "empty task list with forge state returns result",
+			tasks:      map[string]task.Task{},
+			forgeState: true,
+			wantNil:    false,
 		},
 		{
 			name: "e2e scripts dir present is reported",
@@ -77,6 +83,7 @@ func TestCheckAllCompleted(t *testing.T) {
 				"t1": {ID: "1.1", Status: "completed"},
 			},
 			createE2EDir: true,
+			forgeState:   true,
 			wantNil:      false,
 			wantE2EDir:   true,
 		},
@@ -86,6 +93,7 @@ func TestCheckAllCompleted(t *testing.T) {
 				"t1": {ID: "1.1", Status: "completed"},
 			},
 			createE2EDir: false,
+			forgeState:   true,
 			wantNil:      false,
 			wantE2EDir:   false,
 		},
@@ -95,8 +103,18 @@ func TestCheckAllCompleted(t *testing.T) {
 				"t1": {ID: "1.1", Status: "completed"},
 			},
 			testCommand: "make test",
+			forgeState:  true,
 			wantNil:     false,
 			wantTestCmd: "make test",
+		},
+		{
+			name: "no forge state returns nil even if all tasks completed",
+			tasks: map[string]task.Task{
+				"t1": {ID: "1.1", Status: "completed"},
+				"t2": {ID: "1.2", Status: "completed"},
+			},
+			forgeState: false,
+			wantNil:    true,
 		},
 	}
 
@@ -126,6 +144,13 @@ func TestCheckAllCompleted(t *testing.T) {
 			if tc.createE2EDir {
 				e2eDir := filepath.Join(dir, feature.GetFeatureTestingScriptsDir("test"))
 				if err := os.MkdirAll(e2eDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			// Optionally create .forge/state.json with allCompleted=true
+			if tc.forgeState {
+				if err := feature.WriteForgeState(dir, "test"); err != nil {
 					t.Fatal(err)
 				}
 			}

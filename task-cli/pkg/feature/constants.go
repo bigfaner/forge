@@ -55,6 +55,10 @@ const (
 	E2ETestsBaseDir = "tests/e2e"
 	E2EGraduatedDir = "tests/e2e/.graduated"
 
+	// Forge runtime directory (project-level)
+	ForgeDir            = ".forge"
+	ForgeStateFileName  = "state.json"
+
 	// Template file
 	TemplateFileName = "template.md"
 
