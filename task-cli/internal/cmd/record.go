@@ -154,9 +154,7 @@ func runRecord(cmd *cobra.Command, args []string) {
 	// Update task status in index
 	t.Status = rd.Status
 	index.Tasks[key] = *t
-	if err := task.SaveIndex(indexPath, index); err != nil {
-		Exit(NewAIError(ErrConflict, "Failed to update task index", err.Error(), "Check index.json is writable", "cat "+indexPath))
-	}
+	saveIndexAndSignalCompletion(indexPath, projectRoot, featureSlug, index)
 
 	if recordJSON {
 		result := map[string]string{
@@ -172,6 +170,27 @@ func runRecord(cmd *cobra.Command, args []string) {
 		PrintField("RECORD_FILE", recordPath)
 		PrintField("STATUS", rd.Status)
 		PrintBlockEnd()
+	}
+}
+
+// saveIndexAndSignalCompletion saves the index and writes .forge/state.json
+// if all tasks are completed or skipped.
+func saveIndexAndSignalCompletion(indexPath, projectRoot, featureSlug string, index *task.TaskIndex) {
+	if err := task.SaveIndex(indexPath, index); err != nil {
+		Exit(NewAIError(ErrConflict, "Failed to update task index", err.Error(), "Check index.json is writable", "cat "+indexPath))
+	}
+
+	allDone := true
+	for _, t := range index.Tasks {
+		if t.Status != feature.StatusCompleted && t.Status != feature.StatusSkipped {
+			allDone = false
+			break
+		}
+	}
+	if allDone {
+		if err := feature.WriteForgeState(projectRoot, featureSlug); err != nil {
+			fmt.Fprintf(os.Stderr, "WARNING: failed to write forge state: %v\n", err)
+		}
 	}
 }
 
@@ -231,8 +250,7 @@ func validateRecordData(rd *RecordData) {
 			recommended = append(recommended, "keyDecisions")
 		}
 		// coverage=-1.0 means "no tests" — intentionally set, not missing.
-			// Real 0% coverage with tests run would have testsPassed/testsFailed > 0.
-			if rd.Coverage >= 0 && rd.TestsPassed == 0 && rd.TestsFailed == 0 {
+		if rd.Coverage >= 0 && rd.TestsPassed == 0 && rd.TestsFailed == 0 {
 			recommended = append(recommended, "testsPassed/testsFailed/coverage")
 		}
 		if len(rd.AcceptanceCriteria) == 0 {

@@ -67,6 +67,17 @@ func checkAllCompleted(verbose bool) (*AllCompletedResult, error) {
 	}
 	Debugf(verbose, "feature: %s", featureSlug)
 
+	// Guard: only proceed if .forge/state.json signals allCompleted.
+	forgeState := feature.ReadForgeState(projectRoot)
+	if forgeState == nil || !forgeState.AllCompleted {
+		Debugf(verbose, "no forge state with allCompleted — skipping")
+		return nil, nil
+	}
+	Debugf(verbose, "forge state: feature=%s allCompleted=true", forgeState.Feature)
+
+	// Consume the state — clear it before proceeding
+	feature.ClearForgeState(projectRoot)
+
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
 	index, err := task.LoadIndex(indexPath)
 	if err != nil {

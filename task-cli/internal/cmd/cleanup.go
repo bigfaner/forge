@@ -27,12 +27,17 @@ func runCleanup(cmd *cobra.Command, args []string) {
 	os.Exit(0)
 }
 
-// cleanupCompletedTaskState removes state.json when task is completed.
+// cleanupCompletedTaskState removes state.json when task is completed,
+// and cleans up .forge/state.json as a fallback.
 func cleanupCompletedTaskState() {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
 		return // No project context, nothing to clean up
 	}
+
+	// Always clean up .forge/state.json as fallback
+	// (normally consumed by all-completed, but safe to clear on session end)
+	feature.ClearForgeState(projectRoot)
 
 	// Get current feature
 	featureSlug, err := feature.GetCurrentFeature(projectRoot)
