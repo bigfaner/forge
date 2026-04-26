@@ -29,6 +29,16 @@
 - 测试结果
 - 验收标准确认
 
+**验证规则（hard validation）：**
+
+| Condition | Error | Fix |
+|-----------|-------|-----|
+| `status=completed` + `testsPassed=0` + `testsFailed=0` + `coverage >= 0` | No test evidence | Run tests, or set `coverage: -1.0` |
+| `status=completed` + any `acceptanceCriteria.met=false` | Unmet AC | Fix issue, or set `status: "blocked"` |
+| `summary` empty or whitespace | Missing summary | Provide a summary |
+
+Override with `--force`: `task record <id> --data record.json --force`
+
 ### 3. 状态管理
 
 | 命令 | 功能 |
@@ -187,6 +197,7 @@ type Task struct {
     Status        string   `json:"status"`                  // pending/in_progress/completed/blocked/skipped
     File          string   `json:"file"`                    // 任务文件
     Record        string   `json:"record"`                  // 记录文件
+    Breaking      bool     `json:"breaking,omitempty"`      // 全局性变更标记，完成后触发全量测试
 }
 ```
 
@@ -231,6 +242,7 @@ type TaskIndex struct {
 ```bash
 task claim              # 声明下一个任务
 task record 1.1         # 生成任务记录
+task record 1.1 --force # 生成任务记录（跳过验证）
 task status 1.1         # 查询任务状态
 task status 1.1 done    # 更新状态
 task query 1.1          # 查询任务详情
