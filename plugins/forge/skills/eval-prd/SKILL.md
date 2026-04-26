@@ -7,12 +7,12 @@ description: Evaluate a PRD document with 100-point scoring, then run adversaria
 
 ## Prerequisites
 
-检查上一阶段产物，缺失则中止并提示用户：
+Check previous stage artifacts. Abort and prompt user if missing:
 
-| 产物 | 缺失时提示 |
-|------|-----------|
-| `prd/prd-spec.md` | 先执行 `/write-prd` |
-| `prd/prd-user-stories.md` | 先执行 `/write-prd` |
+| Artifact | Missing prompt |
+|----------|----------------|
+| `prd/prd-spec.md` | Run `/write-prd` first |
+| `prd/prd-user-stories.md` | Run `/write-prd` first |
 
 ## When to Use
 

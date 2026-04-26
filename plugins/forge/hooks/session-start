@@ -29,7 +29,7 @@ escape_for_json() {
 }
 
 guide_escaped=$(escape_for_json "$guide_content")
-session_context="<EXTREAMLY_IMPORTANT>\n<forge-guide>\n${guide_escaped}\n</forge-guide>\n</EXTREAMLY_IMPORTANT>"
+session_context="<EXTREMELY_IMPORTANT>\n<forge-guide>\n${guide_escaped}\n</forge-guide>\n</EXTREMELY_IMPORTANT>"
 
 # Output context injection as JSON
 if [ -n "${CURSOR_PLUGIN_ROOT:-}" ]; then

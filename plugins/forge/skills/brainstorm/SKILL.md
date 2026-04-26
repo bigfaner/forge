@@ -7,25 +7,25 @@ description: Use when a user has a vague idea or feature request and needs to ex
 
 ## Overview
 
-从模糊想法到结构化提案，通过协作对话探索问题空间。
+From vague idea to structured proposal, explore the problem space through collaborative dialogue.
 
-**核心原则**：在投入 PRD 之前，先确认问题值得解决、方案值得投入。
+**Core principle**: Before investing in a PRD, confirm the problem is worth solving and the approach is worth investing in.
 
 ## Prerequisites
 
-无前置产物。这是流程入口。
+No required artifacts. This is the entry point of the workflow.
 
 <HARD-GATE>
 Do NOT write any code or take implementation action. This skill produces a proposal document only.
 </HARD-GATE>
 
 <HARD-RULE>
-**禁止技术选型，允许技术约束**：
+**No technology selection allowed; constraints are allowed**:
 
-- **允许**：描述非功能性约束——性能要求（响应时间、并发量）、平台要求（浏览器、移动端）、兼容性、安全合规等。这些是业务级需求。
-- **禁止**：提及具体技术栈——框架名称、编程语言、数据库、库、中间件、架构模式（如微服务、事件驱动）等。这些是技术选型，留给 `/tech-design` 阶段。
+- **Allowed**: Describe non-functional constraints — performance requirements (response time, concurrency), platform requirements (browser, mobile), compatibility, security/compliance. These are business-level requirements.
+- **Forbidden**: Mention specific tech stacks — framework names, programming languages, databases, libraries, middleware, architectural patterns (e.g., microservices, event-driven). These are technology selections, left to the `/tech-design` phase.
 
-**判断标准**：如果描述的是"需要达到什么效果"→ 允许；如果描述的是"用什么工具实现"→ 禁止。
+**Judgment rule**: If the description is about "what effect to achieve" → allowed; if it's about "what tool to implement with" → forbidden.
 </HARD-RULE>
 
 ## When to Use
@@ -142,7 +142,7 @@ After understanding the problem and solution direction, propose 2-3 **business a
 4. **Always include "do nothing"** (status quo) as one alternative — it forces honest assessment of whether the problem warrants action
 5. **Let user make the final decision**
 
-**禁止**：方案中不得涉及具体技术选型。方案应描述"做什么"（功能、流程、用户体验）而非"怎么做"（技术实现）。但可以提及非功能性约束（如"响应时间 < 200ms"、"需支持离线使用"）。
+**Forbidden**: Approaches must not involve specific technology selection. Describe "what to build" (features, flows, user experience) not "how to build" (technical implementation). Non-functional constraints (e.g., "response time < 200ms", "must support offline") are allowed.
 
 ```
 Based on our discussion, I see 3 approaches:
@@ -198,7 +198,7 @@ git commit -m "docs: add proposal for <feature-slug>"
 
 After committing, use `AskUserQuestion` to ask:
 
-> 是否运行 `/eval-proposal` 对提案进行对抗性评估？（默认 80 分 / 3 轮）
+> Run `/eval-proposal` for adversarial evaluation? (default: 80 points / 3 rounds)
 
 - **Yes** → invoke `/eval-proposal` via `Skill` tool
 - **Custom** → invoke `/eval-proposal --target X --iterations Y` via `Skill` tool

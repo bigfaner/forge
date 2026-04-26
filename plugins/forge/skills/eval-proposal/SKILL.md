@@ -5,6 +5,14 @@ description: Evaluate a proposal document with 100-point scoring, then run adver
 
 # Eval Proposal
 
+## Prerequisites
+
+Check previous stage artifacts. Abort and prompt user if missing:
+
+| Artifact | Missing prompt |
+|----------|----------------|
+| `docs/proposals/<slug>/proposal.md` | Run `/brainstorm` first |
+
 ## When to Use
 
 **Trigger:**
@@ -146,4 +154,3 @@ Increment iteration counter. Return to Step 2.
 ```
 
 Save the final report to `docs/proposals/<slug>/eval/report.md`.
-

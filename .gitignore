@@ -4,6 +4,8 @@
 coverages/
 coverage*
 cover.outfile
+cover.out
+dep_*.out
 
 # Temporary
 tmp/

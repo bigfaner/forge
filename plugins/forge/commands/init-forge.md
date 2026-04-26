@@ -10,7 +10,7 @@ description: 自动编译并安装 task-cli 工具
 ## 流程
 
 1. 检测操作系统（Windows/Linux/macOS）
-2. 定位 task-cli 路径（zcode/task-cli/）
+2. 定位 task-cli 路径（task-cli/）
 3. 调用对应安装脚本编译并安装
 4. 提示用户重新打开终端
 
@@ -19,7 +19,7 @@ description: 自动编译并安装 task-cli 工具
 ### Step 1: 定位 task-cli
 
 ```bash
-# task-cli 在 zcode/task-cli/ 目录下
+# task-cli 在 task-cli/ 目录下
 TASK_CLI_DIR="${CLAUDE_PROJECT_ROOT}/task-cli"
 if [ ! -d "$TASK_CLI_DIR" ]; then
   echo "ERROR: task-cli not found at $TASK_CLI_DIR"
@@ -64,6 +64,6 @@ task --version
 
 | 错误 | 解决方案 |
 |------|----------|
-| task-cli 未找到 | 确保 task-cli 目录存在于 zcode/ 下 |
+| task-cli 未找到 | 确保 task-cli 目录存在于项目根目录下 |
 | 编译失败 | 检查 Go 环境 |
 | 权限错误 | 检查安装目录写入权限 |

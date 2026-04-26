@@ -7,9 +7,9 @@ description: Use after PRD ui-functions are defined to create UI design specific
 
 ## Overview
 
-从 PRD 的 UI 功能需求产出 UI 设计规格文档，并可选生成 HTML 原型。
+Produce UI design specifications from PRD's UI function requirements, with optional HTML prototype generation.
 
-**核心原则**：定义 HOW 界面呈现和交互，与 PRD 的 WHAT（需求层）分离。
+**Core principle**: Define HOW the interface looks and behaves, separated from the PRD's WHAT (requirements layer).
 
 <HARD-GATE>
 Do NOT write any implementation code (except HTML prototypes). This skill produces design specification documents and optionally HTML/CSS/JS prototypes.
@@ -17,15 +17,15 @@ Do NOT write any implementation code (except HTML prototypes). This skill produc
 
 ## Prerequisites
 
-检查上一阶段产物，缺失则中止并提示用户：
+Check previous stage artifacts. Abort and prompt user if missing:
 
 ```bash
 ls docs/features/<slug>/prd/prd-ui-functions.md
 ```
 
-| 产物                      | 缺失时提示                             |
-| ------------------------- | -------------------------------------- |
-| `prd/prd-ui-functions.md` | 先执行 `/write-prd` 并补充 UI 功能要点 |
+| Artifact                    | Missing prompt                                        |
+| --------------------------- | ----------------------------------------------------- |
+| `prd/prd-ui-functions.md` | Run `/write-prd` first and add UI function highlights |
 
 ## When to Use
 
@@ -55,36 +55,36 @@ Read `prd/prd-ui-functions.md` to understand UI requirements.
 
 ## Step 3: Select Design Style
 
-按优先级选择设计风格：
+Select design style by priority:
 
 ### Priority 1: User-provided DESIGN.md
 
-检查以下位置，找到则直接使用：
+Check the following locations; use directly if found:
 
-- 项目根目录 `DESIGN.md`
-- Feature 目录 `docs/features/<slug>/ui/style.md`
+- Project root `DESIGN.md`
+- Feature directory `docs/features/<slug>/ui/style.md`
 
-如果用户指定了自定义路径，优先使用该路径。
+If the user specifies a custom path, prioritize that.
 
 ### Priority 2: Built-in Styles
 
-若用户未提供 DESIGN.md，让用户从 5 种内置风格中选择：
+If no user-provided DESIGN.md, let the user choose from 5 built-in styles:
 
-| Style           | Vibe                     | 适合场景                       |
-| --------------- | ------------------------ | ------------------------------ |
-| **Vercel**      | 黑白极简，开发者工具感   | 开发者平台、CLI 工具、技术文档 |
-| **Shadcn**      | Zinc 中性色，功能极简    | SaaS、管理后台、工具类应用     |
-| **Tailwind UI** | Indigo 主色，专业温暖    | 通用 SaaS、营销页、企业后台    |
-| **Stripe**      | 紫色渐变，轻量优雅       | 金融科技、品牌官网、支付产品   |
-| **Apple**       | 大留白，影像驱动，高级感 | 消费产品、品牌官网、营销页     |
+| Style           | Vibe                     | Best for                                     |
+| --------------- | ------------------------ | -------------------------------------------- |
+| **Vercel**      | Black & white minimal, developer-tool feel | Developer platforms, CLI tools, technical docs |
+| **Shadcn**      | Zinc neutral, functional minimalism | SaaS, admin panels, tool applications        |
+| **Tailwind UI** | Indigo primary, professional warmth | General SaaS, marketing pages, enterprise    |
+| **Stripe**      | Purple gradients, light elegance | Fintech, brand sites, payment products       |
+| **Apple**       | Generous whitespace, image-driven, premium | Consumer products, brand sites, marketing     |
 
-使用 `AskUserQuestion` 工具让用户选择，选项附简要说明。
+Use `AskUserQuestion` tool for user selection with brief descriptions.
 
 Built-in style files located at: `templates/styles/{vercel,shadcn,tailwind-ui,stripe,apple}.md`
 
 ### Priority 3: Clone More Styles from Repo
 
-如果内置 5 种不满足，支持从 awesome-design-md 仓库获取更多：
+If the 5 built-in styles are insufficient, clone additional styles from the awesome-design-md repo:
 
 ```bash
 # Clone to a temp directory (not into project)
@@ -98,7 +98,7 @@ npx getdesign@latest add <site-name>
 
 ### Using the Selected Style
 
-将选中的 style 内容作为 `Design System` 部分写入 `ui-design.md`，后续组件设计必须遵循该 style 的色彩、排版、组件规范。
+Inline the selected style content as the `Design System` section in `ui-design.md`. All subsequent component designs must follow the style's color, typography, and component specifications.
 
 ## Step 4: Draft UI Design
 
@@ -109,13 +109,13 @@ For each UI function, define:
 - Interactions (triggers, actions, feedback)
 - Data binding (UI element → data field)
 
-所有设计决策必须遵循 Step 3 中选定的 design style。
+All design decisions must follow the design style selected in Step 3.
 
 ## Step 5: Write UI Design
 
 Save to `ui/ui-design.md` using `templates/ui-design.md`.
 
-Design System 部分引用 Step 3 选中的 style（内联核心 token，不引用外部文件）。
+The Design System section references the style selected in Step 3 (inline core tokens, no external file references).
 
 ## Step 6: Update Manifest
 
@@ -148,13 +148,13 @@ Use `AskUserQuestion`:
 
 ## Step 9: Generate Prototype (Optional)
 
-根据 `ui-design.md` 和选定的 design style 生成 HTML 原型：
+Generate HTML prototype from `ui-design.md` and the selected design style:
 
-- 遵循 `templates/prototype.md` 的规范
-- 多文件结构：共享 CSS/JS + 每页独立 HTML + index.html 导航
-- 实现所有组件的所有状态（loading/empty/error/populated）
-- 交互行为可用（导航切换、模态框、标签页等）
-- 响应式布局
+- Follow `templates/prototype.md` specifications
+- Multi-file structure: shared CSS/JS + per-page HTML + index.html navigation
+- Implement all component states (loading/empty/error/populated)
+- Interactive behaviors functional (navigation, modals, tabs, etc.)
+- Responsive layout
 
 Save to: `docs/features/<slug>/ui/prototype/`
 

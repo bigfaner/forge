@@ -5,26 +5,26 @@ description: Generate structured test cases from PRD acceptance criteria. Classi
 
 # Gen Test Cases
 
-从 PRD 验收标准生成结构化测试用例。
+Generate structured test cases from PRD acceptance criteria.
 
-**核心原则**：PRD 是唯一输入源。每个测试用例必须可追溯到 PRD 中的具体验收标准，不发明 PRD 中不存在的验收标准。
+**Core principle**: The PRD is the sole input source. Every test case must be traceable to a specific acceptance criterion in the PRD. Do not invent acceptance criteria not present in the PRD.
 
 <HARD-GATE>
-本 skill 只生成测试用例文档（testing/test-cases.md），不生成可执行的测试脚本。
-测试脚本的生成由 `/gen-test-scripts` skill 负责。
+This skill only generates test case documents (testing/test-cases.md), not executable test scripts.
+Test script generation is handled by the `/gen-test-scripts` skill.
 </HARD-GATE>
 
 ## Prerequisites
 
-检查上一阶段产物，缺失则中止并提示用户：
+Check previous stage artifacts. Abort and prompt user if missing:
 
-| 产物 | 缺失时提示 |
-|------|-----------|
-| `prd/prd-user-stories.md` | 先执行 `/write-prd` |
-| `prd/prd-spec.md` | 先执行 `/write-prd` |
-| `docs/sitemap/sitemap.json`（可选，仅 UI 测试） | 先执行 `/gen-sitemap` 可获得更精确的元素引用 |
+| Artifact | Missing prompt |
+|----------|----------------|
+| `prd/prd-user-stories.md` | Run `/write-prd` first |
+| `prd/prd-spec.md` | Run `/write-prd` first |
+| `docs/sitemap/sitemap.json` (optional, UI tests only) | Run `/gen-sitemap` for more precise element references |
 
-**注意**：本 skill 既可以手动调用，也可以作为 `/breakdown-tasks` 追加的标准任务 T-test-1 被 agent 调用。
+**Note**: This skill can be invoked manually or as the standard task T-test-1 appended by `/breakdown-tasks`.
 
 ```bash
 task feature
@@ -50,7 +50,7 @@ ls docs/features/<slug>/prd/prd-spec.md
 
 ### Step 1: Read PRD Sources
 
-Read all available PRD documents：
+Read all available PRD documents:
 
 1. `prd/prd-user-stories.md` — primary source for acceptance criteria (Given/When/Then format)
 2. `prd/prd-spec.md` — functional specs, scope, quality checks at the end
@@ -60,7 +60,7 @@ Also read `ui/ui-design.md` if it exists — provides component-level verificati
 
 ### Step 2: Extract Acceptance Criteria
 
-From each source, extract every verifiable criterion：
+From each source, extract every verifiable criterion:
 
 **From user stories** (`prd-user-stories.md`):
 - Each `Given/When/Then` block is one acceptance criterion
@@ -69,7 +69,7 @@ From each source, extract every verifiable criterion：
 
 **From PRD spec** (`prd/prd-spec.md`):
 - Quality check items at the end (checkboxes)
-- Functional requirements in Section 5 (列表页, 按钮操作, 表单)
+- Functional requirements in Section 5 (list pages, button operations, forms)
 - Performance/security requirements if testable
 
 **From UI functions** (`prd/prd-ui-functions.md`):
@@ -78,10 +78,10 @@ From each source, extract every verifiable criterion：
 - State requirements (loading, empty, error)
 
 <EXTREMELY-IMPORTANT>
-只提取 PRD 中**明确存在**的验收标准。禁止：
-- 发明 PRD 中没有提到的测试场景
-- 将模糊描述臆断为具体验收标准
-- 遗漏任何明确的 Given/When/Then 条件
+Only extract acceptance criteria that **explicitly exist** in the PRD. Forbidden:
+- Inventing test scenarios not mentioned in the PRD
+- Interpreting vague descriptions as specific acceptance criteria
+- Omitting any explicit Given/When/Then conditions
 </EXTREMELY-IMPORTANT>
 
 ### Step 3: Classify & Generate Test Cases
@@ -89,9 +89,9 @@ From each source, extract every verifiable criterion：
 For each extracted criterion, classify by type and generate a test case.
 
 <HARD-RULE>
-每个测试用例必须包含 `Target` 和 `Test ID` 字段：
-- **Target**: `<type>/<page-or-resource>` (例如 `ui/login`、`api/auth`、`cli/deploy`)
-- **Test ID**: `<target>/<title-slug>`，其中 title-slug = 标题小写 + 空格转连字符 + 去除标点
+Every test case must include `Target` and `Test ID` fields:
+- **Target**: `<type>/<page-or-resource>` (e.g. `ui/login`, `api/auth`, `cli/deploy`)
+- **Test ID**: `<target>/<title-slug>` where title-slug = lowercase title + spaces to hyphens + remove punctuation
 </HARD-RULE>
 
 **Type classification rules:**
@@ -107,7 +107,7 @@ For each extracted criterion, classify by type and generate a test case.
 - **P1**: Criteria tied to secondary features or edge cases in core flow
 - **P2**: Nice-to-have verifications, performance checks, edge cases
 
-For each criterion, generate：
+For each criterion, generate:
 
 ```markdown
 ## TC-{NNN}: {Title}
@@ -126,23 +126,23 @@ For each criterion, generate：
 - **Priority**: P0 | P1 | P2
 ```
 
-**Element 字段规则**：
-- 仅当 `docs/sitemap/sitemap.json` 存在时生成
-- 引用 sitemap 中的元素 ID（E-NNN 为页面元素，L-NNN 为布局元素）
-- 列出测试步骤中直接操作的元素 ID，多个用逗号分隔
-- 无 sitemap 时省略此字段，gen-test-scripts 会使用页面全部元素
+**Element field rules**:
+- Only generate when `docs/sitemap/sitemap.json` exists
+- Reference element IDs from sitemap (E-NNN for page elements, L-NNN for layout elements)
+- List element IDs directly operated on in test steps, comma-separated for multiple
+- Omit this field when no sitemap exists; gen-test-scripts will use all page elements
 
 <HARD-RULE>
 **Numbering**: Start from TC-001, sequential. Group by type (UI first, then API, then CLI).
 
-**Traceability**: 每个测试用例的 `Source` 字段必须指向 PRD 中的具体位置（Story 编号、Spec 章节号、UI Function 名称）。文件末尾必须包含完整的追溯表（TC ID → Source → Type → Target → Priority）。
+**Traceability**: Every test case's `Source` field must point to a specific location in the PRD (Story number, Spec section number, UI Function name). The file must end with a complete traceability table (TC ID → Source → Type → Target → Priority).
 
-**Target 推导规则**：
-- UI 测试：`ui/<page-name>`（从 URL 或组件名推导，如 login 页 → `ui/login`）
-- API 测试：`api/<resource>`（从端点推导，如 `/api/auth` → `api/auth`）
-- CLI 测试：`cli/<command>`（从命令名推导，如 `task claim` → `cli/claim`）
+**Target derivation rules**:
+- UI tests: `ui/<page-name>` (derived from URL or component name, e.g. login page → `ui/login`)
+- API tests: `api/<resource>` (derived from endpoint, e.g. `/api/auth` → `api/auth`)
+- CLI tests: `cli/<command>` (derived from command name, e.g. `task claim` → `cli/claim`)
 
-**Test ID 生成规则**：`<target>/<title-slug>`，其中 title-slug = 标题小写 + 空格转连字符 + 去除标点符号。
+**Test ID generation rule**: `<target>/<title-slug>` where title-slug = lowercase title + spaces to hyphens + remove punctuation.
 </HARD-RULE>
 
 ### Step 4: Write Output

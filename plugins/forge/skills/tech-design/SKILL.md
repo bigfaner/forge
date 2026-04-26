@@ -7,9 +7,9 @@ description: Use after PRD is finalized to create technical design with architec
 
 ## Overview
 
-从 PRD 产出技术设计文档，结合项目现状进行技术决策。
+Produce technical design from PRD, making technology decisions informed by the current project state.
 
-**核心原则**：在设计阶段解决技术不确定性，避免实现时的返工。
+**Core principle**: Resolve technical uncertainty during the design phase, avoiding rework during implementation.
 
 <HARD-GATE>
 Do NOT write any implementation code until tech-design.md is approved. The output of this skill is a design document, not code.
@@ -17,15 +17,15 @@ Do NOT write any implementation code until tech-design.md is approved. The outpu
 
 ## Prerequisites
 
-检查上一阶段产物，缺失则中止并提示用户：
+Check previous stage artifacts. Abort and prompt user if missing:
 
 ```bash
 ls docs/features/<slug>/prd/prd-spec.md
 ```
 
-| 产物 | 缺失时提示 |
-|------|-----------|
-| `prd/prd-spec.md` | 先执行 `/write-prd`，再执行 `/eval-prd` |
+| Artifact | Missing prompt |
+|----------|----------------|
+| `prd/prd-spec.md` | Run `/write-prd` first, then `/eval-prd` |
 
 ## When to Use
 
@@ -56,7 +56,7 @@ ls docs/features/<slug>/prd/prd-spec.md
 3. Read `prd/prd-user-stories.md` — extract all Given/When/Then acceptance criteria into a checklist
    - Keep this AC list visible throughout the design process — every AC must map to a design element
 
-> **Note**: PRD 故意不含技术选型（brainstorm 和 write-prd 阶段禁止引入）。所有技术决策从本阶段开始。用 PRD 中的非功能性约束作为技术选型的输入条件。
+> **Note**: The PRD intentionally excludes technology selection (brainstorm and write-prd phases forbid it). All technology decisions start from this phase. Use non-functional constraints from the PRD as input conditions for technology selection.
 
 ## Step 2: Explore Context
 
@@ -160,7 +160,7 @@ Update `manifest.md`:
 
 After committing, use `AskUserQuestion` to ask:
 
-> 是否运行 `/eval-design` 对技术设计进行对抗性评估？（默认 80 分 / 3 轮）
+> Run `/eval-design` for adversarial evaluation? (default: 80 points / 3 rounds)
 
 - **Yes** → invoke `/eval-design` via `Skill` tool
 - **Custom** → invoke `/eval-design --target X --iterations Y` via `Skill` tool

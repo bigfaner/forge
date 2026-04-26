@@ -5,7 +5,15 @@ description: Evaluate a tech design document with 100-point scoring, then run ad
 
 # Eval Design
 
-重点检查能否直接驱动 `/breakdown-tasks`。
+Focus on whether the design can directly drive `/breakdown-tasks`.
+
+## Prerequisites
+
+Check previous stage artifacts. Abort and prompt user if missing:
+
+| Artifact | Missing prompt |
+|----------|----------------|
+| `design/tech-design.md` | Run `/tech-design` first |
 
 ## When to Use
 

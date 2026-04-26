@@ -239,5 +239,5 @@ task validate -file docs/features/<slug>/tasks/index.json
 - [ ] Dependencies follow Step 3 rules (no cycles)
 - [ ] UI tasks reference prototype files (if applicable)
 - [ ] User Stories populated from `prd-user-stories.md`
-- [ ] index.json 末尾包含 T-test-1 和 T-test-2，依赖关系正确
+- [ ] `index.json` ends with T-test-1 and T-test-2 with correct dependencies
 - [ ] `manifest.md` updated with traceability + `status: tasks`

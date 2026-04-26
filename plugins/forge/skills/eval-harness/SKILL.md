@@ -5,7 +5,7 @@ description: Harness health evaluation centered on three core principles - Desig
 
 # Eval Harness
 
-评估项目 harness 健康状态，基于 OpenAI Harness Engineering 三大核心原则。
+Evaluate project harness health based on OpenAI's three core Harness Engineering principles.
 
 ## When to Use
 
@@ -23,55 +23,57 @@ description: Harness health evaluation centered on three core principles - Desig
 ┌─────────────────────────────────────────────────────────────┐
 │                    HARNESS ENGINEERING                       │
 ├─────────────────────────────────────────────────────────────┤
-│   设计环境 (Environment) → 明确意图 (Intent) → 反馈回路 (Feedback) │
+│   Design Environment → Clarify Intent → Build Feedback Loops│
 │         │                      │                    │        │
 │         ▼                      ▼                    ▼        │
-│   结构、边界、工具、抽象    计划、规格、原则、约束   验证、修正、可观测  │
+│   Structure, boundaries,  Plans, specs,         Validation, │
+│   tools, abstractions     principles,           correction, │
+│                            constraints           observability│
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ## Workflow
 
 ```
-1. 检查环境 ──▶ 2. 检查意图 ──▶ 3. 检查反馈 ──▶ 4. 生成报告
+1. Check Environment → 2. Check Intent → 3. Check Feedback → 4. Generate Report
 ```
 
-### Step 1: Design Environment (设计环境)
+### Step 1: Design Environment
 
-| 维度 | 检查项 | 命令 |
-|------|--------|------|
-| 渐进式披露 | CLAUDE.md < 100行, 有 paths frontmatter | `wc -l CLAUDE.md` |
-| 架构边界 | 依赖方向定义, 边界检查脚本 | `ls scripts/lint*.sh 2>/dev/null` |
-| 工具抽象 | skills, agents 存在 | `ls .claude/skills/ .claude/agents/ 2>/dev/null` |
-| Agent可读性 | 架构在代码中可见 | 项目特定命令 |
+| Dimension | Checks | Command |
+|-----------|--------|---------|
+| Progressive disclosure | CLAUDE.md < 100 lines, has paths frontmatter | `wc -l CLAUDE.md` |
+| Architecture boundaries | Dependency direction defined, boundary check scripts | `ls scripts/lint*.sh 2>/dev/null` |
+| Tool abstractions | skills, agents exist | `ls .claude/skills/ .claude/agents/ 2>/dev/null` |
+| Agent readability | Architecture visible in code | Project-specific command |
 
-### Step 2: Clarify Intent (明确意图)
+### Step 2: Clarify Intent
 
-| 维度 | 检查项 | 命令 |
-|------|--------|------|
-| 黄金原则 | 原则有强制机制 | 检查 CLAUDE.md 或项目规则 |
-| 计划工件 | 任务有 schema 验证 | `ls docs/features/*/tasks/index.json 2>/dev/null` |
-| 不变量 | Lint, format 自动化 | 检查 Makefile 或 CI 配置 |
+| Dimension | Checks | Command |
+|-----------|--------|---------|
+| Golden principles | Principles have enforcement mechanisms | Check CLAUDE.md or project rules |
+| Plan artifacts | Tasks have schema validation | `ls docs/features/*/tasks/index.json 2>/dev/null` |
+| Invariants | Lint, format automated | Check Makefile or CI config |
 
-### Step 3: Build Feedback Loops (构建反馈回路)
+### Step 3: Build Feedback Loops
 
-| 维度 | 检查项 | 命令 |
-|------|--------|------|
-| 即时反馈 | hooks 配置 | `cat .claude/settings.json 2>/dev/null` |
-| 自动修复 | error-fixer agent | `ls .claude/agents/error-fixer.md 2>/dev/null` |
-| 债务GC | 代码简化 skill | `grep -r simplify .claude/ 2>/dev/null` |
-| 可观测性 | 测试结果结构化 | 项目特定命令 |
+| Dimension | Checks | Command |
+|-----------|--------|---------|
+| Immediate feedback | hooks configured | `cat .claude/settings.json 2>/dev/null` |
+| Auto-fix | error-fixer agent | `ls .claude/agents/error-fixer.md 2>/dev/null` |
+| Debt GC | code simplification skill | `grep -r simplify .claude/ 2>/dev/null` |
+| Observability | Structured test results | Project-specific command |
 
 ### Step 4: Generate Report
 
-输出到 `docs/harness-reports/YYYY-MM-DD.md`，使用 `templates/report.md` 模板。
+Output to `docs/harness-reports/YYYY-MM-DD.md` using `templates/report.md` template.
 
 ## Language Detection
 
-自动检测项目语言并使用对应的检查命令：
+Auto-detect project language and use corresponding check commands:
 
-| 语言 | 检测标记 | 格式检查 | Lint | 测试 |
-|------|----------|----------|------|------|
+| Language | Detection Marker | Format Check | Lint | Test |
+|----------|-----------------|--------------|------|------|
 | Go | `go.mod` | `gofmt` | `go vet`, `golangci-lint` | `go test` |
 | Node.js | `package.json` | `prettier` | `eslint` | `npm test` |
 | Python | `pyproject.toml` | `black` | `ruff`, `pylint` | `pytest` |
