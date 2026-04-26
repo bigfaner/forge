@@ -133,7 +133,7 @@ Read the corresponding template before writing each task type.
 - Business task: file `<seq>.<sub>-<slug>.md`, ID `<seq>.<sub>`
 - Phase summary: file `<phase>-summary.md`, ID `<phase>.summary`, depends on `["<phase>.x"]`
 - Gate task: file `<phase>-gate.md`, ID `<phase>.gate`, `breaking: true`
-- Standard test: file `T-test-<N>.md`, ID `T-test-<N>`
+- Standard test: file `<title-slug>.md` (e.g., `gen-test-cases.md`), ID `T-test-<N>`
 
 **Gate attribution:**
 - `N.gate` is phase N's exit verification gate — confirms phase N output is complete and consistent
@@ -218,8 +218,8 @@ Phase 2 gate: 2.gate               (dependencies: ["2.summary"])
 
 Append two fixed test tasks:
 
-- **T-test-1**: read `templates/gen-test-cases.md`, calls `/gen-test-cases`
-- **T-test-2**: read `templates/gen-test-scripts.md`, calls `/gen-test-scripts`, depends on T-test-1
+- **T-test-1**: read `templates/gen-test-cases.md`, calls `/gen-test-cases`, file `gen-test-cases.md`
+- **T-test-2**: read `templates/gen-test-scripts.md`, calls `/gen-test-scripts`, depends on T-test-1, file `gen-test-scripts.md`
 
 Replace `{{T_TEST_1_DEP}}` with the last phase's gate ID if a gate exists (e.g., `"2.gate"`), otherwise the last phase's summary ID.
 

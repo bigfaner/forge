@@ -80,25 +80,25 @@
       "file": "2-gate.md",
       "record": "records/2-gate.md"
     },
-    "T-test-1": {
+    "gen-test-cases": {
       "id": "T-test-1",
       "title": "Generate e2e Test Cases",
       "priority": "P1",
       "estimatedTime": "1-2h",
       "dependencies": ["2.gate"],
       "status": "pending",
-      "file": "T-test-1.md",
-      "record": "records/T-test-1.md"
+      "file": "gen-test-cases.md",
+      "record": "records/gen-test-cases.md"
     },
-    "T-test-2": {
+    "gen-test-scripts": {
       "id": "T-test-2",
       "title": "Generate e2e Test Scripts",
       "priority": "P1",
       "estimatedTime": "1-2h",
       "dependencies": ["T-test-1"],
       "status": "pending",
-      "file": "T-test-2.md",
-      "record": "records/T-test-2.md"
+      "file": "gen-test-scripts.md",
+      "record": "records/gen-test-scripts.md"
     }
   }
 }

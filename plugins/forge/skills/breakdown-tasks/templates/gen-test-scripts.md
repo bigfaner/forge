@@ -7,7 +7,7 @@ dependencies: ["T-test-1"]
 status: pending
 ---
 
-# T-test-2: Generate e2e Test Scripts
+# Generate e2e Test Scripts
 
 ## Description
 

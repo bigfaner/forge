@@ -7,7 +7,7 @@ dependencies: [{{T_TEST_1_DEP}}]
 status: pending
 ---
 
-# T-test-1: Generate e2e Test Cases
+# Generate e2e Test Cases
 
 ## Description
 
