@@ -1,2 +1,5 @@
 1、增加一个系统化修复Bug的slash command或skill，先复现问题，补充单元测试和e2e测试，再修复问题，最后验证
 2、优化独立agent占用token的问题
+3、完善动态追加任务的机制：例如e2e测试失败，追加修复问题的任务
+4、遵循harness enginnering思想，持续迭代forge插件
+5、拆分forge，把辅助性的skill或slash command迁移到其它插件
