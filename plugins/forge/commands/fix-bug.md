@@ -1,0 +1,220 @@
+---
+name: fix-bug
+description: Systematically fix a bug using TDD workflow — reproduce, write failing tests, fix, verify. Ensures the bug is captured by tests before any code changes.
+allowed_tools: ["Bash", "Read", "Write", "Edit", "Grep", "Glob", "Agent", "LSP"]
+argument-hints:
+  - name: error-msg
+    description: Error message, stack trace, or symptom description to locate the bug (e.g. "TypeError: Cannot read property 'id' of undefined")
+    required: false
+  - name: scope
+    description: Affected module or package path to narrow the search (e.g. src/parser, pkg/auth). Auto-detected if omitted.
+    required: false
+---
+
+# /fix-bug
+
+Systematic bug fix workflow: **Reproduce → Test → Fix → Verify**.
+
+Core principle: never touch production code until a failing test proves the bug exists.
+
+## Parameters
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `--issue` | — | GitHub issue number or bug description |
+| `--scope` | auto | Affected module/package path (auto-detected if omitted) |
+| `--skip-e2e` | false | Skip e2e tests (use when no UI/API surface is affected) |
+
+## Workflow
+
+```
+1. Understand → 2. Reproduce → 3. Write failing tests → 4. Fix → 5. Verify → 6. Commit
+```
+
+---
+
+## Step 1: Understand the Bug
+
+Collect all available context before touching any code.
+
+**Gather:**
+- Bug description / error message / stack trace
+- Steps to reproduce (from issue or user)
+- Expected vs. actual behavior
+- Affected version / commit (use `git log --oneline -20` if unknown)
+
+**Locate the blast radius:**
+
+```bash
+# Find files related to the symptom
+grep -r "<error-keyword>" src/ --include="*.ts" -l
+git log --oneline --all -- <suspected-file>
+```
+
+Write a one-paragraph **Bug Summary** before proceeding:
+
+```
+Bug: <what goes wrong>
+Trigger: <exact steps or input that causes it>
+Expected: <correct behavior>
+Actual: <observed behavior>
+Suspected location: <file:line or module>
+```
+
+---
+
+## Step 2: Reproduce
+
+Confirm the bug is reproducible in the current codebase before writing any tests.
+
+```bash
+# Run existing tests to establish baseline
+<project-test-command>   # e.g. npm test, go test ./..., pytest
+```
+
+**Reproduction checklist:**
+- [ ] Bug is reproducible on current branch
+- [ ] Baseline test suite passes (no pre-existing failures masking the bug)
+- [ ] Exact reproduction steps documented
+
+<HARD-GATE>
+If the bug cannot be reproduced, STOP. Report to the user with findings. Do not proceed to write tests or fix code for an unconfirmed bug.
+</HARD-GATE>
+
+---
+
+## Step 3: Write Failing Tests
+
+Write tests that **fail because of the bug** and will **pass after the fix**. This is the proof that the fix works.
+
+### 3a. Unit Test
+
+Locate the test file closest to the buggy code. Add a focused test case:
+
+```
+Convention: test file lives next to source file
+  src/foo/bar.ts  →  src/foo/bar.test.ts  (or bar.spec.ts)
+  pkg/foo/bar.go  →  pkg/foo/bar_test.go
+  foo/bar.py      →  tests/test_bar.py
+```
+
+Test naming convention:
+```
+"bug: <short description of the incorrect behavior>"
+// e.g. "bug: returns null when input is empty string"
+```
+
+Run the new test — it **must fail** before the fix:
+
+```bash
+<project-test-command> --testNamePattern "bug:"
+```
+
+<HARD-RULE>
+If the new unit test passes before any fix, the test does not capture the bug. Revise the test until it fails for the right reason.
+</HARD-RULE>
+
+### 3b. E2E / Integration Test (skip if `--skip-e2e`)
+
+Add an e2e test only when the bug is observable at the API, CLI, or UI surface.
+
+| Bug surface | Test location | Runner |
+|-------------|--------------|--------|
+| UI behavior | `docs/features/<slug>/testing/scripts/ui.spec.ts` | Playwright |
+| API endpoint | `docs/features/<slug>/testing/scripts/api.spec.ts` | fetch |
+| CLI command | `docs/features/<slug>/testing/scripts/cli.spec.ts` | child_process |
+
+If no feature slug applies, add to `tests/e2e/` directly.
+
+Run the e2e test — it **must fail** before the fix:
+
+```bash
+npx tsx <spec-file> 2>&1
+```
+
+---
+
+## Step 4: Fix
+
+With failing tests in place, implement the minimal fix.
+
+**Principles:**
+- Fix only what the failing tests require — no scope creep
+- Do not refactor surrounding code
+- Do not add features or "improvements"
+- If the root cause is in a dependency, document it and apply the minimal workaround
+
+**Root cause note** — before moving on, write one sentence in a code comment or commit body:
+```
+// Root cause: <why this happened, not just what changed>
+```
+
+---
+
+## Step 5: Verify
+
+Run the full test suite. All tests must pass — both the new ones and the pre-existing ones.
+
+```bash
+# Full suite
+<project-test-command>
+
+# E2E (if written in Step 3b)
+npx tsx <spec-file> 2>&1
+```
+
+**Verification checklist:**
+- [ ] New unit test(s): PASS
+- [ ] New e2e test(s): PASS (if written)
+- [ ] Pre-existing tests: no regressions
+- [ ] Build succeeds (if applicable)
+
+<HARD-GATE>
+Do not proceed to commit if any pre-existing test is newly failing. Investigate whether the fix introduced a regression.
+</HARD-GATE>
+
+---
+
+## Step 6: Commit
+
+```
+Skill(skill="forge:git-commit")
+```
+
+The commit must include both the fix and the tests in a single atomic commit.
+
+Commit message format:
+```
+fix(<scope>): <what was wrong and is now correct>
+
+Root cause: <one sentence>
+Fixes: #<issue-number> (if applicable)
+```
+
+---
+
+## Output Summary
+
+After completion, report:
+
+```
+Bug Fix Summary
+───────────────
+Bug:     <description>
+Fix:     <file(s) changed>
+Tests:   <N unit tests added> + <M e2e tests added>
+Result:  All tests pass ✓
+Commit:  <commit hash>
+```
+
+---
+
+## Common Pitfalls
+
+| Pitfall | Correct approach |
+|---------|-----------------|
+| Fixing before writing a failing test | Always write the test first |
+| Test passes before fix | Test doesn't capture the bug — revise it |
+| Fixing more than the bug | Minimal fix only; open a separate task for cleanup |
+| Skipping e2e when the bug is user-facing | Add at least one e2e smoke test |
+| Committing fix and tests separately | One atomic commit: fix + tests together |
