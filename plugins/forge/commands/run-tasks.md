@@ -111,8 +111,9 @@ If the claimed task had `BREAKING: true` in the claim output:
 ```
 
 **If tests fail**:
-- Dispatch error-fixer with failure context
-- Do NOT proceed to next task until error-fixer resolves or marks blocked
+- Option A: Dispatch error-fixer with failure context (existing behavior)
+- Option B: Add fix task via `task add --title "Fix: <failure>" --priority P0 --breaking --description "..."` and continue loop
+- Do NOT proceed to next task until error-fixer resolves or fix task completes
 
 **If tests pass**:
 - Continue to next iteration

@@ -248,3 +248,25 @@ func ErrUnmetAcceptanceCriteria(unmet []string) *AIError {
 		"Fix issues, then: task record <id> --data record.json\nOr set status 'blocked': change \"status\" to \"blocked\" in record.json",
 	)
 }
+
+// ErrTaskIDConflict creates an error for duplicate task IDs.
+func ErrTaskIDConflict(id string) *AIError {
+	return NewAIError(
+		ErrConflict,
+		fmt.Sprintf("Task ID already exists: %s", id),
+		"A task with this ID or key already exists in index.json",
+		"Use a different ID, or omit --id to auto-generate one",
+		"task add --title \"...\"  # auto-generates disc-N ID",
+	)
+}
+
+// ErrInvalidDependency creates an error for non-existent dependencies.
+func ErrInvalidDependency(deps []string) *AIError {
+	return NewAIError(
+		ErrValidation,
+		fmt.Sprintf("Dependency not found: %s", strings.Join(deps, ", ")),
+		"Referenced task IDs do not exist in index.json",
+		"Check that dependency IDs are correct",
+		"task query  # list all tasks",
+	)
+}

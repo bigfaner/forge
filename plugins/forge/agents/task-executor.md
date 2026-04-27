@@ -151,6 +151,19 @@ Violating this rule breaks the dispatcher's control loop.
 | Test fails | Fix, then retry verification |
 | Coverage < 80% | Add tests, then retry |
 | record-task fails | Follow skill guidance, retry |
+| Test failures beyond scope | Use `task add` to create a fix task, then continue |
+
+### Dynamic Task Addition
+
+When discovering issues beyond the current task's scope (pre-existing bugs, environment issues,
+failures in unrelated modules), use `task add` to create a new task instead of trying to fix everything
+in the current task:
+
+```bash
+task add --title "Fix: <concise description>" --priority P0 --breaking --description "Context about what needs fixing"
+```
+
+The new task will be picked up by the next `task claim` in the dispatcher loop.
 
 ## Rules
 

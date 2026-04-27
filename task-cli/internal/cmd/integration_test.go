@@ -1203,16 +1203,6 @@ func TestRunStatus_Update(t *testing.T) {
 	}
 }
 
-// ---------- saveIndexAtomic error ----------
-
-func TestSaveIndexAtomic_InvalidPath(t *testing.T) {
-	index := &task.TaskIndex{Feature: "test", Tasks: map[string]task.Task{}}
-	err := saveIndexAtomic("/nonexistent/deep/nested/dir/index.json", index)
-	if err == nil {
-		t.Error("expected error for invalid path")
-	}
-}
-
 // ---------- executeClaim error: no project ----------
 
 func TestExecuteClaim_NoProject(t *testing.T) {
@@ -1521,31 +1511,7 @@ func TestRunRecord_BlockedStatus(t *testing.T) {
 	}
 }
 
-// ---------- appendFixTask: no failures fallback ----------
-
-func TestAppendFixTask_NoFailures(t *testing.T) {
-	dir := t.TempDir()
-	t.Setenv("CLAUDE_PROJECT_DIR", dir)
-	feature.EnsureFeatureDir(dir, "test")
-
-	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
-	index := &task.TaskIndex{
-		Feature:    "test",
-		StatusEnum: []string{"pending", "completed"},
-		Tasks: map[string]task.Task{
-			"t1": {ID: "1.1", Status: "completed"},
-		},
-	}
-	task.SaveIndex(indexPath, index)
-
-	added, err := appendFixTask(dir, "test", nil)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if added != 1 {
-		t.Errorf("expected 1 task for empty failures (fallback), got %d", added)
-	}
-}
+// ---------- appendFixTask removed (agent handles fix tasks now) ----------
 
 // ---------- runProjectTests: justfile branch ----------
 

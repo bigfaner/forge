@@ -17,7 +17,7 @@ func TestCheckAllCompleted(t *testing.T) {
 		tasks        map[string]task.Task
 		testCommand  string
 		createE2EDir bool
-		forgeState   bool // whether .forge/state.json with allCompleted=true exists
+		forgeState   bool
 		wantNil      bool
 		wantE2EDir   bool
 		wantTestCmd  string
@@ -123,12 +123,10 @@ func TestCheckAllCompleted(t *testing.T) {
 			dir := t.TempDir()
 			t.Setenv("CLAUDE_PROJECT_DIR", dir)
 
-			// Create feature directory structure
 			if err := feature.EnsureFeatureDir(dir, "test"); err != nil {
 				t.Fatal(err)
 			}
 
-			// Write index.json
 			indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
 			index := &task.TaskIndex{
 				Feature:     "test",
@@ -140,7 +138,6 @@ func TestCheckAllCompleted(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			// Optionally create e2e scripts dir
 			if tc.createE2EDir {
 				e2eDir := filepath.Join(dir, feature.GetFeatureTestingScriptsDir("test"))
 				if err := os.MkdirAll(e2eDir, 0755); err != nil {
@@ -148,7 +145,6 @@ func TestCheckAllCompleted(t *testing.T) {
 				}
 			}
 
-			// Optionally create .forge/state.json with allCompleted=true
 			if tc.forgeState {
 				if err := feature.WriteForgeState(dir, "test"); err != nil {
 					t.Fatal(err)
@@ -195,7 +191,6 @@ func TestCheckAllCompleted(t *testing.T) {
 func TestCheckAllCompleted_NoFeature(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("CLAUDE_PROJECT_DIR", dir)
-	// Create features dir but no feature subdirectory
 	if err := os.MkdirAll(filepath.Join(dir, feature.FeaturesDir), 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -223,35 +218,15 @@ func TestCheckAllCompleted_NoProject(t *testing.T) {
 
 func TestHasJustfile(t *testing.T) {
 	tests := []struct {
-		name     string
-		files    []string // files to create in temp dir
-		want     bool
+		name  string
+		files []string
+		want  bool
 	}{
-		{
-			name:  "no justfile",
-			files: []string{},
-			want:  false,
-		},
-		{
-			name:  "lowercase justfile",
-			files: []string{"justfile"},
-			want:  true,
-		},
-		{
-			name:  "capitalized Justfile",
-			files: []string{"Justfile"},
-			want:  true,
-		},
-		{
-			name:  "both present",
-			files: []string{"justfile", "Justfile"},
-			want:  true,
-		},
-		{
-			name:  "unrelated files only",
-			files: []string{"Makefile", "go.mod"},
-			want:  false,
-		},
+		{name: "no justfile", files: []string{}, want: false},
+		{name: "lowercase justfile", files: []string{"justfile"}, want: true},
+		{name: "capitalized Justfile", files: []string{"Justfile"}, want: true},
+		{name: "both present", files: []string{"justfile", "Justfile"}, want: true},
+		{name: "unrelated files only", files: []string{"Makefile", "go.mod"}, want: false},
 	}
 
 	for _, tc := range tests {
@@ -270,7 +245,6 @@ func TestHasJustfile(t *testing.T) {
 }
 
 func TestHasJustRecipe(t *testing.T) {
-	// Skip if just is not installed
 	if _, err := exec.LookPath("just"); err != nil {
 		t.Skip("just not installed, skipping")
 	}
@@ -309,216 +283,76 @@ func TestWriteLatestMd(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 
-	// Create feature directory structure
 	if err := feature.EnsureFeatureDir(dir, "test"); err != nil {
 		t.Fatal(err)
 	}
 
-	stats := TestStats{
-		Total:     5,
-		Pass:      3,
-		Fail:      2,
-		Framework: "npm",
-	}
-	failures := []TestFailure{
-		{
-			TestName:     "Login with invalid credentials",
-			TestCaseID:   "ui-login-login-with-invalid-credentials",
-			ErrorMessage: "Expected status 401, got 500",
-		},
+	t.Run("fail status", func(t *testing.T) {
+		stats := TestStats{Fail: 1}
+
+		err := writeLatestMd(dir, "test", stats)
+		if err != nil {
+			t.Fatalf("writeLatestMd() error = %v", err)
+		}
+
+		resultsDir := filepath.Join(dir, feature.GetFeatureTestingResultsDir("test"))
+		data, err := os.ReadFile(filepath.Join(resultsDir, "latest.md"))
+		if err != nil {
+			t.Fatalf("failed to read latest.md: %v", err)
+		}
+
+		content := string(data)
+		if !strings.Contains(content, "FAIL") {
+			t.Error("latest.md should show FAIL status")
+		}
+		if !strings.Contains(content, "raw-output.txt") {
+			t.Error("latest.md should reference raw-output.txt")
+		}
+	})
+
+	t.Run("pass status", func(t *testing.T) {
+		stats := TestStats{Total: 5, Pass: 5}
+
+		err := writeLatestMd(dir, "test", stats)
+		if err != nil {
+			t.Fatalf("writeLatestMd() error = %v", err)
+		}
+
+		resultsDir := filepath.Join(dir, feature.GetFeatureTestingResultsDir("test"))
+		data, err := os.ReadFile(filepath.Join(resultsDir, "latest.md"))
+		if err != nil {
+			t.Fatalf("failed to read latest.md: %v", err)
+		}
+
+		content := string(data)
+		if !strings.Contains(content, "PASS") {
+			t.Error("latest.md should show PASS status")
+		}
+	})
+}
+
+func TestWriteRawOutput(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+
+	if err := feature.EnsureFeatureDir(dir, "test"); err != nil {
+		t.Fatal(err)
 	}
 
-	err := writeLatestMd(dir, "test", stats, failures)
+	output := "not ok 1 - Login test\n  Error: expected 200, got 404"
+	err := writeRawOutput(dir, "test", output)
 	if err != nil {
-		t.Fatalf("writeLatestMd() error = %v", err)
+		t.Fatalf("writeRawOutput() error = %v", err)
 	}
 
 	resultsDir := filepath.Join(dir, feature.GetFeatureTestingResultsDir("test"))
-	latestPath := filepath.Join(resultsDir, "latest.md")
-
-	data, err := os.ReadFile(latestPath)
+	data, err := os.ReadFile(filepath.Join(resultsDir, "raw-output.txt"))
 	if err != nil {
-		t.Fatalf("failed to read latest.md: %v", err)
+		t.Fatalf("failed to read raw-output.txt: %v", err)
 	}
 
-	fileContent := string(data)
-	if !strings.Contains(fileContent, "# Test Results: test") {
-		t.Error("latest.md missing header")
-	}
-	if !strings.Contains(fileContent, "FAIL") {
-		t.Error("latest.md should show FAIL status")
-	}
-	if !strings.Contains(fileContent, "failure-ui-login-login-with-invalid-credentials.md") {
-		t.Error("latest.md should reference failure file by test case ID")
-	}
-}
-
-func TestAppendFixTask(t *testing.T) {
-	tests := []struct {
-		name          string
-		existingTasks map[string]task.Task
-		failures      []TestFailure
-		e2eRound      int
-		wantErr       error
-		wantAdded     int
-		verifyFunc    func(t *testing.T, indexPath string)
-	}{
-		{
-			name: "first failure appends fix-e2e-1-1",
-			existingTasks: map[string]task.Task{
-				"biz-1": {ID: "1.1", Status: "completed"},
-			},
-			failures: []TestFailure{
-				{
-					TestName:     "Login with invalid credentials",
-					TestCaseID:   "ui-login-login-with-invalid-credentials",
-					ErrorMessage: "Expected status 401, got 500",
-				},
-			},
-			wantErr:   nil,
-			wantAdded: 1,
-			verifyFunc: func(t *testing.T, indexPath string) {
-				index, err := task.LoadIndex(indexPath)
-				if err != nil {
-					t.Fatal(err)
-				}
-				if len(index.Tasks) != 2 {
-					t.Errorf("expected 2 tasks, got %d", len(index.Tasks))
-				}
-				fixTask, ok := index.Tasks["fix-e2e-1-1"]
-				if !ok {
-					t.Error("fix-e2e-1-1 task not found")
-				} else {
-					if fixTask.ID != "fix-e2e-1-1" {
-						t.Errorf("ID = %q, want fix-e2e-1-1", fixTask.ID)
-					}
-					if fixTask.Priority != "P0" {
-						t.Errorf("Priority = %q, want P0", fixTask.Priority)
-					}
-					if fixTask.Status != "pending" {
-						t.Errorf("Status = %q, want pending", fixTask.Status)
-					}
-					if fixTask.File != "fix-e2e-1-1.md" {
-						t.Errorf("File = %q, want fix-e2e-1-1.md", fixTask.File)
-					}
-				}
-			},
-		},
-		{
-			name: "two failures create two tasks",
-			existingTasks: map[string]task.Task{
-				"biz-1": {ID: "1.1", Status: "completed"},
-			},
-			failures: []TestFailure{
-				{TestName: "Test A", TestCaseID: "tc-a"},
-				{TestName: "Test B", TestCaseID: "tc-b"},
-			},
-			wantErr:   nil,
-			wantAdded: 2,
-			verifyFunc: func(t *testing.T, indexPath string) {
-				index, err := task.LoadIndex(indexPath)
-				if err != nil {
-					t.Fatal(err)
-				}
-				if len(index.Tasks) != 3 {
-					t.Errorf("expected 3 tasks, got %d", len(index.Tasks))
-				}
-				if _, ok := index.Tasks["fix-e2e-1-1"]; !ok {
-					t.Error("fix-e2e-1-1 not found")
-				}
-				if _, ok := index.Tasks["fix-e2e-1-2"]; !ok {
-					t.Error("fix-e2e-1-2 not found")
-				}
-			},
-		},
-		{
-			name: "pending fix-e2e exists, skip append",
-			existingTasks: map[string]task.Task{
-				"biz-1":       {ID: "1.1", Status: "completed"},
-				"fix-e2e-1-1": {ID: "fix-e2e-1-1", Status: "pending", Priority: "P0"},
-			},
-			failures: []TestFailure{
-				{TestName: "Login with invalid credentials", TestCaseID: "ui-login"},
-			},
-			wantErr:   nil,
-			wantAdded: 1,
-			verifyFunc: func(t *testing.T, indexPath string) {
-				index, err := task.LoadIndex(indexPath)
-				if err != nil {
-					t.Fatal(err)
-				}
-				if len(index.Tasks) != 2 {
-					t.Errorf("expected 2 tasks (no new ones added), got %d", len(index.Tasks))
-				}
-			},
-		},
-		{
-			name: "fix-e2e round limit (3) reached, returns sentinel",
-			existingTasks: map[string]task.Task{
-				"biz-1":       {ID: "1.1", Status: "completed"},
-				"fix-e2e-1-1": {ID: "fix-e2e-1-1", Status: "completed", Priority: "P0"},
-				"fix-e2e-2-1": {ID: "fix-e2e-2-1", Status: "completed", Priority: "P0"},
-				"fix-e2e-3-1": {ID: "fix-e2e-3-1", Status: "completed", Priority: "P0"},
-			},
-			e2eRound: 3,
-			failures: []TestFailure{
-				{TestName: "Login with invalid credentials", TestCaseID: "ui-login"},
-			},
-			wantErr:   errFixLimitExceeded,
-			wantAdded: 0,
-			verifyFunc: func(t *testing.T, indexPath string) {
-				index, err := task.LoadIndex(indexPath)
-				if err != nil {
-					t.Fatal(err)
-				}
-				if len(index.Tasks) != 4 {
-					t.Errorf("expected 4 tasks (unchanged), got %d", len(index.Tasks))
-				}
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			dir := t.TempDir()
-			t.Setenv("CLAUDE_PROJECT_DIR", dir)
-
-			// Create feature directory structure
-			if err := feature.EnsureFeatureDir(dir, "test"); err != nil {
-				t.Fatal(err)
-			}
-
-			// Write index.json
-			indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
-			index := &task.TaskIndex{
-				Feature:    "test",
-				StatusEnum: []string{"pending", "in_progress", "completed", "blocked", "skipped"},
-				Tasks:      tt.existingTasks,
-				E2ERound:   tt.e2eRound,
-			}
-			if err := task.SaveIndex(indexPath, index); err != nil {
-				t.Fatal(err)
-			}
-
-			// Run appendFixTask
-			added, err := appendFixTask(dir, "test", tt.failures)
-
-			if tt.wantErr != nil {
-				if err != tt.wantErr {
-					t.Errorf("appendFixTask() error = %v, want %v", err, tt.wantErr)
-				}
-			} else if err != nil {
-				t.Fatalf("appendFixTask() unexpected error = %v", err)
-			}
-
-			if err == nil && added != tt.wantAdded {
-				t.Errorf("appendFixTask() added = %d, want %d", added, tt.wantAdded)
-			}
-
-			if tt.verifyFunc != nil {
-				tt.verifyFunc(t, indexPath)
-			}
-		})
+	if string(data) != output {
+		t.Errorf("raw output mismatch: got %q, want %q", string(data), output)
 	}
 }
 
@@ -531,7 +365,6 @@ func TestGraduateTestScripts(t *testing.T) {
 		{
 			name: "first success creates marker and copies scripts",
 			setupFunc: func(t *testing.T, projectRoot, featureSlug string) {
-				// Create test-cases.md with targets
 				testCasesPath := filepath.Join(projectRoot, feature.GetFeatureTestCasesFile(featureSlug))
 				content := `# Test Cases
 ## TC-001: Login
@@ -545,14 +378,12 @@ func TestGraduateTestScripts(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				// Create scripts directory with ui.spec.ts
 				scriptsDir := filepath.Join(projectRoot, feature.GetFeatureTestingScriptsDir(featureSlug))
 				if err := os.MkdirAll(scriptsDir, 0755); err != nil {
 					t.Fatal(err)
 				}
 				specContent := "import { test } from 'node:test';\ntest('login', () => {});"
-				specPath := filepath.Join(scriptsDir, "ui.spec.ts")
-				if err := os.WriteFile(specPath, []byte(specContent), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(scriptsDir, "ui.spec.ts"), []byte(specContent), 0644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -561,8 +392,6 @@ func TestGraduateTestScripts(t *testing.T) {
 				if !fileExists(markerPath) {
 					t.Error("graduation marker not created")
 				}
-
-				// Check ui/login/ui.spec.ts exists
 				uiLoginSpec := filepath.Join(projectRoot, "tests/e2e/ui/login/ui.spec.ts")
 				if !fileExists(uiLoginSpec) {
 					t.Error("ui/login/ui.spec.ts not copied")
@@ -572,7 +401,6 @@ func TestGraduateTestScripts(t *testing.T) {
 		{
 			name: "already graduated skips migration",
 			setupFunc: func(t *testing.T, projectRoot, featureSlug string) {
-				// Create graduation marker
 				markerPath := feature.GetE2EGraduatedMarker(projectRoot, featureSlug)
 				if err := os.MkdirAll(filepath.Dir(markerPath), 0755); err != nil {
 					t.Fatal(err)
@@ -582,7 +410,6 @@ func TestGraduateTestScripts(t *testing.T) {
 				}
 			},
 			verifyFunc: func(t *testing.T, projectRoot, featureSlug string) {
-				// Marker should still exist with original timestamp
 				markerPath := feature.GetE2EGraduatedMarker(projectRoot, featureSlug)
 				data, err := os.ReadFile(markerPath)
 				if err != nil {
@@ -600,7 +427,6 @@ func TestGraduateTestScripts(t *testing.T) {
 			dir := t.TempDir()
 			t.Setenv("CLAUDE_PROJECT_DIR", dir)
 
-			// Create feature directory structure
 			if err := feature.EnsureFeatureDir(dir, "test"); err != nil {
 				t.Fatal(err)
 			}
@@ -609,7 +435,6 @@ func TestGraduateTestScripts(t *testing.T) {
 				tt.setupFunc(t, dir, "test")
 			}
 
-			// Run graduateTestScripts
 			err := graduateTestScripts(dir, "test")
 			if err != nil {
 				t.Fatalf("graduateTestScripts() error = %v", err)
@@ -619,38 +444,6 @@ func TestGraduateTestScripts(t *testing.T) {
 				tt.verifyFunc(t, dir, "test")
 			}
 		})
-	}
-}
-
-func TestSaveIndexAtomic(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "index.json")
-
-	index := &task.TaskIndex{
-		Feature:    "test",
-		StatusEnum: []string{"pending", "completed"},
-		Tasks: map[string]task.Task{
-			"task1": {ID: "1.1", Status: "pending"},
-		},
-	}
-
-	err := saveIndexAtomic(path, index)
-	if err != nil {
-		t.Fatalf("saveIndexAtomic() error = %v", err)
-	}
-
-	// Verify file exists
-	if !fileExists(path) {
-		t.Error("index.json not created")
-	}
-
-	// Verify content
-	loaded, err := task.LoadIndex(path)
-	if err != nil {
-		t.Fatalf("failed to load index: %v", err)
-	}
-	if loaded.Feature != "test" {
-		t.Errorf("Feature = %q, want test", loaded.Feature)
 	}
 }
 
@@ -666,48 +459,9 @@ func TestRunCmdCapture(t *testing.T) {
 	}
 }
 
-func TestCountPassingTests(t *testing.T) {
-	tests := []struct {
-		name   string
-		output string
-		want   int
-	}{
-		{
-			name:   "TAP ok lines",
-			output: "ok 1 - test one\nok 2 - test two\nnot ok 3 - test three",
-			want:   2,
-		},
-		{
-			name:   "checkmark lines",
-			output: "✓ test one\n✓ test two\n✗ test three",
-			want:   2,
-		},
-		{
-			name:   "mixed with noise",
-			output: "ok 1\nsome noise ok here\n✓ another\n  ok 2\n",
-			want:   3,
-		},
-		{
-			name:   "empty output",
-			output: "",
-			want:   0,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			got := countPassingTests(tc.output)
-			if got != tc.want {
-				t.Errorf("countPassingTests() = %d, want %d", got, tc.want)
-			}
-		})
-	}
-}
-
 func TestRunSpecsIndividually(t *testing.T) {
 	dir := t.TempDir()
 
-	// Create a passing spec
 	passSpec := `import { test } from 'node:test';
 test('pass', () => {});
 `
@@ -715,7 +469,6 @@ test('pass', () => {});
 		t.Fatal(err)
 	}
 
-	// Create a non-spec file (should be ignored)
 	if err := os.WriteFile(filepath.Join(dir, "helper.ts"), []byte("// not a spec"), 0644); err != nil {
 		t.Fatal(err)
 	}

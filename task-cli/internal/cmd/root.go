@@ -33,5 +33,6 @@ func init() {
 	rootCmd.AddCommand(verifyCompletionCmd)
 	rootCmd.AddCommand(cleanupCmd)
 	rootCmd.AddCommand(allCompletedCmd)
+	rootCmd.AddCommand(addCmd)
 	rootCmd.AddCommand(versionCmd)
 }
