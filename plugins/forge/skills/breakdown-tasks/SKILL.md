@@ -232,7 +232,7 @@ Reference: [templates/index.json](templates/index.json) | Schema: [templates/ind
 ## Step 6: Validate
 
 ```bash
-task validate -file docs/features/<slug>/tasks/index.json
+task validate docs/features/<slug>/tasks/index.json
 ```
 
 ## Step 7: Update Manifest
