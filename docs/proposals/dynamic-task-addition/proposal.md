@@ -345,3 +345,127 @@ bash ../claude-code-go/scripts/lint-arch.sh
 8. 全量测试 + lint
 9. `docs/OVERVIEW.md` + `WORKFLOW.md`
 10. `agents/task-executor.md` + `commands/run-tasks.md`
+
+---
+
+## Phase 2：Agent 驱动的测试脚本毕业
+
+### 问题
+
+当前 `graduateTestScripts` 在 `all-completed` hook 中自动执行，用正则从 `test-cases.md` 扫描 `**Target**` 行决定归类路径，然后硬拷贝 spec 文件到 `tests/e2e/<type>/<target>/`。
+
+**缺陷：**
+
+| 问题 | 说明 |
+|------|------|
+| 归类依赖 test-cases.md 格式 | gen-test-cases 没写 Target 行时，归类失败或跳过 |
+| 一个 spec 只能归一个目录 | `ui.spec.ts` 可能测试多个页面，硬拷贝无法拆分 |
+| Agent 不参与决策 | Hook 自动拷贝，没有机会让 agent 审查、合并、拆分、归类 |
+| "unknown" placeholder | 解析失败时生成无用任务（见 lessons/tool-fix-e2e-unknown-placeholder.md） |
+
+**根因：毕业是需要理解力的决策，不是文件操作。**
+
+### 设计：从 hook 剥离毕业，交给 Agent
+
+#### 毕业需要回答的问题（每一个都需要理解力）
+
+1. **这个脚本测了什么？** → 读代码才能知道
+2. **该归到哪个目录？** → 看现有 `tests/e2e/` 结构才能决定
+3. **要不要拆分？** → 一个 spec 混合多个功能域怎么办
+4. **现有 helpers.ts 是否兼容？** → 可能需要合并而非覆盖
+5. **import 路径是否需要调整？** → sitemap 结构可能变了
+
+#### 流程对比
+
+**当前（CLI 自动）：**
+```
+hook → e2e pass → 正则读 test-cases.md → 硬拷贝 → marker → project tests
+```
+
+**改造后（Agent 驱动）：**
+```
+hook → e2e pass → 写 results (PASS) → project tests → regression → 完成
+
+// 毕业由 agent 在适当时机调用 /graduate-tests skill
+agent → 读 scripts/*.spec.ts → 分析内容 → 智能归类 → 迁移 → marker
+```
+
+#### all-completed hook 变更
+
+从 `all_completed.go` 中移除 `graduateTestScripts()` 调用。e2e 测试通过后直接跑 project tests + regression，不再自动毕业。
+
+#### 新增 `/graduate-tests` skill
+
+**触发时机：**
+- `run-tasks` orchestrator 在所有 task 完成后建议运行
+- 或用户手动调用
+
+**Skill 工作流：**
+
+```
+Step 1: 读源脚本
+  读 testing/scripts/*.spec.ts + helpers.ts
+
+Step 2: 分析现有结构
+  读 tests/e2e/ 目录结构（如果存在），理解现有归类规范
+
+Step 3: 智能归类决策
+  - 分析每个 spec 的 test 描述和代码
+  - 确定归类维度（按类型/功能域/页面路由）
+  - 决定是否需要拆分（一个 spec 覆盖多个域）
+  - 决定是否需要合并（多个 spec 测同一域）
+
+Step 4: 执行迁移
+  - 复制/拆分/合并 spec 文件到 tests/e2e/<category>/
+  - 重写 import 路径（./helpers → ../helpers）
+  - 合并或保留 helpers.ts（不覆盖已有的）
+  - 如果 tests/e2e/package.json 不存在，创建 + npm install
+
+Step 5: 创建 graduation marker
+  写 tests/e2e/.graduated/<slug>（时间戳），防止重复毕业
+```
+
+**智能归类示例：**
+
+```
+# 输入：testing/scripts/
+ui.spec.ts    # 包含 login, dashboard, profile 的测试
+api.spec.ts   # 全是 auth 相关
+cli.spec.ts   # 通用 CLI 命令测试
+
+# Agent 分析后决定：
+ui.spec.ts → 拆分为：
+  tests/e2e/ui/login/login.spec.ts
+  tests/e2e/ui/dashboard/dashboard.spec.ts
+  tests/e2e/ui/profile/profile.spec.ts
+
+api.spec.ts → 归入：
+  tests/e2e/api/auth/auth.spec.ts
+
+cli.spec.ts → 归入：
+  tests/e2e/cli/cli.spec.ts（不拆分，因为都是通用命令）
+```
+
+#### 为什么不从 hook 中 block 让 agent 立即毕业
+
+考虑过：`hook → e2e pass → block → agent graduates → continue`
+
+**不采用：**
+1. Hook block 是为"需要 agent 修复"设计的，不是为"需要 agent 做决策"
+2. 毕业不紧急——可以在任何时间点做
+3. 毕业涉及文件组织，可能需要用户确认归类方案
+4. 解耦后，毕业可以独立重试（不需要重新跑 e2e）
+5. 毕业是幂等的（有 marker 防重），"稍后做"和"立即做"效果相同
+
+#### 涉及的文件变更
+
+| 文件 | 变更 |
+|------|------|
+| `task-cli/internal/cmd/all_completed.go` | 删除 `graduateTestScripts` 调用 |
+| `plugins/forge/skills/graduate-tests/SKILL.md` | 新增：agent 驱动的毕业 skill |
+| `plugins/forge/commands/run-tasks.md` | 更新 Post-Completion，建议 `/graduate-tests` |
+| `plugins/forge/SKILLS.md` | 注册 `/graduate-tests` |
+
+#### CLI 层面不需要新命令
+
+毕业是纯文件操作（读、写、移、改 import），agent 用 Bash/Write/Edit 完成。Graduation marker 直接 Write 创建，不需要 `task graduate` 命令。
