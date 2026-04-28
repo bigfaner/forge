@@ -1,6 +1,6 @@
 # Example: Context-Aware Questions
 
-When analysis finds concrete facts, derive questions that reference them. Below are worked examples showing the full flow: analysis → finding → targeted question.
+When analysis finds concrete facts, derive questions that reference them. Below are worked examples showing the full flow: analysis → finding → targeted question with recommendation.
 
 ## Example 1: Overlapping Feature Found
 
@@ -24,7 +24,7 @@ When analysis finds concrete facts, derive questions that reference them. Below 
     "header": "Existing Overlap",
     "multiSelect": false,
     "options": [
-      {"label": "Gap between them", "description": "Neither fully covers automated code review as you envision it"},
+      {"label": "Gap between them (Recommended)", "description": "Neither fully covers automated code review as you envision it"},
       {"label": "Extending simplify", "description": "Build on the existing simplify skill with deeper analysis"},
       {"label": "Different scope", "description": "Your idea targets a different aspect of code review entirely"},
       {"label": "Didn't know about those", "description": "Need to understand what they do before deciding"}
@@ -60,7 +60,7 @@ When analysis finds concrete facts, derive questions that reference them. Below 
     "header": "Related Work",
     "multiSelect": false,
     "options": [
-      {"label": "Continuing that work", "description": "Building on the existing redesign spec and plan"},
+      {"label": "Continuing that work (Recommended)", "description": "Building on the existing redesign spec and plan"},
       {"label": "Different directories", "description": "Your restructuring targets areas not covered by the existing plan"},
       {"label": "Revising the approach", "description": "You want to change the direction of the existing redesign"},
       {"label": "Unaware of it", "description": "Let me review the existing spec/plan first"}
@@ -94,7 +94,7 @@ When analysis finds concrete facts, derive questions that reference them. Below 
     "header": "Deferred Need",
     "multiSelect": false,
     "options": [
-      {"label": "Same deferred need", "description": "The deferred batch import is now a priority"},
+      {"label": "Same deferred need (Recommended)", "description": "The deferred batch import is now a priority"},
       {"label": "Different scenario", "description": "Your batch import targets a different workflow or user role"},
       {"label": "Broader than before", "description": "Covers the deferred case plus additional scenarios"},
       {"label": "Unaware of it", "description": "Let me review that PRD first"}
@@ -130,7 +130,7 @@ When analysis finds concrete facts, derive questions that reference them. Below 
     "header": "Source",
     "multiSelect": false,
     "options": [
-      {"label": "Git history", "description": "Parse commits, tags, and merge messages"},
+      {"label": "Git history (Recommended)", "description": "Parse commits, tags, and merge messages"},
       {"label": "Task records", "description": "Aggregate from docs/features/*/tasks/"},
       {"label": "PRD diff tracking", "description": "Track changes to PRD specs over time"},
       {"label": "Manual entries", "description": "Provide a template for manual changelog entries"}
@@ -147,8 +147,8 @@ When analysis finds concrete facts, derive questions that reference them. Below 
 ## Summary Pattern
 
 ```
-Analysis finding → Specific, referenced question
-No finding → Idea-specific scoping question (still better than generic template)
+Analysis finding → Specific, referenced question with recommendation
+No finding → Idea-specific scoping question with recommendation (still better than generic template)
 ```
 
-Always prefer questions that prove you've looked at the codebase. Users trust and engage more when they see the skill has done its homework.
+Always prefer questions that prove you've looked at the codebase. Users trust and engage more when they see the skill has done its homework. For each question, mark your recommended answer as the first option with `(Recommended)` — this reduces user burden and shows you've thought through the analysis.

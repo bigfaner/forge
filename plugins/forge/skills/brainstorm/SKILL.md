@@ -9,7 +9,7 @@ description: Use when a user has a vague idea or feature request and needs to ex
 
 From vague idea to structured proposal, explore the problem space through collaborative dialogue.
 
-**Core principle**: Before investing in a PRD, confirm the problem is worth solving and the approach is worth investing in.
+**Core principle**: Relentlessly interview every aspect of the idea until reaching shared understanding. Before investing in a PRD, confirm the problem is worth solving and the approach is worth investing in.
 
 ## Prerequisites
 
@@ -44,14 +44,14 @@ Do NOT write any code or take implementation action. This skill produces a propo
 ## Process Flow
 
 ```
-Analyze context → Synthesize findings → Ask targeted questions (Problem → Solution → Challenge) → Propose approaches → Define scope → Write proposal → Commit
+Analyze context → Synthesize findings → Walk the design tree (resolve decisions branch-by-branch) → Propose approaches → Define scope → Write proposal → Commit
 ```
 
 ## Checklist
 
 1. **Analyze project context** — extract keywords, grep code, check docs & proposals
 2. **Synthesize findings** — summarize what you found; identify gaps, overlaps, and open questions
-3. **Ask targeted questions** — one at a time via AskUserQuestion, derived from findings not templates
+3. **Walk the design tree** — resolve decisions branch-by-branch via AskUserQuestion, derived from findings not templates
 4. **Propose 2-3 approaches** — with trade-offs and your recommendation
 5. **Define scope** — get user agreement on in-scope / out-of-scope
 6. **Write proposal** — save to `docs/proposals/<slug>/proposal.md`
@@ -93,11 +93,20 @@ This brief drives Step 2. **Do NOT show the brief to the user** — it's interna
 
 ## Step 2: Ask Targeted Questions
 
+Interview the user relentlessly about every aspect of the idea until reaching shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one-by-one. For each question, provide your recommended answer.
+
 **CRITICAL**: Use `AskUserQuestion` tool for ALL questions.
 
-### Questioning Rules
+### Core Principles
 
+- **Shared understanding is the termination condition** — keep going until both sides genuinely agree on each decision, not just surface agreement
+- **Walk the design tree** — each question is a branch; resolve parent decisions before exploring sub-branches. If question B depends on question A, resolve A first
+- **Recommend before asking** — for each question, provide your recommended answer based on analysis. Present it as the first option so the user can confirm or adjust
 - **One question at a time** — never batch
+- **Codebase-first answering** — if a question could be answered by exploring the codebase, explore the codebase instead. Never ask what you can discover yourself
+
+### Questioning Techniques
+
 - **Prefer multiple choice** — easier to answer than open-ended
 - **Derive questions from findings** — not from templates
 - **Reference concrete facts** — "I found X already does Y..." not "Is there something similar?"
@@ -116,17 +125,17 @@ This brief drives Step 2. **Do NOT show the brief to the user** — it's interna
 
 See `examples/context-aware-questions.md` for full worked examples.
 
-### Phase Flow
+### Design Tree
 
-Use the three-phase flow as a guide for question ordering, but let findings drive the actual content:
+Questioning is a decision tree traversal, not a linear phase sequence. Three decision clusters provide direction for what to ask:
 
-| Phase         | Goal                      | What to ask                                       |
-| ------------- | ------------------------- | ------------------------------------------------- |
-| **Problem**   | Understand what & why     | Questions derived from gaps and overlaps          |
-| **Solution**  | Validate business direction | Questions derived from user needs and workflows  |
-| **Challenge** | Pressure-test assumptions | Questions derived from alternatives and edge cases |
+| Cluster      | Drives questions about                                       |
+| ------------ | ------------------------------------------------------------ |
+| **Problem**  | Core problem, affected users, urgency, cost of inaction      |
+| **Solution** | Success criteria, must-haves, user workflows                 |
+| **Challenge**| Simpler alternatives, risks, blind spots                     |
 
-Move through phases naturally. If a Phase 2 question reveals the problem isn't well understood, go back to Phase 1.
+Traverse freely based on decision dependencies. Backtrack when a branch reveals an earlier assumption was wrong — a Challenge answer may invalidate a Problem assumption. Walk each branch to shared understanding before moving to the next.
 
 ### Fallback to Generic Questions
 
