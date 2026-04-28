@@ -1307,18 +1307,6 @@ func TestRunProjectTests_Makefile(t *testing.T) {
 	}
 }
 
-// ---------- runSpecsIndividually error path ----------
-
-func TestRunSpecsIndividually_InvalidDir(t *testing.T) {
-	output, success := runSpecsIndividually("/nonexistent/path")
-	if success {
-		t.Error("expected false for nonexistent dir")
-	}
-	if !strings.Contains(output, "ERROR") {
-		t.Errorf("expected error message, got: %s", output)
-	}
-}
-
 // ---------- runFeature: display no feature ----------
 
 func TestRunFeature_None(t *testing.T) {

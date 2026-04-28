@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strings"
 
 	"task-cli/pkg/feature"
 	"task-cli/pkg/project"
@@ -23,7 +22,10 @@ var allCompletedCmd = &cobra.Command{
 	Short: "Check if all tasks are done, then run tests",
 	Long: `Checks if every task in the current feature is completed or skipped.
 Exits 0 silently if any task is still pending, in_progress, or blocked (no-op).
-If all done: runs feature e2e tests, then project-wide tests.
+If all done: runs project-wide unit/integration tests, then e2e regression.
+
+Feature e2e tests are run by T-test-3 (run-e2e-tests task), not this hook.
+This hook is the project health gate: unit tests + regression suite.
 
 Use -v to see why the command exits early (useful for debugging).`,
 	Run: runAllCompleted,
@@ -35,10 +37,9 @@ func init() {
 
 // AllCompletedResult holds context for running tests after all tasks complete.
 type AllCompletedResult struct {
-	FeatureSlug   string
-	ProjectRoot   string
-	E2EScriptsDir string // empty if dir doesn't exist
-	TestCommand   string // empty if not set in index.json
+	FeatureSlug string
+	ProjectRoot string
+	TestCommand string // empty if not set in index.json
 }
 
 // checkAllCompleted verifies all tasks are done and returns test context.
@@ -85,21 +86,10 @@ func checkAllCompleted(verbose bool) (*AllCompletedResult, error) {
 		}
 	}
 
-	// Resolve e2e scripts dir
-	e2eRelDir := feature.GetFeatureTestingScriptsDir(featureSlug)
-	e2eAbsDir := filepath.Join(projectRoot, e2eRelDir)
-	if _, err := os.Stat(e2eAbsDir); err != nil {
-		Debugf(verbose, "e2e scripts dir not found: %s", e2eAbsDir)
-		e2eAbsDir = ""
-	} else {
-		Debugf(verbose, "e2e scripts dir: %s", e2eAbsDir)
-	}
-
 	return &AllCompletedResult{
-		FeatureSlug:   featureSlug,
-		ProjectRoot:   projectRoot,
-		E2EScriptsDir: e2eAbsDir,
-		TestCommand:   index.TestCommand,
+		FeatureSlug: featureSlug,
+		ProjectRoot: projectRoot,
+		TestCommand: index.TestCommand,
 	}, nil
 }
 
@@ -111,90 +101,39 @@ func runAllCompleted(cmd *cobra.Command, args []string) {
 
 	fmt.Fprintf(os.Stderr, "=== All tasks completed for feature: %s ===\n", result.FeatureSlug)
 
-	// Step 1: Feature e2e tests
-	var e2eOutput string
-	var e2eSuccess bool
-
-	switch {
-	case hasJustfile(result.ProjectRoot) && hasJustRecipe(result.ProjectRoot, "test-e2e"):
-		fmt.Fprintf(os.Stderr, "--- Running feature e2e tests (just test-e2e --feature %s) ---\n", result.FeatureSlug)
-		e2eOutput, e2eSuccess = runCmdCapture(result.ProjectRoot, "just", "test-e2e", "--feature", result.FeatureSlug)
-	case fileExists(filepath.Join(result.ProjectRoot, "Makefile")) && hasMakeTarget(result.ProjectRoot, "test-e2e"):
-		fmt.Fprintf(os.Stderr, "--- Running feature e2e tests (make test-e2e FEATURE=%s) ---\n", result.FeatureSlug)
-		e2eOutput, e2eSuccess = runCmdCapture(result.ProjectRoot, "make", "test-e2e", "FEATURE="+result.FeatureSlug)
-	case result.E2EScriptsDir != "":
-		pkgJSON := filepath.Join(result.E2EScriptsDir, "package.json")
-		if _, err := os.Stat(pkgJSON); err == nil {
-			fmt.Fprintln(os.Stderr, "--- Running feature e2e tests (individual specs) ---")
-			e2eOutput, e2eSuccess = runSpecsIndividually(result.E2EScriptsDir)
-		} else {
-			fmt.Fprintf(os.Stderr, "WARNING: %s has no package.json — skipping e2e tests\n", result.E2EScriptsDir)
-			e2eSuccess = true // no scripts to run, treat as success
-		}
-	default:
-		e2eSuccess = true // no e2e configured, skip
+	// Warn if feature e2e scripts exist but haven't been graduated.
+	// Feature e2e execution is owned by T-test-3 (run-e2e-tests task).
+	e2eScriptsDir := filepath.Join(result.ProjectRoot, feature.GetFeatureTestingScriptsDir(result.FeatureSlug))
+	markerPath := feature.GetE2EGraduatedMarker(result.ProjectRoot, result.FeatureSlug)
+	if fileExists(e2eScriptsDir) && !fileExists(markerPath) {
+		fmt.Fprintln(os.Stderr,
+			"WARNING: feature e2e scripts exist but haven't been run or graduated.\n"+
+				"  Add T-test-3 (run-e2e-tests) and T-test-4 (graduate-tests) to your task index,\n"+
+				"  or run /run-e2e-tests and /graduate-tests manually.")
 	}
 
-	if !e2eSuccess {
-		fmt.Fprintln(os.Stderr, "ERROR: e2e tests failed")
-
-		// Save raw output for agent analysis
-		if e2eOutput != "" {
-			if err := writeRawOutput(result.ProjectRoot, result.FeatureSlug, e2eOutput); err != nil {
-				fmt.Fprintf(os.Stderr, "WARNING: failed to write raw-output.txt: %v\n", err)
-			}
-			if err := writeLatestMd(result.ProjectRoot, result.FeatureSlug, TestStats{Fail: 1}); err != nil {
-				fmt.Fprintf(os.Stderr, "WARNING: failed to write latest.md: %v\n", err)
-			}
-		}
-
-		// Block Stop: tell Claude to analyze failures and add fix tasks
-		printHookJSON(map[string]any{
-			"decision": "block",
-			"reason":   "e2e tests failed. Read testing/results/raw-output.txt, analyze failures, then use `task add --title \"Fix: ...\" --priority P0 --breaking` to create fix tasks for each failure.",
-		})
-		os.Exit(0)
-		return
-	}
-
-	// Write passing results
-	if e2eOutput != "" {
-		stats := TestStats{
-			Total: countTestLines(e2eOutput),
-			Pass:  countTestLines(e2eOutput), // all passed since exit code was 0
-		}
-		if err := writeLatestMd(result.ProjectRoot, result.FeatureSlug, stats); err != nil {
-			fmt.Fprintf(os.Stderr, "WARNING: failed to write latest.md: %v\n", err)
-		}
-	}
-
-	// Step 2: Project-wide unit tests
+	// Step 1: Project-wide unit/integration tests
 	fmt.Fprintln(os.Stderr, "--- Running project-wide tests ---")
 	runProjectTests(result.ProjectRoot, result.TestCommand)
 
-	// Step 3: Full e2e regression (graduated scripts in tests/e2e/)
+	// Step 2: Full e2e regression (graduated scripts in tests/e2e/)
 	if hasJustfile(result.ProjectRoot) && hasJustRecipe(result.ProjectRoot, "test-e2e") {
 		fmt.Fprintln(os.Stderr, "--- Running full e2e regression (just test-e2e) ---")
-		_, regSuccess := runCmdCapture(result.ProjectRoot, "just", "test-e2e")
+		regressionOutput, regSuccess := runCmdCapture(result.ProjectRoot, "just", "test-e2e")
 		if !regSuccess {
-			fmt.Fprintln(os.Stderr, "ERROR: e2e regression failed: see output above")
-			os.Exit(1)
+			fmt.Fprintln(os.Stderr, "ERROR: e2e regression failed")
+			if regressionOutput != "" {
+				if err := writeRawOutput(result.ProjectRoot, result.FeatureSlug, regressionOutput); err != nil {
+					fmt.Fprintf(os.Stderr, "WARNING: failed to write raw-output.txt: %v\n", err)
+				}
+			}
+			printHookJSON(map[string]any{
+				"decision": "block",
+				"reason":   "e2e regression failed. Read testing/results/raw-output.txt, analyze failures, then use `task add --title \"Fix: ...\" --priority P0 --breaking` to create fix tasks.",
+			})
+			os.Exit(0)
 		}
 	}
-}
-
-// countTestLines provides a rough count of test results from output.
-// Not used for accurate stats — only for the passing summary.
-func countTestLines(output string) int {
-	count := 0
-	for _, line := range strings.Split(output, "\n") {
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "ok ") || strings.HasPrefix(trimmed, "✓") ||
-			strings.HasPrefix(trimmed, "not ok ") || strings.HasPrefix(trimmed, "✗") {
-			count++
-		}
-	}
-	return count
 }
 
 
@@ -280,30 +219,6 @@ func runShell(dir, command string) {
 	}
 }
 
-// runSpecsIndividually runs each .spec.ts in dir sequentially, collecting all output.
-func runSpecsIndividually(dir string) (string, bool) {
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return fmt.Sprintf("ERROR: read dir %s: %v", dir, err), false
-	}
-
-	var allOutput strings.Builder
-	allSuccess := true
-
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".spec.ts") {
-			continue
-		}
-		specPath := filepath.Join(dir, entry.Name())
-		output, success := runCmdCapture(dir, "npx", "tsx", specPath)
-		allOutput.WriteString(output)
-		if !success {
-			allSuccess = false
-		}
-	}
-
-	return allOutput.String(), allSuccess
-}
 
 func runProjectTests(projectRoot, testCommand string) {
 	if testCommand != "" {

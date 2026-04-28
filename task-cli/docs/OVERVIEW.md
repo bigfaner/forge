@@ -73,22 +73,23 @@ Override with `--force`: `task record <id> --data record.json --force`
 | `task all-completed` | Stop hook | Check if all tasks are completed, and if so, automatically run tests |
 
 **all-completed behavior:**
-- All tasks are `completed` or `skipped` -> run feature e2e tests + project-level tests, exit 0
-- Any task is `pending`/`in_progress`/`blocked` -> silent exit, exit 1
-- No feature or no project root -> silent exit, exit 1
+- All tasks are `completed` or `skipped` → run project-wide unit/integration tests + e2e regression, exit 0
+- Any task is `pending`/`in_progress`/`blocked` → silent exit, exit 0
+- No feature or no project root → silent exit, exit 0
 
-**e2e test failure recovery:**
-- When e2e tests fail, save raw output to `testing/results/raw-output.txt`
-- Write simplified `testing/results/latest.md` with FAIL status and agent instructions
+**e2e regression failure recovery:**
+- When regression (`just test-e2e`) fails, save raw output to `testing/results/raw-output.txt`
 - Block the Stop hook, telling the agent to analyze failures and use `task add` to create fix tasks
 - The agent reads raw output, determines root causes, and adds fix tasks dynamically
-- No hardcoded fix-e2e task templates or round limits — the agent decides
+
+**feature e2e tests (NOT run by this hook):**
+- Feature e2e execution is owned by T-test-3 (`run-e2e-tests` task in the task chain)
+- If `testing/scripts/` exists but no graduation marker, hook prints a WARNING to guide migration
 
 **e2e test script graduation model:**
-- Graduation is agent-driven via the `/graduate-tests` skill — not automatic
-- The agent reads each spec, analyzes content, decides classification (split/merge/keep), then migrates
+- Graduation is agent-driven via T-test-4 (`graduate-tests` task) — not automatic
+- T-test-4 checks `testing/results/latest.md` for PASS status before calling `/graduate-tests`
 - Graduation marker: `tests/e2e/.graduated/<slug>` (content is a timestamp)
-- If graduation marker already exists, `/graduate-tests` is a no-op (idempotent)
 - `docs/features/<slug>/testing/scripts/` is preserved (as traceability record)
 
 **Test command auto-detection order (project-level):**

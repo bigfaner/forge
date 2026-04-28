@@ -13,14 +13,12 @@ import (
 
 func TestCheckAllCompleted(t *testing.T) {
 	tests := []struct {
-		name         string
-		tasks        map[string]task.Task
-		testCommand  string
-		createE2EDir bool
-		forgeState   bool
-		wantNil      bool
-		wantE2EDir   bool
-		wantTestCmd  string
+		name        string
+		tasks       map[string]task.Task
+		testCommand string
+		forgeState  bool
+		wantNil     bool
+		wantTestCmd string
 	}{
 		{
 			name: "all completed with forge state returns result",
@@ -78,26 +76,6 @@ func TestCheckAllCompleted(t *testing.T) {
 			wantNil:    false,
 		},
 		{
-			name: "e2e scripts dir present is reported",
-			tasks: map[string]task.Task{
-				"t1": {ID: "1.1", Status: "completed"},
-			},
-			createE2EDir: true,
-			forgeState:   true,
-			wantNil:      false,
-			wantE2EDir:   true,
-		},
-		{
-			name: "e2e scripts dir absent gives empty field",
-			tasks: map[string]task.Task{
-				"t1": {ID: "1.1", Status: "completed"},
-			},
-			createE2EDir: false,
-			forgeState:   true,
-			wantNil:      false,
-			wantE2EDir:   false,
-		},
-		{
 			name: "testCommand from index.json is propagated",
 			tasks: map[string]task.Task{
 				"t1": {ID: "1.1", Status: "completed"},
@@ -138,13 +116,6 @@ func TestCheckAllCompleted(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if tc.createE2EDir {
-				e2eDir := filepath.Join(dir, feature.GetFeatureTestingScriptsDir("test"))
-				if err := os.MkdirAll(e2eDir, 0755); err != nil {
-					t.Fatal(err)
-				}
-			}
-
 			if tc.forgeState {
 				if err := feature.WriteForgeState(dir, "test"); err != nil {
 					t.Fatal(err)
@@ -172,13 +143,6 @@ func TestCheckAllCompleted(t *testing.T) {
 			}
 			if result.ProjectRoot == "" {
 				t.Error("ProjectRoot should not be empty")
-			}
-
-			if tc.wantE2EDir && result.E2EScriptsDir == "" {
-				t.Error("expected E2EScriptsDir to be set")
-			}
-			if !tc.wantE2EDir && result.E2EScriptsDir != "" {
-				t.Errorf("expected E2EScriptsDir to be empty, got %q", result.E2EScriptsDir)
 			}
 
 			if result.TestCommand != tc.wantTestCmd {
@@ -356,7 +320,6 @@ func TestWriteRawOutput(t *testing.T) {
 	}
 }
 
-
 func TestRunCmdCapture(t *testing.T) {
 	dir := t.TempDir()
 
@@ -369,25 +332,11 @@ func TestRunCmdCapture(t *testing.T) {
 	}
 }
 
-func TestRunSpecsIndividually(t *testing.T) {
+func TestRunCmdCapture_Failure(t *testing.T) {
 	dir := t.TempDir()
-
-	passSpec := `import { test } from 'node:test';
-test('pass', () => {});
-`
-	if err := os.WriteFile(filepath.Join(dir, "a.spec.ts"), []byte(passSpec), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := os.WriteFile(filepath.Join(dir, "helper.ts"), []byte("// not a spec"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	output, success := runSpecsIndividually(dir)
-	if !success {
-		t.Errorf("expected success, got failure. Output: %s", output)
-	}
-	if !strings.Contains(output, "pass") {
-		t.Errorf("output should contain test name, got: %s", output)
+	_, success := runCmdCapture(dir, "false")
+	if success {
+		t.Error("runCmdCapture() success = true, want false for failing command")
 	}
 }
+

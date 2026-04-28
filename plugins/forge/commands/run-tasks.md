@@ -145,17 +145,23 @@ INSTRUCTION: Use /record-task skill to create the record (task record CLI is man
 )
 ```
 
-## Post-Completion: E2E Verification
+## Post-Completion
 
 After all tasks are completed (loop ends with "No available task"):
 
 ```
-Suggest to user:
-"All tasks completed. Run `/run-e2e-tests` to verify against PRD acceptance criteria.
-After tests pass, run `/graduate-tests` to migrate scripts to the regression suite."
+Print summary to user:
+"All tasks completed. T-test-3 and T-test-4 in the task chain handle
+e2e verification and graduation automatically."
 ```
 
-Do NOT run e2e tests automatically — the dispatcher must not execute tests. Only suggest.
+If the feature's task index does not include T-test-3/T-test-4, suggest:
+```
+"Run `/run-e2e-tests` to verify against PRD acceptance criteria,
+then `/graduate-tests` to migrate scripts to the regression suite."
+```
+
+Do NOT run e2e tests automatically — the dispatcher must not execute tests.
 
 ## Related Commands
 

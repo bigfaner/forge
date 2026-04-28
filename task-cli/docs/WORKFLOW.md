@@ -297,44 +297,44 @@ Note: verifyCompletion only validates status; it does not delete any files.
     ┌─────────────────┐             ┌─────────────────┐
     │ All completed   │             │ Has incomplete   │
     │ or skipped      │             │ tasks            │
-    └────────┬────────┘             │ Silent exit(1)   │
+    └────────┬────────┘             │ Silent exit(0)   │
               │                      └─────────────────┘
               ▼
     ┌─────────────────┐
-    │ Check if e2e    │
-    │ test script dir │
-    │ exists          │
+    │ Warn if e2e     │
+    │ scripts exist   │
+    │ but not         │
+    │ graduated       │
+    └────────┬────────┘
+              │
+              ▼
+    ┌─────────────────┐
+    │ Project-wide    │
+    │ unit/integration│
+    │ tests           │
+    └────────┬────────┘
+              │
+              ▼
+    ┌─────────────────┐
+    │ E2E regression  │
+    │ (just test-e2e) │
+    │ if available    │
     └────────┬────────┘
               │
     ┌─────────┴──────────┐
     │                    │
     ▼                    ▼
-┌──────────┐      ┌──────────────┐
-│ Exists:  │      │ Not exists:  │
-│ Run      │      │ Skip e2e     │
-│ e2e tests│      └──────────────┘
-└────┬─────┘
-     │
-     ▼
-┌──────────┐
-│ Exit     │
-│ code = 0 │      ┌──────────────────────┐
-│ ?        ├─────▶│ YES: Run project     │
-└────┬─────┘      │ tests + regression   │
-     │            └──────────────────────┘
-     ▼
-┌──────────────────────────┐
-│ NO: Save raw output to   │
-│ testing/results/          │
-│ raw-output.txt            │
-│                           │
-│ Write latest.md (FAIL)    │
-│                           │
-│ Block hook → Agent reads  │
-│ raw output → task add     │
-│ → claim fix tasks         │
-└──────────────────────────┘
+┌──────────┐      ┌──────────────────────────┐
+│ PASS:    │      │ FAIL: Save raw output    │
+│ exit 0   │      │ Block hook → Agent reads │
+└──────────┘      │ raw output → task add    │
+                  │ → claim fix tasks        │
+                  └──────────────────────────┘
 ```
+
+**Note**: Feature e2e tests are NOT run by this hook.
+They are owned by T-test-3 (`run-e2e-tests` task) in the task chain.
+This hook is the project health gate: unit/integration tests + regression suite.
 
 **Test command detection order:**
 1. `testCommand` field in `index.json`
