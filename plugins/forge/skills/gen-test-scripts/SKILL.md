@@ -10,7 +10,7 @@ Generate executable TypeScript e2e test scripts from test cases.
 **Core principle**: Every generated `test()` must be independently runnable, repeatable, and have explicit assertions. Test cases are input; scripts are output.
 
 <HARD-GATE>
-This skill only generates test scripts (testing/scripts/), it does not execute tests.
+This skill only generates test scripts (`tests/e2e/<feature>/`), it does not execute tests.
 Test execution is handled by the `/run-e2e-tests` skill.
 </HARD-GATE>
 
@@ -29,6 +29,7 @@ Check previous stage artifacts. Abort and prompt user if missing:
 ```bash
 ls docs/features/<slug>/testing/test-cases.md
 ls docs/sitemap/sitemap.json  # UI tests only (project-level file, not per-feature)
+ls tests/e2e/config.yaml      # Test environment config (project-level)
 ```
 
 **Note**: `<slug>` is the current feature name, obtained via `task feature` command. `docs/sitemap/sitemap.json` is a project-level file (one per application), not isolated per feature.
@@ -69,7 +70,7 @@ Test cases match sitemap pages via the `Route` field. The `Element` field (refer
 ## Workflow
 
 ```
-1. Read test cases → 2. Resolve sitemap → 3. Map locators → 4. Generate spec files → 5. Generate config files
+1. Read test cases → 1.5. Code Reconnaissance → 2. Resolve sitemap → 3. Map locators → 4. Generate spec files → 5. Ensure shared infrastructure
 ```
 
 ### Step 1: Read Test Cases
@@ -96,6 +97,42 @@ Count each category to decide whether to enable shared auth (enabled when `auth-
 
 <HARD-RULE>
 Login tests and authenticated tests must not be mixed in the same `describe` block.
+</HARD-RULE>
+
+### Step 1.5: Code Reconnaissance (Build Fact Table)
+
+Read actual source code files to extract ground-truth values. **Never guess or assume values** — every value in a generated script must come from the test-cases.md input or the Fact Table built here.
+
+**Check test-cases.md** for Route Validation results (⚠️ warnings from gen-test-cases Step 3.5). Use corrected routes where available.
+
+**Required reads** (adapt to project structure):
+
+| Source | What to extract | Typical file patterns |
+|--------|----------------|----------------------|
+| Router files | Route paths, path parameters, middleware bindings | `internal/handler/router.go`, `src/routes/**`, `src/app/**/page.tsx` |
+| Config files | API port, base path prefix, auth credentials | `config.yaml`, `.env`, `.env.example`, `src/config.*` |
+| API handlers | Request/response schemas, status codes, validation rules | `internal/handler/*.go`, `src/handlers/**` |
+| Auth implementation | Login endpoint path, token field name, header format | Auth module/controller files |
+| CLI entry points | Command names, flag names, output formats | `src/cli/**`, `cmd/**/*.go` |
+
+**Build the Fact Table**: After reading, record verified facts with source citations:
+
+```markdown
+## Fact Table
+| Key | Value | Source |
+|-----|-------|--------|
+| API_PORT | 8080 | backend/config.yaml:3 |
+| API_PREFIX | /v1 | internal/handler/router.go:20 |
+| AUTH_ENDPOINT | POST /v1/auth/login | internal/handler/router.go:42 |
+| AUTH_TOKEN_FIELD | data.token | internal/handler/auth.go:58 |
+| AUTH_HEADER | Authorization: Bearer <token> | internal/middleware/auth.go:15 |
+```
+
+<HARD-RULE>
+- Every value in the Fact Table must cite the source file and line number.
+- If a source file cannot be found, note it as `UNKNOWN`. Do not fabricate values.
+- The agent must use Fact Table values when generating spec files in Step 4. When a Fact Table value contradicts a template placeholder, the Fact Table wins.
+- All `// VERIFY:` markers in templates must be resolved using Fact Table values.
 </HARD-RULE>
 
 ### Step 2: Resolve Sitemap
@@ -136,6 +173,16 @@ For each type group, generate a spec file from the corresponding template.
 
 **Template usage**: Templates contain `CONDITIONAL` comment blocks marking code segments to enable/disable based on auth classification. Based on Step 1 auth classification results, **uncomment** matching CONDITIONAL blocks, remove non-matching blocks, then fill in test data. Do not rewrite template structure from scratch.
 
+**Import path**: All spec files must import from `'../helpers.js'` (one level up to shared helpers.ts at `tests/e2e/`).
+
+**VERIFY marker resolution**: All `// VERIFY:` comments in templates must be resolved during generation:
+1. Look up the corresponding value in the Fact Table (Step 1.5)
+2. Replace the placeholder value with the Fact Table value
+3. Remove the `// VERIFY:` comment
+4. If no Fact Table value exists, keep the `// VERIFY:` comment as-is so it is visible during code review
+
+**Post-generation check**: After generating all spec files, run `grep -r '// VERIFY:' tests/e2e/<feature>/` to confirm no unresolved markers remain (or note which ones are unresolved for manual review).
+
 <EXTREMELY-IMPORTANT>
 **UI tests use Playwright Locator API** (browser driver library only). Using agent-browser in generated spec files is forbidden.
 
@@ -148,7 +195,7 @@ For each type group, generate a spec file from the corresponding template.
 **`@eN` refs must not appear in any generated spec file.**
 </EXTREMELY-IMPORTANT>
 
-**UI tests (`testing/scripts/ui.spec.ts`)**:
+**UI tests (`tests/e2e/<feature>/ui.spec.ts`)**:
 
 - Read template: `plugins/forge/skills/gen-test-scripts/templates/playwright-ui.spec.ts`
 - **Auth setup** (top-level `before` hook):
@@ -165,7 +212,7 @@ For each type group, generate a spec file from the corresponding template.
 - Fallback locators annotated with `// UNSTABLE: no semantic anchor`
 - Each test includes a comment: `// Traceability: TC-NNN → {Source}`
 
-**API tests (`testing/scripts/api.spec.ts`)**:
+**API tests (`tests/e2e/<feature>/api.spec.ts`)**:
 
 - Read template: `plugins/forge/skills/gen-test-scripts/templates/api.spec.ts`
 - **Auth setup** (top-level `before` hook):
@@ -178,7 +225,7 @@ For each type group, generate a spec file from the corresponding template.
   - Assert on status code, response body, headers
   - Each test includes a traceability comment
 
-**CLI tests (`testing/scripts/cli.spec.ts`)**:
+**CLI tests (`tests/e2e/<feature>/cli.spec.ts`)**:
 
 - Read template: `plugins/forge/skills/gen-test-scripts/templates/cli.spec.ts`
 - For each CLI test case, generate a `test()` block:
@@ -192,30 +239,49 @@ For each type group, generate a spec file from the corresponding template.
 **Skip empty groups**: If no test cases of a given type exist, skip generating that spec file.
 </HARD-RULE>
 
-### Step 5: Generate Config Files
+### Step 5: Ensure Shared Infrastructure
 
-Write `testing/scripts/package.json` from template:
+Check if shared infrastructure exists at `tests/e2e/`:
 
-- `tsx` + `playwright` as devDependencies
-- Scripts: `"test:ui"`, `"test:api"`, `"test:cli"`, `"test:all"`
+```bash
+ls tests/e2e/helpers.ts tests/e2e/package.json tests/e2e/tsconfig.json 2>/dev/null
+```
 
-Write `testing/scripts/tsconfig.json` from template:
+**If any file is missing**, create it from the corresponding template:
+- `helpers.ts`: copy from `plugins/forge/skills/gen-test-scripts/templates/helpers.ts` (only if tests/e2e/helpers.ts does not exist)
+- `package.json`: copy from `plugins/forge/skills/gen-test-scripts/templates/package.json` (only if tests/e2e/package.json does not exist)
+- `tsconfig.json`: copy from `plugins/forge/skills/gen-test-scripts/templates/tsconfig.json` (only if tests/e2e/tsconfig.json does not exist)
 
-- Target ES2022, module NodeNext, strict mode
+**If all exist**: skip. Do not modify existing shared files.
+
+Install dependencies if `node_modules` is missing:
+
+```bash
+cd tests/e2e && npm install
+```
 
 ## Output Files
 
-All files go to `docs/features/<slug>/testing/scripts/`:
+All generated spec files go to `tests/e2e/<feature>/`:
 
 ```
-scripts/
-  helpers.ts       # Shared utilities (browser lifecycle, curl, auth helpers, runCli)
-  ui.spec.ts       # UI tests via Playwright (shared auth via loginViaUI)
-  api.spec.ts      # API tests via fetch (shared auth via authCurl)
-  cli.spec.ts      # CLI tests via child_process
-  package.json     # tsx + playwright
-  tsconfig.json    # ES2022 + NodeNext
+tests/e2e/                        # Shared infrastructure (created once)
+  helpers.ts                      # Shared utilities (browser lifecycle, curl, auth, runCli)
+  package.json                    # tsx + playwright + yaml
+  tsconfig.json                   # ES2022 + NodeNext
+  config.yaml                     # Test environment config (already exists)
+  <feature>/                      # Generated per-feature
+    ui.spec.ts                    # UI tests via Playwright
+    api.spec.ts                   # API tests via fetch
+    cli.spec.ts                   # CLI tests via child_process
 ```
+
+<HARD-RULE>
+**Shared file policy**: `helpers.ts`, `package.json`, and `tsconfig.json` at `tests/e2e/` are shared across all features.
+- If they do not exist: create them from templates.
+- If they already exist: DO NOT overwrite. The existing versions are canonical.
+- Only spec files (`*.spec.ts`) are written per-feature.
+</HARD-RULE>
 
 ## Locator Priority Reference
 

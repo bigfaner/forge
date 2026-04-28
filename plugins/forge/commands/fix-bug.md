@@ -120,9 +120,9 @@ Add an e2e test only when the bug is observable at the API, CLI, or UI surface.
 
 | Bug surface | Test location | Runner |
 |-------------|--------------|--------|
-| UI behavior | `docs/features/<slug>/testing/scripts/ui.spec.ts` | Playwright |
-| API endpoint | `docs/features/<slug>/testing/scripts/api.spec.ts` | fetch |
-| CLI command | `docs/features/<slug>/testing/scripts/cli.spec.ts` | child_process |
+| UI behavior | `tests/e2e/<slug>/ui.spec.ts` | Playwright |
+| API endpoint | `tests/e2e/<slug>/api.spec.ts` | fetch |
+| CLI command | `tests/e2e/<slug>/cli.spec.ts` | child_process |
 
 If no feature slug applies, add to `tests/e2e/` directly.
 

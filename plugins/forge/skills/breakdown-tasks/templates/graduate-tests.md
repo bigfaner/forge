@@ -11,15 +11,15 @@ status: pending
 
 ## Description
 
-Call `/graduate-tests` skill to migrate feature test scripts from `testing/scripts/` to the
-project-wide regression suite at `tests/e2e/`.
+Call `/graduate-tests` skill to migrate feature test scripts from `tests/e2e/<feature>/` to the
+project-wide regression suite at `tests/e2e/<target>/`.
 
 This task is a gate: it only proceeds if e2e tests are passing.
 
 ## Reference Files
 
 - `testing/results/latest.md` — Must show status = PASS before graduating
-- `testing/scripts/` — Source scripts to migrate
+- `tests/e2e/<feature>/` — Source scripts to migrate
 - `tests/e2e/` — Destination regression suite
 
 ## Acceptance Criteria

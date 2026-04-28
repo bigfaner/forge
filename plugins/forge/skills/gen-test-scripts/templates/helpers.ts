@@ -26,10 +26,9 @@ function findConfigPath(): string {
   throw new Error(`tests/e2e/config.yaml not found. Searched upward from ${__dirname}. Set E2E_CONFIG_PATH or run /gen-sitemap first.`);
 }
 
-// Screenshots go to <helpers-dir>/../results/screenshots
-// During development: testing/scripts/ → testing/results/screenshots/
-// After graduation:   tests/e2e/       → tests/e2e/results/screenshots/
-const SCREENSHOTS_DIR = join(__dirname, '..', 'results', 'screenshots');
+// Screenshots go to <helpers-dir>/results/screenshots
+// helpers.ts lives at tests/e2e/helpers.ts, so screenshots go to tests/e2e/results/screenshots/
+const SCREENSHOTS_DIR = join(__dirname, 'results', 'screenshots');
 
 interface E2EConfig {
   baseUrl?: string;
@@ -55,8 +54,8 @@ function toNumber(val: unknown, fallback: number): number {
   return fallback;
 }
 
-export const baseUrl = _config.baseUrl ?? 'http://localhost:3456';
-export const apiBaseUrl = _config.apiBaseUrl ?? 'http://localhost:8080';
+export const baseUrl = _config.baseUrl ?? 'http://localhost:3456'; // VERIFY: frontend port from config
+export const apiBaseUrl = _config.apiBaseUrl ?? 'http://localhost:8080'; // VERIFY: API port from config
 const DEFAULT_TIMEOUT = toNumber(_config.timeout, 30000);
 
 // ── Browser lifecycle ──────────────────────────────────────────────
@@ -164,6 +163,7 @@ export async function loginViaUI(page: Page, creds: UICredentials = defaultCreds
 export async function getApiToken(apiBaseUrl: string, creds: UICredentials = defaultCreds): Promise<string> {
   // IMPORTANT: apiBaseUrl contains no path prefix. The path below (/v1/auth/login) is a placeholder.
   // Check backend router (e.g. r.Group(...) in router.go) for the actual auth endpoint path.
+  // VERIFY: auth endpoint path from backend router
   const res = await curl('POST', `${apiBaseUrl}/v1/auth/login`, {
     body: JSON.stringify({ username: creds.username, password: creds.password }),
   });

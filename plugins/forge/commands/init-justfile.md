@@ -77,7 +77,7 @@ Write to `justfile` (lowercase). All templates share the same `test-e2e`; only `
 test-e2e feature="":
     #!/usr/bin/env bash
     if [ "{{feature}}" != "" ]; then
-        scripts_dir="docs/features/{{feature}}/testing/scripts"
+        scripts_dir="tests/e2e/{{feature}}"
         fail=0
         for spec in "$scripts_dir"/*.spec.ts; do
             [ -f "$spec" ] && npx tsx "$spec" || fail=$((fail+1))
@@ -153,7 +153,7 @@ Created justfile with standard forge targets (Go project)
 Targets:
   just test                       → go test -race ./...
   just test-e2e                   → regression tests in tests/e2e/
-  just test-e2e --feature <slug>  → feature tests in docs/features/<slug>/testing/scripts/
+  just test-e2e --feature <slug>  → feature tests in tests/e2e/<slug>/
   just build                      → go build ./...
   just lint                       → golangci-lint run ./...
 

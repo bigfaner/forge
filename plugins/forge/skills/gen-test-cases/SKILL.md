@@ -45,7 +45,7 @@ ls docs/features/<slug>/prd/prd-spec.md
 ## Workflow
 
 ```
-1. Read PRD sources → 2. Extract AC → 3. Classify & generate → 4. Write test-cases.md
+1. Read PRD sources → 2. Extract AC → 3. Classify & generate → 3.5. Validate routes → 4. Write test-cases.md
 ```
 
 ### Step 1: Read PRD Sources
@@ -143,6 +143,32 @@ For each criterion, generate:
 - CLI tests: `cli/<command>` (derived from command name, e.g. `task claim` → `cli/claim`)
 
 **Test ID generation rule**: `<target>/<title-slug>` where title-slug = lowercase title + spaces to hyphens + remove punctuation.
+</HARD-RULE>
+
+### Step 3.5: Validate Routes
+
+Cross-reference each test case's `Route` and `Target` fields against actual project route files.
+
+**Discovery**: Scan the project root for route definitions:
+
+| Pattern | Framework |
+|---------|-----------|
+| `internal/handler/router.go`, `*routes*.go` | Go (Gin/Echo/Fiber) |
+| `src/routes/**`, `src/app/**/route.*` | React/Next.js |
+| `src/pages/**`, `src/app/**/page.*` | Next.js App Router |
+| `config/routes.*`, `routes/**` | Rails/Phoenix |
+
+Use `Grep` to search for route registration patterns (e.g., `r.Get(`, `r.Post(`, `router.get(`, `router.post(`, `app.get(`).
+
+**Validation**: For each test case with a `Route` field:
+- Exact or prefix match against discovered routes → `✅ Matched (source:line)`
+- No match → `⚠️ Route /path not found — verify path`
+- Suggest closest matching route if available
+
+**Write results** as annotations on each test case's `Route` line, and add a summary section after the Traceability table (see template).
+
+<HARD-RULE>
+If no route files can be discovered, skip this step entirely and omit the Route Validation section from the output. Do not fabricate validation results.
 </HARD-RULE>
 
 ### Step 4: Write Output

@@ -60,7 +60,7 @@ project-root/
 /breakdown-tasks appends standard test tasks (T-test-1, T-test-2), executed in order:
 /gen-sitemap → /gen-test-cases → /gen-test-scripts → /run-e2e-tests
      ↓              ↓                  ↓                   ↓
- sitemap.json  test-cases.md    testing/scripts/*    testing/results/
+ sitemap.json  test-cases.md    tests/e2e/<feature>/*    testing/results/
 ```
 
 Each skill checks prerequisites with `ls` before execution; aborts and prompts user if missing.

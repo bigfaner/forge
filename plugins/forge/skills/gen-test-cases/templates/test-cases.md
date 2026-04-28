@@ -43,3 +43,13 @@ generated: "{{DATE}}"
 | TC ID | Source | Type | Target | Priority |
 |-------|--------|------|--------|----------|
 {{TRACEABILITY_ROWS}}
+
+---
+
+## Route Validation
+
+| Route | Status | TC IDs | Matched Route |
+|-------|--------|--------|---------------|
+{{ROUTE_VALIDATION_ROWS}}
+
+_Omit this section if route files cannot be discovered in the project._

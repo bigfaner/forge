@@ -27,9 +27,8 @@ Generated scripts use:
 
 ## Acceptance Criteria
 
-- [ ] `testing/scripts/package.json` created
-- [ ] `testing/scripts/helpers.ts` created
-- [ ] At least one spec file generated (ui.spec.ts / api.spec.ts / cli.spec.ts)
+- [ ] `tests/e2e/<feature>/` contains at least one spec file (ui.spec.ts / api.spec.ts / cli.spec.ts)
+- [ ] `tests/e2e/helpers.ts` exists (shared infrastructure)
 - [ ] Each test() includes traceability comment `// Traceability: TC-NNN → {PRD Source}`
 
 ## User Stories
@@ -39,5 +38,5 @@ No direct user story mapping. This is a standard test generation task.
 ## Implementation Notes
 
 1. Run `/gen-test-scripts` skill
-2. Verify `testing/scripts/package.json` exists
+2. Verify spec files exist under `tests/e2e/<feature>/`
 3. If T-test-1 was skipped, mark this task as skipped as well
