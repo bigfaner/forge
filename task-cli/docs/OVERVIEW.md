@@ -73,25 +73,23 @@ Override with `--force`: `task record <id> --data record.json --force`
 | `task all-completed` | Stop hook | Check if all tasks are completed, and if so, automatically run tests |
 
 **all-completed behavior:**
-- All tasks are `completed` or `skipped` -> run feature e2e tests + project-level tests, exit 0
-- Any task is `pending`/`in_progress`/`blocked` -> silent exit, exit 1
-- No feature or no project root -> silent exit, exit 1
+- All tasks are `completed` or `skipped` → run project-wide unit/integration tests + e2e regression, exit 0
+- Any task is `pending`/`in_progress`/`blocked` → silent exit, exit 0
+- No feature or no project root → silent exit, exit 0
 
-**e2e test failure recovery:**
-- When e2e tests fail, automatically append a `fix-e2e-N` task to `index.json` (N starts from 1)
-- fix-e2e task format:
-  - id: `fix-e2e-N`
-  - title: "Fix e2e test failures"
-  - priority: `P0`
-  - file: `testing/results/latest.md` (points to failure details)
-- If a pending fix-e2e task already exists, skip appending (avoid duplicates)
-- fix-e2e task limit is 3; after exceeding, print a warning and exit 0 (avoid infinite loops)
-- After appending, exit 1, triggering the agent to continue working and claim the fix-e2e task
+**e2e regression failure recovery:**
+- When regression (`just test-e2e`) fails, save raw output to `testing/results/raw-output.txt`
+- Block the Stop hook, telling the agent to analyze failures and use `task add` to create fix tasks
+- The agent reads raw output, determines root causes, and adds fix tasks dynamically
+
+**feature e2e tests (NOT run by this hook):**
+- Feature e2e execution is owned by T-test-3 (`run-e2e-tests` task in the task chain)
+- If `testing/scripts/` exists but no graduation marker, hook prints a WARNING to guide migration
 
 **e2e test script graduation model:**
-- On first successful e2e test, migrate scripts to `tests/e2e/<type>/<target>/` based on the test case's `target` field
+- Graduation is agent-driven via T-test-4 (`graduate-tests` task) — not automatic
+- T-test-4 checks `testing/results/latest.md` for PASS status before calling `/graduate-tests`
 - Graduation marker: `tests/e2e/.graduated/<slug>` (content is a timestamp)
-- If graduation marker already exists, skip migration (not first success)
 - `docs/features/<slug>/testing/scripts/` is preserved (as traceability record)
 
 **Test command auto-detection order (project-level):**
@@ -243,6 +241,7 @@ Module interaction: via interfaces/type definitions, no direct dependency on int
 task claim              # Claim the next task
 task record 1.1         # Generate task record
 task record 1.1 --force # Generate task record (skip validation)
+task add --title "Fix: ..." --priority P0 --breaking  # Add a new task dynamically
 task status 1.1         # Query task status
 task status 1.1 done    # Update status
 task query 1.1          # Query task details

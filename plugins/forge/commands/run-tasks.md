@@ -111,8 +111,9 @@ If the claimed task had `BREAKING: true` in the claim output:
 ```
 
 **If tests fail**:
-- Dispatch error-fixer with failure context
-- Do NOT proceed to next task until error-fixer resolves or marks blocked
+- Option A: Dispatch error-fixer with failure context (existing behavior)
+- Option B: Add fix task via `task add --title "Fix: <failure>" --priority P0 --breaking --description "..."` and continue loop
+- Do NOT proceed to next task until error-fixer resolves or fix task completes
 
 **If tests pass**:
 - Continue to next iteration
@@ -144,16 +145,23 @@ INSTRUCTION: Use /record-task skill to create the record (task record CLI is man
 )
 ```
 
-## Post-Completion: E2E Verification
+## Post-Completion
 
 After all tasks are completed (loop ends with "No available task"):
 
 ```
-Suggest to user:
-"All tasks completed. Run `/run-e2e-tests` to verify against PRD acceptance criteria."
+Print summary to user:
+"All tasks completed. T-test-3 and T-test-4 in the task chain handle
+e2e verification and graduation automatically."
 ```
 
-Do NOT run e2e tests automatically — the dispatcher must not execute tests. Only suggest.
+If the feature's task index does not include T-test-3/T-test-4, suggest:
+```
+"Run `/run-e2e-tests` to verify against PRD acceptance criteria,
+then `/graduate-tests` to migrate scripts to the regression suite."
+```
+
+Do NOT run e2e tests automatically — the dispatcher must not execute tests.
 
 ## Related Commands
 

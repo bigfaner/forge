@@ -216,12 +216,19 @@ Phase 2 gate: 2.gate               (dependencies: ["2.summary"])
 
 ### 4d. Standard Test Tasks
 
-Append two fixed test tasks:
+Append four fixed test tasks:
 
 - **T-test-1**: read `templates/gen-test-cases.md`, calls `/gen-test-cases`, file `gen-test-cases.md`
 - **T-test-2**: read `templates/gen-test-scripts.md`, calls `/gen-test-scripts`, depends on T-test-1, file `gen-test-scripts.md`
+- **T-test-3**: read `templates/run-e2e-tests.md`, calls `/run-e2e-tests`, depends on T-test-2, file `run-e2e-tests.md`
+- **T-test-4**: read `templates/graduate-tests.md`, calls `/graduate-tests`, depends on T-test-3, file `graduate-tests.md`
 
 Replace `{{T_TEST_1_DEP}}` with the last phase's gate ID if a gate exists (e.g., `"2.gate"`), otherwise the last phase's summary ID.
+
+**Responsibility chain:**
+- T-test-1/2: generate test artifacts (documentation + scripts)
+- T-test-3: execute feature e2e tests; on failure, `task add` fix tasks (P0) and mark completed
+- T-test-4: verify e2e passed (check `latest.md`), then graduate scripts to `tests/e2e/`
 
 ## Step 5: Create index.json
 
@@ -252,5 +259,5 @@ task validate docs/features/<slug>/tasks/index.json
 - [ ] `breaking: true` set on tasks that modify shared contracts
 - [ ] UI tasks reference prototype files (if applicable)
 - [ ] User Stories populated from `prd-user-stories.md`
-- [ ] `index.json` ends with T-test-1 and T-test-2
+- [ ] `index.json` ends with T-test-1, T-test-2, T-test-3, and T-test-4
 - [ ] `manifest.md` updated with traceability + `status: tasks`

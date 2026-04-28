@@ -419,147 +419,6 @@ func TestPrintHookJSON(t *testing.T) {
 	})
 }
 
-// ---------- parseTargetsFromTestCases ----------
-
-func TestParseTargetsFromTestCases(t *testing.T) {
-	tests := []struct {
-		name    string
-		content string
-		want    map[string][]string
-	}{
-		{
-			name:    "file not found returns nil",
-			content: "", // won't create file
-			want:    nil,
-		},
-		{
-			name:    "no target lines",
-			content: "# Just a heading\nSome text\n",
-			want:    map[string][]string{},
-		},
-		{
-			name:    "single target",
-			content: "- **Target**: ui/login\n",
-			want:    map[string][]string{"ui": {"ui/login"}},
-		},
-		{
-			name:    "duplicate target deduped",
-			content: "- **Target**: ui/login\n- **Target**: ui/login\n",
-			want:    map[string][]string{"ui": {"ui/login"}},
-		},
-		{
-			name:    "target without slash skipped",
-			content: "- **Target**: login\n",
-			want:    map[string][]string{},
-		},
-		{
-			name:    "multiple types",
-			content: "- **Target**: ui/login\n- **Target**: api/auth\n",
-			want:    map[string][]string{"ui": {"ui/login"}, "api": {"api/auth"}},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			dir := t.TempDir()
-			path := filepath.Join(dir, "test-cases.md")
-
-			if tt.content != "" {
-				os.WriteFile(path, []byte(tt.content), 0644)
-				result, err := parseTargetsFromTestCases(path)
-				if err != nil {
-					t.Fatalf("unexpected error: %v", err)
-				}
-				if len(result) != len(tt.want) {
-					t.Errorf("got %d types, want %d: %+v", len(result), len(tt.want), result)
-				}
-				for k, v := range tt.want {
-					if got, ok := result[k]; !ok {
-						t.Errorf("missing type %q", k)
-					} else if len(got) != len(v) {
-						t.Errorf("type %q: got %v, want %v", k, got, v)
-					}
-				}
-			} else {
-				result, err := parseTargetsFromTestCases(path)
-				if err != nil {
-					t.Fatalf("unexpected error: %v", err)
-				}
-				if result != nil {
-					t.Errorf("expected nil for missing file, got %+v", result)
-				}
-			}
-		})
-	}
-}
-
-// ---------- copyFile ----------
-
-func TestCopyFile(t *testing.T) {
-	dir := t.TempDir()
-	src := filepath.Join(dir, "src.txt")
-	dst := filepath.Join(dir, "dst.txt")
-
-	os.WriteFile(src, []byte("hello world"), 0644)
-
-	if err := copyFile(src, dst); err != nil {
-		t.Fatalf("copyFile() error = %v", err)
-	}
-
-	data, err := os.ReadFile(dst)
-	if err != nil {
-		t.Fatalf("failed to read dst: %v", err)
-	}
-	if string(data) != "hello world" {
-		t.Errorf("got %q, want 'hello world'", data)
-	}
-}
-
-func TestCopyFile_SourceNotFound(t *testing.T) {
-	err := copyFile("/nonexistent/file.txt", "/tmp/dst.txt")
-	if err == nil {
-		t.Error("expected error for missing source file")
-	}
-}
-
-// ---------- copyAndRewriteImports ----------
-
-func TestCopyAndRewriteImports(t *testing.T) {
-	dir := t.TempDir()
-	src := filepath.Join(dir, "spec.ts")
-	dst := filepath.Join(dir, "out", "spec.ts")
-
-	content := `import { helper } from '../helpers.js';
-import { other } from '../other';
-test('x', () => {});
-`
-	os.WriteFile(src, []byte(content), 0644)
-	os.MkdirAll(filepath.Dir(dst), 0755)
-
-	if err := copyAndRewriteImports(src, dst); err != nil {
-		t.Fatalf("copyAndRewriteImports() error = %v", err)
-	}
-
-	data, err := os.ReadFile(dst)
-	if err != nil {
-		t.Fatalf("failed to read: %v", err)
-	}
-
-	got := string(data)
-	// The regex matches '../helpers.js' or './helpers' (with or without .js)
-	// and replaces with '../helpers.js'
-	if !strings.Contains(got, "'../helpers.js'") {
-		t.Errorf("expected import rewrite, got: %s", got)
-	}
-}
-
-func TestCopyAndRewriteImports_SourceNotFound(t *testing.T) {
-	err := copyAndRewriteImports("/nonexistent.ts", "/tmp/out.ts")
-	if err == nil {
-		t.Error("expected error for missing source")
-	}
-}
-
 // ---------- hasNpmTestScript ----------
 
 func TestHasNpmTestScript(t *testing.T) {
@@ -595,104 +454,6 @@ func TestHasNpmTestScript(t *testing.T) {
 			t.Error("expected false for invalid JSON")
 		}
 	})
-}
-
-// ---------- graduateTestScripts more paths ----------
-
-func TestGraduateTestScripts_NoScriptsDir(t *testing.T) {
-	dir := t.TempDir()
-	t.Setenv("CLAUDE_PROJECT_DIR", dir)
-	feature.EnsureFeatureDir(dir, "test")
-
-	err := graduateTestScripts(dir, "test")
-	if err != nil {
-		t.Errorf("no scripts dir should be no-op, got: %v", err)
-	}
-}
-
-func TestGraduateTestScripts_NoTestCases(t *testing.T) {
-	dir := t.TempDir()
-	t.Setenv("CLAUDE_PROJECT_DIR", dir)
-	feature.EnsureFeatureDir(dir, "test")
-
-	// Create scripts dir but no test-cases.md
-	scriptsDir := filepath.Join(dir, feature.GetFeatureTestingScriptsDir("test"))
-	os.MkdirAll(scriptsDir, 0755)
-
-	err := graduateTestScripts(dir, "test")
-	if err != nil {
-		t.Errorf("no test-cases should be no-op, got: %v", err)
-	}
-}
-
-func TestGraduateTestScripts_EmptyTargets(t *testing.T) {
-	dir := t.TempDir()
-	t.Setenv("CLAUDE_PROJECT_DIR", dir)
-	feature.EnsureFeatureDir(dir, "test")
-
-	// Create test-cases.md with no targets
-	tcPath := filepath.Join(dir, feature.GetFeatureTestCasesFile("test"))
-	os.MkdirAll(filepath.Dir(tcPath), 0755)
-	os.WriteFile(tcPath, []byte("# No targets here\n"), 0644)
-
-	// Create scripts dir
-	scriptsDir := filepath.Join(dir, feature.GetFeatureTestingScriptsDir("test"))
-	os.MkdirAll(scriptsDir, 0755)
-
-	err := graduateTestScripts(dir, "test")
-	if err != nil {
-		t.Errorf("empty targets should be no-op, got: %v", err)
-	}
-}
-
-func TestGraduateTestScripts_WithSharedFiles(t *testing.T) {
-	dir := t.TempDir()
-	t.Setenv("CLAUDE_PROJECT_DIR", dir)
-	feature.EnsureFeatureDir(dir, "test")
-
-	// test-cases.md with target
-	tcPath := filepath.Join(dir, feature.GetFeatureTestCasesFile("test"))
-	os.MkdirAll(filepath.Dir(tcPath), 0755)
-	os.WriteFile(tcPath, []byte("- **Target**: ui/login\n"), 0644)
-
-	// scripts dir with shared files and spec
-	scriptsDir := filepath.Join(dir, feature.GetFeatureTestingScriptsDir("test"))
-	os.MkdirAll(scriptsDir, 0755)
-	os.WriteFile(filepath.Join(scriptsDir, "helpers.ts"), []byte("export function h() {}"), 0644)
-	os.WriteFile(filepath.Join(scriptsDir, "package.json"), []byte(`{"dependencies": {}}`), 0644)
-	os.WriteFile(filepath.Join(scriptsDir, "tsconfig.json"), []byte(`{"compilerOptions": {}}`), 0644)
-	os.WriteFile(filepath.Join(scriptsDir, "ui.spec.ts"), []byte("import { h } from '../helpers.js';\ntest('x', () => {});"), 0644)
-
-	err := graduateTestScripts(dir, "test")
-	if err != nil {
-		t.Fatalf("graduateTestScripts() error = %v", err)
-	}
-
-	// Check shared files copied to tests/e2e/
-	for _, f := range []string{"helpers.ts", "package.json", "tsconfig.json"} {
-		dst := filepath.Join(dir, "tests", "e2e", f)
-		if !fileExists(dst) {
-			t.Errorf("shared file %s not copied to tests/e2e/", f)
-		}
-	}
-
-	// Check spec copied to tests/e2e/ui/login/
-	specDst := filepath.Join(dir, "tests", "e2e", "ui", "login", "ui.spec.ts")
-	if !fileExists(specDst) {
-		t.Error("ui.spec.ts not graduated to tests/e2e/ui/login/")
-	}
-
-	// Check import rewritten
-	data, _ := os.ReadFile(specDst)
-	if !strings.Contains(string(data), "'../helpers.js'") {
-		t.Errorf("import not rewritten in graduated spec: %s", string(data))
-	}
-
-	// Check marker
-	markerPath := feature.GetE2EGraduatedMarker(dir, "test")
-	if !fileExists(markerPath) {
-		t.Error("graduation marker not created")
-	}
 }
 
 // ---------- executeClaim error paths ----------
@@ -1203,16 +964,6 @@ func TestRunStatus_Update(t *testing.T) {
 	}
 }
 
-// ---------- saveIndexAtomic error ----------
-
-func TestSaveIndexAtomic_InvalidPath(t *testing.T) {
-	index := &task.TaskIndex{Feature: "test", Tasks: map[string]task.Task{}}
-	err := saveIndexAtomic("/nonexistent/deep/nested/dir/index.json", index)
-	if err == nil {
-		t.Error("expected error for invalid path")
-	}
-}
-
 // ---------- executeClaim error: no project ----------
 
 func TestExecuteClaim_NoProject(t *testing.T) {
@@ -1521,31 +1272,7 @@ func TestRunRecord_BlockedStatus(t *testing.T) {
 	}
 }
 
-// ---------- appendFixTask: no failures fallback ----------
-
-func TestAppendFixTask_NoFailures(t *testing.T) {
-	dir := t.TempDir()
-	t.Setenv("CLAUDE_PROJECT_DIR", dir)
-	feature.EnsureFeatureDir(dir, "test")
-
-	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
-	index := &task.TaskIndex{
-		Feature:    "test",
-		StatusEnum: []string{"pending", "completed"},
-		Tasks: map[string]task.Task{
-			"t1": {ID: "1.1", Status: "completed"},
-		},
-	}
-	task.SaveIndex(indexPath, index)
-
-	added, err := appendFixTask(dir, "test", nil)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if added != 1 {
-		t.Errorf("expected 1 task for empty failures (fallback), got %d", added)
-	}
-}
+// ---------- appendFixTask removed (agent handles fix tasks now) ----------
 
 // ---------- runProjectTests: justfile branch ----------
 
@@ -1577,18 +1304,6 @@ func TestRunProjectTests_Makefile(t *testing.T) {
 	})
 	if !strings.Contains(out, "make-test-output") {
 		t.Errorf("expected make test output, got: %s", out)
-	}
-}
-
-// ---------- runSpecsIndividually error path ----------
-
-func TestRunSpecsIndividually_InvalidDir(t *testing.T) {
-	output, success := runSpecsIndividually("/nonexistent/path")
-	if success {
-		t.Error("expected false for nonexistent dir")
-	}
-	if !strings.Contains(output, "ERROR") {
-		t.Errorf("expected error message, got: %s", output)
 	}
 }
 
@@ -1628,34 +1343,6 @@ func TestValidateTTest1Template_MissingFile(t *testing.T) {
 	v.validateTTest1Template("/nonexistent/task.md")
 	if len(v.errors) != 0 {
 		t.Errorf("missing file should not add errors, got: %v", v.errors)
-	}
-}
-
-// ---------- graduateTestScripts: spec file missing ----------
-
-func TestGraduateTestScripts_ApiSpecOnly(t *testing.T) {
-	dir := t.TempDir()
-	t.Setenv("CLAUDE_PROJECT_DIR", dir)
-	feature.EnsureFeatureDir(dir, "test")
-
-	tcPath := filepath.Join(dir, feature.GetFeatureTestCasesFile("test"))
-	os.MkdirAll(filepath.Dir(tcPath), 0755)
-	os.WriteFile(tcPath, []byte("- **Target**: api/auth\n"), 0644)
-
-	scriptsDir := filepath.Join(dir, feature.GetFeatureTestingScriptsDir("test"))
-	os.MkdirAll(scriptsDir, 0755)
-	// Only create api.spec.ts, no ui.spec.ts
-	os.WriteFile(filepath.Join(scriptsDir, "api.spec.ts"), []byte("import { test } from 'node:test';"), 0644)
-
-	err := graduateTestScripts(dir, "test")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	// Check api spec graduated
-	apiSpec := filepath.Join(dir, "tests", "e2e", "api", "auth", "api.spec.ts")
-	if !fileExists(apiSpec) {
-		t.Error("api/auth/api.spec.ts not graduated")
 	}
 }
 

@@ -19,3 +19,4 @@
 | gen-test-cases | Generate test cases from PRD acceptance criteria |
 | gen-test-scripts | Generate executable e2e test scripts |
 | run-e2e-tests | Execute e2e test scripts and generate results report |
+| graduate-tests | Migrate feature test scripts to the regression suite (tests/e2e/) |
