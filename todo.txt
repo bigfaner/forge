@@ -4,3 +4,5 @@
 4、遵循harness enginnering思想，持续迭代forge插件
 5、拆分forge，把辅助性的skill或slash command迁移到其它插件
 6、优化生成的feature e2e测试脚本的质量
+7、增加一个改进forge本身的skill或其它能力
+8、优化gen-sitemap的输出结果，避免重复的节点
