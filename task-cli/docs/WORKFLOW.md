@@ -319,8 +319,8 @@ Note: verifyCompletion only validates status; it does not delete any files.
 ┌──────────┐
 │ Exit     │
 │ code = 0 │      ┌──────────────────────┐
-│ ?        ├─────▶│ YES: Graduate + run  │
-└────┬─────┘      │ project tests        │
+│ ?        ├─────▶│ YES: Run project     │
+└────┬─────┘      │ tests + regression   │
      │            └──────────────────────┘
      ▼
 ┌──────────────────────────┐

@@ -6,10 +6,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"runtime"
 	"strings"
-	"time"
 
 	"task-cli/pkg/feature"
 	"task-cli/pkg/project"
@@ -170,11 +168,6 @@ func runAllCompleted(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	// e2e succeeded — attempt graduation
-	if err := graduateTestScripts(result.ProjectRoot, result.FeatureSlug); err != nil {
-		fmt.Fprintf(os.Stderr, "WARNING: graduation failed: %v\n", err)
-	}
-
 	// Step 2: Project-wide unit tests
 	fmt.Fprintln(os.Stderr, "--- Running project-wide tests ---")
 	runProjectTests(result.ProjectRoot, result.TestCommand)
@@ -204,128 +197,6 @@ func countTestLines(output string) int {
 	return count
 }
 
-// graduateTestScripts migrates test scripts to tests/e2e/<target>/ on first success.
-func graduateTestScripts(projectRoot, featureSlug string) error {
-	markerPath := feature.GetE2EGraduatedMarker(projectRoot, featureSlug)
-	if fileExists(markerPath) {
-		return nil // already graduated
-	}
-
-	scriptsDir := filepath.Join(projectRoot, feature.GetFeatureTestingScriptsDir(featureSlug))
-	if !fileExists(scriptsDir) {
-		return nil // no scripts to graduate
-	}
-
-	testCasesPath := filepath.Join(projectRoot, feature.GetFeatureTestCasesFile(featureSlug))
-	targets, err := parseTargetsFromTestCases(testCasesPath)
-	if err != nil {
-		return fmt.Errorf("parse test cases: %w", err)
-	}
-
-	if len(targets) == 0 {
-		return nil // no targets defined, skip graduation
-	}
-
-	// Copy shared infrastructure to tests/e2e/ (helpers, config, types)
-	e2eBaseDir := filepath.Join(projectRoot, feature.E2ETestsBaseDir)
-	if err := os.MkdirAll(e2eBaseDir, 0755); err != nil {
-		return fmt.Errorf("mkdir %s: %w", e2eBaseDir, err)
-	}
-	for _, shared := range []string{"helpers.ts", "package.json", "tsconfig.json"} {
-		srcPath := filepath.Join(scriptsDir, shared)
-		destPath := filepath.Join(e2eBaseDir, shared)
-		if fileExists(srcPath) && !fileExists(destPath) {
-			if err := copyFile(srcPath, destPath); err != nil {
-				return fmt.Errorf("copy shared %s: %w", shared, err)
-			}
-			fmt.Printf("INFO: graduated shared %s → %s\n", shared, destPath)
-		}
-	}
-
-	// Run npm install in tests/e2e/ if node_modules doesn't exist
-	nodeModules := filepath.Join(e2eBaseDir, "node_modules")
-	if !fileExists(nodeModules) && fileExists(filepath.Join(e2eBaseDir, "package.json")) {
-		fmt.Fprintln(os.Stderr, "INFO: running npm install in tests/e2e/ ...")
-		c := exec.Command("npm", "install")
-		c.Dir = e2eBaseDir
-		c.Stdout = os.Stderr
-		c.Stderr = os.Stderr
-		if err := c.Run(); err != nil {
-			return fmt.Errorf("npm install in tests/e2e/: %w", err)
-		}
-	}
-
-	// Copy spec files to tests/e2e/<target>/ and rewrite imports
-	typeToSpec := map[string]string{
-		"ui":  "ui.spec.ts",
-		"api": "api.spec.ts",
-		"cli": "cli.spec.ts",
-	}
-
-	for testType, specFile := range typeToSpec {
-		srcPath := filepath.Join(scriptsDir, specFile)
-		if !fileExists(srcPath) {
-			continue
-		}
-		for _, target := range targets[testType] {
-			destDir := feature.GetE2ETargetDir(projectRoot, target)
-			if err := os.MkdirAll(destDir, 0755); err != nil {
-				return fmt.Errorf("mkdir %s: %w", destDir, err)
-			}
-			destPath := filepath.Join(destDir, specFile)
-			if err := copyAndRewriteImports(srcPath, destPath); err != nil {
-				return fmt.Errorf("copy %s → %s: %w", srcPath, destPath, err)
-			}
-			fmt.Printf("INFO: graduated %s → %s\n", specFile, destPath)
-		}
-	}
-
-	// Create graduation marker
-	markerDir := filepath.Dir(markerPath)
-	if err := os.MkdirAll(markerDir, 0755); err != nil {
-		return fmt.Errorf("mkdir graduated dir: %w", err)
-	}
-	timestamp := time.Now().Format(time.RFC3339)
-	return os.WriteFile(markerPath, []byte(timestamp+"\n"), 0644)
-}
-
-// parseTargetsFromTestCases reads test-cases.md and returns unique targets grouped by type.
-// Returns map[type][]target, e.g. {"ui": ["ui/login", "ui/dashboard"], "api": ["api/auth"]}.
-func parseTargetsFromTestCases(path string) (map[string][]string, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-
-	seen := map[string]bool{}
-	result := map[string][]string{}
-	for _, line := range strings.Split(string(data), "\n") {
-		line = strings.TrimSpace(line)
-		if !strings.Contains(line, "**Target**") {
-			continue
-		}
-		parts := strings.SplitN(line, ":", 2)
-		if len(parts) != 2 {
-			continue
-		}
-		target := strings.TrimSpace(parts[1])
-		if target == "" || seen[target] {
-			continue
-		}
-		seen[target] = true
-
-		typeParts := strings.SplitN(target, "/", 2)
-		if len(typeParts) < 2 {
-			continue
-		}
-		testType := typeParts[0]
-		result[testType] = append(result[testType], target)
-	}
-	return result, nil
-}
 
 func fileExists(path string) bool {
 	_, err := os.Stat(path)
@@ -456,22 +327,3 @@ func runProjectTests(projectRoot, testCommand string) {
 	}
 }
 
-// copyFile copies src to dst, overwriting dst if it exists.
-func copyFile(src, dst string) error {
-	data, err := os.ReadFile(src)
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(dst, data, 0644)
-}
-
-func copyAndRewriteImports(src, dst string) error {
-	data, err := os.ReadFile(src)
-	if err != nil {
-		return err
-	}
-	rewritten := helpersImportRe.ReplaceAllString(string(data), "'../helpers.js'")
-	return os.WriteFile(dst, []byte(rewritten), 0644)
-}
-
-var helpersImportRe = regexp.MustCompile(`['"]\.\./?helpers(?:\.js)?['"]`)

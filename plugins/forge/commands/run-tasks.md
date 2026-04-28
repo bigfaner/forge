@@ -151,7 +151,8 @@ After all tasks are completed (loop ends with "No available task"):
 
 ```
 Suggest to user:
-"All tasks completed. Run `/run-e2e-tests` to verify against PRD acceptance criteria."
+"All tasks completed. Run `/run-e2e-tests` to verify against PRD acceptance criteria.
+After tests pass, run `/graduate-tests` to migrate scripts to the regression suite."
 ```
 
 Do NOT run e2e tests automatically — the dispatcher must not execute tests. Only suggest.

@@ -85,9 +85,10 @@ Override with `--force`: `task record <id> --data record.json --force`
 - No hardcoded fix-e2e task templates or round limits — the agent decides
 
 **e2e test script graduation model:**
-- On first successful e2e test, migrate scripts to `tests/e2e/<type>/<target>/` based on the test case's `target` field
+- Graduation is agent-driven via the `/graduate-tests` skill — not automatic
+- The agent reads each spec, analyzes content, decides classification (split/merge/keep), then migrates
 - Graduation marker: `tests/e2e/.graduated/<slug>` (content is a timestamp)
-- If graduation marker already exists, skip migration (not first success)
+- If graduation marker already exists, `/graduate-tests` is a no-op (idempotent)
 - `docs/features/<slug>/testing/scripts/` is preserved (as traceability record)
 
 **Test command auto-detection order (project-level):**
