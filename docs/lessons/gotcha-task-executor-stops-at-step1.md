@@ -2,22 +2,22 @@
 
 ## Problem
 
-`forge:task-executor` subagent returns `"Step 1/5: Reading task definition... DONE"` as its only output and stops. No implementation file is created, no record is written. Retrying the same subagent type produces the same result.
+`forge:task-executor` subagent returns `"Step 1/5: Reading task definition... DONE"` as its only output and stops. No implementation file is created, no record is written.
 
-Observed pattern:
+Observed pattern (manual retries):
 - Attempt 1: 19 tools, 322s → "Step 1/5: Reading task definition... DONE" → no file
 - Attempt 2: 14 tools, 240s → same output → no file
-- Attempt 3: 4 tools, 138s → same output → no file (tool count drops each retry — agent is doing less each time)
+- Attempt 3: 4 tools, 138s → same output → no file (tool count drops each retry)
 
-## Root Cause
+## Root Cause (Uncertain)
 
-Three-level causal chain:
+The exact root cause is unknown. What we know:
 
-1. **Surface**: `forge:task-executor` outputs the step marker and stops
-2. **Direct cause**: The skill's step-by-step format (`Step 1/5 ... Step 2/5 ...`) causes the agent to treat each step as an invocation boundary — it outputs "Step 1 done" and considers its turn complete
-3. **Root cause**: The skill prompt structure is ambiguous about whether steps are a checklist to output or actions to perform in sequence. The agent resolves the ambiguity by outputting the marker and stopping, especially when the task requires writing new files (higher-risk action)
+1. **The step format itself is not the cause.** `Step N/5: <name> DONE` is an output format rule ("when done, output this marker"), not an execution boundary. The agent is supposed to do the work AND output the marker.
+2. **The agent is choosing not to proceed past Step 1.** Possible reasons: task file content is ambiguous, the implementation looks high-risk (new files vs. edits), context window pressure, or permission friction.
+3. **Tool count dropping (19→14→4) suggests the agent adapts its behavior across retries** — doing progressively less each invocation, consistent with LLM context degradation.
 
-Secondary cause: The dispatcher retried the same failing subagent type 3+ times. Each retry had fewer tool uses (19 → 14 → 4), indicating the agent was doing progressively less — a sign of context degradation or the agent "giving up" faster each time.
+Note: The `run-tasks` dispatcher does NOT retry the same task with `task-executor` — it escalates to `error-fixer` when a record is missing. The retry pattern above was from manual re-dispatch by the operator.
 
 ## Solution
 
@@ -40,14 +40,12 @@ Good prompt: "Create file X with struct Y and function Z. Run command W. Write r
 
 ## Key Takeaway
 
-**When `forge:task-executor` returns only "Step 1/5: Reading task definition... DONE", it will not recover on retry.** The dispatcher's escalation path is:
+**When `forge:task-executor` returns only "Step 1/5: Reading task definition... DONE", retrying the same subagent type will not fix it.** The escalation path for manual dispatch:
 
 ```
 forge:task-executor fails once
-  → retry once with more explicit prompt
-  → still fails → implement directly in main session
+  → do not retry same type
+  → implement directly (Option A) or use general-purpose agent with concrete spec (Option B)
 ```
 
-Do NOT retry the same subagent type 3 times. The tool use count dropping (19 → 14 → 4) is a signal that retries are making things worse, not better.
-
-Also: a general-purpose agent with a vague "implement based on your findings" prompt will also fail. The agent needs a concrete spec, not a research task.
+A general-purpose agent with a vague "implement based on your findings" prompt will also fail. The agent needs a concrete spec, not a research task.
