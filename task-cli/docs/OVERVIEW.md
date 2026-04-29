@@ -84,13 +84,13 @@ Override with `--force`: `task record <id> --data record.json --force`
 
 **feature e2e tests (NOT run by this hook):**
 - Feature e2e execution is owned by T-test-3 (`run-e2e-tests` task in the task chain)
-- If `testing/scripts/` exists but no graduation marker, hook prints a WARNING to guide migration
+- If `tests/e2e/<feature>/` exists but no graduation marker, hook prints a WARNING to guide migration
 
 **e2e test script graduation model:**
 - Graduation is agent-driven via T-test-4 (`graduate-tests` task) — not automatic
 - T-test-4 checks `testing/results/latest.md` for PASS status before calling `/graduate-tests`
 - Graduation marker: `tests/e2e/.graduated/<slug>` (content is a timestamp)
-- `docs/features/<slug>/testing/scripts/` is preserved (as traceability record)
+- Source scripts at `tests/e2e/<feature>/` are reorganized into `tests/e2e/<target>/` after graduation
 
 **Test command auto-detection order (project-level):**
 1. `testCommand` field in `index.json` (explicit configuration)
@@ -102,8 +102,6 @@ Override with `--force`: `task record <id> --data record.json --force`
 
 **e2e test detection order:**
 1. `justfile`/`Justfile` contains `test-e2e` recipe -> `just test-e2e`
-2. `Makefile` contains `test-e2e:` target -> `make test-e2e`
-3. `testing/scripts/package.json` exists -> `npm run test:all --if-present`
 
 ---
 
@@ -127,10 +125,6 @@ project-root/
 │       │   └── ui-design.md        # UI design specification (optional)
 │       ├── testing/
 │       │   ├── test-cases.md      # Test cases (with target field)
-│       │   ├── scripts/           # Development-phase test scripts
-│       │   │   ├── ui.spec.ts
-│       │   │   ├── api.spec.ts
-│       │   │   └── cli.spec.ts
 │       │   └── results/
 │       │       └── latest.md      # e2e test results report
 │       └── tasks/

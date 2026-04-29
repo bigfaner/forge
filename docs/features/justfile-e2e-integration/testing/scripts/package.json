@@ -1,0 +1,13 @@
+{
+  "name": "e2e-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:cli": "tsx cli.spec.ts",
+    "test:all": "tsx cli.spec.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "yaml": "^2.7.0"
+  }
+}

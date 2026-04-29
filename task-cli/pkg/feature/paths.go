@@ -99,11 +99,6 @@ func GetProcessDir(projectRoot, feature string) string {
 	return filepath.Join(projectRoot, FeaturesDir, feature, TasksDirName, ProcessDirName)
 }
 
-// GetFeatureTestingScriptsDir returns the path to docs/features/{slug}/testing/scripts/.
-func GetFeatureTestingScriptsDir(featureSlug string) string {
-	return filepath.Join(FeaturesDir, featureSlug, TestingScriptsDirName)
-}
-
 // GetFeatureTestingResultsDir returns the path to docs/features/{slug}/testing/results/.
 func GetFeatureTestingResultsDir(featureSlug string) string {
 	return filepath.Join(FeaturesDir, featureSlug, TestingResultsDirName)

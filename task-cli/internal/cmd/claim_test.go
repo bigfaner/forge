@@ -286,63 +286,8 @@ func TestGetTaskPhase(t *testing.T) {
 			}
 		})
 	}
+
 }
-
-func TestGetMinPendingPhase(t *testing.T) {
-	tests := []struct {
-		name      string
-		tasks     map[string]task.Task
-		wantPhase int
-	}{
-		{
-			"single phase with pending tasks",
-			map[string]task.Task{
-				"task1": {ID: "1.1", Status: "pending"},
-			},
-			1,
-		},
-		{
-			"multiple phases",
-			map[string]task.Task{
-				"task1": {ID: "1.1", Status: "pending"},
-				"task2": {ID: "2.1", Status: "pending"},
-			},
-			1,
-		},
-		{
-			"mixed statuses",
-			map[string]task.Task{
-				"task1": {ID: "1.1", Status: "pending"},
-				"task2": {ID: "1.2", Status: "completed"},
-				"task3": {ID: "2.1", Status: "pending"},
-			},
-			1,
-		},
-		{
-			"no pending tasks",
-			map[string]task.Task{
-				"task1": {ID: "1.1", Status: "completed"},
-			},
-			-1,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			index := &task.TaskIndex{
-
-				Tasks:        tt.tasks,
-				StatusEnum:   []string{"pending", "in_progress", "completed"},
-				PriorityEnum: []string{"P0", "P1", "P2"},
-			}
-			got := getMinPendingPhase(index)
-			if got != tt.wantPhase {
-				t.Errorf("getMinPendingPhase() = %d, want %d", got, tt.wantPhase)
-			}
-		})
-	}
-}
-
 func TestCompareVersionIDs(t *testing.T) {
 	// compareVersionIDs returns true if a < b (a comes before b)
 	tests := []struct {
@@ -461,8 +406,7 @@ func TestClaimNextTask_MultiplePhases(t *testing.T) {
 		t.Fatalf("claimNextTask() error = %v", err)
 	}
 	// Actually looking at the code, eligibleTasks just filters by status and dependencies
-	// It doesn't filter by phase. The phase filtering is done by getMinPendingPhase
-	// But that's just for informational purposes, not for filtering
+	// It doesn't filter by phase. Phase ordering is handled by compareVersionIDs
 	// So it will pick based on priority
 	if key != "task1" { // P0 wins over P2
 		t.Errorf("expected key 'task1', got key %q", key)

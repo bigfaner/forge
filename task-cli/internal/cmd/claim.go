@@ -211,19 +211,6 @@ func claimNextTask(index *task.TaskIndex) (string, *task.Task, error) {
 	return twk.key, &t, nil
 }
 
-func getMinPendingPhase(index *task.TaskIndex) int {
-	minPhase := -1
-	for _, t := range index.Tasks {
-		if t.Status == "pending" {
-			phase := getTaskPhase(t.ID)
-			if phase != -1 && (minPhase == -1 || phase < minPhase) {
-				minPhase = phase
-			}
-		}
-	}
-	return minPhase
-}
-
 func getTaskPhase(id string) int {
 	parts := strings.Split(id, ".")
 	if len(parts) > 0 {

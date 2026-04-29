@@ -36,7 +36,7 @@ REFACTOR → Clean up while keeping tests green
 
 ## Step 3: Full Verification
 
-Run project-specific verification commands.
+Run `just build && just test`.
 
 ## Step 4: Record Task (MANDATORY)
 

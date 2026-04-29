@@ -1,0 +1,94 @@
+Error: 1 unresolved // VERIFY: marker(s) in tests/e2e/test-feature/
+tests/e2e/test-feature/sample.spec.ts:1:// VERIFY: check this
+error: Recipe `e2e-verify` failed with exit code 1
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║ WARNING: It looks like you are running 'npx playwright install' without first ║
+║ installing your project's dependencies.                                       ║
+║                                                                               ║
+║ To avoid unexpected behavior, please install your dependencies first, and     ║
+║ then run Playwright's install command:                                        ║
+║                                                                               ║
+║     npm install                                                               ║
+║     npx playwright install                                                    ║
+║                                                                               ║
+║ If your project does not yet depend on Playwright, first install the          ║
+║ applicable npm package (most commonly @playwright/test), and                  ║
+║ then run Playwright's install command to download the browsers:               ║
+║                                                                               ║
+║     npm install @playwright/test                                              ║
+║     npx playwright install                                                    ║
+║                                                                               ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+Usage: just e2e-verify --feature <slug>
+error: Recipe `e2e-verify` failed with exit code 1
+Error: 1 unresolved // VERIFY: marker(s) in tests/e2e/my-feature/
+tests/e2e/my-feature/login.spec.ts:42:// VERIFY: implement this
+error: Recipe `e2e-verify` failed with exit code 1
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║ WARNING: It looks like you are running 'npx playwright install' without first ║
+║ installing your project's dependencies.                                       ║
+║                                                                               ║
+║ To avoid unexpected behavior, please install your dependencies first, and     ║
+║ then run Playwright's install command:                                        ║
+║                                                                               ║
+║     npm install                                                               ║
+║     npx playwright install                                                    ║
+║                                                                               ║
+║ If your project does not yet depend on Playwright, first install the          ║
+║ applicable npm package (most commonly @playwright/test), and                  ║
+║ then run Playwright's install command to download the browsers:               ║
+║                                                                               ║
+║     npm install @playwright/test                                              ║
+║     npx playwright install                                                    ║
+║                                                                               ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║ WARNING: It looks like you are running 'npx playwright install' without first ║
+║ installing your project's dependencies.                                       ║
+║                                                                               ║
+║ To avoid unexpected behavior, please install your dependencies first, and     ║
+║ then run Playwright's install command:                                        ║
+║                                                                               ║
+║     npm install                                                               ║
+║     npx playwright install                                                    ║
+║                                                                               ║
+║ If your project does not yet depend on Playwright, first install the          ║
+║ applicable npm package (most commonly @playwright/test), and                  ║
+║ then run Playwright's install command to download the browsers:               ║
+║                                                                               ║
+║     npm install @playwright/test                                              ║
+║     npx playwright install                                                    ║
+║                                                                               ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+▶ Skill/Agent file content checks
+  ✔ TC-001: run-e2e-tests Step 1 uses just e2e-setup (0.700041ms)
+  ✔ TC-002: task-executor Step 3 uses just build && just test (0.357083ms)
+  ✔ TC-005: fix-e2e template uses just test-e2e for post-fix verification (0.253583ms)
+  ✔ TC-006: fix-bug uses just test not project-test-command placeholder (0.314458ms)
+  ✔ TC-007: run-tasks Breaking Gate uses just test (0.266834ms)
+  ✔ TC-008: record-task Metrics Collection uses just test (0.277542ms)
+  ✔ TC-013: run-e2e-tests skill prompts init-justfile when justfile missing (0.065375ms)
+  ✔ TC-014: gen-test-scripts Step 4 uses just e2e-verify (0.404625ms)
+  ✔ TC-015: error-fixer uses just build && just test (0.242375ms)
+  ✔ TC-016: execute-task Step 3 uses just build && just test (0.274291ms)
+  ✔ TC-017: improve-harness uses just test (0.215209ms)
+  ✔ TC-018: init-justfile generates e2e-setup target (0.293542ms)
+  ✔ TC-019: init-justfile generates e2e-verify target (0.051709ms)
+✔ Skill/Agent file content checks (4.163917ms)
+▶ just command execution
+  ✔ TC-003: just e2e-verify exits 1 when VERIFY markers present (549.645583ms)
+  ✔ TC-004: just e2e-verify exits 0 when no VERIFY markers (179.826792ms)
+  ✔ TC-009: just e2e-setup exits 1 when package.json missing (0.199ms)
+  ✔ TC-010: just e2e-setup exits 0 with OK message when deps ready (993.225166ms)
+  ✔ TC-011: just e2e-verify exits 1 when feature flag missing (461.26075ms)
+  ✔ TC-012: just e2e-verify outputs file and line number for residual markers (496.977917ms)
+  ✔ TC-020: just e2e-setup is idempotent (1475.094208ms)
+✔ just command execution (4157.36525ms)
+ℹ tests 20
+ℹ suites 2
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4165.892833

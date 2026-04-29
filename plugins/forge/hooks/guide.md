@@ -57,10 +57,10 @@ project-root/
                                  ↓
                             ui/ui-design.md
 
-/breakdown-tasks appends standard test tasks (T-test-1, T-test-2), executed in order:
-/gen-sitemap → /gen-test-cases → /gen-test-scripts → /run-e2e-tests
-     ↓              ↓                  ↓                   ↓
- sitemap.json  test-cases.md    tests/e2e/<feature>/*    testing/results/
+/breakdown-tasks appends standard test tasks (T-test-1 through T-test-4), executed in order:
+/gen-sitemap → /gen-test-cases → /gen-test-scripts → /run-e2e-tests → /graduate-tests
+     ↓              ↓                  ↓                   ↓               ↓
+ sitemap.json  test-cases.md    tests/e2e/<feature>/*    testing/results/  tests/e2e/<target>/
 ```
 
 Each skill checks prerequisites with `ls` before execution; aborts and prompts user if missing.

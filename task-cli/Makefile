@@ -1,4 +1,4 @@
-.PHONY: all build install test lint clean-coverage coverage
+.PHONY: all build install test lint clean-coverage coverage check-docs
 
 GO := go
 BINARY_NAME := task
@@ -32,3 +32,6 @@ coverage:
 
 clean-coverage:
 	rm -f coverages/coverage.out
+
+check-docs:
+	$(GO) test -v ./internal/docsync/

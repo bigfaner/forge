@@ -1,0 +1,19 @@
+{
+  "taskId": "T-test-4",
+  "status": "blocked",
+  "summary": "Gate check failed: testing/results/latest.md shows Result=FAIL (7/20 tests failing). Blocked on TC-003, TC-004, TC-010, TC-011, TC-012, TC-013, TC-020 — all require missing Justfile recipes (e2e-verify, e2e-setup) and a justfile reference in run-e2e-tests SKILL.md. Will unblock once fix tasks complete.",
+  "filesCreated": [],
+  "filesModified": [],
+  "keyDecisions": [
+    "Task is a gate: e2e tests must pass before graduation proceeds",
+    "Status set to blocked per implementation notes — waiting for fix tasks"
+  ],
+  "testsPassed": 0,
+  "testsFailed": 0,
+  "coverage": -1.0,
+  "acceptanceCriteria": [
+    {"criterion": "testing/results/latest.md shows status = PASS", "met": false},
+    {"criterion": "tests/e2e/.graduated/<slug> marker exists", "met": false},
+    {"criterion": "Spec files present in tests/e2e/<category>/", "met": false}
+  ]
+}

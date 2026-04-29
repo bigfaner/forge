@@ -32,6 +32,8 @@ If version < 1.50.0: `cargo install just`
 | `test-e2e` | No | E2E tests |
 | `build` | No | Compile/package |
 | `lint` | No | Static analysis |
+| `e2e-setup` | No | Install e2e dependencies (idempotent) |
+| `e2e-verify` | No | Check for unresolved `// VERIFY:` markers |
 
 `test-e2e` invocation:
 
@@ -91,6 +93,51 @@ test-e2e feature="":
         done
         [ "$fail" -eq 0 ]
     fi
+```
+
+**e2e-setup (all languages):**
+
+```just
+e2e-setup:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ ! -f tests/e2e/package.json ]; then
+        echo "Error: tests/e2e/package.json not found" >&2
+        exit 1
+    fi
+    if [ ! -d tests/e2e/node_modules ]; then
+        npm install --prefix tests/e2e
+    fi
+    npx --prefix tests/e2e playwright install chromium
+    echo "OK: e2e dependencies ready"
+```
+
+**e2e-verify (all languages):**
+
+```just
+# Requires just >= 1.50.0. [arg("feature", long)] declares a long-form CLI flag:
+# --feature <value>. "long" maps the argument to --<name> form; omitting it makes
+# the argument positional.
+[arg("feature", long)]
+e2e-verify feature="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -z "{{feature}}" ]; then
+        echo "Usage: just e2e-verify --feature <slug>" >&2
+        exit 1
+    fi
+    if [ ! -d "tests/e2e/{{feature}}" ]; then
+        echo "Error: tests/e2e/{{feature}}/ not found" >&2
+        exit 1
+    fi
+    matches=$(grep -rn '// VERIFY:' "tests/e2e/{{feature}}/" --include='*.spec.ts' || true)
+    if [ -n "$matches" ]; then
+        count=$(echo "$matches" | wc -l | tr -d ' ')
+        echo "Error: $count unresolved // VERIFY: marker(s) in tests/e2e/{{feature}}/" >&2
+        echo "$matches" >&2
+        exit 1
+    fi
+    echo "OK: no unresolved // VERIFY: markers in tests/e2e/{{feature}}/"
 ```
 
 **Language-specific recipes:**
@@ -156,6 +203,8 @@ Targets:
   just test-e2e --feature <slug>  → feature tests in tests/e2e/<slug>/
   just build                      → go build ./...
   just lint                       → golangci-lint run ./...
+  just e2e-setup                  → install e2e deps (idempotent)
+  just e2e-verify --feature <slug> → check for unresolved // VERIFY: markers
 
 Edit justfile to customize commands for your project.
 task all-completed will now use `just test` automatically.

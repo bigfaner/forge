@@ -178,17 +178,19 @@ for each dep in T.Dependencies:
 
 ```json
 {
-    "summary": "Task execution summary",
+    "taskId": "1.1",
     "status": "completed",
-    "time_spent": "2h",
-    "files_created": ["path/to/new.go"],
-    "files_modified": ["path/to/existing.go"],
-    "key_decisions": ["Decision 1", "Decision 2"],
-    "test_results": "All tests passed",
-    "acceptance_criteria": [
-        {"criteria": "Criterion 1", "met": true},
-        {"criteria": "Criterion 2", "met": true}
-    ]
+    "summary": "Brief description of what was done",
+    "filesCreated": ["path/to/new/file.go"],
+    "filesModified": ["path/to/modified/file.go"],
+    "keyDecisions": ["Decision 1", "Decision 2"],
+    "testsPassed": 5,
+    "testsFailed": 0,
+    "coverage": 85.5,
+    "acceptanceCriteria": [
+        {"criterion": "Feature works", "met": true}
+    ],
+    "notes": "Optional notes"
 }
 ```
 
@@ -338,10 +340,11 @@ This hook is the project health gate: unit/integration tests + regression suite.
 
 **Test command detection order:**
 1. `testCommand` field in `index.json`
-2. `go.mod` → `go test ./...`
-3. `package.json` (with scripts.test) → `npm test`
-4. `Makefile` (with test: target) → `make test`
-5. `pytest.ini` / `pyproject.toml` → `pytest`
+2. `justfile`/`Justfile` contains `test` recipe -> `just test`
+3. `Makefile` (with test: target) -> `make test`
+4. `go.mod` → `go test ./...`
+5. `package.json` (with scripts.test) → `npm test`
+6. `pytest.ini` / `pyproject.toml` → `pytest`
 
 ---
 

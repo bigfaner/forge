@@ -69,13 +69,10 @@ Output: `Step 2/5: TDD implementation... DONE (N tests)` or `Step 2/5: Implement
 
 ### Step 3: Full Verification
 
-Run complete verification suite for your project:
+Run `just build && just test`:
 
-**Examples by language:**
 ```bash
-# Go: go build ./... && go vet ./... && go test -race -cover ./...
-# Node: npm run build && npm test
-# Python: pytest --cov
+just build && just test
 ```
 
 **All must pass. Coverage >= 80% (if applicable). If any fails, fix before proceeding.**

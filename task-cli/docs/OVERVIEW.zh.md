@@ -73,26 +73,24 @@ Override with `--force`: `task record <id> --data record.json --force`
 | `task all-completed` | Stop hook | 检查所有任务是否完成，若完成则自动运行测试 |
 
 **all-completed 行为：**
-- 所有任务均为 `completed` 或 `skipped` → 运行 feature e2e 测试 + 项目级测试，exit 0
-- 任意任务为 `pending`/`in_progress`/`blocked` → 静默退出，exit 1
-- 无 feature 或无 project root → 静默退出，exit 1
+- 所有任务均为 `completed` 或 `skipped` → 运行项目级测试 + e2e 回归，exit 0
+- 任意任务为 `pending`/`in_progress`/`blocked` → 静默退出，exit 0
+- 无 feature 或无 project root → 静默退出，exit 0
 
 **e2e 测试失败恢复：**
-- e2e 测试失败时，自动向 `index.json` 追加 `fix-e2e-N` 任务（N 从 1 开始）
-- fix-e2e 任务格式：
-  - id: `fix-e2e-N`
-  - title: "修复 e2e 测试失败"
-  - priority: `P0`
-  - file: `testing/results/latest.md`（指向失败详情）
-- 若已有 pending 的 fix-e2e 任务，则跳过追加（避免重复）
-- fix-e2e 任务上限为 3 个，超过后打印警告并 exit 0（避免无限循环）
-- 追加后 exit 1，触发 agent 继续工作并认领 fix-e2e 任务
+- 当回归测试 (`just test-e2e`) 失败时，保存原始输出到 `testing/results/raw-output.txt`
+- 阻止 Stop hook，指示 agent 分析失败原因并使用 `task add` 创建修复任务
+- agent 读取原始输出，确定根因，动态添加修复任务
+
+**feature e2e 测试（不由本 hook 运行）：**
+- Feature e2e 执行由 T-test-3（`run-e2e-tests` 任务）负责
+- 若 `tests/e2e/<feature>/` 存在但无毕业标记，hook 打印 WARNING 引导迁移
 
 **e2e 测试脚本毕业模型：**
-- e2e 测试首次成功时，按测试用例的 `target` 字段将脚本迁移到 `tests/e2e/<type>/<target>/`
+- 毕业由 T-test-4（`graduate-tests` 任务）agent 驱动，非自动
+- T-test-4 检查 `testing/results/latest.md` 为 PASS 状态后调用 `/graduate-tests`
 - 毕业标记：`tests/e2e/.graduated/<slug>`（内容为时间戳）
-- 若毕业标记已存在，则跳过迁移（非首次成功）
-- `docs/features/<slug>/testing/scripts/` 保留不删除（作为可追溯性记录）
+- 源脚本从 `tests/e2e/<feature>/` 重组到 `tests/e2e/<target>/`
 
 **测试命令自动检测顺序（项目级）：**
 1. `index.json` 中的 `testCommand` 字段（显式配置）
@@ -104,8 +102,6 @@ Override with `--force`: `task record <id> --data record.json --force`
 
 **e2e 测试检测顺序：**
 1. `justfile`/`Justfile` 含 `test-e2e` recipe → `just test-e2e`
-2. `Makefile` 含 `test-e2e:` target → `make test-e2e`
-3. `testing/scripts/package.json` 存在 → `npm run test:all --if-present`
 
 ---
 
@@ -129,10 +125,6 @@ project-root/
 │       │   └── ui-design.md        # UI 设计规格（可选）
 │       ├── testing/
 │       │   ├── test-cases.md      # 测试用例（含 target 字段）
-│       │   ├── scripts/           # 开发期测试脚本
-│       │   │   ├── ui.spec.ts
-│       │   │   ├── api.spec.ts
-│       │   │   └── cli.spec.ts
 │       │   └── results/
 │       │       └── latest.md      # e2e 测试结果报告
 │       └── tasks/
@@ -243,6 +235,7 @@ type TaskIndex struct {
 task claim              # 声明下一个任务
 task record 1.1         # 生成任务记录
 task record 1.1 --force # 生成任务记录（跳过验证）
+task add --title "Fix: ..." --priority P0 --breaking  # 动态添加新任务
 task status 1.1         # 查询任务状态
 task status 1.1 done    # 更新状态
 task query 1.1          # 查询任务详情

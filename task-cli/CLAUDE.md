@@ -25,6 +25,13 @@ Use the `/git-commit` SKILL
 
 `cmd → internal → pkg`, reverse is strictly forbidden. Modules interact through interfaces.
 
+### Version Bump
+
+Code changes must bump the version in `scripts/version.txt`. Follow semver:
+- Patch: bug fixes, dead code removal (x.y.Z)
+- Minor: new features, new commands (x.Y.z)
+- Major: breaking CLI changes (X.y.z)
+
 ## Common Commands
 
 ```bash
@@ -33,6 +40,7 @@ go vet ./...                    # Static analysis
 go test -race -cover ./...      # Tests (with race detection and coverage)
 golangci-lint run ./...         # Lint
 bash ../claude-code-go/scripts/lint-arch.sh       # Architecture constraint verification
+make check-docs                 # Doc freshness check (validate docs match code)
 ```
 
 ## Documentation
@@ -49,3 +57,4 @@ bash ../claude-code-go/scripts/lint-arch.sh       # Architecture constraint veri
 1. **Feature changes must update docs**: when adding/modifying/removing features, sync `docs/OVERVIEW.md`
 2. **Workflow changes must update docs**: when modifying core logic or workflows, sync `docs/WORKFLOW.md`
 3. **Pre-commit check**: when code changes affect documented areas, confirm docs are synced
+4. **Doc freshness test**: run `make check-docs` after changing structs in `pkg/task/types.go`, constants in `pkg/feature/constants.go`, or detection logic in `internal/cmd/all_completed.go`

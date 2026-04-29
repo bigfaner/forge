@@ -69,9 +69,7 @@ Coverage rules:
 Example commands (use whatever matches the project's toolchain):
 
 ```
-Go:        go test -cover ./changed/package/...
-TypeScript: npm test -- --coverage --watchAll=false
-Python:    pytest --cov=<module> --cov-report=term-missing
+just test
 ```
 
 </HARD-RULE>

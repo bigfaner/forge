@@ -103,7 +103,7 @@ func runAllCompleted(cmd *cobra.Command, args []string) {
 
 	// Warn if feature e2e scripts exist but haven't been graduated.
 	// Feature e2e execution is owned by T-test-3 (run-e2e-tests task).
-	e2eScriptsDir := filepath.Join(result.ProjectRoot, feature.GetFeatureTestingScriptsDir(result.FeatureSlug))
+	e2eScriptsDir := feature.GetE2ETargetDir(result.ProjectRoot, result.FeatureSlug)
 	markerPath := feature.GetE2EGraduatedMarker(result.ProjectRoot, result.FeatureSlug)
 	if fileExists(e2eScriptsDir) && !fileExists(markerPath) {
 		fmt.Fprintln(os.Stderr,

@@ -19,3 +19,6 @@ bin/
 bin/
 *.DS_Store
 task-cli/check.out
+
+# Dependencies
+node_modules/
