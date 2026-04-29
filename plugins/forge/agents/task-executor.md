@@ -69,10 +69,10 @@ Output: `Step 2/5: TDD implementation... DONE (N tests)` or `Step 2/5: Implement
 
 ### Step 3: Full Verification
 
-Run `just build && just test`:
+Run `just compile && just test`:
 
 ```bash
-just build && just test
+just compile && just test
 ```
 
 **All must pass. Coverage >= 80% (if applicable). If any fails, fix before proceeding.**

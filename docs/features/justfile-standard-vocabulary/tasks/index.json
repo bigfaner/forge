@@ -72,7 +72,7 @@
       "title": "Skill/agent/command migration + validation",
       "priority": "P0",
       "estimatedTime": "2h",
-      "status": "pending",
+      "status": "completed",
       "file": "1.5-skill-migration.md",
       "record": "records/1.5-skill-migration.md"
     },

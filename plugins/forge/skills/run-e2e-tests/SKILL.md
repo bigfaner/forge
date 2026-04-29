@@ -83,7 +83,7 @@ Detect what needs to be started based on the project:
 
 | Artifact | Server Command | When |
 |----------|---------------|------|
-| HTML prototype | `npx serve ../ui/prototype -p 3456 -s &` | `ui/prototype/` exists |
+| HTML prototype | `just run` | `ui/prototype/` exists |
 | Real application | User-specified or detected | App needs running server |
 
 Start servers in background. Record PIDs for cleanup.
