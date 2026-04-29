@@ -1,0 +1,14 @@
+{
+  "taskId": "T001",
+  "status": "completed",
+  "summary": "完成 Raycast 设计规范研究，整理出关键实现点：#07080a 背景、Inter 500 weight、multi-layer shadow、pill button 等核心 token。",
+  "filesCreated": [],
+  "filesModified": ["DESIGN.md"],
+  "keyDecisions": ["使用内联样式而非 Tailwind class 确保精确颜色值", "全局暗色，不做主题切换"],
+  "testsPassed": 0,
+  "testsFailed": 0,
+  "coverage": 0,
+  "notes": "DESIGN.md Section 9 Agent Prompt Guide 是实现参考核心",
+  "completedAt": "2026-04-10T11:00:00Z",
+  "commitHash": "e5f6a7b"
+}

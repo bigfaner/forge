@@ -1,0 +1,14 @@
+{
+  "taskId": "T001",
+  "status": "completed",
+  "summary": "完成 Dashboard 路由结构设计，确定使用 React Router v6 的嵌套路由方案，AppLayout 作为根 layout。",
+  "filesCreated": ["web/src/App.tsx", "web/src/layouts/AppLayout.tsx"],
+  "filesModified": ["web/index.html"],
+  "keyDecisions": ["采用嵌套路由而非平铺路由，减少 Layout 重复渲染", "使用 BrowserRouter 而非 HashRouter，便于未来 SSR"],
+  "testsPassed": 0,
+  "testsFailed": 0,
+  "coverage": 0,
+  "notes": "路由结构已完成，等待后续页面开发填充。",
+  "completedAt": "2026-03-15T10:30:00Z",
+  "commitHash": "a1b2c3d"
+}

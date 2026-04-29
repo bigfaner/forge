@@ -1,0 +1,14 @@
+{
+  "taskId": "T002",
+  "status": "completed",
+  "summary": "实现了带有 Logo、导航菜单和底部主题切换的侧边栏 AppLayout 组件，使用 Tailwind CSS 变量主题系统。",
+  "filesCreated": ["web/src/components/ThemeToggle.tsx", "web/src/lib/theme.ts"],
+  "filesModified": ["web/src/layouts/AppLayout.tsx", "web/src/index.css", "web/tailwind.config.ts"],
+  "keyDecisions": ["主题存储在 localStorage 避免闪烁", "使用 class dark 模式而非 media query 模式，便于手动控制"],
+  "testsPassed": 0,
+  "testsFailed": 0,
+  "coverage": 0,
+  "notes": "暗色模式 CSS 变量已全部定义完毕。",
+  "completedAt": "2026-03-16T14:20:00Z",
+  "commitHash": "b2c3d4e"
+}

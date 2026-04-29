@@ -1,0 +1,84 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Raycast Design System — always dark */
+    --background: 224 40% 4%;       /* #07080a near-black blue */
+    --foreground: 0 0% 98%;         /* #f9f9f9 */
+    --card: 180 5% 7%;              /* #101111 */
+    --card-foreground: 0 0% 98%;
+    --primary: 0 100% 69%;          /* #FF6363 Raycast Red */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 11%;          /* #1b1c1e */
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 10%;              /* #18191a */
+    --muted-foreground: 0 0% 61%;   /* #9c9c9d */
+    --accent: 0 100% 69%;           /* #FF6363 Raycast Red */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 100% 69%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 195 5% 15%;           /* hsl(195,5%,15%) ~#252829 */
+    --input: 0 0% 10%;
+    --ring: 202 100% 67%;           /* Raycast Blue */
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    font-feature-settings: "calt" 1, "kern" 1, "liga" 1, "ss03" 1;
+  }
+
+  body {
+    background-color: #07080a;
+    color: #f9f9f9;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.6;
+    letter-spacing: 0.2px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: #07080a; }
+::-webkit-scrollbar-thumb { background: #252829; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #434345; }
+
+/* Raycast shadow system */
+@layer utilities {
+  .shadow-card-ring {
+    box-shadow:
+      rgb(27, 28, 30) 0px 0px 0px 1px,
+      rgb(7, 8, 10) 0px 0px 0px 1px inset;
+  }
+
+  .shadow-btn {
+    box-shadow:
+      rgba(255, 255, 255, 0.05) 0px 1px 0px 0px inset,
+      rgba(255, 255, 255, 0.25) 0px 0px 0px 1px,
+      rgba(0, 0, 0, 0.2) 0px -1px 0px 0px inset;
+  }
+
+  .shadow-floating {
+    box-shadow:
+      rgba(0, 0, 0, 0.5) 0px 0px 0px 2px,
+      rgba(255, 255, 255, 0.19) 0px 0px 14px,
+      rgba(255, 255, 255, 0.05) 0px 1px 0px 0px inset;
+  }
+
+  .border-subtle {
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+}

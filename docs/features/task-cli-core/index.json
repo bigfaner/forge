@@ -1,0 +1,91 @@
+{
+  "feature": "task-cli-core",
+  "prd": "prd.md",
+  "design": "design.md",
+  "created": "2026-02-10",
+  "status": "completed",
+  "statusEnum": ["pending", "in_progress", "completed", "blocked", "skipped"],
+  "priorityEnum": ["P0", "P1", "P2"],
+  "tasks": {
+    "T001": {
+      "id": "T001",
+      "title": "定义 TaskIndex / Task 数据结构与 JSON schema",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [],
+      "status": "completed",
+      "file": "tasks/T001.md",
+      "record": "records/T001.md"
+    },
+    "T002": {
+      "id": "T002",
+      "title": "实现 claim 命令：认领下一个 pending 任务",
+      "priority": "P0",
+      "estimatedTime": "4h",
+      "dependencies": ["T001"],
+      "status": "completed",
+      "file": "tasks/T002.md",
+      "record": "records/T002.md"
+    },
+    "T003": {
+      "id": "T003",
+      "title": "实现 status 命令：更新任务状态",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": ["T002"],
+      "status": "completed",
+      "file": "tasks/T003.md",
+      "record": "records/T003.md"
+    },
+    "T004": {
+      "id": "T004",
+      "title": "实现 record 命令：写入执行记录 JSON",
+      "priority": "P1",
+      "estimatedTime": "3h",
+      "dependencies": ["T002"],
+      "status": "completed",
+      "file": "tasks/T004.md",
+      "record": "records/T004.md"
+    },
+    "T005": {
+      "id": "T005",
+      "title": "实现 validate 命令：校验 index.json 完整性",
+      "priority": "P2",
+      "estimatedTime": "3h",
+      "dependencies": ["T001"],
+      "status": "completed",
+      "file": "tasks/T005.md",
+      "record": "records/T005.md"
+    },
+    "T006": {
+      "id": "T006",
+      "title": "feature 子命令：init / list / switch 功能",
+      "priority": "P1",
+      "estimatedTime": "4h",
+      "dependencies": ["T001"],
+      "status": "completed",
+      "file": "tasks/T006.md",
+      "record": "records/T006.md"
+    },
+    "T007": {
+      "id": "T007",
+      "title": "Git worktree 集成：自动推断当前 feature",
+      "priority": "P0",
+      "estimatedTime": "3h",
+      "dependencies": ["T006"],
+      "status": "completed",
+      "file": "tasks/T007.md",
+      "record": "records/T007.md"
+    },
+    "T008": {
+      "id": "T008",
+      "title": "单元测试覆盖率达到 80%+",
+      "priority": "P1",
+      "estimatedTime": "6h",
+      "dependencies": ["T002", "T003", "T004"],
+      "status": "completed",
+      "file": "tasks/T008.md",
+      "record": "records/T008.md"
+    }
+  }
+}

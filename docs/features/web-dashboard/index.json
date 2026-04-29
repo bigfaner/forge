@@ -1,0 +1,111 @@
+{
+  "feature": "web-dashboard",
+  "prd": "prd.md",
+  "design": "design.md",
+  "created": "2026-03-15",
+  "status": "in_progress",
+  "statusEnum": ["pending", "in_progress", "completed", "blocked", "skipped"],
+  "priorityEnum": ["P0", "P1", "P2"],
+  "tasks": {
+    "T001": {
+      "id": "T001",
+      "title": "设计 Dashboard 整体布局与路由结构",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [],
+      "status": "completed",
+      "file": "tasks/T001.md",
+      "record": "records/T001.md"
+    },
+    "T002": {
+      "id": "T002",
+      "title": "实现 AppLayout 侧边栏导航组件",
+      "priority": "P0",
+      "estimatedTime": "3h",
+      "dependencies": ["T001"],
+      "status": "completed",
+      "file": "tasks/T002.md",
+      "record": "records/T002.md"
+    },
+    "T003": {
+      "id": "T003",
+      "title": "开发 Dashboard 统计卡片与 Feature 列表",
+      "priority": "P1",
+      "estimatedTime": "4h",
+      "dependencies": ["T002"],
+      "status": "completed",
+      "file": "tasks/T003.md",
+      "record": "records/T003.md"
+    },
+    "T004": {
+      "id": "T004",
+      "title": "实现 Kanban / List / DAG 三视图任务看板",
+      "priority": "P1",
+      "estimatedTime": "8h",
+      "dependencies": ["T003"],
+      "status": "completed",
+      "file": "tasks/T004.md",
+      "record": "records/T004.md"
+    },
+    "T005": {
+      "id": "T005",
+      "title": "集成 TanStack Query 数据层与 API 代理",
+      "priority": "P0",
+      "estimatedTime": "3h",
+      "dependencies": ["T001"],
+      "status": "completed",
+      "file": "tasks/T005.md",
+      "record": "records/T005.md"
+    },
+    "T006": {
+      "id": "T006",
+      "title": "Records 时间线页面与 Lessons 知识库",
+      "priority": "P2",
+      "estimatedTime": "4h",
+      "dependencies": ["T003"],
+      "status": "completed",
+      "file": "tasks/T006.md",
+      "record": "records/T006.md"
+    },
+    "T007": {
+      "id": "T007",
+      "title": "Dark/Light 主题切换与 Tailwind CSS token",
+      "priority": "P2",
+      "estimatedTime": "2h",
+      "dependencies": ["T002"],
+      "status": "completed",
+      "file": "tasks/T007.md",
+      "record": "records/T007.md"
+    },
+    "T008": {
+      "id": "T008",
+      "title": "Raycast 设计系统副本 (web-raycast)",
+      "priority": "P1",
+      "estimatedTime": "6h",
+      "dependencies": ["T002", "T003"],
+      "status": "in_progress",
+      "file": "tasks/T008.md",
+      "record": ""
+    },
+    "T009": {
+      "id": "T009",
+      "title": "E2E 测试覆盖核心页面流程",
+      "priority": "P2",
+      "estimatedTime": "5h",
+      "dependencies": ["T004", "T006"],
+      "status": "pending",
+      "file": "tasks/T009.md",
+      "record": ""
+    },
+    "T010": {
+      "id": "T010",
+      "title": "生产构建优化与 Docker 部署配置",
+      "priority": "P1",
+      "estimatedTime": "3h",
+      "dependencies": ["T009"],
+      "status": "pending",
+      "file": "tasks/T010.md",
+      "record": ""
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "taskId": "T004",
+  "status": "completed",
+  "summary": "三视图任务看板全部实现：Kanban 按状态分列展示，List 表格支持 phase/priority 排序，DAG 用 @xyflow/react 展示依赖关系图。",
+  "filesCreated": ["web/src/components/task-board/KanbanView.tsx", "web/src/components/task-board/ListView.tsx", "web/src/components/task-board/DagView.tsx", "web/src/components/TaskCard.tsx"],
+  "filesModified": ["web/src/pages/FeatureDetail.tsx"],
+  "keyDecisions": ["DAG 使用 ELK 布局算法实现自动排版", "KanbanView 始终显示 pending 和 in_progress 列即使为空"],
+  "testsPassed": 5,
+  "testsFailed": 0,
+  "coverage": 82.3,
+  "notes": "DAG 视图节点点击跳转到 TaskDetail 页面",
+  "completedAt": "2026-03-22T16:45:00Z",
+  "commitHash": "d4e5f6a"
+}
