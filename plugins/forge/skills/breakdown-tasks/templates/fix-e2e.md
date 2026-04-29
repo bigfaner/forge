@@ -23,7 +23,7 @@ This is fix attempt round {{round}}. Steps:
 - `testing/results/latest.md` — Test results overview
 - `testing/results/failures/failure-{{test_case_id}}.md` — Failure details
 - `testing/test-cases.md` — Test case document
-- `testing/scripts/` — Test scripts directory
+- `tests/e2e/<feature>/` — Test scripts directory
 
 ## Acceptance Criteria
 

@@ -22,13 +22,13 @@ Check previous stage artifacts. Abort and prompt user if missing:
 
 | Artifact | Missing prompt |
 |----------|----------------|
-| `testing/scripts/` directory | Run `/gen-test-scripts` first |
-| `testing/scripts/helpers.ts` | Run `/gen-test-scripts` first |
+| `tests/e2e/<slug>/` directory | Run `/gen-test-scripts` first |
+| `tests/e2e/helpers.ts` | Run `/gen-test-scripts` first |
 | At least one `.spec.ts` file | Run `/gen-test-scripts` first |
 | `tests/e2e/config.yaml` | Run `/gen-sitemap` or create manually |
 
 ```bash
-ls docs/features/<slug>/testing/scripts/
+ls tests/e2e/<slug>/
 ```
 
 **Note**: `<slug>` is the current feature name, obtained via `task feature` command.
@@ -41,7 +41,7 @@ ls docs/features/<slug>/testing/scripts/
 - After `/gen-test-scripts` has generated test scripts
 
 **Skip:**
-- `testing/scripts/` doesn't exist (run `/gen-test-scripts` first)
+- `tests/e2e/<slug>/` doesn't exist (run `/gen-test-scripts` first)
 
 ## Workflow
 
@@ -62,7 +62,7 @@ If missing, prompt user to run `/gen-sitemap` or create manually.
 **Install dependencies** (if `node_modules` doesn't exist):
 
 ```bash
-cd docs/features/<slug>/testing/scripts && npm install
+cd tests/e2e && npm install
 ```
 
 **Install Playwright browser** (if not installed):
@@ -93,7 +93,7 @@ Start servers in background. Record PIDs for cleanup.
 Run each spec file that exists:
 
 ```bash
-cd docs/features/<slug>/testing/scripts
+cd tests/e2e
 ```
 
 <EXTREMELY-IMPORTANT>
@@ -107,19 +107,19 @@ cd docs/features/<slug>/testing/scripts
 **CLI tests** (run first):
 
 ```bash
-npx tsx cli.spec.ts 2>&1 | tee ../results/cli-output.txt
+npx tsx <slug>/cli.spec.ts 2>&1 | tee results/<slug>-cli-output.txt
 ```
 
 **API tests**:
 
 ```bash
-npx tsx api.spec.ts 2>&1 | tee ../results/api-output.txt
+npx tsx <slug>/api.spec.ts 2>&1 | tee results/<slug>-api-output.txt
 ```
 
 **UI tests** (run last — requires Playwright browser):
 
 ```bash
-npx tsx ui.spec.ts 2>&1 | tee ../results/ui-output.txt
+npx tsx <slug>/ui.spec.ts 2>&1 | tee results/<slug>-ui-output.txt
 ```
 
 ### Step 3: Collect Results

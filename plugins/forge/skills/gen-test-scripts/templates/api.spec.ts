@@ -5,7 +5,7 @@ import { curl, apiBaseUrl
   // , getApiToken, createAuthCurl
   // CONDITIONAL: Uncomment import below only if login-test exists
   // , defaultCreds
-} from './helpers.js';
+} from '../helpers.js';
 
 describe('API E2E Tests', () => {
   // CONDITIONAL: Uncomment the 2 lines below only if auth-required-test exists
@@ -24,12 +24,12 @@ describe('API E2E Tests', () => {
   //
   // // Traceability: TC-010 → Spec Section 5.2
   // test('TC-010: POST /v1/auth/login returns 200 with valid credentials', async () => {
-  //   const res = await curl('POST', `${apiBaseUrl}/v1/auth/login`, {
-  //     body: JSON.stringify(defaultCreds),
+  //   const res = await curl('POST', `${apiBaseUrl}/v1/auth/login`, { // VERIFY: auth endpoint path from router files
+  //     body: JSON.stringify(defaultCreds), // VERIFY: auth request body schema from handler
   //   });
   //   assert.equal(res.status, 200);
   //   const data = JSON.parse(res.body);
-  //   assert.ok(data.token ?? data.access_token, 'Response contains token');
+  //   assert.ok(data.token ?? data.access_token, 'Response contains token'); // VERIFY: token field name from auth response
   // });
 
   // ── Authenticated Tests (use shared auth) ───────────────────────
@@ -38,7 +38,7 @@ describe('API E2E Tests', () => {
   //
   // // Traceability: TC-011 → Spec Section 5.3
   // test('TC-011: GET /v1/users returns 200', async () => {
-  //   const res = await authCurl('GET', '/v1/users');
+  //   const res = await authCurl('GET', '/v1/users'); // VERIFY: API path from router files
   //   assert.equal(res.status, 200);
   // });
 });
