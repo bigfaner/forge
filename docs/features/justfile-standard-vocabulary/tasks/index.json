@@ -54,7 +54,7 @@
       "title": "init-justfile frontend template (15 recipes)",
       "priority": "P0",
       "estimatedTime": "1-2h",
-      "status": "pending",
+      "status": "completed",
       "file": "1.3-frontend-template.md",
       "record": "records/1.3-frontend-template.md"
     },

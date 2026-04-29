@@ -444,6 +444,129 @@ e2e-verify feature="":
 # --- end forge standard recipes ---
 ```
 
+### Frontend Template (pure frontend projects: Node.js/npm)
+
+No scope parameters. Each recipe directly calls npm toolchain commands.
+
+```just
+# --- forge standard recipes ---
+
+# project-type: return project type identifier
+project-type:
+    @echo "frontend"
+
+# compile: type-check and transpile for fast feedback
+compile:
+    npx tsc --noEmit
+
+# build: full compile and package
+build:
+    npm run build
+
+# run: start the service
+run:
+    npm start
+
+# dev: hot-reload development mode
+dev:
+    npm run dev
+
+# test: unit + integration tests
+test:
+    npm test
+
+# test-e2e: end-to-end tests
+[arg("feature", long)]
+test-e2e feature="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ "{{feature}}" != "" ]; then
+        scripts_dir="tests/e2e/{{feature}}"
+        fail=0
+        for spec in "$scripts_dir"/*.spec.ts; do
+            [ -f "$spec" ] && npx tsx "$spec" || fail=$((fail+1))
+        done
+        [ "$fail" -eq 0 ]
+    else
+        [ ! -d tests/e2e/node_modules ] && npm install --prefix tests/e2e
+        fail=0
+        for spec in $(find tests/e2e -mindepth 2 -name '*.spec.ts'); do
+            npx tsx "$spec" || fail=$((fail+1))
+        done
+        [ "$fail" -eq 0 ]
+    fi
+
+# lint: static analysis
+lint:
+    npm run lint
+
+# fmt: auto-format code
+fmt:
+    npx prettier --write .
+
+# check: lint + compile (CI gate)
+check:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    npm run lint && npx tsc --noEmit
+
+# clean: remove build artifacts
+clean:
+    rm -rf dist
+
+# install: install dependencies (idempotent)
+install:
+    npm install
+
+# ci: full CI pipeline
+ci:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    just install
+    just compile
+    just build
+    just test
+    just lint
+
+# e2e-setup: install e2e dependencies (idempotent)
+e2e-setup:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ ! -f tests/e2e/package.json ]; then
+        echo "Error: tests/e2e/package.json not found" >&2
+        exit 1
+    fi
+    if [ ! -d tests/e2e/node_modules ]; then
+        npm install --prefix tests/e2e
+    fi
+    npx --prefix tests/e2e playwright install chromium
+    echo "OK: e2e dependencies ready"
+
+# e2e-verify: check for unresolved // VERIFY: markers
+[arg("feature", long)]
+e2e-verify feature="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -z "{{feature}}" ]; then
+        echo "Usage: just e2e-verify --feature <slug>" >&2
+        exit 1
+    fi
+    if [ ! -d "tests/e2e/{{feature}}" ]; then
+        echo "Error: tests/e2e/{{feature}}/ not found" >&2
+        exit 1
+    fi
+    matches=$(grep -rn '// VERIFY:' "tests/e2e/{{feature}}/" --include='*.spec.ts' || true)
+    if [ -n "$matches" ]; then
+        count=$(echo "$matches" | wc -l | tr -d ' ')
+        echo "Error: $count unresolved // VERIFY: marker(s) in tests/e2e/{{feature}}/" >&2
+        echo "$matches" >&2
+        exit 1
+    fi
+    echo "OK: no unresolved // VERIFY: markers in tests/e2e/{{feature}}/"
+
+# --- end forge standard recipes ---
+```
+
 ## Notes
 
 - **just >= 1.50.0**: `[arg("feature", long)]` generates `--feature <value>` named option, must pass a value when invoked
