@@ -7,10 +7,6 @@ function fileContains(content: string, needle: string): boolean {
   return content.includes(needle);
 }
 
-function fileNotContains(content: string, needle: string): boolean {
-  return !content.includes(needle);
-}
-
 // Skill/agent/command files that should use `just <verb>` exclusively.
 const SKILL_FILES: string[] = [
   'plugins/forge/skills/run-e2e-tests/SKILL.md',

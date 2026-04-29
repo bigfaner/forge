@@ -1,18 +1,26 @@
 {
-  "taskId": "T-test-3",
+  "taskId": "T-test-4",
   "status": "completed",
-  "summary": "Executed all 4 e2e test spec files for justfile-standard-vocabulary feature. All 25 tests passed across skill-content (1), init-justfile (7), scope-resolution (8), and justfile-execution (9) specs. Generated test results report at testing/results/latest.md.",
-  "filesCreated": ["testing/results/latest.md"],
+  "summary": "Graduated 25 e2e test scripts from tests/e2e/justfile-standard-vocabulary/ to 4 category directories in the regression suite: plugin-content (1 test), init-justfile (7 tests), scope-resolution (8 tests), justfile-execution (9 tests). Removed original feature directory after migration. Created graduation marker at tests/e2e/.graduated/justfile-standard-vocabulary.",
+  "filesCreated": [
+    "tests/e2e/plugin-content/skill-content.spec.ts",
+    "tests/e2e/init-justfile/init-justfile.spec.ts",
+    "tests/e2e/scope-resolution/scope-resolution.spec.ts",
+    "tests/e2e/justfile-execution/justfile-execution.spec.ts",
+    "tests/e2e/.graduated/justfile-standard-vocabulary"
+  ],
   "filesModified": [],
   "keyDecisions": [
-    "Used just test-e2e --feature justfile-standard-vocabulary as the primary verification command",
-    "Tests gracefully handle missing frontend toolchains (no root package.json) via skip/return patterns"
+    "Classified 4 spec files into 4 semantic categories rather than merging: plugin-content (static file checks), init-justfile (template generation), scope-resolution (scope dispatch logic), justfile-execution (live CLI execution)",
+    "Kept import paths as ../helpers.js since all category dirs are one level under tests/e2e/, same as the original feature directory",
+    "Removed original feature directory (tests/e2e/justfile-standard-vocabulary/) after migration to avoid duplicate test discovery"
   ],
   "testsPassed": 25,
   "testsFailed": 0,
   "coverage": -1.0,
   "acceptanceCriteria": [
-    { "criterion": "testing/results/latest.md exists", "met": true },
-    { "criterion": "All tests pass (status = PASS in latest.md)", "met": true }
+    { "criterion": "testing/results/latest.md shows status = PASS", "met": true },
+    { "criterion": "tests/e2e/.graduated/justfile-standard-vocabulary marker exists", "met": true },
+    { "criterion": "Spec files present in tests/e2e/<category>/", "met": true }
   ]
 }

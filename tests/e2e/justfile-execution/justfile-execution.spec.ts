@@ -10,7 +10,7 @@ function fileContains(content: string, needle: string): boolean {
 }
 
 // Temporary fixture directories for testing
-const TMP_FEATURE_DIR = join(PROJECT_ROOT, 'tests', 'e2e', 'justfile-standard-vocabulary', '_tmp_fixture');
+const TMP_FEATURE_DIR = join(PROJECT_ROOT, 'tests', 'e2e', 'justfile-execution', '_tmp_fixture');
 
 // -- Tests -----------------------------------------------------------------
 describe('justfile command execution', () => {
