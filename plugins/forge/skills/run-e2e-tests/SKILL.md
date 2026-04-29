@@ -22,10 +22,22 @@ Check previous stage artifacts. Abort and prompt user if missing:
 
 | Artifact | Missing prompt |
 |----------|----------------|
+| `Justfile` with `e2e-setup` recipe | Run `/init-justfile` first |
 | `tests/e2e/<slug>/` directory | Run `/gen-test-scripts` first |
 | `tests/e2e/helpers.ts` | Run `/gen-test-scripts` first |
 | At least one `.spec.ts` file | Run `/gen-test-scripts` first |
 | `tests/e2e/config.yaml` | Run `/gen-sitemap` or create manually |
+
+**Justfile check** (must pass before proceeding):
+
+```bash
+# Verify Justfile exists and contains e2e-setup recipe
+test -f Justfile && grep -q "^e2e-setup:" Justfile
+```
+
+If the Justfile is missing or does not contain the `e2e-setup` recipe, abort and prompt:
+
+> Justfile is missing or does not contain the `e2e-setup` recipe. Run `/init-justfile` to scaffold the required targets, then retry.
 
 ```bash
 ls tests/e2e/<slug>/

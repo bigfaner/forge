@@ -199,7 +199,7 @@
       "id": "disc-2",
       "title": "Fix: add justfile prerequisite check to run-e2e-tests SKILL.md",
       "priority": "P0",
-      "status": "pending",
+      "status": "completed",
       "file": "disc-2.md",
       "record": "records/disc-2.md",
       "breaking": true
