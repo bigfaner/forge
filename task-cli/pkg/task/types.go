@@ -46,6 +46,7 @@ type TaskState struct {
 
 // RecordData represents the JSON input for record generation.
 type RecordData struct {
+	TaskID             string                `json:"taskId"`
 	Status             string                `json:"status"`
 	Summary            string                `json:"summary"`
 	FilesCreated       []string              `json:"filesCreated"`

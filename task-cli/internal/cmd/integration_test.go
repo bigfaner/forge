@@ -287,14 +287,14 @@ func TestRunRecord_HappyPath(t *testing.T) {
 	dir, _ := os.Getwd()
 
 	// Create a record data file
-	rd := RecordData{
+	rd := task.RecordData{
 		Status:       "completed",
 		Summary:      "Did the thing",
 		TestsPassed:  5,
 		TestsFailed:  0,
 		Coverage:     90.0,
 		KeyDecisions: []string{"used approach X"},
-		AcceptanceCriteria: []AcceptanceCriterion{
+		AcceptanceCriteria: []task.AcceptanceCriterion{
 			{Criterion: "It works", Met: true},
 		},
 	}
@@ -336,12 +336,12 @@ func TestRunRecord_JSONOutput(t *testing.T) {
 
 	dir, _ := os.Getwd()
 
-	rd := RecordData{
+	rd := task.RecordData{
 		Status:      "completed",
 		Summary:     "JSON test",
 		TestsPassed: 1,
 		Coverage:    80.0,
-		AcceptanceCriteria: []AcceptanceCriterion{
+		AcceptanceCriteria: []task.AcceptanceCriterion{
 			{Criterion: "Works", Met: true},
 		},
 	}
@@ -376,12 +376,12 @@ func TestRunRecord_QuietOutput(t *testing.T) {
 
 	dir, _ := os.Getwd()
 
-	rd := RecordData{
+	rd := task.RecordData{
 		Status:      "completed",
 		Summary:     "Quiet test",
 		TestsPassed: 1,
 		Coverage:    75.0,
-		AcceptanceCriteria: []AcceptanceCriterion{
+		AcceptanceCriteria: []task.AcceptanceCriterion{
 			{Criterion: "Works", Met: true},
 		},
 	}
@@ -560,7 +560,7 @@ func TestValidatorRun_InvalidJSON(t *testing.T) {
 
 func TestFillRecordTemplate_NonCompletedStatus(t *testing.T) {
 	t2 := &task.Task{ID: "1.1", Title: "Test Task"}
-	rd := &RecordData{
+	rd := &task.RecordData{
 		Status:       "blocked",
 		Summary:      "Blocked due to X",
 		KeyDecisions: []string{"Decision A"},
@@ -583,13 +583,13 @@ func TestFillRecordTemplate_NonCompletedStatus(t *testing.T) {
 
 func TestFillRecordTemplate_WithNotes(t *testing.T) {
 	t2 := &task.Task{ID: "1.1", Title: "Test Task"}
-	rd := &RecordData{
+	rd := &task.RecordData{
 		Status:      "completed",
 		Summary:     "Done",
 		Notes:       "Custom notes here",
 		TestsPassed: 1,
 		Coverage:    50.0,
-		AcceptanceCriteria: []AcceptanceCriterion{
+		AcceptanceCriteria: []task.AcceptanceCriterion{
 			{Criterion: "Works", Met: true},
 		},
 	}
@@ -638,13 +638,13 @@ func TestSaveIndexAndSignalCompletion_IncompleteTasks(t *testing.T) {
 // ---------- validateRecordData ----------
 
 func TestValidateRecordData_ForceOverride(t *testing.T) {
-	rd := &RecordData{
+	rd := &task.RecordData{
 		Status:       "completed",
 		Summary:      "Done",
 		TestsPassed:  0,
 		TestsFailed:  0,
 		Coverage:     50.0,
-		AcceptanceCriteria: []AcceptanceCriterion{
+		AcceptanceCriteria: []task.AcceptanceCriterion{
 			{Criterion: "Works", Met: false},
 		},
 	}
@@ -661,12 +661,12 @@ func TestValidateRecordData_ForceOverride(t *testing.T) {
 // ---------- validateRecordData no-test task ----------
 
 func TestValidateRecordData_NoTestTask(t *testing.T) {
-	rd := &RecordData{
+	rd := &task.RecordData{
 		Status:      "completed",
 		Summary:     "Docs only",
 		Coverage:    -1.0,
 		KeyDecisions: []string{"doc-only"},
-		AcceptanceCriteria: []AcceptanceCriterion{
+		AcceptanceCriteria: []task.AcceptanceCriterion{
 			{Criterion: "Docs written", Met: true},
 		},
 	}
@@ -838,7 +838,7 @@ func TestFindTaskByKey(t *testing.T) {
 
 func TestReadRecordData_FromFile(t *testing.T) {
 	dir := t.TempDir()
-	rd := RecordData{Summary: "test summary", TestsPassed: 1, Coverage: 50.0}
+	rd := task.RecordData{Summary: "test summary", TestsPassed: 1, Coverage: 50.0}
 	data, _ := json.Marshal(rd)
 	path := filepath.Join(dir, "record.json")
 	os.WriteFile(path, data, 0644)
@@ -1247,7 +1247,7 @@ func TestRunRecord_BlockedStatus(t *testing.T) {
 
 	dir, _ := os.Getwd()
 
-	rd := RecordData{
+	rd := task.RecordData{
 		Status:  "blocked",
 		Summary: "Blocked by dependency",
 		Notes:   "Waiting for upstream",

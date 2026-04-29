@@ -37,6 +37,7 @@ and the task status is updated in index.json.
 
 JSON input format:
   {
+    "taskId": "1.1",
     "status": "completed",
     "summary": "Brief description of what was done",
     "filesCreated": ["path/to/new/file.go"],
@@ -52,9 +53,9 @@ JSON input format:
   }
 
 Required fields: summary
-Optional fields: status (default: completed), filesCreated, filesModified,
-                 keyDecisions, testsPassed, testsFailed, coverage,
-                 acceptanceCriteria, notes`,
+Optional fields: taskId (verified against CLI arg if provided), status (default: completed),
+                 filesCreated, filesModified, keyDecisions, testsPassed,
+                 testsFailed, coverage, acceptanceCriteria, notes`,
 	Args: cobra.ExactArgs(1),
 	Run:  runRecord,
 }
@@ -64,26 +65,6 @@ func init() {
 	recordCmd.Flags().BoolVar(&recordJSON, "json", false, "Output result as JSON")
 	recordCmd.Flags().BoolVar(&recordQuiet, "quiet", false, "Minimal output")
 	recordCmd.Flags().BoolVar(&recordForce, "force", false, "Override validation errors (use with caution)")
-}
-
-// AcceptanceCriterion represents a single acceptance criterion.
-type AcceptanceCriterion struct {
-	Criterion string `json:"criterion"`
-	Met       bool   `json:"met"`
-}
-
-// RecordData represents the input data for record generation.
-type RecordData struct {
-	Status             string                `json:"status"`
-	Summary            string                `json:"summary"`
-	FilesCreated       []string              `json:"filesCreated"`
-	FilesModified      []string              `json:"filesModified"`
-	KeyDecisions       []string              `json:"keyDecisions"`
-	TestsPassed        int                   `json:"testsPassed"`
-	TestsFailed        int                   `json:"testsFailed"`
-	Coverage           float64               `json:"coverage"`
-	AcceptanceCriteria []AcceptanceCriterion `json:"acceptanceCriteria"`
-	Notes              string                `json:"notes"`
 }
 
 func runRecord(cmd *cobra.Command, args []string) {
@@ -117,6 +98,15 @@ func runRecord(cmd *cobra.Command, args []string) {
 
 	if rd.Status == "" {
 		rd.Status = "completed"
+	}
+
+	// Validate taskId matches CLI arg if provided
+	if rd.TaskID != "" && rd.TaskID != taskIDArg {
+		Exit(NewAIError(ErrValidation,
+			fmt.Sprintf("taskId mismatch: JSON has %q, CLI arg is %q", rd.TaskID, taskIDArg),
+			"The taskId in record.json does not match the task being recorded",
+			"Either omit taskId from JSON or ensure it matches the CLI argument",
+			fmt.Sprintf("Change taskId to %q or remove it from record.json", taskIDArg)))
 	}
 
 	// Validate required and recommended fields
@@ -205,7 +195,7 @@ func findTask(index *task.TaskIndex, taskID string) (string, *task.Task, error) 
 	return "", nil, fmt.Errorf("task not found: %s", taskID)
 }
 
-func readRecordData(dataPath string) (*RecordData, error) {
+func readRecordData(dataPath string) (*task.RecordData, error) {
 	var data []byte
 	var err error
 
@@ -222,21 +212,21 @@ func readRecordData(dataPath string) (*RecordData, error) {
 		return nil, fmt.Errorf("failed to read record data: %w", err)
 	}
 
-	var rd RecordData
+	var rd task.RecordData
 	if err := json.Unmarshal(data, &rd); err != nil {
 		return nil, fmt.Errorf("failed to parse JSON: %w", err)
 	}
 	return &rd, nil
 }
 
-// validateRecordData checks required and recommended fields in RecordData.
+// validateRecordData checks required and recommended fields in task.RecordData.
 // Hard-required fields (missing = error): summary
 // Hard validation for completed tasks (overridable with --force):
 //   - testsPassed=0 && testsFailed=0 with coverage >= 0
 //   - any acceptanceCriteria with met=false
 // Recommended fields for "completed" status (missing = warning):
 //   - keyDecisions, acceptanceCriteria
-func validateRecordData(rd *RecordData, force bool) {
+func validateRecordData(rd *task.RecordData, force bool) {
 	var missing []string
 
 	// Hard-required fields
@@ -286,7 +276,7 @@ func validateRecordData(rd *RecordData, force bool) {
 	}
 }
 
-func fillRecordTemplate(t *task.Task, rd *RecordData, startedTime string) string {
+func fillRecordTemplate(t *task.Task, rd *task.RecordData, startedTime string) string {
 	status := rd.Status
 	started := startedTime
 	if started == "" {
@@ -388,7 +378,7 @@ func formatDuration(dur time.Duration) string {
 	}
 }
 
-func formatCriteria(criteria []AcceptanceCriterion) string {
+func formatCriteria(criteria []task.AcceptanceCriterion) string {
 	if len(criteria) == 0 {
 		return "无"
 	}

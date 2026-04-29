@@ -13,7 +13,7 @@ import (
 
 func TestValidateRecordData(t *testing.T) {
 	t.Run("empty summary triggers hard error", func(t *testing.T) {
-		rd := &RecordData{
+		rd := &task.RecordData{
 			Status: "completed",
 			Summary: "",
 		}
@@ -31,7 +31,7 @@ func TestValidateRecordData(t *testing.T) {
 
 	t.Run("whitespace-only summary triggers hard error", func(t *testing.T) {
 		if os.Getenv("TEST_VALIDATE_WS_SUMMARY") == "1" {
-			validateRecordData(&RecordData{Status: "completed", Summary: "   "}, false)
+			validateRecordData(&task.RecordData{Status: "completed", Summary: "   "}, false)
 			return
 		}
 		cmd := exec.Command(os.Args[0], "-test.run=TestValidateRecordData/whitespace-only_summary_triggers_hard_error")
@@ -44,7 +44,7 @@ func TestValidateRecordData(t *testing.T) {
 
 	t.Run("completed without test evidence triggers hard error", func(t *testing.T) {
 		if os.Getenv("TEST_VALIDATE_NO_TESTS") == "1" {
-			validateRecordData(&RecordData{Status: "completed", Summary: "Did the work", TestsPassed: 0, TestsFailed: 0, Coverage: 0}, false)
+			validateRecordData(&task.RecordData{Status: "completed", Summary: "Did the work", TestsPassed: 0, TestsFailed: 0, Coverage: 0}, false)
 			return
 		}
 		cmd := exec.Command(os.Args[0], "-test.run=TestValidateRecordData/completed_without_test_evidence_triggers_hard_error")
@@ -56,7 +56,7 @@ func TestValidateRecordData(t *testing.T) {
 	})
 
 	t.Run("completed with coverage=-1 skips test evidence check", func(t *testing.T) {
-		rd := &RecordData{
+		rd := &task.RecordData{
 			Status:      "completed",
 			Summary:     "Doc task",
 			Coverage:    -1.0,
@@ -80,13 +80,13 @@ func TestValidateRecordData(t *testing.T) {
 	})
 
 	t.Run("completed with tests passes test evidence check", func(t *testing.T) {
-		rd := &RecordData{
+		rd := &task.RecordData{
 			Status:             "completed",
 			Summary:            "Full record",
 			KeyDecisions:       []string{"decision"},
 			TestsPassed:        5,
 			Coverage:           80.0,
-			AcceptanceCriteria: []AcceptanceCriterion{{Criterion: "works", Met: true}},
+			AcceptanceCriteria: []task.AcceptanceCriterion{{Criterion: "works", Met: true}},
 		}
 		old := os.Stderr
 		r, w, _ := os.Pipe()
@@ -106,12 +106,12 @@ func TestValidateRecordData(t *testing.T) {
 
 	t.Run("completed with unmet AC triggers hard error", func(t *testing.T) {
 		if os.Getenv("TEST_VALIDATE_UNMET_AC") == "1" {
-			validateRecordData(&RecordData{
+			validateRecordData(&task.RecordData{
 				Status:      "completed",
 				Summary:     "Partial",
 				TestsPassed: 1,
 				Coverage:    50.0,
-				AcceptanceCriteria: []AcceptanceCriterion{
+				AcceptanceCriteria: []task.AcceptanceCriterion{
 					{Criterion: "works", Met: true},
 					{Criterion: "edge case", Met: false},
 				},
@@ -127,13 +127,13 @@ func TestValidateRecordData(t *testing.T) {
 	})
 
 	t.Run("blocked with unmet AC is allowed", func(t *testing.T) {
-		rd := &RecordData{
+		rd := &task.RecordData{
 			Status:      "blocked",
 			Summary:     "Blocked",
 			TestsPassed: 0,
 			TestsFailed: 0,
 			Coverage:    0,
-			AcceptanceCriteria: []AcceptanceCriterion{
+			AcceptanceCriteria: []task.AcceptanceCriterion{
 				{Criterion: "works", Met: false},
 			},
 		}
@@ -154,7 +154,7 @@ func TestValidateRecordData(t *testing.T) {
 	})
 
 	t.Run("force overrides test evidence check", func(t *testing.T) {
-		rd := &RecordData{
+		rd := &task.RecordData{
 			Status:      "completed",
 			Summary:     "Force override",
 			TestsPassed: 0,
@@ -178,7 +178,7 @@ func TestValidateRecordData(t *testing.T) {
 	})
 
 	t.Run("completed without recommended fields warns", func(t *testing.T) {
-		rd := &RecordData{
+		rd := &task.RecordData{
 			Status:      "completed",
 			Summary:     "Did the work",
 			TestsPassed: 1,
@@ -206,7 +206,7 @@ func TestValidateRecordData(t *testing.T) {
 	})
 
 	t.Run("non-completed status skips all checks", func(t *testing.T) {
-		rd := &RecordData{
+		rd := &task.RecordData{
 			Status:  "blocked",
 			Summary: "Blocked with reason",
 		}
@@ -378,31 +378,31 @@ func TestFormatDuration(t *testing.T) {
 func TestFormatCriteria(t *testing.T) {
 	tests := []struct {
 		name     string
-		criteria []AcceptanceCriterion
+		criteria []task.AcceptanceCriterion
 		want     string
 	}{
 		{
 			name:     "empty criteria",
-			criteria: []AcceptanceCriterion{},
+			criteria: []task.AcceptanceCriterion{},
 			want:     "无",
 		},
 		{
 			name: "single unmet criterion",
-			criteria: []AcceptanceCriterion{
+			criteria: []task.AcceptanceCriterion{
 				{Criterion: "Feature works", Met: false},
 			},
 			want: "- [ ] Feature works",
 		},
 		{
 			name: "single met criterion",
-			criteria: []AcceptanceCriterion{
+			criteria: []task.AcceptanceCriterion{
 				{Criterion: "Feature works", Met: true},
 			},
 			want: "- [x] Feature works",
 		},
 		{
 			name: "multiple mixed criteria",
-			criteria: []AcceptanceCriterion{
+			criteria: []task.AcceptanceCriterion{
 				{Criterion: "Feature works", Met: true},
 				{Criterion: "Tests pass", Met: false},
 				{Criterion: "Docs updated", Met: true},
@@ -425,7 +425,7 @@ func TestFillRecordTemplate(t *testing.T) {
 	tests := []struct {
 		name             string
 		task             *task.Task
-		recordData       *RecordData
+		recordData       *task.RecordData
 		startedTime      string
 		checkContains    []string
 		checkNotContains []string
@@ -436,7 +436,7 @@ func TestFillRecordTemplate(t *testing.T) {
 				ID:    "1.1",
 				Title: "Implement feature X",
 			},
-			recordData: &RecordData{
+			recordData: &task.RecordData{
 				Status:       "completed",
 				Summary:      "Implemented the feature",
 				FilesCreated: []string{"main.go"},
@@ -461,7 +461,7 @@ func TestFillRecordTemplate(t *testing.T) {
 				ID:    "2.1",
 				Title: "Full feature",
 			},
-			recordData: &RecordData{
+			recordData: &task.RecordData{
 				Status:        "completed",
 				Summary:       "Complete implementation",
 				FilesCreated:  []string{"a.go", "b.go"},
@@ -470,7 +470,7 @@ func TestFillRecordTemplate(t *testing.T) {
 				TestsPassed:   10,
 				TestsFailed:   2,
 				Coverage:      90.0,
-				AcceptanceCriteria: []AcceptanceCriterion{
+				AcceptanceCriteria: []task.AcceptanceCriterion{
 					{Criterion: "AC1", Met: true},
 					{Criterion: "AC2", Met: false},
 				},
@@ -498,7 +498,7 @@ func TestFillRecordTemplate(t *testing.T) {
 				ID:    "1.2",
 				Title: "In progress task",
 			},
-			recordData: &RecordData{
+			recordData: &task.RecordData{
 				Status:  "in_progress",
 				Summary: "Work in progress",
 			},
@@ -514,7 +514,7 @@ func TestFillRecordTemplate(t *testing.T) {
 				ID:    "1.3",
 				Title: "Task with no notes",
 			},
-			recordData: &RecordData{
+			recordData: &task.RecordData{
 				Status:       "completed",
 				Summary:      "Done",
 				TestsPassed:  1,
@@ -532,7 +532,7 @@ func TestFillRecordTemplate(t *testing.T) {
 				ID:    "1.4",
 				Title: "Task",
 			},
-			recordData: &RecordData{
+			recordData: &task.RecordData{
 				Status:       "completed",
 				Summary:      "Done",
 				TestsPassed:  1,
@@ -550,7 +550,7 @@ func TestFillRecordTemplate(t *testing.T) {
 				ID:    "1.5",
 				Title: "Timed Task",
 			},
-			recordData: &RecordData{
+			recordData: &task.RecordData{
 				Status:       "completed",
 				Summary:      "Done",
 				TestsPassed:  1,
@@ -567,7 +567,7 @@ func TestFillRecordTemplate(t *testing.T) {
 				ID:    "1.6",
 				Title: "Backward Time Task",
 			},
-			recordData: &RecordData{
+			recordData: &task.RecordData{
 				Status:       "completed",
 				Summary:      "Done",
 				TestsPassed:  1,

@@ -138,7 +138,7 @@ for each dep in T.Dependencies:
 
 ---
 
-## 2. 任务记录生成流程 (task record)
+## 3. 任务记录生成流程 (task record)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -174,23 +174,25 @@ for each dep in T.Dependencies:
 
 ```json
 {
-    "summary": "任务执行摘要",
+    "taskId": "1.1",
     "status": "completed",
-    "time_spent": "2h",
-    "files_created": ["path/to/new.go"],
-    "files_modified": ["path/to/existing.go"],
-    "key_decisions": ["决策1", "决策2"],
-    "test_results": "所有测试通过",
-    "acceptance_criteria": [
-        {"criteria": "标准1", "met": true},
-        {"criteria": "标准2", "met": true}
-    ]
+    "summary": "实现摘要",
+    "filesCreated": ["path/to/new/file.go"],
+    "filesModified": ["path/to/modified/file.go"],
+    "keyDecisions": ["决策1", "决策2"],
+    "testsPassed": 5,
+    "testsFailed": 0,
+    "coverage": 85.5,
+    "acceptanceCriteria": [
+        {"criterion": "功能正常", "met": true}
+    ],
+    "notes": "可选备注"
 }
 ```
 
 ---
 
-## 3. verifyCompletion 流程
+## 4. verifyCompletion 流程
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -232,7 +234,7 @@ for each dep in T.Dependencies:
 
 ---
 
-## 4. cleanup 流程
+## 5. cleanup 流程
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -272,7 +274,7 @@ for each dep in T.Dependencies:
 
 ---
 
-## 5. all-completed 流程
+## 6. all-completed 流程
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -290,41 +292,54 @@ for each dep in T.Dependencies:
               ▼                               ▼
     ┌─────────────────┐             ┌─────────────────┐
     │ 全部 completed  │             │ 有未完成任务     │
-    │ 或 skipped      │             │ 静默退出(1)     │
+    │ 或 skipped      │             │ 静默退出(0)     │
     └────────┬────────┘             └─────────────────┘
               │
               ▼
     ┌─────────────────┐
-    │ 检查 e2e 测试   │
-    │ 脚本目录是否存在 │
+    │ 若 e2e 脚本存在 │
+    │ 但未毕业则警告  │
+    └────────┬────────┘
+              │
+              ▼
+    ┌─────────────────┐
+    │ 运行项目级      │
+    │ 单元/集成测试   │
+    └────────┬────────┘
+              │
+              ▼
+    ┌─────────────────┐
+    │ E2e 回归测试    │
+    │ (just test-e2e) │
+    │ 若可用          │
     └────────┬────────┘
               │
     ┌─────────┴──────────┐
     │                    │
     ▼                    ▼
-┌──────────┐      ┌──────────────┐
-│ 存在:    │      │ 不存在:      │
-│ 运行     │      │ 跳过 e2e     │
-│ e2e 测试 │      └──────────────┘
-└────┬─────┘
-     │
-     ▼
-┌─────────────────┐
-│ 运行项目级测试  │
-│ (自动检测命令)  │
-└─────────────────┘
+┌──────────┐      ┌──────────────────────────┐
+│ 通过:    │      │ 失败: 保存原始输出       │
+│ exit 0   │      │ 阻止 hook → Agent 读取   │
+└──────────┘      │ 原始输出 → task add      │
+                  │ → 声明修复任务           │
+                  └──────────────────────────┘
 ```
 
+**注意**: Feature e2e 测试不由此 hook 运行。
+由 T-test-3（`run-e2e-tests` 任务）负责。
+此 hook 是项目健康门禁：单元/集成测试 + 回归套件。
+
 **测试命令检测顺序：**
-1. `index.json` 中的 `testCommand` 字段
-2. `go.mod` → `go test ./...`
-3. `package.json` (含 scripts.test) → `npm test`
-4. `Makefile` (含 test: target) → `make test`
-5. `pytest.ini` / `pyproject.toml` → `pytest`
+1. `testCommand` 字段在 `index.json` 中
+2. `justfile`/`Justfile` 含 `test` recipe → `just test`
+3. `Makefile` (含 test: target) → `make test`
+4. `go.mod` → `go test ./...`
+5. `package.json` (含 scripts.test) → `npm test`
+6. `pytest.ini` / `pyproject.toml` → `pytest`
 
 ---
 
-## 6. 验证流程 (task validate)
+## 7. 验证流程 (task validate)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -373,7 +388,7 @@ for each dep in T.Dependencies:
 
 ---
 
-## 5. 循环依赖检测算法
+## 8. 循环依赖检测算法
 
 ```go
 // 深度优先搜索检测循环
@@ -416,7 +431,7 @@ func detectCycle(tasks map[string]Task) []string {
 
 ---
 
-## 7. 典型开发工作流
+## 9. 典型开发工作流
 
 ### 方式一：使用 Git 分支（推荐）
 
@@ -474,7 +489,7 @@ $ task claim
 
 ---
 
-## 8. 错误处理流程
+## 10. 错误处理流程
 
 ```
 错误类型              处理方式
@@ -490,7 +505,7 @@ index.json 语法错误   返回详细错误位置
 
 ---
 
-## 9. Feature 状态管理
+## 11. Feature 状态管理
 
 ### 设置 Feature
 
@@ -539,3 +554,81 @@ main/master/HEAD   → 忽略，使用目录扫描
 - `custom/branch/name` → `custom-branch-name`
 - `main` → 使用目录扫描
 ```
+
+---
+
+## 12. 动态任务添加流程
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         task add                                │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+                    ┌─────────────────┐
+                    │ FindProjectRoot │
+                    └────────┬────────┘
+                              │
+                              ▼
+                    ┌─────────────────┐
+                    │ RequireFeature  │
+                    └────────┬────────┘
+                              │
+                              ▼
+                    ┌─────────────────┐
+                    │ 验证 title      │
+                    │ 非空            │
+                    └────────┬────────┘
+                              │
+              ┌───────────────┴───────────────┐
+              │                               │
+              ▼                               ▼
+    ┌─────────────────┐             ┌─────────────────┐
+    │ 提供 --id:      │             │ 省略 --id:      │
+    │ 验证唯一性      │             │ 自动生成        │
+    └────────┬────────┘             │ disc-N          │
+             │                      └────────┬────────┘
+             └──────────┬────────────────────┘
+                        │
+                        ▼
+              ┌─────────────────┐
+              │ 验证依赖        │
+              │ 存在于 index 中 │
+              └────────┬────────┘
+                        │
+                        ▼
+              ┌─────────────────┐
+              │ 添加到 index    │
+              │ 创建 .md 文件   │
+              └────────┬────────┘
+                        │
+                        ▼
+              ┌─────────────────┐
+              │ 重置 forge      │
+              │ state           │
+              │ (allCompleted=  │
+              │  false)         │
+              └────────┬────────┘
+                        │
+                        ▼
+              ┌─────────────────┐
+              │ 输出 ADDED 块   │
+              └─────────────────┘
+```
+
+**自动 ID 生成（填充间隙）：**
+- 扫描已有任务中的 `disc-*` 键
+- 找到最小未使用整数 N（从 1 开始）
+- 返回 `disc-{N}`
+
+**Flags:**
+
+| Flag | 必填 | 默认值 | 说明 |
+|------|------|--------|------|
+| `--title` | 是 | - | 任务标题 |
+| `--id` | 否 | 自动 `disc-N` | 自定义任务 ID |
+| `--priority` | 否 | P1 | P0/P1/P2 |
+| `--depends-on` | 否 | 无 | 逗号分隔的任务 ID |
+| `--estimated-time` | 否 | - | 时间估算 |
+| `--breaking` | 否 | false | 触发全量测试 |
+| `--description` | 否 | - | 任务正文内容 |

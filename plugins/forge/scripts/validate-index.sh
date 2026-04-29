@@ -21,6 +21,6 @@ if ! command -v task &> /dev/null; then
 fi
 
 # Run task validate
-task validate -file "$FILE_PATH" 2>&1 || true
+task validate "$FILE_PATH" 2>&1 || true
 
 exit 0

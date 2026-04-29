@@ -47,7 +47,6 @@ const (
 
 	// Testing subdirectory names
 	TestingDirName        = "testing"
-	TestingScriptsDirName = "testing/scripts"
 	TestingResultsDirName = "testing/results"
 	TestCasesFileName     = "testing/test-cases.md"
 
