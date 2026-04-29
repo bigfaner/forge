@@ -6,3 +6,4 @@
 6、优化生成的feature e2e测试脚本的质量
 7、增加一个改进forge本身的skill或其它能力
 8、优化gen-sitemap的输出结果，避免重复的节点
+9、增加一个eval-test-cases skill
