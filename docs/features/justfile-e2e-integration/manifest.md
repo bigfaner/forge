@@ -1,6 +1,6 @@
 ---
 feature: "justfile-e2e-integration"
-status: design
+status: tasks
 ---
 
 # Feature: justfile-e2e-integration

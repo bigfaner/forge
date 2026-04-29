@@ -1,0 +1,26 @@
+[
+  {
+    "phase": 1,
+    "name": "New Targets (init-justfile)",
+    "source": "design",
+    "gates": [{"afterPhase": 1, "description": "Verify e2e-setup and e2e-verify recipes are syntactically correct and complete in init-justfile.md"}]
+  },
+  {
+    "phase": 2,
+    "name": "E2E Skill Files",
+    "source": "design",
+    "gates": [{"afterPhase": 2, "description": "Verify no raw npx tsx / npm install / npx playwright commands remain in gen-test-scripts and run-e2e-tests"}]
+  },
+  {
+    "phase": 3,
+    "name": "Build/Test Files (7 files)",
+    "source": "design",
+    "gates": [{"afterPhase": 3, "description": "Verify no raw go test / npm test / pytest / project-test-command remain in fix-bug, run-tasks, task-executor, error-fixer, execute-task, record-task, improve-harness"}]
+  },
+  {
+    "phase": 4,
+    "name": "Breakdown-Tasks Templates",
+    "source": "design",
+    "gates": [{"afterPhase": 4, "description": "Verify all 3 breakdown-tasks templates reference just commands in Implementation Notes"}]
+  }
+]
