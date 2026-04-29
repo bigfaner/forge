@@ -59,22 +59,10 @@ ls tests/e2e/config.yaml
 
 If missing, prompt user to run `/gen-sitemap` or create manually.
 
-**Install dependencies** (if `node_modules` doesn't exist):
+Run `just e2e-setup` (idempotent — installs deps and Playwright browser):
 
 ```bash
-cd tests/e2e && npm install
-```
-
-**Install Playwright browser** (if not installed):
-
-```bash
-npx playwright install chromium
-```
-
-Verify installation:
-
-```bash
-npx playwright --version
+just e2e-setup
 ```
 
 **Start servers** (if needed):
@@ -104,22 +92,10 @@ cd tests/e2e
 **Each spec's output must be fully saved** (`tee` to results/ directory) for subsequent result collection.
 </EXTREMELY-IMPORTANT>
 
-**CLI tests** (run first):
+**Run all specs**:
 
 ```bash
-npx tsx <slug>/cli.spec.ts 2>&1 | tee results/<slug>-cli-output.txt
-```
-
-**API tests**:
-
-```bash
-npx tsx <slug>/api.spec.ts 2>&1 | tee results/<slug>-api-output.txt
-```
-
-**UI tests** (run last — requires Playwright browser):
-
-```bash
-npx tsx <slug>/ui.spec.ts 2>&1 | tee results/<slug>-ui-output.txt
+just test-e2e --feature <slug> 2>&1 | tee results/<slug>-output.txt
 ```
 
 ### Step 3: Collect Results
@@ -191,10 +167,10 @@ Report: docs/features/<slug>/testing/results/latest.md
 
 | Situation | Action |
 |-----------|--------|
-| Playwright browser not installed | Run `npx playwright install chromium`, retry |
+| Playwright browser not installed | Run `just e2e-setup`, retry |
 | Server won't start | Report error, skip tests that need it |
 | Test timeout | Kill test process, mark as FAIL with timeout reason |
-| `node_modules` missing | Run `npm install`, retry |
+| `node_modules` missing | Run `just e2e-setup`, retry |
 | Spec file doesn't compile | Report TypeScript error, skip that spec |
 
 ## Related Skills
