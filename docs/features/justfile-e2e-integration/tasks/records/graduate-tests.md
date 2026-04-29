@@ -1,36 +1,37 @@
 ---
-status: "blocked"
+status: "completed"
 started: "2026-04-29 20:17"
-completed: "N/A"
-time_spent: ""
+completed: "2026-04-29 20:25"
+time_spent: "~8m"
 ---
 
 # Task Record: T-test-4 Graduate Test Scripts
 
 ## Summary
-Gate check failed: testing/results/latest.md shows Result=FAIL (7/20 tests failing). Blocked on TC-003, TC-004, TC-010, TC-011, TC-012, TC-013, TC-020 — all require missing Justfile recipes (e2e-verify, e2e-setup) and a justfile reference in run-e2e-tests SKILL.md. Will unblock once fix tasks complete.
+Re-ran e2e tests after disc-1 (added e2e-setup/e2e-verify to Justfile) and disc-2 (added justfile prerequisite check to run-e2e-tests SKILL.md) fixes. All 20/20 CLI tests now pass. Graduated test scripts to tests/e2e/justfile-e2e-integration/cli.spec.ts and wrote graduation marker at tests/e2e/.graduated/justfile-e2e-integration.
 
 ## Changes
 
 ### Files Created
-无
+- tests/e2e/.graduated/justfile-e2e-integration
 
 ### Files Modified
-无
+- docs/features/justfile-e2e-integration/testing/results/latest.md
+- docs/features/justfile-e2e-integration/testing/results/cli-output.txt
 
 ### Key Decisions
-- Task is a gate: e2e tests must pass before graduation proceeds
-- Status set to blocked per implementation notes — waiting for fix tasks
+- tests/e2e/justfile-e2e-integration/cli.spec.ts was already present with correct imports — no migration needed, only graduation marker was missing
+- TC-009/TC-010/TC-020 pass because tests/e2e/package.json and node_modules exist in the real project
 
 ## Test Results
-- **Passed**: 0
+- **Passed**: 20
 - **Failed**: 0
 - **Coverage**: N/A (task has no tests)
 
 ## Acceptance Criteria
-- [ ] testing/results/latest.md shows status = PASS
-- [ ] tests/e2e/.graduated/<slug> marker exists
-- [ ] Spec files present in tests/e2e/<category>/
+- [x] testing/results/latest.md shows status = PASS
+- [x] tests/e2e/.graduated/<slug> marker exists
+- [x] Spec files present in tests/e2e/<category>/
 
 ## Notes
 无
