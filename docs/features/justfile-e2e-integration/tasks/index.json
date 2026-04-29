@@ -109,7 +109,7 @@
       "dependencies": [
         "3.x"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3-summary.md",
       "record": "records/3-summary.md"
     },
@@ -121,7 +121,7 @@
       "dependencies": [
         "2.gate"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3.1-fix-bug-run-tasks.md",
       "record": "records/3.1-fix-bug-run-tasks.md"
     },
@@ -133,7 +133,7 @@
       "dependencies": [
         "2.gate"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3.2-task-executor-error-fixer.md",
       "record": "records/3.2-task-executor-error-fixer.md"
     },
@@ -145,7 +145,7 @@
       "dependencies": [
         "2.gate"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3.3-execute-task-record-task-improve-harness.md",
       "record": "records/3.3-execute-task-record-task-improve-harness.md"
     },
