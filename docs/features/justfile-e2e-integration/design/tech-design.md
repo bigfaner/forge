@@ -41,6 +41,21 @@ plugins/forge/
     └── fix-e2e.md               ← EDIT: add post-fix verification step
 ```
 
+### Execution Flow
+
+```
+gen-test-scripts
+  └─ Step 4: just e2e-verify --feature <slug>
+       ├─ exit 0 ──► run-e2e-tests
+       │                └─ just test-e2e --feature <slug>
+       └─ exit 1 ──► HARD GATE: skill marks incomplete, stops here
+
+task-executor / error-fixer
+  └─ Step 3/4: just build && just test
+       ├─ exit 0 ──► task complete
+       └─ exit 1 ──► error-fixer retries
+```
+
 ### Dependencies
 
 No new dependencies. `just` (>= 1.50.0) is already required by `init-justfile`.
@@ -54,6 +69,7 @@ No new dependencies. `just` (>= 1.50.0) is already required by `init-justfile`.
 just e2e-setup
 
 # Behavior
+if [ ! -f tests/e2e/package.json ]; then exit 1 with "Error: tests/e2e/package.json not found"; fi
 if [ ! -d tests/e2e/node_modules ]; then
     npm install --prefix tests/e2e
 fi
@@ -62,6 +78,22 @@ npx --prefix tests/e2e playwright install chromium
 # Exit codes
 # 0 — success, outputs: "OK: e2e dependencies ready"
 # 1 — tests/e2e/package.json not found, outputs: "Error: tests/e2e/package.json not found"
+```
+
+```just
+# Justfile recipe (verbatim template for init-justfile.md)
+e2e-setup:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ ! -f tests/e2e/package.json ]; then
+        echo "Error: tests/e2e/package.json not found" >&2
+        exit 1
+    fi
+    if [ ! -d tests/e2e/node_modules ]; then
+        npm install --prefix tests/e2e
+    fi
+    npx --prefix tests/e2e playwright install chromium
+    echo "OK: e2e dependencies ready"
 ```
 
 ### Interface 2: `just e2e-verify --feature <slug>`
@@ -75,13 +107,42 @@ just e2e-verify --feature <slug>
 #                   Agent obtains via: task feature
 
 # Behavior
-# Scans tests/e2e/<slug>/**/*.spec.ts for lines matching "// VERIFY:"
-# Counts matches; if count > 0 → exit 1 with file:line list
+# 1. Checks tests/e2e/<slug>/ exists — exits 1 if not
+# 2. Scans tests/e2e/<slug>/**/*.spec.ts for lines matching "// VERIFY:"
+# 3. Counts matches; if count > 0 → exit 1 with file:line list
 
 # Exit codes
 # 0 — no unresolved markers, outputs: "OK: no unresolved // VERIFY: markers in tests/e2e/<slug>/"
+# 1 — slug directory not found, outputs: "Error: tests/e2e/<slug>/ not found"
 # 1 — markers found, outputs: count + file:line list for each marker
 # 1 — --feature omitted, outputs: "Usage: just e2e-verify --feature <slug>"
+```
+
+```just
+# Justfile recipe (verbatim template for init-justfile.md)
+# Requires just >= 1.50.0. [arg("feature", long)] declares a long-form CLI flag:
+# --feature <value>. "long" maps the argument to --<name> form; omitting it makes
+# the argument positional.
+[arg("feature", long)]
+e2e-verify feature="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -z "{{feature}}" ]; then
+        echo "Usage: just e2e-verify --feature <slug>" >&2
+        exit 1
+    fi
+    if [ ! -d "tests/e2e/{{feature}}" ]; then
+        echo "Error: tests/e2e/{{feature}}/ not found" >&2
+        exit 1
+    fi
+    matches=$(grep -rn '// VERIFY:' "tests/e2e/{{feature}}/" --include='*.spec.ts' || true)
+    if [ -n "$matches" ]; then
+        count=$(echo "$matches" | wc -l | tr -d ' ')
+        echo "Error: $count unresolved // VERIFY: marker(s) in tests/e2e/{{feature}}/" >&2
+        echo "$matches" >&2
+        exit 1
+    fi
+    echo "OK: no unresolved // VERIFY: markers in tests/e2e/{{feature}}/"
 ```
 
 ## Data Models
@@ -95,6 +156,9 @@ Single-layer documentation feature. No data models.
 | Situation | Command | Exit Code | Output |
 |-----------|---------|-----------|--------|
 | `package.json` missing | `just e2e-setup` | 1 | `Error: tests/e2e/package.json not found` |
+| `npm install` network/registry failure | `just e2e-setup` | non-zero (from npm) | npm error log path printed by npm; recipe aborts via `set -euo pipefail` |
+| `npx playwright install chromium` network failure | `just e2e-setup` | non-zero (from playwright) | playwright error message; recipe aborts via `set -euo pipefail` |
+| `tests/e2e/<slug>/` directory not found | `just e2e-verify` | 1 | `Error: tests/e2e/<slug>/ not found` |
 | `// VERIFY:` markers remain | `just e2e-verify` | 1 | Count + file:line list |
 | `--feature` arg omitted | `just e2e-verify` | 1 | `Usage: just e2e-verify --feature <slug>` |
 | `justfile` not found in project | any `just` call | — | Skill checks `ls justfile` first; prompts user to run `/init-justfile` |
@@ -257,6 +321,81 @@ All tests must pass before marking this task completed.
 | Phase 4 | `grep -c 'just ' plugins/forge/skills/breakdown-tasks/templates/run-e2e-tests.md` | >= 1 |
 | All | `grep -rn 'just e2e-setup\|just e2e-verify\|just test-e2e\|just test\|just build' plugins/forge/` | >= 20 lines total |
 
+### Functional Execution Tests
+
+Run after Phase 1 completes, using a temp directory scaffolded with a minimal justfile extracted from the `init-justfile` template. These tests validate that the recipes execute correctly — grep checks above cannot catch a typo in recipe logic or a wrong flag name.
+
+**Test tooling**: `bash`, `just` >= 1.50.0, `node` + `npm` (already required by the feature). Each test is a plain bash script with inline assertions (`[[ ]] || { echo FAIL; exit 1; }`). Run each block directly with `bash` or collect them into a single script.
+
+**Setup** (shared across all functional tests):
+
+```bash
+TMPDIR=$(mktemp -d)
+# Copy the e2e-setup and e2e-verify recipes from the updated init-justfile.md template into $TMPDIR/justfile
+# Create minimal tests/e2e/package.json: {"name":"test","dependencies":{"playwright":"*"}}
+```
+
+**T-func-1: `just e2e-setup` happy path**
+
+```bash
+cd "$TMPDIR"
+output=$(just e2e-setup 2>&1)
+exit_code=$?
+[[ $exit_code -eq 0 ]] || { echo "FAIL T-func-1: expected exit 0, got $exit_code"; exit 1; }
+echo "$output" | grep -q "OK: e2e dependencies ready" || { echo "FAIL T-func-1: expected 'OK: e2e dependencies ready' in output"; exit 1; }
+[[ -d tests/e2e/node_modules ]] || { echo "FAIL T-func-1: node_modules not created"; exit 1; }
+```
+
+**T-func-2: `just e2e-setup` missing package.json**
+
+```bash
+cd "$TMPDIR" && rm tests/e2e/package.json
+output=$(just e2e-setup 2>&1)
+exit_code=$?
+[[ $exit_code -eq 1 ]] || { echo "FAIL T-func-2: expected exit 1, got $exit_code"; exit 1; }
+echo "$output" | grep -q "Error: tests/e2e/package.json not found" || { echo "FAIL T-func-2: expected error message not found"; exit 1; }
+```
+
+**T-func-3: `just e2e-verify` happy path (no markers)**
+
+```bash
+mkdir -p "$TMPDIR/tests/e2e/my-feature"
+echo "// clean spec" > "$TMPDIR/tests/e2e/my-feature/cli.spec.ts"
+cd "$TMPDIR"
+output=$(just e2e-verify --feature my-feature 2>&1)
+exit_code=$?
+[[ $exit_code -eq 0 ]] || { echo "FAIL T-func-3: expected exit 0, got $exit_code"; exit 1; }
+echo "$output" | grep -q "OK: no unresolved // VERIFY: markers in tests/e2e/my-feature/" || { echo "FAIL T-func-3: expected OK message not found"; exit 1; }
+```
+
+**T-func-4: `just e2e-verify` with unresolved markers**
+
+```bash
+echo "// VERIFY: check this" >> "$TMPDIR/tests/e2e/my-feature/cli.spec.ts"
+output=$(just e2e-verify --feature my-feature 2>&1)
+exit_code=$?
+[[ $exit_code -eq 1 ]] || { echo "FAIL T-func-4: expected exit 1, got $exit_code"; exit 1; }
+echo "$output" | grep -q "unresolved // VERIFY: marker" || { echo "FAIL T-func-4: expected marker error not found"; exit 1; }
+```
+
+**T-func-5: `just e2e-verify` with non-existent slug**
+
+```bash
+output=$(just e2e-verify --feature no-such-slug 2>&1)
+exit_code=$?
+[[ $exit_code -eq 1 ]] || { echo "FAIL T-func-5: expected exit 1, got $exit_code"; exit 1; }
+echo "$output" | grep -q "Error: tests/e2e/no-such-slug/ not found" || { echo "FAIL T-func-5: expected error message not found"; exit 1; }
+```
+
+**T-func-6: `just e2e-verify` missing --feature arg**
+
+```bash
+output=$(just e2e-verify 2>&1)
+exit_code=$?
+[[ $exit_code -eq 1 ]] || { echo "FAIL T-func-6: expected exit 1, got $exit_code"; exit 1; }
+echo "$output" | grep -q "Usage: just e2e-verify --feature <slug>" || { echo "FAIL T-func-6: expected usage message not found"; exit 1; }
+```
+
 ### Key Test Scenarios
 
 1. **Happy path**: After all changes, `grep -r 'npx tsx\|cd tests/e2e && npm\|project-test-command' plugins/forge/` returns 0 results
@@ -266,7 +405,7 @@ All tests must pass before marking this task completed.
 
 ### Overall Coverage Target
 
-100% — every in-scope file must pass its grep verification. No partial completion.
+100% — every in-scope file must pass its grep verification. All 6 functional tests must exit with the asserted codes and output strings.
 
 ## Security Considerations
 
