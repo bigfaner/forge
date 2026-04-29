@@ -109,7 +109,7 @@
       "dependencies": [
         "1.gate"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2.1-detection-assembly.md",
       "record": "records/2.1-detection-assembly.md",
       "breaking": true
@@ -163,6 +163,15 @@
       "status": "pending",
       "file": "3.1-forge-justfile.md",
       "record": "records/3.1-forge-justfile.md"
+    },
+    "disc-1": {
+      "id": "disc-1",
+      "title": "Fix: cli.spec.ts test expectations after task 1.5 migration",
+      "priority": "P1",
+      "status": "pending",
+      "file": "disc-1.md",
+      "record": "records/disc-1.md",
+      "breaking": true
     },
     "gen-test-cases": {
       "id": "T-test-1",

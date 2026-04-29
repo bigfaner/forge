@@ -55,30 +55,69 @@ If version < 1.50.0: `cargo install just`
 
 ### Step 1: Detect Project Type
 
-```bash
-ls go.mod package.json pyproject.toml setup.py Cargo.toml 2>/dev/null
-```
-
-| File | Project Type |
-|------|-------------|
-| `go.mod` | Go |
-| `package.json` | Node.js |
-| `pyproject.toml` / `setup.py` | Python |
-| `Cargo.toml` | Rust |
-| Other | Generic |
-
-### Step 2: Check Existing Files
+Check for project marker files and classify the project type:
 
 ```bash
-ls justfile Justfile Makefile 2>/dev/null
+ls package.json go.mod Cargo.toml pyproject.toml 2>/dev/null
 ```
 
-- If `justfile` or `Justfile` already exists → ask to overwrite, abort if no
-- If `Makefile` exists → read content, migrate existing targets to Justfile
+**Detection signal mapping:**
 
-### Step 3: Generate Justfile
+| Marker File | Signal |
+|-------------|--------|
+| `package.json` | frontend |
+| `go.mod` | backend |
+| `Cargo.toml` | backend |
+| `pyproject.toml` | backend |
 
-Write to `justfile` (lowercase). All templates share the same `test-e2e`; only `test`/`build`/`lint` differ by language.
+**Classification algorithm:**
+
+1. Check for each marker file's existence in the project root.
+2. Collect detected signals into two sets: `frontend_signals` and `backend_signals`.
+3. Classify:
+   - Both `frontend_signals` and `backend_signals` are non-empty → **`mixed`**
+   - Only `frontend_signals` is non-empty → **`frontend`**
+   - Only `backend_signals` is non-empty → **`backend`**
+   - Neither set has signals → **Error**: output "Error: no known project markers detected (expected one of: package.json, go.mod, Cargo.toml, pyproject.toml)" and abort. Do NOT generate a justfile.
+
+### Step 2: Check Existing Justfile
+
+```bash
+ls justfile Justfile 2>/dev/null
+```
+
+- If `justfile` or `Justfile` already exists:
+  - Check for boundary markers (`# --- forge standard recipes ---` / `# --- end forge standard recipes ---`).
+  - **If boundary markers exist**: proceed to Step 3 (boundary marker merge). No confirmation needed — only the marked section will be replaced; custom recipes outside markers are preserved.
+  - **If boundary markers do NOT exist** (user's justfile has no forge markers):
+    - If `--force` flag was provided: skip confirmation, proceed to Step 3 (will add boundary markers and replace entire content).
+    - If `--force` flag was NOT provided: prompt the user: "A justfile already exists without forge markers. Overwrite? (y/n)". If user declines, abort without modifying the file.
+- If no justfile exists: proceed to Step 3 (create new file).
+
+**`--force` flag**: Use `/init-justfile --force` to skip all interactive confirmation prompts. This is required for agent workflows where no human is present to respond to prompts. When `--force` is active, the command runs non-interactively: it merges within boundary markers if they exist, or overwrites the entire file if they don't.
+
+### Step 3: Assemble and Write Justfile
+
+Based on the project type from Step 1, select the matching template:
+
+| Project Type | Template Section | Key Characteristics |
+|-------------|-----------------|---------------------|
+| `frontend` | Frontend Template | No scope parameters; npm toolchain commands |
+| `backend` | Backend Template | No scope parameters; Go toolchain commands |
+| `mixed` | Mixed Template | 10 recipes with `scope=""` parameter + bash case dispatch |
+
+Write to `justfile` (lowercase).
+
+**Boundary marker merge**: When an existing justfile contains `# --- forge standard recipes ---` / `# --- end forge standard recipes ---` markers:
+1. Read the existing justfile content.
+2. Find the start marker `# --- forge standard recipes ---` and end marker `# --- end forge standard recipes ---`.
+3. Replace everything between (and including) the markers with the new template content wrapped in markers.
+4. Preserve all content outside the markers (user custom recipes).
+5. Write the merged result back to `justfile`.
+
+**New justfile**: When no justfile exists, write the selected template (which already includes boundary markers) as the new file.
+
+All templates share the same `test-e2e`, `ci`, `e2e-setup`, and `e2e-verify` recipes; only the language-specific recipes differ.
 
 **test-e2e (all languages):**
 
