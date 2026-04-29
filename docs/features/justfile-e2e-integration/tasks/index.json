@@ -4,49 +4,75 @@
   "design": "design/tech-design.md",
   "created": "2026-04-29",
   "status": "planning",
-  "statusEnum": ["pending", "in_progress", "completed", "blocked", "skipped"],
-  "priorityEnum": ["P0", "P1", "P2"],
-  "e2eRound": 0,
   "tasks": {
-    "1.1-init-justfile-new-targets": {
-      "id": "1.1",
-      "title": "Add e2e-setup and e2e-verify targets to init-justfile",
+    "1-gate": {
+      "id": "1.gate",
+      "title": "Phase 1 Exit Gate",
       "priority": "P0",
-      "estimatedTime": "1h",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1.summary"
+      ],
       "status": "pending",
-      "breaking": false,
-      "file": "1.1-init-justfile-new-targets.md",
-      "record": "records/1.1-init-justfile-new-targets.md"
+      "file": "1-gate.md",
+      "record": "records/1-gate.md",
+      "breaking": true
     },
     "1-summary": {
       "id": "1.summary",
       "title": "Phase 1 Summary",
       "priority": "P0",
       "estimatedTime": "15min",
-      "dependencies": ["1.x"],
-      "status": "pending",
+      "dependencies": [
+        "1.x"
+      ],
+      "status": "completed",
       "file": "1-summary.md",
       "record": "records/1-summary.md"
     },
-    "1-gate": {
-      "id": "1.gate",
-      "title": "Phase 1 Exit Gate",
+    "1.1-init-justfile-new-targets": {
+      "id": "1.1",
+      "title": "Add e2e-setup and e2e-verify targets to init-justfile",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "1.1-init-justfile-new-targets.md",
+      "record": "records/1.1-init-justfile-new-targets.md"
+    },
+    "2-gate": {
+      "id": "2.gate",
+      "title": "Phase 2 Exit Gate",
       "priority": "P0",
       "estimatedTime": "30min",
-      "dependencies": ["1.summary"],
+      "dependencies": [
+        "2.summary"
+      ],
       "status": "pending",
-      "breaking": true,
-      "file": "1-gate.md",
-      "record": "records/1-gate.md"
+      "file": "2-gate.md",
+      "record": "records/2-gate.md",
+      "breaking": true
+    },
+    "2-summary": {
+      "id": "2.summary",
+      "title": "Phase 2 Summary",
+      "priority": "P0",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "2.x"
+      ],
+      "status": "pending",
+      "file": "2-summary.md",
+      "record": "records/2-summary.md"
     },
     "2.1-gen-test-scripts-skill": {
       "id": "2.1",
       "title": "Update gen-test-scripts SKILL.md",
       "priority": "P0",
       "estimatedTime": "1h",
-      "dependencies": ["1.gate"],
+      "dependencies": [
+        "1.gate"
+      ],
       "status": "pending",
-      "breaking": false,
       "file": "2.1-gen-test-scripts-skill.md",
       "record": "records/2.1-gen-test-scripts-skill.md"
     },
@@ -55,41 +81,47 @@
       "title": "Update run-e2e-tests SKILL.md",
       "priority": "P0",
       "estimatedTime": "1h",
-      "dependencies": ["1.gate"],
+      "dependencies": [
+        "1.gate"
+      ],
       "status": "pending",
-      "breaking": false,
       "file": "2.2-run-e2e-tests-skill.md",
       "record": "records/2.2-run-e2e-tests-skill.md"
     },
-    "2-summary": {
-      "id": "2.summary",
-      "title": "Phase 2 Summary",
-      "priority": "P0",
-      "estimatedTime": "15min",
-      "dependencies": ["2.x"],
-      "status": "pending",
-      "file": "2-summary.md",
-      "record": "records/2-summary.md"
-    },
-    "2-gate": {
-      "id": "2.gate",
-      "title": "Phase 2 Exit Gate",
+    "3-gate": {
+      "id": "3.gate",
+      "title": "Phase 3 Exit Gate",
       "priority": "P0",
       "estimatedTime": "30min",
-      "dependencies": ["2.summary"],
+      "dependencies": [
+        "3.summary"
+      ],
       "status": "pending",
-      "breaking": true,
-      "file": "2-gate.md",
-      "record": "records/2-gate.md"
+      "file": "3-gate.md",
+      "record": "records/3-gate.md",
+      "breaking": true
+    },
+    "3-summary": {
+      "id": "3.summary",
+      "title": "Phase 3 Summary",
+      "priority": "P0",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "3.x"
+      ],
+      "status": "pending",
+      "file": "3-summary.md",
+      "record": "records/3-summary.md"
     },
     "3.1-fix-bug-run-tasks": {
       "id": "3.1",
       "title": "Update fix-bug and run-tasks commands",
       "priority": "P0",
       "estimatedTime": "1h",
-      "dependencies": ["2.gate"],
+      "dependencies": [
+        "2.gate"
+      ],
       "status": "pending",
-      "breaking": false,
       "file": "3.1-fix-bug-run-tasks.md",
       "record": "records/3.1-fix-bug-run-tasks.md"
     },
@@ -98,9 +130,10 @@
       "title": "Update task-executor and error-fixer agents",
       "priority": "P0",
       "estimatedTime": "1h",
-      "dependencies": ["2.gate"],
+      "dependencies": [
+        "2.gate"
+      ],
       "status": "pending",
-      "breaking": false,
       "file": "3.2-task-executor-error-fixer.md",
       "record": "records/3.2-task-executor-error-fixer.md"
     },
@@ -109,71 +142,58 @@
       "title": "Update execute-task, record-task, and improve-harness",
       "priority": "P0",
       "estimatedTime": "1h",
-      "dependencies": ["2.gate"],
+      "dependencies": [
+        "2.gate"
+      ],
       "status": "pending",
-      "breaking": false,
       "file": "3.3-execute-task-record-task-improve-harness.md",
       "record": "records/3.3-execute-task-record-task-improve-harness.md"
-    },
-    "3-summary": {
-      "id": "3.summary",
-      "title": "Phase 3 Summary",
-      "priority": "P0",
-      "estimatedTime": "15min",
-      "dependencies": ["3.x"],
-      "status": "pending",
-      "file": "3-summary.md",
-      "record": "records/3-summary.md"
-    },
-    "3-gate": {
-      "id": "3.gate",
-      "title": "Phase 3 Exit Gate",
-      "priority": "P0",
-      "estimatedTime": "30min",
-      "dependencies": ["3.summary"],
-      "status": "pending",
-      "breaking": true,
-      "file": "3-gate.md",
-      "record": "records/3-gate.md"
-    },
-    "4.1-breakdown-tasks-templates": {
-      "id": "4.1",
-      "title": "Update breakdown-tasks templates",
-      "priority": "P0",
-      "estimatedTime": "1h",
-      "dependencies": ["3.gate"],
-      "status": "pending",
-      "breaking": false,
-      "file": "4.1-breakdown-tasks-templates.md",
-      "record": "records/4.1-breakdown-tasks-templates.md"
-    },
-    "4-summary": {
-      "id": "4.summary",
-      "title": "Phase 4 Summary",
-      "priority": "P0",
-      "estimatedTime": "15min",
-      "dependencies": ["4.x"],
-      "status": "pending",
-      "file": "4-summary.md",
-      "record": "records/4-summary.md"
     },
     "4-gate": {
       "id": "4.gate",
       "title": "Phase 4 Exit Gate",
       "priority": "P0",
       "estimatedTime": "30min",
-      "dependencies": ["4.summary"],
+      "dependencies": [
+        "4.summary"
+      ],
       "status": "pending",
-      "breaking": true,
       "file": "4-gate.md",
-      "record": "records/4-gate.md"
+      "record": "records/4-gate.md",
+      "breaking": true
+    },
+    "4-summary": {
+      "id": "4.summary",
+      "title": "Phase 4 Summary",
+      "priority": "P0",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "4.x"
+      ],
+      "status": "pending",
+      "file": "4-summary.md",
+      "record": "records/4-summary.md"
+    },
+    "4.1-breakdown-tasks-templates": {
+      "id": "4.1",
+      "title": "Update breakdown-tasks templates",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "3.gate"
+      ],
+      "status": "pending",
+      "file": "4.1-breakdown-tasks-templates.md",
+      "record": "records/4.1-breakdown-tasks-templates.md"
     },
     "gen-test-cases": {
       "id": "T-test-1",
       "title": "Generate e2e Test Cases",
       "priority": "P1",
       "estimatedTime": "1-2h",
-      "dependencies": ["4.gate"],
+      "dependencies": [
+        "4.gate"
+      ],
       "status": "pending",
       "file": "gen-test-cases.md",
       "record": "records/gen-test-cases.md"
@@ -183,30 +203,48 @@
       "title": "Generate e2e Test Scripts",
       "priority": "P1",
       "estimatedTime": "1-2h",
-      "dependencies": ["T-test-1"],
+      "dependencies": [
+        "T-test-1"
+      ],
       "status": "pending",
       "file": "gen-test-scripts.md",
       "record": "records/gen-test-scripts.md"
-    },
-    "run-e2e-tests": {
-      "id": "T-test-3",
-      "title": "Run e2e Tests",
-      "priority": "P1",
-      "estimatedTime": "30min-1h",
-      "dependencies": ["T-test-2"],
-      "status": "pending",
-      "file": "run-e2e-tests.md",
-      "record": "records/run-e2e-tests.md"
     },
     "graduate-tests": {
       "id": "T-test-4",
       "title": "Graduate Test Scripts",
       "priority": "P1",
       "estimatedTime": "30min",
-      "dependencies": ["T-test-3"],
+      "dependencies": [
+        "T-test-3"
+      ],
       "status": "pending",
       "file": "graduate-tests.md",
       "record": "records/graduate-tests.md"
+    },
+    "run-e2e-tests": {
+      "id": "T-test-3",
+      "title": "Run e2e Tests",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "T-test-2"
+      ],
+      "status": "pending",
+      "file": "run-e2e-tests.md",
+      "record": "records/run-e2e-tests.md"
     }
-  }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
 }
