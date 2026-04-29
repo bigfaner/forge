@@ -170,7 +170,7 @@
       "dependencies": [
         "4.x"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-summary.md",
       "record": "records/4-summary.md"
     },
@@ -182,7 +182,7 @@
       "dependencies": [
         "3.gate"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4.1-breakdown-tasks-templates.md",
       "record": "records/4.1-breakdown-tasks-templates.md"
     },
