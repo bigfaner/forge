@@ -63,7 +63,7 @@
       "title": "init-justfile mixed template (15 recipes with scope)",
       "priority": "P0",
       "estimatedTime": "2-3h",
-      "status": "pending",
+      "status": "completed",
       "file": "1.4-mixed-template.md",
       "record": "records/1.4-mixed-template.md"
     },
