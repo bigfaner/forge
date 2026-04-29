@@ -186,6 +186,24 @@
       "file": "4.1-breakdown-tasks-templates.md",
       "record": "records/4.1-breakdown-tasks-templates.md"
     },
+    "disc-1": {
+      "id": "disc-1",
+      "title": "Fix: add e2e-setup and e2e-verify recipes to Justfile",
+      "priority": "P0",
+      "status": "pending",
+      "file": "disc-1.md",
+      "record": "records/disc-1.md",
+      "breaking": true
+    },
+    "disc-2": {
+      "id": "disc-2",
+      "title": "Fix: add justfile prerequisite check to run-e2e-tests SKILL.md",
+      "priority": "P0",
+      "status": "pending",
+      "file": "disc-2.md",
+      "record": "records/disc-2.md",
+      "breaking": true
+    },
     "gen-test-cases": {
       "id": "T-test-1",
       "title": "Generate e2e Test Cases",
@@ -230,7 +248,7 @@
       "dependencies": [
         "T-test-2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "run-e2e-tests.md",
       "record": "records/run-e2e-tests.md"
     }
