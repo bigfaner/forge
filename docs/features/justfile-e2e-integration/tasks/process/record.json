@@ -1,18 +1,1 @@
-{
-  "taskId": "2.2",
-  "status": "completed",
-  "summary": "Replaced all raw shell commands in run-e2e-tests SKILL.md with just commands: merged npm install + playwright install into just e2e-setup, collapsed three npx tsx spec commands into just test-e2e --feature <slug>, and updated error table entries accordingly.",
-  "filesCreated": [],
-  "filesModified": ["plugins/forge/skills/run-e2e-tests/SKILL.md"],
-  "keyDecisions": [
-    "Three separate npx tsx spec commands collapsed into one just test-e2e --feature <slug> call with combined tee output",
-    "Both npm install and playwright install error table entries replaced with just e2e-setup"
-  ],
-  "testsPassed": 0,
-  "testsFailed": 0,
-  "coverage": -1.0,
-  "acceptanceCriteria": [
-    {"criterion": "grep -c 'npx tsx|npx playwright|npm install' SKILL.md = 0", "met": true},
-    {"criterion": "grep -c 'just e2e-setup|just test-e2e' SKILL.md >= 2", "met": true}
-  ]
-}
+{"taskId":"3.2","status":"completed","summary":"Replaced language-specific verification examples in task-executor.md and error-fixer.md with single just build && just test command","filesCreated":[],"filesModified":["plugins/forge/agents/task-executor.md","plugins/forge/agents/error-fixer.md"],"keyDecisions":["Replaced three language examples (Go/Node/Python) with single just build && just test","Updated prose from Run complete verification suite for your project: to Run just build && just test:"],"testsPassed":0,"testsFailed":0,"coverage":-1.0,"acceptanceCriteria":[{"criterion":"grep -c go test|npm test|pytest|npm run build plugins/forge/agents/task-executor.md = 0","met":true},{"criterion":"grep -c go test|npm test|pytest|npm run build plugins/forge/agents/error-fixer.md = 0","met":true},{"criterion":"grep -c just build && just test plugins/forge/agents/task-executor.md >= 1","met":true},{"criterion":"grep -c just build && just test plugins/forge/agents/error-fixer.md >= 1","met":true}]}

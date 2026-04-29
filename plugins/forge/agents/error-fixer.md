@@ -48,13 +48,10 @@ Output: `Step 3/5: Fixing errors... DONE`
 
 ### Step 4: Verify
 
-Run complete verification suite for your project:
+Run `just build && just test`:
 
-**Examples by language:**
 ```bash
-# Go: go build ./... && go vet ./... && go test -race -cover ./...
-# Node: npm run build && npm test
-# Python: pytest --cov
+just build && just test
 ```
 
 **If any fails, continue fixing. Coverage >= 80% (if applicable).**
