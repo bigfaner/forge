@@ -7,3 +7,4 @@
 7、增加一个改进forge本身的skill或其它能力
 8、优化gen-sitemap的输出结果，避免重复的节点
 9、增加一个eval-test-cases skill
+10、task record命令检查验收标准是否完成？
