@@ -1,22 +1,18 @@
 {
-  "taskId": "disc-1",
+  "taskId": "T-test-3",
   "status": "completed",
-  "summary": "Fixed cli.spec.ts test expectations after task 1.5 migrated just build to just compile. Updated TC-002, TC-015, TC-016 to assert just compile && just test. Fixed TC-005 which referenced non-existent fix-e2e.md template, replaced with run-tasks.md just test assertion.",
-  "filesCreated": [],
-  "filesModified": [
-    "docs/features/justfile-e2e-integration/testing/scripts/cli.spec.ts"
-  ],
+  "summary": "Executed all 4 e2e test spec files for justfile-standard-vocabulary feature. All 25 tests passed across skill-content (1), init-justfile (7), scope-resolution (8), and justfile-execution (9) specs. Generated test results report at testing/results/latest.md.",
+  "filesCreated": ["testing/results/latest.md"],
+  "filesModified": [],
   "keyDecisions": [
-    "TC-005 redirected from fix-e2e.md (non-existent) to run-tasks.md just test verification, matching the template's approach"
+    "Used just test-e2e --feature justfile-standard-vocabulary as the primary verification command",
+    "Tests gracefully handle missing frontend toolchains (no root package.json) via skip/return patterns"
   ],
-  "testsPassed": 20,
+  "testsPassed": 25,
   "testsFailed": 0,
   "coverage": -1.0,
   "acceptanceCriteria": [
-    { "criterion": "TC-002 asserts just compile && just test in task-executor.md", "met": true },
-    { "criterion": "TC-005 no longer references non-existent fix-e2e.md", "met": true },
-    { "criterion": "TC-015 asserts just compile && just test in error-fixer.md", "met": true },
-    { "criterion": "TC-016 asserts just compile && just test in execute-task.md", "met": true },
-    { "criterion": "All 20 tests pass", "met": true }
+    { "criterion": "testing/results/latest.md exists", "met": true },
+    { "criterion": "All tests pass (status = PASS in latest.md)", "met": true }
   ]
 }
