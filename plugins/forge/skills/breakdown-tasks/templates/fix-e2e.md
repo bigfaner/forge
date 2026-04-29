@@ -30,3 +30,7 @@ This is fix attempt round {{round}}. Steps:
 - [ ] Root cause of failure identified
 - [ ] Code or test script fixed
 - [ ] All unit tests pass
+
+## Implementation Notes
+
+After fixing, verify with `just test-e2e --feature <slug>`; all tests must pass before marking this task completed.

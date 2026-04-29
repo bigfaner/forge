@@ -40,3 +40,4 @@ No direct user story mapping. This is a standard test generation task.
 1. Run `/gen-test-scripts` skill
 2. Verify spec files exist under `tests/e2e/<feature>/`
 3. If T-test-1 was skipped, mark this task as skipped as well
+4. After generating spec files, run `just e2e-verify --feature <slug>`; if exit 1 (unresolved `// VERIFY:` markers), task is incomplete — resolve markers before proceeding to T-test-3
