@@ -181,7 +181,7 @@ For each type group, generate a spec file from the corresponding template.
 3. Remove the `// VERIFY:` comment
 4. If no Fact Table value exists, keep the `// VERIFY:` comment as-is so it is visible during code review
 
-**Post-generation check**: After generating all spec files, run `grep -r '// VERIFY:' tests/e2e/<feature>/` to confirm no unresolved markers remain (or note which ones are unresolved for manual review).
+**Post-generation check**: After generating all spec files, run `just e2e-verify --feature <slug>` to confirm no unresolved markers remain. exit 1 = skill incomplete — do not proceed to run-e2e-tests until all `// VERIFY:` markers are resolved.
 
 <EXTREMELY-IMPORTANT>
 **UI tests use Playwright Locator API** (browser driver library only). Using agent-browser in generated spec files is forbidden.
@@ -257,7 +257,7 @@ ls tests/e2e/helpers.ts tests/e2e/package.json tests/e2e/tsconfig.json 2>/dev/nu
 Install dependencies if `node_modules` is missing:
 
 ```bash
-cd tests/e2e && npm install
+just e2e-setup
 ```
 
 ## Output Files

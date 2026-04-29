@@ -1,1 +1,19 @@
-{"taskId":"1.gate","status":"completed","summary":"Phase 1 exit gate verification passed. All 5 checklist items confirmed: grep count=9 (>=4), e2e-setup recipe contains set -euo pipefail/package.json check/node_modules check/playwright install chromium/OK message, e2e-verify recipe contains [arg(feature,long)]/empty-string guard/directory check/VERIFY grep scan/correct exit codes, Step 4 Output Confirmation lists both targets, recipes match Interface 1 and Interface 2 verbatim.","filesCreated":[],"filesModified":[],"keyDecisions":["All Phase 1 content verified correct — no fixes needed"],"testsPassed":0,"testsFailed":0,"coverage":-1.0,"acceptanceCriteria":[{"criterion":"grep -c 'e2e-setup|e2e-verify' plugins/forge/commands/init-justfile.md >= 4","met":true},{"criterion":"e2e-setup recipe contains required elements","met":true},{"criterion":"e2e-verify recipe contains required elements","met":true},{"criterion":"Step 4 Output Confirmation lists both new targets","met":true},{"criterion":"No deviations from tech-design.md Interface 1 and Interface 2 specs","met":true}]}
+{
+  "taskId": "2.1",
+  "status": "completed",
+  "summary": "Replaced raw shell commands in gen-test-scripts SKILL.md Step 4 and Step 5 with just commands. Step 4 post-generation check now uses `just e2e-verify --feature <slug>` with explicit 'exit 1 = skill incomplete' hard gate note. Step 5 deps install now uses `just e2e-setup`.",
+  "filesCreated": [],
+  "filesModified": ["plugins/forge/skills/gen-test-scripts/SKILL.md"],
+  "keyDecisions": [
+    "Used exact phrase 'exit 1 = skill incomplete' to satisfy acceptance criteria AC3",
+    "Kept targeted edits only — no restructuring of SKILL.md"
+  ],
+  "testsPassed": 0,
+  "testsFailed": 0,
+  "coverage": -1.0,
+  "acceptanceCriteria": [
+    {"criterion": "grep -c 'npx playwright install|cd tests/e2e' plugins/forge/skills/gen-test-scripts/SKILL.md = 0", "met": true},
+    {"criterion": "grep -c 'just e2e-verify|just e2e-setup' plugins/forge/skills/gen-test-scripts/SKILL.md >= 2", "met": true},
+    {"criterion": "Step 4 prose contains 'exit 1 = skill incomplete' note", "met": true}
+  ]
+}
