@@ -105,9 +105,8 @@ After verifying the record, check if the completed task was a phase summary task
 If the claimed task had `BREAKING: true` in the claim output:
 
 ```bash
-# Run project-level full test suite
-# Use the same detection logic as `task all-completed`:
-# go test ./... OR npm test OR the testCommand from index.json
+# Run `just test`
+just test
 ```
 
 **If tests fail**:

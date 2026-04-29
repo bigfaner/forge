@@ -68,8 +68,8 @@ Suspected location: <file:line or module>
 Confirm the bug is reproducible in the current codebase before writing any tests.
 
 ```bash
-# Run existing tests to establish baseline
-<project-test-command>   # e.g. npm test, go test ./..., pytest
+# Run just test to establish baseline
+just test
 ```
 
 **Reproduction checklist:**
@@ -104,10 +104,10 @@ Test naming convention:
 // e.g. "bug: returns null when input is empty string"
 ```
 
-Run the new test — it **must fail** before the fix:
+Run `just test` — it **must fail** before the fix:
 
 ```bash
-<project-test-command> --testNamePattern "bug:"
+just test
 ```
 
 <HARD-RULE>
@@ -126,10 +126,10 @@ Add an e2e test only when the bug is observable at the API, CLI, or UI surface.
 
 If no feature slug applies, add to `tests/e2e/` directly.
 
-Run the e2e test — it **must fail** before the fix:
+Run `just test-e2e --feature <slug>` — it **must fail** before the fix:
 
 ```bash
-npx tsx <spec-file> 2>&1
+just test-e2e --feature <slug>
 ```
 
 ---
@@ -153,14 +153,14 @@ With failing tests in place, implement the minimal fix.
 
 ## Step 5: Verify
 
-Run the full test suite. All tests must pass — both the new ones and the pre-existing ones.
+Run `just build && just test`. All must pass.
 
 ```bash
 # Full suite
-<project-test-command>
+just test
 
 # E2E (if written in Step 3b)
-npx tsx <spec-file> 2>&1
+just test-e2e --feature <slug>
 ```
 
 **Verification checklist:**
