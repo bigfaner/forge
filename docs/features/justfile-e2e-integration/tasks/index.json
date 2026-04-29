@@ -47,7 +47,7 @@
       "dependencies": [
         "2.summary"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2-gate.md",
       "record": "records/2-gate.md",
       "breaking": true
