@@ -1,25 +1,22 @@
 {
-	"taskId": "3.gate",
+	"taskId": "T-test-1",
 	"status": "completed",
-	"summary": "Phase 3 Exit Gate verification for forge project justfile as mixed project reference implementation. All 15 standard commands present, scope dispatch correct, boundary markers present, 77/77 e2e tests passing. No deviations from design spec.",
-	"filesCreated": [],
+	"summary": "Generated 25 structured CLI test cases from PRD acceptance criteria (5 user stories + spec sections). All test cases traceable to specific PRD sources, grouped by type (UI/API/CLI), with Target and Test ID fields. No UI or API test cases needed -- feature is purely CLI-based.",
+	"filesCreated": ["docs/features/justfile-standard-vocabulary/testing/test-cases.md"],
 	"filesModified": [],
 	"keyDecisions": [
-		"Scope dispatch mechanism fully verified via e2e tests (TC-FJ-011 through TC-FJ-014) — actual toolchain commands fail at root level because forge project has Go in task-cli/ and JS in web/, but the dispatch logic itself is correct",
-		"No deviations from design spec — all 15 commands, boundary markers, scope parameter behavior, and error handling match Interface 1-2 and Model 5 exactly"
+		"All 25 test cases classified as CLI type -- no UI or API components in this feature",
+		"P0 priority assigned to 10 test cases covering core flows: standardized commands, project detection, scope validation, exit codes, and full vocabulary presence",
+		"Test cases cover all 5 user stories plus spec sections 5.1-5.3 (scope validation rules, adaptive generation, command vocabulary)",
+		"4 target categories used: cli/justfile (8), cli/init-justfile (6), cli/breakdown-tasks (4), cli/skill-execution (5), plus 2 additional edge cases"
 	],
-	"testsPassed": 77,
+	"testsPassed": 0,
 	"testsFailed": 0,
 	"coverage": -1.0,
 	"acceptanceCriteria": [
-		{"criterion": "Forge project justfile contains all 15 standard commands", "met": true},
-		{"criterion": "just project-type returns mixed with exit code 0", "met": true},
-		{"criterion": "just compile frontend executes without error (scope dispatch correct)", "met": true},
-		{"criterion": "just compile backend executes without error (scope dispatch correct)", "met": true},
-		{"criterion": "just compile (no scope) executes both frontend and backend (scope dispatch correct)", "met": true},
-		{"criterion": "Invalid scope (just compile foo) exits with code 1 and stderr message", "met": true},
-		{"criterion": "Boundary markers present in justfile", "met": true},
-		{"criterion": "Existing e2e tests pass: just test-e2e --feature justfile-e2e-integration", "met": true},
-		{"criterion": "No deviations from design spec (or deviations are documented as decisions)", "met": true}
+		{ "criterion": "testing/test-cases.md file created", "met": true },
+		{ "criterion": "Each test case includes Target and Test ID fields", "met": true },
+		{ "criterion": "All test cases traceable to PRD acceptance criteria", "met": true },
+		{ "criterion": "Test cases grouped by type (UI -> API -> CLI)", "met": true }
 	]
 }
