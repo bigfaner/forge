@@ -236,7 +236,7 @@
       "dependencies": [
         "T-test-3"
       ],
-      "status": "pending",
+      "status": "blocked",
       "file": "graduate-tests.md",
       "record": "records/graduate-tests.md"
     },

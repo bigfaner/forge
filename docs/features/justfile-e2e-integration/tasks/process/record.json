@@ -1,22 +1,19 @@
 {
-  "taskId": "disc-1",
-  "status": "completed",
-  "summary": "Added e2e-setup and e2e-verify recipes to the project Justfile. e2e-setup installs npm deps and playwright chromium idempotently, exits 1 if tests/e2e/package.json is missing. e2e-verify --feature <slug> scans tests/e2e/<slug>/*.spec.ts for // VERIFY: markers, exits 1 with file:line output if found, exits 0 with OK message if clean.",
+  "taskId": "T-test-4",
+  "status": "blocked",
+  "summary": "Gate check failed: testing/results/latest.md shows Result=FAIL (7/20 tests failing). Blocked on TC-003, TC-004, TC-010, TC-011, TC-012, TC-013, TC-020 — all require missing Justfile recipes (e2e-verify, e2e-setup) and a justfile reference in run-e2e-tests SKILL.md. Will unblock once fix tasks complete.",
   "filesCreated": [],
-  "filesModified": ["Justfile"],
+  "filesModified": [],
   "keyDecisions": [
-    "Copied recipe definitions verbatim from init-justfile.md to ensure consistency with documented contract",
-    "Used [arg('feature', long)] syntax requiring just >= 1.50.0 (confirmed installed at 1.50.0)"
+    "Task is a gate: e2e tests must pass before graduation proceeds",
+    "Status set to blocked per implementation notes — waiting for fix tasks"
   ],
   "testsPassed": 0,
   "testsFailed": 0,
   "coverage": -1.0,
   "acceptanceCriteria": [
-    {"criterion": "e2e-setup recipe added to Justfile", "met": true},
-    {"criterion": "e2e-setup exits 1 if tests/e2e/package.json missing", "met": true},
-    {"criterion": "e2e-setup installs npm deps and playwright chromium idempotently", "met": true},
-    {"criterion": "e2e-verify --feature <slug> recipe added to Justfile", "met": true},
-    {"criterion": "e2e-verify exits 1 with file:line output if // VERIFY: markers found", "met": true},
-    {"criterion": "e2e-verify exits 0 with OK message if no markers found", "met": true}
+    {"criterion": "testing/results/latest.md shows status = PASS", "met": false},
+    {"criterion": "tests/e2e/.graduated/<slug> marker exists", "met": false},
+    {"criterion": "Spec files present in tests/e2e/<category>/", "met": false}
   ]
 }
