@@ -122,7 +122,7 @@
       "dependencies": [
         "1.gate"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2.2-scope-annotation.md",
       "record": "records/2.2-scope-annotation.md",
       "breaking": true
