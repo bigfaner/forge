@@ -168,7 +168,7 @@
       "id": "disc-1",
       "title": "Fix: cli.spec.ts test expectations after task 1.5 migration",
       "priority": "P1",
-      "status": "pending",
+      "status": "completed",
       "file": "disc-1.md",
       "record": "records/disc-1.md",
       "breaking": true

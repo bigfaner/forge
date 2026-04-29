@@ -1,22 +1,22 @@
 {
-	"taskId": "T-test-1",
-	"status": "completed",
-	"summary": "Generated 25 structured CLI test cases from PRD acceptance criteria (5 user stories + spec sections). All test cases traceable to specific PRD sources, grouped by type (UI/API/CLI), with Target and Test ID fields. No UI or API test cases needed -- feature is purely CLI-based.",
-	"filesCreated": ["docs/features/justfile-standard-vocabulary/testing/test-cases.md"],
-	"filesModified": [],
-	"keyDecisions": [
-		"All 25 test cases classified as CLI type -- no UI or API components in this feature",
-		"P0 priority assigned to 10 test cases covering core flows: standardized commands, project detection, scope validation, exit codes, and full vocabulary presence",
-		"Test cases cover all 5 user stories plus spec sections 5.1-5.3 (scope validation rules, adaptive generation, command vocabulary)",
-		"4 target categories used: cli/justfile (8), cli/init-justfile (6), cli/breakdown-tasks (4), cli/skill-execution (5), plus 2 additional edge cases"
-	],
-	"testsPassed": 0,
-	"testsFailed": 0,
-	"coverage": -1.0,
-	"acceptanceCriteria": [
-		{ "criterion": "testing/test-cases.md file created", "met": true },
-		{ "criterion": "Each test case includes Target and Test ID fields", "met": true },
-		{ "criterion": "All test cases traceable to PRD acceptance criteria", "met": true },
-		{ "criterion": "Test cases grouped by type (UI -> API -> CLI)", "met": true }
-	]
+  "taskId": "disc-1",
+  "status": "completed",
+  "summary": "Fixed cli.spec.ts test expectations after task 1.5 migrated just build to just compile. Updated TC-002, TC-015, TC-016 to assert just compile && just test. Fixed TC-005 which referenced non-existent fix-e2e.md template, replaced with run-tasks.md just test assertion.",
+  "filesCreated": [],
+  "filesModified": [
+    "docs/features/justfile-e2e-integration/testing/scripts/cli.spec.ts"
+  ],
+  "keyDecisions": [
+    "TC-005 redirected from fix-e2e.md (non-existent) to run-tasks.md just test verification, matching the template's approach"
+  ],
+  "testsPassed": 20,
+  "testsFailed": 0,
+  "coverage": -1.0,
+  "acceptanceCriteria": [
+    { "criterion": "TC-002 asserts just compile && just test in task-executor.md", "met": true },
+    { "criterion": "TC-005 no longer references non-existent fix-e2e.md", "met": true },
+    { "criterion": "TC-015 asserts just compile && just test in error-fixer.md", "met": true },
+    { "criterion": "TC-016 asserts just compile && just test in execute-task.md", "met": true },
+    { "criterion": "All 20 tests pass", "met": true }
+  ]
 }
