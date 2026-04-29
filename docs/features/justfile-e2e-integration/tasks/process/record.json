@@ -1,1 +1,20 @@
-{"taskId":"3.2","status":"completed","summary":"Replaced language-specific verification examples in task-executor.md and error-fixer.md with single just build && just test command","filesCreated":[],"filesModified":["plugins/forge/agents/task-executor.md","plugins/forge/agents/error-fixer.md"],"keyDecisions":["Replaced three language examples (Go/Node/Python) with single just build && just test","Updated prose from Run complete verification suite for your project: to Run just build && just test:"],"testsPassed":0,"testsFailed":0,"coverage":-1.0,"acceptanceCriteria":[{"criterion":"grep -c go test|npm test|pytest|npm run build plugins/forge/agents/task-executor.md = 0","met":true},{"criterion":"grep -c go test|npm test|pytest|npm run build plugins/forge/agents/error-fixer.md = 0","met":true},{"criterion":"grep -c just build && just test plugins/forge/agents/task-executor.md >= 1","met":true},{"criterion":"grep -c just build && just test plugins/forge/agents/error-fixer.md >= 1","met":true}]}
+{
+  "taskId": "3.gate",
+  "status": "completed",
+  "summary": "Phase 3 exit gate verification passed. All 7 checklist items confirmed: no raw language-specific commands remain in fix-bug.md, run-tasks.md, task-executor.md, error-fixer.md, execute-task.md, record-task/SKILL.md; improve-harness/SKILL.md contains 'just test' reference.",
+  "filesCreated": [],
+  "filesModified": [],
+  "keyDecisions": ["All 7 gate checks passed with zero raw language-specific commands found in the 6 files that should have none, and 1 'just test' reference confirmed in improve-harness/SKILL.md"],
+  "testsPassed": 0,
+  "testsFailed": 0,
+  "coverage": -1.0,
+  "acceptanceCriteria": [
+    {"criterion": "grep -c 'project-test-command|npx tsx' plugins/forge/commands/fix-bug.md = 0", "met": true},
+    {"criterion": "grep -c 'go test|npm test|pytest' plugins/forge/commands/run-tasks.md = 0", "met": true},
+    {"criterion": "grep -c 'go test|npm test|pytest|npm run build' plugins/forge/agents/task-executor.md = 0", "met": true},
+    {"criterion": "grep -c 'go test|npm test|pytest|npm run build' plugins/forge/agents/error-fixer.md = 0", "met": true},
+    {"criterion": "grep -c 'project-specific verification' plugins/forge/commands/execute-task.md = 0", "met": true},
+    {"criterion": "grep -c 'go test|npm test.*coverage|pytest --cov' plugins/forge/skills/record-task/SKILL.md = 0", "met": true},
+    {"criterion": "grep -c 'just test' plugins/forge/skills/improve-harness/SKILL.md >= 1", "met": true}
+  ]
+}
