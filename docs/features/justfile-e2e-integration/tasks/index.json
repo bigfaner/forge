@@ -60,7 +60,7 @@
       "dependencies": [
         "2.x"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2-summary.md",
       "record": "records/2-summary.md"
     },
