@@ -1,25 +1,22 @@
 {
-  "taskId": "disc-2",
+  "taskId": "disc-1",
   "status": "completed",
-  "summary": "Added Justfile prerequisite check to run-e2e-tests SKILL.md. The Prerequisites section now includes a row for 'Justfile with e2e-setup recipe' and a bash check that verifies the Justfile exists and contains the e2e-setup recipe, with a prompt to run /init-justfile if missing.",
+  "summary": "Added e2e-setup and e2e-verify recipes to the project Justfile. e2e-setup installs npm deps and playwright chromium idempotently, exits 1 if tests/e2e/package.json is missing. e2e-verify --feature <slug> scans tests/e2e/<slug>/*.spec.ts for // VERIFY: markers, exits 1 with file:line output if found, exits 0 with OK message if clean.",
   "filesCreated": [],
-  "filesModified": ["plugins/forge/skills/run-e2e-tests/SKILL.md"],
-  "keyDecisions": ["Added Justfile existence and e2e-setup recipe check before other prerequisite checks so users are directed to /init-justfile early in the workflow"],
+  "filesModified": ["Justfile"],
+  "keyDecisions": [
+    "Copied recipe definitions verbatim from init-justfile.md to ensure consistency with documented contract",
+    "Used [arg('feature', long)] syntax requiring just >= 1.50.0 (confirmed installed at 1.50.0)"
+  ],
   "testsPassed": 0,
   "testsFailed": 0,
   "coverage": -1.0,
   "acceptanceCriteria": [
-    {
-      "criterion": "Prerequisites section references Justfile existence check",
-      "met": true
-    },
-    {
-      "criterion": "Prerequisites section references e2e-setup recipe check",
-      "met": true
-    },
-    {
-      "criterion": "User is prompted to run /init-justfile when Justfile or e2e-setup recipe is missing",
-      "met": true
-    }
+    {"criterion": "e2e-setup recipe added to Justfile", "met": true},
+    {"criterion": "e2e-setup exits 1 if tests/e2e/package.json missing", "met": true},
+    {"criterion": "e2e-setup installs npm deps and playwright chromium idempotently", "met": true},
+    {"criterion": "e2e-verify --feature <slug> recipe added to Justfile", "met": true},
+    {"criterion": "e2e-verify exits 1 with file:line output if // VERIFY: markers found", "met": true},
+    {"criterion": "e2e-verify exits 0 with OK message if no markers found", "met": true}
   ]
 }
