@@ -160,7 +160,7 @@
       "dependencies": [
         "2.gate"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3.1-forge-justfile.md",
       "record": "records/3.1-forge-justfile.md"
     },
