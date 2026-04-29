@@ -13,7 +13,7 @@
       "dependencies": [
         "1.summary"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "1-gate.md",
       "record": "records/1-gate.md",
       "breaking": true
