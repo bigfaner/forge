@@ -14,6 +14,10 @@ type Task struct {
 	File          string   `json:"file"`
 	Record        string   `json:"record"`
 	Breaking      bool     `json:"breaking,omitempty"`
+	// Scope indicates the task's domain: "frontend", "backend", or "all".
+	// Default is "all" (enforced by consumers, not a Go zero value).
+	// Omitempty allows existing index.json files without scope to remain valid.
+	Scope string `json:"scope,omitempty"`
 }
 
 // TaskIndex represents the index.json structure for a feature.
@@ -42,6 +46,8 @@ type TaskState struct {
 	Record        string   `json:"record"`
 	StartedTime   string   `json:"startedTime"`
 	Breaking      bool     `json:"breaking,omitempty"`
+	// Scope mirrors Task.Scope for the claimed task.
+	Scope string `json:"scope,omitempty"`
 }
 
 // RecordData represents the JSON input for record generation.

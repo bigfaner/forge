@@ -190,6 +190,7 @@ type Task struct {
     File          string   `json:"file"`                    // Task file
     Record        string   `json:"record"`                  // Record file
     Breaking      bool     `json:"breaking,omitempty"`      // Global change flag; triggers full test suite on completion
+    Scope         string   `json:"scope,omitempty"`         // Task scope: frontend/backend/all (default: all)
 }
 ```
 

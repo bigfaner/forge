@@ -61,6 +61,12 @@
             "type": "boolean",
             "description": "When true, task completion triggers full test suite across all layers",
             "default": false
+          },
+          "scope": {
+            "type": "string",
+            "enum": ["frontend", "backend", "all"],
+            "default": "all",
+            "description": "Task scope: frontend/backend/all. Determines which project layer the task affects."
           }
         }
       }

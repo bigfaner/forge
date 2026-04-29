@@ -1,0 +1,228 @@
+{
+  "feature": "justfile-standard-vocabulary",
+  "prd": "prd/prd-spec.md",
+  "design": "design/tech-design.md",
+  "created": "2026-04-30",
+  "status": "planning",
+  "tasks": {
+    "1-gate": {
+      "id": "1.gate",
+      "title": "Phase 1 Exit Gate",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1.summary"
+      ],
+      "status": "pending",
+      "file": "1-gate.md",
+      "record": "records/1-gate.md",
+      "breaking": true
+    },
+    "1-summary": {
+      "id": "1.summary",
+      "title": "Phase 1 Summary",
+      "priority": "P0",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "1.x"
+      ],
+      "status": "pending",
+      "file": "1-summary.md",
+      "record": "records/1-summary.md"
+    },
+    "1.1-task-cli-scope-field": {
+      "id": "1.1",
+      "title": "task-cli scope field: Go structs + JSON schema",
+      "priority": "P0",
+      "estimatedTime": "1-2h",
+      "status": "completed",
+      "file": "1.1-task-cli-scope-field.md",
+      "record": "records/1.1-task-cli-scope-field.md",
+      "breaking": true
+    },
+    "1.2-backend-template": {
+      "id": "1.2",
+      "title": "init-justfile backend template (15 recipes)",
+      "priority": "P0",
+      "estimatedTime": "1-2h",
+      "status": "pending",
+      "file": "1.2-backend-template.md",
+      "record": "records/1.2-backend-template.md"
+    },
+    "1.3-frontend-template": {
+      "id": "1.3",
+      "title": "init-justfile frontend template (15 recipes)",
+      "priority": "P0",
+      "estimatedTime": "1-2h",
+      "status": "pending",
+      "file": "1.3-frontend-template.md",
+      "record": "records/1.3-frontend-template.md"
+    },
+    "1.4-mixed-template": {
+      "id": "1.4",
+      "title": "init-justfile mixed template (15 recipes with scope)",
+      "priority": "P0",
+      "estimatedTime": "2-3h",
+      "status": "pending",
+      "file": "1.4-mixed-template.md",
+      "record": "records/1.4-mixed-template.md"
+    },
+    "1.5-skill-migration": {
+      "id": "1.5",
+      "title": "Skill/agent/command migration + validation",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "status": "pending",
+      "file": "1.5-skill-migration.md",
+      "record": "records/1.5-skill-migration.md"
+    },
+    "2-gate": {
+      "id": "2.gate",
+      "title": "Phase 2 Exit Gate",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "2.summary"
+      ],
+      "status": "pending",
+      "file": "2-gate.md",
+      "record": "records/2-gate.md",
+      "breaking": true
+    },
+    "2-summary": {
+      "id": "2.summary",
+      "title": "Phase 2 Summary",
+      "priority": "P0",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "2.x"
+      ],
+      "status": "pending",
+      "file": "2-summary.md",
+      "record": "records/2-summary.md"
+    },
+    "2.1-detection-assembly": {
+      "id": "2.1",
+      "title": "init-justfile project-type detection + template assembly",
+      "priority": "P0",
+      "estimatedTime": "2-3h",
+      "dependencies": [
+        "1.gate"
+      ],
+      "status": "pending",
+      "file": "2.1-detection-assembly.md",
+      "record": "records/2.1-detection-assembly.md",
+      "breaking": true
+    },
+    "2.2-scope-annotation": {
+      "id": "2.2",
+      "title": "breakdown-tasks scope annotation prompt",
+      "priority": "P0",
+      "estimatedTime": "1-2h",
+      "dependencies": [
+        "1.gate"
+      ],
+      "status": "pending",
+      "file": "2.2-scope-annotation.md",
+      "record": "records/2.2-scope-annotation.md",
+      "breaking": true
+    },
+    "3-gate": {
+      "id": "3.gate",
+      "title": "Phase 3 Exit Gate",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "3.summary"
+      ],
+      "status": "pending",
+      "file": "3-gate.md",
+      "record": "records/3-gate.md",
+      "breaking": true
+    },
+    "3-summary": {
+      "id": "3.summary",
+      "title": "Phase 3 Summary",
+      "priority": "P0",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "3.x"
+      ],
+      "status": "pending",
+      "file": "3-summary.md",
+      "record": "records/3-summary.md"
+    },
+    "3.1-forge-justfile": {
+      "id": "3.1",
+      "title": "Update forge project justfile as mixed reference",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "2.gate"
+      ],
+      "status": "pending",
+      "file": "3.1-forge-justfile.md",
+      "record": "records/3.1-forge-justfile.md"
+    },
+    "gen-test-cases": {
+      "id": "T-test-1",
+      "title": "Generate e2e Test Cases",
+      "priority": "P1",
+      "estimatedTime": "1-2h",
+      "dependencies": [
+        "3.gate"
+      ],
+      "status": "pending",
+      "file": "gen-test-cases.md",
+      "record": "records/gen-test-cases.md"
+    },
+    "gen-test-scripts": {
+      "id": "T-test-2",
+      "title": "Generate e2e Test Scripts",
+      "priority": "P1",
+      "estimatedTime": "1-2h",
+      "dependencies": [
+        "T-test-1"
+      ],
+      "status": "pending",
+      "file": "gen-test-scripts.md",
+      "record": "records/gen-test-scripts.md"
+    },
+    "graduate-tests": {
+      "id": "T-test-4",
+      "title": "Graduate Test Scripts",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "T-test-3"
+      ],
+      "status": "pending",
+      "file": "graduate-tests.md",
+      "record": "records/graduate-tests.md"
+    },
+    "run-e2e-tests": {
+      "id": "T-test-3",
+      "title": "Run e2e Tests",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "T-test-2"
+      ],
+      "status": "pending",
+      "file": "run-e2e-tests.md",
+      "record": "records/run-e2e-tests.md"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
