@@ -1,0 +1,35 @@
+[
+  {
+    "phase": 1,
+    "name": "Foundation",
+    "source": "fallback",
+    "gates": [
+      {
+        "afterPhase": 1,
+        "description": "Verify Go code compiles, JSON schema is valid, recipe templates are syntactically correct, all skill migrations applied"
+      }
+    ]
+  },
+  {
+    "phase": 2,
+    "name": "Integration",
+    "source": "fallback",
+    "gates": [
+      {
+        "afterPhase": 2,
+        "description": "Verify init-justfile generates correct justfile for 3 project types, breakdown-tasks outputs scope field in index.json"
+      }
+    ]
+  },
+  {
+    "phase": 3,
+    "name": "Reference Implementation",
+    "source": "fallback",
+    "gates": [
+      {
+        "afterPhase": 3,
+        "description": "Verify forge project justfile works as mixed project reference implementation"
+      }
+    ]
+  }
+]

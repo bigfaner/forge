@@ -8,7 +8,7 @@ updated: "2026-04-23"
 
 | Category | File | Decisions | Last Updated |
 |----------|------|-----------|--------------|
-| Architecture | architecture.md | 0 | - |
+| Architecture | architecture.md | 1 | 2026-04-30 |
 | Interface | interface.md | 0 | - |
 | Data Model | data-model.md | 0 | - |
 | Dependencies | dependencies.md | 0 | - |
@@ -21,3 +21,4 @@ updated: "2026-04-23"
 
 | Date | Feature | Category | Decision | Source |
 |------|---------|----------|----------|--------|
+| 2026-04-30 | justfile-standard-vocabulary | Architecture | Defer `task scope` command until scope resolution fails in practice | manual |

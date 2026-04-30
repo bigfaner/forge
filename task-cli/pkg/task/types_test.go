@@ -160,6 +160,153 @@ func TestTaskStateJSONRoundTrip(t *testing.T) {
 	}
 }
 
+func TestTaskScopeSerialization(t *testing.T) {
+	t.Run("scope field serializes when set", func(t *testing.T) {
+		task := Task{
+			ID:     "1.1",
+			Title:  "Frontend Task",
+			Scope:  "frontend",
+			Status: "pending",
+			File:   "tasks/1.1.md",
+		}
+
+		data, err := json.Marshal(task)
+		if err != nil {
+			t.Fatalf("json.Marshal failed: %v", err)
+		}
+
+		got := string(data)
+		if !contains(got, `"scope":"frontend"`) {
+			t.Errorf("JSON = %s, want to contain %q", got, `"scope":"frontend"`)
+		}
+	})
+
+	t.Run("scope field omitted when empty", func(t *testing.T) {
+		task := Task{
+			ID:     "1.1",
+			Title:  "Task Without Scope",
+			Scope:  "",
+			Status: "pending",
+			File:   "tasks/1.1.md",
+		}
+
+		data, err := json.Marshal(task)
+		if err != nil {
+			t.Fatalf("json.Marshal failed: %v", err)
+		}
+
+		got := string(data)
+		if contains(got, `"scope"`) {
+			t.Errorf("JSON = %s, should NOT contain scope field when empty", got)
+		}
+	})
+
+	t.Run("scope field deserializes from JSON", func(t *testing.T) {
+		jsonStr := `{"id":"1.1","title":"Backend Task","scope":"backend","status":"pending","file":"tasks/1.1.md"}`
+
+		var task Task
+		if err := json.Unmarshal([]byte(jsonStr), &task); err != nil {
+			t.Fatalf("json.Unmarshal failed: %v", err)
+		}
+
+		if task.Scope != "backend" {
+			t.Errorf("Scope = %q, want %q", task.Scope, "backend")
+		}
+	})
+
+	t.Run("scope field defaults to empty when missing in JSON", func(t *testing.T) {
+		jsonStr := `{"id":"1.1","title":"No Scope Task","status":"pending","file":"tasks/1.1.md"}`
+
+		var task Task
+		if err := json.Unmarshal([]byte(jsonStr), &task); err != nil {
+			t.Fatalf("json.Unmarshal failed: %v", err)
+		}
+
+		if task.Scope != "" {
+			t.Errorf("Scope = %q, want empty string when missing", task.Scope)
+		}
+	})
+
+	t.Run("scope roundtrip preserves value", func(t *testing.T) {
+		task := Task{
+			ID:     "2.3",
+			Title:  "Mixed Task",
+			Scope:  "all",
+			Status: "pending",
+			File:   "tasks/2.3.md",
+		}
+
+		data, err := json.Marshal(task)
+		if err != nil {
+			t.Fatalf("json.Marshal failed: %v", err)
+		}
+
+		var unmarshaled Task
+		if err := json.Unmarshal(data, &unmarshaled); err != nil {
+			t.Fatalf("json.Unmarshal failed: %v", err)
+		}
+
+		if unmarshaled.Scope != task.Scope {
+			t.Errorf("Scope roundtrip = %q, want %q", unmarshaled.Scope, task.Scope)
+		}
+	})
+}
+
+func TestTaskStateScopeSerialization(t *testing.T) {
+	t.Run("TaskState scope serializes when set", func(t *testing.T) {
+		state := &TaskState{
+			TaskID:      "1.1",
+			Key:         "task1",
+			Title:       "Frontend Task",
+			Scope:       "frontend",
+			StartedTime: "2024-01-01 10:00",
+		}
+
+		data, err := json.Marshal(state)
+		if err != nil {
+			t.Fatalf("json.Marshal failed: %v", err)
+		}
+
+		got := string(data)
+		if !contains(got, `"scope":"frontend"`) {
+			t.Errorf("JSON = %s, want to contain %q", got, `"scope":"frontend"`)
+		}
+	})
+
+	t.Run("TaskState scope omitted when empty", func(t *testing.T) {
+		state := &TaskState{
+			TaskID:      "1.1",
+			Key:         "task1",
+			Title:       "Task",
+			Scope:       "",
+			StartedTime: "2024-01-01 10:00",
+		}
+
+		data, err := json.Marshal(state)
+		if err != nil {
+			t.Fatalf("json.Marshal failed: %v", err)
+		}
+
+		got := string(data)
+		if contains(got, `"scope"`) {
+			t.Errorf("JSON = %s, should NOT contain scope field when empty", got)
+		}
+	})
+
+	t.Run("TaskState scope deserializes from JSON", func(t *testing.T) {
+		jsonStr := `{"task_id":"1.1","key":"task1","title":"Backend Task","scope":"backend","startedTime":"2024-01-01 10:00"}`
+
+		var state TaskState
+		if err := json.Unmarshal([]byte(jsonStr), &state); err != nil {
+			t.Fatalf("json.Unmarshal failed: %v", err)
+		}
+
+		if state.Scope != "backend" {
+			t.Errorf("Scope = %q, want %q", state.Scope, "backend")
+		}
+	})
+}
+
 func TestRecordDataJSONRoundTrip(t *testing.T) {
 	rd := &RecordData{
 		Status:        "completed",

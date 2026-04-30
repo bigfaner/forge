@@ -33,12 +33,12 @@ describe('Skill/Agent file content checks', () => {
     );
   });
 
-  // Traceability: TC-002 → Story 2 / AC-1
-  test('TC-002: task-executor Step 3 uses just build && just test', () => {
+  // Traceability: TC-002 → Story 2 / AC-1 (migrated: just build → just compile per tech-design)
+  test('TC-002: task-executor Step 3 uses just compile && just test', () => {
     const content = readProjectFile('plugins/forge/agents/task-executor.md');
     assert.ok(
-      fileContains(content, 'just build && just test'),
-      'Expected "just build && just test" to appear in task-executor.md',
+      fileContains(content, 'just compile && just test'),
+      'Expected "just compile && just test" to appear in task-executor.md',
     );
     assert.ok(
       fileNotContains(content, 'go test ./...'),
@@ -54,16 +54,20 @@ describe('Skill/Agent file content checks', () => {
     );
   });
 
-  // Traceability: TC-005 → Story 4 / AC-1
-  test('TC-005: fix-e2e template uses just test-e2e for post-fix verification', () => {
-    const content = readProjectFile('plugins/forge/skills/breakdown-tasks/templates/fix-e2e.md');
+  // Traceability: TC-005 → Story 5 / AC-2 (verify run-tasks uses standard just commands)
+  test('TC-005: run-tasks Breaking Gate uses just test for verification', () => {
+    const content = readProjectFile('plugins/forge/commands/run-tasks.md');
     assert.ok(
-      fileContains(content, 'just test-e2e --feature <slug>'),
-      'Expected "just test-e2e --feature <slug>" to appear in fix-e2e.md Implementation Notes',
+      fileContains(content, 'just test'),
+      'Expected "just test" to appear in run-tasks.md',
     );
     assert.ok(
-      fileNotContains(content, 'npx tsx'),
-      'Expected "npx tsx" NOT to appear in fix-e2e.md',
+      fileNotContains(content, 'go test ./...'),
+      'Expected "go test ./..." NOT to appear in run-tasks.md',
+    );
+    assert.ok(
+      fileNotContains(content, 'npm test'),
+      'Expected "npm test" NOT to appear in run-tasks.md',
     );
   });
 
@@ -146,12 +150,12 @@ describe('Skill/Agent file content checks', () => {
     );
   });
 
-  // Traceability: TC-015 → Spec Section 5.2
-  test('TC-015: error-fixer uses just build && just test', () => {
+  // Traceability: TC-015 → Spec Section 5.2 (migrated: just build → just compile per tech-design)
+  test('TC-015: error-fixer uses just compile && just test', () => {
     const content = readProjectFile('plugins/forge/agents/error-fixer.md');
     assert.ok(
-      fileContains(content, 'just build && just test'),
-      'Expected "just build && just test" to appear in error-fixer.md',
+      fileContains(content, 'just compile && just test'),
+      'Expected "just compile && just test" to appear in error-fixer.md',
     );
     assert.ok(
       fileNotContains(content, 'go build ./...'),
@@ -175,12 +179,12 @@ describe('Skill/Agent file content checks', () => {
     );
   });
 
-  // Traceability: TC-016 → Spec Section 5.2
-  test('TC-016: execute-task Step 3 uses just build && just test', () => {
+  // Traceability: TC-016 → Spec Section 5.2 (migrated: just build → just compile per tech-design)
+  test('TC-016: execute-task Step 3 uses just compile && just test', () => {
     const content = readProjectFile('plugins/forge/commands/execute-task.md');
     assert.ok(
-      fileContains(content, 'just build && just test'),
-      'Expected "just build && just test" to appear in execute-task.md Step 3',
+      fileContains(content, 'just compile && just test'),
+      'Expected "just compile && just test" to appear in execute-task.md Step 3',
     );
   });
 

@@ -54,6 +54,7 @@ task claim
 - `TASK_KEY` (e.g., "2.1-implementation")
 - `TASK_FILE` (e.g., "2.1-implementation.md")
 - `BREAKING` (e.g., "true" or absent)
+- `SCOPE` (e.g., "frontend", "backend", or "all" — defaults to "all" if absent)
 
 ### Step 2: Dispatch with Timeout
 
@@ -72,6 +73,7 @@ Agent(
   prompt="TASK_KEY: {{KEY}}
 TASK_ID: {{ID}}
 TASK_FILE: {{FILE}}
+SCOPE: {{SCOPE}}
 {{PHASE_SUMMARY_SECTION}}
 
 IMPORTANT: Do NOT claim or start any other tasks after completing this one. Stop after recording the task result."
@@ -105,9 +107,22 @@ After verifying the record, check if the completed task was a phase summary task
 If the claimed task had `BREAKING: true` in the claim output:
 
 ```bash
-# Run `just test`
-just test
+# Pre-flight: verify justfile and test recipe exist
+if [ ! -f justfile ] && [ ! -f Justfile ]; then
+    echo "Error: justfile not found — run /init-justfile first" >&2
+    exit 1
+fi
+just --list 2>/dev/null | grep -q "^    test " || {
+    echo "Error: 'test' recipe not found in justfile" >&2
+    exit 1
+}
 ```
+
+```bash
+just test [scope]
+```
+
+Apply the **Scope Resolution** protocol in guide.md — use the `SCOPE` extracted from the claim output in Step 1.
 
 **If tests fail**:
 - Option A: Dispatch error-fixer with failure context (existing behavior)

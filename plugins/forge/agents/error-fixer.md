@@ -48,10 +48,8 @@ Output: `Step 3/5: Fixing errors... DONE`
 
 ### Step 4: Verify
 
-Run `just build && just test`:
-
 ```bash
-just build && just test
+just compile [scope] && just test [scope]
 ```
 
 **If any fails, continue fixing. Coverage >= 80% (if applicable).**

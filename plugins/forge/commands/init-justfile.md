@@ -28,10 +28,19 @@ If version < 1.50.0: `cargo install just`
 
 | Target | Required | Purpose |
 |--------|----------|---------|
+| `project-type` | Yes | Return project type identifier (`frontend`/`backend`/`mixed`) |
+| `compile` | No | Type-check and transpile for fast feedback |
+| `build` | No | Full compile and package |
+| `run` | No | Start the service |
+| `dev` | No | Hot-reload development mode |
 | `test` | Yes | Unit + integration tests |
 | `test-e2e` | No | E2E tests |
-| `build` | No | Compile/package |
 | `lint` | No | Static analysis |
+| `fmt` | No | Auto-format code |
+| `check` | No | lint + compile (CI gate) |
+| `clean` | No | Remove build artifacts |
+| `install` | No | Install dependencies (idempotent) |
+| `ci` | No | Full CI pipeline |
 | `e2e-setup` | No | Install e2e dependencies (idempotent) |
 | `e2e-verify` | No | Check for unresolved `// VERIFY:` markers |
 
@@ -46,163 +55,131 @@ If version < 1.50.0: `cargo install just`
 
 ### Step 1: Detect Project Type
 
-```bash
-ls go.mod package.json pyproject.toml setup.py Cargo.toml 2>/dev/null
-```
-
-| File | Project Type |
-|------|-------------|
-| `go.mod` | Go |
-| `package.json` | Node.js |
-| `pyproject.toml` / `setup.py` | Python |
-| `Cargo.toml` | Rust |
-| Other | Generic |
-
-### Step 2: Check Existing Files
+Verify `just` is installed and meets the minimum version requirement:
 
 ```bash
-ls justfile Justfile Makefile 2>/dev/null
+just --version 2>/dev/null | awk '{print $2}' | awk -F. '$1 > 1 || ($1 == 1 && $2 >= 50)' | grep -q .
 ```
 
-- If `justfile` or `Justfile` already exists → ask to overwrite, abort if no
-- If `Makefile` exists → read content, migrate existing targets to Justfile
+If the check fails: output "Error: just >= 1.50.0 required — run `cargo install just`" and abort.
 
-### Step 3: Generate Justfile
+Check for project marker files and classify the project type:
 
-Write to `justfile` (lowercase). All templates share the same `test-e2e`; only `test`/`build`/`lint` differ by language.
-
-**test-e2e (all languages):**
-
-```just
-# Run e2e tests: "just test-e2e" (regression) or "just test-e2e --feature <slug>" (feature tests)
-[arg("feature", long)]
-test-e2e feature="":
-    #!/usr/bin/env bash
-    if [ "{{feature}}" != "" ]; then
-        scripts_dir="tests/e2e/{{feature}}"
-        fail=0
-        for spec in "$scripts_dir"/*.spec.ts; do
-            [ -f "$spec" ] && npx tsx "$spec" || fail=$((fail+1))
-        done
-        [ "$fail" -eq 0 ]
-    else
-        [ ! -d tests/e2e/node_modules ] && npm install --prefix tests/e2e
-        fail=0
-        for spec in $(find tests/e2e -mindepth 2 -name '*.spec.ts'); do
-            npx tsx "$spec" || fail=$((fail+1))
-        done
-        [ "$fail" -eq 0 ]
-    fi
+```bash
+ls package.json go.mod Cargo.toml pyproject.toml 2>/dev/null
 ```
 
-**e2e-setup (all languages):**
+**Detection signal mapping:**
 
-```just
-e2e-setup:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    if [ ! -f tests/e2e/package.json ]; then
-        echo "Error: tests/e2e/package.json not found" >&2
-        exit 1
-    fi
-    if [ ! -d tests/e2e/node_modules ]; then
-        npm install --prefix tests/e2e
-    fi
-    npx --prefix tests/e2e playwright install chromium
-    echo "OK: e2e dependencies ready"
+| Marker File | Signal |
+|-------------|--------|
+| `package.json` | frontend |
+| `go.mod` | backend |
+| `Cargo.toml` | backend |
+| `pyproject.toml` | backend |
+
+**Classification algorithm:**
+
+1. Check for each marker file's existence in the project root.
+2. Collect detected signals into two sets: `frontend_signals` and `backend_signals`.
+3. Classify:
+   - Exactly one frontend signal AND exactly one backend signal → **`mixed`**
+   - Exactly one frontend signal, no backend signals → **`frontend`**
+   - Exactly one backend signal, no frontend signals → **`backend`**
+   - Neither set has signals → **Error**: "Error: no known project markers detected (expected one of: package.json, go.mod, Cargo.toml, pyproject.toml)" — abort, do NOT generate a justfile.
+   - Multiple frontend signals (e.g. `package.json` + another) → **Error**: "Error: multiple frontend markers detected — not supported" — abort.
+   - Multiple backend signals (e.g. `go.mod` + `Cargo.toml`) → **Error**: "Error: multiple backend markers detected — not supported" — abort.
+
+Supported configurations: backend only, frontend only, one backend + one frontend (mixed).
+
+**For `mixed` projects, also detect root paths:**
+
+```bash
+# Find frontend root (package.json, excluding node_modules)
+find . -name package.json -not -path '*/node_modules/*' -maxdepth 3 | head -1 | xargs dirname
+
+# Find backend root (go.mod / Cargo.toml / pyproject.toml)
+find . \( -name go.mod -o -name Cargo.toml -o -name pyproject.toml \) -maxdepth 3 | head -1 | xargs dirname
 ```
 
-**e2e-verify (all languages):**
+Record these as `FRONTEND_DIR` and `BACKEND_DIR` (e.g. `./frontend`, `./backend`). Use `.` if the marker is in the project root.
 
-```just
-# Requires just >= 1.50.0. [arg("feature", long)] declares a long-form CLI flag:
-# --feature <value>. "long" maps the argument to --<name> form; omitting it makes
-# the argument positional.
-[arg("feature", long)]
-e2e-verify feature="":
-    #!/usr/bin/env bash
-    set -euo pipefail
-    if [ -z "{{feature}}" ]; then
-        echo "Usage: just e2e-verify --feature <slug>" >&2
-        exit 1
-    fi
-    if [ ! -d "tests/e2e/{{feature}}" ]; then
-        echo "Error: tests/e2e/{{feature}}/ not found" >&2
-        exit 1
-    fi
-    matches=$(grep -rn '// VERIFY:' "tests/e2e/{{feature}}/" --include='*.spec.ts' || true)
-    if [ -n "$matches" ]; then
-        count=$(echo "$matches" | wc -l | tr -d ' ')
-        echo "Error: $count unresolved // VERIFY: marker(s) in tests/e2e/{{feature}}/" >&2
-        echo "$matches" >&2
-        exit 1
-    fi
-    echo "OK: no unresolved // VERIFY: markers in tests/e2e/{{feature}}/"
+### Step 2: Check Existing Justfile
+
+```bash
+ls justfile Justfile 2>/dev/null
 ```
 
-**Language-specific recipes:**
+- If `justfile` or `Justfile` already exists:
+  - Check for boundary markers (`# --- forge standard recipes ---` / `# --- end forge standard recipes ---`).
+  - **If boundary markers exist**: proceed to Step 3 (boundary marker merge). No confirmation needed — only the marked section will be replaced; custom recipes outside markers are preserved.
+  - **If boundary markers do NOT exist** (user's justfile has no forge markers):
+    - If `--force` flag was provided: skip confirmation, proceed to Step 3 (will add boundary markers and replace entire content).
+    - If `--force` flag was NOT provided: prompt the user: "A justfile already exists without forge markers. Overwrite? (y/n)". If user declines, abort without modifying the file.
+- If no justfile exists: proceed to Step 3 (create new file).
 
-Go:
-```just
-test:
-    go test -race ./...
-build:
-    go build ./...
-lint:
-    golangci-lint run ./...
+**`--force` flag**: Use `/init-justfile --force` to skip all interactive confirmation prompts. This is required for agent workflows where no human is present to respond to prompts. When `--force` is active, the command runs non-interactively: it merges within boundary markers if they exist, or overwrites the entire file if they don't.
+
+### Step 3: Assemble and Write Justfile
+
+Select the template from `plugins/forge/references/justfile-templates/`:
+
+| Marker file | Template |
+|-------------|----------|
+| `go.mod` | `go.just` |
+| `Cargo.toml` | `rust.just` |
+| `pyproject.toml` | `python.just` |
+| `package.json` only | `node.just` |
+| mixed | `mixed.just` |
+| none matched | `generic.just` |
+
+Write to `justfile` (lowercase).
+
+**Boundary marker merge**: When an existing justfile contains `# --- forge standard recipes ---` / `# --- end forge standard recipes ---` markers:
+1. Read the existing justfile content.
+2. Replace everything between (and including) the markers with the new template content.
+3. Preserve all content outside the markers (user custom recipes).
+4. Write the merged result back to `justfile`.
+
+**New justfile**: Write the selected template as the new file.
+
+**For `mixed` projects**: after copying `mixed.just`, replace the two placeholder variables with the detected paths:
+
+- `FRONTEND_DIR` → detected frontend root (e.g. `./frontend`)
+- `BACKEND_DIR` → detected backend root (e.g. `./backend`)
+
+### Step 4: Verify Generated Commands
+
+Run the following to confirm the justfile is valid and recipes are callable:
+
+```bash
+just --list
+just project-type
+just --dry-run compile
 ```
 
-Rust:
-```just
-test:
-    cargo test
-build:
-    cargo build --release
-lint:
-    cargo clippy -- -D warnings
-```
+If any command fails, report the error and do not claim success.
 
-Node.js:
-```just
-test:
-    npm test
-build:
-    npm run build
-lint:
-    npm run lint
-```
-
-Python:
-```just
-test:
-    pytest
-build:
-    python -m build
-lint:
-    ruff check .
-```
-
-Generic:
-```just
-test:
-    echo "TODO: implement test recipe"
-build:
-    echo "TODO: implement build recipe"
-lint:
-    echo "TODO: implement lint recipe"
-```
-
-### Step 4: Output Confirmation
+### Step 5: Output Confirmation
 
 ```
 Created justfile with standard forge targets (Go project)
 
 Targets:
+  just project-type               → echo "backend"
+  just compile                    → go vet ./...
+  just build                      → go build ./...
+  just run                        → go run .
+  just dev                        → go run . --dev
   just test                       → go test -race ./...
   just test-e2e                   → regression tests in tests/e2e/
   just test-e2e --feature <slug>  → feature tests in tests/e2e/<slug>/
-  just build                      → go build ./...
   just lint                       → golangci-lint run ./...
+  just fmt                        → gofmt -w .
+  just check                      → golangci-lint run ./...
+  just clean                      → go clean ./...
+  just install                    → go mod download
+  just ci                         → install + compile + build + test + lint
   just e2e-setup                  → install e2e deps (idempotent)
   just e2e-verify --feature <slug> → check for unresolved // VERIFY: markers
 
@@ -215,3 +192,7 @@ task all-completed will now use `just test` automatically.
 - **just >= 1.50.0**: `[arg("feature", long)]` generates `--feature <value>` named option, must pass a value when invoked
 - Callers (CI, `task all-completed`) are responsible for passing the slug: `just test-e2e --feature <slug>`
 - When migrating from Makefile, preserve original command logic, only adjust format
+- **e2e tests use `npx tsx` regardless of project language**: forge e2e test scripts are always written in TypeScript and run via `tsx`. This is intentional — the e2e layer is language-agnostic. Backend projects (Go/Rust/Python) still need Node.js available in the environment for `just test-e2e` and `just e2e-setup`.
+- **Targets invoked by forge skills**: `project-type`, `compile`, `build`, `test`, `test-e2e`, `install`, `e2e-setup`, `e2e-verify`. The remaining targets (`run`, `dev`, `lint`, `fmt`, `check`, `clean`, `ci`) are for manual use and are not called by any skill.
+- **Idempotency**: `e2e-setup` and `install` are designed to be idempotent (safe to run multiple times). Other recipes (`build`, `compile`, `test`) are not — they always re-execute.
+- **Mixed project scope**: forge skills resolve scope from `task claim` output or `process/state.json` and pass it to `just <verb>` when `just project-type` returns `mixed`. Pass `just compile frontend` or `just compile backend` manually to target a single side outside of a task context.

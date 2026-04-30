@@ -14,6 +14,9 @@ inputs:
   - name: TASK_FILE
     description: Task definition file path (e.g., phase2-2.1.1-query-engine.md)
     required: true
+  - name: SCOPE
+    description: Task scope — frontend, backend, or all (defaults to all if absent)
+    required: false
   - name: PHASE_SUMMARY
     description: Path to phase summary file from preceding phase (optional)
     required: false
@@ -69,10 +72,8 @@ Output: `Step 2/5: TDD implementation... DONE (N tests)` or `Step 2/5: Implement
 
 ### Step 3: Full Verification
 
-Run `just build && just test`:
-
 ```bash
-just build && just test
+just compile [scope] && just test [scope]
 ```
 
 **All must pass. Coverage >= 80% (if applicable). If any fails, fix before proceeding.**

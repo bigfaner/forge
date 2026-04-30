@@ -36,7 +36,7 @@ REFACTOR → Clean up while keeping tests green
 
 ## Step 3: Full Verification
 
-Run `just build && just test`.
+Run `just compile [scope] && just test [scope]`.
 
 ## Step 4: Record Task (MANDATORY)
 

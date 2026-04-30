@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"task-cli/pkg/feature"
@@ -716,4 +717,118 @@ func TestExecuteClaim_Continue(t *testing.T) {
 	if result.Key != "task1" {
 		t.Errorf("expected Key 'task1', got %q", result.Key)
 	}
+}
+
+// ---------- scope propagation ----------
+
+func TestExecuteClaim_ScopePropagatedToState(t *testing.T) {
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n\ngo 1.21\n"), 0644)
+	feature.EnsureFeatureDir(dir, "test-feature")
+
+	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test-feature"))
+	index := &task.TaskIndex{
+		Feature:      "test-feature",
+		StatusEnum:   []string{"pending", "in_progress", "completed"},
+		PriorityEnum: []string{"P0"},
+		Tasks: map[string]task.Task{
+			"t1": {ID: "1.1", Title: "Frontend task", Status: "pending", Priority: "P0",
+				File: "1.1.md", Record: "records/1.1.md", Scope: "frontend"},
+		},
+	}
+	task.SaveIndex(indexPath, index)
+	os.WriteFile(filepath.Join(dir, "docs", "features", "test-feature", "tasks", "1.1.md"), []byte("# T1"), 0644)
+
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { os.Chdir(origWd) })
+	os.Chdir(dir)
+
+	result, err := executeClaim()
+	if err != nil {
+		t.Fatalf("executeClaim() error = %v", err)
+	}
+
+	// Scope must be in the returned task
+	if result.Task.Scope != "frontend" {
+		t.Errorf("Task.Scope = %q, want %q", result.Task.Scope, "frontend")
+	}
+
+	// Scope must be persisted to process/state.json
+	statePath := feature.GetTaskStatePath(dir, "test-feature")
+	state, err := task.LoadState(statePath)
+	if err != nil || state == nil {
+		t.Fatalf("failed to load state: %v", err)
+	}
+	if state.Scope != "frontend" {
+		t.Errorf("state.Scope = %q, want %q", state.Scope, "frontend")
+	}
+}
+
+func TestExecuteClaim_ScopeEmptyWhenNotSet(t *testing.T) {
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n\ngo 1.21\n"), 0644)
+	feature.EnsureFeatureDir(dir, "test-feature")
+
+	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test-feature"))
+	index := &task.TaskIndex{
+		Feature:      "test-feature",
+		StatusEnum:   []string{"pending", "in_progress", "completed"},
+		PriorityEnum: []string{"P0"},
+		Tasks: map[string]task.Task{
+			"t1": {ID: "1.1", Title: "Task without scope", Status: "pending", Priority: "P0",
+				File: "1.1.md", Record: "records/1.1.md"},
+		},
+	}
+	task.SaveIndex(indexPath, index)
+	os.WriteFile(filepath.Join(dir, "docs", "features", "test-feature", "tasks", "1.1.md"), []byte("# T1"), 0644)
+
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { os.Chdir(origWd) })
+	os.Chdir(dir)
+
+	result, err := executeClaim()
+	if err != nil {
+		t.Fatalf("executeClaim() error = %v", err)
+	}
+
+	if result.Task.Scope != "" {
+		t.Errorf("Task.Scope = %q, want empty string for task without scope", result.Task.Scope)
+	}
+
+	statePath := feature.GetTaskStatePath(dir, "test-feature")
+	state, _ := task.LoadState(statePath)
+	if state != nil && state.Scope != "" {
+		t.Errorf("state.Scope = %q, want empty for task without scope", state.Scope)
+	}
+}
+
+func TestPrintTaskDetails_ScopeInOutput(t *testing.T) {
+	dir := t.TempDir()
+	feature.EnsureFeatureDir(dir, "feat")
+
+	t.Run("scope present", func(t *testing.T) {
+		tk := &task.Task{
+			ID: "1.1", Title: "T", Priority: "P0", Status: "pending",
+			File: "1.1.md", Record: "records/1.1.md", Scope: "backend",
+		}
+		out := captureStdout(func() {
+			printTaskDetails("t1", tk, dir, "feat")
+		})
+		if !strings.Contains(out, "SCOPE: backend") {
+			t.Errorf("expected SCOPE: backend in output, got: %s", out)
+		}
+	})
+
+	t.Run("scope absent — no SCOPE line", func(t *testing.T) {
+		tk := &task.Task{
+			ID: "1.1", Title: "T", Priority: "P0", Status: "pending",
+			File: "1.1.md", Record: "records/1.1.md",
+		}
+		out := captureStdout(func() {
+			printTaskDetails("t1", tk, dir, "feat")
+		})
+		if strings.Contains(out, "SCOPE:") {
+			t.Errorf("expected no SCOPE line for task without scope, got: %s", out)
+		}
+	})
 }

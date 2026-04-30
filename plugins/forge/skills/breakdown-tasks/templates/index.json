@@ -14,6 +14,7 @@
       "priority": "P0",
       "estimatedTime": "2h",
       "status": "pending",
+      "scope": "all",
       "breaking": true,
       "file": "1.1-interfaces.md",
       "record": "records/1.1-interfaces.md"
@@ -25,6 +26,7 @@
       "estimatedTime": "3h",
       "dependencies": ["1.1"],
       "status": "pending",
+      "scope": "backend",
       "file": "1.2-models.md",
       "record": "records/1.2-models.md"
     },
@@ -35,6 +37,7 @@
       "estimatedTime": "15min",
       "dependencies": ["1.x"],
       "status": "pending",
+      "scope": "all",
       "file": "1-summary.md",
       "record": "records/1-summary.md"
     },
@@ -45,6 +48,7 @@
       "estimatedTime": "1h",
       "dependencies": ["1.summary"],
       "status": "pending",
+      "scope": "all",
       "breaking": true,
       "file": "1-gate.md",
       "record": "records/1-gate.md"
@@ -56,6 +60,7 @@
       "estimatedTime": "4h",
       "dependencies": ["1.gate"],
       "status": "pending",
+      "scope": "frontend",
       "file": "2.1-implementation.md",
       "record": "records/2.1-implementation.md"
     },
@@ -66,6 +71,7 @@
       "estimatedTime": "15min",
       "dependencies": ["2.x"],
       "status": "pending",
+      "scope": "all",
       "file": "2-summary.md",
       "record": "records/2-summary.md"
     },
@@ -76,6 +82,7 @@
       "estimatedTime": "1h",
       "dependencies": ["2.summary"],
       "status": "pending",
+      "scope": "all",
       "breaking": true,
       "file": "2-gate.md",
       "record": "records/2-gate.md"
@@ -87,6 +94,7 @@
       "estimatedTime": "1-2h",
       "dependencies": ["2.gate"],
       "status": "pending",
+      "scope": "all",
       "file": "gen-test-cases.md",
       "record": "records/gen-test-cases.md"
     },
@@ -97,6 +105,7 @@
       "estimatedTime": "1-2h",
       "dependencies": ["T-test-1"],
       "status": "pending",
+      "scope": "all",
       "file": "gen-test-scripts.md",
       "record": "records/gen-test-scripts.md"
     },
@@ -107,6 +116,7 @@
       "estimatedTime": "30min-1h",
       "dependencies": ["T-test-2"],
       "status": "pending",
+      "scope": "all",
       "file": "run-e2e-tests.md",
       "record": "records/run-e2e-tests.md"
     },
@@ -117,6 +127,7 @@
       "estimatedTime": "30min",
       "dependencies": ["T-test-3"],
       "status": "pending",
+      "scope": "all",
       "file": "graduate-tests.md",
       "record": "records/graduate-tests.md"
     }

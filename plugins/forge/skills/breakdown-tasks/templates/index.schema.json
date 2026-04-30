@@ -44,7 +44,7 @@
       "type": "object",
       "additionalProperties": {
         "type": "object",
-        "required": ["id", "title", "priority", "status", "file"],
+        "required": ["id", "title", "priority", "status", "file", "scope"],
         "properties": {
           "id": { "type": "string" },
           "title": { "type": "string" },
@@ -61,6 +61,12 @@
             "type": "boolean",
             "description": "When true, task completion triggers full test suite across all layers",
             "default": false
+          },
+          "scope": {
+            "type": "string",
+            "enum": ["frontend", "backend", "all"],
+            "default": "all",
+            "description": "Task scope: must be explicitly set by breakdown-tasks using the Scope Assignment algorithm. 'all' for cross-layer, summary, gate, and T-test tasks; 'frontend'/'backend' for single-layer tasks in mixed projects."
           }
         }
       }

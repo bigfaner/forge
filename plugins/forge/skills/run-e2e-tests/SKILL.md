@@ -45,6 +45,11 @@ ls tests/e2e/<slug>/
 
 **Note**: `<slug>` is the current feature name, obtained via `task feature` command.
 
+```bash
+slug=$(task feature 2>/dev/null | tr -d '[:space:]')
+[ -z "$slug" ] && echo "Error: no active feature — run \`task feature <slug>\` first" >&2 && exit 1
+```
+
 ## When to Use
 
 **Trigger:**
@@ -83,7 +88,7 @@ Detect what needs to be started based on the project:
 
 | Artifact | Server Command | When |
 |----------|---------------|------|
-| HTML prototype | `npx serve ../ui/prototype -p 3456 -s &` | `ui/prototype/` exists |
+| HTML prototype | `just run` | `ui/prototype/` exists |
 | Real application | User-specified or detected | App needs running server |
 
 Start servers in background. Record PIDs for cleanup.

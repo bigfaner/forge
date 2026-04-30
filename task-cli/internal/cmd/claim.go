@@ -123,6 +123,7 @@ func executeClaim() (*ClaimResult, error) {
 		Record:        t.Record,
 		StartedTime:   time.Now().Format("2006-01-02 15:04"),
 		Breaking:      t.Breaking,
+		Scope:         t.Scope,
 	}
 	if err := task.SaveState(statePath, state); err != nil {
 		return nil, err
@@ -307,6 +308,7 @@ func printTaskDetails(key string, t *task.Task, projectRoot, featureSlug string)
 	if t.Breaking {
 		PrintField("BREAKING", "true")
 	}
+	PrintFieldIfNotEmpty("SCOPE", t.Scope)
 	PrintField("FILE", filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, t.File)))
 	PrintField("RECORD", filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, t.Record)))
 }

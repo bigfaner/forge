@@ -175,6 +175,36 @@ Example:
 
 For each task, populate the **User Stories** section with matching stories from `prd/prd-user-stories.md`. Include full Given/When/Then acceptance criteria. If no match, note "No direct user story mapping."
 
+### Scope Assignment
+
+For each task, determine the `scope` field for `index.json`:
+
+**Algorithm**: inspect the task's affected file paths (listed in the task's "Files Created/Modified" section derived from the tech-design).
+
+1. Classify each file path:
+   - `frontend`: path starts with `ui/`, `src/`, `components/`, `pages/`, `styles/`, `public/`, or any directory containing `package.json` with no `go.mod`/`Cargo.toml` at the same level
+   - `backend`: path starts with `cmd/`, `internal/`, `pkg/`, `api/`, or any directory containing `go.mod`/`Cargo.toml`/`pyproject.toml` with no `package.json` at the same level
+   - `undetermined`: path does not match either pattern (e.g., `docs/`, root config files, `justfile`)
+
+2. Compute scope:
+   - If ALL paths are `frontend` → `scope: "frontend"`
+   - If ALL paths are `backend` → `scope: "backend"`
+   - Otherwise (mixed paths, `undetermined` paths, or no file paths) → `scope: "all"`
+
+3. Write `scope` into the task entry in `index.json`.
+
+**Non-mixed projects**: when `init-justfile` detects a pure frontend or backend project, all tasks receive `scope: "all"` (scope distinction is irrelevant when `just project-type` does not return `"mixed"`).
+
+**Examples**:
+
+| Task file paths | scope | Reason |
+|----------------|-------|--------|
+| `ui/components/Button.tsx`, `src/styles.css` | `frontend` | All frontend paths |
+| `cmd/server/main.go`, `pkg/handler/api.go` | `backend` | All backend paths |
+| `ui/App.tsx`, `cmd/server/main.go` | `all` | Mixed frontend + backend |
+| `docs/WORKFLOW.md`, `justfile` | `all` | Undetermined paths |
+| Any task in a pure backend project | `all` | Non-mixed project, scope distinction is irrelevant |
+
 ### 4b. Phase Summary Tasks
 
 For each phase in the decomposition (from Step 3), insert a phase summary task at the end of that phase. Read `templates/phase-summary-task.md` for task content.
