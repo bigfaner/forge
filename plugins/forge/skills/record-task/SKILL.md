@@ -72,6 +72,8 @@ Example commands (use whatever matches the project's toolchain):
 just test [scope]
 ```
 
+`scope` comes from the `SCOPE` field in `task claim` output (or `process/state.json`). Apply the **Scope Resolution** protocol in guide.md before running.
+
 </HARD-RULE>
 
 ## Usage
