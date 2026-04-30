@@ -11,7 +11,7 @@
 			"name": "forge",
 			"source": "./plugins/forge",
 			"description": "Task management and workflow helper tools for Claude Code",
-			"version": "2.7.1",
+			"version": "2.8.0",
 			"keywords": ["task", "workflow", "productivity", "prd", "git", "eval"]
 		}
 	]
