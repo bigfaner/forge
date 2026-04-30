@@ -60,7 +60,7 @@
       "estimatedTime": "4h",
       "dependencies": ["1.gate"],
       "status": "pending",
-      "scope": "all",
+      "scope": "frontend",
       "file": "2.1-implementation.md",
       "record": "records/2.1-implementation.md"
     },
