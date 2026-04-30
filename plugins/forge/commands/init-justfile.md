@@ -193,3 +193,5 @@ task all-completed will now use `just test` automatically.
 - Callers (CI, `task all-completed`) are responsible for passing the slug: `just test-e2e --feature <slug>`
 - When migrating from Makefile, preserve original command logic, only adjust format
 - **e2e tests use `npx tsx` regardless of project language**: forge e2e test scripts are always written in TypeScript and run via `tsx`. This is intentional — the e2e layer is language-agnostic. Backend projects (Go/Rust/Python) still need Node.js available in the environment for `just test-e2e` and `just e2e-setup`.
+- **Targets invoked by forge skills**: `project-type`, `compile`, `build`, `test`, `test-e2e`, `install`, `e2e-setup`, `e2e-verify`. The remaining targets (`run`, `dev`, `lint`, `fmt`, `check`, `clean`, `ci`) are for manual use and are not called by any skill.
+- **Mixed project scope**: forge skills invoke `just compile`, `just test`, etc. without a scope argument, which runs both frontend and backend. Pass `just compile frontend` or `just compile backend` manually to target a single side.
