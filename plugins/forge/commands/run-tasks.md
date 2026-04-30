@@ -117,13 +117,8 @@ just --list 2>/dev/null | grep -q "^    test " || {
 }
 ```
 
-#### Scope Resolution for Breaking Gate
-
-Apply **Scope Resolution** (see Forge Guide) using the completed task's `SCOPE` field before invoking `just test`.
-
 ```bash
-# Run just test (with scope if applicable per resolution above)
-just test
+just test [scope]
 ```
 
 **If tests fail**:

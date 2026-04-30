@@ -69,12 +69,8 @@ Output: `Step 2/5: TDD implementation... DONE (N tests)` or `Step 2/5: Implement
 
 ### Step 3: Full Verification
 
-Apply **Scope Resolution** (see Forge Guide) before invoking `just compile` and `just test`.
-
-Run `just compile && just test` (with scope if applicable):
-
 ```bash
-just compile && just test
+just compile [scope] && just test [scope]
 ```
 
 **All must pass. Coverage >= 80% (if applicable). If any fails, fix before proceeding.**
