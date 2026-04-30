@@ -104,7 +104,7 @@ Test naming convention:
 // e.g. "bug: returns null when input is empty string"
 ```
 
-Run `just test` — it **must fail** before the fix:
+Run `just test` — it **must fail** before the fix (apply **Scope Resolution** from Forge Guide before invoking):
 
 ```bash
 just test
