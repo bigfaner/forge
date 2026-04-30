@@ -157,7 +157,10 @@ e2e-verify feature="":
     if [ -n "$matches" ]; then
         count=$(echo "$matches" | wc -l | tr -d ' ')
         echo "Error: $count unresolved // VERIFY: marker(s) in tests/e2e/{{feature}}/" >&2
+        echo "" >&2
         echo "$matches" >&2
+        echo "" >&2
+        echo "Replace each // VERIFY: comment with a real assertion before running tests." >&2
         exit 1
     fi
     echo "OK: no unresolved // VERIFY: markers in tests/e2e/{{feature}}/"
