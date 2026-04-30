@@ -73,6 +73,7 @@ Agent(
   prompt="TASK_KEY: {{KEY}}
 TASK_ID: {{ID}}
 TASK_FILE: {{FILE}}
+SCOPE: {{SCOPE}}
 {{PHASE_SUMMARY_SECTION}}
 
 IMPORTANT: Do NOT claim or start any other tasks after completing this one. Stop after recording the task result."
@@ -120,6 +121,8 @@ just --list 2>/dev/null | grep -q "^    test " || {
 ```bash
 just test [scope]
 ```
+
+Apply the **Scope Resolution** protocol in guide.md — use the `SCOPE` extracted from the claim output in Step 1.
 
 **If tests fail**:
 - Option A: Dispatch error-fixer with failure context (existing behavior)
