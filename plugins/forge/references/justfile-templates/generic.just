@@ -4,19 +4,19 @@ project-type:
     @echo "backend"
 
 compile:
-    echo "TODO: implement compile recipe"
+    @echo "Error: compile recipe not implemented — edit justfile to add build command" >&2 && exit 1
 
 build:
-    echo "TODO: implement build recipe"
+    @echo "Error: build recipe not implemented — edit justfile to add build command" >&2 && exit 1
 
 run:
-    echo "TODO: implement run recipe"
+    @echo "Error: run recipe not implemented — edit justfile to add run command" >&2 && exit 1
 
 dev:
-    echo "TODO: implement dev recipe"
+    @echo "Error: dev recipe not implemented — edit justfile to add dev command" >&2 && exit 1
 
 test:
-    echo "TODO: implement test recipe"
+    @echo "Error: test recipe not implemented — edit justfile to add test command" >&2 && exit 1
 
 [arg("feature", long)]
 test-e2e feature="":
@@ -39,19 +39,19 @@ test-e2e feature="":
     fi
 
 lint:
-    echo "TODO: implement lint recipe"
+    @echo "Error: lint recipe not implemented — edit justfile to add lint command" >&2 && exit 1
 
 fmt:
-    echo "TODO: implement fmt recipe"
+    @echo "Error: fmt recipe not implemented — edit justfile to add fmt command" >&2 && exit 1
 
 check:
-    echo "TODO: implement check recipe"
+    @echo "Error: check recipe not implemented — edit justfile to add check command" >&2 && exit 1
 
 clean:
-    echo "TODO: implement clean recipe"
+    @echo "Error: clean recipe not implemented — edit justfile to add clean command" >&2 && exit 1
 
 install:
-    echo "TODO: implement install recipe"
+    @echo "Error: install recipe not implemented — edit justfile to add install command" >&2 && exit 1
 
 ci: install compile build test lint
 

@@ -105,6 +105,16 @@ After verifying the record, check if the completed task was a phase summary task
 If the claimed task had `BREAKING: true` in the claim output:
 
 ```bash
+# Pre-flight: verify justfile and test recipe exist
+if [ ! -f justfile ] && [ ! -f Justfile ]; then
+    echo "Error: justfile not found — run /init-justfile first" >&2
+    exit 1
+fi
+just --list 2>/dev/null | grep -q "^    test " || {
+    echo "Error: 'test' recipe not found in justfile" >&2
+    exit 1
+}
+
 # Run `just test`
 just test
 ```

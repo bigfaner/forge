@@ -55,6 +55,14 @@ If version < 1.50.0: `cargo install just`
 
 ### Step 1: Detect Project Type
 
+Verify `just` is installed and meets the minimum version requirement:
+
+```bash
+just --version 2>/dev/null | awk '{print $2}' | awk -F. '$1 > 1 || ($1 == 1 && $2 >= 50)' | grep -q .
+```
+
+If the check fails: output "Error: just >= 1.50.0 required — run `cargo install just`" and abort.
+
 Check for project marker files and classify the project type:
 
 ```bash
