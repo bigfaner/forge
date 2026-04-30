@@ -69,7 +69,7 @@ Confirm the bug is reproducible in the current codebase before writing any tests
 
 ```bash
 # Run just test to establish baseline
-just test
+just test [scope]
 ```
 
 **Reproduction checklist:**
@@ -104,10 +104,10 @@ Test naming convention:
 // e.g. "bug: returns null when input is empty string"
 ```
 
-Run `just test` — it **must fail** before the fix (apply **Scope Resolution** from Forge Guide before invoking):
+Run `just test [scope]` — it **must fail** before the fix (apply **Scope Resolution** from Forge Guide before invoking):
 
 ```bash
-just test
+just test [scope]
 ```
 
 <HARD-RULE>
@@ -153,11 +153,11 @@ With failing tests in place, implement the minimal fix.
 
 ## Step 5: Verify
 
-Run `just build && just test`. All must pass.
+Run `just build [scope] && just test [scope]`. All must pass.
 
 ```bash
 # Full suite
-just test
+just test [scope]
 
 # E2E (if written in Step 3b)
 just test-e2e --feature <slug>
