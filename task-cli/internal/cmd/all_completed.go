@@ -115,7 +115,20 @@ func runAllCompleted(cmd *cobra.Command, args []string) {
 	// Step 1: Compile check (type errors before running tests)
 	if hasJustfile(result.ProjectRoot) && hasJustRecipe(result.ProjectRoot, "compile") {
 		fmt.Fprintln(os.Stderr, "--- Running compile check (just compile) ---")
-		runCmd(result.ProjectRoot, "just", "compile")
+		compileOutput, compileSuccess := runCmdCapture(result.ProjectRoot, "just", "compile")
+		if !compileSuccess {
+			fmt.Fprintln(os.Stderr, "ERROR: compile check failed")
+			if compileOutput != "" {
+				if err := writeUnitTestRawOutput(result.ProjectRoot, "=== compile failure ===\n"+compileOutput); err != nil {
+					fmt.Fprintf(os.Stderr, "WARNING: failed to write compile output: %v\n", err)
+				}
+			}
+			printHookJSON(map[string]any{
+				"decision": "block",
+				"reason":   "Compile check failed. Read tests/results/unit-raw-output.txt, fix type errors, then re-run.",
+			})
+			os.Exit(0)
+		}
 	}
 
 	// Step 2: Project-wide unit/integration tests

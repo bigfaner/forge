@@ -1276,6 +1276,26 @@ func TestRunRecord_BlockedStatus(t *testing.T) {
 
 // ---------- writeUnitTestRawOutput ----------
 
+// TestWriteUnitTestRawOutput_CompilePrefix verifies compile failure output is prefixed correctly.
+func TestWriteUnitTestRawOutput_CompilePrefix(t *testing.T) {
+	dir := t.TempDir()
+	compileOutput := "src/main.ts(10,5): error TS2345: Argument of type 'number' is not assignable"
+	err := writeUnitTestRawOutput(dir, "=== compile failure ===\n"+compileOutput)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	data, err := os.ReadFile(filepath.Join(dir, "tests", "results", "unit-raw-output.txt"))
+	if err != nil {
+		t.Fatalf("file not created: %v", err)
+	}
+	if !strings.Contains(string(data), "compile failure") {
+		t.Errorf("expected compile prefix in output, got: %s", string(data))
+	}
+	if !strings.Contains(string(data), "TS2345") {
+		t.Errorf("expected compile error in output, got: %s", string(data))
+	}
+}
+
 func TestWriteUnitTestRawOutput(t *testing.T) {
 	dir := t.TempDir()
 	output := "FAIL\n--- FAIL: TestFoo (0.01s)"
