@@ -112,26 +112,65 @@ func runAllCompleted(cmd *cobra.Command, args []string) {
 				"  or run /run-e2e-tests and /graduate-tests manually.")
 	}
 
-	// Step 1: Project-wide unit/integration tests
-	fmt.Fprintln(os.Stderr, "--- Running project-wide tests ---")
-	runProjectTests(result.ProjectRoot, result.TestCommand)
+	// Step 1: Compile check (type errors before running tests)
+	if hasJustfile(result.ProjectRoot) && hasJustRecipe(result.ProjectRoot, "compile") {
+		fmt.Fprintln(os.Stderr, "--- Running compile check (just compile) ---")
+		runCmd(result.ProjectRoot, "just", "compile")
+	}
 
-	// Step 2: Full e2e regression (graduated scripts in tests/e2e/)
-	if hasJustfile(result.ProjectRoot) && hasJustRecipe(result.ProjectRoot, "test-e2e") {
-		fmt.Fprintln(os.Stderr, "--- Running full e2e regression (just test-e2e) ---")
-		regressionOutput, regSuccess := runCmdCapture(result.ProjectRoot, "just", "test-e2e")
-		if !regSuccess {
-			fmt.Fprintln(os.Stderr, "ERROR: e2e regression failed")
-			if regressionOutput != "" {
-				if err := writeRawOutput(result.ProjectRoot, result.FeatureSlug, regressionOutput); err != nil {
-					fmt.Fprintf(os.Stderr, "WARNING: failed to write raw-output.txt: %v\n", err)
-				}
+	// Step 2: Project-wide unit/integration tests
+	fmt.Fprintln(os.Stderr, "--- Running project-wide tests ---")
+	unitOutput, unitSuccess := runProjectTests(result.ProjectRoot, result.TestCommand)
+	if !unitSuccess {
+		fmt.Fprintln(os.Stderr, "ERROR: unit tests failed")
+		if unitOutput != "" {
+			if err := writeUnitTestRawOutput(result.ProjectRoot, unitOutput); err != nil {
+				fmt.Fprintf(os.Stderr, "WARNING: failed to write unit test output: %v\n", err)
 			}
-			printHookJSON(map[string]any{
-				"decision": "block",
-				"reason":   "e2e regression failed. Read testing/results/raw-output.txt, analyze failures, then use `task add --title \"Fix: ...\" --priority P0 --breaking` to create fix tasks.",
-			})
-			os.Exit(0)
+		}
+		printHookJSON(map[string]any{
+			"decision": "block",
+			"reason":   "Unit tests failed. Read tests/results/unit-raw-output.txt, fix failures, then re-run.",
+		})
+		os.Exit(0)
+	}
+
+	// Step 3: Full e2e regression (graduated scripts in tests/e2e/)
+	if hasJustfile(result.ProjectRoot) && hasJustRecipe(result.ProjectRoot, "test-e2e") {
+		// Ensure e2e dependencies are installed; skip regression if setup fails (environment issue)
+		e2eReady := true
+		if hasJustRecipe(result.ProjectRoot, "e2e-setup") {
+			fmt.Fprintln(os.Stderr, "--- Ensuring e2e dependencies (just e2e-setup) ---")
+			setupOutput, setupSuccess := runCmdCapture(result.ProjectRoot, "just", "e2e-setup")
+			if !setupSuccess {
+				fmt.Fprintln(os.Stderr, "WARNING: e2e-setup failed; skipping e2e regression")
+				fmt.Fprintln(os.Stderr, "  To retry manually: just e2e-setup && just test-e2e")
+				if setupOutput != "" {
+					if err := writeRegressionRawOutput(result.ProjectRoot, "=== e2e-setup failure ===\n"+setupOutput); err != nil {
+						fmt.Fprintf(os.Stderr, "WARNING: failed to write setup output: %v\n", err)
+					} else {
+						fmt.Fprintln(os.Stderr, "  Setup output saved to tests/e2e/results/raw-output.txt")
+					}
+				}
+				e2eReady = false
+			}
+		}
+		if e2eReady {
+			fmt.Fprintln(os.Stderr, "--- Running full e2e regression (just test-e2e) ---")
+			regressionOutput, regSuccess := runCmdCapture(result.ProjectRoot, "just", "test-e2e")
+			if !regSuccess {
+				fmt.Fprintln(os.Stderr, "ERROR: e2e regression failed")
+				if regressionOutput != "" {
+					if err := writeRegressionRawOutput(result.ProjectRoot, regressionOutput); err != nil {
+						fmt.Fprintf(os.Stderr, "WARNING: failed to write raw-output.txt: %v\n", err)
+					}
+				}
+				printHookJSON(map[string]any{
+					"decision": "block",
+					"reason":   "e2e regression failed. Read tests/e2e/results/raw-output.txt, analyze failures, then use `task add --title \"Fix: ...\" --priority P0 --breaking` to create fix tasks.",
+				})
+				os.Exit(0)
+			}
 		}
 	}
 }
@@ -219,26 +258,41 @@ func runShell(dir, command string) {
 	}
 }
 
+// runShellCapture runs a shell command, streams output to stderr, and returns combined output + success.
+func runShellCapture(dir, command string) (string, bool) {
+	var c *exec.Cmd
+	if runtime.GOOS == "windows" {
+		c = exec.Command("cmd", "/C", command)
+	} else {
+		c = exec.Command("sh", "-c", command)
+	}
+	c.Dir = dir
+	output, err := c.CombinedOutput()
+	fmt.Fprint(os.Stderr, string(output))
+	return string(output), err == nil
+}
 
-func runProjectTests(projectRoot, testCommand string) {
+
+func runProjectTests(projectRoot, testCommand string) (string, bool) {
 	if testCommand != "" {
-		runShell(projectRoot, testCommand)
-		return
+		output, ok := runShellCapture(projectRoot, testCommand)
+		return output, ok
 	}
 
 	switch {
 	case hasJustfile(projectRoot) && hasJustRecipe(projectRoot, "test"):
-		runCmd(projectRoot, "just", "test")
+		return runCmdCapture(projectRoot, "just", "test")
 	case fileExists(filepath.Join(projectRoot, "Makefile")) && hasMakeTarget(projectRoot, "test"):
-		runCmd(projectRoot, "make", "test")
+		return runCmdCapture(projectRoot, "make", "test")
 	case fileExists(filepath.Join(projectRoot, "go.mod")):
-		runCmd(projectRoot, "go", "test", "./...")
+		return runCmdCapture(projectRoot, "go", "test", "./...")
 	case fileExists(filepath.Join(projectRoot, "package.json")) && hasNpmTestScript(projectRoot):
-		runCmd(projectRoot, "npm", "test")
+		return runCmdCapture(projectRoot, "npm", "test")
 	case fileExists(filepath.Join(projectRoot, "pytest.ini")) || fileExists(filepath.Join(projectRoot, "pyproject.toml")):
-		runCmd(projectRoot, "pytest")
+		return runCmdCapture(projectRoot, "pytest")
 	default:
 		fmt.Println("WARNING: No test command found. Set testCommand in index.json.")
+		return "", true
 	}
 }
 

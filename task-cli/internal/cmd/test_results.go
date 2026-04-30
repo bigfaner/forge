@@ -64,3 +64,24 @@ func writeRawOutput(projectRoot, featureSlug string, output string) error {
 	rawPath := filepath.Join(resultsDir, "raw-output.txt")
 	return os.WriteFile(rawPath, []byte(output), 0644)
 }
+
+// writeUnitTestRawOutput saves project-wide unit test output to tests/results/unit-raw-output.txt.
+func writeUnitTestRawOutput(projectRoot, output string) error {
+	resultsDir := filepath.Join(projectRoot, "tests", "results")
+	if err := os.MkdirAll(resultsDir, 0755); err != nil {
+		return err
+	}
+	rawPath := filepath.Join(resultsDir, "unit-raw-output.txt")
+	return os.WriteFile(rawPath, []byte(output), 0644)
+}
+
+// writeRegressionRawOutput saves project-wide regression output to tests/e2e/results/raw-output.txt.
+// Kept separate from writeRawOutput because regression failures span all features, not one.
+func writeRegressionRawOutput(projectRoot, output string) error {
+	resultsDir := filepath.Join(projectRoot, "tests", "e2e", "results")
+	if err := os.MkdirAll(resultsDir, 0755); err != nil {
+		return err
+	}
+	rawPath := filepath.Join(resultsDir, "raw-output.txt")
+	return os.WriteFile(rawPath, []byte(output), 0644)
+}

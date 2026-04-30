@@ -1274,6 +1274,133 @@ func TestRunRecord_BlockedStatus(t *testing.T) {
 
 // ---------- appendFixTask removed (agent handles fix tasks now) ----------
 
+// ---------- writeUnitTestRawOutput ----------
+
+func TestWriteUnitTestRawOutput(t *testing.T) {
+	dir := t.TempDir()
+	output := "FAIL\n--- FAIL: TestFoo (0.01s)"
+
+	err := writeUnitTestRawOutput(dir, output)
+	if err != nil {
+		t.Fatalf("writeUnitTestRawOutput() error = %v", err)
+	}
+
+	path := filepath.Join(dir, "tests", "results", "unit-raw-output.txt")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("expected file at %s, got error: %v", path, err)
+	}
+	if string(data) != output {
+		t.Errorf("content = %q, want %q", string(data), output)
+	}
+}
+
+func TestWriteUnitTestRawOutput_CreatesDir(t *testing.T) {
+	dir := t.TempDir()
+	// tests/results/ does not exist yet — function must create it
+	err := writeUnitTestRawOutput(dir, "output")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "tests", "results")); os.IsNotExist(err) {
+		t.Error("tests/results/ directory should have been created")
+	}
+}
+
+// ---------- writeRegressionRawOutput ----------
+
+func TestWriteRegressionRawOutput(t *testing.T) {
+	dir := t.TempDir()
+	output := "not ok 1 - login test\n  Error: expected 200, got 404"
+
+	err := writeRegressionRawOutput(dir, output)
+	if err != nil {
+		t.Fatalf("writeRegressionRawOutput() error = %v", err)
+	}
+
+	path := filepath.Join(dir, "tests", "e2e", "results", "raw-output.txt")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("expected file at %s, got error: %v", path, err)
+	}
+	if string(data) != output {
+		t.Errorf("content = %q, want %q", string(data), output)
+	}
+}
+
+func TestWriteRegressionRawOutput_CreatesDir(t *testing.T) {
+	dir := t.TempDir()
+	err := writeRegressionRawOutput(dir, "output")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "tests", "e2e", "results")); os.IsNotExist(err) {
+		t.Error("tests/e2e/results/ directory should have been created")
+	}
+}
+
+// ---------- runShellCapture ----------
+
+func TestRunShellCapture_Success(t *testing.T) {
+	dir := t.TempDir()
+	output, ok := runShellCapture(dir, "echo shell-capture-output")
+	if !ok {
+		t.Error("runShellCapture() ok = false, want true")
+	}
+	if !strings.Contains(output, "shell-capture-output") {
+		t.Errorf("output = %q, want to contain 'shell-capture-output'", output)
+	}
+}
+
+func TestRunShellCapture_Failure(t *testing.T) {
+	dir := t.TempDir()
+	_, ok := runShellCapture(dir, "exit 1")
+	if ok {
+		t.Error("runShellCapture() ok = true, want false for failing command")
+	}
+}
+
+func TestRunShellCapture_OutputOnFailure(t *testing.T) {
+	dir := t.TempDir()
+	output, ok := runShellCapture(dir, "echo failure-output && exit 1")
+	if ok {
+		t.Error("expected failure")
+	}
+	if !strings.Contains(output, "failure-output") {
+		t.Errorf("output should contain stderr/stdout even on failure, got: %q", output)
+	}
+}
+
+// ---------- runProjectTests return values ----------
+
+func TestRunProjectTests_CustomCommand_Success(t *testing.T) {
+	dir := t.TempDir()
+	output, ok := runProjectTests(dir, "echo test-passed")
+	if !ok {
+		t.Error("runProjectTests() ok = false, want true for passing command")
+	}
+	if !strings.Contains(output, "test-passed") {
+		t.Errorf("output = %q, want to contain 'test-passed'", output)
+	}
+}
+
+func TestRunProjectTests_CustomCommand_Failure(t *testing.T) {
+	dir := t.TempDir()
+	_, ok := runProjectTests(dir, "exit 1")
+	if ok {
+		t.Error("runProjectTests() ok = true, want false for failing command")
+	}
+}
+
+func TestRunProjectTests_NoTestCommand_ReturnsTrue(t *testing.T) {
+	// No project markers → WARNING printed, returns ("", true)
+	dir := t.TempDir()
+	_, ok := runProjectTests(dir, "")
+	if !ok {
+		t.Error("runProjectTests() ok = false, want true when no test command found (warning only)")
+	}
+}
+
 // ---------- runProjectTests: justfile branch ----------
 
 func TestRunProjectTests_Justfile(t *testing.T) {
