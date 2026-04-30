@@ -54,6 +54,7 @@ task claim
 - `TASK_KEY` (e.g., "2.1-implementation")
 - `TASK_FILE` (e.g., "2.1-implementation.md")
 - `BREAKING` (e.g., "true" or absent)
+- `SCOPE` (e.g., "frontend", "backend", or "all" — defaults to "all" if absent)
 
 ### Step 2: Dispatch with Timeout
 
@@ -114,8 +115,14 @@ just --list 2>/dev/null | grep -q "^    test " || {
     echo "Error: 'test' recipe not found in justfile" >&2
     exit 1
 }
+```
 
-# Run `just test`
+#### Scope Resolution for Breaking Gate
+
+Apply **Scope Resolution** (see Forge Guide) using the completed task's `SCOPE` field before invoking `just test`.
+
+```bash
+# Run just test (with scope if applicable per resolution above)
 just test
 ```
 

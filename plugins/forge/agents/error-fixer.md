@@ -48,7 +48,9 @@ Output: `Step 3/5: Fixing errors... DONE`
 
 ### Step 4: Verify
 
-Run `just compile && just test`:
+Apply **Scope Resolution** (see Forge Guide) before invoking `just compile` and `just test`.
+
+Run `just compile && just test` (with scope if applicable):
 
 ```bash
 just compile && just test

@@ -36,7 +36,9 @@ REFACTOR → Clean up while keeping tests green
 
 ## Step 3: Full Verification
 
-Run `just compile && just test`.
+Apply **Scope Resolution** (see Forge Guide) before invoking `just compile` and `just test`.
+
+Run `just compile && just test` (with scope if applicable).
 
 ## Step 4: Record Task (MANDATORY)
 

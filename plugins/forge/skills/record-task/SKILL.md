@@ -72,6 +72,8 @@ Example commands (use whatever matches the project's toolchain):
 just test
 ```
 
+Apply **Scope Resolution** (see Forge Guide) before invoking `just test`.
+
 </HARD-RULE>
 
 ## Usage

@@ -151,3 +151,29 @@ task record <TASK_ID> --data record.json --force
 ```
 
 > For full command reference, run `task -h` or `task [command] -h`
+
+## Scope Resolution
+
+Before executing any `just <verb>` command, resolve scope from the current task's `scope` field (available in `task claim` output and `process/state.json`):
+
+1. If `scope` is missing, empty, or `"all"` → execute `just <verb>` (no scope argument). Done.
+2. If `scope` is `"frontend"` or `"backend"`:
+   a. Run `just project-type` and capture stdout (trimmed) and exit code.
+   b. If exit code != 0, or stdout is not one of `frontend`/`backend`/`mixed`:
+      - Log: `[forge] just project-type failed (exit N); falling back to just <verb>`
+      - Execute `just <verb>` (no scope). Done.
+   c. If stdout == `"mixed"`:
+      - Execute `just <verb> <scope>` (e.g., `just build frontend`). Done.
+   d. If stdout is `"frontend"` or `"backend"` (not mixed):
+      - Log: `[forge] scope=<scope> but project-type=<type>; falling back to just <verb>`
+      - Execute `just <verb>` (no scope). Done.
+
+**Worked examples**:
+
+| Task scope | `just project-type` output | Action |
+|-----------|---------------------------|--------|
+| `frontend` | `mixed` (exit 0) | `just build frontend` |
+| `backend` | `mixed` (exit 0) | `just test backend` |
+| `all` | (not called) | `just compile` |
+| `frontend` | `backend` (exit 0) | log + fallback → `just build` |
+| `frontend` | exit 127 | log + fallback → `just build` |
