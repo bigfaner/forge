@@ -17,7 +17,7 @@ Generated scripts use:
 - UI tests: Playwright Locator API (semantic locators)
 - API tests: Node.js built-in `fetch`
 - CLI tests: `child_process.execSync`
-- Test framework: `node:test` + `node:assert`
+- Test framework: `@playwright/test` (test runner with built-in timeouts, fixture injection)
 
 ## Reference Files
 

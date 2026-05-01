@@ -10,10 +10,10 @@ build:
     python -m build
 
 run:
-    python -m src
+    python ENTRY_POINT
 
 dev:
-    uvicorn src:app --reload
+    DEV_COMMAND
 
 test:
     pytest
@@ -23,19 +23,10 @@ test-e2e feature="":
     #!/usr/bin/env bash
     set -euo pipefail
     if [ "{{feature}}" != "" ]; then
-        scripts_dir="tests/e2e/{{feature}}"
-        fail=0
-        for spec in "$scripts_dir"/*.spec.ts; do
-            [ -f "$spec" ] && npx tsx "$spec" || fail=$((fail+1))
-        done
-        [ "$fail" -eq 0 ]
+        cd tests/e2e && npx playwright test {{feature}}/
     else
         [ ! -d tests/e2e/node_modules ] && npm install --prefix tests/e2e
-        fail=0
-        for spec in $(find tests/e2e -mindepth 2 -name '*.spec.ts'); do
-            npx tsx "$spec" || fail=$((fail+1))
-        done
-        [ "$fail" -eq 0 ]
+        cd tests/e2e && npx playwright test
     fi
 
 lint:
@@ -45,7 +36,7 @@ fmt:
     ruff format .
 
 check:
-    ruff check .
+    ruff check . && python -m py_compile src/
 
 clean:
     rm -rf build/ dist/ *.egg-info

@@ -1,7 +1,7 @@
 # --- forge standard recipes ---
 
 project-type:
-    @echo "backend"
+    @echo "unknown"
 
 compile:
     @echo "Error: compile recipe not implemented — edit justfile to add build command" >&2 && exit 1
@@ -23,19 +23,10 @@ test-e2e feature="":
     #!/usr/bin/env bash
     set -euo pipefail
     if [ "{{feature}}" != "" ]; then
-        scripts_dir="tests/e2e/{{feature}}"
-        fail=0
-        for spec in "$scripts_dir"/*.spec.ts; do
-            [ -f "$spec" ] && npx tsx "$spec" || fail=$((fail+1))
-        done
-        [ "$fail" -eq 0 ]
+        cd tests/e2e && npx playwright test {{feature}}/
     else
         [ ! -d tests/e2e/node_modules ] && npm install --prefix tests/e2e
-        fail=0
-        for spec in $(find tests/e2e -mindepth 2 -name '*.spec.ts'); do
-            npx tsx "$spec" || fail=$((fail+1))
-        done
-        [ "$fail" -eq 0 ]
+        cd tests/e2e && npx playwright test
     fi
 
 lint:

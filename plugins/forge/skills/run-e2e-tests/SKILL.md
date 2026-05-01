@@ -117,11 +117,11 @@ just test-e2e --feature <slug> 2>&1 | tee results/<slug>-output.txt
 
 ### Step 3: Collect Results
 
-Parse the Node.js test runner output (TAP-like format) from each spec:
+Parse the Playwright test runner output (`list` reporter format) from each spec:
 
-- **Pass**: Lines containing `✓` or `ok N`
-- **Fail**: Lines containing `✗` or `not ok N` followed by error details
-- **Skip**: Lines containing `# skip`
+- **Pass**: Lines containing `✓` or test name followed by timing
+- **Fail**: Lines containing `✘` or `×` followed by error details
+- **Skip**: Lines containing `-` or `[skipped]`
 
 For each test, capture:
 - TC ID (from test name)
@@ -156,7 +156,7 @@ Skill(skill="mcp__zai-mcp-server__analyze_image", image_source="<screenshot_path
 1. `kill <server_pid>` — terminate all servers started in Step 1
 2. Clean up temporary files
 
-Playwright browser instances are automatically closed by `after()` hooks in spec files; no manual cleanup needed.
+Playwright browser instances are automatically closed by the test runner; no manual cleanup needed.
 </HARD-RULE>
 
 ## Output

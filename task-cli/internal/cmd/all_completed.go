@@ -3,10 +3,13 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
+	"time"
 
 	"task-cli/pkg/feature"
 	"task-cli/pkg/project"
@@ -169,6 +172,14 @@ func runAllCompleted(cmd *cobra.Command, args []string) {
 			}
 		}
 		if e2eReady {
+			// Health check: probe baseUrl and apiBaseUrl from config.yaml
+			if !probeE2EServers(result.ProjectRoot) {
+				fmt.Fprintln(os.Stderr, "WARNING: e2e server health check failed; skipping e2e regression")
+				fmt.Fprintln(os.Stderr, "  Start dev server and retry: just dev && just test-e2e")
+				e2eReady = false
+			}
+		}
+		if e2eReady {
 			fmt.Fprintln(os.Stderr, "--- Running full e2e regression (just test-e2e) ---")
 			regressionOutput, regSuccess := runCmdCapture(result.ProjectRoot, "just", "test-e2e")
 			if !regSuccess {
@@ -307,5 +318,69 @@ func runProjectTests(projectRoot, testCommand string) (string, bool) {
 		fmt.Println("WARNING: No test command found. Set testCommand in index.json.")
 		return "", true
 	}
+}
+
+// probeEndpoint checks if an HTTP endpoint is reachable within the given timeout.
+func probeEndpoint(url string, timeout time.Duration) bool {
+	client := http.Client{Timeout: timeout}
+	resp, err := client.Get(url)
+	if err != nil {
+		return false
+	}
+	resp.Body.Close()
+	return resp.StatusCode < 500
+}
+
+// probeE2EServers reads tests/e2e/config.yaml, extracts baseUrl and apiBaseUrl,
+// and probes both endpoints. Returns true if all configured endpoints respond.
+func probeE2EServers(projectRoot string) bool {
+	configPath := filepath.Join(projectRoot, "tests", "e2e", "config.yaml")
+	if !fileExists(configPath) {
+		fmt.Fprintln(os.Stderr, "  No tests/e2e/config.yaml found; skipping health check")
+		return true
+	}
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "  WARNING: cannot read config.yaml: %v\n", err)
+		return true
+	}
+
+	baseURL := extractYAMLStringField(data, "baseUrl")
+	apiBaseURL := extractYAMLStringField(data, "apiBaseUrl")
+
+	endpoints := []string{}
+	if baseURL != "" {
+		endpoints = append(endpoints, baseURL)
+	}
+	if apiBaseURL != "" {
+		endpoints = append(endpoints, apiBaseURL)
+	}
+	if len(endpoints) == 0 {
+		return true
+	}
+
+	probeTimeout := 5 * time.Second
+	for _, ep := range endpoints {
+		if !probeEndpoint(ep, probeTimeout) {
+			fmt.Fprintf(os.Stderr, "  Endpoint unreachable: %s\n", ep)
+			return false
+		}
+		fmt.Fprintf(os.Stderr, "  Endpoint OK: %s\n", ep)
+	}
+	return true
+}
+
+// extractYAMLStringField extracts a top-level string field value from YAML content.
+func extractYAMLStringField(data []byte, field string) string {
+	for line := range strings.SplitSeq(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if after, ok := strings.CutPrefix(line, field+":"); ok {
+			val := strings.TrimSpace(after)
+			val = strings.Trim(val, `'"`)
+			return val
+		}
+	}
+	return ""
 }
 
