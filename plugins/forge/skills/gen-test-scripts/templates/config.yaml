@@ -1,0 +1,20 @@
+# E2E Test Environment Configuration
+# VERIFY: adjust values to match your local/dev environment
+# IMPORTANT: add config.yaml to .gitignore to prevent credential leaks
+
+# Application URLs
+baseUrl: http://localhost:3456        # Frontend URL
+apiBaseUrl: http://localhost:8080     # Backend API URL
+
+# Default timeout (ms)
+timeout: 30000
+
+# Auth credentials (used by loginViaUI and getApiToken)
+username: admin
+password: password
+
+# Login page locators (optional — overrides regex defaults in loginViaUI)
+# loginLocators:
+#   usernameField: 'username|email'
+#   passwordField: 'password'
+#   submitButton: 'login|sign in|submit'

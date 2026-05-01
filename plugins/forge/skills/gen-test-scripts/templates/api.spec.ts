@@ -1,5 +1,4 @@
-import { describe, test, before } from 'node:test';
-import assert from 'node:assert/strict';
+import { test, expect } from '@playwright/test';
 import { curl, apiBaseUrl
   // CONDITIONAL: Uncomment imports below only if auth-required-test exists
   // , getApiToken, createAuthCurl
@@ -7,15 +6,15 @@ import { curl, apiBaseUrl
   // , defaultCreds
 } from '../helpers.js';
 
-describe('API E2E Tests', () => {
+test.describe('API E2E Tests', () => {
   // CONDITIONAL: Uncomment the 2 lines below only if auth-required-test exists
   // let authCurl: ReturnType<typeof createAuthCurl>;
 
-  before(async () => {
-    // CONDITIONAL: Uncomment the 2 lines below only if auth-required-test exists
-    // const token = await getApiToken(apiBaseUrl);
-    // authCurl = createAuthCurl(apiBaseUrl, token);
-  });
+  // test.beforeAll(async () => {
+  //   // CONDITIONAL: Uncomment the 2 lines below only if auth-required-test exists
+  //   // const token = await getApiToken(apiBaseUrl, '/v1/auth/login'); // VERIFY: auth endpoint path from router files
+  //   // authCurl = createAuthCurl(apiBaseUrl, token);
+  // });
 
   // ── Auth Tests (no shared auth) ─────────────────────────────────
   // CONDITIONAL: Uncomment this block only if login-test exists
@@ -27,9 +26,20 @@ describe('API E2E Tests', () => {
   //   const res = await curl('POST', `${apiBaseUrl}/v1/auth/login`, { // VERIFY: auth endpoint path from router files
   //     body: JSON.stringify(defaultCreds), // VERIFY: auth request body schema from handler
   //   });
-  //   assert.equal(res.status, 200);
+  //   expect(res.status).toBe(200);
   //   const data = JSON.parse(res.body);
-  //   assert.ok(data.token ?? data.access_token, 'Response contains token'); // VERIFY: token field name from auth response
+  //   expect(data.token ?? data.access_token).toBeTruthy(); // VERIFY: token field name from auth response
+  // });
+
+  // CONDITIONAL: Uncomment and adapt this block only if custom-auth-test exists
+  // This is a scaffold — rewrite the auth mechanism to match what Step 1.5 discovered.
+  //
+  // let customAuthHeaders: Record<string, string>;
+  //
+  // test.beforeAll(async () => {
+  //   // VERIFY: set up custom auth based on codebase analysis (API key / OAuth / session cookie)
+  //   // Example for API key auth:
+  //   // customAuthHeaders = { 'X-API-Key': 'your-api-key' }; // VERIFY: API key source from Fact Table
   // });
 
   // ── Authenticated Tests (use shared auth) ───────────────────────
@@ -39,6 +49,6 @@ describe('API E2E Tests', () => {
   // // Traceability: TC-011 → Spec Section 5.3
   // test('TC-011: GET /v1/users returns 200', async () => {
   //   const res = await authCurl('GET', '/v1/users'); // VERIFY: API path from router files
-  //   assert.equal(res.status, 200);
+  //   expect(res.status).toBe(200);
   // });
 });

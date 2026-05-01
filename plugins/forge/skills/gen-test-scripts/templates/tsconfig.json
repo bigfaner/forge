@@ -10,6 +10,6 @@
     "resolveJsonModule": true,
     "declaration": false
   },
-  "include": ["./*.ts"],
+  "include": ["./*.ts", "./**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }

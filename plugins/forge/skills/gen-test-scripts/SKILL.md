@@ -1,6 +1,6 @@
 ---
 name: gen-test-scripts
-description: Generate executable TypeScript e2e test scripts from test cases. Uses Playwright for UI (semantic locators from sitemap.json), fetch for API, child_process for CLI. Zero external test frameworks (node:test + node:assert).
+description: Generate executable TypeScript e2e test scripts from test cases. Uses @playwright/test for all tests (no node:test or node:assert). Playwright for UI, fetch for API, child_process for CLI.
 ---
 
 # Gen Test Scripts
@@ -22,7 +22,7 @@ Check previous stage artifacts. Abort and prompt user if missing:
 |----------|----------------|
 | `testing/test-cases.md` | Run `/gen-test-cases` first |
 | `docs/sitemap/sitemap.json` (UI tests only) | Run `/gen-sitemap` first |
-| `tests/e2e/config.yaml` | Run `/gen-sitemap` or create manually |
+| `tests/e2e/config.yaml` | Run `/gen-sitemap` or create from template at `plugins/forge/skills/gen-test-scripts/templates/config.yaml` |
 
 **Note**: This skill can be invoked manually or as the standard task T-test-2 appended by `/breakdown-tasks`.
 
@@ -92,6 +92,7 @@ For each test case, classify by authentication requirements:
 | **login-test** | `Target` matches `ui/login`, `ui/auth`, `ui/signin`, `api/auth`, `api/login`, `api/token` | No shared auth. UI uses independent `loginPage`, API uses raw `curl()` |
 | **auth-required-test** | `Pre-conditions` contain "authenticated", "logged in", or `Target` implies protected resource | Use shared auth |
 | **public-test** | No auth-related pre-conditions, target is a public resource | No auth needed |
+| **custom-auth-test** | `Pre-conditions` mention "API key", "X-API-Key", "OAuth", "session cookie", or other non-Bearer auth patterns | Detect auth mechanism from codebase during Step 1.5. Generate custom auth setup in `test.beforeAll` — e.g., API key via `curl()` with custom header, or cookie-based session |
 
 Count each category to decide whether to enable shared auth (enabled when `auth-required-test` exists).
 
@@ -169,7 +170,9 @@ Build an in-memory mapping table for use in Step 4.
 
 ### Step 4: Generate Spec Files
 
-For each type group, generate a spec file from the corresponding template.
+**Verify project interfaces before generating**: For each type group from Step 1, confirm the project actually exposes that interface. If a type group has test cases but the project lacks that interface (no evidence in codebase that this is a product interface, not developer tooling): warn the user, then **skip that spec file entirely**. Key distinction: build/test/lint commands (`go build`, `grep`, `npm test`) are developer tooling, not a CLI product interface.
+
+For each non-empty, verified type group, generate a spec file from the corresponding template.
 
 **Template usage**: Templates contain `CONDITIONAL` comment blocks marking code segments to enable/disable based on auth classification. Based on Step 1 auth classification results, **uncomment** matching CONDITIONAL blocks, remove non-matching blocks, then fill in test data. Do not rewrite template structure from scratch.
 
@@ -181,16 +184,19 @@ For each type group, generate a spec file from the corresponding template.
 3. Remove the `// VERIFY:` comment
 4. If no Fact Table value exists, keep the `// VERIFY:` comment as-is so it is visible during code review
 
-**Post-generation check**: After generating all spec files, run `just e2e-verify --feature <slug>` to confirm no unresolved markers remain. exit 1 = skill incomplete — do not proceed to run-e2e-tests until all `// VERIFY:` markers are resolved.
+**Post-generation check**: After generating all spec files, verify no unresolved `// VERIFY:` markers remain:
+1. Run `just e2e-verify --feature <slug>` if the recipe exists in the Justfile
+2. Otherwise, fall back to `grep -r '// VERIFY:' tests/e2e/<slug>/`
+3. Any remaining `// VERIFY:` = skill incomplete — do not proceed to run-e2e-tests until all markers are resolved
 
 <EXTREMELY-IMPORTANT>
-**UI tests use Playwright Locator API** (browser driver library only). Using agent-browser in generated spec files is forbidden.
+**UI tests use `@playwright/test`** (full test runner with automatic browser lifecycle). Using agent-browser in generated spec files is forbidden.
 
 **API tests use Node.js built-in `fetch`**. External HTTP libraries like axios, supertest are forbidden.
 
 **CLI tests use `child_process.execSync`** via `runCli()` helper.
 
-**All tests use `node:test` + `node:assert`**. External test frameworks like jest, mocha, vitest are forbidden.
+**All tests use `@playwright/test`** (`test`, `expect`, `test.describe`). The `node:test` and `node:assert` modules are not used.
 
 **`@eN` refs must not appear in any generated spec file.**
 </EXTREMELY-IMPORTANT>
@@ -198,16 +204,15 @@ For each type group, generate a spec file from the corresponding template.
 **UI tests (`tests/e2e/<feature>/ui.spec.ts`)**:
 
 - Read template: `plugins/forge/skills/gen-test-scripts/templates/playwright-ui.spec.ts`
-- **Auth setup** (top-level `before` hook):
-  - If `auth-required-test` exists: call `await loginViaUI(page)` after `setupBrowser()`
+- **Auth setup** (`test.beforeEach` hook):
+  - If `auth-required-test` exists: call `await loginViaUI(page)` using the injected `page` fixture
   - If only `public-test` and/or `login-test`: do not call `loginViaUI()`
-- **Login test cases**: place in nested `describe('Login', ...)` block
-  - Create independent `loginPage` via `page.context().newPage()` (no auth cookie)
-  - After block ends, `loginPage.close()`
-  - No shared auth
-- **Authenticated test cases** + **public-test cases**: at top level, use shared `page` (logged-in state)
+- **Login test cases**: place in nested `test.describe('Login', ...)` block
+  - Each test gets its own `page` via Playwright fixture injection
+  - No shared auth state between tests
+- **Authenticated test cases** + **public-test cases**: at top level, use shared `page` from fixture
 - Use locator mapping table from Step 3 to replace template example locators
-- Each `test()` uses `await page.xxx.waitFor()` instead of `assert.ok(snapshotContains())`
+- Use `await expect(locator).toBeVisible()` pattern instead of `assert.ok()`
 - Keep `screenshot(page, 'TC-NNN')` calls
 - Fallback locators annotated with `// UNSTABLE: no semantic anchor`
 - Each test includes a comment: `// Traceability: TC-NNN → {Source}`
@@ -215,14 +220,16 @@ For each type group, generate a spec file from the corresponding template.
 **API tests (`tests/e2e/<feature>/api.spec.ts`)**:
 
 - Read template: `plugins/forge/skills/gen-test-scripts/templates/api.spec.ts`
-- **Auth setup** (top-level `before` hook):
-  - If `auth-required-test` exists: call `const token = await getApiToken(apiBaseUrl)` and create `authCurl = createAuthCurl(apiBaseUrl, token)`
+- **Auth setup** (`test.beforeAll` block):
+  - If `auth-required-test` exists: call `const token = await getApiToken(apiBaseUrl, authPath)` (authPath from Fact Table `AUTH_ENDPOINT` path) and create `authCurl = createAuthCurl(apiBaseUrl, token)`
+  - If `custom-auth-test` exists: write custom auth setup from scratch in `test.beforeAll` using `curl()` directly — do not use `getApiToken` (it assumes username/password body schema). See CONDITIONAL scaffold in template.
   - If only `public-test` and/or `login-test`: no auth setup
 - **Login/auth API test cases**: use raw `curl()` (no Bearer header)
 - **Authenticated test cases**: use `authCurl(method, path)` (auto-inject Bearer token)
+- **Custom-auth test cases**: use `curl()` with custom auth headers from `test.beforeAll`
 - **Public test cases**: use `curl()` (no auth)
 - For each API test case, generate a `test()` block:
-  - Assert on status code, response body, headers
+  - Assert on status code, response body using `expect()`
   - Each test includes a traceability comment
 
 **CLI tests (`tests/e2e/<feature>/cli.spec.ts`)**:
@@ -230,13 +237,15 @@ For each type group, generate a spec file from the corresponding template.
 - Read template: `plugins/forge/skills/gen-test-scripts/templates/cli.spec.ts`
 - For each CLI test case, generate a `test()` block:
   - Use `runCli()` helper to execute commands
-  - Assert on stdout, stderr, exit code
+  - Assert on stdout, stderr, exit code using `expect()`
   - Each test includes a traceability comment
 
 <HARD-RULE>
 **Traceability**: Each `test()` must include a traceability comment `// Traceability: TC-NNN → {PRD Source}` ensuring complete traceability chain from test script to PRD.
 
-**Skip empty groups**: If no test cases of a given type exist, skip generating that spec file.
+**Skip empty groups**: If no test cases of a given type exist, or the project lacks that interface (Step 4 verification), skip generating that spec file.
+
+**Empty result guard**: If zero spec files were generated (all groups empty or all interfaces undetected), abort with a clear message: "No spec files generated — either test-cases.md has no testable cases, or all interface types were undetected. Re-run /gen-test-cases or verify project structure."
 </HARD-RULE>
 
 ### Step 5: Ensure Shared Infrastructure
@@ -244,13 +253,14 @@ For each type group, generate a spec file from the corresponding template.
 Check if shared infrastructure exists at `tests/e2e/`:
 
 ```bash
-ls tests/e2e/helpers.ts tests/e2e/package.json tests/e2e/tsconfig.json 2>/dev/null
+ls tests/e2e/helpers.ts tests/e2e/package.json tests/e2e/tsconfig.json tests/e2e/playwright.config.ts 2>/dev/null
 ```
 
 **If any file is missing**, create it from the corresponding template:
 - `helpers.ts`: copy from `plugins/forge/skills/gen-test-scripts/templates/helpers.ts` (only if tests/e2e/helpers.ts does not exist)
 - `package.json`: copy from `plugins/forge/skills/gen-test-scripts/templates/package.json` (only if tests/e2e/package.json does not exist)
 - `tsconfig.json`: copy from `plugins/forge/skills/gen-test-scripts/templates/tsconfig.json` (only if tests/e2e/tsconfig.json does not exist)
+- `playwright.config.ts`: copy from `plugins/forge/skills/gen-test-scripts/templates/playwright.config.ts` (only if tests/e2e/playwright.config.ts does not exist)
 
 **If all exist**: skip. Do not modify existing shared files.
 
@@ -266,18 +276,18 @@ All generated spec files go to `tests/e2e/<feature>/`:
 
 ```
 tests/e2e/                        # Shared infrastructure (created once)
-  helpers.ts                      # Shared utilities (browser lifecycle, curl, auth, runCli)
-  package.json                    # tsx + playwright + yaml
+  helpers.ts                      # Shared utilities (curl, auth, runCli, screenshot)
+  package.json                    # @playwright/test + yaml
   tsconfig.json                   # ES2022 + NodeNext
   config.yaml                     # Test environment config (already exists)
-  <feature>/                      # Generated per-feature
-    ui.spec.ts                    # UI tests via Playwright
-    api.spec.ts                   # API tests via fetch
-    cli.spec.ts                   # CLI tests via child_process
+  <feature>/                      # Generated per-feature (only for types detected in project)
+    ui.spec.ts                    # [if UI detected] UI tests via Playwright
+    api.spec.ts                   # [if API detected] API tests via fetch
+    cli.spec.ts                   # [if CLI detected] CLI tests via child_process
 ```
 
 <HARD-RULE>
-**Shared file policy**: `helpers.ts`, `package.json`, and `tsconfig.json` at `tests/e2e/` are shared across all features.
+**Shared file policy**: `helpers.ts`, `package.json`, `tsconfig.json`, and `playwright.config.ts` at `tests/e2e/` are shared across all features.
 - If they do not exist: create them from templates.
 - If they already exist: DO NOT overwrite. The existing versions are canonical.
 - Only spec files (`*.spec.ts`) are written per-feature.

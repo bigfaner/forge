@@ -45,7 +45,7 @@ ls docs/features/<slug>/prd/prd-spec.md
 ## Workflow
 
 ```
-1. Read PRD sources → 2. Extract AC → 3. Classify & generate → 3.5. Validate routes → 4. Write test-cases.md
+1. Read PRD sources → 2. Extract AC → 2.5. Detect interfaces → 3. Classify & generate → 3.5. Validate routes → 4. Write test-cases.md
 ```
 
 ### Step 1: Read PRD Sources
@@ -84,6 +84,29 @@ Only extract acceptance criteria that **explicitly exist** in the PRD. Forbidden
 - Omitting any explicit Given/When/Then conditions
 </EXTREMELY-IMPORTANT>
 
+### Step 2.5: Detect Project Interfaces
+
+Before classification, determine which interface types the project actually exposes. Use two signals:
+
+1. **PRD signal** (primary): The PRD read in Step 1 describes the product's nature. A "web application" has UI+API but no CLI; a "CLI tool" has CLI but no UI.
+2. **Codebase signal** (secondary): Scan the project for evidence of each interface type. Look broadly — don't hardcode specific framework patterns. Ask: "does this codebase contain code whose *purpose* is to serve this interface?"
+
+**Interface concepts**:
+
+| Interface | Meaning | NOT this |
+|-----------|---------|----------|
+| **UI** | The project renders pages/views that users interact with in a browser | — |
+| **API** | The project exposes HTTP endpoints that clients consume | — |
+| **CLI** | The project provides a **user-facing command-line binary** — a product feature the end user invokes from a terminal | Build commands (`go build`, `npm run build`), lint/test tools (`grep`, `eslint`), CI scripts — these are developer tooling, not product interfaces |
+
+**Method**: Based on both signals, decide which interfaces the project exposes. Record as a set (e.g. `{UI, API}`).
+
+<HARD-RULE>
+If an interface type is absent from the detected set, **do not generate test cases for that type**. Criteria that would have matched an absent type should be:
+1. Reclassified to a present type if they relate to product behavior under that interface
+2. Omitted if they are purely build/tooling checks unrelated to any product interface
+</HARD-RULE>
+
 ### Step 3: Classify & Generate Test Cases
 
 For each extracted criterion, classify by type and generate a test case.
@@ -95,6 +118,8 @@ Every test case must include `Target` and `Test ID` fields:
 </HARD-RULE>
 
 **Type classification rules:**
+
+Only classify into types present in the detected set from Step 2.5. Skip absent types entirely.
 
 | Type | Indicators |
 |------|-----------|

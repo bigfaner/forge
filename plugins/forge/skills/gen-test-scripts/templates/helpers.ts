@@ -3,7 +3,7 @@ import { readFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
-import { chromium, type Browser, type Page } from 'playwright';
+import type { Page } from '@playwright/test';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -17,13 +17,13 @@ function findConfigPath(): string {
 
   let dir = __dirname;
   for (let i = 0; i < 10; i++) {
-    const candidate = resolve(dir, 'tests', 'e2e', 'config.yaml');
+    const candidate = resolve(dir, 'config.yaml');
     if (existsSync(candidate)) return candidate;
     const parent = resolve(dir, '..');
     if (parent === dir) break;
     dir = parent;
   }
-  throw new Error(`tests/e2e/config.yaml not found. Searched upward from ${__dirname}. Set E2E_CONFIG_PATH or run /gen-sitemap first.`);
+  throw new Error(`config.yaml not found. Searched upward from ${__dirname}. Set E2E_CONFIG_PATH or run /gen-sitemap first.`);
 }
 
 // Screenshots go to <helpers-dir>/results/screenshots
@@ -40,7 +40,11 @@ interface E2EConfig {
 }
 
 function readConfig(): E2EConfig {
-  return parseYaml(readFileSync(findConfigPath(), 'utf-8'));
+  const raw = parseYaml(readFileSync(_configPath, 'utf-8'));
+  if (typeof raw !== 'object' || raw === null) {
+    throw new Error(`Invalid config.yaml: expected object, got ${typeof raw}`);
+  }
+  return raw as E2EConfig;
 }
 
 const _config = readConfig();
@@ -57,28 +61,6 @@ function toNumber(val: unknown, fallback: number): number {
 export const baseUrl = _config.baseUrl ?? 'http://localhost:3456'; // VERIFY: frontend port from config
 export const apiBaseUrl = _config.apiBaseUrl ?? 'http://localhost:8080'; // VERIFY: API port from config
 const DEFAULT_TIMEOUT = toNumber(_config.timeout, 30000);
-
-// ── Browser lifecycle ──────────────────────────────────────────────
-let _browser: Browser | null = null;
-let _page: Page | null = null;
-
-export async function setupBrowser(): Promise<Page> {
-  _browser = await chromium.launch();
-  _page = await _browser.newPage();
-  _page.setDefaultTimeout(DEFAULT_TIMEOUT);
-  return _page;
-}
-
-export async function teardownBrowser(): Promise<void> {
-  await _browser?.close();
-  _browser = null;
-  _page = null;
-}
-
-export function getPage(): Page {
-  if (!_page) throw new Error('Browser not initialized. Call setupBrowser() first.');
-  return _page;
-}
 
 // ── Evidence ───────────────────────────────────────────────────────
 export async function screenshot(page: Page, tcId: string): Promise<string> {
@@ -149,22 +131,21 @@ const _loginLocators = _config.loginLocators;
 
 // TEMPLATE: Replace regex with actual locator from sitemap when generating
 export async function loginViaUI(page: Page, creds: UICredentials = defaultCreds): Promise<void> {
-  await page.goto(`${baseUrl}/login`);
-  await page.waitForLoadState('networkidle');
+  const loginUrl = new URL('/login', baseUrl).toString();
+  await page.goto(loginUrl);
   const uPat = new RegExp(_loginLocators?.usernameField ?? 'username|email', 'i');
   const pPat = new RegExp(_loginLocators?.passwordField ?? 'password', 'i');
   const bPat = new RegExp(_loginLocators?.submitButton ?? 'login|sign in|submit', 'i');
   await page.getByRole('textbox', { name: uPat }).fill(creds.username);
   await page.getByRole('textbox', { name: pPat }).fill(creds.password);
   await page.getByRole('button', { name: bPat }).click();
-  await page.waitForURL((url) => !url.pathname.includes('login'), { timeout: DEFAULT_TIMEOUT });
+  await page.waitForURL((url) => !url.pathname.includes('login') && url.pathname !== '/', { timeout: DEFAULT_TIMEOUT });
 }
 
-export async function getApiToken(apiBaseUrl: string, creds: UICredentials = defaultCreds): Promise<string> {
-  // IMPORTANT: apiBaseUrl contains no path prefix. The path below (/v1/auth/login) is a placeholder.
-  // Check backend router (e.g. r.Group(...) in router.go) for the actual auth endpoint path.
-  // VERIFY: auth endpoint path from backend router
-  const res = await curl('POST', `${apiBaseUrl}/v1/auth/login`, {
+export async function getApiToken(apiBaseUrl: string, authPath: string, creds: UICredentials = defaultCreds): Promise<string> {
+  // authPath MUST be resolved from Fact Table before calling this function.
+  // Example: getApiToken(apiBaseUrl, '/v1/auth/login')
+  const res = await curl('POST', `${apiBaseUrl}${authPath}`, {
     body: JSON.stringify({ username: creds.username, password: creds.password }),
   });
   if (res.status !== 200) throw new Error(`Auth failed: ${res.status} ${res.body}`);
@@ -178,11 +159,13 @@ export function createAuthCurl(
   apiBaseUrl: string,
   token: string,
 ): (method: string, path: string, opts?: { body?: string; headers?: Record<string, string>; timeout?: number }) => Promise<CurlResponse> {
-  return (method, path, opts) =>
-    curl(method, new URL(path, apiBaseUrl).toString(), {
+  return (method, path, opts) => {
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    return curl(method, `${apiBaseUrl}${normalizedPath}`, {
       ...opts,
       headers: { Authorization: `Bearer ${token}`, ...opts?.headers },
     });
+  };
 }
 
 // ── CLI ────────────────────────────────────────────────────────────
@@ -200,11 +183,12 @@ export function runCli(cmd: string, cwd?: string): CliResult {
       cwd: cwd ?? process.cwd(),
     });
     return { stdout, stderr: '', exitCode: 0 };
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const err = e as { stdout?: string; stderr?: string; status?: number };
     return {
-      stdout: e.stdout ?? '',
-      stderr: e.stderr ?? '',
-      exitCode: e.status ?? 1,
+      stdout: err.stdout ?? '',
+      stderr: err.stderr ?? '',
+      exitCode: err.status ?? 1,
     };
   }
 }
