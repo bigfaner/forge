@@ -1,0 +1,9 @@
+{
+  "entries": [
+    {
+      "targetPath": "tests/e2e/{{MODULE}}/{{SPEC_FILE}}",
+      "wasExistingBeforeMerge": false,
+      "status": "done"
+    }
+  ]
+}

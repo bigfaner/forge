@@ -1,0 +1,9 @@
+schema_version: 1
+status: completed
+timestamp: {{UTC_ISO_TIMESTAMP}}
+source: tests/e2e/features/{{SLUG}}/
+targets:
+  - tests/e2e/{{MODULE}}/{{SPEC_FILE}}
+modules:
+  - {{MODULE_NAME}}
+testCount: {{N}}
