@@ -1,1 +1,12 @@
-2026-04-29T12:24:09Z
+schema_version: 1
+status: completed
+timestamp: 2026-04-30T02:31:12Z
+source: tests/e2e/justfile-e2e-integration/
+targets:
+  - tests/e2e/justfile-e2e-integration/cli.spec.ts
+  - tests/e2e/justfile-e2e-integration/detection-assembly.spec.ts
+  - tests/e2e/justfile-e2e-integration/forge-justfile.spec.ts
+  - tests/e2e/justfile-e2e-integration/mixed-template.spec.ts
+modules:
+  - justfile
+testCount: 62

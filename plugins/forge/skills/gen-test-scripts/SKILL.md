@@ -10,7 +10,7 @@ Generate executable TypeScript e2e test scripts from test cases.
 **Core principle**: Every generated `test()` must be independently runnable, repeatable, and have explicit assertions. Test cases are input; scripts are output.
 
 <HARD-GATE>
-This skill only generates test scripts (`tests/e2e/<feature>/`), it does not execute tests.
+This skill only generates test scripts (`tests/e2e/features/<feature>/`), it does not execute tests.
 Test execution is handled by the `/run-e2e-tests` skill.
 </HARD-GATE>
 
@@ -22,7 +22,7 @@ Check previous stage artifacts. Abort and prompt user if missing:
 |----------|----------------|
 | `testing/test-cases.md` | Run `/gen-test-cases` first |
 | `docs/sitemap/sitemap.json` (UI tests only) | Run `/gen-sitemap` first |
-| `tests/e2e/config.yaml` | Run `/gen-sitemap` or create from template at `plugins/forge/skills/gen-test-scripts/templates/config.yaml` |
+| `tests/e2e/config.yaml` | Created by this skill in Step 5 (or create manually from template at `plugins/forge/skills/gen-test-scripts/templates/config.yaml`) |
 
 **Note**: This skill can be invoked manually or as the standard task T-test-2 appended by `/breakdown-tasks`.
 
@@ -54,6 +54,8 @@ Locator source for UI tests comes from `docs/sitemap/sitemap.json`. Generated an
 | `states[].elements` | Locators for elements within dynamic states |
 
 Test cases match sitemap pages via the `Route` field. The `Element` field (referencing element IDs like E-NNN / L-NNN) is optional — when present, provides precise mapping; when absent, all page elements are used.
+
+When `Element` references an ID (E-NNN or L-NNN), match it to the sitemap's `elements[].id` field directly. When it references a textual description, match semantically to the most relevant element's `name` or `label` field.
 
 ## When to Use
 
@@ -94,6 +96,12 @@ For each test case, classify by authentication requirements:
 | **public-test** | No auth-related pre-conditions, target is a public resource | No auth needed |
 | **custom-auth-test** | `Pre-conditions` mention "API key", "X-API-Key", "OAuth", "session cookie", or other non-Bearer auth patterns | Detect auth mechanism from codebase during Step 1.5. Generate custom auth setup in `test.beforeAll` — e.g., API key via `curl()` with custom header, or cookie-based session |
 
+**Classification priority** (evaluated top-down, first match wins):
+1. `custom-auth-test` — takes priority over `auth-required-test` when both match (e.g., "authenticated via API key" → custom-auth, not auth-required)
+2. `login-test`
+3. `auth-required-test`
+4. `public-test`
+
 Count each category to decide whether to enable shared auth (enabled when `auth-required-test` exists).
 
 <HARD-RULE>
@@ -108,13 +116,13 @@ Read actual source code files to extract ground-truth values. **Never guess or a
 
 **Required reads** (adapt to project structure):
 
-| Source | What to extract | Typical file patterns |
-|--------|----------------|----------------------|
-| Router files | Route paths, path parameters, middleware bindings | `internal/handler/router.go`, `src/routes/**`, `src/app/**/page.tsx` |
-| Config files | API port, base path prefix, auth credentials | `config.yaml`, `.env`, `.env.example`, `src/config.*` |
-| API handlers | Request/response schemas, status codes, validation rules | `internal/handler/*.go`, `src/handlers/**` |
-| Auth implementation | Login endpoint path, token field name, header format | Auth module/controller files |
-| CLI entry points | Command names, flag names, output formats | `src/cli/**`, `cmd/**/*.go` |
+| Source | What to extract | Discovery guidance |
+|--------|----------------|---------------------|
+| Router files | Route paths, path parameters, middleware bindings | Search for route registration patterns, configuration files, and entry points using Grep. Look for URL path strings, HTTP method bindings, and path parameter definitions. |
+| Config files | API port, base path prefix, auth credentials | Search for config/settings files (`.env`, `config.*`, `settings.*`). Look for port numbers, base URLs, and credential variable names. |
+| API handlers | Request/response schemas, status codes, validation rules | Search for request handler functions and response definitions. Look for status code usage, input validation, and response body shaping. |
+| Auth implementation | Login endpoint path, token field name, header format | Search for authentication/authorization modules. Look for login endpoints, token generation/parsing, and header middleware. |
+| CLI entry points | Command names, flag names, output formats | Search for command registration and argument parsing. Look for CLI framework usage (e.g., cobra, commander, click) and output formatting. |
 
 **Build the Fact Table**: After reading, record verified facts with source citations:
 
@@ -172,11 +180,20 @@ Build an in-memory mapping table for use in Step 4.
 
 **Verify project interfaces before generating**: For each type group from Step 1, confirm the project actually exposes that interface. If a type group has test cases but the project lacks that interface (no evidence in codebase that this is a product interface, not developer tooling): warn the user, then **skip that spec file entirely**. Key distinction: build/test/lint commands (`go build`, `grep`, `npm test`) are developer tooling, not a CLI product interface.
 
+Verification probes by type:
+| Type | Probe command | Evidence of product interface |
+|------|--------------|-------------------------------|
+| UI | `ls docs/sitemap/sitemap.json` or `grep -r "router\|<Route\|page\." src/` | Sitemap exists, or frontend route registration files found |
+| API | `grep -rn "router\|handler\|endpoint\|HandleFunc\|app.get\|app.post" --include='*.go' --include='*.ts' --include='*.js' .` | HTTP handler registration patterns found |
+| CLI | `grep '"bin"' package.json` or `ls cmd/ main.go` or `grep -rn "cobra.Command\|flag\\.Parse\|argparse" --include='*.go' --include='*.py' .` | CLI entry point or command framework detected |
+
 For each non-empty, verified type group, generate a spec file from the corresponding template.
 
 **Template usage**: Templates contain `CONDITIONAL` comment blocks marking code segments to enable/disable based on auth classification. Based on Step 1 auth classification results, **uncomment** matching CONDITIONAL blocks, remove non-matching blocks, then fill in test data. Do not rewrite template structure from scratch.
 
-**Import path**: All spec files must import from `'../helpers.js'` (one level up to shared helpers.ts at `tests/e2e/`).
+**Example tests**: The UI template (TC-002..TC-005) and API template (TC-012..TC-014) contain example test patterns. These are **reference patterns to guide generation** — replace their content with actual test cases from `test-cases.md`, keeping the same structure (locator pattern, assertion pattern, screenshot call).
+
+**Import path**: All spec files must import from `'../../helpers.js'` (two levels up to shared helpers.ts at `tests/e2e/`).
 
 **VERIFY marker resolution**: All `// VERIFY:` comments in templates must be resolved during generation:
 1. Look up the corresponding value in the Fact Table (Step 1.5)
@@ -184,10 +201,17 @@ For each non-empty, verified type group, generate a spec file from the correspon
 3. Remove the `// VERIFY:` comment
 4. If no Fact Table value exists, keep the `// VERIFY:` comment as-is so it is visible during code review
 
+**TypeScript compilation check**: After generating all spec files for a feature, verify they compile:
+```bash
+cd tests/e2e && npx tsc --noEmit
+```
+If compilation fails, fix the generated spec files before proceeding.
+
 **Post-generation check**: After generating all spec files, verify no unresolved `// VERIFY:` markers remain:
 1. Run `just e2e-verify --feature <slug>` if the recipe exists in the Justfile
-2. Otherwise, fall back to `grep -r '// VERIFY:' tests/e2e/<slug>/`
-3. Any remaining `// VERIFY:` = skill incomplete — do not proceed to run-e2e-tests until all markers are resolved
+2. Otherwise, fall back to `grep -rn '// VERIFY:' tests/e2e/features/<slug>/ --include='*.spec.ts'`
+3. Also check shared infrastructure: `grep -rn '// VERIFY:' tests/e2e/helpers.ts` (should have none after stripping during copy)
+4. Any remaining `// VERIFY:` = skill incomplete — do not proceed to run-e2e-tests until all markers are resolved
 
 <EXTREMELY-IMPORTANT>
 **UI tests use `@playwright/test`** (full test runner with automatic browser lifecycle). Using agent-browser in generated spec files is forbidden.
@@ -201,7 +225,7 @@ For each non-empty, verified type group, generate a spec file from the correspon
 **`@eN` refs must not appear in any generated spec file.**
 </EXTREMELY-IMPORTANT>
 
-**UI tests (`tests/e2e/<feature>/ui.spec.ts`)**:
+**UI tests (`tests/e2e/features/<feature>/ui.spec.ts`)**:
 
 - Read template: `plugins/forge/skills/gen-test-scripts/templates/playwright-ui.spec.ts`
 - **Auth setup** (`test.beforeEach` hook):
@@ -217,7 +241,7 @@ For each non-empty, verified type group, generate a spec file from the correspon
 - Fallback locators annotated with `// UNSTABLE: no semantic anchor`
 - Each test includes a comment: `// Traceability: TC-NNN → {Source}`
 
-**API tests (`tests/e2e/<feature>/api.spec.ts`)**:
+**API tests (`tests/e2e/features/<feature>/api.spec.ts`)**:
 
 - Read template: `plugins/forge/skills/gen-test-scripts/templates/api.spec.ts`
 - **Auth setup** (`test.beforeAll` block):
@@ -232,7 +256,7 @@ For each non-empty, verified type group, generate a spec file from the correspon
   - Assert on status code, response body using `expect()`
   - Each test includes a traceability comment
 
-**CLI tests (`tests/e2e/<feature>/cli.spec.ts`)**:
+**CLI tests (`tests/e2e/features/<feature>/cli.spec.ts`)**:
 
 - Read template: `plugins/forge/skills/gen-test-scripts/templates/cli.spec.ts`
 - For each CLI test case, generate a `test()` block:
@@ -253,16 +277,23 @@ For each non-empty, verified type group, generate a spec file from the correspon
 Check if shared infrastructure exists at `tests/e2e/`:
 
 ```bash
-ls tests/e2e/helpers.ts tests/e2e/package.json tests/e2e/tsconfig.json tests/e2e/playwright.config.ts 2>/dev/null
+ls tests/e2e/helpers.ts tests/e2e/package.json tests/e2e/tsconfig.json tests/e2e/playwright.config.ts tests/e2e/config.yaml 2>/dev/null
 ```
 
+<PRINCIPLE>
+**共享基础设施优先。** 生成任何 spec 文件前，先确保公共依赖（`helpers.ts`、`config.yaml`、`package.json`、`tsconfig.json`、`playwright.config.ts`）完整且可用。Spec 文件通过 import 依赖这些共享文件——如果缺失或不完整，所有 spec 会在 import 阶段失败。检查并修复公共依赖，再生成 spec 文件。后续技能（`/run-e2e-tests`、`/graduate-tests`）也遵循同一原则。
+</PRINCIPLE>
+
 **If any file is missing**, create it from the corresponding template:
-- `helpers.ts`: copy from `plugins/forge/skills/gen-test-scripts/templates/helpers.ts` (only if tests/e2e/helpers.ts does not exist)
+- `helpers.ts`: copy from `plugins/forge/skills/gen-test-scripts/templates/helpers.ts` (only if tests/e2e/helpers.ts does not exist). When copying, strip all `// VERIFY:` and `// TEMPLATE:` comments — these are generation-time markers that should not appear in runtime files.
 - `package.json`: copy from `plugins/forge/skills/gen-test-scripts/templates/package.json` (only if tests/e2e/package.json does not exist)
 - `tsconfig.json`: copy from `plugins/forge/skills/gen-test-scripts/templates/tsconfig.json` (only if tests/e2e/tsconfig.json does not exist)
 - `playwright.config.ts`: copy from `plugins/forge/skills/gen-test-scripts/templates/playwright.config.ts` (only if tests/e2e/playwright.config.ts does not exist)
+- `config.yaml`: copy from `plugins/forge/skills/gen-test-scripts/templates/config.yaml` (only if tests/e2e/config.yaml does not exist). Required by UI/API helpers. CLI-only projects may omit this — `helpers.ts` uses lazy config loading and gracefully handles missing config.yaml for CLI-only usage.
 
-**If all exist**: skip. Do not modify existing shared files.
+**If helpers.ts already exists**: check whether it exports all symbols imported by the generated specs. If symbols are missing (e.g., `screenshot` for UI tests, `curl` for API tests), add the missing exports AND all their private dependencies from the template. Private dependencies include: `findConfigPath()`, `getConfig()`, `_config`, `_configPath`, `_defaultCreds`, `getDefaultCreds()`, `SCREENSHOTS_DIR`, plus `yaml` import and `Page` type import from `@playwright/test`. Do NOT overwrite existing exports — merge.
+
+**Other shared files (package.json, tsconfig.json, playwright.config.ts, config.yaml)**: if they already exist, skip. Do not modify.
 
 Install dependencies if `node_modules` is missing:
 
@@ -272,24 +303,29 @@ just e2e-setup
 
 ## Output Files
 
-All generated spec files go to `tests/e2e/<feature>/`:
+All generated spec files go to `tests/e2e/features/<feature>/`:
 
 ```
 tests/e2e/                        # Shared infrastructure (created once)
   helpers.ts                      # Shared utilities (curl, auth, runCli, screenshot)
   package.json                    # @playwright/test + yaml
   tsconfig.json                   # ES2022 + NodeNext
+  playwright.config.ts            # Playwright config (testIgnore excludes features/ from regression)
   config.yaml                     # Test environment config (already exists)
-  <feature>/                      # Generated per-feature (only for types detected in project)
-    ui.spec.ts                    # [if UI detected] UI tests via Playwright
-    api.spec.ts                   # [if API detected] API tests via fetch
-    cli.spec.ts                   # [if CLI detected] CLI tests via child_process
+  features/                       # Staging area for generated test scripts
+    <feature>/                    # Generated per-feature (only for types detected in project)
+      ui.spec.ts                  # [if UI detected] UI tests via Playwright
+      api.spec.ts                 # [if API detected] API tests via fetch
+      cli.spec.ts                 # [if CLI detected] CLI tests via child_process
 ```
+
+**Note**: Spec files are written to the staging area `tests/e2e/features/<slug>/`. After verification via `/run-e2e-tests`, use `/graduate-tests` to migrate them to the regression suite.
 
 <HARD-RULE>
 **Shared file policy**: `helpers.ts`, `package.json`, `tsconfig.json`, and `playwright.config.ts` at `tests/e2e/` are shared across all features.
 - If they do not exist: create them from templates.
-- If they already exist: DO NOT overwrite. The existing versions are canonical.
+- If `helpers.ts` already exists: merge missing exports from template into it (do NOT overwrite existing exports).
+- Other shared files (`package.json`, `tsconfig.json`, `playwright.config.ts`): if they exist, DO NOT modify.
 - Only spec files (`*.spec.ts`) are written per-feature.
 </HARD-RULE>
 
@@ -306,6 +342,17 @@ When generating UI test code, use Playwright locators following this priority:
 | 3        | `page.getByText()`        | `page.getByText('No results found')`                 |
 | 4        | `page.getByTestId()`      | `page.getByTestId('user-avatar')`                    |
 | 5        | `page.locator()`          | `page.locator('.btn') // UNSTABLE`                   |
+
+## Error Handling
+
+| Situation | Action |
+|-----------|--------|
+| `testing/test-cases.md` missing | Abort with prompt to run `/gen-test-cases` |
+| `sitemap.json` missing (UI tests) | Abort with prompt to run `/gen-sitemap` |
+| TypeScript compilation fails post-generation | Fix generated code, re-run `tsc --noEmit` |
+| No spec files generated (all empty groups) | Abort with clear diagnostic message |
+| Source files not found for Fact Table | Mark as `UNKNOWN`, do not fabricate values |
+| `helpers.ts` exists but missing needed exports | Merge missing exports from template into existing file |
 
 ## Related Skills
 

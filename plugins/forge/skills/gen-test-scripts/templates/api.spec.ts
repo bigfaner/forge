@@ -4,7 +4,7 @@ import { curl, apiBaseUrl
   // , getApiToken, createAuthCurl
   // CONDITIONAL: Uncomment import below only if login-test exists
   // , defaultCreds
-} from '../helpers.js';
+} from '../../helpers.js';
 
 test.describe('API E2E Tests', () => {
   // CONDITIONAL: Uncomment the 2 lines below only if auth-required-test exists
@@ -12,8 +12,8 @@ test.describe('API E2E Tests', () => {
 
   // test.beforeAll(async () => {
   //   // CONDITIONAL: Uncomment the 2 lines below only if auth-required-test exists
-  //   // const token = await getApiToken(apiBaseUrl, '/v1/auth/login'); // VERIFY: auth endpoint path from router files
-  //   // authCurl = createAuthCurl(apiBaseUrl, token);
+  //   // const token = await getApiToken(apiBaseUrl(), '/v1/auth/login'); // VERIFY: auth endpoint path from router files
+  //   // authCurl = createAuthCurl(apiBaseUrl(), token);
   // });
 
   // ── Auth Tests (no shared auth) ─────────────────────────────────
@@ -23,7 +23,7 @@ test.describe('API E2E Tests', () => {
   //
   // // Traceability: TC-010 → Spec Section 5.2
   // test('TC-010: POST /v1/auth/login returns 200 with valid credentials', async () => {
-  //   const res = await curl('POST', `${apiBaseUrl}/v1/auth/login`, { // VERIFY: auth endpoint path from router files
+  //   const res = await curl('POST', `${apiBaseUrl()}/v1/auth/login`, { // VERIFY: auth endpoint path from router files
   //     body: JSON.stringify(defaultCreds), // VERIFY: auth request body schema from handler
   //   });
   //   expect(res.status).toBe(200);
@@ -50,5 +50,33 @@ test.describe('API E2E Tests', () => {
   // test('TC-011: GET /v1/users returns 200', async () => {
   //   const res = await authCurl('GET', '/v1/users'); // VERIFY: API path from router files
   //   expect(res.status).toBe(200);
+  // });
+
+  // ── Collection endpoint pattern (PATTERN REFERENCE: use as structural guide for generating new tests)
+  // test('TC-012: GET /v1/resources returns collection', async () => {
+  //   const res = await curl('GET', `${apiBaseUrl()}/v1/resources`); // VERIFY: collection endpoint
+  //   expect(res.status).toBe(200);
+  //   const data = JSON.parse(res.body);
+  //   expect(Array.isArray(data.items ?? data.data ?? data)).toBe(true); // VERIFY: response shape
+  // });
+
+  // ── Update endpoint pattern (PATTERN REFERENCE: use as structural guide for generating new tests)
+  // test('TC-013: PUT /v1/resources/:id returns 200 with updated data', async () => {
+  //   const res = await curl('PUT', `${apiBaseUrl()}/v1/resources/1`, { // VERIFY: update endpoint
+  //     body: JSON.stringify({ name: 'Updated' }), // VERIFY: request body schema
+  //   });
+  //   expect(res.status).toBe(200);
+  //   const data = JSON.parse(res.body);
+  //   expect(data.name ?? data.data?.name).toBe('Updated'); // VERIFY: response field
+  // });
+
+  // ── Error assertion pattern (PATTERN REFERENCE: use as structural guide for generating new tests)
+  // test('TC-014: POST /v1/resources returns 400 for invalid payload', async () => {
+  //   const res = await curl('POST', `${apiBaseUrl()}/v1/resources`, { // VERIFY: endpoint
+  //     body: JSON.stringify({ invalid: true }), // VERIFY: invalid payload
+  //   });
+  //   expect(res.status).toBe(400); // VERIFY: expected error status
+  //   const data = JSON.parse(res.body);
+  //   expect(data.error ?? data.message).toBeTruthy(); // VERIFY: error field
   // });
 });

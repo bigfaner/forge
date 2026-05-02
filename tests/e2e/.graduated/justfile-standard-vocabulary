@@ -1,1 +1,14 @@
-2026-04-30T02:31:12Z
+schema_version: 1
+status: completed
+timestamp: 2026-04-29T12:24:09Z
+source: tests/e2e/justfile-standard-vocabulary/
+targets:
+  - tests/e2e/init-justfile/init-justfile.spec.ts
+  - tests/e2e/justfile-execution/justfile-execution.spec.ts
+  - tests/e2e/plugin-content/skill-content.spec.ts
+  - tests/e2e/scope-resolution/scope-resolution.spec.ts
+modules:
+  - justfile
+  - plugin-content
+  - scope-resolution
+testCount: 25
