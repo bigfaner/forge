@@ -11,8 +11,8 @@ compile scope="":
     set -euo pipefail
     case "{{scope}}" in
       frontend) cd "{{frontend_dir}}" && npx tsc --noEmit ;;
-      backend)  cd "{{backend_dir}}" && go vet ./... ;;
-      "")       (cd "{{frontend_dir}}" && npx tsc --noEmit) && (cd "{{backend_dir}}" && go vet ./...) ;;
+      backend)  cd "{{backend_dir}}" && BACKEND_COMPILE ;;
+      "")       (cd "{{frontend_dir}}" && npx tsc --noEmit) && (cd "{{backend_dir}}" && BACKEND_COMPILE) ;;
       *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
     esac
 
@@ -21,8 +21,8 @@ build scope="":
     set -euo pipefail
     case "{{scope}}" in
       frontend) cd "{{frontend_dir}}" && npm run build ;;
-      backend)  cd "{{backend_dir}}" && go build ./... ;;
-      "")       (cd "{{frontend_dir}}" && npm run build) && (cd "{{backend_dir}}" && go build ./...) ;;
+      backend)  cd "{{backend_dir}}" && BACKEND_BUILD ;;
+      "")       (cd "{{frontend_dir}}" && npm run build) && (cd "{{backend_dir}}" && BACKEND_BUILD) ;;
       *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
     esac
 
@@ -30,9 +30,9 @@ run scope="":
     #!/usr/bin/env bash
     set -euo pipefail
     case "{{scope}}" in
-      frontend) cd "{{frontend_dir}}" && npm start ;;
-      backend)  cd "{{backend_dir}}" && go run . ;;
-      "")       (cd "{{frontend_dir}}" && npm start) && (cd "{{backend_dir}}" && go run .) ;;
+      frontend) cd "{{frontend_dir}}" && FRONTEND_RUN ;;
+      backend)  cd "{{backend_dir}}" && BACKEND_RUN ;;
+      "")       cd "{{backend_dir}}" && BACKEND_RUN & backend_pid=$!; trap "kill $backend_pid 2>/dev/null" EXIT; sleep 2; cd "{{frontend_dir}}" && FRONTEND_RUN ;;
       *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
     esac
 
@@ -40,9 +40,9 @@ dev scope="":
     #!/usr/bin/env bash
     set -euo pipefail
     case "{{scope}}" in
-      frontend) cd "{{frontend_dir}}" && npm run dev ;;
-      backend)  cd "{{backend_dir}}" && go run . --dev ;;
-      "")       (cd "{{frontend_dir}}" && npm run dev) && (cd "{{backend_dir}}" && go run . --dev) ;;
+      frontend) cd "{{frontend_dir}}" && FRONTEND_DEV ;;
+      backend)  cd "{{backend_dir}}" && BACKEND_DEV ;;
+      "")       cd "{{backend_dir}}" && BACKEND_DEV & backend_pid=$!; trap "kill $backend_pid 2>/dev/null" EXIT; sleep 2; cd "{{frontend_dir}}" && FRONTEND_DEV ;;
       *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
     esac
 
@@ -51,8 +51,8 @@ test scope="":
     set -euo pipefail
     case "{{scope}}" in
       frontend) cd "{{frontend_dir}}" && npm test ;;
-      backend)  cd "{{backend_dir}}" && go test -race ./... ;;
-      "")       (cd "{{frontend_dir}}" && npm test) && (cd "{{backend_dir}}" && go test -race ./...) ;;
+      backend)  cd "{{backend_dir}}" && BACKEND_TEST ;;
+      "")       (cd "{{frontend_dir}}" && npm test) && (cd "{{backend_dir}}" && BACKEND_TEST) ;;
       *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
     esac
 
@@ -61,19 +61,10 @@ test-e2e feature="":
     #!/usr/bin/env bash
     set -euo pipefail
     if [ "{{feature}}" != "" ]; then
-        scripts_dir="tests/e2e/{{feature}}"
-        fail=0
-        for spec in "$scripts_dir"/*.spec.ts; do
-            [ -f "$spec" ] && npx tsx "$spec" || fail=$((fail+1))
-        done
-        [ "$fail" -eq 0 ]
+        cd tests/e2e && npx playwright test features/{{feature}}/
     else
         [ ! -d tests/e2e/node_modules ] && npm install --prefix tests/e2e
-        fail=0
-        for spec in $(find tests/e2e -mindepth 2 -name '*.spec.ts'); do
-            npx tsx "$spec" || fail=$((fail+1))
-        done
-        [ "$fail" -eq 0 ]
+        cd tests/e2e && npx playwright test
     fi
 
 lint scope="":
@@ -81,8 +72,8 @@ lint scope="":
     set -euo pipefail
     case "{{scope}}" in
       frontend) cd "{{frontend_dir}}" && npm run lint ;;
-      backend)  cd "{{backend_dir}}" && golangci-lint run ./... ;;
-      "")       (cd "{{frontend_dir}}" && npm run lint) && (cd "{{backend_dir}}" && golangci-lint run ./...) ;;
+      backend)  cd "{{backend_dir}}" && BACKEND_LINT ;;
+      "")       (cd "{{frontend_dir}}" && npm run lint) && (cd "{{backend_dir}}" && BACKEND_LINT) ;;
       *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
     esac
 
@@ -91,8 +82,8 @@ fmt scope="":
     set -euo pipefail
     case "{{scope}}" in
       frontend) cd "{{frontend_dir}}" && npx prettier --write . ;;
-      backend)  cd "{{backend_dir}}" && gofmt -w . ;;
-      "")       (cd "{{frontend_dir}}" && npx prettier --write .) && (cd "{{backend_dir}}" && gofmt -w .) ;;
+      backend)  cd "{{backend_dir}}" && BACKEND_FMT ;;
+      "")       (cd "{{frontend_dir}}" && npx prettier --write .) && (cd "{{backend_dir}}" && BACKEND_FMT) ;;
       *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
     esac
 
@@ -101,8 +92,8 @@ check scope="":
     set -euo pipefail
     case "{{scope}}" in
       frontend) cd "{{frontend_dir}}" && npm run lint && npx tsc --noEmit ;;
-      backend)  cd "{{backend_dir}}" && golangci-lint run ./... ;;
-      "")       (cd "{{frontend_dir}}" && npm run lint && npx tsc --noEmit) && (cd "{{backend_dir}}" && golangci-lint run ./...) ;;
+      backend)  cd "{{backend_dir}}" && BACKEND_LINT && BACKEND_COMPILE ;;
+      "")       (cd "{{frontend_dir}}" && npm run lint && npx tsc --noEmit) && (cd "{{backend_dir}}" && BACKEND_LINT && BACKEND_COMPILE) ;;
       *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
     esac
 
@@ -111,8 +102,8 @@ clean scope="":
     set -euo pipefail
     case "{{scope}}" in
       frontend) cd "{{frontend_dir}}" && rm -rf dist ;;
-      backend)  cd "{{backend_dir}}" && go clean ./... ;;
-      "")       (cd "{{frontend_dir}}" && rm -rf dist) && (cd "{{backend_dir}}" && go clean ./...) ;;
+      backend)  cd "{{backend_dir}}" && BACKEND_CLEAN ;;
+      "")       (cd "{{frontend_dir}}" && rm -rf dist) && (cd "{{backend_dir}}" && BACKEND_CLEAN) ;;
       *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
     esac
 
@@ -121,8 +112,8 @@ install scope="":
     set -euo pipefail
     case "{{scope}}" in
       frontend) cd "{{frontend_dir}}" && npm install ;;
-      backend)  cd "{{backend_dir}}" && go mod download ;;
-      "")       (cd "{{frontend_dir}}" && npm install) && (cd "{{backend_dir}}" && go mod download) ;;
+      backend)  cd "{{backend_dir}}" && BACKEND_INSTALL ;;
+      "")       (cd "{{frontend_dir}}" && npm install) && (cd "{{backend_dir}}" && BACKEND_INSTALL) ;;
       *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
     esac
 
@@ -141,6 +132,27 @@ e2e-setup:
     npx --prefix tests/e2e playwright install chromium
     echo "OK: e2e dependencies ready"
 
+# probe: check if configured services are healthy
+probe path="/health":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    config="tests/e2e/config.yaml"
+    if [ ! -f "$config" ]; then
+        echo "OK: no config.yaml (CLI-only project)"
+        exit 0
+    fi
+    fail=0
+    for url in $(grep 'Url:' "$config" | grep -oE 'https?://[^ "]+'); do
+        probe_url="${url}{{path}}"
+        if curl -sf --max-time 5 "$probe_url" > /dev/null 2>&1; then
+            echo "OK: $probe_url"
+        else
+            echo "FAIL: $probe_url not responding" >&2
+            fail=$((fail+1))
+        fi
+    done
+    [ "$fail" -eq 0 ] || exit 1
+
 [arg("feature", long)]
 e2e-verify feature="":
     #!/usr/bin/env bash
@@ -149,20 +161,20 @@ e2e-verify feature="":
         echo "Usage: just e2e-verify --feature <slug>" >&2
         exit 1
     fi
-    if [ ! -d "tests/e2e/{{feature}}" ]; then
-        echo "Error: tests/e2e/{{feature}}/ not found" >&2
+    if [ ! -d "tests/e2e/features/{{feature}}" ]; then
+        echo "Error: tests/e2e/features/{{feature}}/ not found" >&2
         exit 1
     fi
-    matches=$(grep -rn '// VERIFY:' "tests/e2e/{{feature}}/" --include='*.spec.ts' || true)
+    matches=$(grep -rn '// VERIFY:' "tests/e2e/features/{{feature}}/" --include='*.spec.ts' || true)
     if [ -n "$matches" ]; then
         count=$(echo "$matches" | wc -l | tr -d ' ')
-        echo "Error: $count unresolved // VERIFY: marker(s) in tests/e2e/{{feature}}/" >&2
+        echo "Error: $count unresolved // VERIFY: marker(s) in tests/e2e/features/{{feature}}/" >&2
         echo "" >&2
         echo "$matches" >&2
         echo "" >&2
         echo "Replace each // VERIFY: comment with a real assertion before running tests." >&2
         exit 1
     fi
-    echo "OK: no unresolved // VERIFY: markers in tests/e2e/{{feature}}/"
+    echo "OK: no unresolved // VERIFY: markers in tests/e2e/features/{{feature}}/"
 
 # --- end forge standard recipes ---

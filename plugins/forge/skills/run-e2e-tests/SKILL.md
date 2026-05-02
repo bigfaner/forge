@@ -23,10 +23,14 @@ Check previous stage artifacts. Abort and prompt user if missing:
 | Artifact | Missing prompt |
 |----------|----------------|
 | `Justfile` with `e2e-setup` recipe | Run `/init-justfile` first |
-| `tests/e2e/<slug>/` directory | Run `/gen-test-scripts` first |
+| `tests/e2e/features/<slug>/` directory | Run `/gen-test-scripts` first |
 | `tests/e2e/helpers.ts` | Run `/gen-test-scripts` first |
-| At least one `.spec.ts` file | Run `/gen-test-scripts` first |
-| `tests/e2e/config.yaml` | Run `/gen-sitemap` or create manually |
+| At least one `.spec.ts` file in `tests/e2e/features/<slug>/` | Run `/gen-test-scripts` first |
+| `tests/e2e/config.yaml` | Required for UI/API tests; optional for CLI-only projects. Created by `/gen-test-scripts` Step 5 or create manually |
+
+<PRINCIPLE>
+**共享基础设施优先。** 执行任何测试操作前，先验证公共依赖（`helpers.ts`、`config.yaml`、`package.json`、`tsconfig.json`、`playwright.config.ts`）完整且可用。如果 `helpers.ts` 缺少 spec 文件导入的符号（如 UI 测试需要 `screenshot`/`baseUrl`，API 测试需要 `curl`/`apiBaseUrl`），测试会在 import 阶段全部失败。发现不一致时先回到 `/gen-test-scripts` 修复公共依赖，再运行测试。
+</PRINCIPLE>
 
 **Justfile check** (must pass before proceeding):
 
@@ -40,7 +44,7 @@ If the Justfile is missing or does not contain the `e2e-setup` recipe, abort and
 > Justfile is missing or does not contain the `e2e-setup` recipe. Run `/init-justfile` to scaffold the required targets, then retry.
 
 ```bash
-ls tests/e2e/<slug>/
+ls tests/e2e/features/<slug>/
 ```
 
 **Note**: `<slug>` is the current feature name, obtained via `task feature` command.
@@ -58,29 +62,37 @@ slug=$(task feature 2>/dev/null | tr -d '[:space:]')
 - After `/gen-test-scripts` has generated test scripts
 
 **Skip:**
-- `tests/e2e/<slug>/` doesn't exist (run `/gen-test-scripts` first)
+- `tests/e2e/features/<slug>/` doesn't exist (run `/gen-test-scripts` first)
 
 ## Workflow
 
 ```
-1. Setup → 2. Run specs → 3. Collect results → 4. Generate report → 5. Teardown
+1. Setup → 2. Verify → 3. Run specs → 4. Collect results → 5. Generate report → 6. Teardown
 ```
 
 ### Step 1: Setup Environment
 
-**Verify config** (must exist before any test runs):
+**Verify config** (required for UI/API tests; optional for CLI-only projects):
 
 ```bash
 ls tests/e2e/config.yaml
 ```
 
-If missing, prompt user to run `/gen-sitemap` or create manually.
+If missing and specs use `page`/`baseUrl`/`curl`/`apiBaseUrl` imports, prompt user to run `/gen-test-scripts` (which creates config.yaml from template) or create manually. If missing and all specs are CLI-only (using only `runCli`), proceed without config — helpers.ts lazy-loads gracefully.
 
 Run `just e2e-setup` (idempotent — installs deps and Playwright browser):
 
 ```bash
 just e2e-setup
+mkdir -p tests/e2e/results/
+mkdir -p tests/e2e/features/<slug>/results/
+# Clean stale results from previous runs
+rm -f tests/e2e/results/test-results.json
+# Truncate PID file to prevent stale PIDs from previous runs
+> tests/e2e/results/.server-pids
 ```
+
+The Playwright JSON reporter writes to `results/`, so it must exist.
 
 **Start servers** (if needed):
 
@@ -91,46 +103,96 @@ Detect what needs to be started based on the project:
 | HTML prototype | `just run` | `ui/prototype/` exists |
 | Real application | User-specified or detected | App needs running server |
 
-Start servers in background. Record PIDs for cleanup.
-
-### Step 2: Run Test Specs
-
-Run each spec file that exists:
+Start servers in background. Record PIDs to a file for reliable cleanup across agent turns:
 
 ```bash
-cd tests/e2e
+mkdir -p tests/e2e/results
+# Start server and capture PID
+just run & echo $! >> tests/e2e/results/.server-pids
 ```
 
-<EXTREMELY-IMPORTANT>
-**Execution order**: CLI → API → UI (fastest to slowest, increasing environment dependency)
-
-**Skip files that don't exist** — not all projects have all three types.
-
-**Each spec's output must be fully saved** (`tee` to results/ directory) for subsequent result collection.
-</EXTREMELY-IMPORTANT>
-
-**Run all specs**:
+**Health check**: After starting servers, poll until ready (with timeout):
 
 ```bash
-just test-e2e --feature <slug> 2>&1 | tee results/<slug>-output.txt
+# Retry probe up to 10 times, 3 seconds apart (30s total)
+for i in $(seq 1 10); do just probe && break; sleep 3; done || { echo "Health check failed after 30s"; exit 1; }
 ```
 
-### Step 3: Collect Results
+The `just probe` recipe reads all `*Url` fields from `tests/e2e/config.yaml` and probes each with `/health`. For CLI-only projects without config.yaml, it silently succeeds. If `just probe` reports zero lines of output (no services probed), warn the user that config.yaml may be misconfigured.
 
-Parse the Node.js test runner output (TAP-like format) from each spec:
+### Step 2: Verify Scripts
 
-- **Pass**: Lines containing `✓` or `ok N`
-- **Fail**: Lines containing `✗` or `not ok N` followed by error details
-- **Skip**: Lines containing `# skip`
+Before running tests, verify no unresolved placeholder markers:
 
-For each test, capture:
-- TC ID (from test name)
-- Status: PASS / FAIL / SKIP
-- Duration (from output)
-- Error message (if failed)
-- Screenshot path (if UI test)
+```bash
+just e2e-verify --feature <slug>
+```
 
-### Step 4: Generate Report
+If this fails, return to `/gen-test-scripts` to resolve the `// VERIFY:` markers.
+
+### Step 3: Run Test Specs
+
+**Run all specs** via a single Playwright invocation (execution order managed by `playwright.config.ts`):
+
+```bash
+just test-e2e --feature <slug>
+```
+
+The `playwright.config.ts` provides structured JSON output to `tests/e2e/results/test-results.json` and human-readable output via the list reporter.
+
+Note: `playwright.config.ts` has `testIgnore: /features\//` which prevents default test discovery from running staging specs. However, `just test-e2e --feature <slug>` passes an explicit path (`features/<slug>/`) to `npx playwright test`, which overrides the ignore pattern and runs only the specified staging specs.
+
+### Step 4: Collect Results
+
+**Guard**: Before parsing, verify the JSON output file:
+
+```bash
+test -s tests/e2e/results/test-results.json || echo "Error: test-results.json missing or empty — Playwright may have crashed"
+```
+
+If `test-results.json` is missing or empty, or `JSON.parse` fails on its contents: report the error to the user with Playwright's console output as evidence, and abort report generation. Do NOT attempt to parse a missing/malformed file.
+
+**Concrete validation** (must run from `tests/e2e/` directory — paths are relative to that cwd):
+
+```bash
+cd tests/e2e && node -e "JSON.parse(require('fs').readFileSync('results/test-results.json','utf-8')); console.log('OK: valid JSON')" 2>&1 || echo "Error: malformed JSON"
+```
+
+Parse `tests/e2e/results/test-results.json` (Playwright JSON reporter output). The JSON has a nested structure:
+
+```json
+{
+  "config": { "rootDir": "...", "projects": [...] },
+  "suites": [{
+    "specs": [{
+      "title": "TC-001: Login with valid credentials",
+      "ok": true,
+      "tests": [{
+        "status": "expected",
+        "results": [{
+          "status": "passed",
+          "duration": 1234,
+          "errors": [{ "message": "..." }],
+          "attachments": [{ "name": "screenshot", "path": "results/TC-001.png", "contentType": "image/png" }]
+        }]
+      }]
+    }]
+  }]
+}
+```
+
+Traverse `suites[].specs[]` (recursing into `suites[].suites[]`). For each spec:
+- **Title**: `spec.title` — contains TC ID
+- **Quick check**: `spec.ok` (boolean) — `true` if all tests passed. Note: some Playwright versions may omit this field; if absent, derive from `tests[].results[].status` (all `"passed"` = ok)
+- **Test-level status**: `spec.tests[].status` — `"expected"` (passed), `"unexpected"` (failed), `"skipped"`, `"flaky"`
+- **Result-level status**: `spec.tests[].results[].status` — `"passed"`, `"failed"`, `"skipped"`, `"timedOut"`, `"interrupted"` — use this as the authoritative pass/fail for the report
+- **Duration**: `spec.tests[].results[].duration` — milliseconds
+- **Errors**: `spec.tests[].results[].errors[].message` — multiline string containing error details and stack trace (if failed)
+- **Attachments**: `spec.tests[].results[].attachments[]` — auto-captured failure screenshots (from `screenshot: 'only-on-failure'` in config). Each attachment has `name`, `path` (relative to `tests/e2e/`), and `contentType`
+
+Extract the TC ID from `spec.title` using pattern `TC-\d+` (matches first occurrence). Map to the report.
+
+### Step 5: Generate Report
 
 Read the template at `plugins/forge/skills/run-e2e-tests/templates/e2e-report.md`.
 
@@ -140,25 +202,36 @@ Fill in:
 - Failed test details with error messages
 - Screenshot paths for UI tests
 
-Write to: `docs/features/<slug>/testing/results/latest.md`
+**Test type classification**: Classify each test by examining the spec file and test structure:
+| Type | Detection rule |
+|------|---------------|
+| UI | Test uses `page` fixture (`async ({ page })`) or imports `screenshot`/`loginViaUI` from helpers |
+| API | Test uses `curl`/`fetch`/`authCurl` or imports API-related helpers (`curl`, `apiBaseUrl`, `getApiToken`) |
+| CLI | Test uses `runCli` or executes commands via child_process |
 
-**For failed UI tests**: Use MCP image analysis tools to examine screenshots and add diagnostic notes:
+**TC ID extraction**: Extract from `spec.title` using pattern `TC-\d+` (e.g., "TC-001: Login with valid credentials" → "TC-001").
 
-```
-Skill(skill="mcp__zai-mcp-server__analyze_image", image_source="<screenshot_path>", prompt="What is shown on this page? Why might the test have failed?")
-```
+**Screenshots**: Two distinct screenshot mechanisms and locations:
+- `tests/e2e/results/screenshots/` — explicit `screenshot(page, tcId)` calls in UI tests (filenames like `TC-001.png`)
+- `tests/e2e/results/` (via `outputDir` in `playwright.config.ts`) — Playwright auto-captured failure screenshots. These have nested paths like `results/<test-title>-<chromium>/<test-title>-1.png`, NOT the `TC-NNN.png` naming pattern. Access via the `attachments[].path` field in the JSON results.
 
-### Step 5: Teardown
+Use `glob tests/e2e/results/**/*.png` to discover both. For failed UI tests, include the attachment path from the JSON `attachments` array (not the explicit screenshot path).
+
+Write to: `tests/e2e/features/<slug>/results/latest.md`
+
+**For failed UI tests**: Use the `mcp__zai-mcp-server__analyze_image` tool to examine screenshots and add diagnostic notes. Call with parameters `image_source` (screenshot path) and `prompt` ("What is shown on this page? Why might the test have failed?").
+
+### Step 6: Teardown
 
 <HARD-RULE>
 **Teardown is mandatory**, even if tests fail:
 
-1. `kill <server_pid>` — terminate all servers started in Step 1
-2. Clean up temporary files
+1. Read PIDs from `tests/e2e/results/.server-pids` and kill each: `kill $(cat tests/e2e/results/.server-pids) 2>/dev/null || true`
+2. Remove PID file: `rm -f tests/e2e/results/.server-pids`
+3. Clean up temporary files
 
-Playwright browser instances are automatically closed by `after()` hooks in spec files; no manual cleanup needed.
+Playwright browser instances are automatically closed by the test runner; no manual cleanup needed.
 </HARD-RULE>
-
 ## Output
 
 After completion, report to the user:
@@ -170,25 +243,39 @@ Failed tests:
 - TC-NNN: {failure reason}
 - TC-NNN: {failure reason}
 
-Report: docs/features/<slug>/testing/results/latest.md
+Report: tests/e2e/features/<slug>/results/latest.md
 ```
 
 If all tests pass:
 
 ```
 E2E Test Results: X/X passed
-Report: docs/features/<slug>/testing/results/latest.md
+Report: tests/e2e/features/<slug>/results/latest.md
 ```
+
+## Timeout Configuration
+
+Playwright provides hierarchical timeouts configured in `playwright.config.ts`:
+
+| Timeout | Default | Purpose |
+|---------|---------|---------|
+| `globalTimeout` | 300000ms | Maximum time for the entire test run (5-minute hard cap) |
+| `timeout` | 30000ms | Per-test maximum |
+| `expect.timeout` | 10000ms | Per-assertion maximum |
+
+These are set in `tests/e2e/playwright.config.ts` and require no manual management. A test exceeding `timeout` is automatically killed and marked as FAIL. If `globalTimeout` is exceeded, Playwright aborts the entire run with "Timeout of 300000ms exceeded" — check if the feature has too many specs and increase `globalTimeout` in `playwright.config.ts` accordingly.
 
 ## Error Handling
 
-| Situation | Action |
-|-----------|--------|
-| Playwright browser not installed | Run `just e2e-setup`, retry |
-| Server won't start | Report error, skip tests that need it |
-| Test timeout | Kill test process, mark as FAIL with timeout reason |
-| `node_modules` missing | Run `just e2e-setup`, retry |
-| Spec file doesn't compile | Report TypeScript error, skip that spec |
+| Situation | Action | Retries |
+|-----------|--------|---------|
+| Playwright browser not installed | Run `just e2e-setup`, retry | 1 |
+| Server won't start | Report error, skip tests that need it | 0 |
+| Health check (`just probe`) fails | Report which services are unreachable, abort | 0 |
+| `e2e-verify` finds unresolved `// VERIFY:` markers | Return to `/gen-test-scripts` to resolve markers | 0 |
+| Test timeout | Mark as FAIL with timeout reason | 0 |
+| `node_modules` missing | Run `just e2e-setup`, retry | 1 |
+| Spec file doesn't compile | Report TypeScript error, skip that spec | 0 |
 
 ## Related Skills
 
@@ -196,3 +283,4 @@ Report: docs/features/<slug>/testing/results/latest.md
 |-------|-------|
 | `/gen-test-cases` | Generate test cases from PRD |
 | `/gen-test-scripts` | Generate executable test scripts |
+| `/graduate-tests` | Migrate passing tests to regression suite |

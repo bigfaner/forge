@@ -1,5 +1,4 @@
-import { describe, test } from 'node:test';
-import assert from 'node:assert/strict';
+import { test, expect } from '@playwright/test';
 import { runCli, readProjectFile } from '../helpers.js';
 
 // -- Helpers ---------------------------------------------------------------
@@ -19,91 +18,59 @@ const STANDARD_COMMANDS = [
 ];
 
 // -- Tests -----------------------------------------------------------------
-describe('init-justfile: project detection and generation', () => {
+test.describe('init-justfile: project detection and generation', () => {
 
   // Traceability: TC-004 -> Story 2 / AC-1
   test('TC-004: frontend project detection generates scope-free justfile', () => {
-    const content = getInitJustfileContent();
-    // Frontend template should exist
-    assert.ok(
-      fileContains(content, '### Frontend Template'),
-      'Expected "### Frontend Template" section in init-justfile',
-    );
-    // Extract the frontend template section (between ### Frontend and ### Mixed or ##)
-    const frontendStart = content.indexOf('### Frontend Template');
-    const nextH3 = content.indexOf('\n### ', frontendStart + 1);
-    const nextH2 = content.indexOf('\n## ', frontendStart + 1);
-    const nextSection = nextH3 !== -1 ? nextH3 : nextH2;
-    const frontendSection = nextSection !== -1
-      ? content.slice(frontendStart, nextSection)
-      : content.slice(frontendStart);
-    assert.ok(
-      !fileContains(frontendSection, 'scope=""'),
+    const frontendTemplate = readProjectFile('plugins/forge/references/justfile-templates/node.just');
+    // Frontend template should NOT have scope="" parameters
+    expect(
+      !fileContains(frontendTemplate, 'scope=""'),
       'Expected frontend template to NOT have scope="" parameters',
-    );
+    ).toBeTruthy();
     // project-type should output "frontend"
-    assert.ok(
-      fileContains(frontendSection, '@echo "frontend"'),
+    expect(
+      fileContains(frontendTemplate, '@echo "frontend"'),
       'Expected @echo "frontend" in frontend template',
-    );
+    ).toBeTruthy();
   });
 
   // Traceability: TC-005 -> Story 2 / AC-2
   test('TC-005: backend project detection generates scope-free justfile', () => {
-    const content = getInitJustfileContent();
-    assert.ok(
-      fileContains(content, '### Backend Template'),
-      'Expected "### Backend Template" section in init-justfile',
-    );
-    // Extract the backend template section (between ### Backend and ### Frontend)
-    const backendStart = content.indexOf('### Backend Template');
-    const nextH3 = content.indexOf('\n### ', backendStart + 1);
-    const nextH2 = content.indexOf('\n## ', backendStart + 1);
-    const nextSection = nextH3 !== -1 ? nextH3 : nextH2;
-    const backendSection = nextSection !== -1
-      ? content.slice(backendStart, nextSection)
-      : content.slice(backendStart);
-    assert.ok(
-      !fileContains(backendSection, 'scope=""'),
+    const backendTemplate = readProjectFile('plugins/forge/references/justfile-templates/go.just');
+    // Backend template should NOT have scope="" parameters
+    expect(
+      !fileContains(backendTemplate, 'scope=""'),
       'Expected backend template to NOT have scope="" parameters',
-    );
-    assert.ok(
-      fileContains(backendSection, '@echo "backend"'),
+    ).toBeTruthy();
+    expect(
+      fileContains(backendTemplate, '@echo "backend"'),
       'Expected @echo "backend" in backend template',
-    );
+    ).toBeTruthy();
   });
 
   // Traceability: TC-006 -> Story 2 / AC-3
   test('TC-006: mixed project detection generates scope-aware justfile', () => {
-    const content = getInitJustfileContent();
-    assert.ok(
-      fileContains(content, '### Mixed Template'),
-      'Expected "### Mixed Template" section in init-justfile',
-    );
-    const mixedStart = content.indexOf('### Mixed Template');
-    const nextSection = content.indexOf('\n## ', mixedStart + 1);
-    const mixedSection = nextSection !== -1
-      ? content.slice(mixedStart, nextSection)
-      : content.slice(mixedStart);
+    const mixedTemplate = readProjectFile('plugins/forge/references/justfile-templates/mixed.just');
     // Mixed template SHOULD have scope="" parameters
-    assert.ok(
-      fileContains(mixedSection, 'scope=""'),
+    expect(
+      fileContains(mixedTemplate, 'scope=""'),
       'Expected mixed template to have scope="" parameters',
-    );
-    assert.ok(
-      fileContains(mixedSection, '@echo "mixed"'),
+    ).toBeTruthy();
+    expect(
+      fileContains(mixedTemplate, '@echo "mixed"'),
       'Expected @echo "mixed" in mixed template',
-    );
+    ).toBeTruthy();
   });
 
   // Traceability: TC-022 -> Spec 5.1 / vocabulary
   test('TC-022: all 15 standard commands are present in generated justfile', () => {
     const justfile = readProjectFile('justfile');
     for (const cmd of STANDARD_COMMANDS) {
-      assert.ok(
+      expect(
         fileContains(justfile, cmd),
         `Expected recipe "${cmd}" in the forge project justfile`,
-      );
+      ).toBeTruthy();
     }
   });
 
@@ -111,7 +78,7 @@ describe('init-justfile: project detection and generation', () => {
   test('TC-018: no marker files detected causes init-justfile to error', () => {
     const content = getInitJustfileContent();
     // The init-justfile skill should describe an error case for no markers
-    assert.ok(
+    expect(
       fileContains(content, 'no known project markers') ||
       fileContains(content, 'no project markers') ||
       fileContains(content, 'Error: no known') ||
@@ -119,20 +86,20 @@ describe('init-justfile: project detection and generation', () => {
       fileContains(content, 'neither') ||
       fileContains(content, 'Cannot determine'),
       'Expected error handling description for no project markers',
-    );
+    ).toBeTruthy();
   });
 
   // Traceability: TC-019 -> Spec 5.2 / flow
   test('TC-019: existing justfile triggers user confirmation', () => {
     const content = getInitJustfileContent();
-    assert.ok(
+    expect(
       fileContains(content, 'confirm') ||
       fileContains(content, 'prompt') ||
       fileContains(content, 'overwrite') ||
       fileContains(content, 'ask') ||
       fileContains(content, '--force'),
       'Expected user confirmation mechanism for existing justfile',
-    );
+    ).toBeTruthy();
   });
 
   // Traceability: TC-020 -> Spec / maintainability
@@ -140,19 +107,19 @@ describe('init-justfile: project detection and generation', () => {
     const justfile = readProjectFile('justfile');
     const startMarker = '# --- forge standard recipes ---';
     const endMarker = '# --- end forge standard recipes ---';
-    assert.ok(
+    expect(
       fileContains(justfile, startMarker),
       'Expected start boundary marker in justfile',
-    );
-    assert.ok(
+    ).toBeTruthy();
+    expect(
       fileContains(justfile, endMarker),
       'Expected end boundary marker in justfile',
-    );
+    ).toBeTruthy();
 
     // Custom recipes should be OUTSIDE boundary markers
     const startIdx = justfile.indexOf(startMarker);
     const endIdx = justfile.indexOf(endMarker);
-    assert.ok(startIdx !== -1 && endIdx !== -1, 'Expected both boundary markers');
+    expect(startIdx !== -1 && endIdx !== -1, 'Expected both boundary markers').toBeTruthy();
 
     // Content before start marker or after end marker should contain custom recipes
     const beforeMarkers = justfile.slice(0, startIdx);
@@ -160,9 +127,9 @@ describe('init-justfile: project detection and generation', () => {
     const customRecipesOutsideMarkers =
       beforeMarkers.includes('claude:') ||
       afterMarkers.includes('claude:');
-    assert.ok(
+    expect(
       customRecipesOutsideMarkers,
       'Expected custom recipes outside boundary markers',
-    );
+    ).toBeTruthy();
   });
 });

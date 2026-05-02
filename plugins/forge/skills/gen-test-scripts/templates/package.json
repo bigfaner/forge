@@ -3,14 +3,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test:ui": "tsx ui.spec.ts",
-    "test:api": "tsx api.spec.ts",
-    "test:cli": "tsx cli.spec.ts",
-    "test:all": "tsx cli.spec.ts && tsx api.spec.ts && tsx ui.spec.ts"
+    "test": "npx playwright test"
   },
   "devDependencies": {
-    "tsx": "^4.19.0",
-    "playwright": "^1.44.0",
+    "@playwright/test": "^1.44.0",
+    "@types/node": "^25.6.0",
+    "typescript": "^6.0.3",
     "yaml": "^2.7.0"
   }
 }

@@ -1,5 +1,4 @@
-import { describe, test } from 'node:test';
-import assert from 'node:assert/strict';
+import { test, expect } from '@playwright/test';
 import { readProjectFile } from '../helpers.js';
 
 // -- Helpers ---------------------------------------------------------------
@@ -37,7 +36,7 @@ const FORBIDDEN_COMMANDS: string[] = [
 ];
 
 // -- Tests -----------------------------------------------------------------
-describe('Skill commands use standard just verbs', () => {
+test.describe('Skill commands use standard just verbs', () => {
 
   // Traceability: TC-001 -> Story 1 / AC-1
   test('TC-001: skill/agent/command files contain zero raw toolchain commands', () => {
@@ -52,10 +51,9 @@ describe('Skill commands use standard just verbs', () => {
       }
     }
 
-    assert.equal(
+    expect(
       violations.length,
-      0,
       `Expected zero raw toolchain commands, but found:\n${violations.join('\n')}`,
-    );
+    ).toBe(0);
   });
 });
