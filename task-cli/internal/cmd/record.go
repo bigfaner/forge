@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"task-cli/pkg/feature"
+	"task-cli/pkg/just"
 	"task-cli/pkg/project"
 	"task-cli/pkg/task"
 
@@ -111,6 +112,11 @@ func runRecord(cmd *cobra.Command, args []string) {
 
 	// Validate required and recommended fields
 	validateRecordData(rd, recordForce)
+
+	// Quality gate pre-check for completed tasks (unless --force)
+	if rd.Status == "completed" && !recordForce {
+		validateQualityGate(projectRoot, t.Scope)
+	}
 
 	// Validate status
 	validStatus := false
@@ -391,4 +397,17 @@ func formatCriteria(criteria []task.AcceptanceCriterion) string {
 		lines[i] = "- " + check + " " + c.Criterion
 	}
 	return strings.Join(lines, "\n")
+}
+
+// validateQualityGate runs the full quality gate (compile -> fmt -> lint -> test).
+// On failure, exits with AIError containing concise error output.
+func validateQualityGate(projectRoot, scope string) {
+	just.RunGate(projectRoot, scope, just.DefaultGateSequence(), func(step, output string) {
+		concise := just.ExtractConciseError(output, 10)
+		Exit(NewAIError(ErrValidation,
+			fmt.Sprintf("Quality gate failed at step: just %s", step),
+			concise,
+			"Fix the errors above and re-run task record",
+			"Or use --force to bypass the quality gate"))
+	})
 }

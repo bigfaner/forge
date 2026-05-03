@@ -152,7 +152,7 @@ Read the corresponding template before writing each task type.
 
 ### 4a. Business Tasks
 
-Create one task file per design element from the Element Mapping table, following dependencies from Step 3. For each task, set `breaking: true` if it modifies shared interfaces, data models, or API contracts (e.g., changing a schema column type, renaming a shared field). Additive changes are non-breaking.
+Read `templates/task.md` for task content structure. Create one task file per design element from the Element Mapping table, following dependencies from Step 3. For each task, set `breaking: true` if it modifies shared interfaces, data models, or API contracts (e.g., changing a schema column type, renaming a shared field). Additive changes are non-breaking.
 
 <HAS_UI>
 
@@ -246,12 +246,13 @@ Phase 2 gate: 2.gate               (dependencies: ["2.summary"])
 
 ### 4d. Standard Test Tasks
 
-Append four fixed test tasks:
+Append five fixed test tasks:
 
-- **T-test-1**: read `templates/gen-test-cases.md`, calls `/gen-test-cases`, file `gen-test-cases.md`
+- **T-test-1**: read `templates/gen-test-cases.md`, calls `/gen-sitemap` first (if `sitemap.json` missing) then `/gen-test-cases`, file `gen-test-cases.md`
 - **T-test-2**: read `templates/gen-test-scripts.md`, calls `/gen-test-scripts`, depends on T-test-1, file `gen-test-scripts.md`
 - **T-test-3**: read `templates/run-e2e-tests.md`, calls `/run-e2e-tests`, depends on T-test-2, file `run-e2e-tests.md`
 - **T-test-4**: read `templates/graduate-tests.md`, calls `/graduate-tests`, depends on T-test-3, file `graduate-tests.md`
+- **T-test-5**: read `templates/consolidate-specs.md`, calls `/consolidate-specs`, depends on T-test-4, file `consolidate-specs.md`
 
 Replace `{{T_TEST_1_DEP}}` with the last phase's gate ID if a gate exists (e.g., `"2.gate"`), otherwise the last phase's summary ID.
 
@@ -259,6 +260,7 @@ Replace `{{T_TEST_1_DEP}}` with the last phase's gate ID if a gate exists (e.g.,
 - T-test-1/2: generate test artifacts (documentation + scripts)
 - T-test-3: execute feature e2e tests; on failure, `task add` fix tasks (P0) and mark completed
 - T-test-4: verify e2e passed (check `latest.md`), then graduate scripts to `tests/e2e/`
+- T-test-5: extract business rules and tech specs, user reviews and confirms integration
 
 ## Step 5: Create index.json
 
@@ -273,6 +275,8 @@ task validate docs/features/<slug>/tasks/index.json
 ```
 
 ## Step 7: Update Manifest
+
+Read `templates/manifest-update-tasks.md` for the traceability table format and frontmatter update instructions.
 
 - Fill traceability table (4-column: PRD Section | Design Section | UI Component | Tasks); use "—" for UI Component when no UI
 - Advance status to `tasks`
@@ -289,5 +293,5 @@ task validate docs/features/<slug>/tasks/index.json
 - [ ] `breaking: true` set on tasks that modify shared contracts
 - [ ] UI tasks reference prototype files (if applicable)
 - [ ] User Stories populated from `prd-user-stories.md`
-- [ ] `index.json` ends with T-test-1, T-test-2, T-test-3, and T-test-4
+- [ ] `index.json` ends with T-test-1 through T-test-5
 - [ ] `manifest.md` updated with traceability + `status: tasks`

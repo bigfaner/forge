@@ -3,6 +3,7 @@ package feature
 import (
 	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -229,6 +230,107 @@ func TestEnsureFeatureDir(t *testing.T) {
 			}
 		}
 	})
+}
+
+func TestGetCurrentFeature_GitContext(t *testing.T) {
+	t.Run("git branch with existing feature directory", func(t *testing.T) {
+		dir := t.TempDir()
+
+		// Initialize a git repo so git.GetFeatureFromGit can resolve the branch
+		gitInit(t, dir)
+
+		// Create and checkout a feature branch
+		gitCheckoutBranch(t, dir, "feature/my-feature")
+
+		// Create the feature directory so Stat succeeds
+		featureDir := filepath.Join(dir, FeaturesDir, "my-feature", TasksDirName)
+		if err := os.MkdirAll(featureDir, 0755); err != nil {
+			t.Fatalf("MkdirAll() error = %v", err)
+		}
+		indexData, _ := json.Marshal(&task.TaskIndex{Feature: "my-feature"})
+		if err := os.WriteFile(filepath.Join(featureDir, IndexFileName), indexData, 0644); err != nil {
+			t.Fatalf("WriteFile() error = %v", err)
+		}
+
+		got, err := GetCurrentFeature(dir)
+		if err != nil {
+			t.Fatalf("GetCurrentFeature() error = %v", err)
+		}
+		if got != "my-feature" {
+			t.Errorf("GetCurrentFeature() = %q, want %q", got, "my-feature")
+		}
+	})
+
+	t.Run("git branch creates feature dir when missing", func(t *testing.T) {
+		dir := t.TempDir()
+
+		gitInit(t, dir)
+		gitCheckoutBranch(t, dir, "feature/new-feature")
+
+		// No feature directory exists yet — EnsureFeatureDir should create it
+		got, err := GetCurrentFeature(dir)
+		if err != nil {
+			t.Fatalf("GetCurrentFeature() error = %v", err)
+		}
+		if got != "new-feature" {
+			t.Errorf("GetCurrentFeature() = %q, want %q", got, "new-feature")
+		}
+
+		// Verify the directory structure was created
+		expectedDir := filepath.Join(dir, FeaturesDir, "new-feature")
+		if _, err := os.Stat(expectedDir); os.IsNotExist(err) {
+			t.Errorf("feature directory %s was not created", expectedDir)
+		}
+	})
+
+	t.Run("git returns empty when on main branch", func(t *testing.T) {
+		dir := t.TempDir()
+
+		// Initialize git repo (starts on main/master by default)
+		gitInit(t, dir)
+
+		// Create a single feature directory without state (Priority 3 path)
+		featureDir := filepath.Join(dir, FeaturesDir, "my-feature", TasksDirName)
+		if err := os.MkdirAll(featureDir, 0755); err != nil {
+			t.Fatalf("MkdirAll() error = %v", err)
+		}
+		indexData, _ := json.Marshal(&task.TaskIndex{Feature: "my-feature"})
+		if err := os.WriteFile(filepath.Join(featureDir, IndexFileName), indexData, 0644); err != nil {
+			t.Fatalf("WriteFile() error = %v", err)
+		}
+
+		got, err := GetCurrentFeature(dir)
+		if err != nil {
+			t.Fatalf("GetCurrentFeature() error = %v", err)
+		}
+		if got != "my-feature" {
+			t.Errorf("GetCurrentFeature() = %q, want %q", got, "my-feature")
+		}
+	})
+}
+
+func gitInit(t *testing.T, dir string) {
+	t.Helper()
+	cmd := exec.Command("git", "init", dir)
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git init failed: %v", err)
+	}
+	// Set a default user so commits work
+	exec.Command("git", "-C", dir, "config", "user.email", "test@test.com").Run()
+	exec.Command("git", "-C", dir, "config", "user.name", "Test").Run()
+	// Create an initial commit so branch switching works
+	dummy := filepath.Join(dir, ".gitignore")
+	os.WriteFile(dummy, []byte(""), 0644)
+	exec.Command("git", "-C", dir, "add", ".gitignore").Run()
+	exec.Command("git", "-C", dir, "commit", "-m", "init").Run()
+}
+
+func gitCheckoutBranch(t *testing.T, dir, branch string) {
+	t.Helper()
+	cmd := exec.Command("git", "-C", dir, "checkout", "-b", branch)
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git checkout -b %s failed: %v", branch, err)
+	}
 }
 
 func containsString(s, substr string) bool {

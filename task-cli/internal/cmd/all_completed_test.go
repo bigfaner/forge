@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"task-cli/pkg/feature"
+	"task-cli/pkg/just"
 	"task-cli/pkg/task"
 )
 
@@ -201,8 +202,8 @@ func TestHasJustfile(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			if got := hasJustfile(dir); got != tc.want {
-				t.Errorf("hasJustfile() = %v, want %v", got, tc.want)
+			if got := just.HasJustfile(dir); got != tc.want {
+				t.Errorf("just.HasJustfile() = %v, want %v", got, tc.want)
 			}
 		})
 	}
@@ -219,8 +220,8 @@ func TestHasJustRecipe(t *testing.T) {
 		if err := os.WriteFile(filepath.Join(dir, "justfile"), []byte(content), 0644); err != nil {
 			t.Fatal(err)
 		}
-		if !hasJustRecipe(dir, "test") {
-			t.Error("hasJustRecipe() = false, want true for existing recipe")
+		if !just.HasRecipe(dir, "test") {
+			t.Error("just.HasRecipe() = false, want true for existing recipe")
 		}
 	})
 
@@ -230,15 +231,15 @@ func TestHasJustRecipe(t *testing.T) {
 		if err := os.WriteFile(filepath.Join(dir, "justfile"), []byte(content), 0644); err != nil {
 			t.Fatal(err)
 		}
-		if hasJustRecipe(dir, "test") {
-			t.Error("hasJustRecipe() = true, want false for missing recipe")
+		if just.HasRecipe(dir, "test") {
+			t.Error("just.HasRecipe() = true, want false for missing recipe")
 		}
 	})
 
 	t.Run("no justfile", func(t *testing.T) {
 		dir := t.TempDir()
-		if hasJustRecipe(dir, "test") {
-			t.Error("hasJustRecipe() = true, want false when no justfile")
+		if just.HasRecipe(dir, "test") {
+			t.Error("just.HasRecipe() = true, want false when no justfile")
 		}
 	})
 }
@@ -320,23 +321,5 @@ func TestWriteRawOutput(t *testing.T) {
 	}
 }
 
-func TestRunCmdCapture(t *testing.T) {
-	dir := t.TempDir()
 
-	output, success := runCmdCapture(dir, "echo", "hello")
-	if !success {
-		t.Error("runCmdCapture() success = false, want true")
-	}
-	if !strings.Contains(output, "hello") {
-		t.Errorf("runCmdCapture() output = %q, want contain hello", output)
-	}
-}
-
-func TestRunCmdCapture_Failure(t *testing.T) {
-	dir := t.TempDir()
-	_, success := runCmdCapture(dir, "false")
-	if success {
-		t.Error("runCmdCapture() success = true, want false for failing command")
-	}
-}
 

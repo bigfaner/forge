@@ -130,6 +130,17 @@
       "scope": "all",
       "file": "graduate-tests.md",
       "record": "records/graduate-tests.md"
+    },
+    "consolidate-specs": {
+      "id": "T-test-5",
+      "title": "Consolidate Specs",
+      "priority": "P2",
+      "estimatedTime": "20min",
+      "dependencies": ["T-test-4"],
+      "status": "pending",
+      "scope": "all",
+      "file": "consolidate-specs.md",
+      "record": "records/consolidate-specs.md"
     }
   }
 }

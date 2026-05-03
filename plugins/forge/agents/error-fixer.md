@@ -48,11 +48,13 @@ Output: `Step 3/5: Fixing errors... DONE`
 
 ### Step 4: Verify
 
+Execute the quality gate sequence. Apply **Scope Resolution** from the Forge Guide for each command:
+
 ```bash
-just compile [scope] && just test [scope]
+just compile [scope] → just fmt [scope] → just lint [scope] → just test [scope]
 ```
 
-**If any fails, continue fixing. Coverage >= 80% (if applicable).**
+Strict sequential order. Stop at first failure. **If any fails, continue fixing. Coverage >= 80% (if applicable).**
 
 Output: `Step 4/5: Verification... DONE (coverage: N%)`
 

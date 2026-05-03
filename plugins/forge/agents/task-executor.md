@@ -70,13 +70,24 @@ Run project-specific verification commands.
 
 Output: `Step 2/5: TDD implementation... DONE (N tests)` or `Step 2/5: Implementation... DONE (skipped TDD: documentation-only task)`
 
-### Step 3: Full Verification
+### Step 3: Full Verification (Quality Gate)
+
+Execute the quality gate sequence. Apply **Scope Resolution** from the Forge Guide for each command:
 
 ```bash
-just compile [scope] && just test [scope]
+just compile [scope] → just fmt [scope] → just lint [scope] → just test [scope]
 ```
 
-**All must pass. Coverage >= 80% (if applicable). If any fails, fix before proceeding.**
+Strict sequential order. Stop at first failure:
+
+| Failed step | Action |
+|---|---|
+| `compile` | Fix compilation errors, then retry from compile |
+| `fmt` | Mark task as `blocked` (auto-fix failed = toolchain issue) |
+| `lint` | Self-fix (max 1 retry), then mark `blocked` if still failing |
+| `test` | Fix failing tests, then retry from compile |
+
+**All must pass. Coverage >= 80% (if applicable).**
 
 Output: `Step 3/5: Verification... DONE (coverage: N%)`
 
@@ -142,6 +153,8 @@ Violating this rule breaks the dispatcher's control loop.
 </HARD-RULE>
 
 ## Error Handling
+
+> When running under `/run-tasks` dispatcher, compile/test failures are delegated to the error-fixer subagent instead of self-fix.
 
 | Situation | Action |
 |-----------|--------|

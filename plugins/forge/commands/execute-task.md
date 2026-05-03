@@ -34,9 +34,22 @@ GREEN    → Implement minimal code to pass
 REFACTOR → Clean up while keeping tests green
 ```
 
-## Step 3: Full Verification
+## Step 3: Full Verification (Quality Gate)
 
-Run `just compile [scope] && just test [scope]`.
+Execute the quality gate sequence. Apply **Scope Resolution** from the Forge Guide for each command:
+
+```
+just compile [scope] → just fmt [scope] → just lint [scope] → just test [scope]
+```
+
+Strict sequential order. Stop at first failure:
+
+| Failed step | Action |
+|---|---|
+| `compile` | Fix compilation errors, then retry from compile |
+| `fmt` | Mark task as `blocked` (auto-fix failed = toolchain issue) |
+| `lint` | Self-fix (max 1 retry), then mark `blocked` if still failing |
+| `test` | Fix failing tests, then retry from compile |
 
 ## Step 4: Record Task (MANDATORY)
 

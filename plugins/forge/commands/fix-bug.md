@@ -151,15 +151,26 @@ With failing tests in place, implement the minimal fix.
 
 ---
 
-## Step 5: Verify
+## Step 5: Verify (Quality Gate)
 
-Run `just build [scope] && just test [scope]`. All must pass.
+Execute the quality gate sequence. Apply **Scope Resolution** from the Forge Guide for each command:
+
+```
+just compile [scope] → just fmt [scope] → just lint [scope] → just test [scope]
+```
+
+Strict sequential order. Stop at first failure:
+
+| Failed step | Action |
+|---|---|
+| `compile` | Fix compilation errors, then retry from compile |
+| `fmt` | Mark task as `blocked` (auto-fix failed = toolchain issue) |
+| `lint` | Self-fix (max 1 retry), then mark `blocked` if still failing |
+| `test` | Fix failing tests, then retry from compile |
+
+E2E (if written in Step 3b):
 
 ```bash
-# Full suite
-just test [scope]
-
-# E2E (if written in Step 3b)
 just test-e2e --feature <slug>
 ```
 
@@ -178,7 +189,7 @@ Do not proceed to commit if any pre-existing test is newly failing. Investigate 
 ## Step 6: Commit
 
 ```
-Skill(skill="forge:git-commit")
+Skill(skill="git-commit")
 ```
 
 The commit must include both the fix and the tests in a single atomic commit.

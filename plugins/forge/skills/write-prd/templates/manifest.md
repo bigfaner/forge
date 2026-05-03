@@ -5,7 +5,7 @@ status: prd
 
 # Feature: {{FEATURE_SLUG}}
 
-<!-- Status flow: prd → design → tasks → in-progress → done -->
+<!-- Status flow: prd → design → tasks → in-progress → completed -->
 
 ## Documents
 

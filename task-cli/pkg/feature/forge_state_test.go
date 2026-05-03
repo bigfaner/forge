@@ -7,6 +7,36 @@ import (
 	"testing"
 )
 
+func TestEnsureForgeDir(t *testing.T) {
+	t.Run("creates .forge/ directory", func(t *testing.T) {
+		dir := t.TempDir()
+
+		if err := EnsureForgeDir(dir); err != nil {
+			t.Fatalf("EnsureForgeDir() error = %v", err)
+		}
+
+		forgeDir := filepath.Join(dir, ForgeDir)
+		info, err := os.Stat(forgeDir)
+		if err != nil {
+			t.Fatalf(".forge/ directory not created: %v", err)
+		}
+		if !info.IsDir() {
+			t.Error(".forge is not a directory")
+		}
+	})
+
+	t.Run("idempotent when directory exists", func(t *testing.T) {
+		dir := t.TempDir()
+
+		if err := EnsureForgeDir(dir); err != nil {
+			t.Fatalf("first EnsureForgeDir() error = %v", err)
+		}
+		if err := EnsureForgeDir(dir); err != nil {
+			t.Fatalf("second EnsureForgeDir() error = %v", err)
+		}
+	})
+}
+
 func TestWriteForgeState(t *testing.T) {
 	dir := t.TempDir()
 
