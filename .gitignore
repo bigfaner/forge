@@ -22,3 +22,4 @@ task-cli/check.out
 
 # Dependencies
 node_modules/
+task-cli/*.out
