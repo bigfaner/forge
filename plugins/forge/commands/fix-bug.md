@@ -37,6 +37,12 @@ Core principle: never touch production code until a failing test proves the bug 
 
 Collect all available context before touching any code.
 
+**Project Knowledge**: Read relevant project knowledge files:
+- Infer relevant domains from bug description, affected files, and scope
+- Read matching files from `docs/business-rules/` and `docs/conventions/`
+- Example mappings: "auth"/"login"/"permission" → `business-rules/auth.md`; "state"/"validation"/"lifecycle" → `business-rules/<domain>.md`; "API"/"endpoint"/"route" → `conventions/api.md`; "error"/"status code" → `conventions/error-handling.md`; "database"/"schema"/"migration" → `conventions/data-model.md`; "test"/"mock"/"coverage" → `conventions/testing.md`
+- If no matching file exists, skip this step
+
 **Gather:**
 - Bug description / error message / stack trace
 - Steps to reproduce (from issue or user)

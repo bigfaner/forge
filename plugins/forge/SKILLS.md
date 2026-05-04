@@ -22,7 +22,7 @@
 | gen-test-scripts | Generate executable e2e test scripts |
 | run-e2e-tests | Execute e2e test scripts and generate results report |
 | graduate-tests | Migrate feature test scripts to the regression suite (tests/e2e/) |
-| consolidate-specs | Extract business rules and tech specs from feature docs, user confirms before integrating to project-level dirs |
+| consolidate-specs | Extract business rules and tech specs from feature docs into preview files, detect overlaps with existing knowledge, user confirms before integrating to project-level dirs |
 
 ## Commands
 

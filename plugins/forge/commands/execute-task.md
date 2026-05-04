@@ -24,7 +24,13 @@ Step 5: Git commit
 task claim
 ```
 
-Parse output for KEY, ID, FILE. Read task file.
+Parse output for KEY, ID, FILE. Reading order: project knowledge → task definition.
+
+**Project Knowledge**: Read relevant project knowledge files first (domain constraints):
+- Infer relevant domains from task title, scope, and feature slug
+- Read matching files from `docs/business-rules/` and `docs/conventions/`
+- Example mappings: "auth"/"login"/"permission" → `business-rules/auth.md`; "state"/"validation"/"lifecycle" → `business-rules/<domain>.md`; "API"/"endpoint"/"route" → `conventions/api.md`; "error"/"status code" → `conventions/error-handling.md`; "database"/"schema"/"migration" → `conventions/data-model.md`; "test"/"mock"/"coverage" → `conventions/testing.md`
+- If no matching file exists, skip this step
 
 ## Step 2: TDD Implementation
 

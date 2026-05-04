@@ -1,5 +1,6 @@
 ---
 created: "<DATE>"
+tags: [<TAG1>, <TAG2>, ...]
 ---
 
 # <Title>

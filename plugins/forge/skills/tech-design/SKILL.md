@@ -64,20 +64,23 @@ ls docs/features/<slug>/prd/prd-spec.md
 | ---------------------- | ------------------------------------------------- |
 | `docs/ARCHITECTURE.md` | Layer constraints                                 |
 | `docs/decisions/`      | Existing decisions (category-based directory)     |
+| `docs/business-rules/` | Cross-feature business rules from prior features  |
+| `docs/conventions/`    | Technical conventions from prior features         |
 | Package manager files  | Current dependencies (package.json, go.mod, etc.) |
 | Source directories     | Existing patterns (src/, internal/, lib/, etc.)   |
 
 ## Step 3: Identify Decisions
 
-| Decision Type  | Example Questions        |
-| -------------- | ------------------------ |
-| Architecture   | Where does this fit?     |
-| Interface      | What interfaces needed?  |
-| Data Model     | What structures needed?  |
-| Dependencies   | New dependencies?        |
-| Error Handling | How to handle errors?    |
-| Testing        | Test strategy?           |
-| Security       | Security considerations? |
+| Decision Type          | Example Questions        |
+| ---------------------- | ------------------------ |
+| Architecture           | Where does this fit?     |
+| Interface              | What interfaces needed?  |
+| Data Model             | What structures needed?  |
+| Dependencies           | New dependencies?        |
+| Error Handling         | How to handle errors?    |
+| Testing                | Test strategy?           |
+| Security               | Security considerations? |
+| Local Dev & Deployment | Dev environment setup?   |
 
 ## Step 4: Ask Questions
 

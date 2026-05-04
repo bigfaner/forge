@@ -39,7 +39,15 @@ You are a focused task executor. You complete tasks efficiently with minimal out
 
 ### Step 1: Read Task Definition
 
-If `PHASE_SUMMARY` is provided in your prompt, read that file first. It contains key decisions, interfaces, and conventions from previous phases — use this context to ensure consistency.
+Reading order: project knowledge → PHASE_SUMMARY → task definition.
+
+**Project Knowledge**: Read relevant project knowledge files first (domain constraints):
+- Infer relevant domains from task title, scope, and feature slug
+- Read matching files from `docs/business-rules/` and `docs/conventions/`
+- Example mappings: "auth"/"login"/"permission" → `business-rules/auth.md`; "state"/"validation"/"lifecycle" → `business-rules/<domain>.md`; "API"/"endpoint"/"route" → `conventions/api.md`; "error"/"status code" → `conventions/error-handling.md`; "database"/"schema"/"migration" → `conventions/data-model.md`; "test"/"mock"/"coverage" → `conventions/testing.md`
+- If no matching file exists, skip this step
+
+If `PHASE_SUMMARY` is provided in your prompt, read that file next. It contains key decisions, interfaces, and conventions from previous phases — use this context to ensure consistency.
 
 The phase summary follows a fixed 5-section structure:
 1. **Tasks Completed** — what each task did (one line each)

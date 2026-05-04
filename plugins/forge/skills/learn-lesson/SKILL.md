@@ -60,26 +60,44 @@ When an error occurs, **you must dig deep into the root cause** — never stop a
 | Pattern | `pattern-` | `pattern-error-wrapping.md` |
 | Gotcha | `gotcha-` | `gotcha-context-cancellation.md` |
 
+## Step 2.5: Select Tags
+
+After classifying category, select 1-4 tags from the fixed vocabulary:
+
+```
+Select tags (comma-separated, from fixed vocabulary):
+  architecture, interface, data-model, dependencies, error-handling, testing, security, local-dev-deployment
+```
+
+If a domain does not have an exact tag match, pick the closest fit (e.g., concurrency → `architecture`, performance → `architecture`). Only use tags from the vocabulary above — do not invent new tags.
+
+| Tag | Domain |
+|-----|--------|
+| `architecture` | System structure, layering |
+| `interface` | API contracts, data shapes |
+| `data-model` | Schema, indexing, soft-delete |
+| `dependencies` | Library choices, version constraints |
+| `error-handling` | Error types, status codes, propagation |
+| `testing` | Test patterns, coverage, mocking |
+| `security` | Auth, permissions, data protection |
+| `local-dev-deployment` | Dev environment, tooling, deployment |
+
+Tags enable overlap detection during `/consolidate-specs`.
+
 ## Step 3: Write Document
 
 Output: `docs/lessons/<category-prefix><slug>.md`
 
-Template:
-```markdown
-# <Title>
+Use the template at `templates/template.md`. The `tags` frontmatter must use values from the fixed vocabulary in Step 2.5.
 
-## Problem
-<!-- Symptom description -->
-
-## Root Cause
-<!-- Why it happened -->
-
-## Solution
-<!-- How to fix it -->
-
-## Key Takeaway
-<!-- Reusable insight for next time -->
-```
+Template sections:
+- **Problem** — Symptom description
+- **Root Cause** — Why it happened (trace causal chain at least 3 levels deep)
+- **Solution** — How to fix it
+- **Reusable Pattern** — What to do next time (the key insight)
+- **Example** — Code example or command (optional)
+- **Related Files** — File paths involved (optional)
+- **References** — Related docs or links (optional)
 
 ## Step 4: User Review
 

@@ -32,6 +32,12 @@ Analyze error messages to understand:
 2. Affected files/modules
 3. Likely root cause
 
+**Project Knowledge**: Read relevant project knowledge files:
+- Infer relevant domains from affected files and error context
+- Read matching files from `docs/business-rules/` and `docs/conventions/`
+- Example mappings: "auth"/"login"/"permission" → `business-rules/auth.md`; "state"/"validation"/"lifecycle" → `business-rules/<domain>.md`; "API"/"endpoint"/"route" → `conventions/api.md`; "error"/"status code" → `conventions/error-handling.md`; "database"/"schema"/"migration" → `conventions/data-model.md`; "test"/"mock"/"coverage" → `conventions/testing.md`
+- If no matching file exists, skip this step
+
 Output: `Step 1/5: Diagnosing errors... DONE`
 
 ### Step 2: Locate
