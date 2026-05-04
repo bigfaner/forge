@@ -54,9 +54,9 @@ function getConfig(): E2EConfig {
   return _config;
 }
 
-export function baseUrl(): string { return getConfig().baseUrl ?? 'http://localhost:3456'; } // VERIFY: frontend port from config
-export function apiBaseUrl(): string { return getConfig().apiBaseUrl ?? 'http://localhost:8080'; } // VERIFY: API port from config
-const DEFAULT_TIMEOUT = 30000;
+export function baseUrl(): string { return getConfig().baseUrl ?? 'http://localhost:3456'; }
+export function apiBaseUrl(): string { return getConfig().apiBaseUrl ?? 'http://localhost:8080'; }
+export function timeout(): number { return Number(getConfig().timeout ?? 30000); }
 
 // ── Evidence ───────────────────────────────────────────────────────
 export async function screenshot(page: Page, tcId: string): Promise<string> {
@@ -132,7 +132,6 @@ export const defaultCreds: UICredentials = new Proxy({} as UICredentials, {
   get(_, prop) { return getDefaultCreds()[prop as keyof UICredentials]; },
 });
 
-// TEMPLATE: Replace regex with actual locator from sitemap when generating
 export async function loginViaUI(page: Page, creds: UICredentials = defaultCreds): Promise<void> {
   const loginUrl = new URL('/login', baseUrl()).toString();
   await page.goto(loginUrl);
@@ -143,7 +142,7 @@ export async function loginViaUI(page: Page, creds: UICredentials = defaultCreds
   await page.getByRole('textbox', { name: uPat }).fill(creds.username);
   await page.getByRole('textbox', { name: pPat }).fill(creds.password);
   await page.getByRole('button', { name: bPat }).click();
-  await page.waitForURL((url) => !url.pathname.includes('login') && url.pathname !== '/', { timeout: DEFAULT_TIMEOUT });
+  await page.waitForURL((url) => !url.pathname.includes('login') && url.pathname !== '/', { timeout: timeout() });
 }
 
 export async function getApiToken(apiBaseUrl: string, authPath: string, creds: UICredentials = defaultCreds): Promise<string> {
@@ -172,6 +171,66 @@ export function createAuthCurl(
   };
 }
 
+// ── Retry ──────────────────────────────────────────────────────────
+export async function withRetry<T>(
+  fn: () => Promise<T>,
+  opts?: { maxRetries?: number; delayMs?: number; label?: string },
+): Promise<T> {
+  const maxRetries = opts?.maxRetries ?? 3;
+  const delayMs = opts?.delayMs ?? 1000;
+  const label = opts?.label ?? 'operation';
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      if (attempt === maxRetries) throw e;
+      console.warn(`${label} failed (attempt ${attempt}/${maxRetries}), retrying in ${delayMs}ms...`, e);
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+  }
+  throw new Error('unreachable');
+}
+
+// ── Test Fixtures ──────────────────────────────────────────────────
+export interface ResourceRef { id: string; type: string; _cleanup: boolean }
+
+const _createdResources: ResourceRef[] = [];
+
+/** Create a test resource via API with retry and automatic cleanup tracking.
+ *  Call cleanupTestResources() in afterAll to remove all created resources. */
+export async function createTestResource(
+  authFn: (method: string, path: string, opts?: { body?: string }) => Promise<CurlResponse>,
+  opts: { endpoint: string; body: Record<string, unknown>; idField?: string; label?: string },
+): Promise<ResourceRef> {
+  const idField = opts.idField ?? 'id';
+  const label = opts.label ?? opts.endpoint;
+  const res = await withRetry(
+    () => authFn('POST', opts.endpoint, { body: JSON.stringify(opts.body) }),
+    { label, maxRetries: 3 },
+  );
+  if (res.status < 200 || res.status >= 300) {
+    throw new Error(`${label} failed: ${res.status} ${res.body}`);
+  }
+  const data = JSON.parse(res.body);
+  const id = data[idField] ?? data.data?.[idField];
+  if (!id) throw new Error(`${idField} is undefined after ${label}`);
+  const ref: ResourceRef = { id: String(id), type: label, _cleanup: true };
+  _createdResources.push(ref);
+  return ref;
+}
+
+/** Delete all resources created via createTestResource(). Call in afterAll. */
+export async function cleanupTestResources(
+  authFn: (method: string, path: string) => Promise<CurlResponse>,
+): Promise<void> {
+  for (const ref of _createdResources.splice(0)) {
+    try {
+      await authFn('DELETE', `/${ref.type}/${ref.id}`);
+    } catch { /* best-effort cleanup */ }
+  }
+}
+
 // ── CLI ────────────────────────────────────────────────────────────
 export const PROJECT_ROOT = resolve(__dirname, '..', '..');
 
@@ -185,7 +244,7 @@ export function runCli(cmd: string, cwd?: string): CliResult {
   try {
     const stdout = execSync(cmd, {
       encoding: 'utf-8',
-      timeout: DEFAULT_TIMEOUT,
+      timeout: timeout(),
       cwd: cwd ?? PROJECT_ROOT,
     });
     return { stdout, stderr: '', exitCode: 0 };

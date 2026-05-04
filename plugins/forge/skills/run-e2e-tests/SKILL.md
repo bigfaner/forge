@@ -140,7 +140,7 @@ just test-e2e --feature <slug>
 
 The `playwright.config.ts` provides structured JSON output to `tests/e2e/results/test-results.json` and human-readable output via the list reporter.
 
-Note: `playwright.config.ts` has `testIgnore: /features\//` which prevents default test discovery from running staging specs. However, `just test-e2e --feature <slug>` passes an explicit path (`features/<slug>/`) to `npx playwright test`, which overrides the ignore pattern and runs only the specified staging specs.
+Note: `playwright.config.ts` has `testIgnore: /^features\//` which prevents default test discovery from running staging specs. However, `just test-e2e --feature <slug>` passes an explicit path (`features/<slug>/`) to `npx playwright test`, which overrides the ignore pattern and runs only the specified staging specs.
 
 ### Step 4: Collect Results
 
@@ -262,6 +262,7 @@ Playwright provides hierarchical timeouts configured in `playwright.config.ts`:
 | `globalTimeout` | 300000ms | Maximum time for the entire test run (5-minute hard cap) |
 | `timeout` | 30000ms | Per-test maximum |
 | `expect.timeout` | 10000ms | Per-assertion maximum |
+| `retries` | 0 | Per-test retry count; override via `E2E_RETRIES` env var (e.g. `E2E_RETRIES=2 just test-e2e --feature <slug>`) |
 
 These are set in `tests/e2e/playwright.config.ts` and require no manual management. A test exceeding `timeout` is automatically killed and marked as FAIL. If `globalTimeout` is exceeded, Playwright aborts the entire run with "Timeout of 300000ms exceeded" — check if the feature has too many specs and increase `globalTimeout` in `playwright.config.ts` accordingly.
 
@@ -276,6 +277,38 @@ These are set in `tests/e2e/playwright.config.ts` and require no manual manageme
 | Test timeout | Mark as FAIL with timeout reason | 0 |
 | `node_modules` missing | Run `just e2e-setup`, retry | 1 |
 | Spec file doesn't compile | Report TypeScript error, skip that spec | 0 |
+
+## Failure Diagnosis
+
+When tests fail, do not stop at the first visible error message. Follow these rules to avoid misdiagnosis:
+
+<PRINCIPLE>
+**Surface-level errors are often secondary effects.** The first error message in Playwright output is frequently a symptom, not the root cause. For example, "Windows libuv handle-closing assertion" is a Node.js cleanup crash that appears *after* an async operation threw — it is never the root cause.
+</PRINCIPLE>
+
+**Diagnostic checklist when batch failures occur:**
+
+1. **Check for cascade patterns** — if many tests fail with the same symptom (e.g., all 404 on `undefined` in URL paths), the root cause is in shared setup (`beforeAll`), not individual tests. One `beforeAll` failure leaves all its module-level variables as `undefined`.
+
+2. **Ask the contradiction question** — "Why does this test fail when other tests with the same pattern (same framework, same OS) pass?" If 500 tests use `beforeAll` + `fetch` and pass, the failure is specific to this test's setup, not a platform issue.
+
+3. **Verify backend health** — after code changes, the backend must be rebuilt AND restarted before re-running e2e. Check:
+   - Did the health check (`just probe`) actually pass?
+   - Are there backend logs showing the failed requests?
+   - Did a rate limit (429) or connection reset occur during `beforeAll`?
+
+4. **Investigate `beforeAll` step-by-step** — when `beforeAll` is suspected:
+   - Add temporary `console.log` between steps to identify which operation fails
+   - Run the `beforeAll` code manually outside Playwright to isolate the issue
+   - Use `npx playwright test <spec> --debug` to step through
+
+**Common misdiagnoses to reject:**
+
+| Surface Symptom | Actual Root Cause (likely) |
+|----------------|---------------------------|
+| "Windows libuv handle-closing assertion" | Async operation threw in `beforeAll`; libuv crash is secondary |
+| "Environment/OS issue" | Setup timing, missing rebuild, or backend not ready |
+| "Playwright bug" | Almost always a test code issue — verify with a passing test that uses the same pattern |
 
 ## Related Skills
 

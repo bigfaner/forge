@@ -24,14 +24,18 @@ Auto-generate and maintain `docs/sitemap/sitemap.json` for web applications.
 **Verify agent-browser installation:**
 
 ```bash
-npx agent-browser --version
+npx agent-browser@latest --version
 ```
 
 If it fails, install first:
 
 ```bash
-npx agent-browser install
+npx agent-browser@latest install
 ```
+
+<HARD-RULE>
+Always use a version-qualified `npx agent-browser@latest` invocation. Do not use bare `npx agent-browser` (unpinned) — it may pull breaking changes between runs. For CI reproducibility, consider pinning to a specific version (e.g. `agent-browser@0.4.x`) in your environment.
+</HARD-RULE>
 
 After installation, re-run this command.
 

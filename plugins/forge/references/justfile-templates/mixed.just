@@ -176,5 +176,12 @@ e2e-verify feature="":
         exit 1
     fi
     echo "OK: no unresolved // VERIFY: markers in tests/e2e/features/{{feature}}/"
+    if [ -f "tests/e2e/helpers.ts" ]; then
+        hmatches=$(grep -n '// VERIFY:\|// TEMPLATE:' "tests/e2e/helpers.ts" || true)
+        if [ -n "$hmatches" ]; then
+            echo "Warning: unresolved markers in tests/e2e/helpers.ts:" >&2
+            echo "$hmatches" >&2
+        fi
+    fi
 
 # --- end forge standard recipes ---

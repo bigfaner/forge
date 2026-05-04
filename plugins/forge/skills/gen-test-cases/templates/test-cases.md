@@ -1,9 +1,9 @@
 ---
 feature: "{{FEATURE_SLUG}}"
 sources:
-  - prd/prd-user-stories.md
-  - prd/prd-spec.md
-  - prd/prd-ui-functions.md
+  - docs/features/{{FEATURE_SLUG}}/prd/prd-user-stories.md
+  - docs/features/{{FEATURE_SLUG}}/prd/prd-spec.md
+  - docs/features/{{FEATURE_SLUG}}/prd/prd-ui-functions.md
 generated: "{{DATE}}"
 ---
 

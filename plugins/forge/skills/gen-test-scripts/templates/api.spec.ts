@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { curl, apiBaseUrl
   // CONDITIONAL: Uncomment imports below only if auth-required-test exists
-  // , getApiToken, createAuthCurl
+  // , getApiToken, createAuthCurl, withRetry
   // CONDITIONAL: Uncomment import below only if login-test exists
   // , defaultCreds
 } from '../../helpers.js';
@@ -11,8 +11,15 @@ test.describe('API E2E Tests', () => {
   // let authCurl: ReturnType<typeof createAuthCurl>;
 
   // test.beforeAll(async () => {
-  //   // CONDITIONAL: Uncomment the 2 lines below only if auth-required-test exists
-  //   // const token = await getApiToken(apiBaseUrl(), '/v1/auth/login'); // VERIFY: auth endpoint path from router files
+  //   // CONDITIONAL: Uncomment below only if auth-required-test exists
+  //   // let token: string;
+  //   // try {
+  //   //   token = await withRetry(() => getApiToken(apiBaseUrl(), '/v1/auth/login'), { label: 'getApiToken' }); // VERIFY: auth endpoint path from router files
+  //   // } catch (e) {
+  //   //   console.error('beforeAll failed at getApiToken:', e);
+  //   //   throw e;
+  //   // }
+  //   // if (!token) throw new Error('token is undefined after getApiToken');
   //   // authCurl = createAuthCurl(apiBaseUrl(), token);
   // });
 
@@ -37,9 +44,24 @@ test.describe('API E2E Tests', () => {
   // let customAuthHeaders: Record<string, string>;
   //
   // test.beforeAll(async () => {
-  //   // VERIFY: set up custom auth based on codebase analysis (API key / OAuth / session cookie)
-  //   // Example for API key auth:
-  //   // customAuthHeaders = { 'X-API-Key': 'your-api-key' }; // VERIFY: API key source from Fact Table
+  //   try {
+  //     // VERIFY: set up custom auth based on codebase analysis (API key / OAuth / session cookie)
+  //     // Example for API key auth:
+  //     // customAuthHeaders = { 'X-API-Key': 'your-api-key' }; // VERIFY: API key source from Fact Table
+  //   } catch (e) {
+  //     console.error('beforeAll failed at custom auth setup:', e);
+  //     throw e;
+  //   }
+  //   if (!customAuthHeaders) throw new Error('customAuthHeaders is undefined after auth setup');
+  // });
+
+  // ── Public endpoint pattern (no auth needed) ───────────────────
+  // Use this pattern for endpoints that do not require authentication.
+  //
+  // // Traceability: TC-011 → Spec Section 5.3
+  // test('TC-011: GET /v1/health returns 200', async () => {
+  //   const res = await curl('GET', `${apiBaseUrl()}/v1/health`); // VERIFY: public endpoint path
+  //   expect(res.status).toBe(200);
   // });
 
   // ── Authenticated Tests (use shared auth) ───────────────────────
@@ -78,5 +100,29 @@ test.describe('API E2E Tests', () => {
   //   expect(res.status).toBe(400); // VERIFY: expected error status
   //   const data = JSON.parse(res.body);
   //   expect(data.error ?? data.message).toBeTruthy(); // VERIFY: error field
+  // });
+
+  // ── Serial describe with resource creation (PATTERN REFERENCE: for tests that share sequential state)
+  // Use test.describe.serial when tests depend on resources created by earlier tests.
+  // Prefer this over bare test.describe + beforeAll when resource creation is required.
+  //
+  // test.describe.serial('Resource lifecycle', () => {
+  //   let resourceId: string;
+  //
+  //   test('TC-015: Create resource', async () => {
+  //     const res = await withRetry(
+  //       () => authCurl('POST', '/v1/resources', { body: JSON.stringify({ name: 'test' }) }),
+  //       { label: 'create resource', maxRetries: 3 },
+  //     );
+  //     expect(res.status).toBe(201);
+  //     const data = JSON.parse(res.body);
+  //     resourceId = data.id; // VERIFY: response field for resource ID
+  //     if (!resourceId) throw new Error('resourceId is undefined after create');
+  //   });
+  //
+  //   test('TC-016: Get created resource', async () => {
+  //     const res = await authCurl('GET', `/v1/resources/${resourceId}`);
+  //     expect(res.status).toBe(200);
+  //   });
   // });
 });

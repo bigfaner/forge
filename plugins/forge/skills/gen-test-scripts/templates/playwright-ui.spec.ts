@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { screenshot, baseUrl
-  // CONDITIONAL: Uncomment import below only if auth-required-test exists
-  // , loginViaUI
+  // CONDITIONAL: Uncomment imports below only if auth-required-test exists
+  // , loginViaUI, getApiToken, createAuthCurl, CurlResponse
   // CONDITIONAL: Uncomment import below only if login-test exists (for login form filling)
   // , defaultCreds
 } from '../../helpers.js';
@@ -10,6 +10,26 @@ test.describe('UI E2E Tests', () => {
   // CONDITIONAL: Uncomment the block below only if auth-required-test exists
   // test.beforeEach(async ({ page }) => {
   //   await loginViaUI(page);
+  // });
+
+  // PATTERN REFERENCE: beforeAll for shared setup (e.g., creating test data via API)
+  // Use defensive try/catch + explicit undefined check per beforeAll Safety rules.
+  //
+  // let testResourceId: string;
+  // test.beforeAll(async () => {
+  //   const token = await getApiToken(apiBaseUrl(), '/v1/auth/login'); // VERIFY: auth endpoint
+  //   let res: CurlResponse;
+  //   try {
+  //     res = await createAuthCurl(apiBaseUrl(), token)('POST', '/v1/resources', {
+  //       body: JSON.stringify({ name: 'UI test resource' }),
+  //     });
+  //   } catch (e) {
+  //     console.error('beforeAll failed at create test resource:', e);
+  //     throw e;
+  //   }
+  //   if (res.status !== 201) throw new Error(`Create resource failed: ${res.status}`);
+  //   testResourceId = JSON.parse(res.body).id; // VERIFY: response field for ID
+  //   if (!testResourceId) throw new Error('testResourceId is undefined after create');
   // });
 
   // ── Login Tests (no shared auth) ────────────────────────────────
