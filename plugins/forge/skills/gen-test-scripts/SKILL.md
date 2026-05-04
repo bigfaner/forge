@@ -20,7 +20,7 @@ Check previous stage artifacts. Abort and prompt user if missing:
 
 | Artifact | Missing prompt |
 |----------|----------------|
-| `testing/test-cases.md` | Run `/gen-test-cases` first |
+| `docs/features/<slug>/testing/test-cases.md` | Run `/gen-test-cases` first |
 | `docs/sitemap/sitemap.json` (UI tests only) | Run `/gen-sitemap` first |
 | `tests/e2e/config.yaml` | Created by this skill in Step 5 (or create manually from template at `plugins/forge/skills/gen-test-scripts/templates/config.yaml`) |
 
@@ -165,6 +165,20 @@ For each non-empty, verified type group, generate a spec file from the correspon
 
 Based on Step 1 auth classification, **uncomment** matching CONDITIONAL blocks, remove non-matching blocks, then fill in test data. Replace example content with actual test cases from `test-cases.md`, keeping the same structure (locator pattern, assertion pattern, screenshot call). Do not rewrite template structure from scratch.
 
+#### beforeAll Safety
+
+All `test.beforeAll` blocks must follow defensive patterns to prevent cascade failures where module-level variables stay `undefined`:
+
+1. **Wrap each operation in try/catch** with `console.error` identifying which step failed
+2. **Explicit undefined check** — after assignment, validate with `if (!var) throw new Error('var is undefined after <operation>')`
+3. **Prefer reusing existing resources** over creating new ones in `beforeAll` — fewer operations means fewer failure modes
+4. **Use `test.describe.serial`** when tests have sequential dependencies (resource A must exist for test B), instead of bare `test.describe` with shared mutable state
+5. **Use `withRetry()`** for backend-dependent operations (token acquisition, resource creation) to handle transient failures (429, connection reset)
+
+<HARD-RULE>
+When `beforeAll` throws and module-level `let` variables stay `undefined`, all downstream tests fail with misleading errors (e.g., `undefined` in URL paths → 404). The try/catch + explicit check pattern ensures the *real* failure is reported, not a secondary symptom.
+</HARD-RULE>
+
 **Import path**: All spec files must import from `'../../helpers.js'` (two levels up to shared helpers.ts at `tests/e2e/`).
 
 **VERIFY marker resolution**: Resolve all `// VERIFY:` comments using Fact Table values. If no Fact Table value exists, keep the `// VERIFY:` comment as-is.
@@ -236,7 +250,7 @@ All generated spec files go to `tests/e2e/features/<feature>/` (staging area). A
 
 | Situation | Action |
 |-----------|--------|
-| `testing/test-cases.md` missing | Abort with prompt to run `/gen-test-cases` |
+| `docs/features/<slug>/testing/test-cases.md` missing | Abort with prompt to run `/gen-test-cases` |
 | `sitemap.json` missing (UI tests) | Abort with prompt to run `/gen-sitemap` |
 | TypeScript compilation fails post-generation | Fix generated code, re-run `tsc --noEmit` |
 | No spec files generated (all empty groups) | Abort with clear diagnostic message |

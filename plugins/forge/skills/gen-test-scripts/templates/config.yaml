@@ -14,7 +14,7 @@ username: admin
 password: password
 
 # Login page locators (optional — overrides regex defaults in loginViaUI)
-# loginLocators:
-#   usernameField: 'username|email'
-#   passwordField: 'password'
-#   submitButton: 'login|sign in|submit'
+loginLocators:
+  usernameField: "username|email"
+  passwordField: "password"
+  submitButton: "login|sign in|submit"

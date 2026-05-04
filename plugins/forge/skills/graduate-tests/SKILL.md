@@ -102,9 +102,15 @@ For each target file:
 4. Write the merged file
 
 <HARD-RULE>
-Specs in the staging area (`tests/e2e/features/<slug>/`) import helpers via `'../../helpers.js'` (two levels up). After migration to the regression suite (`tests/e2e/<target>/`), the import must be rewritten to `'../helpers.js'` (one level up). Every migrated spec file MUST have its helpers import path updated. Other imports (node built-ins, @playwright/test) remain unchanged.
+Specs in the staging area (`tests/e2e/features/<slug>/`) import helpers via `'../../helpers.js'` (two levels up). After migration to the regression suite, the import must be rewritten based on target depth:
 
-Note: This rule assumes targets are at `tests/e2e/<target>/` (one level deep). If the agent places specs in a nested directory (e.g., `tests/e2e/<target>/sub/`), compute the relative path to `tests/e2e/helpers.ts` accordingly.
+| Target location | Import path |
+|----------------|-------------|
+| `tests/e2e/<module>/file.spec.ts` (1 level deep) | `'../helpers.js'` |
+| `tests/e2e/<module>/sub/file.spec.ts` (2 levels deep) | `'../../helpers.js'` |
+| `tests/e2e/<module>/a/b/file.spec.ts` (3 levels deep) | `'../../../helpers.js'` |
+
+Formula: count directory levels from spec file to `tests/e2e/`, then generate `'../' * levels + 'helpers.js'`. Every migrated spec file MUST have its helpers import path updated. Other imports (node built-ins, @playwright/test) remain unchanged.
 </HARD-RULE>
 
 Shared infrastructure (`helpers.ts`, `package.json`, `tsconfig.json`) already exists at `tests/e2e/` — no merging or copying needed.
@@ -119,6 +125,7 @@ After migrating all spec files:
 If validation fails and is unfixable, rollback using the migration manifest:
 - **Newly created** target files: delete them entirely
 - **Merged** target files: revert by restoring from `tests/e2e/.graduated/.backup/<slug>/`
+- **Update manifest entries**: change `"status": "done"` to `"status": "rolled-back"` for affected entries (prevents stale entries on re-run)
 - Do NOT write the marker. Source directory remains intact for retry.
 
 ### Step 6: Create Graduation Marker
@@ -144,9 +151,14 @@ EOF
 
 ### Step 7: Source Cleanup
 
-After the marker is written, remove the source directory and clean up backups:
+After the marker is written, archive test results then remove the source directory:
 
 ```bash
+# Archive results before cleanup
+if [ -d "tests/e2e/features/<slug>/results/" ]; then
+    mkdir -p tests/e2e/.graduated/.results-archive
+    cp -r tests/e2e/features/<slug>/results/ tests/e2e/.graduated/.results-archive/<slug>/
+fi
 rm -rf tests/e2e/features/<slug>/
 rm -rf tests/e2e/.graduated/.backup/<slug>/
 ```

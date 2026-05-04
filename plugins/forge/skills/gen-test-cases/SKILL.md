@@ -20,8 +20,8 @@ Check previous stage artifacts. Abort and prompt user if missing:
 
 | Artifact | Missing prompt |
 |----------|----------------|
-| `prd/prd-user-stories.md` | Run `/write-prd` first |
-| `prd/prd-spec.md` | Run `/write-prd` first |
+| `docs/features/<slug>/prd/prd-user-stories.md` | Run `/write-prd` first |
+| `docs/features/<slug>/prd/prd-spec.md` | Run `/write-prd` first |
 | `docs/sitemap/sitemap.json` (optional, UI tests only) | Run `/gen-sitemap` for more precise element references |
 
 This skill can be invoked manually or as the standard task T-test-1 appended by `/breakdown-tasks`.
@@ -43,17 +43,17 @@ This skill can be invoked manually or as the standard task T-test-1 appended by 
 
 Read all available PRD documents:
 
-1. `prd/prd-user-stories.md` — primary source for acceptance criteria (Given/When/Then format)
-2. `prd/prd-spec.md` — functional specs, scope, quality checks at the end
-3. `prd/prd-ui-functions.md` — UI-specific criteria (if exists)
+1. `docs/features/<slug>/prd/prd-user-stories.md` — primary source for acceptance criteria (Given/When/Then format)
+2. `docs/features/<slug>/prd/prd-spec.md` — functional specs, scope, quality checks at the end
+3. `docs/features/<slug>/prd/prd-ui-functions.md` — UI-specific criteria (if exists)
 
-Also read `ui/ui-design.md` if it exists — provides component-level verification points for UI tests.
+Also read `docs/features/<slug>/ui/ui-design.md` if it exists — provides component-level verification points for UI tests.
 
 ### Step 2: Extract Acceptance Criteria
 
 From each source, extract every verifiable criterion:
 
-**From user stories** (`prd-user-stories.md`):
+**From user stories** (`prd/prd-user-stories.md`):
 - Each `Given/When/Then` block is one acceptance criterion
 - Each story may have multiple AC blocks
 - Preserve the story reference (e.g., "Story 1 / AC-1")
