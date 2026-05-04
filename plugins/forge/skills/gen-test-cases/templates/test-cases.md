@@ -19,6 +19,8 @@ generated: "{{DATE}}"
 | CLI  | {{CLI_COUNT}}  |
 | **Total** | **{{TOTAL_COUNT}}** |
 
+> **Note**: Integration test count is a subset of UI count. Integration tests verify that components are correctly wired into their parent pages, using the same Playwright framework as UI tests.
+
 ---
 
 ## UI Test Cases

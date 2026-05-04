@@ -434,7 +434,7 @@ This spec is consumed by breakdown-tasks to generate separate integration tasks.
 **Step 1 (addition):** Read sitemap for validation:
 
 ```markdown
-<HAS_UI>
+<HAS_PLACEMENT>
 If `prd/prd-ui-functions.md` exists, validate Placement:
 1. Read the Page Composition table from `prd/prd-ui-functions.md`
 2. For each `existing-page:<route>` entry, verify the route exists in `docs/sitemap/sitemap.json`
@@ -442,12 +442,13 @@ If `prd/prd-ui-functions.md` exists, validate Placement:
    Run /gen-sitemap first or verify the route is correct."
 4. If no Placement sections found in any UI Function → ERROR: "Missing Placement declarations.
    All UI Functions must have a Placement section. Run /write-prd to update."
-</HAS_UI>
+</HAS_PLACEMENT>
 ```
 
 **Step 2 (addition):** Task split rules driven by placement:
 
 ```markdown
+<HAS_PLACEMENT>
 <RULE> (replaces existing one-to-one rule)
 
 UI Task Split Rules — driven by PRD Placement:
@@ -473,6 +474,7 @@ UI Task Split Rules — driven by PRD Placement:
 
 4. NO fallback to one-to-one rule. Every UI component MUST have explicit Placement.
 </RULE>
+</HAS_PLACEMENT>
 ```
 
 **Step 2 Element Mapping (addition):**

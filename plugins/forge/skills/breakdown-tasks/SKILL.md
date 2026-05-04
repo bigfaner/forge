@@ -12,7 +12,7 @@ Break a technical design into executable tasks (1-4h each, clear dependencies, t
 **Conditional Tags**: `<HAS_UI>`, `<NO_UI>`, `<UI_ONLY>`, `<HAS_PLACEMENT>`, `<RULE>` are inclusion markers.
 - If `ui/ui-design.md` exists → include `<HAS_UI>` and `<UI_ONLY>` blocks, exclude `<NO_UI>` blocks.
 - If `ui/ui-design.md` does NOT exist → include `<NO_UI>` blocks, exclude `<HAS_UI>`/`<UI_ONLY>` blocks.
-- If `prd/prd-ui-functions.md` exists → include `<HAS_PLACEMENT>` and `<RULE>` blocks (independent of ui-design.md).
+- If `prd/prd-ui-functions.md` exists → include `<HAS_PLACEMENT>` and `<RULE>` blocks (independent of ui-design.md). `<RULE>` has no independent activation — it is always co-activated with `<HAS_PLACEMENT>`.
 - If `prd/prd-ui-functions.md` does NOT exist → exclude `<HAS_PLACEMENT>` and `<RULE>` blocks.
 
 | Artifact                | Missing? Run                    |
