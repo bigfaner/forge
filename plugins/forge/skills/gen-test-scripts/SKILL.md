@@ -165,6 +165,40 @@ For each non-empty, verified type group, generate a spec file from the correspon
 
 Based on Step 1 auth classification, **uncomment** matching CONDITIONAL blocks, remove non-matching blocks, then fill in test data. Replace example content with actual test cases from `test-cases.md`, keeping the same structure (locator pattern, assertion pattern, screenshot call). Do not rewrite template structure from scratch.
 
+#### Integration Test Scripts
+
+Integration test cases are a subcategory of UI tests. They verify that a component embedded on an existing page (via `placement: existing-page:<route>`) is visible at the correct position and renders data correctly.
+
+**Identification**: A test case is an integration test when:
+- `Source` field contains "Placement + Integration Spec", **or**
+- `Test ID` field contains "integration-"
+
+Integration tests use the same Playwright framework and spec file structure as standard UI tests — the distinction is conceptual (page-level integration vs component-level behavior). They are grouped with UI test cases and emitted into the same `ui.spec.ts` file.
+
+**Script generation strategy** — for each integration test case:
+
+1. **Locate the target page** by route (same as standard UI tests, using sitemap resolution from Step 2).
+2. **Locate the embedded component** using these strategies in priority order:
+   a. Component heading or section title: `page.getByRole('heading', { name: /component name/i })`
+   b. Container with `aria-label` or `data-testid`: `page.getByLabel(label)` or `page.getByTestId(id)`
+   c. Sitemap element at the insertion point area (from the test case `Element` field)
+3. **Assert visibility**: `expect(locator).toBeVisible()`
+4. **Assert position** (if feasible): verify the component appears above/below/adjacent to expected sibling elements using Playwright's locator chaining or `.evaluate()` for DOM position checks.
+5. **Verify data rendering**: assert expected text content is present within the component locator (e.g., `await expect(locator).toContainText('expected data')`).
+
+**Example generated test**:
+
+```typescript
+test('Integration — Recent Tasks visible on Dashboard', async ({ page }) => {
+  // Traceability: TC-005 → PRD UI Function "Recent Tasks" Placement + Integration Spec
+  await page.goto('/dashboard');
+  const recentTasks = page.getByRole('heading', { name: /recent tasks/i });
+  await expect(recentTasks).toBeVisible();
+  const section = recentTasks.locator('..');
+  await expect(section).toContainText('task-001');
+});
+```
+
 #### beforeAll Safety
 
 All `test.beforeAll` blocks must follow defensive patterns to prevent cascade failures where module-level variables stay `undefined`:

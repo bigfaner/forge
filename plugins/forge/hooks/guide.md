@@ -76,6 +76,15 @@ docs/
 
 Each skill checks prerequisites with `ls` before execution; aborts and prompts user if missing.
 
+### Page Integration Awareness
+
+Every UI Function in `prd-ui-functions.md` includes a **Placement** field (`new-page` or `existing-page:<route>`):
+
+- **`/breakdown-tasks`** uses Placement to determine task structure:
+  - `existing-page` generates a Build task + an Integrate task (wire component into existing page)
+  - `new-page` generates a Build task + a Page Assembly task (create page file, register route, compose components)
+- **`/gen-test-cases`** auto-generates integration verification test cases for existing-page placements, ensuring the component is visible at the correct position in the target page
+
 ### Manifest
 
 `manifest.md` is the single entry point for a Feature. An AI agent reads this file to understand the full context:

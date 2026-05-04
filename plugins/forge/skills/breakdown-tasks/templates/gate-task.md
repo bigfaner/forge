@@ -22,7 +22,7 @@ Exit verification gate for this phase. Confirms that all outputs are complete, i
 4. [ ] Project builds successfully
 5. [ ] All existing tests pass
 6. [ ] No deviations from design spec (or deviations are documented as decisions)
-7. [ ] All Integration Specs from `tech-design.md` have corresponding code changes (for each Integration Spec: verify target file was modified since feature branch started)
+7. [ ] All Integration Specs from `tech-design.md` have corresponding code changes (for each Integration Spec: verify target file was modified since feature branch started; if branch point cannot be determined, verify target file was modified per the task record)
 8. [ ] All integration test cases pass (if gen-test-cases already ran)
 
 ## Reference Files

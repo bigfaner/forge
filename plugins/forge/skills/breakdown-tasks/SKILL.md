@@ -9,7 +9,11 @@ Break a technical design into executable tasks (1-4h each, clear dependencies, t
 
 ## Prerequisites
 
-**Conditional Tags**: `<HAS_UI>`, `<NO_UI>`, `<UI_ONLY>`, `<RULE>` are inclusion markers. If `ui/ui-design.md` exists, include `<HAS_UI>` and `<UI_ONLY>` blocks and exclude `<NO_UI>` blocks. If not, include `<NO_UI>` blocks and exclude `<HAS_UI>`/`<UI_ONLY>`/`<RULE>` blocks.
+**Conditional Tags**: `<HAS_UI>`, `<NO_UI>`, `<UI_ONLY>`, `<HAS_PLACEMENT>`, `<RULE>` are inclusion markers.
+- If `ui/ui-design.md` exists → include `<HAS_UI>` and `<UI_ONLY>` blocks, exclude `<NO_UI>` blocks.
+- If `ui/ui-design.md` does NOT exist → include `<NO_UI>` blocks, exclude `<HAS_UI>`/`<UI_ONLY>` blocks.
+- If `prd/prd-ui-functions.md` exists → include `<HAS_PLACEMENT>` and `<RULE>` blocks (independent of ui-design.md).
+- If `prd/prd-ui-functions.md` does NOT exist → exclude `<HAS_PLACEMENT>` and `<RULE>` blocks.
 
 | Artifact                | Missing? Run                    |
 | ----------------------- | ------------------------------- |
@@ -29,13 +33,16 @@ Read `manifest.md` to locate documents, then read all available files:
 
 <HAS_UI>
 If `ui/ui-design.md` exists, also list `ui/prototype/` files and read `ui/prototype/index.html` for page inventory (skip if no prototype directory).
+</HAS_UI>
 
+<HAS_PLACEMENT>
 **Placement validation** (mandatory):
 1. Read the Page Composition table from `prd/prd-ui-functions.md`
-2. For each `existing-page:<route>` entry, verify the route exists in `docs/sitemap/sitemap.json`
-3. If route not found in sitemap → ERROR: abort with message `"Route <route> not found in sitemap.json. Run /gen-sitemap first or verify the route is correct."`
-4. If no Placement sections found in any UI Function → ERROR: `"Missing Placement declarations. All UI Functions must have a Placement section. Update prd-ui-functions.md via /write-prd."`
-</HAS_UI>
+2. Check if `docs/sitemap/sitemap.json` exists. If not → WARN: `"sitemap.json not found — cannot verify existing-page routes. Run /gen-sitemap for full validation."` and proceed without route verification (skip step 3).
+3. For each `existing-page:<route>` entry, verify the route exists in `docs/sitemap/sitemap.json`
+4. If route not found in sitemap → ERROR: abort with message `"Route <route> not found in sitemap.json. Run /gen-sitemap first or verify the route is correct."`
+5. If no Placement sections found in any UI Function → ERROR: `"Missing Placement declarations. All UI Functions must have a Placement section. Edit prd/prd-ui-functions.md to add Placement sections, or re-run /write-prd."`
+</HAS_PLACEMENT>
 
 ## Step 2: Map → Tasks
 
@@ -55,6 +62,7 @@ If `ui/ui-design.md` exists, also list `ui/prototype/` files and read `ui/protot
 | Page composition (new-page) | prd-ui-functions.md Page Composition | Page Assembly task |
 </UI_ONLY>
 
+<HAS_PLACEMENT>
 <RULE>
 UI Task Split Rules — driven by PRD Placement:
 
@@ -79,6 +87,9 @@ UI Task Split Rules — driven by PRD Placement:
 
 4. NO fallback to one-to-one rule. Every UI component MUST have explicit Placement.
 </RULE>
+
+**Placement format note**: The PRD template stores Placement as two separate fields (`Mode: new-page | existing-page` and `Target Page: <page route or name>`). Downstream consumers (including the rules above) use the combined canonical form: `<mode>:<target-page-value>`. For example, if Mode is `existing-page` and Target Page is `/dashboard`, the canonical placement is `existing-page:/dashboard`. If Mode is `new-page` and Target Page is `Analytics`, the canonical placement is `new-page:Analytics`.
+</HAS_PLACEMENT>
 
 ### PRD Coverage Verification
 
@@ -321,7 +332,7 @@ task validate docs/features/<slug>/tasks/index.json
 
 Read `templates/manifest-update-tasks.md` for the traceability table format and frontmatter update instructions.
 
-- Fill traceability table (4-column: PRD Section | Design Section | UI Component | Tasks); use "—" for UI Component when no UI
+- Fill traceability table (5-column: PRD Section | Design Section | UI Component | Placement | Tasks); use "—" for UI Component when no UI, use "—" for Placement when no UI Functions
 - Advance status to `tasks`
 
 ## Output Checklist
