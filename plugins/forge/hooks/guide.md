@@ -86,7 +86,7 @@ Each skill checks prerequisites with `ls` before execution; aborts and prompts u
 
 ## Quality Gate Protocol
 
-All task-executing workflows (`/execute-task`, `task-executor` agent, `/fix-bug`) MUST pass the quality gate before recording completion.
+All task-executing workflows (`/execute-task`, `task-executor` agent, `/fix-bug`, `error-fixer` agent) MUST pass the quality gate before recording completion.
 
 ### Gate Sequence
 

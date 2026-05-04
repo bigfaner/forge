@@ -7,11 +7,11 @@
 
 | Section | Required |
 |---------|----------|
-| 需求背景（原因/对象/人员） | ✓ |
-| 需求目标 + 量化指标 | ✓ |
-| Scope（In + Out） | ✓ |
-| 流程说明 + Mermaid 流程图 | ✓ |
-| 功能描述 | ✓ |
+| Background (Reason/Target/Users) | ✓ |
+| Goals + Quantified Metrics | ✓ |
+| Scope (In + Out) | ✓ |
+| Flow Description + Mermaid Diagram | ✓ |
+| Functional Specs | ✓ |
 
 ## Required Sections (prd-user-stories.md)
 
@@ -26,7 +26,7 @@
 
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| Background has three elements (原因/对象/人员) | 0-7 | Are all three present and specific? |
+| Background has three elements (Reason/Target/Users) | 0-7 | Are all three present and specific? |
 | Goals are quantified | 0-7 | Is there at least one numeric target (%, count, time)? |
 | Background and goals are logically consistent | 0-6 | Does the goal follow from the stated problem? |
 
@@ -60,7 +60,7 @@
 |-----------|--------|---------------|
 | In-scope items are concrete deliverables | 0-7 | Each item is a specific feature/screen/API, not a vague area |
 | Out-of-scope explicitly lists deferred items | 0-7 | Are deferred items named, not just implied by absence? |
-| Scope consistent with functional specs and user stories | 0-6 | Do the in-scope items match what's described in 功能描述 and user stories? |
+| Scope consistent with functional specs and user stories | 0-6 | Do the in-scope items match what's described in Functional Specs and user stories? |
 
 ## Deduction Rules
 

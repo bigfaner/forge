@@ -131,7 +131,7 @@ Use `templates/manifest-update-ui.md` for the update pattern.
 
 After updating manifest, use `AskUserQuestion` to ask:
 
-> Run `/eval-ui` for adversarial evaluation of the UI design? (default 80/3)
+> Run `/eval-ui` for adversarial evaluation? (default: 90 points / 3 rounds)
 
 - **Yes** → invoke `/eval-ui` via `Skill` tool
 - **Custom** → invoke `/eval-ui --target X --iterations Y` via `Skill` tool

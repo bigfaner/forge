@@ -29,7 +29,7 @@ Check previous stage artifacts. Abort and prompt user if missing:
 | `tests/e2e/config.yaml` | Required for UI/API tests; optional for CLI-only projects. Created by `/gen-test-scripts` Step 5 or create manually |
 
 <PRINCIPLE>
-**共享基础设施优先。** 执行任何测试操作前，先验证公共依赖（`helpers.ts`、`config.yaml`、`package.json`、`tsconfig.json`、`playwright.config.ts`）完整且可用。如果 `helpers.ts` 缺少 spec 文件导入的符号（如 UI 测试需要 `screenshot`/`baseUrl`，API 测试需要 `curl`/`apiBaseUrl`），测试会在 import 阶段全部失败。发现不一致时先回到 `/gen-test-scripts` 修复公共依赖，再运行测试。
+**Shared infrastructure first.** Before executing any test actions, verify that shared dependencies (`helpers.ts`, `config.yaml`, `package.json`, `tsconfig.json`, `playwright.config.ts`) are complete and functional. If `helpers.ts` is missing symbols imported by spec files (e.g., `screenshot`/`baseUrl` for UI tests, `curl`/`apiBaseUrl` for API tests), all tests will fail at the import stage. When inconsistencies are found, go back to `/gen-test-scripts` to fix shared dependencies before running tests.
 </PRINCIPLE>
 
 **Justfile check** (must pass before proceeding):

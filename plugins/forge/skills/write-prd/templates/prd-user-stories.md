@@ -4,31 +4,31 @@ feature: "{{FEATURE_NAME}}"
 
 # User Stories: {{FEATURE_NAME}}
 
-## Story 1: <!-- 用户故事标题 -->
+## Story 1: <!-- User story title -->
 
-**As a** <!-- 用户角色 -->
-**I want to** <!-- 具体行为 -->
-**So that** <!-- 达成的目标/价值 -->
+**As a** <!-- User role -->
+**I want to** <!-- Specific action -->
+**So that** <!-- Goal / value achieved -->
 
 **Acceptance Criteria:**
-- Given <!-- 前置条件 -->
-- When <!-- 触发动作 -->
-- Then <!-- 期望结果 -->
+- Given <!-- Precondition -->
+- When <!-- Trigger action -->
+- Then <!-- Expected result -->
 
 ---
 
-## Story 2: <!-- 用户故事标题 -->
+## Story 2: <!-- User story title -->
 
-**As a** <!-- 用户角色 -->
-**I want to** <!-- 具体行为 -->
-**So that** <!-- 达成的目标/价值 -->
+**As a** <!-- User role -->
+**I want to** <!-- Specific action -->
+**So that** <!-- Goal / value achieved -->
 
 **Acceptance Criteria:**
-- Given <!-- 前置条件 -->
-- When <!-- 触发动作 -->
-- Then <!-- 期望结果 -->
+- Given <!-- Precondition -->
+- When <!-- Trigger action -->
+- Then <!-- Expected result -->
 
 ---
 
-<!-- 重复以上格式添加更多用户故事 -->
-<!-- 建议：1-3 个故事；超过 5 个通常意味着范围过大 -->
+<!-- Repeat the format above for additional user stories -->
+<!-- Suggestion: 1-3 stories; more than 5 usually indicates the scope is too broad -->

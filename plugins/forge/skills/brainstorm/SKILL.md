@@ -86,12 +86,12 @@ git add docs/proposals/<slug>/
 git commit -m "docs: add proposal for <feature-slug>"
 ```
 
-## Step 7: Eval Prompt
+## Step 7: Adversarial Eval Prompt
 
 After committing, ask via `AskUserQuestion`:
 
-> Run `/eval-proposal` for adversarial evaluation? (default: 80 points / 3 rounds)
+> Run `/eval-proposal` for adversarial evaluation? (default: 90 points / 3 rounds)
 
-- **Yes** → invoke `/eval-proposal`
-- **Custom** → invoke `/eval-proposal --target X --iterations Y`
+- **Yes** → invoke `/eval-proposal` via `Skill` tool
+- **Custom** → invoke `/eval-proposal --target X --iterations Y` via `Skill` tool
 - **No** → proceed to `/write-prd`

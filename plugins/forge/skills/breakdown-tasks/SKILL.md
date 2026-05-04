@@ -1,6 +1,6 @@
 ---
 name: breakdown-tasks
-description: Use when design.md is finalized to break down into executable tasks. Creates task files based on technical design.
+description: Use when the technical design is finalized to break down into executable tasks. Creates task files based on technical design.
 ---
 
 # Breakdown Tasks
@@ -44,11 +44,11 @@ If `ui/ui-design.md` exists, also list `ui/prototype/` files and read `ui/protot
 | PRD flow gate (diamond node) | prd-spec.md    | Gate verification task   |
 
 <UI_ONLY>
-| UI Component (Layout + States + Interactions + Binding) | ui-design.md | Implementation (UI) |
+| UI Component (Layout + States + Interactions + Binding) | ui/ui-design.md | Implementation (UI) |
 </UI_ONLY>
 
 <RULE>
-- Each `ui-design.md` Component → **one** UI task (split only if >4h)
+- Each `ui/ui-design.md` Component → **one** UI task (split only if >4h)
 </RULE>
 
 ### PRD Coverage Verification
@@ -158,7 +158,7 @@ Read `templates/task.md` for task content structure. Create one task file per de
 
 For each UI task, **Reference Files** must include:
 
-1. Matching `ui-design.md` Component section
+1. Matching `ui/ui-design.md` Component section
 2. Corresponding `ui/prototype/<page>.html` (or note "No HTML prototype available")
 3. Data binding table for this component
 4. Relevant `tech-design.md` interfaces

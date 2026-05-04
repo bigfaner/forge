@@ -4,17 +4,17 @@
 
 | Skill | Description |
 |-------|-------------|
-| brainstorm | Explore vague ideas before formalizing into a PRD |
-| write-prd | Formalize requirements into a structured PRD |
+| brainstorm | Explore vague ideas through collaborative dialogue and produce a structured proposal document before formalizing into a PRD |
+| write-prd | Formalize requirements into a structured PRD through collaborative dialogue |
 | eval-prd | Evaluate PRD quality against standards |
 | tech-design | Create technical design after PRD is finalized |
-| ui-design | Create UI design specifications for UI features |
-| eval-design | Evaluate tech-design.md quality |
-| breakdown-tasks | Break down design into executable tasks |
-| record-task | Record task execution result |
+| ui-design | Create UI design specifications with style selection and HTML prototype generation |
+| eval-design | Evaluate a tech design with 100-point scoring, then run adversarial iterations until target score is met |
+| breakdown-tasks | Break down tech-design into executable tasks |
+| record-task | Record task execution result and update task status |
 | git-commit | Create git commits with Conventional Commits format |
 | eval-harness | Evaluate harness health |
-| eval-proposal | Evaluate a proposal document with scoring |
+| eval-proposal | Evaluate a proposal with 100-point scoring and adversarial iterations until target score is met |
 | eval-ui | Evaluate UI design with four-perspective scoring |
 | improve-harness | Improve harness based on evaluation report |
 | learn-lesson | Extract reusable knowledge from current session |
@@ -30,12 +30,12 @@ Invoked via `/command-name`. Commands live in `commands/` directory.
 
 | Command | Description |
 |---------|-------------|
-| gen-sitemap | Generate page element map (sitemap.json) for test pipeline and ui-design |
-| execute-task | Execute a single task with full quality gate verification |
-| fix-bug | Fix a bug with minimal changes and quality gate verification |
-| run-tasks | Dispatch and execute all pending tasks in a feature |
-| init-forge | Initialize forge directory structure in a new project |
-| init-justfile | Generate project-specific justfile with standard vocabulary |
-| record-decision | Record a technical decision with context and rationale |
-| extract-design-md | Extract design document from conversation context |
-| simplify-skill | Simplify and optimize a skill definition |
+| gen-sitemap | Auto-generate and maintain sitemap.json for a web app. Uses agent-browser to explore routes, capture accessibility tree, and discover dynamic states |
+| execute-task | Execute single task with focused TDD workflow |
+| fix-bug | Systematically fix a bug using TDD workflow — reproduce, write failing tests, fix, verify |
+| run-tasks | Autonomous task dispatcher that continuously claims tasks and dispatches to subagents |
+| init-forge | Build and install the task-cli tool |
+| init-justfile | Scaffold a Justfile with standard forge targets for the current project |
+| record-decision | Record an architecture/technical decision to docs/decisions/ at any stage of development |
+| extract-design-md | Analyze a web app's visual style and generate a DESIGN.md for use with ui-design skill |
+| simplify-skill | Refactor skill files by extracting templates/examples to separate files |

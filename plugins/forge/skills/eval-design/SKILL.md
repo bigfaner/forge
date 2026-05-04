@@ -23,7 +23,7 @@ Check previous stage artifacts. Abort and prompt user if missing:
 - Before handing off tech-design.md to `/breakdown-tasks`
 
 **Skip:**
-- design.md doesn't exist yet (use `/tech-design` first)
+- tech-design.md doesn't exist yet (use `/tech-design` first)
 
 ## Parameters
 

@@ -218,7 +218,7 @@ Technical Specs:
   [LOCAL] TECH-002: <spec> → stays in feature
 
 Related existing entries (may overlap):
-  ⚠ decisions/error-handling.md: "采用 AIError 结构体" — appears to overlap with TECH-001
+  ⚠ decisions/error-handling.md: "Adopt AIError struct" — appears to overlap with TECH-001
   ⚠ lessons/gotcha-error-handling.md [error-handling] — may overlap with TECH-002
 
 For each overlap, choose: [skip] keep both | [replace] delete old + write new
@@ -251,7 +251,7 @@ reviewed: "<date>"
 
 ## Related Existing Entries
 
-- decisions/error-handling.md row "采用 AIError 结构体" → replaced by BIZ-auth-003
+- decisions/error-handling.md row "Adopt AIError struct" → replaced by BIZ-auth-003
 - lessons/gotcha-error-handling.md → deleted, superseded by TECH-error-005
 ```
 
@@ -298,7 +298,7 @@ integrated: "<date>"
 biz_count: <N>
 tech_count: <M>
 replaced:
-  - decisions/error-handling.md row "采用 AIError..." → BIZ-auth-003
+  - decisions/error-handling.md row "Adopt AIError..." → BIZ-auth-003
   - lessons/gotcha-error-handling.md → TECH-error-005
 ```
 

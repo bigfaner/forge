@@ -62,6 +62,13 @@ just compile [scope] → just fmt [scope] → just lint [scope] → just test [s
 
 Strict sequential order. Stop at first failure. **If any fails, continue fixing. Coverage >= 80% (if applicable).**
 
+| Failed step | Action |
+|-------------|--------|
+| compile | Fix compilation errors, then retry from compile |
+| fmt | Mark task as blocked (auto-fix failed = toolchain issue) |
+| lint | Self-fix (max 1 retry), then mark blocked if still failing |
+| test | Fix failing tests, then retry from compile |
+
 Output: `Step 4/5: Verification... DONE (coverage: N%)`
 
 ### Step 5: Commit
