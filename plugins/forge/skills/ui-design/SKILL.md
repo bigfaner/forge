@@ -53,6 +53,10 @@ Read `manifest.md` to locate `prd/prd-ui-functions.md`.
 
 Read `prd/prd-ui-functions.md` to understand UI requirements.
 
+**Placement awareness**: For each UI Function, note its Placement section:
+- `new-page`: design the complete page including layout, navigation, and all contained components
+- `existing-page:<route>`: design only the new component(s) that will be embedded. The Placement's Position field tells you WHERE in the existing page — this constrains the component's layout (e.g., width must match existing content area).
+
 ## Step 3: Select Design Style
 
 Select design style by priority:
@@ -108,6 +112,8 @@ For each UI function, define:
 - States (loading, empty, error, populated)
 - Interactions (triggers, actions, feedback)
 - Data binding (UI element → data field)
+
+**For existing-page UI Functions**: the Component section in `ui-design.md` MUST include a Placement subsection that specifies where in the existing page this component will be placed. This comes from the PRD's Placement Position field but may be refined with layout constraints discovered during design (e.g., "full width of the content area, above the sub-items table, below the progress summary heading").
 
 All design decisions must follow the design style selected in Step 3.
 

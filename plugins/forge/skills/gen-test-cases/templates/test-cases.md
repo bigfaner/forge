@@ -14,6 +14,7 @@ generated: "{{DATE}}"
 | Type | Count |
 |------|-------|
 | UI   | {{UI_COUNT}}   |
+| **Integration** | **{{INTEGRATION_COUNT}}** |
 | API  | {{API_COUNT}}  |
 | CLI  | {{CLI_COUNT}}  |
 | **Total** | **{{TOTAL_COUNT}}** |

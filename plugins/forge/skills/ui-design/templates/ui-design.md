@@ -12,6 +12,12 @@ status: Draft
 
 ## Component: {{Component Name}}
 
+### Placement
+
+- **Mode**: new-page | existing-page
+- **Target**: {{page route or name}}
+- **Position**: {{where in the page — inherited from PRD, refined with design constraints}}
+
 ### Layout Structure
 <!-- Component hierarchy, grid/flex layout description -->
 

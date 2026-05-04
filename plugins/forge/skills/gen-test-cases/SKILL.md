@@ -141,6 +141,29 @@ For each criterion, generate:
 - **Priority**: P0 | P1 | P2
 ```
 
+### Integration Test Case Generation
+
+For each UI Function with `placement: existing-page:<route>`, generate a dedicated integration verification test case:
+
+```markdown
+## TC-{NNN}: Integration — {{Component}} visible on {{Page}}
+- **Source**: PRD UI Function "{{Function Name}}" Placement + Integration Spec
+- **Type**: UI
+- **Target**: ui/<page-name>
+- **Test ID**: ui/<page-name>/integration-<component-slug>
+- **Pre-conditions**: Component build complete, integration task complete
+- **Route**: <route>
+- **Element**: {{sitemap element IDs for the insertion point area}}
+- **Steps**:
+  1. Navigate to <route>
+  2. Verify {{Component}} is visible at {{Position}}
+  3. Verify {{Component}} renders with expected data
+- **Expected**: Component appears at the specified position and displays data correctly
+- **Priority**: P0
+```
+
+This test case MUST exist for every existing-page integration. It serves as a safety net: if the integration task is skipped, this test will fail.
+
 <HARD-RULE>
 **Numbering**: Start from TC-001, sequential. Group by type (UI first, then API, then CLI).
 

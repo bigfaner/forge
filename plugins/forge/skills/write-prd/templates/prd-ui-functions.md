@@ -8,9 +8,15 @@ feature: "{{FEATURE_NAME}}"
 
 ## UI Scope
 
-<!-- List all UI surfaces this feature requires -->
+<!-- Summary of all UI surfaces this feature requires -->
 
 ## UI Function 1: {{Function Name}}
+
+### Placement
+
+- **Mode**: new-page | existing-page
+- **Target Page**: {{page route (for existing-page) or page name (for new-page)}}
+- **Position**: {{for existing-page: where in the page. For new-page: describe page purpose}}
 
 ### Description
 <!-- What this UI element does -->
@@ -40,3 +46,12 @@ feature: "{{FEATURE_NAME}}"
 ## UI Function 2: {{Function Name}}
 
 <!-- Repeat pattern above for each UI surface -->
+
+---
+
+## Page Composition
+
+| Page | Type | UI Functions | Position Notes |
+|------|------|-------------|----------------|
+| {{route or name}} | new | UF-1, UF-2 | New page for {{purpose}} |
+| {{route}} | existing | UF-3 | {{UF-3}} embedded {{position}} |

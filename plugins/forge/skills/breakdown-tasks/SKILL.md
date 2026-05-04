@@ -29,6 +29,12 @@ Read `manifest.md` to locate documents, then read all available files:
 
 <HAS_UI>
 If `ui/ui-design.md` exists, also list `ui/prototype/` files and read `ui/prototype/index.html` for page inventory (skip if no prototype directory).
+
+**Placement validation** (mandatory):
+1. Read the Page Composition table from `prd/prd-ui-functions.md`
+2. For each `existing-page:<route>` entry, verify the route exists in `docs/sitemap/sitemap.json`
+3. If route not found in sitemap → ERROR: abort with message `"Route <route> not found in sitemap.json. Run /gen-sitemap first or verify the route is correct."`
+4. If no Placement sections found in any UI Function → ERROR: `"Missing Placement declarations. All UI Functions must have a Placement section. Update prd-ui-functions.md via /write-prd."`
 </HAS_UI>
 
 ## Step 2: Map → Tasks
@@ -45,10 +51,33 @@ If `ui/ui-design.md` exists, also list `ui/prototype/` files and read `ui/protot
 
 <UI_ONLY>
 | UI Component (Layout + States + Interactions + Binding) | ui/ui-design.md | Implementation (UI) |
+| Integration Spec (existing-page) | tech-design.md | Integration (UI) |
+| Page composition (new-page) | prd-ui-functions.md Page Composition | Page Assembly task |
 </UI_ONLY>
 
 <RULE>
-- Each `ui/ui-design.md` Component → **one** UI task (split only if >4h)
+UI Task Split Rules — driven by PRD Placement:
+
+1. For each UI Function with `placement: new-page`:
+   - Create one "Build Component" task per component (existing behavior)
+   - Create one "Page Assembly" task: create page file, register route, compose all components
+   - Build tasks depend on interfaces + models
+   - Page Assembly depends on all Build tasks for its page
+
+2. For each UI Function with `placement: existing-page:<route>`:
+   - Create one "Build Component" task (component implementation + unit tests)
+   - Create one "Integrate Component" task (wire component into existing page)
+   - Build task depends on interfaces + models
+   - Integrate task depends on Build task
+   - Integrate task's acceptance criteria MUST reference:
+     a. Target page file from tech-design Integration Spec
+     b. Insertion point from tech-design Integration Spec
+     c. Component visible at correct position (verifiable by e2e)
+
+3. For mixed scenarios (some new-page, some existing-page):
+   - Apply rules 1 and 2 independently per UI Function
+
+4. NO fallback to one-to-one rule. Every UI component MUST have explicit Placement.
 </RULE>
 
 ### PRD Coverage Verification
@@ -170,6 +199,20 @@ Example:
 - ui/prototype/dashboard.html — interactive prototype
 - design/tech-design.md Interfaces — data contracts
 ```
+
+For **Integration tasks** (existing-page), Reference Files must include:
+
+1. `tech-design.md` Integration Spec section
+2. `ui-design.md` Component Placement section
+3. Target page file path (for file-diff verification)
+4. Any relevant prototype file
+
+For **Page Assembly tasks** (new-page), Reference Files must include:
+
+1. `prd-ui-functions.md` Page Composition table
+2. `ui-design.md` Components for this page
+3. Route configuration file (for route registration)
+4. Navigation component file (for adding nav links)
 
 </HAS_UI>
 
