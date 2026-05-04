@@ -39,6 +39,7 @@ No direct user story mapping. This is a standard test generation task.
 
 ## Implementation Notes
 
-1. Run `/gen-test-cases` skill
-2. Verify generated `testing/test-cases.md` contains Target and Test ID fields
-3. If PRD has no UI/API/CLI requirements, mark task as skipped with explanation
+1. If `docs/sitemap/sitemap.json` does not exist, run `/gen-sitemap` first
+2. Run `/gen-test-cases` skill
+3. Verify generated `testing/test-cases.md` contains Target and Test ID fields
+4. If PRD has no UI/API/CLI requirements, mark task as skipped with explanation

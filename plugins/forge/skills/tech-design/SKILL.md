@@ -64,20 +64,23 @@ ls docs/features/<slug>/prd/prd-spec.md
 | ---------------------- | ------------------------------------------------- |
 | `docs/ARCHITECTURE.md` | Layer constraints                                 |
 | `docs/decisions/`      | Existing decisions (category-based directory)     |
+| `docs/business-rules/` | Cross-feature business rules from prior features  |
+| `docs/conventions/`    | Technical conventions from prior features         |
 | Package manager files  | Current dependencies (package.json, go.mod, etc.) |
 | Source directories     | Existing patterns (src/, internal/, lib/, etc.)   |
 
 ## Step 3: Identify Decisions
 
-| Decision Type  | Example Questions        |
-| -------------- | ------------------------ |
-| Architecture   | Where does this fit?     |
-| Interface      | What interfaces needed?  |
-| Data Model     | What structures needed?  |
-| Dependencies   | New dependencies?        |
-| Error Handling | How to handle errors?    |
-| Testing        | Test strategy?           |
-| Security       | Security considerations? |
+| Decision Type          | Example Questions        |
+| ---------------------- | ------------------------ |
+| Architecture           | Where does this fit?     |
+| Interface              | What interfaces needed?  |
+| Data Model             | What structures needed?  |
+| Dependencies           | New dependencies?        |
+| Error Handling         | How to handle errors?    |
+| Testing                | Test strategy?           |
+| Security               | Security considerations? |
+| Local Dev & Deployment | Dev environment setup?   |
 
 ## Step 4: Ask Questions
 
@@ -160,7 +163,7 @@ Update `manifest.md`:
 
 After committing, use `AskUserQuestion` to ask:
 
-> Run `/eval-design` for adversarial evaluation? (default: 80 points / 3 rounds)
+> Run `/eval-design` for adversarial evaluation? (default: 90 points / 3 rounds)
 
 - **Yes** → invoke `/eval-design` via `Skill` tool
 - **Custom** → invoke `/eval-design --target X --iterations Y` via `Skill` tool

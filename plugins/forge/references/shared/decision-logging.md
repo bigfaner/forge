@@ -110,7 +110,7 @@ If skipped, set Feature to `-`.
 ### Auto-filled fields
 
 - `Date`: today's date in ISO 8601 format (YYYY-MM-DD)
-- `Source`: `<feature-slug>/tech-design.md` if invoked from tech-design flow; `manual` if invoked directly via `/record-decision`
+- `Source`: `<feature-slug>/design/tech-design.md` if invoked from tech-design flow; `manual` if invoked directly via `/record-decision`
 
 After Round 4, write the entry (Section 6) and update the manifest (Section 7).
 
@@ -143,7 +143,7 @@ Triggered when the user inputs `edit:<number>` during the tech-design candidate 
 Append to the end of `docs/decisions/<type>.md`:
 
 ```
-| YYYY-MM-DD | <feature-slug> | <Decision, one sentence> | <Rationale, one sentence> | <feature-slug>/tech-design.md §<Section> |
+| YYYY-MM-DD | <feature-slug> | <Decision, one sentence> | <Rationale, one sentence> | <feature-slug>/design/tech-design.md §<Section> |
 ```
 
 Field constraints:

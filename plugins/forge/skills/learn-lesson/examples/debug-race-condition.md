@@ -11,6 +11,11 @@
 ## Generated Lesson
 
 ```markdown
+---
+created: "2026-04-30"
+tags: [architecture, testing]
+---
+
 # Protect Map Access with sync.RWMutex
 
 ## Problem

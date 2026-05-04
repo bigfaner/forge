@@ -2,6 +2,7 @@ package project
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 )
@@ -520,4 +521,324 @@ func TestRootTypeString(t *testing.T) {
 			}
 		})
 	}
+}
+
+// --- Additional tests to push coverage to 85%+ ---
+
+func TestFindProjectRootFrom(t *testing.T) {
+	t.Run("returns path from FindRootInfoFrom", func(t *testing.T) {
+		tempDir := t.TempDir()
+		subDir := filepath.Join(tempDir, "deep", "nested", "dir")
+		if err := os.MkdirAll(subDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+
+		goModPath := filepath.Join(tempDir, "go.mod")
+		if err := os.WriteFile(goModPath, []byte("module test\n"), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		root, err := FindProjectRootFrom(subDir)
+		if err != nil {
+			t.Fatalf("FindProjectRootFrom() error = %v", err)
+		}
+		if root != tempDir {
+			t.Errorf("FindProjectRootFrom() = %q, want %q", root, tempDir)
+		}
+	})
+
+	t.Run("returns env override path", func(t *testing.T) {
+		overridePath := filepath.Join("env", "override")
+		os.Setenv("CLAUDE_PROJECT_DIR", overridePath)
+		defer os.Unsetenv("CLAUDE_PROJECT_DIR")
+
+		root, err := FindProjectRootFrom("/some/dir")
+		if err != nil {
+			t.Fatalf("FindProjectRootFrom() error = %v", err)
+		}
+		want := filepath.Clean(overridePath)
+		if root != want {
+			t.Errorf("FindProjectRootFrom() = %q, want %q", root, want)
+		}
+	})
+
+	t.Run("returns project root from deep nesting", func(t *testing.T) {
+		tempDir := t.TempDir()
+		deepDir := filepath.Join(tempDir, "a", "b", "c", "d")
+		if err := os.MkdirAll(deepDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		goModPath := filepath.Join(tempDir, "go.mod")
+		if err := os.WriteFile(goModPath, []byte("module test\n"), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		root, err := FindProjectRootFrom(deepDir)
+		if err != nil {
+			t.Fatalf("FindProjectRootFrom() error = %v", err)
+		}
+		if root != tempDir {
+			t.Errorf("FindProjectRootFrom() = %q, want %q", root, tempDir)
+		}
+	})
+}
+
+func TestFindRootInfoFrom_EnvOverride(t *testing.T) {
+	t.Run("returns RootTypeUnknown when env var set", func(t *testing.T) {
+		envDir := filepath.Join("custom", "env", "root")
+		os.Setenv("CLAUDE_PROJECT_DIR", envDir)
+		defer os.Unsetenv("CLAUDE_PROJECT_DIR")
+
+		info, err := FindRootInfoFrom("/any/path")
+		if err != nil {
+			t.Fatalf("FindRootInfoFrom() error = %v", err)
+		}
+		if info.Type != RootTypeUnknown {
+			t.Errorf("Type = %v, want %v", info.Type, RootTypeUnknown)
+		}
+		if info.Marker != "ENV" {
+			t.Errorf("Marker = %q, want %q", info.Marker, "ENV")
+		}
+		if info.Path != filepath.Clean(envDir) {
+			t.Errorf("Path = %q, want %q", info.Path, filepath.Clean(envDir))
+		}
+	})
+}
+
+func TestFindProjectRoot_EnvOverride(t *testing.T) {
+	t.Run("CLAUDE_PROJECT_DIR returns env path directly", func(t *testing.T) {
+		envDir := filepath.Join("from", "env")
+		os.Setenv("CLAUDE_PROJECT_DIR", envDir)
+		defer os.Unsetenv("CLAUDE_PROJECT_DIR")
+
+		root, err := FindProjectRoot()
+		if err != nil {
+			t.Fatalf("FindProjectRoot() error = %v", err)
+		}
+		want := filepath.Clean(envDir)
+		if root != want {
+			t.Errorf("FindProjectRoot() = %q, want %q", root, want)
+		}
+	})
+}
+
+func TestFindRootInfo_EnvOverride(t *testing.T) {
+	t.Run("CLAUDE_PROJECT_DIR returns RootTypeUnknown info", func(t *testing.T) {
+		envDir := filepath.Join("env", "based")
+		os.Setenv("CLAUDE_PROJECT_DIR", envDir)
+		defer os.Unsetenv("CLAUDE_PROJECT_DIR")
+
+		info, err := FindRootInfo()
+		if err != nil {
+			t.Fatalf("FindRootInfo() error = %v", err)
+		}
+		if info.Type != RootTypeUnknown {
+			t.Errorf("Type = %v, want %v", info.Type, RootTypeUnknown)
+		}
+		if info.Marker != "ENV" {
+			t.Errorf("Marker = %q, want %q", info.Marker, "ENV")
+		}
+	})
+}
+
+func TestFindVCSRootWithGitInit(t *testing.T) {
+	t.Run("finds VCS root in real git repo", func(t *testing.T) {
+		tempDir := t.TempDir()
+
+		// Run git init to create a real .git directory
+		cmd := exec.Command("git", "init")
+		cmd.Dir = tempDir
+		if err := cmd.Run(); err != nil {
+			t.Fatalf("git init failed: %v", err)
+		}
+
+		originalDir, _ := os.Getwd()
+		defer os.Chdir(originalDir)
+		if err := os.Chdir(tempDir); err != nil {
+			t.Fatalf("Chdir() error = %v", err)
+		}
+
+		root, err := FindVCSRoot()
+		if err != nil {
+			t.Fatalf("FindVCSRoot() error = %v", err)
+		}
+		// Resolve both to handle symlink differences on some platforms
+		rootResolved, _ := filepath.EvalSymlinks(root)
+		tempResolved, _ := filepath.EvalSymlinks(tempDir)
+		if rootResolved != tempResolved {
+			t.Errorf("FindVCSRoot() = %q, want %q", rootResolved, tempResolved)
+		}
+	})
+
+	t.Run("finds VCS root from subdirectory of real git repo", func(t *testing.T) {
+		tempDir := t.TempDir()
+		cmd := exec.Command("git", "init")
+		cmd.Dir = tempDir
+		if err := cmd.Run(); err != nil {
+			t.Fatalf("git init failed: %v", err)
+		}
+
+		subDir := filepath.Join(tempDir, "src", "pkg")
+		if err := os.MkdirAll(subDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+
+		root, err := FindVCSRootFrom(subDir)
+		if err != nil {
+			t.Fatalf("FindVCSRootFrom() error = %v", err)
+		}
+		rootResolved, _ := filepath.EvalSymlinks(root)
+		tempResolved, _ := filepath.EvalSymlinks(tempDir)
+		if rootResolved != tempResolved {
+			t.Errorf("FindVCSRootFrom() = %q, want %q", rootResolved, tempResolved)
+		}
+	})
+}
+
+func TestFindVCSRootFrom_Errors(t *testing.T) {
+	t.Run("error when no VCS markers found", func(t *testing.T) {
+		tempDir := t.TempDir()
+		// No .git or .hg anywhere up the tree
+		_, err := FindVCSRootFrom(tempDir)
+		if err == nil {
+			t.Error("FindVCSRootFrom() expected error, got nil")
+		}
+	})
+}
+
+func TestFindVCSRootFrom_Hg(t *testing.T) {
+	t.Run("finds .hg directory", func(t *testing.T) {
+		tempDir := t.TempDir()
+		hgDir := filepath.Join(tempDir, ".hg")
+		if err := os.MkdirAll(hgDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+
+		root, err := FindVCSRootFrom(tempDir)
+		if err != nil {
+			t.Fatalf("FindVCSRootFrom() error = %v", err)
+		}
+		if root != tempDir {
+			t.Errorf("FindVCSRootFrom() = %q, want %q", root, tempDir)
+		}
+	})
+}
+
+func TestMatchesMarker_DirectoryRequired(t *testing.T) {
+	t.Run("directory marker rejects file", func(t *testing.T) {
+		tempDir := t.TempDir()
+		// .hg must be a directory, create it as a file instead
+		hgFile := filepath.Join(tempDir, ".hg")
+		if err := os.WriteFile(hgFile, []byte("not a directory"), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		hgMarker := Marker{Name: ".hg", Type: RootTypeVCS, IsDirectory: true}
+		if matchesMarker(tempDir, hgMarker) {
+			t.Error("matchesMarker() should reject .hg when it is a file, not a directory")
+		}
+	})
+
+	t.Run("directory marker accepts directory", func(t *testing.T) {
+		tempDir := t.TempDir()
+		forgeDir := filepath.Join(tempDir, ".forge")
+		if err := os.MkdirAll(forgeDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+
+		forgeMarker := Marker{Name: ".forge", Type: RootTypeWorkspace, IsDirectory: true}
+		if !matchesMarker(tempDir, forgeMarker) {
+			t.Error("matchesMarker() should accept .forge when it is a directory")
+		}
+	})
+
+	t.Run("directory marker rejects when absent", func(t *testing.T) {
+		tempDir := t.TempDir()
+		forgeMarker := Marker{Name: ".forge", Type: RootTypeWorkspace, IsDirectory: true}
+		if matchesMarker(tempDir, forgeMarker) {
+			t.Error("matchesMarker() should reject absent marker")
+		}
+	})
+}
+
+func TestMatchesMarker_GlobPattern(t *testing.T) {
+	t.Run("glob matches build.gradle.kts", func(t *testing.T) {
+		tempDir := t.TempDir()
+		buildFile := filepath.Join(tempDir, "build.gradle.kts")
+		if err := os.WriteFile(buildFile, []byte("plugins {}"), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		globMarker := Marker{Name: "build.gradle*", Type: RootTypeProject, IsFileGlob: true}
+		if !matchesMarker(tempDir, globMarker) {
+			t.Error("matchesMarker() should match build.gradle.kts via glob")
+		}
+	})
+
+	t.Run("glob matches build.gradle", func(t *testing.T) {
+		tempDir := t.TempDir()
+		buildFile := filepath.Join(tempDir, "build.gradle")
+		if err := os.WriteFile(buildFile, []byte("plugins {}"), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		globMarker := Marker{Name: "build.gradle*", Type: RootTypeProject, IsFileGlob: true}
+		if !matchesMarker(tempDir, globMarker) {
+			t.Error("matchesMarker() should match build.gradle via glob")
+		}
+	})
+
+	t.Run("glob returns false when no match", func(t *testing.T) {
+		tempDir := t.TempDir()
+		globMarker := Marker{Name: "build.gradle*", Type: RootTypeProject, IsFileGlob: true}
+		if matchesMarker(tempDir, globMarker) {
+			t.Error("matchesMarker() should return false when glob has no matches")
+		}
+	})
+}
+
+func TestFindRootInfoFrom_VCSDetected(t *testing.T) {
+	t.Run("VCS marker is detected alongside project marker", func(t *testing.T) {
+		tempDir := t.TempDir()
+		// Create both .git and go.mod in the same directory
+		gitDir := filepath.Join(tempDir, ".git")
+		if err := os.MkdirAll(gitDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		goModPath := filepath.Join(tempDir, "go.mod")
+		if err := os.WriteFile(goModPath, []byte("module test\n"), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		info, err := FindRootInfoFrom(tempDir)
+		if err != nil {
+			t.Fatalf("FindRootInfoFrom() error = %v", err)
+		}
+		// Project marker (go.mod) takes priority over VCS marker (.git)
+		if info.Type != RootTypeProject {
+			t.Errorf("Type = %v, want %v (project should take priority over VCS)", info.Type, RootTypeProject)
+		}
+		if info.Marker != "go.mod" {
+			t.Errorf("Marker = %q, want %q", info.Marker, "go.mod")
+		}
+	})
+}
+
+func TestFindRootInfoFrom_NoMarkersInTree(t *testing.T) {
+	t.Run("returns ancestor marker when temp dir has none", func(t *testing.T) {
+		tempDir := t.TempDir()
+		// On this system, C:\Users\panda has package.json,
+		// so FindRootInfoFrom should find it as an ancestor project marker
+		info, err := FindRootInfoFrom(tempDir)
+		if err != nil {
+			t.Fatalf("FindRootInfoFrom() error = %v", err)
+		}
+		// Should find something walking up the tree
+		if info.Path == "" {
+			t.Error("FindRootInfoFrom() should find ancestor markers")
+		}
+		if info.Type == RootTypeUnknown {
+			t.Error("FindRootInfoFrom() should detect a real marker type from ancestors")
+		}
+	})
 }

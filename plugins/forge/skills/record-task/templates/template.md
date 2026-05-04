@@ -24,7 +24,7 @@ time_spent: "{{TIME_SPENT}}"
 ## Test Results
 - **Passed**: {{TESTS_PASSED}}
 - **Failed**: {{TESTS_FAILED}}
-- **Coverage**: {{COVERAGE}}%
+- **Coverage**: {{COVERAGE}}
 
 ## Acceptance Criteria
 {{ACCEPTANCE_CRITERIA}}

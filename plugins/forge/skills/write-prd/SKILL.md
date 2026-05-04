@@ -210,7 +210,7 @@ git commit -m "docs: add PRD for <feature-slug>"
 
 After committing, use `AskUserQuestion` to ask:
 
-> Run `/eval-prd` for adversarial evaluation? (default: 80 points / 3 rounds)
+> Run `/eval-prd` for adversarial evaluation? (default: 90 points / 3 rounds)
 
 - **Yes** → invoke `/eval-prd` via `Skill` tool
 - **Custom** → invoke `/eval-prd --target X --iterations Y` via `Skill` tool

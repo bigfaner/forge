@@ -63,7 +63,7 @@ Determine if phase summary context should be injected:
 **Phase boundary detection**:
 1. From `TASK_ID`, extract the phase number (integer before first dot, e.g., "2.1" → phase 2)
 2. If this is the first task of a new phase (phase number changed from previous task):
-   - Check if previous phase's summary record exists: `docs/features/<slug>/tasks/records/<prev-phase>.summary-phase-summary.md`
+   - Check if previous phase's summary record exists: `docs/features/<slug>/tasks/records/<prev-phase>-summary.md`
    - If exists, include in dispatch prompt
    - Skip injection for gate tasks (ID ends with `.gate`) and phase summary tasks (ID ends with `.summary`)
 
@@ -83,7 +83,7 @@ IMPORTANT: Do NOT claim or start any other tasks after completing this one. Stop
 Where `{{PHASE_SUMMARY_SECTION}}` is:
 ```
 PHASE_SUMMARY: Read the following file for context from previous phases:
-docs/features/<slug>/tasks/records/<prev-phase>.summary-phase-summary.md
+docs/features/<slug>/tasks/records/<prev-phase>-summary.md
 ```
 
 Phase summaries follow a fixed 5-section structure (Tasks Completed, Key Decisions, Types & Interfaces Changed, Conventions Established, Deviations from Design). The task-executor is trained to parse these sections.
@@ -122,7 +122,7 @@ just --list 2>/dev/null | grep -q "^    test " || {
 just test [scope]
 ```
 
-Apply the **Scope Resolution** protocol in guide.md — use the `SCOPE` extracted from the claim output in Step 1.
+Apply the **Scope Resolution** protocol from the Forge Guide — use the `SCOPE` extracted from the claim output in Step 1.
 
 **If tests fail**:
 - Option A: Dispatch error-fixer with failure context (existing behavior)

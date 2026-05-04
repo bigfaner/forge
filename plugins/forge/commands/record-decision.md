@@ -30,7 +30,7 @@ Follow the record-decision 4-round interaction flow defined in `plugins/forge/re
 ### Auto-filled fields
 
 - `Date`: today's date (YYYY-MM-DD)
-- `Source`: `<feature-slug>/tech-design.md` if a feature was provided; `manual` if Round 4 was skipped
+- `Source`: `<feature-slug>/design/tech-design.md` if a feature was provided; `manual` if Round 4 was skipped
 
 ### After the 4 rounds
 

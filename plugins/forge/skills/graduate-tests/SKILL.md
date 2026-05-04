@@ -28,7 +28,7 @@ Check before running. Abort and prompt user if missing:
 | `tests/e2e/.graduated/<slug>` | Must NOT exist | Already graduated — skip |
 
 <PRINCIPLE>
-**共享基础设施优先。** 执行毕业操作前，先验证公共依赖（`helpers.ts`、`config.yaml`、`package.json`、`tsconfig.json`、`playwright.config.ts`）完整且可用。毕业后的 spec 文件 import 路径会从 `'../../helpers.js'` 改写为 `'../helpers.js'`，如果 `helpers.ts` 本身不完整，改写后依然无法通过编译。发现不一致时先回到 `/gen-test-scripts` 修复公共依赖，再执行毕业。
+**Shared infrastructure first.** Before executing graduation, verify that shared dependencies (`helpers.ts`, `config.yaml`, `package.json`, `tsconfig.json`, `playwright.config.ts`) are complete and functional. After graduation, spec file import paths are rewritten from `'../../helpers.js'` to `'../helpers.js'` — if `helpers.ts` itself is incomplete, the rewritten imports will still fail to compile. When inconsistencies are found, go back to `/gen-test-scripts` to fix shared dependencies before graduating.
 </PRINCIPLE>
 
 ## When to Use

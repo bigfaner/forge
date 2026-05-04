@@ -1,27 +1,27 @@
 ---
 created: "<DATE>"
+tags: [<TAG1>, <TAG2>, ...]
 ---
 
 # <Title>
 
 ## Problem
-<!-- 症状描述：什么现象？什么错误？ -->
+<!-- Symptom description: what happened? what error? -->
 
 ## Root Cause
-<!-- 根本原因：为什么会发生？ -->
+<!-- Root cause: why did it happen? -->
 
 ## Solution
-<!-- 解决方案：如何修复？ -->
+<!-- Solution: how was it fixed? -->
 
 ## Reusable Pattern
-<!-- 可复用知识点：下次遇到类似问题怎么办？ -->
+<!-- Reusable knowledge: what to do next time a similar issue occurs? -->
 
 ## Example
-<!-- 代码示例或命令 -->
+<!-- Code example or command -->
 
 ## Related Files
-<!-- 相关文件路径 -->
+<!-- Related file paths -->
 
 ## References
-<!-- 相关文档或链接 -->
-
+<!-- Related documentation or links -->

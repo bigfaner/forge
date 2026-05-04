@@ -232,6 +232,80 @@ func TestGetProposalFile(t *testing.T) {
 	}
 }
 
+func TestGetFeatureTestingResultsDir(t *testing.T) {
+	tests := []struct {
+		name        string
+		featureSlug string
+		want        string
+	}{
+		{"basic", "my-feature", filepath.Join("docs/features", "my-feature", "testing", "results")},
+		{"empty", "", filepath.Join("docs/features", "", "testing", "results")},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := GetFeatureTestingResultsDir(tt.featureSlug); got != tt.want {
+				t.Errorf("GetFeatureTestingResultsDir(%q) = %q, want %q", tt.featureSlug, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetFeatureTestCasesFile(t *testing.T) {
+	tests := []struct {
+		name        string
+		featureSlug string
+		want        string
+	}{
+		{"basic", "my-feature", filepath.Join("docs/features", "my-feature", "testing", "test-cases.md")},
+		{"empty", "", filepath.Join("docs/features", "", "testing", "test-cases.md")},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := GetFeatureTestCasesFile(tt.featureSlug); got != tt.want {
+				t.Errorf("GetFeatureTestCasesFile(%q) = %q, want %q", tt.featureSlug, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetE2EGraduatedMarker(t *testing.T) {
+	tests := []struct {
+		name        string
+		projectRoot string
+		featureSlug string
+		want        string
+	}{
+		{"basic", "/project", "login", filepath.Join("/project", "tests", "e2e", ".graduated", "login")},
+		{"nested", "/path/to/project", "signup-flow", filepath.Join("/path/to/project", "tests", "e2e", ".graduated", "signup-flow")},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := GetE2EGraduatedMarker(tt.projectRoot, tt.featureSlug); got != tt.want {
+				t.Errorf("GetE2EGraduatedMarker(%q, %q) = %q, want %q", tt.projectRoot, tt.featureSlug, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetE2ETargetDir(t *testing.T) {
+	tests := []struct {
+		name        string
+		projectRoot string
+		target      string
+		want        string
+	}{
+		{"basic", "/project", "ui/login", filepath.Join("/project", "tests", "e2e", "ui", "login")},
+		{"api target", "/project", "api/health", filepath.Join("/project", "tests", "e2e", "api", "health")},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := GetE2ETargetDir(tt.projectRoot, tt.target); got != tt.want {
+				t.Errorf("GetE2ETargetDir(%q, %q) = %q, want %q", tt.projectRoot, tt.target, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestGetForgeStatePath(t *testing.T) {
 	tests := []struct {
 		name        string

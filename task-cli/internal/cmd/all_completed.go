@@ -1,19 +1,16 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"runtime"
-	"strings"
-	"time"
 
+	"task-cli/pkg/e2eprobe"
 	"task-cli/pkg/feature"
+	"task-cli/pkg/just"
 	"task-cli/pkg/project"
 	"task-cli/pkg/task"
+	"task-cli/pkg/testrunner"
 
 	"github.com/spf13/cobra"
 )
@@ -24,13 +21,13 @@ var allCompletedCmd = &cobra.Command{
 	Use:   "all-completed",
 	Short: "Check if all tasks are done, then run tests",
 	Long: `Checks if every task in the current feature is completed or skipped.
-Exits 0 silently if any task is still pending, in_progress, or blocked (no-op).
-If all done: runs project-wide unit/integration tests, then e2e regression.
+	Exits 0 silently if any task is still pending, in_progress, or blocked (no-op).
+	If all done: runs project-wide unit/integration tests, then e2e regression.
 
-Feature e2e tests are run by T-test-3 (run-e2e-tests task), not this hook.
-This hook is the project health gate: unit tests + regression suite.
+	Feature e2e tests are run by T-test-3 (run-e2e-tests task), not this hook.
+	This hook is the project health gate: unit tests + regression suite.
 
-Use -v to see why the command exits early (useful for debugging).`,
+	Use -v to see why the command exits early (useful for debugging).`,
 	Run: runAllCompleted,
 }
 
@@ -105,38 +102,35 @@ func runAllCompleted(cmd *cobra.Command, args []string) {
 	fmt.Fprintf(os.Stderr, "=== All tasks completed for feature: %s ===\n", result.FeatureSlug)
 
 	// Warn if feature e2e scripts exist but haven't been graduated.
-	// Feature e2e execution is owned by T-test-3 (run-e2e-tests task).
 	e2eScriptsDir := feature.GetE2ETargetDir(result.ProjectRoot, result.FeatureSlug)
 	markerPath := feature.GetE2EGraduatedMarker(result.ProjectRoot, result.FeatureSlug)
-	if fileExists(e2eScriptsDir) && !fileExists(markerPath) {
+	if just.FileExists(e2eScriptsDir) && !just.FileExists(markerPath) {
 		fmt.Fprintln(os.Stderr,
 			"WARNING: feature e2e scripts exist but haven't been run or graduated.\n"+
 				"  Add T-test-3 (run-e2e-tests) and T-test-4 (graduate-tests) to your task index,\n"+
 				"  or run /run-e2e-tests and /graduate-tests manually.")
 	}
 
-	// Step 1: Compile check (type errors before running tests)
-	if hasJustfile(result.ProjectRoot) && hasJustRecipe(result.ProjectRoot, "compile") {
-		fmt.Fprintln(os.Stderr, "--- Running compile check (just compile) ---")
-		compileOutput, compileSuccess := runCmdCapture(result.ProjectRoot, "just", "compile")
-		if !compileSuccess {
-			fmt.Fprintln(os.Stderr, "ERROR: compile check failed")
-			if compileOutput != "" {
-				if err := writeUnitTestRawOutput(result.ProjectRoot, "=== compile failure ===\n"+compileOutput); err != nil {
-					fmt.Fprintf(os.Stderr, "WARNING: failed to write compile output: %v\n", err)
-				}
+	// Step 1: Quality gate (compile → fmt → lint)
+	gateSteps := just.LintGateSequence()
+	just.RunGate(result.ProjectRoot, "", gateSteps, func(step, output string) {
+		fmt.Fprintf(os.Stderr, "ERROR: %s check failed\n", step)
+		if output != "" {
+			if err := writeUnitTestRawOutput(result.ProjectRoot, "=== "+step+" failure ===\n"+output); err != nil {
+				fmt.Fprintf(os.Stderr, "WARNING: failed to write %s output: %v\n", step, err)
 			}
-			printHookJSON(map[string]any{
-				"decision": "block",
-				"reason":   "Compile check failed. Read tests/results/unit-raw-output.txt, fix type errors, then re-run.",
-			})
-			os.Exit(0)
 		}
-	}
+		concise := just.ExtractConciseError(output, 5)
+		testrunner.PrintHookJSON(map[string]any{
+			"decision": "block",
+			"reason":   fmt.Sprintf("%s check failed. Read tests/results/unit-raw-output.txt, fix errors, then re-run.\n%s", testrunner.Capitalize(step), concise),
+		})
+		os.Exit(0)
+	})
 
 	// Step 2: Project-wide unit/integration tests
 	fmt.Fprintln(os.Stderr, "--- Running project-wide tests ---")
-	unitOutput, unitSuccess := runProjectTests(result.ProjectRoot, result.TestCommand)
+	unitOutput, unitSuccess := testrunner.RunProjectTests(result.ProjectRoot, result.TestCommand)
 	if !unitSuccess {
 		fmt.Fprintln(os.Stderr, "ERROR: unit tests failed")
 		if unitOutput != "" {
@@ -144,7 +138,7 @@ func runAllCompleted(cmd *cobra.Command, args []string) {
 				fmt.Fprintf(os.Stderr, "WARNING: failed to write unit test output: %v\n", err)
 			}
 		}
-		printHookJSON(map[string]any{
+		testrunner.PrintHookJSON(map[string]any{
 			"decision": "block",
 			"reason":   "Unit tests failed. Read tests/results/unit-raw-output.txt, fix failures, then re-run.",
 		})
@@ -152,12 +146,11 @@ func runAllCompleted(cmd *cobra.Command, args []string) {
 	}
 
 	// Step 3: Full e2e regression (graduated scripts in tests/e2e/)
-	if hasJustfile(result.ProjectRoot) && hasJustRecipe(result.ProjectRoot, "test-e2e") {
-		// Ensure e2e dependencies are installed; skip regression if setup fails (environment issue)
+	if just.HasJustfile(result.ProjectRoot) && just.HasRecipe(result.ProjectRoot, "test-e2e") {
 		e2eReady := true
-		if hasJustRecipe(result.ProjectRoot, "e2e-setup") {
+		if just.HasRecipe(result.ProjectRoot, "e2e-setup") {
 			fmt.Fprintln(os.Stderr, "--- Ensuring e2e dependencies (just e2e-setup) ---")
-			setupOutput, setupSuccess := runCmdCapture(result.ProjectRoot, "just", "e2e-setup")
+			setupOutput, setupSuccess := just.RunCapture(result.ProjectRoot, "just", "e2e-setup")
 			if !setupSuccess {
 				fmt.Fprintln(os.Stderr, "WARNING: e2e-setup failed; skipping e2e regression")
 				fmt.Fprintln(os.Stderr, "  To retry manually: just e2e-setup && just test-e2e")
@@ -172,8 +165,7 @@ func runAllCompleted(cmd *cobra.Command, args []string) {
 			}
 		}
 		if e2eReady {
-			// Health check: probe baseUrl and apiBaseUrl from config.yaml
-			if !probeE2EServers(result.ProjectRoot) {
+			if !e2eprobe.ProbeServers(result.ProjectRoot) {
 				fmt.Fprintln(os.Stderr, "WARNING: e2e server health check failed; skipping e2e regression")
 				fmt.Fprintln(os.Stderr, "  Start dev server and retry: just dev && just test-e2e")
 				e2eReady = false
@@ -181,7 +173,7 @@ func runAllCompleted(cmd *cobra.Command, args []string) {
 		}
 		if e2eReady {
 			fmt.Fprintln(os.Stderr, "--- Running full e2e regression (just test-e2e) ---")
-			regressionOutput, regSuccess := runCmdCapture(result.ProjectRoot, "just", "test-e2e")
+			regressionOutput, regSuccess := just.RunCapture(result.ProjectRoot, "just", "test-e2e")
 			if !regSuccess {
 				fmt.Fprintln(os.Stderr, "ERROR: e2e regression failed")
 				if regressionOutput != "" {
@@ -189,7 +181,7 @@ func runAllCompleted(cmd *cobra.Command, args []string) {
 						fmt.Fprintf(os.Stderr, "WARNING: failed to write raw-output.txt: %v\n", err)
 					}
 				}
-				printHookJSON(map[string]any{
+				testrunner.PrintHookJSON(map[string]any{
 					"decision": "block",
 					"reason":   "e2e regression failed. Read tests/e2e/results/raw-output.txt, analyze failures, then use `task add --title \"Fix: ...\" --priority P0 --breaking` to create fix tasks.",
 				})
@@ -198,189 +190,3 @@ func runAllCompleted(cmd *cobra.Command, args []string) {
 		}
 	}
 }
-
-
-func fileExists(path string) bool {
-	_, err := os.Stat(path)
-	return err == nil
-}
-
-func hasNpmTestScript(projectRoot string) bool {
-	data, err := os.ReadFile(filepath.Join(projectRoot, "package.json"))
-	if err != nil {
-		return false
-	}
-	var pkg struct {
-		Scripts map[string]string `json:"scripts"`
-	}
-	if err := json.Unmarshal(data, &pkg); err != nil {
-		return false
-	}
-	_, ok := pkg.Scripts["test"]
-	return ok
-}
-
-func hasMakeTarget(projectRoot, target string) bool {
-	c := exec.Command("make", "-n", target)
-	c.Dir = projectRoot
-	return c.Run() == nil
-}
-
-func hasJustfile(dir string) bool {
-	return fileExists(filepath.Join(dir, "justfile")) ||
-		fileExists(filepath.Join(dir, "Justfile"))
-}
-
-func hasJustRecipe(dir, recipe string) bool {
-	c := exec.Command("just", "--dry-run", recipe)
-	c.Dir = dir
-	return c.Run() == nil
-}
-
-// runCmdCapture runs a command, streams output to stderr, and returns
-// the combined output as a string along with whether the command succeeded.
-func runCmdCapture(dir string, name string, args ...string) (string, bool) {
-	c := exec.Command(name, args...)
-	c.Dir = dir
-	output, err := c.CombinedOutput()
-	fmt.Fprint(os.Stderr, string(output))
-	return string(output), err == nil
-}
-
-// printHookJSON writes a Claude Code hook decision as JSON to stdout.
-func printHookJSON(v any) {
-	data, err := json.Marshal(v)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "WARNING: failed to marshal hook JSON: %v\n", err)
-		return
-	}
-	fmt.Println(string(data))
-}
-
-func runCmd(dir string, name string, args ...string) {
-	c := exec.Command(name, args...)
-	c.Dir = dir
-	c.Stdout = os.Stderr
-	c.Stderr = os.Stderr
-	if err := c.Run(); err != nil {
-		fmt.Fprintf(os.Stderr, "ERROR: %s failed: %v\n", name, err)
-	}
-}
-
-func runShell(dir, command string) {
-	var c *exec.Cmd
-	if runtime.GOOS == "windows" {
-		c = exec.Command("cmd", "/C", command)
-	} else {
-		c = exec.Command("sh", "-c", command)
-	}
-	c.Dir = dir
-	c.Stdout = os.Stderr
-	c.Stderr = os.Stderr
-	if err := c.Run(); err != nil {
-		fmt.Fprintf(os.Stderr, "ERROR: command failed: %v\n", err)
-	}
-}
-
-// runShellCapture runs a shell command, streams output to stderr, and returns combined output + success.
-func runShellCapture(dir, command string) (string, bool) {
-	var c *exec.Cmd
-	if runtime.GOOS == "windows" {
-		c = exec.Command("cmd", "/C", command)
-	} else {
-		c = exec.Command("sh", "-c", command)
-	}
-	c.Dir = dir
-	output, err := c.CombinedOutput()
-	fmt.Fprint(os.Stderr, string(output))
-	return string(output), err == nil
-}
-
-
-func runProjectTests(projectRoot, testCommand string) (string, bool) {
-	if testCommand != "" {
-		output, ok := runShellCapture(projectRoot, testCommand)
-		return output, ok
-	}
-
-	switch {
-	case hasJustfile(projectRoot) && hasJustRecipe(projectRoot, "test"):
-		return runCmdCapture(projectRoot, "just", "test")
-	case fileExists(filepath.Join(projectRoot, "Makefile")) && hasMakeTarget(projectRoot, "test"):
-		return runCmdCapture(projectRoot, "make", "test")
-	case fileExists(filepath.Join(projectRoot, "go.mod")):
-		return runCmdCapture(projectRoot, "go", "test", "./...")
-	case fileExists(filepath.Join(projectRoot, "package.json")) && hasNpmTestScript(projectRoot):
-		return runCmdCapture(projectRoot, "npm", "test")
-	case fileExists(filepath.Join(projectRoot, "pytest.ini")) || fileExists(filepath.Join(projectRoot, "pyproject.toml")):
-		return runCmdCapture(projectRoot, "pytest")
-	default:
-		fmt.Println("WARNING: No test command found. Set testCommand in index.json.")
-		return "", true
-	}
-}
-
-// probeEndpoint checks if an HTTP endpoint is reachable within the given timeout.
-func probeEndpoint(url string, timeout time.Duration) bool {
-	client := http.Client{Timeout: timeout}
-	resp, err := client.Get(url)
-	if err != nil {
-		return false
-	}
-	resp.Body.Close()
-	return resp.StatusCode < 500
-}
-
-// probeE2EServers reads tests/e2e/config.yaml, extracts baseUrl and apiBaseUrl,
-// and probes both endpoints. Returns true if all configured endpoints respond.
-func probeE2EServers(projectRoot string) bool {
-	configPath := filepath.Join(projectRoot, "tests", "e2e", "config.yaml")
-	if !fileExists(configPath) {
-		fmt.Fprintln(os.Stderr, "  No tests/e2e/config.yaml found; skipping health check")
-		return true
-	}
-
-	data, err := os.ReadFile(configPath)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "  WARNING: cannot read config.yaml: %v\n", err)
-		return true
-	}
-
-	baseURL := extractYAMLStringField(data, "baseUrl")
-	apiBaseURL := extractYAMLStringField(data, "apiBaseUrl")
-
-	endpoints := []string{}
-	if baseURL != "" {
-		endpoints = append(endpoints, baseURL)
-	}
-	if apiBaseURL != "" {
-		endpoints = append(endpoints, apiBaseURL)
-	}
-	if len(endpoints) == 0 {
-		return true
-	}
-
-	probeTimeout := 5 * time.Second
-	for _, ep := range endpoints {
-		if !probeEndpoint(ep, probeTimeout) {
-			fmt.Fprintf(os.Stderr, "  Endpoint unreachable: %s\n", ep)
-			return false
-		}
-		fmt.Fprintf(os.Stderr, "  Endpoint OK: %s\n", ep)
-	}
-	return true
-}
-
-// extractYAMLStringField extracts a top-level string field value from YAML content.
-func extractYAMLStringField(data []byte, field string) string {
-	for line := range strings.SplitSeq(string(data), "\n") {
-		line = strings.TrimSpace(line)
-		if after, ok := strings.CutPrefix(line, field+":"); ok {
-			val := strings.TrimSpace(after)
-			val = strings.Trim(val, `'"`)
-			return val
-		}
-	}
-	return ""
-}
-

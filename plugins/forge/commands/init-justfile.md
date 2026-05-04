@@ -133,12 +133,12 @@ ls justfile Justfile 2>/dev/null
 
 | Marker file | Template |
 |-------------|----------|
-| `go.mod` | `go.just` |
-| `Cargo.toml` | `rust.just` |
-| `pyproject.toml` | `python.just` |
-| `package.json` only | `node.just` |
-| mixed | `mixed.just` |
-| none matched | `generic.just` |
+| `go.mod` | `plugins/forge/references/justfile-templates/go.just` |
+| `Cargo.toml` | `plugins/forge/references/justfile-templates/rust.just` |
+| `pyproject.toml` | `plugins/forge/references/justfile-templates/python.just` |
+| `package.json` only | `plugins/forge/references/justfile-templates/node.just` |
+| mixed | `plugins/forge/references/justfile-templates/mixed.just` |
+| none matched | `plugins/forge/references/justfile-templates/generic.just` |
 
 Write to `justfile` (lowercase).
 

@@ -39,7 +39,15 @@ You are a focused task executor. You complete tasks efficiently with minimal out
 
 ### Step 1: Read Task Definition
 
-If `PHASE_SUMMARY` is provided in your prompt, read that file first. It contains key decisions, interfaces, and conventions from previous phases — use this context to ensure consistency.
+Reading order: project knowledge → PHASE_SUMMARY → task definition.
+
+**Project Knowledge**: Read relevant project knowledge files first (domain constraints):
+- Infer relevant domains from task title, scope, and feature slug
+- Read matching files from `docs/business-rules/` and `docs/conventions/`
+- Example mappings: "auth"/"login"/"permission" → `business-rules/auth.md`; "state"/"validation"/"lifecycle" → `business-rules/<domain>.md`; "API"/"endpoint"/"route" → `conventions/api.md`; "error"/"status code" → `conventions/error-handling.md`; "database"/"schema"/"migration" → `conventions/data-model.md`; "test"/"mock"/"coverage" → `conventions/testing.md`
+- If no matching file exists, skip this step
+
+If `PHASE_SUMMARY` is provided in your prompt, read that file next. It contains key decisions, interfaces, and conventions from previous phases — use this context to ensure consistency.
 
 The phase summary follows a fixed 5-section structure:
 1. **Tasks Completed** — what each task did (one line each)
@@ -70,13 +78,24 @@ Run project-specific verification commands.
 
 Output: `Step 2/5: TDD implementation... DONE (N tests)` or `Step 2/5: Implementation... DONE (skipped TDD: documentation-only task)`
 
-### Step 3: Full Verification
+### Step 3: Full Verification (Quality Gate)
+
+Execute the quality gate sequence. Apply **Scope Resolution** from the Forge Guide for each command:
 
 ```bash
-just compile [scope] && just test [scope]
+just compile [scope] → just fmt [scope] → just lint [scope] → just test [scope]
 ```
 
-**All must pass. Coverage >= 80% (if applicable). If any fails, fix before proceeding.**
+Strict sequential order. Stop at first failure:
+
+| Failed step | Action |
+|---|---|
+| `compile` | Fix compilation errors, then retry from compile |
+| `fmt` | Mark task as `blocked` (auto-fix failed = toolchain issue) |
+| `lint` | Self-fix (max 1 retry), then mark `blocked` if still failing |
+| `test` | Fix failing tests, then retry from compile |
+
+**All must pass. Coverage >= 80% (if applicable).**
 
 Output: `Step 3/5: Verification... DONE (coverage: N%)`
 
@@ -142,6 +161,8 @@ Violating this rule breaks the dispatcher's control loop.
 </HARD-RULE>
 
 ## Error Handling
+
+> When running under `/run-tasks` dispatcher, compile/test failures are delegated to the error-fixer subagent instead of self-fix.
 
 | Situation | Action |
 |-----------|--------|

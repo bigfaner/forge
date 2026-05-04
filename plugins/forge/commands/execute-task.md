@@ -24,7 +24,13 @@ Step 5: Git commit
 task claim
 ```
 
-Parse output for KEY, ID, FILE. Read task file.
+Parse output for KEY, ID, FILE. Reading order: project knowledge → task definition.
+
+**Project Knowledge**: Read relevant project knowledge files first (domain constraints):
+- Infer relevant domains from task title, scope, and feature slug
+- Read matching files from `docs/business-rules/` and `docs/conventions/`
+- Example mappings: "auth"/"login"/"permission" → `business-rules/auth.md`; "state"/"validation"/"lifecycle" → `business-rules/<domain>.md`; "API"/"endpoint"/"route" → `conventions/api.md`; "error"/"status code" → `conventions/error-handling.md`; "database"/"schema"/"migration" → `conventions/data-model.md`; "test"/"mock"/"coverage" → `conventions/testing.md`
+- If no matching file exists, skip this step
 
 ## Step 2: TDD Implementation
 
@@ -34,9 +40,22 @@ GREEN    → Implement minimal code to pass
 REFACTOR → Clean up while keeping tests green
 ```
 
-## Step 3: Full Verification
+## Step 3: Full Verification (Quality Gate)
 
-Run `just compile [scope] && just test [scope]`.
+Execute the quality gate sequence. Apply **Scope Resolution** from the Forge Guide for each command:
+
+```
+just compile [scope] → just fmt [scope] → just lint [scope] → just test [scope]
+```
+
+Strict sequential order. Stop at first failure:
+
+| Failed step | Action |
+|---|---|
+| `compile` | Fix compilation errors, then retry from compile |
+| `fmt` | Mark task as `blocked` (auto-fix failed = toolchain issue) |
+| `lint` | Self-fix (max 1 retry), then mark `blocked` if still failing |
+| `test` | Fix failing tests, then retry from compile |
 
 ## Step 4: Record Task (MANDATORY)
 

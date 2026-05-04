@@ -32,6 +32,12 @@ Analyze error messages to understand:
 2. Affected files/modules
 3. Likely root cause
 
+**Project Knowledge**: Read relevant project knowledge files:
+- Infer relevant domains from affected files and error context
+- Read matching files from `docs/business-rules/` and `docs/conventions/`
+- Example mappings: "auth"/"login"/"permission" → `business-rules/auth.md`; "state"/"validation"/"lifecycle" → `business-rules/<domain>.md`; "API"/"endpoint"/"route" → `conventions/api.md`; "error"/"status code" → `conventions/error-handling.md`; "database"/"schema"/"migration" → `conventions/data-model.md`; "test"/"mock"/"coverage" → `conventions/testing.md`
+- If no matching file exists, skip this step
+
 Output: `Step 1/5: Diagnosing errors... DONE`
 
 ### Step 2: Locate
@@ -48,11 +54,20 @@ Output: `Step 3/5: Fixing errors... DONE`
 
 ### Step 4: Verify
 
+Execute the quality gate sequence. Apply **Scope Resolution** from the Forge Guide for each command:
+
 ```bash
-just compile [scope] && just test [scope]
+just compile [scope] → just fmt [scope] → just lint [scope] → just test [scope]
 ```
 
-**If any fails, continue fixing. Coverage >= 80% (if applicable).**
+Strict sequential order. Stop at first failure. **If any fails, continue fixing. Coverage >= 80% (if applicable).**
+
+| Failed step | Action |
+|-------------|--------|
+| compile | Fix compilation errors, then retry from compile |
+| fmt | Mark task as blocked (auto-fix failed = toolchain issue) |
+| lint | Self-fix (max 1 retry), then mark blocked if still failing |
+| test | Fix failing tests, then retry from compile |
 
 Output: `Step 4/5: Verification... DONE (coverage: N%)`
 

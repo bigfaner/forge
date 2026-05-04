@@ -37,6 +37,12 @@ Core principle: never touch production code until a failing test proves the bug 
 
 Collect all available context before touching any code.
 
+**Project Knowledge**: Read relevant project knowledge files:
+- Infer relevant domains from bug description, affected files, and scope
+- Read matching files from `docs/business-rules/` and `docs/conventions/`
+- Example mappings: "auth"/"login"/"permission" → `business-rules/auth.md`; "state"/"validation"/"lifecycle" → `business-rules/<domain>.md`; "API"/"endpoint"/"route" → `conventions/api.md`; "error"/"status code" → `conventions/error-handling.md`; "database"/"schema"/"migration" → `conventions/data-model.md`; "test"/"mock"/"coverage" → `conventions/testing.md`
+- If no matching file exists, skip this step
+
 **Gather:**
 - Bug description / error message / stack trace
 - Steps to reproduce (from issue or user)
@@ -151,15 +157,26 @@ With failing tests in place, implement the minimal fix.
 
 ---
 
-## Step 5: Verify
+## Step 5: Verify (Quality Gate)
 
-Run `just build [scope] && just test [scope]`. All must pass.
+Execute the quality gate sequence. Apply **Scope Resolution** from the Forge Guide for each command:
+
+```
+just compile [scope] → just fmt [scope] → just lint [scope] → just test [scope]
+```
+
+Strict sequential order. Stop at first failure:
+
+| Failed step | Action |
+|---|---|
+| `compile` | Fix compilation errors, then retry from compile |
+| `fmt` | Mark task as `blocked` (auto-fix failed = toolchain issue) |
+| `lint` | Self-fix (max 1 retry), then mark `blocked` if still failing |
+| `test` | Fix failing tests, then retry from compile |
+
+E2E (if written in Step 3b):
 
 ```bash
-# Full suite
-just test [scope]
-
-# E2E (if written in Step 3b)
 just test-e2e --feature <slug>
 ```
 
@@ -178,7 +195,7 @@ Do not proceed to commit if any pre-existing test is newly failing. Investigate 
 ## Step 6: Commit
 
 ```
-Skill(skill="forge:git-commit")
+Skill(skill="git-commit")
 ```
 
 The commit must include both the fix and the tests in a single atomic commit.

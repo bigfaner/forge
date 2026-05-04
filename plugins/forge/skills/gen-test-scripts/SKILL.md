@@ -159,9 +159,9 @@ For test steps within dynamic states: first click the trigger element's locator,
 | CLI | `grep '"bin"' package.json` or `ls cmd/` or `grep -rn "cobra.Command" --include='*.go' .` | CLI entry point or command framework detected |
 
 For each non-empty, verified type group, generate a spec file from the corresponding template:
-- UI: `plugins/forge/skills/gen-test-scripts/templates/playwright-ui.spec.ts`
-- API: `plugins/forge/skills/gen-test-scripts/templates/api.spec.ts`
-- CLI: `plugins/forge/skills/gen-test-scripts/templates/cli.spec.ts`
+- UI: `plugins/forge/skills/gen-test-scripts/templates/playwright-ui.spec.ts` → output: `ui.spec.ts`
+- API: `plugins/forge/skills/gen-test-scripts/templates/api.spec.ts` → output: `api.spec.ts`
+- CLI: `plugins/forge/skills/gen-test-scripts/templates/cli.spec.ts` → output: `cli.spec.ts`
 
 Based on Step 1 auth classification, **uncomment** matching CONDITIONAL blocks, remove non-matching blocks, then fill in test data. Replace example content with actual test cases from `test-cases.md`, keeping the same structure (locator pattern, assertion pattern, screenshot call). Do not rewrite template structure from scratch.
 
@@ -208,7 +208,7 @@ ls tests/e2e/helpers.ts tests/e2e/package.json tests/e2e/tsconfig.json tests/e2e
 ```
 
 <PRINCIPLE>
-**共享基础设施优先。** 生成任何 spec 文件前，先确保公共依赖（`helpers.ts`、`config.yaml`、`package.json`、`tsconfig.json`、`playwright.config.ts`）完整且可用。Spec 文件通过 import 依赖这些共享文件——如果缺失或不完整，所有 spec 会在 import 阶段失败。检查并修复公共依赖，再生成 spec 文件。后续技能（`/run-e2e-tests`、`/graduate-tests`）也遵循同一原则。
+**Shared infrastructure first.** Before generating any spec files, ensure that shared dependencies (`helpers.ts`, `config.yaml`, `package.json`, `tsconfig.json`, `playwright.config.ts`) are complete and functional. Spec files depend on these shared files via import — if they are missing or incomplete, all specs will fail at the import stage. Check and fix shared dependencies before generating spec files. Downstream skills (`/run-e2e-tests`, `/graduate-tests`) follow the same principle.
 </PRINCIPLE>
 
 **If any file is missing**, create it from the corresponding template:

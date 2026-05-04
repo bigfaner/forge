@@ -37,7 +37,8 @@ Post-task completion: create execution record + update task status.
 	"testsPassed": 12,
 	"testsFailed": 0,
 	"coverage": 85.6,
-	"acceptanceCriteria": [{ "criterion": "Acceptance criterion 1", "met": true }]
+	"acceptanceCriteria": [{ "criterion": "Acceptance criterion 1", "met": true }],
+	"notes": "Optional observations"
 }
 ```
 
@@ -45,6 +46,7 @@ Post-task completion: create execution record + update task status.
 
 | Field                 | Type   | Description                                  |
 | --------------------- | ------ | -------------------------------------------- |
+| `taskId`              | string | Task ID (verified against CLI arg if provided) |
 | `status`              | string | Task status, defaults to `completed`         |
 | `summary`             | string | Implementation summary                       |
 | `filesCreated`        | array  | List of newly created files                  |
@@ -54,6 +56,7 @@ Post-task completion: create execution record + update task status.
 | `testsFailed`         | int    | Number of tests failed                       |
 | `coverage`            | float  | Coverage percentage (collected from test runner) |
 | `acceptanceCriteria`  | array  | `{criterion, met}` objects                   |
+| `notes`               | string | Optional notes or observations               |
 
 ## Metrics Collection (MANDATORY before writing record.json)
 
@@ -102,7 +105,7 @@ The CLI command provides schema validation, consistent output format, and potent
 Bypassing the command defeats the purpose of the skill.
 </EXTREMELY-IMPORTANT>
 
-## What `task record` Does (One Command = 3 Operations)
+## What `task record` Does (One Command = 2 Operations)
 
 ```
 task record <TASK_ID> --data docs/features/{slug}/tasks/process/record.json

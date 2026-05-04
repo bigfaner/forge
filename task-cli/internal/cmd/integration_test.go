@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -406,56 +407,6 @@ func TestRunRecord_QuietOutput(t *testing.T) {
 	}
 }
 
-// ---------- printHookJSON ----------
-
-func TestPrintHookJSON(t *testing.T) {
-	t.Run("valid JSON", func(t *testing.T) {
-		out := captureStdout(func() {
-			printHookJSON(map[string]any{"decision": "block", "reason": "test"})
-		})
-		if !strings.Contains(out, `"decision"`) {
-			t.Errorf("expected JSON output, got: %s", out)
-		}
-	})
-}
-
-// ---------- hasNpmTestScript ----------
-
-func TestHasNpmTestScript(t *testing.T) {
-	t.Run("has test script", func(t *testing.T) {
-		dir := t.TempDir()
-		pkg := `{"scripts": {"test": "jest"}}`
-		os.WriteFile(filepath.Join(dir, "package.json"), []byte(pkg), 0644)
-		if !hasNpmTestScript(dir) {
-			t.Error("expected true for package with test script")
-		}
-	})
-
-	t.Run("no test script", func(t *testing.T) {
-		dir := t.TempDir()
-		pkg := `{"scripts": {"build": "tsc"}}`
-		os.WriteFile(filepath.Join(dir, "package.json"), []byte(pkg), 0644)
-		if hasNpmTestScript(dir) {
-			t.Error("expected false for package without test script")
-		}
-	})
-
-	t.Run("no package.json", func(t *testing.T) {
-		dir := t.TempDir()
-		if hasNpmTestScript(dir) {
-			t.Error("expected false when no package.json")
-		}
-	})
-
-	t.Run("invalid JSON", func(t *testing.T) {
-		dir := t.TempDir()
-		os.WriteFile(filepath.Join(dir, "package.json"), []byte("not json"), 0644)
-		if hasNpmTestScript(dir) {
-			t.Error("expected false for invalid JSON")
-		}
-	})
-}
-
 // ---------- executeClaim error paths ----------
 
 func TestExecuteClaim_DataIntegrityError(t *testing.T) {
@@ -740,80 +691,6 @@ func TestValidateTTest1Template_ResolvedPlaceholder(t *testing.T) {
 	}
 }
 
-// ---------- runCmd / runShell ----------
-
-func TestRunCmd_Success(t *testing.T) {
-	out := captureStderr2(func() {
-		runCmd(t.TempDir(), "echo", "hello from runcmd")
-	})
-	if !strings.Contains(out, "hello from runcmd") {
-		t.Errorf("expected echo output on stderr, got: %s", out)
-	}
-}
-
-func TestRunCmd_Failure(t *testing.T) {
-	out := captureStderr2(func() {
-		runCmd(t.TempDir(), "false")
-	})
-	if !strings.Contains(out, "ERROR") {
-		t.Errorf("expected error output for failing command, got: %s", out)
-	}
-}
-
-func TestRunShell_Success(t *testing.T) {
-	out := captureStderr2(func() {
-		runShell(t.TempDir(), "echo shell-output")
-	})
-	if !strings.Contains(out, "shell-output") {
-		t.Errorf("expected shell output, got: %s", out)
-	}
-}
-
-func TestRunShell_Failure(t *testing.T) {
-	out := captureStderr2(func() {
-		runShell(t.TempDir(), "exit 1")
-	})
-	if !strings.Contains(out, "ERROR") {
-		t.Errorf("expected error for failing shell command, got: %s", out)
-	}
-}
-
-// ---------- runProjectTests ----------
-
-func TestRunProjectTests_GoMod(t *testing.T) {
-	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644)
-
-	out := captureStderr2(func() {
-		runProjectTests(dir, "")
-	})
-	// go test ./... on empty module should still run (even if no tests)
-	// Just verify it doesn't panic
-	_ = out
-}
-
-func TestRunProjectTests_CustomCommand(t *testing.T) {
-	dir := t.TempDir()
-	out := captureStderr2(func() {
-		runProjectTests(dir, "echo custom-test-command")
-	})
-	if !strings.Contains(out, "custom-test-command") {
-		t.Errorf("expected custom command output, got: %s", out)
-	}
-}
-
-func TestRunProjectTests_NpmTest(t *testing.T) {
-	dir := t.TempDir()
-	pkg := `{"scripts": {"test": "echo npm-test-pass"}}`
-	os.WriteFile(filepath.Join(dir, "package.json"), []byte(pkg), 0644)
-
-	out := captureStderr2(func() {
-		runProjectTests(dir, "")
-	})
-	if !strings.Contains(out, "npm-test-pass") {
-		t.Errorf("expected npm test output, got: %s", out)
-	}
-}
 
 // ---------- findTask ----------
 
@@ -929,18 +806,6 @@ func TestPrintTaskDetails_Breaking(t *testing.T) {
 	}
 }
 
-// ---------- runProjectTests no test command ----------
-
-func TestRunProjectTests_NoTestCommand(t *testing.T) {
-	dir := t.TempDir()
-	out := captureStdout(func() {
-		runProjectTests(dir, "")
-	})
-	if !strings.Contains(out, "WARNING") {
-		t.Errorf("expected warning when no test command found, got: %s", out)
-	}
-}
-
 // ---------- runStatus update mode ----------
 
 func TestRunStatus_Update(t *testing.T) {
@@ -1029,20 +894,6 @@ func TestRunClaim_Output(t *testing.T) {
 	}
 }
 
-// ---------- fileExists ----------
-
-func TestFileExists(t *testing.T) {
-	dir := t.TempDir()
-	existing := filepath.Join(dir, "exists.txt")
-	os.WriteFile(existing, []byte("x"), 0644)
-
-	if !fileExists(existing) {
-		t.Error("expected true for existing file")
-	}
-	if fileExists(filepath.Join(dir, "nope.txt")) {
-		t.Error("expected false for non-existing file")
-	}
-}
 
 // ---------- runCheck integration (valid deps, exits 0 via PrintResult) ----------
 
@@ -1105,18 +956,6 @@ func TestRunValidate_Integration(t *testing.T) {
 	}
 }
 
-// ---------- printHookJSON error path ----------
-
-func TestPrintHookJSON_MarshalError(t *testing.T) {
-	// Chan cannot be marshaled to JSON
-	out := captureStderr2(func() {
-		printHookJSON(map[string]any{"ch": make(chan int)})
-	})
-	if !strings.Contains(out, "WARNING") {
-		t.Errorf("expected warning for marshal error, got: %s", out)
-	}
-}
-
 // ---------- saveIndexAndSignalCompletion with forge state ----------
 
 func TestSaveIndexAndSignalCompletion_AllDone(t *testing.T) {
@@ -1145,19 +984,6 @@ func TestSaveIndexAndSignalCompletion_AllDone(t *testing.T) {
 		t.Error("forge state should be written when all tasks done")
 	}
 	_ = out
-}
-
-// ---------- runProjectTests: pytest branch ----------
-
-func TestRunProjectTests_Pytest(t *testing.T) {
-	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "pytest.ini"), []byte("[pytest]\n"), 0644)
-
-	out := captureStderr2(func() {
-		runProjectTests(dir, "")
-	})
-	_ = out
-	// Just verify it doesn't panic — pytest may or may not be installed
 }
 
 // ---------- runValidate no-args (feature-based path) ----------
@@ -1359,100 +1185,6 @@ func TestWriteRegressionRawOutput_CreatesDir(t *testing.T) {
 	}
 }
 
-// ---------- runShellCapture ----------
-
-func TestRunShellCapture_Success(t *testing.T) {
-	dir := t.TempDir()
-	output, ok := runShellCapture(dir, "echo shell-capture-output")
-	if !ok {
-		t.Error("runShellCapture() ok = false, want true")
-	}
-	if !strings.Contains(output, "shell-capture-output") {
-		t.Errorf("output = %q, want to contain 'shell-capture-output'", output)
-	}
-}
-
-func TestRunShellCapture_Failure(t *testing.T) {
-	dir := t.TempDir()
-	_, ok := runShellCapture(dir, "exit 1")
-	if ok {
-		t.Error("runShellCapture() ok = true, want false for failing command")
-	}
-}
-
-func TestRunShellCapture_OutputOnFailure(t *testing.T) {
-	dir := t.TempDir()
-	output, ok := runShellCapture(dir, "echo failure-output && exit 1")
-	if ok {
-		t.Error("expected failure")
-	}
-	if !strings.Contains(output, "failure-output") {
-		t.Errorf("output should contain stderr/stdout even on failure, got: %q", output)
-	}
-}
-
-// ---------- runProjectTests return values ----------
-
-func TestRunProjectTests_CustomCommand_Success(t *testing.T) {
-	dir := t.TempDir()
-	output, ok := runProjectTests(dir, "echo test-passed")
-	if !ok {
-		t.Error("runProjectTests() ok = false, want true for passing command")
-	}
-	if !strings.Contains(output, "test-passed") {
-		t.Errorf("output = %q, want to contain 'test-passed'", output)
-	}
-}
-
-func TestRunProjectTests_CustomCommand_Failure(t *testing.T) {
-	dir := t.TempDir()
-	_, ok := runProjectTests(dir, "exit 1")
-	if ok {
-		t.Error("runProjectTests() ok = true, want false for failing command")
-	}
-}
-
-func TestRunProjectTests_NoTestCommand_ReturnsTrue(t *testing.T) {
-	// No project markers → WARNING printed, returns ("", true)
-	dir := t.TempDir()
-	_, ok := runProjectTests(dir, "")
-	if !ok {
-		t.Error("runProjectTests() ok = false, want true when no test command found (warning only)")
-	}
-}
-
-// ---------- runProjectTests: justfile branch ----------
-
-func TestRunProjectTests_Justfile(t *testing.T) {
-	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "justfile"), []byte("test:\n    echo just-test-output\n"), 0644)
-
-	out := captureStderr2(func() {
-		runProjectTests(dir, "")
-	})
-	_ = out
-	// Just verify no panic
-}
-
-// ---------- runProjectTests: Makefile branch ----------
-
-func TestRunProjectTests_Makefile(t *testing.T) {
-	dir := t.TempDir()
-
-	// Skip if make not available
-	if _, err := exec.LookPath("make"); err != nil {
-		t.Skip("make not installed")
-	}
-
-	os.WriteFile(filepath.Join(dir, "Makefile"), []byte("test:\n\t@echo make-test-output\n"), 0644)
-
-	out := captureStderr2(func() {
-		runProjectTests(dir, "")
-	})
-	if !strings.Contains(out, "make-test-output") {
-		t.Errorf("expected make test output, got: %s", out)
-	}
-}
 
 // ---------- runFeature: display no feature ----------
 
@@ -1490,6 +1222,516 @@ func TestValidateTTest1Template_MissingFile(t *testing.T) {
 	v.validateTTest1Template("/nonexistent/task.md")
 	if len(v.errors) != 0 {
 		t.Errorf("missing file should not add errors, got: %v", v.errors)
+	}
+}
+
+// ---------- validateQualityGate ----------
+
+func TestValidateQualityGate_PassingGate(t *testing.T) {
+	if _, err := exec.LookPath("just"); err != nil {
+		t.Skip("just not installed, skipping")
+	}
+
+	dir := t.TempDir()
+	// Create a justfile with all required recipes that succeed
+	justfile := `
+compile:
+    echo "compile ok"
+
+fmt:
+    echo "fmt ok"
+
+lint:
+    echo "lint ok"
+
+test:
+    echo "test ok"
+`
+	if err := os.WriteFile(filepath.Join(dir, "justfile"), []byte(justfile), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Should not exit -- validateQualityGate only exits on failure
+	exited := false
+	// validateQualityGate calls Exit on failure which calls os.Exit(1).
+	// For success path, it just returns.
+	validateQualityGate(dir, "")
+	_ = exited
+}
+
+func TestValidateQualityGate_FailingCompileGate(t *testing.T) {
+	if _, err := exec.LookPath("just"); err != nil {
+		t.Skip("just not installed, skipping")
+	}
+
+	dir := t.TempDir()
+	// Create a justfile where compile fails (blocking step)
+	justfile := `
+compile:
+    echo "compile fail" && exit 1
+
+fmt:
+    echo "fmt ok"
+
+lint:
+    echo "lint ok"
+
+test:
+    echo "test ok"
+`
+	if err := os.WriteFile(filepath.Join(dir, "justfile"), []byte(justfile), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if os.Getenv("TEST_QUALITY_GATE_COMPILE_FAIL") == "1" {
+		validateQualityGate(dir, "")
+		return
+	}
+
+	cmd := exec.Command(os.Args[0], "-test.run=TestValidateQualityGate_FailingCompileGate")
+	cmd.Env = append(os.Environ(), "TEST_QUALITY_GATE_COMPILE_FAIL=1")
+	cmd.Dir = dir
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Error("expected non-zero exit when compile fails")
+	}
+	out := string(output)
+	if !strings.Contains(out, "Quality gate failed") {
+		t.Errorf("expected quality gate failure message, got: %s", out)
+	}
+	if !strings.Contains(out, "VALIDATION_ERROR") {
+		t.Errorf("expected VALIDATION_ERROR code, got: %s", out)
+	}
+}
+
+func TestValidateQualityGate_FailingLintGate(t *testing.T) {
+	if _, err := exec.LookPath("just"); err != nil {
+		t.Skip("just not installed, skipping")
+	}
+
+	dir := t.TempDir()
+	// compile passes, lint fails (blocking step)
+	justfile := `
+compile:
+    echo "compile ok"
+
+fmt:
+    echo "fmt ok"
+
+lint:
+    echo "lint fail" && exit 1
+
+test:
+    echo "test ok"
+`
+	if err := os.WriteFile(filepath.Join(dir, "justfile"), []byte(justfile), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if os.Getenv("TEST_QUALITY_GATE_LINT_FAIL") == "1" {
+		validateQualityGate(dir, "")
+		return
+	}
+
+	cmd := exec.Command(os.Args[0], "-test.run=TestValidateQualityGate_FailingLintGate")
+	cmd.Env = append(os.Environ(), "TEST_QUALITY_GATE_LINT_FAIL=1")
+	cmd.Dir = dir
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Error("expected non-zero exit when lint fails")
+	}
+	out := string(output)
+	if !strings.Contains(out, "Quality gate failed") {
+		t.Errorf("expected quality gate failure message, got: %s", out)
+	}
+}
+
+func TestValidateQualityGate_FailingTestGate(t *testing.T) {
+	if _, err := exec.LookPath("just"); err != nil {
+		t.Skip("just not installed, skipping")
+	}
+
+	dir := t.TempDir()
+	// compile and lint pass, test fails (blocking step)
+	justfile := `
+compile:
+    echo "compile ok"
+
+fmt:
+    echo "fmt ok"
+
+lint:
+    echo "lint ok"
+
+test:
+    echo "test fail" && exit 1
+`
+	if err := os.WriteFile(filepath.Join(dir, "justfile"), []byte(justfile), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if os.Getenv("TEST_QUALITY_GATE_TEST_FAIL") == "1" {
+		validateQualityGate(dir, "")
+		return
+	}
+
+	cmd := exec.Command(os.Args[0], "-test.run=TestValidateQualityGate_FailingTestGate")
+	cmd.Env = append(os.Environ(), "TEST_QUALITY_GATE_TEST_FAIL=1")
+	cmd.Dir = dir
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Error("expected non-zero exit when test fails")
+	}
+	out := string(output)
+	if !strings.Contains(out, "Quality gate failed") {
+		t.Errorf("expected quality gate failure message, got: %s", out)
+	}
+}
+
+func TestValidateQualityGate_NoJustfile(t *testing.T) {
+	dir := t.TempDir()
+	// No justfile -- RunGate returns true immediately, no exit
+	validateQualityGate(dir, "")
+}
+
+func TestValidateQualityGate_FmtNonBlockingFailure(t *testing.T) {
+	if _, err := exec.LookPath("just"); err != nil {
+		t.Skip("just not installed, skipping")
+	}
+
+	dir := t.TempDir()
+	// fmt fails but is non-blocking, should still pass
+	justfile := `
+compile:
+    echo "compile ok"
+
+fmt:
+    exit 1
+
+lint:
+    echo "lint ok"
+
+test:
+    echo "test ok"
+`
+	if err := os.WriteFile(filepath.Join(dir, "justfile"), []byte(justfile), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Should not exit -- fmt is non-blocking
+	validateQualityGate(dir, "")
+}
+
+// ---------- write*Output MkdirAll error paths ----------
+
+func TestWriteRawOutput_MkdirAllError(t *testing.T) {
+	dir := t.TempDir()
+	// Create a file where the directory should be, so MkdirAll fails
+	resultsDir := filepath.Join(dir, feature.GetFeatureTestingResultsDir("test"))
+	os.MkdirAll(filepath.Dir(resultsDir), 0755)
+	os.WriteFile(resultsDir, []byte("blocker"), 0644)
+
+	err := writeRawOutput(dir, "test", "output")
+	if err == nil {
+		t.Error("expected error when MkdirAll fails")
+	}
+}
+
+func TestWriteUnitTestRawOutput_MkdirAllError(t *testing.T) {
+	dir := t.TempDir()
+	// Create a file where tests/results/ should be, so MkdirAll fails
+	testsDir := filepath.Join(dir, "tests")
+	os.WriteFile(testsDir, []byte("blocker"), 0644)
+
+	err := writeUnitTestRawOutput(dir, "output")
+	if err == nil {
+		t.Error("expected error when MkdirAll fails")
+	}
+}
+
+func TestWriteRegressionRawOutput_MkdirAllError(t *testing.T) {
+	dir := t.TempDir()
+	// Create a file where tests/e2e/results/ should be, so MkdirAll fails
+	testsDir := filepath.Join(dir, "tests")
+	os.WriteFile(testsDir, []byte("blocker"), 0644)
+
+	err := writeRegressionRawOutput(dir, "output")
+	if err == nil {
+		t.Error("expected error when MkdirAll fails")
+	}
+}
+
+// ---------- runValidate error paths ----------
+
+func TestRunValidate_NoProjectRoot(t *testing.T) {
+	if os.Getenv("TEST_RUN_VALIDATE_NO_PROJECT") == "1" {
+		runValidate(nil, []string{})
+		return
+	}
+
+	tmpDir := t.TempDir()
+	cmd := exec.Command(os.Args[0], "-test.run=TestRunValidate_NoProjectRoot")
+	// Build clean env: clear CLAUDE_PROJECT_DIR so FindProjectRoot walks up
+	env := []string{}
+	for _, e := range os.Environ() {
+		if strings.HasPrefix(e, "CLAUDE_PROJECT_DIR=") || strings.HasPrefix(e, "PROJECT_ROOT=") {
+			continue
+		}
+		env = append(env, e)
+	}
+	cmd.Env = append(env, "TEST_RUN_VALIDATE_NO_PROJECT=1", "CLAUDE_PROJECT_DIR=")
+	cmd.Dir = tmpDir
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Error("expected non-zero exit for no project root")
+	}
+	if !strings.Contains(string(output), "NO_FEATURE") {
+		t.Errorf("expected NO_FEATURE error, got: %s", string(output))
+	}
+}
+
+func TestRunValidate_NoFeatureSet(t *testing.T) {
+	if os.Getenv("TEST_RUN_VALIDATE_NO_FEATURE") == "1" {
+		runValidate(nil, []string{})
+		return
+	}
+
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644)
+	os.MkdirAll(filepath.Join(dir, "docs", "features"), 0755)
+
+	cmd := exec.Command(os.Args[0], "-test.run=TestRunValidate_NoFeatureSet")
+	// Clear env vars and set CLAUDE_PROJECT_DIR to our temp dir
+	env := []string{}
+	for _, e := range os.Environ() {
+		if strings.HasPrefix(e, "CLAUDE_PROJECT_DIR=") || strings.HasPrefix(e, "PROJECT_ROOT=") {
+			continue
+		}
+		env = append(env, e)
+	}
+	cmd.Env = append(env, "TEST_RUN_VALIDATE_NO_FEATURE=1", "CLAUDE_PROJECT_DIR="+dir)
+	cmd.Dir = dir
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Error("expected non-zero exit for no feature")
+	}
+	if !strings.Contains(string(output), "NO_FEATURE") {
+		t.Errorf("expected NO_FEATURE error, got: %s", string(output))
+	}
+}
+
+func TestRunValidate_IndexFileNotFound(t *testing.T) {
+	if os.Getenv("TEST_RUN_VALIDATE_NO_INDEX") == "1" {
+		runValidate(nil, []string{})
+		return
+	}
+
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644)
+	feature.EnsureFeatureDir(dir, "testf")
+	feature.SetFeature(dir, "testf")
+
+	cmd := exec.Command(os.Args[0], "-test.run=TestRunValidate_IndexFileNotFound")
+	// Clear env and set CLAUDE_PROJECT_DIR
+	env := []string{}
+	for _, e := range os.Environ() {
+		if strings.HasPrefix(e, "CLAUDE_PROJECT_DIR=") || strings.HasPrefix(e, "PROJECT_ROOT=") {
+			continue
+		}
+		env = append(env, e)
+	}
+	cmd.Env = append(env, "TEST_RUN_VALIDATE_NO_INDEX=1", "CLAUDE_PROJECT_DIR="+dir)
+	cmd.Dir = dir
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Error("expected non-zero exit for missing index file")
+	}
+	if !strings.Contains(string(output), "NO_FEATURE") {
+		t.Errorf("expected NO_FEATURE error, got: %s", string(output))
+	}
+}
+
+// ---------- runCheck error paths ----------
+
+func TestRunCheck_NoProjectRoot(t *testing.T) {
+	if os.Getenv("TEST_RUN_CHECK_NO_PROJECT") == "1" {
+		runCheck(nil, []string{})
+		return
+	}
+
+	tmpDir := t.TempDir()
+	cmd := exec.Command(os.Args[0], "-test.run=TestRunCheck_NoProjectRoot")
+	env := []string{}
+	for _, e := range os.Environ() {
+		if strings.HasPrefix(e, "CLAUDE_PROJECT_DIR=") || strings.HasPrefix(e, "PROJECT_ROOT=") {
+			continue
+		}
+		env = append(env, e)
+	}
+	cmd.Env = append(env, "TEST_RUN_CHECK_NO_PROJECT=1", "CLAUDE_PROJECT_DIR=")
+	cmd.Dir = tmpDir
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Error("expected non-zero exit for no project root")
+	}
+	if !strings.Contains(string(output), "NO_FEATURE") {
+		t.Errorf("expected NO_FEATURE error, got: %s", string(output))
+	}
+}
+
+func TestRunCheck_NoFeatureSet(t *testing.T) {
+	if os.Getenv("TEST_RUN_CHECK_NO_FEATURE") == "1" {
+		runCheck(nil, []string{})
+		return
+	}
+
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644)
+	os.MkdirAll(filepath.Join(dir, "docs", "features"), 0755)
+
+	cmd := exec.Command(os.Args[0], "-test.run=TestRunCheck_NoFeatureSet")
+	env := []string{}
+	for _, e := range os.Environ() {
+		if strings.HasPrefix(e, "CLAUDE_PROJECT_DIR=") || strings.HasPrefix(e, "PROJECT_ROOT=") {
+			continue
+		}
+		env = append(env, e)
+	}
+	cmd.Env = append(env, "TEST_RUN_CHECK_NO_FEATURE=1", "CLAUDE_PROJECT_DIR="+dir)
+	cmd.Dir = dir
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Error("expected non-zero exit for no feature")
+	}
+	if !strings.Contains(string(output), "NO_FEATURE") {
+		t.Errorf("expected NO_FEATURE error, got: %s", string(output))
+	}
+}
+
+func TestRunCheck_IndexFileNotFound(t *testing.T) {
+	if os.Getenv("TEST_RUN_CHECK_NO_INDEX") == "1" {
+		runCheck(nil, []string{})
+		return
+	}
+
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644)
+	feature.EnsureFeatureDir(dir, "testf")
+	feature.SetFeature(dir, "testf")
+
+	cmd := exec.Command(os.Args[0], "-test.run=TestRunCheck_IndexFileNotFound")
+	env := []string{}
+	for _, e := range os.Environ() {
+		if strings.HasPrefix(e, "CLAUDE_PROJECT_DIR=") || strings.HasPrefix(e, "PROJECT_ROOT=") {
+			continue
+		}
+		env = append(env, e)
+	}
+	cmd.Env = append(env, "TEST_RUN_CHECK_NO_INDEX=1", "CLAUDE_PROJECT_DIR="+dir)
+	cmd.Dir = dir
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Error("expected non-zero exit for missing index file")
+	}
+	if !strings.Contains(string(output), "NO_FEATURE") {
+		t.Errorf("expected NO_FEATURE error, got: %s", string(output))
+	}
+}
+
+// ---------- runCheck with invalid deps ----------
+
+func TestRunCheck_InvalidDeps(t *testing.T) {
+	setupFullProject(t, map[string]task.Task{
+		"t1": {ID: "1.1", Title: "T1", Status: "pending", Dependencies: []string{"9.9"}},
+	})
+
+	if os.Getenv("TEST_RUN_CHECK_INVALID_DEPS") == "1" {
+		runCheck(nil, []string{})
+		return
+	}
+
+	cmd := exec.Command(os.Args[0], "-test.run=TestRunCheck_InvalidDeps")
+	cmd.Env = append(os.Environ(), "TEST_RUN_CHECK_INVALID_DEPS=1")
+	dir, _ := os.Getwd()
+	cmd.Dir = dir
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Error("expected non-zero exit for invalid deps")
+	}
+	if !strings.Contains(string(output), "FAIL") {
+		t.Errorf("expected FAIL output, got: %s", string(output))
+	}
+	if !strings.Contains(string(output), "does NOT exist") {
+		t.Errorf("expected 'does NOT exist' error message, got: %s", string(output))
+	}
+}
+
+// ---------- saveIndexAndSignalCompletion error paths ----------
+
+func TestSaveIndexAndSignalCompletion_SaveIndexError(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	feature.EnsureFeatureDir(dir, "test")
+
+	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
+	index := &task.TaskIndex{
+		Feature:    "test",
+		StatusEnum: []string{"pending", "completed"},
+		Tasks: map[string]task.Task{
+			"t1": {ID: "1.1", Status: "completed"},
+		},
+	}
+	task.SaveIndex(indexPath, index)
+
+	// Make index.json read-only so SaveIndex fails
+	os.Chmod(indexPath, 0444)
+	defer os.Chmod(indexPath, 0644)
+
+	if os.Getenv("TEST_SAVE_INDEX_ERROR") == "1" {
+		saveIndexAndSignalCompletion(indexPath, dir, "test", index)
+		return
+	}
+
+	cmd := exec.Command(os.Args[0], "-test.run=TestSaveIndexAndSignalCompletion_SaveIndexError")
+	cmd.Env = append(os.Environ(), "TEST_SAVE_INDEX_ERROR=1")
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Error("expected non-zero exit for save index failure")
+	}
+	if !strings.Contains(string(output), "Failed to update task index") {
+		t.Errorf("expected save index error message, got: %s", string(output))
+	}
+}
+
+func TestSaveIndexAndSignalCompletion_WriteForgeStateWarning(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+
+	// Create the feature directory structure manually
+	featureDir := filepath.Join(dir, "docs", "features", "test", "tasks")
+	os.MkdirAll(featureDir, 0755)
+
+	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
+	index := &task.TaskIndex{
+		Feature:    "test",
+		StatusEnum: []string{"pending", "completed"},
+		Tasks: map[string]task.Task{
+			"t1": {ID: "1.1", Status: "completed"},
+		},
+	}
+	task.SaveIndex(indexPath, index)
+
+	// Make .forge directory read-only to trigger WriteForgeState warning
+	forgeDir := filepath.Join(dir, ".forge")
+	os.MkdirAll(forgeDir, 0755)
+	// Create a file named state.json that is a directory (causes write to fail)
+	os.MkdirAll(filepath.Join(forgeDir, "state.json"), 0755)
+
+	out := captureStderr2(func() {
+		saveIndexAndSignalCompletion(indexPath, dir, "test", index)
+	})
+	if !strings.Contains(out, "WARNING") {
+		t.Errorf("expected warning about failed forge state write, got: %s", out)
 	}
 }
 
@@ -1565,5 +1807,194 @@ func TestForgeStateLifecycle(t *testing.T) {
 	state = feature.ReadForgeState(dir)
 	if state != nil {
 		t.Error("state.json should be deleted after all-completed consumes it")
+	}
+}
+
+// ---------- error constructors ----------
+
+func TestErrTaskIDConflict(t *testing.T) {
+	err := ErrTaskIDConflict("1.1")
+	if err.Code != ErrConflict {
+		t.Errorf("Code = %q, want %q", err.Code, ErrConflict)
+	}
+	if !strings.Contains(err.Message, "1.1") {
+		t.Errorf("Message should contain '1.1', got %q", err.Message)
+	}
+}
+
+func TestErrInvalidDependency(t *testing.T) {
+	err := ErrInvalidDependency([]string{"2.1", "2.2"})
+	if err.Code != ErrValidation {
+		t.Errorf("Code = %q, want %q", err.Code, ErrValidation)
+	}
+	if !strings.Contains(err.Message, "2.1") {
+		t.Errorf("Message should contain '2.1', got %q", err.Message)
+	}
+}
+
+// ---------- Exit with non-AIError ----------
+
+func TestExit_NonAIError(t *testing.T) {
+	if os.Getenv("TEST_EXIT_PLAIN_ERR") == "1" {
+		Exit(fmt.Errorf("plain error"))
+		return
+	}
+
+	cmd := exec.Command(os.Args[0], "-test.run=TestExit_NonAIError")
+	cmd.Env = append(os.Environ(), "TEST_EXIT_PLAIN_ERR=1")
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Error("expected non-zero exit")
+	}
+	if !strings.Contains(string(output), "ERROR: plain error") {
+		t.Errorf("expected plain error message, got: %s", string(output))
+	}
+}
+
+// ---------- runAdd / executeAdd ----------
+
+func TestRunAdd_NoProject(t *testing.T) {
+	if os.Getenv("TEST_RUN_ADD_NO_PROJECT") == "1" {
+		addTitle = "Test"
+		runAdd(nil, []string{})
+		return
+	}
+
+	tmpDir := t.TempDir()
+	cmd := exec.Command(os.Args[0], "-test.run=TestRunAdd_NoProject")
+	env := []string{}
+	for _, e := range os.Environ() {
+		if strings.HasPrefix(e, "CLAUDE_PROJECT_DIR=") {
+			continue
+		}
+		env = append(env, e)
+	}
+	cmd.Env = append(env, "TEST_RUN_ADD_NO_PROJECT=1", "CLAUDE_PROJECT_DIR=")
+	cmd.Dir = tmpDir
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Error("expected non-zero exit")
+	}
+	out := string(output)
+	if !strings.Contains(out, "NO_PROJECT") && !strings.Contains(out, "NO_FEATURE") {
+		t.Errorf("expected project or feature error, got: %s", out)
+	}
+}
+
+func TestRunAdd_Success(t *testing.T) {
+	setupFullProject(t, map[string]task.Task{})
+
+	if os.Getenv("TEST_RUN_ADD_SUCCESS") == "1" {
+		addTitle = "New Task"
+		addPriority = "P1"
+		runAdd(nil, []string{})
+		return
+	}
+
+	cmd := exec.Command(os.Args[0], "-test.run=TestRunAdd_Success")
+	cmd.Env = append(os.Environ(), "TEST_RUN_ADD_SUCCESS=1")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Errorf("expected success, got error: %v\n%s", err, string(output))
+	}
+	if !strings.Contains(string(output), "ADDED") {
+		t.Errorf("expected ADDED in output, got: %s", string(output))
+	}
+}
+
+// ---------- runCleanup ----------
+
+func TestRunCleanup_Success(t *testing.T) {
+	setupFullProject(t, map[string]task.Task{
+		"t1": {ID: "1.1", Title: "T1", Status: "completed", File: "1.1.md", Record: "records/1.1.md"},
+	})
+
+	dir, _ := os.Getwd()
+	statePath := feature.GetTaskStatePath(dir, "test")
+	task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1"})
+
+	if os.Getenv("TEST_RUN_CLEANUP") == "1" {
+		runCleanup(nil, []string{})
+		return
+	}
+
+	cmd := exec.Command(os.Args[0], "-test.run=TestRunCleanup_Success")
+	cmd.Env = append(os.Environ(), "TEST_RUN_CLEANUP=1")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Errorf("expected success, got error: %v\n%s", err, string(output))
+	}
+	_ = output
+}
+
+// ---------- runVerifyCompletion ----------
+
+func TestRunVerifyCompletion_Success(t *testing.T) {
+	setupFullProject(t, map[string]task.Task{
+		"t1": {ID: "1.1", Title: "T1", Status: "completed", File: "1.1.md", Record: "records/1.1.md"},
+	})
+
+	dir, _ := os.Getwd()
+	_ = os.MkdirAll(filepath.Join(dir, "docs", "features", "test", "tasks", "records"), 0755)
+	os.WriteFile(filepath.Join(dir, "docs", "features", "test", "tasks", "records", "1.1.md"), []byte("record"), 0644)
+
+	statePath := feature.GetTaskStatePath(dir, "test")
+	task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1"})
+
+	if os.Getenv("TEST_RUN_VERIFY_OK") == "1" {
+		runVerifyCompletion(nil, []string{})
+		return
+	}
+
+	cmd := exec.Command(os.Args[0], "-test.run=TestRunVerifyCompletion_Success")
+	cmd.Env = append(os.Environ(), "TEST_RUN_VERIFY_OK=1")
+	err := cmd.Run()
+	if err != nil {
+		t.Errorf("expected success (exit 0), got: %v", err)
+	}
+}
+
+func TestRunVerifyCompletion_Fail(t *testing.T) {
+	setupFullProject(t, map[string]task.Task{
+		"t1": {ID: "1.1", Title: "T1", Status: "in_progress", File: "1.1.md"},
+	})
+
+	dir, _ := os.Getwd()
+	statePath := feature.GetTaskStatePath(dir, "test")
+	task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1"})
+
+	if os.Getenv("TEST_RUN_VERIFY_FAIL") == "1" {
+		runVerifyCompletion(nil, []string{})
+		return
+	}
+
+	cmd := exec.Command(os.Args[0], "-test.run=TestRunVerifyCompletion_Fail")
+	cmd.Env = append(os.Environ(), "TEST_RUN_VERIFY_FAIL=1")
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Error("expected non-zero exit")
+	}
+	if !strings.Contains(string(output), "not completed") {
+		t.Errorf("expected 'not completed' in output, got: %s", string(output))
+	}
+}
+
+// ---------- runAllCompleted ----------
+
+func TestRunAllCompleted_NotAllDone(t *testing.T) {
+	setupFullProject(t, map[string]task.Task{
+		"t1": {ID: "1.1", Title: "T1", Status: "pending", File: "1.1.md"},
+	})
+
+	if os.Getenv("TEST_RUN_ALL_COMPLETED_NOT_DONE") == "1" {
+		runAllCompleted(nil, []string{})
+		return
+	}
+
+	cmd := exec.Command(os.Args[0], "-test.run=TestRunAllCompleted_NotAllDone")
+	cmd.Env = append(os.Environ(), "TEST_RUN_ALL_COMPLETED_NOT_DONE=1")
+	err := cmd.Run()
+	if err != nil {
+		t.Errorf("expected exit 0 when not all done, got: %v", err)
 	}
 }
