@@ -21,7 +21,7 @@ Check before running. Abort and prompt user if missing:
 
 | Artifact | Condition | Action if not met |
 |----------|-----------|-------------------|
-| `tests/e2e/features/<slug>/` directory | Must exist | Run `/gen-test-scripts` first |
+| `tests/e2e/features/<slug>/` directory | Must exist (or scripts at `tests/e2e/<slug>/` via staging bypass — see Step 1.5) | Run `/gen-test-scripts` first |
 | At least one `.spec.ts` file | Must exist | Run `/gen-test-scripts` first |
 | `tests/e2e/helpers.ts` | Must exist (symbol completeness checked after Step 2) | Run `/gen-test-scripts` first |
 | `tests/e2e/features/<slug>/results/latest.md` | Must show PASS | Run `/run-e2e-tests` first — only graduate passing tests |
@@ -47,9 +47,25 @@ Check before running. Abort and prompt user if missing:
 
 If `tests/e2e/.graduated/<slug>` exists: print "Already graduated on <timestamp>" and stop.
 
+### Step 1.5: Detect Staging Bypass
+
+Check whether spec files exist at the staging path `tests/e2e/features/<slug>/`:
+- **Found at staging path** → proceed normally with Step 2
+- **NOT found at staging path** → check `tests/e2e/<slug>/` (direct e2e subdirectory without `features/` prefix)
+
+If spec files are found at `tests/e2e/<slug>/` but NOT at `tests/e2e/features/<slug>/`, this indicates a staging bypass — the generation step wrote directly to a post-graduation location. **Do NOT skip classification.** Instead:
+1. Treat `tests/e2e/<slug>/` as the source directory for this graduation run
+2. Proceed with Step 2 using this source path
+3. Step 4 (functional module classification) is MANDATORY — classify by business domain and move to the correct `tests/e2e/<module>/`
+4. Log a warning: "Staging bypass detected: source at tests/e2e/<slug>/ instead of tests/e2e/features/<slug>/. Performing classification anyway."
+
+<HARD-RULE>
+Graduation MUST ALWAYS perform Step 4 (functional module classification), regardless of where the source scripts are found. The agent MUST NOT treat scripts already at `tests/e2e/<any-dir>/` as "already graduated" — only the marker at `tests/e2e/.graduated/<slug>` determines graduation status.
+</HARD-RULE>
+
 ### Step 2: Read Source Scripts
 
-Read all `.spec.ts` files in `tests/e2e/features/<slug>/` and `helpers.ts`. Understand what each `describe`/`test` block tests, which routes/APIs/CLI commands are covered, and whether a single spec mixes multiple functional domains.
+Read all `.spec.ts` files from the source directory determined in Step 1.5 (either `tests/e2e/features/<slug>/` or `tests/e2e/<slug>/` for bypass) and `helpers.ts`. Understand what each `describe`/`test` block tests, which routes/APIs/CLI commands are covered, and whether a single spec mixes multiple functional domains.
 
 **Symbol completeness check**: Extract the set of imported symbols from `helpers.js` (e.g., `screenshot`, `baseUrl`, `curl`, `runCli`). Verify each symbol is exported by `tests/e2e/helpers.ts`. If any are missing, abort and prompt: "helpers.ts is missing exports (X, Y). Run `/gen-test-scripts` first to merge missing symbols."
 

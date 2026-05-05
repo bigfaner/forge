@@ -1,15 +1,22 @@
 import { test, expect } from '@playwright/test';
 import { screenshot, baseUrl
   // CONDITIONAL: Uncomment imports below only if auth-required-test exists
-  // , loginViaUI, getApiToken, createAuthCurl, CurlResponse
+  // , loginViaUI, ensureAuthState, getApiToken, createAuthCurl, CurlResponse
   // CONDITIONAL: Uncomment import below only if login-test exists (for login form filling)
-  // , defaultCreds
+  // , defaultCreds, clearAuthState, clearCachedToken
 } from '../../helpers.js';
 
 test.describe('UI E2E Tests', () => {
   // CONDITIONAL: Uncomment the block below only if auth-required-test exists
-  // test.beforeEach(async ({ page }) => {
-  //   await loginViaUI(page);
+  // and the playwright.config.ts setup project is NOT configured.
+  // If the setup project IS configured, this block is unnecessary —
+  // storageState is injected automatically by Playwright.
+  //
+  // test.beforeAll(async ({ browser }) => {
+  //   const ctx = await browser.newContext();
+  //   const page = await ctx.newPage();
+  //   await ensureAuthState(page);
+  //   await ctx.close();
   // });
 
   // PATTERN REFERENCE: beforeAll for shared setup (e.g., creating test data via API)
@@ -36,6 +43,12 @@ test.describe('UI E2E Tests', () => {
   // CONDITIONAL: Uncomment this block only if login-test exists
   //
   // test.describe('Login', () => {
+  //   test.afterAll(() => {
+  //     // Invalidate cached credentials so subsequent auth-required tests re-authenticate
+  //     clearCachedToken();
+  //     clearAuthState();
+  //   });
+  //
   //   test('TC-001: Login with valid credentials', async ({ page }) => {
   //     await page.goto(`${baseUrl()}/login`); // VERIFY: login route from router files
   //     await page.getByRole('textbox', { name: 'Username' }).fill(defaultCreds.username); // VERIFY: username field locator from sitemap/code

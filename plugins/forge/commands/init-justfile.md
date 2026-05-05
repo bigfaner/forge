@@ -263,7 +263,7 @@ Targets:
   just project-type               → echo "backend"
   just compile                    → go vet ./...
   just test                       → go test ./...
-  just test-e2e --feature <slug>  → feature tests in tests/e2e/<slug>/
+  just test-e2e --feature <slug>  → feature tests in tests/e2e/features/<slug>/
   ... (all 15 standard targets listed with resolved commands)
 
 Edit justfile to customize commands for your project.

@@ -23,7 +23,7 @@ test-e2e feature="":
     #!/usr/bin/env bash
     set -euo pipefail
     if [ "{{feature}}" != "" ]; then
-        cd tests/e2e && npx playwright test features/{{feature}}/
+        cd tests/e2e && E2E_FEATURE=1 npx playwright test features/{{feature}}/
     else
         [ ! -d tests/e2e/node_modules ] && npm install --prefix tests/e2e
         cd tests/e2e && npx playwright test

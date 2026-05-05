@@ -3,7 +3,7 @@ import { curl, apiBaseUrl
   // CONDITIONAL: Uncomment imports below only if auth-required-test exists
   // , getApiToken, createAuthCurl, withRetry
   // CONDITIONAL: Uncomment import below only if login-test exists
-  // , defaultCreds
+  // , defaultCreds, clearCachedToken
 } from '../../helpers.js';
 
 test.describe('API E2E Tests', () => {
@@ -28,14 +28,21 @@ test.describe('API E2E Tests', () => {
   // IMPORTANT: apiBaseUrl contains no path prefix. Replace /v1/auth/login with the actual
   //            auth endpoint path from the backend router (e.g. r.Group(...) in router.go).
   //
-  // // Traceability: TC-010 → Spec Section 5.2
-  // test('TC-010: POST /v1/auth/login returns 200 with valid credentials', async () => {
-  //   const res = await curl('POST', `${apiBaseUrl()}/v1/auth/login`, { // VERIFY: auth endpoint path from router files
-  //     body: JSON.stringify(defaultCreds), // VERIFY: auth request body schema from handler
+  // test.describe('Auth', () => {
+  //   test.afterAll(() => {
+  //     // Invalidate cached token so subsequent auth-required tests re-authenticate
+  //     clearCachedToken();
   //   });
-  //   expect(res.status).toBe(200);
-  //   const data = JSON.parse(res.body);
-  //   expect(data.token ?? data.access_token).toBeTruthy(); // VERIFY: token field name from auth response
+  //
+  //   // Traceability: TC-010 → Spec Section 5.2
+  //   test('TC-010: POST /v1/auth/login returns 200 with valid credentials', async () => {
+  //     const res = await curl('POST', `${apiBaseUrl()}/v1/auth/login`, { // VERIFY: auth endpoint path from router files
+  //       body: JSON.stringify(defaultCreds), // VERIFY: auth request body schema from handler
+  //     });
+  //     expect(res.status).toBe(200);
+  //     const data = JSON.parse(res.body);
+  //     expect(data.token ?? data.access_token).toBeTruthy(); // VERIFY: token field name from auth response
+  //   });
   // });
 
   // CONDITIONAL: Uncomment and adapt this block only if custom-auth-test exists
