@@ -10,8 +10,19 @@ Generate executable TypeScript e2e test scripts from test cases.
 **Core principle**: Every generated `test()` must be independently runnable, repeatable, and have explicit assertions. Test cases are input; scripts are output.
 
 <HARD-GATE>
-This skill only generates test scripts (`tests/e2e/features/<feature>/`), it does not execute tests.
-Test execution is handled by the `/run-e2e-tests` skill.
+This skill ONLY writes to `tests/e2e/features/<feature>/` (staging area). It does NOT execute tests (handled by `/run-e2e-tests`).
+
+**FORBIDDEN output paths** — agents MUST NOT write spec files to any of these, regardless of project convention:
+- `tests/e2e/<feature>/` (directly under e2e root — this is a post-graduation location)
+- `tests/e2e/<module>/` (any module directory — reserved for graduated scripts)
+- Any path outside `tests/e2e/features/`
+
+**Why this matters**: The `features/` prefix is a staging area that enforces a two-phase flow:
+```
+Phase 1: /gen-test-scripts → writes to tests/e2e/features/<feature>/
+Phase 2: /graduate-tests   → classifies by functional module → moves to tests/e2e/<module>/
+```
+Bypassing the staging area skips functional module classification in `/graduate-tests`, scattering tests into wrong directories. Existing directories at `tests/e2e/<module>/` are POST-GRADUATION locations — do NOT copy that convention during generation.
 </HARD-GATE>
 
 ## Prerequisites
@@ -68,8 +79,8 @@ For each test case, classify by authentication requirements:
 
 | Category | Detection Rules | Generation Strategy |
 |----------|----------------|---------------------|
-| **login-test** | `Target` matches `ui/login`, `ui/auth`, `ui/signin`, `api/auth`, `api/login`, `api/token` | No shared auth. UI uses independent `loginPage`, API uses raw `curl()` |
-| **auth-required-test** | `Pre-conditions` contain "authenticated", "logged in", or `Target` implies protected resource | Use shared auth |
+| **login-test** | `Target` matches `ui/login`, `ui/auth`, `ui/signin`, `api/auth`, `api/login`, `api/token` | No shared auth. UI uses independent `loginPage`, API uses raw `curl()`. Must call `clearCachedToken()` / `clearAuthState()` after to invalidate cached credentials for subsequent tests. |
+| **auth-required-test** | `Pre-conditions` contain "authenticated", "logged in", or `Target` implies protected resource | Use **cached shared auth** — credentials acquired once, reused across all tests and spec files (see Credential Caching below) |
 | **public-test** | No auth-related pre-conditions, target is a public resource | No auth needed |
 | **custom-auth-test** | `Pre-conditions` mention "API key", "X-API-Key", "OAuth", "session cookie", or other non-Bearer auth patterns | Detect auth mechanism from codebase during Step 1.5. Generate custom auth setup in `test.beforeAll` — e.g., API key via `curl()` with custom header, or cookie-based session |
 
@@ -83,6 +94,25 @@ Count each category to decide whether to enable shared auth (enabled when `auth-
 
 <HARD-RULE>
 Login tests and authenticated tests must not be mixed in the same `describe` block.
+</HARD-RULE>
+
+#### Credential Caching
+
+Non-login test cases MUST use cached shared access credentials — no per-test or per-file re-authentication.
+
+**API tests**: `getApiToken()` in `helpers.ts` caches the token at module level. First call authenticates via the login endpoint; subsequent calls across all spec files return the cached token. No changes needed in spec files — the caching is transparent.
+
+**UI tests**: Use Playwright's `storageState` mechanism to avoid re-logging in per test:
+1. Generate `auth-setup.ts` (template: `plugins/forge/skills/gen-test-scripts/templates/auth-setup.ts`) into `tests/e2e/` — it calls `ensureAuthState(page)` once
+2. Uncomment the `projects` section in `playwright.config.ts` — the `setup` project runs `auth-setup.ts`, the `authenticated` project sets `testDir: 'features'` and `storageState: 'results/.auth/state.json'`
+3. Playwright injects the saved cookies/localStorage into each test's browser context — no `loginViaUI` in `beforeEach`
+
+**Fallback** (if `projects` are not configured): use `ensureAuthState(page)` in `test.beforeAll` with a fresh browser context — it checks whether the state file already exists before re-authenticating.
+
+**Login tests**: After login/logout tests complete, call both `clearCachedToken()` and `clearAuthState()` to invalidate stale credentials so subsequent auth-required tests re-authenticate with fresh state.
+
+<HARD-RULE>
+Auth-required tests MUST NOT call `loginViaUI` in `beforeEach` or re-authenticate per test. Use cached shared credentials instead. Re-authentication per test wastes time, creates flaky tests (auth endpoint rate limits), and masks real failures behind auth noise.
 </HARD-RULE>
 
 ### Step 1.5: Code Reconnaissance (Build Fact Table)
@@ -162,6 +192,10 @@ For each non-empty, verified type group, generate a spec file from the correspon
 - UI: `plugins/forge/skills/gen-test-scripts/templates/playwright-ui.spec.ts` → output: `ui.spec.ts`
 - API: `plugins/forge/skills/gen-test-scripts/templates/api.spec.ts` → output: `api.spec.ts`
 - CLI: `plugins/forge/skills/gen-test-scripts/templates/cli.spec.ts` → output: `cli.spec.ts`
+
+Additionally, if auth-required-test cases exist and UI tests are generated:
+- **Auth setup**: `plugins/forge/skills/gen-test-scripts/templates/auth-setup.ts` → output: `tests/e2e/auth-setup.ts`
+- **Config update**: uncomment the `projects` section in `playwright.config.ts` to enable the setup/authenticated project separation
 
 Based on Step 1 auth classification, **uncomment** matching CONDITIONAL blocks, remove non-matching blocks, then fill in test data. Replace example content with actual test cases from `test-cases.md`, keeping the same structure (locator pattern, assertion pattern, screenshot call). Do not rewrite template structure from scratch.
 
@@ -266,7 +300,7 @@ ls tests/e2e/helpers.ts tests/e2e/package.json tests/e2e/tsconfig.json tests/e2e
 - `playwright.config.ts`: copy from `plugins/forge/skills/gen-test-scripts/templates/playwright.config.ts` (only if tests/e2e/playwright.config.ts does not exist)
 - `config.yaml`: copy from `plugins/forge/skills/gen-test-scripts/templates/config.yaml` (only if tests/e2e/config.yaml does not exist). CLI-only projects may omit this — `helpers.ts` lazy-loads gracefully.
 
-**If helpers.ts already exists**: check whether it exports all symbols imported by the generated specs. If symbols are missing (e.g., `screenshot` for UI tests, `curl` for API tests), add the missing exports AND all their private dependencies from the template. Private dependencies include: `findConfigPath()`, `getConfig()`, `_config`, `_configPath`, `_defaultCreds`, `getDefaultCreds()`, `SCREENSHOTS_DIR`, plus `yaml` import and `Page` type import from `@playwright/test`. Do NOT overwrite existing exports — merge.
+**If helpers.ts already exists**: check whether it exports all symbols imported by the generated specs. If symbols are missing (e.g., `screenshot` for UI tests, `curl` for API tests), add the missing exports AND all their private dependencies from the template. Private dependencies include: `findConfigPath()`, `getConfig()`, `_config`, `_configPath`, `_defaultCreds`, `getDefaultCreds()`, `SCREENSHOTS_DIR`, `_cachedToken`, `AUTH_STATE_DIR`, `AUTH_STATE_PATH`, plus `yaml` import, `Page` type import from `@playwright/test`, and `unlinkSync` import from `node:fs`. Do NOT overwrite existing exports — merge.
 
 <HARD-RULE>
 **Shared file policy**: `helpers.ts`, `package.json`, `tsconfig.json`, and `playwright.config.ts` at `tests/e2e/` are shared across all features.
@@ -279,6 +313,10 @@ ls tests/e2e/helpers.ts tests/e2e/package.json tests/e2e/tsconfig.json tests/e2e
 ## Output
 
 All generated spec files go to `tests/e2e/features/<feature>/` (staging area). After verification via `/run-e2e-tests`, use `/graduate-tests` to migrate them to the regression suite. Output files: `ui.spec.ts` (if UI detected), `api.spec.ts` (if API detected), `cli.spec.ts` (if CLI detected).
+
+**Shared infrastructure outputs** (written to `tests/e2e/`, not per-feature):
+- `auth-setup.ts` — if auth-required-test cases exist and UI tests are generated
+- `playwright.config.ts` — `projects` section uncommented when auth setup is needed
 
 ## Error Handling
 

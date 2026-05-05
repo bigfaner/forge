@@ -84,13 +84,13 @@ Override with `--force`: `task record <id> --data record.json --force`
 
 **feature e2e tests (NOT run by this hook):**
 - Feature e2e execution is owned by T-test-3 (`run-e2e-tests` task in the task chain)
-- If `tests/e2e/<feature>/` exists but no graduation marker, hook prints a WARNING to guide migration
+- If `tests/e2e/features/<feature>/` exists but no graduation marker, hook prints a WARNING to guide migration
 
 **e2e test script graduation model:**
 - Graduation is agent-driven via T-test-4 (`graduate-tests` task) — not automatic
 - T-test-4 checks `testing/results/latest.md` for PASS status before calling `/graduate-tests`
-- Graduation marker: `tests/e2e/.graduated/<slug>` (content is a timestamp)
-- Source scripts at `tests/e2e/<feature>/` are reorganized into `tests/e2e/<target>/` after graduation
+- Graduation marker: `tests/e2e/.graduated/<slug>` (YAML with schema_version, status, timestamp, source, targets, modules, testCount)
+- Source scripts at `tests/e2e/features/<feature>/` are reorganized into `tests/e2e/<target>/` after graduation
 
 **Test command auto-detection order (project-level):**
 1. `testCommand` field in `index.json` (explicit configuration)
@@ -137,7 +137,7 @@ project-root/
 ├── tests/
 │   └── e2e/                       # Post-graduation regression test suite
 │       ├── .graduated/            # Graduation marker files
-│       │   └── <slug>             # Timestamp
+│       │   └── <slug>             # YAML marker (schema_version, status, timestamp, source, targets, modules, testCount)
 │       ├── ui/<page>/             # UI tests (aggregated by page)
 │       │   └── ui.spec.ts
 │       ├── api/<resource>/        # API tests (aggregated by resource)

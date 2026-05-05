@@ -140,7 +140,7 @@ just test-e2e --feature <slug>
 
 The `playwright.config.ts` provides structured JSON output to `tests/e2e/results/test-results.json` and human-readable output via the list reporter.
 
-Note: `playwright.config.ts` has `testIgnore: /^features\//` which prevents default test discovery from running staging specs. However, `just test-e2e --feature <slug>` passes an explicit path (`features/<slug>/`) to `npx playwright test`, which overrides the ignore pattern and runs only the specified staging specs.
+Note: `playwright.config.ts` has `testIgnore: /^features\//` which prevents default test discovery from running staging specs. The justfile recipe `test-e2e --feature <slug>` sets `E2E_FEATURE=1` which disables `testIgnore`, allowing the explicit path (`features/<slug>/`) to reach the staging specs.
 
 ### Step 4: Collect Results
 

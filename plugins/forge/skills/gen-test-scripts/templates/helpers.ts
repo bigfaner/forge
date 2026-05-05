@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process';
-import { readFileSync, mkdirSync, existsSync } from 'node:fs';
+import { readFileSync, mkdirSync, existsSync, unlinkSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
@@ -145,7 +145,10 @@ export async function loginViaUI(page: Page, creds: UICredentials = defaultCreds
   await page.waitForURL((url) => !url.pathname.includes('login') && url.pathname !== '/', { timeout: timeout() });
 }
 
+let _cachedToken: string | null = null;
+
 export async function getApiToken(apiBaseUrl: string, authPath: string, creds: UICredentials = defaultCreds): Promise<string> {
+  if (_cachedToken) return _cachedToken;
   // authPath MUST be resolved from Fact Table before calling this function.
   // Example: getApiToken(apiBaseUrl, '/v1/auth/login')
   const res = await curl('POST', `${apiBaseUrl}${authPath}`, {
@@ -155,8 +158,12 @@ export async function getApiToken(apiBaseUrl: string, authPath: string, creds: U
   const data = JSON.parse(res.body);
   const token = data.token ?? data.access_token ?? data.data?.token;
   if (!token) throw new Error(`No token in auth response. Keys: ${Object.keys(data).join(', ')}`);
+  _cachedToken = token;
   return token;
 }
+
+/** Invalidate cached token. Call after login/logout tests that change auth state. */
+export function clearCachedToken(): void { _cachedToken = null; }
 
 export function createAuthCurl(
   apiBaseUrl: string,
@@ -169,6 +176,28 @@ export function createAuthCurl(
       headers: { Authorization: `Bearer ${token}`, ...opts?.headers },
     });
   };
+}
+
+// ── UI Auth State Caching ─────────────────────────────────────────
+// Playwright storageState: login once, reuse across all UI tests.
+const AUTH_STATE_DIR = join(__dirname, 'results', '.auth');
+const AUTH_STATE_PATH = join(AUTH_STATE_DIR, 'state.json');
+
+export function getAuthStatePath(): string { return AUTH_STATE_PATH; }
+
+export function hasAuthState(): boolean { return existsSync(AUTH_STATE_PATH); }
+
+/** Login via UI and save browser storage state for reuse by other tests. */
+export async function ensureAuthState(page: Page, creds: UICredentials = defaultCreds): Promise<void> {
+  if (existsSync(AUTH_STATE_PATH)) return;
+  await loginViaUI(page, creds);
+  if (!existsSync(AUTH_STATE_DIR)) mkdirSync(AUTH_STATE_DIR, { recursive: true });
+  await page.context().storageState({ path: AUTH_STATE_PATH });
+}
+
+/** Delete saved auth state. Call after logout tests that invalidate the session. */
+export function clearAuthState(): void {
+  if (existsSync(AUTH_STATE_PATH)) unlinkSync(AUTH_STATE_PATH);
 }
 
 // ── Retry ──────────────────────────────────────────────────────────

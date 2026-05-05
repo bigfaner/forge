@@ -306,6 +306,25 @@ func TestGetE2ETargetDir(t *testing.T) {
 	}
 }
 
+func TestGetE2EStagingDir(t *testing.T) {
+	tests := []struct {
+		name         string
+		projectRoot  string
+		featureSlug  string
+		want         string
+	}{
+		{"basic", "/project", "decision-log", filepath.Join("/project", "tests", "e2e", "features", "decision-log")},
+		{"nested slug", "/project", "rbac-permissions", filepath.Join("/project", "tests", "e2e", "features", "rbac-permissions")},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := GetE2EStagingDir(tt.projectRoot, tt.featureSlug); got != tt.want {
+				t.Errorf("GetE2EStagingDir(%q, %q) = %q, want %q", tt.projectRoot, tt.featureSlug, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestGetForgeStatePath(t *testing.T) {
 	tests := []struct {
 		name        string

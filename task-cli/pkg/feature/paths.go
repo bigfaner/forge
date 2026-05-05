@@ -114,7 +114,12 @@ func GetE2EGraduatedMarker(projectRoot, featureSlug string) string {
 	return filepath.Join(projectRoot, E2EGraduatedDir, featureSlug)
 }
 
-// GetE2ETargetDir returns the path to tests/e2e/<target> (e.g. tests/e2e/ui/login).
+// GetE2EStagingDir returns the path to tests/e2e/features/<slug> (pre-graduation staging area).
+func GetE2EStagingDir(projectRoot, featureSlug string) string {
+	return filepath.Join(projectRoot, E2EStagingDir, featureSlug)
+}
+
+// GetE2ETargetDir returns the path to tests/e2e/<target> (post-graduation regression suite, e.g. tests/e2e/ui/login).
 func GetE2ETargetDir(projectRoot, target string) string {
 	return filepath.Join(projectRoot, E2ETestsBaseDir, target)
 }

@@ -28,6 +28,7 @@ Generated scripts use:
 ## Acceptance Criteria
 
 - [ ] `tests/e2e/features/<slug>/` contains at least one spec file (ui.spec.ts / api.spec.ts / cli.spec.ts)
+- [ ] NO spec files exist directly at `tests/e2e/<slug>/` (staging area bypass is forbidden — the `features/` prefix is mandatory)
 - [ ] `tests/e2e/helpers.ts` exists (shared infrastructure)
 - [ ] Each test() includes traceability comment `// Traceability: TC-NNN → {PRD Source}`
 
@@ -38,8 +39,9 @@ No direct user story mapping. This is a standard test generation task.
 ## Implementation Notes
 
 1. Run `/gen-test-scripts` skill
-2. Verify spec files exist under `tests/e2e/features/<slug>/`
-3. If T-test-1 was skipped, mark this task as skipped as well
-4. After generating spec files, run `just e2e-verify --feature <slug>`; if exit 1 (unresolved `// VERIFY:` markers), task is incomplete — resolve markers before proceeding to T-test-3
-5. After generating spec files, run TypeScript compilation check: `cd tests/e2e && npx tsc --noEmit`
-6. If compilation fails, fix the generated spec files before marking the task complete
+2. Verify spec files exist under `tests/e2e/features/<slug>/` — NOT directly under `tests/e2e/<slug>/`
+3. If spec files were written to `tests/e2e/<slug>/` instead of `tests/e2e/features/<slug>/`, move them to the staging area before proceeding — this is a hard requirement, not a convention preference
+4. If T-test-1 was skipped, mark this task as skipped as well
+5. After generating spec files, run `just e2e-verify --feature <slug>`; if exit 1 (unresolved `// VERIFY:` markers), task is incomplete — resolve markers before proceeding to T-test-3
+6. After generating spec files, run TypeScript compilation check: `cd tests/e2e && npx tsc --noEmit`
+7. If compilation fails, fix the generated spec files before marking the task complete

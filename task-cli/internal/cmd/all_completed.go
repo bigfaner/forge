@@ -102,7 +102,7 @@ func runAllCompleted(cmd *cobra.Command, args []string) {
 	fmt.Fprintf(os.Stderr, "=== All tasks completed for feature: %s ===\n", result.FeatureSlug)
 
 	// Warn if feature e2e scripts exist but haven't been graduated.
-	e2eScriptsDir := feature.GetE2ETargetDir(result.ProjectRoot, result.FeatureSlug)
+	e2eScriptsDir := feature.GetE2EStagingDir(result.ProjectRoot, result.FeatureSlug)
 	markerPath := feature.GetE2EGraduatedMarker(result.ProjectRoot, result.FeatureSlug)
 	if just.FileExists(e2eScriptsDir) && !just.FileExists(markerPath) {
 		fmt.Fprintln(os.Stderr,
