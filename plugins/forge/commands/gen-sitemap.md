@@ -103,7 +103,7 @@ See `plugins/forge/references/shared/sitemap.json` for a full example.
 ## Workflow
 
 ```
-1. Load existing sitemap → 2. Analyze layout → 3. Discover routes → 4. Explore pages → 5. Merge & write
+1. Load existing sitemap → 2. Analyze layout & build route registry → 3. Discover routes → 4. Explore pages → 5. Merge & dedup & validate → 6. Write
 ```
 
 ### Step 1: Load Existing Sitemap
@@ -114,7 +114,7 @@ Build an ID index: use `route + role + name` as key, mapping to existing IDs.
 
 If no existing sitemap, start numbering from `E-001`.
 
-### Step 2: Analyze Layout
+### Step 2: Analyze Layout & Build Route Registry
 
 <EXTREMELY-IMPORTANT>
 **This step MUST execute before page exploration.** The goal is to identify shared layout to avoid extracting layout elements on every page.
@@ -122,48 +122,83 @@ If no existing sitemap, start numbering from `E-001`.
 **Read code first, then explore.** Do not blindly explore first and then go back to deduplicate.
 </EXTREMELY-IMPORTANT>
 
-**2a. Read route definitions**: Find the application's route configuration files (e.g. `App.tsx`, `router.ts`, `routes.tsx`), identify layout nesting:
+**2a. Build complete route registry**: Find the application's route configuration files (e.g. `App.tsx`, `router.ts`, `routes.tsx`, Next.js `pages/` or `app/` directory, Vue `router.ts`/`router.js`). Extract ALL registered routes:
 
 ```
-<Route element={<AppLayout />}>      ← shared layout
-  <Route path="/" element={<Dashboard />} />
-  <Route path="/settings" element={<Settings />} />
-  ...
-</Route>
-<Route path="/login">                ← no layout (standalone page)
+1. Scan route configuration files:
+   - React Router: App.tsx, router.tsx, routes.tsx
+   - Next.js: pages/ or app/ directory structure
+   - Vue Router: router.ts, router.js
+   - Generic: grep for path patterns in route definitions
+
+2. Extract ALL registered routes:
+   - Static routes: /items, /settings
+   - Dynamic routes: /items/:id, /users/:userId
+   - Nested routes: /items/:id/sub/:subId
+   - Layout-wrapped vs standalone classification
+
+3. Identify layout nesting:
+   <Route element={<AppLayout />}>      ← shared layout
+     <Route path="/" element={<Dashboard />} />
+     <Route path="/settings" element={<Settings />} />
+     ...
+   </Route>
+   <Route path="/login">                ← no layout (standalone page)
+
+4. Record:
+   - layout.name: layout component name (e.g. `AppLayout`)
+   - layout.wraps: list of routes wrapped by the layout
+   - Routes not wrapped by any layout (e.g. `/login`) are standalone pages
+
+5. Build route registry with source tracking:
+   routes = [
+     { template: "/items", source: "router", layout: "AppLayout" },
+     { template: "/items/:id", source: "router", layout: "AppLayout" },
+     { template: "/login", source: "router", layout: null }
+   ]
 ```
 
-Record:
-- `layout.name`: layout component name (e.g. `AppLayout`)
-- `layout.wraps`: list of routes wrapped by the layout
-- Routes not wrapped by any layout (e.g. `/login`) are standalone pages
-
-**2b. Explore layout elements**: Take a snapshot of the first wrapped page, extracting **only layout-level** elements:
+**2b. Identify shared elements via multi-page comparison**: Visit 3-5 wrapped routes to identify shared elements by intersection:
 
 ```
-ab('open <baseUrl><first_wrapped_route>')
-ab('wait --load networkidle')
-snapshot = abJson('snapshot -i')
-```
+Visit up to 5 wrapped routes with agent-browser:
+  ab('open <baseUrl><route_1>')
+  ab('wait --load networkidle')
+  snapshot_1 = abJson('snapshot -i')
 
-From the snapshot, identify layout regions (typically `role=navigation`, `role=banner`, sidebar containers, etc.) and extract their elements into `layout.elements`.
+  ab('open <baseUrl><route_2>')
+  ab('wait --load networkidle')
+  snapshot_2 = abJson('snapshot -i')
+
+  // ... up to 5 routes total
+
+Compute intersection: elements present in ALL visited snapshots with same role+name
+→ These are shared elements (sidebar, nav, header, footer, etc.)
+
+Classify shared elements:
+- Layout-level (sidebar, top nav, footer) → layout.elements with L-NNN IDs
+- Pattern-level (e.g. breadcrumb on multiple but not all pages) → noted as "partial-shared"
+  (still assigned to individual pages, but identified for awareness)
+```
 
 **If route code cannot be read** (pure HTML project or no source access): skip this step and treat all elements as page-level. After exploring the first two pages in Step 4, compare snapshots for elements with identical `role + name` as layout candidates, assign them to `layout.elements`, and filter them out during subsequent page exploration.
 
-### Step 3: Discover Routes
+### Step 3: Discover Routes (dual-source)
 
-Use agent-browser to navigate to the user-provided `base-url` and extract all links from the page:
+Combine router registry with link-crawling for complete coverage:
 
 ```
-ab('open <base-url>')
-ab('wait --load networkidle')
-links = abJson('snapshot -i')  // extract all role=link nodes' href
+1. Start with route registry from Step 2a as the BASE
+2. Navigate to baseUrl with agent-browser to crawl links:
+   ab('open <base-url>')
+   ab('wait --load networkidle')
+   links = abJson('snapshot -i')  // extract all role=link nodes' href
+3. Filter to same-origin paths (exclude external links, `mailto:`, `javascript:`)
+4. Deduplicate to get crawled route list
+5. Recursively extract links from each new route (breadth-first, max depth 3)
+6. Merge: router routes + crawled routes = complete route list
+7. Report source counts: "12 routes from router, 1 additional from crawling"
 ```
-
-1. Filter to same-origin paths (exclude external links, `mailto:`, `javascript:`)
-2. Deduplicate to get a route list
-3. Recursively extract links from each new route (breadth-first, max depth 3)
-4. Merge manually added routes from existing sitemap
 
 **Dynamic route handling**: Routes with parameters (e.g. `/tasks/123`) are recorded as template form `/tasks/:id`. Parameterization rules:
 
@@ -174,6 +209,8 @@ links = abJson('snapshot -i')  // extract all role=link nodes' href
 | 32-char hex | `:hash` | `/files/a1b2c3d4e5f6...` → `/files/:hash` |
 
 During deduplication, routes with the same template keep only one entry. `layout.wraps` also uses template form.
+
+Also merge manually added routes from existing sitemap that are not found by either source.
 
 ### Step 4: Explore Pages
 
@@ -198,7 +235,14 @@ Only page-specific content area elements are included in `pages[].elements`.
 1. Get page title
 2. Extract elements from snapshot with filters:
    - Exclude elements already in `layout.elements` (matched by `role + name`)
-   - `role` ∈ {button, link, heading, textbox, checkbox, radio, combobox, tab, dialog, alert, navigation, search, form, menuitem, switch}
+   - `role` ∈ the full ARIA role set:
+     {button, link, heading, textbox, checkbox, radio, combobox, tab, dialog, alert, navigation, search, form, menuitem, switch,
+      table, row, cell, columnheader, rowheader,
+      grid, listbox, option, list, listitem,
+      tooltip, progressbar, meter, slider, spinbutton,
+      status, log, marquee, timer,
+      img, separator, group, region,
+      feed, article, figure, caption}
    - `name` is non-empty
 3. For each element, record full attributes:
    - Common: `{ role, name }`
@@ -207,7 +251,9 @@ Only page-specific content area elements are included in `pages[].elements`.
 
 #### Dynamic State Exploration
 
-For trigger elements with role=button/tab/disclosure and non-empty name:
+Explore dynamic states triggered by multiple interaction types:
+
+**1. Click triggers** (existing): For elements with role=button/tab/disclosure and non-empty name:
 
 ```
 ab('click @eN')
@@ -217,10 +263,44 @@ state_snapshot = abJson('snapshot -i')
 ab('press Escape')  // or ab('click @close_btn') to reset
 ```
 
+**2. Hover triggers**: For elements with tooltip or aria-describedby attributes:
+
+```
+ab('hover @eN')
+ab('wait --load networkidle')
+state_snapshot = abJson('snapshot -i')
+// Extract new elements (tooltip content)
+ab('move 0 0')  // move mouse away to reset
+```
+
+**3. Scroll triggers**: For elements with role=feed, role=list with overflow, or scrollable containers:
+
+```
+ab('scroll @eN down')
+ab('wait --load networkidle')
+state_snapshot = abJson('snapshot -i')
+// Extract new elements (lazy-loaded content)
+ab('scroll @eN up')  // scroll back to reset
+```
+
+**4. Form submission triggers**: For elements with role=form:
+
+```
+// Fill required fields with test data
+ab('fill @required_field "test value"')
+ab('click @submit_button')
+ab('wait --load networkidle')
+state_snapshot = abJson('snapshot -i')
+// Extract new elements (validation results, success/error messages)
+ab('press Escape')  // or navigate back to reset
+```
+
+For each trigger type:
 1. Compare state snapshot with base snapshot, extract new elements
 2. Record as `states` entry: `{ name, trigger: "<elementID>", elements: [...] }`
 3. `trigger` references the trigger element's E-NNN ID (e.g. `"E-002"`)
 4. In-state elements also receive E-NNN IDs
+5. Reset to base state before exploring next trigger
 
 > **Note**: `@eN` is agent-browser CLI's element reference syntax, used only during sitemap generation. Generated test scripts (`*.spec.ts`) must NOT use `@eN`; they must use Playwright Locator API.
 
@@ -228,13 +308,68 @@ ab('press Escape')  // or ab('click @close_btn') to reset
 ab('close')
 ```
 
-### Step 5: Merge & Write
+### Step 5: Merge, Dedup & Validate
+
+#### 5a. Element Merge
 
 For each element (including layout and in-states elements), match against existing sitemap using the `route + role + name` triplet:
 
 - **Match found** → preserve existing ID
 - **No match** → assign new ID (current max ID + 1)
 - **Existing ID has no match** → element was removed, delete from sitemap
+
+#### 5b. Post-Collection Dedup
+
+After merging all elements, scan for uncaught shared elements:
+
+```
+1. For each element across all pages:
+   - If same role+name appears in ≥2 pages AND exists in layout.elements → already handled
+   - If same role+name appears in ≥2 pages BUT NOT in layout.elements:
+     → Uncaught shared element
+     → Promote to layout.elements (if wrapped by layout)
+     → Remove from individual page element lists
+
+2. Report promotions: "3 elements promoted to shared: Breadcrumb (was on 5 pages), PageTitle (was on 3 pages)"
+```
+
+#### 5c. Stale Route Detection
+
+```
+For each route in the existing sitemap:
+1. Check if route exists in the new route registry (Step 2a) or was discovered by crawling (Step 3)
+2. If NOT found in either source:
+   - Mark as "potentially stale"
+   - Attempt to open the route with agent-browser
+   - If 404/redirect → remove from sitemap
+   - If still loads → keep with a warning in the change report
+3. Report: "2 stale routes removed: /old-page, /deprecated-feature"
+```
+
+#### 5d. Validation
+
+```
+1. JSON schema validation:
+   - All pages have route + title + elements (non-empty arrays)
+   - All elements have id + role + name (non-empty)
+   - All state triggers reference existing element IDs
+   - Layout wraps reference existing page routes
+   - No duplicate element IDs across the entire sitemap
+   - No duplicate routes
+
+2. Structural integrity:
+   - Layout element IDs (L-NNN) are unique
+   - Page element IDs (E-NNN) are unique
+   - No gaps in ID numbering (orphan check)
+
+3. Completeness check:
+   - Every route from the route registry (Step 2a) has a corresponding page entry
+   - Report MISSING routes: routes found in router but not explored
+
+On validation failure: write sitemap anyway, but include validation warnings in the change report.
+```
+
+### Step 6: Write
 
 Write to `docs/sitemap/sitemap.json`.
 
@@ -244,9 +379,16 @@ Write to `docs/sitemap/sitemap.json`.
 Sitemap updated: docs/sitemap/sitemap.json
   Layout: AppLayout (5 shared elements, L-001..L-005)
   3 pages, 12 elements (page-specific) + 8 elements (states)
+  Routes: 12 from router, 1 additional from crawling
   +4 new elements (E-015..E-018)
   -2 removed elements (previously on /settings)
+  2 stale routes removed: /old-page, /deprecated
+  3 elements promoted to shared: Breadcrumb, PageTitle, BackButton
   17 unchanged
+
+Validation: PASS / Validation: 2 WARNINGS
+  ⚠ Route /admin found in router but not explored (requires special auth)
+  ⚠ Route /deprecated-feature still loads but not in router
 ```
 
 ## Element ID Assignment Rules

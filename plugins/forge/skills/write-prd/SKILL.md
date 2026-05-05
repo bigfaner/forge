@@ -81,8 +81,9 @@ Before asking questions, understand the current state:
 - Check `docs/proposals/<slug>/proposal.md` if a proposal exists — carry forward business context
 - Check `docs/features/<slug>/tasks/index.json` for related tasks
 - Review recent git commits for related work
+- **Read `docs/sitemap/sitemap.json`** if it exists — this is a business asset catalog listing all existing pages and their elements. Use it to understand what pages already exist when the user's requirements involve modifying existing pages.
 
-**Forbidden**: Do not read `ARCHITECTURE.md`, `DECISIONS.md` or other technical docs to guide requirements discussion. Technical constraints do not belong in the PRD.
+**Forbidden**: Do not read `ARCHITECTURE.md`, `DECISIONS.md` or other technical docs to guide requirements discussion. Technical constraints do not belong in the PRD. `sitemap.json` is explicitly allowed — it documents business-level page inventory, not technical architecture decisions.
 
 ## Step 2: Assess Scope
 
@@ -170,6 +171,17 @@ So that [concrete benefit/goal]
 For features with UI surfaces, create `prd/prd-ui-functions.md` using `templates/prd-ui-functions.md`.
 Skip this step for backend/API/CLI features with no UI surface.
 
+**Placement rules** (mandatory for every UI Function):
+
+1. Read `docs/sitemap/sitemap.json` to understand existing page inventory
+2. For each UI Function, declare its Placement:
+   - `new-page` — this function creates a brand new page
+   - `existing-page:<route>` — this function adds UI to an existing page (route from sitemap)
+3. For `existing-page`, also specify the Position within the page (e.g., "above sub-items table")
+4. After all UI Functions are defined, compile the Page Composition summary table at the end of the document
+
+**Validation**: Every UI Function MUST have a Placement section. Missing Placement → error, do not proceed.
+
 ## Step 9: Create Manifest
 
 Create `manifest.md` at the feature root using `templates/manifest.md`:
@@ -190,6 +202,10 @@ Before presenting to the user, verify the PRD passes these checks:
 | User stories | One story per user role, each with Given/When/Then AC |
 | Scope consistency | In-scope items match what's described in Functional Specs and user stories |
 | No vague language | No "better", "faster", "improved" without quantification |
+| Placement completeness | Every UI Function has a Placement section with Mode and target |
+| Placement consistency | existing-page routes exist in sitemap.json (if sitemap available) |
+| Sitemap availability | If sitemap.json not found, warn: "Sitemap unavailable — existing-page routes cannot be validated. Run /gen-sitemap." |
+| Page Composition valid | Page Composition table lists all pages with correct UI Function references |
 
 ## Step 10: Review & Commit
 

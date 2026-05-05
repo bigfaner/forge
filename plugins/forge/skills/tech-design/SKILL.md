@@ -97,6 +97,7 @@ Present incrementally, section by section:
 | Interfaces     | Interface definitions   |
 | Data Models    | Struct definitions      |
 | Error Handling | Error strategy          |
+| Integration Specs | Integration specifications for existing-page components |
 | Testing        | Test strategy           |
 | Security       | Security considerations |
 
@@ -131,6 +132,18 @@ If the feature touches more than one architectural layer (database, API, UI, CLI
 
 If the feature is single-layer (e.g., only affects CLI output formatting):
 - Write "Single-layer feature. Cross-Layer Data Map not applicable." in the section
+
+### 5.4 Integration Specs
+
+For each UI Function with `placement: existing-page:<route>`, generate an Integration Spec in the tech design document. Read the UI Design's Placement section for context.
+
+The Integration Spec declares what file to modify and where:
+- Do NOT specify implementation details (import statements, prop interfaces)
+- Do specify: target file path, insertion point description, data source
+
+This spec is consumed by breakdown-tasks to generate separate integration tasks.
+
+If no UI Function has `placement: existing-page`, write "No existing-page integrations — not applicable."
 
 ## Step 6: Get Approval
 

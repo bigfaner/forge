@@ -68,6 +68,19 @@ ModelName = {
 |------------|---------------|---------------|---------|---------------|-----------------|
 | <!-- e.g. user_id --> | <!-- e.g. UUID, NOT NULL --> | <!-- e.g. User.ID uuid.UUID --> | <!-- e.g. json:"userId" --> | <!-- e.g. userId: string --> | <!-- e.g. required, UUID format --> |
 
+## Integration Specs
+
+<!-- Required when any UI Function has placement: existing-page.
+     Skip with "No existing-page integrations — not applicable." otherwise. -->
+
+### Integration: {{Component Name}} → {{Target Page}}
+
+- **Target File**: {{file path of the existing page component}}
+- **Insertion Point**: {{where to add the component in the page, e.g., "above SubItemsTable"}}
+- **Data Source**: {{API call or data hook needed, e.g., "decision logs API by mainItemId"}}
+
+<!-- Repeat for each existing-page integration -->
+
 ## Testing Strategy
 
 ### Per-Layer Test Plan
