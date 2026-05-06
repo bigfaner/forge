@@ -46,16 +46,22 @@ install:
 
 ci: install compile build test lint
 
-e2e-setup:
+e2e-setup force="":
     #!/usr/bin/env bash
     set -euo pipefail
     if [ ! -f tests/e2e/package.json ]; then
         echo "Error: tests/e2e/package.json not found" >&2
         exit 1
     fi
-    if [ ! -d tests/e2e/node_modules ]; then
-        npm install --prefix tests/e2e
-    fi
+    case "{{force}}" in
+      force) npm install --prefix tests/e2e ;;
+      "")
+        if [ ! -d tests/e2e/node_modules ]; then
+            npm install --prefix tests/e2e
+        fi
+        ;;
+      *) echo "[forge] invalid value '{{force}}'; expected 'force' or empty" >&2; exit 1 ;;
+    esac
     npx --prefix tests/e2e playwright install chromium
     echo "OK: e2e dependencies ready"
 
