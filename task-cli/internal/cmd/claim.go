@@ -299,7 +299,7 @@ func parseSegment(parts []string, i int) (int, bool) {
 
 func printTaskDetails(key string, t *task.Task, projectRoot, featureSlug string) {
 	PrintField("KEY", key)
-	PrintField("ID", t.ID)
+	PrintField("TASK_ID", t.ID)
 	PrintField("TITLE", t.Title)
 	PrintField("PRIORITY", t.Priority)
 	PrintField("STATUS", t.Status)

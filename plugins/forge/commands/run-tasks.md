@@ -51,8 +51,8 @@ task claim
 
 **Extract from claim output**:
 - `TASK_ID` (e.g., "2.1")
-- `TASK_KEY` (e.g., "2.1-implementation")
-- `TASK_FILE` (e.g., "2.1-implementation.md")
+- `KEY` (e.g., "2.1-implementation")
+- `FILE` (e.g., full absolute path to task file)
 - `BREAKING` (e.g., "true" or absent)
 - `SCOPE` (e.g., "frontend", "backend", or "all" — defaults to "all" if absent)
 - `FEATURE` (e.g., "my-feature" — feature slug from claim output)
@@ -72,7 +72,7 @@ Determine if phase summary context should be injected:
 Agent(
   subagent_type="task-executor",
   prompt="TASK_KEY: {{KEY}}
-TASK_ID: {{ID}}
+TASK_ID: {{TASK_ID}}
 TASK_FILE: {{FILE}}
 SCOPE: {{SCOPE}}
 {{PHASE_SUMMARY_SECTION}}
@@ -139,7 +139,7 @@ Apply the **Scope Resolution** protocol from the Forge Guide — use the `SCOPE`
 **If tests fail**:
 - Run `task template fix-task` to view the template, then add fix task and mark source blocked:
   ```bash
-  task status <TASK_ID> blocked --force
+  task status <TASK_ID> blocked
   task add --template fix-task --title "Fix: <failure>" \
     --source-task-id <TASK_ID> \
     --var SOURCE_FILES="<affected paths>" \
@@ -185,7 +185,7 @@ fi
 **If e2e fails**:
 - Mark source task blocked, then add fix task using the fix-task template:
   ```bash
-  task status <TASK_ID> blocked --force
+  task status <TASK_ID> blocked
   task add --template fix-task --title "Fix: <concise description>" \
     --source-task-id <TASK_ID> \
     --var SOURCE_FILES="<affected source paths>" \
@@ -208,8 +208,8 @@ Return to Step 1.
 | Agent timeout | Mark blocked, continue next |
 | Record missing | Dispatch error-fixer (include: "Use /record-task skill to create record") |
 | 3 consecutive failures | STOP dispatcher |
-| Breaking task tests fail (5a) | `task status <ID> blocked --force` + `task add --template fix-task`, continue loop |
-| Feature e2e tests fail (5b) | `task status <ID> blocked --force` + `task add --template fix-task`, continue loop |
+| Breaking task tests fail (5a) | `task status <ID> blocked` + `task add --template fix-task`, continue loop |
+| Feature e2e tests fail (5b) | `task status <ID> blocked` + `task add --template fix-task`, continue loop |
 
 ### Error-Fixer Dispatch
 
@@ -218,7 +218,8 @@ When dispatching error-fixer for missing record, include explicit instruction:
 ```
 Agent(
   subagent_type="error-fixer",
-  prompt="TASK_ID: {{ID}}
+  prompt="TASK_ID: {{TASK_ID}}
+TASK_FILE: {{TASK_FILE}}
 ERROR_MESSAGES: Missing task record
 INSTRUCTION: Use /record-task skill to create the record (task record CLI is mandatory)"
 )

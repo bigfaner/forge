@@ -28,10 +28,14 @@ func runFeature(cmd *cobra.Command, args []string) {
 		// Display current feature
 		slug, err := feature.GetCurrentFeature(projectRoot)
 		if err != nil {
+			PrintBlockStart()
 			PrintField("FEATURE", "(none)")
+			PrintBlockEnd()
 			return
 		}
+		PrintBlockStart()
 		PrintField("FEATURE", slug)
+		PrintBlockEnd()
 		return
 	}
 
@@ -40,5 +44,7 @@ func runFeature(cmd *cobra.Command, args []string) {
 	if err := feature.SetFeature(projectRoot, slug); err != nil {
 		Exit(ErrFeatureNotFound(slug))
 	}
+	PrintBlockStart()
 	PrintField("FEATURE", slug)
+	PrintBlockEnd()
 }

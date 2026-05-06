@@ -24,7 +24,7 @@ Step 5: Git commit
 task claim
 ```
 
-Parse output for KEY, ID, FILE, SCOPE, FEATURE. Reading order: project knowledge → task definition.
+Parse output for KEY, TASK_ID, FILE, SCOPE, FEATURE. Reading order: project knowledge → task definition.
 
 **Project Knowledge**: Read relevant project knowledge files first (domain constraints):
 - Infer relevant domains from task title, scope, and feature slug

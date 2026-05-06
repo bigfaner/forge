@@ -48,7 +48,7 @@ func runQuery(cmd *cobra.Command, args []string) {
 
 	PrintBlockStart()
 	PrintField("KEY", key)
-	PrintField("ID", t.ID)
+	PrintField("TASK_ID", t.ID)
 	PrintField("TITLE", t.Title)
 	PrintField("STATUS", t.Status)
 	PrintField("PRIORITY", t.Priority)

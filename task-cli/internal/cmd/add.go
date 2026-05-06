@@ -71,7 +71,7 @@ func runAdd(cmd *cobra.Command, args []string) {
 	PrintBlockStart()
 	PrintField("ACTION", "ADDED")
 	PrintField("KEY", result.ID)
-	PrintField("ID", result.ID)
+	PrintField("TASK_ID", result.ID)
 	PrintField("TITLE", result.Title)
 	PrintField("PRIORITY", result.Priority)
 	PrintField("STATUS", result.Status)

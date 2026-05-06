@@ -63,7 +63,7 @@ func runStatus(cmd *cobra.Command, args []string) {
 	if len(args) == 1 {
 		PrintBlockStart()
 		PrintField("KEY", key)
-		PrintField("ID", t.ID)
+		PrintField("TASK_ID", t.ID)
 		PrintField("STATUS", t.Status)
 		PrintField("TITLE", t.Title)
 		PrintFieldIfNotEmptySlice("DEPENDENCIES", t.Dependencies)
@@ -95,7 +95,7 @@ func runStatus(cmd *cobra.Command, args []string) {
 		if len(unmet) > 0 {
 			PrintBlockStart()
 			PrintField("KEY", key)
-			PrintField("ID", t.ID)
+			PrintField("TASK_ID", t.ID)
 			PrintField("STATUS", t.Status)
 			PrintField("TITLE", t.Title)
 			fmt.Printf("WARNING: %s has unmet dependencies: %s. Status not changed.\n", t.ID, strings.Join(unmet, ", "))
@@ -113,7 +113,7 @@ func runStatus(cmd *cobra.Command, args []string) {
 
 	PrintBlockStart()
 	PrintField("KEY", key)
-	PrintField("ID", t.ID)
+	PrintField("TASK_ID", t.ID)
 	PrintField("STATUS", t.Status)
 	PrintField("TITLE", t.Title)
 	PrintFieldIfNotEmptySlice("DEPENDENCIES", t.Dependencies)

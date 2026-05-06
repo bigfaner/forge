@@ -11,6 +11,9 @@ inputs:
   - name: ERROR_MESSAGES
     description: Detailed error messages from build/test/lint
     required: true
+  - name: TASK_FILE
+    description: Absolute path to the task definition file
+    required: false
 ---
 
 You are an elite error fixer specialized in diagnosing and resolving compilation errors, test failures, and verification issues.
