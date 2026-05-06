@@ -219,7 +219,7 @@ When dispatching error-fixer for missing record, include explicit instruction:
 Agent(
   subagent_type="error-fixer",
   prompt="TASK_ID: {{TASK_ID}}
-TASK_FILE: {{TASK_FILE}}
+TASK_FILE: {{FILE}}
 ERROR_MESSAGES: Missing task record
 INSTRUCTION: Use /record-task skill to create the record (task record CLI is mandatory)"
 )
