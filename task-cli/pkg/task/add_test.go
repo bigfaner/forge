@@ -312,6 +312,214 @@ func TestGenerateDiscID_NonDiscIgnored(t *testing.T) {
 	}
 }
 
+func TestApplyVars(t *testing.T) {
+	tests := []struct {
+		name     string
+		tmpl     string
+		opts     AddTaskOpts
+		expected string
+	}{
+		{
+			name:     "builtin ID and TITLE",
+			tmpl:     "id: {{ID}}, title: {{TITLE}}",
+			opts:     AddTaskOpts{ID: "fix-1", Title: "Fix: login bug"},
+			expected: "id: fix-1, title: Fix: login bug",
+		},
+		{
+			name:     "user variable",
+			tmpl:     "source: {{SOURCE_TASK_ID}}",
+			opts:     AddTaskOpts{Vars: map[string]string{"SOURCE_TASK_ID": "T-test-3"}},
+			expected: "source: T-test-3",
+		},
+		{
+			name:     "user var overrides builtin",
+			tmpl:     "{{TITLE}}",
+			opts:     AddTaskOpts{Title: "original", Vars: map[string]string{"TITLE": "overridden"}},
+			expected: "overridden",
+		},
+		{
+			name:     "missing var left as-is",
+			tmpl:     "keep {{UNKNOWN}} placeholder",
+			opts:     AddTaskOpts{},
+			expected: "keep {{UNKNOWN}} placeholder",
+		},
+		{
+			name:     "no placeholders",
+			tmpl:     "plain text",
+			opts:     AddTaskOpts{},
+			expected: "plain text",
+		},
+		{
+			name:     "multiple same placeholder",
+			tmpl:     "{{ID}}-{{ID}}",
+			opts:     AddTaskOpts{ID: "fix-1"},
+			expected: "fix-1-fix-1",
+		},
+		{
+			name:     "builtin DESCRIPTION",
+			tmpl:     "desc: {{DESCRIPTION}}",
+			opts:     AddTaskOpts{Description: "root cause"},
+			expected: "desc: root cause",
+		},
+		{
+			name:     "builtin PRIORITY",
+			tmpl:     "prio: {{PRIORITY}}",
+			opts:     AddTaskOpts{Priority: "P0"},
+			expected: "prio: P0",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ApplyVars(tt.tmpl, tt.opts)
+			if result != tt.expected {
+				t.Errorf("ApplyVars() = %q, want %q", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestCreateTaskMarkdown_TemplateMode(t *testing.T) {
+	dir := t.TempDir()
+
+	opts := AddTaskOpts{
+		ID:          "fix-1",
+		Title:       "Fix: login selector mismatch",
+		Priority:    "P0",
+		Description: "Selector [data-testid='submit-btn'] not found.",
+		Template:    "fix-task",
+		Vars: map[string]string{
+			"SOURCE_TASK_ID": "T-test-3",
+			"SOURCE_FILES":   "src/components/Login.tsx",
+			"TEST_SCRIPT":    "tests/e2e/features/auth/login.spec.ts",
+			"TEST_RESULTS":   "tests/e2e/features/auth/results/latest.md",
+		},
+	}
+
+	if err := CreateTaskMarkdown(dir, "fix-1.md", opts); err != nil {
+		t.Fatalf("CreateTaskMarkdown() error: %v", err)
+	}
+
+	data, err := os.ReadFile(filepath.Join(dir, "fix-1.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(data)
+
+	checks := []string{
+		`id: "fix-1"`,
+		`title: "Fix: login selector mismatch"`,
+		`priority: "P0"`,
+		"Selector [data-testid='submit-btn'] not found.",
+		"automatically restored to pending",
+		"## Reference Files",
+	}
+	for _, want := range checks {
+		if !contains(got, want) {
+			t.Errorf("output missing %q\nfull output:\n%s", want, got)
+		}
+	}
+
+	if contains(got, "{{") {
+		t.Errorf("unsubstituted placeholder remaining in output:\n%s", got)
+	}
+}
+
+func TestCreateTaskMarkdown_TemplateNotFound(t *testing.T) {
+	dir := t.TempDir()
+	opts := AddTaskOpts{
+		ID:       "fix-1",
+		Title:    "Fix: test",
+		Template: "nonexistent",
+	}
+	err := CreateTaskMarkdown(dir, "fix-1.md", opts)
+	if err == nil {
+		t.Fatal("expected error for missing template")
+	}
+}
+
+func TestAddDependency(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	if err := AddDependency(indexPath, "1.2-setup", "disc-1"); err != nil {
+		t.Fatalf("AddDependency failed: %v", err)
+	}
+
+	index, _ := LoadIndex(indexPath)
+	task := index.Tasks["1.2-setup"]
+	if !containsSlice(task.Dependencies, "disc-1") {
+		t.Errorf("expected disc-1 in dependencies, got %v", task.Dependencies)
+	}
+}
+
+func TestAddDependency_Duplicate(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	AddDependency(indexPath, "1.2-setup", "disc-1")
+	err := AddDependency(indexPath, "1.2-setup", "disc-1")
+	if err != nil {
+		t.Errorf("duplicate AddDependency should be no-op, got: %v", err)
+	}
+
+	index, _ := LoadIndex(indexPath)
+	task := index.Tasks["1.2-setup"]
+	count := 0
+	for _, d := range task.Dependencies {
+		if d == "disc-1" {
+			count++
+		}
+	}
+	if count != 1 {
+		t.Errorf("expected 1 occurrence of disc-1, got %d", count)
+	}
+}
+
+func TestAddDependency_TaskNotFound(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+	err := AddDependency(indexPath, "nonexistent", "disc-1")
+	if err == nil {
+		t.Fatal("expected error for nonexistent task")
+	}
+}
+
+func TestGetUnmetDependencies(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// 1.1 is completed, 1.2 is pending — depend on both
+	AddTask(indexPath, AddTaskOpts{Title: "Fix", ID: "fix-1"})
+	AddDependency(indexPath, "1.2-setup", "fix-1")
+
+	unmet, err := GetUnmetDependencies(indexPath, "1.2-setup")
+	if err != nil {
+		t.Fatalf("GetUnmetDependencies failed: %v", err)
+	}
+	// fix-1 is pending (not completed) → unmet
+	if !containsSlice(unmet, "fix-1") {
+		t.Errorf("expected fix-1 in unmet, got %v", unmet)
+	}
+
+	// Complete fix-1
+	index, _ := LoadIndex(indexPath)
+	fixTask := index.Tasks["fix-1"]
+	fixTask.Status = "completed"
+	index.Tasks["fix-1"] = fixTask
+	SaveIndex(indexPath, index)
+
+	unmet2, _ := GetUnmetDependencies(indexPath, "1.2-setup")
+	if containsSlice(unmet2, "fix-1") {
+		t.Errorf("fix-1 is completed, should not be unmet, got %v", unmet2)
+	}
+}
+
+func containsSlice(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
+}
+
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsSubstr(s, substr))
 }
@@ -323,4 +531,138 @@ func containsSubstr(s, substr string) bool {
 		}
 	}
 	return false
+}
+
+func TestAddTask_SourceTaskID_Persisted(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	id, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix auth",
+		Priority:     "P0",
+		SourceTaskID: "1.1-init",
+	})
+	if err != nil {
+		t.Fatalf("AddTask failed: %v", err)
+	}
+
+	index, _ := LoadIndex(indexPath)
+	task := index.Tasks[id]
+	if task.SourceTaskID != "1.1-init" {
+		t.Errorf("expected sourceTaskID '1.1-init', got %q", task.SourceTaskID)
+	}
+}
+
+func TestAddTask_SourceTaskID_UpdatesSourceDeps(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	id, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix auth",
+		Priority:     "P0",
+		SourceTaskID: "1.1-init",
+	})
+	if err != nil {
+		t.Fatalf("AddTask failed: %v", err)
+	}
+
+	index, _ := LoadIndex(indexPath)
+	srcTask := index.Tasks["1.1-init"]
+	if !containsSlice(srcTask.Dependencies, id) {
+		t.Errorf("source task should have %s as dependency, got %v", id, srcTask.Dependencies)
+	}
+}
+
+func TestAddTask_SourceTaskID_SourceNotFound(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	id, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix auth",
+		Priority:     "P0",
+		SourceTaskID: "nonexistent",
+	})
+	if err != nil {
+		t.Fatalf("AddTask should succeed even if source not found, got: %v", err)
+	}
+
+	index, _ := LoadIndex(indexPath)
+	task := index.Tasks[id]
+	if task.SourceTaskID != "nonexistent" {
+		t.Errorf("SourceTaskID should still be persisted, got %q", task.SourceTaskID)
+	}
+}
+
+func TestAddTask_SourceTaskID_IdempotentDep(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	id1, _ := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 1",
+		SourceTaskID: "1.1-init",
+	})
+	// Add again with same source — source dep should not duplicate
+	id2, _ := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 2",
+		SourceTaskID: "1.1-init",
+	})
+
+	index, _ := LoadIndex(indexPath)
+	srcTask := index.Tasks["1.1-init"]
+	count := 0
+	for _, d := range srcTask.Dependencies {
+		if d == id1 || d == id2 {
+			count++
+		}
+	}
+	if count != 2 {
+		t.Errorf("expected 2 distinct deps, got %d in %v", count, srcTask.Dependencies)
+	}
+
+	// Verify id1 only appears once
+	count1 := 0
+	for _, d := range srcTask.Dependencies {
+		if d == id1 {
+			count1++
+		}
+	}
+	if count1 != 1 {
+		t.Errorf("id1 should appear exactly once, got %d", count1)
+	}
+}
+
+func TestGetUnmetDependencies_Wildcard(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// Add wildcard dep to 1.2-setup
+	AddDependency(indexPath, "1.2-setup", "0.x")
+
+	// Add a phase-0 task that's pending
+	AddTask(indexPath, AddTaskOpts{Title: "Phase 0 task", ID: "0.1", Status: "pending"})
+
+	unmet, err := GetUnmetDependencies(indexPath, "1.2-setup")
+	if err != nil {
+		t.Fatalf("GetUnmetDependencies failed: %v", err)
+	}
+	// 0.1 is pending -> unmet, 1.1 is completed -> met
+	found := false
+	for _, u := range unmet {
+		if u == "0.1" {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("expected 0.1 in unmet for wildcard dep, got %v", unmet)
+	}
+}
+
+func TestGetUnmetDependencies_WildcardAllCompleted(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// 1.1 is completed. 1.2 matches wildcard but is the task itself — self-excluded.
+	AddDependency(indexPath, "1.2-setup", "1.x")
+
+	unmet, err := GetUnmetDependencies(indexPath, "1.2-setup")
+	if err != nil {
+		t.Fatalf("GetUnmetDependencies failed: %v", err)
+	}
+	if len(unmet) != 0 {
+		t.Errorf("expected 0 unmet (self-excluded + all others completed), got %v", unmet)
+	}
 }

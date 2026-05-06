@@ -101,7 +101,7 @@ func (v *validator) run() error {
 	v.validateGateIntegrity(idx.Tasks)
 	v.validatePhaseOrder(idx.Tasks)
 	v.validatePhaseSummaries(idx.Tasks)
-
+	v.validateLiveness(idx.Tasks)
 	if !v.printResults() {
 		return NewAIError(ErrValidation, "Validation failed", fmt.Sprintf("%d errors found", len(v.errors)), "Fix errors in index.json", "cat "+v.filePath)
 	}
@@ -440,4 +440,69 @@ func (v *validator) printResults() bool {
 	}
 	PrintResult("FAIL", fmt.Sprintf("%s (%d errors)", v.filePath, len(v.errors)))
 	return false
+}
+
+// validateLiveness checks for lifecycle anomalies in blocked tasks.
+func (v *validator) validateLiveness(tasks map[string]task.Task) {
+	for key, t := range tasks {
+		if t.Status != "blocked" {
+			continue
+		}
+
+		if len(t.Dependencies) == 0 {
+			v.warnings = append(v.warnings,
+				fmt.Sprintf("Task '%s' (%s): blocked with no dependencies (orphaned)", key, t.ID))
+			continue
+		}
+
+		allDepsCompleted := true
+		hasActiveDep := false
+		for _, dep := range t.Dependencies {
+			if strings.HasSuffix(dep, ".x") {
+				prefix := strings.TrimSuffix(dep, ".x")
+				prefixWithDot := prefix + "."
+				wildcardHasMatch := false
+				for _, other := range tasks {
+					if other.ID == t.ID {
+						continue
+					}
+					if strings.HasPrefix(other.ID, prefixWithDot) && isBusinessTask(other.ID) {
+						wildcardHasMatch = true
+						if other.Status != "completed" && other.Status != "skipped" {
+							allDepsCompleted = false
+							if other.Status == "pending" || other.Status == "in_progress" {
+								hasActiveDep = true
+							}
+						}
+					}
+				}
+				if !wildcardHasMatch {
+					// Wildcard matches no tasks — vacuously satisfied
+				}
+				continue
+			}
+			depTask, found := tasks[dep]
+			if !found {
+				v.errors = append(v.errors,
+					fmt.Sprintf("Task '%s' (%s): blocked on missing dependency '%s'", key, t.ID, dep))
+				allDepsCompleted = false
+				continue
+			}
+			if depTask.Status == "completed" || depTask.Status == "skipped" {
+				continue
+			}
+			allDepsCompleted = false
+			if depTask.Status == "pending" || depTask.Status == "in_progress" {
+				hasActiveDep = true
+			}
+		}
+
+		if allDepsCompleted {
+			v.warnings = append(v.warnings,
+				fmt.Sprintf("Task '%s' (%s): blocked but all dependencies resolved (stale, should be pending)", key, t.ID))
+		} else if !hasActiveDep {
+			v.warnings = append(v.warnings,
+				fmt.Sprintf("Task '%s' (%s): blocked with no path to resolution (all deps blocked or missing)", key, t.ID))
+		}
+	}
 }

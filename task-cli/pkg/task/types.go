@@ -18,6 +18,9 @@ type Task struct {
 	// Default is "all" (enforced by consumers, not a Go zero value).
 	// Omitempty allows existing index.json files without scope to remain valid.
 	Scope string `json:"scope,omitempty"`
+	// SourceTaskID records which task spawned this task (e.g. fix-task -> source task).
+	// Empty for original tasks. Used by record auto-restore to unblock source when all deps complete.
+	SourceTaskID string `json:"sourceTaskID,omitempty"`
 }
 
 // TaskIndex represents the index.json structure for a feature.

@@ -50,11 +50,19 @@ Override with `--force`: `task record <id> --data record.json --force`
 
 **Status values:** `pending`, `in_progress`, `completed`, `blocked`, `skipped`
 
+**State machine guards:**
+- `completed` is terminal — cannot transition out without `--force`
+- `in_progress → completed` blocked — use `task record` instead
+- `pending`/`in_progress` transitions require all dependencies to be completed or skipped
+- `--force` flag on `task status` bypasses all guards
+
+**Auto-restore:** When a fix-task (task with `sourceTaskID`) is recorded as `completed` or `skipped`, the source task is automatically restored to `pending` if all its dependencies are completed or skipped.
+
 ### 4. Validation and Verification
 
 | Command | Function |
 |---------|----------|
-| `task validate [file]` | Validate index.json structure |
+| `task validate [file]` | Validate index.json structure and lifecycle |
 | `task check` | Check all task dependencies |
 
 **Validation rules:**
@@ -63,6 +71,7 @@ Override with `--force`: `task record <id> --data record.json --force`
 - Dependency reference validity
 - Circular dependency detection
 - File existence check
+- Lifecycle liveness: orphaned blocked tasks, stale blocking, deadlock detection
 
 ### 5. Claude Code Integration Commands
 
@@ -191,6 +200,7 @@ type Task struct {
     Record        string   `json:"record"`                  // Record file
     Breaking      bool     `json:"breaking,omitempty"`      // Global change flag; triggers full test suite on completion
     Scope         string   `json:"scope,omitempty"`         // Task scope: frontend/backend/all (default: all)
+    SourceTaskID  string   `json:"sourceTaskID,omitempty"`  // ID of the task that spawned this task (e.g. fix-task -> source)
 }
 ```
 

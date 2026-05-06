@@ -61,10 +61,10 @@ func runCheck(cmd *cobra.Command, args []string) {
 
 	for key, t := range index.Tasks {
 		for _, dep := range t.Dependencies {
-			isWildcard := strings.HasSuffix(dep, ".x") || strings.HasSuffix(dep, "x")
+			isWildcard := strings.HasSuffix(dep, ".x")
 
 			if isWildcard {
-				prefix := strings.TrimSuffix(strings.TrimSuffix(dep, "x"), ".")
+				prefix := strings.TrimSuffix(dep, ".x")
 				prefixWithDot := prefix + "."
 
 				var matches []string

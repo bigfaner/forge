@@ -125,12 +125,12 @@ custom-branch              → custom-branch
 for each dep in T.Dependencies:
     if dep 包含 ".x":           # 通配符依赖 (如 "1.x")
         phase = 提取 phase 编号
-        if 该 phase 下所有任务都已完成:
+        if 该 phase 下所有任务都已完成或已跳过:
             依赖满足
         else:
             依赖不满足
     else:                        # 精确依赖 (如 "1.1")
-        if dep 任务状态 == completed:
+        if dep 任务状态 == completed OR skipped:
             依赖满足
         else:
             依赖不满足

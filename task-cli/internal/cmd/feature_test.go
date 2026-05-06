@@ -257,7 +257,7 @@ func TestRunStatus(t *testing.T) {
 		Feature:      "test-feature",
 		PRD:          "prd/prd-spec.md",
 		Design:       "design/tech-design.md",
-		StatusEnum:   []string{"pending", "in_progress", "completed"},
+			StatusEnum:   []string{"pending", "in_progress", "completed", "blocked", "skipped"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
 		Tasks: map[string]task.Task{
 			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md", Record: "1.1.md"},
@@ -284,7 +284,7 @@ func TestRunStatus(t *testing.T) {
 	}
 
 	_, err = captureOutput(func() error {
-		rootCmd.SetArgs([]string{"status", "1.1", "completed"})
+		rootCmd.SetArgs([]string{"status", "1.1", "blocked"})
 		return rootCmd.Execute()
 	})
 	if err != nil {
@@ -295,8 +295,8 @@ func TestRunStatus(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to load updated index: %v", err)
 	}
-	if updatedIndex.Tasks["task1"].Status != "completed" {
-		t.Errorf("expected status 'completed', got %q", updatedIndex.Tasks["task1"].Status)
+	if updatedIndex.Tasks["task1"].Status != "blocked" {
+		t.Errorf("expected status 'blocked', got %q", updatedIndex.Tasks["task1"].Status)
 	}
 }
 

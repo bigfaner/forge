@@ -24,7 +24,7 @@ Step 5: Git commit
 task claim
 ```
 
-Parse output for KEY, ID, FILE. Reading order: project knowledge → task definition.
+Parse output for KEY, ID, FILE, SCOPE, FEATURE. Reading order: project knowledge → task definition.
 
 **Project Knowledge**: Read relevant project knowledge files first (domain constraints):
 - Infer relevant domains from task title, scope, and feature slug
@@ -56,6 +56,38 @@ Strict sequential order. Stop at first failure:
 | `fmt` | Mark task as `blocked` (auto-fix failed = toolchain issue) |
 | `lint` | Self-fix (max 1 retry), then mark `blocked` if still failing |
 | `test` | Fix failing tests, then retry from compile |
+
+### Fix-Task Escape Hatch
+
+When failures are beyond the current task's scope (pre-existing bugs, environment issues, cross-module failures), create a fix-task instead of struggling:
+
+```bash
+task template fix-task  # View template and required variables first
+task status <TASK_ID> blocked
+task add --template fix-task --title "Fix: <concise description>" \
+  --source-task-id <TASK_ID> \
+  --var SOURCE_FILES="<affected source paths>" \
+  --var TEST_SCRIPT="<failing test file>" \
+  --var TEST_RESULTS="<test results path>" \
+  --description "<root cause and context>"
+```
+
+The fix-task (P0) will be auto-claimed by the next `task claim`. When it completes, `task record` auto-restores the source task to pending via SourceTaskID.
+
+### E2E Reminder (After Step 3)
+
+After the quality gate passes, check whether to show an e2e reminder:
+
+1. SCOPE (from Step 1) is `frontend` or `all`
+2. Glob for `tests/e2e/features/<FEATURE>/*.spec.ts` — files exist
+
+If both are true, print:
+```
+"Reminder: this task may affect e2e specs. Consider running:
+ just test-e2e --feature <FEATURE>"
+```
+
+This reminder is informational only for manual `/execute-task` invocation. When dispatched by `/run-tasks`, e2e gates are handled by the dispatcher's Step 5b automatically.
 
 ## Step 4: Record Task (MANDATORY)
 

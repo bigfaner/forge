@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"task-cli/pkg/task"
@@ -1223,4 +1224,208 @@ func TestRunValidate_WithFileArg(t *testing.T) {
 		// Should not exit (would kill test process)
 		runValidate(nil, []string{indexFile})
 	})
+}
+
+func TestValidator_ValidateLiveness(t *testing.T) {
+	tests := []struct {
+		name            string
+		tasks           map[string]task.Task
+		wantWarnings    int
+		wantErrors      int
+		wantWarnContains []string
+		wantErrContains  []string
+	}{
+		{
+			name: "non-blocked task produces no warnings",
+			tasks: map[string]task.Task{
+				"a": {ID: "a", Status: "pending"},
+			},
+			wantWarnings: 0,
+			wantErrors:   0,
+		},
+		{
+			name: "blocked with no deps warns orphaned",
+			tasks: map[string]task.Task{
+				"a": {ID: "a", Status: "blocked"},
+			},
+			wantWarnings:    1,
+			wantWarnContains: []string{"orphaned"},
+		},
+		{
+			name: "blocked with all deps completed warns stale",
+			tasks: map[string]task.Task{
+				"a": {ID: "a", Status: "blocked", Dependencies: []string{"b"}},
+				"b": {ID: "b", Status: "completed"},
+			},
+			wantWarnings:    1,
+			wantWarnContains: []string{"stale"},
+		},
+		{
+			name: "blocked with all deps skipped warns stale",
+			tasks: map[string]task.Task{
+				"a": {ID: "a", Status: "blocked", Dependencies: []string{"b"}},
+				"b": {ID: "b", Status: "skipped"},
+			},
+			wantWarnings:    1,
+			wantWarnContains: []string{"stale"},
+		},
+		{
+			name: "blocked with active dep produces no warning",
+			tasks: map[string]task.Task{
+				"a": {ID: "a", Status: "blocked", Dependencies: []string{"b"}},
+				"b": {ID: "b", Status: "in_progress"},
+			},
+			wantWarnings: 0,
+			wantErrors:   0,
+		},
+		{
+			name: "blocked with pending dep produces no warning",
+			tasks: map[string]task.Task{
+				"a": {ID: "a", Status: "blocked", Dependencies: []string{"b"}},
+				"b": {ID: "b", Status: "pending"},
+			},
+			wantWarnings: 0,
+			wantErrors:   0,
+		},
+		{
+			name: "blocked on missing dep errors and warns no path",
+			tasks: map[string]task.Task{
+				"a": {ID: "a", Status: "blocked", Dependencies: []string{"missing"}},
+			},
+			wantErrors:      1,
+			wantWarnings:    1,
+			wantErrContains: []string{"missing dependency"},
+			wantWarnContains: []string{"no path to resolution"},
+		},
+		{
+			name: "blocked chain with no path to resolution warns",
+			tasks: map[string]task.Task{
+				"a": {ID: "a", Status: "blocked", Dependencies: []string{"b"}},
+				"b": {ID: "b", Status: "blocked"},
+			},
+			wantWarnings:    2, // a: no path, b: orphaned (no deps)
+			wantWarnContains: []string{"no path to resolution", "orphaned"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := &validator{}
+			v.validateLiveness(tt.tasks)
+			if len(v.warnings) != tt.wantWarnings {
+				t.Errorf("got %d warnings, want %d: %v", len(v.warnings), tt.wantWarnings, v.warnings)
+			}
+			if len(v.errors) != tt.wantErrors {
+				t.Errorf("got %d errors, want %d: %v", len(v.errors), tt.wantErrors, v.errors)
+			}
+			for _, want := range tt.wantWarnContains {
+				found := false
+				for _, w := range v.warnings {
+					if strings.Contains(w, want) {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("expected warning containing %q, got %v", want, v.warnings)
+				}
+			}
+			for _, want := range tt.wantErrContains {
+				found := false
+				for _, e := range v.errors {
+					if strings.Contains(e, want) {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("expected error containing %q, got %v", want, v.errors)
+				}
+			}
+		})
+	}
+}
+
+func TestValidator_ValidateLiveness_Wildcard(t *testing.T) {
+	tests := []struct {
+		name             string
+		tasks            map[string]task.Task
+		wantWarnings     int
+		wantErrors       int
+		wantWarnContains []string
+	}{
+		{
+			name: "wildcard deps all completed warns stale",
+			tasks: map[string]task.Task{
+				"a":   {ID: "a", Status: "blocked", Dependencies: []string{"1.x"}},
+				"1.1": {ID: "1.1", Status: "completed"},
+				"1.2": {ID: "1.2", Status: "completed"},
+			},
+			wantWarnings:     1,
+			wantWarnContains: []string{"stale"},
+		},
+		{
+			name: "wildcard deps with pending task no warning",
+			tasks: map[string]task.Task{
+				"a":   {ID: "a", Status: "blocked", Dependencies: []string{"1.x"}},
+				"1.1": {ID: "1.1", Status: "completed"},
+				"1.2": {ID: "1.2", Status: "pending"},
+			},
+			wantWarnings: 0,
+			wantErrors:   0,
+		},
+		{
+			name: "wildcard no matches no error",
+			tasks: map[string]task.Task{
+				"a": {ID: "a", Status: "blocked", Dependencies: []string{"9.x"}},
+			},
+			wantWarnings:     1,
+			wantWarnContains: []string{"stale"},
+		},
+		{
+			name: "mixed wildcard and exact deps",
+			tasks: map[string]task.Task{
+				"a":     {ID: "a", Status: "blocked", Dependencies: []string{"1.x", "fix-1"}},
+				"1.1":   {ID: "1.1", Status: "completed"},
+				"fix-1": {ID: "fix-1", Status: "completed"},
+			},
+			wantWarnings:     1,
+			wantWarnContains: []string{"stale"},
+		},
+		{
+			name: "wildcard self-exclusion: blocked task matching own wildcard",
+			tasks: map[string]task.Task{
+				"1.3": {ID: "1.3", Status: "blocked", Dependencies: []string{"1.x"}},
+				"1.1": {ID: "1.1", Status: "completed"},
+				"1.2": {ID: "1.2", Status: "completed"},
+			},
+			wantWarnings:     1,
+			wantWarnContains: []string{"stale"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := &validator{}
+			v.validateLiveness(tt.tasks)
+			if len(v.warnings) != tt.wantWarnings {
+				t.Errorf("got %d warnings, want %d: %v", len(v.warnings), tt.wantWarnings, v.warnings)
+			}
+			if len(v.errors) != tt.wantErrors {
+				t.Errorf("got %d errors, want %d: %v", len(v.errors), tt.wantErrors, v.errors)
+			}
+			for _, want := range tt.wantWarnContains {
+				found := false
+				for _, w := range v.warnings {
+					if strings.Contains(w, want) {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("expected warning containing %q, got %v", want, v.warnings)
+				}
+			}
+		})
+	}
 }

@@ -58,6 +58,5 @@ Run `/graduate-tests` skill. The skill will:
 
 **Step 3: Record**
 
-Mark task completed. The `all-completed` hook will run regression
-(`just test-e2e` without `--feature`) on the next session end to verify
-the graduated scripts integrate cleanly with the existing suite.
+Mark task completed. T-test-4.5 will run full regression to verify the
+graduated scripts integrate cleanly with the existing suite.

@@ -804,6 +804,9 @@ func TestPrintTaskDetails_Breaking(t *testing.T) {
 	if !strings.Contains(out, "DEPENDENCIES: 1.summary") {
 		t.Errorf("expected DEPENDENCIES, got: %s", out)
 	}
+	if !strings.Contains(out, "FEATURE: test") {
+		t.Errorf("expected FEATURE: test, got: %s", out)
+	}
 }
 
 // ---------- runStatus update mode ----------
