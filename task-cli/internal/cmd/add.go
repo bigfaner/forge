@@ -9,6 +9,7 @@ import (
 	"task-cli/pkg/feature"
 	"task-cli/pkg/project"
 	"task-cli/pkg/task"
+	tmpl "task-cli/pkg/template"
 
 	"github.com/spf13/cobra"
 )
@@ -21,10 +22,13 @@ var (
 	addEstimatedTime string
 	addBreaking      bool
 	addDescription   string
+	addTemplate      string
+	addVars          []string
+	addSourceTaskID  string
 )
 
 var addCmd = &cobra.Command{
-	Use:   "add --title TITLE [--id ID] [--priority P0|P1|P2] [--depends-on ID,ID] [--breaking] [--description TEXT]",
+	Use:   "add --title TITLE [--id ID] [--priority P0|P1|P2] [--depends-on ID,ID] [--breaking] [--description TEXT] [--template NAME] [--var KEY=VALUE]",
 	Short: "Add a new task to the current feature",
 	Long: `Add a new task dynamically. Validates inputs and writes files.
 The CLI is a pure tool — the caller decides what to add.`,
@@ -39,6 +43,9 @@ func init() {
 	addCmd.Flags().StringVar(&addEstimatedTime, "estimated-time", "", "Time estimate (e.g. \"1-2h\")")
 	addCmd.Flags().BoolVar(&addBreaking, "breaking", false, "Mark as breaking (triggers full test suite)")
 	addCmd.Flags().StringVar(&addDescription, "description", "", "Task description (markdown body)")
+	addCmd.Flags().StringVar(&addTemplate, "template", "", "Template name (reads from tasks/_templates/<name>.md)")
+	addCmd.Flags().StringArrayVar(&addVars, "var", nil, "Template variable in key=value format (repeatable)")
+	addCmd.Flags().StringVar(&addSourceTaskID, "source-task-id", "", "Source task ID: auto-injects {{SOURCE_TASK_ID}} and adds this task as source dependency")
 }
 
 // AddResult holds the result of a successful add operation.
@@ -56,7 +63,7 @@ type AddResult struct {
 }
 
 func runAdd(cmd *cobra.Command, args []string) {
-	result, err := executeAdd()
+	result, err := executeAdd(cmd)
 	if err != nil {
 		Exit(err)
 	}
@@ -64,7 +71,7 @@ func runAdd(cmd *cobra.Command, args []string) {
 	PrintBlockStart()
 	PrintField("ACTION", "ADDED")
 	PrintField("KEY", result.ID)
-	PrintField("ID", result.ID)
+	PrintField("TASK_ID", result.ID)
 	PrintField("TITLE", result.Title)
 	PrintField("PRIORITY", result.Priority)
 	PrintField("STATUS", result.Status)
@@ -77,7 +84,7 @@ func runAdd(cmd *cobra.Command, args []string) {
 	PrintBlockEnd()
 }
 
-func executeAdd() (*AddResult, error) {
+func executeAdd(cmd *cobra.Command) (*AddResult, error) {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
 		return nil, ErrProjectNotFound()
@@ -107,6 +114,16 @@ func executeAdd() (*AddResult, error) {
 		}
 	}
 
+	// Parse --var key=value flags
+	vars := make(map[string]string)
+	for _, v := range addVars {
+		parts := strings.SplitN(v, "=", 2)
+		if len(parts) != 2 || parts[0] == "" {
+			return nil, ErrNoInput(fmt.Sprintf("invalid --var format: %q (expected key=value)", v))
+		}
+		vars[parts[0]] = parts[1]
+	}
+
 	opts := task.AddTaskOpts{
 		ID:            addID,
 		Title:         addTitle,
@@ -115,6 +132,28 @@ func executeAdd() (*AddResult, error) {
 		Dependencies:  deps,
 		Breaking:      addBreaking,
 		Description:   addDescription,
+		Template:      addTemplate,
+		Vars:          vars,
+		SourceTaskID:  addSourceTaskID,
+	}
+
+	// Apply template defaults for fixed fields
+	if addTemplate != "" {
+		if _, err := tmpl.Get(addTemplate); err != nil {
+			return nil, ErrNoInput(fmt.Sprintf("template %q not found. Available: %v", addTemplate, tmpl.List()))
+		}
+		defs, err := tmpl.GetDefaults(addTemplate)
+		if err == nil {
+			if !cmd.Flags().Changed("priority") {
+				opts.Priority = defs.Priority
+			}
+			if !cmd.Flags().Changed("breaking") {
+				opts.Breaking = defs.Breaking
+			}
+			if !cmd.Flags().Changed("estimated-time") && defs.EstimatedTime != "" {
+				opts.EstimatedTime = defs.EstimatedTime
+			}
+		}
 	}
 
 	id, err := task.AddTask(indexPath, opts)
@@ -147,7 +186,7 @@ func executeAdd() (*AddResult, error) {
 		Status:       "pending",
 		File:         filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, id+".md")),
 		Record:       filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, "records/"+id+".md")),
-		Breaking:     addBreaking,
+		Breaking:     opts.Breaking,
 		Dependencies: deps,
 		FeatureSlug:  featureSlug,
 		ProjectRoot:  projectRoot,

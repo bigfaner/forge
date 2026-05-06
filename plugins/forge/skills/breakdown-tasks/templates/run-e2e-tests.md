@@ -37,21 +37,29 @@ No direct user story mapping. This is a standard test execution task.
 
 1. Run `/run-e2e-tests` skill
 2. Read `tests/e2e/features/<slug>/results/latest.md` to determine outcome
-3. Run: `just test-e2e --feature <slug>` (replace `<slug>` with current feature name from `task feature`)
+3. Run: `just test-e2e --feature <slug>` (use FEATURE from claim output)
 
 **If tests pass**: mark task completed. T-test-4 will proceed to graduation.
 
 **If tests fail**:
 - Read `results/test-results.json`
 - Analyze each failure: is it a code bug, test script issue, or environment issue?
-- For each distinct root cause, add a fix task:
+- Run `task template fix-task` to view the fix-task template and required variables
+- Mark this task `blocked` (not completed — it must re-run after fixes):
   ```bash
-  task add --title "Fix: <concise description>" \
-           --priority P0 \
-           --breaking \
+  task status T-test-3 blocked
+  ```
+- For each distinct root cause, create a fix task:
+  ```bash
+  task add --template fix-task \
+           --title "Fix: <concise description>" \
+           --source-task-id T-test-3 \
+           --var SOURCE_FILES="<affected source file paths>" \
+           --var TEST_SCRIPT="tests/e2e/features/<slug>/<failing-spec>.spec.ts" \
+           --var TEST_RESULTS="tests/e2e/features/<slug>/results/latest.md" \
            --description "<root cause and context>"
   ```
-- Mark this task completed (the run-and-report work is done)
-- Fix tasks (P0) will be claimed before T-test-4 (P1) resumes
+- Fix tasks (P0) will be claimed before T-test-4 (P1)
+- After fix tasks complete, T-test-3 is unblocked and re-claimed for re-run
 
 **Do NOT** attempt to fix failures inline — create fix tasks and let the dispatcher handle them.

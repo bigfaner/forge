@@ -226,15 +226,15 @@ func getTaskPhase(id string) int {
 func checkDependenciesMet(index *task.TaskIndex, selfID string, t task.Task) (bool, []string) {
 	var unmet []string
 	for _, dep := range t.Dependencies {
-		if strings.HasSuffix(dep, ".x") || strings.HasSuffix(dep, "x") {
-			prefix := strings.TrimSuffix(strings.TrimSuffix(dep, "x"), ".")
+		if strings.HasSuffix(dep, ".x") {
+			prefix := strings.TrimSuffix(dep, ".x")
 			found := false
 			prefixWithDot := prefix + "."
 			for _, other := range index.Tasks {
 				if other.ID == selfID {
 					continue
 				}
-				if strings.HasPrefix(other.ID, prefixWithDot) && isBusinessTask(other.ID) && other.Status != "completed" {
+				if strings.HasPrefix(other.ID, prefixWithDot) && isBusinessTask(other.ID) && other.Status != "completed" && other.Status != "skipped" {
 					unmet = append(unmet, other.ID)
 					found = true
 				}
@@ -245,7 +245,7 @@ func checkDependenciesMet(index *task.TaskIndex, selfID string, t task.Task) (bo
 		} else {
 			for _, other := range index.Tasks {
 				if other.ID == dep {
-					if other.Status != "completed" {
+					if other.Status != "completed" && other.Status != "skipped" {
 						unmet = append(unmet, dep)
 					}
 					break
@@ -299,7 +299,7 @@ func parseSegment(parts []string, i int) (int, bool) {
 
 func printTaskDetails(key string, t *task.Task, projectRoot, featureSlug string) {
 	PrintField("KEY", key)
-	PrintField("ID", t.ID)
+	PrintField("TASK_ID", t.ID)
 	PrintField("TITLE", t.Title)
 	PrintField("PRIORITY", t.Priority)
 	PrintField("STATUS", t.Status)
@@ -309,6 +309,7 @@ func printTaskDetails(key string, t *task.Task, projectRoot, featureSlug string)
 		PrintField("BREAKING", "true")
 	}
 	PrintFieldIfNotEmpty("SCOPE", t.Scope)
+	PrintFieldIfNotEmpty("FEATURE", featureSlug)
 	PrintField("FILE", filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, t.File)))
 	PrintField("RECORD", filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, t.Record)))
 }

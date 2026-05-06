@@ -3,7 +3,7 @@ id: "T-test-5"
 title: "Consolidate Specs"
 priority: "P2"
 estimated_time: "20min"
-dependencies: ["T-test-4"]
+dependencies: ["T-test-4.5"]
 status: pending
 ---
 

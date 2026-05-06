@@ -175,6 +175,8 @@ Task CLI manages task lifecycle within feature workflows.
 | Switch feature | `task feature <slug>` | Set current work context |
 | Claim task | `task claim` | Get next available task |
 | Complete task | `task record <id> --data docs/features/{slug}/tasks/process/record.json` | **One step for record + status update** |
+| Add task | `task add --title "..." [flags]` | Add task to current feature |
+| Apply template | `task template <name>` | View task template content |
 
 ### `task record` Workflow
 
@@ -191,7 +193,7 @@ Task CLI manages task lifecycle within feature workflows.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `taskId` | string | ✓ | Task ID |
+| `taskId` | string | | Task ID (verified against CLI arg if provided) |
 | `status` | string | | Status, defaults to `completed` |
 | `summary` | string | ✓ | Implementation summary |
 | `filesCreated` | array | | List of newly created files |

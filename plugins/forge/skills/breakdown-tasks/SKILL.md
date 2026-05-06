@@ -300,21 +300,37 @@ Phase 2 gate: 2.gate               (dependencies: ["2.summary"])
 
 ### 4d. Standard Test Tasks
 
-Append five fixed test tasks:
+Append six fixed test tasks:
 
 - **T-test-1**: read `templates/gen-test-cases.md`, calls `/gen-sitemap` first (if `sitemap.json` missing) then `/gen-test-cases`, file `gen-test-cases.md`
 - **T-test-2**: read `templates/gen-test-scripts.md`, calls `/gen-test-scripts`, depends on T-test-1, file `gen-test-scripts.md`
 - **T-test-3**: read `templates/run-e2e-tests.md`, calls `/run-e2e-tests`, depends on T-test-2, file `run-e2e-tests.md`
 - **T-test-4**: read `templates/graduate-tests.md`, calls `/graduate-tests`, depends on T-test-3, file `graduate-tests.md`
-- **T-test-5**: read `templates/consolidate-specs.md`, calls `/consolidate-specs`, depends on T-test-4, file `consolidate-specs.md`
+- **T-test-4.5**: read `templates/verify-regression.md`, runs full e2e regression, depends on T-test-4, file `verify-regression.md`
+- **T-test-5**: read `templates/consolidate-specs.md`, calls `/consolidate-specs`, depends on T-test-4.5, file `consolidate-specs.md`
 
 Replace `{{T_TEST_1_DEP}}` with the last phase's gate ID if a gate exists (e.g., `"2.gate"`), otherwise the last phase's summary ID.
 
 **Responsibility chain:**
 - T-test-1/2: generate test artifacts (documentation + scripts)
-- T-test-3: execute feature e2e tests; on failure, `task add` fix tasks (P0) and mark completed
+- T-test-3: execute feature e2e tests; on failure, mark blocked, add fix tasks (P0) with unblock instruction — re-runs after fix
 - T-test-4: verify e2e passed (check `latest.md`), then graduate scripts to `tests/e2e/`
+- T-test-4.5: run full regression suite; on failure, mark blocked, add fix tasks (P0) with unblock instruction — re-runs after fix
 - T-test-5: extract business rules and tech specs, user reviews and confirms integration
+
+**Fix-task reference**: Templates are managed by task-cli and embedded in the binary. Agents should run `task template fix-task` to view the template and required variables before creating fix tasks. When adding a fix task, the source task MUST be marked `blocked` first (so it's not `in_progress` and the P0 fix task can be claimed immediately):
+
+```bash
+task status <source-task-id> blocked
+task add --template fix-task --title "Fix: <description>" \
+  --source-task-id <source-task-id> \
+  --var SOURCE_FILES="<affected paths>" \
+  --var TEST_SCRIPT="<failing test>" \
+  --var TEST_RESULTS="<results path>" \
+  --description "<root cause>"
+```
+
+When a fix-task completes, `task record` auto-restores the source task to `pending` (checks all source task's dependencies are completed). For nested fix-tasks (fix-task itself fails), `--source-task-id` must point to the FAILED fix-task, not the original source. Maximum nesting: 3 levels.
 
 ## Step 5: Create index.json
 
@@ -347,5 +363,5 @@ Read `templates/manifest-update-tasks.md` for the traceability table format and 
 - [ ] `breaking: true` set on tasks that modify shared contracts
 - [ ] UI tasks reference prototype files (if applicable)
 - [ ] User Stories populated from `prd-user-stories.md`
-- [ ] `index.json` ends with T-test-1 through T-test-5
+- [ ] `index.json` ends with T-test-1 through T-test-5 (including T-test-4.5)
 - [ ] `manifest.md` updated with traceability + `status: tasks`

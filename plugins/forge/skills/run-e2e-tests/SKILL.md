@@ -50,7 +50,7 @@ ls tests/e2e/features/<slug>/
 **Note**: `<slug>` is the current feature name, obtained via `task feature` command.
 
 ```bash
-slug=$(task feature 2>/dev/null | tr -d '[:space:]')
+slug=$(task feature 2>/dev/null | grep '^FEATURE:' | sed 's/^FEATURE:[[:space:]]*//')
 [ -z "$slug" ] && echo "Error: no active feature — run \`task feature <slug>\` first" >&2 && exit 1
 ```
 

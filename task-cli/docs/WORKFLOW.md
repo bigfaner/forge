@@ -126,12 +126,12 @@ Check if task T's dependencies are satisfied:
 for each dep in T.Dependencies:
     if dep contains ".x":           # Wildcard dependency (e.g. "1.x")
         phase = extract phase number
-        if all tasks in that phase are completed:
+        if all tasks in that phase are completed OR skipped:
             dependency satisfied
         else:
             dependency not satisfied
     else:                        # Exact dependency (e.g. "1.1")
-        if dep task status == completed:
+        if dep task status == completed OR skipped:
             dependency satisfied
         else:
             dependency not satisfied
@@ -652,3 +652,102 @@ Examples:
 | `--estimated-time` | No | - | Time estimate |
 | `--breaking` | No | false | Triggers full test suite |
 | `--description` | No | - | Task body content |
+
+| `--template` | No | - | Template name (e.g. fix-task) |
+| `--var` | No | - | Template variable (key=value, repeatable) |
+| `--source-task-id` | No | - | Source task ID for fix-tasks |
+
+**SourceTaskID behavior:**
+- Persists `sourceTaskID` on the new Task in index.json
+- Auto-adds new task as dependency of the source task (reverse dependency injection)
+- Template variable `{{SOURCE_TASK_ID}}` is auto-populated
+
+**Template defaults:**
+- `fix-task`: Priority=P0, Breaking=true, EstimatedTime=30min
+- Defaults are applied unless the corresponding flag is explicitly set
+
+## 11. Fix-Task Lifecycle
+
+```
+Source task (in_progress)
+         │
+         ▼  test fails
+task status <id> blocked
+         │
+         ▼
+task add --template fix-task --source-task-id <id>
+         │
+         ▼  fix-task (P0, pending)
+   task claim → picks P0 first
+         │
+         ▼  fix-task executes
+   task record → fix-task completed or skipped
+         │
+         ▼  auto-restore checks:
+   - fix-task has SourceTaskID?
+   - Source is blocked?
+   - ALL source deps completed or skipped?
+         │
+    YES  │  NO
+    ┌────┘  └─── source stays blocked
+    ▼           (other fix-tasks still pending)
+Source → pending
+         │
+         ▼
+   task claim → source re-claimed
+```
+
+**Multi-fix scenario:** When multiple fix-tasks are created for one source, the source is auto-restored only when the LAST fix-task completes.
+
+**Nested fix-tasks:** When a fix-task itself fails, `--source-task-id` points to the FAILED fix-task (not the original source). Auto-restore chains: fix-B completes → fix-A restored → fix-A completes → source restored. Max nesting: 3 levels.
+
+## 12. State Machine
+
+```
+                    ┌──────────┐
+          claim     │ pending   │
+      ┌────────────│           │◄─────────────────┐
+      │            └──────────┘                   │
+      │                 │                         │
+      │                 │ task status blocked      │ auto-restore
+      │                 ▼                         │ (via task record)
+      │            ┌──────────┐                   │
+      │            │ blocked   │───────────────────┘
+      │            └──────────┘   (all deps completed)
+      │                 │
+      │                 │ (all deps completed +
+      │                 │  validated by task status)
+      │                 ▼
+      │            ┌──────────┐
+      ├───────────►│in_progress│
+      │            └──────────┘
+      │                 │
+      │                 │ task status blocked
+      │                 ▼
+      │            ┌──────────┐
+      │            │ blocked   │───────────────────┐
+      │            └──────────┘                   │
+      │                                           │
+      │                 │ task record              │
+      │                 ▼                         │
+      │            ┌──────────┐                   │
+      │            │ completed │◄──────────────────┘
+      │            └──────────┘  (terminal, no exit without --force)
+      │
+      │            ┌──────────┐
+      └───────────►│ skipped   │
+                   └──────────┘
+```
+
+**Guards:**
+- `completed → *`: Blocked (terminal state). Use `--force` to override.
+- `in_progress → completed`: Blocked. Use `task record` instead.
+- `* → pending` / `* → in_progress`: Requires all dependencies to be completed or skipped.
+- `--force` flag bypasses all state machine guards.
+
+## 13. Lifecycle Liveness Validation
+
+`task validate` detects lifecycle anomalies:
+- **Orphaned**: blocked task with no dependencies
+- **Stale**: blocked task whose deps are all completed or skipped (should be pending)
+- **Deadlock**: blocked task whose deps are all blocked or missing (no path to resolution)

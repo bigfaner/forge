@@ -817,9 +817,12 @@ func TestPrintTaskDetails_ScopeInOutput(t *testing.T) {
 		if !strings.Contains(out, "SCOPE: backend") {
 			t.Errorf("expected SCOPE: backend in output, got: %s", out)
 		}
+		if !strings.Contains(out, "FEATURE: feat") {
+			t.Errorf("expected FEATURE: feat in output, got: %s", out)
+		}
 	})
 
-	t.Run("scope absent — no SCOPE line", func(t *testing.T) {
+	t.Run("scope absent - no SCOPE line", func(t *testing.T) {
 		tk := &task.Task{
 			ID: "1.1", Title: "T", Priority: "P0", Status: "pending",
 			File: "1.1.md", Record: "records/1.1.md",
@@ -829,6 +832,9 @@ func TestPrintTaskDetails_ScopeInOutput(t *testing.T) {
 		})
 		if strings.Contains(out, "SCOPE:") {
 			t.Errorf("expected no SCOPE line for task without scope, got: %s", out)
+		}
+		if !strings.Contains(out, "FEATURE: feat") {
+			t.Errorf("expected FEATURE: feat in output even when scope absent, got: %s", out)
 		}
 	})
 }

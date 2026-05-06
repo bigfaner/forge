@@ -175,14 +175,43 @@ Violating this rule breaks the dispatcher's control loop.
 ### Dynamic Task Addition
 
 When discovering issues beyond the current task's scope (pre-existing bugs, environment issues,
-failures in unrelated modules), use `task add` to create a new task instead of trying to fix everything
-in the current task:
+failures in unrelated modules), run `task template fix-task` to view the template, then:
 
-```bash
-task add --title "Fix: <concise description>" --priority P0 --breaking --description "Context about what needs fixing"
-```
+1. Mark source task blocked so it's not in_progress when fix task is added:
+   ```bash
+   task status <TASK_ID> blocked
+   ```
+   Note: No `--force` needed here because this escape hatch runs during Step 3 (verification), before `task record`. The task is still `in_progress`, so `in_progress -> blocked` is a valid transition.
+2. Create the fix task:
+   ```bash
+   task add --template fix-task --title "Fix: <concise description>" \
+     --source-task-id <TASK_ID> \
+     --var SOURCE_FILES="<affected source paths>" \
+     --var TEST_SCRIPT="<failing test file>" \
+     --var TEST_RESULTS="<test results path>" \
+     --description "<root cause and context>"
+   ```
 
-The new task will be picked up by the next `task claim` in the dispatcher loop.
+The new P0 fix task will be picked up by the next `task claim` in the dispatcher loop.
+
+### Nested Fix-Tasks
+
+When a fix-task itself fails and needs another fix-task:
+
+1. The NEW fix-task's `--source-task-id` must point to the FAILED fix-task (not the original source):
+   ```bash
+   task status <FIX_TASK_ID> blocked
+   task add --template fix-task --title "Fix: deeper issue" \
+     --source-task-id <FIX_TASK_ID> \
+     --var SOURCE_FILES="<affected paths>" \
+     --var TEST_SCRIPT="<failing test>" \
+     --var TEST_RESULTS="<results path>" \
+     --description "<root cause of fix-task failure>"
+   ```
+2. This creates a chain: source -> fix-A -> fix-B
+3. When fix-B completes, `task record` auto-restores fix-A to pending (via SourceTaskID)
+4. When fix-A completes, `task record` auto-restores the original source to pending
+5. Maximum nesting depth: 3 levels. If deeper nesting is needed, escalate to manual intervention.
 
 ## Rules
 

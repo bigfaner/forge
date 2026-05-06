@@ -155,5 +155,5 @@ If `task record` fails and cannot be fixed:
 
 ```bash
 # Manual status fix (last resort only)
-task status <TASK_ID> completed
+task status <TASK_ID> completed --force
 ```

@@ -7,6 +7,8 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+
+	tmpl "task-cli/pkg/template"
 )
 
 // AddTaskOpts holds options for adding a new task.
@@ -19,6 +21,9 @@ type AddTaskOpts struct {
 	Breaking      bool     // Optional
 	Description   string   // Optional, becomes markdown body
 	Status        string   // Default pending if empty
+	Template      string   // Template name (e.g. "fix-task")
+	Vars          map[string]string // Variable substitutions for template placeholders
+	SourceTaskID  string   // Source task ID: auto-injects {{SOURCE_TASK_ID}} and adds this task as source dependency
 }
 
 // AddTask validates opts, adds a task to the index, and saves it.
@@ -60,15 +65,30 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 
 	// Validate dependencies exist
 	for _, dep := range opts.Dependencies {
-		found := false
-		for _, t := range index.Tasks {
-			if t.ID == dep || strings.HasSuffix(dep, ".x") {
-				found = true
-				break
+		if strings.HasSuffix(dep, ".x") {
+			prefix := strings.TrimSuffix(dep, ".x")
+			prefixWithDot := prefix + "."
+			found := false
+			for _, t := range index.Tasks {
+				if strings.HasPrefix(t.ID, prefixWithDot) && isBusinessTaskID(t.ID) {
+					found = true
+					break
+				}
 			}
-		}
-		if !found {
-			return "", fmt.Errorf("dependency not found: %s", dep)
+			if !found {
+				return "", fmt.Errorf("wildcard dependency %q matches no business tasks", dep)
+			}
+		} else {
+			found := false
+			for _, t := range index.Tasks {
+				if t.ID == dep {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return "", fmt.Errorf("dependency not found: %s", dep)
+			}
 		}
 	}
 
@@ -92,6 +112,18 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 		File:          fileName,
 		Record:        recordPath,
 		Breaking:      opts.Breaking,
+		SourceTaskID:  opts.SourceTaskID,
+	}
+
+	// SourceTaskID: add this task as dependency of the source task (in-memory, before single save)
+	if opts.SourceTaskID != "" {
+		srcTask, found := index.Tasks[opts.SourceTaskID]
+		if found {
+			if !slices.Contains(srcTask.Dependencies, opts.ID) {
+				srcTask.Dependencies = append(srcTask.Dependencies, opts.ID)
+				index.Tasks[opts.SourceTaskID] = srcTask
+			}
+		}
 	}
 
 	if err := SaveIndex(indexPath, index); err != nil {
@@ -107,6 +139,48 @@ func CreateTaskMarkdown(tasksDir string, filename string, opts AddTaskOpts) erro
 		return fmt.Errorf("create tasks dir: %w", err)
 	}
 
+	var content string
+
+	if opts.Template != "" {
+		tmpl, err := tmpl.Get(opts.Template)
+		if err != nil {
+			return err
+		}
+		content = ApplyVars(tmpl, opts)
+	} else {
+		content = buildTaskMarkdown(opts)
+	}
+
+	return os.WriteFile(filepath.Join(tasksDir, filename), []byte(content), 0644)
+}
+
+// ApplyVars replaces {{KEY}} placeholders in tmpl with values from opts.Vars
+// and built-in variables (ID, TITLE, PRIORITY, DESCRIPTION).
+// User-provided variables take precedence over builtins.
+func ApplyVars(tmpl string, opts AddTaskOpts) string {
+	result := tmpl
+
+	// Build merged variable map: user vars override builtins
+	vars := map[string]string{
+		"ID":          opts.ID,
+		"TITLE":       opts.Title,
+		"PRIORITY":    opts.Priority,
+		"DESCRIPTION": opts.Description,
+		"SOURCE_TASK_ID": opts.SourceTaskID,
+	}
+	for key, val := range opts.Vars {
+		vars[key] = val
+	}
+
+	for key, val := range vars {
+		result = strings.ReplaceAll(result, "{{"+key+"}}", val)
+	}
+
+	return result
+}
+
+// buildTaskMarkdown generates task markdown from scratch (non-template mode).
+func buildTaskMarkdown(opts AddTaskOpts) string {
 	var buf strings.Builder
 
 	// Frontmatter
@@ -141,7 +215,7 @@ func CreateTaskMarkdown(tasksDir string, filename string, opts AddTaskOpts) erro
 		buf.WriteString("## Description\n\n_TBD_\n")
 	}
 
-	return os.WriteFile(filepath.Join(tasksDir, filename), []byte(buf.String()), 0644)
+	return buf.String()
 }
 
 // generateDiscID generates the next available disc-N ID using gap-filling.
@@ -160,4 +234,68 @@ func generateDiscID(index *TaskIndex) string {
 			return fmt.Sprintf("disc-%d", i)
 		}
 	}
+}
+
+// AddDependency adds depID to the specified task's Dependencies in the index.
+// If depID is already listed, this is a no-op.
+func AddDependency(indexPath string, taskID string, depID string) error {
+	index, err := LoadIndex(indexPath)
+	if err != nil {
+		return fmt.Errorf("load index: %w", err)
+	}
+
+	t, ok := index.Tasks[taskID]
+	if !ok {
+		return fmt.Errorf("task not found: %s", taskID)
+	}
+
+	if slices.Contains(t.Dependencies, depID) {
+		return nil
+	}
+
+	t.Dependencies = append(t.Dependencies, depID)
+	index.Tasks[taskID] = t
+
+	return SaveIndex(indexPath, index)
+}
+
+// GetUnmetDependencies returns the list of dependency IDs that are not "completed" or "skipped".
+// Missing task IDs are treated as unmet.
+func GetUnmetDependencies(indexPath string, taskID string) ([]string, error) {
+	index, err := LoadIndex(indexPath)
+	if err != nil {
+		return nil, fmt.Errorf("load index: %w", err)
+	}
+
+	t, ok := index.Tasks[taskID]
+	if !ok {
+		return nil, fmt.Errorf("task not found: %s", taskID)
+	}
+
+	var unmet []string
+	for _, dep := range t.Dependencies {
+		if strings.HasSuffix(dep, ".x") {
+			prefix := strings.TrimSuffix(dep, ".x")
+			prefixWithDot := prefix + "."
+			for _, other := range index.Tasks {
+				if other.ID == t.ID {
+					continue
+				}
+				if strings.HasPrefix(other.ID, prefixWithDot) && isBusinessTaskID(other.ID) && other.Status != "completed" && other.Status != "skipped" {
+					unmet = append(unmet, other.ID)
+				}
+			}
+			continue
+		}
+		depTask, found := index.Tasks[dep]
+		if !found || (depTask.Status != "completed" && depTask.Status != "skipped") {
+			unmet = append(unmet, dep)
+		}
+	}
+	return unmet, nil
+}
+
+// isBusinessTaskID returns true for task IDs that are not gate or summary tasks.
+func isBusinessTaskID(id string) bool {
+	return !strings.HasSuffix(id, ".gate") && !strings.HasSuffix(id, ".summary")
 }

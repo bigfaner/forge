@@ -107,8 +107,8 @@ func ErrTaskNotFound(taskID string) *AIError {
 		ErrNotFound,
 		fmt.Sprintf("Task not found: %s", taskID),
 		"The task ID does not exist in index.json",
-		"Verify the task ID is correct. Check available tasks with: task query",
-		"task query --status pending",
+		"Verify the task ID is correct. Check available tasks with: task check",
+		"task check",
 	)
 }
 
@@ -152,7 +152,7 @@ func ErrNoPendingTasks() *AIError {
 		"No pending tasks available",
 		"All tasks are either in_progress or completed, or no tasks defined",
 		"Add new tasks to docs/features/<slug>/tasks/index.json",
-		"task query --status pending",
+		"task check",
 	)
 }
 
@@ -267,6 +267,6 @@ func ErrInvalidDependency(deps []string) *AIError {
 		fmt.Sprintf("Dependency not found: %s", strings.Join(deps, ", ")),
 		"Referenced task IDs do not exist in index.json",
 		"Check that dependency IDs are correct",
-		"task query  # list all tasks",
+		"task check",
 	)
 }

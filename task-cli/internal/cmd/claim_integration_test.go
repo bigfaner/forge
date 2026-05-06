@@ -169,6 +169,7 @@ func TestPrintTaskDetails(t *testing.T) {
 				"STATUS: in_progress",
 				"FILE: " + filepath.Join(testRoot, feature.GetTaskFile(testFeature, "1.1.md")),
 				"RECORD: " + filepath.Join(testRoot, feature.GetTaskFile(testFeature, "records/1.1.md")),
+			"FEATURE: test-feature",
 			},
 		},
 		{

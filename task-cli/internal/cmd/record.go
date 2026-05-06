@@ -152,6 +152,12 @@ func runRecord(cmd *cobra.Command, args []string) {
 	// Update task status in index
 	t.Status = rd.Status
 	index.Tasks[key] = *t
+
+	// Auto-restore: if this task has a SourceTaskID and completed or skipped, check if source can be unblocked
+	if t.SourceTaskID != "" && (rd.Status == "completed" || rd.Status == "skipped") {
+		autoRestoreSourceTask(index, t.SourceTaskID)
+	}
+
 	saveIndexAndSignalCompletion(indexPath, projectRoot, featureSlug, index)
 
 	if recordJSON {
@@ -190,6 +196,24 @@ func saveIndexAndSignalCompletion(indexPath, projectRoot, featureSlug string, in
 			fmt.Fprintf(os.Stderr, "WARNING: failed to write forge state: %v\n", err)
 		}
 	}
+}
+
+// autoRestoreSourceTask checks if a blocked source task can be unblocked.
+// If the source is blocked and ALL its dependencies are completed or skipped, restores it to pending.
+func autoRestoreSourceTask(index *task.TaskIndex, sourceTaskID string) {
+	srcTask, found := index.Tasks[sourceTaskID]
+	if !found || srcTask.Status != "blocked" {
+		return
+	}
+
+	unmet := checkUnmetDeps(index, &srcTask)
+	if len(unmet) > 0 {
+		return
+	}
+
+	srcTask.Status = "pending"
+	index.Tasks[sourceTaskID] = srcTask
+	fmt.Fprintf(os.Stderr, "AUTO-RESTORE: source task %s restored to pending (all deps completed or skipped)\n", sourceTaskID)
 }
 
 func findTask(index *task.TaskIndex, taskID string) (string, *task.Task, error) {
