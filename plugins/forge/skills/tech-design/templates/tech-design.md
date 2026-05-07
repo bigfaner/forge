@@ -37,15 +37,30 @@ methodName(param1: Type, param2: Type): ReturnType
 
 ## Data Models
 
-### Model 1: <!-- Name -->
+<!-- CONDITIONAL: Choose ONE format based on db-schema value.
+     Delete this comment, the unused format, and UNWRAP the chosen format
+     (remove its surrounding <!-- --> delimiters) so it renders as visible content. -->
 
-<!-- Every field must have name, type, and constraint. No prose-only descriptions. -->
-```
+<!-- DB-Schema: yes — USE THIS FORMAT (delete the "no" block, then unwrap this block):
+> Full database design in separate files.
+
+**ER Diagram**: design/er-diagram.md
+**SQL Schema**: design/schema.sql
+
+### Field Quick Reference
+| Model | Key Fields | Notes |
+|-------|------------|-------|
+| ModelName | field1, field2 | brief note |
+-->
+
+<!-- DB-Schema: no — USE THIS FORMAT (delete the "yes" block, then unwrap this block):
+
+### Model 1: Name
+
 ModelName = {
     fieldName: Type       // constraint or note
-    fieldName: Type       // constraint or note
 }
-```
+-->
 
 ## Error Handling
 

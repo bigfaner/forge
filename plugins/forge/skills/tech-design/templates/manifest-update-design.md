@@ -5,6 +5,8 @@
 Add rows:
 | Tech Design | design/tech-design.md | {{TECH_DESIGN_SUMMARY}} |
 | API Handbook | design/api-handbook.md | {{API_HANDBOOK_SUMMARY}} |
+| ER Diagram | design/er-diagram.md | {{ER_DIAGRAM_SUMMARY}} |  <!-- only when db-schema="yes" -->
+| SQL Schema | design/schema.sql | {{SCHEMA_SQL_SUMMARY}} |    <!-- only when db-schema="yes" -->
 
 ## Traceability (updated)
 

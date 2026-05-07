@@ -135,6 +135,8 @@ Present incrementally, getting approval after each section:
 
 Use `templates/prd-spec.md` template.
 
+**db-schema determination**: Assess whether the feature involves creating or modifying database tables. If yes → `db-schema: "yes"`. If no → `db-schema: "no"`. When unsure, default to `"yes"` — unnecessary DB design costs less than missing DB design.
+
 **Directory structure:**
 
 ```
@@ -206,6 +208,7 @@ Before presenting to the user, verify the PRD passes these checks:
 | Placement consistency | existing-page routes exist in sitemap.json (if sitemap available) |
 | Sitemap availability | If sitemap.json not found, warn: "Sitemap unavailable — existing-page routes cannot be validated. Run /gen-sitemap." |
 | Page Composition valid | Page Composition table lists all pages with correct UI Function references |
+| db-schema filled | db-schema frontmatter is "yes" or "no" (not empty) |
 
 ## Step 10: Review & Commit
 

@@ -9,4 +9,5 @@
 9、增加一个eval-test-cases skill
 10、task record命令检查验收标准是否完成？
 11、调整eval-prd的评分比重，用户故事提到高30分。
-12、改造tech-design skill：涉及到数据库表设计或变更时，需要输出到独立的E—R图文档和SQL文件，并必须得到人类的同意后，才可以继续。
+12、改造tech-design skill：涉及到数据库表设计或变更时，需要输出到独立的E—R图文档和SQL文件，并必须得到人类的同意后，才可以继续。doing
+13、init-justfile通过参数指定语言、项目类型，适应项目初始时什么都没有的场景。
