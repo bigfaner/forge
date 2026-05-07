@@ -651,6 +651,125 @@ func TestAddTask_SourceTaskID_LookupByID(t *testing.T) {
 	}
 }
 
+// TestAddTask_SourceTaskID_LookupByID_PreservesExistingDeps verifies that appending
+// a new dep by-ID lookup does not clobber the source task's existing dependencies.
+func TestAddTask_SourceTaskID_LookupByID_PreservesExistingDeps(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// Give the source task an existing dependency before the add
+	index, _ := LoadIndex(indexPath)
+	src := index.Tasks["1.1-init"]
+	src.Dependencies = []string{"some-other-task"}
+	index.Tasks["1.1-init"] = src
+	SaveIndex(indexPath, index)
+
+	id, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix auth",
+		Priority:     "P0",
+		SourceTaskID: "1.1", // task ID, map key is "1.1-init"
+	})
+	if err != nil {
+		t.Fatalf("AddTask failed: %v", err)
+	}
+
+	index, _ = LoadIndex(indexPath)
+	srcTask := index.Tasks["1.1-init"]
+	if !containsSlice(srcTask.Dependencies, "some-other-task") {
+		t.Errorf("existing dep 'some-other-task' was lost, got %v", srcTask.Dependencies)
+	}
+	if !containsSlice(srcTask.Dependencies, id) {
+		t.Errorf("new dep %s missing, got %v", id, srcTask.Dependencies)
+	}
+}
+
+// TestAddTask_SourceTaskID_DynamicTaskWhereKeyEqualsID verifies lookup works
+// for dynamically added tasks where the map key equals the task ID.
+func TestAddTask_SourceTaskID_DynamicTaskWhereKeyEqualsID(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// First add a disc task (key == ID)
+	firstID, _ := AddTask(indexPath, AddTaskOpts{
+		Title:    "Disc task",
+		Priority: "P1",
+	})
+
+	// Now add another task with SourceTaskID pointing to the disc task
+	secondID, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix for disc",
+		Priority:     "P0",
+		SourceTaskID: firstID, // disc-1: key == ID
+	})
+	if err != nil {
+		t.Fatalf("AddTask failed: %v", err)
+	}
+
+	index, _ := LoadIndex(indexPath)
+	srcTask := index.Tasks[firstID]
+	if !containsSlice(srcTask.Dependencies, secondID) {
+		t.Errorf("disc task should have %s as dependency, got %v", secondID, srcTask.Dependencies)
+	}
+}
+
+// TestAddTask_SourceTaskID_MultipleAddsToSameSourceByID verifies that multiple
+// tasks added with the same SourceTaskID (by ID) all appear as dependencies.
+func TestAddTask_SourceTaskID_MultipleAddsToSameSourceByID(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	id1, _ := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix A",
+		SourceTaskID: "1.1", // ID, not key
+	})
+	id2, _ := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix B",
+		SourceTaskID: "1.1",
+	})
+	id3, _ := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix C",
+		SourceTaskID: "1.1",
+	})
+
+	index, _ := LoadIndex(indexPath)
+	srcTask := index.Tasks["1.1-init"]
+	for _, id := range []string{id1, id2, id3} {
+		if !containsSlice(srcTask.Dependencies, id) {
+			t.Errorf("source missing dep %s, got %v", id, srcTask.Dependencies)
+		}
+	}
+	if len(srcTask.Dependencies) != 3 {
+		t.Errorf("expected 3 deps, got %d: %v", len(srcTask.Dependencies), srcTask.Dependencies)
+	}
+}
+
+// TestAddTask_SourceTaskID_LookupByID_SourceNotFoundIsNoOp verifies that passing
+// a nonexistent ID does not error and does not corrupt the index.
+func TestAddTask_SourceTaskID_LookupByID_SourceNotFoundIsNoOp(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	indexBefore, _ := LoadIndex(indexPath)
+	taskCountBefore := len(indexBefore.Tasks)
+
+	_, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Orphan fix",
+		Priority:     "P0",
+		SourceTaskID: "9.9-nonexistent", // no such ID or key
+	})
+	if err != nil {
+		t.Fatalf("AddTask should succeed even for missing source, got: %v", err)
+	}
+
+	index, _ := LoadIndex(indexPath)
+	if len(index.Tasks) != taskCountBefore+1 {
+		t.Errorf("expected %d tasks, got %d", taskCountBefore+1, len(index.Tasks))
+	}
+	// Original tasks unchanged
+	for key, before := range indexBefore.Tasks {
+		after := index.Tasks[key]
+		if len(after.Dependencies) != len(before.Dependencies) {
+			t.Errorf("task %s deps changed unexpectedly: before=%v after=%v", key, before.Dependencies, after.Dependencies)
+		}
+	}
+}
+
 func TestGetUnmetDependencies_Wildcard(t *testing.T) {
 	indexPath, _ := newTestIndex(t)
 

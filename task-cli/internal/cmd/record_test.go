@@ -894,3 +894,93 @@ func TestAutoRestoreSourceTask_WildcardDeps(t *testing.T) {
 		}
 	})
 }
+
+func TestAutoRestoreSourceTask_KeyDiffersFromID(t *testing.T) {
+	t.Run("restores blocked source by ID when key is slug", func(t *testing.T) {
+		index := &task.TaskIndex{
+			Feature: "test",
+			Tasks: map[string]task.Task{
+				"run-e2e-tests": {ID: "T-test-3", Status: "blocked", Dependencies: []string{"fix-1"}},
+				"fix-1":         {ID: "fix-1", Status: "completed", SourceTaskID: "T-test-3"},
+			},
+		}
+
+		autoRestoreSourceTask(index, "T-test-3")
+
+		if index.Tasks["run-e2e-tests"].Status != "pending" {
+			t.Errorf("expected pending, got %s", index.Tasks["run-e2e-tests"].Status)
+		}
+	})
+
+	t.Run("no-op when source not found by ID", func(t *testing.T) {
+		index := &task.TaskIndex{
+			Feature: "test",
+			Tasks: map[string]task.Task{
+				"run-e2e-tests": {ID: "T-test-3", Status: "blocked", Dependencies: []string{"fix-1"}},
+				"fix-1":         {ID: "fix-1", Status: "completed"},
+			},
+		}
+
+		autoRestoreSourceTask(index, "nonexistent-id")
+		if index.Tasks["run-e2e-tests"].Status != "blocked" {
+			t.Errorf("should stay blocked, got %s", index.Tasks["run-e2e-tests"].Status)
+		}
+	})
+
+	t.Run("stays blocked when some deps incomplete (slug-keyed source)", func(t *testing.T) {
+		index := &task.TaskIndex{
+			Feature: "test",
+			Tasks: map[string]task.Task{
+				"run-e2e-tests": {ID: "T-test-3", Status: "blocked", Dependencies: []string{"fix-1", "fix-2"}},
+				"fix-1":         {ID: "fix-1", Status: "completed"},
+				"fix-2":         {ID: "fix-2", Status: "pending"},
+			},
+		}
+
+		autoRestoreSourceTask(index, "T-test-3")
+
+		if index.Tasks["run-e2e-tests"].Status != "blocked" {
+			t.Errorf("should stay blocked with incomplete deps, got %s", index.Tasks["run-e2e-tests"].Status)
+		}
+	})
+
+	t.Run("restores by key when key equals ID (dynamic task)", func(t *testing.T) {
+		index := &task.TaskIndex{
+			Feature: "test",
+			Tasks: map[string]task.Task{
+				"disc-1": {ID: "disc-1", Status: "blocked", Dependencies: []string{"fix-1"}},
+				"fix-1":  {ID: "fix-1", Status: "completed"},
+			},
+		}
+
+		autoRestoreSourceTask(index, "disc-1")
+
+		if index.Tasks["disc-1"].Status != "pending" {
+			t.Errorf("expected pending, got %s", index.Tasks["disc-1"].Status)
+		}
+	})
+
+	t.Run("write-back uses correct slug key, does not create duplicate entry", func(t *testing.T) {
+		index := &task.TaskIndex{
+			Feature: "test",
+			Tasks: map[string]task.Task{
+				"run-e2e-tests": {ID: "T-test-3", Status: "blocked", Dependencies: []string{"fix-1"}},
+				"fix-1":         {ID: "fix-1", Status: "completed"},
+			},
+		}
+
+		autoRestoreSourceTask(index, "T-test-3")
+
+		_, hasSlugKey := index.Tasks["run-e2e-tests"]
+		_, hasIDKey := index.Tasks["T-test-3"]
+		if !hasSlugKey {
+			t.Error("slug key 'run-e2e-tests' was lost after restore")
+		}
+		if hasIDKey {
+			t.Error("should not create duplicate entry under ID key 'T-test-3'")
+		}
+		if index.Tasks["run-e2e-tests"].Status != "pending" {
+			t.Errorf("expected pending, got %s", index.Tasks["run-e2e-tests"].Status)
+		}
+	})
+}
