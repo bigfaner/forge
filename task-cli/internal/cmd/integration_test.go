@@ -1488,8 +1488,8 @@ func TestRunValidate_NoProjectRoot(t *testing.T) {
 	if err == nil {
 		t.Error("expected non-zero exit for no project root")
 	}
-	if !strings.Contains(string(output), "NO_FEATURE") {
-		t.Errorf("expected NO_FEATURE error, got: %s", string(output))
+	if !strings.Contains(string(output), "NO_PROJECT") {
+		t.Errorf("expected NO_PROJECT error, got: %s", string(output))
 	}
 }
 
@@ -1577,8 +1577,8 @@ func TestRunCheck_NoProjectRoot(t *testing.T) {
 	if err == nil {
 		t.Error("expected non-zero exit for no project root")
 	}
-	if !strings.Contains(string(output), "NO_FEATURE") {
-		t.Errorf("expected NO_FEATURE error, got: %s", string(output))
+	if !strings.Contains(string(output), "NO_PROJECT") {
+		t.Errorf("expected NO_PROJECT error, got: %s", string(output))
 	}
 }
 
