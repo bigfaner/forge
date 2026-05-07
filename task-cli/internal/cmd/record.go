@@ -200,19 +200,20 @@ func saveIndexAndSignalCompletion(indexPath, projectRoot, featureSlug string, in
 
 // autoRestoreSourceTask checks if a blocked source task can be unblocked.
 // If the source is blocked and ALL its dependencies are completed or skipped, restores it to pending.
+// Root cause: must lookup by ID (iterate), not by direct map key, because map keys are slugs.
 func autoRestoreSourceTask(index *task.TaskIndex, sourceTaskID string) {
-	srcTask, found := index.Tasks[sourceTaskID]
-	if !found || srcTask.Status != "blocked" {
+	srcKey, srcTask, err := findTask(index, sourceTaskID)
+	if err != nil || srcTask.Status != "blocked" {
 		return
 	}
 
-	unmet := checkUnmetDeps(index, &srcTask)
+	unmet := checkUnmetDeps(index, srcTask)
 	if len(unmet) > 0 {
 		return
 	}
 
 	srcTask.Status = "pending"
-	index.Tasks[sourceTaskID] = srcTask
+	index.Tasks[srcKey] = *srcTask
 	fmt.Fprintf(os.Stderr, "AUTO-RESTORE: source task %s restored to pending (all deps completed or skipped)\n", sourceTaskID)
 }
 

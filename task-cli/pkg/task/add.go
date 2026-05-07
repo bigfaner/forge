@@ -116,12 +116,15 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 	}
 
 	// SourceTaskID: add this task as dependency of the source task (in-memory, before single save)
+	// Root cause: must iterate by ID or key, not use direct map access with ID, because map keys are slugs
 	if opts.SourceTaskID != "" {
-		srcTask, found := index.Tasks[opts.SourceTaskID]
-		if found {
-			if !slices.Contains(srcTask.Dependencies, opts.ID) {
-				srcTask.Dependencies = append(srcTask.Dependencies, opts.ID)
-				index.Tasks[opts.SourceTaskID] = srcTask
+		for key, t := range index.Tasks {
+			if t.ID == opts.SourceTaskID || key == opts.SourceTaskID {
+				if !slices.Contains(t.Dependencies, opts.ID) {
+					t.Dependencies = append(t.Dependencies, opts.ID)
+					index.Tasks[key] = t
+				}
+				break
 			}
 		}
 	}

@@ -627,6 +627,30 @@ func TestAddTask_SourceTaskID_IdempotentDep(t *testing.T) {
 	}
 }
 
+// TestAddTask_SourceTaskID_LookupByID verifies that SourceTaskID lookup works
+// when the source task's key differs from its ID (e.g. key="1.1-init", id="1.1").
+// This is the core bug: index.Tasks[opts.SourceTaskID] fails when SourceTaskID is
+// the task ID but the map key is a slug.
+func TestAddTask_SourceTaskID_LookupByID(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// SourceTaskID uses the task ID "1.1", but the map key is "1.1-init"
+	id, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix auth",
+		Priority:     "P0",
+		SourceTaskID: "1.1", // task ID, not map key
+	})
+	if err != nil {
+		t.Fatalf("AddTask failed: %v", err)
+	}
+
+	index, _ := LoadIndex(indexPath)
+	srcTask := index.Tasks["1.1-init"]
+	if !containsSlice(srcTask.Dependencies, id) {
+		t.Errorf("source task should have %s as dependency (looked up by ID), got deps %v", id, srcTask.Dependencies)
+	}
+}
+
 func TestGetUnmetDependencies_Wildcard(t *testing.T) {
 	indexPath, _ := newTestIndex(t)
 
