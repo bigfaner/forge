@@ -51,7 +51,10 @@ func TestAddTask_Basic(t *testing.T) {
 		t.Errorf("expected disc-1, got %s", id)
 	}
 
-	index, _ := LoadIndex(indexPath)
+	index, err := LoadIndex(indexPath)
+	if err != nil {
+		t.Fatalf("setup: LoadIndex failed: %v", err)
+	}
 	task := index.Tasks["disc-1"]
 	if task.Title != "Fix auth timeout" {
 		t.Errorf("expected title 'Fix auth timeout', got %s", task.Title)
@@ -98,8 +101,12 @@ func TestAddTask_AutoGenerateID(t *testing.T) {
 func TestAddTask_AutoGenerateID_Sequential(t *testing.T) {
 	indexPath, _ := newTestIndex(t)
 
-	AddTask(indexPath, AddTaskOpts{Title: "Disc 1"})
-	AddTask(indexPath, AddTaskOpts{Title: "Disc 2"})
+	if _, err := AddTask(indexPath, AddTaskOpts{Title: "Disc 1"}); err != nil {
+		t.Fatalf("setup: AddTask failed: %v", err)
+	}
+	if _, err := AddTask(indexPath, AddTaskOpts{Title: "Disc 2"}); err != nil {
+		t.Fatalf("setup: AddTask failed: %v", err)
+	}
 
 	id, err := AddTask(indexPath, AddTaskOpts{Title: "Disc 3"})
 	if err != nil {
@@ -113,8 +120,12 @@ func TestAddTask_AutoGenerateID_Sequential(t *testing.T) {
 func TestAddTask_AutoGenerateID_GapFill(t *testing.T) {
 	indexPath, _ := newTestIndex(t)
 
-	AddTask(indexPath, AddTaskOpts{Title: "Disc 1", ID: "disc-1"})
-	AddTask(indexPath, AddTaskOpts{Title: "Disc 3", ID: "disc-3"})
+	if _, err := AddTask(indexPath, AddTaskOpts{Title: "Disc 1", ID: "disc-1"}); err != nil {
+		t.Fatalf("setup: AddTask failed: %v", err)
+	}
+	if _, err := AddTask(indexPath, AddTaskOpts{Title: "Disc 3", ID: "disc-3"}); err != nil {
+		t.Fatalf("setup: AddTask failed: %v", err)
+	}
 
 	id, err := AddTask(indexPath, AddTaskOpts{Title: "Fill gap"})
 	if err != nil {
@@ -155,8 +166,14 @@ func TestAddTask_EmptyTitle(t *testing.T) {
 func TestAddTask_DefaultPriority(t *testing.T) {
 	indexPath, _ := newTestIndex(t)
 
-	id, _ := AddTask(indexPath, AddTaskOpts{Title: "Default prio"})
-	index, _ := LoadIndex(indexPath)
+	id, err := AddTask(indexPath, AddTaskOpts{Title: "Default prio"})
+	if err != nil {
+		t.Fatalf("setup: AddTask failed: %v", err)
+	}
+	index, err := LoadIndex(indexPath)
+	if err != nil {
+		t.Fatalf("setup: LoadIndex failed: %v", err)
+	}
 	task := index.Tasks[id]
 	if task.Priority != "P1" {
 		t.Errorf("expected default P1, got %s", task.Priority)
@@ -185,7 +202,10 @@ func TestAddTask_DependenciesExist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("AddTask failed: %v", err)
 	}
-	index, _ := LoadIndex(indexPath)
+	index, err := LoadIndex(indexPath)
+	if err != nil {
+		t.Fatalf("setup: LoadIndex failed: %v", err)
+	}
 	task := index.Tasks[id]
 	if len(task.Dependencies) != 1 || task.Dependencies[0] != "1.1" {
 		t.Errorf("expected deps [1.1], got %v", task.Dependencies)
@@ -195,8 +215,14 @@ func TestAddTask_DependenciesExist(t *testing.T) {
 func TestAddTask_Breaking(t *testing.T) {
 	indexPath, _ := newTestIndex(t)
 
-	id, _ := AddTask(indexPath, AddTaskOpts{Title: "Breaking task", Breaking: true})
-	index, _ := LoadIndex(indexPath)
+	id, err := AddTask(indexPath, AddTaskOpts{Title: "Breaking task", Breaking: true})
+	if err != nil {
+		t.Fatalf("setup: AddTask failed: %v", err)
+	}
+	index, err := LoadIndex(indexPath)
+	if err != nil {
+		t.Fatalf("setup: LoadIndex failed: %v", err)
+	}
 	task := index.Tasks[id]
 	if !task.Breaking {
 		t.Error("expected breaking=true")
@@ -243,7 +269,10 @@ func TestCreateTaskMarkdown_WithBody(t *testing.T) {
 		t.Fatalf("CreateTaskMarkdown failed: %v", err)
 	}
 
-	data, _ := os.ReadFile(filepath.Join(dir, "disc-1.md"))
+	data, err := os.ReadFile(filepath.Join(dir, "disc-1.md"))
+	if err != nil {
+		t.Fatalf("setup: read file failed: %v", err)
+	}
 	content := string(data)
 	if !contains(content, "## Steps") {
 		t.Errorf("missing description body: %s", content)
@@ -259,8 +288,13 @@ func TestCreateTaskMarkdown_WithDependencies(t *testing.T) {
 		Dependencies: []string{"1.1", "1.2"},
 	}
 
-	CreateTaskMarkdown(dir, "disc-1.md", opts)
-	data, _ := os.ReadFile(filepath.Join(dir, "disc-1.md"))
+	if err := CreateTaskMarkdown(dir, "disc-1.md", opts); err != nil {
+		t.Fatalf("setup: CreateTaskMarkdown failed: %v", err)
+	}
+	data, err := os.ReadFile(filepath.Join(dir, "disc-1.md"))
+	if err != nil {
+		t.Fatalf("setup: read file failed: %v", err)
+	}
 	content := string(data)
 	if !contains(content, `"1.1"`) || !contains(content, `"1.2"`) {
 		t.Errorf("missing dependencies: %s", content)
@@ -276,8 +310,13 @@ func TestCreateTaskMarkdown_Breaking(t *testing.T) {
 		Breaking: true,
 	}
 
-	CreateTaskMarkdown(dir, "disc-1.md", opts)
-	data, _ := os.ReadFile(filepath.Join(dir, "disc-1.md"))
+	if err := CreateTaskMarkdown(dir, "disc-1.md", opts); err != nil {
+		t.Fatalf("setup: CreateTaskMarkdown failed: %v", err)
+	}
+	data, err := os.ReadFile(filepath.Join(dir, "disc-1.md"))
+	if err != nil {
+		t.Fatalf("setup: read file failed: %v", err)
+	}
 	content := string(data)
 	if !contains(content, "breaking: true") {
 		t.Errorf("missing breaking: %s", content)
@@ -445,7 +484,10 @@ func TestAddDependency(t *testing.T) {
 		t.Fatalf("AddDependency failed: %v", err)
 	}
 
-	index, _ := LoadIndex(indexPath)
+	index, err := LoadIndex(indexPath)
+	if err != nil {
+		t.Fatalf("setup: LoadIndex failed: %v", err)
+	}
 	task := index.Tasks["1.2-setup"]
 	if !containsSlice(task.Dependencies, "disc-1") {
 		t.Errorf("expected disc-1 in dependencies, got %v", task.Dependencies)
@@ -455,13 +497,18 @@ func TestAddDependency(t *testing.T) {
 func TestAddDependency_Duplicate(t *testing.T) {
 	indexPath, _ := newTestIndex(t)
 
-	AddDependency(indexPath, "1.2-setup", "disc-1")
+	if err := AddDependency(indexPath, "1.2-setup", "disc-1"); err != nil {
+		t.Fatalf("setup: AddDependency failed: %v", err)
+	}
 	err := AddDependency(indexPath, "1.2-setup", "disc-1")
 	if err != nil {
 		t.Errorf("duplicate AddDependency should be no-op, got: %v", err)
 	}
 
-	index, _ := LoadIndex(indexPath)
+	index, err := LoadIndex(indexPath)
+	if err != nil {
+		t.Fatalf("setup: LoadIndex failed: %v", err)
+	}
 	task := index.Tasks["1.2-setup"]
 	count := 0
 	for _, d := range task.Dependencies {
@@ -486,8 +533,12 @@ func TestGetUnmetDependencies(t *testing.T) {
 	indexPath, _ := newTestIndex(t)
 
 	// 1.1 is completed, 1.2 is pending — depend on both
-	AddTask(indexPath, AddTaskOpts{Title: "Fix", ID: "fix-1"})
-	AddDependency(indexPath, "1.2-setup", "fix-1")
+	if _, err := AddTask(indexPath, AddTaskOpts{Title: "Fix", ID: "fix-1"}); err != nil {
+		t.Fatalf("setup: AddTask failed: %v", err)
+	}
+	if err := AddDependency(indexPath, "1.2-setup", "fix-1"); err != nil {
+		t.Fatalf("setup: AddDependency failed: %v", err)
+	}
 
 	unmet, err := GetUnmetDependencies(indexPath, "1.2-setup")
 	if err != nil {
@@ -499,11 +550,16 @@ func TestGetUnmetDependencies(t *testing.T) {
 	}
 
 	// Complete fix-1
-	index, _ := LoadIndex(indexPath)
+	index, err := LoadIndex(indexPath)
+	if err != nil {
+		t.Fatalf("setup: LoadIndex failed: %v", err)
+	}
 	fixTask := index.Tasks["fix-1"]
 	fixTask.Status = "completed"
 	index.Tasks["fix-1"] = fixTask
-	SaveIndex(indexPath, index)
+	if err := SaveIndex(indexPath, index); err != nil {
+		t.Fatalf("setup: SaveIndex failed: %v", err)
+	}
 
 	unmet2, _ := GetUnmetDependencies(indexPath, "1.2-setup")
 	if containsSlice(unmet2, "fix-1") {
@@ -545,7 +601,10 @@ func TestAddTask_SourceTaskID_Persisted(t *testing.T) {
 		t.Fatalf("AddTask failed: %v", err)
 	}
 
-	index, _ := LoadIndex(indexPath)
+	index, err := LoadIndex(indexPath)
+	if err != nil {
+		t.Fatalf("setup: LoadIndex failed: %v", err)
+	}
 	task := index.Tasks[id]
 	if task.SourceTaskID != "1.1-init" {
 		t.Errorf("expected sourceTaskID '1.1-init', got %q", task.SourceTaskID)
@@ -564,7 +623,10 @@ func TestAddTask_SourceTaskID_UpdatesSourceDeps(t *testing.T) {
 		t.Fatalf("AddTask failed: %v", err)
 	}
 
-	index, _ := LoadIndex(indexPath)
+	index, err := LoadIndex(indexPath)
+	if err != nil {
+		t.Fatalf("setup: LoadIndex failed: %v", err)
+	}
 	srcTask := index.Tasks["1.1-init"]
 	if !containsSlice(srcTask.Dependencies, id) {
 		t.Errorf("source task should have %s as dependency, got %v", id, srcTask.Dependencies)
@@ -583,7 +645,10 @@ func TestAddTask_SourceTaskID_SourceNotFound(t *testing.T) {
 		t.Fatalf("AddTask should succeed even if source not found, got: %v", err)
 	}
 
-	index, _ := LoadIndex(indexPath)
+	index, err := LoadIndex(indexPath)
+	if err != nil {
+		t.Fatalf("setup: LoadIndex failed: %v", err)
+	}
 	task := index.Tasks[id]
 	if task.SourceTaskID != "nonexistent" {
 		t.Errorf("SourceTaskID should still be persisted, got %q", task.SourceTaskID)
@@ -593,17 +658,26 @@ func TestAddTask_SourceTaskID_SourceNotFound(t *testing.T) {
 func TestAddTask_SourceTaskID_IdempotentDep(t *testing.T) {
 	indexPath, _ := newTestIndex(t)
 
-	id1, _ := AddTask(indexPath, AddTaskOpts{
+	id1, err := AddTask(indexPath, AddTaskOpts{
 		Title:        "Fix 1",
 		SourceTaskID: "1.1-init",
 	})
+	if err != nil {
+		t.Fatalf("setup: AddTask failed: %v", err)
+	}
 	// Add again with same source — source dep should not duplicate
-	id2, _ := AddTask(indexPath, AddTaskOpts{
+	id2, err := AddTask(indexPath, AddTaskOpts{
 		Title:        "Fix 2",
 		SourceTaskID: "1.1-init",
 	})
+	if err != nil {
+		t.Fatalf("setup: AddTask failed: %v", err)
+	}
 
-	index, _ := LoadIndex(indexPath)
+	index, err := LoadIndex(indexPath)
+	if err != nil {
+		t.Fatalf("setup: LoadIndex failed: %v", err)
+	}
 	srcTask := index.Tasks["1.1-init"]
 	count := 0
 	for _, d := range srcTask.Dependencies {
@@ -774,10 +848,14 @@ func TestGetUnmetDependencies_Wildcard(t *testing.T) {
 	indexPath, _ := newTestIndex(t)
 
 	// Add wildcard dep to 1.2-setup
-	AddDependency(indexPath, "1.2-setup", "0.x")
+	if err := AddDependency(indexPath, "1.2-setup", "0.x"); err != nil {
+		t.Fatalf("setup: AddDependency failed: %v", err)
+	}
 
 	// Add a phase-0 task that's pending
-	AddTask(indexPath, AddTaskOpts{Title: "Phase 0 task", ID: "0.1", Status: "pending"})
+	if _, err := AddTask(indexPath, AddTaskOpts{Title: "Phase 0 task", ID: "0.1", Status: "pending"}); err != nil {
+		t.Fatalf("setup: AddTask failed: %v", err)
+	}
 
 	unmet, err := GetUnmetDependencies(indexPath, "1.2-setup")
 	if err != nil {
@@ -799,7 +877,9 @@ func TestGetUnmetDependencies_WildcardAllCompleted(t *testing.T) {
 	indexPath, _ := newTestIndex(t)
 
 	// 1.1 is completed. 1.2 matches wildcard but is the task itself — self-excluded.
-	AddDependency(indexPath, "1.2-setup", "1.x")
+	if err := AddDependency(indexPath, "1.2-setup", "1.x"); err != nil {
+		t.Fatalf("setup: AddDependency failed: %v", err)
+	}
 
 	unmet, err := GetUnmetDependencies(indexPath, "1.2-setup")
 	if err != nil {
