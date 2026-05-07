@@ -41,7 +41,7 @@ func runQuery(cmd *cobra.Command, args []string) {
 		Exit(ErrFileNotFound(indexPath))
 	}
 
-	key, t, err := findTask(index, taskIDArg)
+	key, t, err := task.FindTask(index, taskIDArg)
 	if err != nil {
 		Exit(ErrTaskNotFound(taskIDArg))
 	}

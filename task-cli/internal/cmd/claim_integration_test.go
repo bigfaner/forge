@@ -313,7 +313,7 @@ func TestClaimCommand_Integration(t *testing.T) {
 		}
 
 		// Test findTask
-		key, gotTask, err := findTask(index, "1.1")
+		key, gotTask, err := task.FindTask(index, "1.1")
 		if err != nil {
 			t.Fatalf("findTask error: %v", err)
 		}

@@ -52,10 +52,8 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 	}
 
 	// Validate ID uniqueness
-	for key, t := range index.Tasks {
-		if t.ID == opts.ID || key == opts.ID {
-			return "", fmt.Errorf("task ID already exists: %s", opts.ID)
-		}
+	if _, exists := index.ByID(opts.ID); exists {
+		return "", fmt.Errorf("task ID already exists: %s", opts.ID)
 	}
 
 	// Validate priority
@@ -79,14 +77,7 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 				return "", fmt.Errorf("wildcard dependency %q matches no business tasks", dep)
 			}
 		} else {
-			found := false
-			for _, t := range index.Tasks {
-				if t.ID == dep {
-					found = true
-					break
-				}
-			}
-			if !found {
+			if _, exists := index.ByID(dep); !exists {
 				return "", fmt.Errorf("dependency not found: %s", dep)
 			}
 		}
@@ -109,19 +100,13 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 		SourceTaskID:  opts.SourceTaskID,
 	}
 
-	// SourceTaskID: add this task as dependency of the source task (in-memory, before single save)
-	// Root cause: must iterate by ID or key, not use direct map access with ID, because map keys are slugs
-	if opts.SourceTaskID != "" {
-		for key, t := range index.Tasks {
-			if t.ID == opts.SourceTaskID || key == opts.SourceTaskID {
-				if !slices.Contains(t.Dependencies, opts.ID) {
-					t.Dependencies = append(t.Dependencies, opts.ID)
-					index.Tasks[key] = t
-				}
-				break
+		if opts.SourceTaskID != "" {
+			srcKey, srcTask, err := FindTask(index, opts.SourceTaskID)
+			if err == nil && !slices.Contains(srcTask.Dependencies, opts.ID) {
+				srcTask.Dependencies = append(srcTask.Dependencies, opts.ID)
+				index.Tasks[srcKey] = *srcTask
 			}
 		}
-	}
 
 	if err := SaveIndex(indexPath, index); err != nil {
 		return "", fmt.Errorf("save index: %w", err)
@@ -241,16 +226,8 @@ func AddDependency(indexPath string, taskID string, depID string) error {
 		return fmt.Errorf("load index: %w", err)
 	}
 
-	var taskKey string
-	var foundTask Task
-	for key, t := range index.Tasks {
-		if t.ID == taskID || key == taskID {
-			taskKey = key
-			foundTask = t
-			break
-		}
-	}
-	if taskKey == "" {
+	taskKey, foundTask, err := FindTask(index, taskID)
+	if err != nil {
 		return fmt.Errorf("task not found: %s", taskID)
 	}
 
@@ -259,7 +236,7 @@ func AddDependency(indexPath string, taskID string, depID string) error {
 	}
 
 	foundTask.Dependencies = append(foundTask.Dependencies, depID)
-	index.Tasks[taskKey] = foundTask
+	index.Tasks[taskKey] = *foundTask
 
 	return SaveIndex(indexPath, index)
 }
@@ -272,16 +249,8 @@ func GetUnmetDependencies(indexPath string, taskID string) ([]string, error) {
 		return nil, fmt.Errorf("load index: %w", err)
 	}
 
-	var taskKey string
-	var foundTask Task
-	for k, t := range index.Tasks {
-		if t.ID == taskID || k == taskID {
-			taskKey = k
-			foundTask = t
-			break
-		}
-	}
-	if taskKey == "" {
+	_, foundTask, err := FindTask(index, taskID)
+	if err != nil {
 		return nil, fmt.Errorf("task not found: %s", taskID)
 	}
 
@@ -300,17 +269,9 @@ func GetUnmetDependencies(indexPath string, taskID string) ([]string, error) {
 			}
 			continue
 		}
-		var depFound bool
-		for _, other := range index.Tasks {
-			if other.ID == dep {
-				depFound = true
-				if other.Status != "completed" && other.Status != "skipped" {
-					unmet = append(unmet, dep)
-				}
-				break
-			}
-		}
-		if !depFound {
+		if depTask, exists := index.ByID(dep); !exists {
+			unmet = append(unmet, dep)
+		} else if depTask.Status != "completed" && depTask.Status != "skipped" {
 			unmet = append(unmet, dep)
 		}
 	}

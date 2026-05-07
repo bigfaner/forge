@@ -33,16 +33,30 @@ func SaveIndex(path string, index *TaskIndex) error {
 	return nil
 }
 
-// FindTask finds a task by ID or key.
-func FindTask(index *TaskIndex, idOrKey string) (string, *Task, error) {
-	// Try exact key match first
-	if task, ok := index.Tasks[idOrKey]; ok {
-		return idOrKey, &task, nil
+// ByID returns the task matching the given ID or map key.
+// Returns (Task, false) if not found.
+func (ti *TaskIndex) ByID(id string) (Task, bool) {
+	if t, ok := ti.Tasks[id]; ok {
+		return t, true
 	}
-	// Try ID match
-	for key, task := range index.Tasks {
-		if task.ID == idOrKey {
-			return key, &task, nil
+	for _, t := range ti.Tasks {
+		if t.ID == id {
+			return t, true
+		}
+	}
+	return Task{}, false
+}
+
+// FindTask finds a task by ID or key and returns the map key for write-back.
+func FindTask(index *TaskIndex, idOrKey string) (string, *Task, error) {
+	if t, ok := index.ByID(idOrKey); ok {
+		if _, direct := index.Tasks[idOrKey]; direct {
+			return idOrKey, &t, nil
+		}
+		for key, task := range index.Tasks {
+			if task.ID == idOrKey {
+				return key, &t, nil
+			}
 		}
 	}
 	return "", nil, fmt.Errorf("task not found: %s", idOrKey)

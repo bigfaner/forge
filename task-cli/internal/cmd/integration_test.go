@@ -739,7 +739,7 @@ func TestFindTaskByKey(t *testing.T) {
 		},
 	}
 
-	key, t2, err := findTask(index, "task1")
+	key, t2, err := task.FindTask(index, "task1")
 	if err != nil {
 		t.Fatal(err)
 	}

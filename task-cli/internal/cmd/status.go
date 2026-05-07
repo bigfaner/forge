@@ -54,7 +54,7 @@ func runStatus(cmd *cobra.Command, args []string) {
 		Exit(ErrFileNotFound(indexPath))
 	}
 
-	key, t, err := findTask(index, taskIDArg)
+	key, t, err := task.FindTask(index, taskIDArg)
 	if err != nil {
 		Exit(ErrTaskNotFound(taskIDArg))
 	}
@@ -178,7 +178,7 @@ func checkUnmetDeps(index *task.TaskIndex, t *task.Task) []string {
 				continue
 			}
 		} else {
-			_, depTask, err := findTask(index, dep)
+			_, depTask, err := task.FindTask(index, dep)
 			if err != nil || (depTask.Status != "completed" && depTask.Status != "skipped") {
 				unmet = append(unmet, dep)
 			}

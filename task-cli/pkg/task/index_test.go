@@ -89,24 +89,83 @@ func TestSaveIndex(t *testing.T) {
 	})
 }
 
+func TestByID(t *testing.T) {
+	index := &TaskIndex{
+		Feature: "test-feature",
+		Tasks: map[string]Task{
+			"task1":    {ID: "1.1", Title: "Task 1", Status: "pending"},
+			"run-e2e":  {ID: "T-test-3", Title: "Run e2e", Status: "pending"},
+			"disc-1":   {ID: "disc-1", Title: "Discovery", Status: "pending"},
+		},
+	}
+
+	t.Run("key equals ID", func(t *testing.T) {
+		got, ok := index.ByID("disc-1")
+		if !ok {
+			t.Fatal("ByID() returned false")
+		}
+		if got.Title != "Discovery" {
+			t.Errorf("Title = %q, want %q", got.Title, "Discovery")
+		}
+	})
+
+	t.Run("key differs from ID, lookup by ID", func(t *testing.T) {
+		got, ok := index.ByID("T-test-3")
+		if !ok {
+			t.Fatal("ByID() returned false")
+		}
+		if got.Title != "Run e2e" {
+			t.Errorf("Title = %q, want %q", got.Title, "Run e2e")
+		}
+	})
+
+	t.Run("key differs from ID, lookup by key", func(t *testing.T) {
+		got, ok := index.ByID("run-e2e")
+		if !ok {
+			t.Fatal("ByID() returned false")
+		}
+		if got.ID != "T-test-3" {
+			t.Errorf("ID = %q, want %q", got.ID, "T-test-3")
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		_, ok := index.ByID("nonexistent")
+		if ok {
+			t.Error("ByID() should return false for nonexistent ID")
+		}
+	})
+
+	t.Run("empty index", func(t *testing.T) {
+		empty := &TaskIndex{Tasks: map[string]Task{}}
+		_, ok := empty.ByID("anything")
+		if ok {
+			t.Error("ByID() should return false in empty index")
+		}
+	})
+}
+
 func TestFindTask(t *testing.T) {
 	index := &TaskIndex{
 		Feature: "test-feature",
 		Tasks: map[string]Task{
-			"task1": {ID: "1.1", Title: "Task 1", Status: "pending"},
-			"task2": {ID: "1.2", Title: "Task 2", Status: "pending"},
+			"task1":   {ID: "1.1", Title: "Task 1", Status: "pending"},
+			"task2":   {ID: "1.2", Title: "Task 2", Status: "pending"},
+			"run-e2e": {ID: "T-test-3", Title: "Run e2e", Status: "pending"},
 		},
 	}
 
 	tests := []struct {
-		name      string
-		idOrKey   string
-		wantKey   string
-		wantID    string
-		wantErr   bool
+		name    string
+		idOrKey string
+		wantKey string
+		wantID  string
+		wantErr bool
 	}{
-		{"find by key", "task1", "task1", "1.1", false},
+		{"find by key (key==ID)", "task1", "task1", "1.1", false},
 		{"find by ID", "1.2", "task2", "1.2", false},
+		{"find by ID when key differs", "T-test-3", "run-e2e", "T-test-3", false},
+		{"find by key when key differs from ID", "run-e2e", "run-e2e", "T-test-3", false},
 		{"not found", "nonexistent", "", "", true},
 	}
 

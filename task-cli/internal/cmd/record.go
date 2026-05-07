@@ -87,7 +87,7 @@ func runRecord(cmd *cobra.Command, args []string) {
 		Exit(ErrFileNotFound(indexPath))
 	}
 
-	key, t, err := findTask(index, taskIDArg)
+	key, t, err := task.FindTask(index, taskIDArg)
 	if err != nil {
 		Exit(ErrTaskNotFound(taskIDArg))
 	}
@@ -202,7 +202,7 @@ func saveIndexAndSignalCompletion(indexPath, projectRoot, featureSlug string, in
 // If the source is blocked and ALL its dependencies are completed or skipped, restores it to pending.
 // Root cause: must lookup by ID (iterate), not by direct map key, because map keys are slugs.
 func autoRestoreSourceTask(index *task.TaskIndex, sourceTaskID string) {
-	srcKey, srcTask, err := findTask(index, sourceTaskID)
+	srcKey, srcTask, err := task.FindTask(index, sourceTaskID)
 	if err != nil || srcTask.Status != "blocked" {
 		return
 	}
@@ -217,14 +217,6 @@ func autoRestoreSourceTask(index *task.TaskIndex, sourceTaskID string) {
 	fmt.Fprintf(os.Stderr, "AUTO-RESTORE: source task %s restored to pending (all deps completed or skipped)\n", sourceTaskID)
 }
 
-func findTask(index *task.TaskIndex, taskID string) (string, *task.Task, error) {
-	for key, t := range index.Tasks {
-		if t.ID == taskID || key == taskID {
-			return key, &t, nil
-		}
-	}
-	return "", nil, fmt.Errorf("task not found: %s", taskID)
-}
 
 func readRecordData(dataPath string) (*task.RecordData, error) {
 	var data []byte
