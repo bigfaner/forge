@@ -825,20 +825,22 @@ func TestFindRootInfoFrom_VCSDetected(t *testing.T) {
 }
 
 func TestFindRootInfoFrom_NoMarkersInTree(t *testing.T) {
-	t.Run("returns ancestor marker when temp dir has none", func(t *testing.T) {
-		tempDir := t.TempDir()
-		// On this system, C:\Users\panda has package.json,
-		// so FindRootInfoFrom should find it as an ancestor project marker
-		info, err := FindRootInfoFrom(tempDir)
+	t.Run("finds marker from ancestor directory", func(t *testing.T) {
+		// Create a marker in a parent, then query from a nested child
+		parentDir := t.TempDir()
+		os.WriteFile(filepath.Join(parentDir, "go.mod"), []byte("module test\n"), 0644)
+		childDir := filepath.Join(parentDir, "sub", "deep")
+		os.MkdirAll(childDir, 0755)
+
+		info, err := FindRootInfoFrom(childDir)
 		if err != nil {
 			t.Fatalf("FindRootInfoFrom() error = %v", err)
 		}
-		// Should find something walking up the tree
-		if info.Path == "" {
-			t.Error("FindRootInfoFrom() should find ancestor markers")
+		if info.Path != parentDir {
+			t.Errorf("expected %s, got %s", parentDir, info.Path)
 		}
-		if info.Type == RootTypeUnknown {
-			t.Error("FindRootInfoFrom() should detect a real marker type from ancestors")
+		if info.Type != RootTypeProject {
+			t.Errorf("expected RootTypeProject, got %v", info.Type)
 		}
 	})
 }

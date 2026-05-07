@@ -2041,10 +2041,10 @@ func TestRunAllCompleted_NotAllDone(t *testing.T) {
 }
 
 func TestRunRecord_AutoRestore_SlugKeyedSource(t *testing.T) {
-	dir := setupFullProject(t, map[string]task.Task{
+	dir := setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 		"run-e2e": {ID: "T-test-3", Title: "Run e2e tests", Status: "blocked", Priority: "P0", File: "T-test-3.md", Record: "records/T-test-3.md", Dependencies: []string{"fix-auth"}},
 		"fix-auth": {ID: "fix-auth", Title: "Fix auth", Status: "in_progress", Priority: "P0", File: "fix-auth.md", Record: "records/fix-auth.md", SourceTaskID: "T-test-3"},
-	})
+	}})
 
 	rd := task.RecordData{
 		Status:       "completed",
