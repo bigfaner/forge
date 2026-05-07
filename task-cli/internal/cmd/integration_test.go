@@ -13,35 +13,63 @@ import (
 	"task-cli/pkg/task"
 )
 
-// setupFullProject creates a project with go.mod, feature dir, index, task files, and chdirs.
-func setupFullProject(t *testing.T, tasks map[string]task.Task) (dir string) {
+// SetupOpts configures the test project created by setupFullProject.
+type SetupOpts struct {
+	// Tasks is the task map to write into index.json (required).
+	Tasks map[string]task.Task
+	// State, if non-nil, creates a task-state.json in the process directory.
+	State *task.TaskState
+	// UseEnvVar, when true, sets CLAUDE_PROJECT_DIR instead of using go.mod+chdir+SetFeature.
+	UseEnvVar bool
+	// FeatureName defaults to "test" if empty.
+	FeatureName string
+}
+
+// setupFullProject creates a fully configured test project.
+//
+// By default (UseEnvVar=false) it creates go.mod, feature dirs, index.json,
+// task markdown files, records dir, then chdirs and calls feature.SetFeature.
+//
+// When UseEnvVar=true it instead sets CLAUDE_PROJECT_DIR (no go.mod, no chdir),
+// suitable for tests that call project.FindProjectRoot via env-var path.
+func setupFullProject(t *testing.T, opts SetupOpts) (dir string) {
 	t.Helper()
 	dir = t.TempDir()
 
-	// go.mod marks project root
-	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n\ngo 1.21\n"), 0644); err != nil {
-		t.Fatal(err)
+	featureName := opts.FeatureName
+	if featureName == "" {
+		featureName = "test"
 	}
-	if err := feature.EnsureFeatureDir(dir, "test"); err != nil {
+
+	if opts.UseEnvVar {
+		t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	} else {
+		// go.mod marks project root
+		if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n\ngo 1.21\n"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if err := feature.EnsureFeatureDir(dir, featureName); err != nil {
 		t.Fatal(err)
 	}
 
-	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
+	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile(featureName))
 	index := &task.TaskIndex{
-		Feature:      "test",
+		Feature:      featureName,
 		PRD:          "prd/prd-spec.md",
 		Design:       "design/tech-design.md",
 		StatusEnum:   []string{"pending", "in_progress", "completed", "blocked", "skipped"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
-		Tasks:        tasks,
+		Tasks:        opts.Tasks,
 	}
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create task markdown files
-	tasksDir := filepath.Join(dir, feature.GetFeatureTasksDir("test"))
-	for _, t2 := range tasks {
+	tasksDir := filepath.Join(dir, feature.GetFeatureTasksDir(featureName))
+	for _, t2 := range opts.Tasks {
 		if t2.File != "" {
 			if err := os.WriteFile(filepath.Join(tasksDir, t2.File), []byte("# "+t2.Title), 0644); err != nil {
 				t.Fatal(err)
@@ -54,16 +82,26 @@ func setupFullProject(t *testing.T, tasks map[string]task.Task) (dir string) {
 		t.Fatal(err)
 	}
 
-	// Set working dir
-	origWd, _ := os.Getwd()
-	t.Cleanup(func() { os.Chdir(origWd) })
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
+	// Optionally create task state file
+	if opts.State != nil {
+		statePath := feature.GetTaskStatePath(dir, featureName)
+		if err := task.SaveState(statePath, opts.State); err != nil {
+			t.Fatalf("SaveState failed: %v", err)
+		}
 	}
 
-	// Set feature
-	if err := feature.SetFeature(dir, "test"); err != nil {
-		t.Fatal(err)
+	if !opts.UseEnvVar {
+		// Set working dir
+		origWd, _ := os.Getwd()
+		t.Cleanup(func() { os.Chdir(origWd) })
+		if err := os.Chdir(dir); err != nil {
+			t.Fatal(err)
+		}
+
+		// Set feature
+		if err := feature.SetFeature(dir, featureName); err != nil {
+			t.Fatal(err)
+		}
 	}
 	return dir
 }
@@ -71,9 +109,9 @@ func setupFullProject(t *testing.T, tasks map[string]task.Task) (dir string) {
 // ---------- verifyTaskCompletion ----------
 
 func TestVerifyTaskCompletion_HappyPath(t *testing.T) {
-	setupFullProject(t, map[string]task.Task{
+	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 		"t1": {ID: "1.1", Title: "T1", Status: "completed", File: "1.1.md", Record: "records/1.1.md"},
-	})
+	}})
 
 	// Write record file
 	dir, _ := os.Getwd()
@@ -91,9 +129,9 @@ func TestVerifyTaskCompletion_HappyPath(t *testing.T) {
 }
 
 func TestVerifyTaskCompletion_TaskNotCompleted(t *testing.T) {
-	setupFullProject(t, map[string]task.Task{
+	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 		"t1": {ID: "1.1", Title: "T1", Status: "in_progress", File: "1.1.md", Record: "records/1.1.md"},
-	})
+	}})
 
 	dir, _ := os.Getwd()
 	statePath := feature.GetTaskStatePath(dir, "test")
@@ -109,9 +147,9 @@ func TestVerifyTaskCompletion_TaskNotCompleted(t *testing.T) {
 }
 
 func TestVerifyTaskCompletion_RecordFileMissing(t *testing.T) {
-	setupFullProject(t, map[string]task.Task{
+	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 		"t1": {ID: "1.1", Title: "T1", Status: "completed", File: "1.1.md", Record: "records/1.1.md"},
-	})
+	}})
 
 	dir, _ := os.Getwd()
 	statePath := feature.GetTaskStatePath(dir, "test")
@@ -155,9 +193,9 @@ func TestVerifyTaskCompletion_NoFeature(t *testing.T) {
 }
 
 func TestVerifyTaskCompletion_NoState(t *testing.T) {
-	setupFullProject(t, map[string]task.Task{
+	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 		"t1": {ID: "1.1", Title: "T1", Status: "completed"},
-	})
+	}})
 
 	err := verifyTaskCompletion()
 	if err != nil {
@@ -166,9 +204,9 @@ func TestVerifyTaskCompletion_NoState(t *testing.T) {
 }
 
 func TestVerifyTaskCompletion_TaskNotFoundInIndex(t *testing.T) {
-	setupFullProject(t, map[string]task.Task{
+	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 		"t1": {ID: "1.1", Title: "T1", Status: "completed"},
-	})
+	}})
 
 	dir, _ := os.Getwd()
 	statePath := feature.GetTaskStatePath(dir, "test")
@@ -184,9 +222,9 @@ func TestVerifyTaskCompletion_TaskNotFoundInIndex(t *testing.T) {
 }
 
 func TestVerifyTaskCompletion_NoRecordField(t *testing.T) {
-	setupFullProject(t, map[string]task.Task{
+	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 		"t1": {ID: "1.1", Title: "T1", Status: "completed", File: "1.1.md"},
-	})
+	}})
 
 	dir, _ := os.Getwd()
 	statePath := feature.GetTaskStatePath(dir, "test")
@@ -202,9 +240,9 @@ func TestVerifyTaskCompletion_NoRecordField(t *testing.T) {
 // ---------- cleanupCompletedTaskState ----------
 
 func TestCleanupCompletedTaskState_Completed(t *testing.T) {
-	setupFullProject(t, map[string]task.Task{
+	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 		"t1": {ID: "1.1", Title: "T1", Status: "completed", File: "1.1.md", Record: "records/1.1.md"},
-	})
+	}})
 
 	dir, _ := os.Getwd()
 	statePath := feature.GetTaskStatePath(dir, "test")
@@ -226,9 +264,9 @@ func TestCleanupCompletedTaskState_Completed(t *testing.T) {
 }
 
 func TestCleanupCompletedTaskState_InProgress(t *testing.T) {
-	setupFullProject(t, map[string]task.Task{
+	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 		"t1": {ID: "1.1", Title: "T1", Status: "in_progress", File: "1.1.md"},
-	})
+	}})
 
 	dir, _ := os.Getwd()
 	statePath := feature.GetTaskStatePath(dir, "test")
@@ -242,9 +280,9 @@ func TestCleanupCompletedTaskState_InProgress(t *testing.T) {
 }
 
 func TestCleanupCompletedTaskState_NoState(t *testing.T) {
-	setupFullProject(t, map[string]task.Task{
+	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 		"t1": {ID: "1.1", Title: "T1", Status: "completed"},
-	})
+	}})
 
 	// No state file — should not panic
 	cleanupCompletedTaskState()
@@ -261,9 +299,9 @@ func TestCleanupCompletedTaskState_NoProject(t *testing.T) {
 }
 
 func TestCleanupCompletedTaskState_TaskKeyNotFound(t *testing.T) {
-	setupFullProject(t, map[string]task.Task{
+	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 		"t1": {ID: "1.1", Title: "T1", Status: "completed"},
-	})
+	}})
 
 	dir, _ := os.Getwd()
 	statePath := feature.GetTaskStatePath(dir, "test")
@@ -281,9 +319,9 @@ func TestCleanupCompletedTaskState_TaskKeyNotFound(t *testing.T) {
 // ---------- runRecord integration ----------
 
 func TestRunRecord_HappyPath(t *testing.T) {
-	setupFullProject(t, map[string]task.Task{
+	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 		"t1": {ID: "1.1", Title: "Task One", Status: "in_progress", Priority: "P0", File: "1.1.md", Record: "records/1.1.md"},
-	})
+	}})
 
 	dir, _ := os.Getwd()
 
@@ -331,9 +369,9 @@ func TestRunRecord_HappyPath(t *testing.T) {
 }
 
 func TestRunRecord_JSONOutput(t *testing.T) {
-	setupFullProject(t, map[string]task.Task{
+	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 		"t1": {ID: "1.1", Title: "Task One", Status: "in_progress", Priority: "P0", File: "1.1.md", Record: "records/1.1.md"},
-	})
+	}})
 
 	dir, _ := os.Getwd()
 
@@ -371,9 +409,9 @@ func TestRunRecord_JSONOutput(t *testing.T) {
 }
 
 func TestRunRecord_QuietOutput(t *testing.T) {
-	setupFullProject(t, map[string]task.Task{
+	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 		"t1": {ID: "1.1", Title: "Task One", Status: "in_progress", Priority: "P0", File: "1.1.md", Record: "records/1.1.md"},
-	})
+	}})
 
 	dir, _ := os.Getwd()
 
@@ -410,9 +448,9 @@ func TestRunRecord_QuietOutput(t *testing.T) {
 // ---------- executeClaim error paths ----------
 
 func TestExecuteClaim_DataIntegrityError(t *testing.T) {
-	setupFullProject(t, map[string]task.Task{
+	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 		"t1": {ID: "1.1", Title: "T1", Status: "completed", Priority: "P0", File: "1.1.md", Record: "records/1.1.md"},
-	})
+	}})
 
 	dir, _ := os.Getwd()
 	// Create state pointing to a key that doesn't exist in index
@@ -429,10 +467,10 @@ func TestExecuteClaim_DataIntegrityError(t *testing.T) {
 }
 
 func TestExecuteClaim_CompletedStateClaimNew(t *testing.T) {
-	setupFullProject(t, map[string]task.Task{
+	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 		"t1": {ID: "1.1", Title: "T1", Status: "completed", Priority: "P0", File: "1.1.md"},
 		"t2": {ID: "1.2", Title: "T2", Status: "pending", Priority: "P0", File: "1.2.md", Record: "records/1.2.md"},
-	})
+	}})
 
 	dir, _ := os.Getwd()
 	statePath := feature.GetTaskStatePath(dir, "test")
@@ -451,9 +489,9 @@ func TestExecuteClaim_CompletedStateClaimNew(t *testing.T) {
 }
 
 func TestExecuteClaim_UnexpectedStatus(t *testing.T) {
-	setupFullProject(t, map[string]task.Task{
+	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 		"t1": {ID: "1.1", Title: "T1", Status: "blocked", Priority: "P0", File: "1.1.md"},
-	})
+	}})
 
 	dir, _ := os.Getwd()
 	statePath := feature.GetTaskStatePath(dir, "test")
@@ -812,9 +850,9 @@ func TestPrintTaskDetails_Breaking(t *testing.T) {
 // ---------- runStatus update mode ----------
 
 func TestRunStatus_Update(t *testing.T) {
-	setupFullProject(t, map[string]task.Task{
+	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 		"t1": {ID: "1.1", Title: "Status Task", Status: "pending", Priority: "P0", File: "1.1.md", Record: "records/1.1.md", Dependencies: []string{}},
-	})
+	}})
 
 	out := captureStdout(func() {
 		runStatus(nil, []string{"1.1", "blocked"})
@@ -882,9 +920,9 @@ func TestExecuteClaim_SaveIndexError(t *testing.T) {
 // ---------- runClaim output paths ----------
 
 func TestRunClaim_Output(t *testing.T) {
-	setupFullProject(t, map[string]task.Task{
+	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 		"t1": {ID: "1.1", Title: "Claim Task", Status: "pending", Priority: "P0", File: "1.1.md", Record: "records/1.1.md"},
-	})
+	}})
 
 	out := captureStdout(func() {
 		runClaim(nil, []string{})
@@ -901,10 +939,10 @@ func TestRunClaim_Output(t *testing.T) {
 // ---------- runCheck integration (valid deps, exits 0 via PrintResult) ----------
 
 func TestRunCheck_AllValid(t *testing.T) {
-	setupFullProject(t, map[string]task.Task{
+	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 		"t0": {ID: "1.0", Title: "T0", Status: "completed", Dependencies: []string{}},
 		"t1": {ID: "1.1", Title: "T1", Status: "pending", Dependencies: []string{"1.0"}},
-	})
+	}})
 
 	out := captureStdout(func() {
 		captureStderr2(func() {
@@ -992,9 +1030,9 @@ func TestSaveIndexAndSignalCompletion_AllDone(t *testing.T) {
 // ---------- runValidate no-args (feature-based path) ----------
 
 func TestRunValidate_NoArgs(t *testing.T) {
-	setupFullProject(t, map[string]task.Task{
+	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 		"t1": {ID: "1.1", Title: "T1", Status: "pending", Priority: "P0", File: "1.1.md", Dependencies: []string{}},
-	})
+	}})
 
 	out := captureStdout(func() {
 		runValidate(nil, []string{})
@@ -1007,10 +1045,10 @@ func TestRunValidate_NoArgs(t *testing.T) {
 // ---------- runCheck with wildcard ----------
 
 func TestRunCheck_WildcardMatch(t *testing.T) {
-	setupFullProject(t, map[string]task.Task{
+	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 		"t0": {ID: "1.0", Title: "T0", Status: "completed", Dependencies: []string{}},
 		"t1": {ID: "1.1", Title: "T1", Status: "pending", Dependencies: []string{"1.x"}},
-	})
+	}})
 
 	out := captureStdout(func() {
 		captureStderr2(func() {
@@ -1070,9 +1108,9 @@ func TestCheckExistingTaskState_LoadFail(t *testing.T) {
 // ---------- runRecord with blocked status ----------
 
 func TestRunRecord_BlockedStatus(t *testing.T) {
-	setupFullProject(t, map[string]task.Task{
+	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 		"t1": {ID: "1.1", Title: "Task One", Status: "in_progress", Priority: "P0", File: "1.1.md", Record: "records/1.1.md"},
-	})
+	}})
 
 	dir, _ := os.Getwd()
 
@@ -1644,9 +1682,9 @@ func TestRunCheck_IndexFileNotFound(t *testing.T) {
 // ---------- runCheck with invalid deps ----------
 
 func TestRunCheck_InvalidDeps(t *testing.T) {
-	setupFullProject(t, map[string]task.Task{
+	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 		"t1": {ID: "1.1", Title: "T1", Status: "pending", Dependencies: []string{"9.9"}},
-	})
+	}})
 
 	if os.Getenv("TEST_RUN_CHECK_INVALID_DEPS") == "1" {
 		runCheck(nil, []string{})
@@ -1885,7 +1923,7 @@ func TestRunAdd_NoProject(t *testing.T) {
 }
 
 func TestRunAdd_Success(t *testing.T) {
-	setupFullProject(t, map[string]task.Task{})
+	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{}})
 
 	if os.Getenv("TEST_RUN_ADD_SUCCESS") == "1" {
 		addTitle = "New Task"
@@ -1908,9 +1946,9 @@ func TestRunAdd_Success(t *testing.T) {
 // ---------- runCleanup ----------
 
 func TestRunCleanup_Success(t *testing.T) {
-	setupFullProject(t, map[string]task.Task{
+	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 		"t1": {ID: "1.1", Title: "T1", Status: "completed", File: "1.1.md", Record: "records/1.1.md"},
-	})
+	}})
 
 	dir, _ := os.Getwd()
 	statePath := feature.GetTaskStatePath(dir, "test")
@@ -1933,9 +1971,9 @@ func TestRunCleanup_Success(t *testing.T) {
 // ---------- runVerifyCompletion ----------
 
 func TestRunVerifyCompletion_Success(t *testing.T) {
-	setupFullProject(t, map[string]task.Task{
+	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 		"t1": {ID: "1.1", Title: "T1", Status: "completed", File: "1.1.md", Record: "records/1.1.md"},
-	})
+	}})
 
 	dir, _ := os.Getwd()
 	_ = os.MkdirAll(filepath.Join(dir, "docs", "features", "test", "tasks", "records"), 0755)
@@ -1958,9 +1996,9 @@ func TestRunVerifyCompletion_Success(t *testing.T) {
 }
 
 func TestRunVerifyCompletion_Fail(t *testing.T) {
-	setupFullProject(t, map[string]task.Task{
+	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 		"t1": {ID: "1.1", Title: "T1", Status: "in_progress", File: "1.1.md"},
-	})
+	}})
 
 	dir, _ := os.Getwd()
 	statePath := feature.GetTaskStatePath(dir, "test")
@@ -1985,9 +2023,9 @@ func TestRunVerifyCompletion_Fail(t *testing.T) {
 // ---------- runAllCompleted ----------
 
 func TestRunAllCompleted_NotAllDone(t *testing.T) {
-	setupFullProject(t, map[string]task.Task{
+	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 		"t1": {ID: "1.1", Title: "T1", Status: "pending", File: "1.1.md"},
-	})
+	}})
 
 	if os.Getenv("TEST_RUN_ALL_COMPLETED_NOT_DONE") == "1" {
 		runAllCompleted(nil, []string{})

@@ -11,45 +11,10 @@ import (
 	"task-cli/pkg/task"
 )
 
-func setupAddTestProject(t *testing.T) string {
-	t.Helper()
-	dir := t.TempDir()
-
-	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n\ngo 1.21\n"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := feature.EnsureFeatureDir(dir, "test"); err != nil {
-		t.Fatal(err)
-	}
-
-	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
-	index := &task.TaskIndex{
-		Feature:      "test",
-		PRD:          "prd/prd-spec.md",
-		Design:       "design/tech-design.md",
-		StatusEnum:   []string{"pending", "in_progress", "completed", "blocked", "skipped"},
-		PriorityEnum: []string{"P0", "P1", "P2"},
-		Tasks: map[string]task.Task{
-			"1.1": {ID: "1.1", Title: "Existing", Priority: "P0", Status: "completed", File: "1.1.md", Record: "records/1.1.md"},
-		},
-	}
-	if err := task.SaveIndex(indexPath, index); err != nil {
-		t.Fatal(err)
-	}
-
-	origWd, _ := os.Getwd()
-	t.Cleanup(func() { os.Chdir(origWd) })
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
-	if err := feature.SetFeature(dir, "test"); err != nil {
-		t.Fatal(err)
-	}
-	return dir
-}
-
 func TestAddCmd_WithTemplateAndVars(t *testing.T) {
-	setupAddTestProject(t)
+	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
+		"1.1": {ID: "1.1", Title: "Existing", Priority: "P0", Status: "completed", File: "1.1.md", Record: "records/1.1.md"},
+	}})
 
 	output, err := captureOutput(func() error {
 		rootCmd.SetArgs([]string{
@@ -155,7 +120,9 @@ func TestAddCmd_VarParsing(t *testing.T) {
 
 func TestAddCmd_UnknownTemplateReturnsError(t *testing.T) {
 	if os.Getenv("TEST_UNKNOWN_TEMPLATE") == "1" {
-		setupAddTestProject(t)
+		setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
+			"1.1": {ID: "1.1", Title: "Existing", Priority: "P0", Status: "completed", File: "1.1.md", Record: "records/1.1.md"},
+		}})
 		rootCmd.SetArgs([]string{
 			"add",
 			"--title", "Fix: test",
