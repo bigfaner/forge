@@ -606,11 +606,11 @@ func TestSaveIndexAndSignalCompletion(t *testing.T) {
 		indexPath := filepath.Join(tasksDir, "index.json")
 		index := &task.TaskIndex{
 			Feature: "test-f",
-			Tasks: map[string]task.Task{
+		}
+			index.SetTasks(map[string]task.Task{
 				"t1": {ID: "1.1", Title: "Done", Status: "completed", Priority: "P0", File: "1.1.md"},
 				"t2": {ID: "1.2", Title: "Skipped", Status: "skipped", Priority: "P1", File: "1.2.md"},
-			},
-		}
+			})
 
 		saveIndexAndSignalCompletion(indexPath, dir, "test-f", index)
 
@@ -639,11 +639,11 @@ func TestSaveIndexAndSignalCompletion(t *testing.T) {
 		indexPath := filepath.Join(tasksDir, "index.json")
 		index := &task.TaskIndex{
 			Feature: "test-f",
-			Tasks: map[string]task.Task{
+		}
+			index.SetTasks(map[string]task.Task{
 				"t1": {ID: "1.1", Title: "Done", Status: "completed", Priority: "P0", File: "1.1.md"},
 				"t2": {ID: "1.2", Title: "Pending", Status: "pending", Priority: "P1", File: "1.2.md"},
-			},
-		}
+			})
 
 		saveIndexAndSignalCompletion(indexPath, dir, "test-f", index)
 
@@ -659,56 +659,55 @@ func TestAutoRestoreSourceTask(t *testing.T) {
 	t.Run("restores blocked source when all deps completed", func(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
-			Tasks: map[string]task.Task{
+		}
+			index.SetTasks(map[string]task.Task{
 				"src":   {ID: "src", Status: "blocked", Dependencies: []string{"fix-1"}},
 				"fix-1": {ID: "fix-1", Status: "completed", SourceTaskID: "src"},
-			},
-		}
+			})
 
 		autoRestoreSourceTask(index, "src")
 
-		if index.Tasks["src"].Status != "pending" {
-			t.Errorf("expected pending, got %s", index.Tasks["src"].Status)
+		if index.TasksMap()["src"].Status != "pending" {
+			t.Errorf("expected pending, got %s", index.TasksMap()["src"].Status)
 		}
 	})
 
 	t.Run("does not restore when some deps incomplete", func(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
-			Tasks: map[string]task.Task{
+		}
+			index.SetTasks(map[string]task.Task{
 				"src":   {ID: "src", Status: "blocked", Dependencies: []string{"fix-1", "fix-2"}},
 				"fix-1": {ID: "fix-1", Status: "completed"},
 				"fix-2": {ID: "fix-2", Status: "pending"},
-			},
-		}
+			})
 
 		autoRestoreSourceTask(index, "src")
 
-		if index.Tasks["src"].Status != "blocked" {
-			t.Errorf("source should stay blocked when deps incomplete, got %s", index.Tasks["src"].Status)
+		if index.TasksMap()["src"].Status != "blocked" {
+			t.Errorf("source should stay blocked when deps incomplete, got %s", index.TasksMap()["src"].Status)
 		}
 	})
 
 	t.Run("no-op when source is not blocked", func(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
-			Tasks: map[string]task.Task{
+		}
+			index.SetTasks(map[string]task.Task{
 				"src":   {ID: "src", Status: "in_progress", Dependencies: []string{"fix-1"}},
 				"fix-1": {ID: "fix-1", Status: "completed"},
-			},
-		}
+			})
 
 		autoRestoreSourceTask(index, "src")
 
-		if index.Tasks["src"].Status != "in_progress" {
-			t.Errorf("source should stay in_progress, got %s", index.Tasks["src"].Status)
+		if index.TasksMap()["src"].Status != "in_progress" {
+			t.Errorf("source should stay in_progress, got %s", index.TasksMap()["src"].Status)
 		}
 	})
 
 	t.Run("no-op when source not found", func(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
-			Tasks:   map[string]task.Task{},
 		}
 
 		autoRestoreSourceTask(index, "nonexistent")
@@ -717,70 +716,70 @@ func TestAutoRestoreSourceTask(t *testing.T) {
 	t.Run("blocked with no deps restores to pending", func(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
-			Tasks: map[string]task.Task{
-				"src": {ID: "src", Status: "blocked"},
-			},
 		}
+			index.SetTasks(map[string]task.Task{
+				"src": {ID: "src", Status: "blocked"},
+			})
 
 		autoRestoreSourceTask(index, "src")
 
-		if index.Tasks["src"].Status != "pending" {
-			t.Errorf("blocked with no deps should restore, got %s", index.Tasks["src"].Status)
+		if index.TasksMap()["src"].Status != "pending" {
+			t.Errorf("blocked with no deps should restore, got %s", index.TasksMap()["src"].Status)
 		}
 	})
 
 	t.Run("nested chain: fix-B restores fix-A only", func(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
-			Tasks: map[string]task.Task{
+		}
+			index.SetTasks(map[string]task.Task{
 				"src":   {ID: "src", Status: "blocked", Dependencies: []string{"fix-A"}},
 				"fix-A": {ID: "fix-A", Status: "blocked", Dependencies: []string{"fix-B"}, SourceTaskID: "src"},
 				"fix-B": {ID: "fix-B", Status: "completed", SourceTaskID: "fix-A"},
-			},
-		}
+			})
 
 		autoRestoreSourceTask(index, "fix-A")
 
-		if index.Tasks["fix-A"].Status != "pending" {
-			t.Errorf("fix-A should be restored to pending, got %s", index.Tasks["fix-A"].Status)
+		if index.TasksMap()["fix-A"].Status != "pending" {
+			t.Errorf("fix-A should be restored to pending, got %s", index.TasksMap()["fix-A"].Status)
 		}
-		if index.Tasks["src"].Status != "blocked" {
-			t.Errorf("src should stay blocked until fix-A completes, got %s", index.Tasks["src"].Status)
+		if index.TasksMap()["src"].Status != "blocked" {
+			t.Errorf("src should stay blocked until fix-A completes, got %s", index.TasksMap()["src"].Status)
 		}
 	})
 
 	t.Run("skipped dep counts as completed (aligned with validate)", func(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
-			Tasks: map[string]task.Task{
+		}
+			index.SetTasks(map[string]task.Task{
 				"src":   {ID: "src", Status: "blocked", Dependencies: []string{"fix-1", "fix-2"}},
 				"fix-1": {ID: "fix-1", Status: "completed"},
 				"fix-2": {ID: "fix-2", Status: "skipped"},
-			},
-		}
+			})
 
 		autoRestoreSourceTask(index, "src")
 
-		if index.Tasks["src"].Status != "pending" {
-			t.Errorf("source should be restored when deps are completed/skipped, got %s", index.Tasks["src"].Status)
+		if index.TasksMap()["src"].Status != "pending" {
+			t.Errorf("source should be restored when deps are completed/skipped, got %s", index.TasksMap()["src"].Status)
 		}
 	})
 	t.Run("skipped fix-task triggers auto-restore", func(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
-			Tasks: map[string]task.Task{
+		}
+			index.SetTasks(map[string]task.Task{
 				"src":   {ID: "src", Status: "blocked", Dependencies: []string{"fix-1"}},
 				"fix-1": {ID: "fix-1", Status: "skipped", SourceTaskID: "src"},
-			},
-		}
+			})
 
 		// Simulate what record.go does: check SourceTaskID with skipped status
-		if index.Tasks["fix-1"].SourceTaskID != "" {
+		if index.TasksMap()["fix-1"].SourceTaskID != "" {
 			autoRestoreSourceTask(index, "src")
 		}
 
-		if index.Tasks["src"].Status != "pending" {
-			t.Errorf("source should be restored when skipped fix-task completes, got %s", index.Tasks["src"].Status)
+		if index.TasksMap()["src"].Status != "pending" {
+			t.Errorf("source should be restored when skipped fix-task completes, got %s", index.TasksMap()["src"].Status)
 		}
 	})
 }
@@ -789,36 +788,36 @@ func TestAutoRestoreSourceTask_WildcardDeps(t *testing.T) {
 	t.Run("restores when wildcard deps all completed", func(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
-			Tasks: map[string]task.Task{
+		}
+			index.SetTasks(map[string]task.Task{
 				"src":   {ID: "src", Status: "blocked", Dependencies: []string{"1.x", "fix-1"}},
 				"1.1":   {ID: "1.1", Status: "completed"},
 				"1.2":   {ID: "1.2", Status: "completed"},
 				"1.gate": {ID: "1.gate", Status: "pending"},
 				"fix-1": {ID: "fix-1", Status: "completed"},
-			},
-		}
+			})
 
 		autoRestoreSourceTask(index, "src")
 
-		if index.Tasks["src"].Status != "pending" {
-			t.Errorf("should restore with wildcard deps all completed, got %s", index.Tasks["src"].Status)
+		if index.TasksMap()["src"].Status != "pending" {
+			t.Errorf("should restore with wildcard deps all completed, got %s", index.TasksMap()["src"].Status)
 		}
 	})
 
 	t.Run("does not restore when wildcard dep has pending task", func(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
-			Tasks: map[string]task.Task{
+		}
+			index.SetTasks(map[string]task.Task{
 				"src":   {ID: "src", Status: "blocked", Dependencies: []string{"1.x"}},
 				"1.1":   {ID: "1.1", Status: "completed"},
 				"1.2":   {ID: "1.2", Status: "pending"},
-			},
-		}
+			})
 
 		autoRestoreSourceTask(index, "src")
 
-		if index.Tasks["src"].Status != "blocked" {
-			t.Errorf("should stay blocked when wildcard dep has pending, got %s", index.Tasks["src"].Status)
+		if index.TasksMap()["src"].Status != "blocked" {
+			t.Errorf("should stay blocked when wildcard dep has pending, got %s", index.TasksMap()["src"].Status)
 		}
 	})
 }
@@ -827,88 +826,88 @@ func TestAutoRestoreSourceTask_KeyDiffersFromID(t *testing.T) {
 	t.Run("restores blocked source by ID when key is slug", func(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
-			Tasks: map[string]task.Task{
+		}
+			index.SetTasks(map[string]task.Task{
 				"run-e2e-tests": {ID: "T-test-3", Status: "blocked", Dependencies: []string{"fix-1"}},
 				"fix-1":         {ID: "fix-1", Status: "completed", SourceTaskID: "T-test-3"},
-			},
-		}
+			})
 
 		autoRestoreSourceTask(index, "T-test-3")
 
-		if index.Tasks["run-e2e-tests"].Status != "pending" {
-			t.Errorf("expected pending, got %s", index.Tasks["run-e2e-tests"].Status)
+		if index.TasksMap()["run-e2e-tests"].Status != "pending" {
+			t.Errorf("expected pending, got %s", index.TasksMap()["run-e2e-tests"].Status)
 		}
 	})
 
 	t.Run("no-op when source not found by ID", func(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
-			Tasks: map[string]task.Task{
+		}
+			index.SetTasks(map[string]task.Task{
 				"run-e2e-tests": {ID: "T-test-3", Status: "blocked", Dependencies: []string{"fix-1"}},
 				"fix-1":         {ID: "fix-1", Status: "completed"},
-			},
-		}
+			})
 
 		autoRestoreSourceTask(index, "nonexistent-id")
-		if index.Tasks["run-e2e-tests"].Status != "blocked" {
-			t.Errorf("should stay blocked, got %s", index.Tasks["run-e2e-tests"].Status)
+		if index.TasksMap()["run-e2e-tests"].Status != "blocked" {
+			t.Errorf("should stay blocked, got %s", index.TasksMap()["run-e2e-tests"].Status)
 		}
 	})
 
 	t.Run("stays blocked when some deps incomplete (slug-keyed source)", func(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
-			Tasks: map[string]task.Task{
+		}
+			index.SetTasks(map[string]task.Task{
 				"run-e2e-tests": {ID: "T-test-3", Status: "blocked", Dependencies: []string{"fix-1", "fix-2"}},
 				"fix-1":         {ID: "fix-1", Status: "completed"},
 				"fix-2":         {ID: "fix-2", Status: "pending"},
-			},
-		}
+			})
 
 		autoRestoreSourceTask(index, "T-test-3")
 
-		if index.Tasks["run-e2e-tests"].Status != "blocked" {
-			t.Errorf("should stay blocked with incomplete deps, got %s", index.Tasks["run-e2e-tests"].Status)
+		if index.TasksMap()["run-e2e-tests"].Status != "blocked" {
+			t.Errorf("should stay blocked with incomplete deps, got %s", index.TasksMap()["run-e2e-tests"].Status)
 		}
 	})
 
 	t.Run("restores by key when key equals ID (dynamic task)", func(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
-			Tasks: map[string]task.Task{
+		}
+			index.SetTasks(map[string]task.Task{
 				"disc-1": {ID: "disc-1", Status: "blocked", Dependencies: []string{"fix-1"}},
 				"fix-1":  {ID: "fix-1", Status: "completed"},
-			},
-		}
+			})
 
 		autoRestoreSourceTask(index, "disc-1")
 
-		if index.Tasks["disc-1"].Status != "pending" {
-			t.Errorf("expected pending, got %s", index.Tasks["disc-1"].Status)
+		if index.TasksMap()["disc-1"].Status != "pending" {
+			t.Errorf("expected pending, got %s", index.TasksMap()["disc-1"].Status)
 		}
 	})
 
 	t.Run("write-back uses correct slug key, does not create duplicate entry", func(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
-			Tasks: map[string]task.Task{
+		}
+			index.SetTasks(map[string]task.Task{
 				"run-e2e-tests": {ID: "T-test-3", Status: "blocked", Dependencies: []string{"fix-1"}},
 				"fix-1":         {ID: "fix-1", Status: "completed"},
-			},
-		}
+			})
 
 		autoRestoreSourceTask(index, "T-test-3")
 
-		_, hasSlugKey := index.Tasks["run-e2e-tests"]
-		_, hasIDKey := index.Tasks["T-test-3"]
+		_, hasSlugKey := index.TasksMap()["run-e2e-tests"]
+		_, hasIDKey := index.TasksMap()["T-test-3"]
 		if !hasSlugKey {
 			t.Error("slug key 'run-e2e-tests' was lost after restore")
 		}
 		if hasIDKey {
 			t.Error("should not create duplicate entry under ID key 'T-test-3'")
 		}
-		if index.Tasks["run-e2e-tests"].Status != "pending" {
-			t.Errorf("expected pending, got %s", index.Tasks["run-e2e-tests"].Status)
+		if index.TasksMap()["run-e2e-tests"].Status != "pending" {
+			t.Errorf("expected pending, got %s", index.TasksMap()["run-e2e-tests"].Status)
 		}
 	})
 }
@@ -917,48 +916,48 @@ func TestAutoRestoreSourceTask_SlugKeyedFullChain(t *testing.T) {
 	t.Run("slug source with slug-keyed deps restores", func(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
-			Tasks: map[string]task.Task{
+		}
+			index.SetTasks(map[string]task.Task{
 				"run-e2e":  {ID: "T-test-3", Status: "blocked", Dependencies: []string{"T-fix-7"}},
 				"fix-auth": {ID: "T-fix-7", Status: "completed"},
-			},
-		}
+			})
 
 		autoRestoreSourceTask(index, "T-test-3")
 
-		if index.Tasks["run-e2e"].Status != "pending" {
-			t.Errorf("should restore with slug-keyed dep completed, got %s", index.Tasks["run-e2e"].Status)
+		if index.TasksMap()["run-e2e"].Status != "pending" {
+			t.Errorf("should restore with slug-keyed dep completed, got %s", index.TasksMap()["run-e2e"].Status)
 		}
 	})
 
 	t.Run("slug source with wildcard deps all completed", func(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
-			Tasks: map[string]task.Task{
+		}
+			index.SetTasks(map[string]task.Task{
 				"run-e2e": {ID: "T-test-3", Status: "blocked", Dependencies: []string{"1.x"}},
 				"1.1":     {ID: "1.1", Status: "completed"},
 				"1.2":     {ID: "1.2", Status: "completed"},
-			},
-		}
+			})
 
 		autoRestoreSourceTask(index, "T-test-3")
 
-		if index.Tasks["run-e2e"].Status != "pending" {
-			t.Errorf("should restore with wildcard all completed, got %s", index.Tasks["run-e2e"].Status)
+		if index.TasksMap()["run-e2e"].Status != "pending" {
+			t.Errorf("should restore with wildcard all completed, got %s", index.TasksMap()["run-e2e"].Status)
 		}
 	})
 
 	t.Run("slug source completed status is no-op", func(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
-			Tasks: map[string]task.Task{
+		}
+			index.SetTasks(map[string]task.Task{
 				"run-e2e":  {ID: "T-test-3", Status: "completed", Dependencies: []string{"T-fix-7"}},
 				"fix-auth": {ID: "T-fix-7", Status: "completed"},
-			},
-		}
+			})
 
 		autoRestoreSourceTask(index, "T-test-3")
 
-		if index.Tasks["run-e2e"].Status != "completed" {
+		if index.TasksMap()["run-e2e"].Status != "completed" {
 			t.Error("completed source should not be changed")
 		}
 	})
@@ -966,14 +965,14 @@ func TestAutoRestoreSourceTask_SlugKeyedFullChain(t *testing.T) {
 	t.Run("slug source skipped status is no-op", func(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
-			Tasks: map[string]task.Task{
-				"run-e2e": {ID: "T-test-3", Status: "skipped", Dependencies: []string{}},
-			},
 		}
+			index.SetTasks(map[string]task.Task{
+				"run-e2e": {ID: "T-test-3", Status: "skipped", Dependencies: []string{}},
+			})
 
 		autoRestoreSourceTask(index, "T-test-3")
 
-		if index.Tasks["run-e2e"].Status != "skipped" {
+		if index.TasksMap()["run-e2e"].Status != "skipped" {
 			t.Error("skipped source should not be changed")
 		}
 	})
@@ -981,54 +980,54 @@ func TestAutoRestoreSourceTask_SlugKeyedFullChain(t *testing.T) {
 	t.Run("slug blocked source with no deps restores", func(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
-			Tasks: map[string]task.Task{
-				"run-e2e": {ID: "T-test-3", Status: "blocked", Dependencies: []string{}},
-			},
 		}
+			index.SetTasks(map[string]task.Task{
+				"run-e2e": {ID: "T-test-3", Status: "blocked", Dependencies: []string{}},
+			})
 
 		autoRestoreSourceTask(index, "T-test-3")
 
-		if index.Tasks["run-e2e"].Status != "pending" {
-			t.Errorf("blocked with no deps should restore, got %s", index.Tasks["run-e2e"].Status)
+		if index.TasksMap()["run-e2e"].Status != "pending" {
+			t.Errorf("blocked with no deps should restore, got %s", index.TasksMap()["run-e2e"].Status)
 		}
 	})
 
 	t.Run("idempotent: second call is no-op for slug-keyed task", func(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
-			Tasks: map[string]task.Task{
+		}
+			index.SetTasks(map[string]task.Task{
 				"run-e2e":  {ID: "T-test-3", Status: "blocked", Dependencies: []string{"T-fix-7"}},
 				"fix-auth": {ID: "T-fix-7", Status: "completed"},
-			},
-		}
+			})
 
 		autoRestoreSourceTask(index, "T-test-3")
 		// Second call: status is now "pending", should be no-op
 		autoRestoreSourceTask(index, "T-test-3")
 
-		if index.Tasks["run-e2e"].Status != "pending" {
-			t.Errorf("should stay pending after second call, got %s", index.Tasks["run-e2e"].Status)
+		if index.TasksMap()["run-e2e"].Status != "pending" {
+			t.Errorf("should stay pending after second call, got %s", index.TasksMap()["run-e2e"].Status)
 		}
 	})
 
 	t.Run("nested chain: both source and fix-A are slug-keyed", func(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
-			Tasks: map[string]task.Task{
+		}
+			index.SetTasks(map[string]task.Task{
 				"run-e2e":  {ID: "T-test-3", Status: "blocked", Dependencies: []string{"T-fix-A"}},
 				"fix-auth": {ID: "T-fix-A", Status: "blocked", Dependencies: []string{"fix-B"}, SourceTaskID: "T-test-3"},
 				"fix-B":    {ID: "fix-B", Status: "completed", SourceTaskID: "T-fix-A"},
-			},
-		}
+			})
 
 		// Restoring fix-A (slug-keyed, has completed dep fix-B)
 		autoRestoreSourceTask(index, "T-fix-A")
 
-		if index.Tasks["fix-auth"].Status != "pending" {
-			t.Errorf("fix-A should be restored, got %s", index.Tasks["fix-auth"].Status)
+		if index.TasksMap()["fix-auth"].Status != "pending" {
+			t.Errorf("fix-A should be restored, got %s", index.TasksMap()["fix-auth"].Status)
 		}
-		if index.Tasks["run-e2e"].Status != "blocked" {
-			t.Errorf("source should stay blocked (fix-A not completed yet), got %s", index.Tasks["run-e2e"].Status)
+		if index.TasksMap()["run-e2e"].Status != "blocked" {
+			t.Errorf("source should stay blocked (fix-A not completed yet), got %s", index.TasksMap()["run-e2e"].Status)
 		}
 	})
 }

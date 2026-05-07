@@ -56,7 +56,7 @@ func cleanupCompletedTaskState() {
 		return
 	}
 
-	t, exists := index.Tasks[state.Key]
+	t, exists := index.ByID(state.Key)
 	if !exists {
 		return
 	}

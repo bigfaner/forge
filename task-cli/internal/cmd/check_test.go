@@ -29,18 +29,18 @@ func TestValidator_IndirectRun(t *testing.T) {
 			Feature: featureSlug,
 			PRD:     "prd/prd-spec.md",
 			Design:  "design/tech-design.md",
-			Tasks: map[string]task.Task{
-				"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md"},
-			},
 		}
+			index.SetTasks(map[string]task.Task{
+				"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md"},
+			})
 		data, _ := encodeIndex(index)
 		os.WriteFile(indexPath, data, 0644)
 
 		v := &validator{filePath: indexPath}
-		v.validateTasks(index.Tasks)
-		v.validateDependencies(index.Tasks)
-		v.validateCircularDeps(index.Tasks)
-		v.validateFilesExist(featureSlug, index.Tasks)
+		v.validateTasks(index.TasksMap())
+		v.validateDependencies(index.TasksMap())
+		v.validateCircularDeps(index.TasksMap())
+		v.validateFilesExist(featureSlug, index.TasksMap())
 
 		if len(v.errors) != 0 {
 			t.Errorf("unexpected errors: %v", v.errors)

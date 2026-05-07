@@ -151,7 +151,7 @@ func runRecord(cmd *cobra.Command, args []string) {
 
 	// Update task status in index
 	t.Status = rd.Status
-	index.Tasks[key] = *t
+	index.SetTask(key, *t)
 
 	// Auto-restore: if this task has a SourceTaskID and completed or skipped, check if source can be unblocked
 	if t.SourceTaskID != "" && (rd.Status == "completed" || rd.Status == "skipped") {
@@ -185,7 +185,7 @@ func saveIndexAndSignalCompletion(indexPath, projectRoot, featureSlug string, in
 	}
 
 	allDone := true
-	for _, t := range index.Tasks {
+	for _, t := range index.TasksMap() {
 		if t.Status != feature.StatusCompleted && t.Status != feature.StatusSkipped {
 			allDone = false
 			break
@@ -213,7 +213,7 @@ func autoRestoreSourceTask(index *task.TaskIndex, sourceTaskID string) {
 	}
 
 	srcTask.Status = "pending"
-	index.Tasks[srcKey] = *srcTask
+	index.SetTask(srcKey, *srcTask)
 	fmt.Fprintf(os.Stderr, "AUTO-RESTORE: source task %s restored to pending (all deps completed or skipped)\n", sourceTaskID)
 }
 

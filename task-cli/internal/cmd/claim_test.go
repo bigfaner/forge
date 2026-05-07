@@ -13,14 +13,14 @@ import (
 func TestClaimNextTask(t *testing.T) {
 	index := &task.TaskIndex{
 
-		Tasks: map[string]task.Task{
-			"task1": {ID: "1.1", Title: "Task 1", Priority: "P0", Status: "pending", Dependencies: []string{}},
-			"task2": {ID: "1.2", Title: "Task 2", Priority: "P1", Status: "pending", Dependencies: []string{"1.1"}},
-			"task3": {ID: "2.1", Title: "Task 3", Priority: "P0", Status: "pending", Dependencies: []string{"1.1", "1.2"}},
-		},
 		StatusEnum:   []string{"pending", "in_progress", "completed"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
 	}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1.1", Title: "Task 1", Priority: "P0", Status: "pending", Dependencies: []string{}},
+			"task2": {ID: "1.2", Title: "Task 2", Priority: "P1", Status: "pending", Dependencies: []string{"1.1"}},
+			"task3": {ID: "2.1", Title: "Task 3", Priority: "P0", Status: "pending", Dependencies: []string{"1.1", "1.2"}},
+		})
 
 	key, gotTask, err := claimNextTask(index)
 	if err != nil {
@@ -34,8 +34,8 @@ func TestClaimNextTask(t *testing.T) {
 		t.Errorf("expected priority P0, got %s", gotTask.Priority)
 	}
 	// Verify status was updated
-	if index.Tasks["task1"].Status != "in_progress" {
-		t.Errorf("expected status to be 'in_progress', got %s", index.Tasks["task1"].Status)
+	if index.TasksMap()["task1"].Status != "in_progress" {
+		t.Errorf("expected status to be 'in_progress', got %s", index.TasksMap()["task1"].Status)
 	}
 }
 
@@ -89,10 +89,10 @@ func TestClaimNextTask_P0Priority(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			index := &task.TaskIndex{
 
-				Tasks:        tt.tasks,
 				StatusEnum:   []string{"pending", "in_progress", "completed"},
 				PriorityEnum: []string{"P0", "P1", "P2"},
 			}
+			index.SetTasks(tt.tasks)
 			key, gotTask, err := claimNextTask(index)
 			if err != nil {
 				t.Fatalf("claimNextTask() error = %v", err)
@@ -110,12 +110,12 @@ func TestClaimNextTask_P0Priority(t *testing.T) {
 func TestClaimNextTask_NoPending(t *testing.T) {
 	index := &task.TaskIndex{
 
-		Tasks: map[string]task.Task{
-			"task1": {ID: "1.1", Title: "Task 1", Priority: "P0", Status: "completed", Dependencies: []string{}},
-		},
 		StatusEnum:   []string{"pending", "in_progress", "completed"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
 	}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1.1", Title: "Task 1", Priority: "P0", Status: "completed", Dependencies: []string{}},
+		})
 	_, _, err := claimNextTask(index)
 	if err == nil {
 		t.Errorf("expected error when no pending tasks")
@@ -127,13 +127,13 @@ func TestClaimNextTask_DependenciesBlocked(t *testing.T) {
 	// the dependency is not met
 	index := &task.TaskIndex{
 
-		Tasks: map[string]task.Task{
-			"task1": {ID: "1.1", Title: "Task 1", Priority: "P0", Status: "pending", Dependencies: []string{"1.0"}},
-			"task0": {ID: "1.0", Title: "Task 0", Priority: "P0", Status: "pending", Dependencies: []string{}},
-		},
 		StatusEnum:   []string{"pending", "in_progress", "completed"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
 	}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1.1", Title: "Task 1", Priority: "P0", Status: "pending", Dependencies: []string{"1.0"}},
+			"task0": {ID: "1.0", Title: "Task 0", Priority: "P0", Status: "pending", Dependencies: []string{}},
+		})
 	// task0 has no dependencies and should be claimable
 	key, _, err := claimNextTask(index)
 	if err != nil {
@@ -252,10 +252,10 @@ func TestCheckDependenciesMet(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			index := &task.TaskIndex{
 
-				Tasks:        tt.indexTasks,
 				StatusEnum:   []string{"pending", "in_progress", "completed"},
 				PriorityEnum: []string{"P0", "P1", "P2"},
 			}
+			index.SetTasks(tt.indexTasks)
 			gotMet, _ := checkDependenciesMet(index, tt.task.ID, tt.task)
 			if gotMet != tt.wantMet {
 				t.Errorf("checkDependenciesMet() = %v, want %v", gotMet, tt.wantMet)
@@ -336,13 +336,13 @@ func TestClaimNextTask_NoEligibleTasks(t *testing.T) {
 	// Test when all tasks have unmet dependencies
 	index := &task.TaskIndex{
 
-		Tasks: map[string]task.Task{
-			"task1": {ID: "1.1", Title: "Task 1", Priority: "P0", Status: "pending", Dependencies: []string{"1.0"}},
-			"task0": {ID: "1.0", Title: "Task 0", Priority: "P0", Status: "pending", Dependencies: []string{}},
-		},
 		StatusEnum:   []string{"pending", "in_progress", "completed"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
 	}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1.1", Title: "Task 1", Priority: "P0", Status: "pending", Dependencies: []string{"1.0"}},
+			"task0": {ID: "1.0", Title: "Task 0", Priority: "P0", Status: "pending", Dependencies: []string{}},
+		})
 	// task0 should be claimed first since task1 depends on 1.0
 	key, _, err := claimNextTask(index)
 	if err != nil {
@@ -357,13 +357,13 @@ func TestClaimNextTask_AllDependenciesBlocked(t *testing.T) {
 	// All pending tasks have unmet dependencies
 	index := &task.TaskIndex{
 
-		Tasks: map[string]task.Task{
-			"task1": {ID: "1.1", Title: "Task 1", Priority: "P0", Status: "pending", Dependencies: []string{"1.2"}},
-			"task2": {ID: "1.2", Title: "Task 2", Priority: "P0", Status: "pending", Dependencies: []string{"1.1"}},
-		},
 		StatusEnum:   []string{"pending", "in_progress", "completed"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
 	}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1.1", Title: "Task 1", Priority: "P0", Status: "pending", Dependencies: []string{"1.2"}},
+			"task2": {ID: "1.2", Title: "Task 2", Priority: "P0", Status: "pending", Dependencies: []string{"1.1"}},
+		})
 	_, _, err := claimNextTask(index)
 	if err == nil {
 		t.Errorf("expected error when circular dependencies")
@@ -373,13 +373,13 @@ func TestClaimNextTask_AllDependenciesBlocked(t *testing.T) {
 func TestClaimNextTask_CompletedTaskSkipped(t *testing.T) {
 	index := &task.TaskIndex{
 
-		Tasks: map[string]task.Task{
-			"task1": {ID: "1.1", Title: "Task 1", Priority: "P0", Status: "completed", Dependencies: []string{}},
-			"task2": {ID: "1.2", Title: "Task 2", Priority: "P1", Status: "pending", Dependencies: []string{}},
-		},
 		StatusEnum:   []string{"pending", "in_progress", "completed"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
 	}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1.1", Title: "Task 1", Priority: "P0", Status: "completed", Dependencies: []string{}},
+			"task2": {ID: "1.2", Title: "Task 2", Priority: "P1", Status: "pending", Dependencies: []string{}},
+		})
 	key, _, err := claimNextTask(index)
 	if err != nil {
 		t.Fatalf("claimNextTask() error = %v", err)
@@ -393,13 +393,13 @@ func TestClaimNextTask_MultiplePhases(t *testing.T) {
 	// Tasks in different phases - should pick minimum phase
 	index := &task.TaskIndex{
 
-		Tasks: map[string]task.Task{
-			"task1": {ID: "2.1", Title: "Task 1", Priority: "P0", Status: "pending", Dependencies: []string{}},
-			"task2": {ID: "1.1", Title: "Task 2", Priority: "P2", Status: "pending", Dependencies: []string{}},
-		},
 		StatusEnum:   []string{"pending", "in_progress", "completed"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
 	}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "2.1", Title: "Task 1", Priority: "P0", Status: "pending", Dependencies: []string{}},
+			"task2": {ID: "1.1", Title: "Task 2", Priority: "P2", Status: "pending", Dependencies: []string{}},
+		})
 	// Even though task1 has P0, task2 is in phase 1 and should be claimed
 	// Wait - the logic should pick minimum phase tasks
 	key, _, err := claimNextTask(index)
@@ -418,13 +418,13 @@ func TestCheckDependenciesMet_WildcardMatchesCompleted(t *testing.T) {
 	// Wildcard should pass when matching tasks are completed
 	index := &task.TaskIndex{
 
-		Tasks: map[string]task.Task{
-			"task0": {ID: "0.1", Status: "completed"},
-			"task1": {ID: "1.1", Status: "pending"},
-		},
 		StatusEnum:   []string{"pending", "in_progress", "completed"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
 	}
+		index.SetTasks(map[string]task.Task{
+			"task0": {ID: "0.1", Status: "completed"},
+			"task1": {ID: "1.1", Status: "pending"},
+		})
 	task := task.Task{ID: "1.1", Dependencies: []string{"0.x"}}
 	met, unmet := checkDependenciesMet(index, task.ID, task)
 	if !met {
@@ -436,12 +436,12 @@ func TestCheckDependenciesMet_UnknownDependency(t *testing.T) {
 	// Unknown dependency should be considered unmet (not found in index)
 	index := &task.TaskIndex{
 
-		Tasks: map[string]task.Task{
-			"task1": {ID: "1.1", Status: "pending"},
-		},
 		StatusEnum:   []string{"pending", "in_progress", "completed"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
 	}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1.1", Status: "pending"},
+		})
 	task := task.Task{ID: "1.1", Dependencies: []string{"9.9"}}
 	met, unmet := checkDependenciesMet(index, task.ID, task)
 	// Unknown dependency doesn't fail - it just doesn't block
@@ -474,10 +474,10 @@ func TestExecuteClaim(t *testing.T) {
 		Design:       "design/tech-design.md",
 		StatusEnum:   []string{"pending", "in_progress", "completed"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
-		Tasks: map[string]task.Task{
-			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md", Record: "1.1.md"},
-		},
 	}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md", Record: "1.1.md"},
+		})
 
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)
@@ -554,10 +554,10 @@ func TestClaimNextTask_NonNumericID(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			index := &task.TaskIndex{
-				Tasks:        tt.tasks,
 				StatusEnum:   []string{"pending", "in_progress", "completed"},
 				PriorityEnum: []string{"P0", "P1", "P2"},
 			}
+			index.SetTasks(tt.tasks)
 			key, _, err := claimNextTask(index)
 			if err != nil {
 				t.Fatalf("claimNextTask() error = %v", err)
@@ -572,13 +572,13 @@ func TestClaimNextTask_NonNumericID(t *testing.T) {
 func TestClaimNextTask_NonNumericBlocked(t *testing.T) {
 	// T-test-1 blocked because its dependency (1.1) is still pending
 	index := &task.TaskIndex{
-		Tasks: map[string]task.Task{
-			"biz-1":    {ID: "1.1", Priority: "P0", Status: "pending"},
-			"t-test-1": {ID: "T-test-1", Priority: "P1", Status: "pending", Dependencies: []string{"1.1"}},
-		},
 		StatusEnum:   []string{"pending", "in_progress", "completed"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
 	}
+		index.SetTasks(map[string]task.Task{
+			"biz-1":    {ID: "1.1", Priority: "P0", Status: "pending"},
+			"t-test-1": {ID: "T-test-1", Priority: "P1", Status: "pending", Dependencies: []string{"1.1"}},
+		})
 	key, _, err := claimNextTask(index)
 	if err != nil {
 		t.Fatalf("claimNextTask() error = %v", err)
@@ -605,10 +605,10 @@ func TestExecuteClaim_CreatesForgeState(t *testing.T) {
 		Feature:      "test-feature",
 		StatusEnum:   []string{"pending", "in_progress", "completed"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
-		Tasks: map[string]task.Task{
-			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md", Record: "1.1.md"},
-		},
 	}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md", Record: "1.1.md"},
+		})
 	task.SaveIndex(indexPath, index)
 
 	taskFile := filepath.Join(dir, "docs", "features", "test-feature", "tasks", "1.1.md")
@@ -665,10 +665,10 @@ func TestExecuteClaim_Continue(t *testing.T) {
 		Design:       "design/tech-design.md",
 		StatusEnum:   []string{"pending", "in_progress", "completed"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
-		Tasks: map[string]task.Task{
-			"task1": {ID: "1.1", Title: "Task 1", Status: "in_progress", Priority: "P0", File: "1.1.md", Record: "1.1.md"},
-		},
 	}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1.1", Title: "Task 1", Status: "in_progress", Priority: "P0", File: "1.1.md", Record: "1.1.md"},
+		})
 
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)
@@ -731,11 +731,11 @@ func TestExecuteClaim_ScopePropagatedToState(t *testing.T) {
 		Feature:      "test-feature",
 		StatusEnum:   []string{"pending", "in_progress", "completed"},
 		PriorityEnum: []string{"P0"},
-		Tasks: map[string]task.Task{
+	}
+		index.SetTasks(map[string]task.Task{
 			"t1": {ID: "1.1", Title: "Frontend task", Status: "pending", Priority: "P0",
 				File: "1.1.md", Record: "records/1.1.md", Scope: "frontend"},
-		},
-	}
+		})
 	task.SaveIndex(indexPath, index)
 	os.WriteFile(filepath.Join(dir, "docs", "features", "test-feature", "tasks", "1.1.md"), []byte("# T1"), 0644)
 
@@ -774,11 +774,11 @@ func TestExecuteClaim_ScopeEmptyWhenNotSet(t *testing.T) {
 		Feature:      "test-feature",
 		StatusEnum:   []string{"pending", "in_progress", "completed"},
 		PriorityEnum: []string{"P0"},
-		Tasks: map[string]task.Task{
+	}
+		index.SetTasks(map[string]task.Task{
 			"t1": {ID: "1.1", Title: "Task without scope", Status: "pending", Priority: "P0",
 				File: "1.1.md", Record: "records/1.1.md"},
-		},
-	}
+		})
 	task.SaveIndex(indexPath, index)
 	os.WriteFile(filepath.Join(dir, "docs", "features", "test-feature", "tasks", "1.1.md"), []byte("# T1"), 0644)
 

@@ -19,7 +19,7 @@ func TestLoadIndex(t *testing.T) {
 		path := filepath.Join(dir, "index.json")
 		wantIndex := &TaskIndex{
 			Feature: "test-feature",
-			Tasks: map[string]Task{
+			tasks: map[string]Task{
 				"task1": {ID: "1.1", Title: "Task 1", Status: "pending"},
 			},
 			StatusEnum:   []string{"pending", "completed"},
@@ -36,8 +36,8 @@ func TestLoadIndex(t *testing.T) {
 		if gotIndex.Feature != wantIndex.Feature {
 			t.Errorf("Feature = %q, want %q", gotIndex.Feature, wantIndex.Feature)
 		}
-		if len(gotIndex.Tasks) != len(wantIndex.Tasks) {
-			t.Errorf("Tasks count = %d, want %d", len(gotIndex.Tasks), len(wantIndex.Tasks))
+		if len(gotIndex.tasks) != len(wantIndex.tasks) {
+			t.Errorf("Tasks count = %d, want %d", len(gotIndex.tasks), len(wantIndex.tasks))
 		}
 	})
 
@@ -61,7 +61,7 @@ func TestSaveIndex(t *testing.T) {
 		path := filepath.Join(dir, "index.json")
 		index := &TaskIndex{
 			Feature: "test-feature",
-			Tasks: map[string]Task{
+			tasks: map[string]Task{
 				"task1": {ID: "1.1", Title: "Task 1", Status: "pending"},
 			},
 		}
@@ -92,7 +92,7 @@ func TestSaveIndex(t *testing.T) {
 func TestByID(t *testing.T) {
 	index := &TaskIndex{
 		Feature: "test-feature",
-		Tasks: map[string]Task{
+		tasks: map[string]Task{
 			"task1":    {ID: "1.1", Title: "Task 1", Status: "pending"},
 			"run-e2e":  {ID: "T-test-3", Title: "Run e2e", Status: "pending"},
 			"disc-1":   {ID: "disc-1", Title: "Discovery", Status: "pending"},
@@ -137,7 +137,7 @@ func TestByID(t *testing.T) {
 	})
 
 	t.Run("empty index", func(t *testing.T) {
-		empty := &TaskIndex{Tasks: map[string]Task{}}
+		empty := &TaskIndex{tasks: map[string]Task{}}
 		_, ok := empty.ByID("anything")
 		if ok {
 			t.Error("ByID() should return false in empty index")
@@ -148,7 +148,7 @@ func TestByID(t *testing.T) {
 func TestFindTask(t *testing.T) {
 	index := &TaskIndex{
 		Feature: "test-feature",
-		Tasks: map[string]Task{
+		tasks: map[string]Task{
 			"task1":   {ID: "1.1", Title: "Task 1", Status: "pending"},
 			"task2":   {ID: "1.2", Title: "Task 2", Status: "pending"},
 			"run-e2e": {ID: "T-test-3", Title: "Run e2e", Status: "pending"},

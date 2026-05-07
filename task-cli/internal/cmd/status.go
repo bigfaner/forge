@@ -105,7 +105,7 @@ func runStatus(cmd *cobra.Command, args []string) {
 	}
 
 	t.Status = newStatus
-	index.Tasks[key] = *t
+	index.SetTask(key, *t)
 
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		Exit(NewAIError(ErrConflict, "Failed to save index", err.Error(), "Check index.json is writable", "cat "+indexPath))
@@ -165,7 +165,7 @@ func checkUnmetDeps(index *task.TaskIndex, t *task.Task) []string {
 			prefix := strings.TrimSuffix(dep, ".x")
 			prefixWithDot := prefix + "."
 			found := false
-			for _, other := range index.Tasks {
+			for _, other := range index.TasksMap() {
 				if other.ID == t.ID {
 					continue
 				}

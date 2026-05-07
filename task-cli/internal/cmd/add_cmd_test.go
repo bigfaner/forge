@@ -74,7 +74,7 @@ func TestAddCmd_WithTemplateAndVars(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	srcTask := idx.Tasks["1.1"]
+	srcTask := idx.TasksMap()["1.1"]
 	foundDep := false
 	for _, d := range srcTask.Dependencies {
 		if d != "" {

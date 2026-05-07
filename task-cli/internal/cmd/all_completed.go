@@ -76,10 +76,10 @@ func checkAllCompleted(verbose bool) (*AllCompletedResult, error) {
 		Debugf(verbose, "index.json not found: %s (%v)", indexPath, err)
 		return nil, nil //nolint:nilerr
 	}
-	Debugf(verbose, "loaded index: %d tasks", len(index.Tasks))
+	Debugf(verbose, "loaded index: %d tasks", index.TaskCount())
 
 	// All tasks must be completed or skipped
-	for _, t := range index.Tasks {
+	for _, t := range index.TasksMap() {
 		if t.Status != feature.StatusCompleted && t.Status != feature.StatusSkipped {
 			Debugf(verbose, "task %s is %s — not all done", t.ID, t.Status)
 			return nil, nil

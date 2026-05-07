@@ -24,11 +24,11 @@ func TestNewTaskIndex(t *testing.T) {
 			if index.Feature != tt.feature {
 				t.Errorf("Feature = %q, want %q", index.Feature, tt.feature)
 			}
-			if index.Tasks == nil {
+			if index.tasks == nil {
 				t.Error("Tasks map is nil")
 			}
-			if len(index.Tasks) != 0 {
-				t.Errorf("Tasks map should be empty, got %d items", len(index.Tasks))
+			if len(index.tasks) != 0 {
+				t.Errorf("Tasks map should be empty, got %d items", len(index.tasks))
 			}
 			// Check default status enum
 			expectedStatuses := []string{"pending", "in_progress", "completed", "blocked", "skipped"}
@@ -94,7 +94,7 @@ func TestTaskIndexJSONRoundTrip(t *testing.T) {
 		Design:  "design/tech-design.md",
 		Created: "2024-01-01",
 		Status:  "in_progress",
-		Tasks: map[string]Task{
+		tasks: map[string]Task{
 			"task1": {
 				ID:       "1.1",
 				Title:    "First Task",
@@ -121,8 +121,8 @@ func TestTaskIndexJSONRoundTrip(t *testing.T) {
 	if unmarshaled.Feature != index.Feature {
 		t.Errorf("Feature = %q, want %q", unmarshaled.Feature, index.Feature)
 	}
-	if len(unmarshaled.Tasks) != len(index.Tasks) {
-		t.Errorf("Tasks count = %d, want %d", len(unmarshaled.Tasks), len(index.Tasks))
+	if len(unmarshaled.tasks) != len(index.tasks) {
+		t.Errorf("Tasks count = %d, want %d", len(unmarshaled.tasks), len(index.tasks))
 	}
 }
 

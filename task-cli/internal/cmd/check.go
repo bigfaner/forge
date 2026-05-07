@@ -52,14 +52,14 @@ func runCheck(cmd *cobra.Command, args []string) {
 
 	// Collect all task IDs
 	taskIDs := make(map[string]bool)
-	for _, t := range index.Tasks {
+	for _, t := range index.TasksMap() {
 		taskIDs[t.ID] = true
 	}
 
 	var errors []string
 	var depInfos []depInfo
 
-	for key, t := range index.Tasks {
+	for key, t := range index.TasksMap() {
 		for _, dep := range t.Dependencies {
 			isWildcard := strings.HasSuffix(dep, ".x")
 

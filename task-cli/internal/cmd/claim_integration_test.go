@@ -17,8 +17,6 @@ func TestCheckExistingTaskState(t *testing.T) {
 		statePath := filepath.Join(dir, "task-state.json")
 
 		index := &task.TaskIndex{
-
-			Tasks: map[string]task.Task{},
 		}
 		task.SaveIndex(indexPath, index)
 
@@ -34,8 +32,6 @@ func TestCheckExistingTaskState(t *testing.T) {
 		statePath := filepath.Join(dir, "task-state.json")
 
 		index := &task.TaskIndex{
-
-			Tasks: map[string]task.Task{},
 		}
 		task.SaveIndex(indexPath, index)
 
@@ -55,10 +51,10 @@ func TestCheckExistingTaskState(t *testing.T) {
 
 		index := &task.TaskIndex{
 
-			Tasks: map[string]task.Task{
-				"task1": {ID: "1.1", Title: "Task 1", Status: "in_progress"},
-			},
 		}
+			index.SetTasks(map[string]task.Task{
+				"task1": {ID: "1.1", Title: "Task 1", Status: "in_progress"},
+			})
 		task.SaveIndex(indexPath, index)
 
 		state := &task.TaskState{TaskID: "1.1", Key: "task1"}
@@ -77,10 +73,10 @@ func TestCheckExistingTaskState(t *testing.T) {
 
 		index := &task.TaskIndex{
 
-			Tasks: map[string]task.Task{
-				"task1": {ID: "1.1", Title: "Task 1", Status: "completed"},
-			},
 		}
+			index.SetTasks(map[string]task.Task{
+				"task1": {ID: "1.1", Title: "Task 1", Status: "completed"},
+			})
 		task.SaveIndex(indexPath, index)
 
 		state := &task.TaskState{TaskID: "1.1", Key: "task1"}
@@ -103,8 +99,6 @@ func TestCheckExistingTaskState(t *testing.T) {
 		statePath := filepath.Join(dir, "task-state.json")
 
 		index := &task.TaskIndex{
-
-			Tasks: map[string]task.Task{},
 		}
 		task.SaveIndex(indexPath, index)
 
@@ -124,10 +118,10 @@ func TestCheckExistingTaskState(t *testing.T) {
 
 		index := &task.TaskIndex{
 
-			Tasks: map[string]task.Task{
-				"task1": {ID: "1.1", Title: "Task 1", Status: "blocked"},
-			},
 		}
+			index.SetTasks(map[string]task.Task{
+				"task1": {ID: "1.1", Title: "Task 1", Status: "blocked"},
+			})
 		task.SaveIndex(indexPath, index)
 
 		state := &task.TaskState{TaskID: "1.1", Key: "task1"}
@@ -301,13 +295,13 @@ func TestClaimCommand_Integration(t *testing.T) {
 		// Create index
 		index := &task.TaskIndex{
 
-			Tasks: map[string]task.Task{
-				"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md"},
-				"task2": {ID: "1.2", Title: "Task 2", Status: "pending", Priority: "P1", File: "1.2.md"},
-			},
 			StatusEnum:   []string{"pending", "in_progress", "completed"},
 			PriorityEnum: []string{"P0", "P1", "P2"},
 		}
+			index.SetTasks(map[string]task.Task{
+				"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md"},
+				"task2": {ID: "1.2", Title: "Task 2", Status: "pending", Priority: "P1", File: "1.2.md"},
+			})
 		if err := task.SaveIndex(indexPath, index); err != nil {
 			t.Fatal(err)
 		}

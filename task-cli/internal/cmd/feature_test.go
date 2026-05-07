@@ -191,10 +191,10 @@ func TestRunQuery(t *testing.T) {
 		Design:       "design/tech-design.md",
 		StatusEnum:   []string{"pending", "in_progress", "completed"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
-		Tasks: map[string]task.Task{
-			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md", Record: "1.1.md", EstimatedTime: "30m", Dependencies: []string{"1.0"}},
-		},
 	}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md", Record: "1.1.md", EstimatedTime: "30m", Dependencies: []string{"1.0"}},
+		})
 
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)
@@ -259,10 +259,10 @@ func TestRunStatus(t *testing.T) {
 		Design:       "design/tech-design.md",
 			StatusEnum:   []string{"pending", "in_progress", "completed", "blocked", "skipped"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
-		Tasks: map[string]task.Task{
-			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md", Record: "1.1.md"},
-		},
 	}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md", Record: "1.1.md"},
+		})
 
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)
@@ -295,8 +295,8 @@ func TestRunStatus(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to load updated index: %v", err)
 	}
-	if updatedIndex.Tasks["task1"].Status != "blocked" {
-		t.Errorf("expected status 'blocked', got %q", updatedIndex.Tasks["task1"].Status)
+	if updatedIndex.TasksMap()["task1"].Status != "blocked" {
+		t.Errorf("expected status 'blocked', got %q", updatedIndex.TasksMap()["task1"].Status)
 	}
 }
 
@@ -322,11 +322,11 @@ func TestRunCheck(t *testing.T) {
 		Design:       "design/tech-design.md",
 		StatusEnum:   []string{"pending", "in_progress", "completed"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
-		Tasks: map[string]task.Task{
+	}
+		index.SetTasks(map[string]task.Task{
 			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md", Record: "1.1.md"},
 			"task2": {ID: "1.2", Title: "Task 2", Status: "pending", Priority: "P1", File: "1.2.md", Record: "1.2.md", Dependencies: []string{"1.1"}},
-		},
-	}
+		})
 
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)

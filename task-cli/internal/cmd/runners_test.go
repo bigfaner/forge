@@ -59,9 +59,9 @@ func TestRunClaim_Continue(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t1 := index.Tasks["task1"]
+	t1 := index.TasksMap()["task1"]
 	t1.Status = "in_progress"
-	index.Tasks["task1"] = t1
+	index.SetTask("task1", t1)
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)
 	}
@@ -94,8 +94,8 @@ func TestRunValidate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	index.Tasks["task2"] = task.Task{ID: "1.2", Title: "Task 2", Priority: "P1", Status: "pending", File: "1.2.md", Record: "1.2.md", Dependencies: []string{"1.1"}}
-	index.Tasks["task3"] = task.Task{ID: "1.3", Title: "Task 3", Priority: "P2", Status: "pending", File: "1.3.md", Record: "1.3.md", Dependencies: []string{"1.1", "1.2"}}
+	index.SetTask("task2", task.Task{ID: "1.2", Title: "Task 2", Priority: "P1", Status: "pending", File: "1.2.md", Record: "1.2.md", Dependencies: []string{"1.1"}})
+	index.SetTask("task3", task.Task{ID: "1.3", Title: "Task 3", Priority: "P2", Status: "pending", File: "1.3.md", Record: "1.3.md", Dependencies: []string{"1.1", "1.2"}})
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)
 	}
@@ -140,9 +140,9 @@ func TestRunRecord(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t1 := index.Tasks["task1"]
+	t1 := index.TasksMap()["task1"]
 	t1.Status = "in_progress"
-	index.Tasks["task1"] = t1
+	index.SetTask("task1", t1)
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)
 	}
@@ -212,9 +212,9 @@ func TestRunHookCleanup(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t1 := index.Tasks["task1"]
+	t1 := index.TasksMap()["task1"]
 	t1.Status = "completed"
-	index.Tasks["task1"] = t1
+	index.SetTask("task1", t1)
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)
 	}
@@ -274,9 +274,9 @@ func TestRunHookPreCommit_Success(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t1 := index.Tasks["task1"]
+	t1 := index.TasksMap()["task1"]
 	t1.Status = "completed"
-	index.Tasks["task1"] = t1
+	index.SetTask("task1", t1)
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)
 	}
@@ -327,10 +327,10 @@ func setupClaimTestProject(t *testing.T) string {
 		Design:       "design/tech-design.md",
 		StatusEnum:   []string{"pending", "in_progress", "completed"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
-		Tasks: map[string]task.Task{
-			"task1": {ID: "1.1", Title: "Task 1", Priority: "P0", Status: "pending", File: "1.1.md", Record: "records/1.1.md"},
-		},
 	}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1.1", Title: "Task 1", Priority: "P0", Status: "pending", File: "1.1.md", Record: "records/1.1.md"},
+		})
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)
 	}

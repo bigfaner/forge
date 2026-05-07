@@ -110,9 +110,9 @@ func TestCheckAllCompleted(t *testing.T) {
 			index := &task.TaskIndex{
 				Feature:     "test",
 				StatusEnum:  []string{"pending", "in_progress", "completed", "blocked", "skipped"},
-				Tasks:       tc.tasks,
 				TestCommand: tc.testCommand,
 			}
+			index.SetTasks(tc.tasks)
 			if err := task.SaveIndex(indexPath, index); err != nil {
 				t.Fatal(err)
 			}

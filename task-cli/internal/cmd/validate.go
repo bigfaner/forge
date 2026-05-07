@@ -81,7 +81,7 @@ func (v *validator) run() error {
 	}
 
 	v.info = append(v.info, fmt.Sprintf("Feature: %s", idx.Feature))
-	v.info = append(v.info, fmt.Sprintf("Tasks: %d", len(idx.Tasks)))
+	v.info = append(v.info, fmt.Sprintf("Tasks: %d", idx.TaskCount()))
 
 	if idx.PRD == "" {
 		v.warnings = append(v.warnings, "Missing 'prd' field")
@@ -93,15 +93,15 @@ func (v *validator) run() error {
 		v.warnings = append(v.warnings, "Missing 'statusEnum' field — task record/status commands may fail")
 	}
 
-	v.validateTasks(idx.Tasks)
-	v.validateDependencies(idx.Tasks)
-	v.validateCircularDeps(idx.Tasks)
-	v.validateFilesExist(idx.Feature, idx.Tasks)
-	v.validateWildcardSelfDeps(idx.Tasks)
-	v.validateGateIntegrity(idx.Tasks)
-	v.validatePhaseOrder(idx.Tasks)
-	v.validatePhaseSummaries(idx.Tasks)
-	v.validateLiveness(idx.Tasks)
+	v.validateTasks(idx.TasksMap())
+	v.validateDependencies(idx.TasksMap())
+	v.validateCircularDeps(idx.TasksMap())
+	v.validateFilesExist(idx.Feature, idx.TasksMap())
+	v.validateWildcardSelfDeps(idx.TasksMap())
+	v.validateGateIntegrity(idx.TasksMap())
+	v.validatePhaseOrder(idx.TasksMap())
+	v.validatePhaseSummaries(idx.TasksMap())
+	v.validateLiveness(idx.TasksMap())
 	if !v.printResults() {
 		return NewAIError(ErrValidation, "Validation failed", fmt.Sprintf("%d errors found", len(v.errors)), "Fix errors in index.json", "cat "+v.filePath)
 	}

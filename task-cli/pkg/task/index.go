@@ -36,10 +36,10 @@ func SaveIndex(path string, index *TaskIndex) error {
 // ByID returns the task matching the given ID or map key.
 // Returns (Task, false) if not found.
 func (ti *TaskIndex) ByID(id string) (Task, bool) {
-	if t, ok := ti.Tasks[id]; ok {
+	if t, ok := ti.tasks[id]; ok {
 		return t, true
 	}
-	for _, t := range ti.Tasks {
+	for _, t := range ti.tasks {
 		if t.ID == id {
 			return t, true
 		}
@@ -50,16 +50,54 @@ func (ti *TaskIndex) ByID(id string) (Task, bool) {
 // FindTask finds a task by ID or key and returns the map key for write-back.
 func FindTask(index *TaskIndex, idOrKey string) (string, *Task, error) {
 	if t, ok := index.ByID(idOrKey); ok {
-		if _, direct := index.Tasks[idOrKey]; direct {
+		if _, direct := index.tasks[idOrKey]; direct {
 			return idOrKey, &t, nil
 		}
-		for key, task := range index.Tasks {
+		for key, task := range index.tasks {
 			if task.ID == idOrKey {
 				return key, &t, nil
 			}
 		}
 	}
 	return "", nil, fmt.Errorf("task not found: %s", idOrKey)
+}
+
+// SetTask inserts or updates a task under the given map key.
+func (ti *TaskIndex) SetTask(key string, t Task) {
+	if ti.tasks == nil {
+		ti.tasks = make(map[string]Task)
+	}
+	ti.tasks[key] = t
+}
+
+// SetTasks bulk-inserts tasks, replacing the internal map.
+func (ti *TaskIndex) SetTasks(tasks map[string]Task) {
+	if ti.tasks == nil {
+		ti.tasks = make(map[string]Task, len(tasks))
+	}
+	for k, v := range tasks {
+		ti.tasks[k] = v
+	}
+}
+
+// TasksMap returns the internal tasks map for iteration.
+func (ti *TaskIndex) TasksMap() map[string]Task {
+	return ti.tasks
+}
+
+// TaskCount returns the number of tasks.
+func (ti *TaskIndex) TaskCount() int {
+	return len(ti.tasks)
+}
+
+// NewTestIndex creates a TaskIndex for testing with the given tasks.
+func NewTestIndex(feature string, tasks map[string]Task, statusEnum ...[]string) *TaskIndex {
+	ti := NewTaskIndex(feature)
+	if len(statusEnum) > 0 {
+		ti.StatusEnum = statusEnum[0]
+	}
+	ti.SetTasks(tasks)
+	return ti
 }
 
 // IsValidStatus checks if the status is valid.

@@ -81,7 +81,7 @@ func executeClaim() (*ClaimResult, error) {
 
 	if continueTask {
 		state, _ := task.LoadState(statePath)
-		t := index.Tasks[state.Key]
+		t, _ := index.ByID(state.Key)
 		return &ClaimResult{
 			Action:      "CONTINUE",
 			Key:         state.Key,
@@ -149,7 +149,7 @@ func checkExistingTaskState(projectRoot string, index *task.TaskIndex, statePath
 		return false, false, nil
 	}
 
-	t, exists := index.Tasks[state.Key]
+	t, exists := index.ByID(state.Key)
 	if !exists {
 		return false, true, []string{fmt.Sprintf("Task key '%s' not found in index.json", state.Key)}
 	}
@@ -174,7 +174,7 @@ func claimNextTask(index *task.TaskIndex) (string, *task.Task, error) {
 	var eligibleTasks []taskWithKey
 
 	hasPending := false
-	for _, t := range index.Tasks {
+	for _, t := range index.TasksMap() {
 		if t.Status == "pending" {
 			hasPending = true
 			break
@@ -184,7 +184,7 @@ func claimNextTask(index *task.TaskIndex) (string, *task.Task, error) {
 		return "", nil, ErrNoPendingTasks()
 	}
 
-	for key, t := range index.Tasks {
+	for key, t := range index.TasksMap() {
 		if t.Status == "pending" {
 			if met, _ := checkDependenciesMet(index, t.ID, t); met {
 				eligibleTasks = append(eligibleTasks, taskWithKey{key: key, t: t})
@@ -206,9 +206,9 @@ func claimNextTask(index *task.TaskIndex) (string, *task.Task, error) {
 	})
 
 	twk := eligibleTasks[0]
-	t := index.Tasks[twk.key]
+	t, _ := index.ByID(twk.key)
 	t.Status = "in_progress"
-	index.Tasks[twk.key] = t
+	index.SetTask(twk.key, t)
 	return twk.key, &t, nil
 }
 
@@ -230,7 +230,7 @@ func checkDependenciesMet(index *task.TaskIndex, selfID string, t task.Task) (bo
 			prefix := strings.TrimSuffix(dep, ".x")
 			found := false
 			prefixWithDot := prefix + "."
-			for _, other := range index.Tasks {
+			for _, other := range index.TasksMap() {
 				if other.ID == selfID {
 					continue
 				}
@@ -243,7 +243,7 @@ func checkDependenciesMet(index *task.TaskIndex, selfID string, t task.Task) (bo
 				continue
 			}
 		} else {
-			for _, other := range index.Tasks {
+			for _, other := range index.TasksMap() {
 				if other.ID == dep {
 					if other.Status != "completed" && other.Status != "skipped" {
 						unmet = append(unmet, dep)

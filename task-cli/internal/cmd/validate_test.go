@@ -390,10 +390,10 @@ func TestValidator_Run(t *testing.T) {
 			Design:       "design/tech-design.md",
 			StatusEnum:   []string{"pending", "completed"},
 			PriorityEnum: []string{"P0", "P1", "P2"},
-			Tasks: map[string]task.Task{
-				"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "task.md"},
-			},
 		}
+			index.SetTasks(map[string]task.Task{
+				"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "task.md"},
+			})
 
 		// Create task file
 		taskFile := filepath.Join(dir, "task.md")
@@ -423,10 +423,10 @@ func TestValidator_Run(t *testing.T) {
 
 		index := &task.TaskIndex{
 			Feature: "test-feature",
-			Tasks: map[string]task.Task{
-				"task1": {ID: "", Title: "", File: "", Dependencies: []string{"missing"}},
-			},
 		}
+			index.SetTasks(map[string]task.Task{
+				"task1": {ID: "", Title: "", File: "", Dependencies: []string{"missing"}},
+			})
 
 		// Create index file
 		indexFile := filepath.Join(dir, "index.json")

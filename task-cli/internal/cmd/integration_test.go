@@ -61,8 +61,10 @@ func setupFullProject(t *testing.T, opts SetupOpts) (dir string) {
 		Design:       "design/tech-design.md",
 		StatusEnum:   []string{"pending", "in_progress", "completed", "blocked", "skipped"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
-		Tasks:        opts.Tasks,
-	}
+			}
+		if len(opts.Tasks) > 0 {
+			index.SetTasks(opts.Tasks)
+		}
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)
 	}
@@ -515,7 +517,6 @@ func TestValidatorRun_WithFileArg(t *testing.T) {
 	index := &task.TaskIndex{
 		Feature:    "test-feature",
 		StatusEnum: []string{"pending", "in_progress", "completed"},
-		Tasks:      map[string]task.Task{},
 	}
 	data, _ := json.Marshal(index)
 	indexPath := filepath.Join(dir, "index.json")
@@ -608,11 +609,11 @@ func TestSaveIndexAndSignalCompletion_IncompleteTasks(t *testing.T) {
 	index := &task.TaskIndex{
 		Feature:    "test",
 		StatusEnum: []string{"pending", "in_progress", "completed"},
-		Tasks: map[string]task.Task{
+	}
+		index.SetTasks(map[string]task.Task{
 			"t1": {ID: "1.1", Status: "completed"},
 			"t2": {ID: "1.2", Status: "pending"},
-		},
-	}
+		})
 	task.SaveIndex(indexPath, index)
 
 	// Should NOT write forge state since not all tasks are done
@@ -679,7 +680,6 @@ func TestValidatorRun_FeatureBased(t *testing.T) {
 	index := &task.TaskIndex{
 		Feature:    "test",
 		StatusEnum: []string{"pending", "completed"},
-		Tasks:      map[string]task.Task{},
 	}
 	task.SaveIndex(indexPath, index)
 
@@ -734,10 +734,10 @@ func TestValidateTTest1Template_ResolvedPlaceholder(t *testing.T) {
 
 func TestFindTaskByKey(t *testing.T) {
 	index := &task.TaskIndex{
-		Tasks: map[string]task.Task{
-			"task1": {ID: "1.1", Title: "Task One"},
-		},
 	}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1.1", Title: "Task One"},
+		})
 
 	key, t2, err := task.FindTask(index, "task1")
 	if err != nil {
@@ -865,8 +865,8 @@ func TestRunStatus_Update(t *testing.T) {
 	dir, _ := os.Getwd()
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
 	index, _ := task.LoadIndex(indexPath)
-	if index.Tasks["t1"].Status != "blocked" {
-		t.Errorf("index status = %q, want blocked", index.Tasks["t1"].Status)
+	if index.TasksMap()["t1"].Status != "blocked" {
+		t.Errorf("index status = %q, want blocked", index.TasksMap()["t1"].Status)
 	}
 }
 
@@ -896,10 +896,10 @@ func TestExecuteClaim_SaveIndexError(t *testing.T) {
 		Feature:      "test",
 		StatusEnum:   []string{"pending", "in_progress", "completed"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
-		Tasks: map[string]task.Task{
-			"t1": {ID: "1.1", Title: "T1", Status: "pending", Priority: "P0", File: "1.1.md", Record: "1.1.md"},
-		},
 	}
+		index.SetTasks(map[string]task.Task{
+			"t1": {ID: "1.1", Title: "T1", Status: "pending", Priority: "P0", File: "1.1.md", Record: "1.1.md"},
+		})
 	task.SaveIndex(indexPath, index)
 
 	feature.SetFeature(dir, "test")
@@ -970,10 +970,10 @@ func TestRunValidate_Integration(t *testing.T) {
 		PRD:        "prd/prd-spec.md",
 		Design:     "design/tech-design.md",
 		StatusEnum: []string{"pending", "in_progress", "completed"},
-		Tasks: map[string]task.Task{
-			"t1": {ID: "1.1", Title: "T1", Status: "pending", Priority: "P0", File: "1.1.md", Dependencies: []string{}},
-		},
 	}
+		index.SetTasks(map[string]task.Task{
+			"t1": {ID: "1.1", Title: "T1", Status: "pending", Priority: "P0", File: "1.1.md", Dependencies: []string{}},
+		})
 	data, _ := json.Marshal(index)
 	indexPath := filepath.Join(dir, "index.json")
 	os.WriteFile(indexPath, data, 0644)
@@ -1008,11 +1008,11 @@ func TestSaveIndexAndSignalCompletion_AllDone(t *testing.T) {
 	index := &task.TaskIndex{
 		Feature:    "test",
 		StatusEnum: []string{"pending", "completed", "skipped"},
-		Tasks: map[string]task.Task{
+	}
+		index.SetTasks(map[string]task.Task{
 			"t1": {ID: "1.1", Status: "completed"},
 			"t2": {ID: "1.2", Status: "skipped"},
-		},
-	}
+		})
 	task.SaveIndex(indexPath, index)
 
 	out := captureStderr2(func() {
@@ -1087,7 +1087,6 @@ func TestCheckExistingTaskState_LoadFail(t *testing.T) {
 	index := &task.TaskIndex{
 		Feature:    "test",
 		StatusEnum: []string{"pending", "in_progress", "completed"},
-		Tasks:      map[string]task.Task{},
 	}
 	task.SaveIndex(indexPath, index)
 
@@ -1718,10 +1717,10 @@ func TestSaveIndexAndSignalCompletion_SaveIndexError(t *testing.T) {
 	index := &task.TaskIndex{
 		Feature:    "test",
 		StatusEnum: []string{"pending", "completed"},
-		Tasks: map[string]task.Task{
-			"t1": {ID: "1.1", Status: "completed"},
-		},
 	}
+		index.SetTasks(map[string]task.Task{
+			"t1": {ID: "1.1", Status: "completed"},
+		})
 	task.SaveIndex(indexPath, index)
 
 	// Make index.json read-only so SaveIndex fails
@@ -1756,10 +1755,10 @@ func TestSaveIndexAndSignalCompletion_WriteForgeStateWarning(t *testing.T) {
 	index := &task.TaskIndex{
 		Feature:    "test",
 		StatusEnum: []string{"pending", "completed"},
-		Tasks: map[string]task.Task{
-			"t1": {ID: "1.1", Status: "completed"},
-		},
 	}
+		index.SetTasks(map[string]task.Task{
+			"t1": {ID: "1.1", Status: "completed"},
+		})
 	task.SaveIndex(indexPath, index)
 
 	// Make .forge directory read-only to trigger WriteForgeState warning
@@ -1788,10 +1787,10 @@ func TestForgeStateLifecycle(t *testing.T) {
 		Feature:      "lf",
 		StatusEnum:   []string{"pending", "in_progress", "completed"},
 		PriorityEnum: []string{"P0"},
-		Tasks: map[string]task.Task{
-			"t1": {ID: "1.1", Title: "T1", Status: "pending", Priority: "P0", File: "1.1.md", Record: "1.1.md"},
-		},
 	}
+		index.SetTasks(map[string]task.Task{
+			"t1": {ID: "1.1", Title: "T1", Status: "pending", Priority: "P0", File: "1.1.md", Record: "1.1.md"},
+		})
 	task.SaveIndex(indexPath, index)
 	os.WriteFile(filepath.Join(dir, "docs", "features", "lf", "tasks", "1.1.md"), []byte("# T1"), 0644)
 	os.MkdirAll(filepath.Join(dir, "docs", "features", "lf", "tasks", "records"), 0755)
@@ -2078,17 +2077,17 @@ func TestRunRecord_AutoRestore_SlugKeyedSource(t *testing.T) {
 	}
 
 	// Source restored to pending
-	if index.Tasks["run-e2e"].Status != "pending" {
-		t.Errorf("source task should be restored to pending, got %s", index.Tasks["run-e2e"].Status)
+	if index.TasksMap()["run-e2e"].Status != "pending" {
+		t.Errorf("source task should be restored to pending, got %s", index.TasksMap()["run-e2e"].Status)
 	}
 
 	// Fix task completed
-	if index.Tasks["fix-auth"].Status != "completed" {
-		t.Errorf("fix task should be completed, got %s", index.Tasks["fix-auth"].Status)
+	if index.TasksMap()["fix-auth"].Status != "completed" {
+		t.Errorf("fix task should be completed, got %s", index.TasksMap()["fix-auth"].Status)
 	}
 
 	// No duplicate key created under task ID
-	if _, hasDup := index.Tasks["T-test-3"]; hasDup {
+	if _, hasDup := index.TasksMap()["T-test-3"]; hasDup {
 		t.Error("should not create duplicate entry under ID key 'T-test-3'")
 	}
 }

@@ -67,7 +67,7 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 			prefix := strings.TrimSuffix(dep, ".x")
 			prefixWithDot := prefix + "."
 			found := false
-			for _, t := range index.Tasks {
+			for _, t := range index.tasks {
 				if strings.HasPrefix(t.ID, prefixWithDot) && isBusinessTaskID(t.ID) {
 					found = true
 					break
@@ -87,7 +87,7 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 	fileName := opts.ID + ".md"
 	recordPath := "records/" + opts.ID + ".md"
 
-	index.Tasks[opts.ID] = Task{
+	index.SetTask(opts.ID, Task{
 		ID:            opts.ID,
 		Title:         opts.Title,
 		Priority:      opts.Priority,
@@ -98,13 +98,13 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 		Record:        recordPath,
 		Breaking:      opts.Breaking,
 		SourceTaskID:  opts.SourceTaskID,
-	}
+	})
 
 		if opts.SourceTaskID != "" {
 			srcKey, srcTask, err := FindTask(index, opts.SourceTaskID)
 			if err == nil && !slices.Contains(srcTask.Dependencies, opts.ID) {
 				srcTask.Dependencies = append(srcTask.Dependencies, opts.ID)
-				index.Tasks[srcKey] = *srcTask
+				index.SetTask(srcKey, *srcTask)
 			}
 		}
 
@@ -203,7 +203,7 @@ func buildTaskMarkdown(opts AddTaskOpts) string {
 // generateDiscID generates the next available disc-N ID using gap-filling.
 func generateDiscID(index *TaskIndex) string {
 	used := make(map[int]bool)
-	for key := range index.Tasks {
+	for key := range index.tasks {
 		numStr, ok := strings.CutPrefix(key, "disc-")
 		if ok {
 			if n, err := strconv.Atoi(numStr); err == nil && n > 0 {
@@ -236,7 +236,7 @@ func AddDependency(indexPath string, taskID string, depID string) error {
 	}
 
 	foundTask.Dependencies = append(foundTask.Dependencies, depID)
-	index.Tasks[taskKey] = *foundTask
+	index.SetTask(taskKey, *foundTask)
 
 	return SaveIndex(indexPath, index)
 }
@@ -259,7 +259,7 @@ func GetUnmetDependencies(indexPath string, taskID string) ([]string, error) {
 		if strings.HasSuffix(dep, ".x") {
 			prefix := strings.TrimSuffix(dep, ".x")
 			prefixWithDot := prefix + "."
-			for _, other := range index.Tasks {
+			for _, other := range index.tasks {
 				if other.ID == foundTask.ID {
 					continue
 				}

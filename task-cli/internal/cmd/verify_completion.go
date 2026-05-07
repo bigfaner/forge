@@ -68,7 +68,7 @@ func verifyTaskCompletion() error {
 
 	// Find task and check status
 	var foundTask *task.Task
-	for _, t := range index.Tasks {
+	for _, t := range index.TasksMap() {
 		if t.ID == state.TaskID {
 			foundTask = &t
 			break

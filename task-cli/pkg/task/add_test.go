@@ -13,7 +13,7 @@ func newTestIndex(t *testing.T) (string, string) {
 	os.MkdirAll(tasksDir, 0755)
 
 	index := NewTaskIndex("test-feature")
-	index.Tasks["1.1-init"] = Task{
+	index.tasks["1.1-init"] = Task{
 		ID:       "1.1",
 		Title:    "Init project",
 		Priority: "P0",
@@ -21,7 +21,7 @@ func newTestIndex(t *testing.T) (string, string) {
 		File:     "1.1-init.md",
 		Record:   "records/1.1-init.md",
 	}
-	index.Tasks["1.2-setup"] = Task{
+	index.tasks["1.2-setup"] = Task{
 		ID:       "1.2",
 		Title:    "Setup config",
 		Priority: "P1",
@@ -55,7 +55,7 @@ func TestAddTask_Basic(t *testing.T) {
 	if err != nil {
 		t.Fatalf("setup: LoadIndex failed: %v", err)
 	}
-	task := index.Tasks["disc-1"]
+	task := index.tasks["disc-1"]
 	if task.Title != "Fix auth timeout" {
 		t.Errorf("expected title 'Fix auth timeout', got %s", task.Title)
 	}
@@ -174,7 +174,7 @@ func TestAddTask_DefaultPriority(t *testing.T) {
 	if err != nil {
 		t.Fatalf("setup: LoadIndex failed: %v", err)
 	}
-	task := index.Tasks[id]
+	task := index.tasks[id]
 	if task.Priority != "P1" {
 		t.Errorf("expected default P1, got %s", task.Priority)
 	}
@@ -206,7 +206,7 @@ func TestAddTask_DependenciesExist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("setup: LoadIndex failed: %v", err)
 	}
-	task := index.Tasks[id]
+	task := index.tasks[id]
 	if len(task.Dependencies) != 1 || task.Dependencies[0] != "1.1" {
 		t.Errorf("expected deps [1.1], got %v", task.Dependencies)
 	}
@@ -223,7 +223,7 @@ func TestAddTask_Breaking(t *testing.T) {
 	if err != nil {
 		t.Fatalf("setup: LoadIndex failed: %v", err)
 	}
-	task := index.Tasks[id]
+	task := index.tasks[id]
 	if !task.Breaking {
 		t.Error("expected breaking=true")
 	}
@@ -333,8 +333,8 @@ func TestGenerateDiscID_Empty(t *testing.T) {
 
 func TestGenerateDiscID_Sequential(t *testing.T) {
 	index := NewTaskIndex("test")
-	index.Tasks["disc-1"] = Task{ID: "disc-1", Title: "D1", Priority: "P1", Status: "completed", File: "disc-1.md", Record: "records/disc-1.md"}
-	index.Tasks["disc-2"] = Task{ID: "disc-2", Title: "D2", Priority: "P1", Status: "completed", File: "disc-2.md", Record: "records/disc-2.md"}
+	index.tasks["disc-1"] = Task{ID: "disc-1", Title: "D1", Priority: "P1", Status: "completed", File: "disc-1.md", Record: "records/disc-1.md"}
+	index.tasks["disc-2"] = Task{ID: "disc-2", Title: "D2", Priority: "P1", Status: "completed", File: "disc-2.md", Record: "records/disc-2.md"}
 	id := generateDiscID(index)
 	if id != "disc-3" {
 		t.Errorf("expected disc-3, got %s", id)
@@ -343,8 +343,8 @@ func TestGenerateDiscID_Sequential(t *testing.T) {
 
 func TestGenerateDiscID_NonDiscIgnored(t *testing.T) {
 	index := NewTaskIndex("test")
-	index.Tasks["1.1-init"] = Task{ID: "1.1", Title: "Init", Priority: "P0", Status: "completed", File: "1.1-init.md", Record: "records/1.1-init.md"}
-	index.Tasks["fix-e2e-1-1"] = Task{ID: "fix-e2e-1-1", Title: "Fix e2e", Priority: "P0", Status: "completed", File: "fix-e2e-1-1.md", Record: "records/fix-e2e-1-1.md"}
+	index.tasks["1.1-init"] = Task{ID: "1.1", Title: "Init", Priority: "P0", Status: "completed", File: "1.1-init.md", Record: "records/1.1-init.md"}
+	index.tasks["fix-e2e-1-1"] = Task{ID: "fix-e2e-1-1", Title: "Fix e2e", Priority: "P0", Status: "completed", File: "fix-e2e-1-1.md", Record: "records/fix-e2e-1-1.md"}
 	id := generateDiscID(index)
 	if id != "disc-1" {
 		t.Errorf("expected disc-1, got %s", id)
@@ -488,7 +488,7 @@ func TestAddDependency(t *testing.T) {
 	if err != nil {
 		t.Fatalf("setup: LoadIndex failed: %v", err)
 	}
-	task := index.Tasks["1.2-setup"]
+	task := index.tasks["1.2-setup"]
 	if !containsSlice(task.Dependencies, "disc-1") {
 		t.Errorf("expected disc-1 in dependencies, got %v", task.Dependencies)
 	}
@@ -509,7 +509,7 @@ func TestAddDependency_Duplicate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("setup: LoadIndex failed: %v", err)
 	}
-	task := index.Tasks["1.2-setup"]
+	task := index.tasks["1.2-setup"]
 	count := 0
 	for _, d := range task.Dependencies {
 		if d == "disc-1" {
@@ -554,9 +554,9 @@ func TestGetUnmetDependencies(t *testing.T) {
 	if err != nil {
 		t.Fatalf("setup: LoadIndex failed: %v", err)
 	}
-	fixTask := index.Tasks["fix-1"]
+	fixTask := index.tasks["fix-1"]
 	fixTask.Status = "completed"
-	index.Tasks["fix-1"] = fixTask
+	index.tasks["fix-1"] = fixTask
 	if err := SaveIndex(indexPath, index); err != nil {
 		t.Fatalf("setup: SaveIndex failed: %v", err)
 	}
@@ -605,7 +605,7 @@ func TestAddTask_SourceTaskID_Persisted(t *testing.T) {
 	if err != nil {
 		t.Fatalf("setup: LoadIndex failed: %v", err)
 	}
-	task := index.Tasks[id]
+	task := index.tasks[id]
 	if task.SourceTaskID != "1.1-init" {
 		t.Errorf("expected sourceTaskID '1.1-init', got %q", task.SourceTaskID)
 	}
@@ -627,7 +627,7 @@ func TestAddTask_SourceTaskID_UpdatesSourceDeps(t *testing.T) {
 	if err != nil {
 		t.Fatalf("setup: LoadIndex failed: %v", err)
 	}
-	srcTask := index.Tasks["1.1-init"]
+	srcTask := index.tasks["1.1-init"]
 	if !containsSlice(srcTask.Dependencies, id) {
 		t.Errorf("source task should have %s as dependency, got %v", id, srcTask.Dependencies)
 	}
@@ -649,7 +649,7 @@ func TestAddTask_SourceTaskID_SourceNotFound(t *testing.T) {
 	if err != nil {
 		t.Fatalf("setup: LoadIndex failed: %v", err)
 	}
-	task := index.Tasks[id]
+	task := index.tasks[id]
 	if task.SourceTaskID != "nonexistent" {
 		t.Errorf("SourceTaskID should still be persisted, got %q", task.SourceTaskID)
 	}
@@ -678,7 +678,7 @@ func TestAddTask_SourceTaskID_IdempotentDep(t *testing.T) {
 	if err != nil {
 		t.Fatalf("setup: LoadIndex failed: %v", err)
 	}
-	srcTask := index.Tasks["1.1-init"]
+	srcTask := index.tasks["1.1-init"]
 	count := 0
 	for _, d := range srcTask.Dependencies {
 		if d == id1 || d == id2 {
@@ -703,7 +703,7 @@ func TestAddTask_SourceTaskID_IdempotentDep(t *testing.T) {
 
 // TestAddTask_SourceTaskID_LookupByID verifies that SourceTaskID lookup works
 // when the source task's key differs from its ID (e.g. key="1.1-init", id="1.1").
-// This is the core bug: index.Tasks[opts.SourceTaskID] fails when SourceTaskID is
+// This is the core bug: index.tasks[opts.SourceTaskID] fails when SourceTaskID is
 // the task ID but the map key is a slug.
 func TestAddTask_SourceTaskID_LookupByID(t *testing.T) {
 	indexPath, _ := newTestIndex(t)
@@ -719,7 +719,7 @@ func TestAddTask_SourceTaskID_LookupByID(t *testing.T) {
 	}
 
 	index, _ := LoadIndex(indexPath)
-	srcTask := index.Tasks["1.1-init"]
+	srcTask := index.tasks["1.1-init"]
 	if !containsSlice(srcTask.Dependencies, id) {
 		t.Errorf("source task should have %s as dependency (looked up by ID), got deps %v", id, srcTask.Dependencies)
 	}
@@ -732,9 +732,9 @@ func TestAddTask_SourceTaskID_LookupByID_PreservesExistingDeps(t *testing.T) {
 
 	// Give the source task an existing dependency before the add
 	index, _ := LoadIndex(indexPath)
-	src := index.Tasks["1.1-init"]
+	src := index.tasks["1.1-init"]
 	src.Dependencies = []string{"some-other-task"}
-	index.Tasks["1.1-init"] = src
+	index.tasks["1.1-init"] = src
 	SaveIndex(indexPath, index)
 
 	id, err := AddTask(indexPath, AddTaskOpts{
@@ -747,7 +747,7 @@ func TestAddTask_SourceTaskID_LookupByID_PreservesExistingDeps(t *testing.T) {
 	}
 
 	index, _ = LoadIndex(indexPath)
-	srcTask := index.Tasks["1.1-init"]
+	srcTask := index.tasks["1.1-init"]
 	if !containsSlice(srcTask.Dependencies, "some-other-task") {
 		t.Errorf("existing dep 'some-other-task' was lost, got %v", srcTask.Dependencies)
 	}
@@ -778,7 +778,7 @@ func TestAddTask_SourceTaskID_DynamicTaskWhereKeyEqualsID(t *testing.T) {
 	}
 
 	index, _ := LoadIndex(indexPath)
-	srcTask := index.Tasks[firstID]
+	srcTask := index.tasks[firstID]
 	if !containsSlice(srcTask.Dependencies, secondID) {
 		t.Errorf("disc task should have %s as dependency, got %v", secondID, srcTask.Dependencies)
 	}
@@ -803,7 +803,7 @@ func TestAddTask_SourceTaskID_MultipleAddsToSameSourceByID(t *testing.T) {
 	})
 
 	index, _ := LoadIndex(indexPath)
-	srcTask := index.Tasks["1.1-init"]
+	srcTask := index.tasks["1.1-init"]
 	for _, id := range []string{id1, id2, id3} {
 		if !containsSlice(srcTask.Dependencies, id) {
 			t.Errorf("source missing dep %s, got %v", id, srcTask.Dependencies)
@@ -820,7 +820,7 @@ func TestAddTask_SourceTaskID_LookupByID_SourceNotFoundIsNoOp(t *testing.T) {
 	indexPath, _ := newTestIndex(t)
 
 	indexBefore, _ := LoadIndex(indexPath)
-	taskCountBefore := len(indexBefore.Tasks)
+	taskCountBefore := len(indexBefore.tasks)
 
 	_, err := AddTask(indexPath, AddTaskOpts{
 		Title:        "Orphan fix",
@@ -832,12 +832,12 @@ func TestAddTask_SourceTaskID_LookupByID_SourceNotFoundIsNoOp(t *testing.T) {
 	}
 
 	index, _ := LoadIndex(indexPath)
-	if len(index.Tasks) != taskCountBefore+1 {
-		t.Errorf("expected %d tasks, got %d", taskCountBefore+1, len(index.Tasks))
+	if len(index.tasks) != taskCountBefore+1 {
+		t.Errorf("expected %d tasks, got %d", taskCountBefore+1, len(index.tasks))
 	}
 	// Original tasks unchanged
-	for key, before := range indexBefore.Tasks {
-		after := index.Tasks[key]
+	for key, before := range indexBefore.tasks {
+		after := index.tasks[key]
 		if len(after.Dependencies) != len(before.Dependencies) {
 			t.Errorf("task %s deps changed unexpectedly: before=%v after=%v", key, before.Dependencies, after.Dependencies)
 		}
@@ -900,7 +900,7 @@ func TestAddDependency_LookupByID(t *testing.T) {
 	}
 
 	index, _ := LoadIndex(indexPath)
-	task := index.Tasks["1.2-setup"]
+	task := index.tasks["1.2-setup"]
 	if !containsSlice(task.Dependencies, "disc-1") {
 		t.Errorf("expected disc-1 in dependencies, got %v", task.Dependencies)
 	}
@@ -924,10 +924,10 @@ func TestAddDependency_WriteBackUsesSlugKey(t *testing.T) {
 	}
 
 	index, _ := LoadIndex(indexPath)
-	if _, ok := index.Tasks["1.2"]; ok {
+	if _, ok := index.tasks["1.2"]; ok {
 		t.Error("should not create duplicate entry under ID key '1.2'")
 	}
-	if _, ok := index.Tasks["1.2-setup"]; !ok {
+	if _, ok := index.tasks["1.2-setup"]; !ok {
 		t.Error("original slug key '1.2-setup' should still exist")
 	}
 }
@@ -989,9 +989,9 @@ func TestGetUnmetDependencies_AllSlugKeyedCompleted(t *testing.T) {
 	// Both deps are slug-keyed: "1.1" (key="1.1-init"), "1.2" (key="1.2-setup")
 	// 1.1 is completed, make 1.2 completed too
 	index, _ := LoadIndex(indexPath)
-	t2 := index.Tasks["1.2-setup"]
+	t2 := index.tasks["1.2-setup"]
 	t2.Status = "completed"
-	index.Tasks["1.2-setup"] = t2
+	index.tasks["1.2-setup"] = t2
 	SaveIndex(indexPath, index)
 
 	AddTask(indexPath, AddTaskOpts{Title: "Watcher", Dependencies: []string{"1.1", "1.2"}})
@@ -1006,9 +1006,9 @@ func TestGetUnmetDependencies_SkippedDepTreatedAsMet(t *testing.T) {
 	indexPath, _ := newTestIndex(t)
 
 	index, _ := LoadIndex(indexPath)
-	t1 := index.Tasks["1.1-init"]
+	t1 := index.tasks["1.1-init"]
 	t1.Status = "skipped"
-	index.Tasks["1.1-init"] = t1
+	index.tasks["1.1-init"] = t1
 	SaveIndex(indexPath, index)
 
 	AddTask(indexPath, AddTaskOpts{Title: "Watcher", Dependencies: []string{"1.1"}})
@@ -1024,7 +1024,7 @@ func TestGetUnmetDependencies_NonexistentDepTreatedAsUnmet(t *testing.T) {
 
 	// Bypass AddTask dependency validation — directly create task with phantom dep
 	index, _ := LoadIndex(indexPath)
-	index.Tasks["disc-1"] = Task{
+	index.tasks["disc-1"] = Task{
 		ID:       "disc-1",
 		Title:    "Watcher",
 		Priority: "P1",

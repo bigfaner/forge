@@ -1,7 +1,10 @@
 // Package task provides task-related types and operations.
 package task
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 // Task represents a single task in the feature index.
 type Task struct {
@@ -24,17 +27,65 @@ type Task struct {
 }
 
 // TaskIndex represents the index.json structure for a feature.
+// The tasks map is unexported; use ByID, SetTask, TasksMap, etc.
 type TaskIndex struct {
+	Feature      string
+	PRD          string   // e.g. "prd/prd-spec.md"
+	Design       string   // e.g. "design/tech-design.md"
+	Created      string
+	Status       string
+	tasks        map[string]Task
+	StatusEnum   []string
+	PriorityEnum []string
+	TestCommand  string
+	E2ERound     int // current fix-e2e round (0 = no failures yet)
+}
+
+// taskIndexJSON mirrors TaskIndex for JSON serialization.
+type taskIndexJSON struct {
 	Feature      string          `json:"feature"`
-	PRD          string          `json:"prd,omitempty"`     // e.g. "prd/prd-spec.md"
-	Design       string          `json:"design,omitempty"`  // e.g. "design/tech-design.md"
+	PRD          string          `json:"prd,omitempty"`
+	Design       string          `json:"design,omitempty"`
 	Created      string          `json:"created,omitempty"`
 	Status       string          `json:"status,omitempty"`
 	Tasks        map[string]Task `json:"tasks"`
 	StatusEnum   []string        `json:"statusEnum,omitempty"`
 	PriorityEnum []string        `json:"priorityEnum,omitempty"`
 	TestCommand  string          `json:"testCommand,omitempty"`
-	E2ERound     int             `json:"e2eRound,omitempty"` // current fix-e2e round (0 = no failures yet)
+	E2ERound     int             `json:"e2eRound,omitempty"`
+}
+
+func (ti TaskIndex) MarshalJSON() ([]byte, error) {
+	return json.Marshal(taskIndexJSON{
+		Feature:      ti.Feature,
+		PRD:          ti.PRD,
+		Design:       ti.Design,
+		Created:      ti.Created,
+		Status:       ti.Status,
+		Tasks:        ti.tasks,
+		StatusEnum:   ti.StatusEnum,
+		PriorityEnum: ti.PriorityEnum,
+		TestCommand:  ti.TestCommand,
+		E2ERound:     ti.E2ERound,
+	})
+}
+
+func (ti *TaskIndex) UnmarshalJSON(data []byte) error {
+	var j taskIndexJSON
+	if err := json.Unmarshal(data, &j); err != nil {
+		return err
+	}
+	ti.Feature = j.Feature
+	ti.PRD = j.PRD
+	ti.Design = j.Design
+	ti.Created = j.Created
+	ti.Status = j.Status
+	ti.tasks = j.Tasks
+	ti.StatusEnum = j.StatusEnum
+	ti.PriorityEnum = j.PriorityEnum
+	ti.TestCommand = j.TestCommand
+	ti.E2ERound = j.E2ERound
+	return nil
 }
 
 // TaskState represents the current in-progress task state.
@@ -86,7 +137,7 @@ func NewTaskIndex(feature string) *TaskIndex {
 			"skipped",
 		},
 		PriorityEnum: []string{"P0", "P1", "P2"},
-		Tasks:        make(map[string]Task),
+		tasks:        make(map[string]Task),
 		Created:      time.Now().Format("2006-01-02"),
 	}
 }
