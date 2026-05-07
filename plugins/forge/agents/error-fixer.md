@@ -14,6 +14,9 @@ inputs:
   - name: TASK_FILE
     description: Absolute path to the task definition file
     required: false
+  - name: INSTRUCTION
+    description: Additional instruction for the fix (e.g., which skill to invoke)
+    required: false
 ---
 
 You are an elite error fixer specialized in diagnosing and resolving compilation errors, test failures, and verification issues.

@@ -61,7 +61,7 @@ Explore context → Check proposal → Assess scope → Ask questions → Propos
 6. **Present PRD sections** — get approval after each section
 7. **Write PRD Spec** — save to `docs/features/<feature-slug>/prd/prd-spec.md`
 8. **Write User Stories** — save to `docs/features/<feature-slug>/prd/prd-user-stories.md`
-9. **Write UI Functions** (if applicable) — save to `docs/features/<feature-slug>/prd/prd-ui-functions.md`
+9. **Write UI Functions** (mandatory for UI features) — save to `docs/features/<feature-slug>/prd/prd-ui-functions.md`
 10. **Create Manifest** — save to `docs/features/<feature-slug>/manifest.md`
 11. **Commit** — commit all documents
 
@@ -71,7 +71,7 @@ Explore context → Check proposal → Assess scope → Ask questions → Propos
 |------|----------|-------------|
 | `prd/prd-spec.md` | `templates/prd-spec.md` | Product requirements document with background, goals, scope, flows, functional specs |
 | `prd/prd-user-stories.md` | `templates/prd-user-stories.md` | User stories derived from user roles identified in the PRD background |
-| `prd/prd-ui-functions.md` | `templates/prd-ui-functions.md` | UI function highlights (requirements level, only for features with UI surface) |
+| `prd/prd-ui-functions.md` | `templates/prd-ui-functions.md` | UI function highlights (requirements level, **mandatory** for features with UI surface) |
 | `manifest.md` | `templates/manifest.md` | Feature index and traceability mapping |
 
 ## Step 1: Explore Project Context
@@ -127,7 +127,7 @@ Present incrementally, getting approval after each section:
 | Goals | Objectives + quantified metrics | Quantify benefits wherever possible |
 | Scope | In Scope / Out of Scope | Clear boundaries |
 | Flow Description | Business flow + Mermaid diagram | Flowchart is required |
-| Functional Specs | List page / Buttons / Forms / Related changes | Choose quick/detailed mode as needed; tables required |
+| Functional Specs | Reference to prd-ui-functions.md + Related changes | UI specs in separate file |
 | Other Notes | Performance / Data / Monitoring / Security | Non-functional requirements |
 | User Stories | As a / I want / So that + AC | Output to separate file |
 
@@ -145,7 +145,7 @@ docs/features/<feature-slug>/
 ├── prd/
 │   ├── prd-spec.md            # PRD Spec
 │   ├── prd-user-stories.md    # User Stories
-│   └── prd-ui-functions.md    # UI Functions (optional)
+│   └── prd-ui-functions.md    # UI Functions (mandatory for UI features)
 ├── design/                    # (created by /tech-design)
 ├── ui/                        # (created by /ui-design)
 └── tasks/                     # (created by /breakdown-tasks)
@@ -168,10 +168,12 @@ So that [concrete benefit/goal]
 
 **Acceptance Criteria** (Given/When/Then) must follow each story. Each AC must be objectively verifiable.
 
-## Step 8: Write UI Functions (if applicable)
+See `examples/user-stories.md` for concrete examples derived from Background roles.
+
+## Step 8: Write UI Functions (mandatory for UI features)
 
 For features with UI surfaces, create `prd/prd-ui-functions.md` using `templates/prd-ui-functions.md`.
-Skip this step for backend/API/CLI features with no UI surface.
+This step is **mandatory** when the feature has any UI surface. Skip only for backend/API/CLI-only features with no UI surface.
 
 **Placement rules** (mandatory for every UI Function):
 
@@ -200,7 +202,7 @@ Before presenting to the user, verify the PRD passes these checks:
 | Background completeness | Reason + target users + stakeholders all present and specific |
 | Goals quantified | At least one numeric target (% , count, time) |
 | Flow diagram | Mermaid flowchart with decision points (diamond nodes) and at least one error/exception branch |
-| Functional specs | All applicable tables filled — no placeholder rows |
+| Functional specs | prd-spec.md references prd-ui-functions.md; prd-ui-functions.md tables filled — no placeholder rows |
 | User stories | One story per user role, each with Given/When/Then AC |
 | Scope consistency | In-scope items match what's described in Functional Specs and user stories |
 | No vague language | No "better", "faster", "improved" without quantification |

@@ -9,10 +9,11 @@ Each skill produces files to specific locations. Follow these rules when creatin
 | Skill output | Location | Who creates | Rules |
 |---|---|---|---|
 | `/brainstorm` | `docs/proposals/<slug>/proposal.md` | Skill | |
+| `/eval-proposal` | `docs/proposals/<slug>/eval/{report.md,iteration-N.md}` | Skill | Auto-generated |
 | `/write-prd` | `docs/features/<slug>/manifest.md` | Skill | Feature single entry point |
-| `/write-prd` | `docs/features/<slug>/prd/{prd-spec,prd-user-stories,prd-ui-functions}.md` | Skill | ui-functions optional |
+| `/write-prd` | `docs/features/<slug>/prd/{prd-spec,prd-user-stories,prd-ui-functions}.md` | Skill | ui-functions mandatory for UI features |
 | `/eval-prd` | `docs/features/<slug>/prd/eval/{report.md,iteration-N.md}` | Skill | Auto-generated |
-| `/tech-design` | `docs/features/<slug>/design/{tech-design,api-handbook}.md` | Skill | api-handbook optional |
+| `/tech-design` | `docs/features/<slug>/design/{tech-design,api-handbook}.md` | Skill | api-handbook optional; er-diagram.md + schema.sql when db-schema: yes |
 | `/eval-design` | `docs/features/<slug>/design/eval/{report.md,iteration-N.md}` | Skill | Auto-generated |
 | `/ui-design` | `docs/features/<slug>/ui/ui-design.md` | Skill | Optional |
 | `/eval-ui` | `docs/features/<slug>/ui/eval/{report.md,iteration-N.md}` | Skill | Auto-generated |
@@ -27,6 +28,8 @@ Each skill produces files to specific locations. Follow these rules when creatin
 | `/consolidate-specs` | `docs/business-rules/<domain>.md`, `docs/conventions/<topic>.md` | Skill | Cross-feature knowledge integration |
 | `/record-decision` | `docs/decisions/<type>.md` | Command | Categorized by decision type |
 | `/learn-lesson` | `docs/lessons/<category-prefix><slug>.md` | Skill | Categorized lesson docs |
+| `/eval-harness` | `docs/harness-reports/YYYY-MM-DD{,-snapshot}.md` | Skill | Auto-generated |
+| `/improve-harness` | `docs/harness-reports/YYYY-MM-DD-improvements.md` | Skill | Auto-generated |
 | `task record` | `docs/features/<slug>/tasks/records/<seq>.<sub>-<slug>.md` | CLI | Never write directly |
 | Task runtime | `docs/features/<slug>/tasks/process/` | CLI | Not committed to git |
 
@@ -66,10 +69,10 @@ docs/
                                  ↓
                             ui/ui-design.md
 
-/breakdown-tasks appends standard tasks (T-test-1 through T-test-5), executed in order:
-/gen-sitemap* → /gen-test-cases → /gen-test-scripts → /run-e2e-tests → /graduate-tests → /consolidate-specs
-     ↓              ↓                  ↓                   ↓               ↓                    ↓
- sitemap.json  test-cases.md    tests/e2e/features/  tests/e2e/.../results/  tests/e2e/<target>/  specs/{biz,tech}-specs.md
+/breakdown-tasks appends standard tasks (T-test-1 through T-test-5, including T-test-4.5 verify-regression), executed in order:
+/gen-sitemap* → /gen-test-cases → /gen-test-scripts → /run-e2e-tests → /verify-regression → /graduate-tests → /consolidate-specs
+     ↓              ↓                  ↓                   ↓               ↓                    ↓                    ↓
+ sitemap.json  test-cases.md    tests/e2e/features/  tests/e2e/.../results/  regression check  tests/e2e/<target>/  specs/{biz,tech}-specs.md
 
 * /gen-sitemap is a prerequisite command (called by T-test-1), not a standalone T-test task.
 ```

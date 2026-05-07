@@ -79,7 +79,6 @@ Pass these inputs to the scorer:
 - `REPORT_PATH` = `docs/features/<slug>/design/eval/iteration-{{N}}.md`
 - `ITERATION` = current iteration number (1-based)
 - `PREVIOUS_REPORT_PATH` = previous iteration report path (only if iteration > 1)
-- `HAS_DB_SCHEMA` = `true` if `er-diagram.md` exists in DOC_DIR, `false` otherwise. When true, scorer uses the db-schema variant of Dimension 2 sub-criteria from the rubric.
 
 The scorer must NEVER be told what the reviser changed. It evaluates the design as-is.
 </HARD-RULE>

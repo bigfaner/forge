@@ -3,12 +3,13 @@ date: "{{DATE}}"
 doc_dir: "{{DOC_DIR}}"
 iteration: "{{ITERATION}}"
 target_score: "{{TARGET}}"
+scoring_mode: "{{MODE_A_or_MODE_B}}"
 evaluator: Claude (automated, adversarial)
 ---
 
 # PRD Eval — Iteration {{ITERATION}}
 
-**Score: {{SCORE}}/100** (target: {{TARGET}})
+**Score: {{SCORE}}/100** (target: {{TARGET}}, mode: {{MODE_A_or_MODE_B}})
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -16,9 +17,9 @@ evaluator: Claude (automated, adversarial)
 ├──────────────────────────────┬──────────┬──────────┬────────────┤
 │ Dimension                    │ Score    │ Max      │ Status     │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 1. Background & Goals        │  ___     │  20      │ ✅/⚠️/❌    │
-│    Background three elements │  ___/7   │          │            │
-│    Goals quantified          │  ___/7   │          │            │
+│ 1. Background & Goals        │  ___     │  15      │ ✅/⚠️/❌    │
+│    Three elements            │  ___/5   │          │            │
+│    Goals quantified          │  ___/4   │          │            │
 │    Logical consistency       │  ___/6   │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
 │ 2. Flow Diagrams             │  ___     │  20      │ ✅/⚠️/❌    │
@@ -26,24 +27,32 @@ evaluator: Claude (automated, adversarial)
 │    Main path complete        │  ___/7   │          │            │
 │    Decision + error branches │  ___/6   │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 3. Functional Specs          │  ___     │  20      │ ✅/⚠️/❌    │
-│    Tables complete           │  ___/7   │          │            │
-│    Field descriptions clear  │  ___/7   │          │            │
-│    Validation rules explicit │  ___/6   │          │            │
+│ 3a. Functional Specs (A)     │  ___     │  20      │ ✅/⚠️/❌    │
+│  OR 3b. Flow Completeness(B) │          │          │            │
+│    Sub-criterion 1           │  ___/7   │          │            │
+│    Sub-criterion 2           │  ___/7   │          │            │
+│    Sub-criterion 3           │  ___/6   │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 4. User Stories              │  ___     │  20      │ ✅/⚠️/❌    │
+│ 4. User Stories              │  ___     │  30      │ ✅/⚠️/❌    │
 │    Coverage per user type    │  ___/7   │          │            │
 │    Format correct            │  ___/7   │          │            │
-│    AC per story              │  ___/6   │          │            │
+│    AC per story (G/W/T)      │  ___/6   │          │            │
+│    AC verifiability          │  ___/10  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 5. Scope Clarity             │  ___     │  20      │ ✅/⚠️/❌    │
-│    In-scope concrete         │  ___/7   │          │            │
-│    Out-of-scope explicit     │  ___/7   │          │            │
+│ 5. Scope Clarity             │  ___     │  15      │ ✅/⚠️/❌    │
+│    In-scope concrete         │  ___/5   │          │            │
+│    Out-of-scope explicit     │  ___/4   │          │            │
 │    Consistent with specs     │  ___/6   │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
 │ TOTAL                        │  ___     │  100     │            │
 └──────────────────────────────┴──────────┴──────────┴────────────┘
 ```
+
+> **Mode A** (prd-ui-functions.md present): Dimension 3 evaluates Functional Specs from prd-ui-functions.md.
+> Sub-criteria: Placement & Interaction completeness /7, Data Requirements & States clarity /7, Validation Rules explicit /6.
+>
+> **Mode B** (prd-ui-functions.md absent): Dimension 3 evaluates Flow Completeness from prd-spec.md Flow Description.
+> Sub-criteria: Flow steps describe complete business process /7, Data flow documented /7, Exception handling and edge cases /6.
 
 ---
 
@@ -51,7 +60,7 @@ evaluator: Claude (automated, adversarial)
 
 | Location | Issue | Penalty |
 |----------|-------|---------|
-| <!-- section:line --> | <!-- vague language / missing content / inconsistency --> | <!-- -N pts --> |
+| <!-- section:line --> | <!-- vague language / missing content / cross-file inconsistency --> | <!-- -N pts --> |
 
 ---
 

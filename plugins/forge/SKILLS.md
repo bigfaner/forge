@@ -9,7 +9,7 @@
 | eval-prd | Evaluate PRD quality against standards |
 | tech-design | Create technical design after PRD is finalized |
 | ui-design | Create UI design specifications with style selection and HTML prototype generation |
-| eval-design | Evaluate a tech design with 100-point scoring, then run adversarial iterations until target score is met |
+| eval-design | Evaluate a tech design with 100-point scoring, then run adversarial iterations until target score is met. Main session orchestrates doc-scorer and doc-reviser subagents |
 | breakdown-tasks | Break down tech-design into executable tasks |
 | record-task | Record task execution result and update task status |
 | git-commit | Create git commits with Conventional Commits format |
@@ -22,7 +22,7 @@
 | gen-test-scripts | Generate executable e2e test scripts |
 | run-e2e-tests | Execute e2e test scripts and generate results report |
 | graduate-tests | Migrate feature test scripts to the regression suite (tests/e2e/) |
-| consolidate-specs | Extract business rules and tech specs from feature docs into preview files, detect overlaps with existing knowledge, user confirms before integrating to project-level dirs |
+| consolidate-specs | Extract business rules and tech specs from feature docs into preview files, detect overlaps with existing knowledge, user confirms before integrating to project-level dirs. |
 
 ## Commands
 
