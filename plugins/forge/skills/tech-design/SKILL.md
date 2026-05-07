@@ -55,6 +55,7 @@ ls docs/features/<slug>/prd/prd-spec.md
    - Identify acceptance criteria
 3. Read `prd/prd-user-stories.md` — extract all Given/When/Then acceptance criteria into a checklist
    - Keep this AC list visible throughout the design process — every AC must map to a design element
+4. Read `prd/prd-spec.md` frontmatter → extract `db-schema` value. Store for conditional branching in Step 5.
 
 > **Note**: The PRD intentionally excludes technology selection (brainstorm and write-prd phases forbid it). All technology decisions start from this phase. Use non-functional constraints from the PRD as input conditions for technology selection.
 
@@ -95,7 +96,7 @@ Present incrementally, section by section:
 | Overview       | High-level approach     |
 | Architecture   | Component diagram       |
 | Interfaces     | Interface definitions   |
-| Data Models    | Struct definitions      |
+| Data Models    | If `db-schema: "yes"`: generate `er-diagram.md` + `schema.sql`; inline becomes cross-reference. If `db-schema: "no"`: struct definitions as before. |
 | Error Handling | Error strategy          |
 | Integration Specs | Integration specifications for existing-page components |
 | Testing        | Test strategy           |
@@ -145,9 +146,21 @@ This spec is consumed by breakdown-tasks to generate separate integration tasks.
 
 If no UI Function has `placement: existing-page`, write "No existing-page integrations — not applicable."
 
+### 5.5 DB Schema Branch (conditional)
+
+**When `db-schema: "yes"`**:
+1. Generate `design/er-diagram.md` using `templates/er-diagram.md` — Mermaid erDiagram + entity detail tables + index design + relationship descriptions
+2. Generate `design/schema.sql` using `templates/schema.sql` — CREATE TABLE / ALTER TABLE with inline COMMENT syntax
+3. Replace Data Models section in tech-design.md with cross-reference summary + Field Quick Reference table
+
+**When `db-schema: "no"`**:
+Data Models stays inline. After drafting, scan content for keywords: `TABLE`, `REFERENCES`, `FOREIGN KEY`, `CREATE TABLE`, `ALTER TABLE`, `migration`, `schema`. If found, prompt: "PRD marked db-schema 'no' but design references database tables. Generate er-diagram.md and schema.sql?" — Yes → proceed with db-schema "yes" path. No → keep inline.
+
 ## Step 6: Get Approval
 
 For each section, wait for user approval.
+
+When `db-schema: "yes"`, present `er-diagram.md` and `schema.sql` alongside the Data Models cross-reference for approval as a single unit.
 
 ## Step 7: Archive Decisions (Optional)
 
@@ -164,6 +177,8 @@ Follow the tech-design archiving flow defined in `plugins/forge/references/share
 Save to:
 - `docs/features/<slug>/design/tech-design.md` — using `templates/tech-design.md`
 - `docs/features/<slug>/design/api-handbook.md` — using `templates/api-handbook.md` (if feature has API surface)
+- `docs/features/<slug>/design/er-diagram.md` — using `templates/er-diagram.md` (if `db-schema: "yes"`)
+- `docs/features/<slug>/design/schema.sql` — using `templates/schema.sql` (if `db-schema: "yes"`)
 
 ## Step 9: Update Manifest
 

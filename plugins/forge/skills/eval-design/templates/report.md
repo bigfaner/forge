@@ -25,6 +25,13 @@ evaluator: Claude (automated, adversarial)
 │    Interface signatures typed│  ___/7   │          │            │
 │    Models concrete           │  ___/7   │          │            │
 │    Directly implementable    │  ___/6   │          │            │
+<!-- When HAS_DB_SCHEMA=true, replace lines 25-27 (the 3 sub-criteria above) with the 5 rows below. Keep the dimension header (line 24). Delete this comment afterward.
+│    Interface signatures typed│  ___/5   │          │            │
+│    Inline models concrete    │  ___/5   │          │            │
+│    ER diagram complete       │  ___/3   │          │            │
+│    SQL DDL directly usable   │  ___/4   │          │            │
+│    Cross-layer consistency   │  ___/3   │          │            │
+-->
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
 │ 3. Error Handling            │  ___     │  15      │ ✅/⚠️/❌    │
 │    Error types defined       │  ___/5   │          │            │

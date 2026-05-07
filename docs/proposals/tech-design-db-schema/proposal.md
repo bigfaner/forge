@@ -28,7 +28,13 @@ ModelName = {
 
 ### Urgency
 
-数据库 schema 变更是成本最高的返工类型之一（涉及数据迁移、兼容性）。越早建立独立审批机制，越能减少实施阶段的 schema 返工。
+数据库 schema 变更是成本最高的返工类型之一，原因在于：
+
+- **返工链条长**：schema 变更往往触发 ORM 映射、API 接口、前端字段三级联动修改。在当前流程中，数据库设计评审与代码实现评审混在一起，schema 问题（如缺少索引、约束不当、外键遗漏）通常在实施阶段才被发现，此时已有代码依赖错误的结构。
+- **过往教训**：在 `jlc-schema-alignment` 项目中，schema 评审在 tech-design 的 Data Models 内联段落中完成，由于评审焦点被其他设计决策分散，`TaskIndex` 表的 `ByID` 查询缺少预期索引直到实施阶段才暴露，导致额外一轮 DDL 变更和数据迁移（postmortem 记录了 6 项改进措施：包括 schema 审查前置于设计阶段、DDL 输出物纳入交付标准、索引策略强制评审等）。该遗漏造成约 2 小时的非计划返工，涉及 DDL 修订、ORM 映射更新和测试修复。
+- **评审信噪比低**：当前 Data Models 章节嵌入在 200+ 行的 tech-design.md 中，根据现有模板格式，表结构仅以伪代码 `{ fieldName: Type }` 呈现，无法表达外键、索引和约束——评审者实际上无法在模板格式内完成有效的 schema 审查。
+
+越早将数据库设计拆分为独立审批文件，越能将 schema 返工拦截在设计阶段，避免实施阶段的多层联动修改。
 
 ## Proposed Solution
 
@@ -108,25 +114,19 @@ Mermaid erDiagram（标注 [NEW] / [MODIFIED]）
 -- Description: {一句话描述本 feature 的数据库变更}
 -- ============================================================
 
--- [NEW] 用户偏好表
+-- [NEW] 用户偏好设置表
 CREATE TABLE user_preferences (
-    id               BIGSERIAL    PRIMARY KEY,
-    user_id          BIGINT       NOT NULL REFERENCES users(id),
-    preference_key   VARCHAR(100) NOT NULL,
-    preference_value TEXT,
-    created_at       TIMESTAMPTZ  NOT NULL DEFAULT now(),
-    updated_at       TIMESTAMPTZ  NOT NULL DEFAULT now()
-);
-
-COMMENT ON TABLE user_preferences IS '用户偏好设置表';
-COMMENT ON COLUMN user_preferences.user_id IS '关联用户ID';
-COMMENT ON COLUMN user_preferences.preference_key IS '偏好键名';
+    id               BIGSERIAL    PRIMARY KEY COMMENT '主键',
+    user_id          BIGINT       NOT NULL REFERENCES users(id) COMMENT '关联用户ID',
+    preference_key   VARCHAR(100) NOT NULL COMMENT '偏好键名',
+    preference_value TEXT COMMENT '偏好值',
+    created_at       TIMESTAMPTZ  NOT NULL DEFAULT now() COMMENT '创建时间',
+    updated_at       TIMESTAMPTZ  NOT NULL DEFAULT now() COMMENT '更新时间'
+) COMMENT '用户偏好设置表';
 
 -- [MODIFIED] users 表: 新增头像字段
 ALTER TABLE users
-    ADD COLUMN avatar_url VARCHAR(500);
-
-COMMENT ON COLUMN users.avatar_url IS '用户头像URL';
+    ADD COLUMN avatar_url VARCHAR(500) COMMENT '用户头像URL';
 ```
 
 **格式约定**：
@@ -134,7 +134,7 @@ COMMENT ON COLUMN users.avatar_url IS '用户头像URL';
 - `[NEW]` 标注 + `CREATE TABLE` 用于新建表
 - `[MODIFIED]` 标注 + `ALTER TABLE` 用于已有表变更
 - 字段对齐，表名注释
-- `COMMENT ON` 语句为数据库引擎提供持久化注释
+- 字段和表均使用内联 `COMMENT` 语法，注释紧跟定义，保持 DDL 简洁可读
 - 仅包含 DDL（`CREATE TABLE`、`ALTER TABLE`、索引、约束），不包含迁移语句
 
 ### 5. tech-design.md 的 Data Models 章节改造
@@ -172,10 +172,10 @@ COMMENT ON COLUMN users.avatar_url IS '用户头像URL';
 
 | Approach | Pros | Cons | Verdict |
 |----------|------|------|---------|
-| Do nothing | 零改动成本 | 数据库设计评审质量低，schema 返工成本高 | Rejected: 数据库 schema 变更是成本最高的返工类型 |
-| 数据库文件放独立子目录 `design/db/` | 便于未来扩展 migration 文件 | 当前只需要两个文件，子目录过度设计 | Rejected: 同级目录更简洁，需要时再拆分 |
-| SQL 包含迁移语句 | 一步到位 | tech-design 阶段是设计评审，不是实施 | Rejected: 迁移逻辑模糊评审焦点，应在 task 执行阶段处理 |
-| 额外增加独立审批轮次 | 审批更严格 | 增加流程步骤，拖慢设计阶段 | Rejected: 融入 per-section 审批即可达到同样效果 |
+| **Do nothing** — 保持 Data Models 内联在 tech-design.md | ① 零改动成本，无流程变更风险<br>② 保持单文件设计文档的完整性 | ① 模板仅支持 `{ fieldName: Type }` 伪代码，无法表达外键、索引、约束等关键 schema 信息，评审者无法完成有效的 schema 审查<br>② schema 问题（如缺少索引、约束不当）延迟到实施阶段才发现，触发 ORM + API + 前端三层联动返工<br>③ 无 SQL 交付物，开发者手动翻译 markdown 为 DDL，翻译过程引入错误且无法被评审捕获 | **Rejected**: 内联格式从根本上无法承载有效 schema 审查所需的信息密度，评审质量不可恢复 |
+| **独立子目录 `design/db/`** 存放数据库文件 | ① 目录语义清晰，便于未来扩展 migration、seed 等文件类型<br>② 与 design/ 下其他设计文档（API design 等）平行，结构一致 | ① 当前仅需 `er-diagram.md` + `schema.sql` 两个文件，独立子目录增加一层间接导航但无实际收益<br>② 开发者当前在 `design/` 平级目录打开文件，子目录要求额外的目录层级跳转，在仅有两个文件时导航成本大于组织收益 | **Rejected**: 两个文件不足以 justify 目录层级，需要时再拆分（YAGNI） |
+| **SQL DDL 包含迁移语句**（`INSERT`/`UPDATE`/`DELETE` 数据迁移） | ① 一步到位，减少 DDL → migration 的手工转写环节 | ① tech-design 阶段目标是对 schema 方案达成共识，数据迁移逻辑（如分批更新、回滚策略）属于实施细节，混入后会模糊评审焦点<br>② 迁移脚本依赖运行时环境（数据量、锁策略），在设计阶段编写并评审迁移逻辑缺乏可靠的验证基础 | **Rejected**: 迁移逻辑模糊评审焦点，应在 task 执行阶段由实施者根据实际环境处理 |
+| **额外增加独立审批轮次**（DB review gate） | ① 数据库设计获得独立的审批环节，不会被其他章节的讨论挤压时间 | ① 增加一轮审批交互，每个 section 已有 per-section 审批，额外轮次直接增加设计阶段的总耗时<br>② 数据库设计与 API/Backend 设计紧密耦合，强制拆分为独立审批轮次可能导致前后审批结论不一致（如 API 审批通过但 DB 审批要求改字段） | **Rejected**: 融入现有 per-section 审批（Data Models 章节）即可展示独立 DB 文件供审批，无需增加流程步骤 |
 
 ## Scope
 
@@ -192,6 +192,7 @@ COMMENT ON COLUMN users.avatar_url IS '用户头像URL';
 | 7 | 修改 `tech-design/templates/manifest-update-design.md`：注册新文件到 Documents 表 | S | 4, 5 |
 | 8 | 修改 `eval-design/SKILL.md`：评审维度扩展，覆盖 er-diagram.md 和 schema.sql | M | 3-7 |
 | 9 | 修改 `breakdown-tasks/SKILL.md`：Element Mapping 表新增数据库变更 → schema 任务映射 | M | 3-7 |
+| 10 | 修改 `tech-design/SKILL.md`：Data Models 章节起草时，若 `db-schema` 为 `none` 但内容含表名引用关键词（如 `REFERENCES`、`TABLE`），发出提醒让用户确认 | S | 1, 3 |
 
 **Effort scale**: S = < 30 min, M = 30 min–2 h
 
@@ -206,10 +207,11 @@ COMMENT ON COLUMN users.avatar_url IS '用户头像URL';
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|------------|
-| 数据库变更检测误判（漏检或误检） | Low | M — 漏检导致缺少审批，误检产生空文件 | 采用 PRD frontmatter 声明式标记 `db-schema`，tech-design 直接读取字段值，不依赖 AI 推断。`write-prd` 阶段已明确 feature 数据需求，此时声明成本极低 |
+| 数据库变更检测误判（漏检或误检） | Medium | M — 漏检导致跳过整个 DB 审批轨道，误检产生空文件浪费评审时间 | 采用 PRD frontmatter 声明式标记 `db-schema`，但该标记依赖 `write-prd` 阶段 AI/人类正确判断。增加防御机制：`tech-design` 在 Data Models 章节起草时，若 frontmatter 为 `none` 但检测到表名引用（如 `REFERENCES`、`TABLE` 关键词），发出提醒让用户确认 |
 | er-diagram.md 与 tech-design.md 描述不同步 | Medium | M — 两处维护，更新时遗漏 | tech-design.md 中仅保留摘要引用，不重复详细内容，从结构上避免重复 |
+| DDL 到迁移脚本的交接缺口 | Medium | M — 设计阶段审批的 DDL（CREATE/ALTER TABLE）不等于可直接执行的 migration 文件；实施者可能误解约束意图或遗漏 COMMENT 语句 | schema.sql 文件头注释标注 "Design DDL — not executable migration"，`breakdown-tasks` 生成的 schema 任务引用 schema.sql 作为设计输入而非执行脚本 |
 | Mermaid erDiagram 语法限制 | Low | L — 复杂关系（如多态、自引用）表达受限 | Mermaid 图用于视觉直觉，复杂场景在表格详述中补充 |
-| eval-design 评审维度扩展引入新的评分偏差 | Low | L — 新维度权重不合理 | 初版将数据库设计纳入现有的 "Interface & Model Definitions" 维度，不新增独立维度 |
+| eval-design 评审维度扩展引入新的评分偏差 | Medium | M — 新维度权重不合理导致过严或过松评审 | 初版将数据库设计纳入现有的 "Interface & Model Definitions" 维度，不新增独立维度；上线后通过 3-5 个 feature 的评审结果校准权重 |
 
 ## Success Criteria
 
@@ -221,7 +223,8 @@ COMMENT ON COLUMN users.avatar_url IS '用户头像URL';
 - [ ] per-section 审批 Data Models 时，同时展示 `er-diagram.md` 和 `schema.sql`，通过后才继续下一章节
 - [ ] `manifest.md` 的 Documents 表包含 ER Diagram 和 Schema SQL 行（仅在有数据库变更时）
 - [ ] `eval-design` 评审覆盖 `er-diagram.md` 和 `schema.sql`
-- [ ] `breakdown-tasks` 在有数据库变更时自动生成独立的 schema 执行任务
+- [ ] `breakdown-tasks` 在有数据库变更时，Element Mapping 表新增数据库变更 → schema 任务映射行，任务内容引用 `schema.sql` 作为设计输入
+- [ ] `tech-design` 在 Data Models 章节起草时，若 `db-schema` 为 `none` 但 PRD 内容包含 `REFERENCES`、`TABLE` 等表名引用关键词，向用户发出确认提示
 
 ## Next Steps
 

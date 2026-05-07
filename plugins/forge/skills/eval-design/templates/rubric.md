@@ -29,6 +29,18 @@ Mark missing required sections as 0 pts for that dimension:
 
 ### 2. Interface & Model Definitions (20 pts)
 
+**When `er-diagram.md` exists (db-schema: "yes"):**
+
+| Criterion | Points | What to check |
+|-----------|--------|---------------|
+| Interface signatures typed | 0-5 | Do all interfaces have typed params and return values (not prose)? |
+| Inline models concrete | 0-5 | Are all non-DB model fields named with types and constraints? |
+| ER diagram complete | 0-3 | Does er-diagram.md have Mermaid erDiagram with all entities, relationships, and cardinality? |
+| SQL DDL directly usable | 0-4 | Can schema.sql be executed as-is? Inline COMMENT syntax, all FKs, indexes, defaults present? |
+| Cross-layer consistency | 0-3 | Do field names in Cross-Layer Data Map match er-diagram.md entity column names? |
+
+**When `er-diagram.md` absent (db-schema: "no"):**
+
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
 | Interface signatures typed | 0-7 | Do all interfaces have typed params and return values (not prose)? |

@@ -14,6 +14,8 @@ Break a technical design into executable tasks (1-4h each, clear dependencies, t
 - If `ui/ui-design.md` does NOT exist → include `<NO_UI>` blocks, exclude `<HAS_UI>`/`<UI_ONLY>` blocks.
 - If `prd/prd-ui-functions.md` exists → include `<HAS_PLACEMENT>` and `<RULE>` blocks (independent of ui-design.md). `<RULE>` has no independent activation — it is always co-activated with `<HAS_PLACEMENT>`.
 - If `prd/prd-ui-functions.md` does NOT exist → exclude `<HAS_PLACEMENT>` and `<RULE>` blocks.
+- If `design/er-diagram.md` exists → include `<HAS_DB>` blocks.
+- If `design/er-diagram.md` does NOT exist → exclude `<HAS_DB>` blocks.
 
 | Artifact                | Missing? Run                    |
 | ----------------------- | ------------------------------- |
@@ -27,6 +29,8 @@ Read `manifest.md` to locate documents, then read all available files:
 - `prd/prd-spec.md` — WHAT to build
 - `design/tech-design.md` — HOW to build it
 - `design/api-handbook.md` — interfaces (if exists)
+- `design/er-diagram.md` — entity relationships (if exists)
+- `design/schema.sql` — SQL DDL (if exists)
 - `prd/prd-user-stories.md` — user scenarios with Given/When/Then AC (if exists)
 - `prd/prd-ui-functions.md` — UI function requirements (if exists)
 - `ui/ui-design.md` — UI component specs (if exists)
@@ -52,6 +56,7 @@ If `ui/ui-design.md` exists, also list `ui/prototype/` files and read `ui/protot
 | ---------------------------- | -------------- | ------------------------ |
 | Interface definition         | tech-design.md | Interface task           |
 | Data model                   | tech-design.md | Model task               |
+| DB schema (er-diagram + schema.sql) | design/er-diagram.md, design/schema.sql | Schema task |
 | Backend component            | tech-design.md | Implementation (Backend) |
 | Error type                   | tech-design.md | Error handling task      |
 | PRD flow gate (diamond node) | prd-spec.md    | Gate verification task   |
@@ -193,6 +198,17 @@ Read the corresponding template before writing each task type.
 ### 4a. Business Tasks
 
 Read `templates/task.md` for task content structure. Create one task file per design element from the Element Mapping table, following dependencies from Step 3. For each task, set `breaking: true` if it modifies shared interfaces, data models, or API contracts (e.g., changing a schema column type, renaming a shared field). Additive changes are non-breaking.
+
+<HAS_DB>
+
+For each entity in `design/er-diagram.md`, create one Schema task:
+- References `design/schema.sql` and `design/er-diagram.md` as input
+- AC: "DDL executes without error", "all FK references resolve", "indexes created"
+- `breaking: true` if it ALTERs an existing table; `breaking: false` if all CREATE TABLE are new
+- Depends on interface tasks (if any) since the migration may need type information
+- scope: "backend"
+
+</HAS_DB>
 
 <HAS_UI>
 
