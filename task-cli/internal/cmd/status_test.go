@@ -217,3 +217,87 @@ func TestCheckUnmetDeps_KeyDiffersFromID(t *testing.T) {
 		}
 	})
 }
+
+func TestCheckUnmetDeps_KeyDiffersFromID_EdgeCases(t *testing.T) {
+	t.Run("empty deps returns empty", func(t *testing.T) {
+		index := &task.TaskIndex{
+			Feature: "test",
+			Tasks: map[string]task.Task{
+				"src": {ID: "src"},
+			},
+		}
+		unmet := checkUnmetDeps(index, &task.Task{ID: "src", Dependencies: []string{}})
+		if len(unmet) != 0 {
+			t.Errorf("empty deps should return 0 unmet, got %v", unmet)
+		}
+	})
+
+	t.Run("self-referencing dep treated as unmet", func(t *testing.T) {
+		index := &task.TaskIndex{
+			Feature: "test",
+			Tasks: map[string]task.Task{
+				"run-e2e": {ID: "T-test-3", Status: "blocked"},
+			},
+		}
+		unmet := checkUnmetDeps(index, &task.Task{ID: "T-test-3", Dependencies: []string{"T-test-3"}})
+		if len(unmet) != 1 || unmet[0] != "T-test-3" {
+			t.Errorf("self-dep should be unmet (blocked), got %v", unmet)
+		}
+	})
+
+	t.Run("pure slug-keyed deps some met some not", func(t *testing.T) {
+		index := &task.TaskIndex{
+			Feature: "test",
+			Tasks: map[string]task.Task{
+				"run-e2e":  {ID: "T-test-3", Status: "completed"},
+				"run-smoke": {ID: "T-test-7", Status: "pending"},
+			},
+		}
+		unmet := checkUnmetDeps(index, &task.Task{ID: "src", Dependencies: []string{"T-test-3", "T-test-7"}})
+		if len(unmet) != 1 || unmet[0] != "T-test-7" {
+			t.Errorf("expected only T-test-7 unmet, got %v", unmet)
+		}
+	})
+
+	t.Run("dep resolved by slug key not by ID", func(t *testing.T) {
+		index := &task.TaskIndex{
+			Feature: "test",
+			Tasks: map[string]task.Task{
+				"run-e2e": {ID: "T-test-3", Status: "completed"},
+			},
+		}
+		// Pass slug key as dep value instead of ID
+		unmet := checkUnmetDeps(index, &task.Task{ID: "src", Dependencies: []string{"run-e2e"}})
+		if len(unmet) != 0 {
+			t.Errorf("dep by slug key should be found, got %v", unmet)
+		}
+	})
+
+	t.Run("wildcard combined with slug-keyed exact dep", func(t *testing.T) {
+		index := &task.TaskIndex{
+			Feature: "test",
+			Tasks: map[string]task.Task{
+				"run-e2e": {ID: "T-test-3", Status: "completed"},
+				"1.1":     {ID: "1.1", Status: "completed"},
+			},
+		}
+		unmet := checkUnmetDeps(index, &task.Task{ID: "src", Dependencies: []string{"T-test-3", "1.x"}})
+		if len(unmet) != 0 {
+			t.Errorf("both slug-keyed exact and wildcard should be met, got %v", unmet)
+		}
+	})
+
+	t.Run("multiple unmet deps reported correctly", func(t *testing.T) {
+		index := &task.TaskIndex{
+			Feature: "test",
+			Tasks: map[string]task.Task{
+				"run-e2e":   {ID: "T-test-3", Status: "pending"},
+				"run-smoke": {ID: "T-test-7", Status: "pending"},
+			},
+		}
+		unmet := checkUnmetDeps(index, &task.Task{ID: "src", Dependencies: []string{"T-test-3", "T-test-7"}})
+		if len(unmet) != 2 {
+			t.Errorf("expected 2 unmet, got %d: %v", len(unmet), unmet)
+		}
+	})
+}

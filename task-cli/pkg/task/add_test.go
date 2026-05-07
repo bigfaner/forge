@@ -902,3 +902,87 @@ func TestGetUnmetDependencies_LookupByID_NotFound(t *testing.T) {
 		t.Fatal("expected error for nonexistent task ID")
 	}
 }
+
+func TestGetUnmetDependencies_AllSlugKeyedCompleted(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// Both deps are slug-keyed: "1.1" (key="1.1-init"), "1.2" (key="1.2-setup")
+	// 1.1 is completed, make 1.2 completed too
+	index, _ := LoadIndex(indexPath)
+	t2 := index.Tasks["1.2-setup"]
+	t2.Status = "completed"
+	index.Tasks["1.2-setup"] = t2
+	SaveIndex(indexPath, index)
+
+	AddTask(indexPath, AddTaskOpts{Title: "Watcher", Dependencies: []string{"1.1", "1.2"}})
+
+	unmet, _ := GetUnmetDependencies(indexPath, "disc-1")
+	if len(unmet) != 0 {
+		t.Errorf("all slug-keyed deps completed, expected 0 unmet, got %v", unmet)
+	}
+}
+
+func TestGetUnmetDependencies_SkippedDepTreatedAsMet(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	index, _ := LoadIndex(indexPath)
+	t1 := index.Tasks["1.1-init"]
+	t1.Status = "skipped"
+	index.Tasks["1.1-init"] = t1
+	SaveIndex(indexPath, index)
+
+	AddTask(indexPath, AddTaskOpts{Title: "Watcher", Dependencies: []string{"1.1"}})
+
+	unmet, _ := GetUnmetDependencies(indexPath, "disc-1")
+	if len(unmet) != 0 {
+		t.Errorf("skipped dep should be met, got %v", unmet)
+	}
+}
+
+func TestGetUnmetDependencies_NonexistentDepTreatedAsUnmet(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// Bypass AddTask dependency validation — directly create task with phantom dep
+	index, _ := LoadIndex(indexPath)
+	index.Tasks["disc-1"] = Task{
+		ID:       "disc-1",
+		Title:    "Watcher",
+		Priority: "P1",
+		Status:   "pending",
+		File:     "disc-1.md",
+		Record:   "records/disc-1.md",
+		Dependencies: []string{"9.9"},
+	}
+	SaveIndex(indexPath, index)
+
+	unmet, _ := GetUnmetDependencies(indexPath, "disc-1")
+	if len(unmet) != 1 || unmet[0] != "9.9" {
+		t.Errorf("expected [9.9] unmet, got %v", unmet)
+	}
+}
+
+func TestGetUnmetDependencies_WildcardWithSlugKeyedTasks(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// "1.x" wildcard should match slug-keyed tasks "1.1" and "1.2"
+	// 1.1 is completed, 1.2 is pending
+	AddTask(indexPath, AddTaskOpts{Title: "Watcher", Dependencies: []string{"1.x"}})
+
+	unmet, _ := GetUnmetDependencies(indexPath, "disc-1")
+	if len(unmet) != 1 || unmet[0] != "1.2" {
+		t.Errorf("expected [1.2] unmet from wildcard, got %v", unmet)
+	}
+}
+
+func TestGetUnmetDependencies_MixedWildcardAndExactSlugKeyed(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// dep on "1.x" (wildcard) + "1.1" (exact slug-keyed, completed)
+	AddTask(indexPath, AddTaskOpts{Title: "Watcher", Dependencies: []string{"1.x", "1.1"}})
+
+	// 1.1 completed, 1.2 pending → wildcard reports 1.2 as unmet
+	unmet, _ := GetUnmetDependencies(indexPath, "disc-1")
+	if len(unmet) != 1 || unmet[0] != "1.2" {
+		t.Errorf("expected [1.2] unmet, got %v", unmet)
+	}
+}

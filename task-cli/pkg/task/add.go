@@ -96,13 +96,7 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 	fileName := opts.ID + ".md"
 	recordPath := "records/" + opts.ID + ".md"
 
-	key := opts.ID
-	if strings.Contains(opts.ID, "-") {
-		// Use ID as key directly for disc-*, fix-* style IDs
-		key = opts.ID
-	}
-
-	index.Tasks[key] = Task{
+	index.Tasks[opts.ID] = Task{
 		ID:            opts.ID,
 		Title:         opts.Title,
 		Priority:      opts.Priority,

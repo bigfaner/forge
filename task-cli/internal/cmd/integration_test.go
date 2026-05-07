@@ -2001,3 +2001,56 @@ func TestRunAllCompleted_NotAllDone(t *testing.T) {
 		t.Errorf("expected exit 0 when not all done, got: %v", err)
 	}
 }
+
+func TestRunRecord_AutoRestore_SlugKeyedSource(t *testing.T) {
+	dir := setupFullProject(t, map[string]task.Task{
+		"run-e2e": {ID: "T-test-3", Title: "Run e2e tests", Status: "blocked", Priority: "P0", File: "T-test-3.md", Record: "records/T-test-3.md", Dependencies: []string{"fix-auth"}},
+		"fix-auth": {ID: "fix-auth", Title: "Fix auth", Status: "in_progress", Priority: "P0", File: "fix-auth.md", Record: "records/fix-auth.md", SourceTaskID: "T-test-3"},
+	})
+
+	rd := task.RecordData{
+		Status:       "completed",
+		Summary:      "Fixed auth",
+		TestsPassed:  3,
+		Coverage:     85.0,
+		KeyDecisions: []string{"added retry logic"},
+		AcceptanceCriteria: []task.AcceptanceCriterion{{Criterion: "Tests pass", Met: true}},
+	}
+	rdJSON, _ := json.Marshal(rd)
+	dataPath := filepath.Join(dir, "record.json")
+	os.WriteFile(dataPath, rdJSON, 0644)
+
+	statePath := feature.GetTaskStatePath(dir, "test")
+	task.SaveState(statePath, &task.TaskState{TaskID: "fix-auth", Key: "fix-auth", StartedTime: "2026-01-01 10:00"})
+
+	recordDataPath = dataPath
+	recordJSON = false
+	recordQuiet = false
+	recordForce = false
+
+	_ = captureStdout(func() {
+		runRecord(nil, []string{"fix-auth"})
+	})
+
+	// Verify source task was auto-restored
+	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
+	index, err := task.LoadIndex(indexPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Source restored to pending
+	if index.Tasks["run-e2e"].Status != "pending" {
+		t.Errorf("source task should be restored to pending, got %s", index.Tasks["run-e2e"].Status)
+	}
+
+	// Fix task completed
+	if index.Tasks["fix-auth"].Status != "completed" {
+		t.Errorf("fix task should be completed, got %s", index.Tasks["fix-auth"].Status)
+	}
+
+	// No duplicate key created under task ID
+	if _, hasDup := index.Tasks["T-test-3"]; hasDup {
+		t.Error("should not create duplicate entry under ID key 'T-test-3'")
+	}
+}
