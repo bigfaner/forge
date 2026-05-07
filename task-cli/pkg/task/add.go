@@ -247,17 +247,25 @@ func AddDependency(indexPath string, taskID string, depID string) error {
 		return fmt.Errorf("load index: %w", err)
 	}
 
-	t, ok := index.Tasks[taskID]
-	if !ok {
+	var taskKey string
+	var foundTask Task
+	for key, t := range index.Tasks {
+		if t.ID == taskID || key == taskID {
+			taskKey = key
+			foundTask = t
+			break
+		}
+	}
+	if taskKey == "" {
 		return fmt.Errorf("task not found: %s", taskID)
 	}
 
-	if slices.Contains(t.Dependencies, depID) {
+	if slices.Contains(foundTask.Dependencies, depID) {
 		return nil
 	}
 
-	t.Dependencies = append(t.Dependencies, depID)
-	index.Tasks[taskID] = t
+	foundTask.Dependencies = append(foundTask.Dependencies, depID)
+	index.Tasks[taskKey] = foundTask
 
 	return SaveIndex(indexPath, index)
 }
@@ -270,18 +278,26 @@ func GetUnmetDependencies(indexPath string, taskID string) ([]string, error) {
 		return nil, fmt.Errorf("load index: %w", err)
 	}
 
-	t, ok := index.Tasks[taskID]
-	if !ok {
+	var taskKey string
+	var foundTask Task
+	for k, t := range index.Tasks {
+		if t.ID == taskID || k == taskID {
+			taskKey = k
+			foundTask = t
+			break
+		}
+	}
+	if taskKey == "" {
 		return nil, fmt.Errorf("task not found: %s", taskID)
 	}
 
 	var unmet []string
-	for _, dep := range t.Dependencies {
+	for _, dep := range foundTask.Dependencies {
 		if strings.HasSuffix(dep, ".x") {
 			prefix := strings.TrimSuffix(dep, ".x")
 			prefixWithDot := prefix + "."
 			for _, other := range index.Tasks {
-				if other.ID == t.ID {
+				if other.ID == foundTask.ID {
 					continue
 				}
 				if strings.HasPrefix(other.ID, prefixWithDot) && isBusinessTaskID(other.ID) && other.Status != "completed" && other.Status != "skipped" {
@@ -290,8 +306,17 @@ func GetUnmetDependencies(indexPath string, taskID string) ([]string, error) {
 			}
 			continue
 		}
-		depTask, found := index.Tasks[dep]
-		if !found || (depTask.Status != "completed" && depTask.Status != "skipped") {
+		var depFound bool
+		for _, other := range index.Tasks {
+			if other.ID == dep {
+				depFound = true
+				if other.Status != "completed" && other.Status != "skipped" {
+					unmet = append(unmet, dep)
+				}
+				break
+			}
+		}
+		if !depFound {
 			unmet = append(unmet, dep)
 		}
 	}

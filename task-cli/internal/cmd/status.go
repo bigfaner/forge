@@ -178,8 +178,8 @@ func checkUnmetDeps(index *task.TaskIndex, t *task.Task) []string {
 				continue
 			}
 		} else {
-			depTask, found := index.Tasks[dep]
-			if !found || (depTask.Status != "completed" && depTask.Status != "skipped") {
+			_, depTask, err := findTask(index, dep)
+			if err != nil || (depTask.Status != "completed" && depTask.Status != "skipped") {
 				unmet = append(unmet, dep)
 			}
 		}

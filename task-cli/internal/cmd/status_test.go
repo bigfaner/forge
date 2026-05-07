@@ -144,3 +144,76 @@ func TestCheckUnmetDeps_Wildcard(t *testing.T) {
 		})
 	}
 }
+
+func TestCheckUnmetDeps_KeyDiffersFromID(t *testing.T) {
+	t.Run("slug-keyed completed dep resolved by ID", func(t *testing.T) {
+		index := &task.TaskIndex{
+			Feature: "test",
+			Tasks: map[string]task.Task{
+				"src":           {ID: "src", Dependencies: []string{"T-test-3"}},
+				"run-e2e-tests": {ID: "T-test-3", Status: "completed"},
+			},
+		}
+		unmet := checkUnmetDeps(index, &task.Task{ID: "src", Dependencies: []string{"T-test-3"}})
+		if len(unmet) != 0 {
+			t.Errorf("expected 0 unmet for slug-keyed completed dep, got %v", unmet)
+		}
+	})
+
+	t.Run("slug-keyed pending dep reported as unmet", func(t *testing.T) {
+		index := &task.TaskIndex{
+			Feature: "test",
+			Tasks: map[string]task.Task{
+				"src":           {ID: "src", Dependencies: []string{"T-test-3"}},
+				"run-e2e-tests": {ID: "T-test-3", Status: "pending"},
+			},
+		}
+		unmet := checkUnmetDeps(index, &task.Task{ID: "src", Dependencies: []string{"T-test-3"}})
+		if len(unmet) != 1 || unmet[0] != "T-test-3" {
+			t.Errorf("expected [T-test-3] unmet, got %v", unmet)
+		}
+	})
+
+	t.Run("mixed slug-keyed and dynamic deps", func(t *testing.T) {
+		index := &task.TaskIndex{
+			Feature: "test",
+			Tasks: map[string]task.Task{
+				"src":           {ID: "src"},
+				"run-e2e-tests": {ID: "T-test-3", Status: "completed"},
+				"disc-1":        {ID: "disc-1", Status: "completed"},
+				"fix-1":         {ID: "fix-1", Status: "pending"},
+			},
+		}
+		unmet := checkUnmetDeps(index, &task.Task{ID: "src", Dependencies: []string{"T-test-3", "disc-1", "fix-1"}})
+		if len(unmet) != 1 || unmet[0] != "fix-1" {
+			t.Errorf("expected only fix-1 unmet, got %v", unmet)
+		}
+	})
+
+	t.Run("nonexistent dep treated as unmet", func(t *testing.T) {
+		index := &task.TaskIndex{
+			Feature: "test",
+			Tasks: map[string]task.Task{
+				"src": {ID: "src"},
+			},
+		}
+		unmet := checkUnmetDeps(index, &task.Task{ID: "src", Dependencies: []string{"ghost"}})
+		if len(unmet) != 1 || unmet[0] != "ghost" {
+			t.Errorf("expected [ghost] unmet, got %v", unmet)
+		}
+	})
+
+	t.Run("slug-keyed skipped dep counts as met", func(t *testing.T) {
+		index := &task.TaskIndex{
+			Feature: "test",
+			Tasks: map[string]task.Task{
+				"src":            {ID: "src"},
+				"run-e2e-tests":  {ID: "T-test-3", Status: "skipped"},
+			},
+		}
+		unmet := checkUnmetDeps(index, &task.Task{ID: "src", Dependencies: []string{"T-test-3"}})
+		if len(unmet) != 0 {
+			t.Errorf("skipped dep should be met, got %v", unmet)
+		}
+	})
+}

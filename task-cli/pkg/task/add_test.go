@@ -809,3 +809,96 @@ func TestGetUnmetDependencies_WildcardAllCompleted(t *testing.T) {
 		t.Errorf("expected 0 unmet (self-excluded + all others completed), got %v", unmet)
 	}
 }
+
+func TestAddDependency_LookupByID(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// "1.2" is the task ID, but map key is "1.2-setup"
+	err := AddDependency(indexPath, "1.2", "disc-1")
+	if err != nil {
+		t.Fatalf("AddDependency by ID failed: %v", err)
+	}
+
+	index, _ := LoadIndex(indexPath)
+	task := index.Tasks["1.2-setup"]
+	if !containsSlice(task.Dependencies, "disc-1") {
+		t.Errorf("expected disc-1 in dependencies, got %v", task.Dependencies)
+	}
+}
+
+func TestAddDependency_LookupByID_NotFound(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	err := AddDependency(indexPath, "9.9", "disc-1")
+	if err == nil {
+		t.Fatal("expected error for nonexistent task ID")
+	}
+}
+
+func TestAddDependency_WriteBackUsesSlugKey(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	err := AddDependency(indexPath, "1.2", "disc-1")
+	if err != nil {
+		t.Fatalf("AddDependency failed: %v", err)
+	}
+
+	index, _ := LoadIndex(indexPath)
+	if _, ok := index.Tasks["1.2"]; ok {
+		t.Error("should not create duplicate entry under ID key '1.2'")
+	}
+	if _, ok := index.Tasks["1.2-setup"]; !ok {
+		t.Error("original slug key '1.2-setup' should still exist")
+	}
+}
+
+func TestGetUnmetDependencies_SlugKeyDeps(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// Add a new task that depends on slug-keyed task "1.1" (key="1.1-init", id="1.1")
+	AddTask(indexPath, AddTaskOpts{Title: "Watcher", Dependencies: []string{"1.1"}})
+
+	// 1.1 is completed → should have 0 unmet
+	unmet, err := GetUnmetDependencies(indexPath, "disc-1")
+	if err != nil {
+		t.Fatalf("GetUnmetDependencies failed: %v", err)
+	}
+	if len(unmet) != 0 {
+		t.Errorf("expected 0 unmet (1.1 is completed), got %v", unmet)
+	}
+}
+
+func TestGetUnmetDependencies_SlugKeyDeps_Pending(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// Depends on "1.2" (key="1.2-setup", status=pending)
+	AddTask(indexPath, AddTaskOpts{Title: "Watcher", Dependencies: []string{"1.2"}})
+
+	unmet, _ := GetUnmetDependencies(indexPath, "disc-1")
+	if !containsSlice(unmet, "1.2") {
+		t.Errorf("expected 1.2 in unmet, got %v", unmet)
+	}
+}
+
+func TestGetUnmetDependencies_LookupByID(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// Query by task ID "1.2", not by key "1.2-setup"
+	unmet, err := GetUnmetDependencies(indexPath, "1.2")
+	if err != nil {
+		t.Fatalf("GetUnmetDependencies by ID failed: %v", err)
+	}
+	// 1.2-setup depends on nothing → 0 unmet
+	if len(unmet) != 0 {
+		t.Errorf("expected 0 unmet, got %v", unmet)
+	}
+}
+
+func TestGetUnmetDependencies_LookupByID_NotFound(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	_, err := GetUnmetDependencies(indexPath, "9.9")
+	if err == nil {
+		t.Fatal("expected error for nonexistent task ID")
+	}
+}
