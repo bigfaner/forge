@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"strings"
 	"testing"
 
 	"task-cli/pkg/task"
@@ -151,10 +152,10 @@ func TestCheckUnmetDeps_KeyDiffersFromID(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
 		}
-			index.SetTasks(map[string]task.Task{
-				"src":           {ID: "src", Dependencies: []string{"T-test-3"}},
-				"run-e2e-tests": {ID: "T-test-3", Status: "completed"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"src":           {ID: "src", Dependencies: []string{"T-test-3"}},
+			"run-e2e-tests": {ID: "T-test-3", Status: "completed"},
+		})
 		unmet := checkUnmetDeps(index, &task.Task{ID: "src", Dependencies: []string{"T-test-3"}})
 		if len(unmet) != 0 {
 			t.Errorf("expected 0 unmet for slug-keyed completed dep, got %v", unmet)
@@ -165,10 +166,10 @@ func TestCheckUnmetDeps_KeyDiffersFromID(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
 		}
-			index.SetTasks(map[string]task.Task{
-				"src":           {ID: "src", Dependencies: []string{"T-test-3"}},
-				"run-e2e-tests": {ID: "T-test-3", Status: "pending"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"src":           {ID: "src", Dependencies: []string{"T-test-3"}},
+			"run-e2e-tests": {ID: "T-test-3", Status: "pending"},
+		})
 		unmet := checkUnmetDeps(index, &task.Task{ID: "src", Dependencies: []string{"T-test-3"}})
 		if len(unmet) != 1 || unmet[0] != "T-test-3" {
 			t.Errorf("expected [T-test-3] unmet, got %v", unmet)
@@ -179,12 +180,12 @@ func TestCheckUnmetDeps_KeyDiffersFromID(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
 		}
-			index.SetTasks(map[string]task.Task{
-				"src":           {ID: "src"},
-				"run-e2e-tests": {ID: "T-test-3", Status: "completed"},
-				"disc-1":        {ID: "disc-1", Status: "completed"},
-				"fix-1":         {ID: "fix-1", Status: "pending"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"src":           {ID: "src"},
+			"run-e2e-tests": {ID: "T-test-3", Status: "completed"},
+			"disc-1":        {ID: "disc-1", Status: "completed"},
+			"fix-1":         {ID: "fix-1", Status: "pending"},
+		})
 		unmet := checkUnmetDeps(index, &task.Task{ID: "src", Dependencies: []string{"T-test-3", "disc-1", "fix-1"}})
 		if len(unmet) != 1 || unmet[0] != "fix-1" {
 			t.Errorf("expected only fix-1 unmet, got %v", unmet)
@@ -195,9 +196,9 @@ func TestCheckUnmetDeps_KeyDiffersFromID(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
 		}
-			index.SetTasks(map[string]task.Task{
-				"src": {ID: "src"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"src": {ID: "src"},
+		})
 		unmet := checkUnmetDeps(index, &task.Task{ID: "src", Dependencies: []string{"ghost"}})
 		if len(unmet) != 1 || unmet[0] != "ghost" {
 			t.Errorf("expected [ghost] unmet, got %v", unmet)
@@ -208,10 +209,10 @@ func TestCheckUnmetDeps_KeyDiffersFromID(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
 		}
-			index.SetTasks(map[string]task.Task{
-				"src":            {ID: "src"},
-				"run-e2e-tests":  {ID: "T-test-3", Status: "skipped"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"src":           {ID: "src"},
+			"run-e2e-tests": {ID: "T-test-3", Status: "skipped"},
+		})
 		unmet := checkUnmetDeps(index, &task.Task{ID: "src", Dependencies: []string{"T-test-3"}})
 		if len(unmet) != 0 {
 			t.Errorf("skipped dep should be met, got %v", unmet)
@@ -224,9 +225,9 @@ func TestCheckUnmetDeps_KeyDiffersFromID_EdgeCases(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
 		}
-			index.SetTasks(map[string]task.Task{
-				"src": {ID: "src"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"src": {ID: "src"},
+		})
 		unmet := checkUnmetDeps(index, &task.Task{ID: "src", Dependencies: []string{}})
 		if len(unmet) != 0 {
 			t.Errorf("empty deps should return 0 unmet, got %v", unmet)
@@ -237,9 +238,9 @@ func TestCheckUnmetDeps_KeyDiffersFromID_EdgeCases(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
 		}
-			index.SetTasks(map[string]task.Task{
-				"run-e2e": {ID: "T-test-3", Status: "blocked"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"run-e2e": {ID: "T-test-3", Status: "blocked"},
+		})
 		unmet := checkUnmetDeps(index, &task.Task{ID: "T-test-3", Dependencies: []string{"T-test-3"}})
 		if len(unmet) != 1 || unmet[0] != "T-test-3" {
 			t.Errorf("self-dep should be unmet (blocked), got %v", unmet)
@@ -250,10 +251,10 @@ func TestCheckUnmetDeps_KeyDiffersFromID_EdgeCases(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
 		}
-			index.SetTasks(map[string]task.Task{
-				"run-e2e":  {ID: "T-test-3", Status: "completed"},
-				"run-smoke": {ID: "T-test-7", Status: "pending"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"run-e2e":  {ID: "T-test-3", Status: "completed"},
+			"run-smoke": {ID: "T-test-7", Status: "pending"},
+		})
 		unmet := checkUnmetDeps(index, &task.Task{ID: "src", Dependencies: []string{"T-test-3", "T-test-7"}})
 		if len(unmet) != 1 || unmet[0] != "T-test-7" {
 			t.Errorf("expected only T-test-7 unmet, got %v", unmet)
@@ -264,10 +265,9 @@ func TestCheckUnmetDeps_KeyDiffersFromID_EdgeCases(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
 		}
-			index.SetTasks(map[string]task.Task{
-				"run-e2e": {ID: "T-test-3", Status: "completed"},
-			})
-		// Pass slug key as dep value instead of ID
+		index.SetTasks(map[string]task.Task{
+			"run-e2e": {ID: "T-test-3", Status: "completed"},
+		})
 		unmet := checkUnmetDeps(index, &task.Task{ID: "src", Dependencies: []string{"run-e2e"}})
 		if len(unmet) != 0 {
 			t.Errorf("dep by slug key should be found, got %v", unmet)
@@ -278,10 +278,10 @@ func TestCheckUnmetDeps_KeyDiffersFromID_EdgeCases(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
 		}
-			index.SetTasks(map[string]task.Task{
-				"run-e2e": {ID: "T-test-3", Status: "completed"},
-				"1.1":     {ID: "1.1", Status: "completed"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"run-e2e": {ID: "T-test-3", Status: "completed"},
+			"1.1":     {ID: "1.1", Status: "completed"},
+		})
 		unmet := checkUnmetDeps(index, &task.Task{ID: "src", Dependencies: []string{"T-test-3", "1.x"}})
 		if len(unmet) != 0 {
 			t.Errorf("both slug-keyed exact and wildcard should be met, got %v", unmet)
@@ -292,13 +292,58 @@ func TestCheckUnmetDeps_KeyDiffersFromID_EdgeCases(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
 		}
-			index.SetTasks(map[string]task.Task{
-				"run-e2e":   {ID: "T-test-3", Status: "pending"},
-				"run-smoke": {ID: "T-test-7", Status: "pending"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"run-e2e":   {ID: "T-test-3", Status: "pending"},
+			"run-smoke": {ID: "T-test-7", Status: "pending"},
+		})
 		unmet := checkUnmetDeps(index, &task.Task{ID: "src", Dependencies: []string{"T-test-3", "T-test-7"}})
 		if len(unmet) != 2 {
 			t.Errorf("expected 2 unmet, got %d: %v", len(unmet), unmet)
 		}
 	})
+}
+
+func TestGetTransitionHint(t *testing.T) {
+	tests := []struct {
+		from string
+		to   string
+		want string
+	}{
+		{"completed", "pending", "completed is a terminal state"},
+		{"completed", "in_progress", "completed is a terminal state"},
+		{"in_progress", "completed", "use 'task record' to complete a task with quality gate"},
+		{"pending", "completed", "use 'task record' to complete a task with quality gate"},
+		{"pending", "in_progress", "transition pending -> in_progress is not allowed"},
+		{"blocked", "pending", "transition blocked -> pending is not allowed"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.from+"->"+tt.to, func(t *testing.T) {
+			got := getTransitionHint(tt.from, tt.to)
+			if !strings.Contains(got, tt.want) {
+				t.Errorf("getTransitionHint(%q, %q) = %q, want to contain %q", tt.from, tt.to, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetTransitionAction(t *testing.T) {
+	tests := []struct {
+		from string
+		to   string
+		want string
+	}{
+		{"completed", "pending", "use --force to override"},
+		{"completed", "blocked", "use --force to override"},
+		{"in_progress", "completed", "task record"},
+		{"pending", "completed", "task record"},
+		{"pending", "in_progress", "use --force to override"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.from+"->"+tt.to, func(t *testing.T) {
+			got := getTransitionAction(tt.from, tt.to)
+			if !strings.Contains(got, tt.want) {
+				t.Errorf("getTransitionAction(%q, %q) = %q, want to contain %q", tt.from, tt.to, got, tt.want)
+			}
+		})
+	}
 }

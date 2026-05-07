@@ -307,6 +307,92 @@ func TestTaskStateScopeSerialization(t *testing.T) {
 	})
 }
 
+func TestTaskIndexJSONRoundTrip_AllFields(t *testing.T) {
+	original := &TaskIndex{
+		Feature:      "full-feature",
+		PRD:          "prd/prd-spec.md",
+		Design:       "design/tech-design.md",
+		Created:      "2024-06-15",
+		Status:       "in_progress",
+		tasks:        map[string]Task{"t1": {ID: "1.1", Title: "Task", Status: "pending"}},
+		StatusEnum:   []string{"pending", "completed"},
+		PriorityEnum: []string{"P0", "P1"},
+		TestCommand:  "go test ./...",
+		E2ERound:     3,
+	}
+
+	data, err := json.Marshal(original)
+	if err != nil {
+		t.Fatalf("Marshal failed: %v", err)
+	}
+
+	// Verify raw JSON contains "tasks" key (two-struct pattern must emit it)
+	if !contains(string(data), `"tasks"`) {
+		t.Errorf("JSON output missing \"tasks\" key: %s", data)
+	}
+	// Verify TestCommand and E2ERound appear in raw output
+	if !contains(string(data), `"testCommand"`) {
+		t.Errorf("JSON output missing \"testCommand\" key: %s", data)
+	}
+	if !contains(string(data), `"e2eRound"`) {
+		t.Errorf("JSON output missing \"e2eRound\" key: %s", data)
+	}
+
+	var loaded TaskIndex
+	if err := json.Unmarshal(data, &loaded); err != nil {
+		t.Fatalf("Unmarshal failed: %v", err)
+	}
+
+	assertField(t, "Feature", loaded.Feature, original.Feature)
+	assertField(t, "PRD", loaded.PRD, original.PRD)
+	assertField(t, "Design", loaded.Design, original.Design)
+	assertField(t, "Created", loaded.Created, original.Created)
+	assertField(t, "Status", loaded.Status, original.Status)
+	assertField(t, "TestCommand", loaded.TestCommand, original.TestCommand)
+	assertField(t, "E2ERound", loaded.E2ERound, original.E2ERound)
+	if loaded.TaskCount() != original.TaskCount() {
+		t.Errorf("TaskCount = %d, want %d", loaded.TaskCount(), original.TaskCount())
+	}
+	if len(loaded.StatusEnum) != len(original.StatusEnum) {
+		t.Errorf("StatusEnum len = %d, want %d", len(loaded.StatusEnum), len(original.StatusEnum))
+	}
+	if len(loaded.PriorityEnum) != len(original.PriorityEnum) {
+		t.Errorf("PriorityEnum len = %d, want %d", len(loaded.PriorityEnum), len(original.PriorityEnum))
+	}
+}
+
+func TestTaskIndexUnmarshal_EmptyTasks(t *testing.T) {
+	t.Run("tasks null", func(t *testing.T) {
+		var idx TaskIndex
+		if err := json.Unmarshal([]byte(`{"feature":"x","tasks":null}`), &idx); err != nil {
+			t.Fatalf("Unmarshal failed: %v", err)
+		}
+		if idx.tasks != nil {
+			t.Error("expected nil tasks for null input")
+		}
+	})
+
+	t.Run("tasks key absent", func(t *testing.T) {
+		var idx TaskIndex
+		if err := json.Unmarshal([]byte(`{"feature":"x"}`), &idx); err != nil {
+			t.Fatalf("Unmarshal failed: %v", err)
+		}
+		if idx.tasks != nil {
+			t.Error("expected nil tasks when key absent")
+		}
+		if idx.Feature != "x" {
+			t.Errorf("Feature = %q, want %q", idx.Feature, "x")
+		}
+	})
+}
+
+func assertField(t *testing.T, name string, got, want interface{}) {
+	t.Helper()
+	if got != want {
+		t.Errorf("%s = %v, want %v", name, got, want)
+	}
+}
+
 func TestRecordDataJSONRoundTrip(t *testing.T) {
 	rd := &RecordData{
 		Status:        "completed",

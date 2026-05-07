@@ -89,6 +89,152 @@ func TestSaveIndex(t *testing.T) {
 	})
 }
 
+func TestSetTask(t *testing.T) {
+	t.Run("nil map guard", func(t *testing.T) {
+		idx := &TaskIndex{} // tasks is nil
+		idx.SetTask("k1", Task{ID: "1.1", Title: "First"})
+		if idx.TaskCount() != 1 {
+			t.Errorf("TaskCount = %d, want 1", idx.TaskCount())
+		}
+		got, ok := idx.ByID("k1")
+		if !ok || got.Title != "First" {
+			t.Errorf("ByID(k1) = %v, %v; want First, true", got, ok)
+		}
+	})
+
+	t.Run("insert on non-nil map", func(t *testing.T) {
+		idx := NewTaskIndex("test")
+		idx.SetTask("k1", Task{ID: "1.1", Title: "First"})
+		idx.SetTask("k2", Task{ID: "1.2", Title: "Second"})
+		if idx.TaskCount() != 2 {
+			t.Errorf("TaskCount = %d, want 2", idx.TaskCount())
+		}
+	})
+
+	t.Run("update existing key", func(t *testing.T) {
+		idx := NewTaskIndex("test")
+		idx.SetTask("k1", Task{ID: "1.1", Title: "Old"})
+		idx.SetTask("k1", Task{ID: "1.1", Title: "New"})
+		if idx.TaskCount() != 1 {
+			t.Errorf("TaskCount = %d, want 1 after update", idx.TaskCount())
+		}
+		got, _ := idx.ByID("k1")
+		if got.Title != "New" {
+			t.Errorf("Title = %q, want %q after update", got.Title, "New")
+		}
+	})
+}
+
+func TestSetTasks(t *testing.T) {
+	t.Run("populated map", func(t *testing.T) {
+		idx := NewTaskIndex("test")
+		idx.SetTasks(map[string]Task{
+			"a": {ID: "1.1", Title: "A"},
+			"b": {ID: "1.2", Title: "B"},
+		})
+		if idx.TaskCount() != 2 {
+			t.Errorf("TaskCount = %d, want 2", idx.TaskCount())
+		}
+	})
+
+	t.Run("nil input does not crash", func(t *testing.T) {
+		idx := &TaskIndex{} // tasks is nil
+		idx.SetTasks(nil)
+		// Should not panic; map remains nil
+		if idx.TaskCount() != 0 {
+			t.Errorf("TaskCount = %d, want 0", idx.TaskCount())
+		}
+	})
+
+	t.Run("empty map", func(t *testing.T) {
+		idx := NewTaskIndex("test")
+		idx.SetTasks(map[string]Task{})
+		if idx.TaskCount() != 0 {
+			t.Errorf("TaskCount = %d, want 0", idx.TaskCount())
+		}
+	})
+
+	t.Run("nil map guard", func(t *testing.T) {
+		idx := &TaskIndex{} // tasks is nil
+		idx.SetTasks(map[string]Task{"a": {ID: "1.1"}})
+		if idx.TaskCount() != 1 {
+			t.Errorf("TaskCount = %d, want 1", idx.TaskCount())
+		}
+	})
+}
+
+func TestTasksMap(t *testing.T) {
+	t.Run("mutation reflects in index", func(t *testing.T) {
+		idx := NewTaskIndex("test")
+		idx.SetTask("k1", Task{ID: "1.1", Title: "Original"})
+
+		m := idx.TasksMap()
+		m["k1"] = Task{ID: "1.1", Title: "Mutated"}
+
+		got, ok := idx.ByID("k1")
+		if !ok || got.Title != "Mutated" {
+			t.Errorf("mutation through TasksMap not reflected; got %q", got.Title)
+		}
+	})
+}
+
+func TestTaskCount(t *testing.T) {
+	t.Run("empty", func(t *testing.T) {
+		idx := NewTaskIndex("test")
+		if idx.TaskCount() != 0 {
+			t.Errorf("TaskCount = %d, want 0", idx.TaskCount())
+		}
+	})
+
+	t.Run("single", func(t *testing.T) {
+		idx := NewTaskIndex("test")
+		idx.SetTask("k1", Task{ID: "1.1"})
+		if idx.TaskCount() != 1 {
+			t.Errorf("TaskCount = %d, want 1", idx.TaskCount())
+		}
+	})
+
+	t.Run("multi", func(t *testing.T) {
+		idx := NewTestIndex("test", map[string]Task{
+			"a": {ID: "1.1"},
+			"b": {ID: "1.2"},
+			"c": {ID: "1.3"},
+		})
+		if idx.TaskCount() != 3 {
+			t.Errorf("TaskCount = %d, want 3", idx.TaskCount())
+		}
+	})
+}
+
+func TestNewTestIndex(t *testing.T) {
+	t.Run("without statusEnum", func(t *testing.T) {
+		idx := NewTestIndex("feat", map[string]Task{
+			"k": {ID: "1.1", Title: "T"},
+		})
+		if idx.Feature != "feat" {
+			t.Errorf("Feature = %q, want %q", idx.Feature, "feat")
+		}
+		if idx.TaskCount() != 1 {
+			t.Errorf("TaskCount = %d, want 1", idx.TaskCount())
+		}
+		// Default StatusEnum from NewTaskIndex
+		if len(idx.StatusEnum) == 0 {
+			t.Error("StatusEnum should have defaults")
+		}
+	})
+
+	t.Run("with custom statusEnum", func(t *testing.T) {
+		custom := []string{"a", "b"}
+		idx := NewTestIndex("feat", map[string]Task{}, custom)
+		if len(idx.StatusEnum) != 2 {
+			t.Errorf("StatusEnum len = %d, want 2", len(idx.StatusEnum))
+		}
+		if idx.StatusEnum[0] != "a" || idx.StatusEnum[1] != "b" {
+			t.Errorf("StatusEnum = %v, want [a b]", idx.StatusEnum)
+		}
+	})
+}
+
 func TestByID(t *testing.T) {
 	index := &TaskIndex{
 		Feature: "test-feature",
