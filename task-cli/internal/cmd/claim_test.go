@@ -802,6 +802,37 @@ func TestExecuteClaim_ScopeEmptyWhenNotSet(t *testing.T) {
 	}
 }
 
+func TestPrintTaskDetails_BreakingInOutput(t *testing.T) {
+	dir := t.TempDir()
+	feature.EnsureFeatureDir(dir, "feat")
+
+	t.Run("breaking true", func(t *testing.T) {
+		tk := &task.Task{
+			ID: "1.1", Title: "T", Priority: "P0", Status: "pending",
+			File: "1.1.md", Record: "records/1.1.md", Breaking: true,
+		}
+		out := captureStdout(func() {
+			printTaskDetails("t1", tk, dir, "feat")
+		})
+		if !strings.Contains(out, "BREAKING: true") {
+			t.Errorf("expected BREAKING: true in output, got: %s", out)
+		}
+	})
+
+	t.Run("breaking false", func(t *testing.T) {
+		tk := &task.Task{
+			ID: "1.1", Title: "T", Priority: "P0", Status: "pending",
+			File: "1.1.md", Record: "records/1.1.md",
+		}
+		out := captureStdout(func() {
+			printTaskDetails("t1", tk, dir, "feat")
+		})
+		if !strings.Contains(out, "BREAKING: false") {
+			t.Errorf("expected BREAKING: false in output, got: %s", out)
+		}
+	})
+}
+
 func TestPrintTaskDetails_ScopeInOutput(t *testing.T) {
 	dir := t.TempDir()
 	feature.EnsureFeatureDir(dir, "feat")

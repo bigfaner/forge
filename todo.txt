@@ -14,7 +14,7 @@
 14、ui-design默认生成原型。done
 15、write-prd之后，先ui-design（如有UI），再tech-design。done
 16、精简guide.md。done
-17、eval-design的breakdown-tasks门槛提高到18分。
+17、eval-design的breakdown-tasks门槛提高到18分。done
 18、增加一个快速模式，brainstorm —> breakdown-tasks —> run-tasks
-19、task claim输出breaking字段的值
+19、task claim输出breaking字段的值。doing
 20、把git操作迁移到独立的插件中，补充一个git-checkout命令，创建一个与正在讨论的提案或feature名称相同的分支。

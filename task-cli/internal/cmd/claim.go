@@ -306,12 +306,8 @@ func printTaskDetails(key string, t *task.Task, projectRoot, featureSlug string)
 	PrintField("STATUS", t.Status)
 	PrintFieldIfNotEmpty("ESTIMATED_TIME", t.EstimatedTime)
 	PrintFieldIfNotEmptySlice("DEPENDENCIES", t.Dependencies)
-	if t.Breaking {
-		PrintField("BREAKING", "true")
-	}
-	if t.MainSession {
-		PrintField("MAIN_SESSION", "true")
-	}
+	PrintField("BREAKING", strconv.FormatBool(t.Breaking))
+	PrintField("MAIN_SESSION", strconv.FormatBool(t.MainSession))
 	PrintFieldIfNotEmpty("SCOPE", t.Scope)
 	PrintFieldIfNotEmpty("FEATURE", featureSlug)
 	PrintField("FILE", filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, t.File)))
