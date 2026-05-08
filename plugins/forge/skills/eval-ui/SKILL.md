@@ -69,6 +69,9 @@ Check in order:
 
 Determine `<feature-slug>` from the path. The UI directory is `docs/features/<slug>/ui/`.
 
+Also locate the PRD for Navigation Architecture reference:
+- `docs/features/<slug>/prd/prd-ui-functions.md` — pass to scorer as `PRD_PATH`
+
 ## Step 2: Invoke Scorer Subagent
 
 Spawn `doc-scorer` via **Agent tool** (subagent_type: `forge:doc-scorer` if registered, otherwise `general-purpose`).
@@ -80,6 +83,7 @@ Pass these inputs to the scorer:
 - `REPORT_PATH` = `docs/features/<slug>/ui/eval/iteration-{{N}}.md`
 - `ITERATION` = current iteration number (1-based)
 - `PREVIOUS_REPORT_PATH` = previous iteration report path (only if iteration > 1)
+- `PRD_PATH` = `docs/features/<slug>/prd/prd-ui-functions.md` (if exists, for Navigation Architecture coverage check)
 
 The scorer must NEVER be told what the reviser changed. It evaluates the design as-is.
 </HARD-RULE>
@@ -157,17 +161,17 @@ Save the final report to `docs/features/<slug>/ui/eval/report.md`.
 
 ## Step 6: Next Step
 
-After final report, ask via `AskUserQuestion`:
+If invoked as a sub-step of `/ui-design` (auto eval-ui), return control to ui-design — do NOT prompt for next skill.
+
+If invoked standalone, ask via `AskUserQuestion`:
 
 > Proceed to `/tech-design` to create technical design?
 
 - **Yes** → invoke `/tech-design` via `Skill` tool
 - **No** → done
 
-> Note: Prototype generation (Step 8 of `/ui-design`) runs as part of the ui-design skill flow.
-
 ## Integration
 
 Works well with:
-- `/ui-design` — Produces the UI design document to evaluate
+- `/ui-design` — Produces the UI design document to evaluate; auto-invokes eval-ui after design
 - `/tech-design` — Next skill after UI evaluation; informed by UI decisions

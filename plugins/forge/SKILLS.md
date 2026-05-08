@@ -8,7 +8,7 @@
 | write-prd | Use when user provides requirements or feature requests that need to be formalized into a structured PRD document through collaborative dialogue. |
 | eval-prd | Evaluate a PRD document with 100-point scoring, then run adversarial iterations until target score is met. Main session orchestrates doc-scorer and doc-reviser subagents. |
 | tech-design | Use after PRD (and UI design if applicable) is finalized to create technical design with architecture and implementation details. |
-| ui-design | Use after PRD ui-functions are defined to create UI design specifications. Supports design style selection and HTML prototype generation. |
+| ui-design | Use after PRD ui-functions are defined to create UI design specifications. Auto Eval UI after design, then generates HTML prototype. |
 | eval-design | Evaluate a tech design document with 100-point scoring, then run adversarial iterations until target score is met. Main session orchestrates doc-scorer and doc-reviser subagents. |
 | breakdown-tasks | Use when the technical design is finalized to break down into executable tasks. Creates task files based on technical design. |
 | record-task | Use after completing a task to create its execution record and update task status. |

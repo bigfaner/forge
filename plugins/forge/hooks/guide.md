@@ -35,10 +35,10 @@ graph LR
     A["/brainstorm<br>proposal.md"] --> B["/write-prd<br>prd/*.{3} + manifest.md"]
     B --> C["/eval-prd<br>eval report"]
     C -->|"has UI"| G["/ui-design<br>ui/ui-design.md"]
-    G --> G1["prototype"]
+    G --> H["/eval-ui<br>eval report"]
+    H --> G1["prototype"]
     G1 --> G2{"👤 review"}
-    G2 -->|"approved"| H["/eval-ui<br>eval report"]
-    H --> D
+    G2 -->|"approved"| D
     C -->|"no UI"| D["/tech-design<br>design/*.{2} + manifest.md"]
     D --> D1{"db-schema?"}
     D1 -->|"yes"| D2["er-diagram + schema.sql"]
