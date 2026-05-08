@@ -10,6 +10,31 @@ feature: "{{FEATURE_NAME}}"
 
 <!-- Summary of all UI surfaces this feature requires -->
 
+## Navigation Architecture
+
+<!-- Define page relationships and navigation structure BEFORE individual UI Functions -->
+
+- **Platform**: {{web | mobile | mini-program | tablet}}
+
+### Primary Navigation (shared across pages)
+
+| # | Label | Target Page | Icon Keyword |
+|---|-------|-------------|-------------|
+| 1 |       |             |             |
+| 2 |       |             |             |
+
+### Secondary Pages (navigated from a parent page)
+
+| Page | Entry Point (UF# or action) | Return Target |
+|------|-----------------------------|---------------|
+|      |                             |               |
+
+### Navigation Rules
+
+- Primary navigation is shared across pages
+- Every secondary page must have back navigation targeting its entry point page
+- Every navigation target must correspond to a page defined in this document
+
 ## UI Function 1: {{Function Name}}
 
 ### Placement

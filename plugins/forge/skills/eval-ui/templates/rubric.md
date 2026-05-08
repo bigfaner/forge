@@ -33,8 +33,9 @@ Mark missing required sections as 0 pts for the relevant dimension:
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
 | UI function coverage | 0-8 | Does every UI function from `prd-ui-functions.md` have a corresponding component in the design? Any gaps? |
+| Navigation Architecture coverage | 0-4 | If PRD defines `## Navigation Architecture`, does the design cover all primary navigation entries and Secondary Pages? Are navigation targets consistent with page names? |
 | State requirement coverage | 0-8 | Are all states defined in `prd-ui-functions.md` (loading, empty, error, populated) addressed in the design's state tables? |
-| Edge case handling | 0-9 | Are boundary conditions addressed: long text overflow, no data, permission denied, slow network, concurrent actions? Or does the design only show the happy path? |
+| Edge case handling | 0-5 | Are boundary conditions addressed: long text overflow, no data, permission denied, slow network, concurrent actions? Or does the design only show the happy path? |
 
 ### 2. User Experience (25 pts) — End User Perspective
 
@@ -49,7 +50,7 @@ Mark missing required sections as 0 pts for the relevant dimension:
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
 | Design system adherence | 0-8 | Does the design follow its referenced style system's rules (colors, typography, spacing, component shapes)? Or does it mix styles arbitrarily? |
-| Visual coherence | 0-9 | Do all components look like they belong to the same product? Consistent border-radius, shadow depth, spacing rhythm across components? |
+| Visual coherence | 0-9 | Do all components look like they belong to the same product? Consistent border-radius, shadow depth, spacing rhythm across components? Cross-page navigation elements identical where shared (same tab bar, same nav bar layout)? |
 | State completeness | 0-8 | Does every interactive component cover all applicable states (Default/Loading/Empty/Error)? Are state transitions described — how does a component go from Loading to Empty? |
 
 ### 4. Implementability (25 pts) — Developer Perspective
@@ -66,6 +67,8 @@ Mark missing required sections as 0 pts for the relevant dimension:
 - **Vague language without quantification**: -2 pts per instance ("better UX", "faster", "improved")
 - **Cross-section inconsistency**: -3 pts per conflict (e.g., interaction table contradicts layout, state missing from data binding)
 - **Happy-path only design** (no error/empty/loading states): -5 pts from Design Integrity
+- **Navigation Architecture gap**: -2 pts per PRD navigation entry not covered in design (from Requirement Coverage)
+- **Cross-page inconsistency**: -3 pts per inconsistency in shared navigation elements (from Design Integrity)
 - **PRD UI function gap**: -3 pts per unaddressed UI function (from Requirement Coverage)
 - **Orphan UI elements** (no data binding): -3 pts per element (from Implementability)
 - **Placeholder text ("TBD", "TODO", "lorem ipsum")**: -2 pts per instance

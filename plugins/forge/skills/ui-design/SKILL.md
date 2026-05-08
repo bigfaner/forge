@@ -42,7 +42,7 @@ ls docs/features/<slug>/prd/prd-ui-functions.md
 ## Process Flow
 
 ```
-1. Read manifest → 2. Read UI functions → 3. Select design style → 4. Draft design → 5. Write design → 6. Update manifest → 7. Eval prompt → 8. Generate prototype → 9. Human review → 10. Next step
+1. Read manifest → 2. Read UI functions → 2.5. Extract nav architecture → 3. Select design style → 4. Draft design → 5. Write design → 6. Update manifest → 7. Auto eval-ui → 8. Generate prototype → 9. Human review → 10. Reconcile PRD → 11. Next step
 ```
 
 ## Step 1: Read Manifest
@@ -56,6 +56,21 @@ Read `prd/prd-ui-functions.md` to understand UI requirements.
 **Placement awareness**: For each UI Function, note its Placement section:
 - `new-page`: design the complete page including layout, navigation, and all contained components
 - `existing-page:<route>`: design only the new component(s) that will be embedded. The Placement's Position field tells you WHERE in the existing page — this constrains the component's layout (e.g., width must match existing content area).
+
+## Step 2.5: Extract Navigation Architecture
+
+Read the `## Navigation Architecture` section from `prd-ui-functions.md`.
+
+If it exists:
+- Use it as the single source of truth for all inter-page navigation
+- Note the `platform` field to determine navigation style
+
+If it does NOT exist:
+- Prompt the user: "PRD lacks a Navigation Architecture section. Consider running `/write-prd` to add it, or define it here:"
+- Use AskUserQuestion to collect: platform (web/mobile), primary navigation entries, secondary pages, navigation rules
+- Write the collected structure back into prd-ui-functions.md (append after UI Scope section)
+
+Then read the platform-specific navigation rules from `templates/platforms/{web,mobile}.md` based on the identified platform.
 
 ## Step 3: Select Design Style
 
@@ -133,15 +148,15 @@ Update `manifest.md`:
 
 Use `templates/manifest-update-ui.md` for the update pattern.
 
-## Step 7: Adversarial Eval Prompt
+## Step 7: Auto Eval UI Design
 
-After updating manifest, use `AskUserQuestion` to ask:
+Automatically invoke `/eval-ui` to evaluate `ui-design.md`. Default: 90 points / 3 rounds.
 
-> Run `/eval-ui` for adversarial evaluation? (default: 90 points / 3 rounds)
+Invoke via `Skill` tool: `eval-ui`
 
-- **Yes** → invoke `/eval-ui` via `Skill` tool
-- **Custom** → invoke `/eval-ui --target X --iterations Y` via `Skill` tool
-- **No** → proceed to prototype generation
+eval-ui runs its own score → gate → revise loop and produces a report at `docs/features/<slug>/ui/eval/report.md`.
+
+After eval-ui completes, proceed to prototype generation regardless of final score — the eval report is attached for reference during prototype generation.
 
 ## Step 8: Generate Prototype
 
@@ -169,7 +184,23 @@ Present the prototype summary and use `AskUserQuestion`:
 - **Request changes** → revise prototype based on feedback, then re-present for approval
 - **Skip prototype** → discard prototype files, proceed without prototype
 
-## Step 10: Next Step
+## Step 10: Reconcile PRD (Optional)
+
+After prototype is approved, compare the generated prototype against `prd-ui-functions.md`.
+
+Check for discrepancies:
+- Pages in prototype but NOT in PRD → suggest adding a new UF
+- Interactions in prototype but different from PRD → suggest updating UF interaction flow
+- Data fields in prototype but not in PRD → suggest updating UF data requirements
+- Navigation structure in prototype but not in PRD → suggest adding Navigation Architecture
+
+If discrepancies found:
+- List them with specific file references
+- Ask user: "Prototype has N differences from PRD. Write back to prd-ui-functions.md?"
+- If yes → update prd-ui-functions.md to match the prototype (prototype is the source of truth)
+- If no → note discrepancies in ui-design.md for future reference
+
+## Step 11: Next Step
 
 After prototype is approved or skipped, use `AskUserQuestion`:
 
