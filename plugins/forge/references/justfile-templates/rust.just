@@ -66,7 +66,7 @@ e2e-setup force="":
     echo "OK: e2e dependencies ready"
 
 # probe: check if configured services are healthy
-probe path="/health":
+probe path="":
     #!/usr/bin/env bash
     set -euo pipefail
     config="tests/e2e/config.yaml"
