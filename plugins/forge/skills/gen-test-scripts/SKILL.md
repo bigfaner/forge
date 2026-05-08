@@ -33,7 +33,7 @@ Check previous stage artifacts. Abort and prompt user if missing:
 |----------|----------------|
 | `docs/features/<slug>/testing/test-cases.md` | Run `/gen-test-cases` first |
 | `docs/sitemap/sitemap.json` (UI tests only) | Run `/gen-sitemap` first |
-| `tests/e2e/config.yaml` | Created by this skill in Step 5 (or create manually from template at `plugins/forge/skills/gen-test-scripts/templates/config.yaml`) |
+| `tests/e2e/config.yaml` | Created by this skill in Step 5 (or create manually from template at `plugins/forge/references/shared/config.yaml`) |
 
 `<slug>` is the current feature name, obtained via `task feature` command. `docs/sitemap/sitemap.json` is a project-level file (one per application), not isolated per feature.
 
@@ -298,7 +298,7 @@ ls tests/e2e/helpers.ts tests/e2e/package.json tests/e2e/tsconfig.json tests/e2e
 - `package.json`: copy from `plugins/forge/skills/gen-test-scripts/templates/package.json` (only if tests/e2e/package.json does not exist)
 - `tsconfig.json`: copy from `plugins/forge/skills/gen-test-scripts/templates/tsconfig.json` (only if tests/e2e/tsconfig.json does not exist)
 - `playwright.config.ts`: copy from `plugins/forge/skills/gen-test-scripts/templates/playwright.config.ts` (only if tests/e2e/playwright.config.ts does not exist)
-- `config.yaml`: copy from `plugins/forge/skills/gen-test-scripts/templates/config.yaml` (only if tests/e2e/config.yaml does not exist). CLI-only projects may omit this — `helpers.ts` lazy-loads gracefully.
+- `config.yaml`: copy from `plugins/forge/references/shared/config.yaml` (only if tests/e2e/config.yaml does not exist). CLI-only projects may omit this — `helpers.ts` lazy-loads gracefully.
 
 **If helpers.ts already exists**: check whether it exports all symbols imported by the generated specs. If symbols are missing (e.g., `screenshot` for UI tests, `curl` for API tests), add the missing exports AND all their private dependencies from the template. Private dependencies include: `findConfigPath()`, `getConfig()`, `_config`, `_configPath`, `_defaultCreds`, `getDefaultCreds()`, `SCREENSHOTS_DIR`, `_cachedToken`, `AUTH_STATE_DIR`, `AUTH_STATE_PATH`, plus `yaml` import, `Page` type import from `@playwright/test`, and `unlinkSync` import from `node:fs`. Do NOT overwrite existing exports — merge.
 

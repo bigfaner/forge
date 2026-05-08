@@ -70,7 +70,7 @@ Determine if phase summary context should be injected:
 
 ```
 Agent(
-  subagent_type="task-executor",
+  subagent_type="forge:task-executor",
   prompt="TASK_KEY: {{KEY}}
 TASK_ID: {{TASK_ID}}
 TASK_FILE: {{FILE}}
@@ -217,7 +217,7 @@ When dispatching error-fixer for missing record, include explicit instruction:
 
 ```
 Agent(
-  subagent_type="error-fixer",
+  subagent_type="forge:error-fixer",
   prompt="TASK_ID: {{TASK_ID}}
 TASK_FILE: {{FILE}}
 ERROR_MESSAGES: Missing task record

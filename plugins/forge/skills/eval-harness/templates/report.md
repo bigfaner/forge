@@ -1,10 +1,10 @@
 ---
-date: YYYY-MM-DD
+date: "{{DATE}}"
 evaluator: doc-scorer
 language: "[Auto-detected]"
 ---
 
-# Harness Evaluation Report — YYYY-MM-DD
+# Harness Evaluation Report — {{DATE}}
 
 ## Overall Score: X/100
 

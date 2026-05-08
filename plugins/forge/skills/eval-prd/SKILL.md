@@ -67,6 +67,10 @@ Check in order:
 
 Determine `<feature-slug>` from the path. The PRD directory is `docs/features/<slug>/prd/`.
 
+**Detect scoring mode**: Check if `prd-ui-functions.md` exists in the PRD directory.
+- **Mode A (with UI)**: `prd-ui-functions.md` present → Functional Specs dimension evaluates it
+- **Mode B (no UI)**: `prd-ui-functions.md` absent → Functional Specs dimension evaluates prd-spec.md Flow Description
+
 ## Step 2: Invoke Scorer Subagent
 
 Spawn `doc-scorer` via **Agent tool** (subagent_type: `forge:doc-scorer` if registered, otherwise `general-purpose`).
@@ -130,6 +134,7 @@ Increment iteration counter. Return to Step 2.
 ## Eval-PRD Complete
 
 **Final Score**: {{SCORE}}/100 (target: {{TARGET}})
+**Scoring Mode**: {{Mode A: with UI / Mode B: no UI}}
 **Iterations Used**: {{N}}/{{MAX}}
 
 ### Score Progression
@@ -141,11 +146,11 @@ Increment iteration counter. Return to Step 2.
 ### Dimension Breakdown (final)
 | Dimension | Score | Max |
 |-----------|-------|-----|
-| Background & Goals | {{d1}} | 20 |
+| Background & Goals | {{d1}} | 15 |
 | Flow Diagrams | {{d2}} | 20 |
-| Functional Specs | {{d3}} | 20 |
-| User Stories | {{d4}} | 20 |
-| Scope Clarity | {{d5}} | 20 |
+| {{Functional Specs / Flow Completeness}} | {{d3}} | 20 |
+| User Stories | {{d4}} | 30 |
+| Scope Clarity | {{d5}} | 15 |
 
 ### Outcome
 {{"Target reached" / "Target NOT reached — N iterations exhausted"}}
@@ -153,3 +158,13 @@ Increment iteration counter. Return to Step 2.
 ```
 
 Save the final report to `docs/features/<slug>/prd/eval/report.md`.
+
+## Step 6: Next Step
+
+After final report, ask via `AskUserQuestion`:
+
+> Proceed to next phase?
+
+- **Tech Design** → invoke `/tech-design` via `Skill` tool
+- **UI Design** → invoke `/ui-design` via `Skill` tool (if PRD has UI functions)
+- **No** → done

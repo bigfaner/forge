@@ -58,3 +58,4 @@
 - **Vague language penalty**: -2 per instance of "better", "improved", "enhanced" without quantification
 - **Missing section penalty**: 0 points for that dimension
 - **Inconsistency penalty**: -3 if scope contradicts solution or success criteria don't cover scope
+- **Placeholder text ("TBD", "TODO")**: -2 pts per instance

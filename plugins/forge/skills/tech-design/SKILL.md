@@ -166,7 +166,9 @@ When `db-schema: "yes"`, present `er-diagram.md` and `schema.sql` alongside the 
 
 Triggered automatically after user approves the tech-design in Step 6.
 
-Follow the tech-design archiving flow defined in `plugins/forge/references/shared/decision-logging.md` (Section 2).
+Follow the tech-design archiving flow defined in `plugins/forge/references/shared/decision-logging.md` (Section 2). Use `templates/decision-entry.md` for the decision row format.
+
+See `examples/ask-question.md` for question formatting and `examples/exploration.md` for context exploration commands.
 
 - If the approved document contains key decisions, display the candidate list and prompt the user to select which to archive.
 - User may enter `none` to skip archiving entirely.
@@ -182,7 +184,7 @@ Save to:
 
 ## Step 9: Update Manifest
 
-Update `manifest.md`:
+Update `manifest.md` using `templates/manifest-update-design.md`:
 - Add Tech Design and API Handbook rows to Documents table
 - Add traceability links from PRD sections to design sections
 - Advance status to `design` if `/ui-design` already completed or if UI is not applicable

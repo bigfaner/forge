@@ -60,7 +60,7 @@ From each source, extract every verifiable criterion:
 
 **From PRD spec** (`prd/prd-spec.md`):
 - Quality check items at the end (checkboxes)
-- Functional requirements in Section 5 (list pages, button operations, forms)
+- Functional requirements in Functional Specs (prd-ui-functions.md UI specs and Related Changes)
 - Performance/security requirements if testable
 
 **From UI functions** (`prd/prd-ui-functions.md`):

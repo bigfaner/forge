@@ -154,3 +154,12 @@ Increment iteration counter. Return to Step 2.
 ```
 
 Save the final report to `docs/proposals/<slug>/eval/report.md`.
+
+## Step 6: Next Step
+
+After final report, ask via `AskUserQuestion`:
+
+> Proceed to `/write-prd` to formalize this proposal into a PRD?
+
+- **Yes** → invoke `/write-prd` via `Skill` tool
+- **No** → done
