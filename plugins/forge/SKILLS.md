@@ -7,7 +7,7 @@
 | brainstorm | Use when a user has a vague idea or feature request and needs to explore it before formalizing into a PRD. Outputs a structured proposal document. |
 | write-prd | Use when user provides requirements or feature requests that need to be formalized into a structured PRD document through collaborative dialogue. |
 | eval-prd | Evaluate a PRD document with 100-point scoring, then run adversarial iterations until target score is met. Main session orchestrates doc-scorer and doc-reviser subagents. |
-| tech-design | Use after PRD is finalized to create technical design with architecture and implementation details. |
+| tech-design | Use after PRD (and UI design if applicable) is finalized to create technical design with architecture and implementation details. |
 | ui-design | Use after PRD ui-functions are defined to create UI design specifications. Supports design style selection and HTML prototype generation. |
 | eval-design | Evaluate a tech design document with 100-point scoring, then run adversarial iterations until target score is met. Main session orchestrates doc-scorer and doc-reviser subagents. |
 | breakdown-tasks | Use when the technical design is finalized to break down into executable tasks. Creates task files based on technical design. |
@@ -19,7 +19,7 @@
 | improve-harness | Dynamically implement harness improvements from eval-harness report. Reads P0/P1/P2 priorities and fixes each finding. |
 | learn-lesson | Use when you have solved an error or discovered a useful pattern. Extracts reusable knowledge from the current session. |
 | gen-test-cases | Generate structured test cases from PRD acceptance criteria. Classifies by type (UI/API/CLI) with full traceability to PRD sections. |
-| gen-test-scripts | Generate executable TypeScript e2e test scripts from test cases. Uses @playwright/test for all tests. Playwright for UI, fetch for API, child_process for CLI. |
+| gen-test-scripts | Generate executable TypeScript e2e test scripts from test cases. Uses @playwright/test for all tests (no node:test or node:assert). Playwright for UI, fetch for API, child_process for CLI. |
 | run-e2e-tests | Execute e2e test scripts and generate a results report. Runs UI tests via Playwright, API tests via fetch, CLI tests via child_process. Produces evidence-backed pass/fail report. |
 | graduate-tests | Migrate feature test scripts to the regression suite (tests/e2e/). Agent-driven: reads scripts, analyzes content, decides classification, splits/merges as needed, rewrites imports, creates graduation marker. |
 | consolidate-specs | Extract business rules and tech specs from feature docs into preview files, detect overlaps with existing knowledge, user confirms before integrating to project-level dirs. |

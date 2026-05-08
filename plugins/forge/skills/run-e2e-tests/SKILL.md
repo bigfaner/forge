@@ -118,7 +118,7 @@ just run & echo $! >> tests/e2e/results/.server-pids
 for i in $(seq 1 10); do just probe && break; sleep 3; done || { echo "Health check failed after 30s"; exit 1; }
 ```
 
-The `just probe` recipe reads all `*Url` fields from `tests/e2e/config.yaml` and probes each with `/health`. For CLI-only projects without config.yaml, it silently succeeds. If `just probe` reports zero lines of output (no services probed), warn the user that config.yaml may be misconfigured.
+The `just probe` recipe reads `baseUrl` (frontend) and `apiBaseUrl` (backend) from `tests/e2e/config.yaml` and probes each with `/health`. For CLI-only projects without config.yaml, it silently succeeds. If `just probe` reports zero lines of output (no services probed), warn the user that config.yaml may be misconfigured.
 
 ### Step 2: Verify Scripts
 

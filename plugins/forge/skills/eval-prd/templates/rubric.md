@@ -112,5 +112,5 @@
 
 - **Missing required section**: 0 pts for that dimension
 - **Vague language without quantification**: -2 pts per instance ("better UX", "faster", "improved")
-- **Cross-file/section inconsistency**: -3 pts per conflict (e.g., scope says X is out but prd-ui-functions.md describes X; user story references a role not in Background)
+- **Cross-section inconsistency**: -3 pts per conflict (e.g., scope says X is out but prd-ui-functions.md describes X; user story references a role not in Background)
 - **Placeholder text ("TBD", "TODO")**: -2 pts per instance

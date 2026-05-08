@@ -7,7 +7,7 @@ description: Use after PRD ui-functions are defined to create UI design specific
 
 ## Overview
 
-Produce UI design specifications from PRD's UI function requirements, with optional HTML prototype generation.
+Produce UI design specifications from PRD's UI function requirements, with HTML prototype generation.
 
 **Core principle**: Define HOW the interface looks and behaves, separated from the PRD's WHAT (requirements layer).
 
@@ -42,7 +42,7 @@ ls docs/features/<slug>/prd/prd-ui-functions.md
 ## Process Flow
 
 ```
-1. Read manifest → 2. Read UI functions → 3. Select design style → 4. Draft design → 5. Write design → 6. Update manifest → 7. Eval prompt → 8. Prototype prompt → 9. Generate prototype (optional)
+1. Read manifest → 2. Read UI functions → 3. Select design style → 4. Draft design → 5. Write design → 6. Update manifest → 7. Eval prompt → 8. Generate prototype → 9. Human review → 10. Next step
 ```
 
 ## Step 1: Read Manifest
@@ -129,7 +129,7 @@ Update `manifest.md`:
 
 - Add UI Design row to Documents table
 - Add traceability links from UI Functions to UI Design sections
-- Advance status to `design` if `/tech-design` already completed
+- Advance status to `design`
 
 Use `templates/manifest-update-ui.md` for the update pattern.
 
@@ -141,18 +141,9 @@ After updating manifest, use `AskUserQuestion` to ask:
 
 - **Yes** → invoke `/eval-ui` via `Skill` tool
 - **Custom** → invoke `/eval-ui --target X --iterations Y` via `Skill` tool
-- **No** → proceed to prototype prompt
+- **No** → proceed to prototype generation
 
-## Step 8: Prototype Prompt
-
-Use `AskUserQuestion`:
-
-> Generate HTML/CSS/JS interactive prototype from the UI design?
-
-- **Yes** → proceed to Step 9
-- **No** → done
-
-## Step 9: Generate Prototype (Optional)
+## Step 8: Generate Prototype
 
 Generate HTML prototype from `ui-design.md` and the selected design style:
 
@@ -164,10 +155,33 @@ Generate HTML prototype from `ui-design.md` and the selected design style:
 
 Save to: `docs/features/<slug>/ui/prototype/`
 
+## Step 9: Human Review Gate
+
+<HARD-GATE>
+Present the prototype to the user for review. Do NOT proceed to tech-design until the user explicitly approves.
+</HARD-GATE>
+
+Present the prototype summary and use `AskUserQuestion`:
+
+> Prototype generated at `docs/features/<slug>/ui/prototype/`. Open `index.html` in a browser to review. Approve the prototype?
+
+- **Approved** → proceed to next step
+- **Request changes** → revise prototype based on feedback, then re-present for approval
+- **Skip prototype** → discard prototype files, proceed without prototype
+
+## Step 10: Next Step
+
+After prototype is approved or skipped, use `AskUserQuestion`:
+
+> Proceed to `/tech-design` to create technical design?
+
+- **Yes** → invoke `/tech-design` via `Skill` tool
+- **No** → done
+
 ## Integration
 
 Works well with:
 
 - `/write-prd` — Produces `prd/prd-ui-functions.md` input
-- `/tech-design` — Parallel skill; both must complete before breakdown
+- `/tech-design` — Next skill after UI design; informed by UI decisions
 - `/eval-ui` — Adversarial evaluation after UI design is created

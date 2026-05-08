@@ -1,6 +1,6 @@
 ---
 name: init-forge
-description: Build and install the task-cli tool
+description: Build and install the task-cli tool.
 ---
 
 # /init-forge

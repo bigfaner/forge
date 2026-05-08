@@ -24,6 +24,14 @@ just --version  # requires >= 1.50.0 (supports [arg] named option syntax)
 
 If version < 1.50.0: `cargo install just`
 
+## Parameters
+
+| Parameter | Values | Default | Description |
+|-----------|--------|---------|-------------|
+| `--lang` | `go`, `rust`, `python`, `node` | (auto-detect) | Override language detection |
+| `--type` | `frontend`, `backend`, `mixed` | (auto-detect) | Override project type |
+| `--force` | (flag) | false | Overwrite existing justfile without confirmation |
+
 ## Standard Target Contract
 
 | Target | Required | Purpose |
@@ -56,6 +64,25 @@ If version < 1.50.0: `cargo install just`
 just --version 2>/dev/null | awk '{print $2}' | awk -F. '$1 > 1 || ($1 == 1 && $2 >= 50)' | grep -q .
 # If exit code != 0: output "Error: just >= 1.50.0 required — run `cargo install just`" and abort.
 ```
+
+#### Parameter override
+
+If `--lang` and/or `--type` are provided, skip all or part of auto-detection:
+
+1. **`--lang` and `--type` both set**: Skip all detection (1a/1b/1c). Use `--lang` for template selection, `--type` for project-type output. Use placeholder defaults from the table below.
+2. **`--lang` only**: Skip 1a (marker detection) and 1b/1c (language-specific detection). Run a simplified 1a just to determine `--type` if no markers exist, otherwise use detected type.
+3. **`--type` only**: Run 1a to detect language from markers, but override the project-type classification with `--type`. Run 1b/1c for the detected language.
+4. **Neither set**: Full auto-detection (existing behavior).
+
+**Placeholder defaults when skipping detection:**
+
+| Placeholder | Go | Rust | Python | Node |
+|-------------|-----|------|--------|------|
+| `ENTRY_POINT` | `.` | `` (empty) | `main.py` | N/A |
+| `DEV_COMMAND` | N/A | N/A | `python main.py` | N/A |
+| `ENTRY_SCRIPT` | N/A | N/A | N/A | `dev` |
+
+For `mixed` projects via parameters, `FRONTEND_DIR` and `BACKEND_DIR` both default to `.`.
 
 #### 1a. Project type detection
 
@@ -130,6 +157,18 @@ ls justfile Justfile 2>/dev/null
 ### Step 3: Assemble and Write Justfile
 
 #### Template selection
+
+If `--lang` is provided, select template directly:
+
+| `--lang` value | Template |
+|----------------|----------|
+| `go` | `plugins/forge/references/justfile-templates/go.just` |
+| `rust` | `plugins/forge/references/justfile-templates/rust.just` |
+| `python` | `plugins/forge/references/justfile-templates/python.just` |
+| `node` | `plugins/forge/references/justfile-templates/node.just` |
+| (mixed via `--type mixed`) | `plugins/forge/references/justfile-templates/mixed.just` |
+
+If `--lang` is not provided, detect from marker files:
 
 | Marker file | Template |
 |-------------|----------|

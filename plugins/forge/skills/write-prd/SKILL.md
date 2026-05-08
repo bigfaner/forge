@@ -186,6 +186,10 @@ This step is **mandatory** when the feature has any UI surface. Skip only for ba
 
 **Validation**: Every UI Function MUST have a Placement section. Missing Placement → error, do not proceed.
 
+**Downstream impact**: Placement determines how downstream skills structure their output:
+- **`/breakdown-tasks`**: `existing-page` generates a Build task + an Integrate task (wire component into existing page); `new-page` generates a Build task + a Page Assembly task (create page file, register route, compose components)
+- **`/gen-test-cases`**: auto-generates integration verification test cases for `existing-page` placements, ensuring the component is visible at the correct position in the target page
+
 ## Step 9: Create Manifest
 
 Create `manifest.md` at the feature root using `templates/manifest.md`:
@@ -235,7 +239,7 @@ After committing, use `AskUserQuestion` to ask:
 
 - **Yes** → invoke `/eval-prd` via `Skill` tool
 - **Custom** → invoke `/eval-prd --target X --iterations Y` via `Skill` tool
-- **No** → proceed to `/tech-design`
+- **No** → proceed to `/ui-design` (if PRD has UI functions) or `/tech-design`
 
 ## Integration
 

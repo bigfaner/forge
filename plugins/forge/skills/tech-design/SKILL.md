@@ -1,13 +1,13 @@
 ---
 name: tech-design
-description: Use after PRD is finalized to create technical design with architecture and implementation details.
+description: Use after PRD (and UI design if applicable) is finalized to create technical design with architecture and implementation details.
 ---
 
 # Tech Design
 
 ## Overview
 
-Produce technical design from PRD, making technology decisions informed by the current project state.
+Produce technical design from PRD (and UI design if applicable), making technology decisions informed by the current project state.
 
 **Core principle**: Resolve technical uncertainty during the design phase, avoiding rework during implementation.
 
@@ -25,14 +25,15 @@ ls docs/features/<slug>/prd/prd-spec.md
 
 | Artifact | Missing prompt |
 |----------|----------------|
-| `prd/prd-spec.md` | Run `/write-prd` first, then `/eval-prd` |
+| `prd/prd-spec.md` | Run `/write-prd` first, then `/eval-prd`, then `/ui-design` (if UI features) |
 
 ## When to Use
 
 **Trigger conditions:**
 
-- Manifest exists at `docs/features/<slug>/manifest.md` with status `prd`
+- Manifest exists at `docs/features/<slug>/manifest.md` with status `prd` or `design`
 - PRD Spec exists at `prd/prd-spec.md`
+- If feature has UI: `ui/ui-design.md` should exist (run `/ui-design` first)
 - PRD is approved and ready for technical design
 
 **Skip when:**
@@ -160,7 +161,18 @@ Data Models stays inline. After drafting, scan content for keywords: `TABLE`, `R
 
 For each section, wait for user approval.
 
-When `db-schema: "yes"`, present `er-diagram.md` and `schema.sql` alongside the Data Models cross-reference for approval as a single unit.
+### 6.1 DB Schema Review Gate (when `db-schema: "yes"`)
+
+<HARD-GATE>
+When the Data Models section is reached and `er-diagram.md` + `schema.sql` have been generated, present them as a standalone review unit. Do NOT proceed to remaining sections until the user explicitly approves the database schema.
+</HARD-GATE>
+
+Present `er-diagram.md` and `schema.sql` alongside the Data Models cross-reference, and use `AskUserQuestion`:
+
+> Database schema generated. Review the ER diagram and CREATE TABLE statements. Approve the schema?
+
+- **Approved** → proceed to remaining sections
+- **Request changes** → revise schema based on feedback, then re-present for approval
 
 ## Step 7: Archive Decisions (Optional)
 
@@ -204,6 +216,6 @@ After committing, use `AskUserQuestion` to ask:
 Works well with skills:
 
 - `/write-prd` - Creates PRD input and manifest
-- `/ui-design` - Parallel skill for UI features
+- `/ui-design` - Preceding skill for UI features; UI design informs technical decisions
 - `/eval-design` - Evaluate tech-design.md quality before handing off to breakdown-tasks
 - `/breakdown-tasks` - Uses tech-design.md to create tasks

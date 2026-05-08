@@ -66,7 +66,7 @@ e2e-setup force="":
     echo "OK: e2e dependencies ready"
 
 # probe: check if configured services are healthy
-probe path="/health":
+probe path="":
     #!/usr/bin/env bash
     set -euo pipefail
     config="tests/e2e/config.yaml"
@@ -75,12 +75,17 @@ probe path="/health":
         exit 0
     fi
     fail=0
-    for url in $(grep 'Url:' "$config" | grep -oE 'https?://[^ "]+'); do
-        probe_url="${url}{{path}}"
-        if curl -sf --max-time 5 "$probe_url" > /dev/null 2>&1; then
-            echo "OK: $probe_url"
+    frontend=$(sed -n 's/^baseUrl:[[:space:]]*\(.*\)/\1/p' "$config" | head -1)
+    backend=$(sed -n 's/^apiBaseUrl:[[:space:]]*\(.*\)/\1/p' "$config" | head -1)
+    [ -n "$frontend" ] && frontend="${frontend}{{path}}"
+    [ -n "$backend" ] && backend="${backend}{{path}}"
+    for label in "frontend:$frontend" "backend:$backend"; do
+        url="${label#*:}"
+        [ -z "$url" ] && continue
+        if curl -sf --max-time 5 "$url" > /dev/null 2>&1; then
+            echo "OK: ${label%%:*} ($url)"
         else
-            echo "FAIL: $probe_url not responding" >&2
+            echo "FAIL: ${label%%:*} ($url) not responding" >&2
             fail=$((fail+1))
         fi
     done
