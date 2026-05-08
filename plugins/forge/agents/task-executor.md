@@ -162,8 +162,6 @@ Violating this rule breaks the dispatcher's control loop.
 
 ## Error Handling
 
-> When running under `/run-tasks` dispatcher, compile/test failures are delegated to the error-fixer subagent instead of self-fix.
-
 | Situation | Action |
 |-----------|--------|
 | Build fails | Fix, then retry verification |
