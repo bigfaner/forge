@@ -59,7 +59,7 @@ The scorer receives a **harness snapshot** (a single markdown file) containing: 
 - **No docs/ directory**: -10 pts from dimension 1
 - **No mechanical enforcement of any kind**: 0 pts for "mechanically enforced" criterion
 - **All knowledge lives only in external systems** (wiki, Slack, heads): -5 pts from dimension 4
-- **Placeholder or boilerplate content** ("TODO", "fill in later"): -2 pts per instance
+- **Placeholder text ("TBD", "TODO", "fill in later")**: -2 pts per instance
 
 ## Scoring Guidance
 

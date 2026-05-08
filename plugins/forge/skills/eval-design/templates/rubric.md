@@ -87,4 +87,6 @@ Only scored if PRD has auth, data privacy, or multi-user requirements. Mark N/A 
 - **Missing required section**: 0 pts for that dimension
 - **Prose-only (no code/diagram where expected)**: -5 pts from that dimension
 - **PRD AC gap**: -3 pts per unaddressed acceptance criterion (from Breakdown-Readiness)
+- **Vague language without quantification**: -2 pts per instance ("better performance", "faster", "improved")
+- **Cross-section inconsistency**: -3 pts per conflict (e.g., interface contradicts data model, error handling conflicts with architecture)
 - **Placeholder text ("TBD", "TODO")**: -2 pts per instance

@@ -155,26 +155,19 @@ Increment iteration counter. Return to Step 2.
 
 Save the final report to `docs/features/<slug>/ui/eval/report.md`.
 
-## Step 6: Prototype Prompt
+## Step 6: Next Step
 
 After final report, ask via `AskUserQuestion`:
 
-> Generate HTML/CSS/JS interactive prototype from the evaluated design?
+> Proceed to `/tech-design` to create technical design?
 
-- **Yes** → proceed to prototype generation (Step 8 of `/ui-design`)
-- **No** → ask next question below
-
-## Step 7: Next Step
-
-After prototype decision, ask via `AskUserQuestion`:
-
-> Proceed to `/breakdown-tasks` to break down the design into executable tasks?
-
-- **Yes** → invoke `/breakdown-tasks` via `Skill` tool
+- **Yes** → invoke `/tech-design` via `Skill` tool
 - **No** → done
+
+> Note: Prototype generation (Step 8 of `/ui-design`) runs as part of the ui-design skill flow.
 
 ## Integration
 
 Works well with:
 - `/ui-design` — Produces the UI design document to evaluate
-- `/eval-design` — Evaluates tech design in parallel (for features with both UI and backend)
+- `/tech-design` — Next skill after UI evaluation; informed by UI decisions

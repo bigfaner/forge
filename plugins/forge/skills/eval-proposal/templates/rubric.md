@@ -55,7 +55,7 @@
 
 ## Deduction Rules
 
-- **Vague language penalty**: -2 per instance of "better", "improved", "enhanced" without quantification
-- **Missing section penalty**: 0 points for that dimension
-- **Inconsistency penalty**: -3 if scope contradicts solution or success criteria don't cover scope
+- **Missing required section**: 0 pts for that dimension
+- **Vague language without quantification**: -2 pts per instance ("better", "improved", "enhanced")
+- **Cross-section inconsistency**: -3 pts per conflict (e.g., scope contradicts solution, success criteria don't cover scope)
 - **Placeholder text ("TBD", "TODO")**: -2 pts per instance

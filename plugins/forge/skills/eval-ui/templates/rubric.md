@@ -62,8 +62,10 @@ Mark missing required sections as 0 pts for the relevant dimension:
 
 ## Deduction Rules
 
-- **Missing required section**: 0 pts for the relevant dimension
+- **Missing required section**: 0 pts for that dimension
+- **Vague language without quantification**: -2 pts per instance ("better UX", "faster", "improved")
+- **Cross-section inconsistency**: -3 pts per conflict (e.g., interaction table contradicts layout, state missing from data binding)
 - **Happy-path only design** (no error/empty/loading states): -5 pts from Design Integrity
 - **PRD UI function gap**: -3 pts per unaddressed UI function (from Requirement Coverage)
 - **Orphan UI elements** (no data binding): -3 pts per element (from Implementability)
-- **Placeholder text** ("TBD", "TODO", "lorem ipsum"): -2 pts per instance
+- **Placeholder text ("TBD", "TODO", "lorem ipsum")**: -2 pts per instance

@@ -20,7 +20,7 @@ Break a technical design into executable tasks (1-4h each, clear dependencies, t
 | Artifact                | Missing? Run                    |
 | ----------------------- | ------------------------------- |
 | `prd/prd-spec.md`       | `/write-prd`                    |
-| `design/tech-design.md` | `/tech-design` → `/eval-design` |
+| `design/tech-design.md` | `/tech-design` |
 
 ## Step 1: Read All Documents
 

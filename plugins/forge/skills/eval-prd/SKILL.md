@@ -165,6 +165,6 @@ After final report, ask via `AskUserQuestion`:
 
 > Proceed to next phase?
 
-- **Tech Design** → invoke `/tech-design` via `Skill` tool
-- **UI Design** → invoke `/ui-design` via `Skill` tool (if PRD has UI functions)
+- **UI Design** → invoke `/ui-design` via `Skill` tool (if PRD has UI functions, design UI first)
+- **Tech Design** → invoke `/tech-design` via `Skill` tool (if no UI, or UI design already completed)
 - **No** → done
