@@ -1,7 +1,7 @@
 ---
 name: run-tasks
 description: Autonomous task dispatcher that continuously claims tasks and dispatches to subagents.
-allowed_tools: ["Bash", "Read", "Agent", "TaskOutput"]
+allowed_tools: ["Bash", "Read", "Agent", "TaskOutput", "Skill"]
 ---
 
 # /run-tasks
@@ -10,27 +10,26 @@ Auto-dispatch tasks to subagents. Main session only handles dispatching.
 
 ## Architecture
 
-```
-MAIN SESSION (Dispatcher)
-   ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-   │ 1. Claim    │───▶│ 2. Dispatch │───▶│ 3. Verify   │───▶│ 4. Context  │
-   │    Task     │    │   + Timeout │    │   Record    │    │   Check     │
-   └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-          ▲                                    │                    │
-          └────────────────────────────────────┘                    │
-                      LOOP                                        │
-                                                                   ▼
-                                                        ┌─────────────┐
-                                                        │ 5. Breaking │
-                                                        │    Gate     │
-                                                        └─────────────┘
+```mermaid
+flowchart TD
+    A["1. Claim Task"] --> B{"MAIN_SESSION?"}
+    B -->|"yes"| C["1.5 Follow Task Instructions"]
+    C --> LOOP(["Step 6: Continue Loop"])
+    B -->|"no"| D["2. Dispatch + Timeout"]
+    D --> E["3. Verify Record"]
+    E --> F["4. Context Check"]
+    F --> G{"Breaking task?"}
+    G -->|"yes"| H["5. Breaking Gate"]
+    G -->|"no"| LOOP
+    H --> LOOP
+    LOOP --> A
 ```
 
 ## Dispatcher Iron Laws
 
 <EXTREMELY-IMPORTANT>
-1. Only 5 actions: claim → dispatch → verify → context check → breaking gate
-2. NO code reading, NO code writing
+1. Only 5 actions: claim → (main_session? follow task instructions : dispatch) → verify → context check → breaking gate
+2. NO code reading, NO code writing — EXCEPT for main_session tasks (Step 1.5) where the Skill tool is invoked in the main session
 3. NO running tests directly — EXCEPT in Step 5 (Breaking Task Gate) where `just test` and `just test-e2e` are executed as quality gates
 4. 30-minute timeout per task
 5. 3 consecutive failures → STOP
@@ -54,8 +53,21 @@ task claim
 - `KEY` (e.g., "2.1-implementation")
 - `FILE` (e.g., full absolute path to task file)
 - `BREAKING` (e.g., "true" or absent)
+- `MAIN_SESSION` (e.g., "true" or absent)
 - `SCOPE` (e.g., "frontend", "backend", or "all" — defaults to "all" if absent)
 - `FEATURE` (e.g., "my-feature" — feature slug from claim output)
+
+### Step 1.5: Main Session Routing
+
+If `MAIN_SESSION == "true"`:
+- This task must execute in the main session (it needs to spawn subagents that task-executor cannot).
+- Read the task file at `{{FILE}}` and find the `## Main Session Instructions` section.
+- Follow the instructions exactly — the task document specifies what skill to invoke, how to check outcome, and how to record the result.
+- The dispatcher does NOT hardcode skill names or record logic — it delegates to the task document.
+- Skip to Step 6 (Continue Loop).
+
+Else:
+- Proceed to Step 2 (Dispatch with Timeout).
 
 ### Step 2: Dispatch with Timeout
 
@@ -210,6 +222,7 @@ Return to Step 1.
 | 3 consecutive failures | STOP dispatcher |
 | Breaking task tests fail (5a) | `task status <ID> blocked` + `task add --template fix-task`, continue loop |
 | Feature e2e tests fail (5b) | `task status <ID> blocked` + `task add --template fix-task`, continue loop |
+| Main session task fails | Follow error handling in task document's `### Error Handling` section |
 
 ### Error-Fixer Dispatch
 

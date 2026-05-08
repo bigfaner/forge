@@ -124,6 +124,7 @@ func executeClaim() (*ClaimResult, error) {
 		StartedTime:   time.Now().Format("2006-01-02 15:04"),
 		Breaking:      t.Breaking,
 		Scope:         t.Scope,
+		MainSession:   t.MainSession,
 	}
 	if err := task.SaveState(statePath, state); err != nil {
 		return nil, err
@@ -307,6 +308,9 @@ func printTaskDetails(key string, t *task.Task, projectRoot, featureSlug string)
 	PrintFieldIfNotEmptySlice("DEPENDENCIES", t.Dependencies)
 	if t.Breaking {
 		PrintField("BREAKING", "true")
+	}
+	if t.MainSession {
+		PrintField("MAIN_SESSION", "true")
 	}
 	PrintFieldIfNotEmpty("SCOPE", t.Scope)
 	PrintFieldIfNotEmpty("FEATURE", featureSlug)

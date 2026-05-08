@@ -67,6 +67,11 @@
             "enum": ["frontend", "backend", "all"],
             "default": "all",
             "description": "Task scope: must be explicitly set by breakdown-tasks using the Scope Assignment algorithm. 'all' for cross-layer, summary, gate, and T-test tasks; 'frontend'/'backend' for single-layer tasks in mixed projects."
+          },
+          "mainSession": {
+            "type": "boolean",
+            "description": "When true, run-tasks executes this task in the main session instead of dispatching to task-executor. Used by tasks that need to spawn subagents.",
+            "default": false
           }
         }
       }
