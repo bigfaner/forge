@@ -24,6 +24,9 @@ type Task struct {
 	// SourceTaskID records which task spawned this task (e.g. fix-task -> source task).
 	// Empty for original tasks. Used by record auto-restore to unblock source when all deps complete.
 	SourceTaskID string `json:"sourceTaskID,omitempty"`
+	// MainSession indicates this task must run in the main session (not dispatched to task-executor).
+	// Used by tasks that need to spawn subagents (e.g., eval-test-cases spawns doc-scorer/doc-reviser).
+	MainSession bool `json:"mainSession,omitempty"`
 }
 
 // TaskIndex represents the index.json structure for a feature.
@@ -102,6 +105,8 @@ type TaskState struct {
 	Breaking      bool     `json:"breaking,omitempty"`
 	// Scope mirrors Task.Scope for the claimed task.
 	Scope string `json:"scope,omitempty"`
+	// MainSession mirrors Task.MainSession for the claimed task.
+	MainSession bool `json:"mainSession,omitempty"`
 }
 
 // RecordData represents the JSON input for record generation.

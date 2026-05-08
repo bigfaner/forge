@@ -19,6 +19,7 @@
 | improve-harness | Dynamically implement harness improvements from eval-harness report. Reads P0/P1/P2 priorities and fixes each finding. |
 | learn-lesson | Use when you have solved an error or discovered a useful pattern. Extracts reusable knowledge from the current session. |
 | gen-test-cases | Generate structured test cases from PRD acceptance criteria. Classifies by type (UI/API/CLI) with full traceability to PRD sections. |
+| eval-test-cases | Evaluate test-cases.md for downstream executability with 100-point scoring, then run adversarial iterations until target score is met. Main session orchestrates doc-scorer and doc-reviser subagents. |
 | gen-test-scripts | Generate executable TypeScript e2e test scripts from test cases. Uses @playwright/test for all tests (no node:test or node:assert). Playwright for UI, fetch for API, child_process for CLI. |
 | run-e2e-tests | Execute e2e test scripts and generate a results report. Runs UI tests via Playwright, API tests via fetch, CLI tests via child_process. Produces evidence-backed pass/fail report. |
 | graduate-tests | Migrate feature test scripts to the regression suite (tests/e2e/). Agent-driven: reads scripts, analyzes content, decides classification, splits/merges as needed, rewrites imports, creates graduation marker. |

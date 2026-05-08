@@ -98,12 +98,24 @@
       "file": "gen-test-cases.md",
       "record": "records/gen-test-cases.md"
     },
+    "eval-test-cases": {
+      "id": "T-test-1b",
+      "title": "Evaluate e2e Test Cases",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": ["T-test-1"],
+      "status": "pending",
+      "scope": "all",
+      "mainSession": true,
+      "file": "eval-test-cases.md",
+      "record": "records/eval-test-cases.md"
+    },
     "gen-test-scripts": {
       "id": "T-test-2",
       "title": "Generate e2e Test Scripts",
       "priority": "P1",
       "estimatedTime": "1-2h",
-      "dependencies": ["T-test-1"],
+      "dependencies": ["T-test-1b"],
       "status": "pending",
       "scope": "all",
       "file": "gen-test-scripts.md",

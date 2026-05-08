@@ -3,7 +3,7 @@ id: "T-test-2"
 title: "Generate e2e Test Scripts"
 priority: "P1"
 estimated_time: "1-2h"
-dependencies: ["T-test-1"]
+dependencies: ["T-test-1b"]
 status: pending
 ---
 

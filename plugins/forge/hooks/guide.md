@@ -52,7 +52,8 @@ graph LR
 graph LR
     F["/breakdown-tasks<br><i>appends T-test-1..5</i>"] --> T1["/gen-sitemap*<br>sitemap.json"]
     T1 --> T2["/gen-test-cases<br>test-cases.md"]
-    T2 --> T3["/gen-test-scripts<br>tests/e2e/features/"]
+    T2 --> T2b["/eval-test-cases<br>eval report"]
+    T2b --> T3["/gen-test-scripts<br>tests/e2e/features/"]
     T3 --> T4["/run-e2e-tests<br>results/"]
     T4 --> T4b["verify-regression<br>regression check"]
     T4b --> T5["/graduate-tests<br>tests/e2e/target/"]
