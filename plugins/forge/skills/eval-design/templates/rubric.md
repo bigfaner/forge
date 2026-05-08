@@ -71,7 +71,7 @@ Mark missing required sections as 0 pts for that dimension:
 | Tasks derivable | 0-7 | Does each interface → at least one impl task? Each model → at least one schema task? |
 | PRD AC coverage | 0-6 | If PRD exists: are all acceptance criteria addressed somewhere in the design? |
 
-★ This dimension is the direct gate to `/breakdown-tasks`. A score below 12/20 blocks progression.
+★ This dimension is the direct gate to `/breakdown-tasks`. A score below 18/20 blocks progression.
 
 ### 6. Security Considerations (10 pts)
 

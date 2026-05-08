@@ -56,7 +56,7 @@ evaluator: Claude (automated, adversarial)
 └──────────────────────────────┴──────────┴──────────┴────────────┘
 ```
 
-★ Breakdown-Readiness < 12/20 blocks progression to `/breakdown-tasks`
+★ Breakdown-Readiness < 18/20 blocks progression to `/breakdown-tasks`
 
 ---
 
