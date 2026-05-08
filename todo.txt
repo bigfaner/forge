@@ -1,12 +1,12 @@
-1、增加一个系统化修复Bug的slash command或skill，先复现问题，补充单元测试和e2e测试，再修复问题，最后验证
+1、增加一个系统化修复Bug的slash command或skill，先复现问题，补充单元测试和e2e测试，再修复问题，最后验证。done
 2、优化独立agent占用token的问题
-3、完善动态追加任务的机制：例如e2e测试失败，追加修复问题的任务
+3、完善动态追加任务的机制：例如e2e测试失败，追加修复问题的任务。done
 4、遵循harness enginnering思想，持续迭代forge插件
 5、拆分forge，把辅助性的skill或slash command迁移到其它插件
-6、优化生成的feature e2e测试脚本的质量
+6、优化生成的feature e2e测试脚本的质量。done
 7、增加一个改进forge本身的skill或其它能力
 8、优化gen-sitemap的输出结果，避免重复的节点
-9、增加一个eval-test-cases skill。doing
+9、增加一个eval-test-cases skill。done
 10、task record命令检查验收标准是否完成？
 11、调整eval-prd的评分比重，用户故事提到高30分。done.
 12、改造tech-design skill：涉及到数据库表设计或变更时，需要输出到独立的E—R图文档和SQL文件，并必须得到人类的同意后，才可以继续。done
@@ -16,5 +16,5 @@
 16、精简guide.md。done
 17、eval-design的breakdown-tasks门槛提高到18分。done
 18、增加一个快速模式，brainstorm —> breakdown-tasks —> run-tasks
-19、task claim输出breaking字段的值。doing
-20、补充一个git-checkout命令，创建一个与正在讨论的提案或feature名称相同的分支。
+19、task claim输出breaking字段的值。done
+20、补充一个git-checkout命令，创建一个与正在讨论的提案或feature名称相同的分支。done
