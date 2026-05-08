@@ -248,3 +248,14 @@ task record <TASK_ID> --data record.json --force
 ```
 
 > For full command reference, run `task -h` or `task [command] -h`
+
+## Plugin Hooks
+
+The forge plugin registers lifecycle hooks in `hooks/hooks.json`:
+
+| Hook | Event | Action |
+|------|-------|--------|
+| Session guide injection | `SessionStart`, `SubagentStart` | Injects `hooks/guide.md` into session context via `run-hook.cmd session-start` |
+| Index validation | `PostToolUse` (Edit/Write) | Runs `scripts/validate-index.sh` to validate `index.json` after edits |
+| Session cleanup | `SessionEnd`, `SubagentStop` | Runs `task cleanup` to release in-progress tasks |
+| Completion check | `Stop` | Runs `task all-completed` to verify all tasks are done |

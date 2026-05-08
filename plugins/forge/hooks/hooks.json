@@ -29,7 +29,6 @@
         "hooks": [
           {
             "type": "command",
-            "if": "Edit(*index.json)|Write(*index.json)",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/validate-index.sh\""
           }
         ]
