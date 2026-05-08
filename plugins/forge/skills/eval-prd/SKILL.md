@@ -158,3 +158,13 @@ Increment iteration counter. Return to Step 2.
 ```
 
 Save the final report to `docs/features/<slug>/prd/eval/report.md`.
+
+## Step 6: Next Step
+
+After final report, ask via `AskUserQuestion`:
+
+> Proceed to next phase?
+
+- **Tech Design** → invoke `/tech-design` via `Skill` tool
+- **UI Design** → invoke `/ui-design` via `Skill` tool (if PRD has UI functions)
+- **No** → done

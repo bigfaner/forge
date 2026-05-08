@@ -141,12 +141,12 @@ Increment iteration counter. Return to Step 2.
 | 2 | {{s2}} | +{{d2}} |
 
 ### Dimension Breakdown (final)
-| Dimension | Perspective | Score | Max |
-|-----------|-------------|-------|-----|
-| Requirement Coverage | Product Manager | {{d1}} | 25 |
-| User Experience | End User | {{d2}} | 25 |
-| Design Integrity | Designer | {{d3}} | 25 |
-| Implementability | Developer | {{d4}} | 25 |
+| Dimension / Perspective | Score | Max |
+|------------------------|-------|-----|
+| Requirement Coverage (PM) | {{d1}} | 25 |
+| User Experience (User) | {{d2}} | 25 |
+| Design Integrity (Designer) | {{d3}} | 25 |
+| Implementability (Developer) | {{d4}} | 25 |
 
 ### Outcome
 {{"Target reached" / "Target NOT reached -- N iterations exhausted"}}
@@ -157,11 +157,20 @@ Save the final report to `docs/features/<slug>/ui/eval/report.md`.
 
 ## Step 6: Prototype Prompt
 
-After final report, use `AskUserQuestion` to ask:
+After final report, ask via `AskUserQuestion`:
 
 > Generate HTML/CSS/JS interactive prototype from the evaluated design?
 
 - **Yes** → proceed to prototype generation (Step 8 of `/ui-design`)
+- **No** → ask next question below
+
+## Step 7: Next Step
+
+After prototype decision, ask via `AskUserQuestion`:
+
+> Proceed to `/breakdown-tasks` to break down the design into executable tasks?
+
+- **Yes** → invoke `/breakdown-tasks` via `Skill` tool
 - **No** → done
 
 ## Integration

@@ -156,3 +156,12 @@ Increment iteration counter. Return to Step 2.
 ```
 
 Save the final report to `docs/features/<slug>/design/eval/report.md`.
+
+## Step 6: Next Step
+
+After final report, ask via `AskUserQuestion`:
+
+> Proceed to `/breakdown-tasks` to break down the design into executable tasks?
+
+- **Yes** → invoke `/breakdown-tasks` via `Skill` tool
+- **No** → done
