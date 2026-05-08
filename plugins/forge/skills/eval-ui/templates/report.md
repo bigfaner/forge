@@ -18,8 +18,9 @@ evaluator: Claude (automated, adversarial)
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
 │ 1. Requirement Coverage (PM) │  ___     │  25      │ ✅/⚠️/❌    │
 │    UI function coverage      │  ___/8   │          │            │
+│    Navigation Arch coverage  │  ___/4   │          │            │
 │    State requirement coverage│  ___/8   │          │            │
-│    Edge case handling        │  ___/9   │          │            │
+│    Edge case handling        │  ___/5   │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
 │ 2. User Experience (User)    │  ___     │  25      │ ✅/⚠️/❌    │
 │    Information hierarchy     │  ___/8   │          │            │
