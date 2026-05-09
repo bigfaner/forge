@@ -1525,6 +1525,110 @@ func TestGolden_ExplicitOutWithoutSlug(t *testing.T) {
 	}
 }
 
+func TestAddToAgg(t *testing.T) {
+	entries := []toolAggEntry{}
+
+	addToAgg(&entries, "hook-a")
+	addToAgg(&entries, "hook-b")
+	addToAgg(&entries, "hook-a")
+
+	if len(entries) != 2 {
+		t.Fatalf("expected 2 entries, got %d: %v", len(entries), entries)
+	}
+	found := false
+	for _, e := range entries {
+		if e.Name == "hook-a" && e.Count == 2 {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("hook-a count should be 2, got %v", entries)
+	}
+}
+
+func TestGolden_ExtendedMetrics(t *testing.T) {
+	// fix-bug.jsonl: has hooks (hook_success), compact_file_reference, plan_mode, stop_reasons, timestamps
+	result := extractTestdata(t, "fix-bug.jsonl")
+
+	// Hook breakdown
+	if len(result.Summary.HookBreakdown) == 0 {
+		t.Error("HookBreakdown should be populated for fix-bug session")
+	}
+	t.Logf("hookBreakdown=%v hookFailures=%d", result.Summary.HookBreakdown, result.Summary.HookFailures)
+
+	// Stop reasons
+	if len(result.Summary.StopReasons) == 0 {
+		t.Error("StopReasons should be populated")
+	}
+	for reason, count := range result.Summary.StopReasons {
+		if reason == "" {
+			t.Error("StopReason key should not be empty")
+		}
+		if count <= 0 {
+			t.Errorf("StopReason[%s] count should be > 0, got %d", reason, count)
+		}
+		t.Logf("  stopReason: %s = %d", reason, count)
+	}
+
+	// Compact count
+	if result.Summary.CompactCount <= 0 {
+		t.Errorf("CompactCount should be > 0 for fix-bug session, got %d", result.Summary.CompactCount)
+	}
+	t.Logf("compactCount=%d", result.Summary.CompactCount)
+
+	// Plan mode count
+	if result.Summary.PlanModeCount <= 0 {
+		t.Errorf("PlanModeCount should be > 0 for fix-bug session, got %d", result.Summary.PlanModeCount)
+	}
+	t.Logf("planModeCount=%d", result.Summary.PlanModeCount)
+
+	// Duration
+	if result.Summary.Duration == "" {
+		t.Error("Duration should be computed from timestamps")
+	}
+	t.Logf("duration=%s", result.Summary.Duration)
+}
+
+func TestGolden_QuickModeMetrics(t *testing.T) {
+	result := extractTestdata(t, "quick-mode.jsonl")
+
+	// quick-mode has hooks, plan_mode, stop_reasons
+	if len(result.Summary.HookBreakdown) == 0 {
+		t.Error("HookBreakdown should be populated")
+	}
+	if result.Summary.PlanModeCount <= 0 {
+		t.Errorf("PlanModeCount should be > 0, got %d", result.Summary.PlanModeCount)
+	}
+	if len(result.Summary.StopReasons) == 0 {
+		t.Error("StopReasons should be populated")
+	}
+
+	// quick-mode has Agent calls => subagent count
+	if result.Summary.SubagentCount <= 0 {
+		t.Errorf("SubagentCount should be > 0, got %d", result.Summary.SubagentCount)
+	}
+	t.Logf("subagentCount=%d planMode=%d hooks=%v stopReasons=%v",
+		result.Summary.SubagentCount, result.Summary.PlanModeCount,
+		result.Summary.HookBreakdown, result.Summary.StopReasons)
+}
+
+func TestGolden_SubagentCountConsistency(t *testing.T) {
+	// SubagentCount should equal sum of AgentsSpawned counts
+	fixtures := []string{"subagent-eval.jsonl", "quick-mode.jsonl"}
+	for _, name := range fixtures {
+		result := extractTestdata(t, name)
+		expected := 0
+		for _, a := range result.Summary.AgentsSpawned {
+			expected += a.Count
+		}
+		if result.Summary.SubagentCount != expected {
+			t.Errorf("%s: SubagentCount=%d but sum of AgentsSpawned=%d",
+				name, result.Summary.SubagentCount, expected)
+		}
+		t.Logf("%s: subagentCount=%d agents=%v", name, result.Summary.SubagentCount, result.Summary.AgentsSpawned)
+	}
+}
+
 func TestGolden_SlugOverridesOut(t *testing.T) {
 	dir := t.TempDir()
 	sessionID := "abc12345-6789-def0-abcd-ef1234567890"
