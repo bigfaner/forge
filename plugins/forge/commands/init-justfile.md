@@ -1,6 +1,7 @@
 ---
 name: init-justfile
 description: Scaffold a Justfile with standard forge targets for the current project.
+allowed_tools: ["Bash", "Read", "Write", "Edit"]
 ---
 
 # /init-justfile
@@ -317,3 +318,9 @@ task all-completed will now use `just test` automatically.
 - **Targets invoked by forge skills**: `project-type`, `compile`, `build`, `test`, `test-e2e`, `install`, `e2e-setup`, `e2e-verify`. The remaining targets (`run`, `dev`, `lint`, `fmt`, `check`, `clean`, `ci`) are for manual use and are not called by any skill.
 - **Idempotency**: `e2e-setup` and `install` are designed to be idempotent (safe to run multiple times). Other recipes (`build`, `compile`, `test`) are not — they always re-execute.
 - **Mixed project scope**: forge skills resolve scope from `task claim` output or `process/state.json` and pass it to `just <verb>` when `just project-type` returns `mixed`. Pass `just compile frontend` or `just compile backend` manually to target a single side outside of a task context.
+
+<EXTREMELY-IMPORTANT>
+- If an existing justfile lacks forge boundary markers and `--force` is not set, you MUST prompt the user before overwriting. Never silently destroy user customizations.
+- Only the section between `# --- forge standard recipes ---` / `# --- end forge standard recipes ---` markers may be replaced. Recipes outside markers must be preserved verbatim.
+- After writing, you MUST run the verification steps (dry-run + actual execution) and report all results.
+</EXTREMELY-IMPORTANT>

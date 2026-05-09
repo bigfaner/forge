@@ -42,3 +42,9 @@ Refer to Sections 6 and 7 of `plugins/forge/references/shared/decision-logging.m
 ### Error handling
 
 If `docs/decisions/` does not exist, auto-create the directory, all 8 type files, and `manifest.md` before writing. See Section 8 of `plugins/forge/references/shared/decision-logging.md` for all error scenarios.
+
+<EXTREMELY-IMPORTANT>
+- Only append to decision files. Never overwrite or delete existing decision rows.
+- Preserve all existing entries in `docs/decisions/manifest.md` — only update counts and append to the recent decisions table.
+- Do not modify any source code files — this command only writes to `docs/decisions/`.
+</EXTREMELY-IMPORTANT>
