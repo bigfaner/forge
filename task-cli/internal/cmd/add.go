@@ -45,7 +45,7 @@ func init() {
 	addCmd.Flags().StringVar(&addDescription, "description", "", "Task description (markdown body)")
 	addCmd.Flags().StringVar(&addTemplate, "template", "", "Template name (reads from tasks/_templates/<name>.md)")
 	addCmd.Flags().StringArrayVar(&addVars, "var", nil, "Template variable in key=value format (repeatable)")
-	addCmd.Flags().StringVar(&addSourceTaskID, "source-task-id", "", "Source task ID: auto-injects {{SOURCE_TASK_ID}} and adds this task as source dependency")
+	addCmd.Flags().StringVar(&addSourceTaskID, "source-task-id", "", "Source task ID: auto-resolves to root ancestor, injects {{SOURCE_TASK_ID}}, and adds this task as source dependency")
 }
 
 // AddResult holds the result of a successful add operation.

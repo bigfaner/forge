@@ -26,6 +26,27 @@ type AddTaskOpts struct {
 	SourceTaskID  string   // Source task ID: auto-injects {{SOURCE_TASK_ID}} and adds this task as source dependency
 }
 
+// ResolveSourceTask traces SourceTaskID chains to find the root ancestor.
+// If sourceID points to a fix-task that itself has a SourceTaskID, this follows
+// the chain until it reaches a task without a SourceTaskID (the original blocked task).
+// Returns the original sourceID if no chain exists or the source task is not found.
+func ResolveSourceTask(index *TaskIndex, sourceID string) string {
+	visited := make(map[string]bool)
+	current := sourceID
+	for {
+		if visited[current] {
+			break // cycle detection
+		}
+		visited[current] = true
+		_, t, err := FindTask(index, current)
+		if err != nil || t.SourceTaskID == "" {
+			break
+		}
+		current = t.SourceTaskID
+	}
+	return current
+}
+
 // AddTask validates opts, adds a task to the index, and saves it.
 // Returns the generated or provided task ID.
 func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
@@ -87,6 +108,25 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 	fileName := opts.ID + ".md"
 	recordPath := "records/" + opts.ID + ".md"
 
+	// Source auto-resolution: when --source-task-id points to a COMPLETED fix-task,
+	// trace through its SourceTaskID chain to find the root blocked task.
+	// This handles the case where a fix-task completed but the original source still fails
+	// (e.g. dispatcher creating a second fix for the same root problem).
+	// When the source is blocked/pending (fix-of-fix during execution), the chain model
+	// is preserved — the new fix-task chains to its immediate parent.
+	if opts.SourceTaskID != "" {
+		if srcKey, srcTask, err := FindTask(index, opts.SourceTaskID); err == nil {
+			if srcTask.Status == "completed" || srcTask.Status == "skipped" {
+				resolved := ResolveSourceTask(index, opts.SourceTaskID)
+				if resolved != opts.SourceTaskID {
+					fmt.Fprintf(os.Stderr, "SOURCE-RESOLVE: %s → %s (source completed, resolving to root)\n", opts.SourceTaskID, resolved)
+					opts.SourceTaskID = resolved
+				}
+			}
+			_ = srcKey
+		}
+	}
+
 	index.SetTask(opts.ID, Task{
 		ID:            opts.ID,
 		Title:         opts.Title,
@@ -100,13 +140,13 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 		SourceTaskID:  opts.SourceTaskID,
 	})
 
-		if opts.SourceTaskID != "" {
-			srcKey, srcTask, err := FindTask(index, opts.SourceTaskID)
-			if err == nil && !slices.Contains(srcTask.Dependencies, opts.ID) {
-				srcTask.Dependencies = append(srcTask.Dependencies, opts.ID)
-				index.SetTask(srcKey, *srcTask)
-			}
+	if opts.SourceTaskID != "" {
+		srcKey, srcTask, err := FindTask(index, opts.SourceTaskID)
+		if err == nil && !slices.Contains(srcTask.Dependencies, opts.ID) {
+			srcTask.Dependencies = append(srcTask.Dependencies, opts.ID)
+			index.SetTask(srcKey, *srcTask)
 		}
+	}
 
 	if err := SaveIndex(indexPath, index); err != nil {
 		return "", fmt.Errorf("save index: %w", err)

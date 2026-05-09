@@ -122,6 +122,59 @@ func TestValidateRecordData(t *testing.T) {
 		}
 	})
 
+	t.Run("noTest task with coverage=-1 skips validation", func(t *testing.T) {
+		rd := &task.RecordData{
+			Status:      "completed",
+			Summary:     "Documentation-only task",
+			Coverage:    -1.0,
+			TestsPassed: 0,
+			TestsFailed: 0,
+		}
+		old := os.Stderr
+		r, w, _ := os.Pipe()
+		os.Stderr = w
+		validateRecordData(rd, false)
+		w.Close()
+		os.Stderr = old
+
+		buf := make([]byte, 1024)
+		n, _ := r.Read(buf)
+		output := string(buf[:n])
+
+		if strings.Contains(output, "ERROR") {
+			t.Errorf("noTest task should skip test evidence check, got: %s", output)
+		}
+	})
+
+
+		t.Run("noTest task with testsPassed > 0 passes validation", func(t *testing.T) {
+			rd := &task.RecordData{
+				Status:      "completed",
+				Summary:     "Ran some tests despite noTest flag",
+				Coverage:    80.0,
+				TestsPassed: 5,
+				TestsFailed: 0,
+				KeyDecisions: []string{"tested anyway"},
+				AcceptanceCriteria: []task.AcceptanceCriterion{
+					{Criterion: "Works", Met: true},
+				},
+			}
+			old := os.Stderr
+			r, w, _ := os.Pipe()
+			os.Stderr = w
+			validateRecordData(rd, false)
+			w.Close()
+			os.Stderr = old
+
+			buf := make([]byte, 1024)
+			n, _ := r.Read(buf)
+			output := string(buf[:n])
+
+			if strings.Contains(output, "ERROR") {
+				t.Errorf("noTest + testsPassed > 0 should pass, got: %s", output)
+			}
+		})
+
 	t.Run("completed with tests passes test evidence check", func(t *testing.T) {
 		rd := &task.RecordData{
 			Status:             "completed",
@@ -549,6 +602,24 @@ func TestFillRecordTemplate(t *testing.T) {
 				"time_spent: ~",
 			},
 		},
+			{
+			name: "noTest task with coverage=-1",
+			task: &task.Task{
+				ID:     "1.7",
+				Title:  "Write PRD",
+				NoTest: true,
+			},
+			recordData: &task.RecordData{
+				Status:  "completed",
+				Summary: "Created PRD",
+				Coverage: -1.0,
+			},
+			startedTime: "2026-04-06 10:00",
+			checkContains: []string{
+				"Tests Executed**: No (noTest task)",
+				"Coverage**: N/A (task has no tests)",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -635,6 +706,27 @@ func TestFormatCoverage(t *testing.T) {
 		got := formatCoverage(tt.input)
 		if got != tt.want {
 			t.Errorf("formatCoverage(%v) = %q, want %q", tt.input, got, tt.want)
+		}
+	}
+}
+
+func TestFormatTestsExecuted(t *testing.T) {
+	tests := []struct {
+		coverage float64
+		noTest   bool
+		want     string
+	}{
+		{-1.0, true, "No (noTest task)"},
+		{-1.0, false, "No"},
+		{0.0, false, "Yes"},
+		{85.5, false, "Yes"},
+		{0.0, true, "No (noTest task)"},
+			{80.0, true, "No (noTest task)"},
+	}
+	for _, tt := range tests {
+		got := formatTestsExecuted(tt.coverage, tt.noTest)
+		if got != tt.want {
+			t.Errorf("formatTestsExecuted(%v, %v) = %q, want %q", tt.coverage, tt.noTest, got, tt.want)
 		}
 	}
 }

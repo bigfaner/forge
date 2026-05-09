@@ -844,6 +844,261 @@ func TestAddTask_SourceTaskID_LookupByID_SourceNotFoundIsNoOp(t *testing.T) {
 	}
 }
 
+// --- Source Resolution Tests (auto-resolve --source-task-id when source is completed) ---
+
+func TestAddTask_SourceResolution_CompletedSourceResolvesToRoot(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// disc-1 is a fix-task for source "1.1" — mark it completed
+	fix1ID, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 1",
+		Priority:     "P0",
+		SourceTaskID: "1.1", // points to root source
+	})
+	if err != nil {
+		t.Fatalf("setup: AddTask failed: %v", err)
+	}
+	// Mark disc-1 as completed (simulates it finishing its quality gate)
+	index, _ := LoadIndex(indexPath)
+	fix1 := index.tasks[fix1ID]
+	fix1.Status = "completed"
+	index.tasks[fix1ID] = fix1
+	SaveIndex(indexPath, index)
+
+	// Now add disc-2 with --source-task-id pointing to disc-1 (a COMPLETED fix-task)
+	// Auto-resolve should trace disc-1 → 1.1 (root) because disc-1 is completed
+	fix2ID, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 2 (deeper)",
+		Priority:     "P0",
+		SourceTaskID: fix1ID, // pointing to completed fix-task
+	})
+	if err != nil {
+		t.Fatalf("AddTask failed: %v", err)
+	}
+
+	// disc-2 should have SourceTaskID resolved to "1.1" (root), not disc-1
+	index, _ = LoadIndex(indexPath)
+	if index.tasks[fix2ID].SourceTaskID != "1.1" {
+		t.Errorf("disc-2 SourceTaskID should resolve to '1.1', got %q", index.tasks[fix2ID].SourceTaskID)
+	}
+
+	// Source task "1.1" should have BOTH disc-1 AND disc-2 as dependencies
+	srcTask := index.tasks["1.1-init"]
+	if !containsSlice(srcTask.Dependencies, fix1ID) {
+		t.Errorf("source should have %s as dep, got %v", fix1ID, srcTask.Dependencies)
+	}
+	if !containsSlice(srcTask.Dependencies, fix2ID) {
+		t.Errorf("source should have %s as dep, got %v", fix2ID, srcTask.Dependencies)
+	}
+
+	// disc-1 should NOT have disc-2 as dependency (resolved to root, flat for completed source)
+	if containsSlice(index.tasks[fix1ID].Dependencies, fix2ID) {
+		t.Errorf("disc-1 should NOT have disc-2 as dep (resolved to root), got %v", index.tasks[fix1ID].Dependencies)
+	}
+}
+
+func TestAddTask_SourceResolution_BlockedSourcePreservesChain(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// disc-1 is a fix-task for source "1.1" — mark it BLOCKED (its quality gate failed)
+	fix1ID, _ := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 1",
+		Priority:     "P0",
+		SourceTaskID: "1.1",
+	})
+	index, _ := LoadIndex(indexPath)
+	fix1 := index.tasks[fix1ID]
+	fix1.Status = "blocked"
+	index.tasks[fix1ID] = fix1
+	SaveIndex(indexPath, index)
+
+	// Now add disc-2 with --source-task-id pointing to disc-1 (a BLOCKED fix-task)
+	// Chain model should be preserved — no resolution
+	fix2ID, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 2 (nested)",
+		Priority:     "P0",
+		SourceTaskID: fix1ID, // pointing to blocked fix-task
+	})
+	if err != nil {
+		t.Fatalf("AddTask failed: %v", err)
+	}
+
+	index, _ = LoadIndex(indexPath)
+	// disc-2 should keep SourceTaskID as disc-1 (chain preserved)
+	if index.tasks[fix2ID].SourceTaskID != fix1ID {
+		t.Errorf("disc-2 SourceTaskID should remain %q (chain preserved), got %q", fix1ID, index.tasks[fix2ID].SourceTaskID)
+	}
+
+	// disc-1 should have disc-2 as dependency (chain model)
+	if !containsSlice(index.tasks[fix1ID].Dependencies, fix2ID) {
+		t.Errorf("disc-1 should have disc-2 as dep (chain model), got %v", index.tasks[fix1ID].Dependencies)
+	}
+
+	// Root source should NOT have disc-2 as direct dep
+	srcTask := index.tasks["1.1-init"]
+	if containsSlice(srcTask.Dependencies, fix2ID) {
+		t.Errorf("root source should NOT have disc-2 as dep (chain model), got %v", srcTask.Dependencies)
+	}
+}
+
+func TestAddTask_SourceResolution_MultiLevelCompletedChain(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// Chain: disc-1 → 1.1 (root), mark completed
+	fix1ID, _ := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 1",
+		SourceTaskID: "1.1",
+	})
+	index, _ := LoadIndex(indexPath)
+	tmp := index.tasks[fix1ID]
+	tmp.Status = "completed"
+	index.tasks[fix1ID] = tmp
+	SaveIndex(indexPath, index)	// disc-2 → disc-1 (completed) → resolves to 1.1
+	fix2ID, _ := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 2",
+		SourceTaskID: fix1ID,
+	})
+	index, _ = LoadIndex(indexPath)
+	tmp2 := index.tasks[fix2ID]
+	tmp2.Status = "completed"
+	index.tasks[fix2ID] = tmp2
+	SaveIndex(indexPath, index)
+
+	// disc-3 → disc-2 (completed) → disc-1 (completed) → resolves to 1.1
+	fix3ID, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 3",
+		SourceTaskID: fix2ID,
+	})
+	if err != nil {
+		t.Fatalf("AddTask failed: %v", err)
+	}
+
+	index, _ = LoadIndex(indexPath)
+
+	// All should resolve to "1.1"
+	for _, id := range []string{fix1ID, fix2ID, fix3ID} {
+		if index.tasks[id].SourceTaskID != "1.1" {
+			t.Errorf("%s SourceTaskID should be '1.1', got %q", id, index.tasks[id].SourceTaskID)
+		}
+	}
+
+	// Source should have all 3 as deps
+	srcTask := index.tasks["1.1-init"]
+	if len(srcTask.Dependencies) != 3 {
+		t.Errorf("source should have 3 deps, got %d: %v", len(srcTask.Dependencies), srcTask.Dependencies)
+	}
+}
+
+func TestAddTask_SourceResolution_NoChainPassthrough(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// 1.1 has no SourceTaskID — direct passthrough, no resolution needed
+	id, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix direct",
+		SourceTaskID: "1.1",
+	})
+	if err != nil {
+		t.Fatalf("AddTask failed: %v", err)
+	}
+
+	index, _ := LoadIndex(indexPath)
+	if index.tasks[id].SourceTaskID != "1.1" {
+		t.Errorf("SourceTaskID should remain '1.1', got %q", index.tasks[id].SourceTaskID)
+	}
+}
+
+func TestAddTask_SourceResolution_CycleDetection(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// Manually create a cycle: disc-1 → disc-2 → disc-1, both completed
+	index, _ := LoadIndex(indexPath)
+	index.tasks["disc-1"] = Task{
+		ID:           "disc-1",
+		Title:        "Fix 1",
+		Priority:     "P0",
+		Status:       "completed",
+		File:         "disc-1.md",
+		Record:       "records/disc-1.md",
+		SourceTaskID: "disc-2",
+	}
+	index.tasks["disc-2"] = Task{
+		ID:           "disc-2",
+		Title:        "Fix 2",
+		Priority:     "P0",
+		Status:       "completed",
+		File:         "disc-2.md",
+		Record:       "records/disc-2.md",
+		SourceTaskID: "disc-1",
+	}
+	SaveIndex(indexPath, index)
+
+	// Adding with --source-task-id disc-1 should not infinite loop
+	id, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 3",
+		SourceTaskID: "disc-1",
+	})
+	if err != nil {
+		t.Fatalf("AddTask should handle cycle gracefully, got: %v", err)
+	}
+
+	// Should resolve to disc-1 or disc-2 (whichever the cycle stops at)
+	index, _ = LoadIndex(indexPath)
+	if index.tasks[id].SourceTaskID == "" {
+		t.Error("SourceTaskID should be set even with cycle")
+	}
+}
+
+func TestAddTask_SourceResolution_SkippedSourceResolves(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// disc-1 is a SKIPPED fix-task for source "1.1"
+	fix1ID, _ := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 1",
+		SourceTaskID: "1.1",
+	})
+	index, _ := LoadIndex(indexPath)
+	tmp3 := index.tasks[fix1ID]
+	tmp3.Status = "skipped"
+	index.tasks[fix1ID] = tmp3
+	SaveIndex(indexPath, index)
+
+	// disc-2 → disc-1 (skipped) → resolves to 1.1
+	fix2ID, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 2",
+		SourceTaskID: fix1ID,
+	})
+	if err != nil {
+		t.Fatalf("AddTask failed: %v", err)
+	}
+
+	index, _ = LoadIndex(indexPath)
+	if index.tasks[fix2ID].SourceTaskID != "1.1" {
+		t.Errorf("disc-2 SourceTaskID should resolve to '1.1' (skipped source), got %q", index.tasks[fix2ID].SourceTaskID)
+	}
+}
+
+func TestResolveSourceTask_Direct(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+	index, _ := LoadIndex(indexPath)
+
+	// 1.1 has no SourceTaskID → direct passthrough
+	result := ResolveSourceTask(index, "1.1")
+	if result != "1.1" {
+		t.Errorf("expected '1.1', got %q", result)
+	}
+}
+
+func TestResolveSourceTask_NotFound(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+	index, _ := LoadIndex(indexPath)
+
+	// Nonexistent task → return as-is
+	result := ResolveSourceTask(index, "nonexistent")
+	if result != "nonexistent" {
+		t.Errorf("expected 'nonexistent', got %q", result)
+	}
+}
+
 func TestGetUnmetDependencies_Wildcard(t *testing.T) {
 	indexPath, _ := newTestIndex(t)
 

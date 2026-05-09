@@ -233,7 +233,7 @@ func ErrNoTestEvidence() *AIError {
 		ErrValidation,
 		"Cannot mark task completed with no test evidence",
 		"testsPassed=0 and testsFailed=0 with status=completed suggests tests were not actually run",
-		"Either (1) run tests and report results, (2) set coverage=-1.0 for tasks without tests, or (3) use --force to override",
+		"Either (1) run tests and report results, (2) add noTest:true to the task template, or (3) use --force to override",
 		"task record <id> --data record.json  (with real test metrics)\ntask record <id> --data record.json --force  (override, use cautiously)",
 	)
 }

@@ -202,6 +202,7 @@ type Task struct {
     Scope         string   `json:"scope,omitempty"`         // Task scope: frontend/backend/all (default: all)
     SourceTaskID  string   `json:"sourceTaskID,omitempty"`  // ID of the task that spawned this task (e.g. fix-task -> source)
     MainSession   bool     `json:"mainSession,omitempty"`   // Task must run in main session (not dispatched to task-executor)
+    NoTest        bool     `json:"noTest,omitempty"`        // Task does not require tests (e.g. documentation-only); skips quality gate and test evidence check
 }
 ```
 

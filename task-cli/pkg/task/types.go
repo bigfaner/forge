@@ -27,6 +27,9 @@ type Task struct {
 	// MainSession indicates this task must run in the main session (not dispatched to task-executor).
 	// Used by tasks that need to spawn subagents (e.g., eval-test-cases spawns doc-scorer/doc-reviser).
 	MainSession bool `json:"mainSession,omitempty"`
+	// NoTest indicates this task does not require tests (e.g., documentation-only tasks).
+	// When true, quality gate and test evidence checks are skipped, and coverage is auto-set to -1.0.
+	NoTest bool `json:"noTest,omitempty"`
 }
 
 // TaskIndex represents the index.json structure for a feature.
@@ -111,6 +114,8 @@ type TaskState struct {
 	Scope string `json:"scope,omitempty"`
 	// MainSession mirrors Task.MainSession for the claimed task.
 	MainSession bool `json:"mainSession,omitempty"`
+	// NoTest mirrors Task.NoTest for the claimed task.
+	NoTest bool `json:"noTest,omitempty"`
 }
 
 // RecordData represents the JSON input for record generation.
