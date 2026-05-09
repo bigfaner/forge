@@ -4,12 +4,15 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 
 	"task-cli/pkg/e2eprobe"
 	"task-cli/pkg/feature"
 	"task-cli/pkg/just"
 	"task-cli/pkg/project"
 	"task-cli/pkg/task"
+	tmpl "task-cli/pkg/template"
 	"task-cli/pkg/testrunner"
 
 	"github.com/spf13/cobra"
@@ -112,20 +115,18 @@ func runAllCompleted(cmd *cobra.Command, args []string) {
 	}
 
 	// Step 1: Quality gate (compile → fmt → lint)
+	// Stops at first blocking failure.
 	gateSteps := just.LintGateSequence()
 	just.RunGate(result.ProjectRoot, "", gateSteps, func(step, output string) {
 		fmt.Fprintf(os.Stderr, "ERROR: %s check failed\n", step)
+		errorDocPath := "tests/results/unit-raw-output.txt"
 		if output != "" {
 			if err := writeUnitTestRawOutput(result.ProjectRoot, "=== "+step+" failure ===\n"+output); err != nil {
 				fmt.Fprintf(os.Stderr, "WARNING: failed to write %s output: %v\n", step, err)
 			}
 		}
-		concise := just.ExtractConciseError(output, 5)
-		testrunner.PrintHookJSON(map[string]any{
-			"decision": "block",
-			"reason":   fmt.Sprintf("%s check failed. Read tests/results/unit-raw-output.txt, fix errors, then re-run.\n%s", testrunner.Capitalize(step), concise),
-		})
-		os.Exit(0)
+		addFixTask(result.ProjectRoot, result.FeatureSlug, step, output, errorDocPath)
+		handleGateFailure(step, errorDocPath, just.ExtractConciseError(output, 5))
 	})
 
 	// Step 2: Project-wide unit/integration tests
@@ -133,16 +134,14 @@ func runAllCompleted(cmd *cobra.Command, args []string) {
 	unitOutput, unitSuccess := testrunner.RunProjectTests(result.ProjectRoot, result.TestCommand)
 	if !unitSuccess {
 		fmt.Fprintln(os.Stderr, "ERROR: unit tests failed")
+		errorDocPath := "tests/results/unit-raw-output.txt"
 		if unitOutput != "" {
 			if err := writeUnitTestRawOutput(result.ProjectRoot, unitOutput); err != nil {
 				fmt.Fprintf(os.Stderr, "WARNING: failed to write unit test output: %v\n", err)
 			}
 		}
-		testrunner.PrintHookJSON(map[string]any{
-			"decision": "block",
-			"reason":   "Unit tests failed. Read tests/results/unit-raw-output.txt, fix failures, then re-run.",
-		})
-		os.Exit(0)
+		addFixTask(result.ProjectRoot, result.FeatureSlug, "unit-test", unitOutput, errorDocPath)
+		handleGateFailure("unit-test", errorDocPath, just.ExtractConciseError(unitOutput, 5))
 	}
 
 	// Step 3: Full e2e regression (graduated scripts in tests/e2e/)
@@ -176,17 +175,149 @@ func runAllCompleted(cmd *cobra.Command, args []string) {
 			regressionOutput, regSuccess := just.RunCapture(result.ProjectRoot, "just", "test-e2e")
 			if !regSuccess {
 				fmt.Fprintln(os.Stderr, "ERROR: e2e regression failed")
+				errorDocPath := "tests/e2e/results/raw-output.txt"
 				if regressionOutput != "" {
 					if err := writeRegressionRawOutput(result.ProjectRoot, regressionOutput); err != nil {
 						fmt.Fprintf(os.Stderr, "WARNING: failed to write raw-output.txt: %v\n", err)
 					}
 				}
-				testrunner.PrintHookJSON(map[string]any{
-					"decision": "block",
-					"reason":   "e2e regression failed. Read tests/e2e/results/raw-output.txt, analyze failures, then use `task add --title \"Fix: ...\" --priority P0 --breaking` to create fix tasks.",
-				})
-				os.Exit(0)
+				addFixTask(result.ProjectRoot, result.FeatureSlug, "test-e2e", regressionOutput, errorDocPath)
+				handleGateFailure("test-e2e", errorDocPath, just.ExtractConciseError(regressionOutput, 5))
 			}
 		}
 	}
+}
+
+// handleGateFailure prints the hook JSON block reason and exits.
+// Each stage has a distinct reason with stage-specific guidance.
+func handleGateFailure(step, errorDocPath, concise string) {
+	var reason string
+	switch step {
+	case "compile":
+		reason = fmt.Sprintf(
+			"Project compilation failed in all-completed hook. A fix task has been added (P0, breaking) — run `task claim` to pick it up and fix compilation errors.\nError output: %s\n%s",
+			errorDocPath, concise)
+	case "lint":
+		reason = fmt.Sprintf(
+			"Lint check failed in all-completed hook. A fix task has been added (P0, breaking) — run `task claim` to pick it up and fix lint errors.\nError output: %s\n%s",
+			errorDocPath, concise)
+	case "unit-test":
+		reason = fmt.Sprintf(
+			"Unit tests failed in all-completed hook. A fix task has been added (P0, breaking) — run `task claim` to pick it up and fix failing tests.\nError output: %s\n%s",
+			errorDocPath, concise)
+	case "test-e2e":
+		reason = fmt.Sprintf(
+			"E2e regression tests failed in all-completed hook. A fix task has been added (P0, breaking) — run `task claim` to pick it up and fix failing e2e tests.\nError output: %s\n%s",
+			errorDocPath, concise)
+	default:
+		reason = fmt.Sprintf(
+			"%s check failed in all-completed hook. A fix task has been added (P0, breaking) — run `task claim` to pick it up and fix the issue.\nError output: %s\n%s",
+			testrunner.Capitalize(step), errorDocPath, concise)
+	}
+
+	testrunner.PrintHookJSON(map[string]any{
+		"decision": "block",
+		"reason":   reason,
+	})
+	os.Exit(0)
+}
+
+// sourceFileRe matches source file paths followed by :line or :line:col patterns.
+var sourceFileRe = regexp.MustCompile(`([\w][\w./-]*\.\w{1,10})(?::\d+){1,2}`)
+
+// sourceExts is a whitelist of source code extensions for file extraction.
+var sourceExts = map[string]bool{
+	".go": true, ".ts": true, ".js": true, ".tsx": true, ".jsx": true,
+	".py": true, ".rs": true, ".java": true, ".rb": true,
+	".c": true, ".cpp": true, ".h": true, ".hpp": true,
+	".css": true, ".scss": true, ".html": true, ".sql": true,
+	".vue": true, ".svelte": true,
+}
+
+// extractSourceFiles parses error output and returns comma-separated file paths.
+func extractSourceFiles(output string) string {
+	seen := make(map[string]bool)
+	var files []string
+	for _, match := range sourceFileRe.FindAllStringSubmatch(output, -1) {
+		path := strings.TrimPrefix(match[1], "./")
+		if path == "" || seen[path] {
+			continue
+		}
+		if !sourceExts[filepath.Ext(path)] {
+			continue
+		}
+		seen[path] = true
+		files = append(files, path)
+	}
+
+	if len(files) > 10 {
+		files = files[:10]
+	}
+	if len(files) == 0 {
+		return "See error output for affected files"
+	}
+	return strings.Join(files, ", ")
+}
+
+// addFixTask creates a fix task using the same internal API as `task add`.
+// Mirrors executeAdd() from add.go: template defaults → AddTask → CreateTaskMarkdown → EnsureForgeState.
+func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) string {
+	sourceFiles := extractSourceFiles(output)
+
+	testScript := "just " + step
+	if step == "unit-test" {
+		testScript = "just test"
+	}
+
+	title := fmt.Sprintf("Fix: %s failure in all-completed quality gate", step)
+	description := fmt.Sprintf(
+		"Quality gate step `%s` failed during all-completed hook.\n\n"+
+			"Error output saved to: `%s`\n\n"+
+			"Concise error:\n```\n%s\n```",
+		testScript, errorDocPath, just.ExtractConciseError(output, 10),
+	)
+
+	// Build opts — same as task add --template fix-task
+	opts := task.AddTaskOpts{
+		Title:         title,
+		Priority:      "P0",
+		EstimatedTime: "30min",
+		Breaking:      true,
+		Description:   description,
+		Template:      "fix-task",
+		Vars: map[string]string{
+			"SOURCE_FILES":   sourceFiles,
+			"TEST_SCRIPT":    testScript,
+			"TEST_RESULTS":   errorDocPath,
+			"SOURCE_TASK_ID": "N/A (project-wide gate)",
+		},
+	}
+
+	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
+	tasksDir := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug))
+
+	if _, err := tmpl.Get(opts.Template); err != nil {
+		fmt.Fprintf(os.Stderr, "WARNING: template %q not found: %v\n", opts.Template, err)
+		return ""
+	}
+
+	id, err := task.AddTask(indexPath, opts)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "WARNING: failed to add fix task: %v\n", err)
+		return ""
+	}
+
+	opts.ID = id
+
+	if err := task.CreateTaskMarkdown(tasksDir, id+".md", opts); err != nil {
+		fmt.Fprintf(os.Stderr, "WARNING: failed to create fix task file: %v\n", err)
+		return ""
+	}
+
+	if err := feature.EnsureForgeState(projectRoot, featureSlug); err != nil {
+		fmt.Fprintf(os.Stderr, "WARNING: failed to update .forge/state.json: %v\n", err)
+	}
+
+	fmt.Fprintf(os.Stderr, "Fix task %s added (P0, breaking)\n", id)
+	return id
 }
