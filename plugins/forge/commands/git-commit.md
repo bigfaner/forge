@@ -1,17 +1,18 @@
 ---
 name: git-commit
-description: Use when creating git commits. Ensures commit messages follow Conventional Commits format.
+description: Create a git commit following Conventional Commits specification.
+allowed_tools: ["Bash", "Read"]
+argument-hints:
+  - name: scope
+    description: Optional commit scope (e.g. api, cli, core). Auto-detected from changes if omitted.
+    required: false
 ---
 
-# Git Commit
-
-## Overview
-
-Follow Conventional Commits specification with project-defined type and scope rules.
+Create a git commit following Conventional Commits specification.
 
 ## Atomic Commits
 
-**Core principle**: group high-related changes; split unrelated changes.
+Group high-related changes; split unrelated changes.
 
 | Practice           | Description                                     |
 | ------------------ | ----------------------------------------------- |
@@ -52,23 +53,17 @@ Follow Conventional Commits specification with project-defined type and scope ru
 
 ## Subject Rules
 
-1. **Lowercase first letter** - `add` not `Add`
-2. **No trailing period**
-3. **Imperative mood** - `add` not `added`
-4. **Max 72 characters**
+1. Lowercase first letter
+2. No trailing period
+3. Imperative mood
+4. Max 72 characters
 
-## Examples
+## Steps
 
-```bash
-# Good
-feat(api): add streaming support
-fix(parser): handle empty input
-docs(readme): update install steps
-
-# Bad
-Update(api): add streaming    # Wrong type
-feat(api): Added support.     # Past tense, period
-```
+1. Run `git status` and `git diff` to inspect changes.
+2. Stage appropriate files with `git add`.
+3. Compose commit message following rules above.
+4. Execute commit.
 
 ## Task Completion Template
 
@@ -83,11 +78,3 @@ Co-Authored-By: Agent
 EOF
 )"
 ```
-
-## Quick Checklist
-
-- [ ] Type is one of: feat / fix / docs / test / refactor / chore
-- [ ] Scope matches affected module
-- [ ] Subject starts with lowercase
-- [ ] Subject has no trailing period
-- [ ] Subject is imperative mood

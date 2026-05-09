@@ -202,6 +202,7 @@ type Task struct {
     Scope         string   `json:"scope,omitempty"`         // Task scope: frontend/backend/all (default: all)
     SourceTaskID  string   `json:"sourceTaskID,omitempty"`  // ID of the task that spawned this task (e.g. fix-task -> source)
     MainSession   bool     `json:"mainSession,omitempty"`   // Task must run in main session (not dispatched to task-executor)
+    NoTest        bool     `json:"noTest,omitempty"`        // Task does not require tests (e.g. documentation-only); skips quality gate and test evidence check
 }
 ```
 
@@ -247,7 +248,7 @@ Module interaction: via interfaces/type definitions, no direct dependency on int
 task claim              # Claim the next task
 task record 1.1         # Generate task record
 task record 1.1 --force # Generate task record (skip validation)
-task add --title "Fix: ..." --priority P0 --breaking  # Add a new task dynamically
+task add --title "Fix: ..." --priority P0 --breaking  # Add a new task dynamically (auto-generates disc-N or template prefix ID)
 task status 1.1         # Query task status
 task status 1.1 done    # Update status
 task query 1.1          # Query task details

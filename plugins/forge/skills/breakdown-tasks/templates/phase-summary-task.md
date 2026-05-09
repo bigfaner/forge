@@ -5,6 +5,8 @@ priority: "P0"
 estimated_time: "15min"
 dependencies: [{{DEPENDENCIES}}]
 status: pending
+noTest: true
+mainSession: false
 ---
 
 # {{ID}}: {{TITLE}}
@@ -58,7 +60,6 @@ The `summary` field in `record.json` MUST follow this exact template. Copy it ve
   "keyDecisions": ["<list all keyDecisions from all phase records>"],
   "testsPassed": 0,
   "testsFailed": 0,
-  "coverage": -1.0,
   "acceptanceCriteria": [
     {"criterion": "All phase task records read and analyzed", "met": true},
     {"criterion": "Summary follows the exact template with all 5 sections", "met": true},
@@ -77,11 +78,10 @@ The `summary` field in `record.json` MUST follow this exact template. Copy it ve
 - [ ] All phase task records have been read
 - [ ] Summary follows the exact 5-section template above
 - [ ] Types & Interfaces Changed table is populated (or "None" if no changes)
-- [ ] Record created via `/record-task` with `coverage: -1.0`
+- [ ] Record created via `/record-task`
 
 ## Implementation Notes
 
-This is a documentation-only task. No code should be written.
-- Skip the normal TDD cycle — proceed directly to generating the summary
-- Set `coverage: -1.0` in the record to indicate no tests expected
+This is a noTest task. No code should be written.
+- Proceed directly to generating the summary
 - The summary MUST be structured — subsequent phase tasks depend on parsing it

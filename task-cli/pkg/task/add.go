@@ -13,7 +13,7 @@ import (
 
 // AddTaskOpts holds options for adding a new task.
 type AddTaskOpts struct {
-	ID            string   // Auto-generated as disc-N if empty
+	ID            string   // Auto-generated as prefix-N if empty
 	Title         string   // Required
 	Priority      string   // Default P1 if empty
 	EstimatedTime string   // Optional
@@ -24,6 +24,28 @@ type AddTaskOpts struct {
 	Template      string   // Template name (e.g. "fix-task")
 	Vars          map[string]string // Variable substitutions for template placeholders
 	SourceTaskID  string   // Source task ID: auto-injects {{SOURCE_TASK_ID}} and adds this task as source dependency
+	IDPrefix      string   // Auto-generate ID as prefix-N; empty defaults to "disc"
+}
+
+// ResolveSourceTask traces SourceTaskID chains to find the root ancestor.
+// If sourceID points to a fix-task that itself has a SourceTaskID, this follows
+// the chain until it reaches a task without a SourceTaskID (the original blocked task).
+// Returns the original sourceID if no chain exists or the source task is not found.
+func ResolveSourceTask(index *TaskIndex, sourceID string) string {
+	visited := make(map[string]bool)
+	current := sourceID
+	for {
+		if visited[current] {
+			break // cycle detection
+		}
+		visited[current] = true
+		_, t, err := FindTask(index, current)
+		if err != nil || t.SourceTaskID == "" {
+			break
+		}
+		current = t.SourceTaskID
+	}
+	return current
 }
 
 // AddTask validates opts, adds a task to the index, and saves it.
@@ -48,7 +70,11 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 
 	// Auto-generate ID if empty
 	if opts.ID == "" {
-		opts.ID = generateDiscID(index)
+		prefix := opts.IDPrefix
+		if prefix == "" {
+			prefix = "disc"
+		}
+		opts.ID = generateAutoID(prefix, index)
 	}
 
 	// Validate ID uniqueness
@@ -87,6 +113,31 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 	fileName := opts.ID + ".md"
 	recordPath := "records/" + opts.ID + ".md"
 
+	// Source auto-resolution: when --source-task-id points to a COMPLETED fix-task,
+	// trace through its SourceTaskID chain to find the root blocked task.
+	// When the source is blocked/pending (fix-of-fix during execution), the chain model
+	// is preserved — the new fix-task chains to its immediate parent.
+	var srcKey string
+	var srcTask *Task
+	if opts.SourceTaskID != "" {
+		var k string
+		var t *Task
+		if foundK, foundT, err := FindTask(index, opts.SourceTaskID); err == nil {
+			k, t = foundK, foundT
+			if t.Status == "completed" || t.Status == "skipped" {
+				resolved := ResolveSourceTask(index, opts.SourceTaskID)
+				if resolved != opts.SourceTaskID {
+					fmt.Fprintf(os.Stderr, "SOURCE-RESOLVE: %s \xe2\x86\x92 %s (source completed, resolving to root)\n", opts.SourceTaskID, resolved)
+					opts.SourceTaskID = resolved
+					if k2, t2, err2 := FindTask(index, opts.SourceTaskID); err2 == nil {
+						k, t = k2, t2
+					}
+				}
+			}
+			srcKey, srcTask = k, t
+		}
+	}
+
 	index.SetTask(opts.ID, Task{
 		ID:            opts.ID,
 		Title:         opts.Title,
@@ -100,13 +151,10 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 		SourceTaskID:  opts.SourceTaskID,
 	})
 
-		if opts.SourceTaskID != "" {
-			srcKey, srcTask, err := FindTask(index, opts.SourceTaskID)
-			if err == nil && !slices.Contains(srcTask.Dependencies, opts.ID) {
-				srcTask.Dependencies = append(srcTask.Dependencies, opts.ID)
-				index.SetTask(srcKey, *srcTask)
-			}
-		}
+	if srcTask != nil && !slices.Contains(srcTask.Dependencies, opts.ID) {
+		srcTask.Dependencies = append(srcTask.Dependencies, opts.ID)
+		index.SetTask(srcKey, *srcTask)
+	}
 
 	if err := SaveIndex(indexPath, index); err != nil {
 		return "", fmt.Errorf("save index: %w", err)
@@ -144,10 +192,10 @@ func ApplyVars(tmpl string, opts AddTaskOpts) string {
 
 	// Build merged variable map: user vars override builtins
 	vars := map[string]string{
-		"ID":          opts.ID,
-		"TITLE":       opts.Title,
-		"PRIORITY":    opts.Priority,
-		"DESCRIPTION": opts.Description,
+		"ID":             opts.ID,
+		"TITLE":          opts.Title,
+		"PRIORITY":       opts.Priority,
+		"DESCRIPTION":    opts.Description,
 		"SOURCE_TASK_ID": opts.SourceTaskID,
 	}
 	for key, val := range opts.Vars {
@@ -200,22 +248,19 @@ func buildTaskMarkdown(opts AddTaskOpts) string {
 	return buf.String()
 }
 
-// generateDiscID generates the next available disc-N ID using gap-filling.
-func generateDiscID(index *TaskIndex) string {
-	used := make(map[int]bool)
+// generateAutoID generates the next prefix-N ID as max(existing) + 1.
+func generateAutoID(prefix string, index *TaskIndex) string {
+	maxN := 0
+	prefixWithDash := prefix + "-"
 	for key := range index.tasks {
-		numStr, ok := strings.CutPrefix(key, "disc-")
+		numStr, ok := strings.CutPrefix(key, prefixWithDash)
 		if ok {
-			if n, err := strconv.Atoi(numStr); err == nil && n > 0 {
-				used[n] = true
+			if n, err := strconv.Atoi(numStr); err == nil && n > maxN {
+				maxN = n
 			}
 		}
 	}
-	for i := 1; ; i++ {
-		if !used[i] {
-			return fmt.Sprintf("disc-%d", i)
-		}
-	}
+	return fmt.Sprintf("%s-%d", prefix, maxN+1)
 }
 
 // AddDependency adds depID to the specified task's Dependencies in the index.

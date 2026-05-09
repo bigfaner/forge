@@ -30,7 +30,7 @@ Check previous stage artifacts. Abort and prompt user if missing:
 
 | Parameter      | Default | Description                                           |
 | -------------- | ------- | ----------------------------------------------------- |
-| `--target`     | 90      | Target score (0-100). Loop stops when score >= target |
+| `--target`     | 95      | Target score (0-100). Loop stops when score >= target |
 | `--iterations` | 3       | Max adversarial iterations                            |
 
 ## Architecture

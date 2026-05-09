@@ -5,6 +5,8 @@ priority: "P1"
 estimated_time: "15-30min"
 dependencies: ["T-quick-2"]
 status: pending
+noTest: false
+mainSession: false
 ---
 
 # Run Quick E2E Tests

@@ -28,7 +28,7 @@ Step 5: Git commit
 task claim
 ```
 
-Parse output for KEY, TASK_ID, FILE, SCOPE, FEATURE. Reading order: project knowledge → task definition.
+Parse output for KEY, TASK_ID, FILE, SCOPE, FEATURE, NO_TEST. Reading order: project knowledge → task definition.
 
 **Project Knowledge**: Read relevant project knowledge files first (domain constraints):
 - Infer relevant domains from task title, scope, and feature slug
@@ -38,6 +38,8 @@ Parse output for KEY, TASK_ID, FILE, SCOPE, FEATURE. Reading order: project know
 
 ## Step 2: TDD Implementation
 
+**Skip when `NO_TEST=true`** — perform task work directly, output `Step 2/5: Implementation... DONE (skipped TDD: noTest task)`.
+
 ```
 RED      → Write failing test first
 GREEN    → Implement minimal code to pass
@@ -45,6 +47,8 @@ REFACTOR → Clean up while keeping tests green
 ```
 
 ## Step 3: Full Verification (Quality Gate)
+
+**Skip when `NO_TEST=true`** — output `Step 3/5: Verification... SKIPPED (noTest task)`, proceed to Step 4.
 
 Execute the quality gate sequence. Apply **Scope Resolution** from the Forge Guide for each command:
 
@@ -75,6 +79,8 @@ task add --template fix-task --title "Fix: <concise description>" \
   --var TEST_RESULTS="<test results path>" \
   --description "<root cause and context>"
 ```
+
+**`--source-task-id` auto-resolves**: if `<TASK_ID>` is a **completed** fix-task, the CLI automatically resolves to the root blocked task. Always pass the current failing task's ID — no manual chain tracing needed.
 
 The fix-task (P0) will be auto-claimed by the next `task claim`. When it completes, `task record` auto-restores the source task to pending via SourceTaskID.
 

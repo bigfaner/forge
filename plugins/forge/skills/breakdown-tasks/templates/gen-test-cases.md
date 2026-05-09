@@ -5,6 +5,8 @@ priority: "P1"
 estimated_time: "1-2h"
 dependencies: [{{T_TEST_1_DEP}}]
 status: pending
+noTest: true
+mainSession: false
 ---
 
 # Generate e2e Test Cases

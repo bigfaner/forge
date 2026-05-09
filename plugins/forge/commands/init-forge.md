@@ -1,6 +1,7 @@
 ---
 name: init-forge
 description: Build and install the task-cli tool.
+allowed_tools: ["Bash", "Read"]
 ---
 
 # /init-forge
@@ -67,3 +68,9 @@ After installation, output:
 | task-cli not found | Ensure task-cli directory exists in the project root |
 | Build failed | Check Go environment |
 | Permission denied | Check write permissions for install directory |
+
+<EXTREMELY-IMPORTANT>
+- Do NOT modify any project source files — this command only builds and installs the task-cli binary.
+- Do NOT overwrite an existing task-cli installation without user confirmation.
+- If the build fails, report the error and stop. Do not attempt partial installs.
+</EXTREMELY-IMPORTANT>

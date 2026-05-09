@@ -636,10 +636,10 @@ Examples:
               └─────────────────┘
 ```
 
-**Auto-ID generation (gap-filling):**
-- Scan existing tasks for `disc-*` keys
-- Find the lowest unused integer N (starting from 1)
-- Return `disc-{N}`
+**Auto-ID generation (max+1):**
+- Without template: scan existing tasks for `disc-*` keys → `disc-{max+1}`
+- With template: use template's `IDPrefix` (e.g. `fix-task` → `fix-{max+1}`)
+- Returns max(existing prefix-N) + 1; starts from 1 when none exist
 
 **Flags:**
 
@@ -663,7 +663,7 @@ Examples:
 - Template variable `{{SOURCE_TASK_ID}}` is auto-populated
 
 **Template defaults:**
-- `fix-task`: Priority=P0, Breaking=true, EstimatedTime=30min
+- `fix-task`: Priority=P0, Breaking=true, EstimatedTime=30min, IDPrefix=fix
 - Defaults are applied unless the corresponding flag is explicitly set
 
 ## 11. Fix-Task Lifecycle
@@ -677,7 +677,7 @@ task status <id> blocked
          ▼
 task add --template fix-task --source-task-id <id>
          │
-         ▼  fix-task (P0, pending)
+         ▼  fix-N (P0, pending, auto-ID from template prefix)
    task claim → picks P0 first
          │
          ▼  fix-task executes

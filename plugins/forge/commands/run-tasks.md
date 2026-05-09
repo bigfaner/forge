@@ -54,7 +54,8 @@ task claim
 - `FILE` (e.g., full absolute path to task file)
 - `BREAKING` (e.g., "true" or absent)
 - `MAIN_SESSION` (e.g., "true" or absent)
-- `SCOPE` (e.g., "frontend", "backend", or "all" — defaults to "all" if absent)
+- `SCOPE` (e.g., "frontend", "backend", or "all" — defaults to "all" if absent; may be omitted entirely by claim output when not set)
+- `NO_TEST` (e.g., "true" or "false")
 - `FEATURE` (e.g., "my-feature" — feature slug from claim output)
 
 ### Step 1.5: Main Session Routing
@@ -89,6 +90,7 @@ Agent(
 TASK_ID: {{TASK_ID}}
 TASK_FILE: {{FILE}}
 SCOPE: {{SCOPE}}
+NO_TEST: {{NO_TEST}}
 {{PHASE_SUMMARY_SECTION}}
 
 IMPORTANT: Do NOT claim or start any other tasks after completing this one. Stop after recording the task result."
@@ -174,6 +176,7 @@ Apply the **Scope Resolution** protocol from the Forge Guide — use the `SCOPE`
     --var TEST_RESULTS="<results path>" \
     --description "<root cause>"
   ```
+  **`--source-task-id` auto-resolves**: if `<TASK_ID>` is a **completed** fix-task, the CLI automatically resolves to the root blocked task. Always pass the current failing task's ID — no manual chain tracing needed.
 - Continue loop — fix task (P0) will be claimed on next iteration
 - Do NOT proceed to next task until fix task completes
 
@@ -220,6 +223,7 @@ fi
     --var TEST_RESULTS="tests/e2e/features/$FEATURE/results/latest.md" \
     --description "<root cause and context>"
   ```
+  **`--source-task-id` auto-resolves**: if `<TASK_ID>` is a **completed** fix-task, the CLI automatically resolves to the root blocked task. Always pass the current failing task's ID — no manual chain tracing needed.
 
 **If e2e passes or pre-flight skipped**: continue to next iteration (Step 1)
 

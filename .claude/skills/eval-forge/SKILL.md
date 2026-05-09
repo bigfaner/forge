@@ -1,33 +1,35 @@
 ---
-name: eval-plugin
-description: MANUAL-ONLY. Audit forge plugin structural consistency with multi-round scoring and auto-fix. Do NOT auto-invoke — only when user explicitly asks to "audit plugin" or "eval plugin".
+name: eval-forge
+description: MANUAL-ONLY. Audit forge plugin structural consistency with multi-round scoring and auto-fix. Do NOT auto-invoke — only when user explicitly asks to "audit forge" or "eval forge".
 ---
 
 <HARD-RULE>
-This skill MUST NOT be auto-triggered by the agent. It is only invoked when the user explicitly requests a plugin audit (e.g., "audit the plugin", "run eval-plugin", "check plugin consistency"). If you are about to invoke this skill without the user explicitly asking, STOP.
+This skill MUST NOT be auto-triggered by the agent. It is only invoked when the user explicitly requests a plugin audit (e.g., "audit the forge plugin", "run eval-forge", "check forge consistency"). If you are about to invoke this skill without the user explicitly asking, STOP.
 </HARD-RULE>
 
-# Eval Plugin
+# Eval Forge
 
 Audit the forge plugin's internal consistency — skills, commands, agents, templates, cross-references, and task CLI alignment. Detect issues via 1000-point scoring, auto-fix via dedicated reviser, verify via re-scoring.
 
 ## When to Use
 
 **Trigger (explicit user request only):**
-- User explicitly asks to "audit plugin", "eval plugin", "check plugin consistency"
-- User says "run eval-plugin"
+
+- User explicitly asks to "audit forge plugin", "eval forge", "check forge consistency"
+- User says "run eval-forge"
 
 **Never auto-trigger:**
+
 - Do not invoke during normal skill development
 - Do not invoke as a post-edit check
 - Do not invoke proactively
 
 ## Parameters
 
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `--target` | 900 | Target score (0-1000). Loop continues until score >= target or iterations exhausted |
-| `--iterations` | 3 | Max audit→fix→verify cycles |
+| Parameter      | Default | Description                                                                         |
+| -------------- | ------- | ----------------------------------------------------------------------------------- |
+| `--target`     | 950     | Target score (0-1000). Loop continues until score >= target or iterations exhausted |
+| `--iterations` | 3       | Max audit→fix→verify cycles                                                         |
 
 ## Architecture
 
@@ -62,6 +64,7 @@ flowchart TD
 All audit artifacts are written to `docs/self-evolution/{seq}/`, where `{seq}` is a zero-padded sequence number representing how many times the plugin has been audited (not iteration count).
 
 Determine `{seq}` at start:
+
 1. List existing directories under `docs/self-evolution/`
 2. Find the highest numeric directory name (e.g., `003`)
 3. Increment by 1 → `{seq}` = `004`
@@ -87,15 +90,18 @@ Gather the full plugin structure for the scorer:
 Dispatch a single `general-purpose` subagent with precisely crafted audit context — never your session history. The scorer reads the plugin structure fresh and evaluates against the rubric independently.
 
 **Agent tool configuration:**
+
 - `subagent_type`: `general-purpose`
 - `description`: `plugin consistency scorer iteration {{N}}`
 
 **Prompt** — read `templates/scorer-prompt.md`, then craft the prompt with these injected values:
+
 - `{{SEQ}}` → the audit sequence number (determined in Output Directory section)
 - `{{ITERATION}}` → current iteration number
 - `{{PREV}}` → previous iteration number (omit if iteration 1)
 
 After the scorer returns, parse its output:
+
 1. Extract `SCORE: X/1000`
 2. Extract per-dimension scores
 3. Extract attack points
@@ -106,13 +112,14 @@ After the scorer returns, parse its output:
 This decision is made in the MAIN SESSION. This gate fires unconditionally after every scorer run.
 </HARD-GATE>
 
-| Condition | Action |
-|-----------|--------|
-| Score >= target | Skip to Step 6 (final report) |
-| Score < target AND iterations remaining | Proceed to Step 4 |
+| Condition                                  | Action                          |
+| ------------------------------------------ | ------------------------------- |
+| Score >= target                            | Skip to Step 6 (final report)   |
+| Score < target AND iterations remaining    | Proceed to Step 4               |
 | Score < target AND no iterations remaining | Skip to Step 6 (report failure) |
 
 Report to user:
+
 ```
 Iteration {{N}}/{{MAX}}: scored {{SCORE}}/1000 (target: {{TARGET}}). {{COUNT}} issues found.
 ```
@@ -121,42 +128,45 @@ Iteration {{N}}/{{MAX}}: scored {{SCORE}}/1000 (target: {{TARGET}}). {{COUNT}} i
 
 For each attack point, classify fixability:
 
-| Type | Pattern | Auto-Fixable? |
-|------|---------|---------------|
-| Missing frontmatter `name` | Command file has no `name` field | Yes — add `name: <stem>` |
-| Missing frontmatter `description` | File has no `description` field | Yes — generate from content |
-| Dangling agent reference | Skill references non-existent agent | No — requires agent creation |
-| Dangling template reference | Skill references non-existent template | No — requires template creation |
-| Dangling cross-skill reference | Skill references non-existent skill | No — requires skill creation |
-| Name-directory mismatch | `name` field ≠ directory name | Yes — fix the `name` field |
-| Invalid CLI flag | Skill uses non-existent CLI flag | Yes — fix the flag |
-| Invalid status value | Skill uses wrong status value | Yes — fix the status |
-| Schema-code mismatch | Schema field missing from Go code | Partial — depends on direction |
-| Missing eval template | eval-* missing rubric.md or report.md | No — requires content creation |
-| Missing Iron Laws | eval-* missing orchestrator section | Partial — requires domain knowledge |
-| Dangling guide reference | guide.md references non-existent skill | Yes — remove or update reference |
+| Type                              | Pattern                                | Auto-Fixable?                       |
+| --------------------------------- | -------------------------------------- | ----------------------------------- |
+| Missing frontmatter `name`        | Command file has no `name` field       | Yes — add `name: <stem>`            |
+| Missing frontmatter `description` | File has no `description` field        | Yes — generate from content         |
+| Dangling agent reference          | Skill references non-existent agent    | No — requires agent creation        |
+| Dangling template reference       | Skill references non-existent template | No — requires template creation     |
+| Dangling cross-skill reference    | Skill references non-existent skill    | No — requires skill creation        |
+| Name-directory mismatch           | `name` field ≠ directory name          | Yes — fix the `name` field          |
+| Invalid CLI flag                  | Skill uses non-existent CLI flag       | Yes — fix the flag                  |
+| Invalid status value              | Skill uses wrong status value          | Yes — fix the status                |
+| Schema-code mismatch              | Schema field missing from Go code      | Partial — depends on direction      |
+| Missing eval template             | eval-\* missing rubric.md or report.md | No — requires content creation      |
+| Missing Iron Laws                 | eval-\* missing orchestrator section   | Partial — requires domain knowledge |
+| Dangling guide reference          | guide.md references non-existent skill | Yes — remove or update reference    |
 
 ## Step 5: Invoke Reviser (Custom Subagent)
 
 Dispatch a single `general-purpose` subagent with precisely crafted fix context — never your session history. The reviser reads the audit report fresh and applies surgical fixes.
 
 **Agent tool configuration:**
+
 - `subagent_type`: `general-purpose`
 - `description`: `plugin consistency fixer iteration {{N}}`
 
 **Prompt** — read `templates/reviser-prompt.md`, then craft the prompt with these injected values:
+
 - `{{SEQ}}` → the audit sequence number
 - `{{ITERATION}}` → current iteration number
 - `{{ATTACK_POINTS}}` → only the auto-fixable attack points from Step 4
 
 After the reviser completes:
+
 1. Increment iteration counter
 2. Return to Step 1 (re-scan) → Step 2 (re-score)
 
 ## Step 6: Final Report (Main Session)
 
 ```
-## Eval-Plugin Complete
+## Eval-Forge Complete
 
 **Final Score**: {{SCORE}}/1000 (target: {{TARGET}})
 **Plugin Version**: {{from plugin.json}}
@@ -179,7 +189,7 @@ After the reviser completes:
 | 6. Orchestrator Convention | {{d6}} | 40 |
 | 7. Task CLI Alignment | {{d7}} | 240 |
 | 8. Hook Wiring Integrity | {{d8}} | 70 |
-| 9. Guide Coverage | {{d9}} | 70 |
+| 9. Guide Coverage+Conciseness | {{d9}} | 70 |
 | 10. Command Metadata | {{d10}} | 60 |
 | 11. Plugin Metadata | {{d11}} | 40 |
 | 12. Safety Marker Consistency | {{d12}} | 50 |

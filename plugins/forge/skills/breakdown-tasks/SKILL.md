@@ -319,10 +319,10 @@ Phase 2 gate: 2.gate               (dependencies: ["2.summary"])
 Append seven fixed test tasks:
 
 - **T-test-1**: read `templates/gen-test-cases.md`, calls `/gen-sitemap` first (if `sitemap.json` missing) then `/gen-test-cases`, file `gen-test-cases.md`
-- **T-test-1b**: read `templates/eval-test-cases.md`, calls `/eval-test-cases`, depends on T-test-1, `mainSession: true`, file `eval-test-cases.md`
+- **T-test-1b**: read `templates/eval-test-cases.md`, calls `/eval-test-cases`, depends on T-test-1, file `eval-test-cases.md`
 
 <HARD-RULE>
-**When to set `mainSession: true`**: Any task whose skill spawns subagents via Agent tool MUST set `mainSession: true` in index.json. Applies to all eval-* skills.
+**Task properties propagate from template frontmatter to index.json**: When generating `index.json`, copy all boolean flags from the task template's YAML frontmatter (e.g., `breaking`, `noTest`, `mainSession`) directly into the corresponding index.json entry. Do NOT set these flags ad-hoc — they belong in the template.
 </HARD-RULE>
 - **T-test-2**: read `templates/gen-test-scripts.md`, calls `/gen-test-scripts`, depends on T-test-1b, file `gen-test-scripts.md`
 - **T-test-3**: read `templates/run-e2e-tests.md`, calls `/run-e2e-tests`, depends on T-test-2, file `run-e2e-tests.md`
@@ -341,7 +341,7 @@ Replace `{{T_TEST_1_DEP}}` with the last phase's gate ID if a gate exists (e.g.,
 - T-test-4.5: run full regression suite; on failure, mark blocked, add fix tasks (P0) with unblock instruction — re-runs after fix
 - T-test-5: extract business rules and tech specs, user reviews and confirms integration
 
-**Fix-task reference**: Templates are managed by task-cli and embedded in the binary. Agents should run `task template fix-task` to view the template and required variables before creating fix tasks. When adding a fix task, the source task MUST be marked `blocked` first (so it's not `in_progress` and the P0 fix task can be claimed immediately):
+**Fix-task reference**: Templates are managed by task-cli and embedded in the binary. Auto-generated fix-task IDs follow the `disc-N` format (e.g., `disc-1`, `disc-2`). Agents should run `task template fix-task` to view the template and required variables before creating fix tasks. When adding a fix task, the source task MUST be marked `blocked` first (so it's not `in_progress` and the P0 fix task can be claimed immediately):
 
 ```bash
 task status <source-task-id> blocked

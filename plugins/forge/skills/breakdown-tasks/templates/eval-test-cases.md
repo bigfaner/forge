@@ -5,6 +5,7 @@ priority: "P1"
 estimated_time: "30min"
 dependencies: ["T-test-1"]
 status: pending
+noTest: true
 mainSession: true
 ---
 

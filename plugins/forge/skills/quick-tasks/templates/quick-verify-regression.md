@@ -5,6 +5,8 @@ priority: "P1"
 estimated_time: "15min"
 dependencies: ["T-quick-4"]
 status: pending
+noTest: false
+mainSession: false
 ---
 
 # Verify Quick E2E Regression

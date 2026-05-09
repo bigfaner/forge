@@ -1,7 +1,7 @@
 # Forge Plugin Consistency Rubric
 
 **Total: 1000 points**
-**Report template:** `.claude/skills/eval-plugin/templates/report.md`
+**Report template:** `.claude/skills/eval-forge/templates/report.md`
 
 ## What This Rubric Measures
 
@@ -57,7 +57,8 @@ Merged from Template + Cross-Skill reference checks. All "does the target exist"
 |-----------|--------|---------------|
 | Template references valid | 0-25 | Every template path referenced in a SKILL.md points to an existing file. Each dangling = -15 (Medium). |
 | Cross-skill references valid | 0-30 | Every `invoke /<name>` or `Skill tool` reference points to an existing skill directory or command file. Each dangling = -15 (Medium). |
-| No orphan templates | 0-25 | Every file in `skills/*/templates/` is referenced (directly or via rubric→report chain). Each orphan = -5 (Low). |
+| No orphan templates | 0-15 | Every file in `skills/*/templates/` is referenced (directly or via rubric→report chain). Each orphan = -5 (Low). |
+| No cross-file duplication | 0-10 | No factual information is copy-pasted across 3+ files when a canonical location exists. Each instance = -5 (Low). Exception: autonomous agents that cannot read other files at runtime may duplicate essential facts. |
 
 ### 4. Frontmatter Completeness (110 pts)
 
@@ -117,16 +118,19 @@ This dimension requires reading task CLI source code to verify behavioral alignm
 | Hook CLI commands valid | 0-15 | Every CLI command referenced in `hooks.json` (e.g., `task cleanup`, `task all-completed`) exists in `task -h`. Each unknown = -15 (Medium). |
 | Hook event names valid | 0-20 | Every event name in `hooks.json` (e.g., `SessionStart`, `PostToolUse`, `Stop`, `SessionEnd`, `SubagentStop`) is a Claude Code supported hook event. Each unknown = -15 (Medium). |
 
-### 9. Guide Coverage (70 pts)
+### 9. Guide Coverage and Conciseness (70 pts)
 
-Bidirectional check: guide.md references must be valid AND guide.md should mention all active skills/commands.
+Bidirectional check: guide.md references must be valid, workflow-critical skills must be documented, and guide.md must stay concise.
+
+**Workflow-critical skills** are those appearing in the guide.md workflow diagrams (Skill Workflow, Quick Mode) or referenced in the Quality Gate Protocol and Task-CLI sections. Utility/setup commands (init-forge, init-justfile, git-checkout, simplify-skill, extract-design-md, forensic, improve-harness, learn-lesson, record-decision) are NOT required to appear in guide.md.
 
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
 | Guide references are valid | 0-30 | Every `/name` pattern in `plugins/forge/hooks/guide.md` points to an existing skill or command. Each dangling = -15 (Medium). |
-| Core skills documented | 0-40 | Every skill and command directory has at least a mention in guide.md (workflow reference, usage example, or description). Each completely undocumented skill/command = -5 (Low). |
+| Core workflow skills documented | 0-25 | Every workflow-critical skill (those in Mermaid diagrams, Quality Gate, or Task-CLI sections) has at least a mention in guide.md. Each undocumented workflow-critical skill = -5 (Low). |
+| Conciseness / no redundancy | 0-15 | guide.md contains only workflow rules and conventions — no CLI output format tables, no API reference, no information that belongs in `task -h` or individual SKILL.md files. Each instance of misplaced reference material = -5 (Low). Duplicated information across sections = -5 (Low). |
 
-> Note: guide.md is not a full registry. "Documented" means mentioned in any context (workflow description, table, or example), not necessarily a standalone section.
+> Note: guide.md is a workflow guide, not a registry. CLI output field tables belong in individual SKILL.md or `task -h`. Setup/utility commands need not be mentioned.
 
 ### 10. Command Metadata Completeness (60 pts)
 

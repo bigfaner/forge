@@ -27,7 +27,8 @@ evaluator: Claude (structural audit)
 │ 3. Reference Integrity       │  ___     │  80      │ ✅/⚠️/❌    │
 │    Template refs valid       │  ___/25  │          │            │
 │    Cross-skill refs valid    │  ___/30  │          │            │
-│    No orphan templates       │  ___/25  │          │            │
+│    No orphan templates       │  ___/15  │          │            │
+│    No cross-file duplication │  ___/10  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
 │ 4. Frontmatter Completeness  │  ___     │  110     │ ✅/⚠️/❌    │
 │    Skill frontmatter         │  ___/45  │          │            │
@@ -62,9 +63,10 @@ evaluator: Claude (structural audit)
 │    Hook CLI commands valid   │  ___/15  │          │            │
 │    Hook event names valid    │  ___/20  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 9. Guide Coverage            │  ___     │  70      │ ✅/⚠️/❌    │
+│ 9. Guide Coverage+Concise    │  ___     │  70      │ ✅/⚠️/❌    │
 │    Guide references valid    │  ___/30  │          │            │
-│    Core skills documented    │  ___/40  │          │            │
+│    Core workflow skills doc  │  ___/25  │          │            │
+│    Conciseness / no redund.  │  ___/15  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
 │ 10. Command Metadata         │  ___     │  60      │ ✅/⚠️/❌    │
 │    allowed_tools declared    │  ___/35  │          │            │

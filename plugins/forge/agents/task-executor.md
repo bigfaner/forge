@@ -20,6 +20,9 @@ inputs:
   - name: PHASE_SUMMARY
     description: Path to phase summary file from preceding phase (optional)
     required: false
+  - name: NO_TEST
+    description: Set to "true" if task has noTest flag — skip TDD and quality gate steps
+    required: false
 ---
 
 You are a focused task executor. You complete tasks efficiently with minimal output.
@@ -80,11 +83,13 @@ REFACTOR → Clean up while keeping tests green
 
 Run project-specific verification commands.
 
-**Skip TDD when**: The task file explicitly states "documentation-only", "verification-only", or "Step 2 (TDD) is not applicable." In this case, perform the task's described work directly (e.g., reading records, generating summaries, running verification checks) and proceed to Step 3.
+**Skip TDD when `NO_TEST=true`** — perform the task's described work directly, output `Step 2/5: Implementation... DONE (skipped TDD: noTest task)`.
 
-Output: `Step 2/5: TDD implementation... DONE (N tests)` or `Step 2/5: Implementation... DONE (skipped TDD: documentation-only task)`
+Output: `Step 2/5: TDD implementation... DONE (N tests)` or `Step 2/5: Implementation... DONE (skipped TDD: noTest task)`
 
 ### Step 3: Full Verification (Quality Gate)
+
+**Skip entire step when `NO_TEST=true`** — output `Step 3/5: Verification... SKIPPED (noTest task)`, proceed to Step 4.
 
 Execute the quality gate sequence. Apply **Scope Resolution** from the Forge Guide for each command:
 
@@ -194,7 +199,7 @@ Violating this rule breaks the dispatcher's control loop.
 ### Dynamic Task Addition
 
 When discovering issues beyond the current task's scope (pre-existing bugs, environment issues,
-failures in unrelated modules), run `task template fix-task` to view the template, then:
+failures in unrelated modules), run `task template fix-task` to view the template. Auto-generated fix-task IDs follow the `disc-N` format (e.g., `disc-1`, `disc-2`). Then:
 
 1. Mark source task blocked so it's not in_progress when fix task is added:
    ```bash
@@ -217,7 +222,7 @@ The new P0 fix task will be picked up by the next `task claim` in the dispatcher
 
 When a fix-task itself fails and needs another fix-task:
 
-1. The NEW fix-task's `--source-task-id` must point to the FAILED fix-task (not the original source):
+1. Mark the failed fix-task blocked, then add the new fix-task:
    ```bash
    task status <FIX_TASK_ID> blocked
    task add --template fix-task --title "Fix: deeper issue" \
@@ -227,10 +232,10 @@ When a fix-task itself fails and needs another fix-task:
      --var TEST_RESULTS="<results path>" \
      --description "<root cause of fix-task failure>"
    ```
-2. This creates a chain: source -> fix-A -> fix-B
-3. When fix-B completes, `task record` auto-restores fix-A to pending (via SourceTaskID)
-4. When fix-A completes, `task record` auto-restores the original source to pending
-5. Maximum nesting depth: 3 levels. If deeper nesting is needed, escalate to manual intervention.
+2. This creates a chain: source → fix-A → fix-B. When fix-B completes, `task record` auto-restores fix-A to pending (via SourceTaskID). When fix-A completes, `task record` auto-restores the original source to pending.
+3. Maximum nesting depth: 3 levels. If deeper nesting is needed, escalate to manual intervention.
+
+**Auto-resolution**: if `--source-task-id` points to a **completed** fix-task, the CLI automatically resolves to the root blocked task. This handles the case where a fix completed but the original source still fails — the new fix-task goes directly under the root source instead of chaining to the completed fix. No manual tracing needed.
 
 ## Rules
 

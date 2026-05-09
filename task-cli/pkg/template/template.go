@@ -18,6 +18,7 @@ type Defaults struct {
 	Priority      string
 	Breaking      bool
 	EstimatedTime string
+	IDPrefix      string // auto-generate ID as prefix-N (e.g. "fix" → fix-1, fix-2)
 }
 
 // templateDefaults defines the fixed values for each template.
@@ -26,6 +27,7 @@ var templateDefaults = map[string]Defaults{
 		Priority:      "P0",
 		Breaking:      true,
 		EstimatedTime: "30min",
+		IDPrefix:      "fix",
 	},
 }
 

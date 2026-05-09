@@ -1,6 +1,7 @@
 ---
 name: extract-design-md
 description: Analyze a web app's visual style and generate a DESIGN.md for use with ui-design skill.
+allowed_tools: ["Bash", "Read", "Write", "WebFetch"]
 argument-hints:
   - name: url
     description: Web application URL to analyze (e.g. https://stripe.com)
@@ -260,3 +261,9 @@ Output completion message:
 ```
 DESIGN.md written to project root
 ```
+
+<EXTREMELY-IMPORTANT>
+- Only write to `DESIGN.md` in the project root. Do not modify any other project files.
+- If `DESIGN.md` already exists and the user declines overwrite, abort immediately without writing.
+- All extracted values must come from actual CSS/HTML analysis. Mark estimated values with `(estimated)`.
+</EXTREMELY-IMPORTANT>

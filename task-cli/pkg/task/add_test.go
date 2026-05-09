@@ -3,6 +3,8 @@ package task
 import (
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 	"testing"
 )
 
@@ -117,7 +119,7 @@ func TestAddTask_AutoGenerateID_Sequential(t *testing.T) {
 	}
 }
 
-func TestAddTask_AutoGenerateID_GapFill(t *testing.T) {
+func TestAddTask_AutoGenerateID_MaxPlusOne(t *testing.T) {
 	indexPath, _ := newTestIndex(t)
 
 	if _, err := AddTask(indexPath, AddTaskOpts{Title: "Disc 1", ID: "disc-1"}); err != nil {
@@ -127,12 +129,12 @@ func TestAddTask_AutoGenerateID_GapFill(t *testing.T) {
 		t.Fatalf("setup: AddTask failed: %v", err)
 	}
 
-	id, err := AddTask(indexPath, AddTaskOpts{Title: "Fill gap"})
+	id, err := AddTask(indexPath, AddTaskOpts{Title: "Max plus one"})
 	if err != nil {
 		t.Fatalf("AddTask failed: %v", err)
 	}
-	if id != "disc-2" {
-		t.Errorf("expected disc-2 (gap fill), got %s", id)
+	if id != "disc-4" {
+		t.Errorf("expected disc-4 (max+1), got %s", id)
 	}
 }
 
@@ -247,10 +249,10 @@ func TestCreateTaskMarkdown_Basic(t *testing.T) {
 		t.Fatalf("read file failed: %v", err)
 	}
 	content := string(data)
-	if !contains(content, `id: "disc-1"`) {
+	if !strings.Contains(content, `id: "disc-1"`) {
 		t.Errorf("missing id in frontmatter: %s", content)
 	}
-	if !contains(content, "# disc-1: Fix timeout") {
+	if !strings.Contains(content, "# disc-1: Fix timeout") {
 		t.Errorf("missing title heading: %s", content)
 	}
 }
@@ -274,7 +276,7 @@ func TestCreateTaskMarkdown_WithBody(t *testing.T) {
 		t.Fatalf("setup: read file failed: %v", err)
 	}
 	content := string(data)
-	if !contains(content, "## Steps") {
+	if !strings.Contains(content, "## Steps") {
 		t.Errorf("missing description body: %s", content)
 	}
 }
@@ -296,7 +298,7 @@ func TestCreateTaskMarkdown_WithDependencies(t *testing.T) {
 		t.Fatalf("setup: read file failed: %v", err)
 	}
 	content := string(data)
-	if !contains(content, `"1.1"`) || !contains(content, `"1.2"`) {
+	if !strings.Contains(content, `"1.1"`) || !strings.Contains(content, `"1.2"`) {
 		t.Errorf("missing dependencies: %s", content)
 	}
 }
@@ -318,36 +320,102 @@ func TestCreateTaskMarkdown_Breaking(t *testing.T) {
 		t.Fatalf("setup: read file failed: %v", err)
 	}
 	content := string(data)
-	if !contains(content, "breaking: true") {
+	if !strings.Contains(content, "breaking: true") {
 		t.Errorf("missing breaking: %s", content)
 	}
 }
 
-func TestGenerateDiscID_Empty(t *testing.T) {
+func TestGenerateAutoID_Empty(t *testing.T) {
 	index := NewTaskIndex("test")
-	id := generateDiscID(index)
+	id := generateAutoID("disc", index)
 	if id != "disc-1" {
 		t.Errorf("expected disc-1, got %s", id)
 	}
 }
 
-func TestGenerateDiscID_Sequential(t *testing.T) {
+func TestGenerateAutoID_Sequential(t *testing.T) {
 	index := NewTaskIndex("test")
 	index.tasks["disc-1"] = Task{ID: "disc-1", Title: "D1", Priority: "P1", Status: "completed", File: "disc-1.md", Record: "records/disc-1.md"}
 	index.tasks["disc-2"] = Task{ID: "disc-2", Title: "D2", Priority: "P1", Status: "completed", File: "disc-2.md", Record: "records/disc-2.md"}
-	id := generateDiscID(index)
+	id := generateAutoID("disc", index)
 	if id != "disc-3" {
 		t.Errorf("expected disc-3, got %s", id)
 	}
 }
 
-func TestGenerateDiscID_NonDiscIgnored(t *testing.T) {
+func TestGenerateAutoID_NonDiscIgnored(t *testing.T) {
 	index := NewTaskIndex("test")
 	index.tasks["1.1-init"] = Task{ID: "1.1", Title: "Init", Priority: "P0", Status: "completed", File: "1.1-init.md", Record: "records/1.1-init.md"}
 	index.tasks["fix-e2e-1-1"] = Task{ID: "fix-e2e-1-1", Title: "Fix e2e", Priority: "P0", Status: "completed", File: "fix-e2e-1-1.md", Record: "records/fix-e2e-1-1.md"}
-	id := generateDiscID(index)
+	id := generateAutoID("disc", index)
 	if id != "disc-1" {
 		t.Errorf("expected disc-1, got %s", id)
+	}
+}
+
+func TestGenerateAutoID_FixPrefix(t *testing.T) {
+	tests := []struct {
+		name     string
+		existing map[string]Task
+		prefix   string
+		expected string
+	}{
+		{
+			name:     "empty index",
+			existing: nil,
+			prefix:   "fix",
+			expected: "fix-1",
+		},
+		{
+			name: "sequential",
+			existing: map[string]Task{
+				"fix-1": {ID: "fix-1"},
+				"fix-2": {ID: "fix-2"},
+			},
+			prefix:   "fix",
+			expected: "fix-3",
+		},
+		{
+			name: "gap skipped (max+1, not gap-fill)",
+			existing: map[string]Task{
+				"fix-1": {ID: "fix-1"},
+				"fix-3": {ID: "fix-3"},
+			},
+			prefix:   "fix",
+			expected: "fix-4",
+		},
+		{
+			name: "disc tasks ignored for fix prefix",
+			existing: map[string]Task{
+				"disc-1": {ID: "disc-1"},
+				"disc-2": {ID: "disc-2"},
+				"fix-1":  {ID: "fix-1"},
+			},
+			prefix:   "fix",
+			expected: "fix-2",
+		},
+		{
+			name: "fix prefix ignores disc",
+			existing: map[string]Task{
+				"fix-1": {ID: "fix-1"},
+			},
+			prefix:   "disc",
+			expected: "disc-1",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			index := NewTaskIndex("test")
+			if tt.existing != nil {
+				for k, v := range tt.existing {
+					index.tasks[k] = v
+				}
+			}
+			id := generateAutoID(tt.prefix, index)
+			if id != tt.expected {
+				t.Errorf("expected %s, got %s", tt.expected, id)
+			}
+		})
 	}
 }
 
@@ -454,12 +522,12 @@ func TestCreateTaskMarkdown_TemplateMode(t *testing.T) {
 		"## Reference Files",
 	}
 	for _, want := range checks {
-		if !contains(got, want) {
+		if !strings.Contains(got, want) {
 			t.Errorf("output missing %q\nfull output:\n%s", want, got)
 		}
 	}
 
-	if contains(got, "{{") {
+	if strings.Contains(got, "{{") {
 		t.Errorf("unsubstituted placeholder remaining in output:\n%s", got)
 	}
 }
@@ -489,7 +557,7 @@ func TestAddDependency(t *testing.T) {
 		t.Fatalf("setup: LoadIndex failed: %v", err)
 	}
 	task := index.tasks["1.2-setup"]
-	if !containsSlice(task.Dependencies, "disc-1") {
+	if !slices.Contains(task.Dependencies, "disc-1") {
 		t.Errorf("expected disc-1 in dependencies, got %v", task.Dependencies)
 	}
 }
@@ -545,7 +613,7 @@ func TestGetUnmetDependencies(t *testing.T) {
 		t.Fatalf("GetUnmetDependencies failed: %v", err)
 	}
 	// fix-1 is pending (not completed) → unmet
-	if !containsSlice(unmet, "fix-1") {
+	if !slices.Contains(unmet, "fix-1") {
 		t.Errorf("expected fix-1 in unmet, got %v", unmet)
 	}
 
@@ -562,31 +630,9 @@ func TestGetUnmetDependencies(t *testing.T) {
 	}
 
 	unmet2, _ := GetUnmetDependencies(indexPath, "1.2-setup")
-	if containsSlice(unmet2, "fix-1") {
+	if slices.Contains(unmet2, "fix-1") {
 		t.Errorf("fix-1 is completed, should not be unmet, got %v", unmet2)
 	}
-}
-
-func containsSlice(slice []string, item string) bool {
-	for _, s := range slice {
-		if s == item {
-			return true
-		}
-	}
-	return false
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsSubstr(s, substr))
-}
-
-func containsSubstr(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }
 
 func TestAddTask_SourceTaskID_Persisted(t *testing.T) {
@@ -628,7 +674,7 @@ func TestAddTask_SourceTaskID_UpdatesSourceDeps(t *testing.T) {
 		t.Fatalf("setup: LoadIndex failed: %v", err)
 	}
 	srcTask := index.tasks["1.1-init"]
-	if !containsSlice(srcTask.Dependencies, id) {
+	if !slices.Contains(srcTask.Dependencies, id) {
 		t.Errorf("source task should have %s as dependency, got %v", id, srcTask.Dependencies)
 	}
 }
@@ -720,7 +766,7 @@ func TestAddTask_SourceTaskID_LookupByID(t *testing.T) {
 
 	index, _ := LoadIndex(indexPath)
 	srcTask := index.tasks["1.1-init"]
-	if !containsSlice(srcTask.Dependencies, id) {
+	if !slices.Contains(srcTask.Dependencies, id) {
 		t.Errorf("source task should have %s as dependency (looked up by ID), got deps %v", id, srcTask.Dependencies)
 	}
 }
@@ -748,10 +794,10 @@ func TestAddTask_SourceTaskID_LookupByID_PreservesExistingDeps(t *testing.T) {
 
 	index, _ = LoadIndex(indexPath)
 	srcTask := index.tasks["1.1-init"]
-	if !containsSlice(srcTask.Dependencies, "some-other-task") {
+	if !slices.Contains(srcTask.Dependencies, "some-other-task") {
 		t.Errorf("existing dep 'some-other-task' was lost, got %v", srcTask.Dependencies)
 	}
-	if !containsSlice(srcTask.Dependencies, id) {
+	if !slices.Contains(srcTask.Dependencies, id) {
 		t.Errorf("new dep %s missing, got %v", id, srcTask.Dependencies)
 	}
 }
@@ -779,7 +825,7 @@ func TestAddTask_SourceTaskID_DynamicTaskWhereKeyEqualsID(t *testing.T) {
 
 	index, _ := LoadIndex(indexPath)
 	srcTask := index.tasks[firstID]
-	if !containsSlice(srcTask.Dependencies, secondID) {
+	if !slices.Contains(srcTask.Dependencies, secondID) {
 		t.Errorf("disc task should have %s as dependency, got %v", secondID, srcTask.Dependencies)
 	}
 }
@@ -805,7 +851,7 @@ func TestAddTask_SourceTaskID_MultipleAddsToSameSourceByID(t *testing.T) {
 	index, _ := LoadIndex(indexPath)
 	srcTask := index.tasks["1.1-init"]
 	for _, id := range []string{id1, id2, id3} {
-		if !containsSlice(srcTask.Dependencies, id) {
+		if !slices.Contains(srcTask.Dependencies, id) {
 			t.Errorf("source missing dep %s, got %v", id, srcTask.Dependencies)
 		}
 	}
@@ -841,6 +887,261 @@ func TestAddTask_SourceTaskID_LookupByID_SourceNotFoundIsNoOp(t *testing.T) {
 		if len(after.Dependencies) != len(before.Dependencies) {
 			t.Errorf("task %s deps changed unexpectedly: before=%v after=%v", key, before.Dependencies, after.Dependencies)
 		}
+	}
+}
+
+// --- Source Resolution Tests (auto-resolve --source-task-id when source is completed) ---
+
+func TestAddTask_SourceResolution_CompletedSourceResolvesToRoot(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// disc-1 is a fix-task for source "1.1" — mark it completed
+	fix1ID, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 1",
+		Priority:     "P0",
+		SourceTaskID: "1.1", // points to root source
+	})
+	if err != nil {
+		t.Fatalf("setup: AddTask failed: %v", err)
+	}
+	// Mark disc-1 as completed (simulates it finishing its quality gate)
+	index, _ := LoadIndex(indexPath)
+	fix1 := index.tasks[fix1ID]
+	fix1.Status = "completed"
+	index.tasks[fix1ID] = fix1
+	SaveIndex(indexPath, index)
+
+	// Now add disc-2 with --source-task-id pointing to disc-1 (a COMPLETED fix-task)
+	// Auto-resolve should trace disc-1 → 1.1 (root) because disc-1 is completed
+	fix2ID, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 2 (deeper)",
+		Priority:     "P0",
+		SourceTaskID: fix1ID, // pointing to completed fix-task
+	})
+	if err != nil {
+		t.Fatalf("AddTask failed: %v", err)
+	}
+
+	// disc-2 should have SourceTaskID resolved to "1.1" (root), not disc-1
+	index, _ = LoadIndex(indexPath)
+	if index.tasks[fix2ID].SourceTaskID != "1.1" {
+		t.Errorf("disc-2 SourceTaskID should resolve to '1.1', got %q", index.tasks[fix2ID].SourceTaskID)
+	}
+
+	// Source task "1.1" should have BOTH disc-1 AND disc-2 as dependencies
+	srcTask := index.tasks["1.1-init"]
+	if !slices.Contains(srcTask.Dependencies, fix1ID) {
+		t.Errorf("source should have %s as dep, got %v", fix1ID, srcTask.Dependencies)
+	}
+	if !slices.Contains(srcTask.Dependencies, fix2ID) {
+		t.Errorf("source should have %s as dep, got %v", fix2ID, srcTask.Dependencies)
+	}
+
+	// disc-1 should NOT have disc-2 as dependency (resolved to root, flat for completed source)
+	if slices.Contains(index.tasks[fix1ID].Dependencies, fix2ID) {
+		t.Errorf("disc-1 should NOT have disc-2 as dep (resolved to root), got %v", index.tasks[fix1ID].Dependencies)
+	}
+}
+
+func TestAddTask_SourceResolution_BlockedSourcePreservesChain(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// disc-1 is a fix-task for source "1.1" — mark it BLOCKED (its quality gate failed)
+	fix1ID, _ := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 1",
+		Priority:     "P0",
+		SourceTaskID: "1.1",
+	})
+	index, _ := LoadIndex(indexPath)
+	fix1 := index.tasks[fix1ID]
+	fix1.Status = "blocked"
+	index.tasks[fix1ID] = fix1
+	SaveIndex(indexPath, index)
+
+	// Now add disc-2 with --source-task-id pointing to disc-1 (a BLOCKED fix-task)
+	// Chain model should be preserved — no resolution
+	fix2ID, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 2 (nested)",
+		Priority:     "P0",
+		SourceTaskID: fix1ID, // pointing to blocked fix-task
+	})
+	if err != nil {
+		t.Fatalf("AddTask failed: %v", err)
+	}
+
+	index, _ = LoadIndex(indexPath)
+	// disc-2 should keep SourceTaskID as disc-1 (chain preserved)
+	if index.tasks[fix2ID].SourceTaskID != fix1ID {
+		t.Errorf("disc-2 SourceTaskID should remain %q (chain preserved), got %q", fix1ID, index.tasks[fix2ID].SourceTaskID)
+	}
+
+	// disc-1 should have disc-2 as dependency (chain model)
+	if !slices.Contains(index.tasks[fix1ID].Dependencies, fix2ID) {
+		t.Errorf("disc-1 should have disc-2 as dep (chain model), got %v", index.tasks[fix1ID].Dependencies)
+	}
+
+	// Root source should NOT have disc-2 as direct dep
+	srcTask := index.tasks["1.1-init"]
+	if slices.Contains(srcTask.Dependencies, fix2ID) {
+		t.Errorf("root source should NOT have disc-2 as dep (chain model), got %v", srcTask.Dependencies)
+	}
+}
+
+func TestAddTask_SourceResolution_MultiLevelCompletedChain(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// Chain: disc-1 → 1.1 (root), mark completed
+	fix1ID, _ := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 1",
+		SourceTaskID: "1.1",
+	})
+	index, _ := LoadIndex(indexPath)
+	tmp := index.tasks[fix1ID]
+	tmp.Status = "completed"
+	index.tasks[fix1ID] = tmp
+	SaveIndex(indexPath, index)	// disc-2 → disc-1 (completed) → resolves to 1.1
+	fix2ID, _ := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 2",
+		SourceTaskID: fix1ID,
+	})
+	index, _ = LoadIndex(indexPath)
+	tmp2 := index.tasks[fix2ID]
+	tmp2.Status = "completed"
+	index.tasks[fix2ID] = tmp2
+	SaveIndex(indexPath, index)
+
+	// disc-3 → disc-2 (completed) → disc-1 (completed) → resolves to 1.1
+	fix3ID, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 3",
+		SourceTaskID: fix2ID,
+	})
+	if err != nil {
+		t.Fatalf("AddTask failed: %v", err)
+	}
+
+	index, _ = LoadIndex(indexPath)
+
+	// All should resolve to "1.1"
+	for _, id := range []string{fix1ID, fix2ID, fix3ID} {
+		if index.tasks[id].SourceTaskID != "1.1" {
+			t.Errorf("%s SourceTaskID should be '1.1', got %q", id, index.tasks[id].SourceTaskID)
+		}
+	}
+
+	// Source should have all 3 as deps
+	srcTask := index.tasks["1.1-init"]
+	if len(srcTask.Dependencies) != 3 {
+		t.Errorf("source should have 3 deps, got %d: %v", len(srcTask.Dependencies), srcTask.Dependencies)
+	}
+}
+
+func TestAddTask_SourceResolution_NoChainPassthrough(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// 1.1 has no SourceTaskID — direct passthrough, no resolution needed
+	id, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix direct",
+		SourceTaskID: "1.1",
+	})
+	if err != nil {
+		t.Fatalf("AddTask failed: %v", err)
+	}
+
+	index, _ := LoadIndex(indexPath)
+	if index.tasks[id].SourceTaskID != "1.1" {
+		t.Errorf("SourceTaskID should remain '1.1', got %q", index.tasks[id].SourceTaskID)
+	}
+}
+
+func TestAddTask_SourceResolution_CycleDetection(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// Manually create a cycle: disc-1 → disc-2 → disc-1, both completed
+	index, _ := LoadIndex(indexPath)
+	index.tasks["disc-1"] = Task{
+		ID:           "disc-1",
+		Title:        "Fix 1",
+		Priority:     "P0",
+		Status:       "completed",
+		File:         "disc-1.md",
+		Record:       "records/disc-1.md",
+		SourceTaskID: "disc-2",
+	}
+	index.tasks["disc-2"] = Task{
+		ID:           "disc-2",
+		Title:        "Fix 2",
+		Priority:     "P0",
+		Status:       "completed",
+		File:         "disc-2.md",
+		Record:       "records/disc-2.md",
+		SourceTaskID: "disc-1",
+	}
+	SaveIndex(indexPath, index)
+
+	// Adding with --source-task-id disc-1 should not infinite loop
+	id, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 3",
+		SourceTaskID: "disc-1",
+	})
+	if err != nil {
+		t.Fatalf("AddTask should handle cycle gracefully, got: %v", err)
+	}
+
+	// Should resolve to disc-1 or disc-2 (whichever the cycle stops at)
+	index, _ = LoadIndex(indexPath)
+	if index.tasks[id].SourceTaskID == "" {
+		t.Error("SourceTaskID should be set even with cycle")
+	}
+}
+
+func TestAddTask_SourceResolution_SkippedSourceResolves(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// disc-1 is a SKIPPED fix-task for source "1.1"
+	fix1ID, _ := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 1",
+		SourceTaskID: "1.1",
+	})
+	index, _ := LoadIndex(indexPath)
+	tmp3 := index.tasks[fix1ID]
+	tmp3.Status = "skipped"
+	index.tasks[fix1ID] = tmp3
+	SaveIndex(indexPath, index)
+
+	// disc-2 → disc-1 (skipped) → resolves to 1.1
+	fix2ID, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 2",
+		SourceTaskID: fix1ID,
+	})
+	if err != nil {
+		t.Fatalf("AddTask failed: %v", err)
+	}
+
+	index, _ = LoadIndex(indexPath)
+	if index.tasks[fix2ID].SourceTaskID != "1.1" {
+		t.Errorf("disc-2 SourceTaskID should resolve to '1.1' (skipped source), got %q", index.tasks[fix2ID].SourceTaskID)
+	}
+}
+
+func TestResolveSourceTask_Direct(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+	index, _ := LoadIndex(indexPath)
+
+	// 1.1 has no SourceTaskID → direct passthrough
+	result := ResolveSourceTask(index, "1.1")
+	if result != "1.1" {
+		t.Errorf("expected '1.1', got %q", result)
+	}
+}
+
+func TestResolveSourceTask_NotFound(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+	index, _ := LoadIndex(indexPath)
+
+	// Nonexistent task → return as-is
+	result := ResolveSourceTask(index, "nonexistent")
+	if result != "nonexistent" {
+		t.Errorf("expected 'nonexistent', got %q", result)
 	}
 }
 
@@ -901,7 +1202,7 @@ func TestAddDependency_LookupByID(t *testing.T) {
 
 	index, _ := LoadIndex(indexPath)
 	task := index.tasks["1.2-setup"]
-	if !containsSlice(task.Dependencies, "disc-1") {
+	if !slices.Contains(task.Dependencies, "disc-1") {
 		t.Errorf("expected disc-1 in dependencies, got %v", task.Dependencies)
 	}
 }
@@ -955,7 +1256,7 @@ func TestGetUnmetDependencies_SlugKeyDeps_Pending(t *testing.T) {
 	AddTask(indexPath, AddTaskOpts{Title: "Watcher", Dependencies: []string{"1.2"}})
 
 	unmet, _ := GetUnmetDependencies(indexPath, "disc-1")
-	if !containsSlice(unmet, "1.2") {
+	if !slices.Contains(unmet, "1.2") {
 		t.Errorf("expected 1.2 in unmet, got %v", unmet)
 	}
 }

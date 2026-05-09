@@ -33,8 +33,8 @@ Check before running. Abort and prompt user if missing:
 
 ## Skip Conditions
 
-1. **No extractable rules**: The PRD/design contains no explicit business rules or technical conventions (e.g., pure CRUD with no domain logic). Mark task as completed with `coverage: -1.0`.
-2. **All items are LOCAL**: After extraction, every item is feature-specific with no cross-cutting candidates. Generate preview files but skip integration. Mark task as completed with `coverage: -1.0`.
+1. **No extractable rules**: The PRD/design contains no explicit business rules or technical conventions (e.g., pure CRUD with no domain logic). Mark task as completed.
+2. **All items are LOCAL**: After extraction, every item is feature-specific with no cross-cutting candidates. Generate preview files but skip integration. Mark task as completed.
 3. **Non-interactive session**: Running under `/run-tasks` dispatcher with no user present and CROSS items exist. Write preview files, mark task as `blocked`, and note "User review required for integration."
 
 ## Workflow
@@ -200,7 +200,7 @@ biz_count: 0
 tech_count: 0
 ```
 
-Then proceed directly to **Step 9** (Record Task) with `coverage: -1.0`. The preview files remain for traceability.
+Then proceed directly to **Step 9** (Record Task). The preview files remain for traceability.
 
 ## Step 6: Present to User for Review
 
@@ -314,7 +314,7 @@ Invoke the skill:
 Skill(skill="record-task")
 ```
 
-Set `coverage: -1.0` in record.json (documentation extraction task, no tests).
+Omit `coverage` from record.json — the noTest flag in index.json auto-sets it.
 
 ## Rules
 

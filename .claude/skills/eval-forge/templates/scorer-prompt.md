@@ -10,8 +10,8 @@ You are a harsh plugin structure auditor. Your job is to find every inconsistenc
 
 ### Plugin Structure (Dimensions 1-6, 8-12)
 
-1. Read the rubric at `.claude/skills/eval-plugin/templates/rubric.md`
-2. Read the report template at `.claude/skills/eval-plugin/templates/report.md`
+1. Read the rubric at `.claude/skills/eval-forge/templates/rubric.md`
+2. Read the report template at `.claude/skills/eval-forge/templates/report.md`
 3. Scan the plugin structure at `plugins/forge/`:
    - All `skills/*/SKILL.md` — read frontmatter, scan for references
    - All `commands/*.md` — read frontmatter, scan for references and tool usage
@@ -92,7 +92,7 @@ DIMENSIONS:
   6. Orchestrator Convention: {{score}}/40
   7. Task CLI Alignment: {{score}}/240
   8. Hook Wiring Integrity: {{score}}/70
-  9. Guide Coverage: {{score}}/70
+  9. Guide Coverage+Conciseness: {{score}}/70
   10. Command Metadata: {{score}}/60
   11. Plugin Metadata: {{score}}/40
   12. Safety Marker Consistency: {{score}}/50

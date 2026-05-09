@@ -5,6 +5,8 @@ priority: "P1"
 estimated_time: "30min-1h"
 dependencies: ["T-test-2"]
 status: pending
+noTest: false
+mainSession: false
 ---
 
 # Run e2e Tests

@@ -23,3 +23,5 @@ task-cli/check.out
 # Dependencies
 node_modules/
 task-cli/*.out
+test-results/.last-run.json
+tests/e2e/results/.last-run.json
