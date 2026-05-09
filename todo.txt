@@ -19,3 +19,4 @@
 19、task claim输出breaking字段的值。done
 20、补充一个git-checkout命令，创建一个与正在讨论的提案或feature名称相同的分支。done
 21、all-completed stop hook：just lint 等出现错误，追加任务到index.json
+22、增加一个开启subagent评估一致性的skill
