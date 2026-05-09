@@ -61,8 +61,8 @@ func cleanupCompletedTaskState() {
 		return
 	}
 
-	// Delete state file if task is completed
-	if t.Status == "completed" {
+	// Delete state file if task is completed or blocked
+	if t.Status == "completed" || t.Status == "blocked" {
 		os.Remove(statePath)
 
 		// Also delete record.json if exists

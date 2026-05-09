@@ -117,9 +117,13 @@ Invoke the skill (it contains file locations, JSON format, and CLI usage):
 Skill(skill="record-task")
 ```
 
-Output: `Step 4/5: Recording task... DONE`
+After `task record` completes, check the STATUS field in the output block:
+- `STATUS: completed` → Output `Step 4/5: Recording task... DONE`, proceed to Step 5
+- `STATUS: blocked` (auto-downgraded due to test failures) → Output `Step 4/5: Recording task... BLOCKED`, skip Step 5
 
 ### Step 5: Commit
+
+Only execute if Step 4 STATUS was "completed".
 
 Use the Skill tool to invoke git-commit:
 
@@ -131,7 +135,7 @@ Output: `Step 5/5: Git commit... DONE`
 
 ## Output Format
 
-**Required output pattern** (keep it brief):
+**Completed path**:
 
 ```
 Step 1/5: Reading task definition... DONE
@@ -141,6 +145,17 @@ Step 4/5: Recording task... DONE
 Step 5/5: Git commit... DONE
 
 DONE: {{TASK_ID}} | ✅ | <commit-hash> | <one-line-summary>
+```
+
+**Blocked path** (task auto-downgraded, fix tasks needed):
+
+```
+Step 1/5: Reading task definition... DONE
+Step 2/5: TDD implementation... DONE (6 tests, 3 failed)
+Step 3/5: Verification... DONE (coverage: 60%)
+Step 4/5: Recording task... BLOCKED
+
+BLOCKED: {{TASK_ID}} | ⛔ | test failures | <one-line-summary>
 ```
 
 **Bad output** (AVOID):
