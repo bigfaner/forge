@@ -43,6 +43,48 @@ func TestValidateRecordData(t *testing.T) {
 		}
 	})
 
+	t.Run("completed with testsFailed auto-downgrades to blocked", func(t *testing.T) {
+		rd := &task.RecordData{
+			Status:       "completed",
+			Summary:      "Partial pass",
+			TestsPassed:  3,
+			TestsFailed:  2,
+			Coverage:     60.0,
+		}
+		old := os.Stderr
+		r, w, _ := os.Pipe()
+		os.Stderr = w
+		validateRecordData(rd, false)
+		w.Close()
+		os.Stderr = old
+
+		buf := make([]byte, 2048)
+		n, _ := r.Read(buf)
+		output := string(buf[:n])
+
+		if rd.Status != "blocked" {
+			t.Errorf("expected status downgraded to 'blocked', got %q", rd.Status)
+		}
+		if !strings.Contains(output, "auto-downgrading") {
+			t.Errorf("expected auto-downgrade warning in stderr, got: %s", output)
+		}
+	})
+
+	t.Run("force does NOT prevent auto-downgrade of testsFailed", func(t *testing.T) {
+		rd := &task.RecordData{
+			Status:       "completed",
+			Summary:      "Partial pass",
+			TestsPassed:  3,
+			TestsFailed:  2,
+			Coverage:     60.0,
+		}
+		validateRecordData(rd, true)
+
+		if rd.Status != "blocked" {
+			t.Errorf("expected status downgraded even with force=true, got %q", rd.Status)
+		}
+	})
+
 	t.Run("completed without test evidence triggers hard error", func(t *testing.T) {
 		if os.Getenv("TEST_VALIDATE_NO_TESTS") == "1" {
 			validateRecordData(&task.RecordData{Status: "completed", Summary: "Did the work", TestsPassed: 0, TestsFailed: 0, Coverage: 0}, false)

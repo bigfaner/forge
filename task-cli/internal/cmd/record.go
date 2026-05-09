@@ -244,6 +244,7 @@ func readRecordData(dataPath string) (*task.RecordData, error) {
 
 // validateRecordData checks required and recommended fields in task.RecordData.
 // Hard-required fields (missing = error): summary
+// Auto-downgrade: completed + testsFailed > 0 → blocked (non-overridable)
 // Hard validation for completed tasks (overridable with --force):
 //   - testsPassed=0 && testsFailed=0 with coverage >= 0
 //   - any acceptanceCriteria with met=false
@@ -259,6 +260,12 @@ func validateRecordData(rd *task.RecordData, force bool) {
 
 	if len(missing) > 0 {
 		Exit(ErrMissingFields(missing))
+	}
+
+	// Auto-downgrade: completed with test failures → blocked (non-overridable)
+	if rd.Status == "completed" && rd.TestsFailed > 0 {
+		fmt.Fprintf(os.Stderr, "---\nWARNING: %d test failures detected — auto-downgrading status from 'completed' to 'blocked'\nHINT: Fix test failures, then re-record with status 'completed'\n---\n", rd.TestsFailed)
+		rd.Status = "blocked"
 	}
 
 	if rd.Status != "completed" {

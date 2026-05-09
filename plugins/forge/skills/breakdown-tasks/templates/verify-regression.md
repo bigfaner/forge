@@ -38,10 +38,6 @@ No direct user story mapping. This is a standard regression verification task.
 - Read Playwright output for failure details (check `tests/e2e/test-results/` and terminal output)
 - Analyze each failure: is it a code bug, test script issue, or environment issue?
 - Run `task template fix-task` to view the fix-task template and required variables
-- Mark this task `blocked`:
-  ```bash
-  task status T-test-4.5 blocked
-  ```
 - For each distinct root cause, create a fix task:
   ```bash
   task add --template fix-task \
@@ -52,7 +48,8 @@ No direct user story mapping. This is a standard regression verification task.
            --var TEST_RESULTS="tests/e2e/test-results/" \
            --description "<root cause and context>"
   ```
+- When you record this task, the CLI will auto-downgrade `status: "completed"` to `status: "blocked"` if `testsFailed > 0` — do NOT manually set status to blocked
 - Fix tasks (P0) will be claimed before T-test-5 (P2)
-- After fix tasks complete, T-test-4.5 is unblocked and re-claimed for re-run
+- After fix tasks complete, T-test-4.5 is auto-restored to pending and re-claimed for re-run
 
 **Do NOT** attempt to fix failures inline — create fix tasks and let the dispatcher handle them.

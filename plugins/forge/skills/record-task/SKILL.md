@@ -114,9 +114,11 @@ task record <TASK_ID> --data docs/features/{slug}/tasks/process/record.json
 This single command automatically:
 
 1. ✅ Generates `records/*.md` from JSON
-2. ✅ Updates `index.json` status to `completed`
+2. ✅ Updates `index.json` status
 
-**You don't need to do anything else after calling this command.**
+After running, check the STATUS field in the output:
+- `STATUS: completed` → task recorded successfully, proceed to commit
+- `STATUS: blocked` → task was auto-downgraded (e.g. test failures), **do NOT commit**
 
 ## Validation Rules (enforced by CLI)
 
@@ -124,6 +126,7 @@ This single command automatically:
 
 | Condition | Error | Fix |
 |-----------|-------|-----|
+| `status=completed` + `testsFailed > 0` | Auto-downgrade to `blocked` | Fix the test failures, then re-record with `status: "completed"` |
 | `status=completed` + `testsPassed=0` + `testsFailed=0` + `coverage >= 0` | No test evidence | Run tests and report results, or set `coverage: -1.0` for no-test tasks |
 | `status=completed` + any `acceptanceCriteria.met=false` | Unmet acceptance criteria | Fix the issue, or set `status: "blocked"` |
 | `summary` is empty or whitespace | Missing summary | Provide a summary |

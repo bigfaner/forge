@@ -45,10 +45,6 @@ No direct user story mapping. This is a standard test execution task.
 - Read `results/test-results.json`
 - Analyze each failure: is it a code bug, test script issue, or environment issue?
 - Run `task template fix-task` to view the fix-task template and required variables
-- Mark this task `blocked` (not completed — it must re-run after fixes):
-  ```bash
-  task status T-test-3 blocked
-  ```
 - For each distinct root cause, create a fix task:
   ```bash
   task add --template fix-task \
@@ -59,7 +55,8 @@ No direct user story mapping. This is a standard test execution task.
            --var TEST_RESULTS="tests/e2e/features/<slug>/results/latest.md" \
            --description "<root cause and context>"
   ```
+- When you record this task, the CLI will auto-downgrade `status: "completed"` to `status: "blocked"` if `testsFailed > 0` — do NOT manually set status to blocked
 - Fix tasks (P0) will be claimed before T-test-4 (P1)
-- After fix tasks complete, T-test-3 is unblocked and re-claimed for re-run
+- After fix tasks complete, T-test-3 is auto-restored to pending and re-claimed for re-run
 
 **Do NOT** attempt to fix failures inline — create fix tasks and let the dispatcher handle them.

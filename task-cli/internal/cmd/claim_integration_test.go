@@ -111,14 +111,12 @@ func TestCheckExistingTaskState(t *testing.T) {
 		}
 	})
 
-	t.Run("state with unexpected task status", func(t *testing.T) {
+	t.Run("state with blocked task clears state and claims new", func(t *testing.T) {
 		dir := t.TempDir()
 		indexPath := filepath.Join(dir, "index.json")
 		statePath := filepath.Join(dir, "task-state.json")
 
-		index := &task.TaskIndex{
-
-		}
+		index := &task.TaskIndex{}
 			index.SetTasks(map[string]task.Task{
 				"task1": {ID: "1.1", Title: "Task 1", Status: "blocked"},
 			})
@@ -128,8 +126,33 @@ func TestCheckExistingTaskState(t *testing.T) {
 		task.SaveState(statePath, state)
 
 		cont, hasIssues, issues := checkExistingTaskState(dir, index, statePath)
+		if cont || hasIssues || len(issues) != 0 {
+			t.Errorf("expected (false, false, nil) for blocked, got (%v, %v, %v)", cont, hasIssues, issues)
+		}
+
+		// State should be deleted
+		if _, err := os.Stat(statePath); !os.IsNotExist(err) {
+			t.Error("state file should be deleted for blocked task")
+		}
+	})
+
+	t.Run("state with unexpected task status", func(t *testing.T) {
+		dir := t.TempDir()
+		indexPath := filepath.Join(dir, "index.json")
+		statePath := filepath.Join(dir, "task-state.json")
+
+		index := &task.TaskIndex{}
+			index.SetTasks(map[string]task.Task{
+				"task1": {ID: "1.1", Title: "Task 1", Status: "unknown_status"},
+			})
+		task.SaveIndex(indexPath, index)
+
+		state := &task.TaskState{TaskID: "1.1", Key: "task1"}
+		task.SaveState(statePath, state)
+
+		cont, hasIssues, issues := checkExistingTaskState(dir, index, statePath)
 		if cont || !hasIssues || len(issues) != 1 {
-			t.Errorf("expected (false, true, 1 issue), got (%v, %v, %v)", cont, hasIssues, issues)
+			t.Errorf("expected (false, true, 1 issue) for truly unexpected status, got (%v, %v, %v)", cont, hasIssues, issues)
 		}
 	})
 }

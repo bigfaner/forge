@@ -490,7 +490,7 @@ func TestExecuteClaim_CompletedStateClaimNew(t *testing.T) {
 	}
 }
 
-func TestExecuteClaim_UnexpectedStatus(t *testing.T) {
+func TestExecuteClaim_BlockedTaskClearsStateAndProceeds(t *testing.T) {
 	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 		"t1": {ID: "1.1", Title: "T1", Status: "blocked", Priority: "P0", File: "1.1.md"},
 	}})
@@ -500,11 +500,12 @@ func TestExecuteClaim_UnexpectedStatus(t *testing.T) {
 	task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1", StartedTime: "2026-01-01 10:00"})
 
 	_, err := executeClaim()
+	// Blocked task clears state, but no pending tasks to claim
 	if err == nil {
-		t.Error("expected error for unexpected status")
+		t.Error("expected error (no pending tasks)")
 	}
-	if !strings.Contains(err.Error(), "integrity") {
-		t.Errorf("error should mention integrity: %v", err)
+	if strings.Contains(err.Error(), "integrity") {
+		t.Errorf("blocked status should not trigger integrity error: %v", err)
 	}
 }
 
@@ -2089,5 +2090,223 @@ func TestRunRecord_AutoRestore_SlugKeyedSource(t *testing.T) {
 	// No duplicate key created under task ID
 	if _, hasDup := index.TasksMap()["T-test-3"]; hasDup {
 		t.Error("should not create duplicate entry under ID key 'T-test-3'")
+	}
+}
+
+func TestRunRecord_FixTaskAutoDowngrade_NoRestore(t *testing.T) {
+	dir := setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
+		"source": {ID: "T-test-3", Title: "Run e2e tests", Status: "blocked", Priority: "P0", File: "T-test-3.md", Record: "records/T-test-3.md", Dependencies: []string{"fix-1"}},
+		"fix-1":  {ID: "fix-1", Title: "Fix auth", Status: "in_progress", Priority: "P0", File: "fix-1.md", Record: "records/fix-1.md", SourceTaskID: "T-test-3"},
+	}})
+
+	rd := task.RecordData{
+		Status:       "completed",
+		Summary:      "Attempted fix, some tests still fail",
+		TestsPassed:  2,
+		TestsFailed:  1,
+		Coverage:     60.0,
+		KeyDecisions: []string{"partial fix"},
+	}
+	rdJSON, _ := json.Marshal(rd)
+	dataPath := filepath.Join(dir, "record.json")
+	os.WriteFile(dataPath, rdJSON, 0644)
+
+	statePath := feature.GetTaskStatePath(dir, "test")
+	task.SaveState(statePath, &task.TaskState{TaskID: "fix-1", Key: "fix-1", StartedTime: "2026-01-01 10:00"})
+
+	recordDataPath = dataPath
+	recordJSON = false
+	recordQuiet = false
+	recordForce = false
+
+	_ = captureStdout(func() {
+		runRecord(nil, []string{"fix-1"})
+	})
+
+	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
+	index, err := task.LoadIndex(indexPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if index.TasksMap()["fix-1"].Status != "blocked" {
+		t.Errorf("fix-task should be auto-downgraded to blocked, got %s", index.TasksMap()["fix-1"].Status)
+	}
+	if index.TasksMap()["source"].Status != "blocked" {
+		t.Errorf("source should stay blocked when fix-task also fails, got %s", index.TasksMap()["source"].Status)
+	}
+}
+
+func TestRunRecord_AutoDowngrade_ThenCleanup(t *testing.T) {
+	dir := setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
+		"task1": {ID: "1.1", Title: "Task 1", Status: "in_progress", Priority: "P0", File: "1.1.md", Record: "records/1.1.md"},
+	}})
+
+	rd := task.RecordData{
+		Status:       "completed",
+		Summary:      "Some tests failed",
+		TestsPassed:  3,
+		TestsFailed:  2,
+		Coverage:     60.0,
+		KeyDecisions: []string{"best effort"},
+	}
+	rdJSON, _ := json.Marshal(rd)
+	dataPath := filepath.Join(dir, "record.json")
+	os.WriteFile(dataPath, rdJSON, 0644)
+
+	statePath := feature.GetTaskStatePath(dir, "test")
+	task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "task1", StartedTime: "2026-01-01 10:00"})
+
+	recordDataPath = dataPath
+	recordJSON = false
+	recordQuiet = false
+	recordForce = false
+
+	_ = captureStdout(func() {
+		runRecord(nil, []string{"1.1"})
+	})
+
+	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
+	index, _ := task.LoadIndex(indexPath)
+	if index.TasksMap()["task1"].Status != "blocked" {
+		t.Fatalf("expected blocked, got %s", index.TasksMap()["task1"].Status)
+	}
+
+	// state.json persists after record (record.go doesn't delete it)
+	if _, err := os.Stat(statePath); os.IsNotExist(err) {
+		t.Fatal("state.json should exist after record")
+	}
+
+	// Cleanup should delete state.json for blocked tasks
+	cleanupCompletedTaskState()
+
+	if _, err := os.Stat(statePath); !os.IsNotExist(err) {
+		t.Error("state.json should be deleted by cleanup for blocked task")
+	}
+}
+
+func TestRunRecord_AutoDowngrade_ThenClaim(t *testing.T) {
+	dir := setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
+		"task1": {ID: "1.1", Title: "Task 1", Status: "in_progress", Priority: "P0", File: "1.1.md", Record: "records/1.1.md"},
+		"task2": {ID: "1.2", Title: "Task 2", Status: "pending", Priority: "P1", File: "1.2.md", Record: "records/1.2.md"},
+	}})
+
+	rd := task.RecordData{
+		Status:       "completed",
+		Summary:      "Tests failed",
+		TestsPassed:  3,
+		TestsFailed:  2,
+		Coverage:     60.0,
+		KeyDecisions: []string{"partial"},
+	}
+	rdJSON, _ := json.Marshal(rd)
+	dataPath := filepath.Join(dir, "record.json")
+	os.WriteFile(dataPath, rdJSON, 0644)
+
+	statePath := feature.GetTaskStatePath(dir, "test")
+	task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "task1", StartedTime: "2026-01-01 10:00"})
+
+	recordDataPath = dataPath
+	recordJSON = false
+	recordQuiet = false
+	recordForce = false
+
+	_ = captureStdout(func() {
+		runRecord(nil, []string{"1.1"})
+	})
+
+	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
+	index, _ := task.LoadIndex(indexPath)
+	if index.TasksMap()["task1"].Status != "blocked" {
+		t.Fatalf("expected blocked, got %s", index.TasksMap()["task1"].Status)
+	}
+
+	// Claim should clear blocked state and claim task2
+	result, err := executeClaim()
+	if err != nil {
+		t.Fatalf("claim should succeed after blocked task cleanup: %v", err)
+	}
+	if result.Task.ID != "1.2" {
+		t.Errorf("expected to claim task2, got %s", result.Task.ID)
+	}
+
+	// New state should be for task2
+	newStatePath := feature.GetTaskStatePath(dir, "test")
+	newState, _ := task.LoadState(newStatePath)
+	if newState.TaskID != "1.2" {
+		t.Errorf("new state should be for task2, got %s", newState.TaskID)
+	}
+}
+
+func TestRunRecord_MultiFixTask_PartialDowngrade(t *testing.T) {
+	dir := setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
+		"source": {ID: "T-test-3", Title: "Run e2e tests", Status: "blocked", Priority: "P0", File: "T-test-3.md", Record: "records/T-test-3.md", Dependencies: []string{"fix-1", "fix-2"}},
+		"fix-1":  {ID: "fix-1", Title: "Fix auth", Status: "in_progress", Priority: "P0", File: "fix-1.md", Record: "records/fix-1.md", SourceTaskID: "T-test-3"},
+		"fix-2":  {ID: "fix-2", Title: "Fix timeout", Status: "pending", Priority: "P0", File: "fix-2.md", Record: "records/fix-2.md", SourceTaskID: "T-test-3"},
+	}})
+
+	// Step 1: Record fix-1 as completed
+	rd1 := task.RecordData{
+		Status:       "completed",
+		Summary:      "Fixed auth",
+		TestsPassed:  3,
+		Coverage:     85.0,
+		KeyDecisions: []string{"added retry"},
+		AcceptanceCriteria: []task.AcceptanceCriterion{{Criterion: "Tests pass", Met: true}},
+	}
+	rd1JSON, _ := json.Marshal(rd1)
+	dataPath1 := filepath.Join(dir, "record1.json")
+	os.WriteFile(dataPath1, rd1JSON, 0644)
+
+	statePath := feature.GetTaskStatePath(dir, "test")
+	task.SaveState(statePath, &task.TaskState{TaskID: "fix-1", Key: "fix-1", StartedTime: "2026-01-01 10:00"})
+
+	recordDataPath = dataPath1
+	recordJSON = false
+	recordQuiet = false
+	recordForce = false
+
+	_ = captureStdout(func() {
+		runRecord(nil, []string{"fix-1"})
+	})
+
+	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
+	index, _ := task.LoadIndex(indexPath)
+
+	if index.TasksMap()["fix-1"].Status != "completed" {
+		t.Fatalf("fix-1 should be completed, got %s", index.TasksMap()["fix-1"].Status)
+	}
+	if index.TasksMap()["source"].Status != "blocked" {
+		t.Errorf("source should stay blocked with fix-2 pending, got %s", index.TasksMap()["source"].Status)
+	}
+
+	// Step 2: Record fix-2 with test failures (auto-downgrade)
+	task.SaveState(statePath, &task.TaskState{TaskID: "fix-2", Key: "fix-2", StartedTime: "2026-01-01 11:00"})
+
+	rd2 := task.RecordData{
+		Status:       "completed",
+		Summary:      "Attempted fix, tests still fail",
+		TestsPassed:  2,
+		TestsFailed:  1,
+		Coverage:     50.0,
+		KeyDecisions: []string{"partial"},
+	}
+	rd2JSON, _ := json.Marshal(rd2)
+	dataPath2 := filepath.Join(dir, "record2.json")
+	os.WriteFile(dataPath2, rd2JSON, 0644)
+
+	recordDataPath = dataPath2
+
+	_ = captureStdout(func() {
+		runRecord(nil, []string{"fix-2"})
+	})
+
+	index, _ = task.LoadIndex(indexPath)
+
+	if index.TasksMap()["fix-2"].Status != "blocked" {
+		t.Errorf("fix-2 should be auto-downgraded to blocked, got %s", index.TasksMap()["fix-2"].Status)
+	}
+	if index.TasksMap()["source"].Status != "blocked" {
+		t.Errorf("source should stay blocked when fix-2 is blocked, got %s", index.TasksMap()["source"].Status)
 	}
 }

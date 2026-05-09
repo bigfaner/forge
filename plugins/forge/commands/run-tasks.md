@@ -109,7 +109,20 @@ Or empty string if no phase summary exists.
 
 ### Step 3: Verify Record
 
-Check if record file exists after agent completes.
+Check if record file exists after agent completes. Then check the task's actual status via CLI:
+
+```bash
+task query <TASK_ID>
+```
+
+- If STATUS is not `"completed"`: task was auto-downgraded (e.g. test failures).
+  Before spawning fix tasks, check if fix tasks already exist:
+  ```bash
+  grep -l "sourceTaskID.*<TASK_ID>" docs/features/<FEATURE>/tasks/index.json
+  ```
+  If fix tasks already exist for this source → skip, they are already in progress.
+  If no fix tasks exist → spawn fix task (same as Step 5a failure handling).
+- Only proceed if STATUS is `"completed"`
 
 ### Step 4: Context Check
 
