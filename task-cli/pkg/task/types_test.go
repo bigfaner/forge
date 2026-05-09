@@ -31,7 +31,7 @@ func TestNewTaskIndex(t *testing.T) {
 				t.Errorf("Tasks map should be empty, got %d items", len(index.tasks))
 			}
 			// Check default status enum
-			expectedStatuses := []string{"pending", "in_progress", "completed", "blocked", "skipped"}
+			expectedStatuses := []string{"pending", "in_progress", "completed", "blocked", "skipped", "rejected"}
 			if len(index.StatusEnum) != len(expectedStatuses) {
 				t.Errorf("StatusEnum length = %d, want %d", len(index.StatusEnum), len(expectedStatuses))
 			}

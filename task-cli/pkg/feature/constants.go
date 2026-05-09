@@ -74,6 +74,7 @@ const (
 	StatusCompleted  = "completed"
 	StatusBlocked    = "blocked"
 	StatusSkipped    = "skipped"
+	StatusRejected   = "rejected"
 )
 
 // Priority values

@@ -1649,3 +1649,65 @@ dependencies: ["2"]
 		}
 	})
 }
+
+func TestValidator_ValidateTasks_RejectedStatusValid(t *testing.T) {
+	v := &validator{filePath: "test.json"}
+	tasks := map[string]task.Task{
+		"a": {ID: "1.1", Title: "Task", File: "1.1.md", Status: "rejected"},
+	}
+	v.validateTasks(tasks)
+	if len(v.errors) != 0 {
+		t.Errorf("rejected should be a valid status, got errors: %v", v.errors)
+	}
+}
+
+func TestValidator_ValidateLiveness_BlockedWithRejectedDep(t *testing.T) {
+	v := &validator{filePath: "test.json"}
+	tasks := map[string]task.Task{
+		"blocked-task": {ID: "1.1", Status: "blocked", Dependencies: []string{"1.2"}},
+		"rejected-dep": {ID: "1.2", Status: "rejected"},
+	}
+	v.validateLiveness(tasks)
+	found := false
+	for _, w := range v.warnings {
+		if strings.Contains(w, "no path to resolution") {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("blocked on rejected dep should warn 'no path to resolution', got: %v", v.warnings)
+	}
+}
+
+func TestValidator_ValidateLiveness_RejectedTaskNotFlagged(t *testing.T) {
+	v := &validator{filePath: "test.json"}
+	tasks := map[string]task.Task{
+		"rejected-task": {ID: "1.1", Status: "rejected", Dependencies: []string{"1.2"}},
+		"completed-dep": {ID: "1.2", Status: "completed"},
+	}
+	v.validateLiveness(tasks)
+	for _, w := range v.warnings {
+		if strings.Contains(w, "1.1") {
+			t.Errorf("rejected task should not be flagged by liveness checks, got: %s", w)
+		}
+	}
+}
+
+func TestValidator_ValidateLiveness_BlockedOnRejectedViaWildcard(t *testing.T) {
+	v := &validator{filePath: "test.json"}
+	tasks := map[string]task.Task{
+		"blocked-task": {ID: "2.1", Status: "blocked", Dependencies: []string{"1.x"}},
+		"1.1":          {ID: "1.1", Status: "completed"},
+		"1.2":          {ID: "1.2", Status: "rejected"},
+	}
+	v.validateLiveness(tasks)
+	found := false
+	for _, w := range v.warnings {
+		if strings.Contains(w, "no path to resolution") {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("blocked on wildcard with rejected task should warn, got: %v", v.warnings)
+	}
+}

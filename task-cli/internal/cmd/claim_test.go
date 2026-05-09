@@ -869,3 +869,60 @@ func TestPrintTaskDetails_ScopeInOutput(t *testing.T) {
 		}
 	})
 }
+
+func TestCheckExistingTaskState_Rejected(t *testing.T) {
+	t.Run("rejected state claims new task", func(t *testing.T) {
+		index := &task.TaskIndex{Feature: "test"}
+		index.SetTasks(map[string]task.Task{
+			"task-a": {ID: "1.1", Status: "rejected", File: "1.1.md"},
+		})
+		state := &task.TaskState{Key: "task-a", TaskID: "1.1"}
+		statePath := filepath.Join(t.TempDir(), "state.json")
+		task.SaveState(statePath, state)
+
+		cont, hasIssues, _ := checkExistingTaskState("", index, statePath)
+		if cont {
+			t.Error("should not continue rejected task")
+		}
+		if hasIssues {
+			t.Error("rejected should not be an integrity issue")
+		}
+	})
+}
+
+func TestCheckDependenciesMet_RejectedDep(t *testing.T) {
+	t.Run("rejected dep is not met", func(t *testing.T) {
+		index := &task.TaskIndex{Feature: "test"}
+		index.SetTasks(map[string]task.Task{
+			"task-a": {ID: "1.1", Status: "rejected"},
+		})
+		met, _ := checkDependenciesMet(index, "1.2", task.Task{ID: "1.2", Dependencies: []string{"1.1"}})
+		if met {
+			t.Error("rejected dependency should not be met")
+		}
+	})
+
+	t.Run("rejected wildcard dep is not met", func(t *testing.T) {
+		index := &task.TaskIndex{Feature: "test"}
+		index.SetTasks(map[string]task.Task{
+			"1.1": {ID: "1.1", Status: "completed"},
+			"1.2": {ID: "1.2", Status: "rejected"},
+			"2.1": {ID: "2.1", Status: "pending", Dependencies: []string{"1.x"}},
+		})
+		met, _ := checkDependenciesMet(index, "2.1", index.TasksMap()["2.1"])
+		if met {
+			t.Error("wildcard with rejected task should not be met")
+		}
+	})
+}
+
+func TestClaimNextTask_RejectedNotClaimable(t *testing.T) {
+	index := &task.TaskIndex{Feature: "test"}
+	index.SetTasks(map[string]task.Task{
+		"task-a": {ID: "1.1", Status: "rejected", Priority: "P0", File: "1.1.md"},
+	})
+	_, _, err := claimNextTask(index)
+	if err == nil {
+		t.Error("should error when only rejected tasks exist")
+	}
+}

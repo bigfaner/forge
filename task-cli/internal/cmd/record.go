@@ -153,7 +153,7 @@ func runRecord(cmd *cobra.Command, args []string) {
 	t.Status = rd.Status
 	index.SetTask(key, *t)
 
-	// Auto-restore: if this task has a SourceTaskID and completed or skipped, check if source can be unblocked
+	// Auto-restore: if this fix-task completed or skipped, check if source can be unblocked
 	if t.SourceTaskID != "" && (rd.Status == "completed" || rd.Status == "skipped") {
 		autoRestoreSourceTask(index, t.SourceTaskID)
 	}
@@ -178,7 +178,7 @@ func runRecord(cmd *cobra.Command, args []string) {
 }
 
 // saveIndexAndSignalCompletion saves the index and writes .forge/state.json
-// if all tasks are completed or skipped.
+// if all tasks are completed or skipped (rejected does not count as done).
 func saveIndexAndSignalCompletion(indexPath, projectRoot, featureSlug string, index *task.TaskIndex) {
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		Exit(NewAIError(ErrConflict, "Failed to update task index", err.Error(), "Check index.json is writable", "cat "+indexPath))

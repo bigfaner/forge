@@ -33,11 +33,24 @@ func TestIsTransitionAllowed(t *testing.T) {
 		{"completed", "in_progress", false},
 		{"completed", "blocked", false},
 		{"completed", "skipped", false},
+		{"completed", "rejected", false},
+		// Rejected is terminal
+		{"rejected", "pending", false},
+		{"rejected", "in_progress", false},
+		{"rejected", "blocked", false},
+		{"rejected", "skipped", false},
+		{"rejected", "completed", false},
+		{"rejected", "rejected", true},
 		// Must use task record
 		{"in_progress", "completed", false},
 		{"pending", "completed", false},
 		{"blocked", "completed", false},
 		{"skipped", "completed", false},
+		// Transitions to rejected allowed from non-terminal states
+		{"pending", "rejected", true},
+		{"in_progress", "rejected", true},
+		{"blocked", "rejected", true},
+		{"skipped", "rejected", true},
 	}
 
 	for _, tt := range tests {
@@ -311,6 +324,8 @@ func TestGetTransitionHint(t *testing.T) {
 	}{
 		{"completed", "pending", "completed is a terminal state"},
 		{"completed", "in_progress", "completed is a terminal state"},
+		{"rejected", "pending", "rejected is a terminal state"},
+		{"rejected", "in_progress", "rejected is a terminal state"},
 		{"in_progress", "completed", "use 'task record' to complete a task with quality gate"},
 		{"pending", "completed", "use 'task record' to complete a task with quality gate"},
 		{"pending", "in_progress", "transition pending -> in_progress is not allowed"},
@@ -334,6 +349,8 @@ func TestGetTransitionAction(t *testing.T) {
 	}{
 		{"completed", "pending", "use --force to override"},
 		{"completed", "blocked", "use --force to override"},
+		{"rejected", "pending", "use --force to override"},
+		{"rejected", "blocked", "use --force to override"},
 		{"in_progress", "completed", "task record"},
 		{"pending", "completed", "task record"},
 		{"pending", "in_progress", "use --force to override"},
@@ -346,4 +363,31 @@ func TestGetTransitionAction(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCheckUnmetDeps_RejectedDepNotSatisfied(t *testing.T) {
+	t.Run("rejected exact dep is unmet", func(t *testing.T) {
+		index := &task.TaskIndex{Feature: "test"}
+		index.SetTasks(map[string]task.Task{
+			"a": {ID: "a", Dependencies: []string{"b"}},
+			"b": {ID: "b", Status: "rejected"},
+		})
+		unmet := checkUnmetDeps(index, &task.Task{ID: "a", Dependencies: []string{"b"}})
+		if len(unmet) != 1 || unmet[0] != "b" {
+			t.Errorf("rejected dep should be unmet, got %v", unmet)
+		}
+	})
+
+	t.Run("rejected wildcard dep is unmet", func(t *testing.T) {
+		index := &task.TaskIndex{Feature: "test"}
+		index.SetTasks(map[string]task.Task{
+			"a":   {ID: "a"},
+			"1.1": {ID: "1.1", Status: "completed"},
+			"1.2": {ID: "1.2", Status: "rejected"},
+		})
+		unmet := checkUnmetDeps(index, &task.Task{ID: "a", Dependencies: []string{"1.x"}})
+		if len(unmet) != 1 || unmet[0] != "1.2" {
+			t.Errorf("wildcard should report rejected task as unmet, got %v", unmet)
+		}
+	})
 }

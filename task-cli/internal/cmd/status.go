@@ -24,7 +24,7 @@ Without status argument: query current status.
 With status argument: update to new status.
 
 State machine guards:
-  - completed is terminal (cannot leave without --force)
+  - completed and rejected are terminal (cannot leave without --force)
   - in_progress -> completed is blocked (use "task record" instead)
   - pending/in_progress transitions require all dependencies to be completed or skipped`,
 	Args: cobra.RangeArgs(1, 2),
@@ -121,12 +121,13 @@ func runStatus(cmd *cobra.Command, args []string) {
 }
 
 // isTransitionAllowed returns true if the state transition is valid.
-// completed is terminal. in_progress -> completed must go through task record.
+// completed and rejected are terminal. in_progress -> completed must go through task record.
+// rejected does not satisfy dependency checks — downstream tasks cannot proceed.
 func isTransitionAllowed(from, to string) bool {
 	if from == to {
 		return true
 	}
-	if from == "completed" {
+	if from == "completed" || from == "rejected" {
 		return false
 	}
 	if to == "completed" {
@@ -139,6 +140,9 @@ func getTransitionHint(from, to string) string {
 	if from == "completed" {
 		return "completed is a terminal state"
 	}
+	if from == "rejected" {
+		return "rejected is a terminal state (task ran but acceptance criteria not met)"
+	}
 	if to == "completed" {
 		return "use 'task record' to complete a task with quality gate"
 	}
@@ -146,7 +150,7 @@ func getTransitionHint(from, to string) string {
 }
 
 func getTransitionAction(from, to string) string {
-	if from == "completed" {
+	if from == "completed" || from == "rejected" {
 		return "use --force to override (may break lifecycle tracking)"
 	}
 	if to == "completed" {
