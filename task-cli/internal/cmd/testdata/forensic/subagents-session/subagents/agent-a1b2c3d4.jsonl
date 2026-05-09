@@ -1,0 +1,2 @@
+{"type": "assistant", "message": {"id": "m1", "role": "assistant", "model": "glm-5", "content": [{"type": "thinking", "thinking": "exploring..."}, {"type": "tool_use", "name": "Grep", "id": "c1", "input": {"pattern": "forensic"}}]}}
+{"type": "user", "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "c1", "content": "found 3 matches"}]}}
