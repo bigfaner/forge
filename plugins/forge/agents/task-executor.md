@@ -199,7 +199,7 @@ Violating this rule breaks the dispatcher's control loop.
 ### Dynamic Task Addition
 
 When discovering issues beyond the current task's scope (pre-existing bugs, environment issues,
-failures in unrelated modules), run `task template fix-task` to view the template, then:
+failures in unrelated modules), run `task template fix-task` to view the template. Auto-generated fix-task IDs follow the `disc-N` format (e.g., `disc-1`, `disc-2`). Then:
 
 1. Mark source task blocked so it's not in_progress when fix task is added:
    ```bash

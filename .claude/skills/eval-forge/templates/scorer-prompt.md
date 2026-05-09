@@ -92,7 +92,7 @@ DIMENSIONS:
   6. Orchestrator Convention: {{score}}/40
   7. Task CLI Alignment: {{score}}/240
   8. Hook Wiring Integrity: {{score}}/70
-  9. Guide Coverage: {{score}}/70
+  9. Guide Coverage+Conciseness: {{score}}/70
   10. Command Metadata: {{score}}/60
   11. Plugin Metadata: {{score}}/40
   12. Safety Marker Consistency: {{score}}/50

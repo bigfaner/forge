@@ -54,7 +54,7 @@ task claim
 - `FILE` (e.g., full absolute path to task file)
 - `BREAKING` (e.g., "true" or absent)
 - `MAIN_SESSION` (e.g., "true" or absent)
-- `SCOPE` (e.g., "frontend", "backend", or "all" — defaults to "all" if absent)
+- `SCOPE` (e.g., "frontend", "backend", or "all" — defaults to "all" if absent; may be omitted entirely by claim output when not set)
 - `NO_TEST` (e.g., "true" or "false")
 - `FEATURE` (e.g., "my-feature" — feature slug from claim output)
 

@@ -3,7 +3,7 @@
   "title": "Task Index Schema",
   "description": "Schema for task index file",
   "type": "object",
-  "required": ["feature", "prd", "design", "created", "status", "tasks"],
+  "required": ["feature", "created", "status", "tasks"],
   "properties": {
     "feature": {
       "type": "string"
@@ -13,6 +13,10 @@
     },
     "design": {
       "type": "string"
+    },
+    "proposal": {
+      "type": "string",
+      "description": "Path to proposal document (quick mode alternative to prd/design)"
     },
     "created": {
       "type": "string",

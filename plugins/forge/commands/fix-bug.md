@@ -31,6 +31,14 @@ Core principle: never touch production code until a failing test proves the bug 
 1. Understand → 2. Reproduce → 3. Write failing tests → 4. Fix → 5. Verify → 6. Commit
 ```
 
+<EXTREMELY-IMPORTANT>
+- Never touch production code until a failing test proves the bug exists (Step 3 before Step 4)
+- Fix only what the failing tests require — no scope creep, no refactoring, no "improvements"
+- Tests and fix must be committed together in a single atomic commit
+- If the bug cannot be reproduced (Step 2), STOP and report — do not write tests or fix code for an unconfirmed bug
+- All quality gate checks must pass before committing (Step 5)
+</EXTREMELY-IMPORTANT>
+
 ---
 
 ## Step 1: Understand the Bug

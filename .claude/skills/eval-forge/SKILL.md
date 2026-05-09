@@ -189,7 +189,7 @@ After the reviser completes:
 | 6. Orchestrator Convention | {{d6}} | 40 |
 | 7. Task CLI Alignment | {{d7}} | 240 |
 | 8. Hook Wiring Integrity | {{d8}} | 70 |
-| 9. Guide Coverage | {{d9}} | 70 |
+| 9. Guide Coverage+Conciseness | {{d9}} | 70 |
 | 10. Command Metadata | {{d10}} | 60 |
 | 11. Plugin Metadata | {{d11}} | 40 |
 | 12. Safety Marker Consistency | {{d12}} | 50 |

@@ -341,7 +341,7 @@ Replace `{{T_TEST_1_DEP}}` with the last phase's gate ID if a gate exists (e.g.,
 - T-test-4.5: run full regression suite; on failure, mark blocked, add fix tasks (P0) with unblock instruction — re-runs after fix
 - T-test-5: extract business rules and tech specs, user reviews and confirms integration
 
-**Fix-task reference**: Templates are managed by task-cli and embedded in the binary. Agents should run `task template fix-task` to view the template and required variables before creating fix tasks. When adding a fix task, the source task MUST be marked `blocked` first (so it's not `in_progress` and the P0 fix task can be claimed immediately):
+**Fix-task reference**: Templates are managed by task-cli and embedded in the binary. Auto-generated fix-task IDs follow the `disc-N` format (e.g., `disc-1`, `disc-2`). Agents should run `task template fix-task` to view the template and required variables before creating fix tasks. When adding a fix task, the source task MUST be marked `blocked` first (so it's not `in_progress` and the P0 fix task can be claimed immediately):
 
 ```bash
 task status <source-task-id> blocked

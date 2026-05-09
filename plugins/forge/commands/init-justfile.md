@@ -2,6 +2,7 @@
 name: init-justfile
 description: Scaffold a Justfile with standard forge targets for the current project.
 allowed_tools: ["Bash", "Read", "Write", "Edit"]
+argument-hints: "[--lang go|rust|python|node] [--type frontend|backend|mixed] [--force]"
 ---
 
 # /init-justfile

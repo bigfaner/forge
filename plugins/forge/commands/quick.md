@@ -2,6 +2,7 @@
 name: quick
 description: Streamlined pipeline for small features (1-2h, 1-4 tasks). Brainstorm -> tasks -> execute, no PRD or design. Supports --no-test flag.
 allowed_tools: ["Bash", "Read", "Write", "Edit", "Grep", "Glob", "Agent", "Skill", "AskUserQuestion"]
+argument-hints: "[--no-test]"
 ---
 
 # /quick
