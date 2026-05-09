@@ -64,6 +64,40 @@ graph LR
 
 Each skill checks prerequisites with `ls` before execution; aborts and prompts user if missing.
 
+### Quick Mode
+
+For small features (1-2h, 1-4 tasks), use the streamlined pipeline:
+
+```mermaid
+graph LR
+    Q0["/quick"] --> Q1["/brainstorm<br>proposal.md"]
+    Q1 --> Q2{"human confirm"}
+    Q2 -->|"yes"| Q3["/quick-tasks<br>tasks/*.md + index.json"]
+    Q2 -->|"revise"| Q1
+    Q3 --> Q4["/run-tasks<br>auto-execute"]
+```
+
+**When to use Quick Mode:**
+- Feature is 1-2 hours of work
+- 1-4 tasks maximum
+- No complex architecture decisions needed
+- Proposal provides enough context (no PRD/design needed)
+
+**When to use Full Mode:**
+- Feature >2 hours or >4 tasks
+- Requires PRD with acceptance criteria
+- Needs tech design with architecture decisions
+- Has UI design requirements
+- Needs multi-phase execution with gates
+
+**Quick mode differences:**
+- No PRD, no design, no eval steps
+- `proposal.md` is the sole input document
+- Flat task list (no phases, no gates, no summaries)
+- T-quick-1~5 test tasks (subset of T-test 7 tasks: skips gen-sitemap prerequisite, eval-test-cases, consolidate-specs)
+- Simplified manifest (no Traceability table)
+- `--no-test` flag skips T-quick-1~5
+
 ### Manifest
 
 `manifest.md` is the single entry point for a Feature. An AI agent reads this file to understand the full context:

@@ -24,6 +24,7 @@
 | run-e2e-tests | Execute e2e test scripts and generate a results report. Runs UI tests via Playwright, API tests via fetch, CLI tests via child_process. Produces evidence-backed pass/fail report. |
 | graduate-tests | Migrate feature test scripts to the regression suite (tests/e2e/). Agent-driven: reads scripts, analyzes content, decides classification, splits/merges as needed, rewrites imports, creates graduation marker. |
 | consolidate-specs | Extract business rules and tech specs from feature docs into preview files, detect overlaps with existing knowledge, user confirms before integrating to project-level dirs. |
+| quick-tasks | Use for small features (1-2h, 1-4 tasks) to generate tasks directly from proposal. No PRD or design needed. Supports --no-test to skip test tasks. |
 
 ## Commands
 
@@ -40,3 +41,4 @@ Invoked via `/command-name`. Commands live in `commands/` directory.
 | record-decision | Record an architecture/technical decision to docs/decisions/ at any stage of development. |
 | extract-design-md | Analyze a web app's visual style and generate a DESIGN.md for use with ui-design skill. |
 | simplify-skill | Refactor skill files by extracting templates/examples to separate files. |
+| quick | Streamlined pipeline for small features (1-2h, 1-4 tasks). Brainstorm -> tasks -> execute, no PRD or design. Supports --no-test flag. |
