@@ -5,6 +5,8 @@ priority: "P1"
 estimated_time: "30min-1h"
 dependencies: ["T-quick-1"]
 status: pending
+noTest: false
+mainSession: false
 ---
 
 # Generate Quick Test Scripts

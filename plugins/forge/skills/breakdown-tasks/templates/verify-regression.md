@@ -5,6 +5,8 @@ priority: "P1"
 estimated_time: "15-30min"
 dependencies: ["T-test-4"]
 status: pending
+noTest: false
+mainSession: false
 ---
 
 # Verify Full E2E Regression

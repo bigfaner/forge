@@ -5,6 +5,8 @@ priority: "P1"
 estimated_time: "30min"
 dependencies: ["T-test-3"]
 status: pending
+noTest: false
+mainSession: false
 ---
 
 # Graduate Test Scripts

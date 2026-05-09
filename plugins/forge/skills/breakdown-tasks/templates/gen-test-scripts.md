@@ -5,6 +5,8 @@ priority: "P1"
 estimated_time: "1-2h"
 dependencies: ["T-test-1b"]
 status: pending
+noTest: false
+mainSession: false
 ---
 
 # Generate e2e Test Scripts

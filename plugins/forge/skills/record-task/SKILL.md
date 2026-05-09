@@ -66,7 +66,7 @@ Before writing `record.json`, you MUST collect real metrics from the project's t
 Coverage rules:
 
 - `coverage` = actual percentage from test runner output
-- `coverage` = `-1.0` when task has no tests
+- `coverage` = `-1.0` is auto-set by CLI for tasks with `noTest: true`. For non-noTest tasks, always report real metrics.
 - Never write `0.0` unless the runner actually reported 0%
 
 Example commands (use whatever matches the project's toolchain):
@@ -122,12 +122,24 @@ After running, check the STATUS field in the output:
 
 ## Validation Rules (enforced by CLI)
 
+### Quality Gate Pre-check
+
+When `status=completed`, `--force` is NOT used, and the task does NOT have `noTest: true` in its index.json entry, `task record` automatically runs the full quality gate before accepting the record:
+
+```
+just compile [scope] → just fmt [scope] → just lint [scope] → just test [scope]
+```
+
+This gate runs via `validateQualityGate()` in record.go. If any step fails, the record is rejected with an error. Fix the errors and re-run `task record`, or use `--force` to bypass.
+
+### Data Validation
+
 `task record` will reject the following combinations:
 
 | Condition | Error | Fix |
 |-----------|-------|-----|
 | `status=completed` + `testsFailed > 0` | Auto-downgrade to `blocked` | Fix the test failures, then re-record with `status: "completed"` |
-| `status=completed` + `testsPassed=0` + `testsFailed=0` + `coverage >= 0` | No test evidence | Run tests and report results, or set `coverage: -1.0` for no-test tasks |
+| `status=completed` + `testsPassed=0` + `testsFailed=0` + `coverage >= 0` | No test evidence | Ensure task has `noTest: true` (CLI auto-sets coverage), or run tests and report results |
 | `status=completed` + any `acceptanceCriteria.met=false` | Unmet acceptance criteria | Fix the issue, or set `status: "blocked"` |
 | `summary` is empty or whitespace | Missing summary | Provide a summary |
 

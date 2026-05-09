@@ -72,6 +72,11 @@
             "type": "boolean",
             "description": "When true, run-tasks executes this task in the main session instead of dispatching to task-executor. Used by tasks that need to spawn subagents.",
             "default": false
+          },
+          "noTest": {
+            "type": "boolean",
+            "description": "When true, this task does not require tests (e.g. documentation-only, summary tasks). Skips quality gate and test evidence checks. Coverage is auto-set to -1.0.",
+            "default": false
           }
         }
       }

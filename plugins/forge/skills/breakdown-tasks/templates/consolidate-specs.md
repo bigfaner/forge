@@ -5,6 +5,8 @@ priority: "P2"
 estimated_time: "20min"
 dependencies: ["T-test-4.5"]
 status: pending
+noTest: true
+mainSession: false
 ---
 
 # Consolidate Specs
@@ -30,9 +32,9 @@ Call `/consolidate-specs` skill to extract business rules from PRD and technical
 
 ## Skip Conditions
 
-If ALL extracted items are `[LOCAL]` (no cross-cutting candidates), generate preview files only and mark task completed with `coverage: -1.0`. No integration step needed.
+If ALL extracted items are `[LOCAL]` (no cross-cutting candidates), generate preview files only and mark task completed. No integration step needed.
 
-If no extractable rules found in PRD/design, mark task completed with `coverage: -1.0`.
+If no extractable rules found in PRD/design, mark task completed.
 
 If running under `/run-tasks` (non-interactive session) and CROSS items exist, write preview files and mark task as `blocked` with note "User review required for integration." Do NOT auto-integrate.
 
@@ -83,4 +85,4 @@ Write `docs/features/<slug>/specs/.integrated` marker with integrated counts.
 
 **Step 5: Record**
 
-Record task via `/record-task` skill (set `coverage: -1.0`). The preview files remain in `specs/` for traceability.
+Record task via `/record-task` skill. The preview files remain in `specs/` for traceability.

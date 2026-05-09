@@ -6,6 +6,8 @@ estimated_time: "1h"
 dependencies: [{{DEPENDENCIES}}]
 status: pending
 breaking: true
+noTest: false
+mainSession: false
 ---
 
 # {{ID}}: {{TITLE}}
