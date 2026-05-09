@@ -165,6 +165,10 @@ func (m *jsonlMessage) textContent() string {
 	return ""
 }
 
+type snapshotData struct {
+	Timestamp string `json:"timestamp,omitempty"`
+}
+
 type jsonlEntry struct {
 	Type         string       `json:"type"`
 	Message      jsonlMessage `json:"message"`
@@ -172,6 +176,9 @@ type jsonlEntry struct {
 	GitBranch    string       `json:"gitBranch"`
 	Attachment   attachment   `json:"attachment"`
 	ToolUseResult *toolUseResult `json:"toolUseResult"`
+	Timestamp    string       `json:"timestamp,omitempty"`
+	SessionID    string       `json:"sessionId,omitempty"`
+	Snapshot     snapshotData `json:"snapshot"`
 }
 
 type attachment struct {
@@ -243,36 +250,80 @@ type hookEventEntry struct {
 }
 
 type toolAggEntry struct {
-		Name  string `json:"name"`
-		Count int    `json:"count"`
-	}
+	Name  string `json:"name"`
+	Count int    `json:"count"`
+}
 
-	type extractSummary struct {
-		TotalThinking    int            `json:"totalThinking"`
-		TotalToolCalls   int            `json:"totalToolCalls"`
-		TotalToolResults int            `json:"totalToolResults"`
-		TotalUserMsgs    int            `json:"totalUserMsgs"`
-		ToolBreakdown    map[string]int `json:"toolBreakdown"`
-		FilesRead        []string       `json:"filesRead"`
-		FilesWritten     []string       `json:"filesWritten"`
-		GrepPatterns     []string       `json:"grepPatterns"`
-		AgentsSpawned    []toolAggEntry `json:"agentsSpawned"`
-		Commands         []string       `json:"commands"`
-	}
+// timingEntry records a single tool call's execution duration.
+type timingEntry struct {
+	Tool    string  `json:"tool"`
+	Line    int     `json:"line"`
+	Seconds float64 `json:"seconds"`
+	Detail  string  `json:"detail,omitempty"`
+}
+
+// timingAgg aggregates timing statistics per tool type.
+type timingAgg struct {
+	Tool    string  `json:"tool"`
+	Count   int     `json:"count"`
+	Total   float64 `json:"total"`
+	Average float64 `json:"average"`
+	Max     float64 `json:"max"`
+}
+
+type extractSummary struct {
+	TotalThinking    int            `json:"totalThinking"`
+	TotalToolCalls   int            `json:"totalToolCalls"`
+	TotalToolResults int            `json:"totalToolResults"`
+	TotalUserMsgs    int            `json:"totalUserMsgs"`
+	ToolBreakdown    map[string]int `json:"toolBreakdown"`
+
+	// Tool-specific aggregations
+	FilesRead     []string       `json:"filesRead"`
+	FilesWritten  []string       `json:"filesWritten"`
+	GrepPatterns  []string       `json:"grepPatterns"`
+	AgentsSpawned []toolAggEntry `json:"agentsSpawned"`
+	Commands      []string       `json:"commands"`
+
+	// Hook statistics
+	HookBreakdown []toolAggEntry `json:"hookBreakdown"`
+	HookFailures  int            `json:"hookFailures"`
+
+	// Session lifecycle
+	CompactCount    int            `json:"compactCount"`
+	PlanModeCount   int            `json:"planModeCount"`
+	StopReasons     map[string]int `json:"stopReasons"`
+
+	// Skill invocations (from attachment.invoked_skills)
+	SkillInvocations []toolAggEntry `json:"skillInvocations"`
+
+	// Sub-sessions
+	SubagentCount int `json:"subagentCount"`
+
+	// Time range
+	StartTime string `json:"startTime"`
+	EndTime   string `json:"endTime"`
+	Duration  string `json:"duration"`
+
+	// Timing statistics (tool execution time from tool_use → tool_result)
+	TopSlowest   []timingEntry `json:"topSlowest"`
+	TimingByTool []timingAgg   `json:"timingByTool"`
+	TotalToolMs  int64         `json:"totalToolMs"`
+}
 
 type extractResult struct {
-	File         string            `json:"file"`
-	Lines        int               `json:"lines"`
-	Model        string            `json:"model,omitempty"`
-	GitBranch    string            `json:"gitBranch,omitempty"`
-	Thinking     []thinkingEntry   `json:"thinking"`
-	ToolCalls    []toolCallEntry   `json:"toolCalls"`
-	ToolResults  []toolResultEntry `json:"toolResults"`
-	UserMsgs     []userMsgEntry    `json:"userMsgs"`
-	SkillsUsed   []string          `json:"skillsUsed"`
-	Hooks        []hookEventEntry  `json:"hooks"`
-	FilesEdited  []string          `json:"filesEdited"`
-	Summary      extractSummary    `json:"summary"`
+	File        string            `json:"file"`
+	Lines       int               `json:"lines"`
+	Model       string            `json:"model,omitempty"`
+	GitBranch   string            `json:"gitBranch,omitempty"`
+	Thinking    []thinkingEntry   `json:"thinking"`
+	ToolCalls   []toolCallEntry   `json:"toolCalls"`
+	ToolResults []toolResultEntry `json:"toolResults"`
+	UserMsgs    []userMsgEntry    `json:"userMsgs"`
+	SkillsUsed  []string          `json:"skillsUsed"`
+	Hooks       []hookEventEntry  `json:"hooks"`
+	FilesEdited []string          `json:"filesEdited"`
+	Summary     extractSummary    `json:"summary"`
 }
 
 type subagentInfo struct {
@@ -400,11 +451,22 @@ func runForensicExtract(cmd *cobra.Command, args []string) {
 		FilesEdited: []string{},
 		Summary: extractSummary{
 			ToolBreakdown: map[string]int{},
+StopReasons:   map[string]int{},
 		},
 	}
 
 	scanner := bufio.NewScanner(f)
 	scanner.Buffer(make([]byte, 0, 1024*1024), 10*1024*1024)
+
+	var firstTS, lastTS string
+	// pending tool_use calls: toolUseID → {timestamp, tool, line, detail}
+	type pendingCall struct {
+		ts     string
+		tool   string
+		line   int
+		detail string
+	}
+	pending := map[string]pendingCall{}
 
 	lineNum := 0
 	for scanner.Scan() {
@@ -446,9 +508,34 @@ func runForensicExtract(cmd *cobra.Command, args []string) {
 						MsgID:      entry.Message.ID,
 					})
 					aggregateToolInput(block.Name, block.Input, &result.Summary)
+					// Record pending tool_use for timing
+					if block.ID != "" && entry.Timestamp != "" {
+						pending[block.ID] = pendingCall{
+							ts:     entry.Timestamp,
+							tool:   block.Name,
+							line:   lineNum,
+							detail: truncate(string(inputJSON), 120),
+						}
+					}
 				}
 			}
 
+			// Track stop reasons from assistant messages
+			if entry.Message.StopReason != "" {
+				result.Summary.StopReasons[entry.Message.StopReason]++
+			}
+
+			// Track timestamps for duration
+			ts := entry.Timestamp
+			if ts == "" && entry.Snapshot.Timestamp != "" {
+				ts = entry.Snapshot.Timestamp
+			}
+			if ts != "" {
+				if firstTS == "" {
+					firstTS = ts
+				}
+				lastTS = ts
+			}
 		case "user":
 			result.Summary.TotalUserMsgs++
 			content := extractUserContent(entry)
@@ -463,6 +550,20 @@ func runForensicExtract(cmd *cobra.Command, args []string) {
 			// Extract tool_result metadata
 			for _, block := range entry.Message.Content {
 				if block.Type == "tool_result" {
+					// Match with pending tool_use for timing
+					if pc, ok := pending[block.ToolUseID]; ok {
+						dur := computeDurationMs(pc.ts, entry.Timestamp)
+						if dur >= 0 {
+							result.Summary.TotalToolMs += dur
+							result.Summary.TopSlowest = append(result.Summary.TopSlowest, timingEntry{
+								Tool:    pc.tool,
+								Line:    pc.line,
+								Seconds: float64(dur) / 1000.0,
+								Detail:  pc.detail,
+							})
+						}
+						delete(pending, block.ToolUseID)
+					}
 					result.Summary.TotalToolResults++
 					tre := toolResultEntry{
 						Line:      lineNum,
@@ -502,16 +603,93 @@ func runForensicExtract(cmd *cobra.Command, args []string) {
 					ExitCode:   att.ExitCode,
 					Command:    att.Command,
 				})
+				addToAgg(&result.Summary.HookBreakdown, att.HookName)
+				if att.ExitCode != 0 {
+					result.Summary.HookFailures++
+				}
 			case "edited_text_file":
 				if att.Filename != "" {
 					result.FilesEdited = append(result.FilesEdited, att.Filename)
 				}
+				case "compact_file_reference":
+					result.Summary.CompactCount++
+				case "plan_mode", "plan_mode_exit", "plan_mode_reentry":
+					result.Summary.PlanModeCount++
+			}
+			// Track skill invocations from all attachment types
+			for _, skill := range att.Skills {
+				addToAgg(&result.Summary.SkillInvocations, skill.Name)
 			}
 		}
 	}
 
 	result.Lines = lineNum
 
+	// Aggregate timing by tool type and sort TopSlowest
+	toolTiming := map[string]*timingAgg{}
+	for _, t := range result.Summary.TopSlowest {
+		agg, ok := toolTiming[t.Tool]
+		if !ok {
+			agg = &timingAgg{Tool: t.Tool}
+			toolTiming[t.Tool] = agg
+		}
+		agg.Count++
+		agg.Total += t.Seconds
+		if t.Seconds > agg.Max {
+			agg.Max = t.Seconds
+		}
+	}
+	for _, agg := range toolTiming {
+		agg.Average = agg.Total / float64(agg.Count)
+		result.Summary.TimingByTool = append(result.Summary.TimingByTool, *agg)
+	}
+	sort.Slice(result.Summary.TimingByTool, func(i, j int) bool {
+		return result.Summary.TimingByTool[i].Total > result.Summary.TimingByTool[j].Total
+	})
+	sort.Slice(result.Summary.TopSlowest, func(i, j int) bool {
+		return result.Summary.TopSlowest[i].Seconds > result.Summary.TopSlowest[j].Seconds
+	})
+	// Keep top 20 slowest
+	if len(result.Summary.TopSlowest) > 20 {
+		result.Summary.TopSlowest = result.Summary.TopSlowest[:20]
+	}
+
+	// Compute subagent count from Agent tool calls
+	for _, a := range result.Summary.AgentsSpawned {
+		result.Summary.SubagentCount += a.Count
+	}
+
+	// Compute start/end time and duration
+	if firstTS != "" {
+		if t, err := parseTimestamp(firstTS); err == nil {
+			result.Summary.StartTime = t.Format("2006-01-02 15:04:05")
+		} else {
+			result.Summary.StartTime = firstTS
+		}
+	}
+	if lastTS != "" {
+		if t, err := parseTimestamp(lastTS); err == nil {
+			result.Summary.EndTime = t.Format("2006-01-02 15:04:05")
+		} else {
+			result.Summary.EndTime = lastTS
+		}
+	}
+	if firstTS != "" && lastTS != "" {
+		t1, err1 := parseTimestamp(firstTS)
+		t2, err2 := parseTimestamp(lastTS)
+		if err1 == nil && err2 == nil {
+			d := t2.Sub(t1)
+			if d < time.Minute {
+				result.Summary.Duration = fmt.Sprintf("%.0fs", d.Seconds())
+			} else if d < time.Hour {
+				result.Summary.Duration = fmt.Sprintf("%.1fmin", d.Minutes())
+			} else {
+				result.Summary.Duration = fmt.Sprintf("%.1fh", d.Hours())
+			}
+		} else {
+			result.Summary.Duration = fmt.Sprintf("%s / %s", firstTS, lastTS)
+		}
+	}
 	out, _ := json.MarshalIndent(result, "", "  ")
 
 	if forensicOutDir != "" {
@@ -696,4 +874,34 @@ func appendUniq(slice []string, val string) []string {
 		}
 	}
 	return append(slice, val)
+}
+
+func computeDurationMs(startTS, endTS string) int64 {
+	t1, err1 := parseTimestamp(startTS)
+	if err1 != nil {
+		return -1
+	}
+	t2, err2 := parseTimestamp(endTS)
+	if err2 != nil {
+		return -1
+	}
+	return t2.Sub(t1).Milliseconds()
+}
+
+func parseTimestamp(s string) (time.Time, error) {
+	t, err := time.Parse(time.RFC3339Nano, s)
+	if err != nil {
+		t, err = time.Parse(time.RFC3339, s)
+	}
+	return t, err
+}
+
+func addToAgg(entries *[]toolAggEntry, name string) {
+	for i := range *entries {
+		if (*entries)[i].Name == name {
+			(*entries)[i].Count++
+			return
+		}
+	}
+	*entries = append(*entries, toolAggEntry{Name: name, Count: 1})
 }
