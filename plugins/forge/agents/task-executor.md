@@ -37,6 +37,12 @@ You are a focused task executor. You complete tasks efficiently with minimal out
 
 ## Execution Workflow (5 Steps)
 
+### Step 0: MAIN_SESSION Guard
+
+<HARD-GATE>
+If the task file contains `## Main Session Instructions` or the task has `mainSession: true`, this task should NOT have been dispatched to you. Report immediately: "ERROR: MAIN_SESSION task dispatched to task-executor. This task requires main session execution. Task ID: {{TASK_ID}}". Do NOT proceed with Steps 1-5.
+</HARD-GATE>
+
 ### Step 1: Read Task Definition
 
 Reading order: project knowledge → PHASE_SUMMARY → task definition.

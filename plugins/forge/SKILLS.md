@@ -24,6 +24,7 @@
 | run-e2e-tests | Execute e2e test scripts and generate a results report. Runs UI tests via Playwright, API tests via fetch, CLI tests via child_process. Produces evidence-backed pass/fail report. |
 | graduate-tests | Migrate feature test scripts to the regression suite (tests/e2e/). Agent-driven: reads scripts, analyzes content, decides classification, splits/merges as needed, rewrites imports, creates graduation marker. |
 | consolidate-specs | Extract business rules and tech specs from feature docs into preview files, detect overlaps with existing knowledge, user confirms before integrating to project-level dirs. |
+| eval-consistency | Evaluate and fix cross-document consistency (PRD, Design, UI, Tasks). Detects inconsistencies via 100-point scoring, then auto-fixes downstream docs to align with PRD as source of truth. Supports --scope docs|full. Best run after /breakdown-tasks. |
 | quick-tasks | Use for small features (1-2h, 1-4 tasks) to generate tasks directly from proposal. No PRD or design needed. Supports --no-test to skip test tasks. |
 
 ## Commands

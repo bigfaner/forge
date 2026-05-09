@@ -8,6 +8,10 @@ allowed_tools: ["Bash", "Read", "Write", "Edit", "Grep", "Glob", "Agent", "LSP"]
 
 Execute a single task with streamlined TDD workflow.
 
+## Step 0: MAIN_SESSION Check
+
+If the claimed task has `MAIN_SESSION == "true"`, read the task file's `## Main Session Instructions` section and follow it. After execution, invoke `Skill(skill="record-task")`. Skip Steps 2–5.
+
 ## Workflow (5 Steps)
 
 ```

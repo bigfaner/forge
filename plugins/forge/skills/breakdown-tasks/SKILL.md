@@ -320,6 +320,10 @@ Append seven fixed test tasks:
 
 - **T-test-1**: read `templates/gen-test-cases.md`, calls `/gen-sitemap` first (if `sitemap.json` missing) then `/gen-test-cases`, file `gen-test-cases.md`
 - **T-test-1b**: read `templates/eval-test-cases.md`, calls `/eval-test-cases`, depends on T-test-1, `mainSession: true`, file `eval-test-cases.md`
+
+<HARD-RULE>
+**When to set `mainSession: true`**: Any task whose skill spawns subagents via Agent tool MUST set `mainSession: true` in index.json. Applies to all eval-* skills.
+</HARD-RULE>
 - **T-test-2**: read `templates/gen-test-scripts.md`, calls `/gen-test-scripts`, depends on T-test-1b, file `gen-test-scripts.md`
 - **T-test-3**: read `templates/run-e2e-tests.md`, calls `/run-e2e-tests`, depends on T-test-2, file `run-e2e-tests.md`
 - **T-test-4**: read `templates/graduate-tests.md`, calls `/graduate-tests`, depends on T-test-3, file `graduate-tests.md`

@@ -52,7 +52,7 @@
             "type": "array",
             "items": { "type": "string" }
           },
-          "status": { "type": "string", "enum": ["pending", "in_progress", "completed", "blocked", "skipped"] },
+          "status": { "type": "string", "enum": ["pending", "in_progress", "completed", "blocked", "skipped", "rejected"] },
           "file": { "type": "string" },
           "record": { "type": "string" },
           "breaking": {

@@ -6,7 +6,7 @@ allowed_tools: ["Bash", "Read", "Agent", "TaskOutput", "Skill"]
 
 # /run-tasks
 
-Auto-dispatch tasks to subagents. Main session only handles dispatching.
+Auto-dispatch tasks. MAIN_SESSION tasks execute in main session; all others go to forge:task-executor subagent.
 
 ## Architecture
 
@@ -29,7 +29,7 @@ flowchart TD
 
 <EXTREMELY-IMPORTANT>
 1. Only 5 actions: claim → (main_session? follow task instructions : dispatch) → verify → context check → breaking gate
-2. NO code reading, NO code writing — EXCEPT for main_session tasks (Step 1.5) where the Skill tool is invoked in the main session
+2. NO code reading, NO code writing — EXCEPT for MAIN_SESSION tasks (Step 1.5) where the Skill tool is invoked in the main session
 3. NO running tests directly — EXCEPT in Step 5 (Breaking Task Gate) where `just test` and `just test-e2e` are executed as quality gates
 4. 30-minute timeout per task
 5. 3 consecutive failures → STOP
@@ -60,11 +60,13 @@ task claim
 ### Step 1.5: Main Session Routing
 
 If `MAIN_SESSION == "true"`:
-- This task must execute in the main session (it needs to spawn subagents that task-executor cannot).
-- Read the task file at `{{FILE}}` and find the `## Main Session Instructions` section.
-- Follow the instructions exactly — the task document specifies what skill to invoke, how to check outcome, and how to record the result.
-- The dispatcher does NOT hardcode skill names or record logic — it delegates to the task document.
-- Skip to Step 6 (Continue Loop).
+
+1. Read the task file at `{{FILE}}` and find the `## Main Session Instructions` section.
+2. Follow the instructions exactly — the task document specifies what skill to invoke, how to check outcome, and how to record the result.
+3. The dispatcher does NOT hardcode skill names or record logic — it delegates to the task document.
+4. If the task file lacks a `## Main Session Instructions` section, mark the task blocked and report: "MAIN_SESSION task missing Main Session Instructions section — task document is incomplete".
+5. After execution, verify the record file exists (same as Step 3 for subagent tasks).
+6. Skip to Step 6 (Continue Loop).
 
 Else:
 - Proceed to Step 2 (Dispatch with Timeout).
@@ -222,7 +224,7 @@ Return to Step 1.
 | 3 consecutive failures | STOP dispatcher |
 | Breaking task tests fail (5a) | `task status <ID> blocked` + `task add --template fix-task`, continue loop |
 | Feature e2e tests fail (5b) | `task status <ID> blocked` + `task add --template fix-task`, continue loop |
-| Main session task fails | Follow error handling in task document's `### Error Handling` section |
+| Main session task fails | Follow error handling in task document's `### Error Handling` section; if missing, mark blocked + add fix-task, continue loop |
 
 ### Error-Fixer Dispatch
 
