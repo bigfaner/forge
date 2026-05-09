@@ -15,10 +15,10 @@
 15、write-prd之后，先ui-design（如有UI），再tech-design。done
 16、精简guide.md。done
 17、eval-design的breakdown-tasks门槛提高到18分。done
-18、增加一个快速模式，brainstorm —> breakdown-tasks —> run-tasks 。doing
+18、增加一个快速模式，brainstorm —> breakdown-tasks —> run-tasks 。done
 19、task claim输出breaking字段的值。done
 20、补充一个git-checkout命令，创建一个与正在讨论的提案或feature名称相同的分支。done
-21、all-completed stop hook：just lint 等出现错误，动态追加任务
+21、all-completed stop hook：just lint 等出现错误，动态追加任务。done
 22、增加一个开启subagent评估一致性的skill。done
 23、有些任务只输出文档，没有代码，不需要执行测试，task record需要放过，避免报错。done
 
@@ -34,4 +34,4 @@ Bash(task record T-test-1b --data docs/features/train-recorder/tasks/process/rec
      ---  
 
 24、eval-ui的评分必须达到94，才允许自动进入到生成原型的阶段。done
-25、把git-commit skill更改为slash command。doing
+25、把git-commit skill更改为slash command。done
