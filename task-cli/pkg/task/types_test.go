@@ -2,6 +2,7 @@ package task
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 )
 
@@ -176,7 +177,7 @@ func TestTaskScopeSerialization(t *testing.T) {
 		}
 
 		got := string(data)
-		if !contains(got, `"scope":"frontend"`) {
+		if !strings.Contains(got, `"scope":"frontend"`) {
 			t.Errorf("JSON = %s, want to contain %q", got, `"scope":"frontend"`)
 		}
 	})
@@ -196,7 +197,7 @@ func TestTaskScopeSerialization(t *testing.T) {
 		}
 
 		got := string(data)
-		if contains(got, `"scope"`) {
+		if strings.Contains(got, `"scope"`) {
 			t.Errorf("JSON = %s, should NOT contain scope field when empty", got)
 		}
 	})
@@ -268,7 +269,7 @@ func TestTaskStateScopeSerialization(t *testing.T) {
 		}
 
 		got := string(data)
-		if !contains(got, `"scope":"frontend"`) {
+		if !strings.Contains(got, `"scope":"frontend"`) {
 			t.Errorf("JSON = %s, want to contain %q", got, `"scope":"frontend"`)
 		}
 	})
@@ -288,7 +289,7 @@ func TestTaskStateScopeSerialization(t *testing.T) {
 		}
 
 		got := string(data)
-		if contains(got, `"scope"`) {
+		if strings.Contains(got, `"scope"`) {
 			t.Errorf("JSON = %s, should NOT contain scope field when empty", got)
 		}
 	})
@@ -327,14 +328,14 @@ func TestTaskIndexJSONRoundTrip_AllFields(t *testing.T) {
 	}
 
 	// Verify raw JSON contains "tasks" key (two-struct pattern must emit it)
-	if !contains(string(data), `"tasks"`) {
+	if !strings.Contains(string(data), `"tasks"`) {
 		t.Errorf("JSON output missing \"tasks\" key: %s", data)
 	}
 	// Verify TestCommand and E2ERound appear in raw output
-	if !contains(string(data), `"testCommand"`) {
+	if !strings.Contains(string(data), `"testCommand"`) {
 		t.Errorf("JSON output missing \"testCommand\" key: %s", data)
 	}
-	if !contains(string(data), `"e2eRound"`) {
+	if !strings.Contains(string(data), `"e2eRound"`) {
 		t.Errorf("JSON output missing \"e2eRound\" key: %s", data)
 	}
 

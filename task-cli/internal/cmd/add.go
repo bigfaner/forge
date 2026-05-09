@@ -153,6 +153,9 @@ func executeAdd(cmd *cobra.Command) (*AddResult, error) {
 			if !cmd.Flags().Changed("estimated-time") && defs.EstimatedTime != "" {
 				opts.EstimatedTime = defs.EstimatedTime
 			}
+			if !cmd.Flags().Changed("id") && defs.IDPrefix != "" {
+				opts.IDPrefix = defs.IDPrefix
+			}
 		}
 	}
 

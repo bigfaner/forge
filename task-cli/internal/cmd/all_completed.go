@@ -125,8 +125,8 @@ func runAllCompleted(cmd *cobra.Command, args []string) {
 				fmt.Fprintf(os.Stderr, "WARNING: failed to write %s output: %v\n", step, err)
 			}
 		}
-		addFixTask(result.ProjectRoot, result.FeatureSlug, step, output, errorDocPath)
-		handleGateFailure(step, errorDocPath, just.ExtractConciseError(output, 5))
+		fixID := addFixTask(result.ProjectRoot, result.FeatureSlug, step, output, errorDocPath)
+		handleGateFailure(step, errorDocPath, fixID, just.ExtractConciseError(output, 5))
 	})
 
 	// Step 2: Project-wide unit/integration tests
@@ -140,8 +140,8 @@ func runAllCompleted(cmd *cobra.Command, args []string) {
 				fmt.Fprintf(os.Stderr, "WARNING: failed to write unit test output: %v\n", err)
 			}
 		}
-		addFixTask(result.ProjectRoot, result.FeatureSlug, "unit-test", unitOutput, errorDocPath)
-		handleGateFailure("unit-test", errorDocPath, just.ExtractConciseError(unitOutput, 5))
+		fixID := addFixTask(result.ProjectRoot, result.FeatureSlug, "unit-test", unitOutput, errorDocPath)
+		handleGateFailure("unit-test", errorDocPath, fixID, just.ExtractConciseError(unitOutput, 5))
 	}
 
 	// Step 3: Full e2e regression (graduated scripts in tests/e2e/)
@@ -181,39 +181,53 @@ func runAllCompleted(cmd *cobra.Command, args []string) {
 						fmt.Fprintf(os.Stderr, "WARNING: failed to write raw-output.txt: %v\n", err)
 					}
 				}
-				addFixTask(result.ProjectRoot, result.FeatureSlug, "test-e2e", regressionOutput, errorDocPath)
-				handleGateFailure("test-e2e", errorDocPath, just.ExtractConciseError(regressionOutput, 5))
+				fixID := addFixTask(result.ProjectRoot, result.FeatureSlug, "test-e2e", regressionOutput, errorDocPath)
+				handleGateFailure("test-e2e", errorDocPath, fixID, just.ExtractConciseError(regressionOutput, 5))
 			}
 		}
 	}
 }
 
 // handleGateFailure prints the hook JSON block reason and exits.
-// Each stage has a distinct reason with stage-specific guidance.
-func handleGateFailure(step, errorDocPath, concise string) {
-	var reason string
-	switch step {
-	case "compile":
-		reason = fmt.Sprintf(
-			"Project compilation failed in all-completed hook. A fix task has been added (P0, breaking) — run `task claim` to pick it up and fix compilation errors.\nError output: %s\n%s",
-			errorDocPath, concise)
-	case "lint":
-		reason = fmt.Sprintf(
-			"Lint check failed in all-completed hook. A fix task has been added (P0, breaking) — run `task claim` to pick it up and fix lint errors.\nError output: %s\n%s",
-			errorDocPath, concise)
-	case "unit-test":
-		reason = fmt.Sprintf(
-			"Unit tests failed in all-completed hook. A fix task has been added (P0, breaking) — run `task claim` to pick it up and fix failing tests.\nError output: %s\n%s",
-			errorDocPath, concise)
-	case "test-e2e":
-		reason = fmt.Sprintf(
-			"E2e regression tests failed in all-completed hook. A fix task has been added (P0, breaking) — run `task claim` to pick it up and fix failing e2e tests.\nError output: %s\n%s",
-			errorDocPath, concise)
-	default:
-		reason = fmt.Sprintf(
-			"%s check failed in all-completed hook. A fix task has been added (P0, breaking) — run `task claim` to pick it up and fix the issue.\nError output: %s\n%s",
-			testrunner.Capitalize(step), errorDocPath, concise)
+// fixID is the ID returned by addFixTask; empty means task creation failed.
+func handleGateFailure(step, errorDocPath, fixID, concise string) {
+	action := "run `task add --template fix-task` to create one manually, then `task claim`"
+	if fixID != "" {
+		action = "run `task claim` to pick it up"
 	}
+
+	guide := map[string]string{
+		"compile":   "fix compilation errors",
+		"lint":      "fix lint errors",
+		"unit-test": "fix failing tests",
+		"test-e2e":  "fix failing e2e tests",
+	}
+	label := map[string]string{
+		"compile":   "Project compilation",
+		"lint":      "Lint check",
+		"unit-test": "Unit tests",
+		"test-e2e":  "E2e regression tests",
+	}
+
+	g := guide[step]
+	if g == "" {
+		g = "fix the issue"
+	}
+	l := label[step]
+	if l == "" {
+		l = testrunner.Capitalize(step) + " check"
+	}
+
+	var fixMsg string
+	if fixID != "" {
+		fixMsg = fmt.Sprintf("Fix task %s added (P0, breaking)", fixID)
+	} else {
+		fixMsg = "Failed to add fix task automatically"
+	}
+
+	reason := fmt.Sprintf(
+		"%s failed in all-completed hook. %s — %s and %s.\nError output: %s\n%s",
+		l, fixMsg, action, g, errorDocPath, concise)
 
 	testrunner.PrintHookJSON(map[string]any{
 		"decision": "block",
@@ -277,7 +291,8 @@ func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) str
 		testScript, errorDocPath, just.ExtractConciseError(output, 10),
 	)
 
-	// Build opts — same as task add --template fix-task
+	// Build opts — Priority/Breaking/EstimatedTime intentionally hardcoded
+	// (not read from template defaults) since this is a programmatic caller.
 	opts := task.AddTaskOpts{
 		Title:         title,
 		Priority:      "P0",
@@ -299,6 +314,9 @@ func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) str
 	if _, err := tmpl.Get(opts.Template); err != nil {
 		fmt.Fprintf(os.Stderr, "WARNING: template %q not found: %v\n", opts.Template, err)
 		return ""
+	}
+	if defs, err := tmpl.GetDefaults(opts.Template); err == nil && defs.IDPrefix != "" {
+		opts.IDPrefix = defs.IDPrefix
 	}
 
 	id, err := task.AddTask(indexPath, opts)

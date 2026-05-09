@@ -331,40 +331,11 @@ func TestExtractSourceFiles(t *testing.T) {
 		output string
 		want   string
 	}{
+		// --- empty / no-match cases ---
 		{
 			name:   "empty output",
 			output: "",
 			want:   "See error output for affected files",
-		},
-		{
-			name:   "Go compile error",
-			output: "./internal/handler.go:42:2: undefined: foo\n./internal/handler.go:43:1: too many arguments",
-			want:   "internal/handler.go",
-		},
-		{
-			name:   "Go lint error deduplicates",
-			output: "pkg/service/user.go:108:1: S1000: should use for-range (gosimple)\npkg/service/user.go:200:3: SA1006: printf-style (staticcheck)",
-			want:   "pkg/service/user.go",
-		},
-		{
-			name:   "Go test error multiple files",
-			output: "--- FAIL: TestHandler (0.00s)\n    handler_test.go:42: Expected 200, got 404\n    service_test.go:10: Error",
-			want:   "handler_test.go, service_test.go",
-		},
-		{
-			name:   "TypeScript error",
-			output: "src/app.ts:42:5: error TS2304: Cannot find name 'foo'.",
-			want:   "src/app.ts",
-		},
-		{
-			name:   "multiple different files",
-			output: "a.go:1: error\nb.go:2: error\nc.go:3: error",
-			want:   "a.go, b.go, c.go",
-		},
-		{
-			name:   "skips non-source extensions",
-			output: "output.txt:10: something\nreport.json:5: error\nhandler.go:42: error",
-			want:   "handler.go",
 		},
 		{
 			name:   "no source files found",
@@ -372,15 +343,180 @@ func TestExtractSourceFiles(t *testing.T) {
 			want:   "See error output for affected files",
 		},
 		{
+			name:   "only non-source extensions",
+			output: "output.txt:10: something\nreport.json:5: error\nconfig.yaml:8: bad",
+			want:   "See error output for affected files",
+		},
+
+		// --- Go patterns ---
+		{
+			name:   "Go compile error with ./ prefix",
+			output: "./internal/handler.go:42:2: undefined: foo\n./internal/handler.go:43:1: too many arguments",
+			want:   "internal/handler.go",
+		},
+		{
+			name:   "Go compile error without prefix",
+			output: "pkg/service/user.go:108:1: S1000: should use for-range (gosimple)",
+			want:   "pkg/service/user.go",
+		},
+		{
+			name:   "Go deduplicates same file",
+			output: "handler.go:10: err1\nhandler.go:20: err2\nhandler.go:30: err3",
+			want:   "handler.go",
+		},
+		{
+			name:   "Go test error multiple files",
+			output: "--- FAIL: TestHandler (0.00s)\n    handler_test.go:42: Expected 200, got 404\n    service_test.go:10: Error",
+			want:   "handler_test.go, service_test.go",
+		},
+		{
+			name:   "Go vet output",
+			output: "internal/handler.go:42:2: fmt.Sprintf format %v has arg of wrong type int",
+			want:   "internal/handler.go",
+		},
+
+		// --- TypeScript / JavaScript ---
+		{
+			name:   "TypeScript error",
+			output: "src/app.ts:42:5: error TS2304: Cannot find name 'foo'.",
+			want:   "src/app.ts",
+		},
+		{
+			name:   "TypeScript JSX",
+			output: "src/components/Button.tsx:15:3: error TS2604: Element implicitly has an 'any' type.",
+			want:   "src/components/Button.tsx",
+		},
+		{
+			name:   "JavaScript error",
+			output: "src/utils/helpers.js:10:5: ReferenceError: foo is not defined",
+			want:   "src/utils/helpers.js",
+		},
+
+		// --- Python ---
+		{
+			name:   "Python error (pyflakes format)",
+			output: "app/handlers.py:42: undefined name 'foo'",
+			want:   "app/handlers.py",
+		},
+		{
+			name:   "Python error (traceback format not matched)",
+			output: "  File \"app/handlers.py\", line 42\n    def foo(\n           ^\nSyntaxError: incomplete input",
+			want:   "See error output for affected files",
+		},
+		{
+			name:   "Python pytest error",
+			output: "FAILED tests/test_handler.py:42 - AssertionError: expected 200",
+			want:   "tests/test_handler.py",
+		},
+
+		// --- Rust ---
+		{
+			name:   "Rust error",
+			output: "error[E0425]: cannot find value `foo` in this scope\n --> src/main.rs:10:5\n",
+			want:   "src/main.rs",
+		},
+
+		// --- Java ---
+		{
+			name:   "Java error",
+			output: "src/main/java/com/example/App.java:42: error: cannot find symbol",
+			want:   "src/main/java/com/example/App.java",
+		},
+
+		// --- C/C++ ---
+		{
+			name:   "C error",
+			output: "src/main.c:42:5: error: use of undeclared identifier 'foo'",
+			want:   "src/main.c",
+		},
+		{
+			name:   "C++ header error",
+			output: "include/utils.hpp:10:1: error: expected ';' after struct",
+			want:   "include/utils.hpp",
+		},
+
+		// --- Web ---
+		{
+			name:   "CSS error",
+			output: "src/styles/main.css:42:3: parse error: invalid property",
+			want:   "src/styles/main.css",
+		},
+		{
+			name:   "SCSS error",
+			output: "src/styles/_variables.scss:15:1: error: undefined variable",
+			want:   "src/styles/_variables.scss",
+		},
+		{
+			name:   "HTML error",
+			output: "src/templates/index.html:20:5: mismatched tag",
+			want:   "src/templates/index.html",
+		},
+		{
+			name:   "SQL error",
+			output: "migrations/001_init.sql:10:1: syntax error at or near \"CREATE\"",
+			want:   "migrations/001_init.sql",
+		},
+		{
+			name:   "Vue error",
+			output: "src/components/App.vue:25:3: error: v-bind without expression",
+			want:   "src/components/App.vue",
+		},
+		{
+			name:   "Svelte error",
+			output: "src/lib/Button.svelte:10:1: Unexpected token",
+			want:   "src/lib/Button.svelte",
+		},
+
+		// --- mixed languages ---
+		{
+			name:   "mixed Go and TypeScript",
+			output: "internal/api.go:10: error\nsrc/frontend.ts:20: error",
+			want:   "internal/api.go, src/frontend.ts",
+		},
+
+		// --- path patterns ---
+		{
+			name:   "deep nested path",
+			output: "a/b/c/d/e/f.go:1: error",
+			want:   "a/b/c/d/e/f.go",
+		},
+		{
+			name:   "path with hyphens and underscores",
+			output: "pkg/my-module/handler_utils.go:10: error",
+			want:   "pkg/my-module/handler_utils.go",
+		},
+
+		// --- boundary ---
+		{
 			name: "limits to 10 unique files",
 			output: func() string {
 				var lines []string
-				for i := 0; i < 15; i++ {
+				for i := range 15 {
 					lines = append(lines, fmt.Sprintf("file%02d.go:%d: error", i, i+1))
 				}
 				return strings.Join(lines, "\n")
 			}(),
 			want: "file00.go, file01.go, file02.go, file03.go, file04.go, file05.go, file06.go, file07.go, file08.go, file09.go",
+		},
+		{
+			name:   "exactly 10 files",
+			output: "f01.go:1:e\nf02.go:2:e\nf03.go:3:e\nf04.go:4:e\nf05.go:5:e\nf06.go:6:e\nf07.go:7:e\nf08.go:8:e\nf09.go:9:e\nf10.go:10:e",
+			want:   "f01.go, f02.go, f03.go, f04.go, f05.go, f06.go, f07.go, f08.go, f09.go, f10.go",
+		},
+		{
+			name:   "single file no line number colon suffix still matches",
+			output: "handler.go:42: msg",
+			want:   "handler.go",
+		},
+		{
+			name:   "file with only line number",
+			output: "handler.go:42: ",
+			want:   "handler.go",
+		},
+		{
+			name:   "skips .log .md .txt .json .yaml .xml .toml .csv .bin .exe .lock",
+			output: "app.log:1:e\nreadme.md:2:e\ndata.json:3:e\nconfig.yaml:4:e\napp.toml:5:e\nhandler.go:6:e",
+			want:   "handler.go",
 		},
 	}
 
@@ -394,17 +530,18 @@ func TestExtractSourceFiles(t *testing.T) {
 	}
 }
 
-func TestAddFixTask(t *testing.T) {
-	projectRoot := t.TempDir()
+// helperSetup creates a minimal feature with a completed task for addFixTask tests.
+func helperSetup(t *testing.T) (projectRoot, featureSlug, indexPath string) {
+	t.Helper()
+	projectRoot = t.TempDir()
 	t.Setenv("CLAUDE_PROJECT_DIR", projectRoot)
-	featureSlug := "test-feature"
+	featureSlug = "test-feature"
 
 	if err := feature.EnsureFeatureDir(projectRoot, featureSlug); err != nil {
 		t.Fatal(err)
 	}
 
-	// Create index with one completed task so feature is valid
-	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
+	indexPath = filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
 	index := task.NewTaskIndex(featureSlug)
 	index.SetTasks(map[string]task.Task{
 		"t1": {ID: "1.1", Status: "completed", File: "1.1.md"},
@@ -412,6 +549,11 @@ func TestAddFixTask(t *testing.T) {
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)
 	}
+	return
+}
+
+func TestAddFixTask_BasicCompile(t *testing.T) {
+	projectRoot, featureSlug, indexPath := helperSetup(t)
 
 	output := "./internal/handler.go:42:2: undefined: foo\n./internal/handler.go:43:1: too many arguments"
 	errorDocPath := "tests/results/unit-raw-output.txt"
@@ -421,7 +563,6 @@ func TestAddFixTask(t *testing.T) {
 		t.Fatal("expected non-empty task ID")
 	}
 
-	// Verify task was added to index
 	updatedIndex, err := task.LoadIndex(indexPath)
 	if err != nil {
 		t.Fatal(err)
@@ -431,7 +572,6 @@ func TestAddFixTask(t *testing.T) {
 		t.Fatalf("task %s not found in index", taskID)
 	}
 
-	// Verify fix-task defaults applied
 	if addedTask.Priority != "P0" {
 		t.Errorf("priority = %q, want P0", addedTask.Priority)
 	}
@@ -441,8 +581,14 @@ func TestAddFixTask(t *testing.T) {
 	if addedTask.Status != "pending" {
 		t.Errorf("status = %q, want pending", addedTask.Status)
 	}
+	if addedTask.EstimatedTime != "30min" {
+		t.Errorf("estimatedTime = %q, want 30min", addedTask.EstimatedTime)
+	}
+	if addedTask.SourceTaskID != "" {
+		t.Errorf("sourceTaskID should be empty for project-wide fix, got %q", addedTask.SourceTaskID)
+	}
 
-	// Verify task markdown file was created
+	// Verify task markdown content
 	mdPath := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug), taskID+".md")
 	data, err := os.ReadFile(mdPath)
 	if err != nil {
@@ -456,7 +602,16 @@ func TestAddFixTask(t *testing.T) {
 		t.Error("task markdown should reference extracted source files")
 	}
 	if !strings.Contains(content, "just compile") {
-		t.Error("task markdown should reference the failed command")
+		t.Error("task markdown should reference 'just compile'")
+	}
+	if !strings.Contains(content, "Root Cause") {
+		t.Error("task markdown should contain Root Cause section from fix-task template")
+	}
+	if !strings.Contains(content, "Reference Files") {
+		t.Error("task markdown should contain Reference Files section from fix-task template")
+	}
+	if !strings.Contains(content, "Verification") {
+		t.Error("task markdown should contain Verification section from fix-task template")
 	}
 
 	// Verify forge state was reset
@@ -469,25 +624,43 @@ func TestAddFixTask(t *testing.T) {
 	}
 }
 
-func TestAddFixTask_UnitTestStep(t *testing.T) {
-	projectRoot := t.TempDir()
-	t.Setenv("CLAUDE_PROJECT_DIR", projectRoot)
-	featureSlug := "test-feature"
-
-	if err := feature.EnsureFeatureDir(projectRoot, featureSlug); err != nil {
-		t.Fatal(err)
+func TestAddFixTask_StepSpecificTestScripts(t *testing.T) {
+	tests := []struct {
+		step           string
+		wantTestScript string
+	}{
+		{"compile", "just compile"},
+		{"lint", "just lint"},
+		{"unit-test", "just test"},
+		{"test-e2e", "just test-e2e"},
 	}
 
-	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
-	index := task.NewTaskIndex(featureSlug)
-	index.SetTasks(map[string]task.Task{
-		"t1": {ID: "1.1", Status: "completed", File: "1.1.md"},
-	})
-	task.SaveIndex(indexPath, index)
+	for _, tc := range tests {
+		t.Run(tc.step, func(t *testing.T) {
+			projectRoot, featureSlug, _ := helperSetup(t)
+			taskID := addFixTask(projectRoot, featureSlug, tc.step, "handler.go:10: fail", "tests/results/fake.txt")
+			if taskID == "" {
+				t.Fatal("expected non-empty task ID")
+			}
 
-	taskID := addFixTask(projectRoot, featureSlug, "unit-test", "handler_test.go:10: fail", "tests/results/unit-raw-output.txt")
+			mdPath := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug), taskID+".md")
+			data, err := os.ReadFile(mdPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(string(data), tc.wantTestScript) {
+				t.Errorf("step %q should produce test script %q in markdown", tc.step, tc.wantTestScript)
+			}
+		})
+	}
+}
+
+func TestAddFixTask_EmptyOutput(t *testing.T) {
+	projectRoot, featureSlug, _ := helperSetup(t)
+
+	taskID := addFixTask(projectRoot, featureSlug, "lint", "", "tests/results/unit-raw-output.txt")
 	if taskID == "" {
-		t.Fatal("expected non-empty task ID")
+		t.Fatal("expected non-empty task ID even with empty output")
 	}
 
 	mdPath := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug), taskID+".md")
@@ -495,44 +668,170 @@ func TestAddFixTask_UnitTestStep(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(data), "just test") {
-		t.Error("unit-test step should use 'just test' as test script")
+	content := string(data)
+	if !strings.Contains(content, "See error output for affected files") {
+		t.Error("empty output should produce fallback source files message")
+	}
+}
+
+func TestAddFixTask_NoSourceFilesInOutput(t *testing.T) {
+	projectRoot, featureSlug, _ := helperSetup(t)
+
+	taskID := addFixTask(projectRoot, featureSlug, "compile", "some random output without file references", "tests/results/unit-raw-output.txt")
+	if taskID == "" {
+		t.Fatal("expected task ID")
+	}
+
+	mdPath := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug), taskID+".md")
+	data, err := os.ReadFile(mdPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), "See error output for affected files") {
+		t.Error("no source files in output should produce fallback message")
+	}
+}
+
+func TestAddFixTask_SequentialIDs(t *testing.T) {
+	projectRoot, featureSlug, indexPath := helperSetup(t)
+
+	id1 := addFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt")
+	id2 := addFixTask(projectRoot, featureSlug, "lint", "b.go:2: error", "tests/results/out.txt")
+	id3 := addFixTask(projectRoot, featureSlug, "unit-test", "c.go:3: error", "tests/results/out.txt")
+
+	if id1 == "" || id2 == "" || id3 == "" {
+		t.Fatalf("expected 3 valid IDs, got %q %q %q", id1, id2, id3)
+	}
+
+	// IDs should be different (max+1 via template prefix)
+	if id1 == id2 || id2 == id3 || id1 == id3 {
+		t.Errorf("expected unique IDs, got %q %q %q", id1, id2, id3)
+	}
+
+	// All should be in index
+	idx, _ := task.LoadIndex(indexPath)
+	count := 0
+	for _, id := range []string{id1, id2, id3} {
+		if _, ok := idx.ByID(id); ok {
+			count++
+		}
+	}
+	if count != 3 {
+		t.Errorf("expected 3 tasks in index, found %d", count)
+	}
+}
+
+func TestAddFixTask_TitleContainsStep(t *testing.T) {
+	projectRoot, featureSlug, _ := helperSetup(t)
+
+	taskID := addFixTask(projectRoot, featureSlug, "lint", "a.go:1: error", "tests/results/out.txt")
+	if taskID == "" {
+		t.Fatal("expected task ID")
+	}
+
+	mdPath := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug), taskID+".md")
+	data, err := os.ReadFile(mdPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), "lint failure in all-completed quality gate") {
+		t.Error("task title should contain step name")
+	}
+}
+
+func TestAddFixTask_DescriptionContainsErrorDoc(t *testing.T) {
+	projectRoot, featureSlug, _ := helperSetup(t)
+
+	errorDoc := "tests/e2e/results/raw-output.txt"
+	taskID := addFixTask(projectRoot, featureSlug, "test-e2e", "test.spec.ts:5: fail", errorDoc)
+	if taskID == "" {
+		t.Fatal("expected task ID")
+	}
+
+	mdPath := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug), taskID+".md")
+	data, err := os.ReadFile(mdPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), errorDoc) {
+		t.Errorf("task description should reference error doc %q", errorDoc)
+	}
+}
+
+func TestAddFixTask_ForgeStateResetEachTime(t *testing.T) {
+	projectRoot, featureSlug, _ := helperSetup(t)
+
+	// First add
+	addFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt")
+	state := feature.ReadForgeState(projectRoot)
+	if state == nil || state.AllCompleted {
+		t.Fatal("after first addFixTask, forge state should exist with allCompleted=false")
+	}
+
+	// Write allCompleted=true to simulate next completion cycle
+	feature.WriteForgeState(projectRoot, featureSlug)
+
+	// Second add should reset again
+	addFixTask(projectRoot, featureSlug, "lint", "b.go:2: error", "tests/results/out.txt")
+	state = feature.ReadForgeState(projectRoot)
+	if state == nil || state.AllCompleted {
+		t.Fatal("after second addFixTask, forge state should be reset again")
 	}
 }
 
 func TestHandleGateFailure_DistinctReasons(t *testing.T) {
 	tests := []struct {
-		step string
-		want string
+		step          string
+		fixID         string
+		wantContains  string
+		wantFixAction string
+		wantClaim     bool   // expect "task claim" in output
+		wantManual    bool   // expect "task add --template fix-task" in output
+		wantFixMsg    string // expect this fix task message
 	}{
-		{"compile", "Project compilation failed in all-completed hook"},
-		{"lint", "Lint check failed in all-completed hook"},
-		{"unit-test", "Unit tests failed in all-completed hook"},
-		{"test-e2e", "E2e regression tests failed in all-completed hook"},
+		{"compile", "fix-1", "Project compilation failed in all-completed hook", "fix compilation errors", true, false, "Fix task fix-1 added (P0, breaking)"},
+		{"lint", "fix-2", "Lint check failed in all-completed hook", "fix lint errors", true, false, "Fix task fix-2 added (P0, breaking)"},
+		{"unit-test", "fix-3", "Unit tests failed in all-completed hook", "fix failing tests", true, false, "Fix task fix-3 added (P0, breaking)"},
+		{"test-e2e", "fix-4", "E2e regression tests failed in all-completed hook", "fix failing e2e tests", true, false, "Fix task fix-4 added (P0, breaking)"},
+		{"unknown-step", "fix-5", "Unknown-step check failed in all-completed hook", "fix the issue", true, false, "Fix task fix-5 added (P0, breaking)"},
+		{"compile", "", "Project compilation failed in all-completed hook", "fix compilation errors", false, true, "Failed to add fix task automatically"},
 	}
 
 	for _, tc := range tests {
-		t.Run(tc.step, func(t *testing.T) {
-			// Capture the hook JSON output from handleGateFailure
-			// It calls os.Exit(0), so we run it in a subprocess
+		name := tc.step
+		if tc.fixID == "" {
+			name = "nofixid-" + tc.step
+		}
+		t.Run(name, func(t *testing.T) {
 			if os.Getenv("TEST_HANDLE_GATE") == "1" {
-				handleGateFailure(tc.step, "tests/results/fake.txt", "some error")
+				handleGateFailure(tc.step, "tests/results/fake.txt", tc.fixID, "some error detail")
 				return
 			}
-			cmd := exec.Command(os.Args[0], "-test.run=TestHandleGateFailure_DistinctReasons/"+tc.step)
+			cmd := exec.Command(os.Args[0], "-test.run=TestHandleGateFailure_DistinctReasons/"+name)
 			cmd.Env = append(os.Environ(), "TEST_HANDLE_GATE=1")
 			output, _ := cmd.CombinedOutput()
 
 			got := string(output)
-			if !strings.Contains(got, tc.want) {
-				t.Errorf("reason for step %q should contain %q, got:\n%s", tc.step, tc.want, got)
+			if !strings.Contains(got, tc.wantContains) {
+				t.Errorf("reason for step %q should contain %q, got:\n%s", tc.step, tc.wantContains, got)
 			}
-			if !strings.Contains(got, "task claim") {
+			if !strings.Contains(got, tc.wantFixAction) {
+				t.Errorf("reason for step %q should contain fix action %q", tc.step, tc.wantFixAction)
+			}
+			if tc.wantClaim && !strings.Contains(got, "task claim") {
 				t.Errorf("reason for step %q should contain 'task claim'", tc.step)
 			}
-			// Should NOT contain a specific task ID like disc-N
-			if strings.Contains(got, "disc-") {
-				t.Errorf("reason for step %q should not contain task ID", tc.step)
+			if tc.wantManual && !strings.Contains(got, "task add --template fix-task") {
+				t.Errorf("reason for step %q (no fixID) should contain manual add instruction", tc.step)
+			}
+			if !strings.Contains(got, tc.wantFixMsg) {
+				t.Errorf("reason for step %q should contain %q, got:\n%s", tc.step, tc.wantFixMsg, got)
+			}
+			if !strings.Contains(got, "tests/results/fake.txt") {
+				t.Errorf("reason for step %q should reference error doc path", tc.step)
+			}
+			if !strings.Contains(got, "some error detail") {
+				t.Errorf("reason for step %q should include concise error", tc.step)
 			}
 		})
 	}
@@ -556,5 +855,133 @@ func TestCheckAllCompleted_RejectedTaskReturnsNil(t *testing.T) {
 	result, _ := checkAllCompleted(false)
 	if result != nil {
 		t.Error("rejected task should prevent all-completed from proceeding")
+	}
+}
+
+func TestCheckAllCompleted_ForgeStateConsumedOnSuccess(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+
+	if err := feature.EnsureFeatureDir(dir, "test"); err != nil {
+		t.Fatal(err)
+	}
+
+	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
+	index := &task.TaskIndex{
+		Feature:    "test",
+		StatusEnum: []string{"pending", "in_progress", "completed", "blocked", "skipped"},
+	}
+	index.SetTasks(map[string]task.Task{
+		"t1": {ID: "1.1", Status: "completed"},
+	})
+	task.SaveIndex(indexPath, index)
+	feature.WriteForgeState(dir, "test")
+
+	// First call should succeed and consume the state
+	result, _ := checkAllCompleted(false)
+	if result == nil {
+		t.Fatal("first call should return result")
+	}
+
+	// Forge state should be cleared
+	state := feature.ReadForgeState(dir)
+	if state != nil {
+		t.Error("forge state should be cleared after checkAllCompleted consumes it")
+	}
+
+	// Second call should return nil (no state)
+	result2, _ := checkAllCompleted(false)
+	if result2 != nil {
+		t.Error("second call should return nil after state was consumed")
+	}
+}
+
+func TestCheckAllCompleted_ManyCompletedTasks(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	feature.EnsureFeatureDir(dir, "test")
+
+	tasks := make(map[string]task.Task)
+	for i := range 20 {
+		id := fmt.Sprintf("1.%d", i+1)
+		key := fmt.Sprintf("task-%d", i+1)
+		tasks[key] = task.Task{ID: id, Status: "completed"}
+	}
+
+	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
+	index := &task.TaskIndex{
+		Feature:    "test",
+		StatusEnum: []string{"pending", "in_progress", "completed", "blocked", "skipped"},
+	}
+	index.SetTasks(tasks)
+	task.SaveIndex(indexPath, index)
+	feature.WriteForgeState(dir, "test")
+
+	result, _ := checkAllCompleted(false)
+	if result == nil {
+		t.Fatal("expected result with many completed tasks")
+	}
+}
+
+func TestCheckAllCompleted_AllBlockedReturnsNil(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	feature.EnsureFeatureDir(dir, "test")
+
+	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
+	index := &task.TaskIndex{
+		Feature:    "test",
+		StatusEnum: []string{"pending", "in_progress", "completed", "blocked", "skipped"},
+	}
+	index.SetTasks(map[string]task.Task{
+		"t1": {ID: "1.1", Status: "blocked"},
+		"t2": {ID: "1.2", Status: "blocked"},
+	})
+	task.SaveIndex(indexPath, index)
+	feature.WriteForgeState(dir, "test")
+
+	result, _ := checkAllCompleted(false)
+	if result != nil {
+		t.Error("all blocked tasks should return nil")
+	}
+}
+
+func TestCheckAllCompleted_MixedCompletedSkippedRejected(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	feature.EnsureFeatureDir(dir, "test")
+
+	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
+	index := &task.TaskIndex{
+		Feature:    "test",
+		StatusEnum: []string{"pending", "in_progress", "completed", "blocked", "skipped", "rejected"},
+	}
+	index.SetTasks(map[string]task.Task{
+		"t1": {ID: "1.1", Status: "completed"},
+		"t2": {ID: "1.2", Status: "skipped"},
+		"t3": {ID: "1.3", Status: "rejected"},
+	})
+	task.SaveIndex(indexPath, index)
+	feature.WriteForgeState(dir, "test")
+
+	// rejected is not completed or skipped, so should return nil
+	result, _ := checkAllCompleted(false)
+	if result != nil {
+		t.Error("rejected task should prevent all-completed from proceeding")
+	}
+}
+
+func TestCheckAllCompleted_VerboseMode(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	feature.EnsureFeatureDir(dir, "test")
+
+	// No forge state → should return nil but not error
+	result, err := checkAllCompleted(true)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != nil {
+		t.Error("expected nil result without forge state")
 	}
 }
