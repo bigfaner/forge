@@ -59,10 +59,11 @@ func runValidate(cmd *cobra.Command, args []string) {
 }
 
 type validator struct {
-	filePath string
-	errors   []string
-	warnings []string
-	info     []string
+	filePath  string
+	quickMode bool // true when Proposal is set instead of PRD+Design
+	errors    []string
+	warnings  []string
+	info      []string
 }
 
 func (v *validator) run() error {
@@ -83,12 +84,15 @@ func (v *validator) run() error {
 	v.info = append(v.info, fmt.Sprintf("Feature: %s", idx.Feature))
 	v.info = append(v.info, fmt.Sprintf("Tasks: %d", idx.TaskCount()))
 
-	if idx.PRD == "" {
+	if idx.PRD == "" && idx.Proposal == "" {
 		v.warnings = append(v.warnings, "Missing 'prd' field")
 	}
-	if idx.Design == "" {
+	if idx.Design == "" && idx.Proposal == "" {
 		v.warnings = append(v.warnings, "Missing 'design' field")
 	}
+
+	// Quick mode: Proposal replaces PRD+Design, flat tasks without phases/gates/summaries
+	v.quickMode = idx.Proposal != "" && idx.PRD == "" && idx.Design == ""
 	if len(idx.StatusEnum) == 0 {
 		v.warnings = append(v.warnings, "Missing 'statusEnum' field — task record/status commands may fail")
 	}
@@ -215,24 +219,29 @@ func (v *validator) validateFilesExist(featureSlug string, tasks map[string]task
 			v.warnings = append(v.warnings, fmt.Sprintf("Task '%s': file '%s' missing", key, t.File))
 		}
 
-		// Check for unresolved template placeholders in T-test-1 task file
+		// Check for unresolved template placeholders in first-test task files
 		if t.ID == "T-test-1" {
-			v.validateTTest1Template(taskFile)
+			v.validateFirstTestTaskTemplate(taskFile, "T-test-1", []string{"{{LAST_BUSINESS_TASK_ID}}", "{{T_TEST_1_DEP}}"})
+		}
+		if t.ID == "T-quick-1" {
+			v.validateFirstTestTaskTemplate(taskFile, "T-quick-1", []string{"{{T_QUICK_1_DEP}}"})
 		}
 	}
 }
 
-// validateTTest1Template checks if T-test-1 task file has unresolved {{LAST_BUSINESS_TASK_ID}} placeholder.
-func (v *validator) validateTTest1Template(taskFile string) {
+// validateFirstTestTaskTemplate checks if a first-test task file has unresolved placeholders.
+func (v *validator) validateFirstTestTaskTemplate(taskFile string, taskID string, placeholders []string) {
 	data, err := os.ReadFile(taskFile)
 	if err != nil {
 		return // File existence already checked above
 	}
 
 	content := string(data)
-	if strings.Contains(content, "{{LAST_BUSINESS_TASK_ID}}") {
-		v.errors = append(v.errors,
-			fmt.Sprintf("Task 'T-test-1': file contains unresolved placeholder {{LAST_BUSINESS_TASK_ID}} — replace with actual last business task ID"))
+	for _, ph := range placeholders {
+		if strings.Contains(content, ph) {
+			v.errors = append(v.errors,
+				fmt.Sprintf("Task '%s': file contains unresolved placeholder %s — replace with actual dependency ID", taskID, ph))
+		}
 	}
 }
 
@@ -338,6 +347,10 @@ func (v *validator) validateGateIntegrity(tasks map[string]task.Task) {
 
 // V3: Phase order sanity
 func (v *validator) validatePhaseOrder(tasks map[string]task.Task) {
+	// Quick mode: flat tasks without phases
+	if v.quickMode {
+		return
+	}
 	// Build a lookup for gate tasks (used to recognize transitive cross-phase deps)
 	gateIDs := make(map[string]bool)
 	for _, t := range tasks {
@@ -383,6 +396,10 @@ func (v *validator) validatePhaseOrder(tasks map[string]task.Task) {
 
 // V4: Phase summary existence
 func (v *validator) validatePhaseSummaries(tasks map[string]task.Task) {
+	// Quick mode: flat tasks without phases, summaries, or gates
+	if v.quickMode {
+		return
+	}
 	// Collect phases that have business tasks
 	phasesWithBusiness := make(map[int]bool)
 	for _, t := range tasks {

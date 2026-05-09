@@ -35,6 +35,7 @@ type TaskIndex struct {
 	Feature      string
 	PRD          string   // e.g. "prd/prd-spec.md"
 	Design       string   // e.g. "design/tech-design.md"
+	Proposal     string   // e.g. "docs/proposals/<slug>/proposal.md" (quick mode alternative to PRD+Design)
 	Created      string
 	Status       string
 	tasks        map[string]Task
@@ -49,6 +50,7 @@ type taskIndexJSON struct {
 	Feature      string          `json:"feature"`
 	PRD          string          `json:"prd,omitempty"`
 	Design       string          `json:"design,omitempty"`
+	Proposal     string          `json:"proposal,omitempty"`
 	Created      string          `json:"created,omitempty"`
 	Status       string          `json:"status,omitempty"`
 	Tasks        map[string]Task `json:"tasks"`
@@ -63,6 +65,7 @@ func (ti TaskIndex) MarshalJSON() ([]byte, error) {
 		Feature:      ti.Feature,
 		PRD:          ti.PRD,
 		Design:       ti.Design,
+		Proposal:     ti.Proposal,
 		Created:      ti.Created,
 		Status:       ti.Status,
 		Tasks:        ti.tasks,
@@ -81,6 +84,7 @@ func (ti *TaskIndex) UnmarshalJSON(data []byte) error {
 	ti.Feature = j.Feature
 	ti.PRD = j.PRD
 	ti.Design = j.Design
+	ti.Proposal = j.Proposal
 	ti.Created = j.Created
 	ti.Status = j.Status
 	ti.tasks = j.Tasks

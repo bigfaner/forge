@@ -1429,3 +1429,223 @@ func TestValidator_ValidateLiveness_Wildcard(t *testing.T) {
 		})
 	}
 }
+
+// --- Quick mode validation ---
+
+func TestValidator_QuickMode(t *testing.T) {
+	t.Run("quick mode with proposal field suppresses prd/design/summary warnings", func(t *testing.T) {
+		dir := t.TempDir()
+
+		index := &task.TaskIndex{
+			Feature:      "test-quick",
+			Proposal:     "docs/proposals/test-quick/proposal.md",
+			StatusEnum:   []string{"pending", "in_progress", "completed", "blocked", "skipped"},
+			PriorityEnum: []string{"P0", "P1", "P2"},
+		}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1-task.md"},
+			"task2": {ID: "2", Title: "Task 2", Status: "pending", Priority: "P0", Dependencies: []string{"1"}, File: "2-task.md"},
+			"quick-test-cases": {ID: "T-quick-1", Title: "Test Cases", Status: "pending", Priority: "P1", Dependencies: []string{"2"}, File: "quick-test-cases.md"},
+		})
+
+		for _, fname := range []string{"1-task.md", "2-task.md", "quick-test-cases.md"} {
+			if err := os.WriteFile(filepath.Join(dir, fname), []byte("content"), 0644); err != nil {
+				t.Fatal(err)
+			}
+		}
+
+		indexFile := filepath.Join(dir, "index.json")
+		data, err := json.Marshal(index)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(indexFile, data, 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		v := &validator{filePath: indexFile}
+		err = v.run()
+		if err != nil {
+			t.Errorf("run() returned error: %v", err)
+		}
+
+		for _, w := range v.warnings {
+			if contains(w, "prd") {
+				t.Errorf("quick mode should not warn about missing prd: %s", w)
+			}
+			if contains(w, "design") {
+				t.Errorf("quick mode should not warn about missing design: %s", w)
+			}
+			if contains(w, "summary") {
+				t.Errorf("quick mode should not warn about missing summary: %s", w)
+			}
+			if contains(w, "previous phase") {
+				t.Errorf("quick mode should not warn about phase order: %s", w)
+			}
+		}
+	})
+
+	t.Run("quick mode deserializes proposal field", func(t *testing.T) {
+		dir := t.TempDir()
+
+		rawIndex := map[string]interface{}{
+			"feature":      "test-quick",
+			"proposal":     "docs/proposals/test-quick/proposal.md",
+			"statusEnum":   []string{"pending", "completed"},
+			"priorityEnum": []string{"P0", "P1", "P2"},
+			"tasks": map[string]interface{}{
+				"task1": map[string]interface{}{
+					"id": "1", "title": "Task", "status": "pending", "priority": "P0", "file": "task.md", "scope": "all",
+				},
+			},
+		}
+		data, _ := json.Marshal(rawIndex)
+		indexFile := filepath.Join(dir, "index.json")
+		if err := os.WriteFile(indexFile, data, 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := os.WriteFile(filepath.Join(dir, "task.md"), []byte("content"), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		v := &validator{filePath: indexFile}
+		err := v.run()
+		if err != nil {
+			t.Errorf("run() returned error: %v", err)
+		}
+		if !v.quickMode {
+			t.Error("expected quickMode to be true when proposal is set and prd/design are empty")
+		}
+	})
+
+	t.Run("quick mode round-trips proposal through marshal/unmarshal", func(t *testing.T) {
+		index := &task.TaskIndex{
+			Feature:      "test-quick",
+			Proposal:     "docs/proposals/test-quick/proposal.md",
+			StatusEnum:   []string{"pending"},
+			PriorityEnum: []string{"P0"},
+		}
+		index.SetTasks(map[string]task.Task{
+			"t1": {ID: "1", Title: "T", File: "t.md"},
+		})
+
+		data, err := json.Marshal(index)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		var restored task.TaskIndex
+		if err := json.Unmarshal(data, &restored); err != nil {
+			t.Fatal(err)
+		}
+		if restored.Proposal != "docs/proposals/test-quick/proposal.md" {
+			t.Errorf("proposal not preserved: got %q", restored.Proposal)
+		}
+		if restored.PRD != "" || restored.Design != "" {
+			t.Errorf("prd/design should be empty: prd=%q design=%q", restored.PRD, restored.Design)
+		}
+	})
+
+	t.Run("full mode with prd+design+proposal has no quick mode suppression", func(t *testing.T) {
+		dir := t.TempDir()
+
+		index := &task.TaskIndex{
+			Feature:      "test-feature",
+			PRD:          "prd/prd-spec.md",
+			Design:       "design/tech-design.md",
+			Proposal:     "docs/proposals/test/proposal.md",
+			StatusEnum:   []string{"pending", "completed"},
+			PriorityEnum: []string{"P0", "P1", "P2"},
+		}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "task.md"},
+		})
+
+		taskFile := filepath.Join(dir, "task.md")
+		if err := os.WriteFile(taskFile, []byte("content"), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		indexFile := filepath.Join(dir, "index.json")
+		data, err := json.Marshal(index)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(indexFile, data, 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		v := &validator{filePath: indexFile}
+		err = v.run()
+		if err != nil {
+			t.Errorf("run() returned error: %v", err)
+		}
+		if v.quickMode {
+			t.Error("should not be quick mode when prd and design are both set")
+		}
+	})
+}
+
+func TestValidator_QuickMode_FirstTestTaskPlaceholder(t *testing.T) {
+	t.Run("T-quick-1 with unresolved placeholder", func(t *testing.T) {
+		dir := t.TempDir()
+		featureSlug := "test-feature"
+
+		tasksDir := filepath.Join(dir, "docs", "features", featureSlug, "tasks")
+		if err := os.MkdirAll(tasksDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+
+		taskFile := filepath.Join(tasksDir, "quick-test-cases.md")
+		content := `---
+id: "T-quick-1"
+dependencies: [{{T_QUICK_1_DEP}}]
+---
+`
+		if err := os.WriteFile(taskFile, []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		v := &validator{filePath: filepath.Join(dir, "docs", "features", featureSlug, "tasks", "index.json")}
+		v.validateFilesExist(featureSlug, map[string]task.Task{
+			"quick-test-cases": {ID: "T-quick-1", File: "quick-test-cases.md"},
+		})
+
+		if len(v.errors) != 1 {
+			t.Errorf("expected 1 error for unresolved placeholder, got %d: %v", len(v.errors), v.errors)
+		}
+		if len(v.errors) > 0 && !contains(v.errors[0], "{{T_QUICK_1_DEP}}") {
+			t.Errorf("error should mention placeholder, got: %s", v.errors[0])
+		}
+	})
+
+	t.Run("T-quick-1 with resolved placeholder", func(t *testing.T) {
+		dir := t.TempDir()
+		featureSlug := "test-feature"
+
+		tasksDir := filepath.Join(dir, "docs", "features", featureSlug, "tasks")
+		if err := os.MkdirAll(tasksDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+
+		taskFile := filepath.Join(tasksDir, "quick-test-cases.md")
+		content := `---
+id: "T-quick-1"
+dependencies: ["2"]
+---
+`
+		if err := os.WriteFile(taskFile, []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		v := &validator{filePath: filepath.Join(dir, "docs", "features", featureSlug, "tasks", "index.json")}
+		v.validateFilesExist(featureSlug, map[string]task.Task{
+			"quick-test-cases": {ID: "T-quick-1", File: "quick-test-cases.md"},
+		})
+
+		if len(v.errors) != 0 {
+			t.Errorf("expected no errors for resolved placeholder, got: %v", v.errors)
+		}
+	})
+}
