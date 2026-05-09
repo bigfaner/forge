@@ -708,7 +708,7 @@ func TestValidateTTest1Template_UnresolvedPlaceholder(t *testing.T) {
 	os.WriteFile(taskFile, []byte("# Task\nReplace {{LAST_BUSINESS_TASK_ID}} with actual ID\n"), 0644)
 
 	v := &validator{}
-	v.validateTTest1Template(taskFile)
+	v.validateFirstTestTaskTemplate(taskFile, "T-test-1", []string{"{{LAST_BUSINESS_TASK_ID}}"})
 	if len(v.errors) == 0 {
 		t.Error("expected error for unresolved placeholder")
 	}
@@ -723,7 +723,7 @@ func TestValidateTTest1Template_ResolvedPlaceholder(t *testing.T) {
 	os.WriteFile(taskFile, []byte("# Task\nDepends on 1.5\n"), 0644)
 
 	v := &validator{}
-	v.validateTTest1Template(taskFile)
+	v.validateFirstTestTaskTemplate(taskFile, "T-test-1", []string{"{{LAST_BUSINESS_TASK_ID}}"})
 	if len(v.errors) != 0 {
 		t.Errorf("expected no errors, got: %v", v.errors)
 	}
@@ -1259,7 +1259,7 @@ func TestRunValidate_InvalidFile(t *testing.T) {
 
 func TestValidateTTest1Template_MissingFile(t *testing.T) {
 	v := &validator{}
-	v.validateTTest1Template("/nonexistent/task.md")
+	v.validateFirstTestTaskTemplate("/nonexistent/task.md", "T-test-1", []string{"{{LAST_BUSINESS_TASK_ID}}"})
 	if len(v.errors) != 0 {
 		t.Errorf("missing file should not add errors, got: %v", v.errors)
 	}
