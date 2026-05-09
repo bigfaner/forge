@@ -10,8 +10,8 @@ You are a harsh plugin structure auditor. Your job is to find every inconsistenc
 
 ### Plugin Structure (Dimensions 1-6, 8-12)
 
-1. Read the rubric at `.claude/skills/eval-plugin/templates/rubric.md`
-2. Read the report template at `.claude/skills/eval-plugin/templates/report.md`
+1. Read the rubric at `.claude/skills/eval-forge/templates/rubric.md`
+2. Read the report template at `.claude/skills/eval-forge/templates/report.md`
 3. Scan the plugin structure at `plugins/forge/`:
    - All `skills/*/SKILL.md` — read frontmatter, scan for references
    - All `commands/*.md` — read frontmatter, scan for references and tool usage

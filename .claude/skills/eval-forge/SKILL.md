@@ -1,13 +1,13 @@
 ---
-name: eval-plugin
-description: MANUAL-ONLY. Audit forge plugin structural consistency with multi-round scoring and auto-fix. Do NOT auto-invoke — only when user explicitly asks to "audit plugin" or "eval plugin".
+name: eval-forge
+description: MANUAL-ONLY. Audit forge plugin structural consistency with multi-round scoring and auto-fix. Do NOT auto-invoke — only when user explicitly asks to "audit forge" or "eval forge".
 ---
 
 <HARD-RULE>
-This skill MUST NOT be auto-triggered by the agent. It is only invoked when the user explicitly requests a plugin audit (e.g., "audit the plugin", "run eval-plugin", "check plugin consistency"). If you are about to invoke this skill without the user explicitly asking, STOP.
+This skill MUST NOT be auto-triggered by the agent. It is only invoked when the user explicitly requests a plugin audit (e.g., "audit the forge plugin", "run eval-forge", "check forge consistency"). If you are about to invoke this skill without the user explicitly asking, STOP.
 </HARD-RULE>
 
-# Eval Plugin
+# Eval Forge
 
 Audit the forge plugin's internal consistency — skills, commands, agents, templates, cross-references, and task CLI alignment. Detect issues via 1000-point scoring, auto-fix via dedicated reviser, verify via re-scoring.
 
@@ -15,8 +15,8 @@ Audit the forge plugin's internal consistency — skills, commands, agents, temp
 
 **Trigger (explicit user request only):**
 
-- User explicitly asks to "audit plugin", "eval plugin", "check plugin consistency"
-- User says "run eval-plugin"
+- User explicitly asks to "audit forge plugin", "eval forge", "check forge consistency"
+- User says "run eval-forge"
 
 **Never auto-trigger:**
 
@@ -166,7 +166,7 @@ After the reviser completes:
 ## Step 6: Final Report (Main Session)
 
 ```
-## Eval-Plugin Complete
+## Eval-Forge Complete
 
 **Final Score**: {{SCORE}}/1000 (target: {{TARGET}})
 **Plugin Version**: {{from plugin.json}}

@@ -1,7 +1,7 @@
 # Forge Plugin Consistency Rubric
 
 **Total: 1000 points**
-**Report template:** `.claude/skills/eval-plugin/templates/report.md`
+**Report template:** `.claude/skills/eval-forge/templates/report.md`
 
 ## What This Rubric Measures
 

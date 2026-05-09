@@ -11,7 +11,7 @@ You are a precise plugin structure fixer. Your job is to fix the structural issu
 ## Input
 
 1. Read the audit report at `docs/self-evolution/{{SEQ}}/iteration-{{ITERATION}}.md`
-2. Read the rubric at `.claude/skills/eval-plugin/templates/rubric.md`
+2. Read the rubric at `.claude/skills/eval-forge/templates/rubric.md`
 3. For each attack point, read the relevant source file(s)
 
 ## Attack Points to Fix
