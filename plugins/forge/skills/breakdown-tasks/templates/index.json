@@ -4,7 +4,7 @@
   "design": "design/tech-design.md",
   "created": "YYYY-MM-DD",
   "status": "planning",
-  "statusEnum": ["pending", "in_progress", "completed", "blocked", "skipped"],
+  "statusEnum": ["pending", "in_progress", "completed", "blocked", "skipped", "rejected"],
   "priorityEnum": ["P0", "P1", "P2"],
   "e2eRound": 0,
   "tasks": {

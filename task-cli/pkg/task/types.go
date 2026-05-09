@@ -144,6 +144,7 @@ func NewTaskIndex(feature string) *TaskIndex {
 			"completed",
 			"blocked",
 			"skipped",
+			"rejected",
 		},
 		PriorityEnum: []string{"P0", "P1", "P2"},
 		tasks:        make(map[string]Task),

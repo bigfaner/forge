@@ -323,3 +323,24 @@ func TestWriteRawOutput(t *testing.T) {
 
 
 
+
+func TestCheckAllCompleted_RejectedTaskReturnsNil(t *testing.T) {
+	projectRoot := t.TempDir()
+	featureSlug := "test"
+	tasksDir := filepath.Join(projectRoot, "docs", "features", featureSlug, "tasks")
+	os.MkdirAll(tasksDir, 0755)
+
+	index := task.NewTaskIndex(featureSlug)
+	index.SetTasks(map[string]task.Task{
+		"task-a": {ID: "1.1", Status: "completed", File: "1.1.md"},
+		"task-b": {ID: "1.2", Status: "rejected", File: "1.2.md"},
+	})
+	indexPath := filepath.Join(tasksDir, "index.json")
+	task.SaveIndex(indexPath, index)
+	feature.WriteForgeState(projectRoot, featureSlug)
+
+	result, _ := checkAllCompleted(false)
+	if result != nil {
+		t.Error("rejected task should prevent all-completed from proceeding")
+	}
+}

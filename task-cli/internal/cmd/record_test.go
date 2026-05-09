@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"task-cli/pkg/feature"
 	"task-cli/pkg/task"
 )
 
@@ -1030,4 +1031,64 @@ func TestAutoRestoreSourceTask_SlugKeyedFullChain(t *testing.T) {
 			t.Errorf("source should stay blocked (fix-A not completed yet), got %s", index.TasksMap()["run-e2e"].Status)
 		}
 	})
+}
+
+func TestFillRecordTemplate_RejectedStatus(t *testing.T) {
+	tmpl := &task.Task{ID: "1.1", Title: "Test Task"}
+	rd := &task.RecordData{Status: "rejected", Summary: "Did not pass acceptance criteria"}
+	content := fillRecordTemplate(tmpl, rd, "2026-01-01 10:00")
+	if !strings.Contains(content, `status: "rejected"`) {
+		t.Error("template should contain rejected status")
+	}
+	if !strings.Contains(content, "N/A") {
+		t.Error("completed time should be N/A for non-completed status")
+	}
+}
+
+func TestSaveIndexAndSignalCompletion_RejectedNotDone(t *testing.T) {
+	projectRoot := t.TempDir()
+	featureSlug := "test"
+	tasksDir := filepath.Join(projectRoot, "docs", "features", featureSlug, "tasks")
+	os.MkdirAll(tasksDir, 0755)
+
+	index := task.NewTaskIndex(featureSlug)
+	index.SetTasks(map[string]task.Task{
+		"task-a": {ID: "1.1", Status: "completed", File: "1.1.md", Record: "1.1-record.md"},
+		"task-b": {ID: "1.2", Status: "rejected", File: "1.2.md", Record: "1.2-record.md"},
+	})
+	indexPath := filepath.Join(tasksDir, "index.json")
+	task.SaveIndex(indexPath, index)
+
+	saveIndexAndSignalCompletion(indexPath, projectRoot, featureSlug, index)
+
+	// Should NOT write forge state because rejected != done
+	forgeState := feature.ReadForgeState(projectRoot)
+	if forgeState != nil && forgeState.AllCompleted {
+		t.Error("rejected task should prevent allCompleted signal")
+	}
+}
+
+func TestAutoRestoreSourceTask_RejectedDepNotMet(t *testing.T) {
+	index := &task.TaskIndex{Feature: "test"}
+	index.SetTasks(map[string]task.Task{
+		"source": {ID: "1.1", Status: "blocked", Dependencies: []string{"1.2"}},
+		"dep":    {ID: "1.2", Status: "rejected"},
+	})
+	// Should not restore because dep is rejected (not completed/skipped)
+	autoRestoreSourceTask(index, "1.1")
+	src, _ := index.ByID("source")
+	if src.Status != "blocked" {
+		t.Errorf("source should stay blocked when dep is rejected, got %s", src.Status)
+	}
+}
+
+func TestValidateRecordData_RejectedSkipsCompletedChecks(t *testing.T) {
+	// Rejected status should skip test evidence and AC checks
+	rd := &task.RecordData{
+		Status:   "rejected",
+		Summary:  "Acceptance criteria not met",
+		Coverage: -1.0,
+	}
+	// Should not exit or error — rejected skips completed validation
+	validateRecordData(rd, false)
 }

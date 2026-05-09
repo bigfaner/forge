@@ -78,7 +78,7 @@ func checkAllCompleted(verbose bool) (*AllCompletedResult, error) {
 	}
 	Debugf(verbose, "loaded index: %d tasks", index.TaskCount())
 
-	// All tasks must be completed or skipped
+	// All tasks must be completed or skipped (rejected does not count as done)
 	for _, t := range index.TasksMap() {
 		if t.Status != feature.StatusCompleted && t.Status != feature.StatusSkipped {
 			Debugf(verbose, "task %s is %s — not all done", t.ID, t.Status)

@@ -116,6 +116,7 @@ index.json rules:
 - Paths relative to `tasks/` directory
 - `dependencies` arrays reference task IDs (`"1"`, `"T-quick-1"`)
 - `proposal` field points to the proposal path (relative to feature dir)
+- If a quick task needs to spawn subagents (unlikely in quick mode), set `mainSession: true` and add `## Main Session Instructions` to the task file
 </HARD-RULE>
 
 Reference: [templates/index.json](templates/index.json) | Schema: [templates/index.schema.json](templates/index.schema.json)

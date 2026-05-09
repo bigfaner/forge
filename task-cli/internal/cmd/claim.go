@@ -162,6 +162,10 @@ func checkExistingTaskState(projectRoot string, index *task.TaskIndex, statePath
 		fmt.Printf("Previous task '%s' is completed. Claiming new task...\n", t.Title)
 		task.DeleteState(statePath)
 		return false, false, nil
+	case "rejected":
+		fmt.Printf("Previous task '%s' was rejected. Claiming new task...\n", t.Title)
+		task.DeleteState(statePath)
+		return false, false, nil
 	default:
 		return false, true, []string{fmt.Sprintf("Task '%s' has unexpected status: %s", t.Title, t.Status)}
 	}

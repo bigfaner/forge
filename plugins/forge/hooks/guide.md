@@ -104,7 +104,7 @@ graph LR
 - **Documents** table: lists all document paths and auto-generated summaries
 - **Traceability** table: PRD → Design → Tasks mapping
 - **Status** (feature-level): prd → design → tasks → in-progress → completed
-  - Not to be confused with task-level statuses in index.json: pending, in_progress, completed, blocked, skipped
+  - Not to be confused with task-level statuses in index.json: pending, in_progress, completed, blocked, skipped, rejected
 
 ## Quality Gate Protocol
 
