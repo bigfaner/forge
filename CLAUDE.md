@@ -19,4 +19,3 @@
 |------|------|
 | [docs/official-references/plugin marketplace.md](docs/official-references/plugin-marketplace.md) | 构建和托管 plugin marketplace，以在团队和社区中分发 Claude Code 扩展 |
 | [docs/official-references/plugin.md](docs/official-references/plugin.md) | Claude Code 插件系统的完整技术参考，包括架构、CLI 命令和组件规范。 |
-| [plugins/forge/SKILLS.md](plugins/forge/SKILLS.md) | forge skill 注册表，列出所有可用 skill 及说明 |
