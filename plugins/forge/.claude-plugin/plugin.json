@@ -1,6 +1,6 @@
 {
 	"name": "forge",
-	"version": "2.14.0",
+	"version": "2.14.1",
 	"description": "Task management and workflow helper tools for Claude Code",
 	"keywords": [
 		"task",
