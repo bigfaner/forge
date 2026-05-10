@@ -47,3 +47,8 @@ export default defineConfig({
   //   },
   // ],
 });
+
+// IMPORTANT: Do NOT add a webServer section here.
+// Server lifecycle is managed by the test-e2e justfile recipe.
+// Adding webServer would conflict and cause false positive test failures
+// (TCP port ready ≠ application ready).

@@ -22,10 +22,50 @@ test:
 test-e2e feature="":
     #!/usr/bin/env bash
     set -euo pipefail
+    # --- Server Lifecycle (idempotent) ---
+    mkdir -p tests/e2e/results
+    _root="$(pwd)"
+    _pid_file="$_root/tests/e2e/results/.pid-server"
+    should_start=false
+    # Layer 1: tracked process alive?
+    if [ -f "$_pid_file" ] && kill -0 "$(tr -d '\r' < "$_pid_file")" 2>/dev/null; then
+        should_start=false
+    # Layer 2: already responding (manually started)?
+    elif just probe > /dev/null 2>&1; then
+        should_start=false
+    # Layer 3: start
+    else
+        should_start=true
+    fi
+    if [ "$should_start" = true ]; then
+        just run > /dev/null 2>&1 &
+        printf '%s\n' "$!" > "$_pid_file"
+        _cleanup() { kill "$(tr -d '\r' < "$_pid_file")" 2>/dev/null || true; rm -f "$_pid_file"; }
+        trap _cleanup EXIT INT TERM
+        sleep 1
+        if ! kill -0 "$(tr -d '\r' < "$_pid_file")" 2>/dev/null; then
+            echo "e2e: server process exited immediately" >&2
+            rm -f "$_pid_file"
+            exit 1
+        fi
+    fi
+    if [ -f tests/e2e/config.yaml ]; then
+        ready=false
+        for i in {1..10}; do
+            if just probe > /dev/null 2>&1; then ready=true; break; fi
+            sleep 3
+        done
+        if [ "$ready" = false ]; then
+            echo "e2e: health check failed after 30s" >&2
+            just probe || true
+            exit 1
+        fi
+    fi
+    # --- Run Tests ---
     if [ "{{feature}}" != "" ]; then
         cd tests/e2e && E2E_FEATURE=1 npx playwright test features/{{feature}}/
     else
-        [ ! -d tests/e2e/node_modules ] && npm install --prefix tests/e2e
+        if [ ! -d tests/e2e/node_modules ]; then npm install --prefix tests/e2e; fi
         cd tests/e2e && npx playwright test
     fi
 
@@ -82,10 +122,12 @@ probe path="":
     for label in "frontend:$frontend" "backend:$backend"; do
         url="${label#*:}"
         [ -z "$url" ] && continue
-        if curl -sf --max-time 5 "$url" > /dev/null 2>&1; then
+        STATUS=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "$url" 2>/dev/null || echo "000")
+        STATUS=${STATUS:-000}
+        if [ "$STATUS" != "000" ] && [ "$STATUS" -lt 500 ]; then
             echo "OK: ${label%%:*} ($url)"
         else
-            echo "FAIL: ${label%%:*} ($url) not responding" >&2
+            echo "FAIL: ${label%%:*} ($url) status=$STATUS" >&2
             fail=$((fail+1))
         fi
     done
