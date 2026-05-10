@@ -71,16 +71,18 @@ When failures are beyond the current task's scope (pre-existing bugs, environmen
 
 ```bash
 task template fix-task  # View template and required variables first
-task status <TASK_ID> blocked
 task add --template fix-task --title "Fix: <concise description>" \
   --source-task-id <TASK_ID> \
+  --block-source \
   --var SOURCE_FILES="<affected source paths>" \
   --var TEST_SCRIPT="<failing test file>" \
   --var TEST_RESULTS="<test results path>" \
   --description "<root cause and context>"
 ```
 
+**`--block-source`**: atomically sets source task to blocked before resolution, preserving the fix-chain model.
 **`--source-task-id` auto-resolves**: if `<TASK_ID>` is a **completed** fix-task, the CLI automatically resolves to the root blocked task. Always pass the current failing task's ID — no manual chain tracing needed.
+`task add` automatically deduplicates — check output: `ACTION: ADDED` (new fix task) or `ACTION: SKIPPED` (active fix already exists).
 
 The fix-task (P0) will be auto-claimed by the next `task claim`. When it completes, `task record` auto-restores the source task to pending via SourceTaskID.
 

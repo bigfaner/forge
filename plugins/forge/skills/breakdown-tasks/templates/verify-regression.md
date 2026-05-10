@@ -45,11 +45,13 @@ No direct user story mapping. This is a standard regression verification task.
   task add --template fix-task \
            --title "Fix: <concise description>" \
            --source-task-id T-test-4.5 \
+           --block-source \
            --var SOURCE_FILES="<affected source file paths>" \
            --var TEST_SCRIPT="tests/e2e/<failing-spec>.spec.ts" \
            --var TEST_RESULTS="tests/e2e/test-results/" \
            --description "<root cause and context>"
   ```
+  `task add` automatically deduplicates — check output: `ACTION: ADDED` (new fix task) or `ACTION: SKIPPED` (active fix already exists).
 - When you record this task, the CLI will auto-downgrade `status: "completed"` to `status: "blocked"` if `testsFailed > 0` — do NOT manually set status to blocked
 - Fix tasks (P0) will be claimed before T-test-5 (P2)
 - After fix tasks complete, T-test-4.5 is auto-restored to pending and re-claimed for re-run

@@ -118,12 +118,16 @@ task query <TASK_ID>
 ```
 
 - If STATUS is not `"completed"`: task was auto-downgraded (e.g. test failures).
-  Before spawning fix tasks, check if fix tasks already exist:
+  Spawn fix task using `--block-source` to atomically block the source:
   ```bash
-  grep -l "sourceTaskID.*<TASK_ID>" docs/features/<FEATURE>/tasks/index.json
+  task add --template fix-task --title "Fix: <failure>" \
+    --source-task-id <TASK_ID> \
+    --block-source \
+    --description "<reason>"
   ```
-  If fix tasks already exist for this source → skip, they are already in progress.
-  If no fix tasks exist → spawn fix task (same as Step 5a failure handling).
+  `task add` automatically deduplicates — check output:
+  - `ACTION: ADDED` → new fix task created, continue loop
+  - `ACTION: SKIPPED` → active fix task already exists, continue loop
 - Only proceed if STATUS is `"completed"`
 
 ### Step 4: Context Check
@@ -166,16 +170,17 @@ just test [scope]
 Apply the **Scope Resolution** protocol from the Forge Guide — use the `SCOPE` extracted from the claim output in Step 1.
 
 **If tests fail**:
-- Run `task template fix-task` to view the template, then add fix task and mark source blocked:
+- Run `task template fix-task` to view the template, then add fix task:
   ```bash
-  task status <TASK_ID> blocked
   task add --template fix-task --title "Fix: <failure>" \
     --source-task-id <TASK_ID> \
+    --block-source \
     --var SOURCE_FILES="<affected paths>" \
     --var TEST_SCRIPT="<failing test>" \
     --var TEST_RESULTS="<results path>" \
     --description "<root cause>"
   ```
+  **`--block-source`**: atomically sets source task to blocked before resolution, preserving the fix-chain model.
   **`--source-task-id` auto-resolves**: if `<TASK_ID>` is a **completed** fix-task, the CLI automatically resolves to the root blocked task. Always pass the current failing task's ID — no manual chain tracing needed.
 - Continue loop — fix task (P0) will be claimed on next iteration
 - Do NOT proceed to next task until fix task completes
@@ -213,17 +218,16 @@ fi
 ```
 
 **If e2e fails**:
-- Mark source task blocked, then add fix task using the fix-task template:
+- Add fix task using the fix-task template:
   ```bash
-  task status <TASK_ID> blocked
   task add --template fix-task --title "Fix: <concise description>" \
     --source-task-id <TASK_ID> \
+    --block-source \
     --var SOURCE_FILES="<affected source paths>" \
     --var TEST_SCRIPT="tests/e2e/features/$FEATURE/<failing-spec>.spec.ts" \
     --var TEST_RESULTS="tests/e2e/features/$FEATURE/results/latest.md" \
     --description "<root cause and context>"
   ```
-  **`--source-task-id` auto-resolves**: if `<TASK_ID>` is a **completed** fix-task, the CLI automatically resolves to the root blocked task. Always pass the current failing task's ID — no manual chain tracing needed.
 
 **If e2e passes or pre-flight skipped**: continue to next iteration (Step 1)
 
@@ -239,9 +243,9 @@ Return to Step 1.
 | Agent timeout | Mark blocked, continue next |
 | Record missing | Dispatch error-fixer (include: "Use /record-task skill to create record") |
 | 3 consecutive failures | STOP dispatcher |
-| Breaking task tests fail (5a) | `task status <ID> blocked` + `task add --template fix-task`, continue loop |
-| Feature e2e tests fail (5b) | `task status <ID> blocked` + `task add --template fix-task`, continue loop |
-| Main session task fails | Follow error handling in task document's `### Error Handling` section; if missing, mark blocked + add fix-task, continue loop |
+| Breaking task tests fail (5a) | `task add --template fix-task --block-source`, continue loop |
+| Feature e2e tests fail (5b) | `task add --template fix-task --block-source`, continue loop |
+| Main session task fails | Follow error handling in task document's `### Error Handling` section; if missing, `task add --template fix-task --block-source`, continue loop |
 
 ### Error-Fixer Dispatch
 

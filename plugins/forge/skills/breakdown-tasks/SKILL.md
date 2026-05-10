@@ -341,17 +341,19 @@ Replace `{{T_TEST_1_DEP}}` with the last phase's gate ID if a gate exists (e.g.,
 - T-test-4.5: run full regression suite; on failure, mark blocked, add fix tasks (P0) with unblock instruction — re-runs after fix
 - T-test-5: extract business rules and tech specs, user reviews and confirms integration
 
-**Fix-task reference**: Templates are managed by task-cli and embedded in the binary. Auto-generated fix-task IDs follow the `disc-N` format (e.g., `disc-1`, `disc-2`). Agents should run `task template fix-task` to view the template and required variables before creating fix tasks. When adding a fix task, the source task MUST be marked `blocked` first (so it's not `in_progress` and the P0 fix task can be claimed immediately):
+**Fix-task reference**: Templates are managed by task-cli and embedded in the binary. Auto-generated fix-task IDs follow the `disc-N` format (e.g., `disc-1`, `disc-2`). Agents should run `task template fix-task` to view the template and required variables before creating fix tasks:
 
 ```bash
-task status <source-task-id> blocked
 task add --template fix-task --title "Fix: <description>" \
   --source-task-id <source-task-id> \
+  --block-source \
   --var SOURCE_FILES="<affected paths>" \
   --var TEST_SCRIPT="<failing test>" \
   --var TEST_RESULTS="<results path>" \
   --description "<root cause>"
 ```
+
+**`--block-source`**: atomically sets source task to blocked before resolution. `task add` automatically deduplicates — check output: `ACTION: ADDED` (new fix task) or `ACTION: SKIPPED` (active fix already exists).
 
 When a fix-task completes, `task record` auto-restores the source task to `pending` (checks all source task's dependencies are completed). For nested fix-tasks (fix-task itself fails), `--source-task-id` must point to the FAILED fix-task, not the original source. Maximum nesting: 3 levels.
 

@@ -36,20 +36,18 @@ with existing tests.
 - Read Playwright output for failure details (check `tests/e2e/test-results/` and terminal output)
 - Analyze each failure: is it a code bug, test script issue, or environment issue?
 - Run `task template fix-task` to view the fix-task template and required variables
-- Mark this task `blocked`:
-  ```bash
-  task status T-quick-5 blocked
-  ```
 - For each distinct root cause, create a fix task:
   ```bash
   task add --template fix-task \
            --title "Fix: <concise description>" \
            --source-task-id T-quick-5 \
+           --block-source \
            --var SOURCE_FILES="<affected source file paths>" \
            --var TEST_SCRIPT="tests/e2e/<failing-spec>.spec.ts" \
            --var TEST_RESULTS="tests/e2e/test-results/" \
            --description "<root cause and context>"
   ```
+  `task add` automatically deduplicates — check output: `ACTION: ADDED` (new fix task) or `ACTION: SKIPPED` (active fix already exists).
 - Fix tasks (P0) will be claimed before other P1/P2 tasks
 - After fix tasks complete, T-quick-5 is unblocked and re-claimed for re-run
 

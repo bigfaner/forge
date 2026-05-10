@@ -1,6 +1,7 @@
 package task
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"slices"
@@ -711,6 +712,14 @@ func TestAddTask_SourceTaskID_IdempotentDep(t *testing.T) {
 	if err != nil {
 		t.Fatalf("setup: AddTask failed: %v", err)
 	}
+
+	// Complete fix-1 so dedup allows fix-2
+	index, _ := LoadIndex(indexPath)
+	fix1 := index.tasks[id1]
+	fix1.Status = "completed"
+	index.tasks[id1] = fix1
+	SaveIndex(indexPath, index)
+
 	// Add again with same source — source dep should not duplicate
 	id2, err := AddTask(indexPath, AddTaskOpts{
 		Title:        "Fix 2",
@@ -720,7 +729,7 @@ func TestAddTask_SourceTaskID_IdempotentDep(t *testing.T) {
 		t.Fatalf("setup: AddTask failed: %v", err)
 	}
 
-	index, err := LoadIndex(indexPath)
+	index, err = LoadIndex(indexPath)
 	if err != nil {
 		t.Fatalf("setup: LoadIndex failed: %v", err)
 	}
@@ -839,16 +848,30 @@ func TestAddTask_SourceTaskID_MultipleAddsToSameSourceByID(t *testing.T) {
 		Title:        "Fix A",
 		SourceTaskID: "1.1", // ID, not key
 	})
+	// Complete fix A so dedup allows fix B
+	index, _ := LoadIndex(indexPath)
+	fixA := index.tasks[id1]
+	fixA.Status = "completed"
+	index.tasks[id1] = fixA
+	SaveIndex(indexPath, index)
+
 	id2, _ := AddTask(indexPath, AddTaskOpts{
 		Title:        "Fix B",
 		SourceTaskID: "1.1",
 	})
+	// Complete fix B so dedup allows fix C
+	index, _ = LoadIndex(indexPath)
+	fixB := index.tasks[id2]
+	fixB.Status = "completed"
+	index.tasks[id2] = fixB
+	SaveIndex(indexPath, index)
+
 	id3, _ := AddTask(indexPath, AddTaskOpts{
 		Title:        "Fix C",
 		SourceTaskID: "1.1",
 	})
 
-	index, _ := LoadIndex(indexPath)
+	index, _ = LoadIndex(indexPath)
 	srcTask := index.tasks["1.1-init"]
 	for _, id := range []string{id1, id2, id3} {
 		if !slices.Contains(srcTask.Dependencies, id) {
@@ -1365,5 +1388,428 @@ func TestGetUnmetDependencies_MixedWildcardAndExactSlugKeyed(t *testing.T) {
 	unmet, _ := GetUnmetDependencies(indexPath, "disc-1")
 	if len(unmet) != 1 || unmet[0] != "1.2" {
 		t.Errorf("expected [1.2] unmet, got %v", unmet)
+	}
+}
+
+// --- Active fix-task dedup tests ---
+
+func TestAddTask_Dedup_ActiveFixBlocksCreation(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// Add fix-1 targeting source "1.1" — still pending (active)
+	_, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 1",
+		Priority:     "P0",
+		SourceTaskID: "1.1",
+	})
+	if err != nil {
+		t.Fatalf("setup: AddTask fix-1 failed: %v", err)
+	}
+
+	// Try adding fix-2 for the same source — should be blocked by dedup
+	_, err = AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 2",
+		Priority:     "P0",
+		SourceTaskID: "1.1",
+	})
+	if err == nil {
+		t.Fatal("expected ActiveFixExistsError, got nil")
+	}
+	var dedupErr *ActiveFixExistsError
+	if !errors.As(err, &dedupErr) {
+		t.Fatalf("expected *ActiveFixExistsError, got %T: %v", err, err)
+	}
+	if dedupErr.SourceTaskID != "1.1" {
+		t.Errorf("SourceTaskID = %q, want %q", dedupErr.SourceTaskID, "1.1")
+	}
+	if len(dedupErr.ActiveFixIDs) != 1 || dedupErr.ActiveFixIDs[0] != "disc-1" {
+		t.Errorf("ActiveFixIDs = %v, want [disc-1]", dedupErr.ActiveFixIDs)
+	}
+}
+
+func TestAddTask_Dedup_CompletedFixAllowsCreation(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// Add fix-1 and mark it completed
+	fix1ID, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 1",
+		Priority:     "P0",
+		SourceTaskID: "1.1",
+	})
+	if err != nil {
+		t.Fatalf("setup: AddTask fix-1 failed: %v", err)
+	}
+	index, _ := LoadIndex(indexPath)
+	fix1 := index.tasks[fix1ID]
+	fix1.Status = "completed"
+	index.tasks[fix1ID] = fix1
+	SaveIndex(indexPath, index)
+
+	// Adding fix-2 for the same source should succeed (fix-1 is completed)
+	fix2ID, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 2",
+		Priority:     "P0",
+		SourceTaskID: "1.1",
+	})
+	if err != nil {
+		t.Fatalf("AddTask fix-2 should succeed when fix-1 is completed, got: %v", err)
+	}
+	if fix2ID == "" {
+		t.Error("expected non-empty fix-2 ID")
+	}
+}
+
+func TestAddTask_Dedup_SkippedFixAllowsCreation(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	fix1ID, _ := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 1",
+		SourceTaskID: "1.1",
+	})
+	index, _ := LoadIndex(indexPath)
+	fix1 := index.tasks[fix1ID]
+	fix1.Status = "skipped"
+	index.tasks[fix1ID] = fix1
+	SaveIndex(indexPath, index)
+
+	_, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 2",
+		SourceTaskID: "1.1",
+	})
+	if err != nil {
+		t.Fatalf("should succeed when fix-1 is skipped, got: %v", err)
+	}
+}
+
+func TestAddTask_Dedup_RejectedFixAllowsCreation(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	fix1ID, _ := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 1",
+		SourceTaskID: "1.1",
+	})
+	index, _ := LoadIndex(indexPath)
+	fix1 := index.tasks[fix1ID]
+	fix1.Status = "rejected"
+	index.tasks[fix1ID] = fix1
+	SaveIndex(indexPath, index)
+
+	_, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 2",
+		SourceTaskID: "1.1",
+	})
+	if err != nil {
+		t.Fatalf("should succeed when fix-1 is rejected, got: %v", err)
+	}
+}
+
+func TestAddTask_Dedup_BlockedFixBlocksCreation(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	fix1ID, _ := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 1",
+		SourceTaskID: "1.1",
+	})
+	index, _ := LoadIndex(indexPath)
+	fix1 := index.tasks[fix1ID]
+	fix1.Status = "blocked"
+	index.tasks[fix1ID] = fix1
+	SaveIndex(indexPath, index)
+
+	_, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 2",
+		SourceTaskID: "1.1",
+	})
+	if err == nil {
+		t.Fatal("expected ActiveFixExistsError for blocked fix-task")
+	}
+	var dedupErr *ActiveFixExistsError
+	if !errors.As(err, &dedupErr) {
+		t.Fatalf("expected *ActiveFixExistsError, got %T: %v", err, err)
+	}
+	if dedupErr.ActiveFixIDs[0] != fix1ID {
+		t.Errorf("ActiveFixIDs = %v, want [%s]", dedupErr.ActiveFixIDs, fix1ID)
+	}
+}
+
+func TestAddTask_Dedup_NoSourceTaskID(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// No dedup check when SourceTaskID is empty
+	_, err := AddTask(indexPath, AddTaskOpts{Title: "Task A"})
+	if err != nil {
+		t.Fatalf("AddTask without sourceTaskID failed: %v", err)
+	}
+	_, err = AddTask(indexPath, AddTaskOpts{Title: "Task B"})
+	if err != nil {
+		t.Fatalf("second AddTask without sourceTaskID failed: %v", err)
+	}
+}
+
+func TestAddTask_Dedup_ResolvedSourceChecksAgainstRoot(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// fix-1 targets source "1.1", mark it completed (triggers source resolution)
+	fix1ID, _ := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 1",
+		SourceTaskID: "1.1",
+	})
+	index, _ := LoadIndex(indexPath)
+	fix1 := index.tasks[fix1ID]
+	fix1.Status = "completed"
+	index.tasks[fix1ID] = fix1
+	SaveIndex(indexPath, index)
+
+	// fix-2 targets completed fix-1 → resolves to "1.1" (root), then checks dedup.
+	// fix-1 is completed → dedup passes → fix-2 created
+	fix2ID, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 2",
+		SourceTaskID: fix1ID,
+	})
+	if err != nil {
+		t.Fatalf("AddTask fix-2 should succeed (fix-1 completed, resolved to 1.1), got: %v", err)
+	}
+
+	// Mark fix-2 as pending (active), then try fix-3 targeting "1.1"
+	index, _ = LoadIndex(indexPath)
+	// fix-2 resolved to SourceTaskID "1.1" — it's active (pending)
+	if index.tasks[fix2ID].SourceTaskID != "1.1" {
+		t.Fatalf("fix-2 SourceTaskID should resolve to '1.1', got %q", index.tasks[fix2ID].SourceTaskID)
+	}
+
+	// fix-3 targets "1.1" — fix-2 is active with source "1.1" → dedup blocks
+	_, err = AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 3",
+		SourceTaskID: "1.1",
+	})
+	if err == nil {
+		t.Fatal("expected ActiveFixExistsError (fix-2 is active for source 1.1)")
+	}
+	var dedupErr *ActiveFixExistsError
+	if !errors.As(err, &dedupErr) {
+		t.Fatalf("expected *ActiveFixExistsError, got %T: %v", err, err)
+	}
+}
+
+func TestAddTask_Dedup_MixedActiveAndCompleted(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// fix-1 completed
+	fix1ID, _ := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 1",
+		SourceTaskID: "1.1",
+	})
+	index, _ := LoadIndex(indexPath)
+	fix1 := index.tasks[fix1ID]
+	fix1.Status = "completed"
+	index.tasks[fix1ID] = fix1
+	SaveIndex(indexPath, index)
+
+	// fix-2 pending (active)
+	AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 2",
+		SourceTaskID: "1.1",
+	})
+
+	// Try fix-3 → blocked by active fix-2
+	_, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 3",
+		SourceTaskID: "1.1",
+	})
+	if err == nil {
+		t.Fatal("expected ActiveFixExistsError")
+	}
+	var dedupErr *ActiveFixExistsError
+	if !errors.As(err, &dedupErr) {
+		t.Fatalf("expected *ActiveFixExistsError, got %T: %v", err, err)
+	}
+	// Should only report fix-2 (active), not fix-1 (completed)
+	if len(dedupErr.ActiveFixIDs) != 1 {
+		t.Errorf("expected 1 active fix, got %d: %v", len(dedupErr.ActiveFixIDs), dedupErr.ActiveFixIDs)
+	}
+}
+
+// --- BlockSource tests ---
+
+func TestAddTask_BlockSource_SetsBlocked(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// 1.2 is pending — block it via --block-source
+	_, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix for 1.2",
+		Priority:     "P0",
+		SourceTaskID: "1.2",
+		BlockSource:  true,
+	})
+	if err != nil {
+		t.Fatalf("AddTask failed: %v", err)
+	}
+
+	index, _ := LoadIndex(indexPath)
+	srcTask := index.tasks["1.2-setup"]
+	if srcTask.Status != "blocked" {
+		t.Errorf("source should be blocked, got %q", srcTask.Status)
+	}
+}
+
+func TestAddTask_BlockSource_CompletedSourcePreservesChain(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// fix-1 targets source "1.1" — mark completed
+	fix1ID, _ := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 1",
+		SourceTaskID: "1.1",
+	})
+	index, _ := LoadIndex(indexPath)
+	fix1 := index.tasks[fix1ID]
+	fix1.Status = "completed"
+	index.tasks[fix1ID] = fix1
+	SaveIndex(indexPath, index)
+
+	// Add fix-2 with --block-source targeting completed fix-1
+	// BlockSource sets fix-1 to blocked BEFORE resolution → no resolution → chain preserved
+	fix2ID, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 2 (fix-of-fix)",
+		SourceTaskID: fix1ID,
+		BlockSource:  true,
+	})
+	if err != nil {
+		t.Fatalf("AddTask failed: %v", err)
+	}
+
+	index, _ = LoadIndex(indexPath)
+	// fix-2 should chain to fix-1 (not resolve to root 1.1)
+	if index.tasks[fix2ID].SourceTaskID != fix1ID {
+		t.Errorf("fix-2 SourceTaskID should be %q (chain preserved), got %q", fix1ID, index.tasks[fix2ID].SourceTaskID)
+	}
+	// fix-1 should be blocked
+	if index.tasks[fix1ID].Status != "blocked" {
+		t.Errorf("fix-1 should be blocked, got %q", index.tasks[fix1ID].Status)
+	}
+	// fix-2 should be a dependency of fix-1 (not root 1.1)
+	if !slices.Contains(index.tasks[fix1ID].Dependencies, fix2ID) {
+		t.Errorf("fix-1 should have fix-2 as dep, got %v", index.tasks[fix1ID].Dependencies)
+	}
+}
+
+func TestAddTask_BlockSource_WithoutFlagFlattensToRoot(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// fix-1 targets "1.1" — mark completed
+	fix1ID, _ := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 1",
+		SourceTaskID: "1.1",
+	})
+	index, _ := LoadIndex(indexPath)
+	fix1 := index.tasks[fix1ID]
+	fix1.Status = "completed"
+	index.tasks[fix1ID] = fix1
+	SaveIndex(indexPath, index)
+
+	// Without --block-source, completed fix-1 resolves to root "1.1"
+	fix2ID, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix 2",
+		SourceTaskID: fix1ID,
+		BlockSource:  false,
+	})
+	if err != nil {
+		t.Fatalf("AddTask failed: %v", err)
+	}
+
+	index, _ = LoadIndex(indexPath)
+	// fix-2 should flatten to root "1.1"
+	if index.tasks[fix2ID].SourceTaskID != "1.1" {
+		t.Errorf("fix-2 SourceTaskID should resolve to '1.1', got %q", index.tasks[fix2ID].SourceTaskID)
+	}
+	// fix-1 should still be completed (not blocked)
+	if index.tasks[fix1ID].Status != "completed" {
+		t.Errorf("fix-1 should remain completed, got %q", index.tasks[fix1ID].Status)
+	}
+}
+
+func TestAddTask_BlockSource_SourceNotFound(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// --block-source with nonexistent source — should succeed (no source to block)
+	_, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix orphan",
+		SourceTaskID: "9.9-nonexistent",
+		BlockSource:  true,
+	})
+	if err != nil {
+		t.Fatalf("AddTask should succeed with missing source, got: %v", err)
+	}
+}
+
+func TestAddTask_BlockSource_NoSourceTaskID(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// --block-source without --source-task-id — flag is ignored
+	_, err := AddTask(indexPath, AddTaskOpts{
+		Title:       "Plain task",
+		BlockSource: true,
+	})
+	if err != nil {
+		t.Fatalf("AddTask failed: %v", err)
+	}
+}
+
+func TestAddTask_BlockSource_DedupPreventsMutation(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// Add first fix task for source 1.1 (active/pending)
+	AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix: first attempt",
+		SourceTaskID: "1.1",
+	})
+
+	// Verify 1.1 is still "completed" before the dedup test
+	index, _ := LoadIndex(indexPath)
+	if index.tasks["1.1-init"].Status != "completed" {
+		t.Fatalf("1.1 should be completed before dedup test, got %q", index.tasks["1.1-init"].Status)
+	}
+
+	// Try to add second fix with --block-source — dedup should trigger BEFORE blocking
+	_, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix: second attempt",
+		SourceTaskID: "1.1",
+		BlockSource:  true,
+	})
+	var dedupErr *ActiveFixExistsError
+	if !errors.As(err, &dedupErr) {
+		t.Fatalf("expected ActiveFixExistsError, got %v", err)
+	}
+
+	// Key assertion: source 1.1 must NOT have been mutated to "blocked"
+	index, _ = LoadIndex(indexPath)
+	if index.tasks["1.1-init"].Status != "completed" {
+		t.Errorf("source 1.1 should remain completed (dedup prevented blocking mutation), got %q",
+			index.tasks["1.1-init"].Status)
+	}
+}
+
+func TestAddTask_BlockSource_AlreadyBlocked(t *testing.T) {
+	indexPath, _ := newTestIndex(t)
+
+	// Mark 1.2 as blocked manually
+	index, _ := LoadIndex(indexPath)
+	t1 := index.tasks["1.2-setup"]
+	t1.Status = "blocked"
+	index.tasks["1.2-setup"] = t1
+	SaveIndex(indexPath, index)
+
+	// --block-source on already-blocked source — idempotent
+	_, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix for blocked 1.2",
+		SourceTaskID: "1.2",
+		BlockSource:  true,
+	})
+	if err != nil {
+		t.Fatalf("AddTask failed: %v", err)
+	}
+
+	index, _ = LoadIndex(indexPath)
+	if index.tasks["1.2-setup"].Status != "blocked" {
+		t.Errorf("source should remain blocked, got %q", index.tasks["1.2-setup"].Status)
 	}
 }
