@@ -14,6 +14,9 @@ import (
 // setupValidateSpecsProject creates a test project with feature context and e2e spec files.
 func setupValidateSpecsProject(t *testing.T) string {
 	t.Helper()
+	t.Setenv("CLAUDE_PROJECT_DIR", "")
+	t.Setenv("PROJECT_ROOT", "")
+
 	dir := t.TempDir()
 
 	// Create go.mod as project marker

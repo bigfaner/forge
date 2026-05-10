@@ -56,6 +56,24 @@ task-executor 使用 markdown 标题检测提取 workflow 段落：
 3. **回退逻辑**: 若任务文件不包含 `## Execution Workflow` 标题，task-executor 回退到当前 TDD + Quality Gate 步骤（向后兼容）。
 4. **异常处理**: 若标题存在但正文为空（标题后紧接下一个 `##` 标题或文件结束），task-executor 视为配置错误，记录警告到执行记录并回退到 TDD，而非静默跳过。
 
+#### Example: T-test-3 Execution Workflow
+
+以 T-test-3 (`run-e2e-tests.md`) 为例，添加到模板末尾的 `## Execution Workflow` 段落内容如下：
+
+```markdown
+## Execution Workflow
+
+1. Run `npx playwright test` against the generated test scripts for this feature.
+2. If all tests pass: record results (pass count, duration) and proceed to Step 3 (record + commit).
+3. If any tests fail:
+   a. Analyze each failure — classify as: flaky (retry once), environment issue (log and halt), or genuine defect.
+   b. For genuine defects: do NOT attempt to fix. Create a new fix task via `record-task` with failure details (test name, error message, stack trace).
+   c. Record the partial-pass result and commit whatever evidence was collected.
+4. Stop. Do not re-run tests. Do not enter a TDD cycle.
+```
+
+这段 workflow 替换了当前 task-executor 为 T-test-3 硬编码的 "Step 2: TDD implementation" 指令。关键区别：明确禁止重试和 TDD 循环，指定失败时创建 fix task 而非自行修复。
+
 ### 主线 2: 移除 noTest
 
 `noTest` 的职责被 `## Execution Workflow` 完全取代。移除范围：
@@ -71,11 +89,11 @@ task-executor 使用 markdown 标题检测提取 workflow 段落：
 
 | Approach | Pros | Cons | Verdict |
 |----------|------|------|---------|
-| Do nothing | 零成本 | T-test-3 每次浪费 ~14 分钟，noTest 歧义持续 | Rejected: 成本太高 |
-| 只加 Execution Workflow，保留 noTest | 改动最小 | noTest 变成僵尸字段，新模板仍会困惑 | Rejected: 半吊子方案 |
-| 新建 execution-type agent | 完全隔离 | 多一个 agent 维护，重复 Record/Commit 逻辑 | Rejected: 重复代码 |
-| dispatcher 路由 + prompt 模板 | dispatcher 控制 | dispatcher 需改，多一条维护线 | Rejected: 复杂度高 |
-| **Execution Workflow + 移除 noTest** | 干净、统一、可扩展 | 改动面广（20+ 文件） | **采用** |
+| Do nothing | 零改动成本，零回归风险 | T-test-3 每次浪费 ~14 分钟（4 个受影响模板 x 每个迭代至少 1 次 = 每周 ~56 分钟）；`noTest` 语义模糊（"不跑 TDD" vs "不需要测试"），每新增一个模板都需判断该字段含义，历史上 T-test-2 已因误配 `noTest: false` 走过 TDD 歧路 | Rejected: 每周 ~1 小时的浪费且持续增长，noTest 歧义无法通过文档修复（字段名本身误导） |
+| 只加 Execution Workflow，保留 noTest | 改动最小（~18 个模板文件，不涉及 task-cli/commands） | noTest 变成僵尸字段：task-cli 仍输出 NO_TEST、dispatcher 仍解析它、但 workflow 自身决定行为。两套并行机制意味着维护者需同时理解 noTest 和 workflow 的交互。新模板作者会困惑"我是该设 noTest 还是写 Execution Workflow，还是都要？"——这种歧义在 code review 中难以发现，因为两种写法都不报错 | Rejected: 技术债不减反增，半迁移状态比当前状态更令人困惑 |
+| 新建 execution-type agent | 完全隔离执行型任务的 agent 逻辑，task-executor 无需改动 | 需要从 task-executor 复制 Record/Commit/Step 1 的通用逻辑（约 60 行 prompt）。看似只加一个文件，但实际还需：dispatcher 新增路由规则区分 TDD vs 执行型任务、新增 agent 的 manifest 注册、两套 agent 的行为同步维护。对比当前方案改动 20+ 文件，每个文件的改动都是删除 noTest（机械操作），而新建 agent 的改动涉及设计决策（新 agent 的 boundary 在哪、哪些步骤共享、状态如何传递） | Rejected: 一个新 agent 文件看似简单，但它引入的架构边界问题（共享逻辑抽离 vs 复制、路由规则维护）比机械删除 noTest 复杂度更高且持续 |
+| dispatcher 路由 + prompt 模板 | dispatcher 已有路由能力（MAIN_SESSION 分支），可复用；不同任务类型用不同 prompt 模板，职责清晰 | 需要维护 dispatcher 中的任务类型→模板映射表。每新增一种任务类型，需同时改 dispatcher 路由和新建 prompt 模板。当前方案只需改任务模板自身（自包含），而此方案的任务行为分散在两个位置（模板 + dispatcher 路由），增加了不一致的风险 | Rejected: 路由逻辑和 prompt 模板是两个独立维护面，增加同步负担；当前方案的自包含设计更不容易出错 |
+| **Execution Workflow + 移除 noTest** | 单一机制覆盖所有任务类型（TDD 任务也写 Execution Workflow，内容就是当前 Step 2-3）；自包含（每个模板声明自己的行为，无需外部路由）；完全移除 noTest 消除歧义 | 改动面广（20+ 文件），但每个改动是机械的删除或添加标准段落，不涉及设计决策 | **采用** |
 
 ## Scope
 
@@ -122,6 +140,7 @@ task-executor 使用 markdown 标题检测提取 workflow 段落：
 - [ ] `skills/record-task/SKILL.md`：noTest 引用已删除，skill 调用后仍能正确创建执行记录
 - [ ] `skills/quick-tasks/SKILL.md`：`--no-test` 标志已删除，quick-tasks 流程不传该标志仍正常运行
 - [ ] `skills/consolidate-specs/SKILL.md`：noTest 引用已删除，skill 调用后仍能正确提取和合并规格
+- [ ] `index.schema.json`：breakdown 和 quick schema 中 `noTest` 字段定义已删除；`npx ajv validate -s index.schema.json -d <每个模板>` 对所有 16 个模板验证通过（删除 noTest 后模板 frontmatter 仍合规）
 
 ## Next Steps
 

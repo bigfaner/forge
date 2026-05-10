@@ -450,6 +450,9 @@ func TestCheckDependenciesMet_UnknownDependency(t *testing.T) {
 }
 
 func TestExecuteClaim(t *testing.T) {
+	t.Setenv("CLAUDE_PROJECT_DIR", "")
+	t.Setenv("PROJECT_ROOT", "")
+
 	// Setup test project structure
 	dir := t.TempDir()
 
@@ -589,6 +592,9 @@ func TestClaimNextTask_NonNumericBlocked(t *testing.T) {
 }
 
 func TestExecuteClaim_CreatesForgeState(t *testing.T) {
+	t.Setenv("CLAUDE_PROJECT_DIR", "")
+	t.Setenv("PROJECT_ROOT", "")
+
 	dir := t.TempDir()
 
 	// Create go.mod to simulate project root
@@ -648,6 +654,9 @@ func TestExecuteClaim_CreatesForgeState(t *testing.T) {
 }
 
 func TestExecuteClaim_Continue(t *testing.T) {
+	t.Setenv("CLAUDE_PROJECT_DIR", "")
+	t.Setenv("PROJECT_ROOT", "")
+
 	// Setup test project structure
 	dir := t.TempDir()
 
@@ -727,6 +736,9 @@ func TestExecuteClaim_Continue(t *testing.T) {
 // ---------- scope propagation ----------
 
 func TestExecuteClaim_ScopePropagatedToState(t *testing.T) {
+	t.Setenv("CLAUDE_PROJECT_DIR", "")
+	t.Setenv("PROJECT_ROOT", "")
+
 	dir := t.TempDir()
 	_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n\ngo 1.21\n"), 0644)
 	if err := feature.EnsureFeatureDir(dir, "test-feature"); err != nil {

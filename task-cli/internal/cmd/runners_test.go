@@ -306,6 +306,9 @@ func TestRunHookPreCommit_Success(t *testing.T) {
 
 // setupClaimTestProject creates a minimal test project for claim tests
 func setupClaimTestProject(t *testing.T) string {
+	t.Setenv("CLAUDE_PROJECT_DIR", "")
+	t.Setenv("PROJECT_ROOT", "")
+
 	dir := t.TempDir()
 
 	// Create go.mod

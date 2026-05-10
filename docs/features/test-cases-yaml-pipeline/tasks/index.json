@@ -1,0 +1,102 @@
+{
+  "feature": "test-cases-yaml-pipeline",
+  "proposal": "docs/proposals/test-cases-yaml-pipeline/proposal.md",
+  "created": "2026-05-10",
+  "status": "planning",
+  "statusEnum": ["pending", "in_progress", "completed", "blocked", "skipped", "rejected"],
+  "priorityEnum": ["P0", "P1", "P2"],
+  "e2eRound": 0,
+  "tasks": {
+    "1-pipeline-scripts": {
+      "id": "1",
+      "title": "Create pipeline scripts and YAML template",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "status": "pending",
+      "scope": "all",
+      "breaking": false,
+      "file": "1-pipeline-scripts.md",
+      "record": "records/1-pipeline-scripts.md"
+    },
+    "2-skill-agent-updates": {
+      "id": "2",
+      "title": "Update skill and agent instructions for YAML pipeline",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": ["1"],
+      "status": "pending",
+      "scope": "all",
+      "breaking": false,
+      "file": "2-skill-agent-updates.md",
+      "record": "records/2-skill-agent-updates.md"
+    },
+    "3-verify-migration": {
+      "id": "3",
+      "title": "Migrate existing files and verify pipeline end-to-end",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": ["1", "2"],
+      "status": "pending",
+      "scope": "all",
+      "breaking": false,
+      "file": "3-verify-migration.md",
+      "record": "records/3-verify-migration.md"
+    },
+    "quick-test-cases": {
+      "id": "T-quick-1",
+      "title": "Generate Quick Test Cases",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": ["3"],
+      "status": "pending",
+      "scope": "all",
+      "noTest": true,
+      "file": "quick-test-cases.md",
+      "record": "records/quick-test-cases.md"
+    },
+    "quick-gen-scripts": {
+      "id": "T-quick-2",
+      "title": "Generate Quick Test Scripts",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": ["T-quick-1"],
+      "status": "pending",
+      "scope": "all",
+      "file": "quick-gen-scripts.md",
+      "record": "records/quick-gen-scripts.md"
+    },
+    "quick-run-tests": {
+      "id": "T-quick-3",
+      "title": "Run Quick E2E Tests",
+      "priority": "P1",
+      "estimatedTime": "15-30min",
+      "dependencies": ["T-quick-2"],
+      "status": "pending",
+      "scope": "all",
+      "file": "quick-run-tests.md",
+      "record": "records/quick-run-tests.md"
+    },
+    "quick-graduate": {
+      "id": "T-quick-4",
+      "title": "Graduate Quick Test Scripts",
+      "priority": "P1",
+      "estimatedTime": "15min",
+      "dependencies": ["T-quick-3"],
+      "status": "pending",
+      "scope": "all",
+      "file": "quick-graduate.md",
+      "record": "records/quick-graduate.md"
+    },
+    "quick-verify-regression": {
+      "id": "T-quick-5",
+      "title": "Verify Quick E2E Regression",
+      "priority": "P1",
+      "estimatedTime": "15min",
+      "dependencies": ["T-quick-4"],
+      "status": "pending",
+      "scope": "all",
+      "file": "quick-verify-regression.md",
+      "record": "records/quick-verify-regression.md"
+    }
+  }
+}

@@ -1,0 +1,100 @@
+ok  	task-cli/cmd/task	(cached)
+--- FAIL: TestAddCmd_WithTemplateAndVars (0.10s)
+    add_cmd_test.go:55: no task markdown file created
+--- FAIL: TestAddCmd_DedupSkipsActiveFix (0.17s)
+    add_cmd_test.go:160: first add should output ACTION: ADDED, got "---\nACTION: SKIPPED\nREASON: active fix tasks already exist for source 1.1: fix-3\n---\n"
+--- FAIL: TestAddCmd_BlockSource (0.10s)
+    add_cmd_test.go:201: expected ACTION: ADDED, got "---\nACTION: SKIPPED\nREASON: active fix tasks already exist for source 1.1: fix-3\n---\n"
+    add_cmd_test.go:204: expected SOURCE_BLOCKED: 1.1, got "---\nACTION: SKIPPED\nREASON: active fix tasks already exist for source 1.1: fix-3\n---\n"
+    add_cmd_test.go:212: source 1.1 should be blocked, got "completed"
+Fix task fix-1 added (P0, breaking)
+Fix task fix-1 added (P0, breaking)
+Fix task fix-1 added (P0, breaking)
+Fix task fix-1 added (P0, breaking)
+Fix task fix-1 added (P0, breaking)
+Fix task fix-1 added (P0, breaking)
+Fix task fix-1 added (P0, breaking)
+Fix task fix-1 added (P0, breaking)
+Fix task fix-2 added (P0, breaking)
+Fix task fix-3 added (P0, breaking)
+Fix task fix-1 added (P0, breaking)
+Fix task fix-1 added (P0, breaking)
+Fix task fix-1 added (P0, breaking)
+Fix task fix-2 added (P0, breaking)
+[debug] project root: C:\Users\panda\AppData\Local\Temp\TestCheckAllCompleted_VerboseMode3563466800\001
+[debug] feature not found: no feature set. Run: task feature <slug>
+Warning: failed to load task state: failed to parse state: invalid character 'o' in literal null (expecting 'u')
+Previous task 'Task 1' is completed. Claiming new task...
+Previous task 'Task 1' is blocked. Claiming new task...
+Previous task 'Fix: unit-test failure in all-completed quality gate' is completed. Claiming new task...
+--- FAIL: TestExecuteClaim (0.06s)
+    claim_test.go:514: expected Key 'task1', got "fix-3"
+--- FAIL: TestExecuteClaim_CreatesForgeState (0.06s)
+    claim_test.go:640: .forge/state.json should exist after claim
+--- FAIL: TestExecuteClaim_Continue (0.07s)
+    claim_test.go:723: expected Key 'task1', got "fix-3"
+--- FAIL: TestExecuteClaim_ScopePropagatedToState (0.06s)
+    claim_test.go:764: Task.Scope = "", want "frontend"
+    claim_test.go:771: failed to load state: <nil>
+Previous task '' was rejected. Claiming new task...
+--- FAIL: TestRunFeature_Display (0.08s)
+    feature_test.go:101: expected output to contain 'test-feature', got "---\nFEATURE: task-executor-skeleton\n---\n"
+--- FAIL: TestRunFeature_Set (0.02s)
+    feature_test.go:134: feature process directory C:\Users\panda\AppData\Local\Temp\TestRunFeature_Set2968819806\001\docs\features\my-new-feature\tasks\process was not created
+--- FAIL: TestRunFeature_NoFeatureSet (0.07s)
+    feature_test.go:168: expected output to contain 'FEATURE: (none)', got "---\nFEATURE: task-executor-skeleton\n---\n"
+--- FAIL: TestRunQuery (0.08s)
+    feature_test.go:227: expected output to contain 'KEY: task1', got "---\nKEY: 1.1-skeleton\nTASK_ID: 1.1\nTITLE: Rewrite task-executor.md as workflow skeleton\nSTATUS: completed\nPRIORITY: P0\nESTIMATED_TIME: 2h\nDEPENDENCIES: fix-3\nBREAKING: true\nFILE: Z:\\project\\ai\\forge\\docs\\features\\task-executor-skeleton\\tasks\\1.1-skeleton.md\nRECORD: Z:\\project\\ai\\forge\\docs\\features\\task-executor-skeleton\\tasks\\records\\1.1-skeleton.md\n---\n"
+    feature_test.go:233: expected output to contain 'TITLE: Task 1', got "---\nKEY: 1.1-skeleton\nTASK_ID: 1.1\nTITLE: Rewrite task-executor.md as workflow skeleton\nSTATUS: completed\nPRIORITY: P0\nESTIMATED_TIME: 2h\nDEPENDENCIES: fix-3\nBREAKING: true\nFILE: Z:\\project\\ai\\forge\\docs\\features\\task-executor-skeleton\\tasks\\1.1-skeleton.md\nRECORD: Z:\\project\\ai\\forge\\docs\\features\\task-executor-skeleton\\tasks\\records\\1.1-skeleton.md\n---\n"
+    feature_test.go:236: expected output to contain 'DEPENDENCIES: 1.0', got "---\nKEY: 1.1-skeleton\nTASK_ID: 1.1\nTITLE: Rewrite task-executor.md as workflow skeleton\nSTATUS: completed\nPRIORITY: P0\nESTIMATED_TIME: 2h\nDEPENDENCIES: fix-3\nBREAKING: true\nFILE: Z:\\project\\ai\\forge\\docs\\features\\task-executor-skeleton\\tasks\\1.1-skeleton.md\nRECORD: Z:\\project\\ai\\forge\\docs\\features\\task-executor-skeleton\\tasks\\records\\1.1-skeleton.md\n---\n"
+FAIL	task-cli/internal/cmd	3.091s
+ok  	task-cli/internal/docsync	(cached)
+ok  	task-cli/pkg/e2eprobe	(cached)
+ok  	task-cli/pkg/feature	1.743s
+ok  	task-cli/pkg/git	3.159s
+ok  	task-cli/pkg/just	2.115s
+--- FAIL: TestFindProjectRoot (0.02s)
+    --- FAIL: TestFindProjectRoot/finds_go.mod_in_current_directory (0.00s)
+        root_test.go:132: Marker = "ENV", want "go.mod"
+        root_test.go:135: Type = unknown, want project
+    --- FAIL: TestFindProjectRoot/finds_go.mod_in_parent_directory (0.00s)
+        root_test.go:132: Marker = "ENV", want "go.mod"
+        root_test.go:135: Type = unknown, want project
+    --- FAIL: TestFindProjectRoot/finds_package.json_for_Node.js_project (0.00s)
+        root_test.go:132: Marker = "ENV", want "package.json"
+        root_test.go:135: Type = unknown, want project
+    --- FAIL: TestFindProjectRoot/finds_Cargo.toml_for_Rust_project (0.00s)
+        root_test.go:132: Marker = "ENV", want "Cargo.toml"
+        root_test.go:135: Type = unknown, want project
+    --- FAIL: TestFindProjectRoot/finds_pyproject.toml_for_Python_project (0.00s)
+        root_test.go:132: Marker = "ENV", want "pyproject.toml"
+        root_test.go:135: Type = unknown, want project
+    --- FAIL: TestFindProjectRoot/finds_pom.xml_for_Java/Maven_project (0.00s)
+        root_test.go:132: Marker = "ENV", want "pom.xml"
+        root_test.go:135: Type = unknown, want project
+    --- FAIL: TestFindProjectRoot/finds_build.gradle_for_Java/Gradle_project (0.00s)
+        root_test.go:132: Marker = "ENV", want "build.gradle"
+        root_test.go:135: Type = unknown, want project
+    --- FAIL: TestFindProjectRoot/prefers_workspace_marker_over_project_marker (0.00s)
+        root_test.go:132: Marker = "ENV", want "go.work"
+        root_test.go:135: Type = unknown, want workspace
+--- FAIL: TestFindRootInfo (0.00s)
+    --- FAIL: TestFindRootInfo/returns_detailed_info_for_Go_project (0.00s)
+        root_test.go:156: Path = "Z:\\project\\ai\\forge", want "C:\\Users\\panda\\AppData\\Local\\Temp\\TestFindRootInforeturns_detailed_info_for_Go_project3794415633\\001"
+        root_test.go:159: Type = unknown, want project
+        root_test.go:162: Marker = "ENV", want "go.mod"
+        root_test.go:165: Languages = [], want [go]
+    --- FAIL: TestFindRootInfo/returns_workspace_type_for_go.work (0.00s)
+        root_test.go:183: Type = unknown, want workspace
+        root_test.go:186: Marker = "ENV", want "go.work"
+--- FAIL: TestFindRootInfoFrom (0.00s)
+    --- FAIL: TestFindRootInfoFrom/finds_root_from_subdirectory (0.00s)
+        root_test.go:205: Path = "Z:\\project\\ai\\forge", want "C:\\Users\\panda\\AppData\\Local\\Temp\\TestFindRootInfoFromfinds_root_from_subdirectory4016662861\\001"
+FAIL
+FAIL	task-cli/pkg/project	0.576s
+ok  	task-cli/pkg/task	(cached)
+ok  	task-cli/pkg/template	(cached)
+ok  	task-cli/pkg/testrunner	1.392s
+ok  	task-cli/pkg/version	(cached)
+FAIL
+error: Recipe `test` failed with exit code 1

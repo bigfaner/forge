@@ -1,0 +1,4673 @@
+{
+  "config": {
+    "configFile": "Z:\\project\\ai\\forge\\tests\\e2e\\playwright.config.ts",
+    "rootDir": "Z:/project/ai/forge/tests/e2e",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 300000,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "Z:/project/ai/forge/tests/e2e/results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "Z:/project/ai/forge/tests/e2e",
+        "testIgnore": [
+          "/features\\//"
+        ],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "results/test-results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.59.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "gen-test-scripts\\cli.spec.ts",
+      "file": "gen-test-scripts/cli.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "TC-003: ts-morph devDependency in package.json",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-05-10T14:38:50.036Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7d23c65bbdbe48a735d6-591d77b282bf5e33f168",
+          "file": "gen-test-scripts/cli.spec.ts",
+          "line": 158,
+          "column": 1
+        },
+        {
+          "title": "TC-005: gen-test-scripts SKILL.md contains Step 4.5 structural validation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 15,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-05-10T14:38:50.484Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7d23c65bbdbe48a735d6-d36963f832ab2e3d1d3a",
+          "file": "gen-test-scripts/cli.spec.ts",
+          "line": 238,
+          "column": 1
+        },
+        {
+          "title": "TC-006: gen-test-scripts aborts when eval-test-cases Step Actionability below 20",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-05-10T14:38:50.510Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7d23c65bbdbe48a735d6-c12d2f8a27ab6b578227",
+          "file": "gen-test-scripts/cli.spec.ts",
+          "line": 257,
+          "column": 1
+        },
+        {
+          "title": "TC-007: gen-test-cases Element field marked as required",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 13,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-05-10T14:38:50.525Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7d23c65bbdbe48a735d6-05daf65e324ef105b852",
+          "file": "gen-test-scripts/cli.spec.ts",
+          "line": 274,
+          "column": 1
+        }
+      ],
+      "suites": [
+        {
+          "title": "validate-specs E1-E4 ERROR detection",
+          "file": "gen-test-scripts/cli.spec.ts",
+          "line": 25,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC-001: validate-specs detects E1-E4 ERROR rules",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2531,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:46.998Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d23c65bbdbe48a735d6-55f2584b6f658d354e43",
+              "file": "gen-test-scripts/cli.spec.ts",
+              "line": 71,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "validate-specs W1-W4 WARNING detection",
+          "file": "gen-test-scripts/cli.spec.ts",
+          "line": 93,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC-002: validate-specs detects W1-W4 WARNING rules",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 418,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:49.581Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d23c65bbdbe48a735d6-6e9494baa8d877a864ea",
+              "file": "gen-test-scripts/cli.spec.ts",
+              "line": 139,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "task validate-specs command",
+          "file": "gen-test-scripts/cli.spec.ts",
+          "line": 176,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC-004: task validate-specs returns structured output with violations",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 389,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:50.049Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d23c65bbdbe48a735d6-e592f8ff6affaf82ae4a",
+              "file": "gen-test-scripts/cli.spec.ts",
+              "line": 209,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "init-justfile\\init-justfile.spec.ts",
+      "file": "init-justfile/init-justfile.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "init-justfile: project detection and generation",
+          "file": "init-justfile/init-justfile.spec.ts",
+          "line": 21,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC-004: frontend project detection generates scope-free justfile",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:50.575Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "444f43b74c9f0e4c5230-dc6044a8fdff76e70aa2",
+              "file": "init-justfile/init-justfile.spec.ts",
+              "line": 24,
+              "column": 3
+            },
+            {
+              "title": "TC-005: backend project detection generates scope-free justfile",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:50.584Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "444f43b74c9f0e4c5230-39401798a0216d01720d",
+              "file": "init-justfile/init-justfile.spec.ts",
+              "line": 39,
+              "column": 3
+            },
+            {
+              "title": "TC-006: mixed project detection generates scope-aware justfile",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:50.592Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "444f43b74c9f0e4c5230-72237c5b5e987d00ce02",
+              "file": "init-justfile/init-justfile.spec.ts",
+              "line": 53,
+              "column": 3
+            },
+            {
+              "title": "TC-022: all 15 standard commands are present in generated justfile",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 7,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:50.600Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "444f43b74c9f0e4c5230-13122632ee55a6083c8a",
+              "file": "init-justfile/init-justfile.spec.ts",
+              "line": 67,
+              "column": 3
+            },
+            {
+              "title": "TC-018: no marker files detected causes init-justfile to error",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:50.615Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "444f43b74c9f0e4c5230-390fe664d328e46837da",
+              "file": "init-justfile/init-justfile.spec.ts",
+              "line": 78,
+              "column": 3
+            },
+            {
+              "title": "TC-019: existing justfile triggers user confirmation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:50.624Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "444f43b74c9f0e4c5230-96b01bddde23f692f7ba",
+              "file": "init-justfile/init-justfile.spec.ts",
+              "line": 93,
+              "column": 3
+            },
+            {
+              "title": "TC-020: boundary markers present triggers idempotent merge",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:50.641Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "444f43b74c9f0e4c5230-3bef681a18d92b601507",
+              "file": "init-justfile/init-justfile.spec.ts",
+              "line": 106,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "justfile-e2e-integration\\cli.spec.ts",
+      "file": "justfile-e2e-integration/cli.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Skill/Agent file content checks",
+          "file": "justfile-e2e-integration/cli.spec.ts",
+          "line": 16,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC-001: run-e2e-tests Step 1 uses just e2e-setup",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:50.674Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "aa5cfa71b55d1db9c80d-333e60d857014500b2b2",
+              "file": "justfile-e2e-integration/cli.spec.ts",
+              "line": 19,
+              "column": 3
+            },
+            {
+              "title": "TC-002: task-executor uses workflow-driven execution (no hardcoded language commands)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:50.684Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "aa5cfa71b55d1db9c80d-ebbb0dc9736cfb8e0bd6",
+              "file": "justfile-e2e-integration/cli.spec.ts",
+              "line": 36,
+              "column": 3
+            },
+            {
+              "title": "TC-005: run-tasks Breaking Gate uses just test for verification",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:50.693Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "aa5cfa71b55d1db9c80d-f4835a08ea1e75f1bdfb",
+              "file": "justfile-e2e-integration/cli.spec.ts",
+              "line": 60,
+              "column": 3
+            },
+            {
+              "title": "TC-006: fix-bug uses just test not project-test-command placeholder",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:50.703Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "aa5cfa71b55d1db9c80d-c6a2385f49669618aa70",
+              "file": "justfile-e2e-integration/cli.spec.ts",
+              "line": 77,
+              "column": 3
+            },
+            {
+              "title": "TC-007: run-tasks Breaking Gate uses just test",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:50.718Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "aa5cfa71b55d1db9c80d-320ff2c668ff433cb1ec",
+              "file": "justfile-e2e-integration/cli.spec.ts",
+              "line": 90,
+              "column": 3
+            },
+            {
+              "title": "TC-008: record-task Metrics Collection uses just test",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:50.726Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "aa5cfa71b55d1db9c80d-ace465c4fb74dfdc5a51",
+              "file": "justfile-e2e-integration/cli.spec.ts",
+              "line": 111,
+              "column": 3
+            },
+            {
+              "title": "TC-013: run-e2e-tests skill prompts init-justfile when justfile missing",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:50.735Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "aa5cfa71b55d1db9c80d-e98cdcd4a7d18f0f4336",
+              "file": "justfile-e2e-integration/cli.spec.ts",
+              "line": 132,
+              "column": 3
+            },
+            {
+              "title": "TC-014: gen-test-scripts Step 4 uses just e2e-verify",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:50.742Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "aa5cfa71b55d1db9c80d-860834ce6fb7b75d4171",
+              "file": "justfile-e2e-integration/cli.spec.ts",
+              "line": 143,
+              "column": 3
+            },
+            {
+              "title": "TC-015: error-fixer uses just compile && just test",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:50.749Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "aa5cfa71b55d1db9c80d-c31fca383dc1da9c0368",
+              "file": "justfile-e2e-integration/cli.spec.ts",
+              "line": 153,
+              "column": 3
+            },
+            {
+              "title": "TC-016: execute-task uses workflow-driven execution (no hardcoded language commands)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:50.758Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "aa5cfa71b55d1db9c80d-cc6bf1ef12f6384c6306",
+              "file": "justfile-e2e-integration/cli.spec.ts",
+              "line": 186,
+              "column": 3
+            },
+            {
+              "title": "TC-017: improve-harness uses just test",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:50.767Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "aa5cfa71b55d1db9c80d-ecc7e3d3328ba6389a0f",
+              "file": "justfile-e2e-integration/cli.spec.ts",
+              "line": 210,
+              "column": 3
+            },
+            {
+              "title": "TC-018: init-justfile generates e2e-setup target",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 13,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:50.776Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "aa5cfa71b55d1db9c80d-1daed40d8bd5af7438cd",
+              "file": "justfile-e2e-integration/cli.spec.ts",
+              "line": 219,
+              "column": 3
+            },
+            {
+              "title": "TC-019: init-justfile generates e2e-verify target",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:50.796Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "aa5cfa71b55d1db9c80d-25d8c2ecebcd82960bef",
+              "file": "justfile-e2e-integration/cli.spec.ts",
+              "line": 239,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "just command execution",
+          "file": "justfile-e2e-integration/cli.spec.ts",
+          "line": 257,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC-003: just e2e-verify exits 1 when VERIFY markers present",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 217,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [
+                        {
+                          "text": "Error: 1 unresolved // VERIFY: marker(s) in tests/e2e/features/test-feature/\ntests/e2e/features/test-feature/sample.spec.ts:1:// VERIFY: check this\nerror: Recipe `e2e-verify` failed with exit code 1\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:50.804Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "aa5cfa71b55d1db9c80d-3d9d678b93c43811fe4e",
+              "file": "justfile-e2e-integration/cli.spec.ts",
+              "line": 280,
+              "column": 3
+            },
+            {
+              "title": "TC-004: just e2e-verify exits 0 when no VERIFY markers",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 144,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:51.036Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "aa5cfa71b55d1db9c80d-7460425dbd6f02458e43",
+              "file": "justfile-e2e-integration/cli.spec.ts",
+              "line": 295,
+              "column": 3
+            },
+            {
+              "title": "TC-009: just e2e-setup exits 1 when package.json missing",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:51.186Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "aa5cfa71b55d1db9c80d-a798ecb15d8d7369f5c7",
+              "file": "justfile-e2e-integration/cli.spec.ts",
+              "line": 309,
+              "column": 3
+            },
+            {
+              "title": "TC-010: just e2e-setup exits 0 with OK message when deps ready",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1578,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:51.192Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "aa5cfa71b55d1db9c80d-78d582fad873d9a463f7",
+              "file": "justfile-e2e-integration/cli.spec.ts",
+              "line": 327,
+              "column": 3
+            },
+            {
+              "title": "TC-011: just e2e-verify exits 1 when feature flag missing",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 118,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [
+                        {
+                          "text": "Usage: just e2e-verify --feature <slug>\nerror: Recipe `e2e-verify` failed with exit code 1\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:52.776Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "aa5cfa71b55d1db9c80d-b58a99d1caef97e9665e",
+              "file": "justfile-e2e-integration/cli.spec.ts",
+              "line": 343,
+              "column": 3
+            },
+            {
+              "title": "TC-012: just e2e-verify outputs file and line number for residual markers",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 226,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [
+                        {
+                          "text": "Error: 1 unresolved // VERIFY: marker(s) in tests/e2e/features/my-feature/\ntests/e2e/features/my-feature/login.spec.ts:42:// VERIFY: implement this\nerror: Recipe `e2e-verify` failed with exit code 1\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:52.902Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "aa5cfa71b55d1db9c80d-af91fe331ffd85b8406e",
+              "file": "justfile-e2e-integration/cli.spec.ts",
+              "line": 354,
+              "column": 3
+            },
+            {
+              "title": "TC-020: just e2e-setup is idempotent",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2896,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:53.135Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "aa5cfa71b55d1db9c80d-54c20d6138d1c495dbfe",
+              "file": "justfile-e2e-integration/cli.spec.ts",
+              "line": 415,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "justfile-e2e-integration\\detection-assembly.spec.ts",
+      "file": "justfile-e2e-integration/detection-assembly.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Project-type detection signals",
+          "file": "justfile-e2e-integration/detection-assembly.spec.ts",
+          "line": 14,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC-DET-001: detection logic checks for package.json as frontend signal",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:56.063Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f6343266580e6ede9bf5-4e74f9f3ae9051ca1373",
+              "file": "justfile-e2e-integration/detection-assembly.spec.ts",
+              "line": 17,
+              "column": 3
+            },
+            {
+              "title": "TC-DET-002: detection logic checks for go.mod as backend signal",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:56.071Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f6343266580e6ede9bf5-1104d3f31f28f60e3a3a",
+              "file": "justfile-e2e-integration/detection-assembly.spec.ts",
+              "line": 29,
+              "column": 3
+            },
+            {
+              "title": "TC-DET-003: detection logic checks for Cargo.toml as backend signal",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:56.078Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f6343266580e6ede9bf5-8c4639d1dc98be664c9d",
+              "file": "justfile-e2e-integration/detection-assembly.spec.ts",
+              "line": 38,
+              "column": 3
+            },
+            {
+              "title": "TC-DET-004: detection logic checks for pyproject.toml as backend signal",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:56.085Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f6343266580e6ede9bf5-c808bb0bfd6baa58280c",
+              "file": "justfile-e2e-integration/detection-assembly.spec.ts",
+              "line": 47,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Project classification",
+          "file": "justfile-e2e-integration/detection-assembly.spec.ts",
+          "line": 57,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC-DET-005: classification produces mixed when both frontend and backend signals detected",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:56.092Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f6343266580e6ede9bf5-d132912db10fbec8c7f0",
+              "file": "justfile-e2e-integration/detection-assembly.spec.ts",
+              "line": 60,
+              "column": 3
+            },
+            {
+              "title": "TC-DET-006: classification produces frontend when only frontend signals detected",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:56.100Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f6343266580e6ede9bf5-088c19698d06c1c7b72e",
+              "file": "justfile-e2e-integration/detection-assembly.spec.ts",
+              "line": 70,
+              "column": 3
+            },
+            {
+              "title": "TC-DET-007: classification produces backend when only backend signals detected",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:56.107Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f6343266580e6ede9bf5-037f1e6557e37e78878a",
+              "file": "justfile-e2e-integration/detection-assembly.spec.ts",
+              "line": 79,
+              "column": 3
+            },
+            {
+              "title": "TC-DET-008: classification produces error when no known markers detected",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:56.114Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f6343266580e6ede9bf5-cfcb3fcc2ea7df9e01bd",
+              "file": "justfile-e2e-integration/detection-assembly.spec.ts",
+              "line": 88,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Template selection and assembly",
+          "file": "justfile-e2e-integration/detection-assembly.spec.ts",
+          "line": 104,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC-DET-009: selects Backend Template for pure backend projects",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:56.121Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f6343266580e6ede9bf5-050bc10fd16db51efc37",
+              "file": "justfile-e2e-integration/detection-assembly.spec.ts",
+              "line": 107,
+              "column": 3
+            },
+            {
+              "title": "TC-DET-010: selects Frontend Template for pure frontend projects",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:56.128Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f6343266580e6ede9bf5-3616e4dd1dd296c4b0e6",
+              "file": "justfile-e2e-integration/detection-assembly.spec.ts",
+              "line": 116,
+              "column": 3
+            },
+            {
+              "title": "TC-DET-011: selects Mixed Template for mixed projects",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:56.134Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f6343266580e6ede9bf5-c4567f52236c04d138a5",
+              "file": "justfile-e2e-integration/detection-assembly.spec.ts",
+              "line": 125,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Boundary markers",
+          "file": "justfile-e2e-integration/detection-assembly.spec.ts",
+          "line": 135,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC-DET-012: generated recipes wrapped in forge boundary markers",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:56.141Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f6343266580e6ede9bf5-ea92ff7b762b3e00cfce",
+              "file": "justfile-e2e-integration/detection-assembly.spec.ts",
+              "line": 138,
+              "column": 3
+            },
+            {
+              "title": "TC-DET-013: boundary marker merge replaces only marked section",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:56.148Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f6343266580e6ede9bf5-03eaa455ae8ac4e1bd89",
+              "file": "justfile-e2e-integration/detection-assembly.spec.ts",
+              "line": 153,
+              "column": 3
+            },
+            {
+              "title": "TC-DET-014: all three templates have boundary markers",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:56.156Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f6343266580e6ede9bf5-db06b3898997fa96950c",
+              "file": "justfile-e2e-integration/detection-assembly.spec.ts",
+              "line": 166,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "--force flag and interactive confirmation",
+          "file": "justfile-e2e-integration/detection-assembly.spec.ts",
+          "line": 189,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC-DET-015: --force flag skips user confirmation for agent use",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:56.166Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f6343266580e6ede9bf5-811c6eaaaace38268768",
+              "file": "justfile-e2e-integration/detection-assembly.spec.ts",
+              "line": 192,
+              "column": 3
+            },
+            {
+              "title": "TC-DET-016: interactive confirmation when no boundary markers and justfile exists",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:56.173Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f6343266580e6ede9bf5-1b7d7fea99ab55d42285",
+              "file": "justfile-e2e-integration/detection-assembly.spec.ts",
+              "line": 207,
+              "column": 3
+            },
+            {
+              "title": "TC-DET-017: re-running init-justfile preserves user custom recipes",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:56.180Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f6343266580e6ede9bf5-32e334a7f06cbb1c061c",
+              "file": "justfile-e2e-integration/detection-assembly.spec.ts",
+              "line": 219,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "project-type recipe variants",
+          "file": "justfile-e2e-integration/detection-assembly.spec.ts",
+          "line": 233,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC-DET-018: all three project-type recipe variants exist",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:56.187Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f6343266580e6ede9bf5-a882ee4adc956b72757f",
+              "file": "justfile-e2e-integration/detection-assembly.spec.ts",
+              "line": 236,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Detection signal mapping",
+          "file": "justfile-e2e-integration/detection-assembly.spec.ts",
+          "line": 253,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC-DET-019: detection correctly maps signals to frontend/backend categories",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:56.195Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f6343266580e6ede9bf5-2658979fee4f845b865a",
+              "file": "justfile-e2e-integration/detection-assembly.spec.ts",
+              "line": 256,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "justfile-e2e-integration\\forge-justfile.spec.ts",
+      "file": "justfile-e2e-integration/forge-justfile.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Forge justfile: all 15 standard recipes present",
+          "file": "justfile-e2e-integration/forge-justfile.spec.ts",
+          "line": 32,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC-FJ-001: project-type recipe outputs a valid type (frontend/backend/mixed)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 71,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:56.229Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "12f92e910b848284b484-5491762ff0df75a1298d",
+              "file": "justfile-e2e-integration/forge-justfile.spec.ts",
+              "line": 35,
+              "column": 3
+            },
+            {
+              "title": "TC-FJ-002: 10 scoped recipes use bash case dispatch",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:56.307Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "12f92e910b848284b484-a6b1ca1b24545a283930",
+              "file": "justfile-e2e-integration/forge-justfile.spec.ts",
+              "line": 46,
+              "column": 3
+            },
+            {
+              "title": "TC-FJ-003: 5 unscoped recipes present (no scope parameter)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:56.318Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "12f92e910b848284b484-a323e3293c509f0f45eb",
+              "file": "justfile-e2e-integration/forge-justfile.spec.ts",
+              "line": 59,
+              "column": 3
+            },
+            {
+              "title": "TC-FJ-004: boundary markers present",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:56.327Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "12f92e910b848284b484-5962ff35b33f13093884",
+              "file": "justfile-e2e-integration/forge-justfile.spec.ts",
+              "line": 76,
+              "column": 3
+            },
+            {
+              "title": "TC-FJ-005: compile recipe has correct toolchain dispatch for project type",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 63,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:56.335Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "12f92e910b848284b484-888fe86148ede828b857",
+              "file": "justfile-e2e-integration/forge-justfile.spec.ts",
+              "line": 89,
+              "column": 3
+            },
+            {
+              "title": "TC-FJ-006: build recipe has correct toolchain dispatch for project type",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 67,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:56.405Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "12f92e910b848284b484-21a6f0572e1784c622c7",
+              "file": "justfile-e2e-integration/forge-justfile.spec.ts",
+              "line": 114,
+              "column": 3
+            },
+            {
+              "title": "TC-FJ-007: test recipe has correct toolchain dispatch for project type",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 76,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:56.479Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "12f92e910b848284b484-cf0c471835e99c916089",
+              "file": "justfile-e2e-integration/forge-justfile.spec.ts",
+              "line": 136,
+              "column": 3
+            },
+            {
+              "title": "TC-FJ-008: scoped recipes have *) error branch with stderr (mixed projects)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 64,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:56.561Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "12f92e910b848284b484-155de3f695b53616c4f3",
+              "file": "justfile-e2e-integration/forge-justfile.spec.ts",
+              "line": 158,
+              "column": 3
+            },
+            {
+              "title": "TC-FJ-009: ci recipe chains install, compile, build, test, lint",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:56.632Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "12f92e910b848284b484-74a9289f4c7af59a2563",
+              "file": "justfile-e2e-integration/forge-justfile.spec.ts",
+              "line": 181,
+              "column": 3
+            },
+            {
+              "title": "TC-FJ-010: custom recipes (claude, claude-c) preserved outside boundary markers",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:56.641Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "12f92e910b848284b484-52c6c7a8ed4257367c3a",
+              "file": "justfile-e2e-integration/forge-justfile.spec.ts",
+              "line": 191,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Forge justfile: live command execution",
+          "file": "justfile-e2e-integration/forge-justfile.spec.ts",
+          "line": 199,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC-FJ-011: just compile backend dispatches to backend branch (no scope error)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 675,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:56.648Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "12f92e910b848284b484-978625f98e40295777e9",
+              "file": "justfile-e2e-integration/forge-justfile.spec.ts",
+              "line": 202,
+              "column": 3
+            },
+            {
+              "title": "TC-FJ-012: just compile frontend dispatches to frontend branch (no scope error)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 607,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:57.329Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "12f92e910b848284b484-837bc032b3455bd78589",
+              "file": "justfile-e2e-integration/forge-justfile.spec.ts",
+              "line": 211,
+              "column": 3
+            },
+            {
+              "title": "TC-FJ-013: just compile with empty scope dispatches to both branches (no scope error)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 654,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:57.943Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "12f92e910b848284b484-1a512ca19737b80397bb",
+              "file": "justfile-e2e-integration/forge-justfile.spec.ts",
+              "line": 220,
+              "column": 3
+            },
+            {
+              "title": "TC-FJ-014: just compile with invalid scope behavior depends on project type",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 675,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:58.603Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "12f92e910b848284b484-73b6e1a2e00c59a67fb7",
+              "file": "justfile-e2e-integration/forge-justfile.spec.ts",
+              "line": 228,
+              "column": 3
+            },
+            {
+              "title": "TC-FJ-015: just project-type returns a valid project type",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 79,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:59.284Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "12f92e910b848284b484-a31913922f7ea07980da",
+              "file": "justfile-e2e-integration/forge-justfile.spec.ts",
+              "line": 246,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "justfile-e2e-integration\\mixed-template.spec.ts",
+      "file": "justfile-e2e-integration/mixed-template.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Mixed template content checks",
+          "file": "justfile-e2e-integration/mixed-template.spec.ts",
+          "line": 19,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC-MIX-001: project-type outputs \"mixed\"",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:59.386Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5dba6401402a65cfe55b-9965bc25a0ef06966e4a",
+              "file": "justfile-e2e-integration/mixed-template.spec.ts",
+              "line": 22,
+              "column": 3
+            },
+            {
+              "title": "TC-MIX-002: compile recipe has scope=\"\" parameter with bash case dispatch",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:59.396Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5dba6401402a65cfe55b-5c377c459dcd5c984a44",
+              "file": "justfile-e2e-integration/mixed-template.spec.ts",
+              "line": 31,
+              "column": 3
+            },
+            {
+              "title": "TC-MIX-003: build recipe has scope=\"\" parameter with bash case dispatch",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:59.407Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5dba6401402a65cfe55b-9bfa35fb23e46a136e87",
+              "file": "justfile-e2e-integration/mixed-template.spec.ts",
+              "line": 45,
+              "column": 3
+            },
+            {
+              "title": "TC-MIX-004: run recipe has scope=\"\" parameter with bash case dispatch",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:59.422Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5dba6401402a65cfe55b-431d9b64814188d13ad9",
+              "file": "justfile-e2e-integration/mixed-template.spec.ts",
+              "line": 54,
+              "column": 3
+            },
+            {
+              "title": "TC-MIX-005: dev recipe has scope=\"\" parameter with bash case dispatch",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:59.434Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5dba6401402a65cfe55b-41aaabea3e47aaa323a9",
+              "file": "justfile-e2e-integration/mixed-template.spec.ts",
+              "line": 63,
+              "column": 3
+            },
+            {
+              "title": "TC-MIX-006: test recipe has scope=\"\" parameter with bash case dispatch",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:59.443Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5dba6401402a65cfe55b-9e1d4694f5318615b164",
+              "file": "justfile-e2e-integration/mixed-template.spec.ts",
+              "line": 72,
+              "column": 3
+            },
+            {
+              "title": "TC-MIX-007: lint recipe has scope=\"\" parameter with bash case dispatch",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:59.452Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5dba6401402a65cfe55b-f3c4da00b1c562e1000d",
+              "file": "justfile-e2e-integration/mixed-template.spec.ts",
+              "line": 81,
+              "column": 3
+            },
+            {
+              "title": "TC-MIX-008: fmt recipe has scope=\"\" parameter with bash case dispatch",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:59.460Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5dba6401402a65cfe55b-b7ec3b1487a85628f4fe",
+              "file": "justfile-e2e-integration/mixed-template.spec.ts",
+              "line": 90,
+              "column": 3
+            },
+            {
+              "title": "TC-MIX-009: check recipe has scope=\"\" parameter with bash case dispatch",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:59.470Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5dba6401402a65cfe55b-247bc1aa4c1c3961292c",
+              "file": "justfile-e2e-integration/mixed-template.spec.ts",
+              "line": 99,
+              "column": 3
+            },
+            {
+              "title": "TC-MIX-010: clean recipe has scope=\"\" parameter with bash case dispatch",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:59.481Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5dba6401402a65cfe55b-9f4abf7420f958afd392",
+              "file": "justfile-e2e-integration/mixed-template.spec.ts",
+              "line": 108,
+              "column": 3
+            },
+            {
+              "title": "TC-MIX-011: install recipe has scope=\"\" parameter with bash case dispatch",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:59.488Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5dba6401402a65cfe55b-e5ebdebf6795511f616d",
+              "file": "justfile-e2e-integration/mixed-template.spec.ts",
+              "line": 117,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Mixed template bash case pattern checks",
+          "file": "justfile-e2e-integration/mixed-template.spec.ts",
+          "line": 127,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC-MIX-012: scoped recipes have *) branch with error message to stderr",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:59.500Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5dba6401402a65cfe55b-fec6e22079fdefc46818",
+              "file": "justfile-e2e-integration/mixed-template.spec.ts",
+              "line": 130,
+              "column": 3
+            },
+            {
+              "title": "TC-MIX-013: \"\" branch executes both frontend and backend commands",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:59.508Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5dba6401402a65cfe55b-655ebfcaace3f530c411",
+              "file": "justfile-e2e-integration/mixed-template.spec.ts",
+              "line": 142,
+              "column": 3
+            },
+            {
+              "title": "TC-MIX-014: all bash recipes use set -euo pipefail",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:59.516Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5dba6401402a65cfe55b-5db51c77671da17157a5",
+              "file": "justfile-e2e-integration/mixed-template.spec.ts",
+              "line": 158,
+              "column": 3
+            },
+            {
+              "title": "TC-MIX-015: frontend commands use npm toolchain, backend uses BACKEND_* placeholders",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 12,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:59.524Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5dba6401402a65cfe55b-e1162cfb615040cdafbd",
+              "file": "justfile-e2e-integration/mixed-template.spec.ts",
+              "line": 169,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Mixed template unscoped recipe checks",
+          "file": "justfile-e2e-integration/mixed-template.spec.ts",
+          "line": 194,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC-MIX-016: project-type has no scope parameter",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:59.543Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5dba6401402a65cfe55b-709de110fc5b0aad281e",
+              "file": "justfile-e2e-integration/mixed-template.spec.ts",
+              "line": 197,
+              "column": 3
+            },
+            {
+              "title": "TC-MIX-017: test-e2e has no scope parameter",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:59.553Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5dba6401402a65cfe55b-031f145522b9ab60f61f",
+              "file": "justfile-e2e-integration/mixed-template.spec.ts",
+              "line": 209,
+              "column": 3
+            },
+            {
+              "title": "TC-MIX-018: ci has no scope parameter",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:59.562Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5dba6401402a65cfe55b-623ba1b6c548ef4f7f22",
+              "file": "justfile-e2e-integration/mixed-template.spec.ts",
+              "line": 221,
+              "column": 3
+            },
+            {
+              "title": "TC-MIX-019: e2e-setup has no scope parameter",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:59.582Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5dba6401402a65cfe55b-dab63fe6127a562c9bda",
+              "file": "justfile-e2e-integration/mixed-template.spec.ts",
+              "line": 232,
+              "column": 3
+            },
+            {
+              "title": "TC-MIX-020: e2e-verify has no scope parameter",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:59.596Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5dba6401402a65cfe55b-d3090822c9ca446f9764",
+              "file": "justfile-e2e-integration/mixed-template.spec.ts",
+              "line": 243,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Mixed template boundary markers and structure",
+          "file": "justfile-e2e-integration/mixed-template.spec.ts",
+          "line": 257,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC-MIX-021: mixed template has forge boundary markers",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:59.604Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5dba6401402a65cfe55b-d763f37d09dcd7e1b431",
+              "file": "justfile-e2e-integration/mixed-template.spec.ts",
+              "line": 260,
+              "column": 3
+            },
+            {
+              "title": "TC-MIX-022: all 15 recipes are present in mixed template",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:59.612Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5dba6401402a65cfe55b-2268a106d433d9330a78",
+              "file": "justfile-e2e-integration/mixed-template.spec.ts",
+              "line": 273,
+              "column": 3
+            },
+            {
+              "title": "TC-MIX-023: ci recipe chains standard commands",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:59.623Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5dba6401402a65cfe55b-a1c83611737b82437a78",
+              "file": "justfile-e2e-integration/mixed-template.spec.ts",
+              "line": 289,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "justfile-execution\\justfile-execution.spec.ts",
+      "file": "justfile-execution/justfile-execution.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "justfile command execution",
+          "file": "justfile-execution/justfile-execution.spec.ts",
+          "line": 21,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC-011: just compile exits 0 when code is in passing state",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 625,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:38:59.655Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7a89f55f12ac59240aef-1451cefdc10e1415cf7c",
+              "file": "justfile-execution/justfile-execution.spec.ts",
+              "line": 24,
+              "column": 3
+            },
+            {
+              "title": "TC-012: just compile with failing code exits non-zero with stderr",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:39:00.289Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7a89f55f12ac59240aef-0ac622dad3f0a8c6c700",
+              "file": "justfile-execution/justfile-execution.spec.ts",
+              "line": 35,
+              "column": 3
+            },
+            {
+              "title": "TC-013: compile type errors output details to stderr",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 63,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:39:00.298Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7a89f55f12ac59240aef-9db583a048dcd4c2ef3e",
+              "file": "justfile-execution/justfile-execution.spec.ts",
+              "line": 48,
+              "column": 3
+            },
+            {
+              "title": "TC-014: consecutive commands all succeed with exit code 0",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 989,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [
+                        {
+                          "text": "go: -race requires cgo; enable cgo by setting CGO_ENABLED=1\nerror: Recipe `test` failed with exit code 2\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:39:00.372Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7a89f55f12ac59240aef-73f5536aaf41627a9f5d",
+              "file": "justfile-execution/justfile-execution.spec.ts",
+              "line": 70,
+              "column": 3
+            },
+            {
+              "title": "TC-017: just build with invalid scope exits 1 with error message (mixed projects)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1142,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:39:01.368Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7a89f55f12ac59240aef-fa8435757cf31c0ca8a8",
+              "file": "justfile-execution/justfile-execution.spec.ts",
+              "line": 93,
+              "column": 3
+            },
+            {
+              "title": "TC-021: just project-type outputs deterministic single word",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 132,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:39:02.516Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7a89f55f12ac59240aef-62eb8afe2d84d8a94928",
+              "file": "justfile-execution/justfile-execution.spec.ts",
+              "line": 118,
+              "column": 3
+            },
+            {
+              "title": "TC-025: idempotent recipes produce no side effects on repeat runs",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3201,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:39:02.656Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7a89f55f12ac59240aef-ee1351aae0597cc7e260",
+              "file": "justfile-execution/justfile-execution.spec.ts",
+              "line": 134,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "justfile scope dispatch",
+          "file": "justfile-execution/justfile-execution.spec.ts",
+          "line": 153,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC-002: backend project has correct toolchain in test recipe",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 64,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:39:05.865Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7a89f55f12ac59240aef-048e601aba006f7c0e6f",
+              "file": "justfile-execution/justfile-execution.spec.ts",
+              "line": 156,
+              "column": 3
+            },
+            {
+              "title": "TC-003: scope parameter targets correct toolchain per project type",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 63,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:39:05.937Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7a89f55f12ac59240aef-290e8273de148013359a",
+              "file": "justfile-execution/justfile-execution.spec.ts",
+              "line": 181,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "plugin-content\\skill-content.spec.ts",
+      "file": "plugin-content/skill-content.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Skill commands use standard just verbs",
+          "file": "plugin-content/skill-content.spec.ts",
+          "line": 39,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC-001: skill/agent/command files contain zero raw toolchain commands",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:39:06.025Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "85b6dfa4bd7d9e5feb7f-098ec03c243d7430d13d",
+              "file": "plugin-content/skill-content.spec.ts",
+              "line": 42,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "scope-resolution\\scope-resolution.spec.ts",
+      "file": "scope-resolution/scope-resolution.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "breakdown-tasks: scope field in index.json",
+          "file": "scope-resolution/scope-resolution.spec.ts",
+          "line": 16,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC-007: mixed project tasks receive scope field in index.json",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:39:06.059Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "27fea0cd28229b161eda-afbbc01fdf3cc1928fd8",
+              "file": "scope-resolution/scope-resolution.spec.ts",
+              "line": 19,
+              "column": 3
+            },
+            {
+              "title": "TC-008: frontend-only task scope marked as frontend",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:39:06.067Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "27fea0cd28229b161eda-a49afa0986e30dd7a494",
+              "file": "scope-resolution/scope-resolution.spec.ts",
+              "line": 29,
+              "column": 3
+            },
+            {
+              "title": "TC-009: cross-scope task marked as all",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:39:06.074Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "27fea0cd28229b161eda-9a636295888e78dd9241",
+              "file": "scope-resolution/scope-resolution.spec.ts",
+              "line": 40,
+              "column": 3
+            },
+            {
+              "title": "TC-010: non-mixed project tasks all receive scope all",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:39:06.082Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "27fea0cd28229b161eda-fa3cef4db7649d399e42",
+              "file": "scope-resolution/scope-resolution.spec.ts",
+              "line": 50,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "skill execution: scope mismatch and fallback",
+          "file": "scope-resolution/scope-resolution.spec.ts",
+          "line": 61,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC-015: scope mismatch shows warning and falls back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1077,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:39:06.089Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "27fea0cd28229b161eda-7a984c27f17cdbccf0ec",
+              "file": "scope-resolution/scope-resolution.spec.ts",
+              "line": 64,
+              "column": 3
+            },
+            {
+              "title": "TC-016: mixed project with matching scope executes normally",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 659,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:39:07.173Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "27fea0cd28229b161eda-5f1a811f7208ccad5d7f",
+              "file": "scope-resolution/scope-resolution.spec.ts",
+              "line": 88,
+              "column": 3
+            },
+            {
+              "title": "TC-023: just project-type failure triggers fallback in skill",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 78,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:39:07.838Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "27fea0cd28229b161eda-5cbb914b6b54b078b4f5",
+              "file": "scope-resolution/scope-resolution.spec.ts",
+              "line": 98,
+              "column": 3
+            },
+            {
+              "title": "TC-024: unexpected project-type output triggers fallback",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 129,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:39:07.923Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "27fea0cd28229b161eda-156f5faf0ef957fb522c",
+              "file": "scope-resolution/scope-resolution.spec.ts",
+              "line": 120,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "task-executor\\cli.spec.ts",
+      "file": "task-executor/cli.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "TC-001: Execution Workflow detected in task template replaces TDD",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-05-10T14:39:08.099Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9643c7bb51961efc86e1-0376cb208be2eea70cc7",
+          "file": "task-executor/cli.spec.ts",
+          "line": 41,
+          "column": 1
+        },
+        {
+          "title": "TC-002: Missing Execution Workflow falls back to TDD and Quality Gate",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-05-10T14:39:08.107Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9643c7bb51961efc86e1-f600193d7a3b8736fd42",
+          "file": "task-executor/cli.spec.ts",
+          "line": 54,
+          "column": 1
+        },
+        {
+          "title": "TC-003: Empty Execution Workflow body triggers warning and TDD fallback",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-05-10T14:39:08.115Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9643c7bb51961efc86e1-459bf66f982ddd7760cb",
+          "file": "task-executor/cli.spec.ts",
+          "line": 66,
+          "column": 1
+        },
+        {
+          "title": "TC-004: Execution-type task creates fix task on failure without TDD retry",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-05-10T14:39:08.125Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9643c7bb51961efc86e1-613cd1bb3c84762918c1",
+          "file": "task-executor/cli.spec.ts",
+          "line": 82,
+          "column": 1
+        },
+        {
+          "title": "TC-005: Step 2 output uses Execution Workflow terminology not TDD terminology",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-05-10T14:39:08.133Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9643c7bb51961efc86e1-fe00c699afd3de1eb14a",
+          "file": "task-executor/cli.spec.ts",
+          "line": 95,
+          "column": 1
+        },
+        {
+          "title": "TC-006: Execution-type task skips Quality Gate and proceeds to record and commit",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-05-10T14:39:08.149Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9643c7bb51961efc86e1-ab72e9fa01afefef93e4",
+          "file": "task-executor/cli.spec.ts",
+          "line": 108,
+          "column": 1
+        },
+        {
+          "title": "TC-007: Grep noTest and NO_TEST across all harness files yields zero matches",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 131,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [
+                    {
+                      "text": "ϵͳ�Ҳ���ָ����·����\r\n"
+                    }
+                  ],
+                  "retry": 0,
+                  "startTime": "2026-05-10T14:39:08.158Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9643c7bb51961efc86e1-5010560c4ef031767541",
+          "file": "task-executor/cli.spec.ts",
+          "line": 132,
+          "column": 1
+        },
+        {
+          "title": "TC-008: task-cli Go code has no noTest conditional branches",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 159,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-05-10T14:39:08.296Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9643c7bb51961efc86e1-ab6aa0e451a5e7dd5388",
+          "file": "task-executor/cli.spec.ts",
+          "line": 158,
+          "column": 1
+        },
+        {
+          "title": "TC-009: All task templates have no noTest in frontmatter",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 172,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-05-10T14:39:08.461Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9643c7bb51961efc86e1-a48f8c66742ac7fcfb6f",
+          "file": "task-executor/cli.spec.ts",
+          "line": 184,
+          "column": 1
+        },
+        {
+          "title": "TC-010: index.schema.json files have no noTest field definition",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-05-10T14:39:08.639Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9643c7bb51961efc86e1-b5dc88d4f9ccbd4eb91e",
+          "file": "task-executor/cli.spec.ts",
+          "line": 207,
+          "column": 1
+        },
+        {
+          "title": "TC-011: Command docs run-tasks.md and execute-task.md have no NO_TEST references",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-05-10T14:39:08.646Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9643c7bb51961efc86e1-760b6dbf73a95793d0ad",
+          "file": "task-executor/cli.spec.ts",
+          "line": 226,
+          "column": 1
+        },
+        {
+          "title": "TC-012: task-executor.md Step 2-3 has no NO_TEST references and uses workflow injection",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-05-10T14:39:08.657Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9643c7bb51961efc86e1-548a9b378dcb239bbc3b",
+          "file": "task-executor/cli.spec.ts",
+          "line": 241,
+          "column": 1
+        },
+        {
+          "title": "TC-017: Full dispatch-to-commit pipeline with Execution Workflow template",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-05-10T14:39:08.825Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9643c7bb51961efc86e1-b8b0e4d5e5813e16a997",
+          "file": "task-executor/cli.spec.ts",
+          "line": 332,
+          "column": 1
+        }
+      ],
+      "suites": [
+        {
+          "title": "Failure Handling",
+          "file": "task-executor/cli.spec.ts",
+          "line": 265,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC-013: Missing or unparseable task file sets status to failed with error log",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 110,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [
+                        {
+                          "text": "---\nERROR_CODE: NOT_FOUND\nERROR: Task not found: nonexistent-task-xyz\nCAUSE: The task ID does not exist in index.json\nHINT: Verify the task ID is correct. Check available tasks with: task check\nACTION: task check\n---\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:39:08.665Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9643c7bb51961efc86e1-4e98c5a3e59a36b51e4b",
+              "file": "task-executor/cli.spec.ts",
+              "line": 277,
+              "column": 3
+            },
+            {
+              "title": "TC-014: Workflow failure with explicit failure instruction followed correctly",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:39:08.789Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9643c7bb51961efc86e1-70c3108a96e5a8f6bc5d",
+              "file": "task-executor/cli.spec.ts",
+              "line": 290,
+              "column": 3
+            },
+            {
+              "title": "TC-015: Workflow failure without explicit instruction records and stops",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:39:08.796Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9643c7bb51961efc86e1-af62a370ce272dc13490",
+              "file": "task-executor/cli.spec.ts",
+              "line": 302,
+              "column": 3
+            },
+            {
+              "title": "TC-016: Multi-step workflow mid-failure records completed steps and failure point",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-10T14:39:08.803Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9643c7bb51961efc86e1-0f0cf9ee5cf187d0a941",
+              "file": "task-executor/cli.spec.ts",
+              "line": 315,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-05-10T14:38:45.637Z",
+    "duration": 23227.409000000003,
+    "expected": 126,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

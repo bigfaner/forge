@@ -23,6 +23,9 @@
       "title": "Rewrite task-executor.md as workflow skeleton",
       "priority": "P0",
       "estimatedTime": "2h",
+      "dependencies": [
+        "fix-3"
+      ],
       "status": "completed",
       "file": "1.1-skeleton.md",
       "record": "records/1.1-skeleton.md",
@@ -150,9 +153,30 @@
       "title": "Fix: unit-test failure in all-completed quality gate",
       "priority": "P0",
       "estimatedTime": "30min",
-      "status": "in_progress",
+      "status": "completed",
       "file": "fix-2.md",
       "record": "records/fix-2.md",
+      "breaking": true
+    },
+    "fix-3": {
+      "id": "fix-3",
+      "title": "Fix: login bug",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-3.md",
+      "record": "records/fix-3.md",
+      "breaking": true,
+      "sourceTaskID": "1.1"
+    },
+    "fix-4": {
+      "id": "fix-4",
+      "title": "Fix: unit-test failure in all-completed quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-4.md",
+      "record": "records/fix-4.md",
       "breaking": true
     },
     "gen-test-cases": {

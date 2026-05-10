@@ -1,0 +1,11 @@
+{
+  "task_id": "fix-3",
+  "key": "fix-3",
+  "title": "Fix: login bug",
+  "priority": "P0",
+  "estimatedTime": "30min",
+  "file": "fix-3.md",
+  "record": "records/fix-3.md",
+  "startedTime": "2026-05-10 22:45",
+  "breaking": true
+}

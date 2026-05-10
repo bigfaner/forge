@@ -59,6 +59,9 @@ func captureOutput(f func() error) (string, error) {
 }
 
 func TestRunFeature_Display(t *testing.T) {
+	t.Setenv("CLAUDE_PROJECT_DIR", "")
+	t.Setenv("PROJECT_ROOT", "")
+
 	dir := t.TempDir()
 
 	goMod := filepath.Join(dir, "go.mod")
@@ -103,6 +106,9 @@ func TestRunFeature_Display(t *testing.T) {
 }
 
 func TestRunFeature_Set(t *testing.T) {
+	t.Setenv("CLAUDE_PROJECT_DIR", "")
+	t.Setenv("PROJECT_ROOT", "")
+
 	dir := t.TempDir()
 
 	goMod := filepath.Join(dir, "go.mod")
@@ -136,6 +142,9 @@ func TestRunFeature_Set(t *testing.T) {
 }
 
 func TestRunFeature_NoFeatureSet(t *testing.T) {
+	t.Setenv("CLAUDE_PROJECT_DIR", "")
+	t.Setenv("PROJECT_ROOT", "")
+
 	dir := t.TempDir()
 
 	goMod := filepath.Join(dir, "go.mod")
@@ -170,6 +179,9 @@ func TestRunFeature_NoFeatureSet(t *testing.T) {
 }
 
 func TestRunQuery(t *testing.T) {
+	t.Setenv("CLAUDE_PROJECT_DIR", "")
+	t.Setenv("PROJECT_ROOT", "")
+
 	dir := t.TempDir()
 
 	goMod := filepath.Join(dir, "go.mod")
@@ -238,6 +250,9 @@ func TestRunQuery(t *testing.T) {
 }
 
 func TestRunStatus(t *testing.T) {
+	t.Setenv("CLAUDE_PROJECT_DIR", "")
+	t.Setenv("PROJECT_ROOT", "")
+
 	dir := t.TempDir()
 
 	goMod := filepath.Join(dir, "go.mod")
@@ -301,6 +316,9 @@ func TestRunStatus(t *testing.T) {
 }
 
 func TestRunCheck(t *testing.T) {
+	t.Setenv("CLAUDE_PROJECT_DIR", "")
+	t.Setenv("PROJECT_ROOT", "")
+
 	dir := t.TempDir()
 
 	goMod := filepath.Join(dir, "go.mod")

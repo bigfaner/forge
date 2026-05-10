@@ -45,6 +45,9 @@ func setupFullProject(t *testing.T, opts SetupOpts) (dir string) {
 	if opts.UseEnvVar {
 		t.Setenv("CLAUDE_PROJECT_DIR", dir)
 	} else {
+		// Clear env vars so FindProjectRoot falls through to filesystem detection
+		t.Setenv("CLAUDE_PROJECT_DIR", "")
+		t.Setenv("PROJECT_ROOT", "")
 		// go.mod marks project root
 		if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n\ngo 1.21\n"), 0644); err != nil {
 			t.Fatal(err)
@@ -1227,6 +1230,9 @@ func TestWriteRegressionRawOutput_CreatesDir(t *testing.T) {
 // ---------- runFeature: display no feature ----------
 
 func TestRunFeature_None(t *testing.T) {
+	t.Setenv("CLAUDE_PROJECT_DIR", "")
+	t.Setenv("PROJECT_ROOT", "")
+
 	dir := t.TempDir()
 	_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644)
 	_ = os.MkdirAll(filepath.Join(dir, "docs", "features"), 0755)
