@@ -124,7 +124,7 @@
         "T-quick-4",
         "fix-1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "quick-verify-regression.md",
       "record": "records/quick-verify-regression.md",
       "scope": "all"
