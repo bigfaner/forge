@@ -1,0 +1,5 @@
+[
+  {"phase": 1, "name": "Core Mechanism", "source": "fallback", "gates": []},
+  {"phase": 2, "name": "Templates", "source": "fallback", "gates": []},
+  {"phase": 3, "name": "Commands & Skills", "source": "fallback", "gates": []}
+]
