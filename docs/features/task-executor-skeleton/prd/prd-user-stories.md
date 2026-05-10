@@ -44,3 +44,21 @@ feature: "task-executor-skeleton"
 - Given task-cli 代码（types.go, record.go）, When 审查条件分支, Then 无基于 noTest 的残留逻辑
 - Given 所有 16 个任务模板的 frontmatter, When 验证, Then 无 `noTest` 字段
 - Given `index.schema.json`（breakdown + quick）, When 验证, Then 无 `noTest` 字段定义且 `ajv validate` 对所有模板通过
+- Given `commands/run-tasks.md` 和 `commands/execute-task.md`, When grep `NO_TEST`, Then 零匹配且 claim 解析与 dispatch prompt 中无 NO_TEST 相关段落
+- Given `skills/record-task/SKILL.md`, `skills/quick-tasks/SKILL.md`, `skills/consolidate-specs/SKILL.md`, When grep `noTest` / `NO_TEST` / `--no-test`（大小写不敏感）, Then 零匹配
+- Given task-executor.md, When 检查 Step 2-3 定义, Then 无 `NO_TEST` input 引用，步骤逻辑改为"读取 Execution Workflow 并注入"
+
+---
+
+## Story 4: Task-executor Agent 处理执行失败
+
+**As a** task-executor agent
+**I want to** 在 workflow 执行失败或超时时按确定性规则处理
+**So that** 失败的任务不会无限重试，且失败原因被准确记录
+
+**Acceptance Criteria:**
+
+- Given 任务文件缺失或 frontmatter 无法解析, When task-executor 读取任务, Then 任务状态设为 `failed` 并记录错误日志，不进入 Step 2
+- Given agent 执行 workflow 步骤时发生错误（命令执行失败、外部依赖不可达）, When workflow 包含显式失败指令（如"创建 fix task"）, Then agent 按指令执行后停止，任务状态设为 `failed`
+- Given agent 执行 workflow 步骤时发生错误, When workflow 无显式失败指令, Then agent 记录失败原因并停止，不进入 TDD 循环重试，任务状态设为 `failed`
+- Given workflow 包含多个步骤且中途失败, When agent 记录执行结果, Then 失败记录包含已完成步骤摘要和失败点描述

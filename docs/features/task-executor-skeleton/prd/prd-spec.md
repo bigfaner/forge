@@ -59,14 +59,27 @@ task-executor 硬编码了 TDD 工作流（Step 2-3），所有非 MAIN_SESSION 
 
 ### Business Flow Description
 
-task-executor 收到任务后，读取任务文件并检测是否包含 `## Execution Workflow` 标题。若存在且正文非空，将其注入到 agent prompt 的 Step 2 指令区域，替换硬编码的 TDD 步骤。若不存在，回退到当前 TDD + Quality Gate 步骤。若标题存在但正文为空，视为配置错误，记录警告并回退到 TDD。执行完成后统一进入 Step 3（记录 + 提交）。
+task-executor 收到任务后，读取任务文件并检测是否包含 `## Execution Workflow` 标题。若存在且正文非空，将其注入到 agent prompt 的 Step 2 指令区域，替换硬编码的 TDD 步骤。若不存在，回退到当前 TDD + Quality Gate 步骤。若标题存在但正文为空，视为配置错误，记录警告并回退到 TDD。
+
+**成功路径**：执行完成后统一进入 Step 3（记录 + 提交），任务状态设为 `completed`。
+
+**失败路径**：
+- **任务文件不可读**：Step 1 阶段若任务文件缺失或格式损坏（无法解析 frontmatter），记录错误日志，任务状态设为 `failed`，不进入 Step 2。跳过执行，直接提交一条错误记录。
+- **Agent 执行超时**：若 agent 在执行 workflow 步骤时超过 task-executor 内置超时阈值，强制终止当前执行，任务状态设为 `failed`，记录超时信息。
+- **Workflow 执行失败**：若 agent 在执行过程中遇到错误（命令执行失败、测试框架崩溃、外部依赖不可达），任务状态设为 `failed`。若 workflow 本身声明了失败处理指令（如 T-test-3 的"创建 fix task"），agent 按指令执行后停止；若无显式失败指令，agent 记录失败原因并停止，不进入 TDD 循环重试。
+- **部分完成**：若 workflow 包含多个步骤且中途失败，agent 记录已完成步骤和失败点，任务状态设为 `failed`，失败记录包含已执行步骤摘要和失败原因。
+
+**终端状态**：`completed`（执行成功，进入 Step 3 提交）、`failed`（上述任一失败路径触发）。无 `partial` 状态——部分完成归入 `failed` 并附带已执行步骤信息。
 
 ### Business Flow Diagram
 
 ```mermaid
 flowchart TD
     Start([task-executor 收到任务]) --> S1[Step 1: 读取任务文件]
-    S1 --> HasWF{任务文件包含<br>## Execution Workflow ?}
+    S1 --> FileOK{任务文件可读<br>且 frontmatter 合法?}
+    FileOK -->|No| FailRead[记录错误日志<br>状态 = failed]
+    FailRead --> EndFail([终端: failed])
+    FileOK -->|Yes| HasWF{任务文件包含<br>## Execution Workflow ?}
     HasWF -->|Yes| EmptyWF{Workflow 正文为空?}
     EmptyWF -->|Yes| Warn[记录配置错误警告<br>回退到 TDD]
     EmptyWF -->|No| Inject[注入 workflow 正文到<br>Step 2 指令区域]
@@ -74,8 +87,11 @@ flowchart TD
     HasWF -->|No| Fallback[回退到 TDD + Quality Gate]
     Fallback --> Execute
     Warn --> Execute
-    Execute --> S3[Step 3: 记录结果 + 提交]
-    S3 --> End([完成])
+    Execute --> ExecOK{执行结果?}
+    ExecOK -->|成功| S3[Step 3: 记录结果 + 提交<br>状态 = completed]
+    S3 --> EndOK([终端: completed])
+    ExecOK -->|失败/超时| FailExec[记录失败原因 + 已执行步骤摘要<br>状态 = failed]
+    FailExec --> EndFail
 ```
 
 ## Functional Specs
