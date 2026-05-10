@@ -59,7 +59,7 @@
       "dependencies": [
         "T-quick-1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "quick-gen-scripts.md",
       "record": "records/quick-gen-scripts.md",
       "scope": "all"
