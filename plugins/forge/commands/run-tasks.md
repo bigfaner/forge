@@ -55,7 +55,6 @@ task claim
 - `BREAKING` (e.g., "true" or absent)
 - `MAIN_SESSION` (e.g., "true" or absent)
 - `SCOPE` (e.g., "frontend", "backend", or "all" — defaults to "all" if absent; may be omitted entirely by claim output when not set)
-- `NO_TEST` (e.g., "true" or "false")
 - `FEATURE` (e.g., "my-feature" — feature slug from claim output)
 
 ### Step 1.5: Main Session Routing
@@ -90,7 +89,6 @@ Agent(
 TASK_ID: {{TASK_ID}}
 TASK_FILE: {{FILE}}
 SCOPE: {{SCOPE}}
-NO_TEST: {{NO_TEST}}
 {{PHASE_SUMMARY_SECTION}}
 
 IMPORTANT: Do NOT claim or start any other tasks after completing this one. Stop after recording the task result."

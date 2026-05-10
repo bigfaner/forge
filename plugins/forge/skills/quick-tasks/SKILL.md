@@ -1,6 +1,6 @@
 ---
 name: quick-tasks
-description: Use for small features (1-2h, 1-4 tasks) to generate tasks directly from proposal. No PRD or design needed. Supports --no-test to skip test tasks.
+description: Use for small features (1-2h, 1-4 tasks) to generate tasks directly from proposal. No PRD or design needed.
 ---
 
 # Quick Tasks
@@ -16,10 +16,6 @@ Generate executable tasks directly from a proposal document. For small features 
 <HARD-GATE>
 Maximum 4 business tasks. If the proposal requires more, STOP and recommend the full pipeline: `/write-prd` → `/tech-design` → `/breakdown-tasks`.
 </HARD-GATE>
-
-## Flags
-
-- `--no-test`: Skip T-quick-1~5 test tasks. Use for non-code proposals or when tests are handled separately.
 
 ## Step 1: Read Proposal
 
@@ -76,9 +72,9 @@ For each task:
 - Fill Implementation Notes from Key Risks and solution details
 - Set `breaking: true` only when modifying shared interfaces/models/APIs
 
-## Step 4: Create Test Tasks (unless --no-test)
+## Step 4: Create Test Tasks
 
-If `--no-test` flag is NOT set, append five test tasks. Read each template before writing:
+Append five test tasks. Read each template before writing:
 
 - **T-quick-1**: read `templates/quick-test-cases.md`, generates test cases from proposal's Success Criteria
 - **T-quick-2**: read `templates/quick-gen-scripts.md`, generates e2e test scripts from test cases
@@ -118,7 +114,7 @@ index.json rules:
 - Paths relative to `tasks/` directory
 - `dependencies` arrays reference task IDs (`"1"`, `"T-quick-1"`)
 - `proposal` field points to the proposal path (relative to feature dir)
-- Copy all boolean flags from the task template's YAML frontmatter (`breaking`, `noTest`, `mainSession`) directly into the corresponding index.json entry
+- Copy all boolean flags from the task template's YAML frontmatter (`breaking`, `mainSession`) directly into the corresponding index.json entry
 - If a quick task needs to spawn subagents (unlikely in quick mode), set `mainSession: true` and add `## Main Session Instructions` to the task file
 </HARD-RULE>
 
@@ -146,7 +142,7 @@ task validate docs/features/<slug>/tasks/index.json
 - [ ] Every Success Criterion covered by ≥1 task
 - [ ] Dependency graph is a DAG (no cycles)
 - [ ] Each task file includes `## Affected Files` section with Create/Modify/Delete
-- [ ] (if not --no-test) T-quick-1~5 appended with correct dependency chain
+- [ ] T-quick-1~5 appended with correct dependency chain
 - [ ] `docs/features/<slug>/manifest.md` written with `mode: quick`
 
 ## Integration

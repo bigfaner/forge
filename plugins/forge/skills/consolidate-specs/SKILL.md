@@ -314,7 +314,7 @@ Invoke the skill:
 Skill(skill="record-task")
 ```
 
-Omit `coverage` from record.json — the noTest flag in index.json auto-sets it.
+Omit `coverage` from record.json.
 
 ## Rules
 

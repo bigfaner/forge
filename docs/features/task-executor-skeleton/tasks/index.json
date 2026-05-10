@@ -105,7 +105,7 @@
       "dependencies": [
         "1.summary"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3.1-commands-skills.md",
       "record": "records/3.1-commands-skills.md",
       "scope": "all"
