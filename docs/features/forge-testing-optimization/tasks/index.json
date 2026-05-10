@@ -45,7 +45,7 @@
       "title": "Make gen-test-cases Element field required",
       "priority": "P1",
       "estimatedTime": "30min",
-      "status": "pending",
+      "status": "completed",
       "file": "4-gen-test-cases-element-required.md",
       "record": "records/4-gen-test-cases-element-required.md",
       "breaking": true,

@@ -22,7 +22,7 @@ Check previous stage artifacts. Abort and prompt user if missing:
 |----------|----------------|
 | `docs/features/<slug>/prd/prd-user-stories.md` | Run `/write-prd` first |
 | `docs/features/<slug>/prd/prd-spec.md` | Run `/write-prd` first |
-| `docs/sitemap/sitemap.json` (optional, UI tests only) | Run `/gen-sitemap` for more precise element references |
+| `docs/sitemap/sitemap.json` (optional, UI tests only) | Run `/gen-sitemap` — Element field defaults to `sitemap-missing` when absent |
 
 This skill can be invoked manually or as the standard task T-test-1 appended by `/breakdown-tasks`.
 
@@ -133,13 +133,24 @@ For each criterion, generate:
 - **Test ID**: <target>/<title-slug>
 - **Pre-conditions**: {What must be true before testing}
 - **Route**: {Page route for UI tests}
-- **Element**: {Optional: sitemap element IDs}    ← only if sitemap exists
+- **Element**: {Required: sitemap element IDs (e.g., E-001) or `sitemap-missing`}
 - **Steps**:
   1. {Step 1}
   2. {Step 2}
 - **Expected**: {What the correct result looks like}
 - **Priority**: P0 | P1 | P2
 ```
+
+<HARD-RULE>
+**Element field is required** for every test case. There are no exceptions — every TC must have an Element value.
+
+**Sitemap presence check** (during Step 2, after reading PRD sources):
+1. Check if `docs/sitemap/sitemap.json` exists.
+2. **If sitemap.json does NOT exist**: Set Element to `sitemap-missing` for all test cases. Add a `> **WARNING**: sitemap.json not found — Element set to `sitemap-missing`. Run \`/gen-sitemap\` for precise element references.` note at the top of the test cases output.
+3. **If sitemap.json exists**: For each test case, resolve the Route to sitemap page elements. If the sitemap page has element data, use the relevant element IDs. If the sitemap page has no element data for a specific route, set Element to `sitemap-missing` and add a note: `> ⚠️ Route {route} has no element data in sitemap — run \`/gen-sitemap\` to update.`
+
+**Route Validation enhancement** (Step 3.5): When sitemap exists but lacks element data for a test case's route, the Route Validation step must report this gap alongside the route match result. The suggested remediation is running `/gen-sitemap` to regenerate or update the sitemap for that route.
+</HARD-RULE>
 
 ### Integration Test Case Generation
 
@@ -153,7 +164,7 @@ For each UI Function with `placement: existing-page:<route>`, generate a dedicat
 - **Test ID**: ui/<page-name>/integration-<component-slug>
 - **Pre-conditions**: Component build complete, integration task complete
 - **Route**: <route>
-- **Element**: {{sitemap element IDs for the insertion point area}}
+- **Element**: {{sitemap element IDs for the insertion point area}} (required: use sitemap IDs or `sitemap-missing`)
 - **Steps**:
   1. Navigate to <route>
   2. Verify {{Component}} is visible at {{Position}}
