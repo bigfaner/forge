@@ -181,7 +181,7 @@
       "dependencies": [
         "T-test-2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "run-e2e-tests.md",
       "record": "records/run-e2e-tests.md",
       "scope": "all"
