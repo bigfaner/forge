@@ -5,7 +5,6 @@ priority: "P1"
 estimated_time: "15min"
 dependencies: ["T-quick-3"]
 status: pending
-noTest: false
 mainSession: false
 ---
 
@@ -53,3 +52,19 @@ Run `/graduate-tests` skill. The skill will:
 
 Mark task completed. T-quick-5 will run full regression to verify the
 graduated scripts integrate cleanly with the existing suite.
+
+## Execution Workflow
+
+1. Verify e2e tests passed.
+   - Check: read `tests/e2e/features/<slug>/results/latest.md`, confirm status = PASS.
+   - Success: status is PASS, proceed to step 2.
+   - Failure: status is FAIL → set task status to `blocked`, stop.
+2. Graduate test scripts.
+   - Action: run `/graduate-tests` skill.
+   - Success: graduation marker `tests/e2e/.graduated/<slug>` created; spec files present in `tests/e2e/<module>/`.
+   - Failure: set task status to `blocked` and stop.
+3. Verify post-migration compilation.
+   - Command: `cd tests/e2e && npx tsc --noEmit`
+   - Success: exit 0 (no type errors after import path rewrites).
+   - Failure: fix import paths in migrated specs, retry this step.
+4. Stop. Proceed to Step 3 (Record).

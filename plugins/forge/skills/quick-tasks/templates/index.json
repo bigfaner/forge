@@ -37,7 +37,6 @@
       "dependencies": ["2"],
       "status": "pending",
       "scope": "all",
-      "noTest": true,
       "file": "quick-test-cases.md",
       "record": "records/quick-test-cases.md"
     },

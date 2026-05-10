@@ -5,7 +5,6 @@ priority: "P1"
 estimated_time: "15-30min"
 dependencies: ["T-quick-2"]
 status: pending
-noTest: false
 mainSession: false
 ---
 
@@ -58,3 +57,22 @@ This task owns the feature e2e execution lifecycle:
 - After fix tasks complete, T-quick-3 is unblocked and re-claimed for re-run
 
 **Do NOT** attempt to fix failures inline — create fix tasks and let the dispatcher handle them.
+
+## Execution Workflow
+
+1. Execute e2e tests.
+   - Command: `just test-e2e --feature <slug>`
+   - Success: all tests pass (exit 0).
+   - Failure: proceed to step 2 for failure classification.
+2. Classify failures (only on test failure).
+   - Action: read `results/test-results.json`, analyze each failure.
+   - Classification: code bug, test script issue, or environment issue.
+3. Create fix tasks for defects (only on test failure).
+   - Action: for each distinct root cause, run `task add --template fix-task --source-task-id T-quick-3 --block-source ...`.
+   - Success: fix tasks created (CLI outputs `ACTION: ADDED` or `ACTION: SKIPPED`).
+   - Failure: if `task add` fails, set task status to `blocked` and stop.
+4. Record results.
+   - On all pass: record with status `completed`.
+   - On failures with fix tasks created: record with testsFailed > 0 (CLI auto-downgrades to `blocked`).
+   - Do NOT re-run tests or enter TDD cycle.
+5. Stop. Proceed to Step 3 (Record).

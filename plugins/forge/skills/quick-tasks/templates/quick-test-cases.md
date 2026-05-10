@@ -5,7 +5,6 @@ priority: "P1"
 estimated_time: "30min-1h"
 dependencies: [{{T_QUICK_1_DEP}}]
 status: pending
-noTest: true
 mainSession: false
 ---
 
@@ -40,3 +39,15 @@ Each test case includes:
 3. No sitemap prerequisite (quick mode skips `/gen-sitemap`)
 4. Each Success Criterion checkbox becomes one or more test cases
 5. If proposal has no testable criteria, mark task as skipped with explanation
+
+## Execution Workflow
+
+1. Run `/gen-test-cases` skill to generate test case documentation.
+   - Action: invoke the skill with proposal Success Criteria as source.
+   - Success: `testing/test-cases.md` created with Target and Test ID fields present.
+   - Failure: if proposal has no testable criteria, mark task as skipped with explanation.
+2. Verify generated output.
+   - Check: `testing/test-cases.md` exists and contains at least one test case with Target and Test ID fields.
+   - Success: file exists, fields populated.
+   - Failure: re-run the skill or fix the output manually.
+3. Stop. Proceed to Step 3 (Record).
