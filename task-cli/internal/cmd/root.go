@@ -35,4 +35,5 @@ func init() {
 	rootCmd.AddCommand(allCompletedCmd)
 	rootCmd.AddCommand(addCmd)
 	rootCmd.AddCommand(versionCmd)
+	rootCmd.AddCommand(validateSpecsCmd)
 }
