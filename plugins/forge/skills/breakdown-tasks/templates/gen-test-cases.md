@@ -5,7 +5,6 @@ priority: "P1"
 estimated_time: "1-2h"
 dependencies: [{{T_TEST_1_DEP}}]
 status: pending
-noTest: true
 mainSession: false
 ---
 
@@ -45,3 +44,19 @@ No direct user story mapping. This is a standard test generation task.
 2. Run `/gen-test-cases` skill
 3. Verify generated `testing/test-cases.md` contains Target and Test ID fields
 4. If PRD has no UI/API/CLI requirements, mark task as skipped with explanation
+
+## Execution Workflow
+
+1. Verify sitemap exists.
+   - Check: `docs/sitemap/sitemap.json` file exists.
+   - Success: file found, proceed to step 2.
+   - Failure: run `/gen-sitemap` skill, then re-check.
+2. Run `/gen-test-cases` skill to generate test case documentation.
+   - Action: invoke the skill; it writes `testing/test-cases.md`.
+   - Success: `testing/test-cases.md` created with Target and Test ID fields present.
+   - Failure: if PRD has no UI/API/CLI requirements, mark task as skipped with explanation.
+3. Verify generated output.
+   - Check: `testing/test-cases.md` exists and contains at least one test case with Target and Test ID fields.
+   - Success: file exists, fields populated.
+   - Failure: re-run the skill or fix the output manually.
+4. Stop. Proceed to Step 3 (Record).

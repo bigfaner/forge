@@ -5,7 +5,6 @@ priority: "P1"
 estimated_time: "30min"
 dependencies: ["T-test-1"]
 status: pending
-noTest: true
 mainSession: true
 ---
 
@@ -54,3 +53,18 @@ This section is read by `run-tasks` dispatcher when `mainSession: true`. Execute
 | Eval report `report.md` not generated | `task status <TASK_ID> blocked` |
 | Target NOT reached (iterations exhausted) | `task status <TASK_ID> blocked` |
 | Step Actionability < 20 (blocking threshold) | Report warning to user; still record if total target reached |
+
+## Execution Workflow
+
+1. Invoke eval-test-cases skill.
+   - Action: `Skill(skill="forge:eval-test-cases", args=FEATURE)`
+   - Success: skill runs without error.
+   - Failure: set task status to `blocked`, stop.
+2. Check eval report outcome.
+   - Check: read `docs/features/<FEATURE>/testing/eval/report.md`, extract target reached status.
+   - Success: target reached (final score >= target).
+   - Failure: target NOT reached after iterations exhausted → set task status to `blocked`, stop.
+3. Verify no Step Actionability dimension score < 20.
+   - Success: all dimension scores >= 20.
+   - Failure: report warning; still record if total target reached.
+4. Stop. Record task result (completed or blocked).

@@ -5,7 +5,6 @@ priority: "P1"
 estimated_time: "1-2h"
 dependencies: ["T-test-1b"]
 status: pending
-noTest: false
 mainSession: false
 ---
 
@@ -47,3 +46,23 @@ No direct user story mapping. This is a standard test generation task.
 5. After generating spec files, run `just e2e-verify --feature <slug>`; if exit 1 (unresolved `// VERIFY:` markers), task is incomplete — resolve markers before proceeding to T-test-3
 6. After generating spec files, run TypeScript compilation check: `cd tests/e2e && npx tsc --noEmit`
 7. If compilation fails, fix the generated spec files before marking the task complete
+
+## Execution Workflow
+
+1. Run `/gen-test-scripts` skill to generate TypeScript e2e test scripts.
+   - Action: invoke the skill; it writes spec files under `tests/e2e/features/<slug>/`.
+   - Success: at least one spec file (ui.spec.ts / api.spec.ts / cli.spec.ts) created under `tests/e2e/features/<slug>/`.
+   - Failure: if T-test-1 was skipped, mark this task as skipped and stop.
+2. Verify spec file locations.
+   - Check: no spec files exist at `tests/e2e/<slug>/` (must be under `tests/e2e/features/<slug>/`).
+   - Success: all specs are in the correct directory.
+   - Failure: move misplaced files to `tests/e2e/features/<slug>/`, then re-verify.
+3. Verify unresolved markers.
+   - Command: `just e2e-verify --feature <slug>`
+   - Success: exit 0 (no unresolved `// VERIFY:` markers).
+   - Failure: resolve markers in spec files, then retry this step.
+4. Verify TypeScript compilation.
+   - Command: `cd tests/e2e && npx tsc --noEmit`
+   - Success: exit 0 (no type errors).
+   - Failure: fix generated spec files, then retry this step.
+5. Stop. Proceed to Step 3 (Record).

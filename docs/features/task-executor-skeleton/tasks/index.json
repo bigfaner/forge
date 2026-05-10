@@ -63,7 +63,7 @@
       "dependencies": [
         "1.summary"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2.1-breakdown-templates.md",
       "record": "records/2.1-breakdown-templates.md",
       "breaking": true,

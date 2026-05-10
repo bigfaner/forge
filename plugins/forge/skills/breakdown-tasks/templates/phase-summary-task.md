@@ -5,7 +5,6 @@ priority: "P0"
 estimated_time: "15min"
 dependencies: [{{DEPENDENCIES}}]
 status: pending
-noTest: true
 mainSession: false
 ---
 
@@ -82,6 +81,22 @@ The `summary` field in `record.json` MUST follow this exact template. Copy it ve
 
 ## Implementation Notes
 
-This is a noTest task. No code should be written.
+This is a documentation-only task. No code should be written.
 - Proceed directly to generating the summary
 - The summary MUST be structured — subsequent phase tasks depend on parsing it
+
+## Execution Workflow
+
+1. Read all phase task records.
+   - Action: read each file matching `docs/features/<slug>/tasks/records/{{PHASE}}.*.md` (excluding summary records).
+   - Success: all phase task records loaded.
+   - Failure: if no records found, mark task as completed with empty summary.
+2. Extract structured data into summary fields.
+   - Action: populate the 5-section template (Tasks Completed, Key Decisions, Types & Interfaces Changed, Conventions Established, Deviations from Design) from task records.
+   - Success: all sections populated (use "None" if empty).
+   - Failure: re-read missing records.
+3. Create task record via `/record-task`.
+   - Action: invoke record-task skill with summary content.
+   - Success: record file created with all 5 sections.
+   - Failure: fix record content and retry.
+4. Stop. Proceed to Step 3 (Record).

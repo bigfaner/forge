@@ -5,7 +5,6 @@ priority: "P2"
 estimated_time: "20min"
 dependencies: ["T-test-4.5"]
 status: pending
-noTest: true
 mainSession: false
 ---
 
@@ -86,3 +85,25 @@ Write `docs/features/<slug>/specs/.integrated` marker with integrated counts.
 **Step 5: Record**
 
 Record task via `/record-task` skill. The preview files remain in `specs/` for traceability.
+
+## Execution Workflow
+
+1. Verify prerequisites.
+   - Check: `docs/features/<slug>/prd/prd-spec.md` and `docs/features/<slug>/design/tech-design.md` exist.
+   - Success: both files found, proceed to step 2.
+   - Failure: set task status to `blocked`, stop.
+   - Idempotency: if `docs/features/<slug>/specs/.integrated` already exists, skip all steps and record as completed.
+2. Extract and classify specs.
+   - Action: run `/consolidate-specs` skill; it writes `docs/features/<slug>/specs/biz-specs.md` and `docs/features/<slug>/specs/tech-specs.md`.
+   - Success: both spec files created with extracted content.
+   - Failure: if no extractable rules found, mark task as completed and stop.
+3. Handle integration decision.
+   - Check: are there any `[CROSS]` items?
+   - All `[LOCAL]`: skip integration, proceed to step 5.
+   - Has `[CROSS]` in non-interactive session: write preview files, set status to `blocked` with note "User review required for integration."
+   - Has `[CROSS]` in interactive session: present to user for review, write choices to `review-choices.md`.
+4. Integrate approved items (only if user approved).
+   - Action: append approved items to project-level files in `docs/business-rules/` and `docs/conventions/`.
+   - Success: `docs/features/<slug>/specs/.integrated` marker created.
+   - Failure: set task status to `blocked`.
+5. Stop. Proceed to Step 3 (Record).
