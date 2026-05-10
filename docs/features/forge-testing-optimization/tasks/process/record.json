@@ -1,25 +1,20 @@
 {
-  "taskId": "fix-1",
+  "taskId": "fix-2",
   "status": "completed",
-  "summary": "Updated 4 test spec files to reference the new file paths after init-justfile was moved from plugins/forge/commands/init-justfile.md to plugins/forge/skills/init-justfile/SKILL.md and templates moved from plugins/forge/references/justfile-templates/ to plugins/forge/skills/init-justfile/templates/. Also fixed TC-MIX-019 which had a pre-existing test/template mismatch (e2e-setup recipe has force=\"\" parameter between name and colon).",
+  "summary": "Fixed compile failure by converting justfile from mixed (frontend+backend) template to backend-only Go project configuration. The project had no package.json or TypeScript setup, so npx tsc --noEmit in the compile recipe always failed. Updated project-type from 'mixed' to 'backend', replaced all frontend npm/npx commands with Go toolchain commands targeting the task-cli subdirectory, and removed orphan package-lock.json.",
   "filesCreated": [],
-  "filesModified": [
-    "tests/e2e/init-justfile/init-justfile.spec.ts",
-    "tests/e2e/justfile-e2e-integration/cli.spec.ts",
-    "tests/e2e/justfile-e2e-integration/detection-assembly.spec.ts",
-    "tests/e2e/justfile-e2e-integration/mixed-template.spec.ts"
-  ],
+  "filesModified": ["justfile"],
   "keyDecisions": [
-    "Used replace_all for both path patterns (commands/init-justfile.md -> skills/init-justfile/SKILL.md and references/justfile-templates/ -> skills/init-justfile/templates/) across all 4 affected spec files",
-    "Fixed TC-MIX-019 by using regex match /^e2e-setup[^:]*:/m instead of substring search for 'e2e-setup:' since the recipe has 'e2e-setup force=\"\"\":' format"
+    "Converted justfile from mixed frontend/backend template to backend-only Go project since the project has no frontend (no package.json, no TypeScript)",
+    "All Go commands target the task-cli/ subdirectory where go.mod lives",
+    "Removed orphan package-lock.json at project root (no package.json to support it)"
   ],
-  "testsPassed": 69,
+  "testsPassed": 0,
   "testsFailed": 0,
-  "coverage": -1,
+  "coverage": -1.0,
   "acceptanceCriteria": [
-    { "criterion": "All init-justfile path references updated to new SKILL.md location", "met": true },
-    { "criterion": "All template path references updated from references/justfile-templates/ to skills/init-justfile/templates/", "met": true },
-    { "criterion": "All 69 tests pass with new paths", "met": true }
+    { "criterion": "just compile passes without TypeScript errors", "met": true },
+    { "criterion": "just fmt passes", "met": true }
   ],
-  "notes": "Fixed path references in 4 spec files and also fixed a pre-existing test/template mismatch in TC-MIX-019."
+  "notes": "Config-only fix (justfile). Pre-existing lint failures (99 issues from errcheck/gocritic/revive) and test failures (Windows cgo -race issue, permission tests, TestVerifyTaskCompletion detecting fix-2 in_progress) are unrelated to this change. Lint and test failures are pre-existing tech debt."
 }

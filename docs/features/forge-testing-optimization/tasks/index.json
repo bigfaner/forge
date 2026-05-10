@@ -62,6 +62,16 @@
       "breaking": true,
       "sourceTaskID": "T-quick-5"
     },
+    "fix-2": {
+      "id": "fix-2",
+      "title": "Fix: compile failure in all-completed quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-2.md",
+      "record": "records/fix-2.md",
+      "breaking": true
+    },
     "quick-gen-scripts": {
       "id": "T-quick-2",
       "title": "Generate Quick Test Scripts",

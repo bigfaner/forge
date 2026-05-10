@@ -1,14 +1,11 @@
 {
-  "task_id": "T-quick-4",
-  "key": "quick-graduate",
-  "title": "Graduate Quick Test Scripts",
-  "priority": "P1",
-  "estimatedTime": "15min",
-  "dependencies": [
-    "T-quick-3"
-  ],
-  "file": "quick-graduate.md",
-  "record": "records/quick-graduate.md",
-  "startedTime": "2026-05-10 13:55",
-  "scope": "all"
+  "task_id": "fix-2",
+  "key": "fix-2",
+  "title": "Fix: compile failure in all-completed quality gate",
+  "priority": "P0",
+  "estimatedTime": "30min",
+  "file": "fix-2.md",
+  "record": "records/fix-2.md",
+  "startedTime": "2026-05-10 14:11",
+  "breaking": true
 }
