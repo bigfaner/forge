@@ -1,30 +1,18 @@
 {
-  "taskId": "3.1",
+  "taskId": "3.summary",
   "status": "completed",
-  "summary": "Removed all NO_TEST/noTest/--no-test references from 4 files: run-tasks.md (claim parsing + dispatch prompt), record-task/SKILL.md (coverage rules, quality gate pre-check, validation rules), quick-tasks/SKILL.md (description, flags section, step 4, index.json rules, output checklist), consolidate-specs/SKILL.md (step 9 note). execute-task.md verified clean (already done by task 1.1). grep confirms zero matches across all 5 target files.",
+  "summary": "## Tasks Completed\n- 3.1: Removed all NO_TEST/noTest/--no-test references from 4 files: run-tasks.md (claim parsing + dispatch prompt), record-task/SKILL.md (coverage rules, quality gate pre-check, validation rules), quick-tasks/SKILL.md (description, flags section, step 4, index.json rules, output checklist), consolidate-specs/SKILL.md (step 9 note). grep confirms zero matches across all 5 target files.\n\n## Key Decisions\n- 3.1: Removed NO_TEST from run-tasks.md claim parsing and dispatch prompt — dispatcher no longer passes NO_TEST to subagents\n- 3.1: Removed noTest references from record-task/SKILL.md quality gate pre-check condition and validation fix suggestion (suggest --force instead of noTest:true)\n- 3.1: Removed --no-test flag and all conditional logic from quick-tasks/SKILL.md — test tasks are always generated\n- 3.1: Simplified consolidate-specs/SKILL.md step 9 to just 'Omit coverage from record.json' without noTest justification\n\n## Types & Interfaces Changed\n| Name | Change | Affects |\n|------|--------|----------|\n| run-tasks.md dispatch prompt | Removed NO_TEST parameter passing | Task dispatcher → subagent communication |\n| record-task/SKILL.md validation | Replaced noTest condition with --force suggestion | Record-task quality gate logic |\n| quick-tasks/SKILL.md | Removed --no-test flag and conditional logic | Quick-tasks pipeline always generates test tasks |\n| consolidate-specs/SKILL.md | Simplified step 9 note | Coverage handling in consolidate-specs |\n\n## Conventions Established\n- 3.1: noTest is now only a task frontmatter flag (for CLI quality gate bypass) — all command/skill documentation is clean of NO_TEST references\n- 3.1: --force flag is the documented override for quality gate bypass in record-task\n\n## Deviations from Design\n- None",
   "filesCreated": [],
-  "filesModified": [
-    "plugins/forge/commands/run-tasks.md",
-    "plugins/forge/skills/record-task/SKILL.md",
-    "plugins/forge/skills/quick-tasks/SKILL.md",
-    "plugins/forge/skills/consolidate-specs/SKILL.md"
-  ],
+  "filesModified": [],
   "keyDecisions": [
-    "Removed NO_TEST from run-tasks.md claim parsing and dispatch prompt — dispatcher no longer passes NO_TEST to subagents",
-    "Removed noTest references from record-task/SKILL.md quality gate pre-check condition and validation fix suggestion (suggest --force instead of noTest:true)",
-    "Removed --no-test flag and all conditional logic from quick-tasks/SKILL.md — test tasks are always generated",
-    "Simplified consolidate-specs/SKILL.md step 9 to just 'Omit coverage from record.json' without noTest justification"
+    "NO_TEST fully removed from command/skill docs — workflow content in templates replaces it",
+    "--force is the documented quality gate bypass mechanism"
   ],
   "testsPassed": 0,
   "testsFailed": 0,
-  "coverage": -1.0,
   "acceptanceCriteria": [
-    {"criterion": "run-tasks.md: no NO_TEST in claim parsing or dispatch prompt", "met": true},
-    {"criterion": "execute-task.md: no NO_TEST references", "met": true},
-    {"criterion": "skills/record-task/SKILL.md: no noTest references", "met": true},
-    {"criterion": "skills/quick-tasks/SKILL.md: no --no-test flag, no noTest in frontmatter copy instructions", "met": true},
-    {"criterion": "skills/consolidate-specs/SKILL.md: no noTest reference in Step 9", "met": true},
-    {"criterion": "grep zero matches across all 5 target files", "met": true}
-  ],
-  "notes": "Documentation-only task. execute-task.md was already clean from task 1.1. Quality gate (compile/fmt/lint/test) passed."
+    {"criterion": "All phase task records read and analyzed", "met": true},
+    {"criterion": "Summary follows the exact 5-section template", "met": true},
+    {"criterion": "Types & Interfaces table populated", "met": true}
+  ]
 }
