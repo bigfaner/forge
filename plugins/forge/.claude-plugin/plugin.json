@@ -1,27 +1,14 @@
 {
 	"name": "forge",
-	"version": "2.17.2",
-	"description": "Task management and workflow helper tools for Claude Code",
+	"version": "2.17.3",
+	"description": "Feature development pipeline: brainstorm, PRD, design, task breakdown, TDD execution, and e2e test automation",
 	"keywords": [
-		"task",
-		"workflow",
-		"productivity",
-		"prd",
-		"git",
+		"pipeline",
 		"brainstorm",
-		"ui-design",
-		"eval",
-		"manifest",
-		"e2e",
-		"playwright",
-		"sitemap",
-		"justfile",
-		"test-lifecycle",
+		"prd",
 		"design",
-		"test-generation",
-		"forensic",
-		"proposal",
-		"record",
-		"consolidation"
+		"task",
+		"eval",
+		"e2e"
 	]
 }

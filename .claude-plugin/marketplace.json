@@ -4,15 +4,15 @@
 		"name": "HuiFeng Fan"
 	},
 	"metadata": {
-		"description": "Claude Code productivity tools for task management and workflow"
+		"description": "Structured feature development pipeline with quality gates, from brainstorm to e2e testing"
 	},
 	"plugins": [
 		{
 			"name": "forge",
 			"source": "./plugins/forge",
-			"description": "Task management and workflow helper tools for Claude Code",
-			"version": "2.17.2",
-			"keywords": ["task", "workflow", "productivity", "prd", "git", "eval"]
+			"description": "Feature development pipeline: brainstorm, PRD, design, task breakdown, TDD execution, and e2e test automation",
+			"version": "2.17.3",
+			"keywords": ["pipeline", "brainstorm", "prd", "design", "task", "eval", "e2e"]
 		}
 	]
 }
