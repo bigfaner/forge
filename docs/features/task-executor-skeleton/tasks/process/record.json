@@ -1,28 +1,16 @@
 {
-  "taskId": "fix-1",
+  "taskId": "T-test-4.5",
   "status": "completed",
-  "summary": "Fix 12 pre-existing e2e tests that fail because they expect a mixed-project justfile with scope dispatch (frontend/backend case branches), but the project is backend-type with scope-free recipes. Added getProjectType() helper to detect project type at runtime and conditionally assert based on project type (mixed vs backend vs frontend). Updated tests in forge-justfile.spec.ts, cli.spec.ts, justfile-execution.spec.ts, and scope-resolution.spec.ts.",
+  "summary": "Full e2e regression suite verified after fix-1. All 126 tests pass (0 failures, 23.2s runtime). Both graduated specs (task-executor) and existing specs (init-justfile, justfile-e2e-integration, justfile-execution, scope-resolution, plugin-content, gen-test-scripts) pass cleanly.",
   "filesCreated": [],
-  "filesModified": [
-    "tests/e2e/justfile-e2e-integration/forge-justfile.spec.ts",
-    "tests/e2e/justfile-e2e-integration/cli.spec.ts",
-    "tests/e2e/justfile-execution/justfile-execution.spec.ts",
-    "tests/e2e/scope-resolution/scope-resolution.spec.ts"
-  ],
-  "keyDecisions": [
-    "Added getProjectType() runtime detection helper instead of hardcoding project type assertions. Tests now branch on project type (mixed/backend/frontend) and assert appropriately for each.",
-    "For TC-002/TC-016: Updated to verify workflow-driven dispatch pattern (no language-specific commands) instead of checking for hardcoded just compile/test, since task-executor.md was refactored to workflow skeleton pattern.",
-    "For scope validation tests (TC-FJ-014, TC-017, TC-015): Non-mixed projects accept scope param but ignore it (no scope dispatch). Tests now check that non-mixed projects don't produce scope errors for invalid scopes.",
-    "For toolchain dispatch tests (TC-FJ-005/006/007, TC-002, TC-003): Tests check for the appropriate toolchain per project type (go build for backend, npm for frontend, both for mixed)."
-  ],
-  "testsPassed": 1188,
+  "filesModified": [],
+  "keyDecisions": [],
+  "testsPassed": 126,
   "testsFailed": 0,
-  "coverage": 93.5,
+  "coverage": -1.0,
   "acceptanceCriteria": [
-    { "criterion": "12 failing e2e tests fixed to handle backend-type project correctly", "met": true },
-    { "criterion": "Tests use runtime project-type detection instead of hardcoded mixed-project assumptions", "met": true },
-    { "criterion": "TypeScript compilation passes with no errors", "met": true },
-    { "criterion": "Unit tests (go test ./...) continue to pass", "met": true }
+    { "criterion": "just test-e2e passes (full suite, no --feature flag)", "met": true },
+    { "criterion": "All graduated and existing specs pass", "met": true }
   ],
-  "notes": "E2e test fixes only. E2e regression verified by dispatcher after fix completes, not by this task. Go unit tests cannot run with -race flag on Windows without CGO/gcc installed."
+  "notes": "Retry after fix-1 resolved pre-existing e2e test failures. Suite is now green."
 }
