@@ -1,16 +1,28 @@
 {
-  "taskId": "T-test-4.5",
+  "taskId": "T-test-5",
   "status": "completed",
-  "summary": "Full e2e regression suite verified after fix-1. All 126 tests pass (0 failures, 23.2s runtime). Both graduated specs (task-executor) and existing specs (init-justfile, justfile-e2e-integration, justfile-execution, scope-resolution, plugin-content, gen-test-scripts) pass cleanly.",
-  "filesCreated": [],
+  "summary": "Extracted business rules and tech specs from PRD and tech design into specs/ directory. Created biz-specs.md (10 rules: 4 CROSS, 6 LOCAL), tech-specs.md (15 specs: 3 CROSS, 12 LOCAL), review-choices.md (7 CROSS items pending user review), and .integrated marker. No overlaps detected with existing decisions or lessons.",
+  "filesCreated": [
+    "docs/features/task-executor-skeleton/specs/biz-specs.md",
+    "docs/features/task-executor-skeleton/specs/tech-specs.md",
+    "docs/features/task-executor-skeleton/specs/review-choices.md",
+    "docs/features/task-executor-skeleton/specs/.integrated"
+  ],
   "filesModified": [],
-  "keyDecisions": [],
-  "testsPassed": 126,
+  "keyDecisions": [
+    "Classified 4 biz rules as CROSS (terminal states, backward compat, timeout, quality gate) -> target docs/business-rules/task-lifecycle.md",
+    "Classified 3 tech specs as CROSS (workflow content model, structured error handoff, error propagation) -> target docs/conventions/",
+    "No overlaps detected with existing decisions (empty files) or lessons (no matching tags)",
+    "Integration deferred pending user review of CROSS items per consolidate-specs HARD-GATE"
+  ],
+  "testsPassed": 0,
   "testsFailed": 0,
   "coverage": -1.0,
   "acceptanceCriteria": [
-    { "criterion": "just test-e2e passes (full suite, no --feature flag)", "met": true },
-    { "criterion": "All graduated and existing specs pass", "met": true }
+    { "criterion": "biz-specs.md exists", "met": true },
+    { "criterion": "tech-specs.md exists", "met": true },
+    { "criterion": "review-choices.md exists with CROSS items (pending user approval)", "met": true },
+    { "criterion": ".integrated marker exists", "met": true }
   ],
-  "notes": "Retry after fix-1 resolved pre-existing e2e test failures. Suite is now green."
+  "notes": "CROSS items (4 biz + 3 tech) require user review before integration to project-level dirs (docs/business-rules/, docs/conventions/). Integration deferred per consolidate-specs HARD-GATE rule: do not integrate without explicit user confirmation."
 }

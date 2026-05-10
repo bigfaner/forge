@@ -1,0 +1,7 @@
+feature: "task-executor-skeleton"
+integrated: "2026-05-10"
+status: "pending-review: cross items require user confirmation"
+biz_count: 0
+tech_count: 0
+cross_biz: [BIZ-003, BIZ-007, BIZ-009, BIZ-010]
+cross_tech: [TECH-003, TECH-008, TECH-009]
