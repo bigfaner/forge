@@ -138,3 +138,77 @@ func TestAddCmd_UnknownTemplateReturnsError(t *testing.T) {
 		t.Fatal("expected non-zero exit for unknown template")
 	}
 }
+
+func TestAddCmd_DedupSkipsActiveFix(t *testing.T) {
+	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
+		"1.1": {ID: "1.1", Title: "Source", Priority: "P0", Status: "blocked", File: "1.1.md", Record: "records/1.1.md"},
+	}})
+
+	// First add succeeds
+	output, err := captureOutput(func() error {
+		rootCmd.SetArgs([]string{
+			"add",
+			"--title", "Fix: first attempt",
+			"--source-task-id", "1.1",
+		})
+		return rootCmd.Execute()
+	})
+	if err != nil {
+		t.Fatalf("first add failed: %v", err)
+	}
+	if !strings.Contains(output, "ACTION: ADDED") {
+		t.Errorf("first add should output ACTION: ADDED, got %q", output)
+	}
+
+	// Second add for same source should be skipped (first fix is still active/pending)
+	output, err = captureOutput(func() error {
+		rootCmd.SetArgs([]string{
+			"add",
+			"--title", "Fix: second attempt",
+			"--source-task-id", "1.1",
+		})
+		return rootCmd.Execute()
+	})
+	if err != nil {
+		t.Fatalf("dedup add should not error, got: %v", err)
+	}
+	if !strings.Contains(output, "ACTION: SKIPPED") {
+		t.Errorf("second add should output ACTION: SKIPPED, got %q", output)
+	}
+	if !strings.Contains(output, "active fix tasks already exist") {
+		t.Errorf("SKIPPED output should contain reason, got %q", output)
+	}
+}
+
+func TestAddCmd_BlockSource(t *testing.T) {
+	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
+		"1.1": {ID: "1.1", Title: "Source", Priority: "P0", Status: "completed", File: "1.1.md", Record: "records/1.1.md"},
+	}})
+
+	output, err := captureOutput(func() error {
+		rootCmd.SetArgs([]string{
+			"add",
+			"--title", "Fix: blocked source",
+			"--source-task-id", "1.1",
+			"--block-source",
+		})
+		return rootCmd.Execute()
+	})
+	if err != nil {
+		t.Fatalf("add with --block-source failed: %v", err)
+	}
+	if !strings.Contains(output, "ACTION: ADDED") {
+		t.Errorf("expected ACTION: ADDED, got %q", output)
+	}
+	if !strings.Contains(output, "SOURCE_BLOCKED: 1.1") {
+		t.Errorf("expected SOURCE_BLOCKED: 1.1, got %q", output)
+	}
+
+	// Verify source task is now blocked in index
+	wd, _ := os.Getwd()
+	indexPath := filepath.Join(wd, feature.GetFeatureIndexFile("test"))
+	idx, _ := task.LoadIndex(indexPath)
+	if idx.TasksMap()["1.1"].Status != "blocked" {
+		t.Errorf("source 1.1 should be blocked, got %q", idx.TasksMap()["1.1"].Status)
+	}
+}

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -25,6 +26,7 @@ var (
 	addTemplate      string
 	addVars          []string
 	addSourceTaskID  string
+	addBlockSource   bool
 )
 
 var addCmd = &cobra.Command{
@@ -46,25 +48,35 @@ func init() {
 	addCmd.Flags().StringVar(&addTemplate, "template", "", "Template name (reads from tasks/_templates/<name>.md)")
 	addCmd.Flags().StringArrayVar(&addVars, "var", nil, "Template variable in key=value format (repeatable)")
 	addCmd.Flags().StringVar(&addSourceTaskID, "source-task-id", "", "Source task ID: auto-resolves to root ancestor, injects {{SOURCE_TASK_ID}}, and adds this task as source dependency")
+	addCmd.Flags().BoolVar(&addBlockSource, "block-source", false, "Set source task to blocked (before resolution, preserves fix-chain)")
 }
 
 // AddResult holds the result of a successful add operation.
 type AddResult struct {
-	ID           string
-	Title        string
-	Priority     string
-	Status       string
-	File         string
-	Record       string
-	Breaking     bool
-	Dependencies []string
-	FeatureSlug  string
-	ProjectRoot  string
+	ID            string
+	Title         string
+	Priority      string
+	Status        string
+	File          string
+	Record        string
+	Breaking      bool
+	Dependencies  []string
+	FeatureSlug   string
+	ProjectRoot   string
+	SourceBlocked string // source task ID that was blocked (empty if --block-source not used)
 }
 
 func runAdd(cmd *cobra.Command, args []string) {
 	result, err := executeAdd(cmd)
 	if err != nil {
+		var dedupErr *task.ActiveFixExistsError
+		if errors.As(err, &dedupErr) {
+			PrintBlockStart()
+			PrintField("ACTION", "SKIPPED")
+			PrintField("REASON", dedupErr.Error())
+			PrintBlockEnd()
+			return
+		}
 		Exit(err)
 	}
 
@@ -79,6 +91,9 @@ func runAdd(cmd *cobra.Command, args []string) {
 	PrintField("RECORD", result.Record)
 	if result.Breaking {
 		PrintField("BREAKING", "true")
+	}
+	if result.SourceBlocked != "" {
+		PrintField("SOURCE_BLOCKED", result.SourceBlocked)
 	}
 	PrintFieldIfNotEmptySlice("DEPENDENCIES", result.Dependencies)
 	PrintBlockEnd()
@@ -125,16 +140,17 @@ func executeAdd(cmd *cobra.Command) (*AddResult, error) {
 	}
 
 	opts := task.AddTaskOpts{
-		ID:            addID,
-		Title:         addTitle,
-		Priority:      addPriority,
+		ID:           addID,
+		Title:        addTitle,
+		Priority:     addPriority,
 		EstimatedTime: addEstimatedTime,
-		Dependencies:  deps,
-		Breaking:      addBreaking,
-		Description:   addDescription,
-		Template:      addTemplate,
-		Vars:          vars,
-		SourceTaskID:  addSourceTaskID,
+		Dependencies: deps,
+		Breaking:     addBreaking,
+		Description:  addDescription,
+		Template:     addTemplate,
+		Vars:         vars,
+		SourceTaskID: addSourceTaskID,
+		BlockSource:  addBlockSource,
 	}
 
 	// Apply template defaults for fixed fields
@@ -182,16 +198,23 @@ func executeAdd(cmd *cobra.Command) (*AddResult, error) {
 		fmt.Fprintf(os.Stderr, "WARNING: failed to update .forge/state.json: %v\n", err)
 	}
 
+	// Report which source was blocked (if --block-source was used)
+	var sourceBlocked string
+	if addBlockSource && addSourceTaskID != "" {
+		sourceBlocked = addSourceTaskID
+	}
+
 	return &AddResult{
-		ID:           id,
-		Title:        addTitle,
-		Priority:     opts.Priority,
-		Status:       "pending",
-		File:         filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, id+".md")),
-		Record:       filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, "records/"+id+".md")),
-		Breaking:     opts.Breaking,
-		Dependencies: deps,
-		FeatureSlug:  featureSlug,
-		ProjectRoot:  projectRoot,
+		ID:            id,
+		Title:         addTitle,
+		Priority:      opts.Priority,
+		Status:        "pending",
+		File:          filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, id+".md")),
+		Record:        filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, "records/"+id+".md")),
+		Breaking:      opts.Breaking,
+		Dependencies:  deps,
+		FeatureSlug:   featureSlug,
+		ProjectRoot:   projectRoot,
+		SourceBlocked: sourceBlocked,
 	}, nil
 }

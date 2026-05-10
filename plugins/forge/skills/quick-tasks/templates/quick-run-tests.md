@@ -42,20 +42,18 @@ This task owns the feature e2e execution lifecycle:
 - Read `results/test-results.json`
 - Analyze each failure: is it a code bug, test script issue, or environment issue?
 - Run `task template fix-task` to view the fix-task template and required variables
-- Mark this task `blocked`:
-  ```bash
-  task status T-quick-3 blocked
-  ```
 - For each distinct root cause, create a fix task:
   ```bash
   task add --template fix-task \
            --title "Fix: <concise description>" \
            --source-task-id T-quick-3 \
+           --block-source \
            --var SOURCE_FILES="<affected source file paths>" \
            --var TEST_SCRIPT="tests/e2e/features/<slug>/<failing-spec>.spec.ts" \
            --var TEST_RESULTS="tests/e2e/features/<slug>/results/latest.md" \
            --description "<root cause and context>"
   ```
+  `task add` automatically deduplicates — check output: `ACTION: ADDED` (new fix task) or `ACTION: SKIPPED` (active fix already exists).
 - Fix tasks (P0) will be claimed before T-quick-4 (P1)
 - After fix tasks complete, T-quick-3 is unblocked and re-claimed for re-run
 

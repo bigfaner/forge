@@ -24,7 +24,37 @@ type AddTaskOpts struct {
 	Template      string   // Template name (e.g. "fix-task")
 	Vars          map[string]string // Variable substitutions for template placeholders
 	SourceTaskID  string   // Source task ID: auto-injects {{SOURCE_TASK_ID}} and adds this task as source dependency
+	BlockSource   bool     // Block source task before resolution (preserves fix-chain model)
 	IDPrefix      string   // Auto-generate ID as prefix-N; empty defaults to "disc"
+}
+
+// terminalStatuses are task statuses that indicate the task is done.
+var terminalStatuses = map[string]bool{
+	"completed": true,
+	"skipped":   true,
+	"rejected":  true,
+}
+
+// ActiveFixExistsError is returned by AddTask when active fix tasks already exist
+// for the specified source task, making the new addition redundant.
+type ActiveFixExistsError struct {
+	SourceTaskID string
+	ActiveFixIDs []string
+}
+
+func (e *ActiveFixExistsError) Error() string {
+	return fmt.Sprintf("active fix tasks already exist for source %s: %s", e.SourceTaskID, strings.Join(e.ActiveFixIDs, ", "))
+}
+
+// HasActiveFixTasks returns IDs of fix tasks targeting sourceTaskID that are not in a terminal state.
+func HasActiveFixTasks(index *TaskIndex, sourceTaskID string) []string {
+	var active []string
+	for _, t := range index.tasks {
+		if t.SourceTaskID == sourceTaskID && !terminalStatuses[t.Status] {
+			active = append(active, t.ID)
+		}
+	}
+	return active
 }
 
 // ResolveSourceTask traces SourceTaskID chains to find the root ancestor.
@@ -113,10 +143,9 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 	fileName := opts.ID + ".md"
 	recordPath := "records/" + opts.ID + ".md"
 
-	// Source auto-resolution: when --source-task-id points to a COMPLETED fix-task,
-	// trace through its SourceTaskID chain to find the root blocked task.
-	// When the source is blocked/pending (fix-of-fix during execution), the chain model
-	// is preserved — the new fix-task chains to its immediate parent.
+	// Source handling: dedup → block → resolve.
+	// Dedup is a pure read (no mutation), so it must come first.
+	// Block before resolution preserves the fix-chain model.
 	var srcKey string
 	var srcTask *Task
 	if opts.SourceTaskID != "" {
@@ -124,6 +153,26 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 		var t *Task
 		if foundK, foundT, err := FindTask(index, opts.SourceTaskID); err == nil {
 			k, t = foundK, foundT
+		}
+
+		// Dedup check (pure read): if active fix tasks already exist, skip — no mutation needed.
+		if activeFixes := HasActiveFixTasks(index, opts.SourceTaskID); len(activeFixes) > 0 {
+			return "", &ActiveFixExistsError{
+				SourceTaskID: opts.SourceTaskID,
+				ActiveFixIDs: activeFixes,
+			}
+		}
+
+		// Only mutate after dedup passes.
+		if t != nil {
+			// Block source before resolution (--block-source flag).
+			// Prevents auto-resolve from flattening to root, preserving the chain.
+			if opts.BlockSource {
+				t.Status = "blocked"
+			}
+
+			// Source auto-resolution: when --source-task-id points to a COMPLETED/SKIPPED
+			// fix-task, trace the chain to find the root blocked task.
 			if t.Status == "completed" || t.Status == "skipped" {
 				resolved := ResolveSourceTask(index, opts.SourceTaskID)
 				if resolved != opts.SourceTaskID {

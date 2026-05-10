@@ -194,27 +194,25 @@ Violating this rule breaks the dispatcher's control loop.
 | Test fails | Fix, then retry verification |
 | Coverage < 80% | Add tests, then retry |
 | record-task fails | Follow skill guidance, retry |
-| Test failures beyond scope | Use `task add` to create a fix task, then continue |
+| Test failures beyond scope | Use `task add --block-source` to create a fix task, then continue |
 
 ### Dynamic Task Addition
 
 When discovering issues beyond the current task's scope (pre-existing bugs, environment issues,
 failures in unrelated modules), run `task template fix-task` to view the template. Auto-generated fix-task IDs follow the `disc-N` format (e.g., `disc-1`, `disc-2`). Then:
 
-1. Mark source task blocked so it's not in_progress when fix task is added:
-   ```bash
-   task status <TASK_ID> blocked
-   ```
-   Note: No `--force` needed here because this escape hatch runs during Step 3 (verification), before `task record`. The task is still `in_progress`, so `in_progress -> blocked` is a valid transition.
-2. Create the fix task:
-   ```bash
-   task add --template fix-task --title "Fix: <concise description>" \
-     --source-task-id <TASK_ID> \
-     --var SOURCE_FILES="<affected source paths>" \
-     --var TEST_SCRIPT="<failing test file>" \
-     --var TEST_RESULTS="<test results path>" \
-     --description "<root cause and context>"
-   ```
+```bash
+task add --template fix-task --title "Fix: <concise description>" \
+  --source-task-id <TASK_ID> \
+  --block-source \
+  --var SOURCE_FILES="<affected source paths>" \
+  --var TEST_SCRIPT="<failing test file>" \
+  --var TEST_RESULTS="<test results path>" \
+  --description "<root cause and context>"
+```
+
+**`--block-source`**: atomically sets source task to blocked before resolution.
+`task add` automatically deduplicates — check output: `ACTION: ADDED` (new fix task) or `ACTION: SKIPPED` (active fix already exists).
 
 The new P0 fix task will be picked up by the next `task claim` in the dispatcher loop.
 
@@ -222,18 +220,18 @@ The new P0 fix task will be picked up by the next `task claim` in the dispatcher
 
 When a fix-task itself fails and needs another fix-task:
 
-1. Mark the failed fix-task blocked, then add the new fix-task:
-   ```bash
-   task status <FIX_TASK_ID> blocked
-   task add --template fix-task --title "Fix: deeper issue" \
-     --source-task-id <FIX_TASK_ID> \
-     --var SOURCE_FILES="<affected paths>" \
-     --var TEST_SCRIPT="<failing test>" \
-     --var TEST_RESULTS="<results path>" \
-     --description "<root cause of fix-task failure>"
-   ```
-2. This creates a chain: source → fix-A → fix-B. When fix-B completes, `task record` auto-restores fix-A to pending (via SourceTaskID). When fix-A completes, `task record` auto-restores the original source to pending.
-3. Maximum nesting depth: 3 levels. If deeper nesting is needed, escalate to manual intervention.
+```bash
+task add --template fix-task --title "Fix: deeper issue" \
+  --source-task-id <FIX_TASK_ID> \
+  --block-source \
+  --var SOURCE_FILES="<affected paths>" \
+  --var TEST_SCRIPT="<failing test>" \
+  --var TEST_RESULTS="<results path>" \
+  --description "<root cause of fix-task failure>"
+```
+
+This creates a chain: source → fix-A → fix-B. When fix-B completes, `task record` auto-restores fix-A to pending (via SourceTaskID). When fix-A completes, `task record` auto-restores the original source to pending.
+Maximum nesting depth: 3 levels. If deeper nesting is needed, escalate to manual intervention.
 
 **Auto-resolution**: if `--source-task-id` points to a **completed** fix-task, the CLI automatically resolves to the root blocked task. This handles the case where a fix completed but the original source still fails — the new fix-task goes directly under the root source instead of chaining to the completed fix. No manual tracing needed.
 

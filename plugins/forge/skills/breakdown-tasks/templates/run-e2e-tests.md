@@ -52,11 +52,13 @@ No direct user story mapping. This is a standard test execution task.
   task add --template fix-task \
            --title "Fix: <concise description>" \
            --source-task-id T-test-3 \
+           --block-source \
            --var SOURCE_FILES="<affected source file paths>" \
            --var TEST_SCRIPT="tests/e2e/features/<slug>/<failing-spec>.spec.ts" \
            --var TEST_RESULTS="tests/e2e/features/<slug>/results/latest.md" \
            --description "<root cause and context>"
   ```
+  `task add` automatically deduplicates — check output: `ACTION: ADDED` (new fix task) or `ACTION: SKIPPED` (active fix already exists).
 - When you record this task, the CLI will auto-downgrade `status: "completed"` to `status: "blocked"` if `testsFailed > 0` — do NOT manually set status to blocked
 - Fix tasks (P0) will be claimed before T-test-4 (P1)
 - After fix tasks complete, T-test-3 is auto-restored to pending and re-claimed for re-run

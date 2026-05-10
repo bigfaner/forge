@@ -95,17 +95,19 @@ Replace `{{T_QUICK_1_DEP}}` with the last business task ID (e.g., `"2"` if 2 bus
 - T-quick-4: graduate scripts to `tests/e2e/`
 - T-quick-5: run full regression suite; on failure, mark blocked, add fix tasks (P0)
 
-**Fix-task reference**: When adding a fix task, the source task MUST be marked `blocked` first:
+**Fix-task reference**:
 
 ```bash
-task status <source-task-id> blocked
 task add --template fix-task --title "Fix: <description>" \
   --source-task-id <source-task-id> \
+  --block-source \
   --var SOURCE_FILES="<affected paths>" \
   --var TEST_SCRIPT="<failing test>" \
   --var TEST_RESULTS="<results path>" \
   --description "<root cause>"
 ```
+
+**`--block-source`**: atomically sets source task to blocked before resolution. `task add` automatically deduplicates — check output: `ACTION: ADDED` (new fix task) or `ACTION: SKIPPED` (active fix already exists).
 
 ## Step 5: Create index.json
 
