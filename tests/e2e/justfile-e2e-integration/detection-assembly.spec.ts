@@ -7,7 +7,7 @@ function fileContains(content: string, needle: string): boolean {
 }
 
 function getInitJustfileContent(): string {
-  return readProjectFile('plugins/forge/commands/init-justfile.md');
+  return readProjectFile('plugins/forge/skills/init-justfile/SKILL.md');
 }
 
 // ── TC-DET-001 to TC-DET-004: Project-type detection signals ───────
@@ -105,7 +105,7 @@ test.describe('Template selection and assembly', () => {
 
   // Traceability: TC-DET-009 -> AC: Selects backend template for backend project
   test('TC-DET-009: selects Backend Template for pure backend projects', () => {
-    const backendTemplate = readProjectFile('plugins/forge/references/justfile-templates/go.just');
+    const backendTemplate = readProjectFile('plugins/forge/skills/init-justfile/templates/go.just');
     expect(
       fileContains(backendTemplate, '@echo "backend"'),
       'Expected backend template to output @echo "backend"',
@@ -114,7 +114,7 @@ test.describe('Template selection and assembly', () => {
 
   // Traceability: TC-DET-010 -> AC: Selects frontend template for frontend project
   test('TC-DET-010: selects Frontend Template for pure frontend projects', () => {
-    const frontendTemplate = readProjectFile('plugins/forge/references/justfile-templates/node.just');
+    const frontendTemplate = readProjectFile('plugins/forge/skills/init-justfile/templates/node.just');
     expect(
       fileContains(frontendTemplate, '@echo "frontend"'),
       'Expected frontend template to output @echo "frontend"',
@@ -123,7 +123,7 @@ test.describe('Template selection and assembly', () => {
 
   // Traceability: TC-DET-011 -> AC: Selects mixed template for mixed project
   test('TC-DET-011: selects Mixed Template for mixed projects', () => {
-    const mixedTemplate = readProjectFile('plugins/forge/references/justfile-templates/mixed.just');
+    const mixedTemplate = readProjectFile('plugins/forge/skills/init-justfile/templates/mixed.just');
     expect(
       fileContains(mixedTemplate, '@echo "mixed"'),
       'Expected mixed template to output @echo "mixed"',
@@ -167,9 +167,9 @@ test.describe('Boundary markers', () => {
     const startMarker = '# --- forge standard recipes ---';
     const endMarker = '# --- end forge standard recipes ---';
     const templates = [
-      'plugins/forge/references/justfile-templates/go.just',
-      'plugins/forge/references/justfile-templates/node.just',
-      'plugins/forge/references/justfile-templates/mixed.just',
+      'plugins/forge/skills/init-justfile/templates/go.just',
+      'plugins/forge/skills/init-justfile/templates/node.just',
+      'plugins/forge/skills/init-justfile/templates/mixed.just',
     ];
     for (const tpl of templates) {
       const content = readProjectFile(tpl);
@@ -235,15 +235,15 @@ test.describe('project-type recipe variants', () => {
   // Traceability: TC-DET-018 -> AC: project-type recipe outputs correct type
   test('TC-DET-018: all three project-type recipe variants exist', () => {
     expect(
-      fileContains(readProjectFile('plugins/forge/references/justfile-templates/node.just'), '@echo "frontend"'),
+      fileContains(readProjectFile('plugins/forge/skills/init-justfile/templates/node.just'), '@echo "frontend"'),
       'Expected @echo "frontend" project-type recipe',
     ).toBeTruthy();
     expect(
-      fileContains(readProjectFile('plugins/forge/references/justfile-templates/go.just'), '@echo "backend"'),
+      fileContains(readProjectFile('plugins/forge/skills/init-justfile/templates/go.just'), '@echo "backend"'),
       'Expected @echo "backend" project-type recipe',
     ).toBeTruthy();
     expect(
-      fileContains(readProjectFile('plugins/forge/references/justfile-templates/mixed.just'), '@echo "mixed"'),
+      fileContains(readProjectFile('plugins/forge/skills/init-justfile/templates/mixed.just'), '@echo "mixed"'),
       'Expected @echo "mixed" project-type recipe',
     ).toBeTruthy();
   });

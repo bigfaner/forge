@@ -51,6 +51,17 @@
       "breaking": true,
       "scope": "all"
     },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "Fix: init-justfile test specs reference moved file path",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "T-quick-5"
+    },
     "quick-gen-scripts": {
       "id": "T-quick-2",
       "title": "Generate Quick Test Scripts",
@@ -110,7 +121,8 @@
       "priority": "P1",
       "estimatedTime": "15min",
       "dependencies": [
-        "T-quick-4"
+        "T-quick-4",
+        "fix-1"
       ],
       "status": "pending",
       "file": "quick-verify-regression.md",

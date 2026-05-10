@@ -7,7 +7,7 @@ function fileContains(content: string, needle: string): boolean {
 }
 
 function getInitJustfileContent(): string {
-  return readProjectFile('plugins/forge/commands/init-justfile.md');
+  return readProjectFile('plugins/forge/skills/init-justfile/SKILL.md');
 }
 
 // The 15 standard command names per Spec 5.1
@@ -22,7 +22,7 @@ test.describe('init-justfile: project detection and generation', () => {
 
   // Traceability: TC-004 -> Story 2 / AC-1
   test('TC-004: frontend project detection generates scope-free justfile', () => {
-    const frontendTemplate = readProjectFile('plugins/forge/references/justfile-templates/node.just');
+    const frontendTemplate = readProjectFile('plugins/forge/skills/init-justfile/templates/node.just');
     // Frontend template should NOT have scope="" parameters
     expect(
       !fileContains(frontendTemplate, 'scope=""'),
@@ -37,7 +37,7 @@ test.describe('init-justfile: project detection and generation', () => {
 
   // Traceability: TC-005 -> Story 2 / AC-2
   test('TC-005: backend project detection generates scope-free justfile', () => {
-    const backendTemplate = readProjectFile('plugins/forge/references/justfile-templates/go.just');
+    const backendTemplate = readProjectFile('plugins/forge/skills/init-justfile/templates/go.just');
     // Backend template should NOT have scope="" parameters
     expect(
       !fileContains(backendTemplate, 'scope=""'),
@@ -51,7 +51,7 @@ test.describe('init-justfile: project detection and generation', () => {
 
   // Traceability: TC-006 -> Story 2 / AC-3
   test('TC-006: mixed project detection generates scope-aware justfile', () => {
-    const mixedTemplate = readProjectFile('plugins/forge/references/justfile-templates/mixed.just');
+    const mixedTemplate = readProjectFile('plugins/forge/skills/init-justfile/templates/mixed.just');
     // Mixed template SHOULD have scope="" parameters
     expect(
       fileContains(mixedTemplate, 'scope=""'),

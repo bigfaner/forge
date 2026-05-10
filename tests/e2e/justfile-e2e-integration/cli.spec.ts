@@ -207,7 +207,7 @@ test.describe('Skill/Agent file content checks', () => {
 
   // Traceability: TC-018 → Spec Section 5.1
   test('TC-018: init-justfile generates e2e-setup target', () => {
-    const content = readProjectFile('plugins/forge/commands/init-justfile.md');
+    const content = readProjectFile('plugins/forge/skills/init-justfile/SKILL.md');
     expect(
       fileContains(content, 'e2e-setup'),
       'Expected "e2e-setup" recipe to appear in init-justfile.md template',
@@ -218,7 +218,7 @@ test.describe('Skill/Agent file content checks', () => {
       'Expected idempotent node_modules check in e2e-setup recipe',
     ).toBeTruthy();
     // Verify playwright install in the template files
-    const genericTemplate = readProjectFile('plugins/forge/references/justfile-templates/generic.just');
+    const genericTemplate = readProjectFile('plugins/forge/skills/init-justfile/templates/generic.just');
     expect(
       fileContains(genericTemplate, 'playwright install chromium'),
       'Expected "playwright install chromium" in e2e-setup recipe template',
@@ -227,7 +227,7 @@ test.describe('Skill/Agent file content checks', () => {
 
   // Traceability: TC-019 → Spec Section 5.1
   test('TC-019: init-justfile generates e2e-verify target', () => {
-    const content = readProjectFile('plugins/forge/commands/init-justfile.md');
+    const content = readProjectFile('plugins/forge/skills/init-justfile/SKILL.md');
     expect(
       fileContains(content, 'e2e-verify'),
       'Expected "e2e-verify" recipe to appear in init-justfile.md template',
