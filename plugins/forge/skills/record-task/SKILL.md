@@ -138,16 +138,17 @@ This gate runs via `validateQualityGate()` in record.go. If any step fails, the 
 
 | Condition | Error | Fix |
 |-----------|-------|-----|
-| `status=completed` + `testsFailed > 0` | Auto-downgrade to `blocked` | Fix the test failures, then re-record with `status: "completed"` |
-| `status=completed` + `testsPassed=0` + `testsFailed=0` + `coverage >= 0` | No test evidence | Ensure task has `noTest: true` (CLI auto-sets coverage), or run tests and report results |
-| `status=completed` + any `acceptanceCriteria.met=false` | Unmet acceptance criteria | Fix the issue, or set `status: "blocked"` |
+| `status=completed` + `testsFailed > 0` | Auto-downgrade to `blocked` (**non-overridable**) | Fix the test failures, then re-record with `status: "completed"` |
+| `status=completed` + `testsPassed=0` + `testsFailed=0` + `coverage >= 0` | No test evidence (overridable) | Ensure task has `noTest: true` (CLI auto-sets coverage), or run tests and report results |
+| `status=completed` + any `acceptanceCriteria.met=false` | Unmet acceptance criteria (overridable) | Fix the issue, or set `status: "blocked"` |
 | `summary` is empty or whitespace | Missing summary | Provide a summary |
 
-Override any validation error with `--force`:
+Override quality gate, test evidence, and AC validation with `--force`:
 ```bash
 task record <TASK_ID> --data record.json --force
 ```
 
+Note: auto-downgrade (`completed` + `testsFailed > 0` → `blocked`) is **never** overridden by `--force`. Fix the failing tests first.
 Use `--force` only when you have a specific reason (document it in `notes`).
 
 ## Forbidden Operations

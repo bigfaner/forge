@@ -42,7 +42,7 @@
       "type": "object",
       "additionalProperties": {
         "type": "object",
-        "required": ["id", "title", "priority", "status", "file", "scope"],
+        "required": ["id", "title", "priority", "status", "file"],
         "properties": {
           "id": { "type": "string" },
           "title": { "type": "string" },

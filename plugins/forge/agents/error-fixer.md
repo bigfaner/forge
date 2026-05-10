@@ -163,3 +163,19 @@ Save patterns discovered:
 Do NOT save:
 - Session-specific error details
 - Information specific to one task
+
+## STOP
+
+<HARD-RULE>
+ONE FIX PER INVOCATION. This is absolute and non-negotiable.
+
+After Step 5, you MUST stop immediately.
+
+<PROHIBITIONS>
+- Running `task claim` under any circumstances
+- Reading other task files
+- Attempting additional fixes
+</PROHIBITIONS>
+
+Output your final DONE line and STOP. Return control to the dispatcher.
+</HARD-RULE>
