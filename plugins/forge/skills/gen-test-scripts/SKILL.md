@@ -310,6 +310,26 @@ ls tests/e2e/helpers.ts tests/e2e/package.json tests/e2e/tsconfig.json tests/e2e
 - Only spec files (`*.spec.ts`) are written per-feature.
 </HARD-RULE>
 
+#### Playwright webServer Audit
+
+When processing `playwright.config.ts` (new copy or existing file):
+
+> **Exception to HARD-RULE "do not modify existing playwright.config.ts"**:
+> The webServer audit is the ONLY permitted modification to an existing `playwright.config.ts`.
+> All other content must be preserved verbatim.
+
+1. Check for `webServer` key:
+   ```bash
+   grep -n "webServer" tests/e2e/playwright.config.ts
+   ```
+
+2. If `webServer` block found:
+   - Remove the entire `webServer: { ... }` block (matching braces)
+   - Insert comment: `// Server lifecycle managed by justfile (embedded in test-e2e recipe)`
+   - Report: "Removed Playwright webServer config — server lifecycle enforced by test-e2e"
+
+3. If `webServer` not found: no action needed
+
 ## Output
 
 All generated spec files go to `tests/e2e/features/<feature>/` (staging area). After verification via `/run-e2e-tests`, use `/graduate-tests` to migrate them to the regression suite. Output files: `ui.spec.ts` (if UI detected), `api.spec.ts` (if API detected), `cli.spec.ts` (if CLI detected).

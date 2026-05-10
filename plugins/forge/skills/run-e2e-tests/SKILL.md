@@ -88,37 +88,13 @@ mkdir -p tests/e2e/results/
 mkdir -p tests/e2e/features/<slug>/results/
 # Clean stale results from previous runs
 rm -f tests/e2e/results/test-results.json
-# Truncate PID file to prevent stale PIDs from previous runs
-> tests/e2e/results/.server-pids
 ```
 
 The Playwright JSON reporter writes to `results/`, so it must exist.
 
-**Start servers** (if needed):
-
-Detect what needs to be started based on the project:
-
-| Artifact | Server Command | When |
-|----------|---------------|------|
-| HTML prototype | `just run` | `ui/prototype/` exists |
-| Real application | User-specified or detected | App needs running server |
-
-Start servers in background. Record PIDs to a file for reliable cleanup across agent turns:
-
-```bash
-mkdir -p tests/e2e/results
-# Start server and capture PID
-just run & echo $! >> tests/e2e/results/.server-pids
-```
-
-**Health check**: After starting servers, poll until ready (with timeout):
-
-```bash
-# Retry probe up to 10 times, 3 seconds apart (30s total)
-for i in $(seq 1 10); do just probe && break; sleep 3; done || { echo "Health check failed after 30s"; exit 1; }
-```
-
-The `just probe` recipe reads `baseUrl` (frontend) and `apiBaseUrl` (backend) from `tests/e2e/config.yaml` and probes each with `/health`. For CLI-only projects without config.yaml, it silently succeeds. If `just probe` reports zero lines of output (no services probed), warn the user that config.yaml may be misconfigured.
+Server lifecycle is embedded in `test-e2e`.
+Calling `just test-e2e` (Step 3) automatically ensures servers are started and healthy.
+No manual server management needed.
 
 ### Step 2: Verify Scripts
 
@@ -226,11 +202,10 @@ Write to: `tests/e2e/features/<slug>/results/latest.md`
 <HARD-RULE>
 **Teardown is mandatory**, even if tests fail:
 
-1. Read PIDs from `tests/e2e/results/.server-pids` and kill each: `kill $(cat tests/e2e/results/.server-pids) 2>/dev/null || true`
-2. Remove PID file: `rm -f tests/e2e/results/.server-pids`
-3. Clean up temporary files
+1. Kill tracked servers: `for f in tests/e2e/results/.pid-*; do [ -f "$f" ] && kill "$(tr -d '\r' < "$f")" 2>/dev/null || true; rm -f "$f"; done`
+2. Clean up temporary files
 
-Playwright browser instances are automatically closed by the test runner; no manual cleanup needed.
+Playwright browser instances are automatically closed by the test runner.
 </HARD-RULE>
 ## Output
 
