@@ -1,0 +1,24 @@
+{
+	"taskId": "T-test-4",
+	"status": "completed",
+	"summary": "Graduated task-executor-skeleton e2e test scripts from staging area to regression suite. Verified latest.md shows PASS (17/17 CLI tests). Migrated cli.spec.ts to tests/e2e/task-executor/ with updated import paths. TypeScript compilation and Playwright discovery both pass.",
+	"filesCreated": [
+		"tests/e2e/task-executor/cli.spec.ts",
+		"tests/e2e/.graduated/task-executor-skeleton"
+	],
+	"filesModified": [],
+	"keyDecisions": [
+		"Classified all tests under task-executor module (single functional domain: task-executor agent behavior)",
+		"No splitting needed: one spec file covering workflow detection, noTest removal, failure handling, and end-to-end integration",
+		"Import path rewritten from ../../helpers.js to ../helpers.js (1 level deep target)"
+	],
+	"testsPassed": 17,
+	"testsFailed": 0,
+	"coverage": -1.0,
+	"acceptanceCriteria": [
+		{ "criterion": "tests/e2e/features/task-executor-skeleton/results/latest.md shows status = PASS", "met": true },
+		{ "criterion": "tests/e2e/.graduated/task-executor-skeleton marker exists", "met": true },
+		{ "criterion": "Spec files present in tests/e2e/task-executor/", "met": true }
+	],
+	"notes": "Source directory tests/e2e/features/task-executor-skeleton/ archived and removed. Results archived to tests/e2e/.graduated/.results-archive/task-executor-skeleton/. Playwright discovers 17 tests in task-executor/cli.spec.ts (TC-001 through TC-017)."
+}

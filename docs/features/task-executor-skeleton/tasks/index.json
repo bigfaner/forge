@@ -168,7 +168,7 @@
       "dependencies": [
         "T-test-3"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "graduate-tests.md",
       "record": "records/graduate-tests.md",
       "scope": "all"

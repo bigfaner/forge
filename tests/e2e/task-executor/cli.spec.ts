@@ -4,7 +4,7 @@ import {
   readProjectFile,
   projectFileExists,
   PROJECT_ROOT,
-} from '../../helpers.js';
+} from '../helpers.js';
 import { join } from 'node:path';
 import { writeFileSync, readFileSync, mkdirSync, rmSync, existsSync } from 'node:fs';
 
