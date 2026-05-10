@@ -16,8 +16,7 @@
       "status": "completed",
       "file": "1-summary.md",
       "record": "records/1-summary.md",
-      "scope": "all",
-      "noTest": true
+      "scope": "all"
     },
     "1.1-skeleton": {
       "id": "1.1",
@@ -52,8 +51,7 @@
       "status": "completed",
       "file": "2-summary.md",
       "record": "records/2-summary.md",
-      "scope": "all",
-      "noTest": true
+      "scope": "all"
     },
     "2.1-breakdown-templates": {
       "id": "2.1",
@@ -94,8 +92,7 @@
       "status": "completed",
       "file": "3-summary.md",
       "record": "records/3-summary.md",
-      "scope": "all",
-      "noTest": true
+      "scope": "all"
     },
     "3.1-commands-skills": {
       "id": "3.1",
@@ -121,8 +118,7 @@
       "status": "pending",
       "file": "consolidate-specs.md",
       "record": "records/consolidate-specs.md",
-      "scope": "all",
-      "noTest": true
+      "scope": "all"
     },
     "eval-test-cases": {
       "id": "T-test-1b",
@@ -132,12 +128,11 @@
       "dependencies": [
         "T-test-1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "eval-test-cases.md",
       "record": "records/eval-test-cases.md",
       "scope": "all",
-      "mainSession": true,
-      "noTest": true
+      "mainSession": true
     },
     "gen-test-cases": {
       "id": "T-test-1",
@@ -150,8 +145,7 @@
       "status": "completed",
       "file": "gen-test-cases.md",
       "record": "records/gen-test-cases.md",
-      "scope": "all",
-      "noTest": true
+      "scope": "all"
     },
     "gen-test-scripts": {
       "id": "T-test-2",
@@ -161,7 +155,7 @@
       "dependencies": [
         "T-test-1b"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "gen-test-scripts.md",
       "record": "records/gen-test-scripts.md",
       "scope": "all"

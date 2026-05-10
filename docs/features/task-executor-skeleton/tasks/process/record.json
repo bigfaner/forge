@@ -1,18 +1,25 @@
 {
-  "taskId": "3.summary",
+  "taskId": "T-test-2",
   "status": "completed",
-  "summary": "## Tasks Completed\n- 3.1: Removed all NO_TEST/noTest/--no-test references from 4 files: run-tasks.md (claim parsing + dispatch prompt), record-task/SKILL.md (coverage rules, quality gate pre-check, validation rules), quick-tasks/SKILL.md (description, flags section, step 4, index.json rules, output checklist), consolidate-specs/SKILL.md (step 9 note). grep confirms zero matches across all 5 target files.\n\n## Key Decisions\n- 3.1: Removed NO_TEST from run-tasks.md claim parsing and dispatch prompt — dispatcher no longer passes NO_TEST to subagents\n- 3.1: Removed noTest references from record-task/SKILL.md quality gate pre-check condition and validation fix suggestion (suggest --force instead of noTest:true)\n- 3.1: Removed --no-test flag and all conditional logic from quick-tasks/SKILL.md — test tasks are always generated\n- 3.1: Simplified consolidate-specs/SKILL.md step 9 to just 'Omit coverage from record.json' without noTest justification\n\n## Types & Interfaces Changed\n| Name | Change | Affects |\n|------|--------|----------|\n| run-tasks.md dispatch prompt | Removed NO_TEST parameter passing | Task dispatcher → subagent communication |\n| record-task/SKILL.md validation | Replaced noTest condition with --force suggestion | Record-task quality gate logic |\n| quick-tasks/SKILL.md | Removed --no-test flag and conditional logic | Quick-tasks pipeline always generates test tasks |\n| consolidate-specs/SKILL.md | Simplified step 9 note | Coverage handling in consolidate-specs |\n\n## Conventions Established\n- 3.1: noTest is now only a task frontmatter flag (for CLI quality gate bypass) — all command/skill documentation is clean of NO_TEST references\n- 3.1: --force flag is the documented override for quality gate bypass in record-task\n\n## Deviations from Design\n- None",
-  "filesCreated": [],
+  "summary": "Generated e2e test scripts from test-cases.md for task-executor-skeleton feature. Created cli.spec.ts with 17 CLI test cases covering workflow detection/injection, execution workflow behavior, noTest removal verification, failure handling, and end-to-end integration. All 17 tests pass.",
+  "filesCreated": [
+    "tests/e2e/features/task-executor-skeleton/cli.spec.ts",
+    "tests/e2e/features/task-executor-skeleton/playwright.config.ts"
+  ],
   "filesModified": [],
   "keyDecisions": [
-    "NO_TEST fully removed from command/skill docs — workflow content in templates replaces it",
-    "--force is the documented quality gate bypass mechanism"
+    "TC-007/TC-008 use targeted grep patterns for noTest as feature flag (struct field/json tag/NO_TEST env var) rather than broad case-insensitive match to avoid false positives from legitimate error names like ErrNoTestEvidence",
+    "Tests verify agent/skill document content rather than CLI dispatch since task-executor is an agent prompt, not compiled Go code",
+    "TC-013 uses task CLI record command with non-existent task to verify error handling"
   ],
-  "testsPassed": 0,
+  "testsPassed": 17,
   "testsFailed": 0,
+  "coverage": 100.0,
   "acceptanceCriteria": [
-    {"criterion": "All phase task records read and analyzed", "met": true},
-    {"criterion": "Summary follows the exact 5-section template", "met": true},
-    {"criterion": "Types & Interfaces table populated", "met": true}
-  ]
+    { "criterion": "tests/e2e/features/task-executor-skeleton/ contains at least one spec file", "met": true },
+    { "criterion": "NO spec files exist directly at tests/e2e/task-executor-skeleton/", "met": true },
+    { "criterion": "tests/e2e/helpers.ts exists (shared infrastructure)", "met": true },
+    { "criterion": "Each test() includes traceability comment", "met": true }
+  ],
+  "notes": "All 17 test cases from test-cases.md implemented as CLI-type tests using runCli() and readProjectFile() helpers. TypeScript compilation passes. No unresolved VERIFY markers."
 }
