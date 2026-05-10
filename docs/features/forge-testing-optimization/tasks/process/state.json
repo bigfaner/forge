@@ -1,14 +1,14 @@
 {
-  "task_id": "T-quick-2",
-  "key": "quick-gen-scripts",
-  "title": "Generate Quick Test Scripts",
+  "task_id": "T-quick-3",
+  "key": "quick-run-tests",
+  "title": "Run Quick E2E Tests",
   "priority": "P1",
-  "estimatedTime": "30min-1h",
+  "estimatedTime": "15-30min",
   "dependencies": [
-    "T-quick-1"
+    "T-quick-2"
   ],
-  "file": "quick-gen-scripts.md",
-  "record": "records/quick-gen-scripts.md",
-  "startedTime": "2026-05-10 13:40",
+  "file": "quick-run-tests.md",
+  "record": "records/quick-run-tests.md",
+  "startedTime": "2026-05-10 13:49",
   "scope": "all"
 }

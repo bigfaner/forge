@@ -85,7 +85,7 @@
       "dependencies": [
         "T-quick-2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "quick-run-tests.md",
       "record": "records/quick-run-tests.md",
       "scope": "all"

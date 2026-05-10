@@ -6,6 +6,9 @@ claude:
 claude-c:
     claude --dangerously-skip-permissions -c
 
+claude-w name="":
+    claude --dangerously-skip-permissions -w "{{name}}"
+
 # --- forge standard recipes ---
 
 # project-type: return project type identifier
@@ -51,8 +54,8 @@ dev scope="":
     set -euo pipefail
     case "{{scope}}" in
       frontend) npm run dev ;;
-      backend)  go run . --dev ;;
-      "")       npm run dev && go run . --dev ;;
+      backend)  go run . ;;
+      "")       npm run dev && go run . ;;
       *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
     esac
 
@@ -76,7 +79,12 @@ test-e2e feature="":
         [ ! -d tests/e2e/node_modules ] && npm install --prefix tests/e2e
         cd tests/e2e && npx playwright test
     else
-        cd tests/e2e && E2E_FEATURE=1 npx playwright test features/{{feature}}/
+        feature_config="tests/e2e/features/{{feature}}/playwright.config.ts"
+        if [ -f "$feature_config" ]; then
+            cd tests/e2e/features/{{feature}} && npx playwright test --config=playwright.config.ts
+        else
+            cd tests/e2e && E2E_FEATURE=1 npx playwright test features/{{feature}}/
+        fi
     fi
 
 # probe: check if configured services are healthy
