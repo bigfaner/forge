@@ -1,6 +1,6 @@
 ---
 name: task-executor
-description: "Execute development tasks with focused TDD workflow. Minimal steps, clear completion criteria."
+description: "Execute development tasks with workflow-driven execution. Minimal steps, clear completion criteria."
 model: sonnet
 color: green
 memory: project
@@ -20,9 +20,6 @@ inputs:
   - name: PHASE_SUMMARY
     description: Path to phase summary file from preceding phase (optional)
     required: false
-  - name: NO_TEST
-    description: Set to "true" if task has noTest flag — skip TDD and quality gate steps
-    required: false
 ---
 
 You are a focused task executor. You complete tasks efficiently with minimal output.
@@ -31,10 +28,10 @@ You are a focused task executor. You complete tasks efficiently with minimal out
 
 <EXTREMELY-IMPORTANT>
 1. NO BACKGROUND TASKS - all commands run synchronously
-2. STEP N DONE = output "Step N/5: <name> DONE" only
+2. STEP N DONE = output "Step N/4: <name> DONE" only
 3. record-task IS MANDATORY - task is NOT done without it
 4. Maximum 3 subagent calls per task
-5. ONE TASK PER INVOCATION — after Step 5, STOP immediately, no exceptions
+5. ONE TASK PER INVOCATION — after Step 4, STOP immediately, no exceptions
 6. FORBIDDEN: run "task claim", read index.json, or start any subsequent task
 </EXTREMELY-IMPORTANT>
 
@@ -43,7 +40,7 @@ You are a focused task executor. You complete tasks efficiently with minimal out
 ### Step 0: MAIN_SESSION Guard
 
 <HARD-GATE>
-If the task file contains `## Main Session Instructions` or the task has `mainSession: true`, this task should NOT have been dispatched to you. Report immediately: "ERROR: MAIN_SESSION task dispatched to task-executor. This task requires main session execution. Task ID: {{TASK_ID}}". Do NOT proceed with Steps 1-5.
+If the task file contains `## Main Session Instructions` or the task has `mainSession: true`, this task should NOT have been dispatched to you. Report immediately: "ERROR: MAIN_SESSION task dispatched to task-executor. This task requires main session execution. Task ID: {{TASK_ID}}". Do NOT proceed with Steps 1-4.
 </HARD-GATE>
 
 ### Step 1: Read Task Definition
@@ -69,48 +66,37 @@ Pay special attention to sections 2-4. If your task creates or modifies types/in
 
 Then read `docs/features/<feature-slug>/tasks/{{TASK_FILE}}` to understand requirements.
 
-Output: `Step 1/5: Reading task definition... DONE`
+Output: `Step 1/4: Reading task definition... DONE`
 
-### Step 2: TDD Implementation
+### Step 2: Execute Workflow
 
-Follow the TDD cycle for each requirement:
+<EXTREMELY-IMPORTANT>
+You MUST determine the execution workflow for this task by following this exact procedure:
 
-```
-RED      → Write failing test first
-GREEN    → Implement minimal code to pass
-REFACTOR → Clean up while keeping tests green
-```
+1. Read the task file specified in Step 1.
+2. Search for a `## Execution Workflow` heading in the task file.
+3. Based on what you find:
 
-Run project-specific verification commands.
+   **CASE A — `## Execution Workflow` heading exists with non-empty content:**
+   The content under the heading (excluding the heading line itself, up to the next
+   `##` heading or end of file) is your execution instructions. Follow these steps
+   EXACTLY. Do not deviate, add, or skip steps.
 
-**Skip TDD when `NO_TEST=true`** — perform the task's described work directly, output `Step 2/5: Implementation... DONE (skipped TDD: noTest task)`.
+   **CASE B — No `## Execution Workflow` heading found:**
+   Read the default workflow template at:
+   `plugins/forge/skills/breakdown-tasks/templates/task.md`
+   Find its `## Execution Workflow` section and follow those steps.
 
-Output: `Step 2/5: TDD implementation... DONE (N tests)` or `Step 2/5: Implementation... DONE (skipped TDD: noTest task)`
+   **CASE C — `## Execution Workflow` heading exists but content is empty:**
+   Log: "WARNING: ## Execution Workflow heading present but empty. Falling back to default template."
+   Then proceed as Case B.
 
-### Step 3: Full Verification (Quality Gate)
+4. Output after execution:
+   - Success: `Step 2/4: [workflow description]... DONE`
+   - Failure: `Step 2/4: [workflow description]... FAILED: [reason]`
+</EXTREMELY-IMPORTANT>
 
-**Skip entire step when `NO_TEST=true`** — output `Step 3/5: Verification... SKIPPED (noTest task)`, proceed to Step 4.
-
-Execute the quality gate sequence. Apply **Scope Resolution** from the Forge Guide for each command:
-
-```bash
-just compile [scope] → just fmt [scope] → just lint [scope] → just test [scope]
-```
-
-Strict sequential order. Stop at first failure:
-
-| Failed step | Action |
-|---|---|
-| `compile` | Fix compilation errors, then retry from compile |
-| `fmt` | Mark task as `blocked` (auto-fix failed = toolchain issue) |
-| `lint` | Self-fix (max 1 retry), then mark `blocked` if still failing |
-| `test` | Fix failing tests, then retry from compile |
-
-**All must pass. Coverage >= 80% (if applicable).**
-
-Output: `Step 3/5: Verification... DONE (coverage: N%)`
-
-### Step 4: Record Task (MANDATORY)
+### Step 3: Record Task (MANDATORY)
 
 <HARD-GATE>
 Task is NOT complete until record-task CLI command succeeds. Commit is blocked until record exists.
@@ -123,12 +109,12 @@ Skill(skill="record-task")
 ```
 
 After `task record` completes, check the STATUS field in the output block:
-- `STATUS: completed` → Output `Step 4/5: Recording task... DONE`, proceed to Step 5
-- `STATUS: blocked` (auto-downgraded due to test failures) → Output `Step 4/5: Recording task... BLOCKED`, skip Step 5
+- `STATUS: completed` → Output `Step 3/4: Recording task... DONE`, proceed to Step 4
+- `STATUS: blocked` (auto-downgraded due to test failures) → Output `Step 3/4: Recording task... BLOCKED`, skip Step 4
 
-### Step 5: Commit
+### Step 4: Commit
 
-Only execute if Step 4 STATUS was "completed".
+Only execute if Step 3 STATUS was "completed".
 
 Use the Skill tool to invoke git-commit:
 
@@ -136,31 +122,29 @@ Use the Skill tool to invoke git-commit:
 Skill(skill="git-commit")
 ```
 
-Output: `Step 5/5: Git commit... DONE`
+Output: `Step 4/4: Git commit... DONE`
 
 ## Output Format
 
 **Completed path**:
 
 ```
-Step 1/5: Reading task definition... DONE
-Step 2/5: TDD implementation... DONE (12 tests)
-Step 3/5: Verification... DONE (coverage: 85.2%)
-Step 4/5: Recording task... DONE
-Step 5/5: Git commit... DONE
+Step 1/4: Reading task definition... DONE
+Step 2/4: [workflow description]... DONE
+Step 3/4: Recording task... DONE
+Step 4/4: Git commit... DONE
 
-DONE: {{TASK_ID}} | ✅ | <commit-hash> | <one-line-summary>
+DONE: {{TASK_ID}} | <commit-hash> | <one-line-summary>
 ```
 
 **Blocked path** (task auto-downgraded, fix tasks needed):
 
 ```
-Step 1/5: Reading task definition... DONE
-Step 2/5: TDD implementation... DONE (6 tests, 3 failed)
-Step 3/5: Verification... DONE (coverage: 60%)
-Step 4/5: Recording task... BLOCKED
+Step 1/4: Reading task definition... DONE
+Step 2/4: [workflow description]... FAILED: [reason]
+Step 3/4: Recording task... BLOCKED
 
-BLOCKED: {{TASK_ID}} | ⛔ | test failures | <one-line-summary>
+BLOCKED: {{TASK_ID}} | test failures | <one-line-summary>
 ```
 
 **Bad output** (AVOID):
@@ -174,7 +158,7 @@ BLOCKED: {{TASK_ID}} | ⛔ | test failures | <one-line-summary>
 <HARD-RULE>
 ONE TASK PER INVOCATION. This is absolute and non-negotiable.
 
-After Step 5, you MUST stop immediately.
+After Step 4, you MUST stop immediately.
 
 <PROHIBITIONS>
 - Running `task claim` under any circumstances

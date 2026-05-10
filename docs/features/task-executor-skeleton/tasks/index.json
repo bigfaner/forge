@@ -4,21 +4,31 @@
   "design": "design/tech-design.md",
   "created": "2026-05-10",
   "status": "planning",
-  "statusEnum": ["pending", "in_progress", "completed", "blocked", "skipped", "rejected"],
-  "priorityEnum": ["P0", "P1", "P2"],
-  "e2eRound": 0,
   "tasks": {
+    "1-summary": {
+      "id": "1.summary",
+      "title": "Phase 1 Summary",
+      "priority": "P0",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "1.x"
+      ],
+      "status": "pending",
+      "file": "1-summary.md",
+      "record": "records/1-summary.md",
+      "scope": "all",
+      "noTest": true
+    },
     "1.1-skeleton": {
       "id": "1.1",
       "title": "Rewrite task-executor.md as workflow skeleton",
       "priority": "P0",
       "estimatedTime": "2h",
-      "status": "pending",
-      "scope": "all",
-      "breaking": true,
-      "noTest": false,
+      "status": "completed",
       "file": "1.1-skeleton.md",
-      "record": "records/1.1-skeleton.md"
+      "record": "records/1.1-skeleton.md",
+      "breaking": true,
+      "scope": "all"
     },
     "1.2-taskcli-notest": {
       "id": "1.2",
@@ -26,167 +36,187 @@
       "priority": "P0",
       "estimatedTime": "3h",
       "status": "pending",
-      "scope": "all",
-      "breaking": true,
-      "noTest": false,
       "file": "1.2-taskcli-notest.md",
-      "record": "records/1.2-taskcli-notest.md"
-    },
-    "1-summary": {
-      "id": "1.summary",
-      "title": "Phase 1 Summary",
-      "priority": "P0",
-      "estimatedTime": "15min",
-      "dependencies": ["1.x"],
-      "status": "pending",
-      "scope": "all",
-      "noTest": true,
-      "file": "1-summary.md",
-      "record": "records/1-summary.md"
-    },
-    "2.1-breakdown-templates": {
-      "id": "2.1",
-      "title": "Add Execution Workflow to breakdown templates + remove noTest",
-      "priority": "P0",
-      "estimatedTime": "3-4h",
-      "dependencies": ["1.summary"],
-      "status": "pending",
-      "scope": "all",
+      "record": "records/1.2-taskcli-notest.md",
       "breaking": true,
-      "noTest": false,
-      "file": "2.1-breakdown-templates.md",
-      "record": "records/2.1-breakdown-templates.md"
-    },
-    "2.2-quick-templates-schemas": {
-      "id": "2.2",
-      "title": "Add Execution Workflow to quick templates + update schemas",
-      "priority": "P0",
-      "estimatedTime": "2h",
-      "dependencies": ["2.1"],
-      "status": "pending",
-      "scope": "all",
-      "breaking": true,
-      "noTest": false,
-      "file": "2.2-quick-templates-schemas.md",
-      "record": "records/2.2-quick-templates-schemas.md"
+      "scope": "all"
     },
     "2-summary": {
       "id": "2.summary",
       "title": "Phase 2 Summary",
       "priority": "P0",
       "estimatedTime": "15min",
-      "dependencies": ["2.x"],
+      "dependencies": [
+        "2.x"
+      ],
       "status": "pending",
-      "scope": "all",
-      "noTest": true,
       "file": "2-summary.md",
-      "record": "records/2-summary.md"
-    },
-    "3.1-commands-skills": {
-      "id": "3.1",
-      "title": "Remove NO_TEST from commands and skill docs",
-      "priority": "P0",
-      "estimatedTime": "1.5h",
-      "dependencies": ["1.summary"],
-      "status": "pending",
+      "record": "records/2-summary.md",
       "scope": "all",
-      "breaking": false,
-      "noTest": false,
-      "file": "3.1-commands-skills.md",
-      "record": "records/3.1-commands-skills.md"
+      "noTest": true
+    },
+    "2.1-breakdown-templates": {
+      "id": "2.1",
+      "title": "Add Execution Workflow to breakdown templates + remove noTest",
+      "priority": "P0",
+      "estimatedTime": "3-4h",
+      "dependencies": [
+        "1.summary"
+      ],
+      "status": "pending",
+      "file": "2.1-breakdown-templates.md",
+      "record": "records/2.1-breakdown-templates.md",
+      "breaking": true,
+      "scope": "all"
+    },
+    "2.2-quick-templates-schemas": {
+      "id": "2.2",
+      "title": "Add Execution Workflow to quick templates + update schemas",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "2.1"
+      ],
+      "status": "pending",
+      "file": "2.2-quick-templates-schemas.md",
+      "record": "records/2.2-quick-templates-schemas.md",
+      "breaking": true,
+      "scope": "all"
     },
     "3-summary": {
       "id": "3.summary",
       "title": "Phase 3 Summary",
       "priority": "P0",
       "estimatedTime": "15min",
-      "dependencies": ["3.x"],
+      "dependencies": [
+        "3.x"
+      ],
       "status": "pending",
-      "scope": "all",
-      "noTest": true,
       "file": "3-summary.md",
-      "record": "records/3-summary.md"
-    },
-    "gen-test-cases": {
-      "id": "T-test-1",
-      "title": "Generate e2e Test Cases",
-      "priority": "P1",
-      "estimatedTime": "1-2h",
-      "dependencies": ["3.summary"],
-      "status": "pending",
+      "record": "records/3-summary.md",
       "scope": "all",
-      "noTest": true,
-      "file": "gen-test-cases.md",
-      "record": "records/gen-test-cases.md"
+      "noTest": true
     },
-    "eval-test-cases": {
-      "id": "T-test-1b",
-      "title": "Evaluate e2e Test Cases",
-      "priority": "P1",
-      "estimatedTime": "30min",
-      "dependencies": ["T-test-1"],
+    "3.1-commands-skills": {
+      "id": "3.1",
+      "title": "Remove NO_TEST from commands and skill docs",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1.summary"
+      ],
       "status": "pending",
-      "scope": "all",
-      "noTest": true,
-      "mainSession": true,
-      "file": "eval-test-cases.md",
-      "record": "records/eval-test-cases.md"
-    },
-    "gen-test-scripts": {
-      "id": "T-test-2",
-      "title": "Generate e2e Test Scripts",
-      "priority": "P1",
-      "estimatedTime": "1-2h",
-      "dependencies": ["T-test-1b"],
-      "status": "pending",
-      "scope": "all",
-      "file": "gen-test-scripts.md",
-      "record": "records/gen-test-scripts.md"
-    },
-    "run-e2e-tests": {
-      "id": "T-test-3",
-      "title": "Run e2e Tests",
-      "priority": "P1",
-      "estimatedTime": "30min-1h",
-      "dependencies": ["T-test-2"],
-      "status": "pending",
-      "scope": "all",
-      "file": "run-e2e-tests.md",
-      "record": "records/run-e2e-tests.md"
-    },
-    "graduate-tests": {
-      "id": "T-test-4",
-      "title": "Graduate Test Scripts",
-      "priority": "P1",
-      "estimatedTime": "30min",
-      "dependencies": ["T-test-3"],
-      "status": "pending",
-      "scope": "all",
-      "file": "graduate-tests.md",
-      "record": "records/graduate-tests.md"
-    },
-    "verify-regression": {
-      "id": "T-test-4.5",
-      "title": "Verify Full E2E Regression",
-      "priority": "P1",
-      "estimatedTime": "15-30min",
-      "dependencies": ["T-test-4"],
-      "status": "pending",
-      "scope": "all",
-      "file": "verify-regression.md",
-      "record": "records/verify-regression.md"
+      "file": "3.1-commands-skills.md",
+      "record": "records/3.1-commands-skills.md",
+      "scope": "all"
     },
     "consolidate-specs": {
       "id": "T-test-5",
       "title": "Consolidate Specs",
       "priority": "P2",
       "estimatedTime": "20min",
-      "dependencies": ["T-test-4.5"],
+      "dependencies": [
+        "T-test-4.5"
+      ],
       "status": "pending",
-      "scope": "all",
-      "noTest": true,
       "file": "consolidate-specs.md",
-      "record": "records/consolidate-specs.md"
+      "record": "records/consolidate-specs.md",
+      "scope": "all",
+      "noTest": true
+    },
+    "eval-test-cases": {
+      "id": "T-test-1b",
+      "title": "Evaluate e2e Test Cases",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "T-test-1"
+      ],
+      "status": "pending",
+      "file": "eval-test-cases.md",
+      "record": "records/eval-test-cases.md",
+      "scope": "all",
+      "mainSession": true,
+      "noTest": true
+    },
+    "gen-test-cases": {
+      "id": "T-test-1",
+      "title": "Generate e2e Test Cases",
+      "priority": "P1",
+      "estimatedTime": "1-2h",
+      "dependencies": [
+        "3.summary"
+      ],
+      "status": "pending",
+      "file": "gen-test-cases.md",
+      "record": "records/gen-test-cases.md",
+      "scope": "all",
+      "noTest": true
+    },
+    "gen-test-scripts": {
+      "id": "T-test-2",
+      "title": "Generate e2e Test Scripts",
+      "priority": "P1",
+      "estimatedTime": "1-2h",
+      "dependencies": [
+        "T-test-1b"
+      ],
+      "status": "pending",
+      "file": "gen-test-scripts.md",
+      "record": "records/gen-test-scripts.md",
+      "scope": "all"
+    },
+    "graduate-tests": {
+      "id": "T-test-4",
+      "title": "Graduate Test Scripts",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "T-test-3"
+      ],
+      "status": "pending",
+      "file": "graduate-tests.md",
+      "record": "records/graduate-tests.md",
+      "scope": "all"
+    },
+    "run-e2e-tests": {
+      "id": "T-test-3",
+      "title": "Run e2e Tests",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "T-test-2"
+      ],
+      "status": "pending",
+      "file": "run-e2e-tests.md",
+      "record": "records/run-e2e-tests.md",
+      "scope": "all"
+    },
+    "verify-regression": {
+      "id": "T-test-4.5",
+      "title": "Verify Full E2E Regression",
+      "priority": "P1",
+      "estimatedTime": "15-30min",
+      "dependencies": [
+        "T-test-4"
+      ],
+      "status": "pending",
+      "file": "verify-regression.md",
+      "record": "records/verify-regression.md",
+      "scope": "all"
     }
-  }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
 }

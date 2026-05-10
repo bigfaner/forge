@@ -1,25 +1,24 @@
 ---
 name: execute-task
-description: Execute single task with focused TDD workflow.
+description: Execute single task with workflow-driven execution.
 allowed_tools: ["Bash", "Read", "Write", "Edit", "Grep", "Glob", "Agent", "LSP"]
 ---
 
 # /execute-task
 
-Execute a single task with streamlined TDD workflow.
+Execute a single task with workflow-driven execution.
 
 ## Step 0: MAIN_SESSION Check
 
-If the claimed task has `MAIN_SESSION == "true"`, read the task file's `## Main Session Instructions` section and follow it. After execution, invoke `Skill(skill="record-task")`. Skip Steps 2–5.
+If the claimed task has `MAIN_SESSION == "true"`, read the task file's `## Main Session Instructions` section and follow it. After execution, invoke `Skill(skill="record-task")`. Skip Steps 2–4.
 
-## Workflow (5 Steps)
+## Workflow (4 Steps)
 
 ```
-Step 1: Read task definition
-Step 2: TDD (RED → GREEN → REFACTOR)
-Step 3: Full verification
-Step 4: Record task (MANDATORY)
-Step 5: Git commit
+Step 1: Claim & Read task definition
+Step 2: Execute Workflow
+Step 3: Record task (MANDATORY)
+Step 4: Git commit
 ```
 
 ## Step 1: Claim & Read
@@ -28,7 +27,7 @@ Step 5: Git commit
 task claim
 ```
 
-Parse output for KEY, TASK_ID, FILE, SCOPE, FEATURE, NO_TEST. Reading order: project knowledge → task definition.
+Parse output for KEY, TASK_ID, FILE, SCOPE, FEATURE. Reading order: project knowledge → task definition.
 
 **Project Knowledge**: Read relevant project knowledge files first (domain constraints):
 - Infer relevant domains from task title, scope, and feature slug
@@ -36,27 +35,33 @@ Parse output for KEY, TASK_ID, FILE, SCOPE, FEATURE, NO_TEST. Reading order: pro
 - Example mappings: "auth"/"login"/"permission" → `business-rules/auth.md`; "state"/"validation"/"lifecycle" → `business-rules/<domain>.md`; "API"/"endpoint"/"route" → `conventions/api.md`; "error"/"status code" → `conventions/error-handling.md`; "database"/"schema"/"migration" → `conventions/data-model.md`; "test"/"mock"/"coverage" → `conventions/testing.md`
 - If no matching file exists, skip this step
 
-## Step 2: TDD Implementation
+## Step 2: Execute Workflow
 
-**Skip when `NO_TEST=true`** — perform task work directly, output `Step 2/5: Implementation... DONE (skipped TDD: noTest task)`.
+<EXTREMELY-IMPORTANT>
+You MUST determine the execution workflow for this task by following this exact procedure:
 
-```
-RED      → Write failing test first
-GREEN    → Implement minimal code to pass
-REFACTOR → Clean up while keeping tests green
-```
+1. Read the task file specified in Step 1.
+2. Search for a `## Execution Workflow` heading in the task file.
+3. Based on what you find:
 
-## Step 3: Full Verification (Quality Gate)
+   **CASE A — `## Execution Workflow` heading exists with non-empty content:**
+   The content under the heading (excluding the heading line itself, up to the next
+   `##` heading or end of file) is your execution instructions. Follow these steps
+   EXACTLY. Do not deviate, add, or skip steps.
 
-**Skip when `NO_TEST=true`** — output `Step 3/5: Verification... SKIPPED (noTest task)`, proceed to Step 4.
+   **CASE B — No `## Execution Workflow` heading found:**
+   Read the default workflow template at:
+   `plugins/forge/skills/breakdown-tasks/templates/task.md`
+   Find its `## Execution Workflow` section and follow those steps.
 
-Execute the quality gate sequence. Apply **Scope Resolution** from the Forge Guide for each command:
+   **CASE C — `## Execution Workflow` heading exists but content is empty:**
+   Log: "WARNING: ## Execution Workflow heading present but empty. Falling back to default template."
+   Then proceed as Case B.
 
-```
-just compile [scope] → just fmt [scope] → just lint [scope] → just test [scope]
-```
-
-Strict sequential order. Stop at first failure. See Forge Guide Quality Gate Protocol for failure actions.
+4. Output after execution:
+   - Success: `Step 2/4: [workflow description]... DONE`
+   - Failure: `Step 2/4: [workflow description]... FAILED: [reason]`
+</EXTREMELY-IMPORTANT>
 
 ### Fix-Task Escape Hatch
 
@@ -79,9 +84,9 @@ task add --template fix-task --title "Fix: <concise description>" \
 
 The fix-task (P0) will be auto-claimed by the next `task claim`. When it completes, `task record` auto-restores the source task to pending via SourceTaskID.
 
-### E2E Reminder (After Step 3)
+### E2E Reminder (After Step 2)
 
-After the quality gate passes, check whether to show an e2e reminder:
+After the workflow completes successfully, check whether to show an e2e reminder:
 
 1. SCOPE (from Step 1) is `frontend` or `all`
 2. Glob for `tests/e2e/features/<FEATURE>/*.spec.ts` — files exist
@@ -94,7 +99,7 @@ If both are true, print:
 
 This reminder is informational only for manual `/execute-task` invocation. When dispatched by `/run-tasks`, e2e gates are handled by the dispatcher's Step 5b automatically.
 
-## Step 4: Record Task (MANDATORY)
+## Step 3: Record Task (MANDATORY)
 
 Invoke the skill (it contains file location details):
 
@@ -107,7 +112,7 @@ The skill provides complete workflow including:
 - JSON format and fields
 - CLI command usage
 
-## Step 5: Commit
+## Step 4: Commit
 
 ```
 Skill(skill="git-commit")
@@ -119,7 +124,7 @@ Skill(skill="git-commit")
 - record-task is mandatory - No completion without it
 - All verifications must pass
 - Commit only after record
-- ONE TASK PER INVOCATION — after Step 5, STOP immediately, no exceptions
+- ONE TASK PER INVOCATION — after Step 4, STOP immediately, no exceptions
 - FORBIDDEN: run "task claim", read index.json, or start any subsequent task
 </EXTREMELY-IMPORTANT>
 
@@ -132,7 +137,7 @@ Task is NOT complete until record-task CLI command succeeds. Commit is blocked u
 <HARD-RULE>
 ONE TASK PER INVOCATION. This is absolute and non-negotiable.
 
-After Step 5, you MUST stop immediately.
+After Step 4, you MUST stop immediately.
 
 <PROHIBITIONS>
 - Running `task claim` under any circumstances

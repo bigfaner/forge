@@ -1,0 +1,29 @@
+{
+  "taskId": "1.1",
+  "status": "completed",
+  "summary": "Rewrote task-executor.md and execute-task.md to use workflow skeleton pattern. Removed hardcoded TDD/Quality Gate steps, added 3-case dispatch (found workflow, no workflow, empty workflow), removed NO_TEST input, renumbered steps from 6 to 5 (0-4).",
+  "filesCreated": ["docs/features/task-executor-skeleton/tests/test-1.1.sh"],
+  "filesModified": [
+    "plugins/forge/agents/task-executor.md",
+    "plugins/forge/commands/execute-task.md"
+  ],
+  "keyDecisions": [
+    "Step 2 merged old Steps 2+3 (TDD + Quality Gate) into single 'Execute Workflow' step with 3-case dispatch",
+    "Steps renumbered: old 4->3 (Record), old 5->4 (Commit)",
+    "NO_TEST input removed entirely from both files",
+    "Output format uses Step N/4 numbering throughout"
+  ],
+  "testsPassed": 18,
+  "testsFailed": 0,
+  "coverage": -1.0,
+  "acceptanceCriteria": [
+    { "criterion": "Step 2 contains zero TDD-specific instructions", "met": true },
+    { "criterion": "Step 2 has 3-case dispatch (Case A, B, C)", "met": true },
+    { "criterion": "Case B references default template path", "met": true },
+    { "criterion": "NO_TEST removed from Inputs section", "met": true },
+    { "criterion": "Steps renumbered to 5 steps (0-4)", "met": true },
+    { "criterion": "execute-task.md mirrors same skeleton structure", "met": true },
+    { "criterion": "grep NO_TEST/noTest in both files returns zero matches", "met": true }
+  ],
+  "notes": "All 18 acceptance tests pass. No Go code changes in this task — only agent prompt and command markdown files. Coverage N/A for documentation-only task."
+}
