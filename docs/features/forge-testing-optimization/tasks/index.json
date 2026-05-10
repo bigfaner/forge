@@ -72,6 +72,16 @@
       "record": "records/fix-2.md",
       "breaking": true
     },
+    "fix-3": {
+      "id": "fix-3",
+      "title": "Fix: lint failure in all-completed quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-3.md",
+      "record": "records/fix-3.md",
+      "breaking": true
+    },
     "quick-gen-scripts": {
       "id": "T-quick-2",
       "title": "Generate Quick Test Scripts",

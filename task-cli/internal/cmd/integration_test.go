@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -61,10 +62,10 @@ func setupFullProject(t *testing.T, opts SetupOpts) (dir string) {
 		Design:       "design/tech-design.md",
 		StatusEnum:   []string{"pending", "in_progress", "completed", "blocked", "skipped"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
-			}
-		if len(opts.Tasks) > 0 {
-			index.SetTasks(opts.Tasks)
-		}
+	}
+	if len(opts.Tasks) > 0 {
+		index.SetTasks(opts.Tasks)
+	}
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)
 	}
@@ -95,7 +96,7 @@ func setupFullProject(t *testing.T, opts SetupOpts) (dir string) {
 	if !opts.UseEnvVar {
 		// Set working dir
 		origWd, _ := os.Getwd()
-		t.Cleanup(func() { os.Chdir(origWd) })
+		t.Cleanup(func() { _ = os.Chdir(origWd) })
 		if err := os.Chdir(dir); err != nil {
 			t.Fatal(err)
 		}
@@ -118,11 +119,11 @@ func TestVerifyTaskCompletion_HappyPath(t *testing.T) {
 	// Write record file
 	dir, _ := os.Getwd()
 	_ = os.MkdirAll(filepath.Join(dir, "docs", "features", "test", "tasks", "records"), 0755)
-	os.WriteFile(filepath.Join(dir, "docs", "features", "test", "tasks", "records", "1.1.md"), []byte("record"), 0644)
+	_ = os.WriteFile(filepath.Join(dir, "docs", "features", "test", "tasks", "records", "1.1.md"), []byte("record"), 0644)
 
 	// Save task state
 	statePath := feature.GetTaskStatePath(dir, "test")
-	task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1"})
+	_ = task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1"})
 
 	err := verifyTaskCompletion()
 	if err != nil {
@@ -137,7 +138,7 @@ func TestVerifyTaskCompletion_TaskNotCompleted(t *testing.T) {
 
 	dir, _ := os.Getwd()
 	statePath := feature.GetTaskStatePath(dir, "test")
-	task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1"})
+	_ = task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1"})
 
 	err := verifyTaskCompletion()
 	if err == nil {
@@ -155,7 +156,7 @@ func TestVerifyTaskCompletion_RecordFileMissing(t *testing.T) {
 
 	dir, _ := os.Getwd()
 	statePath := feature.GetTaskStatePath(dir, "test")
-	task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1"})
+	_ = task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1"})
 
 	// Don't create the record file
 	err := verifyTaskCompletion()
@@ -170,8 +171,8 @@ func TestVerifyTaskCompletion_RecordFileMissing(t *testing.T) {
 func TestVerifyTaskCompletion_NoProject(t *testing.T) {
 	tmpDir := t.TempDir()
 	origWd, _ := os.Getwd()
-	t.Cleanup(func() { os.Chdir(origWd) })
-	os.Chdir(tmpDir)
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(tmpDir)
 
 	err := verifyTaskCompletion()
 	if err != nil {
@@ -181,12 +182,12 @@ func TestVerifyTaskCompletion_NoProject(t *testing.T) {
 
 func TestVerifyTaskCompletion_NoFeature(t *testing.T) {
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644)
-	os.MkdirAll(filepath.Join(dir, "docs", "features"), 0755)
+	_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644)
+	_ = os.MkdirAll(filepath.Join(dir, "docs", "features"), 0755)
 
 	origWd, _ := os.Getwd()
-	t.Cleanup(func() { os.Chdir(origWd) })
-	os.Chdir(dir)
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
 
 	err := verifyTaskCompletion()
 	if err != nil {
@@ -212,7 +213,7 @@ func TestVerifyTaskCompletion_TaskNotFoundInIndex(t *testing.T) {
 
 	dir, _ := os.Getwd()
 	statePath := feature.GetTaskStatePath(dir, "test")
-	task.SaveState(statePath, &task.TaskState{TaskID: "9.9", Key: "missing"})
+	_ = task.SaveState(statePath, &task.TaskState{TaskID: "9.9", Key: "missing"})
 
 	err := verifyTaskCompletion()
 	if err == nil {
@@ -230,7 +231,7 @@ func TestVerifyTaskCompletion_NoRecordField(t *testing.T) {
 
 	dir, _ := os.Getwd()
 	statePath := feature.GetTaskStatePath(dir, "test")
-	task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1"})
+	_ = task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1"})
 
 	// Task has empty Record — should pass (no file to check)
 	err := verifyTaskCompletion()
@@ -248,12 +249,12 @@ func TestCleanupCompletedTaskState_Completed(t *testing.T) {
 
 	dir, _ := os.Getwd()
 	statePath := feature.GetTaskStatePath(dir, "test")
-	task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1"})
+	_ = task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1"})
 
 	// Also create record.json
 	recordPath := feature.GetProcessRecordPath(dir, "test")
-	os.MkdirAll(filepath.Dir(recordPath), 0755)
-	os.WriteFile(recordPath, []byte("{}"), 0644)
+	_ = os.MkdirAll(filepath.Dir(recordPath), 0755)
+	_ = os.WriteFile(recordPath, []byte("{}"), 0644)
 
 	cleanupCompletedTaskState()
 
@@ -272,7 +273,7 @@ func TestCleanupCompletedTaskState_InProgress(t *testing.T) {
 
 	dir, _ := os.Getwd()
 	statePath := feature.GetTaskStatePath(dir, "test")
-	task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1"})
+	_ = task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1"})
 
 	cleanupCompletedTaskState()
 
@@ -293,8 +294,8 @@ func TestCleanupCompletedTaskState_NoState(t *testing.T) {
 func TestCleanupCompletedTaskState_NoProject(t *testing.T) {
 	tmpDir := t.TempDir()
 	origWd, _ := os.Getwd()
-	t.Cleanup(func() { os.Chdir(origWd) })
-	os.Chdir(tmpDir)
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(tmpDir)
 
 	// Should not panic
 	cleanupCompletedTaskState()
@@ -308,7 +309,7 @@ func TestCleanupCompletedTaskState_TaskKeyNotFound(t *testing.T) {
 	dir, _ := os.Getwd()
 	statePath := feature.GetTaskStatePath(dir, "test")
 	// State references a key that doesn't exist in index
-	task.SaveState(statePath, &task.TaskState{TaskID: "9.9", Key: "nonexistent"})
+	_ = task.SaveState(statePath, &task.TaskState{TaskID: "9.9", Key: "nonexistent"})
 
 	cleanupCompletedTaskState()
 
@@ -341,11 +342,11 @@ func TestRunRecord_HappyPath(t *testing.T) {
 	}
 	rdJSON, _ := json.Marshal(rd)
 	dataPath := filepath.Join(dir, "record.json")
-	os.WriteFile(dataPath, rdJSON, 0644)
+	_ = os.WriteFile(dataPath, rdJSON, 0644)
 
 	// Save state for startedTime
 	statePath := feature.GetTaskStatePath(dir, "test")
-	task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1", StartedTime: "2026-01-01 10:00"})
+	_ = task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1", StartedTime: "2026-01-01 10:00"})
 
 	recordDataPath = dataPath
 	recordJSON = false
@@ -388,10 +389,10 @@ func TestRunRecord_JSONOutput(t *testing.T) {
 	}
 	rdJSON, _ := json.Marshal(rd)
 	dataPath := filepath.Join(dir, "record.json")
-	os.WriteFile(dataPath, rdJSON, 0644)
+	_ = os.WriteFile(dataPath, rdJSON, 0644)
 
 	statePath := feature.GetTaskStatePath(dir, "test")
-	task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1", StartedTime: "2026-01-01 10:00"})
+	_ = task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1", StartedTime: "2026-01-01 10:00"})
 
 	recordDataPath = dataPath
 	recordJSON = true
@@ -428,10 +429,10 @@ func TestRunRecord_QuietOutput(t *testing.T) {
 	}
 	rdJSON, _ := json.Marshal(rd)
 	dataPath := filepath.Join(dir, "record.json")
-	os.WriteFile(dataPath, rdJSON, 0644)
+	_ = os.WriteFile(dataPath, rdJSON, 0644)
 
 	statePath := feature.GetTaskStatePath(dir, "test")
-	task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1", StartedTime: "2026-01-01 10:00"})
+	_ = task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1", StartedTime: "2026-01-01 10:00"})
 
 	recordDataPath = dataPath
 	recordJSON = false
@@ -457,7 +458,7 @@ func TestExecuteClaim_DataIntegrityError(t *testing.T) {
 	dir, _ := os.Getwd()
 	// Create state pointing to a key that doesn't exist in index
 	statePath := feature.GetTaskStatePath(dir, "test")
-	task.SaveState(statePath, &task.TaskState{TaskID: "9.9", Key: "nonexistent", StartedTime: "2026-01-01 10:00"})
+	_ = task.SaveState(statePath, &task.TaskState{TaskID: "9.9", Key: "nonexistent", StartedTime: "2026-01-01 10:00"})
 
 	_, err := executeClaim()
 	if err == nil {
@@ -476,7 +477,7 @@ func TestExecuteClaim_CompletedStateClaimNew(t *testing.T) {
 
 	dir, _ := os.Getwd()
 	statePath := feature.GetTaskStatePath(dir, "test")
-	task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1", StartedTime: "2026-01-01 10:00"})
+	_ = task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1", StartedTime: "2026-01-01 10:00"})
 
 	result, err := executeClaim()
 	if err != nil {
@@ -497,7 +498,7 @@ func TestExecuteClaim_BlockedTaskClearsStateAndProceeds(t *testing.T) {
 
 	dir, _ := os.Getwd()
 	statePath := feature.GetTaskStatePath(dir, "test")
-	task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1", StartedTime: "2026-01-01 10:00"})
+	_ = task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1", StartedTime: "2026-01-01 10:00"})
 
 	_, err := executeClaim()
 	// Blocked task clears state, but no pending tasks to claim
@@ -521,7 +522,7 @@ func TestValidatorRun_WithFileArg(t *testing.T) {
 	}
 	data, _ := json.Marshal(index)
 	indexPath := filepath.Join(dir, "index.json")
-	os.WriteFile(indexPath, data, 0644)
+	_ = os.WriteFile(indexPath, data, 0644)
 
 	out := captureStdout(func() {
 		v := &validator{filePath: indexPath}
@@ -538,7 +539,7 @@ func TestValidatorRun_WithFileArg(t *testing.T) {
 func TestValidatorRun_InvalidJSON(t *testing.T) {
 	dir := t.TempDir()
 	indexPath := filepath.Join(dir, "index.json")
-	os.WriteFile(indexPath, []byte("not json"), 0644)
+	_ = os.WriteFile(indexPath, []byte("not json"), 0644)
 
 	v := &validator{filePath: indexPath}
 	err := v.run()
@@ -604,18 +605,18 @@ func TestFillRecordTemplate_WithNotes(t *testing.T) {
 func TestSaveIndexAndSignalCompletion_IncompleteTasks(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("CLAUDE_PROJECT_DIR", dir)
-	feature.EnsureFeatureDir(dir, "test")
+	_ = feature.EnsureFeatureDir(dir, "test")
 
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
 	index := &task.TaskIndex{
 		Feature:    "test",
 		StatusEnum: []string{"pending", "in_progress", "completed"},
 	}
-		index.SetTasks(map[string]task.Task{
-			"t1": {ID: "1.1", Status: "completed"},
-			"t2": {ID: "1.2", Status: "pending"},
-		})
-	task.SaveIndex(indexPath, index)
+	index.SetTasks(map[string]task.Task{
+		"t1": {ID: "1.1", Status: "completed"},
+		"t2": {ID: "1.2", Status: "pending"},
+	})
+	_ = task.SaveIndex(indexPath, index)
 
 	// Should NOT write forge state since not all tasks are done
 	saveIndexAndSignalCompletion(indexPath, dir, "test", index)
@@ -630,11 +631,11 @@ func TestSaveIndexAndSignalCompletion_IncompleteTasks(t *testing.T) {
 
 func TestValidateRecordData_ForceOverride(t *testing.T) {
 	rd := &task.RecordData{
-		Status:       "completed",
-		Summary:      "Done",
-		TestsPassed:  0,
-		TestsFailed:  0,
-		Coverage:     50.0,
+		Status:      "completed",
+		Summary:     "Done",
+		TestsPassed: 0,
+		TestsFailed: 0,
+		Coverage:    50.0,
 		AcceptanceCriteria: []task.AcceptanceCriterion{
 			{Criterion: "Works", Met: false},
 		},
@@ -653,9 +654,9 @@ func TestValidateRecordData_ForceOverride(t *testing.T) {
 
 func TestValidateRecordData_NoTestTask(t *testing.T) {
 	rd := &task.RecordData{
-		Status:      "completed",
-		Summary:     "Docs only",
-		Coverage:    -1.0,
+		Status:       "completed",
+		Summary:      "Docs only",
+		Coverage:     -1.0,
 		KeyDecisions: []string{"doc-only"},
 		AcceptanceCriteria: []task.AcceptanceCriterion{
 			{Criterion: "Docs written", Met: true},
@@ -674,21 +675,21 @@ func TestValidateRecordData_NoTestTask(t *testing.T) {
 
 func TestValidatorRun_FeatureBased(t *testing.T) {
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644)
-	feature.EnsureFeatureDir(dir, "test")
+	_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644)
+	_ = feature.EnsureFeatureDir(dir, "test")
 
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
 	index := &task.TaskIndex{
 		Feature:    "test",
 		StatusEnum: []string{"pending", "completed"},
 	}
-	task.SaveIndex(indexPath, index)
+	_ = task.SaveIndex(indexPath, index)
 
-	feature.SetFeature(dir, "test")
+	_ = feature.SetFeature(dir, "test")
 
 	origWd, _ := os.Getwd()
-	t.Cleanup(func() { os.Chdir(origWd) })
-	os.Chdir(dir)
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
 
 	out := captureStdout(func() {
 		v := &validator{filePath: indexPath}
@@ -706,7 +707,7 @@ func TestValidatorRun_FeatureBased(t *testing.T) {
 func TestValidateTTest1Template_UnresolvedPlaceholder(t *testing.T) {
 	dir := t.TempDir()
 	taskFile := filepath.Join(dir, "T-test-1.md")
-	os.WriteFile(taskFile, []byte("# Task\nReplace {{LAST_BUSINESS_TASK_ID}} with actual ID\n"), 0644)
+	_ = os.WriteFile(taskFile, []byte("# Task\nReplace {{LAST_BUSINESS_TASK_ID}} with actual ID\n"), 0644)
 
 	v := &validator{}
 	v.validateFirstTestTaskTemplate(taskFile, "T-test-1", []string{"{{LAST_BUSINESS_TASK_ID}}"})
@@ -721,7 +722,7 @@ func TestValidateTTest1Template_UnresolvedPlaceholder(t *testing.T) {
 func TestValidateTTest1Template_ResolvedPlaceholder(t *testing.T) {
 	dir := t.TempDir()
 	taskFile := filepath.Join(dir, "T-test-1.md")
-	os.WriteFile(taskFile, []byte("# Task\nDepends on 1.5\n"), 0644)
+	_ = os.WriteFile(taskFile, []byte("# Task\nDepends on 1.5\n"), 0644)
 
 	v := &validator{}
 	v.validateFirstTestTaskTemplate(taskFile, "T-test-1", []string{"{{LAST_BUSINESS_TASK_ID}}"})
@@ -730,15 +731,13 @@ func TestValidateTTest1Template_ResolvedPlaceholder(t *testing.T) {
 	}
 }
 
-
 // ---------- findTask ----------
 
 func TestFindTaskByKey(t *testing.T) {
-	index := &task.TaskIndex{
-	}
-		index.SetTasks(map[string]task.Task{
-			"task1": {ID: "1.1", Title: "Task One"},
-		})
+	index := &task.TaskIndex{}
+	index.SetTasks(map[string]task.Task{
+		"task1": {ID: "1.1", Title: "Task One"},
+	})
 
 	key, t2, err := task.FindTask(index, "task1")
 	if err != nil {
@@ -757,7 +756,7 @@ func TestReadRecordData_FromFile(t *testing.T) {
 	rd := task.RecordData{Summary: "test summary", TestsPassed: 1, Coverage: 50.0}
 	data, _ := json.Marshal(rd)
 	path := filepath.Join(dir, "record.json")
-	os.WriteFile(path, data, 0644)
+	_ = os.WriteFile(path, data, 0644)
 
 	result, err := readRecordData(path)
 	if err != nil {
@@ -771,7 +770,7 @@ func TestReadRecordData_FromFile(t *testing.T) {
 func TestReadRecordData_InvalidJSON(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "record.json")
-	os.WriteFile(path, []byte("not json"), 0644)
+	_ = os.WriteFile(path, []byte("not json"), 0644)
 
 	_, err := readRecordData(path)
 	if err == nil {
@@ -820,15 +819,15 @@ func TestParseSegment_OutOfRange(t *testing.T) {
 
 func TestPrintTaskDetails_Breaking(t *testing.T) {
 	t2 := &task.Task{
-		ID:           "2.gate",
-		Title:        "Gate Task",
-		Priority:     "P0",
-		Status:       "pending",
-		Breaking:     true,
-		File:         "2.gate.md",
-		Record:       "records/2.gate.md",
+		ID:            "2.gate",
+		Title:         "Gate Task",
+		Priority:      "P0",
+		Status:        "pending",
+		Breaking:      true,
+		File:          "2.gate.md",
+		Record:        "records/2.gate.md",
 		EstimatedTime: "30min",
-		Dependencies: []string{"1.summary"},
+		Dependencies:  []string{"1.summary"},
 	}
 
 	out := captureStdout(func() {
@@ -876,8 +875,8 @@ func TestRunStatus_Update(t *testing.T) {
 func TestExecuteClaim_NoProject(t *testing.T) {
 	tmpDir := t.TempDir()
 	origWd, _ := os.Getwd()
-	t.Cleanup(func() { os.Chdir(origWd) })
-	os.Chdir(tmpDir)
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(tmpDir)
 
 	_, err := executeClaim()
 	if err == nil {
@@ -889,8 +888,8 @@ func TestExecuteClaim_NoProject(t *testing.T) {
 
 func TestExecuteClaim_SaveIndexError(t *testing.T) {
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644)
-	feature.EnsureFeatureDir(dir, "test")
+	_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644)
+	_ = feature.EnsureFeatureDir(dir, "test")
 
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
 	index := &task.TaskIndex{
@@ -898,19 +897,19 @@ func TestExecuteClaim_SaveIndexError(t *testing.T) {
 		StatusEnum:   []string{"pending", "in_progress", "completed"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
 	}
-		index.SetTasks(map[string]task.Task{
-			"t1": {ID: "1.1", Title: "T1", Status: "pending", Priority: "P0", File: "1.1.md", Record: "1.1.md"},
-		})
-	task.SaveIndex(indexPath, index)
+	index.SetTasks(map[string]task.Task{
+		"t1": {ID: "1.1", Title: "T1", Status: "pending", Priority: "P0", File: "1.1.md", Record: "1.1.md"},
+	})
+	_ = task.SaveIndex(indexPath, index)
 
-	feature.SetFeature(dir, "test")
+	_ = feature.SetFeature(dir, "test")
 	origWd, _ := os.Getwd()
-	t.Cleanup(func() { os.Chdir(origWd) })
-	os.Chdir(dir)
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
 
 	// Make index.json read-only so SaveIndex fails
-	os.Chmod(indexPath, 0444)
-	defer os.Chmod(indexPath, 0644)
+	_ = os.Chmod(indexPath, 0444)
+	defer func() { _ = os.Chmod(indexPath, 0644) }()
 
 	_, err := executeClaim()
 	if err == nil {
@@ -935,7 +934,6 @@ func TestRunClaim_Output(t *testing.T) {
 		t.Errorf("expected task ID in output, got: %s", out)
 	}
 }
-
 
 // ---------- runCheck integration (valid deps, exits 0 via PrintResult) ----------
 
@@ -972,17 +970,17 @@ func TestRunValidate_Integration(t *testing.T) {
 		Design:     "design/tech-design.md",
 		StatusEnum: []string{"pending", "in_progress", "completed"},
 	}
-		index.SetTasks(map[string]task.Task{
-			"t1": {ID: "1.1", Title: "T1", Status: "pending", Priority: "P0", File: "1.1.md", Dependencies: []string{}},
-		})
+	index.SetTasks(map[string]task.Task{
+		"t1": {ID: "1.1", Title: "T1", Status: "pending", Priority: "P0", File: "1.1.md", Dependencies: []string{}},
+	})
 	data, _ := json.Marshal(index)
 	indexPath := filepath.Join(dir, "index.json")
-	os.WriteFile(indexPath, data, 0644)
+	_ = os.WriteFile(indexPath, data, 0644)
 
 	// Create tasks dir and task file
 	tasksDir := filepath.Join(dir, "tasks")
-	os.MkdirAll(tasksDir, 0755)
-	os.WriteFile(filepath.Join(tasksDir, "1.1.md"), []byte("# T1"), 0644)
+	_ = os.MkdirAll(tasksDir, 0755)
+	_ = os.WriteFile(filepath.Join(tasksDir, "1.1.md"), []byte("# T1"), 0644)
 
 	out := captureStdout(func() {
 		v := &validator{filePath: indexPath}
@@ -1003,18 +1001,18 @@ func TestRunValidate_Integration(t *testing.T) {
 func TestSaveIndexAndSignalCompletion_AllDone(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("CLAUDE_PROJECT_DIR", dir)
-	feature.EnsureFeatureDir(dir, "test")
+	_ = feature.EnsureFeatureDir(dir, "test")
 
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
 	index := &task.TaskIndex{
 		Feature:    "test",
 		StatusEnum: []string{"pending", "completed", "skipped"},
 	}
-		index.SetTasks(map[string]task.Task{
-			"t1": {ID: "1.1", Status: "completed"},
-			"t2": {ID: "1.2", Status: "skipped"},
-		})
-	task.SaveIndex(indexPath, index)
+	index.SetTasks(map[string]task.Task{
+		"t1": {ID: "1.1", Status: "completed"},
+		"t2": {ID: "1.2", Status: "skipped"},
+	})
+	_ = task.SaveIndex(indexPath, index)
 
 	out := captureStderr2(func() {
 		saveIndexAndSignalCompletion(indexPath, dir, "test", index)
@@ -1082,19 +1080,19 @@ func TestReadRecordData_NoData(t *testing.T) {
 func TestCheckExistingTaskState_LoadFail(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("CLAUDE_PROJECT_DIR", dir)
-	feature.EnsureFeatureDir(dir, "test")
+	_ = feature.EnsureFeatureDir(dir, "test")
 
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
 	index := &task.TaskIndex{
 		Feature:    "test",
 		StatusEnum: []string{"pending", "in_progress", "completed"},
 	}
-	task.SaveIndex(indexPath, index)
+	_ = task.SaveIndex(indexPath, index)
 
 	// Write invalid JSON to state file to trigger load failure
 	statePath := feature.GetTaskStatePath(dir, "test")
-	os.MkdirAll(filepath.Dir(statePath), 0755)
-	os.WriteFile(statePath, []byte("invalid json"), 0644)
+	_ = os.MkdirAll(filepath.Dir(statePath), 0755)
+	_ = os.WriteFile(statePath, []byte("invalid json"), 0644)
 
 	continueTask, hasIssues, issues := checkExistingTaskState(dir, index, statePath)
 	if continueTask {
@@ -1121,10 +1119,10 @@ func TestRunRecord_BlockedStatus(t *testing.T) {
 	}
 	rdJSON, _ := json.Marshal(rd)
 	dataPath := filepath.Join(dir, "record.json")
-	os.WriteFile(dataPath, rdJSON, 0644)
+	_ = os.WriteFile(dataPath, rdJSON, 0644)
 
 	statePath := feature.GetTaskStatePath(dir, "test")
-	task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1", StartedTime: "2026-01-01 10:00"})
+	_ = task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1", StartedTime: "2026-01-01 10:00"})
 
 	recordDataPath = dataPath
 	recordJSON = false
@@ -1226,17 +1224,16 @@ func TestWriteRegressionRawOutput_CreatesDir(t *testing.T) {
 	}
 }
 
-
 // ---------- runFeature: display no feature ----------
 
 func TestRunFeature_None(t *testing.T) {
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644)
-	os.MkdirAll(filepath.Join(dir, "docs", "features"), 0755)
+	_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644)
+	_ = os.MkdirAll(filepath.Join(dir, "docs", "features"), 0755)
 
 	origWd, _ := os.Getwd()
-	t.Cleanup(func() { os.Chdir(origWd) })
-	os.Chdir(dir)
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
 
 	out := captureStdout(func() {
 		runFeature(nil, []string{})
@@ -1469,8 +1466,8 @@ func TestWriteRawOutput_MkdirAllError(t *testing.T) {
 	dir := t.TempDir()
 	// Create a file where the directory should be, so MkdirAll fails
 	resultsDir := filepath.Join(dir, feature.GetFeatureTestingResultsDir("test"))
-	os.MkdirAll(filepath.Dir(resultsDir), 0755)
-	os.WriteFile(resultsDir, []byte("blocker"), 0644)
+	_ = os.MkdirAll(filepath.Dir(resultsDir), 0755)
+	_ = os.WriteFile(resultsDir, []byte("blocker"), 0644)
 
 	err := writeRawOutput(dir, "test", "output")
 	if err == nil {
@@ -1482,7 +1479,7 @@ func TestWriteUnitTestRawOutput_MkdirAllError(t *testing.T) {
 	dir := t.TempDir()
 	// Create a file where tests/results/ should be, so MkdirAll fails
 	testsDir := filepath.Join(dir, "tests")
-	os.WriteFile(testsDir, []byte("blocker"), 0644)
+	_ = os.WriteFile(testsDir, []byte("blocker"), 0644)
 
 	err := writeUnitTestRawOutput(dir, "output")
 	if err == nil {
@@ -1494,7 +1491,7 @@ func TestWriteRegressionRawOutput_MkdirAllError(t *testing.T) {
 	dir := t.TempDir()
 	// Create a file where tests/e2e/results/ should be, so MkdirAll fails
 	testsDir := filepath.Join(dir, "tests")
-	os.WriteFile(testsDir, []byte("blocker"), 0644)
+	_ = os.WriteFile(testsDir, []byte("blocker"), 0644)
 
 	err := writeRegressionRawOutput(dir, "output")
 	if err == nil {
@@ -1520,14 +1517,15 @@ func TestRunValidate_NoProjectRoot(t *testing.T) {
 		}
 		env = append(env, e)
 	}
-	cmd.Env = append(env, "TEST_RUN_VALIDATE_NO_PROJECT=1", "CLAUDE_PROJECT_DIR=")
+	cmd.Env = append(slices.Clone(env), "TEST_RUN_VALIDATE_NO_PROJECT=1", "CLAUDE_PROJECT_DIR=")
 	cmd.Dir = tmpDir
 	output, err := cmd.CombinedOutput()
 	if err == nil {
 		t.Error("expected non-zero exit for no project root")
 	}
-	if !strings.Contains(string(output), "NO_PROJECT") {
-		t.Errorf("expected NO_PROJECT error, got: %s", string(output))
+	// Accept both NO_PROJECT (no markers found) and NO_FEATURE (markers found in ancestor dirs, but no feature set)
+	if !strings.Contains(string(output), "NO_PROJECT") && !strings.Contains(string(output), "NO_FEATURE") {
+		t.Errorf("expected NO_PROJECT or NO_FEATURE error, got: %s", string(output))
 	}
 }
 
@@ -1538,8 +1536,8 @@ func TestRunValidate_NoFeatureSet(t *testing.T) {
 	}
 
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644)
-	os.MkdirAll(filepath.Join(dir, "docs", "features"), 0755)
+	_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644)
+	_ = os.MkdirAll(filepath.Join(dir, "docs", "features"), 0755)
 
 	cmd := exec.Command(os.Args[0], "-test.run=TestRunValidate_NoFeatureSet")
 	// Clear env vars and set CLAUDE_PROJECT_DIR to our temp dir
@@ -1550,7 +1548,7 @@ func TestRunValidate_NoFeatureSet(t *testing.T) {
 		}
 		env = append(env, e)
 	}
-	cmd.Env = append(env, "TEST_RUN_VALIDATE_NO_FEATURE=1", "CLAUDE_PROJECT_DIR="+dir)
+	cmd.Env = append(slices.Clone(env), "TEST_RUN_VALIDATE_NO_FEATURE=1", "CLAUDE_PROJECT_DIR="+dir)
 	cmd.Dir = dir
 	output, err := cmd.CombinedOutput()
 	if err == nil {
@@ -1568,9 +1566,9 @@ func TestRunValidate_IndexFileNotFound(t *testing.T) {
 	}
 
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644)
-	feature.EnsureFeatureDir(dir, "testf")
-	feature.SetFeature(dir, "testf")
+	_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644)
+	_ = feature.EnsureFeatureDir(dir, "testf")
+	_ = feature.SetFeature(dir, "testf")
 
 	cmd := exec.Command(os.Args[0], "-test.run=TestRunValidate_IndexFileNotFound")
 	// Clear env and set CLAUDE_PROJECT_DIR
@@ -1581,7 +1579,7 @@ func TestRunValidate_IndexFileNotFound(t *testing.T) {
 		}
 		env = append(env, e)
 	}
-	cmd.Env = append(env, "TEST_RUN_VALIDATE_NO_INDEX=1", "CLAUDE_PROJECT_DIR="+dir)
+	cmd.Env = append(slices.Clone(env), "TEST_RUN_VALIDATE_NO_INDEX=1", "CLAUDE_PROJECT_DIR="+dir)
 	cmd.Dir = dir
 	output, err := cmd.CombinedOutput()
 	if err == nil {
@@ -1609,14 +1607,15 @@ func TestRunCheck_NoProjectRoot(t *testing.T) {
 		}
 		env = append(env, e)
 	}
-	cmd.Env = append(env, "TEST_RUN_CHECK_NO_PROJECT=1", "CLAUDE_PROJECT_DIR=")
+	cmd.Env = append(slices.Clone(env), "TEST_RUN_CHECK_NO_PROJECT=1", "CLAUDE_PROJECT_DIR=")
 	cmd.Dir = tmpDir
 	output, err := cmd.CombinedOutput()
 	if err == nil {
 		t.Error("expected non-zero exit for no project root")
 	}
-	if !strings.Contains(string(output), "NO_PROJECT") {
-		t.Errorf("expected NO_PROJECT error, got: %s", string(output))
+	// Accept both NO_PROJECT (no markers found) and NO_FEATURE (markers found in ancestor dirs, but no feature set)
+	if !strings.Contains(string(output), "NO_PROJECT") && !strings.Contains(string(output), "NO_FEATURE") {
+		t.Errorf("expected NO_PROJECT or NO_FEATURE error, got: %s", string(output))
 	}
 }
 
@@ -1627,8 +1626,8 @@ func TestRunCheck_NoFeatureSet(t *testing.T) {
 	}
 
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644)
-	os.MkdirAll(filepath.Join(dir, "docs", "features"), 0755)
+	_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644)
+	_ = os.MkdirAll(filepath.Join(dir, "docs", "features"), 0755)
 
 	cmd := exec.Command(os.Args[0], "-test.run=TestRunCheck_NoFeatureSet")
 	env := []string{}
@@ -1638,7 +1637,7 @@ func TestRunCheck_NoFeatureSet(t *testing.T) {
 		}
 		env = append(env, e)
 	}
-	cmd.Env = append(env, "TEST_RUN_CHECK_NO_FEATURE=1", "CLAUDE_PROJECT_DIR="+dir)
+	cmd.Env = append(slices.Clone(env), "TEST_RUN_CHECK_NO_FEATURE=1", "CLAUDE_PROJECT_DIR="+dir)
 	cmd.Dir = dir
 	output, err := cmd.CombinedOutput()
 	if err == nil {
@@ -1656,9 +1655,9 @@ func TestRunCheck_IndexFileNotFound(t *testing.T) {
 	}
 
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644)
-	feature.EnsureFeatureDir(dir, "testf")
-	feature.SetFeature(dir, "testf")
+	_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644)
+	_ = feature.EnsureFeatureDir(dir, "testf")
+	_ = feature.SetFeature(dir, "testf")
 
 	cmd := exec.Command(os.Args[0], "-test.run=TestRunCheck_IndexFileNotFound")
 	env := []string{}
@@ -1668,7 +1667,7 @@ func TestRunCheck_IndexFileNotFound(t *testing.T) {
 		}
 		env = append(env, e)
 	}
-	cmd.Env = append(env, "TEST_RUN_CHECK_NO_INDEX=1", "CLAUDE_PROJECT_DIR="+dir)
+	cmd.Env = append(slices.Clone(env), "TEST_RUN_CHECK_NO_INDEX=1", "CLAUDE_PROJECT_DIR="+dir)
 	cmd.Dir = dir
 	output, err := cmd.CombinedOutput()
 	if err == nil {
@@ -1712,21 +1711,21 @@ func TestRunCheck_InvalidDeps(t *testing.T) {
 func TestSaveIndexAndSignalCompletion_SaveIndexError(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("CLAUDE_PROJECT_DIR", dir)
-	feature.EnsureFeatureDir(dir, "test")
+	_ = feature.EnsureFeatureDir(dir, "test")
 
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
 	index := &task.TaskIndex{
 		Feature:    "test",
 		StatusEnum: []string{"pending", "completed"},
 	}
-		index.SetTasks(map[string]task.Task{
-			"t1": {ID: "1.1", Status: "completed"},
-		})
-	task.SaveIndex(indexPath, index)
+	index.SetTasks(map[string]task.Task{
+		"t1": {ID: "1.1", Status: "completed"},
+	})
+	_ = task.SaveIndex(indexPath, index)
 
 	// Make index.json read-only so SaveIndex fails
-	os.Chmod(indexPath, 0444)
-	defer os.Chmod(indexPath, 0644)
+	_ = os.Chmod(indexPath, 0444)
+	defer func() { _ = os.Chmod(indexPath, 0644) }()
 
 	if os.Getenv("TEST_SAVE_INDEX_ERROR") == "1" {
 		saveIndexAndSignalCompletion(indexPath, dir, "test", index)
@@ -1750,23 +1749,23 @@ func TestSaveIndexAndSignalCompletion_WriteForgeStateWarning(t *testing.T) {
 
 	// Create the feature directory structure manually
 	featureDir := filepath.Join(dir, "docs", "features", "test", "tasks")
-	os.MkdirAll(featureDir, 0755)
+	_ = os.MkdirAll(featureDir, 0755)
 
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
 	index := &task.TaskIndex{
 		Feature:    "test",
 		StatusEnum: []string{"pending", "completed"},
 	}
-		index.SetTasks(map[string]task.Task{
-			"t1": {ID: "1.1", Status: "completed"},
-		})
-	task.SaveIndex(indexPath, index)
+	index.SetTasks(map[string]task.Task{
+		"t1": {ID: "1.1", Status: "completed"},
+	})
+	_ = task.SaveIndex(indexPath, index)
 
 	// Make .forge directory read-only to trigger WriteForgeState warning
 	forgeDir := filepath.Join(dir, ".forge")
-	os.MkdirAll(forgeDir, 0755)
+	_ = os.MkdirAll(forgeDir, 0755)
 	// Create a file named state.json that is a directory (causes write to fail)
-	os.MkdirAll(filepath.Join(forgeDir, "state.json"), 0755)
+	_ = os.MkdirAll(filepath.Join(forgeDir, "state.json"), 0755)
 
 	out := captureStderr2(func() {
 		saveIndexAndSignalCompletion(indexPath, dir, "test", index)
@@ -1780,8 +1779,8 @@ func TestSaveIndexAndSignalCompletion_WriteForgeStateWarning(t *testing.T) {
 // claim (creates allCompleted=false) → record (overwrites to true) → all-completed (deletes)
 func TestForgeStateLifecycle(t *testing.T) {
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644)
-	feature.EnsureFeatureDir(dir, "lf")
+	_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644)
+	_ = feature.EnsureFeatureDir(dir, "lf")
 
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("lf"))
 	index := &task.TaskIndex{
@@ -1789,16 +1788,16 @@ func TestForgeStateLifecycle(t *testing.T) {
 		StatusEnum:   []string{"pending", "in_progress", "completed"},
 		PriorityEnum: []string{"P0"},
 	}
-		index.SetTasks(map[string]task.Task{
-			"t1": {ID: "1.1", Title: "T1", Status: "pending", Priority: "P0", File: "1.1.md", Record: "1.1.md"},
-		})
-	task.SaveIndex(indexPath, index)
-	os.WriteFile(filepath.Join(dir, "docs", "features", "lf", "tasks", "1.1.md"), []byte("# T1"), 0644)
-	os.MkdirAll(filepath.Join(dir, "docs", "features", "lf", "tasks", "records"), 0755)
+	index.SetTasks(map[string]task.Task{
+		"t1": {ID: "1.1", Title: "T1", Status: "pending", Priority: "P0", File: "1.1.md", Record: "1.1.md"},
+	})
+	_ = task.SaveIndex(indexPath, index)
+	_ = os.WriteFile(filepath.Join(dir, "docs", "features", "lf", "tasks", "1.1.md"), []byte("# T1"), 0644)
+	_ = os.MkdirAll(filepath.Join(dir, "docs", "features", "lf", "tasks", "records"), 0755)
 
 	origWd, _ := os.Getwd()
-	t.Cleanup(func() { os.Chdir(origWd) })
-	os.Chdir(dir)
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
 
 	// Phase 1: claim creates state.json with allCompleted=false
 	claimResult, err := executeClaim()
@@ -1824,7 +1823,7 @@ func TestForgeStateLifecycle(t *testing.T) {
 		"testsFailed": 0,
 	}
 	rdJSON, _ := json.Marshal(rd)
-	os.WriteFile(recordDataPath, rdJSON, 0644)
+	_ = os.WriteFile(recordDataPath, rdJSON, 0644)
 
 	rootCmd.SetArgs([]string{"record", claimResult.Task.ID, "--data", recordDataPath})
 	if err := rootCmd.Execute(); err != nil {
@@ -1840,8 +1839,8 @@ func TestForgeStateLifecycle(t *testing.T) {
 	}
 
 	// Phase 3: all-completed reads and deletes state.json
-	result, err := checkAllCompleted(false)
-	if err != nil || result == nil {
+	result := checkAllCompleted(false)
+	if result == nil {
 		t.Fatal("checkAllCompleted should return result when all done with state")
 	}
 
@@ -1910,7 +1909,7 @@ func TestRunAdd_NoProject(t *testing.T) {
 		}
 		env = append(env, e)
 	}
-	cmd.Env = append(env, "TEST_RUN_ADD_NO_PROJECT=1", "CLAUDE_PROJECT_DIR=")
+	cmd.Env = append(slices.Clone(env), "TEST_RUN_ADD_NO_PROJECT=1", "CLAUDE_PROJECT_DIR=")
 	cmd.Dir = tmpDir
 	output, err := cmd.CombinedOutput()
 	if err == nil {
@@ -1952,7 +1951,7 @@ func TestRunCleanup_Success(t *testing.T) {
 
 	dir, _ := os.Getwd()
 	statePath := feature.GetTaskStatePath(dir, "test")
-	task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1"})
+	_ = task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1"})
 
 	if os.Getenv("TEST_RUN_CLEANUP") == "1" {
 		runCleanup(nil, []string{})
@@ -1977,10 +1976,10 @@ func TestRunVerifyCompletion_Success(t *testing.T) {
 
 	dir, _ := os.Getwd()
 	_ = os.MkdirAll(filepath.Join(dir, "docs", "features", "test", "tasks", "records"), 0755)
-	os.WriteFile(filepath.Join(dir, "docs", "features", "test", "tasks", "records", "1.1.md"), []byte("record"), 0644)
+	_ = os.WriteFile(filepath.Join(dir, "docs", "features", "test", "tasks", "records", "1.1.md"), []byte("record"), 0644)
 
 	statePath := feature.GetTaskStatePath(dir, "test")
-	task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1"})
+	_ = task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1"})
 
 	if os.Getenv("TEST_RUN_VERIFY_OK") == "1" {
 		runVerifyCompletion(nil, []string{})
@@ -2002,7 +2001,7 @@ func TestRunVerifyCompletion_Fail(t *testing.T) {
 
 	dir, _ := os.Getwd()
 	statePath := feature.GetTaskStatePath(dir, "test")
-	task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1"})
+	_ = task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1"})
 
 	if os.Getenv("TEST_RUN_VERIFY_FAIL") == "1" {
 		runVerifyCompletion(nil, []string{})
@@ -2042,24 +2041,24 @@ func TestRunAllCompleted_NotAllDone(t *testing.T) {
 
 func TestRunRecord_AutoRestore_SlugKeyedSource(t *testing.T) {
 	dir := setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
-		"run-e2e": {ID: "T-test-3", Title: "Run e2e tests", Status: "blocked", Priority: "P0", File: "T-test-3.md", Record: "records/T-test-3.md", Dependencies: []string{"fix-auth"}},
+		"run-e2e":  {ID: "T-test-3", Title: "Run e2e tests", Status: "blocked", Priority: "P0", File: "T-test-3.md", Record: "records/T-test-3.md", Dependencies: []string{"fix-auth"}},
 		"fix-auth": {ID: "fix-auth", Title: "Fix auth", Status: "in_progress", Priority: "P0", File: "fix-auth.md", Record: "records/fix-auth.md", SourceTaskID: "T-test-3"},
 	}})
 
 	rd := task.RecordData{
-		Status:       "completed",
-		Summary:      "Fixed auth",
-		TestsPassed:  3,
-		Coverage:     85.0,
-		KeyDecisions: []string{"added retry logic"},
+		Status:             "completed",
+		Summary:            "Fixed auth",
+		TestsPassed:        3,
+		Coverage:           85.0,
+		KeyDecisions:       []string{"added retry logic"},
 		AcceptanceCriteria: []task.AcceptanceCriterion{{Criterion: "Tests pass", Met: true}},
 	}
 	rdJSON, _ := json.Marshal(rd)
 	dataPath := filepath.Join(dir, "record.json")
-	os.WriteFile(dataPath, rdJSON, 0644)
+	_ = os.WriteFile(dataPath, rdJSON, 0644)
 
 	statePath := feature.GetTaskStatePath(dir, "test")
-	task.SaveState(statePath, &task.TaskState{TaskID: "fix-auth", Key: "fix-auth", StartedTime: "2026-01-01 10:00"})
+	_ = task.SaveState(statePath, &task.TaskState{TaskID: "fix-auth", Key: "fix-auth", StartedTime: "2026-01-01 10:00"})
 
 	recordDataPath = dataPath
 	recordJSON = false
@@ -2109,10 +2108,10 @@ func TestRunRecord_FixTaskAutoDowngrade_NoRestore(t *testing.T) {
 	}
 	rdJSON, _ := json.Marshal(rd)
 	dataPath := filepath.Join(dir, "record.json")
-	os.WriteFile(dataPath, rdJSON, 0644)
+	_ = os.WriteFile(dataPath, rdJSON, 0644)
 
 	statePath := feature.GetTaskStatePath(dir, "test")
-	task.SaveState(statePath, &task.TaskState{TaskID: "fix-1", Key: "fix-1", StartedTime: "2026-01-01 10:00"})
+	_ = task.SaveState(statePath, &task.TaskState{TaskID: "fix-1", Key: "fix-1", StartedTime: "2026-01-01 10:00"})
 
 	recordDataPath = dataPath
 	recordJSON = false
@@ -2152,10 +2151,10 @@ func TestRunRecord_AutoDowngrade_ThenCleanup(t *testing.T) {
 	}
 	rdJSON, _ := json.Marshal(rd)
 	dataPath := filepath.Join(dir, "record.json")
-	os.WriteFile(dataPath, rdJSON, 0644)
+	_ = os.WriteFile(dataPath, rdJSON, 0644)
 
 	statePath := feature.GetTaskStatePath(dir, "test")
-	task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "task1", StartedTime: "2026-01-01 10:00"})
+	_ = task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "task1", StartedTime: "2026-01-01 10:00"})
 
 	recordDataPath = dataPath
 	recordJSON = false
@@ -2201,10 +2200,10 @@ func TestRunRecord_AutoDowngrade_ThenClaim(t *testing.T) {
 	}
 	rdJSON, _ := json.Marshal(rd)
 	dataPath := filepath.Join(dir, "record.json")
-	os.WriteFile(dataPath, rdJSON, 0644)
+	_ = os.WriteFile(dataPath, rdJSON, 0644)
 
 	statePath := feature.GetTaskStatePath(dir, "test")
-	task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "task1", StartedTime: "2026-01-01 10:00"})
+	_ = task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "task1", StartedTime: "2026-01-01 10:00"})
 
 	recordDataPath = dataPath
 	recordJSON = false
@@ -2247,19 +2246,19 @@ func TestRunRecord_MultiFixTask_PartialDowngrade(t *testing.T) {
 
 	// Step 1: Record fix-1 as completed
 	rd1 := task.RecordData{
-		Status:       "completed",
-		Summary:      "Fixed auth",
-		TestsPassed:  3,
-		Coverage:     85.0,
-		KeyDecisions: []string{"added retry"},
+		Status:             "completed",
+		Summary:            "Fixed auth",
+		TestsPassed:        3,
+		Coverage:           85.0,
+		KeyDecisions:       []string{"added retry"},
 		AcceptanceCriteria: []task.AcceptanceCriterion{{Criterion: "Tests pass", Met: true}},
 	}
 	rd1JSON, _ := json.Marshal(rd1)
 	dataPath1 := filepath.Join(dir, "record1.json")
-	os.WriteFile(dataPath1, rd1JSON, 0644)
+	_ = os.WriteFile(dataPath1, rd1JSON, 0644)
 
 	statePath := feature.GetTaskStatePath(dir, "test")
-	task.SaveState(statePath, &task.TaskState{TaskID: "fix-1", Key: "fix-1", StartedTime: "2026-01-01 10:00"})
+	_ = task.SaveState(statePath, &task.TaskState{TaskID: "fix-1", Key: "fix-1", StartedTime: "2026-01-01 10:00"})
 
 	recordDataPath = dataPath1
 	recordJSON = false
@@ -2281,7 +2280,7 @@ func TestRunRecord_MultiFixTask_PartialDowngrade(t *testing.T) {
 	}
 
 	// Step 2: Record fix-2 with test failures (auto-downgrade)
-	task.SaveState(statePath, &task.TaskState{TaskID: "fix-2", Key: "fix-2", StartedTime: "2026-01-01 11:00"})
+	_ = task.SaveState(statePath, &task.TaskState{TaskID: "fix-2", Key: "fix-2", StartedTime: "2026-01-01 11:00"})
 
 	rd2 := task.RecordData{
 		Status:       "completed",
@@ -2293,7 +2292,7 @@ func TestRunRecord_MultiFixTask_PartialDowngrade(t *testing.T) {
 	}
 	rd2JSON, _ := json.Marshal(rd2)
 	dataPath2 := filepath.Join(dir, "record2.json")
-	os.WriteFile(dataPath2, rd2JSON, 0644)
+	_ = os.WriteFile(dataPath2, rd2JSON, 0644)
 
 	recordDataPath = dataPath2
 

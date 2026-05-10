@@ -94,13 +94,13 @@ type sessionSummary struct {
 }
 
 type contentBlock struct {
-	Type     string `json:"type"`
-	Thinking string `json:"thinking,omitempty"`
-	Text     string `json:"text,omitempty"`
-	Name     string `json:"name,omitempty"`
-	ID       string `json:"id,omitempty"`
+	Type      string `json:"type"`
+	Thinking  string `json:"thinking,omitempty"`
+	Text      string `json:"text,omitempty"`
+	Name      string `json:"name,omitempty"`
+	ID        string `json:"id,omitempty"`
 	ToolUseID string `json:"tool_use_id,omitempty"`
-	Input    any    `json:"input,omitempty"`
+	Input     any    `json:"input,omitempty"`
 }
 
 type usageInfo struct {
@@ -120,11 +120,11 @@ type jsonlMessage struct {
 
 func (m *jsonlMessage) UnmarshalJSON(data []byte) error {
 	var raw struct {
-		ID         string          `json:"id"`
-		Role       string          `json:"role"`
-		Model      string          `json:"model"`
-		StopReason string          `json:"stop_reason"`
-		Usage      *usageInfo      `json:"usage,omitempty"`
+		ID         string     `json:"id"`
+		Role       string     `json:"role"`
+		Model      string     `json:"model"`
+		StopReason string     `json:"stop_reason"`
+		Usage      *usageInfo `json:"usage,omitempty"`
 	}
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
@@ -170,15 +170,15 @@ type snapshotData struct {
 }
 
 type jsonlEntry struct {
-	Type         string       `json:"type"`
-	Message      jsonlMessage `json:"message"`
-	Content      string       `json:"content"`
-	GitBranch    string       `json:"gitBranch"`
-	Attachment   attachment   `json:"attachment"`
+	Type          string         `json:"type"`
+	Message       jsonlMessage   `json:"message"`
+	Content       string         `json:"content"`
+	GitBranch     string         `json:"gitBranch"`
+	Attachment    attachment     `json:"attachment"`
 	ToolUseResult *toolUseResult `json:"toolUseResult"`
-	Timestamp    string       `json:"timestamp,omitempty"`
-	SessionID    string       `json:"sessionId,omitempty"`
-	Snapshot     snapshotData `json:"snapshot"`
+	Timestamp     string         `json:"timestamp,omitempty"`
+	SessionID     string         `json:"sessionId,omitempty"`
+	Snapshot      snapshotData   `json:"snapshot"`
 }
 
 type attachment struct {
@@ -271,6 +271,13 @@ type timingAgg struct {
 	Max     float64 `json:"max"`
 }
 
+type thinkingTurn struct {
+	Line       int     `json:"line"`
+	Seconds    float64 `json:"seconds"`
+	StopReason string  `json:"stopReason,omitempty"`
+	Detail     string  `json:"detail,omitempty"`
+}
+
 type extractSummary struct {
 	TotalThinking    int            `json:"totalThinking"`
 	TotalToolCalls   int            `json:"totalToolCalls"`
@@ -290,9 +297,9 @@ type extractSummary struct {
 	HookFailures  int            `json:"hookFailures"`
 
 	// Session lifecycle
-	CompactCount    int            `json:"compactCount"`
-	PlanModeCount   int            `json:"planModeCount"`
-	StopReasons     map[string]int `json:"stopReasons"`
+	CompactCount  int            `json:"compactCount"`
+	PlanModeCount int            `json:"planModeCount"`
+	StopReasons   map[string]int `json:"stopReasons"`
 
 	// Skill invocations (from attachment.invoked_skills)
 	SkillInvocations []toolAggEntry `json:"skillInvocations"`
@@ -306,9 +313,11 @@ type extractSummary struct {
 	Duration  string `json:"duration"`
 
 	// Timing statistics (tool execution time from tool_use → tool_result)
-	TopSlowest   []timingEntry `json:"topSlowest"`
-	TimingByTool []timingAgg   `json:"timingByTool"`
-	TotalToolMs  int64         `json:"totalToolMs"`
+	TopSlowest      []timingEntry  `json:"topSlowest"`
+	TimingByTool    []timingAgg    `json:"timingByTool"`
+	TotalToolMs     int64          `json:"totalToolMs"`
+	ThinkingTurns   []thinkingTurn `json:"thinkingTurns"`
+	TotalThinkingMs int64          `json:"totalThinkingMs"`
 }
 
 type extractResult struct {
@@ -334,7 +343,7 @@ type subagentInfo struct {
 
 // ── search ──────────────────────────────────────────────────────────
 
-func runForensicSearch(cmd *cobra.Command, args []string) {
+func runForensicSearch(_ *cobra.Command, args []string) {
 	projectPath := ""
 	if len(args) > 0 {
 		projectPath = args[0]
@@ -350,7 +359,7 @@ func runForensicSearch(cmd *cobra.Command, args []string) {
 	if err != nil {
 		Exit(NewAIError(ErrNotFound, "Cannot open history.jsonl", err.Error(), "", ""))
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	sessions := map[string]*sessionSummary{}
 
@@ -421,7 +430,7 @@ func runForensicSearch(cmd *cobra.Command, args []string) {
 
 // ── extract ─────────────────────────────────────────────────────────
 
-func runForensicExtract(cmd *cobra.Command, args []string) {
+func runForensicExtract(_ *cobra.Command, args []string) {
 	jsonlPath := args[0]
 
 	// Resolve output directory: --slug > --out > auto-derive from session ID
@@ -438,7 +447,7 @@ func runForensicExtract(cmd *cobra.Command, args []string) {
 	if err != nil {
 		Exit(NewAIError(ErrNotFound, "Cannot open transcript", err.Error(), "", ""))
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	result := extractResult{
 		File:        jsonlPath,
@@ -451,14 +460,14 @@ func runForensicExtract(cmd *cobra.Command, args []string) {
 		FilesEdited: []string{},
 		Summary: extractSummary{
 			ToolBreakdown: map[string]int{},
-StopReasons:   map[string]int{},
+			StopReasons:   map[string]int{},
 		},
 	}
 
 	scanner := bufio.NewScanner(f)
 	scanner.Buffer(make([]byte, 0, 1024*1024), 10*1024*1024)
 
-	var firstTS, lastTS string
+	var firstTS, lastTS, prevTS string
 	// pending tool_use calls: toolUseID → {timestamp, tool, line, detail}
 	type pendingCall struct {
 		ts     string
@@ -535,6 +544,17 @@ StopReasons:   map[string]int{},
 					firstTS = ts
 				}
 				lastTS = ts
+				if prevTS != "" {
+					if dur := computeDurationMs(prevTS, ts); dur > 0 {
+						result.Summary.ThinkingTurns = append(result.Summary.ThinkingTurns, thinkingTurn{
+							Line:       lineNum,
+							Seconds:    float64(dur) / 1000.0,
+							StopReason: entry.Message.StopReason,
+							Detail:     truncate(firstThinking(entry.Message.Content), 80),
+						})
+						result.Summary.TotalThinkingMs += dur
+					}
+				}
 			}
 		case "user":
 			result.Summary.TotalUserMsgs++
@@ -611,15 +631,22 @@ StopReasons:   map[string]int{},
 				if att.Filename != "" {
 					result.FilesEdited = append(result.FilesEdited, att.Filename)
 				}
-				case "compact_file_reference":
-					result.Summary.CompactCount++
-				case "plan_mode", "plan_mode_exit", "plan_mode_reentry":
-					result.Summary.PlanModeCount++
+			case "compact_file_reference":
+				result.Summary.CompactCount++
+			case "plan_mode", "plan_mode_exit", "plan_mode_reentry":
+				result.Summary.PlanModeCount++
 			}
 			// Track skill invocations from all attachment types
 			for _, skill := range att.Skills {
 				addToAgg(&result.Summary.SkillInvocations, skill.Name)
 			}
+		}
+		entryTS := entry.Timestamp
+		if entryTS == "" && entry.Snapshot.Timestamp != "" {
+			entryTS = entry.Snapshot.Timestamp
+		}
+		if entryTS != "" {
+			prevTS = entryTS
 		}
 	}
 
@@ -679,11 +706,12 @@ StopReasons:   map[string]int{},
 		t2, err2 := parseTimestamp(lastTS)
 		if err1 == nil && err2 == nil {
 			d := t2.Sub(t1)
-			if d < time.Minute {
+			switch {
+			case d < time.Minute:
 				result.Summary.Duration = fmt.Sprintf("%.0fs", d.Seconds())
-			} else if d < time.Hour {
+			case d < time.Hour:
 				result.Summary.Duration = fmt.Sprintf("%.1fmin", d.Minutes())
-			} else {
+			default:
 				result.Summary.Duration = fmt.Sprintf("%.1fh", d.Hours())
 			}
 		} else {
@@ -693,21 +721,84 @@ StopReasons:   map[string]int{},
 	out, _ := json.MarshalIndent(result, "", "  ")
 
 	if forensicOutDir != "" {
-		os.MkdirAll(forensicOutDir, 0755)
+		_ = os.MkdirAll(forensicOutDir, 0755)
 		outPath := filepath.Join(forensicOutDir, "evidence.json")
 		if err := os.WriteFile(outPath, out, 0644); err != nil {
 			Exit(NewAIError(ErrNotFound, "Cannot write evidence file", err.Error(), "", ""))
 		}
 		copyFile(jsonlPath, filepath.Join(forensicOutDir, filepath.Base(jsonlPath)))
 		fmt.Println(outPath)
+		printTimingSummary(&result.Summary)
 	} else {
 		fmt.Println(string(out))
 	}
 }
 
+func printTimingSummary(s *extractSummary) {
+	fmt.Fprintln(os.Stderr, "\nTiming Summary:")
+	fmt.Fprintf(os.Stderr, "  Session: %s -> %s (%s)\n", s.StartTime, s.EndTime, s.Duration)
+	fmt.Fprintf(os.Stderr, "  Tool time: %s  Thinking time: %s\n", formatDurationMs(s.TotalToolMs), formatDurationMs(s.TotalThinkingMs))
+	if len(s.TimingByTool) > 0 {
+		fmt.Fprintln(os.Stderr, "  By tool:")
+		for _, t := range s.TimingByTool {
+			fmt.Fprintf(os.Stderr, "    %-12s %dx  total=%s  avg=%s  max=%s\n",
+				t.Tool, t.Count, formatSec(t.Total), formatSec(t.Average), formatSec(t.Max))
+		}
+	}
+	if len(s.TopSlowest) > 0 {
+		fmt.Fprintln(os.Stderr, "  Top slowest actions:")
+		limit := 5
+		if len(s.TopSlowest) < limit {
+			limit = len(s.TopSlowest)
+		}
+		for _, t := range s.TopSlowest[:limit] {
+			fmt.Fprintf(os.Stderr, "    %6s  %-12s  %s\n", formatSec(t.Seconds), t.Tool, truncate(t.Detail, 60))
+		}
+	}
+	if len(s.ThinkingTurns) > 0 {
+		fmt.Fprintln(os.Stderr, "  Thinking turns:")
+		limit := 5
+		if len(s.ThinkingTurns) < limit {
+			limit = len(s.ThinkingTurns)
+		}
+		for _, t := range s.ThinkingTurns[:limit] {
+			fmt.Fprintf(os.Stderr, "    %6s  %s\n", formatSec(t.Seconds), truncate(t.Detail, 60))
+		}
+	}
+	fmt.Fprintln(os.Stderr)
+}
+
+func formatDurationMs(ms int64) string {
+	if ms < 1000 {
+		return fmt.Sprintf("%dms", ms)
+	}
+	return fmt.Sprintf("%.1fs", float64(ms)/1000.0)
+}
+
+func formatSec(s float64) string {
+	if s < 1 {
+		return fmt.Sprintf("%.0fms", s*1000)
+	}
+	return fmt.Sprintf("%.1fs", s)
+}
+
+func firstThinking(blocks []contentBlock) string {
+	for _, block := range blocks {
+		if block.Type == "thinking" && block.Thinking != "" {
+			return block.Thinking
+		}
+	}
+	for _, block := range blocks {
+		if block.Type == "tool_use" {
+			return block.Name + "(...)"
+		}
+	}
+	return ""
+}
+
 // ── subagents ───────────────────────────────────────────────────────
 
-func runForensicSubagents(cmd *cobra.Command, args []string) {
+func runForensicSubagents(_ *cobra.Command, args []string) {
 	sessionDir := args[0]
 	subDir := filepath.Join(sessionDir, "subagents")
 
@@ -729,7 +820,7 @@ func runForensicSubagents(cmd *cobra.Command, args []string) {
 		}
 
 		var meta map[string]string
-		json.Unmarshal(data, &meta)
+		_ = json.Unmarshal(data, &meta)
 
 		base := strings.TrimSuffix(e.Name(), ".meta.json")
 		transcriptPath := filepath.Join(subDir, base+".jsonl")
@@ -812,16 +903,16 @@ func copyFile(src, dst string) {
 	if err != nil {
 		return
 	}
-	defer in.Close()
+	defer func() { _ = in.Close() }()
 
 	out, err := os.Create(dst)
 	if err != nil {
 		return
 	}
-	defer out.Close()
+	defer func() { _ = out.Close() }()
 
 	// Best-effort copy; don't fail the extract if copy fails
-	io.Copy(out, in)
+	_, _ = io.Copy(out, in)
 }
 
 // aggregateToolInput extracts tool-specific details into the summary.

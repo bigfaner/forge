@@ -3,6 +3,7 @@ package task
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -140,8 +141,8 @@ func TestSaveState_ErrorPaths(t *testing.T) {
 		}
 
 		// Make the file read-only
-		os.Chmod(path, 0444)
-		defer os.Chmod(path, 0644)
+		_ = os.Chmod(path, 0444)
+		defer func() { _ = os.Chmod(path, 0644) }()
 
 		state2 := &TaskState{TaskID: "2.1"}
 		err := SaveState(path, state2)
@@ -171,12 +172,15 @@ func TestSaveState_ErrorPaths(t *testing.T) {
 
 func TestLoadState_ErrorPaths(t *testing.T) {
 	t.Run("read permission denied", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("chmod does not restrict read access on Windows")
+		}
 		dir := t.TempDir()
 		path := filepath.Join(dir, "task-state.json")
-		os.WriteFile(path, []byte(`{"task_id":"1.1"}`), 0644)
+		_ = os.WriteFile(path, []byte(`{"task_id":"1.1"}`), 0644)
 
-		os.Chmod(path, 0000)
-		defer os.Chmod(path, 0644)
+		_ = os.Chmod(path, 0000)
+		defer func() { _ = os.Chmod(path, 0644) }()
 
 		_, err := LoadState(path)
 		if err == nil {
@@ -187,15 +191,18 @@ func TestLoadState_ErrorPaths(t *testing.T) {
 
 func TestDeleteState_ErrorPaths(t *testing.T) {
 	t.Run("permission denied on directory", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("chmod does not restrict directory access on Windows")
+		}
 		dir := t.TempDir()
 		subDir := filepath.Join(dir, "sub")
-		os.MkdirAll(subDir, 0755)
+		_ = os.MkdirAll(subDir, 0755)
 		path := filepath.Join(subDir, "task-state.json")
-		os.WriteFile(path, []byte("{}"), 0644)
+		_ = os.WriteFile(path, []byte("{}"), 0644)
 
 		// Make parent directory read-only
-		os.Chmod(subDir, 0555)
-		defer os.Chmod(subDir, 0755)
+		_ = os.Chmod(subDir, 0555)
+		defer func() { _ = os.Chmod(subDir, 0755) }()
 
 		err := DeleteState(path)
 		if err == nil {
