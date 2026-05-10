@@ -161,31 +161,120 @@ Every task template adds this section after existing content. Example for the de
 6. Stop. Proceed to Step 3 (Record).
 ```
 
-**Rules for workflow content** (enforced in template review):
-- Must include explicit stop/termination condition
-- Must not use open-ended instructions ("continue until...", "keep trying...")
-- Must specify commands to run and success/failure criteria
-- Must specify failure handling (create fix task? halt? record partial?)
+**Workflow Content Model** — each `## Execution Workflow` section MUST satisfy this checklist. A template reviewer (or future linter) checks each item:
+
+| # | Rule | Example (valid) | Counter-example (invalid) |
+|---|------|-----------------|---------------------------|
+| W1 | Steps are numbered and sequential | `1. Write failing tests...` | Bullet list without order |
+| W2 | Each step names a concrete command or action | `Run just compile [scope]` | "Make sure compilation works" |
+| W3 | Each step states success criteria | "All tests pass (exit 0)" | "Tests should be good" |
+| W4 | Failure handling is explicit per step | "If lint fails: self-fix once, then blocked" | "Fix if broken" |
+| W5 | Terminal step is a stop condition (no loops) | `6. Stop. Proceed to Step 3.` | "Repeat until all tests pass" |
+
+**Automated validation**: `grep -c "^## Execution Workflow" templates/*.md` confirms every template has the heading. Content compliance (W1-W5) is enforced in template review with the checklist above — a future linter could parse numbered steps and detect missing `Stop` / `Proceed to Step` markers.
 
 ### Interface 3: task-cli Claim Output
 
-```
-BEFORE: KEY, TASK_ID, FILE, BREAKING, MAIN_SESSION, NO_TEST, SCOPE, FEATURE
-AFTER:  KEY, TASK_ID, FILE, BREAKING, MAIN_SESSION, SCOPE, FEATURE
+`NoTest` field removed from both structs and the claim print output.
+
+**types.go struct change:**
+
+```go
+// BEFORE (Task struct, line ~32):
+NoTest bool `json:"noTest,omitempty"`
+
+// BEFORE (TaskState struct, line ~120):
+NoTest bool `json:"noTest,omitempty"`
+
+// AFTER: both fields deleted entirely.
 ```
 
-`NO_TEST` field removed. Downstream consumers (run-tasks.md, execute-task.md) stop parsing it.
+**claim.go function change:**
+
+```go
+// BEFORE (printTaskDetails, line ~310-325):
+func printTaskDetails(key string, t *task.Task, projectRoot, featureSlug string) {
+    PrintField("KEY", key)
+    PrintField("TASK_ID", t.ID)
+    // ... other fields ...
+    PrintField("NO_TEST", strconv.FormatBool(t.NoTest))  // REMOVED
+    PrintFieldIfNotEmpty("FEATURE", featureSlug)
+    // ...
+}
+
+// AFTER:
+func printTaskDetails(key string, t *task.Task, projectRoot, featureSlug string) {
+    PrintField("KEY", key)
+    PrintField("TASK_ID", t.ID)
+    // ... other fields (unchanged) ...
+    // NO_TEST line deleted
+    PrintFieldIfNotEmpty("FEATURE", featureSlug)
+    // ...
+}
+```
+
+**claim.go state bootstrap change (executeClaim, line ~115-129):**
+
+```go
+// BEFORE:
+state := &task.TaskState{
+    // ...
+    NoTest: t.NoTest,  // REMOVED
+}
+
+// AFTER:
+state := &task.TaskState{
+    // ... (NoTest line deleted)
+}
+```
+
+Downstream consumers (run-tasks.md, execute-task.md) stop parsing the `NO_TEST` field from claim output.
 
 ### Interface 4: task-cli Record Behavior
 
-```
-BEFORE:
-  noTest → coverage = -1.0 (auto), skip quality gate pre-check
-  else   → require test evidence, run quality gate
+The `NoTest` bypass is removed. Record validation applies uniformly to all tasks.
 
-AFTER:
-  All tasks: require test evidence OR explicit --force
-  Quality gate pre-check runs for all completed tasks
+**record.go line ~113-116 deletion:**
+
+```go
+// BEFORE:
+if t.NoTest && rd.Coverage >= 0 && rd.TestsPassed == 0 && rd.TestsFailed == 0 {
+    rd.Coverage = -1.0
+}
+
+// AFTER: deleted entirely.
+```
+
+**record.go line ~121-124 quality gate condition change:**
+
+```go
+// BEFORE:
+if rd.Status == "completed" && !recordForce && !t.NoTest {
+    validateQualityGate(projectRoot, t.Scope)
+}
+
+// AFTER:
+if rd.Status == "completed" && !recordForce {
+    validateQualityGate(projectRoot, t.Scope)
+}
+```
+
+**record.go template rendering change (fillRecordTemplate, line ~380):**
+
+```go
+// BEFORE:
+formatTestsExecuted(rd.Coverage, t.NoTest)  // NoTest param
+// AFTER:
+formatTestsExecuted(rd.Coverage)             // NoTest param removed
+```
+
+**errors.go ErrNoTestEvidence hint update (line ~235):**
+
+```go
+// BEFORE:
+"Either (1) run tests and report results, (2) add noTest:true to the task template, or (3) use --force to override",
+// AFTER:
+"Either (1) run tests and report results, or (2) use --force to override",
 ```
 
 Rationale: The workflow itself determines what validation to run during Step 2. task-cli's record pre-check is a separate safety net. After removal, documentation-only tasks use `task record --force` or include a lightweight validation step (e.g., `just compile`) in their workflow.
@@ -205,15 +294,90 @@ No new data models. The `## Execution Workflow` content is embedded in task temp
 
 ## Error Handling
 
-| Error Case | Detection | Behavior |
-|---|---|---|
-| Task file unreadable | Step 1 (read failure) | Status = `failed`, log error, skip Step 2 |
-| Workflow heading empty | Step 2 Case C | Log warning, read default template |
-| No workflow heading | Step 2 Case B | Read default template (`task.md`) |
-| Default template missing | Step 2 Case B (file not found) | Status = `failed`, log "default template not found" |
-| Workflow execution fails | Step 2 (agent reports) | Status = `failed` in Step 3, record failure reason |
-| Agent timeout | External (session limit) | Status stays `in_progress`, re-claimable |
-| No test evidence at record | task-cli pre-check | Error, suggest `--force` |
+### TaskStatus Enum (existing, unchanged)
+
+Task statuses are already defined in `types.go` via `TaskIndex.StatusEnum`:
+
+```go
+// NewTaskIndex creates a new TaskIndex with default enum values.
+func NewTaskIndex(feature string) *TaskIndex {
+    return &TaskIndex{
+        StatusEnum: []string{
+            "pending",
+            "in_progress",
+            "completed",
+            "blocked",
+            "skipped",
+            "rejected",
+        },
+        // ...
+    }
+}
+```
+
+These are the only valid values for `Task.Status` and `RecordData.Status`.
+
+### Error Codes (existing, extended)
+
+The existing `ErrorCode` type in `errors.go` defines codes as string constants. Two changes for this feature:
+
+```go
+// EXISTING (unchanged):
+type ErrorCode string
+
+const (
+    ErrNoProject   ErrorCode = "NO_PROJECT"
+    ErrNoFeature   ErrorCode = "NO_FEATURE"
+    ErrInvalidInput ErrorCode = "INVALID_INPUT"
+    ErrNotFound    ErrorCode = "NOT_FOUND"
+    ErrConflict    ErrorCode = "CONFLICT"
+    ErrValidation  ErrorCode = "VALIDATION_ERROR"
+)
+
+// CHANGE: update ErrNoTestEvidence hint to remove noTest option.
+// No new error codes needed — all error cases map to existing codes.
+```
+
+### Error Propagation
+
+Errors propagate through two channels:
+
+1. **task-cli (Go)**: errors are `*AIError` structs with `Code`, `Message`, `Cause`, `Hint`, `Action` fields. Printed to stderr in a machine-readable format (`ERROR_CODE: ...`, `ERROR: ...`, `HINT: ...`). No error codes cross the Go/agent boundary.
+
+2. **Agent prompts (markdown)**: errors are expressed as step output strings:
+   - Success: `Step 2/4: [workflow description]... DONE`
+   - Failure: `Step 2/4: [workflow description]... FAILED: [reason]`
+   The failure reason is freeform text written into the task record by the agent.
+
+### Agent-to-task-cli Error Translation
+
+The agent does not rely on freeform text parsing. The error handoff works as follows:
+
+1. **Agent sets status directly**: When a workflow step fails, the agent writes the task record file with `status: failed` (or `blocked`) in the YAML frontmatter and includes the failure reason in the `## Notes` section.
+2. **Agent calls `task record`**: The agent invokes `task record --status failed` (or `blocked`), passing the status as a structured argument. The `notes` field carries the failure reason. task-cli reads these arguments — no text parsing of step output strings is required.
+3. **task-cli persists**: `task record` writes the record file and updates `index.json` using the status provided as a CLI argument.
+
+This means the "Step 2/4: ... FAILED: [reason]" output is a human-readable log line. The structured data flows through the `task record` CLI arguments, not through parsing the agent's freeform output.
+
+### Error Persistence
+
+Errors are recorded in two places:
+
+1. **Task record file** (markdown): the `status` frontmatter field is set to `failed`, `blocked`, or `rejected`. The `## Notes` section contains the failure reason. This is the primary audit trail.
+2. **index.json**: the task's `status` field is updated via `task record`. No separate error log is created.
+
+### Error Cases
+
+| Error Case | Detection | Status Set | Error Code (Go) | Behavior |
+|---|---|---|---|---|
+| Task file unreadable | Step 1 (read failure) | `failed` | `NOT_FOUND` | Log error, skip Step 2 |
+| Workflow heading empty | Step 2 Case C | (continues) | (warning only) | Log warning, read default template |
+| No workflow heading | Step 2 Case B | (continues) | (no error) | Read default template (`task.md`) |
+| Default template missing | Step 2 Case B (file not found) | `failed` | `NOT_FOUND` | Agent logs "default template not found" |
+| Workflow execution fails | Step 2 (agent reports) | `failed` | (agent text) | Record failure reason in task record notes |
+| Workflow declares failure instructions | Step 2 (workflow-specific) | `blocked` | (agent text) | Workflow instructs agent to create fix task; agent sets status to `blocked` |
+| Agent timeout | External (session limit) | `in_progress` | (none) | Status stays `in_progress`, task is re-claimable |
+| No test evidence at record | task-cli pre-check | (exit) | `VALIDATION_ERROR` | Print ErrNoTestEvidence, suggest `--force` |
 
 ## Integration Specs
 
@@ -221,24 +385,34 @@ No existing-page integrations — not applicable.
 
 ## Testing Strategy
 
+### Coverage Target
+
+- **task-cli Go code**: maintain >= 80% coverage on changed files (`claim.go`, `record.go`, `errors.go`, `types.go`). This is the same threshold enforced by `task-cli/CLAUDE.md` for all Go code. Verify with `go test -race -cover ./...`.
+- **Agent prompt tests**: manual execution with binary pass/fail criteria (see scenarios below).
+- **Grep verification**: binary pass/fail (zero matches = pass).
+
 ### Per-Layer Test Plan
 
 | Layer | Test Type | Tool | What to Test |
 |---|---|---|---|
-| task-cli (Go) | Unit | go test | NoTest removal: update/remove noTest test cases, remaining tests pass |
-| task-cli (Go) | Integration | go test | `task record` quality gate runs for all tasks (no noTest bypass) |
-| task-cli (Go) | Build | go build | Compilation passes after field removal |
-| Agent prompt | Manual | Execute T-test-3 | Step 2 output = "Execution Workflow", not "TDD implementation" |
-| Grep | Manual | grep -ri noTest | Zero matches across .go, .md, .json files |
+| task-cli (Go) | Unit | `go test` | NoTest removal: update/remove noTest test cases, remaining tests pass |
+| task-cli (Go) | Integration | `go test` | `task record` quality gate runs for all tasks (no noTest bypass) |
+| task-cli (Go) | Build | `go build ./...` | Compilation passes after field removal |
+| Agent prompt | Manual | Execute T-test-3; test scenarios 4-8 | Step 2 output = "Execution Workflow", not "TDD implementation"; Case C (scenario 8) logs warning and falls back |
+| Grep | Manual | `grep -ri noTest` | Zero matches across .go, .md, .json files |
 
 ### Key Test Scenarios
 
-1. `task record` with no test evidence → error (previously auto-passed for noTest tasks)
-2. `task record --force` with no test evidence → success
-3. `task record` with test evidence → success, quality gate runs
-4. Task file without `## Execution Workflow` → agent reads default template → follows TDD
-5. Task file with `## Execution Workflow` → agent follows workflow steps
-6. T-test-3 execution → <5 min, creates fix tasks on failure (no TDD retry)
+| # | Scenario | Pass Criteria | Fail Criteria |
+|---|----------|---------------|---------------|
+| 1 | `task record` with no test evidence | Exit code 1, stderr contains `VALIDATION_ERROR` | Exit code 0 or no error message |
+| 2 | `task record --force` with no test evidence | Exit code 0, record file created, status = "completed" | Exit code non-zero or missing record file |
+| 3 | `task record` with test evidence | Exit code 0, quality gate runs, record file created | Quality gate skipped or exit code non-zero |
+| 4 | Task file without `## Execution Workflow` | Agent reads `templates/task.md`, follows TDD + QG steps | Agent reports "no workflow found" or skips execution |
+| 5 | Task file with `## Execution Workflow` | Agent follows workflow steps exactly as declared | Agent deviates from declared workflow steps |
+| 6 | T-test-3 execution | Completes in <5 min; on failure, creates fix tasks (no TDD retry loop) | Exceeds 5 min or retries TDD instead of creating fix tasks |
+| 7 | `grep -ri noTest` across repo | Zero matches in `.go`, `.md`, `.json` files | Any match found |
+| 8 | Task file with `## Execution Workflow` heading but empty content | Agent logs "WARNING: ... empty. Falling back to default template.", reads default template, follows TDD + QG steps | Agent skips execution, errors out, or uses workflow-less behavior |
 
 ## Security Considerations
 
