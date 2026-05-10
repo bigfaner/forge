@@ -1,12 +1,4 @@
 ok  	task-cli/cmd/task	(cached)
---- FAIL: TestAddCmd_WithTemplateAndVars (0.10s)
-    add_cmd_test.go:55: no task markdown file created
---- FAIL: TestAddCmd_DedupSkipsActiveFix (0.17s)
-    add_cmd_test.go:160: first add should output ACTION: ADDED, got "---\nACTION: SKIPPED\nREASON: active fix tasks already exist for source 1.1: fix-3\n---\n"
---- FAIL: TestAddCmd_BlockSource (0.10s)
-    add_cmd_test.go:201: expected ACTION: ADDED, got "---\nACTION: SKIPPED\nREASON: active fix tasks already exist for source 1.1: fix-3\n---\n"
-    add_cmd_test.go:204: expected SOURCE_BLOCKED: 1.1, got "---\nACTION: SKIPPED\nREASON: active fix tasks already exist for source 1.1: fix-3\n---\n"
-    add_cmd_test.go:212: source 1.1 should be blocked, got "completed"
 Fix task fix-1 added (P0, breaking)
 Fix task fix-1 added (P0, breaking)
 Fix task fix-1 added (P0, breaking)
@@ -21,39 +13,541 @@ Fix task fix-1 added (P0, breaking)
 Fix task fix-1 added (P0, breaking)
 Fix task fix-1 added (P0, breaking)
 Fix task fix-2 added (P0, breaking)
-[debug] project root: C:\Users\panda\AppData\Local\Temp\TestCheckAllCompleted_VerboseMode3563466800\001
+[debug] project root: C:\Users\panda\AppData\Local\Temp\TestCheckAllCompleted_VerboseMode977602082\001
 [debug] feature not found: no feature set. Run: task feature <slug>
 Warning: failed to load task state: failed to parse state: invalid character 'o' in literal null (expecting 'u')
 Previous task 'Task 1' is completed. Claiming new task...
 Previous task 'Task 1' is blocked. Claiming new task...
-Previous task 'Fix: unit-test failure in all-completed quality gate' is completed. Claiming new task...
---- FAIL: TestExecuteClaim (0.06s)
-    claim_test.go:514: expected Key 'task1', got "fix-3"
---- FAIL: TestExecuteClaim_CreatesForgeState (0.06s)
-    claim_test.go:640: .forge/state.json should exist after claim
---- FAIL: TestExecuteClaim_Continue (0.07s)
-    claim_test.go:723: expected Key 'task1', got "fix-3"
---- FAIL: TestExecuteClaim_ScopePropagatedToState (0.06s)
-    claim_test.go:764: Task.Scope = "", want "frontend"
-    claim_test.go:771: failed to load state: <nil>
+Previous task 'Fix: login bug' is completed. Claiming new task...
+--- FAIL: TestExecuteClaim_ScopeEmptyWhenNotSet (0.06s)
+    claim_test.go:820: executeClaim() error = No pending tasks available
 Previous task '' was rejected. Claiming new task...
---- FAIL: TestRunFeature_Display (0.08s)
-    feature_test.go:101: expected output to contain 'test-feature', got "---\nFEATURE: task-executor-skeleton\n---\n"
---- FAIL: TestRunFeature_Set (0.02s)
-    feature_test.go:134: feature process directory C:\Users\panda\AppData\Local\Temp\TestRunFeature_Set2968819806\001\docs\features\my-new-feature\tasks\process was not created
---- FAIL: TestRunFeature_NoFeatureSet (0.07s)
-    feature_test.go:168: expected output to contain 'FEATURE: (none)', got "---\nFEATURE: task-executor-skeleton\n---\n"
---- FAIL: TestRunQuery (0.08s)
-    feature_test.go:227: expected output to contain 'KEY: task1', got "---\nKEY: 1.1-skeleton\nTASK_ID: 1.1\nTITLE: Rewrite task-executor.md as workflow skeleton\nSTATUS: completed\nPRIORITY: P0\nESTIMATED_TIME: 2h\nDEPENDENCIES: fix-3\nBREAKING: true\nFILE: Z:\\project\\ai\\forge\\docs\\features\\task-executor-skeleton\\tasks\\1.1-skeleton.md\nRECORD: Z:\\project\\ai\\forge\\docs\\features\\task-executor-skeleton\\tasks\\records\\1.1-skeleton.md\n---\n"
-    feature_test.go:233: expected output to contain 'TITLE: Task 1', got "---\nKEY: 1.1-skeleton\nTASK_ID: 1.1\nTITLE: Rewrite task-executor.md as workflow skeleton\nSTATUS: completed\nPRIORITY: P0\nESTIMATED_TIME: 2h\nDEPENDENCIES: fix-3\nBREAKING: true\nFILE: Z:\\project\\ai\\forge\\docs\\features\\task-executor-skeleton\\tasks\\1.1-skeleton.md\nRECORD: Z:\\project\\ai\\forge\\docs\\features\\task-executor-skeleton\\tasks\\records\\1.1-skeleton.md\n---\n"
-    feature_test.go:236: expected output to contain 'DEPENDENCIES: 1.0', got "---\nKEY: 1.1-skeleton\nTASK_ID: 1.1\nTITLE: Rewrite task-executor.md as workflow skeleton\nSTATUS: completed\nPRIORITY: P0\nESTIMATED_TIME: 2h\nDEPENDENCIES: fix-3\nBREAKING: true\nFILE: Z:\\project\\ai\\forge\\docs\\features\\task-executor-skeleton\\tasks\\1.1-skeleton.md\nRECORD: Z:\\project\\ai\\forge\\docs\\features\\task-executor-skeleton\\tasks\\records\\1.1-skeleton.md\n---\n"
-FAIL	task-cli/internal/cmd	3.091s
+
+Timing Summary:
+  Session:  ->  ()
+  Tool time: 0ms  Thinking time: 0ms
+
+
+Timing Summary:
+  Session:  ->  ()
+  Tool time: 0ms  Thinking time: 0ms
+
+
+Timing Summary:
+  Session:  ->  ()
+  Tool time: 0ms  Thinking time: 0ms
+
+
+Timing Summary:
+  Session:  ->  ()
+  Tool time: 0ms  Thinking time: 0ms
+
+
+Timing Summary:
+  Session:  ->  ()
+  Tool time: 0ms  Thinking time: 0ms
+
+
+Timing Summary:
+  Session:  ->  ()
+  Tool time: 0ms  Thinking time: 0ms
+
+
+Timing Summary:
+  Session:  ->  ()
+  Tool time: 0ms  Thinking time: 0ms
+
+
+Timing Summary:
+  Session: 2026-05-07 01:24:58 -> 2026-05-07 09:43:50 (8.3h)
+  Tool time: 78ms  Thinking time: 479.7s
+  By tool:
+    Bash         1x  total=69ms  avg=69ms  max=69ms
+    Read         1x  total=9ms  avg=9ms  max=9ms
+  Top slowest actions:
+      69ms  Bash          {"command":"git status","description":"Verify commit success...
+       9ms  Read          {"file_path":"/Users/fanhuifeng/Projects/ai/coding-harness/f...
+  Thinking turns:
+      3.4s  The user is running the `/fix-bug` skill with an argument po...
+     923ms  
+       1ms  Read(...)
+      3.7s  Now I understand the bug. Let me locate the actual file in t...
+      1.6s  
+
+
+Timing Summary:
+  Session:  ->  ()
+  Tool time: 0ms  Thinking time: 0ms
+
+
+Timing Summary:
+  Session: 2026-05-07 01:24:58 -> 2026-05-07 09:43:50 (8.3h)
+  Tool time: 78ms  Thinking time: 479.7s
+  By tool:
+    Bash         1x  total=69ms  avg=69ms  max=69ms
+    Read         1x  total=9ms  avg=9ms  max=9ms
+  Top slowest actions:
+      69ms  Bash          {"command":"git status","description":"Verify commit success...
+       9ms  Read          {"file_path":"/Users/fanhuifeng/Projects/ai/coding-harness/f...
+  Thinking turns:
+      3.4s  The user is running the `/fix-bug` skill with an argument po...
+     923ms  
+       1ms  Read(...)
+      3.7s  Now I understand the bug. Let me locate the actual file in t...
+      1.6s  
+
+
+Timing Summary:
+  Session: 2026-05-08 01:23:15 -> 2026-05-08 07:01:49 (5.6h)
+  Tool time: 91.3s  Thinking time: 62.9s
+  By tool:
+    Agent        1x  total=91.2s  avg=91.2s  max=91.2s
+    Bash         1x  total=58ms  avg=58ms  max=58ms
+  Top slowest actions:
+     91.2s  Agent         {"description":"Map forge plugin structure","prompt":"Thorou...
+      58ms  Bash          {"command":"git add todo.txt \u0026\u0026 git commit -m \"$(...
+  Thinking turns:
+      6.6s  The user wants me to perform a deep evaluation of the forge ...
+      3.5s  
+       1ms  Agent(...)
+      7.8s  Now I have a comprehensive map of the forge plugin. Let me l...
+      7.9s  
+
+
+Timing Summary:
+  Session: 2026-05-09 01:20:50 -> 2026-05-09 02:31:41 (1.2h)
+  Tool time: 238.7s  Thinking time: 91.7s
+  By tool:
+    Agent        2x  total=238.6s  avg=119.3s  max=126.3s
+    Bash         1x  total=64ms  avg=64ms  max=64ms
+    EnterPlanMode 1x  total=3ms  avg=3ms  max=3ms
+  Top slowest actions:
+    126.3s  Agent         {"description":"Explore brainstorm and breakdown-tasks","pro...
+    112.3s  Agent         {"description":"Explore existing skill structure","prompt":"...
+      64ms  Bash          {"command":"git add todo.txt \u0026\u0026 git commit -m \"$(...
+       3ms  EnterPlanMode  {}
+  Thinking turns:
+     10.7s  The user wants me to generate a complete implementation plan...
+      14ms  EnterPlanMode(...)
+      9.7s  
+       7ms  Agent(...)
+      4.0s  Agent(...)
+
+
+Timing Summary:
+  Session: 2026-05-09 06:21:59 -> 2026-05-09 07:15:55 (53.9min)
+  Tool time: 118.1s  Thinking time: 1300.8s
+  By tool:
+    Agent        2x  total=118.1s  avg=59.0s  max=64.0s
+  Top slowest actions:
+     64.0s  Agent         {"description":"Explore forge agents and skills","prompt":"F...
+     54.0s  Agent         {"description":"Explore task CLI code","prompt":"Find and re...
+  Thinking turns:
+      9.6s  The user wants me to improve the task scheduling and executi...
+      2.9s  
+      11ms  Agent(...)
+      5.2s  Agent(...)
+      8.2s  Now I have a thorough understanding of the current state. Le...
+
+
+Timing Summary:
+  Session:  ->  ()
+  Tool time: 0ms  Thinking time: 0ms
+
+
+Timing Summary:
+  Session: 2026-05-07 01:24:58 -> 2026-05-07 09:43:50 (8.3h)
+  Tool time: 78ms  Thinking time: 479.7s
+  By tool:
+    Bash         1x  total=69ms  avg=69ms  max=69ms
+    Read         1x  total=9ms  avg=9ms  max=9ms
+  Top slowest actions:
+      69ms  Bash          {"command":"git status","description":"Verify commit success...
+       9ms  Read          {"file_path":"/Users/fanhuifeng/Projects/ai/coding-harness/f...
+  Thinking turns:
+      3.4s  The user is running the `/fix-bug` skill with an argument po...
+     923ms  
+       1ms  Read(...)
+      3.7s  Now I understand the bug. Let me locate the actual file in t...
+      1.6s  
+
+
+Timing Summary:
+  Session: 2026-05-07 01:24:58 -> 2026-05-07 09:43:50 (8.3h)
+  Tool time: 78ms  Thinking time: 479.7s
+  By tool:
+    Bash         1x  total=69ms  avg=69ms  max=69ms
+    Read         1x  total=9ms  avg=9ms  max=9ms
+  Top slowest actions:
+      69ms  Bash          {"command":"git status","description":"Verify commit success...
+       9ms  Read          {"file_path":"/Users/fanhuifeng/Projects/ai/coding-harness/f...
+  Thinking turns:
+      3.4s  The user is running the `/fix-bug` skill with an argument po...
+     923ms  
+       1ms  Read(...)
+      3.7s  Now I understand the bug. Let me locate the actual file in t...
+      1.6s  
+
+
+Timing Summary:
+  Session: 2026-05-07 01:24:58 -> 2026-05-07 09:43:50 (8.3h)
+  Tool time: 78ms  Thinking time: 479.7s
+  By tool:
+    Bash         1x  total=69ms  avg=69ms  max=69ms
+    Read         1x  total=9ms  avg=9ms  max=9ms
+  Top slowest actions:
+      69ms  Bash          {"command":"git status","description":"Verify commit success...
+       9ms  Read          {"file_path":"/Users/fanhuifeng/Projects/ai/coding-harness/f...
+  Thinking turns:
+      3.4s  The user is running the `/fix-bug` skill with an argument po...
+     923ms  
+       1ms  Read(...)
+      3.7s  Now I understand the bug. Let me locate the actual file in t...
+      1.6s  
+
+
+Timing Summary:
+  Session: 2026-05-07 01:24:58 -> 2026-05-07 09:43:50 (8.3h)
+  Tool time: 78ms  Thinking time: 479.7s
+  By tool:
+    Bash         1x  total=69ms  avg=69ms  max=69ms
+    Read         1x  total=9ms  avg=9ms  max=9ms
+  Top slowest actions:
+      69ms  Bash          {"command":"git status","description":"Verify commit success...
+       9ms  Read          {"file_path":"/Users/fanhuifeng/Projects/ai/coding-harness/f...
+  Thinking turns:
+      3.4s  The user is running the `/fix-bug` skill with an argument po...
+     923ms  
+       1ms  Read(...)
+      3.7s  Now I understand the bug. Let me locate the actual file in t...
+      1.6s  
+
+
+Timing Summary:
+  Session: 2026-05-08 01:23:15 -> 2026-05-08 07:01:49 (5.6h)
+  Tool time: 91.3s  Thinking time: 62.9s
+  By tool:
+    Agent        1x  total=91.2s  avg=91.2s  max=91.2s
+    Bash         1x  total=58ms  avg=58ms  max=58ms
+  Top slowest actions:
+     91.2s  Agent         {"description":"Map forge plugin structure","prompt":"Thorou...
+      58ms  Bash          {"command":"git add todo.txt \u0026\u0026 git commit -m \"$(...
+  Thinking turns:
+      6.6s  The user wants me to perform a deep evaluation of the forge ...
+      3.5s  
+       1ms  Agent(...)
+      7.8s  Now I have a comprehensive map of the forge plugin. Let me l...
+      7.9s  
+
+
+Timing Summary:
+  Session: 2026-05-09 01:20:50 -> 2026-05-09 02:31:41 (1.2h)
+  Tool time: 238.7s  Thinking time: 91.7s
+  By tool:
+    Agent        2x  total=238.6s  avg=119.3s  max=126.3s
+    Bash         1x  total=64ms  avg=64ms  max=64ms
+    EnterPlanMode 1x  total=3ms  avg=3ms  max=3ms
+  Top slowest actions:
+    126.3s  Agent         {"description":"Explore brainstorm and breakdown-tasks","pro...
+    112.3s  Agent         {"description":"Explore existing skill structure","prompt":"...
+      64ms  Bash          {"command":"git add todo.txt \u0026\u0026 git commit -m \"$(...
+       3ms  EnterPlanMode  {}
+  Thinking turns:
+     10.7s  The user wants me to generate a complete implementation plan...
+      14ms  EnterPlanMode(...)
+      9.7s  
+       7ms  Agent(...)
+      4.0s  Agent(...)
+
+
+Timing Summary:
+  Session: 2026-05-09 06:21:59 -> 2026-05-09 07:15:55 (53.9min)
+  Tool time: 118.1s  Thinking time: 1300.8s
+  By tool:
+    Agent        2x  total=118.1s  avg=59.0s  max=64.0s
+  Top slowest actions:
+     64.0s  Agent         {"description":"Explore forge agents and skills","prompt":"F...
+     54.0s  Agent         {"description":"Explore task CLI code","prompt":"Find and re...
+  Thinking turns:
+      9.6s  The user wants me to improve the task scheduling and executi...
+      2.9s  
+      11ms  Agent(...)
+      5.2s  Agent(...)
+      8.2s  Now I have a thorough understanding of the current state. Le...
+
+
+Timing Summary:
+  Session:  ->  ()
+  Tool time: 0ms  Thinking time: 0ms
+
+
+Timing Summary:
+  Session:  ->  ()
+  Tool time: 0ms  Thinking time: 0ms
+
+
+Timing Summary:
+  Session:  ->  ()
+  Tool time: 0ms  Thinking time: 0ms
+
+
+Timing Summary:
+  Session: 2026-05-07 01:24:58 -> 2026-05-07 09:43:50 (8.3h)
+  Tool time: 78ms  Thinking time: 479.7s
+  By tool:
+    Bash         1x  total=69ms  avg=69ms  max=69ms
+    Read         1x  total=9ms  avg=9ms  max=9ms
+  Top slowest actions:
+      69ms  Bash          {"command":"git status","description":"Verify commit success...
+       9ms  Read          {"file_path":"/Users/fanhuifeng/Projects/ai/coding-harness/f...
+  Thinking turns:
+      3.4s  The user is running the `/fix-bug` skill with an argument po...
+     923ms  
+       1ms  Read(...)
+      3.7s  Now I understand the bug. Let me locate the actual file in t...
+      1.6s  
+
+
+Timing Summary:
+  Session: 2026-05-09 01:20:50 -> 2026-05-09 02:31:41 (1.2h)
+  Tool time: 238.7s  Thinking time: 91.7s
+  By tool:
+    Agent        2x  total=238.6s  avg=119.3s  max=126.3s
+    Bash         1x  total=64ms  avg=64ms  max=64ms
+    EnterPlanMode 1x  total=3ms  avg=3ms  max=3ms
+  Top slowest actions:
+    126.3s  Agent         {"description":"Explore brainstorm and breakdown-tasks","pro...
+    112.3s  Agent         {"description":"Explore existing skill structure","prompt":"...
+      64ms  Bash          {"command":"git add todo.txt \u0026\u0026 git commit -m \"$(...
+       3ms  EnterPlanMode  {}
+  Thinking turns:
+     10.7s  The user wants me to generate a complete implementation plan...
+      14ms  EnterPlanMode(...)
+      9.7s  
+       7ms  Agent(...)
+      4.0s  Agent(...)
+
+
+Timing Summary:
+  Session: 2026-05-08 01:23:15 -> 2026-05-08 07:01:49 (5.6h)
+  Tool time: 91.3s  Thinking time: 62.9s
+  By tool:
+    Agent        1x  total=91.2s  avg=91.2s  max=91.2s
+    Bash         1x  total=58ms  avg=58ms  max=58ms
+  Top slowest actions:
+     91.2s  Agent         {"description":"Map forge plugin structure","prompt":"Thorou...
+      58ms  Bash          {"command":"git add todo.txt \u0026\u0026 git commit -m \"$(...
+  Thinking turns:
+      6.6s  The user wants me to perform a deep evaluation of the forge ...
+      3.5s  
+       1ms  Agent(...)
+      7.8s  Now I have a comprehensive map of the forge plugin. Let me l...
+      7.9s  
+
+
+Timing Summary:
+  Session: 2026-05-09 01:20:50 -> 2026-05-09 02:31:41 (1.2h)
+  Tool time: 238.7s  Thinking time: 91.7s
+  By tool:
+    Agent        2x  total=238.6s  avg=119.3s  max=126.3s
+    Bash         1x  total=64ms  avg=64ms  max=64ms
+    EnterPlanMode 1x  total=3ms  avg=3ms  max=3ms
+  Top slowest actions:
+    126.3s  Agent         {"description":"Explore brainstorm and breakdown-tasks","pro...
+    112.3s  Agent         {"description":"Explore existing skill structure","prompt":"...
+      64ms  Bash          {"command":"git add todo.txt \u0026\u0026 git commit -m \"$(...
+       3ms  EnterPlanMode  {}
+  Thinking turns:
+     10.7s  The user wants me to generate a complete implementation plan...
+      14ms  EnterPlanMode(...)
+      9.7s  
+       7ms  Agent(...)
+      4.0s  Agent(...)
+
+
+Timing Summary:
+  Session:  ->  ()
+  Tool time: 0ms  Thinking time: 0ms
+
+---
+WARNING: Missing recommended fields: keyDecisions
+HINT: Include these fields for complete records. Record will still be saved.
+---
+---
+WARNING: Missing recommended fields: keyDecisions
+HINT: Include these fields for complete records. Record will still be saved.
+---
+Previous task 'T1' is completed. Claiming new task...
+Previous task 'T1' is blocked. Claiming new task...
+Warning: failed to load task state: failed to parse state: invalid character 'i' looking for beginning of value
+echo "compile ok"
+compile ok
+echo "fmt ok"
+fmt ok
+echo "lint ok"
+lint ok
+echo "test ok"
+test ok
+echo "compile ok"
+compile ok
+exit 1
+error: Recipe `fmt` failed on line 6 with exit code 1
+WARNING: non-blocking gate step "fmt" failed
+echo "lint ok"
+lint ok
+echo "test ok"
+test ok
+--- FAIL: TestForgeStateLifecycle (0.06s)
+    integration_test.go:1811: claim failed: No pending tasks available
+AUTO-RESTORE: source task T-test-3 restored to pending (all deps completed or skipped)
+---
+WARNING: 1 test failures detected — auto-downgrading status from 'completed' to 'blocked'
+HINT: Fix test failures, then re-record with status 'completed'
+---
+---
+WARNING: 2 test failures detected — auto-downgrading status from 'completed' to 'blocked'
+HINT: Fix test failures, then re-record with status 'completed'
+---
+---
+WARNING: 2 test failures detected — auto-downgrading status from 'completed' to 'blocked'
+HINT: Fix test failures, then re-record with status 'completed'
+---
+Previous task 'Task 1' is blocked. Claiming new task...
+---
+WARNING: 1 test failures detected — auto-downgrading status from 'completed' to 'blocked'
+HINT: Fix test failures, then re-record with status 'completed'
+---
+---
+WARNING: 2 test failures detected — auto-downgrading status from 'completed' to 'blocked'
+HINT: Fix test failures, then re-record with status 'completed'
+---
+AUTO-RESTORE: source task src restored to pending (all deps completed or skipped)
+AUTO-RESTORE: source task src restored to pending (all deps completed or skipped)
+AUTO-RESTORE: source task fix-A restored to pending (all deps completed or skipped)
+AUTO-RESTORE: source task src restored to pending (all deps completed or skipped)
+AUTO-RESTORE: source task src restored to pending (all deps completed or skipped)
+AUTO-RESTORE: source task src restored to pending (all deps completed or skipped)
+AUTO-RESTORE: source task T-test-3 restored to pending (all deps completed or skipped)
+AUTO-RESTORE: source task disc-1 restored to pending (all deps completed or skipped)
+AUTO-RESTORE: source task T-test-3 restored to pending (all deps completed or skipped)
+AUTO-RESTORE: source task T-test-3 restored to pending (all deps completed or skipped)
+AUTO-RESTORE: source task T-test-3 restored to pending (all deps completed or skipped)
+AUTO-RESTORE: source task T-test-3 restored to pending (all deps completed or skipped)
+AUTO-RESTORE: source task T-test-3 restored to pending (all deps completed or skipped)
+AUTO-RESTORE: source task T-fix-A restored to pending (all deps completed or skipped)
+---
+ACTION: CLAIMED
+KEY: task1
+TASK_ID: 1.1
+TITLE: Task 1
+PRIORITY: P0
+STATUS: in_progress
+BREAKING: false
+MAIN_SESSION: false
+FEATURE: test-feature
+FILE: C:\Users\panda\AppData\Local\Temp\TestRunStatus_QueryMode4048315923\001\docs\features\test-feature\tasks\1.1.md
+RECORD: C:\Users\panda\AppData\Local\Temp\TestRunStatus_QueryMode4048315923\001\docs\features\test-feature\tasks\records\1.1.md
+---
+ERROR: Failed to parse validation output: invalid JSON: invalid character 'o' in literal null (expecting 'u')
+  Output: node:internal/modules/cjs/loader:1423
+  throw err;
+  ^
+
+Error: Cannot find module 'C:\nonexistent\validate-specs.mjs'
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1420:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1058:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1063:22)
+    at Module._load (node:internal/modules/cjs/loader:1226:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:244:24)
+    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+    at node:internal/main/run_main_module:33:47 {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: []
+}
+
+Node.js v24.9.0
+
+
+[INFO]
+  Feature: test-feature
+  Tasks: 1
+
+[WARNINGS]
+  Phase 1 has business tasks but no '1.summary' task
+  Task 'task1': file 'task.md' missing
+RESULT: PASS (C:\Users\panda\AppData\Local\Temp\TestValidator_Runvalid_index4095751472\001\index.json)
+
+[INFO]
+  Feature: test-feature
+  Tasks: 1
+
+[WARNINGS]
+  Missing 'design' field
+  Missing 'prd' field
+  Missing 'statusEnum' field — task record/status commands may fail
+
+[ERRORS]
+  Task 'task1': dependency 'missing' not found
+  Task 'task1': missing 'file'
+  Task 'task1': missing 'id'
+  Task 'task1': missing 'title'
+RESULT: FAIL (C:\Users\panda\AppData\Local\Temp\TestValidator_Runindex_with_errors1475820826\001\index.json (4 errors))
+
+[INFO]
+  Feature: test-feature
+  Tasks: 0
+
+[WARNINGS]
+  Missing 'design' field
+  Missing 'prd' field
+  Missing 'statusEnum' field — task record/status commands may fail
+RESULT: PASS (C:\Users\panda\AppData\Local\Temp\TestValidator_Runmissing_statusEnum_warns2349663558\001\index.json)
+
+[INFO]
+  Feature: test
+  Tasks: 0
+
+[WARNINGS]
+  Missing 'design' field
+  Missing 'prd' field
+  Missing 'statusEnum' field — task record/status commands may fail
+RESULT: PASS (C:\Users\panda\AppData\Local\Temp\TestRunValidate_WithFileArgvalid_file_via_arg1253616557\001\index.json)
+
+[INFO]
+  Feature: test-quick
+  Tasks: 3
+
+[WARNINGS]
+  Task 'quick-test-cases': file 'quick-test-cases.md' missing
+  Task 'task1': file '1-task.md' missing
+  Task 'task2': file '2-task.md' missing
+RESULT: PASS (C:\Users\panda\AppData\Local\Temp\TestValidator_QuickModequick_mode_with_proposal_field_suppresse2717603426\001\index.json)
+
+[INFO]
+  Feature: test-quick
+  Tasks: 1
+
+[WARNINGS]
+  Task 'task1': file 'task.md' missing
+RESULT: PASS (C:\Users\panda\AppData\Local\Temp\TestValidator_QuickModequick_mode_deserializes_proposal_field2781355954\001\index.json)
+
+[INFO]
+  Feature: test-feature
+  Tasks: 1
+
+[WARNINGS]
+  Phase 1 has business tasks but no '1.summary' task
+  Task 'task1': file 'task.md' missing
+RESULT: PASS (C:\Users\panda\AppData\Local\Temp\TestValidator_QuickModefull_mode_with_prd+design+proposal_has_n2959879594\001\index.json)
+FAIL
+FAIL	task-cli/internal/cmd	8.272s
 ok  	task-cli/internal/docsync	(cached)
 ok  	task-cli/pkg/e2eprobe	(cached)
-ok  	task-cli/pkg/feature	1.743s
-ok  	task-cli/pkg/git	3.159s
-ok  	task-cli/pkg/just	2.115s
---- FAIL: TestFindProjectRoot (0.02s)
+ok  	task-cli/pkg/feature	(cached)
+ok  	task-cli/pkg/git	(cached)
+ok  	task-cli/pkg/just	(cached)
+--- FAIL: TestFindProjectRoot (0.01s)
     --- FAIL: TestFindProjectRoot/finds_go.mod_in_current_directory (0.00s)
         root_test.go:132: Marker = "ENV", want "go.mod"
         root_test.go:135: Type = unknown, want project
@@ -80,7 +574,7 @@ ok  	task-cli/pkg/just	2.115s
         root_test.go:135: Type = unknown, want workspace
 --- FAIL: TestFindRootInfo (0.00s)
     --- FAIL: TestFindRootInfo/returns_detailed_info_for_Go_project (0.00s)
-        root_test.go:156: Path = "Z:\\project\\ai\\forge", want "C:\\Users\\panda\\AppData\\Local\\Temp\\TestFindRootInforeturns_detailed_info_for_Go_project3794415633\\001"
+        root_test.go:156: Path = "Z:\\project\\ai\\forge", want "C:\\Users\\panda\\AppData\\Local\\Temp\\TestFindRootInforeturns_detailed_info_for_Go_project2708639184\\001"
         root_test.go:159: Type = unknown, want project
         root_test.go:162: Marker = "ENV", want "go.mod"
         root_test.go:165: Languages = [], want [go]
@@ -89,12 +583,12 @@ ok  	task-cli/pkg/just	2.115s
         root_test.go:186: Marker = "ENV", want "go.work"
 --- FAIL: TestFindRootInfoFrom (0.00s)
     --- FAIL: TestFindRootInfoFrom/finds_root_from_subdirectory (0.00s)
-        root_test.go:205: Path = "Z:\\project\\ai\\forge", want "C:\\Users\\panda\\AppData\\Local\\Temp\\TestFindRootInfoFromfinds_root_from_subdirectory4016662861\\001"
+        root_test.go:205: Path = "Z:\\project\\ai\\forge", want "C:\\Users\\panda\\AppData\\Local\\Temp\\TestFindRootInfoFromfinds_root_from_subdirectory3346198918\\001"
 FAIL
-FAIL	task-cli/pkg/project	0.576s
+FAIL	task-cli/pkg/project	0.494s
 ok  	task-cli/pkg/task	(cached)
 ok  	task-cli/pkg/template	(cached)
-ok  	task-cli/pkg/testrunner	1.392s
+ok  	task-cli/pkg/testrunner	(cached)
 ok  	task-cli/pkg/version	(cached)
 FAIL
 error: Recipe `test` failed with exit code 1

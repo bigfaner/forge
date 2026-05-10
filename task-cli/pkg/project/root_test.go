@@ -8,6 +8,9 @@ import (
 )
 
 func TestFindProjectRoot(t *testing.T) {
+	t.Setenv("CLAUDE_PROJECT_DIR", "")
+	t.Setenv("PROJECT_ROOT", "")
+
 	tests := []struct {
 		name       string
 		setup      func(tempDir string) (workDir string)
@@ -139,6 +142,9 @@ func TestFindProjectRoot(t *testing.T) {
 }
 
 func TestFindRootInfo(t *testing.T) {
+	t.Setenv("CLAUDE_PROJECT_DIR", "")
+	t.Setenv("PROJECT_ROOT", "")
+
 	t.Run("returns detailed info for Go project", func(t *testing.T) {
 		tempDir, _ := filepath.EvalSymlinks(t.TempDir())
 		goModPath := filepath.Join(tempDir, "go.mod")
@@ -189,6 +195,9 @@ func TestFindRootInfo(t *testing.T) {
 }
 
 func TestFindRootInfoFrom(t *testing.T) {
+	t.Setenv("CLAUDE_PROJECT_DIR", "")
+	t.Setenv("PROJECT_ROOT", "")
+
 	t.Run("finds root from subdirectory", func(t *testing.T) {
 		tempDir := t.TempDir()
 		subDir := filepath.Join(tempDir, "a", "b", "c")
@@ -526,6 +535,9 @@ func TestRootTypeString(t *testing.T) {
 // --- Additional tests to push coverage to 85%+ ---
 
 func TestFindProjectRootFrom(t *testing.T) {
+	t.Setenv("CLAUDE_PROJECT_DIR", "")
+	t.Setenv("PROJECT_ROOT", "")
+
 	t.Run("returns path from FindRootInfoFrom", func(t *testing.T) {
 		tempDir := t.TempDir()
 		subDir := filepath.Join(tempDir, "deep", "nested", "dir")
@@ -798,6 +810,8 @@ func TestMatchesMarker_GlobPattern(t *testing.T) {
 }
 
 func TestFindRootInfoFrom_VCSDetected(t *testing.T) {
+	t.Setenv("CLAUDE_PROJECT_DIR", "")
+	t.Setenv("PROJECT_ROOT", "")
 	t.Run("VCS marker is detected alongside project marker", func(t *testing.T) {
 		tempDir := t.TempDir()
 		// Create both .git and go.mod in the same directory

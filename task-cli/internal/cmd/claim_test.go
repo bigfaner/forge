@@ -788,6 +788,9 @@ func TestExecuteClaim_ScopePropagatedToState(t *testing.T) {
 }
 
 func TestExecuteClaim_ScopeEmptyWhenNotSet(t *testing.T) {
+	t.Setenv("CLAUDE_PROJECT_DIR", "")
+	t.Setenv("PROJECT_ROOT", "")
+
 	dir := t.TempDir()
 	_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n\ngo 1.21\n"), 0644)
 	if err := feature.EnsureFeatureDir(dir, "test-feature"); err != nil {

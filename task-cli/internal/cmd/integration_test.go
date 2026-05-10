@@ -1784,6 +1784,9 @@ func TestSaveIndexAndSignalCompletion_WriteForgeStateWarning(t *testing.T) {
 // TestForgeStateLifecycle verifies the full .forge/state.json lifecycle:
 // claim (creates allCompleted=false) → record (overwrites to true) → all-completed (deletes)
 func TestForgeStateLifecycle(t *testing.T) {
+	t.Setenv("CLAUDE_PROJECT_DIR", "")
+	t.Setenv("PROJECT_ROOT", "")
+
 	dir := t.TempDir()
 	_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644)
 	_ = feature.EnsureFeatureDir(dir, "lf")

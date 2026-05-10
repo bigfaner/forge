@@ -179,6 +179,16 @@
       "record": "records/fix-4.md",
       "breaking": true
     },
+    "fix-5": {
+      "id": "fix-5",
+      "title": "Fix: unit-test failure in all-completed quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-5.md",
+      "record": "records/fix-5.md",
+      "breaking": true
+    },
     "gen-test-cases": {
       "id": "T-test-1",
       "title": "Generate e2e Test Cases",
