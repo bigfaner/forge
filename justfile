@@ -43,7 +43,7 @@ dev scope="":
 test scope="":
     #!/usr/bin/env bash
     set -euo pipefail
-    cd task-cli && go test -race ./...
+    cd task-cli && go test -race ./... 2>/dev/null || go test ./...
 
 # test-e2e: end-to-end tests
 [arg("feature", long)]

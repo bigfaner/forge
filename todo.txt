@@ -41,3 +41,4 @@ Bash(task record T-test-1b --data docs/features/train-recorder/tasks/process/rec
 29、init-justfile支持覆盖式更新，just run 等命令去掉 --dev参数，更改为skill，内置模板，但是禁止大模型调用。
 30、forensic分析任务卡住不动时，要展示各个动作的耗时
 31、task feature 要支持worktree
+32、快速模式去掉： HARD-GATE: Maximum 4 business tasks, total effort 1-2 hours
