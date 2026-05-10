@@ -110,16 +110,11 @@ func runRecord(_ *cobra.Command, args []string) {
 			fmt.Sprintf("Change taskId to %q or remove it from record.json", taskIDArg)))
 	}
 
-	// NoTest tasks: auto-set coverage=-1.0 to skip test evidence check
-	if t.NoTest && rd.Coverage >= 0 && rd.TestsPassed == 0 && rd.TestsFailed == 0 {
-		rd.Coverage = -1.0
-	}
-
 	// Validate required and recommended fields
 	validateRecordData(rd, recordForce)
 
-	// Quality gate pre-check for completed tasks (unless --force or noTest)
-	if rd.Status == "completed" && !recordForce && !t.NoTest {
+	// Quality gate pre-check for completed tasks (unless --force)
+	if rd.Status == "completed" && !recordForce {
 		validateQualityGate(projectRoot, t.Scope)
 	}
 
@@ -377,7 +372,7 @@ time_spent: "%s"
 		formatList(rd.FilesCreated),
 		formatList(rd.FilesModified),
 		formatList(rd.KeyDecisions),
-		formatTestsExecuted(rd.Coverage, t.NoTest), rd.TestsPassed, rd.TestsFailed, formatCoverage(rd.Coverage),
+		formatTestsExecuted(rd.Coverage), rd.TestsPassed, rd.TestsFailed, formatCoverage(rd.Coverage),
 		formatCriteria(rd.AcceptanceCriteria),
 		notes,
 	)
@@ -390,10 +385,7 @@ func formatCoverage(c float64) string {
 	return fmt.Sprintf("%.1f%%", c)
 }
 
-func formatTestsExecuted(c float64, noTest bool) string {
-	if noTest {
-		return "No (noTest task)"
-	}
+func formatTestsExecuted(c float64) string {
 	if c < 0 {
 		return "No"
 	}

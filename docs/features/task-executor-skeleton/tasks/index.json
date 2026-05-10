@@ -35,7 +35,7 @@
       "title": "Remove NoTest from task-cli (Go)",
       "priority": "P0",
       "estimatedTime": "3h",
-      "status": "pending",
+      "status": "completed",
       "file": "1.2-taskcli-notest.md",
       "record": "records/1.2-taskcli-notest.md",
       "breaking": true,

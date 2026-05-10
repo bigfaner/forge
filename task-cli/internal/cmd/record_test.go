@@ -122,7 +122,7 @@ func TestValidateRecordData(t *testing.T) {
 		}
 	})
 
-	t.Run("noTest task with coverage=-1 skips validation", func(t *testing.T) {
+	t.Run("coverage=-1 skips test evidence check", func(t *testing.T) {
 		rd := &task.RecordData{
 			Status:      "completed",
 			Summary:     "Documentation-only task",
@@ -142,35 +142,7 @@ func TestValidateRecordData(t *testing.T) {
 		output := string(buf[:n])
 
 		if strings.Contains(output, "ERROR") {
-			t.Errorf("noTest task should skip test evidence check, got: %s", output)
-		}
-	})
-
-	t.Run("noTest task with testsPassed > 0 passes validation", func(t *testing.T) {
-		rd := &task.RecordData{
-			Status:       "completed",
-			Summary:      "Ran some tests despite noTest flag",
-			Coverage:     80.0,
-			TestsPassed:  5,
-			TestsFailed:  0,
-			KeyDecisions: []string{"tested anyway"},
-			AcceptanceCriteria: []task.AcceptanceCriterion{
-				{Criterion: "Works", Met: true},
-			},
-		}
-		old := os.Stderr
-		r, w, _ := os.Pipe()
-		os.Stderr = w
-		validateRecordData(rd, false)
-		_ = w.Close()
-		os.Stderr = old
-
-		buf := make([]byte, 1024)
-		n, _ := r.Read(buf)
-		output := string(buf[:n])
-
-		if strings.Contains(output, "ERROR") {
-			t.Errorf("noTest + testsPassed > 0 should pass, got: %s", output)
+			t.Errorf("coverage=-1.0 should skip test evidence check, got: %s", output)
 		}
 	})
 
@@ -602,11 +574,10 @@ func TestFillRecordTemplate(t *testing.T) {
 			},
 		},
 		{
-			name: "noTest task with coverage=-1",
+			name: "coverage=-1 task",
 			task: &task.Task{
-				ID:     "1.7",
-				Title:  "Write PRD",
-				NoTest: true,
+				ID:    "1.7",
+				Title: "Write PRD",
 			},
 			recordData: &task.RecordData{
 				Status:   "completed",
@@ -615,7 +586,7 @@ func TestFillRecordTemplate(t *testing.T) {
 			},
 			startedTime: "2026-04-06 10:00",
 			checkContains: []string{
-				"Tests Executed**: No (noTest task)",
+				"Tests Executed**: No",
 				"Coverage**: N/A (task has no tests)",
 			},
 		},
@@ -712,20 +683,16 @@ func TestFormatCoverage(t *testing.T) {
 func TestFormatTestsExecuted(t *testing.T) {
 	tests := []struct {
 		coverage float64
-		noTest   bool
 		want     string
 	}{
-		{-1.0, true, "No (noTest task)"},
-		{-1.0, false, "No"},
-		{0.0, false, "Yes"},
-		{85.5, false, "Yes"},
-		{0.0, true, "No (noTest task)"},
-		{80.0, true, "No (noTest task)"},
+		{-1.0, "No"},
+		{0.0, "Yes"},
+		{85.5, "Yes"},
 	}
 	for _, tt := range tests {
-		got := formatTestsExecuted(tt.coverage, tt.noTest)
+		got := formatTestsExecuted(tt.coverage)
 		if got != tt.want {
-			t.Errorf("formatTestsExecuted(%v, %v) = %q, want %q", tt.coverage, tt.noTest, got, tt.want)
+			t.Errorf("formatTestsExecuted(%v) = %q, want %q", tt.coverage, got, tt.want)
 		}
 	}
 }
