@@ -98,7 +98,7 @@
       "dependencies": [
         "4"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "quick-test-cases.md",
       "record": "records/quick-test-cases.md",
       "scope": "all",
