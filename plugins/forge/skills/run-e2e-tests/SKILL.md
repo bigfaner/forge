@@ -255,6 +255,29 @@ These are set in `tests/e2e/playwright.config.ts` and require no manual manageme
 
 ## Failure Diagnosis
 
+### App Health First Gate
+
+When tests fail, the first step is determining whether the **app itself is healthy**. E2E test error signals cannot distinguish "test wrote wrong selector" from "app crashed and renders nothing" — both produce "element not found".
+
+<HARD-RULE>
+When **>30% of UI tests fail simultaneously**, do NOT proceed to individual test fix tasks. Run app health diagnostics first. Batch failures almost always indicate an app-level problem, not per-test selector issues.
+</HARD-RULE>
+
+| Failure ratio | Likely cause | First action |
+|---|---|---|
+| **>30%** UI tests fail simultaneously | App health problem | Check screenshots for white/blank screen + dependency compatibility |
+| 10-30% partial failure | Possibly test issues | Spot check 2-3 failure screenshots before deciding |
+| <10% few failures | Test/selector issues | Proceed to per-test fix tasks |
+
+**App health diagnostic flow** (run in order, stop at first positive finding):
+
+1. **Check failure screenshots** — `glob tests/e2e/results/**/*.png`. White/blank screen = app crash, NOT test problem
+2. **If white screen** — check dependency compatibility (`npx expo-doctor` or equivalent), check root component (`_layout.tsx` / `App.tsx`) for import errors, check browser console fatal errors
+3. **Verify app renders manually** (if health still uncertain) — start dev server, open browser, confirm page renders with content
+4. **Only after app is confirmed healthy** — proceed to individual test failure analysis
+
+### General Failure Analysis
+
 When tests fail, do not stop at the first visible error message. Follow these rules to avoid misdiagnosis:
 
 <PRINCIPLE>

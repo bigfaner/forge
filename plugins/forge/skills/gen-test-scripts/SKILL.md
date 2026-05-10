@@ -247,6 +247,39 @@ All `test.beforeAll` blocks must follow defensive patterns to prevent cascade fa
 When `beforeAll` throws and module-level `let` variables stay `undefined`, all downstream tests fail with misleading errors (e.g., `undefined` in URL paths → 404). The try/catch + explicit check pattern ensures the *real* failure is reported, not a secondary symptom.
 </HARD-RULE>
 
+#### Anti-Patterns (Forbidden in Generated Code)
+
+<HARD-RULE>
+**No `waitForTimeout` / `sleep` / fixed delays.** These mask real timing issues, waste time when the app is fast, and fail when the app is slow. Instead:
+
+| Forbidden | Replacement |
+|-----------|-------------|
+| `page.waitForTimeout(2000)` | `await expect(locator).toBeVisible()` or `await page.waitForResponse('**/api/...')` |
+| `await new Promise(r => setTimeout(r, N))` | `await withRetry(() => ..., { delayMs: N })` for API polling |
+| `waitForTimeout` after navigation | `await page.waitForLoadState('networkidle')` or `await expect(locator).toBeVisible()` |
+| `waitForTimeout` after click/submit | `await page.waitForResponse('**/api/...')` wrapping the click, or `await expect(resultLocator).toBeVisible()` |
+
+**Why**: In a real project (350+ tests), `waitForTimeout` accounted for ~60+ seconds of wasted time per run and was the #1 source of flaky tests — too short when slow, wasted when fast. Every wait must be event-driven.
+</HARD-RULE>
+
+<HARD-RULE>
+**Serial suite size limit: 15 tests max.** When a workflow requires more than 15 sequential tests, split into multiple `test.describe.serial` blocks, each with independent setup/teardown. Large serial suites (30+ tests) create catastrophic cascade — one early failure invalidates all subsequent tests, making diagnosis extremely difficult.
+
+**afterAll cleanup is mandatory** for serial suites that create shared data. Use `createTestResource()` + `cleanupTestResources()` from helpers, or manual DELETE calls. Missing cleanup causes test pollution across runs.
+</HARD-RULE>
+
+<HARD-RULE>
+**UI auth: use `beforeAll` login, NOT `beforeEach`.** Each `login(page)` call costs ~1-3 seconds (page load + auth injection + reload). For a 30-test suite, `beforeEach` login adds 30-90 seconds of pure overhead. Instead:
+
+- **Preferred**: Playwright `storageState` mechanism (login once in setup project, reuse across all tests)
+- **Fallback**: `test.beforeAll` login with shared page context for tests that don't need isolation
+- **Exception**: `beforeEach` login is acceptable only for tests that specifically verify login behavior or need clean session state
+</HARD-RULE>
+
+<HARD-RULE>
+**Selector priority (same as Step 3, reinforced)**: Never use CSS class selectors (`.ant-*`, `.btn-*`, etc.) or DOM traversal (`locator('..')`) in generated code. These bind to internal implementation details and break on any UI library update. If sitemap doesn't provide a role-based locator, use `data-testid` as fallback — never CSS classes.
+</HARD-RULE>
+
 **Import path**: All spec files must import from `'../../helpers.js'` (two levels up to shared helpers.ts at `tests/e2e/`).
 
 **VERIFY marker resolution**: Resolve all `// VERIFY:` comments using Fact Table values. If no Fact Table value exists, keep the `// VERIFY:` comment as-is.

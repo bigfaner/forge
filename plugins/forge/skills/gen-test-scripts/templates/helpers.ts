@@ -200,6 +200,33 @@ export function clearAuthState(): void {
   if (existsSync(AUTH_STATE_PATH)) unlinkSync(AUTH_STATE_PATH);
 }
 
+// ── UI Action Helpers (replace waitForTimeout) ────────────────────
+/**
+ * Perform a UI action and wait for the matching API response.
+ * Use this instead of waitForTimeout after clicks that trigger API calls.
+ *
+ * Example:
+ *   const data = await waitForApiAction(page,
+ *     () => page.getByRole('button', { name: 'Save' }).click(),
+ *     '/api/items',
+ *   );
+ */
+export async function waitForApiAction(
+  page: Page,
+  action: () => Promise<void>,
+  apiPathPattern: string,
+  opts?: { method?: string; timeout?: number },
+): Promise<{ status: number; body: string }> {
+  const [response] = await Promise.all([
+    page.waitForResponse(
+      (resp) => resp.url().includes(apiPathPattern) && (!opts?.method || resp.request().method() === opts.method),
+      { timeout: opts?.timeout ?? 10000 },
+    ),
+    action(),
+  ]);
+  return { status: response.status(), body: await response.text() };
+}
+
 // ── Retry ──────────────────────────────────────────────────────────
 export async function withRetry<T>(
   fn: () => Promise<T>,

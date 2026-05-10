@@ -109,12 +109,20 @@ test.describe('API E2E Tests', () => {
   //   expect(data.error ?? data.message).toBeTruthy(); // VERIFY: error field
   // });
 
-  // ── Serial describe with resource creation (PATTERN REFERENCE: for tests that share sequential state)
+  // ── Serial describe with resource creation + cleanup (PATTERN REFERENCE)
   // Use test.describe.serial when tests depend on resources created by earlier tests.
-  // Prefer this over bare test.describe + beforeAll when resource creation is required.
+  // afterAll cleanup is MANDATORY for serial suites that create data.
+  // Limit serial suites to 15 tests max.
   //
   // test.describe.serial('Resource lifecycle', () => {
   //   let resourceId: string;
+  //   const _cleanupIds: string[] = [];
+  //
+  //   test.afterAll(async () => {
+  //     for (const id of _cleanupIds) {
+  //       await authCurl('DELETE', `/v1/resources/${id}`).catch(() => {}); // best-effort
+  //     }
+  //   });
   //
   //   test('TC-015: Create resource', async () => {
   //     const res = await withRetry(
@@ -125,6 +133,7 @@ test.describe('API E2E Tests', () => {
   //     const data = JSON.parse(res.body);
   //     resourceId = data.id; // VERIFY: response field for resource ID
   //     if (!resourceId) throw new Error('resourceId is undefined after create');
+  //     _cleanupIds.push(resourceId);
   //   });
   //
   //   test('TC-016: Get created resource', async () => {
