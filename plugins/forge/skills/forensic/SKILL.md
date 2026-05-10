@@ -50,6 +50,18 @@ flowchart LR
 
 ## Workflow
 
+<HARD-RULE>
+After completing each workflow step, report its elapsed time in the format `[Step N: <duration>]`. This ensures the user can see progress even when analysis takes several minutes. Example output after each step:
+
+```
+[Step 1: 3.2s] Found 4 sessions matching "init-justfile"
+[Step 2: 12.1s] Extracted evidence from 2 sessions (session-abc123: 8.4s, session-def456: 3.7s)
+[Step 3: 0.8s] Loaded 3 skill definitions
+[Step 4: 45.3s] Analyzed deviations across 2 sessions
+[Step 5: 1.2s] Report written to docs/forensics/init-justfile-deviation/report.md
+```
+</HARD-RULE>
+
 ### Step 1: Locate Target Sessions
 
 Search `~/.claude/history.jsonl` to find relevant sessions.
@@ -118,6 +130,25 @@ If `skillsUsed` is empty in the evidence (user messages may not always trigger s
 ### Step 4: Analyze Deviations
 
 Read the extracted evidence JSON from `docs/forensics/<slug>/evidence/evidence.json`.
+
+<EXTREMELY-IMPORTANT>
+**Proactively display timing data from the evidence.** The `summary.topSlowest` and `summary.timingByTool` fields contain per-action timing. When analyzing a session where the agent appeared stuck or inactive, present the timing breakdown prominently:
+
+```
+## Timing Breakdown (session-abc123)
+
+| Action | Duration | Detail |
+|--------|----------|--------|
+| Agent (doc-scorer) | 142.3s | eval-design scoring... |
+| Read | 0.8s | plugins/forge/skills/... |
+| Bash | 45.2s | go test -race -cover ./... |
+| Edit | 0.3s | internal/cmd/forensic.go |
+
+Total tool time: 188.6s / Session duration: 12.4min
+```
+
+This helps the user immediately see where the agent spent time — especially when investigating "stuck" tasks where one long-running tool call (often Agent/Bash) dominates.
+</EXTREMELY-IMPORTANT>
 
 For each session, trace through:
 
