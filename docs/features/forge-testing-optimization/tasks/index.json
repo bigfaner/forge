@@ -1,0 +1,115 @@
+{
+  "feature": "forge-testing-optimization",
+  "proposal": "docs/proposals/forge-testing-optimization/proposal.md",
+  "created": "2026-05-10",
+  "status": "planning",
+  "statusEnum": ["pending", "in_progress", "completed", "blocked", "skipped", "rejected"],
+  "priorityEnum": ["P0", "P1", "P2"],
+  "e2eRound": 0,
+  "tasks": {
+    "1-validate-specs-script": {
+      "id": "1",
+      "title": "Create validate-specs.mjs validation script + update package.json",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [],
+      "status": "pending",
+      "scope": "all",
+      "breaking": false,
+      "file": "1-validate-specs-script.md",
+      "record": "records/1-validate-specs-script.md"
+    },
+    "2-task-cli-validate-cmd": {
+      "id": "2",
+      "title": "Add task-cli validate-specs command",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": ["1"],
+      "status": "pending",
+      "scope": "all",
+      "breaking": false,
+      "file": "2-task-cli-validate-cmd.md",
+      "record": "records/2-task-cli-validate-cmd.md"
+    },
+    "3-gen-test-scripts-skill-updates": {
+      "id": "3",
+      "title": "Update gen-test-scripts SKILL.md with Step 4.5 + Prerequisites gate",
+      "priority": "P1",
+      "estimatedTime": "50min",
+      "dependencies": ["2"],
+      "status": "pending",
+      "scope": "all",
+      "breaking": false,
+      "file": "3-gen-test-scripts-skill-updates.md",
+      "record": "records/3-gen-test-scripts-skill-updates.md"
+    },
+    "4-gen-test-cases-element-required": {
+      "id": "4",
+      "title": "Make gen-test-cases Element field required",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [],
+      "status": "pending",
+      "scope": "all",
+      "breaking": true,
+      "file": "4-gen-test-cases-element-required.md",
+      "record": "records/4-gen-test-cases-element-required.md"
+    },
+    "quick-test-cases": {
+      "id": "T-quick-1",
+      "title": "Generate Quick Test Cases",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": ["4"],
+      "status": "pending",
+      "scope": "all",
+      "noTest": true,
+      "file": "quick-test-cases.md",
+      "record": "records/quick-test-cases.md"
+    },
+    "quick-gen-scripts": {
+      "id": "T-quick-2",
+      "title": "Generate Quick Test Scripts",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": ["T-quick-1"],
+      "status": "pending",
+      "scope": "all",
+      "file": "quick-gen-scripts.md",
+      "record": "records/quick-gen-scripts.md"
+    },
+    "quick-run-tests": {
+      "id": "T-quick-3",
+      "title": "Run Quick E2E Tests",
+      "priority": "P1",
+      "estimatedTime": "15-30min",
+      "dependencies": ["T-quick-2"],
+      "status": "pending",
+      "scope": "all",
+      "file": "quick-run-tests.md",
+      "record": "records/quick-run-tests.md"
+    },
+    "quick-graduate": {
+      "id": "T-quick-4",
+      "title": "Graduate Quick Test Scripts",
+      "priority": "P1",
+      "estimatedTime": "15min",
+      "dependencies": ["T-quick-3"],
+      "status": "pending",
+      "scope": "all",
+      "file": "quick-graduate.md",
+      "record": "records/quick-graduate.md"
+    },
+    "quick-verify-regression": {
+      "id": "T-quick-5",
+      "title": "Verify Quick E2E Regression",
+      "priority": "P1",
+      "estimatedTime": "15min",
+      "dependencies": ["T-quick-4"],
+      "status": "pending",
+      "scope": "all",
+      "file": "quick-verify-regression.md",
+      "record": "records/quick-verify-regression.md"
+    }
+  }
+}
