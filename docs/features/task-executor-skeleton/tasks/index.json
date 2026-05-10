@@ -134,6 +134,17 @@
       "scope": "all",
       "mainSession": true
     },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "Fix: 12 pre-existing e2e regressions expect mixed-project justfile",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "T-test-4.5"
+    },
     "gen-test-cases": {
       "id": "T-test-1",
       "title": "Generate e2e Test Cases",
@@ -192,7 +203,8 @@
       "priority": "P1",
       "estimatedTime": "15-30min",
       "dependencies": [
-        "T-test-4"
+        "T-test-4",
+        "fix-1"
       ],
       "status": "pending",
       "file": "verify-regression.md",

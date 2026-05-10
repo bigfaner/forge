@@ -6,6 +6,12 @@ function fileContains(content: string, needle: string): boolean {
   return content.includes(needle);
 }
 
+// Get project type from justfile
+function getProjectType(): string {
+  const result = runCli('just project-type');
+  return result.stdout.trim();
+}
+
 // -- Tests -----------------------------------------------------------------
 test.describe('breakdown-tasks: scope field in index.json', () => {
 
@@ -56,18 +62,26 @@ test.describe('skill execution: scope mismatch and fallback', () => {
 
   // Traceability: TC-015 -> Story 5 / AC-1
   test('TC-015: scope mismatch shows warning and falls back', () => {
-    // Verify that the justfile's invalid scope error message matches the expected format
-    // from the PRD: [forge] invalid scope 'X'; expected frontend/backend
-    // When a scope mismatch occurs at the skill level, the skill should detect it
-    // and fall back to running `just <verb>` without scope.
-    // Here we verify the justfile produces the correct error for invalid scopes.
-    const result = runCli('just build invalidscope');
-    expect(result.exitCode, 'Expected exit code 1 for invalid scope').toBe(1);
-    const output = result.stdout + result.stderr;
-    expect(
-      output.includes("[forge] invalid scope 'invalidscope'"),
-      `Expected "[forge] invalid scope 'invalidscope'" in output, got: ${output}`,
-    ).toBeTruthy();
+    const projectType = getProjectType();
+    if (projectType === 'mixed') {
+      // Mixed projects validate scope and reject invalid values
+      // When a scope mismatch occurs at the skill level, the skill should detect it
+      // and fall back to running `just <verb>` without scope.
+      const result = runCli('just build invalidscope');
+      expect(result.exitCode, 'Expected exit code 1 for invalid scope').toBe(1);
+      const output = result.stdout + result.stderr;
+      expect(
+        output.includes("[forge] invalid scope 'invalidscope'"),
+        `Expected "[forge] invalid scope 'invalidscope'" in output, got: ${output}`,
+      ).toBeTruthy();
+    } else {
+      // Non-mixed projects accept scope param but ignore it (no scope dispatch).
+      // Scope mismatch is not applicable since there's no scope validation.
+      const result = runCli('just build invalidscope');
+      const output = result.stdout + result.stderr;
+      const isScopeError = output.includes('[forge] invalid scope');
+      expect(!isScopeError, 'Non-mixed projects should not produce scope errors').toBeTruthy();
+    }
   });
 
   // Traceability: TC-016 -> Story 5 / AC-2

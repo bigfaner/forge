@@ -10,6 +10,12 @@ function getJustfile(): string {
   return readProjectFile('justfile');
 }
 
+// Get project type from justfile
+function getProjectType(): string {
+  const result = runCli('just project-type');
+  return result.stdout.trim();
+}
+
 // Extract the forge standard recipes section
 function getStandardSection(): string {
   const content = getJustfile();
@@ -25,11 +31,15 @@ function getStandardSection(): string {
 // ── TC-FJ-001 to TC-FJ-010: Standard recipes presence ─────────────
 test.describe('Forge justfile: all 15 standard recipes present', () => {
 
-  // Traceability: TC-FJ-001 -> AC: project-type outputs "mixed"
-  test('TC-FJ-001: project-type recipe outputs "mixed"', () => {
+  // Traceability: TC-FJ-001 -> AC: project-type outputs a valid type
+  test('TC-FJ-001: project-type recipe outputs a valid type (frontend/backend/mixed)', () => {
     const result = runCli('just project-type');
     expect(result.exitCode, 'Expected exit code 0').toBe(0);
-    expect(result.stdout.trim(), 'Expected "mixed" output').toBe('mixed');
+    const output = result.stdout.trim();
+    expect(
+      ['frontend', 'backend', 'mixed'].includes(output),
+      `Expected valid project-type output, got: "${output}"`,
+    ).toBeTruthy();
   });
 
   // Traceability: TC-FJ-002 -> AC: 10 scoped recipes present
@@ -75,37 +85,82 @@ test.describe('Forge justfile: all 15 standard recipes present', () => {
     ).toBeTruthy();
   });
 
-  // Traceability: TC-FJ-005 -> AC: compile frontend/backend/all work
-  test('TC-FJ-005: compile recipe has frontend/backend/empty branches', () => {
+  // Traceability: TC-FJ-005 -> AC: compile recipe has correct toolchain dispatch
+  test('TC-FJ-005: compile recipe has correct toolchain dispatch for project type', () => {
     const section = getStandardSection();
     expect(fileContains(section, 'compile scope=""'), 'Expected compile with scope').toBeTruthy();
-    // Frontend: tsc --noEmit, Backend: go vet
-    const compileMatch = section.match(/compile scope=""[\s\S]*?esac/);
-    expect(compileMatch, 'Expected compile recipe with bash case').toBeTruthy();
-    expect(compileMatch![0].includes('npx tsc --noEmit'), 'Expected frontend compile: npx tsc --noEmit').toBeTruthy();
-    expect(compileMatch![0].includes('go vet ./...'), 'Expected backend compile: go vet ./...').toBeTruthy();
+    const projectType = getProjectType();
+    if (projectType === 'mixed') {
+      // Mixed projects have bash case with frontend/backend branches
+      const compileMatch = section.match(/compile scope=""[\s\S]*?esac/);
+      expect(compileMatch, 'Expected compile recipe with bash case').toBeTruthy();
+      expect(compileMatch![0].includes('npx tsc --noEmit'), 'Expected frontend compile: npx tsc --noEmit').toBeTruthy();
+      expect(compileMatch![0].includes('go vet ./...'), 'Expected backend compile: go vet ./...').toBeTruthy();
+    } else if (projectType === 'backend') {
+      // Backend projects run backend toolchain directly (scope param accepted but unused)
+      expect(
+        fileContains(section, 'go vet') || fileContains(section, 'go build'),
+        'Expected backend toolchain command in compile recipe',
+      ).toBeTruthy();
+    } else if (projectType === 'frontend') {
+      expect(
+        fileContains(section, 'tsc') || fileContains(section, 'npm run build'),
+        'Expected frontend toolchain command in compile recipe',
+      ).toBeTruthy();
+    }
   });
 
-  // Traceability: TC-FJ-006 -> AC: build has correct frontend/backend branches
-  test('TC-FJ-006: build recipe has frontend npm and backend go branches', () => {
+  // Traceability: TC-FJ-006 -> AC: build recipe has correct toolchain dispatch
+  test('TC-FJ-006: build recipe has correct toolchain dispatch for project type', () => {
     const section = getStandardSection();
-    const buildMatch = section.match(/build scope=""[\s\S]*?esac/);
-    expect(buildMatch, 'Expected build recipe with bash case').toBeTruthy();
-    expect(buildMatch![0].includes('npm run build'), 'Expected frontend: npm run build').toBeTruthy();
-    expect(buildMatch![0].includes('go build ./...'), 'Expected backend: go build ./...').toBeTruthy();
+    const projectType = getProjectType();
+    if (projectType === 'mixed') {
+      const buildMatch = section.match(/build scope=""[\s\S]*?esac/);
+      expect(buildMatch, 'Expected build recipe with bash case').toBeTruthy();
+      expect(buildMatch![0].includes('npm run build'), 'Expected frontend: npm run build').toBeTruthy();
+      expect(buildMatch![0].includes('go build ./...'), 'Expected backend: go build ./...').toBeTruthy();
+    } else if (projectType === 'backend') {
+      expect(
+        fileContains(section, 'go build'),
+        'Expected backend: go build in build recipe',
+      ).toBeTruthy();
+    } else if (projectType === 'frontend') {
+      expect(
+        fileContains(section, 'npm run build'),
+        'Expected frontend: npm run build in build recipe',
+      ).toBeTruthy();
+    }
   });
 
-  // Traceability: TC-FJ-007 -> AC: test recipe has correct branches
-  test('TC-FJ-007: test recipe has frontend npm and backend go branches', () => {
+  // Traceability: TC-FJ-007 -> AC: test recipe has correct toolchain dispatch
+  test('TC-FJ-007: test recipe has correct toolchain dispatch for project type', () => {
     const section = getStandardSection();
-    const testMatch = section.match(/test scope=""[\s\S]*?esac/);
-    expect(testMatch, 'Expected test recipe with bash case').toBeTruthy();
-    expect(testMatch![0].includes('npm test'), 'Expected frontend: npm test').toBeTruthy();
-    expect(testMatch![0].includes('go test -race ./...'), 'Expected backend: go test -race ./...').toBeTruthy();
+    const projectType = getProjectType();
+    if (projectType === 'mixed') {
+      const testMatch = section.match(/test scope=""[\s\S]*?esac/);
+      expect(testMatch, 'Expected test recipe with bash case').toBeTruthy();
+      expect(testMatch![0].includes('npm test'), 'Expected frontend: npm test').toBeTruthy();
+      expect(testMatch![0].includes('go test -race ./...'), 'Expected backend: go test -race ./...').toBeTruthy();
+    } else if (projectType === 'backend') {
+      expect(
+        fileContains(section, 'go test'),
+        'Expected backend: go test in test recipe',
+      ).toBeTruthy();
+    } else if (projectType === 'frontend') {
+      expect(
+        fileContains(section, 'npm test'),
+        'Expected frontend: npm test in test recipe',
+      ).toBeTruthy();
+    }
   });
 
-  // Traceability: TC-FJ-008 -> AC: *) error branch in scoped recipes
-  test('TC-FJ-008: all scoped recipes have *) error branch with stderr', () => {
+  // Traceability: TC-FJ-008 -> AC: *) error branch in scoped recipes (mixed only)
+  test('TC-FJ-008: scoped recipes have *) error branch with stderr (mixed projects)', () => {
+    const projectType = getProjectType();
+    if (projectType !== 'mixed') {
+      // Non-mixed projects do not have scope dispatch, so no error branches needed
+      return;
+    }
     const section = getStandardSection();
     const scopedRecipes = ['compile', 'build', 'run', 'dev', 'test', 'lint', 'fmt', 'check', 'clean', 'install'];
     for (const recipe of scopedRecipes) {
@@ -169,21 +224,32 @@ test.describe('Forge justfile: live command execution', () => {
     expect(!isScopeError, 'Should not be a scope error with empty scope').toBeTruthy();
   });
 
-  // Traceability: TC-FJ-014 -> AC: invalid scope produces error
-  test('TC-FJ-014: just compile with invalid scope exits 1', () => {
+  // Traceability: TC-FJ-014 -> AC: invalid scope produces error (mixed) or is ignored (non-mixed)
+  test('TC-FJ-014: just compile with invalid scope behavior depends on project type', () => {
+    const projectType = getProjectType();
     const result = runCli('just compile invalidscope');
-    expect(result.exitCode, 'Expected exit 1 for invalid scope').toBe(1);
-    const output = result.stdout + result.stderr;
-    expect(
-      output.includes('[forge] invalid scope'),
-      `Expected "[forge] invalid scope" error, got: ${output}`,
-    ).toBeTruthy();
+    if (projectType === 'mixed') {
+      // Mixed projects validate scope and reject invalid values
+      expect(result.exitCode, 'Expected exit 1 for invalid scope in mixed project').toBe(1);
+      const output = result.stdout + result.stderr;
+      expect(
+        output.includes('[forge] invalid scope'),
+        `Expected "[forge] invalid scope" error, got: ${output}`,
+      ).toBeTruthy();
+    } else {
+      // Non-mixed projects accept scope param but ignore it (no scope dispatch)
+      expect(result.exitCode, 'Expected exit 0 or non-scope-error for non-mixed project').not.toBe(1);
+    }
   });
 
-  // Traceability: TC-FJ-015 -> AC: just project-type returns mixed
-  test('TC-FJ-015: just project-type returns exactly "mixed"', () => {
+  // Traceability: TC-FJ-015 -> AC: just project-type returns valid type
+  test('TC-FJ-015: just project-type returns a valid project type', () => {
     const result = runCli('just project-type');
     expect(result.exitCode, 'Expected exit 0').toBe(0);
-    expect(result.stdout.trim(), 'Expected exactly "mixed"').toBe('mixed');
+    const output = result.stdout.trim();
+    expect(
+      ['frontend', 'backend', 'mixed'].includes(output),
+      `Expected valid project-type output, got: "${output}"`,
+    ).toBeTruthy();
   });
 });

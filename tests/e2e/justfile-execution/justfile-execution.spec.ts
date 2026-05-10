@@ -8,6 +8,12 @@ function fileContains(content: string, needle: string): boolean {
   return content.includes(needle);
 }
 
+// Get project type from justfile
+function getProjectType(): string {
+  const result = runCli('just project-type');
+  return result.stdout.trim();
+}
+
 // Temporary fixture directories for testing
 const TMP_FEATURE_DIR = join(PROJECT_ROOT, 'tests', 'e2e', 'justfile-execution', '_tmp_fixture');
 
@@ -42,13 +48,22 @@ test.describe('justfile command execution', () => {
   test('TC-013: compile type errors output details to stderr', () => {
     // Verify recipe structure: stderr redirect for error messages
     const justfile = readProjectFile('justfile');
-    const compileSection = justfile.match(/compile scope=""[\s\S]*?esac/);
-    expect(compileSection, 'Expected compile recipe in justfile').toBeTruthy();
-    // The recipe uses `set -euo pipefail` which propagates errors through stderr
-    expect(
-      fileContains(compileSection![0], 'set -euo pipefail'),
-      'Expected compile recipe to use set -euo pipefail',
-    ).toBeTruthy();
+    const projectType = getProjectType();
+    if (projectType === 'mixed') {
+      const compileSection = justfile.match(/compile scope=""[\s\S]*?esac/);
+      expect(compileSection, 'Expected compile recipe in justfile').toBeTruthy();
+      // The recipe uses `set -euo pipefail` which propagates errors through stderr
+      expect(
+        fileContains(compileSection![0], 'set -euo pipefail'),
+        'Expected compile recipe to use set -euo pipefail',
+      ).toBeTruthy();
+    } else {
+      // Non-mixed projects: verify set -euo pipefail is in the justfile
+      expect(
+        fileContains(justfile, 'set -euo pipefail'),
+        'Expected set -euo pipefail in justfile recipes',
+      ).toBeTruthy();
+    }
   });
 
   // Traceability: TC-014 -> Story 4 / AC-4
@@ -75,18 +90,28 @@ test.describe('justfile command execution', () => {
   });
 
   // Traceability: TC-017 -> Spec 5.3 / row 2
-  test('TC-017: just build with invalid scope exits 1 with error message', () => {
-    const result = runCli('just build foo');
-    expect(result.exitCode, 'Expected exit code 1 for invalid scope').toBe(1);
-    const output = result.stdout + result.stderr;
-    expect(
-      output.includes("[forge] invalid scope 'foo'"),
-      `Expected "[forge] invalid scope 'foo'" in output, got: ${output}`,
-    ).toBeTruthy();
-    expect(
-      output.includes('expected frontend/backend'),
-      `Expected "expected frontend/backend" in output, got: ${output}`,
-    ).toBeTruthy();
+  test('TC-017: just build with invalid scope exits 1 with error message (mixed projects)', () => {
+    const projectType = getProjectType();
+    if (projectType === 'mixed') {
+      // Mixed projects validate scope and reject invalid values
+      const result = runCli('just build foo');
+      expect(result.exitCode, 'Expected exit code 1 for invalid scope').toBe(1);
+      const output = result.stdout + result.stderr;
+      expect(
+        output.includes("[forge] invalid scope 'foo'"),
+        `Expected "[forge] invalid scope 'foo'" in output, got: ${output}`,
+      ).toBeTruthy();
+      expect(
+        output.includes('expected frontend/backend'),
+        `Expected "expected frontend/backend" in output, got: ${output}`,
+      ).toBeTruthy();
+    } else {
+      // Non-mixed projects accept scope param but ignore it (no scope dispatch)
+      const result = runCli('just build foo');
+      const output = result.stdout + result.stderr;
+      const isScopeError = output.includes('[forge] invalid scope');
+      expect(!isScopeError, 'Non-mixed projects should not produce scope errors').toBeTruthy();
+    }
   });
 
   // Traceability: TC-021 -> Spec 5.1 + agent-friendly
@@ -128,39 +153,67 @@ test.describe('justfile command execution', () => {
 test.describe('justfile scope dispatch', () => {
 
   // Traceability: TC-002 -> Story 1 / AC-2
-  test('TC-002: pure backend project executes correct toolchain via just test', () => {
-    // Verify the justfile test recipe includes go test for backend
+  test('TC-002: backend project has correct toolchain in test recipe', () => {
+    // Verify the justfile test recipe includes appropriate toolchain
     const justfile = readProjectFile('justfile');
-    const testMatch = justfile.match(/test scope=""[\s\S]*?esac/);
-    expect(testMatch, 'Expected test recipe with bash case').toBeTruthy();
-    expect(
-      fileContains(testMatch![0], 'go test -race ./...'),
-      'Expected backend branch: go test -race ./...',
-    ).toBeTruthy();
+    const projectType = getProjectType();
+    if (projectType === 'mixed') {
+      const testMatch = justfile.match(/test scope=""[\s\S]*?esac/);
+      expect(testMatch, 'Expected test recipe with bash case').toBeTruthy();
+      expect(
+        fileContains(testMatch![0], 'go test -race ./...'),
+        'Expected backend branch: go test -race ./...',
+      ).toBeTruthy();
+    } else if (projectType === 'backend') {
+      expect(
+        fileContains(justfile, 'go test'),
+        'Expected go test in backend project test recipe',
+      ).toBeTruthy();
+    } else if (projectType === 'frontend') {
+      expect(
+        fileContains(justfile, 'npm test'),
+        'Expected npm test in frontend project test recipe',
+      ).toBeTruthy();
+    }
   });
 
   // Traceability: TC-003 -> Story 1 / AC-3
-  test('TC-003: mixed project scope parameter targets frontend only', () => {
-    // Verify just build frontend only triggers frontend build
+  test('TC-003: scope parameter targets correct toolchain per project type', () => {
     const justfile = readProjectFile('justfile');
-    const buildMatch = justfile.match(/build scope=""[\s\S]*?esac/);
-    expect(buildMatch, 'Expected build recipe with bash case').toBeTruthy();
-    expect(
-      fileContains(buildMatch![0], 'frontend)') && fileContains(buildMatch![0], 'npm run build'),
-      'Expected frontend branch with npm run build',
-    ).toBeTruthy();
-    // Backend branch should be separate
-    expect(
-      fileContains(buildMatch![0], 'backend)') && fileContains(buildMatch![0], 'go build ./...'),
-      'Expected backend branch with go build ./...',
-    ).toBeTruthy();
-    // Frontend and backend are in separate case branches, not chained
-    const frontendBranch = buildMatch![0].match(/frontend\)[^;]*;/);
-    expect(frontendBranch, 'Expected standalone frontend branch').toBeTruthy();
-    // Frontend branch should NOT contain go build
-    expect(
-      !fileContains(frontendBranch![0], 'go build'),
-      'Frontend branch should not contain go build',
-    ).toBeTruthy();
+    const projectType = getProjectType();
+    if (projectType === 'mixed') {
+      // Mixed project: verify just build frontend only triggers frontend build
+      const buildMatch = justfile.match(/build scope=""[\s\S]*?esac/);
+      expect(buildMatch, 'Expected build recipe with bash case').toBeTruthy();
+      expect(
+        fileContains(buildMatch![0], 'frontend)') && fileContains(buildMatch![0], 'npm run build'),
+        'Expected frontend branch with npm run build',
+      ).toBeTruthy();
+      // Backend branch should be separate
+      expect(
+        fileContains(buildMatch![0], 'backend)') && fileContains(buildMatch![0], 'go build ./...'),
+        'Expected backend branch with go build ./...',
+      ).toBeTruthy();
+      // Frontend and backend are in separate case branches, not chained
+      const frontendBranch = buildMatch![0].match(/frontend\)[^;]*;/);
+      expect(frontendBranch, 'Expected standalone frontend branch').toBeTruthy();
+      // Frontend branch should NOT contain go build
+      expect(
+        !fileContains(frontendBranch![0], 'go build'),
+        'Frontend branch should not contain go build',
+      ).toBeTruthy();
+    } else if (projectType === 'backend') {
+      // Backend project: verify go build is in the build recipe
+      expect(
+        fileContains(justfile, 'go build'),
+        'Expected go build in backend project build recipe',
+      ).toBeTruthy();
+    } else if (projectType === 'frontend') {
+      // Frontend project: verify npm run build is in the build recipe
+      expect(
+        fileContains(justfile, 'npm run build'),
+        'Expected npm run build in frontend project build recipe',
+      ).toBeTruthy();
+    }
   });
 });

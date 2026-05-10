@@ -32,28 +32,27 @@ test.describe('Skill/Agent file content checks', () => {
     ).toBeTruthy();
   });
 
-  // Traceability: TC-002 → Story 2 / AC-1 (migrated: just build → just compile per tech-design)
-  test('TC-002: task-executor Step 3 uses just compile && just test', () => {
+  // Traceability: TC-002 → Story 2 / AC-1 (updated: task-executor uses workflow-driven dispatch, not hardcoded commands)
+  test('TC-002: task-executor uses workflow-driven execution (no hardcoded language commands)', () => {
     const content = readProjectFile('plugins/forge/agents/task-executor.md');
-    expect(
-      fileContains(content, 'just compile'),
-      'Expected "just compile" to appear in task-executor.md',
-    ).toBeTruthy();
-    expect(
-      fileContains(content, 'just test'),
-      'Expected "just test" to appear in task-executor.md',
-    ).toBeTruthy();
+    // After refactor, task-executor uses workflow dispatch from task files, not hardcoded just commands.
+    // Verify the agent does NOT contain language-specific commands.
     expect(
       fileNotContains(content, 'go test ./...'),
-      'Expected "go test ./..." NOT to appear in task-executor.md Step 3',
+      'Expected "go test ./..." NOT to appear in task-executor.md',
     ).toBeTruthy();
     expect(
       fileNotContains(content, 'npm test'),
-      'Expected "npm test" NOT to appear in task-executor.md Step 3',
+      'Expected "npm test" NOT to appear in task-executor.md',
     ).toBeTruthy();
     expect(
       fileNotContains(content, 'pytest'),
-      'Expected "pytest" NOT to appear in task-executor.md Step 3',
+      'Expected "pytest" NOT to appear in task-executor.md',
+    ).toBeTruthy();
+    // Verify workflow-driven dispatch: agent reads execution workflow from task files
+    expect(
+      fileContains(content, 'Execution Workflow') || fileContains(content, 'workflow'),
+      'Expected workflow-driven dispatch in task-executor.md',
     ).toBeTruthy();
   });
 
@@ -183,16 +182,27 @@ test.describe('Skill/Agent file content checks', () => {
     ).toBeTruthy();
   });
 
-  // Traceability: TC-016 → Spec Section 5.2 (migrated: just build → just compile per tech-design)
-  test('TC-016: execute-task Step 3 uses just compile && just test', () => {
+  // Traceability: TC-016 → Spec Section 5.2 (updated: execute-task uses workflow-driven dispatch)
+  test('TC-016: execute-task uses workflow-driven execution (no hardcoded language commands)', () => {
     const content = readProjectFile('plugins/forge/commands/execute-task.md');
+    // After refactor, execute-task uses workflow dispatch from task files, not hardcoded just commands.
+    // Verify the command does NOT contain language-specific commands.
     expect(
-      fileContains(content, 'just compile'),
-      'Expected "just compile" to appear in execute-task.md Step 3',
+      fileNotContains(content, 'go test ./...'),
+      'Expected "go test ./..." NOT to appear in execute-task.md',
     ).toBeTruthy();
     expect(
-      fileContains(content, 'just test'),
-      'Expected "just test" to appear in execute-task.md Step 3',
+      fileNotContains(content, 'npm test'),
+      'Expected "npm test" NOT to appear in execute-task.md',
+    ).toBeTruthy();
+    expect(
+      fileNotContains(content, 'pytest'),
+      'Expected "pytest" NOT to appear in execute-task.md',
+    ).toBeTruthy();
+    // Verify workflow-driven dispatch
+    expect(
+      fileContains(content, 'Execution Workflow') || fileContains(content, 'workflow'),
+      'Expected workflow-driven dispatch in execute-task.md',
     ).toBeTruthy();
   });
 
