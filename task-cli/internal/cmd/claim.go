@@ -28,7 +28,7 @@ The task is selected based on:
 	Run: runClaim,
 }
 
-func runClaim(cmd *cobra.Command, args []string) {
+func runClaim(_ *cobra.Command, _ []string) {
 	result, err := executeClaim()
 	if err != nil {
 		Exit(err)
@@ -141,7 +141,7 @@ func executeClaim() (*ClaimResult, error) {
 	}, nil
 }
 
-func checkExistingTaskState(projectRoot string, index *task.TaskIndex, statePath string) (bool, bool, []string) {
+func checkExistingTaskState(_ string, index *task.TaskIndex, statePath string) (bool, bool, []string) {
 	state, err := task.LoadState(statePath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: failed to load task state: %v\n", err)
@@ -161,15 +161,15 @@ func checkExistingTaskState(projectRoot string, index *task.TaskIndex, statePath
 		return true, false, nil
 	case "completed":
 		fmt.Printf("Previous task '%s' is completed. Claiming new task...\n", t.Title)
-		task.DeleteState(statePath)
+		_ = task.DeleteState(statePath)
 		return false, false, nil
 	case "blocked":
 		fmt.Printf("Previous task '%s' is blocked. Claiming new task...\n", t.Title)
-		task.DeleteState(statePath)
+		_ = task.DeleteState(statePath)
 		return false, false, nil
 	case "rejected":
 		fmt.Printf("Previous task '%s' was rejected. Claiming new task...\n", t.Title)
-		task.DeleteState(statePath)
+		_ = task.DeleteState(statePath)
 		return false, false, nil
 	default:
 		return false, true, []string{fmt.Sprintf("Task '%s' has unexpected status: %s", t.Title, t.Status)}

@@ -173,14 +173,7 @@ Execute the quality gate sequence. Apply **Scope Resolution** from the Forge Gui
 just compile [scope] → just fmt [scope] → just lint [scope] → just test [scope]
 ```
 
-Strict sequential order. Stop at first failure:
-
-| Failed step | Action |
-|---|---|
-| `compile` | Fix compilation errors, then retry from compile |
-| `fmt` | Mark task as `blocked` (auto-fix failed = toolchain issue) |
-| `lint` | Self-fix (max 1 retry), then mark `blocked` if still failing |
-| `test` | Fix failing tests, then retry from compile |
+Strict sequential order. Stop at first failure. See Forge Guide Quality Gate Protocol for failure actions.
 
 E2E (if written in Step 3b):
 

@@ -44,6 +44,15 @@ No direct user story mapping. This is a standard test execution task.
 **If tests pass**: mark task completed. T-test-4 will proceed to graduation.
 
 **If tests fail**:
+
+**App Health First**: Before creating fix tasks, check the failure ratio:
+- Count total UI tests vs failed UI tests in `results/test-results.json`
+- If **>30% of UI tests failed**: run app health diagnostics first
+  1. Check failure screenshots (`glob tests/e2e/results/**/*.png`) — white/blank screen = app crash
+  2. If app is broken (white screen, dependency errors): create **ONE fix task** for the root cause (dependency fix or root component), NOT per-test fixes
+  3. If app is healthy: proceed to per-root-cause fix tasks below
+- If **<30%**: proceed directly to per-root-cause fix tasks
+
 - Read `results/test-results.json`
 - Analyze each failure: is it a code bug, test script issue, or environment issue?
 - Run `task template fix-task` to view the fix-task template and required variables

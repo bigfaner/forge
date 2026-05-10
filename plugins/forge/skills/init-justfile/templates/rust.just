@@ -13,7 +13,7 @@ run:
     cargo run ENTRY_POINT
 
 dev:
-    cargo run ENTRY_POINT -- --dev
+    cargo run ENTRY_POINT
 
 test:
     cargo test

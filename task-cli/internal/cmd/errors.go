@@ -29,9 +29,9 @@ const (
 type AIError struct {
 	Code    ErrorCode
 	Message string
-	Cause   string   // What caused the error
-	Hint   string   // How to fix
-	Action  string   // Suggested next step
+	Cause   string // What caused the error
+	Hint    string // How to fix
+	Action  string // Suggested next step
 }
 
 // Error implements the error interface.
@@ -45,7 +45,7 @@ func NewAIError(code ErrorCode, message, cause, hint, action string) *AIError {
 		Code:    code,
 		Message: message,
 		Cause:   cause,
-		Hint:   hint,
+		Hint:    hint,
 		Action:  action,
 	}
 }

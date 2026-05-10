@@ -9,11 +9,11 @@ import (
 	"testing"
 )
 
-func newTestIndex(t *testing.T) (string, string) {
+func newTestIndex(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
 	tasksDir := filepath.Join(dir, "tasks")
-	os.MkdirAll(tasksDir, 0755)
+	_ = os.MkdirAll(tasksDir, 0755)
 
 	index := NewTaskIndex("test-feature")
 	index.tasks["1.1-init"] = Task{
@@ -37,11 +37,11 @@ func newTestIndex(t *testing.T) (string, string) {
 	if err := SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)
 	}
-	return indexPath, tasksDir
+	return indexPath
 }
 
 func TestAddTask_Basic(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	id, err := AddTask(indexPath, AddTaskOpts{
 		Title:    "Fix auth timeout",
@@ -74,7 +74,7 @@ func TestAddTask_Basic(t *testing.T) {
 }
 
 func TestAddTask_WithProvidedID(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	id, err := AddTask(indexPath, AddTaskOpts{
 		ID:       "fix-auth-1",
@@ -90,7 +90,7 @@ func TestAddTask_WithProvidedID(t *testing.T) {
 }
 
 func TestAddTask_AutoGenerateID(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	id, err := AddTask(indexPath, AddTaskOpts{Title: "First disc"})
 	if err != nil {
@@ -102,7 +102,7 @@ func TestAddTask_AutoGenerateID(t *testing.T) {
 }
 
 func TestAddTask_AutoGenerateID_Sequential(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	if _, err := AddTask(indexPath, AddTaskOpts{Title: "Disc 1"}); err != nil {
 		t.Fatalf("setup: AddTask failed: %v", err)
@@ -121,7 +121,7 @@ func TestAddTask_AutoGenerateID_Sequential(t *testing.T) {
 }
 
 func TestAddTask_AutoGenerateID_MaxPlusOne(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	if _, err := AddTask(indexPath, AddTaskOpts{Title: "Disc 1", ID: "disc-1"}); err != nil {
 		t.Fatalf("setup: AddTask failed: %v", err)
@@ -140,7 +140,7 @@ func TestAddTask_AutoGenerateID_MaxPlusOne(t *testing.T) {
 }
 
 func TestAddTask_DuplicateID(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	_, err := AddTask(indexPath, AddTaskOpts{ID: "1.1", Title: "Duplicate"})
 	if err == nil {
@@ -149,7 +149,7 @@ func TestAddTask_DuplicateID(t *testing.T) {
 }
 
 func TestAddTask_InvalidPriority(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	_, err := AddTask(indexPath, AddTaskOpts{Title: "Bad priority", Priority: "P5"})
 	if err == nil {
@@ -158,7 +158,7 @@ func TestAddTask_InvalidPriority(t *testing.T) {
 }
 
 func TestAddTask_EmptyTitle(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	_, err := AddTask(indexPath, AddTaskOpts{Title: ""})
 	if err == nil {
@@ -167,7 +167,7 @@ func TestAddTask_EmptyTitle(t *testing.T) {
 }
 
 func TestAddTask_DefaultPriority(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	id, err := AddTask(indexPath, AddTaskOpts{Title: "Default prio"})
 	if err != nil {
@@ -184,7 +184,7 @@ func TestAddTask_DefaultPriority(t *testing.T) {
 }
 
 func TestAddTask_DependencyNotFound(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	_, err := AddTask(indexPath, AddTaskOpts{
 		Title:        "Bad dep",
@@ -196,7 +196,7 @@ func TestAddTask_DependencyNotFound(t *testing.T) {
 }
 
 func TestAddTask_DependenciesExist(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	id, err := AddTask(indexPath, AddTaskOpts{
 		Title:        "With dep",
@@ -216,7 +216,7 @@ func TestAddTask_DependenciesExist(t *testing.T) {
 }
 
 func TestAddTask_Breaking(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	id, err := AddTask(indexPath, AddTaskOpts{Title: "Breaking task", Breaking: true})
 	if err != nil {
@@ -547,7 +547,7 @@ func TestCreateTaskMarkdown_TemplateNotFound(t *testing.T) {
 }
 
 func TestAddDependency(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	if err := AddDependency(indexPath, "1.2-setup", "disc-1"); err != nil {
 		t.Fatalf("AddDependency failed: %v", err)
@@ -564,7 +564,7 @@ func TestAddDependency(t *testing.T) {
 }
 
 func TestAddDependency_Duplicate(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	if err := AddDependency(indexPath, "1.2-setup", "disc-1"); err != nil {
 		t.Fatalf("setup: AddDependency failed: %v", err)
@@ -591,7 +591,7 @@ func TestAddDependency_Duplicate(t *testing.T) {
 }
 
 func TestAddDependency_TaskNotFound(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 	err := AddDependency(indexPath, "nonexistent", "disc-1")
 	if err == nil {
 		t.Fatal("expected error for nonexistent task")
@@ -599,7 +599,7 @@ func TestAddDependency_TaskNotFound(t *testing.T) {
 }
 
 func TestGetUnmetDependencies(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	// 1.1 is completed, 1.2 is pending — depend on both
 	if _, err := AddTask(indexPath, AddTaskOpts{Title: "Fix", ID: "fix-1"}); err != nil {
@@ -637,7 +637,7 @@ func TestGetUnmetDependencies(t *testing.T) {
 }
 
 func TestAddTask_SourceTaskID_Persisted(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	id, err := AddTask(indexPath, AddTaskOpts{
 		Title:        "Fix auth",
@@ -659,7 +659,7 @@ func TestAddTask_SourceTaskID_Persisted(t *testing.T) {
 }
 
 func TestAddTask_SourceTaskID_UpdatesSourceDeps(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	id, err := AddTask(indexPath, AddTaskOpts{
 		Title:        "Fix auth",
@@ -681,7 +681,7 @@ func TestAddTask_SourceTaskID_UpdatesSourceDeps(t *testing.T) {
 }
 
 func TestAddTask_SourceTaskID_SourceNotFound(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	id, err := AddTask(indexPath, AddTaskOpts{
 		Title:        "Fix auth",
@@ -703,7 +703,7 @@ func TestAddTask_SourceTaskID_SourceNotFound(t *testing.T) {
 }
 
 func TestAddTask_SourceTaskID_IdempotentDep(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	id1, err := AddTask(indexPath, AddTaskOpts{
 		Title:        "Fix 1",
@@ -718,7 +718,9 @@ func TestAddTask_SourceTaskID_IdempotentDep(t *testing.T) {
 	fix1 := index.tasks[id1]
 	fix1.Status = "completed"
 	index.tasks[id1] = fix1
-	SaveIndex(indexPath, index)
+	if err := SaveIndex(indexPath, index); err != nil {
+		t.Fatalf("SaveIndex failed: %v", err)
+	}
 
 	// Add again with same source — source dep should not duplicate
 	id2, err := AddTask(indexPath, AddTaskOpts{
@@ -761,7 +763,7 @@ func TestAddTask_SourceTaskID_IdempotentDep(t *testing.T) {
 // This is the core bug: index.tasks[opts.SourceTaskID] fails when SourceTaskID is
 // the task ID but the map key is a slug.
 func TestAddTask_SourceTaskID_LookupByID(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	// SourceTaskID uses the task ID "1.1", but the map key is "1.1-init"
 	id, err := AddTask(indexPath, AddTaskOpts{
@@ -783,14 +785,16 @@ func TestAddTask_SourceTaskID_LookupByID(t *testing.T) {
 // TestAddTask_SourceTaskID_LookupByID_PreservesExistingDeps verifies that appending
 // a new dep by-ID lookup does not clobber the source task's existing dependencies.
 func TestAddTask_SourceTaskID_LookupByID_PreservesExistingDeps(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	// Give the source task an existing dependency before the add
 	index, _ := LoadIndex(indexPath)
 	src := index.tasks["1.1-init"]
 	src.Dependencies = []string{"some-other-task"}
 	index.tasks["1.1-init"] = src
-	SaveIndex(indexPath, index)
+	if err := SaveIndex(indexPath, index); err != nil {
+		t.Fatalf("SaveIndex failed: %v", err)
+	}
 
 	id, err := AddTask(indexPath, AddTaskOpts{
 		Title:        "Fix auth",
@@ -814,7 +818,7 @@ func TestAddTask_SourceTaskID_LookupByID_PreservesExistingDeps(t *testing.T) {
 // TestAddTask_SourceTaskID_DynamicTaskWhereKeyEqualsID verifies lookup works
 // for dynamically added tasks where the map key equals the task ID.
 func TestAddTask_SourceTaskID_DynamicTaskWhereKeyEqualsID(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	// First add a disc task (key == ID)
 	firstID, _ := AddTask(indexPath, AddTaskOpts{
@@ -842,7 +846,7 @@ func TestAddTask_SourceTaskID_DynamicTaskWhereKeyEqualsID(t *testing.T) {
 // TestAddTask_SourceTaskID_MultipleAddsToSameSourceByID verifies that multiple
 // tasks added with the same SourceTaskID (by ID) all appear as dependencies.
 func TestAddTask_SourceTaskID_MultipleAddsToSameSourceByID(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	id1, _ := AddTask(indexPath, AddTaskOpts{
 		Title:        "Fix A",
@@ -853,7 +857,9 @@ func TestAddTask_SourceTaskID_MultipleAddsToSameSourceByID(t *testing.T) {
 	fixA := index.tasks[id1]
 	fixA.Status = "completed"
 	index.tasks[id1] = fixA
-	SaveIndex(indexPath, index)
+	if err := SaveIndex(indexPath, index); err != nil {
+		t.Fatalf("SaveIndex failed: %v", err)
+	}
 
 	id2, _ := AddTask(indexPath, AddTaskOpts{
 		Title:        "Fix B",
@@ -864,7 +870,9 @@ func TestAddTask_SourceTaskID_MultipleAddsToSameSourceByID(t *testing.T) {
 	fixB := index.tasks[id2]
 	fixB.Status = "completed"
 	index.tasks[id2] = fixB
-	SaveIndex(indexPath, index)
+	if err := SaveIndex(indexPath, index); err != nil {
+		t.Fatalf("SaveIndex failed: %v", err)
+	}
 
 	id3, _ := AddTask(indexPath, AddTaskOpts{
 		Title:        "Fix C",
@@ -886,7 +894,7 @@ func TestAddTask_SourceTaskID_MultipleAddsToSameSourceByID(t *testing.T) {
 // TestAddTask_SourceTaskID_LookupByID_SourceNotFoundIsNoOp verifies that passing
 // a nonexistent ID does not error and does not corrupt the index.
 func TestAddTask_SourceTaskID_LookupByID_SourceNotFoundIsNoOp(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	indexBefore, _ := LoadIndex(indexPath)
 	taskCountBefore := len(indexBefore.tasks)
@@ -916,7 +924,7 @@ func TestAddTask_SourceTaskID_LookupByID_SourceNotFoundIsNoOp(t *testing.T) {
 // --- Source Resolution Tests (auto-resolve --source-task-id when source is completed) ---
 
 func TestAddTask_SourceResolution_CompletedSourceResolvesToRoot(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	// disc-1 is a fix-task for source "1.1" — mark it completed
 	fix1ID, err := AddTask(indexPath, AddTaskOpts{
@@ -932,7 +940,9 @@ func TestAddTask_SourceResolution_CompletedSourceResolvesToRoot(t *testing.T) {
 	fix1 := index.tasks[fix1ID]
 	fix1.Status = "completed"
 	index.tasks[fix1ID] = fix1
-	SaveIndex(indexPath, index)
+	if err := SaveIndex(indexPath, index); err != nil {
+		t.Fatalf("SaveIndex failed: %v", err)
+	}
 
 	// Now add disc-2 with --source-task-id pointing to disc-1 (a COMPLETED fix-task)
 	// Auto-resolve should trace disc-1 → 1.1 (root) because disc-1 is completed
@@ -967,7 +977,7 @@ func TestAddTask_SourceResolution_CompletedSourceResolvesToRoot(t *testing.T) {
 }
 
 func TestAddTask_SourceResolution_BlockedSourcePreservesChain(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	// disc-1 is a fix-task for source "1.1" — mark it BLOCKED (its quality gate failed)
 	fix1ID, _ := AddTask(indexPath, AddTaskOpts{
@@ -979,7 +989,9 @@ func TestAddTask_SourceResolution_BlockedSourcePreservesChain(t *testing.T) {
 	fix1 := index.tasks[fix1ID]
 	fix1.Status = "blocked"
 	index.tasks[fix1ID] = fix1
-	SaveIndex(indexPath, index)
+	if err := SaveIndex(indexPath, index); err != nil {
+		t.Fatalf("SaveIndex failed: %v", err)
+	}
 
 	// Now add disc-2 with --source-task-id pointing to disc-1 (a BLOCKED fix-task)
 	// Chain model should be preserved — no resolution
@@ -1011,7 +1023,7 @@ func TestAddTask_SourceResolution_BlockedSourcePreservesChain(t *testing.T) {
 }
 
 func TestAddTask_SourceResolution_MultiLevelCompletedChain(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	// Chain: disc-1 → 1.1 (root), mark completed
 	fix1ID, _ := AddTask(indexPath, AddTaskOpts{
@@ -1022,7 +1034,9 @@ func TestAddTask_SourceResolution_MultiLevelCompletedChain(t *testing.T) {
 	tmp := index.tasks[fix1ID]
 	tmp.Status = "completed"
 	index.tasks[fix1ID] = tmp
-	SaveIndex(indexPath, index)	// disc-2 → disc-1 (completed) → resolves to 1.1
+	if err := SaveIndex(indexPath, index); err != nil {
+		t.Fatalf("SaveIndex failed: %v", err)
+	}
 	fix2ID, _ := AddTask(indexPath, AddTaskOpts{
 		Title:        "Fix 2",
 		SourceTaskID: fix1ID,
@@ -1031,7 +1045,9 @@ func TestAddTask_SourceResolution_MultiLevelCompletedChain(t *testing.T) {
 	tmp2 := index.tasks[fix2ID]
 	tmp2.Status = "completed"
 	index.tasks[fix2ID] = tmp2
-	SaveIndex(indexPath, index)
+	if err := SaveIndex(indexPath, index); err != nil {
+		t.Fatalf("SaveIndex failed: %v", err)
+	}
 
 	// disc-3 → disc-2 (completed) → disc-1 (completed) → resolves to 1.1
 	fix3ID, err := AddTask(indexPath, AddTaskOpts{
@@ -1059,7 +1075,7 @@ func TestAddTask_SourceResolution_MultiLevelCompletedChain(t *testing.T) {
 }
 
 func TestAddTask_SourceResolution_NoChainPassthrough(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	// 1.1 has no SourceTaskID — direct passthrough, no resolution needed
 	id, err := AddTask(indexPath, AddTaskOpts{
@@ -1077,7 +1093,7 @@ func TestAddTask_SourceResolution_NoChainPassthrough(t *testing.T) {
 }
 
 func TestAddTask_SourceResolution_CycleDetection(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	// Manually create a cycle: disc-1 → disc-2 → disc-1, both completed
 	index, _ := LoadIndex(indexPath)
@@ -1099,7 +1115,9 @@ func TestAddTask_SourceResolution_CycleDetection(t *testing.T) {
 		Record:       "records/disc-2.md",
 		SourceTaskID: "disc-1",
 	}
-	SaveIndex(indexPath, index)
+	if err := SaveIndex(indexPath, index); err != nil {
+		t.Fatalf("SaveIndex failed: %v", err)
+	}
 
 	// Adding with --source-task-id disc-1 should not infinite loop
 	id, err := AddTask(indexPath, AddTaskOpts{
@@ -1118,7 +1136,7 @@ func TestAddTask_SourceResolution_CycleDetection(t *testing.T) {
 }
 
 func TestAddTask_SourceResolution_SkippedSourceResolves(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	// disc-1 is a SKIPPED fix-task for source "1.1"
 	fix1ID, _ := AddTask(indexPath, AddTaskOpts{
@@ -1129,7 +1147,9 @@ func TestAddTask_SourceResolution_SkippedSourceResolves(t *testing.T) {
 	tmp3 := index.tasks[fix1ID]
 	tmp3.Status = "skipped"
 	index.tasks[fix1ID] = tmp3
-	SaveIndex(indexPath, index)
+	if err := SaveIndex(indexPath, index); err != nil {
+		t.Fatalf("SaveIndex failed: %v", err)
+	}
 
 	// disc-2 → disc-1 (skipped) → resolves to 1.1
 	fix2ID, err := AddTask(indexPath, AddTaskOpts{
@@ -1147,7 +1167,7 @@ func TestAddTask_SourceResolution_SkippedSourceResolves(t *testing.T) {
 }
 
 func TestResolveSourceTask_Direct(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 	index, _ := LoadIndex(indexPath)
 
 	// 1.1 has no SourceTaskID → direct passthrough
@@ -1158,7 +1178,7 @@ func TestResolveSourceTask_Direct(t *testing.T) {
 }
 
 func TestResolveSourceTask_NotFound(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 	index, _ := LoadIndex(indexPath)
 
 	// Nonexistent task → return as-is
@@ -1169,7 +1189,7 @@ func TestResolveSourceTask_NotFound(t *testing.T) {
 }
 
 func TestGetUnmetDependencies_Wildcard(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	// Add wildcard dep to 1.2-setup
 	if err := AddDependency(indexPath, "1.2-setup", "0.x"); err != nil {
@@ -1198,7 +1218,7 @@ func TestGetUnmetDependencies_Wildcard(t *testing.T) {
 }
 
 func TestGetUnmetDependencies_WildcardAllCompleted(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	// 1.1 is completed. 1.2 matches wildcard but is the task itself — self-excluded.
 	if err := AddDependency(indexPath, "1.2-setup", "1.x"); err != nil {
@@ -1215,7 +1235,7 @@ func TestGetUnmetDependencies_WildcardAllCompleted(t *testing.T) {
 }
 
 func TestAddDependency_LookupByID(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	// "1.2" is the task ID, but map key is "1.2-setup"
 	err := AddDependency(indexPath, "1.2", "disc-1")
@@ -1231,7 +1251,7 @@ func TestAddDependency_LookupByID(t *testing.T) {
 }
 
 func TestAddDependency_LookupByID_NotFound(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	err := AddDependency(indexPath, "9.9", "disc-1")
 	if err == nil {
@@ -1240,7 +1260,7 @@ func TestAddDependency_LookupByID_NotFound(t *testing.T) {
 }
 
 func TestAddDependency_WriteBackUsesSlugKey(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	err := AddDependency(indexPath, "1.2", "disc-1")
 	if err != nil {
@@ -1257,10 +1277,10 @@ func TestAddDependency_WriteBackUsesSlugKey(t *testing.T) {
 }
 
 func TestGetUnmetDependencies_SlugKeyDeps(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	// Add a new task that depends on slug-keyed task "1.1" (key="1.1-init", id="1.1")
-	AddTask(indexPath, AddTaskOpts{Title: "Watcher", Dependencies: []string{"1.1"}})
+	_, _ = AddTask(indexPath, AddTaskOpts{Title: "Watcher", Dependencies: []string{"1.1"}})
 
 	// 1.1 is completed → should have 0 unmet
 	unmet, err := GetUnmetDependencies(indexPath, "disc-1")
@@ -1273,10 +1293,10 @@ func TestGetUnmetDependencies_SlugKeyDeps(t *testing.T) {
 }
 
 func TestGetUnmetDependencies_SlugKeyDeps_Pending(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	// Depends on "1.2" (key="1.2-setup", status=pending)
-	AddTask(indexPath, AddTaskOpts{Title: "Watcher", Dependencies: []string{"1.2"}})
+	_, _ = AddTask(indexPath, AddTaskOpts{Title: "Watcher", Dependencies: []string{"1.2"}})
 
 	unmet, _ := GetUnmetDependencies(indexPath, "disc-1")
 	if !slices.Contains(unmet, "1.2") {
@@ -1285,7 +1305,7 @@ func TestGetUnmetDependencies_SlugKeyDeps_Pending(t *testing.T) {
 }
 
 func TestGetUnmetDependencies_LookupByID(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	// Query by task ID "1.2", not by key "1.2-setup"
 	unmet, err := GetUnmetDependencies(indexPath, "1.2")
@@ -1299,7 +1319,7 @@ func TestGetUnmetDependencies_LookupByID(t *testing.T) {
 }
 
 func TestGetUnmetDependencies_LookupByID_NotFound(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	_, err := GetUnmetDependencies(indexPath, "9.9")
 	if err == nil {
@@ -1308,7 +1328,7 @@ func TestGetUnmetDependencies_LookupByID_NotFound(t *testing.T) {
 }
 
 func TestGetUnmetDependencies_AllSlugKeyedCompleted(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	// Both deps are slug-keyed: "1.1" (key="1.1-init"), "1.2" (key="1.2-setup")
 	// 1.1 is completed, make 1.2 completed too
@@ -1316,9 +1336,11 @@ func TestGetUnmetDependencies_AllSlugKeyedCompleted(t *testing.T) {
 	t2 := index.tasks["1.2-setup"]
 	t2.Status = "completed"
 	index.tasks["1.2-setup"] = t2
-	SaveIndex(indexPath, index)
+	if err := SaveIndex(indexPath, index); err != nil {
+		t.Fatalf("SaveIndex failed: %v", err)
+	}
 
-	AddTask(indexPath, AddTaskOpts{Title: "Watcher", Dependencies: []string{"1.1", "1.2"}})
+	_, _ = AddTask(indexPath, AddTaskOpts{Title: "Watcher", Dependencies: []string{"1.1", "1.2"}})
 
 	unmet, _ := GetUnmetDependencies(indexPath, "disc-1")
 	if len(unmet) != 0 {
@@ -1327,15 +1349,17 @@ func TestGetUnmetDependencies_AllSlugKeyedCompleted(t *testing.T) {
 }
 
 func TestGetUnmetDependencies_SkippedDepTreatedAsMet(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	index, _ := LoadIndex(indexPath)
 	t1 := index.tasks["1.1-init"]
 	t1.Status = "skipped"
 	index.tasks["1.1-init"] = t1
-	SaveIndex(indexPath, index)
+	if err := SaveIndex(indexPath, index); err != nil {
+		t.Fatalf("SaveIndex failed: %v", err)
+	}
 
-	AddTask(indexPath, AddTaskOpts{Title: "Watcher", Dependencies: []string{"1.1"}})
+	_, _ = AddTask(indexPath, AddTaskOpts{Title: "Watcher", Dependencies: []string{"1.1"}})
 
 	unmet, _ := GetUnmetDependencies(indexPath, "disc-1")
 	if len(unmet) != 0 {
@@ -1344,20 +1368,22 @@ func TestGetUnmetDependencies_SkippedDepTreatedAsMet(t *testing.T) {
 }
 
 func TestGetUnmetDependencies_NonexistentDepTreatedAsUnmet(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	// Bypass AddTask dependency validation — directly create task with phantom dep
 	index, _ := LoadIndex(indexPath)
 	index.tasks["disc-1"] = Task{
-		ID:       "disc-1",
-		Title:    "Watcher",
-		Priority: "P1",
-		Status:   "pending",
-		File:     "disc-1.md",
-		Record:   "records/disc-1.md",
+		ID:           "disc-1",
+		Title:        "Watcher",
+		Priority:     "P1",
+		Status:       "pending",
+		File:         "disc-1.md",
+		Record:       "records/disc-1.md",
 		Dependencies: []string{"9.9"},
 	}
-	SaveIndex(indexPath, index)
+	if err := SaveIndex(indexPath, index); err != nil {
+		t.Fatalf("SaveIndex failed: %v", err)
+	}
 
 	unmet, _ := GetUnmetDependencies(indexPath, "disc-1")
 	if len(unmet) != 1 || unmet[0] != "9.9" {
@@ -1366,11 +1392,11 @@ func TestGetUnmetDependencies_NonexistentDepTreatedAsUnmet(t *testing.T) {
 }
 
 func TestGetUnmetDependencies_WildcardWithSlugKeyedTasks(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	// "1.x" wildcard should match slug-keyed tasks "1.1" and "1.2"
 	// 1.1 is completed, 1.2 is pending
-	AddTask(indexPath, AddTaskOpts{Title: "Watcher", Dependencies: []string{"1.x"}})
+	_, _ = AddTask(indexPath, AddTaskOpts{Title: "Watcher", Dependencies: []string{"1.x"}})
 
 	unmet, _ := GetUnmetDependencies(indexPath, "disc-1")
 	if len(unmet) != 1 || unmet[0] != "1.2" {
@@ -1379,10 +1405,10 @@ func TestGetUnmetDependencies_WildcardWithSlugKeyedTasks(t *testing.T) {
 }
 
 func TestGetUnmetDependencies_MixedWildcardAndExactSlugKeyed(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	// dep on "1.x" (wildcard) + "1.1" (exact slug-keyed, completed)
-	AddTask(indexPath, AddTaskOpts{Title: "Watcher", Dependencies: []string{"1.x", "1.1"}})
+	_, _ = AddTask(indexPath, AddTaskOpts{Title: "Watcher", Dependencies: []string{"1.x", "1.1"}})
 
 	// 1.1 completed, 1.2 pending → wildcard reports 1.2 as unmet
 	unmet, _ := GetUnmetDependencies(indexPath, "disc-1")
@@ -1394,7 +1420,7 @@ func TestGetUnmetDependencies_MixedWildcardAndExactSlugKeyed(t *testing.T) {
 // --- Active fix-task dedup tests ---
 
 func TestAddTask_Dedup_ActiveFixBlocksCreation(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	// Add fix-1 targeting source "1.1" — still pending (active)
 	_, err := AddTask(indexPath, AddTaskOpts{
@@ -1428,7 +1454,7 @@ func TestAddTask_Dedup_ActiveFixBlocksCreation(t *testing.T) {
 }
 
 func TestAddTask_Dedup_CompletedFixAllowsCreation(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	// Add fix-1 and mark it completed
 	fix1ID, err := AddTask(indexPath, AddTaskOpts{
@@ -1443,7 +1469,9 @@ func TestAddTask_Dedup_CompletedFixAllowsCreation(t *testing.T) {
 	fix1 := index.tasks[fix1ID]
 	fix1.Status = "completed"
 	index.tasks[fix1ID] = fix1
-	SaveIndex(indexPath, index)
+	if err := SaveIndex(indexPath, index); err != nil {
+		t.Fatalf("SaveIndex failed: %v", err)
+	}
 
 	// Adding fix-2 for the same source should succeed (fix-1 is completed)
 	fix2ID, err := AddTask(indexPath, AddTaskOpts{
@@ -1460,7 +1488,7 @@ func TestAddTask_Dedup_CompletedFixAllowsCreation(t *testing.T) {
 }
 
 func TestAddTask_Dedup_SkippedFixAllowsCreation(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	fix1ID, _ := AddTask(indexPath, AddTaskOpts{
 		Title:        "Fix 1",
@@ -1470,7 +1498,9 @@ func TestAddTask_Dedup_SkippedFixAllowsCreation(t *testing.T) {
 	fix1 := index.tasks[fix1ID]
 	fix1.Status = "skipped"
 	index.tasks[fix1ID] = fix1
-	SaveIndex(indexPath, index)
+	if err := SaveIndex(indexPath, index); err != nil {
+		t.Fatalf("SaveIndex failed: %v", err)
+	}
 
 	_, err := AddTask(indexPath, AddTaskOpts{
 		Title:        "Fix 2",
@@ -1482,7 +1512,7 @@ func TestAddTask_Dedup_SkippedFixAllowsCreation(t *testing.T) {
 }
 
 func TestAddTask_Dedup_RejectedFixAllowsCreation(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	fix1ID, _ := AddTask(indexPath, AddTaskOpts{
 		Title:        "Fix 1",
@@ -1492,7 +1522,9 @@ func TestAddTask_Dedup_RejectedFixAllowsCreation(t *testing.T) {
 	fix1 := index.tasks[fix1ID]
 	fix1.Status = "rejected"
 	index.tasks[fix1ID] = fix1
-	SaveIndex(indexPath, index)
+	if err := SaveIndex(indexPath, index); err != nil {
+		t.Fatalf("SaveIndex failed: %v", err)
+	}
 
 	_, err := AddTask(indexPath, AddTaskOpts{
 		Title:        "Fix 2",
@@ -1504,7 +1536,7 @@ func TestAddTask_Dedup_RejectedFixAllowsCreation(t *testing.T) {
 }
 
 func TestAddTask_Dedup_BlockedFixBlocksCreation(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	fix1ID, _ := AddTask(indexPath, AddTaskOpts{
 		Title:        "Fix 1",
@@ -1514,7 +1546,9 @@ func TestAddTask_Dedup_BlockedFixBlocksCreation(t *testing.T) {
 	fix1 := index.tasks[fix1ID]
 	fix1.Status = "blocked"
 	index.tasks[fix1ID] = fix1
-	SaveIndex(indexPath, index)
+	if err := SaveIndex(indexPath, index); err != nil {
+		t.Fatalf("SaveIndex failed: %v", err)
+	}
 
 	_, err := AddTask(indexPath, AddTaskOpts{
 		Title:        "Fix 2",
@@ -1533,7 +1567,7 @@ func TestAddTask_Dedup_BlockedFixBlocksCreation(t *testing.T) {
 }
 
 func TestAddTask_Dedup_NoSourceTaskID(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	// No dedup check when SourceTaskID is empty
 	_, err := AddTask(indexPath, AddTaskOpts{Title: "Task A"})
@@ -1547,7 +1581,7 @@ func TestAddTask_Dedup_NoSourceTaskID(t *testing.T) {
 }
 
 func TestAddTask_Dedup_ResolvedSourceChecksAgainstRoot(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	// fix-1 targets source "1.1", mark it completed (triggers source resolution)
 	fix1ID, _ := AddTask(indexPath, AddTaskOpts{
@@ -1558,7 +1592,9 @@ func TestAddTask_Dedup_ResolvedSourceChecksAgainstRoot(t *testing.T) {
 	fix1 := index.tasks[fix1ID]
 	fix1.Status = "completed"
 	index.tasks[fix1ID] = fix1
-	SaveIndex(indexPath, index)
+	if err := SaveIndex(indexPath, index); err != nil {
+		t.Fatalf("SaveIndex failed: %v", err)
+	}
 
 	// fix-2 targets completed fix-1 → resolves to "1.1" (root), then checks dedup.
 	// fix-1 is completed → dedup passes → fix-2 created
@@ -1592,7 +1628,7 @@ func TestAddTask_Dedup_ResolvedSourceChecksAgainstRoot(t *testing.T) {
 }
 
 func TestAddTask_Dedup_MixedActiveAndCompleted(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	// fix-1 completed
 	fix1ID, _ := AddTask(indexPath, AddTaskOpts{
@@ -1603,10 +1639,12 @@ func TestAddTask_Dedup_MixedActiveAndCompleted(t *testing.T) {
 	fix1 := index.tasks[fix1ID]
 	fix1.Status = "completed"
 	index.tasks[fix1ID] = fix1
-	SaveIndex(indexPath, index)
+	if err := SaveIndex(indexPath, index); err != nil {
+		t.Fatalf("SaveIndex failed: %v", err)
+	}
 
 	// fix-2 pending (active)
-	AddTask(indexPath, AddTaskOpts{
+	_, _ = AddTask(indexPath, AddTaskOpts{
 		Title:        "Fix 2",
 		SourceTaskID: "1.1",
 	})
@@ -1632,7 +1670,7 @@ func TestAddTask_Dedup_MixedActiveAndCompleted(t *testing.T) {
 // --- BlockSource tests ---
 
 func TestAddTask_BlockSource_SetsBlocked(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	// 1.2 is pending — block it via --block-source
 	_, err := AddTask(indexPath, AddTaskOpts{
@@ -1653,7 +1691,7 @@ func TestAddTask_BlockSource_SetsBlocked(t *testing.T) {
 }
 
 func TestAddTask_BlockSource_CompletedSourcePreservesChain(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	// fix-1 targets source "1.1" — mark completed
 	fix1ID, _ := AddTask(indexPath, AddTaskOpts{
@@ -1664,7 +1702,9 @@ func TestAddTask_BlockSource_CompletedSourcePreservesChain(t *testing.T) {
 	fix1 := index.tasks[fix1ID]
 	fix1.Status = "completed"
 	index.tasks[fix1ID] = fix1
-	SaveIndex(indexPath, index)
+	if err := SaveIndex(indexPath, index); err != nil {
+		t.Fatalf("SaveIndex failed: %v", err)
+	}
 
 	// Add fix-2 with --block-source targeting completed fix-1
 	// BlockSource sets fix-1 to blocked BEFORE resolution → no resolution → chain preserved
@@ -1693,7 +1733,7 @@ func TestAddTask_BlockSource_CompletedSourcePreservesChain(t *testing.T) {
 }
 
 func TestAddTask_BlockSource_WithoutFlagFlattensToRoot(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	// fix-1 targets "1.1" — mark completed
 	fix1ID, _ := AddTask(indexPath, AddTaskOpts{
@@ -1704,7 +1744,9 @@ func TestAddTask_BlockSource_WithoutFlagFlattensToRoot(t *testing.T) {
 	fix1 := index.tasks[fix1ID]
 	fix1.Status = "completed"
 	index.tasks[fix1ID] = fix1
-	SaveIndex(indexPath, index)
+	if err := SaveIndex(indexPath, index); err != nil {
+		t.Fatalf("SaveIndex failed: %v", err)
+	}
 
 	// Without --block-source, completed fix-1 resolves to root "1.1"
 	fix2ID, err := AddTask(indexPath, AddTaskOpts{
@@ -1728,7 +1770,7 @@ func TestAddTask_BlockSource_WithoutFlagFlattensToRoot(t *testing.T) {
 }
 
 func TestAddTask_BlockSource_SourceNotFound(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	// --block-source with nonexistent source — should succeed (no source to block)
 	_, err := AddTask(indexPath, AddTaskOpts{
@@ -1742,7 +1784,7 @@ func TestAddTask_BlockSource_SourceNotFound(t *testing.T) {
 }
 
 func TestAddTask_BlockSource_NoSourceTaskID(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	// --block-source without --source-task-id — flag is ignored
 	_, err := AddTask(indexPath, AddTaskOpts{
@@ -1755,10 +1797,10 @@ func TestAddTask_BlockSource_NoSourceTaskID(t *testing.T) {
 }
 
 func TestAddTask_BlockSource_DedupPreventsMutation(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	// Add first fix task for source 1.1 (active/pending)
-	AddTask(indexPath, AddTaskOpts{
+	_, _ = AddTask(indexPath, AddTaskOpts{
 		Title:        "Fix: first attempt",
 		SourceTaskID: "1.1",
 	})
@@ -1789,14 +1831,16 @@ func TestAddTask_BlockSource_DedupPreventsMutation(t *testing.T) {
 }
 
 func TestAddTask_BlockSource_AlreadyBlocked(t *testing.T) {
-	indexPath, _ := newTestIndex(t)
+	indexPath := newTestIndex(t)
 
 	// Mark 1.2 as blocked manually
 	index, _ := LoadIndex(indexPath)
 	t1 := index.tasks["1.2-setup"]
 	t1.Status = "blocked"
 	index.tasks["1.2-setup"] = t1
-	SaveIndex(indexPath, index)
+	if err := SaveIndex(indexPath, index); err != nil {
+		t.Fatalf("SaveIndex failed: %v", err)
+	}
 
 	// --block-source on already-blocked source — idempotent
 	_, err := AddTask(indexPath, AddTaskOpts{

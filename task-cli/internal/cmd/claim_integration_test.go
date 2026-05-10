@@ -16,9 +16,10 @@ func TestCheckExistingTaskState(t *testing.T) {
 		indexPath := filepath.Join(dir, "index.json")
 		statePath := filepath.Join(dir, "task-state.json")
 
-		index := &task.TaskIndex{
+		index := &task.TaskIndex{}
+		if err := task.SaveIndex(indexPath, index); err != nil {
+			t.Fatal(err)
 		}
-		task.SaveIndex(indexPath, index)
 
 		cont, hasIssues, issues := checkExistingTaskState(dir, index, statePath)
 		if cont || hasIssues || len(issues) != 0 {
@@ -31,12 +32,13 @@ func TestCheckExistingTaskState(t *testing.T) {
 		indexPath := filepath.Join(dir, "index.json")
 		statePath := filepath.Join(dir, "task-state.json")
 
-		index := &task.TaskIndex{
+		index := &task.TaskIndex{}
+		if err := task.SaveIndex(indexPath, index); err != nil {
+			t.Fatal(err)
 		}
-		task.SaveIndex(indexPath, index)
 
 		// Create corrupted state file (invalid JSON)
-		os.WriteFile(statePath, []byte("not valid json {{{"), 0644)
+		_ = os.WriteFile(statePath, []byte("not valid json {{{"), 0644)
 
 		cont, hasIssues, issues := checkExistingTaskState(dir, index, statePath)
 		if cont || hasIssues || len(issues) != 0 {
@@ -49,16 +51,18 @@ func TestCheckExistingTaskState(t *testing.T) {
 		indexPath := filepath.Join(dir, "index.json")
 		statePath := filepath.Join(dir, "task-state.json")
 
-		index := &task.TaskIndex{
-
+		index := &task.TaskIndex{}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1.1", Title: "Task 1", Status: "in_progress"},
+		})
+		if err := task.SaveIndex(indexPath, index); err != nil {
+			t.Fatal(err)
 		}
-			index.SetTasks(map[string]task.Task{
-				"task1": {ID: "1.1", Title: "Task 1", Status: "in_progress"},
-			})
-		task.SaveIndex(indexPath, index)
 
 		state := &task.TaskState{TaskID: "1.1", Key: "task1"}
-		task.SaveState(statePath, state)
+		if err := task.SaveState(statePath, state); err != nil {
+			t.Fatal(err)
+		}
 
 		cont, hasIssues, issues := checkExistingTaskState(dir, index, statePath)
 		if !cont || hasIssues || len(issues) != 0 {
@@ -71,16 +75,18 @@ func TestCheckExistingTaskState(t *testing.T) {
 		indexPath := filepath.Join(dir, "index.json")
 		statePath := filepath.Join(dir, "task-state.json")
 
-		index := &task.TaskIndex{
-
+		index := &task.TaskIndex{}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1.1", Title: "Task 1", Status: "completed"},
+		})
+		if err := task.SaveIndex(indexPath, index); err != nil {
+			t.Fatal(err)
 		}
-			index.SetTasks(map[string]task.Task{
-				"task1": {ID: "1.1", Title: "Task 1", Status: "completed"},
-			})
-		task.SaveIndex(indexPath, index)
 
 		state := &task.TaskState{TaskID: "1.1", Key: "task1"}
-		task.SaveState(statePath, state)
+		if err := task.SaveState(statePath, state); err != nil {
+			t.Fatal(err)
+		}
 
 		cont, hasIssues, issues := checkExistingTaskState(dir, index, statePath)
 		if cont || hasIssues || len(issues) != 0 {
@@ -98,12 +104,15 @@ func TestCheckExistingTaskState(t *testing.T) {
 		indexPath := filepath.Join(dir, "index.json")
 		statePath := filepath.Join(dir, "task-state.json")
 
-		index := &task.TaskIndex{
+		index := &task.TaskIndex{}
+		if err := task.SaveIndex(indexPath, index); err != nil {
+			t.Fatal(err)
 		}
-		task.SaveIndex(indexPath, index)
 
 		state := &task.TaskState{TaskID: "1.1", Key: "task1"}
-		task.SaveState(statePath, state)
+		if err := task.SaveState(statePath, state); err != nil {
+			t.Fatal(err)
+		}
 
 		cont, hasIssues, issues := checkExistingTaskState(dir, index, statePath)
 		if cont || !hasIssues || len(issues) != 1 {
@@ -117,13 +126,17 @@ func TestCheckExistingTaskState(t *testing.T) {
 		statePath := filepath.Join(dir, "task-state.json")
 
 		index := &task.TaskIndex{}
-			index.SetTasks(map[string]task.Task{
-				"task1": {ID: "1.1", Title: "Task 1", Status: "blocked"},
-			})
-		task.SaveIndex(indexPath, index)
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1.1", Title: "Task 1", Status: "blocked"},
+		})
+		if err := task.SaveIndex(indexPath, index); err != nil {
+			t.Fatal(err)
+		}
 
 		state := &task.TaskState{TaskID: "1.1", Key: "task1"}
-		task.SaveState(statePath, state)
+		if err := task.SaveState(statePath, state); err != nil {
+			t.Fatal(err)
+		}
 
 		cont, hasIssues, issues := checkExistingTaskState(dir, index, statePath)
 		if cont || hasIssues || len(issues) != 0 {
@@ -142,13 +155,17 @@ func TestCheckExistingTaskState(t *testing.T) {
 		statePath := filepath.Join(dir, "task-state.json")
 
 		index := &task.TaskIndex{}
-			index.SetTasks(map[string]task.Task{
-				"task1": {ID: "1.1", Title: "Task 1", Status: "unknown_status"},
-			})
-		task.SaveIndex(indexPath, index)
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1.1", Title: "Task 1", Status: "unknown_status"},
+		})
+		if err := task.SaveIndex(indexPath, index); err != nil {
+			t.Fatal(err)
+		}
 
 		state := &task.TaskState{TaskID: "1.1", Key: "task1"}
-		task.SaveState(statePath, state)
+		if err := task.SaveState(statePath, state); err != nil {
+			t.Fatal(err)
+		}
 
 		cont, hasIssues, issues := checkExistingTaskState(dir, index, statePath)
 		if cont || !hasIssues || len(issues) != 1 {
@@ -186,7 +203,7 @@ func TestPrintTaskDetails(t *testing.T) {
 				"STATUS: in_progress",
 				"FILE: " + filepath.Join(testRoot, feature.GetTaskFile(testFeature, "1.1.md")),
 				"RECORD: " + filepath.Join(testRoot, feature.GetTaskFile(testFeature, "records/1.1.md")),
-			"FEATURE: test-feature",
+				"FEATURE: test-feature",
 			},
 		},
 		{
@@ -219,9 +236,9 @@ func TestPrintTaskDetails(t *testing.T) {
 
 			printTaskDetails(tt.key, tt.task, testRoot, testFeature)
 
-			w.Close()
+			_ = w.Close()
 			os.Stdout = old
-			buf.ReadFrom(r)
+			_, _ = buf.ReadFrom(r)
 
 			output := buf.String()
 			for _, want := range tt.wantContains {
@@ -258,9 +275,9 @@ func TestPrintContinueTask(t *testing.T) {
 
 	printContinueTask(state, tt, testRoot, testFeature)
 
-	w.Close()
+	_ = w.Close()
 	os.Stdout = old
-	buf.ReadFrom(r)
+	_, _ = buf.ReadFrom(r)
 
 	output := buf.String()
 	wantStrings := []string{"ACTION: CONTINUE", "STARTED_AT: 2026-04-06 10:00"}
@@ -287,9 +304,9 @@ func TestPrintNewTask(t *testing.T) {
 		Status:   "in_progress",
 	}, testRoot, testFeature)
 
-	w.Close()
+	_ = w.Close()
 	os.Stdout = old
-	buf.ReadFrom(r)
+	_, _ = buf.ReadFrom(r)
 
 	output := buf.String()
 	if !bytes.Contains([]byte(output), []byte("ACTION: CLAIMED")) {
@@ -321,10 +338,10 @@ func TestClaimCommand_Integration(t *testing.T) {
 			StatusEnum:   []string{"pending", "in_progress", "completed"},
 			PriorityEnum: []string{"P0", "P1", "P2"},
 		}
-			index.SetTasks(map[string]task.Task{
-				"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md"},
-				"task2": {ID: "1.2", Title: "Task 2", Status: "pending", Priority: "P1", File: "1.2.md"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md"},
+			"task2": {ID: "1.2", Title: "Task 2", Status: "pending", Priority: "P1", File: "1.2.md"},
+		})
 		if err := task.SaveIndex(indexPath, index); err != nil {
 			t.Fatal(err)
 		}

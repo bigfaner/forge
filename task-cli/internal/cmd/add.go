@@ -66,7 +66,7 @@ type AddResult struct {
 	SourceBlocked string // source task ID that was blocked (empty if --block-source not used)
 }
 
-func runAdd(cmd *cobra.Command, args []string) {
+func runAdd(cmd *cobra.Command, _ []string) {
 	result, err := executeAdd(cmd)
 	if err != nil {
 		var dedupErr *task.ActiveFixExistsError
@@ -140,17 +140,17 @@ func executeAdd(cmd *cobra.Command) (*AddResult, error) {
 	}
 
 	opts := task.AddTaskOpts{
-		ID:           addID,
-		Title:        addTitle,
-		Priority:     addPriority,
+		ID:            addID,
+		Title:         addTitle,
+		Priority:      addPriority,
 		EstimatedTime: addEstimatedTime,
-		Dependencies: deps,
-		Breaking:     addBreaking,
-		Description:  addDescription,
-		Template:     addTemplate,
-		Vars:         vars,
-		SourceTaskID: addSourceTaskID,
-		BlockSource:  addBlockSource,
+		Dependencies:  deps,
+		Breaking:      addBreaking,
+		Description:   addDescription,
+		Template:      addTemplate,
+		Vars:          vars,
+		SourceTaskID:  addSourceTaskID,
+		BlockSource:   addBlockSource,
 	}
 
 	// Apply template defaults for fixed fields

@@ -13,19 +13,19 @@ import (
 
 // AddTaskOpts holds options for adding a new task.
 type AddTaskOpts struct {
-	ID            string   // Auto-generated as prefix-N if empty
-	Title         string   // Required
-	Priority      string   // Default P1 if empty
-	EstimatedTime string   // Optional
-	Dependencies  []string // Optional, validated against existing tasks
-	Breaking      bool     // Optional
-	Description   string   // Optional, becomes markdown body
-	Status        string   // Default pending if empty
-	Template      string   // Template name (e.g. "fix-task")
+	ID            string            // Auto-generated as prefix-N if empty
+	Title         string            // Required
+	Priority      string            // Default P1 if empty
+	EstimatedTime string            // Optional
+	Dependencies  []string          // Optional, validated against existing tasks
+	Breaking      bool              // Optional
+	Description   string            // Optional, becomes markdown body
+	Status        string            // Default pending if empty
+	Template      string            // Template name (e.g. "fix-task")
 	Vars          map[string]string // Variable substitutions for template placeholders
-	SourceTaskID  string   // Source task ID: auto-injects {{SOURCE_TASK_ID}} and adds this task as source dependency
-	BlockSource   bool     // Block source task before resolution (preserves fix-chain model)
-	IDPrefix      string   // Auto-generate ID as prefix-N; empty defaults to "disc"
+	SourceTaskID  string            // Source task ID: auto-injects {{SOURCE_TASK_ID}} and adds this task as source dependency
+	BlockSource   bool              // Block source task before resolution (preserves fix-chain model)
+	IDPrefix      string            // Auto-generate ID as prefix-N; empty defaults to "disc"
 }
 
 // terminalStatuses are task statuses that indicate the task is done.
@@ -64,10 +64,7 @@ func HasActiveFixTasks(index *TaskIndex, sourceTaskID string) []string {
 func ResolveSourceTask(index *TaskIndex, sourceID string) string {
 	visited := make(map[string]bool)
 	current := sourceID
-	for {
-		if visited[current] {
-			break // cycle detection
-		}
+	for !visited[current] {
 		visited[current] = true
 		_, t, err := FindTask(index, current)
 		if err != nil || t.SourceTaskID == "" {

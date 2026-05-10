@@ -139,7 +139,7 @@ func TestErrInvalidStatus(t *testing.T) {
 	t.Run("empty valid statuses", func(t *testing.T) {
 		err := ErrInvalidStatus("bad", []string{})
 		if err == nil {
-			t.Error("expected non-nil error")
+			t.Fatal("expected non-nil error")
 		}
 		if !strings.Contains(err.Cause, "statusEnum") {
 			t.Errorf("Cause should mention statusEnum: %s", err.Cause)

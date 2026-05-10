@@ -24,7 +24,7 @@ func init() {
 	rootCmd.AddCommand(templateCmd)
 }
 
-func runTemplate(cmd *cobra.Command, args []string) {
+func runTemplate(_ *cobra.Command, args []string) {
 	if len(args) == 0 {
 		listTemplates()
 		return

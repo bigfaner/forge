@@ -46,19 +46,19 @@ type AllCompletedResult struct {
 }
 
 // checkAllCompleted verifies all tasks are done and returns test context.
-// Returns nil (no error) when tasks are not all done — caller should exit 1.
-func checkAllCompleted(verbose bool) (*AllCompletedResult, error) {
+// Returns nil when tasks are not all done — caller should exit silently.
+func checkAllCompleted(verbose bool) *AllCompletedResult {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
 		Debugf(verbose, "project root not found: %v", err)
-		return nil, nil //nolint:nilerr
+		return nil
 	}
 	Debugf(verbose, "project root: %s", projectRoot)
 
 	featureSlug, err := feature.GetCurrentFeature(projectRoot)
 	if err != nil {
 		Debugf(verbose, "feature not found: %v", err)
-		return nil, nil //nolint:nilerr
+		return nil
 	}
 	Debugf(verbose, "feature: %s", featureSlug)
 
@@ -66,18 +66,18 @@ func checkAllCompleted(verbose bool) (*AllCompletedResult, error) {
 	forgeState := feature.ReadForgeState(projectRoot)
 	if forgeState == nil || !forgeState.AllCompleted {
 		Debugf(verbose, "no forge state with allCompleted — skipping")
-		return nil, nil
+		return nil
 	}
 	Debugf(verbose, "forge state: feature=%s allCompleted=true", forgeState.Feature)
 
 	// Consume the state — clear it before proceeding
-	feature.ClearForgeState(projectRoot)
+	_ = feature.ClearForgeState(projectRoot)
 
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
 	index, err := task.LoadIndex(indexPath)
 	if err != nil {
 		Debugf(verbose, "index.json not found: %s (%v)", indexPath, err)
-		return nil, nil //nolint:nilerr
+		return nil
 	}
 	Debugf(verbose, "loaded index: %d tasks", index.TaskCount())
 
@@ -85,7 +85,7 @@ func checkAllCompleted(verbose bool) (*AllCompletedResult, error) {
 	for _, t := range index.TasksMap() {
 		if t.Status != feature.StatusCompleted && t.Status != feature.StatusSkipped {
 			Debugf(verbose, "task %s is %s — not all done", t.ID, t.Status)
-			return nil, nil
+			return nil
 		}
 	}
 
@@ -93,12 +93,12 @@ func checkAllCompleted(verbose bool) (*AllCompletedResult, error) {
 		FeatureSlug: featureSlug,
 		ProjectRoot: projectRoot,
 		TestCommand: index.TestCommand,
-	}, nil
+	}
 }
 
-func runAllCompleted(cmd *cobra.Command, args []string) {
-	result, err := checkAllCompleted(allCompletedVerbose)
-	if err != nil || result == nil {
+func runAllCompleted(_ *cobra.Command, _ []string) {
+	result := checkAllCompleted(allCompletedVerbose)
+	if result == nil {
 		os.Exit(0) // not all done is normal, exit silently
 	}
 

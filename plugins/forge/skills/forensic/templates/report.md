@@ -20,6 +20,18 @@ severity: <high|medium|low>
 | Skills involved | <list> |
 | Trigger | <what prompted this investigation> |
 
+## Timing Overview
+
+| Session | Duration | Tool Time | Idle* | Top Bottleneck |
+|---------|----------|-----------|-------|---------------|
+| <session-id-8ch> | <duration> | <totalToolMs> | <idle> | `<tool>` (<max>s) |
+
+*Idle = session duration minus total tool execution time — indicates thinking/waiting.
+
+| Tool | Calls | Total | Avg | Max |
+|------|-------|-------|-----|-----|
+| `<tool>` | <count> | <total>s | <avg>s | <max>s |
+
 ## Findings
 
 ### Finding 1: <Title>

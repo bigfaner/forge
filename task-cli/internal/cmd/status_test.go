@@ -74,8 +74,8 @@ func TestCheckUnmetDeps_Wildcard(t *testing.T) {
 		{
 			name: "exact dep completed",
 			tasks: map[string]task.Task{
-				"a":   {ID: "a", Dependencies: []string{"b"}},
-				"b":   {ID: "b", Status: "completed"},
+				"a": {ID: "a", Dependencies: []string{"b"}},
+				"b": {ID: "b", Status: "completed"},
 			},
 			deps:      []string{"b"},
 			wantUnmet: 0,
@@ -83,8 +83,8 @@ func TestCheckUnmetDeps_Wildcard(t *testing.T) {
 		{
 			name: "exact dep pending",
 			tasks: map[string]task.Task{
-				"a":   {ID: "a", Dependencies: []string{"b"}},
-				"b":   {ID: "b", Status: "pending"},
+				"a": {ID: "a", Dependencies: []string{"b"}},
+				"b": {ID: "b", Status: "pending"},
 			},
 			deps:      []string{"b"},
 			wantUnmet: 1,
@@ -92,9 +92,9 @@ func TestCheckUnmetDeps_Wildcard(t *testing.T) {
 		{
 			name: "wildcard all completed",
 			tasks: map[string]task.Task{
-				"a":     {ID: "a"},
-				"1.1":   {ID: "1.1", Status: "completed"},
-				"1.2":   {ID: "1.2", Status: "completed"},
+				"a":      {ID: "a"},
+				"1.1":    {ID: "1.1", Status: "completed"},
+				"1.2":    {ID: "1.2", Status: "completed"},
 				"1.gate": {ID: "1.gate", Status: "pending"},
 			},
 			deps:      []string{"1.x"},
@@ -103,9 +103,9 @@ func TestCheckUnmetDeps_Wildcard(t *testing.T) {
 		{
 			name: "wildcard some pending",
 			tasks: map[string]task.Task{
-				"a":     {ID: "a"},
-				"1.1":   {ID: "1.1", Status: "completed"},
-				"1.2":   {ID: "1.2", Status: "pending"},
+				"a":   {ID: "a"},
+				"1.1": {ID: "1.1", Status: "completed"},
+				"1.2": {ID: "1.2", Status: "pending"},
 			},
 			deps:      []string{"1.x"},
 			wantUnmet: 1,
@@ -113,9 +113,9 @@ func TestCheckUnmetDeps_Wildcard(t *testing.T) {
 		{
 			name: "wildcard ignores gate and summary",
 			tasks: map[string]task.Task{
-				"a":        {ID: "a"},
-				"1.1":      {ID: "1.1", Status: "completed"},
-				"1.gate":   {ID: "1.gate", Status: "pending"},
+				"a":         {ID: "a"},
+				"1.1":       {ID: "1.1", Status: "completed"},
+				"1.gate":    {ID: "1.gate", Status: "pending"},
 				"1.summary": {ID: "1.summary", Status: "pending"},
 			},
 			deps:      []string{"1.x"},
@@ -131,12 +131,12 @@ func TestCheckUnmetDeps_Wildcard(t *testing.T) {
 			wantUnmet: 0,
 		},
 		{
-			name: "wildcard self-exclusion",
+			name:      "wildcard self-exclusion",
 			subjectID: "1.3",
 			tasks: map[string]task.Task{
-				"1.3":   {ID: "1.3", Status: "pending"},
-				"1.1":   {ID: "1.1", Status: "completed"},
-				"1.2":   {ID: "1.2", Status: "completed"},
+				"1.3": {ID: "1.3", Status: "pending"},
+				"1.1": {ID: "1.1", Status: "completed"},
+				"1.2": {ID: "1.2", Status: "completed"},
 			},
 			deps:      []string{"1.x"},
 			wantUnmet: 0,
@@ -265,7 +265,7 @@ func TestCheckUnmetDeps_KeyDiffersFromID_EdgeCases(t *testing.T) {
 			Feature: "test",
 		}
 		index.SetTasks(map[string]task.Task{
-			"run-e2e":  {ID: "T-test-3", Status: "completed"},
+			"run-e2e":   {ID: "T-test-3", Status: "completed"},
 			"run-smoke": {ID: "T-test-7", Status: "pending"},
 		})
 		unmet := checkUnmetDeps(index, &task.Task{ID: "src", Dependencies: []string{"T-test-3", "T-test-7"}})

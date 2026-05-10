@@ -33,7 +33,7 @@ type depInfo struct {
 	isWildcard bool
 }
 
-func runCheck(cmd *cobra.Command, args []string) {
+func runCheck(_ *cobra.Command, _ []string) {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
 		Exit(ErrProjectNotFound())

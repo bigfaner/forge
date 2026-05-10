@@ -51,13 +51,13 @@ const (
 	TestCasesFileName     = "testing/test-cases.md"
 
 	// E2E graduation paths
-	E2ETestsBaseDir   = "tests/e2e"
-	E2EStagingDir     = "tests/e2e/features"
-	E2EGraduatedDir   = "tests/e2e/.graduated"
+	E2ETestsBaseDir = "tests/e2e"
+	E2EStagingDir   = "tests/e2e/features"
+	E2EGraduatedDir = "tests/e2e/.graduated"
 
 	// Forge runtime directory (project-level)
-	ForgeDir            = ".forge"
-	ForgeStateFileName  = "state.json"
+	ForgeDir           = ".forge"
+	ForgeStateFileName = "state.json"
 
 	// Template file
 	TemplateFileName = "template.md"

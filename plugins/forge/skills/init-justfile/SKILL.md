@@ -2,10 +2,13 @@
 name: init-justfile
 description: Scaffold a Justfile with standard forge targets for the current project.
 allowed_tools: ["Bash", "Read", "Write", "Edit"]
+disable-model-invocation: true
 argument-hints: "[--lang go|rust|python|node] [--type frontend|backend|mixed] [--force]"
 ---
 
 # /init-justfile
+
+MANUAL-ONLY. Do NOT auto-invoke — only when user explicitly asks to `/init-justfile`.
 
 Generate a Justfile with standard forge targets as an abstraction layer for test/build commands.
 
@@ -164,22 +167,22 @@ If `--lang` is provided, select template directly:
 
 | `--lang` value | Template |
 |----------------|----------|
-| `go` | `plugins/forge/references/justfile-templates/go.just` |
-| `rust` | `plugins/forge/references/justfile-templates/rust.just` |
-| `python` | `plugins/forge/references/justfile-templates/python.just` |
-| `node` | `plugins/forge/references/justfile-templates/node.just` |
-| (mixed via `--type mixed`) | `plugins/forge/references/justfile-templates/mixed.just` |
+| `go` | `plugins/forge/skills/init-justfile/templates/go.just` |
+| `rust` | `plugins/forge/skills/init-justfile/templates/rust.just` |
+| `python` | `plugins/forge/skills/init-justfile/templates/python.just` |
+| `node` | `plugins/forge/skills/init-justfile/templates/node.just` |
+| (mixed via `--type mixed`) | `plugins/forge/skills/init-justfile/templates/mixed.just` |
 
 If `--lang` is not provided, detect from marker files:
 
 | Marker file | Template |
 |-------------|----------|
-| `go.mod` | `plugins/forge/references/justfile-templates/go.just` |
-| `Cargo.toml` | `plugins/forge/references/justfile-templates/rust.just` |
-| `pyproject.toml` | `plugins/forge/references/justfile-templates/python.just` |
-| `package.json` only | `plugins/forge/references/justfile-templates/node.just` |
-| mixed | `plugins/forge/references/justfile-templates/mixed.just` |
-| none matched | `plugins/forge/references/justfile-templates/generic.just` |
+| `go.mod` | `plugins/forge/skills/init-justfile/templates/go.just` |
+| `Cargo.toml` | `plugins/forge/skills/init-justfile/templates/rust.just` |
+| `pyproject.toml` | `plugins/forge/skills/init-justfile/templates/python.just` |
+| `package.json` only | `plugins/forge/skills/init-justfile/templates/node.just` |
+| mixed | `plugins/forge/skills/init-justfile/templates/mixed.just` |
+| none matched | `plugins/forge/skills/init-justfile/templates/generic.just` |
 
 Write to `justfile` (lowercase).
 
@@ -202,7 +205,7 @@ Replace `FRONTEND_DIR` and `BACKEND_DIR` with the paths detected in Step 1a. Add
 | `BACKEND_COMPILE` | `go vet ./...` | `cargo check` | `python -m py_compile src/` |
 | `BACKEND_BUILD` | `go build ./...` | `cargo build --release` | `python -m build` |
 | `BACKEND_RUN` | `go run <BACKEND_ENTRY>` | `cargo run <BACKEND_ENTRY>` | `python <BACKEND_ENTRY>` |
-| `BACKEND_DEV` | `go run <BACKEND_ENTRY> --dev` | `cargo run <BACKEND_ENTRY> -- --dev` | `uvicorn src:app --reload` |
+| `BACKEND_DEV` | `go run <BACKEND_ENTRY>` | `cargo run <BACKEND_ENTRY>` | `uvicorn src:app --reload` |
 | `BACKEND_TEST` | `go test ./...` | `cargo test` | `pytest` |
 | `BACKEND_LINT` | `golangci-lint run ./...` | `cargo clippy -- -D warnings` | `ruff check .` |
 | `BACKEND_FMT` | `gofmt -w .` | `cargo fmt` | `ruff format .` |
@@ -288,7 +291,7 @@ Verification results:
   ✓ build           → go build ./... + npm run build (executed)
   ✓ test            → go test ./... + npm test (dry-run only)
   ✗ run             → FIXED: npm start → npm run preview (executed, self-corrected)
-  ✓ dev             → go run cmd/server/main.go -dev + npm run dev (executed, 10s timeout)
+  ✓ dev             → go run cmd/server/main.go + npm run dev (executed, 10s timeout)
   ✓ install         → go mod download + npm install (executed)
   ✗ lint            → golangci-lint not found, replaced with go vet (executed, self-corrected)
 
@@ -321,6 +324,7 @@ task all-completed will now use `just test` automatically.
 - **Mixed project scope**: forge skills resolve scope from `task claim` output or `process/state.json` and pass it to `just <verb>` when `just project-type` returns `mixed`. Pass `just compile frontend` or `just compile backend` manually to target a single side outside of a task context.
 
 <EXTREMELY-IMPORTANT>
+- MANUAL-ONLY. Do NOT auto-invoke this skill from other skills or agents. Only invoke when user explicitly runs `/init-justfile`.
 - If an existing justfile lacks forge boundary markers and `--force` is not set, you MUST prompt the user before overwriting. Never silently destroy user customizations.
 - Only the section between `# --- forge standard recipes ---` / `# --- end forge standard recipes ---` markers may be replaced. Recipes outside markers must be preserved verbatim.
 - After writing, you MUST run the verification steps (dry-run + actual execution) and report all results.

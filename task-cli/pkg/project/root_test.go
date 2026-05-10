@@ -18,7 +18,7 @@ func TestFindProjectRoot(t *testing.T) {
 			name: "finds go.mod in current directory",
 			setup: func(tempDir string) string {
 				goModPath := filepath.Join(tempDir, "go.mod")
-				os.WriteFile(goModPath, []byte("module test\n"), 0644)
+				_ = os.WriteFile(goModPath, []byte("module test\n"), 0644)
 				return tempDir
 			},
 			wantMarker: "go.mod",
@@ -28,9 +28,9 @@ func TestFindProjectRoot(t *testing.T) {
 			name: "finds go.mod in parent directory",
 			setup: func(tempDir string) string {
 				subDir := filepath.Join(tempDir, "subdir")
-				os.MkdirAll(subDir, 0755)
+				_ = os.MkdirAll(subDir, 0755)
 				goModPath := filepath.Join(tempDir, "go.mod")
-				os.WriteFile(goModPath, []byte("module test\n"), 0644)
+				_ = os.WriteFile(goModPath, []byte("module test\n"), 0644)
 				return subDir
 			},
 			wantMarker: "go.mod",
@@ -40,7 +40,7 @@ func TestFindProjectRoot(t *testing.T) {
 			name: "finds package.json for Node.js project",
 			setup: func(tempDir string) string {
 				pkgPath := filepath.Join(tempDir, "package.json")
-				os.WriteFile(pkgPath, []byte(`{"name": "test"}`), 0644)
+				_ = os.WriteFile(pkgPath, []byte(`{"name": "test"}`), 0644)
 				return tempDir
 			},
 			wantMarker: "package.json",
@@ -50,7 +50,7 @@ func TestFindProjectRoot(t *testing.T) {
 			name: "finds Cargo.toml for Rust project",
 			setup: func(tempDir string) string {
 				cargoPath := filepath.Join(tempDir, "Cargo.toml")
-				os.WriteFile(cargoPath, []byte(`[package]\nname = "test"`), 0644)
+				_ = os.WriteFile(cargoPath, []byte(`[package]\nname = "test"`), 0644)
 				return tempDir
 			},
 			wantMarker: "Cargo.toml",
@@ -60,7 +60,7 @@ func TestFindProjectRoot(t *testing.T) {
 			name: "finds pyproject.toml for Python project",
 			setup: func(tempDir string) string {
 				pyPath := filepath.Join(tempDir, "pyproject.toml")
-				os.WriteFile(pyPath, []byte(`[project]\nname = "test"`), 0644)
+				_ = os.WriteFile(pyPath, []byte(`[project]\nname = "test"`), 0644)
 				return tempDir
 			},
 			wantMarker: "pyproject.toml",
@@ -70,7 +70,7 @@ func TestFindProjectRoot(t *testing.T) {
 			name: "finds pom.xml for Java/Maven project",
 			setup: func(tempDir string) string {
 				pomPath := filepath.Join(tempDir, "pom.xml")
-				os.WriteFile(pomPath, []byte(`<project></project>`), 0644)
+				_ = os.WriteFile(pomPath, []byte(`<project></project>`), 0644)
 				return tempDir
 			},
 			wantMarker: "pom.xml",
@@ -80,7 +80,7 @@ func TestFindProjectRoot(t *testing.T) {
 			name: "finds build.gradle for Java/Gradle project",
 			setup: func(tempDir string) string {
 				gradlePath := filepath.Join(tempDir, "build.gradle")
-				os.WriteFile(gradlePath, []byte(`plugins { id("java") }`), 0644)
+				_ = os.WriteFile(gradlePath, []byte(`plugins { id("java") }`), 0644)
 				return tempDir
 			},
 			wantMarker: "build.gradle",
@@ -91,12 +91,12 @@ func TestFindProjectRoot(t *testing.T) {
 			setup: func(tempDir string) string {
 				// Create workspace marker at root
 				goWorkPath := filepath.Join(tempDir, "go.work")
-				os.WriteFile(goWorkPath, []byte(`go 1.21`), 0644)
+				_ = os.WriteFile(goWorkPath, []byte(`go 1.21`), 0644)
 				// Create project marker in subdirectory
 				subDir := filepath.Join(tempDir, "service", "auth")
-				os.MkdirAll(subDir, 0755)
+				_ = os.MkdirAll(subDir, 0755)
 				goModPath := filepath.Join(subDir, "go.mod")
-				os.WriteFile(goModPath, []byte("module test\n"), 0644)
+				_ = os.WriteFile(goModPath, []byte("module test\n"), 0644)
 				return subDir
 			},
 			wantMarker: "go.work",
@@ -110,7 +110,7 @@ func TestFindProjectRoot(t *testing.T) {
 			workDir := tt.setup(tempDir)
 
 			originalDir, _ := os.Getwd()
-			defer os.Chdir(originalDir)
+			defer func() { _ = os.Chdir(originalDir) }()
 			if err := os.Chdir(workDir); err != nil {
 				t.Fatalf("Chdir() error = %v", err)
 			}
@@ -142,11 +142,11 @@ func TestFindRootInfo(t *testing.T) {
 	t.Run("returns detailed info for Go project", func(t *testing.T) {
 		tempDir, _ := filepath.EvalSymlinks(t.TempDir())
 		goModPath := filepath.Join(tempDir, "go.mod")
-		os.WriteFile(goModPath, []byte("module test\n"), 0644)
+		_ = os.WriteFile(goModPath, []byte("module test\n"), 0644)
 
 		originalDir, _ := os.Getwd()
-		defer os.Chdir(originalDir)
-		os.Chdir(tempDir)
+		defer func() { _ = os.Chdir(originalDir) }()
+		_ = os.Chdir(tempDir)
 
 		info, err := FindRootInfo()
 		if err != nil {
@@ -169,11 +169,11 @@ func TestFindRootInfo(t *testing.T) {
 	t.Run("returns workspace type for go.work", func(t *testing.T) {
 		tempDir := t.TempDir()
 		goWorkPath := filepath.Join(tempDir, "go.work")
-		os.WriteFile(goWorkPath, []byte("go 1.21\n"), 0644)
+		_ = os.WriteFile(goWorkPath, []byte("go 1.21\n"), 0644)
 
 		originalDir, _ := os.Getwd()
-		defer os.Chdir(originalDir)
-		os.Chdir(tempDir)
+		defer func() { _ = os.Chdir(originalDir) }()
+		_ = os.Chdir(tempDir)
 
 		info, err := FindRootInfo()
 		if err != nil {
@@ -192,10 +192,10 @@ func TestFindRootInfoFrom(t *testing.T) {
 	t.Run("finds root from subdirectory", func(t *testing.T) {
 		tempDir := t.TempDir()
 		subDir := filepath.Join(tempDir, "a", "b", "c")
-		os.MkdirAll(subDir, 0755)
+		_ = os.MkdirAll(subDir, 0755)
 
 		goModPath := filepath.Join(tempDir, "go.mod")
-		os.WriteFile(goModPath, []byte("module test\n"), 0644)
+		_ = os.WriteFile(goModPath, []byte("module test\n"), 0644)
 
 		info, err := FindRootInfoFrom(subDir)
 		if err != nil {
@@ -210,8 +210,8 @@ func TestFindRootInfoFrom(t *testing.T) {
 func TestGetProjectRootFromEnv(t *testing.T) {
 	t.Run("returns CLAUDE_PROJECT_DIR when set", func(t *testing.T) {
 		testPath := filepath.Join("custom", "path")
-		os.Setenv("CLAUDE_PROJECT_DIR", testPath)
-		defer os.Unsetenv("CLAUDE_PROJECT_DIR")
+		_ = os.Setenv("CLAUDE_PROJECT_DIR", testPath)
+		defer func() { _ = os.Unsetenv("CLAUDE_PROJECT_DIR") }()
 
 		got := GetProjectRootFromEnv()
 		want := filepath.Clean(testPath)
@@ -222,9 +222,9 @@ func TestGetProjectRootFromEnv(t *testing.T) {
 
 	t.Run("returns PROJECT_ROOT when CLAUDE_PROJECT_DIR not set", func(t *testing.T) {
 		testPath := filepath.Join("fallback", "path")
-		os.Unsetenv("CLAUDE_PROJECT_DIR")
-		os.Setenv("PROJECT_ROOT", testPath)
-		defer os.Unsetenv("PROJECT_ROOT")
+		_ = os.Unsetenv("CLAUDE_PROJECT_DIR")
+		_ = os.Setenv("PROJECT_ROOT", testPath)
+		defer func() { _ = os.Unsetenv("PROJECT_ROOT") }()
 
 		got := GetProjectRootFromEnv()
 		want := filepath.Clean(testPath)
@@ -234,12 +234,12 @@ func TestGetProjectRootFromEnv(t *testing.T) {
 	})
 
 	t.Run("CLAUDE_PROJECT_DIR takes priority", func(t *testing.T) {
-		priorityPath := filepath.Join("priority")
-		fallbackPath := filepath.Join("fallback")
-		os.Setenv("CLAUDE_PROJECT_DIR", priorityPath)
-		os.Setenv("PROJECT_ROOT", fallbackPath)
-		defer os.Unsetenv("CLAUDE_PROJECT_DIR")
-		defer os.Unsetenv("PROJECT_ROOT")
+		priorityPath := "priority"
+		fallbackPath := "fallback"
+		_ = os.Setenv("CLAUDE_PROJECT_DIR", priorityPath)
+		_ = os.Setenv("PROJECT_ROOT", fallbackPath)
+		defer func() { _ = os.Unsetenv("CLAUDE_PROJECT_DIR") }()
+		defer func() { _ = os.Unsetenv("PROJECT_ROOT") }()
 
 		got := GetProjectRootFromEnv()
 		want := filepath.Clean(priorityPath)
@@ -249,8 +249,8 @@ func TestGetProjectRootFromEnv(t *testing.T) {
 	})
 
 	t.Run("returns empty when neither set", func(t *testing.T) {
-		os.Unsetenv("CLAUDE_PROJECT_DIR")
-		os.Unsetenv("PROJECT_ROOT")
+		_ = os.Unsetenv("CLAUDE_PROJECT_DIR")
+		_ = os.Unsetenv("PROJECT_ROOT")
 
 		got := GetProjectRootFromEnv()
 		if got != "" {
@@ -265,16 +265,16 @@ func TestEnvVarOverride(t *testing.T) {
 
 		// Create go.mod in temp dir
 		goModPath := filepath.Join(tempDir, "go.mod")
-		os.WriteFile(goModPath, []byte("module test\n"), 0644)
+		_ = os.WriteFile(goModPath, []byte("module test\n"), 0644)
 
 		// Set env var to different path
 		overridePath := filepath.Join("override", "path")
-		os.Setenv("CLAUDE_PROJECT_DIR", overridePath)
-		defer os.Unsetenv("CLAUDE_PROJECT_DIR")
+		_ = os.Setenv("CLAUDE_PROJECT_DIR", overridePath)
+		defer func() { _ = os.Unsetenv("CLAUDE_PROJECT_DIR") }()
 
 		originalDir, _ := os.Getwd()
-		defer os.Chdir(originalDir)
-		os.Chdir(tempDir)
+		defer func() { _ = os.Chdir(originalDir) }()
+		_ = os.Chdir(tempDir)
 
 		root, err := FindProjectRoot()
 		if err != nil {
@@ -293,7 +293,7 @@ func TestGitWorktree(t *testing.T) {
 
 		// Create .git as a file (worktree scenario)
 		gitFile := filepath.Join(tempDir, ".git")
-		os.WriteFile(gitFile, []byte("gitdir: /main/repo/.git/worktrees/feature\n"), 0644)
+		_ = os.WriteFile(gitFile, []byte("gitdir: /main/repo/.git/worktrees/feature\n"), 0644)
 
 		// Test that matchesMarker accepts .git as a file
 		gitMarker := Marker{Name: ".git", Type: RootTypeVCS, IsDirectory: false}
@@ -307,7 +307,7 @@ func TestGitWorktree(t *testing.T) {
 
 		// Create .git as a directory (normal repo)
 		gitDir := filepath.Join(tempDir, ".git")
-		os.MkdirAll(gitDir, 0755)
+		_ = os.MkdirAll(gitDir, 0755)
 
 		// Test that matchesMarker accepts .git as a directory
 		gitMarker := Marker{Name: ".git", Type: RootTypeVCS, IsDirectory: false}
@@ -321,11 +321,11 @@ func TestFindVCSRoot(t *testing.T) {
 	t.Run("finds .git directory", func(t *testing.T) {
 		tempDir, _ := filepath.EvalSymlinks(t.TempDir())
 		gitDir := filepath.Join(tempDir, ".git")
-		os.MkdirAll(gitDir, 0755)
+		_ = os.MkdirAll(gitDir, 0755)
 
 		originalDir, _ := os.Getwd()
-		defer os.Chdir(originalDir)
-		os.Chdir(tempDir)
+		defer func() { _ = os.Chdir(originalDir) }()
+		_ = os.Chdir(tempDir)
 
 		root, err := FindVCSRoot()
 		if err != nil {
@@ -339,13 +339,13 @@ func TestFindVCSRoot(t *testing.T) {
 	t.Run("finds .git in parent", func(t *testing.T) {
 		tempDir, _ := filepath.EvalSymlinks(t.TempDir())
 		subDir := filepath.Join(tempDir, "subdir")
-		os.MkdirAll(subDir, 0755)
+		_ = os.MkdirAll(subDir, 0755)
 		gitDir := filepath.Join(tempDir, ".git")
-		os.MkdirAll(gitDir, 0755)
+		_ = os.MkdirAll(gitDir, 0755)
 
 		originalDir, _ := os.Getwd()
-		defer os.Chdir(originalDir)
-		os.Chdir(subDir)
+		defer func() { _ = os.Chdir(originalDir) }()
+		_ = os.Chdir(subDir)
 
 		root, err := FindVCSRoot()
 		if err != nil {
@@ -363,17 +363,17 @@ func TestMonorepoDetection(t *testing.T) {
 
 		// Create .forge/ at project root (simulates task claim bootstrap)
 		forgeDir := filepath.Join(tempDir, ".forge")
-		os.MkdirAll(forgeDir, 0755)
+		_ = os.MkdirAll(forgeDir, 0755)
 
 		// Create go.mod in backend/ subdirectory
 		backendDir := filepath.Join(tempDir, "backend")
-		os.MkdirAll(backendDir, 0755)
+		_ = os.MkdirAll(backendDir, 0755)
 		goModPath := filepath.Join(backendDir, "go.mod")
-		os.WriteFile(goModPath, []byte("module backend\n"), 0644)
+		_ = os.WriteFile(goModPath, []byte("module backend\n"), 0644)
 
 		originalDir, _ := os.Getwd()
-		defer os.Chdir(originalDir)
-		os.Chdir(backendDir)
+		defer func() { _ = os.Chdir(originalDir) }()
+		_ = os.Chdir(backendDir)
 
 		info, err := FindRootInfo()
 		if err != nil {
@@ -394,16 +394,16 @@ func TestMonorepoDetection(t *testing.T) {
 		tempDir, _ := filepath.EvalSymlinks(t.TempDir())
 
 		forgeDir := filepath.Join(tempDir, ".forge")
-		os.MkdirAll(forgeDir, 0755)
+		_ = os.MkdirAll(forgeDir, 0755)
 
 		frontendDir := filepath.Join(tempDir, "frontend")
-		os.MkdirAll(frontendDir, 0755)
-		pkgJson := filepath.Join(frontendDir, "package.json")
-		os.WriteFile(pkgJson, []byte(`{"name": "frontend"}`), 0644)
+		_ = os.MkdirAll(frontendDir, 0755)
+		pkgJSON := filepath.Join(frontendDir, "package.json")
+		_ = os.WriteFile(pkgJSON, []byte(`{"name": "frontend"}`), 0644)
 
 		originalDir, _ := os.Getwd()
-		defer os.Chdir(originalDir)
-		os.Chdir(frontendDir)
+		defer func() { _ = os.Chdir(originalDir) }()
+		_ = os.Chdir(frontendDir)
 
 		info, err := FindRootInfo()
 		if err != nil {
@@ -424,13 +424,13 @@ func TestMonorepoDetection(t *testing.T) {
 		tempDir, _ := filepath.EvalSymlinks(t.TempDir())
 
 		forgeDir := filepath.Join(tempDir, ".forge")
-		os.MkdirAll(forgeDir, 0755)
+		_ = os.MkdirAll(forgeDir, 0755)
 		goModPath := filepath.Join(tempDir, "go.mod")
-		os.WriteFile(goModPath, []byte("module test\n"), 0644)
+		_ = os.WriteFile(goModPath, []byte("module test\n"), 0644)
 
 		originalDir, _ := os.Getwd()
-		defer os.Chdir(originalDir)
-		os.Chdir(tempDir)
+		defer func() { _ = os.Chdir(originalDir) }()
+		_ = os.Chdir(tempDir)
 
 		info, err := FindRootInfo()
 		if err != nil {
@@ -449,17 +449,17 @@ func TestMonorepoDetection(t *testing.T) {
 
 		// Create pnpm workspace at root
 		pnpmWorkspace := filepath.Join(tempDir, "pnpm-workspace.yaml")
-		os.WriteFile(pnpmWorkspace, []byte("packages:\n  - 'apps/*'\n"), 0644)
+		_ = os.WriteFile(pnpmWorkspace, []byte("packages:\n  - 'apps/*'\n"), 0644)
 
 		// Create package.json in subproject
 		subDir := filepath.Join(tempDir, "apps", "web")
-		os.MkdirAll(subDir, 0755)
-		pkgJson := filepath.Join(subDir, "package.json")
-		os.WriteFile(pkgJson, []byte(`{"name": "web"}`), 0644)
+		_ = os.MkdirAll(subDir, 0755)
+		pkgJSON := filepath.Join(subDir, "package.json")
+		_ = os.WriteFile(pkgJSON, []byte(`{"name": "web"}`), 0644)
 
 		originalDir, _ := os.Getwd()
-		defer os.Chdir(originalDir)
-		os.Chdir(subDir)
+		defer func() { _ = os.Chdir(originalDir) }()
+		_ = os.Chdir(subDir)
 
 		info, err := FindRootInfo()
 		if err != nil {
@@ -478,17 +478,17 @@ func TestMonorepoDetection(t *testing.T) {
 
 		// Create settings.gradle at root
 		settingsGradle := filepath.Join(tempDir, "settings.gradle")
-		os.WriteFile(settingsGradle, []byte("include 'service-auth'"), 0644)
+		_ = os.WriteFile(settingsGradle, []byte("include 'service-auth'"), 0644)
 
 		// Create build.gradle in subproject
 		subDir := filepath.Join(tempDir, "service-auth")
-		os.MkdirAll(subDir, 0755)
+		_ = os.MkdirAll(subDir, 0755)
 		buildGradle := filepath.Join(subDir, "build.gradle")
-		os.WriteFile(buildGradle, []byte("plugins { id('java') }"), 0644)
+		_ = os.WriteFile(buildGradle, []byte("plugins { id('java') }"), 0644)
 
 		originalDir, _ := os.Getwd()
-		defer os.Chdir(originalDir)
-		os.Chdir(subDir)
+		defer func() { _ = os.Chdir(originalDir) }()
+		_ = os.Chdir(subDir)
 
 		info, err := FindRootInfo()
 		if err != nil {
@@ -549,8 +549,8 @@ func TestFindProjectRootFrom(t *testing.T) {
 
 	t.Run("returns env override path", func(t *testing.T) {
 		overridePath := filepath.Join("env", "override")
-		os.Setenv("CLAUDE_PROJECT_DIR", overridePath)
-		defer os.Unsetenv("CLAUDE_PROJECT_DIR")
+		_ = os.Setenv("CLAUDE_PROJECT_DIR", overridePath)
+		defer func() { _ = os.Unsetenv("CLAUDE_PROJECT_DIR") }()
 
 		root, err := FindProjectRootFrom("/some/dir")
 		if err != nil {
@@ -586,8 +586,8 @@ func TestFindProjectRootFrom(t *testing.T) {
 func TestFindRootInfoFrom_EnvOverride(t *testing.T) {
 	t.Run("returns RootTypeUnknown when env var set", func(t *testing.T) {
 		envDir := filepath.Join("custom", "env", "root")
-		os.Setenv("CLAUDE_PROJECT_DIR", envDir)
-		defer os.Unsetenv("CLAUDE_PROJECT_DIR")
+		_ = os.Setenv("CLAUDE_PROJECT_DIR", envDir)
+		defer func() { _ = os.Unsetenv("CLAUDE_PROJECT_DIR") }()
 
 		info, err := FindRootInfoFrom("/any/path")
 		if err != nil {
@@ -608,8 +608,8 @@ func TestFindRootInfoFrom_EnvOverride(t *testing.T) {
 func TestFindProjectRoot_EnvOverride(t *testing.T) {
 	t.Run("CLAUDE_PROJECT_DIR returns env path directly", func(t *testing.T) {
 		envDir := filepath.Join("from", "env")
-		os.Setenv("CLAUDE_PROJECT_DIR", envDir)
-		defer os.Unsetenv("CLAUDE_PROJECT_DIR")
+		_ = os.Setenv("CLAUDE_PROJECT_DIR", envDir)
+		defer func() { _ = os.Unsetenv("CLAUDE_PROJECT_DIR") }()
 
 		root, err := FindProjectRoot()
 		if err != nil {
@@ -625,8 +625,8 @@ func TestFindProjectRoot_EnvOverride(t *testing.T) {
 func TestFindRootInfo_EnvOverride(t *testing.T) {
 	t.Run("CLAUDE_PROJECT_DIR returns RootTypeUnknown info", func(t *testing.T) {
 		envDir := filepath.Join("env", "based")
-		os.Setenv("CLAUDE_PROJECT_DIR", envDir)
-		defer os.Unsetenv("CLAUDE_PROJECT_DIR")
+		_ = os.Setenv("CLAUDE_PROJECT_DIR", envDir)
+		defer func() { _ = os.Unsetenv("CLAUDE_PROJECT_DIR") }()
 
 		info, err := FindRootInfo()
 		if err != nil {
@@ -653,7 +653,7 @@ func TestFindVCSRootWithGitInit(t *testing.T) {
 		}
 
 		originalDir, _ := os.Getwd()
-		defer os.Chdir(originalDir)
+		defer func() { _ = os.Chdir(originalDir) }()
 		if err := os.Chdir(tempDir); err != nil {
 			t.Fatalf("Chdir() error = %v", err)
 		}
@@ -828,9 +828,9 @@ func TestFindRootInfoFrom_NoMarkersInTree(t *testing.T) {
 	t.Run("finds marker from ancestor directory", func(t *testing.T) {
 		// Create a marker in a parent, then query from a nested child
 		parentDir := t.TempDir()
-		os.WriteFile(filepath.Join(parentDir, "go.mod"), []byte("module test\n"), 0644)
+		_ = os.WriteFile(filepath.Join(parentDir, "go.mod"), []byte("module test\n"), 0644)
 		childDir := filepath.Join(parentDir, "sub", "deep")
-		os.MkdirAll(childDir, 0755)
+		_ = os.MkdirAll(childDir, 0755)
 
 		info, err := FindRootInfoFrom(childDir)
 		if err != nil {

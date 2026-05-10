@@ -68,7 +68,7 @@ func init() {
 	recordCmd.Flags().BoolVar(&recordForce, "force", false, "Override validation errors (use with caution)")
 }
 
-func runRecord(cmd *cobra.Command, args []string) {
+func runRecord(_ *cobra.Command, args []string) {
 	taskIDArg := args[0]
 
 	projectRoot, err := project.FindProjectRoot()
@@ -222,7 +222,6 @@ func autoRestoreSourceTask(index *task.TaskIndex, sourceTaskID string) {
 	fmt.Fprintf(os.Stderr, "AUTO-RESTORE: source task %s restored to pending (all deps completed or skipped)\n", sourceTaskID)
 }
 
-
 func readRecordData(dataPath string) (*task.RecordData, error) {
 	var data []byte
 	var err error
@@ -253,6 +252,7 @@ func readRecordData(dataPath string) (*task.RecordData, error) {
 // Hard validation for completed tasks (overridable with --force):
 //   - testsPassed=0 && testsFailed=0 with coverage >= 0
 //   - any acceptanceCriteria with met=false
+//
 // Recommended fields for "completed" status (missing = warning):
 //   - keyDecisions, acceptanceCriteria
 func validateRecordData(rd *task.RecordData, force bool) {
@@ -377,7 +377,7 @@ time_spent: "%s"
 		formatList(rd.FilesCreated),
 		formatList(rd.FilesModified),
 		formatList(rd.KeyDecisions),
-			formatTestsExecuted(rd.Coverage, t.NoTest), rd.TestsPassed, rd.TestsFailed, formatCoverage(rd.Coverage),
+		formatTestsExecuted(rd.Coverage, t.NoTest), rd.TestsPassed, rd.TestsFailed, formatCoverage(rd.Coverage),
 		formatCriteria(rd.AcceptanceCriteria),
 		notes,
 	)

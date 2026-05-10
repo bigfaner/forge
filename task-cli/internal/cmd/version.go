@@ -13,6 +13,6 @@ var versionCmd = &cobra.Command{
 	Run:   runVersion,
 }
 
-func runVersion(cmd *cobra.Command, args []string) {
+func runVersion(_ *cobra.Command, _ []string) {
 	PrintBlock("VERSION", version.GetVersion())
 }

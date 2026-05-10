@@ -18,7 +18,7 @@ With a slug argument: sets the current feature.`,
 	Run:  runFeature,
 }
 
-func runFeature(cmd *cobra.Command, args []string) {
+func runFeature(_ *cobra.Command, args []string) {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
 		Exit(ErrProjectNotFound())

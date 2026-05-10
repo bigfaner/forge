@@ -1,3 +1,4 @@
+// Package e2eprobe provides end-to-end server health probing.
 package e2eprobe
 
 import (
@@ -18,7 +19,7 @@ func ProbeEndpoint(url string, timeout time.Duration) bool {
 	if err != nil {
 		return false
 	}
-	resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	return resp.StatusCode < 500
 }
 

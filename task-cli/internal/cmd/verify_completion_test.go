@@ -11,9 +11,13 @@ import (
 
 func TestVerifyTaskCompletion(t *testing.T) {
 	t.Run("no project root env returns nil", func(t *testing.T) {
-		oldEnv := os.Getenv("CLAUDE_PROJECT_DIR")
-		os.Unsetenv("CLAUDE_PROJECT_DIR")
-		defer os.Setenv("CLAUDE_PROJECT_DIR", oldEnv)
+		// Use a temp dir with no git root or feature state to fully isolate
+		dir := t.TempDir()
+		t.Setenv("CLAUDE_PROJECT_DIR", dir)
+		// Also clear PROJECT_ROOT to prevent fallback to real project
+		oldProjectRoot := os.Getenv("PROJECT_ROOT")
+		_ = os.Unsetenv("PROJECT_ROOT")
+		defer func() { _ = os.Setenv("PROJECT_ROOT", oldProjectRoot) }()
 
 		err := verifyTaskCompletion()
 		if err != nil {
@@ -35,7 +39,7 @@ func TestVerifyTaskCompletion(t *testing.T) {
 		dir := t.TempDir()
 		t.Setenv("CLAUDE_PROJECT_DIR", dir)
 		// Create features dir but no valid feature
-		os.MkdirAll(filepath.Join(dir, feature.FeaturesDir), 0755)
+		_ = os.MkdirAll(filepath.Join(dir, feature.FeaturesDir), 0755)
 
 		err := verifyTaskCompletion()
 		if err != nil {
@@ -84,9 +88,9 @@ func TestVerifyTaskCompletion(t *testing.T) {
 
 		// Create record file
 		recordsDir := filepath.Join(dir, feature.FeaturesDir, "test", feature.TasksDirName, feature.RecordsDirName)
-		os.MkdirAll(recordsDir, 0755)
+		_ = os.MkdirAll(recordsDir, 0755)
 		recordFile := filepath.Join(recordsDir, "1.1.md")
-		os.WriteFile(recordFile, []byte("record content"), 0644)
+		_ = os.WriteFile(recordFile, []byte("record content"), 0644)
 
 		err := verifyTaskCompletion()
 		if err != nil {

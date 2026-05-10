@@ -128,7 +128,7 @@ func TestAddCmd_UnknownTemplateReturnsError(t *testing.T) {
 			"--title", "Fix: test",
 			"--template", "nonexistent",
 		})
-		rootCmd.Execute()
+		_ = rootCmd.Execute()
 		return
 	}
 	cmd := exec.Command(os.Args[0], "-test.run=TestAddCmd_UnknownTemplateReturnsError")

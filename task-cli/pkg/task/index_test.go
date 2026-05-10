@@ -239,9 +239,9 @@ func TestByID(t *testing.T) {
 	index := &TaskIndex{
 		Feature: "test-feature",
 		tasks: map[string]Task{
-			"task1":    {ID: "1.1", Title: "Task 1", Status: "pending"},
-			"run-e2e":  {ID: "T-test-3", Title: "Run e2e", Status: "pending"},
-			"disc-1":   {ID: "disc-1", Title: "Discovery", Status: "pending"},
+			"task1":   {ID: "1.1", Title: "Task 1", Status: "pending"},
+			"run-e2e": {ID: "T-test-3", Title: "Run e2e", Status: "pending"},
+			"disc-1":  {ID: "disc-1", Title: "Discovery", Status: "pending"},
 		},
 	}
 

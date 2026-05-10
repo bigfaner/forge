@@ -34,11 +34,11 @@ type Task struct {
 
 // TaskIndex represents the index.json structure for a feature.
 // The tasks map is unexported; use ByID, SetTask, TasksMap, etc.
-type TaskIndex struct {
+type TaskIndex struct { //nolint:revive // intentional naming for API clarity
 	Feature      string
-	PRD          string   // e.g. "prd/prd-spec.md"
-	Design       string   // e.g. "design/tech-design.md"
-	Proposal     string   // e.g. "docs/proposals/<slug>/proposal.md" (quick mode alternative to PRD+Design)
+	PRD          string // e.g. "prd/prd-spec.md"
+	Design       string // e.g. "design/tech-design.md"
+	Proposal     string // e.g. "docs/proposals/<slug>/proposal.md" (quick mode alternative to PRD+Design)
 	Created      string
 	Status       string
 	tasks        map[string]Task
@@ -63,6 +63,7 @@ type taskIndexJSON struct {
 	E2ERound     int             `json:"e2eRound,omitempty"`
 }
 
+// MarshalJSON serializes the TaskIndex to JSON.
 func (ti TaskIndex) MarshalJSON() ([]byte, error) {
 	return json.Marshal(taskIndexJSON{
 		Feature:      ti.Feature,
@@ -79,6 +80,7 @@ func (ti TaskIndex) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// UnmarshalJSON deserializes JSON data into the TaskIndex.
 func (ti *TaskIndex) UnmarshalJSON(data []byte) error {
 	var j taskIndexJSON
 	if err := json.Unmarshal(data, &j); err != nil {
@@ -99,7 +101,7 @@ func (ti *TaskIndex) UnmarshalJSON(data []byte) error {
 }
 
 // TaskState represents the current in-progress task state.
-type TaskState struct {
+type TaskState struct { //nolint:revive // intentional naming for API clarity
 	TaskID        string   `json:"task_id"`
 	Key           string   `json:"key"`
 	Title         string   `json:"title"`

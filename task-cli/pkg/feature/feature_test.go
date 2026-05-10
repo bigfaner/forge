@@ -316,13 +316,13 @@ func gitInit(t *testing.T, dir string) {
 		t.Fatalf("git init failed: %v", err)
 	}
 	// Set a default user so commits work
-	exec.Command("git", "-C", dir, "config", "user.email", "test@test.com").Run()
-	exec.Command("git", "-C", dir, "config", "user.name", "Test").Run()
+	_ = exec.Command("git", "-C", dir, "config", "user.email", "test@test.com").Run()
+	_ = exec.Command("git", "-C", dir, "config", "user.name", "Test").Run()
 	// Create an initial commit so branch switching works
 	dummy := filepath.Join(dir, ".gitignore")
-	os.WriteFile(dummy, []byte(""), 0644)
-	exec.Command("git", "-C", dir, "add", ".gitignore").Run()
-	exec.Command("git", "-C", dir, "commit", "-m", "init").Run()
+	_ = os.WriteFile(dummy, []byte(""), 0644)
+	_ = exec.Command("git", "-C", dir, "add", ".gitignore").Run()
+	_ = exec.Command("git", "-C", dir, "commit", "-m", "init").Run()
 }
 
 func gitCheckoutBranch(t *testing.T, dir, branch string) {

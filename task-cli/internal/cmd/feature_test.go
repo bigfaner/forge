@@ -35,20 +35,20 @@ func captureOutput(f func() error) (string, error) {
 
 	go func() {
 		var buf bytes.Buffer
-		io.Copy(&buf, rOut)
+		_, _ = io.Copy(&buf, rOut)
 		outCh <- buf.String()
 	}()
 
 	go func() {
 		var buf bytes.Buffer
-		io.Copy(&buf, rErr)
+		_, _ = io.Copy(&buf, rErr)
 		errCh <- buf.String()
 	}()
 
 	runErr := f()
 
-	wOut.Close()
-	wErr.Close()
+	_ = wOut.Close()
+	_ = wErr.Close()
 	os.Stdout = oldStdout
 	os.Stderr = oldStderr
 
@@ -83,7 +83,7 @@ func TestRunFeature_Display(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Chdir(origWd)
+	defer func() { _ = os.Chdir(origWd) }()
 
 	if err := os.Chdir(dir); err != nil {
 		t.Fatal(err)
@@ -114,7 +114,7 @@ func TestRunFeature_Set(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Chdir(origWd)
+	defer func() { _ = os.Chdir(origWd) }()
 
 	if err := os.Chdir(dir); err != nil {
 		t.Fatal(err)
@@ -153,7 +153,7 @@ func TestRunFeature_NoFeatureSet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Chdir(origWd)
+	defer func() { _ = os.Chdir(origWd) }()
 
 	if err := os.Chdir(dir); err != nil {
 		t.Fatal(err)
@@ -192,9 +192,9 @@ func TestRunQuery(t *testing.T) {
 		StatusEnum:   []string{"pending", "in_progress", "completed"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
 	}
-		index.SetTasks(map[string]task.Task{
-			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md", Record: "1.1.md", EstimatedTime: "30m", Dependencies: []string{"1.0"}},
-		})
+	index.SetTasks(map[string]task.Task{
+		"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md", Record: "1.1.md", EstimatedTime: "30m", Dependencies: []string{"1.0"}},
+	})
 
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)
@@ -209,7 +209,7 @@ func TestRunQuery(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Chdir(origWd)
+	defer func() { _ = os.Chdir(origWd) }()
 
 	if err := os.Chdir(dir); err != nil {
 		t.Fatal(err)
@@ -257,12 +257,12 @@ func TestRunStatus(t *testing.T) {
 		Feature:      "test-feature",
 		PRD:          "prd/prd-spec.md",
 		Design:       "design/tech-design.md",
-			StatusEnum:   []string{"pending", "in_progress", "completed", "blocked", "skipped"},
+		StatusEnum:   []string{"pending", "in_progress", "completed", "blocked", "skipped"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
 	}
-		index.SetTasks(map[string]task.Task{
-			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md", Record: "1.1.md"},
-		})
+	index.SetTasks(map[string]task.Task{
+		"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md", Record: "1.1.md"},
+	})
 
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)
@@ -277,7 +277,7 @@ func TestRunStatus(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Chdir(origWd)
+	defer func() { _ = os.Chdir(origWd) }()
 
 	if err := os.Chdir(dir); err != nil {
 		t.Fatal(err)
@@ -323,10 +323,10 @@ func TestRunCheck(t *testing.T) {
 		StatusEnum:   []string{"pending", "in_progress", "completed"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
 	}
-		index.SetTasks(map[string]task.Task{
-			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md", Record: "1.1.md"},
-			"task2": {ID: "1.2", Title: "Task 2", Status: "pending", Priority: "P1", File: "1.2.md", Record: "1.2.md", Dependencies: []string{"1.1"}},
-		})
+	index.SetTasks(map[string]task.Task{
+		"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md", Record: "1.1.md"},
+		"task2": {ID: "1.2", Title: "Task 2", Status: "pending", Priority: "P1", File: "1.2.md", Record: "1.2.md", Dependencies: []string{"1.1"}},
+	})
 
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)
@@ -341,7 +341,7 @@ func TestRunCheck(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Chdir(origWd)
+	defer func() { _ = os.Chdir(origWd) }()
 
 	if err := os.Chdir(dir); err != nil {
 		t.Fatal(err)

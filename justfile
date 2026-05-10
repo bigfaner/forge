@@ -6,66 +6,44 @@ claude:
 claude-c:
     claude --dangerously-skip-permissions -c
 
+claude-w name="":
+    claude --dangerously-skip-permissions -w "{{name}}"
+
 # --- forge standard recipes ---
 
 # project-type: return project type identifier
 project-type:
-    @echo "mixed"
+    @echo "backend"
 
 # compile: type-check and transpile for fast feedback
 compile scope="":
     #!/usr/bin/env bash
     set -euo pipefail
-    case "{{scope}}" in
-      frontend) npx tsc --noEmit ;;
-      backend)  go vet ./... ;;
-      "")       npx tsc --noEmit && go vet ./... ;;
-      *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
-    esac
+    cd task-cli && go vet ./...
 
 # build: full compile and package
 build scope="":
     #!/usr/bin/env bash
     set -euo pipefail
-    case "{{scope}}" in
-      frontend) npm run build ;;
-      backend)  go build ./... ;;
-      "")       npm run build && go build ./... ;;
-      *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
-    esac
+    cd task-cli && go build ./...
 
 # run: start the service
 run scope="":
     #!/usr/bin/env bash
     set -euo pipefail
-    case "{{scope}}" in
-      frontend) npm start ;;
-      backend)  go run . ;;
-      "")       npm start && go run . ;;
-      *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
-    esac
+    cd task-cli && go run .
 
 # dev: hot-reload development mode
 dev scope="":
     #!/usr/bin/env bash
     set -euo pipefail
-    case "{{scope}}" in
-      frontend) npm run dev ;;
-      backend)  go run . --dev ;;
-      "")       npm run dev && go run . --dev ;;
-      *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
-    esac
+    cd task-cli && go run .
 
 # test: unit + integration tests
 test scope="":
     #!/usr/bin/env bash
     set -euo pipefail
-    case "{{scope}}" in
-      frontend) npm test ;;
-      backend)  go test -race ./... ;;
-      "")       npm test && go test -race ./... ;;
-      *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
-    esac
+    cd task-cli && go test -race ./...
 
 # test-e2e: end-to-end tests
 [arg("feature", long)]
@@ -76,7 +54,12 @@ test-e2e feature="":
         [ ! -d tests/e2e/node_modules ] && npm install --prefix tests/e2e
         cd tests/e2e && npx playwright test
     else
-        cd tests/e2e && E2E_FEATURE=1 npx playwright test features/{{feature}}/
+        feature_config="tests/e2e/features/{{feature}}/playwright.config.ts"
+        if [ -f "$feature_config" ]; then
+            cd tests/e2e/features/{{feature}} && npx playwright test --config=playwright.config.ts
+        else
+            cd tests/e2e && E2E_FEATURE=1 npx playwright test features/{{feature}}/
+        fi
     fi
 
 # probe: check if configured services are healthy
@@ -104,56 +87,31 @@ probe path="/health":
 lint scope="":
     #!/usr/bin/env bash
     set -euo pipefail
-    case "{{scope}}" in
-      frontend) npm run lint ;;
-      backend)  golangci-lint run ./... ;;
-      "")       npm run lint && golangci-lint run ./... ;;
-      *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
-    esac
+    cd task-cli && golangci-lint run ./...
 
 # fmt: auto-format code
 fmt scope="":
     #!/usr/bin/env bash
     set -euo pipefail
-    case "{{scope}}" in
-      frontend) npx prettier --write . ;;
-      backend)  gofmt -w . ;;
-      "")       npx prettier --write . && gofmt -w . ;;
-      *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
-    esac
+    cd task-cli && gofmt -w .
 
 # check: lint + compile (CI gate)
 check scope="":
     #!/usr/bin/env bash
     set -euo pipefail
-    case "{{scope}}" in
-      frontend) npm run lint && npx tsc --noEmit ;;
-      backend)  golangci-lint run ./... ;;
-      "")       npm run lint && npx tsc --noEmit && golangci-lint run ./... ;;
-      *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
-    esac
+    cd task-cli && golangci-lint run ./... && go vet ./...
 
 # clean: remove build artifacts
 clean scope="":
     #!/usr/bin/env bash
     set -euo pipefail
-    case "{{scope}}" in
-      frontend) rm -rf dist ;;
-      backend)  go clean ./... ;;
-      "")       rm -rf dist && go clean ./... ;;
-      *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
-    esac
+    cd task-cli && go clean ./...
 
 # install: install dependencies (idempotent)
 install scope="":
     #!/usr/bin/env bash
     set -euo pipefail
-    case "{{scope}}" in
-      frontend) npm install ;;
-      backend)  go mod download ;;
-      "")       npm install && go mod download ;;
-      *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
-    esac
+    cd task-cli && go mod download
 
 # ci: full CI pipeline
 ci:

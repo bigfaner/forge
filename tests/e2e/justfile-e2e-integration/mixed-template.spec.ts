@@ -12,7 +12,7 @@ function fileNotContains(content: string, needle: string): boolean {
 
 // Read the mixed template from the separate template file
 function getMixedTemplate(): string {
-  return readProjectFile('plugins/forge/references/justfile-templates/mixed.just');
+  return readProjectFile('plugins/forge/skills/init-justfile/templates/mixed.just');
 }
 
 // ── TC-MIX-001 to TC-MIX-015: Mixed template content checks ───────
@@ -231,12 +231,10 @@ test.describe('Mixed template unscoped recipe checks', () => {
   // Traceability: TC-MIX-019 -> AC: e2e-setup has no scope parameter
   test('TC-MIX-019: e2e-setup has no scope parameter', () => {
     const template = getMixedTemplate();
+    const e2eSetupMatch = template.match(/^e2e-setup[^:]*:/m);
+    expect(e2eSetupMatch, 'Expected e2e-setup recipe in mixed template').toBeTruthy();
     expect(
-      fileContains(template, 'e2e-setup:'),
-      'Expected e2e-setup recipe in mixed template',
-    ).toBeTruthy();
-    expect(
-      !template.includes('e2e-setup scope=""'),
+      !e2eSetupMatch![0].includes('scope=""'),
       'Expected e2e-setup to NOT have scope="" parameter',
     ).toBeTruthy();
   });
