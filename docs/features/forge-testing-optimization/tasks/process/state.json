@@ -1,14 +1,14 @@
 {
-  "task_id": "T-quick-3",
-  "key": "quick-run-tests",
-  "title": "Run Quick E2E Tests",
+  "task_id": "T-quick-4",
+  "key": "quick-graduate",
+  "title": "Graduate Quick Test Scripts",
   "priority": "P1",
-  "estimatedTime": "15-30min",
+  "estimatedTime": "15min",
   "dependencies": [
-    "T-quick-2"
+    "T-quick-3"
   ],
-  "file": "quick-run-tests.md",
-  "record": "records/quick-run-tests.md",
-  "startedTime": "2026-05-10 13:49",
+  "file": "quick-graduate.md",
+  "record": "records/quick-graduate.md",
+  "startedTime": "2026-05-10 13:55",
   "scope": "all"
 }
