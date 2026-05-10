@@ -17,7 +17,7 @@ func TestProbeEndpoint(t *testing.T) {
 	})
 
 	t.Run("success returns true", func(t *testing.T) {
-		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		}))
 		defer ts.Close()
@@ -28,7 +28,7 @@ func TestProbeEndpoint(t *testing.T) {
 	})
 
 	t.Run("server error returns false", func(t *testing.T) {
-		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 		}))
 		defer ts.Close()
@@ -49,8 +49,8 @@ func TestProbeServers(t *testing.T) {
 
 	t.Run("empty config returns true", func(t *testing.T) {
 		dir := t.TempDir()
-		os.MkdirAll(filepath.Join(dir, "tests", "e2e"), 0755)
-		os.WriteFile(filepath.Join(dir, "tests", "e2e", "config.yaml"), []byte(""), 0644)
+		_ = os.MkdirAll(filepath.Join(dir, "tests", "e2e"), 0755)
+		_ = os.WriteFile(filepath.Join(dir, "tests", "e2e", "config.yaml"), []byte(""), 0644)
 		if !ProbeServers(dir) {
 			t.Error("expected true for empty config")
 		}
@@ -58,23 +58,23 @@ func TestProbeServers(t *testing.T) {
 
 	t.Run("unreachable endpoint returns false", func(t *testing.T) {
 		dir := t.TempDir()
-		os.MkdirAll(filepath.Join(dir, "tests", "e2e"), 0755)
-		os.WriteFile(filepath.Join(dir, "tests", "e2e", "config.yaml"), []byte("baseUrl: http://127.0.0.1:1\n"), 0644)
+		_ = os.MkdirAll(filepath.Join(dir, "tests", "e2e"), 0755)
+		_ = os.WriteFile(filepath.Join(dir, "tests", "e2e", "config.yaml"), []byte("baseUrl: http://127.0.0.1:1\n"), 0644)
 		if ProbeServers(dir) {
 			t.Error("expected false for unreachable endpoint")
 		}
 	})
 
 	t.Run("reachable baseUrl returns true", func(t *testing.T) {
-		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		}))
 		defer ts.Close()
 
 		dir := t.TempDir()
-		os.MkdirAll(filepath.Join(dir, "tests", "e2e"), 0755)
+		_ = os.MkdirAll(filepath.Join(dir, "tests", "e2e"), 0755)
 		config := "baseUrl: " + ts.URL + "\n"
-		os.WriteFile(filepath.Join(dir, "tests", "e2e", "config.yaml"), []byte(config), 0644)
+		_ = os.WriteFile(filepath.Join(dir, "tests", "e2e", "config.yaml"), []byte(config), 0644)
 
 		if !ProbeServers(dir) {
 			t.Error("expected true for reachable baseUrl")
@@ -82,15 +82,15 @@ func TestProbeServers(t *testing.T) {
 	})
 
 	t.Run("reachable apiBaseUrl returns true", func(t *testing.T) {
-		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		}))
 		defer ts.Close()
 
 		dir := t.TempDir()
-		os.MkdirAll(filepath.Join(dir, "tests", "e2e"), 0755)
+		_ = os.MkdirAll(filepath.Join(dir, "tests", "e2e"), 0755)
 		config := "apiBaseUrl: " + ts.URL + "\n"
-		os.WriteFile(filepath.Join(dir, "tests", "e2e", "config.yaml"), []byte(config), 0644)
+		_ = os.WriteFile(filepath.Join(dir, "tests", "e2e", "config.yaml"), []byte(config), 0644)
 
 		if !ProbeServers(dir) {
 			t.Error("expected true for reachable apiBaseUrl")
@@ -98,20 +98,20 @@ func TestProbeServers(t *testing.T) {
 	})
 
 	t.Run("both baseUrl and apiBaseUrl reachable returns true", func(t *testing.T) {
-		ts1 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ts1 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		}))
 		defer ts1.Close()
 
-		ts2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ts2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		}))
 		defer ts2.Close()
 
 		dir := t.TempDir()
-		os.MkdirAll(filepath.Join(dir, "tests", "e2e"), 0755)
+		_ = os.MkdirAll(filepath.Join(dir, "tests", "e2e"), 0755)
 		config := "baseUrl: " + ts1.URL + "\napiBaseUrl: " + ts2.URL + "\n"
-		os.WriteFile(filepath.Join(dir, "tests", "e2e", "config.yaml"), []byte(config), 0644)
+		_ = os.WriteFile(filepath.Join(dir, "tests", "e2e", "config.yaml"), []byte(config), 0644)
 
 		if !ProbeServers(dir) {
 			t.Error("expected true when both endpoints are reachable")

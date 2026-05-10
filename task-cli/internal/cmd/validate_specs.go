@@ -48,7 +48,7 @@ var exitFunc = os.Exit
 // validateSpecsScriptPath is the relative path to the validation script from project root.
 const validateSpecsScriptRelPath = "plugins/forge/skills/gen-test-scripts/templates/validate-specs.mjs"
 
-func runValidateSpecs(cmd *cobra.Command, args []string) {
+func runValidateSpecs(_ *cobra.Command, _ []string) {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
 		Exit(ErrProjectNotFound())
@@ -226,11 +226,10 @@ func captureValidationOutput(result *validationResult) string {
 
 	printValidationResults(result, "test-dir")
 
-	w.Close()
+	_ = w.Close()
 	os.Stdout = old
 
-	var buf []byte
-	buf = make([]byte, 4096)
+	buf := make([]byte, 4096)
 	n, _ := r.Read(buf)
 	return string(buf[:n])
 }

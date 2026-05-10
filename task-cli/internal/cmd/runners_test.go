@@ -19,7 +19,7 @@ func TestRunClaim(t *testing.T) {
 	if err := os.Chdir(dir); err != nil {
 		t.Fatal(err)
 	}
-	defer os.Chdir(origWd)
+	defer func() { _ = os.Chdir(origWd) }()
 
 	output, err := captureOutput(func() error {
 		rootCmd.SetArgs([]string{"claim"})
@@ -70,7 +70,7 @@ func TestRunClaim_Continue(t *testing.T) {
 	if err := os.Chdir(dir); err != nil {
 		t.Fatal(err)
 	}
-	defer os.Chdir(origWd)
+	defer func() { _ = os.Chdir(origWd) }()
 
 	output, err := captureOutput(func() error {
 		rootCmd.SetArgs([]string{"claim"})
@@ -113,7 +113,7 @@ func TestRunValidate(t *testing.T) {
 	if err := os.Chdir(dir); err != nil {
 		t.Fatal(err)
 	}
-	defer os.Chdir(origWd)
+	defer func() { _ = os.Chdir(origWd) }()
 
 	output, err := captureOutput(func() error {
 		rootCmd.SetArgs([]string{"validate", indexPath})
@@ -188,9 +188,9 @@ func TestRunRecord(t *testing.T) {
 	if err := os.Chdir(dir); err != nil {
 		t.Fatal(err)
 	}
-	defer os.Chdir(origWd)
+	defer func() { _ = os.Chdir(origWd) }()
 
-	output, err := captureOutput(func() error {
+	output, _ := captureOutput(func() error {
 		rootCmd.SetArgs([]string{"record", "1.1", "--data", recordDataFile})
 		return rootCmd.Execute()
 	})
@@ -241,7 +241,7 @@ func TestRunHookCleanup(t *testing.T) {
 	if err := os.Chdir(dir); err != nil {
 		t.Fatal(err)
 	}
-	defer os.Chdir(origWd)
+	defer func() { _ = os.Chdir(origWd) }()
 
 	// Run cleanup directly - cleanupCompletedTaskState() doesn't call os.Exit
 	cleanupCompletedTaskState()
@@ -295,7 +295,7 @@ func TestRunHookPreCommit_Success(t *testing.T) {
 	if err := os.Chdir(dir); err != nil {
 		t.Fatal(err)
 	}
-	defer os.Chdir(origWd)
+	defer func() { _ = os.Chdir(origWd) }()
 
 	// Call preCommit directly - it returns error instead of calling os.Exit
 	err = verifyTaskCompletion()
@@ -328,9 +328,9 @@ func setupClaimTestProject(t *testing.T) string {
 		StatusEnum:   []string{"pending", "in_progress", "completed"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
 	}
-		index.SetTasks(map[string]task.Task{
-			"task1": {ID: "1.1", Title: "Task 1", Priority: "P0", Status: "pending", File: "1.1.md", Record: "records/1.1.md"},
-		})
+	index.SetTasks(map[string]task.Task{
+		"task1": {ID: "1.1", Title: "Task 1", Priority: "P0", Status: "pending", File: "1.1.md", Record: "records/1.1.md"},
+	})
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)
 	}
@@ -350,11 +350,11 @@ func TestRunStatus_QueryMode(t *testing.T) {
 	if err := os.Chdir(dir); err != nil {
 		t.Fatal(err)
 	}
-	defer os.Chdir(origWd)
+	defer func() { _ = os.Chdir(origWd) }()
 
 	// First claim to set up state
 	rootCmd.SetArgs([]string{"claim"})
-	rootCmd.Execute()
+	_ = rootCmd.Execute()
 
 	output, err := captureOutput(func() error {
 		rootCmd.SetArgs([]string{"status", "1.1"})

@@ -15,7 +15,7 @@ import (
 func TestValidateRecordData(t *testing.T) {
 	t.Run("empty summary triggers hard error", func(t *testing.T) {
 		rd := &task.RecordData{
-			Status: "completed",
+			Status:  "completed",
 			Summary: "",
 		}
 		if os.Getenv("TEST_VALIDATE_EMPTY_SUMMARY") == "1" {
@@ -45,17 +45,17 @@ func TestValidateRecordData(t *testing.T) {
 
 	t.Run("completed with testsFailed auto-downgrades to blocked", func(t *testing.T) {
 		rd := &task.RecordData{
-			Status:       "completed",
-			Summary:      "Partial pass",
-			TestsPassed:  3,
-			TestsFailed:  2,
-			Coverage:     60.0,
+			Status:      "completed",
+			Summary:     "Partial pass",
+			TestsPassed: 3,
+			TestsFailed: 2,
+			Coverage:    60.0,
 		}
 		old := os.Stderr
 		r, w, _ := os.Pipe()
 		os.Stderr = w
 		validateRecordData(rd, false)
-		w.Close()
+		_ = w.Close()
 		os.Stderr = old
 
 		buf := make([]byte, 2048)
@@ -72,11 +72,11 @@ func TestValidateRecordData(t *testing.T) {
 
 	t.Run("force does NOT prevent auto-downgrade of testsFailed", func(t *testing.T) {
 		rd := &task.RecordData{
-			Status:       "completed",
-			Summary:      "Partial pass",
-			TestsPassed:  3,
-			TestsFailed:  2,
-			Coverage:     60.0,
+			Status:      "completed",
+			Summary:     "Partial pass",
+			TestsPassed: 3,
+			TestsFailed: 2,
+			Coverage:    60.0,
 		}
 		validateRecordData(rd, true)
 
@@ -110,7 +110,7 @@ func TestValidateRecordData(t *testing.T) {
 		r, w, _ := os.Pipe()
 		os.Stderr = w
 		validateRecordData(rd, false)
-		w.Close()
+		_ = w.Close()
 		os.Stderr = old
 
 		buf := make([]byte, 1024)
@@ -134,7 +134,7 @@ func TestValidateRecordData(t *testing.T) {
 		r, w, _ := os.Pipe()
 		os.Stderr = w
 		validateRecordData(rd, false)
-		w.Close()
+		_ = w.Close()
 		os.Stderr = old
 
 		buf := make([]byte, 1024)
@@ -146,34 +146,33 @@ func TestValidateRecordData(t *testing.T) {
 		}
 	})
 
+	t.Run("noTest task with testsPassed > 0 passes validation", func(t *testing.T) {
+		rd := &task.RecordData{
+			Status:       "completed",
+			Summary:      "Ran some tests despite noTest flag",
+			Coverage:     80.0,
+			TestsPassed:  5,
+			TestsFailed:  0,
+			KeyDecisions: []string{"tested anyway"},
+			AcceptanceCriteria: []task.AcceptanceCriterion{
+				{Criterion: "Works", Met: true},
+			},
+		}
+		old := os.Stderr
+		r, w, _ := os.Pipe()
+		os.Stderr = w
+		validateRecordData(rd, false)
+		_ = w.Close()
+		os.Stderr = old
 
-		t.Run("noTest task with testsPassed > 0 passes validation", func(t *testing.T) {
-			rd := &task.RecordData{
-				Status:      "completed",
-				Summary:     "Ran some tests despite noTest flag",
-				Coverage:    80.0,
-				TestsPassed: 5,
-				TestsFailed: 0,
-				KeyDecisions: []string{"tested anyway"},
-				AcceptanceCriteria: []task.AcceptanceCriterion{
-					{Criterion: "Works", Met: true},
-				},
-			}
-			old := os.Stderr
-			r, w, _ := os.Pipe()
-			os.Stderr = w
-			validateRecordData(rd, false)
-			w.Close()
-			os.Stderr = old
+		buf := make([]byte, 1024)
+		n, _ := r.Read(buf)
+		output := string(buf[:n])
 
-			buf := make([]byte, 1024)
-			n, _ := r.Read(buf)
-			output := string(buf[:n])
-
-			if strings.Contains(output, "ERROR") {
-				t.Errorf("noTest + testsPassed > 0 should pass, got: %s", output)
-			}
-		})
+		if strings.Contains(output, "ERROR") {
+			t.Errorf("noTest + testsPassed > 0 should pass, got: %s", output)
+		}
+	})
 
 	t.Run("completed with tests passes test evidence check", func(t *testing.T) {
 		rd := &task.RecordData{
@@ -188,7 +187,7 @@ func TestValidateRecordData(t *testing.T) {
 		r, w, _ := os.Pipe()
 		os.Stderr = w
 		validateRecordData(rd, false)
-		w.Close()
+		_ = w.Close()
 		os.Stderr = old
 
 		buf := make([]byte, 1024)
@@ -237,7 +236,7 @@ func TestValidateRecordData(t *testing.T) {
 		r, w, _ := os.Pipe()
 		os.Stderr = w
 		validateRecordData(rd, false)
-		w.Close()
+		_ = w.Close()
 		os.Stderr = old
 
 		buf := make([]byte, 1024)
@@ -261,7 +260,7 @@ func TestValidateRecordData(t *testing.T) {
 		r, w, _ := os.Pipe()
 		os.Stderr = w
 		validateRecordData(rd, true)
-		w.Close()
+		_ = w.Close()
 		os.Stderr = old
 
 		buf := make([]byte, 1024)
@@ -284,7 +283,7 @@ func TestValidateRecordData(t *testing.T) {
 		r, w, _ := os.Pipe()
 		os.Stderr = w
 		validateRecordData(rd, false)
-		w.Close()
+		_ = w.Close()
 		os.Stderr = old
 
 		buf := make([]byte, 1024)
@@ -310,7 +309,7 @@ func TestValidateRecordData(t *testing.T) {
 		r, w, _ := os.Pipe()
 		os.Stderr = w
 		validateRecordData(rd, false)
-		w.Close()
+		_ = w.Close()
 		os.Stderr = old
 
 		buf := make([]byte, 1024)
@@ -539,11 +538,11 @@ func TestFillRecordTemplate(t *testing.T) {
 				Title: "Task with no notes",
 			},
 			recordData: &task.RecordData{
-				Status:       "completed",
-				Summary:      "Done",
-				TestsPassed:  1,
-				Coverage:     50.0,
-				Notes:        "",
+				Status:      "completed",
+				Summary:     "Done",
+				TestsPassed: 1,
+				Coverage:    50.0,
+				Notes:       "",
 			},
 			startedTime: "2026-04-06 10:00",
 			checkContains: []string{
@@ -557,10 +556,10 @@ func TestFillRecordTemplate(t *testing.T) {
 				Title: "Task",
 			},
 			recordData: &task.RecordData{
-				Status:       "completed",
-				Summary:      "Done",
-				TestsPassed:  1,
-				Coverage:     50.0,
+				Status:      "completed",
+				Summary:     "Done",
+				TestsPassed: 1,
+				Coverage:    50.0,
 			},
 			startedTime: "",
 			checkContains: []string{
@@ -575,10 +574,10 @@ func TestFillRecordTemplate(t *testing.T) {
 				Title: "Timed Task",
 			},
 			recordData: &task.RecordData{
-				Status:       "completed",
-				Summary:      "Done",
-				TestsPassed:  1,
-				Coverage:     50.0,
+				Status:      "completed",
+				Summary:     "Done",
+				TestsPassed: 1,
+				Coverage:    50.0,
 			},
 			startedTime: "2026-04-06 10:00",
 			checkContains: []string{
@@ -592,17 +591,17 @@ func TestFillRecordTemplate(t *testing.T) {
 				Title: "Backward Time Task",
 			},
 			recordData: &task.RecordData{
-				Status:       "completed",
-				Summary:      "Done",
-				TestsPassed:  1,
-				Coverage:     50.0,
+				Status:      "completed",
+				Summary:     "Done",
+				TestsPassed: 1,
+				Coverage:    50.0,
 			},
 			startedTime: "2026-04-06 15:00",
 			checkNotContains: []string{
 				"time_spent: ~",
 			},
 		},
-			{
+		{
 			name: "noTest task with coverage=-1",
 			task: &task.Task{
 				ID:     "1.7",
@@ -610,8 +609,8 @@ func TestFillRecordTemplate(t *testing.T) {
 				NoTest: true,
 			},
 			recordData: &task.RecordData{
-				Status:  "completed",
-				Summary: "Created PRD",
+				Status:   "completed",
+				Summary:  "Created PRD",
 				Coverage: -1.0,
 			},
 			startedTime: "2026-04-06 10:00",
@@ -721,7 +720,7 @@ func TestFormatTestsExecuted(t *testing.T) {
 		{0.0, false, "Yes"},
 		{85.5, false, "Yes"},
 		{0.0, true, "No (noTest task)"},
-			{80.0, true, "No (noTest task)"},
+		{80.0, true, "No (noTest task)"},
 	}
 	for _, tt := range tests {
 		got := formatTestsExecuted(tt.coverage, tt.noTest)
@@ -736,16 +735,16 @@ func TestSaveIndexAndSignalCompletion(t *testing.T) {
 		dir := t.TempDir()
 		featureDir := filepath.Join(dir, "docs", "features", "test-f")
 		tasksDir := filepath.Join(featureDir, "tasks")
-		os.MkdirAll(tasksDir, 0755)
+		_ = os.MkdirAll(tasksDir, 0755)
 
 		indexPath := filepath.Join(tasksDir, "index.json")
 		index := &task.TaskIndex{
 			Feature: "test-f",
 		}
-			index.SetTasks(map[string]task.Task{
-				"t1": {ID: "1.1", Title: "Done", Status: "completed", Priority: "P0", File: "1.1.md"},
-				"t2": {ID: "1.2", Title: "Skipped", Status: "skipped", Priority: "P1", File: "1.2.md"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"t1": {ID: "1.1", Title: "Done", Status: "completed", Priority: "P0", File: "1.1.md"},
+			"t2": {ID: "1.2", Title: "Skipped", Status: "skipped", Priority: "P1", File: "1.2.md"},
+		})
 
 		saveIndexAndSignalCompletion(indexPath, dir, "test-f", index)
 
@@ -769,16 +768,16 @@ func TestSaveIndexAndSignalCompletion(t *testing.T) {
 		dir := t.TempDir()
 		featureDir := filepath.Join(dir, "docs", "features", "test-f")
 		tasksDir := filepath.Join(featureDir, "tasks")
-		os.MkdirAll(tasksDir, 0755)
+		_ = os.MkdirAll(tasksDir, 0755)
 
 		indexPath := filepath.Join(tasksDir, "index.json")
 		index := &task.TaskIndex{
 			Feature: "test-f",
 		}
-			index.SetTasks(map[string]task.Task{
-				"t1": {ID: "1.1", Title: "Done", Status: "completed", Priority: "P0", File: "1.1.md"},
-				"t2": {ID: "1.2", Title: "Pending", Status: "pending", Priority: "P1", File: "1.2.md"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"t1": {ID: "1.1", Title: "Done", Status: "completed", Priority: "P0", File: "1.1.md"},
+			"t2": {ID: "1.2", Title: "Pending", Status: "pending", Priority: "P1", File: "1.2.md"},
+		})
 
 		saveIndexAndSignalCompletion(indexPath, dir, "test-f", index)
 
@@ -795,10 +794,10 @@ func TestAutoRestoreSourceTask(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
 		}
-			index.SetTasks(map[string]task.Task{
-				"src":   {ID: "src", Status: "blocked", Dependencies: []string{"fix-1"}},
-				"fix-1": {ID: "fix-1", Status: "completed", SourceTaskID: "src"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"src":   {ID: "src", Status: "blocked", Dependencies: []string{"fix-1"}},
+			"fix-1": {ID: "fix-1", Status: "completed", SourceTaskID: "src"},
+		})
 
 		autoRestoreSourceTask(index, "src")
 
@@ -811,11 +810,11 @@ func TestAutoRestoreSourceTask(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
 		}
-			index.SetTasks(map[string]task.Task{
-				"src":   {ID: "src", Status: "blocked", Dependencies: []string{"fix-1", "fix-2"}},
-				"fix-1": {ID: "fix-1", Status: "completed"},
-				"fix-2": {ID: "fix-2", Status: "pending"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"src":   {ID: "src", Status: "blocked", Dependencies: []string{"fix-1", "fix-2"}},
+			"fix-1": {ID: "fix-1", Status: "completed"},
+			"fix-2": {ID: "fix-2", Status: "pending"},
+		})
 
 		autoRestoreSourceTask(index, "src")
 
@@ -828,10 +827,10 @@ func TestAutoRestoreSourceTask(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
 		}
-			index.SetTasks(map[string]task.Task{
-				"src":   {ID: "src", Status: "in_progress", Dependencies: []string{"fix-1"}},
-				"fix-1": {ID: "fix-1", Status: "completed"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"src":   {ID: "src", Status: "in_progress", Dependencies: []string{"fix-1"}},
+			"fix-1": {ID: "fix-1", Status: "completed"},
+		})
 
 		autoRestoreSourceTask(index, "src")
 
@@ -840,7 +839,7 @@ func TestAutoRestoreSourceTask(t *testing.T) {
 		}
 	})
 
-	t.Run("no-op when source not found", func(t *testing.T) {
+	t.Run("no-op when source not found", func(_ *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
 		}
@@ -852,9 +851,9 @@ func TestAutoRestoreSourceTask(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
 		}
-			index.SetTasks(map[string]task.Task{
-				"src": {ID: "src", Status: "blocked"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"src": {ID: "src", Status: "blocked"},
+		})
 
 		autoRestoreSourceTask(index, "src")
 
@@ -867,11 +866,11 @@ func TestAutoRestoreSourceTask(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
 		}
-			index.SetTasks(map[string]task.Task{
-				"src":   {ID: "src", Status: "blocked", Dependencies: []string{"fix-A"}},
-				"fix-A": {ID: "fix-A", Status: "blocked", Dependencies: []string{"fix-B"}, SourceTaskID: "src"},
-				"fix-B": {ID: "fix-B", Status: "completed", SourceTaskID: "fix-A"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"src":   {ID: "src", Status: "blocked", Dependencies: []string{"fix-A"}},
+			"fix-A": {ID: "fix-A", Status: "blocked", Dependencies: []string{"fix-B"}, SourceTaskID: "src"},
+			"fix-B": {ID: "fix-B", Status: "completed", SourceTaskID: "fix-A"},
+		})
 
 		autoRestoreSourceTask(index, "fix-A")
 
@@ -887,11 +886,11 @@ func TestAutoRestoreSourceTask(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
 		}
-			index.SetTasks(map[string]task.Task{
-				"src":   {ID: "src", Status: "blocked", Dependencies: []string{"fix-1", "fix-2"}},
-				"fix-1": {ID: "fix-1", Status: "completed"},
-				"fix-2": {ID: "fix-2", Status: "skipped"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"src":   {ID: "src", Status: "blocked", Dependencies: []string{"fix-1", "fix-2"}},
+			"fix-1": {ID: "fix-1", Status: "completed"},
+			"fix-2": {ID: "fix-2", Status: "skipped"},
+		})
 
 		autoRestoreSourceTask(index, "src")
 
@@ -903,10 +902,10 @@ func TestAutoRestoreSourceTask(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
 		}
-			index.SetTasks(map[string]task.Task{
-				"src":   {ID: "src", Status: "blocked", Dependencies: []string{"fix-1"}},
-				"fix-1": {ID: "fix-1", Status: "skipped", SourceTaskID: "src"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"src":   {ID: "src", Status: "blocked", Dependencies: []string{"fix-1"}},
+			"fix-1": {ID: "fix-1", Status: "skipped", SourceTaskID: "src"},
+		})
 
 		// Simulate what record.go does: check SourceTaskID with skipped status
 		if index.TasksMap()["fix-1"].SourceTaskID != "" {
@@ -924,13 +923,13 @@ func TestAutoRestoreSourceTask_WildcardDeps(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
 		}
-			index.SetTasks(map[string]task.Task{
-				"src":   {ID: "src", Status: "blocked", Dependencies: []string{"1.x", "fix-1"}},
-				"1.1":   {ID: "1.1", Status: "completed"},
-				"1.2":   {ID: "1.2", Status: "completed"},
-				"1.gate": {ID: "1.gate", Status: "pending"},
-				"fix-1": {ID: "fix-1", Status: "completed"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"src":    {ID: "src", Status: "blocked", Dependencies: []string{"1.x", "fix-1"}},
+			"1.1":    {ID: "1.1", Status: "completed"},
+			"1.2":    {ID: "1.2", Status: "completed"},
+			"1.gate": {ID: "1.gate", Status: "pending"},
+			"fix-1":  {ID: "fix-1", Status: "completed"},
+		})
 
 		autoRestoreSourceTask(index, "src")
 
@@ -943,11 +942,11 @@ func TestAutoRestoreSourceTask_WildcardDeps(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
 		}
-			index.SetTasks(map[string]task.Task{
-				"src":   {ID: "src", Status: "blocked", Dependencies: []string{"1.x"}},
-				"1.1":   {ID: "1.1", Status: "completed"},
-				"1.2":   {ID: "1.2", Status: "pending"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"src": {ID: "src", Status: "blocked", Dependencies: []string{"1.x"}},
+			"1.1": {ID: "1.1", Status: "completed"},
+			"1.2": {ID: "1.2", Status: "pending"},
+		})
 
 		autoRestoreSourceTask(index, "src")
 
@@ -962,10 +961,10 @@ func TestAutoRestoreSourceTask_KeyDiffersFromID(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
 		}
-			index.SetTasks(map[string]task.Task{
-				"run-e2e-tests": {ID: "T-test-3", Status: "blocked", Dependencies: []string{"fix-1"}},
-				"fix-1":         {ID: "fix-1", Status: "completed", SourceTaskID: "T-test-3"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"run-e2e-tests": {ID: "T-test-3", Status: "blocked", Dependencies: []string{"fix-1"}},
+			"fix-1":         {ID: "fix-1", Status: "completed", SourceTaskID: "T-test-3"},
+		})
 
 		autoRestoreSourceTask(index, "T-test-3")
 
@@ -978,10 +977,10 @@ func TestAutoRestoreSourceTask_KeyDiffersFromID(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
 		}
-			index.SetTasks(map[string]task.Task{
-				"run-e2e-tests": {ID: "T-test-3", Status: "blocked", Dependencies: []string{"fix-1"}},
-				"fix-1":         {ID: "fix-1", Status: "completed"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"run-e2e-tests": {ID: "T-test-3", Status: "blocked", Dependencies: []string{"fix-1"}},
+			"fix-1":         {ID: "fix-1", Status: "completed"},
+		})
 
 		autoRestoreSourceTask(index, "nonexistent-id")
 		if index.TasksMap()["run-e2e-tests"].Status != "blocked" {
@@ -993,11 +992,11 @@ func TestAutoRestoreSourceTask_KeyDiffersFromID(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
 		}
-			index.SetTasks(map[string]task.Task{
-				"run-e2e-tests": {ID: "T-test-3", Status: "blocked", Dependencies: []string{"fix-1", "fix-2"}},
-				"fix-1":         {ID: "fix-1", Status: "completed"},
-				"fix-2":         {ID: "fix-2", Status: "pending"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"run-e2e-tests": {ID: "T-test-3", Status: "blocked", Dependencies: []string{"fix-1", "fix-2"}},
+			"fix-1":         {ID: "fix-1", Status: "completed"},
+			"fix-2":         {ID: "fix-2", Status: "pending"},
+		})
 
 		autoRestoreSourceTask(index, "T-test-3")
 
@@ -1010,10 +1009,10 @@ func TestAutoRestoreSourceTask_KeyDiffersFromID(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
 		}
-			index.SetTasks(map[string]task.Task{
-				"disc-1": {ID: "disc-1", Status: "blocked", Dependencies: []string{"fix-1"}},
-				"fix-1":  {ID: "fix-1", Status: "completed"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"disc-1": {ID: "disc-1", Status: "blocked", Dependencies: []string{"fix-1"}},
+			"fix-1":  {ID: "fix-1", Status: "completed"},
+		})
 
 		autoRestoreSourceTask(index, "disc-1")
 
@@ -1026,10 +1025,10 @@ func TestAutoRestoreSourceTask_KeyDiffersFromID(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
 		}
-			index.SetTasks(map[string]task.Task{
-				"run-e2e-tests": {ID: "T-test-3", Status: "blocked", Dependencies: []string{"fix-1"}},
-				"fix-1":         {ID: "fix-1", Status: "completed"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"run-e2e-tests": {ID: "T-test-3", Status: "blocked", Dependencies: []string{"fix-1"}},
+			"fix-1":         {ID: "fix-1", Status: "completed"},
+		})
 
 		autoRestoreSourceTask(index, "T-test-3")
 
@@ -1052,10 +1051,10 @@ func TestAutoRestoreSourceTask_SlugKeyedFullChain(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
 		}
-			index.SetTasks(map[string]task.Task{
-				"run-e2e":  {ID: "T-test-3", Status: "blocked", Dependencies: []string{"T-fix-7"}},
-				"fix-auth": {ID: "T-fix-7", Status: "completed"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"run-e2e":  {ID: "T-test-3", Status: "blocked", Dependencies: []string{"T-fix-7"}},
+			"fix-auth": {ID: "T-fix-7", Status: "completed"},
+		})
 
 		autoRestoreSourceTask(index, "T-test-3")
 
@@ -1068,11 +1067,11 @@ func TestAutoRestoreSourceTask_SlugKeyedFullChain(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
 		}
-			index.SetTasks(map[string]task.Task{
-				"run-e2e": {ID: "T-test-3", Status: "blocked", Dependencies: []string{"1.x"}},
-				"1.1":     {ID: "1.1", Status: "completed"},
-				"1.2":     {ID: "1.2", Status: "completed"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"run-e2e": {ID: "T-test-3", Status: "blocked", Dependencies: []string{"1.x"}},
+			"1.1":     {ID: "1.1", Status: "completed"},
+			"1.2":     {ID: "1.2", Status: "completed"},
+		})
 
 		autoRestoreSourceTask(index, "T-test-3")
 
@@ -1085,10 +1084,10 @@ func TestAutoRestoreSourceTask_SlugKeyedFullChain(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
 		}
-			index.SetTasks(map[string]task.Task{
-				"run-e2e":  {ID: "T-test-3", Status: "completed", Dependencies: []string{"T-fix-7"}},
-				"fix-auth": {ID: "T-fix-7", Status: "completed"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"run-e2e":  {ID: "T-test-3", Status: "completed", Dependencies: []string{"T-fix-7"}},
+			"fix-auth": {ID: "T-fix-7", Status: "completed"},
+		})
 
 		autoRestoreSourceTask(index, "T-test-3")
 
@@ -1101,9 +1100,9 @@ func TestAutoRestoreSourceTask_SlugKeyedFullChain(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
 		}
-			index.SetTasks(map[string]task.Task{
-				"run-e2e": {ID: "T-test-3", Status: "skipped", Dependencies: []string{}},
-			})
+		index.SetTasks(map[string]task.Task{
+			"run-e2e": {ID: "T-test-3", Status: "skipped", Dependencies: []string{}},
+		})
 
 		autoRestoreSourceTask(index, "T-test-3")
 
@@ -1116,9 +1115,9 @@ func TestAutoRestoreSourceTask_SlugKeyedFullChain(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
 		}
-			index.SetTasks(map[string]task.Task{
-				"run-e2e": {ID: "T-test-3", Status: "blocked", Dependencies: []string{}},
-			})
+		index.SetTasks(map[string]task.Task{
+			"run-e2e": {ID: "T-test-3", Status: "blocked", Dependencies: []string{}},
+		})
 
 		autoRestoreSourceTask(index, "T-test-3")
 
@@ -1131,10 +1130,10 @@ func TestAutoRestoreSourceTask_SlugKeyedFullChain(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
 		}
-			index.SetTasks(map[string]task.Task{
-				"run-e2e":  {ID: "T-test-3", Status: "blocked", Dependencies: []string{"T-fix-7"}},
-				"fix-auth": {ID: "T-fix-7", Status: "completed"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"run-e2e":  {ID: "T-test-3", Status: "blocked", Dependencies: []string{"T-fix-7"}},
+			"fix-auth": {ID: "T-fix-7", Status: "completed"},
+		})
 
 		autoRestoreSourceTask(index, "T-test-3")
 		// Second call: status is now "pending", should be no-op
@@ -1149,11 +1148,11 @@ func TestAutoRestoreSourceTask_SlugKeyedFullChain(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",
 		}
-			index.SetTasks(map[string]task.Task{
-				"run-e2e":  {ID: "T-test-3", Status: "blocked", Dependencies: []string{"T-fix-A"}},
-				"fix-auth": {ID: "T-fix-A", Status: "blocked", Dependencies: []string{"fix-B"}, SourceTaskID: "T-test-3"},
-				"fix-B":    {ID: "fix-B", Status: "completed", SourceTaskID: "T-fix-A"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"run-e2e":  {ID: "T-test-3", Status: "blocked", Dependencies: []string{"T-fix-A"}},
+			"fix-auth": {ID: "T-fix-A", Status: "blocked", Dependencies: []string{"fix-B"}, SourceTaskID: "T-test-3"},
+			"fix-B":    {ID: "fix-B", Status: "completed", SourceTaskID: "T-fix-A"},
+		})
 
 		// Restoring fix-A (slug-keyed, has completed dep fix-B)
 		autoRestoreSourceTask(index, "T-fix-A")
@@ -1183,7 +1182,7 @@ func TestSaveIndexAndSignalCompletion_RejectedNotDone(t *testing.T) {
 	projectRoot := t.TempDir()
 	featureSlug := "test"
 	tasksDir := filepath.Join(projectRoot, "docs", "features", featureSlug, "tasks")
-	os.MkdirAll(tasksDir, 0755)
+	_ = os.MkdirAll(tasksDir, 0755)
 
 	index := task.NewTaskIndex(featureSlug)
 	index.SetTasks(map[string]task.Task{
@@ -1191,7 +1190,7 @@ func TestSaveIndexAndSignalCompletion_RejectedNotDone(t *testing.T) {
 		"task-b": {ID: "1.2", Status: "rejected", File: "1.2.md", Record: "1.2-record.md"},
 	})
 	indexPath := filepath.Join(tasksDir, "index.json")
-	task.SaveIndex(indexPath, index)
+	_ = task.SaveIndex(indexPath, index)
 
 	saveIndexAndSignalCompletion(indexPath, projectRoot, featureSlug, index)
 
@@ -1216,7 +1215,7 @@ func TestAutoRestoreSourceTask_RejectedDepNotMet(t *testing.T) {
 	}
 }
 
-func TestValidateRecordData_RejectedSkipsCompletedChecks(t *testing.T) {
+func TestValidateRecordData_RejectedSkipsCompletedChecks(_ *testing.T) {
 	// Rejected status should skip test evidence and AC checks
 	rd := &task.RecordData{
 		Status:   "rejected",

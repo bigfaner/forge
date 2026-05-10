@@ -308,10 +308,10 @@ func TestGetE2ETargetDir(t *testing.T) {
 
 func TestGetE2EStagingDir(t *testing.T) {
 	tests := []struct {
-		name         string
-		projectRoot  string
-		featureSlug  string
-		want         string
+		name        string
+		projectRoot string
+		featureSlug string
+		want        string
 	}{
 		{"basic", "/project", "decision-log", filepath.Join("/project", "tests", "e2e", "features", "decision-log")},
 		{"nested slug", "/project", "rbac-permissions", filepath.Join("/project", "tests", "e2e", "features", "rbac-permissions")},

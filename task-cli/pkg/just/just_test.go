@@ -195,7 +195,7 @@ func TestFileExists(t *testing.T) {
 	t.Run("existing file", func(t *testing.T) {
 		dir := t.TempDir()
 		p := dir + "/exists.txt"
-		os.WriteFile(p, []byte("x"), 0644)
+		_ = os.WriteFile(p, []byte("x"), 0644)
 		if !FileExists(p) {
 			t.Error("expected true for existing file")
 		}
@@ -323,7 +323,7 @@ func TestRunGate(t *testing.T) {
 			{Name: "compile", Optional: false, Blocking: true},
 			{Name: "warn", Optional: false, Blocking: false},
 		}
-		passed := RunGate(dir, "", steps, func(step, output string) {
+		passed := RunGate(dir, "", steps, func(step, _ string) {
 			t.Errorf("onFail should not be called for non-blocking step, got called with %q", step)
 		})
 		if !passed {

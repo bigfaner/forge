@@ -22,7 +22,7 @@ var queryCmd = &cobra.Command{
 	Run:  runQuery,
 }
 
-func runQuery(cmd *cobra.Command, args []string) {
+func runQuery(_ *cobra.Command, args []string) {
 	taskIDArg := args[0]
 
 	projectRoot, err := project.FindProjectRoot()

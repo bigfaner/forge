@@ -35,7 +35,7 @@ func init() {
 	statusCmd.Flags().BoolVar(&statusForce, "force", false, "Override state machine guards (use with caution)")
 }
 
-func runStatus(cmd *cobra.Command, args []string) {
+func runStatus(_ *cobra.Command, args []string) {
 	taskIDArg := args[0]
 
 	projectRoot, err := project.FindProjectRoot()

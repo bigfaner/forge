@@ -17,11 +17,11 @@ func TestValidator_IndirectRun(t *testing.T) {
 
 		// Create correct directory structure: .../docs/features/<slug>/tasks/
 		tasksDir := filepath.Join(dir, "docs", "features", featureSlug, "tasks")
-		os.MkdirAll(tasksDir, 0755)
+		_ = os.MkdirAll(tasksDir, 0755)
 
 		// Create task file
 		taskFile := filepath.Join(tasksDir, "1.1.md")
-		os.WriteFile(taskFile, []byte("task content"), 0644)
+		_ = os.WriteFile(taskFile, []byte("task content"), 0644)
 
 		// Create index at correct location
 		indexPath := filepath.Join(tasksDir, "index.json")
@@ -30,11 +30,11 @@ func TestValidator_IndirectRun(t *testing.T) {
 			PRD:     "prd/prd-spec.md",
 			Design:  "design/tech-design.md",
 		}
-			index.SetTasks(map[string]task.Task{
-				"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md"},
+		})
 		data, _ := encodeIndex(index)
-		os.WriteFile(indexPath, data, 0644)
+		_ = os.WriteFile(indexPath, data, 0644)
 
 		v := &validator{filePath: indexPath}
 		v.validateTasks(index.TasksMap())
@@ -83,11 +83,11 @@ func TestValidator_ValidateFilesExist_Integration(t *testing.T) {
 
 		// Create correct directory structure: .../docs/features/<slug>/tasks/
 		tasksDir := filepath.Join(dir, "docs", "features", featureSlug, "tasks")
-		os.MkdirAll(tasksDir, 0755)
+		_ = os.MkdirAll(tasksDir, 0755)
 
 		// Create existing file
 		existingFile := filepath.Join(tasksDir, "existing.md")
-		os.WriteFile(existingFile, []byte("content"), 0644)
+		_ = os.WriteFile(existingFile, []byte("content"), 0644)
 
 		v := &validator{filePath: filepath.Join(dir, "docs", "features", featureSlug, "tasks", "index.json")}
 
@@ -175,10 +175,8 @@ func TestCheckLogic(t *testing.T) {
 					if len(matches) == 0 {
 						errors = append(errors, "wildcard matches nothing")
 					}
-				} else {
-					if !taskIDs[dep] {
-						errors = append(errors, "dependency not found")
-					}
+				} else if !taskIDs[dep] {
+					errors = append(errors, "dependency not found")
 				}
 			}
 		}

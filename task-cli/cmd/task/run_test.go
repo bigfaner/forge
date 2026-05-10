@@ -29,8 +29,8 @@ func TestRun_Help(t *testing.T) {
 
 	// Change to temp dir
 	origWd, _ := os.Getwd()
-	defer os.Chdir(origWd)
-	os.Chdir(tmpDir)
+	defer func() { _ = os.Chdir(origWd) }()
+	_ = os.Chdir(tmpDir)
 	os.Args = []string{"task", "--help"}
 
 	// Run in goroutine since it might call os.Exit
@@ -42,12 +42,12 @@ func TestRun_Help(t *testing.T) {
 
 	// Wait for completion
 	<-done
-	w.Close()
+	_ = w.Close()
 	os.Stdout = origStdout
 
 	// Read output
 	var buf bytes.Buffer
-	buf.ReadFrom(r)
+	_, _ = buf.ReadFrom(r)
 	output := buf.String()
 
 	if output == "" {
@@ -71,14 +71,14 @@ func TestGetName(t *testing.T) {
 
 func TestIsTestMode(t *testing.T) {
 	// Without GO_TEST env
-	os.Unsetenv("GO_TEST")
+	_ = os.Unsetenv("GO_TEST")
 	if IsTestMode() {
 		t.Error("expected IsTestMode to be false without GO_TEST env")
 	}
 
 	// With GO_TEST env
-	os.Setenv("GO_TEST", "1")
-	defer os.Unsetenv("GO_TEST")
+	_ = os.Setenv("GO_TEST", "1")
+	defer func() { _ = os.Unsetenv("GO_TEST") }()
 	if !IsTestMode() {
 		t.Error("expected IsTestMode to be true with GO_TEST=1")
 	}

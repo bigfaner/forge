@@ -277,10 +277,10 @@ func TestFindValidateScript(t *testing.T) {
 // TestValidateSpecsOutput_PrintResults verifies the output printing logic.
 func TestValidateSpecsOutput_PrintResults(t *testing.T) {
 	tests := []struct {
-		name           string
-		result         *validationResult
+		name             string
+		result           *validationResult
 		expectedInOutput []string
-		notExpected     []string
+		notExpected      []string
 	}{
 		{
 			name: "clean output",
@@ -442,7 +442,7 @@ func TestRunValidateSpecs_ScriptNotFound(t *testing.T) {
 	if err := os.Chdir(dir); err != nil {
 		t.Fatal(err)
 	}
-	defer os.Chdir(origWd)
+	defer func() { _ = os.Chdir(origWd) }()
 
 	// Temporarily override exitFunc to prevent os.Exit
 	oldExit := exitFunc

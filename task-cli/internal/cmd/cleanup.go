@@ -22,7 +22,7 @@ Called as a Stop hook to clean up:
 	Run: runCleanup,
 }
 
-func runCleanup(cmd *cobra.Command, args []string) {
+func runCleanup(_ *cobra.Command, _ []string) {
 	cleanupCompletedTaskState()
 	os.Exit(0)
 }
@@ -63,10 +63,10 @@ func cleanupCompletedTaskState() {
 
 	// Delete state file if task is completed or blocked
 	if t.Status == "completed" || t.Status == "blocked" {
-		os.Remove(statePath)
+		_ = os.Remove(statePath)
 
 		// Also delete record.json if exists
 		recordPath := feature.GetProcessRecordPath(projectRoot, featureSlug)
-		os.Remove(recordPath)
+		_ = os.Remove(recordPath)
 	}
 }

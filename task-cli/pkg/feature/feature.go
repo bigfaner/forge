@@ -90,6 +90,7 @@ func RequireFeature(projectRoot string) (string, error) {
 }
 
 // SetFeature creates the process directory for a feature.
+//
 // Deprecated: Use EnsureFeatureDir instead.
 func SetFeature(projectRoot, featureSlug string) error {
 	return EnsureFeatureDir(projectRoot, featureSlug)

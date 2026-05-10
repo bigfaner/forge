@@ -35,3 +35,9 @@ Bash(task record T-test-1b --data docs/features/train-recorder/tasks/process/rec
 
 24、eval-ui的评分必须达到94，才允许自动进入到生成原型的阶段。done
 25、把git-commit skill更改为slash command。done
+26、从pm-work-tracker、train-recorder提取e2e测试的经验，来优化forge的测试能力。doing
+27、forensic默认调查当前会话，/status获取会话ID？要知道如何排查当前项目的会话-- /Z--project-ai-coding-train-recorder/
+28、对比get-shit-done、superpowers、gstack等同类产品
+29、init-justfile支持覆盖式更新，just run 等命令去掉 --dev参数，更改为skill，内置模板，但是禁止大模型调用。
+30、forensic分析任务卡住不动时，要展示各个动作的耗时
+31、task feature 要支持worktree

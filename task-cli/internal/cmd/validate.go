@@ -36,7 +36,7 @@ var (
 	validPriority = map[string]bool{"P0": true, "P1": true, "P2": true}
 )
 
-func runValidate(cmd *cobra.Command, args []string) {
+func runValidate(_ *cobra.Command, args []string) {
 	var filePath string
 	if len(args) > 0 {
 		filePath = args[0]
@@ -153,10 +153,8 @@ func (v *validator) validateDependencies(tasks map[string]task.Task) {
 				if len(matches) == 0 {
 					v.errors = append(v.errors, fmt.Sprintf("Task '%s': wildcard '%s' matches no business tasks", key, dep))
 				}
-			} else {
-				if !taskIDs[dep] {
-					v.errors = append(v.errors, fmt.Sprintf("Task '%s': dependency '%s' not found", key, dep))
-				}
+			} else if !taskIDs[dep] {
+				v.errors = append(v.errors, fmt.Sprintf("Task '%s': dependency '%s' not found", key, dep))
 			}
 		}
 	}
@@ -493,9 +491,8 @@ func (v *validator) validateLiveness(tasks map[string]task.Task) {
 						}
 					}
 				}
-				if !wildcardHasMatch {
-					// Wildcard matches no tasks — vacuously satisfied
-				}
+				// Wildcard matches no tasks — vacuously satisfied
+				_ = wildcardHasMatch
 				continue
 			}
 			depTask, found := tasks[dep]

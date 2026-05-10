@@ -1,3 +1,4 @@
+// Package template handles task template loading and processing.
 package template
 
 import (

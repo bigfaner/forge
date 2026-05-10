@@ -1,3 +1,4 @@
+// Package testrunner provides test execution and output formatting.
 package testrunner
 
 import (

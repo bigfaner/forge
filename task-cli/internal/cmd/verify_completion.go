@@ -27,7 +27,7 @@ Exit codes:
 	Run: runVerifyCompletion,
 }
 
-func runVerifyCompletion(cmd *cobra.Command, args []string) {
+func runVerifyCompletion(_ *cobra.Command, _ []string) {
 	if err := verifyTaskCompletion(); err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(2)

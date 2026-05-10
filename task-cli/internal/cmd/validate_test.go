@@ -379,7 +379,6 @@ dependencies: ["1.5"]
 	})
 }
 
-
 func TestValidator_Run(t *testing.T) {
 	t.Run("valid index", func(t *testing.T) {
 		dir := t.TempDir()
@@ -391,9 +390,9 @@ func TestValidator_Run(t *testing.T) {
 			StatusEnum:   []string{"pending", "completed"},
 			PriorityEnum: []string{"P0", "P1", "P2"},
 		}
-			index.SetTasks(map[string]task.Task{
-				"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "task.md"},
-			})
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "task.md"},
+		})
 
 		// Create task file
 		taskFile := filepath.Join(dir, "task.md")
@@ -424,9 +423,9 @@ func TestValidator_Run(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test-feature",
 		}
-			index.SetTasks(map[string]task.Task{
-				"task1": {ID: "", Title: "", File: "", Dependencies: []string{"missing"}},
-			})
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "", Title: "", File: "", Dependencies: []string{"missing"}},
+		})
 
 		// Create index file
 		indexFile := filepath.Join(dir, "index.json")
@@ -561,16 +560,16 @@ func TestValidator_ValidateWildcardSelfDeps(t *testing.T) {
 		wantWarnContains []string
 	}{
 		{
-			name:         "no deps at all",
-			tasks:        map[string]task.Task{
+			name: "no deps at all",
+			tasks: map[string]task.Task{
 				"task1": {ID: "1.1"},
 			},
 			wantErrors:   0,
 			wantWarnings: 0,
 		},
 		{
-			name:         "only non-wildcard deps",
-			tasks:        map[string]task.Task{
+			name: "only non-wildcard deps",
+			tasks: map[string]task.Task{
 				"task1": {ID: "1.1", Dependencies: []string{"1.0"}},
 				"task0": {ID: "1.0"},
 			},
@@ -578,8 +577,8 @@ func TestValidator_ValidateWildcardSelfDeps(t *testing.T) {
 			wantWarnings: 0,
 		},
 		{
-			name:         "wildcard on different phase -> skip",
-			tasks:        map[string]task.Task{
+			name: "wildcard on different phase -> skip",
+			tasks: map[string]task.Task{
 				"task1": {ID: "1.1", Dependencies: []string{"2.x"}},
 				"task2": {ID: "2.1"},
 			},
@@ -587,8 +586,8 @@ func TestValidator_ValidateWildcardSelfDeps(t *testing.T) {
 			wantWarnings: 0,
 		},
 		{
-			name:            "single business task with self-only wildcard -> ERROR",
-			tasks:           map[string]task.Task{
+			name: "single business task with self-only wildcard -> ERROR",
+			tasks: map[string]task.Task{
 				"task1": {ID: "1.1", Dependencies: []string{"1.x"}},
 			},
 			wantErrors:      1,
@@ -596,8 +595,8 @@ func TestValidator_ValidateWildcardSelfDeps(t *testing.T) {
 			wantErrContains: []string{"only matches itself", "1.1", "1.x"},
 		},
 		{
-			name:             "wildcard matches self + 1 other -> WARNING",
-			tasks:            map[string]task.Task{
+			name: "wildcard matches self + 1 other -> WARNING",
+			tasks: map[string]task.Task{
 				"task1": {ID: "1.1", Dependencies: []string{"1.x"}},
 				"task2": {ID: "1.2"},
 			},
@@ -606,8 +605,8 @@ func TestValidator_ValidateWildcardSelfDeps(t *testing.T) {
 			wantWarnContains: []string{"matches itself plus 1 others"},
 		},
 		{
-			name:             "wildcard matches self + many others -> WARNING",
-			tasks:            map[string]task.Task{
+			name: "wildcard matches self + many others -> WARNING",
+			tasks: map[string]task.Task{
 				"task1": {ID: "1.1", Dependencies: []string{"1.x"}},
 				"task2": {ID: "1.2"},
 				"task3": {ID: "1.3"},
@@ -704,7 +703,7 @@ func TestValidator_ValidateGateIntegrity(t *testing.T) {
 		wantErrContains []string
 	}{
 		{
-			name:  "no gates at all -> PASS",
+			name: "no gates at all -> PASS",
 			tasks: map[string]task.Task{
 				"task1": {ID: "1.1"},
 			},
@@ -904,85 +903,85 @@ func TestValidator_ValidatePhaseOrder(t *testing.T) {
 		wantWarnContains []string
 	}{
 		{
-			name:         "phase 1 with empty deps -> no warning",
-			tasks:        map[string]task.Task{
+			name: "phase 1 with empty deps -> no warning",
+			tasks: map[string]task.Task{
 				"task1": {ID: "1.1", Dependencies: []string{}},
 			},
 			wantWarnings: 0,
 		},
 		{
-			name:         "phase 1 with deps -> no warning",
-			tasks:        map[string]task.Task{
+			name: "phase 1 with deps -> no warning",
+			tasks: map[string]task.Task{
 				"task0": {ID: "1.0"},
 				"task1": {ID: "1.1", Dependencies: []string{"1.0"}},
 			},
 			wantWarnings: 0,
 		},
 		{
-			name:         "phase 2 with cross-phase exact dep -> no warning",
-			tasks:        map[string]task.Task{
+			name: "phase 2 with cross-phase exact dep -> no warning",
+			tasks: map[string]task.Task{
 				"task1": {ID: "1.1"},
 				"task2": {ID: "2.1", Dependencies: []string{"1.1"}},
 			},
 			wantWarnings: 0,
 		},
 		{
-			name:         "phase 2 with cross-phase wildcard dep -> no warning",
-			tasks:        map[string]task.Task{
+			name: "phase 2 with cross-phase wildcard dep -> no warning",
+			tasks: map[string]task.Task{
 				"task1": {ID: "1.1"},
 				"task2": {ID: "2.1", Dependencies: []string{"1.x"}},
 			},
 			wantWarnings: 0,
 		},
 		{
-			name:         "phase 3 with wildcard on phase 1 -> no warning",
-			tasks:        map[string]task.Task{
+			name: "phase 3 with wildcard on phase 1 -> no warning",
+			tasks: map[string]task.Task{
 				"task1": {ID: "1.1"},
 				"task3": {ID: "3.1", Dependencies: []string{"1.x"}},
 			},
 			wantWarnings: 0,
 		},
 		{
-			name:         "phase 2 with only same-phase dep -> WARNING for both",
-			tasks:        map[string]task.Task{
+			name: "phase 2 with only same-phase dep -> WARNING for both",
+			tasks: map[string]task.Task{
 				"task2a": {ID: "2.1"},
 				"task2b": {ID: "2.2", Dependencies: []string{"2.1"}},
 			},
-			wantWarnings:     2,
+			wantWarnings: 2,
 		},
 		{
-			name:         "phase 2 with no deps at all -> WARNING",
-			tasks:        map[string]task.Task{
+			name: "phase 2 with no deps at all -> WARNING",
+			tasks: map[string]task.Task{
 				"task2": {ID: "2.1", Dependencies: []string{}},
 			},
 			wantWarnings:     1,
 			wantWarnContains: []string{"2.1"},
 		},
 		{
-			name:         "multiple phases, all missing cross-phase deps -> multiple warnings",
-			tasks:        map[string]task.Task{
+			name: "multiple phases, all missing cross-phase deps -> multiple warnings",
+			tasks: map[string]task.Task{
 				"task2": {ID: "2.1", Dependencies: []string{}},
 				"task3": {ID: "3.1", Dependencies: []string{}},
 			},
 			wantWarnings: 2,
 		},
 		{
-			name:         "gate task skipped",
-			tasks:        map[string]task.Task{
+			name: "gate task skipped",
+			tasks: map[string]task.Task{
 				"gate": {ID: "2.gate", Breaking: true, Dependencies: []string{}},
 			},
 			wantWarnings: 0,
 		},
 		{
-			name:         "summary task skipped",
-			tasks:        map[string]task.Task{
+			name: "summary task skipped",
+			tasks: map[string]task.Task{
 				"summary": {ID: "2.summary", Dependencies: []string{}},
 			},
 			wantWarnings: 0,
 		},
 		{
-			name:         "mixed: same-phase + cross-phase dep -> no warning",
-			tasks:        map[string]task.Task{
+			name: "mixed: same-phase + cross-phase dep -> no warning",
+			tasks: map[string]task.Task{
 				"task1":  {ID: "1.1"},
 				"task2a": {ID: "2.1", Dependencies: []string{"1.1"}},
 				"task2b": {ID: "2.2", Dependencies: []string{"2.1", "1.1"}},
@@ -990,15 +989,15 @@ func TestValidator_ValidatePhaseOrder(t *testing.T) {
 			wantWarnings: 0,
 		},
 		{
-			name:         "non-numeric phase ID -> skipped (phase=0)",
-			tasks:        map[string]task.Task{
+			name: "non-numeric phase ID -> skipped (phase=0)",
+			tasks: map[string]task.Task{
 				"task": {ID: "abc.1", Dependencies: []string{}},
 			},
 			wantWarnings: 0,
 		},
 		{
-			name:         "non-numeric wildcard dep -> fallback branch",
-			tasks:        map[string]task.Task{
+			name: "non-numeric wildcard dep -> fallback branch",
+			tasks: map[string]task.Task{
 				"task1": {ID: "1.1"},
 				"task2": {ID: "2.1", Dependencies: []string{"abc.x"}},
 			},
@@ -1006,16 +1005,16 @@ func TestValidator_ValidatePhaseOrder(t *testing.T) {
 			wantWarnContains: []string{"no dependency on previous phase"},
 		},
 		{
-			name:         "task with nil deps -> WARNING",
-			tasks:        map[string]task.Task{
+			name: "task with nil deps -> WARNING",
+			tasks: map[string]task.Task{
 				"task2": {ID: "2.1", Dependencies: nil},
 			},
 			wantWarnings: 1,
 		},
 		// Exit-gate convention: gate N.gate in phase N, next phase tasks depend on it
 		{
-			name:         "business depends on exit gate from prev phase -> no warning",
-			tasks:        map[string]task.Task{
+			name: "business depends on exit gate from prev phase -> no warning",
+			tasks: map[string]task.Task{
 				"task1":    {ID: "1.1"},
 				"summary1": {ID: "1.summary", Dependencies: []string{"1.x"}},
 				"gate1":    {ID: "1.gate", Breaking: true, Dependencies: []string{"1.summary"}},
@@ -1024,8 +1023,8 @@ func TestValidator_ValidatePhaseOrder(t *testing.T) {
 			wantWarnings: 0,
 		},
 		{
-			name:         "business depends on exit gate via wildcard -> no warning",
-			tasks:        map[string]task.Task{
+			name: "business depends on exit gate via wildcard -> no warning",
+			tasks: map[string]task.Task{
 				"task1":    {ID: "1.1"},
 				"summary1": {ID: "1.summary"},
 				"gate1":    {ID: "1.gate", Breaking: true, Dependencies: []string{"1.summary"}},
@@ -1034,8 +1033,8 @@ func TestValidator_ValidatePhaseOrder(t *testing.T) {
 			wantWarnings: 0,
 		},
 		{
-			name:         "business depends on exit gate only, no other cross-phase -> no warning",
-			tasks:        map[string]task.Task{
+			name: "business depends on exit gate only, no other cross-phase -> no warning",
+			tasks: map[string]task.Task{
 				"summary1": {ID: "1.summary"},
 				"gate1":    {ID: "1.gate", Breaking: true, Dependencies: []string{"1.summary"}},
 				"task2":    {ID: "2.1", Dependencies: []string{"1.gate"}},
@@ -1044,8 +1043,8 @@ func TestValidator_ValidatePhaseOrder(t *testing.T) {
 			wantWarnings: 0,
 		},
 		{
-			name:         "phase 2 wildcard skips gate and summary in matching",
-			tasks:        map[string]task.Task{
+			name: "phase 2 wildcard skips gate and summary in matching",
+			tasks: map[string]task.Task{
 				"task1":    {ID: "1.1"},
 				"summary1": {ID: "1.summary"},
 				"gate1":    {ID: "1.gate", Breaking: true, Dependencies: []string{"1.summary"}},
@@ -1054,8 +1053,8 @@ func TestValidator_ValidatePhaseOrder(t *testing.T) {
 			wantWarnings: 0,
 		},
 		{
-			name:         "phase 2 with same-phase wildcard only -> WARNING",
-			tasks:        map[string]task.Task{
+			name: "phase 2 with same-phase wildcard only -> WARNING",
+			tasks: map[string]task.Task{
 				"task2a": {ID: "2.1"},
 				"task2b": {ID: "2.2", Dependencies: []string{"2.x"}},
 			},
@@ -1219,7 +1218,7 @@ func TestRunValidate_WithFileArg(t *testing.T) {
 			"feature": "test",
 			"tasks":   map[string]interface{}{},
 		})
-		os.WriteFile(indexFile, data, 0644)
+		_ = os.WriteFile(indexFile, data, 0644)
 
 		// Should not exit (would kill test process)
 		runValidate(nil, []string{indexFile})
@@ -1228,10 +1227,10 @@ func TestRunValidate_WithFileArg(t *testing.T) {
 
 func TestValidator_ValidateLiveness(t *testing.T) {
 	tests := []struct {
-		name            string
-		tasks           map[string]task.Task
-		wantWarnings    int
-		wantErrors      int
+		name             string
+		tasks            map[string]task.Task
+		wantWarnings     int
+		wantErrors       int
 		wantWarnContains []string
 		wantErrContains  []string
 	}{
@@ -1248,7 +1247,7 @@ func TestValidator_ValidateLiveness(t *testing.T) {
 			tasks: map[string]task.Task{
 				"a": {ID: "a", Status: "blocked"},
 			},
-			wantWarnings:    1,
+			wantWarnings:     1,
 			wantWarnContains: []string{"orphaned"},
 		},
 		{
@@ -1257,7 +1256,7 @@ func TestValidator_ValidateLiveness(t *testing.T) {
 				"a": {ID: "a", Status: "blocked", Dependencies: []string{"b"}},
 				"b": {ID: "b", Status: "completed"},
 			},
-			wantWarnings:    1,
+			wantWarnings:     1,
 			wantWarnContains: []string{"stale"},
 		},
 		{
@@ -1266,7 +1265,7 @@ func TestValidator_ValidateLiveness(t *testing.T) {
 				"a": {ID: "a", Status: "blocked", Dependencies: []string{"b"}},
 				"b": {ID: "b", Status: "skipped"},
 			},
-			wantWarnings:    1,
+			wantWarnings:     1,
 			wantWarnContains: []string{"stale"},
 		},
 		{
@@ -1292,9 +1291,9 @@ func TestValidator_ValidateLiveness(t *testing.T) {
 			tasks: map[string]task.Task{
 				"a": {ID: "a", Status: "blocked", Dependencies: []string{"missing"}},
 			},
-			wantErrors:      1,
-			wantWarnings:    1,
-			wantErrContains: []string{"missing dependency"},
+			wantErrors:       1,
+			wantWarnings:     1,
+			wantErrContains:  []string{"missing dependency"},
 			wantWarnContains: []string{"no path to resolution"},
 		},
 		{
@@ -1303,7 +1302,7 @@ func TestValidator_ValidateLiveness(t *testing.T) {
 				"a": {ID: "a", Status: "blocked", Dependencies: []string{"b"}},
 				"b": {ID: "b", Status: "blocked"},
 			},
-			wantWarnings:    2, // a: no path, b: orphaned (no deps)
+			wantWarnings:     2, // a: no path, b: orphaned (no deps)
 			wantWarnContains: []string{"no path to resolution", "orphaned"},
 		},
 	}
@@ -1443,8 +1442,8 @@ func TestValidator_QuickMode(t *testing.T) {
 			PriorityEnum: []string{"P0", "P1", "P2"},
 		}
 		index.SetTasks(map[string]task.Task{
-			"task1": {ID: "1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1-task.md"},
-			"task2": {ID: "2", Title: "Task 2", Status: "pending", Priority: "P0", Dependencies: []string{"1"}, File: "2-task.md"},
+			"task1":            {ID: "1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1-task.md"},
+			"task2":            {ID: "2", Title: "Task 2", Status: "pending", Priority: "P0", Dependencies: []string{"1"}, File: "2-task.md"},
 			"quick-test-cases": {ID: "T-quick-1", Title: "Test Cases", Status: "pending", Priority: "P1", Dependencies: []string{"2"}, File: "quick-test-cases.md"},
 		})
 

@@ -15,7 +15,7 @@ func TestCleanupCompletedTaskState(t *testing.T) {
 		cleanupCompletedTaskState()
 	})
 
-	t.Run("no project root env returns no error", func(t *testing.T) {
+	t.Run("no project root env returns no error", func(_ *testing.T) {
 		cleanupCompletedTaskState()
 	})
 
@@ -68,7 +68,7 @@ func TestCleanupCompletedTaskState(t *testing.T) {
 		recordPath := feature.GetProcessRecordPath(dir, "test")
 
 		// Create record.json
-		os.WriteFile(recordPath, []byte("{}"), 0644)
+		_ = os.WriteFile(recordPath, []byte("{}"), 0644)
 
 		cleanupCompletedTaskState()
 
@@ -91,7 +91,7 @@ func TestCleanupCompletedTaskState(t *testing.T) {
 		})
 
 		// Simulate .forge/state.json created by task claim
-		feature.EnsureForgeState(dir, "test")
+		_ = feature.EnsureForgeState(dir, "test")
 
 		cleanupCompletedTaskState()
 
@@ -112,7 +112,7 @@ func TestCleanupCompletedTaskState(t *testing.T) {
 		})
 
 		// Simulate .forge/state.json created by task claim
-		feature.EnsureForgeState(dir, "test")
+		_ = feature.EnsureForgeState(dir, "test")
 
 		cleanupCompletedTaskState()
 
@@ -135,7 +135,7 @@ func TestCleanupCompletedTaskState(t *testing.T) {
 		recordPath := feature.GetProcessRecordPath(dir, "test")
 
 		// Create record.json
-		os.WriteFile(recordPath, []byte("{}"), 0644)
+		_ = os.WriteFile(recordPath, []byte("{}"), 0644)
 
 		cleanupCompletedTaskState()
 

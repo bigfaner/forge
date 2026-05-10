@@ -254,9 +254,7 @@ func TestGetFeatureFromGit_MainBranch(t *testing.T) {
 
 	// Ensure we're on the default branch
 	branch := GetCurrentBranch(dir)
-	if branch == "main" {
-		// already on main
-	} else {
+	if branch != "main" {
 		if err := runGit(dir, "checkout", "-b", "main"); err != nil {
 			t.Fatalf("git checkout -b main: %v", err)
 		}

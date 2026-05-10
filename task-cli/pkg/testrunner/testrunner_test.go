@@ -15,9 +15,9 @@ func captureStdout(f func()) string {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 	f()
-	w.Close()
+	_ = w.Close()
 	os.Stdout = old
-	buf.ReadFrom(r)
+	_, _ = buf.ReadFrom(r)
 	return buf.String()
 }
 
@@ -27,9 +27,9 @@ func captureStderr(f func()) string {
 	r, w, _ := os.Pipe()
 	os.Stderr = w
 	f()
-	w.Close()
+	_ = w.Close()
 	os.Stderr = old
-	buf.ReadFrom(r)
+	_, _ = buf.ReadFrom(r)
 	return buf.String()
 }
 
@@ -72,7 +72,7 @@ func TestHasNpmTestScript(t *testing.T) {
 	t.Run("has test script", func(t *testing.T) {
 		dir := t.TempDir()
 		pkg := `{"scripts": {"test": "jest"}}`
-		os.WriteFile(filepath.Join(dir, "package.json"), []byte(pkg), 0644)
+		_ = os.WriteFile(filepath.Join(dir, "package.json"), []byte(pkg), 0644)
 		if !hasNpmTestScript(dir) {
 			t.Error("expected true for package with test script")
 		}
@@ -81,7 +81,7 @@ func TestHasNpmTestScript(t *testing.T) {
 	t.Run("no test script", func(t *testing.T) {
 		dir := t.TempDir()
 		pkg := `{"scripts": {"build": "tsc"}}`
-		os.WriteFile(filepath.Join(dir, "package.json"), []byte(pkg), 0644)
+		_ = os.WriteFile(filepath.Join(dir, "package.json"), []byte(pkg), 0644)
 		if hasNpmTestScript(dir) {
 			t.Error("expected false for package without test script")
 		}
@@ -96,7 +96,7 @@ func TestHasNpmTestScript(t *testing.T) {
 
 	t.Run("invalid JSON", func(t *testing.T) {
 		dir := t.TempDir()
-		os.WriteFile(filepath.Join(dir, "package.json"), []byte("not json"), 0644)
+		_ = os.WriteFile(filepath.Join(dir, "package.json"), []byte("not json"), 0644)
 		if hasNpmTestScript(dir) {
 			t.Error("expected false for invalid JSON")
 		}
@@ -146,7 +146,7 @@ func TestRunProjectTests(t *testing.T) {
 
 	t.Run("go.mod uses go test", func(t *testing.T) {
 		dir := t.TempDir()
-		os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n\ngo 1.21\n"), 0644)
+		_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n\ngo 1.21\n"), 0644)
 		_, ok := RunProjectTests(dir, "")
 		_ = ok // may succeed or fail, just verify no panic
 	})
@@ -154,7 +154,7 @@ func TestRunProjectTests(t *testing.T) {
 	t.Run("npm test branch", func(t *testing.T) {
 		dir := t.TempDir()
 		pkg := `{"scripts": {"test": "echo npm-test-pass"}}`
-		os.WriteFile(filepath.Join(dir, "package.json"), []byte(pkg), 0644)
+		_ = os.WriteFile(filepath.Join(dir, "package.json"), []byte(pkg), 0644)
 		out := captureStderr(func() {
 			RunProjectTests(dir, "")
 		})
@@ -165,7 +165,7 @@ func TestRunProjectTests(t *testing.T) {
 
 	t.Run("pytest branch", func(t *testing.T) {
 		dir := t.TempDir()
-		os.WriteFile(filepath.Join(dir, "pytest.ini"), []byte("[pytest]\n"), 0644)
+		_ = os.WriteFile(filepath.Join(dir, "pytest.ini"), []byte("[pytest]\n"), 0644)
 		out := captureStderr(func() {
 			RunProjectTests(dir, "")
 		})
@@ -174,7 +174,7 @@ func TestRunProjectTests(t *testing.T) {
 
 	t.Run("justfile branch", func(t *testing.T) {
 		dir := t.TempDir()
-		os.WriteFile(filepath.Join(dir, "justfile"), []byte("test:\n    echo just-test-output\n"), 0644)
+		_ = os.WriteFile(filepath.Join(dir, "justfile"), []byte("test:\n    echo just-test-output\n"), 0644)
 		out := captureStderr(func() {
 			RunProjectTests(dir, "")
 		})
@@ -186,7 +186,7 @@ func TestRunProjectTests(t *testing.T) {
 			t.Skip("make not installed")
 		}
 		dir := t.TempDir()
-		os.WriteFile(filepath.Join(dir, "Makefile"), []byte("test:\n\t@echo make-test-output\n"), 0644)
+		_ = os.WriteFile(filepath.Join(dir, "Makefile"), []byte("test:\n\t@echo make-test-output\n"), 0644)
 		out := captureStderr(func() {
 			RunProjectTests(dir, "")
 		})

@@ -14,9 +14,9 @@ func captureStdout(f func()) string {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 	f()
-	w.Close()
+	_ = w.Close()
 	os.Stdout = old
-	buf.ReadFrom(r)
+	_, _ = buf.ReadFrom(r)
 	return buf.String()
 }
 
@@ -26,9 +26,9 @@ func captureStderr2(f func()) string {
 	r, w, _ := os.Pipe()
 	os.Stderr = w
 	f()
-	w.Close()
+	_ = w.Close()
 	os.Stderr = old
-	buf.ReadFrom(r)
+	_, _ = buf.ReadFrom(r)
 	return buf.String()
 }
 
@@ -57,7 +57,7 @@ func TestPrintFields_PanicsOnOddArgs(t *testing.T) {
 			t.Error("expected panic for odd number of args")
 		}
 	}()
-	PrintFields("K1", "v1", "K2")
+	PrintFields("K1", "v1", "K2") //nolint:staticcheck // intentionally odd to test panic
 }
 
 func TestPrintKeyValue(t *testing.T) {

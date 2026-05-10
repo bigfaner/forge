@@ -71,10 +71,10 @@ func TestReadForgeState(t *testing.T) {
 	t.Run("file exists and valid", func(t *testing.T) {
 		dir := t.TempDir()
 		statePath := GetForgeStatePath(dir)
-		os.MkdirAll(filepath.Dir(statePath), 0755)
+		_ = os.MkdirAll(filepath.Dir(statePath), 0755)
 		content := ForgeState{Feature: "f1", AllCompleted: true, UpdatedAt: "2026-01-01T00:00:00Z"}
 		data, _ := json.Marshal(content)
-		os.WriteFile(statePath, data, 0644)
+		_ = os.WriteFile(statePath, data, 0644)
 
 		state := ReadForgeState(dir)
 		if state == nil {
@@ -99,8 +99,8 @@ func TestReadForgeState(t *testing.T) {
 	t.Run("invalid JSON", func(t *testing.T) {
 		dir := t.TempDir()
 		statePath := GetForgeStatePath(dir)
-		os.MkdirAll(filepath.Dir(statePath), 0755)
-		os.WriteFile(statePath, []byte("not json"), 0644)
+		_ = os.MkdirAll(filepath.Dir(statePath), 0755)
+		_ = os.WriteFile(statePath, []byte("not json"), 0644)
 
 		state := ReadForgeState(dir)
 		if state != nil {
@@ -112,7 +112,7 @@ func TestReadForgeState(t *testing.T) {
 func TestClearForgeState(t *testing.T) {
 	t.Run("deletes existing file", func(t *testing.T) {
 		dir := t.TempDir()
-		WriteForgeState(dir, "test")
+		_ = WriteForgeState(dir, "test")
 
 		err := ClearForgeState(dir)
 		if err != nil {
@@ -183,7 +183,7 @@ func TestEnsureForgeState(t *testing.T) {
 		dir := t.TempDir()
 
 		// Simulate: all tasks were done, then fix-e2e tasks added
-		WriteForgeState(dir, "my-feature")
+		_ = WriteForgeState(dir, "my-feature")
 		state := ReadForgeState(dir)
 		if !state.AllCompleted {
 			t.Fatal("setup: WriteForgeState should set allCompleted=true")

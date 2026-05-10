@@ -230,9 +230,9 @@ func TestForensicExtract_ThinkingAndToolCalls(t *testing.T) {
 		{
 			"type": "assistant",
 			"message": map[string]any{
-				"id":         "msg1",
-				"role":       "assistant",
-				"model":      "glm-5",
+				"id":          "msg1",
+				"role":        "assistant",
+				"model":       "glm-5",
 				"stop_reason": "tool_use",
 				"content": []map[string]any{
 					{"type": "thinking", "thinking": "I should read the file first"},
@@ -256,9 +256,9 @@ func TestForensicExtract_ThinkingAndToolCalls(t *testing.T) {
 		{
 			"type": "assistant",
 			"message": map[string]any{
-				"id":         "msg2",
-				"role":       "assistant",
-				"model":      "glm-5",
+				"id":          "msg2",
+				"role":        "assistant",
+				"model":       "glm-5",
 				"stop_reason": "end_turn",
 				"content": []map[string]any{
 					{"type": "tool_use", "name": "Edit", "id": "call2", "input": map[string]any{"file_path": "/some/file.go", "old_string": "old", "new_string": "new"}},
@@ -278,10 +278,10 @@ func TestForensicExtract_ThinkingAndToolCalls(t *testing.T) {
 	f, _ := os.Create(jsonlPath)
 	for _, entry := range entries {
 		line, _ := json.Marshal(entry)
-		f.Write(line)
-		f.Write([]byte("\n"))
+		_, _ = f.Write(line)
+		_, _ = f.Write([]byte("\n"))
 	}
-	f.Close()
+	_ = f.Close()
 
 	outDir := filepath.Join(dir, "evidence")
 	forensicOutDir = outDir
@@ -300,7 +300,7 @@ func TestForensicExtract_ThinkingAndToolCalls(t *testing.T) {
 	}
 
 	var result extractResult
-	json.Unmarshal(data, &result)
+	_ = json.Unmarshal(data, &result)
 
 	if result.Lines != 4 {
 		t.Errorf("Lines = %d, want 4", result.Lines)
@@ -373,9 +373,9 @@ func TestForensicExtract_InvalidJSONLines(t *testing.T) {
 	jsonlPath := filepath.Join(dir, "bad.jsonl")
 
 	f, _ := os.Create(jsonlPath)
-	f.WriteString("not json at all\n")
-	f.WriteString(`{"type":"user","message":{"role":"user","content":"hello"}}` + "\n")
-	f.Close()
+	_, _ = f.WriteString("not json at all\n")
+	_, _ = f.WriteString(`{"type":"user","message":{"role":"user","content":"hello"}}` + "\n")
+	_ = f.Close()
 
 	outDir := filepath.Join(t.TempDir(), "evidence")
 	forensicOutDir = outDir
@@ -384,7 +384,7 @@ func TestForensicExtract_InvalidJSONLines(t *testing.T) {
 	})
 	data, _ := os.ReadFile(filepath.Join(outDir, "evidence.json"))
 	var result extractResult
-	json.Unmarshal(data, &result)
+	_ = json.Unmarshal(data, &result)
 
 	if result.Lines != 2 {
 		t.Errorf("Lines = %d, want 2 (bad line still counted)", result.Lines)
@@ -438,10 +438,10 @@ func TestForensicExtract_AttachmentInvokedSkills(t *testing.T) {
 	f, _ := os.Create(jsonlPath)
 	for _, entry := range entries {
 		line, _ := json.Marshal(entry)
-		f.Write(line)
-		f.Write([]byte("\n"))
+		_, _ = f.Write(line)
+		_, _ = f.Write([]byte("\n"))
 	}
-	f.Close()
+	_ = f.Close()
 
 	outDir := filepath.Join(dir, "evidence")
 	forensicOutDir = outDir
@@ -451,7 +451,7 @@ func TestForensicExtract_AttachmentInvokedSkills(t *testing.T) {
 
 	data, _ := os.ReadFile(filepath.Join(outDir, "evidence.json"))
 	var result extractResult
-	json.Unmarshal(data, &result)
+	_ = json.Unmarshal(data, &result)
 
 	if len(result.SkillsUsed) != 2 {
 		t.Fatalf("SkillsUsed = %v, want 2 skills", result.SkillsUsed)
@@ -490,10 +490,10 @@ func TestForensicExtract_AttachmentInvokedSkillsDedup(t *testing.T) {
 	f, _ := os.Create(jsonlPath)
 	for _, entry := range entries {
 		line, _ := json.Marshal(entry)
-		f.Write(line)
-		f.Write([]byte("\n"))
+		_, _ = f.Write(line)
+		_, _ = f.Write([]byte("\n"))
 	}
-	f.Close()
+	_ = f.Close()
 
 	outDir := filepath.Join(dir, "evidence")
 	forensicOutDir = outDir
@@ -503,7 +503,7 @@ func TestForensicExtract_AttachmentInvokedSkillsDedup(t *testing.T) {
 
 	data, _ := os.ReadFile(filepath.Join(outDir, "evidence.json"))
 	var result extractResult
-	json.Unmarshal(data, &result)
+	_ = json.Unmarshal(data, &result)
 
 	if len(result.SkillsUsed) != 1 || result.SkillsUsed[0] != "eval-prd" {
 		t.Errorf("SkillsUsed should dedup, got %v", result.SkillsUsed)
@@ -542,10 +542,10 @@ func TestForensicExtract_HookEvents(t *testing.T) {
 	f, _ := os.Create(jsonlPath)
 	for _, entry := range entries {
 		line, _ := json.Marshal(entry)
-		f.Write(line)
-		f.Write([]byte("\n"))
+		_, _ = f.Write(line)
+		_, _ = f.Write([]byte("\n"))
 	}
-	f.Close()
+	_ = f.Close()
 
 	outDir := filepath.Join(dir, "evidence")
 	forensicOutDir = outDir
@@ -555,7 +555,7 @@ func TestForensicExtract_HookEvents(t *testing.T) {
 
 	data, _ := os.ReadFile(filepath.Join(outDir, "evidence.json"))
 	var result extractResult
-	json.Unmarshal(data, &result)
+	_ = json.Unmarshal(data, &result)
 
 	if len(result.Hooks) != 2 {
 		t.Fatalf("Hooks len = %d, want 2", len(result.Hooks))
@@ -611,10 +611,10 @@ func TestForensicExtract_EditedFiles(t *testing.T) {
 	f, _ := os.Create(jsonlPath)
 	for _, entry := range entries {
 		line, _ := json.Marshal(entry)
-		f.Write(line)
-		f.Write([]byte("\n"))
+		_, _ = f.Write(line)
+		_, _ = f.Write([]byte("\n"))
 	}
-	f.Close()
+	_ = f.Close()
 
 	outDir := filepath.Join(dir, "evidence")
 	forensicOutDir = outDir
@@ -624,7 +624,7 @@ func TestForensicExtract_EditedFiles(t *testing.T) {
 
 	data, _ := os.ReadFile(filepath.Join(outDir, "evidence.json"))
 	var result extractResult
-	json.Unmarshal(data, &result)
+	_ = json.Unmarshal(data, &result)
 
 	if len(result.FilesEdited) != 2 {
 		t.Fatalf("FilesEdited = %v, want 2 files", result.FilesEdited)
@@ -657,10 +657,10 @@ func TestForensicExtract_ToolResultWithoutMetadata(t *testing.T) {
 	f, _ := os.Create(jsonlPath)
 	for _, entry := range entries {
 		line, _ := json.Marshal(entry)
-		f.Write(line)
-		f.Write([]byte("\n"))
+		_, _ = f.Write(line)
+		_, _ = f.Write([]byte("\n"))
 	}
-	f.Close()
+	_ = f.Close()
 
 	outDir := filepath.Join(dir, "evidence")
 	forensicOutDir = outDir
@@ -670,7 +670,7 @@ func TestForensicExtract_ToolResultWithoutMetadata(t *testing.T) {
 
 	data, _ := os.ReadFile(filepath.Join(outDir, "evidence.json"))
 	var result extractResult
-	json.Unmarshal(data, &result)
+	_ = json.Unmarshal(data, &result)
 
 	if result.Summary.TotalToolResults != 1 {
 		t.Errorf("TotalToolResults = %d, want 1", result.Summary.TotalToolResults)
@@ -770,7 +770,7 @@ func TestForensicExtract_CopiesSourceJSONL(t *testing.T) {
 	jsonlPath := filepath.Join(dir, "session.jsonl")
 
 	content := []byte(`{"type":"user","message":{"role":"user","content":"hello"}}` + "\n")
-	os.WriteFile(jsonlPath, content, 0644)
+	_ = os.WriteFile(jsonlPath, content, 0644)
 
 	outDir := filepath.Join(dir, "evidence")
 	forensicOutDir = outDir
@@ -793,7 +793,7 @@ func TestForensicExtract_NoCopyWithoutOutDir(t *testing.T) {
 	dir := t.TempDir()
 	jsonlPath := filepath.Join(dir, "session.jsonl")
 
-	os.WriteFile(jsonlPath, []byte(`{"type":"user","message":{"role":"user","content":"hello"}}`+"\n"), 0644)
+	_ = os.WriteFile(jsonlPath, []byte(`{"type":"user","message":{"role":"user","content":"hello"}}`+"\n"), 0644)
 
 	forensicOutDir = ""
 	// Stdout mode — no file operations, no copy
@@ -810,22 +810,22 @@ func TestForensicExtract_NoCopyWithoutOutDir(t *testing.T) {
 func TestForensicSubagents_WithMeta(t *testing.T) {
 	dir := t.TempDir()
 	subDir := filepath.Join(dir, "subagents")
-	os.MkdirAll(subDir, 0755)
+	_ = os.MkdirAll(subDir, 0755)
 
 	// Create meta file
 	meta := map[string]string{"agentType": "Explore"}
 	metaJSON, _ := json.Marshal(meta)
-	os.WriteFile(filepath.Join(subDir, "agent-abc123.meta.json"), metaJSON, 0644)
+	_ = os.WriteFile(filepath.Join(subDir, "agent-abc123.meta.json"), metaJSON, 0644)
 
 	// Create transcript file (empty)
-	os.WriteFile(filepath.Join(subDir, "agent-abc123.jsonl"), []byte(""), 0644)
+	_ = os.WriteFile(filepath.Join(subDir, "agent-abc123.jsonl"), []byte(""), 0644)
 
 	out := captureStdout(func() {
 		runForensicSubagents(nil, []string{dir})
 	})
 
 	var agents []subagentInfo
-	json.Unmarshal([]byte(strings.TrimSpace(out)), &agents)
+	_ = json.Unmarshal([]byte(strings.TrimSpace(out)), &agents)
 
 	if len(agents) != 1 {
 		t.Fatalf("expected 1 agent, got %d", len(agents))
@@ -841,7 +841,7 @@ func TestForensicSubagents_WithMeta(t *testing.T) {
 func TestForensicSubagents_SkipsDirs(t *testing.T) {
 	dir := t.TempDir()
 	subDir := filepath.Join(dir, "subagents")
-	os.MkdirAll(filepath.Join(subDir, "somedir"), 0755)
+	_ = os.MkdirAll(filepath.Join(subDir, "somedir"), 0755)
 	// Only a directory, no .meta.json files
 
 	out := captureStdout(func() {
@@ -849,7 +849,7 @@ func TestForensicSubagents_SkipsDirs(t *testing.T) {
 	})
 
 	var agents []subagentInfo
-	json.Unmarshal([]byte(strings.TrimSpace(out)), &agents)
+	_ = json.Unmarshal([]byte(strings.TrimSpace(out)), &agents)
 
 	if len(agents) != 0 {
 		t.Errorf("expected 0 agents, got %d", len(agents))
@@ -888,10 +888,10 @@ func TestForensicSearch_WithKeyword(t *testing.T) {
 	f, _ := os.Create(histPath)
 	for _, e := range entries {
 		line, _ := json.Marshal(e)
-		f.Write(line)
-		f.Write([]byte("\n"))
+		_, _ = f.Write(line)
+		_, _ = f.Write([]byte("\n"))
 	}
-	f.Close()
+	_ = f.Close()
 
 	// Override home to use our temp dir
 	t.Setenv("HOME", dir)
@@ -907,7 +907,7 @@ func TestForensicSearch_WithKeyword(t *testing.T) {
 	})
 
 	var results []sessionSummary
-	json.Unmarshal([]byte(strings.TrimSpace(out)), &results)
+	_ = json.Unmarshal([]byte(strings.TrimSpace(out)), &results)
 
 	// Should find sess-1 (forge + eval-prd) but not sess-2 (forge, no keyword) or sess-3 (other project)
 	if len(results) != 1 {
@@ -924,7 +924,7 @@ func searchWithHistPath(projectPath, histPath string) {
 	if err != nil {
 		Exit(NewAIError(ErrNotFound, "Cannot open history.jsonl", err.Error(), "", ""))
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	sessions := map[string]*sessionSummary{}
 	scanner := newBufScanner(f)
@@ -983,7 +983,7 @@ func newBufScanner(f *os.File) *bufScanner {
 	return &bufScanner{s}
 }
 
-func (b *bufScanner) scan() bool  { return b.Scan() }
+func (b *bufScanner) scan() bool    { return b.Scan() }
 func (b *bufScanner) bytes() []byte { return b.Bytes() }
 
 // ── jsonlMessage UnmarshalJSON ──────────────────────────────────────
@@ -1020,7 +1020,6 @@ func TestJsonlMessage_Unmarshal_EmptyContent(t *testing.T) {
 		t.Errorf("textContent() = %q, want empty", msg.textContent())
 	}
 }
-
 
 // ── Testdata-based integration tests ────────────────────────────────
 // These tests use sampled session data from testdata/forensic/.
@@ -1099,7 +1098,7 @@ func TestGolden_SearchByKeyword(t *testing.T) {
 	})
 
 	var results []sessionSummary
-	json.Unmarshal([]byte(strings.TrimSpace(out)), &results)
+	_ = json.Unmarshal([]byte(strings.TrimSpace(out)), &results)
 
 	if len(results) == 0 {
 		t.Fatal("expected sessions matching 'eval-prd'")
@@ -1440,7 +1439,7 @@ func TestGolden_SlugFlag(t *testing.T) {
 	dir := t.TempDir()
 	sessionID := "abc12345-6789-def0-abcd-ef1234567890"
 	jsonlPath := filepath.Join(dir, sessionID+".jsonl")
-	os.WriteFile(jsonlPath, []byte(`{"type":"user","message":{"role":"user","content":"hello"}}`+"\n"), 0644)
+	_ = os.WriteFile(jsonlPath, []byte(`{"type":"user","message":{"role":"user","content":"hello"}}`+"\n"), 0644)
 
 	forensicOutDir = ""
 	forensicSlug = "my-investigation"
@@ -1459,13 +1458,13 @@ func TestGolden_SlugFlag(t *testing.T) {
 		t.Fatalf("evidence not written to slug dir: %v", err)
 	}
 	var result extractResult
-	json.Unmarshal(data, &result)
+	_ = json.Unmarshal(data, &result)
 	if result.Lines != 1 {
 		t.Errorf("Lines = %d, want 1", result.Lines)
 	}
 
 	// Cleanup
-	os.RemoveAll("docs/forensics/my-investigation")
+	_ = os.RemoveAll("docs/forensics/my-investigation")
 }
 
 func TestGolden_AutoDeriveSlug(t *testing.T) {
@@ -1473,7 +1472,7 @@ func TestGolden_AutoDeriveSlug(t *testing.T) {
 	dir := t.TempDir()
 	sessionID := "abc12345-6789-def0-abcd-ef1234567890"
 	jsonlPath := filepath.Join(dir, sessionID+".jsonl")
-	os.WriteFile(jsonlPath, []byte(`{"type":"user","message":{"role":"user","content":"test"}}`+"\n"), 0644)
+	_ = os.WriteFile(jsonlPath, []byte(`{"type":"user","message":{"role":"user","content":"test"}}`+"\n"), 0644)
 
 	forensicOutDir = ""
 	forensicSlug = ""
@@ -1492,19 +1491,19 @@ func TestGolden_AutoDeriveSlug(t *testing.T) {
 		t.Fatalf("evidence not written: %v", err)
 	}
 	var result extractResult
-	json.Unmarshal(data, &result)
+	_ = json.Unmarshal(data, &result)
 	if result.Lines != 1 {
 		t.Errorf("Lines = %d, want 1", result.Lines)
 	}
 
 	// Cleanup
-	os.RemoveAll(filepath.Join("docs", "forensics", sessionID))
+	_ = os.RemoveAll(filepath.Join("docs", "forensics", sessionID))
 }
 
 func TestGolden_ExplicitOutWithoutSlug(t *testing.T) {
 	dir := t.TempDir()
 	jsonlPath := filepath.Join(dir, "session.jsonl")
-	os.WriteFile(jsonlPath, []byte(`{"type":"user","message":{"role":"user","content":"x"}}`+"\n"), 0644)
+	_ = os.WriteFile(jsonlPath, []byte(`{"type":"user","message":{"role":"user","content":"x"}}`+"\n"), 0644)
 
 	customOut := filepath.Join(dir, "custom-output")
 	forensicOutDir = customOut
@@ -1519,7 +1518,7 @@ func TestGolden_ExplicitOutWithoutSlug(t *testing.T) {
 		t.Fatalf("evidence not written to --out dir: %v", err)
 	}
 	var result extractResult
-	json.Unmarshal(data, &result)
+	_ = json.Unmarshal(data, &result)
 	if result.Lines != 1 {
 		t.Errorf("Lines = %d, want 1", result.Lines)
 	}
@@ -1633,7 +1632,7 @@ func TestGolden_SlugOverridesOut(t *testing.T) {
 	dir := t.TempDir()
 	sessionID := "abc12345-6789-def0-abcd-ef1234567890"
 	jsonlPath := filepath.Join(dir, sessionID+".jsonl")
-	os.WriteFile(jsonlPath, []byte(`{"type":"user","message":{"role":"user","content":"x"}}`+"\n"), 0644)
+	_ = os.WriteFile(jsonlPath, []byte(`{"type":"user","message":{"role":"user","content":"x"}}`+"\n"), 0644)
 
 	customOut := filepath.Join(dir, "custom-output")
 	forensicOutDir = customOut
@@ -1658,5 +1657,5 @@ func TestGolden_SlugOverridesOut(t *testing.T) {
 		t.Error("--out dir should not be used when --slug is set")
 	}
 
-	os.RemoveAll("docs/forensics/slug-wins")
+	_ = os.RemoveAll("docs/forensics/slug-wins")
 }
