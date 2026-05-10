@@ -4,8 +4,11 @@
   "title": "Fix: lint failure in all-completed quality gate",
   "priority": "P0",
   "estimatedTime": "30min",
+  "dependencies": [
+    "fix-4"
+  ],
   "file": "fix-3.md",
   "record": "records/fix-3.md",
-  "startedTime": "2026-05-10 14:16",
+  "startedTime": "2026-05-10 15:31",
   "breaking": true
 }

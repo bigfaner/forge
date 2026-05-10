@@ -80,7 +80,7 @@
       "dependencies": [
         "fix-4"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "fix-3.md",
       "record": "records/fix-3.md",
       "breaking": true
