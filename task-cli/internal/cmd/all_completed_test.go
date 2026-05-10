@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -124,10 +125,7 @@ func TestCheckAllCompleted(t *testing.T) {
 				}
 			}
 
-			result, err := checkAllCompleted(false)
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
+			result := checkAllCompleted(false)
 
 			if tc.wantNil {
 				if result != nil {
@@ -161,24 +159,37 @@ func TestCheckAllCompleted_NoFeature(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	result, err := checkAllCompleted(false)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	result := checkAllCompleted(false)
 	if result != nil {
 		t.Errorf("expected nil result when no feature set, got %+v", result)
 	}
 }
 
 func TestCheckAllCompleted_NoProject(t *testing.T) {
-	t.Setenv("CLAUDE_PROJECT_DIR", "")
-
-	result, err := checkAllCompleted(false)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	if os.Getenv("TEST_CHECK_ALL_COMPLETED_NO_PROJECT") == "1" {
+		result := checkAllCompleted(false)
+		if result != nil {
+			t.Errorf("expected nil result when no project root, got %+v", result)
+		}
+		return
 	}
-	if result != nil {
-		t.Errorf("expected nil result when no project root, got %+v", result)
+
+	tmpDir := t.TempDir()
+	cmd := exec.Command(os.Args[0], "-test.run=TestCheckAllCompleted_NoProject")
+	// Build clean env: clear CLAUDE_PROJECT_DIR and PROJECT_ROOT so FindProjectRoot
+	// cannot walk up from cwd and find ancestor project markers.
+	env := []string{}
+	for _, e := range os.Environ() {
+		if strings.HasPrefix(e, "CLAUDE_PROJECT_DIR=") || strings.HasPrefix(e, "PROJECT_ROOT=") {
+			continue
+		}
+		env = append(env, e)
+	}
+	cmd.Env = append(slices.Clone(env), "TEST_CHECK_ALL_COMPLETED_NO_PROJECT=1", "CLAUDE_PROJECT_DIR=")
+	cmd.Dir = tmpDir
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("test subprocess failed: %v\n%s", err, string(output))
 	}
 }
 
@@ -321,9 +332,6 @@ func TestWriteRawOutput(t *testing.T) {
 		t.Errorf("raw output mismatch: got %q, want %q", string(data), output)
 	}
 }
-
-
-
 
 func TestExtractSourceFiles(t *testing.T) {
 	tests := []struct {
@@ -769,7 +777,9 @@ func TestAddFixTask_ForgeStateResetEachTime(t *testing.T) {
 	}
 
 	// Write allCompleted=true to simulate next completion cycle
-	feature.WriteForgeState(projectRoot, featureSlug)
+	if err := feature.WriteForgeState(projectRoot, featureSlug); err != nil {
+		t.Fatal(err)
+	}
 
 	// Second add should reset again
 	addFixTask(projectRoot, featureSlug, "lint", "b.go:2: error", "tests/results/out.txt")
@@ -841,7 +851,9 @@ func TestCheckAllCompleted_RejectedTaskReturnsNil(t *testing.T) {
 	projectRoot := t.TempDir()
 	featureSlug := "test"
 	tasksDir := filepath.Join(projectRoot, "docs", "features", featureSlug, "tasks")
-	os.MkdirAll(tasksDir, 0755)
+	if err := os.MkdirAll(tasksDir, 0755); err != nil {
+		t.Fatal(err)
+	}
 
 	index := task.NewTaskIndex(featureSlug)
 	index.SetTasks(map[string]task.Task{
@@ -849,10 +861,14 @@ func TestCheckAllCompleted_RejectedTaskReturnsNil(t *testing.T) {
 		"task-b": {ID: "1.2", Status: "rejected", File: "1.2.md"},
 	})
 	indexPath := filepath.Join(tasksDir, "index.json")
-	task.SaveIndex(indexPath, index)
-	feature.WriteForgeState(projectRoot, featureSlug)
+	if err := task.SaveIndex(indexPath, index); err != nil {
+		t.Fatal(err)
+	}
+	if err := feature.WriteForgeState(projectRoot, featureSlug); err != nil {
+		t.Fatal(err)
+	}
 
-	result, _ := checkAllCompleted(false)
+	result := checkAllCompleted(false)
 	if result != nil {
 		t.Error("rejected task should prevent all-completed from proceeding")
 	}
@@ -874,11 +890,15 @@ func TestCheckAllCompleted_ForgeStateConsumedOnSuccess(t *testing.T) {
 	index.SetTasks(map[string]task.Task{
 		"t1": {ID: "1.1", Status: "completed"},
 	})
-	task.SaveIndex(indexPath, index)
-	feature.WriteForgeState(dir, "test")
+	if err := task.SaveIndex(indexPath, index); err != nil {
+		t.Fatal(err)
+	}
+	if err := feature.WriteForgeState(dir, "test"); err != nil {
+		t.Fatal(err)
+	}
 
 	// First call should succeed and consume the state
-	result, _ := checkAllCompleted(false)
+	result := checkAllCompleted(false)
 	if result == nil {
 		t.Fatal("first call should return result")
 	}
@@ -890,7 +910,7 @@ func TestCheckAllCompleted_ForgeStateConsumedOnSuccess(t *testing.T) {
 	}
 
 	// Second call should return nil (no state)
-	result2, _ := checkAllCompleted(false)
+	result2 := checkAllCompleted(false)
 	if result2 != nil {
 		t.Error("second call should return nil after state was consumed")
 	}
@@ -899,7 +919,9 @@ func TestCheckAllCompleted_ForgeStateConsumedOnSuccess(t *testing.T) {
 func TestCheckAllCompleted_ManyCompletedTasks(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("CLAUDE_PROJECT_DIR", dir)
-	feature.EnsureFeatureDir(dir, "test")
+	if err := feature.EnsureFeatureDir(dir, "test"); err != nil {
+		t.Fatal(err)
+	}
 
 	tasks := make(map[string]task.Task)
 	for i := range 20 {
@@ -914,10 +936,14 @@ func TestCheckAllCompleted_ManyCompletedTasks(t *testing.T) {
 		StatusEnum: []string{"pending", "in_progress", "completed", "blocked", "skipped"},
 	}
 	index.SetTasks(tasks)
-	task.SaveIndex(indexPath, index)
-	feature.WriteForgeState(dir, "test")
+	if err := task.SaveIndex(indexPath, index); err != nil {
+		t.Fatal(err)
+	}
+	if err := feature.WriteForgeState(dir, "test"); err != nil {
+		t.Fatal(err)
+	}
 
-	result, _ := checkAllCompleted(false)
+	result := checkAllCompleted(false)
 	if result == nil {
 		t.Fatal("expected result with many completed tasks")
 	}
@@ -926,7 +952,9 @@ func TestCheckAllCompleted_ManyCompletedTasks(t *testing.T) {
 func TestCheckAllCompleted_AllBlockedReturnsNil(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("CLAUDE_PROJECT_DIR", dir)
-	feature.EnsureFeatureDir(dir, "test")
+	if err := feature.EnsureFeatureDir(dir, "test"); err != nil {
+		t.Fatal(err)
+	}
 
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
 	index := &task.TaskIndex{
@@ -937,10 +965,14 @@ func TestCheckAllCompleted_AllBlockedReturnsNil(t *testing.T) {
 		"t1": {ID: "1.1", Status: "blocked"},
 		"t2": {ID: "1.2", Status: "blocked"},
 	})
-	task.SaveIndex(indexPath, index)
-	feature.WriteForgeState(dir, "test")
+	if err := task.SaveIndex(indexPath, index); err != nil {
+		t.Fatal(err)
+	}
+	if err := feature.WriteForgeState(dir, "test"); err != nil {
+		t.Fatal(err)
+	}
 
-	result, _ := checkAllCompleted(false)
+	result := checkAllCompleted(false)
 	if result != nil {
 		t.Error("all blocked tasks should return nil")
 	}
@@ -949,7 +981,9 @@ func TestCheckAllCompleted_AllBlockedReturnsNil(t *testing.T) {
 func TestCheckAllCompleted_MixedCompletedSkippedRejected(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("CLAUDE_PROJECT_DIR", dir)
-	feature.EnsureFeatureDir(dir, "test")
+	if err := feature.EnsureFeatureDir(dir, "test"); err != nil {
+		t.Fatal(err)
+	}
 
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
 	index := &task.TaskIndex{
@@ -961,11 +995,15 @@ func TestCheckAllCompleted_MixedCompletedSkippedRejected(t *testing.T) {
 		"t2": {ID: "1.2", Status: "skipped"},
 		"t3": {ID: "1.3", Status: "rejected"},
 	})
-	task.SaveIndex(indexPath, index)
-	feature.WriteForgeState(dir, "test")
+	if err := task.SaveIndex(indexPath, index); err != nil {
+		t.Fatal(err)
+	}
+	if err := feature.WriteForgeState(dir, "test"); err != nil {
+		t.Fatal(err)
+	}
 
 	// rejected is not completed or skipped, so should return nil
-	result, _ := checkAllCompleted(false)
+	result := checkAllCompleted(false)
 	if result != nil {
 		t.Error("rejected task should prevent all-completed from proceeding")
 	}
@@ -974,13 +1012,12 @@ func TestCheckAllCompleted_MixedCompletedSkippedRejected(t *testing.T) {
 func TestCheckAllCompleted_VerboseMode(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("CLAUDE_PROJECT_DIR", dir)
-	feature.EnsureFeatureDir(dir, "test")
+	if err := feature.EnsureFeatureDir(dir, "test"); err != nil {
+		t.Fatal(err)
+	}
 
 	// No forge state → should return nil but not error
-	result, err := checkAllCompleted(true)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	result := checkAllCompleted(true)
 	if result != nil {
 		t.Error("expected nil result without forge state")
 	}
