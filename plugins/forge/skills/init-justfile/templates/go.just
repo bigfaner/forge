@@ -13,7 +13,7 @@ run:
     go run ENTRY_POINT
 
 dev:
-    go run ENTRY_POINT --dev
+    go run ENTRY_POINT
 
 test:
     go test ./...
