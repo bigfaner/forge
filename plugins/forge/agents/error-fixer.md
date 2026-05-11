@@ -1,3 +1,5 @@
+> **DEPRECATED**: This agent is no longer dispatched. Use `type: fix` tasks (routed via `task prompt <id>`) for compilation/test/lint fixes, and `task prompt <id> --fix-record-missed` for record recovery.
+
 ---
 name: error-fixer
 description: "Fix compilation errors, test failures, or verification issues in previously executed tasks."

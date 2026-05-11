@@ -173,9 +173,11 @@ source-task (blocked) → fix-task-A (blocked) → fix-task-B
 - 最大嵌套深度 3 层
 - 已完成的 fix-task 会被自动解析到根 blocked task
 
-### error-fixer
+### error-fixer (DEPRECATED)
 
-**触发**：task-executor 失败时分发、`/fix-bug` 手动触发
+> **DEPRECATED**: This agent is no longer dispatched. Use `type: fix` tasks (routed via `task prompt <id>`) for compilation/test/lint fixes, and `task prompt <id> --fix-record-missed` for record recovery.
+
+**原触发**：task-executor 失败时分发、`/fix-bug` 手动触发
 
 **5 步工作流**：
 
@@ -230,7 +232,7 @@ Step 3: 写入 + 报告变更
 
 ## Quality Gate 协议
 
-所有任务执行工作流（`/execute-task`、`task-executor` agent、`/fix-bug`、`error-fixer` agent）在记录完成前必须通过 Quality Gate。
+所有任务执行工作流（`/execute-task`、`task-executor` agent、`/fix-bug`、`type: fix` 任务）在记录完成前必须通过 Quality Gate。
 
 ### 验证序列
 
