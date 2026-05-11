@@ -6,7 +6,7 @@ estimated_time: "{{ESTIMATED_TIME}}"
 dependencies: [{{DEPENDENCIES}}]
 status: pending
 breaking: false
-noTest: false
+type: "{{TYPE}}"
 mainSession: false
 ---
 
