@@ -27,7 +27,7 @@
       "dependencies": [
         "1.x"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "1-summary.md",
       "record": "records/1-summary.md",
       "scope": "all"
