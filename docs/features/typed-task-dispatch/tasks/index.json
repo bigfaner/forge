@@ -168,7 +168,7 @@
       "dependencies": [
         "1.gate"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2.2-template-frontmatter.md",
       "record": "records/2.2-template-frontmatter.md",
       "scope": "all",

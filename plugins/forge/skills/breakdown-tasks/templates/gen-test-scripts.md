@@ -5,7 +5,7 @@ priority: "P1"
 estimated_time: "1-2h"
 dependencies: ["T-test-1b"]
 status: pending
-noTest: false
+type: "test-pipeline.gen-scripts"
 mainSession: false
 ---
 

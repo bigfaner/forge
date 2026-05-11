@@ -5,7 +5,7 @@ priority: "P1"
 estimated_time: "30min-1h"
 dependencies: ["T-test-2"]
 status: pending
-noTest: false
+type: "test-pipeline.run"
 mainSession: false
 ---
 
