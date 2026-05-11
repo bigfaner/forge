@@ -226,7 +226,7 @@
         "2.gate",
         "fix-1"
       ],
-      "status": "blocked",
+      "status": "pending",
       "file": "3.1-slim-task-executor.md",
       "record": "records/3.1-slim-task-executor.md",
       "scope": "all",
@@ -408,7 +408,7 @@
       "title": "Fix: golangci-lint Go version mismatch (go1.25 vs go1.26.1)",
       "priority": "P0",
       "estimatedTime": "30min",
-      "status": "pending",
+      "status": "completed",
       "file": "fix-1.md",
       "record": "records/fix-1.md",
       "breaking": true,

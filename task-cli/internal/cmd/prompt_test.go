@@ -143,7 +143,8 @@ func TestRunPrompt_NoProject_ExitsWithError(t *testing.T) {
 		}
 		env = append(env, e)
 	}
-	cmd.Env = append(env, "TEST_PROMPT_NO_PROJECT=1", "CLAUDE_PROJECT_DIR=")
+	env = append(env, "TEST_PROMPT_NO_PROJECT=1", "CLAUDE_PROJECT_DIR=")
+	cmd.Env = env
 	cmd.Dir = tmpDir
 	output, err := cmd.CombinedOutput()
 	if err == nil {
@@ -178,7 +179,8 @@ func TestRunPrompt_NoFeature_ExitsWithError(t *testing.T) {
 		}
 		env = append(env, e)
 	}
-	cmd.Env = append(env, "TEST_PROMPT_NO_FEATURE=1", "CLAUDE_PROJECT_DIR="+dir)
+	env = append(env, "TEST_PROMPT_NO_FEATURE=1", "CLAUDE_PROJECT_DIR="+dir)
+	cmd.Env = env
 	cmd.Dir = dir
 	output, err := cmd.CombinedOutput()
 	if err == nil {

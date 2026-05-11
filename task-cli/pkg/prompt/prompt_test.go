@@ -26,9 +26,9 @@ func buildTestIndex(t *testing.T, dir string, tasks map[string]task.Task) string
 }
 
 // setupFeatureDir creates the minimal directory structure for a feature.
-func setupFeatureDir(t *testing.T, projectRoot, featureSlug string, tasks map[string]task.Task) {
+func setupFeatureDir(t *testing.T, projectRoot string, tasks map[string]task.Task) {
 	t.Helper()
-	tasksDir := filepath.Join(projectRoot, "docs", "features", featureSlug, "tasks")
+	tasksDir := filepath.Join(projectRoot, "docs", "features", "test-feature", "tasks")
 	recordsDir := filepath.Join(tasksDir, "records")
 	if err := os.MkdirAll(recordsDir, 0755); err != nil {
 		t.Fatalf("mkdir: %v", err)
@@ -67,7 +67,7 @@ func TestSynthesize_AllTypes(t *testing.T) {
 					Scope:  "backend",
 				},
 			}
-			setupFeatureDir(t, dir, "test-feature", tasks)
+			setupFeatureDir(t, dir, tasks)
 
 			opts := SynthesizeOpts{
 				ProjectRoot: dir,
@@ -100,7 +100,7 @@ func TestSynthesize_FixRecordMissed(t *testing.T) {
 			Type:   task.TypeImplementation,
 		},
 	}
-	setupFeatureDir(t, dir, "test-feature", tasks)
+	setupFeatureDir(t, dir, tasks)
 
 	opts := SynthesizeOpts{
 		ProjectRoot:     dir,
@@ -136,7 +136,7 @@ func TestSynthesize_EmptyType_ReturnsError(t *testing.T) {
 			Type:   "", // empty
 		},
 	}
-	setupFeatureDir(t, dir, "test-feature", tasks)
+	setupFeatureDir(t, dir, tasks)
 
 	opts := SynthesizeOpts{
 		ProjectRoot: dir,
@@ -164,7 +164,7 @@ func TestSynthesize_UnknownType_ReturnsError(t *testing.T) {
 			Type:   "unknown-type-xyz",
 		},
 	}
-	setupFeatureDir(t, dir, "test-feature", tasks)
+	setupFeatureDir(t, dir, tasks)
 
 	opts := SynthesizeOpts{
 		ProjectRoot: dir,
@@ -195,7 +195,7 @@ func TestPhaseDetect_NewPhase(t *testing.T) {
 			Type:   task.TypeImplementation,
 		},
 	}
-	setupFeatureDir(t, dir, "test-feature", tasks)
+	setupFeatureDir(t, dir, tasks)
 
 	// Create the summary file that PhaseDetect should find.
 	summaryPath := filepath.Join(dir, "docs", "features", "test-feature", "tasks", "records", "1-summary.md")
@@ -226,7 +226,7 @@ func TestPhaseDetect_SamePhase(t *testing.T) {
 			Type:   task.TypeImplementation,
 		},
 	}
-	setupFeatureDir(t, dir, "test-feature", tasks)
+	setupFeatureDir(t, dir, tasks)
 
 	// Task 1.2 is in phase 1, maxCompleted is also phase 1 → no injection.
 	result := PhaseDetect(dir, "test-feature", "1.2")
@@ -248,7 +248,7 @@ func TestPhaseDetect_FirstPhase(t *testing.T) {
 			Type:   task.TypeImplementation,
 		},
 	}
-	setupFeatureDir(t, dir, "test-feature", tasks)
+	setupFeatureDir(t, dir, tasks)
 
 	result := PhaseDetect(dir, "test-feature", "1.1")
 	if result != "" {
@@ -269,7 +269,7 @@ func TestPhaseDetect_SummaryFileMissing(t *testing.T) {
 			Type:   task.TypeImplementation,
 		},
 	}
-	setupFeatureDir(t, dir, "test-feature", tasks)
+	setupFeatureDir(t, dir, tasks)
 
 	// No summary file created — PhaseDetect should return "" gracefully.
 	result := PhaseDetect(dir, "test-feature", "2.1")

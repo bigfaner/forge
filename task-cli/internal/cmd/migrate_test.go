@@ -210,7 +210,8 @@ func TestRunMigrate_NoProject_ExitsWithError(t *testing.T) {
 		}
 		env = append(env, e)
 	}
-	cmd.Env = append(env, "TEST_MIGRATE_NO_PROJECT=1", "CLAUDE_PROJECT_DIR=")
+	env = append(env, "TEST_MIGRATE_NO_PROJECT=1", "CLAUDE_PROJECT_DIR=")
+	cmd.Env = env
 	cmd.Dir = tmpDir
 	output, err := cmd.CombinedOutput()
 	if err == nil {
@@ -245,7 +246,8 @@ func TestRunMigrate_NoFeature_ExitsWithError(t *testing.T) {
 		}
 		env = append(env, e)
 	}
-	cmd.Env = append(env, "TEST_MIGRATE_NO_FEATURE=1", "CLAUDE_PROJECT_DIR="+dir)
+	env = append(env, "TEST_MIGRATE_NO_FEATURE=1", "CLAUDE_PROJECT_DIR="+dir)
+	cmd.Env = env
 	cmd.Dir = dir
 	output, err := cmd.CombinedOutput()
 	if err == nil {

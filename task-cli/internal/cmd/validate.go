@@ -129,11 +129,12 @@ func (v *validator) validateTasks(tasks map[string]task.Task) {
 		if t.Priority != "" && !validPriority[t.Priority] {
 			v.errors = append(v.errors, fmt.Sprintf("Task '%s': invalid priority '%s'", key, t.Priority))
 		}
-		if t.Type == "" {
+		switch {
+		case t.Type == "":
 			v.errors = append(v.errors, fmt.Sprintf("Task '%s': missing 'type'", key))
-		} else if !task.ValidTypes[t.Type] {
+		case !task.ValidTypes[t.Type]:
 			v.errors = append(v.errors, fmt.Sprintf("Task '%s': invalid type '%s'", key, t.Type))
-		} else if t.MainSession && t.Type != task.TypeTestPipelineEvalCases {
+		case t.MainSession && t.Type != task.TypeTestPipelineEvalCases:
 			v.warnings = append(v.warnings, fmt.Sprintf("Task '%s': mainSession=true but type is '%s' (expected '%s')", key, t.Type, task.TypeTestPipelineEvalCases))
 		}
 	}
