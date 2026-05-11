@@ -203,6 +203,8 @@ type Task struct {
     SourceTaskID  string   `json:"sourceTaskID,omitempty"`  // ID of the task that spawned this task (e.g. fix-task -> source)
     MainSession   bool     `json:"mainSession,omitempty"`   // Task must run in main session (not dispatched to task-executor)
     NoTest        bool     `json:"noTest,omitempty"`        // Task does not require tests (e.g. documentation-only); skips quality gate and test evidence check
+    Type          string   `json:"type,omitempty"`          // Task execution type (e.g. "implementation", "fix", "gate"); required after migration
+    BlockedReason string   `json:"blockedReason,omitempty"` // Why this task entered blocked state; written by run-tasks when task prompt fails
 }
 ```
 

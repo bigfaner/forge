@@ -6,6 +6,36 @@ import (
 	"time"
 )
 
+// Task type constants define the 11 valid execution types.
+const (
+	TypeImplementation               = "implementation"
+	TypeDocGenerationSummary         = "doc-generation.summary"
+	TypeDocGenerationConsolidate     = "doc-generation.consolidate"
+	TypeTestPipelineGenCases         = "test-pipeline.gen-cases"
+	TypeTestPipelineEvalCases        = "test-pipeline.eval-cases"
+	TypeTestPipelineGenScripts       = "test-pipeline.gen-scripts"
+	TypeTestPipelineRun              = "test-pipeline.run"
+	TypeTestPipelineGraduate         = "test-pipeline.graduate"
+	TypeTestPipelineVerifyRegression = "test-pipeline.verify-regression"
+	TypeFix                          = "fix"
+	TypeGate                         = "gate"
+)
+
+// ValidTypes is the complete set of valid task type values.
+var ValidTypes = map[string]bool{
+	TypeImplementation:               true,
+	TypeDocGenerationSummary:         true,
+	TypeDocGenerationConsolidate:     true,
+	TypeTestPipelineGenCases:         true,
+	TypeTestPipelineEvalCases:        true,
+	TypeTestPipelineGenScripts:       true,
+	TypeTestPipelineRun:              true,
+	TypeTestPipelineGraduate:         true,
+	TypeTestPipelineVerifyRegression: true,
+	TypeFix:                          true,
+	TypeGate:                         true,
+}
+
 // Task represents a single task in the feature index.
 type Task struct {
 	ID            string   `json:"id"`
@@ -30,6 +60,13 @@ type Task struct {
 	// NoTest indicates this task does not require tests (e.g., documentation-only tasks).
 	// When true, quality gate and test evidence checks are skipped, and coverage is auto-set to -1.0.
 	NoTest bool `json:"noTest,omitempty"`
+	// Type is the task execution type (e.g. "implementation", "fix", "gate").
+	// Required for all tasks after migration; validated by task validate.
+	// omitempty allows existing index.json files to load without error.
+	Type string `json:"type,omitempty"`
+	// BlockedReason records why a task entered blocked state.
+	// Written by run-tasks when task prompt exits non-zero.
+	BlockedReason string `json:"blockedReason,omitempty"`
 }
 
 // TaskIndex represents the index.json structure for a feature.
@@ -118,6 +155,8 @@ type TaskState struct { //nolint:revive // intentional naming for API clarity
 	MainSession bool `json:"mainSession,omitempty"`
 	// NoTest mirrors Task.NoTest for the claimed task.
 	NoTest bool `json:"noTest,omitempty"`
+	// Type mirrors Task.Type for the claimed task (same pattern as MainSession, NoTest).
+	Type string `json:"type,omitempty"`
 }
 
 // RecordData represents the JSON input for record generation.

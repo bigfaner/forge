@@ -394,6 +394,230 @@ func assertField(t *testing.T, name string, got, want interface{}) {
 	}
 }
 
+func TestTaskTypeFieldSerialization(t *testing.T) {
+	t.Run("type field serializes when set", func(t *testing.T) {
+		task := Task{
+			ID:     "1.1",
+			Title:  "Impl Task",
+			Status: "pending",
+			File:   "tasks/1.1.md",
+			Type:   TypeImplementation,
+		}
+		data, err := json.Marshal(task)
+		if err != nil {
+			t.Fatalf("json.Marshal failed: %v", err)
+		}
+		got := string(data)
+		if !strings.Contains(got, `"type":"implementation"`) {
+			t.Errorf("JSON = %s, want to contain %q", got, `"type":"implementation"`)
+		}
+	})
+
+	t.Run("type field omitted when empty", func(t *testing.T) {
+		task := Task{
+			ID:     "1.1",
+			Title:  "Task Without Type",
+			Status: "pending",
+			File:   "tasks/1.1.md",
+		}
+		data, err := json.Marshal(task)
+		if err != nil {
+			t.Fatalf("json.Marshal failed: %v", err)
+		}
+		got := string(data)
+		if strings.Contains(got, `"type"`) {
+			t.Errorf("JSON = %s, should NOT contain type field when empty", got)
+		}
+	})
+
+	t.Run("type field deserializes from JSON", func(t *testing.T) {
+		jsonStr := `{"id":"1.1","title":"Fix Task","type":"fix","status":"pending","file":"tasks/1.1.md"}`
+		var task Task
+		if err := json.Unmarshal([]byte(jsonStr), &task); err != nil {
+			t.Fatalf("json.Unmarshal failed: %v", err)
+		}
+		if task.Type != TypeFix {
+			t.Errorf("Type = %q, want %q", task.Type, TypeFix)
+		}
+	})
+
+	t.Run("type field defaults to empty when missing in JSON", func(t *testing.T) {
+		jsonStr := `{"id":"1.1","title":"No Type Task","status":"pending","file":"tasks/1.1.md"}`
+		var task Task
+		if err := json.Unmarshal([]byte(jsonStr), &task); err != nil {
+			t.Fatalf("json.Unmarshal failed: %v", err)
+		}
+		if task.Type != "" {
+			t.Errorf("Type = %q, want empty string when missing", task.Type)
+		}
+	})
+}
+
+func TestTaskBlockedReasonFieldSerialization(t *testing.T) {
+	t.Run("blockedReason field serializes when set", func(t *testing.T) {
+		task := Task{
+			ID:            "1.1",
+			Title:         "Blocked Task",
+			Status:        "blocked",
+			File:          "tasks/1.1.md",
+			BlockedReason: "template file missing",
+		}
+		data, err := json.Marshal(task)
+		if err != nil {
+			t.Fatalf("json.Marshal failed: %v", err)
+		}
+		got := string(data)
+		if !strings.Contains(got, `"blockedReason":"template file missing"`) {
+			t.Errorf("JSON = %s, want to contain blockedReason", got)
+		}
+	})
+
+	t.Run("blockedReason field omitted when empty", func(t *testing.T) {
+		task := Task{
+			ID:     "1.1",
+			Title:  "Normal Task",
+			Status: "pending",
+			File:   "tasks/1.1.md",
+		}
+		data, err := json.Marshal(task)
+		if err != nil {
+			t.Fatalf("json.Marshal failed: %v", err)
+		}
+		got := string(data)
+		if strings.Contains(got, `"blockedReason"`) {
+			t.Errorf("JSON = %s, should NOT contain blockedReason when empty", got)
+		}
+	})
+
+	t.Run("blockedReason roundtrip preserves value", func(t *testing.T) {
+		task := Task{
+			ID:            "2.1",
+			Title:         "Blocked Task",
+			Status:        "blocked",
+			File:          "tasks/2.1.md",
+			BlockedReason: "task prompt exited with code 1",
+		}
+		data, err := json.Marshal(task)
+		if err != nil {
+			t.Fatalf("json.Marshal failed: %v", err)
+		}
+		var unmarshaled Task
+		if err := json.Unmarshal(data, &unmarshaled); err != nil {
+			t.Fatalf("json.Unmarshal failed: %v", err)
+		}
+		if unmarshaled.BlockedReason != task.BlockedReason {
+			t.Errorf("BlockedReason = %q, want %q", unmarshaled.BlockedReason, task.BlockedReason)
+		}
+	})
+}
+
+func TestTaskStateTypeFieldSerialization(t *testing.T) {
+	t.Run("TaskState type field serializes when set", func(t *testing.T) {
+		state := &TaskState{
+			TaskID:      "1.1",
+			Key:         "task1",
+			Title:       "Gate Task",
+			Type:        TypeGate,
+			StartedTime: "2024-01-01 10:00",
+		}
+		data, err := json.Marshal(state)
+		if err != nil {
+			t.Fatalf("json.Marshal failed: %v", err)
+		}
+		got := string(data)
+		if !strings.Contains(got, `"type":"gate"`) {
+			t.Errorf("JSON = %s, want to contain %q", got, `"type":"gate"`)
+		}
+	})
+
+	t.Run("TaskState type field omitted when empty", func(t *testing.T) {
+		state := &TaskState{
+			TaskID:      "1.1",
+			Key:         "task1",
+			Title:       "Task",
+			StartedTime: "2024-01-01 10:00",
+		}
+		data, err := json.Marshal(state)
+		if err != nil {
+			t.Fatalf("json.Marshal failed: %v", err)
+		}
+		got := string(data)
+		if strings.Contains(got, `"type"`) {
+			t.Errorf("JSON = %s, should NOT contain type field when empty", got)
+		}
+	})
+
+	t.Run("TaskState type deserializes from JSON", func(t *testing.T) {
+		jsonStr := `{"task_id":"1.1","key":"task1","title":"Fix Task","type":"fix","startedTime":"2024-01-01 10:00"}`
+		var state TaskState
+		if err := json.Unmarshal([]byte(jsonStr), &state); err != nil {
+			t.Fatalf("json.Unmarshal failed: %v", err)
+		}
+		if state.Type != TypeFix {
+			t.Errorf("Type = %q, want %q", state.Type, TypeFix)
+		}
+	})
+}
+
+func TestTypeConstants(t *testing.T) {
+	tests := []struct {
+		constant string
+		expected string
+	}{
+		{TypeImplementation, "implementation"},
+		{TypeDocGenerationSummary, "doc-generation.summary"},
+		{TypeDocGenerationConsolidate, "doc-generation.consolidate"},
+		{TypeTestPipelineGenCases, "test-pipeline.gen-cases"},
+		{TypeTestPipelineEvalCases, "test-pipeline.eval-cases"},
+		{TypeTestPipelineGenScripts, "test-pipeline.gen-scripts"},
+		{TypeTestPipelineRun, "test-pipeline.run"},
+		{TypeTestPipelineGraduate, "test-pipeline.graduate"},
+		{TypeTestPipelineVerifyRegression, "test-pipeline.verify-regression"},
+		{TypeFix, "fix"},
+		{TypeGate, "gate"},
+	}
+	for _, tt := range tests {
+		if tt.constant != tt.expected {
+			t.Errorf("constant value = %q, want %q", tt.constant, tt.expected)
+		}
+	}
+}
+
+func TestValidTypes(t *testing.T) {
+	t.Run("ValidTypes contains all 11 type constants", func(t *testing.T) {
+		allTypes := []string{
+			TypeImplementation,
+			TypeDocGenerationSummary,
+			TypeDocGenerationConsolidate,
+			TypeTestPipelineGenCases,
+			TypeTestPipelineEvalCases,
+			TypeTestPipelineGenScripts,
+			TypeTestPipelineRun,
+			TypeTestPipelineGraduate,
+			TypeTestPipelineVerifyRegression,
+			TypeFix,
+			TypeGate,
+		}
+		if len(ValidTypes) != len(allTypes) {
+			t.Errorf("ValidTypes has %d entries, want %d", len(ValidTypes), len(allTypes))
+		}
+		for _, typ := range allTypes {
+			if !ValidTypes[typ] {
+				t.Errorf("ValidTypes missing %q", typ)
+			}
+		}
+	})
+
+	t.Run("ValidTypes rejects unknown type", func(t *testing.T) {
+		if ValidTypes["unknown-type"] {
+			t.Error("ValidTypes should not contain 'unknown-type'")
+		}
+		if ValidTypes[""] {
+			t.Error("ValidTypes should not contain empty string")
+		}
+	})
+}
+
 func TestRecordDataJSONRoundTrip(t *testing.T) {
 	rd := &RecordData{
 		Status:        "completed",
