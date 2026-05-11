@@ -13,11 +13,12 @@
       "dependencies": [
         "1.summary"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "1-gate.md",
       "record": "records/1-gate.md",
       "breaking": true,
-      "scope": "all"
+      "scope": "all",
+      "type": "gate"
     },
     "1-summary": {
       "id": "1.summary",
@@ -30,7 +31,8 @@
       "status": "completed",
       "file": "1-summary.md",
       "record": "records/1-summary.md",
-      "scope": "all"
+      "scope": "all",
+      "type": "doc-generation.summary"
     },
     "1.1-task-type-fields": {
       "id": "1.1",
@@ -41,7 +43,8 @@
       "file": "1.1-task-type-fields.md",
       "record": "records/1.1-task-type-fields.md",
       "breaking": true,
-      "scope": "backend"
+      "scope": "backend",
+      "type": "implementation"
     },
     "1.2-pkg-prompt": {
       "id": "1.2",
@@ -54,7 +57,8 @@
       "status": "completed",
       "file": "1.2-pkg-prompt.md",
       "record": "records/1.2-pkg-prompt.md",
-      "scope": "backend"
+      "scope": "backend",
+      "type": "implementation"
     },
     "1.3-prompt-cmd": {
       "id": "1.3",
@@ -67,7 +71,8 @@
       "status": "completed",
       "file": "1.3-prompt-cmd.md",
       "record": "records/1.3-prompt-cmd.md",
-      "scope": "backend"
+      "scope": "backend",
+      "type": "implementation"
     },
     "1.4-migrate-cmd": {
       "id": "1.4",
@@ -80,7 +85,8 @@
       "status": "completed",
       "file": "1.4-migrate-cmd.md",
       "record": "records/1.4-migrate-cmd.md",
-      "scope": "backend"
+      "scope": "backend",
+      "type": "implementation"
     },
     "1.5-validate-extend": {
       "id": "1.5",
@@ -93,7 +99,8 @@
       "status": "completed",
       "file": "1.5-validate-extend.md",
       "record": "records/1.5-validate-extend.md",
-      "scope": "backend"
+      "scope": "backend",
+      "type": "implementation"
     },
     "1.6-claim-type-output": {
       "id": "1.6",
@@ -106,7 +113,8 @@
       "status": "completed",
       "file": "1.6-claim-type-output.md",
       "record": "records/1.6-claim-type-output.md",
-      "scope": "backend"
+      "scope": "backend",
+      "type": "implementation"
     },
     "2-gate": {
       "id": "2.gate",
@@ -120,7 +128,8 @@
       "file": "2-gate.md",
       "record": "records/2-gate.md",
       "breaking": true,
-      "scope": "all"
+      "scope": "all",
+      "type": "gate"
     },
     "2-summary": {
       "id": "2.summary",
@@ -133,7 +142,8 @@
       "status": "pending",
       "file": "2-summary.md",
       "record": "records/2-summary.md",
-      "scope": "all"
+      "scope": "all",
+      "type": "doc-generation.summary"
     },
     "2.1-schema-update": {
       "id": "2.1",
@@ -147,7 +157,8 @@
       "file": "2.1-schema-update.md",
       "record": "records/2.1-schema-update.md",
       "breaking": true,
-      "scope": "all"
+      "scope": "all",
+      "type": "implementation"
     },
     "2.2-template-frontmatter": {
       "id": "2.2",
@@ -160,7 +171,8 @@
       "status": "pending",
       "file": "2.2-template-frontmatter.md",
       "record": "records/2.2-template-frontmatter.md",
-      "scope": "all"
+      "scope": "all",
+      "type": "implementation"
     },
     "2.3-skill-type-assignment": {
       "id": "2.3",
@@ -173,7 +185,8 @@
       "status": "pending",
       "file": "2.3-skill-type-assignment.md",
       "record": "records/2.3-skill-type-assignment.md",
-      "scope": "all"
+      "scope": "all",
+      "type": "implementation"
     },
     "3-gate": {
       "id": "3.gate",
@@ -187,7 +200,8 @@
       "file": "3-gate.md",
       "record": "records/3-gate.md",
       "breaking": true,
-      "scope": "all"
+      "scope": "all",
+      "type": "gate"
     },
     "3-summary": {
       "id": "3.summary",
@@ -200,7 +214,8 @@
       "status": "pending",
       "file": "3-summary.md",
       "record": "records/3-summary.md",
-      "scope": "all"
+      "scope": "all",
+      "type": "doc-generation.summary"
     },
     "3.1-slim-task-executor": {
       "id": "3.1",
@@ -213,7 +228,8 @@
       "status": "pending",
       "file": "3.1-slim-task-executor.md",
       "record": "records/3.1-slim-task-executor.md",
-      "scope": "all"
+      "scope": "all",
+      "type": "implementation"
     },
     "3.2-run-tasks-routing": {
       "id": "3.2",
@@ -226,7 +242,8 @@
       "status": "pending",
       "file": "3.2-run-tasks-routing.md",
       "record": "records/3.2-run-tasks-routing.md",
-      "scope": "all"
+      "scope": "all",
+      "type": "implementation"
     },
     "3.3-execute-task-routing": {
       "id": "3.3",
@@ -240,7 +257,8 @@
       "status": "pending",
       "file": "3.3-execute-task-routing.md",
       "record": "records/3.3-execute-task-routing.md",
-      "scope": "all"
+      "scope": "all",
+      "type": "implementation"
     },
     "4-gate": {
       "id": "4.gate",
@@ -254,7 +272,8 @@
       "file": "4-gate.md",
       "record": "records/4-gate.md",
       "breaking": true,
-      "scope": "all"
+      "scope": "all",
+      "type": "gate"
     },
     "4-summary": {
       "id": "4.summary",
@@ -267,7 +286,8 @@
       "status": "pending",
       "file": "4-summary.md",
       "record": "records/4-summary.md",
-      "scope": "all"
+      "scope": "all",
+      "type": "doc-generation.summary"
     },
     "4.1-deprecate-error-fixer": {
       "id": "4.1",
@@ -280,7 +300,8 @@
       "status": "pending",
       "file": "4.1-deprecate-error-fixer.md",
       "record": "records/4.1-deprecate-error-fixer.md",
-      "scope": "all"
+      "scope": "all",
+      "type": "implementation"
     },
     "T-test-1": {
       "id": "T-test-1",
@@ -293,7 +314,8 @@
       "status": "pending",
       "file": "gen-test-cases.md",
       "record": "records/gen-test-cases.md",
-      "scope": "all"
+      "scope": "all",
+      "type": "test-pipeline.gen-cases"
     },
     "T-test-1b": {
       "id": "T-test-1b",
@@ -307,7 +329,8 @@
       "file": "eval-test-cases.md",
       "record": "records/eval-test-cases.md",
       "scope": "all",
-      "mainSession": true
+      "mainSession": true,
+      "type": "test-pipeline.eval-cases"
     },
     "T-test-2": {
       "id": "T-test-2",
@@ -320,7 +343,8 @@
       "status": "pending",
       "file": "gen-test-scripts.md",
       "record": "records/gen-test-scripts.md",
-      "scope": "all"
+      "scope": "all",
+      "type": "test-pipeline.gen-scripts"
     },
     "T-test-3": {
       "id": "T-test-3",
@@ -333,7 +357,8 @@
       "status": "pending",
       "file": "run-e2e-tests.md",
       "record": "records/run-e2e-tests.md",
-      "scope": "all"
+      "scope": "all",
+      "type": "test-pipeline.run"
     },
     "T-test-4": {
       "id": "T-test-4",
@@ -346,7 +371,8 @@
       "status": "pending",
       "file": "graduate-tests.md",
       "record": "records/graduate-tests.md",
-      "scope": "all"
+      "scope": "all",
+      "type": "test-pipeline.graduate"
     },
     "T-test-4.5": {
       "id": "T-test-4.5",
@@ -359,7 +385,8 @@
       "status": "pending",
       "file": "verify-regression.md",
       "record": "records/verify-regression.md",
-      "scope": "all"
+      "scope": "all",
+      "type": "test-pipeline.verify-regression"
     },
     "T-test-5": {
       "id": "T-test-5",
@@ -372,7 +399,8 @@
       "status": "pending",
       "file": "consolidate-specs.md",
       "record": "records/consolidate-specs.md",
-      "scope": "all"
+      "scope": "all",
+      "type": "doc-generation.consolidate"
     }
   },
   "statusEnum": [
