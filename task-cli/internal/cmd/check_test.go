@@ -31,7 +31,7 @@ func TestValidator_IndirectRun(t *testing.T) {
 			Design:  "design/tech-design.md",
 		}
 		index.SetTasks(map[string]task.Task{
-			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md"},
+			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md", Type: "implementation"},
 		})
 		data, _ := encodeIndex(index)
 		_ = os.WriteFile(indexPath, data, 0644)

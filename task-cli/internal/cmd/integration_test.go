@@ -971,7 +971,7 @@ func TestRunValidate_Integration(t *testing.T) {
 		StatusEnum: []string{"pending", "in_progress", "completed"},
 	}
 	index.SetTasks(map[string]task.Task{
-		"t1": {ID: "1.1", Title: "T1", Status: "pending", Priority: "P0", File: "1.1.md", Dependencies: []string{}},
+		"t1": {ID: "1.1", Title: "T1", Status: "pending", Priority: "P0", File: "1.1.md", Dependencies: []string{}, Type: "implementation"},
 	})
 	data, _ := json.Marshal(index)
 	indexPath := filepath.Join(dir, "index.json")
@@ -1030,7 +1030,7 @@ func TestSaveIndexAndSignalCompletion_AllDone(t *testing.T) {
 
 func TestRunValidate_NoArgs(t *testing.T) {
 	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
-		"t1": {ID: "1.1", Title: "T1", Status: "pending", Priority: "P0", File: "1.1.md", Dependencies: []string{}},
+		"t1": {ID: "1.1", Title: "T1", Status: "pending", Priority: "P0", File: "1.1.md", Dependencies: []string{}, Type: "implementation"},
 	}})
 
 	out := captureStdout(func() {

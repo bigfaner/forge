@@ -12,22 +12,24 @@ import (
 
 func TestValidator_ValidateTasks(t *testing.T) {
 	tests := []struct {
-		name            string
-		tasks           map[string]task.Task
-		wantErrors      int
-		wantErrContains []string
+		name             string
+		tasks            map[string]task.Task
+		wantErrors       int
+		wantWarnings     int
+		wantErrContains  []string
+		wantWarnContains []string
 	}{
 		{
 			name: "valid tasks",
 			tasks: map[string]task.Task{
-				"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "task.md"},
+				"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "task.md", Type: "implementation"},
 			},
 			wantErrors: 0,
 		},
 		{
 			name: "missing id",
 			tasks: map[string]task.Task{
-				"task1": {Title: "Task 1", File: "task.md"},
+				"task1": {Title: "Task 1", File: "task.md", Type: "implementation"},
 			},
 			wantErrors:      1,
 			wantErrContains: []string{"missing 'id'"},
@@ -35,7 +37,7 @@ func TestValidator_ValidateTasks(t *testing.T) {
 		{
 			name: "missing title",
 			tasks: map[string]task.Task{
-				"task1": {ID: "1.1", File: "task.md"},
+				"task1": {ID: "1.1", File: "task.md", Type: "implementation"},
 			},
 			wantErrors:      1,
 			wantErrContains: []string{"missing 'title'"},
@@ -43,7 +45,7 @@ func TestValidator_ValidateTasks(t *testing.T) {
 		{
 			name: "missing file",
 			tasks: map[string]task.Task{
-				"task1": {ID: "1.1", Title: "Task 1"},
+				"task1": {ID: "1.1", Title: "Task 1", Type: "implementation"},
 			},
 			wantErrors:      1,
 			wantErrContains: []string{"missing 'file'"},
@@ -51,7 +53,7 @@ func TestValidator_ValidateTasks(t *testing.T) {
 		{
 			name: "invalid status",
 			tasks: map[string]task.Task{
-				"task1": {ID: "1.1", Title: "Task 1", File: "task.md", Status: "invalid"},
+				"task1": {ID: "1.1", Title: "Task 1", File: "task.md", Status: "invalid", Type: "implementation"},
 			},
 			wantErrors:      1,
 			wantErrContains: []string{"invalid status"},
@@ -59,7 +61,7 @@ func TestValidator_ValidateTasks(t *testing.T) {
 		{
 			name: "invalid priority",
 			tasks: map[string]task.Task{
-				"task1": {ID: "1.1", Title: "Task 1", File: "task.md", Priority: "P5"},
+				"task1": {ID: "1.1", Title: "Task 1", File: "task.md", Priority: "P5", Type: "implementation"},
 			},
 			wantErrors:      1,
 			wantErrContains: []string{"invalid priority"},
@@ -69,7 +71,40 @@ func TestValidator_ValidateTasks(t *testing.T) {
 			tasks: map[string]task.Task{
 				"task1": {Status: "bad", Priority: "bad"},
 			},
-			wantErrors: 5, // missing id, title, file, invalid status, invalid priority
+			wantErrors: 6, // missing id, title, file, missing type, invalid status, invalid priority
+		},
+		{
+			name: "missing type",
+			tasks: map[string]task.Task{
+				"task1": {ID: "1.1", Title: "Task 1", File: "task.md"},
+			},
+			wantErrors:      1,
+			wantErrContains: []string{"missing 'type'"},
+		},
+		{
+			name: "invalid type",
+			tasks: map[string]task.Task{
+				"task1": {ID: "1.1", Title: "Task 1", File: "task.md", Type: "bogus-type"},
+			},
+			wantErrors:      1,
+			wantErrContains: []string{"invalid type", "bogus-type"},
+		},
+		{
+			name: "mainSession true with non-eval-cases type produces warning",
+			tasks: map[string]task.Task{
+				"task1": {ID: "1.1", Title: "Task 1", File: "task.md", Type: "implementation", MainSession: true},
+			},
+			wantErrors:       0,
+			wantWarnings:     1,
+			wantWarnContains: []string{"mainSession"},
+		},
+		{
+			name: "mainSession true with eval-cases type produces no warning",
+			tasks: map[string]task.Task{
+				"task1": {ID: "1.1", Title: "Task 1", File: "task.md", Type: "test-pipeline.eval-cases", MainSession: true},
+			},
+			wantErrors:   0,
+			wantWarnings: 0,
 		},
 	}
 
@@ -79,6 +114,9 @@ func TestValidator_ValidateTasks(t *testing.T) {
 			v.validateTasks(tt.tasks)
 			if len(v.errors) != tt.wantErrors {
 				t.Errorf("validateTasks() got %d errors, want %d: %v", len(v.errors), tt.wantErrors, v.errors)
+			}
+			if len(v.warnings) != tt.wantWarnings {
+				t.Errorf("validateTasks() got %d warnings, want %d: %v", len(v.warnings), tt.wantWarnings, v.warnings)
 			}
 			for _, want := range tt.wantErrContains {
 				found := false
@@ -90,6 +128,18 @@ func TestValidator_ValidateTasks(t *testing.T) {
 				}
 				if !found {
 					t.Errorf("validateTasks() missing error containing %q, got %v", want, v.errors)
+				}
+			}
+			for _, want := range tt.wantWarnContains {
+				found := false
+				for _, w := range v.warnings {
+					if contains(w, want) {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("validateTasks() missing warning containing %q, got %v", want, v.warnings)
 				}
 			}
 		})
@@ -391,7 +441,7 @@ func TestValidator_Run(t *testing.T) {
 			PriorityEnum: []string{"P0", "P1", "P2"},
 		}
 		index.SetTasks(map[string]task.Task{
-			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "task.md"},
+			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "task.md", Type: "implementation"},
 		})
 
 		// Create task file
@@ -1442,9 +1492,9 @@ func TestValidator_QuickMode(t *testing.T) {
 			PriorityEnum: []string{"P0", "P1", "P2"},
 		}
 		index.SetTasks(map[string]task.Task{
-			"task1":            {ID: "1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1-task.md"},
-			"task2":            {ID: "2", Title: "Task 2", Status: "pending", Priority: "P0", Dependencies: []string{"1"}, File: "2-task.md"},
-			"quick-test-cases": {ID: "T-quick-1", Title: "Test Cases", Status: "pending", Priority: "P1", Dependencies: []string{"2"}, File: "quick-test-cases.md"},
+			"task1":            {ID: "1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1-task.md", Type: "implementation"},
+			"task2":            {ID: "2", Title: "Task 2", Status: "pending", Priority: "P0", Dependencies: []string{"1"}, File: "2-task.md", Type: "implementation"},
+			"quick-test-cases": {ID: "T-quick-1", Title: "Test Cases", Status: "pending", Priority: "P1", Dependencies: []string{"2"}, File: "quick-test-cases.md", Type: "test-pipeline.gen-cases"},
 		})
 
 		for _, fname := range []string{"1-task.md", "2-task.md", "quick-test-cases.md"} {
@@ -1494,7 +1544,7 @@ func TestValidator_QuickMode(t *testing.T) {
 			"priorityEnum": []string{"P0", "P1", "P2"},
 			"tasks": map[string]interface{}{
 				"task1": map[string]interface{}{
-					"id": "1", "title": "Task", "status": "pending", "priority": "P0", "file": "task.md", "scope": "all",
+					"id": "1", "title": "Task", "status": "pending", "priority": "P0", "file": "task.md", "scope": "all", "type": "implementation",
 				},
 			},
 		}
@@ -1558,7 +1608,7 @@ func TestValidator_QuickMode(t *testing.T) {
 			PriorityEnum: []string{"P0", "P1", "P2"},
 		}
 		index.SetTasks(map[string]task.Task{
-			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "task.md"},
+			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "task.md", Type: "implementation"},
 		})
 
 		taskFile := filepath.Join(dir, "task.md")
@@ -1652,7 +1702,7 @@ dependencies: ["2"]
 func TestValidator_ValidateTasks_RejectedStatusValid(t *testing.T) {
 	v := &validator{filePath: "test.json"}
 	tasks := map[string]task.Task{
-		"a": {ID: "1.1", Title: "Task", File: "1.1.md", Status: "rejected"},
+		"a": {ID: "1.1", Title: "Task", File: "1.1.md", Status: "rejected", Type: "implementation"},
 	}
 	v.validateTasks(tasks)
 	if len(v.errors) != 0 {

@@ -90,7 +90,7 @@
       "dependencies": [
         "1.1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "1.5-validate-extend.md",
       "record": "records/1.5-validate-extend.md",
       "scope": "backend"
