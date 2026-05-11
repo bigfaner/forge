@@ -1,0 +1,26 @@
+[
+  {
+    "phase": 1,
+    "name": "CLI 基础能力",
+    "source": "PRD-explicit",
+    "gates": [{"afterPhase": 1, "description": "task prompt 对 11 种 type 各输出正确 prompt，Go 单元测试全部通过；task migrate 和 task validate 可正常运行"}]
+  },
+  {
+    "phase": 2,
+    "name": "Schema 与模板",
+    "source": "PRD-explicit",
+    "gates": [{"afterPhase": 2, "description": "所有任务模板 frontmatter 包含 type 字段，noTest 字段已移除；breakdown-tasks 和 quick-tasks 生成的任务包含正确 type，task validate 无报错"}]
+  },
+  {
+    "phase": 3,
+    "name": "Agent 与命令更新",
+    "source": "PRD-explicit",
+    "gates": [{"afterPhase": 3, "description": "所有 11 种类型的任务实际运行行为等价；run-tasks 和 execute-task 路由已更新"}]
+  },
+  {
+    "phase": 4,
+    "name": "清理",
+    "source": "PRD-explicit",
+    "gates": [{"afterPhase": 4, "description": "error-fixer 在 run-tasks、execute-task、guide.md 等文件中无孤立引用；noTest 字段从 schema 和所有模板中完全移除"}]
+  }
+]
