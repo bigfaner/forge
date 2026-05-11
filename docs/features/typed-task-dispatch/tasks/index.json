@@ -223,9 +223,10 @@
       "priority": "P0",
       "estimatedTime": "1h",
       "dependencies": [
-        "2.gate"
+        "2.gate",
+        "fix-1"
       ],
-      "status": "pending",
+      "status": "blocked",
       "file": "3.1-slim-task-executor.md",
       "record": "records/3.1-slim-task-executor.md",
       "scope": "all",
@@ -239,7 +240,7 @@
       "dependencies": [
         "2.gate"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3.2-run-tasks-routing.md",
       "record": "records/3.2-run-tasks-routing.md",
       "scope": "all",
@@ -401,6 +402,17 @@
       "record": "records/consolidate-specs.md",
       "scope": "all",
       "type": "doc-generation.consolidate"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "Fix: golangci-lint Go version mismatch (go1.25 vs go1.26.1)",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "pending",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "3.1"
     }
   },
   "statusEnum": [

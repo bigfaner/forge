@@ -6,7 +6,7 @@ allowed_tools: ["Bash", "Read", "Agent", "TaskOutput", "Skill"]
 
 # /run-tasks
 
-Auto-dispatch tasks. MAIN_SESSION tasks execute in main session; all others go to forge:task-executor subagent.
+Auto-dispatch tasks. MAIN_SESSION tasks execute in main session; eval-cases type executes in main session; all others go to forge:task-executor subagent.
 
 ## Architecture
 
@@ -15,8 +15,15 @@ flowchart TD
     A["1. Claim Task"] --> B{"MAIN_SESSION?"}
     B -->|"yes"| C["1.5 Follow Task Instructions"]
     C --> LOOP(["Step 6: Continue Loop"])
-    B -->|"no"| D["2. Dispatch + Timeout"]
-    D --> E["3. Verify Record"]
+    B -->|"no"| D["2. task prompt → Dispatch"]
+    D --> D1{"prompt exit != 0?"}
+    D1 -->|"yes"| D2["block task, continue"]
+    D2 --> LOOP
+    D1 -->|"no"| D3{"TYPE == eval-cases?"}
+    D3 -->|"yes"| D4["Execute in main session"]
+    D3 -->|"no"| D5["Agent(forge:task-executor)"]
+    D4 --> E["3. Verify Record"]
+    D5 --> E
     E --> F["4. Context Check"]
     F --> G{"Breaking task?"}
     G -->|"yes"| H["5. Breaking Gate"]
@@ -57,6 +64,7 @@ task claim
 - `SCOPE` (e.g., "frontend", "backend", or "all" — defaults to "all" if absent; may be omitted entirely by claim output when not set)
 - `NO_TEST` (e.g., "true" or "false")
 - `FEATURE` (e.g., "my-feature" — feature slug from claim output)
+- `TYPE` (e.g., "test-pipeline.eval-cases" — task type from claim output; may be absent)
 
 ### Step 1.5: Main Session Routing
 
@@ -74,38 +82,36 @@ Else:
 
 ### Step 2: Dispatch with Timeout
 
-Determine if phase summary context should be injected:
+**Synthesize prompt via CLI**:
 
-**Phase boundary detection**:
-1. From `TASK_ID`, extract the phase number (integer before first dot, e.g., "2.1" → phase 2)
-2. If this is the first task of a new phase (phase number changed from previous task):
-   - Check if previous phase's summary record exists: `docs/features/<slug>/tasks/records/<prev-phase>-summary.md`
-   - If exists, include in dispatch prompt
-   - Skip injection for gate tasks (ID ends with `.gate`) and phase summary tasks (ID ends with `.summary`)
+```bash
+SYNTHESIZED_PROMPT=$(task prompt <TASK_ID> 2>/tmp/prompt_error.txt)
+PROMPT_EXIT=$?
+PROMPT_ERROR=$(cat /tmp/prompt_error.txt)
+```
 
+**If `PROMPT_EXIT != 0`**:
+```bash
+task status <KEY> blocked --reason "$PROMPT_ERROR"
+```
+Then continue loop (skip Steps 3–5 for this iteration).
+
+**If `PROMPT_EXIT == 0`**:
+
+Check `TYPE` extracted from Step 1 claim output:
+
+**If `TYPE == "test-pipeline.eval-cases"`**:
+- Execute `SYNTHESIZED_PROMPT` directly in the main session (do NOT dispatch to subagent).
+- Proceed to Step 3.
+
+**All other types**:
 ```
 Agent(
   subagent_type="forge:task-executor",
-  prompt="TASK_KEY: {{KEY}}
-TASK_ID: {{TASK_ID}}
-TASK_FILE: {{FILE}}
-SCOPE: {{SCOPE}}
-NO_TEST: {{NO_TEST}}
-{{PHASE_SUMMARY_SECTION}}
-
-IMPORTANT: Do NOT claim or start any other tasks after completing this one. Stop after recording the task result."
+  prompt=SYNTHESIZED_PROMPT
 )
 ```
-
-Where `{{PHASE_SUMMARY_SECTION}}` is:
-```
-PHASE_SUMMARY: Read the following file for context from previous phases:
-docs/features/<slug>/tasks/records/<prev-phase>-summary.md
-```
-
-Phase summaries follow a fixed 5-section structure (Tasks Completed, Key Decisions, Types & Interfaces Changed, Conventions Established, Deviations from Design). The task-executor is trained to parse these sections.
-
-Or empty string if no phase summary exists.
+Proceed to Step 3.
 
 **Timeout**: 30 minutes
 
@@ -241,23 +247,26 @@ Return to Step 1.
 |-----------|--------|
 | No available task | End loop, print summary |
 | Agent timeout | Mark blocked, continue next |
-| Record missing | Dispatch error-fixer (include: "Use /record-task skill to create record") |
+| `task prompt` exit != 0 | Write stderr to blockedReason, `task status <KEY> blocked`, continue loop |
+| Record missing | Run `task prompt <TASK_ID> --fix-record-missed` → `Agent(forge:task-executor, prompt=<stdout>)` |
 | 3 consecutive failures | STOP dispatcher |
 | Breaking task tests fail (5a) | `task add --template fix-task --block-source`, continue loop |
 | Feature e2e tests fail (5b) | `task add --template fix-task --block-source`, continue loop |
 | Main session task fails | Follow error handling in task document's `### Error Handling` section; if missing, `task add --template fix-task --block-source`, continue loop |
 
-### Error-Fixer Dispatch
+### Record-Missing Recovery
 
-When dispatching error-fixer for missing record, include explicit instruction:
+When a task agent completes but the record file is missing, recover using `task prompt` with the fix flag:
 
+```bash
+RECOVERY_PROMPT=$(task prompt <TASK_ID> --fix-record-missed)
+```
+
+Then dispatch:
 ```
 Agent(
-  subagent_type="forge:error-fixer",
-  prompt="TASK_ID: {{TASK_ID}}
-TASK_FILE: {{FILE}}
-ERROR_MESSAGES: Missing task record
-INSTRUCTION: Use /record-task skill to create the record (task record CLI is mandatory)"
+  subagent_type="forge:task-executor",
+  prompt=RECOVERY_PROMPT
 )
 ```
 
