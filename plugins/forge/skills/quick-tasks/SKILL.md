@@ -76,6 +76,26 @@ For each task:
 - Fill Implementation Notes from Key Risks and solution details
 - Set `breaking: true` only when modifying shared interfaces/models/APIs
 
+### Type Assignment
+
+For each task, set the `type` field in `index.json` using the following rules. These rules mirror `InferType()` in `task-cli/pkg/prompt/prompt.go` — both must stay in sync.
+
+| Condition | `type` value |
+|-----------|-------------|
+| Task ID ends with `.summary` | `"doc-generation.summary"` |
+| Task ID ends with `.gate` | `"gate"` |
+| Task ID is `T-test-1` | `"test-pipeline.gen-cases"` |
+| Task ID is `T-test-1b` | `"test-pipeline.eval-cases"` |
+| Task ID is `T-test-2` | `"test-pipeline.gen-scripts"` |
+| Task ID is `T-test-3` | `"test-pipeline.run"` |
+| Task ID is `T-test-4` | `"test-pipeline.graduate"` |
+| Task ID is `T-test-4.5` | `"test-pipeline.verify-regression"` |
+| Task ID is `T-test-5` | `"doc-generation.consolidate"` |
+| Task ID starts with `fix-` or `disc-` | `"fix"` |
+| No match (fallback) | `"implementation"` — emit warning: `warn: task <ID> type could not be inferred, defaulting to implementation` |
+
+Write `type` into the task entry in `index.json` alongside `scope`. For quick-tasks, business tasks (IDs `1`–`4`) and `T-quick-*` test tasks all fall through to the fallback `"implementation"` — no warning needed for these expected cases.
+
 ## Step 4: Create Test Tasks (unless --no-test)
 
 If `--no-test` flag is NOT set, append five test tasks. Read each template before writing:

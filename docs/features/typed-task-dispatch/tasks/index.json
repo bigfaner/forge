@@ -182,7 +182,7 @@
       "dependencies": [
         "1.gate"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2.3-skill-type-assignment.md",
       "record": "records/2.3-skill-type-assignment.md",
       "scope": "all",
