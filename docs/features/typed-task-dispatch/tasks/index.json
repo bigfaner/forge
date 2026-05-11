@@ -103,7 +103,7 @@
       "dependencies": [
         "1.1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "1.6-claim-type-output.md",
       "record": "records/1.6-claim-type-output.md",
       "scope": "backend"
