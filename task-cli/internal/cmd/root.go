@@ -37,4 +37,5 @@ func init() {
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(validateSpecsCmd)
 	rootCmd.AddCommand(promptCmd)
+	rootCmd.AddCommand(migrateCmd)
 }
