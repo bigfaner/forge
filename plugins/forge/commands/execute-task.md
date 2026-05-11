@@ -1,26 +1,16 @@
 ---
 name: execute-task
 description: Execute single task with focused TDD workflow.
-allowed_tools: ["Bash", "Read", "Write", "Edit", "Grep", "Glob", "Agent", "LSP"]
+allowed_tools: ["Bash", "Read", "Agent", "TaskOutput", "Skill"]
 ---
 
 # /execute-task
 
-Execute a single task with streamlined TDD workflow.
+Execute a single task. MAIN_SESSION tasks execute in main session; eval-cases type executes in main session; all others dispatch to forge:task-executor subagent.
 
 ## Step 0: MAIN_SESSION Check
 
-If the claimed task has `MAIN_SESSION == "true"`, read the task file's `## Main Session Instructions` section and follow it. After execution, invoke `Skill(skill="record-task")`. Skip Steps 2–5.
-
-## Workflow (5 Steps)
-
-```
-Step 1: Read task definition
-Step 2: TDD (RED → GREEN → REFACTOR)
-Step 3: Full verification
-Step 4: Record task (MANDATORY)
-Step 5: Git commit
-```
+If the claimed task has `MAIN_SESSION == "true"`, read the task file's `## Main Session Instructions` section and follow it. After execution, invoke `Skill(skill="record-task")`. Skip Steps 2–4.
 
 ## Step 1: Claim & Read
 
@@ -28,111 +18,178 @@ Step 5: Git commit
 task claim
 ```
 
-Parse output for KEY, TASK_ID, FILE, SCOPE, FEATURE, NO_TEST. Reading order: project knowledge → task definition.
+**Output parsing**:
+- `ACTION: CLAIMED` → New task
+- `ACTION: CONTINUE` → Resume existing task
+- Error → No available task, stop
 
-**Project Knowledge**: Read relevant project knowledge files first (domain constraints):
-- Infer relevant domains from task title, scope, and feature slug
-- Read matching files from `docs/business-rules/` and `docs/conventions/`
-- Example mappings: "auth"/"login"/"permission" → `business-rules/auth.md`; "state"/"validation"/"lifecycle" → `business-rules/<domain>.md`; "API"/"endpoint"/"route" → `conventions/api.md`; "error"/"status code" → `conventions/error-handling.md`; "database"/"schema"/"migration" → `conventions/data-model.md`; "test"/"mock"/"coverage" → `conventions/testing.md`
-- If no matching file exists, skip this step
+**Extract from claim output**:
+- `TASK_ID` (e.g., "2.1")
+- `KEY` (e.g., "2.1-implementation")
+- `FILE` (e.g., full absolute path to task file)
+- `BREAKING` (e.g., "true" or absent)
+- `MAIN_SESSION` (e.g., "true" or absent)
+- `SCOPE` (e.g., "frontend", "backend", or "all" — defaults to "all" if absent)
+- `NO_TEST` (e.g., "true" or "false")
+- `FEATURE` (e.g., "my-feature" — feature slug from claim output)
+- `TYPE` (e.g., "test-pipeline.eval-cases" — task type from claim output; may be absent)
 
-## Step 2: TDD Implementation
+## Step 2: Dispatch
 
-**Skip when `NO_TEST=true`** — perform task work directly, output `Step 2/5: Implementation... DONE (skipped TDD: noTest task)`.
-
-```
-RED      → Write failing test first
-GREEN    → Implement minimal code to pass
-REFACTOR → Clean up while keeping tests green
-```
-
-## Step 3: Full Verification (Quality Gate)
-
-**Skip when `NO_TEST=true`** — output `Step 3/5: Verification... SKIPPED (noTest task)`, proceed to Step 4.
-
-Execute the quality gate sequence. Apply **Scope Resolution** from the Forge Guide for each command:
-
-```
-just compile [scope] → just fmt [scope] → just lint [scope] → just test [scope]
-```
-
-Strict sequential order. Stop at first failure. See Forge Guide Quality Gate Protocol for failure actions.
-
-### Fix-Task Escape Hatch
-
-When failures are beyond the current task's scope (pre-existing bugs, environment issues, cross-module failures), create a fix-task instead of struggling:
+**Synthesize prompt via CLI**:
 
 ```bash
-task template fix-task  # View template and required variables first
+SYNTHESIZED_PROMPT=$(task prompt <TASK_ID> 2>/tmp/prompt_error.txt)
+PROMPT_EXIT=$?
+PROMPT_ERROR=$(cat /tmp/prompt_error.txt)
+```
+
+**If `PROMPT_EXIT != 0`**:
+```bash
+task status <KEY> blocked --reason "$PROMPT_ERROR"
+```
+Stop — do not proceed to Steps 3–4.
+
+**If `PROMPT_EXIT == 0`**:
+
+Check `TYPE` extracted from Step 1 claim output:
+
+**If `TYPE == "test-pipeline.eval-cases"`**:
+- Execute `SYNTHESIZED_PROMPT` directly in the main session (do NOT dispatch to subagent).
+- Proceed to Step 3.
+
+**All other types**:
+```
+Agent(
+  subagent_type="forge:task-executor",
+  prompt=SYNTHESIZED_PROMPT
+)
+```
+Proceed to Step 3.
+
+**Timeout**: 30 minutes
+
+## Step 3: Verify Record
+
+Check the task's actual status via CLI:
+
+```bash
+task query <TASK_ID>
+```
+
+- If STATUS is `"completed"`: proceed normally.
+- If STATUS is not `"completed"`: task was auto-downgraded (e.g. test failures).
+  Spawn fix task using `--block-source` to atomically block the source:
+  ```bash
+  task add --template fix-task --title "Fix: <failure>" \
+    --source-task-id <TASK_ID> \
+    --block-source \
+    --description "<reason>"
+  ```
+  `task add` automatically deduplicates — check output:
+  - `ACTION: ADDED` → new fix task created
+  - `ACTION: SKIPPED` → active fix task already exists
+
+### Record-Missing Recovery
+
+When the agent completes but the record file is missing, recover using `task prompt` with the fix flag:
+
+```bash
+RECOVERY_PROMPT=$(task prompt <TASK_ID> --fix-record-missed)
+```
+
+Then dispatch:
+```
+Agent(
+  subagent_type="forge:task-executor",
+  prompt=RECOVERY_PROMPT
+)
+```
+
+## Step 4: Breaking Task Gate
+
+Determine which gates to run based on claim output from Step 1:
+
+| BREAKING=true? | SCOPE frontend\|all + specs exist? | Run 4a? | Run 4b? |
+|----------------|-------------------------------------|---------|---------|
+| Yes | No | Yes | No |
+| No | Yes | No | Yes |
+| Yes | Yes | Yes | Yes |
+| No | No | Skip Step 4 entirely | Skip Step 4 entirely |
+
+If running both: execute 4a first. Only proceed to 4b if 4a passes.
+
+### 4a. Unit/Integration Gate (BREAKING: true)
+
+```bash
+just test [scope]
+```
+
+Apply the **Scope Resolution** protocol from the Forge Guide — use the `SCOPE` extracted from the claim output in Step 1.
+
+**If tests fail**:
+```bash
+task add --template fix-task --title "Fix: <failure>" \
+  --source-task-id <TASK_ID> \
+  --block-source \
+  --var SOURCE_FILES="<affected paths>" \
+  --var TEST_SCRIPT="<failing test>" \
+  --var TEST_RESULTS="<results path>" \
+  --description "<root cause>"
+```
+
+### 4b. Feature E2E Gate (SCOPE=frontend|all, specs exist)
+
+Pre-conditions (all must be true):
+- SCOPE is `frontend` or `all`
+- FEATURE is non-empty
+- Feature has e2e spec files: `tests/e2e/features/$FEATURE/` contains `.spec.ts` files
+- `test-e2e` recipe exists in justfile
+
+```bash
+just e2e-setup
+just test-e2e --feature "$FEATURE"
+```
+
+**If e2e fails**:
+```bash
 task add --template fix-task --title "Fix: <concise description>" \
   --source-task-id <TASK_ID> \
   --block-source \
   --var SOURCE_FILES="<affected source paths>" \
-  --var TEST_SCRIPT="<failing test file>" \
-  --var TEST_RESULTS="<test results path>" \
+  --var TEST_SCRIPT="tests/e2e/features/$FEATURE/<failing-spec>.spec.ts" \
+  --var TEST_RESULTS="tests/e2e/features/$FEATURE/results/latest.md" \
   --description "<root cause and context>"
 ```
 
-**`--block-source`**: atomically sets source task to blocked before resolution, preserving the fix-chain model.
-**`--source-task-id` auto-resolves**: if `<TASK_ID>` is a **completed** fix-task, the CLI automatically resolves to the root blocked task. Always pass the current failing task's ID — no manual chain tracing needed.
-`task add` automatically deduplicates — check output: `ACTION: ADDED` (new fix task) or `ACTION: SKIPPED` (active fix already exists).
+## Error Handling
 
-The fix-task (P0) will be auto-claimed by the next `task claim`. When it completes, `task record` auto-restores the source task to pending via SourceTaskID.
-
-### E2E Reminder (After Step 3)
-
-After the quality gate passes, check whether to show an e2e reminder:
-
-1. SCOPE (from Step 1) is `frontend` or `all`
-2. Glob for `tests/e2e/features/<FEATURE>/*.spec.ts` — files exist
-
-If both are true, print:
-```
-"Reminder: this task may affect e2e specs. Consider running:
- just test-e2e --feature <FEATURE>"
-```
-
-This reminder is informational only for manual `/execute-task` invocation. When dispatched by `/run-tasks`, e2e gates are handled by the dispatcher's Step 5b automatically.
-
-## Step 4: Record Task (MANDATORY)
-
-Invoke the skill (it contains file location details):
-
-```
-Skill(skill="record-task")
-```
-
-The skill provides complete workflow including:
-- File locations (process/record.json vs tmp/)
-- JSON format and fields
-- CLI command usage
-
-## Step 5: Commit
-
-```
-Skill(skill="git-commit")
-```
+| Situation | Action |
+|-----------|--------|
+| No available task | Stop, report |
+| Agent timeout | Mark blocked, stop |
+| `task prompt` exit != 0 | Write stderr to blockedReason, `task status <KEY> blocked`, stop |
+| Record missing | Run `task prompt <TASK_ID> --fix-record-missed` → `Agent(forge:task-executor, prompt=<stdout>)` |
+| Breaking task tests fail (4a) | `task add --template fix-task --block-source` |
+| Feature e2e tests fail (4b) | `task add --template fix-task --block-source` |
+| Main session task fails | Follow error handling in task document's `### Error Handling` section; if missing, `task add --template fix-task --block-source` |
 
 ## Rules
 
 <EXTREMELY-IMPORTANT>
-- record-task is mandatory - No completion without it
+- record-task is mandatory — No completion without it
 - All verifications must pass
-- Commit only after record
-- ONE TASK PER INVOCATION — after Step 5, STOP immediately, no exceptions
+- ONE TASK PER INVOCATION — after Step 4, STOP immediately, no exceptions
 - FORBIDDEN: run "task claim", read index.json, or start any subsequent task
+- Do NOT use TASK_FILE or NO_TEST parameters when dispatching to forge:task-executor
 </EXTREMELY-IMPORTANT>
-
-<HARD-GATE>
-Task is NOT complete until record-task CLI command succeeds. Commit is blocked until record exists.
-</HARD-GATE>
 
 ## STOP
 
 <HARD-RULE>
 ONE TASK PER INVOCATION. This is absolute and non-negotiable.
 
-After Step 5, you MUST stop immediately.
+After Step 4, you MUST stop immediately.
 
 <PROHIBITIONS>
 - Running `task claim` under any circumstances

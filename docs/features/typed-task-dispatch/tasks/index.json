@@ -255,7 +255,7 @@
         "2.gate",
         "3.2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3.3-execute-task-routing.md",
       "record": "records/3.3-execute-task-routing.md",
       "scope": "all",
