@@ -1,0 +1,811 @@
+{
+  "config": {
+    "configFile": "/Users/fanhuifeng/Projects/ai/coding-harness/forge/tests/e2e/playwright.config.ts",
+    "rootDir": "/Users/fanhuifeng/Projects/ai/coding-harness/forge/tests/e2e",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 300000,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/Users/fanhuifeng/Projects/ai/coding-harness/forge/tests/e2e/results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "/Users/fanhuifeng/Projects/ai/coding-harness/forge/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "results/test-results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.59.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "features/typed-task-dispatch/cli.spec.ts",
+      "file": "features/typed-task-dispatch/cli.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "typed-task-dispatch CLI E2E",
+          "file": "features/typed-task-dispatch/cli.spec.ts",
+          "line": 35,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC-001: doc-generation.summary task prompt contains no TDD steps",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 18,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-12T02:04:36.292Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "617f37e41fb3ae019be1-5f24b701f477537141ab",
+              "file": "features/typed-task-dispatch/cli.spec.ts",
+              "line": 39,
+              "column": 3
+            },
+            {
+              "title": "TC-002: fix task prompt contains five-step diagnostic flow",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 17,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-12T02:04:36.317Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "617f37e41fb3ae019be1-f4f2af00fee545210334",
+              "file": "features/typed-task-dispatch/cli.spec.ts",
+              "line": 48,
+              "column": 3
+            },
+            {
+              "title": "TC-003: new type template generates correct prompt output",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 223,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-12T02:04:36.339Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "617f37e41fb3ae019be1-fdf46bc058b399f3d121",
+              "file": "features/typed-task-dispatch/cli.spec.ts",
+              "line": 62,
+              "column": 3
+            },
+            {
+              "title": "TC-004: unregistered type causes non-zero exit with error",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 14,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [
+                        {
+                          "text": "ERROR: unknown type: nonexistent-type\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-05-12T02:04:36.565Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "617f37e41fb3ae019be1-5f68632e6cb418118471",
+              "file": "features/typed-task-dispatch/cli.spec.ts",
+              "line": 69,
+              "column": 3
+            },
+            {
+              "title": "TC-005: task prompt outputs complete synthesized prompt within 500ms",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 14,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-12T02:04:36.584Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "617f37e41fb3ae019be1-4786d11fbaa1d474c348",
+              "file": "features/typed-task-dispatch/cli.spec.ts",
+              "line": 95,
+              "column": 3
+            },
+            {
+              "title": "TC-006: missing type causes non-zero exit with error",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 14,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [
+                        {
+                          "text": "ERROR: type field missing for task test-missing\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-05-12T02:04:36.603Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "617f37e41fb3ae019be1-a3fcf5c2e3c836220f5a",
+              "file": "features/typed-task-dispatch/cli.spec.ts",
+              "line": 106,
+              "column": 3
+            },
+            {
+              "title": "TC-007: task migrate is idempotent on already-typed index",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "Cannot test migrate idempotency while fix-2 is in_progress (blocks migrate)",
+                      "location": {
+                        "file": "/Users/fanhuifeng/Projects/ai/coding-harness/forge/tests/e2e/features/typed-task-dispatch/cli.spec.ts",
+                        "line": 139,
+                        "column": 10
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-12T02:04:36.621Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "description": "Cannot test migrate idempotency while fix-2 is in_progress (blocks migrate)",
+                          "location": {
+                            "file": "/Users/fanhuifeng/Projects/ai/coding-harness/forge/tests/e2e/features/typed-task-dispatch/cli.spec.ts",
+                            "line": 139,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "617f37e41fb3ae019be1-5f990f97d188ab69b927",
+              "file": "features/typed-task-dispatch/cli.spec.ts",
+              "line": 131,
+              "column": 3
+            },
+            {
+              "title": "TC-008: task migrate rejects when tasks are in_progress",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 13,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [
+                        {
+                          "text": "error: task \"T-test-3\" is in_progress — finish or pause it before migrating\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-05-12T02:04:36.624Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "617f37e41fb3ae019be1-0687b8f9a2790ea9afa6",
+              "file": "features/typed-task-dispatch/cli.spec.ts",
+              "line": 142,
+              "column": 3
+            },
+            {
+              "title": "TC-009: breakdown-tasks skill generates type fields for tasks",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-12T02:04:36.644Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "617f37e41fb3ae019be1-751800f13837e4f08962",
+              "file": "features/typed-task-dispatch/cli.spec.ts",
+              "line": 152,
+              "column": 3
+            },
+            {
+              "title": "TC-010: breakdown-tasks falls back to implementation for unrecognized descriptions",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-12T02:04:36.648Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "617f37e41fb3ae019be1-21bf8bf7403c95f41d90",
+              "file": "features/typed-task-dispatch/cli.spec.ts",
+              "line": 160,
+              "column": 3
+            },
+            {
+              "title": "TC-011: execute-task and run-tasks produce identical task prompt output",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 26,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-12T02:04:36.652Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "617f37e41fb3ae019be1-478e6fd31ed2e6161559",
+              "file": "features/typed-task-dispatch/cli.spec.ts",
+              "line": 169,
+              "column": 3
+            },
+            {
+              "title": "TC-012: execute-task marks task blocked when task prompt fails",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 13,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [
+                        {
+                          "text": "ERROR: type field missing for task test-blocked\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-05-12T02:04:36.681Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "617f37e41fb3ae019be1-53a34f3ff9870e4a81e1",
+              "file": "features/typed-task-dispatch/cli.spec.ts",
+              "line": 182,
+              "column": 3
+            },
+            {
+              "title": "TC-013: run-tasks dispatches fix task via task prompt with five-step prompt",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 14,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-12T02:04:36.699Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "617f37e41fb3ae019be1-1557c8f8581ae8912629",
+              "file": "features/typed-task-dispatch/cli.spec.ts",
+              "line": 207,
+              "column": 3
+            },
+            {
+              "title": "TC-014: task prompt --fix-record-missed outputs record-recovery prompt",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 14,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-12T02:04:36.717Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "617f37e41fb3ae019be1-1e4e7355700525ecfabc",
+              "file": "features/typed-task-dispatch/cli.spec.ts",
+              "line": 221,
+              "column": 3
+            },
+            {
+              "title": "TC-015: task validate accepts valid type enum values and rejects invalid ones",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 26,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [
+                        {
+                          "text": "---\nERROR_CODE: VALIDATION_ERROR\nERROR: Validation failed\nCAUSE: 1 errors found\nHINT: Fix errors in index.json\nACTION: cat /tmp/invalid-test-index.json\n---\n"
+                        },
+                        {
+                          "text": "---\nERROR_CODE: VALIDATION_ERROR\nERROR: Validation failed\nCAUSE: 1 errors found\nHINT: Fix errors in index.json\nACTION: cat /tmp/missing-test-index.json\n---\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-05-12T02:04:36.737Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "617f37e41fb3ae019be1-058811caa8d3220b582e",
+              "file": "features/typed-task-dispatch/cli.spec.ts",
+              "line": 233,
+              "column": 3
+            },
+            {
+              "title": "TC-016: task prompt injects phase summary path for first task of new phase",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 103,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-12T02:04:36.767Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "617f37e41fb3ae019be1-6820d913249646c6e489",
+              "file": "features/typed-task-dispatch/cli.spec.ts",
+              "line": 282,
+              "column": 3
+            },
+            {
+              "title": "TC-017: run-tasks routes eval-cases task to main session, not subagent",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-12T02:04:36.873Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "617f37e41fb3ae019be1-d51c2c744ec86c3499bb",
+              "file": "features/typed-task-dispatch/cli.spec.ts",
+              "line": 294,
+              "column": 3
+            },
+            {
+              "title": "TC-018: task prompt --fix-record-missed outputs record-recovery prompt",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 13,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-12T02:04:36.880Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "617f37e41fb3ae019be1-c2c25c8ad9ef94c7d06a",
+              "file": "features/typed-task-dispatch/cli.spec.ts",
+              "line": 303,
+              "column": 3
+            },
+            {
+              "title": "TC-019: quick-tasks skill includes type assignment rules",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-12T02:04:36.896Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "617f37e41fb3ae019be1-29860756b1b96fa7fdb0",
+              "file": "features/typed-task-dispatch/cli.spec.ts",
+              "line": 315,
+              "column": 3
+            },
+            {
+              "title": "TC-020: git branch fallback provides feature when state.json is missing",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 13,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-12T02:04:36.901Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "617f37e41fb3ae019be1-771dcea223983f2aaaa1",
+              "file": "features/typed-task-dispatch/cli.spec.ts",
+              "line": 324,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-05-12T02:04:35.923Z",
+    "duration": 1005.4480000000001,
+    "expected": 19,
+    "skipped": 1,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

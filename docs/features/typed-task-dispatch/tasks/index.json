@@ -326,7 +326,7 @@
       "dependencies": [
         "T-test-1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "eval-test-cases.md",
       "record": "records/eval-test-cases.md",
       "scope": "all",
@@ -341,7 +341,7 @@
       "dependencies": [
         "T-test-1b"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "gen-test-scripts.md",
       "record": "records/gen-test-scripts.md",
       "scope": "all",
@@ -353,9 +353,10 @@
       "priority": "P1",
       "estimatedTime": "30min-1h",
       "dependencies": [
-        "T-test-2"
+        "T-test-2",
+        "fix-2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "run-e2e-tests.md",
       "record": "records/run-e2e-tests.md",
       "scope": "all",
@@ -414,6 +415,17 @@
       "breaking": true,
       "sourceTaskID": "3.1",
       "type": "fix"
+    },
+    "fix-2": {
+      "id": "fix-2",
+      "title": "Fix: e2e test failures in typed-task-dispatch cli.spec.ts (16/20 failed)",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-2.md",
+      "record": "records/fix-2.md",
+      "breaking": true,
+      "sourceTaskID": "T-test-3"
     }
   },
   "statusEnum": [

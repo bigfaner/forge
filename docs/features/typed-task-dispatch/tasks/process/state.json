@@ -1,0 +1,16 @@
+{
+  "task_id": "T-test-3",
+  "key": "T-test-3",
+  "title": "Run e2e Tests",
+  "priority": "P1",
+  "estimatedTime": "30min-1h",
+  "dependencies": [
+    "T-test-2",
+    "fix-2"
+  ],
+  "file": "run-e2e-tests.md",
+  "record": "records/run-e2e-tests.md",
+  "startedTime": "2026-05-12 10:03",
+  "scope": "all",
+  "type": "test-pipeline.run"
+}
