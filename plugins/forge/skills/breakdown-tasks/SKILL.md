@@ -24,17 +24,14 @@ Break a technical design into executable tasks (1-4h each, clear dependencies, t
 
 ## Step 0: Resolve Profile
 
-Determine the active test profile(s) before generating test tasks.
-
-1. **Read config**: Check `.forge/config.yaml` for `test-profiles` list.
-2. **Auto-detect** (if config missing): Follow detection rules in `plugins/forge/references/shared/profile-detection.md`.
-3. **Ask user** (if detection fails): Present available profiles and prompt user to choose. Write their choice to `.forge/config.yaml`.
-4. **Load profile manifest**: Read `plugins/forge/profiles/<profile-name>/manifest.yaml` for each resolved profile.
+1. **Resolve profile**: Run `task profile` to get the active test profile(s). This reads `.forge/config.yaml`, falls back to project structure detection.
+2. **On failure** (output shows `PROFILE: (none)`): ask the user to choose from known profiles (`web-playwright`, `go-test`, `maestro`, `java-junit`, `rust-test`, `pytest`). Run `task profile set <name>` to persist their choice.
+3. **Load profile manifest**: Read `plugins/forge/profiles/<profile-name>/manifest.yaml` for each resolved profile.
 
 The resolved profiles drive per-profile task expansion in Step 4d. If only one profile is active, tasks use plain IDs (e.g., `T-test-2`). If multiple profiles are active, affected tasks are expanded with letter suffixes (e.g., `T-test-2a`, `T-test-2b`).
 
 <HARD-RULE>
-Do NOT silently default to any profile. If config is missing and auto-detection finds no match, ask the user explicitly.
+Do NOT silently default to any profile. If `task profile` returns no result and the user cannot decide, abort the skill.
 </HARD-RULE>
 
 ## Step 1: Read All Documents

@@ -5,6 +5,18 @@ description: Evaluate test-cases.md for downstream executability with 1000-point
 
 # Eval Test Cases
 
+## Step 0: Resolve Profile
+
+1. **Resolve profile**: Run `task profile` to get the active test profile(s). This reads `.forge/config.yaml`, falls back to project structure detection.
+2. **On failure** (output shows `PROFILE: (none)`): ask the user to choose from known profiles (`web-playwright`, `go-test`, `maestro`, `java-junit`, `rust-test`, `pytest`). Run `task profile set <name>` to persist their choice.
+3. **Load profile manifest**: Read `plugins/forge/profiles/<profile-name>/manifest.yaml`.
+
+Use the loaded profile manifest for all subsequent steps.
+
+<HARD-RULE>
+Do NOT silently default to any profile. If `task profile` returns no result and the user cannot decide, abort the skill.
+</HARD-RULE>
+
 ## Prerequisites
 
 Check previous stage artifacts. Abort and prompt user if missing:
@@ -15,7 +27,7 @@ Check previous stage artifacts. Abort and prompt user if missing:
 | `prd/prd-spec.md` | Run `/write-prd` first |
 | `prd/prd-user-stories.md` | Run `/write-prd` first |
 
-**Profile awareness**: The scoring rubric's "Interface Accuracy" dimension (200 pts) adapts based on the active test profile's capabilities. Read `.forge/config.yaml` → load profile manifest → determine which capability-specific scoring criteria apply from `plugins/forge/skills/eval-test-cases/templates/rubric.md`.
+**Profile awareness**: The scoring rubric's "Interface Accuracy" dimension (200 pts) adapts based on the active test profile's capabilities. Use the profile manifest resolved in Step 0 to determine which capability-specific scoring criteria apply from `plugins/forge/skills/eval-test-cases/templates/rubric.md`.
 
 ## When to Use
 

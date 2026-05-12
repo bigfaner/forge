@@ -65,15 +65,16 @@ If version < 1.50.0: `cargo install just`
 
 ### Step 0: Resolve Test Profile
 
-Determine the active test profile to generate correct e2e recipes.
-
-1. Check `.forge/config.yaml` for `test-profiles` list
-2. If missing: auto-detect using `plugins/forge/references/shared/profile-detection.md`
-3. If detection fails: ask the user
-4. Load profile manifest: `plugins/forge/profiles/<profile-name>/manifest.yaml`
-5. Read `plugins/forge/profiles/<profile-name>/justfile-recipes` for the profile-specific e2e recipe bodies
+1. **Resolve profile**: Run `task profile` to get the active test profile(s). This reads `.forge/config.yaml`, falls back to project structure detection.
+2. **On failure** (output shows `PROFILE: (none)`): ask the user to choose from known profiles (`web-playwright`, `go-test`, `maestro`, `java-junit`, `rust-test`, `pytest`). Run `task profile set <name>` to persist their choice.
+3. **Load profile manifest**: Read `plugins/forge/profiles/<profile-name>/manifest.yaml`.
+4. **Load justfile recipes**: Read `plugins/forge/profiles/<profile-name>/justfile-recipes` for the profile-specific e2e recipe bodies.
 
 The `test-e2e`, `e2e-setup`, and `e2e-verify` recipes are generated from the profile's `justfile-recipes` file, not from the language template.
+
+<HARD-RULE>
+Do NOT silently default to any profile. If `task profile` returns no result and the user cannot decide, abort the skill.
+</HARD-RULE>
 
 ### Step 1: Detect Project Type, Language, and Entry Points
 

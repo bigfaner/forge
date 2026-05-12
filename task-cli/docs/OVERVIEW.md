@@ -80,6 +80,28 @@ Override with `--force`: `task record <id> --data record.json --force`
 | `task verifyCompletion` | PreToolUse (git commit) | Verify task completion status, block commits for incomplete tasks |
 | `task cleanup` | Stop | Clean up state files for completed tasks |
 | `task all-completed` | Stop hook | Check if all tasks are completed, and if so, automatically run tests |
+| `task profile` | Profile resolution | Resolve active test profile from config or project structure |
+
+**`task profile` subcommands:**
+
+| Command | Description |
+|---------|-------------|
+| `task profile` | Resolve active profile(s): reads `.forge/config.yaml`, falls back to file-signal detection |
+| `task profile set <name>` | Persist a profile choice to `.forge/config.yaml` |
+| `task profile detect` | Run detection only (ignores existing config) |
+| `task profile --json` | Machine-readable JSON output |
+
+**Profile detection signals:**
+
+| Signal | Profile |
+|--------|---------|
+| `package.json` + `@playwright/test` or `playwright.config.*` | `web-playwright` |
+| `go.mod` | `go-test` |
+| `android/` or `ios/` directory | `maestro` |
+| `pom.xml` or `build.gradle` | `java-junit` |
+| `Cargo.toml` | `rust-test` |
+| `requirements.txt`/`pyproject.toml` + pytest | `pytest` |
+| `package.json` without Playwright | `web-playwright` (fallback) |
 
 **all-completed behavior:**
 - All tasks are `completed` or `skipped` → run project-wide unit/integration tests + e2e regression, exit 0

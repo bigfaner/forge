@@ -14,6 +14,18 @@ This skill only generates test case documents (testing/test-cases.md), not execu
 Test script generation is handled by the `/gen-test-scripts` skill.
 </HARD-GATE>
 
+## Step 0: Resolve Profile
+
+1. **Resolve profile**: Run `task profile` to get the active test profile(s). This reads `.forge/config.yaml`, falls back to project structure detection.
+2. **On failure** (output shows `PROFILE: (none)`): ask the user to choose from known profiles (`web-playwright`, `go-test`, `maestro`, `java-junit`, `rust-test`, `pytest`). Run `task profile set <name>` to persist their choice.
+3. **Load profile manifest**: Read `plugins/forge/profiles/<profile-name>/manifest.yaml`.
+
+Use the loaded profile manifest for all subsequent steps.
+
+<HARD-RULE>
+Do NOT silently default to any profile. If `task profile` returns no result and the user cannot decide, abort the skill.
+</HARD-RULE>
+
 ## Prerequisites
 
 Check previous stage artifacts. Abort and prompt user if missing:
@@ -79,7 +91,7 @@ Only extract acceptance criteria that **explicitly exist** in the PRD. Forbidden
 
 Before classification, determine which interface types the project actually exposes. Use the active test profile's capabilities as the primary signal:
 
-1. **Profile capabilities** (primary): Read `.forge/config.yaml` → load profile manifest → read `capabilities` field. Each capability maps to an interface type:
+1. **Profile capabilities** (primary): Read the profile manifest resolved in Step 0 → read `capabilities` field. Each capability maps to an interface type:
 
 | Capability | Interface type |
 |-----------|---------------|

@@ -17,15 +17,16 @@ Migrate feature test scripts from the staging area `tests/e2e/features/<feature>
 
 ## Step 0: Resolve Profile
 
-Determine the active test profile before proceeding.
+1. **Resolve profile**: Run `task profile` to get the active test profile(s). This reads `.forge/config.yaml`, falls back to project structure detection.
+2. **On failure** (output shows `PROFILE: (none)`): ask the user to choose from known profiles (`web-playwright`, `go-test`, `maestro`, `java-junit`, `rust-test`, `pytest`). Run `task profile set <name>` to persist their choice.
+3. **Load profile manifest**: Read `plugins/forge/profiles/<profile-name>/manifest.yaml`.
+4. **Load profile strategy**: Read `plugins/forge/profiles/<profile-name>/graduate.md`.
 
-1. **Read config**: Check `.forge/config.yaml` for `test-profiles` list.
-2. **Auto-detect** (if config missing): Follow detection rules in `plugins/forge/references/shared/profile-detection.md`.
-3. **Ask user** (if detection fails): Present available profiles and prompt user to choose.
-4. **Load profile manifest**: Read `plugins/forge/profiles/<profile-name>/manifest.yaml`.
-5. **Load profile strategy**: Read `plugins/forge/profiles/<profile-name>/graduate.md`.
+Use the loaded profile manifest and strategy for all subsequent steps.
 
-Use profile values for: file extension discovery, import rewrite rules, compilation checks, and test discovery commands.
+<HARD-RULE>
+Do NOT silently default to any profile. If `task profile` returns no result and the user cannot decide, abort the skill.
+</HARD-RULE>
 
 ## Prerequisites
 

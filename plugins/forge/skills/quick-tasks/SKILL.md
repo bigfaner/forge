@@ -23,20 +23,16 @@ Maximum 4 business tasks. If the proposal requires more, STOP and recommend the 
 
 ## Step 0: Resolve Profile
 
-Determine the active test profile(s) before generating tasks. Profiles control which test environments, configurations, and expectations apply to the test tasks (T-quick-1 through T-quick-5).
-
-1. Read `.forge/config.yaml` and look for a `test-profiles` list.
-2. If `test-profiles` is present and non-empty, use those profile names.
-3. If `test-profiles` is absent or empty, auto-detect the profile using `plugins/forge/references/shared/profile-detection.md`.
-4. If auto-detection fails or returns ambiguous results, ask the user to specify one or more profiles explicitly.
-5. For each resolved profile name, load the profile manifest from `plugins/forge/profiles/<profile-name>/manifest.yaml`.
+1. **Resolve profile**: Run `task profile` to get the active test profile(s). This reads `.forge/config.yaml`, falls back to project structure detection.
+2. **On failure** (output shows `PROFILE: (none)`): ask the user to choose from known profiles (`web-playwright`, `go-test`, `maestro`, `java-junit`, `rust-test`, `pytest`). Run `task profile set <name>` to persist their choice.
+3. **Load profile manifest**: Read `plugins/forge/profiles/<profile-name>/manifest.yaml` for each resolved profile.
 
 **Profile resolution outcome**:
 - **Single profile**: one active profile (default behavior, no per-profile suffixing needed)
 - **Multiple profiles**: two or more active profiles (triggers per-profile task suffixing in Step 4)
 
 <HARD-RULE>
-If profile resolution fails (config missing, auto-detection fails, user cannot decide), ask the user to choose explicitly. Do NOT silently default to any profile. If the user cannot decide, skip test tasks (equivalent to `--no-test` flag).
+Do NOT silently default to any profile. If `task profile` returns no result and the user cannot decide, abort the skill.
 </HARD-RULE>
 
 ## Step 1: Read Proposal

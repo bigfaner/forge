@@ -49,16 +49,12 @@ ls docs/features/<slug>/prd/prd-spec.md
 
 ## Step 0: Select Test Profile
 
-Determine the test profile for this feature. This step ensures `.forge/config.yaml` exists before downstream skills (gen-test-cases, gen-test-scripts) need it.
-
-1. **Check existing config**: `ls .forge/config.yaml`
-2. **If exists**: read it, verify the profile is valid (matches a directory in `plugins/forge/profiles/`). Done.
-3. **If missing**: run auto-detection per `plugins/forge/references/shared/profile-detection.md`.
-4. **If detection succeeds**: write `.forge/config.yaml` with the detected profile. Inform the user.
-5. **If detection fails**: ask the user to select from available profiles. Write their choice to `.forge/config.yaml`.
+1. **Resolve profile**: Run `task profile` to get the active test profile(s). This reads `.forge/config.yaml`, falls back to project structure detection.
+2. **On failure** (output shows `PROFILE: (none)`): ask the user to choose from known profiles (`web-playwright`, `go-test`, `maestro`, `java-junit`, `rust-test`, `pytest`). Run `task profile set <name>` to persist their choice.
+3. **Load profile manifest**: Read `plugins/forge/profiles/<profile-name>/manifest.yaml`.
 
 <HARD-RULE>
-Do NOT silently default to any profile. If auto-detection finds no match, ask the user explicitly.
+Do NOT silently default to any profile. If `task profile` returns no result and the user cannot decide, abort the skill.
 </HARD-RULE>
 
 ## Step 1: Read Manifest → PRD
