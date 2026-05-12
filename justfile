@@ -9,6 +9,16 @@ claude-c:
 claude-w name="":
     claude --dangerously-skip-permissions -w "{{name}}"
 
+# install-task: build and install task CLI locally (platform-aware)
+install-task:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    case "$(uname -s)" in
+        Linux|Darwin)  bash task-cli/scripts/install-local.sh ;;
+        MINGW*|MSYS*|CYGWIN*) powershell -File task-cli/scripts/install-local.ps1 ;;
+        *) echo "Unsupported OS: $(uname -s)" >&2; exit 1 ;;
+    esac
+
 # --- forge standard recipes ---
 
 # project-type: return project type identifier
