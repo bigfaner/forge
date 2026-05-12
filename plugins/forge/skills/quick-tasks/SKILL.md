@@ -25,7 +25,7 @@ Maximum 4 business tasks. If the proposal requires more, STOP and recommend the 
 
 1. **Resolve profile**: Run `task profile` to get the active test profile(s). This reads `.forge/config.yaml`, falls back to project structure detection.
 2. **On failure** (output shows `PROFILE: (none)`): ask the user to choose from known profiles (`web-playwright`, `go-test`, `maestro`, `java-junit`, `rust-test`, `pytest`). Run `task profile set <name>` to persist their choice.
-3. **Load profile manifest**: Read `plugins/forge/profiles/<profile-name>/manifest.yaml` for each resolved profile.
+3. **Load profile manifest**: Run `task profile get <profile-name> --manifest` for each resolved profile.
 
 **Profile resolution outcome**:
 - **Single profile**: one active profile (default behavior, no per-profile suffixing needed)
@@ -145,7 +145,7 @@ When two or more profiles are active (e.g., `api` and `cli`), T-quick-1 and T-qu
 **Per-profile tasks** (one set per profile, suffixed with a, b, c, ...):
 For each profile `<P>` with suffix letter `<L>` (a=first profile, b=second, etc.):
 
-- **T-quick-2\<L\>**: read `templates/quick-gen-scripts.md`, generates e2e test scripts from test cases for profile `<P>`. Pass profile info via template variables: `--var PROFILE=<P> --var PROFILE_MANIFEST=plugins/forge/profiles/<P>/manifest.yaml`
+- **T-quick-2\<L\>**: read `templates/quick-gen-scripts.md`, generates e2e test scripts from test cases for profile `<P>`. Pass profile info via template variables: `--var PROFILE=<P> --var PROFILE_MANIFEST=$(task profile get <P> --manifest)`
 - **T-quick-3\<L\>**: read `templates/quick-run-tests.md`, runs feature e2e tests for profile `<P>`. Pass profile info via template variables: `--var PROFILE=<P>`
 - **T-quick-4\<L\>**: read `templates/quick-graduate.md`, graduates scripts to regression suite for profile `<P>`. Pass profile info via template variables: `--var PROFILE=<P>`
 

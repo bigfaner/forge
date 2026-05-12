@@ -5,7 +5,7 @@ How to create a new test profile for Forge's pluggable test strategy system.
 ## Directory Structure
 
 ```
-plugins/forge/profiles/<name>/
+task-cli/pkg/profile/profiles/<name>/
   manifest.yaml          # Metadata + capabilities + command declarations
   generate.md            # gen-test-scripts profile strategy
   run.md                 # run-e2e-tests profile strategy

@@ -29,8 +29,8 @@ Bypassing the staging area skips functional module classification in `/graduate-
 
 1. **Resolve profile**: Run `task profile` to get the active test profile(s). This reads `.forge/config.yaml`, falls back to project structure detection.
 2. **On failure** (output shows `PROFILE: (none)`): ask the user to choose from known profiles (`web-playwright`, `go-test`, `maestro`, `java-junit`, `rust-test`, `pytest`). Run `task profile set <name>` to persist their choice.
-3. **Load profile manifest**: Read `plugins/forge/profiles/<profile-name>/manifest.yaml`.
-4. **Load profile strategy**: Read `plugins/forge/profiles/<profile-name>/generate.md`.
+3. **Load profile manifest**: Run `task profile get <profile-name> --manifest`.
+4. **Load profile strategy**: Run `task profile get <profile-name> --generate`.
 
 Use the loaded profile manifest and strategy for all subsequent steps.
 

@@ -39,4 +39,5 @@ func init() {
 	rootCmd.AddCommand(promptCmd)
 	rootCmd.AddCommand(migrateCmd)
 	rootCmd.AddCommand(profileCmd)
+	rootCmd.AddCommand(indexCmd)
 }

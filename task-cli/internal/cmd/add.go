@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"task-cli/pkg/feature"
+	"task-cli/pkg/profile"
 	"task-cli/pkg/project"
 	"task-cli/pkg/task"
 	tmpl "task-cli/pkg/template"
@@ -191,6 +192,24 @@ func executeAdd(cmd *cobra.Command) (*AddResult, error) {
 	opts.ID = id // ensure ID is set after potential auto-generation
 	if err := task.CreateTaskMarkdown(tasksDir, id+".md", opts); err != nil {
 		return nil, fmt.Errorf("create task file: %w", err)
+	}
+
+	// Rebuild index from all .md files (canonical merge)
+	profiles, _ := profile.ReadTestProfiles(projectRoot)
+	resolveStrategy := func(profileName, kind string) []byte {
+		content, _ := profile.GetStrategy(profileName, kind)
+		return content
+	}
+	buildOpts := task.BuildIndexOpts{
+		FeatureSlug:     featureSlug,
+		ProjectRoot:     projectRoot,
+		TasksDir:        tasksDir,
+		IndexPath:       indexPath,
+		TestProfiles:    profiles,
+		ResolveStrategy: resolveStrategy,
+	}
+	if _, err := task.BuildIndex(buildOpts); err != nil {
+		fmt.Fprintf(os.Stderr, "WARNING: failed to rebuild index: %v\n", err)
 	}
 
 	// Reset forge state so claim loop continues

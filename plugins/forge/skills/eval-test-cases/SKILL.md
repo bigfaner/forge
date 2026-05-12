@@ -9,7 +9,7 @@ description: Evaluate test-cases.md for downstream executability with 1000-point
 
 1. **Resolve profile**: Run `task profile` to get the active test profile(s). This reads `.forge/config.yaml`, falls back to project structure detection.
 2. **On failure** (output shows `PROFILE: (none)`): ask the user to choose from known profiles (`web-playwright`, `go-test`, `maestro`, `java-junit`, `rust-test`, `pytest`). Run `task profile set <name>` to persist their choice.
-3. **Load profile manifest**: Read `plugins/forge/profiles/<profile-name>/manifest.yaml`.
+3. **Load profile manifest**: Run `task profile get <profile-name> --manifest`.
 
 Use the loaded profile manifest for all subsequent steps.
 

@@ -751,3 +751,64 @@ Source → pending
 - **Orphaned**: blocked task with no dependencies
 - **Stale**: blocked task whose deps are all completed or skipped (should be pending)
 - **Deadlock**: blocked task whose deps are all blocked or missing (no path to resolution)
+
+## 14. Index Build Workflow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│              task index --feature <slug>                        │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+                    ┌─────────────────┐
+                    │ Load existing   │
+                    │ index.json or   │
+                    │ create new      │
+                    └────────┬────────┘
+                              │
+                              ▼
+                    ┌─────────────────┐
+                    │ Detect mode:    │
+                    │ prd→breakdown   │
+                    │ proposal→quick  │
+                    └────────┬────────┘
+                              │
+                              ▼
+                    ┌─────────────────┐
+                    │ Scan tasks/     │
+                    │ *.md files      │
+                    │ parse frontmatter│
+                    └────────┬────────┘
+                              │
+                              ▼
+                    ┌─────────────────┐
+                    │ Merge: preserve │
+                    │ status/         │
+                    │ sourceTaskID/   │
+                    │ blockedReason   │
+                    └────────┬────────┘
+                              │
+                              ▼
+                    ┌─────────────────┐
+                    │ Generate test   │
+                    │ tasks from      │
+                    │ embedded        │
+                    │ profiles        │
+                    └────────┬────────┘
+                              │
+                              ▼
+                    ┌─────────────────┐
+                    │ Save index.json │
+                    │ + run validate  │
+                    └─────────────────┘
+```
+
+**Flags:**
+
+| Flag | Required | Default | Description |
+|------|----------|---------|-------------|
+| `--feature` | Yes | - | Feature slug |
+| `--no-test` | No | false | Skip test task generation |
+| `--test-profiles` | No | from config | Override test profiles (comma-separated) |
+
+**Idempotent:** re-running produces the same output. Runtime state (status, sourceTaskID, blockedReason) is always preserved.

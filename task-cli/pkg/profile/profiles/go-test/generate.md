@@ -20,7 +20,7 @@ All test files import `"testing"`. Prefer `github.com/stretchr/testify/assert` f
 | API | `templates/test-file.go` | `<feature>_api_test.go` |
 | TUI | `templates/test-file.go` | `<feature>_tui_test.go` |
 
-Templates live at `plugins/forge/profiles/go-test/templates/`.
+Templates are available via `task profile get go-test --template <filename>`.
 
 ## Test Function Naming
 

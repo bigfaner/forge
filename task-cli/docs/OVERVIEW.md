@@ -81,6 +81,7 @@ Override with `--force`: `task record <id> --data record.json --force`
 | `task cleanup` | Stop | Clean up state files for completed tasks |
 | `task all-completed` | Stop hook | Check if all tasks are completed, and if so, automatically run tests |
 | `task profile` | Profile resolution | Resolve active test profile from config or project structure |
+| `task index` | Index generation | Build or rebuild index.json from .md files with test task generation |
 
 **`task profile` subcommands:**
 
@@ -89,6 +90,7 @@ Override with `--force`: `task record <id> --data record.json --force`
 | `task profile` | Resolve active profile(s): reads `.forge/config.yaml`, falls back to file-signal detection |
 | `task profile set <name>` | Persist a profile choice to `.forge/config.yaml` |
 | `task profile detect` | Run detection only (ignores existing config) |
+| `task profile get <name> --<flag>` | Get profile data: `--manifest`, `--generate`, `--run`, `--graduate`, `--justfile`, `--template <file>` |
 | `task profile --json` | Machine-readable JSON output |
 
 **Profile detection signals:**
@@ -279,6 +281,7 @@ task query 1.1          # Query task details
 task feature auth       # Switch feature
 task check              # Dependency check
 task validate           # Validate index.json
+task index --feature <slug>  # Build index.json from .md files
 task verifyCompletion   # Verify task completion (git commit hook)
 task cleanup            # Clean up completed task state (stop hook)
 ```

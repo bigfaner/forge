@@ -20,7 +20,7 @@ All tests import `test`, `expect`, `test.describe` from `@playwright/test`. The 
 | API | `templates/api.spec.ts` | `api.spec.ts` |
 | CLI | `templates/cli.spec.ts` | `cli.spec.ts` |
 
-Templates live at `plugins/forge/profiles/web-playwright/templates/`.
+Templates are available via `task profile get web-playwright --template <filename>`.
 
 ## Locator Mapping
 
