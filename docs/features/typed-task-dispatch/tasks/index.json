@@ -39,6 +39,9 @@
       "title": "Add Type/BlockedReason fields and type constants to pkg/task",
       "priority": "P0",
       "estimatedTime": "1h",
+      "dependencies": [
+        "fix-3"
+      ],
       "status": "completed",
       "file": "1.1-task-type-fields.md",
       "record": "records/1.1-task-type-fields.md",
@@ -398,7 +401,7 @@
       "dependencies": [
         "T-test-4.5"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "consolidate-specs.md",
       "record": "records/consolidate-specs.md",
       "scope": "all",
@@ -426,6 +429,27 @@
       "record": "records/fix-2.md",
       "breaking": true,
       "sourceTaskID": "T-test-3"
+    },
+    "fix-3": {
+      "id": "fix-3",
+      "title": "Fix: login bug",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-3.md",
+      "record": "records/fix-3.md",
+      "breaking": true,
+      "sourceTaskID": "1.1"
+    },
+    "fix-4": {
+      "id": "fix-4",
+      "title": "Fix: unit-test failure in all-completed quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-4.md",
+      "record": "records/fix-4.md",
+      "breaking": true
     }
   },
   "statusEnum": [
