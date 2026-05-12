@@ -6,7 +6,7 @@ allowed_tools: ["Bash", "Read", "Agent", "TaskOutput", "Skill"]
 
 # /run-tasks
 
-Auto-dispatch tasks. MAIN_SESSION tasks execute in main session; eval-cases type executes in main session; all others go to forge:task-executor subagent.
+Auto-dispatch tasks. MAIN_SESSION tasks execute in main session; all others dispatch to forge:task-executor subagent (which calls `task prompt` internally).
 
 ## Architecture
 
@@ -14,30 +14,19 @@ Auto-dispatch tasks. MAIN_SESSION tasks execute in main session; eval-cases type
 flowchart TD
     A["1. Claim Task"] --> B{"MAIN_SESSION?"}
     B -->|"yes"| C["1.5 Follow Task Instructions"]
-    C --> LOOP(["Step 6: Continue Loop"])
-    B -->|"no"| D["2. task prompt → Dispatch"]
-    D --> D1{"prompt exit != 0?"}
-    D1 -->|"yes"| D2["block task, continue"]
-    D2 --> LOOP
-    D1 -->|"no"| D3{"TYPE == eval-cases?"}
-    D3 -->|"yes"| D4["Execute in main session"]
-    D3 -->|"no"| D5["Agent(forge:task-executor)"]
-    D4 --> E["3. Verify Record"]
-    D5 --> E
-    E --> F["4. Context Check"]
-    F --> G{"Breaking task?"}
-    G -->|"yes"| H["5. Breaking Gate"]
-    G -->|"no"| LOOP
-    H --> LOOP
+    C --> LOOP(["Step 4: Continue Loop"])
+    B -->|"no"| D["2. Dispatch + Verify"]
+    D --> E["3. Breaking Gate"]
+    E --> LOOP
     LOOP --> A
 ```
 
 ## Dispatcher Iron Laws
 
 <EXTREMELY-IMPORTANT>
-1. Only 5 actions: claim → (main_session? follow task instructions : dispatch) → verify → context check → breaking gate
+1. Only 4 actions: claim → (main_session? follow task instructions : dispatch+verify) → breaking gate
 2. NO code reading, NO code writing — EXCEPT for MAIN_SESSION tasks (Step 1.5) where the Skill tool is invoked in the main session
-3. NO running tests directly — EXCEPT in Step 5 (Breaking Task Gate) where `just test` and `just test-e2e` are executed as quality gates
+3. NO running tests directly — EXCEPT in Step 3 (Breaking Task Gate) where `just test` and `just test-e2e` are executed as quality gates
 4. 30-minute timeout per task
 5. 3 consecutive failures → STOP
 </EXTREMELY-IMPORTANT>
@@ -64,7 +53,6 @@ task claim
 - `SCOPE` (e.g., "frontend", "backend", or "all" — defaults to "all" if absent; may be omitted entirely by claim output when not set)
 - `NO_TEST` (e.g., "true" or "false")
 - `FEATURE` (e.g., "my-feature" — feature slug from claim output)
-- `TYPE` (e.g., "test-pipeline.eval-cases" — task type from claim output; may be absent)
 
 ### Step 1.5: Main Session Routing
 
@@ -74,56 +62,37 @@ If `MAIN_SESSION == "true"`:
 2. Follow the instructions exactly — the task document specifies what skill to invoke, how to check outcome, and how to record the result.
 3. The dispatcher does NOT hardcode skill names or record logic — it delegates to the task document.
 4. If the task file lacks a `## Main Session Instructions` section, mark the task blocked and report: "MAIN_SESSION task missing Main Session Instructions section — task document is incomplete".
-5. After execution, verify the record file exists (same as Step 3 for subagent tasks).
-6. Skip to Step 6 (Continue Loop).
+5. After execution, verify the record file exists via `task query <TASK_ID>`. If STATUS is not `"completed"`, spawn fix task (same as Step 2 verify logic).
+6. Skip to Step 4 (Continue Loop).
 
 Else:
-- Proceed to Step 2 (Dispatch with Timeout).
+- Proceed to Step 2 (Dispatch + Verify).
 
-### Step 2: Dispatch with Timeout
+### Step 2: Dispatch + Verify
 
-**Synthesize prompt via CLI**:
+#### 2a. Dispatch
 
-```bash
-SYNTHESIZED_PROMPT=$(task prompt <TASK_ID> 2>/tmp/prompt_error.txt)
-PROMPT_EXIT=$?
-PROMPT_ERROR=$(cat /tmp/prompt_error.txt)
-```
-
-**If `PROMPT_EXIT != 0`**:
-```bash
-task status <KEY> blocked --reason "$PROMPT_ERROR"
-```
-Then continue loop (skip Steps 3–5 for this iteration).
-
-**If `PROMPT_EXIT == 0`**:
-
-Check `TYPE` extracted from Step 1 claim output:
-
-**If `TYPE == "test-pipeline.eval-cases"`**:
-- Execute `SYNTHESIZED_PROMPT` directly in the main session (do NOT dispatch to subagent).
-- Proceed to Step 3.
-
-**All other types**:
 ```
 Agent(
   subagent_type="forge:task-executor",
-  prompt=SYNTHESIZED_PROMPT
+  prompt="Execute task <TASK_ID>"
 )
 ```
-Proceed to Step 3.
+
+The subagent internally runs `task prompt <TASK_ID>` to get the execution strategy.
 
 **Timeout**: 30 minutes
 
-### Step 3: Verify Record
+#### 2b. Verify Record
 
-Check if record file exists after agent completes. Then check the task's actual status via CLI:
+After subagent returns, check the task's actual status via CLI:
 
 ```bash
 task query <TASK_ID>
 ```
 
-- If STATUS is not `"completed"`: task was auto-downgraded (e.g. test failures).
+- **STATUS == `"completed"`**: proceed to Step 3 (Breaking Gate).
+- **STATUS != `"completed"`**: task was auto-downgraded (e.g. test failures).
   Spawn fix task using `--block-source` to atomically block the source:
   ```bash
   task add --template fix-task --title "Fix: <failure>" \
@@ -134,28 +103,36 @@ task query <TASK_ID>
   `task add` automatically deduplicates — check output:
   - `ACTION: ADDED` → new fix task created, continue loop
   - `ACTION: SKIPPED` → active fix task already exists, continue loop
-- Only proceed if STATUS is `"completed"`
 
-### Step 4: Context Check
+#### 2c. Record-Missing Recovery
 
-After verifying the record, check if the completed task was a phase summary task (ID ends with `.summary`):
-- If yes: This phase's summary is now available for subsequent phases
-- No additional action needed — the summary will be injected on next phase boundary
+When the subagent completes but the record file is missing, delegate recovery to another subagent:
 
-### Step 5: Breaking Task Gate
+```
+Agent(
+  subagent_type="forge:task-executor",
+  prompt="Fix record for task <TASK_ID>"
+)
+```
+
+The subagent's Execution Protocol detects the "Fix record for" prefix and calls `task prompt <TASK_ID> --fix-record-missed` internally.
+
+### Step 3: Breaking Task Gate
 
 Determine which gates to run based on claim output from Step 1:
 
-| BREAKING=true? | SCOPE frontend\|all + specs exist? | Run 5a? | Run 5b? |
+| BREAKING=true? | SCOPE frontend\|all + specs exist? | Run 3a? | Run 3b? |
 |----------------|-------------------------------------|---------|---------|
 | Yes | No | Yes | No |
 | No | Yes | No | Yes |
 | Yes | Yes | Yes | Yes |
-| No | No | Skip Step 5 entirely | Skip Step 5 entirely |
+| No | No | Skip Step 3 entirely | Skip Step 3 entirely |
 
-If running both: execute 5a first. Only proceed to 5b if 5a passes.
+If running both: execute 3a first. Only proceed to 3b if 3a passes.
 
-#### 5a. Unit/Integration Gate (BREAKING: true)
+After completing task, also check if it was a phase summary task (ID ends with `.summary`). If yes, this phase's summary is now available for subsequent phases.
+
+#### 3a. Unit/Integration Gate (BREAKING: true)
 
 ```bash
 # Pre-flight: verify justfile and test recipe exist
@@ -191,9 +168,9 @@ Apply the **Scope Resolution** protocol from the Forge Guide — use the `SCOPE`
 - Continue loop — fix task (P0) will be claimed on next iteration
 - Do NOT proceed to next task until fix task completes
 
-**If tests pass**: if the routing table indicates 5b should also run (SCOPE frontend|all + specs exist), proceed to 5b. Otherwise continue to next iteration (Step 1).
+**If tests pass**: if the routing table indicates 3b should also run (SCOPE frontend|all + specs exist), proceed to 3b. Otherwise continue to next iteration (Step 1).
 
-#### 5b. Feature E2E Gate (SCOPE=frontend|all, specs exist)
+#### 3b. Feature E2E Gate (SCOPE=frontend|all, specs exist)
 
 <EXTREMELY-IMPORTANT>
 The dispatcher evaluates SCOPE and FEATURE from Step 1 claim output BEFORE executing any bash commands below. If SCOPE is `backend` or FEATURE is empty, skip this entire section.
@@ -237,7 +214,7 @@ fi
 
 **If e2e passes or pre-flight skipped**: continue to next iteration (Step 1)
 
-### Step 6: Continue Loop
+### Step 4: Continue Loop
 
 Return to Step 1.
 
@@ -247,28 +224,11 @@ Return to Step 1.
 |-----------|--------|
 | No available task | End loop, print summary |
 | Agent timeout | Mark blocked, continue next |
-| `task prompt` exit != 0 | Write stderr to blockedReason, `task status <KEY> blocked`, continue loop |
-| Record missing | Run `task prompt <TASK_ID> --fix-record-missed` → `Agent(forge:task-executor, prompt=<stdout>)` |
+| Record missing | Dispatch `Agent(prompt="Fix record for task <TASK_ID>")` — subagent calls `task prompt --fix-record-missed` internally |
 | 3 consecutive failures | STOP dispatcher |
-| Breaking task tests fail (5a) | `task add --template fix-task --block-source`, continue loop |
-| Feature e2e tests fail (5b) | `task add --template fix-task --block-source`, continue loop |
+| Breaking task tests fail (3a) | `task add --template fix-task --block-source`, continue loop |
+| Feature e2e tests fail (3b) | `task add --template fix-task --block-source`, continue loop |
 | Main session task fails | Follow error handling in task document's `### Error Handling` section; if missing, `task add --template fix-task --block-source`, continue loop |
-
-### Record-Missing Recovery
-
-When a task agent completes but the record file is missing, recover using `task prompt` with the fix flag:
-
-```bash
-RECOVERY_PROMPT=$(task prompt <TASK_ID> --fix-record-missed)
-```
-
-Then dispatch:
-```
-Agent(
-  subagent_type="forge:task-executor",
-  prompt=RECOVERY_PROMPT
-)
-```
 
 ## Post-Completion
 
@@ -286,7 +246,7 @@ If the feature's task index does not include T-test-3/T-test-4, suggest:
 then `/graduate-tests` to migrate scripts to the regression suite."
 ```
 
-Do NOT run e2e tests outside of the Breaking Task Gate (Step 5) — the dispatcher only executes tests as quality gates.
+Do NOT run e2e tests outside of the Breaking Task Gate (Step 3) — the dispatcher only executes tests as quality gates.
 
 ## Related Commands
 

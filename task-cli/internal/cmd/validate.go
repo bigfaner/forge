@@ -134,8 +134,6 @@ func (v *validator) validateTasks(tasks map[string]task.Task) {
 			v.errors = append(v.errors, fmt.Sprintf("Task '%s': missing 'type'", key))
 		case !task.ValidTypes[t.Type]:
 			v.errors = append(v.errors, fmt.Sprintf("Task '%s': invalid type '%s'", key, t.Type))
-		case t.MainSession && t.Type != task.TypeTestPipelineEvalCases:
-			v.warnings = append(v.warnings, fmt.Sprintf("Task '%s': mainSession=true but type is '%s' (expected '%s')", key, t.Type, task.TypeTestPipelineEvalCases))
 		}
 	}
 }

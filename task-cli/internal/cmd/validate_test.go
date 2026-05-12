@@ -89,23 +89,6 @@ func TestValidator_ValidateTasks(t *testing.T) {
 			wantErrors:      1,
 			wantErrContains: []string{"invalid type", "bogus-type"},
 		},
-		{
-			name: "mainSession true with non-eval-cases type produces warning",
-			tasks: map[string]task.Task{
-				"task1": {ID: "1.1", Title: "Task 1", File: "task.md", Type: "implementation", MainSession: true},
-			},
-			wantErrors:       0,
-			wantWarnings:     1,
-			wantWarnContains: []string{"mainSession"},
-		},
-		{
-			name: "mainSession true with eval-cases type produces no warning",
-			tasks: map[string]task.Task{
-				"task1": {ID: "1.1", Title: "Task 1", File: "task.md", Type: "test-pipeline.eval-cases", MainSession: true},
-			},
-			wantErrors:   0,
-			wantWarnings: 0,
-		},
 	}
 
 	for _, tt := range tests {

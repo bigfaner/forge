@@ -6,11 +6,11 @@ allowed_tools: ["Bash", "Read", "Agent", "TaskOutput", "Skill"]
 
 # /execute-task
 
-Execute a single task. MAIN_SESSION tasks execute in main session; eval-cases type executes in main session; all others dispatch to forge:task-executor subagent.
+Execute a single task. MAIN_SESSION tasks execute in main session; all others dispatch to forge:task-executor subagent (which calls `task prompt` internally).
 
 ## Step 0: MAIN_SESSION Check
 
-If the claimed task has `MAIN_SESSION == "true"`, read the task file's `## Main Session Instructions` section and follow it. After execution, invoke `Skill(skill="record-task")`. Skip Steps 2–4.
+If the claimed task has `MAIN_SESSION == "true"`, read the task file's `## Main Session Instructions` section and follow it. After execution, invoke `Skill(skill="record-task")`. Skip Steps 2–3.
 
 ## Step 1: Claim & Read
 
@@ -32,53 +32,32 @@ task claim
 - `SCOPE` (e.g., "frontend", "backend", or "all" — defaults to "all" if absent)
 - `NO_TEST` (e.g., "true" or "false")
 - `FEATURE` (e.g., "my-feature" — feature slug from claim output)
-- `TYPE` (e.g., "test-pipeline.eval-cases" — task type from claim output; may be absent)
 
-## Step 2: Dispatch
+## Step 2: Dispatch + Verify
 
-**Synthesize prompt via CLI**:
+### 2a. Dispatch
 
-```bash
-SYNTHESIZED_PROMPT=$(task prompt <TASK_ID> 2>/tmp/prompt_error.txt)
-PROMPT_EXIT=$?
-PROMPT_ERROR=$(cat /tmp/prompt_error.txt)
-```
-
-**If `PROMPT_EXIT != 0`**:
-```bash
-task status <KEY> blocked --reason "$PROMPT_ERROR"
-```
-Stop — do not proceed to Steps 3–4.
-
-**If `PROMPT_EXIT == 0`**:
-
-Check `TYPE` extracted from Step 1 claim output:
-
-**If `TYPE == "test-pipeline.eval-cases"`**:
-- Execute `SYNTHESIZED_PROMPT` directly in the main session (do NOT dispatch to subagent).
-- Proceed to Step 3.
-
-**All other types**:
 ```
 Agent(
   subagent_type="forge:task-executor",
-  prompt=SYNTHESIZED_PROMPT
+  prompt="Execute task <TASK_ID>"
 )
 ```
-Proceed to Step 3.
+
+The subagent internally runs `task prompt <TASK_ID>` to get the execution strategy.
 
 **Timeout**: 30 minutes
 
-## Step 3: Verify Record
+### 2b. Verify Record
 
-Check the task's actual status via CLI:
+After subagent returns, check the task's actual status via CLI:
 
 ```bash
 task query <TASK_ID>
 ```
 
-- If STATUS is `"completed"`: proceed normally.
-- If STATUS is not `"completed"`: task was auto-downgraded (e.g. test failures).
+- **STATUS == `"completed"`**: proceed to Step 3 (Breaking Gate).
+- **STATUS != `"completed"`**: task was auto-downgraded (e.g. test failures).
   Spawn fix task using `--block-source` to atomically block the source:
   ```bash
   task add --template fix-task --title "Fix: <failure>" \
@@ -90,36 +69,33 @@ task query <TASK_ID>
   - `ACTION: ADDED` → new fix task created
   - `ACTION: SKIPPED` → active fix task already exists
 
-### Record-Missing Recovery
+### 2c. Record-Missing Recovery
 
-When the agent completes but the record file is missing, recover using `task prompt` with the fix flag:
+When the subagent completes but the record file is missing, delegate recovery to another subagent:
 
-```bash
-RECOVERY_PROMPT=$(task prompt <TASK_ID> --fix-record-missed)
-```
-
-Then dispatch:
 ```
 Agent(
   subagent_type="forge:task-executor",
-  prompt=RECOVERY_PROMPT
+  prompt="Fix record for task <TASK_ID>"
 )
 ```
 
-## Step 4: Breaking Task Gate
+The subagent's Execution Protocol detects the "Fix record for" prefix and calls `task prompt <TASK_ID> --fix-record-missed` internally.
+
+## Step 3: Breaking Task Gate
 
 Determine which gates to run based on claim output from Step 1:
 
-| BREAKING=true? | SCOPE frontend\|all + specs exist? | Run 4a? | Run 4b? |
+| BREAKING=true? | SCOPE frontend\|all + specs exist? | Run 3a? | Run 3b? |
 |----------------|-------------------------------------|---------|---------|
 | Yes | No | Yes | No |
 | No | Yes | No | Yes |
 | Yes | Yes | Yes | Yes |
-| No | No | Skip Step 4 entirely | Skip Step 4 entirely |
+| No | No | Skip Step 3 entirely | Skip Step 3 entirely |
 
-If running both: execute 4a first. Only proceed to 4b if 4a passes.
+If running both: execute 3a first. Only proceed to 3b if 3a passes.
 
-### 4a. Unit/Integration Gate (BREAKING: true)
+### 3a. Unit/Integration Gate (BREAKING: true)
 
 ```bash
 just test [scope]
@@ -138,7 +114,7 @@ task add --template fix-task --title "Fix: <failure>" \
   --description "<root cause>"
 ```
 
-### 4b. Feature E2E Gate (SCOPE=frontend|all, specs exist)
+### 3b. Feature E2E Gate (SCOPE=frontend|all, specs exist)
 
 Pre-conditions (all must be true):
 - SCOPE is `frontend` or `all`
@@ -168,10 +144,9 @@ task add --template fix-task --title "Fix: <concise description>" \
 |-----------|--------|
 | No available task | Stop, report |
 | Agent timeout | Mark blocked, stop |
-| `task prompt` exit != 0 | Write stderr to blockedReason, `task status <KEY> blocked`, stop |
-| Record missing | Run `task prompt <TASK_ID> --fix-record-missed` → `Agent(forge:task-executor, prompt=<stdout>)` |
-| Breaking task tests fail (4a) | `task add --template fix-task --block-source` |
-| Feature e2e tests fail (4b) | `task add --template fix-task --block-source` |
+| Record missing | Dispatch `Agent(prompt="Fix record for task <TASK_ID>")` — subagent calls `task prompt --fix-record-missed` internally |
+| Breaking task tests fail (3a) | `task add --template fix-task --block-source` |
+| Feature e2e tests fail (3b) | `task add --template fix-task --block-source` |
 | Main session task fails | Follow error handling in task document's `### Error Handling` section; if missing, `task add --template fix-task --block-source` |
 
 ## Rules
@@ -179,7 +154,7 @@ task add --template fix-task --title "Fix: <concise description>" \
 <EXTREMELY-IMPORTANT>
 - record-task is mandatory — No completion without it
 - All verifications must pass
-- ONE TASK PER INVOCATION — after Step 4, STOP immediately, no exceptions
+- ONE TASK PER INVOCATION — after Step 3, STOP immediately, no exceptions
 - FORBIDDEN: run "task claim", read index.json, or start any subsequent task
 - Do NOT use TASK_FILE or NO_TEST parameters when dispatching to forge:task-executor
 </EXTREMELY-IMPORTANT>
@@ -189,7 +164,7 @@ task add --template fix-task --title "Fix: <concise description>" \
 <HARD-RULE>
 ONE TASK PER INVOCATION. This is absolute and non-negotiable.
 
-After Step 4, you MUST stop immediately.
+After Step 3, you MUST stop immediately.
 
 <PROHIBITIONS>
 - Running `task claim` under any circumstances
