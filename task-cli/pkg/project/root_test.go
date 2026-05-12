@@ -106,6 +106,20 @@ func TestFindProjectRoot(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Unset env vars that override project root detection
+			originalClaudeDir := os.Getenv("CLAUDE_PROJECT_DIR")
+			originalRoot := os.Getenv("PROJECT_ROOT")
+			_ = os.Unsetenv("CLAUDE_PROJECT_DIR")
+			_ = os.Unsetenv("PROJECT_ROOT")
+			defer func() {
+				if originalClaudeDir != "" {
+					_ = os.Setenv("CLAUDE_PROJECT_DIR", originalClaudeDir)
+				}
+				if originalRoot != "" {
+					_ = os.Setenv("PROJECT_ROOT", originalRoot)
+				}
+			}()
+
 			tempDir := t.TempDir()
 			workDir := tt.setup(tempDir)
 
@@ -140,6 +154,20 @@ func TestFindProjectRoot(t *testing.T) {
 
 func TestFindRootInfo(t *testing.T) {
 	t.Run("returns detailed info for Go project", func(t *testing.T) {
+		// Unset env vars that override project root detection
+		originalClaudeDir := os.Getenv("CLAUDE_PROJECT_DIR")
+		originalRoot := os.Getenv("PROJECT_ROOT")
+		_ = os.Unsetenv("CLAUDE_PROJECT_DIR")
+		_ = os.Unsetenv("PROJECT_ROOT")
+		defer func() {
+			if originalClaudeDir != "" {
+				_ = os.Setenv("CLAUDE_PROJECT_DIR", originalClaudeDir)
+			}
+			if originalRoot != "" {
+				_ = os.Setenv("PROJECT_ROOT", originalRoot)
+			}
+		}()
+
 		tempDir, _ := filepath.EvalSymlinks(t.TempDir())
 		goModPath := filepath.Join(tempDir, "go.mod")
 		_ = os.WriteFile(goModPath, []byte("module test\n"), 0644)
@@ -167,6 +195,20 @@ func TestFindRootInfo(t *testing.T) {
 	})
 
 	t.Run("returns workspace type for go.work", func(t *testing.T) {
+		// Unset env vars that override project root detection
+		originalClaudeDir := os.Getenv("CLAUDE_PROJECT_DIR")
+		originalRoot := os.Getenv("PROJECT_ROOT")
+		_ = os.Unsetenv("CLAUDE_PROJECT_DIR")
+		_ = os.Unsetenv("PROJECT_ROOT")
+		defer func() {
+			if originalClaudeDir != "" {
+				_ = os.Setenv("CLAUDE_PROJECT_DIR", originalClaudeDir)
+			}
+			if originalRoot != "" {
+				_ = os.Setenv("PROJECT_ROOT", originalRoot)
+			}
+		}()
+
 		tempDir := t.TempDir()
 		goWorkPath := filepath.Join(tempDir, "go.work")
 		_ = os.WriteFile(goWorkPath, []byte("go 1.21\n"), 0644)
@@ -190,6 +232,20 @@ func TestFindRootInfo(t *testing.T) {
 
 func TestFindRootInfoFrom(t *testing.T) {
 	t.Run("finds root from subdirectory", func(t *testing.T) {
+		// Unset env vars that override project root detection
+		originalClaudeDir := os.Getenv("CLAUDE_PROJECT_DIR")
+		originalRoot := os.Getenv("PROJECT_ROOT")
+		_ = os.Unsetenv("CLAUDE_PROJECT_DIR")
+		_ = os.Unsetenv("PROJECT_ROOT")
+		defer func() {
+			if originalClaudeDir != "" {
+				_ = os.Setenv("CLAUDE_PROJECT_DIR", originalClaudeDir)
+			}
+			if originalRoot != "" {
+				_ = os.Setenv("PROJECT_ROOT", originalRoot)
+			}
+		}()
+
 		tempDir := t.TempDir()
 		subDir := filepath.Join(tempDir, "a", "b", "c")
 		_ = os.MkdirAll(subDir, 0755)
