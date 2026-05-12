@@ -129,6 +129,12 @@ func (v *validator) validateTasks(tasks map[string]task.Task) {
 		if t.Priority != "" && !validPriority[t.Priority] {
 			v.errors = append(v.errors, fmt.Sprintf("Task '%s': invalid priority '%s'", key, t.Priority))
 		}
+		switch {
+		case t.Type == "":
+			v.errors = append(v.errors, fmt.Sprintf("Task '%s': missing 'type'", key))
+		case !task.ValidTypes[t.Type]:
+			v.errors = append(v.errors, fmt.Sprintf("Task '%s': invalid type '%s'", key, t.Type))
+		}
 	}
 }
 

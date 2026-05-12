@@ -5,7 +5,7 @@ priority: "P0"
 estimated_time: "15min"
 dependencies: [{{DEPENDENCIES}}]
 status: pending
-noTest: true
+type: "doc-generation.summary"
 mainSession: false
 ---
 

@@ -891,6 +891,148 @@ func TestPrintTaskDetails_ScopeInOutput(t *testing.T) {
 	})
 }
 
+func TestPrintTaskDetails_TypeInOutput(t *testing.T) {
+	dir := t.TempDir()
+	if err := feature.EnsureFeatureDir(dir, "feat"); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("type present", func(t *testing.T) {
+		tk := &task.Task{
+			ID: "1.1", Title: "T", Priority: "P0", Status: "pending",
+			File: "1.1.md", Record: "records/1.1.md", Type: "implementation",
+		}
+		out := captureStdout(func() {
+			printTaskDetails("t1", tk, dir, "feat")
+		})
+		if !strings.Contains(out, "TYPE: implementation") {
+			t.Errorf("expected TYPE: implementation in output, got: %s", out)
+		}
+	})
+
+	t.Run("type empty outputs TYPE with empty value", func(t *testing.T) {
+		tk := &task.Task{
+			ID: "1.1", Title: "T", Priority: "P0", Status: "pending",
+			File: "1.1.md", Record: "records/1.1.md",
+		}
+		out := captureStdout(func() {
+			printTaskDetails("t1", tk, dir, "feat")
+		})
+		if !strings.Contains(out, "TYPE: ") {
+			t.Errorf("expected TYPE: line in output even when empty, got: %s", out)
+		}
+	})
+
+	t.Run("TYPE appears after MAIN_SESSION", func(t *testing.T) {
+		tk := &task.Task{
+			ID: "1.1", Title: "T", Priority: "P0", Status: "pending",
+			File: "1.1.md", Record: "records/1.1.md", Type: "fix",
+		}
+		out := captureStdout(func() {
+			printTaskDetails("t1", tk, dir, "feat")
+		})
+		mainSessionIdx := strings.Index(out, "MAIN_SESSION:")
+		typeIdx := strings.Index(out, "TYPE:")
+		if mainSessionIdx == -1 || typeIdx == -1 {
+			t.Fatalf("expected both MAIN_SESSION and TYPE in output, got: %s", out)
+		}
+		if typeIdx <= mainSessionIdx {
+			t.Errorf("expected TYPE to appear after MAIN_SESSION in output")
+		}
+	})
+}
+
+func TestExecuteClaim_TypePropagatedToState(t *testing.T) {
+	dir := t.TempDir()
+	_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n\ngo 1.21\n"), 0644)
+	if err := feature.EnsureFeatureDir(dir, "test-feature"); err != nil {
+		t.Fatal(err)
+	}
+
+	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test-feature"))
+	index := &task.TaskIndex{
+		Feature:      "test-feature",
+		StatusEnum:   []string{"pending", "in_progress", "completed"},
+		PriorityEnum: []string{"P0"},
+	}
+	index.SetTasks(map[string]task.Task{
+		"t1": {ID: "1.1", Title: "Impl task", Status: "pending", Priority: "P0",
+			File: "1.1.md", Record: "records/1.1.md", Type: "implementation"},
+	})
+	if err := task.SaveIndex(indexPath, index); err != nil {
+		t.Fatal(err)
+	}
+	_ = os.WriteFile(filepath.Join(dir, "docs", "features", "test-feature", "tasks", "1.1.md"), []byte("# T1"), 0644)
+
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := executeClaim()
+	if err != nil {
+		t.Fatalf("executeClaim() error = %v", err)
+	}
+
+	if result.Task.Type != "implementation" {
+		t.Errorf("Task.Type = %q, want %q", result.Task.Type, "implementation")
+	}
+
+	statePath := feature.GetTaskStatePath(dir, "test-feature")
+	state, err := task.LoadState(statePath)
+	if err != nil || state == nil {
+		t.Fatalf("failed to load state: %v", err)
+	}
+	if state.Type != "implementation" {
+		t.Errorf("state.Type = %q, want %q", state.Type, "implementation")
+	}
+}
+
+func TestExecuteClaim_TypeEmptyWhenNotSet(t *testing.T) {
+	dir := t.TempDir()
+	_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n\ngo 1.21\n"), 0644)
+	if err := feature.EnsureFeatureDir(dir, "test-feature"); err != nil {
+		t.Fatal(err)
+	}
+
+	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test-feature"))
+	index := &task.TaskIndex{
+		Feature:      "test-feature",
+		StatusEnum:   []string{"pending", "in_progress", "completed"},
+		PriorityEnum: []string{"P0"},
+	}
+	index.SetTasks(map[string]task.Task{
+		"t1": {ID: "1.1", Title: "Task without type", Status: "pending", Priority: "P0",
+			File: "1.1.md", Record: "records/1.1.md"},
+	})
+	if err := task.SaveIndex(indexPath, index); err != nil {
+		t.Fatal(err)
+	}
+	_ = os.WriteFile(filepath.Join(dir, "docs", "features", "test-feature", "tasks", "1.1.md"), []byte("# T1"), 0644)
+
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := executeClaim()
+	if err != nil {
+		t.Fatalf("executeClaim() error = %v", err)
+	}
+
+	if result.Task.Type != "" {
+		t.Errorf("Task.Type = %q, want empty string for task without type", result.Task.Type)
+	}
+
+	statePath := feature.GetTaskStatePath(dir, "test-feature")
+	state, _ := task.LoadState(statePath)
+	if state != nil && state.Type != "" {
+		t.Errorf("state.Type = %q, want empty for task without type", state.Type)
+	}
+}
+
 func TestCheckExistingTaskState_Rejected(t *testing.T) {
 	t.Run("rejected state claims new task", func(t *testing.T) {
 		index := &task.TaskIndex{Feature: "test"}

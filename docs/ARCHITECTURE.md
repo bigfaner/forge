@@ -173,22 +173,6 @@ source-task (blocked) → fix-task-A (blocked) → fix-task-B
 - 最大嵌套深度 3 层
 - 已完成的 fix-task 会被自动解析到根 blocked task
 
-### error-fixer
-
-**触发**：task-executor 失败时分发、`/fix-bug` 手动触发
-
-**5 步工作流**：
-
-```
-Step 1: Diagnose  — 分析错误类型、影响范围、根因
-Step 2: Locate    — 读取失败文件和相关测试
-Step 3: Fix       — 最小修复，保留现有功能
-Step 4: Verify    — Quality Gate 全流程
-Step 5: Commit    — git-commit
-```
-
-**约束**：最小改动，不做重构。
-
 ### doc-scorer
 
 **触发**：`/eval-*` 系列评估技能
@@ -230,7 +214,7 @@ Step 3: 写入 + 报告变更
 
 ## Quality Gate 协议
 
-所有任务执行工作流（`/execute-task`、`task-executor` agent、`/fix-bug`、`error-fixer` agent）在记录完成前必须通过 Quality Gate。
+所有任务执行工作流（`/execute-task`、`task-executor` agent、`/fix-bug`、`type: fix` 任务）在记录完成前必须通过 Quality Gate。
 
 ### 验证序列
 

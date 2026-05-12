@@ -5,7 +5,7 @@ priority: "P1"
 estimated_time: "15min"
 dependencies: ["T-quick-4"]
 status: pending
-noTest: false
+type: "test-pipeline.verify-regression"
 mainSession: false
 ---
 

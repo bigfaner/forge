@@ -5,7 +5,7 @@ priority: "P1"
 estimated_time: "30min-1h"
 dependencies: [{{T_QUICK_1_DEP}}]
 status: pending
-noTest: true
+type: "test-pipeline.gen-cases"
 mainSession: false
 ---
 

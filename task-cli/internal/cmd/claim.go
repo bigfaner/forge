@@ -126,6 +126,7 @@ func executeClaim() (*ClaimResult, error) {
 		Scope:         t.Scope,
 		MainSession:   t.MainSession,
 		NoTest:        t.NoTest,
+		Type:          t.Type,
 	}
 	if err := task.SaveState(statePath, state); err != nil {
 		return nil, err
@@ -317,6 +318,7 @@ func printTaskDetails(key string, t *task.Task, projectRoot, featureSlug string)
 	PrintFieldIfNotEmptySlice("DEPENDENCIES", t.Dependencies)
 	PrintField("BREAKING", strconv.FormatBool(t.Breaking))
 	PrintField("MAIN_SESSION", strconv.FormatBool(t.MainSession))
+	PrintField("TYPE", t.Type)
 	PrintFieldIfNotEmpty("SCOPE", t.Scope)
 	PrintField("NO_TEST", strconv.FormatBool(t.NoTest))
 	PrintFieldIfNotEmpty("FEATURE", featureSlug)

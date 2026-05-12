@@ -275,6 +275,26 @@ For each task, determine the `scope` field for `index.json`:
 | `docs/WORKFLOW.md`, `justfile` | `all` | Undetermined paths |
 | Any task in a pure backend project | `all` | Non-mixed project, scope distinction is irrelevant |
 
+### Type Assignment
+
+For each task, set the `type` field in `index.json` using the following rules. These rules mirror `InferType()` in `task-cli/pkg/prompt/prompt.go` — both must stay in sync.
+
+| Condition | `type` value |
+|-----------|-------------|
+| Task ID ends with `.summary` | `"doc-generation.summary"` |
+| Task ID ends with `.gate` | `"gate"` |
+| Task ID is `T-test-1` | `"test-pipeline.gen-cases"` |
+| Task ID is `T-test-1b` | `"test-pipeline.eval-cases"` |
+| Task ID is `T-test-2` | `"test-pipeline.gen-scripts"` |
+| Task ID is `T-test-3` | `"test-pipeline.run"` |
+| Task ID is `T-test-4` | `"test-pipeline.graduate"` |
+| Task ID is `T-test-4.5` | `"test-pipeline.verify-regression"` |
+| Task ID is `T-test-5` | `"doc-generation.consolidate"` |
+| Task ID starts with `fix-` or `disc-` | `"fix"` |
+| No match (fallback) | `"implementation"` — emit warning: `warn: task <ID> type could not be inferred, defaulting to implementation` |
+
+Write `type` into the task entry in `index.json` alongside `scope`.
+
 ### 4b. Phase Summary Tasks
 
 For each phase in the decomposition (from Step 3), insert a phase summary task at the end of that phase. Read `templates/phase-summary-task.md` for task content.

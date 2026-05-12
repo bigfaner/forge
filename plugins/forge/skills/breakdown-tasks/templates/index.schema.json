@@ -77,9 +77,30 @@
             "description": "When true, run-tasks executes this task in the main session instead of dispatching to task-executor. Used by tasks that need to spawn subagents.",
             "default": false
           },
+          "type": {
+            "type": "string",
+            "enum": [
+              "implementation",
+              "doc-generation.summary",
+              "doc-generation.consolidate",
+              "test-pipeline.gen-cases",
+              "test-pipeline.eval-cases",
+              "test-pipeline.gen-scripts",
+              "test-pipeline.run",
+              "test-pipeline.graduate",
+              "test-pipeline.verify-regression",
+              "fix",
+              "gate"
+            ],
+            "description": "Task type. Determines executor behavior: noTest tasks (doc-generation.*, gate, test-pipeline.*) skip quality gate; mainSession tasks (gate) run in main session."
+          },
+          "blockedReason": {
+            "type": "string",
+            "description": "Human-readable reason why this task is blocked. Set when status is 'blocked'."
+          },
           "noTest": {
             "type": "boolean",
-            "description": "When true, this task does not require tests (e.g. documentation-only, summary tasks). Skips quality gate and test evidence checks. Coverage is auto-set to -1.0.",
+            "description": "Deprecated: use type field instead. When true, this task does not require tests (e.g. documentation-only, summary tasks). Skips quality gate and test evidence checks. Coverage is auto-set to -1.0.",
             "default": false
           }
         }

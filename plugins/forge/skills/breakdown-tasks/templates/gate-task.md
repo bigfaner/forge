@@ -6,7 +6,7 @@ estimated_time: "1h"
 dependencies: [{{DEPENDENCIES}}]
 status: pending
 breaking: true
-noTest: false
+type: "gate"
 mainSession: false
 ---
 
