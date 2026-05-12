@@ -1,0 +1,4 @@
+APP_ID: com.example.app
+TEST_USERNAME: admin
+TEST_PASSWORD: password
+DEVICE: emulator-5554

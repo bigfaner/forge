@@ -44,8 +44,18 @@ ls docs/features/<slug>/prd/prd-spec.md
 ## Process Flow
 
 ```
-1. Read PRD → 2. Explore context → 3. Identify decisions → 4. Ask questions → 5. Draft design → 6. Review → 7. Archive decisions (optional) → 8. Finalize
+0. Select test profile → 1. Read PRD → 2. Explore context → 3. Identify decisions → 4. Ask questions → 5. Draft design → 6. Review → 7. Archive decisions (optional) → 8. Finalize
 ```
+
+## Step 0: Select Test Profile
+
+1. **Resolve profile**: Run `task profile` to get the active test profile(s). This reads `.forge/config.yaml`, falls back to project structure detection.
+2. **On failure** (output shows `PROFILE: (none)`): ask the user to choose from known profiles (`web-playwright`, `go-test`, `maestro`, `java-junit`, `rust-test`, `pytest`). Run `task profile set <name>` to persist their choice.
+3. **Load profile manifest**: Read `plugins/forge/profiles/<profile-name>/manifest.yaml`.
+
+<HARD-RULE>
+Do NOT silently default to any profile. If `task profile` returns no result and the user cannot decide, abort the skill.
+</HARD-RULE>
 
 ## Step 1: Read Manifest → PRD
 

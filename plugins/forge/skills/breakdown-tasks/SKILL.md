@@ -22,6 +22,18 @@ Break a technical design into executable tasks (1-4h each, clear dependencies, t
 | `prd/prd-spec.md`       | `/write-prd`                    |
 | `design/tech-design.md` | `/tech-design` |
 
+## Step 0: Resolve Profile
+
+1. **Resolve profile**: Run `task profile` to get the active test profile(s). This reads `.forge/config.yaml`, falls back to project structure detection.
+2. **On failure** (output shows `PROFILE: (none)`): ask the user to choose from known profiles (`web-playwright`, `go-test`, `maestro`, `java-junit`, `rust-test`, `pytest`). Run `task profile set <name>` to persist their choice.
+3. **Load profile manifest**: Read `plugins/forge/profiles/<profile-name>/manifest.yaml` for each resolved profile.
+
+The resolved profiles drive per-profile task expansion in Step 4d. If only one profile is active, tasks use plain IDs (e.g., `T-test-2`). If multiple profiles are active, affected tasks are expanded with letter suffixes (e.g., `T-test-2a`, `T-test-2b`).
+
+<HARD-RULE>
+Do NOT silently default to any profile. If `task profile` returns no result and the user cannot decide, abort the skill.
+</HARD-RULE>
+
 ## Step 1: Read All Documents
 
 Read `manifest.md` to locate documents, then read all available files:
@@ -285,9 +297,9 @@ For each task, set the `type` field in `index.json` using the following rules. T
 | Task ID ends with `.gate` | `"gate"` |
 | Task ID is `T-test-1` | `"test-pipeline.gen-cases"` |
 | Task ID is `T-test-1b` | `"test-pipeline.eval-cases"` |
-| Task ID is `T-test-2` | `"test-pipeline.gen-scripts"` |
-| Task ID is `T-test-3` | `"test-pipeline.run"` |
-| Task ID is `T-test-4` | `"test-pipeline.graduate"` |
+| Task ID matches `T-test-2` or `T-test-2[a-z]` | `"test-pipeline.gen-scripts"` |
+| Task ID matches `T-test-3` or `T-test-3[a-z]` | `"test-pipeline.run"` |
+| Task ID matches `T-test-4` or `T-test-4[a-z]` | `"test-pipeline.graduate"` |
 | Task ID is `T-test-4.5` | `"test-pipeline.verify-regression"` |
 | Task ID is `T-test-5` | `"doc-generation.consolidate"` |
 | Task ID starts with `fix-` or `disc-` | `"fix"` |
@@ -336,30 +348,61 @@ Phase 2 gate: 2.gate               (dependencies: ["2.summary"])
 
 ### 4d. Standard Test Tasks
 
-Append seven fixed test tasks:
+Generate test tasks based on the profiles resolved in Step 0.
 
-- **T-test-1**: read `templates/gen-test-cases.md`, calls `/gen-sitemap` first (if `sitemap.json` missing) then `/gen-test-cases`, file `gen-test-cases.md`
-- **T-test-1b**: read `templates/eval-test-cases.md`, calls `/eval-test-cases`, depends on T-test-1, file `eval-test-cases.md`
+**Profile-suffix convention**: When multiple profiles are active, per-profile tasks use a lowercase letter suffix (a, b, c, ...) matching the order listed in `.forge/config.yaml`'s `test-profiles` array. Single profile produces no suffix.
 
 <HARD-RULE>
 **Task properties propagate from template frontmatter to index.json**: When generating `index.json`, copy all boolean flags from the task template's YAML frontmatter (e.g., `breaking`, `noTest`, `mainSession`) directly into the corresponding index.json entry. Do NOT set these flags ad-hoc — they belong in the template.
 </HARD-RULE>
-- **T-test-2**: read `templates/gen-test-scripts.md`, calls `/gen-test-scripts`, depends on T-test-1b, file `gen-test-scripts.md`
-- **T-test-3**: read `templates/run-e2e-tests.md`, calls `/run-e2e-tests`, depends on T-test-2, file `run-e2e-tests.md`
-- **T-test-4**: read `templates/graduate-tests.md`, calls `/graduate-tests`, depends on T-test-3, file `graduate-tests.md`
-- **T-test-4.5**: read `templates/verify-regression.md`, runs full e2e regression, depends on T-test-4, file `verify-regression.md`
+
+#### Shared tasks (always single, regardless of profile count)
+
+- **T-test-1**: read `templates/gen-test-cases.md`, calls `/gen-sitemap` first (if `sitemap.json` missing) then `/gen-test-cases`, file `gen-test-cases.md`
+- **T-test-1b**: read `templates/eval-test-cases.md`, calls `/eval-test-cases`, depends on T-test-1, file `eval-test-cases.md`
+
+#### Per-profile tasks (expanded when multiple profiles active)
+
+For each profile resolved in Step 0, create the following tasks. When only one profile is active, use plain IDs (no suffix). When multiple profiles are active, append the profile suffix to the ID and file name.
+
+| Base ID | Suffix | File pattern | Template | Skill | Depends on |
+|---------|--------|-------------|----------|-------|------------|
+| T-test-2 | `a`, `b`, ... | `gen-test-scripts-<suffix>.md` | `templates/gen-test-scripts.md` | `/gen-test-scripts` | T-test-1b |
+| T-test-3 | `a`, `b`, ... | `run-e2e-tests-<suffix>.md` | `templates/run-e2e-tests.md` | `/run-e2e-tests` | T-test-2\* |
+| T-test-4 | `a`, `b`, ... | `graduate-tests-<suffix>.md` | `templates/graduate-tests.md` | `/graduate-tests` | T-test-3\* |
+
+\* Per-profile: T-test-3a depends on T-test-2a, T-test-3b depends on T-test-2b, etc.
+
+**Single-profile example** (one profile in config):
+- T-test-2, file `gen-test-scripts.md`, depends on T-test-1b
+- T-test-3, file `run-e2e-tests.md`, depends on T-test-2
+- T-test-4, file `graduate-tests.md`, depends on T-test-3
+
+**Multi-profile example** (two profiles: `[web-playwright, pytest]`):
+- T-test-2a, file `gen-test-scripts-a.md`, depends on T-test-1b — profile `web-playwright`
+- T-test-2b, file `gen-test-scripts-b.md`, depends on T-test-1b — profile `pytest`
+- T-test-3a, file `run-e2e-tests-a.md`, depends on T-test-2a — profile `web-playwright`
+- T-test-3b, file `run-e2e-tests-b.md`, depends on T-test-2b — profile `pytest`
+- T-test-4a, file `graduate-tests-a.md`, depends on T-test-3a — profile `web-playwright`
+- T-test-4b, file `graduate-tests-b.md`, depends on T-test-3b — profile `pytest`
+
+For each per-profile task, pass the active profile name via the `--profile` variable when instantiating from template. The task content must reference the profile's manifest for framework-specific commands, file extensions, and conventions.
+
+#### Shared tasks (continued, single regardless of profile count)
+
+- **T-test-4.5**: read `templates/verify-regression.md`, runs full e2e regression across all profiles, depends on ALL T-test-4 variants (e.g., `["T-test-4a", "T-test-4b"]` when multi-profile, or `["T-test-4"]` when single), file `verify-regression.md`
 - **T-test-5**: read `templates/consolidate-specs.md`, calls `/consolidate-specs`, depends on T-test-4.5, file `consolidate-specs.md`
 
 Replace `{{T_TEST_1_DEP}}` with the last phase's gate ID if a gate exists (e.g., `"2.gate"`), otherwise the last phase's summary ID.
 
 **Responsibility chain:**
-- T-test-1: generate test case documentation
-- T-test-1b: evaluate test cases for downstream executability (main session task)
-- T-test-2: generate test scripts from evaluated test cases
-- T-test-3: execute feature e2e tests; on failure, mark blocked, add fix tasks (P0) with unblock instruction — re-runs after fix
-- T-test-4: verify e2e passed (check `latest.md`), then graduate scripts to `tests/e2e/`
-- T-test-4.5: run full regression suite; on failure, mark blocked, add fix tasks (P0) with unblock instruction — re-runs after fix
-- T-test-5: extract business rules and tech specs, user reviews and confirms integration
+- T-test-1: generate test case documentation (shared)
+- T-test-1b: evaluate test cases for downstream executability, main session task (shared)
+- T-test-2[letter]: generate test scripts from evaluated test cases (per profile)
+- T-test-3[letter]: execute feature e2e tests; on failure, mark blocked, add fix tasks (P0) with unblock instruction — re-runs after fix (per profile)
+- T-test-4[letter]: verify e2e passed (check `latest.md`), then graduate scripts to regression suite (per profile)
+- T-test-4.5: run full regression suite across all profiles; on failure, mark blocked, add fix tasks (P0) with unblock instruction — re-runs after fix (shared)
+- T-test-5: extract business rules and tech specs, user reviews and confirms integration (shared)
 
 **Fix-task reference**: Templates are managed by task-cli and embedded in the binary. Auto-generated fix-task IDs follow the `disc-N` format (e.g., `disc-1`, `disc-2`). Agents should run `task template fix-task` to view the template and required variables before creating fix tasks:
 
@@ -408,5 +451,5 @@ Read `templates/manifest-update-tasks.md` for the traceability table format and 
 - [ ] `breaking: true` set on tasks that modify shared contracts
 - [ ] UI tasks reference prototype files (if applicable)
 - [ ] User Stories populated from `prd-user-stories.md`
-- [ ] `index.json` ends with T-test-1 through T-test-5 (including T-test-4.5)
+- [ ] `index.json` ends with test tasks matching the profile expansion from Step 0 (shared T-test-1, T-test-1b, per-profile T-test-2/3/4, shared T-test-4.5, T-test-5)
 - [ ] `manifest.md` updated with traceability + `status: tasks`

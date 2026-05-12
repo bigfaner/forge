@@ -21,6 +21,20 @@ Maximum 4 business tasks. If the proposal requires more, STOP and recommend the 
 
 - `--no-test`: Skip T-quick-1~5 test tasks. Use for non-code proposals or when tests are handled separately.
 
+## Step 0: Resolve Profile
+
+1. **Resolve profile**: Run `task profile` to get the active test profile(s). This reads `.forge/config.yaml`, falls back to project structure detection.
+2. **On failure** (output shows `PROFILE: (none)`): ask the user to choose from known profiles (`web-playwright`, `go-test`, `maestro`, `java-junit`, `rust-test`, `pytest`). Run `task profile set <name>` to persist their choice.
+3. **Load profile manifest**: Read `plugins/forge/profiles/<profile-name>/manifest.yaml` for each resolved profile.
+
+**Profile resolution outcome**:
+- **Single profile**: one active profile (default behavior, no per-profile suffixing needed)
+- **Multiple profiles**: two or more active profiles (triggers per-profile task suffixing in Step 4)
+
+<HARD-RULE>
+Do NOT silently default to any profile. If `task profile` returns no result and the user cannot decide, abort the skill.
+</HARD-RULE>
+
 ## Step 1: Read Proposal
 
 Determine the feature slug from the proposal directory name. Read `docs/proposals/<slug>/proposal.md` — the sole input document. Extract:
@@ -75,6 +89,7 @@ For each task:
 - Fill Acceptance Criteria from matching Success Criteria items
 - Fill Implementation Notes from Key Risks and solution details
 - Set `breaking: true` only when modifying shared interfaces/models/APIs
+- Pass resolved profile name(s) as context when the task involves test generation or execution (see Step 4 for per-profile template variable usage)
 
 ### Type Assignment
 
@@ -94,11 +109,15 @@ For each task, set the `type` field in `index.json` using the following rules. T
 | Task ID starts with `fix-` or `disc-` | `"fix"` |
 | No match (fallback) | `"implementation"` — emit warning: `warn: task <ID> type could not be inferred, defaulting to implementation` |
 
-Write `type` into the task entry in `index.json` alongside `scope`. For quick-tasks, business tasks (IDs `1`–`4`) and `T-quick-*` test tasks all fall through to the fallback `"implementation"` — no warning needed for these expected cases.
+Write `type` into the task entry in `index.json` alongside `scope`. For quick-tasks, business tasks (IDs `1`–`4`) and `T-quick-*` test tasks all fall through to the fallback `"implementation"` — no warning needed for these expected cases. When a profile is active, also write `profile: "<profile-name>"` into the index.json entry for per-profile tasks (T-quick-2\<L\> through T-quick-4\<L\>). Shared tasks (T-quick-1, T-quick-5) and business tasks do not include a profile field.
 
 ## Step 4: Create Test Tasks (unless --no-test)
 
-If `--no-test` flag is NOT set, append five test tasks. Read each template before writing:
+If `--no-test` flag is NOT set, append test tasks. The structure depends on the number of active profiles resolved in Step 0.
+
+### Single Profile (or default/fallback)
+
+Same as before — five test tasks in a linear chain. Read each template before writing:
 
 - **T-quick-1**: read `templates/quick-test-cases.md`, generates test cases from proposal's Success Criteria
 - **T-quick-2**: read `templates/quick-gen-scripts.md`, generates e2e test scripts from test cases
@@ -115,7 +134,49 @@ Replace `{{T_QUICK_1_DEP}}` with the last business task ID (e.g., `"2"` if 2 bus
 - T-quick-4: graduate scripts to `tests/e2e/`
 - T-quick-5: run full regression suite; on failure, mark blocked, add fix tasks (P0)
 
-**Fix-task reference**:
+### Multiple Profiles
+
+When two or more profiles are active (e.g., `api` and `cli`), T-quick-1 and T-quick-5 remain shared across all profiles. T-quick-2 through T-quick-4 are replicated per profile with suffixed IDs.
+
+**Shared tasks** (one each, no suffix):
+- **T-quick-1**: test case generation — shared across all profiles (reads profile manifests to produce cases per profile section)
+- **T-quick-5**: full regression verification — runs all profiles' regression suites
+
+**Per-profile tasks** (one set per profile, suffixed with a, b, c, ...):
+For each profile `<P>` with suffix letter `<L>` (a=first profile, b=second, etc.):
+
+- **T-quick-2\<L\>**: read `templates/quick-gen-scripts.md`, generates e2e test scripts from test cases for profile `<P>`. Pass profile info via template variables: `--var PROFILE=<P> --var PROFILE_MANIFEST=plugins/forge/profiles/<P>/manifest.yaml`
+- **T-quick-3\<L\>**: read `templates/quick-run-tests.md`, runs feature e2e tests for profile `<P>`. Pass profile info via template variables: `--var PROFILE=<P>`
+- **T-quick-4\<L\>**: read `templates/quick-graduate.md`, graduates scripts to regression suite for profile `<P>`. Pass profile info via template variables: `--var PROFILE=<P>`
+
+**Dependency chain for multiple profiles**:
+
+```
+[last business task] → T-quick-1
+                     → T-quick-2a → T-quick-3a → T-quick-4a ─┐
+                     → T-quick-2b → T-quick-3b → T-quick-4b ─┤→ T-quick-5
+                     → ...                                       │
+```
+
+- T-quick-2\<L\> all depend on T-quick-1 (parallel across profiles)
+- T-quick-3\<L\> depends on its corresponding T-quick-2\<L\>
+- T-quick-4\<L\> depends on its corresponding T-quick-3\<L\>
+- T-quick-5 depends on ALL T-quick-4\<L\> tasks
+
+**Example** with profiles `api` (suffix `a`) and `cli` (suffix `b`):
+
+| Task ID | Title | Dependencies |
+|---------|-------|-------------|
+| T-quick-1 | Generate test cases (all profiles) | last business task |
+| T-quick-2a | Generate API test scripts | T-quick-1 |
+| T-quick-2b | Generate CLI test scripts | T-quick-1 |
+| T-quick-3a | Run API feature tests | T-quick-2a |
+| T-quick-3b | Run CLI feature tests | T-quick-2b |
+| T-quick-4a | Graduate API tests | T-quick-3a |
+| T-quick-4b | Graduate CLI tests | T-quick-3b |
+| T-quick-5 | Verify full regression | T-quick-4a, T-quick-4b |
+
+**Fix-task reference** (applies to both single and multiple profile modes):
 
 ```bash
 task add --template fix-task --title "Fix: <description>" \
@@ -124,6 +185,7 @@ task add --template fix-task --title "Fix: <description>" \
   --var SOURCE_FILES="<affected paths>" \
   --var TEST_SCRIPT="<failing test>" \
   --var TEST_RESULTS="<results path>" \
+  --var PROFILE="<profile name>" \
   --description "<root cause>"
 ```
 
@@ -166,7 +228,10 @@ task validate docs/features/<slug>/tasks/index.json
 - [ ] Every Success Criterion covered by ≥1 task
 - [ ] Dependency graph is a DAG (no cycles)
 - [ ] Each task file includes `## Affected Files` section with Create/Modify/Delete
-- [ ] (if not --no-test) T-quick-1~5 appended with correct dependency chain
+- [ ] (if not --no-test) Test tasks appended with correct dependency chain:
+  - Single profile: T-quick-1 through T-quick-5
+  - Multiple profiles: T-quick-1 shared, T-quick-2a/2b/... through T-quick-4a/4b/... per profile, T-quick-5 shared
+- [ ] Per-profile test tasks include `profile` field in index.json entries
 - [ ] `docs/features/<slug>/manifest.md` written with `mode: quick`
 
 ## Integration

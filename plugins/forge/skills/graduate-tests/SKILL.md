@@ -1,6 +1,6 @@
 ---
 name: graduate-tests
-description: Migrate feature test scripts to the regression suite (tests/e2e/). Agent-driven: reads scripts, analyzes content, decides classification, splits/merges as needed, rewrites imports, creates graduation marker.
+description: Migrate feature test scripts to the regression suite. Profile-aware: reads active test profile from .forge/config.yaml for import rewriting, compilation, and test discovery.
 ---
 
 # /graduate-tests
@@ -15,6 +15,19 @@ Migrate feature test scripts from the staging area `tests/e2e/features/<feature>
 - Do NOT modify the source scripts in `tests/e2e/features/<slug>/`
 </HARD-GATE>
 
+## Step 0: Resolve Profile
+
+1. **Resolve profile**: Run `task profile` to get the active test profile(s). This reads `.forge/config.yaml`, falls back to project structure detection.
+2. **On failure** (output shows `PROFILE: (none)`): ask the user to choose from known profiles (`web-playwright`, `go-test`, `maestro`, `java-junit`, `rust-test`, `pytest`). Run `task profile set <name>` to persist their choice.
+3. **Load profile manifest**: Read `plugins/forge/profiles/<profile-name>/manifest.yaml`.
+4. **Load profile strategy**: Read `plugins/forge/profiles/<profile-name>/graduate.md`.
+
+Use the loaded profile manifest and strategy for all subsequent steps.
+
+<HARD-RULE>
+Do NOT silently default to any profile. If `task profile` returns no result and the user cannot decide, abort the skill.
+</HARD-RULE>
+
 ## Prerequisites
 
 Check before running. Abort and prompt user if missing:
@@ -22,13 +35,13 @@ Check before running. Abort and prompt user if missing:
 | Artifact | Condition | Action if not met |
 |----------|-----------|-------------------|
 | `tests/e2e/features/<slug>/` directory | Must exist (or scripts at `tests/e2e/<slug>/` via staging bypass — see Step 1.5) | Run `/gen-test-scripts` first |
-| At least one `.spec.ts` file | Must exist | Run `/gen-test-scripts` first |
-| `tests/e2e/helpers.ts` | Must exist (symbol completeness checked after Step 2) | Run `/gen-test-scripts` first |
+| At least one test file (extension from profile manifest `file-extension`) | Must exist | Run `/gen-test-scripts` first |
+| Shared infrastructure files (per profile manifest) | Must exist | Run `/gen-test-scripts` first |
 | `tests/e2e/features/<slug>/results/latest.md` | Must show PASS | Run `/run-e2e-tests` first — only graduate passing tests |
 | `tests/e2e/.graduated/<slug>` | Must NOT exist | Already graduated — skip |
 
 <PRINCIPLE>
-**Shared infrastructure first.** Before executing graduation, verify that shared dependencies (`helpers.ts`, `config.yaml`, `package.json`, `tsconfig.json`, `playwright.config.ts`) are complete and functional. After graduation, spec file import paths are rewritten from `'../../helpers.js'` to `'../helpers.js'` — if `helpers.ts` itself is incomplete, the rewritten imports will still fail to compile. When inconsistencies are found, go back to `/gen-test-scripts` to fix shared dependencies before graduating.
+**Shared infrastructure first.** Before executing graduation, verify that shared dependencies are complete and functional. After graduation, import paths are rewritten according to the profile's `graduate.md` — if shared files are incomplete, the rewritten imports will still fail to compile. When inconsistencies are found, go back to `/gen-test-scripts` to fix shared dependencies before graduating.
 </PRINCIPLE>
 
 ## When to Use
@@ -40,7 +53,7 @@ Check before running. Abort and prompt user if missing:
 ## Workflow
 
 ```
-1. Check marker → 2. Read scripts → 3. Analyze structure → 4. Decide classification → 5. Migrate → 5.5 Validate → 6. Write marker → 7. Cleanup source
+0. Resolve profile → 1. Check marker → 2. Read scripts → 3. Analyze structure → 4. Decide classification → 5. Migrate → 5.5 Validate → 6. Write marker → 7. Cleanup source
 ```
 
 ### Step 1: Check Graduation Marker
@@ -65,15 +78,15 @@ Graduation MUST ALWAYS perform Step 4 (functional module classification), regard
 
 ### Step 2: Read Source Scripts
 
-Read all `.spec.ts` files from the source directory determined in Step 1.5 (either `tests/e2e/features/<slug>/` or `tests/e2e/<slug>/` for bypass) and `helpers.ts`. Understand what each `describe`/`test` block tests, which routes/APIs/CLI commands are covered, and whether a single spec mixes multiple functional domains.
+Read all test files (extension from profile manifest `file-extension`) from the source directory determined in Step 1.5 (either `tests/e2e/features/<slug>/` or `tests/e2e/<slug>/` for bypass) and shared infrastructure files. Understand what each test block tests, which routes/APIs/CLI commands are covered, and whether a single test file mixes multiple functional domains.
 
-**Symbol completeness check**: Extract the set of imported symbols from `helpers.js` (e.g., `screenshot`, `baseUrl`, `curl`, `runCli`). Verify each symbol is exported by `tests/e2e/helpers.ts`. If any are missing, abort and prompt: "helpers.ts is missing exports (X, Y). Run `/gen-test-scripts` first to merge missing symbols."
+**Symbol completeness check**: Extract the set of imported symbols from the shared helper file. Verify each symbol is exported. If any are missing, abort and prompt: "Shared helper file is missing exports (X, Y). Run `/gen-test-scripts` first to merge missing symbols."
 
 ### Step 3: Analyze Existing Structure
 
 Read `tests/e2e/` directory structure to understand the existing classification convention (by type, by route, by feature domain). New specs must follow the same convention.
 
-**Pre-flight check**: Run `cd tests/e2e && npx tsc --noEmit`. If compilation fails on pre-existing files, abort before touching anything — migrating into a broken codebase compounds errors.
+**Pre-flight check**: Run `just e2e-compile` to verify pre-existing files compile. If compilation fails, abort before touching anything.
 
 ### Step 4: Decide Classification
 
@@ -89,9 +102,9 @@ For each spec file, answer:
 
 Classification patterns:
 ```
-# Split: ui.spec.ts (login+dashboard) → tests/e2e/auth/login.spec.ts + tests/e2e/dashboard/ui.spec.ts
-# Keep: justfile-integration/*.spec.ts → tests/e2e/justfile/cli.spec.ts, tests/e2e/justfile/detection.spec.ts
-# Merge: new profile/api.spec.ts into existing tests/e2e/profile/api.spec.ts (deduplicate by test title)
+# Split: test file covering multiple domains → separate files per domain
+# Keep: test file covering single domain → move as-is
+# Merge: new test file into existing target file (deduplicate by test title)
 ```
 
 ### Step 5: Execute Migration
@@ -107,36 +120,28 @@ For each target file:
 3. **Record in migration manifest**: append entries to `tests/e2e/.graduated/.backup/<slug>/manifest.json` after each file operation (write-ahead log). See template: `plugins/forge/skills/graduate-tests/templates/manifest.json`. On re-run after partial failure, read existing manifest and continue — do not reset.
 
 **Merge procedure** (when target file already exists). Full example: `plugins/forge/skills/graduate-tests/templates/merge-example.md`:
-1. Read both source and target spec files
+1. Read both source and target test files
 2. **Backup** the target file (only if no backup exists — prevents overwriting original on re-run): `test -f <backup-path> || cp <target-path> <backup-path>`
-3. **Merge rules**:
+3. **Merge rules** (follow profile's `graduate.md` for framework-specific merge logic):
    - Combine imports, deduplicate
-   - Match `test.describe` blocks by title — merge their children into a single block
-   - Deduplicate `test()` entries by full title string match (identical titles → keep source version; different titles with same TC ID prefix → keep both)
-   - Preserve `test.describe` nesting depth — do not flatten
-   - Append new describe blocks that don't exist in target
+   - Match test grouping blocks (describe/testsuite/class) by title — merge their children into a single block
+   - Deduplicate test functions by full title string match (identical titles → keep source version; different titles with same TC ID prefix → keep both)
+   - Preserve nesting depth — do not flatten
+   - Append new grouping blocks that don't exist in target
 4. Write the merged file
 
 <HARD-RULE>
-Specs in the staging area (`tests/e2e/features/<slug>/`) import helpers via `'../../helpers.js'` (two levels up). After migration to the regression suite, the import must be rewritten based on target depth:
-
-| Target location | Import path |
-|----------------|-------------|
-| `tests/e2e/<module>/file.spec.ts` (1 level deep) | `'../helpers.js'` |
-| `tests/e2e/<module>/sub/file.spec.ts` (2 levels deep) | `'../../helpers.js'` |
-| `tests/e2e/<module>/a/b/file.spec.ts` (3 levels deep) | `'../../../helpers.js'` |
-
-Formula: count directory levels from spec file to `tests/e2e/`, then generate `'../' * levels + 'helpers.js'`. Every migrated spec file MUST have its helpers import path updated. Other imports (node built-ins, @playwright/test) remain unchanged.
+Test files in the staging area import shared helpers using the profile's staging import path. After migration, the import must be rewritten according to the profile's `graduate.md` strategy. Every migrated test file MUST have its import paths updated. Other imports (built-ins, framework imports) remain unchanged.
 </HARD-RULE>
 
-Shared infrastructure (`helpers.ts`, `package.json`, `tsconfig.json`) already exists at `tests/e2e/` — no merging or copying needed.
+Shared infrastructure files already exist at `tests/e2e/` — no merging or copying needed.
 
 ### Step 5.5: Validate Migration
 
 After migrating all spec files:
 
-1. Verify TypeScript compilation: `cd tests/e2e && npx tsc --noEmit`
-2. Verify Playwright discovers all tests: `cd tests/e2e && npx playwright test --list`
+1. Verify compilation: run `just e2e-compile`
+2. Verify test discovery: run `just e2e-discover`
 
 If validation fails and is unfixable, rollback using the migration manifest:
 - **Newly created** target files: delete them entirely
@@ -156,7 +161,7 @@ status: completed
 timestamp: <UTC ISO timestamp>
 source: tests/e2e/features/<slug>/
 targets:
-  - tests/e2e/<module>/<spec-file>
+  - tests/e2e/<module>/<test-file>
 modules:
   - <module-name>
 testCount: <N>
@@ -189,8 +194,8 @@ Report to user:
 
 ```
 Graduated <slug>:
-  ui.spec.ts → tests/e2e/ui/login/login.spec.ts
-  api.spec.ts → tests/e2e/api/auth/auth.spec.ts
+  <test-file-1> → tests/e2e/<module>/<test-file>
+  <test-file-2> → tests/e2e/<module>/<test-file>
 
 Marker: tests/e2e/.graduated/<slug>
 ```

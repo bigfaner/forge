@@ -1,0 +1,24 @@
+name: go-test
+display: "Go CLI/TUI/Backend (go test)"
+language: go
+file-extension: _test.go
+test-directory: tests/e2e/
+
+capabilities: [tui, api, cli]
+
+templates:
+  test-file: templates/test-file.go
+  helpers: templates/helpers.go
+  additional: []
+
+run:
+  command: "go test ./tests/e2e/... -v -tags=e2e -json"
+  compile: "go build ./..."
+  result-format: go-json
+
+graduate:
+  target-directory: tests/e2e/
+  merge-strategy: package
+  import-rewrite: null
+  compile-check: "go build ./..."
+  list-tests: "go test ./tests/e2e/... -list .*"

@@ -35,13 +35,33 @@ The test-cases.md must contain these sections:
 | Expected results are verifiable | 0-90 | Every expected result can be objectively verified: specific text, HTTP status, element state, data value. Not "should work" or "displays correctly" |
 | Preconditions are explicit | 0-70 | TCs with dependencies (logged-in user, existing data, specific state) declare them in Pre-conditions. No implicit assumptions |
 
-### 3. Route & Element Accuracy (200 pts)
+### 3. Interface Accuracy (200 pts)
 
-| Criterion | Points | What to check |
-|-----------|--------|---------------|
-| Routes are valid and specific | 0-70 | Every Route field contains a real path (e.g., `/users/123/edit`), not vague descriptions. Matches sitemap.json routes where applicable |
-| Elements are identifiable | 0-70 | Every Element field uses a selector strategy: `data-testid`, `aria-label`, or semantic locator. Not "the button" or "the form" |
-| Route/Element consistency | 0-60 | UI TCs have both Route and Element. API TCs have Route but no Element. CLI TCs have neither but have command patterns. No mismatches between TC type and fields |
+This dimension adapts based on the project's active test profile capabilities. Read `.forge/config.yaml` to determine capabilities, then select the matching evaluation criteria:
+
+| Capability | Dimension name | Evaluation focus |
+|-----------|---------------|------------------|
+| `web-ui` | Route & Element Accuracy | Routes are valid paths matching sitemap.json. Elements use selector strategies (data-testid, aria-label, semantic locators). UI TCs have both Route and Element. |
+| `tui` | Output Assertion Accuracy | Expected outputs have specific text/snapshot comparison points. Terminal rendering assertions are concrete (exact strings, regex patterns, golden file refs). |
+| `mobile-ui` | Interaction Accuracy | Touch/gesture/navigation flows are specific (tap coordinates, swipe directions, screen transitions). Element identification uses accessibility labels or resource IDs. |
+| `api` | Contract Accuracy | Request/response structures match actual API schemas. Status codes, headers, body fields are explicit. Error response contracts are covered. |
+| `cli` | Command Coverage | Flags, subcommands, arguments are explicitly tested. Output format assertions are concrete (exit codes, stdout/stderr content, error messages). |
+
+When multiple capabilities are active, evaluate each relevant section proportionally (divide 200 pts equally across active capability dimensions).
+
+| Capability-specific criteria | Points | What to check |
+|---|--------|---------------|
+| **web-ui**: Routes are valid and specific | 0-70 | Every Route field contains a real path (e.g., `/users/123/edit`), not vague descriptions. Matches sitemap.json routes where applicable |
+| **web-ui**: Elements are identifiable | 0-70 | Every Element field uses a selector strategy: `data-testid`, `aria-label`, or semantic locator. Not "the button" or "the form" |
+| **web-ui**: Route/Element consistency | 0-60 | UI TCs have both Route and Element. API TCs have Route but no Element. CLI TCs have neither but have command patterns |
+| **tui**: Output assertions are concrete | 0-100 | Expected results specify exact text, snapshot comparison points, or regex patterns for terminal output |
+| **tui**: Keyboard interaction coverage | 0-100 | Keyboard inputs, key sequences, and terminal state transitions are explicitly described |
+| **mobile-ui**: Interaction specificity | 0-100 | Touch targets, gesture types, screen transitions are explicitly described with accessibility labels or resource IDs |
+| **mobile-ui**: Navigation flow coverage | 0-100 | Screen transitions, back navigation, deep links are covered for all navigation paths |
+| **api**: Contract accuracy | 0-100 | Request/response schemas match actual API. Status codes, headers, body fields are explicit |
+| **api**: Error contract coverage | 0-100 | Error responses (4xx, 5xx) are covered with specific error body assertions |
+| **cli**: Command coverage | 0-100 | All flags, subcommands, and argument combinations are tested |
+| **cli**: Output assertion specificity | 0-100 | Exit codes, stdout/stderr content, and error messages are explicitly asserted |
 
 ### 4. Completeness (200 pts)
 

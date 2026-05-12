@@ -1,0 +1,57 @@
+# java-junit justfile recipes
+# Used by init-justfile to generate profile-aware justfile targets
+
+# test-e2e: run end-to-end tests (JUnit 5 + Maven)
+test-e2e feature="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -z "{{feature}}" ]; then
+        mvn test -pl tests/e2e -Dtest=*E2E
+    else
+        mvn test -pl tests/e2e -Dtest="{{feature}}*E2E"
+    fi
+
+# e2e-setup: compile project and verify test dependencies (idempotent)
+e2e-setup force="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ ! -f "tests/e2e/pom.xml" ]; then
+        echo "Error: tests/e2e/pom.xml not found" >&2
+        exit 1
+    fi
+    mvn compile -pl tests/e2e
+    mvn dependency:resolve -pl tests/e2e
+    echo "OK: e2e dependencies ready"
+
+# e2e-verify: compile-check generated test files
+e2e-verify feature="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -z "{{feature}}" ]; then
+        echo "Usage: just e2e-verify --feature <slug>" >&2
+        exit 1
+    fi
+    if [ ! -d "tests/e2e/features/{{feature}}" ]; then
+        echo "Error: tests/e2e/features/{{feature}}/ not found" >&2
+        exit 1
+    fi
+    result=$(mvn test-compile -pl tests/e2e 2>&1)
+    if [ $? -ne 0 ]; then
+        echo "Error: compilation failed" >&2
+        echo "$result" >&2
+        exit 1
+    fi
+    echo "OK: all test files compile successfully"
+
+# e2e-compile: compile-check e2e test files
+e2e-compile:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    mvn test-compile -pl tests/e2e
+    echo "OK: Java compilation passed"
+
+# e2e-discover: list all e2e test cases without running them
+e2e-discover:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    mvn test -pl tests/e2e -DdryRun=true
