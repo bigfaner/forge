@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { runCli, readProjectFile, PROJECT_ROOT } from '../../helpers.js';
+import { runCli, readProjectFile, PROJECT_ROOT } from '../helpers.js';
 import { writeFileSync, rmSync, readFileSync, existsSync, mkdirSync, copyFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { execSync } from 'node:child_process';
