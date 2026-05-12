@@ -1,6 +1,6 @@
 ---
 name: eval-prd
-description: Evaluate a PRD document with 100-point scoring, then run adversarial iterations until target score is met. Main session orchestrates doc-scorer and doc-reviser subagents.
+description: Evaluate a PRD document with 1000-point scoring, then run adversarial iterations until target score is met. Main session orchestrates doc-scorer and doc-reviser subagents.
 ---
 
 # Eval PRD
@@ -28,7 +28,7 @@ Check previous stage artifacts. Abort and prompt user if missing:
 
 | Parameter      | Default | Description                                           |
 | -------------- | ------- | ----------------------------------------------------- |
-| `--target`     | 90      | Target score (0-100). Loop stops when score >= target |
+| `--target`     | 900      | Target score (0-1000). Loop stops when score >= target |
 | `--iterations` | 3       | Max adversarial iterations                            |
 
 ## Architecture
@@ -87,7 +87,7 @@ The scorer must NEVER be told what the reviser changed. It evaluates the PRD as-
 </HARD-RULE>
 
 After the scorer returns, parse its output in the main session:
-1. Extract `SCORE: X/100`
+1. Extract `SCORE: X/1000`
 2. Extract per-dimension scores from `DIMENSIONS:` section
 3. Extract attack points from `ATTACKS:` section
 
@@ -107,7 +107,7 @@ If the user says "continue" or "keep going": run the scorer once more (return to
 
 Only if proceeding to Step 4, report to user:
 ```
-Iteration {{N}}/{{MAX}}: scored {{SCORE}}/100 (target: {{TARGET}}). Revision subagent starting...
+Iteration {{N}}/{{MAX}}: scored {{SCORE}}/1000 (target: {{TARGET}}). Revision subagent starting...
 ```
 
 ## Step 4: Invoke Reviser Subagent
@@ -133,7 +133,7 @@ Increment iteration counter. Return to Step 2.
 ```
 ## Eval-PRD Complete
 
-**Final Score**: {{SCORE}}/100 (target: {{TARGET}})
+**Final Score**: {{SCORE}}/1000 (target: {{TARGET}})
 **Scoring Mode**: {{Mode A: with UI / Mode B: no UI}}
 **Iterations Used**: {{N}}/{{MAX}}
 
@@ -146,11 +146,11 @@ Increment iteration counter. Return to Step 2.
 ### Dimension Breakdown (final)
 | Dimension | Score | Max |
 |-----------|-------|-----|
-| Background & Goals | {{d1}} | 15 |
-| Flow Diagrams | {{d2}} | 20 |
-| {{Functional Specs / Flow Completeness}} | {{d3}} | 20 |
-| User Stories | {{d4}} | 30 |
-| Scope Clarity | {{d5}} | 15 |
+| Background & Goals | {{d1}} | 150 |
+| Flow Diagrams | {{d2}} | 200 |
+| {{Functional Specs / Flow Completeness}} | {{d3}} | 200 |
+| User Stories | {{d4}} | 300 |
+| Scope Clarity | {{d5}} | 150 |
 
 ### Outcome
 {{"Target reached" / "Target NOT reached — N iterations exhausted"}}

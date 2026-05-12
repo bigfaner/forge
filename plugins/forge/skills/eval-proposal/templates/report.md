@@ -8,46 +8,66 @@ evaluator: Claude (automated, adversarial)
 
 # Proposal Eval — Iteration {{ITERATION}}
 
-**Score: {{SCORE}}/100** (target: {{TARGET}})
+**Score: {{SCORE}}/1000** (target: {{TARGET}})
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    PROPOSAL QUALITY SCORECARD                     │
-├──────────────────────────────┬──────────┬──────────┬────────────┤
-│ Dimension                    │ Score    │ Max      │ Status     │
-├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 1. Problem Definition        │  ___     │  20      │ ✅/⚠️/❌    │
-│    Problem clarity           │  ___/7   │          │            │
-│    Evidence provided         │  ___/7   │          │            │
-│    Urgency justified         │  ___/6   │          │            │
-├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 2. Solution Clarity          │  ___     │  20      │ ✅/⚠️/❌    │
-│    Approach concrete         │  ___/7   │          │            │
-│    User-facing behavior      │  ___/7   │          │            │
-│    Differentiated            │  ___/6   │          │            │
-├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 3. Alternatives Analysis     │  ___     │  15      │ ✅/⚠️/❌    │
-│    Alternatives listed (≥2)  │  ___/5   │          │            │
-│    Pros/cons honest          │  ___/5   │          │            │
-│    Rationale justified       │  ___/5   │          │            │
-├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 4. Scope Definition          │  ___     │  15      │ ✅/⚠️/❌    │
-│    In-scope concrete         │  ___/5   │          │            │
-│    Out-of-scope explicit     │  ___/5   │          │            │
-│    Scope bounded             │  ___/5   │          │            │
-├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 5. Risk Assessment           │  ___     │  15      │ ✅/⚠️/❌    │
-│    Risks identified (≥3)     │  ___/5   │          │            │
-│    Likelihood + impact rated │  ___/5   │          │            │
-│    Mitigations actionable    │  ___/5   │          │            │
-├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 6. Success Criteria          │  ___     │  15      │ ✅/⚠️/❌    │
-│    Measurable                │  ___/5   │          │            │
-│    Coverage complete         │  ___/5   │          │            │
-│    Testable                  │  ___/5   │          │            │
-├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ TOTAL                        │  ___     │  100     │            │
-└──────────────────────────────┴──────────┴──────────┴────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│                     PROPOSAL QUALITY SCORECARD (1000 pts)                │
+├─────────────────────────────────────┬──────────┬──────────┬─────────────┤
+│ Dimension                           │ Score    │ Max      │ Status      │
+├─────────────────────────────────────┼──────────┼──────────┼─────────────┤
+│ 1. Problem Definition               │  ___     │  110     │ ✅/⚠️/❌     │
+│    Problem clarity                  │  ___/40  │          │             │
+│    Evidence provided                │  ___/40  │          │             │
+│    Urgency justified                │  ___/30  │          │             │
+├─────────────────────────────────────┼──────────┼──────────┼─────────────┤
+│ 2. Solution Clarity                 │  ___     │  120     │ ✅/⚠️/❌     │
+│    Approach concrete                │  ___/40  │          │             │
+│    User-facing behavior             │  ___/45  │          │             │
+│    Technical direction              │  ___/35  │          │             │
+├─────────────────────────────────────┼──────────┼──────────┼─────────────┤
+│ 3. Industry Benchmarking            │  ___     │  160     │ ✅/⚠️/❌     │
+│    Industry solutions referenced    │  ___/50  │          │             │
+│    3+ meaningful alternatives       │  ___/40  │          │             │
+│    Honest trade-off comparison      │  ___/35  │          │             │
+│    Justified against benchmarks     │  ___/35  │          │             │
+├─────────────────────────────────────┼──────────┼──────────┼─────────────┤
+│ 4. Requirements Completeness        │  ___     │  140     │ ✅/⚠️/❌     │
+│    Scenario coverage                │  ___/50  │          │             │
+│    Non-functional requirements      │  ___/45  │          │             │
+│    Constraints & dependencies       │  ___/45  │          │             │
+├─────────────────────────────────────┼──────────┼──────────┼─────────────┤
+│ 5. Solution Creativity              │  ___     │  130     │ ✅/⚠️/❌     │
+│    Novelty over industry baseline   │  ___/50  │          │             │
+│    Cross-domain inspiration         │  ___/40  │          │             │
+│    Simplicity of insight            │  ___/40  │          │             │
+├─────────────────────────────────────┼──────────┼──────────┼─────────────┤
+│ 6. Feasibility                      │  ___     │  100     │ ✅/⚠️/❌     │
+│    Technical feasibility            │  ___/40  │          │             │
+│    Resource & timeline feasibility  │  ___/30  │          │             │
+│    Dependency readiness             │  ___/30  │          │             │
+├─────────────────────────────────────┼──────────┼──────────┼─────────────┤
+│ 7. Scope Definition                 │  ___     │  80      │ ✅/⚠️/❌     │
+│    In-scope concrete                │  ___/30  │          │             │
+│    Out-of-scope explicit            │  ___/25  │          │             │
+│    Scope bounded                    │  ___/25  │          │             │
+├─────────────────────────────────────┼──────────┼──────────┼─────────────┤
+│ 8. Risk Assessment                  │  ___     │  90      │ ✅/⚠️/❌     │
+│    Risks identified (≥3)            │  ___/30  │          │             │
+│    Likelihood + impact rated        │  ___/30  │          │             │
+│    Mitigations actionable           │  ___/30  │          │             │
+├─────────────────────────────────────┼──────────┼──────────┼─────────────┤
+│ 9. Success Criteria                 │  ___     │  80      │ ✅/⚠️/❌     │
+│    Measurable and testable          │  ___/55  │          │             │
+│    Coverage complete                │  ___/25  │          │             │
+├─────────────────────────────────────┼──────────┼──────────┼─────────────┤
+│ 10. Logical Consistency             │  ___     │  90      │ ✅/⚠️/❌     │
+│     Solution ↔ Problem              │  ___/35  │          │             │
+│     Scope ↔ Solution ↔ Criteria     │  ___/30  │          │             │
+│     Requirements ↔ Solution         │  ___/25  │          │             │
+├─────────────────────────────────────┼──────────┼──────────┼─────────────┤
+│ TOTAL                               │  ___     │  1000    │             │
+└─────────────────────────────────────┴──────────┴──────────┴─────────────┘
 ```
 
 ---
@@ -94,7 +114,7 @@ evaluator: Claude (automated, adversarial)
 
 ## Verdict
 
-- **Score**: {{SCORE}}/100
-- **Target**: {{TARGET}}/100
+- **Score**: {{SCORE}}/1000
+- **Target**: {{TARGET}}/1000
 - **Gap**: {{GAP}} points
 - **Action**: {{Continue to iteration N+1 / Target reached / Iterations exhausted}}

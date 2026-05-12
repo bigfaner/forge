@@ -1,6 +1,6 @@
 ---
 name: eval-consistency
-description: Evaluate and fix cross-document consistency (PRD, Design, UI, Tasks). Detects inconsistencies via 100-point scoring, then auto-fixes downstream docs to align with PRD as source of truth. Supports --scope docs|full. Uses doc-scorer and doc-reviser subagents.
+description: Evaluate and fix cross-document consistency (PRD, Design, UI, Tasks). Detects inconsistencies via 1000-point scoring, then auto-fixes downstream docs to align with PRD as source of truth. Supports --scope docs|full. Uses doc-scorer and doc-reviser subagents.
 ---
 
 # Eval Consistency
@@ -41,7 +41,7 @@ For `--scope full`, additionally:
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `--target` | 90 | Target score (0-100). Loop continues until score >= target or iterations exhausted |
+| `--target` | 900 | Target score (0-1000). Loop continues until score >= target or iterations exhausted |
 | `--iterations` | 3 | Max detect→fix→verify cycles |
 | `--scope` | docs | `docs` = cross-document consistency only; `full` = docs + code consistency |
 
@@ -134,7 +134,7 @@ The scorer must NEVER be told what the reviser changed. It evaluates the bundle 
 </HARD-RULE>
 
 After the scorer returns, parse its output in the main session:
-1. Extract `SCORE: X/100`
+1. Extract `SCORE: X/1000`
 2. Extract per-dimension scores from `DIMENSIONS:` section
 3. Extract attack points from `ATTACKS:` section
 
@@ -152,7 +152,7 @@ This decision is made in the MAIN SESSION, not delegated to a subagent. This gat
 
 Report to user:
 ```
-Iteration {{N}}/{{MAX}}: scored {{SCORE}}/100 (target: {{TARGET}}). {{COUNT}} inconsistencies found.
+Iteration {{N}}/{{MAX}}: scored {{SCORE}}/1000 (target: {{TARGET}}). {{COUNT}} inconsistencies found.
 ```
 
 ## Step 4: Classify Inconsistencies (Main Session)
@@ -212,7 +212,7 @@ After all reviser invocations complete:
 ```
 ## Eval-Consistency Complete
 
-**Final Score**: {{SCORE}}/100 (target: {{TARGET}})
+**Final Score**: {{SCORE}}/1000 (target: {{TARGET}})
 **Scope**: {{docs / full}}
 **Iterations Used**: {{N}}/{{MAX}}
 
@@ -223,14 +223,29 @@ After all reviser invocations complete:
 | 2 | {{s2}} | +{{d2}} |
 
 ### Dimension Breakdown (final)
+<!-- Use docs-mode table when --scope docs (default). Use full-mode table when --scope full. -->
+
+**Mode: docs**
 | Dimension | Score | Max |
 |-----------|-------|-----|
-| PRD-Design Alignment | {{d1}} | 25 |
-| PRD-UI Consistency | {{d2}} | 15 |
-| Design-Task Coverage | {{d3}} | 20 |
-| Terminology Consistency | {{d4}} | 15 |
-| Data Model Consistency | {{d5}} | 15 |
-| Traceability Completeness | {{d6}} | 10 |
+| PRD-Design Alignment | {{d1}} | 250 |
+| PRD-UI Consistency | {{d2}} | 150 |
+| Design-Task Coverage | {{d3}} | 200 |
+| Terminology Consistency | {{d4}} | 150 |
+| Data Model Consistency | {{d5}} | 150 |
+| Traceability Completeness | {{d6}} | 100 |
+
+**Mode: full**
+| Dimension | Score | Max |
+|-----------|-------|-----|
+| PRD-Design Alignment | {{d1}} | 150 |
+| PRD-UI Consistency | {{d2}} | 100 |
+| Design-Task Coverage | {{d3}} | 150 |
+| Terminology Consistency | {{d4}} | 150 |
+| Data Model Consistency | {{d5}} | 100 |
+| Traceability Completeness | {{d6}} | 100 |
+| Interface-Code Alignment | {{d7}} | 150 |
+| Data Model-Code Alignment | {{d8}} | 100 |
 
 ### Files Modified
 | File | Changes |

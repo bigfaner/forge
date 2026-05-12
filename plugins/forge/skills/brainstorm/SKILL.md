@@ -90,7 +90,7 @@ git commit -m "docs: add proposal for <feature-slug>"
 
 After committing, ask via `AskUserQuestion`:
 
-> Run `/eval-proposal` for adversarial evaluation? (default: 90 points / 3 rounds)
+> Run `/eval-proposal` for adversarial evaluation? (default: 900 points / 3 rounds)
 
 - **Yes** → invoke `/eval-proposal` via `Skill` tool
 - **Custom** → invoke `/eval-proposal --target X --iterations Y` via `Skill` tool
