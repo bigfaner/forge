@@ -82,11 +82,10 @@ func renderTemplate(templateFile string, opts SynthesizeOpts, t task.Task) (stri
 	}
 
 	taskFile := filepath.Join(opts.ProjectRoot, feature.GetTaskFile(opts.FeatureSlug, t.File))
-	recordFile := filepath.Join(opts.ProjectRoot, feature.GetRecordFile(opts.FeatureSlug, t.Record))
 
 	scope := t.Scope
-	if scope == "" {
-		scope = "all"
+	if scope == "" || scope == "all" {
+		scope = ""
 	}
 
 	phaseSummaryPath := PhaseDetect(opts.ProjectRoot, opts.FeatureSlug, opts.TaskID)
@@ -99,11 +98,9 @@ func renderTemplate(templateFile string, opts SynthesizeOpts, t task.Task) (stri
 	result := string(data)
 	result = strings.ReplaceAll(result, "{{TASK_ID}}", t.ID)
 	result = strings.ReplaceAll(result, "{{TASK_FILE}}", taskFile)
-	result = strings.ReplaceAll(result, "{{RECORD_FILE}}", recordFile)
 	result = strings.ReplaceAll(result, "{{SCOPE}}", scope)
 	result = strings.ReplaceAll(result, "{{FEATURE_SLUG}}", opts.FeatureSlug)
 	result = strings.ReplaceAll(result, "{{PHASE_SUMMARY}}", phaseSummaryLine)
-	result = strings.ReplaceAll(result, "{{PHASE_SUMMARY_PATH}}", phaseSummaryPath)
 
 	return result, nil
 }

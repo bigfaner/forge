@@ -51,14 +51,13 @@ task claim
 - `BREAKING` (e.g., "true" or absent)
 - `MAIN_SESSION` (e.g., "true" or absent)
 - `SCOPE` (e.g., "frontend", "backend", or "all" — defaults to "all" if absent; may be omitted entirely by claim output when not set)
-- `NO_TEST` (e.g., "true" or "false")
 - `FEATURE` (e.g., "my-feature" — feature slug from claim output)
 
 ### Step 1.5: Main Session Routing
 
 If `MAIN_SESSION == "true"`:
 
-1. Read the task file at `{{FILE}}` and find the `## Main Session Instructions` section.
+1. Read the task file at the FILE path extracted from claim output and find the `## Main Session Instructions` section.
 2. Follow the instructions exactly — the task document specifies what skill to invoke, how to check outcome, and how to record the result.
 3. The dispatcher does NOT hardcode skill names or record logic — it delegates to the task document.
 4. If the task file lacks a `## Main Session Instructions` section, mark the task blocked and report: "MAIN_SESSION task missing Main Session Instructions section — task document is incomplete".
@@ -129,8 +128,6 @@ Determine which gates to run based on claim output from Step 1:
 | No | No | Skip Step 3 entirely | Skip Step 3 entirely |
 
 If running both: execute 3a first. Only proceed to 3b if 3a passes.
-
-After completing task, also check if it was a phase summary task (ID ends with `.summary`). If yes, this phase's summary is now available for subsequent phases.
 
 #### 3a. Unit/Integration Gate (BREAKING: true)
 

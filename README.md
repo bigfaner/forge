@@ -113,7 +113,6 @@ task --version
 | Agent | 职责 |
 |-------|------|
 | **task-executor** | 执行单个任务（TDD + Quality Gate + record） |
-| **error-fixer** | 修复编译/测试错误 |
 | **doc-scorer** | 按评分标准对文档打分 |
 | **doc-reviser** | 根据评分报告修订文档 |
 

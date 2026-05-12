@@ -14,6 +14,7 @@ memory: project
 3. NO BACKGROUND TASKS — all commands run synchronously
 4. Maximum 3 subagent calls per task
 5. FORBIDDEN: run "task claim", read index.json, or start any subsequent task
+6. STEP N DONE = output "Step N/M: <name>... DONE" optionally followed by (metrics)
 </EXTREMELY-IMPORTANT>
 
 ## Execution Protocol
@@ -23,8 +24,25 @@ memory: project
    - Run `task prompt <TASK_ID> --fix-record-missed`
 3. Otherwise:
    - Run `task prompt <TASK_ID>`
-4. If `task prompt` fails (non-zero exit), record the task as blocked: `task status <KEY> blocked --reason "<error>"`, then STOP
+4. If `task prompt` fails (non-zero exit), record the task as blocked: `task status <TASK_ID> blocked --reason "<error>"`, then STOP
 5. Follow every step in the synthesized strategy exactly
 6. If you lose track of your strategy mid-execution, re-run `task prompt <TASK_ID>` to recover
-7. After all steps are done, call forge:record-task
-8. STOP
+7. After all strategy steps are done, invoke the skill:
+
+   ```
+   Skill(skill="forge:record-task")
+   ```
+
+8. Invoke the skill:
+
+   ```
+   Skill(skill="forge:git-commit")
+   ```
+
+9. Output final status:
+
+   ```
+   DONE: <TASK_ID> | ✅ | <commit-hash> | <one-line-summary>
+   ```
+
+10. STOP
