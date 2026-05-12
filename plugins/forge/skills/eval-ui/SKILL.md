@@ -1,6 +1,6 @@
 ---
 name: eval-ui
-description: Evaluate a UI design document with 100-point scoring from four stakeholder perspectives (User/Designer/Developer/PM), then run adversarial iterations until target score is met.
+description: Evaluate a UI design document with 1000-point scoring from four stakeholder perspectives (User/Designer/Developer/PM), then run adversarial iterations until target score is met.
 ---
 
 # Eval UI
@@ -30,7 +30,7 @@ Check previous stage artifacts. Abort and prompt user if missing:
 
 | Parameter      | Default | Description                                           |
 | -------------- | ------- | ----------------------------------------------------- |
-| `--target`     | 95      | Target score (0-100). Loop stops when score >= target |
+| `--target`     | 950     | Target score (0-1000). Loop stops when score >= target |
 | `--iterations` | 3       | Max adversarial iterations                            |
 
 ## Architecture
@@ -89,7 +89,7 @@ The scorer must NEVER be told what the reviser changed. It evaluates the design 
 </HARD-RULE>
 
 After the scorer returns, parse its output in the main session:
-1. Extract `SCORE: X/100`
+1. Extract `SCORE: X/1000`
 2. Extract per-dimension scores from `DIMENSIONS:` section
 3. Extract attack points from `ATTACKS:` section
 
@@ -109,7 +109,7 @@ If the user says "continue" or "keep going": run the scorer once more (return to
 
 Only if proceeding to Step 4, report to user:
 ```
-Iteration {{N}}/{{MAX}}: scored {{SCORE}}/100 (target: {{TARGET}}). Revision subagent starting...
+Iteration {{N}}/{{MAX}}: scored {{SCORE}}/1000 (target: {{TARGET}}). Revision subagent starting...
 ```
 
 ## Step 4: Invoke Reviser Subagent
@@ -135,7 +135,7 @@ Increment iteration counter. Return to Step 2.
 ```
 ## Eval-UI Complete
 
-**Final Score**: {{SCORE}}/100 (target: {{TARGET}})
+**Final Score**: {{SCORE}}/1000 (target: {{TARGET}})
 **Iterations Used**: {{N}}/{{MAX}}
 
 ### Score Progression
@@ -147,10 +147,10 @@ Increment iteration counter. Return to Step 2.
 ### Dimension Breakdown (final)
 | Dimension / Perspective | Score | Max |
 |------------------------|-------|-----|
-| Requirement Coverage (PM) | {{d1}} | 25 |
-| User Experience (User) | {{d2}} | 25 |
-| Design Integrity (Designer) | {{d3}} | 25 |
-| Implementability (Developer) | {{d4}} | 25 |
+| Requirement Coverage (PM) | {{d1}} | 250 |
+| User Experience (User) | {{d2}} | 250 |
+| Design Integrity (Designer) | {{d3}} | 250 |
+| Implementability (Developer) | {{d4}} | 250 |
 
 ### Outcome
 {{"Target reached" / "Target NOT reached -- N iterations exhausted"}}

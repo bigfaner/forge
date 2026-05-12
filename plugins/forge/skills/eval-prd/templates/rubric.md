@@ -1,6 +1,6 @@
 # PRD Evaluation Rubric
 
-**Total: 100 points**
+**Total: 1000 points**
 **Report template:** `plugins/forge/skills/eval-prd/templates/report.md`
 
 ## Required Sections (prd-spec.md)
@@ -37,80 +37,80 @@
 
 | Dimension | Points |
 |-----------|--------|
-| 1. Background & Goals | 15 |
-| 2. Flow Diagrams | 20 |
-| 3. Functional Specs (evaluates prd-ui-functions.md) | 20 |
-| 4. User Stories | 30 |
-| 5. Scope Clarity | 15 |
-| **Total** | **100** |
+| 1. Background & Goals | 150 |
+| 2. Flow Diagrams | 200 |
+| 3. Functional Specs (evaluates prd-ui-functions.md) | 200 |
+| 4. User Stories | 300 |
+| 5. Scope Clarity | 150 |
+| **Total** | **1000** |
 
 ### Mode B: Feature WITHOUT UI (prd-ui-functions.md absent)
 
 | Dimension | Points |
 |-----------|--------|
-| 1. Background & Goals | 15 |
-| 2. Flow Diagrams | 20 |
-| 3. Flow Completeness (evaluates prd-spec.md Flow Description) | 20 |
-| 4. User Stories | 30 |
-| 5. Scope Clarity | 15 |
-| **Total** | **100** |
+| 1. Background & Goals | 150 |
+| 2. Flow Diagrams | 200 |
+| 3. Flow Completeness (evaluates prd-spec.md Flow Description) | 200 |
+| 4. User Stories | 300 |
+| 5. Scope Clarity | 150 |
+| **Total** | **1000** |
 
 > Detection: if `prd-ui-functions.md` exists in the PRD directory → Mode A; otherwise → Mode B.
 
 ## Dimensions
 
-### 1. Background & Goals (15 pts)
+### 1. Background & Goals (150 pts)
 
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| Background has three elements (Reason/Target/Users) | 0-5 | Are all three present and specific? |
-| Goals are quantified | 0-4 | Is there at least one numeric target (%, count, time)? |
-| Background and goals are logically consistent | 0-6 | Does the goal follow from the stated problem? |
+| Background has three elements (Reason/Target/Users) | 0-50 | Are all three present and specific? |
+| Goals are quantified | 0-40 | Is there at least one numeric target (%, count, time)? |
+| Background and goals are logically consistent | 0-60 | Does the goal follow from the stated problem? |
 
-### 2. Flow Diagrams (20 pts)
-
-| Criterion | Points | What to check |
-|-----------|--------|---------------|
-| Mermaid diagram exists | 0-7 | Is there at least one Mermaid flowchart? |
-| Main path complete (start → end) | 0-7 | Does the diagram cover the full happy path? |
-| Decision points + error branches covered | 0-6 | Are there diamond nodes and at least one error/exception branch? |
-
-### 3. Functional Specs (20 pts) — Mode A: evaluates prd-ui-functions.md
+### 2. Flow Diagrams (200 pts)
 
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| Placement & Interaction completeness | 0-7 | Does every UI Function have Placement? Does User Interaction Flow cover the full path? |
-| Data Requirements & States clarity | 0-7 | Are field tables and state tables filled completely? Are sources and triggers explicit? |
-| Validation Rules explicit | 0-6 | Does every UI Function have validation rules that are actionable (not just "validate input")? |
+| Mermaid diagram exists | 0-70 | Is there at least one Mermaid flowchart? |
+| Main path complete (start → end) | 0-70 | Does the diagram cover the full happy path? |
+| Decision points + error branches covered | 0-60 | Are there diamond nodes and at least one error/exception branch? |
 
-### 3. Flow Completeness (20 pts) — Mode B: evaluates prd-spec.md Flow Description
-
-| Criterion | Points | What to check |
-|-----------|--------|---------------|
-| Flow steps describe complete business process | 0-7 | Does the text cover all steps from trigger to end state, including state transitions? |
-| Data flow documented (if multi-system) | 0-7 | For multi-system features: is the Data Flow table complete? For single-system: auto-full-score if N/A |
-| Exception handling and edge cases covered | 0-6 | Are error paths, retry logic, and failure states documented? |
-
-### 4. User Stories (30 pts)
+### 3. Functional Specs (200 pts) — Mode A: evaluates prd-ui-functions.md
 
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| Coverage: one story per target user | 0-7 | Does every user type from the background section have at least one story? |
-| Format correct (As a / I want / So that) | 0-7 | Do all stories follow the format? Are actions concrete (not "manage", "handle")? |
-| AC per story (Given/When/Then) | 0-6 | Does every story have at least one AC in Given/When/Then format? |
-| AC verifiability & boundary coverage | 0-10 | Are ACs objectively testable? Do they cover happy path, error cases, and edge conditions? Can each "Then" be verified without subjective judgment? |
+| Placement & Interaction completeness | 0-70 | Does every UI Function have Placement? Does User Interaction Flow cover the full path? |
+| Data Requirements & States clarity | 0-70 | Are field tables and state tables filled completely? Are sources and triggers explicit? |
+| Validation Rules explicit | 0-60 | Does every UI Function have validation rules that are actionable (not just "validate input")? |
 
-### 5. Scope Clarity (15 pts)
+### 3. Flow Completeness (200 pts) — Mode B: evaluates prd-spec.md Flow Description
 
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| In-scope items are concrete deliverables | 0-5 | Each item is a specific feature/screen/API, not a vague area |
-| Out-of-scope explicitly lists deferred items | 0-4 | Are deferred items named, not just implied by absence? |
-| Scope consistent with functional specs and user stories | 0-6 | Do the in-scope items match what's described in Functional Specs and user stories? |
+| Flow steps describe complete business process | 0-70 | Does the text cover all steps from trigger to end state, including state transitions? |
+| Data flow documented (if multi-system) | 0-70 | For multi-system features: is the Data Flow table complete? For single-system: auto-full-score if N/A |
+| Exception handling and edge cases covered | 0-60 | Are error paths, retry logic, and failure states documented? |
+
+### 4. User Stories (300 pts)
+
+| Criterion | Points | What to check |
+|-----------|--------|---------------|
+| Coverage: one story per target user | 0-70 | Does every user type from the background section have at least one story? |
+| Format correct (As a / I want / So that) | 0-70 | Do all stories follow the format? Are actions concrete (not "manage", "handle")? |
+| AC per story (Given/When/Then) | 0-60 | Does every story have at least one AC in Given/When/Then format? |
+| AC verifiability & boundary coverage | 0-100 | Are ACs objectively testable? Do they cover happy path, error cases, and edge conditions? Can each "Then" be verified without subjective judgment? |
+
+### 5. Scope Clarity (150 pts)
+
+| Criterion | Points | What to check |
+|-----------|--------|---------------|
+| In-scope items are concrete deliverables | 0-50 | Each item is a specific feature/screen/API, not a vague area |
+| Out-of-scope explicitly lists deferred items | 0-40 | Are deferred items named, not just implied by absence? |
+| Scope consistent with functional specs and user stories | 0-60 | Do the in-scope items match what's described in Functional Specs and user stories? |
 
 ## Deduction Rules
 
 - **Missing required section**: 0 pts for that dimension
-- **Vague language without quantification**: -2 pts per instance ("better UX", "faster", "improved")
-- **Cross-section inconsistency**: -3 pts per conflict (e.g., scope says X is out but prd-ui-functions.md describes X; user story references a role not in Background)
-- **Placeholder text ("TBD", "TODO")**: -2 pts per instance
+- **Vague language without quantification**: -20 pts per instance ("better UX", "faster", "improved")
+- **Cross-section inconsistency**: -30 pts per conflict (e.g., scope says X is out but prd-ui-functions.md describes X; user story references a role not in Background)
+- **Placeholder text ("TBD", "TODO")**: -20 pts per instance

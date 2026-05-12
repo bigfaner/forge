@@ -18,28 +18,73 @@ status: Draft
 
 ## Proposed Solution
 
-<!-- High-level approach -->
+<!-- High-level approach. What will be built? What does the end user experience? -->
 
-## Alternatives Considered
+### Innovation Highlights
 
-| Approach | Pros | Cons | Verdict |
-|----------|------|------|---------|
-| Do nothing | <!-- cost of inaction --> | <!-- --> | Rejected: <!-- why --> |
-| <!-- --> | <!-- --> | <!-- --> | <!-- --> |
+<!-- How does this solution differ from or improve upon industry-standard approaches?
+What's the creative insight? What ideas are borrowed from other domains?
+Keep it honest — if the approach is straightforward adoption of a standard, say so and explain why. -->
+
+## Requirements Analysis
+
+### Key Scenarios
+<!-- List the main user scenarios this feature must handle:
+- Happy path scenarios
+- Edge cases and boundary conditions
+- Error scenarios and failure modes
+-->
+
+### Non-Functional Requirements
+<!-- Relevant NFRs: performance, security, compatibility, accessibility, scalability, etc.
+Skip NFRs that are clearly not relevant — don't pad. -->
+
+### Constraints & Dependencies
+<!-- External systems this depends on
+Technical constraints (platform, language, framework)
+Prerequisite conditions that must be met
+-->
+
+## Alternatives & Industry Benchmarking
+
+### Industry Solutions
+
+<!-- How is this type of problem typically solved in the industry?
+Reference specific products, open-source projects, or published patterns. -->
+
+### Comparison Table
+
+| Approach | Source | Pros | Cons | Verdict |
+|----------|--------|------|------|---------|
+| Do nothing | — | <!-- cost of inaction --> | <!-- --> | Rejected: <!-- why --> |
+| <!-- industry standard --> | <!-- product/pattern name --> | <!-- --> | <!-- --> | <!-- --> |
+| <!-- alternative approach --> | <!-- source --> | <!-- --> | <!-- --> | <!-- --> |
+| **Chosen approach** | <!-- --> | <!-- --> | <!-- --> | **Selected: <!-- why -->** |
+
+## Feasibility Assessment
+
+### Technical Feasibility
+<!-- Can current tech stack support this? Any showstopper technical dependencies? -->
+
+### Resource & Timeline
+<!-- Does the team have the skills? Is the scope realistic for the timeline? -->
+
+### Dependency Readiness
+<!-- Are external APIs/services available and stable? Are upstream prerequisites in place? -->
 
 ## Scope
 
 ### In Scope
-- <!-- -->
+- <!-- Each item is a specific deliverable -->
 
 ### Out of Scope
-- <!-- -->
+- <!-- Explicitly list deferred items -->
 
 ## Key Risks
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|------------|
-| <!-- --> | <!-- --> | <!-- --> | <!-- --> |
+| <!-- --> | <!-- H/M/L --> | <!-- H/M/L --> | <!-- actionable mitigation --> |
 
 ## Success Criteria
 

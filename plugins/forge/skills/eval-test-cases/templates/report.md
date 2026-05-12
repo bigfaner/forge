@@ -8,7 +8,7 @@ evaluator: Claude (automated, adversarial)
 
 # Test Cases Eval — Iteration {{ITERATION}}
 
-**Score: {{SCORE}}/100** (target: {{TARGET}})
+**Score: {{SCORE}}/1000** (target: {{TARGET}})
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -16,32 +16,32 @@ evaluator: Claude (automated, adversarial)
 ├──────────────────────────────────────────────────────────────────┤
 │ Dimension                    │ Score    │ Max      │ Status     │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 1. PRD Traceability          │  ___     │  25      │ ✅/⚠️/❌    │
-│    TC-to-AC mapping          │  ___/9   │          │            │
-│    Traceability table        │  ___/8   │          │            │
-│    Reverse coverage          │  ___/8   │          │            │
+│ 1. PRD Traceability          │  ___     │  250     │ ✅/⚠️/❌    │
+│    TC-to-AC mapping          │  ___/90  │          │            │
+│    Traceability table        │  ___/80  │          │            │
+│    Reverse coverage          │  ___/80  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 2. Step Actionability        │  ___     │  25      │ ✅/⚠️/❌    │
-│    Steps concrete            │  ___/9   │          │            │
-│    Expected results          │  ___/9   │          │            │
-│    Preconditions explicit    │  ___/7   │          │            │
+│ 2. Step Actionability        │  ___     │  250     │ ✅/⚠️/❌    │
+│    Steps concrete            │  ___/90  │          │            │
+│    Expected results          │  ___/90  │          │            │
+│    Preconditions explicit    │  ___/70  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 3. Route & Element Accuracy  │  ___     │  20      │ ✅/⚠️/❌    │
-│    Routes valid              │  ___/7   │          │            │
-│    Elements identifiable     │  ___/7   │          │            │
-│    Consistency               │  ___/6   │          │            │
+│ 3. Route & Element Accuracy  │  ___     │  200     │ ✅/⚠️/❌    │
+│    Routes valid              │  ___/70  │          │            │
+│    Elements identifiable     │  ___/70  │          │            │
+│    Consistency               │  ___/60  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 4. Completeness              │  ___     │  20      │ ✅/⚠️/❌    │
-│    Type coverage             │  ___/7   │          │            │
-│    Boundary cases            │  ___/7   │          │            │
-│    Integration scenarios     │  ___/6   │          │            │
+│ 4. Completeness              │  ___     │  200     │ ✅/⚠️/❌    │
+│    Type coverage             │  ___/70  │          │            │
+│    Boundary cases            │  ___/70  │          │            │
+│    Integration scenarios     │  ___/60  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 5. Structure & ID Integrity  │  ___     │  10      │ ✅/⚠️/❌    │
-│    IDs sequential/unique     │  ___/4   │          │            │
-│    Classification correct    │  ___/3   │          │            │
-│    Summary matches actual    │  ___/3   │          │            │
+│ 5. Structure & ID Integrity  │  ___     │  100     │ ✅/⚠️/❌    │
+│    IDs sequential/unique     │  ___/40  │          │            │
+│    Classification correct    │  ___/30  │          │            │
+│    Summary matches actual    │  ___/30  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ TOTAL                        │  ___     │  100     │            │
+│ TOTAL                        │  ___     │  1000    │            │
 └──────────────────────────────┴──────────┴──────────┴────────────┘
 ```
 
@@ -89,8 +89,8 @@ evaluator: Claude (automated, adversarial)
 
 ## Verdict
 
-- **Score**: {{SCORE}}/100
-- **Target**: {{TARGET}}/100
+- **Score**: {{SCORE}}/1000
+- **Target**: {{TARGET}}/1000
 - **Gap**: {{GAP}} points
-- **Step Actionability**: {{SA_SCORE}}/25 {{if < 20: "⚠️ BLOCKING"}}
+- **Step Actionability**: {{SA_SCORE}}/250 {{if < 200: "⚠️ BLOCKING"}}
 - **Action**: {{Continue to iteration N+1 / Target reached / Iterations exhausted}}

@@ -9,7 +9,7 @@ evaluator: Claude (automated, adversarial)
 
 # PRD Eval — Iteration {{ITERATION}}
 
-**Score: {{SCORE}}/100** (target: {{TARGET}}, mode: {{MODE_A_or_MODE_B}})
+**Score: {{SCORE}}/1000** (target: {{TARGET}}, mode: {{MODE_A_or_MODE_B}})
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -17,42 +17,42 @@ evaluator: Claude (automated, adversarial)
 ├──────────────────────────────┬──────────┬──────────┬────────────┤
 │ Dimension                    │ Score    │ Max      │ Status     │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 1. Background & Goals        │  ___     │  15      │ ✅/⚠️/❌    │
-│    Three elements            │  ___/5   │          │            │
-│    Goals quantified          │  ___/4   │          │            │
-│    Logical consistency       │  ___/6   │          │            │
+│ 1. Background & Goals        │  ___     │  150      │ ✅/⚠️/❌    │
+│    Three elements            │  ___/50  │          │            │
+│    Goals quantified          │  ___/40  │          │            │
+│    Logical consistency       │  ___/60  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 2. Flow Diagrams             │  ___     │  20      │ ✅/⚠️/❌    │
-│    Mermaid diagram exists    │  ___/7   │          │            │
-│    Main path complete        │  ___/7   │          │            │
-│    Decision + error branches │  ___/6   │          │            │
+│ 2. Flow Diagrams             │  ___     │  200      │ ✅/⚠️/❌    │
+│    Mermaid diagram exists    │  ___/70  │          │            │
+│    Main path complete        │  ___/70  │          │            │
+│    Decision + error branches │  ___/60  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 3a. Functional Specs (A)     │  ___     │  20      │ ✅/⚠️/❌    │
+│ 3a. Functional Specs (A)     │  ___     │  200      │ ✅/⚠️/❌    │
 │  OR 3b. Flow Completeness(B) │          │          │            │
-│    Sub-criterion 1           │  ___/7   │          │            │
-│    Sub-criterion 2           │  ___/7   │          │            │
-│    Sub-criterion 3           │  ___/6   │          │            │
+│    Sub-criterion 1           │  ___/70  │          │            │
+│    Sub-criterion 2           │  ___/70  │          │            │
+│    Sub-criterion 3           │  ___/60  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 4. User Stories              │  ___     │  30      │ ✅/⚠️/❌    │
-│    Coverage per user type    │  ___/7   │          │            │
-│    Format correct            │  ___/7   │          │            │
-│    AC per story (G/W/T)      │  ___/6   │          │            │
-│    AC verifiability          │  ___/10  │          │            │
+│ 4. User Stories              │  ___     │  300      │ ✅/⚠️/❌    │
+│    Coverage per user type    │  ___/70  │          │            │
+│    Format correct            │  ___/70  │          │            │
+│    AC per story (G/W/T)      │  ___/60  │          │            │
+│    AC verifiability          │  ___/100 │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 5. Scope Clarity             │  ___     │  15      │ ✅/⚠️/❌    │
-│    In-scope concrete         │  ___/5   │          │            │
-│    Out-of-scope explicit     │  ___/4   │          │            │
-│    Consistent with specs     │  ___/6   │          │            │
+│ 5. Scope Clarity             │  ___     │  150      │ ✅/⚠️/❌    │
+│    In-scope concrete         │  ___/50  │          │            │
+│    Out-of-scope explicit     │  ___/40  │          │            │
+│    Consistent with specs     │  ___/60  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ TOTAL                        │  ___     │  100     │            │
+│ TOTAL                        │  ___     │  1000     │            │
 └──────────────────────────────┴──────────┴──────────┴────────────┘
 ```
 
 > **Mode A** (prd-ui-functions.md present): Dimension 3 evaluates Functional Specs from prd-ui-functions.md.
-> Sub-criteria: Placement & Interaction completeness /7, Data Requirements & States clarity /7, Validation Rules explicit /6.
+> Sub-criteria: Placement & Interaction completeness /70, Data Requirements & States clarity /70, Validation Rules explicit /60.
 >
 > **Mode B** (prd-ui-functions.md absent): Dimension 3 evaluates Flow Completeness from prd-spec.md Flow Description.
-> Sub-criteria: Flow steps describe complete business process /7, Data flow documented /7, Exception handling and edge cases /6.
+> Sub-criteria: Flow steps describe complete business process /70, Data flow documented /70, Exception handling and edge cases /60.
 
 ---
 
@@ -98,7 +98,7 @@ evaluator: Claude (automated, adversarial)
 
 ## Verdict
 
-- **Score**: {{SCORE}}/100
-- **Target**: {{TARGET}}/100
+- **Score**: {{SCORE}}/1000
+- **Target**: {{TARGET}}/1000
 - **Gap**: {{GAP}} points
 - **Action**: {{Continue to iteration N+1 / Target reached / Iterations exhausted}}

@@ -8,7 +8,7 @@ evaluator: Claude (automated, adversarial)
 
 # UI Design Eval — Iteration {{ITERATION}}
 
-**Score: {{SCORE}}/100** (target: {{TARGET}})
+**Score: {{SCORE}}/1000** (target: {{TARGET}})
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -16,28 +16,28 @@ evaluator: Claude (automated, adversarial)
 ├──────────────────────────────┬──────────┬──────────┬────────────┤
 │ Dimension / Perspective      │ Score    │ Max      │ Status     │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 1. Requirement Coverage (PM) │  ___     │  25      │ ✅/⚠️/❌    │
-│    UI function coverage      │  ___/8   │          │            │
-│    Navigation Arch coverage  │  ___/4   │          │            │
-│    State requirement coverage│  ___/8   │          │            │
-│    Edge case handling        │  ___/5   │          │            │
+│ 1. Requirement Coverage (PM) │  ___     │  250     │ ✅/⚠️/❌    │
+│    UI function coverage      │  ___/80  │          │            │
+│    Navigation Arch coverage  │  ___/40  │          │            │
+│    State requirement coverage│  ___/80  │          │            │
+│    Edge case handling        │  ___/50  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 2. User Experience (User)    │  ___     │  25      │ ✅/⚠️/❌    │
-│    Information hierarchy     │  ___/8   │          │            │
-│    Interaction intuitiveness │  ___/8   │          │            │
-│    Accessibility             │  ___/9   │          │            │
+│ 2. User Experience (User)    │  ___     │  250     │ ✅/⚠️/❌    │
+│    Information hierarchy     │  ___/80  │          │            │
+│    Interaction intuitiveness │  ___/80  │          │            │
+│    Accessibility             │  ___/90  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 3. Design Integrity (Design) │  ___     │  25      │ ✅/⚠️/❌    │
-│    Design system adherence   │  ___/8   │          │            │
-│    Visual coherence          │  ___/9   │          │            │
-│    State completeness        │  ___/8   │          │            │
+│ 3. Design Integrity (Design) │  ___     │  250     │ ✅/⚠️/❌    │
+│    Design system adherence   │  ___/80  │          │            │
+│    Visual coherence          │  ___/90  │          │            │
+│    State completeness        │  ___/80  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 4. Implementability (Dev)    │  ___     │  25      │ ✅/⚠️/❌    │
-│    Layout specificity        │  ___/8   │          │            │
-│    Data binding explicit     │  ___/8   │          │            │
-│    Interaction unambiguity   │  ___/9   │          │            │
+│ 4. Implementability (Dev)    │  ___     │  250     │ ✅/⚠️/❌    │
+│    Layout specificity        │  ___/80  │          │            │
+│    Data binding explicit     │  ___/80  │          │            │
+│    Interaction unambiguity   │  ___/90  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ TOTAL                        │  ___     │  100     │            │
+│ TOTAL                        │  ___     │  1000    │            │
 └──────────────────────────────┴──────────┴──────────┴────────────┘
 ```
 
@@ -85,7 +85,7 @@ evaluator: Claude (automated, adversarial)
 
 ## Verdict
 
-- **Score**: {{SCORE}}/100
-- **Target**: {{TARGET}}/100
+- **Score**: {{SCORE}}/1000
+- **Target**: {{TARGET}}/1000
 - **Gap**: {{GAP}} points
 - **Action**: {{Continue to iteration N+1 / Target reached / Iterations exhausted}}

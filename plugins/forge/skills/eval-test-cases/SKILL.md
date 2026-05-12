@@ -1,6 +1,6 @@
 ---
 name: eval-test-cases
-description: Evaluate test-cases.md for downstream executability with 100-point scoring, then run adversarial iterations until target score is met. Main session orchestrates doc-scorer and doc-reviser subagents.
+description: Evaluate test-cases.md for downstream executability with 1000-point scoring, then run adversarial iterations until target score is met. Main session orchestrates doc-scorer and doc-reviser subagents.
 ---
 
 # Eval Test Cases
@@ -30,7 +30,7 @@ Check previous stage artifacts. Abort and prompt user if missing:
 
 | Parameter      | Default | Description                                           |
 | -------------- | ------- | ----------------------------------------------------- |
-| `--target`     | 90      | Target score (0-100). Loop stops when score >= target |
+| `--target`     | 900      | Target score (0-1000). Loop stops when score >= target |
 | `--iterations` | 6       | Max adversarial iterations                            |
 
 ## Architecture
@@ -55,7 +55,7 @@ flowchart TD
 4. `--target` / `--iterations` are meaningless unless main session owns the loop
 5. Scorer and reviser are independent subagents — invoke via Agent tool, never inline
 
-❌ Wrong: `Agent(general-purpose, "evaluate this test-cases and iterate until score >= 90")`
+❌ Wrong: `Agent(general-purpose, "evaluate this test-cases and iterate until score >= 900")`
 ✅ Right: Main session calls scorer → parses score → gates → calls reviser → loops
 </EXTREMELY-IMPORTANT>
 
@@ -90,11 +90,11 @@ The scorer must NEVER be told what the reviser changed. It evaluates test-cases.
 </HARD-RULE>
 
 After the scorer returns, parse its output in the main session:
-1. Extract `SCORE: X/100`
+1. Extract `SCORE: X/1000`
 2. Extract per-dimension scores from `DIMENSIONS:` section
 3. Extract attack points from `ATTACKS:` section
 
-**Blocking check**: If Step Actionability score < 20, the downstream is blocked regardless of total score. Report this to the user.
+**Blocking check**: If Step Actionability score < 200, the downstream is blocked regardless of total score. Report this to the user.
 
 ## Step 3: Decision Gate (Main Session)
 
@@ -112,7 +112,7 @@ If the user says "continue" or "keep going": run the scorer once more (return to
 
 Only if proceeding to Step 4, report to user:
 ```
-Iteration {{N}}/{{MAX}}: scored {{SCORE}}/100 (target: {{TARGET}}). Revision subagent starting...
+Iteration {{N}}/{{MAX}}: scored {{SCORE}}/1000 (target: {{TARGET}}). Revision subagent starting...
 ```
 
 ## Step 4: Invoke Reviser Subagent
@@ -140,7 +140,7 @@ Increment iteration counter. Return to Step 2.
 ```
 ## Eval-Test-Cases Complete
 
-**Final Score**: {{SCORE}}/100 (target: {{TARGET}})
+**Final Score**: {{SCORE}}/1000 (target: {{TARGET}})
 **Iterations Used**: {{N}}/{{MAX}}
 
 ### Score Progression
@@ -152,15 +152,15 @@ Increment iteration counter. Return to Step 2.
 ### Dimension Breakdown (final)
 | Dimension | Score | Max |
 |-----------|-------|-----|
-| PRD Traceability | {{d1}} | 25 |
-| Step Actionability | {{d2}} | 25 |
-| Route & Element Accuracy | {{d3}} | 20 |
-| Completeness | {{d4}} | 20 |
-| Structure & ID Integrity | {{d5}} | 10 |
+| PRD Traceability | {{d1}} | 250 |
+| Step Actionability | {{d2}} | 250 |
+| Route & Element Accuracy | {{d3}} | 200 |
+| Completeness | {{d4}} | 200 |
+| Structure & ID Integrity | {{d5}} | 100 |
 
 ### Outcome
 {{"Target reached" / "Target NOT reached — N iterations exhausted"}}
-{{If Step Actionability < 20: "⚠️ Step Actionability below blocking threshold — downstream gen-test-scripts may fail"}}
+{{If Step Actionability < 200: "⚠️ Step Actionability below blocking threshold — downstream gen-test-scripts may fail"}}
 {{If not reached: "Largest gaps: [dimension names]. Consider manual revision or increasing iterations."}}
 ```
 

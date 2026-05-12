@@ -1,6 +1,6 @@
 ---
 name: eval-proposal
-description: Evaluate a proposal document with 100-point scoring, then run adversarial iterations until target score is met. Main session orchestrates doc-scorer and doc-reviser subagents. Specify target score and max iterations.
+description: Evaluate a proposal document with 1000-point scoring, then run adversarial iterations until target score is met. Main session orchestrates doc-scorer and doc-reviser subagents. Specify target score and max iterations.
 ---
 
 # Eval Proposal
@@ -18,7 +18,7 @@ Check previous stage artifacts. Abort and prompt user if missing:
 **Trigger:**
 - User says yes to adversarial eval prompt after `/brainstorm`
 - User provides `/eval-proposal` command
-- User wants iterative refinement: `/eval-proposal --target 85 --iterations 5`
+- User wants iterative refinement: `/eval-proposal --target 900 --iterations 5`
 
 **Skip:**
 - No proposal document exists (use `/brainstorm` first)
@@ -26,10 +26,10 @@ Check previous stage artifacts. Abort and prompt user if missing:
 
 ## Parameters
 
-| Parameter      | Default | Description                                           |
-| -------------- | ------- | ----------------------------------------------------- |
-| `--target`     | 90      | Target score (0-100). Loop stops when score >= target |
-| `--iterations` | 3       | Max adversarial iterations                            |
+| Parameter      | Default | Description                                              |
+| -------------- | ------- | -------------------------------------------------------- |
+| `--target`     | 900     | Target score (0-1000). Loop stops when score >= target   |
+| `--iterations` | 3       | Max adversarial iterations                               |
 
 ## Architecture
 
@@ -53,7 +53,7 @@ flowchart TD
 4. `--target` / `--iterations` are meaningless unless main session owns the loop
 5. Scorer and reviser are independent subagents — invoke via Agent tool, never inline
 
-❌ Wrong: `Agent(general-purpose, "evaluate this proposal and iterate until score >= 85")`
+❌ Wrong: `Agent(general-purpose, "evaluate this proposal and iterate until score >= 900")`
 ✅ Right: Main session calls scorer → parses score → gates → calls reviser → loops
 </EXTREMELY-IMPORTANT>
 
@@ -83,7 +83,7 @@ The scorer must NEVER be told what the reviser changed. It evaluates the proposa
 </HARD-RULE>
 
 After the scorer returns, parse its output in the main session:
-1. Extract `SCORE: X/100`
+1. Extract `SCORE: X/1000`
 2. Extract per-dimension scores from `DIMENSIONS:` section
 3. Extract attack points from `ATTACKS:` section
 
@@ -103,7 +103,7 @@ If the user says "continue" or "keep going": run the scorer once more (return to
 
 Only if proceeding to Step 4, report to user:
 ```
-Iteration {{N}}/{{MAX}}: scored {{SCORE}}/100 (target: {{TARGET}}). Revision subagent starting...
+Iteration {{N}}/{{MAX}}: scored {{SCORE}}/1000 (target: {{TARGET}}). Revision subagent starting...
 ```
 
 ## Step 4: Invoke Reviser Subagent
@@ -129,7 +129,7 @@ Increment iteration counter. Return to Step 2.
 ```
 ## Eval-Proposal Complete
 
-**Final Score**: {{SCORE}}/100 (target: {{TARGET}})
+**Final Score**: {{SCORE}}/1000 (target: {{TARGET}})
 **Iterations Used**: {{N}}/{{MAX}}
 
 ### Score Progression
@@ -141,12 +141,16 @@ Increment iteration counter. Return to Step 2.
 ### Dimension Breakdown (final)
 | Dimension | Score | Max |
 |-----------|-------|-----|
-| Problem Definition | {{d1}} | 20 |
-| Solution Clarity | {{d2}} | 20 |
-| Alternatives Analysis | {{d3}} | 15 |
-| Scope Definition | {{d4}} | 15 |
-| Risk Assessment | {{d5}} | 15 |
-| Success Criteria | {{d6}} | 15 |
+| Problem Definition | {{d1}} | 110 |
+| Solution Clarity | {{d2}} | 120 |
+| Industry Benchmarking | {{d3}} | 160 |
+| Requirements Completeness | {{d4}} | 140 |
+| Solution Creativity | {{d5}} | 130 |
+| Feasibility | {{d6}} | 100 |
+| Scope Definition | {{d7}} | 80 |
+| Risk Assessment | {{d8}} | 90 |
+| Success Criteria | {{d9}} | 80 |
+| Logical Consistency | {{d10}} | 90 |
 
 ### Outcome
 {{"Target reached" / "Target NOT reached — N iterations exhausted"}}
