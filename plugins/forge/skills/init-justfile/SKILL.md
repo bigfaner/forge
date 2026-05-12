@@ -60,8 +60,20 @@ If version < 1.50.0: `cargo install just`
 ## Workflow
 
 ```
-1. Detect project type + language + entry points → 2. Check existing justfile → 3. Assemble and write → 4. Verify and self-correct → 5. Output confirmation
+0. Resolve test profile → 1. Detect project type + language + entry points → 2. Check existing justfile → 3. Assemble and write → 4. Verify and self-correct → 5. Output confirmation
 ```
+
+### Step 0: Resolve Test Profile
+
+Determine the active test profile to generate correct e2e recipes.
+
+1. Check `.forge/config.yaml` for `test-profiles` list
+2. If missing: auto-detect using `plugins/forge/references/shared/profile-detection.md`
+3. If detection fails: ask the user
+4. Load profile manifest: `plugins/forge/profiles/<profile-name>/manifest.yaml`
+5. Read `plugins/forge/profiles/<profile-name>/justfile-recipes` for the profile-specific e2e recipe bodies
+
+The `test-e2e`, `e2e-setup`, and `e2e-verify` recipes are generated from the profile's `justfile-recipes` file, not from the language template.
 
 ### Step 1: Detect Project Type, Language, and Entry Points
 
@@ -318,7 +330,7 @@ task all-completed will now use `just test` automatically.
 
 - **just >= 1.50.0**: `[arg("feature", long)]` generates `--feature <value>` named option syntax; callers (CI, `task all-completed`) must pass the slug: `just test-e2e --feature <slug>`
 - Makefile migration: preserve original command logic, adjust only format
-- **e2e tests use `npx playwright test` regardless of project language**: forge e2e test scripts use `@playwright/test` and are executed via the Playwright test runner. The e2e layer is language-agnostic. Backend projects (Go/Rust/Python) still need Node.js available in the environment for `just test-e2e` and `just e2e-setup`.
+- **e2e tests are profile-aware**: The `test-e2e`, `e2e-setup`, and `e2e-verify` recipes are generated from the active test profile's `justfile-recipes` file (e.g., `plugins/forge/profiles/web-playwright/justfile-recipes`). Each profile defines its own execution commands. For `web-playwright`, this still uses `npx playwright test` and requires Node.js.
 - **Targets invoked by forge skills**: `project-type`, `compile`, `build`, `test`, `test-e2e`, `install`, `e2e-setup`, `e2e-verify`. The remaining targets (`run`, `dev`, `lint`, `fmt`, `check`, `clean`, `ci`) are for manual use and are not called by any skill.
 - **Idempotency**: `e2e-setup` and `install` are designed to be idempotent (safe to run multiple times). Other recipes (`build`, `compile`, `test`) are not — they always re-execute.
 - **Mixed project scope**: forge skills resolve scope from `task claim` output or `process/state.json` and pass it to `just <verb>` when `just project-type` returns `mixed`. Pass `just compile frontend` or `just compile backend` manually to target a single side outside of a task context.

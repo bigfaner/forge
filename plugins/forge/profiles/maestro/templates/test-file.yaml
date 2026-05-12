@@ -1,0 +1,32 @@
+appId: ${APP_ID}
+name: TC-NNN Description
+# Traceability: TC-NNN → {PRD Source}
+
+env:
+  USERNAME: ${TEST_USERNAME}
+  PASSWORD: ${TEST_PASSWORD}
+
+onFlowStart:
+  - launchApp
+
+onFlowEnd:
+  - killApp
+
+commands:
+  # Step 1: Navigate to login
+  - tapOn:
+      text: "Login"
+  # Step 2: Enter credentials
+  - tapOn:
+      text: "Email"
+  - inputText: ${USERNAME}
+  - tapOn:
+      text: "Password"
+  - inputText: ${PASSWORD}
+  # Step 3: Submit
+  - tapOn:
+      text: "Sign in"
+  # Expected: Dashboard visible
+  - assertVisible:
+      text: "Dashboard"
+  - takeScreenshot: TC-NNN

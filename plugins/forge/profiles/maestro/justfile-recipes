@@ -1,0 +1,63 @@
+# maestro justfile recipes
+
+# test-e2e: run end-to-end tests (maestro)
+test-e2e feature="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -z "{{feature}}" ]; then
+        maestro test tests/e2e/ --format junit --output tests/e2e/results/
+    else
+        maestro test "tests/e2e/features/{{feature}}/" --format junit --output tests/e2e/results/
+    fi
+
+# e2e-setup: verify maestro and device
+e2e-setup force="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if ! command -v maestro &>/dev/null; then
+        echo "Error: maestro CLI not found. Install: https://maestro.mobile.dev/" >&2
+        exit 1
+    fi
+    maestro devices 2>/dev/null | head -1 | grep -q . || echo "Warning: no connected devices"
+    echo "OK: e2e dependencies ready (maestro)"
+
+# e2e-verify: check for unresolved # VERIFY: markers
+e2e-verify feature="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -z "{{feature}}" ]; then
+        echo "Usage: just e2e-verify --feature <slug>" >&2
+        exit 1
+    fi
+    if [ ! -d "tests/e2e/features/{{feature}}" ]; then
+        echo "Error: tests/e2e/features/{{feature}}/ not found" >&2
+        exit 1
+    fi
+    matches=$(grep -rn '# VERIFY:' "tests/e2e/features/{{feature}}/" --include='*.yaml' || true)
+    if [ -n "$matches" ]; then
+        count=$(echo "$matches" | wc -l | tr -d ' ')
+        echo "Error: $count unresolved # VERIFY: marker(s) in tests/e2e/features/{{feature}}/" >&2
+        echo "$matches" >&2
+        exit 1
+    fi
+    echo "OK: no unresolved # VERIFY: markers in tests/e2e/features/{{feature}}/"
+
+# e2e-compile: validate maestro flow YAML files
+e2e-compile:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    errors=0
+    for f in tests/e2e/features/**/*.yaml tests/e2e/*.yaml; do
+        [ -f "$f" ] || continue
+        if ! maestro test --dry-run "$f" 2>/dev/null; then
+            echo "Error: invalid maestro flow: $f" >&2
+            errors=$((errors+1))
+        fi
+    done
+    [ "$errors" -eq 0 ] && echo "OK: all maestro flows valid" || exit 1
+
+# e2e-discover: list all maestro flows
+e2e-discover:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    find tests/e2e -name '*.yaml' -not -name 'config.yaml' | sort

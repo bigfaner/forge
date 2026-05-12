@@ -22,7 +22,7 @@ Check previous stage artifacts. Abort and prompt user if missing:
 |----------|----------------|
 | `docs/features/<slug>/prd/prd-user-stories.md` | Run `/write-prd` first |
 | `docs/features/<slug>/prd/prd-spec.md` | Run `/write-prd` first |
-| `docs/sitemap/sitemap.json` (optional, UI tests only) | Run `/gen-sitemap` — Element field defaults to `sitemap-missing` when absent |
+| `docs/sitemap/sitemap.json` (optional, only when profile has `web-ui` capability) | Run `/gen-sitemap` — Element field defaults to `sitemap-missing` when absent. Skip sitemap check entirely for non-web-ui profiles. |
 
 This skill can be invoked manually or as the standard task T-test-1 appended by `/breakdown-tasks`.
 
@@ -77,10 +77,20 @@ Only extract acceptance criteria that **explicitly exist** in the PRD. Forbidden
 
 ### Step 2.5: Detect Project Interfaces
 
-Before classification, determine which interface types the project actually exposes. Use two signals:
+Before classification, determine which interface types the project actually exposes. Use the active test profile's capabilities as the primary signal:
 
-1. **PRD signal** (primary): The PRD read in Step 1 describes the product's nature. A "web application" has UI+API but no CLI; a "CLI tool" has CLI but no UI.
-2. **Codebase signal** (secondary): Scan the project for evidence of each interface type. Look broadly — don't hardcode specific framework patterns. Ask: "does this codebase contain code whose *purpose* is to serve this interface?"
+1. **Profile capabilities** (primary): Read `.forge/config.yaml` → load profile manifest → read `capabilities` field. Each capability maps to an interface type:
+
+| Capability | Interface type |
+|-----------|---------------|
+| `web-ui` | UI (browser DOM interaction) |
+| `tui` | TUI (terminal text rendering, keyboard) |
+| `mobile-ui` | Mobile UI (touch, gestures) |
+| `api` | API (HTTP/network) |
+| `cli` | CLI (command-line) |
+
+2. **PRD signal** (secondary): The PRD describes the product's nature. A "web application" has web-ui+api; a "CLI tool" has cli.
+3. **Codebase signal** (tertiary): Scan the project for evidence of each interface type.
 
 **Interface concepts**:
 
@@ -97,6 +107,11 @@ If an interface type is absent from the detected set, **do not generate test cas
 1. Reclassified to a present type if they relate to product behavior under that interface
 2. Omitted if they are purely build/tooling checks unrelated to any product interface
 </HARD-RULE>
+
+**Automation annotation**: For each test case, determine automation feasibility based on profile capabilities:
+- If the criterion's interface matches a profile capability → annotate as `automated`
+- If the PRD describes a feature requiring a capability the profile lacks (e.g., PRD has web-ui interactions but profile only has `tui`) → annotate as `manual-only` with a note explaining the capability gap
+- Non-UI criteria that don't require a specific UI capability → annotate as `automated` if the project has the corresponding interface (api/cli)
 
 ### Step 3: Classify & Generate Test Cases
 

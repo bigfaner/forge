@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "forge-config",
+  "title": "Forge Project Configuration",
+  "description": "Schema for .forge/config.yaml — project-level declarative config for Forge test profiles",
+  "type": "object",
+  "properties": {
+    "test-profiles": {
+      "type": "array",
+      "description": "Active test profiles for this project. First entry is the primary profile.",
+      "items": {
+        "type": "string",
+        "enum": [
+          "web-playwright",
+          "go-test",
+          "maestro",
+          "java-junit",
+          "rust-test",
+          "pytest"
+        ]
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    }
+  },
+  "required": ["test-profiles"],
+  "additionalProperties": false
+}

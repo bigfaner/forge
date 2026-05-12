@@ -1,0 +1,6 @@
+# Forge Project Configuration
+# Commit to git — this is declarative, not environment-specific
+# Runtime config (baseUrl, credentials) stays in tests/e2e/config.yaml
+
+test-profiles:
+  - web-playwright

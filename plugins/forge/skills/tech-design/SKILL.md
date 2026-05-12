@@ -44,8 +44,22 @@ ls docs/features/<slug>/prd/prd-spec.md
 ## Process Flow
 
 ```
-1. Read PRD → 2. Explore context → 3. Identify decisions → 4. Ask questions → 5. Draft design → 6. Review → 7. Archive decisions (optional) → 8. Finalize
+0. Select test profile → 1. Read PRD → 2. Explore context → 3. Identify decisions → 4. Ask questions → 5. Draft design → 6. Review → 7. Archive decisions (optional) → 8. Finalize
 ```
+
+## Step 0: Select Test Profile
+
+Determine the test profile for this feature. This step ensures `.forge/config.yaml` exists before downstream skills (gen-test-cases, gen-test-scripts) need it.
+
+1. **Check existing config**: `ls .forge/config.yaml`
+2. **If exists**: read it, verify the profile is valid (matches a directory in `plugins/forge/profiles/`). Done.
+3. **If missing**: run auto-detection per `plugins/forge/references/shared/profile-detection.md`.
+4. **If detection succeeds**: write `.forge/config.yaml` with the detected profile. Inform the user.
+5. **If detection fails**: ask the user to select from available profiles. Write their choice to `.forge/config.yaml`.
+
+<HARD-RULE>
+Do NOT silently default to any profile. If auto-detection finds no match, ask the user explicitly.
+</HARD-RULE>
 
 ## Step 1: Read Manifest → PRD
 

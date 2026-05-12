@@ -15,6 +15,8 @@ Check previous stage artifacts. Abort and prompt user if missing:
 | `prd/prd-spec.md` | Run `/write-prd` first |
 | `prd/prd-user-stories.md` | Run `/write-prd` first |
 
+**Profile awareness**: The scoring rubric's "Interface Accuracy" dimension (200 pts) adapts based on the active test profile's capabilities. Read `.forge/config.yaml` → load profile manifest → determine which capability-specific scoring criteria apply from `plugins/forge/skills/eval-test-cases/templates/rubric.md`.
+
 ## When to Use
 
 **Trigger:**

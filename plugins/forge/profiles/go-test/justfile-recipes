@@ -1,0 +1,55 @@
+# go-test justfile recipes
+# Used by init-justfile to generate profile-aware justfile targets
+
+# test-e2e: run end-to-end tests (go test)
+test-e2e feature="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    feature_flag=""
+    if [ -n "{{feature}}" ]; then
+        feature_flag="-run TestTC.*$(echo '{{feature}}' | sed 's/.*/\u&/')"
+    fi
+    go test ./tests/e2e/... -v -tags=e2e -json {{feature_flag}} \
+      | go-junit-report > tests/e2e/results/report.xml 2>/dev/null \
+      || go test ./tests/e2e/... -v -tags=e2e {{feature_flag}}
+
+# e2e-setup: verify compilation (idempotent)
+e2e-setup force="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    go build ./...
+    echo "OK: compilation verified"
+
+# e2e-verify: check for unresolved // VERIFY: markers
+e2e-verify feature="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -z "{{feature}}" ]; then
+        echo "Usage: just e2e-verify --feature <slug>" >&2
+        exit 1
+    fi
+    search_dir="tests/e2e/features/{{feature}}"
+    if [ ! -d "$search_dir" ]; then
+        search_dir="tests/e2e"
+    fi
+    matches=$(grep -rn '// VERIFY:' "$search_dir/" --include='*_test.go' || true)
+    if [ -n "$matches" ]; then
+        count=$(echo "$matches" | wc -l | tr -d ' ')
+        echo "Error: $count unresolved // VERIFY: marker(s) in $search_dir/" >&2
+        echo "$matches" >&2
+        exit 1
+    fi
+    echo "OK: no unresolved // VERIFY: markers in $search_dir/"
+
+# e2e-compile: compile-check e2e test files
+e2e-compile:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    go build ./tests/e2e/...
+    echo "OK: Go compilation passed"
+
+# e2e-discover: list all e2e test cases without running them
+e2e-discover:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    go test ./tests/e2e/... -list '.*' -tags=e2e

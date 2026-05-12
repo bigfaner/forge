@@ -1,0 +1,24 @@
+name: pytest
+display: "Python CLI/Backend (pytest)"
+language: python
+file-extension: .py
+test-directory: tests/e2e/
+
+capabilities: [api, cli]
+
+templates:
+  test-file: templates/test_file.py
+  conftest: templates/conftest.py
+  additional: []
+
+run:
+  command: "python -m pytest tests/e2e/ -v --tb=short"
+  compile: "python -m py_compile tests/e2e/"
+  result-format: pytest-json
+
+graduate:
+  target-directory: tests/e2e/
+  merge-strategy: module
+  import-rewrite: null
+  compile-check: "python -m py_compile tests/e2e/"
+  list-tests: "python -m pytest tests/e2e/ --collect-only -q"

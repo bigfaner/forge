@@ -1,0 +1,24 @@
+name: rust-test
+display: "Rust CLI/Backend (cargo test)"
+language: rust
+file-extension: .rs
+test-directory: tests/e2e/
+
+capabilities: [tui, api, cli]
+
+templates:
+  test-file: templates/test_file.rs
+  helpers: templates/helpers.rs
+  additional: []
+
+run:
+  command: "cargo test --test e2e -- --nocapture"
+  compile: "cargo build"
+  result-format: cargo-json
+
+graduate:
+  target-directory: tests/e2e/
+  merge-strategy: module
+  import-rewrite: null
+  compile-check: "cargo build"
+  list-tests: "cargo test --test e2e -- --list"

@@ -1,0 +1,23 @@
+name: java-junit
+display: "Java CLI/Backend (JUnit 5 + Maven)"
+language: java
+file-extension: Test.java
+test-directory: tests/e2e/
+
+capabilities: [tui, api, cli]
+
+templates:
+  test-file: templates/TestFile.java
+  additional: []
+
+run:
+  command: "mvn test -pl tests/e2e -Dtest=*E2E"
+  compile: "mvn compile"
+  result-format: surefire-xml
+
+graduate:
+  target-directory: tests/e2e/
+  merge-strategy: class
+  import-rewrite: null
+  compile-check: "mvn test-compile"
+  list-tests: "mvn test -pl tests/e2e -DdryRun=true"
