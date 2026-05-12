@@ -48,3 +48,5 @@ Bash(task record T-test-1b --data docs/features/train-recorder/tasks/process/rec
   4. cli提取任务的formatter汇总成index.json
 33、评估提案要增加需求或逻辑是否全面的维度，整体逻辑是否一致，合理性，可行性
 34、forge的流程是否太重。
+35、开启subagent深度评估一致性：@task-cli/pkg/prompt/data/ 中的模板，run-tasks skill、task-executor agent                                  
+  等任务调度机制所有关联方。然后就问题逐个向我提问 
