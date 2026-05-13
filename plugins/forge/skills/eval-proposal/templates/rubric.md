@@ -21,30 +21,30 @@
 | User-facing behavior described | 0-45 | What does the end user experience? Not internals — the observable behavior |
 | Technical direction clear | 0-35 | Is there enough technical hint to know the general implementation approach? |
 
-### 3. Industry Benchmarking (160 pts)
+### 3. Industry Benchmarking (120 pts)
 
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| Industry solutions referenced | 0-50 | Are real-world solutions/patterns for this type of problem cited? Product names, open-source projects, or published patterns? Not just self-invented options |
-| At least 3 meaningful alternatives | 0-40 | Including "do nothing". Each alternative must be a genuinely different approach, not a straw man. At least one must be an industry-validated solution |
-| Honest trade-off comparison | 0-35 | Are pros/cons based on actual project constraints? Not cherry-picked? |
-| Chosen approach justified against benchmarks | 0-35 | Why this approach over industry standards? Or why adopt the standard? Clear rationale required |
+| Industry solutions referenced | 0-40 | Are real-world solutions/patterns for this type of problem cited? Product names, open-source projects, or published patterns? Not just self-invented options |
+| At least 3 meaningful alternatives | 0-30 | Including "do nothing". Each alternative must be a genuinely different approach, not a straw man. At least one must be an industry-validated solution |
+| Honest trade-off comparison | 0-25 | Are pros/cons based on actual project constraints? Not cherry-picked? |
+| Chosen approach justified against benchmarks | 0-25 | Why this approach over industry standards? Or why adopt the standard? Clear rationale required |
 
-### 4. Requirements Completeness (140 pts)
-
-| Criterion | Points | What to check |
-|-----------|--------|---------------|
-| Scenario coverage | 0-50 | Happy path + edge cases + error scenarios all identified? Or only the golden path? |
-| Non-functional requirements | 0-45 | Performance, security, compatibility, accessibility — are relevant NFRs called out? |
-| Constraints & dependencies | 0-45 | External systems, tech constraints, prerequisite conditions named? |
-
-### 5. Solution Creativity (130 pts)
+### 4. Requirements Completeness (110 pts)
 
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| Novelty over industry baseline | 0-50 | Is the proposal just copying an industry solution, or does it innovate beyond? Is the differentiation from the benchmark clearly articulated? |
-| Cross-domain inspiration | 0-40 | Does it borrow ideas from other domains/products that face similar problems? |
-| Simplicity of insight | 0-40 | Is the creative leap elegant ("why didn't I think of that") or forced/overengineered? |
+| Scenario coverage | 0-40 | Happy path + edge cases + error scenarios all identified? Or only the golden path? |
+| Non-functional requirements | 0-40 | Performance, security, compatibility, accessibility — are relevant NFRs called out? |
+| Constraints & dependencies | 0-30 | External systems, tech constraints, prerequisite conditions named? |
+
+### 5. Solution Creativity (100 pts)
+
+| Criterion | Points | What to check |
+|-----------|--------|---------------|
+| Novelty over industry baseline | 0-40 | Is the proposal just copying an industry solution, or does it innovate beyond? Is the differentiation from the benchmark clearly articulated? |
+| Cross-domain inspiration | 0-35 | Does it borrow ideas from other domains/products that face similar problems? |
+| Simplicity of insight | 0-25 | Is the creative leap elegant ("why didn't I think of that") or forced/overengineered? |
 
 ### 6. Feasibility (100 pts)
 

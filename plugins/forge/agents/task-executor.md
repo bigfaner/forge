@@ -24,7 +24,7 @@ memory: project
    - Run `task prompt <TASK_ID> --fix-record-missed`
 3. Otherwise:
    - Run `task prompt <TASK_ID>`
-4. If `task prompt` fails (non-zero exit), record the task as blocked: `task status <TASK_ID> blocked --reason "<error>"`, then STOP
+4. If `task prompt` fails (non-zero exit), record the task as blocked: `task status <TASK_ID> blocked`, then STOP
 5. Follow every step in the synthesized strategy exactly
 6. If you lose track of your strategy mid-execution, re-run `task prompt <TASK_ID>` to recover
 7. After all strategy steps are done, invoke the skill:

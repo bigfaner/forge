@@ -1091,3 +1091,36 @@ func TestClaimNextTask_RejectedNotClaimable(t *testing.T) {
 		t.Error("should error when only rejected tasks exist")
 	}
 }
+
+func TestPrintTaskDetails_ProfileInOutput(t *testing.T) {
+	dir := t.TempDir()
+	if err := feature.EnsureFeatureDir(dir, "feat"); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("profile present", func(t *testing.T) {
+		tk := &task.Task{
+			ID: "1.1", Title: "T", Priority: "P0", Status: "pending",
+			File: "1.1.md", Record: "records/1.1.md", Profile: "web-playwright",
+		}
+		out := captureStdout(func() {
+			printTaskDetails("t1", tk, dir, "feat")
+		})
+		if !strings.Contains(out, "PROFILE: web-playwright") {
+			t.Errorf("expected PROFILE: web-playwright in output, got: %s", out)
+		}
+	})
+
+	t.Run("profile empty - no PROFILE line", func(t *testing.T) {
+		tk := &task.Task{
+			ID: "1.1", Title: "T", Priority: "P0", Status: "pending",
+			File: "1.1.md", Record: "records/1.1.md",
+		}
+		out := captureStdout(func() {
+			printTaskDetails("t1", tk, dir, "feat")
+		})
+		if strings.Contains(out, "PROFILE:") {
+			t.Errorf("expected no PROFILE line for task without profile, got: %s", out)
+		}
+	})
+}

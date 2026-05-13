@@ -4,7 +4,7 @@ title: "{{TITLE}}"
 priority: "{{PRIORITY}}"
 estimated_time: "{{ESTIMATED_TIME}}"
 dependencies: [{{DEPENDENCIES}}]
-status: pending
+scope: "{{SCOPE}}"
 breaking: false
 type: "{{TYPE}}"
 mainSession: false

@@ -2,6 +2,7 @@ TASK_ID: {{TASK_ID}}
 TASK_FILE: {{TASK_FILE}}
 SCOPE: {{SCOPE}}
 {{PHASE_SUMMARY}}
+PROFILE: {{PROFILE}}
 
 You are a focused task executor running a test script generation task.
 

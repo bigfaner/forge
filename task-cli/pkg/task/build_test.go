@@ -1,0 +1,713 @@
+package task
+
+import (
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+// writeTaskMD writes a minimal task .md file with frontmatter.
+func writeTaskMD(t *testing.T, dir, filename, id, title string, deps []string) {
+	t.Helper()
+	var depLine string
+	if len(deps) > 0 {
+		quoted := make([]string, len(deps))
+		for i, d := range deps {
+			quoted[i] = `"` + d + `"`
+		}
+		depLine = "dependencies:\n  - " + joinStrings(quoted, "\n  - ") + "\n"
+	}
+	content := "---\nid: " + `"` + id + `"` + "\ntitle: " + `"` + title + `"` +
+		"\npriority: \"P1\"\nestimated_time: \"1h\"\n" + depLine + "scope: \"all\"\n---\n\n# " + title + "\n"
+	if err := os.WriteFile(filepath.Join(dir, filename), []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func joinStrings(ss []string, sep string) string {
+	return strings.Join(ss, sep)
+}
+
+// setupBuildEnv creates a temp project root with feature dirs.
+// mode: "breakdown" creates prd/prd-spec.md, "quick" creates proposal, "" creates nothing.
+func setupBuildEnv(t *testing.T, mode string) (projectRoot, tasksDir, indexPath string) {
+	t.Helper()
+	projectRoot = t.TempDir()
+	featureSlug := "test-feature"
+	featureDir := filepath.Join(projectRoot, "docs", "features", featureSlug)
+	tasksDir = filepath.Join(featureDir, "tasks")
+	indexPath = filepath.Join(tasksDir, "index.json")
+
+	if err := os.MkdirAll(tasksDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	switch mode {
+	case "breakdown":
+		prdDir := filepath.Join(featureDir, "prd")
+		if err := os.MkdirAll(prdDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(prdDir, "prd-spec.md"), []byte("# PRD"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	case "quick":
+		propDir := filepath.Join(projectRoot, "docs", "proposals", featureSlug)
+		if err := os.MkdirAll(propDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(propDir, "proposal.md"), []byte("# Proposal"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	return projectRoot, tasksDir, indexPath
+}
+
+func TestBuildIndex_FreshBuild(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "")
+
+	writeTaskMD(t, tasksDir, "1-foo.md", "1", "Foo Task", nil)
+	writeTaskMD(t, tasksDir, "2-bar.md", "2", "Bar Task", []string{"1"})
+
+	opts := BuildIndexOpts{
+		FeatureSlug: "test-feature",
+		ProjectRoot: projectRoot,
+		TasksDir:    tasksDir,
+		IndexPath:   indexPath,
+		NoTest:      true,
+	}
+
+	result, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("BuildIndex error: %v", err)
+	}
+	if result.NewCount != 2 {
+		t.Errorf("NewCount = %d, want 2", result.NewCount)
+	}
+	if result.UpdatedCount != 0 {
+		t.Errorf("UpdatedCount = %d, want 0", result.UpdatedCount)
+	}
+
+	// Verify index.json written
+	data, err := os.ReadFile(indexPath)
+	if err != nil {
+		t.Fatalf("read index.json: %v", err)
+	}
+	var idx taskIndexJSON
+	if err := json.Unmarshal(data, &idx); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if len(idx.Tasks) != 2 {
+		t.Errorf("tasks count = %d, want 2", len(idx.Tasks))
+	}
+	if idx.Tasks["1-foo"].Status != "pending" {
+		t.Errorf("1-foo status = %q, want pending", idx.Tasks["1-foo"].Status)
+	}
+	if idx.Feature != "test-feature" {
+		t.Errorf("feature = %q, want test-feature", idx.Feature)
+	}
+}
+
+func TestBuildIndex_IdempotentRebuild(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "")
+
+	writeTaskMD(t, tasksDir, "1-foo.md", "1", "Foo Task", nil)
+
+	opts := BuildIndexOpts{
+		FeatureSlug: "test-feature",
+		ProjectRoot: projectRoot,
+		TasksDir:    tasksDir,
+		IndexPath:   indexPath,
+		NoTest:      true,
+	}
+
+	// First build
+	_, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("first build: %v", err)
+	}
+
+	// Read index to capture created date
+	data1, _ := os.ReadFile(indexPath)
+	var idx1 taskIndexJSON
+	json.Unmarshal(data1, &idx1)
+
+	// Second build (no changes)
+	result2, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("second build: %v", err)
+	}
+	if result2.UpdatedCount != 1 {
+		t.Errorf("UpdatedCount = %d, want 1", result2.UpdatedCount)
+	}
+	if result2.NewCount != 0 {
+		t.Errorf("NewCount = %d, want 0", result2.NewCount)
+	}
+
+	// Created date preserved
+	data2, _ := os.ReadFile(indexPath)
+	var idx2 taskIndexJSON
+	json.Unmarshal(data2, &idx2)
+	if idx2.Created != idx1.Created {
+		t.Errorf("created date changed: %q → %q", idx1.Created, idx2.Created)
+	}
+}
+
+func TestBuildIndex_StatusPreservation(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "")
+
+	writeTaskMD(t, tasksDir, "1-foo.md", "1", "Foo Task", nil)
+
+	// Build first time
+	opts := BuildIndexOpts{
+		FeatureSlug: "test-feature",
+		ProjectRoot: projectRoot,
+		TasksDir:    tasksDir,
+		IndexPath:   indexPath,
+		NoTest:      true,
+	}
+	BuildIndex(opts)
+
+	// Manually modify status
+	data, _ := os.ReadFile(indexPath)
+	var raw map[string]json.RawMessage
+	json.Unmarshal(data, &raw)
+	var tasksMap map[string]json.RawMessage
+	json.Unmarshal(raw["tasks"], &tasksMap)
+
+	var task1 map[string]any
+	json.Unmarshal(tasksMap["1-foo"], &task1)
+	task1["status"] = "in_progress"
+	task1["sourceTaskID"] = "some-source"
+	task1["blockedReason"] = "waiting for review"
+	updated, _ := json.Marshal(task1)
+	tasksMap["1-foo"] = updated
+	raw["tasks"], _ = json.Marshal(tasksMap)
+	finalData, _ := json.MarshalIndent(raw, "", "  ")
+	os.WriteFile(indexPath, append(finalData, '\n'), 0644)
+
+	// Rebuild
+	result, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("rebuild: %v", err)
+	}
+
+	// Verify status preserved
+	data2, _ := os.ReadFile(indexPath)
+	var idx taskIndexJSON
+	json.Unmarshal(data2, &idx)
+	if idx.Tasks["1-foo"].Status != "in_progress" {
+		t.Errorf("status = %q, want in_progress", idx.Tasks["1-foo"].Status)
+	}
+	if idx.Tasks["1-foo"].SourceTaskID != "some-source" {
+		t.Errorf("sourceTaskID = %q, want some-source", idx.Tasks["1-foo"].SourceTaskID)
+	}
+	if idx.Tasks["1-foo"].BlockedReason != "waiting for review" {
+		t.Errorf("blockedReason = %q, want waiting for review", idx.Tasks["1-foo"].BlockedReason)
+	}
+	_ = result
+}
+
+func TestBuildIndex_NewMDAdded(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "")
+
+	writeTaskMD(t, tasksDir, "1-foo.md", "1", "Foo Task", nil)
+
+	opts := BuildIndexOpts{
+		FeatureSlug: "test-feature",
+		ProjectRoot: projectRoot,
+		TasksDir:    tasksDir,
+		IndexPath:   indexPath,
+		NoTest:      true,
+	}
+	BuildIndex(opts)
+
+	// Add new task
+	writeTaskMD(t, tasksDir, "2-bar.md", "2", "Bar Task", []string{"1"})
+
+	result, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("rebuild: %v", err)
+	}
+	if result.NewCount != 1 {
+		t.Errorf("NewCount = %d, want 1", result.NewCount)
+	}
+}
+
+func TestBuildIndex_FrontmatterUpdate(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "")
+
+	writeTaskMD(t, tasksDir, "1-foo.md", "1", "Old Title", nil)
+
+	opts := BuildIndexOpts{
+		FeatureSlug: "test-feature",
+		ProjectRoot: projectRoot,
+		TasksDir:    tasksDir,
+		IndexPath:   indexPath,
+		NoTest:      true,
+	}
+	BuildIndex(opts)
+
+	// Update the .md with new title
+	writeTaskMD(t, tasksDir, "1-foo.md", "1", "New Title", nil)
+
+	BuildIndex(opts)
+
+	data, _ := os.ReadFile(indexPath)
+	var idx taskIndexJSON
+	json.Unmarshal(data, &idx)
+	if idx.Tasks["1-foo"].Title != "New Title" {
+		t.Errorf("title = %q, want New Title", idx.Tasks["1-foo"].Title)
+	}
+}
+
+func TestBuildIndex_OrphanDetection(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "")
+
+	// Create index with a task
+	writeTaskMD(t, tasksDir, "1-foo.md", "1", "Foo", nil)
+	opts := BuildIndexOpts{
+		FeatureSlug: "test-feature",
+		ProjectRoot: projectRoot,
+		TasksDir:    tasksDir,
+		IndexPath:   indexPath,
+		NoTest:      true,
+	}
+	BuildIndex(opts)
+
+	// Remove the .md file
+	os.Remove(filepath.Join(tasksDir, "1-foo.md"))
+
+	// Add a different task so dir isn't empty
+	writeTaskMD(t, tasksDir, "2-bar.md", "2", "Bar", nil)
+
+	result, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("rebuild: %v", err)
+	}
+	if result.PreservedCount != 1 {
+		t.Errorf("PreservedCount = %d, want 1", result.PreservedCount)
+	}
+	found := false
+	for _, w := range result.Warnings {
+		if len(w) > 6 && w[:6] == "orphan" {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("expected orphan warning, got %v", result.Warnings)
+	}
+}
+
+func TestBuildIndex_NoTestSkipsTestGen(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "breakdown")
+
+	writeTaskMD(t, tasksDir, "1-foo.md", "1", "Foo", nil)
+
+	opts := BuildIndexOpts{
+		FeatureSlug:  "test-feature",
+		ProjectRoot:  projectRoot,
+		TasksDir:     tasksDir,
+		IndexPath:    indexPath,
+		NoTest:       true,
+		TestProfiles: []string{"go-test"},
+	}
+
+	result, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("BuildIndex: %v", err)
+	}
+
+	// Only 1 business task, no test tasks
+	if result.NewCount != 1 {
+		t.Errorf("NewCount = %d, want 1", result.NewCount)
+	}
+
+	// No test task .md files generated
+	entries, _ := os.ReadDir(tasksDir)
+	for _, e := range entries {
+		if e.Name() != "1-foo.md" && e.Name() != "index.json" {
+			t.Errorf("unexpected file: %s", e.Name())
+		}
+	}
+}
+
+func TestBuildIndex_ModeDetection(t *testing.T) {
+	tests := []struct {
+		name         string
+		mode         string
+		wantFeature  string
+		wantProposal string
+	}{
+		{"breakdown sets PRD", "breakdown", "prd/prd-spec.md", ""},
+		{"quick sets proposal", "quick", "", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			projectRoot, tasksDir, indexPath := setupBuildEnv(t, tt.mode)
+
+			writeTaskMD(t, tasksDir, "1-foo.md", "1", "Foo", nil)
+
+			opts := BuildIndexOpts{
+				FeatureSlug: "test-feature",
+				ProjectRoot: projectRoot,
+				TasksDir:    tasksDir,
+				IndexPath:   indexPath,
+				NoTest:      true,
+			}
+
+			BuildIndex(opts)
+
+			data, _ := os.ReadFile(indexPath)
+			var idx taskIndexJSON
+			json.Unmarshal(data, &idx)
+
+			if tt.mode == "breakdown" {
+				if idx.PRD != "prd/prd-spec.md" {
+					t.Errorf("PRD = %q, want prd/prd-spec.md", idx.PRD)
+				}
+			}
+		})
+	}
+}
+
+func TestBuildIndex_SkipNoID(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "")
+
+	// Write .md without id in frontmatter
+	content := "---\ntitle: \"No ID\"\npriority: \"P1\"\n---\n\n# No ID task\n"
+	os.WriteFile(filepath.Join(tasksDir, "no-id.md"), []byte(content), 0644)
+
+	writeTaskMD(t, tasksDir, "1-foo.md", "1", "Foo", nil)
+
+	opts := BuildIndexOpts{
+		FeatureSlug: "test-feature",
+		ProjectRoot: projectRoot,
+		TasksDir:    tasksDir,
+		IndexPath:   indexPath,
+		NoTest:      true,
+	}
+
+	result, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("BuildIndex: %v", err)
+	}
+	if result.NewCount != 1 {
+		t.Errorf("NewCount = %d, want 1 (no-id skipped)", result.NewCount)
+	}
+	// Should have warning about no id
+	found := false
+	for _, w := range result.Warnings {
+		if len(w) >= 4 && w[:4] == "skip" {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("expected skip warning, got %v", result.Warnings)
+	}
+}
+
+func TestBuildIndex_SkipUnderscoreFiles(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "")
+
+	writeTaskMD(t, tasksDir, "1-foo.md", "1", "Foo", nil)
+
+	// Create _template.md (should be skipped)
+	os.WriteFile(filepath.Join(tasksDir, "_template.md"), []byte("---\nid: \"skip-me\"\n---\n"), 0644)
+
+	opts := BuildIndexOpts{
+		FeatureSlug: "test-feature",
+		ProjectRoot: projectRoot,
+		TasksDir:    tasksDir,
+		IndexPath:   indexPath,
+		NoTest:      true,
+	}
+
+	result, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("BuildIndex: %v", err)
+	}
+	if result.NewCount != 1 {
+		t.Errorf("NewCount = %d, want 1 (_template.md skipped)", result.NewCount)
+	}
+}
+
+func TestBuildIndex_TypeInference(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "")
+
+	// Task with explicit type
+	content := "---\nid: \"1\"\ntitle: \"Gate\"\npriority: \"P1\"\ntype: \"gate\"\nscope: \"all\"\n---\n\n# Gate\n"
+	os.WriteFile(filepath.Join(tasksDir, "1-gate.md"), []byte(content), 0644)
+
+	// Task without type (should infer)
+	writeTaskMD(t, tasksDir, "2-bar.md", "2", "Bar", nil)
+
+	opts := BuildIndexOpts{
+		FeatureSlug: "test-feature",
+		ProjectRoot: projectRoot,
+		TasksDir:    tasksDir,
+		IndexPath:   indexPath,
+		NoTest:      true,
+	}
+
+	BuildIndex(opts)
+
+	data, _ := os.ReadFile(indexPath)
+	var idx taskIndexJSON
+	json.Unmarshal(data, &idx)
+
+	if idx.Tasks["1-gate"].Type != "gate" {
+		t.Errorf("explicit type = %q, want gate", idx.Tasks["1-gate"].Type)
+	}
+	if idx.Tasks["2-bar"].Type != "implementation" {
+		t.Errorf("inferred type = %q, want implementation", idx.Tasks["2-bar"].Type)
+	}
+}
+
+func TestBuildIndex_EmptyTasksDir(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "")
+
+	opts := BuildIndexOpts{
+		FeatureSlug: "test-feature",
+		ProjectRoot: projectRoot,
+		TasksDir:    tasksDir,
+		IndexPath:   indexPath,
+		NoTest:      true,
+	}
+
+	result, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("BuildIndex: %v", err)
+	}
+	if result.NewCount != 0 {
+		t.Errorf("NewCount = %d, want 0", result.NewCount)
+	}
+	if result.UpdatedCount != 0 {
+		t.Errorf("UpdatedCount = %d, want 0", result.UpdatedCount)
+	}
+}
+
+func TestBuildIndex_WithTestTasks(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "breakdown")
+
+	// Create gate tasks for dep resolution
+	writeTaskMD(t, tasksDir, "1-gate.md", "1.gate", "Phase 1 Gate", nil)
+	writeTaskMD(t, tasksDir, "2-gate.md", "2.gate", "Phase 2 Gate", nil)
+
+	opts := BuildIndexOpts{
+		FeatureSlug:  "test-feature",
+		ProjectRoot:  projectRoot,
+		TasksDir:     tasksDir,
+		IndexPath:    indexPath,
+		NoTest:       false,
+		TestProfiles: []string{"go-test"},
+	}
+
+	result, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("BuildIndex: %v", err)
+	}
+
+	// 2 gates + 7 test tasks = 9
+	total := result.NewCount + result.UpdatedCount
+	if total != 9 {
+		t.Errorf("total tasks = %d (new=%d, updated=%d), want 9", total, result.NewCount, result.UpdatedCount)
+	}
+
+	// Verify test task .md files were generated
+	if _, err := os.Stat(filepath.Join(tasksDir, "gen-test-cases.md")); os.IsNotExist(err) {
+		t.Error("gen-test-cases.md not generated")
+	}
+	if _, err := os.Stat(filepath.Join(tasksDir, "gen-test-scripts-go-test.md")); os.IsNotExist(err) {
+		t.Error("gen-test-scripts-go-test.md not generated")
+	}
+
+	// Verify index contains test tasks
+	data, _ := os.ReadFile(indexPath)
+	var idx taskIndexJSON
+	json.Unmarshal(data, &idx)
+
+	if _, ok := idx.Tasks["gen-test-cases"]; !ok {
+		t.Error("missing gen-test-cases in index")
+	}
+	if _, ok := idx.Tasks["gen-test-scripts-go-test"]; !ok {
+		t.Error("missing gen-test-scripts-go-test in index")
+	}
+
+	// T-test-1 should depend on highest gate
+	if len(idx.Tasks["gen-test-cases"].Dependencies) == 0 {
+		t.Error("T-test-1 has no dependencies")
+	} else if idx.Tasks["gen-test-cases"].Dependencies[0] != "2.gate" {
+		t.Errorf("T-test-1 dep = %v, want [2.gate]", idx.Tasks["gen-test-cases"].Dependencies)
+	}
+
+	// Verify Profile field: per-profile test tasks have profile set
+	if idx.Tasks["gen-test-scripts-go-test"].Profile != "go-test" {
+		t.Errorf("gen-test-scripts-go-test profile = %q, want go-test", idx.Tasks["gen-test-scripts-go-test"].Profile)
+	}
+	// Shared test task (gen-test-cases in breakdown mode) has empty profile
+	if idx.Tasks["gen-test-cases"].Profile != "" {
+		t.Errorf("gen-test-cases profile = %q, want empty", idx.Tasks["gen-test-cases"].Profile)
+	}
+	// Business task has empty profile
+	if idx.Tasks["1-gate"].Profile != "" {
+		t.Errorf("1-gate profile = %q, want empty", idx.Tasks["1-gate"].Profile)
+	}
+}
+
+func TestBuildIndex_TestTasksIdempotent(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "breakdown")
+
+	writeTaskMD(t, tasksDir, "1-gate.md", "1.gate", "Gate", nil)
+
+	opts := BuildIndexOpts{
+		FeatureSlug:  "test-feature",
+		ProjectRoot:  projectRoot,
+		TasksDir:     tasksDir,
+		IndexPath:    indexPath,
+		NoTest:       false,
+		TestProfiles: []string{"go-test"},
+	}
+
+	// First build
+	BuildIndex(opts)
+
+	// Read first build
+	data1, _ := os.ReadFile(indexPath)
+	var idx1 taskIndexJSON
+	json.Unmarshal(data1, &idx1)
+
+	// Second build
+	result, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("second build: %v", err)
+	}
+
+	// No new tasks (all updated)
+	if result.NewCount != 0 {
+		t.Errorf("NewCount = %d, want 0 on second build", result.NewCount)
+	}
+
+	// Test task .md files should still exist (not regenerated)
+	if _, err := os.Stat(filepath.Join(tasksDir, "gen-test-cases.md")); err != nil {
+		t.Error("gen-test-cases.md missing after rebuild")
+	}
+}
+
+func TestBuildIndex_MultiProfile(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "quick")
+
+	writeTaskMD(t, tasksDir, "1-foo.md", "1", "Foo Task", nil)
+
+	opts := BuildIndexOpts{
+		FeatureSlug:  "test-feature",
+		ProjectRoot:  projectRoot,
+		TasksDir:     tasksDir,
+		IndexPath:    indexPath,
+		NoTest:       false,
+		TestProfiles: []string{"go-test", "web-playwright"},
+	}
+
+	result, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("BuildIndex: %v", err)
+	}
+
+	// 1 business + 4*2 per-profile + 1 shared = 10
+	total := result.NewCount + result.UpdatedCount
+	if total != 10 {
+		t.Errorf("total = %d (new=%d, updated=%d), want 10", total, result.NewCount, result.UpdatedCount)
+	}
+
+	// Verify suffixed .md files exist
+	for _, name := range []string{
+		"quick-test-cases-go-test.md",
+		"quick-test-cases-web-playwright.md",
+	} {
+		if _, err := os.Stat(filepath.Join(tasksDir, name)); os.IsNotExist(err) {
+			t.Errorf("%s not generated", name)
+		}
+	}
+
+	// Verify Profile field: per-profile test tasks have profile set
+	data, _ := os.ReadFile(indexPath)
+	var idx taskIndexJSON
+	json.Unmarshal(data, &idx)
+
+	if idx.Tasks["quick-test-cases-go-test"].Profile != "go-test" {
+		t.Errorf("quick-test-cases-go-test profile = %q, want go-test", idx.Tasks["quick-test-cases-go-test"].Profile)
+	}
+	if idx.Tasks["quick-test-cases-web-playwright"].Profile != "web-playwright" {
+		t.Errorf("quick-test-cases-web-playwright profile = %q, want web-playwright", idx.Tasks["quick-test-cases-web-playwright"].Profile)
+	}
+	// Business task has empty profile
+	if idx.Tasks["1-foo"].Profile != "" {
+		t.Errorf("1-foo profile = %q, want empty", idx.Tasks["1-foo"].Profile)
+	}
+}
+
+func TestDetectMode(t *testing.T) {
+	tests := []struct {
+		name string
+		mode string
+		want string
+	}{
+		{"breakdown", "breakdown", "breakdown"},
+		{"quick", "quick", "quick"},
+		{"neither", "", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			projectRoot, _, _ := setupBuildEnv(t, tt.mode)
+			got := detectMode(projectRoot, "test-feature")
+			if got != tt.want {
+				t.Errorf("detectMode = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestShouldSkipFile(t *testing.T) {
+	tests := []struct {
+		name string
+		want bool
+	}{
+		{"_template.md", true},
+		{"_private.md", true},
+		{"index.json", true},
+		{"1-foo.md", false},
+		{"gen-test-cases.md", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := shouldSkipFile(tt.name); got != tt.want {
+				t.Errorf("shouldSkipFile(%q) = %v, want %v", tt.name, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestIsTestTaskID(t *testing.T) {
+	tests := []struct {
+		id   string
+		want bool
+	}{
+		{"T-test-1", true},
+		{"T-test-2a", true},
+		{"T-quick-1", true},
+		{"1", false},
+		{"1.gate", false},
+		{"fix-1", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.id, func(t *testing.T) {
+			if got := isTestTaskID(tt.id); got != tt.want {
+				t.Errorf("isTestTaskID(%q) = %v, want %v", tt.id, got, tt.want)
+			}
+		})
+	}
+}

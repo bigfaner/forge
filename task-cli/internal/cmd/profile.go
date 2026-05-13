@@ -40,10 +40,41 @@ var profileDetectCmd = &cobra.Command{
 	Run:   runProfileDetect,
 }
 
+var (
+	profileGetManifest   bool
+	profileGetGenerate   bool
+	profileGetRun        bool
+	profileGetGraduate   bool
+	profileGetJustfile   bool
+	profileGetTemplate   string
+)
+
+var profileGetCmd = &cobra.Command{
+	Use:   "get <name>",
+	Short: "Get profile strategy file content",
+	Long: `Output a profile's strategy file or template content.
+Used by skills to retrieve profile data from embedded storage.
+
+Examples:
+  task profile get go-test --manifest
+  task profile get go-test --generate
+  task profile get web-playwright --template helpers.ts`,
+	Args: cobra.ExactArgs(1),
+	Run:  runProfileGet,
+}
+
 func init() {
 	profileCmd.Flags().BoolVar(&profileJSON, "json", false, "output as JSON")
 	profileCmd.AddCommand(profileSetCmd)
 	profileCmd.AddCommand(profileDetectCmd)
+	profileCmd.AddCommand(profileGetCmd)
+
+	profileGetCmd.Flags().BoolVar(&profileGetManifest, "manifest", false, "output manifest.yaml")
+	profileGetCmd.Flags().BoolVar(&profileGetGenerate, "generate", false, "output generate.md strategy")
+	profileGetCmd.Flags().BoolVar(&profileGetRun, "run", false, "output run.md strategy")
+	profileGetCmd.Flags().BoolVar(&profileGetGraduate, "graduate", false, "output graduate.md strategy")
+	profileGetCmd.Flags().BoolVar(&profileGetJustfile, "justfile", false, "output justfile-recipes")
+	profileGetCmd.Flags().StringVar(&profileGetTemplate, "template", "", "output a specific template file")
 }
 
 // profileResult holds the resolved profile info.
@@ -145,4 +176,42 @@ func printProfileResult(r profileResult) {
 		}
 	}
 	PrintBlockEnd()
+}
+
+func runProfileGet(_ *cobra.Command, args []string) {
+	name := args[0]
+
+	var data []byte
+	var err error
+	var label string
+
+	switch {
+	case profileGetManifest:
+		data, err = profile.GetManifest(name)
+		label = "manifest"
+	case profileGetGenerate:
+		data, err = profile.GetStrategy(name, "generate")
+		label = "generate"
+	case profileGetRun:
+		data, err = profile.GetStrategy(name, "run")
+		label = "run"
+	case profileGetGraduate:
+		data, err = profile.GetStrategy(name, "graduate")
+		label = "graduate"
+	case profileGetJustfile:
+		data, err = profile.GetJustfileRecipes(name)
+		label = "justfile"
+	case profileGetTemplate != "":
+		data, err = profile.GetTemplate(name, profileGetTemplate)
+		label = "template:" + profileGetTemplate
+	default:
+		Exit(NewAIError(ErrInvalidInput, "No flag specified", "Choose one: --manifest, --generate, --run, --graduate, --justfile, --template <file>", "task profile get go-test --generate", ""))
+	}
+
+	if err != nil {
+		Exit(NewAIError(ErrInvalidInput, "Failed to get profile data", err.Error(), fmt.Sprintf("Check that %q is a valid profile name", name), "task profile detect"))
+	}
+
+	fmt.Print(string(data))
+	_ = label
 }

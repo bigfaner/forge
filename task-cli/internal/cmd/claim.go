@@ -127,6 +127,7 @@ func executeClaim() (*ClaimResult, error) {
 		MainSession:   t.MainSession,
 		NoTest:        t.NoTest,
 		Type:          t.Type,
+		Profile:       t.Profile,
 	}
 	if err := task.SaveState(statePath, state); err != nil {
 		return nil, err
@@ -320,6 +321,7 @@ func printTaskDetails(key string, t *task.Task, projectRoot, featureSlug string)
 	PrintField("MAIN_SESSION", strconv.FormatBool(t.MainSession))
 	PrintField("TYPE", t.Type)
 	PrintFieldIfNotEmpty("SCOPE", t.Scope)
+	PrintFieldIfNotEmpty("PROFILE", t.Profile)
 	PrintField("NO_TEST", strconv.FormatBool(t.NoTest))
 	PrintFieldIfNotEmpty("FEATURE", featureSlug)
 	PrintField("FILE", filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, t.File)))

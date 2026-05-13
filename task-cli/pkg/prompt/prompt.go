@@ -101,6 +101,7 @@ func renderTemplate(templateFile string, opts SynthesizeOpts, t task.Task) (stri
 	result = strings.ReplaceAll(result, "{{SCOPE}}", scope)
 	result = strings.ReplaceAll(result, "{{FEATURE_SLUG}}", opts.FeatureSlug)
 	result = strings.ReplaceAll(result, "{{PHASE_SUMMARY}}", phaseSummaryLine)
+	result = strings.ReplaceAll(result, "{{PROFILE}}", t.Profile)
 
 	return result, nil
 }
@@ -186,31 +187,8 @@ func isBusinessTask(id string) bool {
 	return true
 }
 
-// InferType infers the task type from the task ID using the migration rules.
-// Always returns a non-empty string (falls back to TypeImplementation).
+// InferType infers the task type from the task ID.
+// Delegates to task.InferType. Kept for backward compatibility.
 func InferType(id string) string {
-	switch {
-	case strings.HasSuffix(id, ".summary"):
-		return task.TypeDocGenerationSummary
-	case strings.HasSuffix(id, ".gate"):
-		return task.TypeGate
-	case id == "T-test-1":
-		return task.TypeTestPipelineGenCases
-	case id == "T-test-1b":
-		return task.TypeTestPipelineEvalCases
-	case id == "T-test-2":
-		return task.TypeTestPipelineGenScripts
-	case id == "T-test-3":
-		return task.TypeTestPipelineRun
-	case id == "T-test-4":
-		return task.TypeTestPipelineGraduate
-	case id == "T-test-4.5":
-		return task.TypeTestPipelineVerifyRegression
-	case id == "T-test-5":
-		return task.TypeDocGenerationConsolidate
-	case strings.HasPrefix(id, "fix-") || strings.HasPrefix(id, "disc-"):
-		return task.TypeFix
-	default:
-		return task.TypeImplementation
-	}
+	return task.InferType(id)
 }

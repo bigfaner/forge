@@ -110,7 +110,7 @@ graph LR
 
 All task-executing workflows (`/execute-task`, `task-executor` agent, `/fix-bug`, `type: fix` tasks) MUST pass the quality gate before recording completion.
 
-Quality gate sequence: `just compile → just fmt → just lint → just test`. On failure: compile → fix & retry; fmt → blocked (toolchain issue); lint → self-fix (1 retry) then blocked; test → fix & retry.
+Quality gate sequence: `just compile → just fmt → just lint → just test`. On failure: compile → fix & retry; fmt → WARNING (non-blocking, toolchain issue); lint → self-fix (1 retry) then blocked; test → fix & retry.
 
 ### Scope Resolution
 
@@ -152,15 +152,5 @@ Unit (per task) ──→ Feature E2E (T-test-3) ──→ Regression (graduate 
 Task CLI manages task lifecycle within feature workflows.
 
 **Typical flow**: Before starting work, run `task feature` → `task claim` to get a task → `task record` to save results + update task status.
-
-### Key Commands
-
-| Operation | Command | Description |
-|-----------|---------|-------------|
-| Switch feature | `task feature <slug>` | Set current work context |
-| Claim task | `task claim` | Get next available task |
-| Complete task | `task record <id> --data docs/features/{slug}/tasks/process/record.json` | **One step for record + status update** |
-| Add task | `task add --title "..." [flags]` | Add task to current feature |
-| Apply template | `task template <name>` | View task template content |
 
 > For record workflow details, see the `/record-task` skill. For full command reference, run `task -h` or `task [command] -h`.
