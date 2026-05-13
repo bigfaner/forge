@@ -10,6 +10,8 @@
 		"task",
 		"eval",
 		"e2e",
-		"test-profile"
+		"test-profile",
+		"ui-design",
+		"sitemap"
 	]
 }

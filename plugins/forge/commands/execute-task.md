@@ -67,6 +67,7 @@ task query <TASK_ID>
 
 - **STATUS == `"completed"`**: proceed to Step 3 (Breaking Gate).
 - **STATUS != `"completed"`**: task was auto-downgraded (e.g. test failures).
+  **Auto-downgrade rule**: If `testsFailed > 0`, `task record` automatically downgrades `completed` to `blocked` (non-overridable, even with `--force`). All tests must pass for completion.
   Spawn fix task using `--block-source` to atomically block the source:
   ```bash
   task add --template fix-task --title "Fix: <failure>" \

@@ -9,27 +9,29 @@ description: Evaluate a proposal document with 1000-point scoring, then run adve
 
 Check previous stage artifacts. Abort and prompt user if missing:
 
-| Artifact | Missing prompt |
-|----------|----------------|
+| Artifact                            | Missing prompt          |
+| ----------------------------------- | ----------------------- |
 | `docs/proposals/<slug>/proposal.md` | Run `/brainstorm` first |
 
 ## When to Use
 
 **Trigger:**
+
 - User says yes to adversarial eval prompt after `/brainstorm`
 - User provides `/eval-proposal` command
 - User wants iterative refinement: `/eval-proposal --target 900 --iterations 5`
 
 **Skip:**
+
 - No proposal document exists (use `/brainstorm` first)
 - Requirements are already in PRD form (use `/eval-prd` instead)
 
 ## Parameters
 
-| Parameter      | Default | Description                                              |
-| -------------- | ------- | -------------------------------------------------------- |
-| `--target`     | 900     | Target score (0-1000). Loop stops when score >= target   |
-| `--iterations` | 3       | Max adversarial iterations                               |
+| Parameter      | Default | Description                                            |
+| -------------- | ------- | ------------------------------------------------------ |
+| `--target`     | 900     | Target score (0-1100). Loop stops when score >= target |
+| `--iterations` | 3       | Max adversarial iterations                             |
 
 ## Architecture
 
@@ -60,6 +62,7 @@ flowchart TD
 ## Step 1: Locate Proposal
 
 Check in order:
+
 1. Path provided by user
 2. `docs/proposals/<slug>/` — find latest by modification time
 3. Glob `docs/proposals/*/` and list options to user
@@ -83,6 +86,7 @@ The scorer must NEVER be told what the reviser changed. It evaluates the proposa
 </HARD-RULE>
 
 After the scorer returns, parse its output in the main session:
+
 1. Extract `SCORE: X/1000`
 2. Extract per-dimension scores from `DIMENSIONS:` section
 3. Extract attack points from `ATTACKS:` section
@@ -102,6 +106,7 @@ This decision is made in the MAIN SESSION, not delegated to a subagent. This gat
 If the user says "continue" or "keep going": run the scorer once more (return to Step 2), then re-evaluate this gate. Do NOT skip the gate and invoke the reviser directly.
 
 Only if proceeding to Step 4, report to user:
+
 ```
 Iteration {{N}}/{{MAX}}: scored {{SCORE}}/1000 (target: {{TARGET}}). Revision subagent starting...
 ```

@@ -1,7 +1,10 @@
 ---
 name: simplify-skill
 description: Refactor skill files by extracting templates/examples to separate files.
-argument-hints: skill name
+argument-hints:
+  - name: skill-name
+    description: Name of the skill to simplify (e.g. brainstorm, write-prd)
+    required: true
 allowed_tools: ["Read", "Write", "Edit", "AskUserQuestion"]
 ---
 

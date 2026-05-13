@@ -153,14 +153,4 @@ Task CLI manages task lifecycle within feature workflows.
 
 **Typical flow**: Before starting work, run `task feature` → `task claim` to get a task → `task record` to save results + update task status.
 
-### Key Commands
-
-| Operation | Command | Description |
-|-----------|---------|-------------|
-| Switch feature | `task feature <slug>` | Set current work context |
-| Claim task | `task claim` | Get next available task |
-| Complete task | `task record <id> --data docs/features/{slug}/tasks/process/record.json` | **One step for record + status update** |
-| Add task | `task add --title "..." [flags]` | Add task to current feature |
-| Apply template | `task template <name>` | View task template content |
-
 > For record workflow details, see the `/record-task` skill. For full command reference, run `task -h` or `task [command] -h`.
