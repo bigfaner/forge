@@ -24,7 +24,7 @@ description: Analyze past session transcripts to identify root causes of agent d
 | `--keyword`   | —       | Search history.jsonl for sessions with keyword  |
 | `--session`   | —       | Analyze a specific session ID                  |
 | `--skill`     | —       | Analyze sessions that invoked a specific skill  |
-| `--last`      | 10      | Limit number of sessions to search             |
+| `--last`      | 20      | Limit number of sessions to search             |
 | `--target`    | —       | Specific behavior to investigate (e.g. "agent ignored MAIN_SESSION flag") |
 
 ## Prerequisites
@@ -91,6 +91,7 @@ For each confirmed session, extract compact evidence:
 mkdir -p docs/forensics/<slug>/evidence
 
 task forensic extract ~/.claude/projects/-Users-fanhuifeng-Projects-ai-coding-harness-forge/<SESSION_ID>.jsonl --out docs/forensics/<slug>/evidence
+# Or use --slug shorthand: task forensic extract <path>.jsonl --slug <slug>
 ```
 
 Then check for subagent transcripts:

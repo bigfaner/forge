@@ -101,7 +101,7 @@ custom-branch              → custom-branch
                                               │
                                               ▼
                               ┌─────────────────────────┐
-                              │ Sort by Phase → Priority│
+                              │ Sort by Priority → ID   │
                               │                         │
                               └────────────┬────────────┘
                                               │
@@ -139,39 +139,51 @@ for each dep in T.Dependencies:
 
 ---
 
-## 2. Task Record Generation Workflow
+## 3. Task Record Generation Workflow
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│              task record <task-id> < input.json                 │
+│              task record <task-id> --data <path>                │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
                     ┌─────────────────┐
-                    │ Read from stdin │
+                    │ Read & parse    │
                     │ JSON data       │
                     └────────┬────────┘
                               │
                               ▼
                     ┌─────────────────┐
-                    │ Parse RecordData│
                     │ Validate        │
                     │ required fields │
                     └────────┬────────┘
                               │
                               ▼
-                    ┌─────────────────┐
-                    │ Generate from   │
-                    │ template        │
-                    │ Markdown content│
-                    └────────┬────────┘
-                              │
-                              ▼
-                    ┌─────────────────┐
-                    │ Write to        │
-                    │ records/        │
-                    │ <task-id>.md    │
-                    └─────────────────┘
+                    ┌─────────────────────┐
+                    │ Quality gate check  │
+                    │ (completed only,    │
+                    │  not NoTest,        │
+                    │  not --force):      │
+                    │ just compile → fmt  │
+                    │ → lint → test      │
+                    └────────┬────────────┘
+                             │
+                 ┌───────────┴───────────┐
+                 │                       │
+                 ▼                       ▼
+       ┌──────────────────┐    ┌──────────────────┐
+       │ Gate passed or   │    │ testsFailed > 0  │
+       │ skipped          │    │ Auto-downgrade:  │
+       └────────┬─────────┘    │ completed→blocked│
+                │              │ (non-overridable)│
+                │              └────────┬─────────┘
+                │                       │
+                ▼                       ▼
+       ┌───────────────────────────────────────┐
+       │ Generate markdown from template       │
+       │ Write to records/<task-id>.md         │
+       │ Update index.json status              │
+       └───────────────────────────────────────┘
 ```
 
 ### RecordData Structure
@@ -196,7 +208,7 @@ for each dep in T.Dependencies:
 
 ---
 
-## 3. verifyCompletion Workflow
+## 4. verifyCompletion Workflow
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -239,7 +251,7 @@ Note: verifyCompletion only validates status; it does not delete any files.
 
 ---
 
-## 4. Cleanup Workflow
+## 5. Cleanup Workflow
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -265,10 +277,10 @@ Note: verifyCompletion only validates status; it does not delete any files.
                               │                               │
                               ▼                               ▼
                     ┌─────────────────┐             ┌─────────────────┐
-                    │ Task completed   │             │ Task not         │
-                    │ Delete state file│             │ completed       │
-                    └────────┬────────┘             │ Keep state file  │
-                              │                      └─────────────────┘
+                    │ Task completed/  │             │ Task not         │
+                    │ blocked/rejected │             │ completed       │
+                    │ Delete state file│             │ Keep state file  │
+                    └────────┬────────┘             └─────────────────┘
                               ▼
                     ┌─────────────────┐
                     │ Delete:         │
@@ -280,7 +292,7 @@ Note: verifyCompletion only validates status; it does not delete any files.
 
 ---
 
-## 5. All-Completed Workflow
+## 6. All-Completed Workflow
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -289,18 +301,25 @@ Note: verifyCompletion only validates status; it does not delete any files.
                               │
                               ▼
                     ┌─────────────────┐
-                    │ Load index.json │
-                    │ Get all tasks   │
+                    │ FindProjectRoot │
+                    │ GetCurrentFeature│
+                    └────────┬────────┘
+                              │
+                              ▼
+                    ┌─────────────────┐
+                    │ .forge/state.json│
+                    │ allCompleted=true│
+                    │ guard check      │
                     └────────┬────────┘
                               │
               ┌───────────────┴───────────────┐
               │                               │
               ▼                               ▼
     ┌─────────────────┐             ┌─────────────────┐
-    │ All completed   │             │ Has incomplete   │
-    │ or skipped      │             │ tasks            │
-    └────────┬────────┘             │ Silent exit(0)   │
-              │                      └─────────────────┘
+    │ Guard passed:   │             │ No guard or     │
+    │ consume state,  │             │ incomplete tasks │
+    │ load index.json │             │ Silent exit(0)   │
+    └────────┬────────┘             └─────────────────┘
               ▼
     ┌─────────────────┐
     │ Warn if e2e     │
@@ -310,29 +329,53 @@ Note: verifyCompletion only validates status; it does not delete any files.
     └────────┬────────┘
               │
               ▼
-    ┌─────────────────┐
-    │ Project-wide    │
-    │ unit/integration│
-    │ tests           │
+    ┌─────────────────┐      ┌──────────────────────────────┐
+    │ Step 1: Quality │─────►│ FAIL: addFixTask() creates   │
+    │ gate            │      │ P0 fix-task, save output,    │
+    │ just compile    │      │ block hook → exit(0)         │
+    │ just fmt        │      └──────────────────────────────┘
+    │ (non-blocking)  │
+    │ just lint       │
     └────────┬────────┘
-              │
+              │ pass
+              ▼
+    ┌─────────────────┐      ┌──────────────────────────────┐
+    │ Step 2: Project │─────►│ FAIL: addFixTask() creates   │
+    │ -wide tests     │      │ P0 fix-task, save output,    │
+    │ just test       │      │ block hook → exit(0)         │
+    └────────┬────────┘      └──────────────────────────────┘
+              │ pass
               ▼
     ┌─────────────────┐
-    │ E2E regression  │
-    │ (just test-e2e) │
-    │ if available    │
-    └────────┬────────┘
-              │
-    ┌─────────┴──────────┐
-    │                    │
-    ▼                    ▼
-┌──────────┐      ┌──────────────────────────┐
-│ PASS:    │      │ FAIL: Save raw output    │
-│ exit 0   │      │ Block hook → Agent reads │
-└──────────┘      │ raw output → task add    │
-                  │ → claim fix tasks        │
-                  └──────────────────────────┘
+    │ Step 3: E2E     │
+    │ regression      │
+    │ (if test-e2e    │
+    │  recipe exists) │
+    │                 │
+    │ 3a. just        │──────► setup FAIL: skip e2e, warn
+    │     e2e-setup   │
+    │                 │
+    │ 3b. Server      │──────► probe FAIL: skip e2e, warn
+    │     health      │
+    │     probe       │
+    │                 │
+    │ 3c. just        │      ┌──────────────────────────────┐
+    │     test-e2e    │─────►│ FAIL: addFixTask() creates   │
+    │                 │      │ P0 fix-task, save output,    │
+    └────────┬────────┘      │ block hook → exit(0)         │
+             │               └──────────────────────────────┘
+             │ pass (or e2e unavailable)
+             ▼
+    ┌─────────────────┐
+    │ ALL PASS:       │
+    │ exit(0)         │
+    └─────────────────┘
 ```
+
+**addFixTask()**: On failure at any gate/test step, auto-creates a P0 fix-task using
+the `fix-task` template. Extracts source files from error output, saves raw output
+to `tests/results/` (unit) or `tests/e2e/results/` (e2e), updates `.forge/state.json`,
+and prints a hook JSON block reason so the agent can `task claim` the fix.
 
 **Note**: Feature e2e tests are NOT run by this hook.
 They are owned by T-test-3 (`run-e2e-tests` task) in the task chain.
@@ -348,7 +391,7 @@ This hook is the project health gate: unit/integration tests + regression suite.
 
 ---
 
-## 6. Validation Workflow
+## 7. Validation Workflow
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -362,53 +405,109 @@ This hook is the project health gate: unit/integration tests + regression suite.
                               │
                               ▼
                     ┌─────────────────┐
-                    │ JSON syntax     │
-                    │ validation      │
-                    └────────┬────────┘
-                              │
-                              ▼
-                    ┌─────────────────┐
-                    │ Required field  │
+                    │ 1. JSON syntax  │
                     │ check           │
-                    │ (id, title)     │
                     └────────┬────────┘
                               │
                               ▼
                     ┌─────────────────┐
-                    │ Dependency      │
+                    │ 2. Required     │
+                    │ field check     │
+                    │ (id, title,     │
+                    │  file, type)    │
+                    └────────┬────────┘
+                              │
+                              ▼
+                    ┌─────────────────┐
+                    │ 3. Dependency   │
                     │ reference       │
-                    │ validation      │
-                    │ (refs must have │
-                    │  existing IDs)  │
+                    │ validity        │
+                    │ (incl. wildcard │
+                    │  match check)   │
                     └────────┬────────┘
                               │
                               ▼
                     ┌─────────────────┐
-                    │ Circular        │
+                    │ 4. Circular     │
                     │ dependency      │
-                    │ detection       │
-                    │ (DFS topological│
-                    │  sort)          │
+                    │ detection (DFS) │
                     └────────┬────────┘
                               │
                               ▼
                     ┌─────────────────┐
-                    │ File existence  │
+                    │ 5. Wildcard     │
+                    │ self-dependency │
                     │ check           │
+                    └────────┬────────┘
+                              │
+                              ▼
+                    ┌─────────────────┐
+                    │ 6. Gate         │
+                    │ integrity       │
+                    │ (gate→summary,  │
+                    │  next-phase→    │
+                    │  gate deps)     │
+                    └────────┬────────┘
+                              │
+                              ▼
+                    ┌─────────────────┐
+                    │ 7. Phase order  │
+                    │ validation      │
+                    │ (cross-phase    │
+                    │  deps exist)    │
+                    └────────┬────────┘
+                              │
+                              ▼
+                    ┌─────────────────┐
+                    │ 8. Phase        │
+                    │ summary         │
+                    │ validation      │
+                    │ (each phase has │
+                    │  .summary task) │
+                    └────────┬────────┘
+                              │
+                              ▼
+                    ┌─────────────────┐
+                    │ 9. Liveness     │
+                    │ check:          │
+                    │ orphaned, stale,│
+                    │ deadlock        │
+                    └────────┬────────┘
+                              │
+                              ▼
+                    ┌─────────────────┐
+                    │ 10. Type field  │
+                    │ validation      │
+                    │ (must be in     │
+                    │  ValidTypes)    │
+                    └────────┬────────┘
+                              │
+                              ▼
+                    ┌─────────────────┐
+                    │ 11. File        │
+                    │ existence check │
                     │ (tasks/*.md)    │
                     └────────┬────────┘
                               │
                               ▼
                     ┌─────────────────┐
-                    │ Output          │
-                    │ validation      │
-                    │ results         │
+                    │ 12. T-test-1 /  │
+                    │ T-quick-1       │
+                    │ template        │
+                    │ placeholder     │
+                    │ check           │
+                    └────────┬────────┘
+                              │
+                              ▼
+                    ┌─────────────────┐
+                    │ Output results  │
+                    │ (PASS/FAIL)     │
                     └─────────────────┘
 ```
 
 ---
 
-## 5. Circular Dependency Detection Algorithm
+## 8. Circular Dependency Detection Algorithm
 
 ```go
 // Depth-first search to detect cycles
@@ -451,7 +550,7 @@ func detectCycle(tasks map[string]Task) []string {
 
 ---
 
-## 7. Typical Development Workflow
+## 9. Typical Development Workflow
 
 ### Option 1: Using Git Branch (Recommended)
 
@@ -509,7 +608,7 @@ $ task claim
 
 ---
 
-## 8. Error Handling Workflow
+## 10. Error Handling Workflow
 
 ```
 Error Type              Handling
@@ -526,7 +625,7 @@ File not found          Return warning, does not block operation
 
 ---
 
-## 9. Feature State Management
+## 11. Feature State Management
 
 ### Set Feature
 
@@ -576,7 +675,7 @@ Examples:
 - `main` → use directory scan
 ```
 
-## 10. Dynamic Task Addition Workflow
+## 12. Dynamic Task Addition Workflow
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -666,7 +765,7 @@ Examples:
 - `fix-task`: Priority=P0, Breaking=true, EstimatedTime=30min, IDPrefix=fix
 - Defaults are applied unless the corresponding flag is explicitly set
 
-## 11. Fix-Task Lifecycle
+## 13. Fix-Task Lifecycle
 
 ```
 Source task (in_progress)
@@ -701,7 +800,7 @@ Source → pending
 
 **Nested fix-tasks:** When a fix-task itself fails, `--source-task-id` points to the FAILED fix-task (not the original source). Auto-restore chains: fix-B completes → fix-A restored → fix-A completes → source restored. Max nesting: 3 levels.
 
-## 12. State Machine
+## 14. State Machine
 
 ```
                     ┌──────────┐
@@ -737,22 +836,28 @@ Source → pending
       │            ┌──────────┐
       └───────────►│ skipped   │
                    └──────────┘
+
+      │            ┌──────────┐
+      └───────────►│ rejected  │
+                   └──────────┘
 ```
 
 **Guards:**
 - `completed → *`: Blocked (terminal state). Use `--force` to override.
+- `rejected → *`: Blocked (terminal state). Use `--force` to override.
+- `skipped → *`: Blocked (terminal state). Use `--force` to override.
 - `in_progress → completed`: Blocked. Use `task record` instead.
 - `* → pending` / `* → in_progress`: Requires all dependencies to be completed or skipped.
 - `--force` flag bypasses all state machine guards.
 
-## 13. Lifecycle Liveness Validation
+## 15. Lifecycle Liveness Validation
 
 `task validate` detects lifecycle anomalies:
 - **Orphaned**: blocked task with no dependencies
 - **Stale**: blocked task whose deps are all completed or skipped (should be pending)
 - **Deadlock**: blocked task whose deps are all blocked or missing (no path to resolution)
 
-## 14. Index Build Workflow
+## 16. Index Build Workflow
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐

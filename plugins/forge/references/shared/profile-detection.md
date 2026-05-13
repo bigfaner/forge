@@ -1,39 +1,38 @@
 # Test Profile Auto-Detection Rules
 
-When `.forge/config.yaml` does not exist, use these rules to detect the appropriate test profile.
+When `.forge/config.yaml` does not specify `test-profiles`, `task profile detect` scans the project root for file signals. Multiple signals may produce multiple profiles (multi-profile support).
 
-## Detection Order
+## Detection Rules
 
-Check signals top-to-bottom; first match wins.
+All matching rules apply — profiles are accumulated, not exclusive.
 
 | # | Signal | Profile |
 |---|--------|---------|
-| 1 | `package.json` exists AND (`playwright.config.ts` or `playwright.config.js` exists OR `@playwright/test` in devDependencies) | `web-playwright` |
+| 1 | `package.json` exists AND (`playwright.config.*` exists OR `@playwright/test` in devDependencies/dependencies) | `web-playwright` |
 | 2 | `go.mod` exists | `go-test` |
 | 3 | `android/` or `ios/` directory exists at project root | `maestro` |
 | 4 | `pom.xml` or `build.gradle` or `build.gradle.kts` exists | `java-junit` |
 | 5 | `Cargo.toml` exists | `rust-test` |
-| 6 | (`requirements.txt` or `pyproject.toml`) exists AND `pytest` listed as dependency | `pytest` |
-| 7 | `package.json` exists AND frontend router detected (`src/App.tsx`, `src/router.tsx`, `next.config.*`, `nuxt.config.*`, `vite.config.*`) | `web-playwright` |
+| 6 | (`requirements.txt` or `pyproject.toml`) contains `pytest` | `pytest` |
+| 7 | `package.json` exists AND no Playwright detected (fallback) | `web-playwright` |
 
-## No Match
+## Resolution Priority
 
-If none of the above signals match, **ask the user explicitly**. Do NOT silently default to any profile.
+1. **Config file** (`.forge/config.yaml` `test-profiles` key) — always wins
+2. **Auto-detection** — scans project root using rules above
+3. **No match** — outputs `PROFILE: (none)`, skills ask user to choose
 
-Present the user with the list of available profiles and ask them to choose:
+## Multi-Profile
+
+A project may match multiple rules. For example, a Go backend with a Python CLI tool:
 
 ```
-Could not auto-detect a test profile for this project. Please select one:
-
-1. web-playwright — Web UI/API/CLI (Playwright + TypeScript)
-2. go-test — Go CLI/TUI/backend (go test)
-3. maestro — React Native / Flutter (Maestro CLI)
-4. java-junit — Java CLI/backend (JUnit 5 + Maven)
-5. rust-test — Rust CLI/backend (cargo test)
-6. pytest — Python CLI/backend (pytest)
+go.mod          → go-test
+requirements.txt with pytest → pytest
+Result: [go-test, pytest]
 ```
 
-After the user selects, write `.forge/config.yaml` with their choice so future runs don't need to ask again.
+When multiple profiles are active, test tasks are expanded per-profile with letter suffixes (a, b, c, ...).
 
 ## Capabilities Reference
 

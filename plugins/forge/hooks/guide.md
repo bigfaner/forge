@@ -110,7 +110,7 @@ graph LR
 
 All task-executing workflows (`/execute-task`, `task-executor` agent, `/fix-bug`, `type: fix` tasks) MUST pass the quality gate before recording completion.
 
-Quality gate sequence: `just compile → just fmt → just lint → just test`. On failure: compile → fix & retry; fmt → blocked (toolchain issue); lint → self-fix (1 retry) then blocked; test → fix & retry.
+Quality gate sequence: `just compile → just fmt → just lint → just test`. On failure: compile → fix & retry; fmt → WARNING (non-blocking, toolchain issue); lint → self-fix (1 retry) then blocked; test → fix & retry.
 
 ### Scope Resolution
 

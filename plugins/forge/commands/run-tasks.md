@@ -177,7 +177,7 @@ The dispatcher evaluates SCOPE and FEATURE from Step 1 claim output BEFORE execu
 Pre-conditions (all must be true):
 - SCOPE is `frontend` or `all` (defaults to "all" if absent from claim output)
 - FEATURE is non-empty (always true after successful claim)
-- Feature has e2e spec files: `tests/e2e/features/$FEATURE/` contains `.spec.ts` files
+- Feature has e2e spec files: `tests/e2e/features/$FEATURE/` directory is non-empty
 - `test-e2e` recipe exists in justfile
 
 ```bash
@@ -186,8 +186,8 @@ SKIP=""
 just --list 2>/dev/null | grep -q "test-e2e" || { echo "Skip: test-e2e recipe not found"; SKIP=true; }
 
 # Check if specs exist for this feature
-if [ -z "$(ls "tests/e2e/features/$FEATURE/"*.spec.ts 2>/dev/null)" ]; then
-    echo "Skip: no .spec.ts files in tests/e2e/features/$FEATURE/"
+if [ ! -d "tests/e2e/features/$FEATURE/" ] || [ -z "$(ls -A "tests/e2e/features/$FEATURE/" 2>/dev/null)" ]; then
+    echo "Skip: no spec files in tests/e2e/features/$FEATURE/"
     SKIP=true
 fi
 
@@ -205,7 +205,7 @@ fi
     --source-task-id <TASK_ID> \
     --block-source \
     --var SOURCE_FILES="<affected source paths>" \
-    --var TEST_SCRIPT="tests/e2e/features/$FEATURE/<failing-spec>.spec.ts" \
+    --var TEST_SCRIPT="tests/e2e/features/$FEATURE/<failing-test-file>" \
     --var TEST_RESULTS="tests/e2e/features/$FEATURE/results/latest.md" \
     --description "<root cause and context>"
   ```

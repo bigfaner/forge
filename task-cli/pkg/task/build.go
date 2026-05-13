@@ -113,6 +113,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 			MainSession:   fm.MainSession,
 			NoTest:        fm.NoTest,
 			Type:          taskType,
+			Profile:       fm.Profile,
 		}
 
 		// Merge with existing

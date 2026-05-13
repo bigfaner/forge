@@ -4,7 +4,6 @@ title: "{{TITLE}}"
 priority: "P0"
 estimated_time: "1h"
 dependencies: [{{DEPENDENCIES}}]
-status: pending
 breaking: true
 type: "gate"
 mainSession: false

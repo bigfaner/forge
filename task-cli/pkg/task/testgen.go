@@ -144,9 +144,11 @@ func GenerateTestTaskMD(def TestTaskDef, slug string) ([]byte, error) {
 	fmt.Fprintf(&buf, "priority: %q\n", def.Priority)
 	fmt.Fprintf(&buf, "estimated_time: %q\n", def.EstimatedTime)
 	fmt.Fprintf(&buf, "dependencies: %v\n", formatYAMLList(def.Dependencies))
-	fmt.Fprintf(&buf, "status: pending\n")
 	fmt.Fprintf(&buf, "type: %q\n", def.Type)
 	fmt.Fprintf(&buf, "scope: %q\n", def.Scope)
+		if def.ProfileName != "" {
+			fmt.Fprintf(&buf, "profile: %q\n", def.ProfileName)
+		}
 	if def.NoTest {
 		buf.WriteString("noTest: true\n")
 	}
@@ -154,7 +156,6 @@ func GenerateTestTaskMD(def TestTaskDef, slug string) ([]byte, error) {
 		buf.WriteString("mainSession: true\n")
 	}
 	buf.WriteString("---\n\n")
-
 	// Body
 	if def.ProfileName != "" && def.StrategyKind != "" {
 		if len(def.StrategyContent) > 0 {
@@ -401,5 +402,6 @@ func (d TestTaskDef) TaskFromFile() Task {
 		MainSession:   d.MainSession,
 		NoTest:        d.NoTest,
 		Type:          d.Type,
+		Profile:       d.ProfileName,
 	}
 }

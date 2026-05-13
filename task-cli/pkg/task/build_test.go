@@ -544,6 +544,19 @@ func TestBuildIndex_WithTestTasks(t *testing.T) {
 	} else if idx.Tasks["gen-test-cases"].Dependencies[0] != "2.gate" {
 		t.Errorf("T-test-1 dep = %v, want [2.gate]", idx.Tasks["gen-test-cases"].Dependencies)
 	}
+
+	// Verify Profile field: per-profile test tasks have profile set
+	if idx.Tasks["gen-test-scripts-go-test"].Profile != "go-test" {
+		t.Errorf("gen-test-scripts-go-test profile = %q, want go-test", idx.Tasks["gen-test-scripts-go-test"].Profile)
+	}
+	// Shared test task (gen-test-cases in breakdown mode) has empty profile
+	if idx.Tasks["gen-test-cases"].Profile != "" {
+		t.Errorf("gen-test-cases profile = %q, want empty", idx.Tasks["gen-test-cases"].Profile)
+	}
+	// Business task has empty profile
+	if idx.Tasks["1-gate"].Profile != "" {
+		t.Errorf("1-gate profile = %q, want empty", idx.Tasks["1-gate"].Profile)
+	}
 }
 
 func TestBuildIndex_TestTasksIdempotent(t *testing.T) {
@@ -618,6 +631,22 @@ func TestBuildIndex_MultiProfile(t *testing.T) {
 		if _, err := os.Stat(filepath.Join(tasksDir, name)); os.IsNotExist(err) {
 			t.Errorf("%s not generated", name)
 		}
+	}
+
+	// Verify Profile field: per-profile test tasks have profile set
+	data, _ := os.ReadFile(indexPath)
+	var idx taskIndexJSON
+	json.Unmarshal(data, &idx)
+
+	if idx.Tasks["quick-test-cases-go-test"].Profile != "go-test" {
+		t.Errorf("quick-test-cases-go-test profile = %q, want go-test", idx.Tasks["quick-test-cases-go-test"].Profile)
+	}
+	if idx.Tasks["quick-test-cases-web-playwright"].Profile != "web-playwright" {
+		t.Errorf("quick-test-cases-web-playwright profile = %q, want web-playwright", idx.Tasks["quick-test-cases-web-playwright"].Profile)
+	}
+	// Business task has empty profile
+	if idx.Tasks["1-foo"].Profile != "" {
+		t.Errorf("1-foo profile = %q, want empty", idx.Tasks["1-foo"].Profile)
 	}
 }
 

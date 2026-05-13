@@ -4,7 +4,6 @@ title: "{{TITLE}}"
 priority: "P0"
 estimated_time: "15min"
 dependencies: [{{DEPENDENCIES}}]
-status: pending
 type: "doc-generation.summary"
 mainSession: false
 ---

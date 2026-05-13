@@ -48,7 +48,7 @@ Override with `--force`: `task record <id> --data record.json --force`
 | `task query <id>` | Query task details |
 | `task feature [slug]` | Set/display current feature |
 
-**Status values:** `pending`, `in_progress`, `completed`, `blocked`, `skipped`
+**Status values:** `pending`, `in_progress`, `completed`, `blocked`, `skipped`, `rejected`
 
 **State machine guards:**
 - `completed` is terminal — cannot transition out without `--force`
@@ -77,11 +77,17 @@ Override with `--force`: `task record <id> --data record.json --force`
 
 | Command | Purpose | Function |
 |---------|---------|----------|
-| `task verifyCompletion` | PreToolUse (git commit) | Verify task completion status, block commits for incomplete tasks |
-| `task cleanup` | Stop | Clean up state files for completed tasks |
+| `task verify-completion` | PreToolUse (git commit) | Verify task completion status, block commits for incomplete tasks |
+| `task cleanup` | Stop | Clean up state files for completed, blocked, or rejected tasks |
 | `task all-completed` | Stop hook | Check if all tasks are completed, and if so, automatically run tests |
 | `task profile` | Profile resolution | Resolve active test profile from config or project structure |
 | `task index` | Index generation | Build or rebuild index.json from .md files with test task generation |
+| `task prompt <id>` | Prompt synthesis | Generate agent prompt for a task based on its type; `--fix-record-missed` for recovery |
+| `task template [name]` | Template viewer | List available templates or display template content |
+| `task forensic` | Session analysis | Search/extract past session transcripts for deviation analysis |
+| `task migrate` | Data migration | Infer type fields for all tasks in index.json |
+| `task validate-specs` | Spec validation | AST validation against generated Playwright spec files |
+| `task version` | Version info | Print CLI version |
 
 **`task profile` subcommands:**
 
@@ -100,20 +106,26 @@ Override with `--force`: `task record <id> --data record.json --force`
 | `package.json` + `@playwright/test` or `playwright.config.*` | `web-playwright` |
 | `go.mod` | `go-test` |
 | `android/` or `ios/` directory | `maestro` |
-| `pom.xml` or `build.gradle` | `java-junit` |
+| `pom.xml` or `build.gradle(.kts)` | `java-junit` |
 | `Cargo.toml` | `rust-test` |
 | `requirements.txt`/`pyproject.toml` + pytest | `pytest` |
 | `package.json` without Playwright | `web-playwright` (fallback) |
 
 **all-completed behavior:**
-- All tasks are `completed` or `skipped` → run project-wide unit/integration tests + e2e regression, exit 0
+- Guard: only proceeds when `.forge/state.json` has `allCompleted=true`
 - Any task is `pending`/`in_progress`/`blocked` → silent exit, exit 0
 - No feature or no project root → silent exit, exit 0
+- When all tasks done, runs a multi-step pipeline in order:
+  1. **Quality gate**: `just compile → just fmt (non-blocking) → just lint`
+  2. **Project-wide tests**: `just test` (or detected test command)
+  3. **E2E setup**: `just e2e-setup` (if recipe exists)
+  4. **Server health probe**: check e2e servers are responding before running tests
+  5. **E2E regression**: `just test-e2e` (if recipe exists)
 
-**e2e regression failure recovery:**
-- When regression (`just test-e2e`) fails, save raw output to `testing/results/raw-output.txt`
-- Block the Stop hook, telling the agent to analyze failures and use `task add` to create fix tasks
-- The agent reads raw output, determines root causes, and adds fix tasks dynamically
+**Auto-fix task creation on failure:**
+- At any step failure, `addFixTask()` creates a P0 fix-task using the `fix-task` template
+- Extracts source file paths from error output, saves raw output to disk
+- Prints hook JSON block reason → agent picks up fix task via `task claim`
 
 **feature e2e tests (NOT run by this hook):**
 - Feature e2e execution is owned by T-test-3 (`run-e2e-tests` task in the task chain)
@@ -227,10 +239,27 @@ type Task struct {
     SourceTaskID  string   `json:"sourceTaskID,omitempty"`  // ID of the task that spawned this task (e.g. fix-task -> source)
     MainSession   bool     `json:"mainSession,omitempty"`   // Task must run in main session (not dispatched to task-executor)
     NoTest        bool     `json:"noTest,omitempty"`        // Task does not require tests (e.g. documentation-only); skips quality gate and test evidence check
-    Type          string   `json:"type,omitempty"`          // Task execution type (e.g. "implementation", "fix", "gate"); required after migration
+    Type          string   `json:"type,omitempty"`          // Task execution type; required after migration
+    Profile       string   `json:"profile,omitempty"`       // Test profile name (e.g. "web-playwright"); set by task index for per-profile test tasks
     BlockedReason string   `json:"blockedReason,omitempty"` // Why this task entered blocked state; written by run-tasks when task prompt fails
 }
 ```
+
+**Valid task types (enforced by validation):**
+
+| Type | Description |
+|------|-------------|
+| `implementation` | Standard development task |
+| `fix` | Bug fix task (auto-created by all-completed on failure) |
+| `gate` | Quality gate between phases |
+| `doc-generation.summary` | Phase summary document generation |
+| `doc-generation.consolidate` | Specification consolidation |
+| `test-pipeline.gen-cases` | Test case generation |
+| `test-pipeline.eval-cases` | Test case evaluation |
+| `test-pipeline.gen-scripts` | Test script generation |
+| `test-pipeline.run` | E2E test execution |
+| `test-pipeline.graduate` | Test graduation to regression suite |
+| `test-pipeline.verify-regression` | Regression verification |
 
 ### TaskIndex
 
@@ -239,6 +268,7 @@ type TaskIndex struct {
     Feature      string          `json:"feature"`
     PRD          string          `json:"prd,omitempty"`
     Design       string          `json:"design,omitempty"`
+    Proposal     string          `json:"proposal,omitempty"`
     Created      string          `json:"created,omitempty"`
     Status       string          `json:"status,omitempty"`
     Tasks        map[string]Task `json:"tasks"`
@@ -274,7 +304,9 @@ Module interaction: via interfaces/type definitions, no direct dependency on int
 task claim              # Claim the next task
 task record 1.1         # Generate task record
 task record 1.1 --force # Generate task record (skip validation)
-task add --title "Fix: ..." --priority P0 --breaking  # Add a new task dynamically (auto-generates disc-N or template prefix ID)
+task add --title "Fix: ..." --priority P0 --breaking  # Add a new task dynamically
+task add --template fix-task --title "Fix ..." --source-task-id 1.1 --block-source  # Add fix-task, block source
+task add --title "..." --var KEY=VALUE  # Add task with template variables
 task status 1.1         # Query task status
 task status 1.1 done    # Update status
 task query 1.1          # Query task details
@@ -282,6 +314,6 @@ task feature auth       # Switch feature
 task check              # Dependency check
 task validate           # Validate index.json
 task index --feature <slug>  # Build index.json from .md files
-task verifyCompletion   # Verify task completion (git commit hook)
+task verify-completion   # Verify task completion (git commit hook)
 task cleanup            # Clean up completed task state (stop hook)
 ```

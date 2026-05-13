@@ -19,6 +19,7 @@ type FrontmatterData struct {
 	MainSession   bool     `yaml:"mainSession"`
 	NoTest        bool     `yaml:"noTest"`
 	Type          string   `yaml:"type"`
+	Profile       string   `yaml:"profile"`
 }
 
 // ParseFrontmatter extracts YAML frontmatter from a markdown file.

@@ -30,7 +30,7 @@ Check previous stage artifacts. Abort and prompt user if missing:
 
 | Parameter      | Default | Description                                            |
 | -------------- | ------- | ------------------------------------------------------ |
-| `--target`     | 900     | Target score (0-1100). Loop stops when score >= target |
+| `--target`     | 900     | Target score (0-1000). Loop stops when score >= target |
 | `--iterations` | 3       | Max adversarial iterations                             |
 
 ## Architecture
@@ -148,9 +148,9 @@ Increment iteration counter. Return to Step 2.
 |-----------|-------|-----|
 | Problem Definition | {{d1}} | 110 |
 | Solution Clarity | {{d2}} | 120 |
-| Industry Benchmarking | {{d3}} | 160 |
-| Requirements Completeness | {{d4}} | 140 |
-| Solution Creativity | {{d5}} | 130 |
+| Industry Benchmarking | {{d3}} | 120 |
+| Requirements Completeness | {{d4}} | 110 |
+| Solution Creativity | {{d5}} | 100 |
 | Feasibility | {{d6}} | 100 |
 | Scope Definition | {{d7}} | 80 |
 | Risk Assessment | {{d8}} | 90 |

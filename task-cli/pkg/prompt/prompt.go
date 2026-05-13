@@ -101,6 +101,7 @@ func renderTemplate(templateFile string, opts SynthesizeOpts, t task.Task) (stri
 	result = strings.ReplaceAll(result, "{{SCOPE}}", scope)
 	result = strings.ReplaceAll(result, "{{FEATURE_SLUG}}", opts.FeatureSlug)
 	result = strings.ReplaceAll(result, "{{PHASE_SUMMARY}}", phaseSummaryLine)
+	result = strings.ReplaceAll(result, "{{PROFILE}}", t.Profile)
 
 	return result, nil
 }

@@ -44,19 +44,21 @@ Post-task completion: create execution record + update task status.
 
 ## Fields
 
-| Field                 | Type   | Description                                  |
-| --------------------- | ------ | -------------------------------------------- |
-| `taskId`              | string | Task ID (verified against CLI arg if provided) |
-| `status`              | string | Task status, defaults to `completed`         |
-| `summary`             | string | Implementation summary                       |
-| `filesCreated`        | array  | List of newly created files                  |
-| `filesModified`       | array  | List of modified files                       |
-| `keyDecisions`        | array  | Key design decisions                         |
-| `testsPassed`         | int    | Number of tests passed                       |
-| `testsFailed`         | int    | Number of tests failed                       |
-| `coverage`            | float  | Coverage percentage (collected from test runner) |
-| `acceptanceCriteria`  | array  | `{criterion, met}` objects                   |
-| `notes`               | string | Optional notes or observations               |
+| Field                 | Type   | Required | Description                                  |
+| --------------------- | ------ | -------- | -------------------------------------------- |
+| `taskId`              | string | auto     | Task ID (verified against CLI arg, mismatch = hard error) |
+| `status`              | string | auto     | Defaults to `completed`; must be valid enum value |
+| `summary`             | string | **hard** | Implementation summary. Empty = hard error (non-overridable) |
+| `filesCreated`        | array  | optional | List of newly created files                  |
+| `filesModified`       | array  | optional | List of modified files                       |
+| `keyDecisions`        | array  | warning  | Key design decisions. Missing = warning (completed status only) |
+| `testsPassed`         | int    | context  | Number of tests passed. See Metrics Collection below |
+| `testsFailed`         | int    | context  | Number of tests failed. >0 with completed = auto-downgrade to blocked |
+| `coverage`            | float  | context  | Coverage percentage. Auto-set to `-1.0` for `noTest: true` tasks |
+| `acceptanceCriteria`  | array  | warning  | `{criterion, met}` objects. Missing = warning; any `met:false` = hard error (overridable) |
+| `notes`               | string | optional | Optional notes or observations               |
+
+> **context** = required for `completed` tasks without `noTest: true`; auto-relaxed when `noTest: true`.
 
 ## Metrics Collection (MANDATORY before writing record.json)
 
