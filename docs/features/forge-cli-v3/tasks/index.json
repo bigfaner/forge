@@ -155,7 +155,7 @@
       "dependencies": [
         "1.gate"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "file": "2.6-template-empty-placeholder.md",
       "record": "records/2.6-template-empty-placeholder.md",
       "scope": "backend",

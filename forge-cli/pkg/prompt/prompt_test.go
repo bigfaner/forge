@@ -180,6 +180,171 @@ func TestSynthesize_UnknownType_ReturnsError(t *testing.T) {
 	}
 }
 
+// --- Empty variable rendering tests ---
+
+func TestSynthesize_EmptyPhaseSummary_NoResidual(t *testing.T) {
+	// Phase 1 tasks have no PHASE_SUMMARY; verify no residual text.
+	dir := t.TempDir()
+	tasks := map[string]task.Task{
+		"1.1-impl": {
+			ID:     "1.1",
+			Title:  "Test task",
+			Status: "pending",
+			File:   "1.1-impl.md",
+			Record: "records/1.1-impl.md",
+			Type:   task.TypeImplementation,
+			Scope:  "backend",
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{
+		ProjectRoot: dir,
+		FeatureSlug: "test-feature",
+		TaskID:      "1.1",
+	}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// The sentence "If `` is non-empty" must NOT appear.
+	if strings.Contains(result, "If `` is non-empty") {
+		t.Errorf("result contains residual empty-backtick sentence:\n%s", result)
+	}
+
+	// No "PHASE_SUMMARY:" label should remain.
+	if strings.Contains(result, "PHASE_SUMMARY:") {
+		t.Errorf("result contains residual PHASE_SUMMARY label:\n%s", result)
+	}
+
+	// Check that consecutive blank lines don't appear (which would indicate
+	// a removed placeholder left an extra blank line).
+	if strings.Contains(result, "\n\n\n") {
+		t.Errorf("result contains triple newlines (likely from removed placeholder):\n%s", result)
+	}
+}
+
+func TestSynthesize_NonEmptyPhaseSummary_Preserved(t *testing.T) {
+	// Phase 2 task with phase 1 completed and a summary file present.
+	dir := t.TempDir()
+	tasks := map[string]task.Task{
+		"1.1-impl": {
+			ID:     "1.1",
+			Title:  "Phase 1 task",
+			Status: "completed",
+			File:   "1.1-impl.md",
+			Record: "records/1.1-impl.md",
+			Type:   task.TypeImplementation,
+			Scope:  "backend",
+		},
+		"2.1-impl": {
+			ID:     "2.1",
+			Title:  "Phase 2 task",
+			Status: "pending",
+			File:   "2.1-impl.md",
+			Record: "records/2.1-impl.md",
+			Type:   task.TypeImplementation,
+			Scope:  "backend",
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	// Create the phase 1 summary.
+	summaryPath := filepath.Join(dir, "docs", "features", "test-feature", "tasks", "records", "1-summary.md")
+	if err := os.WriteFile(summaryPath, []byte("# Phase 1 Summary"), 0644); err != nil {
+		t.Fatalf("write summary: %v", err)
+	}
+
+	opts := SynthesizeOpts{
+		ProjectRoot: dir,
+		FeatureSlug: "test-feature",
+		TaskID:      "2.1",
+	}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// The conditional sentence should be present with the actual summary path.
+	if !strings.Contains(result, "1-summary.md") {
+		t.Errorf("result should reference the summary file:\n%s", result)
+	}
+	// The conditional sentence with backticks should contain the path (not empty backticks).
+	if strings.Contains(result, "If `` is non-empty") {
+		t.Errorf("result contains residual empty-backtick sentence:\n%s", result)
+	}
+}
+
+func TestSynthesize_EmptyScope_NoTrailingSpace(t *testing.T) {
+	// When scope is "" or "all", the SCOPE variable is empty.
+	// Check that "SCOPE: " (with trailing space) is cleaned up.
+	dir := t.TempDir()
+	tasks := map[string]task.Task{
+		"1.1-impl": {
+			ID:     "1.1",
+			Title:  "Test task",
+			Status: "pending",
+			File:   "1.1-impl.md",
+			Record: "records/1.1-impl.md",
+			Type:   task.TypeImplementation,
+			Scope:  "", // empty scope
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{
+		ProjectRoot: dir,
+		FeatureSlug: "test-feature",
+		TaskID:      "1.1",
+	}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// "just compile " (trailing space) should not appear.
+	lines := strings.Split(result, "\n")
+	for i, line := range lines {
+		trimmed := strings.TrimRight(line, " \t")
+		if line != trimmed && strings.HasPrefix(trimmed, "just ") {
+			t.Errorf("line %d has trailing space after 'just' command: %q", i+1, line)
+		}
+	}
+}
+
+func TestSynthesize_EmptyProfile_NoResidual(t *testing.T) {
+	// Test pipeline templates with no profile set.
+	dir := t.TempDir()
+	tasks := map[string]task.Task{
+		"1.1-impl": {
+			ID:     "1.1",
+			Title:  "Test task",
+			Status: "pending",
+			File:   "1.1-impl.md",
+			Record: "records/1.1-impl.md",
+			Type:   task.TypeTestPipelineGenScripts,
+			Scope:  "backend",
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{
+		ProjectRoot: dir,
+		FeatureSlug: "test-feature",
+		TaskID:      "1.1",
+	}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// "PROFILE: " (with trailing space and no value) should not appear.
+	if strings.Contains(result, "PROFILE: \n") || strings.Contains(result, "PROFILE: \r\n") {
+		t.Errorf("result contains empty PROFILE label:\n%s", result)
+	}
+}
+
 // --- PhaseDetect tests ---
 
 func TestPhaseDetect_NewPhase(t *testing.T) {

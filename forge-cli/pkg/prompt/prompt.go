@@ -103,6 +103,8 @@ func renderTemplate(templateFile string, opts SynthesizeOpts, t task.Task) (stri
 	result = strings.ReplaceAll(result, "{{PHASE_SUMMARY}}", phaseSummaryLine)
 	result = strings.ReplaceAll(result, "{{PROFILE}}", t.Profile)
 
+	result = cleanTemplateOutput(result)
+
 	return result, nil
 }
 
@@ -191,4 +193,67 @@ func isBusinessTask(id string) bool {
 // Delegates to task.InferType. Kept for backward compatibility.
 func InferType(id string) string {
 	return task.InferType(id)
+}
+
+// cleanTemplateOutput removes residual artifacts left when template variables
+// are substituted with empty strings:
+//
+//  1. Lines that are only a label with an empty value (e.g. "SCOPE: " or "PROFILE: ")
+//     are removed entirely.
+//  2. Lines containing conditional sentences with empty backticks
+//     (e.g. "If “ is non-empty, ...") are removed entirely.
+//  3. Trailing whitespace on "just <cmd> " lines is stripped.
+//  4. Collapsed consecutive blank lines are reduced to a single blank line.
+func cleanTemplateOutput(s string) string {
+	lines := strings.Split(s, "\n")
+	var out []string
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+
+		// Remove conditional sentences referencing empty backticks.
+		if strings.Contains(trimmed, "If `` is non-empty") {
+			continue
+		}
+
+		// Remove label-only lines with empty values: "KEY:" or "KEY: " (no value after colon).
+		if isLabelWithEmptyValue(trimmed) {
+			continue
+		}
+
+		// Strip trailing whitespace on "just" command lines.
+		if strings.HasPrefix(trimmed, "just ") && strings.HasSuffix(line, " ") {
+			line = strings.TrimRight(line, " \t")
+		}
+
+		out = append(out, line)
+	}
+
+	// Collapse consecutive blank lines (3+ newlines → 2 newlines).
+	result := strings.Join(out, "\n")
+	for strings.Contains(result, "\n\n\n") {
+		result = strings.ReplaceAll(result, "\n\n\n", "\n\n")
+	}
+
+	return result
+}
+
+// isLabelWithEmptyValue detects lines like "SCOPE:" or "PROFILE: " or "PHASE_SUMMARY:"
+// where the label is followed by a colon and optional whitespace but no actual value.
+func isLabelWithEmptyValue(line string) bool {
+	if line == "" {
+		return false
+	}
+	colonIdx := strings.Index(line, ":")
+	if colonIdx < 0 {
+		return false
+	}
+	// Everything after the colon must be empty or only whitespace.
+	after := strings.TrimSpace(line[colonIdx+1:])
+	// The part before the colon must look like a word (no spaces).
+	before := strings.TrimSpace(line[:colonIdx])
+	if before == "" || strings.Contains(before, " ") {
+		return false
+	}
+	return after == ""
 }
