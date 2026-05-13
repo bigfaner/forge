@@ -208,7 +208,33 @@ Read the corresponding template before writing each task type.
 
 ### 4a. Business Tasks
 
-Read `templates/task.md` for task content structure. Create one task file per design element from the Element Mapping table, following dependencies from Step 3. For each task, set `breaking: true` if it modifies shared interfaces, data models, or API contracts (e.g., changing a schema column type, renaming a shared field). Additive changes are non-breaking.
+Read `templates/task.md` for task content structure. Create one task file per design element from the Element Mapping table, following dependencies from Step 3. For each task, set `breaking: true` if it modifies shared interfaces, data models, or API contracts (e.g., changing a schema column type, renaming a shared field). Additive changes to existing Go interfaces are breaking — all implementors (including mocks) must be updated.
+
+#### Existing-Code Modification Split
+
+When a task modifies **existing shared code** (interfaces, models, API contracts, utility functions) with multiple downstream consumers, split by dependency layers so each sub-task is independently compilable and testable:
+
+1. **Shared artifact update** (sub-ID `<seq>.<sub>a`, `breaking: true`):
+   - Apply changes to the shared artifact (interface signature, model struct, API contract, etc.)
+   - Reconcile ALL downstream consumers so existing code compiles and tests pass
+   - No new business logic — only signature changes + stubs/adapters
+   - AC: "All existing tests compile and pass"
+
+2. **Feature implementation** (sub-ID `<seq>.<sub>b`, depends on `<seq>.<sub>a`):
+   - Implement the actual feature logic using the updated shared artifact
+   - All consumers already compile; agent focuses on business logic
+   - Standard acceptance criteria from the design
+
+**When to apply**: inspect tech-design for changes to artifacts that already exist in the codebase. If the change propagates to >5 files OR spans multiple architectural layers (e.g., repository → service → handler), apply this split. Purely additive new code (new files, new interfaces) does not need splitting.
+
+**Example** (adding methods to a shared interface with 9 mock consumers):
+
+    # Without split (agent stalls reconciling 9 mock types × 17 methods):
+    1.2-add-milestone-queries
+
+    # With split:
+    1.2a-update-main-item-repo  (interface + mock stubs, breaking: true)
+    1.2b-milestone-queries      (feature logic, depends: ["1.2a"])
 
 <HAS_DB>
 
@@ -435,6 +461,7 @@ Read `templates/manifest-update-tasks.md` for the traceability table format and 
 - [ ] Every Phase Inventory gate has a corresponding gate task
 - [ ] Gate tasks: correct phase attribution, `breaking: true`, explicit dependency chains
 - [ ] `breaking: true` set on tasks that modify shared contracts
+- [ ] Tasks modifying existing shared code (>5 downstream files or cross-layer) split into artifact-update + feature sub-tasks
 - [ ] UI tasks reference prototype files (if applicable)
 - [ ] User Stories populated from `prd-user-stories.md`
 - [ ] `index.json` ends with test tasks matching the profile expansion from Step 0 (shared T-test-1, T-test-1b, per-profile T-test-2/3/4, shared T-test-4.5, T-test-5)
