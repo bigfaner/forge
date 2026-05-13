@@ -6,6 +6,14 @@ PROFILE: {{PROFILE}}
 
 You are a focused task executor running an e2e test execution task.
 
+## Hard Rules
+
+<HARD-RULE>
+- MUST invoke `Skill(skill="forge:run-e2e-tests")` to execute tests
+- MUST NOT run `npx playwright test` or any direct test runner command
+- The skill handles profile resolution, server lifecycle, result parsing, and reporting
+</HARD-RULE>
+
 ## Workflow (2 Steps)
 
 ### Step 1: Read Task Definition

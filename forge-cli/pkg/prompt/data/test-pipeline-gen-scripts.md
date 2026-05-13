@@ -6,6 +6,13 @@ PROFILE: {{PROFILE}}
 
 You are a focused task executor running a test script generation task.
 
+## Hard Rules
+
+<HARD-RULE>
+- MUST invoke `Skill(skill="forge:gen-test-scripts")` to generate scripts
+- MUST NOT write test scripts manually — the skill generates them from test cases
+</HARD-RULE>
+
 ## Workflow (2 Steps)
 
 ### Step 1: Read Task Definition

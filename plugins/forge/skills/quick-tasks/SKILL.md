@@ -88,6 +88,7 @@ For each task:
 - Fill Affected Files from the solution description (Create/Modify/Delete tables)
 - Fill Acceptance Criteria from matching Success Criteria items
 - Fill Implementation Notes from Key Risks and solution details
+- Fill Hard Rules only when the task has critical constraints the agent must not override (must use specific justfile recipe, commands have hidden dependencies like env vars/server lifecycle, or explicit file scope restrictions). Leave empty for normal tasks.
 - Set `breaking: true` only when modifying shared interfaces/models/APIs
 - Pass resolved profile name(s) as context when the task involves test generation or execution (see Step 4 for per-profile template variable usage)
 

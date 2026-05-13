@@ -1,6 +1,7 @@
 package task
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path"
@@ -186,7 +187,26 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 		}
 	}
 
-	// 8. Save index
+	// 8. Normalize task files (remove empty ## Hard Rules sections)
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
+			continue
+		}
+		if shouldSkipFile(entry.Name()) {
+			continue
+		}
+		filePath := filepath.Join(opts.TasksDir, entry.Name())
+		content, err := os.ReadFile(filePath)
+		if err != nil {
+			continue
+		}
+		normalized := NormalizeTaskMD(content)
+		if !bytes.Equal(normalized, content) {
+			os.WriteFile(filePath, normalized, 0644)
+		}
+	}
+
+	// 9. Save index
 	if err := SaveIndex(opts.IndexPath, index); err != nil {
 		return nil, fmt.Errorf("save index: %w", err)
 	}

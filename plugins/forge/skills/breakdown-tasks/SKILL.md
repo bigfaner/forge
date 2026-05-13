@@ -282,6 +282,17 @@ For **Page Assembly tasks** (new-page), Reference Files must include:
 
 For each task, populate the **User Stories** section with matching stories from `prd/prd-user-stories.md`. Include full Given/When/Then acceptance criteria. If no match, note "No direct user story mapping."
 
+
+### Hard Rules
+
+The task template includes a `## Hard Rules` section (`{{HARD_RULES}}`). Fill it **only** when the task has critical constraints that the agent must not override:
+
+- Task must execute via a specific justfile recipe (not direct tool calls) — e.g., `just test-e2e` instead of `npx playwright test`
+- Commands carry hidden dependencies (env vars, server lifecycle) that direct invocation would miss
+- Agent self-constructing commands would produce an incomplete environment
+- Task has explicit file scope restrictions (MUST NOT touch certain files)
+
+Leave `{{HARD_RULES}}` empty for normal implementation tasks where the agent's default TDD + quality gate behavior is sufficient.
 ### Scope Assignment
 
 For each task, determine the `scope` field for `index.json`:

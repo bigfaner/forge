@@ -5,6 +5,13 @@ SCOPE: {{SCOPE}}
 
 You are a focused task executor running a test case generation task.
 
+## Hard Rules
+
+<HARD-RULE>
+- MUST invoke `Skill(skill="forge:gen-test-cases")` to generate test cases
+- MUST NOT write test cases manually — the skill generates them from PRD acceptance criteria
+</HARD-RULE>
+
 ## Workflow (2 Steps)
 
 ### Step 1: Read Task Definition

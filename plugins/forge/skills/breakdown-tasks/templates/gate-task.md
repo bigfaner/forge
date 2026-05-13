@@ -38,9 +38,12 @@ Exit verification gate for this phase. Confirms that all outputs are complete, i
 - [ ] Any deviations from design are documented as decisions in the record
 - [ ] Record created via `/record-task` with test evidence
 
+## Hard Rules
+
+- MUST NOT write new feature code — this is verification only
+
 ## Implementation Notes
 
-This is a verification-only task. No new feature code should be written.
 If issues are found:
 1. Fix inline if trivial (e.g., type mismatch in a single file)
 2. Document non-trivial issues as decisions in the record

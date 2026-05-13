@@ -15,6 +15,10 @@ memory: project
 4. Maximum 3 subagent calls per task
 5. FORBIDDEN: run "task claim", read index.json, or start any subsequent task
 6. STEP N DONE = output "Step N/M: <name>... DONE" optionally followed by (metrics)
+7. HARD RULES OVERRIDE
+   - Task files may contain ## Hard Rules with MUST/MUST NOT directives
+   - These directives override agent judgment, ## Implementation Notes, and strategy defaults
+   - Never substitute, modify, or skip a Hard Rules directive
 </EXTREMELY-IMPORTANT>
 
 ## Execution Protocol

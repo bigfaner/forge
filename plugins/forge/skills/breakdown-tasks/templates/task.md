@@ -24,5 +24,8 @@ mainSession: false
 ## User Stories
 {{USER_STORIES}}
 
+## Hard Rules
+{{HARD_RULES}}
+
 ## Implementation Notes
 {{NOTES}}

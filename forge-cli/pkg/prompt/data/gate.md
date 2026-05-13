@@ -12,6 +12,13 @@ Read the gate task file at `{{TASK_FILE}}` to understand the acceptance criteria
 
 Output: `Step 1/2: Reading task definition... DONE`
 
+<IMPORTANT>
+If the task file contains ## Hard Rules with MUST/MUST NOT directives:
+- Treat every MUST as a pass/fail criterion — no partial credit
+- Treat every MUST NOT as a red line — violation means the gate fails
+- Hard Rules override your judgment about what constitutes "good enough"
+</IMPORTANT>
+
 ### Step 2: Verify All Criteria
 
 First, verify the acceptance criteria from the gate task:

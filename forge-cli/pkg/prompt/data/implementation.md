@@ -15,6 +15,13 @@ If `{{PHASE_SUMMARY}}` is non-empty, read that file for key decisions and conven
 
 Output: `Step 1/3: Reading task definition... DONE`
 
+<IMPORTANT>
+If the task file contains ## Hard Rules with MUST/MUST NOT directives:
+- Follow them exactly during the entire TDD cycle
+- Hard Rules override your default approach for any step they address
+- Do not rationalize bypassing a Hard Rule based on "I know a better way"
+</IMPORTANT>
+
 ### Step 2: TDD Implementation
 
 Follow the TDD cycle for each requirement:

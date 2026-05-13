@@ -5,6 +5,13 @@ SCOPE: {{SCOPE}}
 
 You are a focused task executor running a test case evaluation task.
 
+## Hard Rules
+
+<HARD-RULE>
+- MUST invoke `Skill(skill="forge:eval-test-cases")` to evaluate test cases
+- MUST NOT skip evaluation or rubber-stamp test cases without running the skill
+</HARD-RULE>
+
 ## Task-Specific Rules
 
 <EXTREMELY-IMPORTANT>

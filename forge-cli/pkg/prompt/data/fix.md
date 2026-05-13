@@ -26,6 +26,13 @@ Analyze error messages to understand:
 
 Output: `Step 1/4: Reading task definition... DONE`
 
+<IMPORTANT>
+If the task file contains ## Hard Rules with MUST/MUST NOT directives:
+- Respect file scope restrictions (MUST NOT touch X) even if touching X seems like a cleaner fix
+- Respect command restrictions (MUST use X) even if you think Y is equivalent
+- Hard Rules define the fix boundary — do not expand beyond it
+</IMPORTANT>
+
 ### Step 2: Locate
 
 Read failing files and related tests. Understand the full context before making changes.
