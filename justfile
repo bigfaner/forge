@@ -9,6 +9,9 @@ claude-c:
 claude-w name="":
     claude --dangerously-skip-permissions -w "{{name}}"
 
+claude-p:
+    claude --dangerously-skip-permissions --plugin-dir plugins/forge
+
 # install-task: build and install task CLI locally (platform-aware)
 install-task:
     #!/usr/bin/env bash
