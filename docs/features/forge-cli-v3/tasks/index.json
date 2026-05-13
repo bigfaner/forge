@@ -147,6 +147,20 @@
       "scope": "backend",
       "type": "implementation"
     },
+    "2.6-template-empty-placeholder": {
+      "id": "2.6",
+      "title": "Fix empty template variable rendering in prompt templates",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1.gate"
+      ],
+      "status": "pending",
+      "file": "2.6-template-empty-placeholder.md",
+      "record": "records/2.6-template-empty-placeholder.md",
+      "scope": "backend",
+      "type": "implementation"
+    },
     "3-gate": {
       "id": "3.gate",
       "title": "Phase 3 Gate: Feature Migration Verification",
