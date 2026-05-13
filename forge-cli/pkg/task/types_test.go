@@ -618,6 +618,62 @@ func TestValidTypes(t *testing.T) {
 	})
 }
 
+func TestTaskTypeRegistry(t *testing.T) {
+	t.Run("registry contains all 11 types", func(t *testing.T) {
+		if len(TaskTypeRegistry) != 11 {
+			t.Errorf("TaskTypeRegistry has %d entries, want 11", len(TaskTypeRegistry))
+		}
+	})
+
+	t.Run("each registry entry matches a type constant", func(t *testing.T) {
+		registryNames := make(map[string]bool)
+		for _, entry := range TaskTypeRegistry {
+			registryNames[entry.Name] = true
+			if !ValidTypes[entry.Name] {
+				t.Errorf("TaskTypeRegistry entry %q not in ValidTypes", entry.Name)
+			}
+			if entry.Description == "" {
+				t.Errorf("TaskTypeRegistry entry %q has empty description", entry.Name)
+			}
+			if len(entry.Description) > 60 {
+				t.Errorf("TaskTypeRegistry entry %q description too long (%d chars): %q",
+					entry.Name, len(entry.Description), entry.Description)
+			}
+		}
+
+		// Verify all type constants are present in registry
+		for typ := range ValidTypes {
+			if !registryNames[typ] {
+				t.Errorf("ValidTypes entry %q missing from TaskTypeRegistry", typ)
+			}
+		}
+	})
+
+	t.Run("descriptions use verb+object format", func(t *testing.T) {
+		for _, entry := range TaskTypeRegistry {
+			if entry.Description == "" {
+				continue
+			}
+			// First word should be a verb (lowercase letter start)
+			first := entry.Description[0]
+			if first < 'a' || first > 'z' {
+				t.Errorf("TaskTypeRegistry entry %q description does not start with lowercase verb: %q",
+					entry.Name, entry.Description)
+			}
+		}
+	})
+
+	t.Run("registry entries have no duplicates", func(t *testing.T) {
+		seen := make(map[string]bool)
+		for _, entry := range TaskTypeRegistry {
+			if seen[entry.Name] {
+				t.Errorf("duplicate type name in registry: %q", entry.Name)
+			}
+			seen[entry.Name] = true
+		}
+	})
+}
+
 func TestRecordDataJSONRoundTrip(t *testing.T) {
 	rd := &RecordData{
 		Status:        "completed",

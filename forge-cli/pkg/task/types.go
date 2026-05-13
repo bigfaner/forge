@@ -21,6 +21,28 @@ const (
 	TypeGate                         = "gate"
 )
 
+// TaskTypeInfo describes a single task type for display and discovery.
+type TaskTypeInfo struct { //nolint:revive // intentional naming for API clarity
+	Name        string
+	Description string
+}
+
+// TaskTypeRegistry is the centralized source of truth for all supported task types.
+// Each entry's Description follows verb+object format and is <= 60 chars.
+var TaskTypeRegistry = []TaskTypeInfo{
+	{Name: TypeImplementation, Description: "implement feature task"},
+	{Name: TypeFix, Description: "fix a bug or issue"},
+	{Name: TypeGate, Description: "validate quality gate before proceeding"},
+	{Name: TypeDocGenerationSummary, Description: "generate documentation summary"},
+	{Name: TypeDocGenerationConsolidate, Description: "consolidate documentation files"},
+	{Name: TypeTestPipelineGenCases, Description: "generate test cases from acceptance criteria"},
+	{Name: TypeTestPipelineEvalCases, Description: "evaluate generated test cases for quality"},
+	{Name: TypeTestPipelineGenScripts, Description: "generate executable test scripts"},
+	{Name: TypeTestPipelineRun, Description: "run test scripts and collect results"},
+	{Name: TypeTestPipelineGraduate, Description: "graduate tests to regression suite"},
+	{Name: TypeTestPipelineVerifyRegression, Description: "verify regression suite after graduation"},
+}
+
 // ValidTypes is the complete set of valid task type values.
 var ValidTypes = map[string]bool{
 	TypeImplementation:               true,

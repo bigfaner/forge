@@ -50,6 +50,7 @@ func init() {
 	taskCmd.AddCommand(addCmd)
 	taskCmd.AddCommand(indexCmd)
 	taskCmd.AddCommand(migrateCmd)
+	taskCmd.AddCommand(listTypesCmd)
 
 	// E2E group subcommands
 	e2eCmd.AddCommand(validateSpecsCmd)
