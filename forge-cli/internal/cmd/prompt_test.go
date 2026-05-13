@@ -120,7 +120,14 @@ func TestRunPrompt_UnknownType_ExitsWithError(t *testing.T) {
 
 func TestPromptCmd_RegisteredInRoot(t *testing.T) {
 	for _, cmd := range rootCmd.Commands() {
-		if cmd.Use == "prompt <id>" {
+		if cmd.Name() == "prompt" {
+			// Verify it has the get-by-task-id subcommand
+			for _, sub := range cmd.Commands() {
+				if sub.Name() == "get-by-task-id" {
+					return
+				}
+			}
+			t.Error("prompt command does not have get-by-task-id subcommand")
 			return
 		}
 	}

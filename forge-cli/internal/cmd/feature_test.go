@@ -216,7 +216,7 @@ func TestRunQuery(t *testing.T) {
 	}
 
 	output, err := captureOutput(func() error {
-		rootCmd.SetArgs([]string{"query", "1.1"})
+		rootCmd.SetArgs([]string{"task", "query", "1.1"})
 		return rootCmd.Execute()
 	})
 	if err != nil {
@@ -284,7 +284,7 @@ func TestRunStatus(t *testing.T) {
 	}
 
 	_, err = captureOutput(func() error {
-		rootCmd.SetArgs([]string{"status", "1.1", "blocked"})
+		rootCmd.SetArgs([]string{"task", "status", "1.1", "blocked"})
 		return rootCmd.Execute()
 	})
 	if err != nil {
@@ -348,7 +348,7 @@ func TestRunCheck(t *testing.T) {
 	}
 
 	output, err := captureOutput(func() error {
-		rootCmd.SetArgs([]string{"check"})
+		rootCmd.SetArgs([]string{"task", "check-deps"})
 		return rootCmd.Execute()
 	})
 	if err != nil {

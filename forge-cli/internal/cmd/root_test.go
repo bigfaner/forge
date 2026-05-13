@@ -3,33 +3,120 @@ package cmd
 import (
 	"bytes"
 	"testing"
-
-	"github.com/spf13/cobra"
 )
 
 func TestRootCmd_Structure(t *testing.T) {
-	if rootCmd.Use != "task" {
-		t.Errorf("rootCmd.Use = %q, want %q", rootCmd.Use, "task")
+	if rootCmd.Use != "forge" {
+		t.Errorf("rootCmd.Use = %q, want %q", rootCmd.Use, "forge")
 	}
 
-	// Verify all subcommands are registered
-	// Cobra's Use field includes arguments, e.g., "record <task-id>"
-	// We extract the command name by splitting on space
+	// Verify all group parents and top-level commands are registered
 	commands := rootCmd.Commands()
 	commandNames := make(map[string]bool)
 	for _, cmd := range commands {
-		// Get the first word of Use field as command name
 		name := cmd.Name()
 		if name != "" {
 			commandNames[name] = true
 		}
 	}
 
-	expectedCommands := []string{"claim", "record", "status", "query", "feature", "check", "validate", "verify-completion", "cleanup", "all-completed"}
-	for _, expected := range expectedCommands {
+	// 5 group parents
+	expectedGroups := []string{"task", "e2e", "forensic", "profile", "prompt"}
+	for _, expected := range expectedGroups {
 		if !commandNames[expected] {
-			t.Errorf("missing subcommand: %s (have: %v)", expected, commandNames)
+			t.Errorf("missing group parent: %s (have: %v)", expected, commandNames)
 		}
+	}
+
+	// 5 top-level commands
+	expectedTopLevel := []string{"cleanup", "quality-gate", "verify-task-done", "feature", "version"}
+	for _, expected := range expectedTopLevel {
+		if !commandNames[expected] {
+			t.Errorf("missing top-level command: %s (have: %v)", expected, commandNames)
+		}
+	}
+}
+
+func TestRootCmd_HelpShowsTenVisibleEntries(t *testing.T) {
+	commands := rootCmd.Commands()
+	// Filter out Cobra auto-generated commands (completion, help)
+	autoGen := map[string]bool{"completion": true, "help": true}
+	visibleCount := 0
+	for _, cmd := range commands {
+		if !cmd.Hidden && !autoGen[cmd.Name()] {
+			visibleCount++
+		}
+	}
+	// 5 groups + 4 visible top-level (version is hidden) = 9 visible
+	if visibleCount != 9 {
+		t.Errorf("expected 9 visible commands, got %d", visibleCount)
+	}
+}
+
+func TestRootCmd_VersionIsHidden(t *testing.T) {
+	if !versionCmd.Hidden {
+		t.Error("versionCmd should be hidden")
+	}
+}
+
+func TestRootCmd_TaskGroupHasSubcommands(t *testing.T) {
+	subcommands := taskCmd.Commands()
+	if len(subcommands) == 0 {
+		t.Error("task group should have subcommands")
+	}
+
+	taskSubNames := make(map[string]bool)
+	for _, cmd := range subcommands {
+		taskSubNames[cmd.Name()] = true
+	}
+
+	expectedTaskSubs := []string{"claim", "submit", "status", "query", "check-deps", "validate-index", "add", "index", "migrate"}
+	for _, expected := range expectedTaskSubs {
+		if !taskSubNames[expected] {
+			t.Errorf("missing task subcommand: %s (have: %v)", expected, taskSubNames)
+		}
+	}
+}
+
+func TestRootCmd_E2eGroupHasValidateSpecs(t *testing.T) {
+	subcommands := e2eCmd.Commands()
+	found := false
+	for _, cmd := range subcommands {
+		if cmd.Name() == "validate-specs" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("e2e group should have validate-specs subcommand")
+	}
+}
+
+func TestRootCmd_PromptGroupHasGetByTaskId(t *testing.T) {
+	subcommands := promptCmd.Commands()
+	found := false
+	for _, cmd := range subcommands {
+		if cmd.Name() == "get-by-task-id" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("prompt group should have get-by-task-id subcommand")
+	}
+}
+
+func TestRootCmd_ForensicGroupHasSubcommands(t *testing.T) {
+	subcommands := forensicCmd.Commands()
+	if len(subcommands) < 3 {
+		t.Errorf("forensic group should have at least 3 subcommands, got %d", len(subcommands))
+	}
+}
+
+func TestRootCmd_ProfileGroupHasSubcommands(t *testing.T) {
+	subcommands := profileCmd.Commands()
+	if len(subcommands) == 0 {
+		t.Error("profile group should have subcommands")
 	}
 }
 
@@ -47,21 +134,19 @@ func TestExecute_NoArgs(t *testing.T) {
 }
 
 func TestInit_RegistersCommands(t *testing.T) {
-	// Create a new root command and run init
-	testRoot := &cobra.Command{Use: "test"}
-	testRoot.AddCommand(claimCmd)
-	testRoot.AddCommand(recordCmd)
-	testRoot.AddCommand(statusCmd)
-	testRoot.AddCommand(queryCmd)
-	testRoot.AddCommand(featureCmd)
-	testRoot.AddCommand(checkCmd)
-	testRoot.AddCommand(validateCmd)
-	testRoot.AddCommand(verifyCompletionCmd)
-	testRoot.AddCommand(cleanupCmd)
-	testRoot.AddCommand(allCompletedCmd)
+	// Verify rootCmd has the expected 10 explicitly registered commands.
+	// Cobra auto-adds "completion" and "help" after first Execute(), so filter those.
+	commands := rootCmd.Commands()
+	explicit := []string{}
+	autoGen := map[string]bool{"completion": true, "help": true}
+	for _, cmd := range commands {
+		if !autoGen[cmd.Name()] {
+			explicit = append(explicit, cmd.Name())
+		}
+	}
 
-	// Verify commands are registered
-	if len(testRoot.Commands()) != 10 {
-		t.Errorf("expected 10 commands, got %d", len(testRoot.Commands()))
+	// 5 groups + 5 top-level = 10
+	if len(explicit) != 10 {
+		t.Errorf("expected 10 explicit commands, got %d: %v", len(explicit), explicit)
 	}
 }

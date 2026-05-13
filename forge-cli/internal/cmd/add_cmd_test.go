@@ -18,7 +18,7 @@ func TestAddCmd_WithTemplateAndVars(t *testing.T) {
 
 	output, err := captureOutput(func() error {
 		rootCmd.SetArgs([]string{
-			"add",
+			"task", "add",
 			"--title", "Fix: login bug",
 			"--template", "fix-task",
 			"--source-task-id", "1.1",
@@ -124,7 +124,7 @@ func TestAddCmd_UnknownTemplateReturnsError(t *testing.T) {
 			"1.1": {ID: "1.1", Title: "Existing", Priority: "P0", Status: "completed", File: "1.1.md", Record: "records/1.1.md"},
 		}})
 		rootCmd.SetArgs([]string{
-			"add",
+			"task", "add",
 			"--title", "Fix: test",
 			"--template", "nonexistent",
 		})
@@ -147,7 +147,7 @@ func TestAddCmd_DedupSkipsActiveFix(t *testing.T) {
 	// First add succeeds
 	output, err := captureOutput(func() error {
 		rootCmd.SetArgs([]string{
-			"add",
+			"task", "add",
 			"--title", "Fix: first attempt",
 			"--source-task-id", "1.1",
 		})
@@ -163,7 +163,7 @@ func TestAddCmd_DedupSkipsActiveFix(t *testing.T) {
 	// Second add for same source should be skipped (first fix is still active/pending)
 	output, err = captureOutput(func() error {
 		rootCmd.SetArgs([]string{
-			"add",
+			"task", "add",
 			"--title", "Fix: second attempt",
 			"--source-task-id", "1.1",
 		})
@@ -187,7 +187,7 @@ func TestAddCmd_BlockSource(t *testing.T) {
 
 	output, err := captureOutput(func() error {
 		rootCmd.SetArgs([]string{
-			"add",
+			"task", "add",
 			"--title", "Fix: blocked source",
 			"--source-task-id", "1.1",
 			"--block-source",

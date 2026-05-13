@@ -18,15 +18,15 @@ import (
 )
 
 var (
-	recordDataPath string
-	recordJSON     bool
-	recordQuiet    bool
-	recordForce    bool
+	submitDataPath string
+	submitJSON     bool
+	submitQuiet    bool
+	submitForce    bool
 )
 
-var recordCmd = &cobra.Command{
-	Use:   "record <task-id>",
-	Short: "Generate a task execution record",
+var submitCmd = &cobra.Command{
+	Use:   "submit <task-id>",
+	Short: "Submit task execution result",
 	Long: `Generate a task execution record from a Markdown template.
 
 The record data can be provided via:
@@ -58,17 +58,17 @@ Optional fields: taskId (verified against CLI arg if provided), status (default:
                  filesCreated, filesModified, keyDecisions, testsPassed,
                  testsFailed, coverage, acceptanceCriteria, notes`,
 	Args: cobra.ExactArgs(1),
-	Run:  runRecord,
+	Run:  runSubmit,
 }
 
 func init() {
-	recordCmd.Flags().StringVar(&recordDataPath, "data", "", "Path to JSON data file")
-	recordCmd.Flags().BoolVar(&recordJSON, "json", false, "Output result as JSON")
-	recordCmd.Flags().BoolVar(&recordQuiet, "quiet", false, "Minimal output")
-	recordCmd.Flags().BoolVar(&recordForce, "force", false, "Override validation errors (use with caution)")
+	submitCmd.Flags().StringVar(&submitDataPath, "data", "", "Path to JSON data file")
+	submitCmd.Flags().BoolVar(&submitJSON, "json", false, "Output result as JSON")
+	submitCmd.Flags().BoolVar(&submitQuiet, "quiet", false, "Minimal output")
+	submitCmd.Flags().BoolVar(&submitForce, "force", false, "Override validation errors (use with caution)")
 }
 
-func runRecord(_ *cobra.Command, args []string) {
+func runSubmit(_ *cobra.Command, args []string) {
 	taskIDArg := args[0]
 
 	projectRoot, err := project.FindProjectRoot()
@@ -92,7 +92,7 @@ func runRecord(_ *cobra.Command, args []string) {
 		Exit(ErrTaskNotFound(taskIDArg))
 	}
 
-	rd, err := readRecordData(recordDataPath)
+	rd, err := readSubmitData(submitDataPath)
 	if err != nil {
 		Exit(ErrNoInput(err.Error()))
 	}
@@ -116,10 +116,10 @@ func runRecord(_ *cobra.Command, args []string) {
 	}
 
 	// Validate required and recommended fields
-	validateRecordData(rd, recordForce)
+	validateRecordData(rd, submitForce)
 
 	// Quality gate pre-check for completed tasks (unless --force or noTest)
-	if rd.Status == "completed" && !recordForce && !t.NoTest {
+	if rd.Status == "completed" && !submitForce && !t.NoTest {
 		validateQualityGate(projectRoot, t.Scope)
 	}
 
@@ -165,7 +165,7 @@ func runRecord(_ *cobra.Command, args []string) {
 
 	saveIndexAndSignalCompletion(indexPath, projectRoot, featureSlug, index)
 
-	if recordJSON {
+	if submitJSON {
 		result := map[string]string{
 			"recordFile": recordPath,
 			"taskId":     t.ID,
@@ -173,7 +173,7 @@ func runRecord(_ *cobra.Command, args []string) {
 		}
 		data, _ := json.Marshal(result)
 		fmt.Println(string(data))
-	} else if !recordQuiet {
+	} else if !submitQuiet {
 		PrintBlockStart()
 		PrintField("TASK_ID", t.ID)
 		PrintField("RECORD_FILE", recordPath)
@@ -222,7 +222,7 @@ func autoRestoreSourceTask(index *task.TaskIndex, sourceTaskID string) {
 	fmt.Fprintf(os.Stderr, "AUTO-RESTORE: source task %s restored to pending (all deps completed or skipped)\n", sourceTaskID)
 }
 
-func readRecordData(dataPath string) (*task.RecordData, error) {
+func readSubmitData(dataPath string) (*task.RecordData, error) {
 	var data []byte
 	var err error
 

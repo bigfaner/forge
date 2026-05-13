@@ -79,7 +79,7 @@
       "dependencies": [
         "1.gate"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2.1-command-groups.md",
       "record": "records/2.1-command-groups.md",
       "breaking": true,

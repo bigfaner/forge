@@ -742,7 +742,7 @@ func TestAddFixTask_TitleContainsStep(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(data), "lint failure in all-completed quality gate") {
+	if !strings.Contains(string(data), "lint failure in quality gate") {
 		t.Error("task title should contain step name")
 	}
 }
@@ -799,12 +799,12 @@ func TestHandleGateFailure_DistinctReasons(t *testing.T) {
 		wantManual    bool   // expect "task add --template fix-task" in output
 		wantFixMsg    string // expect this fix task message
 	}{
-		{"compile", "fix-1", "Project compilation failed in all-completed hook", "fix compilation errors", true, false, "Fix task fix-1 added (P0, breaking)"},
-		{"lint", "fix-2", "Lint check failed in all-completed hook", "fix lint errors", true, false, "Fix task fix-2 added (P0, breaking)"},
-		{"unit-test", "fix-3", "Unit tests failed in all-completed hook", "fix failing tests", true, false, "Fix task fix-3 added (P0, breaking)"},
-		{"test-e2e", "fix-4", "E2e regression tests failed in all-completed hook", "fix failing e2e tests", true, false, "Fix task fix-4 added (P0, breaking)"},
-		{"unknown-step", "fix-5", "Unknown-step check failed in all-completed hook", "fix the issue", true, false, "Fix task fix-5 added (P0, breaking)"},
-		{"compile", "", "Project compilation failed in all-completed hook", "fix compilation errors", false, true, "Failed to add fix task automatically"},
+		{"compile", "fix-1", "Project compilation failed in quality-gate hook", "fix compilation errors", true, false, "Fix task fix-1 added (P0, breaking)"},
+		{"lint", "fix-2", "Lint check failed in quality-gate hook", "fix lint errors", true, false, "Fix task fix-2 added (P0, breaking)"},
+		{"unit-test", "fix-3", "Unit tests failed in quality-gate hook", "fix failing tests", true, false, "Fix task fix-3 added (P0, breaking)"},
+		{"test-e2e", "fix-4", "E2e regression tests failed in quality-gate hook", "fix failing e2e tests", true, false, "Fix task fix-4 added (P0, breaking)"},
+		{"unknown-step", "fix-5", "Unknown-step check failed in quality-gate hook", "fix the issue", true, false, "Fix task fix-5 added (P0, breaking)"},
+		{"compile", "", "Project compilation failed in quality-gate hook", "fix compilation errors", false, true, "Failed to add fix task automatically"},
 	}
 
 	for _, tc := range tests {
@@ -870,7 +870,7 @@ func TestCheckAllCompleted_RejectedTaskReturnsNil(t *testing.T) {
 
 	result := checkAllCompleted(false)
 	if result != nil {
-		t.Error("rejected task should prevent all-completed from proceeding")
+		t.Error("rejected task should prevent quality-gate from proceeding")
 	}
 }
 
@@ -1005,7 +1005,7 @@ func TestCheckAllCompleted_MixedCompletedSkippedRejected(t *testing.T) {
 	// rejected is not completed or skipped, so should return nil
 	result := checkAllCompleted(false)
 	if result != nil {
-		t.Error("rejected task should prevent all-completed from proceeding")
+		t.Error("rejected task should prevent quality-gate from proceeding")
 	}
 }
 

@@ -18,10 +18,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var allCompletedVerbose bool
+var qualityGateVerbose bool
 
-var allCompletedCmd = &cobra.Command{
-	Use:   "all-completed",
+var qualityGateCmd = &cobra.Command{
+	Use:   "quality-gate",
 	Short: "Check if all tasks are done, then run tests",
 	Long: `Checks if every task in the current feature is completed or skipped.
 	Exits 0 silently if any task is still pending, in_progress, or blocked (no-op).
@@ -31,11 +31,11 @@ var allCompletedCmd = &cobra.Command{
 	This hook is the project health gate: unit tests + regression suite.
 
 	Use -v to see why the command exits early (useful for debugging).`,
-	Run: runAllCompleted,
+	Run: runQualityGate,
 }
 
 func init() {
-	allCompletedCmd.Flags().BoolVarP(&allCompletedVerbose, "verbose", "v", false, "print debug info when exiting early")
+	qualityGateCmd.Flags().BoolVarP(&qualityGateVerbose, "verbose", "v", false, "print debug info when exiting early")
 }
 
 // AllCompletedResult holds context for running tests after all tasks complete.
@@ -96,8 +96,8 @@ func checkAllCompleted(verbose bool) *AllCompletedResult {
 	}
 }
 
-func runAllCompleted(_ *cobra.Command, _ []string) {
-	result := checkAllCompleted(allCompletedVerbose)
+func runQualityGate(_ *cobra.Command, _ []string) {
+	result := checkAllCompleted(qualityGateVerbose)
 	if result == nil {
 		os.Exit(0) // not all done is normal, exit silently
 	}
@@ -226,7 +226,7 @@ func handleGateFailure(step, errorDocPath, fixID, concise string) {
 	}
 
 	reason := fmt.Sprintf(
-		"%s failed in all-completed hook. %s — %s and %s.\nError output: %s\n%s",
+		"%s failed in quality-gate hook. %s — %s and %s.\nError output: %s\n%s",
 		l, fixMsg, action, g, errorDocPath, concise)
 
 	testrunner.PrintHookJSON(map[string]any{
@@ -283,9 +283,9 @@ func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) str
 		testScript = "just test"
 	}
 
-	title := fmt.Sprintf("Fix: %s failure in all-completed quality gate", step)
+	title := fmt.Sprintf("Fix: %s failure in quality gate", step)
 	description := fmt.Sprintf(
-		"Quality gate step `%s` failed during all-completed hook.\n\n"+
+		"Quality gate step `%s` failed during quality-gate hook.\n\n"+
 			"Error output saved to: `%s`\n\n"+
 			"Concise error:\n```\n%s\n```",
 		testScript, errorDocPath, just.ExtractConciseError(output, 10),

@@ -73,7 +73,6 @@ func init() {
 	forensicCmd.AddCommand(forensicSearchCmd)
 	forensicCmd.AddCommand(forensicExtractCmd)
 	forensicCmd.AddCommand(forensicSubagentsCmd)
-	rootCmd.AddCommand(forensicCmd)
 }
 
 // ── data types ──────────────────────────────────────────────────────

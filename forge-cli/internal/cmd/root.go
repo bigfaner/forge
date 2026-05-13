@@ -1,4 +1,4 @@
-// Package cmd provides the CLI commands for the task management tool.
+// Package cmd provides the CLI commands for the forge CLI tool.
 package cmd
 
 import (
@@ -8,8 +8,8 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "task",
-	Short: "Task management CLI for Claude Code projects",
+	Use:   "forge",
+	Short: "CLI tool for managing tasks in Claude Code projects",
 	Long: `A unified CLI tool for managing tasks in Claude Code projects.
 
 Supports the docs/features/<slug>/ directory structure for task management.`,
@@ -23,21 +23,37 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.AddCommand(claimCmd)
-	rootCmd.AddCommand(recordCmd)
-	rootCmd.AddCommand(statusCmd)
-	rootCmd.AddCommand(queryCmd)
-	rootCmd.AddCommand(featureCmd)
-	rootCmd.AddCommand(checkCmd)
-	rootCmd.AddCommand(validateCmd)
-	rootCmd.AddCommand(verifyCompletionCmd)
-	rootCmd.AddCommand(cleanupCmd)
-	rootCmd.AddCommand(allCompletedCmd)
-	rootCmd.AddCommand(addCmd)
-	rootCmd.AddCommand(versionCmd)
-	rootCmd.AddCommand(validateSpecsCmd)
-	rootCmd.AddCommand(promptCmd)
-	rootCmd.AddCommand(migrateCmd)
+	// Group parents (5)
+	rootCmd.AddCommand(taskCmd)
+	rootCmd.AddCommand(e2eCmd)
+	rootCmd.AddCommand(forensicCmd)
 	rootCmd.AddCommand(profileCmd)
-	rootCmd.AddCommand(indexCmd)
+	rootCmd.AddCommand(promptCmd)
+
+	// Top-level commands (5)
+	rootCmd.AddCommand(cleanupCmd)
+	rootCmd.AddCommand(qualityGateCmd)
+	rootCmd.AddCommand(verifyTaskDoneCmd)
+	rootCmd.AddCommand(featureCmd)
+	rootCmd.AddCommand(versionCmd)
+
+	// Version is hidden from --help but accessible via `forge version`
+	versionCmd.Hidden = true
+
+	// Task group subcommands
+	taskCmd.AddCommand(claimCmd)
+	taskCmd.AddCommand(submitCmd)
+	taskCmd.AddCommand(statusCmd)
+	taskCmd.AddCommand(queryCmd)
+	taskCmd.AddCommand(checkDepsCmd)
+	taskCmd.AddCommand(validateIndexCmd)
+	taskCmd.AddCommand(addCmd)
+	taskCmd.AddCommand(indexCmd)
+	taskCmd.AddCommand(migrateCmd)
+
+	// E2E group subcommands
+	e2eCmd.AddCommand(validateSpecsCmd)
+
+	// Prompt group subcommands
+	promptCmd.AddCommand(promptGetCmd)
 }

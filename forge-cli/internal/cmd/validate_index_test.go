@@ -1254,7 +1254,7 @@ func TestRunValidate_WithFileArg(t *testing.T) {
 		_ = os.WriteFile(indexFile, data, 0644)
 
 		// Should not exit (would kill test process)
-		runValidate(nil, []string{indexFile})
+		runValidateIndex(nil, []string{indexFile})
 	})
 }
 

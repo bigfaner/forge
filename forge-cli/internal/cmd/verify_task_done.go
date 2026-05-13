@@ -12,8 +12,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var verifyCompletionCmd = &cobra.Command{
-	Use:   "verify-completion",
+var verifyTaskDoneCmd = &cobra.Command{
+	Use:   "verify-task-done",
 	Short: "Verify task completion before git commit",
 	Long: `Verifies task completion before allowing git commit.
 
@@ -24,10 +24,10 @@ Checks:
 Exit codes:
   0 - All checks passed
   2 - Verification failed`,
-	Run: runVerifyCompletion,
+	Run: runVerifyTaskDone,
 }
 
-func runVerifyCompletion(_ *cobra.Command, _ []string) {
+func runVerifyTaskDone(_ *cobra.Command, _ []string) {
 	if err := verifyTaskCompletion(); err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(2)
@@ -80,7 +80,7 @@ func verifyTaskCompletion() error {
 	}
 
 	if foundTask.Status != "completed" {
-		return fmt.Errorf("task %s status is %q, not completed. Run 'task record' before committing",
+		return fmt.Errorf("task %s status is %q, not completed. Run 'forge task submit' before committing",
 			state.TaskID, foundTask.Status)
 	}
 

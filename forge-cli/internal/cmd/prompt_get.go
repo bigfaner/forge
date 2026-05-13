@@ -12,8 +12,8 @@ import (
 
 var promptFixRecordMissed bool
 
-var promptCmd = &cobra.Command{
-	Use:   "prompt <id>",
+var promptGetCmd = &cobra.Command{
+	Use:   "get-by-task-id <id>",
 	Short: "Synthesize the agent prompt for a task",
 	Long: `Synthesize and print the agent prompt for the given task ID.
 
@@ -27,7 +27,7 @@ regardless of the task's type.`,
 }
 
 func init() {
-	promptCmd.Flags().BoolVar(&promptFixRecordMissed, "fix-record-missed", false, "Use fix-record-missed template")
+	promptGetCmd.Flags().BoolVar(&promptFixRecordMissed, "fix-record-missed", false, "Use fix-record-missed template")
 }
 
 func runPrompt(_ *cobra.Command, args []string) {

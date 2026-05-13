@@ -14,15 +14,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var checkCmd = &cobra.Command{
-	Use:   "check",
+var checkDepsCmd = &cobra.Command{
+	Use:   "check-deps",
 	Short: "Check task dependencies",
 	Long: `Check all task dependencies in the current feature.
 
 Validates:
   - All dependencies reference existing tasks
   - Wildcard dependencies match at least one task`,
-	Run: runCheck,
+	Run: runCheckDeps,
 }
 
 type depInfo struct {
@@ -33,7 +33,7 @@ type depInfo struct {
 	isWildcard bool
 }
 
-func runCheck(_ *cobra.Command, _ []string) {
+func runCheckDeps(_ *cobra.Command, _ []string) {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
 		Exit(ErrProjectNotFound())

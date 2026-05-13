@@ -22,7 +22,7 @@ func TestRunClaim(t *testing.T) {
 	defer func() { _ = os.Chdir(origWd) }()
 
 	output, err := captureOutput(func() error {
-		rootCmd.SetArgs([]string{"claim"})
+		rootCmd.SetArgs([]string{"task", "claim"})
 		return rootCmd.Execute()
 	})
 	if err != nil {
@@ -73,7 +73,7 @@ func TestRunClaim_Continue(t *testing.T) {
 	defer func() { _ = os.Chdir(origWd) }()
 
 	output, err := captureOutput(func() error {
-		rootCmd.SetArgs([]string{"claim"})
+		rootCmd.SetArgs([]string{"task", "claim"})
 		return rootCmd.Execute()
 	})
 	if err != nil {
@@ -116,7 +116,7 @@ func TestRunValidate(t *testing.T) {
 	defer func() { _ = os.Chdir(origWd) }()
 
 	output, err := captureOutput(func() error {
-		rootCmd.SetArgs([]string{"validate", indexPath})
+		rootCmd.SetArgs([]string{"task", "validate-index", indexPath})
 		return rootCmd.Execute()
 	})
 	if err != nil {
@@ -191,7 +191,7 @@ func TestRunRecord(t *testing.T) {
 	defer func() { _ = os.Chdir(origWd) }()
 
 	output, _ := captureOutput(func() error {
-		rootCmd.SetArgs([]string{"record", "1.1", "--data", recordDataFile})
+		rootCmd.SetArgs([]string{"task", "submit", "1.1", "--data", recordDataFile})
 		return rootCmd.Execute()
 	})
 
@@ -353,11 +353,11 @@ func TestRunStatus_QueryMode(t *testing.T) {
 	defer func() { _ = os.Chdir(origWd) }()
 
 	// First claim to set up state
-	rootCmd.SetArgs([]string{"claim"})
+	rootCmd.SetArgs([]string{"task", "claim"})
 	_ = rootCmd.Execute()
 
 	output, err := captureOutput(func() error {
-		rootCmd.SetArgs([]string{"status", "1.1"})
+		rootCmd.SetArgs([]string{"task", "status", "1.1"})
 		return rootCmd.Execute()
 	})
 	if err != nil {

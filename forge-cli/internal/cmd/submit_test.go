@@ -642,9 +642,9 @@ func TestReadRecordData(t *testing.T) {
 			t.Fatalf("failed to write temp file: %v", err)
 		}
 
-		rd, err := readRecordData(dataPath)
+		rd, err := readSubmitData(dataPath)
 		if err != nil {
-			t.Fatalf("readRecordData() error = %v", err)
+			t.Fatalf("readSubmitData() error = %v", err)
 		}
 		if rd.Status != "completed" {
 			t.Errorf("Status = %q, want %q", rd.Status, "completed")
@@ -661,7 +661,7 @@ func TestReadRecordData(t *testing.T) {
 	})
 
 	t.Run("file not found", func(t *testing.T) {
-		_, err := readRecordData("/nonexistent/path/file.json")
+		_, err := readSubmitData("/nonexistent/path/file.json")
 		if err == nil {
 			t.Error("expected error for nonexistent file")
 		}
@@ -674,14 +674,14 @@ func TestReadRecordData(t *testing.T) {
 			t.Fatalf("failed to write temp file: %v", err)
 		}
 
-		_, err := readRecordData(dataPath)
+		_, err := readSubmitData(dataPath)
 		if err == nil {
 			t.Error("expected error for invalid JSON")
 		}
 	})
 
 	t.Run("no input without data flag", func(t *testing.T) {
-		_, err := readRecordData("")
+		_, err := readSubmitData("")
 		if err == nil {
 			t.Error("expected error when no data provided")
 		}

@@ -16,8 +16,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var validateCmd = &cobra.Command{
-	Use:   "validate [file]",
+var validateIndexCmd = &cobra.Command{
+	Use:   "validate-index [file]",
 	Short: "Validate index.json file",
 	Long: `Validate an index.json file for structural and semantic correctness.
 
@@ -28,7 +28,7 @@ Validations:
   - Required fields present
   - Dependency references exist
   - No circular dependencies`,
-	Run: runValidate,
+	Run: runValidateIndex,
 }
 
 var (
@@ -36,7 +36,7 @@ var (
 	validPriority = map[string]bool{"P0": true, "P1": true, "P2": true}
 )
 
-func runValidate(_ *cobra.Command, args []string) {
+func runValidateIndex(_ *cobra.Command, args []string) {
 	var filePath string
 	if len(args) > 0 {
 		filePath = args[0]
