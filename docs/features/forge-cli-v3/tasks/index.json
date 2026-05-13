@@ -196,7 +196,7 @@
       "dependencies": [
         "2.gate"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "file": "3.1-e2e-core.md",
       "record": "records/3.1-e2e-core.md",
       "scope": "backend",

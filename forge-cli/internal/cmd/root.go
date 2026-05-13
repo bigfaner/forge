@@ -52,8 +52,13 @@ func init() {
 	taskCmd.AddCommand(migrateCmd)
 	taskCmd.AddCommand(listTypesCmd)
 
-	// E2E group subcommands
+	// E2E group subcommands (6 total)
 	e2eCmd.AddCommand(validateSpecsCmd)
+	e2eCmd.AddCommand(e2eRunCmd)
+	e2eCmd.AddCommand(e2eSetupCmd)
+	e2eCmd.AddCommand(e2eVerifyCmd)
+	e2eCmd.AddCommand(e2eCompileCmd)
+	e2eCmd.AddCommand(e2eDiscoverCmd)
 
 	// Prompt group subcommands
 	promptCmd.AddCommand(promptGetCmd)
