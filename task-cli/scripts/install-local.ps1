@@ -108,8 +108,13 @@ function Install-App {
         New-Item -ItemType Directory -Path $InstallDir | Out-Null
     }
 
-    # Copy binary
-    $SourcePath = Join-Path $BinDir $AppName
+    # Copy binary (resolve relative to project root, not CWD)
+    $ScriptDir = Split-Path -Parent $MyInvocation.ScriptName
+    if (-not $ScriptDir) {
+        $ScriptDir = $PSScriptRoot
+    }
+    $ProjectRoot = Split-Path -Parent $ScriptDir
+    $SourcePath = Join-Path $ProjectRoot (Join-Path $BinDir $AppName)
     $DestPath = Join-Path $InstallDir $AppName
 
     Copy-Item -Path $SourcePath -Destination $DestPath -Force
