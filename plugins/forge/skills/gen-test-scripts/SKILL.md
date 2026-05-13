@@ -115,8 +115,21 @@ Test cases match sitemap pages via the `Route` field. `Element` field is **requi
 
 ## Workflow
 
+<HARD-RULE>
+**Task Splitting Guard**: When gen-test-scripts is split into parallel sub-tasks (e.g., by output file or test case range), the following MUST hold:
+
+1. **Global Setup Phase** (Steps 0→1→1.5→3.5) runs as a single pre-task FIRST. This produces:
+   - Auth Plan (from Step 1 classification)
+   - Fact Table (from Step 1.5 reconnaissance)
+   - Shared infrastructure (from Step 3.5: auth-setup.ts, playwright.config.ts, helpers.ts, config files)
+2. **Only Step 4** (spec file generation) may be parallelized into sub-tasks, each handling a subset of test cases
+3. Each sub-task's description MUST include: "Shared infrastructure already configured in pre-task. Auth: use storageState (Playwright) / cached token (API), NOT login() in beforeEach."
+
+**Why**: Steps 0-3.5 produce shared artifacts that ALL spec files depend on. Splitting them causes each subagent to skip shared infrastructure and fall back to per-test login (see `docs/lessons/gotcha-split-task-missing-shared-setup.md`).
+</HARD-RULE>
+
 ```
-0. Resolve profile → 1. Read test cases → 1.5. Code Reconnaissance → 2. Resolve sitemap (web-ui) → 3. Map locators (web-ui) → 4. Generate spec files → 5. Ensure shared infrastructure
+0. Resolve profile → 1. Read test cases → 1.5. Code Reconnaissance → 2. Resolve sitemap (web-ui) → 3. Map locators (web-ui) → 3.5. Ensure shared infrastructure (auth + helpers + config) → 4. Generate spec files
 ```
 
 ### Step 1: Read Test Cases
@@ -141,6 +154,16 @@ For each test case, classify by authentication requirements:
 4. `public-test`
 
 Count each category to decide whether to enable shared auth (enabled when `auth-required-test` exists).
+
+**Auth Plan Output**: Record the classification result. This is the contract consumed by Step 3.5 (auth infrastructure) and Step 4 (spec generation):
+```
+Auth Plan:
+  auth-required-test: N (routes: ...)
+  login-test: N (routes: ...)
+  public-test: N
+  custom-auth-test: N (mechanism: ...)
+  shared-auth-enabled: yes/no
+```
 
 **Credential caching**: Follow the rules in the active profile's `generate.md` for framework-specific credential caching (e.g., storageState for browser-based UI, cached tokens for API). Login tests must invalidate cached credentials after completion.
 
@@ -202,6 +225,55 @@ If a route referenced in test cases does not exist in sitemap, report the missin
 Follow the locator mapping rules in the active profile's `generate.md` to translate sitemap element data into framework-specific locator code. The priority order (role > label > placeholder > text > testid) and syntax are defined per framework in `generate.md`.
 
 For test steps within dynamic states: first click the trigger element's locator, then map locators for in-state elements. Build an in-memory mapping table for use in Step 4.
+
+### Step 3.5: Ensure Shared Infrastructure
+
+<PRINCIPLE>
+**Shared infrastructure first.** Before generating any test files, ensure that shared dependencies are complete and functional. Test files depend on these shared files via import — if they are missing or incomplete, all tests will fail at the import stage. Downstream skills (`/run-e2e-tests`, `/graduate-tests`) follow the same principle.
+</PRINCIPLE>
+
+Check if shared infrastructure exists at `tests/e2e/`:
+
+```bash
+ls tests/e2e/ 2>/dev/null
+```
+
+**If any shared file is missing**, create it from the corresponding template (paths from profile manifest `templates.*`):
+
+- Helper file: copy from `{profile-templates-dir}/{manifest.templates.helpers}` (only if missing). When copying, strip all `// VERIFY:` and `// TEMPLATE:` comments — these are generation-time markers that should not appear in runtime files.
+- Config files: copy from manifest template references (only if missing)
+- Follow `generate.md` for additional shared infrastructure requirements specific to the framework
+
+**If helper file already exists**: check whether it exports all symbols required by the Auth Plan (e.g., `ensureAuthState`, `getApiToken`). If symbols are missing, add the missing exports AND all their private dependencies from the template. Do NOT overwrite existing exports — merge.
+
+#### Auth Infrastructure
+
+Based on the Auth Plan from Step 1, configure auth infrastructure for auth-required tests.
+
+**When `shared-auth-enabled: yes`** (auth-required-test count > 0):
+
+1. Follow the active profile's `generate.md` for framework-specific auth setup
+2. For playwright profile:
+   - Generate `tests/e2e/auth-setup.ts` from template (if not already present)
+   - Configure `tests/e2e/playwright.config.ts`: uncomment the `projects` section with `setup` + `authenticated` projects using `storageState`
+3. For other profiles: follow `generate.md` auth setup instructions
+4. Verify `helpers.ts` exports all auth-related symbols needed by spec files
+
+**When `shared-auth-enabled: no`**: Skip auth infrastructure setup.
+
+<HARD-RULE>
+Auth-required tests MUST use the shared auth mechanism (e.g., storageState for Playwright, cached tokens for API), NOT per-test login in beforeEach. The auth infrastructure generated here provides shared credentials — spec files in Step 4 MUST reference it.
+
+Specifically for Playwright: when the `projects` section in playwright.config.ts is configured with `storageState`, calling `login()` or `loginViaUI()` in `beforeEach` is FORBIDDEN for auth-required tests.
+</HARD-RULE>
+
+<HARD-RULE>
+**Shared file policy**: Shared files at `tests/e2e/` are shared across all features.
+- If they do not exist: create them from templates.
+- If helper file exists: merge missing exports from template into it (do NOT overwrite existing exports).
+- Other shared files (config, package manifest, etc.): if they exist, DO NOT modify.
+- Only test files are written per-feature.
+</HARD-RULE>
 
 ### Step 4: Generate Spec Files
 
@@ -297,34 +369,8 @@ All framework-specific rules (test runner, assertion library, imports, HTTP clie
 **Post-generation VERIFY check**: Verify no unresolved `// VERIFY:` markers remain:
 1. Run `just e2e-verify --feature <slug>` if the recipe exists in the Justfile
 2. Otherwise: `grep -rn '// VERIFY:' tests/e2e/features/<slug>/` (adapt file extension to profile)
-</HARD-RULE>
 
-### Step 5: Ensure Shared Infrastructure
-
-Check if shared infrastructure exists at `tests/e2e/`:
-
-```bash
-ls tests/e2e/ 2>/dev/null
-```
-
-<PRINCIPLE>
-**Shared infrastructure first.** Before generating any test files, ensure that shared dependencies are complete and functional. Test files depend on these shared files via import — if they are missing or incomplete, all tests will fail at the import stage. Check and fix shared dependencies before generating test files. Downstream skills (`/run-e2e-tests`, `/graduate-tests`) follow the same principle.
-</PRINCIPLE>
-
-**If any shared file is missing**, create it from the corresponding template (paths from profile manifest `templates.*`):
-
-- Helper file: copy from `{profile-templates-dir}/{manifest.templates.helpers}` (only if missing). When copying, strip all `// VERIFY:` and `// TEMPLATE:` comments — these are generation-time markers that should not appear in runtime files.
-- Config files: copy from manifest template references (only if missing)
-- Follow `generate.md` for additional shared infrastructure requirements specific to the framework
-
-**If helper file already exists**: check whether it exports all symbols imported by the generated test files. If symbols are missing, add the missing exports AND all their private dependencies from the template. Do NOT overwrite existing exports — merge.
-
-<HARD-RULE>
-**Shared file policy**: Shared files at `tests/e2e/` are shared across all features.
-- If they do not exist: create them from templates.
-- If helper file exists: merge missing exports from template into it (do NOT overwrite existing exports).
-- Other shared files (config, package manifest, etc.): if they exist, DO NOT modify.
-- Only test files are written per-feature.
+**Post-generation helper merge**: After generating all spec files, verify `helpers.ts` exports cover all imports used by generated specs. If any import is missing from helpers, merge it from the template (do NOT overwrite existing exports).
 </HARD-RULE>
 
 ## Output
