@@ -1,0 +1,26 @@
+[
+  {
+    "phase": 1,
+    "name": "Base Rename",
+    "source": "PRD-explicit",
+    "gates": []
+  },
+  {
+    "phase": 2,
+    "name": "Command Reorganization",
+    "source": "PRD-explicit",
+    "gates": []
+  },
+  {
+    "phase": 3,
+    "name": "Feature Migration",
+    "source": "PRD-explicit",
+    "gates": [{"afterPhase": 3, "description": "Verify e2e behavior equivalence between justfile bash and Go implementations"}]
+  },
+  {
+    "phase": 4,
+    "name": "Reference Updates",
+    "source": "PRD-explicit",
+    "gates": [{"afterPhase": 4, "description": "Verify no stale task command references remain; full test suite passes"}]
+  }
+]
