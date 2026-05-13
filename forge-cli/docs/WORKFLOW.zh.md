@@ -53,11 +53,11 @@ custom-branch              → custom-branch
 
 ---
 
-## 2. 任务声明流程 (task claim)
+## 2. 任务声明流程 (forge task claim)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        task claim                               │
+│                     forge task claim                            │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -138,11 +138,11 @@ for each dep in T.Dependencies:
 
 ---
 
-## 3. 任务记录生成流程 (task record)
+## 3. 任务记录生成流程 (forge task submit)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│              task record <task-id> < input.json                 │
+│          forge task submit <task-id> --data <path>              │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -192,11 +192,11 @@ for each dep in T.Dependencies:
 
 ---
 
-## 4. verifyCompletion 流程
+## 4. verify-task-done 流程
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                   task verifyCompletion                         │
+│                   forge verify-task-done                        │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -229,7 +229,7 @@ for each dep in T.Dependencies:
     │ 返回成功(0)     │             │ 返回失败(2)     │
     └─────────────────┘             └─────────────────┘
 
-注意: verifyCompletion 只验证状态，不删除任何文件。
+注意: verify-task-done 只验证状态，不删除任何文件。
 ```
 
 ---
@@ -238,7 +238,7 @@ for each dep in T.Dependencies:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        task cleanup                             │
+│                       forge cleanup                             │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -274,11 +274,11 @@ for each dep in T.Dependencies:
 
 ---
 
-## 6. all-completed 流程
+## 6. quality-gate 流程
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     task all-completed                          │
+│                      forge quality-gate                         │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -320,7 +320,7 @@ for each dep in T.Dependencies:
 ┌──────────┐      ┌──────────────────────────┐
 │ 通过:    │      │ 失败: 保存原始输出       │
 │ exit 0   │      │ 阻止 hook → Agent 读取   │
-└──────────┘      │ 原始输出 → task add      │
+└──────────┘      │ 原始输出 → forge task add  │
                   │ → 声明修复任务           │
                   └──────────────────────────┘
 ```
@@ -339,11 +339,11 @@ for each dep in T.Dependencies:
 
 ---
 
-## 7. 验证流程 (task validate)
+## 7. 验证流程 (forge task validate-index)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                      task validate [file]                       │
+│                forge task validate-index [file]                 │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -440,24 +440,24 @@ func detectCycle(tasks map[string]Task) []string {
 $ git checkout -b feature/auth-login
 
 # 2. 领取任务（自动识别 feature: auth-login）
-$ task claim
+$ forge task claim
 > Claimed task 1.1: 实现用户认证
 
 # 3. 开发任务
 # ... 编写代码、测试 ...
 
 # 4. 生成记录
-$ task record 1.1 < record.json
+$ forge task submit 1.1 --data record.json
 
 # 5. 更新状态
-$ task status 1.1 completed
+$ forge task status 1.1 completed
 
-# 6. 提交代码（verifyCompletion 自动验证）
+# 6. 提交代码（verify-task-done 自动验证）
 $ git commit -m "feat(auth): implement login"
-> verifyCompletion: 任务已完成且有记录 → 允许提交
+> verify-task-done: 任务已完成且有记录 → 允许提交
 
 # 7. 循环
-$ task claim
+$ forge task claim
 > Claimed task 1.2: 实现权限检查
 ```
 
@@ -469,7 +469,7 @@ $ git worktree add ../auth-login feature/auth-login
 
 # 2. 在 worktree 中工作
 $ cd ../auth-login
-$ task claim
+$ forge task claim
 > Claimed task 1.1: 实现用户认证
 
 # 3. 开发、记录、提交 ...
@@ -479,10 +479,10 @@ $ task claim
 
 ```bash
 # 1. 手动设置 feature
-$ task feature auth-login
+$ forge feature auth-login
 
 # 2. 领取任务
-$ task claim
+$ forge task claim
 
 # 3. 开发、记录、提交 ...
 ```
@@ -494,7 +494,7 @@ $ task claim
 ```
 错误类型              处理方式
 ─────────────────────────────────────────────────
-Feature 不存在        返回错误，提示运行: task feature <slug>
+Feature 不存在        返回错误，提示运行: forge feature <slug>
 多个活跃 Feature      返回错误，列出活跃 feature，提示切换
 Task-state 损坏       返回错误，建议手动删除
 index.json 语法错误   返回详细错误位置
@@ -510,7 +510,7 @@ index.json 语法错误   返回详细错误位置
 ### 设置 Feature
 
 ```bash
-$ task feature <slug>
+$ forge feature <slug>
 ```
 
 创建 `docs/features/<slug>/tasks/process/` 目录作为 feature 的运行时状态存储。
@@ -518,7 +518,7 @@ $ task feature <slug>
 ### 显示当前 Feature
 
 ```bash
-$ task feature
+$ forge feature
 > Current feature: auth-login
 ```
 
@@ -561,7 +561,7 @@ main/master/HEAD   → 忽略，使用目录扫描
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         task add                                │
+│                       forge task add                            │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼

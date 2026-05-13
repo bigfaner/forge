@@ -57,7 +57,7 @@ custom-branch              → custom-branch
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        task claim                               │
+│                     forge task claim                            │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -143,7 +143,7 @@ for each dep in T.Dependencies:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│              task record <task-id> --data <path>                │
+│            forge task submit <task-id> --data <path>            │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -208,11 +208,11 @@ for each dep in T.Dependencies:
 
 ---
 
-## 4. verifyCompletion Workflow
+## 4. verify-task-done Workflow
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                   task verifyCompletion                         │
+│                   forge verify-task-done                        │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -246,7 +246,7 @@ for each dep in T.Dependencies:
     │ Return success(0)│             │ Return failure(2)│
     └─────────────────┘             └─────────────────┘
 
-Note: verifyCompletion only validates status; it does not delete any files.
+Note: verify-task-done only validates status; it does not delete any files.
 ```
 
 ---
@@ -255,7 +255,7 @@ Note: verifyCompletion only validates status; it does not delete any files.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        task cleanup                             │
+│                       forge cleanup                             │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -292,11 +292,11 @@ Note: verifyCompletion only validates status; it does not delete any files.
 
 ---
 
-## 6. All-Completed Workflow
+## 6. Quality Gate Workflow
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     task all-completed                          │
+│                      forge quality-gate                         │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -375,7 +375,7 @@ Note: verifyCompletion only validates status; it does not delete any files.
 **addFixTask()**: On failure at any gate/test step, auto-creates a P0 fix-task using
 the `fix-task` template. Extracts source files from error output, saves raw output
 to `tests/results/` (unit) or `tests/e2e/results/` (e2e), updates `.forge/state.json`,
-and prints a hook JSON block reason so the agent can `task claim` the fix.
+and prints a hook JSON block reason so the agent can `forge task claim` the fix.
 
 **Note**: Feature e2e tests are NOT run by this hook.
 They are owned by T-test-3 (`run-e2e-tests` task) in the task chain.
@@ -395,7 +395,7 @@ This hook is the project health gate: unit/integration tests + regression suite.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                      task validate [file]                       │
+│                forge task validate-index [file]                 │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -559,24 +559,24 @@ func detectCycle(tasks map[string]Task) []string {
 $ git checkout -b feature/auth-login
 
 # 2. Claim task (auto-detects feature: auth-login)
-$ task claim
+$ forge task claim
 > Claimed task 1.1: Implement user authentication
 
 # 3. Develop task
 # ... write code, tests ...
 
 # 4. Generate record
-$ task record 1.1 < record.json
+$ forge task submit 1.1 --data record.json
 
 # 5. Update status
-$ task status 1.1 completed
+$ forge task status 1.1 completed
 
-# 6. Commit code (verifyCompletion auto-validates)
+# 6. Commit code (verify-task-done auto-validates)
 $ git commit -m "feat(auth): implement login"
-> verifyCompletion: Task completed with record → commit allowed
+> verify-task-done: Task completed with record → commit allowed
 
 # 7. Loop
-$ task claim
+$ forge task claim
 > Claimed task 1.2: Implement permission check
 ```
 
@@ -588,7 +588,7 @@ $ git worktree add ../auth-login feature/auth-login
 
 # 2. Work in the worktree
 $ cd ../auth-login
-$ task claim
+$ forge task claim
 > Claimed task 1.1: Implement user authentication
 
 # 3. Develop, record, commit ...
@@ -598,10 +598,10 @@ $ task claim
 
 ```bash
 # 1. Manually set feature
-$ task feature auth-login
+$ forge feature auth-login
 
 # 2. Claim task
-$ task claim
+$ forge task claim
 
 # 3. Develop, record, commit ...
 ```
@@ -613,7 +613,7 @@ $ task claim
 ```
 Error Type              Handling
 ─────────────────────────────────────────────────
-Feature not found       Return error, suggest running: task feature <slug>
+Feature not found       Return error, suggest running: forge feature <slug>
 Multiple active         Return error, list active features,
 Features                suggest switching
 Task-state corrupted    Return error, suggest manual deletion
@@ -630,7 +630,7 @@ File not found          Return warning, does not block operation
 ### Set Feature
 
 ```bash
-$ task feature <slug>
+$ forge feature <slug>
 ```
 
 Creates the `docs/features/<slug>/tasks/process/` directory as the feature's runtime state storage.
@@ -638,7 +638,7 @@ Creates the `docs/features/<slug>/tasks/process/` directory as the feature's run
 ### Show Current Feature
 
 ```bash
-$ task feature
+$ forge feature
 > Current feature: auth-login
 ```
 
@@ -679,7 +679,7 @@ Examples:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         task add                                │
+│                       forge task add                            │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -771,16 +771,16 @@ Examples:
 Source task (in_progress)
          │
          ▼  test fails
-task status <id> blocked
+forge task status <id> blocked
          │
          ▼
-task add --template fix-task --source-task-id <id>
+forge task add --template fix-task --source-task-id <id>
          │
          ▼  fix-N (P0, pending, auto-ID from template prefix)
-   task claim → picks P0 first
+   forge task claim → picks P0 first
          │
          ▼  fix-task executes
-   task record → fix-task completed or skipped
+   forge task submit → fix-task completed or skipped
          │
          ▼  auto-restore checks:
    - fix-task has SourceTaskID?
@@ -793,7 +793,7 @@ task add --template fix-task --source-task-id <id>
 Source → pending
          │
          ▼
-   task claim → source re-claimed
+   forge task claim → source re-claimed
 ```
 
 **Multi-fix scenario:** When multiple fix-tasks are created for one source, the source is auto-restored only when the LAST fix-task completes.
@@ -808,26 +808,26 @@ Source → pending
       ┌────────────│           │◄─────────────────┐
       │            └──────────┘                   │
       │                 │                         │
-      │                 │ task status blocked      │ auto-restore
-      │                 ▼                         │ (via task record)
+      │                 │ forge task status blocked │ auto-restore
+      │                 ▼                         │ (via forge task submit)
       │            ┌──────────┐                   │
       │            │ blocked   │───────────────────┘
       │            └──────────┘   (all deps completed)
       │                 │
       │                 │ (all deps completed +
-      │                 │  validated by task status)
+      │                 │  validated by forge task status)
       │                 ▼
       │            ┌──────────┐
       ├───────────►│in_progress│
       │            └──────────┘
       │                 │
-      │                 │ task status blocked
+      │                 │ forge task status blocked
       │                 ▼
       │            ┌──────────┐
       │            │ blocked   │───────────────────┐
       │            └──────────┘                   │
       │                                           │
-      │                 │ task record              │
+      │                 │ forge task submit         │
       │                 ▼                         │
       │            ┌──────────┐                   │
       │            │ completed │◄──────────────────┘
@@ -846,13 +846,13 @@ Source → pending
 - `completed → *`: Blocked (terminal state). Use `--force` to override.
 - `rejected → *`: Blocked (terminal state). Use `--force` to override.
 - `skipped → *`: Blocked (terminal state). Use `--force` to override.
-- `in_progress → completed`: Blocked. Use `task record` instead.
+- `in_progress → completed`: Blocked. Use `forge task submit` instead.
 - `* → pending` / `* → in_progress`: Requires all dependencies to be completed or skipped.
 - `--force` flag bypasses all state machine guards.
 
 ## 15. Lifecycle Liveness Validation
 
-`task validate` detects lifecycle anomalies:
+`forge task validate-index` detects lifecycle anomalies:
 - **Orphaned**: blocked task with no dependencies
 - **Stale**: blocked task whose deps are all completed or skipped (should be pending)
 - **Deadlock**: blocked task whose deps are all blocked or missing (no path to resolution)
@@ -861,7 +861,7 @@ Source → pending
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│              task index --feature <slug>                        │
+│            forge task index --feature <slug>                    │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼

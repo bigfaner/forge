@@ -4,7 +4,7 @@
 
 ## 核心功能
 
-### 1. 智能任务声明 (`task claim`)
+### 1. 智能任务声明 (`forge task claim`)
 
 基于多维度策略自动选择下一个可用任务：
 
@@ -18,7 +18,7 @@
 - 精确匹配：`1.1`, `1.2`
 - 通配符匹配：`1.x`（前缀级别依赖）
 
-### 2. 任务记录生成 (`task record`)
+### 2. 任务记录生成 (`forge task submit`)
 
 从 JSON 输入生成结构化 markdown 执行记录，包含：
 
@@ -37,16 +37,16 @@
 | `status=completed` + any `acceptanceCriteria.met=false` | Unmet AC | Fix issue, or set `status: "blocked"` |
 | `summary` empty or whitespace | Missing summary | Provide a summary |
 
-Override with `--force`: `task record <id> --data record.json --force`
+Override with `--force`: `forge task submit <id> --data record.json --force`
 
 ### 3. 状态管理
 
 | 命令 | 功能 |
 |------|------|
-| `task status <id>` | 查询任务状态 |
-| `task status <id> <status>` | 更新任务状态 |
-| `task query <id>` | 查询任务详情 |
-| `task feature [slug]` | 设置/显示当前 feature |
+| `forge task status <id>` | 查询任务状态 |
+| `forge task status <id> <status>` | 更新任务状态 |
+| `forge task query <id>` | 查询任务详情 |
+| `forge feature [slug]` | 设置/显示当前 feature |
 
 **状态值：** `pending`, `in_progress`, `completed`, `blocked`, `skipped`
 
@@ -54,8 +54,8 @@ Override with `--force`: `task record <id> --data record.json --force`
 
 | 命令 | 功能 |
 |------|------|
-| `task validate [file]` | 验证 index.json 结构 |
-| `task check` | 检查所有任务依赖 |
+| `forge task validate-index [file]` | 验证 index.json 结构 |
+| `forge task check-deps` | 检查所有任务依赖 |
 
 **验证规则：**
 - JSON 语法检查
@@ -68,9 +68,9 @@ Override with `--force`: `task record <id> --data record.json --force`
 
 | 命令 | 用途 | 功能 |
 |------|------|------|
-| `task verifyCompletion` | PreToolUse (git commit) | 验证任务完成状态，阻止未完成任务提交 |
-| `task cleanup` | Stop | 清理已完成任务的状态文件 |
-| `task all-completed` | Stop hook | 检查所有任务是否完成，若完成则自动运行测试 |
+| `forge verify-task-done` | PreToolUse (git commit) | 验证任务完成状态，阻止未完成任务提交 |
+| `forge cleanup` | Stop | 清理已完成任务的状态文件 |
+| `forge quality-gate` | Stop hook | 检查所有任务是否完成，若完成则自动运行测试 |
 
 **all-completed 行为：**
 - 所有任务均为 `completed` 或 `skipped` → 运行项目级测试 + e2e 回归，exit 0
@@ -79,7 +79,7 @@ Override with `--force`: `task record <id> --data record.json --force`
 
 **e2e 测试失败恢复：**
 - 当回归测试 (`just test-e2e`) 失败时，保存原始输出到 `testing/results/raw-output.txt`
-- 阻止 Stop hook，指示 agent 分析失败原因并使用 `task add` 创建修复任务
+- 阻止 Stop hook，指示 agent 分析失败原因并使用 `forge task add` 创建修复任务
 - agent 读取原始输出，确定根因，动态添加修复任务
 
 **feature e2e 测试（不由本 hook 运行）：**
@@ -232,16 +232,16 @@ type TaskIndex struct {
 ## 命令速查
 
 ```bash
-task claim              # 声明下一个任务
-task record 1.1         # 生成任务记录
-task record 1.1 --force # 生成任务记录（跳过验证）
-task add --title "Fix: ..." --priority P0 --breaking  # 动态添加新任务
-task status 1.1         # 查询任务状态
-task status 1.1 done    # 更新状态
-task query 1.1          # 查询任务详情
-task feature auth       # 切换 feature
-task check              # 依赖检查
-task validate           # 验证 index.json
-task verifyCompletion   # 验证任务完成（git commit hook）
-task cleanup            # 清理已完成任务状态（stop hook）
+forge task claim              # 声明下一个任务
+forge task submit 1.1         # 生成任务记录
+forge task submit 1.1 --force # 生成任务记录（跳过验证）
+forge task add --title "Fix: ..." --priority P0 --breaking  # 动态添加新任务
+forge task status 1.1         # 查询任务状态
+forge task status 1.1 done    # 更新状态
+forge task query 1.1          # 查询任务详情
+forge feature auth            # 切换 feature
+forge task check-deps         # 依赖检查
+forge task validate-index     # 验证 index.json
+forge verify-task-done        # 验证任务完成（git commit hook）
+forge cleanup                 # 清理已完成任务状态（stop hook）
 ```

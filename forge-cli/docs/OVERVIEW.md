@@ -4,7 +4,7 @@
 
 ## Core Features
 
-### 1. Intelligent Task Claiming (`task claim`)
+### 1. Intelligent Task Claiming (`forge task claim`)
 
 Automatically selects the next available task based on a multi-dimensional strategy:
 
@@ -18,7 +18,7 @@ Automatically selects the next available task based on a multi-dimensional strat
 - Exact match: `1.1`, `1.2`
 - Wildcard match: `1.x` (prefix-level dependency)
 
-### 2. Task Record Generation (`task record`)
+### 2. Task Record Generation (`forge task submit`)
 
 Generate structured markdown execution records from JSON input, including:
 
@@ -37,24 +37,24 @@ Generate structured markdown execution records from JSON input, including:
 | `status=completed` + any `acceptanceCriteria.met=false` | Unmet AC | Fix issue, or set `status: "blocked"` |
 | `summary` empty or whitespace | Missing summary | Provide a summary |
 
-Override with `--force`: `task record <id> --data record.json --force`
+Override with `--force`: `forge task submit <id> --data record.json --force`
 
 ### 3. Status Management
 
 | Command | Function |
 |---------|----------|
-| `task status <id>` | Query task status |
-| `task status <id> <status>` | Update task status |
-| `task query <id>` | Query task details |
-| `task feature [slug]` | Set/display current feature |
+| `forge task status <id>` | Query task status |
+| `forge task status <id> <status>` | Update task status |
+| `forge task query <id>` | Query task details |
+| `forge feature [slug]` | Set/display current feature |
 
 **Status values:** `pending`, `in_progress`, `completed`, `blocked`, `skipped`, `rejected`
 
 **State machine guards:**
 - `completed` is terminal — cannot transition out without `--force`
-- `in_progress → completed` blocked — use `task record` instead
+- `in_progress → completed` blocked — use `forge task submit` instead
 - `pending`/`in_progress` transitions require all dependencies to be completed or skipped
-- `--force` flag on `task status` bypasses all guards
+- `--force` flag on `forge task status` bypasses all guards
 
 **Auto-restore:** When a fix-task (task with `sourceTaskID`) is recorded as `completed` or `skipped`, the source task is automatically restored to `pending` if all its dependencies are completed or skipped.
 
@@ -62,8 +62,8 @@ Override with `--force`: `task record <id> --data record.json --force`
 
 | Command | Function |
 |---------|----------|
-| `task validate [file]` | Validate index.json structure and lifecycle |
-| `task check` | Check all task dependencies |
+| `forge task validate-index [file]` | Validate index.json structure and lifecycle |
+| `forge task check-deps` | Check all task dependencies |
 
 **Validation rules:**
 - JSON syntax check
@@ -77,27 +77,26 @@ Override with `--force`: `task record <id> --data record.json --force`
 
 | Command | Purpose | Function |
 |---------|---------|----------|
-| `task verify-completion` | PreToolUse (git commit) | Verify task completion status, block commits for incomplete tasks |
-| `task cleanup` | Stop | Clean up state files for completed, blocked, or rejected tasks |
-| `task all-completed` | Stop hook | Check if all tasks are completed, and if so, automatically run tests |
-| `task profile` | Profile resolution | Resolve active test profile from config or project structure |
-| `task index` | Index generation | Build or rebuild index.json from .md files with test task generation |
-| `task prompt <id>` | Prompt synthesis | Generate agent prompt for a task based on its type; `--fix-record-missed` for recovery |
-| `task template [name]` | Template viewer | List available templates or display template content |
-| `task forensic` | Session analysis | Search/extract past session transcripts for deviation analysis |
-| `task migrate` | Data migration | Infer type fields for all tasks in index.json |
-| `task validate-specs` | Spec validation | AST validation against generated Playwright spec files |
-| `task version` | Version info | Print CLI version |
+| `forge verify-task-done` | PreToolUse (git commit) | Verify task completion status, block commits for incomplete tasks |
+| `forge cleanup` | Stop | Clean up state files for completed, blocked, or rejected tasks |
+| `forge quality-gate` | Stop hook | Check if all tasks are completed, and if so, automatically run tests |
+| `forge profile` | Profile resolution | Resolve active test profile from config or project structure |
+| `forge task index` | Index generation | Build or rebuild index.json from .md files with test task generation |
+| `forge prompt get-by-task-id <id>` | Prompt synthesis | Generate agent prompt for a task based on its type; `--fix-record-missed` for recovery |
+| `forge forensic` | Session analysis | Search/extract past session transcripts for deviation analysis |
+| `forge task migrate` | Data migration | Infer type fields for all tasks in index.json |
+| `forge e2e validate-specs` | Spec validation | AST validation against generated Playwright spec files |
+| `forge version` | Version info | Print CLI version |
 
-**`task profile` subcommands:**
+**`forge profile` subcommands:**
 
 | Command | Description |
 |---------|-------------|
-| `task profile` | Resolve active profile(s): reads `.forge/config.yaml`, falls back to file-signal detection |
-| `task profile set <name>` | Persist a profile choice to `.forge/config.yaml` |
-| `task profile detect` | Run detection only (ignores existing config) |
-| `task profile get <name> --<flag>` | Get profile data: `--manifest`, `--generate`, `--run`, `--graduate`, `--justfile`, `--template <file>` |
-| `task profile --json` | Machine-readable JSON output |
+| `forge profile` | Resolve active profile(s): reads `.forge/config.yaml`, falls back to file-signal detection |
+| `forge profile set <name>` | Persist a profile choice to `.forge/config.yaml` |
+| `forge profile detect` | Run detection only (ignores existing config) |
+| `forge profile get <name> --<flag>` | Get profile data: `--manifest`, `--generate`, `--run`, `--graduate`, `--justfile`, `--template <file>` |
+| `forge profile --json` | Machine-readable JSON output |
 
 **Profile detection signals:**
 
@@ -125,7 +124,7 @@ Override with `--force`: `task record <id> --data record.json --force`
 **Auto-fix task creation on failure:**
 - At any step failure, `addFixTask()` creates a P0 fix-task using the `fix-task` template
 - Extracts source file paths from error output, saves raw output to disk
-- Prints hook JSON block reason → agent picks up fix task via `task claim`
+- Prints hook JSON block reason → agent picks up fix task via `forge task claim`
 
 **feature e2e tests (NOT run by this hook):**
 - Feature e2e execution is owned by T-test-3 (`run-e2e-tests` task in the task chain)
@@ -301,19 +300,19 @@ Module interaction: via interfaces/type definitions, no direct dependency on int
 ## Command Quick Reference
 
 ```bash
-task claim              # Claim the next task
-task record 1.1         # Generate task record
-task record 1.1 --force # Generate task record (skip validation)
-task add --title "Fix: ..." --priority P0 --breaking  # Add a new task dynamically
-task add --template fix-task --title "Fix ..." --source-task-id 1.1 --block-source  # Add fix-task, block source
-task add --title "..." --var KEY=VALUE  # Add task with template variables
-task status 1.1         # Query task status
-task status 1.1 done    # Update status
-task query 1.1          # Query task details
-task feature auth       # Switch feature
-task check              # Dependency check
-task validate           # Validate index.json
-task index --feature <slug>  # Build index.json from .md files
-task verify-completion   # Verify task completion (git commit hook)
-task cleanup            # Clean up completed task state (stop hook)
+forge task claim              # Claim the next task
+forge task submit 1.1         # Generate task record
+forge task submit 1.1 --force # Generate task record (skip validation)
+forge task add --title "Fix: ..." --priority P0 --breaking  # Add a new task dynamically
+forge task add --template fix-task --title "Fix ..." --source-task-id 1.1 --block-source  # Add fix-task, block source
+forge task add --title "..." --var KEY=VALUE  # Add task with template variables
+forge task status 1.1         # Query task status
+forge task status 1.1 done    # Update status
+forge task query 1.1          # Query task details
+forge feature auth            # Switch feature
+forge task check-deps         # Dependency check
+forge task validate-index     # Validate index.json
+forge task index --feature <slug>  # Build index.json from .md files
+forge verify-task-done        # Verify task completion (git commit hook)
+forge cleanup                 # Clean up completed task state (stop hook)
 ```
