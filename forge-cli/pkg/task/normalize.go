@@ -85,7 +85,7 @@ func findNextHeading(s string, pos int) int {
 
 // splitFrontmatter returns the index where frontmatter ends (after the closing ---).
 // Returns (0, -1) if no valid frontmatter is found.
-func splitFrontmatter(content []byte) (int, int) {
+func splitFrontmatter(content []byte) (int, int) { //nolint:unparam
 	if !bytes.HasPrefix(content, []byte("---")) {
 		return 0, -1
 	}

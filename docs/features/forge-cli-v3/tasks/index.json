@@ -126,7 +126,7 @@
         "1.gate",
         "2.1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2.4-quality-gate-cap.md",
       "record": "records/2.4-quality-gate-cap.md",
       "scope": "backend",
