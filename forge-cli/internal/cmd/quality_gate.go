@@ -173,7 +173,7 @@ func runQualityGate(_ *cobra.Command, _ []string) {
 			}
 		}
 		if e2eReady {
-			if !e2eprobe.ProbeServers(result.ProjectRoot) {
+			if !e2eprobe.ProbeServers(result.ProjectRoot, "") {
 				fmt.Fprintln(os.Stderr, "WARNING: e2e server health check failed; skipping e2e regression")
 				fmt.Fprintln(os.Stderr, "  Start dev server and retry: just dev && just test-e2e")
 				e2eReady = false

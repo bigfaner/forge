@@ -225,7 +225,7 @@
       "dependencies": [
         "2.gate"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3.3-probe-justfile.md",
       "record": "records/3.3-probe-justfile.md",
       "scope": "all",

@@ -25,10 +25,15 @@ func ProbeEndpoint(url string, timeout time.Duration) bool {
 
 // ProbeServers reads tests/e2e/config.yaml and probes baseUrl/apiBaseUrl.
 // Returns true if all configured endpoints respond, or if no config exists.
-func ProbeServers(projectRoot string) bool {
+// path is the health check path appended to each URL (defaults to "/health").
+func ProbeServers(projectRoot, path string) bool {
+	if path == "" {
+		path = "/health"
+	}
+
 	configPath := filepath.Join(projectRoot, "tests", "e2e", "config.yaml")
 	if !just.FileExists(configPath) {
-		fmt.Fprintln(os.Stderr, "  No tests/e2e/config.yaml found; skipping health check")
+		fmt.Fprintln(os.Stderr, "OK: CLI-only project")
 		return true
 	}
 
@@ -49,16 +54,18 @@ func ProbeServers(projectRoot string) bool {
 		endpoints = append(endpoints, apiBaseURL)
 	}
 	if len(endpoints) == 0 {
+		fmt.Fprintln(os.Stderr, "OK: CLI-only project")
 		return true
 	}
 
 	probeTimeout := 5 * time.Second
 	for _, ep := range endpoints {
-		if !ProbeEndpoint(ep, probeTimeout) {
-			fmt.Fprintf(os.Stderr, "  Endpoint unreachable: %s\n", ep)
+		probeURL := strings.TrimRight(ep, "/") + path
+		if !ProbeEndpoint(probeURL, probeTimeout) {
+			fmt.Fprintf(os.Stderr, "FAIL: %s not responding\n", probeURL)
 			return false
 		}
-		fmt.Fprintf(os.Stderr, "  Endpoint OK: %s\n", ep)
+		fmt.Fprintf(os.Stderr, "OK: %s\n", probeURL)
 	}
 	return true
 }

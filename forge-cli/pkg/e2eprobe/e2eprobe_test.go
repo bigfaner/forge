@@ -42,7 +42,7 @@ func TestProbeEndpoint(t *testing.T) {
 func TestProbeServers(t *testing.T) {
 	t.Run("no config.yaml returns true", func(t *testing.T) {
 		dir := t.TempDir()
-		if !ProbeServers(dir) {
+		if !ProbeServers(dir, "") {
 			t.Error("expected true when no config.yaml exists")
 		}
 	})
@@ -51,7 +51,7 @@ func TestProbeServers(t *testing.T) {
 		dir := t.TempDir()
 		_ = os.MkdirAll(filepath.Join(dir, "tests", "e2e"), 0755)
 		_ = os.WriteFile(filepath.Join(dir, "tests", "e2e", "config.yaml"), []byte(""), 0644)
-		if !ProbeServers(dir) {
+		if !ProbeServers(dir, "") {
 			t.Error("expected true for empty config")
 		}
 	})
@@ -60,7 +60,7 @@ func TestProbeServers(t *testing.T) {
 		dir := t.TempDir()
 		_ = os.MkdirAll(filepath.Join(dir, "tests", "e2e"), 0755)
 		_ = os.WriteFile(filepath.Join(dir, "tests", "e2e", "config.yaml"), []byte("baseUrl: http://127.0.0.1:1\n"), 0644)
-		if ProbeServers(dir) {
+		if ProbeServers(dir, "") {
 			t.Error("expected false for unreachable endpoint")
 		}
 	})
@@ -76,7 +76,7 @@ func TestProbeServers(t *testing.T) {
 		config := "baseUrl: " + ts.URL + "\n"
 		_ = os.WriteFile(filepath.Join(dir, "tests", "e2e", "config.yaml"), []byte(config), 0644)
 
-		if !ProbeServers(dir) {
+		if !ProbeServers(dir, "") {
 			t.Error("expected true for reachable baseUrl")
 		}
 	})
@@ -92,7 +92,7 @@ func TestProbeServers(t *testing.T) {
 		config := "apiBaseUrl: " + ts.URL + "\n"
 		_ = os.WriteFile(filepath.Join(dir, "tests", "e2e", "config.yaml"), []byte(config), 0644)
 
-		if !ProbeServers(dir) {
+		if !ProbeServers(dir, "") {
 			t.Error("expected true for reachable apiBaseUrl")
 		}
 	})
@@ -113,8 +113,48 @@ func TestProbeServers(t *testing.T) {
 		config := "baseUrl: " + ts1.URL + "\napiBaseUrl: " + ts2.URL + "\n"
 		_ = os.WriteFile(filepath.Join(dir, "tests", "e2e", "config.yaml"), []byte(config), 0644)
 
-		if !ProbeServers(dir) {
+		if !ProbeServers(dir, "") {
 			t.Error("expected true when both endpoints are reachable")
+		}
+	})
+
+	t.Run("custom path is appended to URL", func(t *testing.T) {
+		var requestedPath string
+		ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+			requestedPath = r.URL.Path
+		}))
+		defer ts.Close()
+
+		dir := t.TempDir()
+		_ = os.MkdirAll(filepath.Join(dir, "tests", "e2e"), 0755)
+		config := "baseUrl: " + ts.URL + "\n"
+		_ = os.WriteFile(filepath.Join(dir, "tests", "e2e", "config.yaml"), []byte(config), 0644)
+
+		if !ProbeServers(dir, "/api/health") {
+			t.Error("expected true for reachable baseUrl with custom path")
+		}
+		if requestedPath != "/api/health" {
+			t.Errorf("requested path = %q, want %q", requestedPath, "/api/health")
+		}
+	})
+
+	t.Run("default path is /health", func(t *testing.T) {
+		var requestedPath string
+		ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+			requestedPath = r.URL.Path
+		}))
+		defer ts.Close()
+
+		dir := t.TempDir()
+		_ = os.MkdirAll(filepath.Join(dir, "tests", "e2e"), 0755)
+		config := "baseUrl: " + ts.URL + "\n"
+		_ = os.WriteFile(filepath.Join(dir, "tests", "e2e", "config.yaml"), []byte(config), 0644)
+
+		if !ProbeServers(dir, "") {
+			t.Error("expected true for reachable baseUrl with default path")
+		}
+		if requestedPath != "/health" {
+			t.Errorf("requested path = %q, want %q", requestedPath, "/health")
 		}
 	})
 }

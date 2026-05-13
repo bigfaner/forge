@@ -30,8 +30,9 @@ func init() {
 	rootCmd.AddCommand(profileCmd)
 	rootCmd.AddCommand(promptCmd)
 
-	// Top-level commands (5)
+	// Top-level commands (6)
 	rootCmd.AddCommand(cleanupCmd)
+	rootCmd.AddCommand(probeCmd)
 	rootCmd.AddCommand(qualityGateCmd)
 	rootCmd.AddCommand(verifyTaskDoneCmd)
 	rootCmd.AddCommand(featureCmd)

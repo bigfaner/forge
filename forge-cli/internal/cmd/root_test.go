@@ -28,8 +28,8 @@ func TestRootCmd_Structure(t *testing.T) {
 		}
 	}
 
-	// 5 top-level commands
-	expectedTopLevel := []string{"cleanup", "quality-gate", "verify-task-done", "feature", "version"}
+	// 6 top-level commands
+	expectedTopLevel := []string{"cleanup", "probe", "quality-gate", "verify-task-done", "feature", "version"}
 	for _, expected := range expectedTopLevel {
 		if !commandNames[expected] {
 			t.Errorf("missing top-level command: %s (have: %v)", expected, commandNames)
@@ -47,9 +47,9 @@ func TestRootCmd_HelpShowsTenVisibleEntries(t *testing.T) {
 			visibleCount++
 		}
 	}
-	// 5 groups + 4 visible top-level (version is hidden) = 9 visible
-	if visibleCount != 9 {
-		t.Errorf("expected 9 visible commands, got %d", visibleCount)
+	// 5 groups + 5 visible top-level (version is hidden) = 10 visible
+	if visibleCount != 10 {
+		t.Errorf("expected 10 visible commands, got %d", visibleCount)
 	}
 }
 
@@ -145,8 +145,8 @@ func TestInit_RegistersCommands(t *testing.T) {
 		}
 	}
 
-	// 5 groups + 5 top-level = 10
-	if len(explicit) != 10 {
-		t.Errorf("expected 10 explicit commands, got %d: %v", len(explicit), explicit)
+	// 5 groups + 6 top-level = 11
+	if len(explicit) != 11 {
+		t.Errorf("expected 11 explicit commands, got %d: %v", len(explicit), explicit)
 	}
 }
