@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"forge-cli/pkg/feature"
+	indexPkg "forge-cli/pkg/index"
 	"forge-cli/pkg/just"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/task"
@@ -82,12 +84,25 @@ func runSubmit(_ *cobra.Command, args []string) {
 	}
 
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
-	index, err := task.LoadIndex(indexPath)
+
+	// Acquire advisory lock to prevent concurrent write conflicts
+	lock, err := indexPkg.LockFile(indexPath)
+	if err != nil {
+		if errors.Is(err, indexPkg.ErrLockConflict) {
+			fmt.Fprintln(os.Stderr, "concurrent write conflict, retry")
+			os.Exit(1)
+		}
+		fmt.Fprintf(os.Stderr, "failed to create lock file: %v\n", err)
+		os.Exit(1)
+	}
+	defer func() { _ = indexPkg.UnlockFile(lock) }()
+
+	idx, err := task.LoadIndex(indexPath)
 	if err != nil {
 		Exit(ErrFileNotFound(indexPath))
 	}
 
-	key, t, err := task.FindTask(index, taskIDArg)
+	key, t, err := task.FindTask(idx, taskIDArg)
 	if err != nil {
 		Exit(ErrTaskNotFound(taskIDArg))
 	}
@@ -125,14 +140,14 @@ func runSubmit(_ *cobra.Command, args []string) {
 
 	// Validate status
 	validStatus := false
-	for _, s := range index.StatusEnum {
+	for _, s := range idx.StatusEnum {
 		if s == rd.Status {
 			validStatus = true
 			break
 		}
 	}
 	if !validStatus {
-		Exit(ErrInvalidStatus(rd.Status, index.StatusEnum))
+		Exit(ErrInvalidStatus(rd.Status, idx.StatusEnum))
 	}
 
 	// Read startedTime from task-state.json
@@ -156,14 +171,14 @@ func runSubmit(_ *cobra.Command, args []string) {
 
 	// Update task status in index
 	t.Status = rd.Status
-	index.SetTask(key, *t)
+	idx.SetTask(key, *t)
 
 	// Auto-restore: if this fix-task completed or skipped, check if source can be unblocked
 	if t.SourceTaskID != "" && (rd.Status == "completed" || rd.Status == "skipped") {
-		autoRestoreSourceTask(index, t.SourceTaskID)
+		autoRestoreSourceTask(idx, t.SourceTaskID)
 	}
 
-	saveIndexAndSignalCompletion(indexPath, projectRoot, featureSlug, index)
+	saveIndexAndSignalCompletion(indexPath, projectRoot, featureSlug, idx)
 
 	if submitJSON {
 		result := map[string]string{
@@ -182,15 +197,15 @@ func runSubmit(_ *cobra.Command, args []string) {
 	}
 }
 
-// saveIndexAndSignalCompletion saves the index and writes .forge/state.json
+// saveIndexAndSignalCompletion saves the index atomically and writes .forge/state.json
 // if all tasks are completed or skipped (rejected does not count as done).
-func saveIndexAndSignalCompletion(indexPath, projectRoot, featureSlug string, index *task.TaskIndex) {
-	if err := task.SaveIndex(indexPath, index); err != nil {
+func saveIndexAndSignalCompletion(indexPath, projectRoot, featureSlug string, idx *task.TaskIndex) {
+	if err := indexPkg.SaveIndexAtomic(indexPath, idx); err != nil {
 		Exit(NewAIError(ErrConflict, "Failed to update task index", err.Error(), "Check index.json is writable", "cat "+indexPath))
 	}
 
 	allDone := true
-	for _, t := range index.TasksMap() {
+	for _, t := range idx.TasksMap() {
 		if t.Status != feature.StatusCompleted && t.Status != feature.StatusSkipped {
 			allDone = false
 			break

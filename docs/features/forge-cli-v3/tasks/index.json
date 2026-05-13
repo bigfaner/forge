@@ -141,7 +141,7 @@
         "1.gate",
         "2.2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2.5-concurrent-write-lock.md",
       "record": "records/2.5-concurrent-write-lock.md",
       "scope": "backend",
