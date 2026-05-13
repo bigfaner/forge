@@ -2,7 +2,7 @@
   "feature": "forge-cli-v3",
   "prd": "prd/prd-spec.md",
   "design": "design/tech-design.md",
-  "proposal": "docs\\proposals\\forge-cli-v3\\proposal.md",
+  "proposal": "docs/proposals/forge-cli-v3/proposal.md",
   "created": "2026-05-13",
   "tasks": {
     "1-gate": {
@@ -37,7 +37,7 @@
       "title": "Module/directory/binary rename + import path update",
       "priority": "P0",
       "estimatedTime": "2h",
-      "status": "pending",
+      "status": "completed",
       "file": "1.1-base-rename.md",
       "record": "records/1.1-base-rename.md",
       "breaking": true,

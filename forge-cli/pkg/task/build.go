@@ -14,13 +14,13 @@ type StrategyResolver func(profileName, kind string) []byte
 
 // BuildIndexOpts holds options for building the task index.
 type BuildIndexOpts struct {
-	FeatureSlug      string
-	ProjectRoot      string
-	TasksDir         string // absolute path to tasks/
-	IndexPath        string // absolute path to index.json
-	NoTest           bool
-	TestProfiles     []string // flag > config.yaml > none
-	ResolveStrategy  StrategyResolver
+	FeatureSlug     string
+	ProjectRoot     string
+	TasksDir        string // absolute path to tasks/
+	IndexPath       string // absolute path to index.json
+	NoTest          bool
+	TestProfiles    []string // flag > config.yaml > none
+	ResolveStrategy StrategyResolver
 }
 
 // BuildIndexResult holds the result of a BuildIndex operation.

@@ -133,7 +133,7 @@ func TestBuildIndex_IdempotentRebuild(t *testing.T) {
 	// Read index to capture created date
 	data1, _ := os.ReadFile(indexPath)
 	var idx1 taskIndexJSON
-	json.Unmarshal(data1, &idx1)
+	_ = json.Unmarshal(data1, &idx1)
 
 	// Second build (no changes)
 	result2, err := BuildIndex(opts)
@@ -150,7 +150,7 @@ func TestBuildIndex_IdempotentRebuild(t *testing.T) {
 	// Created date preserved
 	data2, _ := os.ReadFile(indexPath)
 	var idx2 taskIndexJSON
-	json.Unmarshal(data2, &idx2)
+	_ = json.Unmarshal(data2, &idx2)
 	if idx2.Created != idx1.Created {
 		t.Errorf("created date changed: %q → %q", idx1.Created, idx2.Created)
 	}
@@ -169,17 +169,19 @@ func TestBuildIndex_StatusPreservation(t *testing.T) {
 		IndexPath:   indexPath,
 		NoTest:      true,
 	}
-	BuildIndex(opts)
+	if _, err := BuildIndex(opts); err != nil {
+		t.Fatalf("first build: %v", err)
+	}
 
 	// Manually modify status
 	data, _ := os.ReadFile(indexPath)
 	var raw map[string]json.RawMessage
-	json.Unmarshal(data, &raw)
+	_ = json.Unmarshal(data, &raw)
 	var tasksMap map[string]json.RawMessage
-	json.Unmarshal(raw["tasks"], &tasksMap)
+	_ = json.Unmarshal(raw["tasks"], &tasksMap)
 
 	var task1 map[string]any
-	json.Unmarshal(tasksMap["1-foo"], &task1)
+	_ = json.Unmarshal(tasksMap["1-foo"], &task1)
 	task1["status"] = "in_progress"
 	task1["sourceTaskID"] = "some-source"
 	task1["blockedReason"] = "waiting for review"
@@ -187,7 +189,9 @@ func TestBuildIndex_StatusPreservation(t *testing.T) {
 	tasksMap["1-foo"] = updated
 	raw["tasks"], _ = json.Marshal(tasksMap)
 	finalData, _ := json.MarshalIndent(raw, "", "  ")
-	os.WriteFile(indexPath, append(finalData, '\n'), 0644)
+	if err := os.WriteFile(indexPath, append(finalData, '\n'), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	// Rebuild
 	result, err := BuildIndex(opts)
@@ -198,7 +202,7 @@ func TestBuildIndex_StatusPreservation(t *testing.T) {
 	// Verify status preserved
 	data2, _ := os.ReadFile(indexPath)
 	var idx taskIndexJSON
-	json.Unmarshal(data2, &idx)
+	_ = json.Unmarshal(data2, &idx)
 	if idx.Tasks["1-foo"].Status != "in_progress" {
 		t.Errorf("status = %q, want in_progress", idx.Tasks["1-foo"].Status)
 	}
@@ -223,7 +227,9 @@ func TestBuildIndex_NewMDAdded(t *testing.T) {
 		IndexPath:   indexPath,
 		NoTest:      true,
 	}
-	BuildIndex(opts)
+	if _, err := BuildIndex(opts); err != nil {
+		t.Fatalf("first build: %v", err)
+	}
 
 	// Add new task
 	writeTaskMD(t, tasksDir, "2-bar.md", "2", "Bar Task", []string{"1"})
@@ -249,16 +255,20 @@ func TestBuildIndex_FrontmatterUpdate(t *testing.T) {
 		IndexPath:   indexPath,
 		NoTest:      true,
 	}
-	BuildIndex(opts)
+	if _, err := BuildIndex(opts); err != nil {
+		t.Fatalf("first build: %v", err)
+	}
 
 	// Update the .md with new title
 	writeTaskMD(t, tasksDir, "1-foo.md", "1", "New Title", nil)
 
-	BuildIndex(opts)
+	if _, err := BuildIndex(opts); err != nil {
+		t.Fatalf("rebuild: %v", err)
+	}
 
 	data, _ := os.ReadFile(indexPath)
 	var idx taskIndexJSON
-	json.Unmarshal(data, &idx)
+	_ = json.Unmarshal(data, &idx)
 	if idx.Tasks["1-foo"].Title != "New Title" {
 		t.Errorf("title = %q, want New Title", idx.Tasks["1-foo"].Title)
 	}
@@ -276,10 +286,14 @@ func TestBuildIndex_OrphanDetection(t *testing.T) {
 		IndexPath:   indexPath,
 		NoTest:      true,
 	}
-	BuildIndex(opts)
+	if _, err := BuildIndex(opts); err != nil {
+		t.Fatalf("first build: %v", err)
+	}
 
 	// Remove the .md file
-	os.Remove(filepath.Join(tasksDir, "1-foo.md"))
+	if err := os.Remove(filepath.Join(tasksDir, "1-foo.md")); err != nil {
+		t.Fatal(err)
+	}
 
 	// Add a different task so dir isn't empty
 	writeTaskMD(t, tasksDir, "2-bar.md", "2", "Bar", nil)
@@ -360,11 +374,13 @@ func TestBuildIndex_ModeDetection(t *testing.T) {
 				NoTest:      true,
 			}
 
-			BuildIndex(opts)
+			if _, err := BuildIndex(opts); err != nil {
+				t.Fatalf("BuildIndex: %v", err)
+			}
 
 			data, _ := os.ReadFile(indexPath)
 			var idx taskIndexJSON
-			json.Unmarshal(data, &idx)
+			_ = json.Unmarshal(data, &idx)
 
 			if tt.mode == "breakdown" {
 				if idx.PRD != "prd/prd-spec.md" {
@@ -391,7 +407,9 @@ func TestBuildIndex_SkipNoID(t *testing.T) {
 
 	// Write .md without id in frontmatter
 	content := "---\ntitle: \"No ID\"\npriority: \"P1\"\n---\n\n# No ID task\n"
-	os.WriteFile(filepath.Join(tasksDir, "no-id.md"), []byte(content), 0644)
+	if err := os.WriteFile(filepath.Join(tasksDir, "no-id.md"), []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	writeTaskMD(t, tasksDir, "1-foo.md", "1", "Foo", nil)
 
@@ -428,7 +446,9 @@ func TestBuildIndex_SkipUnderscoreFiles(t *testing.T) {
 	writeTaskMD(t, tasksDir, "1-foo.md", "1", "Foo", nil)
 
 	// Create _template.md (should be skipped)
-	os.WriteFile(filepath.Join(tasksDir, "_template.md"), []byte("---\nid: \"skip-me\"\n---\n"), 0644)
+	if err := os.WriteFile(filepath.Join(tasksDir, "_template.md"), []byte("---\nid: \"skip-me\"\n---\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	opts := BuildIndexOpts{
 		FeatureSlug: "test-feature",
@@ -452,7 +472,9 @@ func TestBuildIndex_TypeInference(t *testing.T) {
 
 	// Task with explicit type
 	content := "---\nid: \"1\"\ntitle: \"Gate\"\npriority: \"P1\"\ntype: \"gate\"\nscope: \"all\"\n---\n\n# Gate\n"
-	os.WriteFile(filepath.Join(tasksDir, "1-gate.md"), []byte(content), 0644)
+	if err := os.WriteFile(filepath.Join(tasksDir, "1-gate.md"), []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	// Task without type (should infer)
 	writeTaskMD(t, tasksDir, "2-bar.md", "2", "Bar", nil)
@@ -465,11 +487,13 @@ func TestBuildIndex_TypeInference(t *testing.T) {
 		NoTest:      true,
 	}
 
-	BuildIndex(opts)
+	if _, err := BuildIndex(opts); err != nil {
+		t.Fatalf("BuildIndex: %v", err)
+	}
 
 	data, _ := os.ReadFile(indexPath)
 	var idx taskIndexJSON
-	json.Unmarshal(data, &idx)
+	_ = json.Unmarshal(data, &idx)
 
 	if idx.Tasks["1-gate"].Type != "gate" {
 		t.Errorf("explicit type = %q, want gate", idx.Tasks["1-gate"].Type)
@@ -540,7 +564,7 @@ func TestBuildIndex_WithTestTasks(t *testing.T) {
 	// Verify index contains test tasks
 	data, _ := os.ReadFile(indexPath)
 	var idx taskIndexJSON
-	json.Unmarshal(data, &idx)
+	_ = json.Unmarshal(data, &idx)
 
 	if _, ok := idx.Tasks["gen-test-cases"]; !ok {
 		t.Error("missing gen-test-cases in index")
@@ -585,12 +609,14 @@ func TestBuildIndex_TestTasksIdempotent(t *testing.T) {
 	}
 
 	// First build
-	BuildIndex(opts)
+	if _, err := BuildIndex(opts); err != nil {
+		t.Fatalf("first build: %v", err)
+	}
 
 	// Read first build
 	data1, _ := os.ReadFile(indexPath)
 	var idx1 taskIndexJSON
-	json.Unmarshal(data1, &idx1)
+	_ = json.Unmarshal(data1, &idx1)
 
 	// Second build
 	result, err := BuildIndex(opts)
@@ -647,7 +673,7 @@ func TestBuildIndex_MultiProfile(t *testing.T) {
 	// Verify Profile field: per-profile test tasks have profile set
 	data, _ := os.ReadFile(indexPath)
 	var idx taskIndexJSON
-	json.Unmarshal(data, &idx)
+	_ = json.Unmarshal(data, &idx)
 
 	if idx.Tasks["quick-test-cases-go-test"].Profile != "go-test" {
 		t.Errorf("quick-test-cases-go-test profile = %q, want go-test", idx.Tasks["quick-test-cases-go-test"].Profile)

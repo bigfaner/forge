@@ -1,0 +1,59 @@
+package cmd
+
+import (
+	"fmt"
+
+	"forge-cli/pkg/feature"
+	"forge-cli/pkg/project"
+	"forge-cli/pkg/prompt"
+
+	"github.com/spf13/cobra"
+)
+
+var promptFixRecordMissed bool
+
+var promptCmd = &cobra.Command{
+	Use:   "prompt <id>",
+	Short: "Synthesize the agent prompt for a task",
+	Long: `Synthesize and print the agent prompt for the given task ID.
+
+The prompt is selected based on the task's type field and rendered with
+runtime values (task file path, record file path, scope, feature slug).
+
+Use --fix-record-missed to use the fix-record-missed recovery template
+regardless of the task's type.`,
+	Args: cobra.ExactArgs(1),
+	Run:  runPrompt,
+}
+
+func init() {
+	promptCmd.Flags().BoolVar(&promptFixRecordMissed, "fix-record-missed", false, "Use fix-record-missed template")
+}
+
+func runPrompt(_ *cobra.Command, args []string) {
+	taskID := args[0]
+
+	projectRoot, err := project.FindProjectRoot()
+	if err != nil {
+		Exit(ErrProjectNotFound())
+	}
+
+	featureSlug, err := feature.GetCurrentFeature(projectRoot)
+	if err != nil {
+		Exit(ErrFeatureNotSet())
+	}
+
+	opts := prompt.SynthesizeOpts{
+		ProjectRoot:     projectRoot,
+		FeatureSlug:     featureSlug,
+		TaskID:          taskID,
+		FixRecordMissed: promptFixRecordMissed,
+	}
+
+	result, err := prompt.Synthesize(opts)
+	if err != nil {
+		Exit(fmt.Errorf("%w", err))
+	}
+
+	fmt.Print(result)
+}

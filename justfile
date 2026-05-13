@@ -12,13 +12,13 @@ claude-w name="":
 claude-p:
     claude --dangerously-skip-permissions --plugin-dir plugins/forge
 
-# install-task: build and install task CLI locally (platform-aware)
-install-task:
+# install-forge: build and install forge CLI locally (platform-aware)
+install-forge:
     #!/usr/bin/env bash
     set -euo pipefail
     case "$(uname -s)" in
-        Linux|Darwin)  bash task-cli/scripts/install-local.sh ;;
-        MINGW*|MSYS*|CYGWIN*) powershell -File task-cli/scripts/install-local.ps1 ;;
+        Linux|Darwin)  bash forge-cli/scripts/install-local.sh ;;
+        MINGW*|MSYS*|CYGWIN*) powershell -File forge-cli/scripts/install-local.ps1 ;;
         *) echo "Unsupported OS: $(uname -s)" >&2; exit 1 ;;
     esac
 
@@ -32,31 +32,31 @@ project-type:
 compile scope="":
     #!/usr/bin/env bash
     set -euo pipefail
-    cd task-cli && go vet ./...
+    cd forge-cli && go vet ./...
 
 # build: full compile and package
 build scope="":
     #!/usr/bin/env bash
     set -euo pipefail
-    cd task-cli && go build ./...
+    cd forge-cli && go build ./...
 
 # run: start the service
 run scope="":
     #!/usr/bin/env bash
     set -euo pipefail
-    cd task-cli && go run .
+    cd forge-cli && go run .
 
 # dev: hot-reload development mode
 dev scope="":
     #!/usr/bin/env bash
     set -euo pipefail
-    cd task-cli && go run .
+    cd forge-cli && go run .
 
 # test: unit + integration tests
 test scope="":
     #!/usr/bin/env bash
     set -euo pipefail
-    cd task-cli && go test -race ./...
+    cd forge-cli && go test -race ./...
 
 # test-e2e: end-to-end tests (profile-aware)
 [arg("feature", long)]
@@ -109,31 +109,31 @@ probe path="/health":
 lint scope="":
     #!/usr/bin/env bash
     set -euo pipefail
-    cd task-cli && golangci-lint run ./...
+    cd forge-cli && golangci-lint run ./...
 
 # fmt: auto-format code
 fmt scope="":
     #!/usr/bin/env bash
     set -euo pipefail
-    cd task-cli && gofmt -w .
+    cd forge-cli && gofmt -w .
 
 # check: lint + compile (CI gate)
 check scope="":
     #!/usr/bin/env bash
     set -euo pipefail
-    cd task-cli && golangci-lint run ./... && go vet ./...
+    cd forge-cli && golangci-lint run ./... && go vet ./...
 
 # clean: remove build artifacts
 clean scope="":
     #!/usr/bin/env bash
     set -euo pipefail
-    cd task-cli && go clean ./...
+    cd forge-cli && go clean ./...
 
 # install: install dependencies (idempotent)
 install scope="":
     #!/usr/bin/env bash
     set -euo pipefail
-    cd task-cli && go mod download
+    cd forge-cli && go mod download
 
 # ci: full CI pipeline
 ci:
