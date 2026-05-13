@@ -102,8 +102,11 @@ ci:
 check-stale-refs:
     #!/usr/bin/env bash
     set -euo pipefail
-    pattern='\btask (claim|submit|status|query|check-deps|validate-index|verify-task-done|quality-gate|cleanup|feature|prompt|add|index|migrate|validate-specs|record|all-completed|verify-completion|check|validate)\b'
-    matches=$(grep -rE "$pattern" plugins/ forge-cli/docs/ --include='*.md' --include='*.json' 2>/dev/null || true)
+    # Match standalone `task <subcommand>` used as CLI invocation (e.g. in shell snippets)
+    # but exclude: `forge task <subcommand>` (correct), natural language ("task status"),
+    # template variables ("task index"), and markdown table decorations.
+    pattern='(^\s*\$?\s*|`)(task (claim|submit|status|query|check-deps|validate-index|verify-task-done|quality-gate|cleanup|feature|prompt|add|index|migrate|validate-specs|record|all-completed|verify-completion|check|validate))\b'
+    matches=$(grep -rP "$pattern" plugins/ forge-cli/docs/ --include='*.md' --include='*.json' 2>/dev/null || true)
     if [ -n "$matches" ]; then
         count=$(echo "$matches" | wc -l | tr -d ' ')
         echo "Error: $count stale task-cli reference(s) found" >&2
