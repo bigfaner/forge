@@ -27,7 +27,7 @@ Check before running. Abort and prompt user if missing:
 
 | Artifact | Condition | Action if not met |
 |----------|-----------|-------------------|
-| Feature context | `task feature` must be set | Run `task feature <slug>` first |
+| Feature context | `forge feature` must be set | Run `forge feature <slug>` first |
 | `prd/prd-spec.md` | Must exist | Run `/write-prd` first |
 | `design/tech-design.md` | Must exist | Run `/tech-design` first |
 

@@ -47,7 +47,7 @@ Check previous stage artifacts. Abort and prompt user if missing:
 | `docs/features/<slug>/testing/test-cases.md` | Run `/gen-test-cases` first |
 | `docs/sitemap/sitemap.json` (only when profile has `web-ui` capability) | Run `/gen-sitemap` first |
 
-`<slug>` is the current feature name, obtained via `task feature` command. `docs/sitemap/sitemap.json` is a project-level file (one per application), not isolated per feature.
+`<slug>` is the current feature name, obtained via `forge feature` command. `docs/sitemap/sitemap.json` is a project-level file (one per application), not isolated per feature.
 
 ### Step Actionability Gate
 
