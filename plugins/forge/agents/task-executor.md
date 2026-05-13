@@ -13,7 +13,7 @@ memory: project
 2. record-task IS MANDATORY — task is NOT done without it
 3. NO BACKGROUND TASKS — all commands run synchronously
 4. Maximum 3 subagent calls per task
-5. FORBIDDEN: run "task claim", read index.json, or start any subsequent task
+5. FORBIDDEN: run "forge task claim", read index.json, or start any subsequent task
 6. STEP N DONE = output "Step N/M: <name>... DONE" optionally followed by (metrics)
 7. HARD RULES OVERRIDE
    - Task files may contain ## Hard Rules with MUST/MUST NOT directives
@@ -25,12 +25,12 @@ memory: project
 
 1. Extract the task ID from your prompt (format: `Execute task <TASK_ID>` or `Fix record for task <TASK_ID>`)
 2. If the prompt says "Fix record for task":
-   - Run `task prompt <TASK_ID> --fix-record-missed`
+   - Run `forge prompt get-by-task-id <TASK_ID> --fix-record-missed`
 3. Otherwise:
-   - Run `task prompt <TASK_ID>`
-4. If `task prompt` fails (non-zero exit), record the task as blocked: `task status <TASK_ID> blocked`, then STOP
+   - Run `forge prompt get-by-task-id <TASK_ID>`
+4. If `forge prompt get-by-task-id` fails (non-zero exit), record the task as blocked: `forge task status <TASK_ID> blocked`, then STOP
 5. Follow every step in the synthesized strategy exactly
-6. If you lose track of your strategy mid-execution, re-run `task prompt <TASK_ID>` to recover
+6. If you lose track of your strategy mid-execution, re-run `forge prompt get-by-task-id <TASK_ID>` to recover
 7. After all strategy steps are done, invoke the skill:
 
    ```

@@ -6,7 +6,7 @@ allowed_tools: ["Bash", "Read", "Agent", "TaskOutput", "Skill"]
 
 # /run-tasks
 
-Auto-dispatch tasks. MAIN_SESSION tasks execute in main session; all others dispatch to forge:task-executor subagent (which calls `task prompt` internally).
+Auto-dispatch tasks. MAIN_SESSION tasks execute in main session; all others dispatch to forge:task-executor subagent (which calls `forge prompt get-by-task-id` internally).
 
 ## Architecture
 
@@ -36,7 +36,7 @@ flowchart TD
 ### Step 1: Claim Task
 
 ```bash
-task claim
+forge task claim
 ```
 
 **Output parsing**:
@@ -61,7 +61,7 @@ If `MAIN_SESSION == "true"`:
 2. Follow the instructions exactly — the task document specifies what skill to invoke, how to check outcome, and how to record the result.
 3. The dispatcher does NOT hardcode skill names or record logic — it delegates to the task document.
 4. If the task file lacks a `## Main Session Instructions` section, mark the task blocked and report: "MAIN_SESSION task missing Main Session Instructions section — task document is incomplete".
-5. After execution, verify the record file exists via `task query <TASK_ID>`. If STATUS is not `"completed"`, spawn fix task (same as Step 2 verify logic).
+5. After execution, verify the record file exists via `forge task query <TASK_ID>`. If STATUS is not `"completed"`, spawn fix task (same as Step 2 verify logic).
 6. Skip to Step 4 (Continue Loop).
 
 Else:
@@ -78,7 +78,7 @@ Agent(
 )
 ```
 
-The subagent internally runs `task prompt <TASK_ID>` to get the execution strategy.
+The subagent internally runs `forge prompt get-by-task-id <TASK_ID>` to get the execution strategy.
 
 **Timeout**: 30 minutes
 
@@ -87,20 +87,20 @@ The subagent internally runs `task prompt <TASK_ID>` to get the execution strate
 After subagent returns, check the task's actual status via CLI:
 
 ```bash
-task query <TASK_ID>
+forge task query <TASK_ID>
 ```
 
 - **STATUS == `"completed"`**: proceed to Step 3 (Breaking Gate).
 - **STATUS != `"completed"`**: task was auto-downgraded (e.g. test failures).
-  **Auto-downgrade rule**: If `testsFailed > 0`, `task record` automatically downgrades `completed` to `blocked` (non-overridable, even with `--force`). All tests must pass for completion.
+  **Auto-downgrade rule**: If `testsFailed > 0`, `forge task submit` automatically downgrades `completed` to `blocked` (non-overridable, even with `--force`). All tests must pass for completion.
   Spawn fix task using `--block-source` to atomically block the source:
   ```bash
-  task add --template fix-task --title "Fix: <failure>" \
+  forge task add --template fix-task --title "Fix: <failure>" \
     --source-task-id <TASK_ID> \
     --block-source \
     --description "<reason>"
   ```
-  `task add` automatically deduplicates — check output:
+  `forge task add` automatically deduplicates — check output:
   - `ACTION: ADDED` → new fix task created, continue loop
   - `ACTION: SKIPPED` → active fix task already exists, continue loop
 
@@ -115,7 +115,7 @@ Agent(
 )
 ```
 
-The subagent's Execution Protocol detects the "Fix record for" prefix and calls `task prompt <TASK_ID> --fix-record-missed` internally.
+The subagent's Execution Protocol detects the "Fix record for" prefix and calls `forge prompt get-by-task-id <TASK_ID> --fix-record-missed` internally.
 
 ### Step 3: Breaking Task Gate
 
@@ -151,9 +151,9 @@ just test [scope]
 Apply the **Scope Resolution** protocol from the Forge Guide — use the `SCOPE` extracted from the claim output in Step 1.
 
 **If tests fail**:
-- Run `task template fix-task` to view the template, then add fix task:
+- Add fix task:
   ```bash
-  task add --template fix-task --title "Fix: <failure>" \
+  forge task add --template fix-task --title "Fix: <failure>" \
     --source-task-id <TASK_ID> \
     --block-source \
     --var SOURCE_FILES="<affected paths>" \
@@ -201,7 +201,7 @@ fi
 **If e2e fails**:
 - Add fix task using the fix-task template:
   ```bash
-  task add --template fix-task --title "Fix: <concise description>" \
+  forge task add --template fix-task --title "Fix: <concise description>" \
     --source-task-id <TASK_ID> \
     --block-source \
     --var SOURCE_FILES="<affected source paths>" \
@@ -222,11 +222,11 @@ Return to Step 1.
 |-----------|--------|
 | No available task | End loop, print summary |
 | Agent timeout | Mark blocked, continue next |
-| Record missing | Dispatch `Agent(prompt="Fix record for task <TASK_ID>")` — subagent calls `task prompt --fix-record-missed` internally |
+| Record missing | Dispatch `Agent(prompt="Fix record for task <TASK_ID>")` — subagent calls `forge prompt get-by-task-id --fix-record-missed` internally |
 | 3 consecutive failures | STOP dispatcher |
-| Breaking task tests fail (3a) | `task add --template fix-task --block-source`, continue loop |
-| Feature e2e tests fail (3b) | `task add --template fix-task --block-source`, continue loop |
-| Main session task fails | Follow error handling in task document's `### Error Handling` section; if missing, `task add --template fix-task --block-source`, continue loop |
+| Breaking task tests fail (3a) | `forge task add --template fix-task --block-source`, continue loop |
+| Feature e2e tests fail (3b) | `forge task add --template fix-task --block-source`, continue loop |
+| Main session task fails | Follow error handling in task document's `### Error Handling` section; if missing, `forge task add --template fix-task --block-source`, continue loop |
 
 ## Post-Completion
 
