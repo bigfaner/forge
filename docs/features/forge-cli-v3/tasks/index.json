@@ -253,7 +253,7 @@
       "dependencies": [
         "4.x"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-summary.md",
       "record": "records/4-summary.md",
       "type": "doc-generation.summary"
