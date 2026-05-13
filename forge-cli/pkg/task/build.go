@@ -202,7 +202,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 		}
 		normalized := NormalizeTaskMD(content)
 		if !bytes.Equal(normalized, content) {
-			os.WriteFile(filePath, normalized, 0644)
+			_ = os.WriteFile(filePath, normalized, 0644)
 		}
 	}
 

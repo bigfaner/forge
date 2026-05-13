@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -20,17 +21,25 @@ import (
 
 var qualityGateVerbose bool
 
+// maxFixTasksPerStep caps the number of active fix-tasks per quality-gate step.
+// When this limit is reached, no new fix-tasks are created for that step.
+const maxFixTasksPerStep = 3
+
+// ErrMaxFixTasks is returned when the maximum number of active fix-tasks for a
+// quality-gate step has been reached.
+var ErrMaxFixTasks = errors.New("max fix-tasks reached")
+
 var qualityGateCmd = &cobra.Command{
 	Use:   "quality-gate",
 	Short: "Check if all tasks are done, then run tests",
 	Long: `Checks if every task in the current feature is completed or skipped.
-	Exits 0 silently if any task is still pending, in_progress, or blocked (no-op).
-	If all done: runs project-wide unit/integration tests, then e2e regression.
+		Exits 0 silently if any task is still pending, in_progress, or blocked (no-op).
+		If all done: runs project-wide unit/integration tests, then e2e regression.
 
-	Feature e2e tests are run by T-test-3 (run-e2e-tests task), not this hook.
-	This hook is the project health gate: unit tests + regression suite.
+		Feature e2e tests are run by T-test-3 (run-e2e-tests task), not this hook.
+		This hook is the project health gate: unit tests + regression suite.
 
-	Use -v to see why the command exits early (useful for debugging).`,
+		Use -v to see why the command exits early (useful for debugging).`,
 	Run: runQualityGate,
 }
 
@@ -114,7 +123,7 @@ func runQualityGate(_ *cobra.Command, _ []string) {
 				"  or run /run-e2e-tests and /graduate-tests manually.")
 	}
 
-	// Step 1: Quality gate (compile → fmt → lint)
+	// Step 1: Quality gate (compile -> fmt -> lint)
 	// Stops at first blocking failure.
 	gateSteps := just.LintGateSequence()
 	just.RunGate(result.ProjectRoot, "", gateSteps, func(step, output string) {
@@ -125,7 +134,7 @@ func runQualityGate(_ *cobra.Command, _ []string) {
 				fmt.Fprintf(os.Stderr, "WARNING: failed to write %s output: %v\n", step, err)
 			}
 		}
-		fixID := addFixTask(result.ProjectRoot, result.FeatureSlug, step, output, errorDocPath)
+		fixID, _ := addFixTask(result.ProjectRoot, result.FeatureSlug, step, output, errorDocPath)
 		handleGateFailure(step, errorDocPath, fixID, just.ExtractConciseError(output, 5))
 	})
 
@@ -140,7 +149,7 @@ func runQualityGate(_ *cobra.Command, _ []string) {
 				fmt.Fprintf(os.Stderr, "WARNING: failed to write unit test output: %v\n", err)
 			}
 		}
-		fixID := addFixTask(result.ProjectRoot, result.FeatureSlug, "unit-test", unitOutput, errorDocPath)
+		fixID, _ := addFixTask(result.ProjectRoot, result.FeatureSlug, "unit-test", unitOutput, errorDocPath)
 		handleGateFailure("unit-test", errorDocPath, fixID, just.ExtractConciseError(unitOutput, 5))
 	}
 
@@ -181,7 +190,7 @@ func runQualityGate(_ *cobra.Command, _ []string) {
 						fmt.Fprintf(os.Stderr, "WARNING: failed to write raw-output.txt: %v\n", err)
 					}
 				}
-				fixID := addFixTask(result.ProjectRoot, result.FeatureSlug, "test-e2e", regressionOutput, errorDocPath)
+				fixID, _ := addFixTask(result.ProjectRoot, result.FeatureSlug, "test-e2e", regressionOutput, errorDocPath)
 				handleGateFailure("test-e2e", errorDocPath, fixID, just.ExtractConciseError(regressionOutput, 5))
 			}
 		}
@@ -273,9 +282,42 @@ func extractSourceFiles(output string) string {
 	return strings.Join(files, ", ")
 }
 
+// countActiveFixTasks counts fix-tasks for a step that are not in a terminal state
+// (completed or skipped). A fix-task is identified by having a non-empty SourceTaskID
+// AND a title with the prefix "fix <step>:".
+func countActiveFixTasks(index *task.TaskIndex, step string) int {
+	count := 0
+	prefix := "fix " + step + ":"
+	for _, t := range index.TasksMap() {
+		if t.SourceTaskID != "" &&
+			strings.HasPrefix(t.Title, prefix) &&
+			t.Status != "completed" &&
+			t.Status != "skipped" {
+			count++
+		}
+	}
+	return count
+}
+
 // addFixTask creates a fix task using the same internal API as `task add`.
-// Mirrors executeAdd() from add.go: template defaults → AddTask → CreateTaskMarkdown → EnsureForgeState.
-func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) string {
+// Mirrors executeAdd() from add.go: template defaults -> AddTask -> CreateTaskMarkdown -> EnsureForgeState.
+// Returns (taskID, nil) on success, ("", ErrMaxFixTasks) when the fix-task cap is exceeded.
+func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) (string, error) {
+	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
+
+	// Check cap before creating a new fix-task.
+	index, err := task.LoadIndex(indexPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "WARNING: failed to load index for cap check: %v\n", err)
+		// Proceed without cap check if index can't be loaded.
+	} else {
+		active := countActiveFixTasks(index, step)
+		if active >= maxFixTasksPerStep {
+			fmt.Fprintf(os.Stderr, "max fix-tasks reached for %s, manual intervention required\n", step)
+			return "", ErrMaxFixTasks
+		}
+	}
+
 	sourceFiles := extractSourceFiles(output)
 
 	testScript := "just " + step
@@ -283,7 +325,7 @@ func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) str
 		testScript = "just test"
 	}
 
-	title := fmt.Sprintf("Fix: %s failure in quality gate", step)
+	title := fmt.Sprintf("fix %s: %s failure in quality gate", step, testScript)
 	description := fmt.Sprintf(
 		"Quality gate step `%s` failed during quality-gate hook.\n\n"+
 			"Error output saved to: `%s`\n\n"+
@@ -308,12 +350,11 @@ func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) str
 		},
 	}
 
-	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
 	tasksDir := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug))
 
 	if _, err := tmpl.Get(opts.Template); err != nil {
 		fmt.Fprintf(os.Stderr, "WARNING: template %q not found: %v\n", opts.Template, err)
-		return ""
+		return "", nil
 	}
 	if defs, err := tmpl.GetDefaults(opts.Template); err == nil && defs.IDPrefix != "" {
 		opts.IDPrefix = defs.IDPrefix
@@ -322,14 +363,14 @@ func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) str
 	id, err := task.AddTask(indexPath, opts)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "WARNING: failed to add fix task: %v\n", err)
-		return ""
+		return "", nil
 	}
 
 	opts.ID = id
 
 	if err := task.CreateTaskMarkdown(tasksDir, id+".md", opts); err != nil {
 		fmt.Fprintf(os.Stderr, "WARNING: failed to create fix task file: %v\n", err)
-		return ""
+		return "", nil
 	}
 
 	if err := feature.EnsureForgeState(projectRoot, featureSlug); err != nil {
@@ -337,5 +378,5 @@ func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) str
 	}
 
 	fmt.Fprintf(os.Stderr, "Fix task %s added (P0, breaking)\n", id)
-	return id
+	return id, nil
 }

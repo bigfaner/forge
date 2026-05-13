@@ -566,7 +566,10 @@ func TestAddFixTask_BasicCompile(t *testing.T) {
 	output := "./internal/handler.go:42:2: undefined: foo\n./internal/handler.go:43:1: too many arguments"
 	errorDocPath := "tests/results/unit-raw-output.txt"
 
-	taskID := addFixTask(projectRoot, featureSlug, "compile", output, errorDocPath)
+	taskID, addErr := addFixTask(projectRoot, featureSlug, "compile", output, errorDocPath)
+	if addErr != nil {
+		t.Fatalf("unexpected error: %v", addErr)
+	}
 	if taskID == "" {
 		t.Fatal("expected non-empty task ID")
 	}
@@ -646,7 +649,10 @@ func TestAddFixTask_StepSpecificTestScripts(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.step, func(t *testing.T) {
 			projectRoot, featureSlug, _ := helperSetup(t)
-			taskID := addFixTask(projectRoot, featureSlug, tc.step, "handler.go:10: fail", "tests/results/fake.txt")
+			taskID, addErr := addFixTask(projectRoot, featureSlug, tc.step, "handler.go:10: fail", "tests/results/fake.txt")
+			if addErr != nil {
+				t.Fatalf("unexpected error: %v", addErr)
+			}
 			if taskID == "" {
 				t.Fatal("expected non-empty task ID")
 			}
@@ -666,7 +672,10 @@ func TestAddFixTask_StepSpecificTestScripts(t *testing.T) {
 func TestAddFixTask_EmptyOutput(t *testing.T) {
 	projectRoot, featureSlug, _ := helperSetup(t)
 
-	taskID := addFixTask(projectRoot, featureSlug, "lint", "", "tests/results/unit-raw-output.txt")
+	taskID, addErr := addFixTask(projectRoot, featureSlug, "lint", "", "tests/results/unit-raw-output.txt")
+	if addErr != nil {
+		t.Fatalf("unexpected error: %v", addErr)
+	}
 	if taskID == "" {
 		t.Fatal("expected non-empty task ID even with empty output")
 	}
@@ -685,7 +694,10 @@ func TestAddFixTask_EmptyOutput(t *testing.T) {
 func TestAddFixTask_NoSourceFilesInOutput(t *testing.T) {
 	projectRoot, featureSlug, _ := helperSetup(t)
 
-	taskID := addFixTask(projectRoot, featureSlug, "compile", "some random output without file references", "tests/results/unit-raw-output.txt")
+	taskID, addErr := addFixTask(projectRoot, featureSlug, "compile", "some random output without file references", "tests/results/unit-raw-output.txt")
+	if addErr != nil {
+		t.Fatalf("unexpected error: %v", addErr)
+	}
 	if taskID == "" {
 		t.Fatal("expected task ID")
 	}
@@ -703,9 +715,14 @@ func TestAddFixTask_NoSourceFilesInOutput(t *testing.T) {
 func TestAddFixTask_SequentialIDs(t *testing.T) {
 	projectRoot, featureSlug, indexPath := helperSetup(t)
 
-	id1 := addFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt")
-	id2 := addFixTask(projectRoot, featureSlug, "lint", "b.go:2: error", "tests/results/out.txt")
-	id3 := addFixTask(projectRoot, featureSlug, "unit-test", "c.go:3: error", "tests/results/out.txt")
+	id1, err1 := addFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt")
+	id2, err2 := addFixTask(projectRoot, featureSlug, "lint", "b.go:2: error", "tests/results/out.txt")
+	id3, err3 := addFixTask(projectRoot, featureSlug, "unit-test", "c.go:3: error", "tests/results/out.txt")
+	for _, e := range []error{err1, err2, err3} {
+		if e != nil {
+			t.Fatalf("unexpected error: %v", e)
+		}
+	}
 
 	if id1 == "" || id2 == "" || id3 == "" {
 		t.Fatalf("expected 3 valid IDs, got %q %q %q", id1, id2, id3)
@@ -732,7 +749,10 @@ func TestAddFixTask_SequentialIDs(t *testing.T) {
 func TestAddFixTask_TitleContainsStep(t *testing.T) {
 	projectRoot, featureSlug, _ := helperSetup(t)
 
-	taskID := addFixTask(projectRoot, featureSlug, "lint", "a.go:1: error", "tests/results/out.txt")
+	taskID, addErr := addFixTask(projectRoot, featureSlug, "lint", "a.go:1: error", "tests/results/out.txt")
+	if addErr != nil {
+		t.Fatalf("unexpected error: %v", addErr)
+	}
 	if taskID == "" {
 		t.Fatal("expected task ID")
 	}
@@ -742,8 +762,8 @@ func TestAddFixTask_TitleContainsStep(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(data), "lint failure in quality gate") {
-		t.Error("task title should contain step name")
+	if !strings.Contains(string(data), "fix lint:") {
+		t.Error("task title should contain 'fix lint:' prefix")
 	}
 }
 
@@ -751,7 +771,10 @@ func TestAddFixTask_DescriptionContainsErrorDoc(t *testing.T) {
 	projectRoot, featureSlug, _ := helperSetup(t)
 
 	errorDoc := "tests/e2e/results/raw-output.txt"
-	taskID := addFixTask(projectRoot, featureSlug, "test-e2e", "test.spec.ts:5: fail", errorDoc)
+	taskID, addErr := addFixTask(projectRoot, featureSlug, "test-e2e", "test.spec.ts:5: fail", errorDoc)
+	if addErr != nil {
+		t.Fatalf("unexpected error: %v", addErr)
+	}
 	if taskID == "" {
 		t.Fatal("expected task ID")
 	}
@@ -770,7 +793,9 @@ func TestAddFixTask_ForgeStateResetEachTime(t *testing.T) {
 	projectRoot, featureSlug, _ := helperSetup(t)
 
 	// First add
-	addFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt")
+	if _, err := addFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt"); err != nil {
+		t.Fatalf("unexpected error on first add: %v", err)
+	}
 	state := feature.ReadForgeState(projectRoot)
 	if state == nil || state.AllCompleted {
 		t.Fatal("after first addFixTask, forge state should exist with allCompleted=false")
@@ -782,10 +807,182 @@ func TestAddFixTask_ForgeStateResetEachTime(t *testing.T) {
 	}
 
 	// Second add should reset again
-	addFixTask(projectRoot, featureSlug, "lint", "b.go:2: error", "tests/results/out.txt")
+	if _, err := addFixTask(projectRoot, featureSlug, "lint", "b.go:2: error", "tests/results/out.txt"); err != nil {
+		t.Fatalf("unexpected error on second add: %v", err)
+	}
 	state = feature.ReadForgeState(projectRoot)
 	if state == nil || state.AllCompleted {
 		t.Fatal("after second addFixTask, forge state should be reset again")
+	}
+}
+
+func TestCountActiveFixTasks(t *testing.T) {
+	tests := []struct {
+		name  string
+		tasks map[string]task.Task
+		step  string
+		want  int
+	}{
+		{
+			name:  "no fix tasks",
+			tasks: map[string]task.Task{},
+			step:  "compile",
+			want:  0,
+		},
+		{
+			name: "one active fix task for step",
+			tasks: map[string]task.Task{
+				"f1": {ID: "f1", SourceTaskID: "1.1", Title: "fix compile: something broke", Status: "pending"},
+			},
+			step: "compile",
+			want: 1,
+		},
+		{
+			name: "three active fix tasks for same step",
+			tasks: map[string]task.Task{
+				"f1": {ID: "f1", SourceTaskID: "1.1", Title: "fix compile: first error", Status: "pending"},
+				"f2": {ID: "f2", SourceTaskID: "1.1", Title: "fix compile: second error", Status: "in_progress"},
+				"f3": {ID: "f3", SourceTaskID: "1.1", Title: "fix compile: third error", Status: "blocked"},
+			},
+			step: "compile",
+			want: 3,
+		},
+		{
+			name: "completed fix tasks not counted",
+			tasks: map[string]task.Task{
+				"f1": {ID: "f1", SourceTaskID: "1.1", Title: "fix compile: done", Status: "completed"},
+				"f2": {ID: "f2", SourceTaskID: "1.1", Title: "fix compile: active", Status: "pending"},
+			},
+			step: "compile",
+			want: 1,
+		},
+		{
+			name: "skipped fix tasks not counted",
+			tasks: map[string]task.Task{
+				"f1": {ID: "f1", SourceTaskID: "1.1", Title: "fix compile: skipped", Status: "skipped"},
+				"f2": {ID: "f2", SourceTaskID: "1.1", Title: "fix compile: active", Status: "pending"},
+			},
+			step: "compile",
+			want: 1,
+		},
+		{
+			name: "different step not counted",
+			tasks: map[string]task.Task{
+				"f1": {ID: "f1", SourceTaskID: "1.1", Title: "fix compile: error", Status: "pending"},
+				"f2": {ID: "f2", SourceTaskID: "1.1", Title: "fix lint: error", Status: "pending"},
+			},
+			step: "compile",
+			want: 1,
+		},
+		{
+			name: "task without SourceTaskID not counted even with matching title",
+			tasks: map[string]task.Task{
+				"t1": {ID: "1.1", SourceTaskID: "", Title: "fix compile: regular task", Status: "pending"},
+			},
+			step: "compile",
+			want: 0,
+		},
+		{
+			name: "task without fix prefix not counted",
+			tasks: map[string]task.Task{
+				"f1": {ID: "f1", SourceTaskID: "1.1", Title: "some other compile task", Status: "pending"},
+			},
+			step: "compile",
+			want: 0,
+		},
+		{
+			name: "mix of terminal and active across steps",
+			tasks: map[string]task.Task{
+				"f1": {ID: "f1", SourceTaskID: "1.1", Title: "fix compile: first", Status: "completed"},
+				"f2": {ID: "f2", SourceTaskID: "1.1", Title: "fix compile: second", Status: "skipped"},
+				"f3": {ID: "f3", SourceTaskID: "1.1", Title: "fix compile: third", Status: "pending"},
+				"f4": {ID: "f4", SourceTaskID: "1.1", Title: "fix lint: first", Status: "pending"},
+			},
+			step: "compile",
+			want: 1,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			index := task.NewTaskIndex("test")
+			index.SetTasks(tc.tasks)
+			got := countActiveFixTasks(index, tc.step)
+			if got != tc.want {
+				t.Errorf("countActiveFixTasks(%q) = %d, want %d", tc.step, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestAddFixTask_CapEnforced(t *testing.T) {
+	projectRoot, featureSlug, indexPath := helperSetup(t)
+
+	// Pre-populate 3 active fix-tasks for "compile"
+	index, err := task.LoadIndex(indexPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	index.SetTask("f1", task.Task{ID: "f1", SourceTaskID: "1.1", Title: "fix compile: first", Status: "pending", File: "f1.md"})
+	index.SetTask("f2", task.Task{ID: "f2", SourceTaskID: "1.1", Title: "fix compile: second", Status: "in_progress", File: "f2.md"})
+	index.SetTask("f3", task.Task{ID: "f3", SourceTaskID: "1.1", Title: "fix compile: third", Status: "blocked", File: "f3.md"})
+	if err := task.SaveIndex(indexPath, index); err != nil {
+		t.Fatal(err)
+	}
+
+	taskID, capErr := addFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt")
+	if capErr == nil {
+		t.Errorf("expected error when 3 active fix-tasks exist, got nil (taskID=%q)", taskID)
+	}
+	if taskID != "" {
+		t.Errorf("expected empty taskID on cap error, got %q", taskID)
+	}
+}
+
+func TestAddFixTask_CapAllowsUnderLimit(t *testing.T) {
+	projectRoot, featureSlug, indexPath := helperSetup(t)
+
+	// Pre-populate 2 active fix-tasks for "compile" (under cap of 3)
+	index, err := task.LoadIndex(indexPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	index.SetTask("f1", task.Task{ID: "f1", SourceTaskID: "1.1", Title: "fix compile: first", Status: "pending", File: "f1.md"})
+	index.SetTask("f2", task.Task{ID: "f2", SourceTaskID: "1.1", Title: "fix compile: second", Status: "in_progress", File: "f2.md"})
+	if err := task.SaveIndex(indexPath, index); err != nil {
+		t.Fatal(err)
+	}
+
+	taskID, capErr := addFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt")
+	if capErr != nil {
+		t.Fatalf("expected no error with 2 active fix-tasks, got %v", capErr)
+	}
+	if taskID == "" {
+		t.Fatal("expected non-empty task ID")
+	}
+}
+
+func TestAddFixTask_CompletedFixTasksNotCounted(t *testing.T) {
+	projectRoot, featureSlug, indexPath := helperSetup(t)
+
+	// 3 fix-tasks for "compile" but 2 are completed/skipped, only 1 active
+	index, err := task.LoadIndex(indexPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	index.SetTask("f1", task.Task{ID: "f1", SourceTaskID: "1.1", Title: "fix compile: done", Status: "completed", File: "f1.md"})
+	index.SetTask("f2", task.Task{ID: "f2", SourceTaskID: "1.1", Title: "fix compile: skipped", Status: "skipped", File: "f2.md"})
+	index.SetTask("f3", task.Task{ID: "f3", SourceTaskID: "1.1", Title: "fix compile: active", Status: "pending", File: "f3.md"})
+	if err := task.SaveIndex(indexPath, index); err != nil {
+		t.Fatal(err)
+	}
+
+	taskID, capErr := addFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt")
+	if capErr != nil {
+		t.Fatalf("expected no error since only 1 active fix-task, got %v", capErr)
+	}
+	if taskID == "" {
+		t.Fatal("expected non-empty task ID")
 	}
 }
 
@@ -1016,7 +1213,7 @@ func TestCheckAllCompleted_VerboseMode(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// No forge state → should return nil but not error
+	// No forge state -> should return nil but not error
 	result := checkAllCompleted(true)
 	if result != nil {
 		t.Error("expected nil result without forge state")
