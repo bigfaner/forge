@@ -1,4 +1,4 @@
-# claude-task-cli Key Workflows
+# forge CLI Key Workflows
 
 ## 1. Feature Identification Workflow
 

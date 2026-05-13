@@ -1,4 +1,4 @@
-# claude-task-cli Feature Overview
+# forge CLI Feature Overview
 
 > A task management CLI tool based on the features directory structure, providing intelligent task claiming and dependency management for Claude Code workflows.
 

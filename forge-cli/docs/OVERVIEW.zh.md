@@ -1,4 +1,4 @@
-# claude-task-cli 功能概览
+# forge CLI 功能概览
 
 > 基于 features 目录结构的任务管理 CLI 工具，为 Claude Code 工作流提供智能任务声明与依赖管理。
 
