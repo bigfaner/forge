@@ -9,6 +9,7 @@ import (
 )
 
 // writeTaskMD writes a minimal task .md file with frontmatter.
+// Defaults type to "implementation" for tasks whose ID is not auto-inferable.
 func writeTaskMD(t *testing.T, dir, filename, id, title string, deps []string) {
 	t.Helper()
 	var depLine string
@@ -19,8 +20,15 @@ func writeTaskMD(t *testing.T, dir, filename, id, title string, deps []string) {
 		}
 		depLine = "dependencies:\n  - " + joinStrings(quoted, "\n  - ") + "\n"
 	}
+	// InferType for business IDs returns "", so we must set type explicitly.
+	// Auto-gen IDs (gates, summaries, test tasks) get their type from InferType.
+	taskType := InferType(id)
+	if taskType == "" {
+		taskType = TypeImplementation
+	}
 	content := "---\nid: " + `"` + id + `"` + "\ntitle: " + `"` + title + `"` +
-		"\npriority: \"P1\"\nestimated_time: \"1h\"\n" + depLine + "scope: \"all\"\n---\n\n# " + title + "\n"
+		"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: " + `"` + taskType + `"` +
+		"\n" + depLine + "scope: \"all\"\n---\n\n# " + title + "\n"
 	if err := os.WriteFile(filepath.Join(dir, filename), []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -28,6 +36,25 @@ func writeTaskMD(t *testing.T, dir, filename, id, title string, deps []string) {
 
 func joinStrings(ss []string, sep string) string {
 	return strings.Join(ss, sep)
+}
+
+// writeTaskMDWithType writes a minimal task .md file with frontmatter including a type field.
+func writeTaskMDWithType(t *testing.T, dir, filename, id, title, taskType string, deps []string) {
+	t.Helper()
+	var depLine string
+	if len(deps) > 0 {
+		quoted := make([]string, len(deps))
+		for i, d := range deps {
+			quoted[i] = `"` + d + `"`
+		}
+		depLine = "dependencies:\n  - " + joinStrings(quoted, "\n  - ") + "\n"
+	}
+	content := "---\nid: " + `"` + id + `"` + "\ntitle: " + `"` + title + `"` +
+		"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: " + `"` + taskType + `"` +
+		"\n" + depLine + "scope: \"all\"\n---\n\n# " + title + "\n"
+	if err := os.WriteFile(filepath.Join(dir, filename), []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
 }
 
 // setupBuildEnv creates a temp project root with feature dirs.
@@ -152,7 +179,7 @@ func TestBuildIndex_IdempotentRebuild(t *testing.T) {
 	var idx2 taskIndexJSON
 	_ = json.Unmarshal(data2, &idx2)
 	if idx2.Created != idx1.Created {
-		t.Errorf("created date changed: %q → %q", idx1.Created, idx2.Created)
+		t.Errorf("created date changed: %q -> %q", idx1.Created, idx2.Created)
 	}
 }
 
@@ -498,8 +525,8 @@ func TestBuildIndex_TypeInference(t *testing.T) {
 	if idx.Tasks["1-gate"].Type != "gate" {
 		t.Errorf("explicit type = %q, want gate", idx.Tasks["1-gate"].Type)
 	}
-	if idx.Tasks["2-bar"].Type != "" {
-		t.Errorf("inferred type = %q, want empty (no fallback)", idx.Tasks["2-bar"].Type)
+	if idx.Tasks["2-bar"].Type != TypeImplementation {
+		t.Errorf("inferred type = %q, want %q", idx.Tasks["2-bar"].Type, TypeImplementation)
 	}
 }
 
@@ -529,7 +556,8 @@ func TestBuildIndex_EmptyTasksDir(t *testing.T) {
 func TestBuildIndex_WithTestTasks(t *testing.T) {
 	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "breakdown")
 
-	// Create gate tasks for dep resolution
+	// Create a business task (implementation type) and gate tasks for dep resolution
+	writeTaskMDWithType(t, tasksDir, "1-impl.md", "1.1", "Impl Task", TypeImplementation, nil)
 	writeTaskMD(t, tasksDir, "1-gate.md", "1.gate", "Phase 1 Gate", nil)
 	writeTaskMD(t, tasksDir, "2-gate.md", "2.gate", "Phase 2 Gate", nil)
 
@@ -547,10 +575,10 @@ func TestBuildIndex_WithTestTasks(t *testing.T) {
 		t.Fatalf("BuildIndex: %v", err)
 	}
 
-	// 2 gates + 7 test tasks = 9
+	// 1 business + 2 gates + 7 test tasks = 10
 	total := result.NewCount + result.UpdatedCount
-	if total != 9 {
-		t.Errorf("total tasks = %d (new=%d, updated=%d), want 9", total, result.NewCount, result.UpdatedCount)
+	if total != 10 {
+		t.Errorf("total tasks = %d (new=%d, updated=%d), want 10", total, result.NewCount, result.UpdatedCount)
 	}
 
 	// Verify test task .md files were generated
@@ -597,6 +625,7 @@ func TestBuildIndex_WithTestTasks(t *testing.T) {
 func TestBuildIndex_TestTasksIdempotent(t *testing.T) {
 	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "breakdown")
 
+	writeTaskMDWithType(t, tasksDir, "1-impl.md", "1.1", "Impl Task", TypeImplementation, nil)
 	writeTaskMD(t, tasksDir, "1-gate.md", "1.gate", "Gate", nil)
 
 	opts := BuildIndexOpts{
@@ -879,7 +908,7 @@ func TestBuildIndex_StageGatesIdempotent(t *testing.T) {
 		t.Errorf("first build StageGatesGenerated = %d, want 2", result1.StageGatesGenerated)
 	}
 
-	// Second build — no new files should be generated
+	// Second build -- no new files should be generated
 	result2, err := BuildIndex(opts)
 	if err != nil {
 		t.Fatalf("second build: %v", err)
@@ -967,5 +996,301 @@ func TestBuildIndex_StageGatesMultiPhase(t *testing.T) {
 		if _, ok := idx.Tasks[key]; !ok {
 			t.Errorf("%s not in index", key)
 		}
+	}
+}
+
+// --- Task 2: docs-only detection and conditional pipeline tests ---
+
+func TestIsDocsOnlyFeature(t *testing.T) {
+	tests := []struct {
+		name  string
+		tasks map[string]Task
+		want  bool
+	}{
+		{
+			name: "docs-only feature",
+			tasks: map[string]Task{
+				"1-doc": {ID: "1.1", Type: TypeDocumentation},
+				"2-doc": {ID: "1.2", Type: TypeDocumentation},
+			},
+			want: true,
+		},
+		{
+			name: "code feature with implementation",
+			tasks: map[string]Task{
+				"1-impl": {ID: "1.1", Type: TypeImplementation},
+				"2-doc":  {ID: "1.2", Type: TypeDocumentation},
+			},
+			want: false,
+		},
+		{
+			name: "code feature with fix",
+			tasks: map[string]Task{
+				"1-doc": {ID: "1.1", Type: TypeDocumentation},
+				"2-fix": {ID: "1.2", Type: TypeFix},
+			},
+			want: false,
+		},
+		{
+			name: "mixed feature treated as code",
+			tasks: map[string]Task{
+				"1-doc":  {ID: "1.1", Type: TypeDocumentation},
+				"2-impl": {ID: "1.2", Type: TypeImplementation},
+			},
+			want: false,
+		},
+		{
+			name: "only gate and summary tasks (no business tasks)",
+			tasks: map[string]Task{
+				"1.summary": {ID: "1.summary", Type: TypeDocGenerationSummary},
+				"1.gate":    {ID: "1.gate", Type: TypeGate},
+			},
+			want: true,
+		},
+		{
+			name: "business tasks with auto-generated tasks mixed in",
+			tasks: map[string]Task{
+				"1-doc":    {ID: "1.1", Type: TypeDocumentation},
+				"2-doc":    {ID: "1.2", Type: TypeDocumentation},
+				"1.gate":   {ID: "1.gate", Type: TypeGate},
+				"T-test-1": {ID: "T-test-1", Type: TypeTestPipelineGenCases},
+			},
+			want: true,
+		},
+		{
+			name:  "empty tasks",
+			tasks: map[string]Task{},
+			want:  true,
+		},
+		{
+			name: "fix-only feature treated as code",
+			tasks: map[string]Task{
+				"1-fix": {ID: "fix-1", Type: TypeFix},
+			},
+			want: false,
+		},
+		{
+			name: "doc-evaluation type counts as docs",
+			tasks: map[string]Task{
+				"1-doc":  {ID: "1.1", Type: TypeDocumentation},
+				"2-eval": {ID: "1.2", Type: TypeDocEvaluation},
+			},
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isDocsOnlyFeature(tt.tasks)
+			if got != tt.want {
+				t.Errorf("isDocsOnlyFeature() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestBuildIndex_MissingTypeHardError(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "quick")
+
+	// Write a task .md without type field (and InferType returns "" for plain numeric IDs)
+	// Must use raw content since writeTaskMD now auto-sets type.
+	content := "---\nid: \"1\"\ntitle: \"Foo Task\"\npriority: \"P1\"\nestimated_time: \"1h\"\nscope: \"all\"\n---\n\n# Foo Task\n"
+	if err := os.WriteFile(filepath.Join(tasksDir, "1-foo.md"), []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	opts := BuildIndexOpts{
+		FeatureSlug:  "test-feature",
+		ProjectRoot:  projectRoot,
+		TasksDir:     tasksDir,
+		IndexPath:    indexPath,
+		NoTest:       false,
+		TestProfiles: []string{"go-test"},
+	}
+
+	_, err := BuildIndex(opts)
+	if err == nil {
+		t.Fatal("expected error for missing type, got nil")
+	}
+	if !strings.Contains(err.Error(), "1-foo.md") {
+		t.Errorf("error should name the file, got: %v", err)
+	}
+	if !strings.Contains(err.Error(), "type") {
+		t.Errorf("error should mention type, got: %v", err)
+	}
+}
+
+func TestBuildIndex_DocsOnlySkipsGatesAndTests(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "quick")
+
+	// Create 2 documentation tasks in same phase (would normally trigger gate generation)
+	writeTaskMDWithType(t, tasksDir, "1-doc.md", "1.1", "Doc Task 1", TypeDocumentation, nil)
+	writeTaskMDWithType(t, tasksDir, "2-doc.md", "1.2", "Doc Task 2", TypeDocumentation, []string{"1.1"})
+
+	opts := BuildIndexOpts{
+		FeatureSlug:  "test-feature",
+		ProjectRoot:  projectRoot,
+		TasksDir:     tasksDir,
+		IndexPath:    indexPath,
+		NoTest:       false,
+		TestProfiles: []string{"go-test"},
+	}
+
+	result, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("BuildIndex error: %v", err)
+	}
+
+	// Stage gates should NOT be generated for docs-only
+	if result.StageGatesGenerated != 0 {
+		t.Errorf("StageGatesGenerated = %d, want 0 (docs-only)", result.StageGatesGenerated)
+	}
+
+	// No gate or summary files should exist
+	if _, err := os.Stat(filepath.Join(tasksDir, "1.summary.md")); err == nil {
+		t.Error("1.summary.md should NOT exist for docs-only feature")
+	}
+	if _, err := os.Stat(filepath.Join(tasksDir, "1.gate.md")); err == nil {
+		t.Error("1.gate.md should NOT exist for docs-only feature")
+	}
+
+	// No test task files should exist
+	entries, _ := os.ReadDir(tasksDir)
+	for _, e := range entries {
+		name := e.Name()
+		if name == "1-doc.md" || name == "2-doc.md" || name == "index.json" || name == "eval-doc.md" {
+			continue
+		}
+		t.Errorf("unexpected file %s (docs-only should not generate gates or tests)", name)
+	}
+}
+
+func TestBuildIndex_DocsOnlyGeneratesEvalDoc(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "quick")
+
+	writeTaskMDWithType(t, tasksDir, "1-doc.md", "1.1", "Doc Task 1", TypeDocumentation, nil)
+	writeTaskMDWithType(t, tasksDir, "2-doc.md", "1.2", "Doc Task 2", TypeDocumentation, []string{"1.1"})
+
+	opts := BuildIndexOpts{
+		FeatureSlug:  "test-feature",
+		ProjectRoot:  projectRoot,
+		TasksDir:     tasksDir,
+		IndexPath:    indexPath,
+		NoTest:       false,
+		TestProfiles: []string{"go-test"},
+	}
+
+	result, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("BuildIndex error: %v", err)
+	}
+
+	// eval-doc.md should have been generated
+	if _, err := os.Stat(filepath.Join(tasksDir, "eval-doc.md")); os.IsNotExist(err) {
+		t.Error("eval-doc.md not generated for docs-only feature")
+	}
+
+	// Verify T-eval-doc is in the index
+	data, _ := os.ReadFile(indexPath)
+	var idx taskIndexJSON
+	_ = json.Unmarshal(data, &idx)
+
+	evalTask, ok := idx.Tasks["eval-doc"]
+	if !ok {
+		t.Fatal("eval-doc not in index")
+	}
+	if evalTask.ID != "T-eval-doc" {
+		t.Errorf("eval-doc ID = %q, want T-eval-doc", evalTask.ID)
+	}
+	if evalTask.Type != TypeDocEvaluation {
+		t.Errorf("eval-doc type = %q, want %q", evalTask.Type, TypeDocEvaluation)
+	}
+	if !evalTask.NoTest {
+		t.Error("eval-doc should have noTest=true")
+	}
+	// Should depend on last business task
+	if len(evalTask.Dependencies) == 0 {
+		t.Error("eval-doc has no dependencies")
+	} else {
+		lastDep := evalTask.Dependencies[len(evalTask.Dependencies)-1]
+		if lastDep != "1.2" {
+			t.Errorf("eval-doc last dep = %q, want 1.2", lastDep)
+		}
+	}
+
+	// Count: 2 business + 1 eval-doc = 3
+	total := result.NewCount + result.UpdatedCount
+	if total != 3 {
+		t.Errorf("total tasks = %d (new=%d, updated=%d), want 3", total, result.NewCount, result.UpdatedCount)
+	}
+}
+
+func TestBuildIndex_CodeFeatureUnchanged(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "quick")
+
+	// Feature with implementation tasks should behave exactly as before
+	writeTaskMDWithType(t, tasksDir, "1-impl.md", "1.1", "Impl Task 1", TypeImplementation, nil)
+	writeTaskMDWithType(t, tasksDir, "2-impl.md", "1.2", "Impl Task 2", TypeImplementation, []string{"1.1"})
+
+	opts := BuildIndexOpts{
+		FeatureSlug:  "test-feature",
+		ProjectRoot:  projectRoot,
+		TasksDir:     tasksDir,
+		IndexPath:    indexPath,
+		NoTest:       false,
+		TestProfiles: []string{"go-test"},
+	}
+
+	result, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("BuildIndex error: %v", err)
+	}
+
+	// Stage gates SHOULD be generated for code feature
+	if result.StageGatesGenerated != 2 {
+		t.Errorf("StageGatesGenerated = %d, want 2 (code feature)", result.StageGatesGenerated)
+	}
+
+	// Test tasks should be generated (quick mode with 1 profile = 4+1 = 5 test tasks)
+	data, _ := os.ReadFile(indexPath)
+	var idx taskIndexJSON
+	_ = json.Unmarshal(data, &idx)
+
+	if _, ok := idx.Tasks["quick-test-cases-go-test"]; !ok {
+		t.Error("quick-test-cases-go-test missing (code feature should have test tasks)")
+	}
+
+	// eval-doc should NOT be generated for code feature
+	if _, ok := idx.Tasks["eval-doc"]; ok {
+		t.Error("eval-doc should NOT exist for code feature")
+	}
+}
+
+func TestBuildIndex_MissingTypeAllowedForAutoGenTasks(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "quick")
+
+	// Create an implementation task (has type) and a gate task file without explicit type
+	// (gates use InferType)
+	writeTaskMDWithType(t, tasksDir, "1-impl.md", "1.1", "Impl Task", TypeImplementation, nil)
+
+	// Write a gate file without type in frontmatter - should be OK since InferType handles it
+	gateContent := "---\nid: \"1.gate\"\ntitle: \"Phase 1 Gate\"\npriority: \"P0\"\nestimated_time: \"1h\"\nscope: \"all\"\n---\n\n# Gate\n"
+	if err := os.WriteFile(filepath.Join(tasksDir, "1.gate.md"), []byte(gateContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	opts := BuildIndexOpts{
+		FeatureSlug:  "test-feature",
+		ProjectRoot:  projectRoot,
+		TasksDir:     tasksDir,
+		IndexPath:    indexPath,
+		NoTest:       false,
+		TestProfiles: []string{"go-test"},
+	}
+
+	// Should NOT error - gate is an auto-generated task, InferType handles it
+	_, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("BuildIndex should not error for auto-gen task without type: %v", err)
 	}
 }
