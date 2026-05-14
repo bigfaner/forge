@@ -50,7 +50,7 @@
       "dependencies": [
         "3"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-tests.md",
       "record": "records/4-tests.md",
       "scope": "backend",
