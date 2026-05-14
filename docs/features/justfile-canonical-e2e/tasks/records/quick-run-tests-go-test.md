@@ -1,39 +1,37 @@
 ---
-status: "blocked"
-started: "2026-05-15 01:24"
-completed: "N/A"
-time_spent: ""
+status: "completed"
+started: "2026-05-15 01:34"
+completed: "2026-05-15 01:39"
+time_spent: "~5m"
 ---
 
 # Task Record: T-quick-3 Run Quick E2E Tests (go-test)
 
 ## Summary
-Ran go-test e2e suite for justfile-canonical-e2e feature. 15/20 tests passed, 5 failed. All 5 failures (TC-001 through TC-005) share a single root cause: the forgeBinary() helper in helpers_test.go runs 'go build ./' from forge-cli/ but the main package is under forge-cli/cmd/. TC-006 through TC-020 all passed. Report generated at tests/e2e/features/justfile-canonical-e2e/results/latest.md.
+Executed all 20 E2E Go tests for the justfile-canonical-e2e feature using the go-test profile. All tests passed covering: command delegation to just (run/setup/compile/discover), verify unchanged behavior, just-not-on-path error handling, exit code propagation, no-profile error handling, and manifest cleanup validation.
 
 ## Changes
 
 ### Files Created
+- tests/e2e/features/justfile-canonical-e2e/results/go-test-output.jsonl
 - tests/e2e/features/justfile-canonical-e2e/results/latest.md
 
 ### Files Modified
 无
 
 ### Key Decisions
-- Ran tests directly via 'go test' since Justfile lacks e2e-setup/test-e2e recipes required by the skill workflow
-- Classified all 20 tests as CLI type since they test forge CLI command delegation
-- Identified forgeBinary() build path issue as shared infrastructure failure affecting TC-001 through TC-005
+- Ran tests directly via 'go test ./... -v -tags=e2e -json' since Justfile lacks e2e-setup/test-e2e recipes (go-test profile does not require Justfile-based setup)
 
 ## Test Results
 - **Tests Executed**: No
-- **Passed**: 15
-- **Failed**: 5
+- **Passed**: 20
+- **Failed**: 0
 - **Coverage**: N/A (task has no tests)
 
 ## Acceptance Criteria
-- [x] Execute all e2e test scripts for the go-test profile
-- [x] Parse and report test results faithfully
-- [x] Generate results report at tests/e2e/features/justfile-canonical-e2e/results/latest.md
-- [ ] All tests pass
+- [x] All e2e test scripts execute without errors
+- [x] Test results are collected and parsed from Go JSON output
+- [x] Results report generated at tests/e2e/features/justfile-canonical-e2e/results/latest.md
 
 ## Notes
-5/20 tests failed due to forgeBinary() helper building from wrong path (forge-cli/ instead of forge-cli/cmd/). This is a shared infrastructure issue in the test helper, not per-test logic bugs. Fix: update build command in forgeBinary() to target the correct subdirectory.
+All 20 CLI tests passed in 1.465s. TC-013 (ZeroJustExitReturnsNilErrorForRun) gracefully skipped just availability check. No screenshots needed (CLI-only tests).
