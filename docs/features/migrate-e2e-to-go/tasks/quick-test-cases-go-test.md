@@ -3,7 +3,7 @@ id: "T-quick-1"
 title: "Generate Quick Test Cases (go-test)"
 priority: "P1"
 estimated_time: "30min-1h"
-dependencies: ["4"]
+dependencies: ["9"]
 type: "test-pipeline.gen-cases"
 scope: "all"
 profile: "go-test"

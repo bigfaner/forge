@@ -3,57 +3,132 @@
   "proposal": "docs/proposals/migrate-e2e-to-go/proposal.md",
   "created": "2026-05-14",
   "tasks": {
-    "1-testkit-and-gen-test-scripts": {
+    "1-testkit-helpers": {
       "id": "1",
-      "title": "Extend testkit + convert gen-test-scripts and plugin-content tests",
-      "priority": "P1",
+      "title": "Add file assertion helpers to testkit",
+      "priority": "P0",
       "estimatedTime": "30m",
-      "status": "pending",
-      "file": "1-testkit-and-gen-test-scripts.md",
-      "record": "records/1-testkit-and-gen-test-scripts.md",
-      "scope": "backend",
+      "status": "completed",
+      "file": "1-testkit-helpers.md",
+      "record": "records/1-testkit-helpers.md",
+      "scope": "all",
       "type": "implementation"
     },
-    "2-justfile-tests": {
+    "2-convert-gen-test-scripts": {
       "id": "2",
-      "title": "Convert justfile-related Playwright tests to Go",
+      "title": "Convert gen-test-scripts and forge-testing-optimization tests",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-convert-gen-test-scripts.md",
+      "record": "records/2-convert-gen-test-scripts.md",
+      "scope": "all",
+      "type": "implementation"
+    },
+    "3-convert-justfile-execution": {
+      "id": "3",
+      "title": "Convert justfile-execution tests",
       "priority": "P1",
       "estimatedTime": "45m",
       "dependencies": [
         "1"
       ],
-      "status": "pending",
-      "file": "2-justfile-tests.md",
-      "record": "records/2-justfile-tests.md",
-      "scope": "backend",
+      "status": "completed",
+      "file": "3-convert-justfile-execution.md",
+      "record": "records/3-convert-justfile-execution.md",
+      "scope": "all",
       "type": "implementation"
     },
-    "3-task-cli-scope-init": {
-      "id": "3",
-      "title": "Convert task-cli, scope-resolution, and init-justfile tests to Go",
+    "4-convert-task-cli": {
+      "id": "4",
+      "title": "Convert task-cli typed-task-dispatch tests",
       "priority": "P1",
-      "estimatedTime": "30m",
+      "estimatedTime": "1.5h",
       "dependencies": [
         "1"
       ],
-      "status": "pending",
-      "file": "3-task-cli-scope-init.md",
-      "record": "records/3-task-cli-scope-init.md",
-      "scope": "backend",
+      "status": "completed",
+      "file": "4-convert-task-cli.md",
+      "record": "records/4-convert-task-cli.md",
+      "scope": "all",
       "type": "implementation"
     },
-    "4-remove-nodejs-infra": {
-      "id": "4",
+    "5-convert-scope-resolution": {
+      "id": "5",
+      "title": "Convert scope-resolution tests",
+      "priority": "P1",
+      "estimatedTime": "45m",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "5-convert-scope-resolution.md",
+      "record": "records/5-convert-scope-resolution.md",
+      "scope": "all",
+      "type": "implementation"
+    },
+    "6-convert-justfile-integration-a": {
+      "id": "6",
+      "title": "Convert justfile-e2e-integration tests (forge-justfile + detection-assembly)",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "6-convert-justfile-integration-a.md",
+      "record": "records/6-convert-justfile-integration-a.md",
+      "scope": "all",
+      "type": "implementation"
+    },
+    "7-convert-justfile-integration-b": {
+      "id": "7",
+      "title": "Convert justfile-e2e-integration tests (mixed-template + cli)",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "7-convert-justfile-integration-b.md",
+      "record": "records/7-convert-justfile-integration-b.md",
+      "scope": "all",
+      "type": "implementation"
+    },
+    "8-convert-init-justfile-plugin-content": {
+      "id": "8",
+      "title": "Convert init-justfile and plugin-content tests",
+      "priority": "P1",
+      "estimatedTime": "45m",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "8-convert-init-justfile-plugin-content.md",
+      "record": "records/8-convert-init-justfile-plugin-content.md",
+      "scope": "all",
+      "type": "implementation"
+    },
+    "9-remove-nodejs-infrastructure": {
+      "id": "9",
       "title": "Remove Node.js test infrastructure",
       "priority": "P2",
       "estimatedTime": "15m",
       "dependencies": [
         "2",
-        "3"
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8"
       ],
-      "status": "pending",
-      "file": "4-remove-nodejs-infra.md",
-      "record": "records/4-remove-nodejs-infra.md",
+      "status": "completed",
+      "file": "9-remove-nodejs-infrastructure.md",
+      "record": "records/9-remove-nodejs-infrastructure.md",
       "scope": "all",
       "type": "implementation"
     },
@@ -65,7 +140,7 @@
       "dependencies": [
         "T-quick-1"
       ],
-      "status": "pending",
+      "status": "skipped",
       "file": "quick-gen-scripts-go-test.md",
       "record": "records/quick-gen-scripts-go-test.md",
       "scope": "all",
@@ -80,7 +155,7 @@
       "dependencies": [
         "T-quick-3"
       ],
-      "status": "pending",
+      "status": "skipped",
       "file": "quick-graduate-go-test.md",
       "record": "records/quick-graduate-go-test.md",
       "scope": "all",
@@ -95,7 +170,7 @@
       "dependencies": [
         "T-quick-2"
       ],
-      "status": "pending",
+      "status": "skipped",
       "file": "quick-run-tests-go-test.md",
       "record": "records/quick-run-tests-go-test.md",
       "scope": "all",
@@ -108,9 +183,9 @@
       "priority": "P1",
       "estimatedTime": "30min-1h",
       "dependencies": [
-        "4"
+        "9"
       ],
-      "status": "pending",
+      "status": "skipped",
       "file": "quick-test-cases-go-test.md",
       "record": "records/quick-test-cases-go-test.md",
       "scope": "all",
@@ -126,7 +201,7 @@
       "dependencies": [
         "T-quick-4"
       ],
-      "status": "pending",
+      "status": "skipped",
       "file": "quick-verify-regression.md",
       "record": "records/quick-verify-regression.md",
       "scope": "all",
