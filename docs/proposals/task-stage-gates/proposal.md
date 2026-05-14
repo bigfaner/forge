@@ -31,8 +31,8 @@ Extend `forge task index` to automatically detect numbered phases from existing 
 
 After scanning `.md` files (step 5 in `BuildIndex`) and before generating test tasks (step 7):
 
-1. **Detect phases**: Scan all task IDs to find distinct phase numbers (e.g., tasks `1.1`, `1.2`, `2.1` yield phases `1` and `2`). Count business tasks per phase.
-2. **Threshold check**: Only generate gate/summary for phases with **>=2 business tasks**. Single-task phases lack sufficient complexity to justify the overhead.
+1. **Detect phases**: Scan all task IDs to find distinct phase numbers (e.g., tasks `1.1`, `1.2`, `2.1` yield phases `1` and `2`). Count business tasks per phase — exclude tasks whose ID prefix or type field is `T-test` or `T-quick` from the count.
+2. **Threshold check**: Only generate gate/summary for phases with **>=2 business tasks** (after excluding test tasks). Single-task phases and test-only phases both fall below the threshold.
 3. **Check existence**: For each qualifying phase, check if `<N>.summary.md` and `<N>.gate.md` already exist in the tasks directory.
 4. **Generate missing files**: For each missing file, generate from embedded template with:
    - `<N>.summary`: `depends_on` = all business tasks in phase N (IDs matching `<N>.<digit>` pattern, excluding `.summary` and `.gate`)
@@ -41,9 +41,58 @@ After scanning `.md` files (step 5 in `BuildIndex`) and before generating test t
 
 The AI agent still generates business task files, then calls `forge task index --feature <slug>`. One command handles everything: stage-gate generation + index building.
 
+### CLI Output Behavior
+
+`forge task index` prints one summary line per qualifying phase to stderr (alongside existing index-build output). Examples:
+
+**Gates generated (typical run):**
+```
+$ forge task index --feature auth-login
+Indexed 6 tasks from auth-login
+Generated stage-gate: phase 1 → 1.summary, 1.gate
+Generated stage-gate: phase 2 → 2.summary, 2.gate
+```
+
+**Zero phases qualify (all phases have <2 business tasks):**
+```
+$ forge task index --feature hotfix-token
+Indexed 3 tasks from hotfix-token
+No phases qualified for stage-gate generation (each phase has <2 business tasks)
+```
+
+**Template rendering failure:**
+```
+$ forge task index --feature auth-login
+Indexed 6 tasks from auth-login
+Error: failed to render gate template for phase 2: template: gate-task.md:7: unexpected EOF
+exit 1
+```
+
+Existing files that are skipped produce no output (consistent with the idempotent test-task generation behavior).
+
+### Workflow Guarantee
+
+Problem #2 identifies that gate generation depends on AI agent compliance. This proposal reduces the failure surface from "AI must correctly generate gate content AND remember to do so" to "AI must call `forge task index`" — but does not eliminate it. If the agent never calls `forge task index`, gates are still not generated.
+
+This residual gap is accepted because:
+
+1. `forge task index` is already required in both `/quick-tasks` and `/breakdown-tasks` — the agent must call it to produce `index.json`. Gate generation piggybacks on this existing mandatory step.
+2. Making it truly automatic (filesystem watch, post-task hook) would require infrastructure that does not exist in forge — scope an order of magnitude larger than the feature.
+3. Skill instructions will explicitly state that `forge task index` generates stage-gates. If skipped, `index.json` is also missing — a failure immediately visible to the developer.
+
+A future `forge task validate` check could warn when phases with >=2 business tasks lack gate files.
+
 ### Innovation Highlights
 
-This is a straightforward adoption of the existing test-task generation pattern (`generateTestTasks` in `build.go`) to a new task type. The innovation is recognizing that gate/summary generation belongs in the CLI's deterministic layer rather than the AI agent's probabilistic layer.
+The structural insight is that gate/summary generation belongs in the CLI's deterministic layer rather than the AI agent's probabilistic layer — specifically, piggybacking on an already-mandatory command (`forge task index`) rather than introducing a new procedural step.
+
+This follows a general principle observable in several domains:
+
+- **Database migration tools** (Flyway, Liquibase) use *baseline detection*: a migration that already has a checksum match is silently skipped. Our skip-if-exists check is structurally identical — it enables idempotent re-runs without a separate "what already ran?" tracking layer.
+- **Compiler pipelines** auto-generate type-checking and borrow-checking passes after parsing — the programmer describes *what*, the compiler inserts *verification*. Here the AI agent describes business tasks (the *what*), and the CLI inserts structural verification tasks (the *checks*).
+- **Linting frameworks** (eslint, golangci-lint) attach checks to existing toolchain commands (`go build`, `go test`) rather than requiring separate invocations. This avoids the "forgot to run the checker" failure mode by making verification inseparable from the mandatory step.
+
+What is specific to AI-agent workflows: the generating layer (the LLM) is non-deterministic and instruction-dependent. In traditional build systems, missing verification is a human authoring error; in AI-assisted workflows, it is an *expected* failure mode — the agent will sometimes skip instructions. The design principle becomes: **any structural artifact that can be derived deterministically from existing data should be generated outside the agent's control**, attached to a command the agent cannot skip without also skipping its own primary output (`index.json`). This principle generalizes beyond stage-gates to any derived task type (dependency-graph validation tasks, cross-feature integration tasks, etc.).
 
 ## Requirements Analysis
 
@@ -53,13 +102,20 @@ This is a straightforward adoption of the existing test-task generation pattern 
 - **Idempotent re-run**: Re-running `forge task index` after a gate task is completed preserves the existing file and runtime state.
 - **Quick mode**: Same behavior as full mode — any numbered phase with >=2 business tasks gets gate/summary.
 - **Single-task phase**: Phase with only 1 business task → no `.summary` or `.gate` generated (not enough complexity to justify overhead).
-- **Phase with only test tasks**: Phases containing only T-test/T-quick tasks are excluded.
+- **Phase with only test tasks**: Phases containing only `T-test` or `T-quick` tasks are excluded. After grouping by phase number, count only tasks whose type is not `T-test`/`T-quick`. If count is 0, skip the phase.
+- **Partial state (`.summary` exists, `.gate` missing)**: Each file is checked independently. Only missing files are generated.
+- **Concurrent execution**: Two sessions writing the same gate file produce identical output (deterministic templates), so no file locking is needed.
+- **Malformed task IDs**: IDs not matching `<digit>.<digit>` (e.g., `intro`, `1.2a`) are silently skipped by phase detection — still indexed as tasks but do not contribute to phase grouping. Validation: `strings.Split(id, ".")` yields exactly 2 segments, both parseable as integers via `strconv.Atoi`.
+- **Pre-existing hand-crafted gate files**: Existing `.summary` or `.gate` files are preserved (idempotent check). No migration or schema validation on existing files.
 
 ### Non-Functional Requirements
 
 - Templates embedded via `go:embed` (same as test task templates)
-- Generation time: negligible (file writes only)
+- Generation time: < 5ms for up to 100 tasks and 20 phases (measured by file-write syscall count: 2 writes per qualifying phase, each < 1KB)
 - No external dependencies
+- **Security**: Phase detection regex `^\d+\.\d+$` on task IDs inherently rejects path traversal (e.g., `../1.1`). Template rendering uses `text/template` (not `html/template`); no shell execution during generation.
+- **Backward compatibility**: Generated files use the same schema as existing templates. Pre-existing files are unaffected (skip-if-exists). Schema stability maintained by keeping templates in sync with `breakdown-tasks/templates/`.
+- **Go version**: Requires Go 1.16+ for `go:embed` (already the minimum version for forge-cli)
 
 ### Constraints & Dependencies
 
@@ -71,15 +127,22 @@ This is a straightforward adoption of the existing test-task generation pattern 
 
 ### Industry Solutions
 
-Stage-Gate(R) is a standard product development methodology (Cooper, 1990). Each phase ends with a gate that evaluates quality before proceeding. Most CI/CD systems implement similar patterns (pipeline stages with gate approvals).
+Quality gates between pipeline phases are widespread in CI/CD and build systems:
+
+1. **GitHub Actions environment protection rules**: Jobs targeting a named `environment` require manual approval. The gate is structurally enforced — even if the workflow author forgets the check, the environment setting blocks progression. This is the closest analog to our goal, but GitHub's gates are runtime approval checks on pipelines, whereas ours are build-time task-file generation.
+
+2. **Bazel `query` + `test_suite` verification**: `bazel query` verifies every package has a `test_suite` target; missing targets fail the build. This structural-verification pattern mirrors our approach, but Bazel operates on a static human-authored graph, not AI-generated files.
+
+3. **GitLab CI `rules` + `needs` DAG enforcement**: GitLab CI's `rules:exists` can auto-create a downstream gate job when upstream jobs match a pattern — structurally similar to our phase detection, but GitLab's gate runs in a remote executor while ours writes a local file.
 
 ### Comparison Table
 
-| Approach | Source | Pros | Cons | Verdict |
+| Approach | Analog | Pros | Cons | Verdict |
 |----------|--------|------|------|---------|
-| Do nothing | — | No dev cost | Quick mode has no gates; AI-dependent | Rejected: both gaps are real |
-| Standalone `forge task stage-gates` command | — | Separation of concerns | Extra step for AI; more commands to learn | Rejected: unnecessary indirection |
-| **Integrate into `forge task index`** | Existing pattern (test tasks) | One command; deterministic; same pattern as test tasks | Slightly increases `build.go` complexity | **Selected: minimal API surface, maximum reliability** |
+| **Integrate into `forge task index`** | Bazel `test_suite` verification | One command; deterministic; reuses `generateTestTasks` pattern; no extra AI cognitive load | Adds ~50 lines to `build.go` | **Selected: piggybacks on already-mandatory command** |
+| Hook into skill execution lifecycle | GitHub Actions `environment` gates | Fully automatic; structurally guaranteed | Requires new hook infrastructure that does not exist (~1-2 days build) | Rejected: infrastructure scope exceeds feature scope |
+| File-watch trigger | GitLab CI `rules:exists` | Fully automatic | External dependency (`fswatch`); fails in Docker/remote; concurrent-write race conditions | Rejected: contradicts self-contained Go binary model |
+| Standalone `forge task stage-gates` | Bazel standalone `query` | Separation of concerns | Agent must call a second command — the exact failure mode in Problem #2 | Rejected: does not reduce agent-dependent failure |
 
 ## Feasibility Assessment
 
@@ -119,18 +182,21 @@ No external dependencies. Uses existing Go standard library and `go:embed`.
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|------------|
 | Phase detection misidentifies tasks (e.g., `T-test-1` parsed as phase 1) | L | M | Filter: only match `<digit>.<digit>` format, exclude T-test/T-quick, count >=2 business tasks |
-| Template content diverges from skill-authored gate/summary | M | L | Use the same templates from `breakdown-tasks/templates/` via `go:embed` |
-| Dependency cycle if AI manually sets deps that conflict with auto-generated ones | L | M | `forge task validate-index` already checks for cycles |
+| Template content diverges from skill-authored gate/summary | M | H | Single source of truth: `breakdown-tasks/templates/` is the canonical location; `go:embed` reads from there directly (no copy). CI check: `git diff --exit-code -- '*.summary.md' '*.gate.md'` in test pipeline asserts generated output matches committed fixtures. PR template includes checklist item: "If `breakdown-tasks` templates changed, verify `forge task index` fixture test passes." |
+| Dependency cycle if AI manually sets deps that conflict with auto-generated ones | L | M | Add `forge task validate-index` as a required CI step (not just a manual tool). Document in skill instructions that manual dependency edits on auto-generated gate/summary files are unsupported. |
 
 ## Success Criteria
 
-- [ ] `forge task index --feature <slug>` generates `.summary` and `.gate` for every numbered phase that has >=2 business tasks; skips single-task phases
+- [ ] `forge task index --feature <slug>` generates `.summary` and `.gate` for every numbered phase that has >=2 business tasks; skips single-task phases and test-only phases
 - [ ] Generated `.gate` depends on `.summary`; `.summary` depends on all same-phase business tasks
 - [ ] Re-running `forge task index` does not overwrite existing files (idempotent)
+- [ ] If `.summary` exists but `.gate` does not, only the gate file is generated
+- [ ] Task IDs not matching `<digit>.<digit>` pattern (e.g., `intro`, `1.2a`) are silently skipped — no crash, no gate generated
 - [ ] Generated tasks appear in `index.json` with correct `type` (`gate` / `doc-generation.summary`)
 - [ ] `/quick-tasks` SKILL.md updated to call `forge task index` for stage-gate generation
 - [ ] `/breakdown-tasks` SKILL.md updated to delegate gate/summary to `forge task index`
-- [ ] Unit tests cover phase detection, template generation, and idempotency
+- [ ] Version bumped in `forge-cli` (checked by `forge version` output)
+- [ ] Unit tests cover: phase detection, test-task exclusion, template generation, idempotency, malformed task IDs
 
 ## Next Steps
 

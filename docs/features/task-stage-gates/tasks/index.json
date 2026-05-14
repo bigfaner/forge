@@ -52,7 +52,7 @@
       "dependencies": [
         "T-quick-3"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "file": "quick-graduate-go-test.md",
       "record": "records/quick-graduate-go-test.md",
       "scope": "all",
