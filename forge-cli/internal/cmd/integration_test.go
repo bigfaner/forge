@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -1709,6 +1710,9 @@ func TestRunCheck_InvalidDeps(t *testing.T) {
 // ---------- saveIndexAndSignalCompletion error paths ----------
 
 func TestSaveIndexAndSignalCompletion_SaveIndexError(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("chmod on directories has no effect on Windows")
+	}
 	dir := t.TempDir()
 	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 	_ = feature.EnsureFeatureDir(dir, "test")
