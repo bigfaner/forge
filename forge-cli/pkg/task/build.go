@@ -26,10 +26,11 @@ type BuildIndexOpts struct {
 
 // BuildIndexResult holds the result of a BuildIndex operation.
 type BuildIndexResult struct {
-	NewCount       int
-	UpdatedCount   int
-	PreservedCount int
-	Warnings       []string
+	NewCount            int
+	UpdatedCount        int
+	PreservedCount      int
+	StageGatesGenerated int
+	Warnings            []string
 }
 
 // BuildIndex scans .md files and generates/updates index.json.
@@ -138,6 +139,81 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 			// Only warn about non-test tasks; test tasks are generated below
 			result.Warnings = append(result.Warnings, fmt.Sprintf("orphan: key %q (id=%s) has no .md file", key, t.ID))
 			result.PreservedCount++
+		}
+	}
+
+	// 6.5 Generate stage-gates (always, regardless of --no-test)
+	// Collect all task IDs from the current index for phase detection.
+	var allTaskIDs []string
+	for _, t := range index.TasksMap() {
+		allTaskIDs = append(allTaskIDs, t.ID)
+	}
+	generated, err := GenerateStageGates(allTaskIDs, opts.TasksDir, opts.FeatureSlug)
+	if err != nil {
+		return nil, fmt.Errorf("generate stage-gates: %w", err)
+	}
+	result.StageGatesGenerated = generated
+
+	// Index any newly generated stage-gate files
+	if generated > 0 {
+		stageEntries, err := os.ReadDir(opts.TasksDir)
+		if err != nil {
+			return nil, fmt.Errorf("read tasks dir for stage-gates: %w", err)
+		}
+		for _, entry := range stageEntries {
+			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
+				continue
+			}
+			if shouldSkipFile(entry.Name()) {
+				continue
+			}
+			key := strings.TrimSuffix(entry.Name(), ".md")
+			if existingKeys[key] {
+				continue // already indexed
+			}
+
+			filePath := filepath.Join(opts.TasksDir, entry.Name())
+			content, err := os.ReadFile(filePath)
+			if err != nil {
+				continue
+			}
+			fm, _, err := ParseFrontmatter(content)
+			if err != nil || fm.ID == "" {
+				continue
+			}
+
+			existingKeys[key] = true
+			taskType := fm.Type
+			if taskType == "" {
+				taskType = InferType(fm.ID)
+			}
+			newTask := Task{
+				ID:            fm.ID,
+				Title:         fm.Title,
+				Priority:      fm.Priority,
+				EstimatedTime: fm.EstimatedTime,
+				Dependencies:  fm.Dependencies,
+				File:          entry.Name(),
+				Record:        path.Join("records", entry.Name()),
+				Breaking:      fm.Breaking,
+				Scope:         fm.Scope,
+				MainSession:   fm.MainSession,
+				NoTest:        fm.NoTest,
+				Type:          taskType,
+				Profile:       fm.Profile,
+			}
+			// Preserve runtime state if task already exists in index
+			if existing, found := index.ByID(fm.ID); found {
+				newTask.Status = existing.Status
+				newTask.SourceTaskID = existing.SourceTaskID
+				newTask.BlockedReason = existing.BlockedReason
+				index.SetTask(key, newTask)
+				result.UpdatedCount++
+			} else {
+				newTask.Status = "pending"
+				index.SetTask(key, newTask)
+				result.NewCount++
+			}
 		}
 	}
 

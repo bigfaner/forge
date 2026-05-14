@@ -1,0 +1,50 @@
+{
+  "file": "/Users/fanhuifeng/.claude/projects/-Users-fanhuifeng-Projects-ai-coding-harness-forge/dfd6065a-2dc1-45c7-ac50-a720d390bc6e/subagents/agent-a7053af9edc2cd801.jsonl",
+  "lines": 2,
+  "gitBranch": "task-stage-gates",
+  "thinking": [],
+  "toolCalls": [],
+  "toolResults": [],
+  "userMsgs": [
+    {
+      "line": 1,
+      "content": "Execute task T-quick-4",
+      "isMeta": false
+    },
+    {
+      "line": 2,
+      "content": "[Request interrupted by user]",
+      "isMeta": false
+    }
+  ],
+  "skillsUsed": [],
+  "hooks": [],
+  "filesEdited": [],
+  "summary": {
+    "totalThinking": 0,
+    "totalToolCalls": 0,
+    "totalToolResults": 0,
+    "totalUserMsgs": 2,
+    "toolBreakdown": {},
+    "filesRead": null,
+    "filesWritten": null,
+    "grepPatterns": null,
+    "agentsSpawned": null,
+    "commands": null,
+    "hookBreakdown": null,
+    "hookFailures": 0,
+    "compactCount": 0,
+    "planModeCount": 0,
+    "stopReasons": {},
+    "skillInvocations": null,
+    "subagentCount": 0,
+    "startTime": "",
+    "endTime": "",
+    "duration": "",
+    "topSlowest": null,
+    "timingByTool": null,
+    "totalToolMs": 0,
+    "thinkingTurns": null,
+    "totalThinkingMs": 0
+  }
+}

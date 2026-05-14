@@ -748,3 +748,224 @@ func TestIsTestTaskID(t *testing.T) {
 		})
 	}
 }
+
+func TestBuildIndex_StageGatesGenerated(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "")
+
+	// Create tasks in 2 phases: phase 1 has 2 tasks, phase 2 has 1 task
+	writeTaskMD(t, tasksDir, "1-foo.md", "1.1", "Phase 1 Task 1", nil)
+	writeTaskMD(t, tasksDir, "2-bar.md", "1.2", "Phase 1 Task 2", []string{"1.1"})
+	writeTaskMD(t, tasksDir, "3-baz.md", "2.1", "Phase 2 Task 1", []string{"1.2"})
+
+	opts := BuildIndexOpts{
+		FeatureSlug: "test-feature",
+		ProjectRoot: projectRoot,
+		TasksDir:    tasksDir,
+		IndexPath:   indexPath,
+		NoTest:      true,
+	}
+
+	result, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("BuildIndex error: %v", err)
+	}
+
+	// Phase 1 has 2 business tasks -> should generate summary + gate = 2 files
+	// Phase 2 has 1 business task -> below threshold, no generation
+	if result.StageGatesGenerated != 2 {
+		t.Errorf("StageGatesGenerated = %d, want 2", result.StageGatesGenerated)
+	}
+
+	// Verify files exist
+	if _, err := os.Stat(filepath.Join(tasksDir, "1.summary.md")); os.IsNotExist(err) {
+		t.Error("1.summary.md not generated")
+	}
+	if _, err := os.Stat(filepath.Join(tasksDir, "1.gate.md")); os.IsNotExist(err) {
+		t.Error("1.gate.md not generated")
+	}
+	if _, err := os.Stat(filepath.Join(tasksDir, "2.summary.md")); err == nil {
+		t.Error("2.summary.md should NOT be generated (single-task phase)")
+	}
+
+	// Verify tasks appear in index.json with correct types
+	data, err := os.ReadFile(indexPath)
+	if err != nil {
+		t.Fatalf("read index.json: %v", err)
+	}
+	var idx taskIndexJSON
+	if err := json.Unmarshal(data, &idx); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+
+	if task, ok := idx.Tasks["1.summary"]; !ok {
+		t.Error("1.summary not in index")
+	} else if task.Type != TypeDocGenerationSummary {
+		t.Errorf("1.summary type = %q, want %q", task.Type, TypeDocGenerationSummary)
+	}
+	if task, ok := idx.Tasks["1.gate"]; !ok {
+		t.Error("1.gate not in index")
+	} else if task.Type != TypeGate {
+		t.Errorf("1.gate type = %q, want %q", task.Type, TypeGate)
+	}
+
+	// Verify gate depends on summary
+	if len(idx.Tasks["1.gate"].Dependencies) == 0 || idx.Tasks["1.gate"].Dependencies[0] != "1.summary" {
+		t.Errorf("1.gate deps = %v, want [1.summary]", idx.Tasks["1.gate"].Dependencies)
+	}
+	// Verify summary depends on business tasks
+	summaryDeps := idx.Tasks["1.summary"].Dependencies
+	if len(summaryDeps) != 2 {
+		t.Errorf("1.summary deps count = %d, want 2", len(summaryDeps))
+	}
+}
+
+func TestBuildIndex_StageGatesWithNoTestFlag(t *testing.T) {
+	// Stage gates should be generated even when --no-test is set
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "quick")
+
+	writeTaskMD(t, tasksDir, "1-foo.md", "1.1", "Task 1", nil)
+	writeTaskMD(t, tasksDir, "2-bar.md", "1.2", "Task 2", []string{"1.1"})
+
+	opts := BuildIndexOpts{
+		FeatureSlug:  "test-feature",
+		ProjectRoot:  projectRoot,
+		TasksDir:     tasksDir,
+		IndexPath:    indexPath,
+		NoTest:       true,
+		TestProfiles: []string{"go-test"},
+	}
+
+	result, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("BuildIndex error: %v", err)
+	}
+
+	// Stage gates generated despite NoTest=true
+	if result.StageGatesGenerated != 2 {
+		t.Errorf("StageGatesGenerated = %d, want 2 (unaffected by --no-test)", result.StageGatesGenerated)
+	}
+
+	// No test tasks generated
+	entries, _ := os.ReadDir(tasksDir)
+	for _, e := range entries {
+		name := e.Name()
+		if name == "1.summary.md" || name == "1.gate.md" || name == "1-foo.md" || name == "2-bar.md" || name == "index.json" {
+			continue
+		}
+		t.Errorf("unexpected file %s (test tasks should not be generated with --no-test)", name)
+	}
+}
+
+func TestBuildIndex_StageGatesIdempotent(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "")
+
+	writeTaskMD(t, tasksDir, "1-foo.md", "1.1", "Task 1", nil)
+	writeTaskMD(t, tasksDir, "2-bar.md", "1.2", "Task 2", []string{"1.1"})
+
+	opts := BuildIndexOpts{
+		FeatureSlug: "test-feature",
+		ProjectRoot: projectRoot,
+		TasksDir:    tasksDir,
+		IndexPath:   indexPath,
+		NoTest:      true,
+	}
+
+	// First build
+	result1, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("first build: %v", err)
+	}
+	if result1.StageGatesGenerated != 2 {
+		t.Errorf("first build StageGatesGenerated = %d, want 2", result1.StageGatesGenerated)
+	}
+
+	// Second build — no new files should be generated
+	result2, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("second build: %v", err)
+	}
+	if result2.StageGatesGenerated != 0 {
+		t.Errorf("second build StageGatesGenerated = %d, want 0 (idempotent)", result2.StageGatesGenerated)
+	}
+}
+
+func TestBuildIndex_StageGatesTestTaskExclusion(t *testing.T) {
+	// T-test/T-quick tasks should not count toward phase threshold
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "")
+
+	// Phase 1: 1 business task + 1 T-test task = only 1 business task (below threshold)
+	writeTaskMD(t, tasksDir, "1-foo.md", "1.1", "Business Task", nil)
+	writeTaskMD(t, tasksDir, "test-1.md", "T-test-1", "Test Task", nil)
+
+	// Phase 2: 2 business tasks (qualifies)
+	writeTaskMD(t, tasksDir, "2-bar.md", "2.1", "Phase 2 Task 1", nil)
+	writeTaskMD(t, tasksDir, "3-baz.md", "2.2", "Phase 2 Task 2", []string{"2.1"})
+
+	opts := BuildIndexOpts{
+		FeatureSlug: "test-feature",
+		ProjectRoot: projectRoot,
+		TasksDir:    tasksDir,
+		IndexPath:   indexPath,
+		NoTest:      true,
+	}
+
+	result, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("BuildIndex error: %v", err)
+	}
+
+	// Only phase 2 should generate (2 business tasks); phase 1 has only 1 business task
+	if result.StageGatesGenerated != 2 {
+		t.Errorf("StageGatesGenerated = %d, want 2 (only phase 2)", result.StageGatesGenerated)
+	}
+
+	// Phase 1 files should NOT exist
+	if _, err := os.Stat(filepath.Join(tasksDir, "1.summary.md")); err == nil {
+		t.Error("1.summary.md should not exist (phase 1 has only 1 business task)")
+	}
+	// Phase 2 files should exist
+	if _, err := os.Stat(filepath.Join(tasksDir, "2.summary.md")); os.IsNotExist(err) {
+		t.Error("2.summary.md should exist")
+	}
+}
+
+func TestBuildIndex_StageGatesMultiPhase(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "")
+
+	// 3 phases, each with 2 tasks
+	writeTaskMD(t, tasksDir, "1-1.md", "1.1", "P1 T1", nil)
+	writeTaskMD(t, tasksDir, "1-2.md", "1.2", "P1 T2", []string{"1.1"})
+	writeTaskMD(t, tasksDir, "2-1.md", "2.1", "P2 T1", []string{"1.2"})
+	writeTaskMD(t, tasksDir, "2-2.md", "2.2", "P2 T2", []string{"2.1"})
+	writeTaskMD(t, tasksDir, "3-1.md", "3.1", "P3 T1", []string{"2.2"})
+	writeTaskMD(t, tasksDir, "3-2.md", "3.2", "P3 T2", []string{"3.1"})
+
+	opts := BuildIndexOpts{
+		FeatureSlug: "test-feature",
+		ProjectRoot: projectRoot,
+		TasksDir:    tasksDir,
+		IndexPath:   indexPath,
+		NoTest:      true,
+	}
+
+	result, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("BuildIndex error: %v", err)
+	}
+
+	// 3 phases * 2 files = 6
+	if result.StageGatesGenerated != 6 {
+		t.Errorf("StageGatesGenerated = %d, want 6", result.StageGatesGenerated)
+	}
+
+	data, _ := os.ReadFile(indexPath)
+	var idx taskIndexJSON
+	_ = json.Unmarshal(data, &idx)
+
+	// Verify all 6 generated tasks in index
+	for _, key := range []string{"1.summary", "1.gate", "2.summary", "2.gate", "3.summary", "3.gate"} {
+		if _, ok := idx.Tasks[key]; !ok {
+			t.Errorf("%s not in index", key)
+		}
+	}
+}
