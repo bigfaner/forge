@@ -126,7 +126,7 @@
         "7",
         "8"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "9-remove-nodejs-infrastructure.md",
       "record": "records/9-remove-nodejs-infrastructure.md",
       "scope": "all",
@@ -140,7 +140,7 @@
       "dependencies": [
         "T-quick-1"
       ],
-      "status": "pending",
+      "status": "skipped",
       "file": "quick-gen-scripts-go-test.md",
       "record": "records/quick-gen-scripts-go-test.md",
       "scope": "all",
@@ -155,7 +155,7 @@
       "dependencies": [
         "T-quick-3"
       ],
-      "status": "pending",
+      "status": "skipped",
       "file": "quick-graduate-go-test.md",
       "record": "records/quick-graduate-go-test.md",
       "scope": "all",
@@ -170,7 +170,7 @@
       "dependencies": [
         "T-quick-2"
       ],
-      "status": "pending",
+      "status": "skipped",
       "file": "quick-run-tests-go-test.md",
       "record": "records/quick-run-tests-go-test.md",
       "scope": "all",
@@ -185,7 +185,7 @@
       "dependencies": [
         "9"
       ],
-      "status": "pending",
+      "status": "skipped",
       "file": "quick-test-cases-go-test.md",
       "record": "records/quick-test-cases-go-test.md",
       "scope": "all",
@@ -201,7 +201,7 @@
       "dependencies": [
         "T-quick-4"
       ],
-      "status": "pending",
+      "status": "skipped",
       "file": "quick-verify-regression.md",
       "record": "records/quick-verify-regression.md",
       "scope": "all",
