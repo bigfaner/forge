@@ -186,6 +186,15 @@ This step is **mandatory** when the feature has any UI surface. Skip only for ba
 
 **Validation**: Every UI Function MUST have a Placement section. Missing Placement → error, do not proceed.
 
+**Navigation Architecture platform handling**:
+
+The template contains two conditional navigation sections. Render exactly one based on platform:
+
+- **platform=tui**: Render the **TUI Navigation** section (Keymap, Panel Layout, Modes, Navigation Rules). Omit the Pointer-Driven Navigation section entirely.
+- **platform=web|mobile|mini-program|tablet**: Render the **Pointer-Driven Navigation** section (Primary Navigation, Secondary Pages, Navigation Rules). Omit the TUI Navigation section entirely.
+
+TUI uses keyboard-driven navigation (keymap + panels + modes) instead of pointer-driven navigation (pages + routes + icons). Do not mix the two patterns.
+
 **Downstream impact**: Placement determines how downstream skills structure their output:
 - **`/breakdown-tasks`**: `existing-page` generates a Build task + an Integrate task (wire component into existing page); `new-page` generates a Build task + a Page Assembly task (create page file, register route, compose components)
 - **`/gen-test-cases`**: auto-generates integration verification test cases for `existing-page` placements, ensuring the component is visible at the correct position in the target page
