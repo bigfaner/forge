@@ -104,7 +104,6 @@ func TestBuildIndex_FreshBuild(t *testing.T) {
 		ProjectRoot: projectRoot,
 		TasksDir:    tasksDir,
 		IndexPath:   indexPath,
-		NoTest:      true,
 	}
 
 	result, err := BuildIndex(opts)
@@ -148,7 +147,6 @@ func TestBuildIndex_IdempotentRebuild(t *testing.T) {
 		ProjectRoot: projectRoot,
 		TasksDir:    tasksDir,
 		IndexPath:   indexPath,
-		NoTest:      true,
 	}
 
 	// First build
@@ -194,7 +192,6 @@ func TestBuildIndex_StatusPreservation(t *testing.T) {
 		ProjectRoot: projectRoot,
 		TasksDir:    tasksDir,
 		IndexPath:   indexPath,
-		NoTest:      true,
 	}
 	if _, err := BuildIndex(opts); err != nil {
 		t.Fatalf("first build: %v", err)
@@ -252,7 +249,6 @@ func TestBuildIndex_NewMDAdded(t *testing.T) {
 		ProjectRoot: projectRoot,
 		TasksDir:    tasksDir,
 		IndexPath:   indexPath,
-		NoTest:      true,
 	}
 	if _, err := BuildIndex(opts); err != nil {
 		t.Fatalf("first build: %v", err)
@@ -280,7 +276,6 @@ func TestBuildIndex_FrontmatterUpdate(t *testing.T) {
 		ProjectRoot: projectRoot,
 		TasksDir:    tasksDir,
 		IndexPath:   indexPath,
-		NoTest:      true,
 	}
 	if _, err := BuildIndex(opts); err != nil {
 		t.Fatalf("first build: %v", err)
@@ -311,7 +306,6 @@ func TestBuildIndex_OrphanDetection(t *testing.T) {
 		ProjectRoot: projectRoot,
 		TasksDir:    tasksDir,
 		IndexPath:   indexPath,
-		NoTest:      true,
 	}
 	if _, err := BuildIndex(opts); err != nil {
 		t.Fatalf("first build: %v", err)
@@ -343,18 +337,16 @@ func TestBuildIndex_OrphanDetection(t *testing.T) {
 	}
 }
 
-func TestBuildIndex_NoTestSkipsTestGen(t *testing.T) {
+func TestBuildIndex_NoProfilesSkipsTestGen(t *testing.T) {
 	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "breakdown")
 
 	writeTaskMD(t, tasksDir, "1-foo.md", "1", "Foo", nil)
 
 	opts := BuildIndexOpts{
-		FeatureSlug:  "test-feature",
-		ProjectRoot:  projectRoot,
-		TasksDir:     tasksDir,
-		IndexPath:    indexPath,
-		NoTest:       true,
-		TestProfiles: []string{"go-test"},
+		FeatureSlug: "test-feature",
+		ProjectRoot: projectRoot,
+		TasksDir:    tasksDir,
+		IndexPath:   indexPath,
 	}
 
 	result, err := BuildIndex(opts)
@@ -362,7 +354,7 @@ func TestBuildIndex_NoTestSkipsTestGen(t *testing.T) {
 		t.Fatalf("BuildIndex: %v", err)
 	}
 
-	// Only 1 business task, no test tasks
+	// Only 1 business task, no test tasks (no profiles provided)
 	if result.NewCount != 1 {
 		t.Errorf("NewCount = %d, want 1", result.NewCount)
 	}
@@ -398,7 +390,6 @@ func TestBuildIndex_ModeDetection(t *testing.T) {
 				ProjectRoot: projectRoot,
 				TasksDir:    tasksDir,
 				IndexPath:   indexPath,
-				NoTest:      true,
 			}
 
 			if _, err := BuildIndex(opts); err != nil {
@@ -445,7 +436,6 @@ func TestBuildIndex_SkipNoID(t *testing.T) {
 		ProjectRoot: projectRoot,
 		TasksDir:    tasksDir,
 		IndexPath:   indexPath,
-		NoTest:      true,
 	}
 
 	result, err := BuildIndex(opts)
@@ -482,7 +472,6 @@ func TestBuildIndex_SkipUnderscoreFiles(t *testing.T) {
 		ProjectRoot: projectRoot,
 		TasksDir:    tasksDir,
 		IndexPath:   indexPath,
-		NoTest:      true,
 	}
 
 	result, err := BuildIndex(opts)
@@ -511,7 +500,6 @@ func TestBuildIndex_TypeInference(t *testing.T) {
 		ProjectRoot: projectRoot,
 		TasksDir:    tasksDir,
 		IndexPath:   indexPath,
-		NoTest:      true,
 	}
 
 	if _, err := BuildIndex(opts); err != nil {
@@ -538,7 +526,6 @@ func TestBuildIndex_EmptyTasksDir(t *testing.T) {
 		ProjectRoot: projectRoot,
 		TasksDir:    tasksDir,
 		IndexPath:   indexPath,
-		NoTest:      true,
 	}
 
 	result, err := BuildIndex(opts)
@@ -566,7 +553,6 @@ func TestBuildIndex_WithTestTasks(t *testing.T) {
 		ProjectRoot:  projectRoot,
 		TasksDir:     tasksDir,
 		IndexPath:    indexPath,
-		NoTest:       false,
 		TestProfiles: []string{"go-test"},
 	}
 
@@ -633,7 +619,6 @@ func TestBuildIndex_TestTasksIdempotent(t *testing.T) {
 		ProjectRoot:  projectRoot,
 		TasksDir:     tasksDir,
 		IndexPath:    indexPath,
-		NoTest:       false,
 		TestProfiles: []string{"go-test"},
 	}
 
@@ -674,7 +659,6 @@ func TestBuildIndex_MultiProfile(t *testing.T) {
 		ProjectRoot:  projectRoot,
 		TasksDir:     tasksDir,
 		IndexPath:    indexPath,
-		NoTest:       false,
 		TestProfiles: []string{"go-test", "web-playwright"},
 	}
 
@@ -791,7 +775,6 @@ func TestBuildIndex_StageGatesGenerated(t *testing.T) {
 		ProjectRoot: projectRoot,
 		TasksDir:    tasksDir,
 		IndexPath:   indexPath,
-		NoTest:      true,
 	}
 
 	result, err := BuildIndex(opts)
@@ -848,20 +831,18 @@ func TestBuildIndex_StageGatesGenerated(t *testing.T) {
 	}
 }
 
-func TestBuildIndex_StageGatesWithNoTestFlag(t *testing.T) {
-	// Stage gates should be generated even when --no-test is set
+func TestBuildIndex_StageGatesWithNoProfiles(t *testing.T) {
+	// Stage gates should be generated even when no profiles are configured
 	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "quick")
 
 	writeTaskMD(t, tasksDir, "1-foo.md", "1.1", "Task 1", nil)
 	writeTaskMD(t, tasksDir, "2-bar.md", "1.2", "Task 2", []string{"1.1"})
 
 	opts := BuildIndexOpts{
-		FeatureSlug:  "test-feature",
-		ProjectRoot:  projectRoot,
-		TasksDir:     tasksDir,
-		IndexPath:    indexPath,
-		NoTest:       true,
-		TestProfiles: []string{"go-test"},
+		FeatureSlug: "test-feature",
+		ProjectRoot: projectRoot,
+		TasksDir:    tasksDir,
+		IndexPath:   indexPath,
 	}
 
 	result, err := BuildIndex(opts)
@@ -869,19 +850,19 @@ func TestBuildIndex_StageGatesWithNoTestFlag(t *testing.T) {
 		t.Fatalf("BuildIndex error: %v", err)
 	}
 
-	// Stage gates generated despite NoTest=true
+	// Stage gates generated even without profiles
 	if result.StageGatesGenerated != 2 {
-		t.Errorf("StageGatesGenerated = %d, want 2 (unaffected by --no-test)", result.StageGatesGenerated)
+		t.Errorf("StageGatesGenerated = %d, want 2", result.StageGatesGenerated)
 	}
 
-	// No test tasks generated
+	// No test tasks generated (no profiles)
 	entries, _ := os.ReadDir(tasksDir)
 	for _, e := range entries {
 		name := e.Name()
 		if name == "1.summary.md" || name == "1.gate.md" || name == "1-foo.md" || name == "2-bar.md" || name == "index.json" {
 			continue
 		}
-		t.Errorf("unexpected file %s (test tasks should not be generated with --no-test)", name)
+		t.Errorf("unexpected file %s (test tasks should not be generated without profiles)", name)
 	}
 }
 
@@ -896,7 +877,6 @@ func TestBuildIndex_StageGatesIdempotent(t *testing.T) {
 		ProjectRoot: projectRoot,
 		TasksDir:    tasksDir,
 		IndexPath:   indexPath,
-		NoTest:      true,
 	}
 
 	// First build
@@ -935,7 +915,6 @@ func TestBuildIndex_StageGatesTestTaskExclusion(t *testing.T) {
 		ProjectRoot: projectRoot,
 		TasksDir:    tasksDir,
 		IndexPath:   indexPath,
-		NoTest:      true,
 	}
 
 	result, err := BuildIndex(opts)
@@ -974,7 +953,6 @@ func TestBuildIndex_StageGatesMultiPhase(t *testing.T) {
 		ProjectRoot: projectRoot,
 		TasksDir:    tasksDir,
 		IndexPath:   indexPath,
-		NoTest:      true,
 	}
 
 	result, err := BuildIndex(opts)
@@ -1104,7 +1082,6 @@ func TestBuildIndex_MissingTypeHardError(t *testing.T) {
 		ProjectRoot:  projectRoot,
 		TasksDir:     tasksDir,
 		IndexPath:    indexPath,
-		NoTest:       false,
 		TestProfiles: []string{"go-test"},
 	}
 
@@ -1132,7 +1109,6 @@ func TestBuildIndex_DocsOnlySkipsGatesAndTests(t *testing.T) {
 		ProjectRoot:  projectRoot,
 		TasksDir:     tasksDir,
 		IndexPath:    indexPath,
-		NoTest:       false,
 		TestProfiles: []string{"go-test"},
 	}
 
@@ -1176,7 +1152,6 @@ func TestBuildIndex_DocsOnlyGeneratesEvalDoc(t *testing.T) {
 		ProjectRoot:  projectRoot,
 		TasksDir:     tasksDir,
 		IndexPath:    indexPath,
-		NoTest:       false,
 		TestProfiles: []string{"go-test"},
 	}
 
@@ -1237,7 +1212,6 @@ func TestBuildIndex_CodeFeatureUnchanged(t *testing.T) {
 		ProjectRoot:  projectRoot,
 		TasksDir:     tasksDir,
 		IndexPath:    indexPath,
-		NoTest:       false,
 		TestProfiles: []string{"go-test"},
 	}
 
@@ -1284,7 +1258,6 @@ func TestBuildIndex_MissingTypeAllowedForAutoGenTasks(t *testing.T) {
 		ProjectRoot:  projectRoot,
 		TasksDir:     tasksDir,
 		IndexPath:    indexPath,
-		NoTest:       false,
 		TestProfiles: []string{"go-test"},
 	}
 

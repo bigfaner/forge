@@ -913,7 +913,6 @@ Source → pending
 | Flag | Required | Default | Description |
 |------|----------|---------|-------------|
 | `--feature` | Yes | - | Feature slug |
-| `--no-test` | No | false | Skip test task generation |
 | `--test-profiles` | No | from config | Override test profiles (comma-separated) |
 
 **Idempotent:** re-running produces the same output. Runtime state (status, sourceTaskID, blockedReason) is always preserved.

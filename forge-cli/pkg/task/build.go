@@ -17,9 +17,8 @@ type StrategyResolver func(profileName, kind string) []byte
 type BuildIndexOpts struct {
 	FeatureSlug     string
 	ProjectRoot     string
-	TasksDir        string // absolute path to tasks/
-	IndexPath       string // absolute path to index.json
-	NoTest          bool
+	TasksDir        string   // absolute path to tasks/
+	IndexPath       string   // absolute path to index.json
 	TestProfiles    []string // flag > config.yaml > none
 	ResolveStrategy StrategyResolver
 }
@@ -267,7 +266,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 			index.SetTask(evalKey, task)
 			result.NewCount++
 		}
-	} else if !opts.NoTest && len(profiles) > 0 && mode != "" {
+	} else if len(profiles) > 0 && mode != "" {
 		testTasks := generateTestTasks(mode, profiles)
 		if len(testTasks) > 0 {
 			ResolveFirstTestDep(testTasks, index.TasksMap(), mode)

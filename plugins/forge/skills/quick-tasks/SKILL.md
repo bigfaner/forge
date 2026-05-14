@@ -1,6 +1,6 @@
 ---
 name: quick-tasks
-description: Use for features (1-10 tasks) to generate tasks directly from proposal. No PRD or design needed. Supports --no-test to skip test tasks.
+description: Use for features (1-10 tasks) to generate tasks directly from proposal. No PRD or design needed.
 ---
 
 # Quick Tasks
@@ -16,10 +16,6 @@ Generate executable tasks directly from a proposal document. For features (1-10 
 <HARD-GATE>
 Maximum 10 business tasks. If the proposal requires more, STOP and recommend the full pipeline: `/write-prd` → `/tech-design` → `/breakdown-tasks`.
 </HARD-GATE>
-
-## Flags
-
-- `--no-test`: Skip T-quick-1~5 test tasks. Use for non-code proposals or when tests are handled separately.
 
 ## Step 0: Resolve Profile
 
@@ -164,7 +160,7 @@ forge task validate-index docs/features/<slug>/tasks/index.json
 - [ ] Every Success Criterion covered by ≥1 task
 - [ ] Dependency graph is a DAG (no cycles)
 - [ ] Each task file includes `## Affected Files` section with Create/Modify/Delete
-- [ ] (if not --no-test) Test tasks appended with correct dependency chain:
+- [ ] Test tasks appended with correct dependency chain:
   - Single profile: T-quick-1 through T-quick-5
   - Multiple profiles: T-quick-1a/1b/... through T-quick-4a/4b/... all per profile, T-quick-5 shared
 - [ ] Per-profile test tasks include `profile` field in index.json entries

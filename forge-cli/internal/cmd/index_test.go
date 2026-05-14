@@ -20,7 +20,7 @@ func TestIndexCmd_Integration(t *testing.T) {
 	}
 
 	// Create a task .md
-	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\nscope: \"all\"\n---\n\n# Task One\n"
+	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"implementation\"\nscope: \"all\"\n---\n\n# Task One\n"
 	if err := os.WriteFile(filepath.Join(tasksDir, "1-task-one.md"), []byte(taskMD), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -41,7 +41,6 @@ func TestIndexCmd_Integration(t *testing.T) {
 		ProjectRoot: projectRoot,
 		TasksDir:    tasksDir,
 		IndexPath:   indexPath,
-		NoTest:      true,
 	}
 
 	result, err := task.BuildIndex(opts)
