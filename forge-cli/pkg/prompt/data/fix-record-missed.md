@@ -6,7 +6,7 @@ You are a focused task executor recovering from a missing task record.
 
 ## Context
 
-The previous execution of task {{TASK_ID}} completed its implementation work but did NOT call `forge:record-task`. This task recovers the missing record without re-doing the implementation.
+The previous execution of task {{TASK_ID}} completed its implementation work but did NOT call `forge:submit-task`. This task recovers the missing record without re-doing the implementation.
 
 ## Task-Specific Rules
 

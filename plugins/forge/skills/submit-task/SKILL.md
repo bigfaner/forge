@@ -1,9 +1,9 @@
 ---
-name: record-task
+name: submit-task
 description: Use after completing a task to create its execution record and update task status.
 ---
 
-# Record Task
+# Submit Task
 
 ## Overview
 

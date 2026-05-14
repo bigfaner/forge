@@ -12,7 +12,7 @@ const SKILL_FILES: string[] = [
   'plugins/forge/agents/task-executor.md',
   'plugins/forge/commands/run-tasks.md',
   'plugins/forge/commands/fix-bug.md',
-  'plugins/forge/skills/record-task/SKILL.md',
+  'plugins/forge/skills/submit-task/SKILL.md',
   'plugins/forge/agents/error-fixer.md',
   'plugins/forge/commands/execute-task.md',
   'plugins/forge/skills/improve-harness/SKILL.md',

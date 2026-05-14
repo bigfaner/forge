@@ -156,7 +156,7 @@ func GenerateSummaryMD(phase PhaseInfo, featureSlug string) ([]byte, error) {
 	buf.WriteString("- [ ] All phase task records have been read\n")
 	buf.WriteString("- [ ] Summary follows the exact 5-section template\n")
 	buf.WriteString("- [ ] Types & Interfaces Changed table is populated\n")
-	buf.WriteString("- [ ] Record created via `/record-task`\n")
+	buf.WriteString("- [ ] Record created via `/submit-task`\n")
 
 	buf.WriteString("\n## Hard Rules\n\n")
 	buf.WriteString("- MUST NOT write new feature code — this is documentation only\n")
@@ -206,7 +206,7 @@ func GenerateGateMD(phase PhaseInfo, featureSlug string) ([]byte, error) {
 	buf.WriteString("## Acceptance Criteria\n\n")
 	buf.WriteString("- [ ] All applicable verification checklist items pass\n")
 	buf.WriteString("- [ ] Any deviations from design are documented as decisions in the record\n")
-	buf.WriteString("- [ ] Record created via `/record-task` with test evidence\n\n")
+	buf.WriteString("- [ ] Record created via `/submit-task` with test evidence\n\n")
 
 	buf.WriteString("## Hard Rules\n\n")
 	buf.WriteString("- MUST NOT write new feature code — this is verification only\n")

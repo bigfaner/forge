@@ -77,7 +77,7 @@ The `summary` field in `record.json` MUST follow this exact template. Copy it ve
 - [ ] All phase task records have been read
 - [ ] Summary follows the exact 5-section template above
 - [ ] Types & Interfaces Changed table is populated (or "None" if no changes)
-- [ ] Record created via `/record-task`
+- [ ] Record created via `/submit-task`
 
 ## Implementation Notes
 
