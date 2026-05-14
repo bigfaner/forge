@@ -420,6 +420,7 @@ func TestMonorepoDetection(t *testing.T) {
 		// Create .forge/ at project root (simulates task claim bootstrap)
 		forgeDir := filepath.Join(tempDir, ".forge")
 		_ = os.MkdirAll(forgeDir, 0755)
+		_ = os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte("profile: go-test\n"), 0644)
 
 		// Create go.mod in backend/ subdirectory
 		backendDir := filepath.Join(tempDir, "backend")
@@ -451,6 +452,7 @@ func TestMonorepoDetection(t *testing.T) {
 
 		forgeDir := filepath.Join(tempDir, ".forge")
 		_ = os.MkdirAll(forgeDir, 0755)
+		_ = os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte("profile: go-test\n"), 0644)
 
 		frontendDir := filepath.Join(tempDir, "frontend")
 		_ = os.MkdirAll(frontendDir, 0755)
@@ -481,6 +483,7 @@ func TestMonorepoDetection(t *testing.T) {
 
 		forgeDir := filepath.Join(tempDir, ".forge")
 		_ = os.MkdirAll(forgeDir, 0755)
+		_ = os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte("profile: go-test\n"), 0644)
 		goModPath := filepath.Join(tempDir, "go.mod")
 		_ = os.WriteFile(goModPath, []byte("module test\n"), 0644)
 
@@ -801,10 +804,15 @@ func TestMatchesMarker_DirectoryRequired(t *testing.T) {
 		if err := os.MkdirAll(forgeDir, 0755); err != nil {
 			t.Fatal(err)
 		}
+		// .forge requires config.yaml to distinguish project root from tool installation
+		configPath := filepath.Join(forgeDir, "config.yaml")
+		if err := os.WriteFile(configPath, []byte("profile: go-test\n"), 0644); err != nil {
+			t.Fatal(err)
+		}
 
 		forgeMarker := Marker{Name: ".forge", Type: RootTypeWorkspace, IsDirectory: true}
 		if !matchesMarker(tempDir, forgeMarker) {
-			t.Error("matchesMarker() should accept .forge when it is a directory")
+			t.Error("matchesMarker() should accept .forge when it is a directory with config.yaml")
 		}
 	})
 
@@ -813,6 +821,20 @@ func TestMatchesMarker_DirectoryRequired(t *testing.T) {
 		forgeMarker := Marker{Name: ".forge", Type: RootTypeWorkspace, IsDirectory: true}
 		if matchesMarker(tempDir, forgeMarker) {
 			t.Error("matchesMarker() should reject absent marker")
+		}
+	})
+
+	t.Run("forge rejects tool installation without config.yaml", func(t *testing.T) {
+		tempDir := t.TempDir()
+		forgeDir := filepath.Join(tempDir, ".forge")
+		binDir := filepath.Join(forgeDir, "bin")
+		if err := os.MkdirAll(binDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		// ~/.forge/bin/ is a tool installation, not a project root
+		forgeMarker := Marker{Name: ".forge", Type: RootTypeWorkspace, IsDirectory: true}
+		if matchesMarker(tempDir, forgeMarker) {
+			t.Error("matchesMarker() should reject .forge without config.yaml (tool installation)")
 		}
 	})
 }

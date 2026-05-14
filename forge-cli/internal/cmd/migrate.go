@@ -55,7 +55,11 @@ func runMigrate(_ *cobra.Command, _ []string) {
 	// Infer and set type for every task.
 	tasks := index.TasksMap()
 	for key, t := range tasks {
-		t.Type = prompt.InferType(t.ID)
+		inferred := prompt.InferType(t.ID)
+		if inferred == "" {
+			inferred = task.TypeImplementation
+		}
+		t.Type = inferred
 		index.SetTask(key, t)
 	}
 

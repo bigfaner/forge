@@ -9,7 +9,7 @@ import (
 )
 
 func TestListTypesCmd(t *testing.T) {
-	t.Run("outputs all 11 types with descriptions", func(t *testing.T) {
+	t.Run("outputs all registered types with descriptions", func(t *testing.T) {
 		// Capture stdout
 		old := os.Stdout
 		r, w, _ := os.Pipe()
@@ -26,8 +26,8 @@ func TestListTypesCmd(t *testing.T) {
 
 		lines := strings.Split(strings.TrimRight(output, "\n"), "\n")
 
-		if len(lines) != 11 {
-			t.Fatalf("expected 11 lines, got %d\noutput:\n%s", len(lines), output)
+		if len(lines) != len(task.TaskTypeRegistry) {
+			t.Fatalf("expected %d lines, got %d\noutput:\n%s", len(task.TaskTypeRegistry), len(lines), output)
 		}
 
 		// Verify each line has format "<name>  <description>"

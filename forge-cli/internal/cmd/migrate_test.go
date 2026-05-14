@@ -109,9 +109,9 @@ func TestRunMigrate_Idempotent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// InferType("1.1") → "" (no fallback), overwriting the pre-existing TypeGate
-	if index.TasksMap()["t1"].Type != "" {
-		t.Errorf("type = %q, want %q", index.TasksMap()["t1"].Type, "")
+	// InferType("1.1") → "" (no fallback), migrate defaults to implementation
+	if index.TasksMap()["t1"].Type != task.TypeImplementation {
+		t.Errorf("type = %q, want %q", index.TasksMap()["t1"].Type, task.TypeImplementation)
 	}
 }
 
