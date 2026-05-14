@@ -19,7 +19,7 @@
       "title": "Info commands (proposal, feature, lesson)",
       "priority": "P1",
       "estimatedTime": "2h",
-      "status": "completed",
+      "status": "pending",
       "file": "2-info-commands.md",
       "record": "records/2-info-commands.md",
       "scope": "backend",
@@ -53,6 +53,18 @@
       "breaking": true,
       "scope": "all",
       "type": "implementation"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "Fix: compilation errors in task 2 (lessonCmd undefined, truncate redeclared)",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "2",
+      "type": "fix"
     },
     "quick-gen-scripts-go-test": {
       "id": "T-quick-2",

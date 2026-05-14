@@ -326,8 +326,8 @@ func TestGetTransitionHint(t *testing.T) {
 		{"completed", "in_progress", "completed is a terminal state"},
 		{"rejected", "pending", "rejected is a terminal state"},
 		{"rejected", "in_progress", "rejected is a terminal state"},
-		{"in_progress", "completed", "use 'task record' to complete a task with quality gate"},
-		{"pending", "completed", "use 'task record' to complete a task with quality gate"},
+		{"in_progress", "completed", "use 'forge task submit' to complete a task with quality gate"},
+		{"pending", "completed", "use 'forge task submit' to complete a task with quality gate"},
 		{"pending", "in_progress", "transition pending -> in_progress is not allowed"},
 		{"blocked", "pending", "transition blocked -> pending is not allowed"},
 	}
@@ -351,8 +351,8 @@ func TestGetTransitionAction(t *testing.T) {
 		{"completed", "blocked", "use --force to override"},
 		{"rejected", "pending", "use --force to override"},
 		{"rejected", "blocked", "use --force to override"},
-		{"in_progress", "completed", "task record"},
-		{"pending", "completed", "task record"},
+		{"in_progress", "completed", "forge task submit"},
+		{"pending", "completed", "forge task submit"},
 		{"pending", "in_progress", "use --force to override"},
 	}
 	for _, tt := range tests {

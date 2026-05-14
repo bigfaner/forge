@@ -37,8 +37,8 @@ func TestErrFeatureNotSet(t *testing.T) {
 	if err.Code != ErrNoFeature {
 		t.Errorf("Code = %q, want %q", err.Code, ErrNoFeature)
 	}
-	if !strings.Contains(err.Hint, "task feature") {
-		t.Errorf("Hint should mention task feature: %s", err.Hint)
+	if !strings.Contains(err.Hint, "forge feature") {
+		t.Errorf("Hint should mention forge feature: %s", err.Hint)
 	}
 }
 
