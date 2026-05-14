@@ -67,10 +67,10 @@ func WithRetry(t *testing.T, fn func() error, maxRetries int, delay time.Duratio
 	t.Fatalf("retry exhausted: %s", err)
 }
 
-// projectRoot resolves the project root directory by walking up from the
+// ProjectRoot resolves the project root directory by walking up from the
 // source file location (via runtime.Caller) to find a go.mod marker.
 // This mirrors the helpers.ts approach where __dirname is used as anchor.
-func projectRoot(t *testing.T) string {
+func ProjectRoot(t *testing.T) string {
 	t.Helper()
 	// Use runtime.Caller to get this source file's path, then walk up.
 	_, thisFile, _, ok := runtime.Caller(0)
@@ -94,7 +94,7 @@ func projectRoot(t *testing.T) string {
 // project root. Fails the test if the file cannot be read.
 func ReadProjectFile(t *testing.T, relPath string) string {
 	t.Helper()
-	root := projectRoot(t)
+	root := ProjectRoot(t)
 	path := filepath.Join(root, relPath)
 	data, err := os.ReadFile(path)
 	if err != nil {

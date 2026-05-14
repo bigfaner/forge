@@ -10,7 +10,7 @@ import (
 )
 
 func TestProjectRoot(t *testing.T) {
-	root := projectRoot(t)
+	root := ProjectRoot(t)
 	modPath := filepath.Join(root, "go.mod")
 	if _, err := os.Stat(modPath); err != nil {
 		t.Fatalf("projectRoot returned %q but go.mod not found there: %v", root, err)
