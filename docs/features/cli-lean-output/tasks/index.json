@@ -63,7 +63,7 @@
       "dependencies": [
         "T-quick-2"
       ],
-      "status": "pending",
+      "status": "blocked",
       "file": "quick-run-tests-go-test.md",
       "record": "records/quick-run-tests-go-test.md",
       "scope": "all",
