@@ -2,7 +2,7 @@
   "feature": "forge-cli-v3",
   "prd": "prd/prd-spec.md",
   "design": "design/tech-design.md",
-  "proposal": "docs\\proposals\\forge-cli-v3\\proposal.md",
+  "proposal": "docs/proposals/forge-cli-v3/proposal.md",
   "created": "2026-05-13",
   "tasks": {
     "1-gate": {
@@ -355,6 +355,28 @@
       "breaking": true,
       "sourceTaskID": "T-test-1b",
       "type": "fix"
+    },
+    "fix-3": {
+      "id": "fix-3",
+      "title": "Fix: login bug",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-3.md",
+      "record": "records/fix-3.md",
+      "breaking": true,
+      "sourceTaskID": "1.1",
+      "type": "fix"
+    },
+    "fix-4": {
+      "id": "fix-4",
+      "title": "Fix: unit-test failure in all-completed quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "pending",
+      "file": "fix-4.md",
+      "record": "records/fix-4.md",
+      "breaking": true
     },
     "gen-test-cases": {
       "id": "T-test-1",
