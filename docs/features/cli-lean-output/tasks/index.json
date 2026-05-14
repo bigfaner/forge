@@ -8,7 +8,7 @@
       "title": "Trim claim output to essential fields only",
       "priority": "P0",
       "estimatedTime": "45m",
-      "status": "pending",
+      "status": "completed",
       "file": "1-trim-claim-output.md",
       "record": "records/1-trim-claim-output.md",
       "scope": "backend",

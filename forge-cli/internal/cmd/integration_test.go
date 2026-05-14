@@ -836,14 +836,11 @@ func TestPrintTaskDetails_Breaking(t *testing.T) {
 	if !strings.Contains(out, "BREAKING: true") {
 		t.Errorf("expected BREAKING field, got: %s", out)
 	}
-	if !strings.Contains(out, "ESTIMATED_TIME: 30min") {
-		t.Errorf("expected ESTIMATED_TIME, got: %s", out)
-	}
-	if !strings.Contains(out, "DEPENDENCIES: 1.summary") {
-		t.Errorf("expected DEPENDENCIES, got: %s", out)
-	}
 	if !strings.Contains(out, "FEATURE: test") {
 		t.Errorf("expected FEATURE: test, got: %s", out)
+	}
+	if !strings.Contains(out, "TASK_ID: 2.gate") {
+		t.Errorf("expected TASK_ID: 2.gate, got: %s", out)
 	}
 }
 
