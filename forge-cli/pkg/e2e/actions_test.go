@@ -42,10 +42,10 @@ func setupGoTestProfile(t *testing.T) string {
 }
 
 func TestRun(t *testing.T) {
-	t.Run("go-test profile dispatches go test", func(t *testing.T) {
+	t.Run("delegates to just test-e2e", func(t *testing.T) {
 		dir := setupGoTestProfile(t)
 		s := &stubExec{responses: map[string]execResponse{
-			"go test ./tests/e2e/...": {output: []byte("ok\n"), err: nil},
+			"just test-e2e": {output: []byte("ok\n"), err: nil},
 		}}
 		oldRunner := runner
 		runner = s
@@ -57,10 +57,10 @@ func TestRun(t *testing.T) {
 		}
 	})
 
-	t.Run("go-test profile with feature flag", func(t *testing.T) {
+	t.Run("passes feature as justfile argument", func(t *testing.T) {
 		dir := setupGoTestProfile(t)
 		s := &stubExec{responses: map[string]execResponse{
-			"go test ./tests/e2e/features/my-feature/...": {output: []byte("ok\n"), err: nil},
+			"just test-e2e feature=my-feature": {output: []byte("ok\n"), err: nil},
 		}}
 		oldRunner := runner
 		runner = s
@@ -72,40 +72,28 @@ func TestRun(t *testing.T) {
 		}
 	})
 
-	t.Run("web-playwright profile dispatches npx playwright test", func(t *testing.T) {
-		dir := setupProfile(t, "web-playwright")
+	t.Run("just not on PATH returns actionable error", func(t *testing.T) {
+		dir := setupGoTestProfile(t)
 		s := &stubExec{responses: map[string]execResponse{
-			"npx playwright test": {output: []byte("ok\n"), err: nil},
+			"just test-e2e": {output: nil, err: fmt.Errorf("exec: \"just\": executable file not found in $PATH")},
 		}}
 		oldRunner := runner
 		runner = s
 		defer func() { runner = oldRunner }()
 
 		err := Run(RunOpts{ProjectRoot: dir})
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-	})
-
-	t.Run("unsupported profile returns error", func(t *testing.T) {
-		dir := setupProfile(t, "maestro")
-		oldRunner := runner
-		runner = &stubExec{}
-		defer func() { runner = oldRunner }()
-
-		err := Run(RunOpts{ProjectRoot: dir})
 		if err == nil {
-			t.Fatal("expected error for unsupported profile")
+			t.Fatal("expected error for just not found")
 		}
-		if !strings.Contains(err.Error(), "unsupported profile for run") {
-			t.Fatalf("unexpected error: %v", err)
+		if !strings.Contains(err.Error(), "'just' is required but not found on PATH") {
+			t.Fatalf("expected 'just' not found error, got %q", err.Error())
 		}
 	})
 
-	t.Run("external tool failure returns formatted error", func(t *testing.T) {
+	t.Run("just failure returns formatted error", func(t *testing.T) {
 		dir := setupGoTestProfile(t)
 		s := &stubExec{responses: map[string]execResponse{
-			"go test ./tests/e2e/...": {output: []byte("first line of error\nsecond line"), err: fmt.Errorf("exit status 1")},
+			"just test-e2e": {output: []byte("first line of error\nsecond line"), err: fmt.Errorf("exit status 1")},
 		}}
 		oldRunner := runner
 		runner = s
@@ -115,8 +103,8 @@ func TestRun(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected error for tool failure")
 		}
-		if !strings.Contains(err.Error(), "go test failed:") {
-			t.Fatalf("expected error to contain 'go test failed:', got %q", err.Error())
+		if !strings.Contains(err.Error(), "just test-e2e failed:") {
+			t.Fatalf("expected error to contain 'just test-e2e failed:', got %q", err.Error())
 		}
 		if !strings.Contains(err.Error(), "first line of error") {
 			t.Fatalf("expected error to contain first line of stderr, got %q", err.Error())
@@ -136,10 +124,10 @@ func TestRun(t *testing.T) {
 }
 
 func TestSetup(t *testing.T) {
-	t.Run("go-test profile dispatches go install", func(t *testing.T) {
+	t.Run("delegates to just e2e-setup", func(t *testing.T) {
 		dir := setupProfile(t, "go-test")
 		s := &stubExec{responses: map[string]execResponse{
-			"go install": {output: []byte(""), err: nil},
+			"just e2e-setup": {output: []byte(""), err: nil},
 		}}
 		oldRunner := runner
 		runner = s
@@ -151,40 +139,28 @@ func TestSetup(t *testing.T) {
 		}
 	})
 
-	t.Run("web-playwright profile dispatches npx playwright install", func(t *testing.T) {
+	t.Run("just not on PATH returns actionable error", func(t *testing.T) {
+		dir := setupProfile(t, "go-test")
+		s := &stubExec{responses: map[string]execResponse{
+			"just e2e-setup": {output: nil, err: fmt.Errorf("exec: \"just\": executable file not found in $PATH")},
+		}}
+		oldRunner := runner
+		runner = s
+		defer func() { runner = oldRunner }()
+
+		err := Setup(RunOpts{ProjectRoot: dir})
+		if err == nil {
+			t.Fatal("expected error for just not found")
+		}
+		if !strings.Contains(err.Error(), "'just' is required but not found on PATH") {
+			t.Fatalf("expected 'just' not found error, got %q", err.Error())
+		}
+	})
+
+	t.Run("just failure returns formatted error", func(t *testing.T) {
 		dir := setupProfile(t, "web-playwright")
 		s := &stubExec{responses: map[string]execResponse{
-			"npx playwright install": {output: []byte(""), err: nil},
-		}}
-		oldRunner := runner
-		runner = s
-		defer func() { runner = oldRunner }()
-
-		err := Setup(RunOpts{ProjectRoot: dir})
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-	})
-
-	t.Run("pytest profile dispatches pip install", func(t *testing.T) {
-		dir := setupProfile(t, "pytest")
-		s := &stubExec{responses: map[string]execResponse{
-			"python -m pip install pytest": {output: []byte(""), err: nil},
-		}}
-		oldRunner := runner
-		runner = s
-		defer func() { runner = oldRunner }()
-
-		err := Setup(RunOpts{ProjectRoot: dir})
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-	})
-
-	t.Run("external tool failure returns formatted error", func(t *testing.T) {
-		dir := setupProfile(t, "web-playwright")
-		s := &stubExec{responses: map[string]execResponse{
-			"npx playwright install": {output: []byte("EACCES: permission denied\n"), err: fmt.Errorf("exit status 1")},
+			"just e2e-setup": {output: []byte("EACCES: permission denied\n"), err: fmt.Errorf("exit status 1")},
 		}}
 		oldRunner := runner
 		runner = s
@@ -194,7 +170,7 @@ func TestSetup(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected error")
 		}
-		if !strings.Contains(err.Error(), "npx playwright install failed:") {
+		if !strings.Contains(err.Error(), "just e2e-setup failed:") {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	})
@@ -266,10 +242,10 @@ func TestVerify(t *testing.T) {
 }
 
 func TestCompile(t *testing.T) {
-	t.Run("go-test profile dispatches go build", func(t *testing.T) {
+	t.Run("delegates to just e2e-compile", func(t *testing.T) {
 		dir := setupProfile(t, "go-test")
 		s := &stubExec{responses: map[string]execResponse{
-			"go build ./tests/e2e/...": {output: []byte(""), err: nil},
+			"just e2e-compile": {output: []byte(""), err: nil},
 		}}
 		oldRunner := runner
 		runner = s
@@ -281,55 +257,28 @@ func TestCompile(t *testing.T) {
 		}
 	})
 
-	t.Run("web-playwright profile dispatches tsc --noEmit", func(t *testing.T) {
-		dir := setupProfile(t, "web-playwright")
+	t.Run("just not on PATH returns actionable error", func(t *testing.T) {
+		dir := setupProfile(t, "go-test")
 		s := &stubExec{responses: map[string]execResponse{
-			"npx tsc --noEmit": {output: []byte(""), err: nil},
+			"just e2e-compile": {output: nil, err: fmt.Errorf("exec: \"just\": executable file not found in $PATH")},
 		}}
 		oldRunner := runner
 		runner = s
-		defer func() { runner = oldRunner }()
-
-		err := Compile(dir)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-	})
-
-	t.Run("pytest profile dispatches compileall", func(t *testing.T) {
-		dir := setupProfile(t, "pytest")
-		s := &stubExec{responses: map[string]execResponse{
-			"python -m compileall tests/e2e/ -q": {output: []byte(""), err: nil},
-		}}
-		oldRunner := runner
-		runner = s
-		defer func() { runner = oldRunner }()
-
-		err := Compile(dir)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-	})
-
-	t.Run("unsupported profile returns error", func(t *testing.T) {
-		dir := setupProfile(t, "maestro")
-		oldRunner := runner
-		runner = &stubExec{}
 		defer func() { runner = oldRunner }()
 
 		err := Compile(dir)
 		if err == nil {
-			t.Fatal("expected error for unsupported profile")
+			t.Fatal("expected error for just not found")
 		}
-		if !strings.Contains(err.Error(), "unsupported profile for compile") {
-			t.Fatalf("unexpected error: %v", err)
+		if !strings.Contains(err.Error(), "'just' is required but not found on PATH") {
+			t.Fatalf("expected 'just' not found error, got %q", err.Error())
 		}
 	})
 
-	t.Run("external tool failure returns formatted error", func(t *testing.T) {
+	t.Run("just failure returns formatted error", func(t *testing.T) {
 		dir := setupProfile(t, "go-test")
 		s := &stubExec{responses: map[string]execResponse{
-			"go build ./tests/e2e/...": {output: []byte("./tests/e2e/main_test.go:15: undefined: Foo\n"), err: fmt.Errorf("exit status 1")},
+			"just e2e-compile": {output: []byte("./tests/e2e/main_test.go:15: undefined: Foo\n"), err: fmt.Errorf("exit status 1")},
 		}}
 		oldRunner := runner
 		runner = s
@@ -339,7 +288,7 @@ func TestCompile(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected error")
 		}
-		if !strings.Contains(err.Error(), "go build failed:") {
+		if !strings.Contains(err.Error(), "just e2e-compile failed:") {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	})
@@ -354,10 +303,10 @@ func TestCompile(t *testing.T) {
 }
 
 func TestDiscover(t *testing.T) {
-	t.Run("go-test profile dispatches go test -list", func(t *testing.T) {
+	t.Run("delegates to just e2e-discover", func(t *testing.T) {
 		dir := setupProfile(t, "go-test")
 		s := &stubExec{responses: map[string]execResponse{
-			"go test ./tests/e2e/... -list .* -tags=e2e": {output: []byte("TestExample\n"), err: nil},
+			"just e2e-discover": {output: []byte("TestExample\n"), err: nil},
 		}}
 		oldRunner := runner
 		runner = s
@@ -369,55 +318,28 @@ func TestDiscover(t *testing.T) {
 		}
 	})
 
-	t.Run("web-playwright profile dispatches playwright test --list", func(t *testing.T) {
-		dir := setupProfile(t, "web-playwright")
+	t.Run("just not on PATH returns actionable error", func(t *testing.T) {
+		dir := setupProfile(t, "go-test")
 		s := &stubExec{responses: map[string]execResponse{
-			"npx playwright test --list": {output: []byte("test list\n"), err: nil},
+			"just e2e-discover": {output: nil, err: fmt.Errorf("exec: \"just\": executable file not found in $PATH")},
 		}}
 		oldRunner := runner
 		runner = s
-		defer func() { runner = oldRunner }()
-
-		err := Discover(dir)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-	})
-
-	t.Run("pytest profile dispatches pytest --collect-only", func(t *testing.T) {
-		dir := setupProfile(t, "pytest")
-		s := &stubExec{responses: map[string]execResponse{
-			"python -m pytest tests/e2e/ --collect-only -q": {output: []byte("test list\n"), err: nil},
-		}}
-		oldRunner := runner
-		runner = s
-		defer func() { runner = oldRunner }()
-
-		err := Discover(dir)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-	})
-
-	t.Run("unsupported profile returns error", func(t *testing.T) {
-		dir := setupProfile(t, "maestro")
-		oldRunner := runner
-		runner = &stubExec{}
 		defer func() { runner = oldRunner }()
 
 		err := Discover(dir)
 		if err == nil {
-			t.Fatal("expected error for unsupported profile")
+			t.Fatal("expected error for just not found")
 		}
-		if !strings.Contains(err.Error(), "unsupported profile for discover") {
-			t.Fatalf("unexpected error: %v", err)
+		if !strings.Contains(err.Error(), "'just' is required but not found on PATH") {
+			t.Fatalf("expected 'just' not found error, got %q", err.Error())
 		}
 	})
 
-	t.Run("external tool failure returns formatted error", func(t *testing.T) {
+	t.Run("just failure returns formatted error", func(t *testing.T) {
 		dir := setupProfile(t, "go-test")
 		s := &stubExec{responses: map[string]execResponse{
-			"go test ./tests/e2e/... -list .* -tags=e2e": {output: []byte("build constraints exclude all tests\n"), err: fmt.Errorf("exit status 1")},
+			"just e2e-discover": {output: []byte("build constraints exclude all tests\n"), err: fmt.Errorf("exit status 1")},
 		}}
 		oldRunner := runner
 		runner = s
@@ -427,7 +349,7 @@ func TestDiscover(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected error")
 		}
-		if !strings.Contains(err.Error(), "go test -list failed:") {
+		if !strings.Contains(err.Error(), "just e2e-discover failed:") {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	})

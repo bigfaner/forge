@@ -22,7 +22,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2-delegate-actions-to-just.md",
       "record": "records/2-delegate-actions-to-just.md",
       "breaking": true,
