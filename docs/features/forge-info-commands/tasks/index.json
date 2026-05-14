@@ -19,7 +19,7 @@
       "title": "Info commands (proposal, feature, lesson)",
       "priority": "P1",
       "estimatedTime": "2h",
-      "status": "pending",
+      "status": "completed",
       "file": "2-info-commands.md",
       "record": "records/2-info-commands.md",
       "scope": "backend",
