@@ -114,7 +114,7 @@ The existing run-tasks dispatcher will:
 | Brainstorm fails | Stop, user can retry |
 | User aborts at confirmation | Stop cleanly |
 | quick-tasks exceeds 4 task limit | Stop, recommend full pipeline |
-| `task validate` fails | Stop, fix index.json issues |
+| `forge task validate-index` fails | Stop, fix index.json issues |
 | run-tasks encounters failures | Handled by dispatcher (fix tasks, retries) |
 
 ## Rules

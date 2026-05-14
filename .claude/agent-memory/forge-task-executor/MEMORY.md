@@ -1,0 +1,1 @@
+- [Gate: Fix or Block, Never Force](feedback_gate-force-over-fix.md) -- gate task rejection means fix the gap, don't --force past it

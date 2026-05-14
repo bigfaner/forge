@@ -19,9 +19,9 @@ Post-task completion: create execution record + update task status.
 **Workflow:**
 
 ```
-1. task claim           → writes process/state.json (current task)
-2. During execution     → write progress to process/record.json
-3. task record --data   → reads JSON, generates records/*.md, clears process/
+1. forge task claim    → writes process/state.json (current task)
+2. During execution    → write progress to process/record.json
+3. forge task submit --data → reads JSON, generates records/*.md, clears process/
 ```
 
 ## JSON Data Format
@@ -86,11 +86,11 @@ just test [scope]
 echo '{"taskId":"3.3.1","status":"completed","summary":"...","filesCreated":["..."],"filesModified":["..."],"keyDecisions":["..."],"testsPassed":12,"testsFailed":0,"coverage":85.6,"acceptanceCriteria":[{"criterion":"...","met":true}]}' > docs/features/{slug}/tasks/process/record.json
 
 # Step 2: Use CLI command (mandatory)
-task record <TASK_ID> --data docs/features/{slug}/tasks/process/record.json
+forge task submit <TASK_ID> --data docs/features/{slug}/tasks/process/record.json
 ```
 
 <EXTREMELY-IMPORTANT>
-You MUST use the `task record` CLI command. No exceptions.
+You MUST use the `forge task submit` CLI command. No exceptions.
 
 **ONLY ALLOWED PATH:** `docs/features/{slug}/tasks/process/record.json`
 
@@ -107,10 +107,10 @@ The CLI command provides schema validation, consistent output format, and potent
 Bypassing the command defeats the purpose of the skill.
 </EXTREMELY-IMPORTANT>
 
-## What `task record` Does (One Command = 2 Operations)
+## What `forge task submit` Does (One Command = 2 Operations)
 
 ```
-task record <TASK_ID> --data docs/features/{slug}/tasks/process/record.json
+forge task submit <TASK_ID> --data docs/features/{slug}/tasks/process/record.json
 ```
 
 This single command automatically:
@@ -126,17 +126,17 @@ After running, check the STATUS field in the output:
 
 ### Quality Gate Pre-check
 
-When `status=completed`, `--force` is NOT used, and the task does NOT have `noTest: true` in its index.json entry, `task record` automatically runs the full quality gate before accepting the record:
+When `status=completed`, `--force` is NOT used, and the task does NOT have `noTest: true` in its index.json entry, `forge task submit` automatically runs the full quality gate before accepting the record:
 
 ```
 just compile [scope] → just fmt [scope] → just lint [scope] → just test [scope]
 ```
 
-This gate runs via `validateQualityGate()` in record.go. If any step fails, the record is rejected with an error. Fix the errors and re-run `task record`, or use `--force` to bypass.
+This gate runs via `validateQualityGate()` in record.go. If any step fails, the record is rejected with an error. Fix the errors and re-run `forge task submit`, or use `--force` to bypass.
 
 ### Data Validation
 
-`task record` will reject the following combinations:
+`forge task submit` will reject the following combinations:
 
 | Condition | Error | Fix |
 |-----------|-------|-----|
@@ -147,7 +147,7 @@ This gate runs via `validateQualityGate()` in record.go. If any step fails, the 
 
 Override quality gate, test evidence, and AC validation with `--force`:
 ```bash
-task record <TASK_ID> --data record.json --force
+forge task submit <TASK_ID> --data record.json --force
 ```
 
 Note: auto-downgrade (`completed` + `testsFailed > 0` → `blocked`) is **never** overridden by `--force`. Fix the failing tests first.
@@ -162,16 +162,16 @@ These actions will corrupt task state:
 | ---------------------------- | ------------------------------------------ |
 | `Write("records/*.md")`      | Bypasses CLI validation and hooks          |
 | Direct edit to `index.json`  | State becomes inconsistent                 |
-| `task status <id> completed` | Only for recovery when `task record` fails |
+| `forge task status <id> completed` | Only for recovery when `forge task submit` fails |
 | Writing to wrong path        | CLI only reads from `process/record.json`  |
 
 </EXTREMELY-IMPORTANT>
 
-## Recovery (Only when `task record` fails)
+## Recovery (Only when `forge task submit` fails)
 
-If `task record` fails and cannot be fixed:
+If `forge task submit` fails and cannot be fixed:
 
 ```bash
 # Manual status fix (last resort only)
-task status <TASK_ID> completed --force
+forge task status <TASK_ID> completed --force
 ```

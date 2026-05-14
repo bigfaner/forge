@@ -17,7 +17,7 @@ Steps:
    - Otherwise, default to `main`.
 
 2. Derive the new branch name automatically:
-   - Try `task feature` CLI to get the active feature slug.
+   - Try `forge feature` CLI to get the active feature slug.
    - If unavailable, scan `docs/features/` and `docs/proposals/` for a single active directory.
    - If the conversation is clearly about a specific feature or proposal, extract the slug from context.
    - If a slug is found, suggest `feat/<slug>` as the branch name (use `fix/<slug>` or `chore/<slug>` if the work is a bugfix or chore).

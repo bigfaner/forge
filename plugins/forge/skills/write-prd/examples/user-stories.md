@@ -38,7 +38,7 @@ Background identified two users: Developer (Web UI) and AI Agent (CLI).
 
 **Acceptance Criteria:**
 - Given TASK_REMOTE_URL is set and a pending task exists
-- When I run `task claim`
+- When I run `forge task claim`
 - Then the task status changes to in_progress and is assigned to my agent_id
 - And no other agent can claim the same task concurrently
 ```

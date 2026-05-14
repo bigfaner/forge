@@ -38,5 +38,8 @@ mainSession: false
 ## Acceptance Criteria
 {{ACCEPTANCE_CRITERIA}}
 
+## Hard Rules
+{{HARD_RULES}}
+
 ## Implementation Notes
 {{NOTES}}

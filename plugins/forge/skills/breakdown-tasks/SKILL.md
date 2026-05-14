@@ -201,14 +201,40 @@ Read the corresponding template before writing each task type.
 - e.g., `1.1` < `1.2` < `1.gate` < `1.summary`
 - Execution is dependency-driven; sort order is for display only
 
-**Frontmatter rules (propagated to index.json by `task index`):**
+**Frontmatter rules (propagated to index.json by `forge task index`):**
 - `dependencies` arrays reference task IDs (`"1.1"`), not index keys (`"1.1-interface"`)
 - Wildcard `"<phase>.x"` means "all tasks in phase <phase>" (resolved by task CLI, excludes .summary/.gate/self)
 </HARD-RULE>
 
 ### 4a. Business Tasks
 
-Read `templates/task.md` for task content structure. Create one task file per design element from the Element Mapping table, following dependencies from Step 3. For each task, set `breaking: true` if it modifies shared interfaces, data models, or API contracts (e.g., changing a schema column type, renaming a shared field). Additive changes are non-breaking.
+Read `templates/task.md` for task content structure. Create one task file per design element from the Element Mapping table, following dependencies from Step 3. For each task, set `breaking: true` if it modifies shared interfaces, data models, or API contracts (e.g., changing a schema column type, renaming a shared field). Additive changes to existing Go interfaces are breaking — all implementors (including mocks) must be updated.
+
+#### Existing-Code Modification Split
+
+When a task modifies **existing shared code** (interfaces, models, API contracts, utility functions) with multiple downstream consumers, split by dependency layers so each sub-task is independently compilable and testable:
+
+1. **Shared artifact update** (sub-ID `<seq>.<sub>a`, `breaking: true`):
+   - Apply changes to the shared artifact (interface signature, model struct, API contract, etc.)
+   - Reconcile ALL downstream consumers so existing code compiles and tests pass
+   - No new business logic — only signature changes + stubs/adapters
+   - AC: "All existing tests compile and pass"
+
+2. **Feature implementation** (sub-ID `<seq>.<sub>b`, depends on `<seq>.<sub>a`):
+   - Implement the actual feature logic using the updated shared artifact
+   - All consumers already compile; agent focuses on business logic
+   - Standard acceptance criteria from the design
+
+**When to apply**: inspect tech-design for changes to artifacts that already exist in the codebase. If the change propagates to >5 files OR spans multiple architectural layers (e.g., repository → service → handler), apply this split. Purely additive new code (new files, new interfaces) does not need splitting.
+
+**Example** (adding methods to a shared interface with 9 mock consumers):
+
+    # Without split (agent stalls reconciling 9 mock types × 17 methods):
+    1.2-add-milestone-queries
+
+    # With split:
+    1.2a-update-main-item-repo  (interface + mock stubs, breaking: true)
+    1.2b-milestone-queries      (feature logic, depends: ["1.2a"])
 
 <HAS_DB>
 
@@ -256,6 +282,17 @@ For **Page Assembly tasks** (new-page), Reference Files must include:
 
 For each task, populate the **User Stories** section with matching stories from `prd/prd-user-stories.md`. Include full Given/When/Then acceptance criteria. If no match, note "No direct user story mapping."
 
+
+### Hard Rules
+
+The task template includes a `## Hard Rules` section (`{{HARD_RULES}}`). Fill it **only** when the task has critical constraints that the agent must not override:
+
+- Task must execute via a specific justfile recipe (not direct tool calls) — e.g., `just test-e2e` instead of `npx playwright test`
+- Commands carry hidden dependencies (env vars, server lifecycle) that direct invocation would miss
+- Agent self-constructing commands would produce an incomplete environment
+- Task has explicit file scope restrictions (MUST NOT touch certain files)
+
+Leave `{{HARD_RULES}}` empty for normal implementation tasks where the agent's default TDD + quality gate behavior is sufficient.
 ### Scope Assignment
 
 For each task, determine the `scope` field for `index.json`:
@@ -288,7 +325,7 @@ For each task, determine the `scope` field for `index.json`:
 
 ### Type Assignment
 
-`task index` auto-infers `type` from task ID patterns via `InferType()` in `task-cli/pkg/task/infer.go`. The frontmatter `type` field takes precedence when set; otherwise the following patterns apply:
+`forge task index` auto-infers `type` from task ID patterns via `InferType()` in `task-cli/pkg/task/infer.go`. The frontmatter `type` field takes precedence when set; otherwise the following patterns apply:
 
 | Condition | `type` value |
 |-----------|-------------|
@@ -304,7 +341,7 @@ For each task, determine the `scope` field for `index.json`:
 | Task ID starts with `fix-` | `"fix"` |
 | No match (fallback) | `"implementation"` |
 
-No need to write `type` manually — `task index` handles it.
+No need to write `type` manually — `forge task index` handles it.
 
 ### 4b. Phase Summary Tasks
 
@@ -347,7 +384,7 @@ Phase 2 gate: 2.gate               (dependencies: ["2.summary"])
 
 ### 4d. Standard Test Tasks
 
-Test tasks are auto-generated by `task index` based on the profiles resolved in Step 0. **Do NOT create test task `.md` files manually** — `task index` handles the following:
+Test tasks are auto-generated by `forge task index` based on the profiles resolved in Step 0. **Do NOT create test task `.md` files manually** — `forge task index` handles the following:
 
 **Profile-suffix convention**: When multiple profiles are active, per-profile tasks use a lowercase letter suffix (a, b, c, ...) matching the order listed in `.forge/config.yaml`'s `test-profiles` array. Single profile produces no suffix.
 
@@ -380,10 +417,10 @@ Test tasks are auto-generated by `task index` based on the profiles resolved in 
 - T-test-4.5: run full regression suite across all profiles; on failure, mark blocked, add fix tasks (P0) with unblock instruction — re-runs after fix (shared)
 - T-test-5: extract business rules and tech specs, user reviews and confirms integration (shared)
 
-**Fix-task reference**: Templates are managed by task-cli and embedded in the binary. Auto-generated fix-task IDs follow the `fix-N` format (e.g., `fix-1`, `fix-2`). Agents should run `task template fix-task` to view the template and required variables before creating fix tasks:
+**Fix-task reference**: Templates are managed by task-cli and embedded in the binary. Auto-generated fix-task IDs follow the `fix-N` format (e.g., `fix-1`, `fix-2`).
 
 ```bash
-task add --template fix-task --title "Fix: <description>" \
+forge task add --template fix-task --title "Fix: <description>" \
   --source-task-id <source-task-id> \
   --block-source \
   --var SOURCE_FILES="<affected paths>" \
@@ -392,16 +429,16 @@ task add --template fix-task --title "Fix: <description>" \
   --description "<root cause>"
 ```
 
-**`--block-source`**: atomically sets source task to blocked before resolution. `task add` automatically deduplicates — check output: `ACTION: ADDED` (new fix task) or `ACTION: SKIPPED` (active fix already exists).
+**`--block-source`**: atomically sets source task to blocked before resolution. `forge task add` automatically deduplicates — check output: `ACTION: ADDED` (new fix task) or `ACTION: SKIPPED` (active fix already exists).
 
-When a fix-task completes, `task record` auto-restores the source task to `pending` (checks all source task's dependencies are completed). For nested fix-tasks (fix-task itself fails), `--source-task-id` must point to the FAILED fix-task, not the original source.
+When a fix-task completes, `forge task submit` auto-restores the source task to `pending` (checks all source task's dependencies are completed). For nested fix-tasks (fix-task itself fails), `--source-task-id` must point to the FAILED fix-task, not the original source.
 
 ## Step 5: Generate index.json via CLI
 
 After all business task `.md` files (Steps 4a–4c) are written, run:
 
 ```bash
-task index --feature <slug>
+forge task index --feature <slug>
 ```
 
 This command:
@@ -410,12 +447,12 @@ This command:
 3. Produces `index.json` with all business + test tasks
 4. Runs validation automatically
 
-If the profile was not set in Step 0, pass it explicitly: `task index --feature <slug> --test-profiles <p1>,<p2>`.
+If the profile was not set in Step 0, pass it explicitly: `forge task index --feature <slug> --test-profiles <p1>,<p2>`.
 
 ## Step 6: Validate
 
 ```bash
-task validate docs/features/<slug>/tasks/index.json
+forge task validate-index docs/features/<slug>/tasks/index.json
 ```
 
 ## Step 7: Update Manifest
@@ -429,12 +466,13 @@ Read `templates/manifest-update-tasks.md` for the traceability table format and 
 
 - [ ] `tasks/phase-inventory.json` written with detected phases and gates
 - [ ] All task files follow naming conventions from HARD-RULE
-- [ ] `index.json` valid per schema, `task validate` passes
+- [ ] `index.json` valid per schema, `forge task validate-index` passes
 - [ ] Every PRD AC covered by ≥1 task
-- [ ] Dependency graph is a DAG (no cycles) — verify with `task validate`
+- [ ] Dependency graph is a DAG (no cycles) — verify with `forge task validate-index`
 - [ ] Every Phase Inventory gate has a corresponding gate task
 - [ ] Gate tasks: correct phase attribution, `breaking: true`, explicit dependency chains
 - [ ] `breaking: true` set on tasks that modify shared contracts
+- [ ] Tasks modifying existing shared code (>5 downstream files or cross-layer) split into artifact-update + feature sub-tasks
 - [ ] UI tasks reference prototype files (if applicable)
 - [ ] User Stories populated from `prd-user-stories.md`
 - [ ] `index.json` ends with test tasks matching the profile expansion from Step 0 (shared T-test-1, T-test-1b, per-profile T-test-2/3/4, shared T-test-4.5, T-test-5)

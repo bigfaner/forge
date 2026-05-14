@@ -50,3 +50,7 @@ Bash(task record T-test-1b --data docs/features/train-recorder/tasks/process/rec
 34、forge的流程是否太重。
 35、开启subagent深度评估一致性：@task-cli/pkg/prompt/data/ 中的模板，run-tasks skill、task-executor agent                                  
   等任务调度机制所有关联方。然后就问题逐个向我提问 
+36、增加forge proposal 命令展示当前项目的所有提案，包括创建时间（以文件创建时间为准）、是否关联了prd、是否完成
+37、增加forge feature [list|status] --<feature> 命令查询feature的状态，是否完成
+38、增加forge kb 命令对接知识库，集中管理编程知识。
+39、justfile拆分test：just test（快速，无-race）和 just test-race（完整检测，CI/发布前用）

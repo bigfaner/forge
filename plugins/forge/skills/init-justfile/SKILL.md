@@ -324,17 +324,17 @@ Targets:
   ... (all 15 standard targets listed with resolved commands)
 
 Edit justfile to customize commands for your project.
-task all-completed will now use `just test` automatically.
+forge quality-gate will now use `just test` automatically.
 ```
 
 ## Notes
 
-- **just >= 1.50.0**: `[arg("feature", long)]` generates `--feature <value>` named option syntax; callers (CI, `task all-completed`) must pass the slug: `just test-e2e --feature <slug>`
+- **just >= 1.50.0**: `[arg("feature", long)]` generates `--feature <value>` named option syntax; callers (CI, `forge quality-gate`) must pass the slug: `just test-e2e --feature <slug>`
 - Makefile migration: preserve original command logic, adjust only format
 - **e2e tests are profile-aware**: The `test-e2e`, `e2e-setup`, and `e2e-verify` recipes are generated from the active test profile's `justfile-recipes` file (retrieved via `task profile get <profile-name> --justfile`). Each profile defines its own execution commands. For `web-playwright`, this still uses `npx playwright test` and requires Node.js.
 - **Targets invoked by forge skills**: `project-type`, `compile`, `build`, `test`, `test-e2e`, `install`, `e2e-setup`, `e2e-verify`. The remaining targets (`run`, `dev`, `lint`, `fmt`, `check`, `clean`, `ci`) are for manual use and are not called by any skill.
 - **Idempotency**: `e2e-setup` and `install` are designed to be idempotent (safe to run multiple times). Other recipes (`build`, `compile`, `test`) are not — they always re-execute.
-- **Mixed project scope**: forge skills resolve scope from `task claim` output or `process/state.json` and pass it to `just <verb>` when `just project-type` returns `mixed`. Pass `just compile frontend` or `just compile backend` manually to target a single side outside of a task context.
+- **Mixed project scope**: forge skills resolve scope from `forge task claim` output or `process/state.json` and pass it to `just <verb>` when `just project-type` returns `mixed`. Pass `just compile frontend` or `just compile backend` manually to target a single side outside of a task context.
 
 <EXTREMELY-IMPORTANT>
 - MANUAL-ONLY. Do NOT auto-invoke this skill from other skills or agents. Only invoke when user explicitly runs `/init-justfile`.

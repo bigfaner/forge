@@ -39,7 +39,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "task cleanup"
+            "command": "forge cleanup"
           }
         ]
       }
@@ -49,7 +49,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "task cleanup"
+            "command": "forge cleanup"
           }
         ]
       }
@@ -59,7 +59,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "task all-completed"
+            "command": "forge quality-gate"
           }
         ]
       }

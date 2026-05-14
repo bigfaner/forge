@@ -58,11 +58,11 @@ If the Justfile is missing or does not contain the `e2e-setup` recipe, abort and
 ls tests/e2e/features/<slug>/
 ```
 
-**Note**: `<slug>` is the current feature name, obtained via `task feature` command.
+**Note**: `<slug>` is the current feature name, obtained via `forge feature` command.
 
 ```bash
-slug=$(task feature 2>/dev/null | grep '^FEATURE:' | sed 's/^FEATURE:[[:space:]]*//')
-[ -z "$slug" ] && echo "Error: no active feature — run \`task feature <slug>\` first" >&2 && exit 1
+slug=$(forge feature 2>/dev/null | grep '^FEATURE:' | sed 's/^FEATURE:[[:space:]]*//')
+[ -z "$slug" ] && echo "Error: no active feature — run \`forge feature <slug>\` first" >&2 && exit 1
 ```
 
 ## When to Use

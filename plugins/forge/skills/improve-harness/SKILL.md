@@ -112,7 +112,7 @@ Based on the finding, dynamically design and implement the fix. Common fix patte
 | No doc validation | Create freshness detection script or CI check |
 | No boundary enforcement | Create architecture lint script |
 | No shared tools | Extract reusable skill/agent/script |
-| No execution records | Set up task record schema and templates |
+| No execution records | Set up forge task submit schema and templates |
 | Errors lack remediation | Add fix hints to linter/test output |
 | No docs index | Create docs/README.md with catalog |
 | Ad-hoc patterns | Centralize into shared utility |
