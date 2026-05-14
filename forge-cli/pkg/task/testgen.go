@@ -405,3 +405,50 @@ func (d TestTaskDef) TaskFromFile() Task {
 		Profile:       d.ProfileName,
 	}
 }
+
+// GetDocEvalTask returns a TestTaskDef for the docs-only evaluation task (T-eval-doc).
+// Dependencies are resolved separately by ResolveDocEvalDep.
+func GetDocEvalTask() TestTaskDef {
+	return TestTaskDef{
+		Key:           "eval-doc",
+		ID:            "T-eval-doc",
+		Title:         "Evaluate Documentation Quality",
+		Priority:      "P1",
+		EstimatedTime: "30min",
+		Type:          TypeDocEvaluation,
+		Scope:         "all",
+		NoTest:        true,
+	}
+}
+
+// ResolveDocEvalDep sets the dependency of T-eval-doc on the last business task.
+// Uses lexicographic ordering to find the maximum task ID among business tasks.
+func ResolveDocEvalDep(task *TestTaskDef, existingTasks map[string]Task) {
+	var bestID string
+	for _, t := range existingTasks {
+		if isAutoGenForDep(t.ID) {
+			continue
+		}
+		if t.ID > bestID {
+			bestID = t.ID
+		}
+	}
+	if bestID != "" {
+		task.Dependencies = []string{bestID}
+	}
+}
+
+// isAutoGenForDep returns true for auto-generated task IDs that should be
+// excluded from dependency resolution (they are not business tasks).
+func isAutoGenForDep(id string) bool {
+	if isTestTaskID(id) {
+		return true
+	}
+	if id == "T-eval-doc" {
+		return true
+	}
+	if strings.HasSuffix(id, ".gate") || strings.HasSuffix(id, ".summary") {
+		return true
+	}
+	return false
+}

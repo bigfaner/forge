@@ -16,24 +16,22 @@ import (
 
 var (
 	indexFeatureSlug  string
-	indexNoTest       bool
 	indexTestProfiles []string
 )
 
 var indexCmd = &cobra.Command{
-	Use:   "index --feature <slug> [--no-test] [--test-profiles p1,p2]",
+	Use:   "index --feature <slug> [--test-profiles p1,p2]",
 	Short: "Build or rebuild index.json from task markdown files",
 	Long: `Scan .md files in the feature's tasks/ directory and generate/update index.json.
 Idempotent: re-running with no changes produces the same output.
 
-Test tasks are auto-generated from embedded profiles unless --no-test is set.
+Test tasks are auto-generated from embedded profiles.
 Profiles are read from .forge/config.yaml unless overridden by --test-profiles.`,
 	Run: runIndex,
 }
 
 func init() {
 	indexCmd.Flags().StringVar(&indexFeatureSlug, "feature", "", "Feature slug (required)")
-	indexCmd.Flags().BoolVar(&indexNoTest, "no-test", false, "Skip test task generation")
 	indexCmd.Flags().StringSliceVar(&indexTestProfiles, "test-profiles", nil, "Override test profiles (comma-separated)")
 	_ = indexCmd.MarkFlagRequired("feature")
 }
@@ -82,7 +80,6 @@ func runIndex(_ *cobra.Command, _ []string) {
 		ProjectRoot:     projectRoot,
 		TasksDir:        tasksDir,
 		IndexPath:       indexPath,
-		NoTest:          indexNoTest,
 		TestProfiles:    profiles,
 		ResolveStrategy: resolveStrategy,
 	}
@@ -100,7 +97,7 @@ func runIndex(_ *cobra.Command, _ []string) {
 	PrintField("NEW", fmt.Sprintf("%d", result.NewCount))
 	PrintField("UPDATED", fmt.Sprintf("%d", result.UpdatedCount))
 	PrintField("PRESERVED", fmt.Sprintf("%d", result.PreservedCount))
-	if !indexNoTest && len(profiles) > 0 {
+	if len(profiles) > 0 {
 		PrintField("TEST_PROFILES", strings.Join(profiles, ", "))
 	}
 	PrintBlockEnd()

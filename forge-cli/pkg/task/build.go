@@ -17,9 +17,8 @@ type StrategyResolver func(profileName, kind string) []byte
 type BuildIndexOpts struct {
 	FeatureSlug     string
 	ProjectRoot     string
-	TasksDir        string // absolute path to tasks/
-	IndexPath       string // absolute path to index.json
-	NoTest          bool
+	TasksDir        string   // absolute path to tasks/
+	IndexPath       string   // absolute path to index.json
 	TestProfiles    []string // flag > config.yaml > none
 	ResolveStrategy StrategyResolver
 }
@@ -133,6 +132,22 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 		}
 	}
 
+	// 5.5 Validate: business tasks from .md files must have a type
+	for key, t := range index.TasksMap() {
+		if !existingKeys[key] {
+			continue // auto-generated tasks are not from .md files
+		}
+		if isAutoGenTaskID(t.ID) {
+			continue // auto-generated tasks use InferType
+		}
+		if t.Type == "" {
+			return nil, fmt.Errorf("task %s has empty type (set type in frontmatter or use a recognizable ID pattern)", t.File)
+		}
+	}
+
+	// 5.5.1 Detect docs-only feature
+	docsOnly := isDocsOnlyFeature(index.TasksMap())
+
 	// 6. Detect orphans
 	for key, t := range index.TasksMap() {
 		if !existingKeys[key] && !isTestTaskID(t.ID) {
@@ -142,17 +157,20 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 		}
 	}
 
-	// 6.5 Generate stage-gates (always, regardless of --no-test)
-	// Collect all task IDs from the current index for phase detection.
-	var allTaskIDs []string
-	for _, t := range index.TasksMap() {
-		allTaskIDs = append(allTaskIDs, t.ID)
+	// 6.5 Generate stage-gates (skip for docs-only features)
+	var generated int
+	if !docsOnly {
+		// Collect all task IDs from the current index for phase detection.
+		var allTaskIDs []string
+		for _, t := range index.TasksMap() {
+			allTaskIDs = append(allTaskIDs, t.ID)
+		}
+		generated, err = GenerateStageGates(allTaskIDs, opts.TasksDir, opts.FeatureSlug)
+		if err != nil {
+			return nil, fmt.Errorf("generate stage-gates: %w", err)
+		}
+		result.StageGatesGenerated = generated
 	}
-	generated, err := GenerateStageGates(allTaskIDs, opts.TasksDir, opts.FeatureSlug)
-	if err != nil {
-		return nil, fmt.Errorf("generate stage-gates: %w", err)
-	}
-	result.StageGatesGenerated = generated
 
 	// Index any newly generated stage-gate files
 	if generated > 0 {
@@ -217,8 +235,38 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 		}
 	}
 
-	// 7. Generate test tasks (unless --no-test)
-	if !opts.NoTest && len(profiles) > 0 && mode != "" {
+	// 7. Generate test tasks or T-eval-doc
+	if docsOnly && hasBusinessTasks(index.TasksMap()) {
+		// Docs-only: generate T-eval-doc instead of test pipeline
+		evalTask := GetDocEvalTask()
+		ResolveDocEvalDep(&evalTask, index.TasksMap())
+
+		evalKey := evalTask.Key
+		existingKeys[evalKey] = true
+
+		// Generate .md if missing
+		mdPath := filepath.Join(opts.TasksDir, evalKey+".md")
+		if _, err := os.Stat(mdPath); os.IsNotExist(err) {
+			evalContent, err := GenerateTestTaskMD(evalTask, opts.FeatureSlug)
+			if err != nil {
+				result.Warnings = append(result.Warnings, fmt.Sprintf("generate %s: %v", evalKey, err))
+			} else if err := os.WriteFile(mdPath, evalContent, 0644); err != nil {
+				result.Warnings = append(result.Warnings, fmt.Sprintf("write %s: %v", evalKey, err))
+			}
+		}
+
+		task := evalTask.TaskFromFile()
+		if existing, found := index.ByID(evalTask.ID); found {
+			task.Status = existing.Status
+			task.SourceTaskID = existing.SourceTaskID
+			task.BlockedReason = existing.BlockedReason
+			index.SetTask(evalKey, task)
+			result.UpdatedCount++
+		} else {
+			index.SetTask(evalKey, task)
+			result.NewCount++
+		}
+	} else if len(profiles) > 0 && mode != "" {
 		testTasks := generateTestTasks(mode, profiles)
 		if len(testTasks) > 0 {
 			ResolveFirstTestDep(testTasks, index.TasksMap(), mode)
@@ -343,6 +391,48 @@ func shouldSkipFile(name string) bool {
 // isTestTaskID returns true for test pipeline task IDs.
 func isTestTaskID(id string) bool {
 	return strings.HasPrefix(id, "T-test-") || strings.HasPrefix(id, "T-quick-")
+}
+
+// isDocsOnlyFeature returns true when all business tasks have types that are
+// neither implementation nor fix. Auto-generated tasks (gates, summaries, test
+// pipeline tasks) are excluded from the check.
+// An empty task map returns true.
+func isDocsOnlyFeature(tasks map[string]Task) bool {
+	for _, t := range tasks {
+		if isAutoGenTaskID(t.ID) {
+			continue
+		}
+		if t.Type == TypeImplementation || t.Type == TypeFix {
+			return false
+		}
+	}
+	return true
+}
+
+// hasBusinessTasks returns true if there is at least one non-auto-generated task.
+func hasBusinessTasks(tasks map[string]Task) bool {
+	for _, t := range tasks {
+		if !isAutoGenTaskID(t.ID) {
+			return true
+		}
+	}
+	return false
+}
+
+// isAutoGenTaskID returns true for task IDs that are auto-generated
+// (test pipeline, gates, summaries, T-eval-doc).
+// fix- and disc- tasks are NOT auto-generated; they are business tasks (they modify code).
+func isAutoGenTaskID(id string) bool {
+	if isTestTaskID(id) {
+		return true
+	}
+	if id == "T-eval-doc" {
+		return true
+	}
+	if strings.HasSuffix(id, ".gate") || strings.HasSuffix(id, ".summary") {
+		return true
+	}
+	return false
 }
 
 // loadIndexFromBytes deserializes index JSON.

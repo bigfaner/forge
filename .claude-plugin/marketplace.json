@@ -11,7 +11,7 @@
 			"name": "forge",
 			"source": "./plugins/forge",
 			"description": "Feature development pipeline: brainstorm, PRD, design, task breakdown, TDD execution, and e2e test automation",
-			"version": "3.0.0-beta-5",
+			"version": "3.0.0-beta-6",
 			"keywords": ["pipeline", "brainstorm", "prd", "design", "task", "eval", "e2e"]
 		}
 	]

@@ -1,8 +1,7 @@
 ---
 name: quick
-description: Streamlined pipeline for features (1-10 tasks). Brainstorm -> tasks -> execute, no PRD or design. Supports --no-test flag.
+description: Streamlined pipeline for features (1-10 tasks). Brainstorm -> tasks -> execute, no PRD or design.
 allowed_tools: ["Bash", "Read", "Write", "Edit", "Grep", "Glob", "Agent", "Skill", "AskUserQuestion"]
-argument-hints: "[--no-test]"
 ---
 
 # /quick
@@ -19,10 +18,6 @@ flowchart TD
     B -->|"Abort"| STOP["Stop"]
     C --> D["Step 4: /run-tasks<br>auto-execute"]
 ```
-
-## Flags
-
-- `--no-test`: Skip T-quick-1~5 test tasks. Passes through to `/quick-tasks`.
 
 ## Step 1: Brainstorm
 
@@ -71,12 +66,6 @@ Invoke the quick-tasks skill:
 
 ```
 Skill(skill="forge:quick-tasks")
-```
-
-If `--no-test` flag was provided, pass it through:
-
-```
-Skill(skill="forge:quick-tasks", args="--no-test")
 ```
 
 This produces:

@@ -180,5 +180,27 @@ func matchesMarker(dir string, marker Marker) bool {
 	}
 
 	// For markers that must be directories
-	return info.IsDir()
+	if !info.IsDir() {
+		return false
+	}
+
+	// .forge validation: only match if it looks like a forge project root
+	// (contains config.yaml), not a tool installation (only contains bin/).
+	// This prevents ~/.forge/bin/ from being detected as a project root
+	// when tests run from temp directories under the user's home.
+	if marker.Name == ".forge" && !isForgeProjectRoot(path) {
+		return false
+	}
+
+	return true
+}
+
+// isForgeProjectRoot checks if a .forge directory is a forge project root
+// (has config.yaml) vs a tool installation (only has bin/).
+func isForgeProjectRoot(forgeDir string) bool {
+	configPath := filepath.Join(forgeDir, "config.yaml")
+	if _, err := os.Stat(configPath); err == nil {
+		return true
+	}
+	return false
 }
