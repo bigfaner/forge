@@ -1,0 +1,23 @@
+{
+  "taskId": "T-quick-3",
+  "status": "completed",
+  "summary": "Executed e2e test suite for task-stage-gates feature using go-test profile. Ran 20 CLI test cases via 'go test -tags=e2e -json'. 19 passed, 0 failed, 1 skipped (TC-014: unit test scenario requiring binary modification). Total execution time 1.926s. Generated results report at tests/e2e/features/task-stage-gates/results/latest.md.",
+  "filesCreated": [
+    "tests/e2e/features/task-stage-gates/results/latest.md",
+    "tests/e2e/features/task-stage-gates/results/go-test-output.json"
+  ],
+  "filesModified": [],
+  "keyDecisions": [
+    "Ran tests directly via 'go test' since no Justfile with e2e-setup/test-e2e recipes exists in forge-cli",
+    "All tests classified as CLI type based on os/exec and exec.Command usage patterns"
+  ],
+  "testsPassed": 19,
+  "testsFailed": 0,
+  "coverage": -1,
+  "acceptanceCriteria": [
+    {"criterion": "E2E test suite executes without errors", "met": true},
+    {"criterion": "Results report generated at correct path", "met": true},
+    {"criterion": "All non-skipped tests pass", "met": true}
+  ],
+  "notes": "TC-014 skipped by design - requires binary modification to corrupt embedded template, better suited as unit test. No Justfile integration available; ran go test directly with -tags=e2e flag."
+}

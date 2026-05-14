@@ -50,7 +50,21 @@ Bash(task record T-test-1b --data docs/features/train-recorder/tasks/process/rec
 34、forge的流程是否太重。
 35、开启subagent深度评估一致性：@task-cli/pkg/prompt/data/ 中的模板，run-tasks skill、task-executor agent                                  
   等任务调度机制所有关联方。然后就问题逐个向我提问 
-36、增加forge proposal 命令展示当前项目的所有提案，包括创建时间（以文件创建时间为准）、是否关联了prd、是否完成
-37、增加forge feature [list|status] --<feature> 命令查询feature的状态，是否完成
+36、增加forge proposal 命令展示当前项目的所有提案，包括创建时间（以文件创建时间为准）、是否关联了prd、是否完成。doing
+37、增加forge feature [list|status] --<feature> 命令查询feature的状态，是否完成。doing
+forge lesson，查看lesson
+forge config，交互式，提供内置选项，让用户输出必要的信息，初始化.forge/config.yaml
+forge init，初始化.gitignore和Claude.md、.forge/config.yaml，.gitignore要忽略forge的运行时文件。复制 CLAUDE.template.md到项目根目录下，并改名为Claude.md
 38、增加forge kb 命令对接知识库，集中管理编程知识。
 39、justfile拆分test：just test（快速，无-race）和 just test-race（完整检测，CI/发布前用）
+40、forge，ui-design支持tui。doing
+41、forge，分多个任务生成测试用例。
+42、forge cli 生成各阶段的gate和sumary任务。doing
+43、末尾增加clean code的任务
+44、快速模式不限制任务数量，只是流程简化。doing
+45、record-task skill 更名为submit-task跟forge task submit命令对齐。
+46、优先使用justfile中的命令，而不是profile/manifest.yaml中的
+47、把使用nodejs编写的测试用例转成go。doing
+48、forge cli根据任务类型决定是否追加测试任务，适配不同的场景。
+49、去掉forge claim等输出的冗余信息
+50、forge init安装justfile
