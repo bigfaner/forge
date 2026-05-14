@@ -37,6 +37,7 @@ func init() {
 	rootCmd.AddCommand(verifyTaskDoneCmd)
 	rootCmd.AddCommand(featureCmd)
 	rootCmd.AddCommand(versionCmd)
+	rootCmd.AddCommand(configCmd)
 
 	// Version is hidden from --help but accessible via `forge version`
 	versionCmd.Hidden = true

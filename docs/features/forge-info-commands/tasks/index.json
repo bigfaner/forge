@@ -1,0 +1,146 @@
+{
+  "feature": "forge-info-commands",
+  "proposal": "docs/proposals/forge-info-commands/proposal.md",
+  "created": "2026-05-14",
+  "tasks": {
+    "1-config-commands": {
+      "id": "1",
+      "title": "Config commands and schema extension",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "status": "completed",
+      "file": "1-config-commands.md",
+      "record": "records/1-config-commands.md",
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "2-info-commands": {
+      "id": "2",
+      "title": "Info commands (proposal, feature, lesson)",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "status": "pending",
+      "file": "2-info-commands.md",
+      "record": "records/2-info-commands.md",
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "3-init-command": {
+      "id": "3",
+      "title": "forge init command",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "3-init-command.md",
+      "record": "records/3-init-command.md",
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "4-migration-resolve-scope": {
+      "id": "4",
+      "title": "Migration: ResolveScope → config.yaml and doc updates",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "4-migration-resolve-scope.md",
+      "record": "records/4-migration-resolve-scope.md",
+      "breaking": true,
+      "scope": "all",
+      "type": "implementation"
+    },
+    "quick-gen-scripts-go-test": {
+      "id": "T-quick-2",
+      "title": "Generate Quick Test Scripts (go-test)",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "T-quick-1"
+      ],
+      "status": "pending",
+      "file": "quick-gen-scripts-go-test.md",
+      "record": "records/quick-gen-scripts-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.gen-scripts",
+      "profile": "go-test"
+    },
+    "quick-graduate-go-test": {
+      "id": "T-quick-4",
+      "title": "Graduate Quick Test Scripts (go-test)",
+      "priority": "P1",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "T-quick-3"
+      ],
+      "status": "pending",
+      "file": "quick-graduate-go-test.md",
+      "record": "records/quick-graduate-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.graduate",
+      "profile": "go-test"
+    },
+    "quick-run-tests-go-test": {
+      "id": "T-quick-3",
+      "title": "Run Quick E2E Tests (go-test)",
+      "priority": "P1",
+      "estimatedTime": "15-30min",
+      "dependencies": [
+        "T-quick-2"
+      ],
+      "status": "pending",
+      "file": "quick-run-tests-go-test.md",
+      "record": "records/quick-run-tests-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.run",
+      "profile": "go-test"
+    },
+    "quick-test-cases-go-test": {
+      "id": "T-quick-1",
+      "title": "Generate Quick Test Cases (go-test)",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "4"
+      ],
+      "status": "pending",
+      "file": "quick-test-cases-go-test.md",
+      "record": "records/quick-test-cases-go-test.md",
+      "scope": "all",
+      "noTest": true,
+      "type": "test-pipeline.gen-cases",
+      "profile": "go-test"
+    },
+    "quick-verify-regression": {
+      "id": "T-quick-5",
+      "title": "Verify Quick E2E Regression",
+      "priority": "P1",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "T-quick-4"
+      ],
+      "status": "pending",
+      "file": "quick-verify-regression.md",
+      "record": "records/quick-verify-regression.md",
+      "scope": "all",
+      "type": "test-pipeline.verify-regression"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

@@ -6,6 +6,138 @@ import (
 	"testing"
 )
 
+func TestReadConfig(t *testing.T) {
+	t.Run("file not exists", func(t *testing.T) {
+		dir := t.TempDir()
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg != nil {
+			t.Fatalf("expected nil, got %v", cfg)
+		}
+	})
+
+	t.Run("full config", func(t *testing.T) {
+		dir := t.TempDir()
+		forgeDir := filepath.Join(dir, ".forge")
+		if err := os.MkdirAll(forgeDir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		content := "project-type: backend\ntest-profiles:\n  - go-test\ncapabilities:\n  - tui\n  - api\n"
+		if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.ProjectType != "backend" {
+			t.Errorf("expected project-type backend, got %q", cfg.ProjectType)
+		}
+		if len(cfg.TestProfiles) != 1 || cfg.TestProfiles[0] != "go-test" {
+			t.Errorf("expected [go-test], got %v", cfg.TestProfiles)
+		}
+		if len(cfg.Capabilities) != 2 || cfg.Capabilities[0] != "tui" || cfg.Capabilities[1] != "api" {
+			t.Errorf("expected [tui api], got %v", cfg.Capabilities)
+		}
+	})
+
+	t.Run("empty config", func(t *testing.T) {
+		dir := t.TempDir()
+		forgeDir := filepath.Join(dir, ".forge")
+		if err := os.MkdirAll(forgeDir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte("{}"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.ProjectType != "" {
+			t.Errorf("expected empty project-type, got %q", cfg.ProjectType)
+		}
+	})
+}
+
+func TestGetConfigValue(t *testing.T) {
+	setupConfig := func(t *testing.T, content string) string {
+		t.Helper()
+		dir := t.TempDir()
+		forgeDir := filepath.Join(dir, ".forge")
+		if err := os.MkdirAll(forgeDir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		return dir
+	}
+
+	t.Run("project-type scalar", func(t *testing.T) {
+		dir := setupConfig(t, "project-type: frontend\ntest-profiles:\n  - go-test\n")
+		val, err := GetConfigValue(dir, "project-type")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "frontend" {
+			t.Errorf("expected 'frontend', got %q", val)
+		}
+	})
+
+	t.Run("capabilities array", func(t *testing.T) {
+		dir := setupConfig(t, "capabilities:\n  - tui\n  - api\n  - cli\n")
+		val, err := GetConfigValue(dir, "capabilities")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		expected := "tui\napi\ncli"
+		if val != expected {
+			t.Errorf("expected %q, got %q", expected, val)
+		}
+	})
+
+	t.Run("test-profiles array", func(t *testing.T) {
+		dir := setupConfig(t, "test-profiles:\n  - go-test\n  - pytest\n")
+		val, err := GetConfigValue(dir, "test-profiles")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		expected := "go-test\npytest"
+		if val != expected {
+			t.Errorf("expected %q, got %q", expected, val)
+		}
+	})
+
+	t.Run("unknown key returns error", func(t *testing.T) {
+		dir := setupConfig(t, "project-type: backend\n")
+		_, err := GetConfigValue(dir, "nonexistent")
+		if err != ErrKeyNotFound {
+			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		}
+	})
+
+	t.Run("missing file returns error", func(t *testing.T) {
+		dir := t.TempDir()
+		_, err := GetConfigValue(dir, "project-type")
+		if err != ErrKeyNotFound {
+			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		}
+	})
+
+	t.Run("key exists but empty value returns error", func(t *testing.T) {
+		dir := setupConfig(t, "project-type: ''\n")
+		_, err := GetConfigValue(dir, "project-type")
+		if err != ErrKeyNotFound {
+			t.Errorf("expected ErrKeyNotFound for empty string, got %v", err)
+		}
+	})
+}
+
 func TestReadTestProfiles(t *testing.T) {
 	t.Run("file not exists", func(t *testing.T) {
 		dir := t.TempDir()

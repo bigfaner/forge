@@ -7,6 +7,8 @@ import (
 	"path"
 	"slices"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 //go:embed all:profiles
@@ -91,4 +93,42 @@ func validateProfileName(name string) error {
 		return fmt.Errorf("unknown profile: %s (known: %s)", name, strings.Join(KnownProfiles, ", "))
 	}
 	return nil
+}
+
+// profileManifest represents the parsed manifest.yaml structure.
+type profileManifest struct {
+	Capabilities []string `yaml:"capabilities"`
+}
+
+// GetProfileCapabilities returns the capabilities for a given profile.
+func GetProfileCapabilities(name string) ([]string, error) {
+	data, err := GetManifest(name)
+	if err != nil {
+		return nil, err
+	}
+	var manifest profileManifest
+	if err := yaml.Unmarshal(data, &manifest); err != nil {
+		return nil, fmt.Errorf("parse manifest for %s: %w", name, err)
+	}
+	return manifest.Capabilities, nil
+}
+
+// UnionCapabilities returns the union of capabilities from the given profiles.
+func UnionCapabilities(profileNames []string) ([]string, error) {
+	seen := make(map[string]bool)
+	var result []string
+	for _, name := range profileNames {
+		caps, err := GetProfileCapabilities(name)
+		if err != nil {
+			return nil, err
+		}
+		for _, c := range caps {
+			if !seen[c] {
+				seen[c] = true
+				result = append(result, c)
+			}
+		}
+	}
+	slices.Sort(result)
+	return result, nil
 }
