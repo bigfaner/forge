@@ -51,6 +51,45 @@ Forge 的测试生成 pipeline 不区分 interface 类型的验证策略。gen-t
 | **e2e** | 端到端，验证用户可见的完整行为 | interface 类型为 visual/interactive（TUI、web-ui、mobile-ui） | 渲染输出、DOM 状态、截图、设备行为 |
 | **integration** | 集成测试，验证组件间协作行为 | interface 类型为 non-visual（API、CLI） | HTTP 契约、退出码、输出格式、参数解析 |
 
+### Developer Workflow — Before & After
+
+#### Before（当前行为）
+
+```markdown
+## TC-001: 验证 analytics panel 显示正确数据
+- 操作：启动 tui-app，选择 analytics panel
+- 预期：panel 显示正确的统计数据
+- Level: （无此字段）
+```
+
+验证条件是"显示正确数据"——无法检测行溢出、CJK 对齐、窄终端截断等渲染 bug。
+
+#### After（本提案实施后）
+
+```markdown
+## TC-001: 验证 analytics panel 渲染正确性
+- Interface: tui
+- Level: e2e
+- 操作：启动 tui-app --width 80 --height 24，选择 analytics panel
+- 预期（渲染维度）：
+  - 输出行数 <= 24 行（无溢出）
+  - 每行宽度 <= 80 字符（无截断）
+  - Golden file 与 testdata/analytics-80x24.golden 完全匹配
+- 预期（边界场景）：
+  - CJK 路径不导致列错位
+  - 数字 > 9999 时格式化不溢出
+```
+
+#### gen-test-scripts 行为变化
+
+Before：所有用例生成相同结构的测试函数，无级别区分。
+
+After：
+- e2e 用例生成渲染+golden file 对比函数（读取 testdata/*.golden，截获 ANSI 输出逐行比对）
+- integration 用例生成 HTTP 断言或子进程退出码检查函数（不涉及渲染）
+
+开发者可观察到：test-cases.md 多出 `Level` 和 `Interface` 字段；测试脚本按级别分目录（如 `e2e/tui_test.go` vs `integration/api_test.go`）。
+
 ### 创新点
 
 **策略与 profile 解耦但就近定义**：策略文件在 profile 目录内（每个 profile 独立定义），但 gen-test-cases 通过统一的 capability key 查询策略，不需要硬编码类型映射。新增 profile 只需加策略文件，不需要改 skill 逻辑。
@@ -64,29 +103,53 @@ Forge 的测试生成 pipeline 不区分 interface 类型的验证策略。gen-t
 3. **API 集成测试生成**：gen-test-cases 检测到 `api` capability → 生成契约测试用例 + 错误路径用例 + 边界值用例，标记为 integration 级别
 4. **CLI 集成测试生成**：gen-test-cases 检测到 `cli` capability → 生成输出 golden file 用例 + 退出码用例 + 参数组合用例，标记为 integration 级别
 5. **Mixed profile**：go-test profile 同时有 `tui` + `api` + `cli` → 生成 3 类测试用例，TUI 标记 e2e，API/CLI 标记 integration
+6. **Unknown capability type**：manifest.yaml 声明了 capability（如 `grpc`），但 verification-strategies.md 中无对应 `## grpc` section → gen-test-cases 输出 warning（`No strategy found for capability: grpc`），为该 capability 生成通用测试用例（无 Level 字段），继续处理其他已知 capability，不中断执行
+7. **Capability key mismatch**：策略文件包含 `## tui` + `## api`，但 manifest.yaml 声明 `tui` + `cli` → gen-test-cases 中止并输出错误：`Strategy/manifest mismatch. Missing in strategy: cli. Extra in strategy: api. Please align verification-strategies.md sections with manifest.yaml capabilities.`
+8. **Golden file staleness**：run-e2e-tests 执行 TUI golden file 比对时检测到输出不匹配 → 测试失败并输出 diff。agent review diff 后：(a) 若为 intentional behavior change → 运行 `gen-test-scripts --update-golden` 更新 golden file 并重新执行测试；(b) 若为 regression → 以 diff 作为证据 file bug 并修复代码。策略文件无需改动
+9. **Strategy file parse failure**：verification-strategies.md 存在但格式不符合 section 结构要求（如缺少 `### 验证维度` 子标题）→ gen-test-cases 输出 warning（`Strategy file for profile {name} is malformed: missing ### 验证维度 in section ## tui`），回退到当前行为（无 Level 字段），不中断执行。开发者根据 warning 修复策略文件结构
 
 ### Constraints & Dependencies
 
 - 依赖现有 profile 的 capability 声明（manifest.yaml）
 - 策略文件是 profile 目录的一部分，随 profile 版本更新
 - 不引入新的外部依赖
+- **策略文件解析机制**：verification-strategies.md 是 Markdown 格式，gen-test-cases 通过 LLM prompt 上下文读取（非结构化 YAML 解析）。策略文件必须包含以下 section 结构以供 gen-test-cases 正确解读：每个 capability 以 `## <capability-key>` 为标题（如 `## tui`、`## api`），标题下按 `### 验证维度`、`### 边界场景`、`### 测试数据要求` 子标题组织内容。gen-test-cases 的 SKILL.md prompt 模板将包含策略文件的读取指令和 section 结构说明
+- **Capability key 一致性**：gen-test-cases 读取策略文件后，比对策略文件中的 capability 标题（`## <key>`）与 manifest.yaml 中声明的 capability 列表。不一致时（策略文件缺少已声明 capability、或包含未声明 capability）gen-test-cases 中止并输出明确的 mismatch 错误信息（列出缺失/多余的 key）
+- **策略文件有效性**：一个策略文件视为"有效"当且仅当：(1) 包含 ≥1 个 capability section（`## <capability-key>`），(2) 每个 capability section 包含 `### 验证维度` 子标题且其下 ≥3 个维度条目，(3) 每个 capability section 包含 `### 边界场景` 子标题且其下 ≥2 个场景条目。CI 中通过 lint 脚本自动检查，不满足条件的策略文件导致 profile lint 失败
+
+### Non-Functional Requirements
+
+| NFR Category | Requirement | Verification Method |
+|-------------|-------------|-------------------|
+| **Performance** | 策略文件读取增加延迟 < 2s（gen-test-cases 总耗时 < 5%）。策略文件上限 200 行，CI 检查 | 对比有/无策略文件时 gen-test-cases 执行耗时 |
+| **Compatibility — 缺失策略文件** | 无 verification-strategies.md 时回退到当前行为（无 Level 字段），输出 warning | 验证：warning 出现、用例无 Level、不中断 |
+| **Compatibility — 格式错误** | 解析失败时同"缺失"：warning + fallback | 构造错误格式文件验证 graceful degradation |
+| **Security — 策略注入** | 策略内容仅作 gen-test-cases 参考输入，不拼入 shell 命令或 eval | 审计 gen-test-cases 确认无命令注入路径 |
+| **Consistency — 策略漂移** | 跨 profile lint：同一 capability 验证维度差异 > 50% 时 warning | eval-harness 检查，不阻塞生成 |
+| **Observability** | test-cases.md 头部注释：`Applied strategy: {profile}/{cap-count} capabilities, {dim-count} dimensions` | 检查头部注释包含策略元数据 |
 
 ## Alternatives & Industry Benchmarking
 
-### Industry Solutions
+### Industry Patterns & Tools
 
-**Testing Trophy / Testing Quadrant**：业界通用的测试分层模型（Kent C. Dodds 的 Testing Trophy、Martin Fowler 的 Testing Quadrant）将测试按粒度和目的分层。本提案将 interface 类型映射到测试级别，本质上是测试象限的 forge 化实现。
+**Testing Quadrant（Brian Marick / Martin Fowler）**：Q1-Q4 四象限模型。本提案的 e2e/integration 二级划分是其简化版（Q4+Q2 vs Q1+Q3）。forge 的约束是测试由 AI agent 生成，分级粒度不宜过细——agent 无法判断"Q2 vs Q4"，但能判断"UI 渲染 vs API 契约"。
 
-**Playwright 的 test annotation**：Playwright 支持 `test.configure({ mode: 'serial' })` 和自定义 tag（`@fast`、`@slow`），但没有自动化的类型-级别映射。
+**Pact（Contract Testing）**：consumer-driven contract 模式，需要 provider/consumer 双方运行验证服务器。具体对比：(1) 断言风格——Pact 使用 consumer-driven provider states（consumer 定义期望的请求/响应对，provider 验证这些状态是否满足）；forge 的 API 测试是单侧的，gen-test-cases 根据 verification-strategies.md 中的维度生成请求/响应匹配断言，不需要双方协调。(2) 输出格式——Pact 产出 JSON contract 文件（Pact specification），通过 Pact broker 分享和版本化；forge 产出的是可执行的测试脚本（如 `integration/api_test.go`），assertion 内联在测试代码中。(3) 生命周期——Pact 需要 broker 基础设施来管理 contract 版本和 provider verification；forge 的 `gen-test-scripts → run-e2e-tests` 链路不需要外部服务，策略文件即 contract。微服务场景下可引入 Pact 作为子策略，但当前 forge 的 API 测试场景（单项目验证）不需要 broker 的协作能力。
 
-### Comparison Table
+**Bats / Cram（CLI Golden Testing）**：`$ command` + `expected output` 模式。本提案直接借鉴此模式，差异化在于 golden 内容由 AI 自动生成而非人工编写。具体对比：(1) 输入格式——Bats 使用 `.t` 文件以 `$ command` / `expected output` 行对定义测试，Cram 使用同类 `.t` 格式；forge 生成的测试是 Go/Rust/Python 源文件，golden file 存放在 `testdata/*.golden` 中，内容为 ANSI-stripped 的实际输出。(2) 断言粒度——Bats/Cram 逐行比对 stdout 输出；forge 的 golden test 对整个 stdout 做 diff（full-output diff），但额外在策略中定义维度断言（如行数、宽度），这些维度断言在 Bats/Cram 中需要手动编写 `[[ ${#lines[@]} -le 24 ]]` 之类的检查。(3) 生命周期——Bats/Cram 测试由开发者手动编写和维护；forge 的 golden file 由 gen-test-scripts 自动生成、run-e2e-tests 执行比对，开发者仅在 mismatch 时介入。
+
+**charmbracelet/vhs（TUI Testing）**：固定终端尺寸+输出比对。具体对比：(1) 测试定义方式——VHS 使用 `.tape` 脚本描述终端交互序列（`Output` / `Type` / `Wait` 命令），输出为 GIF 或文本截图；forge 的 TUI 测试不使用录制脚本，而是以固定 `--width`/`--height` 启动被测程序，通过子进程 stdout 截获 ANSI 输出与 golden file 比对。(2) 依赖——VHS 依赖 `ffmpeg` 和终端模拟器（`vhs` 本身启动 pty）；forge 的测试不需要终端模拟器，只依赖子进程 stdout 捕获，CI 环境兼容性更好。(3) 维度断言——VHS 主要做视觉输出比对（截图 diff）；forge 除了 golden file 全量 diff，还通过策略文件生成维度断言（行数 <= 高度、每行宽度 <= 终端宽度），这些是 VHS 不提供的结构性验证。
+
+**Appium / Espresso（Mobile Testing）**：Appium 跨平台但慢，Espresso 仅 Android。forge 的 mobile-ui 策略不绑定工具——profile 层决定框架（如 Maestro），verification-strategies.md 只定义验证维度，与 Appium 互补而非竞争。
+
+### Alternatives Analysis
 
 | Approach | Source | Pros | Cons | Verdict |
 |----------|--------|------|------|---------|
-| Do nothing | — | 零改动 | TUI lesson 已证明不可靠 | Rejected: bug 捕获率为 0/11 |
-| 共享策略文档 | 本提案早期选项 | 所有 profile 复用 | 不同 framework 的同类型测试策略不同（go-test 的 TUI vs rust-test 的 TUI） | Rejected: 粒度太粗 |
-| 硬编码在 skill 中 | 传统做法 | 简单直接 | 新增 profile 需要改 skill 代码 | Rejected: 耦合 |
-| **Profile 策略文件** | 本提案 | 按框架定制、新增 profile 零改动 skill | 6 个 profile 各写一份 | **Selected: 灵活性最佳** |
+| **Do nothing** | 当前状态 | 零改动，无迁移成本 | TUI lesson 已证明不可靠：11 个渲染 bug 全部通过现有 verify gate（bug 捕获率 0/11） | Rejected：无法接受已验证的失败模式 |
+| **Centralized config registry** | 类似 eslint-config-shared | 一致性高；更新一处全局生效 | 6 个 profile 框架差异大（Go 用 `testdata/`，Rust 用 `include_str!`，Python 用 `conftest.py` fixtures），集中基础策略无法表达框架特异的测试数据加载方式。混合方案（base strategy + per-profile override patches）看似折中，但在 forge 的 AI-generation 上下文中增加不必要的复杂度：base 层需要定义 override 机制（JSON patch？YAML merge key？），gen-test-cases 的 prompt 需要同时读取 base 和 override 并合并理解，token 开销和 prompt 复杂度双重增加——而 AI 直接读取完整的 profile-local 策略文件无需合并逻辑。一致性漂移通过跨 profile lint（见 NFR Consistency）检测即可，不需要中央注册来强制。 | Rejected：一致性收益被框架差异抵消，混合方案引入的 override 机制在 AI-generation 场景中无价值 |
+| **Strategy hardcoded in SKILL.md** | 类似 Playwright 内置 annotation | 简单，无额外文件 | 新增 profile 需改 skill 代码；策略与 skill 版本强耦合 | Rejected：违背 profile 可插拔原则 |
+| **Profile 策略文件** | 本提案 | 按 profile 框架定制验证手段；新增 profile 只需加文件，零改动 skill；策略可随 profile 版本独立演进 | 6 个 profile 各维护一份策略文件，存在一致性漂移风险（如 TUI 维度在 go-test 和 rust-test 中不同步） | **Selected**：一致性漂移可通过 lint 规则检测（见 NFR），且框架差异使得强制一致性不可取 |
 
 ## Feasibility Assessment
 
@@ -130,19 +193,19 @@ Forge 的测试生成 pipeline 不区分 interface 类型的验证策略。gen-t
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|------------|
-| 策略文件定义的验证维度与实际 PRD 不匹配 | Medium | Medium — 生成的测试用例覆盖不全 | 策略文件列出的是最小验证维度集，agent 可根据 PRD 追加额外维度 |
-| 6 个 profile 策略文件维护成本 | Low | Low — 策略相对稳定 | 策略变化频率低（随 profile 大版本更新） |
-| gen-test-cases 读取策略后 token 开销增加 | Medium | Low — 策略文件精简 | 策略文件控制在 200 行以内，只读当前 profile 的策略 |
-| TUI golden file 测试在 CI 环境中的 terminal 模拟差异 | Medium | High — CI 中 golden test 不稳定 | 策略文件中明确要求 golden test 使用固定 terminal 尺寸（如 80x24），不依赖环境 |
+| 策略文件定义的验证维度与实际 PRD 不匹配 | Medium | Medium — 生成的测试用例覆盖不全 | **Owner**: eval-test-cases rubric 自动检查。**Trigger**: gen-test-cases 生成后，eval-test-cases 对比 PRD 中 interface 行为描述与策略文件维度，维度覆盖率 < 70% 时标记为 incomplete 并输出缺失维度清单。**Corrective action**: 开发者根据清单补充策略文件维度后重新生成 |
+| 6 个 profile 策略文件维护成本 | Medium | Low — 策略相对稳定 | **Owner**: Profile maintainer。**Trigger**: 每次 profile 发布时运行跨 profile lint（见 NFR Consistency 行）。**Corrective action**: 同一 capability 验证维度差异 > 50% 触发人工 review，maintainer 决定是同步维度还是保留框架差异并记录理由 |
+| gen-test-cases 读取策略后 token 开销增加 | Medium | Low — 策略文件精简 | **Owner**: gen-test-cases skill。**Trigger**: gen-test-cases 执行完毕时输出 token 计数日志。**Corrective action**: 策略文件超过 200 行时 CI 报错阻塞；token 开销 > gen-test-cases 总消耗 15% 时 warning 并建议精简策略文件 |
+| TUI golden file 测试在 CI 环境中的 terminal 模拟差异 | Medium | High — CI 中 golden test 不稳定 | **Owner**: gen-test-scripts skill。**Trigger**: TUI golden file 测试失败时。**Corrective action**: 策略文件强制要求 golden test 使用固定 terminal 尺寸（80x24）启动参数，gen-test-scripts 生成的测试代码硬编码 `--width 80 --height 24`，不读取环境变量 |
 
 ## Success Criteria
 
-- [ ] 6 个 profile 各有 verification-strategies.md，定义了各 capability 的验证维度和边界场景
-- [ ] gen-test-cases 生成的 test-cases.md 包含 Level 字段（e2e/integration），且 interface 类型与策略文件一致
-- [ ] TUI 类型的 test-cases 自动包含 golden file + 维度检查 + 边界场景用例
-- [ ] API 类型的 test-cases 自动包含契约测试 + 错误路径 + 边界值用例
-- [ ] gen-test-scripts 按 Level 字段选择不同的代码生成策略
-- [ ] eval-test-cases rubric 包含"类型化验证完整度"维度
+- [ ] 每个 verification-strategies.md 为每个 capability 定义 ≥3 个验证维度、≥2 个边界场景。自动验证：脚本扫描策略文件，计数规则为——每个 `## <capability-key>` 标题下，`### 验证维度` 子标题之后、下一个 `###` 或 `##` 标题之前的所有无序列表项（`- ` 开头）计为一个 dimension 条目；`### 边界场景` 子标题之后、下一个 `###` 或 `##` 标题之前的所有无序列表项计为一个 boundary 条目。低于阈值则报错。示例：`## tui` 下 `### 验证维度` 含 4 个 `- ` 列表项 = 4 dimensions（通过）；`## api` 下 `### 边界场景` 仅 1 个 `- ` 列表项 = 1 boundary（不通过）
+- [ ] gen-test-cases 生成的 test-cases.md 中 Level 字段覆盖率 ≥ 95%（允许未命中策略文件的用例不带 Level，但命中策略的用例必须标记）。interface 类型与 manifest.yaml capability 声明一致率 100%（不一致则 gen-test-cases 中止并报错）
+- [ ] TUI 类型用例必须包含 ≥1 个 golden file 断言 + ≥1 个维度检查（行数/宽度/对齐）+ ≥2 个边界场景用例（如 CJK、窄终端）。覆盖检查通过 eval-test-cases rubric 自动评分
+- [ ] API 类型用例必须包含 ≥1 个契约验证断言（请求/响应匹配 spec）+ ≥1 个错误路径用例 + ≥2 个边界值用例（无效输入、超限）
+- [ ] gen-test-scripts 为 e2e 和 integration 级别生成结构不同的测试代码：e2e 生成渲染截获 + golden file 比对函数；integration 生成 HTTP 断言或子进程退出码检查函数。差异体现在 import 列表、assertion 库选择、测试目录结构三方面，且三方面均必须至少存在一处差异（例如 import 中 e2e 引用 `os/exec` + `golden` 而 integration 引用 `net/http` + `assert`）。自动验证：逐项对比 e2e 与 integration 生成输出的 import/structure/assertion 差异，任一方面无差异则失败
+- [ ] eval-test-cases rubric 新增"类型化验证完整度"维度，权重 ≥ 15%（总 rubric 1000 分中 ≥ 150 分），通过阈值为该维度得分 ≥ 70%
 
 ## Next Steps
 
