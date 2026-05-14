@@ -51,7 +51,7 @@
       "dependencies": [
         "3"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-version-bump.md",
       "record": "records/4-version-bump.md",
       "scope": "backend",
