@@ -1,6 +1,6 @@
 ---
 status: "blocked"
-started: "2026-05-14 17:07"
+started: "2026-05-14 17:29"
 completed: "N/A"
 time_spent: ""
 ---
@@ -8,31 +8,29 @@ time_spent: ""
 # Task Record: T-quick-3 Run Quick E2E Tests (go-test)
 
 ## Summary
-Executed e2e test suite for forge-info-commands feature using go-test profile. Ran 73 tests: 17 passed, 14 failed (all due to unimplemented CLI commands: config, proposal, lesson, feature list/status), 42 skipped. Generated full test report at tests/e2e/features/forge-info-commands/results/latest.md with JSON output saved.
+E2E test run blocked: prerequisites not met. Justfile missing e2e-setup recipe and tests/e2e/features/forge-info-commands/ directory does not exist. Test cases exist (test-cases.md) but test scripts have not been generated yet. Required actions: (1) run /init-justfile to scaffold Justfile with e2e recipes, (2) run /gen-test-scripts to generate executable test scripts, (3) re-run this task.
 
 ## Changes
 
 ### Files Created
-- forge-cli/tests/e2e/features/forge-info-commands/results/latest.md
-- forge-cli/tests/e2e/features/forge-info-commands/results/go-test-output.json
+无
 
 ### Files Modified
 无
 
 ### Key Decisions
-- All 14 failures are expected -- they test commands (config, proposal, lesson) that are part of the forge-info-commands feature proposal but not yet implemented in the CLI binary
-- No infrastructure issues detected; failure rate >30% is due to missing command implementations, not app health problems
+- Blocked task rather than force-running with missing prerequisites -- the go-test profile requires proper Justfile e2e-setup and generated test scripts that do not exist yet
 
 ## Test Results
 - **Tests Executed**: No
-- **Passed**: 17
-- **Failed**: 14
+- **Passed**: 0
+- **Failed**: 0
 - **Coverage**: N/A (task has no tests)
 
 ## Acceptance Criteria
-- [x] E2E tests executed via go-test profile
-- [x] Test results parsed and report generated
-- [ ] All tests pass
+- [ ] E2E test scripts execute and produce results report
+- [ ] Test results parsed from go test JSON output
+- [ ] Results report written to tests/e2e/features/forge-info-commands/results/latest.md
 
 ## Notes
-14 failures are from unimplemented commands (config, proposal, lesson, feature list/status subcommands). These tests will pass once the corresponding implementation tasks are completed. The go-test profile worked correctly - compilation passed, JSON output parsed successfully.
+Blocked by missing prerequisites: (1) Justfile lacks e2e-setup recipe -- current Justfile has no e2e recipes at all, (2) tests/e2e/features/forge-info-commands/ directory does not exist -- test scripts have not been generated from test-cases.md. The existing e2e infrastructure appears to be TypeScript/Playwright-based (playwright.config.ts, helpers.ts present in tests/e2e/) but the active profile is go-test. This profile mismatch may also need resolution.
