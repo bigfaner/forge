@@ -138,7 +138,7 @@
       "dependencies": [
         "T-quick-4"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "quick-verify-regression.md",
       "record": "records/quick-verify-regression.md",
       "scope": "all",
