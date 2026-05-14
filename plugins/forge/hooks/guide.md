@@ -23,6 +23,7 @@ docs/
   reference/            — System specs (environment, deployment, tech stack)
   decisions/            — Technical decisions (/record-decision)
   lessons/              — Lessons learned (/learn-lesson)
+  proposals/            — Improvement proposals (docs/proposals/{slug}/proposal.md, via /brainstorm or ad-hoc)
   sitemap/sitemap.json  — Page element map (project-level, /gen-sitemap)
 ```
 
