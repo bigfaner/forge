@@ -86,7 +86,7 @@ func ErrProjectNotFound() *AIError {
 		"Project root not found",
 		"No .git directory or CLAUDE.md found in current or parent directories",
 		"Run from a directory containing CLAUDE.md or .git",
-		"cd /path/to/project && task <command>",
+		"cd /path/to/project && forge <command>",
 	)
 }
 
@@ -96,8 +96,8 @@ func ErrFeatureNotSet() *AIError {
 		ErrNoFeature,
 		"No feature set",
 		"Feature context is required but not configured",
-		"Set a feature first using: task feature <slug>",
-		"task feature <feature-slug>",
+		"Set a feature first using: forge feature <slug>",
+		"forge feature <feature-slug>",
 	)
 }
 
@@ -107,8 +107,8 @@ func ErrTaskNotFound(taskID string) *AIError {
 		ErrNotFound,
 		fmt.Sprintf("Task not found: %s", taskID),
 		"The task ID does not exist in index.json",
-		"Verify the task ID is correct. Check available tasks with: task check",
-		"task check",
+		"Verify the task ID is correct. Check available tasks with: forge task check-deps",
+		"forge task check-deps",
 	)
 }
 
@@ -119,7 +119,7 @@ func ErrNoInput(details string) *AIError {
 		"No input provided",
 		details,
 		"Provide the required input",
-		"Check command usage with: task <command> -h",
+		"Check command usage with: forge <command> -h",
 	)
 }
 
@@ -152,7 +152,7 @@ func ErrNoPendingTasks() *AIError {
 		"No pending tasks available",
 		"All tasks are either in_progress or completed, or no tasks defined",
 		"Add new tasks to docs/features/<slug>/tasks/index.json",
-		"task check",
+		"forge task check-deps",
 	)
 }
 
@@ -163,7 +163,7 @@ func ErrDependenciesNotMet(taskID string, unmetDeps []string) *AIError {
 		fmt.Sprintf("Dependencies not met for task %s", taskID),
 		fmt.Sprintf("Unmet dependencies: %s", strings.Join(unmetDeps, ", ")),
 		"Complete the dependency tasks first",
-		fmt.Sprintf("task status %s completed", strings.Join(unmetDeps, " ")),
+		fmt.Sprintf("forge task status %s completed", strings.Join(unmetDeps, " ")),
 	)
 }
 
@@ -174,15 +174,15 @@ func ErrDataIntegrity(issues []string) *AIError {
 		"Task data integrity issues detected",
 		strings.Join(issues, "; "),
 		"Fix data inconsistency manually or cleanup state",
-		"task cleanup",
+		"forge cleanup",
 	)
 }
 
 // ErrInvalidStatus creates an invalid status error.
 func ErrInvalidStatus(status string, validStatuses []string) *AIError {
-	action := "task status <id> <valid-status>"
+	action := "forge task status <id> <valid-status>"
 	if len(validStatuses) > 0 {
-		action = fmt.Sprintf("task status <id> %s", validStatuses[0])
+		action = fmt.Sprintf("forge task status <id> %s", validStatuses[0])
 	}
 	cause := "statusEnum is not defined in index.json"
 	if len(validStatuses) > 0 {
@@ -234,7 +234,7 @@ func ErrNoTestEvidence() *AIError {
 		"Cannot mark task completed with no test evidence",
 		"testsPassed=0 and testsFailed=0 with status=completed suggests tests were not actually run",
 		"Either (1) run tests and report results, (2) add noTest:true to the task template, or (3) use --force to override",
-		"task record <id> --data record.json  (with real test metrics)\ntask record <id> --data record.json --force  (override, use cautiously)",
+		"forge task submit <id> --data record.json  (with real test metrics)\nforge task submit <id> --data record.json --force  (override, use cautiously)",
 	)
 }
 
@@ -245,7 +245,7 @@ func ErrUnmetAcceptanceCriteria(unmet []string) *AIError {
 		fmt.Sprintf("Cannot mark task completed with %d unmet acceptance criteria", len(unmet)),
 		fmt.Sprintf("Unmet criteria: %s", strings.Join(unmet, "; ")),
 		"Fix the issues and re-run tests, or set status to 'blocked' with an explanation",
-		"Fix issues, then: task record <id> --data record.json\nOr set status 'blocked': change \"status\" to \"blocked\" in record.json",
+		"Fix issues, then: forge task submit <id> --data record.json\nOr set status 'blocked': change \"status\" to \"blocked\" in record.json",
 	)
 }
 
@@ -256,7 +256,7 @@ func ErrTaskIDConflict(id string) *AIError {
 		fmt.Sprintf("Task ID already exists: %s", id),
 		"A task with this ID or key already exists in index.json",
 		"Use a different ID, or omit --id to auto-generate one",
-		"task add --title \"...\"  # auto-generates disc-N ID",
+		"forge task add --title \"...\"  # auto-generates disc-N ID",
 	)
 }
 
@@ -267,6 +267,6 @@ func ErrInvalidDependency(deps []string) *AIError {
 		fmt.Sprintf("Dependency not found: %s", strings.Join(deps, ", ")),
 		"Referenced task IDs do not exist in index.json",
 		"Check that dependency IDs are correct",
-		"task check",
+		"forge task check-deps",
 	)
 }

@@ -35,7 +35,7 @@ func cleanupCompletedTaskState() {
 	}
 
 	// Note: .forge/state.json is NOT deleted here — it serves as a workspace marker
-	// and is only deleted by `task all-completed` after successful execution.
+	// and is only deleted by `forge quality-gate` after successful execution.
 
 	// Get current feature
 	featureSlug, err := feature.GetCurrentFeature(projectRoot)

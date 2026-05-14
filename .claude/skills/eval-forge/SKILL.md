@@ -80,8 +80,8 @@ Gather the full plugin structure for the scorer:
 2. List `plugins/forge/commands/` files
 3. List `plugins/forge/agents/` files
 4. Read `plugins/forge/.claude-plugin/plugin.json`
-5. Run `task -h` to capture available CLI commands
-6. For each `task <cmd>`, run `task <cmd> -h` to capture flags
+5. Run `forge -h` to capture available CLI commands
+6. For each `forge <cmd>`, run `forge <cmd> -h` to capture flags
 7. Read `plugins/forge/hooks/guide.md`
 8. Scan all template files under `plugins/forge/skills/*/templates/*`
 

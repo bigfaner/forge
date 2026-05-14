@@ -49,12 +49,12 @@ ls docs/features/<slug>/prd/prd-spec.md
 
 ## Step 0: Select Test Profile
 
-1. **Resolve profile**: Run `task profile` to get the active test profile(s). This reads `.forge/config.yaml`, falls back to project structure detection.
-2. **On failure** (output shows `PROFILE: (none)`): ask the user to choose from known profiles (`web-playwright`, `go-test`, `maestro`, `java-junit`, `rust-test`, `pytest`). Run `task profile set <name>` to persist their choice.
-3. **Load profile manifest**: Run `task profile get <profile-name> --manifest`.
+1. **Resolve profile**: Run `forge profile` to get the active test profile(s). This reads `.forge/config.yaml`, falls back to project structure detection.
+2. **On failure** (output shows `PROFILE: (none)`): ask the user to choose from known profiles (`web-playwright`, `go-test`, `maestro`, `java-junit`, `rust-test`, `pytest`). Run `forge profile set <name>` to persist their choice.
+3. **Load profile manifest**: Run `forge profile get <profile-name> --manifest`.
 
 <HARD-RULE>
-Do NOT silently default to any profile. If `task profile` returns no result and the user cannot decide, abort the skill.
+Do NOT silently default to any profile. If `forge profile` returns no result and the user cannot decide, abort the skill.
 </HARD-RULE>
 
 ## Step 1: Read Manifest → PRD

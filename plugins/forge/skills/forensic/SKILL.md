@@ -29,13 +29,13 @@ description: Analyze past session transcripts to identify root causes of agent d
 
 ## Prerequisites
 
-`task` CLI must be installed with forensic subcommand (v2.15.0+). Verify:
+`forge` CLI must be installed with forensic subcommand (v2.15.0+). Verify:
 
 ```bash
-task forensic --help
+forge forensic --help
 ```
 
-If missing, build and install: `cd task-cli && go build -o ~/.zcode-task-cli/task ./cmd/task/`
+If missing, build and install: `cd forge-cli && go build -o ~/.zcode-forge-cli/task ./cmd/task/`
 
 ## Architecture
 
@@ -67,13 +67,13 @@ After completing each workflow step, report its elapsed time in the format `[Ste
 Search `~/.claude/history.jsonl` to find relevant sessions.
 
 ```bash
-task forensic search "coding-harness/forge" --keyword "<KEYWORD>" --last <N>
+forge forensic search "coding-harness/forge" --keyword "<KEYWORD>" --last <N>
 ```
 
 Or search by skill name:
 
 ```bash
-task forensic search "coding-harness/forge" --skill "<SKILL>" --last <N>
+forge forensic search "coding-harness/forge" --skill "<SKILL>" --last <N>
 ```
 
 From the results, identify sessions of interest. Read the `firstMsg` and `dateTime` to select relevant sessions.
@@ -90,20 +90,20 @@ For each confirmed session, extract compact evidence:
 
 mkdir -p docs/forensics/<slug>/evidence
 
-task forensic extract ~/.claude/projects/-Users-fanhuifeng-Projects-ai-coding-harness-forge/<SESSION_ID>.jsonl --out docs/forensics/<slug>/evidence
-# Or use --slug shorthand: task forensic extract <path>.jsonl --slug <slug>
+forge forensic extract ~/.claude/projects/-Users-fanhuifeng-Projects-ai-coding-harness-forge/<SESSION_ID>.jsonl --out docs/forensics/<slug>/evidence
+# Or use --slug shorthand: forge forensic extract <path>.jsonl --slug <slug>
 ```
 
 Then check for subagent transcripts:
 
 ```bash
-task forensic subagents ~/.claude/projects/-Users-fanhuifeng-Projects-ai-coding-harness-forge/<SESSION_ID>
+forge forensic subagents ~/.claude/projects/-Users-fanhuifeng-Projects-ai-coding-harness-forge/<SESSION_ID>
 ```
 
 If subagents exist, extract their evidence too:
 
 ```bash
-task forensic extract <subagent-transcript-path> --out docs/forensics/<slug>/evidence
+forge forensic extract <subagent-transcript-path> --out docs/forensics/<slug>/evidence
 ```
 
 <HARD-RULE>
@@ -188,7 +188,7 @@ Present the report to the user. Do NOT commit automatically — forensic reports
 
 ## Common Mistakes
 
-- **Don't read raw JSONL files** — Always use `task forensic extract` to compress the data. Raw JSONL is too large for analysis.
+- **Don't read raw JSONL files** — Always use `forge forensic extract` to compress the data. Raw JSONL is too large for analysis.
 - **Don't analyze a single data point** — Cross-reference thinking blocks with the corresponding tool calls to understand the full decision chain.
 - **Don't skip the skill definition** — You cannot identify deviations without knowing what the expected behavior was.
 - **Don't confuse symptom with root cause** — "Agent recorded failed task as completed" is a symptom. "CLI validation accepts completed+testsFailed>0" is the root cause.

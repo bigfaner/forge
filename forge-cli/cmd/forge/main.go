@@ -1,4 +1,4 @@
-// Package main is the entry point for the task CLI.
+// Package main is the entry point for the forge CLI.
 package main
 
 // runFn is the function called by main. Overridden in tests.

@@ -56,9 +56,9 @@ var profileGetCmd = &cobra.Command{
 Used by skills to retrieve profile data from embedded storage.
 
 Examples:
-  task profile get go-test --manifest
-  task profile get go-test --generate
-  task profile get web-playwright --template helpers.ts`,
+  forge profile get go-test --manifest
+  forge profile get go-test --generate
+  forge profile get web-playwright --template helpers.ts`,
 	Args: cobra.ExactArgs(1),
 	Run:  runProfileGet,
 }
@@ -92,7 +92,7 @@ func runProfileResolve(_ *cobra.Command, _ []string) {
 	// 1. Try config
 	configured, err := profile.ReadTestProfiles(projectRoot)
 	if err != nil {
-		Exit(NewAIError(ErrValidation, "Failed to read config", err.Error(), "Check .forge/config.yaml format", "task profile detect"))
+		Exit(NewAIError(ErrValidation, "Failed to read config", err.Error(), "Check .forge/config.yaml format", "forge profile detect"))
 	}
 	if len(configured) > 0 {
 		printProfileResult(profileResult{Profiles: configured, Source: "config"})
@@ -102,7 +102,7 @@ func runProfileResolve(_ *cobra.Command, _ []string) {
 	// 2. Try detection
 	detected, err := profile.DetectProfiles(projectRoot)
 	if err != nil {
-		Exit(NewAIError(ErrValidation, "Detection failed", err.Error(), "Run task profile set <name> manually", "task profile set web-playwright"))
+		Exit(NewAIError(ErrValidation, "Detection failed", err.Error(), "Run forge profile set <name> manually", "forge profile set web-playwright"))
 	}
 	if len(detected) > 0 {
 		printProfileResult(profileResult{Profiles: detected, Source: "detected"})
@@ -122,7 +122,7 @@ func runProfileSet(_ *cobra.Command, args []string) {
 			fmt.Sprintf("Unknown profile: %s", name),
 			"Profile name is not in the known profiles list",
 			fmt.Sprintf("Choose from: %s", strings.Join(profile.KnownProfiles, ", ")),
-			fmt.Sprintf("task profile set %s", profile.KnownProfiles[0]),
+			fmt.Sprintf("forge profile set %s", profile.KnownProfiles[0]),
 		))
 	}
 
@@ -150,7 +150,7 @@ func runProfileDetect(_ *cobra.Command, _ []string) {
 
 	detected, err := profile.DetectProfiles(projectRoot)
 	if err != nil {
-		Exit(NewAIError(ErrValidation, "Detection failed", err.Error(), "Run task profile set <name> manually", "task profile set web-playwright"))
+		Exit(NewAIError(ErrValidation, "Detection failed", err.Error(), "Run forge profile set <name> manually", "forge profile set web-playwright"))
 	}
 
 	printProfileResult(profileResult{Profiles: detected, Source: "detected"})
@@ -166,7 +166,7 @@ func printProfileResult(r profileResult) {
 	PrintBlockStart()
 	if len(r.Profiles) == 0 {
 		PrintField("PROFILE", "(none)")
-		fmt.Fprintln(os.Stderr, "HINT: No profile detected. Ask user to choose and run: task profile set <name>")
+		fmt.Fprintln(os.Stderr, "HINT: No profile detected. Ask user to choose and run: forge profile set <name>")
 	} else {
 		for _, p := range r.Profiles {
 			PrintField("PROFILE", p)
@@ -205,11 +205,11 @@ func runProfileGet(_ *cobra.Command, args []string) {
 		data, err = profile.GetTemplate(name, profileGetTemplate)
 		label = "template:" + profileGetTemplate
 	default:
-		Exit(NewAIError(ErrInvalidInput, "No flag specified", "Choose one: --manifest, --generate, --run, --graduate, --justfile, --template <file>", "task profile get go-test --generate", ""))
+		Exit(NewAIError(ErrInvalidInput, "No flag specified", "Choose one: --manifest, --generate, --run, --graduate, --justfile, --template <file>", "forge profile get go-test --generate", ""))
 	}
 
 	if err != nil {
-		Exit(NewAIError(ErrInvalidInput, "Failed to get profile data", err.Error(), fmt.Sprintf("Check that %q is a valid profile name", name), "task profile detect"))
+		Exit(NewAIError(ErrInvalidInput, "Failed to get profile data", err.Error(), fmt.Sprintf("Check that %q is a valid profile name", name), "forge profile detect"))
 	}
 
 	fmt.Print(string(data))

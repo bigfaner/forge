@@ -115,6 +115,6 @@ func runIndex(_ *cobra.Command, _ []string) {
 	if err := v.run(); err != nil {
 		// Validation errors are printed by v.run(), don't Exit here
 		// The index was built successfully, validation is advisory
-		fmt.Fprintf(os.Stderr, "NOTE: fix validation errors above and re-run 'task index --feature %s'\n", indexFeatureSlug)
+		fmt.Fprintf(os.Stderr, "NOTE: fix validation errors above and re-run 'forge task index --feature %s'\n", indexFeatureSlug)
 	}
 }
