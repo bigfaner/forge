@@ -1,0 +1,234 @@
+{
+  "feature": "typed-verification-strategies",
+  "prd": "prd/prd-spec.md",
+  "design": "design/tech-design.md",
+  "proposal": "docs/proposals/typed-verification-strategies/proposal.md",
+  "created": "2026-05-14",
+  "tasks": {
+    "1-summary": {
+      "id": "1.summary",
+      "title": "Phase 1 Summary",
+      "priority": "P0",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "1.x"
+      ],
+      "status": "pending",
+      "file": "1-summary.md",
+      "record": "records/1-summary.md",
+      "type": "doc-generation.summary"
+    },
+    "1.1-go-test-strategy": {
+      "id": "1.1",
+      "title": "Create go-test profile verification-strategies.md",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "status": "pending",
+      "file": "1.1-go-test-strategy.md",
+      "record": "records/1.1-go-test-strategy.md",
+      "scope": "all",
+      "type": "implementation"
+    },
+    "1.2-enhance-gen-test-cases": {
+      "id": "1.2",
+      "title": "Enhance gen-test-cases SKILL.md for typed verification",
+      "priority": "P0",
+      "estimatedTime": "4h",
+      "dependencies": [
+        "1.1"
+      ],
+      "status": "pending",
+      "file": "1.2-enhance-gen-test-cases.md",
+      "record": "records/1.2-enhance-gen-test-cases.md",
+      "scope": "all",
+      "type": "implementation"
+    },
+    "2-summary": {
+      "id": "2.summary",
+      "title": "Phase 2 Summary",
+      "priority": "P0",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "2.x"
+      ],
+      "status": "pending",
+      "file": "2-summary.md",
+      "record": "records/2-summary.md",
+      "type": "doc-generation.summary"
+    },
+    "2.1-enhance-gen-test-scripts": {
+      "id": "2.1",
+      "title": "Enhance gen-test-scripts SKILL.md for Level-based code generation",
+      "priority": "P0",
+      "estimatedTime": "3h",
+      "dependencies": [
+        "1.summary"
+      ],
+      "status": "pending",
+      "file": "2.1-enhance-gen-test-scripts.md",
+      "record": "records/2.1-enhance-gen-test-scripts.md",
+      "scope": "all",
+      "type": "implementation"
+    },
+    "2.2-update-eval-test-cases-rubric": {
+      "id": "2.2",
+      "title": "Update eval-test-cases rubric with Typed Verification Completeness dimension",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1.summary"
+      ],
+      "status": "pending",
+      "file": "2.2-update-eval-test-cases-rubric.md",
+      "record": "records/2.2-update-eval-test-cases-rubric.md",
+      "scope": "all",
+      "type": "implementation"
+    },
+    "3-summary": {
+      "id": "3.summary",
+      "title": "Phase 3 Summary",
+      "priority": "P0",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "3.x"
+      ],
+      "status": "pending",
+      "file": "3-summary.md",
+      "record": "records/3-summary.md",
+      "type": "doc-generation.summary"
+    },
+    "3.1-remaining-profile-strategies": {
+      "id": "3.1",
+      "title": "Create remaining 5 profile verification-strategies.md files",
+      "priority": "P2",
+      "estimatedTime": "3h",
+      "dependencies": [
+        "1.summary",
+        "2.summary"
+      ],
+      "status": "pending",
+      "file": "3.1-remaining-profile-strategies.md",
+      "record": "records/3.1-remaining-profile-strategies.md",
+      "scope": "all",
+      "type": "implementation"
+    },
+    "consolidate-specs": {
+      "id": "T-test-5",
+      "title": "Consolidate Specs",
+      "priority": "P2",
+      "estimatedTime": "20min",
+      "dependencies": [
+        "T-test-4.5"
+      ],
+      "status": "pending",
+      "file": "consolidate-specs.md",
+      "record": "records/consolidate-specs.md",
+      "scope": "all",
+      "noTest": true,
+      "type": "doc-generation.consolidate"
+    },
+    "eval-test-cases": {
+      "id": "T-test-1b",
+      "title": "Evaluate e2e Test Cases",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "T-test-1"
+      ],
+      "status": "pending",
+      "file": "eval-test-cases.md",
+      "record": "records/eval-test-cases.md",
+      "scope": "all",
+      "mainSession": true,
+      "noTest": true,
+      "type": "test-pipeline.eval-cases"
+    },
+    "gen-test-cases": {
+      "id": "T-test-1",
+      "title": "Generate e2e Test Cases",
+      "priority": "P1",
+      "estimatedTime": "1-2h",
+      "dependencies": [
+        "3.summary"
+      ],
+      "status": "pending",
+      "file": "gen-test-cases.md",
+      "record": "records/gen-test-cases.md",
+      "scope": "all",
+      "noTest": true,
+      "type": "test-pipeline.gen-cases"
+    },
+    "gen-test-scripts-go-test": {
+      "id": "T-test-2",
+      "title": "Generate Test Scripts (go-test)",
+      "priority": "P1",
+      "estimatedTime": "1-2h",
+      "dependencies": [
+        "T-test-1b"
+      ],
+      "status": "pending",
+      "file": "gen-test-scripts-go-test.md",
+      "record": "records/gen-test-scripts-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.gen-scripts",
+      "profile": "go-test"
+    },
+    "graduate-tests-go-test": {
+      "id": "T-test-4",
+      "title": "Graduate Test Scripts (go-test)",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "T-test-3"
+      ],
+      "status": "pending",
+      "file": "graduate-tests-go-test.md",
+      "record": "records/graduate-tests-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.graduate",
+      "profile": "go-test"
+    },
+    "run-e2e-tests-go-test": {
+      "id": "T-test-3",
+      "title": "Run e2e Tests (go-test)",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "T-test-2"
+      ],
+      "status": "pending",
+      "file": "run-e2e-tests-go-test.md",
+      "record": "records/run-e2e-tests-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.run",
+      "profile": "go-test"
+    },
+    "verify-regression": {
+      "id": "T-test-4.5",
+      "title": "Verify Full E2E Regression",
+      "priority": "P1",
+      "estimatedTime": "15-30min",
+      "dependencies": [
+        "T-test-4"
+      ],
+      "status": "pending",
+      "file": "verify-regression.md",
+      "record": "records/verify-regression.md",
+      "scope": "all",
+      "type": "test-pipeline.verify-regression"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

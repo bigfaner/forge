@@ -1,0 +1,20 @@
+[
+  {
+    "phase": 1,
+    "name": "Foundation",
+    "source": "fallback",
+    "gates": []
+  },
+  {
+    "phase": 2,
+    "name": "Downstream Consumers",
+    "source": "fallback",
+    "gates": []
+  },
+  {
+    "phase": 3,
+    "name": "Profile Coverage",
+    "source": "fallback",
+    "gates": []
+  }
+]
