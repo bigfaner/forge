@@ -424,7 +424,7 @@
       "dependencies": [
         "T-test-4"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "verify-regression.md",
       "record": "records/verify-regression.md",
       "scope": "all",
