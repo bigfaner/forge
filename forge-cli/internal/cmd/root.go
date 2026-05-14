@@ -30,7 +30,7 @@ func init() {
 	rootCmd.AddCommand(profileCmd)
 	rootCmd.AddCommand(promptCmd)
 
-	// Top-level commands (6)
+	// Top-level commands
 	rootCmd.AddCommand(cleanupCmd)
 	rootCmd.AddCommand(probeCmd)
 	rootCmd.AddCommand(qualityGateCmd)
@@ -40,6 +40,7 @@ func init() {
 	rootCmd.AddCommand(configCmd)
 	rootCmd.AddCommand(proposalCmd)
 	rootCmd.AddCommand(lessonCmd)
+	rootCmd.AddCommand(initCmd)
 
 	// Version is hidden from --help but accessible via `forge version`
 	versionCmd.Hidden = true
