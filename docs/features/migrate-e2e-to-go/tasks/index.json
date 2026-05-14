@@ -78,7 +78,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "6-convert-justfile-integration-a.md",
       "record": "records/6-convert-justfile-integration-a.md",
       "scope": "all",
@@ -92,7 +92,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "7-convert-justfile-integration-b.md",
       "record": "records/7-convert-justfile-integration-b.md",
       "scope": "all",
