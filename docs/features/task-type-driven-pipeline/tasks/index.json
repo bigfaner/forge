@@ -1,0 +1,74 @@
+{
+  "feature": "task-type-driven-pipeline",
+  "proposal": "docs/proposals/task-type-driven-pipeline/proposal.md",
+  "created": "2026-05-14",
+  "tasks": {
+    "1-type-foundation": {
+      "id": "1",
+      "title": "Add documentation/doc-evaluation type constants and remove InferType fallback",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "1-type-foundation.md",
+      "record": "records/1-type-foundation.md",
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "2-docs-only-pipeline": {
+      "id": "2",
+      "title": "Implement docs-only detection and conditional pipeline in BuildIndex",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-docs-only-pipeline.md",
+      "record": "records/2-docs-only-pipeline.md",
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "3-prompt-templates": {
+      "id": "3",
+      "title": "Create documentation and doc-evaluation prompt templates",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "3-prompt-templates.md",
+      "record": "records/3-prompt-templates.md",
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "4-cleanup-no-test": {
+      "id": "4",
+      "title": "Remove --no-test flag and update skill documentation",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "2"
+      ],
+      "status": "pending",
+      "file": "4-cleanup-no-test.md",
+      "record": "records/4-cleanup-no-test.md",
+      "breaking": true,
+      "scope": "all",
+      "type": "implementation"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

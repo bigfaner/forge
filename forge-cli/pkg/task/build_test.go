@@ -498,8 +498,8 @@ func TestBuildIndex_TypeInference(t *testing.T) {
 	if idx.Tasks["1-gate"].Type != "gate" {
 		t.Errorf("explicit type = %q, want gate", idx.Tasks["1-gate"].Type)
 	}
-	if idx.Tasks["2-bar"].Type != "implementation" {
-		t.Errorf("inferred type = %q, want implementation", idx.Tasks["2-bar"].Type)
+	if idx.Tasks["2-bar"].Type != "" {
+		t.Errorf("inferred type = %q, want empty (no fallback)", idx.Tasks["2-bar"].Type)
 	}
 }
 

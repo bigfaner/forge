@@ -109,9 +109,9 @@ func TestRunMigrate_Idempotent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// InferType("1.1") → TypeImplementation, overwriting the pre-existing TypeGate
-	if index.TasksMap()["t1"].Type != task.TypeImplementation {
-		t.Errorf("type = %q, want %q", index.TasksMap()["t1"].Type, task.TypeImplementation)
+	// InferType("1.1") → "" (no fallback), overwriting the pre-existing TypeGate
+	if index.TasksMap()["t1"].Type != "" {
+		t.Errorf("type = %q, want %q", index.TasksMap()["t1"].Type, "")
 	}
 }
 
@@ -159,8 +159,8 @@ func TestRunMigrate_AllKnownIDPatterns(t *testing.T) {
 		id       string
 		wantType string
 	}{
-		{"1.1", task.TypeImplementation},
-		{"2.3", task.TypeImplementation},
+		{"1.1", ""},
+		{"2.3", ""},
 		{"1.gate", task.TypeGate},
 		{"2.gate", task.TypeGate},
 		{"1.summary", task.TypeDocGenerationSummary},

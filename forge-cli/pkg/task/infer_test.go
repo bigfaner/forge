@@ -52,11 +52,14 @@ func TestInferType(t *testing.T) {
 		{"fix-2", TypeFix},
 		{"disc-1", TypeFix},
 
-		// Default: implementation
-		{"1.1", TypeImplementation},
-		{"2.3", TypeImplementation},
-		{"", TypeImplementation},
-		{"random-task", TypeImplementation},
+		// Doc evaluation task
+		{"T-eval-doc", TypeDocEvaluation},
+
+		// Unknown IDs return empty string (no TypeImplementation fallback)
+		{"1.1", ""},
+		{"2.3", ""},
+		{"", ""},
+		{"random-task", ""},
 	}
 
 	for _, tt := range tests {

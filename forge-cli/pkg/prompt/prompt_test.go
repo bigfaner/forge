@@ -469,11 +469,11 @@ func TestInferType(t *testing.T) {
 		{"fix-auth-bug", task.TypeFix},
 		{"disc-1", task.TypeFix},
 		{"disc-2", task.TypeFix},
-		// Default: implementation
-		{"1.1", task.TypeImplementation},
-		{"2.3", task.TypeImplementation},
-		{"3.1-some-task", task.TypeImplementation},
-		{"1.1-task-type-fields", task.TypeImplementation},
+		// Default: empty (no fallback)
+		{"1.1", ""},
+		{"2.3", ""},
+		{"3.1-some-task", ""},
+		{"1.1-task-type-fields", ""},
 	}
 
 	for _, tt := range tests {
