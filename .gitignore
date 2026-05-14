@@ -29,3 +29,7 @@ tests/e2e/results/*/error-context.md
 tests/results/
 .forge/state.json
 docs/features/*/tasks/process/
+
+# Embedded just binaries (only .gitkeep is committed)
+forge-cli/internal/embedded/just/binaries/*
+!forge-cli/internal/embedded/just/binaries/.gitkeep
