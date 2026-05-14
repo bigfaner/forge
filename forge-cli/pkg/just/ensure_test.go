@@ -149,7 +149,7 @@ func TestInstallViaPackageManager_NoManager(t *testing.T) {
 	t.Cleanup(func() { detectPackageManager = orig })
 	detectPackageManager = func() string { return "" }
 
-	result := installViaPackageManager("1.40.0")
+	result := InstallViaPackageManagerFunc("1.40.0")
 	assert.Equal(t, StatusFailed, result.Status)
 	assert.Contains(t, result.Detail, "no supported package manager")
 }
@@ -159,7 +159,7 @@ func TestInstallViaPackageManager_UnknownManager(t *testing.T) {
 	t.Cleanup(func() { detectPackageManager = orig })
 	detectPackageManager = func() string { return "unknown-pm" }
 
-	result := installViaPackageManager("1.40.0")
+	result := InstallViaPackageManagerFunc("1.40.0")
 	assert.Equal(t, StatusFailed, result.Status)
 	assert.Contains(t, result.Detail, "unknown package manager")
 }
@@ -169,7 +169,7 @@ func TestInstallViaPackageManager_CommandFails(t *testing.T) {
 	t.Cleanup(func() { detectPackageManager = orig })
 	detectPackageManager = func() string { return "brew" }
 
-	result := installViaPackageManager("1.40.0")
+	result := InstallViaPackageManagerFunc("1.40.0")
 	// brew command will fail in test environment.
 	assert.Equal(t, StatusFailed, result.Status)
 	assert.Contains(t, result.Detail, "brew install failed")
@@ -188,7 +188,7 @@ func TestDetectPackageManagerImpl(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// extractEmbeddedBinary
+// ExtractEmbeddedBinaryFunc
 // ---------------------------------------------------------------------------
 
 func TestExtractEmbeddedBinary(t *testing.T) {
@@ -197,16 +197,16 @@ func TestExtractEmbeddedBinary(t *testing.T) {
 		binaryContent := []byte("fake-just-binary")
 
 		origHome := userHomeDir
-		origEmbedded := embeddedBinaryFunc
+		origEmbedded := EmbeddedBinaryFunc
 		t.Cleanup(func() {
 			userHomeDir = origHome
-			embeddedBinaryFunc = origEmbedded
+			EmbeddedBinaryFunc = origEmbedded
 		})
 
 		userHomeDir = func() (string, error) { return homeDir, nil }
-		embeddedBinaryFunc = func() []byte { return binaryContent }
+		EmbeddedBinaryFunc = func() []byte { return binaryContent }
 
-		result := extractEmbeddedBinary()
+		result := ExtractEmbeddedBinaryFunc()
 		assert.Equal(t, StatusInstalled, result.Status)
 		assert.Equal(t, "embedded", result.Method)
 
@@ -225,32 +225,32 @@ func TestExtractEmbeddedBinary(t *testing.T) {
 	t.Run("fails when embedded binary is nil", func(t *testing.T) {
 		homeDir := t.TempDir()
 		origHome := userHomeDir
-		origEmbedded := embeddedBinaryFunc
+		origEmbedded := EmbeddedBinaryFunc
 		t.Cleanup(func() {
 			userHomeDir = origHome
-			embeddedBinaryFunc = origEmbedded
+			EmbeddedBinaryFunc = origEmbedded
 		})
 
 		userHomeDir = func() (string, error) { return homeDir, nil }
-		embeddedBinaryFunc = func() []byte { return nil }
+		EmbeddedBinaryFunc = func() []byte { return nil }
 
-		result := extractEmbeddedBinary()
+		result := ExtractEmbeddedBinaryFunc()
 		assert.Equal(t, StatusFailed, result.Status)
 	})
 
 	t.Run("fails when embedded binary is empty", func(t *testing.T) {
 		homeDir := t.TempDir()
 		origHome := userHomeDir
-		origEmbedded := embeddedBinaryFunc
+		origEmbedded := EmbeddedBinaryFunc
 		t.Cleanup(func() {
 			userHomeDir = origHome
-			embeddedBinaryFunc = origEmbedded
+			EmbeddedBinaryFunc = origEmbedded
 		})
 
 		userHomeDir = func() (string, error) { return homeDir, nil }
-		embeddedBinaryFunc = func() []byte { return []byte{} }
+		EmbeddedBinaryFunc = func() []byte { return []byte{} }
 
-		result := extractEmbeddedBinary()
+		result := ExtractEmbeddedBinaryFunc()
 		assert.Equal(t, StatusFailed, result.Status)
 	})
 
@@ -260,7 +260,7 @@ func TestExtractEmbeddedBinary(t *testing.T) {
 
 		userHomeDir = func() (string, error) { return "", errors.New("no home") }
 
-		result := extractEmbeddedBinary()
+		result := ExtractEmbeddedBinaryFunc()
 		assert.Equal(t, StatusFailed, result.Status)
 		assert.Contains(t, result.Detail, "cannot determine home directory")
 	})
@@ -273,16 +273,16 @@ func TestExtractEmbeddedBinary(t *testing.T) {
 // setupEnsureJustMocks configures mock functions for EnsureJust tests.
 // Returns a cleanup function that restores the original values.
 func setupEnsureJustMocks(detect func() (string, string, bool), isTerm bool) func() {
-	origDetect := detectJustFunc
+	origDetect := DetectJustFunc
 	origIsTerm := isTerminalFunc
-	detectJustFunc = detect
+	DetectJustFunc = detect
 	if isTerm {
 		isTerminalFunc = func(io.Reader) bool { return true }
 	} else {
 		isTerminalFunc = isTerminalImpl
 	}
 	return func() {
-		detectJustFunc = origDetect
+		DetectJustFunc = origDetect
 		isTerminalFunc = origIsTerm
 	}
 }
@@ -360,13 +360,13 @@ func TestEnsureJust_UserAccepts_PkgManagerSuccess(t *testing.T) {
 	// Mock embedded binary for the fallback.
 	homeDir := t.TempDir()
 	origHome := userHomeDir
-	origEmbedded := embeddedBinaryFunc
+	origEmbedded := EmbeddedBinaryFunc
 	defer func() {
 		userHomeDir = origHome
-		embeddedBinaryFunc = origEmbedded
+		EmbeddedBinaryFunc = origEmbedded
 	}()
 	userHomeDir = func() (string, error) { return homeDir, nil }
-	embeddedBinaryFunc = func() []byte { return []byte("fake-just") }
+	EmbeddedBinaryFunc = func() []byte { return []byte("fake-just") }
 
 	var buf bytes.Buffer
 	result := EnsureJust(strings.NewReader("y\n"), &buf)
@@ -384,9 +384,9 @@ func TestEnsureJust_UserAccepts_AllFail(t *testing.T) {
 	defer func() { detectPackageManager = origPM }()
 	detectPackageManager = func() string { return "" } // no PM
 
-	origEmbedded := embeddedBinaryFunc
-	defer func() { embeddedBinaryFunc = origEmbedded }()
-	embeddedBinaryFunc = func() []byte { return nil } // no embedded binary
+	origEmbedded := EmbeddedBinaryFunc
+	defer func() { EmbeddedBinaryFunc = origEmbedded }()
+	EmbeddedBinaryFunc = func() []byte { return nil } // no embedded binary
 
 	var buf bytes.Buffer
 	result := EnsureJust(strings.NewReader("y\n"), &buf)
@@ -408,14 +408,14 @@ func TestEnsureJust_OutdatedUserAcceptsUpgrade(t *testing.T) {
 	defer func() { detectPackageManager = origPM }()
 	detectPackageManager = func() string { return "" } // no PM
 
-	origEmbedded := embeddedBinaryFunc
-	defer func() { embeddedBinaryFunc = origEmbedded }()
+	origEmbedded := EmbeddedBinaryFunc
+	defer func() { EmbeddedBinaryFunc = origEmbedded }()
 
 	homeDir := t.TempDir()
 	origHome := userHomeDir
 	defer func() { userHomeDir = origHome }()
 	userHomeDir = func() (string, error) { return homeDir, nil }
-	embeddedBinaryFunc = func() []byte { return []byte("fake-just") }
+	EmbeddedBinaryFunc = func() []byte { return []byte("fake-just") }
 
 	var buf bytes.Buffer
 	result := EnsureJust(strings.NewReader("y\n"), &buf)
@@ -465,14 +465,14 @@ func TestEnsureJust_FoundButNoVersion_Terminal(t *testing.T) {
 	defer func() { detectPackageManager = origPM }()
 	detectPackageManager = func() string { return "" } // no PM
 
-	origEmbedded := embeddedBinaryFunc
-	defer func() { embeddedBinaryFunc = origEmbedded }()
+	origEmbedded := EmbeddedBinaryFunc
+	defer func() { EmbeddedBinaryFunc = origEmbedded }()
 
 	homeDir := t.TempDir()
 	origHome := userHomeDir
 	defer func() { userHomeDir = origHome }()
 	userHomeDir = func() (string, error) { return homeDir, nil }
-	embeddedBinaryFunc = func() []byte { return []byte("fake-just") }
+	EmbeddedBinaryFunc = func() []byte { return []byte("fake-just") }
 
 	var buf bytes.Buffer
 	result := EnsureJust(strings.NewReader("y\n"), &buf)

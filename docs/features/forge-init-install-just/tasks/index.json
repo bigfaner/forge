@@ -36,7 +36,7 @@
       "dependencies": [
         "2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3-wire-into-init.md",
       "record": "records/3-wire-into-init.md",
       "scope": "backend",

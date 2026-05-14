@@ -179,9 +179,13 @@ var packageManagerCommands = map[string][]string{
 	"choco": {"choco", "install", "just", "-y"},
 }
 
-// installViaPackageManager attempts to install just via the detected package
+// InstallViaPackageManagerFunc is the function that attempts to install just
+// via the detected package manager. Variable for testability.
+var InstallViaPackageManagerFunc = installViaPackageManagerImpl
+
+// installViaPackageManagerImpl attempts to install just via the detected package
 // manager. Returns an EnsureResult indicating success or failure.
-func installViaPackageManager(_ string) EnsureResult {
+func installViaPackageManagerImpl(_ string) EnsureResult {
 	pm := detectPackageManager()
 	if pm == "" {
 		return EnsureResult{
@@ -230,17 +234,21 @@ func installViaPackageManager(_ string) EnsureResult {
 // Embedded Binary Extraction
 // ---------------------------------------------------------------------------
 
-// embeddedBinaryFunc is the function that returns the embedded just binary.
+// EmbeddedBinaryFunc is the function that returns the embedded just binary.
 // Variable for testability.
-var embeddedBinaryFunc = embedded.Binary
+var EmbeddedBinaryFunc = embedded.Binary
 
 // userHomeDir is the function that returns the user's home directory.
 // Variable for testability.
 var userHomeDir = os.UserHomeDir
 
-// extractEmbeddedBinary extracts the embedded just binary to ~/.forge/bin/.
+// ExtractEmbeddedBinaryFunc is the function that extracts the embedded just binary.
+// Variable for testability.
+var ExtractEmbeddedBinaryFunc = extractEmbeddedBinaryImpl
+
+// extractEmbeddedBinaryImpl extracts the embedded just binary to ~/.forge/bin/.
 // Returns an EnsureResult with the extraction outcome.
-func extractEmbeddedBinary() EnsureResult {
+func extractEmbeddedBinaryImpl() EnsureResult {
 	homeDir, err := userHomeDir()
 	if err != nil {
 		return EnsureResult{
@@ -249,7 +257,7 @@ func extractEmbeddedBinary() EnsureResult {
 		}
 	}
 
-	binData := embeddedBinaryFunc()
+	binData := EmbeddedBinaryFunc()
 	if len(binData) == 0 {
 		return EnsureResult{
 			Status: StatusFailed,
@@ -290,9 +298,9 @@ func extractEmbeddedBinary() EnsureResult {
 // EnsureJust — Main Orchestrator
 // ---------------------------------------------------------------------------
 
-// detectJustFunc is the detection function used by EnsureJust.
+// DetectJustFunc is the detection function used by EnsureJust.
 // Variable for testability.
-var detectJustFunc = DetectJust
+var DetectJustFunc = DetectJust
 
 // isTerminalFunc checks whether the given reader is connected to a terminal.
 // Hard rule: user confirmation MUST check that stdin is a terminal.
@@ -323,7 +331,7 @@ func writeStr(w io.Writer, s string) {
 // out: stdout for status messages.
 func EnsureJust(in io.Reader, out io.Writer) EnsureResult {
 	// Step 1: Detect
-	path, version, found := detectJustFunc()
+	path, version, found := DetectJustFunc()
 
 	if found && version != "" {
 		if IsMinimumVersion(version, minimumVersion) {
@@ -387,7 +395,7 @@ func EnsureJust(in io.Reader, out io.Writer) EnsureResult {
 	}
 
 	// Step 3: Try package manager first.
-	result := installViaPackageManager(minimumVersion)
+	result := InstallViaPackageManagerFunc(minimumVersion)
 	if result.Status == StatusInstalled {
 		writeStr(out, fmt.Sprintf("just installed successfully via %s\n", result.Method))
 		return result
@@ -395,7 +403,7 @@ func EnsureJust(in io.Reader, out io.Writer) EnsureResult {
 
 	// Step 4: Fallback to embedded binary.
 	writeStr(out, fmt.Sprintf("Package manager installation failed (%s). Trying embedded binary...\n", result.Detail))
-	result = extractEmbeddedBinary()
+	result = ExtractEmbeddedBinaryFunc()
 	if result.Status == StatusInstalled {
 		writeStr(out, "just installed via embedded binary.\n")
 		return result
