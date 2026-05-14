@@ -311,7 +311,7 @@ For each task, determine the `scope` field for `index.json`:
 
 3. Write `scope` into the task `.md` frontmatter's `scope` field.
 
-**Non-mixed projects**: when `init-justfile` detects a pure frontend or backend project, all tasks receive `scope: "all"` (scope distinction is irrelevant when `just project-type` does not return `"mixed"`).
+**Non-mixed projects**: when `init-justfile` detects a pure frontend or backend project, all tasks receive `scope: "all"` (scope distinction is irrelevant when `forge config get project-type` does not return `"mixed"`).
 
 **Examples**:
 

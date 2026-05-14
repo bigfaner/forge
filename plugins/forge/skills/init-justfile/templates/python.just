@@ -1,8 +1,5 @@
 # --- forge standard recipes ---
 
-project-type:
-    @echo "backend"
-
 compile:
     python -m py_compile src/
 

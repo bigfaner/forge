@@ -1,8 +1,5 @@
 # --- forge standard recipes ---
 
-project-type:
-    @echo "unknown"
-
 compile:
     @echo "Error: compile recipe not implemented — edit justfile to add build command" >&2 && exit 1
 

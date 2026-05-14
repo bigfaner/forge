@@ -47,7 +47,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-migration-resolve-scope.md",
       "record": "records/4-migration-resolve-scope.md",
       "breaking": true,

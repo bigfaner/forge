@@ -58,16 +58,32 @@ func TestExtractConciseError(t *testing.T) {
 	})
 }
 
+// writeForgeConfig creates a .forge/config.yaml in dir with the given content.
+func writeForgeConfig(t *testing.T, dir, content string) {
+	t.Helper()
+	forgeDir := filepath.Join(dir, ".forge")
+	if err := os.MkdirAll(forgeDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestResolveScope(t *testing.T) {
 	t.Run("empty scope returns empty", func(t *testing.T) {
-		got := ResolveScope("/nonexistent", "")
+		dir := t.TempDir()
+		writeForgeConfig(t, dir, "project-type: mixed\n")
+		got := ResolveScope(dir, "")
 		if got != "" {
 			t.Errorf("expected empty, got %q", got)
 		}
 	})
 
 	t.Run("all scope returns empty", func(t *testing.T) {
-		got := ResolveScope("/nonexistent", "all")
+		dir := t.TempDir()
+		writeForgeConfig(t, dir, "project-type: mixed\n")
+		got := ResolveScope(dir, "all")
 		if got != "" {
 			t.Errorf("expected empty, got %q", got)
 		}
@@ -80,18 +96,26 @@ func TestResolveScope(t *testing.T) {
 		}
 	})
 
-	t.Run("no project-type recipe returns empty", func(t *testing.T) {
+	t.Run("no config file returns empty", func(t *testing.T) {
 		dir := t.TempDir()
-		writeJustfile(t, dir, "compile:\n  echo hi\n")
 		got := ResolveScope(dir, "frontend")
 		if got != "" {
-			t.Errorf("expected empty without project-type recipe, got %q", got)
+			t.Errorf("expected empty without config file, got %q", got)
+		}
+	})
+
+	t.Run("config without project-type returns empty", func(t *testing.T) {
+		dir := t.TempDir()
+		writeForgeConfig(t, dir, "test-profiles:\n  - go-test\n")
+		got := ResolveScope(dir, "frontend")
+		if got != "" {
+			t.Errorf("expected empty without project-type key, got %q", got)
 		}
 	})
 
 	t.Run("mixed project-type returns scope", func(t *testing.T) {
 		dir := t.TempDir()
-		writeJustfile(t, dir, "project-type:\n  @echo mixed\n")
+		writeForgeConfig(t, dir, "project-type: mixed\n")
 		got := ResolveScope(dir, "frontend")
 		if got != "frontend" {
 			t.Errorf("expected frontend, got %q", got)
@@ -100,7 +124,7 @@ func TestResolveScope(t *testing.T) {
 
 	t.Run("backend project-type returns empty", func(t *testing.T) {
 		dir := t.TempDir()
-		writeJustfile(t, dir, "project-type:\n  @echo backend\n")
+		writeForgeConfig(t, dir, "project-type: backend\n")
 		got := ResolveScope(dir, "frontend")
 		if got != "" {
 			t.Errorf("expected empty for backend project, got %q", got)
@@ -109,7 +133,7 @@ func TestResolveScope(t *testing.T) {
 
 	t.Run("frontend project-type returns empty", func(t *testing.T) {
 		dir := t.TempDir()
-		writeJustfile(t, dir, "project-type:\n  @echo frontend\n")
+		writeForgeConfig(t, dir, "project-type: frontend\n")
 		got := ResolveScope(dir, "backend")
 		if got != "" {
 			t.Errorf("expected empty for frontend project, got %q", got)
@@ -118,7 +142,7 @@ func TestResolveScope(t *testing.T) {
 
 	t.Run("unknown project-type returns empty with warning", func(t *testing.T) {
 		dir := t.TempDir()
-		writeJustfile(t, dir, "project-type:\n  @echo unknown\n")
+		writeForgeConfig(t, dir, "project-type: unknown\n")
 		got := ResolveScope(dir, "frontend")
 		if got != "" {
 			t.Errorf("expected empty for unknown project type, got %q", got)
@@ -346,7 +370,8 @@ func TestRunGate(t *testing.T) {
 
 	t.Run("scope passed for mixed project", func(t *testing.T) {
 		dir := t.TempDir()
-		writeJustfile(t, dir, "project-type:\n  @echo mixed\ncompile frontend:\n  echo ok\n")
+		writeForgeConfig(t, dir, "project-type: mixed\n")
+		writeJustfile(t, dir, "compile frontend:\n  echo ok\n")
 		steps := []GateRecipe{
 			{Name: "compile", Optional: false, Blocking: true},
 		}

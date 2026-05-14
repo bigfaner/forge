@@ -41,7 +41,7 @@ If version < 1.50.0: `cargo install just`
 
 | Target | Required | Purpose |
 |--------|----------|---------|
-| `project-type` | Yes | Return project type identifier (`frontend`/`backend`/`mixed`) |
+| `project-type` | Yes | ~~Removed~~ — project type now stored in `.forge/config.yaml` via `forge config get project-type` |
 | `compile` | No | Type-check and transpile for fast feedback |
 | `build` | No | Full compile and package |
 | `run` | No | Start the service |
@@ -265,7 +265,7 @@ Execute each recipe for real to catch runtime errors. Recipes are classified by 
 
 | Category | Recipes | Method |
 |----------|---------|--------|
-| **Safe** (fast, no side effects) | `project-type`, `compile`, `lint`, `check` | Execute directly |
+| **Safe** (fast, no side effects) | `compile`, `lint`, `check` | Execute directly |
 | **Destructive** (modifies files or creates artifacts) | `build`, `fmt`, `clean` | Execute directly (artifacts can be cleaned; fmt changes are welcome) |
 | **Idempotent** (installs dependencies) | `install`, `e2e-setup` | Execute directly |
 | **Long-running** (starts servers) | `run`, `dev` | Execute with timeout (10s), kill after timeout — success = process still alive at timeout |
@@ -299,7 +299,7 @@ After all recipes have been verified (or corrected):
 
 ```
 Verification results:
-  ✓ project-type    → "mixed" (executed)
+  ✓ project-type    → "mixed" (from .forge/config.yaml)
   ✓ compile         → go vet ./... + npx tsc --noEmit (executed)
   ✓ build           → go build ./... + npm run build (executed)
   ✓ test            → go test ./... + npm test (dry-run only)
@@ -317,7 +317,7 @@ Verification results:
 Created justfile with standard forge targets (Go project)
 
 Targets:
-  just project-type               → echo "backend"
+  forge config get project-type   → "backend" (from .forge/config.yaml)
   just compile                    → go vet ./...
   just test                       → go test ./...
   just test-e2e --feature <slug>  → feature tests in tests/e2e/features/<slug>/
@@ -332,9 +332,9 @@ forge quality-gate will now use `just test` automatically.
 - **just >= 1.50.0**: `[arg("feature", long)]` generates `--feature <value>` named option syntax; callers (CI, `forge quality-gate`) must pass the slug: `just test-e2e --feature <slug>`
 - Makefile migration: preserve original command logic, adjust only format
 - **e2e tests are profile-aware**: The `test-e2e`, `e2e-setup`, and `e2e-verify` recipes are generated from the active test profile's `justfile-recipes` file (retrieved via `forge profile get <profile-name> --justfile`). Each profile defines its own execution commands. For `web-playwright`, this still uses `npx playwright test` and requires Node.js.
-- **Targets invoked by forge skills**: `project-type`, `compile`, `build`, `test`, `test-e2e`, `install`, `e2e-setup`, `e2e-verify`. The remaining targets (`run`, `dev`, `lint`, `fmt`, `check`, `clean`, `ci`) are for manual use and are not called by any skill.
+- **Targets invoked by forge skills**: `compile`, `build`, `test`, `test-e2e`, `install`, `e2e-setup`, `e2e-verify`. The remaining targets (`run`, `dev`, `lint`, `fmt`, `check`, `clean`, `ci`) are for manual use and are not called by any skill. (`project-type` was removed — project type is now read from `.forge/config.yaml` via `forge config get project-type`.)
 - **Idempotency**: `e2e-setup` and `install` are designed to be idempotent (safe to run multiple times). Other recipes (`build`, `compile`, `test`) are not — they always re-execute.
-- **Mixed project scope**: forge skills resolve scope from `forge task claim` output or `process/state.json` and pass it to `just <verb>` when `just project-type` returns `mixed`. Pass `just compile frontend` or `just compile backend` manually to target a single side outside of a task context.
+- **Mixed project scope**: forge skills resolve scope from `forge task claim` output or `process/state.json` and pass it to `just <verb>` when `forge config get project-type` returns `mixed`. Pass `just compile frontend` or `just compile backend` manually to target a single side outside of a task context.
 
 <EXTREMELY-IMPORTANT>
 - MANUAL-ONLY. Do NOT auto-invoke this skill from other skills or agents. Only invoke when user explicitly runs `/init-justfile`.

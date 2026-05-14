@@ -24,10 +24,6 @@ install-forge:
 
 # --- forge standard recipes ---
 
-# project-type: return project type identifier
-project-type:
-    @echo "backend"
-
 # compile: type-check and transpile for fast feedback
 compile scope="":
     #!/usr/bin/env bash
