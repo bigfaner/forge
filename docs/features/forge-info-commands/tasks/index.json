@@ -78,6 +78,74 @@
       "sourceTaskID": "T-quick-3",
       "type": "fix"
     },
+    "fix-3": {
+      "id": "fix-3",
+      "title": "Fix: login bug",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-3.md",
+      "record": "records/fix-3.md",
+      "breaking": true,
+      "sourceTaskID": "1.1",
+      "type": "fix"
+    },
+    "fix-4": {
+      "id": "fix-4",
+      "title": "fix unit-test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-4.md",
+      "record": "records/fix-4.md",
+      "breaking": true,
+      "type": "fix"
+    },
+    "fix-5": {
+      "id": "fix-5",
+      "title": "Fix: login bug",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-5.md",
+      "record": "records/fix-5.md",
+      "breaking": true,
+      "sourceTaskID": "1.1",
+      "type": "fix"
+    },
+    "fix-6": {
+      "id": "fix-6",
+      "title": "fix unit-test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-6.md",
+      "record": "records/fix-6.md",
+      "breaking": true,
+      "type": "fix"
+    },
+    "fix-7": {
+      "id": "fix-7",
+      "title": "Fix: login bug",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-7.md",
+      "record": "records/fix-7.md",
+      "breaking": true,
+      "sourceTaskID": "1.1",
+      "type": "fix"
+    },
+    "fix-8": {
+      "id": "fix-8",
+      "title": "fix unit-test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "in_progress",
+      "file": "fix-8.md",
+      "record": "records/fix-8.md",
+      "breaking": true
+    },
     "quick-gen-scripts-go-test": {
       "id": "T-quick-2",
       "title": "Generate Quick Test Scripts (go-test)",
@@ -147,7 +215,7 @@
       "dependencies": [
         "T-quick-4"
       ],
-      "status": "blocked",
+      "status": "completed",
       "file": "quick-verify-regression.md",
       "record": "records/quick-verify-regression.md",
       "scope": "all",
