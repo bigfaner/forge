@@ -36,7 +36,7 @@ Exit verification gate for this phase. Confirms that all outputs are complete, i
 
 - [ ] All applicable verification checklist items pass
 - [ ] Any deviations from design are documented as decisions in the record
-- [ ] Record created via `/record-task` with test evidence
+- [ ] Record created via `/submit-task` with test evidence
 
 ## Hard Rules
 

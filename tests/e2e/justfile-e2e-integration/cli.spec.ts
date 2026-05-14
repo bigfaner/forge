@@ -109,23 +109,23 @@ test.describe('Skill/Agent file content checks', () => {
   });
 
   // Traceability: TC-008 → Story 5 / AC-3
-  test('TC-008: record-task Metrics Collection uses just test', () => {
-    const content = readProjectFile('plugins/forge/skills/record-task/SKILL.md');
+  test('TC-008: submit-task Metrics Collection uses just test', () => {
+    const content = readProjectFile('plugins/forge/skills/submit-task/SKILL.md');
     expect(
       fileContains(content, 'just test'),
-      'Expected "just test" to appear in record-task/SKILL.md Metrics Collection section',
+      'Expected "just test" to appear in submit-task/SKILL.md Metrics Collection section',
     ).toBeTruthy();
     expect(
       fileNotContains(content, 'go test -cover ./...'),
-      'Expected "go test -cover ./..." NOT to appear in record-task/SKILL.md',
+      'Expected "go test -cover ./..." NOT to appear in submit-task/SKILL.md',
     ).toBeTruthy();
     expect(
       fileNotContains(content, 'npm test -- --coverage'),
-      'Expected "npm test -- --coverage" NOT to appear in record-task/SKILL.md',
+      'Expected "npm test -- --coverage" NOT to appear in submit-task/SKILL.md',
     ).toBeTruthy();
     expect(
       fileNotContains(content, 'pytest --cov='),
-      'Expected "pytest --cov=" NOT to appear in record-task/SKILL.md',
+      'Expected "pytest --cov=" NOT to appear in submit-task/SKILL.md',
     ).toBeTruthy();
   });
 

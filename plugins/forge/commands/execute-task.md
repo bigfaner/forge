@@ -213,7 +213,7 @@ Output your final summary and STOP.
 ## Rules
 
 <EXTREMELY-IMPORTANT>
-- record-task is mandatory — No completion without it
+- submit-task is mandatory — No completion without it
 - All verifications must pass
 - ONE TASK PER INVOCATION — after Step 3, STOP immediately, no exceptions
 - FORBIDDEN: run "forge task claim", read index.json, or start any subsequent task
@@ -225,4 +225,4 @@ Output your final summary and STOP.
 | Command | Usage |
 |---------|-------|
 | `/run-tasks` | Auto-execute all tasks |
-| `/record-task` | Create record + update status |
+| `/submit-task` | Create record + update status |

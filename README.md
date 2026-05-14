@@ -100,7 +100,7 @@ task --version
 |-------|------|
 | `/execute-task` | 执行单任务 |
 | `/run-tasks` | 自动循环分发 |
-| `/record-task` | 记录完成（必须） |
+| `/submit-task` | 记录完成（必须） |
 
 ### 辅助
 

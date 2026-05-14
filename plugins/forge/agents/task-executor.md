@@ -10,7 +10,7 @@ memory: project
 
 <EXTREMELY-IMPORTANT>
 1. ONE TASK PER INVOCATION — after completing, STOP immediately, no exceptions
-2. record-task IS MANDATORY — task is NOT done without it
+2. submit-task IS MANDATORY — task is NOT done without it
 3. NO BACKGROUND TASKS — all commands run synchronously
 4. Maximum 3 subagent calls per task
 5. FORBIDDEN: run "forge task claim", read index.json, or start any subsequent task
@@ -34,7 +34,7 @@ memory: project
 7. After all strategy steps are done, invoke the skill:
 
    ```
-   Skill(skill="forge:record-task")
+   Skill(skill="forge:submit-task")
    ```
 
 8. Invoke the skill:

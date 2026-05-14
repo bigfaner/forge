@@ -153,4 +153,4 @@ Task CLI manages task lifecycle within feature workflows.
 
 **Typical flow**: Before starting work, run `forge feature` → `forge task claim` to get a task → `forge task submit` to save results + update task status.
 
-> For record workflow details, see the `/record-task` skill. For full command reference, run `forge -h` or `forge [command] -h`.
+> For record workflow details, see the `/submit-task` skill. For full command reference, run `forge -h` or `forge [command] -h`.
