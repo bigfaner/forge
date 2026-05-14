@@ -43,8 +43,8 @@ func writeLatestMd(projectRoot, featureSlug string, stats TestStats) error {
 		buf += "## Next Steps\n\n"
 		buf += "1. Read `testing/results/raw-output.txt`\n"
 		buf += "2. Analyze failures and determine root causes\n"
-		buf += "3. Use `task add --title \"Fix: <description>\" --priority P0 --breaking` for each issue\n"
-		buf += "4. Run `task claim` to pick up fix tasks\n"
+		buf += "3. Use `forge task add --title \"Fix: <description>\" --priority P0 --breaking` for each issue\n"
+		buf += "4. Run `forge task claim` to pick up fix tasks\n"
 	} else {
 		buf = fmt.Sprintf("# Test Results: %s\n\n", featureSlug)
 		buf += fmt.Sprintf("**Date**: %s\n", time.Now().Format("2006-01-02 15:04"))

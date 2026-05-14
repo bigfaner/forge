@@ -200,9 +200,9 @@ func runQualityGate(_ *cobra.Command, _ []string) {
 // handleGateFailure prints the hook JSON block reason and exits.
 // fixID is the ID returned by addFixTask; empty means task creation failed.
 func handleGateFailure(step, errorDocPath, fixID, concise string) {
-	action := "run `task add --template fix-task` to create one manually, then `task claim`"
+	action := "run `forge task add --template fix-task` to create one manually, then `forge task claim`"
 	if fixID != "" {
-		action = "run `task claim` to pick it up"
+		action = "run `forge task claim` to pick it up"
 	}
 
 	guide := map[string]string{
@@ -299,7 +299,7 @@ func countActiveFixTasks(index *task.TaskIndex, step string) int {
 	return count
 }
 
-// addFixTask creates a fix task using the same internal API as `task add`.
+// addFixTask creates a fix task using the same internal API as `forge task add`.
 // Mirrors executeAdd() from add.go: template defaults -> AddTask -> CreateTaskMarkdown -> EnsureForgeState.
 // Returns (taskID, nil) on success, ("", ErrMaxFixTasks) when the fix-task cap is exceeded.
 func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) (string, error) {

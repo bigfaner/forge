@@ -119,7 +119,7 @@ Before each `just <verb>` command, resolve scope from the task's `scope` field:
 
 1. If `scope` is missing, empty, or `"all"` → `just <verb>` (no scope argument).
 2. If `scope` is `"frontend"` or `"backend"`:
-   a. Run `just project-type`, capture stdout (trimmed) and exit code.
+   a. Run `forge config get project-type`, capture stdout (trimmed) and exit code.
    b. If exit code != 0, or output not in `frontend`/`backend`/`mixed` → fallback to `just <verb>`.
    c. If output == `"mixed"` → `just <verb> <scope>`.
    d. If output is `"frontend"` or `"backend"` (not mixed) → fallback to `just <verb>`.

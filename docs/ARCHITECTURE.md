@@ -136,7 +136,7 @@ Step 2: TDD implementation
 Step 3: Quality Gate
         └── compile → fmt → lint → test（严格顺序）
 Step 4: Record task（必须）
-        └── 调用 record-task skill → task record CLI
+        └── 调用 record-task skill → forge task submit CLI
 Step 5: Git commit
         └── 调用 git-commit skill
 ```
@@ -145,7 +145,7 @@ Step 5: Git commit
 - 一次调用只执行一个任务，完成后必须 STOP
 - `record-task` 是强制的——没有 record = 任务未完成
 - commit 必须在 record 之后
-- 禁止：`task claim`、读取下一个任务、后台任务
+- 禁止：`forge forge task claim`、读取下一个任务、后台任务
 - 最多 3 次 subagent 调用
 
 **错误处理**：
@@ -156,7 +156,7 @@ Step 5: Git commit
 | fmt 失败 | 标记 `blocked`（工具链问题） |
 | lint 失败 | 自修复（1 次重试），仍失败则 `blocked` |
 | 测试失败 | 修复后从 compile 重试 |
-| 超范围失败 | `task add` 创建 fix-task，当前任务标记 `blocked` |
+| 超范围失败 | `forge task add` 创建 fix-task，当前任务标记 `blocked` |
 
 **动态任务创建**（fix-task 链）：
 
@@ -169,7 +169,7 @@ source-task (blocked) → fix-task-A (blocked) → fix-task-B
 ```
 
 - 通过 `--source-task-id` 关联
-- `task record` 完成时自动恢复 source task 为 pending
+- `forge task submit` 完成时自动恢复 source task 为 pending
 - 最大嵌套深度 3 层
 - 已完成的 fix-task 会被自动解析到根 blocked task
 
@@ -353,9 +353,9 @@ Hooks 在关键生命周期事件自动触发，确保状态一致性：
 | **SessionStart** | 启动/清除/压缩 | `session-start` hook | 加载 forge 上下文 |
 | **SubagentStart** | subagent 启动 | `session-start` hook | 为 subagent 加载上下文 |
 | **PostToolUse** | Edit/Write 工具调用后 | `validate-index.sh` | 自动验证 index.json 格式 |
-| **SessionEnd** | 会话结束 | `task cleanup` | 清理运行时状态 |
-| **SubagentStop** | subagent 停止 | `task cleanup` | 清理 subagent 状态 |
-| **Stop** | Claude 停止响应时 | `task all-completed` | 全部完成后的最终验证 |
+| **SessionEnd** | 会话结束 | `forge cleanup` | 清理运行时状态 |
+| **SubagentStop** | subagent 停止 | `forge cleanup` | 清理 subagent 状态 |
+| **Stop** | Claude 停止响应时 | `forge quality-gate` | 全部完成后的最终验证 |
 
 ### all-completed Hook
 
@@ -383,7 +383,7 @@ Hooks 在关键生命周期事件自动触发，确保状态一致性：
 ```
 (none) ──→ prd ──→ design ──→ tasks ──→ in-progress ──→ completed
   │          │         │         │           │
-  │      /write-prd    │    /breakdown-  首次 task claim
+  │      /write-prd    │    /breakdown-  首次 forge task claim
   │      完成          │    tasks 完成      (或 /execute-task)
   │                    │
   │              /tech-design +
@@ -397,7 +397,7 @@ Hooks 在关键生命周期事件自动触发，确保状态一致性：
 | `prd` | PRD 就绪 | `/write-prd` |
 | `design` | 设计就绪 | `/tech-design` 或 `/ui-design`（后完成者） |
 | `tasks` | 任务已拆分 | `/breakdown-tasks` |
-| `in-progress` | 执行中 | 首次 `task claim` |
+| `in-progress` | 执行中 | 首次 `forge forge task claim` |
 | `completed` | 全部完成 | all tasks done |
 
 ### Manifest 内容结构
@@ -447,7 +447,7 @@ docs/features/<slug>/
 │   ├── process/            # 运行时状态（不提交）
 │   │   ├── state.json      #   当前任务状态
 │   │   └── record.json     #   进行中的记录
-│   ├── records/            # 执行记录（task record 生成）
+│   ├── records/            # 执行记录（forge task submit 生成）
 │   └── specs/              # 规范提取预览（consolidate-specs）
 └── eval/                   # 评估报告（可选）
 ```
@@ -492,5 +492,5 @@ tests/e2e/
 | `testing/` | `/gen-test-cases` | 是 |
 | `tests/e2e/features/` | `/gen-test-scripts` | 是 |
 | `tests/e2e/` (根级) | `/graduate-tests` | 是 |
-| `records/` | `task record` | 是 |
+| `records/` | `forge task submit` | 是 |
 | `specs/` | `/consolidate-specs` | 是（用户确认后） |

@@ -25,7 +25,7 @@ With status argument: update to new status.
 
 State machine guards:
   - completed and rejected are terminal (cannot leave without --force)
-  - in_progress -> completed is blocked (use "task record" instead)
+  - in_progress -> completed is blocked (use "forge task submit" instead)
   - pending/in_progress transitions require all dependencies to be completed or skipped`,
 	Args: cobra.RangeArgs(1, 2),
 	Run:  runStatus,
@@ -144,7 +144,7 @@ func getTransitionHint(from, to string) string {
 		return "rejected is a terminal state (task ran but acceptance criteria not met)"
 	}
 	if to == "completed" {
-		return "use 'task record' to complete a task with quality gate"
+		return "use 'forge task submit' to complete a task with quality gate"
 	}
 	return fmt.Sprintf("transition %s -> %s is not allowed", from, to)
 }
@@ -154,7 +154,7 @@ func getTransitionAction(from, to string) string {
 		return "use --force to override (may break lifecycle tracking)"
 	}
 	if to == "completed" {
-		return "run 'task record <task-id> --data record.json' or use --force"
+		return "run 'forge task submit <task-id> --data record.json' or use --force"
 	}
 	return "use --force to override"
 }

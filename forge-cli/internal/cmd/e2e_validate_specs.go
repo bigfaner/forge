@@ -77,7 +77,7 @@ func runValidateSpecs(_ *cobra.Command, _ []string) {
 			"No spec files found",
 			fmt.Sprintf("Could not find spec files in %s: %v", specDir, err),
 			"Generate spec files first using gen-test-scripts",
-			"task check",
+			"forge task check-deps",
 		))
 		return
 	}

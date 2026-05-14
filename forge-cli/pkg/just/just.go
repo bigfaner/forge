@@ -8,6 +8,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"forge-cli/pkg/profile"
 )
 
 // GateRecipe defines one step in the quality gate sequence.
@@ -61,25 +63,25 @@ func RunCapture(dir string, name string, args ...string) (string, bool) {
 }
 
 // ResolveScope applies scope resolution: only pass scope to just if project is mixed.
+// Reads project-type from .forge/config.yaml directly — no subprocess call.
 func ResolveScope(projectRoot, scope string) string {
 	if scope == "" || scope == "all" {
 		return ""
 	}
-	if !HasRecipe(projectRoot, "project-type") {
+	cfg, err := profile.ReadConfig(projectRoot)
+	if err != nil || cfg == nil {
 		return ""
 	}
-	output, success := RunCapture(projectRoot, "just", "project-type")
-	if !success {
-		return ""
-	}
-	projectType := strings.TrimSpace(output)
+	projectType := strings.TrimSpace(cfg.ProjectType)
 	switch projectType {
 	case "mixed":
 		return scope
 	case "frontend", "backend":
 		return ""
 	default:
-		fmt.Fprintf(os.Stderr, "WARNING: unexpected project-type %q, expected frontend/backend/mixed; skipping scope\n", projectType)
+		if projectType != "" {
+			fmt.Fprintf(os.Stderr, "WARNING: unexpected project-type %q, expected frontend/backend/mixed; skipping scope\n", projectType)
+		}
 		return ""
 	}
 }

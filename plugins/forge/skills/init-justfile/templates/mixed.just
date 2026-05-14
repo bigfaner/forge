@@ -3,9 +3,6 @@
 frontend_dir := "FRONTEND_DIR"
 backend_dir  := "BACKEND_DIR"
 
-project-type:
-    @echo "mixed"
-
 compile scope="":
     #!/usr/bin/env bash
     set -euo pipefail

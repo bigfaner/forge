@@ -37,8 +37,8 @@ Read Go source code for behavioral alignment:
 | `plugins/forge/skills/breakdown-tasks/templates/index.schema.json` | JSON schema | 7h |
 
 Also run:
-- `task -h` to get command list
-- `task <cmd> -h` for each command to verify flags
+- `forge -h` to get command list
+- `forge <cmd> -h` for each command to verify flags
 
 ## Checks to Perform
 
@@ -50,23 +50,23 @@ Follow the rubric exactly. For each dimension check every criterion, quote speci
 
 Read the source code and verify the forge plugin's assumptions match the CLI's actual behavior:
 
-**7d. Status machine** — Read `status.go`. For each `task status` usage in skills:
+**7d. Status machine** — Read `status.go`. For each `forge task status` usage in skills:
 - Is the target status a valid enum value?
 - Is the transition allowed? (`completed`/`rejected` are terminal; `in_progress → completed` blocked)
 - Does the skill correctly handle the `--force` override pattern?
 
-**7e. Claim scheduling** — Read `claim.go`. For skills that invoke or describe `task claim`:
+**7e. Claim scheduling** — Read `claim.go`. For skills that invoke or describe `forge task claim`:
 - Does the skill correctly describe priority ordering (deps met → P0 > P1 > P2 → semantic ID)?
 - Does the skill handle `ACTION: CONTINUE` (resume in-progress task)?
 - Does the skill use the correct output fields (KEY, TASK_ID, SCOPE, MAIN_SESSION)?
 
-**7f. Record validation** — Read `record.go`. For skills that invoke or describe `task record`:
+**7f. Record validation** — Read `record.go`. For skills that invoke or describe `forge task submit`:
 - Does the skill match the auto-downgrade rule (completed + testsFailed > 0 → blocked, non-overridable)?
 - Does the skill match the test evidence requirement (overridable with `--force`)?
 - Does the skill match the AC requirement (all met, overridable with `--force`)?
 - Does the skill match the quality gate (compile → fmt → lint before marking completed)?
 
-**7g. Dynamic task addition** — Read `add.go`. For skills that invoke `task add`:
+**7g. Dynamic task addition** — Read `add.go`. For skills that invoke `forge task add`:
 - Does the skill use `--template fix-task` for fix tasks?
 - Does the skill know that `--source-task-id` auto-injects a dependency?
 - Does the skill know the generated ID format is `disc-N`?

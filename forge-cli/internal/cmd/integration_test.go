@@ -907,7 +907,7 @@ func TestExecuteClaim_SaveIndexError(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chdir(origWd) })
 	_ = os.Chdir(dir)
 
-	// Make index.json read-only so SaveIndex fails
+	// Make index.json read-only so task.SaveIndex (os.WriteFile) fails
 	_ = os.Chmod(indexPath, 0444)
 	defer func() { _ = os.Chmod(indexPath, 0644) }()
 
@@ -1723,9 +1723,10 @@ func TestSaveIndexAndSignalCompletion_SaveIndexError(t *testing.T) {
 	})
 	_ = task.SaveIndex(indexPath, index)
 
-	// Make index.json read-only so SaveIndex fails
-	_ = os.Chmod(indexPath, 0444)
-	defer func() { _ = os.Chmod(indexPath, 0644) }()
+	// Make the parent directory read-only so SaveIndexAtomic (temp+rename) fails
+	indexDir := filepath.Dir(indexPath)
+	_ = os.Chmod(indexDir, 0555)
+	defer func() { _ = os.Chmod(indexDir, 0755) }()
 
 	if os.Getenv("TEST_SAVE_INDEX_ERROR") == "1" {
 		saveIndexAndSignalCompletion(indexPath, dir, "test", index)

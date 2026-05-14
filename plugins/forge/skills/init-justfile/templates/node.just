@@ -1,8 +1,5 @@
 # --- forge standard recipes ---
 
-project-type:
-    @echo "frontend"
-
 compile:
     npx tsc --noEmit
 

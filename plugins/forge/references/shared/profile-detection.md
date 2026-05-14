@@ -1,6 +1,6 @@
 # Test Profile Auto-Detection Rules
 
-When `.forge/config.yaml` does not specify `test-profiles`, `task profile detect` scans the project root for file signals. Multiple signals may produce multiple profiles (multi-profile support).
+When `.forge/config.yaml` does not specify `test-profiles`, `forge profile detect` scans the project root for file signals. Multiple signals may produce multiple profiles (multi-profile support).
 
 ## Detection Rules
 

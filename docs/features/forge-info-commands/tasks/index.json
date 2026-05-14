@@ -1,0 +1,238 @@
+{
+  "feature": "forge-info-commands",
+  "proposal": "docs/proposals/forge-info-commands/proposal.md",
+  "created": "2026-05-14",
+  "tasks": {
+    "1-config-commands": {
+      "id": "1",
+      "title": "Config commands and schema extension",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "status": "completed",
+      "file": "1-config-commands.md",
+      "record": "records/1-config-commands.md",
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "2-info-commands": {
+      "id": "2",
+      "title": "Info commands (proposal, feature, lesson)",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "status": "completed",
+      "file": "2-info-commands.md",
+      "record": "records/2-info-commands.md",
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "3-init-command": {
+      "id": "3",
+      "title": "forge init command",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "3-init-command.md",
+      "record": "records/3-init-command.md",
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "4-migration-resolve-scope": {
+      "id": "4",
+      "title": "Migration: ResolveScope → config.yaml and doc updates",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "4-migration-resolve-scope.md",
+      "record": "records/4-migration-resolve-scope.md",
+      "breaking": true,
+      "scope": "all",
+      "type": "implementation"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "Fix: compilation errors in task 2 (lessonCmd undefined, truncate redeclared)",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "2",
+      "type": "fix"
+    },
+    "fix-2": {
+      "id": "fix-2",
+      "title": "Fix: 14 e2e test failures — subcommands not wired up (config, proposal, lesson, feature list/status)",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-2.md",
+      "record": "records/fix-2.md",
+      "breaking": true,
+      "sourceTaskID": "T-quick-3",
+      "type": "fix"
+    },
+    "fix-3": {
+      "id": "fix-3",
+      "title": "Fix: login bug",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-3.md",
+      "record": "records/fix-3.md",
+      "breaking": true,
+      "sourceTaskID": "1.1",
+      "type": "fix"
+    },
+    "fix-4": {
+      "id": "fix-4",
+      "title": "fix unit-test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-4.md",
+      "record": "records/fix-4.md",
+      "breaking": true,
+      "type": "fix"
+    },
+    "fix-5": {
+      "id": "fix-5",
+      "title": "Fix: login bug",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-5.md",
+      "record": "records/fix-5.md",
+      "breaking": true,
+      "sourceTaskID": "1.1",
+      "type": "fix"
+    },
+    "fix-6": {
+      "id": "fix-6",
+      "title": "fix unit-test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-6.md",
+      "record": "records/fix-6.md",
+      "breaking": true,
+      "type": "fix"
+    },
+    "fix-7": {
+      "id": "fix-7",
+      "title": "Fix: login bug",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-7.md",
+      "record": "records/fix-7.md",
+      "breaking": true,
+      "sourceTaskID": "1.1",
+      "type": "fix"
+    },
+    "fix-8": {
+      "id": "fix-8",
+      "title": "fix unit-test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "in_progress",
+      "file": "fix-8.md",
+      "record": "records/fix-8.md",
+      "breaking": true
+    },
+    "quick-gen-scripts-go-test": {
+      "id": "T-quick-2",
+      "title": "Generate Quick Test Scripts (go-test)",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "T-quick-1"
+      ],
+      "status": "completed",
+      "file": "quick-gen-scripts-go-test.md",
+      "record": "records/quick-gen-scripts-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.gen-scripts",
+      "profile": "go-test"
+    },
+    "quick-graduate-go-test": {
+      "id": "T-quick-4",
+      "title": "Graduate Quick Test Scripts (go-test)",
+      "priority": "P1",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "T-quick-3"
+      ],
+      "status": "completed",
+      "file": "quick-graduate-go-test.md",
+      "record": "records/quick-graduate-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.graduate",
+      "profile": "go-test"
+    },
+    "quick-run-tests-go-test": {
+      "id": "T-quick-3",
+      "title": "Run Quick E2E Tests (go-test)",
+      "priority": "P1",
+      "estimatedTime": "15-30min",
+      "dependencies": [
+        "T-quick-2"
+      ],
+      "status": "completed",
+      "file": "quick-run-tests-go-test.md",
+      "record": "records/quick-run-tests-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.run",
+      "profile": "go-test"
+    },
+    "quick-test-cases-go-test": {
+      "id": "T-quick-1",
+      "title": "Generate Quick Test Cases (go-test)",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "4"
+      ],
+      "status": "completed",
+      "file": "quick-test-cases-go-test.md",
+      "record": "records/quick-test-cases-go-test.md",
+      "scope": "all",
+      "noTest": true,
+      "type": "test-pipeline.gen-cases",
+      "profile": "go-test"
+    },
+    "quick-verify-regression": {
+      "id": "T-quick-5",
+      "title": "Verify Quick E2E Regression",
+      "priority": "P1",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "T-quick-4"
+      ],
+      "status": "completed",
+      "file": "quick-verify-regression.md",
+      "record": "records/quick-verify-regression.md",
+      "scope": "all",
+      "type": "test-pipeline.verify-regression"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

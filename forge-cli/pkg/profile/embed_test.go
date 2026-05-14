@@ -163,3 +163,68 @@ func TestListEmbeddedProfiles(t *testing.T) {
 		}
 	}
 }
+
+func TestGetProfileCapabilities(t *testing.T) {
+	t.Run("go-test has tui, api, cli", func(t *testing.T) {
+		caps, err := GetProfileCapabilities("go-test")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(caps) != 3 {
+			t.Fatalf("expected 3 capabilities, got %d: %v", len(caps), caps)
+		}
+		for _, want := range []string{"tui", "api", "cli"} {
+			if !slices.Contains(caps, want) {
+				t.Errorf("expected capability %q not found", want)
+			}
+		}
+	})
+
+	t.Run("unknown profile returns error", func(t *testing.T) {
+		_, err := GetProfileCapabilities("unknown")
+		if err == nil {
+			t.Error("expected error for unknown profile")
+		}
+	})
+}
+
+func TestUnionCapabilities(t *testing.T) {
+	t.Run("single profile", func(t *testing.T) {
+		caps, err := UnionCapabilities([]string{"go-test"})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(caps) != 3 {
+			t.Errorf("expected 3 capabilities, got %d: %v", len(caps), caps)
+		}
+	})
+
+	t.Run("multiple profiles deduplicates", func(t *testing.T) {
+		// go-test: [tui, api, cli], web-playwright: [web-ui, api, cli]
+		// union: [api, cli, tui, web-ui] (sorted)
+		caps, err := UnionCapabilities([]string{"go-test", "web-playwright"})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		// api and cli appear in both, should be deduplicated
+		expected := []string{"api", "cli", "tui", "web-ui"}
+		if len(caps) != len(expected) {
+			t.Errorf("expected %d capabilities, got %d: %v", len(expected), len(caps), caps)
+		}
+		for _, want := range expected {
+			if !slices.Contains(caps, want) {
+				t.Errorf("expected capability %q not found in union", want)
+			}
+		}
+	})
+
+	t.Run("empty profiles returns empty", func(t *testing.T) {
+		caps, err := UnionCapabilities(nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(caps) != 0 {
+			t.Errorf("expected 0 capabilities, got %d: %v", len(caps), caps)
+		}
+	})
+}

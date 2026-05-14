@@ -98,13 +98,13 @@ This dimension requires reading task CLI source code to verify behavioral alignm
 
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| 7a. Command existence | 0-25 | Every `task <cmd>` referenced in skills/commands/agents exists in `task -h` output. Each unknown = -15 (Medium). |
-| 7b. Flag correctness | 0-25 | Every `task` flag used in skills matches the CLI's actual flags. Each unknown = -15 (Medium). |
+| 7a. Command existence | 0-25 | Every `forge <cmd>` referenced in skills/commands/agents exists in `forge -h` output. Each unknown = -15 (Medium). |
+| 7b. Flag correctness | 0-25 | Every `forge` flag used in skills matches the CLI's actual flags. Each unknown = -15 (Medium). |
 | 7c. Output field parsing | 0-15 | Skills parsing CLI output use correct field names (ACTION, TASK_ID, etc.). Each wrong field = -5 (Low). |
-| 7d. Status machine alignment | 0-35 | Read `status.go`. Verify skills respect the state machine: `completed`/`rejected` are terminal, `in_progress → completed` blocked (must use `task record`), `rejected` does NOT satisfy deps. Each violation = -25 (High). |
+| 7d. Status machine alignment | 0-35 | Read `status.go`. Verify skills respect the state machine: `completed`/`rejected` are terminal, `in_progress → completed` blocked (must use `forge task submit`), `rejected` does NOT satisfy deps. Each violation = -25 (High). |
 | 7e. Claim scheduling alignment | 0-35 | Read `claim.go`. Verify skills describe the correct claim priority: (1) all deps met, (2) P0 > P1 > P2, (3) semantic version ordering. Also verify skills handle `ACTION: CONTINUE` correctly. Each violation = -25 (High). |
 | 7f. Record validation alignment | 0-35 | Read `record.go`. Verify skills match: auto-downgrade `completed + testsFailed > 0 → blocked` (non-overridable), test evidence required (overridable with `--force`), all AC must be met (overridable with `--force`), quality gate before completed. Each violation = -25 (High). |
-| 7g. Dynamic task addition alignment | 0-25 | Read `add.go`. Verify: `--template fix-task` for fix tasks, `--source-task-id` auto-injects dependency, ID format `disc-N`, pre-add pattern (`task status blocked` → `task add` → `task claim`). Each violation = -15 (Medium). |
+| 7g. Dynamic task addition alignment | 0-25 | Read `add.go`. Verify: `--template fix-task` for fix tasks, `--source-task-id` auto-injects dependency, ID format `disc-N`, pre-add pattern (`forge task status blocked` → `forge task add` → `forge task claim`). Each violation = -15 (Medium). |
 | 7h. Schema-code alignment | 0-20 | `index.schema.json` fields match Go `Task`/`TaskIndex` struct fields. Verify enum values match. Each mismatch = -5 (Low). |
 | 7i. All-completed hook alignment | 0-10 | Read `all_completed.go`. Verify guide.md description matches actual behavior. Each mismatch = -5 (Low). |
 | 7j. Template existence | 0-10 | `fix-task` template referenced by skills exists on disk. Missing = -10 (Medium). |
@@ -115,7 +115,7 @@ This dimension requires reading task CLI source code to verify behavioral alignm
 |-----------|--------|---------------|
 | `hooks.json` is valid JSON | 0-10 | Parse `plugins/forge/hooks/hooks.json`. Invalid JSON = -10 (Medium). |
 | Hook script files exist | 0-25 | Every file path referenced in `hooks.json` (e.g., `${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.cmd`, `scripts/validate-index.sh`) exists on disk. Each missing = -25 (High). |
-| Hook CLI commands valid | 0-15 | Every CLI command referenced in `hooks.json` (e.g., `task cleanup`, `task all-completed`) exists in `task -h`. Each unknown = -15 (Medium). |
+| Hook CLI commands valid | 0-15 | Every CLI command referenced in `hooks.json` (e.g., `forge cleanup`, `forge quality-gate`) exists in `forge -h`. Each unknown = -15 (Medium). |
 | Hook event names valid | 0-20 | Every event name in `hooks.json` (e.g., `SessionStart`, `PostToolUse`, `Stop`, `SessionEnd`, `SubagentStop`) is a Claude Code supported hook event. Each unknown = -15 (Medium). |
 
 ### 9. Guide Coverage and Conciseness (70 pts)
@@ -128,9 +128,9 @@ Bidirectional check: guide.md references must be valid, workflow-critical skills
 |-----------|--------|---------------|
 | Guide references are valid | 0-30 | Every `/name` pattern in `plugins/forge/hooks/guide.md` points to an existing skill or command. Each dangling = -15 (Medium). |
 | Core workflow skills documented | 0-25 | Every workflow-critical skill (those in Mermaid diagrams, Quality Gate, or Task-CLI sections) has at least a mention in guide.md. Each undocumented workflow-critical skill = -5 (Low). |
-| Conciseness / no redundancy | 0-15 | guide.md contains only workflow rules and conventions — no CLI output format tables, no API reference, no information that belongs in `task -h` or individual SKILL.md files. Each instance of misplaced reference material = -5 (Low). Duplicated information across sections = -5 (Low). |
+| Conciseness / no redundancy | 0-15 | guide.md contains only workflow rules and conventions — no CLI output format tables, no API reference, no information that belongs in `forge -h` or individual SKILL.md files. Each instance of misplaced reference material = -5 (Low). Duplicated information across sections = -5 (Low). |
 
-> Note: guide.md is a workflow guide, not a registry. CLI output field tables belong in individual SKILL.md or `task -h`. Setup/utility commands need not be mentioned.
+> Note: guide.md is a workflow guide, not a registry. CLI output field tables belong in individual SKILL.md or `forge -h`. Setup/utility commands need not be mentioned.
 
 ### 10. Command Metadata Completeness (60 pts)
 
