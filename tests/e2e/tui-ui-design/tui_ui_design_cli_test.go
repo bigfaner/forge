@@ -4,11 +4,32 @@ package e2e
 
 import (
 	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	// Go test runs from the package source directory by default.
+	// These tests use paths relative to the project root (e.g. plugins/...).
+	// Use runtime.Caller to find this source file, then walk up to project root.
+	_, filename, _, _ := runtime.Caller(0)
+	dir := filepath.Dir(filename)
+	for dir != "/" && dir != "" {
+		if _, err := os.Stat(filepath.Join(dir, "justfile")); err == nil {
+			_ = os.Chdir(dir)
+			return
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break
+		}
+		dir = parent
+	}
+}
 
 // Helper: readFile reads a file and returns its content as a string.
 // Fatal on error so the test stops immediately if the file is missing.
