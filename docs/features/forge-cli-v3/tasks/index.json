@@ -373,7 +373,7 @@
       "title": "Fix: unit-test failure in all-completed quality gate",
       "priority": "P0",
       "estimatedTime": "30min",
-      "status": "pending",
+      "status": "completed",
       "file": "fix-4.md",
       "record": "records/fix-4.md",
       "breaking": true
