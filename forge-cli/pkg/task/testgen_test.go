@@ -204,3 +204,59 @@ func TestResolveFirstTestDep(t *testing.T) {
 		}
 	})
 }
+
+func TestGetDocEvalTask(t *testing.T) {
+	task := GetDocEvalTask()
+
+	if task.ID != "T-eval-doc" {
+		t.Errorf("ID = %q, want T-eval-doc", task.ID)
+	}
+	if task.Key != "eval-doc" {
+		t.Errorf("Key = %q, want eval-doc", task.Key)
+	}
+	if task.Type != TypeDocEvaluation {
+		t.Errorf("Type = %q, want %q", task.Type, TypeDocEvaluation)
+	}
+	if !task.NoTest {
+		t.Error("NoTest should be true")
+	}
+	if task.Title == "" {
+		t.Error("Title should not be empty")
+	}
+	if task.Scope == "" {
+		t.Error("Scope should not be empty")
+	}
+	// Dependencies are resolved later by ResolveDocEvalDep
+	if len(task.Dependencies) != 0 {
+		t.Errorf("Dependencies should be empty (resolved later), got %v", task.Dependencies)
+	}
+}
+
+func TestResolveDocEvalDep(t *testing.T) {
+	t.Run("sets dependency on last business task", func(t *testing.T) {
+		existing := map[string]Task{
+			"1-doc":    {ID: "1.1", Type: TypeDocumentation},
+			"2-doc":    {ID: "1.2", Type: TypeDocumentation},
+			"T-test-1": {ID: "T-test-1", Type: TypeTestPipelineGenCases},
+		}
+		task := GetDocEvalTask()
+		ResolveDocEvalDep(&task, existing)
+
+		if len(task.Dependencies) != 1 {
+			t.Fatalf("Dependencies = %v, want exactly 1", task.Dependencies)
+		}
+		if task.Dependencies[0] != "1.2" {
+			t.Errorf("dep = %q, want 1.2", task.Dependencies[0])
+		}
+	})
+
+	t.Run("empty tasks", func(t *testing.T) {
+		existing := map[string]Task{}
+		task := GetDocEvalTask()
+		ResolveDocEvalDep(&task, existing)
+
+		if len(task.Dependencies) != 0 {
+			t.Errorf("Dependencies = %v, want empty for no tasks", task.Dependencies)
+		}
+	})
+}

@@ -96,7 +96,7 @@ graph LR
 - Flat task list (no phases, no gates, no summaries)
 - T-quick-1~5 test tasks (subset of T-test 7 tasks: skips gen-sitemap prerequisite, eval-test-cases, consolidate-specs)
 - Simplified manifest (no Traceability table)
-- `--no-test` flag skips T-quick-1~5
+- Docs-only features auto-detected: no test tasks, generates T-eval-doc instead
 
 ### Manifest
 
@@ -153,4 +153,4 @@ Task CLI manages task lifecycle within feature workflows.
 
 **Typical flow**: Before starting work, run `forge feature` → `forge task claim` to get a task → `forge task submit` to save results + update task status.
 
-> For record workflow details, see the `/record-task` skill. For full command reference, run `forge -h` or `forge [command] -h`.
+> For record workflow details, see the `/submit-task` skill. For full command reference, run `forge -h` or `forge [command] -h`.

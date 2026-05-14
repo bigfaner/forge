@@ -251,5 +251,5 @@ Do NOT run e2e tests outside of the Breaking Task Gate (Step 3) — the dispatch
 | Command | Usage |
 |---------|-------|
 | `/execute-task` | Manual single task |
-| `/record-task` | Create record + update status |
+| `/submit-task` | Create record + update status |
 | `/run-e2e-tests` | E2E verification against PRD |

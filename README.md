@@ -37,7 +37,7 @@
 /quick → /brainstorm → /quick-tasks → /run-tasks
 ```
 
-跳过 PRD 和设计，`proposal.md` 直接驱动任务。支持 `--no-test` 跳过测试任务。
+跳过 PRD 和设计，`proposal.md` 直接驱动任务。纯文档 feature 自动跳过测试，生成文档评估任务。
 
 ---
 
@@ -100,7 +100,7 @@ task --version
 |-------|------|
 | `/execute-task` | 执行单任务 |
 | `/run-tasks` | 自动循环分发 |
-| `/record-task` | 记录完成（必须） |
+| `/submit-task` | 记录完成（必须） |
 
 ### 辅助
 

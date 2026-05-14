@@ -6,9 +6,11 @@ import (
 	"time"
 )
 
-// Task type constants define the 11 valid execution types.
+// Task type constants define the 13 valid execution types.
 const (
 	TypeImplementation               = "implementation"
+	TypeDocumentation                = "documentation"
+	TypeDocEvaluation                = "doc-evaluation"
 	TypeDocGenerationSummary         = "doc-generation.summary"
 	TypeDocGenerationConsolidate     = "doc-generation.consolidate"
 	TypeTestPipelineGenCases         = "test-pipeline.gen-cases"
@@ -31,6 +33,8 @@ type TaskTypeInfo struct { //nolint:revive // intentional naming for API clarity
 // Each entry's Description follows verb+object format and is <= 60 chars.
 var TaskTypeRegistry = []TaskTypeInfo{
 	{Name: TypeImplementation, Description: "implement feature task"},
+	{Name: TypeDocumentation, Description: "write or update documentation"},
+	{Name: TypeDocEvaluation, Description: "evaluate documentation quality"},
 	{Name: TypeFix, Description: "fix a bug or issue"},
 	{Name: TypeGate, Description: "validate quality gate before proceeding"},
 	{Name: TypeDocGenerationSummary, Description: "generate documentation summary"},
@@ -46,6 +50,8 @@ var TaskTypeRegistry = []TaskTypeInfo{
 // ValidTypes is the complete set of valid task type values.
 var ValidTypes = map[string]bool{
 	TypeImplementation:               true,
+	TypeDocumentation:                true,
+	TypeDocEvaluation:                true,
 	TypeDocGenerationSummary:         true,
 	TypeDocGenerationConsolidate:     true,
 	TypeTestPipelineGenCases:         true,

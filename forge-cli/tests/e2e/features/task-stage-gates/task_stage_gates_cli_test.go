@@ -787,10 +787,10 @@ func TestTC_016_DoesNotBreakExistingIndexBehavior(t *testing.T) {
 	assert.True(t, found, "1.1 task should exist in index")
 }
 
-// --- TC-017: Respects no-test flag independently of stage-gates ---
+// --- TC-017: --no-test flag removed, returns unknown flag error ---
 
-// Traceability: TC-017 -> Proposal "Constraints & Dependencies" - "--no-test flag"
-func TestTC_017_NoTestFlagDoesNotAffectStageGates(t *testing.T) {
+// Traceability: TC-017 -> Proposal "Constraints & Dependencies" - "--no-test flag removed"
+func TestTC_017_NoTestFlagRemoved(t *testing.T) {
 	featureSlug := "test-stage-gates-017"
 	tmpRoot, cleanup := stageGateTestDir(t, featureSlug, []string{
 		"1.1.md",
@@ -800,37 +800,10 @@ func TestTC_017_NoTestFlagDoesNotAffectStageGates(t *testing.T) {
 	})
 	defer cleanup()
 
-	// Create .forge config with a test profile to ensure test tasks would be generated
-	forgeDir := filepath.Join(tmpRoot, ".forge")
-	require.NoError(t, os.MkdirAll(forgeDir, 0755))
-	configContent := `test:
-  profiles:
-    - go-test
-`
-	require.NoError(t, os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(configContent), 0644))
-
-	// Run with --no-test
-	_, _, exitCode := runForgeIndex(t, tmpRoot, featureSlug, "--no-test")
-	assert.Equal(t, 0, exitCode)
-
-	tasksDir := filepath.Join(tmpRoot, "docs", "features", featureSlug, "tasks")
-
-	// Stage-gates should still be generated (--no-test does not affect stage-gates)
-	assert.FileExists(t, filepath.Join(tasksDir, "1.summary.md"), "summary should be generated despite --no-test")
-	assert.FileExists(t, filepath.Join(tasksDir, "1.gate.md"), "gate should be generated despite --no-test")
-	assert.FileExists(t, filepath.Join(tasksDir, "2.summary.md"))
-	assert.FileExists(t, filepath.Join(tasksDir, "2.gate.md"))
-
-	// Test tasks should NOT be present (--no-test suppresses them)
-	// Verify no T-test or T-quick files were auto-generated
-	files, err := os.ReadDir(tasksDir)
-	require.NoError(t, err)
-	for _, f := range files {
-		name := f.Name()
-		if strings.HasPrefix(name, "T-") && strings.HasSuffix(name, ".md") {
-			t.Errorf("test task file should not exist with --no-test: %s", name)
-		}
-	}
+	// Run with --no-test — should fail with unknown flag error
+	_, stderr, exitCode := runForgeIndex(t, tmpRoot, featureSlug, "--no-test")
+	assert.NotEqual(t, 0, exitCode, "--no-test should be rejected")
+	assert.Contains(t, stderr, "unknown flag")
 }
 
 // --- TC-018: Concurrent execution produces identical output ---

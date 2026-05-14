@@ -98,7 +98,7 @@ Forge 由三个核心子系统组成：
 - 扁平任务列表（无 phase、无 gate、无 phase summary）
 - 测试任务使用 `T-quick-1~5`（完整模式 7 个任务的子集）
 - 简化 manifest（无 Traceability 表）
-- `--no-test` 标志跳过所有测试任务
+- 纯文档 feature 自动跳过测试任务，生成 T-eval-doc 替代
 
 ### 如何选择模式
 

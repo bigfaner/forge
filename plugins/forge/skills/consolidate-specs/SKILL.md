@@ -311,7 +311,7 @@ Update `docs/features/<slug>/manifest.md` to reference the integrated specs.
 Invoke the skill:
 
 ```
-Skill(skill="record-task")
+Skill(skill="submit-task")
 ```
 
 Omit `coverage` from record.json — the noTest flag in index.json auto-sets it.
@@ -331,4 +331,4 @@ Omit `coverage` from record.json — the noTest flag in index.json auto-sets it.
 | `/write-prd` | Upstream: source of business rules |
 | `/tech-design` | Upstream: source of technical specs |
 | `/graduate-tests` | Predecessor: T-test-4 before this T-test-5 |
-| `record-task` | Downstream: records task completion |
+| `submit-task` | Downstream: records task completion |

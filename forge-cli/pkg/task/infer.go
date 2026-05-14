@@ -3,7 +3,7 @@ package task
 import "strings"
 
 // InferType infers the task type from the task ID using pattern matching.
-// Always returns a non-empty string (falls back to TypeImplementation).
+// Returns empty string for unknown IDs (no fallback).
 //
 // Handles profile-suffixed IDs from the test profile system (D9):
 // single profile: T-test-2, T-test-3, T-test-4 (no suffix)
@@ -40,8 +40,10 @@ func InferType(id string) string {
 		return TypeTestPipelineVerifyRegression
 	case strings.HasPrefix(id, "fix-") || strings.HasPrefix(id, "disc-"):
 		return TypeFix
+	case id == "T-eval-doc":
+		return TypeDocEvaluation
 	default:
-		return TypeImplementation
+		return ""
 	}
 }
 
