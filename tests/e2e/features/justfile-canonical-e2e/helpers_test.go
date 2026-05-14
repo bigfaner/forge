@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 )
@@ -21,10 +22,14 @@ func forgeBinary(t *testing.T) string {
 			return forgeBinaryPath
 		}
 	}
-	binPath := filepath.Join("..", "..", "..", "..", "forge-cli", "bin", "forge")
+	binName := "forge"
+	if runtime.GOOS == "windows" {
+		binName = "forge.exe"
+	}
+	binPath := filepath.Join("..", "..", "..", "..", "forge-cli", "bin", binName)
 	if _, err := os.Stat(binPath); err != nil {
 		// Build the binary
-		buildCmd := exec.Command("go", "build", "-o", binPath, "./")
+		buildCmd := exec.Command("go", "build", "-o", binPath, "./cmd/forge/")
 		buildCmd.Dir = filepath.Join("..", "..", "..", "..", "forge-cli")
 		if out, err := buildCmd.CombinedOutput(); err != nil {
 			t.Fatalf("failed to build forge binary: %s: %s", err, out)

@@ -57,6 +57,18 @@
       "scope": "backend",
       "type": "implementation"
     },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "Fix: e2e tests forgeBinary path resolution on Windows",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "T-quick-3",
+      "type": "fix"
+    },
     "quick-gen-scripts-go-test": {
       "id": "T-quick-2",
       "title": "Generate Quick Test Scripts (go-test)",
@@ -95,7 +107,7 @@
       "dependencies": [
         "T-quick-2"
       ],
-      "status": "blocked",
+      "status": "pending",
       "file": "quick-run-tests-go-test.md",
       "record": "records/quick-run-tests-go-test.md",
       "scope": "all",
