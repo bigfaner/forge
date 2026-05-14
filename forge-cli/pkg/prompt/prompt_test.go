@@ -41,6 +41,8 @@ func setupFeatureDir(t *testing.T, projectRoot string, tasks map[string]task.Tas
 func TestSynthesize_AllTypes(t *testing.T) {
 	types := []string{
 		task.TypeImplementation,
+		task.TypeDocumentation,
+		task.TypeDocEvaluation,
 		task.TypeDocGenerationSummary,
 		task.TypeDocGenerationConsolidate,
 		task.TypeTestPipelineGenCases,
