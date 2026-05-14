@@ -38,6 +38,8 @@ func init() {
 	rootCmd.AddCommand(featureCmd)
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(configCmd)
+	rootCmd.AddCommand(proposalCmd)
+	rootCmd.AddCommand(lessonCmd)
 
 	// Version is hidden from --help but accessible via `forge version`
 	versionCmd.Hidden = true
