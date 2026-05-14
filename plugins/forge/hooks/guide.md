@@ -96,7 +96,7 @@ graph LR
 - Flat task list (no phases, no gates, no summaries)
 - T-quick-1~5 test tasks (subset of T-test 7 tasks: skips gen-sitemap prerequisite, eval-test-cases, consolidate-specs)
 - Simplified manifest (no Traceability table)
-- `--no-test` flag skips T-quick-1~5
+- Docs-only features auto-detected: no test tasks, generates T-eval-doc instead
 
 ### Manifest
 

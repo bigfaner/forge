@@ -90,7 +90,7 @@ For each task:
 
 ### Type Assignment
 
-`forge task index` auto-infers `type` from task ID patterns. No need to write `type` manually. Business tasks (IDs `1`–`10`) fall through to `"implementation"` fallback — expected behavior.
+Task `.md` files MUST include `type` in frontmatter. `forge task index` validates this — business tasks missing `type` cause a hard error. Set business tasks to `"implementation"`, documentation tasks to `"documentation"`. Auto-generated tasks (gates, summaries, test pipeline) have types inferred from their ID patterns.
 
 ## Step 4: Test Tasks (auto-generated)
 
