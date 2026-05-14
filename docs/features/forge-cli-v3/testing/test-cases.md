@@ -13,12 +13,12 @@ generated: "2026-05-14"
 | Type | Count |
 |------|-------|
 | UI   | 0   |
-| **Integration** | **0** |
+| **Integration** | **6** |
 | API  | 0  |
-| CLI  | 41  |
-| **Total** | **41** |
+| CLI  | 75  |
+| **Total** | **81** |
 
-> **Note**: This is a CLI-only feature. No UI, API, or integration test cases apply.
+> **Note**: This is a CLI-only feature. No UI or API test cases apply. Integration TCs exercise multi-command workflows defined in the PRD flow descriptions.
 
 ---
 
@@ -685,6 +685,715 @@ generated: "2026-05-14"
 - **Expected**: Exit code 1, stderr contains "unknown profile: nonexistent-profile" and lists supported profiles
 - **Priority**: P1
 
+### Task Claim (Happy Path)
+
+## TC-042: Task claim assigns next available pending task
+- **Source**: Spec Agent Task Execution Flow (claim step)
+- **Type**: CLI
+- **Target**: cli/task-claim
+- **Test ID**: cli/task-claim/claim-assigns-next-available-pending-task
+- **Pre-conditions**: index.json exists with at least one task in status pending; no tasks are in_progress
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge task claim`
+  2. Check exit code is 0
+  3. Verify stdout contains the claimed task ID
+  4. Run `cat index.json | jq '.tasks[] | select(.id=="<claimed-id>") | .status'` to confirm status is in_progress
+- **Expected**: Exit code 0, stdout shows claimed task ID, index.json updated to in_progress for that task
+- **Priority**: P0
+
+### Task Add
+
+## TC-043: Task add creates a new task entry in index.json
+- **Source**: Spec Command Structure Table (task add)
+- **Type**: CLI
+- **Target**: cli/task-add
+- **Test ID**: cli/task-add/add-creates-new-task-entry
+- **Pre-conditions**: index.json exists; feature context is set
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge task add --title "my-new-task" --type implementation`
+  2. Check exit code is 0
+  3. Run `cat index.json | jq '.tasks | length'` to verify task count increased by 1
+  4. Run `cat index.json | jq '.tasks[] | select(.title=="my-new-task")'` to verify new task exists with status pending and type implementation
+- **Expected**: Exit code 0, index.json contains new task with title "my-new-task", type "implementation", status "pending"
+- **Priority**: P1
+
+### Task Index
+
+## TC-044: Task index generates index.json from task markdown files
+- **Source**: Spec Command Structure Table (task index)
+- **Type**: CLI
+- **Target**: cli/task-index
+- **Test ID**: cli/task-index/index-generates-from-markdown
+- **Pre-conditions**: Feature directory contains task markdown files but no index.json (or stale index.json)
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Remove existing index.json if present
+  2. Run `forge task index`
+  3. Check exit code is 0
+  4. Verify index.json is created and is valid JSON parseable by `jq .`
+  5. Verify each task markdown file has a corresponding entry in index.json with correct id, title, type, and status fields
+- **Expected**: Exit code 0, index.json created with entries for all task markdown files, valid JSON structure
+- **Priority**: P1
+
+### Task Migrate
+
+## TC-045: Task migrate updates index.json schema to current version
+- **Source**: Spec Command Structure Table (task migrate)
+- **Type**: CLI
+- **Target**: cli/task-migrate
+- **Test ID**: cli/task-migrate/migrate-updates-schema-version
+- **Pre-conditions**: index.json exists with an older schema version format
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge task migrate`
+  2. Check exit code is 0
+  3. Verify index.json schema version field is updated to the current version string
+  4. Verify all existing task entries are preserved with correct field mappings
+- **Expected**: Exit code 0, index.json schema version updated, all task data preserved
+- **Priority**: P2
+
+### Task Query
+
+## TC-046: Task query filters tasks by status
+- **Source**: Spec Command Structure Table (task query)
+- **Type**: CLI
+- **Target**: cli/task-query
+- **Test ID**: cli/task-query/query-filters-by-status
+- **Pre-conditions**: index.json contains tasks in multiple statuses (pending, in_progress, completed)
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge task query --status pending`
+  2. Check exit code is 0
+  3. Verify every task in stdout output has status pending
+  4. Verify no tasks with status in_progress or completed appear in output
+  5. Run `forge task query --status completed` and verify only completed tasks appear
+- **Expected**: Exit code 0, output contains only tasks matching the queried status; filtering is accurate for each status value
+- **Priority**: P1
+
+### Task Status (Happy Path)
+
+## TC-047: Task status displays current status for valid task ID
+- **Source**: Spec Command Structure Table (task status)
+- **Type**: CLI
+- **Target**: cli/task-status
+- **Test ID**: cli/task-status/status-displays-for-valid-id
+- **Pre-conditions**: Task T-impl-1 exists in index.json with status in_progress
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge task status T-impl-1`
+  2. Check exit code is 0
+  3. Verify stdout contains the task ID "T-impl-1"
+  4. Verify stdout contains status "in_progress"
+- **Expected**: Exit code 0, stdout shows task ID and current status
+- **Priority**: P0
+
+### Feature Command
+
+## TC-048: Feature get displays current feature context
+- **Source**: Spec Top-Level Commands Table (feature)
+- **Type**: CLI
+- **Target**: cli/feature
+- **Test ID**: cli/feature/get-displays-current-context
+- **Pre-conditions**: Feature context is set (e.g., via previous `forge feature <name>` call)
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge feature`
+  2. Check exit code is 0
+  3. Verify stdout contains the current feature name/slug
+- **Expected**: Exit code 0, stdout displays the active feature context name
+- **Priority**: P1
+
+## TC-049: Feature set updates current feature context
+- **Source**: Spec Top-Level Commands Table (feature)
+- **Type**: CLI
+- **Target**: cli/feature
+- **Test ID**: cli/feature/set-updates-context
+- **Pre-conditions**: .forge/ directory exists
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge feature my-feature`
+  2. Check exit code is 0
+  3. Run `forge feature` to verify current context is "my-feature"
+  4. Verify .forge/state.json or equivalent config reflects "my-feature"
+- **Expected**: Exit code 0, subsequent `forge feature` call shows "my-feature"
+- **Priority**: P1
+
+### Probe Command
+
+## TC-050: Probe performs HTTP health check and returns status
+- **Source**: Spec Top-Level Commands Table (probe)
+- **Type**: CLI
+- **Target**: cli/probe
+- **Test ID**: cli/probe/probe-performs-health-check
+- **Pre-conditions**: A local service is running and reachable at the configured probe URL
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge probe`
+  2. Check exit code is 0 when service is healthy
+  3. Verify stdout contains HTTP status code (e.g., "200 OK")
+  4. Stop the service and run `forge probe` again
+  5. Check exit code is 1
+  6. Verify stderr contains connection error or non-200 status message
+- **Expected**: Exit code 0 with "200 OK" when service healthy; exit code 1 with error when service unreachable
+- **Priority**: P1
+
+### Version Command
+
+## TC-051: Version outputs binary version information
+- **Source**: Spec Top-Level Commands Table (version)
+- **Type**: CLI
+- **Target**: cli/version
+- **Test ID**: cli/version/version-outputs-binary-info
+- **Pre-conditions**: forge binary is built and available in PATH
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge version`
+  2. Check exit code is 0
+  3. Verify stdout contains a semver-compliant version string (e.g., "v3.0.0")
+  4. Verify the version matches the value in scripts/version.txt
+- **Expected**: Exit code 0, stdout shows version string matching scripts/version.txt
+- **Priority**: P1
+
+### E2E Subcommands
+
+## TC-052: E2E setup initializes test environment for configured profile
+- **Source**: Spec Command Structure Table (e2e setup)
+- **Type**: CLI
+- **Target**: cli/e2e-setup
+- **Test ID**: cli/e2e-setup/setup-initializes-test-environment
+- **Pre-conditions**: .forge/config.yaml has a valid profile configured (e.g., web-playwright)
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge e2e setup --feature my-feature`
+  2. Check exit code is 0
+  3. Verify test dependencies are installed (e.g., node_modules for Playwright profiles)
+  4. Verify stdout contains "profile: <profile-name>"
+- **Expected**: Exit code 0, test environment initialized according to profile, profile name displayed
+- **Priority**: P1
+
+## TC-053: E2E verify checks test artifacts are valid
+- **Source**: Spec Command Structure Table (e2e verify)
+- **Type**: CLI
+- **Target**: cli/e2e-verify
+- **Test ID**: cli/e2e-verify/verify-checks-test-artifacts
+- **Pre-conditions**: .forge/config.yaml has a valid profile configured; test files exist for the feature
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge e2e verify --feature my-feature`
+  2. Check exit code is 0 when test artifacts are valid
+  3. Verify stdout contains verification pass message
+  4. Corrupt a test file and run again
+  5. Check exit code is 1
+  6. Verify stderr contains specific validation error message
+- **Expected**: Exit code 0 with valid artifacts; exit code 1 with descriptive error when artifacts invalid
+- **Priority**: P1
+
+## TC-054: E2E compile builds test code
+- **Source**: Spec Command Structure Table (e2e compile)
+- **Type**: CLI
+- **Target**: cli/e2e-compile
+- **Test ID**: cli/e2e-compile/compile-builds-test-code
+- **Pre-conditions**: .forge/config.yaml has a valid profile configured; test source files exist
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge e2e compile --feature my-feature`
+  2. Check exit code is 0
+  3. Verify stdout contains compilation success message or compiled output path
+  4. Verify compiled test artifacts exist in the expected output directory
+- **Expected**: Exit code 0, test code compiled successfully, compiled artifacts exist
+- **Priority**: P1
+
+## TC-055: E2E discover lists available test files for feature
+- **Source**: Spec Command Structure Table (e2e discover)
+- **Type**: CLI
+- **Target**: cli/e2e-discover
+- **Test ID**: cli/e2e-discover/discover-lists-test-files
+- **Pre-conditions**: Feature directory exists with multiple test files matching the configured profile
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge e2e discover --feature my-feature`
+  2. Check exit code is 0
+  3. Verify stdout lists all discoverable test files with file paths
+  4. Verify each listed file path exists on disk
+- **Expected**: Exit code 0, stdout lists all test files for the feature; listed files exist on disk
+- **Priority**: P1
+
+### Task Submit --result blocked
+
+## TC-056: Task submit with --result blocked transitions to blocked state
+- **Source**: Story 3 / AC-1 (extended: blocked result variant)
+- **Type**: CLI
+- **Target**: cli/task-submit
+- **Test ID**: cli/task-submit/result-blocked-transitions-to-blocked
+- **Pre-conditions**: Task T-block-1 exists with status in_progress in index.json
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge task submit T-block-1 --result blocked --summary "blocked by external dependency"`
+  2. Check exit code is 0
+  3. Run `cat index.json | jq '.tasks[] | select(.id=="T-block-1") | .status'` and verify result is "blocked"
+  4. Verify a record file exists in records/ directory for T-block-1
+- **Expected**: Exit code 0, index.json updated to status "blocked", record file created
+- **Priority**: P1
+
+### State Machine Transition Validation
+
+## TC-057: Valid transition pending to in_progress succeeds
+- **Source**: Spec State Transition Constraints Table (pending row)
+- **Type**: CLI
+- **Target**: cli/task-claim
+- **Test ID**: cli/task-state/valid-pending-to-in-progress
+- **Pre-conditions**: Task T-trans-1 exists with status pending in index.json
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge task claim` (claims T-trans-1)
+  2. Check exit code is 0
+  3. Run `cat index.json | jq '.tasks[] | select(.id=="T-trans-1") | .status'` and verify result is "in_progress"
+- **Expected**: Exit code 0, status transitioned from pending to in_progress
+- **Priority**: P0
+
+## TC-058: Valid transition pending to rejected succeeds
+- **Source**: Spec State Transition Constraints Table (pending row)
+- **Type**: CLI
+- **Target**: cli/task-submit
+- **Test ID**: cli/task-state/valid-pending-to-rejected
+- **Pre-conditions**: Task T-trans-2 exists with status pending in index.json
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge task submit T-trans-2 --result rejected --summary "duplicate of another task"`
+  2. Check exit code is 0
+  3. Run `cat index.json | jq '.tasks[] | select(.id=="T-trans-2") | .status'` and verify result is "rejected"
+- **Expected**: Exit code 0, status transitioned from pending to rejected
+- **Priority**: P0
+
+## TC-059: Valid transition in_progress to completed succeeds
+- **Source**: Spec State Transition Constraints Table (in_progress row)
+- **Type**: CLI
+- **Target**: cli/task-submit
+- **Test ID**: cli/task-state/valid-in-progress-to-completed
+- **Pre-conditions**: Task T-trans-3 exists with status in_progress in index.json
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge task submit T-trans-3 --result success --summary "implementation complete"`
+  2. Check exit code is 0
+  3. Run `cat index.json | jq '.tasks[] | select(.id=="T-trans-3") | .status'` and verify result is "completed"
+- **Expected**: Exit code 0, status transitioned from in_progress to completed
+- **Priority**: P0
+
+## TC-060: Valid transition in_progress to blocked succeeds
+- **Source**: Spec State Transition Constraints Table (in_progress row)
+- **Type**: CLI
+- **Target**: cli/task-submit
+- **Test ID**: cli/task-state/valid-in-progress-to-blocked
+- **Pre-conditions**: Task T-trans-4 exists with status in_progress in index.json
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge task submit T-trans-4 --result blocked --summary "blocked by upstream dependency"`
+  2. Check exit code is 0
+  3. Run `cat index.json | jq '.tasks[] | select(.id=="T-trans-4") | .status'` and verify result is "blocked"
+- **Expected**: Exit code 0, status transitioned from in_progress to blocked
+- **Priority**: P0
+
+## TC-061: Valid transition blocked to in_progress succeeds
+- **Source**: Spec State Transition Constraints Table (blocked row)
+- **Type**: CLI
+- **Target**: cli/task-claim
+- **Test ID**: cli/task-state/valid-blocked-to-in-progress
+- **Pre-conditions**: Task T-trans-5 exists with status blocked in index.json
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge task claim` (claims T-trans-5)
+  2. Check exit code is 0
+  3. Run `cat index.json | jq '.tasks[] | select(.id=="T-trans-5") | .status'` and verify result is "in_progress"
+- **Expected**: Exit code 0, status transitioned from blocked to in_progress
+- **Priority**: P0
+
+## TC-062: Invalid transition pending to completed is rejected
+- **Source**: Spec State Transition Constraints Table (pending row — allowed: in_progress, rejected only)
+- **Type**: CLI
+- **Target**: cli/task-submit
+- **Test ID**: cli/task-state/invalid-pending-to-completed
+- **Pre-conditions**: Task T-trans-6 exists with status pending in index.json
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge task submit T-trans-6 --result success --summary "skip to completed"`
+  2. Check exit code is 1
+  3. Verify stderr contains "invalid state transition: pending → completed"
+  4. Run `cat index.json | jq '.tasks[] | select(.id=="T-trans-6") | .status'` and verify status is still "pending" (unchanged)
+- **Expected**: Exit code 1, stderr contains "invalid state transition: pending → completed", index.json unchanged
+- **Priority**: P0
+
+## TC-063: Invalid transition blocked to completed is rejected
+- **Source**: Spec State Transition Constraints Table (blocked row — allowed: in_progress only)
+- **Type**: CLI
+- **Target**: cli/task-submit
+- **Test ID**: cli/task-state/invalid-blocked-to-completed
+- **Pre-conditions**: Task T-trans-7 exists with status blocked in index.json
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge task submit T-trans-7 --result success --summary "skip blocked to completed"`
+  2. Check exit code is 1
+  3. Verify stderr contains "invalid state transition: blocked → completed"
+  4. Run `cat index.json | jq '.tasks[] | select(.id=="T-trans-7") | .status'` and verify status is still "blocked" (unchanged)
+- **Expected**: Exit code 1, stderr contains "invalid state transition: blocked → completed", index.json unchanged
+- **Priority**: P0
+
+## TC-064: Invalid transition in_progress to pending is rejected
+- **Source**: Spec State Transition Constraints Table (in_progress row — allowed: completed, blocked, rejected only)
+- **Type**: CLI
+- **Target**: cli/task-submit
+- **Test ID**: cli/task-state/invalid-in-progress-to-pending
+- **Pre-conditions**: Task T-trans-8 exists with status in_progress in index.json
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Attempt to transition T-trans-8 back to pending by calling `forge task submit T-trans-8 --result pending --summary "revert"`
+  2. Check exit code is 1
+  3. Verify stderr contains "invalid state transition: in_progress → pending" or "invalid result value: pending"
+  4. Run `cat index.json | jq '.tasks[] | select(.id=="T-trans-8") | .status'` and verify status is still "in_progress" (unchanged)
+- **Expected**: Exit code 1, transition rejected, index.json unchanged
+- **Priority**: P0
+
+## TC-065: Terminal state completed rejects all transitions
+- **Source**: Spec State Transition Constraints Table (completed row — terminal)
+- **Type**: CLI
+- **Target**: cli/task-submit
+- **Test ID**: cli/task-state/terminal-completed-rejects-all
+- **Pre-conditions**: Task T-trans-9 exists with status completed in index.json
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge task submit T-trans-9 --result success --summary "re-submit completed"`
+  2. Check exit code is 1
+  3. Verify stderr contains "task already in terminal state: completed"
+  4. Verify index.json unchanged
+- **Expected**: Exit code 1, stderr contains "task already in terminal state: completed", no status change
+- **Priority**: P0
+
+## TC-066: Terminal state rejected rejects all transitions
+- **Source**: Spec State Transition Constraints Table (rejected row — terminal)
+- **Type**: CLI
+- **Target**: cli/task-submit
+- **Test ID**: cli/task-state/terminal-rejected-rejects-all
+- **Pre-conditions**: Task T-trans-10 exists with status rejected in index.json
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge task submit T-trans-10 --result success --summary "re-submit rejected"`
+  2. Check exit code is 1
+  3. Verify stderr contains "task already in terminal state: rejected"
+  4. Verify index.json unchanged
+- **Expected**: Exit code 1, stderr contains "task already in terminal state: rejected", no status change
+- **Priority**: P0
+
+### Boundary and Edge Cases
+
+## TC-072: Task submit with invalid --result value returns error
+- **Source**: Spec Error Handling Table (task submit, invalid result value)
+- **Type**: CLI
+- **Target**: cli/task-submit
+- **Test ID**: cli/task-submit/invalid-result-value-returns-error
+- **Pre-conditions**: Task T-edge-1 exists with status in_progress in index.json
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge task submit T-edge-1 --result invalid_state --summary "bad result value"`
+  2. Check exit code is 1
+  3. Verify stderr contains "invalid result value: invalid_state" or "unknown result: invalid_state"
+  4. Run `cat index.json | jq '.tasks[] | select(.id=="T-edge-1") | .status'` and verify status is still "in_progress" (unchanged)
+- **Expected**: Exit code 1, stderr contains error about invalid result value, index.json unchanged
+- **Priority**: P0
+
+## TC-073: Task submit with empty --summary string accepts submission
+- **Source**: Spec Command Structure Table (task submit, --summary flag) + Spec Error Handling Table
+- **Type**: CLI
+- **Target**: cli/task-submit
+- **Test ID**: cli/task-submit/empty-summary-accepts-or-rejects
+- **Pre-conditions**: Task T-edge-2 exists with status in_progress in index.json
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge task submit T-edge-2 --result success --summary ""`
+  2. If accepted: check exit code is 0, verify index.json status is "completed", verify record file exists with empty summary field
+  3. If rejected: check exit code is 1, verify stderr contains "summary must not be empty", verify index.json unchanged
+  4. Verify the behavior matches the PRD specification for empty summary handling
+- **Expected**: Exit code and behavior match PRD spec for empty --summary; index.json state is consistent with the acceptance/rejection
+- **Priority**: P1
+
+## TC-074: Task submit with special characters in task ID returns error
+- **Source**: Spec Error Handling Table (task submit, task not found)
+- **Type**: CLI
+- **Target**: cli/task-submit
+- **Test ID**: cli/task-submit/special-chars-in-task-id-returns-error
+- **Pre-conditions**: No task exists with a special-character ID in index.json
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge task submit "T-<script>alert(1)</script>" --result success --summary "xss test"`
+  2. Check exit code is 1
+  3. Verify stderr contains "task not found" error
+  4. Verify index.json is unchanged and no injection artifacts exist
+  5. Run `forge task submit "T space id" --result success --summary "space test"`
+  6. Check exit code is 1
+  7. Verify stderr contains "task not found" error
+  8. Run `forge task submit "T'; DROP TABLE tasks;--" --result success --summary "sql test"`
+  9. Check exit code is 1
+  10. Verify stderr contains "task not found" error, no data corruption in index.json
+- **Expected**: Exit code 1 for all special-character IDs; stderr contains "task not found"; index.json remains valid JSON with no injection artifacts
+- **Priority**: P1
+
+## TC-075: Task index with no task markdown files creates empty index.json
+- **Source**: Spec Command Structure Table (task index)
+- **Type**: CLI
+- **Target**: cli/task-index
+- **Test ID**: cli/task-index/empty-directory-creates-empty-index
+- **Pre-conditions**: Feature directory exists but contains no task markdown files (*.md); no existing index.json
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Create a feature directory with no markdown files
+  2. Run `forge task index`
+  3. Check exit code is 0
+  4. Verify index.json is created and is valid JSON parseable by `jq .`
+  5. Run `cat index.json | jq '.tasks | length'` and verify result is 0
+- **Expected**: Exit code 0, index.json created with empty tasks array, valid JSON structure
+- **Priority**: P1
+
+## TC-076: Quality gate with partial failure reports specific failing step
+- **Source**: Story 4 / AC-2 (quality gate sequence) + Spec Error Handling Table
+- **Type**: CLI
+- **Target**: cli/quality-gate
+- **Test ID**: cli/quality-gate/partial-failure-reports-failing-step
+- **Pre-conditions**: Project code compiles successfully but has lint errors (compile passes, lint fails); all tasks completed
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge quality-gate`
+  2. Check exit code is 1
+  3. Verify stdout or stderr indicates compile step passed
+  4. Verify stderr indicates lint step failed with specific lint error details
+  5. Verify a P0 fix-task is created in index.json with title containing "fix-lint-1" (not "fix-compile")
+  6. Verify the fix-task type is "fix" and priority is P0
+- **Expected**: Exit code 1, compile step passes, lint step fails, fix-task created targeting the lint step specifically (not compile)
+- **Priority**: P0
+
+## TC-077: Task add with missing required flags returns error
+- **Source**: Spec Command Structure Table (task add)
+- **Type**: CLI
+- **Target**: cli/task-add
+- **Test ID**: cli/task-add/missing-flags-returns-error
+- **Pre-conditions**: index.json exists; feature context is set
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge task add` with no flags
+  2. Check exit code is 1
+  3. Verify stderr contains "required flag(s) not set" and lists the missing required flags (at minimum: title, type)
+  4. Run `forge task add --title "no-type-task"` (missing --type)
+  5. Check exit code is 1
+  6. Verify stderr contains "required flag(s) not set: type"
+  7. Run `forge task add --type implementation` (missing --title)
+  8. Check exit code is 1
+  9. Verify stderr contains "required flag(s) not set: title"
+- **Expected**: Exit code 1 for each missing-flag invocation; stderr identifies the specific missing required flag(s)
+- **Priority**: P0
+
+## TC-078: Concurrent task claim on same task resolves to single winner
+- **Source**: Story 3 / AC-4 (concurrent conflict) + Spec Agent Task Execution Flow (claim step)
+- **Type**: CLI
+- **Target**: cli/task-claim
+- **Test ID**: cli/task-claim/concurrent-claim-single-winner
+- **Pre-conditions**: index.json has exactly one task T-concurrent-1 with status pending
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. From two shell processes, simultaneously run `forge task claim` (both targeting T-concurrent-1)
+  2. Verify exactly one process exits with code 0 and stdout contains "T-concurrent-1"
+  3. Verify the other process exits with code 1 and stderr contains "concurrent write conflict, retry" or "no available tasks to claim"
+  4. Run `cat index.json | jq '.tasks[] | select(.id=="T-concurrent-1") | .status'` and verify result is "in_progress"
+  5. Verify index.json is valid JSON parseable by `jq .`
+- **Expected**: Exactly one claim succeeds (exit code 0), the other fails (exit code 1); index.json shows exactly one task claimed to in_progress; JSON integrity preserved
+- **Priority**: P1
+
+### Task check-deps and validate-index Happy Paths
+
+## TC-080: Task check-deps with all dependencies met succeeds
+- **Source**: Spec Agent Task Execution Flow (check-deps step) + Spec Command Structure Table (task check-deps)
+- **Type**: CLI
+- **Target**: cli/task-check-deps
+- **Test ID**: cli/task-check-deps/all-deps-met-succeeds
+- **Pre-conditions**: Task T-dep-1 exists in index.json with dependencies on tasks T-dep-A and T-dep-B, both of which have status completed
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge task check-deps T-dep-1`
+  2. Check exit code is 0
+  3. Verify stdout contains "all dependencies met" or "dependencies satisfied"
+  4. Verify each dependency task ID and its completed status is listed in output
+- **Expected**: Exit code 0, stdout confirms all dependencies are satisfied, each dependency listed with completed status
+- **Priority**: P0
+
+## TC-081: Task validate-index with valid schema succeeds
+- **Source**: Spec Agent Task Execution Flow (validate-index step) + Spec Command Structure Table (task validate-index)
+- **Type**: CLI
+- **Target**: cli/task-validate-index
+- **Test ID**: cli/task-validate-index/valid-schema-succeeds
+- **Pre-conditions**: index.json exists with valid schema (correct fields, valid types, all required fields present)
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge task validate-index`
+  2. Check exit code is 0
+  3. Verify stdout contains "index validation passed" or "index is valid"
+  4. Verify the number of validated tasks is reported in output
+- **Expected**: Exit code 0, stdout confirms validation passed, task count reported
+- **Priority**: P0
+
+### End-to-End Workflows (Integration)
+
+## TC-067: Agent Flow — claim to submit lifecycle completes successfully
+- **Source**: Spec Agent Task Execution Flow (full lifecycle)
+- **Type**: Integration
+- **Target**: cli/workflow-agent-flow
+- **Test ID**: cli/workflow/agent-claim-execute-submit-lifecycle
+- **Pre-conditions**: Feature "wf-test-1" exists with at least one pending implementation task T-wf-1; forge binary built
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge feature wf-test-1` to set feature context
+  2. Run `forge prompt get-by-task-id T-wf-1` and verify exit code 0; capture prompt output
+  3. Verify prompt contains substituted TASK_ID matching "T-wf-1"
+  4. Run `forge task claim` and verify exit code 0; capture claimed task ID
+  5. Run `cat index.json | jq '.tasks[] | select(.id=="T-wf-1") | .status'` and verify result is "in_progress"
+  6. Run `forge task submit T-wf-1 --result success --summary "completed via agent workflow"`
+  7. Check exit code is 0
+  8. Run `cat index.json | jq '.tasks[] | select(.id=="T-wf-1") | .status'` and verify result is "completed"
+  9. Verify records/ directory contains a record file for T-wf-1
+- **Expected**: Full lifecycle succeeds: prompt retrieved, task claimed (pending->in_progress), task submitted (in_progress->completed), record created. All intermediate exit codes 0.
+- **Priority**: P0
+
+## TC-068: Agent Flow — quality gate failure creates fix-task and blocked escalation
+- **Source**: Spec Agent Task Execution Flow (quality gate failure branch)
+- **Type**: Integration
+- **Target**: cli/workflow-agent-flow-failure
+- **Test ID**: cli/workflow/agent-quality-gate-failure-escalation
+- **Pre-conditions**: Feature "wf-test-2" exists with a pending task T-wf-2; project has a deliberate compile error
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge feature wf-test-2`
+  2. Run `forge task claim` and verify exit code 0
+  3. Run `forge task submit T-wf-2 --result success --summary "implementation done"`
+  4. Verify exit code is 0
+  5. Run `forge quality-gate` and verify exit code is 1 (compile fails)
+  6. Verify index.json contains a new P0 fix-task with title containing the failed step name
+  7. Run `forge task claim` to claim the fix-task
+  8. Run `forge task submit <fix-task-id> --result blocked --summary "cannot fix, escalating"`
+  9. Verify exit code is 0 and fix-task status is "blocked"
+- **Expected**: Quality gate failure creates fix-task; fix-task can be claimed and submitted as blocked. Full failure-to-escalation path works end-to-end.
+- **Priority**: P0
+
+## TC-069: Hook Flow — cleanup then quality-gate then verify-task-done sequence
+- **Source**: Spec CI/Hook Flow (SessionEnd -> Stop -> PreToolUse)
+- **Type**: Integration
+- **Target**: cli/workflow-hook-sequence
+- **Test ID**: cli/workflow/hook-cleanup-qualitygate-verify-sequence
+- **Pre-conditions**: Feature "wf-test-3" exists with some completed tasks and some in_progress tasks; project code compiles and passes tests
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge cleanup` and verify exit code is 0
+  2. Verify state files for completed tasks are removed
+  3. Run `forge quality-gate` and verify exit code is 0 (all pass)
+  4. Run `forge verify-task-done` and verify exit code is 1 (in_progress tasks remain)
+  5. Submit all remaining in_progress tasks: `forge task submit <id> --result success --summary "done"`
+  6. Run `forge verify-task-done` again and verify exit code is 0 (all tasks terminal)
+- **Expected**: Cleanup removes terminal state files. Quality gate passes when code is good. verify-task-done fails until all tasks are terminal, then passes. Full hook sequence behaves correctly.
+- **Priority**: P0
+
+## TC-070: Developer Flow — profile detect to set to e2e run
+- **Source**: Spec Developer Flow (profile setup + e2e execution)
+- **Type**: Integration
+- **Target**: cli/workflow-developer-flow
+- **Test ID**: cli/workflow/developer-profile-detect-set-e2e-run
+- **Pre-conditions**: Project contains playwright.config.ts; no profile set in .forge/config.yaml
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge profile detect` and verify exit code is 0
+  2. Verify stdout contains "web-playwright" with detection evidence
+  3. Run `forge profile set web-playwright` and verify exit code is 0
+  4. Verify .forge/config.yaml profile field is "web-playwright"
+  5. Run `forge e2e discover --feature my-feature` and verify exit code is 0
+  6. Run `forge e2e run --feature my-feature` and verify profile is used correctly
+- **Expected**: Profile detected from project, set in config, and used by e2e run. Full developer setup-to-execution flow works.
+- **Priority**: P0
+
+## TC-071: Quality gate retry loop — fix-task creation up to max 3
+- **Source**: Spec Agent Task Execution Flow (retry branch) + Story 4 / AC-4, AC-5
+- **Type**: Integration
+- **Target**: cli/workflow-quality-gate-retry
+- **Test ID**: cli/workflow/quality-gate-retry-loop-max-3
+- **Pre-conditions**: Feature "wf-test-4" exists; project has a persistent compile error
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge quality-gate` — exit code 1, verify first fix-task (e.g., "fix-compile-1") created in index.json
+  2. Run `forge quality-gate` again — exit code 1, verify second fix-task "fix-compile-2" created
+  3. Run `forge quality-gate` again — exit code 1, verify third fix-task "fix-compile-3" created
+  4. Run `forge quality-gate` again — exit code 1, verify stderr contains "max fix-tasks reached for compile, manual intervention required"
+  5. Verify index.json still has exactly 3 fix-tasks for compile step
+- **Expected**: Quality gate creates exactly 3 fix-tasks for the same failing step, then stops and outputs max-fix-tasks message. No fourth fix-task created.
+- **Priority**: P0
+
+## TC-082: Agent Flow — quality gate failure, fix succeeds, retry passes, task submits
+- **Source**: Spec Agent Task Execution Flow (recovery branch: quality gate fail -> fix -> retry -> succeed)
+- **Type**: Integration
+- **Target**: cli/workflow-agent-flow-recovery
+- **Test ID**: cli/workflow/agent-quality-gate-recovery-success
+- **Pre-conditions**: Feature "wf-test-5" exists with a pending implementation task T-wf-5; project has a fixable compile error (e.g., missing import that can be added); forge binary built
+- **Route**: N/A
+- **Element**: N/A
+- **Steps**:
+  1. Run `forge feature wf-test-5` to set feature context
+  2. Run `forge task claim` and verify exit code 0; capture claimed task ID (T-wf-5)
+  3. Run `forge task submit T-wf-5 --result success --summary "implementation done"`
+  4. Verify exit code is 0 and T-wf-5 status is "completed" in index.json
+  5. Run `forge quality-gate` — verify exit code is 1 (compile fails due to fixable error)
+  6. Verify index.json contains a new P0 fix-task with title containing "fix-compile-1"
+  7. Run `forge task claim` to claim the fix-task; verify exit code 0
+  8. Fix the compile error in the project source code (e.g., add the missing import)
+  9. Run `forge task submit <fix-task-id> --result success --summary "import added, compile fixed"`
+  10. Verify exit code is 0 and fix-task status is "completed" in index.json
+  11. Run `forge quality-gate` again — verify exit code is 0 (all steps pass now)
+  12. Verify no new fix-tasks are created in index.json
+  13. Run `forge verify-task-done` — verify exit code is 0 (all tasks terminal)
+- **Expected**: Full recovery loop succeeds: task submitted -> quality gate fails -> fix-task created -> fix executed -> fix submitted -> quality gate retries and passes -> all tasks verified done. No residual fix-tasks remain in non-terminal state.
+- **Priority**: P0
+
 ---
 
 ## Traceability
@@ -732,3 +1441,43 @@ generated: "2026-05-14"
 | TC-039 | Spec Error Handling | CLI | cli/task-submit | P1 |
 | TC-040 | Spec Error Handling | CLI | cli/task-submit | P1 |
 | TC-041 | Spec Error Handling | CLI | cli/profile-get | P1 |
+| TC-042 | Spec Agent Task Execution Flow | CLI | cli/task-claim | P0 |
+| TC-043 | Spec Command Structure (task add) | CLI | cli/task-add | P1 |
+| TC-044 | Spec Command Structure (task index) | CLI | cli/task-index | P1 |
+| TC-045 | Spec Command Structure (task migrate) | CLI | cli/task-migrate | P2 |
+| TC-046 | Spec Command Structure (task query) | CLI | cli/task-query | P1 |
+| TC-047 | Spec Command Structure (task status) | CLI | cli/task-status | P0 |
+| TC-048 | Spec Top-Level Commands (feature get) | CLI | cli/feature | P1 |
+| TC-049 | Spec Top-Level Commands (feature set) | CLI | cli/feature | P1 |
+| TC-050 | Spec Top-Level Commands (probe) | CLI | cli/probe | P1 |
+| TC-051 | Spec Top-Level Commands (version) | CLI | cli/version | P1 |
+| TC-052 | Spec Command Structure (e2e setup) | CLI | cli/e2e-setup | P1 |
+| TC-053 | Spec Command Structure (e2e verify) | CLI | cli/e2e-verify | P1 |
+| TC-054 | Spec Command Structure (e2e compile) | CLI | cli/e2e-compile | P1 |
+| TC-055 | Spec Command Structure (e2e discover) | CLI | cli/e2e-discover | P1 |
+| TC-056 | Story 3 / AC-1 (blocked variant) | CLI | cli/task-submit | P1 |
+| TC-057 | Spec State Transition (pending row) | CLI | cli/task-state | P0 |
+| TC-058 | Spec State Transition (pending row) | CLI | cli/task-state | P0 |
+| TC-059 | Spec State Transition (in_progress row) | CLI | cli/task-state | P0 |
+| TC-060 | Spec State Transition (in_progress row) | CLI | cli/task-state | P0 |
+| TC-061 | Spec State Transition (blocked row) | CLI | cli/task-state | P0 |
+| TC-062 | Spec State Transition (pending invalid) | CLI | cli/task-state | P0 |
+| TC-063 | Spec State Transition (blocked invalid) | CLI | cli/task-state | P0 |
+| TC-064 | Spec State Transition (in_progress invalid) | CLI | cli/task-state | P0 |
+| TC-065 | Spec State Transition (completed terminal) | CLI | cli/task-state | P0 |
+| TC-066 | Spec State Transition (rejected terminal) | CLI | cli/task-state | P0 |
+| TC-067 | Spec Agent Task Execution Flow | Integration | cli/workflow-agent-flow | P0 |
+| TC-068 | Spec Agent Flow (failure branch) | Integration | cli/workflow-agent-flow-failure | P0 |
+| TC-069 | Spec CI/Hook Flow | Integration | cli/workflow-hook-sequence | P0 |
+| TC-070 | Spec Developer Flow | Integration | cli/workflow-developer-flow | P0 |
+| TC-071 | Spec Agent Flow (retry) + Story 4 / AC-4, AC-5 | Integration | cli/workflow-quality-gate-retry | P0 |
+| TC-072 | Spec Error Handling (invalid result value) | CLI | cli/task-submit | P0 |
+| TC-073 | Spec Command Structure (task submit, --summary) | CLI | cli/task-submit | P1 |
+| TC-074 | Spec Error Handling (task not found) | CLI | cli/task-submit | P1 |
+| TC-075 | Spec Command Structure (task index) | CLI | cli/task-index | P1 |
+| TC-076 | Story 4 / AC-2 (partial failure) | CLI | cli/quality-gate | P0 |
+| TC-077 | Spec Command Structure (task add, required flags) | CLI | cli/task-add | P0 |
+| TC-078 | Story 3 / AC-4 + Spec Agent Flow (claim) | CLI | cli/task-claim | P1 |
+| TC-080 | Spec Agent Flow (check-deps) + Spec Command Structure | CLI | cli/task-check-deps | P0 |
+| TC-081 | Spec Agent Flow (validate-index) + Spec Command Structure | CLI | cli/task-validate-index | P0 |
+| TC-082 | Spec Agent Task Execution Flow (recovery branch) | Integration | cli/workflow-agent-flow-recovery | P0 |
