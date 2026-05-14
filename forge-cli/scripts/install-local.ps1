@@ -1,5 +1,5 @@
 # Install script for Windows
-# Builds and installs the forge CLI to ~/.zcode-forge-cli/
+# Builds and installs the forge CLI to ~/.forge/bin/
 
 param(
     [switch]$Force
@@ -9,7 +9,7 @@ $ErrorActionPreference = "Stop"
 
 # Configuration
 $AppName = "forge.exe"
-$InstallDir = "$env:USERPROFILE\.zcode-forge-cli"
+$InstallDir = "$env:USERPROFILE\.forge\bin"
 $BinDir = "bin"
 
 function Write-Info {

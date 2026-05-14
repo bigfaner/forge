@@ -1,51 +1,51 @@
 ---
 name: init-forge
-description: Build and install the task-cli tool.
+description: Build and install the forge CLI tool.
 allowed_tools: ["Bash", "Read"]
 ---
 
 # /init-forge
 
-Build and install the task-cli tool.
+Build and install the forge CLI tool.
 
 ## Process
 
 1. Detect operating system (Windows/Linux/macOS)
-2. Locate task-cli path (task-cli/)
+2. Locate forge-cli path (forge-cli/)
 3. Run the corresponding install script
 4. Prompt user to reopen terminal
 
 ## Steps
 
-### Step 1: Locate task-cli
+### Step 1: Locate forge-cli
 
 ```bash
-# task-cli is in the task-cli/ directory
-TASK_CLI_DIR="${CLAUDE_PROJECT_ROOT}/task-cli"
-if [ ! -d "$TASK_CLI_DIR" ]; then
-  echo "ERROR: task-cli not found at $TASK_CLI_DIR"
+# forge-cli is in the forge-cli/ directory
+FORGE_CLI_DIR="${CLAUDE_PROJECT_ROOT}/forge-cli"
+if [ ! -d "$FORGE_CLI_DIR" ]; then
+  echo "ERROR: forge-cli not found at $FORGE_CLI_DIR"
   exit 1
 fi
-echo "Found task-cli at: $TASK_CLI_DIR"
+echo "Found forge-cli at: $FORGE_CLI_DIR"
 ```
 
 ### Step 2: Detect OS and Install
 
 **Windows (PowerShell):**
 ```powershell
-cd $TASK_CLI_DIR
+cd $FORGE_CLI_DIR
 powershell -ExecutionPolicy Bypass -File scripts/install-local.ps1
 ```
 
 **Linux/macOS:**
 ```bash
-cd "$TASK_CLI_DIR" && bash scripts/install-local.sh
+cd "$FORGE_CLI_DIR" && bash scripts/install-local.sh
 ```
 
 ### Step 3: Verify Installation
 
 ```bash
-task --version
+forge --version
 ```
 
 ### Step 4: Prompt User
@@ -54,10 +54,12 @@ After installation, output:
 
 ```
 ╔════════════════════════════════════════════════════════════════╗
-║  task-cli installed successfully                              ║
+║  forge CLI installed successfully to ~/.forge/bin/            ║
 ╠════════════════════════════════════════════════════════════════╣
-║  Please reopen your terminal to refresh PATH, then run:       ║
-║  task --version                                               ║
+║  Run the following command to update PATH in current session: ║
+║    source ~/.zshrc    (for zsh)                               ║
+║    source ~/.bashrc   (for bash)                              ║
+║  Then verify with: forge --version                            ║
 ╚════════════════════════════════════════════════════════════════╝
 ```
 
@@ -65,12 +67,12 @@ After installation, output:
 
 | Error | Solution |
 |-------|----------|
-| task-cli not found | Ensure task-cli directory exists in the project root |
+| forge-cli not found | Ensure forge-cli directory exists in the project root |
 | Build failed | Check Go environment |
 | Permission denied | Check write permissions for install directory |
 
 <EXTREMELY-IMPORTANT>
-- Do NOT modify any project source files — this command only builds and installs the task-cli binary.
-- Do NOT overwrite an existing task-cli installation without user confirmation.
+- Do NOT modify any project source files — this command only builds and installs the forge CLI binary.
+- Do NOT overwrite an existing forge CLI installation without user confirmation.
 - If the build fails, report the error and stop. Do not attempt partial installs.
 </EXTREMELY-IMPORTANT>

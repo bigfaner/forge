@@ -1,12 +1,12 @@
 #!/bin/bash
 # Install script for Unix-like systems (Linux, macOS)
-# Builds and installs the forge CLI to ~/.zcode-forge-cli/
+# Builds and installs the forge CLI to ~/.forge/bin/
 
 set -e
 
 # Configuration
 APP_NAME="forge"
-INSTALL_DIR="${HOME}/.zcode-forge-cli"
+INSTALL_DIR="${HOME}/.forge/bin"
 BIN_DIR="bin"
 
 # Colors for output
@@ -103,14 +103,12 @@ add_to_path() {
     local shell_rc=""
     local path_export="export PATH=\"\${PATH}:${INSTALL_DIR}\""
 
-    # Detect shell configuration file
-    if [ -n "$ZSH_VERSION" ]; then
-        shell_rc="${HOME}/.zshrc"
-    elif [ -n "$BASH_VERSION" ]; then
-        shell_rc="${HOME}/.bashrc"
-    else
-        shell_rc="${HOME}/.profile"
-    fi
+    # Detect shell configuration file via $SHELL (reliable across subprocesses)
+    case "${SHELL:-}" in
+        */zsh)  shell_rc="${HOME}/.zshrc" ;;
+        */bash) shell_rc="${HOME}/.bashrc" ;;
+        *)      shell_rc="${HOME}/.profile" ;;
+    esac
 
     # Check if already in PATH
     if [[ ":$PATH:" == *":${INSTALL_DIR}:"* ]]; then
