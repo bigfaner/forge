@@ -26,10 +26,11 @@ func setupProfile(t *testing.T, profileName string) string {
 	return dir
 }
 
-// setupGoTestProfile creates a temp dir with go-test profile and e2e test directory.
-func setupGoTestProfile(t *testing.T) string {
+// setupProfileWithE2E creates a temp dir with a valid profile and e2e test directory.
+// Used by TestVerify which needs the directory structure for file scanning.
+func setupProfileWithE2E(t *testing.T, profileName string) string {
 	t.Helper()
-	dir := setupProfile(t, "go-test")
+	dir := setupProfile(t, profileName)
 	e2eDir := filepath.Join(dir, "tests", "e2e")
 	if err := os.MkdirAll(e2eDir, 0o755); err != nil {
 		t.Fatal(err)
@@ -43,7 +44,7 @@ func setupGoTestProfile(t *testing.T) string {
 
 func TestRun(t *testing.T) {
 	t.Run("delegates to just test-e2e", func(t *testing.T) {
-		dir := setupGoTestProfile(t)
+		dir := setupProfile(t, "go-test")
 		s := &stubExec{responses: map[string]execResponse{
 			"just test-e2e": {output: []byte("ok\n"), err: nil},
 		}}
@@ -58,7 +59,7 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("passes feature as justfile argument", func(t *testing.T) {
-		dir := setupGoTestProfile(t)
+		dir := setupProfile(t, "go-test")
 		s := &stubExec{responses: map[string]execResponse{
 			"just test-e2e feature=my-feature": {output: []byte("ok\n"), err: nil},
 		}}
@@ -73,7 +74,7 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("just not on PATH returns actionable error", func(t *testing.T) {
-		dir := setupGoTestProfile(t)
+		dir := setupProfile(t, "go-test")
 		s := &stubExec{responses: map[string]execResponse{
 			"just test-e2e": {output: nil, err: fmt.Errorf("exec: \"just\": executable file not found in $PATH")},
 		}}
@@ -91,7 +92,7 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("just failure returns formatted error", func(t *testing.T) {
-		dir := setupGoTestProfile(t)
+		dir := setupProfile(t, "go-test")
 		s := &stubExec{responses: map[string]execResponse{
 			"just test-e2e": {output: []byte("first line of error\nsecond line"), err: fmt.Errorf("exit status 1")},
 		}}
@@ -186,7 +187,7 @@ func TestSetup(t *testing.T) {
 
 func TestVerify(t *testing.T) {
 	t.Run("go-test profile scans for VERIFY markers", func(t *testing.T) {
-		dir := setupGoTestProfile(t)
+		dir := setupProfileWithE2E(t, "go-test")
 		// Write a file without VERIFY markers
 		e2eDir := filepath.Join(dir, "tests", "e2e")
 		if err := os.WriteFile(filepath.Join(e2eDir, "clean_test.go"), []byte("package e2e\n// no markers\n"), 0o644); err != nil {
@@ -204,7 +205,7 @@ func TestVerify(t *testing.T) {
 	})
 
 	t.Run("finds VERIFY markers returns error", func(t *testing.T) {
-		dir := setupGoTestProfile(t)
+		dir := setupProfileWithE2E(t, "go-test")
 		e2eDir := filepath.Join(dir, "tests", "e2e")
 		if err := os.WriteFile(filepath.Join(e2eDir, "has_verify_test.go"), []byte("// VERIFY: placeholder\npackage e2e\n"), 0o644); err != nil {
 			t.Fatal(err)
@@ -224,7 +225,7 @@ func TestVerify(t *testing.T) {
 	})
 
 	t.Run("feature not found returns ErrFeatureNotFound", func(t *testing.T) {
-		dir := setupGoTestProfile(t)
+		dir := setupProfileWithE2E(t, "go-test")
 
 		err := Verify(RunOpts{ProjectRoot: dir, Feature: "nonexistent"})
 		if !errors.Is(err, ErrFeatureNotFound) {
