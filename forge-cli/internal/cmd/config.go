@@ -11,6 +11,7 @@ import (
 
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/profile"
+	"forge-cli/pkg/project"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -29,8 +30,10 @@ var configGetCmd = &cobra.Command{
 
 Output is plain text: scalars print the raw value, arrays print one item per line.
 Exits with code 1 if the key doesn't exist or config file is missing.`,
-	Args: cobra.ExactArgs(1),
-	RunE: runConfigGet,
+	Args:          cobra.ExactArgs(1),
+	SilenceErrors: true,
+	SilenceUsage:  true,
+	RunE:          runConfigGet,
 }
 
 var configInitCmd = &cobra.Command{
@@ -56,10 +59,15 @@ func write(w io.Writer, format string, args ...any) {
 
 func resolveProjectRoot(cmd *cobra.Command) string {
 	root, _ := cmd.Flags().GetString("project-root")
-	if root == "" {
+	if root != "" {
+		return root
+	}
+	// Auto-detect project root
+	projectRoot, err := project.FindProjectRoot()
+	if err != nil {
 		return "."
 	}
-	return root
+	return projectRoot
 }
 
 func runConfigGet(cmd *cobra.Command, args []string) error {
@@ -68,7 +76,7 @@ func runConfigGet(cmd *cobra.Command, args []string) error {
 
 	value, err := profile.GetConfigValue(projectRoot, key)
 	if err != nil {
-		return fmt.Errorf("config get %s: %w", key, err)
+		return err
 	}
 
 	write(cmd.OutOrStdout(), "%s", value)

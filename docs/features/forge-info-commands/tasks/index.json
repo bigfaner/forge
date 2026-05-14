@@ -66,6 +66,18 @@
       "sourceTaskID": "2",
       "type": "fix"
     },
+    "fix-2": {
+      "id": "fix-2",
+      "title": "Fix: 14 e2e test failures — subcommands not wired up (config, proposal, lesson, feature list/status)",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-2.md",
+      "record": "records/fix-2.md",
+      "breaking": true,
+      "sourceTaskID": "T-quick-3",
+      "type": "fix"
+    },
     "quick-gen-scripts-go-test": {
       "id": "T-quick-2",
       "title": "Generate Quick Test Scripts (go-test)",
@@ -104,7 +116,7 @@
       "dependencies": [
         "T-quick-2"
       ],
-      "status": "blocked",
+      "status": "pending",
       "file": "quick-run-tests-go-test.md",
       "record": "records/quick-run-tests-go-test.md",
       "scope": "all",
