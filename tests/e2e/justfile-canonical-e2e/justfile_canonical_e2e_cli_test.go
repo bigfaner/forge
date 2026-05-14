@@ -365,8 +365,8 @@ func TestTC_019_NoProfileReturnsErrNoProfileForDiscover(t *testing.T) {
 // Traceability: TC-020 -> Proposal SC [4], Task 1 AC [1-2]
 func TestTC_020_AllManifestsContainZeroRunAndGraduateFields(t *testing.T) {
 	// Locate the profiles directory relative to the test file
-	// tests/e2e/features/justfile-canonical-e2e/ -> forge-cli/pkg/profile/profiles/
-	profilesDir := filepath.Join("..", "..", "..", "..", "forge-cli", "pkg", "profile", "profiles")
+	// tests/e2e/justfile-canonical-e2e/ -> forge-cli/pkg/profile/profiles/
+	profilesDir := filepath.Join("..", "..", "..", "forge-cli", "pkg", "profile", "profiles")
 
 	// Top-level YAML keys that MUST NOT appear (removed by Task 1)
 	forbiddenTopLevel := []string{"run:", "graduate:"}

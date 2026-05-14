@@ -26,11 +26,11 @@ func forgeBinary(t *testing.T) string {
 	if runtime.GOOS == "windows" {
 		binName = "forge.exe"
 	}
-	binPath := filepath.Join("..", "..", "..", "..", "forge-cli", "bin", binName)
+	binPath := filepath.Join("..", "..", "..", "forge-cli", "bin", binName)
 	if _, err := os.Stat(binPath); err != nil {
 		// Build the binary
 		buildCmd := exec.Command("go", "build", "-o", binPath, "./cmd/forge/")
-		buildCmd.Dir = filepath.Join("..", "..", "..", "..", "forge-cli")
+		buildCmd.Dir = filepath.Join("..", "..", "..", "forge-cli")
 		if out, err := buildCmd.CombinedOutput(); err != nil {
 			t.Fatalf("failed to build forge binary: %s: %s", err, out)
 		}
