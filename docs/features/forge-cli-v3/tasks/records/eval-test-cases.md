@@ -1,25 +1,29 @@
 ---
-status: "blocked"
-started: "2026-05-14 02:49"
-completed: "N/A"
-time_spent: ""
+status: "completed"
+started: "2026-05-14 02:56"
+completed: "2026-05-14 03:13"
+time_spent: "~17m"
 ---
 
 # Task Record: T-test-1b Evaluate e2e Test Cases
 
 ## Summary
-Cannot evaluate test cases: prerequisites missing (test-cases.md, prd-spec.md, prd-user-stories.md not found). T-test-1 claimed to generate 41 test cases but the file was not persisted to disk.
+Evaluated test-cases.md with 3 adversarial iterations. Final score: 905/1000 (target: 900). Test cases grew from 41 to 81 covering all PRD commands, state machine transitions, and multi-command workflows.
 
 ## Changes
 
 ### Files Created
-无
+- docs/features/forge-cli-v3/testing/eval/iteration-1.md
+- docs/features/forge-cli-v3/testing/eval/iteration-2.md
+- docs/features/forge-cli-v3/testing/eval/iteration-3.md
+- docs/features/forge-cli-v3/testing/eval/report.md
 
 ### Files Modified
-无
+- docs/features/forge-cli-v3/testing/test-cases.md
 
 ### Key Decisions
-无
+- Added 40 test cases across 2 revision iterations to cover missing commands, state transitions, and workflow integration scenarios
+- Kept all TCs as CLI type matching go-test profile capabilities
 
 ## Test Results
 - **Tests Executed**: No (noTest task)
@@ -28,7 +32,8 @@ Cannot evaluate test cases: prerequisites missing (test-cases.md, prd-spec.md, p
 - **Coverage**: N/A (task has no tests)
 
 ## Acceptance Criteria
-无
+- [x] Score >= 900/1000
+- [x] Step Actionability >= 200
 
 ## Notes
 无

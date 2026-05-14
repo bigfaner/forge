@@ -56,12 +56,11 @@ dev scope="":
 test scope="":
     #!/usr/bin/env bash
     set -euo pipefail
-    # Use -race only when CGO is available (race detector requires C compiler)
-    race_flag=""
     if command -v gcc &>/dev/null; then
-        race_flag="-race"
+        cd forge-cli && go test -race ./...
+    else
+        cd forge-cli && CGO_ENABLED=0 go test ./...
     fi
-    cd forge-cli && CGO_ENABLED=0 go test $race_flag ./...
 
 # lint: static analysis
 lint scope="":

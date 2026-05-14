@@ -344,6 +344,16 @@
       "noTest": true,
       "type": "fix"
     },
+    "fix-10": {
+      "id": "fix-10",
+      "title": "Fix: unit-test failure in all-completed quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-10.md",
+      "record": "records/fix-10.md",
+      "breaking": true
+    },
     "fix-2": {
       "id": "fix-2",
       "title": "Fix: T-test-1 output not persisted",
@@ -376,7 +386,66 @@
       "status": "completed",
       "file": "fix-4.md",
       "record": "records/fix-4.md",
-      "breaking": true
+      "breaking": true,
+      "type": "fix"
+    },
+    "fix-5": {
+      "id": "fix-5",
+      "title": "Fix: login bug",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-5.md",
+      "record": "records/fix-5.md",
+      "breaking": true,
+      "sourceTaskID": "1.1",
+      "type": "fix"
+    },
+    "fix-6": {
+      "id": "fix-6",
+      "title": "Fix: unit-test failure in all-completed quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-6.md",
+      "record": "records/fix-6.md",
+      "breaking": true,
+      "type": "fix"
+    },
+    "fix-7": {
+      "id": "fix-7",
+      "title": "Fix: login bug",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-7.md",
+      "record": "records/fix-7.md",
+      "breaking": true,
+      "sourceTaskID": "1.1",
+      "type": "fix"
+    },
+    "fix-8": {
+      "id": "fix-8",
+      "title": "Fix: unit-test failure in all-completed quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-8.md",
+      "record": "records/fix-8.md",
+      "breaking": true,
+      "type": "fix"
+    },
+    "fix-9": {
+      "id": "fix-9",
+      "title": "Fix: login bug",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-9.md",
+      "record": "records/fix-9.md",
+      "breaking": true,
+      "sourceTaskID": "1.1",
+      "type": "fix"
     },
     "gen-test-cases": {
       "id": "T-test-1",
