@@ -59,7 +59,7 @@ flowchart TD
 ✅ Right: Main session calls scorer → parses score → gates → calls reviser → loops
 </EXTREMELY-IMPORTANT>
 
-## Step 1: Locate UI Design Documents
+## Step 1: Locate UI Design Documents and Detect Platform
 
 Check in order:
 1. Path provided by user
@@ -72,6 +72,25 @@ Determine `<feature-slug>` from the path. The UI directory is `docs/features/<sl
 Also locate the PRD for Navigation Architecture reference:
 - `docs/features/<slug>/prd/prd-ui-functions.md` — pass to scorer as `PRD_PATH`
 
+### Platform Detection
+
+Detect the platform from the UI design document(s). For each UI design file found:
+
+1. Read the document header/frontmatter for a `platform` field
+2. If no explicit field, infer from the document structure:
+   - Contains ASCII mockups, terminal keybindings, or character palettes → `tui`
+   - Contains touch targets, safe areas, or adaptive breakpoints → `mobile`
+   - Default: `web`
+3. Map platform to rubric file:
+
+| Platform | Rubric File |
+|----------|-------------|
+| `web` | `plugins/forge/skills/eval-ui/templates/rubric-web.md` |
+| `mobile` | `plugins/forge/skills/eval-ui/templates/rubric-mobile.md` |
+| `tui` | `plugins/forge/skills/eval-ui/templates/rubric-tui.md` |
+
+For multi-platform features (e.g., `ui-design-web.md` + `ui-design-tui.md`), evaluate each file independently with its respective rubric. Run separate score-revise loops per platform.
+
 ## Step 2: Invoke Scorer Subagent
 
 Spawn `doc-scorer` via **Agent tool** (subagent_type: `forge:doc-scorer` if registered, otherwise `general-purpose`).
@@ -79,7 +98,7 @@ Spawn `doc-scorer` via **Agent tool** (subagent_type: `forge:doc-scorer` if regi
 <HARD-RULE>
 Pass these inputs to the scorer:
 - `DOC_DIR` = `docs/features/<slug>/ui/`
-- `RUBRIC_PATH` = `plugins/forge/skills/eval-ui/templates/rubric.md`
+- `RUBRIC_PATH` = the platform-specific rubric file detected in Step 1 (e.g., `plugins/forge/skills/eval-ui/templates/rubric-web.md`)
 - `REPORT_PATH` = `docs/features/<slug>/ui/eval/iteration-{{N}}.md`
 - `ITERATION` = current iteration number (1-based)
 - `PREVIOUS_REPORT_PATH` = previous iteration report path (only if iteration > 1)
@@ -123,7 +142,7 @@ Spawn `doc-reviser` via **Agent tool** (subagent_type: `forge:doc-reviser` if re
 <HARD-RULE>
 Pass these inputs to the reviser:
 - `DOC_DIR` = `docs/features/<slug>/ui/`
-- `RUBRIC_PATH` = `plugins/forge/skills/eval-ui/templates/rubric.md`
+- `RUBRIC_PATH` = the platform-specific rubric file detected in Step 1 (e.g., `plugins/forge/skills/eval-ui/templates/rubric-web.md`)
 - `EVAL_REPORT_PATH` = `docs/features/<slug>/ui/eval/iteration-{{N}}.md`
 - `ATTACK_POINTS` = the 3 attack points extracted from scorer output
 </HARD-RULE>
