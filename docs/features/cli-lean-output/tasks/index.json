@@ -19,7 +19,7 @@
       "title": "Trim submit, query, and status output to essential fields",
       "priority": "P0",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "2-trim-submit-query-status.md",
       "record": "records/2-trim-submit-query-status.md",
       "scope": "backend",

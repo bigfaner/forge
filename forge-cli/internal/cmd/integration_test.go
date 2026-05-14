@@ -357,11 +357,12 @@ func TestRunRecord_HappyPath(t *testing.T) {
 		runSubmit(nil, []string{"1.1"})
 	})
 
-	if !strings.Contains(out, "TASK_ID: 1.1") {
-		t.Errorf("expected task ID in output, got: %s", out)
-	}
 	if !strings.Contains(out, "STATUS: completed") {
 		t.Errorf("expected status in output, got: %s", out)
+	}
+	// TASK_ID removed from non-JSON output
+	if strings.Contains(out, "TASK_ID:") {
+		t.Errorf("TASK_ID should not appear in non-JSON submit output, got: %s", out)
 	}
 
 	// Verify record file was created

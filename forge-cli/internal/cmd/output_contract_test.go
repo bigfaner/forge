@@ -316,29 +316,26 @@ func TestContract_Add_Skipped(t *testing.T) {
 func TestContract_Record_Completed(t *testing.T) {
 	out := captureStdout(func() {
 		PrintBlockStart()
-		PrintField("TASK_ID", "1.1")
-		PrintField("RECORD_FILE", "/path/to/records/1.1.md")
 		PrintField("STATUS", "completed")
 		PrintBlockEnd()
 	})
 	lines := parseBlock(t, out)
 
-	if !hasField(lines, "TASK_ID", "1.1") {
-		t.Errorf("expected TASK_ID: 1.1")
-	}
-	if !hasField(lines, "RECORD_FILE", "") {
-		t.Errorf("expected RECORD_FILE field")
-	}
 	if !hasField(lines, "STATUS", "completed") {
 		t.Errorf("expected STATUS: completed")
+	}
+	// TASK_ID and RECORD_FILE removed — only STATUS remains
+	if !hasNoField(lines, "TASK_ID") {
+		t.Errorf("TASK_ID should not appear in submit output")
+	}
+	if !hasNoField(lines, "RECORD_FILE") {
+		t.Errorf("RECORD_FILE should not appear in submit output")
 	}
 }
 
 func TestContract_Record_Blocked(t *testing.T) {
 	out := captureStdout(func() {
 		PrintBlockStart()
-		PrintField("TASK_ID", "1.1")
-		PrintField("RECORD_FILE", "/path/to/records/1.1.md")
 		PrintField("STATUS", "blocked")
 		PrintBlockEnd()
 	})
@@ -346,6 +343,10 @@ func TestContract_Record_Blocked(t *testing.T) {
 
 	if !hasField(lines, "STATUS", "blocked") {
 		t.Errorf("expected STATUS: blocked")
+	}
+	// Only STATUS field should appear
+	if len(lines) != 1 {
+		t.Errorf("expected exactly 1 field (STATUS), got %d: %v", len(lines), lines)
 	}
 }
 
@@ -378,5 +379,135 @@ func TestContract_BlockSeparator_NoTrailingNewlineInSeparator(t *testing.T) {
 
 	if !strings.HasSuffix(out, "---\n") {
 		t.Errorf("block must end with ---\\n, got suffix: %q", out[len(out)-20:])
+	}
+}
+
+// --- Contract: query output format ---
+
+func TestContract_Query_Minimal(t *testing.T) {
+	out := captureStdout(func() {
+		PrintBlockStart()
+		PrintField("TASK_ID", "1")
+		PrintField("STATUS", "in_progress")
+		PrintBlockEnd()
+	})
+	lines := parseBlock(t, out)
+
+	if !hasField(lines, "TASK_ID", "1") {
+		t.Errorf("expected TASK_ID: 1")
+	}
+	if !hasField(lines, "STATUS", "in_progress") {
+		t.Errorf("expected STATUS: in_progress")
+	}
+	// Removed fields must NOT appear
+	for _, field := range []string{"KEY", "TITLE", "PRIORITY", "ESTIMATED_TIME",
+		"DEPENDENCIES", "FILE", "RECORD"} {
+		if !hasNoField(lines, field) {
+			t.Errorf("removed field %s should not appear in query output: %v", field, lines)
+		}
+	}
+}
+
+func TestContract_Query_WithScope(t *testing.T) {
+	out := captureStdout(func() {
+		PrintBlockStart()
+		PrintField("TASK_ID", "1")
+		PrintField("STATUS", "in_progress")
+		PrintFieldIfNotEmpty("SCOPE", "backend")
+		PrintBlockEnd()
+	})
+	lines := parseBlock(t, out)
+
+	if !hasField(lines, "SCOPE", "backend") {
+		t.Errorf("expected SCOPE: backend")
+	}
+}
+
+func TestContract_Query_EmptyScopeOmitted(t *testing.T) {
+	out := captureStdout(func() {
+		PrintBlockStart()
+		PrintField("TASK_ID", "1")
+		PrintField("STATUS", "in_progress")
+		PrintFieldIfNotEmpty("SCOPE", "")
+		PrintBlockEnd()
+	})
+	lines := parseBlock(t, out)
+
+	if !hasNoField(lines, "SCOPE") {
+		t.Errorf("SCOPE should be omitted when empty")
+	}
+}
+
+func TestContract_Query_BreakingWhenTrue(t *testing.T) {
+	out := captureStdout(func() {
+		PrintBlockStart()
+		PrintField("TASK_ID", "1")
+		PrintField("STATUS", "in_progress")
+		PrintField("BREAKING", "true")
+		PrintBlockEnd()
+	})
+	lines := parseBlock(t, out)
+
+	if !hasField(lines, "BREAKING", "true") {
+		t.Errorf("expected BREAKING: true")
+	}
+}
+
+func TestContract_Query_BreakingOmittedWhenFalse(t *testing.T) {
+	out := captureStdout(func() {
+		PrintBlockStart()
+		PrintField("TASK_ID", "1")
+		PrintField("STATUS", "in_progress")
+		PrintBlockEnd()
+	})
+	lines := parseBlock(t, out)
+
+	if !hasNoField(lines, "BREAKING") {
+		t.Errorf("BREAKING should be omitted when false")
+	}
+}
+
+// --- Contract: status output format ---
+
+func TestContract_Status_QueryMode(t *testing.T) {
+	out := captureStdout(func() {
+		PrintBlockStart()
+		PrintField("TASK_ID", "1")
+		PrintField("STATUS", "in_progress")
+		PrintBlockEnd()
+	})
+	lines := parseBlock(t, out)
+
+	if !hasField(lines, "TASK_ID", "1") {
+		t.Errorf("expected TASK_ID: 1")
+	}
+	if !hasField(lines, "STATUS", "in_progress") {
+		t.Errorf("expected STATUS: in_progress")
+	}
+	// Removed fields must NOT appear
+	for _, field := range []string{"KEY", "TITLE", "DEPENDENCIES"} {
+		if !hasNoField(lines, field) {
+			t.Errorf("removed field %s should not appear in status output: %v", field, lines)
+		}
+	}
+}
+
+func TestContract_Status_UpdateMode(t *testing.T) {
+	out := captureStdout(func() {
+		PrintBlockStart()
+		PrintField("TASK_ID", "1")
+		PrintField("STATUS", "pending")
+		PrintBlockEnd()
+	})
+	lines := parseBlock(t, out)
+
+	if !hasField(lines, "TASK_ID", "1") {
+		t.Errorf("expected TASK_ID: 1")
+	}
+	if !hasField(lines, "STATUS", "pending") {
+		t.Errorf("expected STATUS: pending")
+	}
+	if len(lines) != 2 {
+		t.Errorf("expected exactly 2 fields (TASK_ID + STATUS), got %d: %v", len(lines), lines)
 	}
 }

@@ -393,17 +393,21 @@ func TestRunQuery(t *testing.T) {
 		t.Fatalf("query command failed: %v", err)
 	}
 
-	if !strings.Contains(output, "KEY: task1") {
-		t.Errorf("expected output to contain 'KEY: task1', got %q", output)
+	if !strings.Contains(output, "TASK_ID: 1.1") {
+		t.Errorf("expected output to contain 'TASK_ID: 1.1', got %q", output)
 	}
-	if !strings.Contains(output, "ID: 1.1") {
-		t.Errorf("expected output to contain 'ID: 1.1', got %q", output)
+	if !strings.Contains(output, "STATUS: pending") {
+		t.Errorf("expected output to contain 'STATUS: pending', got %q", output)
 	}
-	if !strings.Contains(output, "TITLE: Task 1") {
-		t.Errorf("expected output to contain 'TITLE: Task 1', got %q", output)
+	// Removed fields must NOT appear
+	if strings.Contains(output, "KEY:") {
+		t.Errorf("KEY should not appear in query output, got %q", output)
 	}
-	if !strings.Contains(output, "DEPENDENCIES: 1.0") {
-		t.Errorf("expected output to contain 'DEPENDENCIES: 1.0', got %q", output)
+	if strings.Contains(output, "TITLE:") {
+		t.Errorf("TITLE should not appear in query output, got %q", output)
+	}
+	if strings.Contains(output, "DEPENDENCIES:") {
+		t.Errorf("DEPENDENCIES should not appear in query output, got %q", output)
 	}
 }
 
