@@ -1,0 +1,149 @@
+{
+  "feature": "justfile-canonical-e2e",
+  "proposal": "docs/proposals/justfile-canonical-e2e/proposal.md",
+  "created": "2026-05-15",
+  "tasks": {
+    "1-remove-manifest-command-fields": {
+      "id": "1",
+      "title": "Remove run.* and graduate.* fields from all 6 manifest.yaml files",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "status": "pending",
+      "file": "1-remove-manifest-command-fields.md",
+      "record": "records/1-remove-manifest-command-fields.md",
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "2-delegate-actions-to-just": {
+      "id": "2",
+      "title": "Delegate e2e/actions.go functions to just recipes",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-delegate-actions-to-just.md",
+      "record": "records/2-delegate-actions-to-just.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "3-update-actions-tests": {
+      "id": "3",
+      "title": "Update e2e/actions_test.go for just delegation",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "2"
+      ],
+      "status": "pending",
+      "file": "3-update-actions-tests.md",
+      "record": "records/3-update-actions-tests.md",
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "4-version-bump": {
+      "id": "4",
+      "title": "Version bump to 3.10.0",
+      "priority": "P2",
+      "estimatedTime": "5m",
+      "dependencies": [
+        "3"
+      ],
+      "status": "pending",
+      "file": "4-version-bump.md",
+      "record": "records/4-version-bump.md",
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "quick-gen-scripts-go-test": {
+      "id": "T-quick-2",
+      "title": "Generate Quick Test Scripts (go-test)",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "T-quick-1"
+      ],
+      "status": "pending",
+      "file": "quick-gen-scripts-go-test.md",
+      "record": "records/quick-gen-scripts-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.gen-scripts",
+      "profile": "go-test"
+    },
+    "quick-graduate-go-test": {
+      "id": "T-quick-4",
+      "title": "Graduate Quick Test Scripts (go-test)",
+      "priority": "P1",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "T-quick-3"
+      ],
+      "status": "pending",
+      "file": "quick-graduate-go-test.md",
+      "record": "records/quick-graduate-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.graduate",
+      "profile": "go-test"
+    },
+    "quick-run-tests-go-test": {
+      "id": "T-quick-3",
+      "title": "Run Quick E2E Tests (go-test)",
+      "priority": "P1",
+      "estimatedTime": "15-30min",
+      "dependencies": [
+        "T-quick-2"
+      ],
+      "status": "pending",
+      "file": "quick-run-tests-go-test.md",
+      "record": "records/quick-run-tests-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.run",
+      "profile": "go-test"
+    },
+    "quick-test-cases-go-test": {
+      "id": "T-quick-1",
+      "title": "Generate Quick Test Cases (go-test)",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "4"
+      ],
+      "status": "pending",
+      "file": "quick-test-cases-go-test.md",
+      "record": "records/quick-test-cases-go-test.md",
+      "scope": "all",
+      "noTest": true,
+      "type": "test-pipeline.gen-cases",
+      "profile": "go-test"
+    },
+    "quick-verify-regression": {
+      "id": "T-quick-5",
+      "title": "Verify Quick E2E Regression",
+      "priority": "P1",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "T-quick-4"
+      ],
+      "status": "pending",
+      "file": "quick-verify-regression.md",
+      "record": "records/quick-verify-regression.md",
+      "scope": "all",
+      "type": "test-pipeline.verify-regression"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
