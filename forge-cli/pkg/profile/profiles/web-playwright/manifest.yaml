@@ -16,15 +16,3 @@ templates:
   package-file: templates/package.json
   tsconfig-file: templates/tsconfig.json
   additional: []
-
-run:
-  command: "npx playwright test"
-  compile: "npx tsc --noEmit"
-  result-format: playwright-json
-
-graduate:
-  target-directory: tests/e2e/
-  merge-strategy: module
-  import-rewrite: "../../helpers.js → ../helpers.js"
-  compile-check: "cd tests/e2e && npx tsc --noEmit"
-  list-tests: "cd tests/e2e && npx playwright test --list"

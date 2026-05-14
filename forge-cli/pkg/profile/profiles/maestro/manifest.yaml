@@ -10,15 +10,3 @@ templates:
   test-file: templates/test-file.yaml
   config-file: templates/config.yaml
   additional: []
-
-run:
-  command: "maestro test tests/e2e/ --format junit --output tests/e2e/results/"
-  compile: null
-  result-format: maestro-junit
-
-graduate:
-  target-directory: tests/e2e/
-  merge-strategy: file
-  import-rewrite: null
-  compile-check: null
-  list-tests: "maestro test tests/e2e/ --list"

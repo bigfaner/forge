@@ -8,7 +8,7 @@
       "title": "Remove run.* and graduate.* fields from all 6 manifest.yaml files",
       "priority": "P1",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "1-remove-manifest-command-fields.md",
       "record": "records/1-remove-manifest-command-fields.md",
       "scope": "backend",
