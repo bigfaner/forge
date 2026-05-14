@@ -1,6 +1,6 @@
 ---
 name: quick
-description: Streamlined pipeline for small features (1-2h, 1-4 tasks). Brainstorm -> tasks -> execute, no PRD or design. Supports --no-test flag.
+description: Streamlined pipeline for features (1-10 tasks). Brainstorm -> tasks -> execute, no PRD or design. Supports --no-test flag.
 allowed_tools: ["Bash", "Read", "Write", "Edit", "Grep", "Glob", "Agent", "Skill", "AskUserQuestion"]
 argument-hints: "[--no-test]"
 ---
@@ -80,14 +80,14 @@ Skill(skill="forge:quick-tasks", args="--no-test")
 ```
 
 This produces:
-- `docs/features/<slug>/tasks/*.md` — task files (1-4 business + optional T-quick-1~5)
+- `docs/features/<slug>/tasks/*.md` — task files (1-10 business + optional T-quick-1~5)
 - `docs/features/<slug>/tasks/index.json` — task index (compatible with `/run-tasks`)
 - `docs/features/<slug>/manifest.md` — simplified manifest
 
-If quick-tasks reports >4 tasks needed, STOP and recommend the full pipeline:
+If quick-tasks reports >10 tasks needed, STOP and recommend the full pipeline:
 
 ```
-"This feature requires more than 4 tasks — too large for quick mode.
+"This feature requires more than 10 tasks — too large for quick mode.
 Recommend using the full pipeline: /write-prd → /tech-design → /breakdown-tasks"
 ```
 
@@ -113,14 +113,14 @@ The existing run-tasks dispatcher will:
 |-----------|--------|
 | Brainstorm fails | Stop, user can retry |
 | User aborts at confirmation | Stop cleanly |
-| quick-tasks exceeds 4 task limit | Stop, recommend full pipeline |
+| quick-tasks exceeds 10 task limit | Stop, recommend full pipeline |
 | `forge task validate-index` fails | Stop, fix index.json issues |
 | run-tasks encounters failures | Handled by dispatcher (fix tasks, retries) |
 
 ## Rules
 
 <EXTREMELY-IMPORTANT>
-- Maximum 4 business tasks. If brainstorm produces a proposal that needs more, STOP and suggest the full pipeline.
+- Maximum 10 business tasks. If brainstorm produces a proposal that needs more, STOP and suggest the full pipeline.
 - ONE feature per invocation.
 - The /quick pipeline is for small, well-scoped features. If scope grows during brainstorm, recommend switching to full mode.
 </EXTREMELY-IMPORTANT>

@@ -67,7 +67,7 @@ Each skill checks prerequisites with `ls` before execution; aborts and prompts u
 
 ### Quick Mode
 
-For small features (1-2h, 1-4 tasks), use the streamlined pipeline:
+For features (1-10 tasks), use the streamlined pipeline:
 
 ```mermaid
 graph LR
@@ -79,13 +79,12 @@ graph LR
 ```
 
 **When to use Quick Mode:**
-- Feature is 1-2 hours of work
-- 1-4 tasks maximum
+- 1-10 tasks maximum
 - No complex architecture decisions needed
 - Proposal provides enough context (no PRD/design needed)
 
 **When to use Full Mode:**
-- Feature >2 hours or >4 tasks
+- Feature requires >10 tasks
 - Requires PRD with acceptance criteria
 - Needs tech design with architecture decisions
 - Has UI design requirements
