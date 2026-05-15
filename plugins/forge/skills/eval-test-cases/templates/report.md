@@ -26,7 +26,7 @@ evaluator: Claude (automated, adversarial)
 │    Expected results          │  ___/90  │          │            │
 │    Preconditions explicit    │  ___/70  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 3. Route & Element Accuracy  │  ___     │  200     │ ✅/⚠️/❌    │
+│ 3. Interface Accuracy        │  ___     │  200     │ ✅/⚠️/❌    │
 │    Routes valid              │  ___/70  │          │            │
 │    Elements identifiable     │  ___/70  │          │            │
 │    Consistency               │  ___/60  │          │            │

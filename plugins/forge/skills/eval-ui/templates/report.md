@@ -10,6 +10,11 @@ evaluator: Claude (automated, adversarial)
 
 **Score: {{SCORE}}/1000** (target: {{TARGET}})
 
+<!-- Platform-adaptive: replace D2/D3 dimension names with the active rubric's names:
+     web → "User Experience" / "Design Integrity"
+     mobile → "Touch Experience" / "Adaptive Layout"
+     tui → "Terminal Experience" / "Visual Specification" -->
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                    UI DESIGN QUALITY SCORECARD                   │
@@ -22,12 +27,12 @@ evaluator: Claude (automated, adversarial)
 │    State requirement coverage│  ___/80  │          │            │
 │    Edge case handling        │  ___/50  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 2. User Experience (User)    │  ___     │  250     │ ✅/⚠️/❌    │
+│ 2. {{D2_NAME}} (End User)    │  ___     │  250     │ ✅/⚠️/❌    │
 │    Information hierarchy     │  ___/80  │          │            │
 │    Interaction intuitiveness │  ___/80  │          │            │
 │    Accessibility             │  ___/90  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 3. Design Integrity (Design) │  ___     │  250     │ ✅/⚠️/❌    │
+│ 3. {{D3_NAME}} (Designer)    │  ___     │  250     │ ✅/⚠️/❌    │
 │    Design system adherence   │  ___/80  │          │            │
 │    Visual coherence          │  ___/90  │          │            │
 │    State completeness        │  ___/80  │          │            │

@@ -51,14 +51,14 @@ graph LR
 
 ```mermaid
 graph LR
-    F["/breakdown-tasks<br><i>appends T-test-1..5</i>"] --> T1["/gen-sitemap*<br>sitemap.json"]
+    F["/breakdown-tasks<br><i>appends T-test-1..5 (with 1b, 4.5)</i>"] --> T1["/gen-sitemap*<br>sitemap.json"]
     T1 --> T2["/gen-test-cases<br>test-cases.md"]
     T2 --> T2b["/eval-test-cases<br>eval report"]
     T2b --> T3["/gen-test-scripts<br>tests/e2e/features/"]
     T3 --> T4["/run-e2e-tests<br>results/"]
-    T4 --> T4b["verify-regression<br>regression check"]
-    T4b --> T5["/graduate-tests<br>tests/e2e/target/"]
-    T5 --> T6["/consolidate-specs<br>specs/{biz,tech}-specs.md"]
+    T4 --> T4b["/graduate-tests<br>tests/e2e/target/"]
+    T4b --> T4c["verify-regression<br>regression check"]
+    T4c --> T5["/consolidate-specs<br>specs/{biz,tech}-specs.md"]
 ```
 
 > * /gen-sitemap is a prerequisite command (called by T-test-1), not a standalone T-test task.
@@ -146,6 +146,26 @@ Three layers of testing, each with distinct purpose and trigger:
 Unit (per task) ──→ Feature E2E (T-test-3) ──→ Regression (graduate to tests/e2e/)
        ↑ Quality Gate enforces              ↑ T-test-4 graduates
 ```
+
+### Evaluation Parameter Exceptions
+
+Most eval skills default to 900 target / 3 iterations. Exceptions:
+
+| Skill | Target | Iterations | Reason |
+|-------|--------|------------|--------|
+| `/eval-ui` | 950 | 3 | UI design requires higher visual fidelity |
+| `/eval-test-cases` | 900 | 6 | Test cases need more refinement cycles |
+| `/eval-harness` | N/A (100-point scale) | N/A | Infrastructure health check, not adversarial |
+
+### Auxiliary Skills
+
+These skills operate outside the main workflow:
+
+| Skill | Purpose |
+|-------|---------|
+| `/eval-consistency` | Cross-document consistency check and fix (PRD, Design, UI, Tasks) |
+| `/forensic` | Analyze past session transcripts to identify root causes of agent deviations |
+| `/improve-harness` | Dynamically implement harness improvements from eval-harness report |
 
 ## Task-CLI
 

@@ -59,10 +59,10 @@ Explore context → Check proposal → Assess scope → Ask questions → Propos
 4. **Ask clarifying questions** — one at a time via AskUserQuestion tool
 5. **Propose 2-3 approaches** — with trade-offs and your recommendation
 6. **Present PRD sections** — get approval after each section
-7. **Write PRD Spec** — save to `docs/features/<feature-slug>/prd/prd-spec.md`
-8. **Write User Stories** — save to `docs/features/<feature-slug>/prd/prd-user-stories.md`
-9. **Write UI Functions** (mandatory for UI features) — save to `docs/features/<feature-slug>/prd/prd-ui-functions.md`
-10. **Create Manifest** — save to `docs/features/<feature-slug>/manifest.md`
+7. **Write PRD Spec** — save to `docs/features/<slug>/prd/prd-spec.md`
+8. **Write User Stories** — save to `docs/features/<slug>/prd/prd-user-stories.md`
+9. **Write UI Functions** (mandatory for UI features) — save to `docs/features/<slug>/prd/prd-ui-functions.md`
+10. **Create Manifest** — save to `docs/features/<slug>/manifest.md`
 11. **Commit** — commit all documents
 
 ## Output Documents
@@ -140,7 +140,7 @@ Use `templates/prd-spec.md` template.
 **Directory structure:**
 
 ```
-docs/features/<feature-slug>/
+docs/features/<slug>/
 ├── manifest.md                # Feature index & traceability
 ├── prd/
 │   ├── prd-spec.md            # PRD Spec
@@ -236,15 +236,15 @@ Do NOT commit documents automatically. Present all generated documents to the us
 3. Only commit after explicit user approval:
 
 ```bash
-git add docs/features/<feature-slug>/
-git commit -m "docs: add PRD for <feature-slug>"
+git add docs/features/<slug>/
+git commit -m "docs: add PRD for <slug>"
 ```
 
 ## Step 11: Adversarial Eval Prompt
 
 After committing, use `AskUserQuestion` to ask:
 
-> Run `/eval-prd` for adversarial evaluation? (default: 90 points / 3 rounds)
+> Run `/eval-prd` for adversarial evaluation? (default: 900 points / 3 rounds)
 
 - **Yes** → invoke `/eval-prd` via `Skill` tool
 - **Custom** → invoke `/eval-prd --target X --iterations Y` via `Skill` tool

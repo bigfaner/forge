@@ -55,7 +55,7 @@ flowchart TD
 4. `--target` / `--iterations` are meaningless unless main session owns the loop
 5. Scorer and reviser are independent subagents — invoke via Agent tool, never inline
 
-❌ Wrong: `Agent(general-purpose, "evaluate this UI design and iterate until score >= 80")`
+❌ Wrong: `Agent(general-purpose, "evaluate this UI design and iterate until score >= 950")`
 ✅ Right: Main session calls scorer → parses score → gates → calls reviser → loops
 </EXTREMELY-IMPORTANT>
 
@@ -167,8 +167,8 @@ Increment iteration counter. Return to Step 2.
 | Dimension / Perspective | Score | Max |
 |------------------------|-------|-----|
 | Requirement Coverage (PM) | {{d1}} | 250 |
-| User Experience (User) | {{d2}} | 250 |
-| Design Integrity (Designer) | {{d3}} | 250 |
+| {{D2_NAME}} (End User) | {{d2}} | 250 |
+| {{D3_NAME}} (Designer) | {{d3}} | 250 |
 | Implementability (Developer) | {{d4}} | 250 |
 
 ### Outcome

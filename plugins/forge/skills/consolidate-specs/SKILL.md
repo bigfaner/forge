@@ -331,4 +331,4 @@ Omit `coverage` from record.json — the noTest flag in index.json auto-sets it.
 | `/write-prd` | Upstream: source of business rules |
 | `/tech-design` | Upstream: source of technical specs |
 | `/graduate-tests` | Predecessor: T-test-4 before this T-test-5 |
-| `submit-task` | Downstream: records task completion |
+| `/submit-task` | Downstream: records task completion |

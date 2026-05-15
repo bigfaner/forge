@@ -53,7 +53,7 @@ flowchart TD
 4. `--target` / `--iterations` are meaningless unless main session owns the loop
 5. Scorer and reviser are independent subagents — invoke via Agent tool, never inline
 
-❌ Wrong: `Agent(general-purpose, "evaluate this PRD and iterate until score >= 95")`
+❌ Wrong: `Agent(general-purpose, "evaluate this PRD and iterate until score >= 900")`
 ✅ Right: Main session calls scorer → parses score → gates → calls reviser → loops
 </EXTREMELY-IMPORTANT>
 

@@ -215,7 +215,7 @@ Update `manifest.md` using `templates/manifest-update-design.md`:
 
 After committing, use `AskUserQuestion` to ask:
 
-> Run `/eval-design` for adversarial evaluation? (default: 90 points / 3 rounds)
+> Run `/eval-design` for adversarial evaluation? (default: 900 points / 3 rounds)
 
 - **Yes** → invoke `/eval-design` via `Skill` tool
 - **Custom** → invoke `/eval-design --target X --iterations Y` via `Skill` tool

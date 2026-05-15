@@ -21,7 +21,7 @@
 
 ## 两种工作模式
 
-### 完整模式（复杂功能：>2h, >4 任务）
+### 完整模式（复杂功能：>2h, >10 任务）
 
 ```
 /brainstorm → /write-prd → /tech-design → /breakdown-tasks → /run-tasks
@@ -29,9 +29,9 @@
  proposal.md   prd/*.{3}   design/*.{2}  ui/    tasks + index.json  自动执行
 ```
 
-每阶段产出文档，通过 `/eval-*` 系列技能迭代评分至达标。
+每阶段产出文档，可选通过 `/eval-*` 系列技能迭代评分至达标（默认可选，非强制）。
 
-### 快速模式（小功能：1-2h, 1-4 任务）
+### 快速模式（小功能：1-2h, 1-10 任务）
 
 ```
 /quick → /brainstorm → /quick-tasks → /run-tasks
@@ -86,13 +86,13 @@ task --version
 | `/quick` | 启动快速模式流程 |
 | `/quick-tasks` | 从提案直接生成任务 |
 
-### 评估（100 分制，对抗式迭代至达标）
+### 评估（1000 分制，对抗式迭代至达标；`/eval-harness` 例外，使用 100 分制）
 
 `/eval-prd` · `/eval-design` · `/eval-ui` · `/eval-proposal` · `/eval-test-cases` · `/eval-consistency` · `/eval-harness`
 
 ### 测试生命周期
 
-`/gen-test-cases` → `/eval-test-cases` → `/gen-test-scripts` → `/run-e2e-tests` → `/graduate-tests` → `/consolidate-specs`
+`/gen-sitemap` → `/gen-test-cases` → `/eval-test-cases` → `/gen-test-scripts` → `/run-e2e-tests` → `/graduate-tests` → `verify-regression` → `/consolidate-specs`
 
 ### 执行
 
@@ -123,9 +123,9 @@ task --version
 ```
 forge/
 ├── plugins/forge/          # Forge plugin
-│   ├── skills/             # 22 个 Skills
-│   ├── commands/           # 12 个 Slash Commands
-│   └── agents/             # 4 个 Subagents
+│   ├── skills/             # 23 个 Skills
+│   ├── commands/           # 11 个 Slash Commands
+│   └── agents/             # 3 个 Subagents
 ├── task-cli/               # Go CLI 工具源码
 ├── tests/e2e/              # Playwright E2E 回归测试
 ├── docs/                   # 项目文档

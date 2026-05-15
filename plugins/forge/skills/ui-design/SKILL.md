@@ -218,7 +218,7 @@ Use `templates/manifest-update-ui.md` for the update pattern.
 
 ## Step 7: Auto Eval UI Design
 
-Automatically invoke `/eval-ui` to evaluate `ui-design.md`. Default: 95 points / 3 rounds.
+Automatically invoke `/eval-ui` to evaluate `ui-design.md`. Default: 950 points / 3 rounds.
 
 Invoke via `Skill` tool: `eval-ui`
 
@@ -228,8 +228,8 @@ After eval-ui completes, check the final score:
 
 | Condition | Action |
 |-----------|--------|
-| Score >= 95 | Proceed to Step 8 (prototype generation) |
-| Score < 95 | Report to user and ask: "UI design score is {{SCORE}}/100, below the 95 threshold. Continue revising?" — if yes, re-invoke eval-ui with additional iterations; if no, proceed to prototype anyway |
+| Score >= 950 | Proceed to Step 8 (prototype generation) |
+| Score < 950 | Report to user and ask: "UI design score is {{SCORE}}/1000, below the 950 threshold. Continue revising?" — if yes, re-invoke eval-ui with additional iterations; if no, proceed to prototype anyway |
 
 The eval report is attached at `docs/features/<slug>/ui/eval/report.md` for reference.
 

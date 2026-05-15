@@ -167,7 +167,7 @@ date_str=$(date +%F 2>/dev/null || date +%Y-%m-%d)
 - [ ] Skills & Agents: checked
 - [ ] Scripts & CI: checked
 - [ ] Task Infrastructure: checked
-**Status**: COMPLETE / PARTIAL (missing: [list])
+**Status**: complete / partial (missing: [list])
 ```
 
 ## Step 3: Invoke Scorer Subagent

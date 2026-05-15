@@ -168,7 +168,7 @@ Increment iteration counter. Return to Step 2.
 |-----------|-------|-----|
 | PRD Traceability | {{d1}} | 250 |
 | Step Actionability | {{d2}} | 250 |
-| Route & Element Accuracy | {{d3}} | 200 |
+| Interface Accuracy | {{d3}} | 200 |
 | Completeness | {{d4}} | 200 |
 | Structure & ID Integrity | {{d5}} | 100 |
 
