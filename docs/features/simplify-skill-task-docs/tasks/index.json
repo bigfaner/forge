@@ -32,7 +32,7 @@
         "1",
         "2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3-add-task-types-reference-to-readme.md",
       "record": "records/3-add-task-types-reference-to-readme.md",
       "type": "documentation"
