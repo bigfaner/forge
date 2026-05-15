@@ -263,6 +263,7 @@ For each task, populate the **User Stories** section with matching stories from 
 ### Hard Rules
 
 The task template includes a `## Hard Rules` section (`{{HARD_RULES}}`). Fill it **only** when the task has critical constraints the agent must not override (e.g., must use a specific justfile recipe, commands have hidden dependencies, explicit file scope restrictions). Leave empty for normal implementation tasks.
+
 ### Scope Assignment
 
 For implementation tasks, determine the `scope` field for `index.json` (documentation tasks skip this — `task-doc.md` has no `scope` field):
