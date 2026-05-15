@@ -1,6 +1,6 @@
 //go:build e2e
 
-package simplify_e2e_tests
+package e2e
 
 import (
 	"os"
@@ -14,17 +14,17 @@ import (
 )
 
 // projectRoot returns the forge project root directory.
-// This file lives at tests/e2e/features/simplify-e2e-tests/.
-// Project root is 4 levels up from this file.
+// This file lives at tests/e2e/.
+// Project root is 2 levels up from this file.
 func projectRoot(t *testing.T) string {
 	t.Helper()
 	_, thisFile, _, ok := runtime.Caller(0)
 	if !ok {
 		t.Fatal("cannot determine test file location")
 	}
-	// thisFile: .../tests/e2e/features/simplify-e2e-tests/simplify_e2e_tests_cli_test.go
-	// up 4: simplify-e2e-tests -> features -> e2e -> tests -> project root
-	dir := filepath.Join(filepath.Dir(thisFile), "..", "..", "..", "..")
+	// thisFile: .../tests/e2e/simplify_e2e_tests_cli_test.go
+	// up 2: e2e -> tests -> project root
+	dir := filepath.Join(filepath.Dir(thisFile), "..", "..")
 	abs, err := filepath.Abs(dir)
 	if err != nil {
 		t.Fatalf("cannot resolve project root: %s", err)
