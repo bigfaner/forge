@@ -26,6 +26,7 @@ Update the forge guide (system prompt section in CLAUDE.md), the eval-forge audi
 ### Modify
 | File | Changes |
 |------|---------|
+| `CLAUDE.md` | Update system prompt skill list to reflect consolidated eval skill (17 skills total) |
 | `plugins/forge/hooks/hooks.json` | Update eval skill references if listed |
 | `forge-cli/pkg/prompt/data/*.md` | Update CLI prompt templates that reference old eval skill paths |
 | `.claude/skills/eval-forge/SKILL.md` | Update audit to validate new eval structure |

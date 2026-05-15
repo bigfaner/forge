@@ -45,7 +45,7 @@ Delete the 7 old eval skill directories (now superseded by the generic eval skil
 - [ ] All 7 eval skill directories fully removed
 - [ ] `plugins/forge/skills/record-task/` no longer exists
 - [ ] `plugins/forge/commands/simplify-skill.md` no longer exists
-- [ ] No dangling references to deleted skills/commands in remaining files
+- [ ] No dangling references to deleted skills/commands in remaining files (verified via grep for `eval-proposal`, `eval-prd`, `eval-design`, `eval-ui`, `eval-test-cases`, `eval-consistency`, `eval-harness`, `record-task`, `simplify-skill`)
 
 ## Hard Rules
 - Verify no other file references the deleted skills by name before deletion

@@ -85,7 +85,7 @@ No external dependencies. All logic exists in current skill files. The command-t
 ### In Scope
 
 1. **Merge eval skills**: Create `skills/eval/SKILL.md` with generic scorer→gate→revise loop
-2. **Extract rubrics**: Create `skills/eval/rubrics/` with 8 rubric files (proposal, prd, design, ui-web, ui-mobile, ui-tui, test-cases, consistency, harness)
+2. **Extract rubrics**: Create `skills/eval/rubrics/` with 9 rubric files (proposal, prd, design, ui-web, ui-mobile, ui-tui, test-cases, consistency, harness)
 3. **Create command wrappers**: Create 7 thin command files (`commands/eval-proposal.md` through `commands/eval-harness.md`) that invoke `Skill("eval", "--type <type>")`
 4. **Remove eval skill directories**: Delete `skills/eval-proposal/` through `skills/eval-harness/` (7 directories)
 5. **Remove record-task skill**: Delete `skills/record-task/` (superseded by `submit-task`)
