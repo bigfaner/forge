@@ -4,9 +4,7 @@ title: "{{TITLE}}"
 priority: "{{PRIORITY}}"
 estimated_time: "{{ESTIMATED_TIME}}"
 dependencies: [{{DEPENDENCIES}}]
-scope: "{{SCOPE}}"
-breaking: false
-type: "implementation"
+type: "documentation"
 mainSession: false
 ---
 

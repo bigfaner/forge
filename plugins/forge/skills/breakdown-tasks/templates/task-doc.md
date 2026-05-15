@@ -4,9 +4,7 @@ title: "{{TITLE}}"
 priority: "{{PRIORITY}}"
 estimated_time: "{{ESTIMATED_TIME}}"
 dependencies: [{{DEPENDENCIES}}]
-scope: "{{SCOPE}}"
-breaking: false
-type: "implementation"
+type: "documentation"
 mainSession: false
 ---
 
@@ -16,7 +14,7 @@ mainSession: false
 {{DESCRIPTION}}
 
 ## Reference Files
-- `docs/proposals/<slug>/proposal.md` — Source proposal
+{{REFERENCE_FILES}}
 
 ## Affected Files
 
