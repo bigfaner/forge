@@ -68,6 +68,33 @@
       "sourceTaskID": "3",
       "type": "fix"
     },
+    "fix-2": {
+      "id": "fix-2",
+      "title": "Fix: rewrite e2e tests to use actual CLI interfaces",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-2.md",
+      "record": "records/fix-2.md",
+      "breaking": true,
+      "sourceTaskID": "T-quick-3",
+      "type": "fix"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-6",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "T-quick-5"
+      ],
+      "status": "pending",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "scope": "all",
+      "noTest": true,
+      "type": "doc-generation.drift"
+    },
     "quick-gen-scripts-go-test": {
       "id": "T-quick-2",
       "title": "Generate Quick Test Scripts (go-test)",
@@ -106,7 +133,7 @@
       "dependencies": [
         "T-quick-2"
       ],
-      "status": "blocked",
+      "status": "pending",
       "file": "quick-run-tests-go-test.md",
       "record": "records/quick-run-tests-go-test.md",
       "scope": "all",
