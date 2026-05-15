@@ -13,7 +13,6 @@ mode: quick
 | Document | Path |
 |----------|------|
 | Proposal | ../../proposals/docs-only-fast-path/proposal.md |
-| Test Cases | testing/test-cases.md |
 
 ## Tasks
 
