@@ -1,0 +1,52 @@
+{"Time":"2026-05-15T23:24:38.3127744+08:00","Action":"start","Package":"e2e-test-scripts-per-type"}
+{"Time":"2026-05-15T23:24:38.8558251+08:00","Action":"run","Package":"e2e-test-scripts-per-type","Test":"TestTC_001_TaskIndexCreatesPerTypeTasksForMultiType"}
+{"Time":"2026-05-15T23:24:38.8558251+08:00","Action":"output","Package":"e2e-test-scripts-per-type","Test":"TestTC_001_TaskIndexCreatesPerTypeTasksForMultiType","Output":"=== RUN   TestTC_001_TaskIndexCreatesPerTypeTasksForMultiType\n"}
+{"Time":"2026-05-15T23:24:39.1202548+08:00","Action":"output","Package":"e2e-test-scripts-per-type","Test":"TestTC_001_TaskIndexCreatesPerTypeTasksForMultiType","Output":"--- PASS: TestTC_001_TaskIndexCreatesPerTypeTasksForMultiType (0.26s)\n"}
+{"Time":"2026-05-15T23:24:39.1202548+08:00","Action":"pass","Package":"e2e-test-scripts-per-type","Test":"TestTC_001_TaskIndexCreatesPerTypeTasksForMultiType","Elapsed":0.26}
+{"Time":"2026-05-15T23:24:39.1202548+08:00","Action":"run","Package":"e2e-test-scripts-per-type","Test":"TestTC_002_TaskIndexPerTypeTasksHaveCorrectType"}
+{"Time":"2026-05-15T23:24:39.1202548+08:00","Action":"output","Package":"e2e-test-scripts-per-type","Test":"TestTC_002_TaskIndexPerTypeTasksHaveCorrectType","Output":"=== RUN   TestTC_002_TaskIndexPerTypeTasksHaveCorrectType\n"}
+{"Time":"2026-05-15T23:24:39.1859406+08:00","Action":"output","Package":"e2e-test-scripts-per-type","Test":"TestTC_002_TaskIndexPerTypeTasksHaveCorrectType","Output":"--- PASS: TestTC_002_TaskIndexPerTypeTasksHaveCorrectType (0.07s)\n"}
+{"Time":"2026-05-15T23:24:39.1859406+08:00","Action":"pass","Package":"e2e-test-scripts-per-type","Test":"TestTC_002_TaskIndexPerTypeTasksHaveCorrectType","Elapsed":0.07}
+{"Time":"2026-05-15T23:24:39.1859406+08:00","Action":"run","Package":"e2e-test-scripts-per-type","Test":"TestTC_003_TaskIndexSingleTypeCreatesOneGenTask"}
+{"Time":"2026-05-15T23:24:39.1859406+08:00","Action":"output","Package":"e2e-test-scripts-per-type","Test":"TestTC_003_TaskIndexSingleTypeCreatesOneGenTask","Output":"=== RUN   TestTC_003_TaskIndexSingleTypeCreatesOneGenTask\n"}
+{"Time":"2026-05-15T23:24:39.2541003+08:00","Action":"output","Package":"e2e-test-scripts-per-type","Test":"TestTC_003_TaskIndexSingleTypeCreatesOneGenTask","Output":"--- PASS: TestTC_003_TaskIndexSingleTypeCreatesOneGenTask (0.07s)\n"}
+{"Time":"2026-05-15T23:24:39.2541003+08:00","Action":"pass","Package":"e2e-test-scripts-per-type","Test":"TestTC_003_TaskIndexSingleTypeCreatesOneGenTask","Elapsed":0.07}
+{"Time":"2026-05-15T23:24:39.2541003+08:00","Action":"run","Package":"e2e-test-scripts-per-type","Test":"TestTC_004_TaskIndexWithoutTestCasesFallsBackToLegacy"}
+{"Time":"2026-05-15T23:24:39.2541003+08:00","Action":"output","Package":"e2e-test-scripts-per-type","Test":"TestTC_004_TaskIndexWithoutTestCasesFallsBackToLegacy","Output":"=== RUN   TestTC_004_TaskIndexWithoutTestCasesFallsBackToLegacy\n"}
+{"Time":"2026-05-15T23:24:39.3178884+08:00","Action":"output","Package":"e2e-test-scripts-per-type","Test":"TestTC_004_TaskIndexWithoutTestCasesFallsBackToLegacy","Output":"--- PASS: TestTC_004_TaskIndexWithoutTestCasesFallsBackToLegacy (0.06s)\n"}
+{"Time":"2026-05-15T23:24:39.3178884+08:00","Action":"pass","Package":"e2e-test-scripts-per-type","Test":"TestTC_004_TaskIndexWithoutTestCasesFallsBackToLegacy","Elapsed":0.06}
+{"Time":"2026-05-15T23:24:39.3178884+08:00","Action":"run","Package":"e2e-test-scripts-per-type","Test":"TestTC_005_TaskIndexZeroTypeTestCasesFallsBackToLegacy"}
+{"Time":"2026-05-15T23:24:39.3178884+08:00","Action":"output","Package":"e2e-test-scripts-per-type","Test":"TestTC_005_TaskIndexZeroTypeTestCasesFallsBackToLegacy","Output":"=== RUN   TestTC_005_TaskIndexZeroTypeTestCasesFallsBackToLegacy\n"}
+{"Time":"2026-05-15T23:24:39.3875425+08:00","Action":"output","Package":"e2e-test-scripts-per-type","Test":"TestTC_005_TaskIndexZeroTypeTestCasesFallsBackToLegacy","Output":"--- PASS: TestTC_005_TaskIndexZeroTypeTestCasesFallsBackToLegacy (0.07s)\n"}
+{"Time":"2026-05-15T23:24:39.3875425+08:00","Action":"pass","Package":"e2e-test-scripts-per-type","Test":"TestTC_005_TaskIndexZeroTypeTestCasesFallsBackToLegacy","Elapsed":0.07}
+{"Time":"2026-05-15T23:24:39.3875425+08:00","Action":"run","Package":"e2e-test-scripts-per-type","Test":"TestTC_006_TaskIndexRunDependsOnAllPerTypeGenTasks"}
+{"Time":"2026-05-15T23:24:39.3875425+08:00","Action":"output","Package":"e2e-test-scripts-per-type","Test":"TestTC_006_TaskIndexRunDependsOnAllPerTypeGenTasks","Output":"=== RUN   TestTC_006_TaskIndexRunDependsOnAllPerTypeGenTasks\n"}
+{"Time":"2026-05-15T23:24:39.4521561+08:00","Action":"output","Package":"e2e-test-scripts-per-type","Test":"TestTC_006_TaskIndexRunDependsOnAllPerTypeGenTasks","Output":"--- PASS: TestTC_006_TaskIndexRunDependsOnAllPerTypeGenTasks (0.06s)\n"}
+{"Time":"2026-05-15T23:24:39.4521561+08:00","Action":"pass","Package":"e2e-test-scripts-per-type","Test":"TestTC_006_TaskIndexRunDependsOnAllPerTypeGenTasks","Elapsed":0.06}
+{"Time":"2026-05-15T23:24:39.4521561+08:00","Action":"run","Package":"e2e-test-scripts-per-type","Test":"TestTC_007_TaskIndexMultiProfilePerTypeTasks"}
+{"Time":"2026-05-15T23:24:39.4521561+08:00","Action":"output","Package":"e2e-test-scripts-per-type","Test":"TestTC_007_TaskIndexMultiProfilePerTypeTasks","Output":"=== RUN   TestTC_007_TaskIndexMultiProfilePerTypeTasks\n"}
+{"Time":"2026-05-15T23:24:39.5292334+08:00","Action":"output","Package":"e2e-test-scripts-per-type","Test":"TestTC_007_TaskIndexMultiProfilePerTypeTasks","Output":"--- PASS: TestTC_007_TaskIndexMultiProfilePerTypeTasks (0.08s)\n"}
+{"Time":"2026-05-15T23:24:39.5292334+08:00","Action":"pass","Package":"e2e-test-scripts-per-type","Test":"TestTC_007_TaskIndexMultiProfilePerTypeTasks","Elapsed":0.08}
+{"Time":"2026-05-15T23:24:39.5292334+08:00","Action":"run","Package":"e2e-test-scripts-per-type","Test":"TestTC_008_TaskIndexQuickModePerTypeTasks"}
+{"Time":"2026-05-15T23:24:39.5292334+08:00","Action":"output","Package":"e2e-test-scripts-per-type","Test":"TestTC_008_TaskIndexQuickModePerTypeTasks","Output":"=== RUN   TestTC_008_TaskIndexQuickModePerTypeTasks\n"}
+{"Time":"2026-05-15T23:24:39.5978601+08:00","Action":"output","Package":"e2e-test-scripts-per-type","Test":"TestTC_008_TaskIndexQuickModePerTypeTasks","Output":"--- PASS: TestTC_008_TaskIndexQuickModePerTypeTasks (0.07s)\n"}
+{"Time":"2026-05-15T23:24:39.5978601+08:00","Action":"pass","Package":"e2e-test-scripts-per-type","Test":"TestTC_008_TaskIndexQuickModePerTypeTasks","Elapsed":0.07}
+{"Time":"2026-05-15T23:24:39.5978601+08:00","Action":"run","Package":"e2e-test-scripts-per-type","Test":"TestTC_009_PerTypeGenScriptsMdContainsTestType"}
+{"Time":"2026-05-15T23:24:39.5978601+08:00","Action":"output","Package":"e2e-test-scripts-per-type","Test":"TestTC_009_PerTypeGenScriptsMdContainsTestType","Output":"=== RUN   TestTC_009_PerTypeGenScriptsMdContainsTestType\n"}
+{"Time":"2026-05-15T23:24:39.6602635+08:00","Action":"output","Package":"e2e-test-scripts-per-type","Test":"TestTC_009_PerTypeGenScriptsMdContainsTestType","Output":"--- PASS: TestTC_009_PerTypeGenScriptsMdContainsTestType (0.06s)\n"}
+{"Time":"2026-05-15T23:24:39.6602635+08:00","Action":"pass","Package":"e2e-test-scripts-per-type","Test":"TestTC_009_PerTypeGenScriptsMdContainsTestType","Elapsed":0.06}
+{"Time":"2026-05-15T23:24:39.6602635+08:00","Action":"run","Package":"e2e-test-scripts-per-type","Test":"TestTC_010_TaskIndexPerTypeIdempotent"}
+{"Time":"2026-05-15T23:24:39.6602635+08:00","Action":"output","Package":"e2e-test-scripts-per-type","Test":"TestTC_010_TaskIndexPerTypeIdempotent","Output":"=== RUN   TestTC_010_TaskIndexPerTypeIdempotent\n"}
+{"Time":"2026-05-15T23:24:39.7561168+08:00","Action":"output","Package":"e2e-test-scripts-per-type","Test":"TestTC_010_TaskIndexPerTypeIdempotent","Output":"--- PASS: TestTC_010_TaskIndexPerTypeIdempotent (0.10s)\n"}
+{"Time":"2026-05-15T23:24:39.7561168+08:00","Action":"pass","Package":"e2e-test-scripts-per-type","Test":"TestTC_010_TaskIndexPerTypeIdempotent","Elapsed":0.1}
+{"Time":"2026-05-15T23:24:39.7561168+08:00","Action":"run","Package":"e2e-test-scripts-per-type","Test":"TestTC_011_PerTypeGenScriptsMdHasCorrectTaskIDs"}
+{"Time":"2026-05-15T23:24:39.7561168+08:00","Action":"output","Package":"e2e-test-scripts-per-type","Test":"TestTC_011_PerTypeGenScriptsMdHasCorrectTaskIDs","Output":"=== RUN   TestTC_011_PerTypeGenScriptsMdHasCorrectTaskIDs\n"}
+{"Time":"2026-05-15T23:24:39.8201636+08:00","Action":"output","Package":"e2e-test-scripts-per-type","Test":"TestTC_011_PerTypeGenScriptsMdHasCorrectTaskIDs","Output":"--- PASS: TestTC_011_PerTypeGenScriptsMdHasCorrectTaskIDs (0.06s)\n"}
+{"Time":"2026-05-15T23:24:39.8201636+08:00","Action":"pass","Package":"e2e-test-scripts-per-type","Test":"TestTC_011_PerTypeGenScriptsMdHasCorrectTaskIDs","Elapsed":0.06}
+{"Time":"2026-05-15T23:24:39.8201636+08:00","Action":"run","Package":"e2e-test-scripts-per-type","Test":"TestTC_012_TaskIndexSharedInfrastructureNotDuplicated"}
+{"Time":"2026-05-15T23:24:39.8201636+08:00","Action":"output","Package":"e2e-test-scripts-per-type","Test":"TestTC_012_TaskIndexSharedInfrastructureNotDuplicated","Output":"=== RUN   TestTC_012_TaskIndexSharedInfrastructureNotDuplicated\n"}
+{"Time":"2026-05-15T23:24:39.9270584+08:00","Action":"output","Package":"e2e-test-scripts-per-type","Test":"TestTC_012_TaskIndexSharedInfrastructureNotDuplicated","Output":"--- PASS: TestTC_012_TaskIndexSharedInfrastructureNotDuplicated (0.11s)\n"}
+{"Time":"2026-05-15T23:24:39.9270584+08:00","Action":"pass","Package":"e2e-test-scripts-per-type","Test":"TestTC_012_TaskIndexSharedInfrastructureNotDuplicated","Elapsed":0.11}
+{"Time":"2026-05-15T23:24:39.9270584+08:00","Action":"output","Package":"e2e-test-scripts-per-type","Output":"PASS\n"}
+{"Time":"2026-05-15T23:24:39.9318253+08:00","Action":"output","Package":"e2e-test-scripts-per-type","Output":"ok  \te2e-test-scripts-per-type\t1.619s\n"}
+{"Time":"2026-05-15T23:24:40.111653+08:00","Action":"pass","Package":"e2e-test-scripts-per-type","Elapsed":1.799}

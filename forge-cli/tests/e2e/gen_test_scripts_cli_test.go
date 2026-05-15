@@ -356,6 +356,54 @@ func TestTC_006_GenTestScriptsAbortsWhenStepActionabilityBelow20(t *testing.T) {
 	assert.Contains(t, content, "ABORT", "SKILL.md should mention ABORT behavior")
 }
 
+// --- TC-008: gen-test-scripts SKILL.md documents --type filter argument ---
+
+// Traceability: TC-008 -> Task 1 "Add --type filter to gen-test-scripts skill"
+func TestTC_008_GenTestScriptsSkillDocumentsTypeFilter(t *testing.T) {
+	skillRelPath := filepath.Join("plugins", "forge", "skills", "gen-test-scripts", "SKILL.md")
+	content := readRepoFile(t, skillRelPath)
+
+	// Acceptance: gen-test-scripts accepts --type <capability> argument
+	assert.Regexp(t, `--type`, content, "SKILL.md should document --type argument")
+
+	// Acceptance: Type value matches profile capability names (e.g., tui, web-ui, api, cli)
+	assert.Regexp(t, `capability`, content, "SKILL.md should reference profile capabilities for type values")
+
+	// Acceptance: Invalid types produce a clear error
+	assert.Contains(t, content, "invalid", "SKILL.md should describe invalid type handling")
+
+	// Acceptance: When --type is specified, only that type is processed
+	assert.Regexp(t, `(?i)only.*type`, content, "SKILL.md should describe type-only processing")
+
+	// Acceptance: Without --type, behavior is unchanged
+	assert.Regexp(t, `(?i)without.*--type|(?i)not specified.*unchanged|(?i)omitted.*all.*type`, content,
+		"SKILL.md should describe unchanged behavior when --type is not specified")
+}
+
+// --- TC-009: gen-test-scripts --type filter skips non-matching steps ---
+
+// Traceability: TC-009 -> Task 1 AC: Fact Table, locators, spec gen filtered; shared infra always runs
+func TestTC_009_GenTestScriptsTypeFilterSkipsNonMatchingSteps(t *testing.T) {
+	skillRelPath := filepath.Join("plugins", "forge", "skills", "gen-test-scripts", "SKILL.md")
+	content := readRepoFile(t, skillRelPath)
+
+	// Acceptance: Shared infrastructure always runs regardless of --type
+	assert.Regexp(t, `(?i)shared.*infra.*always|always.*shared|shared.*regardless.*--type`, content,
+		"SKILL.md should state shared infrastructure always runs regardless of --type")
+
+	// Acceptance: Fact Table verification skipped for non-matching types
+	assert.Regexp(t, `(?i)Fact Table.*skip|skip.*Fact Table|skip.*non-match`, content,
+		"SKILL.md should describe Fact Table skip for non-matching types")
+
+	// Acceptance: Locator mapping skipped for non-UI types
+	assert.Regexp(t, `(?i)locator.*skip|skip.*locator`, content,
+		"SKILL.md should describe locator skip for non-UI types")
+
+	// Acceptance: Spec generation only produces files for the specified type
+	assert.Regexp(t, `(?i)spec.*generat.*type|type.*spec.*generat`, content,
+		"SKILL.md should describe filtered spec generation")
+}
+
 // --- TC-007: gen-test-cases Element field marked as required ---
 
 // Traceability: TC-007 -> SC "gen-test-cases SKILL.md 和模板中 Element 字段标记为必填"

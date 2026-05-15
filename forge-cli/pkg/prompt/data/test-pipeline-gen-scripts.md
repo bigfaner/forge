@@ -28,7 +28,7 @@ Output: `Step 1/2: Reading task definition... DONE`
 Invoke the skill:
 
 ```
-Skill(skill="forge:gen-test-scripts")
+Skill(skill="forge:gen-test-scripts"{{TEST_TYPE_ARG}})
 ```
 
 This generates executable TypeScript e2e test scripts from test cases using @playwright/test.

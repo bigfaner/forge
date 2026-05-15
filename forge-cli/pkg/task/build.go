@@ -267,7 +267,14 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 			result.NewCount++
 		}
 	} else if len(profiles) > 0 && mode != "" {
-		testTasks := generateTestTasks(mode, profiles)
+		// Detect test types from test-cases.md
+		var detectedTypes []string
+		testCasesPath := filepath.Join(opts.ProjectRoot, "docs", "features", opts.FeatureSlug, "testing", "test-cases.md")
+		if tcData, err := os.ReadFile(testCasesPath); err == nil {
+			detectedTypes = DetectTypesFromTestCases(tcData)
+		}
+
+		testTasks := generateTestTasks(mode, profiles, detectedTypes)
 		if len(testTasks) > 0 {
 			ResolveFirstTestDep(testTasks, index.TasksMap(), mode)
 		}
@@ -366,12 +373,12 @@ func setFeatureMetadata(index *TaskIndex, projectRoot, slug string) {
 }
 
 // generateTestTasks returns test task definitions for the given mode and profiles.
-func generateTestTasks(mode string, profiles []string) []TestTaskDef {
+func generateTestTasks(mode string, profiles []string, detectedTypes []string) []TestTaskDef {
 	switch mode {
 	case "breakdown":
-		return GetBreakdownTestTasks(profiles)
+		return GetBreakdownTestTasks(profiles, detectedTypes)
 	case "quick":
-		return GetQuickTestTasks(profiles)
+		return GetQuickTestTasks(profiles, detectedTypes)
 	default:
 		return nil
 	}

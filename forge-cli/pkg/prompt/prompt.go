@@ -106,6 +106,10 @@ func renderTemplate(templateFile string, opts SynthesizeOpts, t task.Task) (stri
 	result = strings.ReplaceAll(result, "{{PHASE_SUMMARY}}", phaseSummaryLine)
 	result = strings.ReplaceAll(result, "{{PROFILE}}", t.Profile)
 
+	// Extract type suffix from task ID for per-type gen-scripts tasks.
+	testTypeArg := extractTestTypeArg(t.ID)
+	result = strings.ReplaceAll(result, "{{TEST_TYPE_ARG}}", testTypeArg)
+
 	result = cleanTemplateOutput(result)
 
 	return result, nil
@@ -259,4 +263,22 @@ func isLabelWithEmptyValue(line string) bool {
 		return false
 	}
 	return after == ""
+}
+
+// genScriptBases lists the task ID bases that support per-type gen-scripts.
+var genScriptBases = []string{
+	"T-test-2",
+	"T-quick-2",
+}
+
+// extractTestTypeArg extracts the --type argument from a type-suffixed task ID.
+// Returns ` --type <capability>` if a type suffix is found, or empty string otherwise.
+func extractTestTypeArg(id string) string {
+	for _, base := range genScriptBases {
+		suffix := task.ExtractTypeSuffix(id, base)
+		if suffix != "" {
+			return " --type " + suffix
+		}
+	}
+	return ""
 }

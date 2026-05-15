@@ -491,3 +491,147 @@ func TestInferType(t *testing.T) {
 		})
 	}
 }
+
+// --- Test type suffix in gen-scripts template ---
+
+func TestSynthesize_GenScripts_WithTypeSuffix(t *testing.T) {
+	tests := []struct {
+		name         string
+		taskID       string
+		wantContains string
+		dontWant     string
+	}{
+		{
+			name:         "T-test-2-api includes --type api",
+			taskID:       "T-test-2-api",
+			wantContains: `Skill(skill="forge:gen-test-scripts" --type api)`,
+			dontWant:     `{{TEST_TYPE_ARG}}`,
+		},
+		{
+			name:         "T-test-2a-tui includes --type tui",
+			taskID:       "T-test-2a-tui",
+			wantContains: `Skill(skill="forge:gen-test-scripts" --type tui)`,
+			dontWant:     `{{TEST_TYPE_ARG}}`,
+		},
+		{
+			name:         "T-quick-2-cli includes --type cli",
+			taskID:       "T-quick-2-cli",
+			wantContains: `Skill(skill="forge:gen-test-scripts" --type cli)`,
+			dontWant:     `{{TEST_TYPE_ARG}}`,
+		},
+		{
+			name:         "T-quick-2b-web-ui includes --type web-ui",
+			taskID:       "T-quick-2b-web-ui",
+			wantContains: `Skill(skill="forge:gen-test-scripts" --type web-ui)`,
+			dontWant:     `{{TEST_TYPE_ARG}}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			tasks := map[string]task.Task{
+				tt.taskID: {
+					ID:     tt.taskID,
+					Title:  "Gen scripts typed",
+					Status: "pending",
+					File:   tt.taskID + ".md",
+					Record: "records/" + tt.taskID + ".md",
+					Type:   task.TypeTestPipelineGenScripts,
+					Scope:  "backend",
+				},
+			}
+			setupFeatureDir(t, dir, tasks)
+
+			opts := SynthesizeOpts{
+				ProjectRoot: dir,
+				FeatureSlug: "test-feature",
+				TaskID:      tt.taskID,
+			}
+			result, err := Synthesize(opts)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if !strings.Contains(result, tt.wantContains) {
+				t.Errorf("result should contain %q, got:\n%s", tt.wantContains, result)
+			}
+			if strings.Contains(result, tt.dontWant) {
+				t.Errorf("result should not contain unreplaced placeholder %q", tt.dontWant)
+			}
+		})
+	}
+}
+
+func TestSynthesize_GenScripts_NoTypeSuffix(t *testing.T) {
+	// Ensure backward compatibility: no --type when no type suffix.
+	tests := []struct {
+		name   string
+		taskID string
+	}{
+		{"T-test-2", "T-test-2"},
+		{"T-test-2a", "T-test-2a"},
+		{"T-quick-2", "T-quick-2"},
+		{"T-quick-2a", "T-quick-2a"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			tasks := map[string]task.Task{
+				tt.taskID: {
+					ID:     tt.taskID,
+					Title:  "Gen scripts",
+					Status: "pending",
+					File:   tt.taskID + ".md",
+					Record: "records/" + tt.taskID + ".md",
+					Type:   task.TypeTestPipelineGenScripts,
+					Scope:  "backend",
+				},
+			}
+			setupFeatureDir(t, dir, tasks)
+
+			opts := SynthesizeOpts{
+				ProjectRoot: dir,
+				FeatureSlug: "test-feature",
+				TaskID:      tt.taskID,
+			}
+			result, err := Synthesize(opts)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if strings.Contains(result, "--type") {
+				t.Errorf("result should not contain --type for non-type-suffixed ID, got:\n%s", result)
+			}
+			// Should still contain the skill invocation without --type
+			if !strings.Contains(result, `Skill(skill="forge:gen-test-scripts")`) {
+				t.Errorf("result should contain skill invocation without --type, got:\n%s", result)
+			}
+		})
+	}
+}
+
+func TestExtractTestTypeArg(t *testing.T) {
+	tests := []struct {
+		id   string
+		want string
+	}{
+		{"T-test-2-api", " --type api"},
+		{"T-test-2a-tui", " --type tui"},
+		{"T-quick-2-cli", " --type cli"},
+		{"T-quick-2b-web-ui", " --type web-ui"},
+		{"T-test-2", ""},
+		{"T-test-2a", ""},
+		{"T-quick-2", ""},
+		{"T-test-3-api", ""}, // not a gen-scripts base
+		{"1.1", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id, func(t *testing.T) {
+			got := extractTestTypeArg(tt.id)
+			if got != tt.want {
+				t.Errorf("extractTestTypeArg(%q) = %q, want %q", tt.id, got, tt.want)
+			}
+		})
+	}
+}
