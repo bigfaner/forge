@@ -22,21 +22,20 @@ All tests import `test`, `expect`, `test.describe` from `@playwright/test`. The 
 
 Templates are available via `task profile get web-playwright --template <filename>`.
 
-## Locator Mapping
+## Locator Syntax
 
-Map sitemap element data to Playwright locators by priority:
+Framework-specific Playwright locator syntax for each locator type (strategy/priority is owned by Step 3 in SKILL.md):
 
-| Priority | Condition | Generated code |
-|----------|-----------|----------------|
-| 0 | `role` + `name` | `page.getByRole('button', { name: 'Submit' })` |
-| 0+ | heading + `level` | `page.getByRole('heading', { name: 'Dashboard', level: 1 })` |
-| 1 | `label` | `page.getByLabel('Email address')` |
-| 2 | `placeholder` (label empty) | `page.getByPlaceholder('Search...')` |
-| 3 | Static text node | `page.getByText('No results found')` |
-| 4 | `data-testid` visible | `page.getByTestId('user-avatar')` |
-| 5 (fallback) | None of the above | `page.locator('.btn') // UNSTABLE: no semantic anchor` |
-
-For dynamic states: click the trigger element's locator first, then map in-state elements.
+| Locator type | Generated code |
+|--------------|----------------|
+| role + name | `page.getByRole('button', { name: 'Submit' })` |
+| heading + level | `page.getByRole('heading', { name: 'Dashboard', level: 1 })` |
+| label | `page.getByLabel('Email address')` |
+| placeholder | `page.getByPlaceholder('Search...')` |
+| text | `page.getByText('No results found')` |
+| data-testid (static) | `page.getByTestId('user-avatar')` |
+| data-testid (dynamic prefix) | `page.locator('[data-testid^="map-card-"]').first()` |
+| unstable fallback | `page.locator('.btn') // UNSTABLE: no semantic anchor` |
 
 ## Auth Classification
 
@@ -117,8 +116,8 @@ Written to `tests/e2e/` (not per-feature):
 Integration tests are a subcategory of UI tests (component on existing page, via `placement: existing-page:<route>`). Same framework, same spec file (`ui.spec.ts`).
 
 Script generation strategy:
-1. Locate target page by route (sitemap resolution)
-2. Locate embedded component: heading/section title → `aria-label`/`data-testid` → sitemap element
+1. Locate target page by route (sitemap resolution from Step 2)
+2. Locate embedded component using the locator priority chain from Step 3 (sitemap element → Fact Table testid → semantic inference)
 3. Assert visibility: `expect(locator).toBeVisible()`
 4. Assert position (if feasible): verify adjacent sibling elements
 5. Verify data rendering: `await expect(locator).toContainText('expected data')`

@@ -1,16 +1,15 @@
 ---
-id: "T-quick-1"
-title: "Generate Quick Test Cases (go-test)"
+id: "T-quick-2"
+title: "Generate Quick Test Scripts (go-test)"
 priority: "P1"
 estimated_time: "30min-1h"
-dependencies: ["9"]
-type: "test-pipeline.gen-cases"
+dependencies: ["T-quick-1"]
+type: "test-pipeline.gen-scripts"
 scope: "all"
 profile: "go-test"
-noTest: true
 ---
 
-# Generate Quick Test Cases (go-test)
+# Generate Quick Test Scripts (go-test)
 
 Profile: **go-test**
 

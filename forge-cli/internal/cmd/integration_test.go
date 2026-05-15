@@ -358,11 +358,12 @@ func TestRunRecord_HappyPath(t *testing.T) {
 		runSubmit(nil, []string{"1.1"})
 	})
 
-	if !strings.Contains(out, "TASK_ID: 1.1") {
-		t.Errorf("expected task ID in output, got: %s", out)
-	}
 	if !strings.Contains(out, "STATUS: completed") {
 		t.Errorf("expected status in output, got: %s", out)
+	}
+	// TASK_ID removed from non-JSON output
+	if strings.Contains(out, "TASK_ID:") {
+		t.Errorf("TASK_ID should not appear in non-JSON submit output, got: %s", out)
 	}
 
 	// Verify record file was created
@@ -837,14 +838,11 @@ func TestPrintTaskDetails_Breaking(t *testing.T) {
 	if !strings.Contains(out, "BREAKING: true") {
 		t.Errorf("expected BREAKING field, got: %s", out)
 	}
-	if !strings.Contains(out, "ESTIMATED_TIME: 30min") {
-		t.Errorf("expected ESTIMATED_TIME, got: %s", out)
-	}
-	if !strings.Contains(out, "DEPENDENCIES: 1.summary") {
-		t.Errorf("expected DEPENDENCIES, got: %s", out)
-	}
 	if !strings.Contains(out, "FEATURE: test") {
 		t.Errorf("expected FEATURE: test, got: %s", out)
+	}
+	if !strings.Contains(out, "TASK_ID: 2.gate") {
+		t.Errorf("expected TASK_ID: 2.gate, got: %s", out)
 	}
 }
 

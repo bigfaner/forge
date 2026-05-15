@@ -186,6 +186,7 @@ Read actual source code files to extract ground-truth values. **Never guess or a
 | API handlers | Request/response schemas, status codes, validation rules | Search for request handler functions and response definitions. Look for status code usage, input validation, and response body shaping. |
 | Auth implementation | Login endpoint path, token field name, header format | Search for authentication/authorization modules. Look for login endpoints, token generation/parsing, and header middleware. |
 | CLI entry points | Command names, flag names, output formats | Search for command registration and argument parsing. Look for CLI framework usage (e.g., cobra, commander, click) and output formatting. |
+| Frontend UI components | `data-testid` values, component structure, dynamic testid patterns | Search frontend source for `data-testid` attributes. Grep for `data-testid` in component files (`.tsx`, `.vue`, `.svelte`). Note static vs dynamic patterns (e.g., `map-card-${id}` vs `map-card`). |
 
 **Build the Fact Table**: After reading, record verified facts with source citations:
 
@@ -195,6 +196,7 @@ Read actual source code files to extract ground-truth values. **Never guess or a
 |-----|-------|--------|
 | API_PORT | 8080 | backend/config.yaml:3 |
 | AUTH_ENDPOINT | POST /v1/auth/login | internal/handler/router.go:42 |
+| TESTID_MAP_CARD | map-card-${bizKey} | frontend/src/pages/MilestonesPage.tsx:110 |
 ```
 
 <HARD-RULE>
@@ -216,15 +218,27 @@ Read `docs/sitemap/sitemap.json`. For each route referenced in test cases:
 4. **If test case has `Element: sitemap-missing`**: skip sitemap lookup for this test case; use Fact Table DOM structure from Step 1.5 to infer locators in Step 3
 5. **If sitemap has `layout` field**: for each route wrapped by `layout.wraps`, merge `layout.elements` as available elements
 
-If a route referenced in test cases does not exist in sitemap, report the missing route and suggest re-running `/gen-sitemap`.
+If a route referenced in test cases does not exist in sitemap, **emit a WARNING** listing the missing routes and suggest re-running `/gen-sitemap`. Proceed using Fact Table DOM structure from Step 1.5 for the missing routes — do not abort, but ensure every inferred locator is annotated with `// VERIFY: sitemap-missing — locator inferred from source code`.
 
 ### Step 3: Map Locators (web-ui capability only)
 
 **Only execute when the active profile has `web-ui` capability.**
 
-Follow the locator mapping rules in the active profile's `generate.md` to translate sitemap element data into framework-specific locator code. The priority order (role > label > placeholder > text > testid) and syntax are defined per framework in `generate.md`.
+Locator strategy is owned by this step — `generate.md` provides only the framework-specific syntax (how to write a Playwright/Go/pytest locator), not the decision of *which* locator to use.
+
+**Locator priority** (all locator types, including integration tests):
+
+1. **Sitemap element data** (from Step 2): role+name, label, placeholder → translate via `generate.md`
+2. **Fact Table testid** (from Step 1.5): `TESTID_*` entries → translate via `generate.md` testid syntax. For dynamic testids (e.g., `map-card-${bizKey}`), use prefix selector (`page.locator('[data-testid^="map-card-"]')`)
+3. **Semantic inference** (sitemap-missing only): heading/section title, aria-label → translate via `generate.md`
+
+<HARD-RULE>
+Never guess `data-testid` values. Every testid locator must come from a Fact Table `TESTID_*` entry. If the Fact Table has no testid entry for the needed element, use semantic locators (role, label, text) instead.
+</HARD-RULE>
 
 For test steps within dynamic states: first click the trigger element's locator, then map locators for in-state elements. Build an in-memory mapping table for use in Step 4.
+
+**Integration test component locators**: Use the same priority chain above. Locate the embedded component via sitemap element data first, then Fact Table testid, then semantic inference.
 
 ### Step 3.5: Ensure Shared Infrastructure
 
@@ -279,9 +293,9 @@ Specifically for Playwright: when the `projects` section in playwright.config.ts
 
 **Verify project interfaces before generating**: For each type group from Step 1, confirm the project actually exposes that interface. Build/test/lint commands are developer tooling, not a CLI product interface.
 
-| Type | Probe command | Evidence of product interface |
-|------|--------------|-------------------------------|
-| UI | `ls docs/sitemap/sitemap.json` or `grep -r "router\|<Route\|page\." src/` | Sitemap exists, or frontend route registration found |
+| Type | Verification method | Evidence of product interface |
+|------|---------------------|-------------------------------|
+| UI | Fact Table has `TESTID_*` or `FRONTEND_*` entries (from Step 1.5) | Frontend source code was found and read |
 | API | `grep -rn "router\|handler\|endpoint\|HandleFunc\|app.get\|app.post" --include='*.go' --include='*.ts' --include='*.js' .` | HTTP handler registration patterns found |
 | CLI | `grep '"bin"' package.json` or `ls cmd/` or `grep -rn "cobra.Command" --include='*.go' .` | CLI entry point or command framework detected |
 

@@ -1,6 +1,6 @@
 ---
 feature: "migrate-e2e-to-go"
-status: tasks
+status: completed
 mode: quick
 ---
 
@@ -19,12 +19,17 @@ mode: quick
 
 | ID | Title | Status | File |
 |----|-------|--------|------|
-| 1 | Extend testkit + convert gen-test-scripts and plugin-content tests | pending | 1-testkit-and-gen-test-scripts.md |
-| 2 | Convert justfile-related Playwright tests to Go | pending | 2-justfile-tests.md |
-| 3 | Convert task-cli, scope-resolution, and init-justfile tests to Go | pending | 3-task-cli-scope-init.md |
-| 4 | Remove Node.js test infrastructure | pending | 4-remove-nodejs-infra.md |
-| T-quick-1 | Generate Quick Test Cases (go-test) | pending | quick-test-cases-go-test.md |
-| T-quick-2 | Generate Quick Test Scripts (go-test) | pending | quick-gen-scripts-go-test.md |
-| T-quick-3 | Run Quick E2E Tests (go-test) | pending | quick-run-tests-go-test.md |
-| T-quick-4 | Graduate Quick Test Scripts (go-test) | pending | quick-graduate-go-test.md |
-| T-quick-5 | Verify Quick E2E Regression | pending | quick-verify-regression.md |
+| 1 | Add file assertion helpers to testkit | completed | tasks/1-testkit-helpers.md |
+| 2 | Convert gen-test-scripts and forge-testing-optimization tests | completed | tasks/2-convert-gen-test-scripts.md |
+| 3 | Convert justfile-execution tests | completed | tasks/3-convert-justfile-execution.md |
+| 4 | Convert task-cli typed-task-dispatch tests | completed | tasks/4-convert-task-cli.md |
+| 5 | Convert scope-resolution tests | completed | tasks/5-convert-scope-resolution.md |
+| 6 | Convert justfile-e2e-integration tests (forge-justfile + detection-assembly) | completed | tasks/6-convert-justfile-integration-a.md |
+| 7 | Convert justfile-e2e-integration tests (mixed-template + cli) | completed | tasks/7-convert-justfile-integration-b.md |
+| 8 | Convert init-justfile and plugin-content tests | completed | tasks/8-convert-init-justfile-plugin-content.md |
+| 9 | Remove Node.js test infrastructure | completed | tasks/9-remove-nodejs-infrastructure.md |
+| T-quick-1 | Generate test cases from proposal | skipped | tasks/T-quick-1.md |
+| T-quick-2 | Generate test scripts from test cases | skipped | tasks/T-quick-2.md |
+| T-quick-3 | Execute feature e2e tests | skipped | tasks/T-quick-3.md |
+| T-quick-4 | Graduate tests to regression suite | skipped | tasks/T-quick-4.md |
+| T-quick-5 | Run full regression suite | skipped | tasks/T-quick-5.md |

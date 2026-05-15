@@ -310,22 +310,17 @@ func parseSegment(parts []string, i int) (int, bool) {
 }
 
 func printTaskDetails(key string, t *task.Task, projectRoot, featureSlug string) {
-	PrintField("KEY", key)
+	_ = key // key is still used internally for routing, but no longer emitted
 	PrintField("TASK_ID", t.ID)
-	PrintField("TITLE", t.Title)
-	PrintField("PRIORITY", t.Priority)
-	PrintField("STATUS", t.Status)
-	PrintFieldIfNotEmpty("ESTIMATED_TIME", t.EstimatedTime)
-	PrintFieldIfNotEmptySlice("DEPENDENCIES", t.Dependencies)
-	PrintField("BREAKING", strconv.FormatBool(t.Breaking))
-	PrintField("MAIN_SESSION", strconv.FormatBool(t.MainSession))
-	PrintField("TYPE", t.Type)
-	PrintFieldIfNotEmpty("SCOPE", t.Scope)
-	PrintFieldIfNotEmpty("PROFILE", t.Profile)
-	PrintField("NO_TEST", strconv.FormatBool(t.NoTest))
 	PrintFieldIfNotEmpty("FEATURE", featureSlug)
 	PrintField("FILE", filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, t.File)))
-	PrintField("RECORD", filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, t.Record)))
+	PrintFieldIfNotEmpty("SCOPE", t.Scope)
+	if t.Breaking {
+		PrintField("BREAKING", "true")
+	}
+	if t.MainSession {
+		PrintField("MAIN_SESSION", "true")
+	}
 }
 
 func printContinueTask(state *task.TaskState, t *task.Task, projectRoot, featureSlug string) {
