@@ -12,75 +12,47 @@ evaluator: Claude (structural audit)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                  PLUGIN CONSISTENCY SCORECARD                     │
+│               RUNTIME RELIABILITY SCORECARD                      │
 ├──────────────────────────────┬──────────┬──────────┬────────────┤
 │ Dimension                    │ Score    │ Max      │ Status     │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 1. Directory-Name Alignment  │  ___     │  40      │ ✅/⚠️/❌    │
-│    Skill name matches dir    │  ___/25  │          │            │
-│    Command name matches file │  ___/15  │          │            │
+│ 1. Workflow Completeness     │  ___     │  250     │ ✅/⚠️/❌    │
+│    1a. Full mode chain       │  ___/80  │          │            │
+│    1b. Quick mode chain      │  ___/40  │          │            │
+│    1c. Conditional branching │  ___/50  │          │            │
+│    1d. Manifest status       │  ___/30  │          │            │
+│    1e. Test lifecycle        │  ___/50  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 2. Agent Reference Integrity │  ___     │  100     │ ✅/⚠️/❌    │
-│    Referenced agents exist   │  ___/70  │          │            │
-│    No orphan agents          │  ___/30  │          │            │
+│ 2. Bypass Resistance         │  ___     │  250     │ ✅/⚠️/❌    │
+│    2a. Quality gates         │  ___/70  │          │            │
+│    2b. Eval integrity        │  ___/70  │          │            │
+│    2c. User interaction      │  ___/45  │          │            │
+│    2d. Required steps        │  ___/35  │          │            │
+│    2e. Prohibition           │  ___/30  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 3. Reference Integrity       │  ___     │  80      │ ✅/⚠️/❌    │
-│    Template refs valid       │  ___/25  │          │            │
-│    Cross-skill refs valid    │  ___/30  │          │            │
-│    No orphan templates       │  ___/15  │          │            │
-│    No cross-file duplication │  ___/10  │          │            │
+│ 3. Instruction Precision     │  ___     │  200     │ ✅/⚠️/❌    │
+│    3a. Instruction conflicts │  ___/80  │          │            │
+│    3b. Step ambiguity        │  ___/50  │          │            │
+│    3c. Incomplete condition. │  ___/40  │          │            │
+│    3d. Variable clarity      │  ___/30  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 4. Frontmatter Completeness  │  ___     │  110     │ ✅/⚠️/❌    │
-│    Skill frontmatter         │  ___/45  │          │            │
-│    Command frontmatter       │  ___/35  │          │            │
-│    Agent frontmatter         │  ___/30  │          │            │
+│ 4. Cross-file Dedup          │  ___     │  150     │ ✅/⚠️/❌    │
+│    4a. Content copy          │  ___/60  │          │            │
+│    4b. guide.md overlap      │  ___/50  │          │            │
+│    4c. Unreasonable inline   │  ___/40  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 5. Eval Template Convention  │  ___     │  100     │ ✅/⚠️/❌    │
-│    rubric.md exists          │  ___/30  │          │            │
-│    report.md exists          │  ___/30  │          │            │
-│    Rubric→report chain valid │  ___/20  │          │            │
-│    Rubric totals correct     │  ___/20  │          │            │
+│ 5. Reference Integrity       │  ___     │  100     │ ✅/⚠️/❌    │
+│    5a. Agent refs            │  ___/30  │          │            │
+│    5b. Template refs         │  ___/25  │          │            │
+│    5c. Cross-skill refs      │  ___/25  │          │            │
+│    5d. Hook refs             │  ___/20  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 6. Orchestrator Convention   │  ___     │  40      │ ✅/⚠️/❌    │
-│    Iron Laws present         │  ___/25  │          │            │
-│    Hard Gate present         │  ___/15  │          │            │
+│ 6. Structural Convention     │  ___     │  50      │ ✅/⚠️/❌    │
+│    6a. Frontmatter           │  ___/25  │          │            │
+│    6b. Eval templates        │  ___/15  │          │            │
+│    6c. Name alignment        │  ___/10  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 7. Task CLI Alignment        │  ___     │  240     │ ✅/⚠️/❌    │
-│    Command existence         │  ___/25  │          │            │
-│    Flag correctness          │  ___/25  │          │            │
-│    Output field parsing      │  ___/15  │          │            │
-│    Status machine align      │  ___/35  │          │            │
-│    Claim scheduling align    │  ___/35  │          │            │
-│    Record validation align   │  ___/35  │          │            │
-│    Dynamic task add align    │  ___/25  │          │            │
-│    Schema-code alignment     │  ___/20  │          │            │
-│    All-completed hook align  │  ___/10  │          │            │
-│    Template existence        │  ___/10  │          │            │
-├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 8. Hook Wiring Integrity     │  ___     │  70      │ ✅/⚠️/❌    │
-│    hooks.json valid JSON     │  ___/10  │          │            │
-│    Hook scripts exist        │  ___/25  │          │            │
-│    Hook CLI commands valid   │  ___/15  │          │            │
-│    Hook event names valid    │  ___/20  │          │            │
-├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 9. Guide Coverage+Concise    │  ___     │  70      │ ✅/⚠️/❌    │
-│    Guide references valid    │  ___/30  │          │            │
-│    Core workflow skills doc  │  ___/25  │          │            │
-│    Conciseness / no redund.  │  ___/15  │          │            │
-├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 10. Command Metadata         │  ___     │  60      │ ✅/⚠️/❌    │
-│    allowed_tools declared    │  ___/35  │          │            │
-│    argument-hints declared   │  ___/25  │          │            │
-├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 11. Plugin Metadata          │  ___     │  40      │ ✅/⚠️/❌    │
-│    keywords coverage         │  ___/25  │          │            │
-│    description accurate      │  ___/15  │          │            │
-├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 12. Safety Marker Consist.   │  ___     │  50      │ ✅/⚠️/❌    │
-│    Command/agent markers     │  ___/30  │          │            │
-│    Dispatch cmd coverage     │  ___/20  │          │            │
-├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ TOTAL                        │  ___     │  1000    │            │
+│ TOTAL                        │  ___/1000│          │            │
 └──────────────────────────────┴──────────┴──────────┴────────────┘
 ```
 
@@ -96,19 +68,9 @@ evaluator: Claude (structural audit)
 
 ## Attack Points
 
-### Attack 1: [dimension — specific issue]
+<!-- For each finding, create an Attack N section. No limit on count. -->
 
-**Where**: <!-- file path and location -->
-**What's wrong**: <!-- concrete description -->
-**How to fix**: <!-- actionable fix -->
-
-### Attack 2: [dimension — specific issue]
-
-**Where**: <!-- file path and location -->
-**What's wrong**: <!-- concrete description -->
-**How to fix**: <!-- actionable fix -->
-
-### Attack 3: [dimension — specific issue]
+### Attack {{N}}: [dimension — specific issue] <!-- D2 attacks: include [ARCHITECTURAL] or [TEXT-FIXABLE] -->
 
 **Where**: <!-- file path and location -->
 **What's wrong**: <!-- concrete description -->

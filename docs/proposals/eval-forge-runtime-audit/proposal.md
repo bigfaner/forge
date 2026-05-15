@@ -5,11 +5,23 @@ created: 2026-05-15
 
 # 重构 eval-forge 为运行时可靠性审计
 
+## Scope
+
+重构 `.claude/skills/eval-forge/` 下的评分体系，从 12 维度结构一致性检查改为 6 维度运行时可靠性审计。涉及文件：
+
+- `templates/rubric.md` — 完全重写（评分维度和标准）
+- `templates/scorer-prompt.md` — 完全重写（4 阶段评估方法论）
+- `templates/reviser-prompt.md` — 重写（两层修复策略）
+- `templates/report.md` — 更新（scorecard 维度表）
+- `SKILL.md` — 更新（维度表 + Final Report 模板）
+
+不涉及 forge CLI 源码变更，不影响其他 skill。
+
 ## Problem
 
 当前 eval-forge 评估"结构一致性"（frontmatter、目录名、引用完整性），12 个维度 1000 分，历史最高分 965/1000。
 
-手动深度审计（5 个并行 subagent）发现 **39 个运行时问题**（竞态条件、绕过漏洞、指令冲突、token 浪费），eval-forge 的 12 维度**完全没有覆盖**。根因：
+手动深度审计（5 个并行 subagent，详见 `docs/proposals/eval-forge-runtime-audit/` 早期分析）发现 **39 个运行时问题**（竞态条件、绕过漏洞、指令冲突、token 浪费），eval-forge 的 12 维度**完全没有覆盖**。根因：
 
 1. **维度面向"文件对不对"，不面向"agent 跑起来会不会出问题"**
    - 290 分给 frontmatter/目录名/plugin metadata，这些对运行时可靠性几乎无影响
@@ -107,13 +119,13 @@ Legal transitions only forward. Quick mode starts at tasks (no prd/design).
 
 假设自己是"想偷懒的 agent"，逐节点寻找绕过路径。
 
-**5 种绕过类型：**
+**5 种绕过类型（按严重度排序）：**
 
 | Type | Points | Description |
 |------|--------|-------------|
-| Type 2: Skip quality gates | 0-70 | `--force` 绕过 compile/test/AC。无 justfile 则 gate 静默通过。noTest 跳过。 |
-| Type 3: Fake eval results | 0-70 | 主会话可伪造 scorer 输出。分数解析无完整性检查。可跳过 scorer subagent。 |
-| Type 1: Skip mandatory interaction | 0-45 | 用户确认点全部是 advisory text（HARD-RULE）。可跳过 brainstorm/write-prd/ui-design/tech-design/consolidate-specs 的确认。 |
+| Type 1: Skip quality gates | 0-70 | `--force` 绕过 compile/test/AC。无 justfile 则 gate 静默通过。noTest 跳过。 |
+| Type 2: Fake eval results | 0-70 | 主会话可伪造 scorer 输出。分数解析无完整性检查。可跳过 scorer subagent。 |
+| Type 3: Skip mandatory interaction | 0-45 | 用户确认点全部是 advisory text（HARD-RULE）。可跳过 brainstorm/write-prd/ui-design/tech-design/consolidate-specs 的确认。 |
 | Type 4: Skip required steps | 0-35 | 条件需求依赖 agent 自报（db-schema、placement）。gen-test-scripts Step Actionability gate 仅在 eval report 存在时触发。 |
 | Type 5: Lazy shortcuts | 0-30 | 禁止模式（no mock、no sleep）纯 advisory。record.json 指标自报。直接编辑 index.json 绕过所有验证。 |
 
@@ -131,31 +143,31 @@ Legal transitions only forward. Quick mode starts at tasks (no prd/design).
 
 | Vector | Type | Severity | Description |
 |--------|------|----------|-------------|
-| BV-2.1 | T2 | HIGH | `forge task submit --force` 绕过 compile/test/AC 全部验证 |
-| BV-2.4 | T2 | HIGH | Agent 可在 record.json 中伪造 testsFailed: 0（CLI 不验证数字来源） |
-| BV-3.1 | T3 | HIGH | 主会课可跳过 scorer subagent 直接声明 SCORE: 950 |
-| BV-3.2 | T3 | HIGH | 分数解析无完整性检查，主会话可篡改 scorer 返回值 |
-| BV-1.1 | T1 | MED | brainstorm 用户审批可跳过（纯 HARD-RULE） |
-| BV-1.2 | T1 | MED | write-prd 用户审批可跳过 |
-| BV-1.3 | T1 | MED | /quick 用户确认可跳过 |
-| BV-1.4 | T1 | MED | ui-design 原型审查可跳过 |
-| BV-1.5 | T1 | MED | tech-design DB schema 审查可跳过 |
-| BV-1.7 | T1 | MED | consolidate-specs spec 集成确认可跳过 |
-| BV-4.2 | T4 | MED | gen-test-scripts Step Actionability gate 仅在 eval report 存在时触发 |
-| BV-4.5 | T4 | MED | placement validation 依赖 sitemap 存在，缺失则跳过 |
+| BV-1.1 | T1 | HIGH | `forge task submit --force` 绕过 compile/test/AC 全部验证 |
+| BV-1.2 | T1 | HIGH | Agent 可在 record.json 中伪造 testsFailed: 0（CLI 不验证数字来源） |
+| BV-2.1 | T2 | HIGH | 主会话可跳过 scorer subagent 直接声明 SCORE: 950 |
+| BV-2.2 | T2 | HIGH | 分数解析无完整性检查，主会话可篡改 scorer 返回值 |
+| BV-3.1 | T3 | MED | brainstorm 用户审批可跳过（纯 HARD-RULE） |
+| BV-3.2 | T3 | MED | write-prd 用户审批可跳过 |
+| BV-3.3 | T3 | MED | /quick 用户确认可跳过 |
+| BV-3.4 | T3 | MED | ui-design 原型审查可跳过 |
+| BV-3.5 | T3 | MED | tech-design DB schema 审查可跳过 |
+| BV-3.6 | T3 | MED | consolidate-specs spec 集成确认可跳过 |
+| BV-4.1 | T4 | MED | gen-test-scripts Step Actionability gate 仅在 eval report 存在时触发 |
+| BV-4.2 | T4 | MED | placement validation 依赖 sitemap 存在，缺失则跳过 |
 | BV-5.1 | T5 | LOW | 禁止模式（no mock/no sleep/no hardcoded URL）纯 advisory |
 | BV-5.2 | T5 | LOW | record.json 指标（coverage/testsPassed）自报，无交叉验证 |
 
 #### Dimension 3: 指令精确性 (200 pts)
 
-**优先级：指令冲突 > 步骤歧义 > 条件不完整 > 变量未定义**
+**优先级：指令冲突 > 步骤歧义 > 条件不完整 > 变量未定义**（第一顺位检查指令冲突）
 
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
 | 3a. 指令冲突（跨文件） | 0-80 | guide.md vs SKILL.md vs command files 对同一概念的不同描述。如 guide 说"lint blocks"但 skill 说"lint non-blocking"。冲突 = -25/个。**第一顺位检查。** |
 | 3b. 步骤歧义 | 0-50 | SKILL.md 步骤是否只有一种理解。模糊动词（"check tests"、"verify quality"）无具体命令 = -10/个 |
 | 3c. 条件不完整 | 0-40 | 每个 if-then 有 else 路径或显式"skip"指令。缺 else = -10/个 |
-| 3d. 变量解析清晰度 | 0-30 | Agent 填充变量须有来源说明。CLI 填充变量须匹配 `prompt.go` 的 typeToTemplate。未定义的 agent 变量 = -10/个 |
+| 3d. 变量解析清晰度 | 0-30 | Agent 填充变量须有来源说明。CLI 填充变量须匹配 `task-cli/internal/prompt/prompt.go` 的 typeToTemplate。未定义的 agent 变量 = -10/个 |
 
 **CLI 填充变量（来自 `prompt.go` Synthesize — 不标记为"未定义"）：**
 
@@ -281,3 +293,7 @@ Final Report 维度表从 12 维更新为 6 维。Parameters 保持 `--target 95
 | `.claude/skills/eval-forge/templates/reviser-prompt.md` | 重写 |
 | `.claude/skills/eval-forge/templates/report.md` | 更新 scorecard |
 | `.claude/skills/eval-forge/SKILL.md` | 更新维度表 + Final Report |
+
+## Migration
+
+无增量迁移——所有 5 个文件直接替换。旧的 12 维度评分结果（`docs/self-evolution/` 下的历史报告）保持不变，不回溯重评。首次运行新 rubric 后，分数会从 ~965 下降到 ~500-650，这是预期行为：新 rubric 覆盖了旧 rubric 未检测的运行时问题。

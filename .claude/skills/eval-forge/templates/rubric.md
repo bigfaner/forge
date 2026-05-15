@@ -1,162 +1,243 @@
-# Forge Plugin Consistency Rubric
+# Forge Plugin Runtime Reliability Rubric
 
 **Total: 1000 points**
 **Report template:** `.claude/skills/eval-forge/templates/report.md`
 
 ## What This Rubric Measures
 
-Structural consistency of the forge plugin — not individual skill quality, but whether components (skills, commands, agents, templates, hooks, CLI integration) are correctly wired together.
+Runtime reliability of the forge plugin — not just structural consistency, but whether components work correctly together at runtime. Measures workflow completeness, bypass resistance, instruction precision, redundancy, reference integrity, and structural conventions.
+
+## Scoring Methodology: 4-Phase Process
+
+This rubric is designed for a 4-phase evaluation methodology:
+
+**Phase 1: Construct Workflow Graph (D1)**
+1. Read the ground-truth workflow specs embedded in Dimension 1 below
+2. Scan all skill/command/agent files, extract actual prerequisites, outputs, gate points
+3. Compare spec vs actual, find breakpoints, dead ends, unreachable states
+
+**Phase 2: Per-Node Adversarial Testing (D2)**
+1. List every gate/confirm point per node
+2. For each gate, assume you are a lazy agent — ask "how can I bypass this?"
+3. Check whether HARD-RULE has enforceable consequences (not just words)
+4. Eval loops: check whether scoring must be done by independent subagent
+5. Quality gates: check whether CLI-level enforcement exists
+
+**Phase 3: Per-File Precision Review (D3 + D4)**
+1. Instruction conflicts (highest priority): cross-file search for contradictory descriptions of the same concept
+2. Step ambiguity: does each SKILL.md step have a single unambiguous interpretation
+3. Incomplete conditionals: does every if-then have an else
+4. Undefined variables: do agent-filled variables have source annotations
+5. Content redundancy: check by A/B/C category standards
+
+**Phase 4: Baseline Integrity (D5 + D6)**
+1. Reference integrity
+2. Frontmatter, eval templates, name alignment
 
 ## Scoring Dimensions
 
 | Dimension | Points |
 |-----------|--------|
-| 1. Directory-Name Alignment | 40 |
-| 2. Agent Reference Integrity | 100 |
-| 3. Reference Integrity (Templates + Cross-Skill) | 80 |
-| 4. Frontmatter Completeness | 110 |
-| 5. Eval Template Convention | 100 |
-| 6. Orchestrator / Safety Marker Convention | 40 |
-| 7. Task CLI Alignment | 240 |
-| 8. Hook Wiring Integrity | 70 |
-| 9. Guide Coverage | 70 |
-| 10. Command Metadata Completeness | 60 |
-| 11. Plugin Metadata Consistency | 40 |
-| 12. Safety Marker Consistency | 50 |
+| 1. Workflow Completeness | 250 |
+| 2. Bypass Resistance | 250 |
+| 3. Instruction Precision | 200 |
+| 4. Cross-file Dedup | 150 |
+| 5. Reference Integrity | 100 |
+| 6. Structural Convention | 50 |
 | **Total** | **1000** |
+
+Score allocation logic: Runtime reliability (D1+D2+D3) = 700 pts (70%), Information efficiency (D4) = 150 pts, Baseline integrity (D5+D6) = 150 pts.
 
 ## Deduction Tiers
 
 | Severity | Penalty | Examples |
 |----------|---------|---------|
-| Low | -5 | Missing frontmatter field, guide.md extra reference |
-| Medium | -15 | Dangling reference, missing template, wrong CLI flag |
-| High | -25 | State machine violation, missing hook script, safety marker missing |
+| Critical | -20 | Workflow breakpoint, eval integrity bypass, instruction conflict |
+| High | -15 | Dangling reference, invalid manifest transition, missing eval template |
+| Medium | -10 | Step ambiguity, conditional without else, content duplication, missing prerequisite check |
+| Low | -5 | Missing frontmatter field, name-directory mismatch, advisory-only prohibition |
+
+**Floor rule:** Each sub-criterion has a minimum score of 0. Total deductions for a sub-criterion cannot result in a negative score.
+
+**Cross-dimension deduction:** The same issue may be deducted in multiple dimensions if it violates independent criteria (e.g., an advisory-only HARD-RULE is both a D2 bypass vector and a D3 incomplete conditional). Bypass resistance (D2) and instruction precision (D3) are independent dimensions.
 
 ## Dimensions
 
-### 1. Directory-Name Alignment (40 pts)
+### 1. Workflow Completeness (250 pts)
+
+Verify the full-chain state graph: every skill's prerequisites, outputs, and successor steps; both quick mode and full mode paths must be complete.
+
+**Ground-Truth Workflow Specs:**
+
+#### Full Mode Pipeline
+
+```
+brainstorm → write-prd → eval-prd → [has UI?] → ui-design → eval-ui → prototype → [human review] → tech-design → [db-schema?] → [schema review] → eval-design → breakdown-tasks
+```
+
+```
+breakdown-tasks → forge task index (auto T-test tasks) → T-test-1 (gen-sitemap + gen-test-cases) → T-test-1b (eval-test-cases) → T-test-2 (gen-test-scripts) → T-test-3 (run-e2e-tests) → T-test-4 (graduate-tests) → T-test-4.5 (verify-regression) → T-test-5 (consolidate-specs)
+```
+
+#### Quick Mode Pipeline
+
+```
+/quick → /brainstorm → [human confirm] → /quick-tasks → /run-tasks
+```
+
+Quick test chain: T-quick-1 (gen-test-cases) → T-quick-2 (gen-test-scripts) → T-quick-3 (run-e2e-tests) → T-quick-4 (graduate-tests) → T-quick-5 (verify-regression). Skips: gen-sitemap, eval-test-cases, consolidate-specs.
+
+#### Manifest Status Machine
+
+```
+prd → design → tasks → in-progress → completed
+```
+
+Legal transitions only forward. Quick mode starts at tasks (no prd/design).
+
+#### Per-Skill Precondition/Output Matrix
+
+| Skill | Hard Prerequisites | Outputs | Conditionals |
+|-------|-------------------|---------|-------------|
+| brainstorm | None | `docs/proposals/<slug>/proposal.md` | → eval-proposal (optional) or write-prd |
+| write-prd | Optional: proposal.md, sitemap.json | `prd/prd-spec.md`, `prd/prd-user-stories.md`, `prd/prd-ui-functions.md` (if UI), `manifest.md` (status: prd) | has UI → ui-design; no UI → tech-design |
+| eval-prd | `prd/prd-spec.md`, `prd/prd-user-stories.md` | `prd/eval/iteration-{N}.md`, `prd/eval/report.md` | score gate pass/fail |
+| ui-design | `prd/prd-ui-functions.md` (hard) | `ui/ui-design.md`, `ui/prototype/` | multi-platform → separate files |
+| eval-ui | `ui/ui-design.md` | `ui/eval/iteration-{N}.md`, `ui/eval/report.md` | platform → rubric variant |
+| tech-design | `prd/prd-spec.md` (hard) | `design/tech-design.md`, `design/er-diagram.md` + `design/schema.sql` (if db), `manifest.md` (status: design) | db-schema: yes → mandatory ER+schema |
+| eval-design | `design/tech-design.md` | `design/eval/iteration-{N}.md`, `design/eval/report.md` | score gate |
+| breakdown-tasks | `prd/prd-spec.md` + `design/tech-design.md` (both hard) | `tasks/*.md`, `tasks/index.json`, `manifest.md` (status: tasks) | HAS_UI/NO_UI/HAS_DB/HAS_PLACEMENT tags |
+| gen-test-cases | `prd/prd-user-stories.md` + `prd/prd-spec.md` (both hard) | `testing/test-cases.md` | profile → interface types |
+| eval-test-cases | `testing/test-cases.md` + PRD docs | `testing/eval/iteration-{N}.md` | Step Actionability < 200 blocks |
+| gen-test-scripts | `testing/test-cases.md` (hard) | `tests/e2e/features/<slug>/` | profile → framework; Step Actionability gate |
+| run-e2e-tests | justfile + staging area | `tests/e2e/features/<slug>/results/latest.md` | >30% failure → stop |
+| graduate-tests | staging area + PASS results + no marker | `tests/e2e/<module>/`, `.graduated/<slug>` | profile → import rewriting |
+| consolidate-specs | PRD + design (both hard) | `specs/`, updated `docs/business-rules/`, `docs/conventions/` | CROSS vs LOCAL |
+| /quick | User idea | Orchestrates quick pipeline | >10 tasks → STOP |
+| quick-tasks | proposal.md (hard) | `tasks/*.md`, `tasks/index.json`, `manifest.md` | max 10 tasks |
+| /run-tasks | `tasks/index.json` | Execution loop | 3 consecutive failures → STOP |
+| submit-task | Task executed + record.json | `records/*.md`, updated index.json | --force bypasses gate (not auto-downgrade) |
+
+**Scoring Criteria:**
 
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| Skill `name` matches directory | 0-25 | Every `SKILL.md` frontmatter `name` equals its parent directory name. Mismatch per skill = -10 (Medium). Missing `name` = auto-fail for this criterion. |
-| Command `name` matches filename | 0-15 | Every command file frontmatter `name` equals its filename stem. Missing `name` per file = -10 (Medium). |
+| 1a. Full mode chain complete | 0-80 | Every skill has prerequisite definitions and outputs. Prerequisite files are produced by predecessor skills. Chain has no breakpoints. Breakpoint = -20 each. |
+| 1b. Quick mode chain complete | 0-40 | Quick chain is complete. Missing step = -20 each. |
+| 1c. Conditional branching correct | 0-50 | Every conditional branch has a true-path and false-path. Missing branch = -10 each. |
+| 1d. Manifest status transitions valid | 0-30 | Status transitions are legal. Illegal transition = -15 each. |
+| 1e. Test lifecycle chain intact | 0-50 | Test chain is complete. Broken link = -15 each. |
 
-### 2. Agent Reference Integrity (100 pts)
+### 2. Bypass Resistance (250 pts)
 
-| Criterion | Points | What to check |
-|-----------|--------|---------------|
-| Referenced agents exist | 0-70 | Every `forge:<agent-name>` or `subagent_type` reference in skills/commands points to an existing file in `plugins/forge/agents/`. Each dangling = -15 (Medium). |
-| No orphan agents | 0-30 | Every agent file is referenced by at least one skill or command. Each orphan = -15 (Medium). |
+Assume you are a "lazy agent trying to cut corners" — test each node for bypass paths.
 
-### 3. Reference Integrity (80 pts)
+**5 Bypass Types:**
 
-Merged from Template + Cross-Skill reference checks. All "does the target exist" checks unified.
+| Type | Points | Description |
+|------|--------|-------------|
+| Type 2: Skip quality gates | 0-70 | `--force` bypasses compile/test/AC. No justfile means gate silently passes. noTest skips. |
+| Type 3: Fake eval results | 0-70 | Main session can fake scorer output. Score parsing lacks integrity checks. Scorer subagent can be skipped. |
+| Type 1: Skip mandatory interaction | 0-45 | User confirmation points are all advisory text (HARD-RULE). Can skip brainstorm/write-prd/ui-design/tech-design/consolidate-specs confirmations. |
+| Type 4: Skip required steps | 0-35 | Conditional requirements depend on agent self-reporting (db-schema, placement). gen-test-scripts Step Actionability gate only triggers when eval report exists. |
+| Type 5: Lazy shortcuts | 0-30 | Prohibition patterns (no mock, no sleep) are purely advisory. record.json metrics are self-reported. Direct index.json editing bypasses all validation. |
 
-| Criterion | Points | What to check |
-|-----------|--------|---------------|
-| Template references valid | 0-25 | Every template path referenced in a SKILL.md points to an existing file. Each dangling = -15 (Medium). |
-| Cross-skill references valid | 0-30 | Every `invoke /<name>` or `Skill tool` reference points to an existing skill directory or command file. Each dangling = -15 (Medium). |
-| No orphan templates | 0-15 | Every file in `skills/*/templates/` is referenced (directly or via rubric→report chain). Each orphan = -5 (Low). |
-| No cross-file duplication | 0-10 | No factual information is copy-pasted across 3+ files when a canonical location exists. Each instance = -5 (Low). Exception: autonomous agents that cannot read other files at runtime may duplicate essential facts. |
-
-### 4. Frontmatter Completeness (110 pts)
-
-| Criterion | Points | What to check |
-|-----------|--------|---------------|
-| Skill frontmatter: `name` + `description` | 0-45 | Every `SKILL.md` has both fields. Missing each = -10 (Medium) per file. |
-| Command frontmatter: `name` + `description` | 0-35 | Every command file has both fields. Missing `name` = -10, missing `description` = -5 per file. |
-| Agent frontmatter: `name` + `description` + `model` | 0-30 | Every agent file has all three. Missing each = -5 (Low) per file. |
-
-### 5. Eval Template Convention (100 pts)
+**Scoring Criteria:**
 
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| `eval-*` has rubric.md | 0-30 | Every directory matching `eval-*` contains `templates/rubric.md`. Missing = -15 (Medium) per skill. |
-| `eval-*` has report.md | 0-30 | Every `eval-*` contains `templates/report.md`. Missing = -15 (Medium) per skill. |
-| Rubric → report chain valid | 0-20 | Every rubric.md references its report.md via `Report template:` line. Missing = -5 (Low) each. |
-| Rubric totals correct | 0-20 | Every rubric.md dimension point values sum to the declared total. Wrong total = -10 (Medium). |
+| 2a. Quality gate enforcement | 0-70 | Is each gate point enforced by CLI or merely advisory text. Zero enforcement with no documented rationale = -15 each. |
+| 2b. Eval integrity | 0-70 | Does each eval skill require an independent subagent for scoring. Does the decision gate parse structured output. Can the main session fake the score. Weakness = -25 each. |
+| 2c. User interaction enforcement | 0-45 | Does each confirmation point have an enforcement mechanism. Purely advisory = -5 each. |
+| 2d. Required step enforcement | 0-35 | Do conditional requirements have downstream verification. No verification = -10 each. |
+| 2e. Prohibition enforcement | 0-30 | Does each HARD-RULE prohibition have a mechanical check. Purely advisory = -5 each. |
 
-### 6. Orchestrator / Safety Marker Convention (40 pts)
+**Known Bypass Vectors (from manual audit — scorer should verify current state):**
 
-| Criterion | Points | What to check |
-|-----------|--------|---------------|
-| `eval-*` has Iron Laws | 0-25 | Every `eval-*` skill (except `eval-harness`) has `<EXTREMELY-IMPORTANT>` block with "Main session controls the loop". Missing = -15 (Medium) per skill. |
-| `eval-*` has Hard Gate | 0-15 | Every `eval-*` skill has `<HARD-GATE>` section. Missing = -5 (Low) per skill. |
+| Vector | Type | Severity | Class | Description |
+|--------|------|----------|-------|-------------|
+| BV-2.1 | T2 | HIGH | ARCHITECTURAL | `forge task submit --force` bypasses compile/test/AC all validation |
+| BV-2.4 | T2 | HIGH | ARCHITECTURAL | Agent can fake testsFailed: 0 in record.json (CLI does not verify number source) |
+| BV-3.1 | T3 | HIGH | ARCHITECTURAL | Main session can skip scorer subagent and directly declare SCORE: 950 |
+| BV-3.2 | T3 | HIGH | ARCHITECTURAL | Score parsing has no integrity check, main session can tamper with scorer return values |
+| BV-1.1 | T1 | MED | TEXT-FIXABLE | brainstorm user approval can be skipped (pure HARD-RULE) |
+| BV-1.2 | T1 | MED | TEXT-FIXABLE | write-prd user approval can be skipped |
+| BV-1.3 | T1 | MED | TEXT-FIXABLE | /quick user confirmation can be skipped |
+| BV-1.4 | T1 | MED | TEXT-FIXABLE | ui-design prototype review can be skipped |
+| BV-1.5 | T1 | MED | TEXT-FIXABLE | tech-design DB schema review can be skipped |
+| BV-1.7 | T1 | MED | TEXT-FIXABLE | consolidate-specs spec integration confirmation can be skipped |
+| BV-4.2 | T4 | MED | TEXT-FIXABLE | gen-test-scripts Step Actionability gate only triggers when eval report exists |
+| BV-4.5 | T4 | MED | TEXT-FIXABLE | placement validation depends on sitemap existence, skipped if absent |
+| BV-5.1 | T5 | LOW | ARCHITECTURAL | Prohibition patterns (no mock/no sleep/no hardcoded URL) are purely advisory |
+| BV-5.2 | T5 | LOW | ARCHITECTURAL | record.json metrics (coverage/testsPassed) are self-reported, no cross-verification |
 
-### 7. Task CLI Alignment (240 pts)
+**Bypass classification for fix strategy:**
 
-This dimension requires reading task CLI source code to verify behavioral alignment.
+- **ARCHITECTURAL**: Cannot be fixed by adding text to SKILL.md/command files. These require code-level changes (CLI enforcement, cryptographic verification, etc.). Score them and report them, but do NOT generate reviser fix tasks. Adding HARD-RULE text for architectural bypasses is counterproductive — it inflates context without changing agent behavior.
+- **TEXT-FIXABLE**: Can be mitigated by adding conditional branches, fallback paths, or actionable instructions. These are valid targets for the reviser.
 
-**Source files to read:**
-- `task-cli/internal/cmd/claim.go` — task claiming and priority scheduling
-- `task-cli/internal/cmd/record.go` — recording, validation, auto-downgrade rules
-- `task-cli/internal/cmd/status.go` — state machine transitions and guards
-- `task-cli/internal/cmd/all_completed.go` — all-completed hook behavior
-- `task-cli/internal/cmd/add.go` — dynamic task addition and ID generation
-- `task-cli/pkg/task/types.go` — data model and status/priority enums
+### 3. Instruction Precision (200 pts)
 
-| Criterion | Points | What to check |
-|-----------|--------|---------------|
-| 7a. Command existence | 0-25 | Every `forge <cmd>` referenced in skills/commands/agents exists in `forge -h` output. Each unknown = -15 (Medium). |
-| 7b. Flag correctness | 0-25 | Every `forge` flag used in skills matches the CLI's actual flags. Each unknown = -15 (Medium). |
-| 7c. Output field parsing | 0-15 | Skills parsing CLI output use correct field names (ACTION, TASK_ID, etc.). Each wrong field = -5 (Low). |
-| 7d. Status machine alignment | 0-35 | Read `status.go`. Verify skills respect the state machine: `completed`/`rejected` are terminal, `in_progress → completed` blocked (must use `forge task submit`), `rejected` does NOT satisfy deps. Each violation = -25 (High). |
-| 7e. Claim scheduling alignment | 0-35 | Read `claim.go`. Verify skills describe the correct claim priority: (1) all deps met, (2) P0 > P1 > P2, (3) semantic version ordering. Also verify skills handle `ACTION: CONTINUE` correctly. Each violation = -25 (High). |
-| 7f. Record validation alignment | 0-35 | Read `record.go`. Verify skills match: auto-downgrade `completed + testsFailed > 0 → blocked` (non-overridable), test evidence required (overridable with `--force`), all AC must be met (overridable with `--force`), quality gate before completed. Each violation = -25 (High). |
-| 7g. Dynamic task addition alignment | 0-25 | Read `add.go`. Verify: `--template fix-task` for fix tasks, `--source-task-id` auto-injects dependency, ID format `disc-N`, pre-add pattern (`forge task status blocked` → `forge task add` → `forge task claim`). Each violation = -15 (Medium). |
-| 7h. Schema-code alignment | 0-20 | `index.schema.json` fields match Go `Task`/`TaskIndex` struct fields. Verify enum values match. Each mismatch = -5 (Low). |
-| 7i. All-completed hook alignment | 0-10 | Read `all_completed.go`. Verify guide.md description matches actual behavior. Each mismatch = -5 (Low). |
-| 7j. Template existence | 0-10 | `fix-task` template referenced by skills exists on disk. Missing = -10 (Medium). |
-
-### 8. Hook Wiring Integrity (70 pts)
+**Priority order: Instruction conflicts > Step ambiguity > Incomplete conditionals > Undefined variables**
 
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| `hooks.json` is valid JSON | 0-10 | Parse `plugins/forge/hooks/hooks.json`. Invalid JSON = -10 (Medium). |
-| Hook script files exist | 0-25 | Every file path referenced in `hooks.json` (e.g., `${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.cmd`, `scripts/validate-index.sh`) exists on disk. Each missing = -25 (High). |
-| Hook CLI commands valid | 0-15 | Every CLI command referenced in `hooks.json` (e.g., `forge cleanup`, `forge quality-gate`) exists in `forge -h`. Each unknown = -15 (Medium). |
-| Hook event names valid | 0-20 | Every event name in `hooks.json` (e.g., `SessionStart`, `PostToolUse`, `Stop`, `SessionEnd`, `SubagentStop`) is a Claude Code supported hook event. Each unknown = -15 (Medium). |
+| 3a. Instruction conflicts (cross-file) | 0-80 | guide.md vs SKILL.md vs command files describe the same concept differently. E.g., guide says "lint blocks" but skill says "lint non-blocking". Conflict = -25 each. **Check this first.** |
+| 3b. Step ambiguity | 0-50 | SKILL.md steps must have a single unambiguous interpretation. Vague verbs ("check tests", "verify quality") without specific commands = -10 each. |
+| 3c. Incomplete conditionals | 0-40 | Every if-then must have an else path or an explicit "skip" instruction. Missing else = -10 each. |
+| 3d. Variable resolution clarity | 0-30 | Agent-filled variables must have source annotations. CLI-filled variables must match `prompt.go` typeToTemplate. Undefined agent variable = -10 each. |
 
-### 9. Guide Coverage and Conciseness (70 pts)
+**CLI-Filled Variables (from `prompt.go` Synthesize — do NOT mark as "undefined"):**
 
-Bidirectional check: guide.md references must be valid, workflow-critical skills must be documented, and guide.md must stay concise.
+| Variable | Source | Used by |
+|----------|--------|---------|
+| `{{TASK_ID}}` | task.ID | All 14 templates |
+| `{{TASK_FILE}}` | feature.GetTaskFile() | All 14 templates |
+| `{{SCOPE}}` | task.Scope | Most templates |
+| `{{PHASE_SUMMARY}}` | PhaseDetect() | 10 templates |
+| `{{FEATURE_SLUG}}` | SynthesizeOpts.FeatureSlug | 4 templates |
+| `{{PROFILE}}` | task.Profile | 4 test pipeline templates |
 
-**Workflow-critical skills** are those appearing in the guide.md workflow diagrams (Skill Workflow, Quick Mode) or referenced in the Quality Gate Protocol and Task-CLI sections. Utility/setup commands (init-forge, init-justfile, git-checkout, simplify-skill, extract-design-md, forensic, improve-harness, learn-lesson, record-decision) are NOT required to appear in guide.md.
+### 4. Cross-file Dedup (150 pts)
 
-| Criterion | Points | What to check |
-|-----------|--------|---------------|
-| Guide references are valid | 0-30 | Every `/name` pattern in `plugins/forge/hooks/guide.md` points to an existing skill or command. Each dangling = -15 (Medium). |
-| Core workflow skills documented | 0-25 | Every workflow-critical skill (those in Mermaid diagrams, Quality Gate, or Task-CLI sections) has at least a mention in guide.md. Each undocumented workflow-critical skill = -5 (Low). |
-| Conciseness / no redundancy | 0-15 | guide.md contains only workflow rules and conventions — no CLI output format tables, no API reference, no information that belongs in `forge -h` or individual SKILL.md files. Each instance of misplaced reference material = -5 (Low). Duplicated information across sections = -5 (Low). |
+**Three categories with different standards:**
 
-> Note: guide.md is a workflow guide, not a registry. CLI output field tables belong in individual SKILL.md or `forge -h`. Setup/utility commands need not be mentioned.
-
-### 10. Command Metadata Completeness (60 pts)
-
-| Criterion | Points | What to check |
-|-----------|--------|---------------|
-| `allowed_tools` declared where needed | 0-35 | Commands that invoke Bash, Edit, or other tools must declare `allowed_tools`. Check each command's content for tool usage and verify `allowed_tools` is declared. Missing = -15 (Medium) per file. |
-| `argument-hints` declared where needed | 0-25 | Commands that accept parameters must declare `argument-hints`. Check each command's content for parameter handling. Missing = -5 (Low) per file. |
-
-### 11. Plugin Metadata Consistency (40 pts)
-
-| Criterion | Points | What to check |
-|-----------|--------|---------------|
-| `keywords` coverage | 0-25 | `plugin.json` keywords cover the core capability areas of all skills/commands. Check for major gaps (e.g., missing "design" when `tech-design` skill exists). Each major gap = -5 (Low). |
-| `description` accurate | 0-15 | `plugin.json` description accurately represents the plugin's scope. Grossly inaccurate = -15 (Medium). |
-
-### 12. Safety Marker Consistency (50 pts)
+<PLUGIN-PORTABILITY>
+Forge is a Claude Code plugin deployed to users' projects. Plugin SKILL.md and command files run in arbitrary working directories. Cross-file relative paths (`../../`) won't resolve at runtime. Therefore:
+- Duplication that serves plugin portability is **acceptable and should NOT be deducted**.
+- Only deduct when dedup is feasible without breaking portability (e.g., content within the same skill directory, or in non-plugin project-level files like `.claude/skills/`).
+- guide.md cannot be referenced via relative path from plugin SKILL.md files. Inlining guide.md content in plugin files is a necessary trade-off.
+</PLUGIN-PORTABILITY>
 
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| Command/agent markers valid | 0-30 | For each `<EXTREMELY-IMPORTANT>`, `<HARD-RULE>`, `<HARD-GATE>` marker in commands and agents, verify the rule content is actionable and non-contradictory. Non-actionable marker (e.g., "be careful") = -5 (Low). Contradiction between files = -25 (High). |
-| Marker coverage for dispatch commands | 0-20 | Commands that dispatch subagents (execute-task, fix-bug, run-tasks, quick) have `<EXTREMELY-IMPORTANT>` blocks with safety constraints. Missing = -15 (Medium) per file. |
+| 4a. Content copy | 0-60 | Identical/near-identical text blocks appearing in 3+ files. **Plugin portability exception:** Known instances (profile resolution in 9 files, eval protocol in 6 files, report sections in 5 files) serve plugin portability — flag as INFO but do NOT deduct. Only deduct when dedup is feasible within the same skill directory or in non-plugin files. Actionable instance = -10 each. |
+| 4b. guide.md vs SKILL.md overlap | 0-50 | guide.md is the single source of truth. **But plugin files cannot reference guide.md via relative paths** — they must inline the content. Only deduct for non-plugin files or when referencing is feasible. Actionable duplication = -10 each. |
+| 4c. Unreasonable inline | 0-40 | Content that has its own file but is also inlined in SKILL.md. Judgment: does the agent need to see the full content in a single context (reasonable inline) vs can it be obtained via Read tool on demand (should reference). **Plugin portability:** inlining content from outside the skill directory is reasonable when the alternative (relative path reference) would break at runtime. Unreasonable inline = -10 each. |
 
-## Known Acceptable Discrepancies
+**Known Redundancy Instances:**
 
-These should be noted as INFO, not deducted:
+| Instance | Category | Portability-Required? | Deduct? |
+|----------|----------|----------------------|---------|
+| "Step 0: Resolve Profile" | A | YES (9 plugin SKILL.md files) | NO |
+| Eval Iron Laws + Steps 2-4 | A | YES (6 plugin eval SKILL.md files) | NO |
+| Eval report shared sections | A | YES (5 plugin report.md files) | NO |
+| Quality gate sequence | B | YES (plugin skills need it inline) | NO |
+| Scope resolution paraphrase | B | Partial | Only if in non-plugin file |
 
-- Schema marks `prd`/`design` as required, but Go allows `Proposal` as alternative (quick mode)
-- `sourceTaskID` exists in Go struct but not in JSON schema (auto-managed field)
-- `eval-harness` lacks Iron Laws/Hard Gate by design (single-pass, no adversarial loop)
+### 5. Reference Integrity (100 pts)
+
+| Criterion | Points | What to check |
+|-----------|--------|---------------|
+| 5a. Agent references valid | 0-30 | `forge:<agent>` or `subagent_type` points to an existing file in `plugins/forge/agents/`. Dangling = -15 each. |
+| 5b. Template references valid | 0-25 | Template paths in SKILL.md point to existing files. Dangling = -15 each. |
+| 5c. Cross-skill references valid | 0-25 | `invoke /<name>` points to an existing skill/command. Dangling = -15 each. |
+| 5d. Hook references valid | 0-20 | Paths and CLI commands in hooks.json exist. Dangling = -15 each. |
+
+### 6. Structural Convention (50 pts)
+
+| Criterion | Points | What to check |
+|-----------|--------|---------------|
+| 6a. Frontmatter completeness | 0-25 | SKILL.md has name + description. Command has name + description. Agent has name + description + model. Missing = -5 each. |
+| 6b. Eval template convention | 0-15 | eval-* directory has templates/rubric.md + report.md. Missing = -10 each. |
+| 6c. Name-directory alignment | 0-10 | Skill name = directory name, command name = filename. Mismatch = -5 each. |
