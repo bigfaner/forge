@@ -38,6 +38,30 @@ Use the loaded profile manifest and strategy for all subsequent steps.
 Do NOT silently default to any profile. If `forge profile` returns no result and the user cannot decide, abort the skill.
 </HARD-RULE>
 
+## Type Filter (--type)
+
+This skill accepts an optional `--type <capability>` argument that filters script generation to a single test type. When `--type` is specified, the skill skips all other type groups entirely — no Fact Table verification, no locator mapping, no spec generation for non-matching types.
+
+**Valid `--type` values**: the profile's declared capability names from its manifest (e.g., `tui` for go-test, `web-ui` for web-playwright, `api`, `cli`).
+
+**Validation**: If `--type` is specified but not found in the profile's capabilities list, the skill MUST error with a clear message listing the valid types for the active profile. For example: `"invalid type: foo. Valid types for profile go-test: tui, api, cli"`.
+
+**Behavior summary**:
+
+| Step | When `--type` matches | When `--type` does not match | Without `--type` |
+|------|----------------------|------------------------------|-------------------|
+| Step 1: Read & group test cases | Process only test cases of the specified type | Skip non-matching type groups | Process all types (unchanged behavior) |
+| Step 1.5: Code Reconnaissance (Fact Table) | Build Fact Table for the specified type only | Skip Fact Table for non-matching types | Build Fact Table for all types |
+| Step 2: Resolve Sitemap | Run if type is `web-ui` | Skip | Run if profile has `web-ui` capability |
+| Step 3: Map Locators | Run if type is `web-ui` | Skip | Run if profile has `web-ui` capability |
+| Step 3.5: Shared Infrastructure | **Always runs** regardless of `--type` | **Always runs** | Always runs |
+| Step 4: Generate Spec Files | Generate spec files for the specified type only | Skip non-matching types | Generate for all types |
+
+**Key rules**:
+- Shared infrastructure (Step 3.5) **always runs** regardless of `--type` value — helpers, config, and auth-setup are shared across all types
+- Without `--type`, behavior is completely unchanged: all types are generated as before
+- The type filter is applied early in the pipeline at Step 1 (test case grouping), after profile capabilities are resolved
+
 ## Prerequisites
 
 Check previous stage artifacts. Abort and prompt user if missing:
@@ -132,6 +156,8 @@ Test cases match sitemap pages via the `Route` field. The `Element` field from t
 
 Read `docs/features/<slug>/testing/test-cases.md`. Parse each test case — extract TC ID, title, type, route, feature, pre-conditions, steps, expected result, priority. Group by type using the profile's capabilities (e.g., `web-ui` → UI, `api` → API, `cli` → CLI).
 
+**Type filter**: If `--type` was specified, keep only the group matching the specified type and discard all other groups. Only test cases of the specified type are processed in all subsequent steps. If no test cases match the specified type, emit a WARNING and proceed (shared infrastructure in Step 3.5 still runs).
+
 #### Auth Classification
 
 For each test case, classify by authentication requirements:
@@ -170,6 +196,8 @@ Login tests and authenticated tests must not be mixed in the same `describe` blo
 ### Step 1.5: Code Reconnaissance (Build Fact Table)
 
 Read actual source code files to extract ground-truth values. **Never guess or assume values** — every value in a generated script must come from the test-cases.md input or the Fact Table built here.
+
+**Type filter**: If `--type` is specified, skip Fact Table verification for non-matching types. Only build Fact Table entries required by the specified type's test cases.
 
 **Check test-cases.md** for Route Validation results (warnings from gen-test-cases Step 3.5). Use corrected routes where available.
 
@@ -232,7 +260,7 @@ If a route referenced in test cases does not exist in sitemap, **emit a WARNING*
 
 ### Step 3: Map Locators (web-ui capability only)
 
-**Only execute when the active profile has `web-ui` capability.**
+**Only execute when the active profile has `web-ui` capability AND the type filter (if specified) includes a UI-related type (`web-ui` or `tui`).** If `--type` is `api` or `cli`, skip locator mapping entirely.
 
 Locator strategy is owned by this step — `generate.md` provides only the framework-specific syntax (how to write a Playwright/Go/pytest locator), not the decision of *which* locator to use.
 
@@ -258,6 +286,8 @@ For test steps within dynamic states: first click the trigger element's locator,
 
 <PRINCIPLE>
 **Shared infrastructure first.** Before generating any test files, ensure that shared dependencies are complete and functional. Test files depend on these shared files via import — if they are missing or incomplete, all tests will fail at the import stage. Downstream skills (`/run-e2e-tests`, `/graduate-tests`) follow the same principle.
+
+**This step always runs regardless of `--type` value.** Shared infrastructure (helpers, config, auth-setup) is used by all test types and MUST be present before any spec files are generated. The idempotent create-only-if-missing logic ensures safe concurrent execution across per-type tasks.
 </PRINCIPLE>
 
 Check if shared infrastructure exists at `tests/e2e/`:
@@ -306,6 +336,8 @@ Specifically for Playwright: when the `projects` section in playwright.config.ts
 ### Step 4: Generate Spec Files
 
 **Verify project interfaces before generating**: For each type group from Step 1, confirm the project actually exposes that interface. Build/test/lint commands are developer tooling, not a CLI product interface.
+
+**Type filter**: If `--type` is specified, only generate spec files for the specified type. Skip generating spec files for all other types. Without `--type`, generate spec files for all non-empty, verified type groups as before.
 
 | Type | Verification method | Evidence of product interface |
 |------|---------------------|-------------------------------|
