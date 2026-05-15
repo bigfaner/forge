@@ -17,6 +17,17 @@ Generate executable tasks directly from a proposal document. For features (1-10 
 Maximum 10 business tasks. If the proposal requires more, STOP and recommend the full pipeline: `/write-prd` → `/tech-design` → `/breakdown-tasks`.
 </HARD-GATE>
 
+## Docs-Only Fast Path
+
+When all business tasks use `templates/task-doc.md` (type: `"documentation"`), the following steps are unnecessary and should be skipped:
+
+- **Step 0 (Resolve Profile)** — skip entirely. No test profile is needed because there are no test tasks.
+- **Step 4 (Test Tasks)** — skip entirely. No test tasks are generated for documentation-type tasks.
+
+**Detection**: After Step 3 (Create Task Files), if every business task was created from `templates/task-doc.md`, the feature is docs-only. The runtime already sets `noTest: true` for these tasks and `forge quality-gate` skips them automatically.
+
+**Workflow for docs-only features**: Step 1 → Step 2 → Step 3 (all tasks use `templates/task-doc.md`) → Step 5 → Step 6 → Step 7.
+
 ## Step 0: Resolve Profile
 
 1. **Resolve profile**: Run `forge profile` to get the active test profile(s). This reads `.forge/config.yaml`, falls back to project structure detection.
