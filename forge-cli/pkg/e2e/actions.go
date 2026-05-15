@@ -59,6 +59,11 @@ func Run(opts RunOpts) error {
 
 	args := []string{}
 	if opts.Feature != "" {
+		// Validate feature directory exists before invoking just
+		featureDir := filepath.Join(opts.ProjectRoot, "tests", "e2e", "features", opts.Feature)
+		if _, statErr := os.Stat(featureDir); os.IsNotExist(statErr) {
+			return fmt.Errorf("%w: %s", ErrFeatureNotFound, opts.Feature)
+		}
 		args = append(args, "feature="+opts.Feature)
 	}
 

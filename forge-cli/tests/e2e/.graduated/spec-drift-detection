@@ -1,0 +1,9 @@
+schema_version: 1
+status: completed
+timestamp: 2026-05-15T14:44:34Z
+source: tests/e2e/features/spec-drift-detection/
+targets:
+  - tests/e2e/spec_drift_detection_cli_test.go
+modules:
+  - spec-drift-detection
+testCount: 19

@@ -38,6 +38,8 @@ func InferType(id string) string {
 		return TypeTestPipelineGraduate
 	case profileSuffixedID(id, "T-quick-5"):
 		return TypeTestPipelineVerifyRegression
+	case id == "T-quick-6", profileSuffixedID(id, "T-quick-6"):
+		return TypeDocGenerationDrift
 	case strings.HasPrefix(id, "fix-") || strings.HasPrefix(id, "disc-"):
 		return TypeFix
 	case id == "T-eval-doc":

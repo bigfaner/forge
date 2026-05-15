@@ -36,6 +36,8 @@ Check previous stage artifacts. Abort and prompt user if missing:
 | `docs/features/<slug>/prd/prd-spec.md` | Run `/write-prd` first |
 | `docs/sitemap/sitemap.json` (optional, only when profile has `web-ui` capability) | Run `/gen-sitemap`. Skip sitemap check entirely for non-web-ui profiles. |
 
+**sitemap-missing fallback**: When `docs/sitemap/sitemap.json` is absent and the profile has `web-ui` capability, emit a warning in the output (`"sitemap-missing: route validation skipped. Run /gen-sitemap to enable route validation."`) and proceed without route verification. Do not abort the skill.
+
 This skill can be invoked manually or as the standard task T-test-1 appended by `/breakdown-tasks`.
 
 ## When to Use
@@ -158,6 +160,7 @@ For each criterion, generate:
 - **Type**: UI | API | CLI
 - **Target**: <type>/<page-or-resource>
 - **Test ID**: <target>/<title-slug>
+- **Element**: {CSS selector, ARIA label, or data-testid identifying the DOM element — required for UI tests}
 - **Pre-conditions**: {What must be true before testing}
 - **Route**: {Page route for UI tests}
 - **Steps**:
@@ -166,6 +169,8 @@ For each criterion, generate:
 - **Expected**: {What the correct result looks like}
 - **Priority**: P0 | P1 | P2
 ```
+
+**Element field is required** for all UI test cases. The Element field identifies the specific DOM element under test using a CSS selector, ARIA label, or data-testid. For API and CLI tests, omit the Element field.
 
 <HARD-RULE>
 **test-cases.md must NOT contain any testid, CSS selector, XPath, or implementation-specific locator** — only natural language UI interaction descriptions. Technical implementation details (locators, selectors, testids) are the responsibility of `/gen-test-scripts`, which extracts them directly from source code.
