@@ -8,7 +8,7 @@
       "title": "Rewrite rubric.md: 6-dimension runtime reliability scoring",
       "priority": "P0",
       "estimatedTime": "1-2h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-rewrite-rubric.md",
       "record": "records/1-rewrite-rubric.md",
       "type": "documentation"
