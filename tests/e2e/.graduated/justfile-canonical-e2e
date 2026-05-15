@@ -1,0 +1,10 @@
+schema_version: 1
+status: completed
+timestamp: 2026-05-15T01:45:00Z
+source: tests/e2e/features/justfile-canonical-e2e/
+targets:
+  - tests/e2e/justfile-canonical-e2e/justfile_canonical_e2e_cli_test.go
+  - tests/e2e/justfile-canonical-e2e/helpers_test.go
+modules:
+  - justfile-canonical-e2e
+testCount: 20
