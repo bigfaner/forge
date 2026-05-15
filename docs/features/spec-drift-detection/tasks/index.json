@@ -8,7 +8,7 @@
       "title": "Add drift detection + auto-fix steps to consolidate-specs SKILL.md",
       "priority": "P0",
       "estimatedTime": "1-2h",
-      "status": "in_progress",
+      "status": "completed",
       "file": "1-consolidate-specs-drift-steps.md",
       "record": "records/1-consolidate-specs-drift-steps.md",
       "type": "documentation"
