@@ -55,6 +55,31 @@ func TestInferType(t *testing.T) {
 		// Doc evaluation task
 		{"T-eval-doc", TypeDocEvaluation},
 
+		// Type-suffixed test tasks (per-type split)
+		{"T-test-2-api", TypeTestPipelineGenScripts},
+		{"T-test-2-tui", TypeTestPipelineGenScripts},
+		{"T-test-2-cli", TypeTestPipelineGenScripts},
+		{"T-test-2-web-ui", TypeTestPipelineGenScripts},
+		{"T-test-3-api", TypeTestPipelineRun},
+		{"T-test-4-api", TypeTestPipelineGraduate},
+		{"T-quick-2-api", TypeTestPipelineGenScripts},
+		{"T-quick-2-tui", TypeTestPipelineGenScripts},
+		{"T-quick-3-cli", TypeTestPipelineRun},
+		{"T-quick-4-api", TypeTestPipelineGraduate},
+
+		// Profile-suffixed + type-suffixed
+		{"T-test-2a-api", TypeTestPipelineGenScripts},
+		{"T-test-2b-tui", TypeTestPipelineGenScripts},
+		{"T-test-3a-cli", TypeTestPipelineRun},
+		{"T-quick-2a-api", TypeTestPipelineGenScripts},
+		{"T-quick-2b-tui", TypeTestPipelineGenScripts},
+		{"T-quick-3a-cli", TypeTestPipelineRun},
+
+		// Type suffix on T-test-1 should NOT match (exact + profileSuffixed only)
+		{"T-test-1-api", ""},
+		{"T-test-4.5-api", ""},
+		{"T-test-5-api", ""},
+
 		// Unknown IDs return empty string (no TypeImplementation fallback)
 		{"1.1", ""},
 		{"2.3", ""},
@@ -67,6 +92,34 @@ func TestInferType(t *testing.T) {
 			got := InferType(tt.id)
 			if got != tt.want {
 				t.Errorf("InferType(%q) = %q, want %q", tt.id, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestExtractTypeSuffix(t *testing.T) {
+	tests := []struct {
+		id   string
+		base string
+		want string
+	}{
+		{"T-test-2-api", "T-test-2", "api"},
+		{"T-test-2a-tui", "T-test-2", "tui"},
+		{"T-test-2-web-ui", "T-test-2", "web-ui"},
+		{"T-test-2a-web-ui", "T-test-2", "web-ui"},
+		{"T-quick-2-cli", "T-quick-2", "cli"},
+		{"T-quick-2b-api", "T-quick-2", "api"},
+		{"T-test-2", "T-test-2", ""},        // exact match
+		{"T-test-2a", "T-test-2", ""},       // profile suffix only
+		{"T-test-1-api", "T-test-1", "api"}, // syntactically valid, but InferType won't route it
+		{"random", "T-test-2", ""},          // wrong base
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id, func(t *testing.T) {
+			got := ExtractTypeSuffix(tt.id, tt.base)
+			if got != tt.want {
+				t.Errorf("ExtractTypeSuffix(%q, %q) = %q, want %q", tt.id, tt.base, got, tt.want)
 			}
 		})
 	}
