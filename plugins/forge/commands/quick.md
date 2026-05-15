@@ -12,12 +12,23 @@ Streamlined pipeline for small features: brainstorm → tasks → execute.
 
 ```mermaid
 flowchart TD
-    A["Step 1: /brainstorm<br>proposal.md"] --> B["Step 2: User confirms ✋"]
-    B -->|"Yes"| C["Step 3: /quick-tasks<br>tasks + index.json + manifest.md"]
+    INPUT(["User Input<br><i>any format: question, idea, feature request</i>"]) --> A
+    A["1. /brainstorm<br>proposal.md"] --> B{"2. User confirms ✋"}
+    B -->|"Yes"| C["3. /quick-tasks<br>tasks + index.json + manifest.md"]
     B -->|"Revise"| A
     B -->|"Abort"| STOP["Stop"]
-    C --> D["Step 4: /run-tasks<br>auto-execute"]
+    C --> D["4. /run-tasks<br>auto-execute"]
+    C -->|">10 tasks"| FULL["STOP → recommend<br>full pipeline"]
 ```
+
+## Core Rules
+
+<EXTREMELY-IMPORTANT>
+1. **Execute the pipeline in order.** Always start with Step 1 (brainstorm), regardless of how the user's input is phrased. Question-like inputs ("can we simplify X?", "should we refactor Y?") are NOT discussions — they are feature requests that brainstorm exists to shape into structured proposals. Do NOT substitute ad-hoc analysis (Explore agents, grep, file reads) for the pipeline.
+2. Maximum 10 business tasks. If brainstorm produces a proposal that needs more, STOP and suggest the full pipeline.
+3. ONE feature per invocation.
+4. The /quick pipeline is for small, well-scoped features. If scope grows during brainstorm, recommend switching to full mode.
+</EXTREMELY-IMPORTANT>
 
 ## Step 1: Brainstorm
 
@@ -105,11 +116,3 @@ The existing run-tasks dispatcher will:
 | quick-tasks exceeds 10 task limit | Stop, recommend full pipeline |
 | `forge task validate-index` fails | Stop, fix index.json issues |
 | run-tasks encounters failures | Handled by dispatcher (fix tasks, retries) |
-
-## Rules
-
-<EXTREMELY-IMPORTANT>
-- Maximum 10 business tasks. If brainstorm produces a proposal that needs more, STOP and suggest the full pipeline.
-- ONE feature per invocation.
-- The /quick pipeline is for small, well-scoped features. If scope grows during brainstorm, recommend switching to full mode.
-</EXTREMELY-IMPORTANT>
