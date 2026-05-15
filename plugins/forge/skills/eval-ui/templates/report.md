@@ -28,14 +28,40 @@ evaluator: Claude (automated, adversarial)
 │    Edge case handling        │  ___/50  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
 │ 2. {{D2_NAME}} (End User)    │  ___     │  250     │ ✅/⚠️/❌    │
+<!-- D2 sub-criteria: web (default) -->
 │    Information hierarchy     │  ___/80  │          │            │
 │    Interaction intuitiveness │  ___/80  │          │            │
 │    Accessibility             │  ___/90  │          │            │
+<!-- D2 sub-criteria: mobile (Touch Experience)
+│    Touch target sizing       │  ___/70  │          │            │
+│    Thumb reachability        │  ___/60  │          │            │
+│    Gesture intuitiveness     │  ___/60  │          │            │
+│    Platform convention       │  ___/60  │          │            │
+-->
+<!-- D2 sub-criteria: tui (Terminal Experience)
+│    Keyboard reachability     │  ___/70  │          │            │
+│    Info scanning efficiency  │  ___/60  │          │            │
+│    Panel switching           │  ___/60  │          │            │
+│    Mode switching consistency│  ___/60  │          │            │
+-->
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
 │ 3. {{D3_NAME}} (Designer)    │  ___     │  250     │ ✅/⚠️/❌    │
+<!-- D3 sub-criteria: web (default) -->
 │    Design system adherence   │  ___/80  │          │            │
 │    Visual coherence          │  ___/90  │          │            │
 │    State completeness        │  ___/80  │          │            │
+<!-- D3 sub-criteria: mobile (Adaptive Layout)
+│    Multi-screen adaptation   │  ___/70  │          │            │
+│    Orientation handling      │  ___/60  │          │            │
+│    Safe area handling        │  ___/60  │          │            │
+│    Platform-native feel      │  ___/60  │          │            │
+-->
+<!-- D3 sub-criteria: tui (Visual Specification)
+│    ASCII mockup completeness │  ___/70  │          │            │
+│    Character palette         │  ___/60  │          │            │
+│    Color mapping compliance  │  ___/60  │          │            │
+│    Dimension specificity     │  ___/60  │          │            │
+-->
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
 │ 4. Implementability (Dev)    │  ___     │  250     │ ✅/⚠️/❌    │
 │    Layout specificity        │  ___/80  │          │            │

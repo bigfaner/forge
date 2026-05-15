@@ -27,9 +27,26 @@ evaluator: Claude (automated, adversarial)
 │    Preconditions explicit    │  ___/70  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
 │ 3. Interface Accuracy        │  ___     │  200     │ ✅/⚠️/❌    │
+<!-- D3 sub-criteria: web-ui (default) -->
 │    Routes valid              │  ___/70  │          │            │
 │    Elements identifiable     │  ___/70  │          │            │
-│    Consistency               │  ___/60  │          │            │
+│    Route/Element consistency │  ___/60  │          │            │
+<!-- D3 sub-criteria: tui
+│    Output assertions concrete│  ___/100 │          │            │
+│    Keyboard interaction      │  ___/100 │          │            │
+-->
+<!-- D3 sub-criteria: mobile-ui
+│    Interaction specificity   │  ___/100 │          │            │
+│    Navigation flow coverage  │  ___/100 │          │            │
+-->
+<!-- D3 sub-criteria: api
+│    Contract accuracy         │  ___/100 │          │            │
+│    Error contract coverage   │  ___/100 │          │            │
+-->
+<!-- D3 sub-criteria: cli
+│    Command coverage          │  ___/100 │          │            │
+│    Output assertion specific.│  ___/100 │          │            │
+-->
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
 │ 4. Completeness              │  ___     │  200     │ ✅/⚠️/❌    │
 │    Type coverage             │  ___/70  │          │            │
