@@ -37,6 +37,8 @@ memory: project
    Skill(skill="forge:submit-task")
    ```
 
+   The submit-task skill internally calls record-task for metrics collection via `just test`.
+
 8. Invoke the skill:
 
    ```

@@ -282,6 +282,19 @@ For implementation tasks, determine the `scope` field for `index.json` (document
 
 3. Write `scope` into the implementation task `.md` frontmatter's `scope` field. Non-mixed projects always use `scope: "all"`.
 
+### Type Assignment
+
+Every task receives a `type` field in its frontmatter. The type controls which executor template the dispatcher selects:
+
+| Type | When to assign |
+|------|----------------|
+| `implementation` | Default for all tasks that produce or modify source code, build configs, or runtime configs |
+| `doc-generation` | Tasks producing only documentation, specs, or non-compilable artifacts |
+| `gate` | Quality-gate verification tasks (PRD flow diamond nodes, stage gates) |
+| `test-pipeline` | Auto-generated test lifecycle tasks (T-test-1 through T-test-5, fix-tasks) |
+
+Unrecognized or ambiguous tasks fall back to `implementation`.
+
 ### Template Selection (business tasks)
 
 Choose the task template based on Affected Files:
