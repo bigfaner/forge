@@ -69,6 +69,28 @@
       "sourceTaskID": "T-quick-3",
       "type": "fix"
     },
+    "fix-2": {
+      "id": "fix-2",
+      "title": "Fix: login bug",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "rejected",
+      "file": "fix-2.md",
+      "record": "records/fix-2.md",
+      "breaking": true,
+      "sourceTaskID": "1.1",
+      "type": "fix"
+    },
+    "fix-3": {
+      "id": "fix-3",
+      "title": "fix unit-test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-3.md",
+      "record": "records/fix-3.md",
+      "breaking": true
+    },
     "quick-gen-scripts-go-test": {
       "id": "T-quick-2",
       "title": "Generate Quick Test Scripts (go-test)",
