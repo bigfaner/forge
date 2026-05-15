@@ -18,7 +18,7 @@
       "title": "Add Docs-Only Fast Path to breakdown-tasks/SKILL.md",
       "priority": "P1",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "2-breakdown-tasks-fast-path.md",
       "record": "records/2-breakdown-tasks-fast-path.md",
       "type": "documentation"
