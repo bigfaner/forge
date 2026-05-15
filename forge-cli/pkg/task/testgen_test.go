@@ -577,9 +577,9 @@ func TestGenerateTestTaskMD_WithTestType(t *testing.T) {
 func TestGetQuickTestTasks_PerType_SingleProfile(t *testing.T) {
 	tasks := GetQuickTestTasks([]string{"go-test"}, []string{"tui", "api"})
 
-	// Per-profile: gen-cases + per-type-gen(tui,api) + run + graduate = 5 + shared verify-regression = 6
-	if len(tasks) != 6 {
-		t.Fatalf("expected 6 tasks, got %d", len(tasks))
+	// Per-profile: gen-cases + per-type-gen(tui,api) + run + graduate = 5 + shared verify-regression + drift-detection = 7
+	if len(tasks) != 7 {
+		t.Fatalf("expected 7 tasks, got %d", len(tasks))
 	}
 
 	wantIDs := []string{
@@ -587,6 +587,7 @@ func TestGetQuickTestTasks_PerType_SingleProfile(t *testing.T) {
 		"T-quick-2-tui", "T-quick-2-api",
 		"T-quick-3", "T-quick-4",
 		"T-quick-5",
+		"T-quick-6",
 	}
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
@@ -649,10 +650,10 @@ func TestGetQuickTestTasks_PerType_MultiProfile(t *testing.T) {
 
 	// Profile-a: gen-cases + 2 per-type-gen + run + graduate = 5
 	// Profile-b: same = 5
-	// Shared: verify-regression = 1
-	// Total = 11
-	if len(tasks) != 11 {
-		t.Fatalf("expected 11 tasks, got %d", len(tasks))
+	// Shared: verify-regression + drift-detection = 2
+	// Total = 12
+	if len(tasks) != 12 {
+		t.Fatalf("expected 12 tasks, got %d", len(tasks))
 	}
 
 	wantIDs := []string{
@@ -663,6 +664,7 @@ func TestGetQuickTestTasks_PerType_MultiProfile(t *testing.T) {
 		"T-quick-2b-tui", "T-quick-2b-api",
 		"T-quick-3b", "T-quick-4b",
 		"T-quick-5",
+		"T-quick-6",
 	}
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
@@ -700,9 +702,9 @@ func TestGetQuickTestTasks_PerType_SingleType(t *testing.T) {
 	tasks := GetQuickTestTasks([]string{"go-test"}, []string{"api"})
 
 	// Only api type -> one gen task
-	// gen-cases + 1 gen-scripts-api + run + graduate + verify-regression = 5
-	if len(tasks) != 5 {
-		t.Fatalf("expected 5 tasks, got %d", len(tasks))
+	// gen-cases + 1 gen-scripts-api + run + graduate + verify-regression + drift-detection = 6
+	if len(tasks) != 6 {
+		t.Fatalf("expected 6 tasks, got %d", len(tasks))
 	}
 
 	wantIDs := []string{
@@ -710,6 +712,7 @@ func TestGetQuickTestTasks_PerType_SingleType(t *testing.T) {
 		"T-quick-2-api",
 		"T-quick-3", "T-quick-4",
 		"T-quick-5",
+		"T-quick-6",
 	}
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
@@ -726,9 +729,9 @@ func TestGetQuickTestTasks_PerType_SingleType(t *testing.T) {
 func TestGetQuickTestTasks_PerType_ThreeTypes(t *testing.T) {
 	tasks := GetQuickTestTasks([]string{"go-test"}, []string{"tui", "api", "cli"})
 
-	// gen-cases + 3 per-type-gen + run + graduate + verify-regression = 7
-	if len(tasks) != 7 {
-		t.Fatalf("expected 7 tasks, got %d", len(tasks))
+	// gen-cases + 3 per-type-gen + run + graduate + verify-regression + drift-detection = 8
+	if len(tasks) != 8 {
+		t.Fatalf("expected 8 tasks, got %d", len(tasks))
 	}
 
 	// T-quick-3 depends on all 3 gen tasks
