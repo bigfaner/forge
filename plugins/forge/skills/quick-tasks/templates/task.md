@@ -18,23 +18,6 @@ mainSession: false
 ## Reference Files
 - `docs/proposals/<slug>/proposal.md` — Source proposal
 
-## Affected Files
-
-### Create
-| File | Description |
-|------|-------------|
-| {{NEW_FILES}} |
-
-### Modify
-| File | Changes |
-|------|---------|
-| {{MODIFIED_FILES}} |
-
-### Delete
-| File | Reason |
-|------|--------|
-| {{DELETED_FILES}} |
-
 ## Acceptance Criteria
 {{ACCEPTANCE_CRITERIA}}
 

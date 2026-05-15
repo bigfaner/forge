@@ -52,6 +52,7 @@ type AllCompletedResult struct {
 	FeatureSlug string
 	ProjectRoot string
 	TestCommand string // empty if not set in index.json
+	DocsOnly    bool   // true if no implementation or fix tasks exist
 }
 
 // checkAllCompleted verifies all tasks are done and returns test context.
@@ -102,7 +103,19 @@ func checkAllCompleted(verbose bool) *AllCompletedResult {
 		FeatureSlug: featureSlug,
 		ProjectRoot: projectRoot,
 		TestCommand: index.TestCommand,
+		DocsOnly:    isDocsOnly(index),
 	}
+}
+
+// isDocsOnly returns true if no task is implementation or fix type.
+// Docs-only features change only markdown files — no compile/test/e2e needed.
+func isDocsOnly(index *task.TaskIndex) bool {
+	for _, t := range index.TasksMap() {
+		if t.Type == task.TypeImplementation || t.Type == task.TypeFix {
+			return false
+		}
+	}
+	return true
 }
 
 func runQualityGate(_ *cobra.Command, _ []string) {
@@ -112,6 +125,12 @@ func runQualityGate(_ *cobra.Command, _ []string) {
 	}
 
 	fmt.Fprintf(os.Stderr, "=== All tasks completed for feature: %s ===\n", result.FeatureSlug)
+
+	// Docs-only features have no code changes — skip compile/test/e2e gates.
+	if result.DocsOnly {
+		fmt.Fprintln(os.Stderr, "Feature is docs-only — skipping quality gate (no implementation or fix tasks)")
+		os.Exit(0)
+	}
 
 	// Warn if feature e2e scripts exist but haven't been graduated.
 	e2eScriptsDir := feature.GetE2EStagingDir(result.ProjectRoot, result.FeatureSlug)

@@ -1113,6 +1113,134 @@ func TestCheckAllCompleted_ForgeStateConsumedOnSuccess(t *testing.T) {
 	}
 }
 
+func TestIsDocsOnly(t *testing.T) {
+	tests := []struct {
+		name  string
+		tasks map[string]task.Task
+		want  bool
+	}{
+		{
+			name: "only documentation tasks",
+			tasks: map[string]task.Task{
+				"t1": {ID: "1", Type: task.TypeDocumentation},
+				"t2": {ID: "2", Type: task.TypeDocumentation},
+			},
+			want: true,
+		},
+		{
+			name: "documentation plus doc-evaluation",
+			tasks: map[string]task.Task{
+				"t1": {ID: "1", Type: task.TypeDocumentation},
+				"t2": {ID: "T-eval-doc", Type: task.TypeDocEvaluation},
+			},
+			want: true,
+		},
+		{
+			name: "empty index is docs-only",
+			tasks: map[string]task.Task{},
+			want: true,
+		},
+		{
+			name: "has implementation task",
+			tasks: map[string]task.Task{
+				"t1": {ID: "1", Type: task.TypeDocumentation},
+				"t2": {ID: "2", Type: task.TypeImplementation},
+			},
+			want: false,
+		},
+		{
+			name: "has fix task",
+			tasks: map[string]task.Task{
+				"t1": {ID: "1", Type: task.TypeDocumentation},
+				"f1": {ID: "fix-1", Type: task.TypeFix},
+			},
+			want: false,
+		},
+		{
+			name: "test-pipeline tasks only",
+			tasks: map[string]task.Task{
+				"t1": {ID: "T-quick-1", Type: task.TypeTestPipelineGenCases},
+				"t2": {ID: "T-quick-2", Type: task.TypeTestPipelineGenScripts},
+			},
+			want: true,
+		},
+		{
+			name: "mixed documentation and test-pipeline",
+			tasks: map[string]task.Task{
+				"t1": {ID: "1", Type: task.TypeDocumentation},
+				"t2": {ID: "T-quick-1", Type: task.TypeTestPipelineRun},
+			},
+			want: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			index := task.NewTaskIndex("test")
+			index.SetTasks(tc.tasks)
+			got := isDocsOnly(index)
+			if got != tc.want {
+				t.Errorf("isDocsOnly() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestCheckAllCompleted_DocsOnlyFlag(t *testing.T) {
+	tests := []struct {
+		name         string
+		tasks        map[string]task.Task
+		wantDocsOnly bool
+	}{
+		{
+			name: "documentation only sets DocsOnly true",
+			tasks: map[string]task.Task{
+				"t1": {ID: "1", Status: "completed", Type: task.TypeDocumentation},
+				"t2": {ID: "T-eval-doc", Status: "completed", Type: task.TypeDocEvaluation},
+			},
+			wantDocsOnly: true,
+		},
+		{
+			name: "implementation task sets DocsOnly false",
+			tasks: map[string]task.Task{
+				"t1": {ID: "1", Status: "completed", Type: task.TypeImplementation},
+			},
+			wantDocsOnly: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			t.Setenv("CLAUDE_PROJECT_DIR", dir)
+			if err := feature.EnsureFeatureDir(dir, "test"); err != nil {
+				t.Fatal(err)
+			}
+
+			indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
+			index := &task.TaskIndex{
+				Feature:    "test",
+				StatusEnum: []string{"pending", "in_progress", "completed", "blocked", "skipped"},
+			}
+			index.SetTasks(tc.tasks)
+			if err := task.SaveIndex(indexPath, index); err != nil {
+				t.Fatal(err)
+			}
+			if err := feature.WriteForgeState(dir, "test"); err != nil {
+				t.Fatal(err)
+			}
+
+			result := checkAllCompleted(false)
+			if result == nil {
+				t.Fatal("expected non-nil result")
+			}
+			if result.DocsOnly != tc.wantDocsOnly {
+				t.Errorf("DocsOnly = %v, want %v", result.DocsOnly, tc.wantDocsOnly)
+			}
+		})
+	}
+}
+
 func TestCheckAllCompleted_ManyCompletedTasks(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("CLAUDE_PROJECT_DIR", dir)
