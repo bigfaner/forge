@@ -17,6 +17,27 @@ Generate executable tasks directly from a proposal document. For features (1-10 
 Maximum 10 business tasks. If the proposal requires more, STOP and recommend the full pipeline: `/write-prd` → `/tech-design` → `/breakdown-tasks`.
 </HARD-GATE>
 
+## Docs-Only Fast Path
+
+When all business tasks use `templates/task-doc.md` (type: `"documentation"`), the following steps are unnecessary and should be skipped:
+
+- **Step 0 (Resolve Profile)** — skip entirely. No test profile is needed because there are no test tasks.
+- **Step 4 (Test Tasks)** — skip entirely. No test tasks are generated for documentation-type tasks.
+
+**Detection**: During Step 1 (Read Proposal), after extracting In Scope items — if every item targets non-compilable files (`.md`, `.yaml`, `.json` config only) and the proposal's Constraints or Feasibility section confirms "documentation only", the feature is docs-only. Skip Step 0 immediately.
+
+```mermaid
+graph LR
+    S1["Step 1: Read Proposal"] --> D{"all In Scope<br>non-compilable?"}
+    D -->|Yes| S2["Step 2 → 3<br><i>skip Step 0 & 4</i>"]
+    D -->|No| S0["Step 0: Resolve Profile"]
+    S0 --> S2x["Step 2 → 3 → 4"]
+    S2 --> S5["Step 5 → 7"]
+    S2x --> S5
+```
+
+**Workflow for docs-only features**: Step 1 (detect docs-only from proposal, skip Step 0) → Step 2 → Step 3 (all tasks use `templates/task-doc.md`) → Step 5 → Step 6 → Step 7.
+
 ## Step 0: Resolve Profile
 
 1. **Resolve profile**: Run `forge profile` to get the active test profile(s). This reads `.forge/config.yaml`, falls back to project structure detection.

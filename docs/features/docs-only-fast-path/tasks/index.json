@@ -1,0 +1,65 @@
+{
+  "feature": "docs-only-fast-path",
+  "proposal": "docs/proposals/docs-only-fast-path/proposal.md",
+  "created": "2026-05-15",
+  "tasks": {
+    "1-quick-tasks-fast-path": {
+      "id": "1",
+      "title": "Add Docs-Only Fast Path to quick-tasks/SKILL.md",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "status": "completed",
+      "file": "1-quick-tasks-fast-path.md",
+      "record": "records/1-quick-tasks-fast-path.md",
+      "type": "documentation"
+    },
+    "2-breakdown-tasks-fast-path": {
+      "id": "2",
+      "title": "Add Docs-Only Fast Path to breakdown-tasks/SKILL.md",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "status": "completed",
+      "file": "2-breakdown-tasks-fast-path.md",
+      "record": "records/2-breakdown-tasks-fast-path.md",
+      "type": "documentation"
+    },
+    "3-guide-exceptions": {
+      "id": "3",
+      "title": "Add docs-only exceptions to guide.md",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "status": "completed",
+      "file": "3-guide-exceptions.md",
+      "record": "records/3-guide-exceptions.md",
+      "type": "documentation"
+    },
+    "eval-doc": {
+      "id": "T-eval-doc",
+      "title": "Evaluate Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "3"
+      ],
+      "status": "completed",
+      "file": "eval-doc.md",
+      "record": "records/eval-doc.md",
+      "scope": "all",
+      "noTest": true,
+      "type": "doc-evaluation"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
