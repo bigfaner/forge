@@ -1,0 +1,84 @@
+{
+  "feature": "skill-rationalization",
+  "proposal": "docs/proposals/skill-rationalization/proposal.md",
+  "created": "2026-05-16",
+  "tasks": {
+    "1-eval-skill-generic": {
+      "id": "1",
+      "title": "Create generic eval skill and extract rubric files",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "status": "pending",
+      "file": "1-eval-skill-generic.md",
+      "record": "records/1-eval-skill-generic.md",
+      "type": "documentation"
+    },
+    "2-eval-command-wrappers": {
+      "id": "2",
+      "title": "Create eval command wrappers for backward-compatible slash commands",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-eval-command-wrappers.md",
+      "record": "records/2-eval-command-wrappers.md",
+      "type": "documentation"
+    },
+    "3-remove-old-eval-skills": {
+      "id": "3",
+      "title": "Remove old eval skill directories, record-task skill, and simplify-skill command",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "2"
+      ],
+      "status": "pending",
+      "file": "3-remove-old-eval-skills.md",
+      "record": "records/3-remove-old-eval-skills.md",
+      "type": "documentation"
+    },
+    "4-update-forge-guide": {
+      "id": "4",
+      "title": "Update forge guide and references for new eval structure",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "3"
+      ],
+      "status": "pending",
+      "file": "4-update-forge-guide.md",
+      "record": "records/4-update-forge-guide.md",
+      "type": "documentation"
+    },
+    "eval-doc": {
+      "id": "T-eval-doc",
+      "title": "Evaluate Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "4"
+      ],
+      "status": "pending",
+      "file": "eval-doc.md",
+      "record": "records/eval-doc.md",
+      "scope": "all",
+      "noTest": true,
+      "type": "doc-evaluation"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
