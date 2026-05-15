@@ -41,7 +41,7 @@ This dimension adapts based on the project's active test profile capabilities. R
 
 | Capability | Dimension name | Evaluation focus |
 |-----------|---------------|------------------|
-| `web-ui` | Route & Element Accuracy | Routes are valid paths matching sitemap.json. Elements use selector strategies (data-testid, aria-label, semantic locators). UI TCs have both Route and Element. |
+| `web-ui` | Route Accuracy | Routes are valid paths matching sitemap.json. UI TCs have Route fields with concrete paths. |
 | `tui` | Output Assertion Accuracy | Expected outputs have specific text/snapshot comparison points. Terminal rendering assertions are concrete (exact strings, regex patterns, golden file refs). |
 | `mobile-ui` | Interaction Accuracy | Touch/gesture/navigation flows are specific (tap coordinates, swipe directions, screen transitions). Element identification uses accessibility labels or resource IDs. |
 | `api` | Contract Accuracy | Request/response structures match actual API schemas. Status codes, headers, body fields are explicit. Error response contracts are covered. |
@@ -51,9 +51,8 @@ When multiple capabilities are active, evaluate each relevant section proportion
 
 | Capability-specific criteria | Points | What to check |
 |---|--------|---------------|
-| **web-ui**: Routes are valid and specific | 0-70 | Every Route field contains a real path (e.g., `/users/123/edit`), not vague descriptions. Matches sitemap.json routes where applicable |
-| **web-ui**: Elements are identifiable | 0-70 | Every Element field uses a selector strategy: `data-testid`, `aria-label`, or semantic locator. Not "the button" or "the form" |
-| **web-ui**: Route/Element consistency | 0-60 | UI TCs have both Route and Element. API TCs have Route but no Element. CLI TCs have neither but have command patterns |
+| **web-ui**: Routes are valid and specific | 0-120 | Every Route field contains a real path (e.g., `/users/123/edit`), not vague descriptions. Matches sitemap.json routes where applicable. No placeholder paths |
+| **web-ui**: Route consistency | 0-80 | UI TCs and API TCs have Route fields. CLI TCs have neither but have command patterns. No Route field contains implementation details (testid, selector, CSS) |
 | **tui**: Output assertions are concrete | 0-100 | Expected results specify exact text, snapshot comparison points, or regex patterns for terminal output |
 | **tui**: Keyboard interaction coverage | 0-100 | Keyboard inputs, key sequences, and terminal state transitions are explicitly described |
 | **mobile-ui**: Interaction specificity | 0-100 | Touch targets, gesture types, screen transitions are explicitly described with accessibility labels or resource IDs |

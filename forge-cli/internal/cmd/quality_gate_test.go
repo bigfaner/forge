@@ -1136,9 +1136,9 @@ func TestIsDocsOnly(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "empty index is docs-only",
+			name:  "empty index is docs-only",
 			tasks: map[string]task.Task{},
-			want: true,
+			want:  true,
 		},
 		{
 			name: "has implementation task",
