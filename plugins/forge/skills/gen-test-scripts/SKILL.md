@@ -206,6 +206,20 @@ Read actual source code files to extract ground-truth values. **Never guess or a
 - All `// VERIFY:` markers in templates must be resolved using Fact Table values.
 </HARD-RULE>
 
+#### Fact Table Completeness Gate
+
+After building the Fact Table, validate completeness per test type before proceeding. For each test type that has test cases in test-cases.md:
+
+| Test type | Required Fact Table keys (all must be non-UNKNOWN) |
+|-----------|-----------------------------------------------------|
+| UI | `FRONTEND_BASE` or `TESTID_*` entries |
+| API | `API_PORT` or route path entries (`AUTH_ENDPOINT`, etc.) |
+| CLI | At least one CLI command name entry |
+
+**If all required keys for a test type are UNKNOWN**: skip that test type, emit a WARNING explaining why, and suggest the user verify the relevant source files exist before re-running. Do NOT generate tests for that type — UNKNOWN values would force the agent to guess, reproducing the anti-pattern this gate prevents.
+
+**If some keys are non-UNKNOWN**: proceed for that type. Individual UNKNOWN keys are acceptable (e.g., `TESTID_MAP_CARD` unknown but `TESTID_BTN_CONFIRM` known) — only skip when *all* required keys for the entire type are UNKNOWN.
+
 ### Step 2: Resolve Sitemap (web-ui capability only)
 
 **Only execute when the active profile has `web-ui` capability AND UI-type test cases exist.**
@@ -403,6 +417,7 @@ All generated test files go to `tests/e2e/features/<feature>/` (staging area). A
 | Compilation fails post-generation | Fix generated code, re-run compile check |
 | No test files generated (all empty groups) | Abort with clear diagnostic message |
 | Source files not found for Fact Table | Mark as `UNKNOWN`, do not fabricate values |
+| All required Fact Table keys UNKNOWN for a test type | Skip that test type with WARNING; suggest verifying source files |
 | Helper file exists but missing needed exports | Merge missing exports from template into existing file |
 
 ## Related Skills

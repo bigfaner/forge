@@ -37,22 +37,11 @@ Framework-specific Playwright locator syntax for each locator type (strategy/pri
 | data-testid (dynamic prefix) | `page.locator('[data-testid^="map-card-"]').first()` |
 | unstable fallback | `page.locator('.btn') // UNSTABLE: no semantic anchor` |
 
-## Auth Classification
+## Auth Implementation
 
-| Category | Detection | Strategy |
-|----------|-----------|----------|
-| **login-test** | Target matches `ui/login`, `ui/auth`, `ui/signin`, `api/auth`, `api/login`, `api/token` | No shared auth. UI: independent `loginPage`. API: raw `curl()`. Must call `clearCachedToken()` / `clearAuthState()` after. |
-| **auth-required-test** | Pre-conditions contain "authenticated", "logged in", or target implies protected resource | **Cached shared auth** — credentials acquired once, reused across all tests. |
-| **public-test** | No auth pre-conditions, public target | No auth needed. |
-| **custom-auth-test** | Pre-conditions mention "API key", "X-API-Key", "OAuth", "session cookie" | Custom auth setup in `test.beforeAll`. |
+Auth classification and caching strategy is defined in SKILL.md Step 1 (Auth Classification) and Step 3.5 (Auth Infrastructure). This section provides only the Playwright-specific implementation syntax.
 
-Classification priority (first match wins): custom-auth-test → login-test → auth-required-test → public-test.
-
-Login tests and authenticated tests must NOT be mixed in the same `describe` block.
-
-## Credential Caching
-
-**API tests**: `getApiToken()` in `helpers.ts` caches token at module level. First call authenticates; subsequent calls return cached token. Transparent to spec files.
+**API tests**: `getApiToken()` in `helpers.ts` caches token at module level. First call authenticates; subsequent calls return cached token.
 
 **UI tests**: Playwright `storageState` mechanism:
 1. Generate `auth-setup.ts` (from `templates/auth-setup.ts`) into `tests/e2e/`
