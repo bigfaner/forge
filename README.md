@@ -123,8 +123,8 @@ task --version
 ```
 forge/
 ├── plugins/forge/          # Forge plugin
-│   ├── skills/             # 23 个 Skills
-│   ├── commands/           # 11 个 Slash Commands
+│   ├── skills/             # 17 个 Skills
+│   ├── commands/           # 17 个 Slash Commands
 │   └── agents/             # 3 个 Subagents
 ├── task-cli/               # Go CLI 工具源码
 ├── tests/e2e/              # Playwright E2E 回归测试

@@ -47,7 +47,7 @@
       "dependencies": [
         "3"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-update-forge-guide.md",
       "record": "records/4-update-forge-guide.md",
       "type": "documentation"

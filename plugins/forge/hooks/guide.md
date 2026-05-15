@@ -153,13 +153,13 @@ Unit (per task) ──→ Feature E2E (T-test-3) ──→ Regression (graduate 
 
 ### Evaluation Parameter Exceptions
 
-Most eval skills default to 900 target / 3 iterations. Exceptions:
+All `/eval-*` commands delegate to the generic `eval` skill (`skills/eval/SKILL.md`) with type-specific rubrics from `skills/eval/rubrics/`. Default: 900 target / 3 iterations. Exceptions:
 
-| Skill | Target | Iterations | Reason |
-|-------|--------|------------|--------|
-| `/eval-ui` | 950 | 3 | UI design requires higher visual fidelity |
-| `/eval-test-cases` | 900 | 6 | Test cases need more refinement cycles |
-| `/eval-harness` | N/A (100-point scale) | N/A | Infrastructure health check, not adversarial |
+| Command | Rubric | Target | Iterations | Reason |
+|---------|--------|--------|------------|--------|
+| `/eval-ui` | `rubrics/ui-web.md` (or `ui-mobile.md`, `ui-tui.md`) | 950 | 3 | UI design requires higher visual fidelity |
+| `/eval-test-cases` | `rubrics/test-cases.md` | 900 | 6 | Test cases need more refinement cycles |
+| `/eval-harness` | `rubrics/harness.md` | N/A (100-point scale) | N/A | Infrastructure health check, not adversarial |
 
 ### Auxiliary Skills
 
@@ -167,9 +167,9 @@ These skills operate outside the main workflow:
 
 | Skill | Purpose |
 |-------|---------|
-| `/eval-consistency` | Cross-document consistency check and fix (PRD, Design, UI, Tasks) |
+| `/eval-consistency` | Cross-document consistency check and fix (PRD, Design, UI, Tasks); delegates to generic `eval` skill with `rubrics/consistency.md` |
 | `/forensic` | Analyze past session transcripts to identify root causes of agent deviations |
-| `/improve-harness` | Dynamically implement harness improvements from eval-harness report |
+| `/improve-harness` | Dynamically implement harness improvements from `/eval-harness` report |
 
 ## Task-CLI
 

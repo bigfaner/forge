@@ -91,7 +91,7 @@ If `forge` CLI is not installed/buildable, skip CLI verification and note "CLI v
    - If the agent ignores this HARD-RULE, does anything mechanically prevent or detect the violation?
 
 4. Eval loop independence:
-   - Does each eval skill (eval-prd, eval-ui, eval-design, eval-test-cases) require scoring by an independent subagent?
+   - Does the eval skill (skills/eval/SKILL.md) require scoring by an independent subagent for each eval type?
    - Can the main session forge the scorer output or skip the scorer subagent?
    - Does the decision gate parse structured output, or can any string pass?
 
@@ -103,7 +103,7 @@ If `forge` CLI is not installed/buildable, skip CLI verification and note "CLI v
 **Scoring Criteria:**
 
 - **2a. Quality gate enforcement** (0-70): For each gate point, is there CLI enforcement or only advisory text? Zero enforcement with no documented rationale = -15 each.
-- **2b. Eval integrity** (0-70): Does each eval skill require independent subagent scoring? Can the main session fake scores? Weakness = -25 each.
+- **2b. Eval integrity** (0-70): Does the generic eval skill (`skills/eval/SKILL.md`) require independent subagent scoring for each eval type? Can the main session fake scores? Weakness = -25 each.
 - **2c. User interaction enforcement** (0-45): Does each confirmation point have a mechanical enforcement mechanism? Purely advisory = -5 each.
 - **2d. Required step enforcement** (0-35): Do conditional requirements (db-schema, placement, sitemap) have downstream verification? No verification = -10 each.
 - **2e. Prohibition enforcement** (0-30): Does each HARD-RULE prohibition (no mock, no sleep, no hardcoded URL) have a mechanical check? Purely advisory = -5 each.
@@ -130,7 +130,7 @@ In the ATTACKS output, prefix each D2 attack with `[ARCHITECTURAL]` or `[TEXT-FI
 For each concept that appears in multiple files (guide.md, SKILL.md, command files), verify the descriptions are consistent. Search for known conflict patterns:
 - Quality gate behavior: Does guide.md say "lint blocks" while a SKILL.md says "lint is non-blocking"?
 - Task status transitions: Do different files describe different legal transitions?
-- Eval scoring: Do different eval skills describe different scoring protocols?
+- Eval scoring: Do different eval rubrics describe different scoring protocols?
 
 For each conflict found, deduct -25. **This is the highest priority check.**
 
@@ -162,7 +162,7 @@ Undefined agent variable = -10 each.
 **4a. Content copy (0-60):**
 Find identical or near-identical text blocks appearing in 3+ files. Known instances from the rubric:
 - "Step 0: Resolve Profile" across 9 SKILL.md files
-- Eval Iron Laws + Steps 2-4 across 6 eval SKILL.md files
+- Eval Iron Laws + Steps 2-4 (consolidated to 1 `skills/eval/SKILL.md`)
 - Eval report shared sections across 5 report.md files
 
 **Plugin portability exception:** Some duplication in plugin files is necessary because the plugin runs in users' projects where cross-file relative paths (`../../`) won't resolve. For plugin SKILL.md/command files, duplication that serves portability should be flagged as INFO but NOT deducted unless the content could reasonably be deduplicated within the same skill directory.
@@ -191,7 +191,7 @@ Content that has its own dedicated file but is also fully inlined in SKILL.md. J
 ### D6: Structural Convention (50 pts)
 
 - **6a. Frontmatter completeness** (0-25): SKILL.md has `name` + `description`. Command has `name` + `description`. Agent has `name` + `description` + `model`. Missing = -5 each.
-- **6b. Eval template convention** (0-15): Each `eval-*` directory has `templates/rubric.md` + `templates/report.md`. Missing = -10 each.
+- **6b. Eval template convention** (0-15): `skills/eval/SKILL.md` exists, `skills/eval/rubrics/` contains rubric files for each eval type, and each `commands/eval-*.md` delegates to `Skill("eval", ...)`. Missing rubric = -10 each.
 - **6c. Name-directory alignment** (0-10): Skill name matches directory name, command name matches filename. Mismatch = -5 each.
 
 ---

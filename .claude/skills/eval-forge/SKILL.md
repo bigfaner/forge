@@ -84,6 +84,8 @@ Gather the full plugin structure for the scorer:
 6. For each `forge <cmd>`, run `forge <cmd> -h` to capture flags (skip if forge unavailable)
 7. Read `plugins/forge/hooks/guide.md`
 8. Scan all template files under `plugins/forge/skills/*/templates/*`
+9. Verify eval structure: `skills/eval/SKILL.md` exists and `skills/eval/rubrics/` contains rubric files for each eval type
+10. Verify eval command wrappers: for each `/eval-*` command, the corresponding `commands/eval-*.md` delegates to `Skill("eval", ...)`
 
 ## Step 2: Invoke Scorer (Custom Subagent)
 
@@ -139,8 +141,8 @@ For each attack point, classify fixability:
 | Invalid CLI flag                  | Skill uses non-existent CLI flag       | Yes — fix the flag                  |
 | Invalid status value              | Skill uses wrong status value          | Yes — fix the status                |
 | Schema-code mismatch              | Schema field missing from Go code      | Partial — depends on direction      |
-| Missing eval template             | eval-\* missing rubric.md or report.md | No — requires content creation      |
-| Missing Iron Laws                 | eval-\* missing orchestrator section   | Partial — requires domain knowledge |
+| Missing eval template             | eval skill or rubrics missing required files | No — requires content creation      |
+| Missing Iron Laws                 | eval skill missing orchestrator section   | Partial — requires domain knowledge |
 | Dangling guide reference          | guide.md references non-existent skill | Yes — remove or update reference    |
 | D2 ARCHITECTURAL bypass           | Scorer marks `[ARCHITECTURAL]`         | No — requires code-level change     |
 
