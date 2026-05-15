@@ -112,6 +112,8 @@ All task-executing workflows (`/execute-task`, `task-executor` agent, `/fix-bug`
 
 Quality gate sequence: `just compile → just fmt → just lint → just test`. On failure: compile → fix & retry; fmt → WARNING (non-blocking, toolchain issue); lint → self-fix (1 retry) then blocked; test → fix & retry.
 
+Documentation tasks (`noTest: true` in task frontmatter) skip the quality gate entirely — no compile, fmt, lint, or test step is required.
+
 ### Scope Resolution
 
 Before each `just <verb>` command, resolve scope from the task's `scope` field:
@@ -129,6 +131,8 @@ After all tasks done, runs as final safety net (no scope — project-wide):
 1. Quality gate: `just compile → just fmt → just lint`
 2. Project-wide tests: `just test`
 3. E2E regression: `just e2e-setup → just probe → just test-e2e`
+
+`forge quality-gate` automatically skips docs-only features (all tasks have `noTest: true`). For mixed features, only the non-documentation tasks are gated.
 
 On failure at any step, a P0 fix-task is automatically created. Run `forge task claim` to pick it up.
 

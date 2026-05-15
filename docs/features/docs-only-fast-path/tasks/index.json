@@ -28,7 +28,7 @@
       "title": "Add docs-only exceptions to guide.md",
       "priority": "P1",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "3-guide-exceptions.md",
       "record": "records/3-guide-exceptions.md",
       "type": "documentation"
