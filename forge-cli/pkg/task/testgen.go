@@ -192,6 +192,11 @@ func GetQuickTestTasks(profiles []string, detectedTypes []string) []TestTaskDef 
 		Title: "Verify Quick E2E Regression", Priority: "P1", EstimatedTime: "15min",
 		Type: TypeTestPipelineVerifyRegression, Scope: "all",
 	})
+	tasks = append(tasks, TestTaskDef{
+		Key: "quick-drift-detection", ID: "T-quick-6",
+		Title: "Detect Spec Drift", Priority: "P2", EstimatedTime: "15min",
+		Type: TypeDocGenerationDrift, Scope: "all", NoTest: true,
+	})
 
 	resolveQuickDeps(tasks, profiles, suffix, detectedTypes)
 
@@ -416,6 +421,11 @@ func resolveQuickDeps(tasks []TestTaskDef, profiles []string, _ bool, detectedTy
 			}
 			tasks[verifyIdx].Dependencies = gradDeps
 		}
+	}
+
+	// T-quick-6 depends on T-quick-5
+	if len(tasks) > len(profiles)*4+1 {
+		tasks[len(profiles)*4+1].Dependencies = []string{"T-quick-5"}
 	}
 }
 

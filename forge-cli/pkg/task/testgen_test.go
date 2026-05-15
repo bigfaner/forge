@@ -178,12 +178,12 @@ func TestGetBreakdownTestTasks_MultiProfile(t *testing.T) {
 func TestGetQuickTestTasks_SingleProfile(t *testing.T) {
 	tasks := GetQuickTestTasks([]string{"go-test"}, nil)
 
-	// 4 per-profile + 1 shared = 5
-	if len(tasks) != 5 {
-		t.Fatalf("expected 5 tasks, got %d", len(tasks))
+	// 4 per-profile + 2 shared = 6
+	if len(tasks) != 6 {
+		t.Fatalf("expected 6 tasks, got %d", len(tasks))
 	}
 
-	wantIDs := []string{"T-quick-1", "T-quick-2", "T-quick-3", "T-quick-4", "T-quick-5"}
+	wantIDs := []string{"T-quick-1", "T-quick-2", "T-quick-3", "T-quick-4", "T-quick-5", "T-quick-6"}
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
 			t.Errorf("tasks[%d].ID = %q, want %q", i, tasks[i].ID, want)
@@ -202,14 +202,29 @@ func TestGetQuickTestTasks_SingleProfile(t *testing.T) {
 	if tasks[4].Dependencies[0] != "T-quick-4" {
 		t.Errorf("verify-regression should depend on graduate, got %v", tasks[4].Dependencies)
 	}
+
+	// T-quick-6 depends on T-quick-5
+	if tasks[5].Dependencies[0] != "T-quick-5" {
+		t.Errorf("drift detection should depend on verify-regression, got %v", tasks[5].Dependencies)
+	}
+	// T-quick-6 type and NoTest
+	if tasks[5].Type != TypeDocGenerationDrift {
+		t.Errorf("T-quick-6 Type = %q, want %q", tasks[5].Type, TypeDocGenerationDrift)
+	}
+	if !tasks[5].NoTest {
+		t.Error("T-quick-6 NoTest should be true")
+	}
+	if tasks[5].Scope != "all" {
+		t.Errorf("T-quick-6 Scope = %q, want %q", tasks[5].Scope, "all")
+	}
 }
 
 func TestGetQuickTestTasks_MultiProfile(t *testing.T) {
 	tasks := GetQuickTestTasks([]string{"web-playwright", "go-test"}, nil)
 
-	// 4*2 per-profile + 1 shared = 9
-	if len(tasks) != 9 {
-		t.Fatalf("expected 9 tasks, got %d", len(tasks))
+	// 4*2 per-profile + 2 shared = 10
+	if len(tasks) != 10 {
+		t.Fatalf("expected 10 tasks, got %d", len(tasks))
 	}
 
 	// Profile-suffixed
@@ -223,6 +238,14 @@ func TestGetQuickTestTasks_MultiProfile(t *testing.T) {
 	// T-quick-5 depends on both graduates
 	if len(tasks[8].Dependencies) != 2 {
 		t.Errorf("verify-regression should depend on 2 graduates, got %v", tasks[8].Dependencies)
+	}
+
+	// T-quick-6 depends on T-quick-5
+	if tasks[9].Dependencies[0] != "T-quick-5" {
+		t.Errorf("drift detection should depend on verify-regression, got %v", tasks[9].Dependencies)
+	}
+	if tasks[9].Type != TypeDocGenerationDrift {
+		t.Errorf("T-quick-6 Type = %q, want %q", tasks[9].Type, TypeDocGenerationDrift)
 	}
 }
 

@@ -25,6 +25,7 @@ var typeToTemplate = map[string]string{
 	task.TypeDocEvaluation:                "data/doc-evaluation.md",
 	task.TypeDocGenerationSummary:         "data/doc-generation-summary.md",
 	task.TypeDocGenerationConsolidate:     "data/doc-generation-consolidate.md",
+	task.TypeDocGenerationDrift:           "data/doc-generation-drift.md",
 	task.TypeTestPipelineGenCases:         "data/test-pipeline-gen-cases.md",
 	task.TypeTestPipelineEvalCases:        "data/test-pipeline-eval-cases.md",
 	task.TypeTestPipelineGenScripts:       "data/test-pipeline-gen-scripts.md",

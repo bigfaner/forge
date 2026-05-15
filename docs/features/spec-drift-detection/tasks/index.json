@@ -1,0 +1,185 @@
+{
+  "feature": "spec-drift-detection",
+  "proposal": "docs/proposals/spec-drift-detection/proposal.md",
+  "created": "2026-05-15",
+  "tasks": {
+    "1-consolidate-specs-drift-steps": {
+      "id": "1",
+      "title": "Add drift detection + auto-fix steps to consolidate-specs SKILL.md",
+      "priority": "P0",
+      "estimatedTime": "1-2h",
+      "status": "completed",
+      "file": "1-consolidate-specs-drift-steps.md",
+      "record": "records/1-consolidate-specs-drift-steps.md",
+      "type": "documentation"
+    },
+    "2-add-drift-type-and-quick6": {
+      "id": "2",
+      "title": "Add doc-generation.drift type and T-quick-6 to Go test pipeline",
+      "priority": "P0",
+      "estimatedTime": "1-2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-add-drift-type-and-quick6.md",
+      "record": "records/2-add-drift-type-and-quick6.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "3-update-breakdown-t5": {
+      "id": "3",
+      "title": "Update breakdown-tasks SKILL.md T-test-5 description for drift verification",
+      "priority": "P2",
+      "estimatedTime": "15-30min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "3-update-breakdown-t5.md",
+      "record": "records/3-update-breakdown-t5.md",
+      "type": "documentation"
+    },
+    "4-update-guide": {
+      "id": "4",
+      "title": "Update guide.md to reflect spec drift detection flow",
+      "priority": "P2",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "1",
+        "2",
+        "3"
+      ],
+      "status": "completed",
+      "file": "4-update-guide.md",
+      "record": "records/4-update-guide.md",
+      "type": "documentation"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "Fix: login bug",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "rejected",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "type": "fix"
+    },
+    "fix-2": {
+      "id": "fix-2",
+      "title": "fix unit-test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "rejected",
+      "file": "fix-2.md",
+      "record": "records/fix-2.md",
+      "breaking": true,
+      "type": "fix"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-6",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "T-quick-5"
+      ],
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "scope": "all",
+      "noTest": true,
+      "type": "doc-generation.drift"
+    },
+    "quick-gen-scripts-go-test": {
+      "id": "T-quick-2",
+      "title": "Generate Quick Test Scripts (go-test)",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "T-quick-1"
+      ],
+      "status": "completed",
+      "file": "quick-gen-scripts-go-test.md",
+      "record": "records/quick-gen-scripts-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.gen-scripts",
+      "profile": "go-test"
+    },
+    "quick-graduate-go-test": {
+      "id": "T-quick-4",
+      "title": "Graduate Quick Test Scripts (go-test)",
+      "priority": "P1",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "T-quick-3"
+      ],
+      "status": "completed",
+      "file": "quick-graduate-go-test.md",
+      "record": "records/quick-graduate-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.graduate",
+      "profile": "go-test"
+    },
+    "quick-run-tests-go-test": {
+      "id": "T-quick-3",
+      "title": "Run Quick E2E Tests (go-test)",
+      "priority": "P1",
+      "estimatedTime": "15-30min",
+      "dependencies": [
+        "T-quick-2"
+      ],
+      "status": "completed",
+      "file": "quick-run-tests-go-test.md",
+      "record": "records/quick-run-tests-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.run",
+      "profile": "go-test"
+    },
+    "quick-test-cases-go-test": {
+      "id": "T-quick-1",
+      "title": "Generate Quick Test Cases (go-test)",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "4"
+      ],
+      "status": "completed",
+      "file": "quick-test-cases-go-test.md",
+      "record": "records/quick-test-cases-go-test.md",
+      "scope": "all",
+      "noTest": true,
+      "type": "test-pipeline.gen-cases",
+      "profile": "go-test"
+    },
+    "quick-verify-regression": {
+      "id": "T-quick-5",
+      "title": "Verify Quick E2E Regression",
+      "priority": "P1",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "T-quick-4"
+      ],
+      "status": "completed",
+      "file": "quick-verify-regression.md",
+      "record": "records/quick-verify-regression.md",
+      "scope": "all",
+      "type": "test-pipeline.verify-regression"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

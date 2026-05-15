@@ -45,6 +45,7 @@ func TestSynthesize_AllTypes(t *testing.T) {
 		task.TypeDocEvaluation,
 		task.TypeDocGenerationSummary,
 		task.TypeDocGenerationConsolidate,
+		task.TypeDocGenerationDrift,
 		task.TypeTestPipelineGenCases,
 		task.TypeTestPipelineEvalCases,
 		task.TypeTestPipelineGenScripts,
@@ -466,6 +467,9 @@ func TestInferType(t *testing.T) {
 		{"T-test-4", task.TypeTestPipelineGraduate},
 		{"T-test-4.5", task.TypeTestPipelineVerifyRegression},
 		{"T-test-5", task.TypeDocGenerationConsolidate},
+		// T-quick-6 drift detection
+		{"T-quick-6", task.TypeDocGenerationDrift},
+		{"T-quick-6a", task.TypeDocGenerationDrift},
 		// Fix prefix
 		{"fix-1", task.TypeFix},
 		{"fix-auth-bug", task.TypeFix},

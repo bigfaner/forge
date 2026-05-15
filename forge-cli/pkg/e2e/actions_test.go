@@ -60,6 +60,11 @@ func TestRun(t *testing.T) {
 
 	t.Run("passes feature as justfile argument", func(t *testing.T) {
 		dir := setupProfile(t, "go-test")
+		// Create feature directory so Run's existence check passes
+		featureDir := filepath.Join(dir, "tests", "e2e", "features", "my-feature")
+		if err := os.MkdirAll(featureDir, 0o755); err != nil {
+			t.Fatal(err)
+		}
 		s := &stubExec{responses: map[string]execResponse{
 			"just test-e2e feature=my-feature": {output: []byte("ok\n"), err: nil},
 		}}

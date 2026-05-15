@@ -33,3 +33,4 @@ docs/features/*/tasks/process/
 # Embedded just binaries (tracked as exception)
 forge-cli/internal/embedded/just/binaries/*
 !forge-cli/internal/embedded/just/binaries/just-*
+docs/features/*/tasks/index.json.lock
