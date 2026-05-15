@@ -1,0 +1,63 @@
+=== RUN   TestTC_001_TUIPlatformFileDefinesNavigationStructure
+--- PASS: TestTC_001_TUIPlatformFileDefinesNavigationStructure (0.00s)
+=== RUN   TestTC_002_ModernDarkTUIThemeSpecifiesCorrectProperties
+--- PASS: TestTC_002_ModernDarkTUIThemeSpecifiesCorrectProperties (0.00s)
+=== RUN   TestTC_003_MinimalASCIITUIThemeSpecifiesCorrectProperties
+--- PASS: TestTC_003_MinimalASCIITUIThemeSpecifiesCorrectProperties (0.00s)
+=== RUN   TestTC_004_TUIThemeFilesFollowExistingStyleFileFormat
+--- PASS: TestTC_004_TUIThemeFilesFollowExistingStyleFileFormat (0.00s)
+=== RUN   TestTC_005_PRDUIFunctionsTemplateIncludesTUINavigationArchitecture
+--- PASS: TestTC_005_PRDUIFunctionsTemplateIncludesTUINavigationArchitecture (0.00s)
+=== RUN   TestTC_006_TUINavigationSectionIsConditionallyRendered
+--- PASS: TestTC_006_TUINavigationSectionIsConditionallyRendered (0.00s)
+=== RUN   TestTC_007_WritePRDSkillReferencesTUINavigationTemplate
+--- PASS: TestTC_007_WritePRDSkillReferencesTUINavigationTemplate (0.00s)
+=== RUN   TestTC_008_ExistingWebMobilePRDGenerationBehaviorUnchanged
+--- PASS: TestTC_008_ExistingWebMobilePRDGenerationBehaviorUnchanged (0.00s)
+=== RUN   TestTC_009_UIDesignSkillDetectsPlatformTUI
+--- PASS: TestTC_009_UIDesignSkillDetectsPlatformTUI (0.00s)
+=== RUN   TestTC_010_TUIBranchPresentsThemeSelection
+--- PASS: TestTC_010_TUIBranchPresentsThemeSelection (0.00s)
+=== RUN   TestTC_011_TUIBranchUsesTUIPlatformAndThemeFiles
+--- PASS: TestTC_011_TUIBranchUsesTUIPlatformAndThemeFiles (0.00s)
+=== RUN   TestTC_012_UIDesignTemplateIncludesTUIComponentTemplateWith5StructuralRequirements
+--- PASS: TestTC_012_UIDesignTemplateIncludesTUIComponentTemplateWith5StructuralRequirements (0.00s)
+=== RUN   TestTC_013_MultiPlatformFeaturesProduceSeparateUIDesignFiles
+--- PASS: TestTC_013_MultiPlatformFeaturesProduceSeparateUIDesignFiles (0.00s)
+=== RUN   TestTC_014_SingleTUIFeatureProducesUIDesignTUI
+--- PASS: TestTC_014_SingleTUIFeatureProducesUIDesignTUI (0.00s)
+=== RUN   TestTC_015_ExistingWebMobileUIDesignBehaviorUnchanged
+--- PASS: TestTC_015_ExistingWebMobileUIDesignBehaviorUnchanged (0.00s)
+=== RUN   TestTC_016_PrototypeTemplateIncludesTUISpecificGenerationRules
+--- PASS: TestTC_016_PrototypeTemplateIncludesTUISpecificGenerationRules (0.00s)
+=== RUN   TestTC_017_TUIPrototypeIsSingleIndexHTMLWithTerminalWindowDiv
+--- PASS: TestTC_017_TUIPrototypeIsSingleIndexHTMLWithTerminalWindowDiv (0.00s)
+=== RUN   TestTC_018_TUIPrototypeIncludesSimulatedKeyButtons
+--- PASS: TestTC_018_TUIPrototypeIncludesSimulatedKeyButtons (0.00s)
+=== RUN   TestTC_019_TUIPrototypeUsesMonospaceFontAndDarkBackground
+--- PASS: TestTC_019_TUIPrototypeUsesMonospaceFontAndDarkBackground (0.00s)
+=== RUN   TestTC_020_TUIPrototypePanelLayoutMatchesASCIIMockup
+--- PASS: TestTC_020_TUIPrototypePanelLayoutMatchesASCIIMockup (0.00s)
+=== RUN   TestTC_021_TUIPrototypesOutputToCorrectDirectories
+--- PASS: TestTC_021_TUIPrototypesOutputToCorrectDirectories (0.00s)
+=== RUN   TestTC_022_RubricWebContainsExistingWebRubricContent
+--- PASS: TestTC_022_RubricWebContainsExistingWebRubricContent (0.00s)
+=== RUN   TestTC_023_RubricTUIHas4CorrectDimensions
+--- PASS: TestTC_023_RubricTUIHas4CorrectDimensions (0.00s)
+=== RUN   TestTC_024_RubricTUIDeductionRulesAreCorrect
+--- PASS: TestTC_024_RubricTUIDeductionRulesAreCorrect (0.00s)
+=== RUN   TestTC_025_RubricMobileHas4CorrectDimensions
+--- PASS: TestTC_025_RubricMobileHas4CorrectDimensions (0.00s)
+=== RUN   TestTC_026_RubricMobileDeductionRulesAreCorrect
+--- PASS: TestTC_026_RubricMobileDeductionRulesAreCorrect (0.00s)
+=== RUN   TestTC_027_EvalUISkillDetectsPlatformAndSelectsRubric
+--- PASS: TestTC_027_EvalUISkillDetectsPlatformAndSelectsRubric (0.00s)
+=== RUN   TestTC_028_MultiPlatformFeaturesEvaluateWithRespectiveRubrics
+--- PASS: TestTC_028_MultiPlatformFeaturesEvaluateWithRespectiveRubrics (0.00s)
+=== RUN   TestTC_029_SinglePlatformWebManifestUnchanged
+--- PASS: TestTC_029_SinglePlatformWebManifestUnchanged (0.00s)
+=== RUN   TestTC_030_MultiPlatformManifestListsPlatformSpecificFiles
+--- PASS: TestTC_030_MultiPlatformManifestListsPlatformSpecificFiles (0.00s)
+=== RUN   TestTC_031_SingleTUIManifestListsCorrectFiles
+--- PASS: TestTC_031_SingleTUIManifestListsCorrectFiles (0.00s)
+PASS

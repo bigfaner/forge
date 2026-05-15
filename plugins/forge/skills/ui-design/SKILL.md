@@ -70,13 +70,17 @@ If it does NOT exist:
 - Use AskUserQuestion to collect: platform (web/mobile), primary navigation entries, secondary pages, navigation rules
 - Write the collected structure back into prd-ui-functions.md (append after UI Scope section)
 
-Then read the platform-specific navigation rules from `templates/platforms/{web,mobile}.md` based on the identified platform.
+Then read the platform-specific navigation rules from `templates/platforms/{web,mobile,tui}.md` based on the identified platform.
 
 ## Step 3: Select Design Style
 
+Select design style based on the platform identified in Step 2.5.
+
+### For Web / Mobile Platform
+
 Select design style by priority:
 
-### Priority 1: User-provided DESIGN.md
+#### Priority 1: User-provided DESIGN.md
 
 Check the following locations; use directly if found:
 
@@ -85,7 +89,7 @@ Check the following locations; use directly if found:
 
 If the user specifies a custom path, prioritize that.
 
-### Priority 2: Built-in Styles
+#### Priority 2: Built-in Web/Mobile Styles
 
 If no user-provided DESIGN.md, let the user choose from 5 built-in styles:
 
@@ -101,7 +105,7 @@ Use `AskUserQuestion` tool for user selection with brief descriptions.
 
 Built-in style files located at: `templates/styles/{vercel,shadcn,tailwind-ui,stripe,apple}.md`
 
-### Priority 3: Clone More Styles from Repo
+#### Priority 3: Clone More Styles from Repo
 
 If the 5 built-in styles are insufficient, clone additional styles from the awesome-design-md repo:
 
@@ -115,9 +119,42 @@ npx getdesign@latest add <site-name>
 
 > Note: The repo's DESIGN.md files are hosted externally at getdesign.md. The `npx getdesign@latest` CLI fetches them.
 
+### For TUI Platform
+
+TUI has its own design style selection, separate from web/mobile.
+
+#### Priority 1: User-provided DESIGN.md
+
+Same check as web: project root `DESIGN.md` or feature directory `docs/features/<slug>/ui/style.md`.
+
+If a user-provided DESIGN.md is found, use it directly as the TUI design system. Skip theme selection.
+
+#### Priority 2: Built-in TUI Themes
+
+If no user-provided DESIGN.md, let the user choose from 2 built-in TUI themes:
+
+| Theme              | Vibe                                         | Best for                                      |
+| ------------------ | -------------------------------------------- | --------------------------------------------- |
+| **Modern Dark**    | 256-color, box-drawing chars, dark bg, high contrast, compact density | Most CLI tools, developer dashboards, monitoring apps |
+| **Minimal ASCII**  | 16-color, pure ASCII chars, default terminal bg, loose density, max compatibility | Minimal tools, SSH sessions, legacy terminals, CI output |
+
+Use `AskUserQuestion` tool for user selection with brief descriptions.
+
+Built-in TUI theme files located at: `templates/styles/{modern-dark-tui,minimal-ascii-tui}.md`
+
 ### Using the Selected Style
 
 Inline the selected style content as the `Design System` section in `ui-design.md`. All subsequent component designs must follow the style's color, typography, and component specifications.
+
+### Multi-Platform Features
+
+When the PRD declares multiple platforms (e.g., `platform: web, tui`):
+- Select a style for EACH platform independently (web/mobile style + TUI theme)
+- Each platform will produce its own `ui-design-{platform}.md` file
+- Output file naming:
+  - Single platform (web): `ui/ui-design.md`
+  - Single platform (tui): `ui/ui-design-tui.md`
+  - Multi-platform: `ui/ui-design-web.md` + `ui/ui-design-tui.md`
 
 ## Step 4: Draft UI Design
 
@@ -130,11 +167,38 @@ For each UI function, define:
 
 **For existing-page UI Functions**: the Component section in `ui-design.md` MUST include a Placement subsection that specifies where in the existing page this component will be placed. This comes from the PRD's Placement Position field but may be refined with layout constraints discovered during design (e.g., "full width of the content area, above the sub-items table, below the progress summary heading").
 
+### TUI Panel Design Requirements
+
+When platform=tui, each panel MUST include all 5 mandatory structural requirements from the TUI lesson:
+
+1. **ASCII Layout Mockup** — box-drawing (or ASCII) illustration showing the exact visual structure of the panel
+2. **Dimensions** — concrete numeric values for every size (e.g., "panel width: 60 chars"). No "approximately" or "appropriate".
+3. **Character Palette** — every visual element must specify its Unicode character (with code point) and selection reason
+4. **Color Mapping** — foreground/background color codes from the theme palette for every visual element
+5. **Edge Cases** — must cover 5 mandatory scenarios: (1) narrow terminal 80x24, (2) wide terminal 140+col, (3) mixed numeric widths, (4) long strings/paths >50 chars, (5) no data
+
+<HARD-RULE>
+These 5 structural requirements are MANDATORY for every TUI panel. Skipping any item is a spec defect. This is the key lesson from the deep-drill-analytics feature — without enforcement, agents skip visual specs and produce iterative trial-and-error fix/style commits.
+</HARD-RULE>
+
+In addition to the 5 structural requirements, each TUI panel must also specify:
+- **States** (loading, empty, error, populated)
+- **Key Bindings** (what keys interact with this panel, from `platforms/tui.md` keymap)
+- **Data Binding** (UI element → data field)
+
 All design decisions must follow the design style selected in Step 3.
 
 ## Step 5: Write UI Design
 
-Save to `ui/ui-design.md` using `templates/ui-design.md`.
+Save using `templates/ui-design.md` (for web/mobile) or the TUI component template section within it (for TUI panels).
+
+Output file naming:
+| Platform | Output File |
+|----------|------------|
+| Web only | `ui/ui-design.md` |
+| TUI only | `ui/ui-design-tui.md` |
+| Mobile only | `ui/ui-design.md` |
+| Multi-platform (web + tui) | `ui/ui-design-web.md` + `ui/ui-design-tui.md` |
 
 The Design System section references the style selected in Step 3 (inline core tokens, no external file references).
 
@@ -145,6 +209,10 @@ Update `manifest.md`:
 - Add UI Design row to Documents table
 - Add traceability links from UI Functions to UI Design sections
 - Advance status to `design`
+
+For multi-platform features, add a row for each platform's design file:
+- `ui/ui-design-web.md` — web design
+- `ui/ui-design-tui.md` — TUI design
 
 Use `templates/manifest-update-ui.md` for the update pattern.
 
@@ -167,7 +235,9 @@ The eval report is attached at `docs/features/<slug>/ui/eval/report.md` for refe
 
 ## Step 8: Generate Prototype
 
-Generate HTML prototype from `ui-design.md` and the selected design style:
+Generate HTML prototype from `ui-design.md` and the selected design style.
+
+### For Web / Mobile Platform
 
 - Follow `templates/prototype.md` specifications
 - Multi-file structure: shared CSS/JS + per-page HTML + index.html navigation
@@ -176,6 +246,24 @@ Generate HTML prototype from `ui-design.md` and the selected design style:
 - Responsive layout
 
 Save to: `docs/features/<slug>/ui/prototype/`
+
+### For TUI Platform
+
+- Follow `templates/prototype.md` specifications for file structure
+- HTML simulates a terminal window: dark monospace background, box-drawing characters rendered via CSS
+- All panels rendered in a single `index.html` within a black "terminal window" div
+- Bottom area simulates key buttons (`[Tab]`, `[1]`, `[q]`, `[:command]`) to switch panels
+- Each panel's ASCII mockup from ui-design-tui.md is rendered as pre-formatted text
+- Implement panel states (loading/empty/error/populated) as toggleable views
+
+Save to: `docs/features/<slug>/ui/prototype/`
+
+### Multi-Platform
+
+When multiple platforms are present:
+- Each platform gets its own prototype directory:
+  - `docs/features/<slug>/ui/prototype/web/` (or `prototype/` for single-platform)
+  - `docs/features/<slug>/ui/prototype/tui/`
 
 ## Step 9: Human Review Gate
 

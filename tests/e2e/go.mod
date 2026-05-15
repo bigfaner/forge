@@ -1,6 +1,6 @@
-module e2e
+module e2e-tests
 
-go 1.25
+go 1.26.1
 
 require github.com/stretchr/testify v1.11.1
 

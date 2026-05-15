@@ -14,7 +14,45 @@ feature: "{{FEATURE_NAME}}"
 
 <!-- Define page relationships and navigation structure BEFORE individual UI Functions -->
 
-- **Platform**: {{web | mobile | mini-program | tablet}}
+- **Platform**: {{web | mobile | mini-program | tablet | tui}}
+
+<!-- IF platform=tui: render the TUI Navigation section below. -->
+<!-- IF platform=web|mobile|mini-program|tablet: render the Pointer-Driven Navigation section below. -->
+
+<!-- === TUI Navigation (render when platform=tui) === -->
+
+### Keymap
+
+<!-- All keyboard bindings for the TUI application -->
+
+| Key | Action | Context/Mode |
+|-----|--------|--------------|
+|     |        |              |
+
+### Panel Layout
+
+<!-- Define panels (areas of the terminal screen) and their arrangement -->
+
+| Panel | View | Position | Size Hint |
+|-------|------|----------|-----------|
+|       |      |          |           |
+
+### Modes
+
+<!-- TUI applications often have modes (normal, insert, command, etc.) -->
+
+| Mode | Description | Default Keybindings |
+|------|-------------|---------------------|
+|      |             |                     |
+
+### Navigation Rules
+
+- Every key in the Keymap must have exactly one action per Context/Mode
+- Every panel must define its View, Position (e.g., top-left, bottom-full), and Size Hint (e.g., rows x cols, percentage)
+- Mode transitions must be explicit: specify which key enters and exits each mode
+- All panels referenced in Panel Layout must correspond to a View defined in this document
+
+<!-- === Pointer-Driven Navigation (render when platform=web|mobile|mini-program|tablet) === -->
 
 ### Primary Navigation (shared across pages)
 

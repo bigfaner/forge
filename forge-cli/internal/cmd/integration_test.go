@@ -1709,7 +1709,7 @@ func TestRunCheck_InvalidDeps(t *testing.T) {
 
 func TestSaveIndexAndSignalCompletion_SaveIndexError(t *testing.T) {
 	if runtime.GOOS == "windows" {
-		t.Skip("chmod does not restrict directory write access on Windows")
+		t.Skip("chmod on directories has no effect on Windows")
 	}
 	dir := t.TempDir()
 	t.Setenv("CLAUDE_PROJECT_DIR", dir)
