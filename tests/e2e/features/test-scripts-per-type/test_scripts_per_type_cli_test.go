@@ -343,7 +343,7 @@ func TestTC_006_TaskIndexRunDependsOnAllPerTypeGenTasks(t *testing.T) {
 	idx := readIndexJSON(t, dir, "deps-feat")
 
 	// Run task should exist
-	runTask, hasRun := idx.Tasks["run-e2e-tests-go-test"]
+	_, hasRun := idx.Tasks["run-e2e-tests-go-test"]
 	require.True(t, hasRun, "index should contain run-e2e-tests-go-test task")
 
 	// Verify the run task's .md file lists per-type gen tasks as dependencies
