@@ -30,6 +30,6 @@ tests/results/
 .forge/state.json
 docs/features/*/tasks/process/
 
-# Embedded just binaries (only .gitkeep is committed)
+# Embedded just binaries (tracked as exception)
 forge-cli/internal/embedded/just/binaries/*
-!forge-cli/internal/embedded/just/binaries/.gitkeep
+!forge-cli/internal/embedded/just/binaries/just-*
