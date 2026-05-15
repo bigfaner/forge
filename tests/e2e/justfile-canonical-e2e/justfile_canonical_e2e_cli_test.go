@@ -43,6 +43,11 @@ func TestTC_001_RunDelegatesToJustTestE2e(t *testing.T) {
 // Traceability: TC-002 -> Proposal SC [1], Task 2 AC [1], Task 2 HR [3]
 func TestTC_002_RunPassesFeatureAsJustfileArgument(t *testing.T) {
 	dir := setupTempProject(t, "go-test")
+	// Create feature directory so Run's feature validation passes and delegates to just
+	featureDir := filepath.Join(dir, "tests", "e2e", "features", "my-feature")
+	if err := os.MkdirAll(featureDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
 	out, err := runForgeInDir(t, dir, "e2e", "run", "--feature", "my-feature")
 	if err == nil {
 		t.Logf("forge e2e run --feature succeeded: %s", out)
