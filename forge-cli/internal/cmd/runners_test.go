@@ -32,8 +32,8 @@ func TestRunClaim(t *testing.T) {
 	if !strings.Contains(output, "ACTION:") {
 		t.Errorf("expected output to contain 'ACTION', got %q", output)
 	}
-	if !strings.Contains(output, "KEY:") {
-		t.Errorf("expected output to contain 'KEY:', got %q", output)
+	if !strings.Contains(output, "TASK_ID:") {
+		t.Errorf("expected output to contain 'TASK_ID:', got %q", output)
 	}
 }
 

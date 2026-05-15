@@ -1,0 +1,117 @@
+{
+  "feature": "cli-lean-output",
+  "proposal": "docs/proposals/cli-lean-output/proposal.md",
+  "created": "2026-05-15",
+  "tasks": {
+    "1-trim-claim-output": {
+      "id": "1",
+      "title": "Trim claim output to essential fields only",
+      "priority": "P0",
+      "estimatedTime": "45m",
+      "status": "completed",
+      "file": "1-trim-claim-output.md",
+      "record": "records/1-trim-claim-output.md",
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "2-trim-submit-query-status": {
+      "id": "2",
+      "title": "Trim submit, query, and status output to essential fields",
+      "priority": "P0",
+      "estimatedTime": "30m",
+      "status": "completed",
+      "file": "2-trim-submit-query-status.md",
+      "record": "records/2-trim-submit-query-status.md",
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "quick-gen-scripts-go-test": {
+      "id": "T-quick-2",
+      "title": "Generate Quick Test Scripts (go-test)",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "T-quick-1"
+      ],
+      "status": "completed",
+      "file": "quick-gen-scripts-go-test.md",
+      "record": "records/quick-gen-scripts-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.gen-scripts",
+      "profile": "go-test"
+    },
+    "quick-graduate-go-test": {
+      "id": "T-quick-4",
+      "title": "Graduate Quick Test Scripts (go-test)",
+      "priority": "P1",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "T-quick-3"
+      ],
+      "status": "pending",
+      "file": "quick-graduate-go-test.md",
+      "record": "records/quick-graduate-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.graduate",
+      "profile": "go-test"
+    },
+    "quick-run-tests-go-test": {
+      "id": "T-quick-3",
+      "title": "Run Quick E2E Tests (go-test)",
+      "priority": "P1",
+      "estimatedTime": "15-30min",
+      "dependencies": [
+        "T-quick-2"
+      ],
+      "status": "blocked",
+      "file": "quick-run-tests-go-test.md",
+      "record": "records/quick-run-tests-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.run",
+      "profile": "go-test"
+    },
+    "quick-test-cases-go-test": {
+      "id": "T-quick-1",
+      "title": "Generate Quick Test Cases (go-test)",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "2"
+      ],
+      "status": "completed",
+      "file": "quick-test-cases-go-test.md",
+      "record": "records/quick-test-cases-go-test.md",
+      "scope": "all",
+      "noTest": true,
+      "type": "test-pipeline.gen-cases",
+      "profile": "go-test"
+    },
+    "quick-verify-regression": {
+      "id": "T-quick-5",
+      "title": "Verify Quick E2E Regression",
+      "priority": "P1",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "T-quick-4"
+      ],
+      "status": "pending",
+      "file": "quick-verify-regression.md",
+      "record": "records/quick-verify-regression.md",
+      "scope": "all",
+      "type": "test-pipeline.verify-regression"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

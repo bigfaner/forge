@@ -846,8 +846,8 @@ func TestPrintTaskDetails_BreakingInOutput(t *testing.T) {
 		out := captureStdout(func() {
 			printTaskDetails("t1", tk, dir, "feat")
 		})
-		if !strings.Contains(out, "BREAKING: false") {
-			t.Errorf("expected BREAKING: false in output, got: %s", out)
+		if strings.Contains(out, "BREAKING:") {
+			t.Errorf("expected no BREAKING line when false, got: %s", out)
 		}
 	})
 }
@@ -887,57 +887,6 @@ func TestPrintTaskDetails_ScopeInOutput(t *testing.T) {
 		}
 		if !strings.Contains(out, "FEATURE: feat") {
 			t.Errorf("expected FEATURE: feat in output even when scope absent, got: %s", out)
-		}
-	})
-}
-
-func TestPrintTaskDetails_TypeInOutput(t *testing.T) {
-	dir := t.TempDir()
-	if err := feature.EnsureFeatureDir(dir, "feat"); err != nil {
-		t.Fatal(err)
-	}
-
-	t.Run("type present", func(t *testing.T) {
-		tk := &task.Task{
-			ID: "1.1", Title: "T", Priority: "P0", Status: "pending",
-			File: "1.1.md", Record: "records/1.1.md", Type: "implementation",
-		}
-		out := captureStdout(func() {
-			printTaskDetails("t1", tk, dir, "feat")
-		})
-		if !strings.Contains(out, "TYPE: implementation") {
-			t.Errorf("expected TYPE: implementation in output, got: %s", out)
-		}
-	})
-
-	t.Run("type empty outputs TYPE with empty value", func(t *testing.T) {
-		tk := &task.Task{
-			ID: "1.1", Title: "T", Priority: "P0", Status: "pending",
-			File: "1.1.md", Record: "records/1.1.md",
-		}
-		out := captureStdout(func() {
-			printTaskDetails("t1", tk, dir, "feat")
-		})
-		if !strings.Contains(out, "TYPE: ") {
-			t.Errorf("expected TYPE: line in output even when empty, got: %s", out)
-		}
-	})
-
-	t.Run("TYPE appears after MAIN_SESSION", func(t *testing.T) {
-		tk := &task.Task{
-			ID: "1.1", Title: "T", Priority: "P0", Status: "pending",
-			File: "1.1.md", Record: "records/1.1.md", Type: "fix",
-		}
-		out := captureStdout(func() {
-			printTaskDetails("t1", tk, dir, "feat")
-		})
-		mainSessionIdx := strings.Index(out, "MAIN_SESSION:")
-		typeIdx := strings.Index(out, "TYPE:")
-		if mainSessionIdx == -1 || typeIdx == -1 {
-			t.Fatalf("expected both MAIN_SESSION and TYPE in output, got: %s", out)
-		}
-		if typeIdx <= mainSessionIdx {
-			t.Errorf("expected TYPE to appear after MAIN_SESSION in output")
 		}
 	})
 }
@@ -1090,37 +1039,4 @@ func TestClaimNextTask_RejectedNotClaimable(t *testing.T) {
 	if err == nil {
 		t.Error("should error when only rejected tasks exist")
 	}
-}
-
-func TestPrintTaskDetails_ProfileInOutput(t *testing.T) {
-	dir := t.TempDir()
-	if err := feature.EnsureFeatureDir(dir, "feat"); err != nil {
-		t.Fatal(err)
-	}
-
-	t.Run("profile present", func(t *testing.T) {
-		tk := &task.Task{
-			ID: "1.1", Title: "T", Priority: "P0", Status: "pending",
-			File: "1.1.md", Record: "records/1.1.md", Profile: "web-playwright",
-		}
-		out := captureStdout(func() {
-			printTaskDetails("t1", tk, dir, "feat")
-		})
-		if !strings.Contains(out, "PROFILE: web-playwright") {
-			t.Errorf("expected PROFILE: web-playwright in output, got: %s", out)
-		}
-	})
-
-	t.Run("profile empty - no PROFILE line", func(t *testing.T) {
-		tk := &task.Task{
-			ID: "1.1", Title: "T", Priority: "P0", Status: "pending",
-			File: "1.1.md", Record: "records/1.1.md",
-		}
-		out := captureStdout(func() {
-			printTaskDetails("t1", tk, dir, "feat")
-		})
-		if strings.Contains(out, "PROFILE:") {
-			t.Errorf("expected no PROFILE line for task without profile, got: %s", out)
-		}
-	})
 }

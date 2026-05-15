@@ -105,9 +105,8 @@ func TestContract_Claim_NewTask(t *testing.T) {
 	})
 	lines := parseBlock(t, out)
 
-	// Mandatory fields
-	for _, field := range []string{"ACTION", "KEY", "TASK_ID", "TITLE", "PRIORITY",
-		"STATUS", "BREAKING", "MAIN_SESSION", "TYPE", "NO_TEST", "FEATURE", "FILE", "RECORD"} {
+	// Mandatory fields (trimmed set)
+	for _, field := range []string{"ACTION", "TASK_ID", "FEATURE", "FILE"} {
 		if !hasField(lines, field, "") {
 			t.Errorf("missing mandatory field %s in output: %v", field, lines)
 		}
@@ -115,18 +114,22 @@ func TestContract_Claim_NewTask(t *testing.T) {
 	if !hasField(lines, "ACTION", "CLAIMED") {
 		t.Errorf("expected ACTION: CLAIMED")
 	}
-	if !hasField(lines, "KEY", "task1") {
-		t.Errorf("expected KEY: task1")
-	}
-	// Conditional fields present when non-empty
-	if !hasField(lines, "ESTIMATED_TIME", "30min") {
-		t.Errorf("expected ESTIMATED_TIME: 30min")
-	}
-	if !hasField(lines, "DEPENDENCIES", "1.0") {
-		t.Errorf("expected DEPENDENCIES: 1.0")
-	}
+	// Conditional fields present when true/non-empty
 	if !hasField(lines, "SCOPE", "backend") {
 		t.Errorf("expected SCOPE: backend")
+	}
+	if !hasField(lines, "BREAKING", "true") {
+		t.Errorf("expected BREAKING: true")
+	}
+	if !hasField(lines, "MAIN_SESSION", "true") {
+		t.Errorf("expected MAIN_SESSION: true")
+	}
+	// Removed fields must NOT appear
+	for _, field := range []string{"KEY", "TITLE", "PRIORITY", "STATUS", "ESTIMATED_TIME",
+		"DEPENDENCIES", "TYPE", "PROFILE", "NO_TEST", "RECORD"} {
+		if !hasNoField(lines, field) {
+			t.Errorf("removed field %s should not appear in output: %v", field, lines)
+		}
 	}
 }
 
@@ -144,57 +147,16 @@ func TestContract_Claim_NewTask_ConditionalAbsent(t *testing.T) {
 	})
 	lines := parseBlock(t, out)
 
-	// Conditional fields absent when empty
-	if !hasNoField(lines, "ESTIMATED_TIME") {
-		t.Errorf("ESTIMATED_TIME should be absent when empty")
-	}
-	if !hasNoField(lines, "DEPENDENCIES") {
-		t.Errorf("DEPENDENCIES should be absent when empty")
-	}
+	// SCOPE absent when empty
 	if !hasNoField(lines, "SCOPE") {
 		t.Errorf("SCOPE should be absent when empty")
 	}
-	if !hasNoField(lines, "PROFILE") {
-		t.Errorf("PROFILE should be absent when empty")
+	// Boolean fields absent when false
+	if !hasNoField(lines, "BREAKING") {
+		t.Errorf("BREAKING should be absent when false")
 	}
-}
-
-func TestContract_Claim_ProfilePresent(t *testing.T) {
-	dir := t.TempDir()
-	_ = feature.EnsureFeatureDir(dir, "feat")
-
-	tk := &task.Task{
-		ID: "1.1", Title: "Test task", Priority: "P0", Status: "pending",
-		File: "1.1.md", Record: "records/1.1.md",
-		Profile: "go-test",
-	}
-
-	out := captureStdout(func() {
-		printNewTask("t1", tk, dir, "feat")
-	})
-	lines := parseBlock(t, out)
-
-	if !hasField(lines, "PROFILE", "go-test") {
-		t.Errorf("expected PROFILE: go-test, got: %v", lines)
-	}
-}
-
-func TestContract_Claim_ProfileAbsent(t *testing.T) {
-	dir := t.TempDir()
-	_ = feature.EnsureFeatureDir(dir, "feat")
-
-	tk := &task.Task{
-		ID: "1.1", Title: "Biz task", Priority: "P0", Status: "pending",
-		File: "1.1.md", Record: "records/1.1.md",
-	}
-
-	out := captureStdout(func() {
-		printNewTask("t1", tk, dir, "feat")
-	})
-	lines := parseBlock(t, out)
-
-	if !hasNoField(lines, "PROFILE") {
-		t.Errorf("PROFILE should be absent when empty, got: %v", lines)
+	if !hasNoField(lines, "MAIN_SESSION") {
+		t.Errorf("MAIN_SESSION should be absent when false")
 	}
 }
 
@@ -204,7 +166,8 @@ func TestContract_Claim_Continue(t *testing.T) {
 
 	tk := &task.Task{
 		ID: "1.1", Title: "Resume me", Priority: "P0", Status: "in_progress",
-		File: "1.1.md", Record: "records/1.1.md",
+		File: "1.1.md", Record: "records/1.1.md", Scope: "backend",
+		Breaking: true, MainSession: true,
 	}
 	state := &task.TaskState{
 		Key: "task1", TaskID: "1.1", StartedTime: "2025-01-01T00:00:00Z",
@@ -218,8 +181,32 @@ func TestContract_Claim_Continue(t *testing.T) {
 	if !hasField(lines, "ACTION", "CONTINUE") {
 		t.Errorf("expected ACTION: CONTINUE")
 	}
+	if !hasField(lines, "TASK_ID", "1.1") {
+		t.Errorf("expected TASK_ID: 1.1")
+	}
+	if !hasField(lines, "FEATURE", "feat") {
+		t.Errorf("expected FEATURE: feat")
+	}
+	if !hasField(lines, "FILE", "") {
+		t.Errorf("expected FILE field")
+	}
+	if !hasField(lines, "SCOPE", "backend") {
+		t.Errorf("expected SCOPE: backend")
+	}
+	if !hasField(lines, "BREAKING", "true") {
+		t.Errorf("expected BREAKING: true")
+	}
+	if !hasField(lines, "MAIN_SESSION", "true") {
+		t.Errorf("expected MAIN_SESSION: true")
+	}
 	if !hasField(lines, "STARTED_AT", "2025-01-01T00:00:00Z") {
 		t.Errorf("expected STARTED_AT field")
+	}
+	// Removed fields must NOT appear
+	for _, field := range []string{"KEY", "TITLE", "PRIORITY", "STATUS"} {
+		if !hasNoField(lines, field) {
+			t.Errorf("removed field %s should not appear in CONTINUE output", field)
+		}
 	}
 }
 
@@ -229,7 +216,8 @@ func TestContract_Claim_FieldOrder(t *testing.T) {
 
 	tk := &task.Task{
 		ID: "1.1", Title: "T", Priority: "P0", Status: "pending",
-		File: "1.1.md", Record: "records/1.1.md", Type: "fix",
+		File: "1.1.md", Record: "records/1.1.md",
+		Breaking: true, MainSession: true, Scope: "backend",
 	}
 
 	out := captureStdout(func() {
@@ -241,24 +229,41 @@ func TestContract_Claim_FieldOrder(t *testing.T) {
 	if idx := fieldIndex(lines, "ACTION"); idx != 0 {
 		t.Errorf("ACTION should be at index 0, got %d", idx)
 	}
-	// KEY before TASK_ID
-	keyIdx := fieldIndex(lines, "KEY")
-	idIdx := fieldIndex(lines, "TASK_ID")
-	if keyIdx == -1 || idIdx == -1 || keyIdx >= idIdx {
-		t.Errorf("KEY (%d) should come before TASK_ID (%d)", keyIdx, idIdx)
-	}
-	// BREAKING before MAIN_SESSION before TYPE
+	// Expected order: ACTION, TASK_ID, FEATURE, FILE, SCOPE, BREAKING, MAIN_SESSION
+	taskIDIdx := fieldIndex(lines, "TASK_ID")
+	featureIdx := fieldIndex(lines, "FEATURE")
+	fileIdx := fieldIndex(lines, "FILE")
+	scopeIdx := fieldIndex(lines, "SCOPE")
 	brkIdx := fieldIndex(lines, "BREAKING")
 	mainIdx := fieldIndex(lines, "MAIN_SESSION")
-	typeIdx := fieldIndex(lines, "TYPE")
-	if brkIdx == -1 || mainIdx == -1 || typeIdx == -1 {
-		t.Fatalf("missing BREAKING/MAIN_SESSION/TYPE fields")
+
+	if taskIDIdx == -1 || featureIdx == -1 || fileIdx == -1 || scopeIdx == -1 || brkIdx == -1 || mainIdx == -1 {
+		t.Fatalf("missing expected fields, got: %v", lines)
+	}
+
+	// Verify ordering
+	if taskIDIdx >= featureIdx {
+		t.Errorf("TASK_ID (%d) should come before FEATURE (%d)", taskIDIdx, featureIdx)
+	}
+	if featureIdx >= fileIdx {
+		t.Errorf("FEATURE (%d) should come before FILE (%d)", featureIdx, fileIdx)
+	}
+	if fileIdx >= scopeIdx {
+		t.Errorf("FILE (%d) should come before SCOPE (%d)", fileIdx, scopeIdx)
+	}
+	if scopeIdx >= brkIdx {
+		t.Errorf("SCOPE (%d) should come before BREAKING (%d)", scopeIdx, brkIdx)
 	}
 	if brkIdx >= mainIdx {
 		t.Errorf("BREAKING (%d) should come before MAIN_SESSION (%d)", brkIdx, mainIdx)
 	}
-	if mainIdx >= typeIdx {
-		t.Errorf("MAIN_SESSION (%d) should come before TYPE (%d)", mainIdx, typeIdx)
+
+	// Removed fields must not appear
+	if idx := fieldIndex(lines, "KEY"); idx != -1 {
+		t.Errorf("KEY should not appear in output, found at index %d", idx)
+	}
+	if idx := fieldIndex(lines, "TYPE"); idx != -1 {
+		t.Errorf("TYPE should not appear in output, found at index %d", idx)
 	}
 }
 
@@ -311,29 +316,26 @@ func TestContract_Add_Skipped(t *testing.T) {
 func TestContract_Record_Completed(t *testing.T) {
 	out := captureStdout(func() {
 		PrintBlockStart()
-		PrintField("TASK_ID", "1.1")
-		PrintField("RECORD_FILE", "/path/to/records/1.1.md")
 		PrintField("STATUS", "completed")
 		PrintBlockEnd()
 	})
 	lines := parseBlock(t, out)
 
-	if !hasField(lines, "TASK_ID", "1.1") {
-		t.Errorf("expected TASK_ID: 1.1")
-	}
-	if !hasField(lines, "RECORD_FILE", "") {
-		t.Errorf("expected RECORD_FILE field")
-	}
 	if !hasField(lines, "STATUS", "completed") {
 		t.Errorf("expected STATUS: completed")
+	}
+	// TASK_ID and RECORD_FILE removed — only STATUS remains
+	if !hasNoField(lines, "TASK_ID") {
+		t.Errorf("TASK_ID should not appear in submit output")
+	}
+	if !hasNoField(lines, "RECORD_FILE") {
+		t.Errorf("RECORD_FILE should not appear in submit output")
 	}
 }
 
 func TestContract_Record_Blocked(t *testing.T) {
 	out := captureStdout(func() {
 		PrintBlockStart()
-		PrintField("TASK_ID", "1.1")
-		PrintField("RECORD_FILE", "/path/to/records/1.1.md")
 		PrintField("STATUS", "blocked")
 		PrintBlockEnd()
 	})
@@ -341,6 +343,10 @@ func TestContract_Record_Blocked(t *testing.T) {
 
 	if !hasField(lines, "STATUS", "blocked") {
 		t.Errorf("expected STATUS: blocked")
+	}
+	// Only STATUS field should appear
+	if len(lines) != 1 {
+		t.Errorf("expected exactly 1 field (STATUS), got %d: %v", len(lines), lines)
 	}
 }
 
@@ -373,5 +379,135 @@ func TestContract_BlockSeparator_NoTrailingNewlineInSeparator(t *testing.T) {
 
 	if !strings.HasSuffix(out, "---\n") {
 		t.Errorf("block must end with ---\\n, got suffix: %q", out[len(out)-20:])
+	}
+}
+
+// --- Contract: query output format ---
+
+func TestContract_Query_Minimal(t *testing.T) {
+	out := captureStdout(func() {
+		PrintBlockStart()
+		PrintField("TASK_ID", "1")
+		PrintField("STATUS", "in_progress")
+		PrintBlockEnd()
+	})
+	lines := parseBlock(t, out)
+
+	if !hasField(lines, "TASK_ID", "1") {
+		t.Errorf("expected TASK_ID: 1")
+	}
+	if !hasField(lines, "STATUS", "in_progress") {
+		t.Errorf("expected STATUS: in_progress")
+	}
+	// Removed fields must NOT appear
+	for _, field := range []string{"KEY", "TITLE", "PRIORITY", "ESTIMATED_TIME",
+		"DEPENDENCIES", "FILE", "RECORD"} {
+		if !hasNoField(lines, field) {
+			t.Errorf("removed field %s should not appear in query output: %v", field, lines)
+		}
+	}
+}
+
+func TestContract_Query_WithScope(t *testing.T) {
+	out := captureStdout(func() {
+		PrintBlockStart()
+		PrintField("TASK_ID", "1")
+		PrintField("STATUS", "in_progress")
+		PrintFieldIfNotEmpty("SCOPE", "backend")
+		PrintBlockEnd()
+	})
+	lines := parseBlock(t, out)
+
+	if !hasField(lines, "SCOPE", "backend") {
+		t.Errorf("expected SCOPE: backend")
+	}
+}
+
+func TestContract_Query_EmptyScopeOmitted(t *testing.T) {
+	out := captureStdout(func() {
+		PrintBlockStart()
+		PrintField("TASK_ID", "1")
+		PrintField("STATUS", "in_progress")
+		PrintFieldIfNotEmpty("SCOPE", "")
+		PrintBlockEnd()
+	})
+	lines := parseBlock(t, out)
+
+	if !hasNoField(lines, "SCOPE") {
+		t.Errorf("SCOPE should be omitted when empty")
+	}
+}
+
+func TestContract_Query_BreakingWhenTrue(t *testing.T) {
+	out := captureStdout(func() {
+		PrintBlockStart()
+		PrintField("TASK_ID", "1")
+		PrintField("STATUS", "in_progress")
+		PrintField("BREAKING", "true")
+		PrintBlockEnd()
+	})
+	lines := parseBlock(t, out)
+
+	if !hasField(lines, "BREAKING", "true") {
+		t.Errorf("expected BREAKING: true")
+	}
+}
+
+func TestContract_Query_BreakingOmittedWhenFalse(t *testing.T) {
+	out := captureStdout(func() {
+		PrintBlockStart()
+		PrintField("TASK_ID", "1")
+		PrintField("STATUS", "in_progress")
+		PrintBlockEnd()
+	})
+	lines := parseBlock(t, out)
+
+	if !hasNoField(lines, "BREAKING") {
+		t.Errorf("BREAKING should be omitted when false")
+	}
+}
+
+// --- Contract: status output format ---
+
+func TestContract_Status_QueryMode(t *testing.T) {
+	out := captureStdout(func() {
+		PrintBlockStart()
+		PrintField("TASK_ID", "1")
+		PrintField("STATUS", "in_progress")
+		PrintBlockEnd()
+	})
+	lines := parseBlock(t, out)
+
+	if !hasField(lines, "TASK_ID", "1") {
+		t.Errorf("expected TASK_ID: 1")
+	}
+	if !hasField(lines, "STATUS", "in_progress") {
+		t.Errorf("expected STATUS: in_progress")
+	}
+	// Removed fields must NOT appear
+	for _, field := range []string{"KEY", "TITLE", "DEPENDENCIES"} {
+		if !hasNoField(lines, field) {
+			t.Errorf("removed field %s should not appear in status output: %v", field, lines)
+		}
+	}
+}
+
+func TestContract_Status_UpdateMode(t *testing.T) {
+	out := captureStdout(func() {
+		PrintBlockStart()
+		PrintField("TASK_ID", "1")
+		PrintField("STATUS", "pending")
+		PrintBlockEnd()
+	})
+	lines := parseBlock(t, out)
+
+	if !hasField(lines, "TASK_ID", "1") {
+		t.Errorf("expected TASK_ID: 1")
+	}
+	if !hasField(lines, "STATUS", "pending") {
+		t.Errorf("expected STATUS: pending")
+	}
+	if len(lines) != 2 {
+		t.Errorf("expected exactly 2 fields (TASK_ID + STATUS), got %d: %v", len(lines), lines)
 	}
 }

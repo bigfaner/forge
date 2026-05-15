@@ -190,8 +190,6 @@ func runSubmit(_ *cobra.Command, args []string) {
 		fmt.Println(string(data))
 	} else if !submitQuiet {
 		PrintBlockStart()
-		PrintField("TASK_ID", t.ID)
-		PrintField("RECORD_FILE", recordPath)
 		PrintField("STATUS", rd.Status)
 		PrintBlockEnd()
 	}
