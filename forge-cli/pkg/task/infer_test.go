@@ -46,6 +46,9 @@ func TestInferType(t *testing.T) {
 		{"T-quick-4b", TypeTestPipelineGraduate},
 		{"T-quick-5a", TypeTestPipelineVerifyRegression},
 		{"T-quick-5b", TypeTestPipelineVerifyRegression},
+		{"T-quick-6", TypeDocGenerationDrift},
+		{"T-quick-6a", TypeDocGenerationDrift},
+		{"T-quick-6b", TypeDocGenerationDrift},
 
 		// Fix tasks
 		{"fix-1", TypeFix},

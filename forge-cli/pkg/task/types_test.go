@@ -569,6 +569,7 @@ func TestTypeConstants(t *testing.T) {
 		{TypeDocEvaluation, "doc-evaluation"},
 		{TypeDocGenerationSummary, "doc-generation.summary"},
 		{TypeDocGenerationConsolidate, "doc-generation.consolidate"},
+		{TypeDocGenerationDrift, "doc-generation.drift"},
 		{TypeTestPipelineGenCases, "test-pipeline.gen-cases"},
 		{TypeTestPipelineEvalCases, "test-pipeline.eval-cases"},
 		{TypeTestPipelineGenScripts, "test-pipeline.gen-scripts"},
@@ -586,13 +587,14 @@ func TestTypeConstants(t *testing.T) {
 }
 
 func TestValidTypes(t *testing.T) {
-	t.Run("ValidTypes contains all 13 type constants", func(t *testing.T) {
+	t.Run("ValidTypes contains all 14 type constants", func(t *testing.T) {
 		allTypes := []string{
 			TypeImplementation,
 			TypeDocumentation,
 			TypeDocEvaluation,
 			TypeDocGenerationSummary,
 			TypeDocGenerationConsolidate,
+			TypeDocGenerationDrift,
 			TypeTestPipelineGenCases,
 			TypeTestPipelineEvalCases,
 			TypeTestPipelineGenScripts,
@@ -623,9 +625,9 @@ func TestValidTypes(t *testing.T) {
 }
 
 func TestTaskTypeRegistry(t *testing.T) {
-	t.Run("registry contains all 13 types", func(t *testing.T) {
-		if len(TaskTypeRegistry) != 13 {
-			t.Errorf("TaskTypeRegistry has %d entries, want 13", len(TaskTypeRegistry))
+	t.Run("registry contains all 14 types", func(t *testing.T) {
+		if len(TaskTypeRegistry) != 14 {
+			t.Errorf("TaskTypeRegistry has %d entries, want 14", len(TaskTypeRegistry))
 		}
 	})
 
