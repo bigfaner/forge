@@ -8,7 +8,7 @@
       "title": "Create generic eval skill and extract rubric files",
       "priority": "P0",
       "estimatedTime": "2h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-eval-skill-generic.md",
       "record": "records/1-eval-skill-generic.md",
       "type": "documentation"
