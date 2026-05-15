@@ -181,18 +181,12 @@ After the reviser completes:
 ### Dimension Breakdown (final)
 | Dimension | Score | Max |
 |-----------|-------|-----|
-| 1. Directory-Name Alignment | {{d1}} | 40 |
-| 2. Agent Reference Integrity | {{d2}} | 100 |
-| 3. Reference Integrity | {{d3}} | 80 |
-| 4. Frontmatter Completeness | {{d4}} | 110 |
-| 5. Eval Template Convention | {{d5}} | 100 |
-| 6. Orchestrator Convention | {{d6}} | 40 |
-| 7. Task CLI Alignment | {{d7}} | 240 |
-| 8. Hook Wiring Integrity | {{d8}} | 70 |
-| 9. Guide Coverage+Conciseness | {{d9}} | 70 |
-| 10. Command Metadata | {{d10}} | 60 |
-| 11. Plugin Metadata | {{d11}} | 40 |
-| 12. Safety Marker Consistency | {{d12}} | 50 |
+| 1. Workflow Completeness | {{d1}} | 250 |
+| 2. Bypass Resistance | {{d2}} | 250 |
+| 3. Instruction Precision | {{d3}} | 200 |
+| 4. Cross-file Dedup | {{d4}} | 150 |
+| 5. Reference Integrity | {{d5}} | 100 |
+| 6. Structural Convention | {{d6}} | 50 |
 
 ### Files Modified
 | File | Changes |
