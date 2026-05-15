@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -9,6 +10,7 @@ import (
 
 	"forge-cli/internal/embedded"
 	"forge-cli/pkg/feature"
+	"forge-cli/pkg/just"
 )
 
 // setupInitTest creates a temp directory with optional pre-existing files.
@@ -26,11 +28,15 @@ func newInitTestEnv(t *testing.T) *initTestEnv {
 	}
 }
 
-func (e *initTestEnv) run() error {
+func (e *initTestEnv) run(extraArgs ...string) error {
+	args := []string{"init", "--project-root", e.dir}
+	args = append(args, extraArgs...)
+	// Reset flags to defaults to avoid state leakage between tests.
+	_ = initCmd.Flags().Set("skip-just", "false")
 	rootCmd.SetOut(&e.stdout)
 	rootCmd.SetErr(&e.stderr)
 	rootCmd.SetIn(&e.stdin)
-	rootCmd.SetArgs([]string{"init", "--project-root", e.dir})
+	rootCmd.SetArgs(args)
 	return rootCmd.Execute()
 }
 
@@ -396,4 +402,193 @@ func TestBuildJustfileAppend(t *testing.T) {
 			t.Errorf("expected no recipes to append, got %d", len(result))
 		}
 	})
+}
+
+func TestInitSkipJustFlag(t *testing.T) {
+	t.Run("--skip-just reports SKIPPED for just step", func(t *testing.T) {
+		env := newInitTestEnv(t)
+		env.stdin.WriteString("2\n1\n\n\n")
+
+		err := env.run("--skip-just")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		output := env.stdout.String()
+		if !strings.Contains(output, "SKIPPED") || !strings.Contains(output, "just") {
+			t.Errorf("expected SKIPPED status for just in output, got %q", output)
+		}
+	})
+
+	t.Run("--skip-just still runs all other steps", func(t *testing.T) {
+		env := newInitTestEnv(t)
+		env.stdin.WriteString("2\n1\n\n\n")
+
+		err := env.run("--skip-just")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		// All other artifacts should still be created
+		checks := []struct {
+			name string
+			path string
+		}{
+			{".forge directory", feature.ForgeDir},
+			{"CLAUDE.md", "CLAUDE.md"},
+			{".gitignore", ".gitignore"},
+			{"justfile", "justfile"},
+			{"config.yaml", filepath.Join(feature.ForgeDir, feature.ForgeConfigFileName)},
+		}
+
+		for _, check := range checks {
+			p := env.path(check.path)
+			if _, err := os.Stat(p); err != nil {
+				t.Errorf("%s not found at %s: %v", check.name, p, err)
+			}
+		}
+	})
+
+	t.Run("ensureJust step appears before justfile step in summary", func(t *testing.T) {
+		env := newInitTestEnv(t)
+		env.stdin.WriteString("2\n1\n\n\n")
+
+		err := env.run("--skip-just")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		output := env.stdout.String()
+		// Just step should appear before justfile step
+		justIdx := strings.Index(output, "just installation")
+		justfileIdx := strings.Index(output, "justfile")
+		if justIdx == -1 || justfileIdx == -1 {
+			t.Fatalf("expected both 'just installation' and 'justfile' in output, got %q", output)
+		}
+		if justIdx > justfileIdx {
+			t.Error("just installation step should appear before justfile step in summary")
+		}
+	})
+}
+
+func TestInitEnsureJustIntegration(t *testing.T) {
+	t.Run("just already installed reports SKIPPED", func(t *testing.T) {
+		origEnsure := ensureJustFunc
+		ensureJustFunc = func(_ io.Reader, _ io.Writer) just.EnsureResult {
+			return just.EnsureResult{
+				Status:  just.StatusSkipped,
+				Version: "1.40.0",
+				Detail:  "just 1.40.0 found at /usr/bin/just (meets minimum 1.40.0)",
+			}
+		}
+		defer func() { ensureJustFunc = origEnsure }()
+
+		env := newInitTestEnv(t)
+		env.stdin.WriteString("2\n1\n\n\n")
+
+		err := env.run()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		output := env.stdout.String()
+		if !strings.Contains(output, "SKIPPED") || !strings.Contains(output, "just") {
+			t.Errorf("expected SKIPPED for just (already installed), got %q", output)
+		}
+	})
+
+	t.Run("just not installed triggers installation attempt", func(t *testing.T) {
+		origEnsure := ensureJustFunc
+		ensureJustFunc = func(_ io.Reader, _ io.Writer) just.EnsureResult {
+			return just.EnsureResult{
+				Status:  just.StatusInstalled,
+				Version: "1.40.0",
+				Method:  "brew",
+				Detail:  "installed via brew",
+			}
+		}
+		defer func() { ensureJustFunc = origEnsure }()
+
+		env := newInitTestEnv(t)
+		env.stdin.WriteString("2\n1\n\n\n")
+
+		err := env.run()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		output := env.stdout.String()
+		if !strings.Contains(output, "INSTALLED") || !strings.Contains(output, "just") {
+			t.Errorf("expected INSTALLED for just, got %q", output)
+		}
+	})
+
+	t.Run("just installation failure is non-blocking", func(t *testing.T) {
+		origEnsure := ensureJustFunc
+		ensureJustFunc = func(_ io.Reader, _ io.Writer) just.EnsureResult {
+			return just.EnsureResult{
+				Status: just.StatusFailed,
+				Detail: "no supported package manager found",
+			}
+		}
+		defer func() { ensureJustFunc = origEnsure }()
+
+		env := newInitTestEnv(t)
+		env.stdin.WriteString("2\n1\n\n\n")
+
+		err := env.run()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		output := env.stdout.String()
+		if !strings.Contains(output, "FAILED") {
+			t.Errorf("expected FAILED for just installation, got %q", output)
+		}
+
+		// Other steps should still complete
+		if !strings.Contains(output, "CREATED") {
+			t.Errorf("expected other steps to still succeed, got %q", output)
+		}
+	})
+}
+
+func TestEnsureResultToAction(t *testing.T) {
+	tests := []struct {
+		name   string
+		result just.EnsureResult
+		status string
+		target string
+	}{
+		{
+			name:   "installed status",
+			result: just.EnsureResult{Status: just.StatusInstalled, Version: "1.40.0", Method: "brew", Detail: "installed via brew"},
+			status: "INSTALLED",
+			target: "just installation",
+		},
+		{
+			name:   "skipped status",
+			result: just.EnsureResult{Status: just.StatusSkipped, Version: "1.40.0", Detail: "just 1.40.0 found"},
+			status: "SKIPPED",
+			target: "just installation",
+		},
+		{
+			name:   "failed status",
+			result: just.EnsureResult{Status: just.StatusFailed, Detail: "no package manager"},
+			status: "FAILED",
+			target: "just installation",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			action := ensureResultToAction(tt.result)
+			if action.status != tt.status {
+				t.Errorf("expected status %q, got %q", tt.status, action.status)
+			}
+			if action.target != tt.target {
+				t.Errorf("expected target %q, got %q", tt.target, action.target)
+			}
+		})
+	}
 }

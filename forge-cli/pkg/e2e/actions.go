@@ -28,78 +28,56 @@ func formatToolError(cmd string, output []byte) error {
 	return fmt.Errorf("%s failed: %s", cmd, firstLine)
 }
 
+const justNotFoundMsg = "error: 'just' is required but not found on PATH. Install: https://github.com/casey/just"
+
+// isJustNotFound checks if the error indicates just is not on PATH.
+func isJustNotFound(err error) bool {
+	return strings.Contains(err.Error(), "just") &&
+		(strings.Contains(err.Error(), "executable file not found") ||
+			strings.Contains(err.Error(), "file not found"))
+}
+
+// runJust executes a just recipe and returns its output and error.
+// It wraps subprocess errors with a not-found check for just itself.
+func runJust(recipe string, args ...string) ([]byte, error) {
+	cmdArgs := append([]string{recipe}, args...)
+	out, err := runner.Run("just", cmdArgs...)
+	if err != nil {
+		if isJustNotFound(err) {
+			return nil, fmt.Errorf("%s", justNotFoundMsg)
+		}
+		return nil, formatToolError("just "+recipe, out)
+	}
+	return out, nil
+}
+
 // Run executes e2e tests using the configured profile.
 func Run(opts RunOpts) error {
-	profile, err := ResolveProfile(opts.ProjectRoot)
-	if err != nil {
+	if _, err := ResolveProfile(opts.ProjectRoot); err != nil {
 		return err
 	}
 
-	switch profile {
-	case "go-test":
-		testPath := "./tests/e2e/..."
-		if opts.Feature != "" {
-			testPath = fmt.Sprintf("./tests/e2e/features/%s/...", opts.Feature)
-		}
-		cmdName := "go test"
-		args := []string{"test", testPath}
-		out, runErr := runner.Run("go", args...)
-		if runErr != nil {
-			return formatToolError(cmdName, out)
-		}
-		fmt.Println(string(out))
-		return nil
-
-	case "web-playwright":
-		cmdName := "npx playwright test"
-		args := []string{"playwright", "test"}
-		out, runErr := runner.Run("npx", args...)
-		if runErr != nil {
-			return formatToolError(cmdName, out)
-		}
-		fmt.Println(string(out))
-		return nil
-
-	default:
-		return fmt.Errorf("unsupported profile for run: %s", profile)
+	args := []string{}
+	if opts.Feature != "" {
+		args = append(args, "feature="+opts.Feature)
 	}
+
+	out, err := runJust("test-e2e", args...)
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(out))
+	return nil
 }
 
 // Setup installs e2e dependencies for the configured profile.
 func Setup(opts RunOpts) error {
-	profile, err := ResolveProfile(opts.ProjectRoot)
-	if err != nil {
+	if _, err := ResolveProfile(opts.ProjectRoot); err != nil {
 		return err
 	}
 
-	switch profile {
-	case "go-test":
-		cmdName := "go install"
-		_, runErr := runner.Run("go", "install")
-		if runErr != nil {
-			return formatToolError(cmdName, nil)
-		}
-		return nil
-
-	case "web-playwright":
-		cmdName := "npx playwright install"
-		out, runErr := runner.Run("npx", "playwright", "install")
-		if runErr != nil {
-			return formatToolError(cmdName, out)
-		}
-		return nil
-
-	case "pytest":
-		cmdName := "python -m pip install pytest"
-		out, runErr := runner.Run("python", "-m", "pip", "install", "pytest")
-		if runErr != nil {
-			return formatToolError(cmdName, out)
-		}
-		return nil
-
-	default:
-		return fmt.Errorf("unsupported profile for setup: %s", profile)
-	}
+	_, err := runJust("e2e-setup")
+	return err
 }
 
 // Verify scans e2e test files for unresolved VERIFY markers.
@@ -156,77 +134,24 @@ func Verify(opts RunOpts) error {
 
 // Compile runs a compile-only check on e2e test files.
 func Compile(projectRoot string) error {
-	profile, err := ResolveProfile(projectRoot)
-	if err != nil {
+	if _, err := ResolveProfile(projectRoot); err != nil {
 		return err
 	}
 
-	switch profile {
-	case "go-test":
-		cmdName := "go build"
-		out, runErr := runner.Run("go", "build", "./tests/e2e/...")
-		if runErr != nil {
-			return formatToolError(cmdName, out)
-		}
-		return nil
-
-	case "web-playwright":
-		cmdName := "npx tsc --noEmit"
-		out, runErr := runner.Run("npx", "tsc", "--noEmit")
-		if runErr != nil {
-			return formatToolError(cmdName, out)
-		}
-		return nil
-
-	case "pytest":
-		cmdName := "python -m compileall tests/e2e/ -q"
-		out, runErr := runner.Run("python", "-m", "compileall", "tests/e2e/", "-q")
-		if runErr != nil {
-			return formatToolError(cmdName, out)
-		}
-		return nil
-
-	default:
-		return fmt.Errorf("unsupported profile for compile: %s", profile)
-	}
+	_, err := runJust("e2e-compile")
+	return err
 }
 
 // Discover lists all e2e test cases without running them.
 func Discover(projectRoot string) error {
-	profile, err := ResolveProfile(projectRoot)
-	if err != nil {
+	if _, err := ResolveProfile(projectRoot); err != nil {
 		return err
 	}
 
-	switch profile {
-	case "go-test":
-		cmdName := "go test -list"
-		out, runErr := runner.Run("go", "test", "./tests/e2e/...", "-list", ".*", "-tags=e2e")
-		if runErr != nil {
-			return formatToolError(cmdName, out)
-		}
-		fmt.Println(string(out))
-		return nil
-
-	case "web-playwright":
-		cmdName := "npx playwright test --list"
-		out, runErr := runner.Run("npx", "playwright", "test", "--list")
-		if runErr != nil {
-			return formatToolError(cmdName, out)
-		}
-		fmt.Println(string(out))
-		return nil
-
-	case "pytest":
-		cmdName := "python -m pytest --collect-only"
-		out, runErr := runner.Run("python", "-m", "pytest", "tests/e2e/", "--collect-only", "-q")
-		if runErr != nil {
-			return formatToolError(cmdName, out)
-		}
-		fmt.Println(string(out))
-		return nil
-
-	default:
-		return fmt.Errorf("unsupported profile for discover: %s", profile)
+	out, err := runJust("e2e-discover")
+	if err != nil {
+		return err
 	}
+	fmt.Println(string(out))
+	return nil
 }

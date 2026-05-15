@@ -10,6 +10,7 @@ import (
 
 	"forge-cli/internal/embedded"
 	"forge-cli/pkg/feature"
+	"forge-cli/pkg/just"
 	"forge-cli/pkg/profile"
 
 	"github.com/spf13/cobra"
@@ -29,6 +30,7 @@ to justfile, and runs interactive config if .forge/config.yaml doesn't exist.`,
 
 func init() {
 	initCmd.Flags().String("project-root", "", "project root directory (defaults to current directory)")
+	initCmd.Flags().Bool("skip-just", false, "skip just installation check")
 }
 
 // gitignoreEntries are the lines to append to .gitignore.
@@ -52,7 +54,7 @@ var justfileRecipes = []struct {
 
 // initAction records a single action taken during init.
 type initAction struct {
-	status string // CREATED, APPENDED, SKIPPED
+	status string // CREATED, APPENDED, INSTALLED, SKIPPED, FAILED
 	target string // file or directory path
 	detail string // extra info (e.g., "5 entries", "from template")
 }
@@ -62,6 +64,8 @@ func runInit(cmd *cobra.Command, _ []string) error {
 	if projectRoot == "" {
 		projectRoot = "."
 	}
+
+	skipJust, _ := cmd.Flags().GetBool("skip-just")
 
 	out := cmd.OutOrStdout()
 	var actions []initAction
@@ -76,6 +80,10 @@ func runInit(cmd *cobra.Command, _ []string) error {
 
 	// Step 3: Update .gitignore
 	action = updateGitignore(projectRoot)
+	actions = append(actions, action)
+
+	// Step 3.5: Ensure just is installed (before justfile update)
+	action = ensureJustStep(skipJust, cmd.InOrStdin(), out)
 	actions = append(actions, action)
 
 	// Step 4: Update justfile
@@ -336,4 +344,40 @@ func printInitSummary(out io.Writer, actions []initAction) {
 		write(out, "%-10s %s%s\n", a.status, a.target, detail)
 	}
 	write(out, "<<<\n")
+}
+
+// ensureJustFunc is the function that runs the ensure-just flow.
+// Variable for testability.
+var ensureJustFunc = just.EnsureJust
+
+// ensureJustStep runs the ensure-just flow or skips it based on the flag.
+// Installation failure is non-blocking — init continues with a WARNING.
+func ensureJustStep(skipJust bool, in io.Reader, out io.Writer) initAction {
+	if skipJust {
+		return initAction{status: "SKIPPED", target: "just installation", detail: "skipped via --skip-just flag"}
+	}
+
+	result := ensureJustFunc(in, out)
+
+	if result.Status == just.StatusFailed {
+		fmt.Fprintf(os.Stderr, "WARNING: just installation failed: %s\n", result.Detail)
+	}
+
+	return ensureResultToAction(result)
+}
+
+// ensureResultToAction converts an EnsureResult to an initAction.
+func ensureResultToAction(r just.EnsureResult) initAction {
+	detail := r.Detail
+	if r.Version != "" && r.Status == just.StatusSkipped {
+		detail = fmt.Sprintf("just %s already available", r.Version)
+	}
+	if r.Method != "" && r.Status == just.StatusInstalled {
+		detail = fmt.Sprintf("installed via %s (%s)", r.Method, r.Version)
+	}
+	return initAction{
+		status: string(r.Status),
+		target: "just installation",
+		detail: detail,
+	}
 }

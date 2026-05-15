@@ -41,23 +41,17 @@ func runQuery(_ *cobra.Command, args []string) {
 		Exit(ErrFileNotFound(indexPath))
 	}
 
-	key, t, err := task.FindTask(index, taskIDArg)
+	_, t, err := task.FindTask(index, taskIDArg)
 	if err != nil {
 		Exit(ErrTaskNotFound(taskIDArg))
 	}
 
 	PrintBlockStart()
-	PrintField("KEY", key)
 	PrintField("TASK_ID", t.ID)
-	PrintField("TITLE", t.Title)
 	PrintField("STATUS", t.Status)
-	PrintField("PRIORITY", t.Priority)
-	PrintFieldIfNotEmpty("ESTIMATED_TIME", t.EstimatedTime)
-	PrintFieldIfNotEmptySlice("DEPENDENCIES", t.Dependencies)
+	PrintFieldIfNotEmpty("SCOPE", t.Scope)
 	if t.Breaking {
 		PrintField("BREAKING", "true")
 	}
-	PrintField("FILE", filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, t.File)))
-	PrintField("RECORD", filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, t.Record)))
 	PrintBlockEnd()
 }
