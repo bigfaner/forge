@@ -42,8 +42,7 @@ type EnsureResult struct {
 }
 
 // Minimum required version of just.
-// Task spec says >= 1.40.0.
-var minimumVersion = "1.40.0"
+var minimumVersion = "1.50.0"
 
 // ---------------------------------------------------------------------------
 // Detect
@@ -74,11 +73,11 @@ func DetectJust() (path string, version string, found bool) {
 // ParseJustVersion
 // ---------------------------------------------------------------------------
 
-// versionRe matches lines like "just 1.40.0" or "just 1.40.0-beta.1".
+// versionRe matches lines like "just 1.51.0" or "just 1.51.0-beta.1".
 var versionRe = regexp.MustCompile(`^just\s+(\S+)`)
 
 // ParseJustVersion parses the output of `just --version` and returns the
-// semver-like version string (e.g., "1.40.0").
+// semver-like version string (e.g., "1.51.0").
 func ParseJustVersion(output string) (string, error) {
 	lines := strings.Split(output, "\n")
 	for _, line := range lines {
@@ -97,7 +96,7 @@ func ParseJustVersion(output string) (string, error) {
 
 // IsMinimumVersion reports whether version >= minimum using semantic version
 // comparison (major.minor.patch). Pre-release suffixes are ignored for the
-// numeric comparison but considered less than the release (e.g., 1.40.0-pre < 1.40.0).
+// numeric comparison but considered less than the release (e.g., 1.51.0-pre < 1.51.0).
 func IsMinimumVersion(version, minimum string) bool {
 	v := parseSemver(version)
 	m := parseSemver(minimum)
