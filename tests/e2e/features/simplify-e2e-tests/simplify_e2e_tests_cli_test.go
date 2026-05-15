@@ -67,10 +67,10 @@ func TestTC_002_VerifyTC020RemovedFromJustfileCanonicalE2e(t *testing.T) {
 // TC-003: Verify e2e test suite compiles
 // Traceability: TC-003 -> Proposal Success Criterion 3
 func TestTC_003_VerifyE2eTestSuiteCompiles(t *testing.T) {
-	// Step 1: Run go test -tags=e2e ./tests/e2e/... -count=1 -run=^$ (compile-only)
-	root := projectRoot(t)
-	cmd := exec.Command("go", "test", "-tags=e2e", "./tests/e2e/...", "-count=1", "-run=^$")
-	cmd.Dir = root
+	// Step 1: Run go test -tags=e2e ./... -count=1 -run=^$ (compile-only)
+	// Must run from tests/e2e/ (the Go module root), not the project root.
+	cmd := exec.Command("go", "test", "-tags=e2e", "./...", "-count=1", "-run=^$")
+	cmd.Dir = e2eRoot(t)
 	out, err := cmd.CombinedOutput()
 
 	// Step 2: Check exit code is 0 and no compilation errors
@@ -80,10 +80,10 @@ func TestTC_003_VerifyE2eTestSuiteCompiles(t *testing.T) {
 // TC-004: Verify remaining CLI behavior tests pass
 // Traceability: TC-004 -> Proposal Success Criterion 4
 func TestTC_004_VerifyRemainingCliBehaviorTestsPass(t *testing.T) {
-	// Step 1: Run go test -tags=e2e ./tests/e2e/... -count=1 -timeout 120s
-	root := projectRoot(t)
-	cmd := exec.Command("go", "test", "-tags=e2e", "./tests/e2e/...", "-count=1", "-timeout", "120s")
-	cmd.Dir = root
+	// Step 1: Run go test -tags=e2e ./... -count=1 -timeout 120s
+	// Must run from tests/e2e/ (the Go module root), not the project root.
+	cmd := exec.Command("go", "test", "-tags=e2e", "./...", "-count=1", "-timeout", "120s")
+	cmd.Dir = e2eRoot(t)
 	out, err := cmd.CombinedOutput()
 
 	// Step 2: Check exit code is 0 and all tests pass
