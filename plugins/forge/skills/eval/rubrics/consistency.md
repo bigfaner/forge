@@ -8,7 +8,6 @@ type: consistency
 # Cross-Document Consistency Rubric
 
 **Total: 1000 points**
-**Report template:** `plugins/forge/skills/eval-consistency/templates/report.md`
 
 ## Required Files
 

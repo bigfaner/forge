@@ -8,7 +8,6 @@ type: prd
 # PRD Evaluation Rubric
 
 **Total: 1000 points**
-**Report template:** `plugins/forge/skills/eval-prd/templates/report.md`
 
 ## Required Sections (prd-spec.md)
 

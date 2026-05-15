@@ -8,7 +8,6 @@ type: test-cases
 # Test Cases Evaluation Rubric
 
 **Total: 1000 points**
-**Report template:** `plugins/forge/skills/eval-test-cases/templates/report.md`
 
 ## Required Sections
 

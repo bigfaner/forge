@@ -28,10 +28,10 @@ Read the latest `/eval-harness` report and implement improvements for each findi
 
 | Document | Path | Purpose |
 |----------|------|---------|
-| Rubric (scoring criteria) | `plugins/forge/skills/eval-harness/templates/rubric.md` | Defines the 4 dimensions and 12 criteria that findings are scored against |
+| Rubric (scoring criteria) | `plugins/forge/skills/eval/rubrics/harness.md` | Defines the 4 dimensions and 12 criteria that findings are scored against |
 | Eval report | `docs/harness-reports/YYYY-MM-DD.md` | Scored report with Priority Improvements table |
 | Snapshot (raw evidence) | `docs/harness-reports/YYYY-MM-DD-snapshot.md` | Original context the scorer evaluated; useful when investigating findings |
-| P0/P1/P2 classification | Defined in `eval-harness/SKILL.md` Step 4 | P0 = score 0 on any criterion; P1 = < 50%; P2 = < 80% |
+| P0/P1/P2 classification | Defined in `eval` rubric for harness type | P0 = score 0 on any criterion; P1 = < 50%; P2 = < 80% |
 
 ## Workflow
 

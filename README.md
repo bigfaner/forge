@@ -104,7 +104,7 @@ task --version
 
 ### 辅助
 
-`/fix-bug` · `/git-commit` · `/git-checkout` · `/learn-lesson` · `/record-decision` · `/consolidate-specs` · `/init-justfile` · `/init-forge` · `/gen-sitemap` · `/extract-design-md` · `/simplify-skill` · `/forensic` · `/improve-harness`
+`/fix-bug` · `/git-commit` · `/git-checkout` · `/learn-lesson` · `/record-decision` · `/consolidate-specs` · `/init-justfile` · `/init-forge` · `/gen-sitemap` · `/extract-design-md` · `/forensic` · `/improve-harness`
 
 ---
 

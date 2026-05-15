@@ -9,7 +9,6 @@ type: ui-tui
 
 **Total: 1000 points**
 **Platform: tui (Terminal User Interface)**
-**Report template:** `plugins/forge/skills/eval-ui/templates/report.md`
 
 ## Perspectives
 

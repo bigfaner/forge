@@ -8,7 +8,6 @@ type: proposal
 # Proposal Evaluation Rubric
 
 **Total: 1000 points**
-**Report template:** `plugins/forge/skills/eval-proposal/templates/report.md`
 
 ## Dimensions
 

@@ -8,7 +8,6 @@ type: harness
 # Harness Evaluation Rubric
 
 **Total: 100 points**
-**Report template:** `plugins/forge/skills/eval-harness/templates/report.md`
 
 ## What This Evaluates
 

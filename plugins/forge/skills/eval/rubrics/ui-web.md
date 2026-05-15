@@ -8,7 +8,6 @@ type: ui-web
 # UI Design Evaluation Rubric
 
 **Total: 1000 points**
-**Report template:** `plugins/forge/skills/eval-ui/templates/report.md`
 
 ## Perspectives
 

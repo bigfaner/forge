@@ -489,7 +489,7 @@ func TestTC_021_TUIPrototypesOutputToCorrectDirectories(t *testing.T) {
 
 // Traceability: TC-022 -> Task 5 AC-1
 func TestTC_022_RubricWebContainsExistingWebRubricContent(t *testing.T) {
-	content := readFile(t, "plugins/forge/skills/eval-ui/templates/rubric-web.md")
+	content := readFile(t, "plugins/forge/skills/eval/rubrics/ui-web.md")
 
 	// Assert file contains rubric content with dimensions and scoring
 	assert.True(t,
@@ -502,7 +502,7 @@ func TestTC_022_RubricWebContainsExistingWebRubricContent(t *testing.T) {
 
 // Traceability: TC-023 -> Task 5 AC-2
 func TestTC_023_RubricTUIHas4CorrectDimensions(t *testing.T) {
-	content := readFile(t, "plugins/forge/skills/eval-ui/templates/rubric-tui.md")
+	content := readFile(t, "plugins/forge/skills/eval/rubrics/ui-tui.md")
 
 	// Assert Requirement Coverage dimension with 250 points
 	fileContains(t, content, "Requirement Coverage", "Requirement Coverage dimension")
@@ -523,7 +523,7 @@ func TestTC_023_RubricTUIHas4CorrectDimensions(t *testing.T) {
 
 // Traceability: TC-024 -> Task 5 AC-3
 func TestTC_024_RubricTUIDeductionRulesAreCorrect(t *testing.T) {
-	content := readFile(t, "plugins/forge/skills/eval-ui/templates/rubric-tui.md")
+	content := readFile(t, "plugins/forge/skills/eval/rubrics/ui-tui.md")
 
 	// Assert deduction: missing ASCII mockup sets Visual Specification to 0
 	assert.True(t,
@@ -548,7 +548,7 @@ func TestTC_024_RubricTUIDeductionRulesAreCorrect(t *testing.T) {
 
 // Traceability: TC-025 -> Task 5 AC-4
 func TestTC_025_RubricMobileHas4CorrectDimensions(t *testing.T) {
-	content := readFile(t, "plugins/forge/skills/eval-ui/templates/rubric-mobile.md")
+	content := readFile(t, "plugins/forge/skills/eval/rubrics/ui-mobile.md")
 
 	// Assert Requirement Coverage dimension with 250 points
 	fileContains(t, content, "Requirement Coverage", "Requirement Coverage dimension")
@@ -569,7 +569,7 @@ func TestTC_025_RubricMobileHas4CorrectDimensions(t *testing.T) {
 
 // Traceability: TC-026 -> Task 5 AC-5
 func TestTC_026_RubricMobileDeductionRulesAreCorrect(t *testing.T) {
-	content := readFile(t, "plugins/forge/skills/eval-ui/templates/rubric-mobile.md")
+	content := readFile(t, "plugins/forge/skills/eval/rubrics/ui-mobile.md")
 
 	// Assert deduction: touch targets without size annotation incur -30 per instance
 	assert.True(t,
@@ -589,7 +589,7 @@ func TestTC_026_RubricMobileDeductionRulesAreCorrect(t *testing.T) {
 
 // Traceability: TC-027 -> Task 5 AC-6
 func TestTC_027_EvalUISkillDetectsPlatformAndSelectsRubric(t *testing.T) {
-	content := readFile(t, "plugins/forge/skills/eval-ui/SKILL.md")
+	content := readFile(t, "plugins/forge/skills/eval/SKILL.md")
 
 	// Assert platform detection from ui-design document
 	assert.True(t,
@@ -614,7 +614,7 @@ func TestTC_027_EvalUISkillDetectsPlatformAndSelectsRubric(t *testing.T) {
 
 // Traceability: TC-028 -> Task 5 AC-7
 func TestTC_028_MultiPlatformFeaturesEvaluateWithRespectiveRubrics(t *testing.T) {
-	content := readFile(t, "plugins/forge/skills/eval-ui/SKILL.md")
+	content := readFile(t, "plugins/forge/skills/eval/SKILL.md")
 
 	// Assert multi-platform logic evaluates each platform independently
 	assert.True(t,

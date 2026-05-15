@@ -9,7 +9,6 @@ type: ui-mobile
 
 **Total: 1000 points**
 **Platform: mobile**
-**Report template:** `plugins/forge/skills/eval-ui/templates/report.md`
 
 ## Perspectives
 

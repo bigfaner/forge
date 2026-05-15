@@ -353,15 +353,15 @@ func TestTC_007_RunTasksBreakingGateUsesJustTest(t *testing.T) {
 
 // Traceability: TC-008 -> Story 5 / AC-3
 func TestTC_008_RecordTaskMetricsCollectionUsesJustTest(t *testing.T) {
-	content := testkit.ReadProjectFile(t, "../plugins/forge/skills/record-task/SKILL.md")
+	content := testkit.ReadProjectFile(t, "../plugins/forge/skills/submit-task/SKILL.md")
 	assert.True(t, strings.Contains(content, "just test"),
-		"Expected \"just test\" to appear in record-task/SKILL.md Metrics Collection section")
+		"Expected \"just test\" to appear in submit-task/SKILL.md Metrics Collection section")
 	assert.False(t, strings.Contains(content, "go test -cover ./..."),
-		"Expected \"go test -cover ./...\" NOT to appear in record-task/SKILL.md")
+		"Expected \"go test -cover ./...\" NOT to appear in submit-task/SKILL.md")
 	assert.False(t, strings.Contains(content, "npm test -- --coverage"),
-		"Expected \"npm test -- --coverage\" NOT to appear in record-task/SKILL.md")
+		"Expected \"npm test -- --coverage\" NOT to appear in submit-task/SKILL.md")
 	assert.False(t, strings.Contains(content, "pytest --cov="),
-		"Expected \"pytest --cov=\" NOT to appear in record-task/SKILL.md")
+		"Expected \"pytest --cov=\" NOT to appear in submit-task/SKILL.md")
 }
 
 // Traceability: TC-009 -> Spec Section 5.1

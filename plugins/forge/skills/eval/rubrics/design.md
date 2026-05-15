@@ -8,7 +8,6 @@ type: design
 # Design Evaluation Rubric
 
 **Total: 1000 points**
-**Report template:** `plugins/forge/skills/eval-design/templates/report.md`
 
 ## Required Sections
 
