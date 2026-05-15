@@ -3,6 +3,8 @@ package task
 import (
 	"fmt"
 	"path"
+	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -559,6 +561,34 @@ func (d TestTaskDef) TaskFromFile() Task {
 		Type:          d.Type,
 		Profile:       d.ProfileName,
 	}
+}
+
+// summaryTableRow matches lines in the Summary table like:
+//
+//	| UI   | 5   |
+//	| **Integration** | **2** |
+var summaryTableRow = regexp.MustCompile(`^\|\s*\*{0,2}(\w+)\*{0,2}\s*\|\s*\*{0,2}(\d+)\*{0,2}\s*\|`)
+
+// DetectTypesFromTestCases parses test-cases.md content and returns lowercase
+// type names that have a non-zero count in the Summary table.
+// Returns nil if no types are detected.
+func DetectTypesFromTestCases(content []byte) []string {
+	var types []string
+	for _, line := range strings.Split(string(content), "\n") {
+		m := summaryTableRow.FindStringSubmatch(line)
+		if m == nil {
+			continue
+		}
+		name := strings.ToLower(m[1])
+		if name == "total" {
+			continue
+		}
+		count, _ := strconv.Atoi(m[2])
+		if count > 0 {
+			types = append(types, name)
+		}
+	}
+	return types
 }
 
 // GetDocEvalTask returns a TestTaskDef for the docs-only evaluation task (T-eval-doc).

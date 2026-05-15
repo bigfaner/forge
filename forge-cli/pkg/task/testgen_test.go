@@ -5,6 +5,107 @@ import (
 	"testing"
 )
 
+func TestDetectTypesFromTestCases(t *testing.T) {
+	tests := []struct {
+		name    string
+		content string
+		want    []string
+	}{
+		{
+			name: "multiple types with non-zero counts",
+			content: `## Summary
+
+| Type | Count |
+|------|-------|
+| UI   | 5   |
+| **Integration** | **2** |
+| API  | 3  |
+| CLI  | 10  |
+| **Total** | **20** |`,
+			want: []string{"ui", "integration", "api", "cli"},
+		},
+		{
+			name: "only CLI type present",
+			content: `## Summary
+
+| Type | Count |
+|------|-------|
+| UI   | 0   |
+| **Integration** | **0** |
+| API  | 0  |
+| CLI  | 75  |
+| **Total** | **75** |`,
+			want: []string{"cli"},
+		},
+		{
+			name: "TUI type present",
+			content: `## Summary
+
+| Type | Count |
+|------|-------|
+| TUI  | 0     |
+| **Integration** | **0** |
+| API  | 0     |
+| CLI  | 31    |
+| **Total** | **31** |`,
+			want: []string{"cli"},
+		},
+		{
+			name: "UI and API only",
+			content: `## Summary
+
+| Type | Count |
+|------|-------|
+| UI   | 8   |
+| **Integration** | **0** |
+| API  | 4  |
+| CLI  | 0  |
+| **Total** | **12** |`,
+			want: []string{"ui", "api"},
+		},
+		{
+			name:    "empty content returns nil",
+			content: ``,
+			want:    nil,
+		},
+		{
+			name: "no summary table returns nil",
+			content: `# Test Cases
+
+Some text without a table.
+`,
+			want: nil,
+		},
+		{
+			name: "all zero counts returns nil",
+			content: `## Summary
+
+| Type | Count |
+|------|-------|
+| UI   | 0   |
+| **Integration** | **0** |
+| API  | 0  |
+| CLI  | 0  |
+| **Total** | **0** |`,
+			want: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := DetectTypesFromTestCases([]byte(tt.content))
+			if len(got) != len(tt.want) {
+				t.Fatalf("DetectTypesFromTestCases() = %v, want %v", got, tt.want)
+			}
+			for i, w := range tt.want {
+				if got[i] != w {
+					t.Errorf("got[%d] = %q, want %q", i, got[i], w)
+				}
+			}
+		})
+	}
+}
+
 func TestGetBreakdownTestTasks_SingleProfile(t *testing.T) {
 	tasks := GetBreakdownTestTasks([]string{"go-test"}, nil)
 

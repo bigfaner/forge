@@ -36,7 +36,7 @@
       "dependencies": [
         "2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3-update-breakdown-generation.md",
       "record": "records/3-update-breakdown-generation.md",
       "scope": "backend",
