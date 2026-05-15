@@ -1,0 +1,71 @@
+{
+  "feature": "test-cases-separation",
+  "proposal": "docs/proposals/test-cases-separation/proposal.md",
+  "created": "2026-05-15",
+  "tasks": {
+    "1-remove-element-from-gen-test-cases": {
+      "id": "1",
+      "title": "Remove Element field from gen-test-cases skill and template",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "1-remove-element-from-gen-test-cases.md",
+      "record": "records/1-remove-element-from-gen-test-cases.md",
+      "type": "documentation"
+    },
+    "2-remove-element-from-gen-test-scripts": {
+      "id": "2",
+      "title": "Remove Element handling from gen-test-scripts and enforce source-code-first",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-remove-element-from-gen-test-scripts.md",
+      "record": "records/2-remove-element-from-gen-test-scripts.md",
+      "type": "documentation"
+    },
+    "3-remove-element-from-eval-test-cases": {
+      "id": "3",
+      "title": "Remove Element evaluation from eval-test-cases skill and rubric",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "3-remove-element-from-eval-test-cases.md",
+      "record": "records/3-remove-element-from-eval-test-cases.md",
+      "type": "documentation"
+    },
+    "eval-doc": {
+      "id": "T-eval-doc",
+      "title": "Evaluate Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "3"
+      ],
+      "status": "pending",
+      "file": "eval-doc.md",
+      "record": "records/eval-doc.md",
+      "scope": "all",
+      "noTest": true,
+      "type": "doc-evaluation"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
