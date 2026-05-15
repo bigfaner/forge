@@ -75,7 +75,7 @@ func TestGetBreakdownTestTasks_MultiProfile(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_SingleProfile(t *testing.T) {
-	tasks := GetQuickTestTasks([]string{"go-test"})
+	tasks := GetQuickTestTasks([]string{"go-test"}, nil)
 
 	// 4 per-profile + 1 shared = 5
 	if len(tasks) != 5 {
@@ -104,7 +104,7 @@ func TestGetQuickTestTasks_SingleProfile(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_MultiProfile(t *testing.T) {
-	tasks := GetQuickTestTasks([]string{"web-playwright", "go-test"})
+	tasks := GetQuickTestTasks([]string{"web-playwright", "go-test"}, nil)
 
 	// 4*2 per-profile + 1 shared = 9
 	if len(tasks) != 9 {
@@ -197,7 +197,7 @@ func TestResolveFirstTestDep(t *testing.T) {
 			"2-bar": {ID: "2"},
 			"3-baz": {ID: "3"},
 		}
-		tasks := GetQuickTestTasks([]string{"go-test"})
+		tasks := GetQuickTestTasks([]string{"go-test"}, nil)
 		ResolveFirstTestDep(tasks, existing, "quick")
 		if tasks[0].Dependencies[0] != "3" {
 			t.Errorf("T-quick-1 should depend on max business task, got %v", tasks[0].Dependencies)
@@ -447,5 +447,175 @@ func TestGenerateTestTaskMD_WithTestType(t *testing.T) {
 	}
 	if !strings.Contains(s, "go-test") {
 		t.Error("missing profile name in body")
+	}
+}
+
+func TestGetQuickTestTasks_PerType_SingleProfile(t *testing.T) {
+	tasks := GetQuickTestTasks([]string{"go-test"}, []string{"tui", "api"})
+
+	// Per-profile: gen-cases + per-type-gen(tui,api) + run + graduate = 5 + shared verify-regression = 6
+	if len(tasks) != 6 {
+		t.Fatalf("expected 6 tasks, got %d", len(tasks))
+	}
+
+	wantIDs := []string{
+		"T-quick-1",
+		"T-quick-2-tui", "T-quick-2-api",
+		"T-quick-3", "T-quick-4",
+		"T-quick-5",
+	}
+	for i, want := range wantIDs {
+		if tasks[i].ID != want {
+			t.Errorf("tasks[%d].ID = %q, want %q", i, tasks[i].ID, want)
+		}
+	}
+
+	// Keys include type suffix
+	if tasks[1].Key != "quick-gen-scripts-go-test-tui" {
+		t.Errorf("tasks[1].Key = %q, want quick-gen-scripts-go-test-tui", tasks[1].Key)
+	}
+	if tasks[2].Key != "quick-gen-scripts-go-test-api" {
+		t.Errorf("tasks[2].Key = %q, want quick-gen-scripts-go-test-api", tasks[2].Key)
+	}
+
+	// TestType field set
+	if tasks[1].TestType != "tui" {
+		t.Errorf("tasks[1].TestType = %q, want tui", tasks[1].TestType)
+	}
+	if tasks[2].TestType != "api" {
+		t.Errorf("tasks[2].TestType = %q, want api", tasks[2].TestType)
+	}
+
+	// Per-type gen-scripts depend on gen-cases
+	if tasks[1].Dependencies[0] != "T-quick-1" {
+		t.Errorf("T-quick-2-tui should depend on T-quick-1, got %v", tasks[1].Dependencies)
+	}
+	if tasks[2].Dependencies[0] != "T-quick-1" {
+		t.Errorf("T-quick-2-api should depend on T-quick-1, got %v", tasks[2].Dependencies)
+	}
+
+	// T-quick-3 depends on ALL per-type T-quick-2-* tasks
+	if len(tasks[3].Dependencies) != 2 {
+		t.Fatalf("T-quick-3 should depend on 2 gen tasks, got %v", tasks[3].Dependencies)
+	}
+	depSet := make(map[string]bool)
+	for _, d := range tasks[3].Dependencies {
+		depSet[d] = true
+	}
+	if !depSet["T-quick-2-tui"] || !depSet["T-quick-2-api"] {
+		t.Errorf("T-quick-3 deps should include T-quick-2-tui and T-quick-2-api, got %v", tasks[3].Dependencies)
+	}
+
+	// T-quick-4 depends on T-quick-3
+	if tasks[4].Dependencies[0] != "T-quick-3" {
+		t.Errorf("graduate should depend on run, got %v", tasks[4].Dependencies)
+	}
+
+	// T-quick-5 depends on T-quick-4
+	if tasks[5].Dependencies[0] != "T-quick-4" {
+		t.Errorf("verify-regression should depend on graduate, got %v", tasks[5].Dependencies)
+	}
+}
+
+func TestGetQuickTestTasks_PerType_MultiProfile(t *testing.T) {
+	tasks := GetQuickTestTasks(
+		[]string{"web-playwright", "go-test"},
+		[]string{"tui", "api"},
+	)
+
+	// Profile-a: gen-cases + 2 per-type-gen + run + graduate = 5
+	// Profile-b: same = 5
+	// Shared: verify-regression = 1
+	// Total = 11
+	if len(tasks) != 11 {
+		t.Fatalf("expected 11 tasks, got %d", len(tasks))
+	}
+
+	wantIDs := []string{
+		"T-quick-1a",
+		"T-quick-2a-tui", "T-quick-2a-api",
+		"T-quick-3a", "T-quick-4a",
+		"T-quick-1b",
+		"T-quick-2b-tui", "T-quick-2b-api",
+		"T-quick-3b", "T-quick-4b",
+		"T-quick-5",
+	}
+	for i, want := range wantIDs {
+		if tasks[i].ID != want {
+			t.Errorf("tasks[%d].ID = %q, want %q", i, tasks[i].ID, want)
+		}
+	}
+
+	// T-quick-3a depends on both profile-a gen tasks
+	if len(tasks[3].Dependencies) != 2 {
+		t.Fatalf("T-quick-3a should depend on 2 gen tasks, got %v", tasks[3].Dependencies)
+	}
+	depSetA := make(map[string]bool)
+	for _, d := range tasks[3].Dependencies {
+		depSetA[d] = true
+	}
+	if !depSetA["T-quick-2a-tui"] || !depSetA["T-quick-2a-api"] {
+		t.Errorf("T-quick-3a deps should include T-quick-2a-tui and T-quick-2a-api, got %v", tasks[3].Dependencies)
+	}
+
+	// Keys include profile and type
+	if tasks[1].Key != "quick-gen-scripts-web-playwright-tui" {
+		t.Errorf("tasks[1].Key = %q, want quick-gen-scripts-web-playwright-tui", tasks[1].Key)
+	}
+	if tasks[6].Key != "quick-gen-scripts-go-test-tui" {
+		t.Errorf("tasks[6].Key = %q, want quick-gen-scripts-go-test-tui", tasks[6].Key)
+	}
+
+	// T-quick-5 depends on both graduates
+	if len(tasks[10].Dependencies) != 2 {
+		t.Errorf("verify-regression should depend on 2 graduates, got %v", tasks[10].Dependencies)
+	}
+}
+
+func TestGetQuickTestTasks_PerType_SingleType(t *testing.T) {
+	tasks := GetQuickTestTasks([]string{"go-test"}, []string{"api"})
+
+	// Only api type -> one gen task
+	// gen-cases + 1 gen-scripts-api + run + graduate + verify-regression = 5
+	if len(tasks) != 5 {
+		t.Fatalf("expected 5 tasks, got %d", len(tasks))
+	}
+
+	wantIDs := []string{
+		"T-quick-1",
+		"T-quick-2-api",
+		"T-quick-3", "T-quick-4",
+		"T-quick-5",
+	}
+	for i, want := range wantIDs {
+		if tasks[i].ID != want {
+			t.Errorf("tasks[%d].ID = %q, want %q", i, tasks[i].ID, want)
+		}
+	}
+
+	// T-quick-3 depends on single gen task
+	if len(tasks[2].Dependencies) != 1 || tasks[2].Dependencies[0] != "T-quick-2-api" {
+		t.Errorf("T-quick-3 should depend on T-quick-2-api, got %v", tasks[2].Dependencies)
+	}
+}
+
+func TestGetQuickTestTasks_PerType_ThreeTypes(t *testing.T) {
+	tasks := GetQuickTestTasks([]string{"go-test"}, []string{"tui", "api", "cli"})
+
+	// gen-cases + 3 per-type-gen + run + graduate + verify-regression = 7
+	if len(tasks) != 7 {
+		t.Fatalf("expected 7 tasks, got %d", len(tasks))
+	}
+
+	// T-quick-3 depends on all 3 gen tasks
+	if len(tasks[4].Dependencies) != 3 {
+		t.Fatalf("T-quick-3 should depend on 3 gen tasks, got %v", tasks[4].Dependencies)
+	}
+	depSet := make(map[string]bool)
+	for _, d := range tasks[4].Dependencies {
+		depSet[d] = true
+	}
+	if !depSet["T-quick-2-tui"] || !depSet["T-quick-2-api"] || !depSet["T-quick-2-cli"] {
+		t.Errorf("T-quick-3 missing expected deps, got %v", tasks[4].Dependencies)
 	}
 }

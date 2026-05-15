@@ -36,7 +36,7 @@
       "dependencies": [
         "2"
       ],
-      "status": "completed",
+      "status": "blocked",
       "file": "3-update-breakdown-generation.md",
       "record": "records/3-update-breakdown-generation.md",
       "scope": "backend",
@@ -50,11 +50,23 @@
       "dependencies": [
         "2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-update-quick-generation.md",
       "record": "records/4-update-quick-generation.md",
       "scope": "backend",
       "type": "implementation"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "Fix: compile errors from testgen signature changes",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "pending",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "3",
+      "type": "fix"
     },
     "quick-gen-scripts-go-test": {
       "id": "T-quick-2",

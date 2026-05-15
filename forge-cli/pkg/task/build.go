@@ -371,7 +371,7 @@ func generateTestTasks(mode string, profiles []string, detectedTypes []string) [
 	case "breakdown":
 		return GetBreakdownTestTasks(profiles, detectedTypes)
 	case "quick":
-		return GetQuickTestTasks(profiles)
+		return GetQuickTestTasks(profiles, detectedTypes)
 	default:
 		return nil
 	}
