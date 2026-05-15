@@ -57,6 +57,10 @@ Score allocation logic: Runtime reliability (D1+D2+D3) = 700 pts (70%), Informat
 | Medium | -10 | Step ambiguity, conditional without else, content duplication, missing prerequisite check |
 | Low | -5 | Missing frontmatter field, name-directory mismatch, advisory-only prohibition |
 
+**Floor rule:** Each sub-criterion has a minimum score of 0. Total deductions for a sub-criterion cannot result in a negative score.
+
+**Cross-dimension deduction:** The same issue may be deducted in multiple dimensions if it violates independent criteria (e.g., an advisory-only HARD-RULE is both a D2 bypass vector and a D3 incomplete conditional). Bypass resistance (D2) and instruction precision (D3) are independent dimensions.
+
 ## Dimensions
 
 ### 1. Workflow Completeness (250 pts)
@@ -150,22 +154,27 @@ Assume you are a "lazy agent trying to cut corners" — test each node for bypas
 
 **Known Bypass Vectors (from manual audit — scorer should verify current state):**
 
-| Vector | Type | Severity | Description |
-|--------|------|----------|-------------|
-| BV-2.1 | T2 | HIGH | `forge task submit --force` bypasses compile/test/AC all validation |
-| BV-2.4 | T2 | HIGH | Agent can fake testsFailed: 0 in record.json (CLI does not verify number source) |
-| BV-3.1 | T3 | HIGH | Main session can skip scorer subagent and directly declare SCORE: 950 |
-| BV-3.2 | T3 | HIGH | Score parsing has no integrity check, main session can tamper with scorer return values |
-| BV-1.1 | T1 | MED | brainstorm user approval can be skipped (pure HARD-RULE) |
-| BV-1.2 | T1 | MED | write-prd user approval can be skipped |
-| BV-1.3 | T1 | MED | /quick user confirmation can be skipped |
-| BV-1.4 | T1 | MED | ui-design prototype review can be skipped |
-| BV-1.5 | T1 | MED | tech-design DB schema review can be skipped |
-| BV-1.7 | T1 | MED | consolidate-specs spec integration confirmation can be skipped |
-| BV-4.2 | T4 | MED | gen-test-scripts Step Actionability gate only triggers when eval report exists |
-| BV-4.5 | T4 | MED | placement validation depends on sitemap existence, skipped if absent |
-| BV-5.1 | T5 | LOW | Prohibition patterns (no mock/no sleep/no hardcoded URL) are purely advisory |
-| BV-5.2 | T5 | LOW | record.json metrics (coverage/testsPassed) are self-reported, no cross-verification |
+| Vector | Type | Severity | Class | Description |
+|--------|------|----------|-------|-------------|
+| BV-2.1 | T2 | HIGH | ARCHITECTURAL | `forge task submit --force` bypasses compile/test/AC all validation |
+| BV-2.4 | T2 | HIGH | ARCHITECTURAL | Agent can fake testsFailed: 0 in record.json (CLI does not verify number source) |
+| BV-3.1 | T3 | HIGH | ARCHITECTURAL | Main session can skip scorer subagent and directly declare SCORE: 950 |
+| BV-3.2 | T3 | HIGH | ARCHITECTURAL | Score parsing has no integrity check, main session can tamper with scorer return values |
+| BV-1.1 | T1 | MED | TEXT-FIXABLE | brainstorm user approval can be skipped (pure HARD-RULE) |
+| BV-1.2 | T1 | MED | TEXT-FIXABLE | write-prd user approval can be skipped |
+| BV-1.3 | T1 | MED | TEXT-FIXABLE | /quick user confirmation can be skipped |
+| BV-1.4 | T1 | MED | TEXT-FIXABLE | ui-design prototype review can be skipped |
+| BV-1.5 | T1 | MED | TEXT-FIXABLE | tech-design DB schema review can be skipped |
+| BV-1.7 | T1 | MED | TEXT-FIXABLE | consolidate-specs spec integration confirmation can be skipped |
+| BV-4.2 | T4 | MED | TEXT-FIXABLE | gen-test-scripts Step Actionability gate only triggers when eval report exists |
+| BV-4.5 | T4 | MED | TEXT-FIXABLE | placement validation depends on sitemap existence, skipped if absent |
+| BV-5.1 | T5 | LOW | ARCHITECTURAL | Prohibition patterns (no mock/no sleep/no hardcoded URL) are purely advisory |
+| BV-5.2 | T5 | LOW | ARCHITECTURAL | record.json metrics (coverage/testsPassed) are self-reported, no cross-verification |
+
+**Bypass classification for fix strategy:**
+
+- **ARCHITECTURAL**: Cannot be fixed by adding text to SKILL.md/command files. These require code-level changes (CLI enforcement, cryptographic verification, etc.). Score them and report them, but do NOT generate reviser fix tasks. Adding HARD-RULE text for architectural bypasses is counterproductive — it inflates context without changing agent behavior.
+- **TEXT-FIXABLE**: Can be mitigated by adding conditional branches, fallback paths, or actionable instructions. These are valid targets for the reviser.
 
 ### 3. Instruction Precision (200 pts)
 
@@ -193,21 +202,28 @@ Assume you are a "lazy agent trying to cut corners" — test each node for bypas
 
 **Three categories with different standards:**
 
+<PLUGIN-PORTABILITY>
+Forge is a Claude Code plugin deployed to users' projects. Plugin SKILL.md and command files run in arbitrary working directories. Cross-file relative paths (`../../`) won't resolve at runtime. Therefore:
+- Duplication that serves plugin portability is **acceptable and should NOT be deducted**.
+- Only deduct when dedup is feasible without breaking portability (e.g., content within the same skill directory, or in non-plugin project-level files like `.claude/skills/`).
+- guide.md cannot be referenced via relative path from plugin SKILL.md files. Inlining guide.md content in plugin files is a necessary trade-off.
+</PLUGIN-PORTABILITY>
+
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| 4a. Content copy | 0-60 | Identical/near-identical text blocks appearing in 3+ files. Known: (1) "Step 0: Resolve Profile" in 9 SKILL.md files ~8 lines identical; (2) Eval Iron Laws + Steps 2-4 across 6 eval skills ~60 lines identical; (3) Eval report shared sections in 5 report.md files ~42 lines identical. Instance = -10 each. |
-| 4b. guide.md vs SKILL.md overlap | 0-50 | guide.md is the single source of truth. SKILL.md copying guide.md content (quality gate sequence, scope resolution) should reference instead. Duplication = -10 each. |
-| 4c. Unreasonable inline | 0-40 | Content that has its own file but is also inlined in SKILL.md. Judgment: does the agent need to see the full content in a single context (reasonable inline) vs can it be obtained via Read tool on demand (should reference). Unreasonable inline = -10 each. |
+| 4a. Content copy | 0-60 | Identical/near-identical text blocks appearing in 3+ files. **Plugin portability exception:** Known instances (profile resolution in 9 files, eval protocol in 6 files, report sections in 5 files) serve plugin portability — flag as INFO but do NOT deduct. Only deduct when dedup is feasible within the same skill directory or in non-plugin files. Actionable instance = -10 each. |
+| 4b. guide.md vs SKILL.md overlap | 0-50 | guide.md is the single source of truth. **But plugin files cannot reference guide.md via relative paths** — they must inline the content. Only deduct for non-plugin files or when referencing is feasible. Actionable duplication = -10 each. |
+| 4c. Unreasonable inline | 0-40 | Content that has its own file but is also inlined in SKILL.md. Judgment: does the agent need to see the full content in a single context (reasonable inline) vs can it be obtained via Read tool on demand (should reference). **Plugin portability:** inlining content from outside the skill directory is reasonable when the alternative (relative path reference) would break at runtime. Unreasonable inline = -10 each. |
 
 **Known Redundancy Instances:**
 
-| Instance | Category | Files | Lines |
-|----------|----------|-------|-------|
-| "Step 0: Resolve Profile" | A | 9 SKILL.md files | ~90 total |
-| Eval Iron Laws + Steps 2-4 | A | 6 eval SKILL.md | ~360 total |
-| Eval report shared sections | A | 5 report.md | ~210 total |
-| Quality gate sequence | B | guide.md, submit-task, fix-bug | ~12 |
-| Scope resolution paraphrase | B | init-justfile SKILL.md | ~4 |
+| Instance | Category | Portability-Required? | Deduct? |
+|----------|----------|----------------------|---------|
+| "Step 0: Resolve Profile" | A | YES (9 plugin SKILL.md files) | NO |
+| Eval Iron Laws + Steps 2-4 | A | YES (6 plugin eval SKILL.md files) | NO |
+| Eval report shared sections | A | YES (5 plugin report.md files) | NO |
+| Quality gate sequence | B | YES (plugin skills need it inline) | NO |
+| Scope resolution paraphrase | B | Partial | Only if in non-plugin file |
 
 ### 5. Reference Integrity (100 pts)
 

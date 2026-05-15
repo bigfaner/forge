@@ -50,7 +50,7 @@ flowchart TD
 
 <EXTREMELY-IMPORTANT>
 1. Main session controls the loop — NEVER delegate the entire audit to a single agent
-2. Only 3 actions per iteration: scan → score → gate → fix
+2. Main session owns the loop: scan → score → gate → classify → fix (Steps 1-5)
 3. Gate (Step 3) runs in main session — never inside a subagent
 4. Scorer and reviser use `general-purpose` agent type with specialized prompts — do NOT use `forge:doc-scorer` or `forge:doc-reviser`
 5. The scorer receives NO hints about what was fixed. It audits the plugin as-is.
@@ -80,8 +80,8 @@ Gather the full plugin structure for the scorer:
 2. List `plugins/forge/commands/` files
 3. List `plugins/forge/agents/` files
 4. Read `plugins/forge/.claude-plugin/plugin.json`
-5. Run `forge -h` to capture available CLI commands
-6. For each `forge <cmd>`, run `forge <cmd> -h` to capture flags
+5. Run `forge -h` to capture available CLI commands. If forge CLI is not installed, note this and skip CLI verification.
+6. For each `forge <cmd>`, run `forge <cmd> -h` to capture flags (skip if forge unavailable)
 7. Read `plugins/forge/hooks/guide.md`
 8. Scan all template files under `plugins/forge/skills/*/templates/*`
 
@@ -142,6 +142,9 @@ For each attack point, classify fixability:
 | Missing eval template             | eval-\* missing rubric.md or report.md | No — requires content creation      |
 | Missing Iron Laws                 | eval-\* missing orchestrator section   | Partial — requires domain knowledge |
 | Dangling guide reference          | guide.md references non-existent skill | Yes — remove or update reference    |
+| D2 ARCHITECTURAL bypass           | Scorer marks `[ARCHITECTURAL]`         | No — requires code-level change     |
+
+Skip `[ARCHITECTURAL]` D2 bypasses — they are scored and reported but cannot be fixed by text changes. Only pass `[TEXT-FIXABLE]` D2 bypasses to the reviser.
 
 ## Step 5: Invoke Reviser (Custom Subagent)
 

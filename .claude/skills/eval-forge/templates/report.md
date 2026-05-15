@@ -68,19 +68,9 @@ evaluator: Claude (structural audit)
 
 ## Attack Points
 
-### Attack 1: [dimension — specific issue]
+<!-- For each finding, create an Attack N section. No limit on count. -->
 
-**Where**: <!-- file path and location -->
-**What's wrong**: <!-- concrete description -->
-**How to fix**: <!-- actionable fix -->
-
-### Attack 2: [dimension — specific issue]
-
-**Where**: <!-- file path and location -->
-**What's wrong**: <!-- concrete description -->
-**How to fix**: <!-- actionable fix -->
-
-### Attack 3: [dimension — specific issue]
+### Attack {{N}}: [dimension — specific issue] <!-- D2 attacks: include [ARCHITECTURAL] or [TEXT-FIXABLE] -->
 
 **Where**: <!-- file path and location -->
 **What's wrong**: <!-- concrete description -->

@@ -27,20 +27,22 @@ You are a harsh runtime reliability auditor. Your job is to find every workflow 
 
 Read Go source code for behavioral alignment — these files provide ground truth for verifying that SKILL.md descriptions match actual CLI behavior:
 
+**Key files to read** (read all that exist under `task-cli/internal/cmd/*.go` and `task-cli/pkg/task/*.go`):
+
 | Source File | Purpose | Relevant Dimensions |
 |-------------|---------|---------------------|
-| `task-cli/internal/cmd/claim.go` | Task claiming priority and scheduling | D1: workflow; D5: reference accuracy |
 | `task-cli/internal/cmd/record.go` | Recording validation, auto-downgrade, quality gate | D2: bypass resistance; D5: reference accuracy |
 | `task-cli/internal/cmd/status.go` | State machine transitions and guards | D1: manifest status machine; D5: reference accuracy |
-| `task-cli/internal/cmd/all_completed.go` | All-completed hook logic | D1: workflow chain; D5: reference accuracy |
-| `task-cli/internal/cmd/add.go` | Dynamic task addition, ID generation | D1: workflow; D5: reference accuracy |
 | `task-cli/pkg/task/types.go` | Data model, status/priority enums | D1: manifest status machine; D5: reference accuracy |
-| `task-cli/internal/cmd/validate.go` | Validation rules for index.json | D5: reference accuracy |
 | `plugins/forge/skills/breakdown-tasks/templates/index.schema.json` | JSON schema | D5: reference accuracy |
+
+Other `task-cli/internal/cmd/*.go` files (claim, add, all_completed, validate, etc.) provide additional workflow alignment — read them as needed for the specific criteria being evaluated.
 
 Also run:
 - `forge -h` to get command list
 - `forge <cmd> -h` for each command to verify flags
+
+If `forge` CLI is not installed/buildable, skip CLI verification and note "CLI verification skipped — forge not available" in the report. Proceed with static analysis of SKILL.md/command files only.
 
 ---
 
@@ -106,7 +108,13 @@ Also run:
 - **2d. Required step enforcement** (0-35): Do conditional requirements (db-schema, placement, sitemap) have downstream verification? No verification = -10 each.
 - **2e. Prohibition enforcement** (0-30): Does each HARD-RULE prohibition (no mock, no sleep, no hardcoded URL) have a mechanical check? Purely advisory = -5 each.
 
-**Known Bypass Vectors:** The rubric's Dimension 2 lists known bypass vectors from a prior manual audit. Verify each one's current state — some may have been fixed since the audit. Do not deduct for vectors that no longer exist.
+**Known Bypass Vectors:** The rubric's Dimension 2 lists known bypass vectors from a prior manual audit. Verify each one's current state — some may have been fixed since the audit. Do not deduct for vectors that no longer exist. After verifying known vectors, perform a fresh pass looking for bypass vectors NOT in the known list — the known list is a starting point, not an exhaustive catalog.
+
+**Bypass Classification:** For each bypass vector found, classify it:
+- **ARCHITECTURAL**: Cannot be fixed by adding text. Requires code-level changes. Deduct the score, report the issue, but mark it as `ARCHITECTURAL` in the ATTACKS section so the reviser will NOT attempt to fix it.
+- **TEXT-FIXABLE**: Can be mitigated by adding conditional branches, fallback paths, or actionable instructions in SKILL.md/command files. Mark as `TEXT-FIXABLE` in ATTACKS — these are valid reviser targets.
+
+In the ATTACKS output, prefix each D2 attack with `[ARCHITECTURAL]` or `[TEXT-FIXABLE]`.
 
 ---
 
@@ -156,10 +164,13 @@ Find identical or near-identical text blocks appearing in 3+ files. Known instan
 - "Step 0: Resolve Profile" across 9 SKILL.md files
 - Eval Iron Laws + Steps 2-4 across 6 eval SKILL.md files
 - Eval report shared sections across 5 report.md files
-Instance = -10 each.
+
+**Plugin portability exception:** Some duplication in plugin files is necessary because the plugin runs in users' projects where cross-file relative paths (`../../`) won't resolve. For plugin SKILL.md/command files, duplication that serves portability should be flagged as INFO but NOT deducted unless the content could reasonably be deduplicated within the same skill directory.
+
+Instance = -10 each (deduct only when dedup is feasible without breaking portability).
 
 **4b. guide.md vs SKILL.md overlap (0-50):**
-guide.md is the single source of truth. If SKILL.md copies content that guide.md already covers (quality gate sequence, scope resolution), it should reference guide.md instead. Duplication = -10 each.
+guide.md is the single source of truth. If SKILL.md copies content that guide.md already covers (quality gate sequence, scope resolution), it should ideally reference guide.md instead. **However**, plugin files cannot use `../../hooks/guide.md` relative paths because the plugin runs in users' projects. Only deduct when: (a) the content is in a non-plugin file (e.g., `.claude/skills/` project-level skills), OR (b) the skill could reference guide.md without crossing directory boundaries. Duplication that exists for plugin portability = -0. Actionable duplication = -10 each.
 
 **4c. Unreasonable inline (0-40):**
 Content that has its own dedicated file but is also fully inlined in SKILL.md. Judgment criteria: does the agent need to see the full content in a single context window (reasonable inline) vs can it use the Read tool to fetch on demand (should be a reference). Unreasonable inline = -10 each.
@@ -226,6 +237,7 @@ DIMENSIONS:
      6b. Eval templates: {{score}}/15
      6c. Name alignment: {{score}}/10
 ATTACKS:
+  <!-- D2 attacks MUST be prefixed with [ARCHITECTURAL] or [TEXT-FIXABLE] -->
   D1. [criterion — specific issue]: {{one-line description}} | File: {{path}}
   D2. [criterion — bypass vector]: {{one-line description}} | File: {{path}}
   D3. [criterion — conflict/ambiguity]: {{one-line description}} | File: {{path}}
