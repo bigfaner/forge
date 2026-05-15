@@ -1,7 +1,8 @@
 ---
 created: 2026-05-14
 author: "faner"
-status: Draft
+status: Superseded
+superseded-by: reject-clean-code-task
 ---
 
 # Proposal: Add Clean Code Task to Forge Task Pipeline
