@@ -8,7 +8,7 @@
       "title": "Remove text-verification e2e tests",
       "priority": "P1",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "1-delete-text-verification-tests.md",
       "record": "records/1-delete-text-verification-tests.md",
       "scope": "backend",
