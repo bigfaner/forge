@@ -190,7 +190,7 @@ func quickSlimReadIndex(t *testing.T, dir, slug string) quickSlimIndex {
 func quickSlimAddBusinessTask(t *testing.T, dir, slug string) {
 	t.Helper()
 	tasksDir := filepath.Join(dir, "docs", "features", slug, "tasks")
-	taskMD := "---\nid: \"1\"\ntitle: \"Implement feature\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"implementation\"\nscope: \"all\"\n---\n\n# Implement feature\n"
+	taskMD := "---\nid: \"1\"\ntitle: \"Implement feature\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"feature\"\nscope: \"all\"\n---\n\n# Implement feature\n"
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "1-implement.md"), []byte(taskMD), 0644))
 }
 
@@ -390,7 +390,7 @@ func TestTC_007_BreakdownModeUnchangedByQuickMerge(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(forgeDir, "config.yaml"),
 		[]byte("test-profiles:\n  - go-test\n"), 0644))
 
-	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"implementation\"\nscope: \"all\"\n---\n\n# Task One\n"
+	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"feature\"\nscope: \"all\"\n---\n\n# Task One\n"
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "1-task-one.md"), []byte(taskMD), 0644))
 
 	bin := quickSlimBin(t)

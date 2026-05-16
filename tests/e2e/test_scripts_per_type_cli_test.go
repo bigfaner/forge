@@ -189,7 +189,7 @@ func TestTC_001_TaskIndexCreatesPerTypeTasksForMultiType(t *testing.T) {
 
 	// Create a business task so index has content
 	tasksDir := filepath.Join(dir, "docs", "features", "multi-type-feat", "tasks")
-	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"implementation\"\nscope: \"all\"\n---\n\n# Task One\n"
+	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"feature\"\nscope: \"all\"\n---\n\n# Task One\n"
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "1-task-one.md"), []byte(taskMD), 0644))
 
 	bin := forgeBin(t)
@@ -219,7 +219,7 @@ func TestTC_002_TaskIndexPerTypeTasksHaveCorrectType(t *testing.T) {
 	dir := setupFeatureProject(t, "type-check-feat", true, []string{"go-test"}, multiTypeTestCases)
 
 	tasksDir := filepath.Join(dir, "docs", "features", "type-check-feat", "tasks")
-	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"implementation\"\nscope: \"all\"\n---\n\n# Task One\n"
+	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"feature\"\nscope: \"all\"\n---\n\n# Task One\n"
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "1-task-one.md"), []byte(taskMD), 0644))
 
 	bin := forgeBin(t)
@@ -247,7 +247,7 @@ func TestTC_003_TaskIndexSingleTypeCreatesOneGenTask(t *testing.T) {
 	dir := setupFeatureProject(t, "single-type-feat", true, []string{"go-test"}, singleTypeTestCases)
 
 	tasksDir := filepath.Join(dir, "docs", "features", "single-type-feat", "tasks")
-	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"implementation\"\nscope: \"all\"\n---\n\n# Task One\n"
+	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"feature\"\nscope: \"all\"\n---\n\n# Task One\n"
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "1-task-one.md"), []byte(taskMD), 0644))
 
 	bin := forgeBin(t)
@@ -278,7 +278,7 @@ func TestTC_004_TaskIndexWithoutTestCasesFallsBackToLegacy(t *testing.T) {
 	dir := setupFeatureProject(t, "no-types-feat", true, []string{"go-test"}, "")
 
 	tasksDir := filepath.Join(dir, "docs", "features", "no-types-feat", "tasks")
-	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"implementation\"\nscope: \"all\"\n---\n\n# Task One\n"
+	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"feature\"\nscope: \"all\"\n---\n\n# Task One\n"
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "1-task-one.md"), []byte(taskMD), 0644))
 
 	bin := forgeBin(t)
@@ -307,7 +307,7 @@ func TestTC_005_TaskIndexZeroTypeTestCasesFallsBackToLegacy(t *testing.T) {
 	dir := setupFeatureProject(t, "zero-types-feat", true, []string{"go-test"}, noTypeTestCases)
 
 	tasksDir := filepath.Join(dir, "docs", "features", "zero-types-feat", "tasks")
-	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"implementation\"\nscope: \"all\"\n---\n\n# Task One\n"
+	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"feature\"\nscope: \"all\"\n---\n\n# Task One\n"
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "1-task-one.md"), []byte(taskMD), 0644))
 
 	bin := forgeBin(t)
@@ -332,7 +332,7 @@ func TestTC_006_TaskIndexRunDependsOnAllPerTypeGenTasks(t *testing.T) {
 	dir := setupFeatureProject(t, "deps-feat", true, []string{"go-test"}, multiTypeTestCases)
 
 	tasksDir := filepath.Join(dir, "docs", "features", "deps-feat", "tasks")
-	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"implementation\"\nscope: \"all\"\n---\n\n# Task One\n"
+	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"feature\"\nscope: \"all\"\n---\n\n# Task One\n"
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "1-task-one.md"), []byte(taskMD), 0644))
 
 	bin := forgeBin(t)
@@ -367,7 +367,7 @@ func TestTC_007_TaskIndexMultiProfilePerTypeTasks(t *testing.T) {
 	dir := setupFeatureProject(t, "multi-prof-feat", true, []string{"web-playwright", "go-test"}, multiTypeTestCases)
 
 	tasksDir := filepath.Join(dir, "docs", "features", "multi-prof-feat", "tasks")
-	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"implementation\"\nscope: \"all\"\n---\n\n# Task One\n"
+	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"feature\"\nscope: \"all\"\n---\n\n# Task One\n"
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "1-task-one.md"), []byte(taskMD), 0644))
 
 	bin := forgeBin(t)
@@ -421,7 +421,7 @@ func TestTC_008_TaskIndexQuickModePerTypeTasks(t *testing.T) {
 	dir := setupFeatureProject(t, "quick-type-feat", false, []string{"go-test"}, multiTypeTestCases)
 
 	tasksDir := filepath.Join(dir, "docs", "features", "quick-type-feat", "tasks")
-	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"implementation\"\nscope: \"all\"\n---\n\n# Task One\n"
+	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"feature\"\nscope: \"all\"\n---\n\n# Task One\n"
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "1-task-one.md"), []byte(taskMD), 0644))
 
 	bin := forgeBin(t)
@@ -459,7 +459,7 @@ func TestTC_009_PerTypeGenScriptsMdContainsTestType(t *testing.T) {
 	dir := setupFeatureProject(t, "type-md-feat", true, []string{"go-test"}, multiTypeTestCases)
 
 	tasksDir := filepath.Join(dir, "docs", "features", "type-md-feat", "tasks")
-	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"implementation\"\nscope: \"all\"\n---\n\n# Task One\n"
+	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"feature\"\nscope: \"all\"\n---\n\n# Task One\n"
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "1-task-one.md"), []byte(taskMD), 0644))
 
 	bin := forgeBin(t)
@@ -500,7 +500,7 @@ func TestTC_010_TaskIndexPerTypeIdempotent(t *testing.T) {
 	dir := setupFeatureProject(t, "idempotent-feat", true, []string{"go-test"}, multiTypeTestCases)
 
 	tasksDir := filepath.Join(dir, "docs", "features", "idempotent-feat", "tasks")
-	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"implementation\"\nscope: \"all\"\n---\n\n# Task One\n"
+	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"feature\"\nscope: \"all\"\n---\n\n# Task One\n"
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "1-task-one.md"), []byte(taskMD), 0644))
 
 	bin := forgeBin(t)
@@ -536,7 +536,7 @@ func TestTC_011_PerTypeGenScriptsMdHasCorrectTaskIDs(t *testing.T) {
 	dir := setupFeatureProject(t, "tid-feat", true, []string{"go-test"}, multiTypeTestCases)
 
 	tasksDir := filepath.Join(dir, "docs", "features", "tid-feat", "tasks")
-	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"implementation\"\nscope: \"all\"\n---\n\n# Task One\n"
+	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"feature\"\nscope: \"all\"\n---\n\n# Task One\n"
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "1-task-one.md"), []byte(taskMD), 0644))
 
 	bin := forgeBin(t)
@@ -569,7 +569,7 @@ func TestTC_012_TaskIndexSharedInfrastructureNotDuplicated(t *testing.T) {
 	dir := setupFeatureProject(t, "shared-feat", true, []string{"go-test"}, multiTypeTestCases)
 
 	tasksDir := filepath.Join(dir, "docs", "features", "shared-feat", "tasks")
-	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"implementation\"\nscope: \"all\"\n---\n\n# Task One\n"
+	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"feature\"\nscope: \"all\"\n---\n\n# Task One\n"
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "1-task-one.md"), []byte(taskMD), 0644))
 
 	bin := forgeBin(t)
