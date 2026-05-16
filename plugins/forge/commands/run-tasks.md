@@ -38,13 +38,10 @@ flowchart TD
 
 ### Step 0: Set Active Feature
 
-Before the first claim, ensure `.forge/state.json` points to the correct feature:
+Runs **once** before the claim loop.
 
 1. Determine the feature slug from the current context (proposal directory, manifest, or user input).
-2. Run `forge feature set <slug>` to write the correct feature to `.forge/state.json`.
-3. Verify: `forge feature` should output `FEATURE: <slug>`.
-
-This step runs **once** before the claim loop starts, not on every iteration.
+2. Run `forge feature set <slug>`. On success (exit code 0), proceed to Step 1.
 
 ### Step 1: Claim Task
 
