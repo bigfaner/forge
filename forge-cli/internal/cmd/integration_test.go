@@ -29,11 +29,11 @@ type SetupOpts struct {
 
 // setupFullProject creates a fully configured test project.
 //
-// By default (UseEnvVar=false) it creates go.mod, feature dirs, index.json,
-// task markdown files, records dir, then chdirs and calls feature.SetFeature.
+// Always sets CLAUDE_PROJECT_DIR for isolation (FindProjectRoot resolves to temp dir
+// regardless of host environment). The UseEnvVar flag controls additional setup:
 //
-// When UseEnvVar=true it instead sets CLAUDE_PROJECT_DIR (no go.mod, no chdir),
-// suitable for tests that call project.FindProjectRoot via env-var path.
+// UseEnvVar=false (default): also creates go.mod, chdirs, and calls feature.SetFeature.
+// UseEnvVar=true: skips go.mod/chdir (env var alone is sufficient).
 func setupFullProject(t *testing.T, opts SetupOpts) (dir string) {
 	t.Helper()
 	dir = t.TempDir()
@@ -43,10 +43,12 @@ func setupFullProject(t *testing.T, opts SetupOpts) (dir string) {
 		featureName = "test"
 	}
 
-	if opts.UseEnvVar {
-		t.Setenv("CLAUDE_PROJECT_DIR", dir)
-	} else {
-		// go.mod marks project root
+	// Always set env var for isolation — prevents FindProjectRoot from resolving
+	// to the real project when CLAUDE_PROJECT_DIR is set in the host environment.
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+
+	if !opts.UseEnvVar {
+		// go.mod marks project root (backup isolation if env var is cleared)
 		if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n\ngo 1.21\n"), 0644); err != nil {
 			t.Fatal(err)
 		}

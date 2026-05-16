@@ -320,6 +320,9 @@ func TestClaimCommand_Integration(t *testing.T) {
 	t.Run("setup and validate task state", func(t *testing.T) {
 		dir := t.TempDir()
 
+		// Force FindProjectRoot to resolve to temp dir
+		t.Setenv("CLAUDE_PROJECT_DIR", dir)
+
 		// Create feature structure
 		featureDir := filepath.Join(dir, feature.FeaturesDir, "test-feature")
 		tasksDir := filepath.Join(featureDir, feature.TasksDirName)

@@ -422,10 +422,11 @@ func TestGenerateAutoID_FixPrefix(t *testing.T) {
 
 func TestApplyVars(t *testing.T) {
 	tests := []struct {
-		name     string
-		tmpl     string
-		opts     AddTaskOpts
-		expected string
+		name      string
+		tmpl      string
+		opts      AddTaskOpts
+		expected  string
+		wantError bool
 	}{
 		{
 			name:     "builtin ID and TITLE",
@@ -446,10 +447,10 @@ func TestApplyVars(t *testing.T) {
 			expected: "overridden",
 		},
 		{
-			name:     "missing var left as-is",
-			tmpl:     "keep {{UNKNOWN}} placeholder",
-			opts:     AddTaskOpts{},
-			expected: "keep {{UNKNOWN}} placeholder",
+			name:      "missing var returns error",
+			tmpl:      "keep {{UNKNOWN}} placeholder",
+			opts:      AddTaskOpts{},
+			wantError: true,
 		},
 		{
 			name:     "no placeholders",
@@ -479,7 +480,16 @@ func TestApplyVars(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := ApplyVars(tt.tmpl, tt.opts)
+			result, err := ApplyVars(tt.tmpl, tt.opts)
+			if tt.wantError {
+				if err == nil {
+					t.Fatal("ApplyVars() expected error, got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("ApplyVars() error = %v", err)
+			}
 			if result != tt.expected {
 				t.Errorf("ApplyVars() = %q, want %q", result, tt.expected)
 			}

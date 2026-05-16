@@ -452,6 +452,7 @@ func TestCheckDependenciesMet_UnknownDependency(t *testing.T) {
 func TestExecuteClaim(t *testing.T) {
 	// Setup test project structure
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 
 	// Create go.mod to simulate project root
 	goMod := filepath.Join(dir, "go.mod")
@@ -590,6 +591,7 @@ func TestClaimNextTask_NonNumericBlocked(t *testing.T) {
 
 func TestExecuteClaim_CreatesForgeState(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 
 	// Create go.mod to simulate project root
 	goMod := filepath.Join(dir, "go.mod")
@@ -650,6 +652,7 @@ func TestExecuteClaim_CreatesForgeState(t *testing.T) {
 func TestExecuteClaim_Continue(t *testing.T) {
 	// Setup test project structure
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 
 	// Create go.mod to simulate project root
 	goMod := filepath.Join(dir, "go.mod")
@@ -728,6 +731,7 @@ func TestExecuteClaim_Continue(t *testing.T) {
 
 func TestExecuteClaim_ScopePropagatedToState(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 	_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n\ngo 1.21\n"), 0644)
 	if err := feature.EnsureFeatureDir(dir, "test-feature"); err != nil {
 		t.Fatal(err)
@@ -777,6 +781,7 @@ func TestExecuteClaim_ScopePropagatedToState(t *testing.T) {
 
 func TestExecuteClaim_ScopeEmptyWhenNotSet(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 	_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n\ngo 1.21\n"), 0644)
 	if err := feature.EnsureFeatureDir(dir, "test-feature"); err != nil {
 		t.Fatal(err)
@@ -893,6 +898,7 @@ func TestPrintTaskDetails_ScopeInOutput(t *testing.T) {
 
 func TestExecuteClaim_TypePropagatedToState(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 	_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n\ngo 1.21\n"), 0644)
 	if err := feature.EnsureFeatureDir(dir, "test-feature"); err != nil {
 		t.Fatal(err)
@@ -940,6 +946,7 @@ func TestExecuteClaim_TypePropagatedToState(t *testing.T) {
 
 func TestExecuteClaim_TypeEmptyWhenNotSet(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 	_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n\ngo 1.21\n"), 0644)
 	if err := feature.EnsureFeatureDir(dir, "test-feature"); err != nil {
 		t.Fatal(err)
@@ -1039,4 +1046,169 @@ func TestClaimNextTask_RejectedNotClaimable(t *testing.T) {
 	if err == nil {
 		t.Error("should error when only rejected tasks exist")
 	}
+}
+
+// --- Fix task blocking scenarios ---
+
+func TestCheckDependenciesMet_PendingFixTaskBlocks(t *testing.T) {
+	t.Run("pending fix task blocks downstream", func(t *testing.T) {
+		// Task 4 depends on task 3 (completed). Fix-1 (sourceTaskID: "3") is pending.
+		// Task 4 should NOT be eligible.
+		index := &task.TaskIndex{Feature: "test"}
+		index.SetTasks(map[string]task.Task{
+			"3":     {ID: "3", Status: "completed"},
+			"4":     {ID: "4", Status: "pending", Dependencies: []string{"3"}},
+			"fix-1": {ID: "fix-1", Status: "pending", SourceTaskID: "3", Type: "fix"},
+		})
+		met, unmet := checkDependenciesMet(index, "4", index.TasksMap()["4"])
+		if met {
+			t.Error("should be blocked by pending fix task for dependency")
+		}
+		if len(unmet) == 0 {
+			t.Error("expected unmet dependencies")
+		}
+	})
+
+	t.Run("completed fix task does not block", func(t *testing.T) {
+		// Fix-1 is completed, so task 4 should be eligible.
+		index := &task.TaskIndex{Feature: "test"}
+		index.SetTasks(map[string]task.Task{
+			"3":     {ID: "3", Status: "completed"},
+			"4":     {ID: "4", Status: "pending", Dependencies: []string{"3"}},
+			"fix-1": {ID: "fix-1", Status: "completed", SourceTaskID: "3", Type: "fix"},
+		})
+		met, _ := checkDependenciesMet(index, "4", index.TasksMap()["4"])
+		if !met {
+			t.Error("should not be blocked by completed fix task")
+		}
+	})
+
+	t.Run("unrelated fix task does not block", func(t *testing.T) {
+		// Fix-1 has sourceTaskID "2", but task 4 depends on task 3. Should be eligible.
+		index := &task.TaskIndex{Feature: "test"}
+		index.SetTasks(map[string]task.Task{
+			"3":     {ID: "3", Status: "completed"},
+			"4":     {ID: "4", Status: "pending", Dependencies: []string{"3"}},
+			"fix-1": {ID: "fix-1", Status: "pending", SourceTaskID: "2", Type: "fix"},
+		})
+		met, _ := checkDependenciesMet(index, "4", index.TasksMap()["4"])
+		if !met {
+			t.Error("unrelated fix task should not block")
+		}
+	})
+
+	t.Run("in_progress fix task also blocks", func(t *testing.T) {
+		// Fix-1 is in_progress, should still block.
+		index := &task.TaskIndex{Feature: "test"}
+		index.SetTasks(map[string]task.Task{
+			"3":     {ID: "3", Status: "completed"},
+			"4":     {ID: "4", Status: "pending", Dependencies: []string{"3"}},
+			"fix-1": {ID: "fix-1", Status: "in_progress", SourceTaskID: "3", Type: "fix"},
+		})
+		met, _ := checkDependenciesMet(index, "4", index.TasksMap()["4"])
+		if met {
+			t.Error("in_progress fix task should block")
+		}
+	})
+
+	t.Run("multiple fix tasks must all complete", func(t *testing.T) {
+		// Both fix-1 and fix-2 have sourceTaskID "3". Task 4 blocked until both done.
+		index := &task.TaskIndex{Feature: "test"}
+		index.SetTasks(map[string]task.Task{
+			"3":     {ID: "3", Status: "completed"},
+			"4":     {ID: "4", Status: "pending", Dependencies: []string{"3"}},
+			"fix-1": {ID: "fix-1", Status: "completed", SourceTaskID: "3", Type: "fix"},
+			"fix-2": {ID: "fix-2", Status: "pending", SourceTaskID: "3", Type: "fix"},
+		})
+		met, _ := checkDependenciesMet(index, "4", index.TasksMap()["4"])
+		if met {
+			t.Error("should be blocked while fix-2 is still pending")
+		}
+	})
+
+	t.Run("all fix tasks completed unblocks", func(t *testing.T) {
+		index := &task.TaskIndex{Feature: "test"}
+		index.SetTasks(map[string]task.Task{
+			"3":     {ID: "3", Status: "completed"},
+			"4":     {ID: "4", Status: "pending", Dependencies: []string{"3"}},
+			"fix-1": {ID: "fix-1", Status: "completed", SourceTaskID: "3", Type: "fix"},
+			"fix-2": {ID: "fix-2", Status: "completed", SourceTaskID: "3", Type: "fix"},
+		})
+		met, _ := checkDependenciesMet(index, "4", index.TasksMap()["4"])
+		if !met {
+			t.Error("should be eligible when all fix tasks completed")
+		}
+	})
+
+	t.Run("no fix tasks - existing behavior unchanged", func(t *testing.T) {
+		index := &task.TaskIndex{Feature: "test"}
+		index.SetTasks(map[string]task.Task{
+			"3": {ID: "3", Status: "completed"},
+			"4": {ID: "4", Status: "pending", Dependencies: []string{"3"}},
+		})
+		met, _ := checkDependenciesMet(index, "4", index.TasksMap()["4"])
+		if !met {
+			t.Error("without fix tasks, completed dependency should be met")
+		}
+	})
+
+	t.Run("fix task without sourceTaskID does not block", func(t *testing.T) {
+		// Fix task without sourceTaskID should not affect behavior.
+		index := &task.TaskIndex{Feature: "test"}
+		index.SetTasks(map[string]task.Task{
+			"3":     {ID: "3", Status: "completed"},
+			"4":     {ID: "4", Status: "pending", Dependencies: []string{"3"}},
+			"fix-1": {ID: "fix-1", Status: "pending", Type: "fix"},
+		})
+		met, _ := checkDependenciesMet(index, "4", index.TasksMap()["4"])
+		if !met {
+			t.Error("fix task without sourceTaskID should not block")
+		}
+	})
+}
+
+func TestClaimNextTask_FixTaskClaimedBeforeBusiness(t *testing.T) {
+	t.Run("fix task claimed when coexisting with blocked business task", func(t *testing.T) {
+		// Task 3 completed. Fix-1 (sourceTaskID: "3") is pending. Task 4 depends on task 3.
+		// Fix-1 should be claimed, not task 4 (because task 4 is blocked by fix-1).
+		index := &task.TaskIndex{
+			StatusEnum:   []string{"pending", "in_progress", "completed"},
+			PriorityEnum: []string{"P0", "P1", "P2"},
+		}
+		index.SetTasks(map[string]task.Task{
+			"3":     {ID: "3", Status: "completed", Priority: "P0"},
+			"fix-1": {ID: "fix-1", Status: "pending", Priority: "P0", SourceTaskID: "3", Type: "fix", Dependencies: []string{}},
+			"4":     {ID: "4", Status: "pending", Priority: "P0", Dependencies: []string{"3"}},
+		})
+		key, _, err := claimNextTask(index)
+		if err != nil {
+			t.Fatalf("claimNextTask() error = %v", err)
+		}
+		if key != "fix-1" {
+			t.Errorf("expected fix-1 to be claimed, got %q", key)
+		}
+	})
+
+	t.Run("fix chain blocks until all complete", func(t *testing.T) {
+		// Task 3 completed. Fix-1 (sourceTaskID: "3") completed.
+		// Fix-2 (sourceTaskID: "3") pending. Task 4 depends on task 3.
+		// Fix-2 should be claimed first.
+		index := &task.TaskIndex{
+			StatusEnum:   []string{"pending", "in_progress", "completed"},
+			PriorityEnum: []string{"P0", "P1", "P2"},
+		}
+		index.SetTasks(map[string]task.Task{
+			"3":     {ID: "3", Status: "completed", Priority: "P0"},
+			"fix-1": {ID: "fix-1", Status: "completed", Priority: "P0", SourceTaskID: "3", Type: "fix"},
+			"fix-2": {ID: "fix-2", Status: "pending", Priority: "P0", SourceTaskID: "3", Type: "fix", Dependencies: []string{}},
+			"4":     {ID: "4", Status: "pending", Priority: "P0", Dependencies: []string{"3"}},
+		})
+		key, _, err := claimNextTask(index)
+		if err != nil {
+			t.Fatalf("claimNextTask() error = %v", err)
+		}
+		if key != "fix-2" {
+			t.Errorf("expected fix-2 to be claimed, got %q", key)
+		}
+	})
 }

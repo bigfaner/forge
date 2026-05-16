@@ -265,6 +265,18 @@ func checkDependenciesMet(index *task.TaskIndex, selfID string, t task.Task) (bo
 			}
 		}
 	}
+	// Check for pending fix tasks whose SourceTaskID matches any dependency.
+	// If task depends on X and a fix task with sourceTaskID "X" is still
+	// pending/in_progress, the dependency is not truly met.
+	for _, dep := range t.Dependencies {
+		for _, other := range index.TasksMap() {
+			if other.ID != selfID && other.Type == "fix" && other.SourceTaskID == dep &&
+				(other.Status == "pending" || other.Status == "in_progress") {
+				unmet = append(unmet, other.ID)
+			}
+		}
+	}
+
 	return len(unmet) == 0, unmet
 }
 

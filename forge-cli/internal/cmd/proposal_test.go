@@ -15,6 +15,7 @@ import (
 
 func TestProposalList_Empty(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644))
 
 	origWd, err := os.Getwd()
@@ -33,6 +34,7 @@ func TestProposalList_Empty(t *testing.T) {
 
 func TestProposalList_WithProposals(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644))
 
 	// Create two proposals
@@ -60,6 +62,7 @@ func TestProposalList_WithProposals(t *testing.T) {
 
 func TestProposalList_SortedByCreatedDescending(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644))
 
 	// Create proposals with different dates (lexicographic order differs from date order)
@@ -108,6 +111,7 @@ func TestProposalList_SortedByCreatedDescending(t *testing.T) {
 
 func TestProposalDetail_Found(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644))
 
 	slug := "test-proposal"
@@ -135,6 +139,7 @@ func TestProposalDetail_Found(t *testing.T) {
 
 func TestProposalDetail_WithPRDAndFeature(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644))
 
 	slug := "full-proposal"
