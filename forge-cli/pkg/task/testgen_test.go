@@ -3,10 +3,15 @@ package task
 import (
 	"strings"
 	"testing"
+
+	"forge-cli/pkg/profile"
 )
 
+// defaultAuto is the backward-compatible default for tests that expect pre-auto behavior.
+var defaultAuto = profile.AutoConfigDefaults()
+
 func TestGetBreakdownTestTasks_EmptyCapabilities(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]string{"go-test"}, nil)
+	tasks := GetBreakdownTestTasks([]string{"go-test"}, nil, defaultAuto)
 
 	// No capabilities -> no test tasks generated
 	if len(tasks) != 0 {
@@ -15,7 +20,7 @@ func TestGetBreakdownTestTasks_EmptyCapabilities(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_SingleProfile(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]string{"go-test"}, []string{"cli"})
+	tasks := GetBreakdownTestTasks([]string{"go-test"}, []string{"cli"}, defaultAuto)
 
 	// Shared: gen-cases, eval-cases + per-type: gen-scripts-cli, run, graduate + shared: verify-regression, consolidate = 7
 	if len(tasks) != 7 {
@@ -23,7 +28,7 @@ func TestGetBreakdownTestTasks_SingleProfile(t *testing.T) {
 	}
 
 	// No suffix for single profile
-	wantIDs := []string{"T-test-1", "T-test-1b", "T-test-2-cli", "T-test-3", "T-test-4", "T-test-4.5", "T-test-5"}
+	wantIDs := []string{"T-test-1", "T-test-1b", "T-test-2-cli", "T-test-3", "T-test-4", "T-test-4.5", "T-specs-1"}
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
 			t.Errorf("tasks[%d].ID = %q, want %q", i, tasks[i].ID, want)
@@ -57,7 +62,7 @@ func TestGetBreakdownTestTasks_SingleProfile(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_MultiProfile(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]string{"web-playwright", "go-test"}, []string{"api"})
+	tasks := GetBreakdownTestTasks([]string{"web-playwright", "go-test"}, []string{"api"}, defaultAuto)
 
 	// 2 shared + (1 per-type-gen + run + graduate)*2 + 2 shared = 10
 	if len(tasks) != 10 {
@@ -69,7 +74,7 @@ func TestGetBreakdownTestTasks_MultiProfile(t *testing.T) {
 		"T-test-1", "T-test-1b",
 		"T-test-2a-api", "T-test-3a", "T-test-4a",
 		"T-test-2b-api", "T-test-3b", "T-test-4b",
-		"T-test-4.5", "T-test-5",
+		"T-test-4.5", "T-specs-1",
 	}
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
@@ -84,7 +89,7 @@ func TestGetBreakdownTestTasks_MultiProfile(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_EmptyCapabilities(t *testing.T) {
-	tasks := GetQuickTestTasks([]string{"go-test"}, nil)
+	tasks := GetQuickTestTasks([]string{"go-test"}, nil, defaultAuto)
 
 	// No capabilities -> no test tasks
 	if len(tasks) != 0 {
@@ -93,14 +98,14 @@ func TestGetQuickTestTasks_EmptyCapabilities(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_SingleProfile(t *testing.T) {
-	tasks := GetQuickTestTasks([]string{"go-test"}, []string{"cli"})
+	tasks := GetQuickTestTasks([]string{"go-test"}, []string{"cli"}, defaultAuto)
 
 	// gen-cases + gen-and-run-cli + graduate + verify-regression + drift = 5
 	if len(tasks) != 5 {
 		t.Fatalf("expected 5 tasks, got %d", len(tasks))
 	}
 
-	wantIDs := []string{"T-quick-1", "T-quick-2-cli", "T-quick-3", "T-quick-4", "T-quick-5"}
+	wantIDs := []string{"T-quick-1", "T-quick-2-cli", "T-quick-3", "T-quick-4", "T-quick-specs-1"}
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
 			t.Errorf("tasks[%d].ID = %q, want %q", i, tasks[i].ID, want)
@@ -125,24 +130,24 @@ func TestGetQuickTestTasks_SingleProfile(t *testing.T) {
 		t.Errorf("verify-regression should depend on graduate, got %v", tasks[3].Dependencies)
 	}
 
-	// T-quick-5 depends on T-quick-4
+	// T-quick-specs-1 depends on T-quick-4
 	if tasks[4].Dependencies[0] != "T-quick-4" {
 		t.Errorf("drift detection should depend on verify-regression, got %v", tasks[4].Dependencies)
 	}
-	// T-quick-5 type and NoTest
+	// T-quick-specs-1 type and NoTest
 	if tasks[4].Type != TypeDocGenerationDrift {
-		t.Errorf("T-quick-5 Type = %q, want %q", tasks[4].Type, TypeDocGenerationDrift)
+		t.Errorf("T-quick-specs-1 Type = %q, want %q", tasks[4].Type, TypeDocGenerationDrift)
 	}
 	if !tasks[4].NoTest {
-		t.Error("T-quick-5 NoTest should be true")
+		t.Error("T-quick-specs-1 NoTest should be true")
 	}
 	if tasks[4].Scope != "all" {
-		t.Errorf("T-quick-5 Scope = %q, want %q", tasks[4].Scope, "all")
+		t.Errorf("T-quick-specs-1 Scope = %q, want %q", tasks[4].Scope, "all")
 	}
 }
 
 func TestGetQuickTestTasks_MultiProfile(t *testing.T) {
-	tasks := GetQuickTestTasks([]string{"web-playwright", "go-test"}, []string{"api"})
+	tasks := GetQuickTestTasks([]string{"web-playwright", "go-test"}, []string{"api"}, defaultAuto)
 
 	// Profile-a: gen-cases + gen-and-run-api + graduate = 3
 	// Profile-b: same = 3
@@ -165,12 +170,12 @@ func TestGetQuickTestTasks_MultiProfile(t *testing.T) {
 		t.Errorf("verify-regression should depend on 2 graduates, got %v", tasks[6].Dependencies)
 	}
 
-	// T-quick-5 depends on T-quick-4
+	// T-quick-specs-1 depends on T-quick-4
 	if tasks[7].Dependencies[0] != "T-quick-4" {
 		t.Errorf("drift detection should depend on verify-regression, got %v", tasks[7].Dependencies)
 	}
 	if tasks[7].Type != TypeDocGenerationDrift {
-		t.Errorf("T-quick-5 Type = %q, want %q", tasks[7].Type, TypeDocGenerationDrift)
+		t.Errorf("T-quick-specs-1 Type = %q, want %q", tasks[7].Type, TypeDocGenerationDrift)
 	}
 }
 
@@ -233,7 +238,7 @@ func TestResolveFirstTestDep(t *testing.T) {
 			"2-gate":  {ID: "2.gate"},
 			"1.1-foo": {ID: "1.1"},
 		}
-		tasks := GetBreakdownTestTasks([]string{"go-test"}, []string{"cli"})
+		tasks := GetBreakdownTestTasks([]string{"go-test"}, []string{"cli"}, defaultAuto)
 		ResolveFirstTestDep(tasks, existing, "breakdown")
 		if tasks[0].Dependencies[0] != "2.gate" {
 			t.Errorf("T-test-1 should depend on highest gate, got %v", tasks[0].Dependencies)
@@ -246,7 +251,7 @@ func TestResolveFirstTestDep(t *testing.T) {
 			"2-bar": {ID: "2"},
 			"3-baz": {ID: "3"},
 		}
-		tasks := GetQuickTestTasks([]string{"go-test"}, []string{"cli"})
+		tasks := GetQuickTestTasks([]string{"go-test"}, []string{"cli"}, defaultAuto)
 		ResolveFirstTestDep(tasks, existing, "quick")
 		if tasks[0].Dependencies[0] != "3" {
 			t.Errorf("T-quick-1 should depend on max business task, got %v", tasks[0].Dependencies)
@@ -311,7 +316,7 @@ func TestResolveDocEvalDep(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_PerType_SingleProfile(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]string{"go-test"}, []string{"tui", "api"})
+	tasks := GetBreakdownTestTasks([]string{"go-test"}, []string{"tui", "api"}, defaultAuto)
 
 	// Shared: gen-cases, eval-cases + per-type-gen: 2 (tui, api) + run + graduate + verify-regression + consolidate = 8
 	if len(tasks) != 8 {
@@ -322,7 +327,7 @@ func TestGetBreakdownTestTasks_PerType_SingleProfile(t *testing.T) {
 		"T-test-1", "T-test-1b",
 		"T-test-2-tui", "T-test-2-api",
 		"T-test-3", "T-test-4",
-		"T-test-4.5", "T-test-5",
+		"T-test-4.5", "T-specs-1",
 	}
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
@@ -376,6 +381,7 @@ func TestGetBreakdownTestTasks_PerType_MultiProfile(t *testing.T) {
 	tasks := GetBreakdownTestTasks(
 		[]string{"web-playwright", "go-test"},
 		[]string{"tui", "api"},
+		defaultAuto,
 	)
 
 	// Shared: 2 + profile-a: 2 per-type-gen + run + grad = 4 + profile-b: same = 4 + shared: 2 = 12
@@ -389,7 +395,7 @@ func TestGetBreakdownTestTasks_PerType_MultiProfile(t *testing.T) {
 		"T-test-3a", "T-test-4a",
 		"T-test-2b-tui", "T-test-2b-api",
 		"T-test-3b", "T-test-4b",
-		"T-test-4.5", "T-test-5",
+		"T-test-4.5", "T-specs-1",
 	}
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
@@ -424,7 +430,7 @@ func TestGetBreakdownTestTasks_PerType_MultiProfile(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_PerType_SingleType(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]string{"go-test"}, []string{"api"})
+	tasks := GetBreakdownTestTasks([]string{"go-test"}, []string{"api"}, defaultAuto)
 
 	// Only api type -> one gen task
 	if len(tasks) != 7 {
@@ -435,7 +441,7 @@ func TestGetBreakdownTestTasks_PerType_SingleType(t *testing.T) {
 		"T-test-1", "T-test-1b",
 		"T-test-2-api",
 		"T-test-3", "T-test-4",
-		"T-test-4.5", "T-test-5",
+		"T-test-4.5", "T-specs-1",
 	}
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
@@ -450,7 +456,7 @@ func TestGetBreakdownTestTasks_PerType_SingleType(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_PerType_ThreeTypes(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]string{"go-test"}, []string{"tui", "api", "cli"})
+	tasks := GetBreakdownTestTasks([]string{"go-test"}, []string{"tui", "api", "cli"}, defaultAuto)
 
 	// 3 types -> 3 gen tasks
 	if len(tasks) != 9 {
@@ -500,7 +506,7 @@ func TestGenerateTestTaskMD_WithTestType(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_PerType_SingleProfile(t *testing.T) {
-	tasks := GetQuickTestTasks([]string{"go-test"}, []string{"tui", "api"})
+	tasks := GetQuickTestTasks([]string{"go-test"}, []string{"tui", "api"}, defaultAuto)
 
 	// Per-profile: gen-cases + per-type-gen-and-run(tui,api) + graduate = 4 + shared verify-regression + drift-detection = 6
 	if len(tasks) != 6 {
@@ -512,7 +518,7 @@ func TestGetQuickTestTasks_PerType_SingleProfile(t *testing.T) {
 		"T-quick-2-tui", "T-quick-2-api",
 		"T-quick-3",
 		"T-quick-4",
-		"T-quick-5",
+		"T-quick-specs-1",
 	}
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
@@ -574,6 +580,7 @@ func TestGetQuickTestTasks_PerType_MultiProfile(t *testing.T) {
 	tasks := GetQuickTestTasks(
 		[]string{"web-playwright", "go-test"},
 		[]string{"tui", "api"},
+		defaultAuto,
 	)
 
 	// Profile-a: gen-cases + 2 per-type-gen-and-run + graduate = 4
@@ -592,7 +599,7 @@ func TestGetQuickTestTasks_PerType_MultiProfile(t *testing.T) {
 		"T-quick-2b-tui", "T-quick-2b-api",
 		"T-quick-3b",
 		"T-quick-4",
-		"T-quick-5",
+		"T-quick-specs-1",
 	}
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
@@ -627,7 +634,7 @@ func TestGetQuickTestTasks_PerType_MultiProfile(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_PerType_SingleType(t *testing.T) {
-	tasks := GetQuickTestTasks([]string{"go-test"}, []string{"api"})
+	tasks := GetQuickTestTasks([]string{"go-test"}, []string{"api"}, defaultAuto)
 
 	// Only api type -> one gen-and-run task
 	// gen-cases + 1 gen-and-run-api + graduate + verify-regression + drift-detection = 5
@@ -640,7 +647,7 @@ func TestGetQuickTestTasks_PerType_SingleType(t *testing.T) {
 		"T-quick-2-api",
 		"T-quick-3",
 		"T-quick-4",
-		"T-quick-5",
+		"T-quick-specs-1",
 	}
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
@@ -660,7 +667,7 @@ func TestGetQuickTestTasks_PerType_SingleType(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_PerType_ThreeTypes(t *testing.T) {
-	tasks := GetQuickTestTasks([]string{"go-test"}, []string{"tui", "api", "cli"})
+	tasks := GetQuickTestTasks([]string{"go-test"}, []string{"tui", "api", "cli"}, defaultAuto)
 
 	// gen-cases + 3 per-type-gen-and-run + graduate + verify-regression + drift-detection = 7
 	if len(tasks) != 7 {

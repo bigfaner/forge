@@ -92,6 +92,11 @@ func TestInferType(t *testing.T) {
 		{"enhancement", ""},
 		{"cleanup", ""},
 		{"refactor", ""},
+
+		// Renamed and new IDs
+		{"T-specs-1", TypeDocGenerationConsolidate},
+		{"T-quick-specs-1", TypeDocGenerationDrift},
+		{"T-clean-code-1", TypeCleanCode},
 	}
 
 	for _, tt := range tests {
