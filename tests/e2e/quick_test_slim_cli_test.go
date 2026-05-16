@@ -142,6 +142,7 @@ func quickSlimBin(t *testing.T) string {
 func quickSlimSetupProject(t *testing.T, slug string, testProfiles []string, testCasesContent string) string {
 	t.Helper()
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 
 	// Create proposal directory (triggers quick mode)
 	propDir := filepath.Join(dir, "docs", "proposals", slug)

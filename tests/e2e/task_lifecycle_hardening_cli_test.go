@@ -93,7 +93,8 @@ func tlhSetupFeatureFixture(t *testing.T, tasks map[string]tlhTaskEntry) string 
 // Returns combined output and exit code. Does NOT fatalf on failure.
 func tlhForgeClaim(t *testing.T, projectRoot string) (string, int) {
 	t.Helper()
-	cmd := exec.Command("forge", "task", "claim")
+	bin := forgeBin(t)
+	cmd := exec.Command(bin, "task", "claim")
 	cmd.Env = append(os.Environ(), "CLAUDE_PROJECT_DIR="+projectRoot)
 	out, err := cmd.CombinedOutput()
 	exitCode := 0
