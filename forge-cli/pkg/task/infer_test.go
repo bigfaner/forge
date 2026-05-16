@@ -86,6 +86,12 @@ func TestInferType(t *testing.T) {
 		{"2.3", ""},
 		{"", ""},
 		{"random-task", ""},
+
+		// New business types are explicit — not inferred from patterns
+		{"feature", ""},
+		{"enhancement", ""},
+		{"cleanup", ""},
+		{"refactor", ""},
 	}
 
 	for _, tt := range tests {

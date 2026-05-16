@@ -6,9 +6,16 @@ import (
 	"time"
 )
 
-// Task type constants define the 14 valid execution types.
+// Task type constants define the valid execution types.
 const (
+	// Deprecated: TypeImplementation is overly broad. Use TypeFeature, TypeEnhancement,
+	// TypeCleanup, or TypeRefactor instead. Kept for backward compatibility with existing
+	// index.json files until migration (task 5) completes.
 	TypeImplementation               = "implementation"
+	TypeFeature                      = "feature"
+	TypeEnhancement                  = "enhancement"
+	TypeCleanup                      = "cleanup"
+	TypeRefactor                     = "refactor"
 	TypeDocumentation                = "documentation"
 	TypeDocEvaluation                = "doc-evaluation"
 	TypeDocGenerationSummary         = "doc-generation.summary"
@@ -34,7 +41,11 @@ type TaskTypeInfo struct { //nolint:revive // intentional naming for API clarity
 // TaskTypeRegistry is the centralized source of truth for all supported task types.
 // Each entry's Description follows verb+object format and is <= 60 chars.
 var TaskTypeRegistry = []TaskTypeInfo{
-	{Name: TypeImplementation, Description: "implement feature task"},
+	{Name: TypeImplementation, Description: "implement feature task (deprecated)"},
+	{Name: TypeFeature, Description: "implement new runtime behavior"},
+	{Name: TypeEnhancement, Description: "enhance existing behavior"},
+	{Name: TypeCleanup, Description: "remove dead code or fix technical debt"},
+	{Name: TypeRefactor, Description: "restructure code without behavior change"},
 	{Name: TypeDocumentation, Description: "write or update documentation"},
 	{Name: TypeDocEvaluation, Description: "evaluate documentation quality"},
 	{Name: TypeFix, Description: "fix a bug or issue"},
@@ -54,6 +65,10 @@ var TaskTypeRegistry = []TaskTypeInfo{
 // ValidTypes is the complete set of valid task type values.
 var ValidTypes = map[string]bool{
 	TypeImplementation:               true,
+	TypeFeature:                      true,
+	TypeEnhancement:                  true,
+	TypeCleanup:                      true,
+	TypeRefactor:                     true,
 	TypeDocumentation:                true,
 	TypeDocEvaluation:                true,
 	TypeDocGenerationSummary:         true,
