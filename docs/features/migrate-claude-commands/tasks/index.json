@@ -50,7 +50,7 @@
       "dependencies": [
         "3"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "eval-doc.md",
       "record": "records/eval-doc.md",
       "scope": "all",
