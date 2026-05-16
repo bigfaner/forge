@@ -19,7 +19,7 @@
       "title": "Query verbose mode with RELATED_FIXES",
       "priority": "P1",
       "estimatedTime": "1.5h",
-      "status": "pending",
+      "status": "completed",
       "file": "2-query-verbose.md",
       "record": "records/2-query-verbose.md",
       "scope": "backend",
