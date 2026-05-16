@@ -85,13 +85,25 @@
       "scope": "backend",
       "type": "documentation"
     },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "Fix: e2e tests failed due to stale forge binary",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "T-quick-3",
+      "type": "fix"
+    },
     "quick-drift-detection": {
-      "id": "T-quick-6",
+      "id": "T-quick-5",
       "title": "Detect Spec Drift",
       "priority": "P2",
       "estimatedTime": "15min",
       "dependencies": [
-        "T-quick-5"
+        "T-quick-4"
       ],
       "status": "pending",
       "file": "quick-drift-detection.md",
@@ -99,6 +111,21 @@
       "scope": "all",
       "noTest": true,
       "type": "doc-generation.drift"
+    },
+    "quick-gen-and-run-go-test-cli": {
+      "id": "T-quick-2-cli",
+      "title": "Generate and Run Quick Test Scripts (go-test, cli)",
+      "priority": "P1",
+      "estimatedTime": "1-2h",
+      "dependencies": [
+        "T-quick-1"
+      ],
+      "status": "pending",
+      "file": "quick-gen-and-run-go-test-cli.md",
+      "record": "records/quick-gen-and-run-go-test-cli.md",
+      "scope": "all",
+      "type": "test-pipeline.gen-and-run",
+      "profile": "go-test"
     },
     "quick-gen-scripts-go-test": {
       "id": "T-quick-2",
@@ -116,14 +143,14 @@
       "profile": "go-test"
     },
     "quick-graduate-go-test": {
-      "id": "T-quick-4",
+      "id": "T-quick-3",
       "title": "Graduate Quick Test Scripts (go-test)",
       "priority": "P1",
       "estimatedTime": "15min",
       "dependencies": [
-        "T-quick-3"
+        "T-quick-2-cli"
       ],
-      "status": "pending",
+      "status": "blocked",
       "file": "quick-graduate-go-test.md",
       "record": "records/quick-graduate-go-test.md",
       "scope": "all",
@@ -162,12 +189,12 @@
       "profile": "go-test"
     },
     "quick-verify-regression": {
-      "id": "T-quick-5",
+      "id": "T-quick-4",
       "title": "Verify Quick E2E Regression",
       "priority": "P1",
       "estimatedTime": "15min",
       "dependencies": [
-        "T-quick-4"
+        "T-quick-3"
       ],
       "status": "pending",
       "file": "quick-verify-regression.md",
