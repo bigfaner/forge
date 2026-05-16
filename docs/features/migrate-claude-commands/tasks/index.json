@@ -1,0 +1,74 @@
+{
+  "feature": "migrate-claude-commands",
+  "proposal": "docs/proposals/migrate-claude-commands/proposal.md",
+  "created": "2026-05-16",
+  "tasks": {
+    "1-add-claude-subcommand": {
+      "id": "1",
+      "title": "Add forge claude subcommand with arg passthrough",
+      "priority": "P0",
+      "estimatedTime": "1-2h",
+      "status": "completed",
+      "file": "1-add-claude-subcommand.md",
+      "record": "records/1-add-claude-subcommand.md",
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "2-remove-justfile-recipes": {
+      "id": "2",
+      "title": "Remove claude/claude-c/claude-w recipes from project justfile",
+      "priority": "P1",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-remove-justfile-recipes.md",
+      "record": "records/2-remove-justfile-recipes.md",
+      "scope": "all",
+      "type": "implementation"
+    },
+    "3-update-forge-init": {
+      "id": "3",
+      "title": "Update forge init to stop generating claude justfile recipes",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "3-update-forge-init.md",
+      "record": "records/3-update-forge-init.md",
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "eval-doc": {
+      "id": "T-eval-doc",
+      "title": "Evaluate Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "3"
+      ],
+      "status": "completed",
+      "file": "eval-doc.md",
+      "record": "records/eval-doc.md",
+      "scope": "all",
+      "noTest": true,
+      "type": "doc-evaluation"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
