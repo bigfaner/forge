@@ -37,7 +37,7 @@
       "dependencies": [
         "2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3-verbose-flag.md",
       "record": "records/3-verbose-flag.md",
       "scope": "backend",

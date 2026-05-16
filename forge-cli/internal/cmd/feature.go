@@ -16,6 +16,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+var verbose bool
+
 var featureCmd = &cobra.Command{
 	Use:   "feature [slug]",
 	Short: "Set or display the current feature",
@@ -76,6 +78,7 @@ func exactArgsNonEmpty(n int) cobra.PositionalArgs {
 }
 
 func init() {
+	featureCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "show resolution source")
 	featureCmd.AddCommand(featureListCmd)
 	featureCmd.AddCommand(featureStatusCmd)
 	featureCmd.AddCommand(featureSetCmd)
@@ -89,6 +92,20 @@ func runFeature(_ *cobra.Command, args []string) {
 
 	if len(args) == 0 {
 		// Display current feature
+		if verbose {
+			slug, source, err := feature.GetCurrentFeatureWithSource(projectRoot)
+			if err != nil {
+				PrintBlockStart()
+				PrintField("FEATURE", "(none)")
+				PrintBlockEnd()
+				return
+			}
+			PrintBlockStart()
+			PrintField("FEATURE", fmt.Sprintf("%s (from: %s)", slug, source))
+			PrintBlockEnd()
+			return
+		}
+
 		slug, err := feature.GetCurrentFeature(projectRoot)
 		if err != nil {
 			PrintBlockStart()
