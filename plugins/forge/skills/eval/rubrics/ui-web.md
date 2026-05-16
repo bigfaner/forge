@@ -3,6 +3,9 @@ scale: 1000
 target: 950
 iterations: 3
 type: ui-web
+context:
+  conventions: [ux, frontend]
+  business-rules: auto
 ---
 
 # UI Design Evaluation Rubric

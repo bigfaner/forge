@@ -1,0 +1,97 @@
+{
+  "feature": "eval-reality-validation",
+  "proposal": "docs/proposals/eval-reality-validation/proposal.md",
+  "created": "2026-05-17",
+  "tasks": {
+    "1-context-injection-infra": {
+      "id": "1",
+      "title": "Context Injection Infrastructure",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "status": "completed",
+      "file": "1-context-injection-infra.md",
+      "record": "records/1-context-injection-infra.md",
+      "type": "documentation"
+    },
+    "2-eval-prd-enhancement": {
+      "id": "2",
+      "title": "eval-prd Rubric Enhancement",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-eval-prd-enhancement.md",
+      "record": "records/2-eval-prd-enhancement.md",
+      "type": "documentation"
+    },
+    "3-validate-code": {
+      "id": "3",
+      "title": "validate-code Implementation",
+      "priority": "P1",
+      "estimatedTime": "3h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "3-validate-code.md",
+      "record": "records/3-validate-code.md",
+      "type": "documentation"
+    },
+    "4-validate-ux": {
+      "id": "4",
+      "title": "validate-ux Implementation",
+      "priority": "P1",
+      "estimatedTime": "4h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "4-validate-ux.md",
+      "record": "records/4-validate-ux.md",
+      "type": "documentation"
+    },
+    "5-rubric-context-enhancement": {
+      "id": "5",
+      "title": "Remaining Rubric Context Enhancement",
+      "priority": "P2",
+      "estimatedTime": "3h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "5-rubric-context-enhancement.md",
+      "record": "records/5-rubric-context-enhancement.md",
+      "type": "documentation"
+    },
+    "eval-doc": {
+      "id": "T-eval-doc",
+      "title": "Evaluate Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "5"
+      ],
+      "status": "completed",
+      "file": "eval-doc.md",
+      "record": "records/eval-doc.md",
+      "scope": "all",
+      "noTest": true,
+      "type": "doc-evaluation"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

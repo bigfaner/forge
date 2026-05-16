@@ -3,6 +3,9 @@ scale: 1000
 target: 900
 iterations: 3
 type: prd
+context:
+  conventions: []
+  business-rules: auto
 ---
 
 # PRD Evaluation Rubric
@@ -43,43 +46,47 @@ type: prd
 
 | Dimension | Points |
 |-----------|--------|
-| 1. Background & Goals | 150 |
-| 2. Flow Diagrams | 200 |
+| 1. Background & Goals | 100 |
+| 2. Flow Diagrams | 150 |
 | 3. Functional Specs (evaluates prd-ui-functions.md) | 200 |
-| 4. User Stories | 300 |
-| 5. Scope Clarity | 150 |
+| 4. User Stories | 200 |
+| 5. Scenario Completeness | 150 |
+| 6. Edge Case Coverage | 100 |
+| 7. Scope Clarity | 100 |
 | **Total** | **1000** |
 
 ### Mode B: Feature WITHOUT UI (prd-ui-functions.md absent)
 
 | Dimension | Points |
 |-----------|--------|
-| 1. Background & Goals | 150 |
-| 2. Flow Diagrams | 200 |
+| 1. Background & Goals | 100 |
+| 2. Flow Diagrams | 150 |
 | 3. Flow Completeness (evaluates prd-spec.md Flow Description) | 200 |
-| 4. User Stories | 300 |
-| 5. Scope Clarity | 150 |
+| 4. User Stories | 200 |
+| 5. Scenario Completeness | 150 |
+| 6. Edge Case Coverage | 100 |
+| 7. Scope Clarity | 100 |
 | **Total** | **1000** |
 
 > Detection: if `prd-ui-functions.md` exists in the PRD directory → Mode A; otherwise → Mode B.
 
 ## Dimensions
 
-### 1. Background & Goals (150 pts)
+### 1. Background & Goals (100 pts)
 
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| Background has three elements (Reason/Target/Users) | 0-50 | Are all three present and specific? |
-| Goals are quantified | 0-40 | Is there at least one numeric target (%, count, time)? |
-| Background and goals are logically consistent | 0-60 | Does the goal follow from the stated problem? |
+| Background has three elements (Reason/Target/Users) | 0-30 | Are all three present and specific? |
+| Goals are quantified | 0-30 | Is there at least one numeric target (%, count, time)? |
+| Background and goals are logically consistent | 0-40 | Does the goal follow from the stated problem? |
 
-### 2. Flow Diagrams (200 pts)
+### 2. Flow Diagrams (150 pts)
 
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| Mermaid diagram exists | 0-70 | Is there at least one Mermaid flowchart? |
-| Main path complete (start → end) | 0-70 | Does the diagram cover the full happy path? |
-| Decision points + error branches covered | 0-60 | Are there diamond nodes and at least one error/exception branch? |
+| Mermaid diagram exists | 0-50 | Is there at least one Mermaid flowchart? |
+| Main path complete (start → end) | 0-50 | Does the diagram cover the full happy path? |
+| Decision points + error branches covered | 0-50 | Are there diamond nodes and at least one error/exception branch? |
 
 ### 3. Functional Specs (200 pts) — Mode A: evaluates prd-ui-functions.md
 
@@ -97,22 +104,38 @@ type: prd
 | Data flow documented (if multi-system) | 0-70 | For multi-system features: is the Data Flow table complete? For single-system: auto-full-score if N/A |
 | Exception handling and edge cases covered | 0-60 | Are error paths, retry logic, and failure states documented? |
 
-### 4. User Stories (300 pts)
+### 4. User Stories (200 pts)
 
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| Coverage: one story per target user | 0-70 | Does every user type from the background section have at least one story? |
-| Format correct (As a / I want / So that) | 0-70 | Do all stories follow the format? Are actions concrete (not "manage", "handle")? |
-| AC per story (Given/When/Then) | 0-60 | Does every story have at least one AC in Given/When/Then format? |
-| AC verifiability & boundary coverage | 0-100 | Are ACs objectively testable? Do they cover happy path, error cases, and edge conditions? Can each "Then" be verified without subjective judgment? |
+| Coverage: one story per target user | 0-50 | Does every user type from the background section have at least one story? |
+| Format correct (As a / I want / So that) | 0-50 | Do all stories follow the format? Are actions concrete (not "manage", "handle")? |
+| AC per story (Given/When/Then) | 0-50 | Does every story have at least one AC in Given/When/Then format? |
+| AC verifiability & boundary coverage | 0-50 | Are ACs objectively testable? Do they cover happy path, error cases, and edge conditions? Can each "Then" be verified without subjective judgment? |
 
-### 5. Scope Clarity (150 pts)
+### 5. Scenario Completeness (150 pts)
 
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| In-scope items are concrete deliverables | 0-50 | Each item is a specific feature/screen/API, not a vague area |
-| Out-of-scope explicitly lists deferred items | 0-40 | Are deferred items named, not just implied by absence? |
-| Scope consistent with functional specs and user stories | 0-60 | Do the in-scope items match what's described in Functional Specs and user stories? |
+| End-to-end scenario coverage | 0-60 | Are all user-facing scenarios described from trigger to final state? Each scenario should cover the full lifecycle, not just the happy step. |
+| Implicit assumptions surfaced | 0-40 | Are there hidden prerequisites, pre-conditions, or environmental dependencies not explicitly stated? Scenarios should not rely on unstated context. |
+| Business-rules consistency | 0-50 | Do scenarios contradict any loaded business-rules (from injected context)? Check that each scenario respects known constraints, naming conventions, and domain rules. |
+
+### 6. Edge Case Coverage (100 pts)
+
+| Criterion | Points | What to check |
+|-----------|--------|---------------|
+| Error paths documented | 0-40 | Are failure scenarios explicitly described (not just "handle error")? Includes: invalid input, permission denied, resource not found, timeout. |
+| Boundary conditions covered | 0-35 | Are limits and thresholds addressed: empty input, max-length values, zero/count overflow, concurrent access, large datasets? |
+| Failure recovery described | 0-25 | Do scenarios include recovery steps when things go wrong? Is it clear what the user or system should do after a failure? |
+
+### 7. Scope Clarity (100 pts)
+
+| Criterion | Points | What to check |
+|-----------|--------|---------------|
+| In-scope items are concrete deliverables | 0-35 | Each item is a specific feature/screen/API, not a vague area |
+| Out-of-scope explicitly lists deferred items | 0-30 | Are deferred items named, not just implied by absence? |
+| Scope consistent with functional specs and user stories | 0-35 | Do the in-scope items match what's described in Functional Specs and user stories? |
 
 ## Deduction Rules
 
