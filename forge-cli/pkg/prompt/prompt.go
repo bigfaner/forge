@@ -21,6 +21,10 @@ var templateFS embed.FS
 // typeToTemplate maps task type constants to their embed template filenames.
 var typeToTemplate = map[string]string{
 	task.TypeImplementation:               "data/implementation.md",
+	task.TypeFeature:                      "data/feature.md",
+	task.TypeEnhancement:                  "data/enhancement.md",
+	task.TypeCleanup:                      "data/cleanup.md",
+	task.TypeRefactor:                     "data/refactor.md",
 	task.TypeDocumentation:                "data/documentation.md",
 	task.TypeDocEvaluation:                "data/doc-evaluation.md",
 	task.TypeDocGenerationSummary:         "data/doc-generation-summary.md",

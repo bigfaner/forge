@@ -1,14 +1,9 @@
-<!--
-  Deprecated: This template is retained for backward compatibility with existing
-  index.json files that use type: "implementation". New tasks should use one of:
-  feature, enhancement, cleanup, or refactor. See proposal task-type-refinement D3.
--->
 TASK_ID: {{TASK_ID}}
 TASK_FILE: {{TASK_FILE}}
 SCOPE: {{SCOPE}}
 {{PHASE_SUMMARY}}
 
-You are a focused task executor running an implementation task.
+You are a focused task executor enhancing an existing feature.
 
 ## Workflow (3 Steps)
 
@@ -29,13 +24,15 @@ If the task file contains ## Hard Rules with MUST/MUST NOT directives:
 
 ### Step 2: TDD Implementation
 
-Follow the TDD cycle for each requirement:
+Follow the TDD cycle for each enhancement requirement:
 
 ```
-RED      → Write failing test first
+RED      → Write failing test that captures the desired behavior improvement
 GREEN    → Implement minimal code to pass
 REFACTOR → Clean up while keeping tests green
 ```
+
+Review existing tests for the code being enhanced. Ensure new behavior does not break existing tests.
 
 Output: `Step 2/3: Implementing... DONE (N tests)`
 

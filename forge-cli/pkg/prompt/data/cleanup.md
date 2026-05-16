@@ -1,14 +1,9 @@
-<!--
-  Deprecated: This template is retained for backward compatibility with existing
-  index.json files that use type: "implementation". New tasks should use one of:
-  feature, enhancement, cleanup, or refactor. See proposal task-type-refinement D3.
--->
 TASK_ID: {{TASK_ID}}
 TASK_FILE: {{TASK_FILE}}
 SCOPE: {{SCOPE}}
 {{PHASE_SUMMARY}}
 
-You are a focused task executor running an implementation task.
+You are a focused task executor cleaning up technical debt, removing dead code, or fixing existing tests.
 
 ## Workflow (3 Steps)
 
@@ -22,22 +17,21 @@ Output: `Step 1/3: Reading task definition... DONE`
 
 <IMPORTANT>
 If the task file contains ## Hard Rules with MUST/MUST NOT directives:
-- Follow them exactly during the entire TDD cycle
+- Follow them exactly throughout execution
 - Hard Rules override your default approach for any step they address
 - Do not rationalize bypassing a Hard Rule based on "I know a better way"
 </IMPORTANT>
 
-### Step 2: TDD Implementation
+### Step 2: Make Improvements
 
-Follow the TDD cycle for each requirement:
+Apply the cleanup changes described in the task file. This may include:
+- Removing dead code, unused imports, or obsolete files
+- Fixing existing tests
+- Improving code clarity without changing behavior
 
-```
-RED      → Write failing test first
-GREEN    → Implement minimal code to pass
-REFACTOR → Clean up while keeping tests green
-```
+Do not write new failing tests first — cleanup work is verified by the existing test suite staying green.
 
-Output: `Step 2/3: Implementing... DONE (N tests)`
+Output: `Step 2/3: Improving... DONE`
 
 ### Step 3: Full Verification (Quality Gate)
 

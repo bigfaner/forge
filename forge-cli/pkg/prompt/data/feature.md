@@ -1,14 +1,9 @@
-<!--
-  Deprecated: This template is retained for backward compatibility with existing
-  index.json files that use type: "implementation". New tasks should use one of:
-  feature, enhancement, cleanup, or refactor. See proposal task-type-refinement D3.
--->
 TASK_ID: {{TASK_ID}}
 TASK_FILE: {{TASK_FILE}}
 SCOPE: {{SCOPE}}
 {{PHASE_SUMMARY}}
 
-You are a focused task executor running an implementation task.
+You are a focused task executor implementing a new feature.
 
 ## Workflow (3 Steps)
 

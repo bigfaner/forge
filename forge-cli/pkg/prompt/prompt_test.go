@@ -41,6 +41,10 @@ func setupFeatureDir(t *testing.T, projectRoot string, tasks map[string]task.Tas
 func TestSynthesize_AllTypes(t *testing.T) {
 	types := []string{
 		task.TypeImplementation,
+		task.TypeFeature,
+		task.TypeEnhancement,
+		task.TypeCleanup,
+		task.TypeRefactor,
 		task.TypeDocumentation,
 		task.TypeDocEvaluation,
 		task.TypeDocGenerationSummary,
@@ -180,6 +184,143 @@ func TestSynthesize_UnknownType_ReturnsError(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "unknown type") {
 		t.Errorf("expected 'unknown type' in error, got: %v", err)
+	}
+}
+
+// --- New type template content tests ---
+
+func TestSynthesize_FeatureTemplate_HasTDDWorkflow(t *testing.T) {
+	dir := t.TempDir()
+	tasks := map[string]task.Task{
+		"1.1": {
+			ID:     "1.1",
+			Title:  "Feature task",
+			Status: "pending",
+			File:   "1.1.md",
+			Record: "records/1.1.md",
+			Type:   task.TypeFeature,
+			Scope:  "backend",
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "1.1"}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(result, "TDD") {
+		t.Error("feature template should mention TDD workflow")
+	}
+	if !strings.Contains(result, "RED") {
+		t.Error("feature template should mention RED step")
+	}
+}
+
+func TestSynthesize_EnhancementTemplate_HasTDDWorkflow(t *testing.T) {
+	dir := t.TempDir()
+	tasks := map[string]task.Task{
+		"1.1": {
+			ID:     "1.1",
+			Title:  "Enhancement task",
+			Status: "pending",
+			File:   "1.1.md",
+			Record: "records/1.1.md",
+			Type:   task.TypeEnhancement,
+			Scope:  "backend",
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "1.1"}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(result, "TDD") {
+		t.Error("enhancement template should mention TDD workflow")
+	}
+}
+
+func TestSynthesize_CleanupTemplate_NoTDD(t *testing.T) {
+	dir := t.TempDir()
+	tasks := map[string]task.Task{
+		"1.1": {
+			ID:     "1.1",
+			Title:  "Cleanup task",
+			Status: "pending",
+			File:   "1.1.md",
+			Record: "records/1.1.md",
+			Type:   task.TypeCleanup,
+			Scope:  "backend",
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "1.1"}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if strings.Contains(result, "RED") {
+		t.Error("cleanup template should NOT mention RED/TDD step")
+	}
+	if !strings.Contains(result, "Quality Gate") {
+		t.Error("cleanup template should mention Quality Gate")
+	}
+}
+
+func TestSynthesize_RefactorTemplate_NoTDD(t *testing.T) {
+	dir := t.TempDir()
+	tasks := map[string]task.Task{
+		"1.1": {
+			ID:     "1.1",
+			Title:  "Refactor task",
+			Status: "pending",
+			File:   "1.1.md",
+			Record: "records/1.1.md",
+			Type:   task.TypeRefactor,
+			Scope:  "backend",
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "1.1"}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if strings.Contains(result, "RED") {
+		t.Error("refactor template should NOT mention RED/TDD step")
+	}
+	if !strings.Contains(result, "behavior") {
+		t.Error("refactor template should mention behavior preservation")
+	}
+}
+
+func TestSynthesize_ImplementationTemplate_Deprecated(t *testing.T) {
+	// Verify implementation.md still works but is marked deprecated.
+	dir := t.TempDir()
+	tasks := map[string]task.Task{
+		"1.1": {
+			ID:     "1.1",
+			Title:  "Old impl task",
+			Status: "pending",
+			File:   "1.1.md",
+			Record: "records/1.1.md",
+			Type:   task.TypeImplementation,
+			Scope:  "backend",
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "1.1"}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(result, "Deprecated") {
+		t.Error("implementation template should be marked Deprecated")
 	}
 }
 
