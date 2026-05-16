@@ -36,7 +36,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3-create-per-type-templates.md",
       "record": "records/3-create-per-type-templates.md",
       "noTest": true,
