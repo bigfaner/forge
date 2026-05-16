@@ -1167,6 +1167,108 @@ func TestCheckDependenciesMet_PendingFixTaskBlocks(t *testing.T) {
 	})
 }
 
+// --- SourceTaskID == selfID blocking (self-block) scenarios ---
+
+func TestCheckDependenciesMet_SelfBlock(t *testing.T) {
+	t.Run("pending fix task targeting self blocks claim", func(t *testing.T) {
+		// Task 3 has no dependencies. Fix-1 (sourceTaskID: "3") is pending.
+		// Task 3 should NOT be eligible because a fix task is targeting it.
+		index := &task.TaskIndex{Feature: "test"}
+		index.SetTasks(map[string]task.Task{
+			"3":     {ID: "3", Status: "pending", Dependencies: []string{}},
+			"fix-1": {ID: "fix-1", Status: "pending", SourceTaskID: "3", Type: "fix"},
+		})
+		met, unmet := checkDependenciesMet(index, "3", index.TasksMap()["3"])
+		if met {
+			t.Error("task should be blocked by pending fix task targeting itself")
+		}
+		if len(unmet) == 0 {
+			t.Error("expected unmet dependencies for self-block")
+		}
+	})
+
+	t.Run("in_progress fix task targeting self blocks claim", func(t *testing.T) {
+		// Task 3 has no dependencies. Fix-1 (sourceTaskID: "3") is in_progress.
+		index := &task.TaskIndex{Feature: "test"}
+		index.SetTasks(map[string]task.Task{
+			"3":     {ID: "3", Status: "pending", Dependencies: []string{}},
+			"fix-1": {ID: "fix-1", Status: "in_progress", SourceTaskID: "3", Type: "fix"},
+		})
+		met, _ := checkDependenciesMet(index, "3", index.TasksMap()["3"])
+		if met {
+			t.Error("task should be blocked by in_progress fix task targeting itself")
+		}
+	})
+
+	t.Run("completed fix task targeting self does not block", func(t *testing.T) {
+		// Fix-1 is completed, so task 3 should be eligible.
+		index := &task.TaskIndex{Feature: "test"}
+		index.SetTasks(map[string]task.Task{
+			"3":     {ID: "3", Status: "pending", Dependencies: []string{}},
+			"fix-1": {ID: "fix-1", Status: "completed", SourceTaskID: "3", Type: "fix"},
+		})
+		met, _ := checkDependenciesMet(index, "3", index.TasksMap()["3"])
+		if !met {
+			t.Error("completed fix task targeting self should not block")
+		}
+	})
+
+	t.Run("self-block with existing dependencies also blocked", func(t *testing.T) {
+		// Task 3 depends on task 2 (completed). Fix-1 (sourceTaskID: "3") is pending.
+		// Task 3 should still be blocked because fix targets itself.
+		index := &task.TaskIndex{Feature: "test"}
+		index.SetTasks(map[string]task.Task{
+			"2":     {ID: "2", Status: "completed"},
+			"3":     {ID: "3", Status: "pending", Dependencies: []string{"2"}},
+			"fix-1": {ID: "fix-1", Status: "pending", SourceTaskID: "3", Type: "fix"},
+		})
+		met, _ := checkDependenciesMet(index, "3", index.TasksMap()["3"])
+		if met {
+			t.Error("should be blocked by fix task targeting self, even with met dependencies")
+		}
+	})
+
+	t.Run("fix task targeting other task does not self-block", func(t *testing.T) {
+		// Fix-1 targets task 2, not task 3. Task 3 has no dependencies.
+		// Task 3 should be eligible.
+		index := &task.TaskIndex{Feature: "test"}
+		index.SetTasks(map[string]task.Task{
+			"2":     {ID: "2", Status: "completed"},
+			"3":     {ID: "3", Status: "pending", Dependencies: []string{}},
+			"fix-1": {ID: "fix-1", Status: "pending", SourceTaskID: "2", Type: "fix"},
+		})
+		met, _ := checkDependenciesMet(index, "3", index.TasksMap()["3"])
+		if !met {
+			t.Error("fix task targeting other task should not block task 3")
+		}
+	})
+
+	t.Run("multiple fix tasks targeting self must all complete", func(t *testing.T) {
+		// Both fix-1 and fix-2 target task 3. Fix-1 completed, fix-2 pending.
+		index := &task.TaskIndex{Feature: "test"}
+		index.SetTasks(map[string]task.Task{
+			"3":     {ID: "3", Status: "pending", Dependencies: []string{}},
+			"fix-1": {ID: "fix-1", Status: "completed", SourceTaskID: "3", Type: "fix"},
+			"fix-2": {ID: "fix-2", Status: "pending", SourceTaskID: "3", Type: "fix"},
+		})
+		met, _ := checkDependenciesMet(index, "3", index.TasksMap()["3"])
+		if met {
+			t.Error("should be blocked while fix-2 is still pending")
+		}
+	})
+
+	t.Run("no fix task targeting self - existing behavior unchanged", func(t *testing.T) {
+		index := &task.TaskIndex{Feature: "test"}
+		index.SetTasks(map[string]task.Task{
+			"3": {ID: "3", Status: "pending", Dependencies: []string{}},
+		})
+		met, _ := checkDependenciesMet(index, "3", index.TasksMap()["3"])
+		if !met {
+			t.Error("task with no deps and no fix tasks should be eligible")
+		}
+	})
+}
+
 func TestClaimNextTask_FixTaskClaimedBeforeBusiness(t *testing.T) {
 	t.Run("fix task claimed when coexisting with blocked business task", func(t *testing.T) {
 		// Task 3 completed. Fix-1 (sourceTaskID: "3") is pending. Task 4 depends on task 3.

@@ -8,7 +8,7 @@
       "title": "Fix checkDependenciesMet: add SourceTaskID == selfID check",
       "priority": "P0",
       "estimatedTime": "1h",
-      "status": "in_progress",
+      "status": "completed",
       "file": "1-fix-check-deps-self-block.md",
       "record": "records/1-fix-check-deps-self-block.md",
       "scope": "backend",

@@ -277,6 +277,16 @@ func checkDependenciesMet(index *task.TaskIndex, selfID string, t task.Task) (bo
 		}
 	}
 
+	// Check for active fix tasks targeting this task itself (SourceTaskID == selfID).
+	// If a fix task with sourceTaskID == selfID is still pending/in_progress,
+	// this task should not be claimed (--block-source scenario).
+	for _, other := range index.TasksMap() {
+		if other.Type == "fix" && other.SourceTaskID == selfID &&
+			(other.Status == "pending" || other.Status == "in_progress") {
+			unmet = append(unmet, other.ID)
+		}
+	}
+
 	return len(unmet) == 0, unmet
 }
 
