@@ -270,7 +270,7 @@ func checkDependenciesMet(index *task.TaskIndex, selfID string, t task.Task) (bo
 	// pending/in_progress, the dependency is not truly met.
 	for _, dep := range t.Dependencies {
 		for _, other := range index.TasksMap() {
-			if other.Type == "fix" && other.SourceTaskID == dep &&
+			if other.ID != selfID && other.Type == "fix" && other.SourceTaskID == dep &&
 				(other.Status == "pending" || other.Status == "in_progress") {
 				unmet = append(unmet, other.ID)
 			}
