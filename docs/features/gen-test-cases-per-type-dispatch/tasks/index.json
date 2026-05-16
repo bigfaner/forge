@@ -1,0 +1,116 @@
+{
+  "feature": "gen-test-cases-per-type-dispatch",
+  "proposal": "docs/proposals/gen-test-cases-per-type-dispatch/proposal.md",
+  "created": "2026-05-16",
+  "tasks": {
+    "1-refactor-skill-dispatcher": {
+      "id": "1",
+      "title": "Refactor gen-test-cases SKILL.md into dispatcher",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "status": "pending",
+      "file": "1-refactor-skill-dispatcher.md",
+      "record": "records/1-refactor-skill-dispatcher.md",
+      "noTest": true,
+      "type": "documentation"
+    },
+    "2-create-per-type-instructions": {
+      "id": "2",
+      "title": "Create per-type instruction files (types/*.md)",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-create-per-type-instructions.md",
+      "record": "records/2-create-per-type-instructions.md",
+      "noTest": true,
+      "type": "documentation"
+    },
+    "3-create-per-type-templates": {
+      "id": "3",
+      "title": "Create per-type templates (templates/*-test-cases.md)",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "3-create-per-type-templates.md",
+      "record": "records/3-create-per-type-templates.md",
+      "noTest": true,
+      "type": "documentation"
+    },
+    "4-create-per-type-rubrics": {
+      "id": "4",
+      "title": "Create per-type rubrics (eval/rubrics/test-cases-*.md)",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "4-create-per-type-rubrics.md",
+      "record": "records/4-create-per-type-rubrics.md",
+      "noTest": true,
+      "type": "documentation"
+    },
+    "5-update-eval-pipeline": {
+      "id": "5",
+      "title": "Update eval skill table + eval-test-cases command",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "4"
+      ],
+      "status": "pending",
+      "file": "5-update-eval-pipeline.md",
+      "record": "records/5-update-eval-pipeline.md",
+      "noTest": true,
+      "type": "documentation"
+    },
+    "6-update-gen-test-scripts": {
+      "id": "6",
+      "title": "Update gen-test-scripts input discovery + convention loading",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "6-update-gen-test-scripts.md",
+      "record": "records/6-update-gen-test-scripts.md",
+      "noTest": true,
+      "type": "documentation"
+    },
+    "eval-doc": {
+      "id": "T-eval-doc",
+      "title": "Evaluate Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "6"
+      ],
+      "status": "pending",
+      "file": "eval-doc.md",
+      "record": "records/eval-doc.md",
+      "scope": "all",
+      "noTest": true,
+      "type": "doc-evaluation"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

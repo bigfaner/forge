@@ -8,18 +8,20 @@ status: Draft
 
 ## Problem
 
-gen-test-cases uses a one-size-fits-all monolithic SKILL.md (271 lines) that loads ALL interface type instructions (UI, TUI, Mobile, API, CLI) into context simultaneously, producing lower quality test cases for specialized types like TUI and Mobile because the agent must navigate a single generic generation strategy.
+gen-test-cases uses a 271-line monolithic SKILL.md that loads ALL interface type instructions (UI, TUI, Mobile, API, CLI) into agent context simultaneously, regardless of which types the project actually uses. A CLI-only project still processes the full UI/TUI/Mobile generation rules, wasting context and diluting focus.
+
+The recent overhaul (6125c64) improved type handling *within* the monolithic framework — TUI/Mobile are now first-class types with dedicated rubric criteria, Interface Accuracy uses percentage-based point splitting, and Antipattern Prevention replaced the old Test Code Quality dimension. However, the fundamental architecture remains: one SKILL.md, one template, one rubric, one output file for all types.
 
 ### Evidence
 
-- The current rubric's "Interface Accuracy" dimension (150 pts) divides points equally across all active capabilities, diluting type-specific scoring depth
-- TUI-specific concerns (ASCII mockup step expectations, key binding coverage, terminal state assertions) share the same dimension weight as generic API contract checks
-- Mobile-specific concerns (touch target sizing, gesture sequences, platform-specific navigation) receive the same shallow treatment
-- A project with only CLI+API still loads the full UI/TUI/Mobile generation rules into agent context
+- **Context waste**: A project with only `cli`+`api` capabilities still loads 271 lines of SKILL.md containing full UI/TUI/Mobile generation instructions (Steps 3-4, target derivation rules, classification indicators, integration TC generation) into agent context
+- **Diluted evaluation**: The Interface Accuracy dimension (150 pts) now uses percentage-based splitting with type-specific sub-criteria, but this is a *scoring workaround* — it still evaluates all types from a single monolithic rubric with conditional branches rather than giving each type its own dedicated rubric
+- **Single-file bottleneck**: All types funnel into one `testing/test-cases.md` — gen-test-scripts already supports `--type` filtering, but must parse the entire file and group by type, then discard non-matching groups. Per-type files would eliminate this grouping step
+- **Template rigidity**: The single template has placeholder sections for all 5 types — a CLI-only project generates `test-cases.md` with 4 empty sections (UI, TUI, Mobile, API) plus the CLI section
 
 ### Urgency
 
-Without type-specialized generation, niche interface types (TUI, Mobile) consistently produce test cases that fail the Step Actionability gate in eval-test-cases, requiring 4-6 refinement iterations. This wastes both agent compute and user time.
+The monolithic architecture limits the quality gains from per-type specialization. Even with percentage-based rubric splitting, the scorer must navigate a single rubric with conditional branches for each type rather than evaluating a focused, type-specific rubric. This adds cognitive overhead to the scoring loop and reduces scoring precision for niche types.
 
 ## Proposed Solution
 
@@ -88,7 +90,9 @@ This file serves as the single entry point for downstream skills to discover all
 
 ### Innovation Highlights
 
-This follows the **strategy pattern** — the dispatcher selects the appropriate generation strategy at runtime based on detected interface types. This is a straightforward decomposition of a monolithic skill into polymorphic sub-skills, not novel but effective. The key insight is that the split boundary aligns with the existing Step 2.5/3 boundary, minimizing restructuring risk.
+This follows the **strategy pattern** — the dispatcher selects the appropriate generation strategy at runtime based on detected interface types. The key insight is that the split boundary aligns with the existing Step 2.5/3 boundary: Steps 0-2.5 produce type-agnostic data (profile, PRD content, AC list, detected types), while Steps 3-4 are already type-specific in the current code. The decomposition is mechanical, not architectural.
+
+The recent overhaul's improvements (percentage-based splitting, TUI/Mobile first-class criteria, Antipattern Prevention) provide the foundation for clean extraction — each type's sub-criteria in the current rubric map directly to its dedicated per-type rubric.
 
 ## Requirements Analysis
 
@@ -102,7 +106,7 @@ This follows the **strategy pattern** — the dispatcher selects the appropriate
 
 ### Non-Functional Requirements
 
-- **Token efficiency**: Per-type instructions should be significantly shorter than the current monolithic equivalent section
+- **Token efficiency**: Per-type instructions should replace the equivalent type-specific sections in the current monolithic SKILL.md, reducing loaded context for single-type projects
 - **Backward compatibility**: Existing features with `testing/test-cases.md` should continue to work (gen-test-scripts reads both old and new formats)
 - **Extensibility**: Adding a new interface type requires only a new `types/{type}.md` + template + rubric, no changes to the dispatcher
 - **Convention awareness**: Per-type instructions and gen-test-scripts load relevant `docs/conventions/` files on demand, grounding output in project standards
@@ -125,9 +129,9 @@ Test generation tools like Playwright Codegen, Postman, and Maestro each special
 
 | Approach | Source | Pros | Cons | Verdict |
 |----------|--------|------|------|---------|
-| Do nothing | — | Zero migration cost | Continued low quality for TUI/Mobile, token waste | Rejected: doesn't solve the problem |
-| Template-only split | Compromise | Fewer files, simpler downstream | Monolithic instructions still loaded; doesn't address quality | Rejected: half-measure |
-| **Per-type dispatch** | Strategy pattern | Type-specialized quality, independent evolution, efficient context | ~15-20 new files, downstream updates needed | **Selected: directly addresses quality pain point** |
+| Do nothing | — | Zero migration cost | Continued context waste, diluted evaluation precision, single-file bottleneck | Rejected: doesn't solve the problem |
+| Template-only split | Compromise | Fewer files, simpler downstream | Monolithic instructions still loaded; doesn't address context waste or evaluation precision | Rejected: half-measure |
+| **Per-type dispatch** | Strategy pattern | Type-specialized quality, independent evolution, efficient context | ~15-20 new files, downstream updates needed | **Selected: directly addresses remaining gaps** |
 
 ## Feasibility Assessment
 
@@ -135,26 +139,28 @@ Test generation tools like Playwright Codegen, Postman, and Maestro each special
 
 The split boundary at Step 2.5/3 is clean — Steps 0-2.5 produce type-agnostic data (profile, PRD content, AC list, detected types). Steps 3-4 are already type-specific in the current code. The decomposition is mechanical, not architectural.
 
+The overhaul's improvements provide a solid foundation: the rubric already has type-specific sub-criteria under Interface Accuracy (web-ui Route Accuracy, tui Output Assertion Accuracy, mobile Interaction Accuracy, api Contract Accuracy, cli Command Coverage), making extraction into dedicated rubrics straightforward.
+
 ### Resource & Timeline
 
 Single-contributor change. The main work is extracting type-specific sections from the monolithic SKILL.md into 5 files, decomposing the rubric, and updating 2 downstream skills. No new dependencies.
 
 ### Dependency Readiness
 
-All downstream skills (gen-test-scripts, eval-test-cases) exist and are well-understood. The eval skill already supports parameterized rubric loading — adding 5 new type entries to its location table is a mechanical extension.
+All downstream skills (gen-test-scripts, eval-test-cases) exist and are well-understood. The eval skill already supports parameterized rubric loading — adding 5 new type entries to its location table is a mechanical extension. gen-test-scripts already has `--type` filter infrastructure, making per-type file consumption a natural extension.
 
 ## Scope
 
 ### In Scope
 
-1. Refactor gen-test-cases `SKILL.md` into dispatcher (Steps 0-2.5) — target under 150 lines
-2. Create 5 per-type instruction files: `types/ui.md`, `types/tui.md`, `types/mobile.md`, `types/api.md`, `types/cli.md`
-3. Create 5 per-type templates: `templates/ui-test-cases.md`, etc.
+1. Refactor gen-test-cases `SKILL.md` into dispatcher (Steps 0-2.5 + manifest generation) — target under 150 lines
+2. Create 5 per-type instruction files: `types/ui.md`, `types/tui.md`, `types/mobile.md`, `types/api.md`, `types/cli.md` — each containing type-specific Steps 3-4 instructions extracted from the current monolithic SKILL.md
+3. Create 5 per-type templates: `templates/ui-test-cases.md`, `templates/tui-test-cases.md`, `templates/mobile-test-cases.md`, `templates/api-test-cases.md`, `templates/cli-test-cases.md` — each containing only that type's section (frontmatter + TC placeholders + type-specific traceability)
 4. Define `testing/manifest.md` aggregator structure (generated by SKILL.md after per-type loop)
-5. Create 5 per-type rubric files: `eval/rubrics/test-cases-ui.md`, `test-cases-tui.md`, `test-cases-mobile.md`, `test-cases-api.md`, `test-cases-cli.md`. Decomposition guidance: keep 1000-point scale; retain PRD Traceability, Step Actionability, Completeness, Structure & ID, Antipattern Prevention as shared dimensions; replace Interface Accuracy with type-specific dimensions (e.g., UI→Visual State Accuracy, API→Contract Accuracy, CLI→Output Accuracy). Remove cross-type filtering logic from per-type rubrics
-6. Add 5 new entries to eval skill's prerequisite/location table: `test-cases-ui/tui/mobile/api/cli` each mapping to `testing/` directory with `{type}-test-cases.md` as the document file
+5. Create 5 per-type rubric files: `eval/rubrics/test-cases-ui.md`, `test-cases-tui.md`, `test-cases-mobile.md`, `test-cases-api.md`, `test-cases-cli.md`. Decomposition guidance: keep 1000-point scale; retain PRD Traceability (200), Step Actionability (250), Completeness (200), Structure & ID (100), Antipattern Prevention (100) as shared dimensions; replace Interface Accuracy (150) with type-specific dimensions derived from current sub-criteria (e.g., UI→Visual State Accuracy from web-ui Route Accuracy criteria, API→Contract Accuracy from api Contract Accuracy criteria, CLI→Output Accuracy from cli Output Assertion criteria). Each per-type rubric gets the full 150 pts for its specialized dimension without percentage-based splitting
+6. Add 5 new entries to eval skill's prerequisite/location table: `test-cases-ui`, `test-cases-tui`, `test-cases-mobile`, `test-cases-api`, `test-cases-cli` — each mapping to `testing/` directory with `{type}-test-cases.md` as the document file
 7. Refactor `eval-test-cases` command into a thin per-type dispatcher loop: for each active type, invoke `eval` skill with `--type test-cases-{type}` pointing to the matching per-type rubric and `{type}-test-cases.md` file. Fallback: if no per-type files exist, invoke with `--type test-cases` for legacy monolithic mode
-8. Update `gen-test-scripts` prerequisite check to accept per-type files (`{type}-test-cases.md`) OR legacy `test-cases.md`. Discovery logic: glob `testing/*-test-cases.md` first; if empty, fall back to `testing/test-cases.md`. Step Actionability gate path updated accordingly
+8. Update `gen-test-scripts` Step 1 prerequisite check to accept per-type files (`{type}-test-cases.md`) OR legacy `test-cases.md`. Discovery logic: glob `testing/*-test-cases.md` first; if empty, fall back to `testing/test-cases.md`. When reading per-type files, skip the type grouping step (file is already single-type). Step Actionability gate path updated accordingly
 9. Add convention loading to SKILL.md dispatcher and gen-test-scripts: read per-type instruction frontmatter `conventions` field, load existing files from `docs/conventions/`, skip missing. Dispatcher's own frontmatter declares project-wide conventions (e.g., `conventions: [testing-isolation.md]`)
 
 ### Out of Scope
@@ -181,7 +187,7 @@ All downstream skills (gen-test-scripts, eval-test-cases) exist and are well-und
 
 - [ ] SKILL.md is under 150 lines (dispatcher + shared Steps 0-2.5 + manifest generation)
 - [ ] Each per-type instruction file covers type-specific Steps 3-4 completely
-- [ ] Each per-type rubric has at least 4 dimensions with type-specific scoring criteria (shared dimensions: PRD Traceability, Step Actionability, Completeness, Structure & ID, Antipattern Prevention; type-specific dimension replaces Interface Accuracy — e.g., UI→Visual State Accuracy, API→Contract Accuracy)
+- [ ] Each per-type rubric has at least 4 dimensions with type-specific scoring criteria (shared dimensions: PRD Traceability 200, Step Actionability 250, Completeness 200, Structure & ID 100, Antipattern Prevention 100; type-specific dimension replaces Interface Accuracy — full 150 pts without percentage-based splitting)
 - [ ] gen-test-scripts prerequisite check accepts per-type files via glob `testing/*-test-cases.md`, falls back to legacy `testing/test-cases.md`
 - [ ] eval skill's prerequisite/location table has entries for all 5 `test-cases-*` types, each mapping to `testing/` directory
 - [ ] eval-test-cases loops per-type: for each active type, invokes eval skill with `--type test-cases-{type}` targeting the matching rubric and single `{type}-test-cases.md` file; falls back to `--type test-cases` for legacy monolithic mode
