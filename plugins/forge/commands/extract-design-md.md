@@ -1,10 +1,13 @@
 ---
 name: extract-design-md
-description: Analyze a web app's visual style and generate a DESIGN.md for use with ui-design skill.
+description: Extract visual style from a web, mobile, or TUI application and generate a DESIGN.md for use with ui-design skill. Supports --platform flag (web, mobile, tui).
 allowed_tools: ["Bash", "Read", "Write", "WebFetch"]
 argument-hints:
   - name: url
-    description: Web application URL to analyze (e.g. https://stripe.com)
+    description: Application URL or screenshot path to analyze (e.g. https://stripe.com or ./screenshot.png)
+    required: false
+  - name: --platform
+    description: "Target platform: web (default), mobile, or tui"
     required: false
 ---
 
@@ -17,8 +20,30 @@ Auto-extract visual style from a web application and generate a forge-compatible
 ## Process Flow
 
 ```
-1. Get URL → 2. Analyze visual style → 3. Match strategy → 4. Build design tokens → 5. Write DESIGN.md → 6. Confirm
+1. Parse platform flag → 2. Validate input → 3. Platform-specific extraction → 4. Match strategy → 5. Build design tokens → 6. Write DESIGN.md → 7. Confirm
 ```
+
+## Platform Routing
+
+Extract the `--platform` flag from command arguments. If not provided, default to `web`.
+
+**Valid values**: `web`, `mobile`, `tui`
+
+**Validation**: If `--platform` is provided with any other value, stop immediately and output:
+
+> ERROR: unsupported platform "<value>". Must be one of: web, mobile, tui
+
+Then route to the appropriate extraction section:
+
+| Platform | Input | Extraction Method |
+|----------|-------|-------------------|
+| `web` (default) | URL | CSS extraction from HTML (Steps below) |
+| `mobile` | URL | Mobile-adapted CSS extraction (placeholder — see note) |
+| `tui` | Screenshot path | AI vision analysis (placeholder — see note) |
+
+**Mobile placeholder**: When `--platform mobile`, execute the same extraction flow as web, but note that mobile-specific analysis (responsive breakpoints, touch targets, safe areas) will be added in a future update. For now, proceed with web extraction and note in the output that results are web-based.
+
+**TUI placeholder**: When `--platform tui`, if no screenshot path is provided, ask the user for a screenshot file path. Then output a message explaining that TUI extraction is not yet implemented and will be added in a future update. Do not generate a DESIGN.md for TUI until the adapter is complete.
 
 ## Step 1: Get URL
 
