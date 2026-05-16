@@ -80,7 +80,7 @@
       "dependencies": [
         "T-quick-3"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "quick-graduate-go-test.md",
       "record": "records/quick-graduate-go-test.md",
       "scope": "all",
@@ -95,7 +95,7 @@
       "dependencies": [
         "T-quick-2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "quick-run-tests-go-test.md",
       "record": "records/quick-run-tests-go-test.md",
       "scope": "all",
@@ -126,7 +126,7 @@
       "dependencies": [
         "T-quick-4"
       ],
-      "status": "pending",
+      "status": "blocked",
       "file": "quick-verify-regression.md",
       "record": "records/quick-verify-regression.md",
       "scope": "all",

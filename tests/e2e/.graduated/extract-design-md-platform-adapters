@@ -1,0 +1,9 @@
+schema_version: 1
+status: completed
+timestamp: 2026-05-16T12:00:00Z
+source: tests/e2e/features/extract-design-md-platform-adapters/
+targets:
+  - tests/e2e/extract_design_md_platform_adapters_cli_test.go
+modules:
+  - extract-design-md
+testCount: 18
