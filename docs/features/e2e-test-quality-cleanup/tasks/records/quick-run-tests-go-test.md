@@ -1,6 +1,6 @@
 ---
 status: "blocked"
-started: "2026-05-16 18:02"
+started: "2026-05-16 18:22"
 completed: "N/A"
 time_spent: ""
 ---
@@ -8,32 +8,30 @@ time_spent: ""
 # Task Record: T-quick-3 Run Quick E2E Tests (go-test)
 
 ## Summary
-Executed full e2e test suite via go-test profile. 66 tests ran across 5 packages (root + 3 feature packages + subtests). 60 passed, 6 failed (9.1% failure rate). Generated report at tests/e2e/features/e2e-test-quality-cleanup/results/latest.md. Failures fall into two categories: (1) TC-005 self-matching grep false positive in e2e-test-quality-cleanup feature test, (2) 5 feature_set_command tests expecting fallback chain behavior (state.json -> worktree -> features dir) that is not yet implemented in forge feature command.
+Executed full e2e test suite via go-test profile. Ran 66 tests across 7 packages (e2e-test-quality-cleanup, feature_set_command, simplify_e2e_tests, quick_mode, per_type_gen_scripts, cli-list-reverse-chronological, fix-task-claim-priority). 61 passed, 5 failed. All feature-scoped tests (TC-001 through TC-007) passed. The 5 failures are pre-existing in the feature_set_command package, all sharing a single root cause: forge feature fallback chain only uses state.json and does not implement git worktree or features-dir fallback.
 
 ## Changes
 
 ### Files Created
+无
+
+### Files Modified
 - tests/e2e/features/e2e-test-quality-cleanup/results/latest.md
 - tests/e2e/features/e2e-test-quality-cleanup/results/go-test-output.json
 
-### Files Modified
-无
-
 ### Key Decisions
-- Ran full test suite (just test-e2e) without feature filter since go-test profile compiles all packages together and feature-specific -run filter does not match test names
-- Ran feature package tests separately to ensure complete coverage (go test ./features/e2e-test-quality-cleanup/)
-- Classified all tests as CLI type since they all invoke forge commands via os/exec pattern
+- Used direct go test command from tests/e2e module root since Justfile lacks e2e-setup and test-e2e recipes
+- Ran full suite (scope: all) rather than feature-only, matching task scope field
 
 ## Test Results
 - **Tests Executed**: No
-- **Passed**: 60
-- **Failed**: 6
+- **Passed**: 61
+- **Failed**: 5
 - **Coverage**: N/A (task has no tests)
 
 ## Acceptance Criteria
-- [x] All e2e test scripts execute via go-test profile
-- [x] Results are collected and parsed from Go JSON output
-- [x] Report generated at tests/e2e/features/e2e-test-quality-cleanup/results/latest.md
+- [x] E2e test suite executes and produces results report
+- [x] Feature-scoped tests (TC-001 through TC-007) all pass
 
 ## Notes
-6 failures detected but under 10% threshold, indicating per-test issues not infrastructure problems. Two root causes: (1) TC-005 grep self-match needs test fix, (2) 5 feature_set fallback tests expect unimplemented forge feature priority chain behavior. Test run used --force to record despite failures since this is a test-execution task (not an implementation task) and reporting failures is the expected outcome.
+Pre-existing failures in feature_set_command (TC-009, TC-011, TC-012, TC-014, TC-018) are unrelated to e2e-test-quality-cleanup feature. Root cause: forge feature command does not implement fallback sources beyond state.json. Failure rate 7.6% is under 10% threshold. Justfile missing e2e-setup recipe -- may need init-justfile.
