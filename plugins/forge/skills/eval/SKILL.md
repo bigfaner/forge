@@ -35,6 +35,23 @@ If missing, tell user to create it first.
 
 Resolution: explicit `--type` in `<command-args>` → command name `/eval-<type>` → ask user.
 
+### Rubric Context Frontmatter (optional)
+
+Rubrics may declare a `context` frontmatter field to inject project reality files into the scorer prompt. Rubrics without `context` continue to work unchanged.
+
+```yaml
+context:
+  conventions: [api, naming, ux]  # list of category strings (optional)
+  business-rules: auto            # "auto" or list of filenames (optional)
+```
+
+| Sub-field | Type | Description |
+|-----------|------|-------------|
+| `conventions` | list of strings | Each string matches filenames in `docs/conventions/` by prefix. E.g., `api` matches `api*.md`. Non-matching strings are skipped silently. |
+| `business-rules` | `"auto"` or list of strings | `auto` loads all `.md` files from `docs/business-rules/`. A list specifies exact filenames. Missing files are skipped silently. |
+
+At least one sub-field must be present for context injection to activate.
+
 ## Architecture
 
 ```mermaid
@@ -66,7 +83,7 @@ flowchart TD
 Load: `plugins/forge/skills/eval/rubrics/<type>.md`
 Exception: type `ui` → detect platform first (see 1.3), then load `ui-<platform>.md`.
 
-Parse rubric frontmatter: `scale`, `target`, `iterations`. CLI `--target`/`--iterations` override frontmatter.
+Parse rubric frontmatter: `scale`, `target`, `iterations`, `context`. CLI `--target`/`--iterations` override frontmatter. Store `context` declaration for use in Step 1.4 and Step 2.
 
 ### 1.2 Locate Documents
 
@@ -103,6 +120,7 @@ Multi-platform: run independent score→gate→revise loops per platform.
 
 | Type | Before Scoring |
 |------|---------------|
+| **All types** | If rubric has `context` frontmatter, load filtered context files: (1) for each string in `conventions`, glob `docs/conventions/<string>*.md` and read matching files; (2) if `business-rules: auto`, glob `docs/business-rules/*.md` and read all, else read listed filenames. Concatenate into `CONTEXT_CONTENT` for Step 2 injection. Skip missing files silently (no error, no abort). |
 | `harness` | Gather project context, write snapshot. Scorer evaluates snapshot, not raw files. |
 | `consistency` | Assemble document bundle — copy relevant docs into flat directory for scorer. |
 | `test-cases` | Resolve test profile via `forge profile`. Pass profile capabilities to scorer. |
@@ -129,6 +147,16 @@ Type-specific inputs:
 - `consistency`: add `SCOPE` = value from `--scope`
 
 Do NOT pass reviser change summaries to the scorer.
+
+**Context Injection**: If `CONTEXT_CONTENT` was loaded in Step 1.4, append the following section to the scorer prompt:
+
+```
+<injected-context>
+The following project reference material is provided for reality-checking the evaluated document. Use it to detect contradictions, violations, or gaps — do not evaluate the reference material itself.
+
+{{CONTEXT_CONTENT}}
+</injected-context>
+```
 
 After scorer returns, extract:
 1. `SCORE: X/{{scale}}`
