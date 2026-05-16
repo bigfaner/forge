@@ -14,6 +14,11 @@ description: Generic document evaluation with scorer→gate→revise loop. Param
 | `design` | `design/tech-design.md` |
 | `ui-web`, `ui-mobile`, `ui-tui` | `ui/ui-design.md` |
 | `test-cases` | `testing/test-cases.md` |
+| `ui-test-cases` | `testing/ui-test-cases.md` |
+| `tui-test-cases` | `testing/tui-test-cases.md` |
+| `mobile-test-cases` | `testing/mobile-test-cases.md` |
+| `api-test-cases` | `testing/api-test-cases.md` |
+| `cli-test-cases` | `testing/cli-test-cases.md` |
 | `consistency` | `manifest.md` + `prd/prd-spec.md` + at least one other doc |
 | `harness` | Project has CLAUDE.md or AGENTS.md |
 
@@ -23,7 +28,7 @@ If missing, tell user to create it first.
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `--type` | (required) | `proposal`, `prd`, `design`, `ui`, `ui-web`, `ui-mobile`, `ui-tui`, `test-cases`, `consistency`, `harness` |
+| `--type` | (required) | `proposal`, `prd`, `design`, `ui`, `ui-web`, `ui-mobile`, `ui-tui`, `test-cases`, `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases`, `consistency`, `harness` |
 | `--target` | rubric frontmatter | Override target score |
 | `--iterations` | rubric frontmatter | Override max iterations |
 | `--scope` | `docs` | `consistency` only: `docs` or `full` |
@@ -76,6 +81,11 @@ Parse rubric frontmatter: `scale`, `target`, `iterations`. CLI `--target`/`--ite
 | `design` | `docs/features/<slug>/design/` |
 | `ui-*` | `docs/features/<slug>/ui/` |
 | `test-cases` | `docs/features/<slug>/testing/` |
+| `ui-test-cases` | `docs/features/<slug>/testing/` |
+| `tui-test-cases` | `docs/features/<slug>/testing/` |
+| `mobile-test-cases` | `docs/features/<slug>/testing/` |
+| `api-test-cases` | `docs/features/<slug>/testing/` |
+| `cli-test-cases` | `docs/features/<slug>/testing/` |
 | `consistency` | `docs/features/<slug>/` |
 | `harness` | `docs/harness-reports/` |
 
@@ -96,6 +106,7 @@ Multi-platform: run independent score→gate→revise loops per platform.
 | `harness` | Gather project context, write snapshot. Scorer evaluates snapshot, not raw files. |
 | `consistency` | Assemble document bundle — copy relevant docs into flat directory for scorer. |
 | `test-cases` | Resolve test profile via `forge profile`. Pass profile capabilities to scorer. |
+| `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases` | Resolve test profile via `forge profile`. Pass profile capabilities to scorer. |
 | `prd` | Detect mode: `prd-ui-functions.md` exists → Mode A (with UI), else Mode B (no UI). |
 
 ## Step 2: Invoke Scorer Subagent
@@ -114,7 +125,7 @@ Inputs:
 
 Type-specific inputs:
 - `ui-*`: add `PRD_PATH` = `docs/features/<slug>/prd/prd-ui-functions.md` (if exists)
-- `test-cases`: add `PRD_FILES` = paths to prd-spec.md and prd-user-stories.md
+- `test-cases`, `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases`: add `PRD_FILES` = paths to prd-spec.md and prd-user-stories.md
 - `consistency`: add `SCOPE` = value from `--scope`
 
 Do NOT pass reviser change summaries to the scorer.
@@ -124,7 +135,7 @@ After scorer returns, extract:
 2. Per-dimension scores from `DIMENSIONS:` section
 3. Attack points from `ATTACKS:` section
 
-`test-cases`: If Step Actionability < 200, warn that gen-test-scripts is blocked.
+`test-cases`, `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases`: If Step Actionability < 200, warn that gen-test-scripts is blocked.
 
 ## Step 3a: Single-Pass (iterations ≤ 1)
 
@@ -152,6 +163,7 @@ Inputs:
 Type-specific constraints:
 - `consistency`: Do NOT modify `prd/`. Classify attack points by fix target before invoking.
 - `test-cases`: ONLY modify `test-cases.md`.
+- `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases`: ONLY modify `{type}-test-cases.md`.
 
 After reviser completes:
 - `consistency`: re-assemble document bundle
@@ -178,7 +190,7 @@ After reviser completes:
 Type-specific additions:
 - `harness`: priority improvement table (P0/P1/P2)
 - `consistency`: "Files Modified" and "Residual Issues"
-- `test-cases`: Step Actionability blocking warning if < 200
+- `test-cases`, `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases`: Step Actionability blocking warning if < 200
 - `design`: Breakdown-Readiness gate status
 
 Save report to type-specific report path.
@@ -194,6 +206,7 @@ Ask user via `AskUserQuestion`:
 | `design` | `/breakdown-tasks` |
 | `ui-*` | `/tech-design` |
 | `test-cases` | `/gen-test-scripts` |
+| `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases` | `/gen-test-scripts` |
 | `consistency` | `/run-tasks` or re-eval |
 | `harness` | `/improve-harness` |
 
@@ -212,5 +225,10 @@ All rubrics: `plugins/forge/skills/eval/rubrics/<type>.md`
 | `ui-mobile` | 1000 | 950 | 3 | |
 | `ui-tui` | 1000 | 950 | 3 | |
 | `test-cases` | 1000 | 900 | 6 | Step Actionability blocking threshold |
+| `ui-test-cases` | 1000 | 900 | 6 | Step Actionability blocking threshold |
+| `tui-test-cases` | 1000 | 900 | 6 | Step Actionability blocking threshold |
+| `mobile-test-cases` | 1000 | 900 | 6 | Step Actionability blocking threshold |
+| `api-test-cases` | 1000 | 900 | 6 | Step Actionability blocking threshold |
+| `cli-test-cases` | 1000 | 900 | 6 | Step Actionability blocking threshold |
 | `consistency` | 1000 | 900 | 3 | docs/full scope modes |
 | `harness` | 100 | 70 | 1 | Single-pass; no reviser |
