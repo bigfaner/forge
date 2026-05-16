@@ -425,26 +425,6 @@ func TestTC_015_VerboseShowsStateJsonSource(t *testing.T) {
 	outputContains(t, out, "FEATURE: my-slug (from: state.json)")
 }
 
-// Traceability: TC-016 -> Task 3 AC #2
-func TestTC_016_VerboseShowsWorktreeSource(t *testing.T) {
-	// This test requires a git worktree setup which is environment-dependent.
-	// When running in a worktree named after a feature, and no state.json,
-	// the output should show "(from: worktree)".
-	// Since we cannot create a real worktree in an e2e test easily,
-	// we test the behavior indirectly via the priority chain:
-	// If we're in a worktree and no state.json exists, worktree source is used.
-	t.Skip("requires real git worktree environment setup - manual verification needed")
-}
-
-// Traceability: TC-017 -> Task 3 AC #3
-func TestTC_017_VerboseShowsBranchSource(t *testing.T) {
-	// This test requires being on a feature branch (feature/xxx) which is
-	// environment-dependent. Similar to TC-016, we test indirectly.
-	// When on a feature branch with matching feature dir and no state.json,
-	// output should show "(from: branch)".
-	t.Skip("requires real git feature branch environment setup - manual verification needed")
-}
-
 // Traceability: TC-018 -> Task 3 AC #4
 func TestTC_018_VerboseShowsFeaturesDirSource(t *testing.T) {
 	projectRoot := setupProjectDir(t)
