@@ -55,7 +55,7 @@
       "file": "quick-gen-scripts-go-test.md",
       "record": "records/quick-gen-scripts-go-test.md",
       "scope": "all",
-      "type": "test-pipeline.gen-scripts",
+      "type": "implementation",
       "profile": "go-test"
     },
     "quick-graduate-go-test": {
@@ -66,11 +66,11 @@
       "dependencies": [
         "T-quick-3"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "quick-graduate-go-test.md",
       "record": "records/quick-graduate-go-test.md",
       "scope": "all",
-      "type": "test-pipeline.graduate",
+      "type": "implementation",
       "profile": "go-test"
     },
     "quick-run-tests-go-test": {
@@ -81,11 +81,11 @@
       "dependencies": [
         "T-quick-2"
       ],
-      "status": "blocked",
+      "status": "completed",
       "file": "quick-run-tests-go-test.md",
       "record": "records/quick-run-tests-go-test.md",
       "scope": "all",
-      "type": "test-pipeline.run",
+      "type": "implementation",
       "profile": "go-test"
     },
     "quick-test-cases-go-test": {
@@ -101,7 +101,7 @@
       "record": "records/quick-test-cases-go-test.md",
       "scope": "all",
       "noTest": true,
-      "type": "test-pipeline.gen-cases",
+      "type": "implementation",
       "profile": "go-test"
     },
     "quick-verify-regression": {
@@ -116,7 +116,7 @@
       "file": "quick-verify-regression.md",
       "record": "records/quick-verify-regression.md",
       "scope": "all",
-      "type": "test-pipeline.verify-regression"
+      "type": "implementation"
     }
   },
   "statusEnum": [
