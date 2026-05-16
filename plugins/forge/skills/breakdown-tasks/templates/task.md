@@ -6,7 +6,7 @@ estimated_time: "{{ESTIMATED_TIME}}"
 dependencies: [{{DEPENDENCIES}}]
 scope: "{{SCOPE}}"
 breaking: false
-type: "implementation"
+type: "feature"
 mainSession: false
 ---
 

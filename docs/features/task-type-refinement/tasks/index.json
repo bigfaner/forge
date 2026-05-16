@@ -79,7 +79,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "6-skill-updates.md",
       "record": "records/6-skill-updates.md",
       "scope": "backend",
