@@ -8,7 +8,7 @@
       "title": "Fix P0: Set step-scoped SourceTaskID and cumulative counting",
       "priority": "P0",
       "estimatedTime": "60m",
-      "status": "in_progress",
+      "status": "completed",
       "file": "1-fix-source-task-id-and-counting.md",
       "record": "records/1-fix-source-task-id-and-counting.md",
       "breaking": true,

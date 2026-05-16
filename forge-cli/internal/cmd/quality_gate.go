@@ -301,17 +301,15 @@ func extractSourceFiles(output string) string {
 	return strings.Join(files, ", ")
 }
 
-// countActiveFixTasks counts fix-tasks for a step that are not in a terminal state
-// (completed or skipped). A fix-task is identified by having a non-empty SourceTaskID
-// AND a title with the prefix "fix <step>:".
-func countActiveFixTasks(index *task.TaskIndex, step string) int {
+// countFixTasks counts ALL fix-tasks for a step regardless of status (completed +
+// active + blocked + skipped). A fix-task is identified by having a non-empty
+// SourceTaskID AND a title with the prefix "fix <step>:".
+func countFixTasks(index *task.TaskIndex, step string) int {
 	count := 0
 	prefix := "fix " + step + ":"
 	for _, t := range index.TasksMap() {
 		if t.SourceTaskID != "" &&
-			strings.HasPrefix(t.Title, prefix) &&
-			t.Status != "completed" &&
-			t.Status != "skipped" {
+			strings.HasPrefix(t.Title, prefix) {
 			count++
 		}
 	}
@@ -330,7 +328,7 @@ func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) (st
 		fmt.Fprintf(os.Stderr, "WARNING: failed to load index for cap check: %v\n", err)
 		// Proceed without cap check if index can't be loaded.
 	} else {
-		active := countActiveFixTasks(index, step)
+		active := countFixTasks(index, step)
 		if active >= maxFixTasksPerStep {
 			fmt.Fprintf(os.Stderr, "max fix-tasks reached for %s, manual intervention required\n", step)
 			return "", ErrMaxFixTasks
@@ -354,12 +352,15 @@ func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) (st
 
 	// Build opts — Priority/Breaking/EstimatedTime intentionally hardcoded
 	// (not read from template defaults) since this is a programmatic caller.
+	// SourceTaskID uses step-scoped sentinel for cumulative counting;
+	// Vars["SOURCE_TASK_ID"] diverges intentionally for template rendering.
 	opts := task.AddTaskOpts{
 		Title:         title,
 		Priority:      "P0",
 		EstimatedTime: "30min",
 		Breaking:      true,
 		Description:   description,
+		SourceTaskID:  "quality-gate:" + step,
 		Template:      "fix-task",
 		Vars: map[string]string{
 			"SOURCE_FILES":   sourceFiles,
