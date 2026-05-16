@@ -22,6 +22,8 @@ func projectRoot() string {
 	if !ok {
 		return ""
 	}
+	// thisFile: .../tests/e2e/features/e2e-test-quality-cleanup/e2e_test_quality_cleanup_cli_test.go
+	// up 4: e2e-test-quality-cleanup -> features -> e2e -> tests -> project root
 	dir := filepath.Join(filepath.Dir(thisFile), "..", "..", "..", "..")
 	abs, err := filepath.Abs(dir)
 	if err != nil {
@@ -194,16 +196,29 @@ func TestTC_005_ZeroRecursiveGoTestInvocations(t *testing.T) {
 	assert.NotEmpty(t, root, "project root must be resolved")
 
 	e2eDir := filepath.Join(root, "tests", "e2e")
+	target := `exec.Command("go", "test"`
 
-	cmd := exec.Command("grep",
-		"-rn", `exec.Command("go", "test"`,
-		"--include=*_test.go",
-		"--exclude-dir=features",
-		e2eDir,
-	)
-	out, _ := cmd.CombinedOutput()
-	assert.Empty(t, strings.TrimSpace(string(out)),
-		"no exec.Command(\"go\", \"test\") calls should exist in e2e test files")
+	var testFiles []string
+	err := filepath.WalkDir(e2eDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		// Skip features/ subdirectory (generated staging area)
+		if d.IsDir() && d.Name() == "features" {
+			return filepath.SkipDir
+		}
+		if !d.IsDir() && strings.HasSuffix(d.Name(), "_test.go") {
+			testFiles = append(testFiles, path)
+		}
+		return nil
+	})
+	assert.NoError(t, err, "failed to walk e2e test directory")
+
+	for _, tf := range testFiles {
+		content := fileContent(t, tf)
+		assert.NotContains(t, content, target,
+			"no exec.Command(\"go\", \"test\") calls should exist in %s", tf)
+	}
 }
 
 // =============================================================================
