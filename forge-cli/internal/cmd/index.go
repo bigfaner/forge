@@ -66,6 +66,20 @@ func runIndex(_ *cobra.Command, _ []string) {
 		profiles = p
 	}
 
+	// Resolve capabilities: config.yaml > UnionCapabilities(profiles)
+	var capabilities []string
+	cfg, _ := profile.ReadConfig(projectRoot)
+	if cfg != nil && len(cfg.Capabilities) > 0 {
+		capabilities = cfg.Capabilities
+	}
+	if len(capabilities) == 0 && len(profiles) > 0 {
+		caps, err := profile.UnionCapabilities(profiles)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "WARNING: failed to resolve capabilities: %v\n", err)
+		}
+		capabilities = caps
+	}
+
 	// Build strategy resolver
 	resolveStrategy := func(profileName, kind string) []byte {
 		content, err := profile.GetStrategy(profileName, kind)
@@ -76,12 +90,13 @@ func runIndex(_ *cobra.Command, _ []string) {
 	}
 
 	opts := task.BuildIndexOpts{
-		FeatureSlug:     indexFeatureSlug,
-		ProjectRoot:     projectRoot,
-		TasksDir:        tasksDir,
-		IndexPath:       indexPath,
-		TestProfiles:    profiles,
-		ResolveStrategy: resolveStrategy,
+		FeatureSlug:      indexFeatureSlug,
+		ProjectRoot:      projectRoot,
+		TasksDir:         tasksDir,
+		IndexPath:        indexPath,
+		TestProfiles:     profiles,
+		TestCapabilities: capabilities,
+		ResolveStrategy:  resolveStrategy,
 	}
 
 	result, err := task.BuildIndex(opts)

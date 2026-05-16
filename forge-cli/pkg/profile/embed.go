@@ -113,6 +113,27 @@ func GetProfileCapabilities(name string) ([]string, error) {
 	return manifest.Capabilities, nil
 }
 
+// ValidTestTypes is the closed set of valid test-type capabilities.
+// Sourced from all profile manifests under pkg/profile/profiles/.
+var ValidTestTypes = []string{
+	"web-ui",
+	"tui",
+	"mobile-ui",
+	"api",
+	"cli",
+}
+
+// ValidateCapabilities checks that every value in caps is a known test-type capability.
+// Returns an error listing valid values if any unknown capability is found.
+func ValidateCapabilities(caps []string) error {
+	for _, c := range caps {
+		if !slices.Contains(ValidTestTypes, c) {
+			return fmt.Errorf("invalid capability: %s (valid types: %s)", c, strings.Join(ValidTestTypes, ", "))
+		}
+	}
+	return nil
+}
+
 // UnionCapabilities returns the union of capabilities from the given profiles.
 func UnionCapabilities(profileNames []string) ([]string, error) {
 	seen := make(map[string]bool)

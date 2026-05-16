@@ -15,12 +15,13 @@ type StrategyResolver func(profileName, kind string) []byte
 
 // BuildIndexOpts holds options for building the task index.
 type BuildIndexOpts struct {
-	FeatureSlug     string
-	ProjectRoot     string
-	TasksDir        string   // absolute path to tasks/
-	IndexPath       string   // absolute path to index.json
-	TestProfiles    []string // flag > config.yaml > none
-	ResolveStrategy StrategyResolver
+	FeatureSlug      string
+	ProjectRoot      string
+	TasksDir         string   // absolute path to tasks/
+	IndexPath        string   // absolute path to index.json
+	TestProfiles     []string // flag > config.yaml > none
+	TestCapabilities []string // config.yaml capabilities > UnionCapabilities(profiles) > none
+	ResolveStrategy  StrategyResolver
 }
 
 // BuildIndexResult holds the result of a BuildIndex operation.
@@ -267,15 +268,8 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 			index.SetTask(evalKey, task)
 			result.NewCount++
 		}
-	} else if needsTest && len(profiles) > 0 && mode != "" {
-		// Detect test types from test-cases.md
-		var detectedTypes []string
-		testCasesPath := filepath.Join(opts.ProjectRoot, "docs", "features", opts.FeatureSlug, "testing", "test-cases.md")
-		if tcData, err := os.ReadFile(testCasesPath); err == nil {
-			detectedTypes = DetectTypesFromTestCases(tcData)
-		}
-
-		testTasks := generateTestTasks(mode, profiles, detectedTypes)
+	} else if needsTest && len(profiles) > 0 && len(opts.TestCapabilities) > 0 && mode != "" {
+		testTasks := generateTestTasks(mode, profiles, opts.TestCapabilities)
 		if len(testTasks) > 0 {
 			ResolveFirstTestDep(testTasks, index.TasksMap(), mode)
 		}
@@ -374,12 +368,12 @@ func setFeatureMetadata(index *TaskIndex, projectRoot, slug string) {
 }
 
 // generateTestTasks returns test task definitions for the given mode and profiles.
-func generateTestTasks(mode string, profiles []string, detectedTypes []string) []TestTaskDef {
+func generateTestTasks(mode string, profiles []string, capabilities []string) []TestTaskDef {
 	switch mode {
 	case "breakdown":
-		return GetBreakdownTestTasks(profiles, detectedTypes)
+		return GetBreakdownTestTasks(profiles, capabilities)
 	case "quick":
-		return GetQuickTestTasks(profiles, detectedTypes)
+		return GetQuickTestTasks(profiles, capabilities)
 	default:
 		return nil
 	}
