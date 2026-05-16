@@ -8,7 +8,7 @@
       "title": "Delete 4 entire test files with no meaningful tests",
       "priority": "P1",
       "estimatedTime": "15m",
-      "status": "pending",
+      "status": "completed",
       "file": "1-delete-test-files.md",
       "record": "records/1-delete-test-files.md",
       "scope": "all",
