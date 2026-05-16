@@ -196,17 +196,30 @@ func executeAdd(cmd *cobra.Command) (*AddResult, error) {
 
 	// Rebuild index from all .md files (canonical merge)
 	profiles, _ := profile.ReadTestProfiles(projectRoot)
+
+	// Resolve capabilities: config.yaml > UnionCapabilities(profiles)
+	var capabilities []string
+	cfg, _ := profile.ReadConfig(projectRoot)
+	if cfg != nil && len(cfg.Capabilities) > 0 {
+		capabilities = cfg.Capabilities
+	}
+	if len(capabilities) == 0 && len(profiles) > 0 {
+		caps, _ := profile.UnionCapabilities(profiles)
+		capabilities = caps
+	}
+
 	resolveStrategy := func(profileName, kind string) []byte {
 		content, _ := profile.GetStrategy(profileName, kind)
 		return content
 	}
 	buildOpts := task.BuildIndexOpts{
-		FeatureSlug:     featureSlug,
-		ProjectRoot:     projectRoot,
-		TasksDir:        tasksDir,
-		IndexPath:       indexPath,
-		TestProfiles:    profiles,
-		ResolveStrategy: resolveStrategy,
+		FeatureSlug:      featureSlug,
+		ProjectRoot:      projectRoot,
+		TasksDir:         tasksDir,
+		IndexPath:        indexPath,
+		TestProfiles:     profiles,
+		TestCapabilities: capabilities,
+		ResolveStrategy:  resolveStrategy,
 	}
 	if _, err := task.BuildIndex(buildOpts); err != nil {
 		fmt.Fprintf(os.Stderr, "WARNING: failed to rebuild index: %v\n", err)

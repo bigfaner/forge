@@ -549,11 +549,12 @@ func TestBuildIndex_WithTestTasks(t *testing.T) {
 	writeTaskMD(t, tasksDir, "2-gate.md", "2.gate", "Phase 2 Gate", nil)
 
 	opts := BuildIndexOpts{
-		FeatureSlug:  "test-feature",
-		ProjectRoot:  projectRoot,
-		TasksDir:     tasksDir,
-		IndexPath:    indexPath,
-		TestProfiles: []string{"go-test"},
+		FeatureSlug:      "test-feature",
+		ProjectRoot:      projectRoot,
+		TasksDir:         tasksDir,
+		IndexPath:        indexPath,
+		TestProfiles:     []string{"go-test"},
+		TestCapabilities: []string{"cli"},
 	}
 
 	result, err := BuildIndex(opts)
@@ -561,7 +562,7 @@ func TestBuildIndex_WithTestTasks(t *testing.T) {
 		t.Fatalf("BuildIndex: %v", err)
 	}
 
-	// 1 business + 2 gates + 7 test tasks = 10
+	// 1 business + 2 gates + 7 test tasks (gen-cases, eval-cases, gen-scripts-cli, run, graduate, verify-regression, consolidate) = 10
 	total := result.NewCount + result.UpdatedCount
 	if total != 10 {
 		t.Errorf("total tasks = %d (new=%d, updated=%d), want 10", total, result.NewCount, result.UpdatedCount)
@@ -571,8 +572,8 @@ func TestBuildIndex_WithTestTasks(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(tasksDir, "gen-test-cases.md")); os.IsNotExist(err) {
 		t.Error("gen-test-cases.md not generated")
 	}
-	if _, err := os.Stat(filepath.Join(tasksDir, "gen-test-scripts-go-test.md")); os.IsNotExist(err) {
-		t.Error("gen-test-scripts-go-test.md not generated")
+	if _, err := os.Stat(filepath.Join(tasksDir, "gen-test-scripts-go-test-cli.md")); os.IsNotExist(err) {
+		t.Error("gen-test-scripts-go-test-cli.md not generated")
 	}
 
 	// Verify index contains test tasks
@@ -583,7 +584,7 @@ func TestBuildIndex_WithTestTasks(t *testing.T) {
 	if _, ok := idx.Tasks["gen-test-cases"]; !ok {
 		t.Error("missing gen-test-cases in index")
 	}
-	if _, ok := idx.Tasks["gen-test-scripts-go-test"]; !ok {
+	if _, ok := idx.Tasks["gen-test-scripts-go-test-cli"]; !ok {
 		t.Error("missing gen-test-scripts-go-test in index")
 	}
 
@@ -595,8 +596,8 @@ func TestBuildIndex_WithTestTasks(t *testing.T) {
 	}
 
 	// Verify Profile field: per-profile test tasks have profile set
-	if idx.Tasks["gen-test-scripts-go-test"].Profile != "go-test" {
-		t.Errorf("gen-test-scripts-go-test profile = %q, want go-test", idx.Tasks["gen-test-scripts-go-test"].Profile)
+	if idx.Tasks["gen-test-scripts-go-test-cli"].Profile != "go-test" {
+		t.Errorf("gen-test-scripts-go-test profile = %q, want go-test", idx.Tasks["gen-test-scripts-go-test-cli"].Profile)
 	}
 	// Shared test task (gen-test-cases in breakdown mode) has empty profile
 	if idx.Tasks["gen-test-cases"].Profile != "" {
@@ -615,11 +616,12 @@ func TestBuildIndex_TestTasksIdempotent(t *testing.T) {
 	writeTaskMD(t, tasksDir, "1-gate.md", "1.gate", "Gate", nil)
 
 	opts := BuildIndexOpts{
-		FeatureSlug:  "test-feature",
-		ProjectRoot:  projectRoot,
-		TasksDir:     tasksDir,
-		IndexPath:    indexPath,
-		TestProfiles: []string{"go-test"},
+		FeatureSlug:      "test-feature",
+		ProjectRoot:      projectRoot,
+		TasksDir:         tasksDir,
+		IndexPath:        indexPath,
+		TestProfiles:     []string{"go-test"},
+		TestCapabilities: []string{"cli"},
 	}
 
 	// First build
@@ -655,11 +657,12 @@ func TestBuildIndex_MultiProfile(t *testing.T) {
 	writeTaskMD(t, tasksDir, "1-foo.md", "1", "Foo Task", nil)
 
 	opts := BuildIndexOpts{
-		FeatureSlug:  "test-feature",
-		ProjectRoot:  projectRoot,
-		TasksDir:     tasksDir,
-		IndexPath:    indexPath,
-		TestProfiles: []string{"go-test", "web-playwright"},
+		FeatureSlug:      "test-feature",
+		ProjectRoot:      projectRoot,
+		TasksDir:         tasksDir,
+		IndexPath:        indexPath,
+		TestProfiles:     []string{"go-test", "web-playwright"},
+		TestCapabilities: []string{"api"},
 	}
 
 	result, err := BuildIndex(opts)
@@ -1176,11 +1179,12 @@ func TestBuildIndex_MissingTypeHardError(t *testing.T) {
 	}
 
 	opts := BuildIndexOpts{
-		FeatureSlug:  "test-feature",
-		ProjectRoot:  projectRoot,
-		TasksDir:     tasksDir,
-		IndexPath:    indexPath,
-		TestProfiles: []string{"go-test"},
+		FeatureSlug:      "test-feature",
+		ProjectRoot:      projectRoot,
+		TasksDir:         tasksDir,
+		IndexPath:        indexPath,
+		TestProfiles:     []string{"go-test"},
+		TestCapabilities: []string{"cli"},
 	}
 
 	_, err := BuildIndex(opts)
@@ -1203,11 +1207,12 @@ func TestBuildIndex_DocsOnlySkipsGatesAndTests(t *testing.T) {
 	writeTaskMDWithType(t, tasksDir, "2-doc.md", "1.2", "Doc Task 2", TypeDocumentation, []string{"1.1"})
 
 	opts := BuildIndexOpts{
-		FeatureSlug:  "test-feature",
-		ProjectRoot:  projectRoot,
-		TasksDir:     tasksDir,
-		IndexPath:    indexPath,
-		TestProfiles: []string{"go-test"},
+		FeatureSlug:      "test-feature",
+		ProjectRoot:      projectRoot,
+		TasksDir:         tasksDir,
+		IndexPath:        indexPath,
+		TestCapabilities: []string{"cli"},
+		TestProfiles:     []string{"go-test"},
 	}
 
 	result, err := BuildIndex(opts)
@@ -1246,11 +1251,12 @@ func TestBuildIndex_DocsOnlyGeneratesEvalDoc(t *testing.T) {
 	writeTaskMDWithType(t, tasksDir, "2-doc.md", "1.2", "Doc Task 2", TypeDocumentation, []string{"1.1"})
 
 	opts := BuildIndexOpts{
-		FeatureSlug:  "test-feature",
-		ProjectRoot:  projectRoot,
-		TasksDir:     tasksDir,
-		IndexPath:    indexPath,
-		TestProfiles: []string{"go-test"},
+		FeatureSlug:      "test-feature",
+		ProjectRoot:      projectRoot,
+		TasksDir:         tasksDir,
+		TestCapabilities: []string{"cli"},
+		IndexPath:        indexPath,
+		TestProfiles:     []string{"go-test"},
 	}
 
 	result, err := BuildIndex(opts)
@@ -1306,11 +1312,12 @@ func TestBuildIndex_CodeFeatureUnchanged(t *testing.T) {
 	writeTaskMDWithType(t, tasksDir, "2-feat.md", "1.2", "Feature Task 2", TypeFeature, []string{"1.1"})
 
 	opts := BuildIndexOpts{
-		FeatureSlug:  "test-feature",
-		ProjectRoot:  projectRoot,
-		TasksDir:     tasksDir,
-		IndexPath:    indexPath,
-		TestProfiles: []string{"go-test"},
+		FeatureSlug:      "test-feature",
+		ProjectRoot:      projectRoot,
+		TestCapabilities: []string{"cli"},
+		TasksDir:         tasksDir,
+		IndexPath:        indexPath,
+		TestProfiles:     []string{"go-test"},
 	}
 
 	result, err := BuildIndex(opts)
@@ -1352,11 +1359,12 @@ func TestBuildIndex_MissingTypeAllowedForAutoGenTasks(t *testing.T) {
 	}
 
 	opts := BuildIndexOpts{
-		FeatureSlug:  "test-feature",
-		ProjectRoot:  projectRoot,
-		TasksDir:     tasksDir,
-		IndexPath:    indexPath,
-		TestProfiles: []string{"go-test"},
+		FeatureSlug:      "test-feature",
+		TestCapabilities: []string{"cli"},
+		ProjectRoot:      projectRoot,
+		TasksDir:         tasksDir,
+		IndexPath:        indexPath,
+		TestProfiles:     []string{"go-test"},
 	}
 
 	// Should NOT error - gate is an auto-generated task, InferType handles it
@@ -1364,4 +1372,143 @@ func TestBuildIndex_MissingTypeAllowedForAutoGenTasks(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildIndex should not error for auto-gen task without type: %v", err)
 	}
+}
+
+func TestBuildIndex_EmptyTestCapabilities_NoTestTasks(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "breakdown")
+
+	writeTaskMDWithType(t, tasksDir, "1-feat.md", "1.1", "Feature Task", TypeFeature, nil)
+	writeTaskMD(t, tasksDir, "1-gate.md", "1.gate", "Phase 1 Gate", nil)
+	writeTaskMD(t, tasksDir, "2-gate.md", "2.gate", "Phase 2 Gate", nil)
+
+	opts := BuildIndexOpts{
+		FeatureSlug:      "test-feature",
+		ProjectRoot:      projectRoot,
+		TasksDir:         tasksDir,
+		IndexPath:        indexPath,
+		TestProfiles:     []string{"go-test"},
+		TestCapabilities: []string{},
+	}
+
+	result, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("BuildIndex: %v", err)
+	}
+
+	// Only business + gate tasks, no test pipeline tasks
+	total := result.NewCount + result.UpdatedCount
+	if total != 3 {
+		t.Errorf("total tasks = %d, want 3 (no test tasks with empty capabilities)", total)
+	}
+
+	// No test task .md files generated
+	entries, _ := os.ReadDir(tasksDir)
+	for _, e := range entries {
+		name := e.Name()
+		if name == "1-feat.md" || name == "1-gate.md" || name == "2-gate.md" || name == "index.json" {
+			continue
+		}
+		t.Errorf("unexpected file %s (no test tasks expected with empty capabilities)", name)
+	}
+}
+
+func TestBuildIndex_WithCapabilities_ProducesPerTypeTasks(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "quick")
+
+	writeTaskMD(t, tasksDir, "1-foo.md", "1", "Foo Task", nil)
+
+	opts := BuildIndexOpts{
+		FeatureSlug:      "test-feature",
+		ProjectRoot:      projectRoot,
+		TasksDir:         tasksDir,
+		IndexPath:        indexPath,
+		TestProfiles:     []string{"go-test"},
+		TestCapabilities: []string{"cli"},
+	}
+
+	result, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("BuildIndex: %v", err)
+	}
+
+	// 1 business + 5 test tasks (gen-cases, gen-and-run-cli, graduate, verify-regression, drift) = 6
+	total := result.NewCount + result.UpdatedCount
+	if total != 6 {
+		t.Errorf("total = %d (new=%d, updated=%d), want 6", total, result.NewCount, result.UpdatedCount)
+	}
+
+	// Verify per-type task .md exists
+	if _, err := os.Stat(filepath.Join(tasksDir, "quick-gen-and-run-go-test-cli.md")); os.IsNotExist(err) {
+		t.Error("quick-gen-and-run-go-test-cli.md not generated")
+	}
+
+	// Verify per-type task in index with correct type
+	data, _ := os.ReadFile(indexPath)
+	var idx taskIndexJSON
+	_ = json.Unmarshal(data, &idx)
+
+	task, ok := idx.Tasks["quick-gen-and-run-go-test-cli"]
+	if !ok {
+		t.Fatal("quick-gen-and-run-go-test-cli not in index")
+	}
+	if task.ID != "T-quick-2-cli" {
+		t.Errorf("per-type task ID = %q, want T-quick-2-cli", task.ID)
+	}
+	if task.Profile != "go-test" {
+		t.Errorf("per-type task profile = %q, want go-test", task.Profile)
+	}
+}
+
+func TestBuildIndex_DeterministicOutput(t *testing.T) {
+	// BuildIndex produces identical output regardless of whether test-cases.md exists
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "quick")
+
+	writeTaskMD(t, tasksDir, "1-foo.md", "1", "Foo Task", nil)
+
+	opts := BuildIndexOpts{
+		FeatureSlug:      "test-feature",
+		ProjectRoot:      projectRoot,
+		TasksDir:         tasksDir,
+		IndexPath:        indexPath,
+		TestProfiles:     []string{"go-test"},
+		TestCapabilities: []string{"api"},
+	}
+
+	_, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("first build: %v", err)
+	}
+
+	data1, _ := os.ReadFile(indexPath)
+
+	// Create a test-cases.md file in the feature's testing dir (should NOT affect output)
+	testingDir := filepath.Join(projectRoot, "docs", "features", "test-feature", "testing")
+	if err := os.MkdirAll(testingDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	testCasesContent := `## Summary
+
+| Type | Count |
+|------|-------|
+| API  | 5     |
+| CLI  | 3     |
+| **Total** | **8** |`
+	if err := os.WriteFile(filepath.Join(testingDir, "test-cases.md"), []byte(testCasesContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Rebuild
+	_, err = BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("second build: %v", err)
+	}
+
+	data2, _ := os.ReadFile(indexPath)
+
+	// Output must be identical
+	if string(data1) != string(data2) {
+		t.Errorf("BuildIndex output differs with/without test-cases.md\nfirst=%s\nsecond=%s", string(data1), string(data2))
+	}
+
+	// The key invariant is that output JSON is identical (verified above).
 }

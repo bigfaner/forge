@@ -22,7 +22,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2-replace-detection-with-config.md",
       "record": "records/2-replace-detection-with-config.md",
       "breaking": true,

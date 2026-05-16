@@ -5,117 +5,25 @@ import (
 	"testing"
 )
 
-func TestDetectTypesFromTestCases(t *testing.T) {
-	tests := []struct {
-		name    string
-		content string
-		want    []string
-	}{
-		{
-			name: "multiple types with non-zero counts",
-			content: `## Summary
+func TestGetBreakdownTestTasks_EmptyCapabilities(t *testing.T) {
+	tasks := GetBreakdownTestTasks([]string{"go-test"}, nil)
 
-| Type | Count |
-|------|-------|
-| UI   | 5   |
-| **Integration** | **2** |
-| API  | 3  |
-| CLI  | 10  |
-| **Total** | **20** |`,
-			want: []string{"ui", "integration", "api", "cli"},
-		},
-		{
-			name: "only CLI type present",
-			content: `## Summary
-
-| Type | Count |
-|------|-------|
-| UI   | 0   |
-| **Integration** | **0** |
-| API  | 0  |
-| CLI  | 75  |
-| **Total** | **75** |`,
-			want: []string{"cli"},
-		},
-		{
-			name: "TUI type present",
-			content: `## Summary
-
-| Type | Count |
-|------|-------|
-| TUI  | 0     |
-| **Integration** | **0** |
-| API  | 0     |
-| CLI  | 31    |
-| **Total** | **31** |`,
-			want: []string{"cli"},
-		},
-		{
-			name: "UI and API only",
-			content: `## Summary
-
-| Type | Count |
-|------|-------|
-| UI   | 8   |
-| **Integration** | **0** |
-| API  | 4  |
-| CLI  | 0  |
-| **Total** | **12** |`,
-			want: []string{"ui", "api"},
-		},
-		{
-			name:    "empty content returns nil",
-			content: ``,
-			want:    nil,
-		},
-		{
-			name: "no summary table returns nil",
-			content: `# Test Cases
-
-Some text without a table.
-`,
-			want: nil,
-		},
-		{
-			name: "all zero counts returns nil",
-			content: `## Summary
-
-| Type | Count |
-|------|-------|
-| UI   | 0   |
-| **Integration** | **0** |
-| API  | 0  |
-| CLI  | 0  |
-| **Total** | **0** |`,
-			want: nil,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := DetectTypesFromTestCases([]byte(tt.content))
-			if len(got) != len(tt.want) {
-				t.Fatalf("DetectTypesFromTestCases() = %v, want %v", got, tt.want)
-			}
-			for i, w := range tt.want {
-				if got[i] != w {
-					t.Errorf("got[%d] = %q, want %q", i, got[i], w)
-				}
-			}
-		})
+	// No capabilities -> no test tasks generated
+	if len(tasks) != 0 {
+		t.Fatalf("expected 0 tasks with empty capabilities, got %d", len(tasks))
 	}
 }
 
 func TestGetBreakdownTestTasks_SingleProfile(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]string{"go-test"}, nil)
+	tasks := GetBreakdownTestTasks([]string{"go-test"}, []string{"cli"})
 
-	// Shared: gen-cases, eval-cases + per-profile: gen-scripts, run, graduate + shared: verify-regression, consolidate = 7
+	// Shared: gen-cases, eval-cases + per-type: gen-scripts-cli, run, graduate + shared: verify-regression, consolidate = 7
 	if len(tasks) != 7 {
 		t.Fatalf("expected 7 tasks, got %d", len(tasks))
 	}
 
 	// No suffix for single profile
-	wantIDs := []string{"T-test-1", "T-test-1b", "T-test-2", "T-test-3", "T-test-4", "T-test-4.5", "T-test-5"}
+	wantIDs := []string{"T-test-1", "T-test-1b", "T-test-2-cli", "T-test-3", "T-test-4", "T-test-4.5", "T-test-5"}
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
 			t.Errorf("tasks[%d].ID = %q, want %q", i, tasks[i].ID, want)
@@ -129,8 +37,8 @@ func TestGetBreakdownTestTasks_SingleProfile(t *testing.T) {
 	if tasks[2].Dependencies[0] != "T-test-1b" {
 		t.Errorf("gen-scripts should depend on eval-cases, got %v", tasks[2].Dependencies)
 	}
-	if tasks[3].Dependencies[0] != "T-test-2" {
-		t.Errorf("run should depend on gen-scripts, got %v", tasks[3].Dependencies)
+	if tasks[3].Dependencies[0] != "T-test-2-cli" {
+		t.Errorf("run should depend on gen-scripts-cli, got %v", tasks[3].Dependencies)
 	}
 	if tasks[4].Dependencies[0] != "T-test-3" {
 		t.Errorf("graduate should depend on run, got %v", tasks[4].Dependencies)
@@ -149,9 +57,9 @@ func TestGetBreakdownTestTasks_SingleProfile(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_MultiProfile(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]string{"web-playwright", "go-test"}, nil)
+	tasks := GetBreakdownTestTasks([]string{"web-playwright", "go-test"}, []string{"api"})
 
-	// 2 shared + 3*2 per-profile + 2 shared = 10
+	// 2 shared + (1 per-type-gen + run + graduate)*2 + 2 shared = 10
 	if len(tasks) != 10 {
 		t.Fatalf("expected 10 tasks, got %d", len(tasks))
 	}
@@ -159,8 +67,8 @@ func TestGetBreakdownTestTasks_MultiProfile(t *testing.T) {
 	// Profile-suffixed IDs
 	wantIDs := []string{
 		"T-test-1", "T-test-1b",
-		"T-test-2a", "T-test-3a", "T-test-4a",
-		"T-test-2b", "T-test-3b", "T-test-4b",
+		"T-test-2a-api", "T-test-3a", "T-test-4a",
+		"T-test-2b-api", "T-test-3b", "T-test-4b",
 		"T-test-4.5", "T-test-5",
 	}
 	for i, want := range wantIDs {
@@ -175,31 +83,40 @@ func TestGetBreakdownTestTasks_MultiProfile(t *testing.T) {
 	}
 }
 
-func TestGetQuickTestTasks_SingleProfile(t *testing.T) {
+func TestGetQuickTestTasks_EmptyCapabilities(t *testing.T) {
 	tasks := GetQuickTestTasks([]string{"go-test"}, nil)
 
-	// 3 per-profile (gen-cases, gen-and-run, graduate) + 2 shared (verify-regression, drift) = 5
+	// No capabilities -> no test tasks
+	if len(tasks) != 0 {
+		t.Fatalf("expected 0 tasks with empty capabilities, got %d", len(tasks))
+	}
+}
+
+func TestGetQuickTestTasks_SingleProfile(t *testing.T) {
+	tasks := GetQuickTestTasks([]string{"go-test"}, []string{"cli"})
+
+	// gen-cases + gen-and-run-cli + graduate + verify-regression + drift = 5
 	if len(tasks) != 5 {
 		t.Fatalf("expected 5 tasks, got %d", len(tasks))
 	}
 
-	wantIDs := []string{"T-quick-1", "T-quick-2", "T-quick-3", "T-quick-4", "T-quick-5"}
+	wantIDs := []string{"T-quick-1", "T-quick-2-cli", "T-quick-3", "T-quick-4", "T-quick-5"}
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
 			t.Errorf("tasks[%d].ID = %q, want %q", i, tasks[i].ID, want)
 		}
 	}
 
-	// T-quick-2 type is gen-and-run
+	// T-quick-2-cli type is gen-and-run
 	if tasks[1].Type != TypeTestPipelineGenAndRun {
-		t.Errorf("T-quick-2 Type = %q, want %q", tasks[1].Type, TypeTestPipelineGenAndRun)
+		t.Errorf("T-quick-2-cli Type = %q, want %q", tasks[1].Type, TypeTestPipelineGenAndRun)
 	}
 
 	// Chain: 2->1, 3->2
 	if tasks[1].Dependencies[0] != "T-quick-1" {
 		t.Errorf("gen-and-run should depend on gen-cases, got %v", tasks[1].Dependencies)
 	}
-	if tasks[2].Dependencies[0] != "T-quick-2" {
+	if tasks[2].Dependencies[0] != "T-quick-2-cli" {
 		t.Errorf("graduate should depend on gen-and-run, got %v", tasks[2].Dependencies)
 	}
 
@@ -225,9 +142,12 @@ func TestGetQuickTestTasks_SingleProfile(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_MultiProfile(t *testing.T) {
-	tasks := GetQuickTestTasks([]string{"web-playwright", "go-test"}, nil)
+	tasks := GetQuickTestTasks([]string{"web-playwright", "go-test"}, []string{"api"})
 
-	// 3*2 per-profile + 2 shared = 8
+	// Profile-a: gen-cases + gen-and-run-api + graduate = 3
+	// Profile-b: same = 3
+	// Shared: verify-regression + drift = 2
+	// Total = 8
 	if len(tasks) != 8 {
 		t.Fatalf("expected 8 tasks, got %d", len(tasks))
 	}
@@ -256,11 +176,11 @@ func TestGetQuickTestTasks_MultiProfile(t *testing.T) {
 
 func TestGenerateTestTaskMD(t *testing.T) {
 	def := TestTaskDef{
-		ID: "T-test-2a", Key: "gen-test-scripts-go-test",
-		Title: "Generate Test Scripts (go-test)", Priority: "P1",
+		ID: "T-test-2a-api", Key: "gen-test-scripts-go-test-api",
+		Title: "Generate Test Scripts (go-test, api)", Priority: "P1",
 		EstimatedTime: "1-2h", Dependencies: []string{"T-test-1b"},
 		Type: TypeTestPipelineGenScripts, Scope: "all",
-		ProfileName: "go-test", StrategyKind: "generate",
+		ProfileName: "go-test", TestType: "api", StrategyKind: "generate",
 	}
 
 	content, err := GenerateTestTaskMD(def, "my-feature")
@@ -271,7 +191,7 @@ func TestGenerateTestTaskMD(t *testing.T) {
 	s := string(content)
 
 	// Check frontmatter
-	if !strings.Contains(s, `id: "T-test-2a"`) {
+	if !strings.Contains(s, `id: "T-test-2a-api"`) {
 		t.Error("missing id in frontmatter")
 	}
 	if !strings.Contains(s, `type: "test-pipeline.gen-scripts"`) {
@@ -313,7 +233,7 @@ func TestResolveFirstTestDep(t *testing.T) {
 			"2-gate":  {ID: "2.gate"},
 			"1.1-foo": {ID: "1.1"},
 		}
-		tasks := GetBreakdownTestTasks([]string{"go-test"}, nil)
+		tasks := GetBreakdownTestTasks([]string{"go-test"}, []string{"cli"})
 		ResolveFirstTestDep(tasks, existing, "breakdown")
 		if tasks[0].Dependencies[0] != "2.gate" {
 			t.Errorf("T-test-1 should depend on highest gate, got %v", tasks[0].Dependencies)
@@ -326,7 +246,7 @@ func TestResolveFirstTestDep(t *testing.T) {
 			"2-bar": {ID: "2"},
 			"3-baz": {ID: "3"},
 		}
-		tasks := GetQuickTestTasks([]string{"go-test"}, nil)
+		tasks := GetQuickTestTasks([]string{"go-test"}, []string{"cli"})
 		ResolveFirstTestDep(tasks, existing, "quick")
 		if tasks[0].Dependencies[0] != "3" {
 			t.Errorf("T-quick-1 should depend on max business task, got %v", tasks[0].Dependencies)

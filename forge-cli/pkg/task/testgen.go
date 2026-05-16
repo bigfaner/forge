@@ -3,8 +3,6 @@ package task
 import (
 	"fmt"
 	"path"
-	"regexp"
-	"strconv"
 	"strings"
 )
 
@@ -30,8 +28,12 @@ type TestTaskDef struct {
 
 // GetBreakdownTestTasks returns test task definitions for breakdown mode.
 // With 0 or 1 profile, uses no suffix. With 2+ profiles, uses letter suffixes.
-// When detectedTypes is non-empty, creates per-type gen-scripts tasks instead of a single T-test-2 per profile.
-func GetBreakdownTestTasks(profiles []string, detectedTypes []string) []TestTaskDef {
+// Capabilities are config-driven test types (e.g., "cli", "api"). Empty capabilities returns nil.
+func GetBreakdownTestTasks(profiles []string, capabilities []string) []TestTaskDef {
+	if len(capabilities) == 0 {
+		return nil
+	}
+
 	suffix := profileSuffix(profiles)
 
 	var tasks []TestTaskDef
@@ -49,54 +51,29 @@ func GetBreakdownTestTasks(profiles []string, detectedTypes []string) []TestTask
 		Type: TypeTestPipelineEvalCases, Scope: "all", NoTest: true, MainSession: true,
 	})
 
-	if len(detectedTypes) > 0 {
-		// Per-profile tasks with per-type gen-scripts
-		for i, p := range profiles {
-			s := suffixLetter(i, suffix)
-			for _, typ := range detectedTypes {
-				tasks = append(tasks, TestTaskDef{
-					Key: "gen-test-scripts-" + p + "-" + typ, ID: "T-test-2" + s + "-" + typ,
-					Title: fmt.Sprintf("Generate Test Scripts (%s, %s)", p, typ), Priority: "P1", EstimatedTime: "1-2h",
-					Type: TypeTestPipelineGenScripts, Scope: "all", ProfileName: p, TestType: typ,
-					StrategyKind: "generate",
-				})
-			}
+	// Per-profile tasks with per-type gen-scripts
+	for i, p := range profiles {
+		s := suffixLetter(i, suffix)
+		for _, typ := range capabilities {
 			tasks = append(tasks, TestTaskDef{
-				Key: "run-e2e-tests-" + p, ID: "T-test-3" + s,
-				Title: fmt.Sprintf("Run e2e Tests (%s)", p), Priority: "P1", EstimatedTime: "30min-1h",
-				Type: TypeTestPipelineRun, Scope: "all", ProfileName: p,
-				StrategyKind: "run",
-			})
-			tasks = append(tasks, TestTaskDef{
-				Key: "graduate-tests-" + p, ID: "T-test-4" + s,
-				Title: fmt.Sprintf("Graduate Test Scripts (%s)", p), Priority: "P1", EstimatedTime: "30min",
-				Type: TypeTestPipelineGraduate, Scope: "all", ProfileName: p,
-				StrategyKind: "graduate",
-			})
-		}
-	} else {
-		// Per-profile tasks: gen-scripts, run, graduate (legacy single gen-scripts)
-		for i, p := range profiles {
-			s := suffixLetter(i, suffix)
-			tasks = append(tasks, TestTaskDef{
-				Key: "gen-test-scripts-" + p, ID: "T-test-2" + s,
-				Title: fmt.Sprintf("Generate Test Scripts (%s)", p), Priority: "P1", EstimatedTime: "1-2h",
-				Type: TypeTestPipelineGenScripts, Scope: "all", ProfileName: p,
+				Key: "gen-test-scripts-" + p + "-" + typ, ID: "T-test-2" + s + "-" + typ,
+				Title: fmt.Sprintf("Generate Test Scripts (%s, %s)", p, typ), Priority: "P1", EstimatedTime: "1-2h",
+				Type: TypeTestPipelineGenScripts, Scope: "all", ProfileName: p, TestType: typ,
 				StrategyKind: "generate",
 			})
-			tasks = append(tasks, TestTaskDef{
-				Key: "run-e2e-tests-" + p, ID: "T-test-3" + s,
-				Title: fmt.Sprintf("Run e2e Tests (%s)", p), Priority: "P1", EstimatedTime: "30min-1h",
-				Type: TypeTestPipelineRun, Scope: "all", ProfileName: p,
-				StrategyKind: "run",
-			})
-			tasks = append(tasks, TestTaskDef{
-				Key: "graduate-tests-" + p, ID: "T-test-4" + s,
-				Title: fmt.Sprintf("Graduate Test Scripts (%s)", p), Priority: "P1", EstimatedTime: "30min",
-				Type: TypeTestPipelineGraduate, Scope: "all", ProfileName: p,
-				StrategyKind: "graduate",
-			})
 		}
+		tasks = append(tasks, TestTaskDef{
+			Key: "run-e2e-tests-" + p, ID: "T-test-3" + s,
+			Title: fmt.Sprintf("Run e2e Tests (%s)", p), Priority: "P1", EstimatedTime: "30min-1h",
+			Type: TypeTestPipelineRun, Scope: "all", ProfileName: p,
+			StrategyKind: "run",
+		})
+		tasks = append(tasks, TestTaskDef{
+			Key: "graduate-tests-" + p, ID: "T-test-4" + s,
+			Title: fmt.Sprintf("Graduate Test Scripts (%s)", p), Priority: "P1", EstimatedTime: "30min",
+			Type: TypeTestPipelineGraduate, Scope: "all", ProfileName: p,
+			StrategyKind: "graduate",
+		})
 	}
 
 	// More shared tasks
@@ -112,66 +89,45 @@ func GetBreakdownTestTasks(profiles []string, detectedTypes []string) []TestTask
 	})
 
 	// Set filenames and dependency chains
-	resolveBreakdownDeps(tasks, profiles, suffix, detectedTypes)
+	resolveBreakdownDeps(tasks, profiles, suffix, capabilities)
 
 	return tasks
 }
 
 // GetQuickTestTasks returns test task definitions for quick mode.
-// When detectedTypes is non-empty, creates per-type gen-scripts tasks instead of a single T-quick-2 per profile.
-func GetQuickTestTasks(profiles []string, detectedTypes []string) []TestTaskDef {
+// Capabilities are config-driven test types (e.g., "cli", "api"). Empty capabilities returns nil.
+func GetQuickTestTasks(profiles []string, capabilities []string) []TestTaskDef {
+	if len(capabilities) == 0 {
+		return nil
+	}
+
 	suffix := profileSuffix(profiles)
 
 	var tasks []TestTaskDef
 
-	if len(detectedTypes) > 0 {
-		// Per-profile with per-type gen-and-run
-		for i, p := range profiles {
-			s := suffixLetter(i, suffix)
+	// Per-profile with per-type gen-and-run
+	for i, p := range profiles {
+		s := suffixLetter(i, suffix)
+		tasks = append(tasks, TestTaskDef{
+			Key: "quick-test-cases-" + p, ID: "T-quick-1" + s,
+			Title: fmt.Sprintf("Generate Quick Test Cases (%s)", p), Priority: "P1", EstimatedTime: "30min-1h",
+			Type: TypeTestPipelineGenCases, Scope: "all", NoTest: true, ProfileName: p,
+			StrategyKind: "generate",
+		})
+		for _, typ := range capabilities {
 			tasks = append(tasks, TestTaskDef{
-				Key: "quick-test-cases-" + p, ID: "T-quick-1" + s,
-				Title: fmt.Sprintf("Generate Quick Test Cases (%s)", p), Priority: "P1", EstimatedTime: "30min-1h",
-				Type: TypeTestPipelineGenCases, Scope: "all", NoTest: true, ProfileName: p,
+				Key: "quick-gen-and-run-" + p + "-" + typ, ID: "T-quick-2" + s + "-" + typ,
+				Title: fmt.Sprintf("Generate and Run Quick Test Scripts (%s, %s)", p, typ), Priority: "P1", EstimatedTime: "1-2h",
+				Type: TypeTestPipelineGenAndRun, Scope: "all", ProfileName: p, TestType: typ,
 				StrategyKind: "generate",
-			})
-			for _, typ := range detectedTypes {
-				tasks = append(tasks, TestTaskDef{
-					Key: "quick-gen-and-run-" + p + "-" + typ, ID: "T-quick-2" + s + "-" + typ,
-					Title: fmt.Sprintf("Generate and Run Quick Test Scripts (%s, %s)", p, typ), Priority: "P1", EstimatedTime: "1-2h",
-					Type: TypeTestPipelineGenAndRun, Scope: "all", ProfileName: p, TestType: typ,
-					StrategyKind: "generate",
-				})
-			}
-			tasks = append(tasks, TestTaskDef{
-				Key: "quick-graduate-" + p, ID: "T-quick-3" + s,
-				Title: fmt.Sprintf("Graduate Quick Test Scripts (%s)", p), Priority: "P1", EstimatedTime: "15min",
-				Type: TypeTestPipelineGraduate, Scope: "all", ProfileName: p,
-				StrategyKind: "graduate",
 			})
 		}
-	} else {
-		// Per-profile: gen-cases, gen-and-run, graduate
-		for i, p := range profiles {
-			s := suffixLetter(i, suffix)
-			tasks = append(tasks, TestTaskDef{
-				Key: "quick-test-cases-" + p, ID: "T-quick-1" + s,
-				Title: fmt.Sprintf("Generate Quick Test Cases (%s)", p), Priority: "P1", EstimatedTime: "30min-1h",
-				Type: TypeTestPipelineGenCases, Scope: "all", NoTest: true, ProfileName: p,
-				StrategyKind: "generate",
-			})
-			tasks = append(tasks, TestTaskDef{
-				Key: "quick-gen-and-run-" + p, ID: "T-quick-2" + s,
-				Title: fmt.Sprintf("Generate and Run Quick Test Scripts (%s)", p), Priority: "P1", EstimatedTime: "1-2h",
-				Type: TypeTestPipelineGenAndRun, Scope: "all", ProfileName: p,
-				StrategyKind: "generate",
-			})
-			tasks = append(tasks, TestTaskDef{
-				Key: "quick-graduate-" + p, ID: "T-quick-3" + s,
-				Title: fmt.Sprintf("Graduate Quick Test Scripts (%s)", p), Priority: "P1", EstimatedTime: "15min",
-				Type: TypeTestPipelineGraduate, Scope: "all", ProfileName: p,
-				StrategyKind: "graduate",
-			})
-		}
+		tasks = append(tasks, TestTaskDef{
+			Key: "quick-graduate-" + p, ID: "T-quick-3" + s,
+			Title: fmt.Sprintf("Graduate Quick Test Scripts (%s)", p), Priority: "P1", EstimatedTime: "15min",
+			Type: TypeTestPipelineGraduate, Scope: "all", ProfileName: p,
+			StrategyKind: "graduate",
+		})
 	}
 
 	// Shared
@@ -186,7 +142,7 @@ func GetQuickTestTasks(profiles []string, detectedTypes []string) []TestTaskDef 
 		Type: TypeDocGenerationDrift, Scope: "all", NoTest: true,
 	})
 
-	resolveQuickDeps(tasks, profiles, suffix, detectedTypes)
+	resolveQuickDeps(tasks, profiles, suffix, capabilities)
 
 	return tasks
 }
@@ -251,7 +207,7 @@ func formatYAMLList(items []string) string {
 }
 
 // resolveBreakdownDeps sets dependency chains for breakdown test tasks.
-func resolveBreakdownDeps(tasks []TestTaskDef, profiles []string, _ bool, detectedTypes []string) {
+func resolveBreakdownDeps(tasks []TestTaskDef, profiles []string, _ bool, capabilities []string) {
 	// T-test-1 depends on last gate or last summary (placeholder, caller resolves)
 	// T-test-1b depends on T-test-1
 	// Per-profile: T-test-2<L>-<type> depends on T-test-1b
@@ -266,141 +222,84 @@ func resolveBreakdownDeps(tasks []TestTaskDef, profiles []string, _ bool, detect
 	}
 
 	profileStart := 2 // index 2 is first per-profile task
-	if len(detectedTypes) > 0 {
-		// Per-type mode: per-profile block is N gen-tasks + run + graduate
-		nTypes := len(detectedTypes)
-		blockSize := nTypes + 2 // gen-per-type + run + graduate
+	// Per-type mode: per-profile block is N gen-tasks + run + graduate
+	nTypes := len(capabilities)
+	blockSize := nTypes + 2 // gen-per-type + run + graduate
+	for i := range profiles {
+		blockStart := profileStart + i*blockSize
+
+		// All per-type gen-scripts depend on T-test-1b
+		for j := 0; j < nTypes; j++ {
+			tasks[blockStart+j].Dependencies = []string{"T-test-1b"}
+		}
+
+		// Run depends on all per-type gen-scripts for this profile
+		run := &tasks[blockStart+nTypes]
+		var genDeps []string
+		for j := 0; j < nTypes; j++ {
+			genDeps = append(genDeps, tasks[blockStart+j].ID)
+		}
+		run.Dependencies = genDeps
+
+		// Graduate depends on run
+		graduate := &tasks[blockStart+nTypes+1]
+		graduate.Dependencies = []string{run.ID}
+	}
+
+	// T-test-4.5 depends on all graduate tasks
+	sharedStart := profileStart + len(profiles)*blockSize
+	if len(tasks) > sharedStart {
+		verifyReg := &tasks[sharedStart]
+		var gradDeps []string
 		for i := range profiles {
-			blockStart := profileStart + i*blockSize
-
-			// All per-type gen-scripts depend on T-test-1b
-			for j := 0; j < nTypes; j++ {
-				tasks[blockStart+j].Dependencies = []string{"T-test-1b"}
-			}
-
-			// Run depends on all per-type gen-scripts for this profile
-			run := &tasks[blockStart+nTypes]
-			var genDeps []string
-			for j := 0; j < nTypes; j++ {
-				genDeps = append(genDeps, tasks[blockStart+j].ID)
-			}
-			run.Dependencies = genDeps
-
-			// Graduate depends on run
-			graduate := &tasks[blockStart+nTypes+1]
-			graduate.Dependencies = []string{run.ID}
+			gradDeps = append(gradDeps, tasks[profileStart+i*blockSize+nTypes+1].ID)
 		}
+		verifyReg.Dependencies = gradDeps
+	}
 
-		// T-test-4.5 depends on all graduate tasks
-		sharedStart := profileStart + len(profiles)*blockSize
-		if len(tasks) > sharedStart {
-			verifyReg := &tasks[sharedStart]
-			var gradDeps []string
-			for i := range profiles {
-				gradDeps = append(gradDeps, tasks[profileStart+i*blockSize+nTypes+1].ID)
-			}
-			verifyReg.Dependencies = gradDeps
-		}
-
-		// T-test-5 depends on T-test-4.5
-		if len(tasks) > sharedStart+1 {
-			tasks[sharedStart+1].Dependencies = []string{"T-test-4.5"}
-		}
-	} else {
-		// Legacy mode: per-profile block is 3 tasks (gen-scripts, run, graduate)
-		for i := range profiles {
-			genScripts := &tasks[profileStart+i*3]
-			run := &tasks[profileStart+i*3+1]
-			graduate := &tasks[profileStart+i*3+2]
-
-			genScripts.Dependencies = []string{"T-test-1b"}
-			run.Dependencies = []string{genScripts.ID}
-			graduate.Dependencies = []string{run.ID}
-		}
-
-		// T-test-4.5 depends on all graduate tasks
-		if len(tasks) > profileStart+len(profiles)*3 {
-			verifyReg := &tasks[profileStart+len(profiles)*3]
-			var gradDeps []string
-			for i := range profiles {
-				gradDeps = append(gradDeps, tasks[profileStart+i*3+2].ID)
-			}
-			if len(gradDeps) == 0 {
-				gradDeps = []string{"T-test-4"}
-			}
-			verifyReg.Dependencies = gradDeps
-		}
-
-		// T-test-5 depends on T-test-4.5
-		if len(tasks) > profileStart+len(profiles)*3+1 {
-			tasks[profileStart+len(profiles)*3+1].Dependencies = []string{"T-test-4.5"}
-		}
+	// T-test-5 depends on T-test-4.5
+	if len(tasks) > sharedStart+1 {
+		tasks[sharedStart+1].Dependencies = []string{"T-test-4.5"}
 	}
 }
 
 // resolveQuickDeps sets dependency chains for quick test tasks.
-func resolveQuickDeps(tasks []TestTaskDef, profiles []string, _ bool, detectedTypes []string) {
+func resolveQuickDeps(tasks []TestTaskDef, profiles []string, _ bool, capabilities []string) {
 	// Per-profile: T-quick-1<L> depends on last business task (placeholder)
-	// Per-type mode:   T-quick-2<L>-<type> depends on T-quick-1<L>
-	//                  T-quick-3<L> depends on ALL T-quick-2<L>-<type> for its profile
-	// Legacy mode:     T-quick-2<L> depends on T-quick-1<L>
-	//                  T-quick-3<L> depends on T-quick-2<L>
+	//              T-quick-2<L>-<type> depends on T-quick-1<L>
+	//              T-quick-3<L> depends on ALL T-quick-2<L>-<type> for its profile
 	// T-quick-4 depends on all T-quick-3<L> (or graduate tasks)
 
-	if len(detectedTypes) > 0 {
-		// Per-type mode: per-profile block is gen-cases + N gen-and-run-per-type + graduate
-		nTypes := len(detectedTypes)
-		blockSize := 1 + nTypes + 1 // gen-cases + gen-per-type + graduate
+	nTypes := len(capabilities)
+	blockSize := 1 + nTypes + 1 // gen-cases + gen-per-type + graduate
+	for i := range profiles {
+		blockStart := i * blockSize
+
+		genCases := &tasks[blockStart]
+		// genCases deps are placeholder (resolved by BuildIndex)
+
+		// All per-type gen-and-run depend on gen-cases
+		for j := 0; j < nTypes; j++ {
+			tasks[blockStart+1+j].Dependencies = []string{genCases.ID}
+		}
+
+		// Graduate depends on all per-type gen-and-run for this profile
+		graduate := &tasks[blockStart+1+nTypes]
+		var genDeps []string
+		for j := 0; j < nTypes; j++ {
+			genDeps = append(genDeps, tasks[blockStart+1+j].ID)
+		}
+		graduate.Dependencies = genDeps
+	}
+
+	// T-quick-4 depends on all graduate tasks
+	sharedStart := len(profiles) * blockSize
+	if len(tasks) > sharedStart {
+		var gradDeps []string
 		for i := range profiles {
-			blockStart := i * blockSize
-
-			genCases := &tasks[blockStart]
-			// genCases deps are placeholder (resolved by BuildIndex)
-
-			// All per-type gen-and-run depend on gen-cases
-			for j := 0; j < nTypes; j++ {
-				tasks[blockStart+1+j].Dependencies = []string{genCases.ID}
-			}
-
-			// Graduate depends on all per-type gen-and-run for this profile
-			graduate := &tasks[blockStart+1+nTypes]
-			var genDeps []string
-			for j := 0; j < nTypes; j++ {
-				genDeps = append(genDeps, tasks[blockStart+1+j].ID)
-			}
-			graduate.Dependencies = genDeps
+			gradDeps = append(gradDeps, tasks[i*blockSize+1+nTypes].ID)
 		}
-
-		// T-quick-4 depends on all graduate tasks
-		sharedStart := len(profiles) * blockSize
-		if len(tasks) > sharedStart {
-			var gradDeps []string
-			for i := range profiles {
-				gradDeps = append(gradDeps, tasks[i*blockSize+1+nTypes].ID)
-			}
-			tasks[sharedStart].Dependencies = gradDeps
-		}
-	} else {
-		// Legacy mode: per-profile block is 3 tasks (gen-cases, gen-and-run, graduate)
-		for i := range profiles {
-			genCases := &tasks[i*3]
-			genAndRun := &tasks[i*3+1]
-			graduate := &tasks[i*3+2]
-
-			// genCases deps are placeholder (resolved by BuildIndex)
-			genAndRun.Dependencies = []string{genCases.ID}
-			graduate.Dependencies = []string{genAndRun.ID}
-		}
-
-		// T-quick-4 depends on all graduate tasks
-		if len(tasks) > len(profiles)*3 {
-			verifyIdx := len(profiles) * 3
-			var gradDeps []string
-			for i := range profiles {
-				gradDeps = append(gradDeps, tasks[i*3+2].ID)
-			}
-			tasks[verifyIdx].Dependencies = gradDeps
-		}
+		tasks[sharedStart].Dependencies = gradDeps
 	}
 
 	// T-quick-5 depends on T-quick-4
@@ -555,34 +454,6 @@ func (d TestTaskDef) TaskFromFile() Task {
 		Type:          d.Type,
 		Profile:       d.ProfileName,
 	}
-}
-
-// summaryTableRow matches lines in the Summary table like:
-//
-//	| UI   | 5   |
-//	| **Integration** | **2** |
-var summaryTableRow = regexp.MustCompile(`^\|\s*\*{0,2}(\w+)\*{0,2}\s*\|\s*\*{0,2}(\d+)\*{0,2}\s*\|`)
-
-// DetectTypesFromTestCases parses test-cases.md content and returns lowercase
-// type names that have a non-zero count in the Summary table.
-// Returns nil if no types are detected.
-func DetectTypesFromTestCases(content []byte) []string {
-	var types []string
-	for _, line := range strings.Split(string(content), "\n") {
-		m := summaryTableRow.FindStringSubmatch(line)
-		if m == nil {
-			continue
-		}
-		name := strings.ToLower(m[1])
-		if name == "total" {
-			continue
-		}
-		count, _ := strconv.Atoi(m[2])
-		if count > 0 {
-			types = append(types, name)
-		}
-	}
-	return types
 }
 
 // GetDocEvalTask returns a TestTaskDef for the docs-only evaluation task (T-eval-doc).
