@@ -257,6 +257,7 @@ type Task struct {
 | `test-pipeline.eval-cases` | Test case evaluation |
 | `test-pipeline.gen-scripts` | Test script generation |
 | `test-pipeline.run` | E2E test execution |
+| `test-pipeline.gen-and-run` | Combined test script generation and execution (quick mode) |
 | `test-pipeline.graduate` | Test graduation to regression suite |
 | `test-pipeline.verify-regression` | Regression verification |
 

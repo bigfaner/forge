@@ -35,14 +35,12 @@ func InferType(id string) string {
 	case profileSuffixedID(id, "T-quick-1"):
 		return TypeTestPipelineGenCases
 	case profileSuffixedID(id, "T-quick-2"), typeSuffixedID(id, "T-quick-2"):
-		return TypeTestPipelineGenScripts
+		return TypeTestPipelineGenAndRun
 	case profileSuffixedID(id, "T-quick-3"), typeSuffixedID(id, "T-quick-3"):
-		return TypeTestPipelineRun
-	case profileSuffixedID(id, "T-quick-4"), typeSuffixedID(id, "T-quick-4"):
 		return TypeTestPipelineGraduate
-	case profileSuffixedID(id, "T-quick-5"):
+	case profileSuffixedID(id, "T-quick-4"):
 		return TypeTestPipelineVerifyRegression
-	case id == "T-quick-6", profileSuffixedID(id, "T-quick-6"):
+	case id == "T-quick-5", profileSuffixedID(id, "T-quick-5"):
 		return TypeDocGenerationDrift
 	case strings.HasPrefix(id, "fix-") || strings.HasPrefix(id, "disc-"):
 		return TypeFix

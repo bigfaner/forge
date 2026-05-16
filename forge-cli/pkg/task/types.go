@@ -18,6 +18,7 @@ const (
 	TypeTestPipelineEvalCases        = "test-pipeline.eval-cases"
 	TypeTestPipelineGenScripts       = "test-pipeline.gen-scripts"
 	TypeTestPipelineRun              = "test-pipeline.run"
+	TypeTestPipelineGenAndRun        = "test-pipeline.gen-and-run"
 	TypeTestPipelineGraduate         = "test-pipeline.graduate"
 	TypeTestPipelineVerifyRegression = "test-pipeline.verify-regression"
 	TypeFix                          = "fix"
@@ -45,6 +46,7 @@ var TaskTypeRegistry = []TaskTypeInfo{
 	{Name: TypeTestPipelineEvalCases, Description: "evaluate generated test cases for quality"},
 	{Name: TypeTestPipelineGenScripts, Description: "generate executable test scripts"},
 	{Name: TypeTestPipelineRun, Description: "run test scripts and collect results"},
+	{Name: TypeTestPipelineGenAndRun, Description: "generate and run test scripts in one session"},
 	{Name: TypeTestPipelineGraduate, Description: "graduate tests to regression suite"},
 	{Name: TypeTestPipelineVerifyRegression, Description: "verify regression suite after graduation"},
 }
@@ -61,6 +63,7 @@ var ValidTypes = map[string]bool{
 	TypeTestPipelineEvalCases:        true,
 	TypeTestPipelineGenScripts:       true,
 	TypeTestPipelineRun:              true,
+	TypeTestPipelineGenAndRun:        true,
 	TypeTestPipelineGraduate:         true,
 	TypeTestPipelineVerifyRegression: true,
 	TypeFix:                          true,
