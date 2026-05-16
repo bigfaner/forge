@@ -40,7 +40,6 @@ func setupFeatureDir(t *testing.T, projectRoot string, tasks map[string]task.Tas
 
 func TestSynthesize_AllTypes(t *testing.T) {
 	types := []string{
-		task.TypeImplementation,
 		task.TypeFeature,
 		task.TypeEnhancement,
 		task.TypeCleanup,
@@ -104,7 +103,7 @@ func TestSynthesize_FixRecordMissed(t *testing.T) {
 			Status: "pending",
 			File:   "1.1-impl.md",
 			Record: "records/1.1-impl.md",
-			Type:   task.TypeImplementation,
+			Type:   task.TypeFeature,
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -298,32 +297,6 @@ func TestSynthesize_RefactorTemplate_NoTDD(t *testing.T) {
 	}
 }
 
-func TestSynthesize_ImplementationTemplate_Deprecated(t *testing.T) {
-	// Verify implementation.md still works but is marked deprecated.
-	dir := t.TempDir()
-	tasks := map[string]task.Task{
-		"1.1": {
-			ID:     "1.1",
-			Title:  "Old impl task",
-			Status: "pending",
-			File:   "1.1.md",
-			Record: "records/1.1.md",
-			Type:   task.TypeImplementation,
-			Scope:  "backend",
-		},
-	}
-	setupFeatureDir(t, dir, tasks)
-
-	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "1.1"}
-	result, err := Synthesize(opts)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if !strings.Contains(result, "Deprecated") {
-		t.Error("implementation template should be marked Deprecated")
-	}
-}
-
 // --- Empty variable rendering tests ---
 
 func TestSynthesize_EmptyPhaseSummary_NoResidual(t *testing.T) {
@@ -336,7 +309,7 @@ func TestSynthesize_EmptyPhaseSummary_NoResidual(t *testing.T) {
 			Status: "pending",
 			File:   "1.1-impl.md",
 			Record: "records/1.1-impl.md",
-			Type:   task.TypeImplementation,
+			Type:   task.TypeFeature,
 			Scope:  "backend",
 		},
 	}
@@ -379,7 +352,7 @@ func TestSynthesize_NonEmptyPhaseSummary_Preserved(t *testing.T) {
 			Status: "completed",
 			File:   "1.1-impl.md",
 			Record: "records/1.1-impl.md",
-			Type:   task.TypeImplementation,
+			Type:   task.TypeFeature,
 			Scope:  "backend",
 		},
 		"2.1-impl": {
@@ -388,7 +361,7 @@ func TestSynthesize_NonEmptyPhaseSummary_Preserved(t *testing.T) {
 			Status: "pending",
 			File:   "2.1-impl.md",
 			Record: "records/2.1-impl.md",
-			Type:   task.TypeImplementation,
+			Type:   task.TypeFeature,
 			Scope:  "backend",
 		},
 	}
@@ -431,7 +404,7 @@ func TestSynthesize_EmptyScope_NoTrailingSpace(t *testing.T) {
 			Status: "pending",
 			File:   "1.1-impl.md",
 			Record: "records/1.1-impl.md",
-			Type:   task.TypeImplementation,
+			Type:   task.TypeFeature,
 			Scope:  "", // empty scope
 		},
 	}
@@ -501,7 +474,7 @@ func TestPhaseDetect_NewPhase(t *testing.T) {
 			Status: "completed",
 			File:   "1.1-impl.md",
 			Record: "records/1.1-impl.md",
-			Type:   task.TypeImplementation,
+			Type:   task.TypeFeature,
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -532,7 +505,7 @@ func TestPhaseDetect_SamePhase(t *testing.T) {
 			Status: "completed",
 			File:   "1.1-impl.md",
 			Record: "records/1.1-impl.md",
-			Type:   task.TypeImplementation,
+			Type:   task.TypeFeature,
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -554,7 +527,7 @@ func TestPhaseDetect_FirstPhase(t *testing.T) {
 			Status: "pending",
 			File:   "1.1-impl.md",
 			Record: "records/1.1-impl.md",
-			Type:   task.TypeImplementation,
+			Type:   task.TypeFeature,
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -575,7 +548,7 @@ func TestPhaseDetect_SummaryFileMissing(t *testing.T) {
 			Status: "completed",
 			File:   "1.1-impl.md",
 			Record: "records/1.1-impl.md",
-			Type:   task.TypeImplementation,
+			Type:   task.TypeFeature,
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
