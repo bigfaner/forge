@@ -1,62 +1,82 @@
 ---
-created: "2026-05-14"
-tags: [testing, architecture]
+created: "2026-05-16"
+tags: [testing, architecture, error-handling]
 ---
 
-# Quality Gate Stop Hook Creates Fix-Task Loop on Stale Failures
+# Quality Gate Fix-Task Loop: Cap Bypass Due to Missing SourceTaskID
 
 ## Problem
 
-The `forge quality-gate` stop hook runs `just test` at session end. When it detects a failure, it auto-creates a P0 fix task. But the hook reads a cached `tests/results/unit-raw-output.txt` file instead of re-running tests live. This caused:
-
-- fix-3, fix-4, fix-5, fix-6, fix-7, fix-8 created in sequence
-- Each fix task was closed as "transient failure, tests pass now"
-- The hook re-read the same stale file and created another fix task
-- Infinite loop until manually broken
+The `forge quality-gate` stop hook runs `just test` at session end. When tests fail, it auto-creates a P0 fix task via `addFixTask`. After the fix task is resolved, the session stops again, the hook fires again, the same flaky tests fail, another fix task is created — infinite loop.
 
 ## Root Cause
 
 Causal chain (4 levels):
 
-1. **Symptom**: Six consecutive fix tasks created for the same transient test failure
-2. **Direct cause**: Hook reads `unit-raw-output.txt` which still contains the old failure output
-3. **Root cause**: The hook doesn't re-run `just test` before creating a fix task — it trusts the output file from the previous run. Even after fix tasks close and re-run tests successfully, the file isn't updated because the fix tasks completed without code changes (tests were already passing)
-4. **Trigger condition**: Any non-deterministic test that fails intermittently, or any test that fails once then passes on retry (race condition, timing, cached results)
+1. **Symptom**: fix-1, fix-2, fix-3... created in sequence for the same transient test failure. The cap (`maxFixTasksPerStep = 3`) never triggers.
+2. **Direct cause**: `countActiveFixTasks()` always returns 0 for quality-gate fix tasks, so `addFixTask` never hits the cap.
+3. **Root cause**: Two bugs compound:
+   - **Bug A**: `addFixTask` puts source info in `Vars["SOURCE_TASK_ID"]` (template rendering) but never sets `opts.SourceTaskID` (struct field). The resulting Task has `SourceTaskID: ""`. But `countActiveFixTasks` requires `t.SourceTaskID != ""` as its first filter — so quality-gate fix tasks are invisible to the counter.
+   - **Bug B**: Even if Bug A were fixed, `countActiveFixTasks` only counts non-terminal tasks (`Status != "completed"`). After fix-1 completes, the count resets to 0, allowing fix-2 for the same step.
+4. **Trigger condition**: Any flaky test that fails in the full suite but passes in isolation, combined with the Stop hook re-triggering on every session end.
+
+```
+Stop hook → quality-gate → just test → flaky test fails
+  → addFixTask → countActiveFixTasks returns 0 (SourceTaskID empty)
+  → creates fix-1 (cap bypassed)
+  → fix-1 resolved → Stop hook fires again
+  → same flaky test fails → countActiveFixTasks returns 0 (fix-1 completed + SourceTaskID empty)
+  → creates fix-2 (cap bypassed again)
+  → infinite loop
+```
 
 ## Solution
 
-The quality gate hook should:
+Three fixes needed:
 
-1. Re-run `just test` live (not read cached output)
-2. Only create a fix task if the live run actually fails
-3. Invalidate `unit-raw-output.txt` after a successful re-run
+1. **Set `opts.SourceTaskID`**: In `addFixTask`, add `SourceTaskID: "quality-gate"` so quality-gate fix tasks are identifiable by the counter.
+2. **Count all fix tasks per step**: Change `countActiveFixTasks` to count ALL fix tasks for the step (including completed), not just active ones. Or track cumulative count per step in a separate mechanism.
+3. **Retry before creating fix task**: When `just test` fails, re-run once before creating a fix task. If it passes on retry, emit a warning instead.
 
 ## Reusable Pattern
 
-**Hooks that trigger on test failures must re-run tests live, never read cached result files.** Cached results become stale the moment any code changes.
+**When implementing rate-limiting or dedup counters, verify the identifier field is actually populated.** A counter that filters on `field != ""` will silently skip every record where the field wasn't set — no error, no warning, just an ineffective cap.
 
-For the fix-task auto-creation pattern:
-- Before creating a fix task, re-execute the failing command
-- If the command passes on re-run, don't create a fix task (was transient)
-- If it fails again, create the fix task with the fresh failure output
+For auto-generated fix/task patterns:
+- The struct field and the template variable are two different things. Setting the template var does NOT set the struct field.
+- Caps must count across the full lifecycle (completed + active), not just active records.
+- Always retry once before auto-creating fix tasks for test failures — transient failures are the norm, not the exception.
 
 ## Example
 
-```bash
-# BAD: hook reads stale file
-if grep -q "FAIL" tests/results/unit-raw-output.txt; then
-  forge task add --template fix-task ...
-fi
+```go
+// BAD: SourceTaskID only in Vars (template), not in struct
+opts := task.AddTaskOpts{
+    Vars: map[string]string{
+        "SOURCE_TASK_ID": "N/A (project-wide gate)", // template only
+    },
+    // SourceTaskID not set → Task.SourceTaskID == ""
+}
 
-# GOOD: hook re-runs live
-if ! just test > /dev/null 2>&1; then
-  just test 2>&1 | tee tests/results/unit-raw-output.txt
-  forge task add --template fix-task ...
-fi
+// countActiveFixTasks checks:
+t.SourceTaskID != "" // always false → cap never triggers
+
+// GOOD: Set the struct field
+opts := task.AddTaskOpts{
+    SourceTaskID: "quality-gate", // struct field → Task.SourceTaskID == "quality-gate"
+    Vars: map[string]string{
+        "SOURCE_TASK_ID": "N/A (project-wide gate)", // template rendering
+    },
+}
 ```
 
 ## Related Files
 
-- `tests/results/unit-raw-output.txt` — cached test output
-- `plugins/forge/hooks/` — stop hook configuration
-- `forge-cli/internal/cmd/all_completed.go` — all-completed hook logic
+- `forge-cli/internal/cmd/quality_gate.go:304-401` — countActiveFixTasks + addFixTask
+- `forge-cli/pkg/task/add.go:27,152,201` — AddTaskOpts.SourceTaskID handling
+- `forge-cli/pkg/task/types.go:88-90` — Task.SourceTaskID field
+- `docs/forensics/fix-task-loop/report.md` — Full forensic analysis
+
+## References
+
+- Forensic report: `docs/forensics/fix-task-loop/report.md`
