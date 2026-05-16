@@ -94,7 +94,7 @@ graph LR
 - No PRD, no design, no eval steps
 - `proposal.md` is the sole input document
 - Flat task list (no phases, no gates, no summaries)
-- T-quick-1~5 test tasks (subset of T-test 7 tasks: skips gen-sitemap prerequisite, eval-test-cases, consolidate-specs; merged gen-and-run replaces separate gen-scripts + run; T-quick-5 adds drift detection as the final test step)
+- T-quick-1~4 test tasks + optional T-quick-specs-1 (subset of T-test pipeline: skips gen-sitemap prerequisite, eval-test-cases; merged gen-and-run replaces separate gen-scripts + run; T-quick-specs-1 adds spec consolidation + drift detection when `auto.consolidateSpecs.quick=true`)
 - Simplified manifest (no Traceability table)
 - Docs-only features auto-detected: no test tasks, generates T-eval-doc instead
 
@@ -135,6 +135,36 @@ After all tasks done, runs as final safety net (no scope — project-wide):
 `forge quality-gate` automatically skips docs-only features (all tasks have `noTest: true`). For mixed features, only the non-documentation tasks are gated.
 
 On failure at any step, a P0 fix-task is automatically created. Run `forge task claim` to pick it up.
+
+### Auto-Behavior Configuration
+
+The `auto` block in `.forge/config.yaml` controls which automated tasks are generated during `forge task index` and post-pipeline actions. Each setting can be toggled independently per pipeline mode (quick vs full).
+
+```yaml
+auto:
+  e2eTest:
+    quick: true        # Generate T-quick-1~4 e2e test tasks in quick mode
+    full: true         # Generate T-test-1~4.5 e2e test tasks in full mode
+  consolidateSpecs:
+    quick: true        # Generate T-quick-specs-1 (spec sync + drift) in quick mode
+    full: true         # Generate T-specs-1 (spec sync + drift) in full mode
+  cleanCode:
+    quick: false       # Generate T-clean-code-1 (runs /simplify) in quick mode
+    full: false        # Generate T-clean-code-1 (runs /simplify) in full mode
+  gitPush: false       # Auto git push after all-completed hook passes
+```
+
+| Setting | Default | Effect when `true` |
+|---------|---------|-------------------|
+| `auto.e2eTest.quick` | true | Quick mode generates e2e test tasks (T-quick-1~4) |
+| `auto.e2eTest.full` | true | Full mode generates e2e test tasks (T-test-1~4.5) |
+| `auto.consolidateSpecs.quick` | true | Quick mode generates T-quick-specs-1 |
+| `auto.consolidateSpecs.full` | true | Full mode generates T-specs-1 |
+| `auto.cleanCode.quick` | false | Quick mode appends T-clean-code-1 before test tasks |
+| `auto.cleanCode.full` | false | Full mode appends T-clean-code-1 before test tasks |
+| `auto.gitPush` | false | Runs `git push` after all-completed hook passes |
+
+Defaults are backward-compatible: existing behaviors default to `true`, new behaviors (`cleanCode`, `gitPush`) default to `false` (opt-in). Projects without an `auto` block get all defaults.
 
 ## Testing Lifecycle
 

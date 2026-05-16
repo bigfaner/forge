@@ -51,7 +51,7 @@
       "dependencies": [
         "2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-update-skill-docs.md",
       "record": "records/4-update-skill-docs.md",
       "type": "documentation"
