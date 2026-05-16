@@ -30,7 +30,7 @@ func edmProjectRoot(t *testing.T) string {
 	if !ok {
 		t.Fatal("cannot determine test file location")
 	}
-	dir := filepath.Join(filepath.Dir(thisFile), "..", "..", "..", "..")
+	dir := filepath.Join(filepath.Dir(thisFile), "..", "..")
 	abs, err := filepath.Abs(dir)
 	if err != nil {
 		t.Fatalf("cannot resolve project root: %s", err)
