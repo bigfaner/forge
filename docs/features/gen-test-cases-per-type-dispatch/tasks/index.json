@@ -64,7 +64,7 @@
       "dependencies": [
         "4"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "5-update-eval-pipeline.md",
       "record": "records/5-update-eval-pipeline.md",
       "noTest": true,
