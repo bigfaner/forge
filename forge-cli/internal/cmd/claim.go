@@ -185,6 +185,19 @@ func claimNextTask(index *task.TaskIndex) (string, *task.Task, error) {
 	}
 	var eligibleTasks []taskWithKey
 
+	// Lazy unblock scan: check blocked tasks and auto-transition eligible ones to pending.
+	// Runs before the hasPending check so newly-unblocked tasks are visible.
+	for key, t := range index.TasksMap() {
+		if t.Status != "blocked" {
+			continue
+		}
+		if met, _ := checkDependenciesMet(index, t.ID, t); met {
+			t.Status = "pending"
+			index.SetTask(key, t)
+			fmt.Printf("Auto-unblocked task %s\n", t.ID)
+		}
+	}
+
 	hasPending := false
 	for _, t := range index.TasksMap() {
 		if t.Status == "pending" {
@@ -274,6 +287,16 @@ func checkDependenciesMet(index *task.TaskIndex, selfID string, t task.Task) (bo
 				(other.Status == "pending" || other.Status == "in_progress") {
 				unmet = append(unmet, other.ID)
 			}
+		}
+	}
+
+	// Check for active fix tasks targeting this task itself (SourceTaskID == selfID).
+	// If a fix task with sourceTaskID == selfID is still pending/in_progress,
+	// this task should not be claimed (--block-source scenario).
+	for _, other := range index.TasksMap() {
+		if other.Type == "fix" && other.SourceTaskID == selfID &&
+			(other.Status == "pending" || other.Status == "in_progress") {
+			unmet = append(unmet, other.ID)
 		}
 	}
 
