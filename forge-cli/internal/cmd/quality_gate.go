@@ -319,6 +319,19 @@ func countActiveFixTasks(index *task.TaskIndex, step string) int {
 	return count
 }
 
+// fixTypeFromStep returns the deterministic task type for a quality gate failure step.
+// compile/test failures → TypeFix, fmt/lint failures → TypeCleanup.
+func fixTypeFromStep(step string) string {
+	switch step {
+	case "compile", "unit-test", "test-e2e":
+		return task.TypeFix
+	case "fmt", "lint":
+		return task.TypeCleanup
+	default:
+		return task.TypeFix
+	}
+}
+
 // addFixTask creates a fix task using the same internal API as `forge task add`.
 // Mirrors executeAdd() from add.go: template defaults -> AddTask -> CreateTaskMarkdown -> EnsureForgeState.
 // Returns (taskID, nil) on success, ("", ErrMaxFixTasks) when the fix-task cap is exceeded.
@@ -362,6 +375,7 @@ func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) (st
 		Breaking:      true,
 		Description:   description,
 		Template:      "fix-task",
+		Type:          fixTypeFromStep(step),
 		Vars: map[string]string{
 			"SOURCE_FILES":   sourceFiles,
 			"TEST_SCRIPT":    testScript,

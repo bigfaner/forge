@@ -202,7 +202,12 @@ for each dep in T.Dependencies:
     "acceptanceCriteria": [
         {"criterion": "Feature works", "met": true}
     ],
-    "notes": "Optional notes"
+    "notes": "Optional notes",
+    "typeReclassification": {
+        "originalType": "fix",
+        "actualType": "cleanup",
+        "reason": "flaky test, not introduced by this feature"
+    }
 }
 ```
 

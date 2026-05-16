@@ -186,7 +186,12 @@ for each dep in T.Dependencies:
     "acceptanceCriteria": [
         {"criterion": "功能正常", "met": true}
     ],
-    "notes": "可选备注"
+    "notes": "可选备注",
+    "typeReclassification": {
+        "originalType": "fix",
+        "actualType": "cleanup",
+        "reason": "flaky test, not introduced by this feature"
+    }
 }
 ```
 

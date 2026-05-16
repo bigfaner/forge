@@ -215,17 +215,25 @@ type TaskState struct { //nolint:revive // intentional naming for API clarity
 
 // RecordData represents the JSON input for record generation.
 type RecordData struct {
-	TaskID             string                `json:"taskId"`
-	Status             string                `json:"status"`
-	Summary            string                `json:"summary"`
-	FilesCreated       []string              `json:"filesCreated"`
-	FilesModified      []string              `json:"filesModified"`
-	KeyDecisions       []string              `json:"keyDecisions"`
-	TestsPassed        int                   `json:"testsPassed"`
-	TestsFailed        int                   `json:"testsFailed"`
-	Coverage           float64               `json:"coverage"`
-	AcceptanceCriteria []AcceptanceCriterion `json:"acceptanceCriteria"`
-	Notes              string                `json:"notes"`
+	TaskID               string                `json:"taskId"`
+	Status               string                `json:"status"`
+	Summary              string                `json:"summary"`
+	FilesCreated         []string              `json:"filesCreated"`
+	FilesModified        []string              `json:"filesModified"`
+	KeyDecisions         []string              `json:"keyDecisions"`
+	TestsPassed          int                   `json:"testsPassed"`
+	TestsFailed          int                   `json:"testsFailed"`
+	Coverage             float64               `json:"coverage"`
+	AcceptanceCriteria   []AcceptanceCriterion `json:"acceptanceCriteria"`
+	Notes                string                `json:"notes"`
+	TypeReclassification *TypeReclassification `json:"typeReclassification,omitempty"`
+}
+
+// TypeReclassification documents when an executor changes a task's type during execution.
+type TypeReclassification struct {
+	OriginalType string `json:"originalType"` // e.g. "fix"
+	ActualType   string `json:"actualType"`   // e.g. "cleanup"
+	Reason       string `json:"reason"`       // why the type was changed
 }
 
 // AcceptanceCriterion represents a single acceptance criterion.

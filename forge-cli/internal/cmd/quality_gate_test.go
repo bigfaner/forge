@@ -669,6 +669,45 @@ func TestAddFixTask_StepSpecificTestScripts(t *testing.T) {
 	}
 }
 
+func TestAddFixTask_TypeFromStep(t *testing.T) {
+	tests := []struct {
+		step     string
+		wantType string
+	}{
+		{"compile", task.TypeFix},
+		{"fmt", task.TypeCleanup},
+		{"lint", task.TypeCleanup},
+		{"unit-test", task.TypeFix},
+		{"test-e2e", task.TypeFix},
+		{"unknown-step", task.TypeFix}, // default fallback
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.step, func(t *testing.T) {
+			projectRoot, featureSlug, indexPath := helperSetup(t)
+			taskID, addErr := addFixTask(projectRoot, featureSlug, tc.step, "handler.go:10: fail", "tests/results/fake.txt")
+			if addErr != nil {
+				t.Fatalf("unexpected error: %v", addErr)
+			}
+			if taskID == "" {
+				t.Fatal("expected non-empty task ID")
+			}
+
+			updatedIndex, err := task.LoadIndex(indexPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			addedTask, exists := updatedIndex.ByID(taskID)
+			if !exists {
+				t.Fatalf("task %s not found in index", taskID)
+			}
+			if addedTask.Type != tc.wantType {
+				t.Errorf("type for step %q = %q, want %q", tc.step, addedTask.Type, tc.wantType)
+			}
+		})
+	}
+}
+
 func TestAddFixTask_EmptyOutput(t *testing.T) {
 	projectRoot, featureSlug, _ := helperSetup(t)
 

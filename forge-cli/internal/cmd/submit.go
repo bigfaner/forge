@@ -349,6 +349,16 @@ func fillRecordTemplate(t *task.Task, rd *task.RecordData, startedTime string) s
 		notes = "无"
 	}
 
+	var reclassBlock string
+	if rd.TypeReclassification != nil {
+		reclassBlock = fmt.Sprintf(`## Type Reclassification
+- Original: %s
+- Actual: %s
+- Reason: %s
+
+`, rd.TypeReclassification.OriginalType, rd.TypeReclassification.ActualType, rd.TypeReclassification.Reason)
+	}
+
 	return fmt.Sprintf(`---
 status: "%s"
 started: "%s"
@@ -361,7 +371,7 @@ time_spent: "%s"
 ## Summary
 %s
 
-## Changes
+%s## Changes
 
 ### Files Created
 %s
@@ -387,6 +397,7 @@ time_spent: "%s"
 		status, started, completed, timeSpent,
 		t.ID, t.Title,
 		rd.Summary,
+		reclassBlock,
 		formatList(rd.FilesCreated),
 		formatList(rd.FilesModified),
 		formatList(rd.KeyDecisions),

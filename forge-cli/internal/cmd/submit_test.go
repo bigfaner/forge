@@ -1168,6 +1168,79 @@ func TestAutoRestoreSourceTask_SlugKeyedFullChain(t *testing.T) {
 	})
 }
 
+func TestFillRecordTemplate_TypeReclassification(t *testing.T) {
+	t.Run("nil TypeReclassification omits block", func(t *testing.T) {
+		tmpl := &task.Task{ID: "1.1", Title: "Test Task"}
+		rd := &task.RecordData{
+			Status:               "completed",
+			Summary:              "Done",
+			TestsPassed:          1,
+			Coverage:             50.0,
+			TypeReclassification: nil,
+		}
+		content := fillRecordTemplate(tmpl, rd, "2026-01-01 10:00")
+		if strings.Contains(content, "Type Reclassification") {
+			t.Error("should not contain Type Reclassification block when nil")
+		}
+	})
+
+	t.Run("non-nil TypeReclassification renders block", func(t *testing.T) {
+		tmpl := &task.Task{ID: "fix-1", Title: "Fix compile error"}
+		rd := &task.RecordData{
+			Status:      "completed",
+			Summary:     "Was actually a cleanup",
+			TestsPassed: 3,
+			Coverage:    80.0,
+			TypeReclassification: &task.TypeReclassification{
+				OriginalType: "fix",
+				ActualType:   "cleanup",
+				Reason:       "e2e test TestTC_003_Login has race condition in assertion timing",
+			},
+		}
+		content := fillRecordTemplate(tmpl, rd, "2026-01-01 10:00")
+
+		if !strings.Contains(content, "## Type Reclassification") {
+			t.Error("should contain Type Reclassification heading")
+		}
+		if !strings.Contains(content, "- Original: fix") {
+			t.Error("should contain original type")
+		}
+		if !strings.Contains(content, "- Actual: cleanup") {
+			t.Error("should contain actual type")
+		}
+		if !strings.Contains(content, "- Reason: e2e test TestTC_003_Login has race condition") {
+			t.Error("should contain reason")
+		}
+	})
+
+	t.Run("TypeReclassification appears between Summary and Changes", func(t *testing.T) {
+		tmpl := &task.Task{ID: "fix-1", Title: "Fix task"}
+		rd := &task.RecordData{
+			Status:      "completed",
+			Summary:     "Changed type",
+			TestsPassed: 1,
+			Coverage:    50.0,
+			TypeReclassification: &task.TypeReclassification{
+				OriginalType: "fix",
+				ActualType:   "cleanup",
+				Reason:       "flaky test",
+			},
+		}
+		content := fillRecordTemplate(tmpl, rd, "2026-01-01 10:00")
+
+		summaryIdx := strings.Index(content, "## Summary")
+		reclassIdx := strings.Index(content, "## Type Reclassification")
+		changesIdx := strings.Index(content, "## Changes")
+
+		if summaryIdx == -1 || reclassIdx == -1 || changesIdx == -1 {
+			t.Fatal("expected all three sections to be present")
+		}
+		if summaryIdx >= reclassIdx || reclassIdx >= changesIdx {
+			t.Error("Type Reclassification should appear between Summary and Changes")
+		}
+	})
+}
+
 func TestFillRecordTemplate_RejectedStatus(t *testing.T) {
 	tmpl := &task.Task{ID: "1.1", Title: "Test Task"}
 	rd := &task.RecordData{Status: "rejected", Summary: "Did not pass acceptance criteria"}

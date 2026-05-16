@@ -51,7 +51,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-dynamic-type-and-record.md",
       "record": "records/4-dynamic-type-and-record.md",
       "scope": "backend",
