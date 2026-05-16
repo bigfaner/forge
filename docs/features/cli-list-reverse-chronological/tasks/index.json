@@ -8,7 +8,7 @@
       "title": "Sort forge proposal output by created date descending",
       "priority": "P1",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "1-sort-proposal-list.md",
       "record": "records/1-sort-proposal-list.md",
       "scope": "backend",
