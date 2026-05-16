@@ -64,6 +64,7 @@ func captureOutput(f func() error) (string, error) {
 }
 
 func TestRunFeature_Display(t *testing.T) {
+	verbose = false
 	dir := t.TempDir()
 	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 
@@ -109,6 +110,7 @@ func TestRunFeature_Display(t *testing.T) {
 }
 
 func TestRunFeature_Set(t *testing.T) {
+	verbose = false
 	dir := t.TempDir()
 	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 
@@ -143,6 +145,7 @@ func TestRunFeature_Set(t *testing.T) {
 }
 
 func TestRunFeature_NoFeatureSet(t *testing.T) {
+	verbose = false
 	dir := t.TempDir()
 	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 
@@ -444,6 +447,206 @@ func TestFeatureList_MissingManifestSortsToEnd(t *testing.T) {
 	noIdx := strings.Index(output, "no-manifest")
 
 	assert.True(t, withIdx < noIdx, "feature with manifest should appear before feature without manifest")
+}
+
+func TestFeatureSet_CreatesDirAndState(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test-project\n"), 0644))
+
+	origWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(origWd) }()
+	require.NoError(t, os.Chdir(dir))
+
+	output, err := captureOutput(func() error {
+		rootCmd.SetArgs([]string{"feature", "set", "my-feature"})
+		return rootCmd.Execute()
+	})
+	require.NoError(t, err)
+
+	// Verify stdout contains the feature slug
+	assert.Contains(t, output, "FEATURE: my-feature")
+
+	// Verify feature directory structure exists
+	featureDir := filepath.Join(dir, feature.FeaturesDir, "my-feature")
+	info, err := os.Stat(featureDir)
+	require.NoError(t, err)
+	assert.True(t, info.IsDir())
+
+	// Verify .forge/state.json was written with correct values
+	statePath := filepath.Join(dir, feature.ForgeDir, feature.ForgeStateFileName)
+	data, err := os.ReadFile(statePath)
+	require.NoError(t, err)
+
+	var state feature.ForgeState
+	require.NoError(t, json.Unmarshal(data, &state))
+	assert.Equal(t, "my-feature", state.Feature)
+	assert.False(t, state.AllCompleted)
+}
+
+func TestFeatureSet_EmptySlug(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test-project\n"), 0644))
+
+	origWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(origWd) }()
+	require.NoError(t, os.Chdir(dir))
+
+	_, err = captureOutput(func() error {
+		rootCmd.SetArgs([]string{"feature", "set", ""})
+		return rootCmd.Execute()
+	})
+	assert.Error(t, err)
+
+	// Verify no state.json was created
+	statePath := filepath.Join(dir, feature.ForgeDir, feature.ForgeStateFileName)
+	_, statErr := os.Stat(statePath)
+	assert.True(t, os.IsNotExist(statErr), "state.json should not be created for empty slug")
+}
+
+func TestFeatureSet_BackwardCompat_PositionalArg(t *testing.T) {
+	// Verify that the existing `forge feature <slug>` positional arg still works
+	// and does NOT write state.json (backward compatible).
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test-project\n"), 0644))
+
+	origWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(origWd) }()
+	require.NoError(t, os.Chdir(dir))
+
+	output, err := captureOutput(func() error {
+		rootCmd.SetArgs([]string{"feature", "legacy-feature"})
+		return rootCmd.Execute()
+	})
+	require.NoError(t, err)
+	assert.Contains(t, output, "FEATURE: legacy-feature")
+
+	// Verify feature directory was created
+	featureDir := filepath.Join(dir, feature.FeaturesDir, "legacy-feature")
+	_, err = os.Stat(featureDir)
+	require.NoError(t, err)
+
+	// Verify state.json was NOT written (old behavior preserved)
+	statePath := filepath.Join(dir, feature.ForgeDir, feature.ForgeStateFileName)
+	_, err = os.Stat(statePath)
+	assert.True(t, os.IsNotExist(err), "state.json should not exist for positional arg")
+}
+
+func TestRunFeature_Verbose_FromStateJSON(t *testing.T) {
+	verbose = false
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test-project\n"), 0644))
+
+	// Create feature directory and index.json
+	require.NoError(t, feature.EnsureFeatureDir(dir, "state-feature"))
+	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("state-feature"))
+	indexData, _ := json.Marshal(&task.TaskIndex{Feature: "state-feature"})
+	require.NoError(t, os.WriteFile(indexPath, indexData, 0644))
+
+	// Write .forge/state.json to set explicit feature
+	require.NoError(t, feature.EnsureForgeState(dir, "state-feature"))
+
+	origWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(origWd) }()
+	require.NoError(t, os.Chdir(dir))
+
+	output, err := captureOutput(func() error {
+		rootCmd.SetArgs([]string{"feature", "-v"})
+		return rootCmd.Execute()
+	})
+	require.NoError(t, err)
+	assert.Contains(t, output, "FEATURE: state-feature (from: state.json)")
+}
+
+func TestRunFeature_Verbose_FromFeaturesDir(t *testing.T) {
+	verbose = false
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test-project\n"), 0644))
+
+	// Create single feature directory with index.json
+	require.NoError(t, feature.EnsureFeatureDir(dir, "dir-feature"))
+	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("dir-feature"))
+	indexData, _ := json.Marshal(&task.TaskIndex{Feature: "dir-feature"})
+	require.NoError(t, os.WriteFile(indexPath, indexData, 0644))
+
+	origWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(origWd) }()
+	require.NoError(t, os.Chdir(dir))
+
+	output, err := captureOutput(func() error {
+		rootCmd.SetArgs([]string{"feature", "-v"})
+		return rootCmd.Execute()
+	})
+	require.NoError(t, err)
+	assert.Contains(t, output, "FEATURE: dir-feature (from: features-dir)")
+}
+
+func TestRunFeature_Verbose_NoFeature(t *testing.T) {
+	verbose = false
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test-project\n"), 0644))
+
+	// Create empty features directory
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, feature.FeaturesDir), 0755))
+
+	origWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(origWd) }()
+	require.NoError(t, os.Chdir(dir))
+
+	output, _ := captureOutput(func() error {
+		rootCmd.SetArgs([]string{"feature", "-v"})
+		return rootCmd.Execute()
+	})
+	assert.Contains(t, output, "FEATURE: (none)")
+}
+
+func TestRunFeature_NonVerboseUnchanged(t *testing.T) {
+	verbose = false
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test-project\n"), 0644))
+
+	require.NoError(t, feature.EnsureFeatureDir(dir, "plain-feature"))
+	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("plain-feature"))
+	indexData, _ := json.Marshal(&task.TaskIndex{Feature: "plain-feature"})
+	require.NoError(t, os.WriteFile(indexPath, indexData, 0644))
+
+	// Write state to ensure it resolves from state.json
+	require.NoError(t, feature.EnsureForgeState(dir, "plain-feature"))
+
+	origWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(origWd) }()
+	require.NoError(t, os.Chdir(dir))
+
+	output, err := captureOutput(func() error {
+		rootCmd.SetArgs([]string{"feature"})
+		return rootCmd.Execute()
+	})
+	require.NoError(t, err)
+	// Without -v, output should be just the slug (no source info)
+	assert.Contains(t, output, "FEATURE: plain-feature")
+	assert.NotContains(t, output, "(from:")
+}
+
+func TestRunFeature_VerboseFlagNotLeakedToSubcommands(t *testing.T) {
+	// Verify -v is a local flag, not persistent — subcommands should not recognize it
+	f := featureCmd.Flags().Lookup("verbose")
+	require.NotNil(t, f, "verbose flag should exist on featureCmd")
+
+	p := featureCmd.PersistentFlags().Lookup("verbose")
+	assert.Nil(t, p, "verbose flag should NOT be a persistent flag")
 }
 
 func TestScoreDisplay(t *testing.T) {

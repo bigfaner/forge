@@ -227,9 +227,9 @@ func CreateTaskMarkdown(tasksDir string, filename string, opts AddTaskOpts) erro
 			return err
 		}
 		content, err = ApplyVars(tmpl, opts)
-			if err != nil {
-				return err
-			}
+		if err != nil {
+			return err
+		}
 	} else {
 		content = buildTaskMarkdown(opts)
 	}
