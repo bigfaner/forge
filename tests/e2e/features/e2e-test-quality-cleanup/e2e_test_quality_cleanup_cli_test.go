@@ -198,6 +198,7 @@ func TestTC_005_ZeroRecursiveGoTestInvocations(t *testing.T) {
 	cmd := exec.Command("grep",
 		"-rn", `exec.Command("go", "test"`,
 		"--include=*_test.go",
+		"--exclude-dir=features",
 		e2eDir,
 	)
 	out, _ := cmd.CombinedOutput()

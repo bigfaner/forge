@@ -53,6 +53,18 @@
       "scope": "all",
       "type": "documentation"
     },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "Fix: TC-005 self-matching grep",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "T-quick-3",
+      "type": "fix"
+    },
     "quick-drift-detection": {
       "id": "T-quick-6",
       "title": "Detect Spec Drift",
@@ -83,6 +95,21 @@
       "type": "test-pipeline.gen-scripts",
       "profile": "go-test"
     },
+    "quick-gen-scripts-go-test-cli": {
+      "id": "T-quick-2-cli",
+      "title": "Generate Quick Test Scripts (go-test, cli)",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "T-quick-1"
+      ],
+      "status": "pending",
+      "file": "quick-gen-scripts-go-test-cli.md",
+      "record": "records/quick-gen-scripts-go-test-cli.md",
+      "scope": "all",
+      "type": "test-pipeline.gen-scripts",
+      "profile": "go-test"
+    },
     "quick-graduate-go-test": {
       "id": "T-quick-4",
       "title": "Graduate Quick Test Scripts (go-test)",
@@ -104,7 +131,7 @@
       "priority": "P1",
       "estimatedTime": "15-30min",
       "dependencies": [
-        "T-quick-2"
+        "T-quick-2-cli"
       ],
       "status": "blocked",
       "file": "quick-run-tests-go-test.md",
