@@ -41,6 +41,7 @@ func init() {
 	rootCmd.AddCommand(proposalCmd)
 	rootCmd.AddCommand(lessonCmd)
 	rootCmd.AddCommand(initCmd)
+	rootCmd.AddCommand(claudeCmd)
 
 	// Version is hidden from --help but accessible via `forge version`
 	versionCmd.Hidden = true
