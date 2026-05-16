@@ -67,6 +67,18 @@
       "breaking": true,
       "sourceTaskID": "quality-gate:test-e2e",
       "type": "fix"
+    },
+    "fix-2": {
+      "id": "fix-2",
+      "title": "fix test-e2e: just test-e2e failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-2.md",
+      "record": "records/fix-2.md",
+      "breaking": true,
+      "sourceTaskID": "quality-gate:test-e2e",
+      "type": "fix"
     }
   },
   "statusEnum": [

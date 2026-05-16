@@ -1,0 +1,14 @@
+{
+  "name": "e2e-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "npx playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.44.0",
+    "@types/node": "^25.6.0",
+    "typescript": "^6.0.3",
+    "yaml": "^2.7.0"
+  }
+}
