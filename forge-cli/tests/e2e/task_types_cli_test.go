@@ -22,7 +22,7 @@ func TestTC_021_ListTypesOutputsAllWithDescriptions(t *testing.T) {
 		"list-types output should not be empty")
 
 	knownTypes := []string{
-		"implementation", "fix", "gate",
+		"feature", "fix", "gate",
 		"doc-generation", "test-pipeline",
 	}
 	for _, typ := range knownTypes {

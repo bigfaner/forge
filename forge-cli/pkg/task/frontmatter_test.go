@@ -26,14 +26,14 @@ dependencies:
 scope: "all"
 breaking: true
 mainSession: false
-type: "implementation"
+type: "feature"
 ---
 
 # Task body here
 Some content`,
 			wantID:    "1.1",
 			wantTitle: "Define Interfaces",
-			wantType:  "implementation",
+			wantType:  "feature",
 			wantBody:  "\n\n# Task body here\nSome content",
 		},
 		{

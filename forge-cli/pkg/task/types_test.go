@@ -401,15 +401,15 @@ func TestTaskTypeFieldSerialization(t *testing.T) {
 			Title:  "Impl Task",
 			Status: "pending",
 			File:   "tasks/1.1.md",
-			Type:   TypeImplementation,
+			Type:   TypeFeature,
 		}
 		data, err := json.Marshal(task)
 		if err != nil {
 			t.Fatalf("json.Marshal failed: %v", err)
 		}
 		got := string(data)
-		if !strings.Contains(got, `"type":"implementation"`) {
-			t.Errorf("JSON = %s, want to contain %q", got, `"type":"implementation"`)
+		if !strings.Contains(got, `"type":"feature"`) {
+			t.Errorf("JSON = %s, want to contain %q", got, `"type":"feature"`)
 		}
 	})
 
@@ -564,7 +564,6 @@ func TestTypeConstants(t *testing.T) {
 		constant string
 		expected string
 	}{
-		{TypeImplementation, "implementation"},
 		{TypeFeature, "feature"},
 		{TypeEnhancement, "enhancement"},
 		{TypeCleanup, "cleanup"},
@@ -591,9 +590,8 @@ func TestTypeConstants(t *testing.T) {
 }
 
 func TestValidTypes(t *testing.T) {
-	t.Run("ValidTypes contains all 19 type constants", func(t *testing.T) {
+	t.Run("ValidTypes contains all 18 type constants", func(t *testing.T) {
 		allTypes := []string{
-			TypeImplementation,
 			TypeFeature,
 			TypeEnhancement,
 			TypeCleanup,
@@ -634,9 +632,9 @@ func TestValidTypes(t *testing.T) {
 }
 
 func TestTaskTypeRegistry(t *testing.T) {
-	t.Run("registry contains all 19 types", func(t *testing.T) {
-		if len(TaskTypeRegistry) != 19 {
-			t.Errorf("TaskTypeRegistry has %d entries, want 19", len(TaskTypeRegistry))
+	t.Run("registry contains all 18 types", func(t *testing.T) {
+		if len(TaskTypeRegistry) != 18 {
+			t.Errorf("TaskTypeRegistry has %d entries, want 18", len(TaskTypeRegistry))
 		}
 	})
 

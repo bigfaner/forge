@@ -94,8 +94,8 @@ func TestRunValidate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	index.SetTask("task2", task.Task{ID: "1.2", Title: "Task 2", Priority: "P1", Status: "pending", File: "1.2.md", Record: "1.2.md", Dependencies: []string{"1.1"}, Type: "implementation"})
-	index.SetTask("task3", task.Task{ID: "1.3", Title: "Task 3", Priority: "P2", Status: "pending", File: "1.3.md", Record: "1.3.md", Dependencies: []string{"1.1", "1.2"}, Type: "implementation"})
+	index.SetTask("task2", task.Task{ID: "1.2", Title: "Task 2", Priority: "P1", Status: "pending", File: "1.2.md", Record: "1.2.md", Dependencies: []string{"1.1"}, Type: "feature"})
+	index.SetTask("task3", task.Task{ID: "1.3", Title: "Task 3", Priority: "P2", Status: "pending", File: "1.3.md", Record: "1.3.md", Dependencies: []string{"1.1", "1.2"}, Type: "feature"})
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)
 	}
@@ -332,7 +332,7 @@ func setupClaimTestProject(t *testing.T) string {
 		PriorityEnum: []string{"P0", "P1", "P2"},
 	}
 	index.SetTasks(map[string]task.Task{
-		"task1": {ID: "1.1", Title: "Task 1", Priority: "P0", Status: "pending", File: "1.1.md", Record: "records/1.1.md", Type: "implementation"},
+		"task1": {ID: "1.1", Title: "Task 1", Priority: "P0", Status: "pending", File: "1.1.md", Record: "records/1.1.md", Type: "feature"},
 	})
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)

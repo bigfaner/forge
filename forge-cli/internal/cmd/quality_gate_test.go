@@ -1218,11 +1218,11 @@ func TestIsDocsOnly(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "has deprecated implementation task (not testable)",
+			name: "has feature task (testable)",
 			tasks: map[string]task.Task{
-				"t1": {ID: "1", Type: task.TypeImplementation},
+				"t1": {ID: "1", Type: task.TypeFeature},
 			},
-			want: true,
+			want: false,
 		},
 		{
 			name: "test-pipeline tasks only",

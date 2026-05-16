@@ -59,7 +59,7 @@ func defaultTaskContent(filename string) string {
 id: %q
 title: "Test task %s"
 priority: "P1"
-type: "implementation"
+type: "feature"
 ---
 
 # Task %s
@@ -309,7 +309,7 @@ func TestTC_003_SkipsSingleTaskPhases(t *testing.T) {
 func TestTC_004_ExcludesTestOnlyPhases(t *testing.T) {
 	featureSlug := "test-stage-gates-004"
 	tmpRoot, cleanup := stageGateTestDir(t, featureSlug, []string{
-		"1.1.md:" + taskContentWithType("1.1.md", "implementation"),
+		"1.1.md:" + taskContentWithType("1.1.md", "feature"),
 		"T-test-1.md:" + taskContentWithType("T-test-1.md", "testTask"),
 		"T-quick-1.md:" + taskContentWithType("T-quick-1.md", "testTask"),
 	})
@@ -859,7 +859,7 @@ func TestTC_019_RejectsPathTraversalInTaskIDs(t *testing.T) {
 id: "../1.1"
 title: "Traversal attempt"
 priority: "P1"
-type: "implementation"
+type: "feature"
 ---
 
 # Traversal

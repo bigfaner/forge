@@ -81,7 +81,7 @@ func TestInferType(t *testing.T) {
 		{"T-test-4.5-api", ""},
 		{"T-test-5-api", ""},
 
-		// Unknown IDs return empty string (no TypeImplementation fallback)
+		// Unknown IDs return empty string (no TypeFeature fallback)
 		{"1.1", ""},
 		{"2.3", ""},
 		{"", ""},

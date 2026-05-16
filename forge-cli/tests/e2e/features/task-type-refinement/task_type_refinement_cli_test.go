@@ -180,17 +180,15 @@ func TestTC_TypeRefine_001_ListTypesDisplaysFourNewBusinessTypes(t *testing.T) {
 	}
 }
 
-// --- TC-002: forge list-types still shows deprecated TypeImplementation ---
+// --- TC-002: forge list-types no longer shows implementation type ---
 
-// Traceability: TC-002 -> Task 1 AC-2, Task 1 Hard Rule (keep TypeImplementation in ValidTypes)
-func TestTC_TypeRefine_002_ListTypesShowsDeprecatedImplementation(t *testing.T) {
+// Traceability: TC-002 -> Task 1 AC-2, TypeImplementation removed from registry
+func TestTC_TypeRefine_002_ListTypesNoLongerShowsImplementation(t *testing.T) {
 	projectRoot := trFindProjectRoot(t)
 	stdout, _, exitCode := trRunForge(t, projectRoot, "task", "list-types")
 	assert.Equal(t, 0, exitCode, "task list-types should exit 0")
-	assert.True(t, strings.Contains(stdout, "implementation"),
-		"task list-types output should contain 'implementation' type")
-	assert.True(t, strings.Contains(stdout, "deprecated"),
-		"implementation entry should indicate deprecation")
+	assert.False(t, strings.Contains(stdout, "implementation"),
+		"task list-types output should NOT contain 'implementation' type")
 }
 
 // --- TC-003: forge validates index.json with new type values ---
@@ -546,13 +544,13 @@ func TestTC_TypeRefine_019_RecordOmitsReclassificationWhenNoShift(t *testing.T) 
 		"record should NOT contain Type Reclassification section when no type shift")
 }
 
-// --- TC-020: forge task migrate maps implementation to feature ---
+// --- TC-020: forge task migrate infers type for tasks without recognized patterns ---
 
 // Traceability: TC-020 -> Task 5 AC-1, AC-2, Proposal Success Criterion 8
-func TestTC_TypeRefine_020_MigrateMapsImplementationToFeature(t *testing.T) {
+func TestTC_TypeRefine_020_MigrateDefaultsUnknownIDToFeature(t *testing.T) {
 	featureSlug := "tr-migrate"
 	tmpRoot := trCreateFeatureDir(t, featureSlug, []string{
-		"biz-1.md:" + trTaskContentWithType("biz-1.md", "implementation"),
+		"biz-1.md:" + trTaskContentWithType("biz-1.md", "feature"),
 		"biz-2.md:" + trTaskContentWithType("biz-2.md", "cleanup"),
 	})
 	_, _, exitCode := trRunForge(t, tmpRoot, "task", "index", "--feature", featureSlug)
@@ -562,7 +560,7 @@ func TestTC_TypeRefine_020_MigrateMapsImplementationToFeature(t *testing.T) {
 	tasks := trGetTasksFromIndex(t, idx)
 	biz1, ok := tasks["biz-1"].(map[string]interface{})
 	require.True(t, ok, "biz-1 should exist in tasks")
-	assert.Equal(t, "implementation", biz1["type"], "biz-1 should initially be implementation")
+	assert.Equal(t, "feature", biz1["type"], "biz-1 should initially be feature")
 
 	// Set all tasks to completed so migrate can proceed
 	for key, v := range tasks {
@@ -588,7 +586,7 @@ func TestTC_TypeRefine_020_MigrateMapsImplementationToFeature(t *testing.T) {
 	biz1Migrated, ok := migratedTasks["biz-1"].(map[string]interface{})
 	require.True(t, ok, "biz-1 should exist after migration")
 	assert.Equal(t, "feature", biz1Migrated["type"],
-		"implementation should be migrated to feature")
+		"feature-typed task should remain feature after migration")
 
 	// InferType("biz-2") returns "" which defaults to "feature"
 	biz2Migrated, ok := migratedTasks["biz-2"].(map[string]interface{})

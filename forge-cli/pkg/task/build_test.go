@@ -1008,14 +1008,6 @@ func TestNeedsTestPipeline(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "implementation type (deprecated) does NOT need test pipeline",
-			tasks: map[string]Task{
-				"1-impl": {ID: "1.1", Type: TypeImplementation},
-				"2-doc":  {ID: "1.2", Type: TypeDocumentation},
-			},
-			want: false,
-		},
-		{
 			name: "documentation-only does NOT need test pipeline",
 			tasks: map[string]Task{
 				"1-doc": {ID: "1.1", Type: TypeDocumentation},

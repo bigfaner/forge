@@ -313,11 +313,8 @@ Every task receives a `type` field in its frontmatter. The type controls which e
 | `enhancement` | Task improves existing behavior (performance, UX, edge-case handling) without adding new capabilities |
 | `cleanup` | Task removes dead code, fixes technical debt, or improves code hygiene |
 | `refactor` | Task restructures code without changing behavior (rename, reorganize, extract) |
-| `doc-generation` | Tasks producing only documentation, specs, or non-compilable artifacts |
-| `gate` | Quality-gate verification tasks (PRD flow diamond nodes, stage gates) |
-| `test-pipeline` | Auto-generated test lifecycle tasks (T-test-1 through T-test-5, fix-tasks) |
-
-> **Deprecated**: `implementation` is no longer used in new tasks. Existing `index.json` files with `type: "implementation"` should be migrated via `forge task migrate` (maps to `feature` as the conservative default).
+| `documentation` | Tasks producing only markdown, specs, or templates (non-compilable, non-runnable) |
+| `gate` | Quality-gate or stage-gate verification tasks |
 
 Unrecognized or ambiguous tasks fall back to `feature`.
 

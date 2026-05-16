@@ -270,22 +270,22 @@ func TestTC_009_BreakdownTasksGeneratesTypeFieldsForTasks(t *testing.T) {
 		regexp.MustCompile(`(?i)type.*assignment`).MatchString(content),
 		"breakdown-tasks SKILL.md should contain 'type assignment' section")
 
-	for _, typ := range []string{"implementation", "doc-generation", "gate", "test-pipeline"} {
+	for _, typ := range []string{"feature", "doc-generation", "gate", "test-pipeline"} {
 		assert.True(t, strings.Contains(content, typ),
 			"breakdown-tasks SKILL.md should mention type: %s", typ)
 	}
 }
 
 // Traceability: TC-010 -> Story 5 / AC-2
-func TestTC_010_BreakdownTasksFallsBackToImplementationForUnrecognized(t *testing.T) {
+func TestTC_010_BreakdownTasksFallsBackToFeatureForUnrecognized(t *testing.T) {
 	content := dispatchReadFile(t, filepath.Join("plugins", "forge", "skills", "breakdown-tasks", "SKILL.md"))
 
 	lower := strings.ToLower(content)
 	hasFallback := strings.Contains(lower, "fallback") || strings.Contains(lower, "default")
 	assert.True(t, hasFallback,
 		"breakdown-tasks SKILL.md should mention fallback/default")
-	assert.True(t, strings.Contains(lower, "implementation"),
-		"breakdown-tasks SKILL.md should mention implementation as fallback")
+	assert.True(t, strings.Contains(lower, "feature"),
+		"breakdown-tasks SKILL.md should mention feature as fallback")
 }
 
 // ── Story 6: execute-task routing consistency ─────────────────────────────
@@ -367,7 +367,7 @@ func TestTC_015_TaskValidateAcceptsValidTypesAndRejectsInvalidOnes(t *testing.T)
 		"status":  "planning",
 		"tasks": map[string]interface{}{
 			"1-1": map[string]interface{}{
-				"id": "1.1", "title": "T1", "type": "implementation",
+				"id": "1.1", "title": "T1", "type": "feature",
 				"status": "pending", "scope": "all", "file": "1-1.md",
 			},
 		},
@@ -493,8 +493,8 @@ func TestTC_019_QuickTasksSkillIncludesTypeAssignmentRules(t *testing.T) {
 	// Verify key type categories are mentioned or implied via auto-inference
 	lower := strings.ToLower(content)
 	assert.True(t,
-		strings.Contains(lower, "implementation") || strings.Contains(lower, "fallback"),
-		"quick-tasks SKILL.md should mention implementation type or fallback behavior")
+		strings.Contains(lower, "feature") || strings.Contains(lower, "fallback"),
+		"quick-tasks SKILL.md should mention feature type or fallback behavior")
 	assert.True(t,
 		strings.Contains(lower, "gate") || strings.Contains(lower, "stage-gate") || strings.Contains(lower, "stage"),
 		"quick-tasks SKILL.md should mention gate/stage-gate tasks")

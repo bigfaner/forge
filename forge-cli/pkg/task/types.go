@@ -8,10 +8,6 @@ import (
 
 // Task type constants define the valid execution types.
 const (
-	// Deprecated: TypeImplementation is overly broad. Use TypeFeature, TypeEnhancement,
-	// TypeCleanup, or TypeRefactor instead. Kept for backward compatibility with existing
-	// index.json files until migration (task 5) completes.
-	TypeImplementation               = "implementation"
 	TypeFeature                      = "feature"
 	TypeEnhancement                  = "enhancement"
 	TypeCleanup                      = "cleanup"
@@ -41,7 +37,6 @@ type TaskTypeInfo struct { //nolint:revive // intentional naming for API clarity
 // TaskTypeRegistry is the centralized source of truth for all supported task types.
 // Each entry's Description follows verb+object format and is <= 60 chars.
 var TaskTypeRegistry = []TaskTypeInfo{
-	{Name: TypeImplementation, Description: "implement feature task (deprecated)"},
 	{Name: TypeFeature, Description: "implement new runtime behavior"},
 	{Name: TypeEnhancement, Description: "enhance existing behavior"},
 	{Name: TypeCleanup, Description: "remove dead code or fix technical debt"},
@@ -64,7 +59,6 @@ var TaskTypeRegistry = []TaskTypeInfo{
 
 // ValidTypes is the complete set of valid task type values.
 var ValidTypes = map[string]bool{
-	TypeImplementation:               true,
 	TypeFeature:                      true,
 	TypeEnhancement:                  true,
 	TypeCleanup:                      true,
@@ -109,7 +103,7 @@ type Task struct {
 	// NoTest indicates this task does not require tests (e.g., documentation-only tasks).
 	// When true, quality gate and test evidence checks are skipped, and coverage is auto-set to -1.0.
 	NoTest bool `json:"noTest,omitempty"`
-	// Type is the task execution type (e.g. "implementation", "fix", "gate").
+	// Type is the task execution type (e.g. "feature", "fix", "gate").
 	// Required for all tasks after migration; validated by task validate.
 	// omitempty allows existing index.json files to load without error.
 	Type string `json:"type,omitempty"`

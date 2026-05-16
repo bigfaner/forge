@@ -912,7 +912,7 @@ func TestExecuteClaim_TypePropagatedToState(t *testing.T) {
 	}
 	index.SetTasks(map[string]task.Task{
 		"t1": {ID: "1.1", Title: "Impl task", Status: "pending", Priority: "P0",
-			File: "1.1.md", Record: "records/1.1.md", Type: "implementation"},
+			File: "1.1.md", Record: "records/1.1.md", Type: "feature"},
 	})
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)
@@ -930,8 +930,8 @@ func TestExecuteClaim_TypePropagatedToState(t *testing.T) {
 		t.Fatalf("executeClaim() error = %v", err)
 	}
 
-	if result.Task.Type != "implementation" {
-		t.Errorf("Task.Type = %q, want %q", result.Task.Type, "implementation")
+	if result.Task.Type != "feature" {
+		t.Errorf("Task.Type = %q, want %q", result.Task.Type, "feature")
 	}
 
 	statePath := feature.GetTaskStatePath(dir, "test-feature")
@@ -939,8 +939,8 @@ func TestExecuteClaim_TypePropagatedToState(t *testing.T) {
 	if err != nil || state == nil {
 		t.Fatalf("failed to load state: %v", err)
 	}
-	if state.Type != "implementation" {
-		t.Errorf("state.Type = %q, want %q", state.Type, "implementation")
+	if state.Type != "feature" {
+		t.Errorf("state.Type = %q, want %q", state.Type, "feature")
 	}
 }
 

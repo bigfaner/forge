@@ -96,7 +96,7 @@ func TestContract_Claim_NewTask(t *testing.T) {
 		ID: "1.1", Title: "Do stuff", Priority: "P0", Status: "pending",
 		File: "1.1.md", Record: "records/1.1.md",
 		Breaking: true, MainSession: true, NoTest: false,
-		Type: "implementation", Scope: "backend",
+		Type: "feature", Scope: "backend",
 		Dependencies: []string{"1.0"}, EstimatedTime: "30min",
 	}
 
@@ -115,7 +115,7 @@ func TestContract_Claim_NewTask(t *testing.T) {
 		t.Errorf("expected ACTION: CLAIMED")
 	}
 	// Conditional fields present when non-empty
-	if !hasField(lines, "TYPE", "implementation") {
+	if !hasField(lines, "TYPE", "feature") {
 		t.Errorf("expected TYPE: implementation")
 	}
 	if !hasField(lines, "SCOPE", "backend") {
@@ -225,7 +225,7 @@ func TestContract_Claim_FieldOrder(t *testing.T) {
 		ID: "1.1", Title: "T", Priority: "P0", Status: "pending",
 		File: "1.1.md", Record: "records/1.1.md",
 		Breaking: true, MainSession: true, Scope: "backend",
-		Type: "implementation",
+		Type: "feature",
 	}
 
 	out := captureStdout(func() {
