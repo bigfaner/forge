@@ -1,6 +1,8 @@
 ---
 name: gen-test-scripts
 description: Generate executable e2e test scripts from test cases. Profile-aware: reads active test profile from .forge/config.yaml to determine test framework, templates, and conventions.
+conventions:
+  - testing-isolation.md
 ---
 
 # Gen Test Scripts
@@ -38,6 +40,20 @@ Use the loaded profile manifest and strategy for all subsequent steps.
 Do NOT silently default to any profile. If `forge profile` returns no result and the user cannot decide, abort the skill.
 </HARD-RULE>
 
+## Convention Loading
+
+After profile resolution and before entering the workflow steps, load project conventions into context. Conventions ground generated output in project-specific coding standards.
+
+**Resolution algorithm**:
+
+1. **Project-wide conventions**: Read this skill's own frontmatter `conventions` field. For each filename, check `docs/conventions/{filename}` — if it exists, read it into context; if missing, skip silently.
+2. **Per-type conventions** (per-type mode only): Read the active type's instruction file from `plugins/forge/skills/gen-test-cases/types/{type}.md`, extract its frontmatter `conventions` field. For each filename, check `docs/conventions/{filename}` — if it exists, read it; if missing, skip silently.
+3. **Legacy mode**: Only project-wide conventions are loaded (no per-type instruction files to consult).
+
+<HARD-RULE>
+Convention loading is non-blocking. Missing convention files are silently skipped — no warnings, no aborts. The naming convention establishes a contract for future files created via `/consolidate-specs`.
+</HARD-RULE>
+
 ## Type Filter (--type)
 
 This skill accepts an optional `--type <capability>` argument that filters script generation to a single test type. When `--type` is specified, the skill skips all other type groups entirely — no Fact Table verification, no locator mapping, no spec generation for non-matching types.
@@ -46,11 +62,18 @@ This skill accepts an optional `--type <capability>` argument that filters scrip
 
 **Validation**: If `--type` is specified but not found in the profile's capabilities list, the skill MUST error with a clear message listing the valid types for the active profile. For example: `"invalid type: foo. Valid types for profile go-test: tui, api, cli"`.
 
+**`--type` interaction with input mode**:
+
+| Input mode | `--type` specified | `--type` omitted |
+|------------|-------------------|-----------------|
+| **Per-type** (per-type files found) | Load only `{type}-test-cases.md` matching the filter | Load all `{type}-test-cases.md` files sequentially |
+| **Legacy** (single test-cases.md) | Filter test cases by type after reading (unchanged behavior) | Process all types (unchanged behavior) |
+
 **Behavior summary**:
 
 | Step | When `--type` matches | When `--type` does not match | Without `--type` |
 |------|----------------------|------------------------------|-------------------|
-| Step 1: Read & group test cases | Process only test cases of the specified type | Skip non-matching type groups | Process all types (unchanged behavior) |
+| Step 1: Read & group test cases | Per-type: read single `{type}-test-cases.md`; Legacy: process only test cases of the specified type | Skip non-matching type groups | Process all types (unchanged behavior) |
 | Step 1.5: Code Reconnaissance (Fact Table) | Build Fact Table for the specified type only | Skip Fact Table for non-matching types | Build Fact Table for all types |
 | Step 2: Resolve Sitemap | Run if type is `web-ui` | Skip | Run if profile has `web-ui` capability |
 | Step 3: Map Locators | Run if type is `web-ui` | Skip | Run if profile has `web-ui` capability |
@@ -61,15 +84,26 @@ This skill accepts an optional `--type <capability>` argument that filters scrip
 - Shared infrastructure (Step 3.5) **always runs** regardless of `--type` value — helpers, config, and auth-setup are shared across all types
 - Without `--type`, behavior is completely unchanged: all types are generated as before
 - The type filter is applied early in the pipeline at Step 1 (test case grouping), after profile capabilities are resolved
+- In per-type mode with `--type`, the matching `{type}-test-cases.md` is the only file read — no type grouping step is needed (file is already single-type)
 
 ## Prerequisites
 
 Check previous stage artifacts. Abort and prompt user if missing:
 
-| Artifact | Missing prompt |
-|----------|----------------|
-| `docs/features/<slug>/testing/test-cases.md` | Run `/gen-test-cases` first |
-| `docs/sitemap/sitemap.json` (only when profile has `web-ui` capability) | Run `/gen-sitemap` first |
+### Test Case File Discovery
+
+**Discovery logic** (first match wins):
+
+1. **Per-type mode**: Glob `docs/features/<slug>/testing/*-test-cases.md` — if any files are found (e.g., `ui-test-cases.md`, `api-test-cases.md`), use per-type mode
+2. **Legacy mode**: Fall back to `docs/features/<slug>/testing/test-cases.md`
+
+When both per-type files AND legacy `test-cases.md` exist, **per-type files take precedence** (new format wins).
+
+| Mode | Input files | Missing prompt |
+|------|------------|----------------|
+| Per-type | `docs/features/<slug>/testing/{type}-test-cases.md` | Run `/gen-test-cases` first |
+| Legacy | `docs/features/<slug>/testing/test-cases.md` | Run `/gen-test-cases` first |
+| `docs/sitemap/sitemap.json` (only when profile has `web-ui` capability) | | Run `/gen-sitemap` first |
 
 `<slug>` is the current feature name, obtained via `forge feature` command. `docs/sitemap/sitemap.json` is a project-level file (one per application), not isolated per feature.
 
@@ -85,16 +119,18 @@ Check whether an eval-test-cases report exists for the current feature. If it do
 4. Find the Step Actionability dimension score in the report's dimension table
 5. If Step Actionability < 200: **ABORT** with the message below
 
+**Per-type mode**: When processing a specific `{type}-test-cases.md` file, the eval report for that type is checked. The eval directory structure remains `testing/eval/iteration-*.md` (shared across types).
+
 **Abort message**:
 ```
 ABORT: Step Actionability score is below the blocking threshold (score < 200).
 
-The test cases in test-cases.md have insufficient step-level detail for reliable
+The test cases in {type}-test-cases.md have insufficient step-level detail for reliable
 script generation. Low Step Actionability means test steps are vague, missing
 concrete actions, or lack sufficient detail for automated translation.
 
 Action required: Run /eval-test-cases, review the Step Actionability dimension
-feedback, and fix test-cases.md to improve step-level specificity before
+feedback, and fix {type}-test-cases.md to improve step-level specificity before
 re-running /gen-test-scripts.
 ```
 
@@ -128,7 +164,7 @@ Test cases match sitemap pages via the `Route` field. The `Element` field from t
 
 - User asks to "generate test scripts" or "create e2e scripts"
 - User provides `/gen-test-scripts` command
-- After `/gen-test-cases` has produced `testing/test-cases.md`
+- After `/gen-test-cases` has produced `testing/test-cases.md` (legacy) or per-type files like `testing/ui-test-cases.md`, `testing/api-test-cases.md` (per-type mode)
 
 **Skip:**
 - `tests/e2e/features/<slug>/` already exists and contains generated scripts (re-run only if explicitly requested)
@@ -154,7 +190,16 @@ Test cases match sitemap pages via the `Route` field. The `Element` field from t
 
 ### Step 1: Read Test Cases
 
-Read `docs/features/<slug>/testing/test-cases.md`. Parse each test case — extract TC ID, title, type, route, feature, pre-conditions, steps, expected result, priority. Group by type using the profile's capabilities (e.g., `web-ui` → UI, `api` → API, `cli` → CLI).
+**Input mode determines read behavior**:
+
+| Mode | Source file(s) | Type grouping |
+|------|---------------|---------------|
+| **Per-type** (per-type files found) | `docs/features/<slug>/testing/{type}-test-cases.md` | **Skip** — file is already single-type |
+| **Legacy** (no per-type files) | `docs/features/<slug>/testing/test-cases.md` | Group by type as before |
+
+**Per-type mode**: For each `{type}-test-cases.md` file (or only the file matching `--type` if specified), read and parse test cases directly. Since the file contains only one type, skip the type-grouping step entirely. Parse TC ID, title, type, route, feature, pre-conditions, steps, expected result, priority.
+
+**Legacy mode**: Read `docs/features/<slug>/testing/test-cases.md`. Parse each test case — extract TC ID, title, type, route, feature, pre-conditions, steps, expected result, priority. Group by type using the profile's capabilities (e.g., `web-ui` → UI, `api` → API, `cli` → CLI).
 
 **Type filter**: If `--type` was specified, keep only the group matching the specified type and discard all other groups. Only test cases of the specified type are processed in all subsequent steps. If no test cases match the specified type, emit a WARNING and proceed (shared infrastructure in Step 3.5 still runs).
 
@@ -444,7 +489,7 @@ All framework-specific rules (test runner, assertion library, imports, HTTP clie
 
 **Skip empty groups**: If no test cases of a given type exist, or the project lacks that interface (Step 4 verification), skip generating that test file.
 
-**Empty result guard**: If zero test files were generated (all groups empty or all interfaces undetected), abort with a clear message: "No test files generated — either test-cases.md has no testable cases, or all interface types were undetected. Re-run /gen-test-cases or verify project structure."
+**Empty result guard**: If zero test files were generated (all groups empty or all interfaces undetected), abort with a clear message: "No test files generated — either the test case files have no testable cases, or all interface types were undetected. Re-run /gen-test-cases or verify project structure."
 
 **VERIFY marker resolution**: Resolve all `// VERIFY:` comments using Fact Table values. If no Fact Table value exists, keep the `// VERIFY:` comment as-is.
 
@@ -466,7 +511,7 @@ All generated test files go to `tests/e2e/features/<feature>/` (staging area). A
 | Situation | Action |
 |-----------|--------|
 | `.forge/config.yaml` missing and auto-detection fails | Ask user to select a profile |
-| `docs/features/<slug>/testing/test-cases.md` missing | Abort with prompt to run `/gen-test-cases` |
+| No per-type files AND `test-cases.md` missing | Abort with prompt to run `/gen-test-cases` |
 | `sitemap.json` missing (web-ui tests) | Abort with prompt to run `/gen-sitemap` |
 | eval-test-cases Step Actionability < 200 | Abort with prompt to fix `test-cases.md` first |
 | Compilation fails post-generation | Fix generated code, re-run compile check |

@@ -78,7 +78,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "6-update-gen-test-scripts.md",
       "record": "records/6-update-gen-test-scripts.md",
       "noTest": true,
