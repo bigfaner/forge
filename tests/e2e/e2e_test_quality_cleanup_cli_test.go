@@ -196,7 +196,8 @@ func TestTC_005_ZeroRecursiveGoTestInvocations(t *testing.T) {
 	assert.NotEmpty(t, root, "project root must be resolved")
 
 	e2eDir := filepath.Join(root, "tests", "e2e")
-	target := `exec.Command("go", "test"`
+	// Construct target dynamically to avoid matching this file's own source.
+	target := `exec.Command("` + "go" + `", "` + "test" + `"`
 
 	var testFiles []string
 	err := filepath.WalkDir(e2eDir, func(path string, d os.DirEntry, err error) error {
