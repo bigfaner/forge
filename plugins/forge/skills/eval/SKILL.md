@@ -21,6 +21,7 @@ description: Generic document evaluation with scorer→gate→revise loop. Param
 | `cli-test-cases` | `testing/cli-test-cases.md` |
 | `consistency` | `manifest.md` + `prd/prd-spec.md` + at least one other doc |
 | `harness` | Project has CLAUDE.md or AGENTS.md |
+| `validate-code` | PRD (`prd/prd-spec.md` + `prd/prd-user-stories.md`) + git diff against base branch |
 
 If missing, tell user to create it first.
 
@@ -28,7 +29,7 @@ If missing, tell user to create it first.
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `--type` | (required) | `proposal`, `prd`, `design`, `ui`, `ui-web`, `ui-mobile`, `ui-tui`, `test-cases`, `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases`, `consistency`, `harness` |
+| `--type` | (required) | `proposal`, `prd`, `design`, `ui`, `ui-web`, `ui-mobile`, `ui-tui`, `test-cases`, `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases`, `consistency`, `harness`, `validate-code` |
 | `--target` | rubric frontmatter | Override target score |
 | `--iterations` | rubric frontmatter | Override max iterations |
 | `--scope` | `docs` | `consistency` only: `docs` or `full` |
@@ -105,6 +106,7 @@ Parse rubric frontmatter: `scale`, `target`, `iterations`, `context`. CLI `--tar
 | `cli-test-cases` | `docs/features/<slug>/testing/` |
 | `consistency` | `docs/features/<slug>/` |
 | `harness` | `docs/harness-reports/` |
+| `validate-code` | `docs/features/<slug>/prd/` |
 
 4. Ask user if not found
 
@@ -126,6 +128,7 @@ Multi-platform: run independent score→gate→revise loops per platform.
 | `test-cases` | Resolve test profile via `forge profile`. Pass profile capabilities to scorer. |
 | `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases` | Resolve test profile via `forge profile`. Pass profile capabilities to scorer. |
 | `prd` | Detect mode: `prd-ui-functions.md` exists → Mode A (with UI), else Mode B (no UI). |
+| `validate-code` | 1) Read PRD → extract user scenarios list (from prd-spec.md flow descriptions and prd-user-stories.md acceptance criteria). 2) Run `git diff <base-branch>...HEAD` to get changed files and diff hunks. 3) Compile changed file list. 4) Pass PRD scenarios + diff + file list to scorer as assembled input. |
 
 ## Step 2: Invoke Scorer Subagent
 
@@ -138,6 +141,7 @@ Inputs:
   - `harness`: `docs/harness-reports/YYYY-MM-DD.md`
   - `consistency`: `docs/features/<slug>/eval-consistency/eval/iteration-{{N}}.md`
   - `proposal`: `docs/proposals/<slug>/eval/iteration-{{N}}.md`
+  - `validate-code`: `docs/features/<slug>/eval/validate-code.md`
 - `ITERATION` = current iteration (1-based)
 - `PREVIOUS_REPORT_PATH` = previous report (only if iteration > 1)
 
@@ -237,6 +241,7 @@ Ask user via `AskUserQuestion`:
 | `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases` | `/gen-test-scripts` |
 | `consistency` | `/run-tasks` or re-eval |
 | `harness` | `/improve-harness` |
+| `validate-code` | `/run-tasks` (proceed to test pipeline) |
 
 `ui-*` invoked as sub-step of `/ui-design`: return control to ui-design, do NOT prompt.
 
@@ -260,3 +265,4 @@ All rubrics: `plugins/forge/skills/eval/rubrics/<type>.md`
 | `cli-test-cases` | 1000 | 900 | 6 | Step Actionability blocking threshold |
 | `consistency` | 1000 | 900 | 3 | docs/full scope modes |
 | `harness` | 100 | 70 | 1 | Single-pass; no reviser |
+| `validate-code` | 1000 | 700 | 1 | Single-pass; scenario tracing; no reviser |

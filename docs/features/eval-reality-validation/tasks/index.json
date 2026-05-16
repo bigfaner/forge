@@ -34,7 +34,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3-validate-code.md",
       "record": "records/3-validate-code.md",
       "type": "documentation"
