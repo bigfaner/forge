@@ -38,7 +38,7 @@
       "dependencies": [
         "T-quick-1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "quick-gen-scripts-go-test.md",
       "record": "records/quick-gen-scripts-go-test.md",
       "scope": "all",
@@ -68,7 +68,7 @@
       "dependencies": [
         "T-quick-2"
       ],
-      "status": "pending",
+      "status": "blocked",
       "file": "quick-run-tests-go-test.md",
       "record": "records/quick-run-tests-go-test.md",
       "scope": "all",
