@@ -142,6 +142,7 @@ func quickSlimBin(t *testing.T) string {
 func quickSlimSetupProject(t *testing.T, slug string, testProfiles []string, testCasesContent string) string {
 	t.Helper()
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 
 	// Create proposal directory (triggers quick mode)
 	propDir := filepath.Join(dir, "docs", "proposals", slug)
@@ -375,6 +376,7 @@ func TestTC_006_QuickModePerTypeDependencyFanIn(t *testing.T) {
 func TestTC_007_BreakdownModeUnchangedByQuickMerge(t *testing.T) {
 	// Create a breakdown mode project (has PRD, not proposal)
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 
 	featureDir := filepath.Join(dir, "docs", "features", "test-qts-007")
 	tasksDir := filepath.Join(featureDir, "tasks")

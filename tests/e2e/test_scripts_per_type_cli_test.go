@@ -90,6 +90,7 @@ func runForge(t *testing.T, args ...string) ([]byte, error) {
 func setupFeatureProject(t *testing.T, slug string, hasPRD bool, testProfiles []string, testCasesContent string) string {
 	t.Helper()
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 
 	// Create feature dirs
 	featureDir := filepath.Join(dir, "docs", "features", slug)

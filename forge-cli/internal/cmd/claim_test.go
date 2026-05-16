@@ -1167,6 +1167,108 @@ func TestCheckDependenciesMet_PendingFixTaskBlocks(t *testing.T) {
 	})
 }
 
+// --- SourceTaskID == selfID blocking (self-block) scenarios ---
+
+func TestCheckDependenciesMet_SelfBlock(t *testing.T) {
+	t.Run("pending fix task targeting self blocks claim", func(t *testing.T) {
+		// Task 3 has no dependencies. Fix-1 (sourceTaskID: "3") is pending.
+		// Task 3 should NOT be eligible because a fix task is targeting it.
+		index := &task.TaskIndex{Feature: "test"}
+		index.SetTasks(map[string]task.Task{
+			"3":     {ID: "3", Status: "pending", Dependencies: []string{}},
+			"fix-1": {ID: "fix-1", Status: "pending", SourceTaskID: "3", Type: "fix"},
+		})
+		met, unmet := checkDependenciesMet(index, "3", index.TasksMap()["3"])
+		if met {
+			t.Error("task should be blocked by pending fix task targeting itself")
+		}
+		if len(unmet) == 0 {
+			t.Error("expected unmet dependencies for self-block")
+		}
+	})
+
+	t.Run("in_progress fix task targeting self blocks claim", func(t *testing.T) {
+		// Task 3 has no dependencies. Fix-1 (sourceTaskID: "3") is in_progress.
+		index := &task.TaskIndex{Feature: "test"}
+		index.SetTasks(map[string]task.Task{
+			"3":     {ID: "3", Status: "pending", Dependencies: []string{}},
+			"fix-1": {ID: "fix-1", Status: "in_progress", SourceTaskID: "3", Type: "fix"},
+		})
+		met, _ := checkDependenciesMet(index, "3", index.TasksMap()["3"])
+		if met {
+			t.Error("task should be blocked by in_progress fix task targeting itself")
+		}
+	})
+
+	t.Run("completed fix task targeting self does not block", func(t *testing.T) {
+		// Fix-1 is completed, so task 3 should be eligible.
+		index := &task.TaskIndex{Feature: "test"}
+		index.SetTasks(map[string]task.Task{
+			"3":     {ID: "3", Status: "pending", Dependencies: []string{}},
+			"fix-1": {ID: "fix-1", Status: "completed", SourceTaskID: "3", Type: "fix"},
+		})
+		met, _ := checkDependenciesMet(index, "3", index.TasksMap()["3"])
+		if !met {
+			t.Error("completed fix task targeting self should not block")
+		}
+	})
+
+	t.Run("self-block with existing dependencies also blocked", func(t *testing.T) {
+		// Task 3 depends on task 2 (completed). Fix-1 (sourceTaskID: "3") is pending.
+		// Task 3 should still be blocked because fix targets itself.
+		index := &task.TaskIndex{Feature: "test"}
+		index.SetTasks(map[string]task.Task{
+			"2":     {ID: "2", Status: "completed"},
+			"3":     {ID: "3", Status: "pending", Dependencies: []string{"2"}},
+			"fix-1": {ID: "fix-1", Status: "pending", SourceTaskID: "3", Type: "fix"},
+		})
+		met, _ := checkDependenciesMet(index, "3", index.TasksMap()["3"])
+		if met {
+			t.Error("should be blocked by fix task targeting self, even with met dependencies")
+		}
+	})
+
+	t.Run("fix task targeting other task does not self-block", func(t *testing.T) {
+		// Fix-1 targets task 2, not task 3. Task 3 has no dependencies.
+		// Task 3 should be eligible.
+		index := &task.TaskIndex{Feature: "test"}
+		index.SetTasks(map[string]task.Task{
+			"2":     {ID: "2", Status: "completed"},
+			"3":     {ID: "3", Status: "pending", Dependencies: []string{}},
+			"fix-1": {ID: "fix-1", Status: "pending", SourceTaskID: "2", Type: "fix"},
+		})
+		met, _ := checkDependenciesMet(index, "3", index.TasksMap()["3"])
+		if !met {
+			t.Error("fix task targeting other task should not block task 3")
+		}
+	})
+
+	t.Run("multiple fix tasks targeting self must all complete", func(t *testing.T) {
+		// Both fix-1 and fix-2 target task 3. Fix-1 completed, fix-2 pending.
+		index := &task.TaskIndex{Feature: "test"}
+		index.SetTasks(map[string]task.Task{
+			"3":     {ID: "3", Status: "pending", Dependencies: []string{}},
+			"fix-1": {ID: "fix-1", Status: "completed", SourceTaskID: "3", Type: "fix"},
+			"fix-2": {ID: "fix-2", Status: "pending", SourceTaskID: "3", Type: "fix"},
+		})
+		met, _ := checkDependenciesMet(index, "3", index.TasksMap()["3"])
+		if met {
+			t.Error("should be blocked while fix-2 is still pending")
+		}
+	})
+
+	t.Run("no fix task targeting self - existing behavior unchanged", func(t *testing.T) {
+		index := &task.TaskIndex{Feature: "test"}
+		index.SetTasks(map[string]task.Task{
+			"3": {ID: "3", Status: "pending", Dependencies: []string{}},
+		})
+		met, _ := checkDependenciesMet(index, "3", index.TasksMap()["3"])
+		if !met {
+			t.Error("task with no deps and no fix tasks should be eligible")
+		}
+	})
+}
+
 func TestClaimNextTask_FixTaskClaimedBeforeBusiness(t *testing.T) {
 	t.Run("fix task claimed when coexisting with blocked business task", func(t *testing.T) {
 		// Task 3 completed. Fix-1 (sourceTaskID: "3") is pending. Task 4 depends on task 3.
@@ -1209,6 +1311,343 @@ func TestClaimNextTask_FixTaskClaimedBeforeBusiness(t *testing.T) {
 		}
 		if key != "fix-2" {
 			t.Errorf("expected fix-2 to be claimed, got %q", key)
+		}
+	})
+}
+
+// --- Lazy unblock scan tests ---
+
+func TestClaimNextTask_LazyUnblockScan(t *testing.T) {
+	t.Run("blocked task auto-unblocked when dependencies met", func(t *testing.T) {
+		// Task 1 completed. Task 2 was blocked on task 1.
+		// Lazy scan should transition task 2 to pending before the hasPending check.
+		index := &task.TaskIndex{
+			StatusEnum:   []string{"pending", "in_progress", "completed", "blocked"},
+			PriorityEnum: []string{"P0", "P1", "P2"},
+		}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1", Title: "Task 1", Priority: "P0", Status: "completed", Dependencies: []string{}},
+			"task2": {ID: "2", Title: "Task 2", Priority: "P0", Status: "blocked", Dependencies: []string{"1"}},
+		})
+
+		key, gotTask, err := claimNextTask(index)
+		if err != nil {
+			t.Fatalf("claimNextTask() error = %v", err)
+		}
+		if key != "task2" {
+			t.Errorf("expected key 'task2', got key %q", key)
+		}
+		if gotTask.Status != "in_progress" {
+			t.Errorf("expected status 'in_progress', got %q", gotTask.Status)
+		}
+	})
+
+	t.Run("blocked task stays blocked when dependencies not met", func(t *testing.T) {
+		// Task 1 is still pending. Task 2 is blocked on task 1.
+		// Lazy scan should NOT unblock task 2.
+		index := &task.TaskIndex{
+			StatusEnum:   []string{"pending", "in_progress", "completed", "blocked"},
+			PriorityEnum: []string{"P0", "P1", "P2"},
+		}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1", Title: "Task 1", Priority: "P0", Status: "pending", Dependencies: []string{}},
+			"task2": {ID: "2", Title: "Task 2", Priority: "P0", Status: "blocked", Dependencies: []string{"1"}},
+		})
+
+		key, _, err := claimNextTask(index)
+		if err != nil {
+			t.Fatalf("claimNextTask() error = %v", err)
+		}
+		// task1 should be claimed, task2 stays blocked
+		if key != "task1" {
+			t.Errorf("expected key 'task1', got key %q", key)
+		}
+		// task2 should still be blocked
+		if index.TasksMap()["task2"].Status != "blocked" {
+			t.Errorf("task2 should still be blocked, got %q", index.TasksMap()["task2"].Status)
+		}
+	})
+
+	t.Run("blocked task with active fix targeting it stays blocked", func(t *testing.T) {
+		// Task 2 depends on task 1 (completed). Fix-1 targets task 2 (sourceTaskID: "2").
+		// Task 2 is blocked. Even though regular deps are met,
+		// the self-block rule keeps task 2 blocked.
+		index := &task.TaskIndex{
+			StatusEnum:   []string{"pending", "in_progress", "completed", "blocked"},
+			PriorityEnum: []string{"P0", "P1", "P2"},
+		}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1", Title: "Task 1", Priority: "P0", Status: "completed", Dependencies: []string{}},
+			"task2": {ID: "2", Title: "Task 2", Priority: "P0", Status: "blocked", Dependencies: []string{"1"}},
+			"fix-1": {ID: "fix-1", Status: "pending", Priority: "P0", SourceTaskID: "2", Type: "fix", Dependencies: []string{}},
+		})
+
+		key, _, err := claimNextTask(index)
+		if err != nil {
+			t.Fatalf("claimNextTask() error = %v", err)
+		}
+		// fix-1 should be claimed (it's pending and has no deps)
+		if key != "fix-1" {
+			t.Errorf("expected key 'fix-1', got key %q", key)
+		}
+		// task2 should remain blocked due to active fix task
+		if index.TasksMap()["task2"].Status != "blocked" {
+			t.Errorf("task2 should remain blocked, got %q", index.TasksMap()["task2"].Status)
+		}
+	})
+
+	t.Run("multiple blocked tasks unblocked simultaneously", func(t *testing.T) {
+		// Task 1 completed. Tasks 2 and 3 were blocked on task 1.
+		// Both should be auto-unblocked.
+		index := &task.TaskIndex{
+			StatusEnum:   []string{"pending", "in_progress", "completed", "blocked"},
+			PriorityEnum: []string{"P0", "P1", "P2"},
+		}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1", Title: "Task 1", Priority: "P0", Status: "completed", Dependencies: []string{}},
+			"task2": {ID: "2", Title: "Task 2", Priority: "P1", Status: "blocked", Dependencies: []string{"1"}},
+			"task3": {ID: "3", Title: "Task 3", Priority: "P0", Status: "blocked", Dependencies: []string{"1"}},
+		})
+
+		key, _, err := claimNextTask(index)
+		if err != nil {
+			t.Fatalf("claimNextTask() error = %v", err)
+		}
+		// task3 should be claimed (P0 beats P1)
+		if key != "task3" {
+			t.Errorf("expected key 'task3' (P0), got key %q", key)
+		}
+		// task2 should have been auto-unblocked to pending
+		if index.TasksMap()["task2"].Status != "pending" {
+			t.Errorf("task2 should be pending after auto-unblock, got %q", index.TasksMap()["task2"].Status)
+		}
+	})
+
+	t.Run("no blocked tasks - existing behavior unchanged", func(t *testing.T) {
+		index := &task.TaskIndex{
+			StatusEnum:   []string{"pending", "in_progress", "completed"},
+			PriorityEnum: []string{"P0", "P1", "P2"},
+		}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1", Title: "Task 1", Priority: "P0", Status: "pending", Dependencies: []string{}},
+		})
+
+		key, _, err := claimNextTask(index)
+		if err != nil {
+			t.Fatalf("claimNextTask() error = %v", err)
+		}
+		if key != "task1" {
+			t.Errorf("expected key 'task1', got key %q", key)
+		}
+	})
+
+	t.Run("all tasks blocked and deps unmet returns error", func(t *testing.T) {
+		index := &task.TaskIndex{
+			StatusEnum:   []string{"pending", "in_progress", "completed", "blocked"},
+			PriorityEnum: []string{"P0", "P1", "P2"},
+		}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1", Title: "Task 1", Priority: "P0", Status: "blocked", Dependencies: []string{"2"}},
+			"task2": {ID: "2", Title: "Task 2", Priority: "P0", Status: "blocked", Dependencies: []string{"1"}},
+		})
+
+		_, _, err := claimNextTask(index)
+		if err == nil {
+			t.Error("expected error when all tasks blocked with unmet deps")
+		}
+	})
+
+	t.Run("auto-unblock logged to stdout", func(t *testing.T) {
+		index := &task.TaskIndex{
+			StatusEnum:   []string{"pending", "in_progress", "completed", "blocked"},
+			PriorityEnum: []string{"P0", "P1", "P2"},
+		}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1", Title: "Task 1", Priority: "P0", Status: "completed", Dependencies: []string{}},
+			"task2": {ID: "2", Title: "Task 2", Priority: "P0", Status: "blocked", Dependencies: []string{"1"}},
+		})
+
+		out := captureStdout(func() {
+			_, _, _ = claimNextTask(index)
+		})
+		if !strings.Contains(out, "Auto-unblocked task 2") {
+			t.Errorf("expected auto-unblock log message, got: %s", out)
+		}
+	})
+}
+
+// --- Block-source lifecycle: fix done -> claim -> source auto-unblocked ---
+
+func TestClaimNextTask_BlockSourceLifecycle(t *testing.T) {
+	t.Run("fix completed auto-unblocks blocked source task", func(t *testing.T) {
+		// Source task is blocked. Fix task (sourceTaskID: "1") is completed.
+		// Lazy scan should auto-unblock source and claim it.
+		index := &task.TaskIndex{
+			StatusEnum:   []string{"pending", "in_progress", "completed", "blocked"},
+			PriorityEnum: []string{"P0", "P1", "P2"},
+		}
+		index.SetTasks(map[string]task.Task{
+			"source": {ID: "1", Title: "Source task", Priority: "P0", Status: "blocked", Dependencies: []string{}},
+			"fix-1":  {ID: "fix-1", Status: "completed", Priority: "P0", SourceTaskID: "1", Type: "fix", Dependencies: []string{}},
+		})
+
+		key, gotTask, err := claimNextTask(index)
+		if err != nil {
+			t.Fatalf("claimNextTask() error = %v", err)
+		}
+		if key != "source" {
+			t.Errorf("expected key 'source', got key %q", key)
+		}
+		if gotTask.Status != "in_progress" {
+			t.Errorf("expected status 'in_progress', got %q", gotTask.Status)
+		}
+	})
+
+	t.Run("source stays blocked when fix is still active", func(t *testing.T) {
+		// Source task is blocked. Fix task (sourceTaskID: "1") is still in_progress.
+		// Source should stay blocked.
+		index := &task.TaskIndex{
+			StatusEnum:   []string{"pending", "in_progress", "completed", "blocked"},
+			PriorityEnum: []string{"P0", "P1", "P2"},
+		}
+		index.SetTasks(map[string]task.Task{
+			"source": {ID: "1", Title: "Source task", Priority: "P0", Status: "blocked", Dependencies: []string{}},
+			"fix-1":  {ID: "fix-1", Status: "in_progress", Priority: "P0", SourceTaskID: "1", Type: "fix", Dependencies: []string{}},
+		})
+
+		_, _, err := claimNextTask(index)
+		if err == nil {
+			t.Error("expected error when no eligible tasks")
+		}
+		// Source should remain blocked
+		if index.TasksMap()["source"].Status != "blocked" {
+			t.Errorf("source should remain blocked, got %q", index.TasksMap()["source"].Status)
+		}
+	})
+
+	t.Run("multiple fix tasks all completed unblocks source", func(t *testing.T) {
+		// Source blocked by two fix tasks. Both completed. Source should auto-unblock.
+		index := &task.TaskIndex{
+			StatusEnum:   []string{"pending", "in_progress", "completed", "blocked"},
+			PriorityEnum: []string{"P0", "P1", "P2"},
+		}
+		index.SetTasks(map[string]task.Task{
+			"source": {ID: "1", Title: "Source task", Priority: "P0", Status: "blocked", Dependencies: []string{}},
+			"fix-1":  {ID: "fix-1", Status: "completed", Priority: "P0", SourceTaskID: "1", Type: "fix", Dependencies: []string{}},
+			"fix-2":  {ID: "fix-2", Status: "completed", Priority: "P0", SourceTaskID: "1", Type: "fix", Dependencies: []string{}},
+		})
+
+		key, gotTask, err := claimNextTask(index)
+		if err != nil {
+			t.Fatalf("claimNextTask() error = %v", err)
+		}
+		if key != "source" {
+			t.Errorf("expected key 'source', got key %q", key)
+		}
+		if gotTask.Status != "in_progress" {
+			t.Errorf("expected status 'in_progress', got %q", gotTask.Status)
+		}
+	})
+
+	t.Run("fix completed but source has unmet regular deps stays blocked", func(t *testing.T) {
+		// Source is blocked, has a regular dep on task "2" which is pending.
+		// Fix targeting source is completed. But regular dep is unmet.
+		// Source should stay blocked.
+		index := &task.TaskIndex{
+			StatusEnum:   []string{"pending", "in_progress", "completed", "blocked"},
+			PriorityEnum: []string{"P0", "P1", "P2"},
+		}
+		index.SetTasks(map[string]task.Task{
+			"source": {ID: "1", Title: "Source task", Priority: "P0", Status: "blocked", Dependencies: []string{"2"}},
+			"dep":    {ID: "2", Title: "Dep task", Priority: "P0", Status: "pending", Dependencies: []string{}},
+			"fix-1":  {ID: "fix-1", Status: "completed", Priority: "P0", SourceTaskID: "1", Type: "fix", Dependencies: []string{}},
+		})
+
+		key, _, err := claimNextTask(index)
+		if err != nil {
+			t.Fatalf("claimNextTask() error = %v", err)
+		}
+		// dep should be claimed, source stays blocked
+		if key != "dep" {
+			t.Errorf("expected key 'dep', got key %q", key)
+		}
+		if index.TasksMap()["source"].Status != "blocked" {
+			t.Errorf("source should stay blocked with unmet deps, got %q", index.TasksMap()["source"].Status)
+		}
+	})
+}
+
+// --- Auto-downgrade scenario: task blocked -> dep completed -> claim auto-unblocks ---
+
+func TestClaimNextTask_AutoDowngradeUnblock(t *testing.T) {
+	t.Run("downgraded task auto-unblocked when dep completes", func(t *testing.T) {
+		// Task 2 was auto-downgraded to blocked (testsFailed). Its dep (task 1) is completed.
+		// No fix tasks exist. Lazy scan should auto-unblock task 2 and claim it.
+		index := &task.TaskIndex{
+			StatusEnum:   []string{"pending", "in_progress", "completed", "blocked"},
+			PriorityEnum: []string{"P0", "P1", "P2"},
+		}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1", Title: "Task 1", Priority: "P0", Status: "completed", Dependencies: []string{}},
+			"task2": {ID: "2", Title: "Task 2", Priority: "P0", Status: "blocked", Dependencies: []string{"1"}, BlockedReason: "auto-downgrade: testsFailed=2"},
+		})
+
+		key, gotTask, err := claimNextTask(index)
+		if err != nil {
+			t.Fatalf("claimNextTask() error = %v", err)
+		}
+		if key != "task2" {
+			t.Errorf("expected key 'task2', got key %q", key)
+		}
+		if gotTask.Status != "in_progress" {
+			t.Errorf("expected status 'in_progress', got %q", gotTask.Status)
+		}
+	})
+
+	t.Run("downgraded task stays blocked when dep still pending", func(t *testing.T) {
+		// Task 2 was auto-downgraded to blocked. Its dep (task 1) is still pending.
+		// Task 2 should stay blocked.
+		index := &task.TaskIndex{
+			StatusEnum:   []string{"pending", "in_progress", "completed", "blocked"},
+			PriorityEnum: []string{"P0", "P1", "P2"},
+		}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1", Title: "Task 1", Priority: "P0", Status: "pending", Dependencies: []string{}},
+			"task2": {ID: "2", Title: "Task 2", Priority: "P0", Status: "blocked", Dependencies: []string{"1"}, BlockedReason: "auto-downgrade: testsFailed=2"},
+		})
+
+		key, _, err := claimNextTask(index)
+		if err != nil {
+			t.Fatalf("claimNextTask() error = %v", err)
+		}
+		if key != "task1" {
+			t.Errorf("expected key 'task1', got key %q", key)
+		}
+		if index.TasksMap()["task2"].Status != "blocked" {
+			t.Errorf("task2 should stay blocked, got %q", index.TasksMap()["task2"].Status)
+		}
+	})
+
+	t.Run("downgraded task with no deps auto-unblocks immediately", func(t *testing.T) {
+		// Task with no dependencies was downgraded to blocked.
+		// Lazy scan should auto-unblock it since no deps exist.
+		index := &task.TaskIndex{
+			StatusEnum:   []string{"pending", "in_progress", "completed", "blocked"},
+			PriorityEnum: []string{"P0", "P1", "P2"},
+		}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1", Title: "Standalone task", Priority: "P0", Status: "blocked", Dependencies: []string{}, BlockedReason: "auto-downgrade: testsFailed=1"},
+		})
+
+		key, gotTask, err := claimNextTask(index)
+		if err != nil {
+			t.Fatalf("claimNextTask() error = %v", err)
+		}
+		if key != "task1" {
+			t.Errorf("expected key 'task1', got key %q", key)
+		}
+		if gotTask.Status != "in_progress" {
+			t.Errorf("expected status 'in_progress', got %q", gotTask.Status)
 		}
 	})
 }
