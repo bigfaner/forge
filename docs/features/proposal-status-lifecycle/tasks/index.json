@@ -1,0 +1,41 @@
+{
+  "feature": "proposal-status-lifecycle",
+  "proposal": "docs/proposals/proposal-status-lifecycle/proposal.md",
+  "created": "2026-05-17",
+  "tasks": {
+    "1-quick-status-lifecycle": {
+      "id": "1",
+      "title": "Add proposal status lifecycle to /quick skill",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "status": "completed",
+      "file": "1-quick-status-lifecycle.md",
+      "record": "records/1-quick-status-lifecycle.md",
+      "type": "documentation"
+    },
+    "2-cli-status-display": {
+      "id": "2",
+      "title": "Update Go CLI display for Approved/Completed status",
+      "priority": "P2",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "2-cli-status-display.md",
+      "record": "records/2-cli-status-display.md",
+      "scope": "backend",
+      "type": "enhancement"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

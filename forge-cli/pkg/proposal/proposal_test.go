@@ -189,6 +189,46 @@ func TestFindBySlug_NotFound(t *testing.T) {
 	assert.Contains(t, err.Error(), "proposal not found")
 }
 
+func TestDiscover_ApprovedStatus(t *testing.T) {
+	dir := t.TempDir()
+	slug := "approved-proposal"
+
+	proposalDir := filepath.Join(dir, feature.ProposalBaseDir, slug)
+	require.NoError(t, os.MkdirAll(proposalDir, 0755))
+	proposalContent := `---
+created: 2026-05-01
+author: tester
+status: Approved
+---
+`
+	require.NoError(t, os.WriteFile(filepath.Join(proposalDir, feature.ProposalFileName), []byte(proposalContent), 0644))
+
+	proposals, err := Discover(dir)
+	assert.NoError(t, err)
+	require.Len(t, proposals, 1)
+	assert.Equal(t, "Approved", proposals[0].Status)
+}
+
+func TestDiscover_CompletedStatus(t *testing.T) {
+	dir := t.TempDir()
+	slug := "completed-proposal"
+
+	proposalDir := filepath.Join(dir, feature.ProposalBaseDir, slug)
+	require.NoError(t, os.MkdirAll(proposalDir, 0755))
+	proposalContent := `---
+created: 2026-04-15
+author: tester
+status: Completed
+---
+`
+	require.NoError(t, os.WriteFile(filepath.Join(proposalDir, feature.ProposalFileName), []byte(proposalContent), 0644))
+
+	proposals, err := Discover(dir)
+	assert.NoError(t, err)
+	require.Len(t, proposals, 1)
+	assert.Equal(t, "Completed", proposals[0].Status)
+}
+
 func TestDiscover_IntentField(t *testing.T) {
 	dir := t.TempDir()
 	slug := "intent-proposal"

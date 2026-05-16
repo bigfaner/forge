@@ -173,6 +173,142 @@ func TestProposalDetail_WithPRDAndFeature(t *testing.T) {
 	assert.Contains(t, output, "FEATURE: in-progress")
 }
 
+func TestProposalList_ApprovedStatus(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644))
+
+	slug := "approved-proposal"
+	proposalDir := filepath.Join(dir, feature.ProposalBaseDir, slug)
+	require.NoError(t, os.MkdirAll(proposalDir, 0755))
+	content := "---\ncreated: 2026-05-01\nstatus: Approved\n---\n"
+	require.NoError(t, os.WriteFile(filepath.Join(proposalDir, feature.ProposalFileName), []byte(content), 0644))
+
+	origWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(origWd) }()
+	require.NoError(t, os.Chdir(dir))
+
+	output, err := captureOutput(func() error {
+		rootCmd.SetArgs([]string{"proposal"})
+		return rootCmd.Execute()
+	})
+	require.NoError(t, err)
+	assert.Contains(t, output, "PROPOSALS")
+	assert.Contains(t, output, "approved-proposal")
+	assert.Contains(t, output, "Approved")
+}
+
+func TestProposalList_CompletedStatus(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644))
+
+	slug := "completed-proposal"
+	proposalDir := filepath.Join(dir, feature.ProposalBaseDir, slug)
+	require.NoError(t, os.MkdirAll(proposalDir, 0755))
+	content := "---\ncreated: 2026-04-01\nstatus: Completed\n---\n"
+	require.NoError(t, os.WriteFile(filepath.Join(proposalDir, feature.ProposalFileName), []byte(content), 0644))
+
+	origWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(origWd) }()
+	require.NoError(t, os.Chdir(dir))
+
+	output, err := captureOutput(func() error {
+		rootCmd.SetArgs([]string{"proposal"})
+		return rootCmd.Execute()
+	})
+	require.NoError(t, err)
+	assert.Contains(t, output, "PROPOSALS")
+	assert.Contains(t, output, "completed-proposal")
+	assert.Contains(t, output, "Completed")
+}
+
+func TestProposalList_MultipleStatuses(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644))
+
+	proposals := []struct {
+		slug    string
+		status  string
+		created string
+	}{
+		{"draft-p", "Draft", "2026-01-01"},
+		{"approved-p", "Approved", "2026-02-01"},
+		{"completed-p", "Completed", "2026-03-01"},
+	}
+	for _, p := range proposals {
+		proposalDir := filepath.Join(dir, feature.ProposalBaseDir, p.slug)
+		require.NoError(t, os.MkdirAll(proposalDir, 0755))
+		content := fmt.Sprintf("---\ncreated: %s\nstatus: %s\n---\n", p.created, p.status)
+		require.NoError(t, os.WriteFile(filepath.Join(proposalDir, feature.ProposalFileName), []byte(content), 0644))
+	}
+
+	origWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(origWd) }()
+	require.NoError(t, os.Chdir(dir))
+
+	output, err := captureOutput(func() error {
+		rootCmd.SetArgs([]string{"proposal"})
+		return rootCmd.Execute()
+	})
+	require.NoError(t, err)
+	assert.Contains(t, output, "Draft")
+	assert.Contains(t, output, "Approved")
+	assert.Contains(t, output, "Completed")
+}
+
+func TestProposalDetail_ApprovedStatus(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644))
+
+	slug := "approved-detail"
+	proposalDir := filepath.Join(dir, feature.ProposalBaseDir, slug)
+	require.NoError(t, os.MkdirAll(proposalDir, 0755))
+	content := "---\ncreated: 2026-05-01\nauthor: tester\nstatus: Approved\n---\n"
+	require.NoError(t, os.WriteFile(filepath.Join(proposalDir, feature.ProposalFileName), []byte(content), 0644))
+
+	origWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(origWd) }()
+	require.NoError(t, os.Chdir(dir))
+
+	output, err := captureOutput(func() error {
+		rootCmd.SetArgs([]string{"proposal", slug})
+		return rootCmd.Execute()
+	})
+	require.NoError(t, err)
+	assert.Contains(t, output, "STATUS: Approved")
+}
+
+func TestProposalDetail_CompletedStatus(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644))
+
+	slug := "completed-detail"
+	proposalDir := filepath.Join(dir, feature.ProposalBaseDir, slug)
+	require.NoError(t, os.MkdirAll(proposalDir, 0755))
+	content := "---\ncreated: 2026-05-01\nauthor: tester\nstatus: Completed\n---\n"
+	require.NoError(t, os.WriteFile(filepath.Join(proposalDir, feature.ProposalFileName), []byte(content), 0644))
+
+	origWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(origWd) }()
+	require.NoError(t, os.Chdir(dir))
+
+	output, err := captureOutput(func() error {
+		rootCmd.SetArgs([]string{"proposal", slug})
+		return rootCmd.Execute()
+	})
+	require.NoError(t, err)
+	assert.Contains(t, output, "STATUS: Completed")
+}
+
 func TestTruncateSlug(t *testing.T) {
 	tests := []struct {
 		input   string
