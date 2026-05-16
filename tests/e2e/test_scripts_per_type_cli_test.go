@@ -412,10 +412,10 @@ func TestTC_007_TaskIndexMultiProfilePerTypeTasks(t *testing.T) {
 }
 
 // ==============================================================================
-// TC-008: forge task index quick mode creates per-type gen-scripts tasks
+// TC-008: forge task index quick mode creates per-type gen-and-run tasks
 // ==============================================================================
 
-// Traceability: TC-008 -> test-scripts-per-type proposal: quick mode per-type
+// Traceability: TC-008 -> test-scripts-per-type proposal: quick mode per-type (merged gen+run)
 func TestTC_008_TaskIndexQuickModePerTypeTasks(t *testing.T) {
 	dir := setupFeatureProject(t, "quick-type-feat", false, []string{"go-test"}, multiTypeTestCases)
 
@@ -431,22 +431,22 @@ func TestTC_008_TaskIndexQuickModePerTypeTasks(t *testing.T) {
 
 	idx := readIndexJSON(t, dir, "quick-type-feat")
 
-	// Quick mode should have per-type gen-scripts tasks with "quick" prefix
+	// Quick mode should have per-type gen-and-run tasks with "quick" prefix
 	for _, typ := range []string{"ui", "api", "cli"} {
-		key := "quick-gen-scripts-go-test-" + typ
+		key := "quick-gen-and-run-go-test-" + typ
 		_, ok := idx.Tasks[key]
 		assert.True(t, ok, "index should contain %s for quick mode", key)
 	}
 
-	// Quick run task should depend on all per-type gen tasks
-	runMDPath := filepath.Join(tasksDir, "quick-run-tests-go-test.md")
-	runMDData, err := os.ReadFile(runMDPath)
-	require.NoError(t, err, "quick run task .md should exist")
-	runContent := string(runMDData)
+	// Quick graduate task should depend on all per-type gen-and-run tasks
+	gradMDPath := filepath.Join(tasksDir, "quick-graduate-go-test.md")
+	gradMDData, err := os.ReadFile(gradMDPath)
+	require.NoError(t, err, "quick graduate task .md should exist")
+	gradContent := string(gradMDData)
 
-	assert.Contains(t, runContent, "T-quick-2-ui", "quick run task should depend on T-quick-2-ui")
-	assert.Contains(t, runContent, "T-quick-2-api", "quick run task should depend on T-quick-2-api")
-	assert.Contains(t, runContent, "T-quick-2-cli", "quick run task should depend on T-quick-2-cli")
+	assert.Contains(t, gradContent, "T-quick-2-ui", "quick graduate task should depend on T-quick-2-ui")
+	assert.Contains(t, gradContent, "T-quick-2-api", "quick graduate task should depend on T-quick-2-api")
+	assert.Contains(t, gradContent, "T-quick-2-cli", "quick graduate task should depend on T-quick-2-cli")
 }
 
 // ==============================================================================
