@@ -36,7 +36,7 @@
       "dependencies": [
         "T-quick-5"
       ],
-      "status": "blocked",
+      "status": "completed",
       "file": "quick-drift-detection.md",
       "record": "records/quick-drift-detection.md",
       "scope": "all",
