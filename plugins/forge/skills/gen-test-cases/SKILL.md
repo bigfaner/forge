@@ -1,6 +1,6 @@
 ---
 name: gen-test-cases
-description: Generate structured test cases from PRD acceptance criteria. Classifies by type (UI/API/CLI) with full traceability to PRD sections.
+description: Generate structured test cases from PRD acceptance criteria. Classifies by type (UI/TUI/Mobile/API/CLI) with full traceability to PRD sections.
 ---
 
 # Gen Test Cases
@@ -104,17 +104,26 @@ Before classification, determine which interface types the project actually expo
 | `cli` | CLI (command-line) |
 
 2. **PRD signal** (secondary): The PRD describes the product's nature. A "web application" has web-ui+api; a "CLI tool" has cli.
-3. **Codebase signal** (tertiary): Scan the project for evidence of each interface type.
+3. **Codebase signal** (tertiary): Scan the project for evidence of each interface type:
+   - **web-ui**: presence of `package.json` with react/vue/angular dependency, or HTML files with DOM structure
+   - **tui**: presence of terminal rendering libraries (tview, bubbletea, ncurses, ratatui)
+   - **api**: presence of route handler files (`http.HandleFunc`, `express()`, `@app.route`, `@router.get`)
+   - **cli**: presence of `cmd/` directory, `cobra.Command`, `argparse`, `main.go` with `os.Args`
+   - **mobile-ui**: presence of `android/` or `ios/` directories, or mobile framework config (Expo, Flutter)
 
 **Interface concepts**:
 
 | Interface | Meaning | NOT this |
 |-----------|---------|----------|
 | **UI** | The project renders pages/views that users interact with in a browser | — |
+| **TUI** | The project renders terminal-based interactive interfaces (text UI, keyboard-driven) | Raw CLI output (flags, exit codes) — TUI has full-screen rendering and keyboard navigation |
+| **Mobile** | The project renders screens/views on a mobile device (native or cross-platform) that users interact with via touch and gestures | — |
 | **API** | The project exposes HTTP endpoints that clients consume | — |
 | **CLI** | The project provides a **user-facing command-line binary** — a product feature the end user invokes from a terminal | Build commands (`go build`, `npm run build`), lint/test tools (`grep`, `eslint`), CI scripts — these are developer tooling, not product interfaces |
 
 **Method**: Based on both signals, decide which interfaces the project exposes. Record as a set (e.g. `{UI, API}`).
+
+**TUI vs CLI disambiguation**: TUI clears the terminal and redraws (full-screen rendering, e.g., `vim`, `htop`, `lazygit`). CLI produces line-oriented sequential output (e.g., `git`, `docker`, `npm`). Interactive prompts (inquirer, cobra — line-by-line Q&A) are CLI, not TUI.
 
 <HARD-RULE>
 If an interface type is absent from the detected set, **do not generate test cases for that type**. Criteria that would have matched an absent type should be:
@@ -122,18 +131,13 @@ If an interface type is absent from the detected set, **do not generate test cas
 2. Omitted if they are purely build/tooling checks unrelated to any product interface
 </HARD-RULE>
 
-**Automation annotation**: For each test case, determine automation feasibility based on profile capabilities:
-- If the criterion's interface matches a profile capability → annotate as `automated`
-- If the PRD describes a feature requiring a capability the profile lacks (e.g., PRD has web-ui interactions but profile only has `tui`) → annotate as `manual-only` with a note explaining the capability gap
-- Non-UI criteria that don't require a specific UI capability → annotate as `automated` if the project has the corresponding interface (api/cli)
-
 ### Step 3: Classify & Generate Test Cases
 
 For each extracted criterion, classify by type and generate a test case.
 
 <HARD-RULE>
 Every test case must include `Target` and `Test ID` fields:
-- **Target**: `<type>/<page-or-resource>` (e.g. `ui/login`, `api/auth`, `cli/deploy`)
+- **Target**: `<type>/<page-or-resource>` (e.g. `ui/login`, `tui/dashboard`, `api/auth`, `cli/deploy`)
 - **Test ID**: `<target>/<title-slug>` where title-slug = lowercase title + spaces to hyphens + remove punctuation
 </HARD-RULE>
 
@@ -144,25 +148,29 @@ Only classify into types present in the detected set from Step 2.5. Skip absent 
 | Type | Indicators |
 |------|-----------|
 | **UI** | Page rendering, navigation, visual state, interactions, responsive behavior, component visibility, form input, modals, tabs, dropdowns |
+| **TUI** | Terminal screen rendering, keyboard navigation, text output assertions, screen transitions, cursor movement, key bindings, terminal state changes |
+| **Mobile** | Touch interactions, gestures (swipe, pinch, long-press), screen transitions, accessibility labels, app lifecycle events, platform-specific UI components |
 | **API** | Endpoints, request/response, status codes, data contracts, HTTP methods, authentication headers |
 | **CLI** | Commands, flags, output format, exit codes, arguments, stdin/stdout |
 
-**Priority assignment:**
-- **P0**: Criteria tied to core user stories or critical path
-- **P1**: Criteria tied to secondary features or edge cases in core flow
-- **P2**: Nice-to-have verifications, performance checks, edge cases
+**Priority assignment** (decision tree):
+
+1. Is the criterion tied to a Given/When/Then in a user story marked as core/critical in the PRD? → **P0**
+2. Is the criterion tied to a secondary story, or an error/boundary case explicitly mentioned for a core story? → **P1**
+3. Otherwise (nice-to-have verifications, minor edge cases) → **P2**
+
+If the PRD has no explicit priority marking, default P0 for the first story's ACs and P1 for all others.
 
 For each criterion, generate:
 
 ```markdown
 ## TC-{NNN}: {Title}
 - **Source**: {Story N / AC-N} or {Spec Section X.Y} or {UI Function Name}
-- **Type**: UI | API | CLI
+- **Type**: UI | TUI | Mobile | API | CLI
 - **Target**: <type>/<page-or-resource>
 - **Test ID**: <target>/<title-slug>
-- **Element**: {CSS selector, ARIA label, or data-testid identifying the DOM element — required for UI tests}
 - **Pre-conditions**: {What must be true before testing}
-- **Route**: {Page route for UI tests}
+- **Route**: {Page route or screen path — only for UI, TUI, and Mobile tests; omit for API and CLI tests}
 - **Steps**:
   1. {Step 1}
   2. {Step 2}
@@ -170,22 +178,35 @@ For each criterion, generate:
 - **Priority**: P0 | P1 | P2
 ```
 
-**Element field is required** for all UI test cases. The Element field identifies the specific DOM element under test using a CSS selector, ARIA label, or data-testid. For API and CLI tests, omit the Element field.
+Technical implementation details (locators, selectors, testids) are the responsibility of `/gen-test-scripts`, which extracts them directly from source code. Keep test case descriptions in natural language only.
 
-<HARD-RULE>
-**test-cases.md must NOT contain any testid, CSS selector, XPath, or implementation-specific locator** — only natural language UI interaction descriptions. Technical implementation details (locators, selectors, testids) are the responsibility of `/gen-test-scripts`, which extracts them directly from source code.
-</HARD-RULE>
+#### Test Case Quality Rules (Antipattern Prevention)
+
+Well-designed test cases prevent downstream antipatterns in `/gen-test-scripts`. Apply these rules to every test case:
+
+| # | Rule | Prevents downstream antipattern | How to apply |
+|---|------|--------------------------------|--------------|
+| 1 | **Pre-conditions must be concrete and creatable** | Conditional skip without self-contained fixture | Every pre-condition must specify HOW to create the required state (e.g., "a project with 3 pending tasks in temp dir" not "pending tasks exist"). If a pre-condition cannot be created in an isolated environment, rewrite it so it can |
+| 2 | **Expected results must be specific and verifiable** | Vacuous assertions | Every expected result must be objectively checkable: exact text, specific status code, element state, data value. Not "works correctly" or "displays as expected" |
+| 3 | **Steps describe runtime behavior, not file content** | Static-file text grep tests | Steps must describe interacting with the running product (click button, call API, run command), not reading source files or documentation |
+| 4 | **No duplicate scenarios** | Duplicate test functions across packages | Each test case must test a distinct scenario. If two TCs test the same condition with the same inputs, merge them |
+| 5 | **Test the product, not the test suite** | Recursive test invocation | Test cases must verify product behavior, not meta-properties like "all tests pass" or "the test suite compiles" |
+| 6 | **Every test case must be implementable** | Unconditional t.Skip (dead tests) | If a test case describes a scenario that cannot be implemented without unavailable infrastructure (e.g., requires a physical device), note it after the Priority field — e.g., `Priority: P2 (manual-only: requires physical device)`. Do not leave it as a normal TC that will generate a dead skip |
+
+These rules are derived from common e2e test quality antipatterns observed in automated test generation pipelines.
 
 ### Integration Test Case Generation
 
-For each UI Function with `placement: existing-page:<route>`, generate a dedicated integration verification test case:
+This section only applies when `prd/prd-ui-functions.md` exists and contains UI Functions with `placement: existing-page:<route>`. Skip if absent.
+
+For each matching UI Function, generate a dedicated integration verification test case:
 
 ```markdown
 ## TC-{NNN}: Integration — {{Component}} visible on {{Page}}
 - **Source**: PRD UI Function "{{Function Name}}" Placement + Integration Spec
-- **Type**: UI
-- **Target**: ui/<page-name>
-- **Test ID**: ui/<page-name>/integration-<component-slug>
+- **Type**: {UI or Mobile, matching the detected interface type from Step 2.5}
+- **Target**: {ui or mobile}/<page-name>
+- **Test ID**: {ui or mobile}/<page-name>/integration-<component-slug>
 - **Pre-conditions**: Component build complete, integration task complete
 - **Route**: <route>
 - **Steps**:
@@ -199,12 +220,14 @@ For each UI Function with `placement: existing-page:<route>`, generate a dedicat
 This test case MUST exist for every existing-page integration. It serves as a safety net: if the integration task is skipped, this test will fail.
 
 <HARD-RULE>
-**Numbering**: Start from TC-001, sequential. Group by type (UI first, then API, then CLI).
+**Numbering**: Start from TC-001, sequential. Group by type (UI first, then TUI, then Mobile, then API, then CLI).
 
 **Traceability**: Every test case's `Source` field must point to a specific location in the PRD. The file must end with a complete traceability table (TC ID → Source → Type → Target → Priority).
 
 **Target derivation rules**:
 - UI tests: `ui/<page-name>` (derived from URL or component name)
+- TUI tests: `tui/<screen-name>` (derived from screen/view name)
+- Mobile tests: `mobile/<screen-name>` (derived from screen or navigation target)
 - API tests: `api/<resource>` (derived from endpoint)
 - CLI tests: `cli/<command>` (derived from command name)
 
@@ -215,7 +238,15 @@ This test case MUST exist for every existing-page integration. It serves as a sa
 
 Cross-reference each test case's `Route` and `Target` fields against actual project route files.
 
-**Discovery**: Scan the project for route registration patterns using Grep (e.g., `r.Get(`, `router.get(`, `app.get(`).
+**Discovery**: Scan the project for route registration patterns using Grep. Common patterns by framework:
+- Go (chi/stdlib): `r.Get(`, `mux.HandleFunc`, `http.Handle`
+- Express/Node: `router.get(`, `app.get(`, `app.post(`
+- React SPA: `path="` or `path='` in route config, `<Route` component
+- Next.js: `app/` directory structure, `page.tsx` files
+- FastAPI/Flask: `@app.get(`, `@router.post(`, `@app.route`
+- Spring: `@GetMapping`, `@PostMapping`, `@RequestMapping`
+- React Native / Expo: `Stack.Screen`, `navigation.navigate`, screen name strings
+- Flutter: `Navigator.push`, `GetPage`, route definitions in `MaterialApp`
 
 **Validation**: For each test case with a `Route` field:
 - Exact or prefix match against discovered routes → `✅ Matched (source:line)`

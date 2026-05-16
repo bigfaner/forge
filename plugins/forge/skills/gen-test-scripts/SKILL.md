@@ -145,7 +145,7 @@ Test cases match sitemap pages via the `Route` field. The `Element` field from t
 2. **Only Step 4** (spec file generation) may be parallelized into sub-tasks, each handling a subset of test cases
 3. Each sub-task's description MUST include: "Shared infrastructure already configured in pre-task. Auth: use storageState (Playwright) / cached token (API), NOT login() in beforeEach."
 
-**Why**: Steps 0-3.5 produce shared artifacts that ALL spec files depend on. Splitting them causes each subagent to skip shared infrastructure and fall back to per-test login (see `docs/lessons/gotcha-split-task-missing-shared-setup.md`).
+**Why**: Steps 0-3.5 produce shared artifacts that ALL spec files depend on. Splitting them causes each subagent to skip shared infrastructure and fall back to per-test login, producing inconsistent auth patterns.
 </HARD-RULE>
 
 ```
@@ -398,7 +398,7 @@ When setup blocks throw and module-level variables stay uninitialized, all downs
 
 Before emitting each generated test function, verify it does not match **any** of the 6 forbidden patterns below. If a pattern matches, fix the generated code before writing it. This guard is mandatory — it is not optional quality advice.
 
-Authoritative sources: `docs/lessons/gotcha-e2e-test-quality-antipatterns.md` and `docs/lessons/gotcha-recursive-go-test-process-explosion.md`.
+These patterns are derived from common e2e test quality issues observed in automated test generation: recursive invocation causing process explosion, dead tests inflating coverage signal, vacuous truth providing false confidence, environment-dependent skips hiding regressions, duplicate tests wasting CI time, and static-file checks coupled to prose rather than behavior.
 
 | # | Forbidden Pattern | What It Is | Why It's Harmful | What To Do Instead |
 |---|---|---|---|---|
