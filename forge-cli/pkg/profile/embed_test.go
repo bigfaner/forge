@@ -2,6 +2,7 @@ package profile
 
 import (
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -186,6 +187,86 @@ func TestGetProfileCapabilities(t *testing.T) {
 			t.Error("expected error for unknown profile")
 		}
 	})
+}
+
+func TestValidateCapabilities(t *testing.T) {
+	t.Run("valid single capability", func(t *testing.T) {
+		err := ValidateCapabilities([]string{"web-ui"})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("valid multiple capabilities", func(t *testing.T) {
+		err := ValidateCapabilities([]string{"web-ui", "tui", "api"})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("all valid types accepted", func(t *testing.T) {
+		err := ValidateCapabilities([]string{"web-ui", "tui", "mobile-ui", "api", "cli"})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("invalid value rejected", func(t *testing.T) {
+		err := ValidateCapabilities([]string{"web-ui", "invalid-type"})
+		if err == nil {
+			t.Fatal("expected error for invalid capability, got nil")
+		}
+		// Error message should list valid values
+		for _, valid := range ValidTestTypes {
+			if !containsSubstring(err.Error(), valid) {
+				t.Errorf("error message should mention valid type %q, got: %v", valid, err)
+			}
+		}
+	})
+
+	t.Run("empty input passes", func(t *testing.T) {
+		err := ValidateCapabilities(nil)
+		if err != nil {
+			t.Fatalf("unexpected error for empty input: %v", err)
+		}
+	})
+
+	t.Run("case sensitive - uppercase rejected", func(t *testing.T) {
+		err := ValidateCapabilities([]string{"Web-UI"})
+		if err == nil {
+			t.Fatal("expected error for uppercase capability, got nil")
+		}
+	})
+
+	t.Run("case sensitive - mixed case rejected", func(t *testing.T) {
+		err := ValidateCapabilities([]string{"Api"})
+		if err == nil {
+			t.Fatal("expected error for mixed-case capability, got nil")
+		}
+	})
+
+	t.Run("duplicate valid values pass", func(t *testing.T) {
+		err := ValidateCapabilities([]string{"api", "api"})
+		if err != nil {
+			t.Fatalf("unexpected error for duplicate valid values: %v", err)
+		}
+	})
+}
+
+func containsSubstring(s, sub string) bool {
+	return strings.Contains(s, sub)
+}
+
+func TestValidTestTypes(t *testing.T) {
+	expected := []string{"web-ui", "tui", "mobile-ui", "api", "cli"}
+	if len(ValidTestTypes) != len(expected) {
+		t.Fatalf("ValidTestTypes has %d entries, want %d", len(ValidTestTypes), len(expected))
+	}
+	for _, want := range expected {
+		if !slices.Contains(ValidTestTypes, want) {
+			t.Errorf("ValidTestTypes missing %q", want)
+		}
+	}
 }
 
 func TestUnionCapabilities(t *testing.T) {
