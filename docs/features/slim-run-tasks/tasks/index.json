@@ -1,0 +1,47 @@
+{
+  "feature": "slim-run-tasks",
+  "proposal": "docs/proposals/slim-run-tasks/proposal.md",
+  "created": "2026-05-16",
+  "tasks": {
+    "1-rewrite-run-tasks": {
+      "id": "1",
+      "title": "Rewrite run-tasks.md for token efficiency",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "1-rewrite-run-tasks.md",
+      "record": "records/1-rewrite-run-tasks.md",
+      "scope": "backend",
+      "noTest": true,
+      "type": "documentation"
+    },
+    "eval-doc": {
+      "id": "T-eval-doc",
+      "title": "Evaluate Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "eval-doc.md",
+      "record": "records/eval-doc.md",
+      "scope": "all",
+      "noTest": true,
+      "type": "doc-evaluation"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
