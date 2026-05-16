@@ -1,10 +1,13 @@
 ---
 name: extract-design-md
-description: Analyze a web app's visual style and generate a DESIGN.md for use with ui-design skill.
+description: Extract visual style from a web, mobile, or TUI application and generate a DESIGN.md for use with ui-design skill. Supports --platform flag (web, mobile, tui).
 allowed_tools: ["Bash", "Read", "Write", "WebFetch"]
 argument-hints:
   - name: url
-    description: Web application URL to analyze (e.g. https://stripe.com)
+    description: Application URL or screenshot path to analyze (e.g. https://stripe.com or ./screenshot.png)
+    required: false
+  - name: --platform
+    description: "Target platform: web (default), mobile, or tui"
     required: false
 ---
 
@@ -17,8 +20,82 @@ Auto-extract visual style from a web application and generate a forge-compatible
 ## Process Flow
 
 ```
-1. Get URL → 2. Analyze visual style → 3. Match strategy → 4. Build design tokens → 5. Write DESIGN.md → 6. Confirm
+1. Parse platform flag → 2. Validate input → 3. Platform-specific extraction → 4. Match strategy → 5. Build design tokens → 6. Write DESIGN.md → 7. Confirm
 ```
+
+## Platform Routing
+
+Extract the `--platform` flag from command arguments. If not provided, default to `web`.
+
+**Valid values**: `web`, `mobile`, `tui`
+
+**Validation**: If `--platform` is provided with any other value, stop immediately and output:
+
+> ERROR: unsupported platform "<value>". Must be one of: web, mobile, tui
+
+Then route to the appropriate extraction section:
+
+| Platform | Input | Extraction Method |
+|----------|-------|-------------------|
+| `web` (default) | URL | CSS extraction from HTML (Steps below) |
+| `mobile` | URL | Mobile-adapted CSS extraction with mobile User-Agent + responsive analysis |
+| `tui` | Local screenshot path | AI vision analysis — ANSI colors, character set, panel layout |
+
+**Mobile extraction**: When `--platform mobile`, reuse the web extraction pipeline (Layers 1-5) with a mobile User-Agent viewport context, then add mobile-specific analysis:
+
+1. **Fetch with mobile context**: When using WebFetch or agent-browser, set mobile viewport headers (viewport width: 375px, User-Agent: mobile) to trigger responsive CSS. Reuse all web extraction layers (Layer 1-5) unchanged — the same CSS bundle parsing, custom property extraction, multi-page sampling, and visual inference apply.
+
+2. **Responsive breakpoint analysis**: Scan CSS for `@media` queries. Extract common mobile breakpoints:
+   - 320px (small phone / iPhone SE)
+   - 375px (standard phone / iPhone 12/13/14)
+   - 414px (large phone / iPhone Plus/Pro Max)
+   - 768px (tablet / iPad)
+   Record which breakpoints the target site uses and what layout changes occur at each.
+
+3. **Touch target estimation**: Analyze interactive elements (buttons, links, inputs) from CSS for minimum size compliance. Check `width`, `height`, `min-width`, `min-height`, `padding` on interactive selectors. Flag elements below the 44x44pt minimum touch target guideline. Values extracted from computed CSS; if not directly specified, mark as `(estimated)`.
+
+4. **Safe area handling**: Check CSS for `env(safe-area-inset-*)` usage (notch/home indicator on iOS). Check HTML `<meta name="viewport">` for `viewport-fit=cover`. If neither is present, note that safe area handling was not detected and values are `(estimated)`.
+
+> **Limitation**: Mobile extraction depends on the target URL serving responsive CSS. Sites without responsive stylesheets will produce web-equivalent results with mobile-specific sections marked `(estimated)`.
+
+**TUI extraction**: When `--platform tui`, the input must be a **local file path** to a terminal screenshot (not a URL — screenshots cannot be fetched remotely). AI vision analyzes the screenshot to reverse-engineer design tokens, since TUI has no CSS or structured source to parse.
+
+1. **Validate screenshot input**: The argument must be a local file path (e.g. `./screenshot.png`, `/tmp/terminal.png`). If a URL is provided instead, stop and output:
+
+   > ERROR: TUI platform requires a local screenshot file path, not a URL. Provide a path like ./screenshot.png
+
+   Use the `Read` tool to load the image file. If the file does not exist or cannot be read, stop with a clear error.
+
+2. **Screenshot quality check**: Before detailed analysis, assess the screenshot quality. If the screenshot is blurry, low-resolution, or unreadable, stop and output:
+
+   > ERROR: Screenshot quality is too low for reliable analysis. Please provide a clear, high-resolution terminal screenshot. Tips: use native screenshot tool (not photo of screen), ensure text is legible, capture at 1x scale.
+
+3. **AI vision analysis**: Use the `Read` tool on the screenshot file to perform visual analysis. Extract the following categories, marking **ALL values as `(estimated)`** since AI vision inference is inherently approximate:
+
+   - **ANSI color palette**: Identify the xterm-256 color numbers used in the screenshot. Map observed colors to the closest xterm-256 palette entries. Record background, text primary/secondary/tertiary, border, and semantic colors (success/error/warning/info). All color values must be xterm-256 numbers (0-255).
+   - **Character set**: Determine whether the TUI uses box-drawing characters (┌─┐│└┘), block elements (█▄░▪), pure ASCII (+-\|*#), or a mix. Identify the specific characters used for borders, dividers, indicators, bar charts, and progress bars.
+   - **Panel layout dimensions**: Estimate the number of rows and columns visible in the terminal. Identify panel boundaries and their dimensions (width in columns, height in rows). Note the overall terminal grid size.
+   - **Key bindings**: If a status bar, help panel, or key binding legend is visible in the screenshot, extract the key-to-action mappings.
+
+4. **Match strategy for TUI**: After extraction, use `AskUserQuestion` to let the user choose:
+
+   | Option | Description |
+   |--------|-------------|
+   | Match closest built-in TUI theme, customize on top | Identify the closest built-in TUI theme (modern-dark-tui or minimal-ascii-tui), override differences with extracted tokens |
+   | Fully custom from screenshot analysis | Generate an independent TUI DESIGN.md entirely from analysis results |
+
+   **If "match built-in" is chosen:**
+
+   Match against these characteristics to identify the closest built-in TUI theme:
+
+   | Built-in Theme | Identifying Characteristics |
+   |---------------|----------------------------|
+   | modern-dark-tui | Dark background, 256-color (xterm-256), box-drawing + block elements, compact density |
+   | minimal-ascii-tui | Default terminal background, 16-color (standard ANSI), pure ASCII characters, loose density |
+
+   Read the corresponding built-in style file: `plugins/forge/skills/ui-design/templates/styles/<name>.md`
+
+5. **Build TUI design tokens and write DESIGN.md**: Follow the TUI DESIGN.md template structure below. All extracted values must be marked `(estimated)`.
 
 ## Step 1: Get URL
 
@@ -252,6 +329,163 @@ Write the design system to `DESIGN.md` in the project root:
 ## Signature Patterns
 
 {{2-5 signature visual patterns of this design system}}
+```
+
+### Mobile-Specific Sections (when `--platform mobile`)
+
+When generating DESIGN.md for mobile, extend the web template above with these additional sections. Insert them after "Responsive Behavior" and before "Signature Patterns":
+
+```markdown
+## Touch Targets
+
+| Element Type | Min Size | Actual Size | Compliant |
+|-------------|----------|-------------|-----------|
+| Primary buttons | 44x44pt | {{width}}x{{height}} | {{yes/no}} |
+| Secondary buttons | 44x44pt | {{width}}x{{height}} | {{yes/no}} |
+| Links | 44x44pt | {{width}}x{{height}} | {{yes/no}} |
+| Inputs | 44x44pt | {{width}}x{{height}} | {{yes/no}} |
+| Icon buttons | 44x44pt | {{width}}x{{height}} | {{yes/no}} |
+
+- Touch target spacing: {{minimum gap between interactive elements}}
+- Padding strategy: {{how touch targets are enlarged beyond visual size}}
+
+## Safe Areas
+
+| Region | Value | Source |
+|--------|-------|--------|
+| Top inset (notch) | {{value}} | {{env(safe-area-inset-top) / CSS / estimated}} |
+| Bottom inset (home indicator) | {{value}} | {{env(safe-area-inset-bottom) / CSS / estimated}} |
+| Left inset | {{value}} | {{env(safe-area-inset-left) / CSS / estimated}} |
+| Right inset | {{value}} | {{env(safe-area-inset-right) / CSS / estimated}} |
+
+- Viewport meta: {{viewport-fit=cover detected / not detected}}
+- Status bar handling: {{description}}
+- Navigation bar overlap: {{description}}
+
+## Responsive Breakpoints
+
+| Breakpoint | Width | Layout Change |
+|-----------|-------|---------------|
+| Small phone | 320px | {{description}} |
+| Standard phone | 375px | {{description}} |
+| Large phone | 414px | {{description}} |
+| Tablet | 768px | {{description}} |
+```
+
+### TUI-Specific Output (when `--platform tui`)
+
+When generating DESIGN.md for TUI, use this template structure instead of the web template. The structure aligns with built-in TUI themes (modern-dark-tui / minimal-ascii-tui) for direct consumption by `/ui-design`. **All values must be marked `(estimated)`**.
+
+```markdown
+# Design System: {{Terminal App Name}}
+
+> Extracted from: screenshot analysis
+> Date: {{YYYY-MM-DD}}
+> Based on: {{modern-dark-tui / minimal-ascii-tui / Custom}}
+> Note: All values are (estimated) — reverse-engineered from terminal screenshot via AI vision
+
+## Visual Theme & Atmosphere
+
+{{2-3 sentences describing overall TUI visual style, character density, and terminal aesthetic}}
+
+## Color Space
+
+{{256-color (xterm-256) / 16-color (standard ANSI) / monochrome}} (estimated)
+
+## Character Set
+
+{{Box-drawing + block elements / Pure ASCII / Mixed}} (estimated). Leverages {{Unicode capability / ASCII only}} for visual structure.
+
+### Character Palette Reference
+
+| Element | Character | Unicode/ASCII | Usage |
+|---------|-----------|---------------|-------|
+| Border corner TL | {{char}} | {{code}} | Panel top-left corner |
+| Border corner TR | {{char}} | {{code}} | Panel top-right corner |
+| Border corner BL | {{char}} | {{code}} | Panel bottom-left corner |
+| Border corner BR | {{char}} | {{code}} | Panel bottom-right corner |
+| Border horizontal | {{char}} | {{code}} | Panel top/bottom edges |
+| Border vertical | {{char}} | {{code}} | Panel left/right edges |
+| Divider | {{char}} | {{code}} | Section divider |
+| Bar fill | {{char}} | {{code}} | Bar chart fill |
+| Bar empty | {{char}} | {{code}} | Bar chart empty |
+| Block full | {{char}} | {{code}} | Progress bar fill |
+| Bullet | {{char}} | {{code}} | List item marker |
+| Arrow | {{char}} | {{code}} | Navigation indicator |
+
+All characters (estimated).
+
+## Color Palette
+
+{{Dark background / Default background}} with {{high-contrast / minimal}} semantic colors (estimated).
+
+| Role | Color # | Preview | Usage |
+|------|---------|---------|-------|
+| Background | {{0-255}} | {{description}} | Primary surface |
+| Background Alt | {{0-255}} | {{description}} | Alternating rows, inactive panels |
+| Surface | {{0-255}} | {{description}} | Cards, focused panel bg |
+| Border | {{0-255}} | {{description}} | Panel borders, dividers |
+| Border Focus | {{0-255}} | {{description}} | Focused panel border |
+| Text Primary | {{0-255}} | {{description}} | Headings, primary text |
+| Text Secondary | {{0-255}} | {{description}} | Body text, descriptions |
+| Text Tertiary | {{0-255}} | {{description}} | Captions, placeholders |
+| Success | {{0-255}} | {{description}} | Positive values, success states |
+| Error | {{0-255}} | {{description}} | Errors, destructive actions |
+| Warning | {{0-255}} | {{description}} | Warnings, caution states |
+| Info | {{0-255}} | {{description}} | Information, links |
+| Accent | {{0-255}} | {{description}} | Highlights, selections |
+
+All color values (estimated).
+
+## Typography
+
+Monospaced font only. No proportional fonts in TUI.
+
+| Role | Style | Usage |
+|------|-------|-------|
+| Title | {{Bold, foreground #}} | Panel headers, app title |
+| Heading | {{Bold, foreground #}} | Section headings |
+| Body | {{Normal, foreground #}} | Content text |
+| Emphasis | {{Bold, foreground #}} | Important values |
+| Dim | {{Normal, foreground #}} | Labels, hints, metadata |
+| Highlight | {{Bold + reverse video}} | Search matches, cursor |
+
+All styles (estimated).
+
+## Panel Layout
+
+{{Compact / Loose}} density. {{description of overall layout}} (estimated).
+
+- Terminal size: {{rows}} rows x {{columns}} columns (estimated)
+- Visible panels: {{count}} (estimated)
+- Panel dimensions:
+  - {{Panel name}}: {{width}} cols x {{height}} rows (estimated)
+- Vertical spacing: {{0-1 / 1-2}} lines between items (estimated)
+- Horizontal padding: {{1-2 / 2-4}} characters (estimated)
+- Status bar: {{always visible / not present}}, {{1 row / none}} (estimated)
+
+## Key Bindings
+
+| Key | Action |
+|-----|--------|
+| {{key}} | {{action}} (estimated) |
+
+Key bindings extracted from visible status bar or help panel (estimated).
+
+## Do's and Don'ts
+
+| Do | Don't |
+|----|-------|
+| Use {{box-drawing / ASCII}} chars for all borders | Use arbitrary characters for borders |
+| Use {{256-color / 16-color}} palette values | Hard-code hex colors or RGB |
+| Keep {{compact / loose}} density | Inconsistent spacing |
+| Specify Unicode codepoint or ASCII code for every char | Leave character choices as "TBD" |
+| Use semantic colors (Success=green, Error=red) | Use arbitrary colors for status |
+
+## Applicable Scenarios
+
+- {{scenario 1}}
+- {{scenario 2}}
 ```
 
 ## Step 6: Confirm & Next Step
