@@ -28,6 +28,28 @@
       "scope": "all",
       "type": "implementation"
     },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "Fix: login bug",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "1.1",
+      "type": "fix"
+    },
+    "fix-2": {
+      "id": "fix-2",
+      "title": "fix unit-test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-2.md",
+      "record": "records/fix-2.md",
+      "breaking": true
+    },
     "quick-drift-detection": {
       "id": "T-quick-6",
       "title": "Detect Spec Drift",
@@ -55,7 +77,22 @@
       "file": "quick-gen-scripts-go-test.md",
       "record": "records/quick-gen-scripts-go-test.md",
       "scope": "all",
-      "type": "implementation",
+      "type": "test-pipeline.gen-scripts",
+      "profile": "go-test"
+    },
+    "quick-gen-scripts-go-test-cli": {
+      "id": "T-quick-2-cli",
+      "title": "Generate Quick Test Scripts (go-test, cli)",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "T-quick-1"
+      ],
+      "status": "blocked",
+      "file": "quick-gen-scripts-go-test-cli.md",
+      "record": "records/quick-gen-scripts-go-test-cli.md",
+      "scope": "all",
+      "type": "test-pipeline.gen-scripts",
       "profile": "go-test"
     },
     "quick-graduate-go-test": {
@@ -70,7 +107,7 @@
       "file": "quick-graduate-go-test.md",
       "record": "records/quick-graduate-go-test.md",
       "scope": "all",
-      "type": "implementation",
+      "type": "test-pipeline.graduate",
       "profile": "go-test"
     },
     "quick-run-tests-go-test": {
@@ -79,13 +116,13 @@
       "priority": "P1",
       "estimatedTime": "15-30min",
       "dependencies": [
-        "T-quick-2"
+        "T-quick-2-cli"
       ],
       "status": "completed",
       "file": "quick-run-tests-go-test.md",
       "record": "records/quick-run-tests-go-test.md",
       "scope": "all",
-      "type": "implementation",
+      "type": "test-pipeline.run",
       "profile": "go-test"
     },
     "quick-test-cases-go-test": {
@@ -101,7 +138,7 @@
       "record": "records/quick-test-cases-go-test.md",
       "scope": "all",
       "noTest": true,
-      "type": "implementation",
+      "type": "test-pipeline.gen-cases",
       "profile": "go-test"
     },
     "quick-verify-regression": {
@@ -116,7 +153,7 @@
       "file": "quick-verify-regression.md",
       "record": "records/quick-verify-regression.md",
       "scope": "all",
-      "type": "implementation"
+      "type": "test-pipeline.verify-regression"
     }
   },
   "statusEnum": [
