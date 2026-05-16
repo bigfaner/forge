@@ -1,0 +1,9 @@
+schema_version: 1
+status: completed
+timestamp: 2026-05-16T00:00:00Z
+source: tests/e2e/features/quality-gate-fix-task-loop-breaker/
+targets:
+  - tests/e2e/quality_gate_fix_task_loop_breaker_cli_test.go
+modules:
+  - quality-gate
+testCount: 7
