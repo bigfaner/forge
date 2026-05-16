@@ -394,6 +394,30 @@ All setup blocks (`beforeAll`, `@BeforeAll`, `setUp`, etc.) must follow defensiv
 When setup blocks throw and module-level variables stay uninitialized, all downstream tests fail with misleading errors (e.g., `undefined` in URL paths → 404). The try/catch + explicit check pattern ensures the *real* failure is reported, not a secondary symptom.
 </HARD-RULE>
 
+#### Antipattern Guard (Mandatory Pre-Emission Check)
+
+Before emitting each generated test function, verify it does not match **any** of the 6 forbidden patterns below. If a pattern matches, fix the generated code before writing it. This guard is mandatory — it is not optional quality advice.
+
+Authoritative sources: `docs/lessons/gotcha-e2e-test-quality-antipatterns.md` and `docs/lessons/gotcha-recursive-go-test-process-explosion.md`.
+
+| # | Forbidden Pattern | What It Is | Why It's Harmful | What To Do Instead |
+|---|---|---|---|---|
+| 1 | **Recursive test invocation** | Calling `exec.Command("go", "test"` (or the equivalent test-runner invocation for any language) from within a test that belongs to the same package/module being tested | Causes process explosion — each recursion level spawns more processes. On Windows, orphaned children persist indefinitely, consuming 6GB+ RAM (see `gotcha-recursive-go-test-process-explosion.md`) | If a meta-test must verify "all tests pass", use a recursion guard: set an environment variable before spawning the subprocess and check it at the top of the calling test. Or exclude the meta-test via `-run` flag filtering |
+| 2 | **Unconditional `t.Skip` (dead tests)** | `t.Skip("requires X")` with no environment-detection logic and no plan to create the precondition | Dead code that inflates coverage signal without verifying anything. The test count increases but no behavior is tested | Either implement the test with proper fixture setup (create the precondition), or do not generate the test at all. A test that always skips is worse than no test — it hides the gap |
+| 3 | **Vacuous assertions** | Patterns like `if condition { assert.X(...) }` where the assertion may never execute on some code paths | Vacuous truth: the test passes because the assertion is never reached, not because the behavior is correct. This is the most harmful outcome — it provides false confidence (see `gotcha-e2e-test-quality-antipatterns.md`) | Every assertion must be reachable on every code path. If a condition must be checked, guard with `require` (fail-fast) not `assert` inside an `if`. Or: test must explicitly skip with a rationale when the condition is unmet |
+| 4 | **Conditional skip without self-contained fixture** | Tests that skip based on environment state ("no pending tasks", "feature branch not found") instead of creating their own isolated world | Tests silently pass or skip depending on environment state. Results are non-deterministic — the same test can pass in one environment and skip in another, hiding real regressions | Every test that calls an external CLI or service must use `t.TempDir()` (or framework equivalent) and set up its own project structure. Fixtures must create the exact state the test needs — no reliance on pre-existing environment state |
+| 5 | **Duplicate test functions across packages** | Generating a `func TestTC_*` name that already exists in another package under the same module (e.g., both `tests/e2e/` and `tests/e2e/features/slug/`) | Both copies run under `go test ./...`, doubling CI time. When they diverge (one fixed, one not), one always fails. This happens when graduation copies but does not remove the source (see `gotcha-e2e-test-quality-antipatterns.md`) | Before generating, scan existing test files in the module for matching `func TestTC_*` names. If a collision is found, either skip generating the duplicate or use a unique function name that includes the feature slug |
+| 6 | **Static-file text grep tests** | Reading static source files (`.md`, `.go`, `.json`, `.yaml`) and asserting on text content via `assert.Contains(out, "some string")` | Tests documentation text, not runtime behavior. A typo fix in a markdown file breaks the test without any functional regression. Zero verification value — the test is coupled to prose, not behavior | Only test runtime behavior: invoke the CLI/API/UI and assert on outputs, exit codes, HTTP responses, or rendered content. Never read source files as test input |
+
+**Validation procedure** — run after generating each test file:
+
+1. **Recursion check**: Grep the generated file for test-runner invocations (`exec.Command("go", "test"`, `subprocess.run(["pytest"`, etc.). If found, verify a recursion guard is present. If not, reject.
+2. **Skip check**: Find all `t.Skip` (or framework equivalent). Each must have an environment-detection rationale (e.g., `os.Getenv("CI") == ""`). If any skip has no rationale, reject.
+3. **Vacuous assertion check**: Find all `if ... { assert` patterns. If the assertion is inside a conditional block without a corresponding `else { t.Skip/t.Fatal }`, reject.
+4. **Fixture check**: For each test that invokes an external command or service, verify it creates its own isolated directory (`t.TempDir()` or equivalent). If it relies on the working directory or pre-existing state, reject.
+5. **Duplicate check**: Compare generated function names against existing test files in the module. If any name already exists elsewhere, rename or skip.
+6. **Static grep check**: Find all file-reading patterns (`os.ReadFile`, `ioutil.ReadFile`, `fs.readFileSync`, `open()`) in the generated code. If the read content is used in assertions (not just as test fixture input), reject.
+
 #### Anti-Patterns (Forbidden in Generated Code)
 
 Follow the anti-pattern rules in the active profile's `generate.md` strategy. Common anti-patterns across all profiles:

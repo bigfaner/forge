@@ -47,7 +47,7 @@
       "dependencies": [
         "3"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-harden-gen-test-scripts.md",
       "record": "records/4-harden-gen-test-scripts.md",
       "scope": "all",
