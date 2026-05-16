@@ -446,6 +446,94 @@ func TestFeatureList_MissingManifestSortsToEnd(t *testing.T) {
 	assert.True(t, withIdx < noIdx, "feature with manifest should appear before feature without manifest")
 }
 
+func TestFeatureSet_CreatesDirAndState(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test-project\n"), 0644))
+
+	origWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(origWd) }()
+	require.NoError(t, os.Chdir(dir))
+
+	output, err := captureOutput(func() error {
+		rootCmd.SetArgs([]string{"feature", "set", "my-feature"})
+		return rootCmd.Execute()
+	})
+	require.NoError(t, err)
+
+	// Verify stdout contains the feature slug
+	assert.Contains(t, output, "FEATURE: my-feature")
+
+	// Verify feature directory structure exists
+	featureDir := filepath.Join(dir, feature.FeaturesDir, "my-feature")
+	info, err := os.Stat(featureDir)
+	require.NoError(t, err)
+	assert.True(t, info.IsDir())
+
+	// Verify .forge/state.json was written with correct values
+	statePath := filepath.Join(dir, feature.ForgeDir, feature.ForgeStateFileName)
+	data, err := os.ReadFile(statePath)
+	require.NoError(t, err)
+
+	var state feature.ForgeState
+	require.NoError(t, json.Unmarshal(data, &state))
+	assert.Equal(t, "my-feature", state.Feature)
+	assert.False(t, state.AllCompleted)
+}
+
+func TestFeatureSet_EmptySlug(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test-project\n"), 0644))
+
+	origWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(origWd) }()
+	require.NoError(t, os.Chdir(dir))
+
+	_, err = captureOutput(func() error {
+		rootCmd.SetArgs([]string{"feature", "set", ""})
+		return rootCmd.Execute()
+	})
+	assert.Error(t, err)
+
+	// Verify no state.json was created
+	statePath := filepath.Join(dir, feature.ForgeDir, feature.ForgeStateFileName)
+	_, statErr := os.Stat(statePath)
+	assert.True(t, os.IsNotExist(statErr), "state.json should not be created for empty slug")
+}
+
+func TestFeatureSet_BackwardCompat_PositionalArg(t *testing.T) {
+	// Verify that the existing `forge feature <slug>` positional arg still works
+	// and does NOT write state.json (backward compatible).
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test-project\n"), 0644))
+
+	origWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(origWd) }()
+	require.NoError(t, os.Chdir(dir))
+
+	output, err := captureOutput(func() error {
+		rootCmd.SetArgs([]string{"feature", "legacy-feature"})
+		return rootCmd.Execute()
+	})
+	require.NoError(t, err)
+	assert.Contains(t, output, "FEATURE: legacy-feature")
+
+	// Verify feature directory was created
+	featureDir := filepath.Join(dir, feature.FeaturesDir, "legacy-feature")
+	_, err = os.Stat(featureDir)
+	require.NoError(t, err)
+
+	// Verify state.json was NOT written (old behavior preserved)
+	statePath := filepath.Join(dir, feature.ForgeDir, feature.ForgeStateFileName)
+	_, err = os.Stat(statePath)
+	assert.True(t, os.IsNotExist(err), "state.json should not exist for positional arg")
+}
+
 func TestScoreDisplay(t *testing.T) {
 	assert.Equal(t, "850", scoreDisplay("850"))
 	assert.Equal(t, "—", scoreDisplay(""))

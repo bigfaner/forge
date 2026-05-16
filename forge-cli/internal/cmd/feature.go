@@ -47,9 +47,38 @@ var featureStatusCmd = &cobra.Command{
 	Run:   runFeatureStatus,
 }
 
+var featureSetCmd = &cobra.Command{
+	Use:   "set <slug>",
+	Short: "Explicitly set the current feature",
+	Long: `Set the current feature context by writing to .forge/state.json
+and ensuring the feature directory structure exists.
+
+This provides an explicit override for feature resolution,
+complementing the existing implicit resolution from git context.`,
+	Args: exactArgsNonEmpty(1),
+	Run:  runFeatureSet,
+}
+
+// exactArgsNonEmpty returns a cobra.Args validator that requires exactly n arguments,
+// each non-empty. Returns an error for empty strings instead of calling os.Exit.
+func exactArgsNonEmpty(n int) cobra.PositionalArgs {
+	return func(_ *cobra.Command, args []string) error {
+		if len(args) != n {
+			return fmt.Errorf("requires exactly %d arg(s), got %d", n, len(args))
+		}
+		for i, arg := range args {
+			if strings.TrimSpace(arg) == "" {
+				return fmt.Errorf("argument %d must not be empty", i+1)
+			}
+		}
+		return nil
+	}
+}
+
 func init() {
 	featureCmd.AddCommand(featureListCmd)
 	featureCmd.AddCommand(featureStatusCmd)
+	featureCmd.AddCommand(featureSetCmd)
 }
 
 func runFeature(_ *cobra.Command, args []string) {
@@ -78,6 +107,42 @@ func runFeature(_ *cobra.Command, args []string) {
 	if err := feature.SetFeature(projectRoot, slug); err != nil {
 		Exit(ErrFeatureNotFound(slug))
 	}
+	PrintBlockStart()
+	PrintField("FEATURE", slug)
+	PrintBlockEnd()
+}
+
+func runFeatureSet(_ *cobra.Command, args []string) {
+	projectRoot, err := project.FindProjectRoot()
+	if err != nil {
+		Exit(ErrProjectNotFound())
+	}
+
+	slug := args[0]
+	if slug == "" {
+		Exit(ErrNoInput("feature slug is required"))
+	}
+
+	if err := feature.EnsureFeatureDir(projectRoot, slug); err != nil {
+		Exit(NewAIError(
+			ErrNotFound,
+			fmt.Sprintf("Failed to create feature directory for: %s", slug),
+			err.Error(),
+			"Check filesystem permissions",
+			"ls docs/features/",
+		))
+	}
+
+	if err := feature.EnsureForgeState(projectRoot, slug); err != nil {
+		Exit(NewAIError(
+			ErrNotFound,
+			fmt.Sprintf("Failed to write state for feature: %s", slug),
+			err.Error(),
+			"Check .forge/ directory permissions",
+			"ls -la .forge/",
+		))
+	}
+
 	PrintBlockStart()
 	PrintField("FEATURE", slug)
 	PrintBlockEnd()

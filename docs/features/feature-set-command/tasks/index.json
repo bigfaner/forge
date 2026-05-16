@@ -8,7 +8,7 @@
       "title": "Add forge feature set subcommand",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-feature-set-command.md",
       "record": "records/1-feature-set-command.md",
       "scope": "backend",
