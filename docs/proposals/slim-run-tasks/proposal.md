@@ -6,6 +6,8 @@ status: Draft
 
 # Proposal: Slim Down run-tasks for Token Efficiency
 
+**Summary**: Compress the `run-tasks.md` skill document (~250 lines) by ~40% and eliminate verbose test output from context, reducing per-iteration token waste without changing CLI behavior.
+
 ## Problem
 
 `run-tasks.md` (~250 lines) is loaded into the main session context every iteration, consuming tokens proportional to its verbosity. The Breaking Gate and E2E Gate also pipe full test output (potentially hundreds of lines) into context. Combined, this wastes ~40-60% of per-iteration tokens on content that doesn't drive decisions.
@@ -15,6 +17,7 @@ status: Draft
 - `run-tasks.md` has 250 lines, much of it verbose explanations and code examples that the AI doesn't need after the first iteration.
 - `forge task query` outputs 4 fields (TASK_ID, STATUS, SCOPE, BREAKING) when only STATUS is needed for verification — `forge task status` outputs just 2 fields.
 - `just test` output can be 100+ lines of test runner output, all flowing into the main session context even on success.
+- **Estimated savings**: ~100 lines of skill text (~40% reduction) + ~100 lines of eliminated test output per gate execution, compounding across iterations.
 
 ### Urgency
 
@@ -40,6 +43,12 @@ Three-pronged optimization of `run-tasks.md` only (no CLI changes):
 
 - Only changes `plugins/forge/commands/run-tasks.md` — no CLI code changes
 - Must preserve all existing functionality (claim, dispatch, verify, fix-task, main-session routing)
+
+### References
+
+- `plugins/forge/commands/run-tasks.md` — target file (current ~250 lines)
+- `forge-cli/internal/cmd/status.go` — `forge task status` command (2-field output)
+- `forge-cli/internal/cmd/query.go` — `forge task query` command (4-field output, being replaced in skill)
 
 ## Alternatives & Industry Benchmarking
 
