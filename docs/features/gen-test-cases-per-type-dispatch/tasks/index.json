@@ -22,7 +22,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "in_progress",
+      "status": "completed",
       "file": "2-create-per-type-instructions.md",
       "record": "records/2-create-per-type-instructions.md",
       "noTest": true,
