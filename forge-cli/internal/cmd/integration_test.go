@@ -504,13 +504,16 @@ func TestExecuteClaim_BlockedTaskClearsStateAndProceeds(t *testing.T) {
 	statePath := feature.GetTaskStatePath(dir, "test")
 	_ = task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1", StartedTime: "2026-01-01 10:00"})
 
-	_, err := executeClaim()
-	// Blocked task clears state, but no pending tasks to claim
-	if err == nil {
-		t.Error("expected error (no pending tasks)")
+	result, err := executeClaim()
+	// Lazy unblock scan auto-transitions blocked task with no deps to pending, then claims it.
+	if err != nil {
+		t.Fatalf("expected no error (blocked task auto-unblocked), got: %v", err)
 	}
-	if strings.Contains(err.Error(), "integrity") {
-		t.Errorf("blocked status should not trigger integrity error: %v", err)
+	if result.Action != "CLAIMED" {
+		t.Errorf("expected CLAIMED, got %q", result.Action)
+	}
+	if result.Key != "t1" {
+		t.Errorf("expected key 't1', got %q", result.Key)
 	}
 }
 
@@ -2194,8 +2197,12 @@ func TestRunRecord_AutoDowngrade_ThenCleanup(t *testing.T) {
 }
 
 func TestRunRecord_AutoDowngrade_ThenClaim(t *testing.T) {
+	// Task 1 has an unmet dependency on task 0 (pending). When task 1 is
+	// downgraded to blocked (test failures), the lazy unblock scan keeps it
+	// blocked because dep 1.0 is still unmet. task2 should be claimed next.
 	dir := setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
-		"task1": {ID: "1.1", Title: "Task 1", Status: "in_progress", Priority: "P0", File: "1.1.md", Record: "records/1.1.md"},
+		"task0": {ID: "1.0", Title: "Prereq", Status: "pending", Priority: "P0", File: "1.0.md", Record: "records/1.0.md"},
+		"task1": {ID: "1.1", Title: "Task 1", Status: "in_progress", Priority: "P0", File: "1.1.md", Record: "records/1.1.md", Dependencies: []string{"1.0"}},
 		"task2": {ID: "1.2", Title: "Task 2", Status: "pending", Priority: "P1", File: "1.2.md", Record: "records/1.2.md"},
 	}})
 
@@ -2229,20 +2236,14 @@ func TestRunRecord_AutoDowngrade_ThenClaim(t *testing.T) {
 		t.Fatalf("expected blocked, got %s", index.TasksMap()["task1"].Status)
 	}
 
-	// Claim should clear blocked state and claim task2
+	// task1 is blocked with unmet dep (1.0 pending). Lazy scan keeps it blocked.
+	// task0 (P0) and task2 (P1) are pending. task0 should be claimed.
 	result, err := executeClaim()
 	if err != nil {
 		t.Fatalf("claim should succeed after blocked task cleanup: %v", err)
 	}
-	if result.Task.ID != "1.2" {
-		t.Errorf("expected to claim task2, got %s", result.Task.ID)
-	}
-
-	// New state should be for task2
-	newStatePath := feature.GetTaskStatePath(dir, "test")
-	newState, _ := task.LoadState(newStatePath)
-	if newState.TaskID != "1.2" {
-		t.Errorf("new state should be for task2, got %s", newState.TaskID)
+	if result.Task.ID != "1.0" {
+		t.Errorf("expected to claim task0 (P0, no deps), got %s", result.Task.ID)
 	}
 }
 

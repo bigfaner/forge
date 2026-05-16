@@ -1,0 +1,166 @@
+{
+  "feature": "quality-gate-fix-task-loop-breaker",
+  "proposal": "docs/proposals/quality-gate-fix-task-loop-breaker/proposal.md",
+  "created": "2026-05-16",
+  "tasks": {
+    "1-fix-source-task-id-and-counting": {
+      "id": "1",
+      "title": "Fix P0: Set step-scoped SourceTaskID and cumulative counting",
+      "priority": "P0",
+      "estimatedTime": "60m",
+      "status": "completed",
+      "file": "1-fix-source-task-id-and-counting.md",
+      "record": "records/1-fix-source-task-id-and-counting.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "2-retry-unit-test-before-fix": {
+      "id": "2",
+      "title": "P1: Retry unit-test once before creating fix task",
+      "priority": "P1",
+      "estimatedTime": "45m",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-retry-unit-test-before-fix.md",
+      "record": "records/2-retry-unit-test-before-fix.md",
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "3-explicit-addfixtask-errors": {
+      "id": "3",
+      "title": "P1: Explicit error propagation from addFixTask",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "3-explicit-addfixtask-errors.md",
+      "record": "records/3-explicit-addfixtask-errors.md",
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "4-version-bump-and-integration-verify": {
+      "id": "4",
+      "title": "Version bump and integration verification",
+      "priority": "P2",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "1",
+        "2",
+        "3"
+      ],
+      "status": "completed",
+      "file": "4-version-bump-and-integration-verify.md",
+      "record": "records/4-version-bump-and-integration-verify.md",
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-6",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "T-quick-5"
+      ],
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "scope": "all",
+      "noTest": true,
+      "type": "doc-generation.drift"
+    },
+    "quick-gen-scripts-go-test": {
+      "id": "T-quick-2",
+      "title": "Generate Quick Test Scripts (go-test)",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "T-quick-1"
+      ],
+      "status": "completed",
+      "file": "quick-gen-scripts-go-test.md",
+      "record": "records/quick-gen-scripts-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.gen-scripts",
+      "profile": "go-test"
+    },
+    "quick-graduate-go-test": {
+      "id": "T-quick-4",
+      "title": "Graduate Quick Test Scripts (go-test)",
+      "priority": "P1",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "T-quick-3"
+      ],
+      "status": "completed",
+      "file": "quick-graduate-go-test.md",
+      "record": "records/quick-graduate-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.graduate",
+      "profile": "go-test"
+    },
+    "quick-run-tests-go-test": {
+      "id": "T-quick-3",
+      "title": "Run Quick E2E Tests (go-test)",
+      "priority": "P1",
+      "estimatedTime": "15-30min",
+      "dependencies": [
+        "T-quick-2"
+      ],
+      "status": "completed",
+      "file": "quick-run-tests-go-test.md",
+      "record": "records/quick-run-tests-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.run",
+      "profile": "go-test"
+    },
+    "quick-test-cases-go-test": {
+      "id": "T-quick-1",
+      "title": "Generate Quick Test Cases (go-test)",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "4"
+      ],
+      "status": "completed",
+      "file": "quick-test-cases-go-test.md",
+      "record": "records/quick-test-cases-go-test.md",
+      "scope": "all",
+      "noTest": true,
+      "type": "test-pipeline.gen-cases",
+      "profile": "go-test"
+    },
+    "quick-verify-regression": {
+      "id": "T-quick-5",
+      "title": "Verify Quick E2E Regression",
+      "priority": "P1",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "T-quick-4"
+      ],
+      "status": "completed",
+      "file": "quick-verify-regression.md",
+      "record": "records/quick-verify-regression.md",
+      "scope": "all",
+      "type": "test-pipeline.verify-regression"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
