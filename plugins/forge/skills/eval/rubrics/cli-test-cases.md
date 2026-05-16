@@ -3,6 +3,9 @@ scale: 1000
 target: 900
 iterations: 6
 type: cli-test-cases
+context:
+  conventions: [cli, testing-isolation]
+  business-rules: auto
 ---
 
 # CLI Test Cases Evaluation Rubric
@@ -41,10 +44,13 @@ The cli-test-cases.md must contain these sections:
 
 ### 3. Command Coverage Accuracy (150 pts)
 
+This dimension also checks compliance with injected project conventions for CLI testing. The scorer should reference injected conventions to detect violations in command invocation patterns and output assertions.
+
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| Command coverage | 0-75 | All flags, subcommands, and argument combinations are tested. Every CLI command mentioned in the PRD has at least one TC. Flag combinations (short and long form) are covered. Required arguments vs optional arguments are distinguished in TCs |
-| Output assertion specificity | 0-75 | Exit codes, stdout/stderr content, and error messages are explicitly asserted. Every TC specifies the expected exit code (0 for success, non-zero for errors). Stdout assertions use concrete text or regex patterns. Error message assertions specify the exact or pattern-matched error output |
+| Command coverage | 0-50 | All flags, subcommands, and argument combinations are tested. Every CLI command mentioned in the PRD has at least one TC. Flag combinations (short and long form) are covered. Required arguments vs optional arguments are distinguished in TCs |
+| Output assertion specificity | 0-50 | Exit codes, stdout/stderr content, and error messages are explicitly asserted. Every TC specifies the expected exit code (0 for success, non-zero for errors). Stdout assertions use concrete text or regex patterns. Error message assertions specify the exact or pattern-matched error output |
+| Convention compliance | 0-50 | Do test steps and assertions comply with project conventions for CLI testing? If injected conventions specify CLI output format (e.g., JSON output structure, table formatting), do TCs assert against that format? If conventions declare exit code ranges or error message patterns, are they tested? Deduct 10 pts per convention violation |
 
 ### 4. Completeness (200 pts)
 

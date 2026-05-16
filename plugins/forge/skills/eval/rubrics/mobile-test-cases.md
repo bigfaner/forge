@@ -3,6 +3,9 @@ scale: 1000
 target: 900
 iterations: 6
 type: mobile-test-cases
+context:
+  conventions: [ux, frontend, testing-isolation]
+  business-rules: auto
 ---
 
 # Mobile Test Cases Evaluation Rubric
@@ -41,10 +44,13 @@ The mobile-test-cases.md must contain these sections:
 
 ### 3. Interaction Accuracy (150 pts)
 
+This dimension also checks compliance with injected project conventions for mobile testing. The scorer should reference injected conventions to detect violations in interaction descriptions and navigation patterns.
+
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| Interaction specificity | 0-75 | Touch targets, gesture types, screen transitions are explicitly described with accessibility labels or resource IDs. "Tap the 'Submit' button (accessibility label: submit_button)" not "Tap submit". Swipe direction, tap coordinates, and gesture duration are specified |
-| Navigation flow coverage | 0-75 | Screen transitions, back navigation, deep links are covered for all navigation paths. Every screen transition is explicitly described (e.g., "Screen transitions from Home to Profile via bottom tab bar"). Deep link handling is tested where applicable |
+| Interaction specificity | 0-50 | Touch targets, gesture types, screen transitions are explicitly described with accessibility labels or resource IDs. "Tap the 'Submit' button (accessibility label: submit_button)" not "Tap submit". Swipe direction, tap coordinates, and gesture duration are specified |
+| Navigation flow coverage | 0-50 | Screen transitions, back navigation, deep links are covered for all navigation paths. Every screen transition is explicitly described (e.g., "Screen transitions from Home to Profile via bottom tab bar"). Deep link handling is tested where applicable |
+| Convention compliance | 0-50 | Do test steps and assertions comply with project conventions for mobile testing? If injected conventions specify element identification patterns (e.g., accessibility labels vs resource IDs), do TCs use the declared pattern? Are navigation assertions consistent with the project's mobile navigation conventions? Deduct 10 pts per convention violation |
 
 ### 4. Completeness (200 pts)
 

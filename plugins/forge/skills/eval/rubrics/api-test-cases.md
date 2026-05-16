@@ -3,6 +3,9 @@ scale: 1000
 target: 900
 iterations: 6
 type: api-test-cases
+context:
+  conventions: [api, testing-isolation]
+  business-rules: auto
 ---
 
 # API Test Cases Evaluation Rubric
@@ -41,10 +44,13 @@ The api-test-cases.md must contain these sections:
 
 ### 3. Contract Accuracy (150 pts)
 
+This dimension also checks compliance with injected project conventions for API testing. The scorer should reference injected conventions to detect violations in contract assertions and error handling patterns.
+
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| Contract accuracy | 0-75 | Request/response schemas match actual API. Status codes, headers, body fields are explicit. Every TC specifies the HTTP method, endpoint, request body structure, and expected response structure. No vague descriptions like "returns user data" — specify the response body fields |
-| Error contract coverage | 0-75 | Error responses (4xx, 5xx) are covered with specific error body assertions. Each error TC specifies the error trigger, expected status code, and error response body structure. Both client errors (validation, auth) and server errors are tested where applicable |
+| Contract accuracy | 0-50 | Request/response schemas match actual API. Status codes, headers, body fields are explicit. Every TC specifies the HTTP method, endpoint, request body structure, and expected response structure. No vague descriptions like "returns user data" — specify the response body fields |
+| Error contract coverage | 0-50 | Error responses (4xx, 5xx) are covered with specific error body assertions. Each error TC specifies the error trigger, expected status code, and error response body structure. Both client errors (validation, auth) and server errors are tested where applicable |
+| Convention compliance | 0-50 | Do test steps and assertions comply with project conventions for API testing? If injected conventions specify API error response format (e.g., `{error: {code, message}}`), do TCs assert against that format? If conventions declare specific header requirements, are they tested? Deduct 10 pts per convention violation |
 
 ### 4. Completeness (200 pts)
 

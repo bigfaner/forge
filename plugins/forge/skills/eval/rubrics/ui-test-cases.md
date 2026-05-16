@@ -3,6 +3,9 @@ scale: 1000
 target: 900
 iterations: 6
 type: ui-test-cases
+context:
+  conventions: [ux, frontend, testing-isolation]
+  business-rules: auto
 ---
 
 # UI Test Cases Evaluation Rubric
@@ -42,10 +45,13 @@ The ui-test-cases.md must contain these sections:
 
 ### 3. Visual State Accuracy (150 pts)
 
+This dimension also checks compliance with injected project conventions for UI testing. The scorer should reference injected conventions to detect violations in route usage, element identification, and assertion patterns.
+
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| Route Accuracy | 0-90 | Every Route field contains a real path (e.g., `/users/123/edit`), not vague descriptions. Matches sitemap.json routes where applicable. No placeholder paths |
-| Route Consistency | 0-60 | UI TCs have Route fields with concrete paths. No Route field contains implementation details (testid, selector, CSS). Route values correspond to actual application routes |
+| Route Accuracy | 0-60 | Every Route field contains a real path (e.g., `/users/123/edit`), not vague descriptions. Matches sitemap.json routes where applicable. No placeholder paths |
+| Route Consistency | 0-40 | UI TCs have Route fields with concrete paths. No Route field contains implementation details (testid, selector, CSS). Route values correspond to actual application routes |
+| Convention compliance | 0-50 | Do test steps and assertions comply with project conventions for UI testing? If injected conventions specify element identification patterns (e.g., accessibility labels vs CSS selectors), do TCs use the declared pattern? Are route assertions consistent with the project's routing conventions? Deduct 10 pts per convention violation |
 
 ### 4. Completeness (200 pts)
 
