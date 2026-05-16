@@ -165,6 +165,28 @@ func runSubmit(_ *cobra.Command, args []string) {
 	if err := os.MkdirAll(filepath.Dir(recordPath), 0755); err != nil {
 		Exit(NewAIError(ErrValidation, "Failed to create record directory", err.Error(), "Check directory permissions", "mkdir -p "+filepath.Dir(recordPath)))
 	}
+
+	// Write-once protection: block overwrite unless --force is set
+	if info, err := os.Stat(recordPath); err == nil {
+		// File exists
+		if !submitForce {
+			Exit(NewAIError(ErrValidation,
+				fmt.Sprintf("Record for task %s already exists at %s", t.ID, recordPath),
+				"Record file already exists — overwriting would destroy audit history",
+				"Use --force to overwrite, or create a fix task instead",
+				fmt.Sprintf("forge task submit %s --data record.json --force", t.ID)))
+		}
+		_ = info
+		fmt.Fprintf(os.Stderr, "WARNING: Overwriting existing record at %s\n", recordPath)
+	} else if !os.IsNotExist(err) {
+		// Unexpected error from os.Stat (e.g., permission issue)
+		Exit(NewAIError(ErrValidation,
+			"Failed to check record file existence",
+			err.Error(),
+			"Check file permissions",
+			"ls -la "+recordPath))
+	}
+
 	if err := os.WriteFile(recordPath, []byte(content), 0644); err != nil {
 		Exit(NewAIError(ErrValidation, "Failed to write record file", err.Error(), "Check file permissions", "cat "+recordPath))
 	}

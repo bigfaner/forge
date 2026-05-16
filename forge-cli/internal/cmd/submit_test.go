@@ -1301,3 +1301,104 @@ func TestValidateRecordData_RejectedSkipsCompletedChecks(_ *testing.T) {
 	// Should not exit or error — rejected skips completed validation
 	validateRecordData(rd, false)
 }
+
+// TestRecordExistsCheck tests the write-once protection for record files.
+// Uses the subprocess pattern (like TestValidateRecordData) because runSubmit calls Exit().
+func TestRecordExistsCheck(t *testing.T) {
+	t.Run("submit fails when record already exists without force", func(t *testing.T) {
+		if os.Getenv("TEST_RECORD_EXISTS_NO_FORCE") == "1" {
+			setupFullProject(t, SetupOpts{
+				Tasks: map[string]task.Task{
+					"t1": {ID: "1", Title: "T1", Status: "pending", File: "1.md", Record: "records/1.md"},
+				},
+			})
+
+			dir, _ := os.Getwd()
+			recordPath := filepath.Join(dir, "docs", "features", "test", "tasks", "records", "1.md")
+			_ = os.WriteFile(recordPath, []byte("existing record"), 0644)
+
+			dataPath := filepath.Join(dir, "record.json")
+			jsonData := `{"status":"completed","summary":"Done","testsPassed":1,"coverage":50.0}`
+			_ = os.WriteFile(dataPath, []byte(jsonData), 0644)
+
+			submitDataPath = dataPath
+			submitForce = false
+			runSubmit(submitCmd, []string{"1"})
+			return
+		}
+		cmd := exec.Command(os.Args[0], "-test.run=TestRecordExistsCheck/submit_fails_when_record_already_exists_without_force")
+		cmd.Env = append(os.Environ(), "TEST_RECORD_EXISTS_NO_FORCE=1")
+		output, _ := cmd.CombinedOutput()
+		if !strings.Contains(string(output), "already exists") {
+			t.Errorf("expected 'already exists' error, got: %s", string(output))
+		}
+		if !strings.Contains(string(output), "VALIDATION_ERROR") {
+			t.Errorf("expected VALIDATION_ERROR code, got: %s", string(output))
+		}
+		if !strings.Contains(string(output), "--force") {
+			t.Errorf("expected hint to mention --force, got: %s", string(output))
+		}
+	})
+
+	t.Run("submit with --force overwrites existing record with warning", func(t *testing.T) {
+		if os.Getenv("TEST_RECORD_EXISTS_FORCE") == "1" {
+			setupFullProject(t, SetupOpts{
+				Tasks: map[string]task.Task{
+					"t1": {ID: "1", Title: "T1", Status: "pending", File: "1.md", Record: "records/1.md"},
+				},
+			})
+
+			dir, _ := os.Getwd()
+			recordPath := filepath.Join(dir, "docs", "features", "test", "tasks", "records", "1.md")
+			_ = os.WriteFile(recordPath, []byte("existing record"), 0644)
+
+			dataPath := filepath.Join(dir, "record.json")
+			jsonData := `{"status":"completed","summary":"Overwritten","testsPassed":2,"coverage":60.0,"keyDecisions":["d1"],"acceptanceCriteria":[{"criterion":"works","met":true}]}`
+			_ = os.WriteFile(dataPath, []byte(jsonData), 0644)
+
+			submitDataPath = dataPath
+			submitForce = true
+			runSubmit(submitCmd, []string{"1"})
+			return
+		}
+		cmd := exec.Command(os.Args[0], "-test.run=TestRecordExistsCheck/submit_with_--force_overwrites_existing_record_with_warning")
+		cmd.Env = append(os.Environ(), "TEST_RECORD_EXISTS_FORCE=1")
+		output, _ := cmd.CombinedOutput()
+		out := string(output)
+		if !strings.Contains(out, "WARNING") || !strings.Contains(out, "Overwriting") {
+			t.Errorf("expected WARNING about overwriting on stderr, got: %s", out)
+		}
+		// Should succeed (exit code 0)
+		if !cmd.ProcessState.Success() {
+			t.Errorf("expected success exit, got: %s", out)
+		}
+	})
+
+	t.Run("submit succeeds when record does not exist", func(t *testing.T) {
+		if os.Getenv("TEST_RECORD_NOT_EXISTS") == "1" {
+			setupFullProject(t, SetupOpts{
+				Tasks: map[string]task.Task{
+					"t1": {ID: "1", Title: "T1", Status: "pending", File: "1.md", Record: "records/1.md"},
+				},
+			})
+
+			dir, _ := os.Getwd()
+			// Ensure record file does NOT exist (it shouldn't by default)
+
+			dataPath := filepath.Join(dir, "record.json")
+			jsonData := `{"status":"completed","summary":"New record","testsPassed":3,"coverage":70.0,"keyDecisions":["d1"],"acceptanceCriteria":[{"criterion":"works","met":true}]}`
+			_ = os.WriteFile(dataPath, []byte(jsonData), 0644)
+
+			submitDataPath = dataPath
+			submitForce = false
+			runSubmit(submitCmd, []string{"1"})
+			return
+		}
+		cmd := exec.Command(os.Args[0], "-test.run=TestRecordExistsCheck/submit_succeeds_when_record_does_not_exist")
+		cmd.Env = append(os.Environ(), "TEST_RECORD_NOT_EXISTS=1")
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Errorf("expected success, got error: %v, output: %s", err, string(output))
+		}
+	})
+}

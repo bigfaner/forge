@@ -8,7 +8,7 @@
       "title": "Submit write-once protection",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-submit-write-once.md",
       "record": "records/1-submit-write-once.md",
       "scope": "backend",
