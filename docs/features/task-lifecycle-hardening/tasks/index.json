@@ -50,7 +50,7 @@
       "dependencies": [
         "T-quick-5"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "quick-drift-detection.md",
       "record": "records/quick-drift-detection.md",
       "scope": "all",
