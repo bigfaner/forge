@@ -185,6 +185,19 @@ func claimNextTask(index *task.TaskIndex) (string, *task.Task, error) {
 	}
 	var eligibleTasks []taskWithKey
 
+	// Lazy unblock scan: check blocked tasks and auto-transition eligible ones to pending.
+	// Runs before the hasPending check so newly-unblocked tasks are visible.
+	for key, t := range index.TasksMap() {
+		if t.Status != "blocked" {
+			continue
+		}
+		if met, _ := checkDependenciesMet(index, t.ID, t); met {
+			t.Status = "pending"
+			index.SetTask(key, t)
+			fmt.Printf("Auto-unblocked task %s\n", t.ID)
+		}
+	}
+
 	hasPending := false
 	for _, t := range index.TasksMap() {
 		if t.Status == "pending" {
