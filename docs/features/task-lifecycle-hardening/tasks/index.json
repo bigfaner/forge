@@ -36,7 +36,7 @@
       "dependencies": [
         "2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3-update-tests.md",
       "record": "records/3-update-tests.md",
       "scope": "backend",
