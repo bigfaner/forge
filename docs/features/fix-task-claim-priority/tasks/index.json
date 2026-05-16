@@ -22,7 +22,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2-bump-version.md",
       "record": "records/2-bump-version.md",
       "scope": "all",
