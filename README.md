@@ -104,7 +104,7 @@ task --version
 
 ### 辅助
 
-`/fix-bug` · `/git-commit` · `/git-checkout` · `/learn-lesson` · `/record-decision` · `/consolidate-specs` · `/init-justfile` · `/init-forge` · `/gen-sitemap` · `/extract-design-md` · `/simplify-skill` · `/forensic` · `/improve-harness`
+`/fix-bug` · `/git-commit` · `/git-checkout` · `/learn-lesson` · `/record-decision` · `/consolidate-specs` · `/init-justfile` · `/init-forge` · `/gen-sitemap` · `/extract-design-md` · `/forensic` · `/improve-harness`
 
 ---
 
@@ -123,8 +123,8 @@ task --version
 ```
 forge/
 ├── plugins/forge/          # Forge plugin
-│   ├── skills/             # 23 个 Skills
-│   ├── commands/           # 11 个 Slash Commands
+│   ├── skills/             # 17 个 Skills
+│   ├── commands/           # 17 个 Slash Commands
 │   └── agents/             # 3 个 Subagents
 ├── task-cli/               # Go CLI 工具源码
 ├── tests/e2e/              # Playwright E2E 回归测试

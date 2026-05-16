@@ -101,14 +101,14 @@ Legal transitions only forward. Quick mode starts at tasks (no prd/design).
 |-------|-------------------|---------|-------------|
 | brainstorm | None | `docs/proposals/<slug>/proposal.md` | → eval-proposal (optional) or write-prd |
 | write-prd | Optional: proposal.md, sitemap.json | `prd/prd-spec.md`, `prd/prd-user-stories.md`, `prd/prd-ui-functions.md` (if UI), `manifest.md` (status: prd) | has UI → ui-design; no UI → tech-design |
-| eval-prd | `prd/prd-spec.md`, `prd/prd-user-stories.md` | `prd/eval/iteration-{N}.md`, `prd/eval/report.md` | score gate pass/fail |
+| eval-prd | `prd/prd-spec.md`, `prd/prd-user-stories.md` | `prd/eval/iteration-{N}.md`, `prd/eval/report.md` | score gate pass/fail; delegates to `skills/eval` with `rubrics/prd.md` |
 | ui-design | `prd/prd-ui-functions.md` (hard) | `ui/ui-design.md`, `ui/prototype/` | multi-platform → separate files |
-| eval-ui | `ui/ui-design.md` | `ui/eval/iteration-{N}.md`, `ui/eval/report.md` | platform → rubric variant |
+| eval-ui | `ui/ui-design.md` | `ui/eval/iteration-{N}.md`, `ui/eval/report.md` | platform → rubric variant; delegates to `skills/eval` with `rubrics/ui-{platform}.md` |
 | tech-design | `prd/prd-spec.md` (hard) | `design/tech-design.md`, `design/er-diagram.md` + `design/schema.sql` (if db), `manifest.md` (status: design) | db-schema: yes → mandatory ER+schema |
-| eval-design | `design/tech-design.md` | `design/eval/iteration-{N}.md`, `design/eval/report.md` | score gate |
+| eval-design | `design/tech-design.md` | `design/eval/iteration-{N}.md`, `design/eval/report.md` | score gate; delegates to `skills/eval` with `rubrics/design.md` |
 | breakdown-tasks | `prd/prd-spec.md` + `design/tech-design.md` (both hard) | `tasks/*.md`, `tasks/index.json`, `manifest.md` (status: tasks) | HAS_UI/NO_UI/HAS_DB/HAS_PLACEMENT tags |
 | gen-test-cases | `prd/prd-user-stories.md` + `prd/prd-spec.md` (both hard) | `testing/test-cases.md` | profile → interface types |
-| eval-test-cases | `testing/test-cases.md` + PRD docs | `testing/eval/iteration-{N}.md` | Step Actionability < 200 blocks |
+| eval-test-cases | `testing/test-cases.md` + PRD docs | `testing/eval/iteration-{N}.md` | Step Actionability < 200 blocks; delegates to `skills/eval` with `rubrics/test-cases.md` |
 | gen-test-scripts | `testing/test-cases.md` (hard) | `tests/e2e/features/<slug>/` | profile → framework; Step Actionability gate |
 | run-e2e-tests | justfile + staging area | `tests/e2e/features/<slug>/results/latest.md` | >30% failure → stop |
 | graduate-tests | staging area + PASS results + no marker | `tests/e2e/<module>/`, `.graduated/<slug>` | profile → import rewriting |
@@ -147,7 +147,7 @@ Assume you are a "lazy agent trying to cut corners" — test each node for bypas
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
 | 2a. Quality gate enforcement | 0-70 | Is each gate point enforced by CLI or merely advisory text. Zero enforcement with no documented rationale = -15 each. |
-| 2b. Eval integrity | 0-70 | Does each eval skill require an independent subagent for scoring. Does the decision gate parse structured output. Can the main session fake the score. Weakness = -25 each. |
+| 2b. Eval integrity | 0-70 | Does the generic eval skill (`skills/eval/SKILL.md`) require an independent subagent for scoring. Does the decision gate parse structured output. Can the main session fake the score. Weakness = -25 each. |
 | 2c. User interaction enforcement | 0-45 | Does each confirmation point have an enforcement mechanism. Purely advisory = -5 each. |
 | 2d. Required step enforcement | 0-35 | Do conditional requirements have downstream verification. No verification = -10 each. |
 | 2e. Prohibition enforcement | 0-30 | Does each HARD-RULE prohibition have a mechanical check. Purely advisory = -5 each. |
@@ -220,7 +220,7 @@ Forge is a Claude Code plugin deployed to users' projects. Plugin SKILL.md and c
 | Instance | Category | Portability-Required? | Deduct? |
 |----------|----------|----------------------|---------|
 | "Step 0: Resolve Profile" | A | YES (9 plugin SKILL.md files) | NO |
-| Eval Iron Laws + Steps 2-4 | A | YES (6 plugin eval SKILL.md files) | NO |
+| Eval Iron Laws + Steps 2-4 | A | NO (consolidated to 1 `skills/eval/SKILL.md`) | NO |
 | Eval report shared sections | A | YES (5 plugin report.md files) | NO |
 | Quality gate sequence | B | YES (plugin skills need it inline) | NO |
 | Scope resolution paraphrase | B | Partial | Only if in non-plugin file |
@@ -239,5 +239,5 @@ Forge is a Claude Code plugin deployed to users' projects. Plugin SKILL.md and c
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
 | 6a. Frontmatter completeness | 0-25 | SKILL.md has name + description. Command has name + description. Agent has name + description + model. Missing = -5 each. |
-| 6b. Eval template convention | 0-15 | eval-* directory has templates/rubric.md + report.md. Missing = -10 each. |
+| 6b. Eval template convention | 0-15 | `skills/eval/SKILL.md` exists, `skills/eval/rubrics/` contains rubric files for each eval type, and each `commands/eval-*.md` delegates to `Skill("eval", ...)`. Missing rubric = -10 each. |
 | 6c. Name-directory alignment | 0-10 | Skill name = directory name, command name = filename. Mismatch = -5 each. |
