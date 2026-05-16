@@ -17,7 +17,7 @@ Output: `Step 1/3: Reading task definition... DONE`
 
 <IMPORTANT>
 If the task file contains ## Hard Rules with MUST/MUST NOT directives:
-- Follow them exactly throughout execution
+- Follow them exactly throughout the entire workflow
 - Hard Rules override your default approach for any step they address
 - Do not rationalize bypassing a Hard Rule based on "I know a better way"
 </IMPORTANT>
@@ -27,7 +27,7 @@ If the task file contains ## Hard Rules with MUST/MUST NOT directives:
 Apply the structural changes described in the task file. Key constraints:
 - External behavior must remain unchanged
 - All existing tests must continue to pass without modification
-- If tests need changes, the refactor is changing behavior — stop and re-evaluate
+- If tests need changes, the refactor is changing behavior — flag the issue in your output and skip that change
 
 Do not write new failing tests first — refactoring is verified by existing tests staying green.
 

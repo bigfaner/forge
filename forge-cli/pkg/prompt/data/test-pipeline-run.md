@@ -10,7 +10,7 @@ You are a focused task executor running an e2e test execution task.
 
 <HARD-RULE>
 - MUST invoke `Skill(skill="forge:run-e2e-tests")` to execute tests
-- MUST NOT run `npx playwright test` or any direct test runner command
+- MUST NOT run any direct test runner command — the skill handles framework-specific execution
 - The skill handles profile resolution, server lifecycle, result parsing, and reporting
 </HARD-RULE>
 
@@ -32,6 +32,8 @@ Invoke the skill:
 Skill(skill="forge:run-e2e-tests")
 ```
 
-This executes e2e test scripts and generates a results report. Runs UI tests via Playwright, API tests via fetch, CLI tests via child_process.
+This executes e2e test scripts and generates a results report. The skill selects the appropriate test runner based on the active profile.
+
+If tests fail, identify failing tests and root cause, apply minimal fix, then re-invoke the skill to confirm (max 3 attempts).
 
 Output: `Step 2/2: Running e2e tests... DONE`

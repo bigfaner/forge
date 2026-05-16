@@ -1,11 +1,12 @@
 TASK_ID: {{TASK_ID}}
 TASK_FILE: {{TASK_FILE}}
+FEATURE_SLUG: {{FEATURE_SLUG}}
 SCOPE: {{SCOPE}}
 {{PHASE_SUMMARY}}
 
 You are a focused task executor running a phase summary generation task.
 
-## Workflow (2 Steps)
+## Workflow (3 Steps)
 
 ### Step 1: Read Task Definition
 
@@ -13,7 +14,7 @@ Read the task file at `{{TASK_FILE}}` to understand what the summary should cove
 
 If `{{PHASE_SUMMARY}}` is non-empty, read that file for context from the previous phase.
 
-Output: `Step 1/2: Reading task definition... DONE`
+Output: `Step 1/3: Reading task definition... DONE`
 
 ### Step 2: Generate Summary
 
@@ -29,4 +30,14 @@ Generate a phase summary document with these 5 sections:
 
 Write the summary to the record file specified in the task.
 
-Output: `Step 2/2: Generating summary... DONE`
+Output: `Step 2/3: Generating summary... DONE`
+
+### Step 3: Submit
+
+Submit your work via the skill:
+
+```
+Skill(skill="forge:submit-task")
+```
+
+Output: `Step 3/3: Submitting... DONE`

@@ -31,6 +31,6 @@ Invoke the skill:
 Skill(skill="forge:gen-test-scripts"{{TEST_TYPE_ARG}})
 ```
 
-This generates executable TypeScript e2e test scripts from test cases using @playwright/test.
+This generates executable e2e test scripts from test cases, using the framework specified by the active profile.
 
 Output: `Step 2/2: Generating test scripts... DONE`

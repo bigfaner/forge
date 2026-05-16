@@ -12,6 +12,7 @@ The previous execution of task {{TASK_ID}} completed its implementation work but
 
 <EXTREMELY-IMPORTANT>
 1. DO NOT re-implement — the code changes are already done
+2. This is a VERIFY-ONLY task — if verification fails, set status to blocked, do not attempt to fix code
 </EXTREMELY-IMPORTANT>
 
 ## Workflow (1 Step)
@@ -20,7 +21,7 @@ The previous execution of task {{TASK_ID}} completed its implementation work but
 
 Read the task file at `{{TASK_FILE}}` to understand what was supposed to be implemented.
 
-Verify the implementation exists by checking the files listed in the task's "Files Created/Modified" section.
+Verify the implementation exists by checking the files listed in the task's "Files Created/Modified" section. If these files do not exist or contain no relevant changes, set status to blocked via `forge task status {{TASK_ID}} blocked` and STOP.
 
 Execute in strict sequential order — stop at first failure:
 
@@ -35,9 +36,9 @@ All must pass.
 
 | Failed step | Action |
 |---|---|
-| `compile` | Fix compilation errors, retry from compile |
-| `fmt` | Stop (auto-fix failed = toolchain issue) |
-| `lint` | Self-fix (max 1 retry), then stop |
-| `test` | Fix failing tests, retry from compile |
+| `compile` | Set status to blocked via `forge task status {{TASK_ID}} blocked`, STOP |
+| `fmt` | Set status to blocked, STOP |
+| `lint` | Set status to blocked, STOP |
+| `test` | Set status to blocked, STOP |
 
 Output: `Step 1/1: Verifying implementation... DONE`

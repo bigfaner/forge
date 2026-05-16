@@ -20,14 +20,14 @@ Evaluate each document against the 8-dimension rubric below. Each dimension is s
 
 | # | Dimension | Description | Scoring Guide |
 |---|-----------|-------------|---------------|
-| 1 | Structural Completeness | Document has all expected sections, headings, and hierarchical structure | 125 = all sections present and well-organized; 0 = missing major sections |
-| 2 | Logical Consistency | Arguments, flow, and reasoning are internally consistent | 125 = no contradictions; 0 = major logical gaps |
-| 3 | Traceability | Requirements, decisions, and references can be traced to their source | 125 = full traceability; 0 = no source links |
-| 4 | Accuracy | Technical content, code references, and factual claims are correct | 125 = all verifiable claims correct; 0 = significant inaccuracies |
-| 5 | Completeness | All expected topics, features, and edge cases are covered | 125 = comprehensive coverage; 0 = major gaps |
-| 6 | Terminology Consistency | Terms are defined once and used consistently throughout | 125 = fully consistent; 0 = inconsistent usage |
-| 7 | Formatting Standards | Markdown formatting, tables, lists, and code blocks follow standards | 125 = clean and consistent formatting; 0 = broken formatting |
-| 8 | Language Quality | Writing is clear, concise, and free of grammar/spelling errors | 125 = professional quality; 0 = needs major editing |
+| 1 | Structural Completeness | Document has all expected sections, headings, and hierarchical structure | 125 = all present, well-organized; 100 = minor gaps; 75 = some sections missing; 50 = major sections missing; 0 = bare skeleton |
+| 2 | Logical Consistency | Arguments, flow, and reasoning are internally consistent | 125 = no contradictions; 100 = minor tension; 75 = some logical gaps; 50 = significant contradictions; 0 = incoherent |
+| 3 | Traceability | Requirements, decisions, and references can be traced to their source | 125 = full traceability; 100 = mostly traced; 75 = some links missing; 50 = sparse linking; 0 = no source links |
+| 4 | Accuracy | Technical content, code references, and factual claims are correct | 125 = all correct; 100 = minor inaccuracies; 75 = some wrong claims; 50 = significant errors; 0 = mostly wrong |
+| 5 | Completeness | All expected topics, features, and edge cases are covered | 125 = comprehensive; 100 = minor omissions; 75 = some gaps; 50 = major gaps; 0 = largely incomplete |
+| 6 | Terminology Consistency | Terms are defined once and used consistently throughout | 125 = fully consistent; 100 = minor variance; 75 = some conflicts; 50 = inconsistent; 0 = random usage |
+| 7 | Formatting Standards | Markdown formatting, tables, lists, and code blocks follow standards | 125 = clean and consistent; 100 = minor issues; 75 = some broken formatting; 50 = messy; 0 = unreadable |
+| 8 | Language Quality | Writing is clear, concise, and free of grammar/spelling errors | 125 = professional; 100 = minor errors; 75 = some unclear; 50 = needs editing; 0 = needs major editing |
 
 #### Iteration Cycle
 

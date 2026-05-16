@@ -57,8 +57,30 @@ Post-task completion: create execution record + update task status.
 | `coverage`            | float  | context  | Coverage percentage. Auto-set to `-1.0` for `noTest: true` tasks |
 | `acceptanceCriteria`  | array  | warning  | `{criterion, met}` objects. Missing = warning; any `met:false` = hard error (overridable) |
 | `notes`               | string | optional | Optional notes or observations               |
+| `typeReclassification` | object | optional | When executor discovers task type doesn't match actual work |
 
 > **context** = required for `completed` tasks without `noTest: true`; auto-relaxed when `noTest: true`.
+
+## Type Reclassification
+
+When executing a task, you may discover that the assigned type doesn't match the actual work. For example, a `fix` task might turn out to be a flaky test cleanup, or a `feature` task might only involve refactoring existing code.
+
+In such cases, process the task according to its **actual type** and include a `typeReclassification` block in the JSON data:
+
+```json
+{
+  "taskId": "fix-1",
+  "status": "completed",
+  "summary": "Fixed flaky test by cleaning up test isolation",
+  "typeReclassification": {
+    "originalType": "fix",
+    "actualType": "cleanup",
+    "reason": "Root cause was test state leak between runs, not a code bug"
+  }
+}
+```
+
+The reclassification is recorded in the task's execution log for traceability. The original type in `index.json` is **not** changed — only the record documents the discrepancy.
 
 ## Metrics Collection (MANDATORY before writing record.json)
 

@@ -17,7 +17,7 @@ Output: `Step 1/3: Reading task definition... DONE`
 
 <IMPORTANT>
 If the task file contains ## Hard Rules with MUST/MUST NOT directives:
-- Follow them exactly throughout execution
+- Follow them exactly throughout the entire workflow
 - Hard Rules override your default approach for any step they address
 - Do not rationalize bypassing a Hard Rule based on "I know a better way"
 </IMPORTANT>
@@ -25,7 +25,7 @@ If the task file contains ## Hard Rules with MUST/MUST NOT directives:
 ### Step 2: Make Improvements
 
 Apply the cleanup changes described in the task file. This may include:
-- Removing dead code, unused imports, or obsolete files
+- Removing dead code, unused declarations, or obsolete files
 - Fixing existing tests
 - Improving code clarity without changing behavior
 

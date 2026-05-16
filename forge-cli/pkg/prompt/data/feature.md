@@ -32,7 +32,7 @@ GREEN    → Implement minimal code to pass
 REFACTOR → Clean up while keeping tests green
 ```
 
-Output: `Step 2/3: Implementing... DONE (N tests)`
+Output: `Step 2/3: Implementing... DONE (N new tests)`
 
 ### Step 3: Full Verification (Quality Gate)
 

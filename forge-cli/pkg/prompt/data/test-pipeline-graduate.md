@@ -31,6 +31,6 @@ Invoke the skill:
 Skill(skill="forge:graduate-tests")
 ```
 
-This migrates feature test scripts to the regression suite (tests/e2e/). Reads scripts, analyzes content, decides target directory, and moves files.
+This migrates feature test scripts to the project's regression suite directory. Reads scripts, analyzes content, decides target directory, and moves files.
 
 Output: `Step 2/2: Graduating tests... DONE`

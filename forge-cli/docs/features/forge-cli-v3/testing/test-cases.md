@@ -714,11 +714,11 @@ generated: "2026-05-14"
 - **Route**: N/A
 - **Element**: N/A
 - **Steps**:
-  1. Run `forge task add --title "my-new-task" --type implementation`
+  1. Run `forge task add --title "my-new-task" --type feature`
   2. Check exit code is 0
   3. Run `cat index.json | jq '.tasks | length'` to verify task count increased by 1
-  4. Run `cat index.json | jq '.tasks[] | select(.title=="my-new-task")'` to verify new task exists with status pending and type implementation
-- **Expected**: Exit code 0, index.json contains new task with title "my-new-task", type "implementation", status "pending"
+  4. Run `cat index.json | jq '.tasks[] | select(.title=="my-new-task")'` to verify new task exists with status pending and type feature
+- **Expected**: Exit code 0, index.json contains new task with title "my-new-task", type "feature", status "pending"
 - **Priority**: P1
 
 ### Task Index
@@ -1211,14 +1211,13 @@ generated: "2026-05-14"
 - **Steps**:
   1. Run `forge task add` with no flags
   2. Check exit code is 1
-  3. Verify stderr contains "required flag(s) not set" and lists the missing required flags (at minimum: title, type)
-  4. Run `forge task add --title "no-type-task"` (missing --type)
-  5. Check exit code is 1
-  6. Verify stderr contains "required flag(s) not set: type"
-  7. Run `forge task add --type implementation` (missing --title)
-  8. Check exit code is 1
-  9. Verify stderr contains "required flag(s) not set: title"
-- **Expected**: Exit code 1 for each missing-flag invocation; stderr identifies the specific missing required flag(s)
+  3. Verify stderr contains "required" and references "title"
+  4. Run `forge task add --title "no-type-task"` (missing --type, optional)
+  5. Check exit code is 0 (--type is optional, InferType used as fallback)
+  6. Run `forge task add --type feature` (missing --title)
+  7. Check exit code is 1
+  8. Verify stderr contains "required" and references "title"
+- **Expected**: Exit code 1 when --title is missing; exit code 0 when only --type is missing (type is optional)
 - **Priority**: P0
 
 ## TC-078: Concurrent task claim on same task resolves to single winner

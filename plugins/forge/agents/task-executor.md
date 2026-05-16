@@ -10,7 +10,7 @@ memory: project
 
 <EXTREMELY-IMPORTANT>
 1. ONE TASK PER INVOCATION — after completing, STOP immediately, no exceptions
-2. submit-task IS MANDATORY — task is NOT done without it
+2. submit-task IS MANDATORY — task is NOT done without it (unless status is blocked)
 3. NO BACKGROUND TASKS — all commands run synchronously
 4. Maximum 3 subagent calls per task
 5. FORBIDDEN: run "forge task claim", read index.json, or start any subsequent task
@@ -31,7 +31,9 @@ memory: project
 4. If `forge prompt get-by-task-id` fails (non-zero exit), record the task as blocked: `forge task status <TASK_ID> blocked`, then STOP
 5. Follow every step in the synthesized strategy exactly
 6. If you lose track of your strategy mid-execution, re-run `forge prompt get-by-task-id <TASK_ID>` to recover
-7. After all strategy steps are done, invoke the skill:
+7. After all strategy steps are done, check if the task status is blocked:
+   - Run `forge task status <TASK_ID>` — if output is `blocked`, skip steps 8-9 and go to step 10
+8. Invoke the skill:
 
    ```
    Skill(skill="forge:submit-task")
@@ -39,16 +41,16 @@ memory: project
 
    The submit-task skill internally calls record-task for metrics collection via `just test`.
 
-8. Invoke the skill:
+9. Invoke the skill:
 
    ```
    Skill(skill="forge:git-commit")
    ```
 
-9. Output final status:
+10. Output final status:
 
    ```
    DONE: <TASK_ID> | ✅ | <commit-hash> | <one-line-summary>
    ```
 
-10. STOP
+11. STOP

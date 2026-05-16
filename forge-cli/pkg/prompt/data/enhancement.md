@@ -34,7 +34,7 @@ REFACTOR → Clean up while keeping tests green
 
 Review existing tests for the code being enhanced. Ensure new behavior does not break existing tests.
 
-Output: `Step 2/3: Implementing... DONE (N tests)`
+Output: `Step 2/3: Implementing... DONE (N new tests)`
 
 ### Step 3: Full Verification (Quality Gate)
 

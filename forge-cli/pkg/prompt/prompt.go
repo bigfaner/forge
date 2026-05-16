@@ -82,6 +82,16 @@ func Synthesize(opts SynthesizeOpts) (string, error) {
 }
 
 // renderTemplate reads the embed template and substitutes placeholders.
+//
+// Available placeholders (all use {{NAME}} syntax):
+//
+//	{{TASK_ID}}         — task ID (e.g. "2.1", "T-test-1")
+//	{{TASK_FILE}}       — absolute path to the task markdown file
+//	{{SCOPE}}           — task scope (empty string when "all" or unspecified)
+//	{{FEATURE_SLUG}}    — feature slug (e.g. "auth-refresh")
+//	{{PHASE_SUMMARY}}   — "PHASE_SUMMARY: <path>" or empty (injected line)
+//	{{PROFILE}}         — test profile for per-profile tasks (e.g. "playwright")
+//	{{TEST_TYPE_ARG}}   — " --type <capability>" or empty (for per-type gen-scripts)
 func renderTemplate(templateFile string, opts SynthesizeOpts, t task.Task) (string, error) {
 	data, err := templateFS.ReadFile(templateFile)
 	if err != nil {
