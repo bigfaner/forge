@@ -114,7 +114,10 @@ func TestContract_Claim_NewTask(t *testing.T) {
 	if !hasField(lines, "ACTION", "CLAIMED") {
 		t.Errorf("expected ACTION: CLAIMED")
 	}
-	// Conditional fields present when true/non-empty
+	// Conditional fields present when non-empty
+	if !hasField(lines, "TYPE", "implementation") {
+		t.Errorf("expected TYPE: implementation")
+	}
 	if !hasField(lines, "SCOPE", "backend") {
 		t.Errorf("expected SCOPE: backend")
 	}
@@ -126,7 +129,7 @@ func TestContract_Claim_NewTask(t *testing.T) {
 	}
 	// Removed fields must NOT appear
 	for _, field := range []string{"KEY", "TITLE", "PRIORITY", "STATUS", "ESTIMATED_TIME",
-		"DEPENDENCIES", "TYPE", "PROFILE", "NO_TEST", "RECORD"} {
+		"DEPENDENCIES", "PROFILE", "NO_TEST", "RECORD"} {
 		if !hasNoField(lines, field) {
 			t.Errorf("removed field %s should not appear in output: %v", field, lines)
 		}
@@ -147,6 +150,10 @@ func TestContract_Claim_NewTask_ConditionalAbsent(t *testing.T) {
 	})
 	lines := parseBlock(t, out)
 
+	// TYPE absent when empty
+	if !hasNoField(lines, "TYPE") {
+		t.Errorf("TYPE should be absent when empty")
+	}
 	// SCOPE absent when empty
 	if !hasNoField(lines, "SCOPE") {
 		t.Errorf("SCOPE should be absent when empty")
@@ -218,6 +225,7 @@ func TestContract_Claim_FieldOrder(t *testing.T) {
 		ID: "1.1", Title: "T", Priority: "P0", Status: "pending",
 		File: "1.1.md", Record: "records/1.1.md",
 		Breaking: true, MainSession: true, Scope: "backend",
+		Type: "implementation",
 	}
 
 	out := captureStdout(func() {
@@ -229,21 +237,25 @@ func TestContract_Claim_FieldOrder(t *testing.T) {
 	if idx := fieldIndex(lines, "ACTION"); idx != 0 {
 		t.Errorf("ACTION should be at index 0, got %d", idx)
 	}
-	// Expected order: ACTION, TASK_ID, FEATURE, FILE, SCOPE, BREAKING, MAIN_SESSION
+	// Expected order: ACTION, TASK_ID, TYPE, FEATURE, FILE, SCOPE, BREAKING, MAIN_SESSION
 	taskIDIdx := fieldIndex(lines, "TASK_ID")
+	typeIdx := fieldIndex(lines, "TYPE")
 	featureIdx := fieldIndex(lines, "FEATURE")
 	fileIdx := fieldIndex(lines, "FILE")
 	scopeIdx := fieldIndex(lines, "SCOPE")
 	brkIdx := fieldIndex(lines, "BREAKING")
 	mainIdx := fieldIndex(lines, "MAIN_SESSION")
 
-	if taskIDIdx == -1 || featureIdx == -1 || fileIdx == -1 || scopeIdx == -1 || brkIdx == -1 || mainIdx == -1 {
+	if taskIDIdx == -1 || typeIdx == -1 || featureIdx == -1 || fileIdx == -1 || scopeIdx == -1 || brkIdx == -1 || mainIdx == -1 {
 		t.Fatalf("missing expected fields, got: %v", lines)
 	}
 
 	// Verify ordering
-	if taskIDIdx >= featureIdx {
-		t.Errorf("TASK_ID (%d) should come before FEATURE (%d)", taskIDIdx, featureIdx)
+	if taskIDIdx >= typeIdx {
+		t.Errorf("TASK_ID (%d) should come before TYPE (%d)", taskIDIdx, typeIdx)
+	}
+	if typeIdx >= featureIdx {
+		t.Errorf("TYPE (%d) should come before FEATURE (%d)", typeIdx, featureIdx)
 	}
 	if featureIdx >= fileIdx {
 		t.Errorf("FEATURE (%d) should come before FILE (%d)", featureIdx, fileIdx)
@@ -261,9 +273,6 @@ func TestContract_Claim_FieldOrder(t *testing.T) {
 	// Removed fields must not appear
 	if idx := fieldIndex(lines, "KEY"); idx != -1 {
 		t.Errorf("KEY should not appear in output, found at index %d", idx)
-	}
-	if idx := fieldIndex(lines, "TYPE"); idx != -1 {
-		t.Errorf("TYPE should not appear in output, found at index %d", idx)
 	}
 }
 
