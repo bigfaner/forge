@@ -16,15 +16,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// projectRoot returns the forge project root directory.
-func projectRoot() string {
+// projectRootQuality returns the forge project root directory.
+func projectRootQuality() string {
 	_, thisFile, _, ok := runtime.Caller(0)
 	if !ok {
 		return ""
 	}
-	// thisFile: .../tests/e2e/features/e2e-test-quality-cleanup/e2e_test_quality_cleanup_cli_test.go
-	// up 4: e2e-test-quality-cleanup -> features -> e2e -> tests -> project root
-	dir := filepath.Join(filepath.Dir(thisFile), "..", "..", "..", "..")
+	// thisFile: .../tests/e2e/e2e_test_quality_cleanup_cli_test.go
+	// up 2: e2e -> tests -> project root
+	dir := filepath.Join(filepath.Dir(thisFile), "..", "..")
 	abs, err := filepath.Abs(dir)
 	if err != nil {
 		return ""
@@ -65,7 +65,7 @@ func fileSHA256(t *testing.T, path string) string {
 
 // Traceability: TC-001 -> Proposal In Scope #1,#2,#3,#4
 func TestTC_001_DeletedTestFilesDoNotExist(t *testing.T) {
-	root := projectRoot()
+	root := projectRootQuality()
 	assert.NotEmpty(t, root, "project root must be resolved")
 
 	deletedFiles := []string{
@@ -88,7 +88,7 @@ func TestTC_001_DeletedTestFilesDoNotExist(t *testing.T) {
 
 // Traceability: TC-002 -> Proposal In Scope #5,#6,#7
 func TestTC_002_DeletedTestFunctionsDoNotExist(t *testing.T) {
-	root := projectRoot()
+	root := projectRootQuality()
 	assert.NotEmpty(t, root, "project root must be resolved")
 
 	type check struct {
@@ -138,7 +138,7 @@ func TestTC_002_DeletedTestFunctionsDoNotExist(t *testing.T) {
 
 // Traceability: TC-003 -> Proposal Success Criterion "just test-e2e compiles and all pass" + Key Risk "compilation failure"
 func TestTC_003_E2ETestSuiteCompilesSuccessfully(t *testing.T) {
-	root := projectRoot()
+	root := projectRootQuality()
 	assert.NotEmpty(t, root, "project root must be resolved")
 
 	cmd := exec.Command("go", "build", "-tags=e2e", "./...")
@@ -154,7 +154,7 @@ func TestTC_003_E2ETestSuiteCompilesSuccessfully(t *testing.T) {
 
 // Traceability: TC-004 -> Proposal Success Criterion "zero t.Skip unconditional skips"
 func TestTC_004_ZeroUnconditionalTSkip(t *testing.T) {
-	root := projectRoot()
+	root := projectRootQuality()
 	assert.NotEmpty(t, root, "project root must be resolved")
 
 	e2eDir := filepath.Join(root, "tests", "e2e")
@@ -192,7 +192,7 @@ func TestTC_004_ZeroUnconditionalTSkip(t *testing.T) {
 
 // Traceability: TC-005 -> Proposal Success Criterion "zero recursive exec.Command go test calls"
 func TestTC_005_ZeroRecursiveGoTestInvocations(t *testing.T) {
-	root := projectRoot()
+	root := projectRootQuality()
 	assert.NotEmpty(t, root, "project root must be resolved")
 
 	e2eDir := filepath.Join(root, "tests", "e2e")
@@ -227,7 +227,7 @@ func TestTC_005_ZeroRecursiveGoTestInvocations(t *testing.T) {
 
 // Traceability: TC-006 -> Proposal Success Criterion "zero static source file text check tests"
 func TestTC_006_NoStaticFileTextGrepTests(t *testing.T) {
-	root := projectRoot()
+	root := projectRootQuality()
 	assert.NotEmpty(t, root, "project root must be resolved")
 
 	e2eDir := filepath.Join(root, "tests", "e2e")
@@ -289,7 +289,7 @@ func TestTC_006_NoStaticFileTextGrepTests(t *testing.T) {
 
 // Traceability: TC-007 -> Proposal Success Criterion "no duplicate files between tests/e2e/ and tests/e2e/features/"
 func TestTC_007_NoDuplicateTestFilesRootAndFeatures(t *testing.T) {
-	root := projectRoot()
+	root := projectRootQuality()
 	assert.NotEmpty(t, root, "project root must be resolved")
 
 	e2eDir := filepath.Join(root, "tests", "e2e")
