@@ -8,7 +8,7 @@
       "title": "Refactor gen-test-cases SKILL.md into dispatcher",
       "priority": "P0",
       "estimatedTime": "2h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-refactor-skill-dispatcher.md",
       "record": "records/1-refactor-skill-dispatcher.md",
       "noTest": true,
@@ -22,7 +22,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "file": "2-create-per-type-instructions.md",
       "record": "records/2-create-per-type-instructions.md",
       "noTest": true,
