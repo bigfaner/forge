@@ -22,6 +22,7 @@ description: Generic document evaluation with scorer→gate→revise loop. Param
 | `consistency` | `manifest.md` + `prd/prd-spec.md` + at least one other doc |
 | `harness` | Project has CLAUDE.md or AGENTS.md |
 | `validate-code` | PRD (`prd/prd-spec.md` + `prd/prd-user-stories.md`) + git diff against base branch |
+| `validate-ux` | PRD + compilable project (binary or web server) |
 
 If missing, tell user to create it first.
 
@@ -29,7 +30,7 @@ If missing, tell user to create it first.
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `--type` | (required) | `proposal`, `prd`, `design`, `ui`, `ui-web`, `ui-mobile`, `ui-tui`, `test-cases`, `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases`, `consistency`, `harness`, `validate-code` |
+| `--type` | (required) | `proposal`, `prd`, `design`, `ui`, `ui-web`, `ui-mobile`, `ui-tui`, `test-cases`, `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases`, `consistency`, `harness`, `validate-code`, `validate-ux` |
 | `--target` | rubric frontmatter | Override target score |
 | `--iterations` | rubric frontmatter | Override max iterations |
 | `--scope` | `docs` | `consistency` only: `docs` or `full` |
@@ -107,6 +108,7 @@ Parse rubric frontmatter: `scale`, `target`, `iterations`, `context`. CLI `--tar
 | `consistency` | `docs/features/<slug>/` |
 | `harness` | `docs/harness-reports/` |
 | `validate-code` | `docs/features/<slug>/prd/` |
+| `validate-ux` | `docs/features/<slug>/prd/` |
 
 4. Ask user if not found
 
@@ -129,6 +131,98 @@ Multi-platform: run independent score→gate→revise loops per platform.
 | `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases` | Resolve test profile via `forge profile`. Pass profile capabilities to scorer. |
 | `prd` | Detect mode: `prd-ui-functions.md` exists → Mode A (with UI), else Mode B (no UI). |
 | `validate-code` | 1) Read PRD → extract user scenarios list (from prd-spec.md flow descriptions and prd-user-stories.md acceptance criteria). 2) Run `git diff <base-branch>...HEAD` to get changed files and diff hunks. 3) Compile changed file list. 4) Pass PRD scenarios + diff + file list to scorer as assembled input. |
+| `validate-ux` | **Two-phase pre-processing.** Must execute in a git worktree or temporary directory. **Phase 1 (main session):** 1) Read PRD → extract user flows list. 2) Resolve project type via `forge profile` capabilities: `cli` capability → CLI, `web-ui` capability → Web, `tui` capability → TUI. Fallback: `forge profile detect` → ask user. 3) Compile and install the project binary. 4) For each PRD flow: translate actions to type-specific operations (see PRD-to-Operation Translation below), execute them, capture output. 5) Run Standalone Checks: `--help`, invalid command, `--version`. 6) Execute Effect Verification per step (7 types: Data Effect, Side Effect, Idempotency, Output-Reality Consistency, State Integrity, Cascade Effect, Rollback Feasibility). 7) Write `ux-snapshot.md`. **Phase 2 (scorer):** evaluate `ux-snapshot.md` against rubric. |
+
+#### validate-ux: Project Type Detection
+
+Resolve project type from `forge profile` capabilities:
+
+| Capability | Project Type | Execution Method | Operation Unit | Capture |
+|------------|-------------|-----------------|----------------|---------|
+| `cli` | CLI | Bash command | Shell command | stdout/stderr/exit code |
+| `web-ui` | Web | agent-browser | URL + element selector + action | Screenshot + accessibility tree |
+| `tui` | TUI | Bash stdin pipe | Key sequence (non-interactive only) | Terminal output |
+
+Detection priority: profile capabilities -> `forge profile detect` -> ask user.
+
+TUI constraint: first version covers non-interactive scenarios only (initial render, help output, invalid input response).
+
+#### validate-ux: PRD-to-Operation Translation
+
+All project types use a hybrid translation strategy:
+
+1. **Direct extraction**: scan PRD for code blocks, commands, URLs, key-binding descriptions
+2. **Inference**: for missing concrete operations, the agent infers from auxiliary information
+
+| Type | Auxiliary Information | Inference Method |
+|------|----------------------|-----------------|
+| CLI | Recursive `forge --help` subcommand discovery | Match PRD description -> subcommand -> argument format |
+| Web | `sitemap.json` (accessibility tree + element IDs) | Match PRD description -> route -> DOM selector |
+| TUI | Run program to capture initial screen + help output | Match PRD description -> menu option -> key-binding |
+
+#### validate-ux: ux-snapshot.md Format
+
+```markdown
+# UX Snapshot: <feature-name>
+
+## Project Info
+- Type: cli | web | tui
+- Binary/URL: <path or url>
+- PRD Reference: <path to PRD>
+- Generated: <timestamp>
+
+## Flow: <flow-name-from-PRD>
+
+### Step 1: <action-description>
+**Command/Navigate**: <what was executed>
+**Input**: <what was sent>
+**Output**:
+`<raw stdout/stderr, screenshot path, or terminal capture>`
+**Exit Code**: <cli only>
+
+**Effect Verification**:
+- Data: <expected data change> -> <actual result> pass/fail
+- Side Effect: <unexpected changes checked via git diff --stat> -> pass/fail
+- Output Consistency: <output claim vs reality> -> pass/fail
+- Cascade: <downstream behavior triggered?> -> pass/fail
+
+**Idempotency Check**:
+- Re-run: <result of running same command again>
+
+**State Integrity**:
+- <consistency check between related state>
+
+### Step 2: ...
+
+## Standalone Checks
+
+### Help Text
+**Command**: `<binary> --help`
+**Output**:
+`<full help output>`
+
+### Error Handling
+**Command**: `<binary> invalid-command`
+**Output**:
+`<error output>`
+
+### Version Info
+**Command**: `<binary> --version`
+**Output**:
+`<version output>`
+```
+
+#### validate-ux: Operation Impact Verification (7 Types)
+
+| Impact Type | Verification Method | Example |
+|-------------|-------------------|---------|
+| Data Effect | Compare file/db/state before and after operation | `submit` updates index.json status |
+| Side Effect | `git diff --stat` checks for unexpected file changes | `delete task` does not affect adjacent tasks |
+| Idempotency | Re-execute the same operation | `submit` returns "already submitted" on second run |
+| Output-Reality Consistency | Verify output claims match actual state | Output "created: X.md" -> file exists on disk |
+| State Integrity | Check system-wide consistency after multi-step operations | Record file count matches index.json count |
+| Cascade Effect | Check if downstream behavior is triggered | `submit` triggers quality-gate |
+| Rollback Feasibility | Check state recoverability after operation failure | Failed operation leaves no residual dirty state |
 
 ## Step 2: Invoke Scorer Subagent
 
@@ -142,6 +236,7 @@ Inputs:
   - `consistency`: `docs/features/<slug>/eval-consistency/eval/iteration-{{N}}.md`
   - `proposal`: `docs/proposals/<slug>/eval/iteration-{{N}}.md`
   - `validate-code`: `docs/features/<slug>/eval/validate-code.md`
+  - `validate-ux`: `docs/features/<slug>/eval/validate-ux.md`
 - `ITERATION` = current iteration (1-based)
 - `PREVIOUS_REPORT_PATH` = previous report (only if iteration > 1)
 
@@ -149,6 +244,7 @@ Type-specific inputs:
 - `ui-*`: add `PRD_PATH` = `docs/features/<slug>/prd/prd-ui-functions.md` (if exists)
 - `test-cases`, `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases`: add `PRD_FILES` = paths to prd-spec.md and prd-user-stories.md
 - `consistency`: add `SCOPE` = value from `--scope`
+- `validate-ux`: add `UX_SNAPSHOT_PATH` = path to generated `ux-snapshot.md`
 
 Do NOT pass reviser change summaries to the scorer.
 
@@ -242,6 +338,7 @@ Ask user via `AskUserQuestion`:
 | `consistency` | `/run-tasks` or re-eval |
 | `harness` | `/improve-harness` |
 | `validate-code` | `/run-tasks` (proceed to test pipeline) |
+| `validate-ux` | `/run-tasks` (feature complete) |
 
 `ui-*` invoked as sub-step of `/ui-design`: return control to ui-design, do NOT prompt.
 
@@ -266,3 +363,4 @@ All rubrics: `plugins/forge/skills/eval/rubrics/<type>.md`
 | `consistency` | 1000 | 900 | 3 | docs/full scope modes |
 | `harness` | 100 | 70 | 1 | Single-pass; no reviser |
 | `validate-code` | 1000 | 700 | 1 | Single-pass; scenario tracing; no reviser |
+| `validate-ux` | 1000 | 700 | 1 | Single-pass; two-phase (snapshot + score); no reviser |
