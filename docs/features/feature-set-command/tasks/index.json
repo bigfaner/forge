@@ -51,7 +51,7 @@
       "dependencies": [
         "T-quick-5"
       ],
-      "status": "pending",
+      "status": "blocked",
       "file": "quick-drift-detection.md",
       "record": "records/quick-drift-detection.md",
       "scope": "all",
@@ -127,7 +127,7 @@
       "dependencies": [
         "T-quick-4"
       ],
-      "status": "blocked",
+      "status": "completed",
       "file": "quick-verify-regression.md",
       "record": "records/quick-verify-regression.md",
       "scope": "all",
