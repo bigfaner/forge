@@ -37,13 +37,13 @@ var qualityGateCmd = &cobra.Command{
 	Use:   "quality-gate",
 	Short: "Check if all tasks are done, then run tests",
 	Long: `Checks if every task in the current feature is completed or skipped.
-		Exits 0 silently if any task is still pending, in_progress, or blocked (no-op).
-		If all done: runs project-wide unit/integration tests, then e2e regression.
+			Exits 0 silently if any task is still pending, in_progress, or blocked (no-op).
+			If all done: runs project-wide unit/integration tests, then e2e regression.
 
-		Feature e2e tests are run by T-test-3 (run-e2e-tests task), not this hook.
-		This hook is the project health gate: unit tests + regression suite.
+			Feature e2e tests are run by T-test-3 (run-e2e-tests task), not this hook.
+			This hook is the project health gate: unit tests + regression suite.
 
-		Use -v to see why the command exits early (useful for debugging).`,
+			Use -v to see why the command exits early (useful for debugging).`,
 	Run: runQualityGate,
 }
 
@@ -157,16 +157,22 @@ func runQualityGate(_ *cobra.Command, _ []string) {
 				fmt.Fprintf(os.Stderr, "WARNING: failed to write %s output: %v\n", step, err)
 			}
 		}
-		fixID, _ := addFixTask(result.ProjectRoot, result.FeatureSlug, step, output, errorDocPath)
+		fixID, fixErr := addFixTask(result.ProjectRoot, result.FeatureSlug, step, output, errorDocPath)
+		if fixErr != nil {
+			fmt.Fprintf(os.Stderr, "WARNING: %v\n", fixErr)
+		}
 		handleGateFailure(step, errorDocPath, fixID, just.ExtractConciseError(output, 5))
 	})
 
 	// Step 2: Project-wide unit/integration tests (with retry-once policy)
 	fmt.Fprintln(os.Stderr, "--- Running project-wide tests ---")
-	unitPassed, unitFixID, _ := runUnitTestStep(
+	unitPassed, unitFixID, unitErr := runUnitTestStep(
 		result.ProjectRoot, result.FeatureSlug,
 		testrunner.RunProjectTests, result.TestCommand,
 	)
+	if unitErr != nil {
+		fmt.Fprintf(os.Stderr, "WARNING: %v\n", unitErr)
+	}
 	if !unitPassed {
 		unitOutput := "" // output already written by runUnitTestStep
 		errorDocPath := "tests/results/unit-raw-output.txt"
@@ -210,7 +216,10 @@ func runQualityGate(_ *cobra.Command, _ []string) {
 						fmt.Fprintf(os.Stderr, "WARNING: failed to write raw-output.txt: %v\n", err)
 					}
 				}
-				fixID, _ := addFixTask(result.ProjectRoot, result.FeatureSlug, "test-e2e", regressionOutput, errorDocPath)
+				fixID, fixErr := addFixTask(result.ProjectRoot, result.FeatureSlug, "test-e2e", regressionOutput, errorDocPath)
+				if fixErr != nil {
+					fmt.Fprintf(os.Stderr, "WARNING: %v\n", fixErr)
+				}
 				handleGateFailure("test-e2e", errorDocPath, fixID, just.ExtractConciseError(regressionOutput, 5))
 			}
 		}
@@ -354,7 +363,8 @@ func countFixTasks(index *task.TaskIndex, step string) int {
 
 // addFixTask creates a fix task using the same internal API as `forge task add`.
 // Mirrors executeAdd() from add.go: template defaults -> AddTask -> CreateTaskMarkdown -> EnsureForgeState.
-// Returns (taskID, nil) on success, ("", ErrMaxFixTasks) when the fix-task cap is exceeded.
+// Returns (taskID, nil) on success.
+// Returns ("", error) on failure: template not found, task add failure, markdown creation failure, or cap exceeded.
 func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) (string, error) {
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
 
@@ -409,8 +419,7 @@ func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) (st
 	tasksDir := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug))
 
 	if _, err := tmpl.Get(opts.Template); err != nil {
-		fmt.Fprintf(os.Stderr, "WARNING: template %q not found: %v\n", opts.Template, err)
-		return "", nil
+		return "", fmt.Errorf("template %q not found: %w", opts.Template, err)
 	}
 	if defs, err := tmpl.GetDefaults(opts.Template); err == nil && defs.IDPrefix != "" {
 		opts.IDPrefix = defs.IDPrefix
@@ -418,15 +427,13 @@ func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) (st
 
 	id, err := task.AddTask(indexPath, opts)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "WARNING: failed to add fix task: %v\n", err)
-		return "", nil
+		return "", fmt.Errorf("failed to add fix task: %w", err)
 	}
 
 	opts.ID = id
 
 	if err := task.CreateTaskMarkdown(tasksDir, id+".md", opts); err != nil {
-		fmt.Fprintf(os.Stderr, "WARNING: failed to create fix task file: %v\n", err)
-		return "", nil
+		return "", fmt.Errorf("failed to create fix task file %s: %w", id+".md", err)
 	}
 
 	if err := feature.EnsureForgeState(projectRoot, featureSlug); err != nil {
