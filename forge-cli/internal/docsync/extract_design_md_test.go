@@ -178,6 +178,151 @@ func TestExtractDesignMd_WebExtractionStepsPreserved(t *testing.T) {
 	}
 }
 
+// --- Mobile Adapter Tests ---
+
+// --- Test: Mobile adapter has explicit extraction steps ---
+
+func TestExtractDesignMd_MobileAdapterHasExplicitExtractionSteps(t *testing.T) {
+	content := readExtractDesignMd(t)
+	bodyLower := strings.ToLower(content)
+
+	// Mobile adapter must not be a "placeholder" anymore
+	if strings.Contains(bodyLower, "mobile placeholder") {
+		t.Error("mobile adapter still contains placeholder text — must be replaced with actual extraction logic")
+	}
+
+	// Must mention mobile-specific extraction concepts
+	mobileConcepts := []string{
+		"responsive breakpoint",
+		"touch target",
+		"safe area",
+	}
+	for _, concept := range mobileConcepts {
+		if !strings.Contains(bodyLower, concept) {
+			t.Errorf("mobile adapter missing required concept: %q", concept)
+		}
+	}
+}
+
+// --- Test: Mobile adapter reuses web extraction layers ---
+
+func TestExtractDesignMd_MobileAdapterReusesWebExtraction(t *testing.T) {
+	content := readExtractDesignMd(t)
+	bodyLower := strings.ToLower(content)
+
+	// Must reference reuse of web extraction pipeline (Layers 1-5)
+	hasLayerReuse := strings.Contains(bodyLower, "reuse") ||
+		(strings.Contains(bodyLower, "layer 1") && strings.Contains(bodyLower, "mobile"))
+	if !hasLayerReuse {
+		t.Error("mobile adapter does not explicitly reference reusing web extraction layers")
+	}
+
+	// Must reference mobile user-agent or mobile viewport context
+	hasMobileContext := strings.Contains(bodyLower, "user-agent") ||
+		strings.Contains(bodyLower, "viewport")
+	if !hasMobileContext {
+		t.Error("mobile adapter missing mobile User-Agent or viewport context reference")
+	}
+}
+
+// --- Test: Mobile adapter documents responsive breakpoint analysis ---
+
+func TestExtractDesignMd_MobileAdapterDocumentsBreakpoints(t *testing.T) {
+	content := readExtractDesignMd(t)
+
+	// Must reference common mobile breakpoints
+	requiredBreakpoints := []string{"320", "375", "414", "768"}
+	for _, bp := range requiredBreakpoints {
+		if !strings.Contains(content, bp) {
+			t.Errorf("mobile adapter missing common breakpoint %spx", bp)
+		}
+	}
+}
+
+// --- Test: Mobile adapter documents touch target guideline ---
+
+func TestExtractDesignMd_MobileAdapterDocumentsTouchTargetGuideline(t *testing.T) {
+	content := readExtractDesignMd(t)
+
+	// Must reference the 44x44pt touch target minimum guideline
+	if !strings.Contains(content, "44") {
+		t.Error("mobile adapter missing 44x44pt touch target minimum guideline reference")
+	}
+}
+
+// --- Test: Mobile adapter documents safe area handling ---
+
+func TestExtractDesignMd_MobileAdapterDocumentsSafeAreaHandling(t *testing.T) {
+	content := readExtractDesignMd(t)
+	bodyLower := strings.ToLower(content)
+
+	// Must reference safe-area-inset CSS env or viewport meta
+	hasSafeAreaRef := strings.Contains(content, "safe-area-inset") ||
+		strings.Contains(bodyLower, "viewport meta")
+	if !hasSafeAreaRef {
+		t.Error("mobile adapter missing safe-area-inset CSS env or viewport meta reference")
+	}
+}
+
+// --- Test: Mobile DESIGN.md template extends web template ---
+
+func TestExtractDesignMd_MobileTemplateExtendsWebTemplate(t *testing.T) {
+	content := readExtractDesignMd(t)
+
+	// Mobile DESIGN.md must extend the web template with mobile-specific sections
+	// Must have mobile-specific sections in the output template
+	requiredMobileSections := []string{
+		"Touch Target",
+		"Safe Area",
+	}
+	for _, section := range requiredMobileSections {
+		if !strings.Contains(content, section) {
+			t.Errorf("mobile DESIGN.md template missing required section: %q", section)
+		}
+	}
+}
+
+// --- Test: Mobile adapter marks estimated values ---
+
+func TestExtractDesignMd_MobileAdapterMarksEstimatedValues(t *testing.T) {
+	content := readExtractDesignMd(t)
+
+	// Must have a mechanism for marking estimated values
+	if !strings.Contains(content, "(estimated)") {
+		t.Error("mobile adapter missing (estimated) marker for uncertain values")
+	}
+}
+
+// --- Test: Mobile adapter documents limitation about responsive CSS ---
+
+func TestExtractDesignMd_MobileAdapterDocumentsResponsiveCSSLimitation(t *testing.T) {
+	content := readExtractDesignMd(t)
+	bodyLower := strings.ToLower(content)
+
+	// Must document that mobile extraction depends on target URL serving responsive CSS
+	hasLimitation := strings.Contains(bodyLower, "responsive css") ||
+		strings.Contains(bodyLower, "responsive stylesheet") ||
+		(strings.Contains(bodyLower, "responsive") && strings.Contains(bodyLower, "limitation"))
+	if !hasLimitation {
+		t.Error("mobile adapter missing documentation about responsive CSS dependency limitation")
+	}
+}
+
+// --- Test: Mobile extraction table entry updated from placeholder ---
+
+func TestExtractDesignMd_MobileExtractionTableNotPlaceholder(t *testing.T) {
+	content := readExtractDesignMd(t)
+
+	// The platform routing table should NOT have "placeholder" in the mobile row
+	routingTableRegex := regexp.MustCompile(`(?i)\|.*mobile.*\|.*\|.*\|`)
+	matches := routingTableRegex.FindAllString(content, -1)
+	for _, match := range matches {
+		if strings.Contains(strings.ToLower(match), "placeholder") {
+			t.Errorf("mobile routing table entry still contains 'placeholder': %s", strings.TrimSpace(match))
+		}
+	}
+}
+
 // --- Test: Command remains a single file ---
 
 func TestExtractDesignMd_CommandIsSingleFile(t *testing.T) {

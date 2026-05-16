@@ -38,10 +38,25 @@ Then route to the appropriate extraction section:
 | Platform | Input | Extraction Method |
 |----------|-------|-------------------|
 | `web` (default) | URL | CSS extraction from HTML (Steps below) |
-| `mobile` | URL | Mobile-adapted CSS extraction (placeholder — see note) |
+| `mobile` | URL | Mobile-adapted CSS extraction with mobile User-Agent + responsive analysis |
 | `tui` | Screenshot path | AI vision analysis (placeholder — see note) |
 
-**Mobile placeholder**: When `--platform mobile`, execute the same extraction flow as web, but note that mobile-specific analysis (responsive breakpoints, touch targets, safe areas) will be added in a future update. For now, proceed with web extraction and note in the output that results are web-based.
+**Mobile extraction**: When `--platform mobile`, reuse the web extraction pipeline (Layers 1-5) with a mobile User-Agent viewport context, then add mobile-specific analysis:
+
+1. **Fetch with mobile context**: When using WebFetch or agent-browser, set mobile viewport headers (viewport width: 375px, User-Agent: mobile) to trigger responsive CSS. Reuse all web extraction layers (Layer 1-5) unchanged — the same CSS bundle parsing, custom property extraction, multi-page sampling, and visual inference apply.
+
+2. **Responsive breakpoint analysis**: Scan CSS for `@media` queries. Extract common mobile breakpoints:
+   - 320px (small phone / iPhone SE)
+   - 375px (standard phone / iPhone 12/13/14)
+   - 414px (large phone / iPhone Plus/Pro Max)
+   - 768px (tablet / iPad)
+   Record which breakpoints the target site uses and what layout changes occur at each.
+
+3. **Touch target estimation**: Analyze interactive elements (buttons, links, inputs) from CSS for minimum size compliance. Check `width`, `height`, `min-width`, `min-height`, `padding` on interactive selectors. Flag elements below the 44x44pt minimum touch target guideline. Values extracted from computed CSS; if not directly specified, mark as `(estimated)`.
+
+4. **Safe area handling**: Check CSS for `env(safe-area-inset-*)` usage (notch/home indicator on iOS). Check HTML `<meta name="viewport">` for `viewport-fit=cover`. If neither is present, note that safe area handling was not detected and values are `(estimated)`.
+
+> **Limitation**: Mobile extraction depends on the target URL serving responsive CSS. Sites without responsive stylesheets will produce web-equivalent results with mobile-specific sections marked `(estimated)`.
 
 **TUI placeholder**: When `--platform tui`, if no screenshot path is provided, ask the user for a screenshot file path. Then output a message explaining that TUI extraction is not yet implemented and will be added in a future update. Do not generate a DESIGN.md for TUI until the adapter is complete.
 
@@ -277,6 +292,47 @@ Write the design system to `DESIGN.md` in the project root:
 ## Signature Patterns
 
 {{2-5 signature visual patterns of this design system}}
+```
+
+### Mobile-Specific Sections (when `--platform mobile`)
+
+When generating DESIGN.md for mobile, extend the web template above with these additional sections. Insert them after "Responsive Behavior" and before "Signature Patterns":
+
+```markdown
+## Touch Targets
+
+| Element Type | Min Size | Actual Size | Compliant |
+|-------------|----------|-------------|-----------|
+| Primary buttons | 44x44pt | {{width}}x{{height}} | {{yes/no}} |
+| Secondary buttons | 44x44pt | {{width}}x{{height}} | {{yes/no}} |
+| Links | 44x44pt | {{width}}x{{height}} | {{yes/no}} |
+| Inputs | 44x44pt | {{width}}x{{height}} | {{yes/no}} |
+| Icon buttons | 44x44pt | {{width}}x{{height}} | {{yes/no}} |
+
+- Touch target spacing: {{minimum gap between interactive elements}}
+- Padding strategy: {{how touch targets are enlarged beyond visual size}}
+
+## Safe Areas
+
+| Region | Value | Source |
+|--------|-------|--------|
+| Top inset (notch) | {{value}} | {{env(safe-area-inset-top) / CSS / estimated}} |
+| Bottom inset (home indicator) | {{value}} | {{env(safe-area-inset-bottom) / CSS / estimated}} |
+| Left inset | {{value}} | {{env(safe-area-inset-left) / CSS / estimated}} |
+| Right inset | {{value}} | {{env(safe-area-inset-right) / CSS / estimated}} |
+
+- Viewport meta: {{viewport-fit=cover detected / not detected}}
+- Status bar handling: {{description}}
+- Navigation bar overlap: {{description}}
+
+## Responsive Breakpoints
+
+| Breakpoint | Width | Layout Change |
+|-----------|-------|---------------|
+| Small phone | 320px | {{description}} |
+| Standard phone | 375px | {{description}} |
+| Large phone | 414px | {{description}} |
+| Tablet | 768px | {{description}} |
 ```
 
 ## Step 6: Confirm & Next Step
