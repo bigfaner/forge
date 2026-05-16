@@ -376,6 +376,7 @@ func TestTC_006_QuickModePerTypeDependencyFanIn(t *testing.T) {
 func TestTC_007_BreakdownModeUnchangedByQuickMerge(t *testing.T) {
 	// Create a breakdown mode project (has PRD, not proposal)
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 
 	featureDir := filepath.Join(dir, "docs", "features", "test-qts-007")
 	tasksDir := filepath.Join(featureDir, "tasks")
