@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"forge-cli/pkg/feature"
@@ -84,14 +85,15 @@ func runFeature(_ *cobra.Command, args []string) {
 
 // featureInfo holds information about a discovered feature.
 type featureInfo struct {
-	Slug        string
-	Status      string
-	PRDScore    string
-	DesignScore string
-	UIScore     string
-	TestScore   string
-	Completed   int
-	Total       int
+	Slug          string
+	Status        string
+	PRDScore      string
+	DesignScore   string
+	UIScore       string
+	TestScore     string
+	Completed     int
+	Total         int
+	ManifestMtime int64 // unix seconds of manifest.md mod time; 0 if missing/unreadable
 }
 
 func runFeatureList(_ *cobra.Command, _ []string) {
@@ -104,6 +106,12 @@ func runFeatureList(_ *cobra.Command, _ []string) {
 	if err != nil {
 		Exit(newErrFeatureDiscovery(err))
 	}
+
+	// Sort by manifest mtime descending (newest first).
+	// Features with missing/unreadable manifest (mtime=0) sort to the end.
+	sort.Slice(features, func(i, j int) bool {
+		return features[i].ManifestMtime > features[j].ManifestMtime
+	})
 
 	if len(features) == 0 {
 		fmt.Fprintln(os.Stderr, "no features found")
@@ -232,8 +240,9 @@ func discoverFeatures(projectRoot string) ([]featureInfo, error) {
 		slug := entry.Name()
 		featureDir := filepath.Join(featuresDir, slug)
 
-		// Read manifest status
+		// Read manifest status and mtime
 		status := ""
+		var manifestMtime int64
 		manifestPath := filepath.Join(featureDir, feature.ManifestFileName)
 		if data, err := os.ReadFile(manifestPath); err == nil {
 			var meta struct {
@@ -242,6 +251,9 @@ func discoverFeatures(projectRoot string) ([]featureInfo, error) {
 			if err := parseYAMLFrontmatter(data, &meta); err == nil {
 				status = meta.Status
 			}
+		}
+		if info, err := os.Stat(manifestPath); err == nil {
+			manifestMtime = info.ModTime().Unix()
 		}
 
 		// Read task progress
@@ -254,14 +266,15 @@ func discoverFeatures(projectRoot string) ([]featureInfo, error) {
 		testScore := readScoreFromFrontmatter(filepath.Join(featureDir, feature.TestingResultsDirName, "results.json"))
 
 		features = append(features, featureInfo{
-			Slug:        slug,
-			Status:      status,
-			PRDScore:    prdScore,
-			DesignScore: designScore,
-			UIScore:     uiScore,
-			TestScore:   testScore,
-			Completed:   completed,
-			Total:       total,
+			Slug:          slug,
+			Status:        status,
+			PRDScore:      prdScore,
+			DesignScore:   designScore,
+			UIScore:       uiScore,
+			TestScore:     testScore,
+			Completed:     completed,
+			Total:         total,
+			ManifestMtime: manifestMtime,
 		})
 	}
 

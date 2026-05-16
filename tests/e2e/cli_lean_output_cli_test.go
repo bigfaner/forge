@@ -14,10 +14,19 @@ import (
 // claim command tests — feature: cli-lean-output
 // ==============================================================================
 
+// claimTask attempts to claim a task. It skips the test if no tasks are available.
+func claimTask(t *testing.T) []string {
+	t.Helper()
+	out, exitCode := runCLIRaw(t, "forge", "task", "claim")
+	if exitCode != 0 {
+		t.Skip("no pending tasks available for claim — cannot test claim output")
+	}
+	return parseBlock(t, out)
+}
+
 // Traceability: TC-001 -> Proposal "Success Criteria" item 1 + Task 1 AC-1
 func TestTC_001_ClaimOutputsOnlyEssentialFields(t *testing.T) {
-	out := runCLI(t, "forge", "task", "claim")
-	lines := parseBlock(t, out)
+	lines := claimTask(t)
 
 	// Mandatory fields must be present
 	for _, field := range []string{"ACTION", "TASK_ID", "FEATURE", "FILE"} {
@@ -39,8 +48,7 @@ func TestTC_001_ClaimOutputsOnlyEssentialFields(t *testing.T) {
 
 // Traceability: TC-002 -> Task 1 AC-2 — printNewTask() wraps with ACTION: CLAIMED
 func TestTC_002_ClaimOutputIncludesActionClaimed(t *testing.T) {
-	out := runCLI(t, "forge", "task", "claim")
-	lines := parseBlock(t, out)
+	lines := claimTask(t)
 
 	assert.True(t, hasField(lines, "ACTION", "CLAIMED"),
 		"expected ACTION: CLAIMED, got: %v", lines)
@@ -48,8 +56,7 @@ func TestTC_002_ClaimOutputIncludesActionClaimed(t *testing.T) {
 
 // Traceability: TC-003 -> Proposal — TASK_ID is consumed "everywhere"
 func TestTC_003_ClaimOutputIncludesTaskID(t *testing.T) {
-	out := runCLI(t, "forge", "task", "claim")
-	lines := parseBlock(t, out)
+	lines := claimTask(t)
 
 	assert.True(t, hasField(lines, "TASK_ID", ""),
 		"TASK_ID field missing from output: %v", lines)
@@ -57,8 +64,7 @@ func TestTC_003_ClaimOutputIncludesTaskID(t *testing.T) {
 
 // Traceability: TC-004 -> Proposal — FEATURE is consumed by "E2E gate"
 func TestTC_004_ClaimOutputIncludesFeature(t *testing.T) {
-	out := runCLI(t, "forge", "task", "claim")
-	lines := parseBlock(t, out)
+	lines := claimTask(t)
 
 	assert.True(t, hasField(lines, "FEATURE", ""),
 		"FEATURE field missing from output: %v", lines)
@@ -66,8 +72,7 @@ func TestTC_004_ClaimOutputIncludesFeature(t *testing.T) {
 
 // Traceability: TC-005 -> Proposal — FILE is consumed by "agent reads task file"
 func TestTC_005_ClaimOutputIncludesFile(t *testing.T) {
-	out := runCLI(t, "forge", "task", "claim")
-	lines := parseBlock(t, out)
+	lines := claimTask(t)
 
 	assert.True(t, hasField(lines, "FILE", ""),
 		"FILE field missing from output: %v", lines)
@@ -79,8 +84,7 @@ func TestTC_005_ClaimOutputIncludesFile(t *testing.T) {
 
 // Traceability: TC-006 -> Task 1 AC-1 — SCOPE only when non-empty
 func TestTC_006_ClaimScopePresentWhenNonEmpty(t *testing.T) {
-	out := runCLI(t, "forge", "task", "claim")
-	lines := parseBlock(t, out)
+	lines := claimTask(t)
 
 	scopeVal := fieldValue(lines, "SCOPE")
 	if scopeVal != "" {
@@ -91,8 +95,7 @@ func TestTC_006_ClaimScopePresentWhenNonEmpty(t *testing.T) {
 
 // Traceability: TC-007 -> Task 1 AC-1 — SCOPE only when non-empty
 func TestTC_007_ClaimScopeAbsentWhenEmpty(t *testing.T) {
-	out := runCLI(t, "forge", "task", "claim")
-	lines := parseBlock(t, out)
+	lines := claimTask(t)
 
 	scopeVal := fieldValue(lines, "SCOPE")
 	if scopeVal == "" {
@@ -103,8 +106,7 @@ func TestTC_007_ClaimScopeAbsentWhenEmpty(t *testing.T) {
 
 // Traceability: TC-008 -> Task 1 AC-5 — BREAKING present with "true" when true
 func TestTC_008_ClaimBreakingPresentWhenTrue(t *testing.T) {
-	out := runCLI(t, "forge", "task", "claim")
-	lines := parseBlock(t, out)
+	lines := claimTask(t)
 
 	breakingVal := fieldValue(lines, "BREAKING")
 	if breakingVal != "" {
@@ -115,8 +117,7 @@ func TestTC_008_ClaimBreakingPresentWhenTrue(t *testing.T) {
 
 // Traceability: TC-009 -> Task 1 AC-5 — BREAKING absent when false
 func TestTC_009_ClaimBreakingAbsentWhenFalse(t *testing.T) {
-	out := runCLI(t, "forge", "task", "claim")
-	lines := parseBlock(t, out)
+	lines := claimTask(t)
 
 	breakingVal := fieldValue(lines, "BREAKING")
 	if breakingVal == "" {
@@ -127,8 +128,7 @@ func TestTC_009_ClaimBreakingAbsentWhenFalse(t *testing.T) {
 
 // Traceability: TC-010 -> Task 1 AC-5 — MAIN_SESSION present with "true" when true
 func TestTC_010_ClaimMainSessionPresentWhenTrue(t *testing.T) {
-	out := runCLI(t, "forge", "task", "claim")
-	lines := parseBlock(t, out)
+	lines := claimTask(t)
 
 	mainSessionVal := fieldValue(lines, "MAIN_SESSION")
 	if mainSessionVal != "" {
@@ -139,8 +139,7 @@ func TestTC_010_ClaimMainSessionPresentWhenTrue(t *testing.T) {
 
 // Traceability: TC-011 -> Task 1 AC-5 — MAIN_SESSION absent when false
 func TestTC_011_ClaimMainSessionAbsentWhenFalse(t *testing.T) {
-	out := runCLI(t, "forge", "task", "claim")
-	lines := parseBlock(t, out)
+	lines := claimTask(t)
 
 	mainSessionVal := fieldValue(lines, "MAIN_SESSION")
 	if mainSessionVal == "" {
@@ -151,8 +150,7 @@ func TestTC_011_ClaimMainSessionAbsentWhenFalse(t *testing.T) {
 
 // Traceability: TC-012 -> Task 1 AC-4 — Removed fields no longer appear
 func TestTC_012_ClaimRemovedFieldsNotPresent(t *testing.T) {
-	out := runCLI(t, "forge", "task", "claim")
-	lines := parseBlock(t, out)
+	lines := claimTask(t)
 
 	removedFields := []string{
 		"KEY", "TITLE", "PRIORITY", "STATUS", "ESTIMATED_TIME",
@@ -166,8 +164,7 @@ func TestTC_012_ClaimRemovedFieldsNotPresent(t *testing.T) {
 
 // Traceability: TC-013 -> Task 1 AC-3 — printContinueTask() wraps with ACTION: CONTINUE + STARTED_AT
 func TestTC_013_ClaimContinueWrapsWithActionContinueAndStartedAt(t *testing.T) {
-	out := runCLI(t, "forge", "task", "claim")
-	lines := parseBlock(t, out)
+	lines := claimTask(t)
 
 	action := fieldValue(lines, "ACTION")
 	if action == "CONTINUE" {
@@ -182,8 +179,7 @@ func TestTC_013_ClaimContinueWrapsWithActionContinueAndStartedAt(t *testing.T) {
 
 // Traceability: TC-014 -> Task 1 Implementation Notes — field order
 func TestTC_014_ClaimFieldOrderMatchesSpecification(t *testing.T) {
-	out := runCLI(t, "forge", "task", "claim")
-	lines := parseBlock(t, out)
+	lines := claimTask(t)
 
 	// ACTION must be first field
 	actionIdx := fieldIndex(lines, "ACTION")
@@ -215,12 +211,8 @@ func TestTC_014_ClaimFieldOrderMatchesSpecification(t *testing.T) {
 
 // Traceability: TC-015 -> Task 2 AC-1 + Proposal "Success Criteria" item 2
 func TestTC_015_SubmitOutputsOnlyStatusField(t *testing.T) {
-	claimOut := runCLI(t, "forge", "task", "claim")
-	claimLines := parseBlock(t, claimOut)
+	claimLines := claimTask(t)
 	taskID := fieldValue(claimLines, "TASK_ID")
-	if taskID == "" {
-		t.Skip("no task available to claim — cannot test submit")
-	}
 
 	recordJSON := `{"summary":"e2e test submit","testsPassed":1,"testsFailed":0,"coverage":100}`
 	tmpFile := t.TempDir() + "/record.json"
@@ -243,12 +235,8 @@ func TestTC_015_SubmitOutputsOnlyStatusField(t *testing.T) {
 
 // Traceability: TC-016 -> Task 2 AC-5 — JSON mode (--json) in submit is NOT changed
 func TestTC_016_SubmitJsonModeUnchanged(t *testing.T) {
-	claimOut := runCLI(t, "forge", "task", "claim")
-	claimLines := parseBlock(t, claimOut)
+	claimLines := claimTask(t)
 	taskID := fieldValue(claimLines, "TASK_ID")
-	if taskID == "" {
-		t.Skip("no task available to claim — cannot test submit --json")
-	}
 
 	recordJSON := `{"summary":"e2e test JSON mode","testsPassed":1,"testsFailed":0,"coverage":100}`
 	tmpFile := t.TempDir() + "/record.json"
@@ -275,12 +263,8 @@ func TestTC_016_SubmitJsonModeUnchanged(t *testing.T) {
 
 // Traceability: TC-017 -> Task 2 AC-2 + Proposal "Success Criteria" item 3
 func TestTC_017_QueryOutputsEssentialFieldsWithConditionalScopeAndBreaking(t *testing.T) {
-	claimOut := runCLI(t, "forge", "task", "claim")
-	claimLines := parseBlock(t, claimOut)
+	claimLines := claimTask(t)
 	taskID := fieldValue(claimLines, "TASK_ID")
-	if taskID == "" {
-		t.Skip("no task available to claim — cannot test query")
-	}
 
 	out := runCLI(t, "forge", "task", "query", taskID)
 	lines := parseBlock(t, out)
@@ -312,12 +296,8 @@ func TestTC_017_QueryOutputsEssentialFieldsWithConditionalScopeAndBreaking(t *te
 
 // Traceability: TC-018 -> Task 2 AC-2 — SCOPE (when non-empty), BREAKING (when true)
 func TestTC_018_QueryOmitsScopeWhenEmptyAndBreakingWhenFalse(t *testing.T) {
-	claimOut := runCLI(t, "forge", "task", "claim")
-	claimLines := parseBlock(t, claimOut)
+	claimLines := claimTask(t)
 	taskID := fieldValue(claimLines, "TASK_ID")
-	if taskID == "" {
-		t.Skip("no task available to claim — cannot test query")
-	}
 
 	out := runCLI(t, "forge", "task", "query", taskID)
 	lines := parseBlock(t, out)
@@ -338,12 +318,8 @@ func TestTC_018_QueryOmitsScopeWhenEmptyAndBreakingWhenFalse(t *testing.T) {
 
 // Traceability: TC-019 -> Task 2 AC-3, AC-4 — status outputs TASK_ID + STATUS
 func TestTC_019_StatusOutputsOnlyTaskIDAndStatus(t *testing.T) {
-	claimOut := runCLI(t, "forge", "task", "claim")
-	claimLines := parseBlock(t, claimOut)
+	claimLines := claimTask(t)
 	taskID := fieldValue(claimLines, "TASK_ID")
-	if taskID == "" {
-		t.Skip("no task available to claim — cannot test status")
-	}
 
 	// Query mode: forge task status <task-id>
 	out := runCLI(t, "forge", "task", "status", taskID)

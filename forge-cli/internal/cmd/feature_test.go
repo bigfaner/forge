@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/task"
@@ -332,6 +333,108 @@ func TestFeatureStatus_WithScores(t *testing.T) {
 	assert.Contains(t, output, "PRD: 850")
 	assert.Contains(t, output, "DESIGN: 920")
 	assert.Contains(t, output, "UI: —") // no UI design, should show em-dash
+}
+
+func TestFeatureList_SortedByManifestMtime(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test-project\n"), 0644))
+
+	// Create features with different manifest mtimes
+	// We control mtime via os.Chtimes to guarantee ordering regardless of filesystem timing
+
+	type featureSpec struct {
+		slug  string
+		mtime time.Time
+	}
+	specs := []featureSpec{
+		{slug: "oldest-feature", mtime: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{slug: "middle-feature", mtime: time.Date(2026, 3, 15, 12, 0, 0, 0, time.UTC)},
+		{slug: "newest-feature", mtime: time.Date(2026, 5, 16, 10, 0, 0, 0, time.UTC)},
+	}
+
+	for _, spec := range specs {
+		featureDir := filepath.Join(dir, feature.FeaturesDir, spec.slug)
+		require.NoError(t, os.MkdirAll(featureDir, 0755))
+
+		manifestContent := fmt.Sprintf("---\nfeature: %s\nstatus: in-progress\n---\n", spec.slug)
+		manifestPath := filepath.Join(featureDir, feature.ManifestFileName)
+		require.NoError(t, os.WriteFile(manifestPath, []byte(manifestContent), 0644))
+
+		// Set manifest mtime explicitly
+		require.NoError(t, os.Chtimes(manifestPath, spec.mtime, spec.mtime))
+
+		// Create task index
+		tasksDir := filepath.Join(featureDir, feature.TasksDirName)
+		require.NoError(t, os.MkdirAll(tasksDir, 0755))
+		index := &task.TaskIndex{Feature: spec.slug}
+		indexData, err := json.Marshal(index)
+		require.NoError(t, err)
+		require.NoError(t, os.WriteFile(filepath.Join(tasksDir, feature.IndexFileName), indexData, 0644))
+	}
+
+	origWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(origWd) }()
+	require.NoError(t, os.Chdir(dir))
+
+	output, err := captureOutput(func() error {
+		rootCmd.SetArgs([]string{"feature", "list"})
+		return rootCmd.Execute()
+	})
+	require.NoError(t, err)
+
+	// Verify features appear in reverse chronological order (newest first)
+	newestIdx := strings.Index(output, "newest-feature")
+	middleIdx := strings.Index(output, "middle-feature")
+	oldestIdx := strings.Index(output, "oldest-feature")
+
+	assert.True(t, newestIdx < middleIdx, "newest-feature should appear before middle-feature")
+	assert.True(t, middleIdx < oldestIdx, "middle-feature should appear before oldest-feature")
+}
+
+func TestFeatureList_MissingManifestSortsToEnd(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test-project\n"), 0644))
+
+	// Create feature with a manifest
+	featureDir := filepath.Join(dir, feature.FeaturesDir, "with-manifest")
+	require.NoError(t, os.MkdirAll(featureDir, 0755))
+	manifestContent := "---\nfeature: with-manifest\nstatus: in-progress\n---\n"
+	manifestPath := filepath.Join(featureDir, feature.ManifestFileName)
+	require.NoError(t, os.WriteFile(manifestPath, []byte(manifestContent), 0644))
+	require.NoError(t, os.Chtimes(manifestPath, time.Date(2026, 5, 16, 10, 0, 0, 0, time.UTC), time.Date(2026, 5, 16, 10, 0, 0, 0, time.UTC)))
+
+	tasksDir := filepath.Join(featureDir, feature.TasksDirName)
+	require.NoError(t, os.MkdirAll(tasksDir, 0755))
+	index := &task.TaskIndex{Feature: "with-manifest"}
+	indexData, _ := json.Marshal(index)
+	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, feature.IndexFileName), indexData, 0644))
+
+	// Create feature WITHOUT a manifest (no manifest.md file)
+	featureDir2 := filepath.Join(dir, feature.FeaturesDir, "no-manifest")
+	require.NoError(t, os.MkdirAll(featureDir2, 0755))
+	tasksDir2 := filepath.Join(featureDir2, feature.TasksDirName)
+	require.NoError(t, os.MkdirAll(tasksDir2, 0755))
+	index2 := &task.TaskIndex{Feature: "no-manifest"}
+	indexData2, _ := json.Marshal(index2)
+	require.NoError(t, os.WriteFile(filepath.Join(tasksDir2, feature.IndexFileName), indexData2, 0644))
+
+	origWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(origWd) }()
+	require.NoError(t, os.Chdir(dir))
+
+	output, err := captureOutput(func() error {
+		rootCmd.SetArgs([]string{"feature", "list"})
+		return rootCmd.Execute()
+	})
+	require.NoError(t, err)
+
+	// Feature with manifest should appear before feature without
+	withIdx := strings.Index(output, "with-manifest")
+	noIdx := strings.Index(output, "no-manifest")
+
+	assert.True(t, withIdx < noIdx, "feature with manifest should appear before feature without manifest")
 }
 
 func TestScoreDisplay(t *testing.T) {
