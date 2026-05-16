@@ -323,6 +323,213 @@ func TestExtractDesignMd_MobileExtractionTableNotPlaceholder(t *testing.T) {
 	}
 }
 
+// --- TUI Adapter Tests ---
+
+// --- Test: TUI adapter is not a placeholder ---
+
+func TestExtractDesignMd_TuiAdapterNotPlaceholder(t *testing.T) {
+	content := readExtractDesignMd(t)
+	bodyLower := strings.ToLower(content)
+
+	// TUI adapter must not be a "placeholder" or "not yet implemented" anymore
+	if strings.Contains(bodyLower, "tui placeholder") {
+		t.Error("TUI adapter still contains 'TUI placeholder' text — must be replaced with actual extraction logic")
+	}
+	if strings.Contains(bodyLower, "not yet implemented") && strings.Contains(bodyLower, "tui") {
+		t.Error("TUI adapter still contains 'not yet implemented' message — must be replaced with actual extraction logic")
+	}
+}
+
+// --- Test: TUI adapter requires local file path (not URL) ---
+
+func TestExtractDesignMd_TuiRequiresLocalFilePath(t *testing.T) {
+	content := readExtractDesignMd(t)
+	bodyLower := strings.ToLower(content)
+
+	// Must explicitly state that TUI input must be a local file path
+	hasLocalPath := strings.Contains(bodyLower, "local file path") ||
+		strings.Contains(bodyLower, "local file") ||
+		(strings.Contains(bodyLower, "file path") && !strings.Contains(bodyLower, "url"))
+	if !hasLocalPath {
+		t.Error("TUI adapter missing explicit requirement that input must be a local file path (not URL)")
+	}
+
+	// Must NOT support URL input for TUI
+	// Find the TUI section and check it does NOT reference URL fetching
+	tuiSectionRegex := regexp.MustCompile(`(?i)(tui|terminal).*?(?:mobile|$)`)
+	tuiMatch := tuiSectionRegex.FindString(content)
+	if tuiMatch != "" {
+		// Within the TUI context, it should NOT mention URL as the primary input
+		// (it's okay if the general command mentions URL for web/mobile)
+		if strings.Contains(strings.ToLower(tuiMatch), "fetch") && strings.Contains(strings.ToLower(tuiMatch), "url") {
+			t.Error("TUI adapter incorrectly suggests URL fetching — TUI must use local file path only")
+		}
+	}
+}
+
+// --- Test: TUI adapter uses AI vision for analysis ---
+
+func TestExtractDesignMd_TuiUsesAIVision(t *testing.T) {
+	content := readExtractDesignMd(t)
+	bodyLower := strings.ToLower(content)
+
+	// Must reference AI vision or image analysis for TUI screenshot
+	hasVisionRef := strings.Contains(bodyLower, "vision") ||
+		strings.Contains(bodyLower, "image analysis") ||
+		strings.Contains(bodyLower, "screenshot analysis") ||
+		strings.Contains(bodyLower, "analyze the screenshot") ||
+		strings.Contains(bodyLower, "read the image") ||
+		strings.Contains(bodyLower, "visual analysis")
+	if !hasVisionRef {
+		t.Error("TUI adapter missing reference to AI vision / image analysis for screenshot processing")
+	}
+}
+
+// --- Test: TUI adapter extracts required token categories ---
+
+func TestExtractDesignMd_TuiExtractsRequiredTokenCategories(t *testing.T) {
+	content := readExtractDesignMd(t)
+	bodyLower := strings.ToLower(content)
+
+	// TUI must extract: ANSI color palette, character set, panel layout dimensions, key bindings
+	requiredCategories := []struct {
+		keyword  string
+		category string
+	}{
+		{"ansi", "ANSI color palette"},
+		{"color palette", "color palette"},
+		{"character set", "character set"},
+		{"panel layout", "panel layout dimensions"},
+		{"key binding", "key bindings"},
+	}
+	for _, rc := range requiredCategories {
+		if !strings.Contains(bodyLower, rc.keyword) {
+			t.Errorf("TUI adapter missing required extraction category: %q (keyword: %q)", rc.category, rc.keyword)
+		}
+	}
+}
+
+// --- Test: TUI adapter references xterm-256 color numbers ---
+
+func TestExtractDesignMd_TuiReferencesXterm256(t *testing.T) {
+	content := readExtractDesignMd(t)
+
+	// Must reference xterm-256 color numbers
+	if !strings.Contains(strings.ToLower(content), "xterm-256") &&
+		!strings.Contains(strings.ToLower(content), "xterm 256") &&
+		!strings.Contains(content, "xterm-256") {
+		t.Error("TUI adapter missing reference to xterm-256 color numbers for ANSI color palette")
+	}
+}
+
+// --- Test: TUI adapter marks all values as estimated ---
+
+func TestExtractDesignMd_TuiMarksAllValuesAsEstimated(t *testing.T) {
+	content := readExtractDesignMd(t)
+
+	// All TUI values MUST be marked (estimated)
+	// Find TUI-specific sections and verify (estimated) marking instruction exists
+	if !strings.Contains(content, "(estimated)") {
+		t.Error("TUI adapter missing (estimated) marker requirement — all values must be marked estimated")
+	}
+
+	// There must be an explicit instruction about marking ALL TUI values as estimated
+	bodyLower := strings.ToLower(content)
+	hasEstimateInstruction := strings.Contains(bodyLower, "all") && strings.Contains(content, "(estimated)")
+	if !hasEstimateInstruction {
+		t.Error("TUI adapter missing instruction that ALL values must be marked (estimated)")
+	}
+}
+
+// --- Test: TUI output structure aligns with modern-dark-tui sections ---
+
+func TestExtractDesignMd_TuiOutputAlignsWithModernDarkTui(t *testing.T) {
+	content := readExtractDesignMd(t)
+
+	// TUI output must have sections matching modern-dark-tui.md structure:
+	// Color Space, Character Set, Character Palette Reference, Color Palette, Panel Layout
+	requiredTuiSections := []string{
+		"Color Space",
+		"Character Set",
+		"Character Palette Reference",
+		"Color Palette",
+		"Panel Layout",
+	}
+	for _, section := range requiredTuiSections {
+		if !strings.Contains(content, section) {
+			t.Errorf("TUI output template missing section matching modern-dark-tui: %q", section)
+		}
+	}
+}
+
+// --- Test: TUI match strategy supports built-in themes ---
+
+func TestExtractDesignMd_TuiMatchStrategySupportsBuiltInThemes(t *testing.T) {
+	content := readExtractDesignMd(t)
+	bodyLower := strings.ToLower(content)
+
+	// TUI must support matching against built-in TUI themes
+	hasModernDark := strings.Contains(bodyLower, "modern-dark-tui")
+	hasMinimalASCII := strings.Contains(bodyLower, "minimal-ascii-tui") ||
+		strings.Contains(bodyLower, "minimal-ascii") ||
+		strings.Contains(bodyLower, "minimal ascii")
+
+	if !hasModernDark {
+		t.Error("TUI match strategy missing reference to modern-dark-tui built-in theme")
+	}
+	if !hasMinimalASCII {
+		t.Error("TUI match strategy missing reference to minimal-ascii-tui built-in theme")
+	}
+}
+
+// --- Test: TUI adapter rejects blurry or low-resolution screenshots ---
+
+func TestExtractDesignMd_TuiRejectsBlurryScreenshots(t *testing.T) {
+	content := readExtractDesignMd(t)
+	bodyLower := strings.ToLower(content)
+
+	// Must have guidance or validation for screenshot quality
+	hasQualityCheck := strings.Contains(bodyLower, "blurry") ||
+		strings.Contains(bodyLower, "low-resolution") ||
+		strings.Contains(bodyLower, "low resolution") ||
+		strings.Contains(bodyLower, "unreadable") ||
+		strings.Contains(bodyLower, "screenshot quality")
+
+	if !hasQualityCheck {
+		t.Error("TUI adapter missing screenshot quality validation — must reject blurry or low-resolution screenshots")
+	}
+}
+
+// --- Test: TUI routing table entry is not placeholder ---
+
+func TestExtractDesignMd_TuiExtractionTableNotPlaceholder(t *testing.T) {
+	content := readExtractDesignMd(t)
+
+	// The platform routing table should NOT have "placeholder" in the TUI row
+	routingTableRegex := regexp.MustCompile(`(?i)\|.*tui.*\|.*\|.*\|`)
+	matches := routingTableRegex.FindAllString(content, -1)
+	for _, match := range matches {
+		if strings.Contains(strings.ToLower(match), "placeholder") {
+			t.Errorf("TUI routing table entry still contains 'placeholder': %s", strings.TrimSpace(match))
+		}
+	}
+}
+
+// --- Test: TUI adapter mentions box-drawing and block elements ---
+
+func TestExtractDesignMd_TuiMentionsBoxDrawingAndBlockElements(t *testing.T) {
+	content := readExtractDesignMd(t)
+	bodyLower := strings.ToLower(content)
+
+	// TUI must reference box-drawing and block elements as part of character set extraction
+	if !strings.Contains(bodyLower, "box-drawing") && !strings.Contains(bodyLower, "box drawing") {
+		t.Error("TUI adapter missing reference to box-drawing characters")
+	}
+	if !strings.Contains(bodyLower, "block element") {
+		t.Error("TUI adapter missing reference to block elements")
+	}
+}
+
 // --- Test: Command remains a single file ---
 
 func TestExtractDesignMd_CommandIsSingleFile(t *testing.T) {

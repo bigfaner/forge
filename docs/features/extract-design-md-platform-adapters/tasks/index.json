@@ -36,7 +36,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3-tui-adapter.md",
       "record": "records/3-tui-adapter.md",
       "scope": "backend",
