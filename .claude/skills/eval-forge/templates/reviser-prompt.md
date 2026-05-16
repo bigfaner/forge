@@ -56,13 +56,7 @@ When identical or near-identical content appears in multiple files:
 3. **DO NOT extract to shared files in plugin directories.** Plugin SKILL.md/command files run in users' projects where relative paths (`../../`) won't resolve. Content that must travel with a plugin file must stay inline in that file.
 
 <PLUGIN-PORTABILITY>
-Forge is a Claude Code plugin deployed to users' projects. Plugin SKILL.md and command files are loaded in arbitrary working directories. Therefore:
-
-- **Never introduce `../../` or any relative path that crosses outside a skill's own directory.** These paths won't resolve when the plugin runs in a user's project.
-- **Safe paths:** `templates/foo.md` (within the same skill directory) — these resolve correctly because Claude Code resolves skill-relative paths.
-- **Unsafe paths:** `../../references/shared/foo.md`, `../hooks/guide.md` — these cross outside the skill directory and will break at runtime.
-- **guide.md is a special case:** guide.md lives in `plugins/forge/hooks/guide.md`. It is loaded as a hook context file by Claude Code, not read via file path by the agent. Therefore, guide.md can be the authoritative source of truth, but plugin files should NOT try to `Read` guide.md via relative paths. Instead, they should inline the relevant content if the agent needs to see it.
-- **Duplication in plugin files is acceptable and often necessary.** Do not penalize or try to eliminate duplication that serves plugin portability.
+Plugin files run in arbitrary working directories. Never introduce `../../` paths. Duplication that serves portability is acceptable. See Rule 3 for safe/unsafe path classification.
 </PLUGIN-PORTABILITY>
 
 No new files may be created for dedup purposes.
@@ -102,27 +96,10 @@ Avoid the consequence-description-only pattern:
 If you skip [action], [failure] will occur because [reason].
 ```
 
-**Why:** Consequence descriptions are narrative text that inflates context without giving the agent a new action to take. Actionable paths (conditional + fallback) give the agent concrete steps to follow.
-
 **Step 3: Never add empty prohibitions.** The following patterns are FORBIDDEN:
 - "You must not skip X" (no actionable path)
 - "Do not bypass X" (no actionable path)
 - "Always do X" (no actionable path)
-
-**Valid example (actionable):**
-```
-If sitemap.json is missing and any task uses existing-page placement, run /gen-sitemap
-before proceeding with breakdown-tasks.
-```
-
-**Invalid example (consequence-only):**
-```
-If you skip user approval and commit, the proposal will lack user-validated scope
-boundaries, causing all downstream PRD, design, and task artifacts to be built on
-unconfirmed assumptions.
-```
-
-The valid example tells the agent WHAT TO DO. The invalid example only describes WHY something is bad — the agent already knows it should get approval; the issue is there's no mechanical enforcement, and text won't create one.
 
 **Step 4: Escape hatch.** If a `[TEXT-FIXABLE]` bypass cannot be converted to a valid actionable path (every attempt reduces to a consequence description or empty prohibition), skip it and report in FIXES SKIPPED: `[TEXT-FIXABLE] bypass has no actionable fix — requires code-level enforcement`.
 
@@ -138,20 +115,7 @@ When a detection point is placed after the step it intends to skip/modify:
 
 4. **Update mermaid diagrams** if present. Ensure the decision node's incoming edge connects from the step where detection now happens, and the "skip" path correctly bypasses the intended steps.
 
-5. **Do NOT change what steps are skipped** — only change WHERE the decision to skip is made. The skip targets remain the same.
-
-**Valid fix example:**
-```
-Before: "Detection: After Step 4a, if every task is docs-only, skip Step 0"
-After:  "Detection: During Step 1, after scanning all documents, if every
-         design element targets non-compilable files, skip Step 0"
-```
-
-**Invalid fix (wrong approach):**
-```
-Moving Step 0 to after Step 4a to make the skip work — this changes the
-workflow semantics, not just the detection point.
-```
+5. **Do NOT change what steps are skipped** — only change WHERE the decision to skip is made. The skip targets remain the same. Do NOT move the skipped step to after the detection point — that changes workflow semantics.
 
 ### Rule 6: Narrative Inflation Fix (maps to D3e)
 
@@ -161,11 +125,30 @@ When a SKILL.md or command file contains text that inflates context without chan
 2. **Fix stale code references.** If a file path or function name is wrong, correct it to the actual location. If the reference is unnecessary, remove it.
 3. **Remove redundant re-explanation.** If a table, step, or code block already states the information, delete the prose restatement.
 4. **Do NOT remove content inside enforcement tags** (`<HARD-RULE>`, `<HARD-GATE>`, `<EXTREMELY-IMPORTANT>`) — these are enforcement markers, not narrative.
+5. **Do NOT remove conditional+fallback text added by Rule 4** (bypass hardening). Text that follows the "If [condition], you MUST [action]. Fallback: [alternative]" pattern is actionable, not narrative, even if it includes a brief rationale clause.
+
+### Rule 7: Incomplete Conditional Fix (maps to D1c + D3c)
+
+When a SKILL.md has an if-then pattern without an else path, and the false-path requires distinct handling:
+
+1. **Check the implicit-else exception.** If the false-path is the natural default (no state change, no output expected, no downstream dependency), no fix is needed.
+2. **If the false-path requires action**, add an explicit else branch. The else should describe what happens when the condition is NOT met. Prefer the same concise format: "Otherwise, [action]."
+3. **Do NOT add else branches to enforcement tags** (`<HARD-RULE>`, `<HARD-GATE>`) — these define constraints, not conditional logic.
+4. **Match the existing style.** If the SKILL.md uses bullet lists for conditions, add the else as a bullet. If it uses tables, add a row.
+
+### Rule 8: Variable Annotation Fix (maps to D3d)
+
+When a SKILL.md uses a template variable without explaining where the value comes from:
+
+1. **Check if the variable is CLI-filled.** Read `forge-cli/pkg/prompt/prompt.go` Synthesize function. If the CLI provides this variable, no annotation is needed.
+2. **If the variable is agent-filled**, add a source annotation in parentheses after the variable's first use: `{{VARIABLE}} (source: [where to get this value])`.
+3. **Do NOT add annotations to variables inside template files** (e.g., `templates/*.md`) — these are output templates, not instructions.
+4. **If the source is unclear**, add a comment noting it needs clarification: `{{VARIABLE}} (source: TODO — unclear where this value originates)`.
 
 ## Execution Order
 
 1. Apply all Layer 1 (safe-fix) changes first.
-2. Then apply Layer 2 (guided-fix) changes in rule order: Rule 1, then Rule 2, then Rule 3, then Rule 4, then Rule 5, then Rule 6.
+2. Then apply Layer 2 (guided-fix) changes in rule order: Rule 1, then Rule 2, then Rule 3, then Rule 4, then Rule 5, then Rule 6, then Rule 7, then Rule 8.
 3. If a fix requires human judgment (e.g., two files conflict and neither is clearly more complete), skip it and report it.
 4. When Rule 4 adds text to a file that Rule 1 would simplify, Rule 4 wins — bypass hardening is higher priority than conciseness.
 

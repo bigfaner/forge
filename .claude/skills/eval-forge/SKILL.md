@@ -108,6 +108,8 @@ After the scorer returns, parse its output:
 2. Extract per-dimension scores
 3. Extract attack points
 
+If iteration > 1, compare current attack points with previous iteration report (`docs/self-evolution/{seq}/iteration-{prev}.md`). Fill the "Previous Issues Check" table in the current iteration report. This comparison is done by the orchestrator, NOT by the scorer — the scorer always scores blind.
+
 ## Step 3: Decision Gate (Main Session)
 
 <HARD-GATE>
@@ -119,6 +121,7 @@ This decision is made in the MAIN SESSION. This gate fires unconditionally after
 | Score >= target                            | Skip to Step 6 (final report)   |
 | Score < target AND iterations remaining    | Proceed to Step 4               |
 | Score < target AND no iterations remaining | Skip to Step 6 (report failure) |
+| Score < target AND zero attack points      | Skip to Step 6 (no fixable issues found — report failure) |
 
 Report to user:
 
@@ -145,8 +148,12 @@ For each attack point, classify fixability:
 | Missing Iron Laws                 | eval skill missing orchestrator section   | Partial — requires domain knowledge |
 | Dangling guide reference          | guide.md references non-existent skill | Yes — remove or update reference    |
 | D2 ARCHITECTURAL bypass           | Scorer marks `[ARCHITECTURAL]`         | No — requires code-level change     |
+| Graph breakpoint (D1a/D1b/D1e)    | Missing prerequisite skill or broken test chain | No — requires skill creation |
+| Step ambiguity (D3b)              | Vague verbs, missing tool specs        | No — requires understanding skill intent |
 
 Skip `[ARCHITECTURAL]` D2 bypasses — they are scored and reported but cannot be fixed by text changes. Only pass `[TEXT-FIXABLE]` D2 bypasses to the reviser.
+
+If no auto-fixable attack points remain (all are No/Partial/ARCHITECTURAL), skip to Step 6 (final report). Do not burn iterations on empty reviser runs.
 
 ## Step 5: Invoke Reviser (Custom Subagent)
 

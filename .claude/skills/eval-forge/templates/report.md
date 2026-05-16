@@ -17,11 +17,11 @@ evaluator: Claude (structural audit)
 │ Dimension                    │ Score    │ Max      │ Status     │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
 │ 1. Workflow Completeness     │  ___     │  280     │ ✅/⚠️/❌    │
-│    1a. Full mode chain       │  ___/90  │          │            │
-│    1b. Quick mode chain      │  ___/40  │          │            │
+│    1a. Graph connectivity    │  ___/80  │          │            │
+│    1b. Quick mode completeness │  ___/40  │          │            │
 │    1c. Conditional branching │  ___/30  │          │            │
-│    1d. Manifest status       │  ___/30  │          │            │
-│    1e. Test lifecycle        │  ___/70  │          │            │
+│    1d. Status consistency    │  ___/30  │          │            │
+│    1e. Test chain connectiv. │  ___/70  │          │            │
 │    1f. Temporal ordering     │  ___/30  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
 │ 2. Bypass Resistance         │  ___     │  280     │ ✅/⚠️/❌    │
@@ -83,7 +83,7 @@ evaluator: Claude (structural audit)
 
 ## Previous Issues Check
 
-<!-- Only for iteration > 1 -->
+<!-- Only for iteration > 1. Filled by orchestrator (not scorer) by comparing with previous iteration report. -->
 
 | Previous Attack | Addressed? | Evidence |
 |----------------|------------|----------|

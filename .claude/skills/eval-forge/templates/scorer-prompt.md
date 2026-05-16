@@ -8,7 +8,7 @@ You are a harsh runtime reliability auditor. Your job is to find every workflow 
 
 ## Phase 0: Load References
 
-1. Read the rubric at `.claude/skills/eval-forge/templates/rubric.md` — all dimensions, criteria, deduction tiers, and ground-truth workflow specs come from the rubric. Do NOT hardcode dimension definitions.
+1. Read the rubric at `.claude/skills/eval-forge/templates/rubric.md` — all dimensions, criteria, and deduction tiers come from the rubric. Do NOT hardcode dimension definitions. **Skip the "Regression Guard" table under Dimension 2** — it is reserved for Phase 2b.
 2. Read the report template at `.claude/skills/eval-forge/templates/report.md` — your output must match this template's structure.
 
 ## Input: Files to Scan
@@ -19,9 +19,17 @@ You are a harsh runtime reliability auditor. Your job is to find every workflow 
 2. All `plugins/forge/commands/*.md` — read frontmatter, extract tool usage and references
 3. All `plugins/forge/agents/*.md` — read frontmatter, extract safety markers and subagent configurations
 4. `hooks/hooks.json` — validate JSON, extract hook references
-5. `hooks/` directory — verify referenced scripts exist
+5. `hooks/` directory — read hook script content, verify behavior matches guide.md description
 6. `hooks/guide.md` — extract skill/command references, quality gate definitions, prohibition statements
 7. `.claude-plugin/plugin.json` — metadata consistency
+
+### Penetrated Content (NOT existence-only)
+
+**Skill output templates** — read all `plugins/forge/skills/*/templates/*.md`. Verify template format/fields match what the SKILL.md describes as outputs. Inconsistency = D3a conflict.
+
+**Eval rubrics** — read all `plugins/forge/skills/eval/rubrics/*.md`. Verify rubric scoring dimensions match what the eval SKILL.md and eval commands describe. Missing or contradictory dimensions = D3a conflict.
+
+**Hook scripts** — read all hook scripts referenced in hooks.json. Verify script behavior matches guide.md's description of what the hook does. Behavioral mismatch = D3a conflict.
 
 ### Task CLI Source Code (D5 Reference Integrity + D1 Workflow Completeness)
 
@@ -34,11 +42,12 @@ Read Go source code for behavioral alignment — these files provide ground trut
 | `forge-cli/internal/cmd/submit.go` | Quality gates, `--force`, `noTest` handling, `validateRecordData` | D2: bypass resistance; D3: behavioral conflicts |
 | `forge-cli/internal/cmd/status.go` | State machine transitions and guards | D1: manifest status machine; D5: reference accuracy |
 | `forge-cli/pkg/task/types.go` | Data model, status/priority enums | D1: manifest status machine; D5: reference accuracy |
-| `forge-cli/pkg/just/just.go` | Quality gate implementation (compile/fmt/lint/test steps) | D2: bypass resistance; D3: behavioral conflicts |
-| `forge-cli/pkg/prompt/prompt.go` | Task template synthesis, CLI-embedded templates | D1: unauditable step detection |
+| `forge-cli/pkg/just/just.go` | Quality gate implementation (compile/fmt/lint/test steps) — read BOTH DefaultGateSequence and LintGateSequence | D2: bypass resistance; D3: behavioral conflicts |
+| `forge-cli/pkg/prompt/prompt.go` | Task template synthesis, CLI-embedded templates | D1: template penetration |
+| `forge-cli/pkg/testrunner/testrunner.go` | Test runner discovery and execution — silent pass when no runner found | D2: bypass resistance |
 | `plugins/forge/skills/breakdown-tasks/templates/index.schema.json` | JSON schema | D5: reference accuracy |
 
-**CLI-embedded task templates** — read `forge-cli/pkg/prompt/prompt.go` to list all templates in `forge-cli/pkg/prompt/data/*.md`. These are task instructions embedded in the CLI binary with no corresponding SKILL.md. Any pipeline step using only a CLI-embedded template is an **unauditable step** (D1a, D1e).
+**CLI-embedded task templates** — read `forge-cli/pkg/prompt/prompt.go` to discover the type→template mapping, then **read every file in `forge-cli/pkg/prompt/data/*.md`**. Do NOT treat them as opaque — penetrate each template's content and evaluate instruction quality, error handling, consistency with corresponding SKILL.md, and stale references. Classify each as thin dispatcher (no deduction) or real logic without SKILL.md (D1a deduction).
 
 Other `forge-cli/internal/cmd/*.go` files (claim, add, all_completed, validate, etc.) provide additional workflow alignment — read them as needed for the specific criteria being evaluated.
 
@@ -52,11 +61,11 @@ If `forge` CLI is not installed/buildable, skip CLI verification and note "CLI v
 
 ## Phase 1: Build Workflow Graph (D1 — 280 pts)
 
-**Goal:** Construct the actual workflow graph from skills/commands/agents and compare against the ground-truth specs in the rubric.
+**Goal:** Construct the actual workflow graph dynamically from plugin files and verify architectural soundness.
 
 **Steps:**
 
-1. Read the rubric's Dimension 1 ground-truth workflow specs: full mode pipeline, quick mode pipeline, manifest status machine, and per-skill precondition/output matrix.
+1. Read guide.md — extract pipeline mermaid diagrams (full mode, quick mode) and quality gate protocol.
 
 2. Scan every `SKILL.md` and extract:
    - Declared prerequisites (hard vs optional)
@@ -66,18 +75,13 @@ If `forge` CLI is not installed/buildable, skip CLI verification and note "CLI v
    - Successor skills (what runs next)
    - Step sequences: numbered steps (Step 0, Step 1, ...), conditional skip targets ("skip Step N"), detection points ("Detection: After Step N", "During Step N"), and mermaid flow diagrams
 
-3. Compare extracted actual graph against ground-truth specs:
-   - **1a. Full mode chain** (0-90): Are all skills in the pipeline present? Does each skill's declared prerequisites match what its predecessor outputs? Are there breakpoints where a required file is not produced by any predecessor? **Also check for unauditable steps**: steps in the ground-truth pipeline that have no SKILL.md and no CLI-accessible template (e.g., CLI-embedded task templates in `forge task index`). Breakpoint = -20 each. Unauditable step = -10 each.
-   - **1b. Quick mode chain** (0-40): Is the quick pipeline complete? Includes T-quick-1 through T-quick-6 (T-quick-5 verify-regression and T-quick-6 doc-generation-drift are CLI-embedded, no SKILL.md — unauditable steps). Missing step = -20 each. Unauditable step = -10 each.
-   - **1c. Conditional branching** (0-30): Does every conditional branch in the ground-truth matrix have a true-path AND false-path defined in the actual SKILL.md? Missing branch = -10 each.
-   - **1d. Manifest status transitions** (0-30): Do skill descriptions respect the legal status transitions (prd -> design -> tasks -> in-progress -> completed)? Do any skills attempt illegal transitions? Cross-reference with `status.go` for actual enum values. Illegal transition = -15 each.
-   - **1e. Test lifecycle chain** (0-70): Is the full test chain intact from gen-test-cases through consolidate-specs? Are all links present and prerequisites satisfied? **Also check for unauditable test steps**: test chain steps with no SKILL.md and no CLI-accessible template (e.g., verify-regression embedded in CLI binary). Broken link = -15 each. Unauditable step = -10 each.
-   - **1f. Intra-skill temporal ordering** (0-30): For each SKILL.md with numbered steps and conditional skip/fast-path logic, verify that every detection point precedes the step it intends to skip. Procedure:
-     a. Extract the step sequence (Step 0, Step 1, ...) and execution order.
-     b. Find conditional skip targets: "skip Step N if condition C" or "Steps N-M are unnecessary when condition C".
-     c. Locate detection points: "Detection: After Step N", "During Step N", or mermaid decision nodes.
-     d. For each (detection_point, skip_target) pair: if detection_step > skip_target_step, it is a temporal ordering contradiction — the condition is evaluated too late for the skip to be actionable. Deduct -15 each.
-     e. If mermaid diagrams exist, trace decision node incoming edges to verify they connect from steps preceding the skipped step.
+3. Build directed graph and check architectural properties:
+   - **1a. Graph connectivity** (0-80): Build the workflow graph from SKILL.md declared prerequisites/outputs. Verify every skill's hard prerequisites are produced by some predecessor. Apply rubric 1a criteria for CLI-embedded template classification (thin dispatcher vs real logic) and scoring.
+   - **1b. Quick mode completeness** (0-40): Read guide.md quick-mode mermaid diagram. Read testgen.go for actual quick-mode task types. Verify each step has SKILL.md or is flagged CLI-embedded. Score per rubric 1b.
+   - **1c. Conditional branching** (0-30): Does every conditional branch in SKILL.md have a true-path AND false-path? Score per rubric 1c.
+   - **1d. Status consistency** (0-30): Are status transitions consistent across guide.md, SKILL.md, and commands? Cross-reference with `status.go` `isTransitionAllowed()`. Score per rubric 1d.
+   - **1e. Test chain connectivity** (0-70): Read testgen.go to discover all T-test/T-quick task types. Build test chain graph. Verify each task type's prerequisites are satisfied. Read all `prompt/data/test-pipeline-*.md` templates — verify instruction quality and consistency with corresponding SKILL.md. Score per rubric 1e.
+   - **1f. Intra-skill temporal ordering** (0-30): For each SKILL.md with numbered steps and conditional skip/fast-path logic, verify that every detection point precedes the step it intends to skip. Apply rubric 1f detailed check procedure (steps 1-5).
 
 **Output:** For each finding, record dimension prefix (D1), criterion letter, exact file path, line reference, and description.
 
@@ -111,12 +115,7 @@ Do NOT read the Regression Guard table in the rubric until Phase 2a is complete.
 - **[ARCHITECTURAL]**: Requires code-level change (CLI enforcement, cryptographic verification, etc.). Score it, report it, but mark as `[ARCHITECTURAL]` in ATTACKS so the reviser will NOT attempt to fix it. Adding HARD-RULE text for architectural bypasses is counterproductive — it inflates context without changing agent behavior.
 - **[TEXT-FIXABLE]**: Can be mitigated by adding conditional branches, fallback paths, or actionable instructions in SKILL.md/command files. Mark as `[TEXT-FIXABLE]` in ATTACKS — these are valid reviser targets.
 
-**Step 4 — Score by type.** Classify each gap into the 5 bypass types and apply scoring criteria:
-- **2a. Quality gate enforcement** (0-80): For each gate point, is there CLI enforcement or only advisory text? Zero enforcement with no documented rationale = -15 each.
-- **2b. Eval integrity** (0-80): Does each eval skill require independent subagent scoring? Can the main session fake scores? Weakness = -25 each.
-- **2c. User interaction enforcement** (0-45): Does each confirmation point have a mechanical enforcement mechanism? Purely advisory = -10 each.
-- **2d. Required step enforcement** (0-35): Do conditional requirements have downstream verification? No verification = -10 each.
-- **2e. Prohibition enforcement** (0-40): Does each HARD-RULE prohibition have a mechanical check? Purely advisory = -5 each.
+**Step 4 — Score by type.** Classify each gap into the 5 bypass types and score per rubric D2 criteria (2a-2e).
 
 ### Phase 2b: Regression Verification (complete AFTER 2a)
 
@@ -128,11 +127,60 @@ Read the rubric's Dimension 2 Regression Guard table — it lists previously-ide
 
 ---
 
+## Phase 2.5: Plugin↔CLI Contract Verification (D3a — 100 pts)
+
+**Goal:** Systematically verify the contract between the Plugin (SKILL.md/commands/guide.md) and the CLI (Go source). Every contract point must be checked bidirectionally.
+
+**Bidirectional verification procedure:**
+
+### Direction 1: Plugin → CLI (does the CLI implement what the plugin describes?)
+
+For every behavioral claim in plugin files, trace to CLI source:
+
+| Plugin Claim Source | CLI Ground Truth | What to Verify |
+|--------------------|-----------------|---------------|
+| CLI command references | CLI command implementation | Command exists, flags match, behavior matches description |
+| Subcommand existence and naming | CLI command registration | Every subcommand referenced in plugin files actually exists and is spelled correctly |
+| CLI output format contracts | CLI source stdout/stderr output | SKILL.md parses CLI output correctly — field names, format strings, field presence match what the CLI actually emits |
+| Data model references | CLI data types | Fields exist, types match, semantics match |
+| Status transition descriptions | CLI transition guards | Transition is legal per CLI guards |
+| Quality gate sequence | CLI gate implementation | Steps match, blocking/optional flags match, scope resolution matches |
+| Enforcement claims (HARD-RULE, HARD-GATE) | CLI source code | Mechanism exists and works as described, or is advisory-only |
+| Template variable declarations | CLI template synthesis | Variables actually provided by CLI match what SKILL.md expects |
+| Hook behavior descriptions | Hook scripts + CLI hook integration | Hook fires when described, does what described |
+| Configuration-driven paths | CLI config resolution | SKILL.md doesn't assume hardcoded paths for directories that are actually config-driven |
+| Command output parsability | CLI stdout format stability | Skills parse CLI stdout with grep/sed/field-extraction patterns — verify the output format is a stable contract, not incidental formatting |
+| Command side effect contracts | CLI file system operations | Skills assume CLI commands create/modify/delete specific files atomically — verify CLI performs these operations, and whether partial failure leaves corrupt state |
+
+### Direction 2: CLI → Plugin (does the plugin document what the CLI implements?)
+
+For every CLI behavior that affects agent workflow, check documentation:
+
+| CLI Behavior | Plugin Documentation | What to Verify |
+|-------------|---------------------|---------------|
+| Auto-downgrade on testsFailed (completed + testsFailed > 0 → blocked, non-overridable) | SKILL.md submission steps | Documented and accurate |
+| Transition guards (pending→completed blocked, must use submit) | guide.md status machine | Guard is documented |
+| Silent pass on missing justfile or missing recipe | guide.md quality gate protocol | Bypass condition is documented |
+| Silent pass when no test infrastructure found | guide.md testing lifecycle | Condition is documented |
+| --force flag scope (what it bypasses, what it doesn't) | SKILL.md submission steps | Scope accurately described |
+| Docs-only feature detection logic | SKILL.md task creation steps | Detection criteria documented |
+| All-completed hook behavior (scope, gate sequence) | guide.md all-completed section | Sequence and scope documented |
+| Task claim output fields | SKILL.md task execution steps | All fields that SKILL.md tries to extract from claim output are actually emitted |
+| Task chain resolution depth | SKILL.md task dependency steps | Resolution is recursive or direct-only — SKILL.md must match actual behavior |
+| Introspection command output format | SKILL.md steps that parse CLI output | Output format is documented and matches actual output |
+| Silent degradation — CLI succeeds (exit 0) but skips expected work | SKILL.md quality gate and enforcement steps | Plugin documents when enforcement is silently skipped |
+| Implicit state transitions — CLI performs state changes beyond the requested operation | SKILL.md workflow steps | Plugin documents CLI side effects: auto-restore, value injection, CONTINUE behavior |
+| Enforcement divergence — different CLI commands enforce different rules for the same concept | guide.md and SKILL.md enforcement sections | Plugin documents which command enforces what |
+
+**Scoring:** Score per rubric 3a deduction schedule.
+
+---
+
 ## Phase 3: Per-File Precision Review (D3 + D4)
 
 **Goal:** Check instruction precision across all files (D3 — 280 pts) and identify content redundancy (D4 — 30 pts).
 
-### D3: Instruction Precision (250 pts)
+### D3: Instruction Precision (280 pts)
 
 **Check in priority order:**
 
@@ -154,7 +202,7 @@ Three conflict sources, checked in priority order:
 - Task status transitions: Do different files describe different legal transitions?
 - Eval scoring: Do different eval rubrics describe different scoring protocols?
 
-For each conflict found (from any source), deduct -25.
+For each conflict found (from any source), score per rubric 3a deduction schedule.
 
 **3b. Step ambiguity (0-60):**
 Read each SKILL.md step. Does it have a single unambiguous interpretation? Flag:
@@ -162,48 +210,24 @@ Read each SKILL.md step. Does it have a single unambiguous interpretation? Flag:
 - Missing tool/command specifications: "run the tests" (which test runner? which command?)
 - Ambiguous references: "update the config" (which config file?)
 - Steps where chain tracing reveals the agent must make an unstated choice
-Deduct -10 per ambiguous step.
+Score per rubric 3b.
 
 **3c. Incomplete conditionals (0-50):**
-For every if-then in SKILL.md files, check for else/skip/fallback paths:
-- "If tests fail, ..." — what if tests pass? Is the else path explicit?
-- "If has UI, do X" — is the no-UI path defined?
-- "If eval report exists, ..." — what if it doesn't?
-Missing else = -10 each. **Implicit-else exception:** if the false-path is the natural default (normal execution continues, zero-value default, or no-op), no explicit else is required. Only flag if-then patterns where the false-path requires distinct handling but none is documented.
+For every if-then in SKILL.md files, check for else/skip/fallback paths. Apply implicit-else exception per rubric 3c definition. Score per rubric 3c.
 
 **3d. Variable resolution clarity (0-40):**
 For every template variable used in SKILL.md:
 - Agent-filled variables: Is there a source annotation explaining where the value comes from?
-- CLI-filled variables: These come from `prompt.go` Synthesize (see rubric's CLI-filled variable table). Do not mark these as undefined.
-- If a variable is used without explanation of its source and is NOT in the CLI-filled table, it is undefined.
-Undefined agent variable = -10 each.
+- CLI-filled variables: Read `forge-cli/pkg/prompt/prompt.go` Synthesize function to discover which variables the CLI fills. Do NOT mark prompt.go variables as undefined.
+- If a variable is used without explanation of its source and is NOT discovered in prompt.go, it is undefined.
+Score per rubric 3d.
 
 **3e. Narrative inflation (0-30):**
-For each SKILL.md and command file, flag paragraphs that inflate context without changing agent behavior:
-- Consequence/rationale paragraphs: text explaining WHY a rule exists or what goes wrong, without giving new actions
-- Stale code/function references: pointing to files or functions that have moved or don't exist
-- Redundant re-explanation: prose restating what a table, step, or code block already says
-Instance = -5 each. **Exempt**: content inside `<HARD-RULE>`, `<HARD-GATE>`, `<EXTREMELY-IMPORTANT>` tags — these are enforcement markers, not narrative.
+Flag paragraphs that inflate context without changing agent behavior. Apply definition and exemptions per rubric 3e. Score per rubric 3e.
 
 ### D4: Cross-file Dedup (30 pts)
 
-**Three categories:**
-
-**4a. Content copy (0-10):**
-Find identical or near-identical text blocks appearing in 3+ files. Known instances from the rubric:
-- "Step 0: Resolve Profile" across 9 SKILL.md files
-- Eval Iron Laws + Steps 2-4 (consolidated to 1 `skills/eval/SKILL.md`)
-- Eval report shared sections across 5 report.md files
-
-**Plugin portability exception:** Some duplication in plugin files is necessary because the plugin runs in users' projects where cross-file relative paths (`../../`) won't resolve. For plugin SKILL.md/command files, duplication that serves portability should be flagged as INFO but NOT deducted unless the content could reasonably be deduplicated within the same skill directory.
-
-Instance = -10 each (deduct only when dedup is feasible without breaking portability).
-
-**4b. guide.md vs SKILL.md overlap (0-10):**
-guide.md is the single source of truth. If SKILL.md copies content that guide.md already covers (quality gate sequence, scope resolution), it should ideally reference guide.md instead. **However**, plugin files cannot use `../../hooks/guide.md` relative paths because the plugin runs in users' projects. Only deduct when: (a) the content is in a non-plugin file (e.g., `.claude/skills/` project-level skills), OR (b) the skill could reference guide.md without crossing directory boundaries. Duplication that exists for plugin portability = -0. Actionable duplication = -10 each.
-
-**4c. Unreasonable inline (0-10):**
-Content that has its own dedicated file but is also fully inlined in SKILL.md. Judgment criteria: does the agent need to see the full content in a single context window (reasonable inline) vs can it use the Read tool to fetch on demand (should be a reference). Unreasonable inline = -10 each.
+Score per rubric D4 criteria (4a-4c). Apply plugin portability exception per rubric — duplication that serves portability is flagged as INFO, not deducted.
 
 ---
 
@@ -213,17 +237,11 @@ Content that has its own dedicated file but is also fully inlined in SKILL.md. J
 
 ### D5: Reference Integrity (80 pts)
 
-- **5a. Agent references valid** (0-20): Every `forge:<agent>` or `subagent_type` reference in SKILL.md/command files must point to an existing file in `plugins/forge/agents/`. Dangling = -10 each.
-- **5b. Template references valid** (0-20): Every template path referenced in SKILL.md must point to an existing file. Dangling = -10 each.
-- **5c. Cross-skill references valid** (0-15): Every `invoke /<name>` must point to an existing skill or command. Dangling = -10 each.
-- **5d. Hook references valid** (0-15): Every path and CLI command in hooks.json must exist. Dangling = -10 each.
-- **5e. Shared reference paths valid** (0-10): Every `plugins/forge/references/*` path referenced in SKILL.md or commands must point to an existing file. Dangling = -5 each.
+Score per rubric D5 criteria (5a-5e). Verify all agent, template, cross-skill, hook, and shared reference paths point to existing files.
 
 ### D6: Structural Convention (50 pts)
 
-- **6a. Frontmatter completeness** (0-25): SKILL.md has `name` + `description`. Command has `name` + `description`. Agent has `name` + `description` + `model`. Missing = -5 each.
-- **6b. Eval template convention** (0-15): `skills/eval/SKILL.md` exists, `skills/eval/rubrics/` contains rubric files for each eval type, and each `commands/eval-*.md` delegates to `Skill("eval", ...)`. Missing rubric = -10 each.
-- **6c. Name-directory alignment** (0-10): Skill name matches directory name, command name matches filename. Mismatch = -5 each.
+Score per rubric D6 criteria (6a-6c). Verify frontmatter completeness, eval template convention, and name-directory alignment.
 
 ---
 
@@ -231,18 +249,17 @@ Content that has its own dedicated file but is also fully inlined in SKILL.md. J
 
 1. Fill in the report template with actual scores, organized by the 6-dimension scorecard.
 2. Write the report to `docs/self-evolution/{{SEQ}}/iteration-{{ITERATION}}.md`
-3. If iteration > 1, read previous report at `docs/self-evolution/{{SEQ}}/iteration-{{PREV}}.md` and check which issues were addressed.
-4. Return a structured summary in this EXACT format:
+3. Return a structured summary in this EXACT format:
 
 ```
 SCORE: {{total}}/1000
 DIMENSIONS:
   1. Workflow Completeness: {{score}}/280
-     1a. Full mode chain: {{score}}/90
-     1b. Quick mode chain: {{score}}/40
+     1a. Graph connectivity: {{score}}/80
+     1b. Quick mode completeness: {{score}}/40
      1c. Conditional branching: {{score}}/30
-     1d. Manifest status: {{score}}/30
-     1e. Test lifecycle: {{score}}/70
+     1d. Status consistency: {{score}}/30
+     1e. Test chain connectivity: {{score}}/70
      1f. Temporal ordering: {{score}}/30
   2. Bypass Resistance: {{score}}/280
      2a. Quality gates: {{score}}/80
