@@ -65,6 +65,7 @@ func captureOutput(f func() error) (string, error) {
 
 func TestRunFeature_Display(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 
 	goMod := filepath.Join(dir, "go.mod")
 	if err := os.WriteFile(goMod, []byte("module test-project\n\ngo 1.21\n"), 0644); err != nil {
@@ -109,6 +110,7 @@ func TestRunFeature_Display(t *testing.T) {
 
 func TestRunFeature_Set(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 
 	goMod := filepath.Join(dir, "go.mod")
 	if err := os.WriteFile(goMod, []byte("module test-project\n\ngo 1.21\n"), 0644); err != nil {
@@ -142,6 +144,7 @@ func TestRunFeature_Set(t *testing.T) {
 
 func TestRunFeature_NoFeatureSet(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 
 	goMod := filepath.Join(dir, "go.mod")
 	if err := os.WriteFile(goMod, []byte("module test-project\n\ngo 1.21\n"), 0644); err != nil {
@@ -176,6 +179,7 @@ func TestRunFeature_NoFeatureSet(t *testing.T) {
 
 func TestFeatureList_WithFeatures(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test-project\n"), 0644))
 
 	// Create two features with manifests
@@ -221,6 +225,7 @@ func TestFeatureList_WithFeatures(t *testing.T) {
 
 func TestFeatureList_Empty(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test-project\n"), 0644))
 
 	origWd, err := os.Getwd()
@@ -239,6 +244,7 @@ func TestFeatureList_Empty(t *testing.T) {
 
 func TestFeatureStatus_Found(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test-project\n"), 0644))
 
 	slug := "test-feature"
@@ -288,6 +294,7 @@ func TestFeatureStatus_Found(t *testing.T) {
 
 func TestFeatureStatus_WithScores(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test-project\n"), 0644))
 
 	slug := "scored-feature"
@@ -337,6 +344,7 @@ func TestFeatureStatus_WithScores(t *testing.T) {
 
 func TestFeatureList_SortedByManifestMtime(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test-project\n"), 0644))
 
 	// Create features with different manifest mtimes
@@ -394,6 +402,7 @@ func TestFeatureList_SortedByManifestMtime(t *testing.T) {
 
 func TestFeatureList_MissingManifestSortsToEnd(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test-project\n"), 0644))
 
 	// Create feature with a manifest
@@ -444,6 +453,7 @@ func TestScoreDisplay(t *testing.T) {
 
 func TestRunQuery(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 
 	goMod := filepath.Join(dir, "go.mod")
 	if err := os.WriteFile(goMod, []byte("module test-project\n\ngo 1.21\n"), 0644); err != nil {
@@ -516,6 +526,7 @@ func TestRunQuery(t *testing.T) {
 
 func TestRunStatus(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 
 	goMod := filepath.Join(dir, "go.mod")
 	if err := os.WriteFile(goMod, []byte("module test-project\n\ngo 1.21\n"), 0644); err != nil {
@@ -579,6 +590,7 @@ func TestRunStatus(t *testing.T) {
 
 func TestRunCheck(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 
 	goMod := filepath.Join(dir, "go.mod")
 	if err := os.WriteFile(goMod, []byte("module test-project\n\ngo 1.21\n"), 0644); err != nil {

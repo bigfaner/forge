@@ -13,6 +13,7 @@ import (
 
 func TestLessonList_Empty(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644))
 
 	origWd, err := os.Getwd()
@@ -31,6 +32,7 @@ func TestLessonList_Empty(t *testing.T) {
 
 func TestLessonList_WithLessons(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644))
 
 	lessonsDir := filepath.Join(dir, lesson.LessonsDir)
@@ -60,6 +62,7 @@ func TestLessonList_WithLessons(t *testing.T) {
 
 func TestLessonDetail_Found(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644))
 
 	lessonsDir := filepath.Join(dir, lesson.LessonsDir)
@@ -88,6 +91,7 @@ func TestLessonDetail_Found(t *testing.T) {
 
 func TestLessonDetail_NoTags(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644))
 
 	lessonsDir := filepath.Join(dir, lesson.LessonsDir)

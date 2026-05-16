@@ -308,6 +308,9 @@ func TestRunHookPreCommit_Success(t *testing.T) {
 func setupClaimTestProject(t *testing.T) string {
 	dir := t.TempDir()
 
+	// Force FindProjectRoot to resolve to temp dir
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+
 	// Create go.mod
 	goMod := filepath.Join(dir, "go.mod")
 	if err := os.WriteFile(goMod, []byte("module test-project\n\ngo 1.21\n"), 0644); err != nil {

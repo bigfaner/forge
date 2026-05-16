@@ -733,6 +733,7 @@ func TestFormatTestsExecuted(t *testing.T) {
 func TestSaveIndexAndSignalCompletion(t *testing.T) {
 	t.Run("all tasks completed writes forge state", func(t *testing.T) {
 		dir := t.TempDir()
+		t.Setenv("CLAUDE_PROJECT_DIR", dir)
 		featureDir := filepath.Join(dir, "docs", "features", "test-f")
 		tasksDir := filepath.Join(featureDir, "tasks")
 		_ = os.MkdirAll(tasksDir, 0755)
@@ -766,6 +767,7 @@ func TestSaveIndexAndSignalCompletion(t *testing.T) {
 
 	t.Run("incomplete tasks does not write forge state", func(t *testing.T) {
 		dir := t.TempDir()
+		t.Setenv("CLAUDE_PROJECT_DIR", dir)
 		featureDir := filepath.Join(dir, "docs", "features", "test-f")
 		tasksDir := filepath.Join(featureDir, "tasks")
 		_ = os.MkdirAll(tasksDir, 0755)
@@ -1180,6 +1182,7 @@ func TestFillRecordTemplate_RejectedStatus(t *testing.T) {
 
 func TestSaveIndexAndSignalCompletion_RejectedNotDone(t *testing.T) {
 	projectRoot := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", projectRoot)
 	featureSlug := "test"
 	tasksDir := filepath.Join(projectRoot, "docs", "features", featureSlug, "tasks")
 	_ = os.MkdirAll(tasksDir, 0755)

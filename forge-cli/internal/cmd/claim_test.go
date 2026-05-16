@@ -452,6 +452,7 @@ func TestCheckDependenciesMet_UnknownDependency(t *testing.T) {
 func TestExecuteClaim(t *testing.T) {
 	// Setup test project structure
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 
 	// Create go.mod to simulate project root
 	goMod := filepath.Join(dir, "go.mod")
@@ -590,6 +591,7 @@ func TestClaimNextTask_NonNumericBlocked(t *testing.T) {
 
 func TestExecuteClaim_CreatesForgeState(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 
 	// Create go.mod to simulate project root
 	goMod := filepath.Join(dir, "go.mod")
@@ -650,6 +652,7 @@ func TestExecuteClaim_CreatesForgeState(t *testing.T) {
 func TestExecuteClaim_Continue(t *testing.T) {
 	// Setup test project structure
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 
 	// Create go.mod to simulate project root
 	goMod := filepath.Join(dir, "go.mod")
@@ -728,6 +731,7 @@ func TestExecuteClaim_Continue(t *testing.T) {
 
 func TestExecuteClaim_ScopePropagatedToState(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 	_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n\ngo 1.21\n"), 0644)
 	if err := feature.EnsureFeatureDir(dir, "test-feature"); err != nil {
 		t.Fatal(err)
@@ -777,6 +781,7 @@ func TestExecuteClaim_ScopePropagatedToState(t *testing.T) {
 
 func TestExecuteClaim_ScopeEmptyWhenNotSet(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 	_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n\ngo 1.21\n"), 0644)
 	if err := feature.EnsureFeatureDir(dir, "test-feature"); err != nil {
 		t.Fatal(err)
@@ -893,6 +898,7 @@ func TestPrintTaskDetails_ScopeInOutput(t *testing.T) {
 
 func TestExecuteClaim_TypePropagatedToState(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 	_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n\ngo 1.21\n"), 0644)
 	if err := feature.EnsureFeatureDir(dir, "test-feature"); err != nil {
 		t.Fatal(err)
@@ -940,6 +946,7 @@ func TestExecuteClaim_TypePropagatedToState(t *testing.T) {
 
 func TestExecuteClaim_TypeEmptyWhenNotSet(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 	_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n\ngo 1.21\n"), 0644)
 	if err := feature.EnsureFeatureDir(dir, "test-feature"); err != nil {
 		t.Fatal(err)

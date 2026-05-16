@@ -23,6 +23,9 @@ func TestAddCmd_WithTemplateAndVars(t *testing.T) {
 			"--template", "fix-task",
 			"--source-task-id", "1.1",
 			"--description", "Selector not found",
+			"--var", "SOURCE_FILES=src/Login.tsx",
+			"--var", "TEST_SCRIPT=tests/e2e/auth.spec.ts",
+			"--var", "TEST_RESULTS=results/latest.md",
 		})
 		return rootCmd.Execute()
 	})

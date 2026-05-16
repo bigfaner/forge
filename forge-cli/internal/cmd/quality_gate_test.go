@@ -1046,6 +1046,7 @@ func TestHandleGateFailure_DistinctReasons(t *testing.T) {
 
 func TestCheckAllCompleted_RejectedTaskReturnsNil(t *testing.T) {
 	projectRoot := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", projectRoot)
 	featureSlug := "test"
 	tasksDir := filepath.Join(projectRoot, "docs", "features", featureSlug, "tasks")
 	if err := os.MkdirAll(tasksDir, 0755); err != nil {

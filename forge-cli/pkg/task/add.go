@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -34,6 +35,9 @@ var terminalStatuses = map[string]bool{
 	"skipped":   true,
 	"rejected":  true,
 }
+
+// placeholderRe matches remaining {{KEY}} patterns after variable substitution.
+var placeholderRe = regexp.MustCompile(`\{\{(\w+)\}\}`)
 
 // ActiveFixExistsError is returned by AddTask when active fix tasks already exist
 // for the specified source task, making the new addition redundant.
@@ -222,7 +226,10 @@ func CreateTaskMarkdown(tasksDir string, filename string, opts AddTaskOpts) erro
 		if err != nil {
 			return err
 		}
-		content = ApplyVars(tmpl, opts)
+		content, err = ApplyVars(tmpl, opts)
+			if err != nil {
+				return err
+			}
 	} else {
 		content = buildTaskMarkdown(opts)
 	}
@@ -233,7 +240,8 @@ func CreateTaskMarkdown(tasksDir string, filename string, opts AddTaskOpts) erro
 // ApplyVars replaces {{KEY}} placeholders in tmpl with values from opts.Vars
 // and built-in variables (ID, TITLE, PRIORITY, DESCRIPTION).
 // User-provided variables take precedence over builtins.
-func ApplyVars(tmpl string, opts AddTaskOpts) string {
+// Returns an error if any {{...}} placeholders remain unfilled after substitution.
+func ApplyVars(tmpl string, opts AddTaskOpts) (string, error) {
 	result := tmpl
 
 	// Build merged variable map: user vars override builtins
@@ -252,7 +260,18 @@ func ApplyVars(tmpl string, opts AddTaskOpts) string {
 		result = strings.ReplaceAll(result, "{{"+key+"}}", val)
 	}
 
-	return result
+	// Check for remaining unfilled placeholders
+	var unfilled []string
+	for _, match := range placeholderRe.FindAllStringSubmatch(result, -1) {
+		if len(match) > 1 {
+			unfilled = append(unfilled, match[1])
+		}
+	}
+	if len(unfilled) > 0 {
+		return "", fmt.Errorf("unfilled template variables: %s", strings.Join(unfilled, ", "))
+	}
+
+	return result, nil
 }
 
 // buildTaskMarkdown generates task markdown from scratch (non-template mode).
