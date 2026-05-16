@@ -188,3 +188,44 @@ func TestFindBySlug_NotFound(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "proposal not found")
 }
+
+func TestDiscover_IntentField(t *testing.T) {
+	dir := t.TempDir()
+	slug := "intent-proposal"
+
+	proposalDir := filepath.Join(dir, feature.ProposalBaseDir, slug)
+	require.NoError(t, os.MkdirAll(proposalDir, 0755))
+	proposalContent := `---
+created: 2026-05-01
+author: tester
+status: Draft
+intent: enhancement
+---
+`
+	require.NoError(t, os.WriteFile(filepath.Join(proposalDir, feature.ProposalFileName), []byte(proposalContent), 0644))
+
+	proposals, err := Discover(dir)
+	assert.NoError(t, err)
+	require.Len(t, proposals, 1)
+	assert.Equal(t, "enhancement", proposals[0].Intent)
+}
+
+func TestDiscover_MissingIntentField(t *testing.T) {
+	dir := t.TempDir()
+	slug := "no-intent-proposal"
+
+	proposalDir := filepath.Join(dir, feature.ProposalBaseDir, slug)
+	require.NoError(t, os.MkdirAll(proposalDir, 0755))
+	proposalContent := `---
+created: 2026-05-01
+author: tester
+status: Draft
+---
+`
+	require.NoError(t, os.WriteFile(filepath.Join(proposalDir, feature.ProposalFileName), []byte(proposalContent), 0644))
+
+	proposals, err := Discover(dir)
+	assert.NoError(t, err)
+	require.Len(t, proposals, 1)
+	assert.Equal(t, "", proposals[0].Intent, "missing intent should produce empty string, not break parsing")
+}

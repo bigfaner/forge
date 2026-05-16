@@ -17,6 +17,7 @@ type Metadata struct {
 	Created string `yaml:"created"`
 	Author  string `yaml:"author"`
 	Status  string `yaml:"status"`
+	Intent  string `yaml:"intent"`
 }
 
 // Proposal represents a discovered proposal with its metadata and derived info.
@@ -25,6 +26,7 @@ type Proposal struct {
 	Created       string
 	Status        string
 	Author        string
+	Intent        string
 	HasPRD        bool
 	FeatureStatus string
 	FilePath      string
@@ -89,6 +91,7 @@ func Discover(projectRoot string) ([]Proposal, error) {
 			Created:       created,
 			Status:        meta.Status,
 			Author:        meta.Author,
+			Intent:        meta.Intent,
 			HasPRD:        hasPRD,
 			FeatureStatus: featureStatus,
 			FilePath:      filepath.Join(feature.ProposalBaseDir, slug, feature.ProposalFileName),
