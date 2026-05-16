@@ -267,7 +267,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 			index.SetTask(evalKey, task)
 			result.NewCount++
 		}
-	} else if len(profiles) > 0 && mode != "" {
+	} else if needsTest && len(profiles) > 0 && mode != "" {
 		// Detect test types from test-cases.md
 		var detectedTypes []string
 		testCasesPath := filepath.Join(opts.ProjectRoot, "docs", "features", opts.FeatureSlug, "testing", "test-cases.md")

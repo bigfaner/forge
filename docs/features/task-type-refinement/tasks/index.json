@@ -120,7 +120,7 @@
       "dependencies": [
         "T-quick-1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "quick-gen-and-run-go-test-cli.md",
       "record": "records/quick-gen-and-run-go-test-cli.md",
       "scope": "all",
