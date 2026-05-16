@@ -1450,3 +1450,111 @@ func TestAddFixTask_VarsSourceTaskIDRemainsNA(t *testing.T) {
 		t.Error("task markdown should contain 'N/A (project-wide gate)' for template rendering")
 	}
 }
+
+func TestRunUnitTestStep_RetryPass(t *testing.T) {
+	projectRoot, featureSlug, _ := helperSetup(t)
+
+	callCount := 0
+	mockRun := func(_, _ string) (string, bool) {
+		callCount++
+		if callCount == 1 {
+			return "FAIL: TestFlaky", false
+		}
+		return "ok", true
+	}
+
+	passed, fixID, fixErr := runUnitTestStep(projectRoot, featureSlug, mockRun, "")
+	if !passed {
+		t.Error("expected passed=true when retry succeeds")
+	}
+	if fixID != "" {
+		t.Errorf("expected no fix task on retry pass, got fixID=%q", fixID)
+	}
+	if fixErr != nil {
+		t.Errorf("expected no error on retry pass, got %v", fixErr)
+	}
+	if callCount != 2 {
+		t.Errorf("expected 2 calls (initial + retry), got %d", callCount)
+	}
+}
+
+func TestRunUnitTestStep_RetryFail(t *testing.T) {
+	projectRoot, featureSlug, _ := helperSetup(t)
+
+	mockRun := func(_, _ string) (string, bool) {
+		return "FAIL: TestReal", false
+	}
+
+	passed, fixID, fixErr := runUnitTestStep(projectRoot, featureSlug, mockRun, "")
+	if passed {
+		t.Error("expected passed=false when both attempts fail")
+	}
+	if fixID == "" {
+		t.Error("expected fix task ID on double failure")
+	}
+	if fixErr != nil {
+		t.Errorf("expected no error from runUnitTestStep, got %v", fixErr)
+	}
+
+	// Verify fix task markdown mentions retry
+	mdPath := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug), fixID+".md")
+	data, err := os.ReadFile(mdPath)
+	if err != nil {
+		t.Fatalf("task markdown not found: %v", err)
+	}
+	content := string(data)
+	if !strings.Contains(content, "retried once, both attempts failed") {
+		t.Errorf("fix task description should mention retry, got content (first 500 chars): %.500s", content)
+	}
+}
+
+func TestRunUnitTestStep_FirstPass(t *testing.T) {
+	projectRoot, featureSlug, _ := helperSetup(t)
+
+	callCount := 0
+	mockRun := func(_, _ string) (string, bool) {
+		callCount++
+		return "ok", true
+	}
+
+	passed, fixID, fixErr := runUnitTestStep(projectRoot, featureSlug, mockRun, "")
+	if !passed {
+		t.Error("expected passed=true on first pass")
+	}
+	if fixID != "" {
+		t.Errorf("expected no fix task on first pass, got fixID=%q", fixID)
+	}
+	if fixErr != nil {
+		t.Errorf("expected no error, got %v", fixErr)
+	}
+	if callCount != 1 {
+		t.Errorf("expected 1 call (no retry needed), got %d", callCount)
+	}
+}
+
+func TestRunUnitTestStep_RetryOutputInDescription(t *testing.T) {
+	projectRoot, featureSlug, _ := helperSetup(t)
+
+	callCount := 0
+	mockRun := func(_, _ string) (string, bool) {
+		callCount++
+		return fmt.Sprintf("attempt %d output: FAIL: TestX", callCount), false
+	}
+
+	passed, fixID, _ := runUnitTestStep(projectRoot, featureSlug, mockRun, "")
+	if passed {
+		t.Error("expected passed=false")
+	}
+
+	mdPath := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug), fixID+".md")
+	data, err := os.ReadFile(mdPath)
+	if err != nil {
+		t.Fatalf("task markdown not found: %v", err)
+	}
+	content := string(data)
+
+	// Description should include retry-run output (attempt 2)
+	if !strings.Contains(content, "attempt 2 output") {
+		t.Errorf("fix task description should contain retry output, got content (first 500 chars): %.500s", content)
+	}
+}

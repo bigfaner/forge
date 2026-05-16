@@ -23,7 +23,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2-retry-unit-test-before-fix.md",
       "record": "records/2-retry-unit-test-before-fix.md",
       "scope": "backend",

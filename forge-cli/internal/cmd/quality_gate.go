@@ -19,6 +19,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// testRunFunc is the signature for running project tests.
+// Returns (output, success).
+type testRunFunc func(projectRoot, testCommand string) (string, bool)
+
 var qualityGateVerbose bool
 
 // maxFixTasksPerStep caps the number of active fix-tasks per quality-gate step.
@@ -157,19 +161,16 @@ func runQualityGate(_ *cobra.Command, _ []string) {
 		handleGateFailure(step, errorDocPath, fixID, just.ExtractConciseError(output, 5))
 	})
 
-	// Step 2: Project-wide unit/integration tests
+	// Step 2: Project-wide unit/integration tests (with retry-once policy)
 	fmt.Fprintln(os.Stderr, "--- Running project-wide tests ---")
-	unitOutput, unitSuccess := testrunner.RunProjectTests(result.ProjectRoot, result.TestCommand)
-	if !unitSuccess {
-		fmt.Fprintln(os.Stderr, "ERROR: unit tests failed")
+	unitPassed, unitFixID, _ := runUnitTestStep(
+		result.ProjectRoot, result.FeatureSlug,
+		testrunner.RunProjectTests, result.TestCommand,
+	)
+	if !unitPassed {
+		unitOutput := "" // output already written by runUnitTestStep
 		errorDocPath := "tests/results/unit-raw-output.txt"
-		if unitOutput != "" {
-			if err := writeUnitTestRawOutput(result.ProjectRoot, unitOutput); err != nil {
-				fmt.Fprintf(os.Stderr, "WARNING: failed to write unit test output: %v\n", err)
-			}
-		}
-		fixID, _ := addFixTask(result.ProjectRoot, result.FeatureSlug, "unit-test", unitOutput, errorDocPath)
-		handleGateFailure("unit-test", errorDocPath, fixID, just.ExtractConciseError(unitOutput, 5))
+		handleGateFailure("unit-test", errorDocPath, unitFixID, just.ExtractConciseError(unitOutput, 5))
 	}
 
 	// Step 3: Full e2e regression (graduated scripts in tests/e2e/)
@@ -262,6 +263,41 @@ func handleGateFailure(step, errorDocPath, fixID, concise string) {
 		"reason":   reason,
 	})
 	os.Exit(0)
+}
+
+// runUnitTestStep runs unit tests with a retry-once policy for transient failures.
+// On first failure, tests are re-run once. If retry passes, a warning is logged and
+// no fix task is created. If retry also fails, a fix task is created with both outputs.
+// Returns (passed, fixTaskID, error).
+func runUnitTestStep(projectRoot, featureSlug string, runTest testRunFunc, testCommand string) (bool, string, error) {
+	unitOutput, unitSuccess := runTest(projectRoot, testCommand)
+	if unitSuccess {
+		return true, "", nil
+	}
+
+	// First attempt failed — retry once.
+	fmt.Fprintln(os.Stderr, "WARNING: unit tests failed on first attempt, retrying once...")
+	retryOutput, retrySuccess := runTest(projectRoot, testCommand)
+	if retrySuccess {
+		fmt.Fprintln(os.Stderr, "WARNING: unit tests passed on retry (transient failure)")
+		return true, "", nil
+	}
+
+	// Both attempts failed — write combined output and create fix task.
+	fmt.Fprintln(os.Stderr, "ERROR: unit tests failed (retried once, both attempts failed)")
+	errorDocPath := "tests/results/unit-raw-output.txt"
+	combinedOutput := fmt.Sprintf(
+		"retried once, both attempts failed\n\n=== First attempt ===\n%s\n\n=== Retry attempt ===\n%s",
+		unitOutput, retryOutput,
+	)
+	if combinedOutput != "" {
+		if err := writeUnitTestRawOutput(projectRoot, combinedOutput); err != nil {
+			fmt.Fprintf(os.Stderr, "WARNING: failed to write unit test output: %v\n", err)
+		}
+	}
+
+	fixID, fixErr := addFixTask(projectRoot, featureSlug, "unit-test", combinedOutput, errorDocPath)
+	return false, fixID, fixErr
 }
 
 // sourceFileRe matches source file paths followed by :line or :line:col patterns.
