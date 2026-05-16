@@ -63,13 +63,25 @@ Use `AskUserQuestion` with three options:
 
 | Option | Action |
 |--------|--------|
-| **Yes, generate tasks** | Proceed to Step 3 |
+| **Yes, generate tasks** | Update proposal status, then proceed to Step 3 |
 | **Revise proposal** | Return to Step 1 (re-run brainstorm) |
 | **Abort** | Stop cleanly |
 
 <EXTREMELY-IMPORTANT>
 This confirmation is MANDATORY. The proposal is the sole input for the entire quick mode pipeline — no PRD or design will be created to correct course. A wrong direction here means all downstream tasks are wasted.
 </EXTREMELY-IMPORTANT>
+
+### Status Transition: Draft → Approved
+
+When the user selects **"Yes, generate tasks"**, update the proposal frontmatter status:
+
+```
+Edit(file_path="docs/proposals/<slug>/proposal.md",
+     old_string="status: Draft",
+     new_string="status: Approved")
+```
+
+This must be an atomic frontmatter edit targeting only the `status:` line. Do NOT rewrite the entire file.
 
 ## Step 3: Generate Tasks
 
@@ -106,6 +118,22 @@ The existing run-tasks dispatcher will:
 4. Run breaking gates (compile + fmt + lint + test)
 5. Handle fix tasks on failure
 6. Run all-completed hook as final safety net
+
+### Status Transition: Approved → Completed
+
+After run-tasks completes all tasks successfully, update both frontmatter files together:
+
+```
+Edit(file_path="docs/proposals/<slug>/proposal.md",
+     old_string="status: Approved",
+     new_string="status: Completed")
+
+Edit(file_path="docs/features/<slug>/manifest.md",
+     old_string="status: tasks",
+     new_string="status: completed")
+```
+
+Both updates MUST happen together to prevent status drift. These must be atomic frontmatter edits targeting only the `status:` line. Do NOT rewrite either file. Only update to Completed after all tasks are confirmed done — if run-tasks reports any failure, leave status as Approved.
 
 ## Error Handling
 
