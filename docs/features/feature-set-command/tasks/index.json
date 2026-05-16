@@ -111,7 +111,7 @@
       "dependencies": [
         "3"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "quick-test-cases-go-test.md",
       "record": "records/quick-test-cases-go-test.md",
       "scope": "all",
