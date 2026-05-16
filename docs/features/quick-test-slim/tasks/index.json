@@ -53,7 +53,7 @@
       "dependencies": [
         "T-quick-3"
       ],
-      "status": "blocked",
+      "status": "completed",
       "file": "quick-graduate-go-test.md",
       "record": "records/quick-graduate-go-test.md",
       "scope": "all",
