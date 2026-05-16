@@ -16,36 +16,39 @@ evaluator: Claude (structural audit)
 ├──────────────────────────────┬──────────┬──────────┬────────────┤
 │ Dimension                    │ Score    │ Max      │ Status     │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 1. Workflow Completeness     │  ___     │  250     │ ✅/⚠️/❌    │
-│    1a. Full mode chain       │  ___/80  │          │            │
+│ 1. Workflow Completeness     │  ___     │  280     │ ✅/⚠️/❌    │
+│    1a. Full mode chain       │  ___/90  │          │            │
 │    1b. Quick mode chain      │  ___/40  │          │            │
-│    1c. Conditional branching │  ___/50  │          │            │
+│    1c. Conditional branching │  ___/30  │          │            │
 │    1d. Manifest status       │  ___/30  │          │            │
-│    1e. Test lifecycle        │  ___/50  │          │            │
+│    1e. Test lifecycle        │  ___/70  │          │            │
+│    1f. Temporal ordering     │  ___/30  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 2. Bypass Resistance         │  ___     │  250     │ ✅/⚠️/❌    │
-│    2a. Quality gates         │  ___/70  │          │            │
-│    2b. Eval integrity        │  ___/70  │          │            │
+│ 2. Bypass Resistance         │  ___     │  280     │ ✅/⚠️/❌    │
+│    2a. Quality gates         │  ___/80  │          │            │
+│    2b. Eval integrity        │  ___/80  │          │            │
 │    2c. User interaction      │  ___/45  │          │            │
 │    2d. Required steps        │  ___/35  │          │            │
-│    2e. Prohibition           │  ___/30  │          │            │
+│    2e. Prohibition           │  ___/40  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 3. Instruction Precision     │  ___     │  200     │ ✅/⚠️/❌    │
-│    3a. Instruction conflicts │  ___/80  │          │            │
-│    3b. Step ambiguity        │  ___/50  │          │            │
-│    3c. Incomplete condition. │  ___/40  │          │            │
-│    3d. Variable clarity      │  ___/30  │          │            │
+│ 3. Instruction Precision     │  ___     │  280     │ ✅/⚠️/❌    │
+│    3a. Instruction conflicts │  ___/100 │          │            │
+│    3b. Step ambiguity        │  ___/60  │          │            │
+│    3c. Incomplete condition. │  ___/50  │          │            │
+│    3d. Variable clarity      │  ___/40  │          │            │
+│    3e. Narrative inflation   │  ___/30  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 4. Cross-file Dedup          │  ___     │  150     │ ✅/⚠️/❌    │
-│    4a. Content copy          │  ___/60  │          │            │
-│    4b. guide.md overlap      │  ___/50  │          │            │
-│    4c. Unreasonable inline   │  ___/40  │          │            │
+│ 4. Cross-file Dedup          │  ___     │  30      │ ✅/⚠️/❌    │
+│    4a. Content copy          │  ___/10  │          │            │
+│    4b. guide.md overlap      │  ___/10  │          │            │
+│    4c. Unreasonable inline   │  ___/10  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
-│ 5. Reference Integrity       │  ___     │  100     │ ✅/⚠️/❌    │
-│    5a. Agent refs            │  ___/30  │          │            │
-│    5b. Template refs         │  ___/25  │          │            │
-│    5c. Cross-skill refs      │  ___/25  │          │            │
-│    5d. Hook refs             │  ___/20  │          │            │
+│ 5. Reference Integrity       │  ___     │  80      │ ✅/⚠️/❌    │
+│    5a. Agent refs            │  ___/20  │          │            │
+│    5b. Template refs         │  ___/20  │          │            │
+│    5c. Cross-skill refs      │  ___/15  │          │            │
+│    5d. Hook refs             │  ___/15  │          │            │
+│    5e. Shared refs           │  ___/10  │          │            │
 ├──────────────────────────────┼──────────┼──────────┼────────────┤
 │ 6. Structural Convention     │  ___     │  50      │ ✅/⚠️/❌    │
 │    6a. Frontmatter           │  ___/25  │          │            │

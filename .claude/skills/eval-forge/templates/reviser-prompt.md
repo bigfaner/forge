@@ -126,10 +126,46 @@ The valid example tells the agent WHAT TO DO. The invalid example only describes
 
 **Step 4: Escape hatch.** If a `[TEXT-FIXABLE]` bypass cannot be converted to a valid actionable path (every attempt reduces to a consequence description or empty prohibition), skip it and report in FIXES SKIPPED: `[TEXT-FIXABLE] bypass has no actionable fix — requires code-level enforcement`.
 
+### Rule 5: Temporal Ordering Fix (maps to D1: Workflow Completeness)
+
+When a detection point is placed after the step it intends to skip/modify:
+
+1. **Identify the earliest point where the condition can be evaluated.** Look at what information is needed to make the decision. For example, "are all design elements non-compilable?" can be determined during Step 1 when reading documents — not only after Step 4a when tasks are already created.
+
+2. **Move the Detection paragraph** to that earliest step. Phrase it as: "During Step N, after [specific action], if [condition], the feature is [classification]. Skip [target steps] immediately."
+
+3. **Update the workflow description** to reflect the new detection point. The fast-path workflow must start with the step where detection now occurs.
+
+4. **Update mermaid diagrams** if present. Ensure the decision node's incoming edge connects from the step where detection now happens, and the "skip" path correctly bypasses the intended steps.
+
+5. **Do NOT change what steps are skipped** — only change WHERE the decision to skip is made. The skip targets remain the same.
+
+**Valid fix example:**
+```
+Before: "Detection: After Step 4a, if every task is docs-only, skip Step 0"
+After:  "Detection: During Step 1, after scanning all documents, if every
+         design element targets non-compilable files, skip Step 0"
+```
+
+**Invalid fix (wrong approach):**
+```
+Moving Step 0 to after Step 4a to make the skip work — this changes the
+workflow semantics, not just the detection point.
+```
+
+### Rule 6: Narrative Inflation Fix (maps to D3e)
+
+When a SKILL.md or command file contains text that inflates context without changing agent behavior:
+
+1. **Remove consequence/rationale paragraphs.** Keep the rule or instruction itself, delete the "why it matters" explanation. The agent doesn't need to understand the rationale to follow the instruction.
+2. **Fix stale code references.** If a file path or function name is wrong, correct it to the actual location. If the reference is unnecessary, remove it.
+3. **Remove redundant re-explanation.** If a table, step, or code block already states the information, delete the prose restatement.
+4. **Do NOT remove content inside enforcement tags** (`<HARD-RULE>`, `<HARD-GATE>`, `<EXTREMELY-IMPORTANT>`) — these are enforcement markers, not narrative.
+
 ## Execution Order
 
 1. Apply all Layer 1 (safe-fix) changes first.
-2. Then apply Layer 2 (guided-fix) changes in rule order: Rule 1, then Rule 2, then Rule 3, then Rule 4.
+2. Then apply Layer 2 (guided-fix) changes in rule order: Rule 1, then Rule 2, then Rule 3, then Rule 4, then Rule 5, then Rule 6.
 3. If a fix requires human judgment (e.g., two files conflict and neither is clearly more complete), skip it and report it.
 4. When Rule 4 adds text to a file that Rule 1 would simplify, Rule 4 wins — bypass hardening is higher priority than conciseness.
 

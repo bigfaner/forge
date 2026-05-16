@@ -15,6 +15,7 @@ This rubric is designed for a 4-phase evaluation methodology:
 1. Read the ground-truth workflow specs embedded in Dimension 1 below
 2. Scan all skill/command/agent files, extract actual prerequisites, outputs, gate points
 3. Compare spec vs actual, find breakpoints, dead ends, unreachable states
+4. Build intra-skill step graphs: extract step sequences, conditional skip targets, and detection points; verify temporal ordering consistency (see criterion 1f)
 
 **Phase 2: Per-Node Adversarial Testing (D2)**
 1. List every gate/confirm point per node
@@ -24,7 +25,7 @@ This rubric is designed for a 4-phase evaluation methodology:
 5. Quality gates: check whether CLI-level enforcement exists
 
 **Phase 3: Per-File Precision Review (D3 + D4)**
-1. Instruction conflicts (highest priority): cross-file search for contradictory descriptions of the same concept
+1. Instruction conflicts (highest priority): behavioral cross-reference with CLI source code, instruction chain tracing, then cross-file same-concept comparison
 2. Step ambiguity: does each SKILL.md step have a single unambiguous interpretation
 3. Incomplete conditionals: does every if-then have an else
 4. Undefined variables: do agent-filled variables have source annotations
@@ -38,24 +39,24 @@ This rubric is designed for a 4-phase evaluation methodology:
 
 | Dimension | Points |
 |-----------|--------|
-| 1. Workflow Completeness | 250 |
-| 2. Bypass Resistance | 250 |
-| 3. Instruction Precision | 200 |
-| 4. Cross-file Dedup | 150 |
-| 5. Reference Integrity | 100 |
+| 1. Workflow Completeness | 280 |
+| 2. Bypass Resistance | 280 |
+| 3. Instruction Precision | 280 |
+| 4. Cross-file Dedup | 30 |
+| 5. Reference Integrity | 80 |
 | 6. Structural Convention | 50 |
 | **Total** | **1000** |
 
-Score allocation logic: Runtime reliability (D1+D2+D3) = 700 pts (70%), Information efficiency (D4) = 150 pts, Baseline integrity (D5+D6) = 150 pts.
+Score allocation logic: Runtime reliability (D1+D2+D3) = 840 pts (84%), Baseline integrity (D4+D5+D6) = 160 pts (16%).
 
 ## Deduction Tiers
 
 | Severity | Penalty | Examples |
 |----------|---------|---------|
-| Critical | -20 | Workflow breakpoint, eval integrity bypass, instruction conflict |
+| Critical | -20 | Workflow breakpoint, eval integrity bypass, instruction conflict, temporal ordering contradiction |
 | High | -15 | Dangling reference, invalid manifest transition, missing eval template |
 | Medium | -10 | Step ambiguity, conditional without else, content duplication, missing prerequisite check |
-| Low | -5 | Missing frontmatter field, name-directory mismatch, advisory-only prohibition |
+| Low | -5 | Missing frontmatter field, name-directory mismatch, advisory-only prohibition, context inflation |
 
 **Floor rule:** Each sub-criterion has a minimum score of 0. Total deductions for a sub-criterion cannot result in a negative score.
 
@@ -63,7 +64,7 @@ Score allocation logic: Runtime reliability (D1+D2+D3) = 700 pts (70%), Informat
 
 ## Dimensions
 
-### 1. Workflow Completeness (250 pts)
+### 1. Workflow Completeness (280 pts)
 
 Verify the full-chain state graph: every skill's prerequisites, outputs, and successor steps; both quick mode and full mode paths must be complete.
 
@@ -85,7 +86,7 @@ breakdown-tasks → forge task index (auto T-test tasks) → T-test-1 (gen-sitem
 /quick → /brainstorm → [human confirm] → /quick-tasks → /run-tasks
 ```
 
-Quick test chain: T-quick-1 (gen-test-cases) → T-quick-2 (gen-test-scripts) → T-quick-3 (run-e2e-tests) → T-quick-4 (graduate-tests) → T-quick-5 (verify-regression). Skips: gen-sitemap, eval-test-cases, consolidate-specs.
+Quick test chain: T-quick-1 (gen-test-cases) → T-quick-2 (gen-test-scripts) → T-quick-3 (run-e2e-tests) → T-quick-4 (graduate-tests) → T-quick-5 (verify-regression) → T-quick-6 (doc-generation-drift). Skips: gen-sitemap, eval-test-cases, consolidate-specs. Note: T-quick-5 and T-quick-6 are CLI-embedded templates (no SKILL.md) — unauditable steps.
 
 #### Manifest Status Machine
 
@@ -114,7 +115,7 @@ Legal transitions only forward. Quick mode starts at tasks (no prd/design).
 | graduate-tests | staging area + PASS results + no marker | `tests/e2e/<module>/`, `.graduated/<slug>` | profile → import rewriting |
 | consolidate-specs | PRD + design (both hard) | `specs/`, updated `docs/business-rules/`, `docs/conventions/` | CROSS vs LOCAL |
 | /quick | User idea | Orchestrates quick pipeline | >10 tasks → STOP |
-| quick-tasks | proposal.md (hard) | `tasks/*.md`, `tasks/index.json`, `manifest.md` | max 10 tasks |
+| quick-tasks | proposal.md (hard) | `tasks/*.md`, `tasks/index.json`, `manifest.md` | max 10 tasks; generates T-quick-1~6 (T-quick-5 and T-quick-6 are CLI-embedded, no SKILL.md) |
 | /run-tasks | `tasks/index.json` | Execution loop | 3 consecutive failures → STOP |
 | submit-task | Task executed + record.json | `records/*.md`, updated index.json | --force bypasses gate (not auto-downgrade) |
 
@@ -122,70 +123,118 @@ Legal transitions only forward. Quick mode starts at tasks (no prd/design).
 
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| 1a. Full mode chain complete | 0-80 | Every skill has prerequisite definitions and outputs. Prerequisite files are produced by predecessor skills. Chain has no breakpoints. Breakpoint = -20 each. |
+| 1a. Full mode chain complete | 0-90 | Every skill has prerequisite definitions and outputs. Prerequisite files are produced by predecessor skills. Chain has no breakpoints. **Also checks for unauditable steps**: steps in the ground-truth pipeline that have no SKILL.md and no CLI-accessible template (e.g., CLI-embedded task templates). Breakpoint = -20 each. Unauditable step = -10 each. |
 | 1b. Quick mode chain complete | 0-40 | Quick chain is complete. Missing step = -20 each. |
-| 1c. Conditional branching correct | 0-50 | Every conditional branch has a true-path and false-path. Missing branch = -10 each. |
+| 1c. Conditional branching correct | 0-30 | Every conditional branch has a true-path and false-path. Missing branch = -10 each. |
 | 1d. Manifest status transitions valid | 0-30 | Status transitions are legal. Illegal transition = -15 each. |
-| 1e. Test lifecycle chain intact | 0-50 | Test chain is complete. Broken link = -15 each. |
+| 1e. Test lifecycle chain intact | 0-70 | Test chain is complete. **Also checks for unauditable test steps**: test chain steps with no SKILL.md and no CLI-accessible template (e.g., verify-regression embedded in CLI binary). Broken link = -15 each. Unauditable step = -10 each. |
+| 1f. Intra-skill temporal ordering | 0-30 | Every conditional skip's detection point precedes the step it modifies. Detection-after-skip-target = -15 each. |
 
-### 2. Bypass Resistance (250 pts)
+**1f Detailed Check Procedure:**
 
-Assume you are a "lazy agent trying to cut corners" — test each node for bypass paths.
+For each SKILL.md that defines numbered steps with conditional skip/fast-path logic:
+
+1. **Extract step sequence**: Identify all numbered steps (Step 0, Step 1, Step 2, ...) and their execution order.
+2. **Identify conditional skip targets**: Find instructions like "skip Step N if condition C" or "Steps N-M are unnecessary when condition C".
+3. **Locate detection points**: Find where condition C is evaluated — look for "Detection:" paragraphs, "After Step N" markers, "During Step N" markers, or mermaid decision nodes.
+4. **Verify temporal consistency**: For each (detection_point, skip_target) pair, check that `detection_step <= skip_target`. A detection point at "After Step 4a" cannot skip "Step 0" because Step 0 executes before the detection.
+5. **Check mermaid diagrams**: If a mermaid flow diagram exists, trace the decision node's incoming edge — does it connect from a step that precedes the skipped step?
+
+**Common violation pattern:**
+```
+Detection: "After Step N, if condition C..."
+Skip target: "Step M where M < N"
+→ Contradiction: condition evaluated at Step N, but Step M already executed.
+```
+
+**Example (from real fix):**
+```
+Before fix: "Detection: After Step 4a (Business Tasks), if every business task
+was docs-only, skip Step 0 (Resolve Profile)"
+→ Step 0 executes BEFORE Step 4a, so the skip is never actionable.
+
+After fix: "Detection: During Step 1 (Read Documents), after scanning all input
+artifacts — if every design element targets non-compilable files, skip Step 0"
+→ Detection at Step 1, Step 0 not yet executed, skip is actionable.
+```
+
+### 2. Bypass Resistance (280 pts)
+
+Phase 2 uses a two-stage approach: independent discovery first (systematically find all enforcement gaps), then regression verification (confirm previously-fixed TEXT-FIXABLE vectors stay fixed).
 
 **5 Bypass Types:**
 
-| Type | Points | Description |
-|------|--------|-------------|
-| Type 2: Skip quality gates | 0-70 | `--force` bypasses compile/test/AC. No justfile means gate silently passes. noTest skips. |
-| Type 3: Fake eval results | 0-70 | Main session can fake scorer output. Score parsing lacks integrity checks. Scorer subagent can be skipped. |
-| Type 1: Skip mandatory interaction | 0-45 | User confirmation points are all advisory text (HARD-RULE). Can skip brainstorm/write-prd/ui-design/tech-design/consolidate-specs confirmations. |
-| Type 4: Skip required steps | 0-35 | Conditional requirements depend on agent self-reporting (db-schema, placement). gen-test-scripts Step Actionability gate only triggers when eval report exists. |
-| Type 5: Lazy shortcuts | 0-30 | Prohibition patterns (no mock, no sleep) are purely advisory. record.json metrics are self-reported. Direct index.json editing bypasses all validation. |
+| Type | Points | Examples |
+|------|--------|----------|
+| Type 2: Skip quality gates | 0-80 | `--force` overrides, noTest bypasses, missing justfile silently passes, self-reported metrics |
+| Type 3: Fake eval results | 0-80 | Skip scorer subagent, tamper with scores, general-purpose fallback loses adversarial constraints |
+| Type 1: Skip mandatory interaction | 0-45 | User confirmations are advisory-only HARD-RULE text, no mechanical enforcement |
+| Type 4: Skip required steps | 0-35 | Conditional requirements depend on self-reporting, gates only trigger when prerequisites exist |
+| Type 5: Lazy shortcuts | 0-30 | Prohibitions are purely advisory, metrics are self-reported, direct file editing bypasses CLI |
 
 **Scoring Criteria:**
 
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| 2a. Quality gate enforcement | 0-70 | Is each gate point enforced by CLI or merely advisory text. Zero enforcement with no documented rationale = -15 each. |
-| 2b. Eval integrity | 0-70 | Does the generic eval skill (`skills/eval/SKILL.md`) require an independent subagent for scoring. Does the decision gate parse structured output. Can the main session fake the score. Weakness = -25 each. |
-| 2c. User interaction enforcement | 0-45 | Does each confirmation point have an enforcement mechanism. Purely advisory = -5 each. |
+| 2a. Quality gate enforcement | 0-80 | Is each gate point enforced by CLI or merely advisory text. Zero enforcement with no documented rationale = -15 each. |
+| 2b. Eval integrity | 0-80 | Does each eval skill require independent subagent scoring. Does the decision gate parse structured output. Can the main session fake the score. Weakness = -25 each. |
+| 2c. User interaction enforcement | 0-45 | Does each confirmation point have a mechanical enforcement mechanism. Purely advisory = -10 each. |
 | 2d. Required step enforcement | 0-35 | Do conditional requirements have downstream verification. No verification = -10 each. |
-| 2e. Prohibition enforcement | 0-30 | Does each HARD-RULE prohibition have a mechanical check. Purely advisory = -5 each. |
+| 2e. Prohibition enforcement | 0-40 | Does each HARD-RULE prohibition have a mechanical check. Purely advisory = -5 each. |
 
-**Known Bypass Vectors (from manual audit — scorer should verify current state):**
+**Bypass Discovery Protocol (Phase 2a):**
 
-| Vector | Type | Severity | Class | Description |
-|--------|------|----------|-------|-------------|
-| BV-2.1 | T2 | HIGH | ARCHITECTURAL | `forge task submit --force` bypasses compile/test/AC all validation |
-| BV-2.4 | T2 | HIGH | ARCHITECTURAL | Agent can fake testsFailed: 0 in record.json (CLI does not verify number source) |
-| BV-3.1 | T3 | HIGH | ARCHITECTURAL | Main session can skip scorer subagent and directly declare SCORE: 950 |
-| BV-3.2 | T3 | HIGH | ARCHITECTURAL | Score parsing has no integrity check, main session can tamper with scorer return values |
-| BV-1.1 | T1 | MED | TEXT-FIXABLE | brainstorm user approval can be skipped (pure HARD-RULE) |
-| BV-1.2 | T1 | MED | TEXT-FIXABLE | write-prd user approval can be skipped |
-| BV-1.3 | T1 | MED | TEXT-FIXABLE | /quick user confirmation can be skipped |
-| BV-1.4 | T1 | MED | TEXT-FIXABLE | ui-design prototype review can be skipped |
-| BV-1.5 | T1 | MED | TEXT-FIXABLE | tech-design DB schema review can be skipped |
-| BV-1.7 | T1 | MED | TEXT-FIXABLE | consolidate-specs spec integration confirmation can be skipped |
-| BV-4.2 | T4 | MED | TEXT-FIXABLE | gen-test-scripts Step Actionability gate only triggers when eval report exists |
-| BV-4.5 | T4 | MED | TEXT-FIXABLE | placement validation depends on sitemap existence, skipped if absent |
-| BV-5.1 | T5 | LOW | ARCHITECTURAL | Prohibition patterns (no mock/no sleep/no hardcoded URL) are purely advisory |
-| BV-5.2 | T5 | LOW | ARCHITECTURAL | record.json metrics (coverage/testsPassed) are self-reported, no cross-verification |
+Systematically enumerate all enforcement gaps. Do NOT read the regression guard table before completing this phase — discovery must be unbiased.
+
+**Step 1 — Enumerate enforcement claims.** Scan every SKILL.md, command file, and guide.md for:
+- `<HARD-RULE>`, `<HARD-GATE>`, `<EXTREMELY-IMPORTANT>` tags and what each demands
+- "must", "required", "mandatory", "do not" statements
+- Quality gate references (compile, fmt, lint, test)
+- User confirmation points (AskUserQuestion, explicit approval)
+- Conditional enforcement (gates that only trigger under certain conditions — e.g., only when eval report exists)
+- Self-reported fields (record.json metrics, task frontmatter values like `noTest`, `db-schema`)
+
+**Step 2 — Trace enforcement chain.** For each claim, determine:
+- Where enforced? (CLI command / hook / text-only / absent)
+- Consequence of ignoring? (blocks / warns / nothing)
+- Bypass path? (`--force` / missing prerequisite / alternative tool / self-declared value)
+- Cross-reference with CLI source code: read `forge-cli/internal/cmd/submit.go` (quality gates, `--force`, `noTest` handling, `validateRecordData`). Confirm CLI behavior matches SKILL.md descriptions.
+
+**Step 3 — Classify gaps.** Each enforcement gap found:
+- **[ARCHITECTURAL]**: Requires code-level change to enforce. Score and report, but do NOT generate reviser fix tasks. Adding HARD-RULE text for architectural bypasses is counterproductive — it inflates context without changing agent behavior.
+- **[TEXT-FIXABLE]**: Can be mitigated by adding conditional branches, fallback paths, or actionable instructions. Valid reviser targets.
+
+**Regression Guard (Phase 2b):**
+
+The following TEXT-FIXABLE bypass vectors were previously identified. Verify each one's current state. Do not deduct for vectors that have been fixed.
+
+| Vector | Type | Severity | Description |
+|--------|------|----------|-------------|
+| BV-1.1 | T1 | MED | brainstorm user approval can be skipped (pure HARD-RULE) |
+| BV-1.2 | T1 | MED | write-prd user approval can be skipped |
+| BV-1.3 | T1 | MED | /quick user confirmation can be skipped |
+| BV-1.4 | T1 | MED | ui-design prototype review can be skipped |
+| BV-1.5 | T1 | MED | tech-design DB schema review can be skipped |
+| BV-1.7 | T1 | MED | consolidate-specs spec integration confirmation can be skipped |
+| BV-4.2 | T4 | MED | gen-test-scripts Step Actionability gate only triggers when eval report exists |
+| BV-4.5 | T4 | MED | placement validation depends on sitemap existence, skipped if absent |
 
 **Bypass classification for fix strategy:**
 
 - **ARCHITECTURAL**: Cannot be fixed by adding text to SKILL.md/command files. These require code-level changes (CLI enforcement, cryptographic verification, etc.). Score them and report them, but do NOT generate reviser fix tasks. Adding HARD-RULE text for architectural bypasses is counterproductive — it inflates context without changing agent behavior.
 - **TEXT-FIXABLE**: Can be mitigated by adding conditional branches, fallback paths, or actionable instructions. These are valid targets for the reviser.
 
-### 3. Instruction Precision (200 pts)
+### 3. Instruction Precision (280 pts)
 
 **Priority order: Instruction conflicts > Step ambiguity > Incomplete conditionals > Undefined variables**
 
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| 3a. Instruction conflicts (cross-file) | 0-80 | guide.md vs SKILL.md vs command files describe the same concept differently. E.g., guide says "lint blocks" but skill says "lint non-blocking". Conflict = -25 each. **Check this first.** |
-| 3b. Step ambiguity | 0-50 | SKILL.md steps must have a single unambiguous interpretation. Vague verbs ("check tests", "verify quality") without specific commands = -10 each. |
-| 3c. Incomplete conditionals | 0-40 | Every if-then must have an else path or an explicit "skip" instruction. Missing else = -10 each. |
-| 3d. Variable resolution clarity | 0-30 | Agent-filled variables must have source annotations. CLI-filled variables must match `prompt.go` typeToTemplate. Undefined agent variable = -10 each. |
+| 3a. Instruction conflicts | 0-100 | Three conflict sources: **(1) Behavioral**: guide.md/SKILL.md describes behavior that CLI source code doesn't implement (e.g., guide says "lint retries once" but CLI has no retry logic). Cross-reference `forge-cli/internal/cmd/submit.go` (behavioral logic), `forge-cli/pkg/just/just.go` (quality gate implementation). **(2) Chain**: Step N's output mismatches Step N+1's expected input; conditional states not handled by subsequent steps. **(3) Cross-file**: same concept described differently across guide.md, SKILL.md, command files. Conflict = -25 each. **Check behavioral first, then chain, then cross-file.** |
+| 3b. Step ambiguity | 0-60 | SKILL.md steps must have a single unambiguous interpretation. Vague verbs ("check tests", "verify quality") without specific commands = -10 each. Also flag steps where chain tracing reveals the agent must make unstated choices. |
+| 3c. Incomplete conditionals | 0-50 | Every if-then must have an else path or an explicit "skip" instruction. Missing else = -10 each. **Implicit-else exception:** if the false-path is the natural default (normal execution continues, zero-value default, or no-op), no explicit else is required. Only flag if-then patterns where the false-path requires distinct handling but none is documented. |
+| 3d. Variable resolution clarity | 0-40 | Agent-filled variables must have source annotations. CLI-filled variables must match `prompt.go` typeToTemplate. Undefined agent variable = -10 each. |
+| 3e. Narrative inflation | 0-30 | Text that inflates context without changing agent behavior: consequence/rationale paragraphs (why vs what), stale code/function references (pointing to moved or non-existent files), redundant re-explanation of what a table/step/code-block already states. Instance = -5 each. **Exempt**: content inside `<HARD-RULE>`, `<HARD-GATE>`, `<EXTREMELY-IMPORTANT>` tags. |
 
 **CLI-Filled Variables (from `prompt.go` Synthesize — do NOT mark as "undefined"):**
 
@@ -198,7 +247,7 @@ Assume you are a "lazy agent trying to cut corners" — test each node for bypas
 | `{{FEATURE_SLUG}}` | SynthesizeOpts.FeatureSlug | 4 templates |
 | `{{PROFILE}}` | task.Profile | 4 test pipeline templates |
 
-### 4. Cross-file Dedup (150 pts)
+### 4. Cross-file Dedup (30 pts)
 
 **Three categories with different standards:**
 
@@ -211,9 +260,9 @@ Forge is a Claude Code plugin deployed to users' projects. Plugin SKILL.md and c
 
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| 4a. Content copy | 0-60 | Identical/near-identical text blocks appearing in 3+ files. **Plugin portability exception:** Known instances (profile resolution in 9 files, eval protocol in 6 files, report sections in 5 files) serve plugin portability — flag as INFO but do NOT deduct. Only deduct when dedup is feasible within the same skill directory or in non-plugin files. Actionable instance = -10 each. |
-| 4b. guide.md vs SKILL.md overlap | 0-50 | guide.md is the single source of truth. **But plugin files cannot reference guide.md via relative paths** — they must inline the content. Only deduct for non-plugin files or when referencing is feasible. Actionable duplication = -10 each. |
-| 4c. Unreasonable inline | 0-40 | Content that has its own file but is also inlined in SKILL.md. Judgment: does the agent need to see the full content in a single context (reasonable inline) vs can it be obtained via Read tool on demand (should reference). **Plugin portability:** inlining content from outside the skill directory is reasonable when the alternative (relative path reference) would break at runtime. Unreasonable inline = -10 each. |
+| 4a. Content copy | 0-10 | Identical/near-identical text blocks appearing in 3+ files. **Plugin portability exception:** Known instances serve plugin portability — flag as INFO but do NOT deduct. Only deduct when dedup is feasible within the same skill directory or in non-plugin files. Actionable instance = -10 each. |
+| 4b. guide.md vs SKILL.md overlap | 0-10 | guide.md is the single source of truth. **But plugin files cannot reference guide.md via relative paths** — they must inline the content. Only deduct for non-plugin files or when referencing is feasible. Actionable duplication = -10 each. |
+| 4c. Unreasonable inline | 0-10 | Content that has its own file but is also inlined in SKILL.md. Judgment: does the agent need to see the full content in a single context (reasonable inline) vs can it be obtained via Read tool on demand (should reference). **Plugin portability:** inlining content from outside the skill directory is reasonable when the alternative would break at runtime. Unreasonable inline = -10 each. |
 
 **Known Redundancy Instances:**
 
@@ -225,14 +274,15 @@ Forge is a Claude Code plugin deployed to users' projects. Plugin SKILL.md and c
 | Quality gate sequence | B | YES (plugin skills need it inline) | NO |
 | Scope resolution paraphrase | B | Partial | Only if in non-plugin file |
 
-### 5. Reference Integrity (100 pts)
+### 5. Reference Integrity (80 pts)
 
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| 5a. Agent references valid | 0-30 | `forge:<agent>` or `subagent_type` points to an existing file in `plugins/forge/agents/`. Dangling = -15 each. |
-| 5b. Template references valid | 0-25 | Template paths in SKILL.md point to existing files. Dangling = -15 each. |
-| 5c. Cross-skill references valid | 0-25 | `invoke /<name>` points to an existing skill/command. Dangling = -15 each. |
-| 5d. Hook references valid | 0-20 | Paths and CLI commands in hooks.json exist. Dangling = -15 each. |
+| 5a. Agent references valid | 0-20 | `forge:<agent>` or `subagent_type` points to an existing file in `plugins/forge/agents/`. Dangling = -10 each. |
+| 5b. Template references valid | 0-20 | Template paths in SKILL.md point to existing files. Dangling = -10 each. |
+| 5c. Cross-skill references valid | 0-15 | `invoke /<name>` points to an existing skill/command. Dangling = -10 each. |
+| 5d. Hook references valid | 0-15 | Paths and CLI commands in hooks.json exist. Dangling = -10 each. |
+| 5e. Shared reference paths valid | 0-10 | `plugins/forge/references/*` paths in SKILL.md or commands must exist. Dangling = -5 each. |
 
 ### 6. Structural Convention (50 pts)
 

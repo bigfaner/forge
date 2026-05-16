@@ -186,11 +186,11 @@ After the reviser completes:
 ### Dimension Breakdown (final)
 | Dimension | Score | Max |
 |-----------|-------|-----|
-| 1. Workflow Completeness | {{d1}} | 250 |
-| 2. Bypass Resistance | {{d2}} | 250 |
-| 3. Instruction Precision | {{d3}} | 200 |
-| 4. Cross-file Dedup | {{d4}} | 150 |
-| 5. Reference Integrity | {{d5}} | 100 |
+| 1. Workflow Completeness | {{d1}} | 280 |
+| 2. Bypass Resistance | {{d2}} | 280 |
+| 3. Instruction Precision | {{d3}} | 280 |
+| 4. Cross-file Dedup | {{d4}} | 30 |
+| 5. Reference Integrity | {{d5}} | 80 |
 | 6. Structural Convention | {{d6}} | 50 |
 
 ### Files Modified
