@@ -2,7 +2,7 @@
 scale: 1000
 target: 900
 iterations: 6
-type: test-cases-cli
+type: cli-test-cases
 ---
 
 # CLI Test Cases Evaluation Rubric

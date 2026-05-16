@@ -2,7 +2,7 @@
 scale: 1000
 target: 900
 iterations: 6
-type: test-cases-tui
+type: tui-test-cases
 ---
 
 # TUI Test Cases Evaluation Rubric

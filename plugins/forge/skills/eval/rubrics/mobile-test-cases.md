@@ -2,7 +2,7 @@
 scale: 1000
 target: 900
 iterations: 6
-type: test-cases-mobile
+type: mobile-test-cases
 ---
 
 # Mobile Test Cases Evaluation Rubric

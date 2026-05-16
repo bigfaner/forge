@@ -24,10 +24,10 @@ argument-hints:
 For each per-type file found in Step 1, invoke the eval skill once:
 
 ```
-Skill(skill="forge:eval", args="--type test-cases-{type} [--target N] [--iterations N]")
+Skill(skill="forge:eval", args="--type {type}-test-cases [--target N] [--iterations N]")
 ```
 
-Where `{type}` is derived from the filename: `ui-test-cases.md` -> `test-cases-ui`, `api-test-cases.md` -> `test-cases-api`, etc.
+Where `{type}` is derived from the filename: `ui-test-cases.md` -> `ui-test-cases`, `api-test-cases.md` -> `api-test-cases`, etc.
 
 Each invocation receives a single `{type}-test-cases.md` file path, NOT the entire `testing/` directory.
 

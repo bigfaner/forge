@@ -2,7 +2,7 @@
 scale: 1000
 target: 900
 iterations: 6
-type: test-cases-api
+type: api-test-cases
 ---
 
 # API Test Cases Evaluation Rubric

@@ -1,6 +1,6 @@
 ---
 id: "4"
-title: "Create per-type rubrics (eval/rubrics/test-cases-*.md)"
+title: "Create per-type rubrics (eval/rubrics/*-test-cases.md)"
 priority: "P0"
 estimated_time: "2h"
 dependencies: ["1"]
@@ -9,7 +9,7 @@ mainSession: false
 noTest: true
 ---
 
-# 4: Create per-type rubrics (eval/rubrics/test-cases-*.md)
+# 4: Create per-type rubrics (eval/rubrics/*-test-cases.md)
 
 ## Description
 
@@ -24,11 +24,11 @@ Decompose the current monolithic `eval/rubrics/test-cases.md` (1000 pts, 6 dimen
 ### Create
 | File | Description |
 |------|-------------|
-| `plugins/forge/skills/eval/rubrics/test-cases-ui.md` | UI rubric: 5 shared dims + Visual State Accuracy (150 pts from web-ui sub-criteria) |
-| `plugins/forge/skills/eval/rubrics/test-cases-tui.md` | TUI rubric: 5 shared dims + Output Assertion Accuracy (150 pts from tui sub-criteria) |
-| `plugins/forge/skills/eval/rubrics/test-cases-mobile.md` | Mobile rubric: 5 shared dims + Interaction Accuracy (150 pts from mobile-ui sub-criteria) |
-| `plugins/forge/skills/eval/rubrics/test-cases-api.md` | API rubric: 5 shared dims + Contract Accuracy (150 pts from api sub-criteria) |
-| `plugins/forge/skills/eval/rubrics/test-cases-cli.md` | CLI rubric: 5 shared dims + Command Coverage Accuracy (150 pts from cli sub-criteria) |
+| `plugins/forge/skills/eval/rubrics/ui-test-cases.md` | UI rubric: 5 shared dims + Visual State Accuracy (150 pts from web-ui sub-criteria) |
+| `plugins/forge/skills/eval/rubrics/tui-test-cases.md` | TUI rubric: 5 shared dims + Output Assertion Accuracy (150 pts from tui sub-criteria) |
+| `plugins/forge/skills/eval/rubrics/mobile-test-cases.md` | Mobile rubric: 5 shared dims + Interaction Accuracy (150 pts from mobile-ui sub-criteria) |
+| `plugins/forge/skills/eval/rubrics/api-test-cases.md` | API rubric: 5 shared dims + Contract Accuracy (150 pts from api sub-criteria) |
+| `plugins/forge/skills/eval/rubrics/cli-test-cases.md` | CLI rubric: 5 shared dims + Command Coverage Accuracy (150 pts from cli sub-criteria) |
 
 ### Modify
 | File | Changes |
@@ -51,7 +51,7 @@ Decompose the current monolithic `eval/rubrics/test-cases.md` (1000 pts, 6 dimen
 - [ ] Mobile rubric: Interaction Accuracy covers Interaction specificity (50%) + Navigation flow coverage (50%)
 - [ ] API rubric: Contract Accuracy covers Contract accuracy (50%) + Error contract coverage (50%)
 - [ ] CLI rubric: Command Coverage Accuracy covers Command coverage (50%) + Output assertion specificity (50%)
-- [ ] Frontmatter: `scale: 1000`, `target: 900`, `iterations: 6`, `type: test-cases-{type}`
+- [ ] Frontmatter: `scale: 1000`, `target: 900`, `iterations: 6`, `type: {type}-test-cases`
 
 ## Hard Rules
 - Each per-type rubric must be self-contained — no references to other per-type rubrics or conditional branching

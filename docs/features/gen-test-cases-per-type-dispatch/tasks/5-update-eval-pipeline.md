@@ -39,7 +39,7 @@ Add 5 new `test-cases-*` entries to the eval skill's prerequisite/location table
 | (none) |
 
 ## Acceptance Criteria
-- [ ] Eval skill Prerequisites table has entries for `test-cases-ui`, `test-cases-tui`, `test-cases-mobile`, `test-cases-api`, `test-cases-cli` — each requiring `testing/{type}-test-cases.md`
+- [ ] Eval skill Prerequisites table has entries for `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases` — each requiring `testing/{type}-test-cases.md`
 - [ ] Eval skill Default Doc Dir table has entries mapping each `test-cases-*` type to `testing/` directory
 - [ ] Eval skill Parameters `--type` enum includes all 5 new `test-cases-*` values
 - [ ] Eval skill Rubric Reference table has entries for all 5 new rubrics (1000 scale, 900 target, 6 iterations)

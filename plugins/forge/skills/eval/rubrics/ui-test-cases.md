@@ -2,7 +2,7 @@
 scale: 1000
 target: 900
 iterations: 6
-type: test-cases-ui
+type: ui-test-cases
 ---
 
 # UI Test Cases Evaluation Rubric
