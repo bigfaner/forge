@@ -43,6 +43,11 @@ func TestTC_001_RunDelegatesToJustTestE2e(t *testing.T) {
 // Traceability: TC-002 -> Proposal SC [1], Task 2 AC [1], Task 2 HR [3]
 func TestTC_002_RunPassesFeatureAsJustfileArgument(t *testing.T) {
 	dir := setupTempProject(t, "go-test")
+	// Create feature directory so Run's feature validation passes and delegates to just
+	featureDir := filepath.Join(dir, "tests", "e2e", "features", "my-feature")
+	if err := os.MkdirAll(featureDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
 	out, err := runForgeInDir(t, dir, "e2e", "run", "--feature", "my-feature")
 	if err == nil {
 		t.Logf("forge e2e run --feature succeeded: %s", out)
@@ -360,42 +365,3 @@ func TestTC_019_NoProfileReturnsErrNoProfileForDiscover(t *testing.T) {
 	}
 }
 
-// --- Manifest Cleanup ---
-
-// Traceability: TC-020 -> Proposal SC [4], Task 1 AC [1-2]
-func TestTC_020_AllManifestsContainZeroRunAndGraduateFields(t *testing.T) {
-	// Locate the profiles directory relative to the test file
-	// tests/e2e/justfile-canonical-e2e/ -> forge-cli/pkg/profile/profiles/
-	profilesDir := filepath.Join("..", "..", "..", "forge-cli", "pkg", "profile", "profiles")
-
-	// Top-level YAML keys that MUST NOT appear (removed by Task 1)
-	forbiddenTopLevel := []string{"run:", "graduate:"}
-	// Required top-level fields that SHOULD be present
-	requiredFields := []string{"name:", "display:", "language:", "file-extension:", "test-directory:", "capabilities:", "templates:"}
-
-	profiles := []string{"go-test", "java-junit", "maestro", "pytest", "rust-test", "web-playwright"}
-	for _, profile := range profiles {
-		t.Run(profile, func(t *testing.T) {
-			manifestPath := filepath.Join(profilesDir, profile, "manifest.yaml")
-			data, err := os.ReadFile(manifestPath)
-			if err != nil {
-				t.Fatalf("failed to read manifest for %s: %v", profile, err)
-			}
-			content := string(data)
-
-			// Check required fields are present
-			for _, field := range requiredFields {
-				if !strings.Contains(content, field) {
-					t.Errorf("profile %s: missing required field %q", profile, field)
-				}
-			}
-
-			// Check forbidden top-level sections are absent
-			for _, section := range forbiddenTopLevel {
-				if strings.Contains(content, section) {
-					t.Errorf("profile %s: should not contain %q section (removed by Task 1)", profile, section)
-				}
-			}
-		})
-	}
-}

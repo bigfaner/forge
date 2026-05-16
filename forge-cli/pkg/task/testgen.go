@@ -424,8 +424,12 @@ func resolveQuickDeps(tasks []TestTaskDef, profiles []string, _ bool, detectedTy
 	}
 
 	// T-quick-6 depends on T-quick-5
-	if len(tasks) > len(profiles)*4+1 {
-		tasks[len(profiles)*4+1].Dependencies = []string{"T-quick-5"}
+	// Find T-quick-6 by searching for its ID (shared task after all per-profile blocks).
+	for i := range tasks {
+		if tasks[i].ID == "T-quick-6" {
+			tasks[i].Dependencies = []string{"T-quick-5"}
+			break
+		}
 	}
 }
 

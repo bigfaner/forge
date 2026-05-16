@@ -1,0 +1,9 @@
+schema_version: 1
+status: completed
+timestamp: 2026-05-16T12:00:00Z
+source: tests/e2e/features/simplify-e2e-tests/
+targets:
+  - tests/e2e/simplify_e2e_tests_cli_test.go
+modules:
+  - e2e
+testCount: 4
