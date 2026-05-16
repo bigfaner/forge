@@ -115,4 +115,28 @@ check-stale-refs:
     fi
     echo "OK: no stale task-cli references"
 
+# test-e2e: end-to-end tests (go-test profile)
+test-e2e feature="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd tests/e2e && go test -v -tags=e2e -timeout=10m ./...
+
+# e2e-compile: compile-check e2e test files
+e2e-compile:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd tests/e2e && go build -tags=e2e ./...
+
+# e2e-discover: list all e2e test cases without running
+e2e-discover:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd tests/e2e && go test -tags=e2e -list '.*' ./...
+
+# e2e-setup: install e2e dependencies (idempotent)
+e2e-setup:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd tests/e2e && go mod download
+
 # --- end forge standard recipes ---
