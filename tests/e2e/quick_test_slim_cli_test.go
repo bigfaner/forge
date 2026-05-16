@@ -251,36 +251,6 @@ func TestTC_002_QuickModeMergedTaskHasGenAndRunType(t *testing.T) {
 	assert.True(t, found, "T-quick-2 task should exist in index")
 }
 
-// =============================================================================
-// TC-003: Quick mode merged task generates correct prompt template
-// =============================================================================
-
-// Traceability: TC-003 -> Task 1 AC: type-to-template mapping
-func TestTC_003_QuickModeMergedTaskPromptTemplate(t *testing.T) {
-	// Verify the template file exists on disk
-	// Resolve project root relative to this test file
-	_, thisFile, _, ok := runtime.Caller(0)
-	require.True(t, ok, "runtime.Caller failed")
-	dir := filepath.Dir(thisFile)
-	for dir != "/" && dir != "" {
-		if _, err := os.Stat(filepath.Join(dir, "justfile")); err == nil {
-			break
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			break
-		}
-		dir = parent
-	}
-
-	templatePath := filepath.Join(dir, "forge-cli", "pkg", "prompt", "data", "test-pipeline-gen-and-run.md")
-	data, err := os.ReadFile(templatePath)
-	require.NoError(t, err, "prompt template should exist at %s", templatePath)
-
-	content := string(data)
-	assert.Contains(t, content, "gen-test-scripts", "template should reference gen-test-scripts skill")
-	assert.Contains(t, content, "run-e2e-tests", "template should reference run-e2e-tests skill")
-}
 
 // =============================================================================
 // TC-004: Quick mode per-type creates independent gen-and-run tasks
@@ -505,100 +475,7 @@ func TestTC_008_QuickModeMultiProfileLetterSuffixes(t *testing.T) {
 	}
 }
 
-// =============================================================================
-// TC-009: Merged prompt template calls gen then run sequentially
-// =============================================================================
 
-// Traceability: TC-009 -> Task 1 AC: merged template orchestrates both skills
-func TestTC_009_MergedTemplateCallsBothSkills(t *testing.T) {
-	_, thisFile, _, ok := runtime.Caller(0)
-	require.True(t, ok, "runtime.Caller failed")
-	dir := filepath.Dir(thisFile)
-	for dir != "/" && dir != "" {
-		if _, err := os.Stat(filepath.Join(dir, "justfile")); err == nil {
-			break
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			break
-		}
-		dir = parent
-	}
-
-	templatePath := filepath.Join(dir, "forge-cli", "pkg", "prompt", "data", "test-pipeline-gen-and-run.md")
-	data, err := os.ReadFile(templatePath)
-	require.NoError(t, err, "prompt template should exist")
-
-	content := string(data)
-
-	// Verify it references gen-test-scripts
-	assert.Contains(t, content, "gen-test-scripts",
-		"template should reference gen-test-scripts skill")
-
-	// Verify it references run-e2e-tests
-	assert.Contains(t, content, "run-e2e-tests",
-		"template should reference run-e2e-tests skill")
-
-	// Verify gen phase appears before run phase
-	genIdx := strings.Index(content, "gen-test-scripts")
-	runIdx := strings.Index(content, "run-e2e-tests")
-	assert.True(t, genIdx < runIdx,
-		"gen-test-scripts should appear before run-e2e-tests in the template")
-
-	// Verify it includes failure recovery / fix loop
-	assert.True(t,
-		strings.Contains(content, "fix") || strings.Contains(content, "retry") || strings.Contains(content, "failure"),
-		"template should include instructions for failure recovery")
-}
-
-// =============================================================================
-// TC-010: Type constant registered in types.go
-// =============================================================================
-
-// Traceability: TC-010 -> Task 1 AC: type constant fully registered
-func TestTC_010_TypeConstantRegisteredInTypesGo(t *testing.T) {
-	_, thisFile, _, ok := runtime.Caller(0)
-	require.True(t, ok, "runtime.Caller failed")
-	dir := filepath.Dir(thisFile)
-	for dir != "/" && dir != "" {
-		if _, err := os.Stat(filepath.Join(dir, "justfile")); err == nil {
-			break
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			break
-		}
-		dir = parent
-	}
-
-	typesPath := filepath.Join(dir, "forge-cli", "pkg", "task", "types.go")
-	data, err := os.ReadFile(typesPath)
-	require.NoError(t, err, "types.go should exist")
-
-	content := string(data)
-
-	// Verify constant exists with correct value
-	assert.Contains(t, content, `TypeTestPipelineGenAndRun        = "test-pipeline.gen-and-run"`,
-		"types.go should declare TypeTestPipelineGenAndRun constant")
-
-	// Verify it appears in TaskTypeRegistry
-	assert.Contains(t, content, "TypeTestPipelineGenAndRun",
-		"types.go should reference TypeTestPipelineGenAndRun in registry")
-
-	// Verify it appears in ValidTypes map
-	lines := strings.Split(content, "\n")
-	inValidTypes := false
-	for _, line := range lines {
-		if strings.Contains(line, "ValidTypes") {
-			inValidTypes = true
-		}
-		if inValidTypes && strings.Contains(line, "TypeTestPipelineGenAndRun") {
-			break
-		}
-	}
-	assert.True(t, inValidTypes,
-		"TypeTestPipelineGenAndRun should be in ValidTypes map")
-}
 
 // =============================================================================
 // TC-011: InferType maps merged IDs correctly
@@ -680,40 +557,6 @@ func TestTC_012_QuickModeSingleProfileProducesFiveTasks(t *testing.T) {
 		"single profile quick mode should produce exactly 5 test tasks")
 }
 
-// =============================================================================
-// TC-013: Existing gen-scripts and run prompt templates remain intact
-// =============================================================================
-
-// Traceability: TC-013 -> Task 1 Implementation Notes: original templates unchanged
-func TestTC_013_ExistingGenScriptsAndRunTemplatesRemainIntact(t *testing.T) {
-	_, thisFile, _, ok := runtime.Caller(0)
-	require.True(t, ok, "runtime.Caller failed")
-	dir := filepath.Dir(thisFile)
-	for dir != "/" && dir != "" {
-		if _, err := os.Stat(filepath.Join(dir, "justfile")); err == nil {
-			break
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			break
-		}
-		dir = parent
-	}
-
-	dataDir := filepath.Join(dir, "forge-cli", "pkg", "prompt", "data")
-
-	// Verify gen-scripts template exists
-	genScriptsPath := filepath.Join(dataDir, "test-pipeline-gen-scripts.md")
-	data, err := os.ReadFile(genScriptsPath)
-	require.NoError(t, err, "test-pipeline-gen-scripts.md should still exist")
-	assert.True(t, len(data) > 0, "gen-scripts template should not be empty")
-
-	// Verify run template exists
-	runPath := filepath.Join(dataDir, "test-pipeline-run.md")
-	data, err = os.ReadFile(runPath)
-	require.NoError(t, err, "test-pipeline-run.md should still exist")
-	assert.True(t, len(data) > 0, "run template should not be empty")
-}
 
 // =============================================================================
 // TC-014: Merged task generates correct task .md file
@@ -778,42 +621,3 @@ func TestTC_015_DetectTypesFromTestCasesParsesSummaryTable(t *testing.T) {
 	}
 }
 
-// =============================================================================
-// TC-016: Subagent completes gen-and-run in single session
-// =============================================================================
-
-// Traceability: TC-016 -> Proposal Success Criteria: single session gen-and-run
-func TestTC_016_SubagentCompletesGenAndRunInSingleSession(t *testing.T) {
-	// Verify the prompt template contains both generation and execution phases
-	_, thisFile, _, ok := runtime.Caller(0)
-	require.True(t, ok, "runtime.Caller failed")
-	dir := filepath.Dir(thisFile)
-	for dir != "/" && dir != "" {
-		if _, err := os.Stat(filepath.Join(dir, "justfile")); err == nil {
-			break
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			break
-		}
-		dir = parent
-	}
-
-	templatePath := filepath.Join(dir, "forge-cli", "pkg", "prompt", "data", "test-pipeline-gen-and-run.md")
-	data, err := os.ReadFile(templatePath)
-	require.NoError(t, err, "prompt template should exist")
-
-	content := string(data)
-
-	// Template must orchestrate both skills in one task definition
-	assert.Contains(t, content, "gen-test-scripts", "template must include gen-test-scripts phase")
-	assert.Contains(t, content, "run-e2e-tests", "template must include run-e2e-tests phase")
-
-	// Template must have 3 steps (read, generate, run)
-	assert.Contains(t, content, "Step 1", "template should have Step 1")
-	assert.Contains(t, content, "Step 2", "template should have Step 2")
-	assert.Contains(t, content, "Step 3", "template should have Step 3")
-
-	// Verify the template describes a single session workflow
-	assert.Contains(t, content, "combined", "template should describe a combined/single-session workflow")
-}

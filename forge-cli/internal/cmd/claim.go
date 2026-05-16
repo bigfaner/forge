@@ -324,6 +324,7 @@ func parseSegment(parts []string, i int) (int, bool) {
 func printTaskDetails(key string, t *task.Task, projectRoot, featureSlug string) {
 	_ = key // key is still used internally for routing, but no longer emitted
 	PrintField("TASK_ID", t.ID)
+	PrintFieldIfNotEmpty("TYPE", t.Type)
 	PrintFieldIfNotEmpty("FEATURE", featureSlug)
 	PrintField("FILE", filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, t.File)))
 	PrintFieldIfNotEmpty("SCOPE", t.Scope)

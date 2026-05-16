@@ -12,7 +12,8 @@ Auto-dispatch tasks. MAIN_SESSION tasks execute in main session; all others disp
 
 ```mermaid
 flowchart TD
-    A["1. Claim Task"] --> B{"MAIN_SESSION?"}
+    S0["0. Set Active Feature"] --> A["1. Claim Task"]
+    A --> B{"MAIN_SESSION?"}
     B -->|"yes"| C["1.5 Follow Task Instructions"]
     C --> LOOP(["Step 4: Continue Loop"])
     B -->|"no"| D["2. Dispatch + Verify"]
@@ -34,6 +35,13 @@ flowchart TD
 ## Execution Loop
 
 **Failure tracking**: maintain `consecutive_failures` (starts at 0). Increment on: fix-task creation, record-missing dispatch, agent timeout. Reset to 0 on successful claim→dispatch→verify→gate cycle. At 3: print summary and STOP.
+
+### Step 0: Set Active Feature
+
+Runs **once** before the claim loop.
+
+1. Determine the feature slug from the current context (proposal directory, manifest, or user input).
+2. Run `forge feature set <slug>`. On success (exit code 0), proceed to Step 1.
 
 ### Step 1: Claim Task
 

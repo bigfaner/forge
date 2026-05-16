@@ -1232,6 +1232,8 @@ func TestRunFeature_None(t *testing.T) {
 	_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644)
 	_ = os.MkdirAll(filepath.Join(dir, "docs", "features"), 0755)
 
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+
 	origWd, _ := os.Getwd()
 	t.Cleanup(func() { _ = os.Chdir(origWd) })
 	_ = os.Chdir(dir)
@@ -1799,6 +1801,8 @@ func TestForgeStateLifecycle(t *testing.T) {
 	_ = task.SaveIndex(indexPath, index)
 	_ = os.WriteFile(filepath.Join(dir, "docs", "features", "lf", "tasks", "1.1.md"), []byte("# T1"), 0644)
 	_ = os.MkdirAll(filepath.Join(dir, "docs", "features", "lf", "tasks", "records"), 0755)
+
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 
 	origWd, _ := os.Getwd()
 	t.Cleanup(func() { _ = os.Chdir(origWd) })

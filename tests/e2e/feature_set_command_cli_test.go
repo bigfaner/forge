@@ -144,7 +144,8 @@ func writeForgeState(t *testing.T, projectRoot, featureSlug string, allCompleted
 	}
 }
 
-// ensureFeatureDir creates the minimal feature directory structure.
+// ensureFeatureDir creates the minimal feature directory structure,
+// including a tasks/index.json so that getFeatureFromFeaturesDir can detect it.
 func ensureFeatureDir(t *testing.T, projectRoot, slug string) {
 	t.Helper()
 	featureDir := filepath.Join(projectRoot, "docs", "features", slug)
@@ -160,6 +161,11 @@ func ensureFeatureDir(t *testing.T, projectRoot, slug string) {
 		if err := os.MkdirAll(filepath.Join(featureDir, sub), 0755); err != nil {
 			t.Fatalf("failed to create feature subdir %s: %v", sub, err)
 		}
+	}
+	// Write a minimal tasks/index.json so the features-dir scanner recognizes this directory.
+	indexPath := filepath.Join(featureDir, "tasks", "index.json")
+	if err := os.WriteFile(indexPath, []byte("{}"), 0644); err != nil {
+		t.Fatalf("failed to write index.json: %v", err)
 	}
 }
 
@@ -423,26 +429,6 @@ func TestTC_015_VerboseShowsStateJsonSource(t *testing.T) {
 	out, exitCode := forgeFeatureVerbose(t, projectRoot)
 	assert.Equal(t, 0, exitCode, "forge feature -v should succeed, output: %s", out)
 	outputContains(t, out, "FEATURE: my-slug (from: state.json)")
-}
-
-// Traceability: TC-016 -> Task 3 AC #2
-func TestTC_016_VerboseShowsWorktreeSource(t *testing.T) {
-	// This test requires a git worktree setup which is environment-dependent.
-	// When running in a worktree named after a feature, and no state.json,
-	// the output should show "(from: worktree)".
-	// Since we cannot create a real worktree in an e2e test easily,
-	// we test the behavior indirectly via the priority chain:
-	// If we're in a worktree and no state.json exists, worktree source is used.
-	t.Skip("requires real git worktree environment setup - manual verification needed")
-}
-
-// Traceability: TC-017 -> Task 3 AC #3
-func TestTC_017_VerboseShowsBranchSource(t *testing.T) {
-	// This test requires being on a feature branch (feature/xxx) which is
-	// environment-dependent. Similar to TC-016, we test indirectly.
-	// When on a feature branch with matching feature dir and no state.json,
-	// output should show "(from: branch)".
-	t.Skip("requires real git feature branch environment setup - manual verification needed")
 }
 
 // Traceability: TC-018 -> Task 3 AC #4
