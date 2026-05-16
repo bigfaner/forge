@@ -22,8 +22,8 @@ var initCmd = &cobra.Command{
 	Long: `One-stop initialization for forge project.
 
 Creates .forge/ directory, generates CLAUDE.md from embedded template,
-appends runtime entries to .gitignore, appends claude/claude-c recipes
-to justfile, and runs interactive config if .forge/config.yaml doesn't exist.`,
+appends runtime entries to .gitignore, ensures just is installed, and
+runs interactive config if .forge/config.yaml doesn't exist.`,
 	Args: cobra.NoArgs,
 	RunE: runInit,
 }
@@ -42,15 +42,6 @@ var gitignoreEntries = []string{
 	"tests/results/.last-run.json",
 	"tests/e2e/results/.last-run.json",
 	"tests/e2e/results/*/error-context.md",
-}
-
-// justfileRecipes are the recipes to append to justfile.
-var justfileRecipes = []struct {
-	name string
-	body string
-}{
-	{"claude", "    claude --dangerously-skip-permissions"},
-	{"claude-c", "    claude --dangerously-skip-permissions -c"},
 }
 
 // initAction records a single action taken during init.
@@ -83,12 +74,8 @@ func runInit(cmd *cobra.Command, _ []string) error {
 	action = updateGitignore(projectRoot)
 	actions = append(actions, action)
 
-	// Step 3.5: Ensure just is installed (before justfile update)
+	// Step 4: Ensure just is installed
 	action = ensureJustStep(skipJust, cmd.InOrStdin(), out)
-	actions = append(actions, action)
-
-	// Step 4: Update justfile
-	action = updateJustfile(projectRoot)
 	actions = append(actions, action)
 
 	// Step 5: Interactive config (only if config doesn't exist)
@@ -181,88 +168,6 @@ func buildGitignoreAppend(existing string, entries []string) []string {
 		}
 	}
 	return toAppend
-}
-
-func updateJustfile(projectRoot string) initAction {
-	justfilePath := filepath.Join(projectRoot, "justfile")
-
-	var existingContent string
-	data, err := os.ReadFile(justfilePath)
-	if err == nil {
-		existingContent = string(data)
-	}
-
-	toAppend := buildJustfileAppend(existingContent)
-	if len(toAppend) == 0 {
-		return initAction{status: "SKIPPED", target: "justfile", detail: "all recipes already present"}
-	}
-
-	// Build content to append
-	var buf strings.Builder
-	if existingContent != "" && !strings.HasSuffix(existingContent, "\n") {
-		buf.WriteByte('\n')
-	}
-	buf.WriteString(toAppend)
-
-	f, err := os.OpenFile(justfilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "ERROR: failed to update justfile: %v\n", err)
-		return initAction{status: "FAILED", target: "justfile", detail: err.Error()}
-	}
-	defer func() { _ = f.Close() }()
-
-	if _, err := f.WriteString(buf.String()); err != nil {
-		fmt.Fprintf(os.Stderr, "ERROR: failed to write justfile: %v\n", err)
-		return initAction{status: "FAILED", target: "justfile", detail: err.Error()}
-	}
-
-	// Count recipes added
-	recipeNames := collectAddedRecipeNames(existingContent)
-	return initAction{status: "APPENDED", target: "justfile", detail: fmt.Sprintf("%d recipes: %s", len(recipeNames), strings.Join(recipeNames, ", "))}
-}
-
-// buildJustfileAppend returns the text to append, excluding recipes that already exist.
-func buildJustfileAppend(existing string) string {
-	var buf strings.Builder
-	for _, recipe := range justfileRecipes {
-		// Check if recipe name already exists as a line prefix
-		if recipeExists(existing, recipe.name) {
-			continue
-		}
-		buf.WriteString(recipe.name + ":\n")
-		buf.WriteString(recipe.body + "\n\n")
-	}
-	if buf.Len() == 0 {
-		return ""
-	}
-	return strings.TrimRight(buf.String(), "\n") + "\n"
-}
-
-// recipeExists checks if a recipe name already exists in justfile content.
-func recipeExists(content, recipeName string) bool {
-	lines := strings.Split(content, "\n")
-	prefix := recipeName + ":"
-	for _, line := range lines {
-		// Recipe names appear at the start of a line (no leading whitespace)
-		trimmed := strings.TrimLeft(line, " \t")
-		// Match exact recipe name followed by ':' or ':' + space (to avoid
-		// matching 'claude:' when checking for 'claude-c:').
-		if trimmed == prefix || strings.HasPrefix(trimmed, prefix+" ") {
-			return true
-		}
-	}
-	return false
-}
-
-// collectAddedRecipeNames returns the names of recipes that were added.
-func collectAddedRecipeNames(existing string) []string {
-	var names []string
-	for _, recipe := range justfileRecipes {
-		if !recipeExists(existing, recipe.name) {
-			names = append(names, recipe.name)
-		}
-	}
-	return names
 }
 
 func runConfigInitIfNeeded(projectRoot string, in io.Reader, out io.Writer) initAction {

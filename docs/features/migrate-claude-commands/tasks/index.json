@@ -36,7 +36,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3-update-forge-init.md",
       "record": "records/3-update-forge-init.md",
       "scope": "backend",

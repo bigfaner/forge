@@ -181,7 +181,7 @@ func TestInitCommand(t *testing.T) {
 		}
 	})
 
-	t.Run("appends recipes to justfile", func(t *testing.T) {
+	t.Run("does not create justfile", func(t *testing.T) {
 		env := newInitTestEnv(t)
 		env.stdin.WriteString("2\n1\n\n\n")
 
@@ -190,48 +190,10 @@ func TestInitCommand(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
-		data, err := os.ReadFile(env.path("justfile"))
-		if err != nil {
-			t.Fatalf("justfile not created: %v", err)
-		}
-
-		content := string(data)
-		if !strings.Contains(content, "claude:") {
-			t.Error("justfile missing 'claude:' recipe")
-		}
-		if !strings.Contains(content, "claude --dangerously-skip-permissions") {
-			t.Error("justfile missing claude recipe content")
-		}
-		if !strings.Contains(content, "claude-c:") {
-			t.Error("justfile missing 'claude-c:' recipe")
-		}
-	})
-
-	t.Run("deduplicates justfile recipes", func(t *testing.T) {
-		env := newInitTestEnv(t)
-		existing := "build:\n    go build ./...\n\nclaude:\n    claude --dangerously-skip-permissions\n"
-		if err := os.WriteFile(env.path("justfile"), []byte(existing), 0o644); err != nil {
-			t.Fatal(err)
-		}
-		env.stdin.WriteString("2\n1\n\n\n")
-
-		err := env.run()
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-
-		data, _ := os.ReadFile(env.path("justfile"))
-		content := string(data)
-
-		// Count occurrences of "claude:" as line prefix (recipe name)
-		count := strings.Count(content, "claude:\n")
-		if count != 1 {
-			t.Errorf("expected 1 occurrence of 'claude:' recipe, got %d", count)
-		}
-
-		// claude-c should be added
-		if !strings.Contains(content, "claude-c:") {
-			t.Error("justfile should have claude-c recipe added")
+		// justfile should NOT be created since no recipes to append
+		if _, err := os.Stat(env.path("justfile")); !os.IsNotExist(err) {
+			data, _ := os.ReadFile(env.path("justfile"))
+			t.Errorf("justfile should not be created, but found: %q", string(data))
 		}
 	})
 
@@ -315,7 +277,6 @@ func TestInitCommand(t *testing.T) {
 			{".forge directory", feature.ForgeDir},
 			{"CLAUDE.md", "CLAUDE.md"},
 			{".gitignore", ".gitignore"},
-			{"justfile", "justfile"},
 			{"config.yaml", filepath.Join(feature.ForgeDir, feature.ForgeConfigFileName)},
 		}
 
@@ -369,41 +330,6 @@ func TestAppendGitignoreEntries(t *testing.T) {
 	})
 }
 
-func TestBuildJustfileAppend(t *testing.T) {
-	t.Run("skips recipe that already exists", func(t *testing.T) {
-		existing := "build:\n    go build\n\nclaude:\n    claude --dangerously-skip-permissions\n"
-		result := buildJustfileAppend(existing)
-
-		if strings.Contains(result, "claude:") {
-			t.Error("should skip 'claude' recipe when it already exists")
-		}
-		if !strings.Contains(result, "claude-c:") {
-			t.Error("should include 'claude-c' recipe when it doesn't exist")
-		}
-	})
-
-	t.Run("includes both recipes when neither exists", func(t *testing.T) {
-		existing := "build:\n    go build\n"
-		result := buildJustfileAppend(existing)
-
-		if !strings.Contains(result, "claude:") {
-			t.Error("should include 'claude' recipe")
-		}
-		if !strings.Contains(result, "claude-c:") {
-			t.Error("should include 'claude-c' recipe")
-		}
-	})
-
-	t.Run("skips both recipes when both exist", func(t *testing.T) {
-		existing := "claude:\n    claude --dangerously-skip-permissions\n\nclaude-c:\n    claude --dangerously-skip-permissions -c\n"
-		result := buildJustfileAppend(existing)
-
-		if len(result) != 0 {
-			t.Errorf("expected no recipes to append, got %d", len(result))
-		}
-	})
-}
-
 func TestInitSkipJustFlag(t *testing.T) {
 	t.Run("--skip-just reports SKIPPED for just step", func(t *testing.T) {
 		env := newInitTestEnv(t)
@@ -437,7 +363,6 @@ func TestInitSkipJustFlag(t *testing.T) {
 			{".forge directory", feature.ForgeDir},
 			{"CLAUDE.md", "CLAUDE.md"},
 			{".gitignore", ".gitignore"},
-			{"justfile", "justfile"},
 			{"config.yaml", filepath.Join(feature.ForgeDir, feature.ForgeConfigFileName)},
 		}
 
@@ -449,7 +374,7 @@ func TestInitSkipJustFlag(t *testing.T) {
 		}
 	})
 
-	t.Run("ensureJust step appears before justfile step in summary", func(t *testing.T) {
+	t.Run("ensureJust step appears in summary", func(t *testing.T) {
 		env := newInitTestEnv(t)
 		env.stdin.WriteString("2\n1\n\n\n")
 
@@ -459,14 +384,8 @@ func TestInitSkipJustFlag(t *testing.T) {
 		}
 
 		output := env.stdout.String()
-		// Just step should appear before justfile step
-		justIdx := strings.Index(output, "just installation")
-		justfileIdx := strings.Index(output, "justfile")
-		if justIdx == -1 || justfileIdx == -1 {
-			t.Fatalf("expected both 'just installation' and 'justfile' in output, got %q", output)
-		}
-		if justIdx > justfileIdx {
-			t.Error("just installation step should appear before justfile step in summary")
+		if !strings.Contains(output, "just installation") {
+			t.Fatalf("expected 'just installation' in output, got %q", output)
 		}
 	})
 }
