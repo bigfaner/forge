@@ -708,6 +708,37 @@ func TestAddFixTask_TypeFromStep(t *testing.T) {
 	}
 }
 
+func TestAddFixTask_TemplateSelection(t *testing.T) {
+	tests := []struct {
+		step        string
+		wantType    string
+		wantSnippet string // distinctive text in the generated .md
+	}{
+		{"compile", task.TypeFix, "type: \"fix\""},
+		{"fmt", task.TypeCleanup, "type: \"cleanup\""},
+		{"lint", task.TypeCleanup, "type: \"cleanup\""},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.step, func(t *testing.T) {
+			projectRoot, featureSlug, _ := helperSetup(t)
+			taskID, addErr := addFixTask(projectRoot, featureSlug, tc.step, "handler.go:10: fail", "tests/results/fake.txt")
+			if addErr != nil {
+				t.Fatalf("unexpected error: %v", addErr)
+			}
+
+			mdPath := filepath.Join(projectRoot, "docs", "features", featureSlug, "tasks", taskID+".md")
+			content, err := os.ReadFile(mdPath)
+			if err != nil {
+				t.Fatalf("read .md: %v", err)
+			}
+			if !strings.Contains(string(content), tc.wantSnippet) {
+				t.Errorf("step %q: .md content does not contain %q.\nGot:\n%s", tc.step, tc.wantSnippet, string(content))
+			}
+		})
+	}
+}
+
 func TestAddFixTask_EmptyOutput(t *testing.T) {
 	projectRoot, featureSlug, _ := helperSetup(t)
 

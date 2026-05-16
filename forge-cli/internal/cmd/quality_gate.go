@@ -414,6 +414,12 @@ func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) (st
 	// (not read from template defaults) since this is a programmatic caller.
 	// SourceTaskID uses step-scoped sentinel for cumulative counting;
 	// Vars["SOURCE_TASK_ID"] diverges intentionally for template rendering.
+	taskType := fixTypeFromStep(step)
+	tmplName := "fix-task"
+	if taskType == task.TypeCleanup {
+		tmplName = "cleanup-task"
+	}
+
 	opts := task.AddTaskOpts{
 		Title:         title,
 		Priority:      "P0",
@@ -421,8 +427,8 @@ func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) (st
 		Breaking:      true,
 		Description:   description,
 		SourceTaskID:  "quality-gate:" + step,
-		Template:      "fix-task",
-		Type:          fixTypeFromStep(step),
+		Template:      tmplName,
+		Type:          taskType,
 		Vars: map[string]string{
 			"SOURCE_FILES":   sourceFiles,
 			"TEST_SCRIPT":    testScript,

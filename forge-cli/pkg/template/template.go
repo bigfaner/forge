@@ -30,6 +30,12 @@ var templateDefaults = map[string]Defaults{
 		EstimatedTime: "30min",
 		IDPrefix:      "fix",
 	},
+	"cleanup-task": {
+		Priority:      "P0",
+		Breaking:      true,
+		EstimatedTime: "15min",
+		IDPrefix:      "fix",
+	},
 }
 
 // Get returns the template content for the given name (without .md extension).

@@ -1867,3 +1867,91 @@ func TestAddTask_BlockSource_AlreadyBlocked(t *testing.T) {
 		t.Errorf("source should remain blocked, got %q", index.tasks["1.2-setup"].Status)
 	}
 }
+
+// --- Type field tests ---
+
+func TestAddTask_TypeField_Persisted(t *testing.T) {
+	indexPath := newTestIndex(t)
+
+	id, err := AddTask(indexPath, AddTaskOpts{
+		Title:    "Cleanup dead code",
+		Priority: "P1",
+		Type:     "cleanup",
+	})
+	if err != nil {
+		t.Fatalf("AddTask failed: %v", err)
+	}
+
+	index, err := LoadIndex(indexPath)
+	if err != nil {
+		t.Fatalf("LoadIndex failed: %v", err)
+	}
+	task := index.tasks[id]
+	if task.Type != "cleanup" {
+		t.Errorf("expected type 'cleanup', got %q", task.Type)
+	}
+}
+
+func TestAddTask_TypeField_EmptyAllowed(t *testing.T) {
+	indexPath := newTestIndex(t)
+
+	id, err := AddTask(indexPath, AddTaskOpts{
+		Title: "Untyped task",
+	})
+	if err != nil {
+		t.Fatalf("AddTask failed: %v", err)
+	}
+
+	index, _ := LoadIndex(indexPath)
+	task := index.tasks[id]
+	if task.Type != "" {
+		t.Errorf("expected empty type, got %q", task.Type)
+	}
+}
+
+func TestBuildTaskMarkdown_IncludesType(t *testing.T) {
+	content := buildTaskMarkdown(AddTaskOpts{
+		ID:       "disc-1",
+		Title:    "Enhance logging",
+		Priority: "P1",
+		Status:   "pending",
+		Type:     "enhancement",
+	})
+	if !strings.Contains(content, `type: "enhancement"`) {
+		t.Errorf("expected type in frontmatter, got:\n%s", content)
+	}
+}
+
+func TestBuildTaskMarkdown_OmitsTypeWhenEmpty(t *testing.T) {
+	content := buildTaskMarkdown(AddTaskOpts{
+		ID:       "disc-1",
+		Title:    "No type",
+		Priority: "P1",
+		Status:   "pending",
+	})
+	if strings.Contains(content, "type:") {
+		t.Errorf("type should be omitted when empty, got:\n%s", content)
+	}
+}
+
+func TestCreateTaskMarkdown_WithTypeInFrontmatter(t *testing.T) {
+	dir := t.TempDir()
+	opts := AddTaskOpts{
+		ID:       "disc-1",
+		Title:    "Refactor handler",
+		Priority: "P1",
+		Status:   "pending",
+		Type:     "refactor",
+	}
+	if err := CreateTaskMarkdown(dir, "disc-1.md", opts); err != nil {
+		t.Fatalf("CreateTaskMarkdown failed: %v", err)
+	}
+
+	data, err := os.ReadFile(filepath.Join(dir, "disc-1.md"))
+	if err != nil {
+		t.Fatalf("read file failed: %v", err)
+	}
+	if !strings.Contains(string(data), `type: "refactor"`) {
+		t.Errorf("expected type in frontmatter, got:\n%s", string(data))
+	}
+}

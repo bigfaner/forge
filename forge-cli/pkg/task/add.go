@@ -297,6 +297,9 @@ func buildTaskMarkdown(opts AddTaskOpts) string {
 		buf.WriteString("dependencies: []\n")
 	}
 	fmt.Fprintf(&buf, "status: %s\n", opts.Status)
+	if opts.Type != "" {
+		fmt.Fprintf(&buf, "type: %q\n", opts.Type)
+	}
 	if opts.Breaking {
 		buf.WriteString("breaking: true\n")
 	}

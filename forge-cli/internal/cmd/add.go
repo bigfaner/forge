@@ -28,10 +28,11 @@ var (
 	addVars          []string
 	addSourceTaskID  string
 	addBlockSource   bool
+	addType          string
 )
 
 var addCmd = &cobra.Command{
-	Use:   "add --title TITLE [--id ID] [--priority P0|P1|P2] [--depends-on ID,ID] [--breaking] [--description TEXT] [--template NAME] [--var KEY=VALUE]",
+	Use:   "add --title TITLE [--id ID] [--type TYPE] [--priority P0|P1|P2] [--depends-on ID,ID] [--breaking] [--description TEXT] [--template NAME] [--var KEY=VALUE]",
 	Short: "Add a new task to the current feature",
 	Long: `Add a new task dynamically. Validates inputs and writes files.
 The CLI is a pure tool — the caller decides what to add.`,
@@ -50,6 +51,7 @@ func init() {
 	addCmd.Flags().StringArrayVar(&addVars, "var", nil, "Template variable in key=value format (repeatable)")
 	addCmd.Flags().StringVar(&addSourceTaskID, "source-task-id", "", "Source task ID: auto-resolves to root ancestor, injects {{SOURCE_TASK_ID}}, and adds this task as source dependency")
 	addCmd.Flags().BoolVar(&addBlockSource, "block-source", false, "Set source task to blocked (before resolution, preserves fix-chain)")
+	addCmd.Flags().StringVar(&addType, "type", "", "Task type (e.g. feature, enhancement, cleanup, refactor, fix, documentation). Validated against known types.")
 }
 
 // AddResult holds the result of a successful add operation.
@@ -130,6 +132,11 @@ func executeAdd(cmd *cobra.Command) (*AddResult, error) {
 		}
 	}
 
+	// Validate type
+	if addType != "" && !task.ValidTypes[addType] {
+		return nil, ErrNoInput(fmt.Sprintf("invalid type %q. Run 'forge list-types' to see valid types", addType))
+	}
+
 	// Parse --var key=value flags
 	vars := make(map[string]string)
 	for _, v := range addVars {
@@ -152,6 +159,7 @@ func executeAdd(cmd *cobra.Command) (*AddResult, error) {
 		Vars:          vars,
 		SourceTaskID:  addSourceTaskID,
 		BlockSource:   addBlockSource,
+		Type:          addType,
 	}
 
 	// Apply template defaults for fixed fields
