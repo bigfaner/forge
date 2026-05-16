@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 
 	"gopkg.in/yaml.v3"
 )
@@ -279,8 +280,17 @@ var configKeyAccessors = map[string]configKeyAccessor{
 
 // GetConfigValue returns the value for a given key from .forge/config.yaml.
 // For scalar values, returns the raw string; for arrays, joins with newline.
+// Supports dot-notation for nested keys (e.g. "auto.gitPush").
 // Returns empty string and ErrKeyNotFound if the key doesn't exist or has zero value.
 func GetConfigValue(projectRoot, key string) (string, error) {
+	// Handle dot-notation auto keys
+	if val, ok, err := getAutoKeyValue(projectRoot, key); ok || err != nil {
+		if err != nil {
+			return "", err
+		}
+		return val, nil
+	}
+
 	accessor, ok := configKeyAccessors[key]
 	if !ok {
 		return "", ErrKeyNotFound
@@ -311,6 +321,21 @@ func GetConfigValue(projectRoot, key string) (string, error) {
 	}
 
 	return "", ErrKeyNotFound
+}
+
+// getAutoKeyValue handles dot-notation keys for the auto config block.
+// Returns (value, true, nil) if the key was handled, ("", false, nil) if not an auto key.
+func getAutoKeyValue(projectRoot, key string) (string, bool, error) {
+	if key != "auto.gitPush" {
+		return "", false, nil
+	}
+
+	auto, err := ReadAutoConfig(projectRoot)
+	if err != nil {
+		return "", true, err
+	}
+
+	return strconv.FormatBool(auto.GitPush), true, nil
 }
 
 // joinSlice joins slice values with newline for plain-text output.

@@ -100,6 +100,44 @@ func TestConfigGetCommand(t *testing.T) {
 		}
 	})
 
+	t.Run("auto.gitPush returns true", func(t *testing.T) {
+		dir := setupConfig(t, "test-profiles:\n  - go-test\nauto:\n  gitPush: true\n")
+
+		var stdout bytes.Buffer
+		rootCmd.SetOut(&stdout)
+		rootCmd.SetErr(os.Stderr)
+		rootCmd.SetArgs([]string{"config", "get", "auto.gitPush", "--project-root", dir})
+
+		err := rootCmd.Execute()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		output := strings.TrimSpace(stdout.String())
+		if output != "true" {
+			t.Errorf("expected 'true', got %q", output)
+		}
+	})
+
+	t.Run("auto.gitPush returns false when absent", func(t *testing.T) {
+		dir := setupConfig(t, "test-profiles:\n  - go-test\n")
+
+		var stdout bytes.Buffer
+		rootCmd.SetOut(&stdout)
+		rootCmd.SetErr(os.Stderr)
+		rootCmd.SetArgs([]string{"config", "get", "auto.gitPush", "--project-root", dir})
+
+		err := rootCmd.Execute()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		output := strings.TrimSpace(stdout.String())
+		if output != "false" {
+			t.Errorf("expected 'false', got %q", output)
+		}
+	})
+
 	t.Run("output is plain text no formatting blocks", func(t *testing.T) {
 		dir := setupConfig(t, "project-type: mixed\ncapabilities:\n  - tui\n")
 

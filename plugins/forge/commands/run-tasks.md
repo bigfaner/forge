@@ -117,4 +117,38 @@ After loop ends, print: "All tasks completed. T-test-3, T-test-4, and T-test-4.5
 
 If index lacks T-test-3/T-test-4, suggest: "Run `/run-e2e-tests` then `/graduate-tests`."
 
+### Step 5: Auto Git Push
+
+<EXTREMELY-IMPORTANT>
+- Only push after all-completed hook passes (quality gate green)
+- Never force push
+- Catch and report git push errors gracefully — do NOT crash
+</EXTREMELY-IMPORTANT>
+
+After the all-completed hook succeeds:
+
+1. Read `auto.gitPush` from config:
+
+```bash
+GIT_PUSH=$(forge config get auto.gitPush 2>/dev/null || echo "false")
+```
+
+2. If `GIT_PUSH` is `true`:
+
+```bash
+REMOTE=$(git remote 2>/dev/null | head -1)
+if [ -z "$REMOTE" ]; then
+  echo "WARNING: auto.gitPush enabled but no git remote found. Push skipped."
+else
+  echo "auto.gitPush enabled. Pushing to ${REMOTE}..."
+  git push "$REMOTE" HEAD 2>&1
+  PUSH_EXIT=$?
+  if [ $PUSH_EXIT -ne 0 ]; then
+    echo "WARNING: git push failed (exit code $PUSH_EXIT). Possible causes: authentication error, no remote write access, or diverged branches. Fix manually with: git push $REMOTE HEAD"
+  fi
+fi
+```
+
+3. If `GIT_PUSH` is `false` or absent: skip push entirely (backward compatible).
+
 Do NOT run e2e tests outside Step 3.
