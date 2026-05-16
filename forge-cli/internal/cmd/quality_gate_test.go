@@ -1142,10 +1142,17 @@ func TestIsDocsOnly(t *testing.T) {
 			want:  true,
 		},
 		{
-			name: "has implementation task",
+			name: "has feature task",
 			tasks: map[string]task.Task{
 				"t1": {ID: "1", Type: task.TypeDocumentation},
-				"t2": {ID: "2", Type: task.TypeImplementation},
+				"t2": {ID: "2", Type: task.TypeFeature},
+			},
+			want: false,
+		},
+		{
+			name: "has enhancement task",
+			tasks: map[string]task.Task{
+				"t1": {ID: "1", Type: task.TypeEnhancement},
 			},
 			want: false,
 		},
@@ -1156,6 +1163,27 @@ func TestIsDocsOnly(t *testing.T) {
 				"f1": {ID: "fix-1", Type: task.TypeFix},
 			},
 			want: false,
+		},
+		{
+			name: "has cleanup task (not testable)",
+			tasks: map[string]task.Task{
+				"t1": {ID: "1", Type: task.TypeCleanup},
+			},
+			want: true,
+		},
+		{
+			name: "has refactor task (not testable)",
+			tasks: map[string]task.Task{
+				"t1": {ID: "1", Type: task.TypeRefactor},
+			},
+			want: true,
+		},
+		{
+			name: "has deprecated implementation task (not testable)",
+			tasks: map[string]task.Task{
+				"t1": {ID: "1", Type: task.TypeImplementation},
+			},
+			want: true,
 		},
 		{
 			name: "test-pipeline tasks only",
@@ -1202,9 +1230,9 @@ func TestCheckAllCompleted_DocsOnlyFlag(t *testing.T) {
 			wantDocsOnly: true,
 		},
 		{
-			name: "implementation task sets DocsOnly false",
+			name: "feature task sets DocsOnly false",
 			tasks: map[string]task.Task{
-				"t1": {ID: "1", Status: "completed", Type: task.TypeImplementation},
+				"t1": {ID: "1", Status: "completed", Type: task.TypeFeature},
 			},
 			wantDocsOnly: false,
 		},

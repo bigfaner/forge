@@ -107,11 +107,12 @@ func checkAllCompleted(verbose bool) *AllCompletedResult {
 	}
 }
 
-// isDocsOnly returns true if no task is implementation or fix type.
+// isDocsOnly returns true if no task has a testable runtime behavior type.
 // Docs-only features change only markdown files — no compile/test/e2e needed.
+// Unlike needsTestPipeline in pkg/task, this checks ALL tasks including auto-generated ones.
 func isDocsOnly(index *task.TaskIndex) bool {
 	for _, t := range index.TasksMap() {
-		if t.Type == task.TypeImplementation || t.Type == task.TypeFix {
+		if task.IsTestableType(t.Type) {
 			return false
 		}
 	}
