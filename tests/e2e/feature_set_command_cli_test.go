@@ -144,7 +144,8 @@ func writeForgeState(t *testing.T, projectRoot, featureSlug string, allCompleted
 	}
 }
 
-// ensureFeatureDir creates the minimal feature directory structure.
+// ensureFeatureDir creates the minimal feature directory structure,
+// including a tasks/index.json so that getFeatureFromFeaturesDir can detect it.
 func ensureFeatureDir(t *testing.T, projectRoot, slug string) {
 	t.Helper()
 	featureDir := filepath.Join(projectRoot, "docs", "features", slug)
@@ -160,6 +161,11 @@ func ensureFeatureDir(t *testing.T, projectRoot, slug string) {
 		if err := os.MkdirAll(filepath.Join(featureDir, sub), 0755); err != nil {
 			t.Fatalf("failed to create feature subdir %s: %v", sub, err)
 		}
+	}
+	// Write a minimal tasks/index.json so the features-dir scanner recognizes this directory.
+	indexPath := filepath.Join(featureDir, "tasks", "index.json")
+	if err := os.WriteFile(indexPath, []byte("{}"), 0644); err != nil {
+		t.Fatalf("failed to write index.json: %v", err)
 	}
 }
 

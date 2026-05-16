@@ -53,6 +53,15 @@
       "scope": "all",
       "type": "documentation"
     },
+    "disc-1": {
+      "id": "disc-1",
+      "title": "Fix: 5 pre-existing flaky tests in feature_set_command",
+      "priority": "P2",
+      "status": "completed",
+      "file": "disc-1.md",
+      "record": "records/disc-1.md",
+      "type": "fix"
+    },
     "fix-1": {
       "id": "fix-1",
       "title": "Fix: TC-005 self-matching grep",
@@ -133,7 +142,7 @@
       "dependencies": [
         "T-quick-2-cli"
       ],
-      "status": "blocked",
+      "status": "completed",
       "file": "quick-run-tests-go-test.md",
       "record": "records/quick-run-tests-go-test.md",
       "scope": "all",
