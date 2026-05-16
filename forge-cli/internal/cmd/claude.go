@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"syscall"
 
 	"github.com/spf13/cobra"
 )
@@ -13,16 +12,16 @@ import (
 // Variable for testability.
 var lookPathFunc = exec.LookPath
 
-// runClaudeFunc executes claude with the given args, replacing the current process.
+// runClaudeFunc executes claude with the given args.
 // Variable for testability.
 var runClaudeFunc = defaultRunClaude
 
 func defaultRunClaude(args []string) error {
-	claudePath, err := lookPathFunc("claude")
-	if err != nil {
-		return err
-	}
-	return syscall.Exec(claudePath, append([]string{"claude"}, args...), os.Environ())
+	cmd := exec.Command("claude", args...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
 
 var claudeCmd = &cobra.Command{
