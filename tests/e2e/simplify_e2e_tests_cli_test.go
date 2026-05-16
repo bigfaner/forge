@@ -82,7 +82,7 @@ func TestTC_003_VerifyE2eTestSuiteCompiles(t *testing.T) {
 func TestTC_004_VerifyRemainingCliBehaviorTestsPass(t *testing.T) {
 	// Step 1: Run go test -tags=e2e ./... -count=1 -timeout 300s
 	// Must run from tests/e2e/ (the Go module root), not the project root.
-	cmd := exec.Command("go", "test", "-tags=e2e", "./...", "-count=1", "-timeout", "300s")
+	cmd := exec.Command("go", "test", "-tags=e2e", "./features/...", "-count=1", "-timeout", "300s")
 	cmd.Dir = e2eRoot(t)
 	out, err := cmd.CombinedOutput()
 

@@ -30,6 +30,7 @@ var typeToTemplate = map[string]string{
 	task.TypeTestPipelineEvalCases:        "data/test-pipeline-eval-cases.md",
 	task.TypeTestPipelineGenScripts:       "data/test-pipeline-gen-scripts.md",
 	task.TypeTestPipelineRun:              "data/test-pipeline-run.md",
+	task.TypeTestPipelineGenAndRun:        "data/test-pipeline-gen-and-run.md",
 	task.TypeTestPipelineGraduate:         "data/test-pipeline-graduate.md",
 	task.TypeTestPipelineVerifyRegression: "data/test-pipeline-verify-regression.md",
 	task.TypeFix:                          "data/fix.md",
@@ -265,7 +266,7 @@ func isLabelWithEmptyValue(line string) bool {
 	return after == ""
 }
 
-// genScriptBases lists the task ID bases that support per-type gen-scripts.
+// genScriptBases lists the task ID bases that support per-type gen-scripts or gen-and-run.
 var genScriptBases = []string{
 	"T-test-2",
 	"T-quick-2",

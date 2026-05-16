@@ -125,7 +125,7 @@ func GetQuickTestTasks(profiles []string, detectedTypes []string) []TestTaskDef 
 	var tasks []TestTaskDef
 
 	if len(detectedTypes) > 0 {
-		// Per-profile with per-type gen-scripts
+		// Per-profile with per-type gen-and-run
 		for i, p := range profiles {
 			s := suffixLetter(i, suffix)
 			tasks = append(tasks, TestTaskDef{
@@ -136,27 +136,21 @@ func GetQuickTestTasks(profiles []string, detectedTypes []string) []TestTaskDef 
 			})
 			for _, typ := range detectedTypes {
 				tasks = append(tasks, TestTaskDef{
-					Key: "quick-gen-scripts-" + p + "-" + typ, ID: "T-quick-2" + s + "-" + typ,
-					Title: fmt.Sprintf("Generate Quick Test Scripts (%s, %s)", p, typ), Priority: "P1", EstimatedTime: "30min-1h",
-					Type: TypeTestPipelineGenScripts, Scope: "all", ProfileName: p, TestType: typ,
+					Key: "quick-gen-and-run-" + p + "-" + typ, ID: "T-quick-2" + s + "-" + typ,
+					Title: fmt.Sprintf("Generate and Run Quick Test Scripts (%s, %s)", p, typ), Priority: "P1", EstimatedTime: "1-2h",
+					Type: TypeTestPipelineGenAndRun, Scope: "all", ProfileName: p, TestType: typ,
 					StrategyKind: "generate",
 				})
 			}
 			tasks = append(tasks, TestTaskDef{
-				Key: "quick-run-tests-" + p, ID: "T-quick-3" + s,
-				Title: fmt.Sprintf("Run Quick E2E Tests (%s)", p), Priority: "P1", EstimatedTime: "15-30min",
-				Type: TypeTestPipelineRun, Scope: "all", ProfileName: p,
-				StrategyKind: "run",
-			})
-			tasks = append(tasks, TestTaskDef{
-				Key: "quick-graduate-" + p, ID: "T-quick-4" + s,
+				Key: "quick-graduate-" + p, ID: "T-quick-3" + s,
 				Title: fmt.Sprintf("Graduate Quick Test Scripts (%s)", p), Priority: "P1", EstimatedTime: "15min",
 				Type: TypeTestPipelineGraduate, Scope: "all", ProfileName: p,
 				StrategyKind: "graduate",
 			})
 		}
 	} else {
-		// Per-profile: gen-cases, gen-scripts, run, graduate (legacy single gen-scripts)
+		// Per-profile: gen-cases, gen-and-run, graduate
 		for i, p := range profiles {
 			s := suffixLetter(i, suffix)
 			tasks = append(tasks, TestTaskDef{
@@ -166,19 +160,13 @@ func GetQuickTestTasks(profiles []string, detectedTypes []string) []TestTaskDef 
 				StrategyKind: "generate",
 			})
 			tasks = append(tasks, TestTaskDef{
-				Key: "quick-gen-scripts-" + p, ID: "T-quick-2" + s,
-				Title: fmt.Sprintf("Generate Quick Test Scripts (%s)", p), Priority: "P1", EstimatedTime: "30min-1h",
-				Type: TypeTestPipelineGenScripts, Scope: "all", ProfileName: p,
+				Key: "quick-gen-and-run-" + p, ID: "T-quick-2" + s,
+				Title: fmt.Sprintf("Generate and Run Quick Test Scripts (%s)", p), Priority: "P1", EstimatedTime: "1-2h",
+				Type: TypeTestPipelineGenAndRun, Scope: "all", ProfileName: p,
 				StrategyKind: "generate",
 			})
 			tasks = append(tasks, TestTaskDef{
-				Key: "quick-run-tests-" + p, ID: "T-quick-3" + s,
-				Title: fmt.Sprintf("Run Quick E2E Tests (%s)", p), Priority: "P1", EstimatedTime: "15-30min",
-				Type: TypeTestPipelineRun, Scope: "all", ProfileName: p,
-				StrategyKind: "run",
-			})
-			tasks = append(tasks, TestTaskDef{
-				Key: "quick-graduate-" + p, ID: "T-quick-4" + s,
+				Key: "quick-graduate-" + p, ID: "T-quick-3" + s,
 				Title: fmt.Sprintf("Graduate Quick Test Scripts (%s)", p), Priority: "P1", EstimatedTime: "15min",
 				Type: TypeTestPipelineGraduate, Scope: "all", ProfileName: p,
 				StrategyKind: "graduate",
@@ -188,12 +176,12 @@ func GetQuickTestTasks(profiles []string, detectedTypes []string) []TestTaskDef 
 
 	// Shared
 	tasks = append(tasks, TestTaskDef{
-		Key: "quick-verify-regression", ID: "T-quick-5",
+		Key: "quick-verify-regression", ID: "T-quick-4",
 		Title: "Verify Quick E2E Regression", Priority: "P1", EstimatedTime: "15min",
 		Type: TypeTestPipelineVerifyRegression, Scope: "all",
 	})
 	tasks = append(tasks, TestTaskDef{
-		Key: "quick-drift-detection", ID: "T-quick-6",
+		Key: "quick-drift-detection", ID: "T-quick-5",
 		Title: "Detect Spec Drift", Priority: "P2", EstimatedTime: "15min",
 		Type: TypeDocGenerationDrift, Scope: "all", NoTest: true,
 	})
@@ -355,79 +343,71 @@ func resolveQuickDeps(tasks []TestTaskDef, profiles []string, _ bool, detectedTy
 	// Per-profile: T-quick-1<L> depends on last business task (placeholder)
 	// Per-type mode:   T-quick-2<L>-<type> depends on T-quick-1<L>
 	//                  T-quick-3<L> depends on ALL T-quick-2<L>-<type> for its profile
-	//                  T-quick-4<L> depends on T-quick-3<L>
 	// Legacy mode:     T-quick-2<L> depends on T-quick-1<L>
 	//                  T-quick-3<L> depends on T-quick-2<L>
-	//                  T-quick-4<L> depends on T-quick-3<L>
-	// T-quick-5 depends on all T-quick-4<L>
+	// T-quick-4 depends on all T-quick-3<L> (or graduate tasks)
 
 	if len(detectedTypes) > 0 {
-		// Per-type mode: per-profile block is N gen-tasks + run + graduate
+		// Per-type mode: per-profile block is gen-cases + N gen-and-run-per-type + graduate
 		nTypes := len(detectedTypes)
-		blockSize := nTypes + 3 // gen-cases + gen-per-type + run + graduate
+		blockSize := 1 + nTypes + 1 // gen-cases + gen-per-type + graduate
 		for i := range profiles {
 			blockStart := i * blockSize
 
 			genCases := &tasks[blockStart]
 			// genCases deps are placeholder (resolved by BuildIndex)
 
-			// All per-type gen-scripts depend on gen-cases
+			// All per-type gen-and-run depend on gen-cases
 			for j := 0; j < nTypes; j++ {
 				tasks[blockStart+1+j].Dependencies = []string{genCases.ID}
 			}
 
-			// Run depends on all per-type gen-scripts for this profile
-			run := &tasks[blockStart+1+nTypes]
+			// Graduate depends on all per-type gen-and-run for this profile
+			graduate := &tasks[blockStart+1+nTypes]
 			var genDeps []string
 			for j := 0; j < nTypes; j++ {
 				genDeps = append(genDeps, tasks[blockStart+1+j].ID)
 			}
-			run.Dependencies = genDeps
-
-			// Graduate depends on run
-			graduate := &tasks[blockStart+1+nTypes+1]
-			graduate.Dependencies = []string{run.ID}
+			graduate.Dependencies = genDeps
 		}
 
-		// T-quick-5 depends on all graduate tasks
+		// T-quick-4 depends on all graduate tasks
 		sharedStart := len(profiles) * blockSize
 		if len(tasks) > sharedStart {
 			var gradDeps []string
 			for i := range profiles {
-				gradDeps = append(gradDeps, tasks[i*blockSize+1+nTypes+1].ID)
+				gradDeps = append(gradDeps, tasks[i*blockSize+1+nTypes].ID)
 			}
 			tasks[sharedStart].Dependencies = gradDeps
 		}
 	} else {
-		// Legacy mode: per-profile block is 4 tasks (gen-cases, gen-scripts, run, graduate)
+		// Legacy mode: per-profile block is 3 tasks (gen-cases, gen-and-run, graduate)
 		for i := range profiles {
-			genCases := &tasks[i*4]
-			genScripts := &tasks[i*4+1]
-			run := &tasks[i*4+2]
-			graduate := &tasks[i*4+3]
+			genCases := &tasks[i*3]
+			genAndRun := &tasks[i*3+1]
+			graduate := &tasks[i*3+2]
 
 			// genCases deps are placeholder (resolved by BuildIndex)
-			genScripts.Dependencies = []string{genCases.ID}
-			run.Dependencies = []string{genScripts.ID}
-			graduate.Dependencies = []string{run.ID}
+			genAndRun.Dependencies = []string{genCases.ID}
+			graduate.Dependencies = []string{genAndRun.ID}
 		}
 
-		// T-quick-5 depends on all graduate tasks
-		if len(tasks) > len(profiles)*4 {
-			verifyIdx := len(profiles) * 4
+		// T-quick-4 depends on all graduate tasks
+		if len(tasks) > len(profiles)*3 {
+			verifyIdx := len(profiles) * 3
 			var gradDeps []string
 			for i := range profiles {
-				gradDeps = append(gradDeps, tasks[i*4+3].ID)
+				gradDeps = append(gradDeps, tasks[i*3+2].ID)
 			}
 			tasks[verifyIdx].Dependencies = gradDeps
 		}
 	}
 
-	// T-quick-6 depends on T-quick-5
-	// Find T-quick-6 by searching for its ID (shared task after all per-profile blocks).
+	// T-quick-5 depends on T-quick-4
+	// Find T-quick-5 by searching for its ID (shared task after all per-profile blocks).
 	for i := range tasks {
-		if tasks[i].ID == "T-quick-6" {
-			tasks[i].Dependencies = []string{"T-quick-5"}
+		if tasks[i].ID == "T-quick-5" {
+			tasks[i].Dependencies = []string{"T-quick-4"}
 			break
 		}
 	}

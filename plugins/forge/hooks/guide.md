@@ -94,7 +94,7 @@ graph LR
 - No PRD, no design, no eval steps
 - `proposal.md` is the sole input document
 - Flat task list (no phases, no gates, no summaries)
-- T-quick-1~6 test tasks (subset of T-test 7 tasks: skips gen-sitemap prerequisite, eval-test-cases, consolidate-specs; T-quick-6 adds drift detection as the final test step)
+- T-quick-1~5 test tasks (subset of T-test 7 tasks: skips gen-sitemap prerequisite, eval-test-cases, consolidate-specs; merged gen-and-run replaces separate gen-scripts + run; T-quick-5 adds drift detection as the final test step)
 - Simplified manifest (no Traceability table)
 - Docs-only features auto-detected: no test tasks, generates T-eval-doc instead
 

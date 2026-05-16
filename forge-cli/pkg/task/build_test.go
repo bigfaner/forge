@@ -667,10 +667,10 @@ func TestBuildIndex_MultiProfile(t *testing.T) {
 		t.Fatalf("BuildIndex: %v", err)
 	}
 
-	// 1 business + 4*2 per-profile + 2 shared = 11
+	// 1 business + 3*2 per-profile + 2 shared = 9
 	total := result.NewCount + result.UpdatedCount
-	if total != 11 {
-		t.Errorf("total = %d (new=%d, updated=%d), want 11", total, result.NewCount, result.UpdatedCount)
+	if total != 9 {
+		t.Errorf("total = %d (new=%d, updated=%d), want 9", total, result.NewCount, result.UpdatedCount)
 	}
 
 	// Verify suffixed .md files exist

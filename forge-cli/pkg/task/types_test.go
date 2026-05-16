@@ -587,7 +587,7 @@ func TestTypeConstants(t *testing.T) {
 }
 
 func TestValidTypes(t *testing.T) {
-	t.Run("ValidTypes contains all 14 type constants", func(t *testing.T) {
+	t.Run("ValidTypes contains all 15 type constants", func(t *testing.T) {
 		allTypes := []string{
 			TypeImplementation,
 			TypeDocumentation,
@@ -599,6 +599,7 @@ func TestValidTypes(t *testing.T) {
 			TypeTestPipelineEvalCases,
 			TypeTestPipelineGenScripts,
 			TypeTestPipelineRun,
+			TypeTestPipelineGenAndRun,
 			TypeTestPipelineGraduate,
 			TypeTestPipelineVerifyRegression,
 			TypeFix,
@@ -625,9 +626,9 @@ func TestValidTypes(t *testing.T) {
 }
 
 func TestTaskTypeRegistry(t *testing.T) {
-	t.Run("registry contains all 14 types", func(t *testing.T) {
-		if len(TaskTypeRegistry) != 14 {
-			t.Errorf("TaskTypeRegistry has %d entries, want 14", len(TaskTypeRegistry))
+	t.Run("registry contains all 15 types", func(t *testing.T) {
+		if len(TaskTypeRegistry) != 15 {
+			t.Errorf("TaskTypeRegistry has %d entries, want 15", len(TaskTypeRegistry))
 		}
 	})
 
