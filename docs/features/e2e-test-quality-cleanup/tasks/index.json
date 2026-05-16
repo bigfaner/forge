@@ -1,0 +1,160 @@
+{
+  "feature": "e2e-test-quality-cleanup",
+  "proposal": "docs/proposals/e2e-test-quality-cleanup/proposal.md",
+  "created": "2026-05-16",
+  "tasks": {
+    "1-delete-test-files": {
+      "id": "1",
+      "title": "Delete 4 entire test files with no meaningful tests",
+      "priority": "P1",
+      "estimatedTime": "15m",
+      "status": "pending",
+      "file": "1-delete-test-files.md",
+      "record": "records/1-delete-test-files.md",
+      "scope": "all",
+      "type": "implementation"
+    },
+    "2-remove-test-functions": {
+      "id": "2",
+      "title": "Remove vacuous, recursive, and dead-skip test functions from 3 files",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-remove-test-functions.md",
+      "record": "records/2-remove-test-functions.md",
+      "scope": "all",
+      "type": "implementation"
+    },
+    "3-extend-rubric": {
+      "id": "3",
+      "title": "Extend test-cases rubric with antipattern detection dimension",
+      "priority": "P2",
+      "estimatedTime": "45m",
+      "status": "pending",
+      "file": "3-extend-rubric.md",
+      "record": "records/3-extend-rubric.md",
+      "scope": "all",
+      "type": "documentation"
+    },
+    "4-harden-gen-test-scripts": {
+      "id": "4",
+      "title": "Harden gen-test-scripts SKILL.md to forbid antipatterns",
+      "priority": "P2",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "3"
+      ],
+      "status": "pending",
+      "file": "4-harden-gen-test-scripts.md",
+      "record": "records/4-harden-gen-test-scripts.md",
+      "scope": "all",
+      "type": "documentation"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-6",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "T-quick-5"
+      ],
+      "status": "pending",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "scope": "all",
+      "noTest": true,
+      "type": "doc-generation.drift"
+    },
+    "quick-gen-scripts-go-test": {
+      "id": "T-quick-2",
+      "title": "Generate Quick Test Scripts (go-test)",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "T-quick-1"
+      ],
+      "status": "pending",
+      "file": "quick-gen-scripts-go-test.md",
+      "record": "records/quick-gen-scripts-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.gen-scripts",
+      "profile": "go-test"
+    },
+    "quick-graduate-go-test": {
+      "id": "T-quick-4",
+      "title": "Graduate Quick Test Scripts (go-test)",
+      "priority": "P1",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "T-quick-3"
+      ],
+      "status": "pending",
+      "file": "quick-graduate-go-test.md",
+      "record": "records/quick-graduate-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.graduate",
+      "profile": "go-test"
+    },
+    "quick-run-tests-go-test": {
+      "id": "T-quick-3",
+      "title": "Run Quick E2E Tests (go-test)",
+      "priority": "P1",
+      "estimatedTime": "15-30min",
+      "dependencies": [
+        "T-quick-2"
+      ],
+      "status": "pending",
+      "file": "quick-run-tests-go-test.md",
+      "record": "records/quick-run-tests-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.run",
+      "profile": "go-test"
+    },
+    "quick-test-cases-go-test": {
+      "id": "T-quick-1",
+      "title": "Generate Quick Test Cases (go-test)",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "4"
+      ],
+      "status": "pending",
+      "file": "quick-test-cases-go-test.md",
+      "record": "records/quick-test-cases-go-test.md",
+      "scope": "all",
+      "noTest": true,
+      "type": "test-pipeline.gen-cases",
+      "profile": "go-test"
+    },
+    "quick-verify-regression": {
+      "id": "T-quick-5",
+      "title": "Verify Quick E2E Regression",
+      "priority": "P1",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "T-quick-4"
+      ],
+      "status": "pending",
+      "file": "quick-verify-regression.md",
+      "record": "records/quick-verify-regression.md",
+      "scope": "all",
+      "type": "test-pipeline.verify-regression"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
