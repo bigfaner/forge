@@ -1,0 +1,46 @@
+{
+  "feature": "task-index-dedup-legacy-types",
+  "proposal": "docs/proposals/task-index-dedup-legacy-types/proposal.md",
+  "created": "2026-05-16",
+  "tasks": {
+    "1-add-capability-validation": {
+      "id": "1",
+      "title": "Add capability validation in profile package",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "status": "pending",
+      "file": "1-add-capability-validation.md",
+      "record": "records/1-add-capability-validation.md",
+      "scope": "backend",
+      "type": "feature"
+    },
+    "2-replace-detection-with-config": {
+      "id": "2",
+      "title": "Replace test-type detection with config-driven capabilities and remove legacy code",
+      "priority": "P1",
+      "estimatedTime": "1-2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-replace-detection-with-config.md",
+      "record": "records/2-replace-detection-with-config.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "enhancement"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
