@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -55,6 +56,54 @@ func TestProposalList_WithProposals(t *testing.T) {
 	assert.Contains(t, output, "PROPOSALS")
 	assert.Contains(t, output, "alpha")
 	assert.Contains(t, output, "beta")
+}
+
+func TestProposalList_SortedByCreatedDescending(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644))
+
+	// Create proposals with different dates (lexicographic order differs from date order)
+	proposals := []struct {
+		slug    string
+		created string
+	}{
+		{"alpha-proposal", "2026-01-15"},
+		{"beta-proposal", "2026-03-10"},
+		{"gamma-proposal", "2026-02-01"},
+	}
+	for _, p := range proposals {
+		proposalDir := filepath.Join(dir, feature.ProposalBaseDir, p.slug)
+		require.NoError(t, os.MkdirAll(proposalDir, 0755))
+		content := fmt.Sprintf("---\ncreated: %s\nstatus: Draft\n---\n", p.created)
+		require.NoError(t, os.WriteFile(filepath.Join(proposalDir, feature.ProposalFileName), []byte(content), 0644))
+	}
+
+	origWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(origWd) }()
+	require.NoError(t, os.Chdir(dir))
+
+	output, err := captureOutput(func() error {
+		rootCmd.SetArgs([]string{"proposal"})
+		return rootCmd.Execute()
+	})
+	require.NoError(t, err)
+
+	// Verify newest first: beta (Mar 10) > gamma (Feb 1) > alpha (Jan 15)
+	lines := strings.Split(output, "\n")
+	var slugOrder []string
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		for _, p := range proposals {
+			if strings.Contains(trimmed, p.slug) {
+				slugOrder = append(slugOrder, p.slug)
+			}
+		}
+	}
+	require.Len(t, slugOrder, 3, "expected 3 proposals in output")
+	assert.Equal(t, "beta-proposal", slugOrder[0], "newest proposal should be first")
+	assert.Equal(t, "gamma-proposal", slugOrder[1], "middle proposal should be second")
+	assert.Equal(t, "alpha-proposal", slugOrder[2], "oldest proposal should be last")
 }
 
 func TestProposalDetail_Found(t *testing.T) {

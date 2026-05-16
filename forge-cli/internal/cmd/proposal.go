@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	"forge-cli/pkg/project"
@@ -45,6 +46,12 @@ func runProposalList(projectRoot string) {
 		fmt.Fprintln(os.Stderr, "no proposals found")
 		return
 	}
+
+	// Sort by Created date descending (newest first).
+	// Created is stored as "YYYY-MM-DD" which sorts correctly lexicographically.
+	sort.Slice(proposals, func(i, j int) bool {
+		return proposals[i].Created > proposals[j].Created
+	})
 
 	PrintBlockStart()
 	PrintField("PROPOSALS", fmt.Sprintf("%d found", len(proposals)))
