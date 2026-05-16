@@ -90,7 +90,7 @@
       "dependencies": [
         "T-quick-3"
       ],
-      "status": "pending",
+      "status": "blocked",
       "file": "quick-graduate-go-test.md",
       "record": "records/quick-graduate-go-test.md",
       "scope": "all",
@@ -105,7 +105,7 @@
       "dependencies": [
         "T-quick-2-cli"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "quick-run-tests-go-test.md",
       "record": "records/quick-run-tests-go-test.md",
       "scope": "all",
