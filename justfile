@@ -1,14 +1,5 @@
 # Custom recipes (project-specific, not part of forge standard)
 
-claude:
-    claude --dangerously-skip-permissions
-
-claude-c:
-    claude --dangerously-skip-permissions -c
-
-claude-w name="":
-    claude --dangerously-skip-permissions -w "{{name}}"
-
 claude-p:
     claude --dangerously-skip-permissions --plugin-dir plugins/forge
 

@@ -22,7 +22,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2-remove-justfile-recipes.md",
       "record": "records/2-remove-justfile-recipes.md",
       "scope": "all",
