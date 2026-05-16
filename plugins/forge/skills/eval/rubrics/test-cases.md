@@ -68,21 +68,36 @@ When multiple capabilities are active, evaluate each relevant section proportion
 | **cli**: Command coverage | 0-100 | All flags, subcommands, and argument combinations are tested |
 | **cli**: Output assertion specificity | 0-100 | Exit codes, stdout/stderr content, and error messages are explicitly asserted |
 
-### 4. Completeness (200 pts)
+### 4. Completeness (150 pts)
 
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| Type coverage | 0-70 | All interface types present in the PRD (UI, API, CLI) have corresponding TCs. If PRD has API endpoints, there are API TCs |
-| Boundary and edge cases | 0-70 | At least one TC per category covers: empty state, error handling, invalid input, or boundary condition. Not just happy paths |
-| Integration scenarios | 0-60 | TCs cover cross-feature or cross-interface scenarios (e.g., UI action triggers API call, CLI command affects UI state) where applicable |
+| Type coverage | 0-50 | All interface types present in the PRD (UI, API, CLI) have corresponding TCs. If PRD has API endpoints, there are API TCs |
+| Boundary and edge cases | 0-50 | At least one TC per category covers: empty state, error handling, invalid input, or boundary condition. Not just happy paths |
+| Integration scenarios | 0-50 | TCs cover cross-feature or cross-interface scenarios (e.g., UI action triggers API call, CLI command affects UI state) where applicable |
 
-### 5. Structure & ID Integrity (100 pts)
+### 5. Structure & ID Integrity (50 pts)
 
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| TC IDs are sequential and unique | 0-40 | IDs follow the pattern (e.g., TC-001, TC-002...). No gaps, no duplicates, no re-used IDs |
-| Classification is correct | 0-30 | Each TC is classified under the correct type (UI/API/CLI). No UI TCs in the API section or vice versa |
-| Summary table matches actual | 0-30 | Counts in the summary table match the actual number of TCs in each section |
+| TC IDs are sequential and unique | 0-20 | IDs follow the pattern (e.g., TC-001, TC-002...). No gaps, no duplicates, no re-used IDs |
+| Classification is correct | 0-15 | Each TC is classified under the correct type (UI/API/CLI). No UI TCs in the API section or vice versa |
+| Summary table matches actual | 0-15 | Counts in the summary table match the actual number of TCs in each section |
+
+### 6. Test Code Quality (200 pts)
+
+**Blocking threshold**: If this dimension scores < 150, downstream gen-test-scripts is blocked.
+
+This dimension checks generated test scripts for known antipatterns. Each antipattern is drawn from project lessons (see `docs/lessons/gotcha-e2e-test-quality-antipatterns.md` and `docs/lessons/gotcha-recursive-go-test-process-explosion.md`).
+
+| Criterion | Points | What to check |
+|-----------|--------|---------------|
+| No recursive test invocation | 0-40 | Generated scripts must NOT call `exec.Command("go", "test"` (or equivalent test-runner invocation for other languages) without a recursion guard. A recursion guard is an environment variable set before spawning the subprocess and checked at the top of the calling test. If `exec.Command("go", "test"` is present without a guard, score 0. See `gotcha-recursive-go-test-process-explosion.md` |
+| No unconditional `t.Skip` without rationale | 0-30 | Every `t.Skip` (or equivalent) must include an environment-detection rationale explaining why the skip is conditional, not permanent. `t.Skip("requires real git worktree")` with no plan to create the worktree is a dead test. Score 0 if any unconditional skip is present |
+| No vacuous assertions | 0-40 | Reject patterns like `if condition { assert.X(...) }` where the assertion may never execute. Every assertion must be reachable on every code path, or the test must explicitly skip when the condition is unmet. Vacuous truth — where the test passes because the assertion is never reached — is the most harmful outcome. Deduct 10 pts per instance |
+| Conditional skip requires self-contained fixture | 0-30 | Tests that skip based on environment state (e.g., "no pending tasks", "feature branch not found") must instead create their own isolated fixtures. Every test that calls an external CLI or service must use `t.TempDir()` and set up its own project structure. Deduct 10 pts per instance of environment-dependent skip without fixture |
+| No duplicate test function names across packages | 0-30 | Scan existing test files for matching `func TestTC_*` names before generating. If the generated script contains a function name that already exists in another package under the same module, it will run twice under `go test ./...`. Deduct 15 pts per duplicate |
+| No static-file text grep tests | 0-30 | Tests must verify runtime behavior, not read static source files (`.md`, `.go`, `.json`) and assert on text content. Reading `commands/*.md` and checking `assert.Contains(out, "some string")` tests the documentation, not the code. Deduct 10 pts per instance |
 
 ## Deduction Rules
 

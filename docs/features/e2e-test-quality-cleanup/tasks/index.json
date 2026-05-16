@@ -33,7 +33,7 @@
       "title": "Extend test-cases rubric with antipattern detection dimension",
       "priority": "P2",
       "estimatedTime": "45m",
-      "status": "pending",
+      "status": "completed",
       "file": "3-extend-rubric.md",
       "record": "records/3-extend-rubric.md",
       "scope": "all",
