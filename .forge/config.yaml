@@ -1,7 +1,5 @@
 project-type: backend
 test-profiles:
-    - go-test
+  - go-test
 capabilities:
-    - compile
-    - test
-    - lint
+  - cli

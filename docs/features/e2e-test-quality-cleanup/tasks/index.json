@@ -74,6 +74,16 @@
       "sourceTaskID": "T-quick-3",
       "type": "fix"
     },
+    "fix-2": {
+      "id": "fix-2",
+      "title": "fix unit-test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "in_progress",
+      "file": "fix-2.md",
+      "record": "records/fix-2.md",
+      "breaking": true
+    },
     "quick-drift-detection": {
       "id": "T-quick-6",
       "title": "Detect Spec Drift",
