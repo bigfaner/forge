@@ -1,0 +1,219 @@
+{
+  "feature": "task-type-refinement",
+  "proposal": "docs/proposals/task-type-refinement/proposal.md",
+  "created": "2026-05-16",
+  "tasks": {
+    "1-type-constants": {
+      "id": "1",
+      "title": "Add new task type constants and deprecate TypeImplementation",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "1-type-constants.md",
+      "record": "records/1-type-constants.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "2-pipeline-logic": {
+      "id": "2",
+      "title": "Replace isDocsOnlyFeature with needsTestPipeline and needsDocEval",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-pipeline-logic.md",
+      "record": "records/2-pipeline-logic.md",
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "3-prompt-templates": {
+      "id": "3",
+      "title": "Add prompt templates for feature, enhancement, cleanup, and refactor types",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "3-prompt-templates.md",
+      "record": "records/3-prompt-templates.md",
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "4-dynamic-type-and-record": {
+      "id": "4",
+      "title": "Dynamic fix task type by failure step and Type Reclassification in records",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "4-dynamic-type-and-record.md",
+      "record": "records/4-dynamic-type-and-record.md",
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "5-migration-and-intent": {
+      "id": "5",
+      "title": "Migration logic and proposal intent field",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "5-migration-and-intent.md",
+      "record": "records/5-migration-and-intent.md",
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "6-skill-updates": {
+      "id": "6",
+      "title": "Update skill type assignment tables for new task types",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "6-skill-updates.md",
+      "record": "records/6-skill-updates.md",
+      "scope": "backend",
+      "type": "documentation"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "Fix: e2e tests failed due to stale forge binary",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "T-quick-3",
+      "type": "fix"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-5",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "T-quick-4"
+      ],
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "scope": "all",
+      "noTest": true,
+      "type": "doc-generation.drift"
+    },
+    "quick-gen-and-run-go-test-cli": {
+      "id": "T-quick-2-cli",
+      "title": "Generate and Run Quick Test Scripts (go-test, cli)",
+      "priority": "P1",
+      "estimatedTime": "1-2h",
+      "dependencies": [
+        "T-quick-1"
+      ],
+      "status": "completed",
+      "file": "quick-gen-and-run-go-test-cli.md",
+      "record": "records/quick-gen-and-run-go-test-cli.md",
+      "scope": "all",
+      "type": "test-pipeline.gen-and-run",
+      "profile": "go-test"
+    },
+    "quick-gen-scripts-go-test": {
+      "id": "T-quick-2",
+      "title": "Generate Quick Test Scripts (go-test)",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "T-quick-1"
+      ],
+      "status": "completed",
+      "file": "quick-gen-scripts-go-test.md",
+      "record": "records/quick-gen-scripts-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.gen-scripts",
+      "profile": "go-test"
+    },
+    "quick-graduate-go-test": {
+      "id": "T-quick-3",
+      "title": "Graduate Quick Test Scripts (go-test)",
+      "priority": "P1",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "T-quick-2-cli"
+      ],
+      "status": "completed",
+      "file": "quick-graduate-go-test.md",
+      "record": "records/quick-graduate-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.graduate",
+      "profile": "go-test"
+    },
+    "quick-run-tests-go-test": {
+      "id": "T-quick-3",
+      "title": "Run Quick E2E Tests (go-test)",
+      "priority": "P1",
+      "estimatedTime": "15-30min",
+      "dependencies": [
+        "T-quick-2"
+      ],
+      "status": "completed",
+      "file": "quick-run-tests-go-test.md",
+      "record": "records/quick-run-tests-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.run",
+      "profile": "go-test"
+    },
+    "quick-test-cases-go-test": {
+      "id": "T-quick-1",
+      "title": "Generate Quick Test Cases (go-test)",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "6"
+      ],
+      "status": "completed",
+      "file": "quick-test-cases-go-test.md",
+      "record": "records/quick-test-cases-go-test.md",
+      "scope": "all",
+      "noTest": true,
+      "type": "test-pipeline.gen-cases",
+      "profile": "go-test"
+    },
+    "quick-verify-regression": {
+      "id": "T-quick-4",
+      "title": "Verify Quick E2E Regression",
+      "priority": "P1",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "T-quick-3"
+      ],
+      "status": "completed",
+      "file": "quick-verify-regression.md",
+      "record": "records/quick-verify-regression.md",
+      "scope": "all",
+      "type": "test-pipeline.verify-regression"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

@@ -669,6 +669,45 @@ func TestAddFixTask_StepSpecificTestScripts(t *testing.T) {
 	}
 }
 
+func TestAddFixTask_TypeFromStep(t *testing.T) {
+	tests := []struct {
+		step     string
+		wantType string
+	}{
+		{"compile", task.TypeFix},
+		{"fmt", task.TypeCleanup},
+		{"lint", task.TypeCleanup},
+		{"unit-test", task.TypeFix},
+		{"test-e2e", task.TypeFix},
+		{"unknown-step", task.TypeFix}, // default fallback
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.step, func(t *testing.T) {
+			projectRoot, featureSlug, indexPath := helperSetup(t)
+			taskID, addErr := addFixTask(projectRoot, featureSlug, tc.step, "handler.go:10: fail", "tests/results/fake.txt")
+			if addErr != nil {
+				t.Fatalf("unexpected error: %v", addErr)
+			}
+			if taskID == "" {
+				t.Fatal("expected non-empty task ID")
+			}
+
+			updatedIndex, err := task.LoadIndex(indexPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			addedTask, exists := updatedIndex.ByID(taskID)
+			if !exists {
+				t.Fatalf("task %s not found in index", taskID)
+			}
+			if addedTask.Type != tc.wantType {
+				t.Errorf("type for step %q = %q, want %q", tc.step, addedTask.Type, tc.wantType)
+			}
+		})
+	}
+}
+
 func TestAddFixTask_EmptyOutput(t *testing.T) {
 	projectRoot, featureSlug, _ := helperSetup(t)
 
@@ -1142,10 +1181,17 @@ func TestIsDocsOnly(t *testing.T) {
 			want:  true,
 		},
 		{
-			name: "has implementation task",
+			name: "has feature task",
 			tasks: map[string]task.Task{
 				"t1": {ID: "1", Type: task.TypeDocumentation},
-				"t2": {ID: "2", Type: task.TypeImplementation},
+				"t2": {ID: "2", Type: task.TypeFeature},
+			},
+			want: false,
+		},
+		{
+			name: "has enhancement task",
+			tasks: map[string]task.Task{
+				"t1": {ID: "1", Type: task.TypeEnhancement},
 			},
 			want: false,
 		},
@@ -1156,6 +1202,27 @@ func TestIsDocsOnly(t *testing.T) {
 				"f1": {ID: "fix-1", Type: task.TypeFix},
 			},
 			want: false,
+		},
+		{
+			name: "has cleanup task (not testable)",
+			tasks: map[string]task.Task{
+				"t1": {ID: "1", Type: task.TypeCleanup},
+			},
+			want: true,
+		},
+		{
+			name: "has refactor task (not testable)",
+			tasks: map[string]task.Task{
+				"t1": {ID: "1", Type: task.TypeRefactor},
+			},
+			want: true,
+		},
+		{
+			name: "has deprecated implementation task (not testable)",
+			tasks: map[string]task.Task{
+				"t1": {ID: "1", Type: task.TypeImplementation},
+			},
+			want: true,
 		},
 		{
 			name: "test-pipeline tasks only",
@@ -1202,9 +1269,9 @@ func TestCheckAllCompleted_DocsOnlyFlag(t *testing.T) {
 			wantDocsOnly: true,
 		},
 		{
-			name: "implementation task sets DocsOnly false",
+			name: "feature task sets DocsOnly false",
 			tasks: map[string]task.Task{
-				"t1": {ID: "1", Status: "completed", Type: task.TypeImplementation},
+				"t1": {ID: "1", Status: "completed", Type: task.TypeFeature},
 			},
 			wantDocsOnly: false,
 		},

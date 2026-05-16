@@ -45,7 +45,7 @@ func TestRunMigrate_HappyPath(t *testing.T) {
 	}
 
 	cases := map[string]string{
-		"t1":      task.TypeImplementation,
+		"t1":      task.TypeFeature, // unknown ID → conservative default is "feature"
 		"t-gate":  task.TypeGate,
 		"t-sum":   task.TypeDocGenerationSummary,
 		"t-fix":   task.TypeFix,
@@ -109,9 +109,9 @@ func TestRunMigrate_Idempotent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// InferType("1.1") → "" (no fallback), migrate defaults to implementation
-	if index.TasksMap()["t1"].Type != task.TypeImplementation {
-		t.Errorf("type = %q, want %q", index.TasksMap()["t1"].Type, task.TypeImplementation)
+	// InferType("1.1") → "" (no fallback), migrate defaults to feature (conservative default)
+	if index.TasksMap()["t1"].Type != task.TypeFeature {
+		t.Errorf("type = %q, want %q", index.TasksMap()["t1"].Type, task.TypeFeature)
 	}
 }
 

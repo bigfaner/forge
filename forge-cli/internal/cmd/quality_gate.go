@@ -111,11 +111,12 @@ func checkAllCompleted(verbose bool) *AllCompletedResult {
 	}
 }
 
-// isDocsOnly returns true if no task is implementation or fix type.
+// isDocsOnly returns true if no task has a testable runtime behavior type.
 // Docs-only features change only markdown files — no compile/test/e2e needed.
+// Unlike needsTestPipeline in pkg/task, this checks ALL tasks including auto-generated ones.
 func isDocsOnly(index *task.TaskIndex) bool {
 	for _, t := range index.TasksMap() {
-		if t.Type == task.TypeImplementation || t.Type == task.TypeFix {
+		if task.IsTestableType(t.Type) {
 			return false
 		}
 	}
@@ -361,6 +362,19 @@ func countFixTasks(index *task.TaskIndex, step string) int {
 	return count
 }
 
+// fixTypeFromStep returns the deterministic task type for a quality gate failure step.
+// compile/test failures → TypeFix, fmt/lint failures → TypeCleanup.
+func fixTypeFromStep(step string) string {
+	switch step {
+	case "compile", "unit-test", "test-e2e":
+		return task.TypeFix
+	case "fmt", "lint":
+		return task.TypeCleanup
+	default:
+		return task.TypeFix
+	}
+}
+
 // addFixTask creates a fix task using the same internal API as `forge task add`.
 // Mirrors executeAdd() from add.go: template defaults -> AddTask -> CreateTaskMarkdown -> EnsureForgeState.
 // Returns (taskID, nil) on success.
@@ -408,6 +422,7 @@ func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) (st
 		Description:   description,
 		SourceTaskID:  "quality-gate:" + step,
 		Template:      "fix-task",
+		Type:          fixTypeFromStep(step),
 		Vars: map[string]string{
 			"SOURCE_FILES":   sourceFiles,
 			"TEST_SCRIPT":    testScript,

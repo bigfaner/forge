@@ -565,6 +565,10 @@ func TestTypeConstants(t *testing.T) {
 		expected string
 	}{
 		{TypeImplementation, "implementation"},
+		{TypeFeature, "feature"},
+		{TypeEnhancement, "enhancement"},
+		{TypeCleanup, "cleanup"},
+		{TypeRefactor, "refactor"},
 		{TypeDocumentation, "documentation"},
 		{TypeDocEvaluation, "doc-evaluation"},
 		{TypeDocGenerationSummary, "doc-generation.summary"},
@@ -587,9 +591,13 @@ func TestTypeConstants(t *testing.T) {
 }
 
 func TestValidTypes(t *testing.T) {
-	t.Run("ValidTypes contains all 15 type constants", func(t *testing.T) {
+	t.Run("ValidTypes contains all 19 type constants", func(t *testing.T) {
 		allTypes := []string{
 			TypeImplementation,
+			TypeFeature,
+			TypeEnhancement,
+			TypeCleanup,
+			TypeRefactor,
 			TypeDocumentation,
 			TypeDocEvaluation,
 			TypeDocGenerationSummary,
@@ -626,9 +634,9 @@ func TestValidTypes(t *testing.T) {
 }
 
 func TestTaskTypeRegistry(t *testing.T) {
-	t.Run("registry contains all 15 types", func(t *testing.T) {
-		if len(TaskTypeRegistry) != 15 {
-			t.Errorf("TaskTypeRegistry has %d entries, want 15", len(TaskTypeRegistry))
+	t.Run("registry contains all 19 types", func(t *testing.T) {
+		if len(TaskTypeRegistry) != 19 {
+			t.Errorf("TaskTypeRegistry has %d entries, want 19", len(TaskTypeRegistry))
 		}
 	})
 

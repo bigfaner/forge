@@ -309,12 +309,28 @@ Every task receives a `type` field in its frontmatter. The type controls which e
 
 | Type | When to assign |
 |------|----------------|
-| `implementation` | Default for all tasks that produce or modify source code, build configs, or runtime configs |
+| `feature` | Task adds new runtime behavior, new user-facing capability, or new files |
+| `enhancement` | Task improves existing behavior (performance, UX, edge-case handling) without adding new capabilities |
+| `cleanup` | Task removes dead code, fixes technical debt, or improves code hygiene |
+| `refactor` | Task restructures code without changing behavior (rename, reorganize, extract) |
 | `doc-generation` | Tasks producing only documentation, specs, or non-compilable artifacts |
 | `gate` | Quality-gate verification tasks (PRD flow diamond nodes, stage gates) |
 | `test-pipeline` | Auto-generated test lifecycle tasks (T-test-1 through T-test-5, fix-tasks) |
 
-Unrecognized or ambiguous tasks fall back to `implementation`.
+> **Deprecated**: `implementation` is no longer used in new tasks. Existing `index.json` files with `type: "implementation"` should be migrated via `forge task migrate` (maps to `feature` as the conservative default).
+
+Unrecognized or ambiguous tasks fall back to `feature`.
+
+### Intent Propagation
+
+The proposal frontmatter may contain an `intent` field (e.g., `intent: cleanup`). When present, use it as the **default type** for all tasks in this feature:
+
+1. Read `proposal.md` frontmatter → extract `intent` value
+2. If `intent` is set and matches a valid type constant (`feature`, `enhancement`, `cleanup`, `refactor`) → use it as the default `type` for all business tasks
+3. Individual task frontmatter `type` field **overrides** the proposal intent — use it when the task's primary output differs from the feature's dominant intent
+4. If `intent` is empty or missing → fall back to per-task Type Assignment from the table above
+
+The mapping is 1:1: proposal intent values use the same names as task type constants.
 
 ### Template Selection (business tasks)
 
@@ -323,7 +339,7 @@ Choose the task template based on Affected Files:
 | Condition | Template |
 |-----------|----------|
 | All Affected Files are non-compilable, non-runnable (markdown, design docs, templates) | `templates/task-doc.md` (type: `"documentation"`) |
-| Any Affected File participates in compile/build/runtime (source code, build configs, runtime configs) | `templates/task.md` (type: `"implementation"`) |
+| Any Affected File participates in compile/build/runtime (source code, build configs, runtime configs) | `templates/task.md` (type: `"feature"` by default, override via per-task Type Assignment) |
 
 Auto-generated tasks (gates, summaries, fix-tasks, test pipeline) have types inferred from their ID patterns by `forge task index`.
 

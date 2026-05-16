@@ -145,8 +145,9 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 		}
 	}
 
-	// 5.5.1 Detect docs-only feature
-	docsOnly := isDocsOnlyFeature(index.TasksMap())
+	// 5.5.1 Detect pipeline needs
+	needsTest := needsTestPipeline(index.TasksMap())
+	needsEval := needsDocEval(index.TasksMap())
 
 	// 6. Detect orphans
 	for key, t := range index.TasksMap() {
@@ -157,9 +158,9 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 		}
 	}
 
-	// 6.5 Generate stage-gates (skip for docs-only features)
+	// 6.5 Generate stage-gates (skip for features without testable types)
 	var generated int
-	if !docsOnly {
+	if needsTest {
 		// Collect all task IDs from the current index for phase detection.
 		var allTaskIDs []string
 		for _, t := range index.TasksMap() {
@@ -236,7 +237,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 	}
 
 	// 7. Generate test tasks or T-eval-doc
-	if docsOnly && hasBusinessTasks(index.TasksMap()) {
+	if needsEval {
 		// Docs-only: generate T-eval-doc instead of test pipeline
 		evalTask := GetDocEvalTask()
 		ResolveDocEvalDep(&evalTask, index.TasksMap())
@@ -266,7 +267,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 			index.SetTask(evalKey, task)
 			result.NewCount++
 		}
-	} else if len(profiles) > 0 && mode != "" {
+	} else if needsTest && len(profiles) > 0 && mode != "" {
 		// Detect test types from test-cases.md
 		var detectedTypes []string
 		testCasesPath := filepath.Join(opts.ProjectRoot, "docs", "features", opts.FeatureSlug, "testing", "test-cases.md")
@@ -400,30 +401,48 @@ func isTestTaskID(id string) bool {
 	return strings.HasPrefix(id, "T-test-") || strings.HasPrefix(id, "T-quick-")
 }
 
-// isDocsOnlyFeature returns true when all business tasks have types that are
-// neither implementation nor fix. Auto-generated tasks (gates, summaries, test
-// pipeline tasks) are excluded from the check.
-// An empty task map returns true.
-func isDocsOnlyFeature(tasks map[string]Task) bool {
+// testableTypes are task types that have testable runtime behavior.
+// Features containing any of these types need the full test pipeline.
+var testableTypes = map[string]bool{
+	TypeFeature:     true,
+	TypeEnhancement: true,
+	TypeFix:         true,
+}
+
+// IsTestableType returns true if the given task type has testable runtime behavior.
+func IsTestableType(typ string) bool {
+	return testableTypes[typ]
+}
+
+// needsTestPipeline returns true when any non-auto-gen task has a testable
+// runtime behavior type (feature, enhancement, or fix).
+// An empty task map returns false.
+func needsTestPipeline(tasks map[string]Task) bool {
 	for _, t := range tasks {
 		if isAutoGenTaskID(t.ID) {
 			continue
 		}
-		if t.Type == TypeImplementation || t.Type == TypeFix {
-			return false
-		}
-	}
-	return true
-}
-
-// hasBusinessTasks returns true if there is at least one non-auto-generated task.
-func hasBusinessTasks(tasks map[string]Task) bool {
-	for _, t := range tasks {
-		if !isAutoGenTaskID(t.ID) {
+		if testableTypes[t.Type] {
 			return true
 		}
 	}
 	return false
+}
+
+// needsDocEval returns true when ALL non-auto-gen tasks have type documentation.
+// An empty task map returns true.
+func needsDocEval(tasks map[string]Task) bool {
+	hasBusinessTask := false
+	for _, t := range tasks {
+		if isAutoGenTaskID(t.ID) {
+			continue
+		}
+		hasBusinessTask = true
+		if t.Type != TypeDocumentation {
+			return false
+		}
+	}
+	return hasBusinessTask
 }
 
 // isAutoGenTaskID returns true for task IDs that are auto-generated
