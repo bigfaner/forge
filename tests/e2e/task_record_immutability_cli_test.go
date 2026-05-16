@@ -103,11 +103,35 @@ func minimalIndexJSON(slug, taskKey, taskID, taskTitle string) string {
 	return string(data)
 }
 
+// envBlacklist lists env vars that override project root detection,
+// causing forge to resolve to the real project instead of the test's temp dir.
+var envBlacklist = []string{"CLAUDE_PROJECT_DIR", "PROJECT_ROOT"}
+
+// cleanForgeEnv returns os.Environ with project-root override vars removed.
+func cleanForgeEnv() []string {
+	env := os.Environ()
+	filtered := make([]string, 0, len(env))
+	for _, e := range env {
+		skip := false
+		for _, bl := range envBlacklist {
+			if strings.HasPrefix(e, bl+"=") {
+				skip = true
+				break
+			}
+		}
+		if !skip {
+			filtered = append(filtered, e)
+		}
+	}
+	return filtered
+}
+
 // runForgeInDir runs forge CLI in a given working directory, fatalfing on non-zero exit.
 func runForgeInDir(t *testing.T, dir string, args ...string) string {
 	t.Helper()
 	cmd := exec.Command("forge", args...)
 	cmd.Dir = dir
+	cmd.Env = cleanForgeEnv()
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("forge %s failed in %s: %s\noutput: %s", strings.Join(args, " "), dir, err, out)
@@ -120,6 +144,7 @@ func runForgeInDirRaw(t *testing.T, dir string, args ...string) (string, int) {
 	t.Helper()
 	cmd := exec.Command("forge", args...)
 	cmd.Dir = dir
+	cmd.Env = cleanForgeEnv()
 	out, err := cmd.CombinedOutput()
 	exitCode := 0
 	if err != nil {
