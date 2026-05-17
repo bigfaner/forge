@@ -116,7 +116,7 @@ func setupFeatureProject(t *testing.T, slug string, hasPRD bool, testProfiles []
 		for _, p := range testProfiles {
 			profileLines += "  - " + p + "\n"
 		}
-		profileLines += "auto:\n  e2eTest:\n    quick: true\n    full: true\n  consolidateSpecs:\n    quick: true\n    full: true\n"
+		profileLines += "auto:\n  e2eTest:\n    quick: true\n    full: true\n"
 		require.NoError(t, os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(profileLines), 0644))
 	}
 
@@ -380,7 +380,7 @@ func TestTC_007_TaskIndexMultiProfilePerTypeTasks(t *testing.T) {
 
 	idx := readIndexJSON(t, dir, "multi-prof-feat")
 
-	// Union capabilities: go [api, cli] + javascript [api, cli, web-ui] = [api, cli, web-ui]
+	// Union capabilities: go [api, cli] + javascript [web-ui, api] = [api, cli, web-ui]
 	// Each profile gets per-type tasks for ALL union capabilities
 	unionCaps := []string{"api", "cli", "web-ui"}
 
@@ -530,7 +530,7 @@ func TestTC_010_TaskIndexPerTypeIdempotent(t *testing.T) {
 	}
 
 	// Count total tasks should be reasonable (not doubled)
-	// breakdown mode with go (3 capabilities): gen-cases + eval + 3 per-type gen + run + graduate + verify + consolidate = 9
+	// breakdown mode with go (2 capabilities): gen-cases + eval + 2 per-type gen + run + graduate + verify + consolidate = 8
 	assert.LessOrEqual(t, len(idx.Tasks), 15,
 		"index should not have excessive tasks after idempotent re-run, got %d", len(idx.Tasks))
 }

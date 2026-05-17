@@ -162,7 +162,7 @@ func quickSlimSetupProject(t *testing.T, slug string, testProfiles []string, tes
 		for _, p := range testProfiles {
 			profileLines += "  - " + p + "\n"
 		}
-		profileLines += "auto:\n  e2eTest:\n    quick: true\n  consolidateSpecs:\n    quick: true\n"
+		profileLines += "auto:\n  e2eTest:\n    quick: true\n    full: true\n  consolidateSpecs:\n    quick: true\n    full: true\n"
 		require.NoError(t, os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(profileLines), 0644))
 	}
 
@@ -220,7 +220,7 @@ func TestTC_001_QuickModeSingleProfileTaskCount(t *testing.T) {
 
 	// Count test pipeline tasks (T-quick-* IDs)
 	// go profile has capabilities [api, cli] -> per-type gen-and-run tasks
-	// Total: gen-cases(1) + 3 per-type gen-and-run + graduate(1) + verify-regression(1) + drift-detection(1) = 7
+	// Total: gen-cases(1) + 2 per-type gen-and-run + graduate(1) + verify-regression(1) + drift-detection(1) = 6
 	testTaskCount := 0
 	for _, task := range idx.Tasks {
 		if strings.HasPrefix(task.ID, "T-quick-") {
@@ -352,6 +352,7 @@ func TestTC_006_QuickModePerTypeDependencyFanIn(t *testing.T) {
 		byID[task.ID] = task
 	}
 
+	// T-quick-2-api and T-quick-2-cli should all depend on T-quick-1
 	for _, typ := range []string{"api", "cli"} {
 		id := "T-quick-2-" + typ
 		task, ok := byID[id]
@@ -425,7 +426,7 @@ func TestTC_007_BreakdownModeUnchangedByQuickMerge(t *testing.T) {
 	assert.Equal(t, "test-pipeline.run", task3.Type,
 		"breakdown T-test-3 should have type test-pipeline.run")
 
-	// Total test pipeline tasks: gen-cases(1) + eval(1) + 2 per-type gen-scripts + run(1) + graduate(1) + verify(1) 
+	// Total test pipeline tasks: gen-cases(1) + eval(1) + 2 per-type gen-scripts + run(1) + graduate(1) + verify(1) = 7
 	// Plus consolidate-specs (T-specs-1) = 8 total T-test-*/T-specs-* tasks
 	testTaskCount := 0
 	for _, task := range idx.Tasks {
@@ -434,7 +435,7 @@ func TestTC_007_BreakdownModeUnchangedByQuickMerge(t *testing.T) {
 		}
 	}
 	assert.Equal(t, 8, testTaskCount,
-		"breakdown mode with go (2 capabilities) should have 9 test pipeline tasks")
+		"breakdown mode with go (2 capabilities) should have 8 test pipeline tasks")
 }
 
 // =============================================================================
@@ -454,7 +455,7 @@ func TestTC_008_QuickModeMultiProfileLetterSuffixes(t *testing.T) {
 		byID[task.ID] = task
 	}
 
-	// Union capabilities from go [api, cli] + javascript [api, web-ui] = [api, cli, web-ui]
+	// Union capabilities from go [api, cli] + javascript [web-ui, api] = [api, cli, web-ui]
 	unionCaps := []string{"api", "cli", "web-ui"}
 
 	// Verify suffixed gen-cases tasks exist
@@ -474,8 +475,8 @@ func TestTC_008_QuickModeMultiProfileLetterSuffixes(t *testing.T) {
 		assert.Equal(t, "test-pipeline.gen-and-run", task.Type,
 			"%s should have type test-pipeline.gen-and-run", id)
 	}
-	// Profile b (javascript): capabilities [api, web-ui]
-	for _, typ := range []string{"api", "web-ui"} {
+	// Profile b (javascript): capabilities [api, cli, web-ui]
+	for _, typ := range []string{"api", "cli", "web-ui"} {
 		id := "T-quick-2b-" + typ
 		task, ok := byID[id]
 		require.True(t, ok, "%s should exist", id)

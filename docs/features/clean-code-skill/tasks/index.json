@@ -1,0 +1,57 @@
+{
+  "feature": "clean-code-skill",
+  "proposal": "docs/proposals/clean-code-skill/proposal.md",
+  "created": "2026-05-17",
+  "tasks": {
+    "1-create-skill-and-command": {
+      "id": "1",
+      "title": "Create clean-code skill and command",
+      "priority": "P0",
+      "estimatedTime": "30m",
+      "status": "completed",
+      "file": "1-create-skill-and-command.md",
+      "record": "records/1-create-skill-and-command.md",
+      "scope": "backend",
+      "type": "feature"
+    },
+    "2-migrate-cli-template": {
+      "id": "2",
+      "title": "Migrate CLI template and fix wiring",
+      "priority": "P0",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-migrate-cli-template.md",
+      "record": "records/2-migrate-cli-template.md",
+      "scope": "backend",
+      "type": "feature"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "fix test-e2e: just test-e2e failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "quality-gate:test-e2e",
+      "type": "fix"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
