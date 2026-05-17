@@ -100,14 +100,14 @@ func IsKnownLanguage(name string) bool {
 }
 
 // ReadLanguages reads languages from .forge/config.yaml.
-// Returns config.Languages if set, otherwise auto-detects via DetectProfiles.
+// Returns config.Languages if set, otherwise auto-detects via DetectLanguages.
 // Returns empty slice (not error) if file doesn't exist or key is missing and detection finds nothing.
 func ReadLanguages(projectRoot string) ([]string, error) {
 	path := configPath(projectRoot)
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return DetectProfiles(projectRoot)
+			return detectLanguagesAsStrings(projectRoot)
 		}
 		return nil, fmt.Errorf("read config: %w", err)
 	}
@@ -121,7 +121,7 @@ func ReadLanguages(projectRoot string) ([]string, error) {
 		return cfg.Languages, nil
 	}
 
-	return DetectProfiles(projectRoot)
+	return detectLanguagesAsStrings(projectRoot)
 }
 
 // ReadInterfaces reads interfaces from .forge/config.yaml.
@@ -151,14 +151,18 @@ func ReadInterfaces(projectRoot string) ([]string, error) {
 
 // defaultInterfaces detects profiles and returns the union of their interfaces.
 func defaultInterfaces(projectRoot string) ([]string, error) {
-	profiles, err := DetectProfiles(projectRoot)
+	langs, err := DetectLanguages(projectRoot)
 	if err != nil {
 		return nil, err
 	}
-	if len(profiles) == 0 {
+	if len(langs) == 0 {
 		return nil, nil
 	}
-	return UnionLanguageInterfaces(profiles)
+	strs, err := languagesToStrings(langs)
+	if err != nil {
+		return nil, err
+	}
+	return UnionLanguageInterfaces(strs)
 }
 
 // configPath returns the path to .forge/config.yaml.
@@ -415,4 +419,27 @@ func WriteLanguages(projectRoot string, languages []string) error {
 	}
 
 	return nil
+}
+
+// languagesToStrings converts []Language to []string for compatibility with
+// config and interface resolution functions that operate on string keys.
+// Preserves nil: if langs is nil, returns nil (not empty slice).
+func languagesToStrings(langs []Language) ([]string, error) {
+	if langs == nil {
+		return nil, nil
+	}
+	result := make([]string, len(langs))
+	for i, l := range langs {
+		result[i] = string(l)
+	}
+	return result, nil
+}
+
+// detectLanguagesAsStrings calls DetectLanguages and converts the result to []string.
+func detectLanguagesAsStrings(projectRoot string) ([]string, error) {
+	langs, err := DetectLanguages(projectRoot)
+	if err != nil {
+		return nil, err
+	}
+	return languagesToStrings(langs)
 }

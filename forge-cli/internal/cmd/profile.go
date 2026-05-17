@@ -135,12 +135,16 @@ func runProfileDetect(_ *cobra.Command, _ []string) {
 		Exit(ErrProjectNotFound())
 	}
 
-	detected, err := profile.DetectProfiles(projectRoot)
+	detected, err := profile.DetectLanguages(projectRoot)
 	if err != nil {
 		Exit(NewAIError(ErrValidation, "Detection failed", err.Error(), "Run forge profile set <name> manually", "forge profile set javascript"))
 	}
 
-	printProfileResult(profileResult{Profiles: detected, Source: "detected"})
+	var names []string
+	for _, l := range detected {
+		names = append(names, string(l))
+	}
+	printProfileResult(profileResult{Profiles: names, Source: "detected"})
 }
 
 func printProfileResult(r profileResult) {

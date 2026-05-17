@@ -6,11 +6,11 @@ import (
 	"testing"
 )
 
-func TestDetectProfiles(t *testing.T) {
+func TestDetectLanguages(t *testing.T) {
 	tests := []struct {
 		name     string
 		setup    func(dir string)
-		expected []string
+		expected []Language
 	}{
 		{
 			name:     "empty directory",
@@ -22,77 +22,77 @@ func TestDetectProfiles(t *testing.T) {
 			setup: func(dir string) {
 				mustWrite(dir, "go.mod", "module example.com/test")
 			},
-			expected: []string{"go"},
+			expected: []Language{LanguageGo},
 		},
 		{
 			name: "Cargo.toml → rust",
 			setup: func(dir string) {
 				mustWrite(dir, "Cargo.toml", "[package]\nname = \"test\"")
 			},
-			expected: []string{"rust"},
+			expected: []Language{LanguageRust},
 		},
 		{
 			name: "pom.xml → java",
 			setup: func(dir string) {
 				mustWrite(dir, "pom.xml", "<project></project>")
 			},
-			expected: []string{"java"},
+			expected: []Language{LanguageJava},
 		},
 		{
 			name: "build.gradle → java",
 			setup: func(dir string) {
 				mustWrite(dir, "build.gradle", "plugins { id 'java' }")
 			},
-			expected: []string{"java"},
+			expected: []Language{LanguageJava},
 		},
 		{
 			name: "android directory → mobile",
 			setup: func(dir string) {
 				mustMkdir(dir, "android")
 			},
-			expected: []string{"mobile"},
+			expected: []Language{LanguageMobile},
 		},
 		{
 			name: "ios directory → mobile",
 			setup: func(dir string) {
 				mustMkdir(dir, "ios")
 			},
-			expected: []string{"mobile"},
+			expected: []Language{LanguageMobile},
 		},
 		{
-			name: "package.json with playwright → javascript",
+			name: "package.json with playwright devDep → javascript",
 			setup: func(dir string) {
 				mustWrite(dir, "package.json", `{"devDependencies":{"@playwright/test":"^1.0.0"}}`)
 			},
-			expected: []string{"javascript"},
+			expected: []Language{LanguageJavaScript},
 		},
 		{
-			name: "playwright.config.ts → javascript",
+			name: "package.json with playwright dep → javascript",
 			setup: func(dir string) {
-				mustWrite(dir, "playwright.config.ts", "export default {}")
+				mustWrite(dir, "package.json", `{"dependencies":{"@playwright/test":"^1.0.0"}}`)
 			},
-			expected: []string{"javascript"},
+			expected: []Language{LanguageJavaScript},
 		},
 		{
-			name: "package.json without playwright → javascript fallback",
+			name: "package.json without playwright → no detection",
 			setup: func(dir string) {
 				mustWrite(dir, "package.json", `{"dependencies":{"express":"^4.0.0"}}`)
 			},
-			expected: []string{"javascript"},
+			expected: nil,
 		},
 		{
 			name: "requirements.txt with pytest → python",
 			setup: func(dir string) {
 				mustWrite(dir, "requirements.txt", "pytest>=7.0\nrequests")
 			},
-			expected: []string{"python"},
+			expected: []Language{LanguagePython},
 		},
 		{
 			name: "pyproject.toml with pytest → python",
 			setup: func(dir string) {
 				mustWrite(dir, "pyproject.toml", "[tool.pytest.ini_options]\ntestpaths = [\"tests\"]")
 			},
-			expected: []string{"python"},
+			expected: []Language{LanguagePython},
 		},
 		{
 			name: "go.mod + package.json with playwright → javascript + go",
@@ -100,7 +100,14 @@ func TestDetectProfiles(t *testing.T) {
 				mustWrite(dir, "go.mod", "module example.com/test")
 				mustWrite(dir, "package.json", `{"devDependencies":{"@playwright/test":"^1.0.0"}}`)
 			},
-			expected: []string{"javascript", "go"},
+			expected: []Language{LanguageJavaScript, LanguageGo},
+		},
+		{
+			name: "playwright.config.ts without package.json playwright dep → no javascript",
+			setup: func(dir string) {
+				mustWrite(dir, "playwright.config.ts", "export default {}")
+			},
+			expected: nil,
 		},
 	}
 
@@ -109,7 +116,7 @@ func TestDetectProfiles(t *testing.T) {
 			dir := t.TempDir()
 			tt.setup(dir)
 
-			got, err := DetectProfiles(dir)
+			got, err := DetectLanguages(dir)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}

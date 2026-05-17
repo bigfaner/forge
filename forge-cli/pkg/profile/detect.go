@@ -7,70 +7,62 @@ import (
 	"strings"
 )
 
-// DetectProfiles scans the project root for file signals to infer test profiles.
+// Language represents a detected programming language key.
+type Language string
+
+// Language constants for type-safe language keys.
+const (
+	LanguageGo         Language = "go"
+	LanguageJavaScript Language = "javascript"
+	LanguagePython     Language = "python"
+	LanguageJava       Language = "java"
+	LanguageRust       Language = "rust"
+	LanguageMobile     Language = "mobile"
+)
+
+// DetectLanguages scans the project root for file signals to infer languages.
 // Returns nil (not error) if no signals match.
-// Multiple signals may return multiple profiles.
-func DetectProfiles(projectRoot string) ([]string, error) {
-	var detected []string
-	seen := make(map[string]bool)
+// Multiple signals may return multiple languages.
+func DetectLanguages(projectRoot string) ([]Language, error) {
+	var detected []Language
+	seen := make(map[Language]bool)
 
-	add := func(name string) {
-		if !seen[name] {
-			seen[name] = true
-			detected = append(detected, name)
+	add := func(lang Language) {
+		if !seen[lang] {
+			seen[lang] = true
+			detected = append(detected, lang)
 		}
 	}
 
-	hasPlaywright := false
-	hasPackageJSON := false
-
-	// Check package.json for Playwright
+	// Check package.json for @playwright/test dependency
 	pkgData, err := os.ReadFile(filepath.Join(projectRoot, "package.json"))
-	if err == nil {
-		hasPackageJSON = true
-		hasPlaywright = detectPlaywrightInPackageJSON(pkgData)
-	}
-
-	// Check for playwright.config.* files
-	if !hasPlaywright {
-		matches, _ := filepath.Glob(filepath.Join(projectRoot, "playwright.config.*"))
-		if len(matches) > 0 {
-			hasPlaywright = true
-		}
-	}
-
-	if hasPlaywright {
-		add("javascript")
+	if err == nil && detectPlaywrightInPackageJSON(pkgData) {
+		add(LanguageJavaScript)
 	}
 
 	// Go
 	if fileExists(projectRoot, "go.mod") {
-		add("go")
+		add(LanguageGo)
 	}
 
 	// Mobile (Maestro)
 	if dirExists(projectRoot, "android") || dirExists(projectRoot, "ios") {
-		add("mobile")
+		add(LanguageMobile)
 	}
 
 	// Java (Maven or Gradle)
 	if fileExists(projectRoot, "pom.xml") || fileExists(projectRoot, "build.gradle") || fileExists(projectRoot, "build.gradle.kts") {
-		add("java")
+		add(LanguageJava)
 	}
 
 	// Rust
 	if fileExists(projectRoot, "Cargo.toml") {
-		add("rust")
+		add(LanguageRust)
 	}
 
 	// Python (pytest)
 	if detectPytest(projectRoot) {
-		add("python")
-	}
-
-	// Fallback: package.json without Playwright → javascript
-	if hasPackageJSON && !hasPlaywright {
-		add("javascript")
+		add(LanguagePython)
 	}
 
 	return detected, nil
