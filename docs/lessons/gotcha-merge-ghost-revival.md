@@ -9,6 +9,8 @@ tags: [dependencies, architecture]
 
 A completed cleanup refactor (skill-rationalization: 7 eval-* skill directories → 1 generic eval skill) was silently undone. Weeks after merge, all 7 deleted directories reappeared in the codebase as if the cleanup never happened. No merge conflict was raised.
 
+This pattern recurred twice more from the same root cause: `error-fixer.md` (agent) and `record-task/SKILL.md` (skill) were deleted in `f61c919` and `8ebaae2` respectively, but revived again by `d7f8a13` — the same stale-based branch merge.
+
 ## Root Cause
 
 Causal chain (3 levels):
@@ -48,10 +50,11 @@ done
 
 ## Related Files
 
-- `plugins/forge/skills/eval-*/` — resurrected directories
+- `plugins/forge/skills/eval-*/` — resurrected directories (incident 1)
+- `plugins/forge/agents/error-fixer.md` — resurrected agent (incident 2)
+- `plugins/forge/skills/record-task/SKILL.md` — resurrected skill (incident 3)
 - `plugins/forge/skills/eval/` — correct generic eval skill
 - `docs/proposals/skill-rationalization/proposal.md` — original cleanup proposal
-- `docs/features/skill-rationalization/tasks/records/3-remove-old-eval-skills.md` — deletion record
 
 ## References
 
