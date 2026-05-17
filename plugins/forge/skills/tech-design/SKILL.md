@@ -44,7 +44,7 @@ ls docs/features/<slug>/prd/prd-spec.md
 ## Process Flow
 
 ```
-0. Detect test language → 1. Read PRD → 2. Explore context → 3. Identify decisions → 4. Ask questions → 5. Draft design → 6. Review → 7. Archive decisions (optional) → 8. Finalize
+0. Detect test language → 1. Read PRD → 2. Explore context → 3. Identify decisions → 4. Ask questions → 5. Draft design → 6. Review → 7. Archive decisions (optional) → 8. Finalize → 11. Auto-extract knowledge
 ```
 
 ## Step 0: Detect Test Language
@@ -219,6 +219,26 @@ After committing, use `AskUserQuestion` to ask:
 - **Yes** → invoke `/eval-design` via `Skill` tool
 - **Custom** → invoke `/eval-design --target X --iterations Y` via `Skill` tool
 - **No** → proceed to `/breakdown-tasks`
+
+## Step 11: Auto-Extract Knowledge
+
+After writing design documents and updating the manifest, run the shared knowledge extraction routine to capture knowledge that the decision archiving in Step 7 may have missed.
+
+Read `plugins/forge/references/shared/knowledge-extraction.md` and execute its extraction flow with:
+
+- `trigger`: `tech-design`
+- `artifacts`: `["docs/features/<slug>/design/tech-design.md"]`
+
+### Coordination with Step 7
+
+Step 7 archives **key decisions** explicitly marked in the tech-design document. This step focuses on knowledge types that Step 7 does not cover:
+
+- **Lessons**: Non-obvious insights discovered during design (e.g., constraints that required workarounds)
+- **Conventions**: Patterns established in the design that should be repeated across the project
+- **Business Rules**: Cross-feature constraints surfaced during technical analysis
+- **Decisions**: Only those not already archived by Step 7 (deduplication in the shared routine handles this)
+
+If Step 7 was skipped (no key decisions), this step still runs and may surface notable knowledge from other categories.
 
 ## Integration
 

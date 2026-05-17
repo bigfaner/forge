@@ -107,7 +107,7 @@
       "dependencies": [
         "3"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "9-trigger-tech-design.md",
       "record": "records/9-trigger-tech-design.md",
       "type": "enhancement"
