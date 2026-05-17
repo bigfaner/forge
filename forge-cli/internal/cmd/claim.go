@@ -68,7 +68,7 @@ func executeClaim() (*ClaimResult, error) {
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
 	index, err := task.LoadIndex(indexPath)
 	if err != nil {
-		return nil, NewAIError(ErrNotFound, "Failed to load task index", err.Error(), "Check index.json exists and is valid", "cat "+indexPath)
+		return nil, NewAIError(ErrNotFound, "Failed to load task index", err.Error(), "Run `forge task index --feature "+featureSlug+"` to generate it", "forge task index --feature "+featureSlug)
 	}
 
 	// Check for existing task state

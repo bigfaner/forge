@@ -449,6 +449,44 @@ func TestCheckDependenciesMet_UnknownDependency(t *testing.T) {
 	}
 }
 
+func TestExecuteClaim_MissingIndexJSON(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+
+	_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test-project\n\ngo 1.21\n"), 0644)
+	if err := feature.EnsureFeatureDir(dir, "test-feature"); err != nil {
+		t.Fatal(err)
+	}
+	if err := feature.WriteForgeState(dir, "test-feature"); err != nil {
+		t.Fatal(err)
+	}
+
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := executeClaim()
+	if err == nil {
+		t.Fatal("expected error when index.json is missing")
+	}
+
+	aiErr, ok := err.(*AIError)
+	if !ok {
+		t.Fatalf("expected *AIError, got %T", err)
+	}
+	if aiErr.Code != ErrNotFound {
+		t.Errorf("expected code NOT_FOUND, got %q", aiErr.Code)
+	}
+	if !strings.Contains(aiErr.Hint, "forge task index") {
+		t.Errorf("expected Hint to suggest 'forge task index', got: %q", aiErr.Hint)
+	}
+	if !strings.Contains(aiErr.Action, "forge task index --feature") {
+		t.Errorf("expected Action to contain 'forge task index --feature', got: %q", aiErr.Action)
+	}
+}
+
 func TestExecuteClaim(t *testing.T) {
 	// Setup test project structure
 	dir := t.TempDir()
