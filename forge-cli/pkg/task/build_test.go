@@ -549,12 +549,12 @@ func TestBuildIndex_WithTestTasks(t *testing.T) {
 	writeTaskMD(t, tasksDir, "2-gate.md", "2.gate", "Phase 2 Gate", nil)
 
 	opts := BuildIndexOpts{
-		FeatureSlug:      "test-feature",
-		ProjectRoot:      projectRoot,
-		TasksDir:         tasksDir,
-		IndexPath:        indexPath,
-		TestProfiles:     []string{"go-test"},
-		TestCapabilities: []string{"cli"},
+		FeatureSlug:    "test-feature",
+		ProjectRoot:    projectRoot,
+		TasksDir:       tasksDir,
+		IndexPath:      indexPath,
+		TestProfiles:   []string{"go-test"},
+		TestInterfaces: []string{"cli"},
 	}
 
 	result, err := BuildIndex(opts)
@@ -616,12 +616,12 @@ func TestBuildIndex_TestTasksIdempotent(t *testing.T) {
 	writeTaskMD(t, tasksDir, "1-gate.md", "1.gate", "Gate", nil)
 
 	opts := BuildIndexOpts{
-		FeatureSlug:      "test-feature",
-		ProjectRoot:      projectRoot,
-		TasksDir:         tasksDir,
-		IndexPath:        indexPath,
-		TestProfiles:     []string{"go-test"},
-		TestCapabilities: []string{"cli"},
+		FeatureSlug:    "test-feature",
+		ProjectRoot:    projectRoot,
+		TasksDir:       tasksDir,
+		IndexPath:      indexPath,
+		TestProfiles:   []string{"go-test"},
+		TestInterfaces: []string{"cli"},
 	}
 
 	// First build
@@ -657,13 +657,13 @@ func TestBuildIndex_MultiProfile(t *testing.T) {
 	writeTaskMD(t, tasksDir, "1-foo.md", "1", "Foo Task", nil)
 
 	opts := BuildIndexOpts{
-		FeatureSlug:      "test-feature",
-		ProjectRoot:      projectRoot,
-		TasksDir:         tasksDir,
-		IndexPath:        indexPath,
-		TestProfiles:     []string{"go-test", "web-playwright"},
-		TestCapabilities: []string{"api"},
-		AutoConfig:       allEnabledAuto,
+		FeatureSlug:    "test-feature",
+		ProjectRoot:    projectRoot,
+		TasksDir:       tasksDir,
+		IndexPath:      indexPath,
+		TestProfiles:   []string{"go-test", "web-playwright"},
+		TestInterfaces: []string{"api"},
+		AutoConfig:     allEnabledAuto,
 	}
 
 	result, err := BuildIndex(opts)
@@ -1172,12 +1172,12 @@ func TestBuildIndex_MissingTypeHardError(t *testing.T) {
 	}
 
 	opts := BuildIndexOpts{
-		FeatureSlug:      "test-feature",
-		ProjectRoot:      projectRoot,
-		TasksDir:         tasksDir,
-		IndexPath:        indexPath,
-		TestProfiles:     []string{"go-test"},
-		TestCapabilities: []string{"cli"},
+		FeatureSlug:    "test-feature",
+		ProjectRoot:    projectRoot,
+		TasksDir:       tasksDir,
+		IndexPath:      indexPath,
+		TestProfiles:   []string{"go-test"},
+		TestInterfaces: []string{"cli"},
 	}
 
 	_, err := BuildIndex(opts)
@@ -1200,12 +1200,12 @@ func TestBuildIndex_DocsOnlySkipsGatesAndTests(t *testing.T) {
 	writeTaskMDWithType(t, tasksDir, "2-doc.md", "1.2", "Doc Task 2", TypeDocumentation, []string{"1.1"})
 
 	opts := BuildIndexOpts{
-		FeatureSlug:      "test-feature",
-		ProjectRoot:      projectRoot,
-		TasksDir:         tasksDir,
-		IndexPath:        indexPath,
-		TestCapabilities: []string{"cli"},
-		TestProfiles:     []string{"go-test"},
+		FeatureSlug:    "test-feature",
+		ProjectRoot:    projectRoot,
+		TasksDir:       tasksDir,
+		IndexPath:      indexPath,
+		TestInterfaces: []string{"cli"},
+		TestProfiles:   []string{"go-test"},
 	}
 
 	result, err := BuildIndex(opts)
@@ -1244,12 +1244,12 @@ func TestBuildIndex_DocsOnlyGeneratesEvalDoc(t *testing.T) {
 	writeTaskMDWithType(t, tasksDir, "2-doc.md", "1.2", "Doc Task 2", TypeDocumentation, []string{"1.1"})
 
 	opts := BuildIndexOpts{
-		FeatureSlug:      "test-feature",
-		ProjectRoot:      projectRoot,
-		TasksDir:         tasksDir,
-		TestCapabilities: []string{"cli"},
-		IndexPath:        indexPath,
-		TestProfiles:     []string{"go-test"},
+		FeatureSlug:    "test-feature",
+		ProjectRoot:    projectRoot,
+		TasksDir:       tasksDir,
+		TestInterfaces: []string{"cli"},
+		IndexPath:      indexPath,
+		TestProfiles:   []string{"go-test"},
 	}
 
 	result, err := BuildIndex(opts)
@@ -1305,13 +1305,13 @@ func TestBuildIndex_CodeFeatureUnchanged(t *testing.T) {
 	writeTaskMDWithType(t, tasksDir, "2-feat.md", "1.2", "Feature Task 2", TypeFeature, []string{"1.1"})
 
 	opts := BuildIndexOpts{
-		FeatureSlug:      "test-feature",
-		ProjectRoot:      projectRoot,
-		TestCapabilities: []string{"cli"},
-		TasksDir:         tasksDir,
-		IndexPath:        indexPath,
-		TestProfiles:     []string{"go-test"},
-		AutoConfig:       allEnabledAuto,
+		FeatureSlug:    "test-feature",
+		ProjectRoot:    projectRoot,
+		TestInterfaces: []string{"cli"},
+		TasksDir:       tasksDir,
+		IndexPath:      indexPath,
+		TestProfiles:   []string{"go-test"},
+		AutoConfig:     allEnabledAuto,
 	}
 
 	result, err := BuildIndex(opts)
@@ -1353,12 +1353,12 @@ func TestBuildIndex_MissingTypeAllowedForAutoGenTasks(t *testing.T) {
 	}
 
 	opts := BuildIndexOpts{
-		FeatureSlug:      "test-feature",
-		TestCapabilities: []string{"cli"},
-		ProjectRoot:      projectRoot,
-		TasksDir:         tasksDir,
-		IndexPath:        indexPath,
-		TestProfiles:     []string{"go-test"},
+		FeatureSlug:    "test-feature",
+		TestInterfaces: []string{"cli"},
+		ProjectRoot:    projectRoot,
+		TasksDir:       tasksDir,
+		IndexPath:      indexPath,
+		TestProfiles:   []string{"go-test"},
 	}
 
 	// Should NOT error - gate is an auto-generated task, InferType handles it
@@ -1368,7 +1368,7 @@ func TestBuildIndex_MissingTypeAllowedForAutoGenTasks(t *testing.T) {
 	}
 }
 
-func TestBuildIndex_EmptyTestCapabilities_NoTestTasks(t *testing.T) {
+func TestBuildIndex_EmptyTestInterfaces_NoTestTasks(t *testing.T) {
 	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "breakdown")
 
 	writeTaskMDWithType(t, tasksDir, "1-feat.md", "1.1", "Feature Task", TypeFeature, nil)
@@ -1376,12 +1376,12 @@ func TestBuildIndex_EmptyTestCapabilities_NoTestTasks(t *testing.T) {
 	writeTaskMD(t, tasksDir, "2-gate.md", "2.gate", "Phase 2 Gate", nil)
 
 	opts := BuildIndexOpts{
-		FeatureSlug:      "test-feature",
-		ProjectRoot:      projectRoot,
-		TasksDir:         tasksDir,
-		IndexPath:        indexPath,
-		TestProfiles:     []string{"go-test"},
-		TestCapabilities: []string{},
+		FeatureSlug:    "test-feature",
+		ProjectRoot:    projectRoot,
+		TasksDir:       tasksDir,
+		IndexPath:      indexPath,
+		TestProfiles:   []string{"go-test"},
+		TestInterfaces: []string{},
 	}
 
 	result, err := BuildIndex(opts)
@@ -1406,19 +1406,19 @@ func TestBuildIndex_EmptyTestCapabilities_NoTestTasks(t *testing.T) {
 	}
 }
 
-func TestBuildIndex_WithCapabilities_ProducesPerTypeTasks(t *testing.T) {
+func TestBuildIndex_WithInterfaces_ProducesPerTypeTasks(t *testing.T) {
 	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "quick")
 
 	writeTaskMD(t, tasksDir, "1-foo.md", "1", "Foo Task", nil)
 
 	opts := BuildIndexOpts{
-		FeatureSlug:      "test-feature",
-		ProjectRoot:      projectRoot,
-		TasksDir:         tasksDir,
-		IndexPath:        indexPath,
-		TestProfiles:     []string{"go-test"},
-		TestCapabilities: []string{"cli"},
-		AutoConfig:       allEnabledAuto,
+		FeatureSlug:    "test-feature",
+		ProjectRoot:    projectRoot,
+		TasksDir:       tasksDir,
+		IndexPath:      indexPath,
+		TestProfiles:   []string{"go-test"},
+		TestInterfaces: []string{"cli"},
+		AutoConfig:     allEnabledAuto,
 	}
 
 	result, err := BuildIndex(opts)
@@ -1461,12 +1461,12 @@ func TestBuildIndex_DeterministicOutput(t *testing.T) {
 	writeTaskMD(t, tasksDir, "1-foo.md", "1", "Foo Task", nil)
 
 	opts := BuildIndexOpts{
-		FeatureSlug:      "test-feature",
-		ProjectRoot:      projectRoot,
-		TasksDir:         tasksDir,
-		IndexPath:        indexPath,
-		TestProfiles:     []string{"go-test"},
-		TestCapabilities: []string{"api"},
+		FeatureSlug:    "test-feature",
+		ProjectRoot:    projectRoot,
+		TasksDir:       tasksDir,
+		IndexPath:      indexPath,
+		TestProfiles:   []string{"go-test"},
+		TestInterfaces: []string{"api"},
 	}
 
 	_, err := BuildIndex(opts)

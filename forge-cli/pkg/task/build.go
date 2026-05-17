@@ -17,14 +17,14 @@ type StrategyResolver func(profileName, kind string) []byte
 
 // BuildIndexOpts holds options for building the task index.
 type BuildIndexOpts struct {
-	FeatureSlug      string
-	ProjectRoot      string
-	TasksDir         string   // absolute path to tasks/
-	IndexPath        string   // absolute path to index.json
-	TestProfiles     []string // flag > config.yaml > none
-	TestCapabilities []string // config.yaml capabilities > UnionCapabilities(profiles) > none
-	ResolveStrategy  StrategyResolver
-	AutoConfig       profile.AutoConfig // auto-behavior config (defaults filled by caller)
+	FeatureSlug     string
+	ProjectRoot     string
+	TasksDir        string   // absolute path to tasks/
+	IndexPath       string   // absolute path to index.json
+	TestProfiles    []string // flag > config.yaml > none
+	TestInterfaces  []string // config.yaml interfaces > UnionLanguageInterfaces(profiles) > none
+	ResolveStrategy StrategyResolver
+	AutoConfig      profile.AutoConfig // auto-behavior config (defaults filled by caller)
 }
 
 // BuildIndexResult holds the result of a BuildIndex operation.
@@ -274,8 +274,8 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 			index.SetTask(evalKey, task)
 			result.NewCount++
 		}
-	} else if needsTest && len(profiles) > 0 && len(opts.TestCapabilities) > 0 && mode != "" {
-		testTasks := generateTestTasks(mode, profiles, opts.TestCapabilities, opts.AutoConfig)
+	} else if needsTest && len(profiles) > 0 && len(opts.TestInterfaces) > 0 && mode != "" {
+		testTasks := generateTestTasks(mode, profiles, opts.TestInterfaces, opts.AutoConfig)
 		if len(testTasks) > 0 {
 			ResolveFirstTestDep(testTasks, index.TasksMap(), mode)
 		}

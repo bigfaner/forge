@@ -30,7 +30,7 @@ type TestTaskDef struct {
 
 // GetBreakdownTestTasks returns test task definitions for breakdown mode.
 // With 0 or 1 profile, uses no suffix. With 2+ profiles, uses letter suffixes.
-// Capabilities are config-driven test types (e.g., "cli", "api"). Empty capabilities returns nil.
+// Interfaces are config-driven test types (e.g., "cli", "api"). Empty interfaces returns nil.
 // auto controls which task categories are generated.
 func GetBreakdownTestTasks(profiles []string, capabilities []string, auto profile.AutoConfig) []TestTaskDef {
 	if len(capabilities) == 0 {
@@ -113,7 +113,7 @@ func GetBreakdownTestTasks(profiles []string, capabilities []string, auto profil
 }
 
 // GetQuickTestTasks returns test task definitions for quick mode.
-// Capabilities are config-driven test types (e.g., "cli", "api"). Empty capabilities returns nil.
+// Interfaces are config-driven test types (e.g., "cli", "api"). Empty interfaces returns nil.
 // auto controls which task categories are generated.
 func GetQuickTestTasks(profiles []string, capabilities []string, auto profile.AutoConfig) []TestTaskDef {
 	if len(capabilities) == 0 {

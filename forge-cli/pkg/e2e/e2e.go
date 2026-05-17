@@ -25,9 +25,9 @@ type RunOpts struct {
 // ResolveProfile reads config.yaml and validates the profile.
 // Returns the profile name or an error.
 func ResolveProfile(projectRoot string) (string, error) {
-	profiles, err := profile.ReadTestProfiles(projectRoot)
+	profiles, err := profile.ReadLanguages(projectRoot)
 	if err != nil {
-		return "", fmt.Errorf("read test profiles: %w", err)
+		return "", fmt.Errorf("read languages: %w", err)
 	}
 
 	if len(profiles) == 0 {

@@ -78,10 +78,10 @@ func (a AutoConfig) WithDefaults() AutoConfig {
 
 // ForgeConfig represents the .forge/config.yaml structure.
 type ForgeConfig struct {
-	ProjectType  string      `yaml:"project-type"`
-	TestProfiles []string    `yaml:"test-profiles"`
-	Capabilities []string    `yaml:"capabilities"`
-	Auto         *AutoConfig `yaml:"auto,omitempty"`
+	ProjectType string      `yaml:"project-type"`
+	Interfaces  []string    `yaml:"interfaces"`
+	Languages   []string    `yaml:"languages"`
+	Auto        *AutoConfig `yaml:"auto,omitempty"`
 }
 
 // KnownProfiles is the set of valid profile names.
@@ -99,19 +99,15 @@ func IsKnownProfile(name string) bool {
 	return slices.Contains(KnownProfiles, name)
 }
 
-// configPath returns the path to .forge/config.yaml.
-func configPath(projectRoot string) string {
-	return filepath.Join(projectRoot, forgeDir, forgeConfigFile)
-}
-
-// ReadTestProfiles reads test-profiles from .forge/config.yaml.
-// Returns empty slice (not error) if file doesn't exist or key is missing.
-func ReadTestProfiles(projectRoot string) ([]string, error) {
+// ReadLanguages reads languages from .forge/config.yaml.
+// Returns config.Languages if set, otherwise auto-detects via DetectProfiles.
+// Returns empty slice (not error) if file doesn't exist or key is missing and detection finds nothing.
+func ReadLanguages(projectRoot string) ([]string, error) {
 	path := configPath(projectRoot)
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, nil
+			return DetectProfiles(projectRoot)
 		}
 		return nil, fmt.Errorf("read config: %w", err)
 	}
@@ -121,7 +117,53 @@ func ReadTestProfiles(projectRoot string) ([]string, error) {
 		return nil, fmt.Errorf("parse config: %w", err)
 	}
 
-	return cfg.TestProfiles, nil
+	if len(cfg.Languages) > 0 {
+		return cfg.Languages, nil
+	}
+
+	return DetectProfiles(projectRoot)
+}
+
+// ReadInterfaces reads interfaces from .forge/config.yaml.
+// Returns config.Interfaces if set, otherwise defaults to union of all
+// detected languages' capabilities via the languageCapabilities map in embed.go.
+func ReadInterfaces(projectRoot string) ([]string, error) {
+	path := configPath(projectRoot)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return defaultInterfaces(projectRoot)
+		}
+		return nil, fmt.Errorf("read config: %w", err)
+	}
+
+	var cfg ForgeConfig
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return nil, fmt.Errorf("parse config: %w", err)
+	}
+
+	if len(cfg.Interfaces) > 0 {
+		return cfg.Interfaces, nil
+	}
+
+	return defaultInterfaces(projectRoot)
+}
+
+// defaultInterfaces detects profiles and returns the union of their interfaces.
+func defaultInterfaces(projectRoot string) ([]string, error) {
+	profiles, err := DetectProfiles(projectRoot)
+	if err != nil {
+		return nil, err
+	}
+	if len(profiles) == 0 {
+		return nil, nil
+	}
+	return UnionLanguageInterfaces(profiles)
+}
+
+// configPath returns the path to .forge/config.yaml.
+func configPath(projectRoot string) string {
+	return filepath.Join(projectRoot, forgeDir, forgeConfigFile)
 }
 
 // ReadConfig reads the full ForgeConfig from .forge/config.yaml.
@@ -264,11 +306,11 @@ var configKeyAccessors = map[string]configKeyAccessor{
 	"project-type": {
 		scalar: func(c *ForgeConfig) (string, bool) { return c.ProjectType, c.ProjectType != "" },
 	},
-	"test-profiles": {
-		slice: func(c *ForgeConfig) ([]string, bool) { return c.TestProfiles, len(c.TestProfiles) > 0 },
+	"interfaces": {
+		slice: func(c *ForgeConfig) ([]string, bool) { return c.Interfaces, len(c.Interfaces) > 0 },
 	},
-	"capabilities": {
-		slice: func(c *ForgeConfig) ([]string, bool) { return c.Capabilities, len(c.Capabilities) > 0 },
+	"languages": {
+		slice: func(c *ForgeConfig) ([]string, bool) { return c.Languages, len(c.Languages) > 0 },
 	},
 }
 
@@ -344,9 +386,9 @@ func joinSlice(vals []string) string {
 	return result
 }
 
-// WriteTestProfiles writes test-profiles to .forge/config.yaml.
+// WriteLanguages writes languages to .forge/config.yaml.
 // Creates the file if it doesn't exist. Preserves other keys if the file exists.
-func WriteTestProfiles(projectRoot string, profiles []string) error {
+func WriteLanguages(projectRoot string, languages []string) error {
 	path := configPath(projectRoot)
 
 	// Ensure .forge/ directory exists
@@ -361,7 +403,7 @@ func WriteTestProfiles(projectRoot string, profiles []string) error {
 		_ = yaml.Unmarshal(data, &cfg)
 	}
 
-	cfg.TestProfiles = profiles
+	cfg.Languages = languages
 
 	out, err := yaml.Marshal(&cfg)
 	if err != nil {

@@ -244,26 +244,26 @@ func runConfigInitIfNeeded(projectRoot string) initAction {
 		selectedProfiles = []string{selectedProfile}
 	}
 
-	// Step 3: Capabilities (only if profile selected)
-	var selectedCaps []string
+	// Step 3: Interfaces (only if profile selected)
+	var selectedIfaces []string
 	if len(selectedProfiles) > 0 {
-		union, err := profile.UnionCapabilities(selectedProfiles)
+		union, err := profile.UnionLanguageInterfaces(selectedProfiles)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "WARNING: could not resolve capabilities: %v\n", err)
+			fmt.Fprintf(os.Stderr, "WARNING: could not resolve interfaces: %v\n", err)
 		} else if len(union) > 0 {
-			selectedCaps = make([]string, len(union))
-			copy(selectedCaps, union)
-			capOpts := make([]huh.Option[string], 0, len(union))
+			selectedIfaces = make([]string, len(union))
+			copy(selectedIfaces, union)
+			ifaceOpts := make([]huh.Option[string], 0, len(union))
 			for _, c := range union {
-				capOpts = append(capOpts, huh.NewOption(c, c).Selected(true))
+				ifaceOpts = append(ifaceOpts, huh.NewOption(c, c).Selected(true))
 			}
 			if err := huh.NewForm(huh.NewGroup(
 				huh.NewMultiSelect[string]().
-					Title("Which test capabilities should be enabled?").
+					Title("Which test interfaces should be enabled?").
 					Description("Controls which test task types are generated. Space to toggle, Enter to confirm.").
-					Options(capOpts...).
+					Options(ifaceOpts...).
 					Limit(0).
-					Value(&selectedCaps),
+					Value(&selectedIfaces),
 			)).Run(); err != nil {
 				if errors.Is(err, huh.ErrUserAborted) {
 					return initAction{status: "CANCELLED", target: ".forge/config.yaml", detail: "Ctrl+C"}
@@ -280,10 +280,10 @@ func runConfigInitIfNeeded(projectRoot string) initAction {
 	}
 
 	cfg := profile.ForgeConfig{
-		ProjectType:  projectType,
-		TestProfiles: selectedProfiles,
-		Capabilities: selectedCaps,
-		Auto:         auto,
+		ProjectType: projectType,
+		Languages:   selectedProfiles,
+		Interfaces:  selectedIfaces,
+		Auto:        auto,
 	}
 
 	if err := writeConfigFile(configFile, &cfg); err != nil {

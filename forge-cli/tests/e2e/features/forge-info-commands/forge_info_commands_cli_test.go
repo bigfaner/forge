@@ -42,14 +42,14 @@ func TestTC_004_ConfigGetProjectType(t *testing.T) {
 }
 
 // Traceability: TC-005 -> Task 1 / AC-5
-func TestTC_005_ConfigGetCapabilitiesArrayOutput(t *testing.T) {
-	exitCode, out := testkit.RunCLIExitCode("config", "get", "capabilities")
+func TestTC_005_ConfigGetInterfacesArrayOutput(t *testing.T) {
+	exitCode, out := testkit.RunCLIExitCode("config", "get", "interfaces")
 
-	assert.Equal(t, 0, exitCode, "config get capabilities should exit 0")
+	assert.Equal(t, 0, exitCode, "config get interfaces should exit 0")
 	lines := strings.Split(strings.TrimSpace(out), "\n")
 	assert.True(t, len(lines) >= 3,
-		"capabilities should output at least 3 lines (one per item), got %d: %q", len(lines), out)
-	// Verify no formatting blocks or quotes — each line should be a plain capability name
+		"interfaces should output at least 3 lines (one per item), got %d: %q", len(lines), out)
+	// Verify no formatting blocks or quotes — each line should be a plain interface name
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
 		assert.NotContains(t, trimmed, `"`, "each line should not contain quotes: %q", trimmed)

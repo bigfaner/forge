@@ -89,27 +89,17 @@ func runProfileResolve(_ *cobra.Command, _ []string) {
 		Exit(ErrProjectNotFound())
 	}
 
-	// 1. Try config
-	configured, err := profile.ReadTestProfiles(projectRoot)
+	// Read languages (config override or auto-detect)
+	languages, err := profile.ReadLanguages(projectRoot)
 	if err != nil {
-		Exit(NewAIError(ErrValidation, "Failed to read config", err.Error(), "Check .forge/config.yaml format", "forge profile detect"))
+		Exit(NewAIError(ErrValidation, "Failed to read languages", err.Error(), "Check .forge/config.yaml format", "forge profile detect"))
 	}
-	if len(configured) > 0 {
-		printProfileResult(profileResult{Profiles: configured, Source: "config"})
+	if len(languages) > 0 {
+		printProfileResult(profileResult{Profiles: languages, Source: "resolved"})
 		return
 	}
 
-	// 2. Try detection
-	detected, err := profile.DetectProfiles(projectRoot)
-	if err != nil {
-		Exit(NewAIError(ErrValidation, "Detection failed", err.Error(), "Run forge profile set <name> manually", "forge profile set web-playwright"))
-	}
-	if len(detected) > 0 {
-		printProfileResult(profileResult{Profiles: detected, Source: "detected"})
-		return
-	}
-
-	// 3. No match — signal AI to ask user
+	// No match — signal AI to ask user
 	printProfileResult(profileResult{Profiles: nil, Source: ""})
 }
 
@@ -131,7 +121,7 @@ func runProfileSet(_ *cobra.Command, args []string) {
 		Exit(ErrProjectNotFound())
 	}
 
-	if err := profile.WriteTestProfiles(projectRoot, []string{name}); err != nil {
+	if err := profile.WriteLanguages(projectRoot, []string{name}); err != nil {
 		Exit(NewAIError(ErrValidation, "Failed to write config", err.Error(), "Check .forge/ directory permissions", "ls -la .forge/"))
 	}
 

@@ -17,7 +17,7 @@ var allEnabledAuto = profile.AutoConfig{
 	CleanCode:        profile.ModeToggle{Quick: false, Full: false},
 }
 
-func TestGetBreakdownTestTasks_EmptyCapabilities(t *testing.T) {
+func TestGetBreakdownTestTasks_EmptyInterfaces(t *testing.T) {
 	tasks := GetBreakdownTestTasks([]string{"go-test"}, nil, defaultAuto)
 
 	// No capabilities -> no test tasks generated
@@ -95,7 +95,7 @@ func TestGetBreakdownTestTasks_MultiProfile(t *testing.T) {
 	}
 }
 
-func TestGetQuickTestTasks_EmptyCapabilities(t *testing.T) {
+func TestGetQuickTestTasks_EmptyInterfaces(t *testing.T) {
 	tasks := GetQuickTestTasks([]string{"go-test"}, nil, allEnabledAuto)
 
 	// No capabilities -> no test tasks

@@ -19,7 +19,7 @@ func setupProfile(t *testing.T, profileName string) string {
 	if err := os.MkdirAll(forgeDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	configContent := fmt.Sprintf("test-profiles:\n  - %s\n", profileName)
+	configContent := fmt.Sprintf("languages:\n  - %s\n", profileName)
 	if err := os.WriteFile(filepath.Join(forgeDir, feature.ForgeConfigFileName), []byte(configContent), 0o644); err != nil {
 		t.Fatal(err)
 	}

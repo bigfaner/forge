@@ -25,7 +25,7 @@ func TestConfigGetCommand(t *testing.T) {
 	}
 
 	t.Run("project-type returns plain text", func(t *testing.T) {
-		dir := setupConfig(t, "project-type: backend\ntest-profiles:\n  - go-test\n")
+		dir := setupConfig(t, "project-type: backend\nlanguages:\n  - go-test\n")
 
 		var stdout, stderr bytes.Buffer
 		rootCmd.SetOut(&stdout)
@@ -43,13 +43,13 @@ func TestConfigGetCommand(t *testing.T) {
 		}
 	})
 
-	t.Run("capabilities returns one per line", func(t *testing.T) {
-		dir := setupConfig(t, "capabilities:\n  - tui\n  - api\n  - cli\n")
+	t.Run("interfaces returns one per line", func(t *testing.T) {
+		dir := setupConfig(t, "interfaces:\n  - tui\n  - api\n  - cli\n")
 
 		var stdout, stderr bytes.Buffer
 		rootCmd.SetOut(&stdout)
 		rootCmd.SetErr(&stderr)
-		rootCmd.SetArgs([]string{"config", "get", "capabilities", "--project-root", dir})
+		rootCmd.SetArgs([]string{"config", "get", "interfaces", "--project-root", dir})
 
 		err := rootCmd.Execute()
 		if err != nil {
@@ -101,7 +101,7 @@ func TestConfigGetCommand(t *testing.T) {
 	})
 
 	t.Run("auto.gitPush returns true", func(t *testing.T) {
-		dir := setupConfig(t, "test-profiles:\n  - go-test\nauto:\n  gitPush: true\n")
+		dir := setupConfig(t, "languages:\n  - go-test\nauto:\n  gitPush: true\n")
 
 		var stdout bytes.Buffer
 		rootCmd.SetOut(&stdout)
@@ -120,7 +120,7 @@ func TestConfigGetCommand(t *testing.T) {
 	})
 
 	t.Run("auto.gitPush returns false when absent", func(t *testing.T) {
-		dir := setupConfig(t, "test-profiles:\n  - go-test\n")
+		dir := setupConfig(t, "languages:\n  - go-test\n")
 
 		var stdout bytes.Buffer
 		rootCmd.SetOut(&stdout)
@@ -139,7 +139,7 @@ func TestConfigGetCommand(t *testing.T) {
 	})
 
 	t.Run("output is plain text no formatting blocks", func(t *testing.T) {
-		dir := setupConfig(t, "project-type: mixed\ncapabilities:\n  - tui\n")
+		dir := setupConfig(t, "project-type: mixed\ninterfaces:\n  - tui\n")
 
 		var stdout bytes.Buffer
 		rootCmd.SetOut(&stdout)
@@ -263,10 +263,10 @@ func TestConfigInitCommand(t *testing.T) {
 		}
 	})
 
-	t.Run("capabilities populated from profile union", func(t *testing.T) {
+	t.Run("interfaces populated from profile union", func(t *testing.T) {
 		dir := t.TempDir()
 
-		// Input: project-type=backend(2), profile=go-test(2), capabilities=all(1 2 3)
+		// Input: project-type=backend(2), profile=go-test(2), interfaces=all(1 2 3)
 		input := "2\n2\n1 2 3\n"
 		var stdin bytes.Buffer
 		stdin.WriteString(input)
@@ -288,18 +288,18 @@ func TestConfigInitCommand(t *testing.T) {
 		}
 
 		content := string(data)
-		// go-test capabilities: api, cli, tui (sorted)
-		for _, cap := range []string{"api", "cli", "tui"} {
-			if !strings.Contains(content, cap) {
-				t.Errorf("expected capability %q in config, got:\n%s", cap, content)
+		// go-test interfaces: api, cli, tui (sorted)
+		for _, iface := range []string{"api", "cli", "tui"} {
+			if !strings.Contains(content, iface) {
+				t.Errorf("expected interface %q in config, got:\n%s", iface, content)
 			}
 		}
-		if !strings.Contains(content, "test-profiles") {
-			t.Errorf("expected test-profiles in config, got:\n%s", content)
+		if !strings.Contains(content, "languages") {
+			t.Errorf("expected languages in config, got:\n%s", content)
 		}
 	})
 
-	t.Run("capabilities empty when no profile selected", func(t *testing.T) {
+	t.Run("interfaces empty when no profile selected", func(t *testing.T) {
 		dir := t.TempDir()
 
 		// Input: project-type=frontend(1), profile=none(empty)
@@ -327,10 +327,10 @@ func TestConfigInitCommand(t *testing.T) {
 		if !strings.Contains(content, "project-type: frontend") {
 			t.Errorf("expected frontend project type, got:\n%s", content)
 		}
-		// No profile-specific capabilities when no profile selected
-		for _, cap := range []string{"api", "cli", "tui", "web-ui"} {
-			if strings.Contains(content, "- "+cap) {
-				t.Errorf("expected no profile capabilities when no profile selected, got:\n%s", content)
+		// No profile-specific interfaces when no profile selected
+		for _, iface := range []string{"api", "cli", "tui", "web-ui"} {
+			if strings.Contains(content, "- "+iface) {
+				t.Errorf("expected no profile interfaces when no profile selected, got:\n%s", content)
 			}
 		}
 	})

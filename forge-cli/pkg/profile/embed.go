@@ -100,8 +100,8 @@ type profileManifest struct {
 	Capabilities []string `yaml:"capabilities"`
 }
 
-// GetProfileCapabilities returns the capabilities for a given profile.
-func GetProfileCapabilities(name string) ([]string, error) {
+// GetProfileInterfaces returns the interfaces for a given profile.
+func GetProfileInterfaces(name string) ([]string, error) {
 	data, err := GetManifest(name)
 	if err != nil {
 		return nil, err
@@ -113,9 +113,9 @@ func GetProfileCapabilities(name string) ([]string, error) {
 	return manifest.Capabilities, nil
 }
 
-// ValidTestTypes is the closed set of valid test-type capabilities.
+// ValidInterfaceTypes is the closed set of valid interface types.
 // Sourced from all profile manifests under pkg/profile/profiles/.
-var ValidTestTypes = []string{
+var ValidInterfaceTypes = []string{
 	"web-ui",
 	"tui",
 	"mobile-ui",
@@ -123,25 +123,41 @@ var ValidTestTypes = []string{
 	"cli",
 }
 
-// ValidateCapabilities checks that every value in caps is a known test-type capability.
-// Returns an error listing valid values if any unknown capability is found.
-func ValidateCapabilities(caps []string) error {
-	for _, c := range caps {
-		if !slices.Contains(ValidTestTypes, c) {
-			return fmt.Errorf("invalid capability: %s (valid types: %s)", c, strings.Join(ValidTestTypes, ", "))
+// ValidateInterfaces checks that every value in ifaces is a known interface type.
+// Returns an error listing valid values if any unknown interface is found.
+func ValidateInterfaces(ifaces []string) error {
+	for _, c := range ifaces {
+		if !slices.Contains(ValidInterfaceTypes, c) {
+			return fmt.Errorf("invalid interface: %s (valid types: %s)", c, strings.Join(ValidInterfaceTypes, ", "))
 		}
 	}
 	return nil
 }
 
-// UnionCapabilities returns the union of capabilities from the given profiles.
-func UnionCapabilities(profileNames []string) ([]string, error) {
+// languageCapabilities maps each profile name to its supported interface types.
+// Used by ReadInterfaces as the default when config.Interfaces is empty.
+var languageCapabilities = map[string][]string{
+	"go-test":        {"api", "cli", "tui"},
+	"web-playwright": {"web-ui", "api", "cli"},
+	"pytest":         {"api", "cli"},
+	"java-junit":     {"api", "cli"},
+	"rust-test":      {"api", "cli"},
+	"maestro":        {"mobile-ui"},
+}
+
+// UnionLanguageInterfaces returns the union of interfaces for the given profiles.
+func UnionLanguageInterfaces(profiles []string) ([]string, error) {
 	seen := make(map[string]bool)
 	var result []string
-	for _, name := range profileNames {
-		caps, err := GetProfileCapabilities(name)
-		if err != nil {
-			return nil, err
+	for _, name := range profiles {
+		caps, ok := languageCapabilities[name]
+		if !ok {
+			// Fallback to manifest for unknown profiles
+			var err error
+			caps, err = GetProfileInterfaces(name)
+			if err != nil {
+				return nil, err
+			}
 		}
 		for _, c := range caps {
 			if !seen[c] {
