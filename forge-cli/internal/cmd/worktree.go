@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"text/tabwriter"
 
 	"forge-cli/pkg/feature"
@@ -36,6 +37,78 @@ Worktrees whose name matches a feature slug in docs/features/ are marked as
 forge-managed. The main worktree (current project) is distinguished from
 feature worktrees.`,
 	RunE: runWorktreeList,
+}
+
+var worktreeRemoveCmd = &cobra.Command{
+	Use:   "remove <slug>",
+	Short: "Remove a git worktree while preserving its branch",
+	Long: `Remove the git worktree at ../<slug>.
+
+The branch is preserved after removal so you can merge it later with
+'git merge <slug>'. Fails if the worktree has uncommitted changes —
+commit or stash first.`,
+	Args: cobra.ExactArgs(1),
+	RunE: runWorktreeRemove,
+}
+
+func runWorktreeRemove(cmd *cobra.Command, args []string) error {
+	slug := args[0]
+
+	if slug == "" {
+		return fmt.Errorf("slug must not be empty")
+	}
+
+	projectRoot, err := project.FindProjectRoot()
+	if err != nil {
+		return fmt.Errorf("find project root: %w", err)
+	}
+
+	if !git.IsGitRepository(projectRoot) {
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: not a git repository: %s\n", projectRoot)
+		return fmt.Errorf("not a git repository: %s", projectRoot)
+	}
+
+	// Resolve worktree path
+	targetDir := filepath.Join(projectRoot, "..", slug)
+	targetDir, err = filepath.Abs(targetDir)
+	if err != nil {
+		return fmt.Errorf("resolve target path: %w", err)
+	}
+
+	// Check that the worktree directory exists
+	if _, err := os.Stat(targetDir); os.IsNotExist(err) {
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: worktree not found: %s\n", targetDir)
+		return fmt.Errorf("worktree not found: %s", targetDir)
+	}
+
+	// Look up the branch name before removal
+	branchName := slug
+	entries, err := listWorktreesFunc(projectRoot)
+	if err == nil {
+		for _, entry := range entries {
+			if entry.Name() == slug && entry.Branch != "" {
+				branchName = entry.Branch
+				break
+			}
+		}
+	}
+
+	// Use git worktree remove (not manual directory deletion)
+	_, err = git.Run(projectRoot, "worktree", "remove", targetDir)
+	if err != nil {
+		// Check if error is due to uncommitted changes
+		errMsg := err.Error()
+		if strings.Contains(errMsg, "dirty") || strings.Contains(errMsg, "modified") ||
+			strings.Contains(errMsg, "local changes") {
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: worktree has uncommitted changes\n")
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "hint: commit or stash your changes before removing, or use --force to discard\n")
+			return fmt.Errorf("uncommitted changes in worktree: %w", err)
+		}
+		return fmt.Errorf("git worktree remove: %w", err)
+	}
+
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Removed worktree %q (branch %s preserved)\n", slug, branchName)
+	return nil
 }
 
 var worktreeStartCmd = &cobra.Command{

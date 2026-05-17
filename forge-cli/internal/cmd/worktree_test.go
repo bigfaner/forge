@@ -544,6 +544,178 @@ func TestWorktreeList_NotGitRepo(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// worktree remove: subcommand registration
+// ---------------------------------------------------------------------------
+
+func TestWorktreeCmd_HasRemoveSubcommand(t *testing.T) {
+	subcommands := worktreeCmd.Commands()
+	found := false
+	for _, cmd := range subcommands {
+		if cmd.Name() == "remove" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("worktree group should have 'remove' subcommand")
+	}
+}
+
+func TestWorktreeRemoveCmd_RequiresSlugArg(t *testing.T) {
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "remove"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Error("expected error when slug argument is missing")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// worktree remove: happy path
+// ---------------------------------------------------------------------------
+
+func TestWorktreeRemove_RemovesWorktreeAndKeepsBranch(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a worktree
+	slug := "remove-test-feature"
+	parentDir := filepath.Dir(dir)
+	targetDir := filepath.Join(parentDir, slug)
+	cmd := exec.Command("git", "worktree", "add", "-b", slug, targetDir)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "remove", slug})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Worktree directory should no longer exist
+	if _, err := os.Stat(targetDir); !os.IsNotExist(err) {
+		t.Errorf("worktree directory %s should have been removed", targetDir)
+	}
+
+	// Branch should still exist
+	output, err := exec.Command("git", "-C", dir, "branch", "--list", slug).Output()
+	if err != nil {
+		t.Fatalf("git branch --list: %v", err)
+	}
+	if !strings.Contains(string(output), slug) {
+		t.Errorf("branch %q should still exist after worktree removal", slug)
+	}
+
+	// Confirmation output should include branch name
+	outputStr := buf.String()
+	if !strings.Contains(outputStr, slug) {
+		t.Errorf("output should mention branch name %q, got:\n%s", slug, outputStr)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// worktree remove: error cases
+// ---------------------------------------------------------------------------
+
+func TestWorktreeRemove_ErrorWhenWorktreeNotFound(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "remove", "nonexistent-worktree"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Error("expected error when worktree does not exist")
+	}
+	stderr := buf.String()
+	if !strings.Contains(stderr, "not found") {
+		t.Errorf("error should mention 'not found', got: %s", stderr)
+	}
+}
+
+func TestWorktreeRemove_ErrorWhenUncommittedChanges(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a worktree
+	slug := "dirty-worktree"
+	parentDir := filepath.Dir(dir)
+	targetDir := filepath.Join(parentDir, slug)
+	cmd := exec.Command("git", "worktree", "add", "-b", slug, targetDir)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	// Create uncommitted changes in the worktree
+	dirtyFile := filepath.Join(targetDir, "dirty.txt")
+	if err := os.WriteFile(dirtyFile, []byte("uncommitted"), 0o644); err != nil {
+		t.Fatalf("write dirty file: %v", err)
+	}
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "remove", slug})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Error("expected error when worktree has uncommitted changes")
+	}
+	stderr := buf.String()
+	if !strings.Contains(stderr, "commit") && !strings.Contains(stderr, "stash") {
+		t.Errorf("error should hint to commit or stash, got: %s", stderr)
+	}
+}
+
+func TestWorktreeRemove_ErrorWhenNotGitRepo(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "remove", "test-slug"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Error("expected error when not in a git repository")
+	}
+}
+
+// ---------------------------------------------------------------------------
 // listForgeFeatures helper
 // ---------------------------------------------------------------------------
 
