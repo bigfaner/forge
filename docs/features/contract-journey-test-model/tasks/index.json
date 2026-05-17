@@ -1,0 +1,132 @@
+{
+  "feature": "contract-journey-test-model",
+  "proposal": "docs/proposals/contract-journey-test-model/proposal.md",
+  "created": "2026-05-17",
+  "tasks": {
+    "1-model-and-directory-spec": {
+      "id": "1",
+      "title": "Journey-Driven 测试模型定义与目录规范",
+      "priority": "P0",
+      "estimatedTime": "3h",
+      "status": "pending",
+      "file": "1-model-and-directory-spec.md",
+      "record": "records/1-model-and-directory-spec.md",
+      "scope": "all",
+      "type": "documentation"
+    },
+    "2-config-driven-framework": {
+      "id": "2",
+      "title": "配置驱动框架系统",
+      "priority": "P0",
+      "estimatedTime": "4h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-config-driven-framework.md",
+      "record": "records/2-config-driven-framework.md",
+      "scope": "backend",
+      "type": "feature"
+    },
+    "3-gen-journeys-skill": {
+      "id": "3",
+      "title": "gen-journeys skill",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "3-gen-journeys-skill.md",
+      "record": "records/3-gen-journeys-skill.md",
+      "scope": "backend",
+      "type": "feature"
+    },
+    "4-gen-contracts-tui-await": {
+      "id": "4",
+      "title": "gen-contracts skill + TUI await 形式化",
+      "priority": "P0",
+      "estimatedTime": "4h",
+      "dependencies": [
+        "3"
+      ],
+      "status": "pending",
+      "file": "4-gen-contracts-tui-await.md",
+      "record": "records/4-gen-contracts-tui-await.md",
+      "scope": "backend",
+      "type": "feature"
+    },
+    "5-gen-test-scripts-template-migration": {
+      "id": "5",
+      "title": "gen-test-scripts 重写 + 内置模板迁移",
+      "priority": "P0",
+      "estimatedTime": "4h",
+      "dependencies": [
+        "2",
+        "4"
+      ],
+      "status": "pending",
+      "file": "5-gen-test-scripts-template-migration.md",
+      "record": "records/5-gen-test-scripts-template-migration.md",
+      "scope": "backend",
+      "type": "feature"
+    },
+    "6-run-tests-journey-isolation": {
+      "id": "6",
+      "title": "run-tests 重写 + Journey 隔离",
+      "priority": "P1",
+      "estimatedTime": "3h",
+      "dependencies": [
+        "5"
+      ],
+      "status": "pending",
+      "file": "6-run-tests-journey-isolation.md",
+      "record": "records/6-run-tests-journey-isolation.md",
+      "scope": "backend",
+      "type": "feature"
+    },
+    "7-forge-test-verify": {
+      "id": "7",
+      "title": "forge test verify 契约断裂检测",
+      "priority": "P1",
+      "estimatedTime": "3h",
+      "dependencies": [
+        "4"
+      ],
+      "status": "pending",
+      "file": "7-forge-test-verify.md",
+      "record": "records/7-forge-test-verify.md",
+      "scope": "backend",
+      "type": "feature"
+    },
+    "8-cli-rename-tag-promotion": {
+      "id": "8",
+      "title": "CLI 重命名 + Tag-Based Promotion",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "5",
+        "6"
+      ],
+      "status": "pending",
+      "file": "8-cli-rename-tag-promotion.md",
+      "record": "records/8-cli-rename-tag-promotion.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "refactor"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
