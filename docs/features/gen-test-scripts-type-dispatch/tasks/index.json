@@ -38,7 +38,7 @@
       "title": "Create types/tui.md instruction file",
       "priority": "P1",
       "estimatedTime": "1-2h",
-      "status": "pending",
+      "status": "completed",
       "file": "4-types-tui.md",
       "record": "records/4-types-tui.md",
       "type": "documentation"
