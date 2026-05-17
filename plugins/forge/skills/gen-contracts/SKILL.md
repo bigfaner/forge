@@ -43,9 +43,9 @@ Check previous stage artifacts. Abort and prompt user if missing:
 
 ## Step 0: Resolve Language and Interfaces
 
-1. **Detect language**: Run `forge testing detect` to auto-detect the project's test language(s) from file signals.
+1. **Detect language**: Run `forge test detect` to auto-detect the project's test language(s) from file signals.
 2. **On failure** (no language detected): ask the user to add `languages` to `.forge/config.yaml`.
-3. **Detect interfaces**: Run `forge testing interfaces` to discover which interface types (cli, api, tui, web-ui, mobile) the project exposes.
+3. **Detect interfaces**: Run `forge test interfaces` to discover which interface types (cli, api, tui, web-ui, mobile) the project exposes.
 
 <HARD-RULE>
 Do NOT silently default to any language or interface. If detection fails and the user cannot configure, abort the skill.

@@ -1,6 +1,6 @@
 # Test Language Auto-Detection Rules
 
-When `.forge/config.yaml` does not specify `languages`, `forge testing detect` scans the project root for file signals. Multiple signals may produce multiple languages (multi-language support).
+When `.forge/config.yaml` does not specify `languages`, `forge test detect` scans the project root for file signals. Multiple signals may produce multiple languages (multi-language support).
 
 ## Detection Rules
 

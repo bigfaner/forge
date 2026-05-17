@@ -78,7 +78,7 @@ Override with `--force`: `forge task submit <id> --data record.json --force`
 - 无 feature 或无 project root → 静默退出，exit 0
 
 **e2e 测试失败恢复：**
-- 当回归测试 (`just test-e2e`) 失败时，保存原始输出到 `testing/results/raw-output.txt`
+- 当回归测试 (`just test-e2e`) 失败时，保存原始输出到 `tests/results/raw-output.txt`
 - 阻止 Stop hook，指示 agent 分析失败原因并使用 `forge task add` 创建修复任务
 - agent 读取原始输出，确定根因，动态添加修复任务
 
@@ -86,11 +86,10 @@ Override with `--force`: `forge task submit <id> --data record.json --force`
 - Feature e2e 执行由 T-test-3（`run-e2e-tests` 任务）负责
 - 若 `tests/e2e/features/<feature>/` 存在但无毕业标记，hook 打印 WARNING 引导迁移
 
-**e2e 测试脚本毕业模型：**
-- 毕业由 T-test-4（`graduate-tests` 任务）agent 驱动，非自动
-- T-test-4 检查 `testing/results/latest.md` 为 PASS 状态后调用 `/graduate-tests`
-- 毕业标记：`tests/e2e/.graduated/<slug>`（YAML 格式，含 schema_version、status、timestamp、source、targets、modules、testCount）
-- 源脚本从 `tests/e2e/features/<feature>/` 重组到 `tests/e2e/<target>/`
+**e2e 测试标签晋升模型：**
+- 晋升通过 `forge test promote <journey>` 命令完成——先运行测试，通过后替换 @feature 为 @regression
+- 标签生命周期：`@feature`（新生成，验证中）-> `@regression`（已验证，回归测试）
+- CI 通过 `forge test run --tags regression` 或 `--tags feature` 选择测试集
 
 **测试命令自动检测顺序（项目级）：**
 1. `index.json` 中的 `testCommand` 字段（显式配置）
@@ -135,8 +134,8 @@ project-root/
 │           ├── 1.1-<title>.md     # 任务详情
 │           └── records/            # 执行记录
 ├── tests/
-│   └── e2e/                       # 毕业后的回归测试套件
-│       ├── .graduated/            # 毕业标记文件
+│   └── e2e/                       # 回归测试套件（通过标签晋升）
+│       ├── .graduated/            # 遗留毕业标记文件
 │       │   └── <slug>             # YAML 标记（schema_version, status, timestamp, source, targets, modules, testCount）
 │       ├── ui/<page>/             # UI 测试（按页面聚合）
 │       │   └── ui.spec.ts

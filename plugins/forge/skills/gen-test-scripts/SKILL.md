@@ -23,15 +23,15 @@ Output: Executable test code with `@feature` tags in `tests/<journey>/`.
 
 ## Step 0: Resolve Language and Strategy
 
-1. **Detect language**: Run `forge testing detect` to auto-detect the project's test language(s) from file signals.
+1. **Detect language**: Run `forge test detect` to auto-detect the project's test language(s) from file signals.
 2. **On failure** (no language detected): ask the user to add `languages` to `.forge/config.yaml` (e.g., `languages: [go]`).
-3. **Load strategy**: Run `forge testing get generate` to load the generate strategy for the detected language.
-4. **Resolve framework**: Run `forge testing framework` to determine the test framework and its code conventions.
+3. **Load strategy**: Run `forge test get generate` to load the generate strategy for the detected language.
+4. **Resolve framework**: Run `forge test framework` to determine the test framework and its code conventions.
 
 Use the loaded strategy and framework for all subsequent steps.
 
 <HARD-RULE>
-Do NOT silently default to any language. If `forge testing detect` returns no result and the user cannot configure `languages`, abort the skill.
+Do NOT silently default to any language. If `forge test detect` returns no result and the user cannot configure `languages`, abort the skill.
 </HARD-RULE>
 
 ## Step 1: Read Contract Specifications
@@ -210,14 +210,14 @@ All framework-specific rules (test runner, assertion library, imports, HTTP clie
 
 The 6 built-in language profiles serve as default templates. When a project has zero custom template configuration:
 
-1. `forge testing get template <filename>` returns built-in template content.
+1. `forge test get template <filename>` returns built-in template content.
 2. Built-in templates define: test file structure, helper functions, auth setup patterns.
 3. Zero-config output equals built-in template output (diff is empty).
 
 Custom template override: When `.forge/config.yaml` declares a custom template directory path, `gen-test-scripts` uses templates from that path instead of built-in ones.
 
 <HARD-RULE>
-**Template override**: If `test-template-dir` is set in config, load templates from that directory. Otherwise, use built-in default templates from `forge testing get template`.
+**Template override**: If `test-template-dir` is set in config, load templates from that directory. Otherwise, use built-in default templates from `forge test get template`.
 </HARD-RULE>
 
 ## Step 4: Post-Generation Verification

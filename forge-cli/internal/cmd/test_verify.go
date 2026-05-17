@@ -26,7 +26,7 @@ Hard Rules:
 }
 
 func init() {
-	testingCmd.AddCommand(testVerifyCmd)
+	testCmd.AddCommand(testVerifyCmd)
 }
 
 func runTestVerify(_ *cobra.Command, _ []string) {

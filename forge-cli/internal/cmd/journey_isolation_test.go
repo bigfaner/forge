@@ -405,7 +405,7 @@ func TestTestingRunJourney_NoTestCommand(t *testing.T) {
 
 func TestTestingRunJourney_CommandRegistered(t *testing.T) {
 	found := false
-	for _, cmd := range testingCmd.Commands() {
+	for _, cmd := range testCmd.Commands() {
 		if cmd.Name() == "run-journey" {
 			found = true
 			break

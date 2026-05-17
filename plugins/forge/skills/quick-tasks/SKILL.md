@@ -36,7 +36,7 @@ graph LR
 
 ## Step 0: Resolve Language
 
-1. **Detect language**: Run `forge testing detect` to auto-detect the project's test language(s) from file signals.
+1. **Detect language**: Run `forge test detect` to auto-detect the project's test language(s) from file signals.
 2. **On failure** (no language detected): ask the user to add `languages` to `.forge/config.yaml` (e.g., `languages: [go]`).
 
 **Language resolution outcome**:
@@ -44,7 +44,7 @@ graph LR
 - **Multiple languages**: two or more detected languages (triggers per-language task suffixing in Step 4)
 
 <HARD-RULE>
-Do NOT silently default to any language. If `forge testing detect` returns no result and the user cannot configure `languages`, abort the skill.
+Do NOT silently default to any language. If `forge test detect` returns no result and the user cannot configure `languages`, abort the skill.
 </HARD-RULE>
 
 ## Step 1: Read Proposal

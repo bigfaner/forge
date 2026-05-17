@@ -7,22 +7,22 @@ import (
 	"testing"
 )
 
-// --- Test: forge testing verify command registered ---
+// --- Test: forge test verify command registered ---
 
 func TestTestVerify_CommandRegistered(t *testing.T) {
 	found := false
-	for _, cmd := range testingCmd.Commands() {
+	for _, cmd := range testCmd.Commands() {
 		if cmd.Name() == "verify" {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Error("testing group missing 'verify' subcommand")
+		t.Error("test group missing 'verify' subcommand")
 	}
 }
 
-// --- Test: forge testing verify with no contracts reports empty ---
+// --- Test: forge test verify with no contracts reports empty ---
 
 func TestTestVerify_NoContracts_ReportsEmpty(t *testing.T) {
 	dir := t.TempDir()
@@ -34,11 +34,11 @@ func TestTestVerify_NoContracts_ReportsEmpty(t *testing.T) {
 	}
 
 	output, err := captureOutput(func() error {
-		rootCmd.SetArgs([]string{"testing", "verify"})
+		rootCmd.SetArgs([]string{"test", "verify"})
 		return rootCmd.Execute()
 	})
 	if err != nil {
-		t.Fatalf("testing verify failed: %v", err)
+		t.Fatalf("test verify failed: %v", err)
 	}
 
 	if !strings.Contains(output, "Scanning 0 Contracts") {
@@ -49,7 +49,7 @@ func TestTestVerify_NoContracts_ReportsEmpty(t *testing.T) {
 	}
 }
 
-// --- Test: forge testing verify with contracts produces report ---
+// --- Test: forge test verify with contracts produces report ---
 
 func TestTestVerify_WithContracts_ProducesReport(t *testing.T) {
 	dir := t.TempDir()
@@ -87,11 +87,11 @@ step-action: "forge feature create"
 	}
 
 	output, err := captureOutput(func() error {
-		rootCmd.SetArgs([]string{"testing", "verify"})
+		rootCmd.SetArgs([]string{"test", "verify"})
 		return rootCmd.Execute()
 	})
 	if err != nil {
-		t.Fatalf("testing verify failed: %v", err)
+		t.Fatalf("test verify failed: %v", err)
 	}
 
 	if !strings.Contains(output, "Scanning 1 Contracts") {
@@ -144,7 +144,7 @@ step-action: "forge test"
 	}
 
 	_, _ = captureOutput(func() error {
-		rootCmd.SetArgs([]string{"testing", "verify"})
+		rootCmd.SetArgs([]string{"test", "verify"})
 		return rootCmd.Execute()
 	})
 
@@ -193,7 +193,7 @@ step-action: "forge test"
 	}
 
 	output, _ := captureOutput(func() error {
-		rootCmd.SetArgs([]string{"testing", "verify"})
+		rootCmd.SetArgs([]string{"test", "verify"})
 		return rootCmd.Execute()
 	})
 

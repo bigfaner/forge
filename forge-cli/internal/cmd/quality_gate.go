@@ -137,14 +137,14 @@ func runQualityGate(_ *cobra.Command, _ []string) {
 		os.Exit(0)
 	}
 
-	// Warn if feature e2e scripts exist but haven't been graduated.
+	// Warn if feature e2e scripts exist but haven't been promoted.
 	e2eScriptsDir := feature.GetE2EStagingDir(result.ProjectRoot, result.FeatureSlug)
 	markerPath := feature.GetE2EGraduatedMarker(result.ProjectRoot, result.FeatureSlug)
 	if just.FileExists(e2eScriptsDir) && !just.FileExists(markerPath) {
 		fmt.Fprintln(os.Stderr,
-			"WARNING: feature e2e scripts exist but haven't been run or graduated.\n"+
-				"  Add T-test-3 (run-e2e-tests) and T-test-4 (graduate-tests) to your task index,\n"+
-				"  or run /run-e2e-tests and /graduate-tests manually.")
+			"WARNING: feature e2e scripts exist but haven't been run or promoted.\n"+
+				"  Add T-test-3 (run-e2e-tests) and T-test-4 (promote) to your task index,\n"+
+				"  or run /run-e2e-tests and forge test promote <journey> manually.")
 	}
 
 	// Step 1: Quality gate (compile -> fmt -> lint)
@@ -180,7 +180,7 @@ func runQualityGate(_ *cobra.Command, _ []string) {
 		handleGateFailure("unit-test", errorDocPath, unitFixID, just.ExtractConciseError(unitOutput, 5))
 	}
 
-	// Step 3: Full e2e regression (graduated scripts in tests/e2e/)
+	// Step 3: Full e2e regression (promoted scripts in tests/e2e/)
 	if just.HasJustfile(result.ProjectRoot) && just.HasRecipe(result.ProjectRoot, "test-e2e") {
 		e2eReady := true
 		if just.HasRecipe(result.ProjectRoot, "e2e-setup") {

@@ -7,8 +7,8 @@ import (
 	"testing"
 )
 
-// setupTestingProject creates a temp directory with go.mod for language detection.
-func setupTestingProject(t *testing.T) string {
+// setupTestProject creates a temp directory with go.mod for language detection.
+func setupTestProject(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
 	t.Setenv("CLAUDE_PROJECT_DIR", dir)
@@ -32,21 +32,21 @@ func setupEmptyProject(t *testing.T) string {
 	return dir
 }
 
-// resetTestingGetLanguage resets the --language flag between tests.
-func resetTestingGetLanguage() {
-	testingGetLanguage = ""
+// resetTestGetLanguage resets the --language flag between tests.
+func resetTestGetLanguage() {
+	testGetLanguage = ""
 }
 
-func TestTestingDetect_OutputsDetectedLanguage(t *testing.T) {
-	resetTestingGetLanguage()
-	_ = setupTestingProject(t)
+func TestTestDetect_OutputsDetectedLanguage(t *testing.T) {
+	resetTestGetLanguage()
+	_ = setupTestProject(t)
 
 	output, err := captureOutput(func() error {
-		rootCmd.SetArgs([]string{"testing", "detect"})
+		rootCmd.SetArgs([]string{"test", "detect"})
 		return rootCmd.Execute()
 	})
 	if err != nil {
-		t.Fatalf("testing detect failed: %v", err)
+		t.Fatalf("test detect failed: %v", err)
 	}
 
 	if !strings.Contains(output, "go") {
@@ -54,12 +54,12 @@ func TestTestingDetect_OutputsDetectedLanguage(t *testing.T) {
 	}
 }
 
-func TestTestingDetect_NoLanguage(t *testing.T) {
-	resetTestingGetLanguage()
+func TestTestDetect_NoLanguage(t *testing.T) {
+	resetTestGetLanguage()
 	_ = setupEmptyProject(t)
 
 	output, _ := captureOutput(func() error {
-		rootCmd.SetArgs([]string{"testing", "detect"})
+		rootCmd.SetArgs([]string{"test", "detect"})
 		return rootCmd.Execute()
 	})
 
@@ -68,16 +68,16 @@ func TestTestingDetect_NoLanguage(t *testing.T) {
 	}
 }
 
-func TestTestingDetect_OutputFormat(t *testing.T) {
-	resetTestingGetLanguage()
-	_ = setupTestingProject(t)
+func TestTestDetect_OutputFormat(t *testing.T) {
+	resetTestGetLanguage()
+	_ = setupTestProject(t)
 
 	output, err := captureOutput(func() error {
-		rootCmd.SetArgs([]string{"testing", "detect"})
+		rootCmd.SetArgs([]string{"test", "detect"})
 		return rootCmd.Execute()
 	})
 	if err != nil {
-		t.Fatalf("testing detect failed: %v", err)
+		t.Fatalf("test detect failed: %v", err)
 	}
 
 	// Output should use structured block format with separators
@@ -89,16 +89,16 @@ func TestTestingDetect_OutputFormat(t *testing.T) {
 	}
 }
 
-func TestTestingGetGenerate_AutoDetect(t *testing.T) {
-	resetTestingGetLanguage()
-	_ = setupTestingProject(t)
+func TestTestGetGenerate_AutoDetect(t *testing.T) {
+	resetTestGetLanguage()
+	_ = setupTestProject(t)
 
 	output, err := captureOutput(func() error {
-		rootCmd.SetArgs([]string{"testing", "get", "generate"})
+		rootCmd.SetArgs([]string{"test", "get", "generate"})
 		return rootCmd.Execute()
 	})
 	if err != nil {
-		t.Fatalf("testing get generate failed: %v", err)
+		t.Fatalf("test get generate failed: %v", err)
 	}
 
 	// Should output the Go generate.md strategy content
@@ -107,16 +107,16 @@ func TestTestingGetGenerate_AutoDetect(t *testing.T) {
 	}
 }
 
-func TestTestingGetGenerate_WithLanguageFlag(t *testing.T) {
-	resetTestingGetLanguage()
-	_ = setupTestingProject(t)
+func TestTestGetGenerate_WithLanguageFlag(t *testing.T) {
+	resetTestGetLanguage()
+	_ = setupTestProject(t)
 
 	output, err := captureOutput(func() error {
-		rootCmd.SetArgs([]string{"testing", "get", "generate", "--language", "go"})
+		rootCmd.SetArgs([]string{"test", "get", "generate", "--language", "go"})
 		return rootCmd.Execute()
 	})
 	if err != nil {
-		t.Fatalf("testing get generate --language go failed: %v", err)
+		t.Fatalf("test get generate --language go failed: %v", err)
 	}
 
 	if len(output) == 0 {
@@ -124,16 +124,16 @@ func TestTestingGetGenerate_WithLanguageFlag(t *testing.T) {
 	}
 }
 
-func TestTestingGetRun(t *testing.T) {
-	resetTestingGetLanguage()
-	_ = setupTestingProject(t)
+func TestTestGetRun(t *testing.T) {
+	resetTestGetLanguage()
+	_ = setupTestProject(t)
 
 	output, err := captureOutput(func() error {
-		rootCmd.SetArgs([]string{"testing", "get", "run"})
+		rootCmd.SetArgs([]string{"test", "get", "run"})
 		return rootCmd.Execute()
 	})
 	if err != nil {
-		t.Fatalf("testing get run failed: %v", err)
+		t.Fatalf("test get run failed: %v", err)
 	}
 
 	if len(output) == 0 {
@@ -141,33 +141,16 @@ func TestTestingGetRun(t *testing.T) {
 	}
 }
 
-func TestTestingGetGraduate(t *testing.T) {
-	resetTestingGetLanguage()
-	_ = setupTestingProject(t)
+func TestTestGetJustfile(t *testing.T) {
+	resetTestGetLanguage()
+	_ = setupTestProject(t)
 
 	output, err := captureOutput(func() error {
-		rootCmd.SetArgs([]string{"testing", "get", "graduate"})
+		rootCmd.SetArgs([]string{"test", "get", "justfile"})
 		return rootCmd.Execute()
 	})
 	if err != nil {
-		t.Fatalf("testing get graduate failed: %v", err)
-	}
-
-	if len(output) == 0 {
-		t.Error("expected non-empty output for get graduate")
-	}
-}
-
-func TestTestingGetJustfile(t *testing.T) {
-	resetTestingGetLanguage()
-	_ = setupTestingProject(t)
-
-	output, err := captureOutput(func() error {
-		rootCmd.SetArgs([]string{"testing", "get", "justfile"})
-		return rootCmd.Execute()
-	})
-	if err != nil {
-		t.Fatalf("testing get justfile failed: %v", err)
+		t.Fatalf("test get justfile failed: %v", err)
 	}
 
 	if len(output) == 0 {
@@ -175,16 +158,16 @@ func TestTestingGetJustfile(t *testing.T) {
 	}
 }
 
-func TestTestingGetTemplate(t *testing.T) {
-	resetTestingGetLanguage()
-	_ = setupTestingProject(t)
+func TestTestGetTemplate(t *testing.T) {
+	resetTestGetLanguage()
+	_ = setupTestProject(t)
 
 	output, err := captureOutput(func() error {
-		rootCmd.SetArgs([]string{"testing", "get", "template", "test-file.go"})
+		rootCmd.SetArgs([]string{"test", "get", "template", "test-file.go"})
 		return rootCmd.Execute()
 	})
 	if err != nil {
-		t.Fatalf("testing get template test-file.go failed: %v", err)
+		t.Fatalf("test get template test-file.go failed: %v", err)
 	}
 
 	if len(output) == 0 {
@@ -192,16 +175,16 @@ func TestTestingGetTemplate(t *testing.T) {
 	}
 }
 
-func TestTestingInterfaces_AutoDetect(t *testing.T) {
-	resetTestingGetLanguage()
-	_ = setupTestingProject(t)
+func TestTestInterfaces_AutoDetect(t *testing.T) {
+	resetTestGetLanguage()
+	_ = setupTestProject(t)
 
 	output, err := captureOutput(func() error {
-		rootCmd.SetArgs([]string{"testing", "interfaces"})
+		rootCmd.SetArgs([]string{"test", "interfaces"})
 		return rootCmd.Execute()
 	})
 	if err != nil {
-		t.Fatalf("testing interfaces failed: %v", err)
+		t.Fatalf("test interfaces failed: %v", err)
 	}
 
 	if !strings.Contains(output, "api") || !strings.Contains(output, "cli") {
@@ -209,9 +192,9 @@ func TestTestingInterfaces_AutoDetect(t *testing.T) {
 	}
 }
 
-func TestTestingInterfaces_WithConfigOverride(t *testing.T) {
-	resetTestingGetLanguage()
-	dir := setupTestingProject(t)
+func TestTestInterfaces_WithConfigOverride(t *testing.T) {
+	resetTestGetLanguage()
+	dir := setupTestProject(t)
 
 	// Write config.yaml with explicit interfaces
 	configDir := filepath.Join(dir, ".forge")
@@ -224,11 +207,11 @@ func TestTestingInterfaces_WithConfigOverride(t *testing.T) {
 	}
 
 	output, err := captureOutput(func() error {
-		rootCmd.SetArgs([]string{"testing", "interfaces"})
+		rootCmd.SetArgs([]string{"test", "interfaces"})
 		return rootCmd.Execute()
 	})
 	if err != nil {
-		t.Fatalf("testing interfaces failed: %v", err)
+		t.Fatalf("test interfaces failed: %v", err)
 	}
 
 	if !strings.Contains(output, "api") {
@@ -240,8 +223,8 @@ func TestTestingInterfaces_WithConfigOverride(t *testing.T) {
 	}
 }
 
-func TestTestingResolveLanguage_NoLanguageDetected_NoConfig(t *testing.T) {
-	resetTestingGetLanguage()
+func TestResolveLanguage_NoLanguageDetected_NoConfig(t *testing.T) {
+	resetTestGetLanguage()
 	dir := setupEmptyProject(t)
 
 	// Test the resolveLanguageFromFlags helper directly
@@ -256,17 +239,17 @@ func TestTestingResolveLanguage_NoLanguageDetected_NoConfig(t *testing.T) {
 	}
 }
 
-func TestTestingGet_SpecificLanguage(t *testing.T) {
-	resetTestingGetLanguage()
-	_ = setupTestingProject(t)
+func TestTestGet_SpecificLanguage(t *testing.T) {
+	resetTestGetLanguage()
+	_ = setupTestProject(t)
 
 	// Request javascript strategy specifically via --language flag
 	output, err := captureOutput(func() error {
-		rootCmd.SetArgs([]string{"testing", "get", "generate", "--language", "javascript"})
+		rootCmd.SetArgs([]string{"test", "get", "generate", "--language", "javascript"})
 		return rootCmd.Execute()
 	})
 	if err != nil {
-		t.Fatalf("testing get generate --language javascript failed: %v", err)
+		t.Fatalf("test get generate --language javascript failed: %v", err)
 	}
 
 	if len(output) == 0 {
@@ -278,54 +261,69 @@ func TestProfileCommand_Removed(t *testing.T) {
 	// The 'profile' command should not exist on rootCmd
 	for _, cmd := range rootCmd.Commands() {
 		if cmd.Name() == "profile" {
-			t.Error("forge profile command should not exist -- it should be replaced by forge testing")
+			t.Error("forge profile command should not exist -- it should be replaced by forge test")
 		}
 	}
 }
 
-func TestTestingCommand_Registered(t *testing.T) {
-	found := false
+func TestTestingCommand_Removed(t *testing.T) {
+	// The old 'testing' command should not exist on rootCmd
 	for _, cmd := range rootCmd.Commands() {
 		if cmd.Name() == "testing" {
+			t.Error("forge testing command should not exist -- it is renamed to forge test")
+		}
+	}
+}
+
+func TestTestCommand_Registered(t *testing.T) {
+	found := false
+	for _, cmd := range rootCmd.Commands() {
+		if cmd.Name() == "test" {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Error("forge testing command should be registered on rootCmd")
+		t.Error("forge test command should be registered on rootCmd")
 	}
 }
 
-func TestTestingCommand_Subcommands(t *testing.T) {
+func TestTestCommand_Subcommands(t *testing.T) {
 	subNames := make(map[string]bool)
-	for _, cmd := range testingCmd.Commands() {
+	for _, cmd := range testCmd.Commands() {
 		subNames[cmd.Name()] = true
 	}
 
-	expected := []string{"detect", "get", "interfaces", "framework", "run-journey", "verify"}
+	expected := []string{"detect", "get", "interfaces", "framework", "run-journey", "verify", "promote"}
 	for _, name := range expected {
 		if !subNames[name] {
-			t.Errorf("testing group missing subcommand: %s (have: %v)", name, subNames)
+			t.Errorf("test group missing subcommand: %s (have: %v)", name, subNames)
 		}
 	}
 }
 
-func TestTestingGetGetSubcommands(t *testing.T) {
+func TestTestGetSubcommands(t *testing.T) {
 	subNames := make(map[string]bool)
-	for _, cmd := range testingGetCmd.Commands() {
+	for _, cmd := range testGetCmd.Commands() {
 		subNames[cmd.Name()] = true
 	}
 
-	expected := []string{"generate", "run", "graduate", "justfile", "template"}
+	// graduate subcommand removed, replaced by promote at top level
+	expected := []string{"generate", "run", "justfile", "template"}
 	for _, name := range expected {
 		if !subNames[name] {
-			t.Errorf("testing get missing subcommand: %s (have: %v)", name, subNames)
+			t.Errorf("test get missing subcommand: %s (have: %v)", name, subNames)
 		}
+	}
+
+	// graduate should NOT exist
+	if subNames["graduate"] {
+		t.Error("test get should NOT have 'graduate' subcommand -- replaced by 'test promote'")
 	}
 }
 
-func TestTestingGet_JavaLanguage(t *testing.T) {
-	resetTestingGetLanguage()
+func TestTestGet_JavaLanguage(t *testing.T) {
+	resetTestGetLanguage()
 	dir := t.TempDir()
 	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 
@@ -335,11 +333,11 @@ func TestTestingGet_JavaLanguage(t *testing.T) {
 	}
 
 	output, err := captureOutput(func() error {
-		rootCmd.SetArgs([]string{"testing", "get", "generate"})
+		rootCmd.SetArgs([]string{"test", "get", "generate"})
 		return rootCmd.Execute()
 	})
 	if err != nil {
-		t.Fatalf("testing get generate (java auto-detect) failed: %v", err)
+		t.Fatalf("test get generate (java auto-detect) failed: %v", err)
 	}
 
 	if len(output) == 0 {
@@ -365,16 +363,16 @@ func setupMultiLanguageProject(t *testing.T) {
 	}
 }
 
-func TestTestingDetect_MultiLanguage(t *testing.T) {
-	resetTestingGetLanguage()
+func TestTestDetect_MultiLanguage(t *testing.T) {
+	resetTestGetLanguage()
 	setupMultiLanguageProject(t)
 
 	output, err := captureOutput(func() error {
-		rootCmd.SetArgs([]string{"testing", "detect"})
+		rootCmd.SetArgs([]string{"test", "detect"})
 		return rootCmd.Execute()
 	})
 	if err != nil {
-		t.Fatalf("testing detect failed: %v", err)
+		t.Fatalf("test detect failed: %v", err)
 	}
 
 	if !strings.Contains(output, "go") {
@@ -385,16 +383,16 @@ func TestTestingDetect_MultiLanguage(t *testing.T) {
 	}
 }
 
-func TestTestingGet_MultiLanguage_SelectSpecific(t *testing.T) {
-	resetTestingGetLanguage()
+func TestTestGet_MultiLanguage_SelectSpecific(t *testing.T) {
+	resetTestGetLanguage()
 	setupMultiLanguageProject(t)
 
 	output, err := captureOutput(func() error {
-		rootCmd.SetArgs([]string{"testing", "get", "generate", "--language", "javascript"})
+		rootCmd.SetArgs([]string{"test", "get", "generate", "--language", "javascript"})
 		return rootCmd.Execute()
 	})
 	if err != nil {
-		t.Fatalf("testing get generate --language javascript failed: %v", err)
+		t.Fatalf("test get generate --language javascript failed: %v", err)
 	}
 
 	if len(output) == 0 {
@@ -402,16 +400,16 @@ func TestTestingGet_MultiLanguage_SelectSpecific(t *testing.T) {
 	}
 }
 
-func TestTestingGet_MultiLanguage_DefaultFirst(t *testing.T) {
-	resetTestingGetLanguage()
+func TestTestGet_MultiLanguage_DefaultFirst(t *testing.T) {
+	resetTestGetLanguage()
 	setupMultiLanguageProject(t)
 
 	output, err := captureOutput(func() error {
-		rootCmd.SetArgs([]string{"testing", "get", "generate"})
+		rootCmd.SetArgs([]string{"test", "get", "generate"})
 		return rootCmd.Execute()
 	})
 	if err != nil {
-		t.Fatalf("testing get generate (multi-language default) failed: %v", err)
+		t.Fatalf("test get generate (multi-language default) failed: %v", err)
 	}
 
 	if len(output) == 0 {
@@ -419,16 +417,16 @@ func TestTestingGet_MultiLanguage_DefaultFirst(t *testing.T) {
 	}
 }
 
-func TestTestingFramework_AutoDetectGo(t *testing.T) {
-	resetTestingGetLanguage()
-	_ = setupTestingProject(t)
+func TestTestFramework_AutoDetectGo(t *testing.T) {
+	resetTestGetLanguage()
+	_ = setupTestProject(t)
 
 	output, err := captureOutput(func() error {
-		rootCmd.SetArgs([]string{"testing", "framework"})
+		rootCmd.SetArgs([]string{"test", "framework"})
 		return rootCmd.Execute()
 	})
 	if err != nil {
-		t.Fatalf("testing framework failed: %v", err)
+		t.Fatalf("test framework failed: %v", err)
 	}
 
 	if !strings.Contains(output, "FRAMEWORK: go-testing") {
@@ -445,9 +443,9 @@ func TestTestingFramework_AutoDetectGo(t *testing.T) {
 	}
 }
 
-func TestTestingFramework_ConfigOverride(t *testing.T) {
-	resetTestingGetLanguage()
-	dir := setupTestingProject(t)
+func TestTestFramework_ConfigOverride(t *testing.T) {
+	resetTestGetLanguage()
+	dir := setupTestProject(t)
 
 	// Write config.yaml with test-framework override
 	configDir := filepath.Join(dir, ".forge")
@@ -460,11 +458,11 @@ func TestTestingFramework_ConfigOverride(t *testing.T) {
 	}
 
 	output, err := captureOutput(func() error {
-		rootCmd.SetArgs([]string{"testing", "framework"})
+		rootCmd.SetArgs([]string{"test", "framework"})
 		return rootCmd.Execute()
 	})
 	if err != nil {
-		t.Fatalf("testing framework failed: %v", err)
+		t.Fatalf("test framework failed: %v", err)
 	}
 
 	if !strings.Contains(output, "FRAMEWORK: pytest") {
@@ -478,16 +476,16 @@ func TestTestingFramework_ConfigOverride(t *testing.T) {
 	}
 }
 
-func TestTestingFramework_NoLanguage(t *testing.T) {
-	resetTestingGetLanguage()
+func TestTestFramework_NoLanguage(t *testing.T) {
+	resetTestGetLanguage()
 	_ = setupEmptyProject(t)
 
 	output, err := captureOutput(func() error {
-		rootCmd.SetArgs([]string{"testing", "framework"})
+		rootCmd.SetArgs([]string{"test", "framework"})
 		return rootCmd.Execute()
 	})
 	if err != nil {
-		t.Fatalf("testing framework failed: %v", err)
+		t.Fatalf("test framework failed: %v", err)
 	}
 
 	if !strings.Contains(output, "(none)") {

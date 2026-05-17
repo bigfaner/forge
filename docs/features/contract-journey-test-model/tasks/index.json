@@ -108,7 +108,7 @@
         "5",
         "6"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "8-cli-rename-tag-promotion.md",
       "record": "records/8-cli-rename-tag-promotion.md",
       "breaking": true,

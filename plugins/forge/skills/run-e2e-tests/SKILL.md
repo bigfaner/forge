@@ -1,6 +1,6 @@
 ---
 name: run-e2e-tests
-description: Execute e2e test scripts and generate a results report. Language-aware: auto-detects test framework from project files via forge testing CLI to determine execution commands and result parsing.
+description: Execute e2e test scripts and generate a results report. Language-aware: auto-detects test framework from project files via forge test CLI to determine execution commands and result parsing.
 ---
 
 # Run E2E Tests
@@ -18,14 +18,14 @@ This skill only executes existing test scripts and reports results. Forbidden:
 
 ## Step 0: Resolve Language and Strategy
 
-1. **Detect language**: Run `forge testing detect` to auto-detect the project's test language(s) from file signals.
+1. **Detect language**: Run `forge test detect` to auto-detect the project's test language(s) from file signals.
 2. **On failure** (no language detected): ask the user to add `languages` to `.forge/config.yaml` (e.g., `languages: [go]`).
-3. **Load strategy**: Run `forge testing get run` to load the run strategy for the detected language.
+3. **Load strategy**: Run `forge test get run` to load the run strategy for the detected language.
 
 Use the loaded strategy for all subsequent steps.
 
 <HARD-RULE>
-Do NOT silently default to any language. If `forge testing detect` returns no result and the user cannot configure `languages`, abort the skill.
+Do NOT silently default to any language. If `forge test detect` returns no result and the user cannot configure `languages`, abort the skill.
 </HARD-RULE>
 
 ## Prerequisites
