@@ -77,7 +77,7 @@
       "title": "Fix breakdown-tasks scope heuristic for backend projects",
       "priority": "P2",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "7-fix-scope-heuristic.md",
       "record": "records/7-fix-scope-heuristic.md",
       "scope": "all",

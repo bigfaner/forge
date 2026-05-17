@@ -282,8 +282,12 @@ For implementation tasks, determine the `scope` field for `index.json` (document
 **Algorithm**: inspect the task's affected file paths (listed in the task's "Files Created/Modified" section derived from the tech-design).
 
 1. Classify each file path:
-   - `frontend`: path starts with `ui/`, `src/`, `components/`, `pages/`, `styles/`, `public/`, or any directory containing `package.json` with no `go.mod`/`Cargo.toml` at the same level
+   - `frontend`: path starts with `ui/`, `components/`, `pages/`, `styles/`, `public/`, or any directory containing `package.json` with no `go.mod`/`Cargo.toml` at the same level
    - `backend`: path starts with `cmd/`, `internal/`, `pkg/`, `api/`, or any directory containing `go.mod`/`Cargo.toml`/`pyproject.toml` with no `package.json` at the same level
+   - **`src/` special case**:
+     - If `go.mod` or `Cargo.toml` exists at the same level, and no `package.json` → `backend`
+     - If `package.json` exists at the same level, and no `go.mod`/`Cargo.toml` → `frontend`
+     - If both exist, or neither exists → `undetermined`
    - `undetermined`: path does not match either pattern (e.g., `docs/`, root config files, `justfile`)
 
 2. Compute scope:
