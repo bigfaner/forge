@@ -65,14 +65,46 @@ Journey "开发者完成一个任务" [Risk: High]
 
 Contract 是 Journey 步骤的验证机制，从系统视角定义"这一步的 I/O/状态/副作用/不变量是否符合预期"：
 
-**Contract 五维度**：
+**Contract 六维度**（所有维度按 Outcome 级别声明，Invariants 额外在 Journey 级别声明）：
+
+**必选维度**（每个 Outcome 声明）：
 | 维度 | CLI | API | TUI |
 |------|-----|-----|-----|
+| Preconditions | 执行前必须满足的状态（如 "task status is in_progress"） | 请求前必须满足的条件（如 "user is authenticated"） | 交互前必须满足的 Model 状态 |
 | Input | 命令参数 + 工作目录状态 | Request schema + auth | Model 状态 + 事件 |
+
+**必选维度**（每个 Outcome 声明）：
+| 维度 | CLI | API | TUI |
+|------|-----|-----|-----|
 | Output | stdout/stderr 语义描述 + exit code | Response schema + status code | Model 新状态 + View 输出 |
 | State | 文件系统变更（JSON Schema） | 数据库/API 状态变更 | 内存 Model 字段 |
+
+**可选维度**（gen-contracts 可省略，省略 = 无该项约束）：
+| 维度 | CLI | API | TUI |
+|------|-----|-----|-----|
+| Invariants（步骤级） | 步骤内不变量（如 "index.json 保持合法 JSON"） | 步骤内不变量 | 步骤内不变量 |
 | Side-effect | hook 触发、外部调用 | 网络副作用、消息发送 | 异步 Cmd 执行 |
-| Invariants | 跨步骤不变量（如 task_id 全程不变） | 跨步骤不变量（如 user_id 一致性） | 跨步骤不变量（如会话 ID 一致性） |
+
+**Journey 级别 Invariants**（必选）：跨步骤不变量在 Journey 级别声明，如 "task_id 全程不变"、"feature_slug 一致性"。
+
+**多 Outcome Contract**：每个步骤支持多个 Outcome（成功/错误变体），每个 Outcome 有独立的 Preconditions + Output/State/Side-effect 契约：
+
+```
+Step: forge task submit
+  Outcome "success":
+    Preconditions: "task status is in_progress"
+    Input: task_id, --result success
+    Output: stdout "submitted successfully", exit code 0
+    State: status → completed
+    Side-effect: hook "post-submit" triggered with { task_id, result }
+  Outcome "not-in-progress":
+    Preconditions: "no task claimed"           ← 不同的前置条件
+    Input: --result success
+    Output: stderr "no task claimed", exit code 1
+    State: unchanged
+```
+
+**Side-effect 契约化**：声明式 Side-effect 契约（hook 名、参数、输出 schema）由 Contract 层定义，Journey 烟测试实际执行验证。无副作用的命令标注 `Side-effect: none`。
 
 **语义描述符**：gen-contracts 阶段使用语义描述而非精确正则（如 "success confirmation containing feature-slug" 而非 `Feature\s+([\w-]+)\s+created`）。具体的正则模式在 gen-test-scripts 阶段结合代码侦察（Fact Table）生成。这避免 LLM 在无法看到代码库时猜测输出格式。
 
@@ -90,7 +122,7 @@ gen-journeys → gen-contracts → gen-test-scripts → run-tests
 | 步骤 | 输入 | 输出 | 需要代码侦察 |
 |------|------|------|-------------|
 | gen-journeys | PRD 用户故事 | Journey 叙述文档（用户工作流 + 风险分级） | 否 |
-| gen-contracts | Journey 文档 + 代码侦察 | Contract 规范（五维度，语义描述符） | 是 |
+| gen-contracts | Journey 文档 + 代码侦察 | Contract 规范（六维度，语义描述符） | 是 |
 | gen-test-scripts | Contract 规范 + 模板 + 代码侦察 | 可执行测试代码 + Journey 烟测试 | 是 |
 | run-tests | 测试代码 | 结果报告 | 否 |
 
@@ -114,9 +146,26 @@ E2E (Web-UI / Mobile-UI)          — 仅前端项目，完整用户体验
 
 项目通过 `.forge/config.yaml` 声明测试框架和执行命令，Forge 不硬编码语言。内置模板作为便利默认值。
 
+### 测试生命周期：Tag-Based Promotion
+
+测试直接生成到最终目录（`tests/<journey>/`），不再有 staging 区域。通过标签管理生命周期：
+
+```
+tests/
+  task-lifecycle/                ← Journey 目录（领域，稳定）
+    claim_submit_test.go         ← @feature（新生成，验证中）
+    task_record_test.go          ← @regression（已验证，回归测试）
+```
+
+- **gen-test-scripts** 生成测试时注入 `@feature` 标签
+- **毕业** = `forge test promote <journey>` 标签更新（`@feature` → `@regression`），不移动文件
+- **CI 选择** = `forge test run --tags regression` 或 `--tags feature`
+- **Quality Gate** = 测试必须至少通过一次才能晋升标签
+- 消除文件迁移、import 重写、去重、分类的复杂度
+
 ### 契约断裂检测机制
 
-Contract 规范存储为结构化文档（markdown with schema），包含所有五维度的断言。当以下事件发生时，自动触发契约重新验证：
+Contract 规范存储为结构化文档（markdown with schema），包含所有六维度的断言。当以下事件发生时，自动触发契约重新验证：
 - CLI 命令的 help text 或输出格式变更
 - API endpoint 的 schema 变更
 - TUI 组件的 Model 字段变更
@@ -157,7 +206,7 @@ TUI 交互步骤的 `await` 语义：
 - **Backward compatibility**：现有 test-cases.md 和生成的测试脚本零改动继续工作（或提供迁移路径）
 - **分批生成**：单次生成一个 Journey（含 happy path + 边缘场景），如果用例数超出上下文窗口则自动分批（同一 Journey 内）
 - **项目自适应**：纯 CLI 项目只生成 Contract，无 E2E 层；Web 应用两层都有
-- **契约断裂报告**：Contract 验证失败时，输出标识失败维度（Input/Output/State/Side-effect/Invariants）和具体不匹配内容
+- **契约断裂报告**：Contract 验证失败时，输出标识失败维度（Preconditions/Input/Output/State/Side-effect/Invariants）和具体不匹配内容
 - **执行性能**：Contract 测试的执行时间不超过当前集成测试的 120%（不含 Setup 时间）
 - **Journey 隔离**：每个 Journey 在独立临时目录执行，支持并行运行无干扰
 
@@ -194,7 +243,7 @@ TUI 交互步骤的 `await` 语义：
 
 - **高**。4 步 pipeline 每步有明确的认知任务：
   - gen-journeys：纯叙述性提取，LLM 擅长
-  - gen-contracts：结合代码侦察推导五维度，Fact Table 机制已成熟
+  - gen-contracts：结合代码侦察推导六维度，Fact Table 机制已成熟
   - gen-test-scripts：基于 Contract 规范 + 模板生成代码，当前已有基础
   - run-tests：项目声明命令，Forge 调度
 - **配置驱动**已有基础：`.forge/config.yaml` 已有 `languages` 和 `interfaces` 字段
@@ -203,7 +252,7 @@ TUI 交互步骤的 `await` 语义：
 ### Resource & Timeline
 
 - 1 名工程师，分 3 个阶段交付：
-  - **Phase 1（4 周）**：模型定义 + 目录规范 + 配置系统 + gen-journeys skill + gen-contracts skill（含五维度 + 语义描述符 + Risk 分级 + TUI await 形式化 + Journey 隔离）
+  - **Phase 1（4 周）**：模型定义 + 目录规范 + 配置系统 + gen-journeys skill + gen-contracts skill（含六维度 + 语义描述符 + Risk 分级 + TUI await 形式化 + Journey 隔离）
   - **Phase 2（3 周）**：gen-test-scripts 重写（配置驱动 + 内置模板迁移 + 语义→regex 转换 + Journey 烟测试生成）
   - **Phase 3（2 周）**：run-tests 重写 + `forge test verify` 契约断裂检测 + forge-cli 命令适配 + eval rubric 更新 + 端到端验证
 - 总计 9 周日历时间
@@ -220,11 +269,11 @@ TUI 交互步骤的 `await` 语义：
 
 ### In Scope
 
-- Journey-Driven 测试模型定义：Journey（用户真实工作流 + 风险分级）+ Contract（五维度验证）+ E2E（前端体验验证）
-- 目录规范：`tests/contracts/journeys/` 和 `tests/e2e/journeys/`
+- Journey-Driven 测试模型定义：Journey（用户真实工作流 + 风险分级）+ Contract（六维度验证）+ E2E（前端体验验证）
+- 目录规范：`tests/<journey>/`（测试直接生成到最终目录，标签管理生命周期）
 - 配置驱动框架系统：`.forge/config.yaml` 声明测试框架、执行命令、capabilities
 - gen-journeys skill：从 PRD 用户故事提取 Journey（叙述性）+ 风险分级
-- gen-contracts skill：从 Journey + 代码侦察推导 Contract（五维度，语义描述符）+ Invariants
+- gen-contracts skill：从 Journey + 代码侦察推导 Contract（六维度 + 语义描述符 + 多 Outcome）+ Invariants
 - gen-test-scripts skill：Contract → 可执行代码 + Journey 烟测试
 - run-tests skill：项目声明执行命令，Forge 调度 + 结果报告
 - Journey 隔离：独立临时工作目录
@@ -232,7 +281,7 @@ TUI 交互步骤的 `await` 语义：
 - TUI await 语义形式化
 - 内置模板迁移：现有 6 个 language profile → 可覆盖的默认模板
 - forge-cli `testing` 命令重命名和适配
-- 废弃 graduate-tests
+- 废弃 graduate-tests，替换为 Tag-Based Promotion（标签管理测试生命周期）
 
 ### Out of Scope
 
@@ -248,7 +297,7 @@ TUI 交互步骤的 `await` 语义：
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|------------|
-| Contract 五维度无法覆盖所有测试场景 | M | H | 五维度覆盖已知场景；遇到新维度时扩展而非重新设计 |
+| Contract 六维度无法覆盖所有测试场景 | M | H | 六维度覆盖已知场景；遇到新维度时扩展而非重新设计 |
 | 内置模板迁移引入回归 | M | M | 逐个 language 迁移，每个 language 先通过现有 e2e 测试回归验证 |
 | 配置驱动系统过于复杂 | L | M | 内置模板作为默认值，简单项目零配置即可工作 |
 | 4 步 pipeline 增加调用开销 | M | L | 每步专注单一任务，输出质量提升抵消调用成本；分批生成已在控制上下文 |
@@ -258,7 +307,9 @@ TUI 交互步骤的 `await` 语义：
 ## Success Criteria
 
 - [ ] gen-journeys 从 PRD 用户故事提取 Journey（含 happy path + 边缘场景 + 风险分级），输出叙述性工作流文档
-- [ ] gen-contracts 从 Journey + Fact Table 推导 Contract（五维度，语义描述符），Invariants 覆盖跨步骤不变量
+- [ ] gen-contracts 从 Journey + Fact Table 推导 Contract（六维度，语义描述符，多 Outcome），Invariants 覆盖跨步骤不变量
+- [ ] gen-test-scripts 生成的测试带 `@feature` 标签，直接放入最终目录（无 staging）
+- [ ] `forge test promote <journey>` 将通过的测试标签从 `@feature` 更新为 `@regression`（Tag-Based Promotion）
 - [ ] gen-test-scripts 将语义描述符转换为精确正则（基于 Fact Table），生成可编译的测试代码 + Journey 烟测试
 - [ ] forge-cli（纯 CLI 项目）的 Journey "开发者完成一个任务" 端到端验证：gen-journeys → gen-contracts → gen-test-scripts → run-tests 全链路通过
 - [ ] 每个 Journey 在独立临时目录执行，支持并行运行无干扰
@@ -266,6 +317,10 @@ TUI 交互步骤的 `await` 语义：
 - [ ] gen-journeys 输出按 Journey 分文件（一个用户工作流一个文件），而非按接口类型分文件
 - [ ] 现有单步 TC 作为单步骤 Journey 退化形式继续工作（零回归）
 - [ ] Contract 验证失败时，输出标识失败维度和具体不匹配内容
+- [ ] `.forge/config.yaml` 声明测试框架后，Forge 能正确加载并使用（零配置时使用内置模板默认值）
+- [ ] TUI await 语义：异步 Cmd 等待超时时 fail-fast 并报告超时 Cmd 名称
+- [ ] 现有 6 个 language profile 的 generate.md/run.md 作为默认模板工作，项目可通过 config 覆盖
+- [ ] forge-cli `testing` 子命令重命名为 `test` 并适配完成
 
 ## Next Steps
 
