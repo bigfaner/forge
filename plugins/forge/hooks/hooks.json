@@ -62,6 +62,14 @@
             "command": "forge quality-gate"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "forge feature complete --if-done"
+          }
+        ]
       }
     ]
   }
