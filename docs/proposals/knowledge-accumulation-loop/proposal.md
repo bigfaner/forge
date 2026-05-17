@@ -4,7 +4,7 @@ author: faner
 status: Draft
 ---
 
-# Proposal: Knowledge Accumulation Unified Entry + Vocabulary
+# Proposal: Knowledge Accumulation Unified Entry + Auto-Extract
 
 ## Problem
 
@@ -24,25 +24,29 @@ Knowledge discovery was implemented but has nothing to discover. Each new featur
 
 ## Proposed Solution
 
-**Two-part solution: unified entry point + suggestive vocabulary.**
+**Three-part solution: unified manual entry + auto-extract triggers + vocabulary归纳.**
 
-### Part 1: `/learn` — Unified Knowledge Skill
+### Part 1: `/learn` — Unified Manual Entry
 
-A new skill that serves as the single recommended entry point for all knowledge accumulation. The user describes what they learned/decided in free-form text; the skill identifies knowledge type(s), suggests classification from a built-in vocabulary, and writes to the appropriate directory.
+A new skill that absorbs `/record-decision` and `/learn-lesson` into a single on-demand entry point. Used for knowledge that bypasses the pipeline — ad-hoc debugging insights, spontaneous realizations, mid-task discoveries.
+
+**Two input modes:**
 
 ```
-/learn "发现 map 非线程安全导致 race condition，决定用 sync.Map"
+# Mode 1: Interactive — agent asks, then classifies
+/learn
+  → Agent: "What did you learn or decide?"
+  → User describes...
+  → Agent classifies, writes, reports
+
+# Mode 2: Direct input — skip the first question
+/learn "race condition from non-thread-safe map, decided to use sync.Map"
   → Agent identifies: lesson + decision
-  → Suggests domain: architecture (from vocabulary)
   → Writes to: docs/lessons/gotcha-race-condition.md + docs/decisions/architecture.md
-  → User reviews and confirms
-
-/learn "所有 API 必须有 /api 前缀"
-  → Agent identifies: convention
-  → Suggests domain: interface (from vocabulary)
-  → Appends to: docs/conventions/api.md
-  → User reviews and confirms
+  → Report includes entries for review
 ```
+
+**Write-first, review-after:** Agent classifies and writes entries immediately, then includes all written entries in the final report for user review. This avoids interrupting the task flow — the user sees what was written and can correct anything after the fact.
 
 **Scope of `/learn`:**
 - Single-record operations: one decision, one lesson, one convention entry, one business-rule entry
@@ -50,110 +54,105 @@ A new skill that serves as the single recommended entry point for all knowledge 
 - Convention/business-rule appending to existing files (or creating new files)
 - Bulk extraction from feature docs → delegates to `/consolidate-specs`
 
-**Old skills:** `/record-decision` and `/learn-lesson` remain functional but are demoted to "low-level API" — still available for power users, but `/learn` is the recommended entry point. `/consolidate-specs` remains unchanged (it handles complex bulk extraction with drift detection).
+**Removed skills:** `/record-decision` and `/learn-lesson` are deleted. Their functionality is fully absorbed by `/learn`.
 
-### Part 2: Built-in Vocabulary
+### Part 2: Auto-Extract Triggers
 
-A reference file (`plugins/forge/references/shared/vocabulary.md`) containing suggested categories for knowledge classification. The vocabulary is presented as recommendations during the `/learn` flow — users can accept suggestions or type any custom value.
+Instead of suggesting `/learn`, triggers automatically extract knowledge from the current feature's artifacts and present for confirmation.
 
-```yaml
-types:
-  - decision       # "Why we chose X"
-  - lesson         # "What went wrong and how to fix it"
-  - convention     # "Technical standard: always do X"
-  - business-rule  # "Business constraint: X must satisfy Y"
+**Flow:**
 
-domains:
-  - architecture        # System structure, layering
-  - interface           # API contracts, data shapes
-  - data-model          # Schema, indexing, soft-delete
-  - dependencies        # Library choices, version constraints
-  - error-handling      # Error types, status codes, propagation
-  - testing             # Test patterns, coverage, mocking
-  - security            # Auth, permissions, data protection
-  - local-dev-deployment # Dev environment, tooling, deployment
+```
+Feature completes (run-tasks / fix-bug / write-prd / tech-design)
+  → Scan feature's PRD + tech-design + task outcomes
+  → Identify new knowledge (decisions, lessons, conventions, business rules)
+  → Extract & summarize
+  → Report to user for review
+  → Write to knowledge dirs on confirmation
 ```
 
-The domain vocabulary matches the existing 8-category system used by decisions and lessons, ensuring backward compatibility. Users can enter any custom domain (e.g., "concurrency", "performance") — the vocabulary is suggestive, not enforced.
+**Trigger points:**
 
-### Part 3: Trigger Points
+| Trigger Point | What to scan | Knowledge types to look for |
+|---------------|-------------|---------------------------|
+| `run-tasks` completes all tasks | Task outcomes, code changes, manifest | Architectural decisions, novel patterns, gotchas, business rules |
+| `fix-bug` completes a fix | Root cause analysis, fix approach | Non-obvious root causes, debugging patterns |
+| `write-prd` completes | PRD content | New business rules, user-facing constraints |
+| `tech-design` completes | Design document | Architecture decisions, dependency choices, data model decisions |
 
-Context-aware suggestions at 3 natural workflow completion points, driving users to `/learn`:
+**Key behaviors:**
+- Triggers are **silent when no notable knowledge is detected** — routine config changes, trivial fixes produce no output
+- Extracted knowledge is **presented for user confirmation** before writing — the auto-extract is a draft, not a final action
+- The extraction logic is a shared routine (prompt section) reused across all 4 trigger points
+- `/consolidate-specs` vocabulary is used during extraction to suggest classifications
 
-| Trigger Point | Detection | Suggestion |
-|---------------|-----------|------------|
-| `run-tasks` completes all tasks | Architectural decisions, novel patterns, business rules in task outcomes | Suggest `/learn` with pre-filled summary |
-| `fix-bug` completes a fix | Non-obvious root cause or notable debugging pattern | Suggest `/learn` with root cause summary |
-| `write-prd` / `tech-design` completes | New business rules, architecture decisions | Suggest `/learn` with decision/rule summary |
+### Part 3: Auto-Generated Vocabulary via `/consolidate-specs`
 
-`/quick` is covered by `run-tasks` since quick calls run-tasks internally.
+No standalone vocabulary file. `/consolidate-specs` automatically归纳 and maintains a vocabulary index from existing knowledge files during its drift-detection pass. The vocabulary is regenerated each run, staying in sync with actual content.
 
-### Innovation Highlights
-
-The design borrows from **unified search bars** (Google, VS Code Command Palette) — instead of requiring users to know the specific command, a single entry point interprets intent and routes to the right destination. The vocabulary acts like **autocomplete suggestions** — it narrows the space without constraining it. This is the opposite of the current design where users must navigate a menu of specialized commands.
+Both `/learn` and the auto-extract triggers read this vocabulary at runtime to suggest classifications. No manual maintenance needed.
 
 ## Requirements Analysis
 
 ### Key Scenarios
 
-- **Multi-type knowledge**: User runs `/learn "race condition from non-thread-safe map, decided to use sync.Map"`. Agent identifies both lesson and decision. Suggests writing to both `docs/lessons/` and `docs/decisions/`. User confirms both entries.
-- **Single convention**: User runs `/learn "all API endpoints must have /api prefix"`. Agent identifies as convention, suggests `docs/conventions/api.md`. Appends rule with project-global ID.
-- **Custom domain**: User runs `/learn "websocket connections must have heartbeat every 30s"`. Agent suggests domain `interface` from vocabulary. User types `websocket` instead. Accepted without error.
-- **Trigger from run-tasks**: After completing tasks that created a new authentication module, run-tasks detects architectural knowledge produced. Suggests `/learn` with summary: "Created new auth module with JWT-based session management."
-- **Trigger from fix-bug**: After fixing a deadlock caused by lock ordering, fix-bug detects notable root cause. Suggests `/learn` with summary: "Deadlock from inconsistent lock acquisition order."
-- **Nothing notable**: After routine config changes, run-tasks detects nothing worth capturing. Silent — no suggestion.
-- **Bulk extraction**: User has a completed feature with PRD + design docs. Wants to extract all business rules at once. `/learn` detects this is a bulk operation and suggests `/consolidate-specs` instead.
+- **Auto-extract after run-tasks**: Feature implementing auth module completes. Trigger scans task outcomes, identifies: "JWT-based session management" as architectural decision, "token expiry must be configurable" as business rule. Presents both for user review. User confirms. Written to `docs/decisions/` and `docs/business-rules/`.
+- **Auto-extract after fix-bug**: Fix for deadlock from inconsistent lock ordering. Trigger extracts root cause as a lesson. Presents for review. User confirms. Written to `docs/lessons/`.
+- **Auto-extract — nothing notable**: Routine config file changes. Trigger scans, finds no notable knowledge. Silent — no output.
+- **Manual /learn**: Developer realizes mid-task that their ORM pattern has a gotcha. Runs `/learn "GORM hooks fire in creation order, not dependency order"`. Agent identifies as lesson, writes to `docs/lessons/`. Report shows entry for review.
+- **Multi-type manual /learn**: `/learn "race condition from non-thread-safe map, decided to use sync.Map"`. Agent identifies both lesson and decision. Writes to both directories. Report shows both entries.
+- **Custom domain**: User types a domain not in auto-vocabulary. Accepted without error.
+- **Bulk extraction**: `/learn` detects bulk need, delegates to `/consolidate-specs`.
 
 ### Non-Functional Requirements
 
-- **Vocabulary non-enforcement**: Any value accepted for type and domain, even if not in vocabulary. Zero friction for custom entries.
-- **Backward compatibility**: Existing files in `docs/decisions/`, `docs/lessons/`, `docs/conventions/`, `docs/business-rules/` are not modified or migrated. Old skills continue to work.
-- **Zero noise from triggers**: Trigger points are silent when no notable knowledge is detected. False-positive rate < 30%.
+- **Vocabulary non-enforcement**: Any value accepted for type and domain. Zero friction for custom entries.
+- **Backward compatibility**: Existing files in knowledge directories are not modified or migrated.
+- **Zero noise from triggers**: False-positive rate < 30%. Silent when nothing notable.
+- **Extraction consistency**: Auto-extract and `/learn` produce the same file formats.
 
 ### Constraints & Dependencies
 
-- Knowledge directory formats (decision rows, lesson files, convention entries) must remain compatible with existing skills
-- `/learn` reuses existing format specifications from `decision-logging.md` and `learn-lesson` templates
+- Knowledge directory formats must remain compatible with `/consolidate-specs`
+- `/learn` reuses existing format specifications from the old `/record-decision` and `/learn-lesson` templates
 - No code changes — all changes are prompt-level (SKILL.md, command files, reference files)
+- `/consolidate-specs` needs a vocabulary generation step added to its drift-detection pass
 
 ## Alternatives & Industry Benchmarking
 
-### Industry Solutions
-
-- **Unified search/command palette** (VS Code, Raycast): Single entry point that interprets intent and routes to specific actions. Users don't need to know command names. This is the UX model for `/learn`.
-- **Tag-based knowledge management** (Notion, Obsidian): Knowledge entries tagged with flexible categories. Tags are suggestive (common tags shown) but not enforced. This is the vocabulary model.
-- **Git commit hooks** (husky, pre-commit): Trigger points that run code at natural workflow boundaries. The trigger points in this proposal serve the same purpose — but they're prompt-based suggestions, not programmatic gates.
-
 ### Comparison Table
 
-| Approach | Source | Pros | Cons | Verdict |
-|----------|--------|------|------|---------|
-| Do nothing | — | Zero cost | Three separate skills, fragmented knowledge, low accumulation rate | Rejected |
-| Merge all directories | Knowledge graph model | Single location for all knowledge | Loses semantic distinctions (decision vs lesson vs rule); breaks existing format consumers | Rejected: too disruptive |
-| Wrapper skill over old skills | Adapter pattern | Minimal change to existing skills | Still depends on three separate skill implementations; wrapper adds indirection | Rejected: doesn't simplify the model |
-| **Unified entry + suggestive vocabulary** | VS Code Command Palette + Obsidian tags | Single entry point; flexible classification; backward compatible; natural UX | Requires new skill implementation; vocabulary maintenance | **Selected: combines unified entry UX with flexible classification, minimal disruption** |
+| Approach | Pros | Cons | Verdict |
+|----------|------|------|---------|
+| Do nothing | Zero cost | Three separate skills, fragmented knowledge, low accumulation rate | Rejected |
+| Wrapper skill over old skills | Minimal change | Still depends on three implementations; wrapper adds indirection | Rejected |
+| Keep old skills + add /learn | Backward compatible | Four skills for same job; confusing for users | Rejected |
+| **Unified /learn + auto-extract triggers + auto-vocabulary** | Single manual entry; auto-capture at pipeline boundaries; no manual vocab maintenance; removes old skills cleanly | More moving parts (triggers + extraction routine) | **Selected** |
 
 ## Feasibility Assessment
 
 ### Technical Feasibility
 
-All changes are prompt-level. `/learn` is a new skill that reads the vocabulary reference and writes to existing directory formats. Trigger points are additions to existing SKILL.md/command files. No code changes required.
+All changes are prompt-level. The shared extraction routine is a reusable prompt section. Trigger points append this routine to existing skill/command files. No code changes required.
 
 ### Resource & Timeline
 
 | Deliverable | Type | Complexity |
 |-------------|------|-----------|
-| `/learn` SKILL.md + templates | New skill | Medium (multi-format output routing) |
-| `references/shared/vocabulary.md` | New reference | Low (static file) |
-| `hooks/guide.md` update | Edit existing | Low (add `/learn` section, demote old skills) |
-| `commands/run-tasks.md` trigger | Edit existing | Low (add knowledge review step) |
-| `commands/fix-bug.md` trigger | Edit existing | Low (add knowledge review step) |
-| `skills/write-prd/SKILL.md` trigger | Edit existing | Low (add knowledge review step) |
-| `skills/tech-design/SKILL.md` trigger | Edit existing | Low (add knowledge review step) |
+| `/learn` SKILL.md + templates | New skill (absorbs 2 old skills) | Medium (multi-format output routing) |
+| Delete `/record-decision` skill | Remove | Low |
+| Delete `/learn-lesson` skill | Remove | Low |
+| Shared extraction routine (prompt section) | New shared reference | Medium (knowledge identification + extraction logic) |
+| Update `/consolidate-specs` — add vocabulary generation | Edit existing | Medium (归纳 logic) |
+| `hooks/guide.md` update | Edit existing | Low |
+| `commands/run-tasks.md` trigger | Edit existing | Low (add extraction step) |
+| `commands/fix-bug.md` trigger | Edit existing | Low |
+| `skills/write-prd/SKILL.md` trigger | Edit existing | Low |
+| `skills/tech-design/SKILL.md` trigger | Edit existing | Low |
 
 ### Dependency Readiness
 
-- Existing format specs (`decision-logging.md`, `learn-lesson` template) are available for reuse
+- Existing format specs from old skills are available for reuse
 - Knowledge directory structures exist and are stable
 - No external dependencies
 
@@ -161,18 +160,21 @@ All changes are prompt-level. `/learn` is a new skill that reads the vocabulary 
 
 ### In Scope
 
-1. Create `/learn` skill (`plugins/forge/skills/learn/SKILL.md`) — unified knowledge accumulation entry point
-2. Create `/learn` skill template (`plugins/forge/skills/learn/templates/`) — if needed for multi-format output
-3. Create vocabulary reference (`plugins/forge/references/shared/vocabulary.md`) — built-in suggestive vocabulary
-4. Update `plugins/forge/hooks/guide.md` — add `/learn` section, demote old skills to "advanced"
-5. Add knowledge review trigger to `plugins/forge/commands/run-tasks.md`
-6. Add knowledge review trigger to `plugins/forge/commands/fix-bug.md`
-7. Add knowledge review trigger to `plugins/forge/skills/write-prd/SKILL.md`
-8. Add knowledge review trigger to `plugins/forge/skills/tech-design/SKILL.md`
+1. Create `/learn` skill (`plugins/forge/skills/learn/SKILL.md`) — unified manual knowledge entry, absorbs `/record-decision` and `/learn-lesson`
+2. Create `/learn` templates if needed (`plugins/forge/skills/learn/templates/`) — merged from old skills
+3. Delete `/record-decision` skill (`plugins/forge/skills/record-decision/`)
+4. Delete `/learn-lesson` skill (`plugins/forge/skills/learn-lesson/`)
+5. Create shared extraction routine (`plugins/forge/references/shared/knowledge-extraction.md`) — reusable prompt section for auto-extract triggers
+6. Update `/consolidate-specs` — add auto-vocabulary generation step
+7. Update `plugins/forge/hooks/guide.md` — replace old skills with `/learn`, document auto-extract flow
+8. Add auto-extract trigger to `plugins/forge/commands/run-tasks.md`
+9. Add auto-extract trigger to `plugins/forge/commands/fix-bug.md`
+10. Add auto-extract trigger to `plugins/forge/skills/write-prd/SKILL.md`
+11. Add auto-extract trigger to `plugins/forge/skills/tech-design/SKILL.md`
 
 ### Out of Scope
 
-- Changes to `/record-decision`, `/learn-lesson`, or `/consolidate-specs` skills — they remain functional as-is
+- Changes to `/consolidate-specs` beyond vocabulary generation step
 - Directory structure changes — all four knowledge directories keep their current formats
 - Migration of existing knowledge files
 - Changes to knowledge discovery mechanism (domains frontmatter)
@@ -182,22 +184,28 @@ All changes are prompt-level. `/learn` is a new skill that reads the vocabulary 
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|------------|
-| `/learn` misidentifies knowledge type | M | M | Present classification to user for confirmation before writing. User can always correct. The existing trigger vocabulary (decision, lesson, convention, business-rule) has clear semantic boundaries. |
-| Trigger points produce too many false suggestions | M | M | Keep heuristics conservative: only suggest for genuinely non-obvious knowledge. If acceptance rate < 30%, tighten detection criteria. |
-| Users still prefer old skills | L | L | Old skills remain functional. `/learn` is recommended but not forced. Gradual adoption is fine. |
-| Vocabulary becomes stale as project evolves | L | L | Vocabulary is suggestive — users naturally use custom terms when built-in terms don't fit. The vocabulary file can be updated in future Forge releases. |
+| Auto-extract produces false positives (noise) | M | M | Conservative heuristics + user confirmation gate. If acceptance rate < 30%, tighten detection. |
+| `/learn` misidentifies knowledge type | M | M | Write-first-then-report: user sees all entries in final report and can correct. |
+| Shared extraction routine diverges across trigger points | L | M | Single shared reference file (`knowledge-extraction.md`) included by all triggers. |
+| Auto-vocabulary becomes stale between `/consolidate-specs` runs | L | L | `/learn` works without vocabulary — falls back to unassisted classification. Vocabulary is suggestive, not required. |
+| Breaking change for users who used old skills | L | L | `/learn` covers all old functionality. Guide.md documents the migration. Old formats preserved in `/learn`. |
 
 ## Success Criteria
 
 - [ ] `/learn` correctly identifies knowledge type(s) from free-form input in 4+ test scenarios (multi-type, single convention, custom domain, bulk delegation)
-- [ ] `/learn` writes to all 4 knowledge directories (`docs/decisions/`, `docs/lessons/`, `docs/conventions/`, `docs/business-rules/`) using their existing formats
-- [ ] `/learn` accepts custom vocabulary values (domains, types) not in the built-in vocabulary without error
-- [ ] `/learn` suggests `/consolidate-specs` when the user's input describes a bulk extraction need
-- [ ] Trigger at `run-tasks` completion suggests `/learn` when tasks produced architectural decisions or novel patterns
-- [ ] Trigger at `fix-bug` completion suggests `/learn` when the root cause was non-obvious
-- [ ] Triggers are silent when no notable knowledge was produced (routine tasks, trivial fixes)
-- [ ] `guide.md` references `/learn` as the primary knowledge accumulation entry point
-- [ ] Old skills (`/record-decision`, `/learn-lesson`) remain functional and documented as "advanced" alternatives
+- [ ] `/learn` writes to all 4 knowledge directories using their existing formats
+- [ ] `/learn` accepts custom vocabulary values without error
+- [ ] `/learn` suggests `/consolidate-specs` for bulk extraction needs
+- [ ] `/learn` works in both interactive mode (no args) and direct-input mode (with args)
+- [ ] `/learn` final report includes all written entries for user review
+- [ ] Old skills (`/record-decision`, `/learn-lesson`) are fully removed
+- [ ] `/consolidate-specs` generates vocabulary index from existing knowledge files
+- [ ] Auto-extract trigger at `run-tasks` completion identifies and extracts notable knowledge from task outcomes
+- [ ] Auto-extract trigger at `fix-bug` completion identifies non-obvious root causes
+- [ ] Auto-extract trigger at `write-prd` completion identifies new business rules
+- [ ] Auto-extract trigger at `tech-design` completion identifies architecture decisions
+- [ ] Triggers are silent when no notable knowledge was produced
+- [ ] `guide.md` references `/learn` as the manual entry point and documents auto-extract flow
 - [ ] All modified files pass `eval-forge` structural consistency check
 
 ## Next Steps
