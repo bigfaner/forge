@@ -29,6 +29,8 @@ Step 1: Scope Detection → Step 2: Code Cleanup → Step 3: Quality Gate (optio
 
 ## Step 1: Scope Detection
 
+**Output**: a concrete file list. All subsequent steps operate on this list only.
+
 Resolve scope from the first applicable source:
 
 | Priority | Source | When |
@@ -54,19 +56,27 @@ If no arguments and on a feature branch:
 git diff --name-only main
 ```
 
-If the base branch is not `main`, determine it from context (e.g., `git merge-base HEAD main`).
+If the base branch is not `main`, detect it:
+
+```bash
+git remote show origin | grep 'HEAD branch' | awk '{print $NF}'
+```
 
 ### Priority 3: Feature Context
 
-If invoked as a pipeline task, use `{{SCOPE}}` from the task template to determine the relevant code directories.
+If invoked as a pipeline task, the feature's changed files are already in the working tree. Use git diff against the base branch (same as Priority 2), or read the feature's task records to collect changed files:
+
+```bash
+cat docs/features/<slug>/tasks/index.json | grep -o '"file":"[^"]*"' | cut -d'"' -f4
+```
 
 ### Scope Validation
 
 <HARD-RULE>
-**Only modify files within the resolved scope.** Never touch files outside the scope. If a file is not in scope, do not edit it — even if it has obvious cleanup opportunities.
+**Only modify files within the scope file list produced by this step.** Never touch files outside the list. If a file is not in the list, do not edit it — even if it has obvious cleanup opportunities.
 </HARD-RULE>
 
-If scope is empty or contains no code files (only `.md`, `.txt`, etc.), output:
+Filter out non-code files (`.md`, `.txt`, `.json` unless they are configs, etc.). If scope is empty after filtering:
 
 ```
 No code files in scope. Nothing to clean up.
