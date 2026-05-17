@@ -175,7 +175,6 @@ func runConfigInitIfNeeded(projectRoot string) initAction {
 		return initAction{status: "SKIPPED", target: ".forge/config.yaml", detail: "already exists"}
 	}
 
-	// Interactive form requires a TTY
 	fi, _ := os.Stdin.Stat()
 	if fi.Mode()&os.ModeCharDevice == 0 {
 		return initAction{status: "SKIPPED", target: ".forge/config.yaml", detail: "non-interactive terminal"}
@@ -183,29 +182,34 @@ func runConfigInitIfNeeded(projectRoot string) initAction {
 
 	// Step 1: Project type
 	projectType := "backend"
-	projectTypeSelect := huh.NewSelect[string]().
-		Title("Project type").
-		Options(
-			huh.NewOption("frontend", "frontend"),
-			huh.NewOption("backend", "backend"),
-			huh.NewOption("mixed", "mixed"),
-		).
-		Value(&projectType)
+	if err := huh.NewForm(huh.NewGroup(
+		huh.NewSelect[string]().
+			Title("What type of project is this?").
+			Description("Determines scope rules for generated tasks (frontend, backend, or both).").
+			Options(
+				huh.NewOption("Frontend (UI-focused)", "frontend"),
+				huh.NewOption("Backend (server/API)", "backend"),
+				huh.NewOption("Mixed (full-stack)", "mixed"),
+			).
+			Value(&projectType),
+	)).Run(); err != nil {
+		return initAction{status: "FAILED", target: ".forge/config.yaml", detail: err.Error()}
+	}
 
-	// Step 2: Test profile (single select)
+	// Step 2: Test profile
 	selectedProfile := ""
 	profileOpts := make([]huh.Option[string], 0, len(profile.KnownProfiles)+1)
-	profileOpts = append(profileOpts, huh.NewOption("(none)", ""))
+	profileOpts = append(profileOpts, huh.NewOption("None — skip test generation", ""))
 	for _, p := range profile.KnownProfiles {
 		profileOpts = append(profileOpts, huh.NewOption(p, p))
 	}
-	profileSelect := huh.NewSelect[string]().
-		Title("Test profile").
-		Options(profileOpts...).
-		Value(&selectedProfile)
-
-	form := huh.NewForm(huh.NewGroup(projectTypeSelect, profileSelect))
-	if err := form.Run(); err != nil {
+	if err := huh.NewForm(huh.NewGroup(
+		huh.NewSelect[string]().
+			Title("Which test framework does this project use?").
+			Description("Select a profile matching your test tooling, or skip test task generation.").
+			Options(profileOpts...).
+			Value(&selectedProfile),
+	)).Run(); err != nil {
 		return initAction{status: "FAILED", target: ".forge/config.yaml", detail: err.Error()}
 	}
 
@@ -214,7 +218,7 @@ func runConfigInitIfNeeded(projectRoot string) initAction {
 		selectedProfiles = []string{selectedProfile}
 	}
 
-	// Step 3: Capabilities (multi-select)
+	// Step 3: Capabilities (only if profile selected)
 	var selectedCaps []string
 	if len(selectedProfiles) > 0 {
 		union, err := profile.UnionCapabilities(selectedProfiles)
@@ -225,11 +229,13 @@ func runConfigInitIfNeeded(projectRoot string) initAction {
 			for _, c := range union {
 				capOpts = append(capOpts, huh.NewOption(c, c))
 			}
-			capSelect := huh.NewMultiSelect[string]().
-				Title("Capabilities").
-				Options(capOpts...).
-				Value(&selectedCaps)
-			if err := huh.NewForm(huh.NewGroup(capSelect)).Run(); err != nil {
+			if err := huh.NewForm(huh.NewGroup(
+				huh.NewMultiSelect[string]().
+					Title("Which test capabilities should be enabled?").
+					Description("Controls which test task types are generated. Space to toggle, Enter to confirm.").
+					Options(capOpts...).
+					Value(&selectedCaps),
+			)).Run(); err != nil {
 				return initAction{status: "FAILED", target: ".forge/config.yaml", detail: err.Error()}
 			}
 		}
@@ -242,9 +248,7 @@ func runConfigInitIfNeeded(projectRoot string) initAction {
 		ProjectType:  projectType,
 		TestProfiles: selectedProfiles,
 		Capabilities: selectedCaps,
-	}
-	if auto != nil {
-		cfg.Auto = auto
+		Auto:         auto,
 	}
 
 	if err := writeConfigFile(configFile, &cfg); err != nil {
@@ -255,58 +259,66 @@ func runConfigInitIfNeeded(projectRoot string) initAction {
 	return initAction{status: "CREATED", target: ".forge/config.yaml", detail: "interactive"}
 }
 
-// askAutoBehavior runs the auto-behavior config step with interactive selects.
-// Returns nil if user accepts all defaults.
+// askAutoBehavior runs the auto-behavior config steps, one question per screen.
+// Always returns a non-nil AutoConfig.
 func askAutoBehavior(hasProfiles bool) *profile.AutoConfig {
-	var fields []huh.Field
-
-	e2eQuick, e2eFull := true, true
-	conQuick, conFull := true, true
-	cleanQuick, cleanFull := false, false
-	gitPush := false
+	defaults := profile.AutoConfigDefaults()
+	auto := &profile.AutoConfig{}
 
 	if hasProfiles {
-		fields = append(fields,
-			huh.NewConfirm().Title("e2eTest (quick mode)?").Value(&e2eQuick),
-			huh.NewConfirm().Title("e2eTest (full mode)?").Value(&e2eFull),
-			huh.NewConfirm().Title("consolidateSpecs (quick mode)?").Value(&conQuick),
-			huh.NewConfirm().Title("consolidateSpecs (full mode)?").Value(&conFull),
+		auto.E2eTest.Quick = askConfirm(
+			"Quick mode: auto-run e2e tests?",
+			"Automatically run end-to-end tests during quick mode (lightweight verification after each task).",
+			defaults.E2eTest.Quick,
+		)
+		auto.E2eTest.Full = askConfirm(
+			"Full mode: auto-run e2e tests?",
+			"Automatically run end-to-end tests during full mode (comprehensive coverage).",
+			defaults.E2eTest.Full,
+		)
+		auto.ConsolidateSpecs.Quick = askConfirm(
+			"Quick mode: auto-consolidate specs?",
+			"Automatically extract and consolidate specs from code after quick-mode tasks.",
+			defaults.ConsolidateSpecs.Quick,
+		)
+		auto.ConsolidateSpecs.Full = askConfirm(
+			"Full mode: auto-consolidate specs?",
+			"Automatically extract and consolidate specs from code after full-mode tasks.",
+			defaults.ConsolidateSpecs.Full,
 		)
 	}
 
-	fields = append(fields,
-		huh.NewConfirm().Title("cleanCode (quick mode)?").Affirmative("Yes").Negative("No").Value(&cleanQuick),
-		huh.NewConfirm().Title("cleanCode (full mode)?").Affirmative("Yes").Negative("No").Value(&cleanFull),
-		huh.NewConfirm().Title("Auto git push after completion?").Affirmative("Yes").Negative("No").Value(&gitPush),
+	auto.CleanCode.Quick = askConfirm(
+		"Quick mode: auto code cleanup?",
+		"Automatically simplify and clean code during quick mode.",
+		defaults.CleanCode.Quick,
+	)
+	auto.CleanCode.Full = askConfirm(
+		"Full mode: auto code cleanup?",
+		"Automatically simplify and clean code during full mode.",
+		defaults.CleanCode.Full,
+	)
+	auto.GitPush = askConfirm(
+		"Auto git push after all tasks complete?",
+		"Push to remote automatically when every task in a run finishes successfully.",
+		defaults.GitPush,
 	)
 
-	if err := huh.NewForm(huh.NewGroup(fields...)).Run(); err != nil {
-		return nil
-	}
-
-	// Check if anything changed from defaults
-	defaults := profile.AutoConfigDefaults()
-	allDefault := true
-	if hasProfiles {
-		allDefault = allDefault && e2eQuick == defaults.E2eTest.Quick && e2eFull == defaults.E2eTest.Full
-		allDefault = allDefault && conQuick == defaults.ConsolidateSpecs.Quick && conFull == defaults.ConsolidateSpecs.Full
-	}
-	allDefault = allDefault && cleanQuick == defaults.CleanCode.Quick && cleanFull == defaults.CleanCode.Full
-	allDefault = allDefault && gitPush == defaults.GitPush
-
-	if allDefault {
-		return nil
-	}
-
-	auto := &profile.AutoConfig{
-		CleanCode: profile.ModeToggle{Quick: cleanQuick, Full: cleanFull},
-		GitPush:   gitPush,
-	}
-	if hasProfiles {
-		auto.E2eTest = profile.ModeToggle{Quick: e2eQuick, Full: e2eFull}
-		auto.ConsolidateSpecs = profile.ModeToggle{Quick: conQuick, Full: conFull}
-	}
 	return auto
+}
+
+// askConfirm shows a single confirm prompt and returns the result.
+func askConfirm(title, desc string, defaultVal bool) bool {
+	val := defaultVal
+	_ = huh.NewForm(huh.NewGroup(
+		huh.NewConfirm().
+			Title(title).
+			Description(desc).
+			Affirmative("Yes").
+			Negative("No").
+			Value(&val),
+	)).Run()
+	return val
 }
 
 func printInitSummary(out io.Writer, actions []initAction) {
