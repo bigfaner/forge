@@ -251,15 +251,18 @@ func runConfigInitIfNeeded(projectRoot string) initAction {
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "WARNING: could not resolve capabilities: %v\n", err)
 		} else if len(union) > 0 {
+			selectedCaps = make([]string, len(union))
+			copy(selectedCaps, union)
 			capOpts := make([]huh.Option[string], 0, len(union))
 			for _, c := range union {
-				capOpts = append(capOpts, huh.NewOption(c, c))
+				capOpts = append(capOpts, huh.NewOption(c, c).Selected(true))
 			}
 			if err := huh.NewForm(huh.NewGroup(
 				huh.NewMultiSelect[string]().
 					Title("Which test capabilities should be enabled?").
 					Description("Controls which test task types are generated. Space to toggle, Enter to confirm.").
 					Options(capOpts...).
+					Limit(0).
 					Value(&selectedCaps),
 			)).Run(); err != nil {
 				if errors.Is(err, huh.ErrUserAborted) {
