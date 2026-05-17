@@ -3,3 +3,14 @@ test-profiles:
   - go-test
 capabilities:
   - cli
+auto:
+  e2eTest:
+    quick: false
+    full: true
+  consolidateSpecs:
+    quick: false
+    full: true
+  cleanCode:
+    quick: false
+    full: true
+  gitPush: false
