@@ -497,6 +497,331 @@ func TestTC_019_WorkflowDiagramIncludesDriftSteps(t *testing.T) {
 	}
 }
 
+// --- TC-020: consolidate-specs SKILL.md contains Step 12 (vocabulary generation) ---
+
+// Traceability: TC-020 -> Task 4 AC (vocabulary generation step exists)
+func TestTC_020_ConsolidateSpecsContainsVocabularyStep(t *testing.T) {
+	skillPath := findRepoFile(t,
+		filepath.Join("plugins", "forge", "skills", "consolidate-specs", "SKILL.md"))
+	data, err := os.ReadFile(skillPath)
+	require.NoError(t, err)
+	content := string(data)
+
+	// Verify Step 12 section exists
+	assert.Contains(t, content, "## Step 12:",
+		"SKILL.md should contain Step 12 section")
+
+	// Verify Step 12 is about vocabulary generation
+	step12Idx := strings.Index(content, "## Step 12:")
+	require.Greater(t, step12Idx, -1, "## Step 12 heading should exist")
+
+	step13Idx := strings.Index(content, "## Step 13:")
+	if step13Idx < 0 {
+		step13Idx = len(content)
+	}
+	step12Section := content[step12Idx:step13Idx]
+
+	assert.Contains(t, step12Section, "vocabulary",
+		"Step 12 should be about vocabulary generation")
+	assert.Contains(t, step12Section, "Vocabulary",
+		"Step 12 should be about vocabulary generation")
+}
+
+// --- TC-021: Step 12 scans all 4 knowledge directories ---
+
+// Traceability: TC-021 -> Task 4 AC (scans decisions, lessons, conventions, business-rules)
+func TestTC_021_VocabularyStepScansAllKnowledgeDirectories(t *testing.T) {
+	skillPath := findRepoFile(t,
+		filepath.Join("plugins", "forge", "skills", "consolidate-specs", "SKILL.md"))
+	data, err := os.ReadFile(skillPath)
+	require.NoError(t, err)
+	content := string(data)
+
+	// Extract Step 12 section
+	step12Idx := strings.Index(content, "## Step 12:")
+	require.Greater(t, step12Idx, -1, "## Step 12 heading should exist")
+
+	step13Idx := strings.Index(content, "## Step 13:")
+	if step13Idx < 0 {
+		step13Idx = len(content)
+	}
+	step12Section := content[step12Idx:step13Idx]
+
+	// Verify all 4 directories are mentioned
+	assert.Contains(t, step12Section, "docs/decisions/",
+		"Step 12 should scan docs/decisions/")
+	assert.Contains(t, step12Section, "docs/lessons/",
+		"Step 12 should scan docs/lessons/")
+	assert.Contains(t, step12Section, "docs/conventions/",
+		"Step 12 should scan docs/conventions/")
+	assert.Contains(t, step12Section, "docs/business-rules/",
+		"Step 12 should scan docs/business-rules/")
+}
+
+// --- TC-022: Step 12 includes base 8-category vocabulary ---
+
+// Traceability: TC-022 -> Task 4 AC (base vocabulary always included)
+func TestTC_022_VocabularyIncludesBase8Categories(t *testing.T) {
+	skillPath := findRepoFile(t,
+		filepath.Join("plugins", "forge", "skills", "consolidate-specs", "SKILL.md"))
+	data, err := os.ReadFile(skillPath)
+	require.NoError(t, err)
+	content := string(data)
+
+	// Extract Step 12 section
+	step12Idx := strings.Index(content, "## Step 12:")
+	require.Greater(t, step12Idx, -1)
+
+	step13Idx := strings.Index(content, "## Step 13:")
+	if step13Idx < 0 {
+		step13Idx = len(content)
+	}
+	step12Section := content[step12Idx:step13Idx]
+
+	// Verify base 8 categories
+	baseCategories := []string{
+		"architecture",
+		"interface",
+		"data-model",
+		"dependencies",
+		"error-handling",
+		"testing",
+		"security",
+		"local-dev-deployment",
+	}
+	for _, cat := range baseCategories {
+		assert.Contains(t, step12Section, cat,
+			"Step 12 should include base category: "+cat)
+	}
+}
+
+// --- TC-023: Step 12 generates vocabulary with types, domains, counts ---
+
+// Traceability: TC-023 -> Task 4 AC (vocabulary output structure)
+func TestTC_023_VocabularyOutputStructure(t *testing.T) {
+	skillPath := findRepoFile(t,
+		filepath.Join("plugins", "forge", "skills", "consolidate-specs", "SKILL.md"))
+	data, err := os.ReadFile(skillPath)
+	require.NoError(t, err)
+	content := string(data)
+
+	// Extract Step 12 section
+	step12Idx := strings.Index(content, "## Step 12:")
+	require.Greater(t, step12Idx, -1)
+
+	step13Idx := strings.Index(content, "## Step 13:")
+	if step13Idx < 0 {
+		step13Idx = len(content)
+	}
+	step12Section := content[step12Idx:step13Idx]
+
+	// Verify output contains types, domains, counts
+	assert.Contains(t, step12Section, "Types",
+		"Step 12 output should include Types")
+	assert.Contains(t, step12Section, "Domains",
+		"Step 12 output should include Domains")
+	assert.Contains(t, step12Section, "Count",
+		"Step 12 output should include Count")
+
+	// Verify the 4 knowledge types
+	assert.Contains(t, step12Section, "decision",
+		"Step 12 should list 'decision' as a type")
+	assert.Contains(t, step12Section, "lesson",
+		"Step 12 should list 'lesson' as a type")
+	assert.Contains(t, step12Section, "convention",
+		"Step 12 should list 'convention' as a type")
+	assert.Contains(t, step12Section, "business-rule",
+		"Step 12 should list 'business-rule' as a type")
+}
+
+// --- TC-024: Vocabulary is marked as auto-generated ---
+
+// Traceability: TC-024 -> Task 4 AC (auto-generated marking)
+func TestTC_024_VocabularyMarkedAsAutoGenerated(t *testing.T) {
+	skillPath := findRepoFile(t,
+		filepath.Join("plugins", "forge", "skills", "consolidate-specs", "SKILL.md"))
+	data, err := os.ReadFile(skillPath)
+	require.NoError(t, err)
+	content := string(data)
+
+	// Extract Step 12 section
+	step12Idx := strings.Index(content, "## Step 12:")
+	require.Greater(t, step12Idx, -1)
+
+	step13Idx := strings.Index(content, "## Step 13:")
+	if step13Idx < 0 {
+		step13Idx = len(content)
+	}
+	step12Section := content[step12Idx:step13Idx]
+
+	// Verify auto-generated marking
+	assert.Contains(t, step12Section, "auto-generated",
+		"Step 12 should mark vocabulary as auto-generated")
+	assert.Contains(t, step12Section, "AUTO-GENERATED",
+		"Step 12 should have explicit AUTO-GENERATED comment")
+
+	// Verify output file path
+	assert.Contains(t, step12Section, "docs/.vocabulary.md",
+		"Step 12 should specify output file docs/.vocabulary.md")
+}
+
+// --- TC-025: Step 12 placed after Step 11 and before Step 13 ---
+
+// Traceability: TC-025 -> Task 4 AC (step ordering)
+func TestTC_025_VocabularyStepOrdering(t *testing.T) {
+	skillPath := findRepoFile(t,
+		filepath.Join("plugins", "forge", "skills", "consolidate-specs", "SKILL.md"))
+	data, err := os.ReadFile(skillPath)
+	require.NoError(t, err)
+	content := string(data)
+
+	step11Idx := strings.Index(content, "## Step 11:")
+	step12Idx := strings.Index(content, "## Step 12:")
+	step13Idx := strings.Index(content, "## Step 13:")
+
+	require.Greater(t, step11Idx, -1, "## Step 11 heading should exist")
+	require.Greater(t, step12Idx, -1, "## Step 12 heading should exist")
+	require.Greater(t, step13Idx, -1, "## Step 13 heading should exist")
+
+	assert.Less(t, step11Idx, step12Idx,
+		"Step 12 should appear after Step 11")
+	assert.Less(t, step12Idx, step13Idx,
+		"Step 12 should appear before Step 13")
+}
+
+// --- TC-026: Existing Steps 1-11 unchanged ---
+
+// Traceability: TC-026 -> Task 4 Hard Rules (do not change existing steps)
+func TestTC_026_ExistingStepsUnchanged(t *testing.T) {
+	skillPath := findRepoFile(t,
+		filepath.Join("plugins", "forge", "skills", "consolidate-specs", "SKILL.md"))
+	data, err := os.ReadFile(skillPath)
+	require.NoError(t, err)
+	content := string(data)
+
+	// Verify all original steps still exist
+	for _, step := range []string{
+		"## Step 1:",
+		"## Step 2:",
+		"## Step 3:",
+		"## Step 4:",
+		"## Step 5:",
+		"## Step 6:",
+		"## Step 7:",
+		"## Step 8:",
+		"## Step 9:",
+		"## Step 10:",
+		"## Step 11:",
+	} {
+		assert.Contains(t, content, step,
+			"Existing step should be preserved: "+step)
+	}
+}
+
+// --- TC-027: Vocabulary step works with empty directories ---
+
+// Traceability: TC-027 -> Task 4 AC (works when directories sparse/empty)
+func TestTC_027_VocabularyWorksWithEmptyDirectories(t *testing.T) {
+	skillPath := findRepoFile(t,
+		filepath.Join("plugins", "forge", "skills", "consolidate-specs", "SKILL.md"))
+	data, err := os.ReadFile(skillPath)
+	require.NoError(t, err)
+	content := string(data)
+
+	// Extract Step 12 section
+	step12Idx := strings.Index(content, "## Step 12:")
+	require.Greater(t, step12Idx, -1)
+
+	step13Idx := strings.Index(content, "## Step 13:")
+	if step13Idx < 0 {
+		step13Idx = len(content)
+	}
+	step12Section := content[step12Idx:step13Idx]
+
+	// Verify it handles sparse/empty directories
+	assert.True(t,
+		strings.Contains(step12Section, "unconditionally") ||
+			strings.Contains(step12Section, "sparse") ||
+			strings.Contains(step12Section, "empty"),
+		"Step 12 should mention handling sparse or empty directories")
+
+	// Verify base vocabulary is always present (even with empty dirs)
+	assert.Contains(t, step12Section, "always included",
+		"Step 12 should state base vocabulary is always included")
+}
+
+// --- TC-028: Vocabulary references /learn and auto-extract triggers ---
+
+// Traceability: TC-028 -> Task 4 AC (vocabulary usable by /learn and triggers)
+func TestTC_028_VocabularyReferencesLearnAndTriggers(t *testing.T) {
+	skillPath := findRepoFile(t,
+		filepath.Join("plugins", "forge", "skills", "consolidate-specs", "SKILL.md"))
+	data, err := os.ReadFile(skillPath)
+	require.NoError(t, err)
+	content := string(data)
+
+	// Extract Step 12 section
+	step12Idx := strings.Index(content, "## Step 12:")
+	require.Greater(t, step12Idx, -1)
+
+	step13Idx := strings.Index(content, "## Step 13:")
+	if step13Idx < 0 {
+		step13Idx = len(content)
+	}
+	step12Section := content[step12Idx:step13Idx]
+
+	// Verify /learn reference
+	assert.Contains(t, step12Section, "/learn",
+		"Step 12 should reference /learn skill")
+
+	// Verify auto-extract triggers mentioned
+	assert.True(t,
+		strings.Contains(step12Section, "auto-extract") ||
+			strings.Contains(step12Section, "trigger"),
+		"Step 12 should reference auto-extract triggers")
+
+	// Verify vocabulary is suggestive, not restrictive
+	assert.True(t,
+		strings.Contains(step12Section, "suggestive") ||
+			strings.Contains(step12Section, "not restrictive"),
+		"Step 12 should note vocabulary is suggestive, not restrictive")
+}
+
+// --- TC-029: Workflow diagram includes Step 12 and Step 13 ---
+
+// Traceability: TC-029 -> Task 4 AC (workflow diagram updated)
+func TestTC_029_WorkflowDiagramIncludesVocabularyStep(t *testing.T) {
+	skillPath := findRepoFile(t,
+		filepath.Join("plugins", "forge", "skills", "consolidate-specs", "SKILL.md"))
+	data, err := os.ReadFile(skillPath)
+	require.NoError(t, err)
+	content := string(data)
+
+	// Locate the workflow section
+	workflowIdx := strings.Index(content, "Workflow")
+	require.Greater(t, workflowIdx, -1, "SKILL.md should contain Workflow section")
+
+	sectionEnd := len(content)
+	if workflowIdx+2500 < sectionEnd {
+		sectionEnd = workflowIdx + 2500
+	}
+	workflowSection := content[workflowIdx:sectionEnd]
+
+	// Verify diagram includes Step 12 and Step 13
+	assert.Contains(t, workflowSection, "Step 12",
+		"Workflow diagram should include Step 12 (vocabulary generation)")
+	assert.Contains(t, workflowSection, "Step 13",
+		"Workflow diagram should include Step 13 (record task)")
+
+	// Verify Step 12 appears after Step 11
+	step11InWorkflow := strings.Index(workflowSection, "Step 11")
+	step12InWorkflow := strings.Index(workflowSection, "Step 12")
+	if step11InWorkflow > 0 && step12InWorkflow > 0 {
+		assert.Less(t, step11InWorkflow, step12InWorkflow,
+			"Step 12 should appear after Step 11 in workflow diagram")
+	}
+}
+
 // --- Helper functions ---
 
 // forgeBinPath caches a forge binary built from source for the test process lifetime.

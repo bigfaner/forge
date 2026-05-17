@@ -211,9 +211,26 @@ Fixes: #<issue-number> (if applicable)
 
 ---
 
+## Knowledge Review
+
+After Step 6 (Commit) completes, run knowledge auto-extraction from the bug fix session:
+
+1. Read `plugins/forge/references/shared/knowledge-extraction.md` and execute its extraction flow with:
+   - `trigger`: `fix-bug`
+   - `artifacts`: root cause analysis (the "Root cause: \<why\>" note from Step 4), fix approach (files changed and the nature of the fix)
+
+2. The extraction flow handles:
+   - Scanning artifacts for notable knowledge (decisions, lessons, conventions, business rules)
+   - Filtering out trivial fixes (typos, simple config changes, obvious mistakes) via the "notable knowledge" heuristics
+   - Silent exit when no notable knowledge detected — no output, no prompts
+   - Presenting extracted knowledge for user confirmation via AskUserQuestion
+   - Writing confirmed knowledge to appropriate directories using shared formats
+
+---
+
 ## Output Summary
 
-After completion, report:
+After completion (and optional knowledge review), report:
 
 ```
 Bug Fix Summary

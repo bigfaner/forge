@@ -250,6 +250,21 @@ After committing, use `AskUserQuestion` to ask:
 - **Custom** → invoke `/eval-prd --target X --iterations Y` via `Skill` tool
 - **No** → proceed to `/ui-design` (if PRD has UI functions) or `/tech-design`
 
+## Step 12: Knowledge Review
+
+After Step 11 (Adversarial Eval Prompt) completes, run knowledge auto-extraction from the PRD:
+
+1. Read `plugins/forge/references/shared/knowledge-extraction.md` and execute its extraction flow with:
+   - `trigger`: `write-prd`
+   - `artifacts`: PRD content (`docs/features/<slug>/prd/prd-spec.md`, `docs/features/<slug>/prd/prd-user-stories.md`)
+
+2. The extraction flow handles:
+   - Scanning PRD content for notable knowledge (decisions, lessons, conventions, business rules)
+   - Focusing on business rules that apply across features, not feature-specific logic
+   - Silent exit when no notable knowledge detected — no output, no prompts
+   - Presenting extracted knowledge for user confirmation via AskUserQuestion
+   - Writing confirmed knowledge to appropriate directories using shared formats
+
 ## Integration
 
 Works well with skills:

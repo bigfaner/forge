@@ -14,7 +14,7 @@ description: Analyze past session transcripts to identify root causes of agent d
 - User provides `/forensic` command with a search term
 
 **Skip:**
-- Single-session post-mortem (use `/learn-lesson` instead)
+- Single-session post-mortem (use `/learn` instead)
 - Current-session debugging (investigate directly)
 
 ## Parameters

@@ -1,0 +1,129 @@
+{
+  "feature": "knowledge-accumulation-loop",
+  "proposal": "docs/proposals/knowledge-accumulation-loop/proposal.md",
+  "created": "2026-05-17",
+  "tasks": {
+    "1-create-learn-skill": {
+      "id": "1",
+      "title": "Create /learn skill (SKILL.md + templates)",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "status": "completed",
+      "file": "1-create-learn-skill.md",
+      "record": "records/1-create-learn-skill.md",
+      "type": "feature"
+    },
+    "2-delete-old-skills": {
+      "id": "2",
+      "title": "Delete /record-decision and /learn-lesson skills",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-delete-old-skills.md",
+      "record": "records/2-delete-old-skills.md",
+      "type": "cleanup"
+    },
+    "3-create-extraction-routine": {
+      "id": "3",
+      "title": "Create shared knowledge extraction routine",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "status": "completed",
+      "file": "3-create-extraction-routine.md",
+      "record": "records/3-create-extraction-routine.md",
+      "type": "feature"
+    },
+    "4-update-consolidate-specs-vocab": {
+      "id": "4",
+      "title": "Update /consolidate-specs — add auto-vocabulary generation",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "4-update-consolidate-specs-vocab.md",
+      "record": "records/4-update-consolidate-specs-vocab.md",
+      "type": "enhancement"
+    },
+    "5-update-guide": {
+      "id": "5",
+      "title": "Update guide.md — replace old skills with /learn",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "1",
+        "2"
+      ],
+      "status": "completed",
+      "file": "5-update-guide.md",
+      "record": "records/5-update-guide.md",
+      "type": "documentation"
+    },
+    "6-trigger-run-tasks": {
+      "id": "6",
+      "title": "Add auto-extract trigger to run-tasks",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "3"
+      ],
+      "status": "completed",
+      "file": "6-trigger-run-tasks.md",
+      "record": "records/6-trigger-run-tasks.md",
+      "type": "enhancement"
+    },
+    "7-trigger-fix-bug": {
+      "id": "7",
+      "title": "Add auto-extract trigger to fix-bug",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "3"
+      ],
+      "status": "completed",
+      "file": "7-trigger-fix-bug.md",
+      "record": "records/7-trigger-fix-bug.md",
+      "type": "enhancement"
+    },
+    "8-trigger-write-prd": {
+      "id": "8",
+      "title": "Add auto-extract trigger to write-prd",
+      "priority": "P2",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "3"
+      ],
+      "status": "completed",
+      "file": "8-trigger-write-prd.md",
+      "record": "records/8-trigger-write-prd.md",
+      "type": "enhancement"
+    },
+    "9-trigger-tech-design": {
+      "id": "9",
+      "title": "Add auto-extract trigger to tech-design",
+      "priority": "P2",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "3"
+      ],
+      "status": "completed",
+      "file": "9-trigger-tech-design.md",
+      "record": "records/9-trigger-tech-design.md",
+      "type": "enhancement"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

@@ -21,8 +21,8 @@ docs/
   business-rules/       — Cross-feature business rules (by domain, e.g. auth.md)
   conventions/          — Technical specs (coding standards, API conventions, naming rules)
   reference/            — System specs (environment, deployment, tech stack)
-  decisions/            — Technical decisions (/record-decision)
-  lessons/              — Lessons learned (/learn-lesson)
+  decisions/            — Technical decisions (/learn)
+  lessons/              — Lessons learned (/learn)
   proposals/            — Improvement proposals (docs/proposals/{slug}/proposal.md, via /brainstorm or ad-hoc)
   sitemap/sitemap.json  — Page element map (project-level, /gen-sitemap)
 ```
@@ -191,7 +191,37 @@ All `/eval-*` commands delegate to the generic `eval` skill (`skills/eval/SKILL.
 | `/eval-test-cases` | `rubrics/test-cases.md` | 900 | 6 | Test cases need more refinement cycles |
 | `/eval-harness` | `rubrics/harness.md` | N/A (100-point scale) | N/A | Infrastructure health check, not adversarial |
 
-### Auxiliary Skills
+### Knowledge Accumulation
+
+Manual entry and automatic extraction of project knowledge into `docs/decisions/`, `docs/lessons/`, `docs/conventions/`, and `docs/business-rules/`.
+
+#### `/learn` — Unified Manual Entry
+
+Use `/learn` to capture ad-hoc knowledge at any point (debugging insights, mid-task discoveries, spontaneous realizations). Supports interactive mode (no args) and direct-input mode (with args). Identifies knowledge type(s) automatically and writes to the appropriate directory.
+
+```
+/learn                              # Interactive — agent asks what you learned
+/learn "race condition, use sync.Map"  # Direct — skip the question
+```
+
+Multi-type capture: a single input can produce entries in multiple directories (e.g., both a lesson and a decision). For bulk extraction from feature docs, `/learn` delegates to `/consolidate-specs`.
+
+#### Auto-Extract Triggers
+
+Knowledge extraction runs automatically at pipeline completion points. When notable knowledge is detected (architectural decisions, novel patterns, gotchas, business rules), it is extracted and presented for user confirmation before writing. Silent when nothing notable is found.
+
+| Trigger Point | What to scan | Knowledge types |
+|---------------|-------------|-----------------|
+| `run-tasks` completes all tasks | Task outcomes, code changes, manifest | Architectural decisions, patterns, gotchas, business rules |
+| `fix-bug` completes | Root cause analysis, fix approach | Non-obvious root causes, debugging patterns |
+| `write-prd` completes | PRD content | New business rules, user-facing constraints |
+| `tech-design` completes | Design document | Architecture decisions, dependency choices, data model decisions |
+
+#### `/consolidate-specs` — Bulk Extraction + Drift Detection
+
+Extracts business rules and tech specs from feature docs into project-level directories. Performs drift verification to keep specs in sync with code. Also maintains the auto-generated vocabulary index used by `/learn` and auto-extract triggers for classification suggestions.
+
+### Other Auxiliary Skills
 
 These skills operate outside the main workflow:
 
