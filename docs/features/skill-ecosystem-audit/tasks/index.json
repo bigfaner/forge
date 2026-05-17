@@ -66,7 +66,7 @@
       "title": "Extract eval validate-ux sub-pipeline to rubric file",
       "priority": "P2",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "6-extract-eval-pipeline.md",
       "record": "records/6-extract-eval-pipeline.md",
       "scope": "all",
