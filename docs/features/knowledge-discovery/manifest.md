@@ -1,6 +1,6 @@
 ---
 feature: "knowledge-discovery"
-status: tasks
+status: completed
 mode: quick
 ---
 
