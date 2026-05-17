@@ -1,6 +1,6 @@
 ---
 name: gen-test-scripts
-description: Generate executable e2e test scripts from test cases. Profile-aware: reads active test profile from .forge/config.yaml to determine test framework, templates, and conventions.
+description: Generate executable e2e test scripts from test cases. Language-aware: auto-detects test framework from project files, uses forge testing CLI for strategy and templates.
 conventions:
   - testing-isolation.md
 ---
@@ -27,22 +27,21 @@ Phase 2: /graduate-tests   → classifies by functional module → moves to test
 Bypassing the staging area skips functional module classification in `/graduate-tests`, scattering tests into wrong directories. Existing directories at `tests/e2e/<module>/` are POST-GRADUATION locations — do NOT copy that convention during generation.
 </HARD-GATE>
 
-## Step 0: Resolve Profile
+## Step 0: Resolve Language and Strategy
 
-1. **Resolve profile**: Run `forge profile` to get the active test profile(s). This reads `.forge/config.yaml`, falls back to project structure detection.
-2. **On failure** (output shows `PROFILE: (none)`): ask the user to choose from known profiles (`web-playwright`, `go-test`, `maestro`, `java-junit`, `rust-test`, `pytest`). Run `forge profile set <name>` to persist their choice.
-3. **Load profile manifest**: Run `forge profile get <profile-name> --manifest`.
-4. **Load profile strategy**: Run `forge profile get <profile-name> --generate`.
+1. **Detect language**: Run `forge testing detect` to auto-detect the project's test language(s) from file signals.
+2. **On failure** (no language detected): ask the user to add `languages` to `.forge/config.yaml` (e.g., `languages: [go]`).
+3. **Load strategy**: Run `forge testing get generate` to load the generate strategy for the detected language.
 
-Use the loaded profile manifest and strategy for all subsequent steps.
+Use the loaded strategy for all subsequent steps.
 
 <HARD-RULE>
-Do NOT silently default to any profile. If `forge profile` returns no result and the user cannot decide, abort the skill.
+Do NOT silently default to any language. If `forge testing detect` returns no result and the user cannot configure `languages`, abort the skill.
 </HARD-RULE>
 
 ## Convention Loading
 
-After profile resolution and before entering the workflow steps, load project conventions into context. Conventions ground generated output in project-specific coding standards.
+After language resolution and before entering the workflow steps, load project conventions into context. Conventions ground generated output in project-specific coding standards.
 
 **Resolution algorithm**:
 
@@ -56,11 +55,11 @@ Convention loading is non-blocking. Missing convention files are silently skippe
 
 ## Type Filter (--type)
 
-This skill accepts an optional `--type <capability>` argument that filters script generation to a single test type. When `--type` is specified, the skill skips all other type groups entirely — no Fact Table verification, no locator mapping, no spec generation for non-matching types.
+This skill accepts an optional `--type <interface>` argument that filters script generation to a single test type. When `--type` is specified, the skill skips all other type groups entirely — no Fact Table verification, no locator mapping, no spec generation for non-matching types.
 
-**Valid `--type` values**: the profile's declared capability names from its manifest (e.g., `tui` for go-test, `web-ui` for web-playwright, `api`, `cli`).
+**Valid `--type` values**: the project's detected interface names (e.g., `tui`, `web-ui`, `api`, `cli`), obtained via `forge testing interfaces`.
 
-**Validation**: If `--type` is specified but not found in the profile's capabilities list, the skill MUST error with a clear message listing the valid types for the active profile. For example: `"invalid type: foo. Valid types for profile go-test: tui, api, cli"`.
+**Validation**: If `--type` is specified but not found in the project's interfaces, the skill MUST error with a clear message listing the valid types. For example: `"invalid type: foo. Valid interfaces for this project: tui, api, cli"`.
 
 **`--type` interaction with input mode**:
 
@@ -75,15 +74,15 @@ This skill accepts an optional `--type <capability>` argument that filters scrip
 |------|----------------------|------------------------------|-------------------|
 | Step 1: Read & group test cases | Per-type: read single `{type}-test-cases.md`; Legacy: process only test cases of the specified type | Skip non-matching type groups | Process all types (unchanged behavior) |
 | Step 1.5: Code Reconnaissance (Fact Table) | Build Fact Table for the specified type only | Skip Fact Table for non-matching types | Build Fact Table for all types |
-| Step 2: Resolve Sitemap | Run if type is `web-ui` | Skip | Run if profile has `web-ui` capability |
-| Step 3: Map Locators | Run if type is `web-ui` | Skip | Run if profile has `web-ui` capability |
+| Step 2: Resolve Sitemap | Run if type is `web-ui` | Skip | Run if project has `web-ui` interface |
+| Step 3: Map Locators | Run if type is `web-ui` | Skip | Run if project has `web-ui` interface |
 | Step 3.5: Shared Infrastructure | **Always runs** regardless of `--type` | **Always runs** | Always runs |
 | Step 4: Generate Spec Files | Generate spec files for the specified type only | Skip non-matching types | Generate for all types |
 
 **Key rules**:
 - Shared infrastructure (Step 3.5) **always runs** regardless of `--type` value — helpers, config, and auth-setup are shared across all types
 - Without `--type`, behavior is completely unchanged: all types are generated as before
-- The type filter is applied early in the pipeline at Step 1 (test case grouping), after profile capabilities are resolved
+- The type filter is applied early in the pipeline at Step 1 (test case grouping), after project interfaces are resolved
 - In per-type mode with `--type`, the matching `{type}-test-cases.md` is the only file read — no type grouping step is needed (file is already single-type)
 
 ## Prerequisites
@@ -103,7 +102,7 @@ When both per-type files AND legacy `test-cases.md` exist, **per-type files take
 |------|------------|----------------|
 | Per-type | `docs/features/<slug>/testing/{type}-test-cases.md` | Run `/gen-test-cases` first |
 | Legacy | `docs/features/<slug>/testing/test-cases.md` | Run `/gen-test-cases` first |
-| `docs/sitemap/sitemap.json` (only when profile has `web-ui` capability) | | Run `/gen-sitemap` first |
+| `docs/sitemap/sitemap.json` (only when project has `web-ui` interface) | | Run `/gen-sitemap` first |
 
 `<slug>` is the current feature name, obtained via `forge feature` command. `docs/sitemap/sitemap.json` is a project-level file (one per application), not isolated per feature.
 
@@ -140,7 +139,7 @@ If eval-test-cases report exists and Step Actionability < 200, gen-test-scripts 
 
 ### Sitemap (web-ui capability only)
 
-When the active profile has `web-ui` capability, the sitemap provides supplementary page structure for UI tests: `docs/sitemap/sitemap.json` (generated by `/gen-sitemap`, full example: `plugins/forge/references/shared/sitemap.json`).
+When the active language has `web-ui` interface, the sitemap provides supplementary page structure for UI tests: `docs/sitemap/sitemap.json` (generated by `/gen-sitemap`, full example: `plugins/forge/references/shared/sitemap.json`).
 
 **Note**: The sitemap is a secondary reference for page structure and route matching. All locators are derived from source code via the Fact Table (Step 1.5). The sitemap does NOT provide locators driven by test-case Element IDs.
 
@@ -185,7 +184,7 @@ Test cases match sitemap pages via the `Route` field. The `Element` field from t
 </HARD-RULE>
 
 ```
-0. Resolve profile → 1. Read test cases → 1.5. Code Reconnaissance → 2. Resolve sitemap (web-ui) → 3. Map locators (web-ui) → 3.5. Ensure shared infrastructure (auth + helpers + config) → 4. Generate spec files
+0. Resolve language → 1. Read test cases → 1.5. Code Reconnaissance → 2. Resolve sitemap (web-ui) → 3. Map locators (web-ui) → 3.5. Ensure shared infrastructure (auth + helpers + config) → 4. Generate spec files
 ```
 
 ### Step 1: Read Test Cases
@@ -199,7 +198,7 @@ Test cases match sitemap pages via the `Route` field. The `Element` field from t
 
 **Per-type mode**: For each `{type}-test-cases.md` file (or only the file matching `--type` if specified), read and parse test cases directly. Since the file contains only one type, skip the type-grouping step entirely. Parse TC ID, title, type, route, feature, pre-conditions, steps, expected result, priority.
 
-**Legacy mode**: Read `docs/features/<slug>/testing/test-cases.md`. Parse each test case — extract TC ID, title, type, route, feature, pre-conditions, steps, expected result, priority. Group by type using the profile's capabilities (e.g., `web-ui` → UI, `api` → API, `cli` → CLI).
+**Legacy mode**: Read `docs/features/<slug>/testing/test-cases.md`. Parse each test case — extract TC ID, title, type, route, feature, pre-conditions, steps, expected result, priority. Group by type using the project's interfaces (e.g., `web-ui` → UI, `api` → API, `cli` → CLI).
 
 **Type filter**: If `--type` was specified, keep only the group matching the specified type and discard all other groups. Only test cases of the specified type are processed in all subsequent steps. If no test cases match the specified type, emit a WARNING and proceed (shared infrastructure in Step 3.5 still runs).
 
@@ -232,7 +231,7 @@ Auth Plan:
   shared-auth-enabled: yes/no
 ```
 
-**Credential caching**: Follow the rules in the active profile's `generate.md` for framework-specific credential caching (e.g., storageState for browser-based UI, cached tokens for API). Login tests must invalidate cached credentials after completion.
+**Credential caching**: Follow the rules in the active strategy's `generate.md` for framework-specific credential caching (e.g., storageState for browser-based UI, cached tokens for API). Login tests must invalidate cached credentials after completion.
 
 <HARD-RULE>
 Login tests and authenticated tests must not be mixed in the same `describe` block.
@@ -289,9 +288,9 @@ After building the Fact Table, validate completeness per test type before procee
 
 **If some keys are non-UNKNOWN**: proceed for that type. Individual UNKNOWN keys are acceptable (e.g., `TESTID_MAP_CARD` unknown but `TESTID_BTN_CONFIRM` known) — only skip when *all* required keys for the entire type are UNKNOWN.
 
-### Step 2: Resolve Sitemap (web-ui capability only)
+### Step 2: Resolve Sitemap (web-ui interface only)
 
-**Only execute when the active profile has `web-ui` capability AND UI-type test cases exist.**
+**Only execute when the active language has `web-ui` interface AND UI-type test cases exist.**
 
 Read `docs/sitemap/sitemap.json`. For each route referenced in test cases:
 
@@ -303,9 +302,9 @@ The sitemap serves as a secondary reference for understanding page structure. Lo
 
 If a route referenced in test cases does not exist in sitemap, **emit a WARNING** listing the missing routes and suggest re-running `/gen-sitemap`. Proceed using the Fact Table from Step 1.5 for the missing routes — do not abort.
 
-### Step 3: Map Locators (web-ui capability only)
+### Step 3: Map Locators (web-ui interface only)
 
-**Only execute when the active profile has `web-ui` capability AND the type filter (if specified) includes a UI-related type (`web-ui` or `tui`).** If `--type` is `api` or `cli`, skip locator mapping entirely.
+**Only execute when the active language has `web-ui` interface AND the type filter (if specified) includes a UI-related type (`web-ui` or `tui`).** If `--type` is `api` or `cli`, skip locator mapping entirely.
 
 Locator strategy is owned by this step — `generate.md` provides only the framework-specific syntax (how to write a Playwright/Go/pytest locator), not the decision of *which* locator to use.
 
@@ -343,7 +342,7 @@ ls tests/e2e/ 2>/dev/null
 
 **If any shared file is missing**, create it from the corresponding template (paths from profile manifest `templates.*`):
 
-- Helper file: copy from `{profile-templates-dir}/{manifest.templates.helpers}` (only if missing). When copying, strip all `// VERIFY:` and `// TEMPLATE:` comments — these are generation-time markers that should not appear in runtime files.
+- Helper file: copy from the language's template directory (only if missing). When copying, strip all `// VERIFY:` and `// TEMPLATE:` comments — these are generation-time markers that should not appear in runtime files.
 - Config files: copy from manifest template references (only if missing)
 - Follow `generate.md` for additional shared infrastructure requirements specific to the framework
 
@@ -355,12 +354,12 @@ Based on the Auth Plan from Step 1, configure auth infrastructure for auth-requi
 
 **When `shared-auth-enabled: yes`** (auth-required-test count > 0):
 
-1. Follow the active profile's `generate.md` for framework-specific auth setup
-2. For playwright profile:
+1. Follow the active strategy's `generate.md` for framework-specific auth setup
+2. For JavaScript/Playwright language:
    - Generate `tests/e2e/auth-setup.ts` from template (if not already present)
    - Configure `tests/e2e/playwright.config.ts`: uncomment the `projects` section with `setup` + `authenticated` projects using `storageState`
-3. For other profiles: follow `generate.md` auth setup instructions
-4. Verify the profile's helpers file (from `manifest.templates.helpers`) exports all auth-related symbols needed by spec files
+3. For other languages: follow `generate.md` auth setup instructions
+4. Verify the language's helpers file exports all auth-related symbols needed by spec files
 
 **When `shared-auth-enabled: no`**: Skip auth infrastructure setup.
 
@@ -390,13 +389,13 @@ Specifically for Playwright: when the `projects` section in playwright.config.ts
 | API | `grep -rn "router\|handler\|endpoint\|HandleFunc\|app.get\|app.post" --include='*.go' --include='*.ts' --include='*.js' .` | HTTP handler registration patterns found |
 | CLI | `grep '"bin"' package.json` or `ls cmd/` or `grep -rn "cobra.Command" --include='*.go' .` | CLI entry point or command framework detected |
 
-For each non-empty, verified type group, generate a test file from the corresponding template in the profile's `templates/` directory (paths from `manifest.templates.*`):
+For each non-empty, verified type group, generate a test file from the corresponding template in the language's `templates/` directory:
 
-- UI tests: `{profile-templates-dir}/{manifest.templates.test-file-ui}`
-- API tests: `{profile-templates-dir}/{manifest.templates.test-file-api}`
-- CLI tests: `{profile-templates-dir}/{manifest.templates.test-file-cli}`
+- UI tests: language template for UI tests
+- API tests: language template for API tests
+- CLI tests: language template for CLI tests
 
-**Follow the active profile's `generate.md`** for all framework-specific patterns:
+**Follow the active strategy's `generate.md`** for all framework-specific patterns:
 - Test runner imports, annotations, and lifecycle hooks
 - Assertion library usage and conventions
 - HTTP client for API tests
@@ -409,7 +408,7 @@ Based on Step 1 auth classification, uncomment matching CONDITIONAL blocks in te
 
 #### Integration Test Scripts
 
-Integration test cases verify that a component embedded on an existing page is visible and renders correctly. Follow the profile's `generate.md` for framework-specific patterns.
+Integration test cases verify that a component embedded on an existing page is visible and renders correctly. Follow the strategy's `generate.md` for framework-specific patterns.
 
 **Identification**: A test case is an integration test when:
 - `Source` field contains "Placement + Integration Spec", **or**
@@ -465,7 +464,7 @@ These patterns are derived from common e2e test quality issues observed in autom
 
 #### Anti-Patterns (Forbidden in Generated Code)
 
-Follow the anti-pattern rules in the active profile's `generate.md` strategy. Common anti-patterns across all profiles:
+Follow the anti-pattern rules in the active strategy's `generate.md`. Common anti-patterns across all languages:
 
 <HARD-RULE>
 **No fixed delays/sleeps.** These mask real timing issues, waste time when the app is fast, and fail when the app is slow. Every wait must be event-driven or use polling with timeout.
@@ -478,9 +477,9 @@ Follow the anti-pattern rules in the active profile's `generate.md` strategy. Co
 </HARD-RULE>
 
 <EXTREMELY-IMPORTANT>
-All framework-specific rules (test runner, assertion library, imports, HTTP client, process execution, anti-patterns) are defined in the active profile's `generate.md` strategy file (loaded in Step 0). Read and follow those rules precisely.
+All framework-specific rules (test runner, assertion library, imports, HTTP client, process execution, anti-patterns) are defined in the active strategy's `generate.md` (loaded in Step 0). Read and follow those rules precisely.
 
-- Use ONLY the framework specified in the profile's `generate.md`
+- Use ONLY the framework specified in the strategy's `generate.md`
 - **`@eN` refs must not appear in any generated test file.**
 </EXTREMELY-IMPORTANT>
 
@@ -499,18 +498,18 @@ All framework-specific rules (test runner, assertion library, imports, HTTP clie
 1. Run `just e2e-verify --feature <slug>` if the recipe exists in the Justfile
 2. Otherwise: `grep -rn '// VERIFY:' tests/e2e/features/<slug>/` (adapt file extension to profile)
 
-**Post-generation helper merge**: After generating all spec files, verify the profile's helpers file (from `manifest.templates.helpers`) exports cover all imports used by generated specs. If any import is missing from helpers, merge it from the template (do NOT overwrite existing exports).
+**Post-generation helper merge**: After generating all spec files, verify the language's helpers file exports cover all imports used by generated specs. If any import is missing from helpers, merge it from the template (do NOT overwrite existing exports).
 </HARD-RULE>
 
 ## Output
 
-All generated test files go to `tests/e2e/features/<feature>/` (staging area). After verification via `/run-e2e-tests`, use `/graduate-tests` to migrate them to the regression suite. Output file names are determined by the profile's manifest template mappings.
+All generated test files go to `tests/e2e/features/<feature>/` (staging area). After verification via `/run-e2e-tests`, use `/graduate-tests` to migrate them to the regression suite. Output file names are determined by the language's template mappings.
 
 ## Error Handling
 
 | Situation | Action |
 |-----------|--------|
-| `.forge/config.yaml` missing and auto-detection fails | Ask user to select a profile |
+| `.forge/config.yaml` missing and auto-detection fails | Ask user to configure `languages` in config.yaml |
 | No per-type files AND `test-cases.md` missing | Abort with prompt to run `/gen-test-cases` |
 | `sitemap.json` missing (web-ui tests) | Abort with prompt to run `/gen-sitemap` |
 | eval-test-cases Step Actionability < 200 | Abort with prompt to fix `test-cases.md` first |

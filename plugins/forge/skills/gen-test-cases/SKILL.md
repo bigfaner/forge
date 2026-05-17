@@ -16,14 +16,14 @@ This skill only generates test case documents (testing/{type}-test-cases.md), no
 Test script generation is handled by the `/gen-test-scripts` skill.
 </HARD-GATE>
 
-## Step 0: Resolve Profile
+## Step 0: Resolve Language and Interfaces
 
-1. **Resolve profile**: Run `forge profile` to get the active test profile(s).
-2. **On failure** (output shows `PROFILE: (none)`): ask the user to choose from known profiles. Run `forge profile set <name>` to persist their choice.
-3. **Load profile manifest**: Run `forge profile get <profile-name> --manifest`.
+1. **Detect language**: Run `forge testing detect` to auto-detect the project's test language(s) from file signals.
+2. **On failure** (no language detected): ask the user to add `languages` to `.forge/config.yaml` (e.g., `languages: [go]`).
+3. **Load interfaces**: Run `forge testing interfaces` to get the project's active interface types.
 
 <HARD-RULE>
-Do NOT silently default to any profile. If `forge profile` returns no result and the user cannot decide, abort the skill.
+Do NOT silently default to any language. If `forge testing detect` returns no result and the user cannot configure `languages`, abort the skill.
 </HARD-RULE>
 
 ## Prerequisites
@@ -32,9 +32,9 @@ Do NOT silently default to any profile. If `forge profile` returns no result and
 |----------|----------------|
 | `docs/features/<slug>/prd/prd-user-stories.md` | Run `/write-prd` first |
 | `docs/features/<slug>/prd/prd-spec.md` | Run `/write-prd` first |
-| `docs/sitemap/sitemap.json` (optional, only for `web-ui` profiles) | Run `/gen-sitemap`. Skip for non-web-ui profiles. |
+| `docs/sitemap/sitemap.json` (optional, only for `web-ui` interface) | Run `/gen-sitemap`. Skip for non-web-ui interfaces. |
 
-**sitemap-missing fallback**: If sitemap absent with `web-ui` profile, emit warning and proceed without route verification. Do not abort.
+**sitemap-missing fallback**: If sitemap absent with `web-ui` interface, emit warning and proceed without route verification. Do not abort.
 
 This skill can be invoked manually or as the standard task T-test-1 appended by `/breakdown-tasks`.
 
@@ -75,7 +75,7 @@ Only extract acceptance criteria that **explicitly exist** in the PRD. Forbidden
 
 Determine which interface types the project exposes:
 
-1. **Profile capabilities** (primary): Read profile manifest `capabilities` field. Mapping: `web-ui`->UI, `tui`->TUI, `mobile-ui`->Mobile, `api`->API, `cli`->CLI.
+1. **Project interfaces** (primary): Run `forge testing interfaces` to get the active interface types. Mapping: `web-ui`->UI, `tui`->TUI, `mobile-ui`->Mobile, `api`->API, `cli`->CLI.
 2. **PRD signal** (secondary): A "web application" has web-ui+api; a "CLI tool" has cli.
 3. **Codebase signal** (tertiary): Scan for evidence (e.g., `package.json` with react for web-ui, `cmd/` + cobra for cli, route handlers for api, terminal rendering libs for tui, `android/`/`ios/` for mobile-ui).
 

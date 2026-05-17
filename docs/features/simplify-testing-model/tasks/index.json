@@ -83,7 +83,7 @@
       "dependencies": [
         "4"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "6-skill-migration.md",
       "record": "records/6-skill-migration.md",
       "scope": "all",

@@ -127,23 +127,23 @@ Multi-platform: run independent score→gate→revise loops per platform.
 | **All types** | If rubric has `context` frontmatter, load filtered context files: (1) for each string in `conventions`, glob `docs/conventions/<string>*.md` and read matching files; (2) if `business-rules: auto`, glob `docs/business-rules/*.md` and read all, else read listed filenames. Concatenate into `CONTEXT_CONTENT` for Step 2 injection. Skip missing files silently (no error, no abort). |
 | `harness` | Gather project context, write snapshot. Scorer evaluates snapshot, not raw files. |
 | `consistency` | Assemble document bundle — copy relevant docs into flat directory for scorer. |
-| `test-cases` | Resolve test profile via `forge profile`. Pass profile capabilities to scorer. |
-| `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases` | Resolve test profile via `forge profile`. Pass profile capabilities to scorer. |
+| `test-cases` | Resolve test language via `forge testing detect`. Pass project interfaces to scorer. |
+| `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases` | Resolve test language via `forge testing detect`. Pass project interfaces to scorer. |
 | `prd` | Detect mode: `prd-ui-functions.md` exists → Mode A (with UI), else Mode B (no UI). |
 | `validate-code` | 1) Read PRD → extract user scenarios list (from prd-spec.md flow descriptions and prd-user-stories.md acceptance criteria). 2) Run `git diff <base-branch>...HEAD` to get changed files and diff hunks. 3) Compile changed file list. 4) Pass PRD scenarios + diff + file list to scorer as assembled input. |
-| `validate-ux` | **Two-phase pre-processing.** Must execute in a git worktree or temporary directory. **Phase 1 (main session):** 1) Read PRD → extract user flows list. 2) Resolve project type via `forge profile` capabilities: `cli` capability → CLI, `web-ui` capability → Web, `tui` capability → TUI. Fallback: `forge profile detect` → ask user. 3) Compile and install the project binary. 4) For each PRD flow: translate actions to type-specific operations (see PRD-to-Operation Translation below), execute them, capture output. 5) Run Standalone Checks: `--help`, invalid command, `--version`. 6) Execute Effect Verification per step (7 types: Data Effect, Side Effect, Idempotency, Output-Reality Consistency, State Integrity, Cascade Effect, Rollback Feasibility). 7) Write `ux-snapshot.md`. **Phase 2 (scorer):** evaluate `ux-snapshot.md` against rubric. |
+| `validate-ux` | **Two-phase pre-processing.** Must execute in a git worktree or temporary directory. **Phase 1 (main session):** 1) Read PRD → extract user flows list. 2) Resolve project type via `forge testing interfaces`: `cli` interface → CLI, `web-ui` interface → Web, `tui` interface → TUI. Fallback: `forge testing detect` → ask user. 3) Compile and install the project binary. 4) For each PRD flow: translate actions to type-specific operations (see PRD-to-Operation Translation below), execute them, capture output. 5) Run Standalone Checks: `--help`, invalid command, `--version`. 6) Execute Effect Verification per step (7 types: Data Effect, Side Effect, Idempotency, Output-Reality Consistency, State Integrity, Cascade Effect, Rollback Feasibility). 7) Write `ux-snapshot.md`. **Phase 2 (scorer):** evaluate `ux-snapshot.md` against rubric. |
 
 #### validate-ux: Project Type Detection
 
-Resolve project type from `forge profile` capabilities:
+Resolve project type from `forge testing interfaces`:
 
-| Capability | Project Type | Execution Method | Operation Unit | Capture |
+| Interface | Project Type | Execution Method | Operation Unit | Capture |
 |------------|-------------|-----------------|----------------|---------|
 | `cli` | CLI | Bash command | Shell command | stdout/stderr/exit code |
 | `web-ui` | Web | agent-browser | URL + element selector + action | Screenshot + accessibility tree |
 | `tui` | TUI | Bash stdin pipe | Key sequence (non-interactive only) | Terminal output |
 
-Detection priority: profile capabilities -> `forge profile detect` -> ask user.
+Detection priority: project interfaces -> `forge testing detect` -> ask user.
 
 TUI constraint: first version covers non-interactive scenarios only (initial render, help output, invalid input response).
 

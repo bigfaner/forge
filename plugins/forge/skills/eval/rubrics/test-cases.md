@@ -20,7 +20,7 @@ The test-cases.md must contain these sections:
 - [ ] Summary table (counts per detected interface type + total)
 - [ ] Grouped test case sections for each detected interface type (UI/TUI/Mobile/API/CLI Test Cases)
 - [ ] Traceability table (TC ID → Source → Type → Target → Priority)
-- [ ] Route Validation table (required when profile has `web-ui` or `api` capability AND route files can be discovered; omit without penalty otherwise)
+- [ ] Route Validation table (required when project has `web-ui` or `api` interface AND route files can be discovered; omit without penalty otherwise)
 
 **Missing section**: 0 pts for every dimension that depends on the missing section.
 
@@ -46,9 +46,9 @@ The test-cases.md must contain these sections:
 
 ### 3. Interface Accuracy (130 pts)
 
-This dimension adapts based on the project's active test profile capabilities. Read the active test profile manifest (resolved via `forge profile`) to determine the profile's `capabilities` field. These are interface-type capabilities (`web-ui`, `tui`, `mobile-ui`, `api`, `cli`), not build capabilities (`compile`, `test`, `lint`). Then select the matching evaluation criteria:
+This dimension adapts based on the project's active interfaces. Read the project's interfaces (resolved via `forge testing interfaces`) to determine the active interface types (`web-ui`, `tui`, `mobile-ui`, `api`, `cli`). Then select the matching evaluation criteria:
 
-| Capability | Dimension name | Evaluation focus |
+| Interface | Dimension name | Evaluation focus |
 |-----------|---------------|------------------|
 | `web-ui` | Route Accuracy | Routes are valid paths matching sitemap.json. UI TCs have Route fields with concrete paths. |
 | `tui` | Output Assertion Accuracy | Expected outputs have specific text/snapshot comparison points. Terminal rendering assertions are concrete (exact strings, regex patterns, golden file refs). |
@@ -56,11 +56,11 @@ This dimension adapts based on the project's active test profile capabilities. R
 | `api` | Contract Accuracy | Request/response structures match actual API schemas. Status codes, headers, body fields are explicit. Error response contracts are covered. |
 | `cli` | Command Coverage | Flags, subcommands, arguments are explicitly tested. Output format assertions are concrete (exit codes, stdout/stderr content, error messages). |
 
-**Active capability filtering**: Before dividing points, exclude capabilities that have zero test cases of the matching type in test-cases.md. Only capabilities with at least one corresponding TC participate in scoring.
+**Active interface filtering**: Before dividing points, exclude interfaces that have zero test cases of the matching type in test-cases.md. Only interfaces with at least one corresponding TC participate in scoring.
 
-When multiple capabilities are active, divide 130 pts equally across the remaining (non-excluded) active capabilities. Each capability's sub-criteria use percentage-based weights (not fixed points) to allow clean rescaling:
+When multiple interfaces are active, divide 130 pts equally across the remaining (non-excluded) active interfaces. Each interface's sub-criteria use percentage-based weights (not fixed points) to allow clean rescaling:
 
-| Capability-specific criteria | Weight | What to check |
+| Interface-specific criteria | Weight | What to check |
 |---|--------|---------------|
 | **web-ui**: Routes are valid and specific | 60% | Every Route field contains a real path (e.g., `/users/123/edit`), not vague descriptions. Matches sitemap.json routes where applicable. No placeholder paths |
 | **web-ui**: Route consistency | 40% | UI, TUI, and Mobile TCs have Route fields with concrete paths/screen identifiers. API and CLI TCs omit Route — they use Target and command patterns instead. No Route field contains implementation details (testid, selector, CSS) |
@@ -73,7 +73,7 @@ When multiple capabilities are active, divide 130 pts equally across the remaini
 | **cli**: Command coverage | 50% | All flags, subcommands, and argument combinations are tested |
 | **cli**: Output assertion specificity | 50% | Exit codes, stdout/stderr content, and error messages are explicitly asserted |
 
-**Scoring example**: If the active capabilities are `api` and `cli` (both with TCs present), each gets 65 pts. For `api`: Contract accuracy scores X/100 × 50% = X × 0.325 of the 65-pt allocation; Error contract coverage scores Y/100 × 50% = Y × 0.325. Total for `api` = X × 0.325 + Y × 0.325 (max 65).
+**Scoring example**: If the active interfaces are `api` and `cli` (both with TCs present), each gets 65 pts. For `api`: Contract accuracy scores X/100 × 50% = X × 0.325 of the 65-pt allocation; Error contract coverage scores Y/100 × 50% = Y × 0.325. Total for `api` = X × 0.325 + Y × 0.325 (max 65).
 
 ### 4. Completeness (170 pts)
 
