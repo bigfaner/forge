@@ -299,9 +299,9 @@ func hl(text string) string {
 	return modeHighlight.Render(text)
 }
 
-// hlMode returns "Quick mode" or "Full mode" with the mode keyword highlighted.
+// hlMode returns "Quick mode" or "Full mode" with the whole phrase highlighted.
 func hlMode(mode string) string {
-	return hl(mode) + " mode"
+	return hl(mode + " mode")
 }
 
 // askAutoBehavior runs the auto-behavior config steps, one question per screen.
