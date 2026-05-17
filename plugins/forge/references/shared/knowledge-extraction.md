@@ -36,7 +36,7 @@ Non-obvious choices where alternatives existed. Written to `docs/decisions/<type
 
 ### 3.2 Lessons
 
-Root causes that were not immediately apparent, debugging patterns worth remembering. Written to `docs/lessons/<slug>.md` using the template from `plugins/forge/skills/learn/templates/lesson-entry.md`.
+Root causes that were not immediately apparent, debugging patterns worth remembering. Written to `docs/lessons/<slug>.md` using the learn skill's `lesson-entry.md` template.
 
 ### 3.3 Conventions
 

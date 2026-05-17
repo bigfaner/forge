@@ -1,9 +1,9 @@
 ---
 name: init-justfile
 description: Scaffold a Justfile with standard forge targets for the current project.
-allowed_tools: ["Bash", "Read", "Write", "Edit"]
+allowed-tools: ['Bash', 'Read', 'Write', 'Edit']
 disable-model-invocation: true
-argument-hints: "[--lang go|rust|python|node] [--type frontend|backend|mixed] [--force]"
+argument-hint: '[--lang go|rust|python|node] [--type frontend|backend|mixed] [--force]'
 ---
 
 # /init-justfile
@@ -16,12 +16,12 @@ Generate a Justfile with standard forge targets as an abstraction layer for test
 
 **Install just (>= 1.50.0)**
 
-| Platform | Command |
-|----------|---------|
-| macOS / Linux | `brew install just` |
-| Windows (Scoop) | `scoop install just` |
-| Windows (winget) | `winget install --id Casey.Just --exact` |
-| Cargo (universal) | `cargo install just` |
+| Platform          | Command                                  |
+| ----------------- | ---------------------------------------- |
+| macOS / Linux     | `brew install just`                      |
+| Windows (Scoop)   | `scoop install just`                     |
+| Windows (winget)  | `winget install --id Casey.Just --exact` |
+| Cargo (universal) | `cargo install just`                     |
 
 ```bash
 just --version  # requires >= 1.50.0 (supports [arg] named option syntax)
@@ -31,31 +31,31 @@ If version < 1.50.0: `cargo install just`
 
 ## Parameters
 
-| Parameter | Values | Default | Description |
-|-----------|--------|---------|-------------|
-| `--lang` | `go`, `rust`, `python`, `node` | (auto-detect) | Override language detection |
-| `--type` | `frontend`, `backend`, `mixed` | (auto-detect) | Override project type |
-| `--force` | (flag) | false | Overwrite existing justfile without confirmation |
+| Parameter | Values                         | Default       | Description                                      |
+| --------- | ------------------------------ | ------------- | ------------------------------------------------ |
+| `--lang`  | `go`, `rust`, `python`, `node` | (auto-detect) | Override language detection                      |
+| `--type`  | `frontend`, `backend`, `mixed` | (auto-detect) | Override project type                            |
+| `--force` | (flag)                         | false         | Overwrite existing justfile without confirmation |
 
 ## Standard Target Contract
 
-| Target | Required | Purpose |
-|--------|----------|---------|
-| `project-type` | Yes | ~~Removed~~ — project type now stored in `.forge/config.yaml` via `forge config get project-type` |
-| `compile` | No | Type-check and transpile for fast feedback |
-| `build` | No | Full compile and package |
-| `run` | No | Start the service |
-| `dev` | No | Hot-reload development mode |
-| `test` | Yes | Unit + integration tests |
-| `test-e2e` | No | E2E tests; `--feature <slug>` for single feature |
-| `lint` | No | Static analysis |
-| `fmt` | No | Auto-format code |
-| `check` | No | lint + compile (CI gate) |
-| `clean` | No | Remove build artifacts |
-| `install` | No | Install dependencies (idempotent) |
-| `ci` | No | Full CI pipeline |
-| `e2e-setup` | No | Install e2e dependencies (idempotent) |
-| `e2e-verify` | No | Check for unresolved `// VERIFY:` markers |
+| Target         | Required | Purpose                                                                                           |
+| -------------- | -------- | ------------------------------------------------------------------------------------------------- |
+| `project-type` | Yes      | ~~Removed~~ — project type now stored in `.forge/config.yaml` via `forge config get project-type` |
+| `compile`      | No       | Type-check and transpile for fast feedback                                                        |
+| `build`        | No       | Full compile and package                                                                          |
+| `run`          | No       | Start the service                                                                                 |
+| `dev`          | No       | Hot-reload development mode                                                                       |
+| `test`         | Yes      | Unit + integration tests                                                                          |
+| `test-e2e`     | No       | E2E tests; `--feature <slug>` for single feature                                                  |
+| `lint`         | No       | Static analysis                                                                                   |
+| `fmt`          | No       | Auto-format code                                                                                  |
+| `check`        | No       | lint + compile (CI gate)                                                                          |
+| `clean`        | No       | Remove build artifacts                                                                            |
+| `install`      | No       | Install dependencies (idempotent)                                                                 |
+| `ci`           | No       | Full CI pipeline                                                                                  |
+| `e2e-setup`    | No       | Install e2e dependencies (idempotent)                                                             |
+| `e2e-verify`   | No       | Check for unresolved `// VERIFY:` markers                                                         |
 
 ## Workflow
 
@@ -93,11 +93,11 @@ If `--lang` and/or `--type` are provided, skip all or part of auto-detection:
 
 **Placeholder defaults when skipping detection:**
 
-| Placeholder | Go | Rust | Python | Node |
-|-------------|-----|------|--------|------|
-| `ENTRY_POINT` | `.` | `` (empty) | `main.py` | N/A |
-| `DEV_COMMAND` | N/A | N/A | `python main.py` | N/A |
-| `ENTRY_SCRIPT` | N/A | N/A | N/A | `dev` |
+| Placeholder    | Go  | Rust       | Python           | Node  |
+| -------------- | --- | ---------- | ---------------- | ----- |
+| `ENTRY_POINT`  | `.` | `` (empty) | `main.py`        | N/A   |
+| `DEV_COMMAND`  | N/A | N/A        | `python main.py` | N/A   |
+| `ENTRY_SCRIPT` | N/A | N/A        | N/A              | `dev` |
 
 For `mixed` projects via parameters, `FRONTEND_DIR` and `BACKEND_DIR` both default to `.`.
 
@@ -109,12 +109,12 @@ ls package.json go.mod Cargo.toml pyproject.toml 2>/dev/null
 
 **Detection signal mapping:**
 
-| Marker File | Signal |
-|-------------|--------|
-| `package.json` | frontend |
-| `go.mod` | backend |
-| `Cargo.toml` | backend |
-| `pyproject.toml` | backend |
+| Marker File      | Signal   |
+| ---------------- | -------- |
+| `package.json`   | frontend |
+| `go.mod`         | backend  |
+| `Cargo.toml`     | backend  |
+| `pyproject.toml` | backend  |
 
 **Classification algorithm:**
 
@@ -139,11 +139,11 @@ Record these as `FRONTEND_DIR` and `BACKEND_DIR` (e.g. `./frontend`, `./backend`
 
 For **backend** and **mixed** projects, detect the backend language (already known from marker file) and the entry point:
 
-| Language | Marker | Entry point detection (`BACKEND_ENTRY`) | `ENTRY_POINT` placeholder value | `DEV_COMMAND` placeholder value |
-|----------|--------|---------------------------------------|-------------------------------|-------------------------------|
-| Go | `go.mod` | `ls cmd/*/main.go` → `cmd/<name>/main.go`; else `ls main.go` → `.` | `cmd/server/main.go` or `.` | N/A (uses `BACKEND_DEV` row) |
-| Rust | `Cargo.toml` | `grep '\[\[bin\]\]' Cargo.toml` → `--bin <name>`; else empty | `--bin server` or `` (empty) | N/A (uses `BACKEND_DEV` row) |
-| Python | `pyproject.toml` | `ls src/__init__.py` → `-m src`; `ls main.py` → `main.py`; `ls app.py` → `app.py` | `-m src` / `main.py` / `app.py` | `uvicorn src:app --reload` or `python -m src --reload` |
+| Language | Marker           | Entry point detection (`BACKEND_ENTRY`)                                           | `ENTRY_POINT` placeholder value | `DEV_COMMAND` placeholder value                        |
+| -------- | ---------------- | --------------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------ |
+| Go       | `go.mod`         | `ls cmd/*/main.go` → `cmd/<name>/main.go`; else `ls main.go` → `.`                | `cmd/server/main.go` or `.`     | N/A (uses `BACKEND_DEV` row)                           |
+| Rust     | `Cargo.toml`     | `grep '\[\[bin\]\]' Cargo.toml` → `--bin <name>`; else empty                      | `--bin server` or `` (empty)    | N/A (uses `BACKEND_DEV` row)                           |
+| Python   | `pyproject.toml` | `ls src/__init__.py` → `-m src`; `ls main.py` → `main.py`; `ls app.py` → `app.py` | `-m src` / `main.py` / `app.py` | `uvicorn src:app --reload` or `python -m src --reload` |
 
 Record `BACKEND_ENTRY` from the detected entry point. For Python `DEV_COMMAND`: use `uvicorn src:app --reload` if uvicorn is available, else `python -m src --reload`.
 
@@ -177,24 +177,24 @@ ls justfile Justfile 2>/dev/null
 
 If `--lang` is provided, select template directly:
 
-| `--lang` value | Template |
-|----------------|----------|
-| `go` | `plugins/forge/skills/init-justfile/templates/go.just` |
-| `rust` | `plugins/forge/skills/init-justfile/templates/rust.just` |
-| `python` | `plugins/forge/skills/init-justfile/templates/python.just` |
-| `node` | `plugins/forge/skills/init-justfile/templates/node.just` |
-| (mixed via `--type mixed`) | `plugins/forge/skills/init-justfile/templates/mixed.just` |
+| `--lang` value             | Template                                                   |
+| -------------------------- | ---------------------------------------------------------- |
+| `go`                       | `${CLAUDE_SKILL_DIR}/templates/go.just`     |
+| `rust`                     | `${CLAUDE_SKILL_DIR}/templates/rust.just`   |
+| `python`                   | `${CLAUDE_SKILL_DIR}/templates/python.just` |
+| `node`                     | `${CLAUDE_SKILL_DIR}/templates/node.just`   |
+| (mixed via `--type mixed`) | `${CLAUDE_SKILL_DIR}/templates/mixed.just`  |
 
 If `--lang` is not provided, detect from marker files:
 
-| Marker file | Template |
-|-------------|----------|
-| `go.mod` | `plugins/forge/skills/init-justfile/templates/go.just` |
-| `Cargo.toml` | `plugins/forge/skills/init-justfile/templates/rust.just` |
-| `pyproject.toml` | `plugins/forge/skills/init-justfile/templates/python.just` |
-| `package.json` only | `plugins/forge/skills/init-justfile/templates/node.just` |
-| mixed | `plugins/forge/skills/init-justfile/templates/mixed.just` |
-| none matched | `plugins/forge/skills/init-justfile/templates/generic.just` |
+| Marker file         | Template                                                    |
+| ------------------- | ----------------------------------------------------------- |
+| `go.mod`            | `${CLAUDE_SKILL_DIR}/templates/go.just`      |
+| `Cargo.toml`        | `${CLAUDE_SKILL_DIR}/templates/rust.just`    |
+| `pyproject.toml`    | `${CLAUDE_SKILL_DIR}/templates/python.just`  |
+| `package.json` only | `${CLAUDE_SKILL_DIR}/templates/node.just`    |
+| mixed               | `${CLAUDE_SKILL_DIR}/templates/mixed.just`   |
+| none matched        | `${CLAUDE_SKILL_DIR}/templates/generic.just` |
 
 Write to `justfile` (lowercase).
 
@@ -202,29 +202,29 @@ Write to `justfile` (lowercase).
 
 For **single-language templates** (`go.just`, `rust.just`, `python.just`, `node.just`):
 
-| Placeholder | Scope | Replaced with | Example |
-|-------------|-------|--------------|---------|
-| `ENTRY_POINT` | Go/Rust | `BACKEND_ENTRY` from Step 1b | `cmd/server/main.go`, `.`, `--bin server`, `` (empty) |
-| `DEV_COMMAND` | Python only | Dev server command from Step 1b | `uvicorn src:app --reload`, `python -m src --reload` |
-| `ENTRY_SCRIPT` | Node only | `FRONTEND_RUN_SCRIPT` from Step 1c | `start` / `preview` / `dev` |
+| Placeholder    | Scope       | Replaced with                      | Example                                               |
+| -------------- | ----------- | ---------------------------------- | ----------------------------------------------------- |
+| `ENTRY_POINT`  | Go/Rust     | `BACKEND_ENTRY` from Step 1b       | `cmd/server/main.go`, `.`, `--bin server`, `` (empty) |
+| `DEV_COMMAND`  | Python only | Dev server command from Step 1b    | `uvicorn src:app --reload`, `python -m src --reload`  |
+| `ENTRY_SCRIPT` | Node only   | `FRONTEND_RUN_SCRIPT` from Step 1c | `start` / `preview` / `dev`                           |
 
 For **mixed projects** (`mixed.just`):
 
 Replace `FRONTEND_DIR` and `BACKEND_DIR` with the paths detected in Step 1a. Additionally, replace all `BACKEND_*` and `FRONTEND_*` placeholders based on detected backend language:
 
-| Placeholder | Go | Rust | Python |
-|-------------|-----|------|--------|
-| `BACKEND_COMPILE` | `go vet ./...` | `cargo check` | `python -m py_compile src/` |
-| `BACKEND_BUILD` | `go build ./...` | `cargo build --release` | `python -m build` |
-| `BACKEND_RUN` | `go run <BACKEND_ENTRY>` | `cargo run <BACKEND_ENTRY>` | `python <BACKEND_ENTRY>` |
-| `BACKEND_DEV` | `go run <BACKEND_ENTRY>` | `cargo run <BACKEND_ENTRY>` | `uvicorn src:app --reload` |
-| `BACKEND_TEST` | `go test ./...` | `cargo test` | `pytest` |
-| `BACKEND_LINT` | `golangci-lint run ./...` | `cargo clippy -- -D warnings` | `ruff check .` |
-| `BACKEND_FMT` | `gofmt -w .` | `cargo fmt` | `ruff format .` |
-| `BACKEND_CLEAN` | `go clean ./...` | `cargo clean` | `rm -rf build/ dist/ *.egg-info` |
-| `BACKEND_INSTALL` | `go mod download` | `cargo fetch` | `pip install -e .` |
-| `FRONTEND_RUN` | `npm run <FRONTEND_RUN_SCRIPT>` (value from Step 1c) | (same) | (same) |
-| `FRONTEND_DEV` | `npm run dev` (all backend langs) | (same) | (same) |
+| Placeholder       | Go                                                   | Rust                          | Python                           |
+| ----------------- | ---------------------------------------------------- | ----------------------------- | -------------------------------- |
+| `BACKEND_COMPILE` | `go vet ./...`                                       | `cargo check`                 | `python -m py_compile src/`      |
+| `BACKEND_BUILD`   | `go build ./...`                                     | `cargo build --release`       | `python -m build`                |
+| `BACKEND_RUN`     | `go run <BACKEND_ENTRY>`                             | `cargo run <BACKEND_ENTRY>`   | `python <BACKEND_ENTRY>`         |
+| `BACKEND_DEV`     | `go run <BACKEND_ENTRY>`                             | `cargo run <BACKEND_ENTRY>`   | `uvicorn src:app --reload`       |
+| `BACKEND_TEST`    | `go test ./...`                                      | `cargo test`                  | `pytest`                         |
+| `BACKEND_LINT`    | `golangci-lint run ./...`                            | `cargo clippy -- -D warnings` | `ruff check .`                   |
+| `BACKEND_FMT`     | `gofmt -w .`                                         | `cargo fmt`                   | `ruff format .`                  |
+| `BACKEND_CLEAN`   | `go clean ./...`                                     | `cargo clean`                 | `rm -rf build/ dist/ *.egg-info` |
+| `BACKEND_INSTALL` | `go mod download`                                    | `cargo fetch`                 | `pip install -e .`               |
+| `FRONTEND_RUN`    | `npm run <FRONTEND_RUN_SCRIPT>` (value from Step 1c) | (same)                        | (same)                           |
+| `FRONTEND_DEV`    | `npm run dev` (all backend langs)                    | (same)                        | (same)                           |
 
 Note: `go test` omits `-race` flag by default — it requires CGO which is unavailable on some platforms (notably Windows). See Step 4c for auto-detection.
 
@@ -262,13 +262,13 @@ Fix any syntax failures before proceeding to Phase 2.
 
 Execute each recipe for real to catch runtime errors. Recipes are classified by execution safety:
 
-| Category | Recipes | Method |
-|----------|---------|--------|
-| **Safe** (fast, no side effects) | `compile`, `lint`, `check` | Execute directly |
-| **Destructive** (modifies files or creates artifacts) | `build`, `fmt`, `clean` | Execute directly (artifacts can be cleaned; fmt changes are welcome) |
-| **Idempotent** (installs dependencies) | `install`, `e2e-setup` | Execute directly |
-| **Long-running** (starts servers) | `run`, `dev` | Execute with timeout (10s), kill after timeout — success = process still alive at timeout |
-| **Expensive** (runs full test suite) | `test`, `test-e2e` | Skip actual execution; verified by `--dry-run` only |
+| Category                                              | Recipes                    | Method                                                                                    |
+| ----------------------------------------------------- | -------------------------- | ----------------------------------------------------------------------------------------- |
+| **Safe** (fast, no side effects)                      | `compile`, `lint`, `check` | Execute directly                                                                          |
+| **Destructive** (modifies files or creates artifacts) | `build`, `fmt`, `clean`    | Execute directly (artifacts can be cleaned; fmt changes are welcome)                      |
+| **Idempotent** (installs dependencies)                | `install`, `e2e-setup`     | Execute directly                                                                          |
+| **Long-running** (starts servers)                     | `run`, `dev`               | Execute with timeout (10s), kill after timeout — success = process still alive at timeout |
+| **Expensive** (runs full test suite)                  | `test`, `test-e2e`         | Skip actual execution; verified by `--dry-run` only                                       |
 
 For long-running recipes (`run`, `dev`): execute via `timeout 10 just <recipe> 2>&1 || true`. A crash before timeout ("missing script", "can't load package") is a runtime failure. For mixed, also verify scoped variants.
 
@@ -276,18 +276,19 @@ For long-running recipes (`run`, `dev`): execute via `timeout 10 just <recipe> 2
 
 When a recipe fails in Phase 2, analyze the error and apply corrections:
 
-| Error Pattern | Recipe | Fix |
-|---------------|--------|-----|
-| `npm error Missing script: "start"` | `run` (node/mixed) | Replace `npm run start` → `npm run preview` in justfile, retry |
-| `npm error Missing script: "preview"` | `run` (node/mixed) | Replace → `npm run dev` in justfile, retry |
-| `npm error Missing script: "dev"` | `dev` (node/mixed) | Replace → `npm run start` in justfile, retry |
-| `can't load package: no Go files` | `run`/`dev`/`compile` (go) | Scan for `cmd/*/main.go`, update entry point in justfile, retry |
-| `CGO_ENABLED=1` available | `test` (go) | Add `-race` flag to `go test` recipe for race detection, retry |
-| `command not found: golangci-lint` | `lint`/`check` (go) | In `lint`: replace `golangci-lint run ./...` → `go vet ./...`. In `check`: replace `golangci-lint run ./... && go vet ./...` → `go vet ./...`. Retry both. |
-| `command not found: uvicorn` | `dev` (python) | Replace → `python -m src --reload` or skip with comment, retry |
-| `command not found: ruff` | `lint`/`fmt`/`check` (python) | In `lint`: replace `ruff check .` → `python -m flake8`. In `check`: replace `ruff check .` → `python -m flake8` (keep `&& python -m py_compile src/`). In `fmt`: skip with comment. Retry. |
+| Error Pattern                         | Recipe                        | Fix                                                                                                                                                                                        |
+| ------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `npm error Missing script: "start"`   | `run` (node/mixed)            | Replace `npm run start` → `npm run preview` in justfile, retry                                                                                                                             |
+| `npm error Missing script: "preview"` | `run` (node/mixed)            | Replace → `npm run dev` in justfile, retry                                                                                                                                                 |
+| `npm error Missing script: "dev"`     | `dev` (node/mixed)            | Replace → `npm run start` in justfile, retry                                                                                                                                               |
+| `can't load package: no Go files`     | `run`/`dev`/`compile` (go)    | Scan for `cmd/*/main.go`, update entry point in justfile, retry                                                                                                                            |
+| `CGO_ENABLED=1` available             | `test` (go)                   | Add `-race` flag to `go test` recipe for race detection, retry                                                                                                                             |
+| `command not found: golangci-lint`    | `lint`/`check` (go)           | In `lint`: replace `golangci-lint run ./...` → `go vet ./...`. In `check`: replace `golangci-lint run ./... && go vet ./...` → `go vet ./...`. Retry both.                                 |
+| `command not found: uvicorn`          | `dev` (python)                | Replace → `python -m src --reload` or skip with comment, retry                                                                                                                             |
+| `command not found: ruff`             | `lint`/`fmt`/`check` (python) | In `lint`: replace `ruff check .` → `python -m flake8`. In `check`: replace `ruff check .` → `python -m flake8` (keep `&& python -m py_compile src/`). In `fmt`: skip with comment. Retry. |
 
 For each fix:
+
 1. Edit the justfile to apply the correction.
 2. Re-run the failed command (actual execution, same method as Phase 2).
 3. If it still fails after 2 attempts, leave the recipe as-is and report the failure in the output.

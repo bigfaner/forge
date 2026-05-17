@@ -36,7 +36,7 @@ After language resolution and before entering the workflow steps, load project c
 **Resolution algorithm**:
 
 1. **Project-wide conventions**: Read this skill's own frontmatter `conventions` field. For each filename, check `docs/conventions/{filename}` — if it exists, read it into context; if missing, skip silently.
-2. **Per-type conventions** (per-type mode only): Read the active type's instruction file from `plugins/forge/skills/gen-test-scripts/types/{type}.md`, extract its frontmatter `conventions` field. For each filename, check `docs/conventions/{filename}` — if it exists, read it; if missing, skip silently.
+2. **Per-type conventions** (per-type mode only): Read the active type's instruction file from `${CLAUDE_SKILL_DIR}/types/{type}.md`, extract its frontmatter `conventions` field. For each filename, check `docs/conventions/{filename}` — if it exists, read it; if missing, skip silently.
 3. **Legacy mode**: Only project-wide conventions are loaded (no per-type instruction files to consult).
 
 <HARD-RULE>
@@ -210,11 +210,11 @@ Based on Step 1 auth classification, uncomment matching CONDITIONAL blocks in te
 
 | Type | Instruction File |
 |------|-----------------|
-| ui | `plugins/forge/skills/gen-test-scripts/types/ui.md` |
-| tui | `plugins/forge/skills/gen-test-scripts/types/tui.md` |
-| mobile | `plugins/forge/skills/gen-test-scripts/types/mobile.md` |
-| api | `plugins/forge/skills/gen-test-scripts/types/api.md` |
-| cli | `plugins/forge/skills/gen-test-scripts/types/cli.md` |
+| ui | `${CLAUDE_SKILL_DIR}/types/ui.md` |
+| tui | `${CLAUDE_SKILL_DIR}/types/tui.md` |
+| mobile | `${CLAUDE_SKILL_DIR}/types/mobile.md` |
+| api | `${CLAUDE_SKILL_DIR}/types/api.md` |
+| cli | `${CLAUDE_SKILL_DIR}/types/cli.md` |
 
 **Dispatch procedure** for each active type:
 1. Verify type file exists. If missing: **HALT** with `"Type file missing: {path}. Cannot generate {type} test scripts. Available types: ui, tui, mobile, api, cli."`

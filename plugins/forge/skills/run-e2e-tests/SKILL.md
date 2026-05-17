@@ -128,7 +128,7 @@ Parse test results following the format described in the active strategy's `run.
 
 ### Step 5: Generate Report
 
-Read the template at `plugins/forge/skills/run-e2e-tests/templates/e2e-report.md`. Fill in results using the strategy's result format.
+Read the template at `${CLAUDE_SKILL_DIR}/templates/e2e-report.md`. Fill in results using the strategy's result format.
 
 Fill in:
 - Summary statistics (total/pass/fail/skip per type)

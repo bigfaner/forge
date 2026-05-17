@@ -115,7 +115,7 @@ Evidence files are intermediate artifacts. Each extract produces ~10-20KB regard
 From the evidence's `skillsUsed` field (or user's `--skill` parameter), read the relevant skill definitions:
 
 ```
-plugins/forge/skills/<skill-name>/SKILL.md
+${CLAUDE_SKILL_DIR}/../<skill-name>/SKILL.md
 ```
 
 Extract the rules that the agent should have followed:
@@ -141,7 +141,7 @@ Read the extracted evidence JSON from `docs/forensics/<slug>/evidence/evidence.j
 | Action | Duration | Detail |
 |--------|----------|--------|
 | Agent (doc-scorer) | 142.3s | eval-design scoring... |
-| Read | 0.8s | plugins/forge/skills/... |
+| Read | 0.8s | ${CLAUDE_SKILL_DIR}/../... |
 | Bash | 45.2s | go test -race -cover ./... |
 | Edit | 0.3s | internal/cmd/forensic.go |
 
@@ -180,7 +180,7 @@ Trace the causal chain at least 3 levels deep:
 
 ### Step 5: Generate Report
 
-Write the forensic report using the template at `plugins/forge/skills/forensic/templates/report.md`.
+Write the forensic report using the template at `${CLAUDE_SKILL_DIR}/templates/report.md`.
 
 Output to: `docs/forensics/<slug>/report.md`
 

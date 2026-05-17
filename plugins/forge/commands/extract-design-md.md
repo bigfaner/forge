@@ -93,7 +93,7 @@ Then route to the appropriate extraction section:
    | modern-dark-tui | Dark background, 256-color (xterm-256), box-drawing + block elements, compact density |
    | minimal-ascii-tui | Default terminal background, 16-color (standard ANSI), pure ASCII characters, loose density |
 
-   Read the corresponding built-in style file: `plugins/forge/skills/ui-design/templates/styles/<name>.md`
+   Read the corresponding built-in style file: `${CLAUDE_SKILL_DIR}/../skills/ui-design/templates/styles/<name>.md`
 
 5. **Build TUI design tokens and write DESIGN.md**: Follow the TUI DESIGN.md template structure below. All extracted values must be marked `(estimated)`.
 
@@ -204,7 +204,7 @@ Based on Step 2 analysis, match against these characteristics to identify the cl
 | Stripe | Purple gradient buttons, light gray background (#f6f9fc), weight-300 display |
 | Apple | Pure white background, generous whitespace, SF Pro, rounded capsule buttons |
 
-Read the corresponding built-in style file: `plugins/forge/skills/ui-design/templates/styles/<name>.md`
+Read the corresponding built-in style file: `${CLAUDE_SKILL_DIR}/../skills/ui-design/templates/styles/<name>.md`
 
 ## Step 4: Build Design Tokens
 

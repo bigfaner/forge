@@ -1,6 +1,7 @@
 ---
 name: improve-harness
 description: Dynamically implement harness improvements from eval-harness report. Reads P0/P1/P2 priorities and fixes each finding.
+disable-model-invocation: true
 ---
 
 # Improve Harness
@@ -9,29 +10,31 @@ Read the latest `/eval-harness` report and implement improvements for each findi
 
 ## Prerequisites
 
-| Artifact | Missing prompt |
-|----------|----------------|
+| Artifact                                           | Missing prompt            |
+| -------------------------------------------------- | ------------------------- |
 | `docs/harness-reports/YYYY-MM-DD.md` (eval report) | Run `/eval-harness` first |
 
 ## When to Use
 
 **Trigger:**
+
 - After running `/eval-harness`
 - User asks to "fix harness issues" or "implement improvements"
 - User provides `/improve-harness` command
 
 **Skip:**
+
 - No evaluation report exists (run `/eval-harness` first)
 - All findings already resolved
 
 ## Document Context
 
-| Document | Path | Purpose |
-|----------|------|---------|
-| Rubric (scoring criteria) | `plugins/forge/skills/eval/rubrics/harness.md` | Defines the 4 dimensions and 12 criteria that findings are scored against |
-| Eval report | `docs/harness-reports/YYYY-MM-DD.md` | Scored report with Priority Improvements table |
-| Snapshot (raw evidence) | `docs/harness-reports/YYYY-MM-DD-snapshot.md` | Original context the scorer evaluated; useful when investigating findings |
-| P0/P1/P2 classification | Defined in `eval` rubric for harness type | P0 = score 0 on any criterion; P1 = < 50%; P2 = < 80% |
+| Document                  | Path                                           | Purpose                                                                   |
+| ------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------- |
+| Rubric (scoring criteria) | `${CLAUDE_SKILL_DIR}/../eval/rubrics/harness.md` | Defines the 4 dimensions and 12 criteria that findings are scored against |
+| Eval report               | `docs/harness-reports/YYYY-MM-DD.md`           | Scored report with Priority Improvements table                            |
+| Snapshot (raw evidence)   | `docs/harness-reports/YYYY-MM-DD-snapshot.md`  | Original context the scorer evaluated; useful when investigating findings |
+| P0/P1/P2 classification   | Defined in `eval` rubric for harness type      | P0 = score 0 on any criterion; P1 = < 50%; P2 = < 80%                     |
 
 ## Workflow
 
@@ -53,12 +56,12 @@ Read the report and extract all rows from the **Priority Improvements** table.
 
 From the report, parse each priority item into:
 
-| Field | Source |
-|-------|--------|
-| Priority | P0 / P1 / P2 |
-| Dimension | Which rubric dimension |
-| Criterion | Which specific criterion |
-| Finding | What's wrong |
+| Field         | Source                     |
+| ------------- | -------------------------- |
+| Priority      | P0 / P1 / P2               |
+| Dimension     | Which rubric dimension     |
+| Criterion     | Which specific criterion   |
+| Finding       | What's wrong               |
 | Suggested Fix | What the report recommends |
 
 Sort by priority (P0 first, then P1, then P2).
@@ -68,6 +71,7 @@ Sort by priority (P0 first, then P1, then P2).
 If `docs/harness-reports/YYYY-MM-DD-improvements.md` already exists (from a previous interrupted run), read it and extract all completed findings from the "Completed" table. Match findings by the triple `(Priority, Dimension, Criterion)` — these three fields uniquely identify each finding. Do not match by Finding text, as wording may differ. Remove matched findings from the list.
 
 Report to user:
+
 ```
 Found existing improvement record with N completed fixes.
 Remaining: X P0, Y P1, Z P2 findings to address.
@@ -107,15 +111,15 @@ Execute? [Y/n/e(xplain)/s(kip)]
 
 Based on the finding, dynamically design and implement the fix. Common fix patterns:
 
-| Finding Pattern | Fix Pattern |
-|----------------|-------------|
-| No doc validation | Create freshness detection script or CI check |
-| No boundary enforcement | Create architecture lint script |
-| No shared tools | Extract reusable skill/agent/script |
-| No execution records | Set up forge task submit schema and templates |
-| Errors lack remediation | Add fix hints to linter/test output |
-| No docs index | Create docs/README.md with catalog |
-| Ad-hoc patterns | Centralize into shared utility |
+| Finding Pattern         | Fix Pattern                                   |
+| ----------------------- | --------------------------------------------- |
+| No doc validation       | Create freshness detection script or CI check |
+| No boundary enforcement | Create architecture lint script               |
+| No shared tools         | Extract reusable skill/agent/script           |
+| No execution records    | Set up forge task submit schema and templates |
+| Errors lack remediation | Add fix hints to linter/test output           |
+| No docs index           | Create docs/README.md with catalog            |
+| Ad-hoc patterns         | Centralize into shared utility                |
 
 ### 4.3 Verify Fix
 
@@ -139,6 +143,7 @@ After all findings are processed (or user stops), update the improvement record:
 - Fill in the **Follow-up** section
 
 Report to user:
+
 ```
 Improvements complete. N fixes applied, M skipped.
 Record: docs/harness-reports/YYYY-MM-DD-improvements.md
