@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"forge-cli/pkg/feature"
+
 	gitPkg "forge-cli/pkg/git"
 )
 
@@ -358,6 +360,215 @@ func TestWorktreeStart_SlugValidation(t *testing.T) {
 	err := rootCmd.Execute()
 	if err == nil {
 		t.Error("expected error when slug is empty")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// worktree list: subcommand registration
+// ---------------------------------------------------------------------------
+
+func TestWorktreeCmd_HasListSubcommand(t *testing.T) {
+	subcommands := worktreeCmd.Commands()
+	found := false
+	for _, cmd := range subcommands {
+		if cmd.Name() == "list" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("worktree group should have 'list' subcommand")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// worktree list: displays worktrees
+// ---------------------------------------------------------------------------
+
+func TestWorktreeList_ShowsMainWorktree(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "list"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, "[main]") {
+		t.Errorf("output should mark main worktree, got:\n%s", output)
+	}
+}
+
+func TestWorktreeList_ShowsMultipleWorktrees(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create an additional worktree
+	slug := "list-test-feature"
+	parentDir := filepath.Dir(dir)
+	targetDir := filepath.Join(parentDir, slug)
+	cmd := exec.Command("git", "worktree", "add", "-b", slug, targetDir)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "list"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, slug) {
+		t.Errorf("output should contain worktree name %q, got:\n%s", slug, output)
+	}
+	if !strings.Contains(output, "[main]") {
+		t.Errorf("output should mark main worktree, got:\n%s", output)
+	}
+}
+
+func TestWorktreeList_MarksForgeManaged(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a feature directory matching a worktree name
+	slug := "forge-managed-feat"
+	featureDir := filepath.Join(dir, feature.FeaturesDir, slug, feature.TasksDirName)
+	if err := os.MkdirAll(featureDir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	// Create index.json so feature scanner recognizes it
+	if err := os.WriteFile(filepath.Join(featureDir, feature.IndexFileName), []byte("{}"), 0o644); err != nil {
+		t.Fatalf("write index.json: %v", err)
+	}
+
+	// Create the worktree
+	parentDir := filepath.Dir(dir)
+	targetDir := filepath.Join(parentDir, slug)
+	cmd := exec.Command("git", "worktree", "add", "-b", slug, targetDir)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "list"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, "[forge]") {
+		t.Errorf("output should mark forge-managed worktree, got:\n%s", output)
+	}
+}
+
+func TestWorktreeList_NoWorktrees(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Override ListWorktrees to return empty list
+	origListWorktrees := listWorktreesFunc
+	listWorktreesFunc = func(_ string) ([]gitPkg.WorktreeEntry, error) {
+		return nil, nil
+	}
+	defer func() { listWorktreesFunc = origListWorktrees }()
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "list"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	output := strings.TrimSpace(buf.String())
+	if output != "No worktrees found" {
+		t.Errorf("expected 'No worktrees found', got:\n%s", output)
+	}
+}
+
+func TestWorktreeList_NotGitRepo(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "list"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Error("expected error when not a git repo")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// listForgeFeatures helper
+// ---------------------------------------------------------------------------
+
+func TestListForgeFeatures(t *testing.T) {
+	dir := t.TempDir()
+
+	// No features dir — should return nil or empty
+	f := listForgeFeatures(dir)
+	if len(f) > 0 {
+		t.Errorf("expected empty for missing features dir, got %d", len(f))
+	}
+
+	// Create features
+	for _, slug := range []string{"feat-a", "feat-b", "feat-c"} {
+		if err := os.MkdirAll(filepath.Join(dir, feature.FeaturesDir, slug), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	f = listForgeFeatures(dir)
+	if len(f) != 3 {
+		t.Errorf("expected 3 features, got %d", len(f))
+	}
+	if !f["feat-a"] || !f["feat-b"] || !f["feat-c"] {
+		t.Errorf("expected all three features, got: %v", f)
 	}
 }
 

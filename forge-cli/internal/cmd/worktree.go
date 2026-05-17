@@ -4,12 +4,18 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"text/tabwriter"
 
+	"forge-cli/pkg/feature"
 	"forge-cli/pkg/git"
 	"forge-cli/pkg/project"
 
 	"github.com/spf13/cobra"
 )
+
+// listWorktreesFunc lists git worktrees for a project root.
+// Overridable for testing.
+var listWorktreesFunc = git.ListWorktrees
 
 var worktreeCmd = &cobra.Command{
 	Use:   "worktree",
@@ -19,6 +25,17 @@ var worktreeCmd = &cobra.Command{
 Each worktree is created as a sibling directory (../<slug>) with a branch
 named <slug>. Forge's feature auto-detection resolves the correct feature
 from the worktree name.`,
+}
+
+var worktreeListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List all git worktrees",
+	Long: `List all git worktrees with their name, branch, and path.
+
+Worktrees whose name matches a feature slug in docs/features/ are marked as
+forge-managed. The main worktree (current project) is distinguished from
+feature worktrees.`,
+	RunE: runWorktreeList,
 }
 
 var worktreeStartCmd = &cobra.Command{
@@ -100,4 +117,65 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 
 	allArgs := []string{"--dangerously-skip-permissions"}
 	return runClaudeFunc(allArgs)
+}
+
+func runWorktreeList(cmd *cobra.Command, _ []string) error {
+	projectRoot, err := project.FindProjectRoot()
+	if err != nil {
+		return fmt.Errorf("find project root: %w", err)
+	}
+
+	if !git.IsGitRepository(projectRoot) {
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: not a git repository: %s\n", projectRoot)
+		return fmt.Errorf("not a git repository: %s", projectRoot)
+	}
+
+	entries, err := listWorktreesFunc(projectRoot)
+	if err != nil {
+		return fmt.Errorf("list worktrees: %w", err)
+	}
+
+	if len(entries) == 0 {
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "No worktrees found")
+		return nil
+	}
+
+	// Build set of forge-managed feature slugs
+	forgeFeatures := listForgeFeatures(projectRoot)
+
+	w := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
+	for _, entry := range entries {
+		name := entry.Name()
+		branch := entry.Branch
+		if branch == "" {
+			branch = "(detached)"
+		}
+
+		suffix := ""
+		if entry.IsMain {
+			suffix = "  [main]"
+		} else if forgeFeatures[name] {
+			suffix = "  [forge]"
+		}
+
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s%s\n", name, branch, entry.Path, suffix)
+	}
+	return w.Flush()
+}
+
+// listForgeFeatures returns a set of feature slugs that exist under docs/features/.
+func listForgeFeatures(projectRoot string) map[string]bool {
+	featuresDir := filepath.Join(projectRoot, feature.FeaturesDir)
+	entries, err := os.ReadDir(featuresDir)
+	if err != nil {
+		return nil
+	}
+
+	result := make(map[string]bool)
+	for _, entry := range entries {
+		if entry.IsDir() {
+			result[entry.Name()] = true
+		}
+	}
+	return result
 }
