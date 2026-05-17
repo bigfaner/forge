@@ -44,7 +44,7 @@
       "title": "Fix 5 template path references and remove Playwright dead code",
       "priority": "P0",
       "estimatedTime": "45m",
-      "status": "pending",
+      "status": "completed",
       "file": "4-fix-template-paths-remove-dead-code.md",
       "record": "records/4-fix-template-paths-remove-dead-code.md",
       "scope": "all",
