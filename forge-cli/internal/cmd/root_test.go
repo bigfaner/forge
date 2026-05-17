@@ -21,7 +21,7 @@ func TestRootCmd_Structure(t *testing.T) {
 	}
 
 	// 5 group parents
-	expectedGroups := []string{"task", "e2e", "forensic", "profile", "prompt"}
+	expectedGroups := []string{"task", "e2e", "forensic", "testing", "prompt"}
 	for _, expected := range expectedGroups {
 		if !commandNames[expected] {
 			t.Errorf("missing group parent: %s (have: %v)", expected, commandNames)
@@ -113,10 +113,10 @@ func TestRootCmd_ForensicGroupHasSubcommands(t *testing.T) {
 	}
 }
 
-func TestRootCmd_ProfileGroupHasSubcommands(t *testing.T) {
-	subcommands := profileCmd.Commands()
+func TestRootCmd_TestingGroupHasSubcommands(t *testing.T) {
+	subcommands := testingCmd.Commands()
 	if len(subcommands) == 0 {
-		t.Error("profile group should have subcommands")
+		t.Error("testing group should have subcommands")
 	}
 }
 

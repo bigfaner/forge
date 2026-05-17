@@ -27,7 +27,7 @@ func init() {
 	rootCmd.AddCommand(taskCmd)
 	rootCmd.AddCommand(e2eCmd)
 	rootCmd.AddCommand(forensicCmd)
-	rootCmd.AddCommand(profileCmd)
+	rootCmd.AddCommand(testingCmd)
 	rootCmd.AddCommand(promptCmd)
 
 	// Top-level commands

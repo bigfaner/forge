@@ -52,7 +52,7 @@
         "2",
         "3"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-cli-testing-command.md",
       "record": "records/4-cli-testing-command.md",
       "breaking": true,
