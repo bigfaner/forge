@@ -119,22 +119,6 @@ The existing run-tasks dispatcher will:
 5. Handle fix tasks on failure
 6. Run all-completed hook as final safety net
 
-### Status Transition: Approved → Completed
-
-After run-tasks completes all tasks successfully, update both frontmatter files together:
-
-```
-Edit(file_path="docs/proposals/<slug>/proposal.md",
-     old_string="status: Approved",
-     new_string="status: Completed")
-
-Edit(file_path="docs/features/<slug>/manifest.md",
-     old_string="status: tasks",
-     new_string="status: completed")
-```
-
-Both updates MUST happen together to prevent status drift. These must be atomic frontmatter edits targeting only the `status:` line. Do NOT rewrite either file. Only update to Completed after all tasks are confirmed done — if run-tasks reports any failure, leave status as Approved.
-
 ## Error Handling
 
 | Situation | Action |
