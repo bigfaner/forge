@@ -31,7 +31,7 @@
       "title": "Create shared knowledge extraction routine",
       "priority": "P0",
       "estimatedTime": "2h",
-      "status": "pending",
+      "status": "completed",
       "file": "3-create-extraction-routine.md",
       "record": "records/3-create-extraction-routine.md",
       "type": "feature"
