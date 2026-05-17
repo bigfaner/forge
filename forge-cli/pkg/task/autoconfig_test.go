@@ -156,20 +156,13 @@ func TestGetBreakdownTestTasks_DefaultsMatchOldBehavior(t *testing.T) {
 	}
 }
 
-func TestGetQuickTestTasks_DefaultsMatchOldBehavior(t *testing.T) {
+func TestGetQuickTestTasks_DefaultsProduceNoTasks(t *testing.T) {
 	auto := profile.AutoConfigDefaults()
 	tasks := GetQuickTestTasks([]string{"go-test"}, []string{"cli"}, auto)
 
-	// Should produce exactly 5 tasks (same as before)
-	if len(tasks) != 5 {
-		t.Fatalf("expected 5 tasks with defaults, got %d", len(tasks))
-	}
-
-	wantIDs := []string{"T-quick-1", "T-quick-2-cli", "T-quick-3", "T-quick-4", "T-quick-specs-1"}
-	for i, want := range wantIDs {
-		if tasks[i].ID != want {
-			t.Errorf("tasks[%d].ID = %q, want %q", i, tasks[i].ID, want)
-		}
+	// Defaults: e2eTest.quick=false, consolidateSpecs.quick=false → no quick test tasks
+	if len(tasks) != 0 {
+		t.Fatalf("expected 0 quick tasks with defaults (quick=false), got %d", len(tasks))
 	}
 }
 
@@ -280,7 +273,7 @@ func TestGetBreakdownTestTasks_SpecsDependsOnVerifyRegression(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_SpecsDependsOnVerifyRegression(t *testing.T) {
-	auto := profile.AutoConfigDefaults()
+	auto := allEnabledAuto
 	tasks := GetQuickTestTasks([]string{"go-test"}, []string{"cli"}, auto)
 
 	// Find T-quick-specs-1

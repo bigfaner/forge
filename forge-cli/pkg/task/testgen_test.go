@@ -7,8 +7,15 @@ import (
 	"forge-cli/pkg/profile"
 )
 
-// defaultAuto is the backward-compatible default for tests that expect pre-auto behavior.
+// defaultAuto is the current default (quick=false for e2e/specs).
 var defaultAuto = profile.AutoConfigDefaults()
+
+// allEnabledAuto enables all auto-behaviors for tests that need quick + full tasks.
+var allEnabledAuto = profile.AutoConfig{
+	E2eTest:          profile.ModeToggle{Quick: true, Full: true},
+	ConsolidateSpecs: profile.ModeToggle{Quick: true, Full: true},
+	CleanCode:        profile.ModeToggle{Quick: false, Full: false},
+}
 
 func TestGetBreakdownTestTasks_EmptyCapabilities(t *testing.T) {
 	tasks := GetBreakdownTestTasks([]string{"go-test"}, nil, defaultAuto)
@@ -89,7 +96,7 @@ func TestGetBreakdownTestTasks_MultiProfile(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_EmptyCapabilities(t *testing.T) {
-	tasks := GetQuickTestTasks([]string{"go-test"}, nil, defaultAuto)
+	tasks := GetQuickTestTasks([]string{"go-test"}, nil, allEnabledAuto)
 
 	// No capabilities -> no test tasks
 	if len(tasks) != 0 {
@@ -98,7 +105,7 @@ func TestGetQuickTestTasks_EmptyCapabilities(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_SingleProfile(t *testing.T) {
-	tasks := GetQuickTestTasks([]string{"go-test"}, []string{"cli"}, defaultAuto)
+	tasks := GetQuickTestTasks([]string{"go-test"}, []string{"cli"}, allEnabledAuto)
 
 	// gen-cases + gen-and-run-cli + graduate + verify-regression + drift = 5
 	if len(tasks) != 5 {
@@ -147,7 +154,7 @@ func TestGetQuickTestTasks_SingleProfile(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_MultiProfile(t *testing.T) {
-	tasks := GetQuickTestTasks([]string{"web-playwright", "go-test"}, []string{"api"}, defaultAuto)
+	tasks := GetQuickTestTasks([]string{"web-playwright", "go-test"}, []string{"api"}, allEnabledAuto)
 
 	// Profile-a: gen-cases + gen-and-run-api + graduate = 3
 	// Profile-b: same = 3
@@ -251,7 +258,7 @@ func TestResolveFirstTestDep(t *testing.T) {
 			"2-bar": {ID: "2"},
 			"3-baz": {ID: "3"},
 		}
-		tasks := GetQuickTestTasks([]string{"go-test"}, []string{"cli"}, defaultAuto)
+		tasks := GetQuickTestTasks([]string{"go-test"}, []string{"cli"}, allEnabledAuto)
 		ResolveFirstTestDep(tasks, existing, "quick")
 		if tasks[0].Dependencies[0] != "3" {
 			t.Errorf("T-quick-1 should depend on max business task, got %v", tasks[0].Dependencies)
@@ -506,7 +513,7 @@ func TestGenerateTestTaskMD_WithTestType(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_PerType_SingleProfile(t *testing.T) {
-	tasks := GetQuickTestTasks([]string{"go-test"}, []string{"tui", "api"}, defaultAuto)
+	tasks := GetQuickTestTasks([]string{"go-test"}, []string{"tui", "api"}, allEnabledAuto)
 
 	// Per-profile: gen-cases + per-type-gen-and-run(tui,api) + graduate = 4 + shared verify-regression + drift-detection = 6
 	if len(tasks) != 6 {
@@ -580,7 +587,7 @@ func TestGetQuickTestTasks_PerType_MultiProfile(t *testing.T) {
 	tasks := GetQuickTestTasks(
 		[]string{"web-playwright", "go-test"},
 		[]string{"tui", "api"},
-		defaultAuto,
+		allEnabledAuto,
 	)
 
 	// Profile-a: gen-cases + 2 per-type-gen-and-run + graduate = 4
@@ -634,7 +641,7 @@ func TestGetQuickTestTasks_PerType_MultiProfile(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_PerType_SingleType(t *testing.T) {
-	tasks := GetQuickTestTasks([]string{"go-test"}, []string{"api"}, defaultAuto)
+	tasks := GetQuickTestTasks([]string{"go-test"}, []string{"api"}, allEnabledAuto)
 
 	// Only api type -> one gen-and-run task
 	// gen-cases + 1 gen-and-run-api + graduate + verify-regression + drift-detection = 5
@@ -667,7 +674,7 @@ func TestGetQuickTestTasks_PerType_SingleType(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_PerType_ThreeTypes(t *testing.T) {
-	tasks := GetQuickTestTasks([]string{"go-test"}, []string{"tui", "api", "cli"}, defaultAuto)
+	tasks := GetQuickTestTasks([]string{"go-test"}, []string{"tui", "api", "cli"}, allEnabledAuto)
 
 	// gen-cases + 3 per-type-gen-and-run + graduate + verify-regression + drift-detection = 7
 	if len(tasks) != 7 {

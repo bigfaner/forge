@@ -663,6 +663,7 @@ func TestBuildIndex_MultiProfile(t *testing.T) {
 		IndexPath:        indexPath,
 		TestProfiles:     []string{"go-test", "web-playwright"},
 		TestCapabilities: []string{"api"},
+		AutoConfig:       allEnabledAuto,
 	}
 
 	result, err := BuildIndex(opts)
@@ -1310,6 +1311,7 @@ func TestBuildIndex_CodeFeatureUnchanged(t *testing.T) {
 		TasksDir:         tasksDir,
 		IndexPath:        indexPath,
 		TestProfiles:     []string{"go-test"},
+		AutoConfig:       allEnabledAuto,
 	}
 
 	result, err := BuildIndex(opts)
@@ -1416,6 +1418,7 @@ func TestBuildIndex_WithCapabilities_ProducesPerTypeTasks(t *testing.T) {
 		IndexPath:        indexPath,
 		TestProfiles:     []string{"go-test"},
 		TestCapabilities: []string{"cli"},
+		AutoConfig:       allEnabledAuto,
 	}
 
 	result, err := BuildIndex(opts)

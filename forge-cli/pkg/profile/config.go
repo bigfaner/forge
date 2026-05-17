@@ -39,11 +39,12 @@ type AutoConfig struct {
 }
 
 // AutoConfigDefaults returns an AutoConfig with backward-compatible defaults:
-// e2eTest=true, consolidateSpecs=true, cleanCode=false, gitPush=false.
+// e2eTest: quick=false, full=true; consolidateSpecs: quick=false, full=true;
+// cleanCode=false, gitPush=false.
 func AutoConfigDefaults() AutoConfig {
 	return AutoConfig{
-		E2eTest:          ModeToggle{Quick: true, Full: true},
-		ConsolidateSpecs: ModeToggle{Quick: true, Full: true},
+		E2eTest:          ModeToggle{Quick: false, Full: true},
+		ConsolidateSpecs: ModeToggle{Quick: false, Full: true},
 		CleanCode:        ModeToggle{Quick: false, Full: false},
 		GitPush:          false,
 	}
@@ -58,21 +59,19 @@ func (a AutoConfig) IsZero() bool {
 }
 
 // WithDefaults returns an AutoConfig with defaults applied for any zero-value fields.
-// This handles the case where BuildIndexOpts.AutoConfig was not explicitly set
-// (Go zero-value for bool is false, but our defaults for e2eTest and consolidateSpecs are true).
 func (a AutoConfig) WithDefaults() AutoConfig {
 	if a.IsZero() {
 		return AutoConfigDefaults()
 	}
-	// If not fully zero but some fields might need defaults
+	d := AutoConfigDefaults()
 	if a.E2eTest == (ModeToggle{}) {
-		a.E2eTest = ModeToggle{Quick: true, Full: true}
+		a.E2eTest = d.E2eTest
 	}
 	if a.ConsolidateSpecs == (ModeToggle{}) {
-		a.ConsolidateSpecs = ModeToggle{Quick: true, Full: true}
+		a.ConsolidateSpecs = d.ConsolidateSpecs
 	}
 	if a.CleanCode == (ModeToggle{}) {
-		a.CleanCode = ModeToggle{Quick: false, Full: false}
+		a.CleanCode = d.CleanCode
 	}
 	return a
 }
@@ -222,38 +221,33 @@ func findMappingKey(node *yaml.Node, key string) *yaml.Node {
 }
 
 // applyDefaults fills in defaults for fields that were not explicitly set in YAML.
-// The Hard Rule requires: e2eTest defaults true, consolidateSpecs defaults true, cleanCode defaults false.
 func (a *AutoConfig) applyDefaults() {
+	d := AutoConfigDefaults()
 	if a.raw == nil {
-		// No raw tracking means all fields get defaults
-		a.E2eTest = ModeToggle{Quick: true, Full: true}
-		a.ConsolidateSpecs = ModeToggle{Quick: true, Full: true}
-		a.CleanCode = ModeToggle{Quick: false, Full: false}
+		a.E2eTest = d.E2eTest
+		a.ConsolidateSpecs = d.ConsolidateSpecs
+		a.CleanCode = d.CleanCode
 		return
 	}
 
-	applyModeDefault(&a.E2eTest, a.raw, "e2eTest", true)
-	applyModeDefault(&a.ConsolidateSpecs, a.raw, "consolidateSpecs", true)
-	applyModeDefault(&a.CleanCode, a.raw, "cleanCode", false)
+	applyModeDefault(&a.E2eTest, a.raw, "e2eTest", d.E2eTest)
+	applyModeDefault(&a.ConsolidateSpecs, a.raw, "consolidateSpecs", d.ConsolidateSpecs)
+	applyModeDefault(&a.CleanCode, a.raw, "cleanCode", d.CleanCode)
 }
 
-// applyModeDefault sets default values for a ModeToggle field.
-// If the entire field block is missing from raw, both Quick and Full get the default.
-// If only one sub-key is missing, only that one gets the default.
-func applyModeDefault(mt *ModeToggle, raw map[string]map[string]bool, field string, defaultVal bool) {
+// applyModeDefault sets default values for a ModeToggle field using per-mode defaults.
+func applyModeDefault(mt *ModeToggle, raw map[string]map[string]bool, field string, defaults ModeToggle) {
 	fieldRaw, exists := raw[field]
 	if !exists {
-		// Entire field block missing: set both to default
-		mt.Quick = defaultVal
-		mt.Full = defaultVal
+		mt.Quick = defaults.Quick
+		mt.Full = defaults.Full
 		return
 	}
-	// Field block exists: check individual sub-keys
 	if !fieldRaw["quick"] {
-		mt.Quick = defaultVal
+		mt.Quick = defaults.Quick
 	}
 	if !fieldRaw["full"] {
-		mt.Full = defaultVal
+		mt.Full = defaults.Full
 	}
 }
 
