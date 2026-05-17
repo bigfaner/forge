@@ -187,7 +187,7 @@ Present `er-diagram.md` and `schema.sql` alongside the Data Models cross-referen
 
 Triggered automatically after user approves the tech-design in Step 6.
 
-Follow the tech-design archiving flow defined in `${CLAUDE_SKILL_DIR}/../../references/shared/decision-logging.md` (Section 2). Use `${CLAUDE_SKILL_DIR}/templates/decision-entry.md` for the decision row format.
+Follow the tech-design archiving flow defined in `${CLAUDE_SKILL_DIR}/../../references/shared/decision-logging.md` (Section 2). Use `templates/decision-entry.md` for the decision row format.
 
 See `examples/ask-question.md` for question formatting and `examples/exploration.md` for context exploration commands.
 

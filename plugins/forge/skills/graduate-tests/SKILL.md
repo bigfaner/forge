@@ -116,9 +116,9 @@ For each target file:
 
 1. **Create directory** if it doesn't exist
 2. **Write spec file** (or merge into existing)
-3. **Record in migration manifest**: append entries to `tests/e2e/.graduated/.backup/<slug>/manifest.json` after each file operation (write-ahead log). See template: `${CLAUDE_SKILL_DIR}/templates/manifest.json`. On re-run after partial failure, read existing manifest and continue — do not reset.
+3. **Record in migration manifest**: append entries to `tests/e2e/.graduated/.backup/<slug>/manifest.json` after each file operation (write-ahead log). See template: `templates/manifest.json`. On re-run after partial failure, read existing manifest and continue — do not reset.
 
-**Merge procedure** (when target file already exists). Full example: `${CLAUDE_SKILL_DIR}/templates/merge-example.md`:
+**Merge procedure** (when target file already exists). Full example: `templates/merge-example.md`:
 1. Read both source and target test files
 2. **Backup** the target file (only if no backup exists — prevents overwriting original on re-run): `test -f <backup-path> || cp <target-path> <backup-path>`
 3. **Merge rules** (follow the strategy's `graduate.md` for framework-specific merge logic):
@@ -150,7 +150,7 @@ If validation fails and is unfixable, rollback using the migration manifest:
 
 ### Step 6: Create Graduation Marker
 
-Write marker only after Step 5.5 validation passes (atomic — no marker = not graduated). Template: `${CLAUDE_SKILL_DIR}/templates/graduation-marker.yaml`:
+Write marker only after Step 5.5 validation passes (atomic — no marker = not graduated). Template: `templates/graduation-marker.yaml`:
 
 ```bash
 mkdir -p tests/e2e/.graduated

@@ -98,7 +98,7 @@ Do not warn or abort on missing convention files.
 
 For each active type, sequentially:
 
-1. Read `${CLAUDE_SKILL_DIR}/types/{type}.md` via Read tool.
+1. Read `types/{type}.md` via Read tool.
 2. Execute the per-type instructions (type-specific Steps 3-4: classify criteria, generate test cases, write per-type output file to `docs/features/<slug>/testing/{type}-test-cases.md`).
 
 <HARD-RULE>

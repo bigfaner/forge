@@ -82,7 +82,7 @@ flowchart TD
 
 ### 1.1 Resolve Rubric Path
 
-Load: `${CLAUDE_SKILL_DIR}/rubrics/<type>.md`
+Load: `rubrics/<type>.md`
 Exception: type `ui` → detect platform first (see 1.3), then load `ui-<platform>.md`.
 
 Parse rubric frontmatter: `scale`, `target`, `iterations`, `context`. CLI `--target`/`--iterations` override frontmatter. Store `context` declaration for use in Step 1.4 and Step 2.
@@ -344,7 +344,7 @@ Ask user via `AskUserQuestion`:
 
 ## Rubric Reference
 
-All rubrics: `${CLAUDE_SKILL_DIR}/rubrics/<type>.md`
+All rubrics: `rubrics/<type>.md`
 
 | Rubric | Scale | Target | Iterations | Notes |
 |--------|-------|--------|------------|-------|

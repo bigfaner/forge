@@ -179,22 +179,22 @@ If `--lang` is provided, select template directly:
 
 | `--lang` value             | Template                                                   |
 | -------------------------- | ---------------------------------------------------------- |
-| `go`                       | `${CLAUDE_SKILL_DIR}/templates/go.just`     |
-| `rust`                     | `${CLAUDE_SKILL_DIR}/templates/rust.just`   |
-| `python`                   | `${CLAUDE_SKILL_DIR}/templates/python.just` |
-| `node`                     | `${CLAUDE_SKILL_DIR}/templates/node.just`   |
-| (mixed via `--type mixed`) | `${CLAUDE_SKILL_DIR}/templates/mixed.just`  |
+| `go`                       | `templates/go.just`     |
+| `rust`                     | `templates/rust.just`   |
+| `python`                   | `templates/python.just` |
+| `node`                     | `templates/node.just`   |
+| (mixed via `--type mixed`) | `templates/mixed.just`  |
 
 If `--lang` is not provided, detect from marker files:
 
 | Marker file         | Template                                                    |
 | ------------------- | ----------------------------------------------------------- |
-| `go.mod`            | `${CLAUDE_SKILL_DIR}/templates/go.just`      |
-| `Cargo.toml`        | `${CLAUDE_SKILL_DIR}/templates/rust.just`    |
-| `pyproject.toml`    | `${CLAUDE_SKILL_DIR}/templates/python.just`  |
-| `package.json` only | `${CLAUDE_SKILL_DIR}/templates/node.just`    |
-| mixed               | `${CLAUDE_SKILL_DIR}/templates/mixed.just`   |
-| none matched        | `${CLAUDE_SKILL_DIR}/templates/generic.just` |
+| `go.mod`            | `templates/go.just`      |
+| `Cargo.toml`        | `templates/rust.just`    |
+| `pyproject.toml`    | `templates/python.just`  |
+| `package.json` only | `templates/node.just`    |
+| mixed               | `templates/mixed.just`   |
+| none matched        | `templates/generic.just` |
 
 Write to `justfile` (lowercase).
 

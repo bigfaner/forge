@@ -180,7 +180,7 @@ Trace the causal chain at least 3 levels deep:
 
 ### Step 5: Generate Report
 
-Write the forensic report using the template at `${CLAUDE_SKILL_DIR}/templates/report.md`.
+Write the forensic report using the template at `templates/report.md`.
 
 Output to: `docs/forensics/<slug>/report.md`
 
