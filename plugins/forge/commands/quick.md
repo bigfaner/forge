@@ -80,7 +80,7 @@ Skill(skill="forge:quick-tasks")
 ```
 
 This produces:
-- `docs/features/<slug>/tasks/*.md` — task files (1-10 business + optional T-quick-1~5)
+- `docs/features/<slug>/tasks/*.md` — task files (1-10 business + optional T-quick-1~4, T-quick-specs-1)
 - `docs/features/<slug>/tasks/index.json` — task index (compatible with `/run-tasks`)
 - `docs/features/<slug>/manifest.md` — simplified manifest
 

@@ -99,6 +99,13 @@ func runIndex(_ *cobra.Command, _ []string) {
 		ResolveStrategy:  resolveStrategy,
 	}
 
+	// Read auto-behavior config (returns defaults when missing)
+	auto, err := profile.ReadAutoConfig(projectRoot)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "WARNING: failed to read auto config: %v\n", err)
+	}
+	opts.AutoConfig = auto
+
 	result, err := task.BuildIndex(opts)
 	if err != nil {
 		Exit(fmt.Errorf("build index: %w", err))

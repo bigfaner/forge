@@ -4,3 +4,28 @@
 
 test-profiles:
   - web-playwright
+
+# Auto-behavior configuration (all optional — omit the block for backward-compatible defaults)
+# Each mode-scoped field has quick/full sub-keys to control pipeline behavior per mode.
+auto:
+  # Whether e2e test tasks are generated for each pipeline mode.
+  # Default: quick=true, full=true (existing behavior — backward compatible)
+  e2eTest:
+    quick: true
+    full: true
+
+  # Whether spec-consolidation tasks are generated for each pipeline mode.
+  # Default: quick=true, full=true (existing behavior — backward compatible)
+  consolidateSpecs:
+    quick: true
+    full: true
+
+  # Whether code-cleanup tasks are generated for each pipeline mode.
+  # Default: quick=false, full=false (opt-in — off by default)
+  cleanCode:
+    quick: false
+    full: false
+
+  # Automatically push to remote after all-completed hook passes.
+  # Default: false (opt-in — off by default)
+  gitPush: false

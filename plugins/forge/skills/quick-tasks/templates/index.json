@@ -1,0 +1,89 @@
+{
+  "feature": "<feature-slug>",
+  "proposal": "docs/proposals/<slug>/proposal.md",
+  "created": "YYYY-MM-DD",
+  "status": "planning",
+  "statusEnum": ["pending", "in_progress", "completed", "blocked", "skipped", "rejected"],
+  "priorityEnum": ["P0", "P1", "P2"],
+  "e2eRound": 0,
+  "tasks": {
+    "1-slug": {
+      "id": "1",
+      "title": "First Task",
+      "priority": "P0",
+      "estimatedTime": "1-2h",
+      "status": "pending",
+      "scope": "all",
+      "breaking": false,
+      "file": "1-slug.md",
+      "record": "records/1-slug.md"
+    },
+    "2-slug": {
+      "id": "2",
+      "title": "Second Task",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": ["1"],
+      "status": "pending",
+      "scope": "all",
+      "file": "2-slug.md",
+      "record": "records/2-slug.md"
+    },
+    "quick-test-cases": {
+      "id": "T-quick-1",
+      "title": "Generate Quick Test Cases",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": ["2"],
+      "status": "pending",
+      "scope": "all",
+      "noTest": true,
+      "file": "quick-test-cases.md",
+      "record": "records/quick-test-cases.md"
+    },
+    "quick-gen-scripts": {
+      "id": "T-quick-2",
+      "title": "Generate Quick Test Scripts",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": ["T-quick-1"],
+      "status": "pending",
+      "scope": "all",
+      "file": "quick-gen-scripts.md",
+      "record": "records/quick-gen-scripts.md"
+    },
+    "quick-run-tests": {
+      "id": "T-quick-3",
+      "title": "Run Quick E2E Tests",
+      "priority": "P1",
+      "estimatedTime": "15-30min",
+      "dependencies": ["T-quick-2"],
+      "status": "pending",
+      "scope": "all",
+      "file": "quick-run-tests.md",
+      "record": "records/quick-run-tests.md"
+    },
+    "quick-graduate": {
+      "id": "T-quick-4",
+      "title": "Graduate Quick Test Scripts",
+      "priority": "P1",
+      "estimatedTime": "15min",
+      "dependencies": ["T-quick-3"],
+      "status": "pending",
+      "scope": "all",
+      "file": "quick-graduate.md",
+      "record": "records/quick-graduate.md"
+    },
+    "quick-verify-regression": {
+      "id": "T-quick-5",
+      "title": "Verify Quick E2E Regression",
+      "priority": "P1",
+      "estimatedTime": "15min",
+      "dependencies": ["T-quick-4"],
+      "status": "pending",
+      "scope": "all",
+      "file": "quick-verify-regression.md",
+      "record": "records/quick-verify-regression.md"
+    }
+  }
+}

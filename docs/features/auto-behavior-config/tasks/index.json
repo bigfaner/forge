@@ -1,0 +1,97 @@
+{
+  "feature": "auto-behavior-config",
+  "proposal": "docs/proposals/auto-behavior-config/proposal.md",
+  "created": "2026-05-17",
+  "tasks": {
+    "1-config-schema": {
+      "id": "1",
+      "title": "Add auto config block to schema and example",
+      "priority": "P1",
+      "estimatedTime": "45m",
+      "status": "completed",
+      "file": "1-config-schema.md",
+      "record": "records/1-config-schema.md",
+      "scope": "backend",
+      "type": "enhancement"
+    },
+    "2-cli-task-generation": {
+      "id": "2",
+      "title": "Implement config-driven task generation with mode scoping",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-cli-task-generation.md",
+      "record": "records/2-cli-task-generation.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "enhancement"
+    },
+    "3-auto-gitpush": {
+      "id": "3",
+      "title": "Add auto.gitPush step to run-tasks skill",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "3-auto-gitpush.md",
+      "record": "records/3-auto-gitpush.md",
+      "scope": "all",
+      "type": "enhancement"
+    },
+    "4-update-skill-docs": {
+      "id": "4",
+      "title": "Update skill docs for renamed task IDs and auto config",
+      "priority": "P2",
+      "estimatedTime": "45m",
+      "dependencies": [
+        "2"
+      ],
+      "status": "completed",
+      "file": "4-update-skill-docs.md",
+      "record": "records/4-update-skill-docs.md",
+      "type": "documentation"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "fix test-e2e: just test-e2e failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "quality-gate:test-e2e",
+      "type": "fix"
+    },
+    "fix-2": {
+      "id": "fix-2",
+      "title": "fix test-e2e: just test-e2e failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-2.md",
+      "record": "records/fix-2.md",
+      "breaking": true,
+      "sourceTaskID": "quality-gate:test-e2e",
+      "type": "fix"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

@@ -590,7 +590,7 @@ func TestTypeConstants(t *testing.T) {
 }
 
 func TestValidTypes(t *testing.T) {
-	t.Run("ValidTypes contains all 18 type constants", func(t *testing.T) {
+	t.Run("ValidTypes contains all type constants", func(t *testing.T) {
 		allTypes := []string{
 			TypeFeature,
 			TypeEnhancement,
@@ -610,6 +610,7 @@ func TestValidTypes(t *testing.T) {
 			TypeTestPipelineVerifyRegression,
 			TypeFix,
 			TypeGate,
+			TypeCleanCode,
 		}
 		if len(ValidTypes) != len(allTypes) {
 			t.Errorf("ValidTypes has %d entries, want %d", len(ValidTypes), len(allTypes))
@@ -632,9 +633,9 @@ func TestValidTypes(t *testing.T) {
 }
 
 func TestTaskTypeRegistry(t *testing.T) {
-	t.Run("registry contains all 18 types", func(t *testing.T) {
-		if len(TaskTypeRegistry) != 18 {
-			t.Errorf("TaskTypeRegistry has %d entries, want 18", len(TaskTypeRegistry))
+	t.Run("registry contains all types", func(t *testing.T) {
+		if len(TaskTypeRegistry) != len(ValidTypes) {
+			t.Errorf("TaskTypeRegistry has %d entries, want %d", len(TaskTypeRegistry), len(ValidTypes))
 		}
 	})
 
