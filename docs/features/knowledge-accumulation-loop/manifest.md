@@ -1,6 +1,7 @@
 ---
+
 feature: "knowledge-accumulation-loop"
-status: tasks
+status: completed
 mode: quick
 ---
 
