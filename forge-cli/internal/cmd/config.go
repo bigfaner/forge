@@ -21,7 +21,7 @@ import (
 var configCmd = &cobra.Command{
 	Use:   "config",
 	Short: "Manage forge configuration",
-	Long:  `Manage .forge/config.yaml for project settings like project-type, test-profiles, and capabilities.`,
+	Long:  `Manage .forge/config.yaml for project settings like project-type, languages, and interfaces.`,
 }
 
 var configGetCmd = &cobra.Command{
@@ -42,7 +42,7 @@ var configInitCmd = &cobra.Command{
 	Short: "Interactively initialize .forge/config.yaml",
 	Long: `Interactively create or reconfigure .forge/config.yaml.
 
-Collects project-type, test-profiles, and capabilities through stdin prompts.`,
+Collects project-type, languages, and interfaces through stdin prompts.`,
 	RunE: runConfigInit,
 }
 
@@ -123,41 +123,41 @@ func runConfigInit(cmd *cobra.Command, _ []string) error {
 
 	// Step 2: Test profiles
 	write(out, "\nSelect test profiles (enter numbers, space-separated, then 'done'):\n")
-	for i, p := range profile.KnownProfiles {
+	for i, p := range profile.KnownLanguages {
 		write(out, "  %d. %s\n", i+1, p)
 	}
 	write(out, "Selections: ")
 
 	input, _ = reader.ReadString('\n')
-	selectedProfiles := parseMultiSelect(input, profile.KnownProfiles)
+	selectedProfiles := parseMultiSelect(input, profile.KnownLanguages)
 
-	// Step 3: Capabilities
-	var availableCaps []string
+	// Step 3: Interfaces
+	var availableIfaces []string
 	if len(selectedProfiles) > 0 {
-		union, err := profile.UnionCapabilities(selectedProfiles)
+		union, err := profile.UnionLanguageInterfaces(selectedProfiles)
 		if err != nil {
-			return fmt.Errorf("resolve capabilities: %w", err)
+			return fmt.Errorf("resolve interfaces: %w", err)
 		}
-		availableCaps = union
+		availableIfaces = union
 	}
 
-	var selectedCaps []string
-	if len(availableCaps) > 0 {
-		write(out, "\nSelect capabilities from detected profiles:\n")
-		for i, c := range availableCaps {
+	var selectedIfaces []string
+	if len(availableIfaces) > 0 {
+		write(out, "\nSelect interfaces from detected profiles:\n")
+		for i, c := range availableIfaces {
 			write(out, "  %d. %s\n", i+1, c)
 		}
 		write(out, "Selections: ")
 
 		input, _ = reader.ReadString('\n')
-		selectedCaps = parseMultiSelect(input, availableCaps)
+		selectedIfaces = parseMultiSelect(input, availableIfaces)
 	}
 
 	// Write config
 	cfg := profile.ForgeConfig{
-		ProjectType:  projectType,
-		TestProfiles: selectedProfiles,
-		Capabilities: selectedCaps,
+		ProjectType: projectType,
+		Languages:   selectedProfiles,
+		Interfaces:  selectedIfaces,
 	}
 
 	if err := writeConfigFile(configFile, &cfg); err != nil {

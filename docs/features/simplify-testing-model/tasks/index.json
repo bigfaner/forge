@@ -1,0 +1,131 @@
+{
+  "feature": "simplify-testing-model",
+  "proposal": "docs/proposals/simplify-testing-model/proposal.md",
+  "created": "2026-05-17",
+  "tasks": {
+    "1-config-schema": {
+      "id": "1",
+      "title": "Config schema: replace TestProfiles/Capabilities with Interfaces/Languages",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "status": "completed",
+      "file": "1-config-schema.md",
+      "record": "records/1-config-schema.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "refactor"
+    },
+    "2-directory-restructure": {
+      "id": "2",
+      "title": "Restructure profiles/ to languages/ with strategy files",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "status": "completed",
+      "file": "2-directory-restructure.md",
+      "record": "records/2-directory-restructure.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "refactor"
+    },
+    "3-detection-logic": {
+      "id": "3",
+      "title": "Rename DetectProfiles to DetectLanguages with language keys",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "3-detection-logic.md",
+      "record": "records/3-detection-logic.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "refactor"
+    },
+    "4-cli-testing-command": {
+      "id": "4",
+      "title": "Implement forge testing CLI command group",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1",
+        "2",
+        "3"
+      ],
+      "status": "completed",
+      "file": "4-cli-testing-command.md",
+      "record": "records/4-cli-testing-command.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "feature"
+    },
+    "5-testgen-update": {
+      "id": "5",
+      "title": "Update testgen.go to use Language instead of ProfileName",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1",
+        "4"
+      ],
+      "status": "completed",
+      "file": "5-testgen-update.md",
+      "record": "records/5-testgen-update.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "refactor"
+    },
+    "6-skill-migration": {
+      "id": "6",
+      "title": "Migrate all 10 skills to forge testing CLI",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "4"
+      ],
+      "status": "completed",
+      "file": "6-skill-migration.md",
+      "record": "records/6-skill-migration.md",
+      "scope": "all",
+      "type": "refactor"
+    },
+    "7-migration-guide": {
+      "id": "7",
+      "title": "Write v2-to-v3 migration guide and update config docs",
+      "priority": "P2",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "6"
+      ],
+      "status": "completed",
+      "file": "7-migration-guide.md",
+      "record": "records/7-migration-guide.md",
+      "type": "documentation"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "fix test-e2e: just test-e2e failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "quality-gate:test-e2e",
+      "type": "fix"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

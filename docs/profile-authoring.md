@@ -1,15 +1,14 @@
-# Profile Authoring Guide
+# Language Strategy Authoring Guide
 
-How to create a new test profile for Forge's pluggable test strategy system.
+How to create a new test language strategy for Forge's pluggable test strategy system.
 
 ## Directory Structure
 
 ```
-task-cli/pkg/profile/profiles/<name>/
-  manifest.yaml          # Metadata + capabilities + command declarations
-  generate.md            # gen-test-scripts profile strategy
-  run.md                 # run-e2e-tests profile strategy
-  graduate.md            # graduate-tests profile strategy
+forge-cli/pkg/testing/languages/<key>/
+  generate.md            # gen-test-scripts language strategy
+  run.md                 # run-e2e-tests language strategy
+  graduate.md            # graduate-tests language strategy
   justfile-recipes       # Justfile recipe bodies for init-justfile
   templates/             # Code templates (spec files, helpers, config)
 ```
@@ -18,45 +17,23 @@ task-cli/pkg/profile/profiles/<name>/
 
 | File | Purpose |
 |------|---------|
-| `manifest.yaml` | Declares profile name, language, capabilities, templates, run/graduate commands |
 | `generate.md` | AI-readable prompt for test script generation (framework-specific rules) |
 | `run.md` | AI-readable prompt for test execution and result parsing |
 | `graduate.md` | AI-readable prompt for test migration from staging to regression |
 | `justfile-recipes` | Justfile recipe bodies for `test-e2e`, `e2e-setup`, `e2e-verify` |
 
-## Manifest Schema
+## Language Key Convention
 
-```yaml
-name: <profile-name>          # lowercase, hyphenated
-display: "Human-readable name"
-language: <language>           # go, typescript, java, rust, python, yaml
-file-extension: <ext>          # _test.go, .spec.ts, .java, .rs, .py, .yaml
-test-directory: tests/e2e/     # always tests/e2e/
+- Lowercase, no hyphens for single-word languages: `go`, `rust`, `python`, `java`
+- Framework-specific keys for multi-framework languages: `javascript` (Playwright, the only supported JS framework in v3.0)
+- Platform keys for non-language targets: `mobile`
+- The language key is both the directory name and the internal identifier used by `forge testing` commands
 
-capabilities: [<cap>, ...]     # closed enum: web-ui, tui, mobile-ui, api, cli
+## Supported Interfaces (Closed Enum)
 
-templates:                     # paths relative to profile directory
-  test-file: templates/<file>
-  helpers: templates/<file>    # optional
-  config-file: templates/<file> # optional
-  additional: []               # extra template files
+Each language declares which interface types it supports. This metadata is hardcoded in the Go `languageCapabilities` map.
 
-run:
-  command: "<test-command>"
-  compile: "<compile-command or null>"
-  result-format: <format-name>
-
-graduate:
-  target-directory: tests/e2e/
-  merge-strategy: <package|class|module|file>
-  import-rewrite: <rule or null>
-  compile-check: "<command or null>"
-  list-tests: "<command>"
-```
-
-### Capabilities (Closed Enum)
-
-| Capability | Meaning |
+| Interface | Meaning |
 |-----------|---------|
 | `web-ui` | Browser UI (DOM interaction) |
 | `tui` | Terminal UI (text rendering, keyboard) |
@@ -64,7 +41,7 @@ graduate:
 | `api` | HTTP/network interface |
 | `cli` | Command-line interface |
 
-Adding a new capability requires changes to Forge core (gen-test-cases, eval-test-cases rubric).
+Adding a new interface type requires changes to Forge core (gen-test-cases, eval-test-cases rubric).
 
 ## Strategy File Conventions
 
@@ -73,13 +50,13 @@ Each strategy file (`generate.md`, `run.md`, `graduate.md`) is an AI-readable pr
 - Use tables for structured data (commands, formats, classifications)
 - Include code examples for common patterns
 - List anti-patterns (forbidden behaviors) explicitly
-- Keep sections concise — no fluff, no preamble
-- Reference template files by their manifest key
+- Keep sections concise -- no fluff, no preamble
+- Reference template files by their relative path within the `templates/` directory
 
 ### generate.md Must Cover
 
 - Test runner and assertion library
-- Spec template mapping (which template → which output file)
+- Spec template mapping (which template -> which output file)
 - CLI/API/TUI testing patterns with code examples
 - Auth mechanism
 - Import conventions
@@ -110,23 +87,32 @@ Each strategy file (`generate.md`, `run.md`, `graduate.md`) is an AI-readable pr
 
 Must define three recipes:
 
-1. **test-e2e** — Run tests, support `--feature <slug>` for single-feature runs
-2. **e2e-setup** — Install dependencies (idempotent)
-3. **e2e-verify** — Check for unresolved `// VERIFY:` markers (use profile's file extension)
+1. **test-e2e** -- Run tests, support `--feature <slug>` for single-feature runs
+2. **e2e-setup** -- Install dependencies (idempotent)
+3. **e2e-verify** -- Check for unresolved `// VERIFY:` markers (use language's file extension)
 
-## Auto-Detection Registration
+## Detection Registration
 
-Add detection rules to `plugins/forge/references/shared/profile-detection.md`:
+Add detection rules to the `DetectLanguages()` function in `forge-cli/pkg/testing/detect.go`:
 
-| Signal | Profile |
-|--------|---------|
-| `<marker-file>` exists | `<profile-name>` |
+| Signal | Language Key |
+|--------|-------------|
+| `<marker-file>` exists | `<key>` |
 
-Detection signals should be unambiguous — don't overlap with existing profiles.
+Detection signals should be unambiguous -- don't overlap with existing languages.
 
-## Testing a New Profile
+Also add the language's supported interfaces to the `languageCapabilities` map in `embed.go`.
 
-1. Verify `manifest.yaml` parses as valid YAML
-2. Verify strategy files are non-empty and cover required sections
-3. Run the full pipeline on a real project of the target type
-4. Verify gen-test-scripts → run-e2e-tests → graduate-tests chain works
+## Steps to Add a New Language
+
+1. Add detection case in `detect.go` (file existence check at project root)
+2. Create `languages/<key>/` directory with all required strategy files
+3. Add entry to `languageCapabilities` map in `embed.go`
+
+No schema migration, no manifest files, no configuration changes needed.
+
+## Testing a New Language
+
+1. Verify strategy files are non-empty and cover required sections
+2. Run the full pipeline on a real project of the target type
+3. Verify gen-test-scripts -> run-e2e-tests -> graduate-tests chain works

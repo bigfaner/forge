@@ -1,6 +1,6 @@
 ---
 name: graduate-tests
-description: Migrate feature test scripts to the regression suite. Profile-aware: reads active test profile from .forge/config.yaml for import rewriting, compilation, and test discovery.
+description: Migrate feature test scripts to the regression suite. Language-aware: auto-detects test framework from project files via forge testing CLI for import rewriting, compilation, and test discovery.
 ---
 
 # /graduate-tests
@@ -15,17 +15,16 @@ Migrate feature test scripts from the staging area `tests/e2e/features/<feature>
 - Do NOT modify the source scripts in `tests/e2e/features/<slug>/`
 </HARD-GATE>
 
-## Step 0: Resolve Profile
+## Step 0: Resolve Language and Strategy
 
-1. **Resolve profile**: Run `forge profile` to get the active test profile(s). This reads `.forge/config.yaml`, falls back to project structure detection.
-2. **On failure** (output shows `PROFILE: (none)`): ask the user to choose from known profiles (`web-playwright`, `go-test`, `maestro`, `java-junit`, `rust-test`, `pytest`). Run `forge profile set <name>` to persist their choice.
-3. **Load profile manifest**: Run `forge profile get <profile-name> --manifest`.
-4. **Load profile strategy**: Run `forge profile get <profile-name> --graduate`.
+1. **Detect language**: Run `forge testing detect` to auto-detect the project's test language(s) from file signals.
+2. **On failure** (no language detected): ask the user to add `languages` to `.forge/config.yaml` (e.g., `languages: [go]`).
+3. **Load strategy**: Run `forge testing get graduate` to load the graduate strategy for the detected language.
 
-Use the loaded profile manifest and strategy for all subsequent steps.
+Use the loaded strategy for all subsequent steps.
 
 <HARD-RULE>
-Do NOT silently default to any profile. If `forge profile` returns no result and the user cannot decide, abort the skill.
+Do NOT silently default to any language. If `forge testing detect` returns no result and the user cannot configure `languages`, abort the skill.
 </HARD-RULE>
 
 ## Prerequisites
@@ -35,13 +34,13 @@ Check before running. Abort and prompt user if missing:
 | Artifact | Condition | Action if not met |
 |----------|-----------|-------------------|
 | `tests/e2e/features/<slug>/` directory | Must exist (or scripts at `tests/e2e/<slug>/` via staging bypass — see Step 1.5) | Run `/gen-test-scripts` first |
-| At least one test file (extension from profile manifest `file-extension`) | Must exist | Run `/gen-test-scripts` first |
-| Shared infrastructure files (per profile manifest) | Must exist | Run `/gen-test-scripts` first |
+| At least one test file (extension from detected language) | Must exist | Run `/gen-test-scripts` first |
+| Shared infrastructure files (per language strategy) | Must exist | Run `/gen-test-scripts` first |
 | `tests/e2e/features/<slug>/results/latest.md` | Must show PASS | Run `/run-e2e-tests` first — only graduate passing tests |
 | `tests/e2e/.graduated/<slug>` | Must NOT exist | Already graduated — skip |
 
 <PRINCIPLE>
-**Shared infrastructure first.** Before executing graduation, verify that shared dependencies are complete and functional. After graduation, import paths are rewritten according to the profile's `graduate.md` — if shared files are incomplete, the rewritten imports will still fail to compile. When inconsistencies are found, go back to `/gen-test-scripts` to fix shared dependencies before graduating.
+**Shared infrastructure first.** Before executing graduation, verify that shared dependencies are complete and functional. After graduation, import paths are rewritten according to the strategy's `graduate.md` — if shared files are incomplete, the rewritten imports will still fail to compile. When inconsistencies are found, go back to `/gen-test-scripts` to fix shared dependencies before graduating.
 </PRINCIPLE>
 
 ## When to Use
@@ -78,7 +77,7 @@ Graduation MUST ALWAYS perform Step 4 (functional module classification), regard
 
 ### Step 2: Read Source Scripts
 
-Read all test files (extension from profile manifest `file-extension`) from the source directory determined in Step 1.5 (either `tests/e2e/features/<slug>/` or `tests/e2e/<slug>/` for bypass) and shared infrastructure files. Understand what each test block tests, which routes/APIs/CLI commands are covered, and whether a single test file mixes multiple functional domains.
+Read all test files (extension from detected language) from the source directory determined in Step 1.5 (either `tests/e2e/features/<slug>/` or `tests/e2e/<slug>/` for bypass) and shared infrastructure files. Understand what each test block tests, which routes/APIs/CLI commands are covered, and whether a single test file mixes multiple functional domains.
 
 **Symbol completeness check**: Extract the set of imported symbols from the shared helper file. Verify each symbol is exported. If any are missing, abort and prompt: "Shared helper file is missing exports (X, Y). Run `/gen-test-scripts` first to merge missing symbols."
 
@@ -122,7 +121,7 @@ For each target file:
 **Merge procedure** (when target file already exists). Full example: `plugins/forge/skills/graduate-tests/templates/merge-example.md`:
 1. Read both source and target test files
 2. **Backup** the target file (only if no backup exists — prevents overwriting original on re-run): `test -f <backup-path> || cp <target-path> <backup-path>`
-3. **Merge rules** (follow profile's `graduate.md` for framework-specific merge logic):
+3. **Merge rules** (follow the strategy's `graduate.md` for framework-specific merge logic):
    - Combine imports, deduplicate
    - Match test grouping blocks (describe/testsuite/class) by title — merge their children into a single block
    - Deduplicate test functions by full title string match (identical titles → keep source version; different titles with same TC ID prefix → keep both)
@@ -131,7 +130,7 @@ For each target file:
 4. Write the merged file
 
 <HARD-RULE>
-Test files in the staging area import shared helpers using the profile's staging import path. After migration, the import must be rewritten according to the profile's `graduate.md` strategy. Every migrated test file MUST have its import paths updated. Other imports (built-ins, framework imports) remain unchanged.
+Test files in the staging area import shared helpers using the language's staging import path. After migration, the import must be rewritten according to the strategy's `graduate.md`. Every migrated test file MUST have its import paths updated. Other imports (built-ins, framework imports) remain unchanged.
 </HARD-RULE>
 
 Shared infrastructure files already exist at `tests/e2e/` — no merging or copying needed.

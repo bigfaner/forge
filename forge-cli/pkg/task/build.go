@@ -17,14 +17,14 @@ type StrategyResolver func(profileName, kind string) []byte
 
 // BuildIndexOpts holds options for building the task index.
 type BuildIndexOpts struct {
-	FeatureSlug      string
-	ProjectRoot      string
-	TasksDir         string   // absolute path to tasks/
-	IndexPath        string   // absolute path to index.json
-	TestProfiles     []string // flag > config.yaml > none
-	TestCapabilities []string // config.yaml capabilities > UnionCapabilities(profiles) > none
-	ResolveStrategy  StrategyResolver
-	AutoConfig       profile.AutoConfig // auto-behavior config (defaults filled by caller)
+	FeatureSlug     string
+	ProjectRoot     string
+	TasksDir        string   // absolute path to tasks/
+	IndexPath       string   // absolute path to index.json
+	TestProfiles    []string // flag > config.yaml > none
+	TestInterfaces  []string // config.yaml interfaces > UnionLanguageInterfaces(profiles) > none
+	ResolveStrategy StrategyResolver
+	AutoConfig      profile.AutoConfig // auto-behavior config (defaults filled by caller)
 }
 
 // BuildIndexResult holds the result of a BuildIndex operation.
@@ -274,8 +274,8 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 			index.SetTask(evalKey, task)
 			result.NewCount++
 		}
-	} else if needsTest && len(profiles) > 0 && len(opts.TestCapabilities) > 0 && mode != "" {
-		testTasks := generateTestTasks(mode, profiles, opts.TestCapabilities, opts.AutoConfig)
+	} else if needsTest && len(profiles) > 0 && len(opts.TestInterfaces) > 0 && mode != "" {
+		testTasks := generateTestTasks(mode, profiles, opts.TestInterfaces, opts.AutoConfig)
 		if len(testTasks) > 0 {
 			ResolveFirstTestDep(testTasks, index.TasksMap(), mode)
 		}
@@ -285,8 +285,8 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 			existingKeys[key] = true
 
 			// Resolve strategy content for per-profile tasks
-			if td.ProfileName != "" && td.StrategyKind != "" && opts.ResolveStrategy != nil {
-				testTasks[i].StrategyContent = opts.ResolveStrategy(td.ProfileName, td.StrategyKind)
+			if td.Language != "" && td.StrategyKind != "" && opts.ResolveStrategy != nil {
+				testTasks[i].StrategyContent = opts.ResolveStrategy(string(td.Language), td.StrategyKind)
 			}
 
 			// Generate .md if missing
@@ -373,13 +373,17 @@ func setFeatureMetadata(index *TaskIndex, projectRoot, slug string) {
 	}
 }
 
-// generateTestTasks returns test task definitions for the given mode and profiles.
+// generateTestTasks returns test task definitions for the given mode and languages.
 func generateTestTasks(mode string, profiles []string, capabilities []string, auto profile.AutoConfig) []TestTaskDef {
+	languages := make([]profile.Language, len(profiles))
+	for i, p := range profiles {
+		languages[i] = profile.Language(p)
+	}
 	switch mode {
 	case "breakdown":
-		return GetBreakdownTestTasks(profiles, capabilities, auto)
+		return GetBreakdownTestTasks(languages, capabilities, auto)
 	case "quick":
-		return GetQuickTestTasks(profiles, capabilities, auto)
+		return GetQuickTestTasks(languages, capabilities, auto)
 	default:
 		return nil
 	}

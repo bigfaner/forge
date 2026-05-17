@@ -1,6 +1,6 @@
 ---
 name: run-e2e-tests
-description: Execute e2e test scripts and generate a results report. Profile-aware: reads active test profile from .forge/config.yaml to determine execution commands and result parsing.
+description: Execute e2e test scripts and generate a results report. Language-aware: auto-detects test framework from project files via forge testing CLI to determine execution commands and result parsing.
 ---
 
 # Run E2E Tests
@@ -16,17 +16,16 @@ This skill only executes existing test scripts and reports results. Forbidden:
 - "Fixing" tests during execution to make them pass
 </HARD-GATE>
 
-## Step 0: Resolve Profile
+## Step 0: Resolve Language and Strategy
 
-1. **Resolve profile**: Run `forge profile` to get the active test profile(s). This reads `.forge/config.yaml`, falls back to project structure detection.
-2. **On failure** (output shows `PROFILE: (none)`): ask the user to choose from known profiles (`web-playwright`, `go-test`, `maestro`, `java-junit`, `rust-test`, `pytest`). Run `forge profile set <name>` to persist their choice.
-3. **Load profile manifest**: Run `forge profile get <profile-name> --manifest`.
-4. **Load profile strategy**: Run `forge profile get <profile-name> --run`.
+1. **Detect language**: Run `forge testing detect` to auto-detect the project's test language(s) from file signals.
+2. **On failure** (no language detected): ask the user to add `languages` to `.forge/config.yaml` (e.g., `languages: [go]`).
+3. **Load strategy**: Run `forge testing get run` to load the run strategy for the detected language.
 
-Use the loaded profile manifest and strategy for all subsequent steps.
+Use the loaded strategy for all subsequent steps.
 
 <HARD-RULE>
-Do NOT silently default to any profile. If `forge profile` returns no result and the user cannot decide, abort the skill.
+Do NOT silently default to any language. If `forge testing detect` returns no result and the user cannot configure `languages`, abort the skill.
 </HARD-RULE>
 
 ## Prerequisites
@@ -37,10 +36,10 @@ Check previous stage artifacts. Abort and prompt user if missing:
 |----------|----------------|
 | `Justfile` with `e2e-setup` recipe | Run `/init-justfile` first |
 | `tests/e2e/features/<slug>/` directory | Run `/gen-test-scripts` first |
-| At least one test file (extension from profile manifest `file-extension`) in `tests/e2e/features/<slug>/` | Run `/gen-test-scripts` first |
+| At least one test file (extension from detected language) in `tests/e2e/features/<slug>/` | Run `/gen-test-scripts` first |
 
 <PRINCIPLE>
-**Shared infrastructure first.** Before executing any test actions, verify that shared dependencies are complete and functional. Shared file names are defined in the profile manifest (`templates.*`). If shared files are missing symbols imported by test files, all tests will fail at the import stage. When inconsistencies are found, go back to `/gen-test-scripts` to fix shared dependencies before running tests.
+**Shared infrastructure first.** Before executing any test actions, verify that shared dependencies are complete and functional. Shared file names are defined in the language's strategy. If shared files are missing symbols imported by test files, all tests will fail at the import stage. When inconsistencies are found, go back to `/gen-test-scripts` to fix shared dependencies before running tests.
 </PRINCIPLE>
 
 **Justfile check** (must pass before proceeding):
@@ -83,7 +82,7 @@ slug=$(forge feature 2>/dev/null | grep '^FEATURE:' | sed 's/^FEATURE:[[:space:]
 
 ### Step 1: Setup Environment
 
-Run `just e2e-setup` (idempotent — installs deps per profile):
+Run `just e2e-setup` (idempotent — installs deps per language):
 
 ```bash
 just e2e-setup
@@ -107,21 +106,21 @@ If this fails, return to `/gen-test-scripts` to resolve the `// VERIFY:` markers
 
 ### Step 3: Run Test Specs
 
-**Run all specs** via justfile (profile-aware execution):
+**Run all specs** via justfile (language-aware execution):
 
 ```bash
 just test-e2e --feature <slug>
 ```
 
-Execution details (command, config behavior, result output path) are defined in the active profile's `run.md` strategy file.
+Execution details (command, config behavior, result output path) are defined in the active strategy's `run.md`.
 
 ### Step 4: Collect Results
 
-**Guard**: Before parsing, verify the result output exists and is valid. The result file path and format are defined in the profile's `run.md`.
+**Guard**: Before parsing, verify the result output exists and is valid. The result file path and format are defined in the strategy's `run.md`.
 
 If the result file is missing or empty: report the error to the user with the test runner's console output as evidence, and abort report generation. Do NOT attempt to parse a missing/malformed file.
 
-Parse test results following the format described in the active profile's `run.md` strategy file. The `run.md` defines:
+Parse test results following the format described in the active strategy's `run.md`. The `run.md` defines:
 - Result file location and format (JSON, XML, text, etc.)
 - Field mapping (status, duration, error message, stack trace)
 - Suite/test case traversal strategy
@@ -129,7 +128,7 @@ Parse test results following the format described in the active profile's `run.m
 
 ### Step 5: Generate Report
 
-Read the template at `plugins/forge/skills/run-e2e-tests/templates/e2e-report.md`. Fill in results using the profile's result format.
+Read the template at `plugins/forge/skills/run-e2e-tests/templates/e2e-report.md`. Fill in results using the strategy's result format.
 
 Fill in:
 - Summary statistics (total/pass/fail/skip per type)
@@ -137,11 +136,11 @@ Fill in:
 - Failed test details with error messages
 - Screenshot paths for UI tests
 
-**Test type classification**: Follow the rules in the active profile's `run.md` for classifying tests by type (UI/API/CLI).
+**Test type classification**: Follow the rules in the active strategy's `run.md` for classifying tests by type (UI/API/CLI).
 
 **TC ID extraction**: Extract from test title using pattern `TC-\d+`.
 
-**Screenshots**: Follow the profile's `run.md` for screenshot discovery paths. When available, use `glob tests/e2e/results/**/*.png` to discover screenshots.
+**Screenshots**: Follow the strategy's `run.md` for screenshot discovery paths. When available, use `glob tests/e2e/results/**/*.png` to discover screenshots.
 
 Write to: `tests/e2e/features/<slug>/results/latest.md`
 
@@ -178,7 +177,7 @@ Report: tests/e2e/features/<slug>/results/latest.md
 
 ## Timeout Configuration
 
-Timeout settings are profile-specific. See the active profile's `run.md` for details on timeout hierarchy and configuration.
+Timeout settings are language-specific. See the active strategy's `run.md` for details on timeout hierarchy and configuration.
 
 ## Error Handling
 

@@ -55,10 +55,10 @@ func testConfigInit(projectRoot string) initAction {
 
 	// Write a sensible default config for testing
 	cfg := profile.ForgeConfig{
-		ProjectType:  "backend",
-		TestProfiles: []string{"go-test"},
-		Capabilities: []string{"tui", "api", "cli"},
-		Auto:         autoConfigDefaults(),
+		ProjectType: "backend",
+		Languages:   []string{"go"},
+		Interfaces:  []string{"tui", "api", "cli"},
+		Auto:        autoConfigDefaults(),
 	}
 
 	if err := writeConfigFile(configFile, &cfg); err != nil {

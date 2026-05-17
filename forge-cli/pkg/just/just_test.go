@@ -106,7 +106,7 @@ func TestResolveScope(t *testing.T) {
 
 	t.Run("config without project-type returns empty", func(t *testing.T) {
 		dir := t.TempDir()
-		writeForgeConfig(t, dir, "test-profiles:\n  - go-test\n")
+		writeForgeConfig(t, dir, "languages:\n  - go\n")
 		got := ResolveScope(dir, "frontend")
 		if got != "" {
 			t.Errorf("expected empty without project-type key, got %q", got)

@@ -6,51 +6,17 @@ import (
 	"testing"
 )
 
-func TestGetManifest(t *testing.T) {
-	tests := []struct {
-		name    string
-		wantErr bool
-	}{
-		{"web-playwright", false},
-		{"go-test", false},
-		{"maestro", false},
-		{"java-junit", false},
-		{"rust-test", false},
-		{"pytest", false},
-		{"unknown-profile", true},
-		{"", true},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			data, err := GetManifest(tt.name)
-			if tt.wantErr {
-				if err == nil {
-					t.Errorf("GetManifest(%q) expected error, got nil", tt.name)
-				}
-				return
-			}
-			if err != nil {
-				t.Fatalf("GetManifest(%q) unexpected error: %v", tt.name, err)
-			}
-			if len(data) == 0 {
-				t.Errorf("GetManifest(%q) returned empty data", tt.name)
-			}
-		})
-	}
-}
-
 func TestGetStrategy(t *testing.T) {
 	tests := []struct {
 		name    string
 		kind    string
 		wantErr bool
 	}{
-		{"go-test", "generate", false},
-		{"go-test", "run", false},
-		{"go-test", "graduate", false},
-		{"web-playwright", "generate", false},
-		{"go-test", "invalid", true},
+		{"go", "generate", false},
+		{"go", "run", false},
+		{"go", "graduate", false},
+		{"javascript", "generate", false},
+		{"go", "invalid", true},
 		{"unknown", "generate", true},
 	}
 
@@ -74,7 +40,7 @@ func TestGetStrategy(t *testing.T) {
 }
 
 func TestGetJustfileRecipes(t *testing.T) {
-	data, err := GetJustfileRecipes("go-test")
+	data, err := GetJustfileRecipes("go")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -84,7 +50,7 @@ func TestGetJustfileRecipes(t *testing.T) {
 
 	_, err = GetJustfileRecipes("unknown")
 	if err == nil {
-		t.Error("expected error for unknown profile")
+		t.Error("expected error for unknown language")
 	}
 }
 
@@ -94,11 +60,11 @@ func TestGetTemplate(t *testing.T) {
 		filename string
 		wantErr  bool
 	}{
-		{"go-test", "test-file.go", false},
-		{"go-test", "helpers.go", false},
-		{"web-playwright", "helpers.ts", false},
-		{"web-playwright", "nonexistent.ts", true},
-		{"go-test", "nonexistent.go", true},
+		{"go", "test-file.go", false},
+		{"go", "helpers.go", false},
+		{"javascript", "helpers.ts", false},
+		{"javascript", "nonexistent.ts", true},
+		{"go", "nonexistent.go", true},
 		{"unknown", "test-file.go", true},
 	}
 
@@ -127,8 +93,8 @@ func TestListProfileTemplates(t *testing.T) {
 		wantCount int
 		wantErr   bool
 	}{
-		{"go-test", 2, false},
-		{"web-playwright", 8, false},
+		{"go", 2, false},
+		{"javascript", 8, false},
 		{"unknown", 0, true},
 	}
 
@@ -157,67 +123,43 @@ func TestListEmbeddedProfiles(t *testing.T) {
 		t.Errorf("ListEmbeddedProfiles() = %d profiles, want 6", len(profiles))
 	}
 
-	expected := []string{"go-test", "java-junit", "maestro", "pytest", "rust-test", "web-playwright"}
+	expected := []string{"go", "java", "javascript", "mobile", "python", "rust"}
 	for _, p := range expected {
 		if !slices.Contains(profiles, p) {
-			t.Errorf("expected profile %q not found in list", p)
+			t.Errorf("expected language %q not found in list", p)
 		}
 	}
 }
 
-func TestGetProfileCapabilities(t *testing.T) {
-	t.Run("go-test has tui, api, cli", func(t *testing.T) {
-		caps, err := GetProfileCapabilities("go-test")
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if len(caps) != 3 {
-			t.Fatalf("expected 3 capabilities, got %d: %v", len(caps), caps)
-		}
-		for _, want := range []string{"tui", "api", "cli"} {
-			if !slices.Contains(caps, want) {
-				t.Errorf("expected capability %q not found", want)
-			}
-		}
-	})
-
-	t.Run("unknown profile returns error", func(t *testing.T) {
-		_, err := GetProfileCapabilities("unknown")
-		if err == nil {
-			t.Error("expected error for unknown profile")
-		}
-	})
-}
-
-func TestValidateCapabilities(t *testing.T) {
-	t.Run("valid single capability", func(t *testing.T) {
-		err := ValidateCapabilities([]string{"web-ui"})
+func TestValidateInterfaces(t *testing.T) {
+	t.Run("valid single interface", func(t *testing.T) {
+		err := ValidateInterfaces([]string{"web-ui"})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	})
 
-	t.Run("valid multiple capabilities", func(t *testing.T) {
-		err := ValidateCapabilities([]string{"web-ui", "tui", "api"})
+	t.Run("valid multiple interfaces", func(t *testing.T) {
+		err := ValidateInterfaces([]string{"web-ui", "tui", "api"})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	})
 
 	t.Run("all valid types accepted", func(t *testing.T) {
-		err := ValidateCapabilities([]string{"web-ui", "tui", "mobile-ui", "api", "cli"})
+		err := ValidateInterfaces([]string{"web-ui", "tui", "mobile-ui", "api", "cli"})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	})
 
 	t.Run("invalid value rejected", func(t *testing.T) {
-		err := ValidateCapabilities([]string{"web-ui", "invalid-type"})
+		err := ValidateInterfaces([]string{"web-ui", "invalid-type"})
 		if err == nil {
-			t.Fatal("expected error for invalid capability, got nil")
+			t.Fatal("expected error for invalid interface, got nil")
 		}
 		// Error message should list valid values
-		for _, valid := range ValidTestTypes {
+		for _, valid := range ValidInterfaceTypes {
 			if !containsSubstring(err.Error(), valid) {
 				t.Errorf("error message should mention valid type %q, got: %v", valid, err)
 			}
@@ -225,28 +167,28 @@ func TestValidateCapabilities(t *testing.T) {
 	})
 
 	t.Run("empty input passes", func(t *testing.T) {
-		err := ValidateCapabilities(nil)
+		err := ValidateInterfaces(nil)
 		if err != nil {
 			t.Fatalf("unexpected error for empty input: %v", err)
 		}
 	})
 
 	t.Run("case sensitive - uppercase rejected", func(t *testing.T) {
-		err := ValidateCapabilities([]string{"Web-UI"})
+		err := ValidateInterfaces([]string{"Web-UI"})
 		if err == nil {
-			t.Fatal("expected error for uppercase capability, got nil")
+			t.Fatal("expected error for uppercase interface, got nil")
 		}
 	})
 
 	t.Run("case sensitive - mixed case rejected", func(t *testing.T) {
-		err := ValidateCapabilities([]string{"Api"})
+		err := ValidateInterfaces([]string{"Api"})
 		if err == nil {
-			t.Fatal("expected error for mixed-case capability, got nil")
+			t.Fatal("expected error for mixed-case interface, got nil")
 		}
 	})
 
 	t.Run("duplicate valid values pass", func(t *testing.T) {
-		err := ValidateCapabilities([]string{"api", "api"})
+		err := ValidateInterfaces([]string{"api", "api"})
 		if err != nil {
 			t.Fatalf("unexpected error for duplicate valid values: %v", err)
 		}
@@ -257,55 +199,55 @@ func containsSubstring(s, sub string) bool {
 	return strings.Contains(s, sub)
 }
 
-func TestValidTestTypes(t *testing.T) {
+func TestValidInterfaceTypes(t *testing.T) {
 	expected := []string{"web-ui", "tui", "mobile-ui", "api", "cli"}
-	if len(ValidTestTypes) != len(expected) {
-		t.Fatalf("ValidTestTypes has %d entries, want %d", len(ValidTestTypes), len(expected))
+	if len(ValidInterfaceTypes) != len(expected) {
+		t.Fatalf("ValidInterfaceTypes has %d entries, want %d", len(ValidInterfaceTypes), len(expected))
 	}
 	for _, want := range expected {
-		if !slices.Contains(ValidTestTypes, want) {
-			t.Errorf("ValidTestTypes missing %q", want)
+		if !slices.Contains(ValidInterfaceTypes, want) {
+			t.Errorf("ValidInterfaceTypes missing %q", want)
 		}
 	}
 }
 
-func TestUnionCapabilities(t *testing.T) {
-	t.Run("single profile", func(t *testing.T) {
-		caps, err := UnionCapabilities([]string{"go-test"})
+func TestUnionLanguageInterfaces(t *testing.T) {
+	t.Run("single language", func(t *testing.T) {
+		ifaces, err := UnionLanguageInterfaces([]string{"go"})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if len(caps) != 3 {
-			t.Errorf("expected 3 capabilities, got %d: %v", len(caps), caps)
+		if len(ifaces) != 2 {
+			t.Errorf("expected 2 interfaces, got %d: %v", len(ifaces), ifaces)
 		}
 	})
 
-	t.Run("multiple profiles deduplicates", func(t *testing.T) {
-		// go-test: [tui, api, cli], web-playwright: [web-ui, api, cli]
-		// union: [api, cli, tui, web-ui] (sorted)
-		caps, err := UnionCapabilities([]string{"go-test", "web-playwright"})
+	t.Run("multiple languages deduplicates", func(t *testing.T) {
+		// go: [api, cli], javascript: [web-ui, api]
+		// union: [api, cli, web-ui] (sorted)
+		ifaces, err := UnionLanguageInterfaces([]string{"go", "javascript"})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		// api and cli appear in both, should be deduplicated
-		expected := []string{"api", "cli", "tui", "web-ui"}
-		if len(caps) != len(expected) {
-			t.Errorf("expected %d capabilities, got %d: %v", len(expected), len(caps), caps)
+		// api appears in both, should be deduplicated
+		expected := []string{"api", "cli", "web-ui"}
+		if len(ifaces) != len(expected) {
+			t.Errorf("expected %d interfaces, got %d: %v", len(expected), len(ifaces), ifaces)
 		}
 		for _, want := range expected {
-			if !slices.Contains(caps, want) {
-				t.Errorf("expected capability %q not found in union", want)
+			if !slices.Contains(ifaces, want) {
+				t.Errorf("expected interface %q not found in union", want)
 			}
 		}
 	})
 
-	t.Run("empty profiles returns empty", func(t *testing.T) {
-		caps, err := UnionCapabilities(nil)
+	t.Run("empty languages returns empty", func(t *testing.T) {
+		ifaces, err := UnionLanguageInterfaces(nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if len(caps) != 0 {
-			t.Errorf("expected 0 capabilities, got %d: %v", len(caps), caps)
+		if len(ifaces) != 0 {
+			t.Errorf("expected 0 interfaces, got %d: %v", len(ifaces), ifaces)
 		}
 	})
 }

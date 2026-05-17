@@ -19,7 +19,7 @@ func setupProfile(t *testing.T, profileName string) string {
 	if err := os.MkdirAll(forgeDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	configContent := fmt.Sprintf("test-profiles:\n  - %s\n", profileName)
+	configContent := fmt.Sprintf("languages:\n  - %s\n", profileName)
 	if err := os.WriteFile(filepath.Join(forgeDir, feature.ForgeConfigFileName), []byte(configContent), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +44,7 @@ func setupProfileWithE2E(t *testing.T, profileName string) string {
 
 func TestRun(t *testing.T) {
 	t.Run("delegates to just test-e2e", func(t *testing.T) {
-		dir := setupProfile(t, "go-test")
+		dir := setupProfile(t, "go")
 		s := &stubExec{responses: map[string]execResponse{
 			"just test-e2e": {output: []byte("ok\n"), err: nil},
 		}}
@@ -59,7 +59,7 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("passes feature as justfile argument", func(t *testing.T) {
-		dir := setupProfile(t, "go-test")
+		dir := setupProfile(t, "go")
 		// Create feature directory so Run's existence check passes
 		featureDir := filepath.Join(dir, "tests", "e2e", "features", "my-feature")
 		if err := os.MkdirAll(featureDir, 0o755); err != nil {
@@ -79,7 +79,7 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("just not on PATH returns actionable error", func(t *testing.T) {
-		dir := setupProfile(t, "go-test")
+		dir := setupProfile(t, "go")
 		s := &stubExec{responses: map[string]execResponse{
 			"just test-e2e": {output: nil, err: fmt.Errorf("exec: \"just\": executable file not found in $PATH")},
 		}}
@@ -97,7 +97,7 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("just failure returns formatted error", func(t *testing.T) {
-		dir := setupProfile(t, "go-test")
+		dir := setupProfile(t, "go")
 		s := &stubExec{responses: map[string]execResponse{
 			"just test-e2e": {output: []byte("first line of error\nsecond line"), err: fmt.Errorf("exit status 1")},
 		}}
@@ -131,7 +131,7 @@ func TestRun(t *testing.T) {
 
 func TestSetup(t *testing.T) {
 	t.Run("delegates to just e2e-setup", func(t *testing.T) {
-		dir := setupProfile(t, "go-test")
+		dir := setupProfile(t, "go")
 		s := &stubExec{responses: map[string]execResponse{
 			"just e2e-setup": {output: []byte(""), err: nil},
 		}}
@@ -146,7 +146,7 @@ func TestSetup(t *testing.T) {
 	})
 
 	t.Run("just not on PATH returns actionable error", func(t *testing.T) {
-		dir := setupProfile(t, "go-test")
+		dir := setupProfile(t, "go")
 		s := &stubExec{responses: map[string]execResponse{
 			"just e2e-setup": {output: nil, err: fmt.Errorf("exec: \"just\": executable file not found in $PATH")},
 		}}
@@ -164,7 +164,7 @@ func TestSetup(t *testing.T) {
 	})
 
 	t.Run("just failure returns formatted error", func(t *testing.T) {
-		dir := setupProfile(t, "web-playwright")
+		dir := setupProfile(t, "javascript")
 		s := &stubExec{responses: map[string]execResponse{
 			"just e2e-setup": {output: []byte("EACCES: permission denied\n"), err: fmt.Errorf("exit status 1")},
 		}}
@@ -191,8 +191,8 @@ func TestSetup(t *testing.T) {
 }
 
 func TestVerify(t *testing.T) {
-	t.Run("go-test profile scans for VERIFY markers", func(t *testing.T) {
-		dir := setupProfileWithE2E(t, "go-test")
+	t.Run("go profile scans for VERIFY markers", func(t *testing.T) {
+		dir := setupProfileWithE2E(t, "go")
 		// Write a file without VERIFY markers
 		e2eDir := filepath.Join(dir, "tests", "e2e")
 		if err := os.WriteFile(filepath.Join(e2eDir, "clean_test.go"), []byte("package e2e\n// no markers\n"), 0o644); err != nil {
@@ -210,7 +210,7 @@ func TestVerify(t *testing.T) {
 	})
 
 	t.Run("finds VERIFY markers returns error", func(t *testing.T) {
-		dir := setupProfileWithE2E(t, "go-test")
+		dir := setupProfileWithE2E(t, "go")
 		e2eDir := filepath.Join(dir, "tests", "e2e")
 		if err := os.WriteFile(filepath.Join(e2eDir, "has_verify_test.go"), []byte("// VERIFY: placeholder\npackage e2e\n"), 0o644); err != nil {
 			t.Fatal(err)
@@ -230,7 +230,7 @@ func TestVerify(t *testing.T) {
 	})
 
 	t.Run("feature not found returns ErrFeatureNotFound", func(t *testing.T) {
-		dir := setupProfileWithE2E(t, "go-test")
+		dir := setupProfileWithE2E(t, "go")
 
 		err := Verify(RunOpts{ProjectRoot: dir, Feature: "nonexistent"})
 		if !errors.Is(err, ErrFeatureNotFound) {
@@ -249,7 +249,7 @@ func TestVerify(t *testing.T) {
 
 func TestCompile(t *testing.T) {
 	t.Run("delegates to just e2e-compile", func(t *testing.T) {
-		dir := setupProfile(t, "go-test")
+		dir := setupProfile(t, "go")
 		s := &stubExec{responses: map[string]execResponse{
 			"just e2e-compile": {output: []byte(""), err: nil},
 		}}
@@ -264,7 +264,7 @@ func TestCompile(t *testing.T) {
 	})
 
 	t.Run("just not on PATH returns actionable error", func(t *testing.T) {
-		dir := setupProfile(t, "go-test")
+		dir := setupProfile(t, "go")
 		s := &stubExec{responses: map[string]execResponse{
 			"just e2e-compile": {output: nil, err: fmt.Errorf("exec: \"just\": executable file not found in $PATH")},
 		}}
@@ -282,7 +282,7 @@ func TestCompile(t *testing.T) {
 	})
 
 	t.Run("just failure returns formatted error", func(t *testing.T) {
-		dir := setupProfile(t, "go-test")
+		dir := setupProfile(t, "go")
 		s := &stubExec{responses: map[string]execResponse{
 			"just e2e-compile": {output: []byte("./tests/e2e/main_test.go:15: undefined: Foo\n"), err: fmt.Errorf("exit status 1")},
 		}}
@@ -310,7 +310,7 @@ func TestCompile(t *testing.T) {
 
 func TestDiscover(t *testing.T) {
 	t.Run("delegates to just e2e-discover", func(t *testing.T) {
-		dir := setupProfile(t, "go-test")
+		dir := setupProfile(t, "go")
 		s := &stubExec{responses: map[string]execResponse{
 			"just e2e-discover": {output: []byte("TestExample\n"), err: nil},
 		}}
@@ -325,7 +325,7 @@ func TestDiscover(t *testing.T) {
 	})
 
 	t.Run("just not on PATH returns actionable error", func(t *testing.T) {
-		dir := setupProfile(t, "go-test")
+		dir := setupProfile(t, "go")
 		s := &stubExec{responses: map[string]execResponse{
 			"just e2e-discover": {output: nil, err: fmt.Errorf("exec: \"just\": executable file not found in $PATH")},
 		}}
@@ -343,7 +343,7 @@ func TestDiscover(t *testing.T) {
 	})
 
 	t.Run("just failure returns formatted error", func(t *testing.T) {
-		dir := setupProfile(t, "go-test")
+		dir := setupProfile(t, "go")
 		s := &stubExec{responses: map[string]execResponse{
 			"just e2e-discover": {output: []byte("build constraints exclude all tests\n"), err: fmt.Errorf("exit status 1")},
 		}}

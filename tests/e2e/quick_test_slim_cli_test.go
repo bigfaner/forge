@@ -646,11 +646,13 @@ func TestTC_015_DetectTypesFromTestCasesParsesSummaryTable(t *testing.T) {
 	idx2 := quickSlimReadIndex(t, dir2, "test-qts-015b")
 
 	// Per-type tasks are generated based on profile capabilities, not test-cases content
+	perTypeCount := 0
 	for _, typ := range []string{"api", "cli", "tui"} {
 		foundType := false
 		for _, task := range idx2.Tasks {
 			if task.ID == "T-quick-2-"+typ {
 				foundType = true
+				perTypeCount++
 				break
 			}
 		}

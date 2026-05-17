@@ -110,7 +110,7 @@ type Task struct {
 	// Required for all tasks after migration; validated by task validate.
 	// omitempty allows existing index.json files to load without error.
 	Type string `json:"type,omitempty"`
-	// Profile indicates the test profile associated with this task (e.g. "web-playwright", "go-test").
+	// Profile indicates the test language associated with this task (e.g. "go", "javascript").
 	// Set by task index for per-profile test tasks; empty for business tasks and shared test tasks.
 	Profile string `json:"profile,omitempty"`
 	// BlockedReason records why a task entered blocked state.

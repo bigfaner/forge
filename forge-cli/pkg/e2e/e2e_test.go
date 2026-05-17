@@ -16,7 +16,7 @@ func TestResolveProfile(t *testing.T) {
 		if err := os.MkdirAll(forgeDir, 0o755); err != nil {
 			t.Fatal(err)
 		}
-		configContent := "test-profiles:\n  - go-test\n"
+		configContent := "languages:\n  - go\n"
 		if err := os.WriteFile(filepath.Join(forgeDir, feature.ForgeConfigFileName), []byte(configContent), 0o644); err != nil {
 			t.Fatal(err)
 		}
@@ -25,8 +25,8 @@ func TestResolveProfile(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if got != "go-test" {
-			t.Fatalf("expected go-test, got %q", got)
+		if got != "go" {
+			t.Fatalf("expected go, got %q", got)
 		}
 	})
 
@@ -36,7 +36,7 @@ func TestResolveProfile(t *testing.T) {
 		if err := os.MkdirAll(forgeDir, 0o755); err != nil {
 			t.Fatal(err)
 		}
-		configContent := "test-profiles:\n  - web-playwright\n  - go-test\n"
+		configContent := "languages:\n  - javascript\n  - go\n"
 		if err := os.WriteFile(filepath.Join(forgeDir, feature.ForgeConfigFileName), []byte(configContent), 0o644); err != nil {
 			t.Fatal(err)
 		}
@@ -45,8 +45,8 @@ func TestResolveProfile(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if got != "web-playwright" {
-			t.Fatalf("expected web-playwright, got %q", got)
+		if got != "javascript" {
+			t.Fatalf("expected javascript, got %q", got)
 		}
 	})
 
@@ -62,7 +62,7 @@ func TestResolveProfile(t *testing.T) {
 		}
 	})
 
-	t.Run("empty test-profiles returns ErrNoProfile", func(t *testing.T) {
+	t.Run("empty languages returns ErrNoProfile", func(t *testing.T) {
 		dir := t.TempDir()
 		forgeDir := filepath.Join(dir, feature.ForgeDir)
 		if err := os.MkdirAll(forgeDir, 0o755); err != nil {
@@ -88,7 +88,7 @@ func TestResolveProfile(t *testing.T) {
 		if err := os.MkdirAll(forgeDir, 0o755); err != nil {
 			t.Fatal(err)
 		}
-		configContent := "test-profiles:\n  - fake-profile\n"
+		configContent := "languages:\n  - fake-profile\n"
 		if err := os.WriteFile(filepath.Join(forgeDir, feature.ForgeConfigFileName), []byte(configContent), 0o644); err != nil {
 			t.Fatal(err)
 		}
@@ -113,7 +113,7 @@ func TestResolveProfile(t *testing.T) {
 		if err := os.MkdirAll(forgeDir, 0o755); err != nil {
 			t.Fatal(err)
 		}
-		configContent := "test-profiles: [not closed"
+		configContent := "languages: [not closed"
 		if err := os.WriteFile(filepath.Join(forgeDir, feature.ForgeConfigFileName), []byte(configContent), 0o644); err != nil {
 			t.Fatal(err)
 		}
@@ -122,7 +122,7 @@ func TestResolveProfile(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
-		// Should be wrapped "read test profiles: ..." error, not ErrNoProfile or ErrBadProfile
+		// Should be wrapped "read languages: ..." error, not ErrNoProfile or ErrBadProfile
 		if errors.Is(err, ErrNoProfile) || errors.Is(err, ErrBadProfile) {
 			t.Fatalf("unexpected sentinel error for malformed config: %v", err)
 		}

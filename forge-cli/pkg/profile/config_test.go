@@ -24,7 +24,7 @@ func TestReadConfig(t *testing.T) {
 		if err := os.MkdirAll(forgeDir, 0o755); err != nil {
 			t.Fatal(err)
 		}
-		content := "project-type: backend\ntest-profiles:\n  - go-test\ncapabilities:\n  - tui\n  - api\n"
+		content := "project-type: backend\nlanguages:\n  - go\ninterfaces:\n  - tui\n  - api\n"
 		if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(content), 0o644); err != nil {
 			t.Fatal(err)
 		}
@@ -36,11 +36,11 @@ func TestReadConfig(t *testing.T) {
 		if cfg.ProjectType != "backend" {
 			t.Errorf("expected project-type backend, got %q", cfg.ProjectType)
 		}
-		if len(cfg.TestProfiles) != 1 || cfg.TestProfiles[0] != "go-test" {
-			t.Errorf("expected [go-test], got %v", cfg.TestProfiles)
+		if len(cfg.Languages) != 1 || cfg.Languages[0] != "go" {
+			t.Errorf("expected [go], got %v", cfg.Languages)
 		}
-		if len(cfg.Capabilities) != 2 || cfg.Capabilities[0] != "tui" || cfg.Capabilities[1] != "api" {
-			t.Errorf("expected [tui api], got %v", cfg.Capabilities)
+		if len(cfg.Interfaces) != 2 || cfg.Interfaces[0] != "tui" || cfg.Interfaces[1] != "api" {
+			t.Errorf("expected [tui api], got %v", cfg.Interfaces)
 		}
 	})
 
@@ -79,7 +79,7 @@ func TestGetConfigValue(t *testing.T) {
 	}
 
 	t.Run("project-type scalar", func(t *testing.T) {
-		dir := setupConfig(t, "project-type: frontend\ntest-profiles:\n  - go-test\n")
+		dir := setupConfig(t, "project-type: frontend\nlanguages:\n  - go\n")
 		val, err := GetConfigValue(dir, "project-type")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -89,9 +89,9 @@ func TestGetConfigValue(t *testing.T) {
 		}
 	})
 
-	t.Run("capabilities array", func(t *testing.T) {
-		dir := setupConfig(t, "capabilities:\n  - tui\n  - api\n  - cli\n")
-		val, err := GetConfigValue(dir, "capabilities")
+	t.Run("interfaces array", func(t *testing.T) {
+		dir := setupConfig(t, "interfaces:\n  - tui\n  - api\n  - cli\n")
+		val, err := GetConfigValue(dir, "interfaces")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -101,20 +101,20 @@ func TestGetConfigValue(t *testing.T) {
 		}
 	})
 
-	t.Run("test-profiles array", func(t *testing.T) {
-		dir := setupConfig(t, "test-profiles:\n  - go-test\n  - pytest\n")
-		val, err := GetConfigValue(dir, "test-profiles")
+	t.Run("languages array", func(t *testing.T) {
+		dir := setupConfig(t, "languages:\n  - go\n  - python\n")
+		val, err := GetConfigValue(dir, "languages")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		expected := "go-test\npytest"
+		expected := "go\npython"
 		if val != expected {
 			t.Errorf("expected %q, got %q", expected, val)
 		}
 	})
 
 	t.Run("auto.gitPush true", func(t *testing.T) {
-		dir := setupConfig(t, "test-profiles:\n  - go-test\nauto:\n  gitPush: true\n")
+		dir := setupConfig(t, "languages:\n  - go\nauto:\n  gitPush: true\n")
 		val, err := GetConfigValue(dir, "auto.gitPush")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -125,7 +125,7 @@ func TestGetConfigValue(t *testing.T) {
 	})
 
 	t.Run("auto.gitPush false", func(t *testing.T) {
-		dir := setupConfig(t, "test-profiles:\n  - go-test\nauto:\n  gitPush: false\n")
+		dir := setupConfig(t, "languages:\n  - go\nauto:\n  gitPush: false\n")
 		val, err := GetConfigValue(dir, "auto.gitPush")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -136,7 +136,7 @@ func TestGetConfigValue(t *testing.T) {
 	})
 
 	t.Run("auto.gitPush absent returns false (default)", func(t *testing.T) {
-		dir := setupConfig(t, "test-profiles:\n  - go-test\n")
+		dir := setupConfig(t, "languages:\n  - go\n")
 		val, err := GetConfigValue(dir, "auto.gitPush")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -147,7 +147,7 @@ func TestGetConfigValue(t *testing.T) {
 	})
 
 	t.Run("auto block absent returns false (default)", func(t *testing.T) {
-		dir := setupConfig(t, "test-profiles:\n  - go-test\n")
+		dir := setupConfig(t, "languages:\n  - go\n")
 		val, err := GetConfigValue(dir, "auto.gitPush")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -182,39 +182,40 @@ func TestGetConfigValue(t *testing.T) {
 	})
 }
 
-func TestReadTestProfiles(t *testing.T) {
-	t.Run("file not exists", func(t *testing.T) {
+func TestReadLanguages(t *testing.T) {
+	t.Run("file not exists falls back to detect", func(t *testing.T) {
 		dir := t.TempDir()
-		profiles, err := ReadTestProfiles(dir)
+		// No config file, no project files — should return empty
+		profiles, err := ReadLanguages(dir)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if profiles != nil {
-			t.Fatalf("expected nil, got %v", profiles)
+			t.Fatalf("expected nil when nothing detected, got %v", profiles)
 		}
 	})
 
-	t.Run("valid config", func(t *testing.T) {
+	t.Run("languages from config", func(t *testing.T) {
 		dir := t.TempDir()
 		forgeDir := filepath.Join(dir, ".forge")
 		if err := os.MkdirAll(forgeDir, 0o755); err != nil {
 			t.Fatal(err)
 		}
-		configContent := "test-profiles:\n  - web-playwright\n  - go-test\n"
+		configContent := "languages:\n  - javascript\n  - go\n"
 		if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(configContent), 0o644); err != nil {
 			t.Fatal(err)
 		}
 
-		profiles, err := ReadTestProfiles(dir)
+		profiles, err := ReadLanguages(dir)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if len(profiles) != 2 || profiles[0] != "web-playwright" || profiles[1] != "go-test" {
-			t.Fatalf("expected [web-playwright go-test], got %v", profiles)
+		if len(profiles) != 2 || profiles[0] != "javascript" || profiles[1] != "go" {
+			t.Fatalf("expected [javascript go], got %v", profiles)
 		}
 	})
 
-	t.Run("empty config", func(t *testing.T) {
+	t.Run("empty config falls back to detect", func(t *testing.T) {
 		dir := t.TempDir()
 		forgeDir := filepath.Join(dir, ".forge")
 		if err := os.MkdirAll(forgeDir, 0o755); err != nil {
@@ -224,30 +225,31 @@ func TestReadTestProfiles(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		profiles, err := ReadTestProfiles(dir)
+		// No project files to detect, should return nil
+		profiles, err := ReadLanguages(dir)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if profiles != nil {
-			t.Fatalf("expected nil for empty config, got %v", profiles)
+			t.Fatalf("expected nil for empty config with no detectable files, got %v", profiles)
 		}
 	})
 }
 
-func TestWriteTestProfiles(t *testing.T) {
+func TestWriteLanguages(t *testing.T) {
 	t.Run("create new file", func(t *testing.T) {
 		dir := t.TempDir()
-		if err := WriteTestProfiles(dir, []string{"go-test"}); err != nil {
+		if err := WriteLanguages(dir, []string{"go"}); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
 		// Verify written
-		profiles, err := ReadTestProfiles(dir)
+		profiles, err := ReadLanguages(dir)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if len(profiles) != 1 || profiles[0] != "go-test" {
-			t.Fatalf("expected [go-test], got %v", profiles)
+		if len(profiles) != 1 || profiles[0] != "go" {
+			t.Fatalf("expected [go], got %v", profiles)
 		}
 	})
 
@@ -257,43 +259,43 @@ func TestWriteTestProfiles(t *testing.T) {
 		if err := os.MkdirAll(forgeDir, 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte("test-profiles:\n  - old\n"), 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte("languages:\n  - old\n"), 0o644); err != nil {
 			t.Fatal(err)
 		}
 
-		if err := WriteTestProfiles(dir, []string{"rust-test"}); err != nil {
+		if err := WriteLanguages(dir, []string{"rust"}); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
-		profiles, err := ReadTestProfiles(dir)
+		profiles, err := ReadLanguages(dir)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if len(profiles) != 1 || profiles[0] != "rust-test" {
-			t.Fatalf("expected [rust-test], got %v", profiles)
+		if len(profiles) != 1 || profiles[0] != "rust" {
+			t.Fatalf("expected [rust], got %v", profiles)
 		}
 	})
 }
 
-func TestIsKnownProfile(t *testing.T) {
+func TestIsKnownLanguage(t *testing.T) {
 	tests := []struct {
 		name     string
 		expected bool
 	}{
-		{"web-playwright", true},
-		{"go-test", true},
-		{"maestro", true},
-		{"java-junit", true},
-		{"rust-test", true},
-		{"pytest", true},
+		{"go", true},
+		{"javascript", true},
+		{"mobile", true},
+		{"java", true},
+		{"rust", true},
+		{"python", true},
 		{"unknown", false},
 		{"", false},
-		{"Web-Playwright", false},
+		{"JavaScript", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := IsKnownProfile(tt.name); got != tt.expected {
-				t.Errorf("IsKnownProfile(%q) = %v, want %v", tt.name, got, tt.expected)
+			if got := IsKnownLanguage(tt.name); got != tt.expected {
+				t.Errorf("IsKnownLanguage(%q) = %v, want %v", tt.name, got, tt.expected)
 			}
 		})
 	}

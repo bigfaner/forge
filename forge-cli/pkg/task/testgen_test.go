@@ -17,8 +17,8 @@ var allEnabledAuto = profile.AutoConfig{
 	CleanCode:        profile.ModeToggle{Quick: false, Full: false},
 }
 
-func TestGetBreakdownTestTasks_EmptyCapabilities(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]string{"go-test"}, nil, defaultAuto)
+func TestGetBreakdownTestTasks_EmptyInterfaces(t *testing.T) {
+	tasks := GetBreakdownTestTasks([]profile.Language{"go"}, nil, defaultAuto)
 
 	// No capabilities -> no test tasks generated
 	if len(tasks) != 0 {
@@ -27,7 +27,7 @@ func TestGetBreakdownTestTasks_EmptyCapabilities(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_SingleProfile(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]string{"go-test"}, []string{"cli"}, defaultAuto)
+	tasks := GetBreakdownTestTasks([]profile.Language{"go"}, []string{"cli"}, defaultAuto)
 
 	// Shared: gen-cases, eval-cases + per-type: gen-scripts-cli, run, graduate + shared: verify-regression, consolidate = 7
 	if len(tasks) != 7 {
@@ -62,14 +62,14 @@ func TestGetBreakdownTestTasks_SingleProfile(t *testing.T) {
 		t.Errorf("consolidate should depend on verify-regression, got %v", tasks[6].Dependencies)
 	}
 
-	// Per-profile tasks have ProfileName
-	if tasks[2].ProfileName != "go-test" {
-		t.Errorf("gen-scripts ProfileName = %q, want go-test", tasks[2].ProfileName)
+	// Per-language tasks have Language
+	if tasks[2].Language != "go" {
+		t.Errorf("gen-scripts Language = %q, want go", tasks[2].Language)
 	}
 }
 
 func TestGetBreakdownTestTasks_MultiProfile(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]string{"web-playwright", "go-test"}, []string{"api"}, defaultAuto)
+	tasks := GetBreakdownTestTasks([]profile.Language{"javascript", "go"}, []string{"api"}, defaultAuto)
 
 	// 2 shared + (1 per-type-gen + run + graduate)*2 + 2 shared = 10
 	if len(tasks) != 10 {
@@ -95,8 +95,8 @@ func TestGetBreakdownTestTasks_MultiProfile(t *testing.T) {
 	}
 }
 
-func TestGetQuickTestTasks_EmptyCapabilities(t *testing.T) {
-	tasks := GetQuickTestTasks([]string{"go-test"}, nil, allEnabledAuto)
+func TestGetQuickTestTasks_EmptyInterfaces(t *testing.T) {
+	tasks := GetQuickTestTasks([]profile.Language{"go"}, nil, allEnabledAuto)
 
 	// No capabilities -> no test tasks
 	if len(tasks) != 0 {
@@ -105,7 +105,7 @@ func TestGetQuickTestTasks_EmptyCapabilities(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_SingleProfile(t *testing.T) {
-	tasks := GetQuickTestTasks([]string{"go-test"}, []string{"cli"}, allEnabledAuto)
+	tasks := GetQuickTestTasks([]profile.Language{"go"}, []string{"cli"}, allEnabledAuto)
 
 	// gen-cases + gen-and-run-cli + graduate + verify-regression + drift = 5
 	if len(tasks) != 5 {
@@ -154,7 +154,7 @@ func TestGetQuickTestTasks_SingleProfile(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_MultiProfile(t *testing.T) {
-	tasks := GetQuickTestTasks([]string{"web-playwright", "go-test"}, []string{"api"}, allEnabledAuto)
+	tasks := GetQuickTestTasks([]profile.Language{"javascript", "go"}, []string{"api"}, allEnabledAuto)
 
 	// Profile-a: gen-cases + gen-and-run-api + graduate = 3
 	// Profile-b: same = 3
@@ -188,11 +188,11 @@ func TestGetQuickTestTasks_MultiProfile(t *testing.T) {
 
 func TestGenerateTestTaskMD(t *testing.T) {
 	def := TestTaskDef{
-		ID: "T-test-2a-api", Key: "gen-test-scripts-go-test-api",
-		Title: "Generate Test Scripts (go-test, api)", Priority: "P1",
+		ID: "T-test-2a-api", Key: "gen-test-scripts-go-api",
+		Title: "Generate Test Scripts (go, api)", Priority: "P1",
 		EstimatedTime: "1-2h", Dependencies: []string{"T-test-1b"},
 		Type: TypeTestPipelineGenScripts, Scope: "all",
-		ProfileName: "go-test", TestType: "api", StrategyKind: "generate",
+		Language: "go", TestType: "api", StrategyKind: "generate",
 	}
 
 	content, err := GenerateTestTaskMD(def, "my-feature")
@@ -214,7 +214,7 @@ func TestGenerateTestTaskMD(t *testing.T) {
 	}
 
 	// Check profile strategy content loaded
-	if !strings.Contains(s, "go-test") {
+	if !strings.Contains(s, "go") {
 		t.Error("missing profile name in body")
 	}
 }
@@ -245,7 +245,7 @@ func TestResolveFirstTestDep(t *testing.T) {
 			"2-gate":  {ID: "2.gate"},
 			"1.1-foo": {ID: "1.1"},
 		}
-		tasks := GetBreakdownTestTasks([]string{"go-test"}, []string{"cli"}, defaultAuto)
+		tasks := GetBreakdownTestTasks([]profile.Language{"go"}, []string{"cli"}, defaultAuto)
 		ResolveFirstTestDep(tasks, existing, "breakdown")
 		if tasks[0].Dependencies[0] != "2.gate" {
 			t.Errorf("T-test-1 should depend on highest gate, got %v", tasks[0].Dependencies)
@@ -258,7 +258,7 @@ func TestResolveFirstTestDep(t *testing.T) {
 			"2-bar": {ID: "2"},
 			"3-baz": {ID: "3"},
 		}
-		tasks := GetQuickTestTasks([]string{"go-test"}, []string{"cli"}, allEnabledAuto)
+		tasks := GetQuickTestTasks([]profile.Language{"go"}, []string{"cli"}, allEnabledAuto)
 		ResolveFirstTestDep(tasks, existing, "quick")
 		if tasks[0].Dependencies[0] != "3" {
 			t.Errorf("T-quick-1 should depend on max business task, got %v", tasks[0].Dependencies)
@@ -323,7 +323,7 @@ func TestResolveDocEvalDep(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_PerType_SingleProfile(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]string{"go-test"}, []string{"tui", "api"}, defaultAuto)
+	tasks := GetBreakdownTestTasks([]profile.Language{"go"}, []string{"tui", "api"}, defaultAuto)
 
 	// Shared: gen-cases, eval-cases + per-type-gen: 2 (tui, api) + run + graduate + verify-regression + consolidate = 8
 	if len(tasks) != 8 {
@@ -343,11 +343,11 @@ func TestGetBreakdownTestTasks_PerType_SingleProfile(t *testing.T) {
 	}
 
 	// Keys include type suffix
-	if tasks[2].Key != "gen-test-scripts-go-test-tui" {
-		t.Errorf("tasks[2].Key = %q, want gen-test-scripts-go-test-tui", tasks[2].Key)
+	if tasks[2].Key != "gen-test-scripts-go-tui" {
+		t.Errorf("tasks[2].Key = %q, want gen-test-scripts-go-tui", tasks[2].Key)
 	}
-	if tasks[3].Key != "gen-test-scripts-go-test-api" {
-		t.Errorf("tasks[3].Key = %q, want gen-test-scripts-go-test-api", tasks[3].Key)
+	if tasks[3].Key != "gen-test-scripts-go-api" {
+		t.Errorf("tasks[3].Key = %q, want gen-test-scripts-go-api", tasks[3].Key)
 	}
 
 	// TestType field set
@@ -386,7 +386,7 @@ func TestGetBreakdownTestTasks_PerType_SingleProfile(t *testing.T) {
 
 func TestGetBreakdownTestTasks_PerType_MultiProfile(t *testing.T) {
 	tasks := GetBreakdownTestTasks(
-		[]string{"web-playwright", "go-test"},
+		[]profile.Language{"javascript", "go"},
 		[]string{"tui", "api"},
 		defaultAuto,
 	)
@@ -423,11 +423,11 @@ func TestGetBreakdownTestTasks_PerType_MultiProfile(t *testing.T) {
 	}
 
 	// Keys include profile and type
-	if tasks[2].Key != "gen-test-scripts-web-playwright-tui" {
-		t.Errorf("tasks[2].Key = %q, want gen-test-scripts-web-playwright-tui", tasks[2].Key)
+	if tasks[2].Key != "gen-test-scripts-javascript-tui" {
+		t.Errorf("tasks[2].Key = %q, want gen-test-scripts-javascript-tui", tasks[2].Key)
 	}
-	if tasks[6].Key != "gen-test-scripts-go-test-tui" {
-		t.Errorf("tasks[6].Key = %q, want gen-test-scripts-go-test-tui", tasks[6].Key)
+	if tasks[6].Key != "gen-test-scripts-go-tui" {
+		t.Errorf("tasks[6].Key = %q, want gen-test-scripts-go-tui", tasks[6].Key)
 	}
 
 	// verify-regression depends on both graduates
@@ -437,7 +437,7 @@ func TestGetBreakdownTestTasks_PerType_MultiProfile(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_PerType_SingleType(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]string{"go-test"}, []string{"api"}, defaultAuto)
+	tasks := GetBreakdownTestTasks([]profile.Language{"go"}, []string{"api"}, defaultAuto)
 
 	// Only api type -> one gen task
 	if len(tasks) != 7 {
@@ -463,7 +463,7 @@ func TestGetBreakdownTestTasks_PerType_SingleType(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_PerType_ThreeTypes(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]string{"go-test"}, []string{"tui", "api", "cli"}, defaultAuto)
+	tasks := GetBreakdownTestTasks([]profile.Language{"go"}, []string{"tui", "api", "cli"}, defaultAuto)
 
 	// 3 types -> 3 gen tasks
 	if len(tasks) != 9 {
@@ -485,11 +485,11 @@ func TestGetBreakdownTestTasks_PerType_ThreeTypes(t *testing.T) {
 
 func TestGenerateTestTaskMD_WithTestType(t *testing.T) {
 	def := TestTaskDef{
-		ID: "T-test-2-api", Key: "gen-test-scripts-go-test-api",
-		Title: "Generate Test Scripts (go-test, api)", Priority: "P1",
+		ID: "T-test-2-api", Key: "gen-test-scripts-go-api",
+		Title: "Generate Test Scripts (go, api)", Priority: "P1",
 		EstimatedTime: "1-2h", Dependencies: []string{"T-test-1b"},
 		Type: TypeTestPipelineGenScripts, Scope: "all",
-		ProfileName: "go-test", TestType: "api", StrategyKind: "generate",
+		Language: "go", TestType: "api", StrategyKind: "generate",
 	}
 
 	content, err := GenerateTestTaskMD(def, "my-feature")
@@ -500,20 +500,20 @@ func TestGenerateTestTaskMD_WithTestType(t *testing.T) {
 	s := string(content)
 
 	// Check frontmatter has profile
-	if !strings.Contains(s, `profile: "go-test"`) {
+	if !strings.Contains(s, `profile: "go"`) {
 		t.Error("missing profile in frontmatter")
 	}
 	// Check body mentions type
 	if !strings.Contains(s, "api") {
 		t.Error("missing test type in body")
 	}
-	if !strings.Contains(s, "go-test") {
+	if !strings.Contains(s, "go") {
 		t.Error("missing profile name in body")
 	}
 }
 
 func TestGetQuickTestTasks_PerType_SingleProfile(t *testing.T) {
-	tasks := GetQuickTestTasks([]string{"go-test"}, []string{"tui", "api"}, allEnabledAuto)
+	tasks := GetQuickTestTasks([]profile.Language{"go"}, []string{"tui", "api"}, allEnabledAuto)
 
 	// Per-profile: gen-cases + per-type-gen-and-run(tui,api) + graduate = 4 + shared verify-regression + drift-detection = 6
 	if len(tasks) != 6 {
@@ -542,11 +542,11 @@ func TestGetQuickTestTasks_PerType_SingleProfile(t *testing.T) {
 	}
 
 	// Keys include type suffix
-	if tasks[1].Key != "quick-gen-and-run-go-test-tui" {
-		t.Errorf("tasks[1].Key = %q, want quick-gen-and-run-go-test-tui", tasks[1].Key)
+	if tasks[1].Key != "quick-gen-and-run-go-tui" {
+		t.Errorf("tasks[1].Key = %q, want quick-gen-and-run-go-tui", tasks[1].Key)
 	}
-	if tasks[2].Key != "quick-gen-and-run-go-test-api" {
-		t.Errorf("tasks[2].Key = %q, want quick-gen-and-run-go-test-api", tasks[2].Key)
+	if tasks[2].Key != "quick-gen-and-run-go-api" {
+		t.Errorf("tasks[2].Key = %q, want quick-gen-and-run-go-api", tasks[2].Key)
 	}
 
 	// TestType field set
@@ -585,7 +585,7 @@ func TestGetQuickTestTasks_PerType_SingleProfile(t *testing.T) {
 
 func TestGetQuickTestTasks_PerType_MultiProfile(t *testing.T) {
 	tasks := GetQuickTestTasks(
-		[]string{"web-playwright", "go-test"},
+		[]profile.Language{"javascript", "go"},
 		[]string{"tui", "api"},
 		allEnabledAuto,
 	)
@@ -627,11 +627,11 @@ func TestGetQuickTestTasks_PerType_MultiProfile(t *testing.T) {
 	}
 
 	// Keys include profile and type
-	if tasks[1].Key != "quick-gen-and-run-web-playwright-tui" {
-		t.Errorf("tasks[1].Key = %q, want quick-gen-and-run-web-playwright-tui", tasks[1].Key)
+	if tasks[1].Key != "quick-gen-and-run-javascript-tui" {
+		t.Errorf("tasks[1].Key = %q, want quick-gen-and-run-javascript-tui", tasks[1].Key)
 	}
-	if tasks[5].Key != "quick-gen-and-run-go-test-tui" {
-		t.Errorf("tasks[5].Key = %q, want quick-gen-and-run-go-test-tui", tasks[5].Key)
+	if tasks[5].Key != "quick-gen-and-run-go-tui" {
+		t.Errorf("tasks[5].Key = %q, want quick-gen-and-run-go-tui", tasks[5].Key)
 	}
 
 	// T-quick-4 depends on both graduates
@@ -641,7 +641,7 @@ func TestGetQuickTestTasks_PerType_MultiProfile(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_PerType_SingleType(t *testing.T) {
-	tasks := GetQuickTestTasks([]string{"go-test"}, []string{"api"}, allEnabledAuto)
+	tasks := GetQuickTestTasks([]profile.Language{"go"}, []string{"api"}, allEnabledAuto)
 
 	// Only api type -> one gen-and-run task
 	// gen-cases + 1 gen-and-run-api + graduate + verify-regression + drift-detection = 5
@@ -674,7 +674,7 @@ func TestGetQuickTestTasks_PerType_SingleType(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_PerType_ThreeTypes(t *testing.T) {
-	tasks := GetQuickTestTasks([]string{"go-test"}, []string{"tui", "api", "cli"}, allEnabledAuto)
+	tasks := GetQuickTestTasks([]profile.Language{"go"}, []string{"tui", "api", "cli"}, allEnabledAuto)
 
 	// gen-cases + 3 per-type-gen-and-run + graduate + verify-regression + drift-detection = 7
 	if len(tasks) != 7 {

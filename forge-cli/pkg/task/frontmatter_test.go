@@ -81,13 +81,13 @@ Body`,
 			name: "frontmatter with profile-suffixed type",
 			input: `---
 id: "T-test-2a"
-title: "Generate Scripts (go-test)"
+title: "Generate Scripts (go)"
 type: "test-pipeline.gen-scripts"
 ---
 
 Call gen-test-scripts`,
 			wantID:    "T-test-2a",
-			wantTitle: "Generate Scripts (go-test)",
+			wantTitle: "Generate Scripts (go)",
 			wantType:  "test-pipeline.gen-scripts",
 			wantBody:  "\n\nCall gen-test-scripts",
 		},

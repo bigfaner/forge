@@ -59,23 +59,23 @@ func runIndex(_ *cobra.Command, _ []string) {
 	// Resolve profiles
 	profiles := indexTestProfiles
 	if len(profiles) == 0 {
-		p, err := profile.ReadTestProfiles(projectRoot)
+		p, err := profile.ReadLanguages(projectRoot)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "WARNING: failed to read profiles: %v\n", err)
 		}
 		profiles = p
 	}
 
-	// Resolve capabilities: config.yaml > UnionCapabilities(profiles)
+	// Resolve interfaces: config.yaml > UnionLanguageInterfaces(profiles)
 	var capabilities []string
 	cfg, _ := profile.ReadConfig(projectRoot)
-	if cfg != nil && len(cfg.Capabilities) > 0 {
-		capabilities = cfg.Capabilities
+	if cfg != nil && len(cfg.Interfaces) > 0 {
+		capabilities = cfg.Interfaces
 	}
 	if len(capabilities) == 0 && len(profiles) > 0 {
-		caps, err := profile.UnionCapabilities(profiles)
+		caps, err := profile.UnionLanguageInterfaces(profiles)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "WARNING: failed to resolve capabilities: %v\n", err)
+			fmt.Fprintf(os.Stderr, "WARNING: failed to resolve interfaces: %v\n", err)
 		}
 		capabilities = caps
 	}
@@ -90,13 +90,13 @@ func runIndex(_ *cobra.Command, _ []string) {
 	}
 
 	opts := task.BuildIndexOpts{
-		FeatureSlug:      indexFeatureSlug,
-		ProjectRoot:      projectRoot,
-		TasksDir:         tasksDir,
-		IndexPath:        indexPath,
-		TestProfiles:     profiles,
-		TestCapabilities: capabilities,
-		ResolveStrategy:  resolveStrategy,
+		FeatureSlug:     indexFeatureSlug,
+		ProjectRoot:     projectRoot,
+		TasksDir:        tasksDir,
+		IndexPath:       indexPath,
+		TestProfiles:    profiles,
+		TestInterfaces:  capabilities,
+		ResolveStrategy: resolveStrategy,
 	}
 
 	// Read auto-behavior config (returns defaults when missing)
