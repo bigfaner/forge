@@ -157,27 +157,18 @@ Output one of:
 
 ## Step 4: Cleanup Summary
 
-Output a summary of what was done:
+Output a summary using the template at `templates/summary.md`. Fill in the placeholders with actual counts.
 
-```
-## Cleanup Summary
+### Template Fields
 
-**Scope**: N files (git diff against main)
-**Modified**: M files
-**Skipped**: K files (already clean)
-**Quality gate**: passed / skipped / N regressions reverted
-
-### Changes by Type
-- Dead code removed: N instances
-- Complexity reduced: N instances
-- Naming improved: N instances
-- Duplication eliminated: N instances
-- Other: N instances
-
-### Files Modified
-- path/to/file1.ext — <brief description of changes>
-- path/to/file2.ext — <brief description of changes>
-```
+| Field | Value |
+|-------|-------|
+| `{{SCOPE_COUNT}}` | Total files in scope |
+| `{{SCOPE_SOURCE}}` | Scope resolution source (user-specified / git-diff / feature-context) |
+| `{{MODIFIED_COUNT}}` | Files where changes were made |
+| `{{SKIPPED_COUNT}}` | Files already clean |
+| `{{GATE_RESULT}}` | `passed` / `skipped` / `N regressions reverted` |
+| `{{FILE_CHANGES}}` | One `- path/to/file — <description>` line per modified file |
 
 If invoked as a standalone command (not via pipeline task), the summary is the final output.
 
