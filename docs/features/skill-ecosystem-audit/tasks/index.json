@@ -1,0 +1,95 @@
+{
+  "feature": "skill-ecosystem-audit",
+  "proposal": "docs/proposals/skill-ecosystem-audit/proposal.md",
+  "created": "2026-05-17",
+  "tasks": {
+    "1-cleanup-stale-refs": {
+      "id": "1",
+      "title": "Cleanup stale record-task references",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "1-cleanup-stale-refs.md",
+      "record": "records/1-cleanup-stale-refs.md",
+      "scope": "all",
+      "type": "cleanup"
+    },
+    "2-fix-forensic-paths": {
+      "id": "2",
+      "title": "Fix forensic hardcoded developer paths",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "2-fix-forensic-paths.md",
+      "record": "records/2-fix-forensic-paths.md",
+      "scope": "all",
+      "type": "cleanup"
+    },
+    "3-fix-path-references": {
+      "id": "3",
+      "title": "Fix all plugins/forge/ hardcoded path references",
+      "priority": "P1",
+      "estimatedTime": "4h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "3-fix-path-references.md",
+      "record": "records/3-fix-path-references.md",
+      "scope": "all",
+      "type": "refactor"
+    },
+    "4-remove-gen-test-scripts-bloat": {
+      "id": "4",
+      "title": "Remove gen-test-scripts dead weight (templates + 27MB node_modules)",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "3"
+      ],
+      "status": "pending",
+      "file": "4-remove-gen-test-scripts-bloat.md",
+      "record": "records/4-remove-gen-test-scripts-bloat.md",
+      "scope": "all",
+      "type": "cleanup"
+    },
+    "5-dedup-tasks-logic": {
+      "id": "5",
+      "title": "Deduplicate breakdown-tasks and quick-tasks shared logic",
+      "priority": "P2",
+      "estimatedTime": "3h",
+      "dependencies": [
+        "3"
+      ],
+      "status": "pending",
+      "file": "5-dedup-tasks-logic.md",
+      "record": "records/5-dedup-tasks-logic.md",
+      "scope": "all",
+      "type": "refactor"
+    },
+    "6-simplify-eval-scope": {
+      "id": "6",
+      "title": "Simplify eval validate-ux inline + fix scope heuristic",
+      "priority": "P2",
+      "estimatedTime": "2h",
+      "status": "pending",
+      "file": "6-simplify-eval-scope.md",
+      "record": "records/6-simplify-eval-scope.md",
+      "scope": "all",
+      "type": "refactor"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
