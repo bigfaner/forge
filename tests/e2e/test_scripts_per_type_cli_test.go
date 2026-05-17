@@ -116,6 +116,7 @@ func setupFeatureProject(t *testing.T, slug string, hasPRD bool, testProfiles []
 		for _, p := range testProfiles {
 			profileLines += "  - " + p + "\n"
 		}
+		profileLines += "auto:\n  e2eTest:\n    quick: true\n    full: true\n"
 		require.NoError(t, os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(profileLines), 0644))
 	}
 
@@ -185,7 +186,7 @@ const noTypeTestCases = `# Test Cases
 
 // Traceability: TC-001 -> test-scripts-per-type proposal: per-type task generation
 func TestTC_001_TaskIndexCreatesPerTypeTasksForMultiType(t *testing.T) {
-	dir := setupFeatureProject(t, "multi-type-feat", true, []string{"go-test"}, multiTypeTestCases)
+	dir := setupFeatureProject(t, "multi-type-feat", true, []string{"go"}, multiTypeTestCases)
 
 	// Create a business task so index has content
 	tasksDir := filepath.Join(dir, "docs", "features", "multi-type-feat", "tasks")
@@ -201,14 +202,12 @@ func TestTC_001_TaskIndexCreatesPerTypeTasksForMultiType(t *testing.T) {
 	idx := readIndexJSON(t, dir, "multi-type-feat")
 
 	// Verify per-type gen-scripts tasks exist
-	// go-test profile capabilities: [api, cli, tui]
-	_, hasAPI := idx.Tasks["gen-test-scripts-go-test-api"]
-	_, hasCLI := idx.Tasks["gen-test-scripts-go-test-cli"]
-	_, hasTUI := idx.Tasks["gen-test-scripts-go-test-tui"]
+	// go profile capabilities: [api, cli]
+	_, hasAPI := idx.Tasks["gen-test-scripts-go-api"]
+	_, hasCLI := idx.Tasks["gen-test-scripts-go-cli"]
 
-	assert.True(t, hasAPI, "index should contain gen-test-scripts-go-test-api task")
-	assert.True(t, hasCLI, "index should contain gen-test-scripts-go-test-cli task")
-	assert.True(t, hasTUI, "index should contain gen-test-scripts-go-test-tui task")
+	assert.True(t, hasAPI, "index should contain gen-test-scripts-go-api task")
+	assert.True(t, hasCLI, "index should contain gen-test-scripts-go-cli task")
 }
 
 // ==============================================================================
@@ -217,7 +216,7 @@ func TestTC_001_TaskIndexCreatesPerTypeTasksForMultiType(t *testing.T) {
 
 // Traceability: TC-002 -> test-scripts-per-type proposal: task type = test-pipeline.gen-scripts
 func TestTC_002_TaskIndexPerTypeTasksHaveCorrectType(t *testing.T) {
-	dir := setupFeatureProject(t, "type-check-feat", true, []string{"go-test"}, multiTypeTestCases)
+	dir := setupFeatureProject(t, "type-check-feat", true, []string{"go"}, multiTypeTestCases)
 
 	tasksDir := filepath.Join(dir, "docs", "features", "type-check-feat", "tasks")
 	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"feature\"\nscope: \"all\"\n---\n\n# Task One\n"
@@ -231,7 +230,7 @@ func TestTC_002_TaskIndexPerTypeTasksHaveCorrectType(t *testing.T) {
 
 	idx := readIndexJSON(t, dir, "type-check-feat")
 
-	for _, key := range []string{"gen-test-scripts-go-test-api", "gen-test-scripts-go-test-cli", "gen-test-scripts-go-test-tui"} {
+	for _, key := range []string{"gen-test-scripts-go-api", "gen-test-scripts-go-cli"} {
 		task, ok := idx.Tasks[key]
 		require.True(t, ok, "task %s should exist", key)
 		assert.Equal(t, "test-pipeline.gen-scripts", task.Type,
@@ -245,7 +244,7 @@ func TestTC_002_TaskIndexPerTypeTasksHaveCorrectType(t *testing.T) {
 
 // Traceability: TC-003 -> test-scripts-per-type proposal: single type = one gen task
 func TestTC_003_TaskIndexSingleTypeCreatesOneGenTask(t *testing.T) {
-	dir := setupFeatureProject(t, "single-type-feat", true, []string{"go-test"}, singleTypeTestCases)
+	dir := setupFeatureProject(t, "single-type-feat", true, []string{"go"}, singleTypeTestCases)
 
 	tasksDir := filepath.Join(dir, "docs", "features", "single-type-feat", "tasks")
 	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"feature\"\nscope: \"all\"\n---\n\n# Task One\n"
@@ -259,16 +258,14 @@ func TestTC_003_TaskIndexSingleTypeCreatesOneGenTask(t *testing.T) {
 
 	idx := readIndexJSON(t, dir, "single-type-feat")
 
-	// go-test profile capabilities [api, cli, tui] are always used regardless of test-cases content
+	// go profile capabilities [api, cli] are always used regardless of test-cases content
 	// All per-type gen-scripts tasks should exist
-	_, hasCLI := idx.Tasks["gen-test-scripts-go-test-cli"]
-	assert.True(t, hasCLI, "index should contain gen-test-scripts-go-test-cli task")
+	_, hasCLI := idx.Tasks["gen-test-scripts-go-cli"]
+	assert.True(t, hasCLI, "index should contain gen-test-scripts-go-cli task")
 
-	// Should also have api and tui variants (driven by profile capabilities)
-	_, hasAPI := idx.Tasks["gen-test-scripts-go-test-api"]
-	_, hasTUI := idx.Tasks["gen-test-scripts-go-test-tui"]
-	assert.True(t, hasAPI, "index should contain gen-test-scripts-go-test-api task")
-	assert.True(t, hasTUI, "index should contain gen-test-scripts-go-test-tui task")
+	// Should also have api variant (driven by profile capabilities)
+	_, hasAPI := idx.Tasks["gen-test-scripts-go-api"]
+	assert.True(t, hasAPI, "index should contain gen-test-scripts-go-api task")
 }
 
 // ==============================================================================
@@ -277,7 +274,7 @@ func TestTC_003_TaskIndexSingleTypeCreatesOneGenTask(t *testing.T) {
 
 // Traceability: TC-004 -> per-type tasks from profile capabilities, not test-cases.md
 func TestTC_004_TaskIndexWithoutTestCasesUsesProfileCapabilities(t *testing.T) {
-	dir := setupFeatureProject(t, "no-types-feat", true, []string{"go-test"}, "")
+	dir := setupFeatureProject(t, "no-types-feat", true, []string{"go"}, "")
 
 	tasksDir := filepath.Join(dir, "docs", "features", "no-types-feat", "tasks")
 	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"feature\"\nscope: \"all\"\n---\n\n# Task One\n"
@@ -293,8 +290,8 @@ func TestTC_004_TaskIndexWithoutTestCasesUsesProfileCapabilities(t *testing.T) {
 
 	// Without test-cases.md, capabilities still come from profile manifest
 	// Per-type tasks are generated based on profile capabilities
-	for _, typ := range []string{"api", "cli", "tui"} {
-		key := "gen-test-scripts-go-test-" + typ
+	for _, typ := range []string{"api", "cli"} {
+		key := "gen-test-scripts-go-" + typ
 		_, ok := idx.Tasks[key]
 		assert.True(t, ok, "index should contain %s (capabilities from profile manifest)", key)
 	}
@@ -306,7 +303,7 @@ func TestTC_004_TaskIndexWithoutTestCasesUsesProfileCapabilities(t *testing.T) {
 
 // Traceability: TC-005 -> per-type tasks from profile capabilities, not test-cases.md
 func TestTC_005_TaskIndexZeroTypeTestCasesUsesProfileCapabilities(t *testing.T) {
-	dir := setupFeatureProject(t, "zero-types-feat", true, []string{"go-test"}, noTypeTestCases)
+	dir := setupFeatureProject(t, "zero-types-feat", true, []string{"go"}, noTypeTestCases)
 
 	tasksDir := filepath.Join(dir, "docs", "features", "zero-types-feat", "tasks")
 	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"feature\"\nscope: \"all\"\n---\n\n# Task One\n"
@@ -322,8 +319,8 @@ func TestTC_005_TaskIndexZeroTypeTestCasesUsesProfileCapabilities(t *testing.T) 
 
 	// All-zero test-cases types do not change per-type generation;
 	// capabilities from profile manifest drive the per-type split
-	for _, typ := range []string{"api", "cli", "tui"} {
-		key := "gen-test-scripts-go-test-" + typ
+	for _, typ := range []string{"api", "cli"} {
+		key := "gen-test-scripts-go-" + typ
 		_, ok := idx.Tasks[key]
 		assert.True(t, ok, "index should contain %s for zero-type test-cases", key)
 	}
@@ -335,7 +332,7 @@ func TestTC_005_TaskIndexZeroTypeTestCasesUsesProfileCapabilities(t *testing.T) 
 
 // Traceability: TC-006 -> test-scripts-per-type proposal: run depends on all gen tasks
 func TestTC_006_TaskIndexRunDependsOnAllPerTypeGenTasks(t *testing.T) {
-	dir := setupFeatureProject(t, "deps-feat", true, []string{"go-test"}, multiTypeTestCases)
+	dir := setupFeatureProject(t, "deps-feat", true, []string{"go"}, multiTypeTestCases)
 
 	tasksDir := filepath.Join(dir, "docs", "features", "deps-feat", "tasks")
 	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"feature\"\nscope: \"all\"\n---\n\n# Task One\n"
@@ -350,18 +347,17 @@ func TestTC_006_TaskIndexRunDependsOnAllPerTypeGenTasks(t *testing.T) {
 	idx := readIndexJSON(t, dir, "deps-feat")
 
 	// Run task should exist
-	_, hasRun := idx.Tasks["run-e2e-tests-go-test"]
-	require.True(t, hasRun, "index should contain run-e2e-tests-go-test task")
+	_, hasRun := idx.Tasks["run-e2e-tests-go"]
+	require.True(t, hasRun, "index should contain run-e2e-tests-go task")
 
 	// Verify the run task's .md file lists per-type gen tasks as dependencies
-	runMDPath := filepath.Join(tasksDir, "run-e2e-tests-go-test.md")
+	runMDPath := filepath.Join(tasksDir, "run-e2e-tests-go.md")
 	runMDData, err := os.ReadFile(runMDPath)
 	require.NoError(t, err, "run task .md file should exist")
 	runMDContent := string(runMDData)
 
 	assert.Contains(t, runMDContent, "T-test-2-api", "run task should depend on T-test-2-api")
 	assert.Contains(t, runMDContent, "T-test-2-cli", "run task should depend on T-test-2-cli")
-	assert.Contains(t, runMDContent, "T-test-2-tui", "run task should depend on T-test-2-tui")
 }
 
 // ==============================================================================
@@ -370,7 +366,7 @@ func TestTC_006_TaskIndexRunDependsOnAllPerTypeGenTasks(t *testing.T) {
 
 // Traceability: TC-007 -> test-scripts-per-type proposal: per-profile per-type tasks
 func TestTC_007_TaskIndexMultiProfilePerTypeTasks(t *testing.T) {
-	dir := setupFeatureProject(t, "multi-prof-feat", true, []string{"web-playwright", "go-test"}, multiTypeTestCases)
+	dir := setupFeatureProject(t, "multi-prof-feat", true, []string{"javascript", "go"}, multiTypeTestCases)
 
 	tasksDir := filepath.Join(dir, "docs", "features", "multi-prof-feat", "tasks")
 	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"feature\"\nscope: \"all\"\n---\n\n# Task One\n"
@@ -384,37 +380,37 @@ func TestTC_007_TaskIndexMultiProfilePerTypeTasks(t *testing.T) {
 
 	idx := readIndexJSON(t, dir, "multi-prof-feat")
 
-	// Union capabilities: go-test [api, cli, tui] + web-playwright [api, cli, web-ui] = [api, cli, tui, web-ui]
+	// Union capabilities: go [api, cli] + javascript [web-ui, api] = [api, cli, web-ui]
 	// Each profile gets per-type tasks for ALL union capabilities
-	unionCaps := []string{"api", "cli", "tui", "web-ui"}
+	unionCaps := []string{"api", "cli", "web-ui"}
 
-	// Profile-a (web-playwright) per-type tasks
+	// Profile-a (javascript) per-type tasks
 	for _, typ := range unionCaps {
-		key := "gen-test-scripts-web-playwright-" + typ
+		key := "gen-test-scripts-javascript-" + typ
 		_, ok := idx.Tasks[key]
-		assert.True(t, ok, "index should contain %s for profile web-playwright", key)
+		assert.True(t, ok, "index should contain %s for profile javascript", key)
 	}
 
-	// Profile-b (go-test) per-type tasks
+	// Profile-b (go) per-type tasks
 	for _, typ := range unionCaps {
-		key := "gen-test-scripts-go-test-" + typ
+		key := "gen-test-scripts-go-" + typ
 		_, ok := idx.Tasks[key]
-		assert.True(t, ok, "index should contain %s for profile go-test", key)
+		assert.True(t, ok, "index should contain %s for profile go", key)
 	}
 
 	// Verify profile-suffixed IDs in generated .md files
 	for _, key := range []string{
-		"gen-test-scripts-web-playwright-api",
-		"gen-test-scripts-web-playwright-cli",
-		"gen-test-scripts-go-test-api",
-		"gen-test-scripts-go-test-cli",
+		"gen-test-scripts-javascript-api",
+		"gen-test-scripts-javascript-cli",
+		"gen-test-scripts-go-api",
+		"gen-test-scripts-go-cli",
 	} {
 		mdPath := filepath.Join(tasksDir, key+".md")
 		mdData, err := os.ReadFile(mdPath)
 		require.NoError(t, err, "%s.md should exist", key)
 		content := string(mdData)
-		// ID should have profile letter suffix (a for web-playwright, b for go-test)
-		if strings.HasPrefix(key, "gen-test-scripts-web-playwright") {
+		// ID should have profile letter suffix (a for javascript, b for go)
+		if strings.HasPrefix(key, "gen-test-scripts-javascript") {
 			assert.Contains(t, content, "T-test-2a-", "%s.md should have profile-a suffixed ID", key)
 		} else {
 			assert.Contains(t, content, "T-test-2b-", "%s.md should have profile-b suffixed ID", key)
@@ -428,7 +424,7 @@ func TestTC_007_TaskIndexMultiProfilePerTypeTasks(t *testing.T) {
 
 // Traceability: TC-008 -> test-scripts-per-type proposal: quick mode per-type (merged gen+run)
 func TestTC_008_TaskIndexQuickModePerTypeTasks(t *testing.T) {
-	dir := setupFeatureProject(t, "quick-type-feat", false, []string{"go-test"}, multiTypeTestCases)
+	dir := setupFeatureProject(t, "quick-type-feat", false, []string{"go"}, multiTypeTestCases)
 
 	tasksDir := filepath.Join(dir, "docs", "features", "quick-type-feat", "tasks")
 	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"feature\"\nscope: \"all\"\n---\n\n# Task One\n"
@@ -443,22 +439,21 @@ func TestTC_008_TaskIndexQuickModePerTypeTasks(t *testing.T) {
 	idx := readIndexJSON(t, dir, "quick-type-feat")
 
 	// Quick mode should have per-type gen-and-run tasks with "quick" prefix
-	// go-test capabilities: [api, cli, tui]
-	for _, typ := range []string{"api", "cli", "tui"} {
-		key := "quick-gen-and-run-go-test-" + typ
+	// go capabilities: [api, cli]
+	for _, typ := range []string{"api", "cli"} {
+		key := "quick-gen-and-run-go-" + typ
 		_, ok := idx.Tasks[key]
 		assert.True(t, ok, "index should contain %s for quick mode", key)
 	}
 
 	// Quick graduate task should depend on all per-type gen-and-run tasks
-	gradMDPath := filepath.Join(tasksDir, "quick-graduate-go-test.md")
+	gradMDPath := filepath.Join(tasksDir, "quick-graduate-go.md")
 	gradMDData, err := os.ReadFile(gradMDPath)
 	require.NoError(t, err, "quick graduate task .md should exist")
 	gradContent := string(gradMDData)
 
 	assert.Contains(t, gradContent, "T-quick-2-api", "quick graduate task should depend on T-quick-2-api")
 	assert.Contains(t, gradContent, "T-quick-2-cli", "quick graduate task should depend on T-quick-2-cli")
-	assert.Contains(t, gradContent, "T-quick-2-tui", "quick graduate task should depend on T-quick-2-tui")
 }
 
 // ==============================================================================
@@ -467,7 +462,7 @@ func TestTC_008_TaskIndexQuickModePerTypeTasks(t *testing.T) {
 
 // Traceability: TC-009 -> test-scripts-per-type proposal: gen-scripts MD contains type info
 func TestTC_009_PerTypeGenScriptsMdContainsTestType(t *testing.T) {
-	dir := setupFeatureProject(t, "type-md-feat", true, []string{"go-test"}, multiTypeTestCases)
+	dir := setupFeatureProject(t, "type-md-feat", true, []string{"go"}, multiTypeTestCases)
 
 	tasksDir := filepath.Join(dir, "docs", "features", "type-md-feat", "tasks")
 	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"feature\"\nscope: \"all\"\n---\n\n# Task One\n"
@@ -480,14 +475,13 @@ func TestTC_009_PerTypeGenScriptsMdContainsTestType(t *testing.T) {
 	require.NoError(t, err, "forge task index should succeed: %s", out)
 
 	// Each per-type .md should mention its type in the body
-	// go-test capabilities: [api, cli, tui]
+	// go capabilities: [api, cli]
 	typeCases := []struct {
 		key  string
 		typ  string
 	}{
-		{"gen-test-scripts-go-test-api", "api"},
-		{"gen-test-scripts-go-test-cli", "cli"},
-		{"gen-test-scripts-go-test-tui", "tui"},
+		{"gen-test-scripts-go-api", "api"},
+		{"gen-test-scripts-go-cli", "cli"},
 	}
 
 	for _, tc := range typeCases {
@@ -499,7 +493,7 @@ func TestTC_009_PerTypeGenScriptsMdContainsTestType(t *testing.T) {
 		// Body should mention the type
 		assert.Contains(t, content, tc.typ, "%s.md should mention type %q", tc.key, tc.typ)
 		// Body should mention profile
-		assert.Contains(t, content, "go-test", "%s.md should mention profile go-test", tc.key)
+		assert.Contains(t, content, "go", "%s.md should mention profile go", tc.key)
 	}
 }
 
@@ -509,7 +503,7 @@ func TestTC_009_PerTypeGenScriptsMdContainsTestType(t *testing.T) {
 
 // Traceability: TC-010 -> test-scripts-per-type proposal: re-running index is idempotent
 func TestTC_010_TaskIndexPerTypeIdempotent(t *testing.T) {
-	dir := setupFeatureProject(t, "idempotent-feat", true, []string{"go-test"}, multiTypeTestCases)
+	dir := setupFeatureProject(t, "idempotent-feat", true, []string{"go"}, multiTypeTestCases)
 
 	tasksDir := filepath.Join(dir, "docs", "features", "idempotent-feat", "tasks")
 	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"feature\"\nscope: \"all\"\n---\n\n# Task One\n"
@@ -528,15 +522,15 @@ func TestTC_010_TaskIndexPerTypeIdempotent(t *testing.T) {
 	idx := readIndexJSON(t, dir, "idempotent-feat")
 
 	// Should have exactly the expected per-type tasks (not duplicated)
-	// go-test capabilities: [api, cli, tui]
-	for _, typ := range []string{"api", "cli", "tui"} {
-		key := "gen-test-scripts-go-test-" + typ
+	// go capabilities: [api, cli]
+	for _, typ := range []string{"api", "cli"} {
+		key := "gen-test-scripts-go-" + typ
 		_, ok := idx.Tasks[key]
 		assert.True(t, ok, "index should contain %s after idempotent re-run", key)
 	}
 
 	// Count total tasks should be reasonable (not doubled)
-	// breakdown mode with go-test (3 capabilities): gen-cases + eval + 3 per-type gen + run + graduate + verify + consolidate = 9
+	// breakdown mode with go (2 capabilities): gen-cases + eval + 2 per-type gen + run + graduate + verify + consolidate = 8
 	assert.LessOrEqual(t, len(idx.Tasks), 15,
 		"index should not have excessive tasks after idempotent re-run, got %d", len(idx.Tasks))
 }
@@ -547,7 +541,7 @@ func TestTC_010_TaskIndexPerTypeIdempotent(t *testing.T) {
 
 // Traceability: TC-011 -> test-scripts-per-type proposal: task IDs include type suffix
 func TestTC_011_PerTypeGenScriptsMdHasCorrectTaskIDs(t *testing.T) {
-	dir := setupFeatureProject(t, "tid-feat", true, []string{"go-test"}, multiTypeTestCases)
+	dir := setupFeatureProject(t, "tid-feat", true, []string{"go"}, multiTypeTestCases)
 
 	tasksDir := filepath.Join(dir, "docs", "features", "tid-feat", "tasks")
 	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"feature\"\nscope: \"all\"\n---\n\n# Task One\n"
@@ -562,11 +556,10 @@ func TestTC_011_PerTypeGenScriptsMdHasCorrectTaskIDs(t *testing.T) {
 	idx := readIndexJSON(t, dir, "tid-feat")
 
 	// Verify task IDs have type suffix
-	// go-test capabilities: [api, cli, tui]
+	// go capabilities: [api, cli]
 	expectedIDs := map[string]string{
-		"gen-test-scripts-go-test-api": "T-test-2-api",
-		"gen-test-scripts-go-test-cli": "T-test-2-cli",
-		"gen-test-scripts-go-test-tui": "T-test-2-tui",
+		"gen-test-scripts-go-api": "T-test-2-api",
+		"gen-test-scripts-go-cli": "T-test-2-cli",
 	}
 	for key, wantID := range expectedIDs {
 		task, ok := idx.Tasks[key]
@@ -581,7 +574,7 @@ func TestTC_011_PerTypeGenScriptsMdHasCorrectTaskIDs(t *testing.T) {
 
 // Traceability: TC-012 -> test-scripts-per-type proposal: shared tasks (gen-cases, eval-cases) not per-type
 func TestTC_012_TaskIndexSharedInfrastructureNotDuplicated(t *testing.T) {
-	dir := setupFeatureProject(t, "shared-feat", true, []string{"go-test"}, multiTypeTestCases)
+	dir := setupFeatureProject(t, "shared-feat", true, []string{"go"}, multiTypeTestCases)
 
 	tasksDir := filepath.Join(dir, "docs", "features", "shared-feat", "tasks")
 	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"feature\"\nscope: \"all\"\n---\n\n# Task One\n"
