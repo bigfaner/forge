@@ -1,7 +1,7 @@
 ---
 name: simplify-skill
 description: Refactor skill files by extracting templates/examples to separate files.
-argument-hints: skill name
+argument-hint: "[skill-name]"
 allowed-tools: Read Write Edit AskUserQuestion
 ---
 

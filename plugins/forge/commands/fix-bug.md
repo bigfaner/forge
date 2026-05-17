@@ -2,13 +2,7 @@
 name: fix-bug
 description: Systematically fix a bug using TDD workflow — reproduce, write failing tests, fix, verify. Ensures the bug is captured by tests before any code changes.
 allowed-tools: Bash Read Write Edit Grep Glob Agent LSP
-argument-hints:
-  - name: error-msg
-    description: Error message, stack trace, or symptom description to locate the bug (e.g. "TypeError: Cannot read property 'id' of undefined")
-    required: false
-  - name: scope
-    description: Affected module or package path to narrow the search (e.g. src/parser, pkg/auth). Auto-detected if omitted.
-    required: false
+argument-hint: "[error-msg] [scope]"
 ---
 
 # /fix-bug

@@ -2,10 +2,7 @@
 name: git-commit
 description: Create a git commit following Conventional Commits specification.
 allowed-tools: Bash Read
-argument-hints:
-  - name: scope
-    description: Optional commit scope (e.g. api, cli, core). Auto-detected from changes if omitted.
-    required: false
+argument-hint: "[scope]"
 ---
 
 Create a git commit following Conventional Commits specification.

@@ -1,6 +1,8 @@
 ---
 name: forensic
 description: Analyze past session transcripts to identify root causes of agent deviations. Searches JSONL history, extracts thinking/tool chains, compares against skill definitions, outputs structured forensic report.
+argument-hint: "[session-id or keywords]"
+effort: max
 ---
 
 # Forensic Agent Deviation Analysis

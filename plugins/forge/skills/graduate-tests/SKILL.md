@@ -1,6 +1,7 @@
 ---
 name: graduate-tests
 description: Migrate feature test scripts to the regression suite. Language-aware: auto-detects test framework from project files via forge testing CLI for import rewriting, compilation, and test discovery.
+argument-hint: "[--slug <feature-slug>]"
 ---
 
 # /graduate-tests
