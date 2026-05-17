@@ -12,3 +12,5 @@ auto:
     quick: false
     full: true
   gitPush: false
+worktree:
+  source-branch: v3.0.0
