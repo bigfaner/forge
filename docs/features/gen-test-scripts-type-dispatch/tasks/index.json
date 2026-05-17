@@ -28,7 +28,7 @@
       "title": "Create types/ui.md instruction file (includes Step 2-3 Sitemap/Locators)",
       "priority": "P1",
       "estimatedTime": "2-3h",
-      "status": "pending",
+      "status": "completed",
       "file": "3-types-ui.md",
       "record": "records/3-types-ui.md",
       "type": "documentation"
