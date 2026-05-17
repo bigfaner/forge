@@ -61,9 +61,17 @@ Group high-related changes; split unrelated changes.
 ## Steps
 
 1. Run `git status` and `git diff` to inspect changes.
-2. Stage appropriate files with `git add`.
+2. Stage appropriate files with `git add` — listing each file path explicitly.
 3. Compose commit message following rules above.
 4. Execute commit.
+
+<HARD-RULE>
+**NEVER use broad staging commands: `git add -A`, `git add .`, `git add --all`.**
+
+Every `git add` must list explicit file paths. If you do not know which files changed, run `git diff --name-only` and `git diff --cached --name-only` first to identify them.
+
+**Why:** A prior fix task (d7f8a13) that modified only 2 `.go` files resulted in a 169-file commit because the agent used `git add -A`, which staged unrelated untracked files and regenerated `.ts` residue from the working directory. Explicit file paths prevent this class of staging amplification.
+</HARD-RULE>
 
 ## Task Completion Template
 
