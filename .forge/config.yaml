@@ -1,7 +1,5 @@
 project-type: backend
-test-profiles:
-  - go-test
-capabilities:
+interfaces:
   - cli
 auto:
   e2eTest:

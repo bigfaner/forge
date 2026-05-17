@@ -1,7 +1,7 @@
 ---
 created: 2026-05-17
 author: faner
-status: Draft
+status: Superseded
 ---
 
 # Proposal: 简化测试概念模型 — 去除 Profile，统一为 project-type + interfaces

@@ -35,7 +35,7 @@ Minimum Fact Table entries required for UI type (all must be non-UNKNOWN):
 
 ## Sitemap Resolution
 
-**Only execute when the active profile has `web-ui` capability AND UI-type test cases exist.**
+**Only execute when the project has `web-ui` interface AND UI-type test cases exist.**
 
 Read `docs/sitemap/sitemap.json`. For each route referenced in test cases:
 
@@ -99,7 +99,7 @@ All DOM interactions must use locators derived from the Locator Mapping priority
 
 ## Integration Test Scripts
 
-Integration test cases verify that a component embedded on an existing page is visible and renders correctly. Follow the profile's `generate.md` for framework-specific patterns.
+Integration test cases verify that a component embedded on an existing page is visible and renders correctly. Follow the strategy's `generate.md` for framework-specific patterns.
 
 **Identification**: A test case is an integration test when:
 - `Source` field contains "Placement + Integration Spec", **or**

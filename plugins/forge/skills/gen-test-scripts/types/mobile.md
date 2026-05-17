@@ -80,11 +80,11 @@ Run these checks in order -- first success is sufficient:
 
 ## Generation Patterns
 
-Mobile test cases translate to executable Maestro YAML flows. Follow the active profile's `generate.md` for the Maestro-specific template structure (flow skeleton, env variables, lifecycle hooks).
+Mobile test cases translate to executable Maestro YAML flows. Follow the active strategy's `generate.md` for the Maestro-specific template structure (flow skeleton, env variables, lifecycle hooks).
 
 ### Flow Skeleton
 
-Each Maestro flow follows this structure (from the maestro profile template):
+Each Maestro flow follows this structure (from the Maestro strategy template):
 
 ```yaml
 appId: ${MOBILE_APP_ID}
@@ -118,7 +118,7 @@ Map test case step descriptions to Maestro commands:
 
 ### Element Location via Accessibility Labels
 
-Maestro selects elements using a priority order (from maestro profile `generate.md`):
+Maestro selects elements using a priority order (from the Maestro strategy's `generate.md`):
 
 | Priority | Method | Example |
 |----------|--------|---------|
@@ -204,4 +204,4 @@ Beyond the generic 6 antipattern guards in the main SKILL.md, Mobile-specific ge
 
 ## Output
 
-Mobile test scripts are written as Maestro YAML flows to `tests/e2e/features/<feature>/` following the profile's template naming convention. Each flow includes a traceability comment linking back to the source test case ID.
+Mobile test scripts are written as Maestro YAML flows to `tests/e2e/features/<feature>/` following the strategy's template naming convention. Each flow includes a traceability comment linking back to the source test case ID.

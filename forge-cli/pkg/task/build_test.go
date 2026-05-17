@@ -553,7 +553,7 @@ func TestBuildIndex_WithTestTasks(t *testing.T) {
 		ProjectRoot:    projectRoot,
 		TasksDir:       tasksDir,
 		IndexPath:      indexPath,
-		TestProfiles:   []string{"go"},
+		Languages:   []string{"go"},
 		TestInterfaces: []string{"cli"},
 	}
 
@@ -620,7 +620,7 @@ func TestBuildIndex_TestTasksIdempotent(t *testing.T) {
 		ProjectRoot:    projectRoot,
 		TasksDir:       tasksDir,
 		IndexPath:      indexPath,
-		TestProfiles:   []string{"go"},
+		Languages:   []string{"go"},
 		TestInterfaces: []string{"cli"},
 	}
 
@@ -661,7 +661,7 @@ func TestBuildIndex_MultiProfile(t *testing.T) {
 		ProjectRoot:    projectRoot,
 		TasksDir:       tasksDir,
 		IndexPath:      indexPath,
-		TestProfiles:   []string{"go", "javascript"},
+		Languages:   []string{"go", "javascript"},
 		TestInterfaces: []string{"api"},
 		AutoConfig:     allEnabledAuto,
 	}
@@ -1176,7 +1176,7 @@ func TestBuildIndex_MissingTypeHardError(t *testing.T) {
 		ProjectRoot:    projectRoot,
 		TasksDir:       tasksDir,
 		IndexPath:      indexPath,
-		TestProfiles:   []string{"go"},
+		Languages:   []string{"go"},
 		TestInterfaces: []string{"cli"},
 	}
 
@@ -1205,7 +1205,7 @@ func TestBuildIndex_DocsOnlySkipsGatesAndTests(t *testing.T) {
 		TasksDir:       tasksDir,
 		IndexPath:      indexPath,
 		TestInterfaces: []string{"cli"},
-		TestProfiles:   []string{"go"},
+		Languages:   []string{"go"},
 	}
 
 	result, err := BuildIndex(opts)
@@ -1249,7 +1249,7 @@ func TestBuildIndex_DocsOnlyGeneratesEvalDoc(t *testing.T) {
 		TasksDir:       tasksDir,
 		TestInterfaces: []string{"cli"},
 		IndexPath:      indexPath,
-		TestProfiles:   []string{"go"},
+		Languages:   []string{"go"},
 	}
 
 	result, err := BuildIndex(opts)
@@ -1310,7 +1310,7 @@ func TestBuildIndex_CodeFeatureUnchanged(t *testing.T) {
 		TestInterfaces: []string{"cli"},
 		TasksDir:       tasksDir,
 		IndexPath:      indexPath,
-		TestProfiles:   []string{"go"},
+		Languages:   []string{"go"},
 		AutoConfig:     allEnabledAuto,
 	}
 
@@ -1358,7 +1358,7 @@ func TestBuildIndex_MissingTypeAllowedForAutoGenTasks(t *testing.T) {
 		ProjectRoot:    projectRoot,
 		TasksDir:       tasksDir,
 		IndexPath:      indexPath,
-		TestProfiles:   []string{"go"},
+		Languages:   []string{"go"},
 	}
 
 	// Should NOT error - gate is an auto-generated task, InferType handles it
@@ -1380,7 +1380,7 @@ func TestBuildIndex_EmptyTestInterfaces_NoTestTasks(t *testing.T) {
 		ProjectRoot:    projectRoot,
 		TasksDir:       tasksDir,
 		IndexPath:      indexPath,
-		TestProfiles:   []string{"go"},
+		Languages:   []string{"go"},
 		TestInterfaces: []string{},
 	}
 
@@ -1416,7 +1416,7 @@ func TestBuildIndex_WithInterfaces_ProducesPerTypeTasks(t *testing.T) {
 		ProjectRoot:    projectRoot,
 		TasksDir:       tasksDir,
 		IndexPath:      indexPath,
-		TestProfiles:   []string{"go"},
+		Languages:   []string{"go"},
 		TestInterfaces: []string{"cli"},
 		AutoConfig:     allEnabledAuto,
 	}
@@ -1465,7 +1465,7 @@ func TestBuildIndex_DeterministicOutput(t *testing.T) {
 		ProjectRoot:    projectRoot,
 		TasksDir:       tasksDir,
 		IndexPath:      indexPath,
-		TestProfiles:   []string{"go"},
+		Languages:   []string{"go"},
 		TestInterfaces: []string{"api"},
 	}
 

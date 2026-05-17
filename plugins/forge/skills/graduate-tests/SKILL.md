@@ -52,7 +52,7 @@ Check before running. Abort and prompt user if missing:
 ## Workflow
 
 ```
-0. Resolve profile → 1. Check marker → 2. Read scripts → 3. Analyze structure → 4. Decide classification → 5. Migrate → 5.5 Validate → 6. Write marker → 7. Cleanup source
+0. Resolve language + strategy → 1. Check marker → 2. Read scripts → 3. Analyze structure → 4. Decide classification → 5. Migrate → 5.5 Validate → 6. Write marker → 7. Cleanup source
 ```
 
 ### Step 1: Check Graduation Marker

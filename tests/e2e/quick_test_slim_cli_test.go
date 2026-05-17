@@ -158,7 +158,7 @@ func quickSlimSetupProject(t *testing.T, slug string, testProfiles []string, tes
 	if len(testProfiles) > 0 {
 		forgeDir := filepath.Join(dir, ".forge")
 		require.NoError(t, os.MkdirAll(forgeDir, 0755))
-		profileLines := "test-profiles:\n"
+		profileLines := "languages:\n"
 		for _, p := range testProfiles {
 			profileLines += "  - " + p + "\n"
 		}
@@ -397,7 +397,7 @@ func TestTC_007_BreakdownModeUnchangedByQuickMerge(t *testing.T) {
 	forgeDir := filepath.Join(dir, ".forge")
 	require.NoError(t, os.MkdirAll(forgeDir, 0755))
 	require.NoError(t, os.WriteFile(filepath.Join(forgeDir, "config.yaml"),
-		[]byte("test-profiles:\n  - go-test\n"), 0644))
+		[]byte("languages:\n  - go-test\n"), 0644))
 
 	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"feature\"\nscope: \"all\"\n---\n\n# Task One\n"
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "1-task-one.md"), []byte(taskMD), 0644))

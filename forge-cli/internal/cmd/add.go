@@ -225,7 +225,7 @@ func executeAdd(cmd *cobra.Command) (*AddResult, error) {
 		ProjectRoot:     projectRoot,
 		TasksDir:        tasksDir,
 		IndexPath:       indexPath,
-		TestProfiles:    profiles,
+		Languages:       profiles,
 		TestInterfaces:  capabilities,
 		ResolveStrategy: resolveStrategy,
 	}

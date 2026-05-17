@@ -2,24 +2,43 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "forge-config",
   "title": "Forge Project Configuration",
-  "description": "Schema for .forge/config.yaml — project-level declarative config for Forge test profiles and auto-behavior settings",
+  "description": "Schema for .forge/config.yaml — project-level declarative config for Forge language detection and auto-behavior settings",
   "type": "object",
   "properties": {
-    "test-profiles": {
+    "project-type": {
+      "type": "string",
+      "description": "Project type for scope resolution.",
+      "enum": ["frontend", "backend", "fullstack", "mobile", "library"]
+    },
+    "interfaces": {
       "type": "array",
-      "description": "Active test profiles for this project. First entry is the primary profile.",
+      "description": "System-facing interface types to test. Omit to use the union of all detected languages' default interfaces.",
       "items": {
         "type": "string",
         "enum": [
-          "web-playwright",
-          "go-test",
-          "maestro",
-          "java-junit",
-          "rust-test",
-          "pytest"
+          "web-ui",
+          "tui",
+          "mobile-ui",
+          "api",
+          "cli"
         ]
       },
-      "minItems": 1,
+      "uniqueItems": true
+    },
+    "languages": {
+      "type": "array",
+      "description": "Override auto-detected languages. Omit to use auto-detection from project file signals (go.mod, package.json, etc.).",
+      "items": {
+        "type": "string",
+        "enum": [
+          "go",
+          "javascript",
+          "mobile",
+          "java",
+          "rust",
+          "python"
+        ]
+      },
       "uniqueItems": true
     },
     "auto": {
@@ -86,6 +105,6 @@
       "additionalProperties": false
     }
   },
-  "required": ["test-profiles"],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "required": []
 }

@@ -84,7 +84,7 @@ Run these checks in order -- first success is sufficient:
 
 ## Generation Patterns
 
-CLI test cases translate to executable scripts using process execution patterns. Follow the active profile's `generate.md` for framework-specific syntax (imports, test runner, assertion library).
+CLI test cases translate to executable scripts using process execution patterns. Follow the active strategy's `generate.md` for framework-specific syntax (imports, test runner, assertion library).
 
 ### Process Execution
 
@@ -151,4 +151,4 @@ Beyond the generic 6 antipattern guards in the main SKILL.md, CLI-specific gener
 
 ## Output
 
-CLI test scripts are written to `tests/e2e/features/<feature>/` following the profile's template naming convention. Each test function includes a traceability comment linking back to the source test case ID.
+CLI test scripts are written to `tests/e2e/features/<feature>/` following the strategy's template naming convention. Each test function includes a traceability comment linking back to the source test case ID.

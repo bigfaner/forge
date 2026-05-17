@@ -69,7 +69,7 @@ func setupTempProject(t *testing.T, profileName string) string {
 	if err := os.MkdirAll(forgeDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	configContent := "test-profiles:\n  - " + profileName + "\n"
+	configContent := "languages:\n  - " + profileName + "\n"
 	if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(configContent), 0o644); err != nil {
 		t.Fatal(err)
 	}

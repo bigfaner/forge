@@ -36,7 +36,7 @@ After language resolution and before entering the workflow steps, load project c
 **Resolution algorithm**:
 
 1. **Project-wide conventions**: Read this skill's own frontmatter `conventions` field. For each filename, check `docs/conventions/{filename}` — if it exists, read it into context; if missing, skip silently.
-2. **Per-type conventions** (per-type mode only): Read the active type's instruction file from `plugins/forge/skills/gen-test-cases/types/{type}.md`, extract its frontmatter `conventions` field. For each filename, check `docs/conventions/{filename}` — if it exists, read it; if missing, skip silently.
+2. **Per-type conventions** (per-type mode only): Read the active type's instruction file from `plugins/forge/skills/gen-test-scripts/types/{type}.md`, extract its frontmatter `conventions` field. For each filename, check `docs/conventions/{filename}` — if it exists, read it; if missing, skip silently.
 3. **Legacy mode**: Only project-wide conventions are loaded (no per-type instruction files to consult).
 
 <HARD-RULE>
@@ -79,10 +79,6 @@ This skill accepts an optional `--type <interface>` argument that filters script
 
 Check previous stage artifacts. Abort and prompt user if missing:
 
-Shared infrastructure (Step 3.5) **always runs** regardless of `--type`. Without `--type`, all types generate as before.
-
-## Prerequisites
-
 **Test Case File Discovery** (first match wins):
 1. **Per-type mode**: Glob `docs/features/<slug>/testing/*-test-cases.md`
 2. **Legacy mode**: `docs/features/<slug>/testing/test-cases.md`
@@ -96,7 +92,7 @@ If eval-test-cases report exists (`docs/features/<slug>/testing/eval/iteration-*
 ## Workflow
 
 ```
-0. Resolve profile → 1. Read test cases → 1.5. Code Reconnaissance → 3.5. Shared infrastructure → 4. Dispatch to type files
+0. Resolve language + strategy → 1. Read test cases → 1.5. Code Reconnaissance → 3.5. Shared infrastructure → 4. Dispatch to type files
 ```
 
 <HARD-RULE>
@@ -172,14 +168,14 @@ Type-specific required keys and completeness rules are defined in each type file
 **This step always runs regardless of `--type` value.** Shared infrastructure (helpers, config, auth-setup) is used by all test types. Create-only-if-missing logic ensures safe concurrent execution.
 </PRINCIPLE>
 
-Check `tests/e2e/`. If any shared file is missing, create from profile manifest templates. Strip `// VERIFY:` and `// TEMPLATE:` comments from copies. If helper file exists but missing exports needed by Auth Plan, merge missing exports (do NOT overwrite existing).
+Check `tests/e2e/`. If any shared file is missing, create from strategy templates. Strip `// VERIFY:` and `// TEMPLATE:` comments from copies. If helper file exists but missing exports needed by Auth Plan, merge missing exports (do NOT overwrite existing).
 
 #### Auth Infrastructure
 
 When `shared-auth-enabled: yes`:
-1. Follow profile's `generate.md` for framework-specific auth setup
+1. Follow the strategy's `generate.md` for framework-specific auth setup
 2. Playwright: generate `auth-setup.ts`, configure `playwright.config.ts` `projects` with `storageState`
-3. Other profiles: follow `generate.md`
+3. Other strategies: follow `generate.md`
 
 <HARD-RULE>
 Auth-required tests MUST use shared auth (storageState/cached tokens), NOT per-test login in beforeEach. Playwright: calling `login()` in `beforeEach` is FORBIDDEN when `storageState` is configured.
@@ -210,6 +206,23 @@ For each non-empty, verified type group, generate a test file from the correspon
 
 Based on Step 1 auth classification, uncomment matching CONDITIONAL blocks in templates, remove non-matching blocks, then fill in test data. Replace example content with actual test cases from `test-cases.md`, keeping the same structure. Do not rewrite template structure from scratch.
 
+**Type-to-file mapping** (hard-coded):
+
+| Type | Instruction File |
+|------|-----------------|
+| ui | `plugins/forge/skills/gen-test-scripts/types/ui.md` |
+| tui | `plugins/forge/skills/gen-test-scripts/types/tui.md` |
+| mobile | `plugins/forge/skills/gen-test-scripts/types/mobile.md` |
+| api | `plugins/forge/skills/gen-test-scripts/types/api.md` |
+| cli | `plugins/forge/skills/gen-test-scripts/types/cli.md` |
+
+**Dispatch procedure** for each active type:
+1. Verify type file exists. If missing: **HALT** with `"Type file missing: {path}. Cannot generate {type} test scripts. Available types: ui, tui, mobile, api, cli."`
+2. Read type file, execute its instructions (reconnaissance, Fact Table keys, verification, generation patterns, antipattern guards)
+3. Generate spec files following type file patterns and strategy's `generate.md`
+
+If `--type` specified, only dispatch to the matching type file.
+
 #### Integration Test Scripts
 
 Integration test cases verify that a component embedded on an existing page is visible and renders correctly. Follow the strategy's `generate.md` for framework-specific patterns.
@@ -227,22 +240,6 @@ Integration tests use the same framework and file structure as standard tests. T
 3. **Assert visibility**: use framework-specific visibility assertion
 4. **Assert position** (if feasible): verify the component appears at expected position
 5. **Verify data rendering**: assert expected text content is present within the component locator
-**Type-to-file mapping** (hard-coded):
-
-| Type | Instruction File |
-|------|-----------------|
-| ui | `plugins/forge/skills/gen-test-scripts/types/ui.md` |
-| tui | `plugins/forge/skills/gen-test-scripts/types/tui.md` |
-| mobile | `plugins/forge/skills/gen-test-scripts/types/mobile.md` |
-| api | `plugins/forge/skills/gen-test-scripts/types/api.md` |
-| cli | `plugins/forge/skills/gen-test-scripts/types/cli.md` |
-
-**Dispatch procedure** for each active type:
-1. Verify type file exists. If missing: **HALT** with `"Type file missing: {path}. Cannot generate {type} test scripts. Available types: ui, tui, mobile, api, cli."`
-2. Read type file, execute its instructions (reconnaissance, Fact Table keys, verification, generation patterns, antipattern guards)
-3. Generate spec files following type file patterns and profile's `generate.md`
-
-If `--type` specified, only dispatch to the matching type file.
 
 #### beforeAll Safety
 
@@ -283,7 +280,7 @@ Follow the anti-pattern rules in the active strategy's `generate.md`. Common ant
 <HARD-RULE>
 **No fixed delays/sleeps.** These mask real timing issues, waste time when the app is fast, and fail when the app is slow. Every wait must be event-driven or use polling with timeout.
 | # | Pattern | Harmful Because | Instead |
-|---|---------|-----------------|---------|
+|---|---------|-----------------|--------|
 | 1 | Recursive test invocation (spawning test runner within test) | Process explosion; 6GB+ RAM on Windows | Recursion guard (env var) or `-run` flag filtering |
 | 2 | Unconditional `t.Skip` with no env detection | Dead code inflating coverage signal | Implement with fixture setup or don't generate |
 | 3 | Vacuous assertions (`if { assert }` without else skip/fail) | Assertion never reached; false confidence | Every assertion reachable on every code path |
@@ -315,7 +312,7 @@ All framework-specific rules (test runner, assertion library, imports, HTTP clie
 
 **Post-generation VERIFY check**: Verify no unresolved `// VERIFY:` markers remain:
 1. Run `just e2e-verify --feature <slug>` if the recipe exists in the Justfile
-2. Otherwise: `grep -rn '// VERIFY:' tests/e2e/features/<slug>/` (adapt file extension to profile)
+2. Otherwise: `grep -rn '// VERIFY:' tests/e2e/features/<slug>/` (adapt file extension to the detected language)
 
 **Post-generation helper merge**: After generating all spec files, verify the language's helpers file exports cover all imports used by generated specs. If any import is missing from helpers, merge it from the template (do NOT overwrite existing exports).
 </HARD-RULE>
@@ -323,12 +320,6 @@ All framework-specific rules (test runner, assertion library, imports, HTTP clie
 ## Output
 
 All generated test files go to `tests/e2e/features/<feature>/` (staging area). After verification via `/run-e2e-tests`, use `/graduate-tests` to migrate them to the regression suite. Output file names are determined by the language's template mappings.
-All framework-specific rules are in the active profile's `generate.md`. Use ONLY that framework. `@eN` refs must not appear in any generated test file.
-</EXTREMELY-IMPORTANT>
-
-## Output
-
-All generated test files go to `tests/e2e/features/<feature>/` (staging area). After `/run-e2e-tests` verification, use `/graduate-tests` to migrate.
 
 ## Error Handling
 
@@ -343,16 +334,9 @@ All generated test files go to `tests/e2e/features/<feature>/` (staging area). A
 | Source files not found for Fact Table | Mark as `UNKNOWN`, do not fabricate values |
 | All required Fact Table keys UNKNOWN for a test type | Skip that test type with WARNING; suggest verifying source files |
 | Helper file exists but missing needed exports | Merge missing exports from template into existing file |
-| Profile resolution fails | Ask user to select a profile |
-| No test case files found | Abort, prompt `/gen-test-cases` |
-| Step Actionability < 200 | Abort, prompt fix test cases |
+| Language resolution fails | Ask user to configure `languages` in config.yaml |
 | Unknown `--type` value | Error listing valid types. No generation. |
 | Type file missing | Halt naming missing file and valid types |
-| Compilation fails | Fix generated code, re-compile |
-| Zero test files generated | Abort with diagnostic |
-| Source not found for Fact Table | Mark `UNKNOWN`, don't fabricate |
-| All required keys UNKNOWN for a type | Skip type with WARNING |
-| Helper missing needed exports | Merge from template |
 
 ## Related Skills
 

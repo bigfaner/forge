@@ -15,24 +15,24 @@ import (
 )
 
 var (
-	indexFeatureSlug  string
-	indexTestProfiles []string
+	indexFeatureSlug string
+	indexLanguages   []string
 )
 
 var indexCmd = &cobra.Command{
-	Use:   "index --feature <slug> [--test-profiles p1,p2]",
+	Use:   "index --feature <slug> [--languages go,javascript]",
 	Short: "Build or rebuild index.json from task markdown files",
 	Long: `Scan .md files in the feature's tasks/ directory and generate/update index.json.
 Idempotent: re-running with no changes produces the same output.
 
-Test tasks are auto-generated from embedded profiles.
-Profiles are read from .forge/config.yaml unless overridden by --test-profiles.`,
+Test tasks are auto-generated from detected language strategies.
+Languages are read from .forge/config.yaml unless overridden by --languages.`,
 	Run: runIndex,
 }
 
 func init() {
 	indexCmd.Flags().StringVar(&indexFeatureSlug, "feature", "", "Feature slug (required)")
-	indexCmd.Flags().StringSliceVar(&indexTestProfiles, "test-profiles", nil, "Override test profiles (comma-separated)")
+	indexCmd.Flags().StringSliceVar(&indexLanguages, "languages", nil, "Override detected languages (comma-separated)")
 	_ = indexCmd.MarkFlagRequired("feature")
 }
 
@@ -56,33 +56,33 @@ func runIndex(_ *cobra.Command, _ []string) {
 		Exit(fmt.Errorf("create tasks dir: %w", err))
 	}
 
-	// Resolve profiles
-	profiles := indexTestProfiles
-	if len(profiles) == 0 {
-		p, err := profile.ReadLanguages(projectRoot)
+	// Resolve languages
+	languages := indexLanguages
+	if len(languages) == 0 {
+		langs, err := profile.ReadLanguages(projectRoot)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "WARNING: failed to read profiles: %v\n", err)
+			fmt.Fprintf(os.Stderr, "WARNING: failed to read languages: %v\n", err)
 		}
-		profiles = p
+		languages = langs
 	}
 
-	// Resolve interfaces: config.yaml > UnionLanguageInterfaces(profiles)
-	var capabilities []string
+	// Resolve interfaces: config.yaml > UnionLanguageInterfaces(languages)
+	var interfaces []string
 	cfg, _ := profile.ReadConfig(projectRoot)
 	if cfg != nil && len(cfg.Interfaces) > 0 {
-		capabilities = cfg.Interfaces
+		interfaces = cfg.Interfaces
 	}
-	if len(capabilities) == 0 && len(profiles) > 0 {
-		caps, err := profile.UnionLanguageInterfaces(profiles)
+	if len(interfaces) == 0 && len(languages) > 0 {
+		ifaces, err := profile.UnionLanguageInterfaces(languages)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "WARNING: failed to resolve interfaces: %v\n", err)
 		}
-		capabilities = caps
+		interfaces = ifaces
 	}
 
 	// Build strategy resolver
-	resolveStrategy := func(profileName, kind string) []byte {
-		content, err := profile.GetStrategy(profileName, kind)
+	resolveStrategy := func(language, kind string) []byte {
+		content, err := profile.GetStrategy(language, kind)
 		if err != nil {
 			return nil
 		}
@@ -94,8 +94,8 @@ func runIndex(_ *cobra.Command, _ []string) {
 		ProjectRoot:     projectRoot,
 		TasksDir:        tasksDir,
 		IndexPath:       indexPath,
-		TestProfiles:    profiles,
-		TestInterfaces:  capabilities,
+		Languages:       languages,
+		TestInterfaces:  interfaces,
 		ResolveStrategy: resolveStrategy,
 	}
 
@@ -119,8 +119,8 @@ func runIndex(_ *cobra.Command, _ []string) {
 	PrintField("NEW", fmt.Sprintf("%d", result.NewCount))
 	PrintField("UPDATED", fmt.Sprintf("%d", result.UpdatedCount))
 	PrintField("PRESERVED", fmt.Sprintf("%d", result.PreservedCount))
-	if len(profiles) > 0 {
-		PrintField("TEST_PROFILES", strings.Join(profiles, ", "))
+	if len(languages) > 0 {
+		PrintField("LANGUAGES", strings.Join(languages, ", "))
 	}
 	PrintBlockEnd()
 

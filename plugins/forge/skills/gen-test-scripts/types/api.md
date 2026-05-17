@@ -90,7 +90,7 @@ Run these checks -- first success is sufficient:
 
 ## Generation Patterns
 
-API test cases translate to executable scripts using HTTP client patterns. Follow the active profile's `generate.md` for framework-specific syntax (HTTP client imports, assertion library, test runner annotations). The type file describes *what* to generate; the profile determines the exact import syntax and assertion format.
+API test cases translate to executable scripts using HTTP client patterns. Follow the active strategy's `generate.md` for framework-specific syntax (HTTP client imports, assertion library, test runner annotations). The type file describes *what* to generate; the strategy determines the exact import syntax and assertion format.
 
 ### HTTP Request Construction
 
@@ -100,7 +100,7 @@ Each API test function constructs and sends an HTTP request:
 2. **Set HTTP method**: Use the method specified in the test case's Steps field (GET, POST, PUT, PATCH, DELETE).
 3. **Set headers**: Include `Content-Type: application/json` for JSON bodies. Add auth headers if the test case requires authentication (from Auth Plan classification).
 4. **Set request body**: Construct the body from the test case's Steps field. Use concrete field names and values -- do not invent request payloads.
-5. **Send the request**: Use the HTTP client specified in the profile's `generate.md`.
+5. **Send the request**: Use the HTTP client specified in the strategy's `generate.md`.
 
 ### Response Assertion
 
@@ -120,7 +120,7 @@ Based on the Auth Plan from Step 1, configure authentication in generated API te
 | Auth Category | Generation Strategy |
 |---------------|---------------------|
 | **login-test** | Generate independent login/logout logic. No shared auth. Must invalidate cached credentials after to prevent stale state. |
-| **auth-required-test** | Use cached shared auth -- credentials acquired once, reused across all tests. Follow profile's `generate.md` for token caching mechanism. |
+| **auth-required-test** | Use cached shared auth -- credentials acquired once, reused across all tests. Follow the strategy's `generate.md` for token caching mechanism. |
 | **custom-auth-test** (API key, OAuth) | Detect auth mechanism from codebase during reconnaissance. Generate custom auth setup using the discovered mechanism (e.g., `X-API-Key` header, OAuth token exchange). |
 | **public-test** | No auth headers needed. |
 
@@ -171,4 +171,4 @@ Beyond the generic 6 antipattern guards in the main SKILL.md, API-specific gener
 
 ## Output
 
-API test scripts are written to `tests/e2e/features/<feature>/` following the profile's template naming convention. Each test function includes a traceability comment linking back to the source test case ID.
+API test scripts are written to `tests/e2e/features/<feature>/` following the strategy's template naming convention. Each test function includes a traceability comment linking back to the source test case ID.

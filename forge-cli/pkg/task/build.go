@@ -21,7 +21,7 @@ type BuildIndexOpts struct {
 	ProjectRoot     string
 	TasksDir        string   // absolute path to tasks/
 	IndexPath       string   // absolute path to index.json
-	TestProfiles    []string // flag > config.yaml > none
+	Languages       []string // flag > config.yaml > auto-detect
 	TestInterfaces  []string // config.yaml interfaces > UnionLanguageInterfaces(profiles) > none
 	ResolveStrategy StrategyResolver
 	AutoConfig      profile.AutoConfig // auto-behavior config (defaults filled by caller)
@@ -62,7 +62,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 	setFeatureMetadata(index, opts.ProjectRoot, opts.FeatureSlug)
 
 	// 4. Use profiles from opts (caller resolves from config/flags)
-	profiles := opts.TestProfiles
+	profiles := opts.Languages
 
 	// 5. Scan .md files
 	existingKeys := make(map[string]bool) // track which keys come from .md files

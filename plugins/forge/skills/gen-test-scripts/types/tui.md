@@ -80,7 +80,7 @@ Run these checks in order -- first success is sufficient:
 
 ## Generation Patterns
 
-TUI test cases translate to executable scripts using non-interactive process execution with stdin piping and terminal output capture. Follow the active profile's `generate.md` for framework-specific syntax (imports, test runner, assertion library).
+TUI test cases translate to executable scripts using non-interactive process execution with stdin piping and terminal output capture. Follow the active strategy's `generate.md` for framework-specific syntax (imports, test runner, assertion library).
 
 ### Non-Interactive Execution Model
 
@@ -176,4 +176,4 @@ Beyond the generic 6 antipattern guards in the main SKILL.md, TUI-specific gener
 
 ## Output
 
-TUI test scripts are written to `tests/e2e/features/<feature>/` following the profile's template naming convention. Each test function includes a traceability comment linking back to the source test case ID.
+TUI test scripts are written to `tests/e2e/features/<feature>/` following the strategy's template naming convention. Each test function includes a traceability comment linking back to the source test case ID.

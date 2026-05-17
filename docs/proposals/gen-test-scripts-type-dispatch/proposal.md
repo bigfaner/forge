@@ -1,7 +1,7 @@
 ---
 created: 2026-05-17
 author: "faner"
-status: Approved
+status: Superseded
 ---
 
 # Proposal: Restructure gen-test-scripts with Per-Type Dispatch

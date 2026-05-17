@@ -77,7 +77,7 @@ slug=$(forge feature 2>/dev/null | grep '^FEATURE:' | sed 's/^FEATURE:[[:space:]
 ## Workflow
 
 ```
-0. Resolve profile → 1. Setup → 2. Verify → 3. Run specs → 4. Collect results → 5. Generate report → 6. Teardown
+0. Resolve language + strategy → 1. Setup → 2. Verify → 3. Run specs → 4. Collect results → 5. Generate report → 6. Teardown
 ```
 
 ### Step 1: Setup Environment

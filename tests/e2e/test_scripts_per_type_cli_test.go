@@ -112,7 +112,7 @@ func setupFeatureProject(t *testing.T, slug string, hasPRD bool, testProfiles []
 	if len(testProfiles) > 0 {
 		forgeDir := filepath.Join(dir, ".forge")
 		require.NoError(t, os.MkdirAll(forgeDir, 0755))
-		profileLines := "test-profiles:\n"
+		profileLines := "languages:\n"
 		for _, p := range testProfiles {
 			profileLines += "  - " + p + "\n"
 		}

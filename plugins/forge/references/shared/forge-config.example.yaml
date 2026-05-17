@@ -2,8 +2,19 @@
 # Commit to git — this is declarative, not environment-specific
 # Runtime config (baseUrl, credentials) stays in tests/e2e/config.yaml
 
-test-profiles:
-  - web-playwright
+project-type: frontend
+
+# System-facing interface types to test.
+# Omit to use the union of all detected languages' default interfaces.
+# Valid values: web-ui, tui, mobile-ui, api, cli
+interfaces:
+  - web-ui
+  - api
+
+# Override auto-detected languages. Omit to use auto-detection from project file signals.
+# Valid values: go, javascript, mobile, java, rust, python
+# languages:
+#   - javascript
 
 # Auto-behavior configuration (all optional — omit the block for backward-compatible defaults)
 # Each mode-scoped field has quick/full sub-keys to control pipeline behavior per mode.
