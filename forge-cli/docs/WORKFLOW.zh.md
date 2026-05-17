@@ -466,11 +466,60 @@ $ forge task claim
 > Claimed task 1.2: 实现权限检查
 ```
 
-### 方式二：使用 Git Worktree
+### 方式二：使用 Git Worktree（推荐用于并行开发多个 feature）
+
+`forge worktree` 命令组管理针对 Forge feature 工作流定制的 git worktree。Forge-cli 内置的 `GetWorktreeName()` 自动从 worktree 名称检测 feature，无需手动设置。
+
+#### 命令一览
+
+| 命令 | 说明 |
+|------|------|
+| `forge worktree start <slug>` | 在 `../<slug>` 创建 worktree 并启动 `claude` |
+| `forge worktree list` | 显示所有 worktree 的名称、分支、路径和 feature 状态 |
+| `forge worktree resume <slug>` | 在已有 worktree 中重新启动 `claude` |
+| `forge worktree remove <slug>` | 移除 worktree（分支保留，供手动合并） |
+
+#### 典型工作流
 
 ```bash
-# 1. 创建 worktree（自动识别 feature）
-$ git worktree add ../auth-login feature/auth-login
+# 1. 启动 worktree — 从 HEAD 创建 <slug> 分支，启动 claude
+$ forge worktree start auth-login
+
+# 2. 在 claude 会话中（自动识别 feature: auth-login）
+$ forge task claim
+> Claimed task 1.1: 实现用户认证
+
+# 3. 开发、记录、提交 ...
+
+# 4. 如果关闭了会话，可以恢复
+$ forge worktree resume auth-login
+
+# 5. 查看所有 worktree 状态
+$ forge worktree list
+
+# 6. 完成后移除（分支保留供合并）
+$ forge worktree remove auth-login
+```
+
+#### 并行开发多个 Feature
+
+```bash
+# 终端 1
+$ forge worktree start feature-a
+
+# 终端 2
+$ forge worktree start feature-b
+
+# 两个 feature 在独立 worktree 中并行开发
+```
+
+#### 手动 Git Worktree（备选方案）
+
+如果 `forge worktree` 不可用，等效的手动步骤为：
+
+```bash
+# 1. 创建 worktree
+$ git worktree add ../auth-login auth-login
 
 # 2. 在 worktree 中工作
 $ cd ../auth-login
@@ -478,6 +527,10 @@ $ forge task claim
 > Claimed task 1.1: 实现用户认证
 
 # 3. 开发、记录、提交 ...
+
+# 4. 清理
+$ cd ..
+$ git worktree remove auth-login
 ```
 
 ### 方式三：手动设置 Feature
