@@ -19,24 +19,20 @@ Maximum 10 business tasks. If the proposal requires more, STOP and recommend the
 
 ## Docs-Only Fast Path
 
-When all business tasks use `templates/task-doc.md` (type: `"documentation"`), the following steps are unnecessary and should be skipped:
+When all tasks are `type: "documentation"` (non-compilable output), skip **Step 0** (profile) and **Step 4** (test tasks). **Step 5** (`forge task index`) is always mandatory — without `index.json`, `forge task claim` fails.
 
-- **Step 0 (Resolve Profile)** — skip entirely. No test profile is needed because there are no test tasks.
-- **Step 4 (Test Tasks)** — skip entirely. No test tasks are generated for documentation-type tasks.
-
-**Detection**: During Step 1 (Read Proposal), after extracting In Scope items — if every item targets non-compilable files (`.md`, `.yaml`, `.json` config only) and the proposal's Constraints or Feasibility section confirms "documentation only", the feature is docs-only. Skip Step 0 immediately.
+**Detection**: Step 1 extracts In Scope items → if every item targets non-compilable files only, the feature is docs-only.
 
 ```mermaid
 graph LR
-    S1["Step 1: Read Proposal"] --> D{"all In Scope<br>non-compilable?"}
-    D -->|Yes| S2["Step 2 → 3<br><i>skip Step 0 & 4</i>"]
-    D -->|No| S0["Step 0: Resolve Profile"]
-    S0 --> S2x["Step 2 → 3 → 4"]
-    S2 --> S5["Step 5 → 7"]
-    S2x --> S5
+    S1["Step 1"] --> D{"docs-only?"}
+    D -->|"skip 0, 4"| B["Steps 2–3"]
+    D -->|No| A["Steps 0→2→3→4"]
+    B --> S5
+    A --> S5
+    S5["Step 5: forge task index<br>(mandatory)"] --> S67["Steps 6–7"]
+    style S5 fill:#fff3cd,stroke:#856404,stroke-width:2px
 ```
-
-**Workflow for docs-only features**: Step 1 (detect docs-only from proposal, skip Step 0) → Step 2 → Step 3 (all tasks use `templates/task-doc.md`) → Step 5 → Step 6 → Step 7.
 
 ## Step 0: Resolve Profile
 
