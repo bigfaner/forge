@@ -101,10 +101,30 @@ otherwise returns the union of all detected languages' default interfaces.`,
 	Run:  runTestingInterfaces,
 }
 
+var testingFrameworkCmd = &cobra.Command{
+	Use:   "framework",
+	Short: "Resolve the test framework for the project",
+	Long: `Resolve the test framework for the project.
+
+Priority:
+  1. test-framework field in .forge/config.yaml (explicit override)
+  2. Default framework for the first resolved language
+  3. No framework resolved
+
+Output is structured fields:
+  FRAMEWORK   — framework name (e.g. "go-testing", "pytest")
+  PATTERN     — test function pattern (e.g. "func Test*", "def test_*")
+  FILES       — file naming pattern (e.g. "*_test.go", "test_*.py")
+  SOURCE      — how it was resolved ("config", "language-default", "none")`,
+	Args: cobra.NoArgs,
+	Run:  runTestingFramework,
+}
+
 func init() {
 	testingCmd.AddCommand(testingDetectCmd)
 	testingCmd.AddCommand(testingGetCmd)
 	testingCmd.AddCommand(testingInterfacesCmd)
+	testingCmd.AddCommand(testingFrameworkCmd)
 
 	testingGetCmd.PersistentFlags().StringVar(&testingGetLanguage, "language", "", "language key (auto-detected if omitted)")
 
@@ -286,6 +306,45 @@ func printTestingLanguages(languages []string, source string) {
 		}
 		if source != "" {
 			PrintField("SOURCE", source)
+		}
+	}
+	PrintBlockEnd()
+}
+
+func runTestingFramework(_ *cobra.Command, _ []string) {
+	projectRoot, err := project.FindProjectRoot()
+	if err != nil {
+		Exit(ErrProjectNotFound())
+	}
+
+	// Determine source
+	cfg, _ := profile.ReadConfig(projectRoot)
+	source := "none"
+	if cfg != nil && cfg.TestFramework != "" {
+		source = "config"
+	}
+
+	fw, err := profile.ResolveTestFramework(projectRoot)
+	if err != nil {
+		Exit(NewAIError(ErrValidation, "Failed to resolve test framework", err.Error(), "Set test-framework in .forge/config.yaml", "forge testing framework"))
+	}
+
+	PrintBlockStart()
+	if fw.Name == "" {
+		PrintField("FRAMEWORK", "(none)")
+		PrintField("SOURCE", "none")
+	} else {
+		PrintField("FRAMEWORK", fw.Name)
+		if fw.TestFunctionPattern != "" {
+			PrintField("PATTERN", fw.TestFunctionPattern)
+		}
+		if fw.FilePattern != "" {
+			PrintField("FILES", fw.FilePattern)
+		}
+		if source == "config" {
+			PrintField("SOURCE", "config")
+		} else {
+			PrintField("SOURCE", "language-default")
 		}
 	}
 	PrintBlockEnd()

@@ -41,6 +41,14 @@
       },
       "uniqueItems": true
     },
+    "test-framework": {
+      "type": "string",
+      "description": "Override the test framework used for code generation. Built-in frameworks: go-testing, pytest, mocha, junit5, rust-test, maestro. Omit to use the default framework for the detected language. Any string value is accepted — custom frameworks are fully supported."
+    },
+    "test-command": {
+      "type": "string",
+      "description": "Override the command used to run tests (e.g. 'go test ./...', 'pytest tests/', 'npx mocha'). Omit to use the default command for the detected framework."
+    },
     "auto": {
       "type": "object",
       "description": "Auto-behavior configuration for Forge pipeline. Each mode-scoped field has quick/full sub-keys. Omit the entire block for backward-compatible defaults.",

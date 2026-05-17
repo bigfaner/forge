@@ -278,7 +278,7 @@ func TestProfileCommand_Removed(t *testing.T) {
 	// The 'profile' command should not exist on rootCmd
 	for _, cmd := range rootCmd.Commands() {
 		if cmd.Name() == "profile" {
-			t.Error("forge profile command should not exist — it should be replaced by forge testing")
+			t.Error("forge profile command should not exist -- it should be replaced by forge testing")
 		}
 	}
 }
@@ -302,7 +302,7 @@ func TestTestingCommand_Subcommands(t *testing.T) {
 		subNames[cmd.Name()] = true
 	}
 
-	expected := []string{"detect", "get", "interfaces"}
+	expected := []string{"detect", "get", "interfaces", "framework"}
 	for _, name := range expected {
 		if !subNames[name] {
 			t.Errorf("testing group missing subcommand: %s (have: %v)", name, subNames)
@@ -416,5 +416,81 @@ func TestTestingGet_MultiLanguage_DefaultFirst(t *testing.T) {
 
 	if len(output) == 0 {
 		t.Error("expected non-empty output for default language in multi-language project")
+	}
+}
+
+func TestTestingFramework_AutoDetectGo(t *testing.T) {
+	resetTestingGetLanguage()
+	_ = setupTestingProject(t)
+
+	output, err := captureOutput(func() error {
+		rootCmd.SetArgs([]string{"testing", "framework"})
+		return rootCmd.Execute()
+	})
+	if err != nil {
+		t.Fatalf("testing framework failed: %v", err)
+	}
+
+	if !strings.Contains(output, "FRAMEWORK: go-testing") {
+		t.Errorf("expected 'FRAMEWORK: go-testing' in output, got: %q", output)
+	}
+	if !strings.Contains(output, "PATTERN: func Test*") {
+		t.Errorf("expected 'PATTERN: func Test*' in output, got: %q", output)
+	}
+	if !strings.Contains(output, "FILES: *_test.go") {
+		t.Errorf("expected 'FILES: *_test.go' in output, got: %q", output)
+	}
+	if !strings.Contains(output, "SOURCE: language-default") {
+		t.Errorf("expected 'SOURCE: language-default' in output, got: %q", output)
+	}
+}
+
+func TestTestingFramework_ConfigOverride(t *testing.T) {
+	resetTestingGetLanguage()
+	dir := setupTestingProject(t)
+
+	// Write config.yaml with test-framework override
+	configDir := filepath.Join(dir, ".forge")
+	if err := os.MkdirAll(configDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	configContent := "languages:\n  - go\ntest-framework: pytest\n"
+	if err := os.WriteFile(filepath.Join(configDir, "config.yaml"), []byte(configContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	output, err := captureOutput(func() error {
+		rootCmd.SetArgs([]string{"testing", "framework"})
+		return rootCmd.Execute()
+	})
+	if err != nil {
+		t.Fatalf("testing framework failed: %v", err)
+	}
+
+	if !strings.Contains(output, "FRAMEWORK: pytest") {
+		t.Errorf("expected 'FRAMEWORK: pytest' in output, got: %q", output)
+	}
+	if !strings.Contains(output, "PATTERN: def test_*") {
+		t.Errorf("expected 'PATTERN: def test_*' in output, got: %q", output)
+	}
+	if !strings.Contains(output, "SOURCE: config") {
+		t.Errorf("expected 'SOURCE: config' in output, got: %q", output)
+	}
+}
+
+func TestTestingFramework_NoLanguage(t *testing.T) {
+	resetTestingGetLanguage()
+	_ = setupEmptyProject(t)
+
+	output, err := captureOutput(func() error {
+		rootCmd.SetArgs([]string{"testing", "framework"})
+		return rootCmd.Execute()
+	})
+	if err != nil {
+		t.Fatalf("testing framework failed: %v", err)
+	}
+
+	if !strings.Contains(output, "(none)") {
+		t.Errorf("expected '(none)' in output when no language, got: %q", output)
 	}
 }

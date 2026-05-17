@@ -62,6 +62,52 @@ func TestReadConfig(t *testing.T) {
 			t.Errorf("expected empty project-type, got %q", cfg.ProjectType)
 		}
 	})
+
+	t.Run("config with test-framework and test-command", func(t *testing.T) {
+		dir := t.TempDir()
+		forgeDir := filepath.Join(dir, ".forge")
+		if err := os.MkdirAll(forgeDir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		content := "languages:\n  - go\ntest-framework: pytest\ntest-command: pytest tests/\n"
+		if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.TestFramework != "pytest" {
+			t.Errorf("expected test-framework pytest, got %q", cfg.TestFramework)
+		}
+		if cfg.TestCommand != "pytest tests/" {
+			t.Errorf("expected test-command 'pytest tests/', got %q", cfg.TestCommand)
+		}
+	})
+
+	t.Run("config without test-framework defaults empty", func(t *testing.T) {
+		dir := t.TempDir()
+		forgeDir := filepath.Join(dir, ".forge")
+		if err := os.MkdirAll(forgeDir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		content := "languages:\n  - go\n"
+		if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.TestFramework != "" {
+			t.Errorf("expected empty test-framework, got %q", cfg.TestFramework)
+		}
+		if cfg.TestCommand != "" {
+			t.Errorf("expected empty test-command, got %q", cfg.TestCommand)
+		}
+	})
 }
 
 func TestGetConfigValue(t *testing.T) {
@@ -178,6 +224,44 @@ func TestGetConfigValue(t *testing.T) {
 		_, err := GetConfigValue(dir, "project-type")
 		if err != ErrKeyNotFound {
 			t.Errorf("expected ErrKeyNotFound for empty string, got %v", err)
+		}
+	})
+
+	t.Run("test-framework returns value", func(t *testing.T) {
+		dir := setupConfig(t, "languages:\n  - go\ntest-framework: pytest\n")
+		val, err := GetConfigValue(dir, "test-framework")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "pytest" {
+			t.Errorf("expected 'pytest', got %q", val)
+		}
+	})
+
+	t.Run("test-framework absent returns error", func(t *testing.T) {
+		dir := setupConfig(t, "languages:\n  - go\n")
+		_, err := GetConfigValue(dir, "test-framework")
+		if err != ErrKeyNotFound {
+			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		}
+	})
+
+	t.Run("test-command returns value", func(t *testing.T) {
+		dir := setupConfig(t, "languages:\n  - go\ntest-command: go test ./...\n")
+		val, err := GetConfigValue(dir, "test-command")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "go test ./..." {
+			t.Errorf("expected 'go test ./...', got %q", val)
+		}
+	})
+
+	t.Run("test-command absent returns error", func(t *testing.T) {
+		dir := setupConfig(t, "languages:\n  - go\n")
+		_, err := GetConfigValue(dir, "test-command")
+		if err != ErrKeyNotFound {
+			t.Errorf("expected ErrKeyNotFound, got %v", err)
 		}
 	})
 }
