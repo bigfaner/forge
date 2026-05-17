@@ -3,80 +3,85 @@
   "proposal": "docs/proposals/skill-ecosystem-audit/proposal.md",
   "created": "2026-05-17",
   "tasks": {
-    "1-cleanup-stale-refs": {
+    "1-fix-allowed-tools": {
       "id": "1",
-      "title": "Cleanup stale record-task references",
+      "title": "Fix allowed-tools field name and format across all skills/commands",
       "priority": "P0",
-      "estimatedTime": "1h",
+      "estimatedTime": "45m",
       "status": "pending",
-      "file": "1-cleanup-stale-refs.md",
-      "record": "records/1-cleanup-stale-refs.md",
+      "file": "1-fix-allowed-tools.md",
+      "record": "records/1-fix-allowed-tools.md",
       "scope": "all",
       "type": "cleanup"
     },
-    "2-fix-forensic-paths": {
+    "2-fix-argument-effort-frontmatter": {
       "id": "2",
-      "title": "Fix forensic hardcoded developer paths",
-      "priority": "P0",
-      "estimatedTime": "1h",
-      "status": "pending",
-      "file": "2-fix-forensic-paths.md",
-      "record": "records/2-fix-forensic-paths.md",
-      "scope": "all",
-      "type": "cleanup"
-    },
-    "3-fix-path-references": {
-      "id": "3",
-      "title": "Fix all plugins/forge/ hardcoded path references",
+      "title": "Fix argument-hints and add missing argument-hint + arguments + effort",
       "priority": "P1",
-      "estimatedTime": "4h",
+      "estimatedTime": "1h",
       "dependencies": [
         "1"
       ],
       "status": "pending",
-      "file": "3-fix-path-references.md",
-      "record": "records/3-fix-path-references.md",
+      "file": "2-fix-argument-effort-frontmatter.md",
+      "record": "records/2-fix-argument-effort-frontmatter.md",
       "scope": "all",
-      "type": "refactor"
+      "type": "cleanup"
     },
-    "4-remove-gen-test-scripts-bloat": {
-      "id": "4",
-      "title": "Remove gen-test-scripts dead weight (templates + 27MB node_modules)",
+    "3-fix-forensic-stale-refs": {
+      "id": "3",
+      "title": "Fix forensic hardcoded paths and stale record-task reference",
       "priority": "P1",
-      "estimatedTime": "2h",
-      "dependencies": [
-        "3"
-      ],
+      "estimatedTime": "30m",
       "status": "pending",
-      "file": "4-remove-gen-test-scripts-bloat.md",
-      "record": "records/4-remove-gen-test-scripts-bloat.md",
+      "file": "3-fix-forensic-stale-refs.md",
+      "record": "records/3-fix-forensic-stale-refs.md",
+      "scope": "all",
+      "type": "cleanup"
+    },
+    "4-fix-template-paths-remove-dead-code": {
+      "id": "4",
+      "title": "Fix 5 template path references and remove Playwright dead code",
+      "priority": "P0",
+      "estimatedTime": "45m",
+      "status": "pending",
+      "file": "4-fix-template-paths-remove-dead-code.md",
+      "record": "records/4-fix-template-paths-remove-dead-code.md",
       "scope": "all",
       "type": "cleanup"
     },
     "5-dedup-tasks-logic": {
       "id": "5",
-      "title": "Deduplicate breakdown-tasks and quick-tasks shared logic",
+      "title": "Extract shared logic from breakdown-tasks ↔ quick-tasks",
       "priority": "P2",
-      "estimatedTime": "3h",
-      "dependencies": [
-        "3"
-      ],
+      "estimatedTime": "2h",
       "status": "pending",
       "file": "5-dedup-tasks-logic.md",
       "record": "records/5-dedup-tasks-logic.md",
       "scope": "all",
       "type": "refactor"
     },
-    "6-simplify-eval-scope": {
+    "6-extract-eval-pipeline": {
       "id": "6",
-      "title": "Simplify eval validate-ux inline + fix scope heuristic",
+      "title": "Extract eval validate-ux sub-pipeline to rubric file",
       "priority": "P2",
-      "estimatedTime": "2h",
+      "estimatedTime": "1h",
       "status": "pending",
-      "file": "6-simplify-eval-scope.md",
-      "record": "records/6-simplify-eval-scope.md",
+      "file": "6-extract-eval-pipeline.md",
+      "record": "records/6-extract-eval-pipeline.md",
       "scope": "all",
       "type": "refactor"
+    },
+    "7-fix-scope-heuristic": {
+      "id": "7",
+      "title": "Fix breakdown-tasks scope heuristic for backend projects",
+      "priority": "P2",
+      "estimatedTime": "30m",
+      "status": "pending",
+      "file": "7-fix-scope-heuristic.md",
+      "record": "records/7-fix-scope-heuristic.md",
+      "scope": "all",
+      "type": "enhancement"
     }
   },
   "statusEnum": [
