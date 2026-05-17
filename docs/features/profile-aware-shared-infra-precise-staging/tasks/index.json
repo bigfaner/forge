@@ -1,0 +1,55 @@
+{
+  "feature": "profile-aware-shared-infra-precise-staging",
+  "proposal": "docs/proposals/profile-aware-shared-infra-precise-staging/proposal.md",
+  "created": "2026-05-17",
+  "tasks": {
+    "1-fix-skill-hardcoded-ts": {
+      "id": "1",
+      "title": "Fix SKILL.md hardcoded .ts references in Step 3.5 and post-generation",
+      "priority": "P0",
+      "estimatedTime": "30m",
+      "status": "completed",
+      "file": "1-fix-skill-hardcoded-ts.md",
+      "record": "records/1-fix-skill-hardcoded-ts.md",
+      "type": "documentation"
+    },
+    "2-add-git-add-prohibition": {
+      "id": "2",
+      "title": "Add git add -A prohibition to git-commit.md",
+      "priority": "P0",
+      "estimatedTime": "15m",
+      "status": "completed",
+      "file": "2-add-git-add-prohibition.md",
+      "record": "records/2-add-git-add-prohibition.md",
+      "type": "documentation"
+    },
+    "eval-doc": {
+      "id": "T-eval-doc",
+      "title": "Evaluate Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "2"
+      ],
+      "status": "completed",
+      "file": "eval-doc.md",
+      "record": "records/eval-doc.md",
+      "scope": "all",
+      "noTest": true,
+      "type": "doc-evaluation"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
