@@ -3,6 +3,9 @@ scale: 1000
 target: 900
 iterations: 6
 type: tui-test-cases
+context:
+  conventions: [testing-isolation]
+  business-rules: auto
 ---
 
 # TUI Test Cases Evaluation Rubric
@@ -41,10 +44,13 @@ The tui-test-cases.md must contain these sections:
 
 ### 3. Output Assertion Accuracy (150 pts)
 
+This dimension also checks compliance with injected project conventions for TUI testing. The scorer should reference injected conventions to detect violations in output assertion patterns and keyboard interaction descriptions.
+
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| Output assertions are concrete | 0-75 | Expected results specify exact text, snapshot comparison points, or regex patterns for terminal output. No vague descriptions like "displays a table" — specify column headers, row content, or regex pattern |
-| Keyboard interaction coverage | 0-75 | Keyboard inputs, key sequences, and terminal state transitions are explicitly described. Every key press is named (e.g., "Press Ctrl+C", "Type `y` then Enter"). Terminal mode transitions (insert mode, command mode) are specified |
+| Output assertions are concrete | 0-50 | Expected results specify exact text, snapshot comparison points, or regex patterns for terminal output. No vague descriptions like "displays a table" — specify column headers, row content, or regex pattern |
+| Keyboard interaction coverage | 0-50 | Keyboard inputs, key sequences, and terminal state transitions are explicitly described. Every key press is named (e.g., "Press Ctrl+C", "Type `y` then Enter"). Terminal mode transitions (insert mode, command mode) are specified |
+| Convention compliance | 0-50 | Do test steps and assertions comply with project conventions for TUI testing? If injected conventions specify output assertion patterns (e.g., golden file comparison vs inline text), do TCs use the declared pattern? Are terminal state assertions consistent with the project's TUI conventions? Deduct 10 pts per convention violation |
 
 ### 4. Completeness (200 pts)
 

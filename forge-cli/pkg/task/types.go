@@ -26,6 +26,7 @@ const (
 	TypeTestPipelineVerifyRegression = "test-pipeline.verify-regression"
 	TypeFix                          = "fix"
 	TypeGate                         = "gate"
+	TypeCleanCode                    = "code-quality.simplify"
 )
 
 // TaskTypeInfo describes a single task type for display and discovery.
@@ -55,6 +56,7 @@ var TaskTypeRegistry = []TaskTypeInfo{
 	{Name: TypeTestPipelineGenAndRun, Description: "generate and run test scripts in one session"},
 	{Name: TypeTestPipelineGraduate, Description: "graduate tests to regression suite"},
 	{Name: TypeTestPipelineVerifyRegression, Description: "verify regression suite after graduation"},
+	{Name: TypeCleanCode, Description: "simplify and clean up code quality"},
 }
 
 // ValidTypes is the complete set of valid task type values.
@@ -77,6 +79,7 @@ var ValidTypes = map[string]bool{
 	TypeTestPipelineVerifyRegression: true,
 	TypeFix:                          true,
 	TypeGate:                         true,
+	TypeCleanCode:                    true,
 }
 
 // Task represents a single task in the feature index.

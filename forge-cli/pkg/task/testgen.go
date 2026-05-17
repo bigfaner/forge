@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"path"
 	"strings"
+
+	"forge-cli/pkg/profile"
 )
 
 // TestTaskDef defines a test task to be generated.
@@ -29,7 +31,8 @@ type TestTaskDef struct {
 // GetBreakdownTestTasks returns test task definitions for breakdown mode.
 // With 0 or 1 profile, uses no suffix. With 2+ profiles, uses letter suffixes.
 // Capabilities are config-driven test types (e.g., "cli", "api"). Empty capabilities returns nil.
-func GetBreakdownTestTasks(profiles []string, capabilities []string) []TestTaskDef {
+// auto controls which task categories are generated.
+func GetBreakdownTestTasks(profiles []string, capabilities []string, auto profile.AutoConfig) []TestTaskDef {
 	if len(capabilities) == 0 {
 		return nil
 	}
@@ -38,65 +41,81 @@ func GetBreakdownTestTasks(profiles []string, capabilities []string) []TestTaskD
 
 	var tasks []TestTaskDef
 
-	// Shared tasks
-	tasks = append(tasks, TestTaskDef{
-		Key: "gen-test-cases", ID: "T-test-1",
-		Title: "Generate e2e Test Cases", Priority: "P1", EstimatedTime: "1-2h",
-		Type: TypeTestPipelineGenCases, Scope: "all", NoTest: true,
-		StrategyKind: "generate",
-	})
-	tasks = append(tasks, TestTaskDef{
-		Key: "eval-test-cases", ID: "T-test-1b",
-		Title: "Evaluate e2e Test Cases", Priority: "P1", EstimatedTime: "30min",
-		Type: TypeTestPipelineEvalCases, Scope: "all", NoTest: true, MainSession: true,
-	})
-
-	// Per-profile tasks with per-type gen-scripts
-	for i, p := range profiles {
-		s := suffixLetter(i, suffix)
-		for _, typ := range capabilities {
-			tasks = append(tasks, TestTaskDef{
-				Key: "gen-test-scripts-" + p + "-" + typ, ID: "T-test-2" + s + "-" + typ,
-				Title: fmt.Sprintf("Generate Test Scripts (%s, %s)", p, typ), Priority: "P1", EstimatedTime: "1-2h",
-				Type: TypeTestPipelineGenScripts, Scope: "all", ProfileName: p, TestType: typ,
-				StrategyKind: "generate",
-			})
-		}
+	// Shared tasks (gated by auto.E2eTest.Full)
+	if auto.E2eTest.Full {
 		tasks = append(tasks, TestTaskDef{
-			Key: "run-e2e-tests-" + p, ID: "T-test-3" + s,
-			Title: fmt.Sprintf("Run e2e Tests (%s)", p), Priority: "P1", EstimatedTime: "30min-1h",
-			Type: TypeTestPipelineRun, Scope: "all", ProfileName: p,
-			StrategyKind: "run",
+			Key: "gen-test-cases", ID: "T-test-1",
+			Title: "Generate e2e Test Cases", Priority: "P1", EstimatedTime: "1-2h",
+			Type: TypeTestPipelineGenCases, Scope: "all", NoTest: true,
+			StrategyKind: "generate",
 		})
 		tasks = append(tasks, TestTaskDef{
-			Key: "graduate-tests-" + p, ID: "T-test-4" + s,
-			Title: fmt.Sprintf("Graduate Test Scripts (%s)", p), Priority: "P1", EstimatedTime: "30min",
-			Type: TypeTestPipelineGraduate, Scope: "all", ProfileName: p,
-			StrategyKind: "graduate",
+			Key: "eval-test-cases", ID: "T-test-1b",
+			Title: "Evaluate e2e Test Cases", Priority: "P1", EstimatedTime: "30min",
+			Type: TypeTestPipelineEvalCases, Scope: "all", NoTest: true, MainSession: true,
+		})
+
+		// Per-profile tasks with per-type gen-scripts
+		for i, p := range profiles {
+			s := suffixLetter(i, suffix)
+			for _, typ := range capabilities {
+				tasks = append(tasks, TestTaskDef{
+					Key: "gen-test-scripts-" + p + "-" + typ, ID: "T-test-2" + s + "-" + typ,
+					Title: fmt.Sprintf("Generate Test Scripts (%s, %s)", p, typ), Priority: "P1", EstimatedTime: "1-2h",
+					Type: TypeTestPipelineGenScripts, Scope: "all", ProfileName: p, TestType: typ,
+					StrategyKind: "generate",
+				})
+			}
+			tasks = append(tasks, TestTaskDef{
+				Key: "run-e2e-tests-" + p, ID: "T-test-3" + s,
+				Title: fmt.Sprintf("Run e2e Tests (%s)", p), Priority: "P1", EstimatedTime: "30min-1h",
+				Type: TypeTestPipelineRun, Scope: "all", ProfileName: p,
+				StrategyKind: "run",
+			})
+			tasks = append(tasks, TestTaskDef{
+				Key: "graduate-tests-" + p, ID: "T-test-4" + s,
+				Title: fmt.Sprintf("Graduate Test Scripts (%s)", p), Priority: "P1", EstimatedTime: "30min",
+				Type: TypeTestPipelineGraduate, Scope: "all", ProfileName: p,
+				StrategyKind: "graduate",
+			})
+		}
+
+		// More shared tasks
+		tasks = append(tasks, TestTaskDef{
+			Key: "verify-regression", ID: "T-test-4.5",
+			Title: "Verify Full E2E Regression", Priority: "P1", EstimatedTime: "15-30min",
+			Type: TypeTestPipelineVerifyRegression, Scope: "all",
 		})
 	}
 
-	// More shared tasks
-	tasks = append(tasks, TestTaskDef{
-		Key: "verify-regression", ID: "T-test-4.5",
-		Title: "Verify Full E2E Regression", Priority: "P1", EstimatedTime: "15-30min",
-		Type: TypeTestPipelineVerifyRegression, Scope: "all",
-	})
-	tasks = append(tasks, TestTaskDef{
-		Key: "consolidate-specs", ID: "T-test-5",
-		Title: "Consolidate Specs", Priority: "P2", EstimatedTime: "20min",
-		Type: TypeDocGenerationConsolidate, Scope: "all", NoTest: true,
-	})
+	// Spec consolidation (gated by auto.ConsolidateSpecs.Full, renamed from T-test-5 to T-specs-1)
+	if auto.ConsolidateSpecs.Full {
+		tasks = append(tasks, TestTaskDef{
+			Key: "consolidate-specs", ID: "T-specs-1",
+			Title: "Consolidate Specs", Priority: "P2", EstimatedTime: "20min",
+			Type: TypeDocGenerationConsolidate, Scope: "all", NoTest: true,
+		})
+	}
+
+	// Clean code task (gated by auto.CleanCode.Full)
+	if auto.CleanCode.Full {
+		tasks = append(tasks, TestTaskDef{
+			Key: "clean-code", ID: "T-clean-code-1",
+			Title: "Simplify and Clean Code", Priority: "P2", EstimatedTime: "20min",
+			Type: TypeCleanCode, Scope: "all", NoTest: true,
+		})
+	}
 
 	// Set filenames and dependency chains
-	resolveBreakdownDeps(tasks, profiles, suffix, capabilities)
+	resolveBreakdownDeps(tasks, profiles, suffix, capabilities, auto)
 
 	return tasks
 }
 
 // GetQuickTestTasks returns test task definitions for quick mode.
 // Capabilities are config-driven test types (e.g., "cli", "api"). Empty capabilities returns nil.
-func GetQuickTestTasks(profiles []string, capabilities []string) []TestTaskDef {
+// auto controls which task categories are generated.
+func GetQuickTestTasks(profiles []string, capabilities []string, auto profile.AutoConfig) []TestTaskDef {
 	if len(capabilities) == 0 {
 		return nil
 	}
@@ -105,44 +124,59 @@ func GetQuickTestTasks(profiles []string, capabilities []string) []TestTaskDef {
 
 	var tasks []TestTaskDef
 
-	// Per-profile with per-type gen-and-run
-	for i, p := range profiles {
-		s := suffixLetter(i, suffix)
-		tasks = append(tasks, TestTaskDef{
-			Key: "quick-test-cases-" + p, ID: "T-quick-1" + s,
-			Title: fmt.Sprintf("Generate Quick Test Cases (%s)", p), Priority: "P1", EstimatedTime: "30min-1h",
-			Type: TypeTestPipelineGenCases, Scope: "all", NoTest: true, ProfileName: p,
-			StrategyKind: "generate",
-		})
-		for _, typ := range capabilities {
+	// Per-profile with per-type gen-and-run (gated by auto.E2eTest.Quick)
+	if auto.E2eTest.Quick {
+		for i, p := range profiles {
+			s := suffixLetter(i, suffix)
 			tasks = append(tasks, TestTaskDef{
-				Key: "quick-gen-and-run-" + p + "-" + typ, ID: "T-quick-2" + s + "-" + typ,
-				Title: fmt.Sprintf("Generate and Run Quick Test Scripts (%s, %s)", p, typ), Priority: "P1", EstimatedTime: "1-2h",
-				Type: TypeTestPipelineGenAndRun, Scope: "all", ProfileName: p, TestType: typ,
+				Key: "quick-test-cases-" + p, ID: "T-quick-1" + s,
+				Title: fmt.Sprintf("Generate Quick Test Cases (%s)", p), Priority: "P1", EstimatedTime: "30min-1h",
+				Type: TypeTestPipelineGenCases, Scope: "all", NoTest: true, ProfileName: p,
 				StrategyKind: "generate",
 			})
+			for _, typ := range capabilities {
+				tasks = append(tasks, TestTaskDef{
+					Key: "quick-gen-and-run-" + p + "-" + typ, ID: "T-quick-2" + s + "-" + typ,
+					Title: fmt.Sprintf("Generate and Run Quick Test Scripts (%s, %s)", p, typ), Priority: "P1", EstimatedTime: "1-2h",
+					Type: TypeTestPipelineGenAndRun, Scope: "all", ProfileName: p, TestType: typ,
+					StrategyKind: "generate",
+				})
+			}
+			tasks = append(tasks, TestTaskDef{
+				Key: "quick-graduate-" + p, ID: "T-quick-3" + s,
+				Title: fmt.Sprintf("Graduate Quick Test Scripts (%s)", p), Priority: "P1", EstimatedTime: "15min",
+				Type: TypeTestPipelineGraduate, Scope: "all", ProfileName: p,
+				StrategyKind: "graduate",
+			})
 		}
+
+		// Shared
 		tasks = append(tasks, TestTaskDef{
-			Key: "quick-graduate-" + p, ID: "T-quick-3" + s,
-			Title: fmt.Sprintf("Graduate Quick Test Scripts (%s)", p), Priority: "P1", EstimatedTime: "15min",
-			Type: TypeTestPipelineGraduate, Scope: "all", ProfileName: p,
-			StrategyKind: "graduate",
+			Key: "quick-verify-regression", ID: "T-quick-4",
+			Title: "Verify Quick E2E Regression", Priority: "P1", EstimatedTime: "15min",
+			Type: TypeTestPipelineVerifyRegression, Scope: "all",
 		})
 	}
 
-	// Shared
-	tasks = append(tasks, TestTaskDef{
-		Key: "quick-verify-regression", ID: "T-quick-4",
-		Title: "Verify Quick E2E Regression", Priority: "P1", EstimatedTime: "15min",
-		Type: TypeTestPipelineVerifyRegression, Scope: "all",
-	})
-	tasks = append(tasks, TestTaskDef{
-		Key: "quick-drift-detection", ID: "T-quick-5",
-		Title: "Detect Spec Drift", Priority: "P2", EstimatedTime: "15min",
-		Type: TypeDocGenerationDrift, Scope: "all", NoTest: true,
-	})
+	// Spec drift detection (gated by auto.ConsolidateSpecs.Quick, renamed from T-quick-5 to T-quick-specs-1)
+	if auto.ConsolidateSpecs.Quick {
+		tasks = append(tasks, TestTaskDef{
+			Key: "quick-drift-detection", ID: "T-quick-specs-1",
+			Title: "Detect Spec Drift", Priority: "P2", EstimatedTime: "15min",
+			Type: TypeDocGenerationDrift, Scope: "all", NoTest: true,
+		})
+	}
 
-	resolveQuickDeps(tasks, profiles, suffix, capabilities)
+	// Clean code task (gated by auto.CleanCode.Quick)
+	if auto.CleanCode.Quick {
+		tasks = append(tasks, TestTaskDef{
+			Key: "quick-clean-code", ID: "T-clean-code-1",
+			Title: "Simplify and Clean Code", Priority: "P2", EstimatedTime: "20min",
+			Type: TypeCleanCode, Scope: "all", NoTest: true,
+		})
+	}
+
+	resolveQuickDeps(tasks, profiles, suffix, capabilities, auto)
 
 	return tasks
 }
@@ -207,109 +241,148 @@ func formatYAMLList(items []string) string {
 }
 
 // resolveBreakdownDeps sets dependency chains for breakdown test tasks.
-func resolveBreakdownDeps(tasks []TestTaskDef, profiles []string, _ bool, capabilities []string) {
+func resolveBreakdownDeps(tasks []TestTaskDef, profiles []string, _ bool, capabilities []string, auto profile.AutoConfig) {
 	// T-test-1 depends on last gate or last summary (placeholder, caller resolves)
 	// T-test-1b depends on T-test-1
 	// Per-profile: T-test-2<L>-<type> depends on T-test-1b
 	//              T-test-3<L> depends on ALL T-test-2<L>-<type> for its profile
 	//              T-test-4<L> depends on T-test-3<L>
 	// T-test-4.5 depends on all T-test-4<L> (or T-test-4 if single)
-	// T-test-5 depends on T-test-4.5
+	// T-specs-1 depends on T-test-4.5 (if e2e tasks exist) or last business task
+	// T-clean-code-1 depends on last business task
 
-	// T-test-1b -> T-test-1
-	if len(tasks) > 1 {
-		tasks[1].Dependencies = []string{"T-test-1"}
+	if !auto.E2eTest.Full && !auto.ConsolidateSpecs.Full && !auto.CleanCode.Full {
+		return // no tasks to wire
 	}
 
-	profileStart := 2 // index 2 is first per-profile task
-	// Per-type mode: per-profile block is N gen-tasks + run + graduate
-	nTypes := len(capabilities)
-	blockSize := nTypes + 2 // gen-per-type + run + graduate
-	for i := range profiles {
-		blockStart := profileStart + i*blockSize
+	e2eStart := 0
+	e2eCount := 0
 
-		// All per-type gen-scripts depend on T-test-1b
-		for j := 0; j < nTypes; j++ {
-			tasks[blockStart+j].Dependencies = []string{"T-test-1b"}
+	if auto.E2eTest.Full {
+		// T-test-1b -> T-test-1
+		if len(tasks) > 1 {
+			tasks[1].Dependencies = []string{"T-test-1"}
 		}
 
-		// Run depends on all per-type gen-scripts for this profile
-		run := &tasks[blockStart+nTypes]
-		var genDeps []string
-		for j := 0; j < nTypes; j++ {
-			genDeps = append(genDeps, tasks[blockStart+j].ID)
-		}
-		run.Dependencies = genDeps
-
-		// Graduate depends on run
-		graduate := &tasks[blockStart+nTypes+1]
-		graduate.Dependencies = []string{run.ID}
-	}
-
-	// T-test-4.5 depends on all graduate tasks
-	sharedStart := profileStart + len(profiles)*blockSize
-	if len(tasks) > sharedStart {
-		verifyReg := &tasks[sharedStart]
-		var gradDeps []string
+		profileStart := 2 // index 2 is first per-profile task
+		nTypes := len(capabilities)
+		blockSize := nTypes + 2 // gen-per-type + run + graduate
 		for i := range profiles {
-			gradDeps = append(gradDeps, tasks[profileStart+i*blockSize+nTypes+1].ID)
+			blockStart := profileStart + i*blockSize
+
+			// All per-type gen-scripts depend on T-test-1b
+			for j := 0; j < nTypes; j++ {
+				tasks[blockStart+j].Dependencies = []string{"T-test-1b"}
+			}
+
+			// Run depends on all per-type gen-scripts for this profile
+			run := &tasks[blockStart+nTypes]
+			var genDeps []string
+			for j := 0; j < nTypes; j++ {
+				genDeps = append(genDeps, tasks[blockStart+j].ID)
+			}
+			run.Dependencies = genDeps
+
+			// Graduate depends on run
+			graduate := &tasks[blockStart+nTypes+1]
+			graduate.Dependencies = []string{run.ID}
 		}
-		verifyReg.Dependencies = gradDeps
+
+		// T-test-4.5 depends on all graduate tasks
+		sharedStart := profileStart + len(profiles)*blockSize
+		if len(tasks) > sharedStart {
+			verifyReg := &tasks[sharedStart]
+			var gradDeps []string
+			for i := range profiles {
+				gradDeps = append(gradDeps, tasks[profileStart+i*blockSize+nTypes+1].ID)
+			}
+			verifyReg.Dependencies = gradDeps
+		}
+		e2eCount = sharedStart + 1 // number of e2e tasks
 	}
 
-	// T-test-5 depends on T-test-4.5
-	if len(tasks) > sharedStart+1 {
-		tasks[sharedStart+1].Dependencies = []string{"T-test-4.5"}
+	// T-specs-1 depends on last e2e task (T-test-4.5) or nothing if no e2e tasks
+	if auto.ConsolidateSpecs.Full {
+		specsIdx := findTaskIndex(tasks, "T-specs-1")
+		if specsIdx >= 0 && auto.E2eTest.Full && e2eCount > 0 {
+			tasks[specsIdx].Dependencies = []string{"T-test-4.5"}
+		}
 	}
+
+	// T-clean-code-1 depends on last business task (resolved by caller via ResolveFirstTestDep)
+	// The first test task depends on T-clean-code-1 when both exist (resolved in BuildIndex)
+	_ = e2eStart
 }
 
 // resolveQuickDeps sets dependency chains for quick test tasks.
-func resolveQuickDeps(tasks []TestTaskDef, profiles []string, _ bool, capabilities []string) {
-	// Per-profile: T-quick-1<L> depends on last business task (placeholder)
-	//              T-quick-2<L>-<type> depends on T-quick-1<L>
-	//              T-quick-3<L> depends on ALL T-quick-2<L>-<type> for its profile
-	// T-quick-4 depends on all T-quick-3<L> (or graduate tasks)
-
-	nTypes := len(capabilities)
-	blockSize := 1 + nTypes + 1 // gen-cases + gen-per-type + graduate
-	for i := range profiles {
-		blockStart := i * blockSize
-
-		genCases := &tasks[blockStart]
-		// genCases deps are placeholder (resolved by BuildIndex)
-
-		// All per-type gen-and-run depend on gen-cases
-		for j := 0; j < nTypes; j++ {
-			tasks[blockStart+1+j].Dependencies = []string{genCases.ID}
-		}
-
-		// Graduate depends on all per-type gen-and-run for this profile
-		graduate := &tasks[blockStart+1+nTypes]
-		var genDeps []string
-		for j := 0; j < nTypes; j++ {
-			genDeps = append(genDeps, tasks[blockStart+1+j].ID)
-		}
-		graduate.Dependencies = genDeps
+func resolveQuickDeps(tasks []TestTaskDef, profiles []string, _ bool, capabilities []string, auto profile.AutoConfig) {
+	if !auto.E2eTest.Quick && !auto.ConsolidateSpecs.Quick && !auto.CleanCode.Quick {
+		return // no tasks to wire
 	}
 
-	// T-quick-4 depends on all graduate tasks
-	sharedStart := len(profiles) * blockSize
-	if len(tasks) > sharedStart {
-		var gradDeps []string
+	if auto.E2eTest.Quick {
+		nTypes := len(capabilities)
+		blockSize := 1 + nTypes + 1 // gen-cases + gen-per-type + graduate
 		for i := range profiles {
-			gradDeps = append(gradDeps, tasks[i*blockSize+1+nTypes].ID)
+			blockStart := i * blockSize
+
+			genCases := &tasks[blockStart]
+			// genCases deps are placeholder (resolved by BuildIndex)
+
+			// All per-type gen-and-run depend on gen-cases
+			for j := 0; j < nTypes; j++ {
+				tasks[blockStart+1+j].Dependencies = []string{genCases.ID}
+			}
+
+			// Graduate depends on all per-type gen-and-run for this profile
+			graduate := &tasks[blockStart+1+nTypes]
+			var genDeps []string
+			for j := 0; j < nTypes; j++ {
+				genDeps = append(genDeps, tasks[blockStart+1+j].ID)
+			}
+			graduate.Dependencies = genDeps
 		}
-		tasks[sharedStart].Dependencies = gradDeps
+
+		// T-quick-4 depends on all graduate tasks
+		sharedStart := len(profiles) * blockSize
+		if len(tasks) > sharedStart {
+			var gradDeps []string
+			for i := range profiles {
+				gradDeps = append(gradDeps, tasks[i*blockSize+1+nTypes].ID)
+			}
+			tasks[sharedStart].Dependencies = gradDeps
+		}
 	}
 
-	// T-quick-5 depends on T-quick-4
-	// Find T-quick-5 by searching for its ID (shared task after all per-profile blocks).
-	for i := range tasks {
-		if tasks[i].ID == "T-quick-5" {
-			tasks[i].Dependencies = []string{"T-quick-4"}
-			break
+	// T-quick-specs-1 depends on T-quick-4 (if e2e tasks exist) or nothing
+	if auto.ConsolidateSpecs.Quick {
+		idx := findTaskIndex(tasks, "T-quick-specs-1")
+		if idx >= 0 && auto.E2eTest.Quick {
+			tasks[idx].Dependencies = []string{"T-quick-4"}
 		}
 	}
+
+	// T-clean-code-1 depends on last business task (resolved by caller via ResolveFirstTestDep)
+}
+
+// findTaskIndex finds the index of the task with the given ID. Returns -1 if not found.
+func findTaskIndex(tasks []TestTaskDef, id string) int {
+	for i, t := range tasks {
+		if t.ID == id {
+			return i
+		}
+	}
+	return -1
+}
+
+// findTaskIndexByPrefix finds the index of the first task whose ID starts with the given prefix.
+func findTaskIndexByPrefix(tasks []TestTaskDef, prefix string) int {
+	for i, t := range tasks {
+		if strings.HasPrefix(t.ID, prefix) {
+			return i
+		}
+	}
+	return -1
 }
 
 // profileSuffix returns true if profiles need letter suffixes (2+).
@@ -328,6 +401,7 @@ func suffixLetter(i int, useSuffix bool) string {
 // ResolveFirstTestDep resolves the first test task's dependency.
 // For breakdown: depends on the highest-phase gate, or last summary if no gate.
 // For quick: depends on the max business task ID.
+// When T-clean-code-1 exists, it is inserted between business tasks and test tasks.
 // Returns the updated tasks with first-test-task deps set.
 func ResolveFirstTestDep(tasks []TestTaskDef, existingTasks map[string]Task, mode string) {
 	if len(tasks) == 0 {
@@ -337,16 +411,41 @@ func ResolveFirstTestDep(tasks []TestTaskDef, existingTasks map[string]Task, mod
 	switch mode {
 	case "breakdown":
 		dep := findHighestGateOrSummary(existingTasks)
-		if dep != "" {
-			tasks[0].Dependencies = []string{dep}
+		if dep == "" {
+			dep = findMaxBusinessTaskID(existingTasks)
 		}
+		if dep == "" {
+			return
+		}
+
+		cleanIdx := findTaskIndex(tasks, "T-clean-code-1")
+		firstTestIdx := findTaskIndex(tasks, "T-test-1")
+
+		if cleanIdx >= 0 {
+			tasks[cleanIdx].Dependencies = []string{dep}
+			if firstTestIdx >= 0 {
+				tasks[firstTestIdx].Dependencies = []string{"T-clean-code-1"}
+			}
+		} else if firstTestIdx >= 0 {
+			tasks[firstTestIdx].Dependencies = []string{dep}
+		}
+
 	case "quick":
 		dep := findMaxBusinessTaskID(existingTasks)
-		if dep != "" {
-			// Set deps on all first-per-profile tasks (T-quick-1<L>)
-			for i := 0; i < len(tasks) && strings.HasPrefix(tasks[i].ID, "T-quick-1"); i++ {
-				tasks[i].Dependencies = []string{dep}
+		if dep == "" {
+			return
+		}
+
+		cleanIdx := findTaskIndex(tasks, "T-clean-code-1")
+		firstTestIdx := findTaskIndexByPrefix(tasks, "T-quick-1")
+
+		if cleanIdx >= 0 {
+			tasks[cleanIdx].Dependencies = []string{dep}
+			if firstTestIdx >= 0 {
+				tasks[firstTestIdx].Dependencies = []string{"T-clean-code-1"}
 			}
+		} else if firstTestIdx >= 0 {
+			tasks[firstTestIdx].Dependencies = []string{dep}
 		}
 	}
 }

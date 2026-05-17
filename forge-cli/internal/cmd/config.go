@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -193,10 +194,12 @@ func writeConfigFile(path string, cfg *profile.ForgeConfig) error {
 		return fmt.Errorf("create .forge dir: %w", err)
 	}
 
-	data, err := yaml.Marshal(cfg)
-	if err != nil {
+	var buf bytes.Buffer
+	enc := yaml.NewEncoder(&buf)
+	enc.SetIndent(2)
+	if err := enc.Encode(cfg); err != nil {
 		return fmt.Errorf("marshal config: %w", err)
 	}
 
-	return os.WriteFile(path, data, 0o644)
+	return os.WriteFile(path, buf.Bytes(), 0o644)
 }

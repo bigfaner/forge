@@ -7,6 +7,8 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+
+	"forge-cli/pkg/profile"
 )
 
 // StrategyResolver returns strategy content for a profile+kind pair.
@@ -22,6 +24,7 @@ type BuildIndexOpts struct {
 	TestProfiles     []string // flag > config.yaml > none
 	TestCapabilities []string // config.yaml capabilities > UnionCapabilities(profiles) > none
 	ResolveStrategy  StrategyResolver
+	AutoConfig       profile.AutoConfig // auto-behavior config (defaults filled by caller)
 }
 
 // BuildIndexResult holds the result of a BuildIndex operation.
@@ -37,6 +40,9 @@ type BuildIndexResult struct {
 // It is idempotent: re-running with no changes produces the same output.
 func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 	result := &BuildIndexResult{}
+
+	// Apply defaults for AutoConfig (Go zero-value for bool is false, but our defaults differ)
+	opts.AutoConfig = opts.AutoConfig.WithDefaults()
 
 	// 1. Load existing index or create new
 	var index *TaskIndex
@@ -269,7 +275,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 			result.NewCount++
 		}
 	} else if needsTest && len(profiles) > 0 && len(opts.TestCapabilities) > 0 && mode != "" {
-		testTasks := generateTestTasks(mode, profiles, opts.TestCapabilities)
+		testTasks := generateTestTasks(mode, profiles, opts.TestCapabilities, opts.AutoConfig)
 		if len(testTasks) > 0 {
 			ResolveFirstTestDep(testTasks, index.TasksMap(), mode)
 		}
@@ -368,12 +374,12 @@ func setFeatureMetadata(index *TaskIndex, projectRoot, slug string) {
 }
 
 // generateTestTasks returns test task definitions for the given mode and profiles.
-func generateTestTasks(mode string, profiles []string, capabilities []string) []TestTaskDef {
+func generateTestTasks(mode string, profiles []string, capabilities []string, auto profile.AutoConfig) []TestTaskDef {
 	switch mode {
 	case "breakdown":
-		return GetBreakdownTestTasks(profiles, capabilities)
+		return GetBreakdownTestTasks(profiles, capabilities, auto)
 	case "quick":
-		return GetQuickTestTasks(profiles, capabilities)
+		return GetQuickTestTasks(profiles, capabilities, auto)
 	default:
 		return nil
 	}
@@ -392,7 +398,7 @@ func shouldSkipFile(name string) bool {
 
 // isTestTaskID returns true for test pipeline task IDs.
 func isTestTaskID(id string) bool {
-	return strings.HasPrefix(id, "T-test-") || strings.HasPrefix(id, "T-quick-")
+	return strings.HasPrefix(id, "T-test-") || strings.HasPrefix(id, "T-quick-") || strings.HasPrefix(id, "T-clean-code-")
 }
 
 // testableTypes are task types that have testable runtime behavior.

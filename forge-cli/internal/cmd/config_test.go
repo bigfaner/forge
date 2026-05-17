@@ -100,6 +100,44 @@ func TestConfigGetCommand(t *testing.T) {
 		}
 	})
 
+	t.Run("auto.gitPush returns true", func(t *testing.T) {
+		dir := setupConfig(t, "test-profiles:\n  - go-test\nauto:\n  gitPush: true\n")
+
+		var stdout bytes.Buffer
+		rootCmd.SetOut(&stdout)
+		rootCmd.SetErr(os.Stderr)
+		rootCmd.SetArgs([]string{"config", "get", "auto.gitPush", "--project-root", dir})
+
+		err := rootCmd.Execute()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		output := strings.TrimSpace(stdout.String())
+		if output != "true" {
+			t.Errorf("expected 'true', got %q", output)
+		}
+	})
+
+	t.Run("auto.gitPush returns false when absent", func(t *testing.T) {
+		dir := setupConfig(t, "test-profiles:\n  - go-test\n")
+
+		var stdout bytes.Buffer
+		rootCmd.SetOut(&stdout)
+		rootCmd.SetErr(os.Stderr)
+		rootCmd.SetArgs([]string{"config", "get", "auto.gitPush", "--project-root", dir})
+
+		err := rootCmd.Execute()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		output := strings.TrimSpace(stdout.String())
+		if output != "false" {
+			t.Errorf("expected 'false', got %q", output)
+		}
+	})
+
 	t.Run("output is plain text no formatting blocks", func(t *testing.T) {
 		dir := setupConfig(t, "project-type: mixed\ncapabilities:\n  - tui\n")
 
@@ -222,6 +260,78 @@ func TestConfigInitCommand(t *testing.T) {
 		data, _ := os.ReadFile(filepath.Join(forgeDir, feature.ForgeConfigFileName))
 		if !strings.Contains(string(data), "project-type: frontend") {
 			t.Errorf("config should be updated to frontend, got %q", string(data))
+		}
+	})
+
+	t.Run("capabilities populated from profile union", func(t *testing.T) {
+		dir := t.TempDir()
+
+		// Input: project-type=backend(2), profile=go-test(2), capabilities=all(1 2 3)
+		input := "2\n2\n1 2 3\n"
+		var stdin bytes.Buffer
+		stdin.WriteString(input)
+		var stdout bytes.Buffer
+
+		rootCmd.SetIn(&stdin)
+		rootCmd.SetOut(&stdout)
+		rootCmd.SetArgs([]string{"config", "init", "--project-root", dir})
+
+		err := rootCmd.Execute()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		configFile := filepath.Join(dir, feature.ForgeDir, feature.ForgeConfigFileName)
+		data, err := os.ReadFile(configFile)
+		if err != nil {
+			t.Fatalf("config file not created: %v", err)
+		}
+
+		content := string(data)
+		// go-test capabilities: api, cli, tui (sorted)
+		for _, cap := range []string{"api", "cli", "tui"} {
+			if !strings.Contains(content, cap) {
+				t.Errorf("expected capability %q in config, got:\n%s", cap, content)
+			}
+		}
+		if !strings.Contains(content, "test-profiles") {
+			t.Errorf("expected test-profiles in config, got:\n%s", content)
+		}
+	})
+
+	t.Run("capabilities empty when no profile selected", func(t *testing.T) {
+		dir := t.TempDir()
+
+		// Input: project-type=frontend(1), profile=none(empty)
+		input := "1\n\n"
+		var stdin bytes.Buffer
+		stdin.WriteString(input)
+		var stdout bytes.Buffer
+
+		rootCmd.SetIn(&stdin)
+		rootCmd.SetOut(&stdout)
+		rootCmd.SetArgs([]string{"config", "init", "--project-root", dir})
+
+		err := rootCmd.Execute()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		configFile := filepath.Join(dir, feature.ForgeDir, feature.ForgeConfigFileName)
+		data, err := os.ReadFile(configFile)
+		if err != nil {
+			t.Fatalf("config file not created: %v", err)
+		}
+
+		content := string(data)
+		if !strings.Contains(content, "project-type: frontend") {
+			t.Errorf("expected frontend project type, got:\n%s", content)
+		}
+		// No profile-specific capabilities when no profile selected
+		for _, cap := range []string{"api", "cli", "tui", "web-ui"} {
+			if strings.Contains(content, "- "+cap) {
+				t.Errorf("expected no profile capabilities when no profile selected, got:\n%s", content)
+			}
 		}
 	})
 }

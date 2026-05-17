@@ -3,6 +3,9 @@ scale: 1000
 target: 900
 iterations: 3
 type: consistency
+context:
+  conventions: []
+  business-rules: auto
 ---
 
 # Cross-Document Consistency Rubric
