@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "forge-config",
   "title": "Forge Project Configuration",
-  "description": "Schema for .forge/config.yaml — project-level declarative config for Forge test profiles",
+  "description": "Schema for .forge/config.yaml — project-level declarative config for Forge test profiles and auto-behavior settings",
   "type": "object",
   "properties": {
     "test-profiles": {
@@ -21,6 +21,69 @@
       },
       "minItems": 1,
       "uniqueItems": true
+    },
+    "auto": {
+      "type": "object",
+      "description": "Auto-behavior configuration for Forge pipeline. Each mode-scoped field has quick/full sub-keys. Omit the entire block for backward-compatible defaults.",
+      "properties": {
+        "e2eTest": {
+          "type": "object",
+          "description": "Whether e2e test tasks are generated for each pipeline mode.",
+          "properties": {
+            "quick": {
+              "type": "boolean",
+              "description": "Generate e2e test tasks (T-quick-1~4) in quick mode.",
+              "default": true
+            },
+            "full": {
+              "type": "boolean",
+              "description": "Generate e2e test tasks (T-test-1~4.5) in full mode.",
+              "default": true
+            }
+          },
+          "additionalProperties": false
+        },
+        "consolidateSpecs": {
+          "type": "object",
+          "description": "Whether spec-consolidation tasks are generated for each pipeline mode.",
+          "properties": {
+            "quick": {
+              "type": "boolean",
+              "description": "Generate spec sync task (T-quick-specs-1) in quick mode.",
+              "default": true
+            },
+            "full": {
+              "type": "boolean",
+              "description": "Generate spec sync task (T-specs-1) in full mode.",
+              "default": true
+            }
+          },
+          "additionalProperties": false
+        },
+        "cleanCode": {
+          "type": "object",
+          "description": "Whether code-cleanup tasks are generated for each pipeline mode.",
+          "properties": {
+            "quick": {
+              "type": "boolean",
+              "description": "Generate code cleanup task (T-clean-code-1) in quick mode.",
+              "default": false
+            },
+            "full": {
+              "type": "boolean",
+              "description": "Generate code cleanup task (T-clean-code-1) in full mode.",
+              "default": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "gitPush": {
+          "type": "boolean",
+          "description": "Automatically push to remote after all-completed hook passes.",
+          "default": false
+        }
+      },
+      "additionalProperties": false
     }
   },
   "required": ["test-profiles"],

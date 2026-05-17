@@ -1799,7 +1799,7 @@ func TestForgeStateLifecycle(t *testing.T) {
 		PriorityEnum: []string{"P0"},
 	}
 	index.SetTasks(map[string]task.Task{
-		"t1": {ID: "1.1", Title: "T1", Status: "pending", Priority: "P0", File: "1.1.md", Record: "1.1.md"},
+		"t1": {ID: "1.1", Title: "T1", Status: "pending", Priority: "P0", File: "1.1.md", Record: "records/1.1.md"},
 	})
 	_ = task.SaveIndex(indexPath, index)
 	_ = os.WriteFile(filepath.Join(dir, "docs", "features", "lf", "tasks", "1.1.md"), []byte("# T1"), 0644)

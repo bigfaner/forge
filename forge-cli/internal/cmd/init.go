@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -13,6 +13,8 @@ import (
 	"forge-cli/pkg/just"
 	"forge-cli/pkg/profile"
 
+	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 )
 
@@ -46,7 +48,7 @@ var gitignoreEntries = []string{
 
 // initAction records a single action taken during init.
 type initAction struct {
-	status string // CREATED, APPENDED, INSTALLED, SKIPPED, FAILED
+	status string // CREATED, APPENDED, INSTALLED, SKIPPED, FAILED, CANCELLED
 	target string // file or directory path
 	detail string // extra info (e.g., "5 entries", "from template")
 }
@@ -79,7 +81,7 @@ func runInit(cmd *cobra.Command, _ []string) error {
 	actions = append(actions, action)
 
 	// Step 5: Interactive config (only if config doesn't exist)
-	action = runConfigInitIfNeeded(projectRoot, cmd.InOrStdin(), out)
+	action = configInitFunc(projectRoot)
 	actions = append(actions, action)
 
 	// Print summary report
@@ -126,7 +128,6 @@ func updateGitignore(projectRoot string) initAction {
 		return initAction{status: "SKIPPED", target: ".gitignore", detail: "all entries already present"}
 	}
 
-	// Build content to append
 	var buf strings.Builder
 	if existingContent != "" && !strings.HasSuffix(existingContent, "\n") {
 		buf.WriteByte('\n')
@@ -170,65 +171,119 @@ func buildGitignoreAppend(existing string, entries []string) []string {
 	return toAppend
 }
 
-func runConfigInitIfNeeded(projectRoot string, in io.Reader, out io.Writer) initAction {
+func runConfigInitIfNeeded(projectRoot string) initAction {
 	configFile := filepath.Join(projectRoot, feature.ForgeDir, feature.ForgeConfigFileName)
-	if _, err := os.Stat(configFile); err == nil {
-		return initAction{status: "SKIPPED", target: ".forge/config.yaml", detail: "already exists"}
+
+	fi, _ := os.Stdin.Stat()
+	if fi.Mode()&os.ModeCharDevice == 0 {
+		return initAction{status: "SKIPPED", target: ".forge/config.yaml", detail: "non-interactive terminal"}
 	}
 
-	reader := bufio.NewReader(in)
+	// When config exists, ask if user wants to reconfigure
+	if _, err := os.Stat(configFile); err == nil {
+		reconfigure := false
+		if err := huh.NewForm(huh.NewGroup(
+			huh.NewConfirm().
+				Title("Config already exists. Reconfigure?").
+				Description("Select Yes to overwrite .forge/config.yaml with new settings.").
+				Affirmative("Yes").
+				Negative("No").
+				Value(&reconfigure),
+		)).Run(); err != nil {
+			if errors.Is(err, huh.ErrUserAborted) {
+				return initAction{status: "CANCELLED", target: ".forge/config.yaml", detail: "Ctrl+C"}
+			}
+			return initAction{status: "FAILED", target: ".forge/config.yaml", detail: err.Error()}
+		}
+		if !reconfigure {
+			return initAction{status: "SKIPPED", target: ".forge/config.yaml", detail: "kept existing"}
+		}
+	}
 
 	// Step 1: Project type
-	write(out, "\nSelect project type:\n")
-	write(out, "  1. frontend\n")
-	write(out, "  2. backend\n")
-	write(out, "  3. mixed\n")
-	write(out, "Enter number [2]: ")
-
-	input, _ := reader.ReadString('\n')
-	input = strings.TrimSpace(input)
 	projectType := "backend"
-	switch input {
-	case "1":
-		projectType = "frontend"
-	case "2", "":
-		projectType = "backend"
-	case "3":
-		projectType = "mixed"
+	if err := huh.NewForm(huh.NewGroup(
+		huh.NewSelect[string]().
+			Title("What type of project is this?").
+			Description("Determines scope rules for generated tasks (frontend, backend, or both).").
+			Options(
+				huh.NewOption("Frontend (UI-focused)", "frontend"),
+				huh.NewOption("Backend (server/API)", "backend"),
+				huh.NewOption("Mixed (full-stack)", "mixed"),
+			).
+			Value(&projectType),
+	)).Run(); err != nil {
+		if errors.Is(err, huh.ErrUserAborted) {
+			return initAction{status: "CANCELLED", target: ".forge/config.yaml", detail: "Ctrl+C"}
+		}
+		return initAction{status: "FAILED", target: ".forge/config.yaml", detail: err.Error()}
 	}
 
-	// Step 2: Test profiles
-	write(out, "\nSelect test profiles (enter numbers, space-separated):\n")
-	for i, p := range profile.KnownProfiles {
-		write(out, "  %d. %s\n", i+1, p)
+	// Step 2: Test profile
+	selectedProfile := ""
+	profileOpts := make([]huh.Option[string], 0, len(profile.KnownProfiles)+1)
+	profileOpts = append(profileOpts, huh.NewOption("None — skip test generation", ""))
+	for _, p := range profile.KnownProfiles {
+		profileOpts = append(profileOpts, huh.NewOption(p, p))
 	}
-	write(out, "Selections: ")
+	if err := huh.NewForm(huh.NewGroup(
+		huh.NewSelect[string]().
+			Title("Which test framework does this project use?").
+			Description("Select a profile matching your test tooling, or skip test task generation.").
+			Options(profileOpts...).
+			Value(&selectedProfile),
+	)).Run(); err != nil {
+		if errors.Is(err, huh.ErrUserAborted) {
+			return initAction{status: "CANCELLED", target: ".forge/config.yaml", detail: "Ctrl+C"}
+		}
+		return initAction{status: "FAILED", target: ".forge/config.yaml", detail: err.Error()}
+	}
 
-	input, _ = reader.ReadString('\n')
-	selectedProfiles := parseMultiSelect(input, profile.KnownProfiles)
+	var selectedProfiles []string
+	if selectedProfile != "" {
+		selectedProfiles = []string{selectedProfile}
+	}
 
-	// Step 3: Capabilities
+	// Step 3: Capabilities (only if profile selected)
 	var selectedCaps []string
 	if len(selectedProfiles) > 0 {
 		union, err := profile.UnionCapabilities(selectedProfiles)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "WARNING: could not resolve capabilities: %v\n", err)
 		} else if len(union) > 0 {
-			write(out, "\nSelect capabilities from detected profiles:\n")
-			for i, c := range union {
-				write(out, "  %d. %s\n", i+1, c)
+			selectedCaps = make([]string, len(union))
+			copy(selectedCaps, union)
+			capOpts := make([]huh.Option[string], 0, len(union))
+			for _, c := range union {
+				capOpts = append(capOpts, huh.NewOption(c, c).Selected(true))
 			}
-			write(out, "Selections: ")
-
-			input, _ = reader.ReadString('\n')
-			selectedCaps = parseMultiSelect(input, union)
+			if err := huh.NewForm(huh.NewGroup(
+				huh.NewMultiSelect[string]().
+					Title("Which test capabilities should be enabled?").
+					Description("Controls which test task types are generated. Space to toggle, Enter to confirm.").
+					Options(capOpts...).
+					Limit(0).
+					Value(&selectedCaps),
+			)).Run(); err != nil {
+				if errors.Is(err, huh.ErrUserAborted) {
+					return initAction{status: "CANCELLED", target: ".forge/config.yaml", detail: "Ctrl+C"}
+				}
+				return initAction{status: "FAILED", target: ".forge/config.yaml", detail: err.Error()}
+			}
 		}
+	}
+
+	// Step 4: Auto-behavior config
+	auto, cancelled := askAutoBehavior(len(selectedProfiles) > 0)
+	if cancelled {
+		return initAction{status: "CANCELLED", target: ".forge/config.yaml", detail: "Ctrl+C"}
 	}
 
 	cfg := profile.ForgeConfig{
 		ProjectType:  projectType,
 		TestProfiles: selectedProfiles,
 		Capabilities: selectedCaps,
+		Auto:         auto,
 	}
 
 	if err := writeConfigFile(configFile, &cfg); err != nil {
@@ -236,8 +291,119 @@ func runConfigInitIfNeeded(projectRoot string, in io.Reader, out io.Writer) init
 		return initAction{status: "FAILED", target: ".forge/config.yaml", detail: err.Error()}
 	}
 
-	write(out, "\n")
 	return initAction{status: "CREATED", target: ".forge/config.yaml", detail: "interactive"}
+}
+
+// modeHighlight styles mode keywords for terminal display.
+var modeHighlight = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#7DCFFF"))
+
+// hl returns a highlighted version of text using modeHighlight.
+func hl(text string) string {
+	return modeHighlight.Render(text)
+}
+
+// hlMode returns "Quick mode" or "Full mode" with the whole phrase highlighted.
+func hlMode(mode string) string {
+	return hl(mode + " mode")
+}
+
+// askAutoBehavior runs the auto-behavior config steps, one question per screen.
+// Returns the config and whether the user cancelled.
+func askAutoBehavior(hasProfiles bool) (*profile.AutoConfig, bool) {
+	defaults := profile.AutoConfigDefaults()
+	auto := &profile.AutoConfig{}
+
+	if hasProfiles {
+		val, ok := askConfirm(
+			fmt.Sprintf("%s: auto-run e2e tests?", hlMode("Quick")),
+			fmt.Sprintf("Automatically run end-to-end tests during %s (lightweight verification after each task).", hl("quick mode")),
+			defaults.E2eTest.Quick,
+		)
+		if !ok {
+			return nil, true
+		}
+		auto.E2eTest.Quick = val
+
+		val, ok = askConfirm(
+			fmt.Sprintf("%s: auto-run e2e tests?", hlMode("Full")),
+			fmt.Sprintf("Automatically run end-to-end tests during %s (comprehensive coverage).", hl("full mode")),
+			defaults.E2eTest.Full,
+		)
+		if !ok {
+			return nil, true
+		}
+		auto.E2eTest.Full = val
+
+		val, ok = askConfirm(
+			fmt.Sprintf("%s: auto-consolidate specs?", hlMode("Quick")),
+			fmt.Sprintf("Automatically extract and consolidate specs from code after %s tasks.", hl("quick-mode")),
+			defaults.ConsolidateSpecs.Quick,
+		)
+		if !ok {
+			return nil, true
+		}
+		auto.ConsolidateSpecs.Quick = val
+
+		val, ok = askConfirm(
+			fmt.Sprintf("%s: auto-consolidate specs?", hlMode("Full")),
+			fmt.Sprintf("Automatically extract and consolidate specs from code after %s tasks.", hl("full-mode")),
+			defaults.ConsolidateSpecs.Full,
+		)
+		if !ok {
+			return nil, true
+		}
+		auto.ConsolidateSpecs.Full = val
+	}
+
+	val, ok := askConfirm(
+		fmt.Sprintf("%s: auto code cleanup?", hlMode("Quick")),
+		fmt.Sprintf("Automatically simplify and clean code during %s.", hl("quick mode")),
+		defaults.CleanCode.Quick,
+	)
+	if !ok {
+		return nil, true
+	}
+	auto.CleanCode.Quick = val
+
+	val, ok = askConfirm(
+		fmt.Sprintf("%s: auto code cleanup?", hlMode("Full")),
+		fmt.Sprintf("Automatically simplify and clean code during %s.", hl("full mode")),
+		defaults.CleanCode.Full,
+	)
+	if !ok {
+		return nil, true
+	}
+	auto.CleanCode.Full = val
+
+	val, ok = askConfirm(
+		"Auto git push after all tasks complete?",
+		"Push to remote automatically when every task in a run finishes successfully.",
+		defaults.GitPush,
+	)
+	if !ok {
+		return nil, true
+	}
+	auto.GitPush = val
+
+	return auto, false
+}
+
+// askConfirm shows a single confirm prompt. Returns (value, ok).
+// ok is false when the user pressed Ctrl+C.
+func askConfirm(title, desc string, defaultVal bool) (bool, bool) {
+	val := defaultVal
+	err := huh.NewForm(huh.NewGroup(
+		huh.NewConfirm().
+			Title(title).
+			Description(desc).
+			Affirmative("Yes").
+			Negative("No").
+			Value(&val),
+	)).Run()
+	if err != nil {
+		return defaultVal, false
+	}
+	return val, true
 }
 
 func printInitSummary(out io.Writer, actions []initAction) {
@@ -255,6 +421,10 @@ func printInitSummary(out io.Writer, actions []initAction) {
 // ensureJustFunc is the function that runs the ensure-just flow.
 // Variable for testability.
 var ensureJustFunc = just.EnsureJust
+
+// configInitFunc is the function that runs interactive config init.
+// Variable for testability — huh requires a real TTY, so tests override this.
+var configInitFunc = runConfigInitIfNeeded
 
 // ensureJustStep runs the ensure-just flow or skips it based on the flag.
 // Installation failure is non-blocking — init continues with a WARNING.

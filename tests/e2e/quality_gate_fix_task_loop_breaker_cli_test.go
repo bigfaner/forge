@@ -359,8 +359,8 @@ func TestTC_003_QualityGateExits0OnNotAllCompleted(t *testing.T) {
 	// Create a project where tasks are NOT all completed
 	// quality-gate should exit 0 silently
 	projectRoot := qgSetupProject(t, slug, map[string]qgTaskEntry{
-		"t1": {ID: "1.1", Status: "completed", File: "1.1.md", Type: "implementation"},
-		"t2": {ID: "1.2", Status: "pending", File: "1.2.md", Type: "implementation"},
+		"t1": {ID: "1.1", Status: "completed", File: "1.1.md", Type: "feature"},
+		"t2": {ID: "1.2", Status: "pending", File: "1.2.md", Type: "feature"},
 	})
 
 	output, exitCode := qgRunQualityGate(t, projectRoot)
@@ -392,7 +392,7 @@ func TestTC_004_QualityGateSkipsDocsOnlyFeatures(t *testing.T) {
 func TestTC_005_FixTaskMarkdownCreatedOnDisk(t *testing.T) {
 	slug := "test-qg-tc005"
 	projectRoot := qgSetupProject(t, slug, map[string]qgTaskEntry{
-		"t1": {ID: "1.1", Status: "completed", File: "1.1.md", Type: "implementation"},
+		"t1": {ID: "1.1", Status: "completed", File: "1.1.md", Type: "feature"},
 	})
 	qgWriteJustfile(t, projectRoot)
 

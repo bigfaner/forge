@@ -3,6 +3,9 @@ scale: 100
 target: 70
 iterations: 1
 type: harness
+context:
+  conventions: []
+  business-rules: []
 ---
 
 # Harness Evaluation Rubric

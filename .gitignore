@@ -34,3 +34,5 @@ docs/features/*/tasks/process/
 forge-cli/internal/embedded/just/binaries/*
 !forge-cli/internal/embedded/just/binaries/just-*
 docs/features/*/tasks/index.json.lock
+# Forge runtime
+tests/results/.last-run.json

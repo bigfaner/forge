@@ -113,6 +113,50 @@ func TestGetConfigValue(t *testing.T) {
 		}
 	})
 
+	t.Run("auto.gitPush true", func(t *testing.T) {
+		dir := setupConfig(t, "test-profiles:\n  - go-test\nauto:\n  gitPush: true\n")
+		val, err := GetConfigValue(dir, "auto.gitPush")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "true" {
+			t.Errorf("expected 'true', got %q", val)
+		}
+	})
+
+	t.Run("auto.gitPush false", func(t *testing.T) {
+		dir := setupConfig(t, "test-profiles:\n  - go-test\nauto:\n  gitPush: false\n")
+		val, err := GetConfigValue(dir, "auto.gitPush")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "false" {
+			t.Errorf("expected 'false', got %q", val)
+		}
+	})
+
+	t.Run("auto.gitPush absent returns false (default)", func(t *testing.T) {
+		dir := setupConfig(t, "test-profiles:\n  - go-test\n")
+		val, err := GetConfigValue(dir, "auto.gitPush")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "false" {
+			t.Errorf("expected 'false' default, got %q", val)
+		}
+	})
+
+	t.Run("auto block absent returns false (default)", func(t *testing.T) {
+		dir := setupConfig(t, "test-profiles:\n  - go-test\n")
+		val, err := GetConfigValue(dir, "auto.gitPush")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "false" {
+			t.Errorf("expected 'false' default, got %q", val)
+		}
+	})
+
 	t.Run("unknown key returns error", func(t *testing.T) {
 		dir := setupConfig(t, "project-type: backend\n")
 		_, err := GetConfigValue(dir, "nonexistent")

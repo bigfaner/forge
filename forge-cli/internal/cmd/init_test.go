@@ -11,6 +11,7 @@ import (
 	"forge-cli/internal/embedded"
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/just"
+	"forge-cli/pkg/profile"
 )
 
 // setupInitTest creates a temp directory with optional pre-existing files.
@@ -23,6 +24,9 @@ type initTestEnv struct {
 
 func newInitTestEnv(t *testing.T) *initTestEnv {
 	t.Helper()
+	orig := configInitFunc
+	configInitFunc = testConfigInit
+	t.Cleanup(func() { configInitFunc = orig })
 	return &initTestEnv{
 		dir: t.TempDir(),
 	}
@@ -44,11 +48,41 @@ func (e *initTestEnv) path(parts ...string) string {
 	return filepath.Join(append([]string{e.dir}, parts...)...)
 }
 
+// testConfigInit replaces configInitFunc for testing.
+// Simulates the interactive config flow without requiring a real TTY.
+func testConfigInit(projectRoot string) initAction {
+	configFile := filepath.Join(projectRoot, feature.ForgeDir, feature.ForgeConfigFileName)
+
+	// Write a sensible default config for testing
+	cfg := profile.ForgeConfig{
+		ProjectType:  "backend",
+		TestProfiles: []string{"go-test"},
+		Capabilities: []string{"tui", "api", "cli"},
+		Auto:         autoConfigDefaults(),
+	}
+
+	if err := writeConfigFile(configFile, &cfg); err != nil {
+		return initAction{status: "FAILED", target: ".forge/config.yaml", detail: err.Error()}
+	}
+
+	detail := "test override"
+	if _, err := os.Stat(configFile); err == nil {
+		// Config existed but we overwrote it (reconfigure path)
+		detail = "reconfigured"
+	}
+
+	return initAction{status: "CREATED", target: ".forge/config.yaml", detail: detail}
+}
+
+// autoConfigDefaults returns a default AutoConfig for tests.
+func autoConfigDefaults() *profile.AutoConfig {
+	d := profile.AutoConfigDefaults()
+	return &d
+}
+
 func TestInitCommand(t *testing.T) {
 	t.Run("creates .forge directory", func(t *testing.T) {
 		env := newInitTestEnv(t)
-		// Answer 'n' to config init prompt (config doesn't exist yet, but stdin needs input)
-		env.stdin.WriteString("2\n1\n\n\n")
 
 		err := env.run()
 		if err != nil {
@@ -71,7 +105,6 @@ func TestInitCommand(t *testing.T) {
 		if err := os.MkdirAll(forgeDir, 0o755); err != nil {
 			t.Fatal(err)
 		}
-		env.stdin.WriteString("2\n1\n\n\n")
 
 		err := env.run()
 		if err != nil {
@@ -85,7 +118,6 @@ func TestInitCommand(t *testing.T) {
 
 	t.Run("creates CLAUDE.md from template", func(t *testing.T) {
 		env := newInitTestEnv(t)
-		env.stdin.WriteString("2\n1\n\n\n")
 
 		err := env.run()
 		if err != nil {
@@ -109,7 +141,6 @@ func TestInitCommand(t *testing.T) {
 		if err := os.WriteFile(env.path("CLAUDE.md"), []byte(existing), 0o644); err != nil {
 			t.Fatal(err)
 		}
-		env.stdin.WriteString("2\n1\n\n\n")
 
 		err := env.run()
 		if err != nil {
@@ -129,7 +160,6 @@ func TestInitCommand(t *testing.T) {
 
 	t.Run("appends entries to .gitignore", func(t *testing.T) {
 		env := newInitTestEnv(t)
-		env.stdin.WriteString("2\n1\n\n\n")
 
 		err := env.run()
 		if err != nil {
@@ -164,7 +194,6 @@ func TestInitCommand(t *testing.T) {
 		if err := os.WriteFile(env.path(".gitignore"), []byte(existing), 0o644); err != nil {
 			t.Fatal(err)
 		}
-		env.stdin.WriteString("2\n1\n\n\n")
 
 		err := env.run()
 		if err != nil {
@@ -183,7 +212,6 @@ func TestInitCommand(t *testing.T) {
 
 	t.Run("does not create justfile", func(t *testing.T) {
 		env := newInitTestEnv(t)
-		env.stdin.WriteString("2\n1\n\n\n")
 
 		err := env.run()
 		if err != nil {
@@ -199,8 +227,6 @@ func TestInitCommand(t *testing.T) {
 
 	t.Run("runs config init when config does not exist", func(t *testing.T) {
 		env := newInitTestEnv(t)
-		// Input for config init: project-type=backend(2), select go-test(1), done, done
-		env.stdin.WriteString("2\n1\n\n\n")
 
 		err := env.run()
 		if err != nil {
@@ -218,31 +244,33 @@ func TestInitCommand(t *testing.T) {
 		}
 	})
 
-	t.Run("skips config init when config already exists", func(t *testing.T) {
-		env := newInitTestEnv(t)
-		forgeDir := env.path(feature.ForgeDir)
-		if err := os.MkdirAll(forgeDir, 0o755); err != nil {
-			t.Fatal(err)
-		}
-		existingConfig := "project-type: frontend\n"
-		if err := os.WriteFile(env.path(feature.ForgeDir, feature.ForgeConfigFileName), []byte(existingConfig), 0o644); err != nil {
-			t.Fatal(err)
-		}
+		t.Run("overwrites existing config (reconfigure)", func(t *testing.T) {
+			env := newInitTestEnv(t)
+			forgeDir := env.path(feature.ForgeDir)
+			if err := os.MkdirAll(forgeDir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			existingConfig := "project-type: frontend\n"
+			if err := os.WriteFile(env.path(feature.ForgeDir, feature.ForgeConfigFileName), []byte(existingConfig), 0o644); err != nil {
+				t.Fatal(err)
+			}
 
-		err := env.run()
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
+			err := env.run()
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 
-		data, _ := os.ReadFile(env.path(feature.ForgeDir, feature.ForgeConfigFileName))
-		if string(data) != existingConfig {
-			t.Error("existing config should not be modified")
-		}
-	})
+			data, _ := os.ReadFile(env.path(feature.ForgeDir, feature.ForgeConfigFileName))
+			if strings.Contains(string(data), "frontend") {
+				t.Error("existing config should have been overwritten")
+			}
+			if !strings.Contains(string(data), "backend") {
+				t.Error("expected reconfigured config to contain backend")
+			}
+		})
 
 	t.Run("prints summary report", func(t *testing.T) {
 		env := newInitTestEnv(t)
-		env.stdin.WriteString("2\n1\n\n\n")
 
 		err := env.run()
 		if err != nil {
@@ -262,7 +290,6 @@ func TestInitCommand(t *testing.T) {
 
 	t.Run("full init on empty directory creates all artifacts", func(t *testing.T) {
 		env := newInitTestEnv(t)
-		env.stdin.WriteString("2\n1\n\n\n")
 
 		err := env.run()
 		if err != nil {
@@ -333,7 +360,6 @@ func TestAppendGitignoreEntries(t *testing.T) {
 func TestInitSkipJustFlag(t *testing.T) {
 	t.Run("--skip-just reports SKIPPED for just step", func(t *testing.T) {
 		env := newInitTestEnv(t)
-		env.stdin.WriteString("2\n1\n\n\n")
 
 		err := env.run("--skip-just")
 		if err != nil {
@@ -348,7 +374,6 @@ func TestInitSkipJustFlag(t *testing.T) {
 
 	t.Run("--skip-just still runs all other steps", func(t *testing.T) {
 		env := newInitTestEnv(t)
-		env.stdin.WriteString("2\n1\n\n\n")
 
 		err := env.run("--skip-just")
 		if err != nil {
@@ -376,7 +401,6 @@ func TestInitSkipJustFlag(t *testing.T) {
 
 	t.Run("ensureJust step appears in summary", func(t *testing.T) {
 		env := newInitTestEnv(t)
-		env.stdin.WriteString("2\n1\n\n\n")
 
 		err := env.run("--skip-just")
 		if err != nil {
@@ -403,7 +427,6 @@ func TestInitEnsureJustIntegration(t *testing.T) {
 		defer func() { ensureJustFunc = origEnsure }()
 
 		env := newInitTestEnv(t)
-		env.stdin.WriteString("2\n1\n\n\n")
 
 		err := env.run()
 		if err != nil {
@@ -429,7 +452,6 @@ func TestInitEnsureJustIntegration(t *testing.T) {
 		defer func() { ensureJustFunc = origEnsure }()
 
 		env := newInitTestEnv(t)
-		env.stdin.WriteString("2\n1\n\n\n")
 
 		err := env.run()
 		if err != nil {
@@ -453,7 +475,6 @@ func TestInitEnsureJustIntegration(t *testing.T) {
 		defer func() { ensureJustFunc = origEnsure }()
 
 		env := newInitTestEnv(t)
-		env.stdin.WriteString("2\n1\n\n\n")
 
 		err := env.run()
 		if err != nil {

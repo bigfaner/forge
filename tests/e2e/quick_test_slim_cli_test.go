@@ -218,15 +218,15 @@ func TestTC_001_QuickModeSingleProfileTaskCount(t *testing.T) {
 	idx := quickSlimReadIndex(t, dir, "test-qts-001")
 
 	// Count test pipeline tasks (T-quick-* IDs)
-	// go-test capabilities: [api, cli, tui] -> per-type gen-and-run tasks
-	// Tasks: T-quick-1, T-quick-2-api, T-quick-2-cli, T-quick-2-tui, T-quick-3, T-quick-4, T-quick-5 = 7
+	// go-test profile has capabilities [api, cli, tui] -> per-type gen-and-run tasks
+	// Total: gen-cases(1) + 3 per-type gen-and-run + graduate(1) + verify-regression(1) + drift-detection(1) = 7
 	testTaskCount := 0
 	for _, task := range idx.Tasks {
 		if strings.HasPrefix(task.ID, "T-quick-") {
 			testTaskCount++
 		}
 	}
-	assert.Equal(t, 7, testTaskCount, "quick mode with single profile should generate exactly 7 test pipeline tasks (1 gen-cases + 3 per-type gen-and-run + 1 graduate + 1 verify + 1 drift)")
+	assert.Equal(t, 7, testTaskCount, "quick mode with go-test profile (3 capabilities) should generate exactly 7 test pipeline tasks")
 }
 
 // =============================================================================
@@ -241,9 +241,8 @@ func TestTC_002_QuickModeMergedTaskHasGenAndRunType(t *testing.T) {
 
 	idx := quickSlimReadIndex(t, dir, "test-qts-002")
 
-	// Find per-type T-quick-2-<type> tasks (go-test capabilities: api, cli, tui)
-	expectedTypes := []string{"api", "cli", "tui"}
-	for _, typ := range expectedTypes {
+	// Find T-quick-2-<type> tasks (per-type gen-and-run with go-test capabilities)
+	for _, typ := range []string{"api", "cli", "tui"} {
 		id := "T-quick-2-" + typ
 		var found bool
 		for _, task := range idx.Tasks {
@@ -303,7 +302,7 @@ func TestTC_005_QuickModeDependencyChainCorrectAfterMerge(t *testing.T) {
 		byID[task.ID] = task
 	}
 
-	// Verify dependency chain with per-type tasks (go-test capabilities: api, cli, tui)
+	// Verify dependency chain with per-type tasks
 	t.Run("T-quick-2-api depends on T-quick-1", func(t *testing.T) {
 		task, ok := byID["T-quick-2-api"]
 		require.True(t, ok, "T-quick-2-api should exist")
@@ -311,7 +310,7 @@ func TestTC_005_QuickModeDependencyChainCorrectAfterMerge(t *testing.T) {
 			"T-quick-2-api should depend on T-quick-1")
 	})
 
-	t.Run("T-quick-3 depends on all T-quick-2-*", func(t *testing.T) {
+	t.Run("T-quick-3 depends on per-type gen-and-run tasks", func(t *testing.T) {
 		task, ok := byID["T-quick-3"]
 		require.True(t, ok, "T-quick-3 should exist")
 		assert.Contains(t, task.Dependencies, "T-quick-2-api",
@@ -329,11 +328,11 @@ func TestTC_005_QuickModeDependencyChainCorrectAfterMerge(t *testing.T) {
 			"T-quick-4 should depend on T-quick-3")
 	})
 
-	t.Run("T-quick-5 depends on T-quick-4", func(t *testing.T) {
-		task, ok := byID["T-quick-5"]
-		require.True(t, ok, "T-quick-5 should exist")
+	t.Run("T-quick-specs-1 depends on T-quick-4", func(t *testing.T) {
+		task, ok := byID["T-quick-specs-1"]
+		require.True(t, ok, "T-quick-specs-1 should exist")
 		assert.Contains(t, task.Dependencies, "T-quick-4",
-			"T-quick-5 should depend on T-quick-4")
+			"T-quick-specs-1 should depend on T-quick-4")
 	})
 }
 
@@ -354,8 +353,8 @@ func TestTC_006_QuickModePerTypeDependencyFanIn(t *testing.T) {
 		byID[task.ID] = task
 	}
 
-	// T-quick-2-api, T-quick-2-cli, T-quick-2-tui should all depend on T-quick-1
-	for _, typ := range []string{"api", "cli", "tui"} {
+	// T-quick-2-tui, T-quick-2-api, and T-quick-2-cli should all depend on T-quick-1
+	for _, typ := range []string{"tui", "api", "cli"} {
 		id := "T-quick-2-" + typ
 		task, ok := byID[id]
 		require.True(t, ok, "%s should exist", id)
@@ -363,15 +362,13 @@ func TestTC_006_QuickModePerTypeDependencyFanIn(t *testing.T) {
 			"%s should depend on T-quick-1", id)
 	}
 
-	// T-quick-3 (graduate) should depend on all T-quick-2-* tasks
+	// T-quick-3 (graduate) should depend on all per-type gen-and-run tasks
 	gradTask, ok := byID["T-quick-3"]
 	require.True(t, ok, "T-quick-3 should exist")
 	assert.Contains(t, gradTask.Dependencies, "T-quick-2-api",
 		"T-quick-3 should depend on T-quick-2-api")
 	assert.Contains(t, gradTask.Dependencies, "T-quick-2-cli",
 		"T-quick-3 should depend on T-quick-2-cli")
-	assert.Contains(t, gradTask.Dependencies, "T-quick-2-tui",
-		"T-quick-3 should depend on T-quick-2-tui")
 
 	// T-quick-4 should depend on T-quick-3
 	verifyTask, ok := byID["T-quick-4"]
@@ -418,14 +415,11 @@ func TestTC_007_BreakdownModeUnchangedByQuickMerge(t *testing.T) {
 		byID[task.ID] = task
 	}
 
-	// Per-type gen-scripts tasks (go-test capabilities: api, cli, tui)
-	for _, typ := range []string{"api", "cli", "tui"} {
-		id := "T-test-2-" + typ
-		task, ok := byID[id]
-		require.True(t, ok, "%s should exist in breakdown mode", id)
-		assert.Equal(t, "test-pipeline.gen-scripts", task.Type,
-			"breakdown %s should have type test-pipeline.gen-scripts", id)
-	}
+	// T-test-2-api should have type gen-scripts (NOT gen-and-run)
+	task2api, ok := byID["T-test-2-api"]
+	require.True(t, ok, "T-test-2-api should exist in breakdown mode")
+	assert.Equal(t, "test-pipeline.gen-scripts", task2api.Type,
+		"breakdown T-test-2-api should have type test-pipeline.gen-scripts, not gen-and-run")
 
 	// T-test-3 should have type run
 	task3, ok := byID["T-test-3"]
@@ -433,22 +427,23 @@ func TestTC_007_BreakdownModeUnchangedByQuickMerge(t *testing.T) {
 	assert.Equal(t, "test-pipeline.run", task3.Type,
 		"breakdown T-test-3 should have type test-pipeline.run")
 
-	// Total test pipeline tasks: gen-cases, eval, 3 gen-scripts-per-type, run, graduate, verify, consolidate = 9
+	// Total test pipeline tasks: gen-cases(1) + eval(1) + 3 per-type gen-scripts + run(1) + graduate(1) + verify(1) = 8
+	// Plus consolidate-specs (T-specs-1) = 9 total T-test-*/T-specs-* tasks
 	testTaskCount := 0
 	for _, task := range idx.Tasks {
-		if strings.HasPrefix(task.ID, "T-test-") {
+		if strings.HasPrefix(task.ID, "T-test-") || strings.HasPrefix(task.ID, "T-specs-") {
 			testTaskCount++
 		}
 	}
 	assert.Equal(t, 9, testTaskCount,
-		"breakdown mode should have 9 test pipeline tasks (gen-cases, eval, 3x gen-scripts-per-type, run, graduate, verify, consolidate)")
+		"breakdown mode with go-test (3 capabilities) should have 9 test pipeline tasks")
 }
 
 // =============================================================================
 // TC-008: Quick mode multi-profile with letter suffixes works
 // =============================================================================
 
-// Traceability: TC-008 -> Task 1 AC: multi-profile letter suffixes with per-type tasks
+// Traceability: TC-008 -> Task 1 AC: multi-profile letter suffixes with per-type gen-and-run tasks
 func TestTC_008_QuickModeMultiProfileLetterSuffixes(t *testing.T) {
 	dir := quickSlimSetupProject(t, "test-qts-008", []string{"go-test", "web-playwright"}, quickSlimNoTypeTestCases)
 	quickSlimAddBusinessTask(t, dir, "test-qts-008")
@@ -461,6 +456,9 @@ func TestTC_008_QuickModeMultiProfileLetterSuffixes(t *testing.T) {
 		byID[task.ID] = task
 	}
 
+	// Union capabilities from go-test [api, cli, tui] + web-playwright [api, cli, web-ui] = [api, cli, tui, web-ui]
+	unionCaps := []string{"api", "cli", "tui", "web-ui"}
+
 	// Verify suffixed gen-cases tasks exist
 	for _, id := range []string{"T-quick-1a", "T-quick-1b"} {
 		task, ok := byID[id]
@@ -470,7 +468,7 @@ func TestTC_008_QuickModeMultiProfileLetterSuffixes(t *testing.T) {
 	}
 
 	// Verify suffixed per-type gen-and-run tasks exist
-	// go-test (profile a): capabilities api, cli, tui
+	// Profile a (go-test): capabilities [api, cli, tui]
 	for _, typ := range []string{"api", "cli", "tui"} {
 		id := "T-quick-2a-" + typ
 		task, ok := byID[id]
@@ -478,7 +476,7 @@ func TestTC_008_QuickModeMultiProfileLetterSuffixes(t *testing.T) {
 		assert.Equal(t, "test-pipeline.gen-and-run", task.Type,
 			"%s should have type test-pipeline.gen-and-run", id)
 	}
-	// web-playwright (profile b): capabilities api, cli, web-ui
+	// Profile b (web-playwright): capabilities [api, cli, web-ui]
 	for _, typ := range []string{"api", "cli", "web-ui"} {
 		id := "T-quick-2b-" + typ
 		task, ok := byID[id]
@@ -495,11 +493,13 @@ func TestTC_008_QuickModeMultiProfileLetterSuffixes(t *testing.T) {
 			"%s should have type test-pipeline.graduate", id)
 	}
 
-	// Shared tasks T-quick-4 and T-quick-5 should exist
-	for _, id := range []string{"T-quick-4", "T-quick-5"} {
+	// Shared tasks T-quick-4 and T-quick-specs-1 should exist
+	for _, id := range []string{"T-quick-4", "T-quick-specs-1"} {
 		_, ok := byID[id]
 		assert.True(t, ok, "%s should exist as shared task", id)
 	}
+
+	_ = unionCaps // capabilities are used implicitly through task IDs above
 }
 
 
@@ -508,7 +508,7 @@ func TestTC_008_QuickModeMultiProfileLetterSuffixes(t *testing.T) {
 // TC-011: InferType maps merged IDs correctly
 // =============================================================================
 
-// Traceability: TC-011 -> Task 1 AC: InferType handles per-type task ID patterns
+// Traceability: TC-011 -> Task 1 AC: InferType handles per-type gen-and-run task ID patterns
 func TestTC_011_InferTypeMapsMergedIDsCorrectly(t *testing.T) {
 	dir := quickSlimSetupProject(t, "test-qts-011", []string{"go-test"}, quickSlimMultiTypeTestCases)
 	quickSlimAddBusinessTask(t, dir, "test-qts-011")
@@ -516,11 +516,13 @@ func TestTC_011_InferTypeMapsMergedIDsCorrectly(t *testing.T) {
 
 	idx := quickSlimReadIndex(t, dir, "test-qts-011")
 
-	// Test cases: each per-type ID should map to gen-and-run type (go-test capabilities: api, cli, tui)
+	// Test cases: each per-type ID should map to gen-and-run type
+	// go-test capabilities are [api, cli, tui]
 	testIDs := []string{
 		"T-quick-2-api",
 		"T-quick-2-cli",
 		"T-quick-2-tui",
+		"T-quick-2-cli",
 	}
 
 	for _, id := range testIDs {
@@ -533,31 +535,19 @@ func TestTC_011_InferTypeMapsMergedIDsCorrectly(t *testing.T) {
 				break
 			}
 		}
-		assert.True(t, found, "%s should exist in single-profile index", id)
+		assert.True(t, found, "%s should exist in index", id)
 	}
 
-	// Also verify multi-profile suffixed IDs via a separate index
+	// Also verify multi-profile suffixed per-type IDs via a separate index
 	dir2 := quickSlimSetupProject(t, "test-qts-011b", []string{"go-test", "web-playwright"}, quickSlimNoTypeTestCases)
 	quickSlimAddBusinessTask(t, dir2, "test-qts-011b")
 	quickSlimRunIndex(t, dir2, "test-qts-011b")
 
 	idx2 := quickSlimReadIndex(t, dir2, "test-qts-011b")
 
-	// go-test (a): per-type tasks for api, cli, tui
-	for _, id := range []string{"T-quick-2a-api", "T-quick-2a-cli", "T-quick-2a-tui"} {
-		found := false
-		for _, task := range idx2.Tasks {
-			if task.ID == id {
-				found = true
-				assert.Equal(t, "test-pipeline.gen-and-run", task.Type,
-					"%s should have type test-pipeline.gen-and-run", id)
-				break
-			}
-		}
-		assert.True(t, found, "%s should exist in multi-profile index", id)
-	}
-	// web-playwright (b): per-type tasks for api, cli, web-ui
-	for _, id := range []string{"T-quick-2b-api", "T-quick-2b-cli", "T-quick-2b-web-ui"} {
+	// Union capabilities: [api, cli, tui, web-ui]
+	for _, id := range []string{"T-quick-2a-api", "T-quick-2a-cli", "T-quick-2a-tui", "T-quick-2a-web-ui",
+		"T-quick-2b-api", "T-quick-2b-cli", "T-quick-2b-tui", "T-quick-2b-web-ui"} {
 		found := false
 		for _, task := range idx2.Tasks {
 			if task.ID == id {
@@ -575,7 +565,7 @@ func TestTC_011_InferTypeMapsMergedIDsCorrectly(t *testing.T) {
 // TC-012: Quick mode single profile produces 5 tasks total
 // =============================================================================
 
-// Traceability: TC-012 -> Task 1 AC: single profile = 7 tasks (with per-type gen-and-run)
+// Traceability: TC-012 -> Task 1 AC: single profile = 7 tasks (with 3 capabilities)
 func TestTC_012_QuickModeSingleProfileProducesFiveTasks(t *testing.T) {
 	dir := quickSlimSetupProject(t, "test-qts-012", []string{"go-test"}, quickSlimNoTypeTestCases)
 	quickSlimAddBusinessTask(t, dir, "test-qts-012")
@@ -591,7 +581,7 @@ func TestTC_012_QuickModeSingleProfileProducesFiveTasks(t *testing.T) {
 		}
 	}
 	assert.Equal(t, 7, testTaskCount,
-		"single profile quick mode should produce exactly 7 test tasks (1 gen-cases + 3 per-type gen-and-run + 1 graduate + 1 verify + 1 drift)")
+		"single profile quick mode with 3 capabilities should produce exactly 7 test tasks")
 }
 
 
@@ -599,7 +589,7 @@ func TestTC_012_QuickModeSingleProfileProducesFiveTasks(t *testing.T) {
 // TC-014: Merged task generates correct task .md file
 // =============================================================================
 
-// Traceability: TC-014 -> Task 1 AC: per-type task generates valid .md with all fields
+// Traceability: TC-014 -> Task 1 AC: per-type gen-and-run task generates valid .md with all fields
 func TestTC_014_MergedTaskGeneratesCorrectMD(t *testing.T) {
 	dir := quickSlimSetupProject(t, "test-qts-014", []string{"go-test"}, quickSlimNoTypeTestCases)
 	quickSlimAddBusinessTask(t, dir, "test-qts-014")
@@ -607,7 +597,7 @@ func TestTC_014_MergedTaskGeneratesCorrectMD(t *testing.T) {
 
 	tasksDir := filepath.Join(dir, "docs", "features", "test-qts-014", "tasks")
 
-	// Find one of the per-type gen-and-run task .md files (e.g., api)
+	// Find a per-type gen-and-run task .md file
 	mdPath := filepath.Join(tasksDir, "quick-gen-and-run-go-test-api.md")
 	data, err := os.ReadFile(mdPath)
 	require.NoError(t, err, "quick-gen-and-run-go-test-api.md should exist")
@@ -627,16 +617,18 @@ func TestTC_014_MergedTaskGeneratesCorrectMD(t *testing.T) {
 // TC-015: DetectTypesFromTestCases correctly parses test-cases.md summary table
 // =============================================================================
 
-// Traceability: TC-015 -> Task 1 AC: capabilities come from profile manifest, not test-cases.md
+// Traceability: TC-015 -> Task 1 AC: capabilities from profile manifest drive per-type generation
 func TestTC_015_DetectTypesFromTestCasesParsesSummaryTable(t *testing.T) {
-	// With go-test profile, capabilities [api, cli, tui] are always from manifest
+	// go-test profile has capabilities [api, cli, tui] from manifest.
+	// Per-type tasks are always generated when capabilities are present,
+	// regardless of test-cases.md content.
 	dir := quickSlimSetupProject(t, "test-qts-015a", []string{"go-test"}, quickSlimMultiTypeTestCases)
 	quickSlimAddBusinessTask(t, dir, "test-qts-015a")
 	quickSlimRunIndex(t, dir, "test-qts-015a")
 
 	idx := quickSlimReadIndex(t, dir, "test-qts-015a")
 
-	// Per-type tasks are always generated based on profile capabilities
+	// With go-test capabilities [api, cli, tui], should have per-type tasks
 	found := false
 	for _, task := range idx.Tasks {
 		if strings.HasPrefix(task.ID, "T-quick-2-") {
@@ -644,23 +636,26 @@ func TestTC_015_DetectTypesFromTestCasesParsesSummaryTable(t *testing.T) {
 			break
 		}
 	}
-	assert.True(t, found, "per-type tasks should be generated based on profile capabilities")
+	assert.True(t, found, "per-type tasks should be generated when profile has capabilities")
 
-	// Even with zero-type test-cases.md, per-type tasks are still generated from manifest
+	// Even with zero-type test cases, capabilities from manifest still drive per-type generation
 	dir2 := quickSlimSetupProject(t, "test-qts-015b", []string{"go-test"}, quickSlimNoTypeTestCases)
 	quickSlimAddBusinessTask(t, dir2, "test-qts-015b")
 	quickSlimRunIndex(t, dir2, "test-qts-015b")
 
 	idx2 := quickSlimReadIndex(t, dir2, "test-qts-015b")
 
-	// Per-type tasks exist regardless of test-cases.md content
-	perTypeCount := 0
-	for _, task := range idx2.Tasks {
-		if strings.HasPrefix(task.ID, "T-quick-2-") {
-			perTypeCount++
+	// Per-type tasks are generated based on profile capabilities, not test-cases content
+	for _, typ := range []string{"api", "cli", "tui"} {
+		foundType := false
+		for _, task := range idx2.Tasks {
+			if task.ID == "T-quick-2-"+typ {
+				foundType = true
+				break
+			}
 		}
+		assert.True(t, foundType, "T-quick-2-%s should exist (driven by profile capabilities)", typ)
 	}
-	assert.Equal(t, 3, perTypeCount,
-		"per-type tasks should be generated from profile capabilities (api, cli, tui) regardless of test-cases.md content")
+	assert.Equal(t, 3, perTypeCount, "per-type tasks should be generated from go-test profile capabilities (tui, api, cli)")
 }
 

@@ -3,6 +3,9 @@ scale: 1000
 target: 950
 iterations: 3
 type: ui-tui
+context:
+  conventions: [ux, frontend]
+  business-rules: auto
 ---
 
 # TUI Design Evaluation Rubric
