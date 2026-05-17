@@ -1,6 +1,6 @@
 ---
 feature: "forge-worktree"
-status: tasks
+status: completed
 mode: quick
 ---
 
