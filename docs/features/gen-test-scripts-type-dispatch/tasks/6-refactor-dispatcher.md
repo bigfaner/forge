@@ -34,7 +34,7 @@ Refactor the monolithic `gen-test-scripts` SKILL.md (530 lines) into a slim disp
 - [ ] `grep -c "Sitemap" SKILL.md` returns 0 — Step 2 moved to types/ui.md
 - [ ] `grep -c "Locator" SKILL.md` returns 0 — Step 3 moved to types/ui.md
 - [ ] Convention loading section references `plugins/forge/skills/gen-test-scripts/types/{type}.md` frontmatter (not gen-test-cases type files)
-- [ ] Step 4 contains a dispatch loop with explicit type-to-file mapping table (ui→types/ui.md, tui→types/tui.md, mobile→types/mobile.md, api→types/api.md, cli→types/cli.md)
+- [ ] Step 4 contains a dispatch loop that discovers available types by scanning `types/*.md` and loads the appropriate type file based on the detected or filtered type (ui→types/ui.md, tui→types/tui.md, mobile→types/mobile.md, api→types/api.md, cli→types/cli.md)
 - [ ] Error scenarios documented: unknown `--type` value, missing type file
 - [ ] Step 3.5 (shared infrastructure) preserved verbatim — always runs regardless of type
 - [ ] Steps 0-1 (profile resolution, test case reading, auth classification) preserved
@@ -45,7 +45,7 @@ Refactor the monolithic `gen-test-scripts` SKILL.md (530 lines) into a slim disp
 ## Hard Rules
 
 - Step 3.5 (shared infrastructure) MUST NOT be moved to any type file — it is shared across all types
-- The dispatcher must use hard-coded type-to-file mapping (not dynamic), matching the proposal's design decision
+- The dispatcher must discover types by scanning the `types/` directory for `.md` files (not hard-coded type-to-file mapping), matching the proposal's design decision that adding a new type requires zero edits to SKILL.md
 - Error messages must name the expected types and the missing file path — no silent fallback to generic instructions
 - Preserve all existing HARD-RULEs that are type-agnostic (antipattern guard overview, traceability, empty result guard, VERIFY markers, post-generation checks)
 
