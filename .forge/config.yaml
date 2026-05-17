@@ -1,6 +1,8 @@
 project-type: backend
 interfaces:
   - cli
+languages:
+  - go
 auto:
   e2eTest:
     quick: false
