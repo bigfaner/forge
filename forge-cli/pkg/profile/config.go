@@ -76,12 +76,19 @@ func (a AutoConfig) WithDefaults() AutoConfig {
 	return a
 }
 
+// WorktreeConfig controls worktree creation behavior.
+type WorktreeConfig struct {
+	SourceBranch string   `yaml:"source-branch"`
+	CopyFiles    []string `yaml:"copy-files"`
+}
+
 // ForgeConfig represents the .forge/config.yaml structure.
 type ForgeConfig struct {
-	ProjectType string      `yaml:"project-type"`
-	Interfaces  []string    `yaml:"interfaces"`
-	Languages   []string    `yaml:"languages"`
-	Auto        *AutoConfig `yaml:"auto,omitempty"`
+	ProjectType string          `yaml:"project-type"`
+	Interfaces  []string        `yaml:"interfaces"`
+	Languages   []string        `yaml:"languages"`
+	Auto        *AutoConfig     `yaml:"auto,omitempty"`
+	Worktree    *WorktreeConfig `yaml:"worktree,omitempty"`
 }
 
 // KnownLanguages is the set of valid language keys.
@@ -320,11 +327,19 @@ var configKeyAccessors = map[string]configKeyAccessor{
 
 // GetConfigValue returns the value for a given key from .forge/config.yaml.
 // For scalar values, returns the raw string; for arrays, joins with newline.
-// Supports dot-notation for nested keys (e.g. "auto.gitPush").
+// Supports dot-notation for nested keys (e.g. "auto.gitPush", "worktree.source-branch").
 // Returns empty string and ErrKeyNotFound if the key doesn't exist or has zero value.
 func GetConfigValue(projectRoot, key string) (string, error) {
 	// Handle dot-notation auto keys
 	if val, ok, err := getAutoKeyValue(projectRoot, key); ok || err != nil {
+		if err != nil {
+			return "", err
+		}
+		return val, nil
+	}
+
+	// Handle dot-notation worktree keys
+	if val, ok, err := getWorktreeKeyValue(projectRoot, key); ok || err != nil {
 		if err != nil {
 			return "", err
 		}
@@ -376,6 +391,37 @@ func getAutoKeyValue(projectRoot, key string) (string, bool, error) {
 	}
 
 	return strconv.FormatBool(auto.GitPush), true, nil
+}
+
+// getWorktreeKeyValue handles dot-notation keys for the worktree config block.
+// Returns (value, true, nil) if the key was handled, ("", false, nil) if not a worktree key.
+func getWorktreeKeyValue(projectRoot, key string) (string, bool, error) {
+	if key != "worktree.source-branch" && key != "worktree.copy-files" {
+		return "", false, nil
+	}
+
+	cfg, err := ReadConfig(projectRoot)
+	if err != nil {
+		return "", true, err
+	}
+	if cfg == nil || cfg.Worktree == nil {
+		return "", true, ErrKeyNotFound
+	}
+
+	switch key {
+	case "worktree.source-branch":
+		if cfg.Worktree.SourceBranch == "" {
+			return "", true, ErrKeyNotFound
+		}
+		return cfg.Worktree.SourceBranch, true, nil
+	case "worktree.copy-files":
+		if len(cfg.Worktree.CopyFiles) == 0 {
+			return "", true, ErrKeyNotFound
+		}
+		return joinSlice(cfg.Worktree.CopyFiles), true, nil
+	}
+
+	return "", true, ErrKeyNotFound
 }
 
 // joinSlice joins slice values with newline for plain-text output.

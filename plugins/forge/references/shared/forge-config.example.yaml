@@ -40,3 +40,12 @@ auto:
   # Automatically push to remote after all-completed hook passes.
   # Default: false (opt-in — off by default)
   gitPush: false
+
+# Worktree creation configuration (optional — omit the block for default behavior)
+# source-branch: default branch to create worktrees from (defaults to HEAD)
+# copy-files: files to copy from project root into new worktrees (e.g., .env files)
+# worktree:
+#   source-branch: develop
+#   copy-files:
+#     - .env
+#     - .env.local
