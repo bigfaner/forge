@@ -237,15 +237,25 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("target directory already exists: %s", targetDir)
 	}
 
+	// Load config for source-branch and copy-files
+	cfg, _ := profile.ReadConfig(projectRoot)
+
+	// Pre-validate copy-files BEFORE git worktree add (to avoid orphan worktrees)
+	var copyFiles []string
+	if cfg != nil && cfg.Worktree != nil {
+		copyFiles = cfg.Worktree.CopyFiles
+	}
+	if err := validateCopyFiles(projectRoot, copyFiles); err != nil {
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: %v\n", err)
+		return err
+	}
+
 	// Resolve source branch: flag > config > HEAD
 	var sourceBranch string
 	if cmd.Flags().Changed("source-branch") {
 		sourceBranch, _ = cmd.Flags().GetString("source-branch")
-	} else {
-		cfg, _ := profile.ReadConfig(projectRoot)
-		if cfg != nil && cfg.Worktree != nil {
-			sourceBranch = cfg.Worktree.SourceBranch
-		}
+	} else if cfg != nil && cfg.Worktree != nil {
+		sourceBranch = cfg.Worktree.SourceBranch
 	}
 
 	// Check if branch already exists
@@ -277,6 +287,11 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 	}
 	if err != nil {
 		return fmt.Errorf("git worktree add: %w", err)
+	}
+
+	// Copy configured files from project root to worktree
+	if err := copyFilesToWorktree(projectRoot, targetDir, copyFiles); err != nil {
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: copy-files failed: %v\n", err)
 	}
 
 	// Launch claude in the worktree directory
@@ -359,4 +374,56 @@ func listForgeFeatures(projectRoot string) map[string]bool {
 		}
 	}
 	return result
+}
+
+// validateCopyFilePath checks that a single copy-file path is safe.
+// Rejects absolute paths and paths containing ".." traversals.
+func validateCopyFilePath(relPath string) error {
+	if filepath.IsAbs(relPath) {
+		return fmt.Errorf("copy-file path must be relative, got absolute: %s", relPath)
+	}
+	if strings.Contains(relPath, "..") {
+		return fmt.Errorf("copy-file path must not contain '..': %s", relPath)
+	}
+	return nil
+}
+
+// validateCopyFiles pre-validates that all copy-files exist in the project root
+// and have safe paths. Returns an error describing the first problem found.
+// Returns nil if copyFiles is empty or nil.
+func validateCopyFiles(projectRoot string, copyFiles []string) error {
+	for _, relPath := range copyFiles {
+		if err := validateCopyFilePath(relPath); err != nil {
+			return err
+		}
+		fullPath := filepath.Join(projectRoot, relPath)
+		if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+			return fmt.Errorf("copy-file not found in project root: %s", relPath)
+		}
+	}
+	return nil
+}
+
+// copyFilesToWorktree copies the listed files from projectRoot to worktreeDir.
+// Creates parent directories as needed. Overwrites existing files.
+// Returns nil if copyFiles is empty or nil.
+func copyFilesToWorktree(projectRoot, worktreeDir string, copyFiles []string) error {
+	for _, relPath := range copyFiles {
+		src := filepath.Join(projectRoot, relPath)
+		dst := filepath.Join(worktreeDir, relPath)
+
+		data, err := os.ReadFile(src)
+		if err != nil {
+			return fmt.Errorf("read %s: %w", relPath, err)
+		}
+
+		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+			return fmt.Errorf("create directory for %s: %w", relPath, err)
+		}
+
+		if err := os.WriteFile(dst, data, 0o644); err != nil {
+			return fmt.Errorf("write %s: %w", relPath, err)
+		}
+	}
+	return nil
 }

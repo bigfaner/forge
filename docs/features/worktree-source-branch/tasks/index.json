@@ -37,7 +37,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3-implement-copy-files.md",
       "record": "records/3-implement-copy-files.md",
       "scope": "backend",
