@@ -106,6 +106,34 @@ Scan design documents for:
 
 For each extracted spec, apply the same `[CROSS]`/`[LOCAL]` classification from Step 3.
 
+## Domain Frontmatter
+
+Convention and business-rule files carry a `domains` field in their YAML frontmatter that enables lightweight discovery by consumers (prompt templates, commands, agents).
+
+```yaml
+---
+title: "Error Handling Conventions"  # existing field, unchanged
+domains: [error, status, response, stderr]  # keywords this file covers
+---
+```
+
+### Domain Derivation Rules
+
+Domains are **derived programmatically from spec content** — never invented by the agent. The derivation algorithm:
+
+1. **Spec ID keywords**: Extract tokens from project-global IDs in the file (e.g., `BIZ-auth-001` contributes `auth`, `TECH-api-003` contributes `api`)
+2. **Source keywords**: Extract recurring domain-specific nouns from rule titles, requirement statements, and source references (e.g., a rule about "token validation" contributes `token`, `validation`)
+3. **Deduplicate and normalize**: Lowercase, remove duplicates, keep only specific terms (not generic words like "rule", "spec", "requirement")
+4. **Cardinality**: Each file gets **3-7 specific keywords**
+
+### Domain Overlap Detection
+
+When multiple files in the same directory (`docs/conventions/` or `docs/business-rules/`) have `domains` fields, compute keyword overlap:
+
+- **Overlap ratio** = `|intersection(domains_A, domains_B)| / min(|domains_A|, |domains_B|)`
+- **Threshold**: If overlap ratio > 50%, flag as a potential duplicate/merge candidate during the user confirmation step (Step 6)
+- **Action**: Display the warning; the user decides whether to merge or keep separate
+
 ## Step 5: Generate Preview Files + Detect Overlaps
 
 Write preview files to `docs/features/<slug>/specs/`:
@@ -228,6 +256,9 @@ Related existing entries (may overlap):
   ⚠ decisions/error-handling.md: "Adopt AIError struct" — appears to overlap with TECH-001
   ⚠ lessons/gotcha-error-handling.md [error-handling] — may overlap with TECH-002
 
+Domain overlap warnings:
+  ⚠ docs/conventions/error-handling.md (domains: [error, status, response]) and docs/conventions/error-reporting.md (domains: [error, status, log]) share 66% of keywords — consider merging
+
 For each overlap, choose: [skip] keep both | [replace] delete old + write new
 ```
 
@@ -236,6 +267,7 @@ Ask the user:
 2. Which domain/topic file should each be merged into?
 3. Any items to skip?
 4. For each overlap: `[skip]` keep both, or `[replace]` delete old entry and write new?
+5. For each domain overlap warning (>50% shared keywords): merge the files, keep separate, or adjust target file?
 
 Write the user's choices to `docs/features/<slug>/specs/review-choices.md`:
 
@@ -268,13 +300,31 @@ For each item listed as "Approved" in `review-choices.md`:
 
 **Business rules** → append to `docs/business-rules/<domain>.md`:
 - Create the file if it doesn't exist
+- When creating a new file, write YAML frontmatter with `title` (derived from the domain name) and `domains` (derived per the Domain Derivation Rules above)
 - Add a source reference linking back to the feature
 - Group by rule category within the file
 
 **Technical specs** → append to `docs/conventions/<topic>.md`:
 - Create the file if it doesn't exist
+- When creating a new file, write YAML frontmatter with `title` (derived from the topic name) and `domains` (derived per the Domain Derivation Rules above)
 - Add a source reference linking back to the feature
 - Group by spec category within the file
+
+### New File Frontmatter
+
+When creating a new project-level spec file, include this frontmatter:
+
+```yaml
+---
+title: "<Descriptive Title>"
+domains: [<keyword1>, <keyword2>, ..., <keywordN>]
+---
+```
+
+- `title`: Human-readable title derived from the domain/topic name (existing behavior, unchanged)
+- `domains`: 3-7 specific keywords derived from the spec content being written into the file, per the Domain Derivation Rules
+
+For **existing files** that lack a `domains` field, derive and add it during integration (do not modify existing `title`).
 
 ### Project-Global ID Encoding
 
@@ -352,6 +402,10 @@ For each rule classified as `drifted` or `orphaned` in Step 9:
    - Present to user for confirmation before appending
    - Append confirmed rules to the appropriate spec file with a new project-global ID
 
+4. **Re-derive `domains` frontmatter**: When a file's content changes substantially (rules updated, added, or removed), re-derive the `domains` field per the Domain Derivation Rules. Compare the new domain set against the existing one:
+   - If domains have changed, update the frontmatter in-place
+   - If the updated `domains` cause a new >50% overlap with another file's domains, flag in the commit message and notify the user
+
 ### Preservation Rules
 
 - Project-global IDs must never change during auto-fix — only description and behavior text updates
@@ -407,6 +461,11 @@ Omit `coverage` from record.json — the noTest flag in index.json auto-sets it.
 - Deleted rules must be recorded in commit message with ID and deletion reason
 - Project-global IDs must be preserved during auto-fix (only update description/behavior text)
 - New implicit rules from code are extracted with `[CROSS]` classification and presented to user before appending
+- `domains` frontmatter is derived from spec ID keywords and source keywords — never invented by the agent
+- Each file gets 3-7 specific domain keywords (not generic terms like "rule", "spec", "requirement")
+- The existing `title` frontmatter behavior is unchanged — `domains` is an additive field
+- Domain overlap >50% between files triggers a warning during the user confirmation step (Step 6)
+- During drift detection (Steps 9-10), `domains` are re-derived when file content changes substantially
 
 ## Related Skills
 
