@@ -11,6 +11,7 @@ import (
 	"forge-cli/internal/embedded"
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/just"
+	"forge-cli/pkg/profile"
 )
 
 // setupInitTest creates a temp directory with optional pre-existing files.
@@ -23,6 +24,9 @@ type initTestEnv struct {
 
 func newInitTestEnv(t *testing.T) *initTestEnv {
 	t.Helper()
+	orig := configInitFunc
+	configInitFunc = testConfigInit
+	t.Cleanup(func() { configInitFunc = orig })
 	return &initTestEnv{
 		dir: t.TempDir(),
 	}
@@ -44,11 +48,31 @@ func (e *initTestEnv) path(parts ...string) string {
 	return filepath.Join(append([]string{e.dir}, parts...)...)
 }
 
+// testConfigInit replaces configInitFunc for testing.
+// It reads simple text input from the piped stdin buffer instead of using huh.
+func testConfigInit(projectRoot string) initAction {
+	configFile := filepath.Join(projectRoot, feature.ForgeDir, feature.ForgeConfigFileName)
+	if _, err := os.Stat(configFile); err == nil {
+		return initAction{status: "SKIPPED", target: ".forge/config.yaml", detail: "already exists"}
+	}
+
+	// Write a sensible default config for testing
+	cfg := profile.ForgeConfig{
+		ProjectType:  "backend",
+		TestProfiles: []string{"go-test"},
+		Capabilities: []string{"tui", "api", "cli"},
+	}
+
+	if err := writeConfigFile(configFile, &cfg); err != nil {
+		return initAction{status: "FAILED", target: ".forge/config.yaml", detail: err.Error()}
+	}
+
+	return initAction{status: "CREATED", target: ".forge/config.yaml", detail: "test override"}
+}
+
 func TestInitCommand(t *testing.T) {
 	t.Run("creates .forge directory", func(t *testing.T) {
 		env := newInitTestEnv(t)
-		// Answer 'n' to config init prompt (config doesn't exist yet, but stdin needs input)
-		env.stdin.WriteString("2\n1\n\n\n")
 
 		err := env.run()
 		if err != nil {
@@ -71,7 +95,6 @@ func TestInitCommand(t *testing.T) {
 		if err := os.MkdirAll(forgeDir, 0o755); err != nil {
 			t.Fatal(err)
 		}
-		env.stdin.WriteString("2\n1\n\n\n")
 
 		err := env.run()
 		if err != nil {
@@ -85,7 +108,6 @@ func TestInitCommand(t *testing.T) {
 
 	t.Run("creates CLAUDE.md from template", func(t *testing.T) {
 		env := newInitTestEnv(t)
-		env.stdin.WriteString("2\n1\n\n\n")
 
 		err := env.run()
 		if err != nil {
@@ -109,7 +131,6 @@ func TestInitCommand(t *testing.T) {
 		if err := os.WriteFile(env.path("CLAUDE.md"), []byte(existing), 0o644); err != nil {
 			t.Fatal(err)
 		}
-		env.stdin.WriteString("2\n1\n\n\n")
 
 		err := env.run()
 		if err != nil {
@@ -129,7 +150,6 @@ func TestInitCommand(t *testing.T) {
 
 	t.Run("appends entries to .gitignore", func(t *testing.T) {
 		env := newInitTestEnv(t)
-		env.stdin.WriteString("2\n1\n\n\n")
 
 		err := env.run()
 		if err != nil {
@@ -164,7 +184,6 @@ func TestInitCommand(t *testing.T) {
 		if err := os.WriteFile(env.path(".gitignore"), []byte(existing), 0o644); err != nil {
 			t.Fatal(err)
 		}
-		env.stdin.WriteString("2\n1\n\n\n")
 
 		err := env.run()
 		if err != nil {
@@ -183,7 +202,6 @@ func TestInitCommand(t *testing.T) {
 
 	t.Run("does not create justfile", func(t *testing.T) {
 		env := newInitTestEnv(t)
-		env.stdin.WriteString("2\n1\n\n\n")
 
 		err := env.run()
 		if err != nil {
@@ -199,8 +217,6 @@ func TestInitCommand(t *testing.T) {
 
 	t.Run("runs config init when config does not exist", func(t *testing.T) {
 		env := newInitTestEnv(t)
-		// Input for config init: project-type=backend(2), select go-test(1), done, done
-		env.stdin.WriteString("2\n1\n\n\n")
 
 		err := env.run()
 		if err != nil {
@@ -242,7 +258,6 @@ func TestInitCommand(t *testing.T) {
 
 	t.Run("prints summary report", func(t *testing.T) {
 		env := newInitTestEnv(t)
-		env.stdin.WriteString("2\n1\n\n\n")
 
 		err := env.run()
 		if err != nil {
@@ -262,7 +277,6 @@ func TestInitCommand(t *testing.T) {
 
 	t.Run("full init on empty directory creates all artifacts", func(t *testing.T) {
 		env := newInitTestEnv(t)
-		env.stdin.WriteString("2\n1\n\n\n")
 
 		err := env.run()
 		if err != nil {
@@ -333,7 +347,6 @@ func TestAppendGitignoreEntries(t *testing.T) {
 func TestInitSkipJustFlag(t *testing.T) {
 	t.Run("--skip-just reports SKIPPED for just step", func(t *testing.T) {
 		env := newInitTestEnv(t)
-		env.stdin.WriteString("2\n1\n\n\n")
 
 		err := env.run("--skip-just")
 		if err != nil {
@@ -348,7 +361,6 @@ func TestInitSkipJustFlag(t *testing.T) {
 
 	t.Run("--skip-just still runs all other steps", func(t *testing.T) {
 		env := newInitTestEnv(t)
-		env.stdin.WriteString("2\n1\n\n\n")
 
 		err := env.run("--skip-just")
 		if err != nil {
@@ -376,7 +388,6 @@ func TestInitSkipJustFlag(t *testing.T) {
 
 	t.Run("ensureJust step appears in summary", func(t *testing.T) {
 		env := newInitTestEnv(t)
-		env.stdin.WriteString("2\n1\n\n\n")
 
 		err := env.run("--skip-just")
 		if err != nil {
@@ -403,7 +414,6 @@ func TestInitEnsureJustIntegration(t *testing.T) {
 		defer func() { ensureJustFunc = origEnsure }()
 
 		env := newInitTestEnv(t)
-		env.stdin.WriteString("2\n1\n\n\n")
 
 		err := env.run()
 		if err != nil {
@@ -429,7 +439,6 @@ func TestInitEnsureJustIntegration(t *testing.T) {
 		defer func() { ensureJustFunc = origEnsure }()
 
 		env := newInitTestEnv(t)
-		env.stdin.WriteString("2\n1\n\n\n")
 
 		err := env.run()
 		if err != nil {
@@ -453,7 +462,6 @@ func TestInitEnsureJustIntegration(t *testing.T) {
 		defer func() { ensureJustFunc = origEnsure }()
 
 		env := newInitTestEnv(t)
-		env.stdin.WriteString("2\n1\n\n\n")
 
 		err := env.run()
 		if err != nil {

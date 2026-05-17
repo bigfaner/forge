@@ -1,12 +1,10 @@
 package cmd
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"forge-cli/internal/embedded"
@@ -14,6 +12,7 @@ import (
 	"forge-cli/pkg/just"
 	"forge-cli/pkg/profile"
 
+	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
 )
 
@@ -80,7 +79,7 @@ func runInit(cmd *cobra.Command, _ []string) error {
 	actions = append(actions, action)
 
 	// Step 5: Interactive config (only if config doesn't exist)
-	action = runConfigInitIfNeeded(projectRoot, cmd.InOrStdin(), out)
+	action = configInitFunc(projectRoot)
 	actions = append(actions, action)
 
 	// Print summary report
@@ -127,7 +126,6 @@ func updateGitignore(projectRoot string) initAction {
 		return initAction{status: "SKIPPED", target: ".gitignore", detail: "all entries already present"}
 	}
 
-	// Build content to append
 	var buf strings.Builder
 	if existingContent != "" && !strings.HasSuffix(existingContent, "\n") {
 		buf.WriteByte('\n')
@@ -171,20 +169,46 @@ func buildGitignoreAppend(existing string, entries []string) []string {
 	return toAppend
 }
 
-func runConfigInitIfNeeded(projectRoot string, in io.Reader, out io.Writer) initAction {
+func runConfigInitIfNeeded(projectRoot string) initAction {
 	configFile := filepath.Join(projectRoot, feature.ForgeDir, feature.ForgeConfigFileName)
 	if _, err := os.Stat(configFile); err == nil {
 		return initAction{status: "SKIPPED", target: ".forge/config.yaml", detail: "already exists"}
 	}
 
-	reader := bufio.NewReader(in)
+	// Interactive form requires a TTY
+	fi, _ := os.Stdin.Stat()
+	if fi.Mode()&os.ModeCharDevice == 0 {
+		return initAction{status: "SKIPPED", target: ".forge/config.yaml", detail: "non-interactive terminal"}
+	}
 
-	// Step 1: Project type (single select)
-	projectType := askSelect(reader, out, "Project type", []string{"frontend", "backend", "mixed"}, 2)
+	// Step 1: Project type
+	projectType := "backend"
+	projectTypeSelect := huh.NewSelect[string]().
+		Title("Project type").
+		Options(
+			huh.NewOption("frontend", "frontend"),
+			huh.NewOption("backend", "backend"),
+			huh.NewOption("mixed", "mixed"),
+		).
+		Value(&projectType)
 
 	// Step 2: Test profile (single select)
-	profileOpts := profile.KnownProfiles
-	selectedProfile := askSelect(reader, out, "Test profile", profileOpts, 0)
+	selectedProfile := ""
+	profileOpts := make([]huh.Option[string], 0, len(profile.KnownProfiles)+1)
+	profileOpts = append(profileOpts, huh.NewOption("(none)", ""))
+	for _, p := range profile.KnownProfiles {
+		profileOpts = append(profileOpts, huh.NewOption(p, p))
+	}
+	profileSelect := huh.NewSelect[string]().
+		Title("Test profile").
+		Options(profileOpts...).
+		Value(&selectedProfile)
+
+	form := huh.NewForm(huh.NewGroup(projectTypeSelect, profileSelect))
+	if err := form.Run(); err != nil {
+		return initAction{status: "FAILED", target: ".forge/config.yaml", detail: err.Error()}
+	}
+
 	var selectedProfiles []string
 	if selectedProfile != "" {
 		selectedProfiles = []string{selectedProfile}
@@ -197,12 +221,22 @@ func runConfigInitIfNeeded(projectRoot string, in io.Reader, out io.Writer) init
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "WARNING: could not resolve capabilities: %v\n", err)
 		} else if len(union) > 0 {
-			selectedCaps = askMultiSelect(reader, out, "Capabilities", union, nil)
+			capOpts := make([]huh.Option[string], 0, len(union))
+			for _, c := range union {
+				capOpts = append(capOpts, huh.NewOption(c, c))
+			}
+			capSelect := huh.NewMultiSelect[string]().
+				Title("Capabilities").
+				Options(capOpts...).
+				Value(&selectedCaps)
+			if err := huh.NewForm(huh.NewGroup(capSelect)).Run(); err != nil {
+				return initAction{status: "FAILED", target: ".forge/config.yaml", detail: err.Error()}
+			}
 		}
 	}
 
 	// Step 4: Auto-behavior config
-	auto := askAutoBehavior(reader, out, len(selectedProfiles) > 0)
+	auto := askAutoBehavior(len(selectedProfiles) > 0)
 
 	cfg := profile.ForgeConfig{
 		ProjectType:  projectType,
@@ -218,170 +252,61 @@ func runConfigInitIfNeeded(projectRoot string, in io.Reader, out io.Writer) init
 		return initAction{status: "FAILED", target: ".forge/config.yaml", detail: err.Error()}
 	}
 
-	write(out, "\n")
 	return initAction{status: "CREATED", target: ".forge/config.yaml", detail: "interactive"}
 }
 
-// askSelect presents a numbered single-select menu. Returns the selected option.
-// defaultIdx is 0-based; -1 means no default.
-func askSelect(reader *bufio.Reader, out io.Writer, label string, options []string, defaultIdx int) string {
-	write(out, "\n%s:\n", label)
-	for i, opt := range options {
-		marker := "  "
-		if i == defaultIdx {
-			marker = "> "
-		}
-		write(out, "%s%d. %s\n", marker, i+1, opt)
-	}
-	if defaultIdx >= 0 {
-		write(out, "Select [%d]: ", defaultIdx+1)
-	} else {
-		write(out, "Select (0 to skip): ")
-	}
-
-	input, _ := reader.ReadString('\n')
-	input = strings.TrimSpace(input)
-	if input == "" {
-		if defaultIdx >= 0 && defaultIdx < len(options) {
-			return options[defaultIdx]
-		}
-		return ""
-	}
-
-	n, err := strconv.Atoi(input)
-	if err != nil || n < 1 || n > len(options) {
-		if defaultIdx >= 0 && defaultIdx < len(options) {
-			return options[defaultIdx]
-		}
-		return ""
-	}
-	return options[n-1]
-}
-
-// askMultiSelect presents a numbered multi-select menu. Returns selected options.
-// defaults are option values that start pre-selected.
-func askMultiSelect(reader *bufio.Reader, out io.Writer, label string, options []string, defaults []string) []string {
-	defSet := make(map[string]bool)
-	for _, d := range defaults {
-		defSet[d] = true
-	}
-
-	write(out, "\n%s (enter numbers, space-separated):\n", label)
-	for i, opt := range options {
-		marker := "  "
-		if defSet[opt] {
-			marker = "> "
-		}
-		write(out, "%s%d. %s\n", marker, i+1, opt)
-	}
-	if len(defaults) > 0 {
-		write(out, "Select [%s]: ", strings.Join(defaults, " "))
-	} else {
-		write(out, "Select (0 to skip): ")
-	}
-
-	input, _ := reader.ReadString('\n')
-	input = strings.TrimSpace(input)
-	if input == "" {
-		return defaults
-	}
-
-	return parseMultiSelect(input, options)
-}
-
-// askAutoBehavior runs the auto-behavior config step with select menus.
+// askAutoBehavior runs the auto-behavior config step with interactive selects.
 // Returns nil if user accepts all defaults.
-func askAutoBehavior(reader *bufio.Reader, out io.Writer, hasProfiles bool) *profile.AutoConfig {
-	write(out, "\nAuto-behavior configuration:\n")
+func askAutoBehavior(hasProfiles bool) *profile.AutoConfig {
+	var fields []huh.Field
 
-	var auto profile.AutoConfig
-	changed := false
+	e2eQuick, e2eFull := true, true
+	conQuick, conFull := true, true
+	cleanQuick, cleanFull := false, false
+	gitPush := false
 
 	if hasProfiles {
-		auto.E2eTest = askToggleSelect(reader, out, "e2eTest", profile.ModeToggle{Quick: true, Full: true}, &changed)
-		auto.ConsolidateSpecs = askToggleSelect(reader, out, "consolidateSpecs", profile.ModeToggle{Quick: true, Full: true}, &changed)
+		fields = append(fields,
+			huh.NewConfirm().Title("e2eTest (quick mode)?").Value(&e2eQuick),
+			huh.NewConfirm().Title("e2eTest (full mode)?").Value(&e2eFull),
+			huh.NewConfirm().Title("consolidateSpecs (quick mode)?").Value(&conQuick),
+			huh.NewConfirm().Title("consolidateSpecs (full mode)?").Value(&conFull),
+		)
 	}
 
-	auto.CleanCode = askToggleSelect(reader, out, "cleanCode", profile.ModeToggle{Quick: false, Full: false}, &changed)
+	fields = append(fields,
+		huh.NewConfirm().Title("cleanCode (quick mode)?").Affirmative("Yes").Negative("No").Value(&cleanQuick),
+		huh.NewConfirm().Title("cleanCode (full mode)?").Affirmative("Yes").Negative("No").Value(&cleanFull),
+		huh.NewConfirm().Title("Auto git push after completion?").Affirmative("Yes").Negative("No").Value(&gitPush),
+	)
 
-	if askYesNo(reader, out, "Auto git push after completion", false) {
-		auto.GitPush = true
-		changed = true
-	}
-
-	if !changed {
+	if err := huh.NewForm(huh.NewGroup(fields...)).Run(); err != nil {
 		return nil
 	}
-	return &auto
-}
 
-// askToggleSelect presents a numbered menu for a mode-scoped toggle.
-func askToggleSelect(reader *bufio.Reader, out io.Writer, name string, defaults profile.ModeToggle, changed *bool) profile.ModeToggle {
-	opts := []string{
-		"enabled (quick + full)",
-		"quick only",
-		"full only",
-		"disabled",
+	// Check if anything changed from defaults
+	defaults := profile.AutoConfigDefaults()
+	allDefault := true
+	if hasProfiles {
+		allDefault = allDefault && e2eQuick == defaults.E2eTest.Quick && e2eFull == defaults.E2eTest.Full
+		allDefault = allDefault && conQuick == defaults.ConsolidateSpecs.Quick && conFull == defaults.ConsolidateSpecs.Full
 	}
-	defIdx := 0
-	if defaults.Quick && defaults.Full {
-		defIdx = 0
-	} else if defaults.Quick && !defaults.Full {
-		defIdx = 1
-	} else if !defaults.Quick && defaults.Full {
-		defIdx = 2
-	} else {
-		defIdx = 3
+	allDefault = allDefault && cleanQuick == defaults.CleanCode.Quick && cleanFull == defaults.CleanCode.Full
+	allDefault = allDefault && gitPush == defaults.GitPush
+
+	if allDefault {
+		return nil
 	}
 
-	write(out, "  %s:\n", name)
-	for i, opt := range opts {
-		marker := "    "
-		if i == defIdx {
-			marker = "  > "
-		}
-		write(out, "%s%d. %s\n", marker, i+1, opt)
+	auto := &profile.AutoConfig{
+		CleanCode: profile.ModeToggle{Quick: cleanQuick, Full: cleanFull},
+		GitPush:   gitPush,
 	}
-	write(out, "  Select [%d]: ", defIdx+1)
-
-	input, _ := reader.ReadString('\n')
-	input = strings.TrimSpace(input)
-	if input == "" {
-		return defaults
+	if hasProfiles {
+		auto.E2eTest = profile.ModeToggle{Quick: e2eQuick, Full: e2eFull}
+		auto.ConsolidateSpecs = profile.ModeToggle{Quick: conQuick, Full: conFull}
 	}
-
-	n, err := strconv.Atoi(input)
-	if err != nil || n < 1 || n > 4 {
-		return defaults
-	}
-
-	*changed = true
-	switch n {
-	case 1:
-		return profile.ModeToggle{Quick: true, Full: true}
-	case 2:
-		return profile.ModeToggle{Quick: true, Full: false}
-	case 3:
-		return profile.ModeToggle{Quick: false, Full: true}
-	default:
-		return profile.ModeToggle{Quick: false, Full: false}
-	}
-}
-
-// askYesNo presents a yes/no confirmation.
-func askYesNo(reader *bufio.Reader, out io.Writer, label string, defVal bool) bool {
-	prompt := "y/N"
-	if defVal {
-		prompt = "Y/n"
-	}
-	write(out, "  %s? [%s]: ", label, prompt)
-
-	input, _ := reader.ReadString('\n')
-	input = strings.TrimSpace(strings.ToLower(input))
-	if input == "" {
-		return defVal
-	}
-	return input == "y" || input == "yes"
+	return auto
 }
 
 func printInitSummary(out io.Writer, actions []initAction) {
@@ -399,6 +324,10 @@ func printInitSummary(out io.Writer, actions []initAction) {
 // ensureJustFunc is the function that runs the ensure-just flow.
 // Variable for testability.
 var ensureJustFunc = just.EnsureJust
+
+// configInitFunc is the function that runs interactive config init.
+// Variable for testability — huh requires a real TTY, so tests override this.
+var configInitFunc = runConfigInitIfNeeded
 
 // ensureJustStep runs the ensure-just flow or skips it based on the flag.
 // Installation failure is non-blocking — init continues with a WARNING.
