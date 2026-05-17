@@ -111,6 +111,73 @@ func runWorktreeRemove(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+var worktreeResumeCmd = &cobra.Command{
+	Use:   "resume <slug>",
+	Short: "Re-launch Claude in an existing worktree",
+	Long: `Launch claude --dangerously-skip-permissions in an existing worktree directory.
+
+Verifies that the worktree exists and is a valid git worktree before launching.`,
+	Args: cobra.ExactArgs(1),
+	RunE: runWorktreeResume,
+}
+
+func runWorktreeResume(cmd *cobra.Command, args []string) error {
+	slug := args[0]
+
+	if slug == "" {
+		return fmt.Errorf("slug must not be empty")
+	}
+
+	// Pre-flight: verify claude binary exists in PATH
+	if _, err := lookPathFunc("claude"); err != nil {
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: claude binary not found in PATH\n")
+		return fmt.Errorf("claude: %w", err)
+	}
+
+	// Find project root
+	projectRoot, err := project.FindProjectRoot()
+	if err != nil {
+		return fmt.Errorf("find project root: %w", err)
+	}
+
+	// Verify we're in a git repository
+	if !git.IsGitRepository(projectRoot) {
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: not a git repository: %s\n", projectRoot)
+		return fmt.Errorf("not a git repository: %s", projectRoot)
+	}
+
+	// Resolve worktree path
+	targetDir := filepath.Join(projectRoot, "..", slug)
+	targetDir, err = filepath.Abs(targetDir)
+	if err != nil {
+		return fmt.Errorf("resolve target path: %w", err)
+	}
+
+	// Check that the worktree directory exists
+	if _, err := os.Stat(targetDir); os.IsNotExist(err) {
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: worktree not found: %s\n", targetDir)
+		return fmt.Errorf("worktree not found: %s", targetDir)
+	}
+
+	// Verify it's a git worktree (.git file or directory must exist)
+	gitFile := filepath.Join(targetDir, ".git")
+	if _, err := os.Stat(gitFile); os.IsNotExist(err) {
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: %s is not a git worktree\n", targetDir)
+		return fmt.Errorf("%s is not a git worktree", targetDir)
+	}
+
+	// Launch claude in the worktree directory
+	origDir, _ := os.Getwd()
+	defer func() { _ = os.Chdir(origDir) }()
+
+	if err := os.Chdir(targetDir); err != nil {
+		return fmt.Errorf("change to worktree directory: %w", err)
+	}
+
+	allArgs := []string{"--dangerously-skip-permissions"}
+	return runClaudeFunc(allArgs)
+}
+
 var worktreeStartCmd = &cobra.Command{
 	Use:   "start <slug>",
 	Short: "Create a worktree and launch Claude in it",

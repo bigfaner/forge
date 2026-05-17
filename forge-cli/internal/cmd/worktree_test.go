@@ -790,3 +790,246 @@ func initGitRepoForWorktree(t *testing.T) string {
 
 	return dir
 }
+
+// ---------------------------------------------------------------------------
+// worktree resume: subcommand registration
+// ---------------------------------------------------------------------------
+
+func TestWorktreeCmd_HasResumeSubcommand(t *testing.T) {
+	subcommands := worktreeCmd.Commands()
+	found := false
+	for _, cmd := range subcommands {
+		if cmd.Name() == "resume" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("worktree group should have 'resume' subcommand")
+	}
+}
+
+func TestWorktreeResumeCmd_RequiresSlugArg(t *testing.T) {
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "resume"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Error("expected error when slug argument is missing")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// worktree resume: pre-flight claude check
+// ---------------------------------------------------------------------------
+
+func TestWorktreeResume_ErrorWhenClaudeNotInPath(t *testing.T) {
+	origLookPath := lookPathFunc
+	lookPathFunc = func(_ string) (string, error) {
+		return "", &exec.Error{Name: "claude", Err: exec.ErrNotFound}
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "resume", "test-slug"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Error("expected error when claude binary not found")
+	}
+	stderr := buf.String()
+	if !strings.Contains(stderr, "claude") {
+		t.Errorf("error should mention 'claude', got: %s", stderr)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// worktree resume: error when worktree not found
+// ---------------------------------------------------------------------------
+
+func TestWorktreeResume_ErrorWhenWorktreeNotFound(t *testing.T) {
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "resume", "nonexistent-worktree"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Error("expected error when worktree does not exist")
+	}
+	stderr := buf.String()
+	if !strings.Contains(stderr, "not found") {
+		t.Errorf("error should mention 'not found', got: %s", stderr)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// worktree resume: error when not a git repo
+// ---------------------------------------------------------------------------
+
+func TestWorktreeResume_ErrorWhenNotGitRepo(t *testing.T) {
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "resume", "test-slug"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Error("expected error when not in a git repository")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// worktree resume: error when directory exists but not a git worktree
+// ---------------------------------------------------------------------------
+
+func TestWorktreeResume_ErrorWhenDirExistsButNotWorktree(t *testing.T) {
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a sibling directory that is NOT a git worktree
+	slug := "not-a-worktree"
+	parentDir := filepath.Dir(dir)
+	targetDir := filepath.Join(parentDir, slug)
+	if err := os.MkdirAll(targetDir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(targetDir) })
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "resume", slug})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Error("expected error when directory is not a git worktree")
+	}
+	stderr := buf.String()
+	if !strings.Contains(stderr, "not a git worktree") {
+		t.Errorf("error should mention 'not a git worktree', got: %s", stderr)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// worktree resume: happy path
+// ---------------------------------------------------------------------------
+
+func TestWorktreeResume_LaunchesClaudeInExistingWorktree(t *testing.T) {
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	// Capture claude launch args and working directory
+	var capturedArgs []string
+	var capturedWd string
+	origRunClaude := runClaudeFunc
+	runClaudeFunc = func(args []string) error {
+		capturedArgs = args
+		wd, _ := os.Getwd()
+		capturedWd = wd
+		return nil
+	}
+	defer func() { runClaudeFunc = origRunClaude }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a real worktree
+	slug := "resume-feature"
+	parentDir := filepath.Dir(dir)
+	targetDir := filepath.Join(parentDir, slug)
+	cmd := exec.Command("git", "worktree", "add", "-b", slug, targetDir)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "resume", slug})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify claude was launched with --dangerously-skip-permissions
+	if len(capturedArgs) == 0 {
+		t.Fatal("claude should have been launched")
+	}
+	if capturedArgs[0] != "--dangerously-skip-permissions" {
+		t.Errorf("first arg should be --dangerously-skip-permissions, got %q", capturedArgs[0])
+	}
+
+	// Verify claude was launched in the worktree directory
+	absTarget, _ := filepath.Abs(targetDir)
+	if capturedWd != absTarget {
+		t.Errorf("claude should have been launched in %s, got %s", absTarget, capturedWd)
+	}
+}
