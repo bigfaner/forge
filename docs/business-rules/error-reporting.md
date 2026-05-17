@@ -1,5 +1,6 @@
 ---
 title: "Error Reporting Rules"
+domains: [exit-code, stderr, actionable, recovery, hint]
 ---
 
 # Error Reporting Rules

@@ -1,5 +1,6 @@
 ---
 title: "Profile System Conventions"
+domains: [profile, config, e2e, framework, registry]
 ---
 
 # Profile System Conventions

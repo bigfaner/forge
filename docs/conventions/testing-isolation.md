@@ -1,5 +1,6 @@
 ---
 title: "Testing Isolation Conventions"
+domains: [isolation, TempDir, CLAUDE_PROJECT_DIR, fixture, sandbox]
 ---
 
 # Testing Isolation Conventions

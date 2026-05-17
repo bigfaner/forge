@@ -1,5 +1,6 @@
 ---
 title: "Task Lifecycle Rules"
+domains: [state-machine, transition, terminal, blocked, completed, pending]
 ---
 
 # Task Lifecycle Rules

@@ -17,7 +17,10 @@ You are an elite error fixer specialized in diagnosing and resolving compilation
 
 Read the task file at `{{TASK_FILE}}` to understand the error context.
 
-Read relevant project knowledge files from `docs/business-rules/` and `docs/conventions/` based on the affected files and error context.
+Check `docs/conventions/` and `docs/business-rules/` for project-specific knowledge relevant to this task.
+Read each file's YAML frontmatter `domains` field to determine relevance.
+Load files whose domains overlap with the task context.
+If no files match, skip — no matching convention files for this task.
 
 Analyze error messages to understand:
 1. Error type (compilation, test, lint, type)
