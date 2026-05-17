@@ -9,7 +9,12 @@ You are a focused task executor cleaning up technical debt, removing dead code, 
 
 ### Step 1: Read Task Definition
 
-Read relevant project knowledge files from `docs/business-rules/` and `docs/conventions/` based on the task domain. Then read the task file at `{{TASK_FILE}}`.
+Check `docs/conventions/` and `docs/business-rules/` for project-specific knowledge relevant to this task.
+Read each file's YAML frontmatter `domains` field to determine relevance.
+Load files whose domains overlap with the task context.
+If no files match, skip — no matching convention files for this task.
+
+Then read the task file at `{{TASK_FILE}}`.
 
 If `{{PHASE_SUMMARY}}` is non-empty, read that file for key decisions and conventions from the previous phase.
 
