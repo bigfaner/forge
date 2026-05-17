@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -47,7 +48,7 @@ var gitignoreEntries = []string{
 
 // initAction records a single action taken during init.
 type initAction struct {
-	status string // CREATED, APPENDED, INSTALLED, SKIPPED, FAILED
+	status string // CREATED, APPENDED, INSTALLED, SKIPPED, FAILED, CANCELLED
 	target string // file or directory path
 	detail string // extra info (e.g., "5 entries", "from template")
 }
@@ -172,13 +173,31 @@ func buildGitignoreAppend(existing string, entries []string) []string {
 
 func runConfigInitIfNeeded(projectRoot string) initAction {
 	configFile := filepath.Join(projectRoot, feature.ForgeDir, feature.ForgeConfigFileName)
-	if _, err := os.Stat(configFile); err == nil {
-		return initAction{status: "SKIPPED", target: ".forge/config.yaml", detail: "already exists"}
-	}
 
 	fi, _ := os.Stdin.Stat()
 	if fi.Mode()&os.ModeCharDevice == 0 {
 		return initAction{status: "SKIPPED", target: ".forge/config.yaml", detail: "non-interactive terminal"}
+	}
+
+	// When config exists, ask if user wants to reconfigure
+	if _, err := os.Stat(configFile); err == nil {
+		reconfigure := false
+		if err := huh.NewForm(huh.NewGroup(
+			huh.NewConfirm().
+				Title("Config already exists. Reconfigure?").
+				Description("Select Yes to overwrite .forge/config.yaml with new settings.").
+				Affirmative("Yes").
+				Negative("No").
+				Value(&reconfigure),
+		)).Run(); err != nil {
+			if errors.Is(err, huh.ErrUserAborted) {
+				return initAction{status: "CANCELLED", target: ".forge/config.yaml", detail: "Ctrl+C"}
+			}
+			return initAction{status: "FAILED", target: ".forge/config.yaml", detail: err.Error()}
+		}
+		if !reconfigure {
+			return initAction{status: "SKIPPED", target: ".forge/config.yaml", detail: "kept existing"}
+		}
 	}
 
 	// Step 1: Project type
@@ -194,6 +213,9 @@ func runConfigInitIfNeeded(projectRoot string) initAction {
 			).
 			Value(&projectType),
 	)).Run(); err != nil {
+		if errors.Is(err, huh.ErrUserAborted) {
+			return initAction{status: "CANCELLED", target: ".forge/config.yaml", detail: "Ctrl+C"}
+		}
 		return initAction{status: "FAILED", target: ".forge/config.yaml", detail: err.Error()}
 	}
 
@@ -211,6 +233,9 @@ func runConfigInitIfNeeded(projectRoot string) initAction {
 			Options(profileOpts...).
 			Value(&selectedProfile),
 	)).Run(); err != nil {
+		if errors.Is(err, huh.ErrUserAborted) {
+			return initAction{status: "CANCELLED", target: ".forge/config.yaml", detail: "Ctrl+C"}
+		}
 		return initAction{status: "FAILED", target: ".forge/config.yaml", detail: err.Error()}
 	}
 
@@ -237,13 +262,19 @@ func runConfigInitIfNeeded(projectRoot string) initAction {
 					Options(capOpts...).
 					Value(&selectedCaps),
 			)).Run(); err != nil {
+				if errors.Is(err, huh.ErrUserAborted) {
+					return initAction{status: "CANCELLED", target: ".forge/config.yaml", detail: "Ctrl+C"}
+				}
 				return initAction{status: "FAILED", target: ".forge/config.yaml", detail: err.Error()}
 			}
 		}
 	}
 
 	// Step 4: Auto-behavior config
-	auto := askAutoBehavior(len(selectedProfiles) > 0)
+	auto, cancelled := askAutoBehavior(len(selectedProfiles) > 0)
+	if cancelled {
+		return initAction{status: "CANCELLED", target: ".forge/config.yaml", detail: "Ctrl+C"}
+	}
 
 	cfg := profile.ForgeConfig{
 		ProjectType:  projectType,
@@ -268,58 +299,97 @@ func hl(text string) string {
 	return modeHighlight.Render(text)
 }
 
+// hlMode returns "Quick mode" or "Full mode" with the mode keyword highlighted.
+func hlMode(mode string) string {
+	return hl(mode) + " mode"
+}
+
 // askAutoBehavior runs the auto-behavior config steps, one question per screen.
-// Always returns a non-nil AutoConfig.
-func askAutoBehavior(hasProfiles bool) *profile.AutoConfig {
+// Returns the config and whether the user cancelled.
+func askAutoBehavior(hasProfiles bool) (*profile.AutoConfig, bool) {
 	defaults := profile.AutoConfigDefaults()
 	auto := &profile.AutoConfig{}
 
 	if hasProfiles {
-		auto.E2eTest.Quick = askConfirm(
-			fmt.Sprintf("%s mode: auto-run e2e tests?", hl("Quick")),
-			"Automatically run end-to-end tests during quick mode (lightweight verification after each task).",
+		val, ok := askConfirm(
+			fmt.Sprintf("%s: auto-run e2e tests?", hlMode("Quick")),
+			fmt.Sprintf("Automatically run end-to-end tests during %s (lightweight verification after each task).", hl("quick mode")),
 			defaults.E2eTest.Quick,
 		)
-		auto.E2eTest.Full = askConfirm(
-			fmt.Sprintf("%s mode: auto-run e2e tests?", hl("Full")),
-			"Automatically run end-to-end tests during full mode (comprehensive coverage).",
+		if !ok {
+			return nil, true
+		}
+		auto.E2eTest.Quick = val
+
+		val, ok = askConfirm(
+			fmt.Sprintf("%s: auto-run e2e tests?", hlMode("Full")),
+			fmt.Sprintf("Automatically run end-to-end tests during %s (comprehensive coverage).", hl("full mode")),
 			defaults.E2eTest.Full,
 		)
-		auto.ConsolidateSpecs.Quick = askConfirm(
-			fmt.Sprintf("%s mode: auto-consolidate specs?", hl("Quick")),
-			"Automatically extract and consolidate specs from code after quick-mode tasks.",
+		if !ok {
+			return nil, true
+		}
+		auto.E2eTest.Full = val
+
+		val, ok = askConfirm(
+			fmt.Sprintf("%s: auto-consolidate specs?", hlMode("Quick")),
+			fmt.Sprintf("Automatically extract and consolidate specs from code after %s tasks.", hl("quick-mode")),
 			defaults.ConsolidateSpecs.Quick,
 		)
-		auto.ConsolidateSpecs.Full = askConfirm(
-			fmt.Sprintf("%s mode: auto-consolidate specs?", hl("Full")),
-			"Automatically extract and consolidate specs from code after full-mode tasks.",
+		if !ok {
+			return nil, true
+		}
+		auto.ConsolidateSpecs.Quick = val
+
+		val, ok = askConfirm(
+			fmt.Sprintf("%s: auto-consolidate specs?", hlMode("Full")),
+			fmt.Sprintf("Automatically extract and consolidate specs from code after %s tasks.", hl("full-mode")),
 			defaults.ConsolidateSpecs.Full,
 		)
+		if !ok {
+			return nil, true
+		}
+		auto.ConsolidateSpecs.Full = val
 	}
 
-	auto.CleanCode.Quick = askConfirm(
-		fmt.Sprintf("%s mode: auto code cleanup?", hl("Quick")),
-		"Automatically simplify and clean code during quick mode.",
+	val, ok := askConfirm(
+		fmt.Sprintf("%s: auto code cleanup?", hlMode("Quick")),
+		fmt.Sprintf("Automatically simplify and clean code during %s.", hl("quick mode")),
 		defaults.CleanCode.Quick,
 	)
-	auto.CleanCode.Full = askConfirm(
-		fmt.Sprintf("%s mode: auto code cleanup?", hl("Full")),
-		"Automatically simplify and clean code during full mode.",
+	if !ok {
+		return nil, true
+	}
+	auto.CleanCode.Quick = val
+
+	val, ok = askConfirm(
+		fmt.Sprintf("%s: auto code cleanup?", hlMode("Full")),
+		fmt.Sprintf("Automatically simplify and clean code during %s.", hl("full mode")),
 		defaults.CleanCode.Full,
 	)
-	auto.GitPush = askConfirm(
+	if !ok {
+		return nil, true
+	}
+	auto.CleanCode.Full = val
+
+	val, ok = askConfirm(
 		"Auto git push after all tasks complete?",
 		"Push to remote automatically when every task in a run finishes successfully.",
 		defaults.GitPush,
 	)
+	if !ok {
+		return nil, true
+	}
+	auto.GitPush = val
 
-	return auto
+	return auto, false
 }
 
-// askConfirm shows a single confirm prompt and returns the result.
-func askConfirm(title, desc string, defaultVal bool) bool {
+// askConfirm shows a single confirm prompt. Returns (value, ok).
+// ok is false when the user pressed Ctrl+C.
+func askConfirm(title, desc string, defaultVal bool) (bool, bool) {
 	val := defaultVal
-	_ = huh.NewForm(huh.NewGroup(
+	err := huh.NewForm(huh.NewGroup(
 		huh.NewConfirm().
 			Title(title).
 			Description(desc).
@@ -327,7 +397,10 @@ func askConfirm(title, desc string, defaultVal bool) bool {
 			Negative("No").
 			Value(&val),
 	)).Run()
-	return val
+	if err != nil {
+		return defaultVal, false
+	}
+	return val, true
 }
 
 func printInitSummary(out io.Writer, actions []initAction) {

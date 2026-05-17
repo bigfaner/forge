@@ -49,25 +49,35 @@ func (e *initTestEnv) path(parts ...string) string {
 }
 
 // testConfigInit replaces configInitFunc for testing.
-// It reads simple text input from the piped stdin buffer instead of using huh.
+// Simulates the interactive config flow without requiring a real TTY.
 func testConfigInit(projectRoot string) initAction {
 	configFile := filepath.Join(projectRoot, feature.ForgeDir, feature.ForgeConfigFileName)
-	if _, err := os.Stat(configFile); err == nil {
-		return initAction{status: "SKIPPED", target: ".forge/config.yaml", detail: "already exists"}
-	}
 
 	// Write a sensible default config for testing
 	cfg := profile.ForgeConfig{
 		ProjectType:  "backend",
 		TestProfiles: []string{"go-test"},
 		Capabilities: []string{"tui", "api", "cli"},
+		Auto:         autoConfigDefaults(),
 	}
 
 	if err := writeConfigFile(configFile, &cfg); err != nil {
 		return initAction{status: "FAILED", target: ".forge/config.yaml", detail: err.Error()}
 	}
 
-	return initAction{status: "CREATED", target: ".forge/config.yaml", detail: "test override"}
+	detail := "test override"
+	if _, err := os.Stat(configFile); err == nil {
+		// Config existed but we overwrote it (reconfigure path)
+		detail = "reconfigured"
+	}
+
+	return initAction{status: "CREATED", target: ".forge/config.yaml", detail: detail}
+}
+
+// autoConfigDefaults returns a default AutoConfig for tests.
+func autoConfigDefaults() *profile.AutoConfig {
+	d := profile.AutoConfigDefaults()
+	return &d
 }
 
 func TestInitCommand(t *testing.T) {
@@ -234,27 +244,30 @@ func TestInitCommand(t *testing.T) {
 		}
 	})
 
-	t.Run("skips config init when config already exists", func(t *testing.T) {
-		env := newInitTestEnv(t)
-		forgeDir := env.path(feature.ForgeDir)
-		if err := os.MkdirAll(forgeDir, 0o755); err != nil {
-			t.Fatal(err)
-		}
-		existingConfig := "project-type: frontend\n"
-		if err := os.WriteFile(env.path(feature.ForgeDir, feature.ForgeConfigFileName), []byte(existingConfig), 0o644); err != nil {
-			t.Fatal(err)
-		}
+		t.Run("overwrites existing config (reconfigure)", func(t *testing.T) {
+			env := newInitTestEnv(t)
+			forgeDir := env.path(feature.ForgeDir)
+			if err := os.MkdirAll(forgeDir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			existingConfig := "project-type: frontend\n"
+			if err := os.WriteFile(env.path(feature.ForgeDir, feature.ForgeConfigFileName), []byte(existingConfig), 0o644); err != nil {
+				t.Fatal(err)
+			}
 
-		err := env.run()
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
+			err := env.run()
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 
-		data, _ := os.ReadFile(env.path(feature.ForgeDir, feature.ForgeConfigFileName))
-		if string(data) != existingConfig {
-			t.Error("existing config should not be modified")
-		}
-	})
+			data, _ := os.ReadFile(env.path(feature.ForgeDir, feature.ForgeConfigFileName))
+			if strings.Contains(string(data), "frontend") {
+				t.Error("existing config should have been overwritten")
+			}
+			if !strings.Contains(string(data), "backend") {
+				t.Error("expected reconfigured config to contain backend")
+			}
+		})
 
 	t.Run("prints summary report", func(t *testing.T) {
 		env := newInitTestEnv(t)
