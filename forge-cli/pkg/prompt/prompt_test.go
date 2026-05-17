@@ -57,6 +57,7 @@ func TestSynthesize_AllTypes(t *testing.T) {
 		task.TypeTestPipelineVerifyRegression,
 		task.TypeFix,
 		task.TypeGate,
+		task.TypeCleanCode,
 	}
 
 	for _, typ := range types {
@@ -603,6 +604,34 @@ func TestInferType(t *testing.T) {
 				t.Errorf("InferType(%q) = %q, want %q", tt.id, got, tt.expected)
 			}
 		})
+	}
+}
+
+func TestSynthesize_CleanCodeTemplate_InvokesSkill(t *testing.T) {
+	dir := t.TempDir()
+	tasks := map[string]task.Task{
+		"T-clean-code-1": {
+			ID:     "T-clean-code-1",
+			Title:  "Clean code task",
+			Status: "pending",
+			File:   "T-clean-code-1.md",
+			Record: "records/T-clean-code-1.md",
+			Type:   task.TypeCleanCode,
+			Scope:  "backend",
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "T-clean-code-1"}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(result, `Skill(skill="forge:clean-code")`) {
+		t.Error("clean-code template should invoke forge:clean-code skill")
+	}
+	if !strings.Contains(result, "T-clean-code-1") {
+		t.Error("clean-code template should contain the task ID")
 	}
 }
 

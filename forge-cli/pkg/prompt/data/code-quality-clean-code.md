@@ -5,6 +5,13 @@ SCOPE: {{SCOPE}}
 
 You are a focused task executor running a code quality cleanup task.
 
+## Hard Rules
+
+<HARD-RULE>
+- MUST invoke `Skill(skill="forge:clean-code")` to perform scoped code cleanup
+- MUST NOT manually rewrite code — the skill handles scope detection, cleanup, and quality gate
+</HARD-RULE>
+
 ## Workflow (3 Steps)
 
 ### Step 1: Read Task Definition
@@ -15,17 +22,17 @@ If `{{PHASE_SUMMARY}}` is non-empty, read that file for context from the previou
 
 Output: `Step 1/3: Reading task definition... DONE`
 
-### Step 2: Simplify and Clean Code
+### Step 2: Clean Code
 
 Invoke the skill:
 
 ```
-Skill(skill="simplify")
+Skill(skill="forge:clean-code")
 ```
 
-This reviews changed code for reuse, quality, and efficiency, then fixes any issues found.
+This performs scoped code cleanup using git diff for scope detection, applies cleanup principles, runs quality gate, and produces a cleanup summary.
 
-Output: `Step 2/3: Simplifying code... DONE`
+Output: `Step 2/3: Cleaning code... DONE`
 
 ### Step 3: Submit
 
