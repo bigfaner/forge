@@ -277,6 +277,184 @@ func TestWriteLanguages(t *testing.T) {
 	})
 }
 
+func TestWorktreeConfig(t *testing.T) {
+	t.Run("worktree config parsed from yaml", func(t *testing.T) {
+		dir := t.TempDir()
+		forgeDir := filepath.Join(dir, ".forge")
+		if err := os.MkdirAll(forgeDir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		content := "worktree:\n  source-branch: develop\n  copy-files:\n    - .env\n    - .env.local\n"
+		if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.Worktree == nil {
+			t.Fatal("expected Worktree to be non-nil")
+		}
+		if cfg.Worktree.SourceBranch != "develop" {
+			t.Errorf("expected source-branch 'develop', got %q", cfg.Worktree.SourceBranch)
+		}
+		if len(cfg.Worktree.CopyFiles) != 2 || cfg.Worktree.CopyFiles[0] != ".env" || cfg.Worktree.CopyFiles[1] != ".env.local" {
+			t.Errorf("expected [.env .env.local], got %v", cfg.Worktree.CopyFiles)
+		}
+	})
+
+	t.Run("worktree absent is backward compatible", func(t *testing.T) {
+		dir := t.TempDir()
+		forgeDir := filepath.Join(dir, ".forge")
+		if err := os.MkdirAll(forgeDir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		content := "project-type: backend\nlanguages:\n  - go\n"
+		if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.Worktree != nil {
+			t.Error("expected Worktree to be nil when not configured")
+		}
+	})
+
+	t.Run("worktree with only source-branch", func(t *testing.T) {
+		dir := t.TempDir()
+		forgeDir := filepath.Join(dir, ".forge")
+		if err := os.MkdirAll(forgeDir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		content := "worktree:\n  source-branch: main\n"
+		if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.Worktree == nil {
+			t.Fatal("expected Worktree to be non-nil")
+		}
+		if cfg.Worktree.SourceBranch != "main" {
+			t.Errorf("expected source-branch 'main', got %q", cfg.Worktree.SourceBranch)
+		}
+		if cfg.Worktree.CopyFiles != nil {
+			t.Errorf("expected CopyFiles nil, got %v", cfg.Worktree.CopyFiles)
+		}
+	})
+
+	t.Run("worktree with only copy-files", func(t *testing.T) {
+		dir := t.TempDir()
+		forgeDir := filepath.Join(dir, ".forge")
+		if err := os.MkdirAll(forgeDir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		content := "worktree:\n  copy-files:\n    - .env\n"
+		if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.Worktree == nil {
+			t.Fatal("expected Worktree to be non-nil")
+		}
+		if cfg.Worktree.SourceBranch != "" {
+			t.Errorf("expected empty source-branch, got %q", cfg.Worktree.SourceBranch)
+		}
+		if len(cfg.Worktree.CopyFiles) != 1 || cfg.Worktree.CopyFiles[0] != ".env" {
+			t.Errorf("expected [.env], got %v", cfg.Worktree.CopyFiles)
+		}
+	})
+}
+
+func TestGetConfigValue_Worktree(t *testing.T) {
+	setupConfig := func(t *testing.T, content string) string {
+		t.Helper()
+		dir := t.TempDir()
+		forgeDir := filepath.Join(dir, ".forge")
+		if err := os.MkdirAll(forgeDir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		return dir
+	}
+
+	t.Run("worktree.source-branch returns value", func(t *testing.T) {
+		dir := setupConfig(t, "worktree:\n  source-branch: develop\n")
+		val, err := GetConfigValue(dir, "worktree.source-branch")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "develop" {
+			t.Errorf("expected 'develop', got %q", val)
+		}
+	})
+
+	t.Run("worktree.copy-files returns joined list", func(t *testing.T) {
+		dir := setupConfig(t, "worktree:\n  copy-files:\n    - .env\n    - .env.local\n")
+		val, err := GetConfigValue(dir, "worktree.copy-files")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		expected := ".env\n.env.local"
+		if val != expected {
+			t.Errorf("expected %q, got %q", expected, val)
+		}
+	})
+
+	t.Run("worktree.source-branch absent returns error", func(t *testing.T) {
+		dir := setupConfig(t, "project-type: backend\n")
+		_, err := GetConfigValue(dir, "worktree.source-branch")
+		if err != ErrKeyNotFound {
+			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		}
+	})
+
+	t.Run("worktree.copy-files absent returns error", func(t *testing.T) {
+		dir := setupConfig(t, "project-type: backend\n")
+		_, err := GetConfigValue(dir, "worktree.copy-files")
+		if err != ErrKeyNotFound {
+			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		}
+	})
+
+	t.Run("worktree present but source-branch empty returns error", func(t *testing.T) {
+		dir := setupConfig(t, "worktree:\n  copy-files:\n    - .env\n")
+		_, err := GetConfigValue(dir, "worktree.source-branch")
+		if err != ErrKeyNotFound {
+			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		}
+	})
+
+	t.Run("worktree present but copy-files empty returns error", func(t *testing.T) {
+		dir := setupConfig(t, "worktree:\n  source-branch: develop\n")
+		_, err := GetConfigValue(dir, "worktree.copy-files")
+		if err != ErrKeyNotFound {
+			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		}
+	})
+
+	t.Run("worktree key with no config file returns error", func(t *testing.T) {
+		dir := t.TempDir()
+		_, err := GetConfigValue(dir, "worktree.source-branch")
+		if err != ErrKeyNotFound {
+			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		}
+	})
+}
+
 func TestIsKnownLanguage(t *testing.T) {
 	tests := []struct {
 		name     string

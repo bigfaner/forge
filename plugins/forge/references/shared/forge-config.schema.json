@@ -103,6 +103,24 @@
         }
       },
       "additionalProperties": false
+    },
+    "worktree": {
+      "type": "object",
+      "description": "Worktree creation configuration. Omit the entire block for default behavior (create from HEAD, no file copying).",
+      "properties": {
+        "source-branch": {
+          "type": "string",
+          "description": "Default source branch for worktree creation. Used when no --source-branch flag is provided."
+        },
+        "copy-files": {
+          "type": "array",
+          "description": "List of files to copy from project root to worktree after creation. Must be relative paths within the project root.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false,

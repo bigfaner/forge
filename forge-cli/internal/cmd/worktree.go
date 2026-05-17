@@ -9,6 +9,7 @@ import (
 
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/git"
+	"forge-cli/pkg/profile"
 	"forge-cli/pkg/project"
 
 	"github.com/spf13/cobra"
@@ -185,9 +186,16 @@ var worktreeStartCmd = &cobra.Command{
 then launch claude --dangerously-skip-permissions in the worktree directory.
 
 If branch <slug> already exists, creates the worktree from that branch
-(resume context).`,
+(resume context).
+
+The source branch for new worktrees can be set via --source-branch / -b flag
+or worktree.source-branch in .forge/config.yaml. Priority: flag > config > HEAD.`,
 	Args: cobra.ExactArgs(1),
 	RunE: runWorktreeStart,
+}
+
+func init() {
+	worktreeStartCmd.Flags().StringP("source-branch", "b", "", "source branch for the new worktree (default: HEAD)")
 }
 
 func runWorktreeStart(cmd *cobra.Command, args []string) error {
@@ -229,6 +237,27 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("target directory already exists: %s", targetDir)
 	}
 
+	// Load config for source-branch and copy-files
+	cfg, _ := profile.ReadConfig(projectRoot)
+
+	// Pre-validate copy-files BEFORE git worktree add (to avoid orphan worktrees)
+	var copyFiles []string
+	if cfg != nil && cfg.Worktree != nil {
+		copyFiles = cfg.Worktree.CopyFiles
+	}
+	if err := validateCopyFiles(projectRoot, copyFiles); err != nil {
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: %v\n", err)
+		return err
+	}
+
+	// Resolve source branch: flag > config > HEAD
+	var sourceBranch string
+	if cmd.Flags().Changed("source-branch") {
+		sourceBranch, _ = cmd.Flags().GetString("source-branch")
+	} else if cfg != nil && cfg.Worktree != nil {
+		sourceBranch = cfg.Worktree.SourceBranch
+	}
+
 	// Check if branch already exists
 	branchExists := false
 	if _, err := git.Run(projectRoot, "rev-parse", "--verify", slug); err == nil {
@@ -240,11 +269,29 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 		// Resume: create worktree from existing branch
 		_, err = git.Run(projectRoot, "worktree", "add", targetDir, slug)
 	} else {
-		// New: create worktree with new branch from HEAD
-		_, err = git.Run(projectRoot, "worktree", "add", "-b", slug, targetDir)
+		// Pre-validate source branch if specified
+		if sourceBranch != "" {
+			if _, err := git.Run(projectRoot, "rev-parse", "--verify", sourceBranch); err != nil {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: source branch %q not found\n", sourceBranch)
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "hint: verify the branch exists locally or fetch from remote\n")
+				return fmt.Errorf("source branch not found: %s", sourceBranch)
+			}
+		}
+
+		// New: create worktree with new branch from source
+		args := []string{"worktree", "add", "-b", slug, targetDir}
+		if sourceBranch != "" {
+			args = append(args, sourceBranch)
+		}
+		_, err = git.Run(projectRoot, args...)
 	}
 	if err != nil {
 		return fmt.Errorf("git worktree add: %w", err)
+	}
+
+	// Copy configured files from project root to worktree
+	if err := copyFilesToWorktree(projectRoot, targetDir, copyFiles); err != nil {
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: copy-files failed: %v\n", err)
 	}
 
 	// Launch claude in the worktree directory
@@ -303,6 +350,15 @@ func runWorktreeList(cmd *cobra.Command, _ []string) error {
 	return w.Flush()
 }
 
+// resolveSourceBranch returns the effective source branch based on priority:
+// flag > config > empty (HEAD).
+func resolveSourceBranch(flagValue, configBranch string) string {
+	if flagValue != "" {
+		return flagValue
+	}
+	return configBranch
+}
+
 // listForgeFeatures returns a set of feature slugs that exist under docs/features/.
 func listForgeFeatures(projectRoot string) map[string]bool {
 	featuresDir := filepath.Join(projectRoot, feature.FeaturesDir)
@@ -318,4 +374,56 @@ func listForgeFeatures(projectRoot string) map[string]bool {
 		}
 	}
 	return result
+}
+
+// validateCopyFilePath checks that a single copy-file path is safe.
+// Rejects absolute paths and paths containing ".." traversals.
+func validateCopyFilePath(relPath string) error {
+	if filepath.IsAbs(relPath) {
+		return fmt.Errorf("copy-file path must be relative, got absolute: %s", relPath)
+	}
+	if strings.Contains(relPath, "..") {
+		return fmt.Errorf("copy-file path must not contain '..': %s", relPath)
+	}
+	return nil
+}
+
+// validateCopyFiles pre-validates that all copy-files exist in the project root
+// and have safe paths. Returns an error describing the first problem found.
+// Returns nil if copyFiles is empty or nil.
+func validateCopyFiles(projectRoot string, copyFiles []string) error {
+	for _, relPath := range copyFiles {
+		if err := validateCopyFilePath(relPath); err != nil {
+			return err
+		}
+		fullPath := filepath.Join(projectRoot, relPath)
+		if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+			return fmt.Errorf("copy-file not found in project root: %s", relPath)
+		}
+	}
+	return nil
+}
+
+// copyFilesToWorktree copies the listed files from projectRoot to worktreeDir.
+// Creates parent directories as needed. Overwrites existing files.
+// Returns nil if copyFiles is empty or nil.
+func copyFilesToWorktree(projectRoot, worktreeDir string, copyFiles []string) error {
+	for _, relPath := range copyFiles {
+		src := filepath.Join(projectRoot, relPath)
+		dst := filepath.Join(worktreeDir, relPath)
+
+		data, err := os.ReadFile(src)
+		if err != nil {
+			return fmt.Errorf("read %s: %w", relPath, err)
+		}
+
+		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+			return fmt.Errorf("create directory for %s: %w", relPath, err)
+		}
+
+		if err := os.WriteFile(dst, data, 0o644); err != nil {
+			return fmt.Errorf("write %s: %w", relPath, err)
+		}
+	}
+	return nil
 }
