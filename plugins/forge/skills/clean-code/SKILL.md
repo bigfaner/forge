@@ -39,10 +39,11 @@ Resolve scope from the first applicable source:
 
 ### Priority 1: User-Specified Paths
 
-If the user provided file or directory paths as arguments, use those directly. For directories, list code files within:
+If the user provided file or directory paths as arguments, use those directly. For directories, list code files within, excluding vendor/dependency directories.
 
+Example for a Go project:
 ```bash
-find <path> -type f \( -name "*.go" -o -name "*.ts" -o -name "*.py" -o -name "*.js" \) ! -path "*/vendor/*" ! -path "*/node_modules/*"
+find <path> -type f -name "*.go" ! -path "*/vendor/*"
 ```
 
 ### Priority 2: Git Diff
@@ -101,7 +102,7 @@ Read each file in scope and apply the five refinement principles. Only edit file
    - Remove helpful abstractions that improve code organization
    - Prioritize fewer lines over readability (e.g., dense one-liners, nested ternaries)
 
-5. **Focus Scope**: Only refine code that is within the git diff scope. Do not touch adjacent code, even if it has obvious issues. Do not refactor things that are not broken. Every changed line should trace directly to the diff scope.
+5. **Focus Scope**: Only refine code that is within the resolved scope. Do not touch adjacent code, even if it has obvious issues. Do not refactor things that are not broken. Every changed line should trace directly to the scope.
 
 ### What to Clean Up
 
@@ -114,14 +115,14 @@ Read each file in scope and apply the five refinement principles. Only edit file
 
 ### What NOT to Clean Up
 
-- Code outside the diff scope
+- Code outside the resolved scope
 - Pre-existing code that you did not change (even if adjacent)
 - Working abstractions that serve a purpose
 - Comments explaining *why* (domain knowledge, non-obvious constraints)
 - Error handling for real edge cases
 
 <HARD-RULE>
-**Every edit must correspond to a file in the diff scope.** If you cannot trace a changed line back to the diff scope, do not change it.
+**Every edit must correspond to a file in the resolved scope.** If you cannot trace a changed line back to the scope, do not change it.
 </HARD-RULE>
 
 Output: `Step 2/4: Code cleanup... DONE (M files modified, K files skipped)`
