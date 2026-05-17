@@ -21,7 +21,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2-delete-old-skills.md",
       "record": "records/2-delete-old-skills.md",
       "type": "cleanup"
@@ -41,7 +41,7 @@
       "title": "Update /consolidate-specs — add auto-vocabulary generation",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "4-update-consolidate-specs-vocab.md",
       "record": "records/4-update-consolidate-specs-vocab.md",
       "type": "enhancement"

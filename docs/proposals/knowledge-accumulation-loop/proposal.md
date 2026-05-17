@@ -1,7 +1,7 @@
 ---
 created: 2026-05-17
 author: faner
-status: Draft
+status: Approved
 ---
 
 # Proposal: Knowledge Accumulation Unified Entry + Auto-Extract
