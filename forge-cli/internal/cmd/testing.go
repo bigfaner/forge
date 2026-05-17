@@ -26,7 +26,8 @@ Subcommands:
   get graduate        — output graduate.md strategy
   get justfile        — output justfile-recipes
   get template <file> — output specified template file
-  interfaces          — output interface types for the project`,
+  interfaces          — output interface types for the project
+  run-journey <name>  — run a single journey in isolated temp directory`,
 	Args: cobra.NoArgs,
 	Run:  runTestingResolve,
 }
@@ -101,6 +102,22 @@ otherwise returns the union of all detected languages' default interfaces.`,
 	Run:  runTestingInterfaces,
 }
 
+var testingRunJourneyCmd = &cobra.Command{
+	Use:   "run-journey <journey-name>",
+	Short: "Run a single journey in isolated temp directory",
+	Long: `Run a single journey's test command in an isolated temporary directory.
+
+Reads the test-command from .forge/config.yaml and executes it in the journey's
+isolated work directory. The temp directory is cleaned up after execution,
+regardless of success or failure.
+
+The journey name is used as part of the temp directory path for traceability.
+
+Output is a structured block with journey name, result, duration, and any failures.`,
+	Args: cobra.ExactArgs(1),
+	Run:  runTestingRunJourney,
+}
+
 var testingFrameworkCmd = &cobra.Command{
 	Use:   "framework",
 	Short: "Resolve the test framework for the project",
@@ -125,6 +142,7 @@ func init() {
 	testingCmd.AddCommand(testingGetCmd)
 	testingCmd.AddCommand(testingInterfacesCmd)
 	testingCmd.AddCommand(testingFrameworkCmd)
+	testingCmd.AddCommand(testingRunJourneyCmd)
 
 	testingGetCmd.PersistentFlags().StringVar(&testingGetLanguage, "language", "", "language key (auto-detected if omitted)")
 
@@ -309,6 +327,35 @@ func printTestingLanguages(languages []string, source string) {
 		}
 	}
 	PrintBlockEnd()
+}
+
+func runTestingRunJourney(_ *cobra.Command, args []string) {
+	journeyName := args[0]
+
+	projectRoot, err := project.FindProjectRoot()
+	if err != nil {
+		Exit(ErrProjectNotFound())
+	}
+
+	cfg, err := resolveJourneyExecutionConfig(projectRoot)
+	if err != nil {
+		Exit(NewAIError(ErrValidation, "Cannot resolve journey execution config", err.Error(),
+			"Set test-command in .forge/config.yaml", "echo 'test-command: go test ./...' >> .forge/config.yaml"))
+	}
+
+	// Create isolated work directory
+	workDir, cleanup, err := createJourneyWorkDir(projectRoot, journeyName)
+	if err != nil {
+		Exit(NewAIError(ErrValidation, "Failed to create journey work directory", err.Error(),
+			"Check temp directory permissions", "forge testing run-journey "+journeyName))
+	}
+	defer cleanup()
+
+	// Execute the test command in isolation
+	result := executeJourneyInIsolation(cfg, workDir, journeyName)
+
+	// Output the result report
+	fmt.Print(result.FormatReport())
 }
 
 func runTestingFramework(_ *cobra.Command, _ []string) {

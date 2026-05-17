@@ -302,7 +302,7 @@ func TestTestingCommand_Subcommands(t *testing.T) {
 		subNames[cmd.Name()] = true
 	}
 
-	expected := []string{"detect", "get", "interfaces", "framework"}
+	expected := []string{"detect", "get", "interfaces", "framework", "run-journey"}
 	for _, name := range expected {
 		if !subNames[name] {
 			t.Errorf("testing group missing subcommand: %s (have: %v)", name, subNames)
