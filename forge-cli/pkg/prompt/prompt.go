@@ -38,7 +38,7 @@ var typeToTemplate = map[string]string{
 	task.TypeTestPipelineVerifyRegression: "data/test-pipeline-verify-regression.md",
 	task.TypeFix:                          "data/fix.md",
 	task.TypeGate:                         "data/gate.md",
-	task.TypeCleanCode:                    "data/code-quality-clean-code.md",
+	task.TypeCleanCode:                    "data/clean-code.md",
 }
 
 // SynthesizeOpts holds inputs for prompt synthesis.
