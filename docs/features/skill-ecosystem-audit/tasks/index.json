@@ -33,7 +33,7 @@
       "title": "Fix forensic hardcoded paths and stale record-task reference",
       "priority": "P1",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "3-fix-forensic-stale-refs.md",
       "record": "records/3-fix-forensic-stale-refs.md",
       "scope": "all",

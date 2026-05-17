@@ -88,18 +88,20 @@ For each confirmed session, extract compact evidence:
 
 ```bash
 # Derive JSONL path from sessionId
-# Path pattern: ~/.claude/projects/-Users-fanhuifeng-Projects-ai-coding-harness-forge/<sessionId>.jsonl
+# Path pattern: ~/.claude/projects/<project-hash>/<sessionId>.jsonl
+# Use forge forensic to discover the project path automatically, or construct it:
+#   ~/.claude/projects/<project-hash>/${CLAUDE_SESSION_ID}.jsonl
 
 mkdir -p docs/forensics/<slug>/evidence
 
-forge forensic extract ~/.claude/projects/-Users-fanhuifeng-Projects-ai-coding-harness-forge/<SESSION_ID>.jsonl --out docs/forensics/<slug>/evidence
+forge forensic extract ~/.claude/projects/<project-hash>/<SESSION_ID>.jsonl --out docs/forensics/<slug>/evidence
 # Or use --slug shorthand: forge forensic extract <path>.jsonl --slug <slug>
 ```
 
 Then check for subagent transcripts:
 
 ```bash
-forge forensic subagents ~/.claude/projects/-Users-fanhuifeng-Projects-ai-coding-harness-forge/<SESSION_ID>
+forge forensic subagents ~/.claude/projects/<project-hash>/<SESSION_ID>
 ```
 
 If subagents exist, extract their evidence too:

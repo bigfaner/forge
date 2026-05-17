@@ -85,4 +85,4 @@ Write `docs/features/<slug>/specs/.integrated` marker with integrated counts.
 
 **Step 5: Record**
 
-Record task via `/record-task` skill. The preview files remain in `specs/` for traceability.
+Record task via `/submit-task` skill. The preview files remain in `specs/` for traceability.
