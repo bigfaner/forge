@@ -5,6 +5,7 @@ priority: "P1"
 estimated_time: "30m"
 dependencies: ["1", "2"]
 type: "documentation"
+noTest: true
 mainSession: false
 ---
 
