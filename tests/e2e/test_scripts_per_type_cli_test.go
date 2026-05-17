@@ -599,9 +599,9 @@ func TestTC_012_TaskIndexSharedInfrastructureNotDuplicated(t *testing.T) {
 	_, hasGenCases := idx.Tasks["gen-test-cases"]
 	assert.True(t, hasGenCases, "index should contain shared gen-test-cases task")
 
-	_, hasGenCasesUI := idx.Tasks["gen-test-cases-ui"]
+	_, hasGenCasesTUI := idx.Tasks["gen-test-cases-tui"]
 	_, hasGenCasesCLI := idx.Tasks["gen-test-cases-cli"]
-	assert.False(t, hasGenCasesUI, "index should NOT contain per-type gen-test-cases-ui")
+	assert.False(t, hasGenCasesTUI, "index should NOT contain per-type gen-test-cases-tui")
 	assert.False(t, hasGenCasesCLI, "index should NOT contain per-type gen-test-cases-cli")
 
 	// Verify shared tasks have correct types

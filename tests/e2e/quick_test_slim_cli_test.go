@@ -353,8 +353,8 @@ func TestTC_006_QuickModePerTypeDependencyFanIn(t *testing.T) {
 		byID[task.ID] = task
 	}
 
-	// T-quick-2-tui and T-quick-2-api should both depend on T-quick-1
-	for _, typ := range []string{"tui", "api"} {
+	// T-quick-2-tui, T-quick-2-api, and T-quick-2-cli should all depend on T-quick-1
+	for _, typ := range []string{"tui", "api", "cli"} {
 		id := "T-quick-2-" + typ
 		task, ok := byID[id]
 		require.True(t, ok, "%s should exist", id)
@@ -362,13 +362,15 @@ func TestTC_006_QuickModePerTypeDependencyFanIn(t *testing.T) {
 			"%s should depend on T-quick-1", id)
 	}
 
-	// T-quick-3 (graduate) should depend on both T-quick-2-tui AND T-quick-2-api
+	// T-quick-3 (graduate) should depend on all per-type gen-and-run tasks
 	gradTask, ok := byID["T-quick-3"]
 	require.True(t, ok, "T-quick-3 should exist")
 	assert.Contains(t, gradTask.Dependencies, "T-quick-2-tui",
 		"T-quick-3 should depend on T-quick-2-tui")
 	assert.Contains(t, gradTask.Dependencies, "T-quick-2-api",
 		"T-quick-3 should depend on T-quick-2-api")
+	assert.Contains(t, gradTask.Dependencies, "T-quick-2-cli",
+		"T-quick-3 should depend on T-quick-2-cli")
 
 	// T-quick-4 should depend on T-quick-3
 	verifyTask, ok := byID["T-quick-4"]
@@ -522,6 +524,7 @@ func TestTC_011_InferTypeMapsMergedIDsCorrectly(t *testing.T) {
 		"T-quick-2-api",
 		"T-quick-2-cli",
 		"T-quick-2-tui",
+		"T-quick-2-cli",
 	}
 
 	for _, id := range testIDs {
@@ -654,5 +657,6 @@ func TestTC_015_DetectTypesFromTestCasesParsesSummaryTable(t *testing.T) {
 		}
 		assert.True(t, foundType, "T-quick-2-%s should exist (driven by profile capabilities)", typ)
 	}
+	assert.Equal(t, 3, perTypeCount, "per-type tasks should be generated from go-test profile capabilities (tui, api, cli)")
 }
 
