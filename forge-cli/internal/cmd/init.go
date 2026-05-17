@@ -225,10 +225,17 @@ func runConfigInitIfNeeded(projectRoot string, in io.Reader, out io.Writer) init
 		}
 	}
 
+	// Step 4: Auto-behavior config
+	auto := askAutoBehavior(reader, out, len(selectedProfiles) > 0)
+
 	cfg := profile.ForgeConfig{
 		ProjectType:  projectType,
 		TestProfiles: selectedProfiles,
 		Capabilities: selectedCaps,
+	}
+	if auto.E2eTest.Quick || auto.E2eTest.Full || auto.ConsolidateSpecs.Quick || auto.ConsolidateSpecs.Full ||
+		auto.CleanCode.Quick || auto.CleanCode.Full || auto.GitPush {
+		cfg.Auto = &auto
 	}
 
 	if err := writeConfigFile(configFile, &cfg); err != nil {
@@ -285,5 +292,65 @@ func ensureResultToAction(r just.EnsureResult) initAction {
 		status: string(r.Status),
 		target: "just installation",
 		detail: detail,
+	}
+}
+
+// askAutoBehavior runs the interactive auto-behavior config step.
+// Returns zero-value AutoConfig if user accepts all defaults.
+func askAutoBehavior(reader *bufio.Reader, out io.Writer, hasProfiles bool) profile.AutoConfig {
+	write(out, "\nAuto-behavior configuration (press Enter for defaults):\n")
+
+	var auto profile.AutoConfig
+	changed := false
+
+	// Only ask about e2eTest and consolidateSpecs when profiles are selected
+	if hasProfiles {
+		auto.E2eTest = askModeToggle(reader, out, "e2eTest", profile.ModeToggle{Quick: true, Full: true}, &changed)
+		auto.ConsolidateSpecs = askModeToggle(reader, out, "consolidateSpecs", profile.ModeToggle{Quick: true, Full: true}, &changed)
+	}
+
+	auto.CleanCode = askModeToggle(reader, out, "cleanCode", profile.ModeToggle{Quick: false, Full: false}, &changed)
+
+	write(out, "  Auto git push after completion? [y/N]: ")
+	input, _ := reader.ReadString('\n')
+	input = strings.TrimSpace(strings.ToLower(input))
+	if input == "y" || input == "yes" {
+		auto.GitPush = true
+		changed = true
+	}
+
+	if !changed {
+		return profile.AutoConfig{}
+	}
+	return auto
+}
+
+// askModeToggle asks about a mode-scoped boolean (quick/full).
+func askModeToggle(reader *bufio.Reader, out io.Writer, name string, defaults profile.ModeToggle, changed *bool) profile.ModeToggle {
+	defLabel := "enabled"
+	if !defaults.Quick && !defaults.Full {
+		defLabel = "disabled"
+	}
+
+	write(out, "  %s (quick/full/both/none) [%s]: ", name, defLabel)
+	input, _ := reader.ReadString('\n')
+	input = strings.TrimSpace(strings.ToLower(input))
+
+	if input == "" {
+		return defaults
+	}
+
+	*changed = true
+	switch input {
+	case "y", "yes", "true", "both":
+		return profile.ModeToggle{Quick: true, Full: true}
+	case "n", "no", "false", "none":
+		return profile.ModeToggle{Quick: false, Full: false}
+	case "quick":
+		return profile.ModeToggle{Quick: true, Full: defaults.Full}
+	case "full":
+		return profile.ModeToggle{Quick: defaults.Quick, Full: true}
+	default:
+		return defaults
 	}
 }
