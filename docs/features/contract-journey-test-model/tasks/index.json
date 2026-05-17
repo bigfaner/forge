@@ -93,7 +93,7 @@
       "dependencies": [
         "4"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "7-forge-test-verify.md",
       "record": "records/7-forge-test-verify.md",
       "scope": "backend",
