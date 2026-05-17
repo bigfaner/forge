@@ -13,6 +13,7 @@ import (
 	"forge-cli/pkg/profile"
 
 	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 )
 
@@ -259,6 +260,14 @@ func runConfigInitIfNeeded(projectRoot string) initAction {
 	return initAction{status: "CREATED", target: ".forge/config.yaml", detail: "interactive"}
 }
 
+// modeHighlight styles mode keywords for terminal display.
+var modeHighlight = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#7DCFFF"))
+
+// hl returns a highlighted version of text using modeHighlight.
+func hl(text string) string {
+	return modeHighlight.Render(text)
+}
+
 // askAutoBehavior runs the auto-behavior config steps, one question per screen.
 // Always returns a non-nil AutoConfig.
 func askAutoBehavior(hasProfiles bool) *profile.AutoConfig {
@@ -267,34 +276,34 @@ func askAutoBehavior(hasProfiles bool) *profile.AutoConfig {
 
 	if hasProfiles {
 		auto.E2eTest.Quick = askConfirm(
-			"Quick mode: auto-run e2e tests?",
+			fmt.Sprintf("%s mode: auto-run e2e tests?", hl("Quick")),
 			"Automatically run end-to-end tests during quick mode (lightweight verification after each task).",
 			defaults.E2eTest.Quick,
 		)
 		auto.E2eTest.Full = askConfirm(
-			"Full mode: auto-run e2e tests?",
+			fmt.Sprintf("%s mode: auto-run e2e tests?", hl("Full")),
 			"Automatically run end-to-end tests during full mode (comprehensive coverage).",
 			defaults.E2eTest.Full,
 		)
 		auto.ConsolidateSpecs.Quick = askConfirm(
-			"Quick mode: auto-consolidate specs?",
+			fmt.Sprintf("%s mode: auto-consolidate specs?", hl("Quick")),
 			"Automatically extract and consolidate specs from code after quick-mode tasks.",
 			defaults.ConsolidateSpecs.Quick,
 		)
 		auto.ConsolidateSpecs.Full = askConfirm(
-			"Full mode: auto-consolidate specs?",
+			fmt.Sprintf("%s mode: auto-consolidate specs?", hl("Full")),
 			"Automatically extract and consolidate specs from code after full-mode tasks.",
 			defaults.ConsolidateSpecs.Full,
 		)
 	}
 
 	auto.CleanCode.Quick = askConfirm(
-		"Quick mode: auto code cleanup?",
+		fmt.Sprintf("%s mode: auto code cleanup?", hl("Quick")),
 		"Automatically simplify and clean code during quick mode.",
 		defaults.CleanCode.Quick,
 	)
 	auto.CleanCode.Full = askConfirm(
-		"Full mode: auto code cleanup?",
+		fmt.Sprintf("%s mode: auto code cleanup?", hl("Full")),
 		"Automatically simplify and clean code during full mode.",
 		defaults.CleanCode.Full,
 	)
