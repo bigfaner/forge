@@ -107,7 +107,7 @@
       "dependencies": [
         "T-quick-1"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "file": "quick-gen-and-run-go-test.md",
       "record": "records/quick-gen-and-run-go-test.md",
       "scope": "all",
