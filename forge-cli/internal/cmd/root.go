@@ -23,12 +23,13 @@ func Execute() {
 }
 
 func init() {
-	// Group parents (5)
+	// Group parents (6)
 	rootCmd.AddCommand(taskCmd)
 	rootCmd.AddCommand(e2eCmd)
 	rootCmd.AddCommand(forensicCmd)
 	rootCmd.AddCommand(testingCmd)
 	rootCmd.AddCommand(promptCmd)
+	rootCmd.AddCommand(worktreeCmd)
 
 	// Top-level commands
 	rootCmd.AddCommand(cleanupCmd)
@@ -45,6 +46,9 @@ func init() {
 
 	// Version is hidden from --help but accessible via `forge version`
 	versionCmd.Hidden = true
+
+	// Worktree group subcommands
+	worktreeCmd.AddCommand(worktreeStartCmd)
 
 	// Task group subcommands
 	taskCmd.AddCommand(claimCmd)

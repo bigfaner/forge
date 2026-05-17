@@ -1,0 +1,86 @@
+{
+  "feature": "forge-worktree",
+  "proposal": "docs/proposals/forge-worktree/proposal.md",
+  "created": "2026-05-17",
+  "tasks": {
+    "1-worktree-start": {
+      "id": "1",
+      "title": "Implement worktree command group scaffold + start subcommand",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "status": "completed",
+      "file": "1-worktree-start.md",
+      "record": "records/1-worktree-start.md",
+      "scope": "backend",
+      "type": "feature"
+    },
+    "2-worktree-list": {
+      "id": "2",
+      "title": "Implement forge worktree list subcommand",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-worktree-list.md",
+      "record": "records/2-worktree-list.md",
+      "scope": "backend",
+      "type": "feature"
+    },
+    "3-worktree-remove": {
+      "id": "3",
+      "title": "Implement forge worktree remove subcommand",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "3-worktree-remove.md",
+      "record": "records/3-worktree-remove.md",
+      "scope": "backend",
+      "type": "feature"
+    },
+    "4-worktree-resume": {
+      "id": "4",
+      "title": "Implement forge worktree resume subcommand",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "4-worktree-resume.md",
+      "record": "records/4-worktree-resume.md",
+      "scope": "backend",
+      "type": "feature"
+    },
+    "5-update-workflow-docs": {
+      "id": "5",
+      "title": "Update WORKFLOW.md with forge worktree commands",
+      "priority": "P2",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "4"
+      ],
+      "status": "pending",
+      "file": "5-update-workflow-docs.md",
+      "record": "records/5-update-workflow-docs.md",
+      "type": "documentation"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

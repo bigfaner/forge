@@ -20,8 +20,8 @@ func TestRootCmd_Structure(t *testing.T) {
 		}
 	}
 
-	// 5 group parents
-	expectedGroups := []string{"task", "e2e", "forensic", "testing", "prompt"}
+	// 6 group parents
+	expectedGroups := []string{"task", "e2e", "forensic", "testing", "prompt", "worktree"}
 	for _, expected := range expectedGroups {
 		if !commandNames[expected] {
 			t.Errorf("missing group parent: %s (have: %v)", expected, commandNames)
@@ -47,9 +47,9 @@ func TestRootCmd_HelpShowsTenVisibleEntries(t *testing.T) {
 			visibleCount++
 		}
 	}
-	// 5 groups + 6 visible top-level (version is hidden) + config + proposal + lesson + init + claude = 15 visible
-	if visibleCount != 15 {
-		t.Errorf("expected 14 visible commands, got %d", visibleCount)
+	// 6 groups + 6 visible top-level (version is hidden) + config + proposal + lesson + init + claude = 16 visible
+	if visibleCount != 16 {
+		t.Errorf("expected 16 visible commands, got %d", visibleCount)
 	}
 }
 
@@ -145,8 +145,8 @@ func TestInit_RegistersCommands(t *testing.T) {
 		}
 	}
 
-	// 5 groups + 6 top-level + config + proposal + lesson + init + claude = 16
-	if len(explicit) != 16 {
-		t.Errorf("expected 15 explicit commands, got %d: %v", len(explicit), explicit)
+	// 6 groups + 6 top-level + config + proposal + lesson + init + claude = 17
+	if len(explicit) != 17 {
+		t.Errorf("expected 17 explicit commands, got %d: %v", len(explicit), explicit)
 	}
 }

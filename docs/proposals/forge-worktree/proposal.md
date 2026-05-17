@@ -1,7 +1,7 @@
 ---
 created: 2026-05-17
 author: "faner"
-status: Draft
+status: Approved
 ---
 
 # Proposal: Forge Worktree Management
@@ -25,10 +25,10 @@ Without worktree management, developers cannot parallelize feature work across m
 
 Add a `forge worktree` subcommand group to the forge CLI that provides four operations:
 
-- **`start <slug>`**: Creates a git worktree with branch name = slug in a sibling directory (`../<slug>`), then launches `claude` CLI in that directory. The forge-cli's existing `GetWorktreeName()` automatically detects the feature from the worktree name.
-- **`list`**: Shows all forge-managed worktrees — name, branch, path, and feature status.
+- **`start <slug>`**: Creates a git worktree with branch name = slug in a sibling directory (`../<slug>`), then launches `claude` CLI with `--dangerously-skip-permissions` in that directory. Uses direct `git worktree add` (not Claude's native `--worktree`). The forge-cli's existing `GetWorktreeName()` automatically detects the feature from the worktree name.
+- **`list`**: Shows all git worktrees (not just forge-created ones) — name, branch, path, and feature status. Worktrees whose name matches a feature slug in `docs/features/` are visually marked as forge-managed.
 - **`remove <slug>`**: Removes the git worktree. Keeps the branch for manual merge.
-- **`resume <slug>`**: Opens a new `claude` session in an existing worktree.
+- **`resume <slug>`**: Opens a new `claude` session (with `--dangerously-skip-permissions`) in an existing worktree.
 
 The user workflow: `forge worktree start auth-login` → Claude Code opens in `../auth-login` → user runs `/run-tasks` or other forge commands → feature is auto-detected from worktree name → `forge worktree remove auth-login` when done.
 
@@ -118,7 +118,7 @@ All dependencies are available: git 2.5+, Claude Code CLI, Go toolchain.
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|------------|
 | Claude CLI not in PATH | M | H | Detect `claude` availability at start; print clear error with install instructions |
-| `.worktreeinclude` not processed | M | L | Manual worktrees don't copy gitignored files (`.env` etc.). Document this; user handles manually. Not an issue for Forge features which don't typically need local env files |
+| `.worktreeinclude` not processed | L | L | Direct git worktrees don't process `.worktreeinclude`. Not an issue for Forge features which don't typically need local env files. Document as known limitation |
 | Windows path handling issues | M | M | Use `filepath.Join()` consistently; test on Windows from the start |
 | Worktree name collision with existing directory | L | M | Check if target directory exists before `git worktree add`; fail with clear message |
 | Orphaned worktrees after crash | L | L | `list` command shows worktree state; `remove` handles cleanup regardless |
