@@ -18,7 +18,7 @@
       "title": "Create types/api.md instruction file",
       "priority": "P1",
       "estimatedTime": "1-2h",
-      "status": "pending",
+      "status": "completed",
       "file": "2-types-api.md",
       "record": "records/2-types-api.md",
       "type": "documentation"
