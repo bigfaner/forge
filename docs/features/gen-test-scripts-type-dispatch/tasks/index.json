@@ -48,7 +48,7 @@
       "title": "Create types/mobile.md instruction file",
       "priority": "P2",
       "estimatedTime": "30min-1h",
-      "status": "pending",
+      "status": "completed",
       "file": "5-types-mobile.md",
       "record": "records/5-types-mobile.md",
       "type": "documentation"
