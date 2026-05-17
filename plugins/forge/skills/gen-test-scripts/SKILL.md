@@ -177,7 +177,7 @@ Test cases match sitemap pages via the `Route` field. The `Element` field from t
 1. **Global Setup Phase** (Steps 0→1→1.5→3.5) runs as a single pre-task FIRST. This produces:
    - Auth Plan (from Step 1 classification)
    - Fact Table (from Step 1.5 reconnaissance)
-   - Shared infrastructure (from Step 3.5: auth-setup.ts, playwright.config.ts, helpers.ts, config files)
+   - Shared infrastructure (from Step 3.5: auth-setup, config, and helpers files as defined by the profile manifest's `templates.*` fields)
 2. **Only Step 4** (spec file generation) may be parallelized into sub-tasks, each handling a subset of test cases
 3. Each sub-task's description MUST include: "Shared infrastructure already configured in pre-task. Auth: use storageState (Playwright) / cached token (API), NOT login() in beforeEach."
 
@@ -360,7 +360,7 @@ Based on the Auth Plan from Step 1, configure auth infrastructure for auth-requi
    - Generate `tests/e2e/auth-setup.ts` from template (if not already present)
    - Configure `tests/e2e/playwright.config.ts`: uncomment the `projects` section with `setup` + `authenticated` projects using `storageState`
 3. For other profiles: follow `generate.md` auth setup instructions
-4. Verify `helpers.ts` exports all auth-related symbols needed by spec files
+4. Verify the profile's helpers file (from `manifest.templates.helpers`) exports all auth-related symbols needed by spec files
 
 **When `shared-auth-enabled: no`**: Skip auth infrastructure setup.
 
@@ -499,7 +499,7 @@ All framework-specific rules (test runner, assertion library, imports, HTTP clie
 1. Run `just e2e-verify --feature <slug>` if the recipe exists in the Justfile
 2. Otherwise: `grep -rn '// VERIFY:' tests/e2e/features/<slug>/` (adapt file extension to profile)
 
-**Post-generation helper merge**: After generating all spec files, verify `helpers.ts` exports cover all imports used by generated specs. If any import is missing from helpers, merge it from the template (do NOT overwrite existing exports).
+**Post-generation helper merge**: After generating all spec files, verify the profile's helpers file (from `manifest.templates.helpers`) exports cover all imports used by generated specs. If any import is missing from helpers, merge it from the template (do NOT overwrite existing exports).
 </HARD-RULE>
 
 ## Output
