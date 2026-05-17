@@ -285,8 +285,8 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 			existingKeys[key] = true
 
 			// Resolve strategy content for per-profile tasks
-			if td.ProfileName != "" && td.StrategyKind != "" && opts.ResolveStrategy != nil {
-				testTasks[i].StrategyContent = opts.ResolveStrategy(td.ProfileName, td.StrategyKind)
+			if td.Language != "" && td.StrategyKind != "" && opts.ResolveStrategy != nil {
+				testTasks[i].StrategyContent = opts.ResolveStrategy(string(td.Language), td.StrategyKind)
 			}
 
 			// Generate .md if missing
@@ -373,13 +373,17 @@ func setFeatureMetadata(index *TaskIndex, projectRoot, slug string) {
 	}
 }
 
-// generateTestTasks returns test task definitions for the given mode and profiles.
+// generateTestTasks returns test task definitions for the given mode and languages.
 func generateTestTasks(mode string, profiles []string, capabilities []string, auto profile.AutoConfig) []TestTaskDef {
+	languages := make([]profile.Language, len(profiles))
+	for i, p := range profiles {
+		languages[i] = profile.Language(p)
+	}
 	switch mode {
 	case "breakdown":
-		return GetBreakdownTestTasks(profiles, capabilities, auto)
+		return GetBreakdownTestTasks(languages, capabilities, auto)
 	case "quick":
-		return GetQuickTestTasks(profiles, capabilities, auto)
+		return GetQuickTestTasks(languages, capabilities, auto)
 	default:
 		return nil
 	}

@@ -68,7 +68,7 @@
         "1",
         "4"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "5-testgen-update.md",
       "record": "records/5-testgen-update.md",
       "breaking": true,

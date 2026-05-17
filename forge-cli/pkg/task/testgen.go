@@ -21,23 +21,23 @@ type TestTaskDef struct {
 	NoTest          bool
 	MainSession     bool
 	Breaking        bool
-	ProfileName     string // empty for shared tasks
-	TestType        string // per-type capability (e.g., "api", "tui", "cli"); empty for non-per-type tasks
-	FileName        string // .md filename (derived from key)
-	StrategyKind    string // "generate", "run", "graduate", or "" for generic
-	StrategyContent []byte // resolved by caller from profile package
+	Language        profile.Language // empty for shared tasks
+	TestType        string           // per-type interface (e.g., "api", "tui", "cli"); empty for non-per-type tasks
+	FileName        string           // .md filename (derived from key)
+	StrategyKind    string           // "generate", "run", "graduate", or "" for generic
+	StrategyContent []byte           // resolved by caller from profile package
 }
 
 // GetBreakdownTestTasks returns test task definitions for breakdown mode.
-// With 0 or 1 profile, uses no suffix. With 2+ profiles, uses letter suffixes.
+// With 0 or 1 language, uses no suffix. With 2+ languages, uses letter suffixes.
 // Interfaces are config-driven test types (e.g., "cli", "api"). Empty interfaces returns nil.
 // auto controls which task categories are generated.
-func GetBreakdownTestTasks(profiles []string, capabilities []string, auto profile.AutoConfig) []TestTaskDef {
-	if len(capabilities) == 0 {
+func GetBreakdownTestTasks(languages []profile.Language, interfaces []string, auto profile.AutoConfig) []TestTaskDef {
+	if len(interfaces) == 0 {
 		return nil
 	}
 
-	suffix := profileSuffix(profiles)
+	suffix := profileSuffix(languages)
 
 	var tasks []TestTaskDef
 
@@ -55,27 +55,27 @@ func GetBreakdownTestTasks(profiles []string, capabilities []string, auto profil
 			Type: TypeTestPipelineEvalCases, Scope: "all", NoTest: true, MainSession: true,
 		})
 
-		// Per-profile tasks with per-type gen-scripts
-		for i, p := range profiles {
+		// Per-language tasks with per-type gen-scripts
+		for i, lang := range languages {
 			s := suffixLetter(i, suffix)
-			for _, typ := range capabilities {
+			for _, typ := range interfaces {
 				tasks = append(tasks, TestTaskDef{
-					Key: "gen-test-scripts-" + p + "-" + typ, ID: "T-test-2" + s + "-" + typ,
-					Title: fmt.Sprintf("Generate Test Scripts (%s, %s)", p, typ), Priority: "P1", EstimatedTime: "1-2h",
-					Type: TypeTestPipelineGenScripts, Scope: "all", ProfileName: p, TestType: typ,
+					Key: "gen-test-scripts-" + string(lang) + "-" + typ, ID: "T-test-2" + s + "-" + typ,
+					Title: fmt.Sprintf("Generate Test Scripts (%s, %s)", lang, typ), Priority: "P1", EstimatedTime: "1-2h",
+					Type: TypeTestPipelineGenScripts, Scope: "all", Language: lang, TestType: typ,
 					StrategyKind: "generate",
 				})
 			}
 			tasks = append(tasks, TestTaskDef{
-				Key: "run-e2e-tests-" + p, ID: "T-test-3" + s,
-				Title: fmt.Sprintf("Run e2e Tests (%s)", p), Priority: "P1", EstimatedTime: "30min-1h",
-				Type: TypeTestPipelineRun, Scope: "all", ProfileName: p,
+				Key: "run-e2e-tests-" + string(lang), ID: "T-test-3" + s,
+				Title: fmt.Sprintf("Run e2e Tests (%s)", lang), Priority: "P1", EstimatedTime: "30min-1h",
+				Type: TypeTestPipelineRun, Scope: "all", Language: lang,
 				StrategyKind: "run",
 			})
 			tasks = append(tasks, TestTaskDef{
-				Key: "graduate-tests-" + p, ID: "T-test-4" + s,
-				Title: fmt.Sprintf("Graduate Test Scripts (%s)", p), Priority: "P1", EstimatedTime: "30min",
-				Type: TypeTestPipelineGraduate, Scope: "all", ProfileName: p,
+				Key: "graduate-tests-" + string(lang), ID: "T-test-4" + s,
+				Title: fmt.Sprintf("Graduate Test Scripts (%s)", lang), Priority: "P1", EstimatedTime: "30min",
+				Type: TypeTestPipelineGraduate, Scope: "all", Language: lang,
 				StrategyKind: "graduate",
 			})
 		}
@@ -107,7 +107,7 @@ func GetBreakdownTestTasks(profiles []string, capabilities []string, auto profil
 	}
 
 	// Set filenames and dependency chains
-	resolveBreakdownDeps(tasks, profiles, suffix, capabilities, auto)
+	resolveBreakdownDeps(tasks, languages, suffix, interfaces, auto)
 
 	return tasks
 }
@@ -115,37 +115,37 @@ func GetBreakdownTestTasks(profiles []string, capabilities []string, auto profil
 // GetQuickTestTasks returns test task definitions for quick mode.
 // Interfaces are config-driven test types (e.g., "cli", "api"). Empty interfaces returns nil.
 // auto controls which task categories are generated.
-func GetQuickTestTasks(profiles []string, capabilities []string, auto profile.AutoConfig) []TestTaskDef {
-	if len(capabilities) == 0 {
+func GetQuickTestTasks(languages []profile.Language, interfaces []string, auto profile.AutoConfig) []TestTaskDef {
+	if len(interfaces) == 0 {
 		return nil
 	}
 
-	suffix := profileSuffix(profiles)
+	suffix := profileSuffix(languages)
 
 	var tasks []TestTaskDef
 
 	// Per-profile with per-type gen-and-run (gated by auto.E2eTest.Quick)
 	if auto.E2eTest.Quick {
-		for i, p := range profiles {
+		for i, lang := range languages {
 			s := suffixLetter(i, suffix)
 			tasks = append(tasks, TestTaskDef{
-				Key: "quick-test-cases-" + p, ID: "T-quick-1" + s,
-				Title: fmt.Sprintf("Generate Quick Test Cases (%s)", p), Priority: "P1", EstimatedTime: "30min-1h",
-				Type: TypeTestPipelineGenCases, Scope: "all", NoTest: true, ProfileName: p,
+				Key: "quick-test-cases-" + string(lang), ID: "T-quick-1" + s,
+				Title: fmt.Sprintf("Generate Quick Test Cases (%s)", lang), Priority: "P1", EstimatedTime: "30min-1h",
+				Type: TypeTestPipelineGenCases, Scope: "all", NoTest: true, Language: lang,
 				StrategyKind: "generate",
 			})
-			for _, typ := range capabilities {
+			for _, typ := range interfaces {
 				tasks = append(tasks, TestTaskDef{
-					Key: "quick-gen-and-run-" + p + "-" + typ, ID: "T-quick-2" + s + "-" + typ,
-					Title: fmt.Sprintf("Generate and Run Quick Test Scripts (%s, %s)", p, typ), Priority: "P1", EstimatedTime: "1-2h",
-					Type: TypeTestPipelineGenAndRun, Scope: "all", ProfileName: p, TestType: typ,
+					Key: "quick-gen-and-run-" + string(lang) + "-" + typ, ID: "T-quick-2" + s + "-" + typ,
+					Title: fmt.Sprintf("Generate and Run Quick Test Scripts (%s, %s)", lang, typ), Priority: "P1", EstimatedTime: "1-2h",
+					Type: TypeTestPipelineGenAndRun, Scope: "all", Language: lang, TestType: typ,
 					StrategyKind: "generate",
 				})
 			}
 			tasks = append(tasks, TestTaskDef{
-				Key: "quick-graduate-" + p, ID: "T-quick-3" + s,
-				Title: fmt.Sprintf("Graduate Quick Test Scripts (%s)", p), Priority: "P1", EstimatedTime: "15min",
-				Type: TypeTestPipelineGraduate, Scope: "all", ProfileName: p,
+				Key: "quick-graduate-" + string(lang), ID: "T-quick-3" + s,
+				Title: fmt.Sprintf("Graduate Quick Test Scripts (%s)", lang), Priority: "P1", EstimatedTime: "15min",
+				Type: TypeTestPipelineGraduate, Scope: "all", Language: lang,
 				StrategyKind: "graduate",
 			})
 		}
@@ -176,7 +176,7 @@ func GetQuickTestTasks(profiles []string, capabilities []string, auto profile.Au
 		})
 	}
 
-	resolveQuickDeps(tasks, profiles, suffix, capabilities, auto)
+	resolveQuickDeps(tasks, languages, suffix, interfaces, auto)
 
 	return tasks
 }
@@ -194,8 +194,8 @@ func GenerateTestTaskMD(def TestTaskDef, _ string) ([]byte, error) {
 	fmt.Fprintf(&buf, "dependencies: %v\n", formatYAMLList(def.Dependencies))
 	fmt.Fprintf(&buf, "type: %q\n", def.Type)
 	fmt.Fprintf(&buf, "scope: %q\n", def.Scope)
-	if def.ProfileName != "" {
-		fmt.Fprintf(&buf, "profile: %q\n", def.ProfileName)
+	if def.Language != "" {
+		fmt.Fprintf(&buf, "profile: %q\n", def.Language)
 	}
 	if def.NoTest {
 		buf.WriteString("noTest: true\n")
@@ -205,17 +205,17 @@ func GenerateTestTaskMD(def TestTaskDef, _ string) ([]byte, error) {
 	}
 	buf.WriteString("---\n\n")
 	// Body
-	if def.ProfileName != "" && def.StrategyKind != "" {
+	if def.Language != "" && def.StrategyKind != "" {
 		if len(def.StrategyContent) > 0 {
 			fmt.Fprintf(&buf, "# %s\n\n", def.Title)
-			fmt.Fprintf(&buf, "Profile: **%s**\n\n", def.ProfileName)
+			fmt.Fprintf(&buf, "Profile: **%s**\n\n", def.Language)
 			if def.TestType != "" {
 				fmt.Fprintf(&buf, "Type: **%s**\n\n", def.TestType)
 			}
 			buf.Write(def.StrategyContent)
 		} else {
 			// Fallback: generic body
-			fmt.Fprintf(&buf, "# %s\n\nCall the appropriate skill for profile %q", def.Title, def.ProfileName)
+			fmt.Fprintf(&buf, "# %s\n\nCall the appropriate skill for profile %q", def.Title, def.Language)
 			if def.TestType != "" {
 				fmt.Fprintf(&buf, " with type %q", def.TestType)
 			}
@@ -241,7 +241,7 @@ func formatYAMLList(items []string) string {
 }
 
 // resolveBreakdownDeps sets dependency chains for breakdown test tasks.
-func resolveBreakdownDeps(tasks []TestTaskDef, profiles []string, _ bool, capabilities []string, auto profile.AutoConfig) {
+func resolveBreakdownDeps(tasks []TestTaskDef, languages []profile.Language, _ bool, interfaces []string, auto profile.AutoConfig) {
 	// T-test-1 depends on last gate or last summary (placeholder, caller resolves)
 	// T-test-1b depends on T-test-1
 	// Per-profile: T-test-2<L>-<type> depends on T-test-1b
@@ -264,10 +264,10 @@ func resolveBreakdownDeps(tasks []TestTaskDef, profiles []string, _ bool, capabi
 			tasks[1].Dependencies = []string{"T-test-1"}
 		}
 
-		profileStart := 2 // index 2 is first per-profile task
-		nTypes := len(capabilities)
+		profileStart := 2 // index 2 is first per-language task
+		nTypes := len(interfaces)
 		blockSize := nTypes + 2 // gen-per-type + run + graduate
-		for i := range profiles {
+		for i := range languages {
 			blockStart := profileStart + i*blockSize
 
 			// All per-type gen-scripts depend on T-test-1b
@@ -289,11 +289,11 @@ func resolveBreakdownDeps(tasks []TestTaskDef, profiles []string, _ bool, capabi
 		}
 
 		// T-test-4.5 depends on all graduate tasks
-		sharedStart := profileStart + len(profiles)*blockSize
+		sharedStart := profileStart + len(languages)*blockSize
 		if len(tasks) > sharedStart {
 			verifyReg := &tasks[sharedStart]
 			var gradDeps []string
-			for i := range profiles {
+			for i := range languages {
 				gradDeps = append(gradDeps, tasks[profileStart+i*blockSize+nTypes+1].ID)
 			}
 			verifyReg.Dependencies = gradDeps
@@ -315,15 +315,15 @@ func resolveBreakdownDeps(tasks []TestTaskDef, profiles []string, _ bool, capabi
 }
 
 // resolveQuickDeps sets dependency chains for quick test tasks.
-func resolveQuickDeps(tasks []TestTaskDef, profiles []string, _ bool, capabilities []string, auto profile.AutoConfig) {
+func resolveQuickDeps(tasks []TestTaskDef, languages []profile.Language, _ bool, interfaces []string, auto profile.AutoConfig) {
 	if !auto.E2eTest.Quick && !auto.ConsolidateSpecs.Quick && !auto.CleanCode.Quick {
 		return // no tasks to wire
 	}
 
 	if auto.E2eTest.Quick {
-		nTypes := len(capabilities)
+		nTypes := len(interfaces)
 		blockSize := 1 + nTypes + 1 // gen-cases + gen-per-type + graduate
-		for i := range profiles {
+		for i := range languages {
 			blockStart := i * blockSize
 
 			genCases := &tasks[blockStart]
@@ -344,10 +344,10 @@ func resolveQuickDeps(tasks []TestTaskDef, profiles []string, _ bool, capabiliti
 		}
 
 		// T-quick-4 depends on all graduate tasks
-		sharedStart := len(profiles) * blockSize
+		sharedStart := len(languages) * blockSize
 		if len(tasks) > sharedStart {
 			var gradDeps []string
-			for i := range profiles {
+			for i := range languages {
 				gradDeps = append(gradDeps, tasks[i*blockSize+1+nTypes].ID)
 			}
 			tasks[sharedStart].Dependencies = gradDeps
@@ -385,9 +385,9 @@ func findTaskIndexByPrefix(tasks []TestTaskDef, prefix string) int {
 	return -1
 }
 
-// profileSuffix returns true if profiles need letter suffixes (2+).
-func profileSuffix(profiles []string) bool {
-	return len(profiles) > 1
+// profileSuffix returns true if languages need letter suffixes (2+).
+func profileSuffix(languages []profile.Language) bool {
+	return len(languages) > 1
 }
 
 // suffixLetter returns the letter suffix for the i-th profile.
@@ -551,7 +551,7 @@ func (d TestTaskDef) TaskFromFile() Task {
 		MainSession:   d.MainSession,
 		NoTest:        d.NoTest,
 		Type:          d.Type,
-		Profile:       d.ProfileName,
+		Profile:       string(d.Language),
 	}
 }
 
