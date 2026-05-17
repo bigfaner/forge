@@ -118,3 +118,19 @@ After loop ends, print: "All tasks completed. T-test-3, T-test-4, and T-test-4.5
 If index lacks T-test-3/T-test-4, suggest: "Run `/run-e2e-tests` then `/graduate-tests`."
 
 Do NOT run e2e tests outside Step 3.
+
+### Knowledge Review
+
+After the loop summary and e2e suggestion (above), run knowledge auto-extraction:
+
+1. Read `plugins/forge/references/shared/knowledge-extraction.md` and execute its extraction flow with:
+   - `trigger`: `run-tasks`
+   - `artifacts`: task outcomes (`docs/features/<slug>/tasks/*.md`), code changes (`git diff` against feature branch base), manifest (`docs/features/<slug>/manifest.md`)
+
+2. The extraction flow handles:
+   - Scanning artifacts for notable knowledge (decisions, lessons, conventions, business rules)
+   - Silent exit when no notable knowledge detected (routine tasks)
+   - Presenting extracted knowledge for user confirmation via AskUserQuestion
+   - Writing confirmed knowledge to appropriate directories using shared formats
+
+Do NOT run knowledge review if the loop ended due to 3 consecutive failures (incomplete feature).

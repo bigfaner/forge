@@ -68,7 +68,7 @@
       "dependencies": [
         "3"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "6-trigger-run-tasks.md",
       "record": "records/6-trigger-run-tasks.md",
       "type": "enhancement"
