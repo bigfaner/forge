@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"forge-cli/internal/embedded"
@@ -178,50 +179,25 @@ func runConfigInitIfNeeded(projectRoot string, in io.Reader, out io.Writer) init
 
 	reader := bufio.NewReader(in)
 
-	// Step 1: Project type
-	write(out, "\nSelect project type:\n")
-	write(out, "  1. frontend\n")
-	write(out, "  2. backend\n")
-	write(out, "  3. mixed\n")
-	write(out, "Enter number [2]: ")
+	// Step 1: Project type (single select)
+	projectType := askSelect(reader, out, "Project type", []string{"frontend", "backend", "mixed"}, 2)
 
-	input, _ := reader.ReadString('\n')
-	input = strings.TrimSpace(input)
-	projectType := "backend"
-	switch input {
-	case "1":
-		projectType = "frontend"
-	case "2", "":
-		projectType = "backend"
-	case "3":
-		projectType = "mixed"
+	// Step 2: Test profile (single select)
+	profileOpts := profile.KnownProfiles
+	selectedProfile := askSelect(reader, out, "Test profile", profileOpts, 0)
+	var selectedProfiles []string
+	if selectedProfile != "" {
+		selectedProfiles = []string{selectedProfile}
 	}
 
-	// Step 2: Test profiles
-	write(out, "\nSelect test profiles (enter numbers, space-separated):\n")
-	for i, p := range profile.KnownProfiles {
-		write(out, "  %d. %s\n", i+1, p)
-	}
-	write(out, "Selections: ")
-
-	input, _ = reader.ReadString('\n')
-	selectedProfiles := parseMultiSelect(input, profile.KnownProfiles)
-
-	// Step 3: Capabilities
+	// Step 3: Capabilities (multi-select)
 	var selectedCaps []string
 	if len(selectedProfiles) > 0 {
 		union, err := profile.UnionCapabilities(selectedProfiles)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "WARNING: could not resolve capabilities: %v\n", err)
 		} else if len(union) > 0 {
-			write(out, "\nSelect capabilities from detected profiles:\n")
-			for i, c := range union {
-				write(out, "  %d. %s\n", i+1, c)
-			}
-			write(out, "Selections: ")
-
-			input, _ = reader.ReadString('\n')
-			selectedCaps = parseMultiSelect(input, union)
+			selectedCaps = askMultiSelect(reader, out, "Capabilities", union, nil)
 		}
 	}
 
@@ -233,9 +209,8 @@ func runConfigInitIfNeeded(projectRoot string, in io.Reader, out io.Writer) init
 		TestProfiles: selectedProfiles,
 		Capabilities: selectedCaps,
 	}
-	if auto.E2eTest.Quick || auto.E2eTest.Full || auto.ConsolidateSpecs.Quick || auto.ConsolidateSpecs.Full ||
-		auto.CleanCode.Quick || auto.CleanCode.Full || auto.GitPush {
-		cfg.Auto = &auto
+	if auto != nil {
+		cfg.Auto = auto
 	}
 
 	if err := writeConfigFile(configFile, &cfg); err != nil {
@@ -245,6 +220,168 @@ func runConfigInitIfNeeded(projectRoot string, in io.Reader, out io.Writer) init
 
 	write(out, "\n")
 	return initAction{status: "CREATED", target: ".forge/config.yaml", detail: "interactive"}
+}
+
+// askSelect presents a numbered single-select menu. Returns the selected option.
+// defaultIdx is 0-based; -1 means no default.
+func askSelect(reader *bufio.Reader, out io.Writer, label string, options []string, defaultIdx int) string {
+	write(out, "\n%s:\n", label)
+	for i, opt := range options {
+		marker := "  "
+		if i == defaultIdx {
+			marker = "> "
+		}
+		write(out, "%s%d. %s\n", marker, i+1, opt)
+	}
+	if defaultIdx >= 0 {
+		write(out, "Select [%d]: ", defaultIdx+1)
+	} else {
+		write(out, "Select (0 to skip): ")
+	}
+
+	input, _ := reader.ReadString('\n')
+	input = strings.TrimSpace(input)
+	if input == "" {
+		if defaultIdx >= 0 && defaultIdx < len(options) {
+			return options[defaultIdx]
+		}
+		return ""
+	}
+
+	n, err := strconv.Atoi(input)
+	if err != nil || n < 1 || n > len(options) {
+		if defaultIdx >= 0 && defaultIdx < len(options) {
+			return options[defaultIdx]
+		}
+		return ""
+	}
+	return options[n-1]
+}
+
+// askMultiSelect presents a numbered multi-select menu. Returns selected options.
+// defaults are option values that start pre-selected.
+func askMultiSelect(reader *bufio.Reader, out io.Writer, label string, options []string, defaults []string) []string {
+	defSet := make(map[string]bool)
+	for _, d := range defaults {
+		defSet[d] = true
+	}
+
+	write(out, "\n%s (enter numbers, space-separated):\n", label)
+	for i, opt := range options {
+		marker := "  "
+		if defSet[opt] {
+			marker = "> "
+		}
+		write(out, "%s%d. %s\n", marker, i+1, opt)
+	}
+	if len(defaults) > 0 {
+		write(out, "Select [%s]: ", strings.Join(defaults, " "))
+	} else {
+		write(out, "Select (0 to skip): ")
+	}
+
+	input, _ := reader.ReadString('\n')
+	input = strings.TrimSpace(input)
+	if input == "" {
+		return defaults
+	}
+
+	return parseMultiSelect(input, options)
+}
+
+// askAutoBehavior runs the auto-behavior config step with select menus.
+// Returns nil if user accepts all defaults.
+func askAutoBehavior(reader *bufio.Reader, out io.Writer, hasProfiles bool) *profile.AutoConfig {
+	write(out, "\nAuto-behavior configuration:\n")
+
+	var auto profile.AutoConfig
+	changed := false
+
+	if hasProfiles {
+		auto.E2eTest = askToggleSelect(reader, out, "e2eTest", profile.ModeToggle{Quick: true, Full: true}, &changed)
+		auto.ConsolidateSpecs = askToggleSelect(reader, out, "consolidateSpecs", profile.ModeToggle{Quick: true, Full: true}, &changed)
+	}
+
+	auto.CleanCode = askToggleSelect(reader, out, "cleanCode", profile.ModeToggle{Quick: false, Full: false}, &changed)
+
+	if askYesNo(reader, out, "Auto git push after completion", false) {
+		auto.GitPush = true
+		changed = true
+	}
+
+	if !changed {
+		return nil
+	}
+	return &auto
+}
+
+// askToggleSelect presents a numbered menu for a mode-scoped toggle.
+func askToggleSelect(reader *bufio.Reader, out io.Writer, name string, defaults profile.ModeToggle, changed *bool) profile.ModeToggle {
+	opts := []string{
+		"enabled (quick + full)",
+		"quick only",
+		"full only",
+		"disabled",
+	}
+	defIdx := 0
+	if defaults.Quick && defaults.Full {
+		defIdx = 0
+	} else if defaults.Quick && !defaults.Full {
+		defIdx = 1
+	} else if !defaults.Quick && defaults.Full {
+		defIdx = 2
+	} else {
+		defIdx = 3
+	}
+
+	write(out, "  %s:\n", name)
+	for i, opt := range opts {
+		marker := "    "
+		if i == defIdx {
+			marker = "  > "
+		}
+		write(out, "%s%d. %s\n", marker, i+1, opt)
+	}
+	write(out, "  Select [%d]: ", defIdx+1)
+
+	input, _ := reader.ReadString('\n')
+	input = strings.TrimSpace(input)
+	if input == "" {
+		return defaults
+	}
+
+	n, err := strconv.Atoi(input)
+	if err != nil || n < 1 || n > 4 {
+		return defaults
+	}
+
+	*changed = true
+	switch n {
+	case 1:
+		return profile.ModeToggle{Quick: true, Full: true}
+	case 2:
+		return profile.ModeToggle{Quick: true, Full: false}
+	case 3:
+		return profile.ModeToggle{Quick: false, Full: true}
+	default:
+		return profile.ModeToggle{Quick: false, Full: false}
+	}
+}
+
+// askYesNo presents a yes/no confirmation.
+func askYesNo(reader *bufio.Reader, out io.Writer, label string, defVal bool) bool {
+	prompt := "y/N"
+	if defVal {
+		prompt = "Y/n"
+	}
+	write(out, "  %s? [%s]: ", label, prompt)
+
+	input, _ := reader.ReadString('\n')
+	input = strings.TrimSpace(strings.ToLower(input))
+	if input == "" {
+		return defVal
+	}
+	return input == "y" || input == "yes"
 }
 
 func printInitSummary(out io.Writer, actions []initAction) {
@@ -292,65 +429,5 @@ func ensureResultToAction(r just.EnsureResult) initAction {
 		status: string(r.Status),
 		target: "just installation",
 		detail: detail,
-	}
-}
-
-// askAutoBehavior runs the interactive auto-behavior config step.
-// Returns zero-value AutoConfig if user accepts all defaults.
-func askAutoBehavior(reader *bufio.Reader, out io.Writer, hasProfiles bool) profile.AutoConfig {
-	write(out, "\nAuto-behavior configuration (press Enter for defaults):\n")
-
-	var auto profile.AutoConfig
-	changed := false
-
-	// Only ask about e2eTest and consolidateSpecs when profiles are selected
-	if hasProfiles {
-		auto.E2eTest = askModeToggle(reader, out, "e2eTest", profile.ModeToggle{Quick: true, Full: true}, &changed)
-		auto.ConsolidateSpecs = askModeToggle(reader, out, "consolidateSpecs", profile.ModeToggle{Quick: true, Full: true}, &changed)
-	}
-
-	auto.CleanCode = askModeToggle(reader, out, "cleanCode", profile.ModeToggle{Quick: false, Full: false}, &changed)
-
-	write(out, "  Auto git push after completion? [y/N]: ")
-	input, _ := reader.ReadString('\n')
-	input = strings.TrimSpace(strings.ToLower(input))
-	if input == "y" || input == "yes" {
-		auto.GitPush = true
-		changed = true
-	}
-
-	if !changed {
-		return profile.AutoConfig{}
-	}
-	return auto
-}
-
-// askModeToggle asks about a mode-scoped boolean (quick/full).
-func askModeToggle(reader *bufio.Reader, out io.Writer, name string, defaults profile.ModeToggle, changed *bool) profile.ModeToggle {
-	defLabel := "enabled"
-	if !defaults.Quick && !defaults.Full {
-		defLabel = "disabled"
-	}
-
-	write(out, "  %s (quick/full/both/none) [%s]: ", name, defLabel)
-	input, _ := reader.ReadString('\n')
-	input = strings.TrimSpace(strings.ToLower(input))
-
-	if input == "" {
-		return defaults
-	}
-
-	*changed = true
-	switch input {
-	case "y", "yes", "true", "both":
-		return profile.ModeToggle{Quick: true, Full: true}
-	case "n", "no", "false", "none":
-		return profile.ModeToggle{Quick: false, Full: false}
-	case "quick":
-		return profile.ModeToggle{Quick: true, Full: defaults.Full}
-	case "full":
-		return profile.ModeToggle{Quick: defaults.Quick, Full: true}
-	default:
-		return defaults
 	}
 }
