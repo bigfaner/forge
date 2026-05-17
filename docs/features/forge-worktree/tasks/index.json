@@ -64,7 +64,7 @@
       "dependencies": [
         "4"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "5-update-workflow-docs.md",
       "record": "records/5-update-workflow-docs.md",
       "type": "documentation"

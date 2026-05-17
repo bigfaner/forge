@@ -585,11 +585,60 @@ $ forge task claim
 > Claimed task 1.2: Implement permission check
 ```
 
-### Option 2: Using Git Worktree
+### Option 2: Using Git Worktree (Recommended for parallel features)
+
+The `forge worktree` command group manages git worktrees tailored to the Forge feature workflow. Forge-cli's existing `GetWorktreeName()` automatically detects the feature from the worktree name, so no manual feature setup is needed.
+
+#### Commands
+
+| Command | Description |
+|---------|-------------|
+| `forge worktree start <slug>` | Create a worktree at `../<slug>` and launch `claude` in it |
+| `forge worktree list` | Show all worktrees with name, branch, path, and feature status |
+| `forge worktree resume <slug>` | Re-launch `claude` in an existing worktree |
+| `forge worktree remove <slug>` | Remove the worktree (branch is preserved for manual merge) |
+
+#### Typical Workflow
 
 ```bash
-# 1. Create worktree (auto-detects feature)
-$ git worktree add ../auth-login feature/auth-login
+# 1. Start a worktree — creates branch <slug> from HEAD, launches claude
+$ forge worktree start auth-login
+
+# 2. Inside the claude session (auto-detects feature: auth-login)
+$ forge task claim
+> Claimed task 1.1: Implement user authentication
+
+# 3. Develop, record, commit ...
+
+# 4. Later, resume an existing session if you closed it
+$ forge worktree resume auth-login
+
+# 5. List all worktrees to see status
+$ forge worktree list
+
+# 6. Remove when done (branch is kept for merge)
+$ forge worktree remove auth-login
+```
+
+#### Multiple Features in Parallel
+
+```bash
+# Terminal 1
+$ forge worktree start feature-a
+
+# Terminal 2
+$ forge worktree start feature-b
+
+# Both features develop independently in separate worktrees
+```
+
+#### Manual Git Worktree (Fallback)
+
+If `forge worktree` is not available, the equivalent manual steps are:
+
+```bash
+# 1. Create worktree
+$ git worktree add ../auth-login auth-login
 
 # 2. Work in the worktree
 $ cd ../auth-login
@@ -597,6 +646,10 @@ $ forge task claim
 > Claimed task 1.1: Implement user authentication
 
 # 3. Develop, record, commit ...
+
+# 4. Clean up
+$ cd ..
+$ git worktree remove auth-login
 ```
 
 ### Option 3: Manual Feature Setup
