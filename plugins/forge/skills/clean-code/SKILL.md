@@ -1,25 +1,25 @@
 ---
 name: clean-code
-description: Simplify and clean up code within the current feature branch scope. Applies five cleanup principles with optional quality gate.
+description: Simplify and clean up code. Supports scoped cleanup (git diff, files, directories) with optional quality gate.
 allowed_tools: ["Bash", "Read", "Edit", "Write", "Glob", "Grep"]
 ---
 
 # Clean Code
 
-Scoped code cleanup for the current feature branch. Applies five refinement principles to code within `git diff` scope, with an optional quality gate.
+Code cleanup applying five refinement principles. Supports three scope modes: user-specified paths, git diff, or full feature scope.
 
-**Core principle**: Only modify code within the feature diff scope. Never change what the code does — only how it does it.
+**Core principle**: Only modify code within the determined scope. Never change what the code does — only how it does it.
 
 ## When to Use
 
 **Trigger conditions:**
-- Invoked via `/forge:clean-code` (standalone)
+- Invoked via `/forge:clean-code` (standalone) — optionally with paths as arguments
 - Invoked via pipeline task `T-clean-code-1` (when `auto.cleanCode` is enabled)
 - User explicitly requests code cleanup
 
 **Skip when:**
-- No files changed in diff scope
-- All changed files are documentation-only
+- No files in scope
+- All files in scope are documentation-only
 
 ## Workflow
 
@@ -29,19 +29,43 @@ Step 1: Scope Detection → Step 2: Code Cleanup → Step 3: Quality Gate (optio
 
 ## Step 1: Scope Detection
 
-Determine which files to clean up.
+Resolve scope from the first applicable source:
+
+| Priority | Source | When |
+|----------|--------|------|
+| 1 | User arguments | `/forge:clean-code path/to/file.go pkg/service/` |
+| 2 | Git diff | On a feature branch with changes vs base |
+| 3 | Current feature | Pipeline task (`T-clean-code-1`) with feature context |
+
+### Priority 1: User-Specified Paths
+
+If the user provided file or directory paths as arguments, use those directly. For directories, list code files within:
+
+```bash
+find <path> -type f \( -name "*.go" -o -name "*.ts" -o -name "*.py" -o -name "*.js" \) ! -path "*/vendor/*" ! -path "*/node_modules/*"
+```
+
+### Priority 2: Git Diff
+
+If no arguments and on a feature branch:
 
 ```bash
 git diff --name-only main
 ```
 
-If the base branch is not `main`, determine it from context (e.g., the feature branch's merge base).
+If the base branch is not `main`, determine it from context (e.g., `git merge-base HEAD main`).
+
+### Priority 3: Feature Context
+
+If invoked as a pipeline task, use `{{SCOPE}}` from the task template to determine the relevant code directories.
+
+### Scope Validation
 
 <HARD-RULE>
-**Only modify files within the git diff scope.** Never touch files outside the diff. If a file is not in the diff output, do not edit it — even if it has obvious cleanup opportunities.
+**Only modify files within the resolved scope.** Never touch files outside the scope. If a file is not in scope, do not edit it — even if it has obvious cleanup opportunities.
 </HARD-RULE>
 
-If the diff is empty or contains no code files (only `.md`, `.txt`, etc.), output:
+If scope is empty or contains no code files (only `.md`, `.txt`, etc.), output:
 
 ```
 No code files in scope. Nothing to clean up.
@@ -49,9 +73,9 @@ No code files in scope. Nothing to clean up.
 
 And stop here.
 
-For large diffs (50+ files), process files in batches of 10-15 to avoid context overflow.
+For large scopes (50+ files), process files in batches of 10-15 to avoid context overflow.
 
-Output: `Step 1/4: Scope detection... DONE (N files in scope)`
+Output: `Step 1/4: Scope detection... DONE (N files in scope, source: <user-specified|git-diff|feature-context>)`
 
 ## Step 2: Code Cleanup
 

@@ -30,7 +30,7 @@ Invoke the skill:
 Skill(skill="forge:clean-code")
 ```
 
-This performs scoped code cleanup using `git diff` for scope detection, applies cleanup principles, runs quality gate, and produces a cleanup summary.
+The skill resolves scope automatically: user-specified paths > git diff > feature context. It applies five cleanup principles, runs an optional quality gate, and produces a cleanup summary.
 
 Output: `Step 2/3: Cleaning code... DONE`
 
