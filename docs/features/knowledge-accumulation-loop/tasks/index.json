@@ -94,7 +94,7 @@
       "dependencies": [
         "3"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "8-trigger-write-prd.md",
       "record": "records/8-trigger-write-prd.md",
       "type": "enhancement"
