@@ -1,7 +1,7 @@
 ---
 name: quick
 description: Streamlined pipeline for features (1-10 tasks). Brainstorm -> tasks -> execute, no PRD or design.
-allowed_tools: ["Bash", "Read", "Write", "Edit", "Grep", "Glob", "Agent", "Skill", "AskUserQuestion"]
+allowed-tools: Bash Read Write Edit Grep Glob Agent Skill AskUserQuestion
 ---
 
 # /quick

@@ -1,7 +1,7 @@
 ---
 name: extract-design-md
 description: Extract visual style from a web, mobile, or TUI application and generate a DESIGN.md for use with ui-design skill. Supports --platform flag (web, mobile, tui).
-allowed_tools: ["Bash", "Read", "Write", "WebFetch"]
+allowed-tools: Bash Read Write WebFetch
 argument-hints:
   - name: url
     description: Application URL or screenshot path to analyze (e.g. https://stripe.com or ./screenshot.png)

@@ -1,7 +1,7 @@
 ---
 name: git-checkout
 description: Pull the latest source branch, create a new branch from it, and switch to it. Automatically derives branch name from active feature/proposal. Optionally accepts a parameter to specify the source branch (defaults to main).
-allowed_tools: ["Bash", "Read"]
+allowed-tools: Bash Read
 argument-hints:
   - name: source-branch
     description: Source branch to pull from (e.g. main, develop). Defaults to main.

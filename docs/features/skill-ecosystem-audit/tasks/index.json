@@ -8,7 +8,7 @@
       "title": "Fix allowed-tools field name and format across all skills/commands",
       "priority": "P0",
       "estimatedTime": "45m",
-      "status": "pending",
+      "status": "completed",
       "file": "1-fix-allowed-tools.md",
       "record": "records/1-fix-allowed-tools.md",
       "scope": "all",

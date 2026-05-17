@@ -2,7 +2,7 @@
 name: simplify-skill
 description: Refactor skill files by extracting templates/examples to separate files.
 argument-hints: skill name
-allowed_tools: ["Read", "Write", "Edit", "AskUserQuestion"]
+allowed-tools: Read Write Edit AskUserQuestion
 ---
 
 # /simplify-skill

@@ -1,7 +1,7 @@
 ---
 name: init-forge
 description: Build and install the forge CLI tool.
-allowed_tools: ["Bash", "Read"]
+allowed-tools: Bash Read
 ---
 
 # /init-forge
