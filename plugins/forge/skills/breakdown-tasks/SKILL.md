@@ -41,14 +41,9 @@ graph LR
 
 ## Step 0: Resolve Language
 
-1. **Detect language**: Run `forge testing detect` to auto-detect the project's test language(s) from file signals.
-2. **On failure** (no language detected): ask the user to add `languages` to `.forge/config.yaml` (e.g., `languages: [go]`).
+Read `${CLAUDE_SKILL_DIR}/../../references/shared/step0-profile-resolution.md` for language detection and failure handling.
 
 The resolved languages drive per-language task expansion (handled automatically by `forge task index`).
-
-<HARD-RULE>
-Do NOT silently default to any language. If `forge testing detect` returns no result and the user cannot configure `languages`, abort the skill.
-</HARD-RULE>
 
 ## Step 1: Read All Documents
 
@@ -300,29 +295,11 @@ For implementation tasks, determine the `scope` field for `index.json` (document
 
 ### Type Assignment
 
-Every task receives a `type` field in its frontmatter. The type controls which executor template the dispatcher selects:
-
-| Type | When to assign |
-|------|----------------|
-| `feature` | Task adds new runtime behavior, new user-facing capability, or new files |
-| `enhancement` | Task improves existing behavior (performance, UX, edge-case handling) without adding new capabilities |
-| `cleanup` | Task removes dead code, fixes technical debt, or improves code hygiene |
-| `refactor` | Task restructures code without changing behavior (rename, reorganize, extract) |
-| `documentation` | Tasks producing only markdown, specs, or templates (non-compilable, non-runnable) |
-| `gate` | Quality-gate or stage-gate verification tasks |
-
-Unrecognized or ambiguous tasks fall back to `feature`.
+Read `${CLAUDE_SKILL_DIR}/../../references/shared/type-assignment.md` for the type-to-assignment mapping table.
 
 ### Intent Propagation
 
-The proposal frontmatter may contain an `intent` field (e.g., `intent: cleanup`). When present, use it as the **default type** for all tasks in this feature:
-
-1. Read `proposal.md` frontmatter → extract `intent` value
-2. If `intent` is set and matches a valid type constant (`feature`, `enhancement`, `cleanup`, `refactor`) → use it as the default `type` for all business tasks
-3. Individual task frontmatter `type` field **overrides** the proposal intent — use it when the task's primary output differs from the feature's dominant intent
-4. If `intent` is empty or missing → fall back to per-task Type Assignment from the table above
-
-The mapping is 1:1: proposal intent values use the same names as task type constants.
+Read `${CLAUDE_SKILL_DIR}/../../references/shared/intent-propagation.md` for proposal intent → default task type propagation logic.
 
 ### Template Selection (business tasks)
 

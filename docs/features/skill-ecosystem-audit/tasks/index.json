@@ -55,7 +55,7 @@
       "title": "Extract shared logic from breakdown-tasks ↔ quick-tasks",
       "priority": "P2",
       "estimatedTime": "2h",
-      "status": "pending",
+      "status": "completed",
       "file": "5-dedup-tasks-logic.md",
       "record": "records/5-dedup-tasks-logic.md",
       "scope": "all",
