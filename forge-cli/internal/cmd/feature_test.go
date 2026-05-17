@@ -649,6 +649,84 @@ func TestRunFeature_VerboseFlagNotLeakedToSubcommands(t *testing.T) {
 	assert.Nil(t, p, "verbose flag should NOT be a persistent flag")
 }
 
+func TestFeatureStatus_CompletedManifest(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test-project\n"), 0644))
+
+	slug := "completed-feature"
+	featureDir := filepath.Join(dir, feature.FeaturesDir, slug)
+	require.NoError(t, os.MkdirAll(featureDir, 0755))
+
+	manifestContent := fmt.Sprintf("---\nfeature: %s\nstatus: completed\n---\n", slug)
+	require.NoError(t, os.WriteFile(filepath.Join(featureDir, feature.ManifestFileName), []byte(manifestContent), 0644))
+
+	// Create task index
+	tasksDir := filepath.Join(featureDir, feature.TasksDirName)
+	require.NoError(t, os.MkdirAll(tasksDir, 0755))
+
+	index := &task.TaskIndex{
+		Feature:    slug,
+		StatusEnum: []string{"completed"},
+	}
+	index.SetTasks(map[string]task.Task{
+		"t1": {ID: "1", Title: "Task 1", Status: "completed"},
+	})
+	indexData, err := json.Marshal(index)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, feature.IndexFileName), indexData, 0644))
+
+	origWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(origWd) }()
+	require.NoError(t, os.Chdir(dir))
+
+	output, err := captureOutput(func() error {
+		rootCmd.SetArgs([]string{"feature", "status", slug})
+		return rootCmd.Execute()
+	})
+	require.NoError(t, err)
+	assert.Contains(t, output, "SLUG: completed-feature")
+	assert.Contains(t, output, "STATUS: completed")
+	assert.Contains(t, output, "completed: 1")
+	assert.Contains(t, output, "TOTAL: 1")
+}
+
+func TestFeatureList_ApprovedStatus(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test-project\n"), 0644))
+
+	slug := "approved-feature"
+	featureDir := filepath.Join(dir, feature.FeaturesDir, slug)
+	require.NoError(t, os.MkdirAll(featureDir, 0755))
+
+	manifestContent := fmt.Sprintf("---\nfeature: %s\nstatus: approved\n---\n", slug)
+	require.NoError(t, os.WriteFile(filepath.Join(featureDir, feature.ManifestFileName), []byte(manifestContent), 0644))
+
+	// Create task index
+	tasksDir := filepath.Join(featureDir, feature.TasksDirName)
+	require.NoError(t, os.MkdirAll(tasksDir, 0755))
+
+	index := &task.TaskIndex{Feature: slug}
+	indexData, err := json.Marshal(index)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, feature.IndexFileName), indexData, 0644))
+
+	origWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(origWd) }()
+	require.NoError(t, os.Chdir(dir))
+
+	output, err := captureOutput(func() error {
+		rootCmd.SetArgs([]string{"feature", "list"})
+		return rootCmd.Execute()
+	})
+	require.NoError(t, err)
+	assert.Contains(t, output, "approved-feature")
+	assert.Contains(t, output, "approved")
+}
+
 func TestScoreDisplay(t *testing.T) {
 	assert.Equal(t, "850", scoreDisplay("850"))
 	assert.Equal(t, "—", scoreDisplay(""))

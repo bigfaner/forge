@@ -1,7 +1,7 @@
 ---
 created: 2026-05-16
 author: "faner"
-status: Draft
+status: Approved
 ---
 
 # Proposal: Proposal Status Lifecycle

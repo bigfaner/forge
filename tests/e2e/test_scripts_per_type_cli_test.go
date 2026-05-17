@@ -272,11 +272,11 @@ func TestTC_003_TaskIndexSingleTypeCreatesOneGenTask(t *testing.T) {
 }
 
 // ==============================================================================
-// TC-004: forge task index without test-cases.md falls back to legacy (no per-type)
+// TC-004: forge task index without test-cases.md uses profile capabilities for per-type
 // ==============================================================================
 
-// Traceability: TC-004 -> test-scripts-per-type proposal: no types = legacy single gen-scripts
-func TestTC_004_TaskIndexWithoutTestCasesFallsBackToLegacy(t *testing.T) {
+// Traceability: TC-004 -> per-type tasks from profile capabilities, not test-cases.md
+func TestTC_004_TaskIndexWithoutTestCasesUsesProfileCapabilities(t *testing.T) {
 	dir := setupFeatureProject(t, "no-types-feat", true, []string{"go-test"}, "")
 
 	tasksDir := filepath.Join(dir, "docs", "features", "no-types-feat", "tasks")
@@ -301,11 +301,11 @@ func TestTC_004_TaskIndexWithoutTestCasesFallsBackToLegacy(t *testing.T) {
 }
 
 // ==============================================================================
-// TC-005: forge task index with zero-type test-cases falls back to legacy
+// TC-005: forge task index with zero-type test-cases uses profile capabilities
 // ==============================================================================
 
-// Traceability: TC-005 -> test-scripts-per-type proposal: all-zero = no detected types
-func TestTC_005_TaskIndexZeroTypeTestCasesFallsBackToLegacy(t *testing.T) {
+// Traceability: TC-005 -> per-type tasks from profile capabilities, not test-cases.md
+func TestTC_005_TaskIndexZeroTypeTestCasesUsesProfileCapabilities(t *testing.T) {
 	dir := setupFeatureProject(t, "zero-types-feat", true, []string{"go-test"}, noTypeTestCases)
 
 	tasksDir := filepath.Join(dir, "docs", "features", "zero-types-feat", "tasks")

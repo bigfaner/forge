@@ -250,9 +250,9 @@ func TestTC_006_CumulativeCapStopsFixTaskAfter3(t *testing.T) {
 	// Map keys must match the fix-task ID pattern so generateAutoID skips over them.
 	projectRoot := qgSetupProject(t, slug, map[string]qgTaskEntry{
 		"t1":    {ID: "1.1", Status: "completed", File: "1.1.md", Type: "feature"},
-		"fix-1": {ID: "fix-1", Title: "fix compile: first error", SourceTaskID: "quality-gate:compile", Status: "completed", File: "fix-1.md", Breaking: true, Priority: "P0"},
-		"fix-2": {ID: "fix-2", Title: "fix compile: second error", SourceTaskID: "quality-gate:compile", Status: "skipped", File: "fix-2.md", Breaking: true, Priority: "P0"},
-		"fix-3": {ID: "fix-3", Title: "fix compile: third error", SourceTaskID: "quality-gate:compile", Status: "completed", File: "fix-3.md", Breaking: true, Priority: "P0"},
+		"fix-1": {ID: "fix-1", Title: "fix compile: first error", SourceTaskID: "quality-gate:compile", Status: "completed", File: "fix-1.md", Breaking: true, Priority: "P0", Type: "fix"},
+		"fix-2": {ID: "fix-2", Title: "fix compile: second error", SourceTaskID: "quality-gate:compile", Status: "skipped", File: "fix-2.md", Breaking: true, Priority: "P0", Type: "fix"},
+		"fix-3": {ID: "fix-3", Title: "fix compile: third error", SourceTaskID: "quality-gate:compile", Status: "completed", File: "fix-3.md", Breaking: true, Priority: "P0", Type: "fix"},
 	})
 	qgWriteJustfile(t, projectRoot)
 
@@ -277,9 +277,9 @@ func TestTC_007_CrossStepIndependenceFixADoesNotBlockB(t *testing.T) {
 	// Map keys match fix-task ID pattern for correct auto-ID generation.
 	projectRoot := qgSetupProject(t, slug, map[string]qgTaskEntry{
 		"t1":    {ID: "1.1", Status: "completed", File: "1.1.md", Type: "feature"},
-		"fix-1": {ID: "fix-1", Title: "fix compile: first", SourceTaskID: "quality-gate:compile", Status: "completed", File: "fix-1.md", Breaking: true, Priority: "P0"},
-		"fix-2": {ID: "fix-2", Title: "fix compile: second", SourceTaskID: "quality-gate:compile", Status: "skipped", File: "fix-2.md", Breaking: true, Priority: "P0"},
-		"fix-3": {ID: "fix-3", Title: "fix compile: third", SourceTaskID: "quality-gate:compile", Status: "completed", File: "fix-3.md", Breaking: true, Priority: "P0"},
+		"fix-1": {ID: "fix-1", Title: "fix compile: first", SourceTaskID: "quality-gate:compile", Status: "completed", File: "fix-1.md", Breaking: true, Priority: "P0", Type: "fix"},
+		"fix-2": {ID: "fix-2", Title: "fix compile: second", SourceTaskID: "quality-gate:compile", Status: "skipped", File: "fix-2.md", Breaking: true, Priority: "P0", Type: "fix"},
+		"fix-3": {ID: "fix-3", Title: "fix compile: third", SourceTaskID: "quality-gate:compile", Status: "completed", File: "fix-3.md", Breaking: true, Priority: "P0", Type: "fix"},
 	})
 
 	// Create a justfile where compile passes but lint fails
@@ -333,10 +333,10 @@ func TestTC_002_CountFixTasksCountsCumulativeRegardlessOfStatus(t *testing.T) {
 	// Total = 4 exceeds the cap of 3, so next attempt should be blocked.
 	projectRoot := qgSetupProject(t, slug, map[string]qgTaskEntry{
 		"t1":    {ID: "1.1", Status: "completed", File: "1.1.md", Type: "feature"},
-		"fix-1": {ID: "fix-1", Title: "fix compile: first", SourceTaskID: "quality-gate:compile", Status: "completed", File: "fix-1.md", Breaking: true, Priority: "P0"},
-		"fix-2": {ID: "fix-2", Title: "fix compile: second", SourceTaskID: "quality-gate:compile", Status: "completed", File: "fix-2.md", Breaking: true, Priority: "P0"},
-		"fix-3": {ID: "fix-3", Title: "fix compile: third", SourceTaskID: "quality-gate:compile", Status: "completed", File: "fix-3.md", Breaking: true, Priority: "P0"},
-		"fix-4": {ID: "fix-4", Title: "fix compile: fourth", SourceTaskID: "quality-gate:compile", Status: "skipped", File: "fix-4.md", Breaking: true, Priority: "P0"},
+		"fix-1": {ID: "fix-1", Title: "fix compile: first", SourceTaskID: "quality-gate:compile", Status: "completed", File: "fix-1.md", Breaking: true, Priority: "P0", Type: "fix"},
+		"fix-2": {ID: "fix-2", Title: "fix compile: second", SourceTaskID: "quality-gate:compile", Status: "completed", File: "fix-2.md", Breaking: true, Priority: "P0", Type: "fix"},
+		"fix-3": {ID: "fix-3", Title: "fix compile: third", SourceTaskID: "quality-gate:compile", Status: "completed", File: "fix-3.md", Breaking: true, Priority: "P0", Type: "fix"},
+		"fix-4": {ID: "fix-4", Title: "fix compile: fourth", SourceTaskID: "quality-gate:compile", Status: "skipped", File: "fix-4.md", Breaking: true, Priority: "P0", Type: "fix"},
 	})
 	qgWriteJustfile(t, projectRoot)
 
