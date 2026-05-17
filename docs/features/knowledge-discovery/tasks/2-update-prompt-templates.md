@@ -12,7 +12,7 @@ mainSession: false
 
 ## Description
 
-Replace the vague "Read relevant project knowledge files" instruction in all 5 prompt templates with the discovery instruction that uses `domains` frontmatter for relevance matching.
+Ensure all 5 prompt templates contain the discovery instruction that uses `domains` frontmatter for relevance matching. The templates already contain a partial knowledge-check instruction ("Check `docs/conventions/` and `docs/business-rules/` for project-specific knowledge") but need the `domains` frontmatter filtering logic added.
 
 ## Reference Files
 - `docs/proposals/knowledge-discovery/proposal.md` — Source proposal (discovery instruction text)
@@ -44,7 +44,7 @@ Replace the vague "Read relevant project knowledge files" instruction in all 5 p
 ## Acceptance Criteria
 
 - [ ] All 5 files contain the discovery instruction
-- [ ] No file contains the text "Read relevant project knowledge files"
+- [ ] All 5 files include the `domains` frontmatter filtering logic ("Read each file's YAML frontmatter `domains` field to determine relevance")
 - [ ] The discovery instruction matches the proposal's specification:
   ```
   Check `docs/conventions/` and `docs/business-rules/` for project-specific knowledge relevant to this task.
@@ -55,10 +55,10 @@ Replace the vague "Read relevant project knowledge files" instruction in all 5 p
 
 ## Hard Rules
 
-- The discovery instruction must replace the existing "Read relevant project knowledge files" line exactly — do not add it as a separate paragraph
+- The discovery instruction must include both the knowledge-check directive and the `domains` frontmatter filtering logic
 - Do not change any other content in the prompt templates
 
 ## Implementation Notes
 
-- All 5 files have the same pattern at the same location (line 12 or 20) — batch replacement
-- The instruction goes where the current vague instruction is, maintaining the same context flow
+- All 5 files have the same pattern at the same location (lines 12-15 or 20-23) — batch replacement
+- The instruction goes where the current knowledge-check instruction is, maintaining the same context flow

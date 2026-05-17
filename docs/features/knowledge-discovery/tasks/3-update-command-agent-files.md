@@ -12,7 +12,9 @@ mainSession: false
 
 ## Description
 
-Remove the hardcoded keyword→filename mapping tables from `fix-bug.md` and `error-fixer.md`, replacing them with the same discovery instruction used in prompt templates.
+Remove the hardcoded keyword→filename mapping tables from `fix-bug.md`, replacing them with the same discovery instruction used in prompt templates.
+
+> **Note**: This task originally also targeted `plugins/forge/agents/error-fixer.md`, but that agent was removed during the `typed-task-dispatch` feature. The discovery instruction was applied to `fix-bug.md` only.
 
 ## Reference Files
 - `docs/proposals/knowledge-discovery/proposal.md` — Source proposal (discovery instruction text)
@@ -30,7 +32,6 @@ Remove the hardcoded keyword→filename mapping tables from `fix-bug.md` and `er
 | File | Changes |
 |------|---------|
 | `plugins/forge/commands/fix-bug.md` | Remove mapping table, add discovery instruction |
-| `plugins/forge/agents/error-fixer.md` | Remove mapping table, add discovery instruction |
 
 ### Delete
 
@@ -40,18 +41,17 @@ Remove the hardcoded keyword→filename mapping tables from `fix-bug.md` and `er
 
 ## Acceptance Criteria
 
-- [ ] Both files contain the discovery instruction (same as in prompt templates)
+- [ ] `fix-bug.md` contains the discovery instruction (same as in prompt templates)
 - [ ] No file contains the hardcoded mapping pattern `"auth"/"login"/"permission" → business-rules/auth.md`
 - [ ] No file contains any keyword→filename mapping table
 - [ ] The "Project Knowledge" section structure is preserved — only the mapping content changes
 
 ## Hard Rules
 
-- The mapping tables in both files are **identical** — apply the same replacement to both
+- The mapping table in `fix-bug.md` needs to be replaced with the discovery instruction
 - Do not change the surrounding instructions (the "Infer relevant domains" bullet stays, only the "Example mappings" bullet is removed)
 
 ## Implementation Notes
 
-- `fix-bug.md:50-51` has the mapping in "Project Knowledge" section
-- `error-fixer.md:64-65` has the identical mapping
+- `fix-bug.md` has the mapping in "Project Knowledge" section
 - Replace the "Example mappings: ..." line with the discovery instruction

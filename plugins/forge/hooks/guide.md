@@ -27,7 +27,7 @@ docs/
   sitemap/sitemap.json  — Page element map (project-level, /gen-sitemap)
 ```
 
-> Agents read `docs/business-rules/` and `docs/conventions/` during task execution for domain constraints and coding standards. These are populated by `/consolidate-specs`, which also performs drift verification to keep specs in sync with code.
+> Agents read `docs/business-rules/` and `docs/conventions/` during task execution for domain constraints and coding standards. Each file carries a `domains` frontmatter field (auto-managed by `/consolidate-specs`) with topic keywords — agents use it to load only files relevant to the current task, skipping the rest. `/consolidate-specs` also performs drift verification to keep specs in sync with code.
 
 ## Skill Workflow
 
