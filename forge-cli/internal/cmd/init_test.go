@@ -244,30 +244,30 @@ func TestInitCommand(t *testing.T) {
 		}
 	})
 
-		t.Run("overwrites existing config (reconfigure)", func(t *testing.T) {
-			env := newInitTestEnv(t)
-			forgeDir := env.path(feature.ForgeDir)
-			if err := os.MkdirAll(forgeDir, 0o755); err != nil {
-				t.Fatal(err)
-			}
-			existingConfig := "project-type: frontend\n"
-			if err := os.WriteFile(env.path(feature.ForgeDir, feature.ForgeConfigFileName), []byte(existingConfig), 0o644); err != nil {
-				t.Fatal(err)
-			}
+	t.Run("overwrites existing config (reconfigure)", func(t *testing.T) {
+		env := newInitTestEnv(t)
+		forgeDir := env.path(feature.ForgeDir)
+		if err := os.MkdirAll(forgeDir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		existingConfig := "project-type: frontend\n"
+		if err := os.WriteFile(env.path(feature.ForgeDir, feature.ForgeConfigFileName), []byte(existingConfig), 0o644); err != nil {
+			t.Fatal(err)
+		}
 
-			err := env.run()
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
+		err := env.run()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
 
-			data, _ := os.ReadFile(env.path(feature.ForgeDir, feature.ForgeConfigFileName))
-			if strings.Contains(string(data), "frontend") {
-				t.Error("existing config should have been overwritten")
-			}
-			if !strings.Contains(string(data), "backend") {
-				t.Error("expected reconfigured config to contain backend")
-			}
-		})
+		data, _ := os.ReadFile(env.path(feature.ForgeDir, feature.ForgeConfigFileName))
+		if strings.Contains(string(data), "frontend") {
+			t.Error("existing config should have been overwritten")
+		}
+		if !strings.Contains(string(data), "backend") {
+			t.Error("expected reconfigured config to contain backend")
+		}
+	})
 
 	t.Run("prints summary report", func(t *testing.T) {
 		env := newInitTestEnv(t)
