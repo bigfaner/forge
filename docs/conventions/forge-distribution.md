@@ -121,20 +121,26 @@ hooks.json 和 shell 脚本可以通过环境变量引用 plugin 安装位置：
 }
 ```
 
-### Skills — 使用相对路径
+### Skills/Commands — 使用 `${CLAUDE_SKILL_DIR}`
 
-Skill 文件（SKILL.md）中的路径是 Claude AI 通过 Read 工具解析的。Claude Code 从 SKILL.md 所在目录解析相对路径，因此路径在开发源码和分发后都能正确工作。
+Skill 文件（SKILL.md）和 Command 文件（.md）中的路径由 Claude 通过 Read 工具解析，工作目录是用户项目根目录，不是文件所在目录。因此必须使用 `${CLAUDE_SKILL_DIR}` 变量构建绝对路径。
+
+`${CLAUDE_SKILL_DIR}` 在 skill 内容加载时自动替换为 SKILL.md 所在目录的绝对路径（分发后为 `~/.claude/plugins/cache/forge/forge/<version>/skills/<name>/`）。
 
 **路径规则：**
 
 | 引用目标 | 路径风格 | 示例 |
 |---------|---------|------|
-| skill 内部文件 | 相对路径（从 SKILL.md 所在目录） | `templates/decision-entry.md` |
-| plugin 共享文件 | 相对路径（回溯到 plugin root） | `../../references/shared/decision-logging.md` |
+| skill 内部文件 | `${CLAUDE_SKILL_DIR}/...` | `${CLAUDE_SKILL_DIR}/templates/decision-entry.md` |
+| plugin 共享文件 | `${CLAUDE_SKILL_DIR}/../...` (commands) 或 `${CLAUDE_SKILL_DIR}/../../...` (skills) | `${CLAUDE_SKILL_DIR}/../../references/shared/decision-logging.md` |
 | 用户项目文件 | 项目相对路径 | `docs/decisions/<type>.md` |
 | forge CLI | 命令名 | `forge task claim` |
 
-**禁止使用项目根路径**（如 `plugins/forge/references/shared/...`）— 该路径仅在开发源码仓库中有效，分发后文件结构不包含 `plugins/forge/` 前缀，会导致路径解析失败。
+**`references/shared/` 内的引用文件**（如 `knowledge-extraction.md`）：不是 skill/command，不适用 `${CLAUDE_SKILL_DIR}`。使用裸文件名引用同目录文件（如 `decision-logging.md`），由读取该文件的 skill 负责路径解析。
+
+**禁止：**
+- 项目根路径（`plugins/forge/...`）— 分发后路径不存在
+- 相对路径（`../../...`、`templates/...`）— 从用户项目根解析，指向错误位置
 
 ## 6. 两条 Pipeline
 

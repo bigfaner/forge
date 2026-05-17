@@ -123,7 +123,7 @@ Do NOT run e2e tests outside Step 3.
 
 After the loop summary and e2e suggestion (above), run knowledge auto-extraction:
 
-1. Read `../references/shared/knowledge-extraction.md` and execute its extraction flow with:
+1. Read `${CLAUDE_SKILL_DIR}/../references/shared/knowledge-extraction.md` and execute its extraction flow with:
    - `trigger`: `run-tasks`
    - `artifacts`: task outcomes (`docs/features/<slug>/tasks/*.md`), code changes (`git diff` against feature branch base), manifest (`docs/features/<slug>/manifest.md`)
 

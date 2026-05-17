@@ -101,8 +101,8 @@ Write entries immediately, one per identified type. Do not ask for confirmation 
 
 ### Decision Entry
 
-1. Read `../../references/shared/decision-logging.md` for the authoritative format.
-2. Read `templates/decision-entry.md` for the row template.
+1. Read `${CLAUDE_SKILL_DIR}/../../references/shared/decision-logging.md` for the authoritative format.
+2. Read `${CLAUDE_SKILL_DIR}/templates/decision-entry.md` for the row template.
 3. Determine: date (today), feature slug (current feature or `-`), decision text, rationale, source (`/learn` or `manual`).
 4. If `docs/decisions/` does not exist, auto-create the directory plus all 8 type files and `manifest.md` following decision-logging.md Section 8.
 5. Append a decision row to `docs/decisions/<type>.md` (Section 6 row format).
@@ -110,7 +110,7 @@ Write entries immediately, one per identified type. Do not ask for confirmation 
 
 ### Lesson Entry
 
-1. Read `templates/lesson-entry.md` for the file template.
+1. Read `${CLAUDE_SKILL_DIR}/templates/lesson-entry.md` for the file template.
 2. Generate filename: `<category-prefix><slug>.md` in `docs/lessons/`.
 3. Fill the template sections: Problem, Root Cause (trace causal chain at least 3 levels deep), Solution, Reusable Pattern.
 4. Set frontmatter: `created` (today's date), `tags` (from vocabulary).
@@ -118,7 +118,7 @@ Write entries immediately, one per identified type. Do not ask for confirmation 
 
 ### Convention Entry
 
-1. Read `templates/convention-entry.md` for the entry format.
+1. Read `${CLAUDE_SKILL_DIR}/templates/convention-entry.md` for the entry format.
 2. Determine target file: existing `docs/conventions/<topic>.md` or create new.
 3. Assign project-global ID: `TECH-<topic>-<NNN>` (find max existing NNN + 1).
 4. If creating new file: write frontmatter with `title` and `domains` (3-7 keywords derived from content).
@@ -126,7 +126,7 @@ Write entries immediately, one per identified type. Do not ask for confirmation 
 
 ### Business-Rule Entry
 
-1. Read `templates/convention-entry.md` for the entry format.
+1. Read `${CLAUDE_SKILL_DIR}/templates/convention-entry.md` for the entry format.
 2. Determine target file: existing `docs/business-rules/<domain>.md` or create new.
 3. Assign project-global ID: `BIZ-<domain>-<NNN>` (find max existing NNN + 1).
 4. If creating new file: write frontmatter with `title` and `domains` (3-7 keywords derived from content).

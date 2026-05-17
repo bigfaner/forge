@@ -32,7 +32,7 @@ The extraction routine identifies four knowledge types:
 
 ### 3.1 Decisions
 
-Non-obvious choices where alternatives existed. Written to `docs/decisions/<type>.md` using the row format from `./decision-logging.md` Section 6.
+Non-obvious choices where alternatives existed. Written to `docs/decisions/<type>.md` using the row format from `decision-logging.md` Section 6.
 
 ### 3.2 Lessons
 

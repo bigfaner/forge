@@ -254,7 +254,7 @@ After committing, use `AskUserQuestion` to ask:
 
 After Step 11 (Adversarial Eval Prompt) completes, run knowledge auto-extraction from the PRD:
 
-1. Read `../../references/shared/knowledge-extraction.md` and execute its extraction flow with:
+1. Read `${CLAUDE_SKILL_DIR}/../../references/shared/knowledge-extraction.md` and execute its extraction flow with:
    - `trigger`: `write-prd`
    - `artifacts`: PRD content (`docs/features/<slug>/prd/prd-spec.md`, `docs/features/<slug>/prd/prd-user-stories.md`)
 
