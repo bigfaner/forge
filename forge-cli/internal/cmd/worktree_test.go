@@ -121,13 +121,12 @@ func TestWorktreeStart_ErrorWhenTargetDirExists(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chdir(origWd) })
 	_ = os.Chdir(dir)
 
-	// Create the target sibling directory ahead of time
-	parentDir := filepath.Dir(dir)
-	targetDir := filepath.Join(parentDir, "test-slug")
+	// Create the target directory ahead of time at .forge/worktrees/<slug>
+	targetDir := filepath.Join(dir, ".forge", "worktrees", "test-slug")
 	if err := os.MkdirAll(targetDir, 0o755); err != nil {
 		t.Fatalf("create target dir: %v", err)
 	}
-	t.Cleanup(func() { _ = os.RemoveAll(targetDir) })
+	t.Cleanup(func() { _ = os.RemoveAll(filepath.Dir(filepath.Dir(targetDir))) })
 
 	buf := new(bytes.Buffer)
 	rootCmd.SetOut(buf)
@@ -177,8 +176,7 @@ func TestWorktreeStart_CreatesWorktreeAndLaunchesClaude(t *testing.T) {
 	_ = os.Chdir(dir)
 
 	slug := "my-feature"
-	parentDir := filepath.Dir(dir)
-	targetDir := filepath.Join(parentDir, slug)
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
 	t.Cleanup(func() {
 		// Clean up the worktree
 		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
@@ -244,8 +242,7 @@ func TestWorktreeStart_ResumesFromExistingBranch(t *testing.T) {
 		t.Fatalf("git branch %s: %v", slug, err)
 	}
 
-	parentDir := filepath.Dir(dir)
-	targetDir := filepath.Join(parentDir, slug)
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
 	t.Cleanup(func() {
 		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
 		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
@@ -348,8 +345,7 @@ func TestWorktreeStart_SourceBranchFlag_CreatesFromSpecifiedBranch(t *testing.T)
 	}
 
 	slug := "source-branch-test"
-	parentDir := filepath.Dir(dir)
-	targetDir := filepath.Join(parentDir, slug)
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
 	t.Cleanup(func() {
 		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
 		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
@@ -404,8 +400,7 @@ func TestWorktreeStart_SourceBranchShortFlag(t *testing.T) {
 	}
 
 	slug := "short-flag-test"
-	parentDir := filepath.Dir(dir)
-	targetDir := filepath.Join(parentDir, slug)
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
 	t.Cleanup(func() {
 		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
 		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
@@ -509,8 +504,7 @@ func TestWorktreeStart_SourceBranchFromConfig(t *testing.T) {
 	}
 
 	slug := "config-source-branch"
-	parentDir := filepath.Dir(dir)
-	targetDir := filepath.Join(parentDir, slug)
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
 	t.Cleanup(func() {
 		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
 		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
@@ -597,8 +591,7 @@ func TestWorktreeStart_FlagOverridesConfigSourceBranch(t *testing.T) {
 	}
 
 	slug := "flag-override-test"
-	parentDir := filepath.Dir(dir)
-	targetDir := filepath.Join(parentDir, slug)
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
 	t.Cleanup(func() {
 		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
 		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
@@ -667,8 +660,7 @@ func TestWorktreeStart_SourceBranchNotUsedForExistingBranch(t *testing.T) {
 		t.Fatalf("git checkout master: %v", err)
 	}
 
-	parentDir := filepath.Dir(dir)
-	targetDir := filepath.Join(parentDir, slug)
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
 	t.Cleanup(func() {
 		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
 		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
@@ -714,8 +706,7 @@ func TestWorktreeStart_NoSourceBranch_DefaultsToHEAD(t *testing.T) {
 	_ = os.Chdir(dir)
 
 	slug := "default-head-test"
-	parentDir := filepath.Dir(dir)
-	targetDir := filepath.Join(parentDir, slug)
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
 	t.Cleanup(func() {
 		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
 		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
@@ -859,8 +850,7 @@ func TestWorktreeStart_WorktreeNameAutoDetection(t *testing.T) {
 	_ = os.Chdir(dir)
 
 	slug := "auto-detect-feature"
-	parentDir := filepath.Dir(dir)
-	targetDir := filepath.Join(parentDir, slug)
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
 	t.Cleanup(func() {
 		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
 		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
@@ -886,6 +876,59 @@ func TestWorktreeStart_WorktreeNameAutoDetection(t *testing.T) {
 // ---------------------------------------------------------------------------
 // worktree start: uses filepath.Join for path construction
 // ---------------------------------------------------------------------------
+
+func TestWorktreeStart_CreatesWorktreeInsideDotForgeWorktrees(t *testing.T) {
+	resetSourceBranchFlag(t)
+
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	origRunClaude := runClaudeFunc
+	runClaudeFunc = func(_ []string) error { return nil }
+	defer func() { runClaudeFunc = origRunClaude }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	slug := "inside-dot-forge"
+	expectedDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", expectedDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "start", slug})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify worktree was created at .forge/worktrees/<slug>
+	if _, err := os.Stat(expectedDir); os.IsNotExist(err) {
+		t.Errorf("worktree should be at %s, not as a sibling of project root", expectedDir)
+	}
+
+	// Verify it's NOT at the old sibling location
+	oldPath := filepath.Join(filepath.Dir(dir), slug)
+	if _, err := os.Stat(oldPath); err == nil {
+		t.Errorf("worktree should NOT exist at old sibling path %s", oldPath)
+		_ = exec.Command("git", "worktree", "remove", oldPath, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	}
+}
 
 func TestWorktreeStart_SlugValidation(t *testing.T) {
 	// Empty slug should fail
@@ -954,8 +997,10 @@ func TestWorktreeList_ShowsMultipleWorktrees(t *testing.T) {
 
 	// Create an additional worktree
 	slug := "list-test-feature"
-	parentDir := filepath.Dir(dir)
-	targetDir := filepath.Join(parentDir, slug)
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	if err := os.MkdirAll(filepath.Dir(targetDir), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
 	cmd := exec.Command("git", "worktree", "add", "-b", slug, targetDir)
 	cmd.Dir = dir
 	if err := cmd.Run(); err != nil {
@@ -1004,8 +1049,10 @@ func TestWorktreeList_MarksForgeManaged(t *testing.T) {
 	}
 
 	// Create the worktree
-	parentDir := filepath.Dir(dir)
-	targetDir := filepath.Join(parentDir, slug)
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	if err := os.MkdirAll(filepath.Dir(targetDir), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
 	cmd := exec.Command("git", "worktree", "add", "-b", slug, targetDir)
 	cmd.Dir = dir
 	if err := cmd.Run(); err != nil {
@@ -1114,6 +1161,54 @@ func TestWorktreeRemoveCmd_RequiresSlugArg(t *testing.T) {
 // worktree remove: happy path
 // ---------------------------------------------------------------------------
 
+func TestWorktreeRemove_ResolvesDotForgeWorktreesPath(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create worktree at .forge/worktrees/<slug>
+	slug := "remove-dot-forge-test"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	if err := os.MkdirAll(filepath.Dir(targetDir), 0o755); err != nil {
+		t.Fatalf("mkdir .forge/worktrees: %v", err)
+	}
+	cmd := exec.Command("git", "worktree", "add", "-b", slug, targetDir)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "remove", slug})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Worktree directory should no longer exist
+	if _, err := os.Stat(targetDir); !os.IsNotExist(err) {
+		t.Errorf("worktree directory %s should have been removed", targetDir)
+	}
+
+	// Branch should still exist
+	output, err := exec.Command("git", "-C", dir, "branch", "--list", slug).Output()
+	if err != nil {
+		t.Fatalf("git branch --list: %v", err)
+	}
+	if !strings.Contains(string(output), slug) {
+		t.Errorf("branch %q should still exist after worktree removal", slug)
+	}
+}
+
 func TestWorktreeRemove_RemovesWorktreeAndKeepsBranch(t *testing.T) {
 	dir := initGitRepoForWorktree(t)
 	t.Setenv("CLAUDE_PROJECT_DIR", dir)
@@ -1123,8 +1218,10 @@ func TestWorktreeRemove_RemovesWorktreeAndKeepsBranch(t *testing.T) {
 
 	// Create a worktree
 	slug := "remove-test-feature"
-	parentDir := filepath.Dir(dir)
-	targetDir := filepath.Join(parentDir, slug)
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	if err := os.MkdirAll(filepath.Dir(targetDir), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
 	cmd := exec.Command("git", "worktree", "add", "-b", slug, targetDir)
 	cmd.Dir = dir
 	if err := cmd.Run(); err != nil {
@@ -1201,8 +1298,10 @@ func TestWorktreeRemove_ErrorWhenUncommittedChanges(t *testing.T) {
 
 	// Create a worktree
 	slug := "dirty-worktree"
-	parentDir := filepath.Dir(dir)
-	targetDir := filepath.Join(parentDir, slug)
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	if err := os.MkdirAll(filepath.Dir(targetDir), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
 	cmd := exec.Command("git", "worktree", "add", "-b", slug, targetDir)
 	cmd.Dir = dir
 	if err := cmd.Run(); err != nil {
@@ -1585,8 +1684,7 @@ func TestWorktreeStart_CopyFilesFromConfig(t *testing.T) {
 	}
 
 	slug := "copy-files-test"
-	parentDir := filepath.Dir(dir)
-	targetDir := filepath.Join(parentDir, slug)
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
 	t.Cleanup(func() {
 		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
 		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
@@ -1657,8 +1755,7 @@ func TestWorktreeStart_AbortsWhenCopyFileMissing(t *testing.T) {
 
 	// Verify NO worktree was created (pre-validation)
 	slug := "test-slug"
-	parentDir := filepath.Dir(dir)
-	targetDir := filepath.Join(parentDir, slug)
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
 	if _, err := os.Stat(targetDir); !os.IsNotExist(err) {
 		// Clean up any orphan worktree
 		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
@@ -1691,8 +1788,7 @@ func TestWorktreeStart_NoCopyWhenConfigAbsent(t *testing.T) {
 	// No .forge/config.yaml at all
 
 	slug := "no-copy-test"
-	parentDir := filepath.Dir(dir)
-	targetDir := filepath.Join(parentDir, slug)
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
 	t.Cleanup(func() {
 		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
 		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
@@ -1746,8 +1842,7 @@ func TestWorktreeStart_NoCopyWhenCopyFilesEmpty(t *testing.T) {
 	}
 
 	slug := "empty-copy-test"
-	parentDir := filepath.Dir(dir)
-	targetDir := filepath.Join(parentDir, slug)
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
 	t.Cleanup(func() {
 		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
 		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
@@ -1919,8 +2014,7 @@ func TestWorktreeResume_ErrorWhenDirExistsButNotWorktree(t *testing.T) {
 
 	// Create a sibling directory that is NOT a git worktree
 	slug := "not-a-worktree"
-	parentDir := filepath.Dir(dir)
-	targetDir := filepath.Join(parentDir, slug)
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
 	if err := os.MkdirAll(targetDir, 0o755); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
@@ -1975,8 +2069,10 @@ func TestWorktreeResume_LaunchesClaudeInExistingWorktree(t *testing.T) {
 
 	// Create a real worktree
 	slug := "resume-feature"
-	parentDir := filepath.Dir(dir)
-	targetDir := filepath.Join(parentDir, slug)
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	if err := os.MkdirAll(filepath.Dir(targetDir), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
 	cmd := exec.Command("git", "worktree", "add", "-b", slug, targetDir)
 	cmd.Dir = dir
 	if err := cmd.Run(); err != nil {

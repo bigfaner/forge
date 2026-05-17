@@ -24,9 +24,9 @@ var worktreeCmd = &cobra.Command{
 	Short: "Manage git worktrees for feature development",
 	Long: `Manage git worktrees for parallel feature development.
 
-Each worktree is created as a sibling directory (../<slug>) with a branch
-named <slug>. Forge's feature auto-detection resolves the correct feature
-from the worktree name.`,
+Each worktree is created inside the project at .forge/worktrees/<slug> with a
+branch named <slug>. Forge's feature auto-detection resolves the correct
+feature from the worktree name.`,
 }
 
 var worktreeListCmd = &cobra.Command{
@@ -43,7 +43,7 @@ feature worktrees.`,
 var worktreeRemoveCmd = &cobra.Command{
 	Use:   "remove <slug>",
 	Short: "Remove a git worktree while preserving its branch",
-	Long: `Remove the git worktree at ../<slug>.
+	Long: `Remove the git worktree at .forge/worktrees/<slug>.
 
 The branch is preserved after removal so you can merge it later with
 'git merge <slug>'. Fails if the worktree has uncommitted changes —
@@ -70,7 +70,7 @@ func runWorktreeRemove(cmd *cobra.Command, args []string) error {
 	}
 
 	// Resolve worktree path
-	targetDir := filepath.Join(projectRoot, "..", slug)
+	targetDir := filepath.Join(projectRoot, ".forge", "worktrees", slug)
 	targetDir, err = filepath.Abs(targetDir)
 	if err != nil {
 		return fmt.Errorf("resolve target path: %w", err)
@@ -148,7 +148,7 @@ func runWorktreeResume(cmd *cobra.Command, args []string) error {
 	}
 
 	// Resolve worktree path
-	targetDir := filepath.Join(projectRoot, "..", slug)
+	targetDir := filepath.Join(projectRoot, ".forge", "worktrees", slug)
 	targetDir, err = filepath.Abs(targetDir)
 	if err != nil {
 		return fmt.Errorf("resolve target path: %w", err)
@@ -182,7 +182,7 @@ func runWorktreeResume(cmd *cobra.Command, args []string) error {
 var worktreeStartCmd = &cobra.Command{
 	Use:   "start <slug>",
 	Short: "Create a worktree and launch Claude in it",
-	Long: `Create a git worktree at ../<slug> with branch <slug> from HEAD,
+	Long: `Create a git worktree at .forge/worktrees/<slug> with branch <slug> from HEAD,
 then launch claude --dangerously-skip-permissions in the worktree directory.
 
 If branch <slug> already exists, creates the worktree from that branch
@@ -223,11 +223,16 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("not a git repository: %s", projectRoot)
 	}
 
-	// Compute target directory as sibling: filepath.Join(projectRoot, "..", slug)
-	targetDir := filepath.Join(projectRoot, "..", slug)
+	// Compute target directory inside project: .forge/worktrees/<slug>
+	targetDir := filepath.Join(projectRoot, ".forge", "worktrees", slug)
 	targetDir, err = filepath.Abs(targetDir)
 	if err != nil {
 		return fmt.Errorf("resolve target path: %w", err)
+	}
+
+	// Ensure .forge/worktrees/ parent directory exists
+	if err := os.MkdirAll(filepath.Dir(targetDir), 0o755); err != nil {
+		return fmt.Errorf("create worktrees directory: %w", err)
 	}
 
 	// Check if target directory already exists
