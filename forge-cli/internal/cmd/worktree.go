@@ -9,6 +9,7 @@ import (
 
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/git"
+	"forge-cli/pkg/profile"
 	"forge-cli/pkg/project"
 
 	"github.com/spf13/cobra"
@@ -185,9 +186,16 @@ var worktreeStartCmd = &cobra.Command{
 then launch claude --dangerously-skip-permissions in the worktree directory.
 
 If branch <slug> already exists, creates the worktree from that branch
-(resume context).`,
+(resume context).
+
+The source branch for new worktrees can be set via --source-branch / -b flag
+or worktree.source-branch in .forge/config.yaml. Priority: flag > config > HEAD.`,
 	Args: cobra.ExactArgs(1),
 	RunE: runWorktreeStart,
+}
+
+func init() {
+	worktreeStartCmd.Flags().StringP("source-branch", "b", "", "source branch for the new worktree (default: HEAD)")
 }
 
 func runWorktreeStart(cmd *cobra.Command, args []string) error {
@@ -229,6 +237,17 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("target directory already exists: %s", targetDir)
 	}
 
+	// Resolve source branch: flag > config > HEAD
+	var sourceBranch string
+	if cmd.Flags().Changed("source-branch") {
+		sourceBranch, _ = cmd.Flags().GetString("source-branch")
+	} else {
+		cfg, _ := profile.ReadConfig(projectRoot)
+		if cfg != nil && cfg.Worktree != nil {
+			sourceBranch = cfg.Worktree.SourceBranch
+		}
+	}
+
 	// Check if branch already exists
 	branchExists := false
 	if _, err := git.Run(projectRoot, "rev-parse", "--verify", slug); err == nil {
@@ -240,8 +259,21 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 		// Resume: create worktree from existing branch
 		_, err = git.Run(projectRoot, "worktree", "add", targetDir, slug)
 	} else {
-		// New: create worktree with new branch from HEAD
-		_, err = git.Run(projectRoot, "worktree", "add", "-b", slug, targetDir)
+		// Pre-validate source branch if specified
+		if sourceBranch != "" {
+			if _, err := git.Run(projectRoot, "rev-parse", "--verify", sourceBranch); err != nil {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: source branch %q not found\n", sourceBranch)
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "hint: verify the branch exists locally or fetch from remote\n")
+				return fmt.Errorf("source branch not found: %s", sourceBranch)
+			}
+		}
+
+		// New: create worktree with new branch from source
+		args := []string{"worktree", "add", "-b", slug, targetDir}
+		if sourceBranch != "" {
+			args = append(args, sourceBranch)
+		}
+		_, err = git.Run(projectRoot, args...)
 	}
 	if err != nil {
 		return fmt.Errorf("git worktree add: %w", err)
@@ -301,6 +333,15 @@ func runWorktreeList(cmd *cobra.Command, _ []string) error {
 		_, _ = fmt.Fprintf(w, "%s\t%s\t%s%s\n", name, branch, entry.Path, suffix)
 	}
 	return w.Flush()
+}
+
+// resolveSourceBranch returns the effective source branch based on priority:
+// flag > config > empty (HEAD).
+func resolveSourceBranch(flagValue, configBranch string) string {
+	if flagValue != "" {
+		return flagValue
+	}
+	return configBranch
 }
 
 // listForgeFeatures returns a set of feature slugs that exist under docs/features/.

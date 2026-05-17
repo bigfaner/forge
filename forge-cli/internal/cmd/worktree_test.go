@@ -65,6 +65,7 @@ func TestWorktreeStartCmd_RequiresSlugArg(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestWorktreeStart_ErrorWhenClaudeNotInPath(t *testing.T) {
+	resetSourceBranchFlag(t)
 	origLookPath := lookPathFunc
 	lookPathFunc = func(_ string) (string, error) {
 		return "", &exec.Error{Name: "claude", Err: exec.ErrNotFound}
@@ -97,6 +98,8 @@ func TestWorktreeStart_ErrorWhenClaudeNotInPath(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestWorktreeStart_ErrorWhenTargetDirExists(t *testing.T) {
+	resetSourceBranchFlag(t)
+
 	// Make claude available
 	origLookPath := lookPathFunc
 	lookPathFunc = func(name string) (string, error) {
@@ -146,6 +149,8 @@ func TestWorktreeStart_ErrorWhenTargetDirExists(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestWorktreeStart_CreatesWorktreeAndLaunchesClaude(t *testing.T) {
+	resetSourceBranchFlag(t)
+
 	// Make claude available
 	origLookPath := lookPathFunc
 	lookPathFunc = func(name string) (string, error) {
@@ -209,6 +214,7 @@ func TestWorktreeStart_CreatesWorktreeAndLaunchesClaude(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestWorktreeStart_ResumesFromExistingBranch(t *testing.T) {
+	resetSourceBranchFlag(t)
 	origLookPath := lookPathFunc
 	lookPathFunc = func(name string) (string, error) {
 		if name == "claude" {
@@ -271,6 +277,7 @@ func TestWorktreeStart_ResumesFromExistingBranch(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestWorktreeStart_ErrorWhenNotGitRepo(t *testing.T) {
+	resetSourceBranchFlag(t)
 	origLookPath := lookPathFunc
 	lookPathFunc = func(name string) (string, error) {
 		if name == "claude" {
@@ -298,10 +305,540 @@ func TestWorktreeStart_ErrorWhenNotGitRepo(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// worktree start: --source-branch flag
+// ---------------------------------------------------------------------------
+
+func TestWorktreeStart_SourceBranchFlag_CreatesFromSpecifiedBranch(t *testing.T) {
+	resetSourceBranchFlag(t)
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	origRunClaude := runClaudeFunc
+	runClaudeFunc = func(_ []string) error { return nil }
+	defer func() { runClaudeFunc = origRunClaude }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a "develop" branch with a distinct commit
+	if err := exec.Command("git", "-C", dir, "checkout", "-b", "develop").Run(); err != nil {
+		t.Fatalf("git checkout -b develop: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "develop.txt"), []byte("develop content"), 0o644); err != nil {
+		t.Fatalf("write develop.txt: %v", err)
+	}
+	if err := exec.Command("git", "-C", dir, "add", ".").Run(); err != nil {
+		t.Fatalf("git add: %v", err)
+	}
+	if err := exec.Command("git", "-C", dir, "commit", "-m", "develop commit").Run(); err != nil {
+		t.Fatalf("git commit: %v", err)
+	}
+	// Go back to main (master)
+	if err := exec.Command("git", "-C", dir, "checkout", "master").Run(); err != nil {
+		t.Fatalf("git checkout master: %v", err)
+	}
+
+	slug := "source-branch-test"
+	parentDir := filepath.Dir(dir)
+	targetDir := filepath.Join(parentDir, slug)
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", "develop").Run()
+	})
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "start", slug, "--source-branch", "develop"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify worktree was created
+	if _, err := os.Stat(targetDir); os.IsNotExist(err) {
+		t.Errorf("worktree directory %s should exist", targetDir)
+	}
+
+	// Verify the worktree has the develop.txt file (proving it was based on develop)
+	if _, err := os.Stat(filepath.Join(targetDir, "develop.txt")); os.IsNotExist(err) {
+		t.Errorf("worktree should have develop.txt (created from develop branch)")
+	}
+}
+
+func TestWorktreeStart_SourceBranchShortFlag(t *testing.T) {
+	resetSourceBranchFlag(t)
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	origRunClaude := runClaudeFunc
+	runClaudeFunc = func(_ []string) error { return nil }
+	defer func() { runClaudeFunc = origRunClaude }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a "release" branch
+	if err := exec.Command("git", "-C", dir, "branch", "release").Run(); err != nil {
+		t.Fatalf("git branch release: %v", err)
+	}
+
+	slug := "short-flag-test"
+	parentDir := filepath.Dir(dir)
+	targetDir := filepath.Join(parentDir, slug)
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", "release").Run()
+	})
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "start", slug, "-b", "release"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify worktree was created
+	if _, err := os.Stat(targetDir); os.IsNotExist(err) {
+		t.Errorf("worktree directory %s should exist", targetDir)
+	}
+}
+
+func TestWorktreeStart_SourceBranchErrorWhenBranchNotFound(t *testing.T) {
+	resetSourceBranchFlag(t)
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "start", "test-slug", "--source-branch", "nonexistent-branch"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Error("expected error when source branch does not exist")
+	}
+	stderr := buf.String()
+	if !strings.Contains(stderr, "nonexistent-branch") {
+		t.Errorf("error should mention the branch name, got: %s", stderr)
+	}
+}
+
+func TestWorktreeStart_SourceBranchFromConfig(t *testing.T) {
+	resetSourceBranchFlag(t)
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	origRunClaude := runClaudeFunc
+	runClaudeFunc = func(_ []string) error { return nil }
+	defer func() { runClaudeFunc = origRunClaude }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a "staging" branch with a distinct file
+	if err := exec.Command("git", "-C", dir, "checkout", "-b", "staging").Run(); err != nil {
+		t.Fatalf("git checkout -b staging: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "staging.txt"), []byte("staging content"), 0o644); err != nil {
+		t.Fatalf("write staging.txt: %v", err)
+	}
+	if err := exec.Command("git", "-C", dir, "add", ".").Run(); err != nil {
+		t.Fatalf("git add: %v", err)
+	}
+	if err := exec.Command("git", "-C", dir, "commit", "-m", "staging commit").Run(); err != nil {
+		t.Fatalf("git commit: %v", err)
+	}
+	if err := exec.Command("git", "-C", dir, "checkout", "master").Run(); err != nil {
+		t.Fatalf("git checkout master: %v", err)
+	}
+
+	// Create .forge/config.yaml with worktree.source-branch
+	forgeDir := filepath.Join(dir, ".forge")
+	if err := os.MkdirAll(forgeDir, 0o755); err != nil {
+		t.Fatalf("mkdir .forge: %v", err)
+	}
+	configContent := "worktree:\n  source-branch: staging\n"
+	if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(configContent), 0o644); err != nil {
+		t.Fatalf("write config.yaml: %v", err)
+	}
+
+	slug := "config-source-branch"
+	parentDir := filepath.Dir(dir)
+	targetDir := filepath.Join(parentDir, slug)
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", "staging").Run()
+	})
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "start", slug})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify worktree was created from staging (has staging.txt)
+	if _, err := os.Stat(filepath.Join(targetDir, "staging.txt")); os.IsNotExist(err) {
+		t.Errorf("worktree should have staging.txt (created from staging branch via config)")
+	}
+}
+
+func TestWorktreeStart_FlagOverridesConfigSourceBranch(t *testing.T) {
+	resetSourceBranchFlag(t)
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	origRunClaude := runClaudeFunc
+	runClaudeFunc = func(_ []string) error { return nil }
+	defer func() { runClaudeFunc = origRunClaude }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create "develop" branch with develop.txt
+	if err := exec.Command("git", "-C", dir, "checkout", "-b", "develop").Run(); err != nil {
+		t.Fatalf("git checkout -b develop: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "develop.txt"), []byte("develop content"), 0o644); err != nil {
+		t.Fatalf("write develop.txt: %v", err)
+	}
+	if err := exec.Command("git", "-C", dir, "add", ".").Run(); err != nil {
+		t.Fatalf("git add: %v", err)
+	}
+	if err := exec.Command("git", "-C", dir, "commit", "-m", "develop commit").Run(); err != nil {
+		t.Fatalf("git commit: %v", err)
+	}
+
+	// Create "v3" branch with v3.txt
+	if err := exec.Command("git", "-C", dir, "checkout", "-b", "v3").Run(); err != nil {
+		t.Fatalf("git checkout -b v3: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "v3.txt"), []byte("v3 content"), 0o644); err != nil {
+		t.Fatalf("write v3.txt: %v", err)
+	}
+	if err := exec.Command("git", "-C", dir, "add", ".").Run(); err != nil {
+		t.Fatalf("git add: %v", err)
+	}
+	if err := exec.Command("git", "-C", dir, "commit", "-m", "v3 commit").Run(); err != nil {
+		t.Fatalf("git commit: %v", err)
+	}
+
+	if err := exec.Command("git", "-C", dir, "checkout", "master").Run(); err != nil {
+		t.Fatalf("git checkout master: %v", err)
+	}
+
+	// Config says "develop"
+	forgeDir := filepath.Join(dir, ".forge")
+	if err := os.MkdirAll(forgeDir, 0o755); err != nil {
+		t.Fatalf("mkdir .forge: %v", err)
+	}
+	configContent := "worktree:\n  source-branch: develop\n"
+	if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(configContent), 0o644); err != nil {
+		t.Fatalf("write config.yaml: %v", err)
+	}
+
+	slug := "flag-override-test"
+	parentDir := filepath.Dir(dir)
+	targetDir := filepath.Join(parentDir, slug)
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", "develop").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", "v3").Run()
+	})
+
+	// Flag says "v3" — should override config
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "start", slug, "--source-branch", "v3"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify worktree was created from v3 (has v3.txt, not develop.txt)
+	if _, err := os.Stat(filepath.Join(targetDir, "v3.txt")); os.IsNotExist(err) {
+		t.Errorf("worktree should have v3.txt (created from v3 branch via flag override)")
+	}
+}
+
+func TestWorktreeStart_SourceBranchNotUsedForExistingBranch(t *testing.T) {
+	resetSourceBranchFlag(t)
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	origRunClaude := runClaudeFunc
+	runClaudeFunc = func(_ []string) error { return nil }
+	defer func() { runClaudeFunc = origRunClaude }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a "develop" branch
+	if err := exec.Command("git", "-C", dir, "checkout", "-b", "develop").Run(); err != nil {
+		t.Fatalf("git checkout -b develop: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "develop.txt"), []byte("develop content"), 0o644); err != nil {
+		t.Fatalf("write develop.txt: %v", err)
+	}
+	if err := exec.Command("git", "-C", dir, "add", ".").Run(); err != nil {
+		t.Fatalf("git add: %v", err)
+	}
+	if err := exec.Command("git", "-C", dir, "commit", "-m", "develop commit").Run(); err != nil {
+		t.Fatalf("git commit: %v", err)
+	}
+
+	// Create the "existing-slug" branch from develop (NOT from master)
+	slug := "existing-slug"
+	if err := exec.Command("git", "-C", dir, "branch", slug).Run(); err != nil {
+		t.Fatalf("git branch %s: %v", slug, err)
+	}
+	if err := exec.Command("git", "-C", dir, "checkout", "master").Run(); err != nil {
+		t.Fatalf("git checkout master: %v", err)
+	}
+
+	parentDir := filepath.Dir(dir)
+	targetDir := filepath.Join(parentDir, slug)
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", "develop").Run()
+	})
+
+	// Start with --source-branch develop, but branch already exists
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "start", slug, "--source-branch", "develop"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Worktree should still be created (existing branch path ignores source-branch)
+	if _, err := os.Stat(targetDir); os.IsNotExist(err) {
+		t.Errorf("worktree directory %s should exist", targetDir)
+	}
+}
+
+func TestWorktreeStart_NoSourceBranch_DefaultsToHEAD(t *testing.T) {
+	resetSourceBranchFlag(t)
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	origRunClaude := runClaudeFunc
+	runClaudeFunc = func(_ []string) error { return nil }
+	defer func() { runClaudeFunc = origRunClaude }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	slug := "default-head-test"
+	parentDir := filepath.Dir(dir)
+	targetDir := filepath.Join(parentDir, slug)
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "start", slug})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify worktree was created from HEAD (has README.md from initial commit)
+	if _, err := os.Stat(filepath.Join(targetDir, "README.md")); os.IsNotExist(err) {
+		t.Errorf("worktree should have README.md (created from HEAD)")
+	}
+}
+
+func TestWorktreeStart_SourceBranchFlagRegistered(t *testing.T) {
+	flag := worktreeStartCmd.Flags().Lookup("source-branch")
+	if flag == nil {
+		t.Fatal("worktree start command should have --source-branch flag")
+	}
+	if flag.Shorthand != "b" {
+		t.Errorf("source-branch shorthand should be 'b', got %q", flag.Shorthand)
+	}
+}
+
+func TestResolveSourceBranch(t *testing.T) {
+	tests := []struct {
+		name         string
+		flagValue    string
+		configBranch string
+		want         string
+	}{
+		{
+			name:         "flag overrides everything",
+			flagValue:    "develop",
+			configBranch: "main",
+			want:         "develop",
+		},
+		{
+			name:         "flag overrides empty config",
+			flagValue:    "v3.0.0",
+			configBranch: "",
+			want:         "v3.0.0",
+		},
+		{
+			name:         "config used when no flag",
+			flagValue:    "",
+			configBranch: "develop",
+			want:         "develop",
+		},
+		{
+			name:         "empty when neither set",
+			flagValue:    "",
+			configBranch: "",
+			want:         "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := resolveSourceBranch(tt.flagValue, tt.configBranch)
+			if got != tt.want {
+				t.Errorf("resolveSourceBranch(%q, %q) = %q, want %q",
+					tt.flagValue, tt.configBranch, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestWorktreeStart_ConfigSourceBranchErrorWhenBranchNotFound(t *testing.T) {
+	resetSourceBranchFlag(t)
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create .forge/config.yaml with a nonexistent source branch
+	forgeDir := filepath.Join(dir, ".forge")
+	if err := os.MkdirAll(forgeDir, 0o755); err != nil {
+		t.Fatalf("mkdir .forge: %v", err)
+	}
+	configContent := "worktree:\n  source-branch: nonexistent-config-branch\n"
+	if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(configContent), 0o644); err != nil {
+		t.Fatalf("write config.yaml: %v", err)
+	}
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "start", "test-slug"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Error("expected error when config source branch does not exist")
+	}
+	stderr := buf.String()
+	if !strings.Contains(stderr, "nonexistent-config-branch") {
+		t.Errorf("error should mention the branch name, got: %s", stderr)
+	}
+}
+
+// ---------------------------------------------------------------------------
 // worktree start: GetWorktreeName auto-detects feature
 // ---------------------------------------------------------------------------
 
 func TestWorktreeStart_WorktreeNameAutoDetection(t *testing.T) {
+	resetSourceBranchFlag(t)
 	origLookPath := lookPathFunc
 	lookPathFunc = func(name string) (string, error) {
 		if name == "claude" {
@@ -747,6 +1284,20 @@ func TestListForgeFeatures(t *testing.T) {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+// resetSourceBranchFlag resets the --source-branch flag on worktreeStartCmd to
+// prevent state leakage between tests. Cobra flags persist across Execute calls
+// on the same Command instance.
+func resetSourceBranchFlag(t *testing.T) {
+	t.Helper()
+	t.Cleanup(func() {
+		f := worktreeStartCmd.Flags().Lookup("source-branch")
+		if f != nil {
+			f.Changed = false
+			_ = f.Value.Set("")
+		}
+	})
+}
 
 // initGitRepoForWorktree creates a git repo with initial commit for worktree testing.
 func initGitRepoForWorktree(t *testing.T) string {
