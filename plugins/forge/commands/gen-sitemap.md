@@ -45,7 +45,7 @@ After installation, re-run this command.
 Before executing the workflow, resolve configuration sources:
 
 1. Check if `tests/e2e/config.yaml` exists
-2. **If not found**: copy from template `plugins/forge/references/shared/config.yaml` to `tests/e2e/config.yaml`, then **abort and prompt the user**:
+2. **If not found**: copy from template `../references/shared/config.yaml` to `tests/e2e/config.yaml`, then **abort and prompt the user**:
 
 ```
 Created tests/e2e/config.yaml (template). Please fill in values for your environment and re-run.
@@ -75,7 +75,7 @@ This ensures agent-browser can access authenticated pages without exploration in
 
 ## Schema
 
-See `plugins/forge/references/shared/sitemap.json` for a full example.
+See `../references/shared/sitemap.json` for a full example.
 
 **Key fields:**
 

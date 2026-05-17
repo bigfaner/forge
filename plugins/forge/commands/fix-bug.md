@@ -215,7 +215,7 @@ Fixes: #<issue-number> (if applicable)
 
 After Step 6 (Commit) completes, run knowledge auto-extraction from the bug fix session:
 
-1. Read `plugins/forge/references/shared/knowledge-extraction.md` and execute its extraction flow with:
+1. Read `../references/shared/knowledge-extraction.md` and execute its extraction flow with:
    - `trigger`: `fix-bug`
    - `artifacts`: root cause analysis (the "Root cause: \<why\>" note from Step 4), fix approach (files changed and the nature of the fix)
 

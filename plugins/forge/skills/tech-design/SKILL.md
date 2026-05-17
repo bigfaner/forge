@@ -187,7 +187,7 @@ Present `er-diagram.md` and `schema.sql` alongside the Data Models cross-referen
 
 Triggered automatically after user approves the tech-design in Step 6.
 
-Follow the tech-design archiving flow defined in `plugins/forge/references/shared/decision-logging.md` (Section 2). Use `templates/decision-entry.md` for the decision row format.
+Follow the tech-design archiving flow defined in `../../references/shared/decision-logging.md` (Section 2). Use `templates/decision-entry.md` for the decision row format.
 
 See `examples/ask-question.md` for question formatting and `examples/exploration.md` for context exploration commands.
 
@@ -224,7 +224,7 @@ After committing, use `AskUserQuestion` to ask:
 
 After writing design documents and updating the manifest, run the shared knowledge extraction routine to capture knowledge that the decision archiving in Step 7 may have missed.
 
-Read `plugins/forge/references/shared/knowledge-extraction.md` and execute its extraction flow with:
+Read `../../references/shared/knowledge-extraction.md` and execute its extraction flow with:
 
 - `trigger`: `tech-design`
 - `artifacts`: `["docs/features/<slug>/design/tech-design.md"]`

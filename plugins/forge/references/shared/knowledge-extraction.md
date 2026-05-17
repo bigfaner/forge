@@ -32,7 +32,7 @@ The extraction routine identifies four knowledge types:
 
 ### 3.1 Decisions
 
-Non-obvious choices where alternatives existed. Written to `docs/decisions/<type>.md` using the row format from `plugins/forge/references/shared/decision-logging.md` Section 6.
+Non-obvious choices where alternatives existed. Written to `docs/decisions/<type>.md` using the row format from `./decision-logging.md` Section 6.
 
 ### 3.2 Lessons
 
@@ -183,7 +183,7 @@ Example inclusion in a trigger point's skill/command file:
 ```markdown
 ## Auto-Extract Knowledge
 
-After completing the main workflow, read `plugins/forge/references/shared/knowledge-extraction.md`
+After completing the main workflow, read this extraction routine (`knowledge-extraction.md`)
 and execute its extraction flow with:
 - trigger: <trigger-name>
 - artifacts: <list of artifact paths to scan>

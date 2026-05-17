@@ -101,7 +101,7 @@ Write entries immediately, one per identified type. Do not ask for confirmation 
 
 ### Decision Entry
 
-1. Read `plugins/forge/references/shared/decision-logging.md` for the authoritative format.
+1. Read `../../references/shared/decision-logging.md` for the authoritative format.
 2. Read `templates/decision-entry.md` for the row template.
 3. Determine: date (today), feature slug (current feature or `-`), decision text, rationale, source (`/learn` or `manual`).
 4. If `docs/decisions/` does not exist, auto-create the directory plus all 8 type files and `manifest.md` following decision-logging.md Section 8.

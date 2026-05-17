@@ -121,19 +121,20 @@ hooks.json 和 shell 脚本可以通过环境变量引用 plugin 安装位置：
 }
 ```
 
-### Skills — Markdown 指令，无自动路径解析
+### Skills — 使用相对路径
 
-Skill 文件（SKILL.md）是 Claude AI 读取的 Markdown 指令。当 skill 中写 `Read plugins/forge/skills/eval/rubrics/harness.md` 时：
+Skill 文件（SKILL.md）中的路径是 Claude AI 通过 Read 工具解析的。Claude Code 从 SKILL.md 所在目录解析相对路径，因此路径在开发源码和分发后都能正确工作。
 
-- AI 尝试从**用户项目根目录**读取 `plugins/forge/skills/eval/rubrics/harness.md`
-- 实际文件在 `~/.claude/plugins/cache/forge/forge/<version>/skills/eval/rubrics/harness.md`
-- **路径不匹配** — 这是当前已知的分发正确性问题
+**路径规则：**
 
-### 正确的路径引用方式
+| 引用目标 | 路径风格 | 示例 |
+|---------|---------|------|
+| skill 内部文件 | 相对路径（从 SKILL.md 所在目录） | `templates/decision-entry.md` |
+| plugin 共享文件 | 相对路径（回溯到 plugin root） | `../../references/shared/decision-logging.md` |
+| 用户项目文件 | 项目相对路径 | `docs/decisions/<type>.md` |
+| forge CLI | 命令名 | `forge task claim` |
 
-- 引用 **plugin 内部文件**（templates、rubrics、references）：需要确保路径在安装后可解析
-- 引用 **用户项目文件**（docs/、features/、.forge/）：使用项目相对路径即可
-- 引用 **forge CLI**：`forge <command>` 即可，CLI 已安装到 PATH
+**禁止使用项目根路径**（如 `plugins/forge/references/shared/...`）— 该路径仅在开发源码仓库中有效，分发后文件结构不包含 `plugins/forge/` 前缀，会导致路径解析失败。
 
 ## 6. 两条 Pipeline
 
