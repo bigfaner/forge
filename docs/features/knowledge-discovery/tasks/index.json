@@ -1,0 +1,97 @@
+{
+  "feature": "knowledge-discovery",
+  "proposal": "docs/proposals/knowledge-discovery/proposal.md",
+  "created": "2026-05-17",
+  "tasks": {
+    "1-domains-frontmatter": {
+      "id": "1",
+      "title": "Add domains frontmatter to convention and business-rule files",
+      "priority": "P0",
+      "estimatedTime": "30m",
+      "status": "completed",
+      "file": "1-domains-frontmatter.md",
+      "record": "records/1-domains-frontmatter.md",
+      "type": "documentation"
+    },
+    "2-update-prompt-templates": {
+      "id": "2",
+      "title": "Update prompt templates with discovery instruction",
+      "priority": "P0",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-update-prompt-templates.md",
+      "record": "records/2-update-prompt-templates.md",
+      "type": "documentation"
+    },
+    "3-update-command-agent-files": {
+      "id": "3",
+      "title": "Update command/agent files with discovery instruction",
+      "priority": "P0",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "3-update-command-agent-files.md",
+      "record": "records/3-update-command-agent-files.md",
+      "type": "documentation"
+    },
+    "4-update-consolidate-specs": {
+      "id": "4",
+      "title": "Update consolidate-specs to manage domains frontmatter",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "4-update-consolidate-specs.md",
+      "record": "records/4-update-consolidate-specs.md",
+      "type": "documentation"
+    },
+    "5-update-guide": {
+      "id": "5",
+      "title": "Update guide.md to reference domains frontmatter",
+      "priority": "P2",
+      "estimatedTime": "15m",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "5-update-guide.md",
+      "record": "records/5-update-guide.md",
+      "type": "documentation"
+    },
+    "eval-doc": {
+      "id": "T-eval-doc",
+      "title": "Evaluate Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "5"
+      ],
+      "status": "completed",
+      "file": "eval-doc.md",
+      "record": "records/eval-doc.md",
+      "scope": "all",
+      "noTest": true,
+      "type": "doc-evaluation"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

@@ -1,5 +1,6 @@
 ---
 title: "Quality Gate Rules"
+domains: [quality-gate, pipeline, fix-task, compile, lint, retry]
 ---
 
 # Quality Gate Rules

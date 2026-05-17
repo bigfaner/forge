@@ -2,7 +2,7 @@
 created: 2026-05-16
 updated: 2026-05-17
 author: faner
-status: Draft
+status: Implemented
 ---
 
 # Proposal: Project Knowledge Discovery via Frontmatter Domain Tags
@@ -14,14 +14,14 @@ Forge consumers (prompt templates, commands, agents) benefit from user-provided 
 ### Current State
 
 - `fix-bug.md:50-51` and `error-fixer.md:64-65` hardcode identical keyword→filename mapping tables, assuming specific files exist
-- 5 prompt templates (`fix.md`, `cleanup.md`, `enhancement.md`, `feature.md`, `refactor.md`) say "Read relevant project knowledge files" with no guidance on how to discover or evaluate relevance
+- 5 prompt templates (`fix.md`, `cleanup.md`, `enhancement.md`, `feature.md`, `refactor.md`) contain a generic "Check `docs/conventions/` and `docs/business-rules/` for project-specific knowledge" instruction with no mechanism to determine which files are relevant
 - `gen-test-scripts`, `gen-test-cases`, and `eval` skills solved this differently — via consumer-declared frontmatter (`conventions: [filename]`) where the skill explicitly lists its dependencies. This works because those skills know their domain (testing). Prompt templates handle arbitrary tasks and cannot predict which conventions they need.
 
 ### Urgency
 
 Each new consumer that needs project knowledge invents its own approach — hardcoded tables, vague instructions, or nothing. Without a shared discovery mechanism, the pattern diverges further with each new skill.
 
-**Concrete failure case**: During `/fix-bug` execution for an error-handling bug, the agent in `fix.md` received the instruction "Read relevant project knowledge files from `docs/business-rules/` and `docs/conventions/` based on the affected files and error context." With no guidance on *which* files or *how* to determine relevance, the agent loaded all 6 convention files — consuming ~2000 tokens of context on unrelated topics (profile-system, data-model) — while missing `business-rules/auth.md` which was directly relevant to the auth error. The result was a fix that violated the project's error-response conventions (documented in `conventions/error-handling.md`) because the agent treated the generic instruction as optional and skipped reading the most relevant file.
+**Concrete failure case**: During `/fix-bug` execution for an error-handling bug, the agent in `fix.md` received the instruction "Read relevant project knowledge files from `docs/business-rules/` and `docs/conventions/` based on the affected files and error context." With no guidance on *which* files or *how* to determine relevance, the agent loaded all 6 convention files — consuming ~2000 tokens of context on unrelated topics (profile-system, testing-isolation) — while the most relevant files (`business-rules/error-reporting.md` and `conventions/error-handling.md`) received no prioritized attention. The result was a fix that risked violating the project's error-response conventions because the agent treated the generic instruction as optional and had no mechanism to identify the most relevant files.
 
 ## Proposed Solution
 

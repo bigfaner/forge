@@ -1,5 +1,6 @@
 ---
-title: "Testing System Conventions"
+title: "Profile System Conventions"
+domains: [profile, config, e2e, framework, registry]
 ---
 
 # Testing System Conventions

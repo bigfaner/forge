@@ -32,6 +32,8 @@ Quantified cost of delay:
 
 ## Proposed Solution
 
+> **Terminology**: "type file" and "type instruction file" refer to the same thing — a markdown file at `types/{type}.md` that contains type-specific generation instructions. This document uses "type file" for brevity.
+
 Restructure `gen-test-scripts` to match `gen-test-cases` dispatcher pattern:
 
 1. **Extract `types/{type}.md`** — 5 type instruction files, each containing:
@@ -62,7 +64,7 @@ While the dispatcher pattern itself is industry-standard, its application here h
 
 **Cross-domain inspiration — compiler pass architecture**: In LLVM, each target architecture (x86, ARM, RISC-V) implements a `TargetLowering` class that translates generic IR into machine-specific instructions. Adding a new target does not require changing the IR or other targets. Our type files serve the same role: each translates a generic Fact Table (the IR) into type-specific test scripts (the target output). The key insight borrowed from compilers: if the IR is stable and complete, adding new targets is purely additive. This is why the Fact Table required keys are defined per-type — the "IR schema" varies by target, just as LLVM's `SelectionDAG` varies per target.
 
-**What makes this application distinctive**: In traditional testing frameworks, dispatch boundaries are fixed at framework design time (pytest's conftest hierarchy, Jest's runner interface). In forge, the agent discovers and interprets dispatch rules from free-form markdown at runtime — there is no type system, no plugin API, no compiled registration. The dispatcher must be self-describing enough that a language model follows it correctly without a parser. This constraint — **dispatch correctness without mechanical enforcement** — is the non-obvious design challenge, and it shapes every decision: hard-coded type-to-file mapping (not dynamic), explicit error messages (not silent fallback), and the regression gate (not type-checking).
+**What makes this application distinctive**: In traditional testing frameworks, dispatch boundaries are fixed at framework design time (pytest's conftest hierarchy, Jest's runner interface). In forge, the agent discovers and interprets dispatch rules from free-form markdown at runtime — there is no type system, no plugin API, no compiled registration. The dispatcher must be self-describing enough that a language model follows it correctly without a parser. This constraint — **dispatch correctness without mechanical enforcement** — is the non-obvious design challenge, and it shapes every decision: directory-based type discovery (scan `types/*.md` for available types rather than maintaining a hard-coded registry), explicit error messages (not silent fallback), and the regression gate (not type-checking).
 
 ## Requirements Analysis
 
@@ -288,5 +290,5 @@ The refactoring targets only markdown instruction files (SKILL.md and new type f
 - [ ] Each type file contains a verification method section and an antipattern guard section (verifiable: 10 matches total across 5 files)
 - [ ] Dispatcher rejects unknown `--type` values with an error listing valid types (test: invoke with `--type graphql`, expect error, no generation)
 - [ ] Dispatcher halts on missing type file with error naming the missing file (test: temporarily rename `types/api.md`, invoke `--type api`, expect error)
-- [ ] Adding a new type file requires zero edits to main SKILL.md (test: create `types/lambda.md` as a stub, invoke `--type lambda`, observe dispatcher loads it without SKILL.md changes)
+- [ ] Adding a new type file requires zero edits to main SKILL.md — the dispatcher discovers types by scanning `types/*.md` rather than maintaining a hard-coded registry (test: create `types/lambda.md` as a stub, invoke `--type lambda`, observe dispatcher loads it without SKILL.md changes)
 - [ ] Generated test scripts are byte-identical before and after refactoring for all 6 profiles when run with the same test case inputs (regression gate: `diff <(old-output) <(new-output)` is empty)

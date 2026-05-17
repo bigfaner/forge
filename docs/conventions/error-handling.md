@@ -1,5 +1,6 @@
 ---
 title: "Error Handling Conventions"
+domains: [stderr, diagnostic, format, stdout, context]
 ---
 
 # Error Handling Conventions

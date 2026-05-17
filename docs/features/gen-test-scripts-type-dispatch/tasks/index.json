@@ -8,7 +8,7 @@
       "title": "Create types/cli.md instruction file",
       "priority": "P1",
       "estimatedTime": "1-2h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-types-cli.md",
       "record": "records/1-types-cli.md",
       "type": "documentation"
@@ -18,7 +18,7 @@
       "title": "Create types/api.md instruction file",
       "priority": "P1",
       "estimatedTime": "1-2h",
-      "status": "pending",
+      "status": "completed",
       "file": "2-types-api.md",
       "record": "records/2-types-api.md",
       "type": "documentation"
@@ -28,7 +28,7 @@
       "title": "Create types/ui.md instruction file (includes Step 2-3 Sitemap/Locators)",
       "priority": "P1",
       "estimatedTime": "2-3h",
-      "status": "pending",
+      "status": "completed",
       "file": "3-types-ui.md",
       "record": "records/3-types-ui.md",
       "type": "documentation"
@@ -38,7 +38,7 @@
       "title": "Create types/tui.md instruction file",
       "priority": "P1",
       "estimatedTime": "1-2h",
-      "status": "pending",
+      "status": "completed",
       "file": "4-types-tui.md",
       "record": "records/4-types-tui.md",
       "type": "documentation"
@@ -48,7 +48,7 @@
       "title": "Create types/mobile.md instruction file",
       "priority": "P2",
       "estimatedTime": "30min-1h",
-      "status": "pending",
+      "status": "completed",
       "file": "5-types-mobile.md",
       "record": "records/5-types-mobile.md",
       "type": "documentation"
@@ -65,7 +65,7 @@
         "4",
         "5"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "6-refactor-dispatcher.md",
       "record": "records/6-refactor-dispatcher.md",
       "type": "documentation"
@@ -78,7 +78,7 @@
       "dependencies": [
         "6"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "eval-doc.md",
       "record": "records/eval-doc.md",
       "scope": "all",
