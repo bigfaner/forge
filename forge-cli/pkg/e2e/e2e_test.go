@@ -16,7 +16,7 @@ func TestResolveProfile(t *testing.T) {
 		if err := os.MkdirAll(forgeDir, 0o755); err != nil {
 			t.Fatal(err)
 		}
-		configContent := "languages:\n  - go-test\n"
+		configContent := "languages:\n  - go\n"
 		if err := os.WriteFile(filepath.Join(forgeDir, feature.ForgeConfigFileName), []byte(configContent), 0o644); err != nil {
 			t.Fatal(err)
 		}
@@ -25,8 +25,8 @@ func TestResolveProfile(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if got != "go-test" {
-			t.Fatalf("expected go-test, got %q", got)
+		if got != "go" {
+			t.Fatalf("expected go, got %q", got)
 		}
 	})
 
@@ -36,7 +36,7 @@ func TestResolveProfile(t *testing.T) {
 		if err := os.MkdirAll(forgeDir, 0o755); err != nil {
 			t.Fatal(err)
 		}
-		configContent := "languages:\n  - web-playwright\n  - go-test\n"
+		configContent := "languages:\n  - javascript\n  - go\n"
 		if err := os.WriteFile(filepath.Join(forgeDir, feature.ForgeConfigFileName), []byte(configContent), 0o644); err != nil {
 			t.Fatal(err)
 		}
@@ -45,8 +45,8 @@ func TestResolveProfile(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if got != "web-playwright" {
-			t.Fatalf("expected web-playwright, got %q", got)
+		if got != "javascript" {
+			t.Fatalf("expected javascript, got %q", got)
 		}
 	})
 

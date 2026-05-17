@@ -41,7 +41,6 @@ var profileDetectCmd = &cobra.Command{
 }
 
 var (
-	profileGetManifest bool
 	profileGetGenerate bool
 	profileGetRun      bool
 	profileGetGraduate bool
@@ -56,9 +55,8 @@ var profileGetCmd = &cobra.Command{
 Used by skills to retrieve profile data from embedded storage.
 
 Examples:
-  forge profile get go-test --manifest
-  forge profile get go-test --generate
-  forge profile get web-playwright --template helpers.ts`,
+  forge profile get go --generate
+  forge profile get javascript --template helpers.ts`,
 	Args: cobra.ExactArgs(1),
 	Run:  runProfileGet,
 }
@@ -69,7 +67,6 @@ func init() {
 	profileCmd.AddCommand(profileDetectCmd)
 	profileCmd.AddCommand(profileGetCmd)
 
-	profileGetCmd.Flags().BoolVar(&profileGetManifest, "manifest", false, "output manifest.yaml")
 	profileGetCmd.Flags().BoolVar(&profileGetGenerate, "generate", false, "output generate.md strategy")
 	profileGetCmd.Flags().BoolVar(&profileGetRun, "run", false, "output run.md strategy")
 	profileGetCmd.Flags().BoolVar(&profileGetGraduate, "graduate", false, "output graduate.md strategy")
@@ -106,13 +103,13 @@ func runProfileResolve(_ *cobra.Command, _ []string) {
 func runProfileSet(_ *cobra.Command, args []string) {
 	name := args[0]
 
-	if !profile.IsKnownProfile(name) {
+	if !profile.IsKnownLanguage(name) {
 		Exit(NewAIError(
 			ErrInvalidInput,
-			fmt.Sprintf("Unknown profile: %s", name),
-			"Profile name is not in the known profiles list",
-			fmt.Sprintf("Choose from: %s", strings.Join(profile.KnownProfiles, ", ")),
-			fmt.Sprintf("forge profile set %s", profile.KnownProfiles[0]),
+			fmt.Sprintf("Unknown language: %s", name),
+			"Language key is not in the known languages list",
+			fmt.Sprintf("Choose from: %s", strings.Join(profile.KnownLanguages, ", ")),
+			fmt.Sprintf("forge profile set %s", profile.KnownLanguages[0]),
 		))
 	}
 
@@ -140,7 +137,7 @@ func runProfileDetect(_ *cobra.Command, _ []string) {
 
 	detected, err := profile.DetectProfiles(projectRoot)
 	if err != nil {
-		Exit(NewAIError(ErrValidation, "Detection failed", err.Error(), "Run forge profile set <name> manually", "forge profile set web-playwright"))
+		Exit(NewAIError(ErrValidation, "Detection failed", err.Error(), "Run forge profile set <name> manually", "forge profile set javascript"))
 	}
 
 	printProfileResult(profileResult{Profiles: detected, Source: "detected"})
@@ -176,9 +173,6 @@ func runProfileGet(_ *cobra.Command, args []string) {
 	var label string
 
 	switch {
-	case profileGetManifest:
-		data, err = profile.GetManifest(name)
-		label = "manifest"
 	case profileGetGenerate:
 		data, err = profile.GetStrategy(name, "generate")
 		label = "generate"
@@ -195,7 +189,7 @@ func runProfileGet(_ *cobra.Command, args []string) {
 		data, err = profile.GetTemplate(name, profileGetTemplate)
 		label = "template:" + profileGetTemplate
 	default:
-		Exit(NewAIError(ErrInvalidInput, "No flag specified", "Choose one: --manifest, --generate, --run, --graduate, --justfile, --template <file>", "forge profile get go-test --generate", ""))
+		Exit(NewAIError(ErrInvalidInput, "No flag specified", "Choose one: --generate, --run, --graduate, --justfile, --template <file>", "forge profile get go --generate", ""))
 	}
 
 	if err != nil {

@@ -29,13 +29,11 @@ func TestTC_028_ProfileSetUpdatesConfigWithValidProfile(t *testing.T) {
 
 // Traceability: TC-029 -> Story 8 / AC-3
 func TestTC_029_ProfileGetOutputsStrategyFileContent(t *testing.T) {
-	exitCode, out := testkit.RunCLIExitCode("profile", "get", "go-test", "--manifest")
+	exitCode, out := testkit.RunCLIExitCode("profile", "get", "go", "--generate")
 
-	assert.Equal(t, 0, exitCode, "profile get go-test --manifest should exit 0")
+	assert.Equal(t, 0, exitCode, "profile get go --generate should exit 0")
 	assert.True(t, len(strings.TrimSpace(out)) > 0,
 		"profile get output should not be empty")
-	assert.True(t, strings.Contains(out, "go-test"),
-		"manifest output should reference go-test profile")
 }
 
 // Traceability: TC-030 -> Story 8 / AC-4
@@ -48,14 +46,14 @@ func TestTC_030_ProfileSetInvalidProfileReturnsErrorWithList(t *testing.T) {
 	assert.True(t, strings.Contains(lower, "unknown"),
 		"output should contain 'unknown': %s", out)
 
-	knownProfiles := []string{"web-playwright", "go-test"}
+	knownLanguages := []string{"javascript", "go"}
 	foundAtLeastOne := false
-	for _, p := range knownProfiles {
+	for _, p := range knownLanguages {
 		if strings.Contains(lower, p) {
 			foundAtLeastOne = true
 			break
 		}
 	}
 	assert.True(t, foundAtLeastOne,
-		"output should list at least one known profile: %s", out)
+		"output should list at least one known language: %s", out)
 }

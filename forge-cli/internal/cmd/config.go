@@ -123,13 +123,13 @@ func runConfigInit(cmd *cobra.Command, _ []string) error {
 
 	// Step 2: Test profiles
 	write(out, "\nSelect test profiles (enter numbers, space-separated, then 'done'):\n")
-	for i, p := range profile.KnownProfiles {
+	for i, p := range profile.KnownLanguages {
 		write(out, "  %d. %s\n", i+1, p)
 	}
 	write(out, "Selections: ")
 
 	input, _ = reader.ReadString('\n')
-	selectedProfiles := parseMultiSelect(input, profile.KnownProfiles)
+	selectedProfiles := parseMultiSelect(input, profile.KnownLanguages)
 
 	// Step 3: Interfaces
 	var availableIfaces []string

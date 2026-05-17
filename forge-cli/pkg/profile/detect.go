@@ -40,37 +40,37 @@ func DetectProfiles(projectRoot string) ([]string, error) {
 	}
 
 	if hasPlaywright {
-		add("web-playwright")
+		add("javascript")
 	}
 
 	// Go
 	if fileExists(projectRoot, "go.mod") {
-		add("go-test")
+		add("go")
 	}
 
 	// Mobile (Maestro)
 	if dirExists(projectRoot, "android") || dirExists(projectRoot, "ios") {
-		add("maestro")
+		add("mobile")
 	}
 
 	// Java (Maven or Gradle)
 	if fileExists(projectRoot, "pom.xml") || fileExists(projectRoot, "build.gradle") || fileExists(projectRoot, "build.gradle.kts") {
-		add("java-junit")
+		add("java")
 	}
 
 	// Rust
 	if fileExists(projectRoot, "Cargo.toml") {
-		add("rust-test")
+		add("rust")
 	}
 
 	// Python (pytest)
 	if detectPytest(projectRoot) {
-		add("pytest")
+		add("python")
 	}
 
-	// Fallback: package.json without Playwright → web-playwright
+	// Fallback: package.json without Playwright → javascript
 	if hasPackageJSON && !hasPlaywright {
-		add("web-playwright")
+		add("javascript")
 	}
 
 	return detected, nil

@@ -84,19 +84,19 @@ type ForgeConfig struct {
 	Auto        *AutoConfig `yaml:"auto,omitempty"`
 }
 
-// KnownProfiles is the set of valid profile names.
-var KnownProfiles = []string{
-	"web-playwright",
-	"go-test",
-	"maestro",
-	"java-junit",
-	"rust-test",
-	"pytest",
+// KnownLanguages is the set of valid language keys.
+var KnownLanguages = []string{
+	"go",
+	"javascript",
+	"mobile",
+	"java",
+	"rust",
+	"python",
 }
 
-// IsKnownProfile checks whether a profile name is valid.
-func IsKnownProfile(name string) bool {
-	return slices.Contains(KnownProfiles, name)
+// IsKnownLanguage checks whether a language key is valid.
+func IsKnownLanguage(name string) bool {
+	return slices.Contains(KnownLanguages, name)
 }
 
 // ReadLanguages reads languages from .forge/config.yaml.

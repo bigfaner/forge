@@ -92,7 +92,7 @@ func trCreateFeatureDir(t *testing.T, featureSlug string, taskFiles []string) st
 	forgeDir := filepath.Join(tmpRoot, ".forge")
 	require.NoError(t, os.MkdirAll(forgeDir, 0755))
 	require.NoError(t, os.WriteFile(filepath.Join(forgeDir, "config.yaml"),
-		[]byte("test-profiles:\n  - go-test\n"), 0644))
+		[]byte("languages:\n  - go\n"), 0644))
 
 	proposalDir := filepath.Join(tmpRoot, "docs", "proposals", featureSlug)
 	require.NoError(t, os.MkdirAll(proposalDir, 0755))

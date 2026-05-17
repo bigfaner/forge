@@ -11,7 +11,7 @@ import (
 // TestTaskDef defines a test task to be generated.
 type TestTaskDef struct {
 	ID              string
-	Key             string // map key in index.json (e.g., "gen-test-cases", "gen-test-scripts-go-test")
+	Key             string // map key in index.json (e.g., "gen-test-cases", "gen-test-scripts-go")
 	Title           string
 	Priority        string
 	EstimatedTime   string

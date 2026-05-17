@@ -221,9 +221,9 @@ func runConfigInitIfNeeded(projectRoot string) initAction {
 
 	// Step 2: Test profile
 	selectedProfile := ""
-	profileOpts := make([]huh.Option[string], 0, len(profile.KnownProfiles)+1)
+	profileOpts := make([]huh.Option[string], 0, len(profile.KnownLanguages)+1)
 	profileOpts = append(profileOpts, huh.NewOption("None — skip test generation", ""))
-	for _, p := range profile.KnownProfiles {
+	for _, p := range profile.KnownLanguages {
 		profileOpts = append(profileOpts, huh.NewOption(p, p))
 	}
 	if err := huh.NewForm(huh.NewGroup(

@@ -6,51 +6,17 @@ import (
 	"testing"
 )
 
-func TestGetManifest(t *testing.T) {
-	tests := []struct {
-		name    string
-		wantErr bool
-	}{
-		{"web-playwright", false},
-		{"go-test", false},
-		{"maestro", false},
-		{"java-junit", false},
-		{"rust-test", false},
-		{"pytest", false},
-		{"unknown-profile", true},
-		{"", true},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			data, err := GetManifest(tt.name)
-			if tt.wantErr {
-				if err == nil {
-					t.Errorf("GetManifest(%q) expected error, got nil", tt.name)
-				}
-				return
-			}
-			if err != nil {
-				t.Fatalf("GetManifest(%q) unexpected error: %v", tt.name, err)
-			}
-			if len(data) == 0 {
-				t.Errorf("GetManifest(%q) returned empty data", tt.name)
-			}
-		})
-	}
-}
-
 func TestGetStrategy(t *testing.T) {
 	tests := []struct {
 		name    string
 		kind    string
 		wantErr bool
 	}{
-		{"go-test", "generate", false},
-		{"go-test", "run", false},
-		{"go-test", "graduate", false},
-		{"web-playwright", "generate", false},
-		{"go-test", "invalid", true},
+		{"go", "generate", false},
+		{"go", "run", false},
+		{"go", "graduate", false},
+		{"javascript", "generate", false},
+		{"go", "invalid", true},
 		{"unknown", "generate", true},
 	}
 
@@ -74,7 +40,7 @@ func TestGetStrategy(t *testing.T) {
 }
 
 func TestGetJustfileRecipes(t *testing.T) {
-	data, err := GetJustfileRecipes("go-test")
+	data, err := GetJustfileRecipes("go")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -84,7 +50,7 @@ func TestGetJustfileRecipes(t *testing.T) {
 
 	_, err = GetJustfileRecipes("unknown")
 	if err == nil {
-		t.Error("expected error for unknown profile")
+		t.Error("expected error for unknown language")
 	}
 }
 
@@ -94,11 +60,11 @@ func TestGetTemplate(t *testing.T) {
 		filename string
 		wantErr  bool
 	}{
-		{"go-test", "test-file.go", false},
-		{"go-test", "helpers.go", false},
-		{"web-playwright", "helpers.ts", false},
-		{"web-playwright", "nonexistent.ts", true},
-		{"go-test", "nonexistent.go", true},
+		{"go", "test-file.go", false},
+		{"go", "helpers.go", false},
+		{"javascript", "helpers.ts", false},
+		{"javascript", "nonexistent.ts", true},
+		{"go", "nonexistent.go", true},
 		{"unknown", "test-file.go", true},
 	}
 
@@ -127,8 +93,8 @@ func TestListProfileTemplates(t *testing.T) {
 		wantCount int
 		wantErr   bool
 	}{
-		{"go-test", 2, false},
-		{"web-playwright", 8, false},
+		{"go", 2, false},
+		{"javascript", 8, false},
 		{"unknown", 0, true},
 	}
 
@@ -157,36 +123,12 @@ func TestListEmbeddedProfiles(t *testing.T) {
 		t.Errorf("ListEmbeddedProfiles() = %d profiles, want 6", len(profiles))
 	}
 
-	expected := []string{"go-test", "java-junit", "maestro", "pytest", "rust-test", "web-playwright"}
+	expected := []string{"go", "java", "javascript", "mobile", "python", "rust"}
 	for _, p := range expected {
 		if !slices.Contains(profiles, p) {
-			t.Errorf("expected profile %q not found in list", p)
+			t.Errorf("expected language %q not found in list", p)
 		}
 	}
-}
-
-func TestGetProfileInterfaces(t *testing.T) {
-	t.Run("go-test has tui, api, cli", func(t *testing.T) {
-		ifaces, err := GetProfileInterfaces("go-test")
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if len(ifaces) != 3 {
-			t.Fatalf("expected 3 interfaces, got %d: %v", len(ifaces), ifaces)
-		}
-		for _, want := range []string{"tui", "api", "cli"} {
-			if !slices.Contains(ifaces, want) {
-				t.Errorf("expected interface %q not found", want)
-			}
-		}
-	})
-
-	t.Run("unknown profile returns error", func(t *testing.T) {
-		_, err := GetProfileInterfaces("unknown")
-		if err == nil {
-			t.Error("expected error for unknown profile")
-		}
-	})
 }
 
 func TestValidateInterfaces(t *testing.T) {
@@ -270,25 +212,25 @@ func TestValidInterfaceTypes(t *testing.T) {
 }
 
 func TestUnionLanguageInterfaces(t *testing.T) {
-	t.Run("single profile", func(t *testing.T) {
-		ifaces, err := UnionLanguageInterfaces([]string{"go-test"})
+	t.Run("single language", func(t *testing.T) {
+		ifaces, err := UnionLanguageInterfaces([]string{"go"})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if len(ifaces) != 3 {
-			t.Errorf("expected 3 interfaces, got %d: %v", len(ifaces), ifaces)
+		if len(ifaces) != 2 {
+			t.Errorf("expected 2 interfaces, got %d: %v", len(ifaces), ifaces)
 		}
 	})
 
-	t.Run("multiple profiles deduplicates", func(t *testing.T) {
-		// go-test: [tui, api, cli], web-playwright: [web-ui, api, cli]
-		// union: [api, cli, tui, web-ui] (sorted)
-		ifaces, err := UnionLanguageInterfaces([]string{"go-test", "web-playwright"})
+	t.Run("multiple languages deduplicates", func(t *testing.T) {
+		// go: [api, cli], javascript: [web-ui, api]
+		// union: [api, cli, web-ui] (sorted)
+		ifaces, err := UnionLanguageInterfaces([]string{"go", "javascript"})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		// api and cli appear in both, should be deduplicated
-		expected := []string{"api", "cli", "tui", "web-ui"}
+		// api appears in both, should be deduplicated
+		expected := []string{"api", "cli", "web-ui"}
 		if len(ifaces) != len(expected) {
 			t.Errorf("expected %d interfaces, got %d: %v", len(expected), len(ifaces), ifaces)
 		}
@@ -299,7 +241,7 @@ func TestUnionLanguageInterfaces(t *testing.T) {
 		}
 	})
 
-	t.Run("empty profiles returns empty", func(t *testing.T) {
+	t.Run("empty languages returns empty", func(t *testing.T) {
 		ifaces, err := UnionLanguageInterfaces(nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)

@@ -553,7 +553,7 @@ func TestBuildIndex_WithTestTasks(t *testing.T) {
 		ProjectRoot:    projectRoot,
 		TasksDir:       tasksDir,
 		IndexPath:      indexPath,
-		TestProfiles:   []string{"go-test"},
+		TestProfiles:   []string{"go"},
 		TestInterfaces: []string{"cli"},
 	}
 
@@ -572,8 +572,8 @@ func TestBuildIndex_WithTestTasks(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(tasksDir, "gen-test-cases.md")); os.IsNotExist(err) {
 		t.Error("gen-test-cases.md not generated")
 	}
-	if _, err := os.Stat(filepath.Join(tasksDir, "gen-test-scripts-go-test-cli.md")); os.IsNotExist(err) {
-		t.Error("gen-test-scripts-go-test-cli.md not generated")
+	if _, err := os.Stat(filepath.Join(tasksDir, "gen-test-scripts-go-cli.md")); os.IsNotExist(err) {
+		t.Error("gen-test-scripts-go-cli.md not generated")
 	}
 
 	// Verify index contains test tasks
@@ -584,8 +584,8 @@ func TestBuildIndex_WithTestTasks(t *testing.T) {
 	if _, ok := idx.Tasks["gen-test-cases"]; !ok {
 		t.Error("missing gen-test-cases in index")
 	}
-	if _, ok := idx.Tasks["gen-test-scripts-go-test-cli"]; !ok {
-		t.Error("missing gen-test-scripts-go-test in index")
+	if _, ok := idx.Tasks["gen-test-scripts-go-cli"]; !ok {
+		t.Error("missing gen-test-scripts-go in index")
 	}
 
 	// T-test-1 should depend on highest gate
@@ -596,8 +596,8 @@ func TestBuildIndex_WithTestTasks(t *testing.T) {
 	}
 
 	// Verify Profile field: per-profile test tasks have profile set
-	if idx.Tasks["gen-test-scripts-go-test-cli"].Profile != "go-test" {
-		t.Errorf("gen-test-scripts-go-test profile = %q, want go-test", idx.Tasks["gen-test-scripts-go-test-cli"].Profile)
+	if idx.Tasks["gen-test-scripts-go-cli"].Profile != "go" {
+		t.Errorf("gen-test-scripts-go profile = %q, want go", idx.Tasks["gen-test-scripts-go-cli"].Profile)
 	}
 	// Shared test task (gen-test-cases in breakdown mode) has empty profile
 	if idx.Tasks["gen-test-cases"].Profile != "" {
@@ -620,7 +620,7 @@ func TestBuildIndex_TestTasksIdempotent(t *testing.T) {
 		ProjectRoot:    projectRoot,
 		TasksDir:       tasksDir,
 		IndexPath:      indexPath,
-		TestProfiles:   []string{"go-test"},
+		TestProfiles:   []string{"go"},
 		TestInterfaces: []string{"cli"},
 	}
 
@@ -661,7 +661,7 @@ func TestBuildIndex_MultiProfile(t *testing.T) {
 		ProjectRoot:    projectRoot,
 		TasksDir:       tasksDir,
 		IndexPath:      indexPath,
-		TestProfiles:   []string{"go-test", "web-playwright"},
+		TestProfiles:   []string{"go", "javascript"},
 		TestInterfaces: []string{"api"},
 		AutoConfig:     allEnabledAuto,
 	}
@@ -679,8 +679,8 @@ func TestBuildIndex_MultiProfile(t *testing.T) {
 
 	// Verify suffixed .md files exist
 	for _, name := range []string{
-		"quick-test-cases-go-test.md",
-		"quick-test-cases-web-playwright.md",
+		"quick-test-cases-go.md",
+		"quick-test-cases-javascript.md",
 	} {
 		if _, err := os.Stat(filepath.Join(tasksDir, name)); os.IsNotExist(err) {
 			t.Errorf("%s not generated", name)
@@ -692,11 +692,11 @@ func TestBuildIndex_MultiProfile(t *testing.T) {
 	var idx taskIndexJSON
 	_ = json.Unmarshal(data, &idx)
 
-	if idx.Tasks["quick-test-cases-go-test"].Profile != "go-test" {
-		t.Errorf("quick-test-cases-go-test profile = %q, want go-test", idx.Tasks["quick-test-cases-go-test"].Profile)
+	if idx.Tasks["quick-test-cases-go"].Profile != "go" {
+		t.Errorf("quick-test-cases-go profile = %q, want go", idx.Tasks["quick-test-cases-go"].Profile)
 	}
-	if idx.Tasks["quick-test-cases-web-playwright"].Profile != "web-playwright" {
-		t.Errorf("quick-test-cases-web-playwright profile = %q, want web-playwright", idx.Tasks["quick-test-cases-web-playwright"].Profile)
+	if idx.Tasks["quick-test-cases-javascript"].Profile != "javascript" {
+		t.Errorf("quick-test-cases-javascript profile = %q, want javascript", idx.Tasks["quick-test-cases-javascript"].Profile)
 	}
 	// Business task has empty profile
 	if idx.Tasks["1-foo"].Profile != "" {
@@ -1176,7 +1176,7 @@ func TestBuildIndex_MissingTypeHardError(t *testing.T) {
 		ProjectRoot:    projectRoot,
 		TasksDir:       tasksDir,
 		IndexPath:      indexPath,
-		TestProfiles:   []string{"go-test"},
+		TestProfiles:   []string{"go"},
 		TestInterfaces: []string{"cli"},
 	}
 
@@ -1205,7 +1205,7 @@ func TestBuildIndex_DocsOnlySkipsGatesAndTests(t *testing.T) {
 		TasksDir:       tasksDir,
 		IndexPath:      indexPath,
 		TestInterfaces: []string{"cli"},
-		TestProfiles:   []string{"go-test"},
+		TestProfiles:   []string{"go"},
 	}
 
 	result, err := BuildIndex(opts)
@@ -1249,7 +1249,7 @@ func TestBuildIndex_DocsOnlyGeneratesEvalDoc(t *testing.T) {
 		TasksDir:       tasksDir,
 		TestInterfaces: []string{"cli"},
 		IndexPath:      indexPath,
-		TestProfiles:   []string{"go-test"},
+		TestProfiles:   []string{"go"},
 	}
 
 	result, err := BuildIndex(opts)
@@ -1310,7 +1310,7 @@ func TestBuildIndex_CodeFeatureUnchanged(t *testing.T) {
 		TestInterfaces: []string{"cli"},
 		TasksDir:       tasksDir,
 		IndexPath:      indexPath,
-		TestProfiles:   []string{"go-test"},
+		TestProfiles:   []string{"go"},
 		AutoConfig:     allEnabledAuto,
 	}
 
@@ -1329,8 +1329,8 @@ func TestBuildIndex_CodeFeatureUnchanged(t *testing.T) {
 	var idx taskIndexJSON
 	_ = json.Unmarshal(data, &idx)
 
-	if _, ok := idx.Tasks["quick-test-cases-go-test"]; !ok {
-		t.Error("quick-test-cases-go-test missing (code feature should have test tasks)")
+	if _, ok := idx.Tasks["quick-test-cases-go"]; !ok {
+		t.Error("quick-test-cases-go missing (code feature should have test tasks)")
 	}
 
 	// eval-doc should NOT be generated for code feature
@@ -1358,7 +1358,7 @@ func TestBuildIndex_MissingTypeAllowedForAutoGenTasks(t *testing.T) {
 		ProjectRoot:    projectRoot,
 		TasksDir:       tasksDir,
 		IndexPath:      indexPath,
-		TestProfiles:   []string{"go-test"},
+		TestProfiles:   []string{"go"},
 	}
 
 	// Should NOT error - gate is an auto-generated task, InferType handles it
@@ -1380,7 +1380,7 @@ func TestBuildIndex_EmptyTestInterfaces_NoTestTasks(t *testing.T) {
 		ProjectRoot:    projectRoot,
 		TasksDir:       tasksDir,
 		IndexPath:      indexPath,
-		TestProfiles:   []string{"go-test"},
+		TestProfiles:   []string{"go"},
 		TestInterfaces: []string{},
 	}
 
@@ -1416,7 +1416,7 @@ func TestBuildIndex_WithInterfaces_ProducesPerTypeTasks(t *testing.T) {
 		ProjectRoot:    projectRoot,
 		TasksDir:       tasksDir,
 		IndexPath:      indexPath,
-		TestProfiles:   []string{"go-test"},
+		TestProfiles:   []string{"go"},
 		TestInterfaces: []string{"cli"},
 		AutoConfig:     allEnabledAuto,
 	}
@@ -1433,8 +1433,8 @@ func TestBuildIndex_WithInterfaces_ProducesPerTypeTasks(t *testing.T) {
 	}
 
 	// Verify per-type task .md exists
-	if _, err := os.Stat(filepath.Join(tasksDir, "quick-gen-and-run-go-test-cli.md")); os.IsNotExist(err) {
-		t.Error("quick-gen-and-run-go-test-cli.md not generated")
+	if _, err := os.Stat(filepath.Join(tasksDir, "quick-gen-and-run-go-cli.md")); os.IsNotExist(err) {
+		t.Error("quick-gen-and-run-go-cli.md not generated")
 	}
 
 	// Verify per-type task in index with correct type
@@ -1442,15 +1442,15 @@ func TestBuildIndex_WithInterfaces_ProducesPerTypeTasks(t *testing.T) {
 	var idx taskIndexJSON
 	_ = json.Unmarshal(data, &idx)
 
-	task, ok := idx.Tasks["quick-gen-and-run-go-test-cli"]
+	task, ok := idx.Tasks["quick-gen-and-run-go-cli"]
 	if !ok {
-		t.Fatal("quick-gen-and-run-go-test-cli not in index")
+		t.Fatal("quick-gen-and-run-go-cli not in index")
 	}
 	if task.ID != "T-quick-2-cli" {
 		t.Errorf("per-type task ID = %q, want T-quick-2-cli", task.ID)
 	}
-	if task.Profile != "go-test" {
-		t.Errorf("per-type task profile = %q, want go-test", task.Profile)
+	if task.Profile != "go" {
+		t.Errorf("per-type task profile = %q, want go", task.Profile)
 	}
 }
 
@@ -1465,7 +1465,7 @@ func TestBuildIndex_DeterministicOutput(t *testing.T) {
 		ProjectRoot:    projectRoot,
 		TasksDir:       tasksDir,
 		IndexPath:      indexPath,
-		TestProfiles:   []string{"go-test"},
+		TestProfiles:   []string{"go"},
 		TestInterfaces: []string{"api"},
 	}
 

@@ -20,7 +20,7 @@
       "title": "Restructure profiles/ to languages/ with strategy files",
       "priority": "P0",
       "estimatedTime": "2h",
-      "status": "in_progress",
+      "status": "completed",
       "file": "2-directory-restructure.md",
       "record": "records/2-directory-restructure.md",
       "breaking": true,

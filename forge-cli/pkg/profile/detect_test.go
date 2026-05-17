@@ -18,89 +18,89 @@ func TestDetectProfiles(t *testing.T) {
 			expected: nil,
 		},
 		{
-			name: "go.mod → go-test",
+			name: "go.mod → go",
 			setup: func(dir string) {
 				mustWrite(dir, "go.mod", "module example.com/test")
 			},
-			expected: []string{"go-test"},
+			expected: []string{"go"},
 		},
 		{
-			name: "Cargo.toml → rust-test",
+			name: "Cargo.toml → rust",
 			setup: func(dir string) {
 				mustWrite(dir, "Cargo.toml", "[package]\nname = \"test\"")
 			},
-			expected: []string{"rust-test"},
+			expected: []string{"rust"},
 		},
 		{
-			name: "pom.xml → java-junit",
+			name: "pom.xml → java",
 			setup: func(dir string) {
 				mustWrite(dir, "pom.xml", "<project></project>")
 			},
-			expected: []string{"java-junit"},
+			expected: []string{"java"},
 		},
 		{
-			name: "build.gradle → java-junit",
+			name: "build.gradle → java",
 			setup: func(dir string) {
 				mustWrite(dir, "build.gradle", "plugins { id 'java' }")
 			},
-			expected: []string{"java-junit"},
+			expected: []string{"java"},
 		},
 		{
-			name: "android directory → maestro",
+			name: "android directory → mobile",
 			setup: func(dir string) {
 				mustMkdir(dir, "android")
 			},
-			expected: []string{"maestro"},
+			expected: []string{"mobile"},
 		},
 		{
-			name: "ios directory → maestro",
+			name: "ios directory → mobile",
 			setup: func(dir string) {
 				mustMkdir(dir, "ios")
 			},
-			expected: []string{"maestro"},
+			expected: []string{"mobile"},
 		},
 		{
-			name: "package.json with playwright → web-playwright",
+			name: "package.json with playwright → javascript",
 			setup: func(dir string) {
 				mustWrite(dir, "package.json", `{"devDependencies":{"@playwright/test":"^1.0.0"}}`)
 			},
-			expected: []string{"web-playwright"},
+			expected: []string{"javascript"},
 		},
 		{
-			name: "playwright.config.ts → web-playwright",
+			name: "playwright.config.ts → javascript",
 			setup: func(dir string) {
 				mustWrite(dir, "playwright.config.ts", "export default {}")
 			},
-			expected: []string{"web-playwright"},
+			expected: []string{"javascript"},
 		},
 		{
-			name: "package.json without playwright → web-playwright fallback",
+			name: "package.json without playwright → javascript fallback",
 			setup: func(dir string) {
 				mustWrite(dir, "package.json", `{"dependencies":{"express":"^4.0.0"}}`)
 			},
-			expected: []string{"web-playwright"},
+			expected: []string{"javascript"},
 		},
 		{
-			name: "requirements.txt with pytest → pytest",
+			name: "requirements.txt with pytest → python",
 			setup: func(dir string) {
 				mustWrite(dir, "requirements.txt", "pytest>=7.0\nrequests")
 			},
-			expected: []string{"pytest"},
+			expected: []string{"python"},
 		},
 		{
-			name: "pyproject.toml with pytest → pytest",
+			name: "pyproject.toml with pytest → python",
 			setup: func(dir string) {
 				mustWrite(dir, "pyproject.toml", "[tool.pytest.ini_options]\ntestpaths = [\"tests\"]")
 			},
-			expected: []string{"pytest"},
+			expected: []string{"python"},
 		},
 		{
-			name: "go.mod + package.json with playwright → go-test + web-playwright",
+			name: "go.mod + package.json with playwright → javascript + go",
 			setup: func(dir string) {
 				mustWrite(dir, "go.mod", "module example.com/test")
 				mustWrite(dir, "package.json", `{"devDependencies":{"@playwright/test":"^1.0.0"}}`)
 			},
-			expected: []string{"web-playwright", "go-test"},
+			expected: []string{"javascript", "go"},
 		},
 	}
 

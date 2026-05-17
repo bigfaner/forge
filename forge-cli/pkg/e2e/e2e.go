@@ -35,7 +35,7 @@ func ResolveProfile(projectRoot string) (string, error) {
 	}
 
 	name := profiles[0]
-	if !profile.IsKnownProfile(name) {
+	if !profile.IsKnownLanguage(name) {
 		return "", fmt.Errorf("%w: %s", ErrBadProfile, name)
 	}
 

@@ -25,7 +25,7 @@ func TestConfigGetCommand(t *testing.T) {
 	}
 
 	t.Run("project-type returns plain text", func(t *testing.T) {
-		dir := setupConfig(t, "project-type: backend\nlanguages:\n  - go-test\n")
+		dir := setupConfig(t, "project-type: backend\nlanguages:\n  - go\n")
 
 		var stdout, stderr bytes.Buffer
 		rootCmd.SetOut(&stdout)
@@ -101,7 +101,7 @@ func TestConfigGetCommand(t *testing.T) {
 	})
 
 	t.Run("auto.gitPush returns true", func(t *testing.T) {
-		dir := setupConfig(t, "languages:\n  - go-test\nauto:\n  gitPush: true\n")
+		dir := setupConfig(t, "languages:\n  - go\nauto:\n  gitPush: true\n")
 
 		var stdout bytes.Buffer
 		rootCmd.SetOut(&stdout)
@@ -120,7 +120,7 @@ func TestConfigGetCommand(t *testing.T) {
 	})
 
 	t.Run("auto.gitPush returns false when absent", func(t *testing.T) {
-		dir := setupConfig(t, "languages:\n  - go-test\n")
+		dir := setupConfig(t, "languages:\n  - go\n")
 
 		var stdout bytes.Buffer
 		rootCmd.SetOut(&stdout)
@@ -165,7 +165,7 @@ func TestConfigInitCommand(t *testing.T) {
 	t.Run("writes config with all fields", func(t *testing.T) {
 		dir := t.TempDir()
 
-		// Simulate user input: backend, 1 (go-test), done, 1 (tui), done
+		// Simulate user input: backend, 1 (go), done, 1 (tui), done
 		input := "backend\n1\ndone\n1\ndone\n"
 		var stdin bytes.Buffer
 		stdin.WriteString(input)
@@ -266,8 +266,8 @@ func TestConfigInitCommand(t *testing.T) {
 	t.Run("interfaces populated from profile union", func(t *testing.T) {
 		dir := t.TempDir()
 
-		// Input: project-type=backend(2), profile=go-test(2), interfaces=all(1 2 3)
-		input := "2\n2\n1 2 3\n"
+		// Input: project-type=backend(2), profile=go(1), interfaces=all(1 2 3)
+		input := "2\n1\n1 2 3\n"
 		var stdin bytes.Buffer
 		stdin.WriteString(input)
 		var stdout bytes.Buffer
@@ -288,8 +288,8 @@ func TestConfigInitCommand(t *testing.T) {
 		}
 
 		content := string(data)
-		// go-test interfaces: api, cli, tui (sorted)
-		for _, iface := range []string{"api", "cli", "tui"} {
+		// go interfaces: api, cli (sorted)
+		for _, iface := range []string{"api", "cli"} {
 			if !strings.Contains(content, iface) {
 				t.Errorf("expected interface %q in config, got:\n%s", iface, content)
 			}

@@ -37,7 +37,7 @@ func TestReadAutoConfig_WithAutoBlock(t *testing.T) {
 	}
 
 	configContent := `test-profiles:
-  - go-test
+  - go
 auto:
   e2eTest:
     quick: false
@@ -91,7 +91,7 @@ func TestReadAutoConfig_PartialAutoBlock(t *testing.T) {
 
 	// Only set e2eTest, others should get defaults
 	configContent := `test-profiles:
-  - go-test
+  - go
 auto:
   e2eTest:
     quick: false
@@ -128,7 +128,7 @@ func TestReadAutoConfig_NoAutoBlock(t *testing.T) {
 	}
 
 	configContent := `test-profiles:
-  - go-test
+  - go
 `
 	if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(configContent), 0644); err != nil {
 		t.Fatal(err)
