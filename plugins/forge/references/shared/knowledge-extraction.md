@@ -36,7 +36,7 @@ Non-obvious choices where alternatives existed. Written to `docs/decisions/<type
 
 ### 3.2 Lessons
 
-Root causes that were not immediately apparent, debugging patterns worth remembering. Written to `docs/lessons/<slug>.md` using the template from `plugins/forge/skills/learn-lesson/templates/template.md`.
+Root causes that were not immediately apparent, debugging patterns worth remembering. Written to `docs/lessons/<slug>.md` using the template from `plugins/forge/skills/learn/templates/lesson-entry.md`.
 
 ### 3.3 Conventions
 
@@ -95,7 +95,7 @@ For each confirmed candidate, write to the target file using the format defined 
 | Type | Target | Format reference |
 |------|--------|-----------------|
 | Decision | `docs/decisions/<type>.md` | `decision-logging.md` Section 6 (row format), Section 7 (manifest update) |
-| Lesson | `docs/lessons/<slug>.md` | `learn-lesson/templates/template.md` |
+| Lesson | `docs/lessons/<slug>.md` | `learn/templates/lesson-entry.md` |
 | Convention | `docs/conventions/<topic>.md` | `/consolidate-specs` tech-specs entry format, with project-global ID |
 | Business Rule | `docs/business-rules/<domain>.md` | `/consolidate-specs` biz-specs entry format, with project-global ID |
 
