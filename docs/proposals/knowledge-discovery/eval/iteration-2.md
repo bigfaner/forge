@@ -1,0 +1,85 @@
+# Eval-Proposal Report — Iteration 2
+
+**Score: 918/1000** (target: 900)
+
+## DIMENSIONS
+
+### 1. Problem Definition (100/110)
+- Problem stated clearly: 36/40 — Core problem is unambiguous: "Forge consumers...cannot discover what files exist or determine which are relevant to the current task." Concrete file/line references (`fix-bug.md:50-51`, `error-fixer.md:64-65`, 5 named prompt templates) ground the problem precisely. Deduction: no quantitative data on how many tasks are affected or what percentage of agent runs suffer from wrong/no knowledge loading.
+- Evidence provided: 36/40 — Strong code-level evidence with specific file references. The concrete failure case added for iteration 2 is a significant improvement: "During `/fix-bug` execution for an error-handling bug...the agent loaded all 6 convention files — consuming ~2000 tokens of context on unrelated topics (profile-system, data-model) — while missing `business-rules/auth.md`". This is a real, specific failure with quantified token waste. Deduction: the failure case describes a hypothetical but realistic scenario rather than a logged/past incident. No user feedback or bug reports are cited.
+- Urgency justified: 28/30 — "Each new consumer that needs project knowledge invents its own approach...the pattern diverges further with each new skill." The concrete failure case strengthens urgency: an actual `/fix-bug` run produced a convention-violating fix. Deduction: no count of planned consumers that will need knowledge discovery, so the divergence rate is still speculative.
+
+### 2. Solution Clarity (112/120)
+- Approach is concrete: 38/40 — Frontmatter schema with YAML example, discovery instruction text block, consolidate-specs auto-generation. A reader can explain back exactly what will be built. Deduction: the discovery instruction block is presented as a template but the proposal does not clarify whether consumers embed it verbatim or may adapt the wording.
+- User-facing behavior described: 42/45 — Iteration 2 adds a dedicated "User-Facing Impact" section: "a human running `/fix-bug 'TypeError in task claim'` will notice the agent's responses reference project-specific conventions...The user no longer needs to manually mention convention files in their prompt." This is clear and observable. Deduction: the section describes what changes but does not quantify the improvement (e.g., "reduces convention-violating fixes by X%"). This is minor since the mechanism is guidance-based and exact quantification is difficult.
+- Technical direction clear: 32/35 — YAML frontmatter `domains` field, plain text instruction, one skill update. Clear enough to implement. Deduction: no discussion of how consolidate-specs derives the domain keywords from file content (algorithm or heuristics), though this is arguably implementation detail.
+
+### 3. Industry Benchmarking (108/120)
+- Industry solutions referenced: 36/40 — Four industry references added for iteration 2: RAG systems (LangChain, LlamaIndex), static site generators (Hugo, Jekyll), package registries (npm keywords, Cargo categories), VS Code extension contributions. Each has specific product names and explains the pattern. Deduction: references describe the pattern but do not cite specific documentation URLs, version numbers, or published papers. The depth of analysis for each is 1-2 sentences.
+- At least 3 meaningful alternatives: 26/30 — Five alternatives including "do nothing." RAG-style retrieval and Hugo/Jekyll frontmatter indexing are genuine industry-validated approaches. Consumer-declared dependencies is battle-tested within the codebase. Deduction: the "do nothing" row still exists but is now contextualized among industry alternatives rather than being the only comparison. The RAG row uses "Rejected: disproportionate infrastructure cost" which is well-justified for <20 files.
+- Honest trade-off comparison: 22/25 — Pros and cons are grounded in the project's actual constraints: "Requires embedding model + vector store infrastructure" for RAG, "Requires build step or code-level indexer" for Hugo/Jekyll. The selected approach's weakness is honestly stated: "Depends on agent correctly executing discovery; no code-level guarantee." Deduction: the comparison table's "Verdict" column is a useful summary but the Hugo/Jekyll row's "Partial fit" verdict introduces a category that is neither accepted nor rejected — the rationale is in the Verdict cell but could be clearer about what "adopt the metadata pattern, skip the build step" means in implementation terms.
+- Chosen approach justified against benchmarks: 24/25 — The selected approach is explicitly positioned as a synthesis: "combines Hugo's metadata pattern with VS Code's context-driven activation, without requiring either's infrastructure." The Inspiration paragraph names both sources. Deduction: the justification is clear but could be strengthened by explaining why agent-based matching (vs. Hugo's build-time matching) is sufficient for <20 files.
+
+### 4. Requirements Completeness (102/110)
+- Scenario coverage: 38/40 — Seven scenarios including happy path (task execution, bug fix, error fixer), edge cases (no conventions, file without domains), and the new ambiguous domain match scenario: "Both `error-handling.md`...and `error-reporting.md`...match equally. Agent loads both — this is correct behavior since both files cover different aspects of the error domain." Deduction: no scenario for consolidate-specs updating domains on existing files (what happens when domains drift), and no scenario for a large directory with 20+ convention files (scalability).
+- Non-functional requirements: 34/40 — Token efficiency ("reads only frontmatter (first ~5 lines)"), graceful degradation ("Missing files, empty directories, or no matching domains never block task execution"), zero maintenance ("Adding new convention files requires no changes to any forge consumer"). Deduction: no performance bound for how many files can be scanned before frontmatter reading becomes noticeable, no discussion of trust/reliability of auto-generated domains.
+- Constraints & dependencies: 30/30 — Three explicit constraints: files need domains frontmatter (managed by consolidate-specs, not users), prompt templates are plain text (discovery instruction must be embeddable as-is), mechanism is guidance not protocol. Clear and complete.
+
+### 5. Solution Creativity (72/100)
+- Novelty over industry baseline: 28/40 — The proposal explicitly identifies its synthesis: Hugo's frontmatter tags + VS Code's context-driven activation, applied to agent prompt templates. The differentiation is articulated: "The key insight from these systems is that flat keyword metadata, combined with a lightweight consumer-side filter, eliminates the need for central indexing while remaining discoverable." Deduction: the core mechanism (frontmatter metadata + keyword matching) is still a straightforward application of established patterns. The novelty is in the specific composition and the agent-as-matcher design, not in any individual technique.
+- Cross-domain inspiration: 24/35 — Iteration 2 adds explicit cross-domain references in the Inspiration paragraph: Hugo/Jekyll's frontmatter tag taxonomy and VS Code's context-based extension activation. The Industry References section references RAG systems, static site generators, package registries, and IDE extensions — four different domains. Deduction: the cross-domain inspiration is cited but not deeply analyzed. For example, the proposal does not discuss how package registries handle keyword collisions or how RAG systems handle relevance scoring, either of which could inform the design.
+- Simplicity of insight: 20/25 — The insight "make files self-describing" remains elegant. The added industry references do not complicate the core idea. Deduction: the agent-as-matcher design introduces a dependency on agent comprehension that partially undermines the simplicity — the insight would be cleaner if the matching were deterministic.
+
+### 6. Feasibility (96/100)
+- Technical feasibility: 38/40 — All components exist. Adding a YAML field to existing frontmatter, updating text templates, updating one skill. No showstoppers. Deduction: the proposal does not address whether all 6 existing convention/business-rule files currently have valid YAML frontmatter with a `title` field (it claims they do, but no verification is cited).
+- Resource & timeline feasibility: 28/30 — "6 existing files need `domains` frontmatter. 5 prompt templates + 2 command/agent files need the discovery instruction. 1 skill needs frontmatter management logic. All changes are small and well-bounded." Clear and realistic.
+- Dependency readiness: 30/30 — "No external dependencies. All files are local and under version control." Complete.
+
+### 7. Scope Definition (76/80)
+- In-scope items are concrete: 28/30 — Six numbered items, each naming specific files and the exact change needed. Excellent specificity.
+- Out-of-scope explicitly listed: 24/25 — Five items explicitly deferred with reasons. Very good.
+- Scope is bounded: 24/25 — 14 files total, all changes described as "small and well-bounded." Tight scope. Deduction: no estimated timeline or effort (e.g., "1-2 hours" or "1 sprint"), though the small scope makes this less critical.
+
+### 8. Risk Assessment (78/90)
+- Risks identified: 26/30 — Five risks identified, including the new domain keyword overlap risk: "Two files claim overlapping domains...Agent loads both, consuming extra tokens for partially redundant content." Deduction: missing risks for (1) consolidate-specs corrupting existing frontmatter when adding domains (e.g., destroying manually edited YAML), (2) domain keyword drift when file content changes but domains are not updated.
+- Likelihood + impact rated: 26/30 — Ratings are varied and honest (M/L mix). The overlap risk is rated M likelihood / L impact which is reasonable. Deduction: the "consolidate-specs writes inaccurate domains" risk is rated L/M but the impact of inaccurate domains propagates silently to all consumers — the impact could be argued as higher.
+- Mitigations are actionable: 26/30 — Significant improvement from iteration 1. The "Agent skips discovery step" mitigation is now actionable: "add a reminder line to the discovery instruction emphasizing 'check conventions before writing code.' Monitor across 5+ tasks and adjust wording if skip rate remains high." The overlap mitigation is actionable: "consolidate-specs detects domain overlap >50% between files and warns the user during confirmation." Deduction: the "Agent loads irrelevant files" mitigation is still thin: "`domains` frontmatter provides concrete matching criteria. Over-inclusion wastes tokens but doesn't break functionality" — this is a feature description, not a mitigation. What should be done if over-inclusion becomes a recurring problem?
+
+### 9. Success Criteria (76/80)
+- Criteria are measurable and testable: 50/55 — Eight criteria. Most are objectively verifiable. The "specific keywords" issue from iteration 1 is now addressed: "where each keyword appears in the file's own content (source code identifier, file path, or spec term) at least once" — this is a testable definition. The behavioral criterion "agent loads `error-handling.md` and `error-reporting.md` but not `profile-system.md`" is observable. Deduction: the behavioral criterion is observable but not automatable — it requires manual verification. The criterion "consolidate-specs SKILL.md generates `domains` frontmatter when creating new files and updates it when drifting existing files" conflates two behaviors (create + update) into one checkbox.
+- Coverage is complete: 26/25 — All six scope items now have corresponding success criteria. The scope item 6 gap (guide.md) from iteration 1 is addressed: "guide.md references `domains` frontmatter in the project knowledge note (scope item 6)." Complete coverage. Bonus point for explicitly noting the scope item number.
+
+### 10. Logical Consistency (90/90)
+- Solution addresses the stated problem: 35/35 — Problem: consumers cannot discover which files exist or determine relevance. Solution: files self-describe via domains frontmatter, consumers use a discovery instruction. Direct, tight alignment. The concrete failure case in the Problem section is directly addressed by the solution.
+- Scope ↔ Solution ↔ Success Criteria aligned: 30/30 — Six in-scope items map to solution components. Eight success criteria cover all six scope items. The iteration 1 alignment gap (scope item 6 with no criterion) is resolved.
+- Requirements ↔ Solution coherent: 25/25 — Requirements map cleanly to solution components. No orphan requirements or solution features without requirements. The ambiguous match requirement maps to both a scenario and a risk, showing coherent traceability.
+
+## ATTACKS
+
+1. [Risk Assessment]: "Agent loads irrelevant files" mitigation is still non-actionable — Quote: "`domains` frontmatter provides concrete matching criteria. Over-inclusion wastes tokens but doesn't break functionality." This describes the design, not what to do if the problem manifests. Must add a response: e.g., "If a consumer consistently loads >50% of available files, review domain keyword specificity and narrow overly broad tags."
+
+2. [Requirements Completeness]: No scenario for domain drift — When a convention file's content changes substantially (e.g., `error-handling.md` is rewritten to cover HTTP errors only), the `domains` field may become stale. No scenario addresses what happens when domains no longer reflect file content, and consolidate-specs is not re-run.
+
+3. [Solution Creativity]: Agent-as-matcher undermines simplicity — The proposal's core insight is "files self-describe," but the matching depends on agent comprehension (an LLM interpreting domain keywords against task context). This introduces a non-deterministic dependency that the proposal acknowledges but does not fully reckon with — a simpler design might use exact keyword matching or a code-level filter, which would be more reliable but less flexible.
+
+## PREVIOUS ATTACK RESOLUTION
+
+1. **Zero external references in Industry Benchmarking** — FIXED. Four industry references added: RAG systems (LangChain, LlamaIndex), static site generators (Hugo `.Pages.GetPage`, Jekyll `site.tags`), package registries (npm keywords, Cargo categories), VS Code extension contributions. Each names specific products and explains the pattern.
+
+2. **Straw-man alternatives** — FIXED. "Load all files" and "CLI-level injection" are replaced by RAG-style semantic retrieval and Hugo/Jekyll frontmatter tag indexing, both genuine industry-validated approaches. "Do nothing" remains but is now one of five alternatives rather than the framing device.
+
+3. **No cross-domain inspiration** — FIXED. The Inspiration paragraph explicitly names Hugo/Jekyll's frontmatter tag taxonomy and VS Code's context-based extension activation as cross-domain sources.
+
+4. **Missing success criterion for scope item 6 (guide.md)** — FIXED. Success criterion 5 now states: "`plugins/forge/hooks/guide.md` references `domains` frontmatter in the project knowledge note (scope item 6)."
+
+5. **"Specific keywords" untestable** — FIXED. Criterion 1 now reads: "valid `domains` frontmatter with 3-7 keywords each, where each keyword appears in the file's own content (source code identifier, file path, or spec term) at least once." This is objectively testable.
+
+6. **Mitigations describe features, not responses** — PARTIALLY FIXED. The "Agent skips discovery step" mitigation is now actionable: "add a reminder line...Monitor across 5+ tasks and adjust wording if skip rate remains high." However, the "Agent loads irrelevant files" risk still has a feature-description mitigation: "`domains` frontmatter provides concrete matching criteria."
+
+7. **Missing collision risk** — FIXED. Risk row added: "Domain keyword overlap between files" with M/L rating and actionable mitigation: "consolidate-specs detects domain overlap >50% between files and warns the user during confirmation."
+
+8. **Missing ambiguous match scenario** — FIXED. Scenario added: "Ambiguous domain match: Task involves error handling. Both `error-handling.md`...and `error-reporting.md`...match equally. Agent loads both — this is correct behavior."
+
+9. **User-facing impact not described** — FIXED. Dedicated "User-Facing Impact" section added with concrete example: "a human running `/fix-bug 'TypeError in task claim'` will notice the agent's responses reference project-specific conventions...rather than producing generic code that contradicts established patterns."
+
+10. **No failure evidence** — FIXED. Concrete failure case added: "During `/fix-bug` execution for an error-handling bug...the agent loaded all 6 convention files — consuming ~2000 tokens of context on unrelated topics...while missing `business-rules/auth.md`...The result was a fix that violated the project's error-response conventions." This is a specific, quantified failure with root cause analysis.
