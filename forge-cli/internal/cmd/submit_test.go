@@ -1402,3 +1402,90 @@ func TestRecordExistsCheck(t *testing.T) {
 		}
 	})
 }
+
+func TestSubmit_NonTestableTypeSkipsQualityGate(t *testing.T) {
+	t.Run("documentation type skips quality gate", func(t *testing.T) {
+		if os.Getenv("TEST_SUBMIT_DOC_SKIPS_QG") == "1" {
+			setupFullProject(t, SetupOpts{
+				Tasks: map[string]task.Task{
+					"t1": {ID: "1", Title: "Doc Task", Status: "pending", File: "1.md", Record: "records/1.md", Type: task.TypeDocumentation},
+				},
+			})
+
+			dir, _ := os.Getwd()
+			dataPath := filepath.Join(dir, "record.json")
+			jsonData := `{"status":"completed","summary":"Doc task done","coverage":-1.0}`
+			_ = os.WriteFile(dataPath, []byte(jsonData), 0644)
+
+			submitDataPath = dataPath
+			submitForce = false
+			runSubmit(submitCmd, []string{"1"})
+			return
+		}
+		cmd := exec.Command(os.Args[0], "-test.run=TestSubmit_NonTestableTypeSkipsQualityGate/documentation_type_skips_quality_gate")
+		cmd.Env = append(os.Environ(), "TEST_SUBMIT_DOC_SKIPS_QG=1")
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Errorf("documentation type should skip quality gate, got error: %v, output: %s", err, string(output))
+		}
+	})
+
+	t.Run("feature type runs quality gate", func(t *testing.T) {
+		if os.Getenv("TEST_SUBMIT_FEAT_RUNS_QG") == "1" {
+			setupFullProject(t, SetupOpts{
+				Tasks: map[string]task.Task{
+					"t1": {ID: "1", Title: "Feature Task", Status: "pending", File: "1.md", Record: "records/1.md", Type: task.TypeFeature},
+				},
+			})
+
+			dir, _ := os.Getwd()
+			// Create a justfile so RunGate actually attempts execution
+			justfile := "compile:\n\t@echo \"compile fails\" && exit 1\nfmt:\n\t@true\nlint:\n\t@true\ntest:\n\t@true\n"
+			_ = os.WriteFile(filepath.Join(dir, "justfile"), []byte(justfile), 0644)
+
+			dataPath := filepath.Join(dir, "record.json")
+			jsonData := `{"status":"completed","summary":"Feature done","testsPassed":3,"coverage":80.0}`
+			_ = os.WriteFile(dataPath, []byte(jsonData), 0644)
+
+			submitDataPath = dataPath
+			submitForce = false
+			runSubmit(submitCmd, []string{"1"})
+			return
+		}
+		cmd := exec.Command(os.Args[0], "-test.run=TestSubmit_NonTestableTypeSkipsQualityGate/feature_type_runs_quality_gate")
+		cmd.Env = append(os.Environ(), "TEST_SUBMIT_FEAT_RUNS_QG=1")
+		output, _ := cmd.CombinedOutput()
+		out := string(output)
+		if !strings.Contains(out, "Quality gate failed") {
+			t.Errorf("feature type should run quality gate, got: %s", out)
+		}
+	})
+}
+
+func TestSubmit_NonTestableTypeAutoSetCoverage(t *testing.T) {
+	t.Run("documentation type auto-sets coverage to -1", func(t *testing.T) {
+		if os.Getenv("TEST_SUBMIT_DOC_AUTO_COV") == "1" {
+			setupFullProject(t, SetupOpts{
+				Tasks: map[string]task.Task{
+					"t1": {ID: "1", Title: "Doc Task", Status: "pending", File: "1.md", Record: "records/1.md", Type: task.TypeDocumentation},
+				},
+			})
+
+			dir, _ := os.Getwd()
+			dataPath := filepath.Join(dir, "record.json")
+			jsonData := `{"status":"completed","summary":"Doc task done"}`
+			_ = os.WriteFile(dataPath, []byte(jsonData), 0644)
+
+			submitDataPath = dataPath
+			submitForce = false
+			runSubmit(submitCmd, []string{"1"})
+			return
+		}
+		cmd := exec.Command(os.Args[0], "-test.run=TestSubmit_NonTestableTypeAutoSetCoverage/documentation_type_auto-sets_coverage_to_-1")
+		cmd.Env = append(os.Environ(), "TEST_SUBMIT_DOC_AUTO_COV=1")
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Errorf("documentation type should auto-set coverage and succeed, got error: %v, output: %s", err, string(output))
+		}
+	})
+}

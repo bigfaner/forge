@@ -125,16 +125,18 @@ func runSubmit(_ *cobra.Command, args []string) {
 			fmt.Sprintf("Change taskId to %q or remove it from record.json", taskIDArg)))
 	}
 
-	// NoTest tasks: auto-set coverage=-1.0 to skip test evidence check
-	if t.NoTest && rd.Coverage >= 0 && rd.TestsPassed == 0 && rd.TestsFailed == 0 {
-		rd.Coverage = -1.0
+	// Non-testable or NoTest tasks: auto-set coverage=-1.0 to skip test evidence check
+	if !task.IsTestableType(t.Type) || t.NoTest {
+		if rd.Coverage >= 0 && rd.TestsPassed == 0 && rd.TestsFailed == 0 {
+			rd.Coverage = -1.0
+		}
 	}
 
 	// Validate required and recommended fields
 	validateRecordData(rd, submitForce)
 
-	// Quality gate pre-check for completed tasks (unless --force or noTest)
-	if rd.Status == "completed" && !submitForce && !t.NoTest {
+	// Quality gate pre-check for completed tasks (unless --force, noTest, or non-testable type)
+	if rd.Status == "completed" && !submitForce && !t.NoTest && task.IsTestableType(t.Type) {
 		validateQualityGate(projectRoot, t.Scope)
 	}
 

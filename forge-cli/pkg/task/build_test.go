@@ -1020,18 +1020,18 @@ func TestNeedsTestPipeline(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "cleanup-only does NOT need test pipeline",
+			name: "cleanup-only needs test pipeline",
 			tasks: map[string]Task{
 				"1-clean": {ID: "1.1", Type: TypeCleanup},
 			},
-			want: false,
+			want: true,
 		},
 		{
-			name: "refactor-only does NOT need test pipeline",
+			name: "refactor-only needs test pipeline",
 			tasks: map[string]Task{
 				"1-ref": {ID: "1.1", Type: TypeRefactor},
 			},
-			want: false,
+			want: true,
 		},
 		{
 			name: "only auto-generated tasks (no business tasks) returns false",
@@ -1156,6 +1156,31 @@ func TestNeedsDocEval(t *testing.T) {
 			got := needsDocEval(tt.tasks)
 			if got != tt.want {
 				t.Errorf("needsDocEval() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestIsTestableType(t *testing.T) {
+	tests := []struct {
+		typ  string
+		want bool
+	}{
+		{TypeFeature, true},
+		{TypeEnhancement, true},
+		{TypeFix, true},
+		{TypeCleanup, true},
+		{TypeRefactor, true},
+		{TypeDocumentation, false},
+		{"unknown", false},
+		{"", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.typ, func(t *testing.T) {
+			got := IsTestableType(tt.typ)
+			if got != tt.want {
+				t.Errorf("IsTestableType(%q) = %v, want %v", tt.typ, got, tt.want)
 			}
 		})
 	}
