@@ -1,0 +1,83 @@
+{
+  "feature": "task-type-code-docs-boundary",
+  "proposal": "docs/proposals/task-type-code-docs-boundary/proposal.md",
+  "created": "2026-05-19",
+  "tasks": {
+    "1-type-classification-rule": {
+      "id": "1",
+      "title": "Add code/docs classification rule to type-assignment.md",
+      "priority": "P1",
+      "estimatedTime": "15min",
+      "status": "completed",
+      "file": "1-type-classification-rule.md",
+      "record": "records/1-type-classification-rule.md",
+      "type": "documentation"
+    },
+    "2-quality-gate-type-skip": {
+      "id": "2",
+      "title": "Add type-based quality-gate skip to guide.md and submit-task",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-quality-gate-type-skip.md",
+      "record": "records/2-quality-gate-type-skip.md",
+      "type": "documentation"
+    },
+    "3-task-generator-classification": {
+      "id": "3",
+      "title": "Strengthen docs-only classification in quick-tasks and breakdown-tasks",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "3-task-generator-classification.md",
+      "record": "records/3-task-generator-classification.md",
+      "type": "documentation"
+    },
+    "4-go-testable-types": {
+      "id": "4",
+      "title": "Expand testableTypes and add type-based quality-gate skip in Go",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "4-go-testable-types.md",
+      "record": "records/4-go-testable-types.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "feature"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-specs-1",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "scope": "all",
+      "noTest": true,
+      "type": "doc-generation.drift"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
