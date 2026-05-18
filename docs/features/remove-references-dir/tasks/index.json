@@ -38,7 +38,7 @@
       "title": "Inline config.yaml and sitemap.json examples into gen-sitemap command",
       "priority": "P1",
       "estimatedTime": "15m",
-      "status": "pending",
+      "status": "completed",
       "file": "4-inline-gen-sitemap-examples.md",
       "record": "records/4-inline-gen-sitemap-examples.md",
       "type": "documentation"
