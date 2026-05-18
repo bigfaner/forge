@@ -41,7 +41,7 @@ flowchart TD
 Runs **once** before the claim loop.
 
 1. Determine the feature slug from the current context (proposal directory, manifest, or user input).
-2. Run `forge feature set <slug>`. On success (exit code 0), proceed to Step 1.
+2. Run `forge feature set <slug>`. On success (exit code 0), the slug is printed to stdout. Proceed to Step 1.
 
 ### Step 1: Claim Task
 
