@@ -18,7 +18,7 @@
       "title": "Create 9 scorer expert files",
       "priority": "P0",
       "estimatedTime": "1.5h",
-      "status": "pending",
+      "status": "completed",
       "file": "2-create-expert-files.md",
       "record": "records/2-create-expert-files.md",
       "type": "documentation"
