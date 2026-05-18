@@ -18,7 +18,7 @@
       "title": "Inline knowledge-extraction.md into consuming skills and commands",
       "priority": "P1",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "2-inline-knowledge-extraction.md",
       "record": "records/2-inline-knowledge-extraction.md",
       "type": "documentation"
