@@ -91,3 +91,25 @@ func ensureFeatureDir(t *testing.T, root, slug string) {
 ```
 
 **Source**: `disc-1` fix — `ensureFeatureDir` in `feature_set_command_cli_test.go` was missing `tasks/index.json`.
+
+## Contract Validation
+
+### TEST-isolation-004: Contract Six-Dimension Model
+
+**Requirement**: Every Contract must specify exactly 6 dimensions — Preconditions, Input, Output, State, Side-effect, Invariants. Semantic descriptors must be pure natural language with no regex syntax. Preconditions across outcomes within a step must be mutually exclusive.
+
+**Why**: Regex in descriptors defeats the purpose of semantic indirection — the Fact Table can't match structural syntax. Mutually exclusive Preconditions ensure deterministic outcome routing during test execution.
+
+**Pattern**:
+
+```go
+// BAD: regex in descriptor
+Output: `stdout matches "^\\d{4}-\\d{2}-\\d{2}.*"`
+
+// GOOD: semantic descriptor, Fact Table resolves it
+Output: `stdout contains "claimed task"`
+```
+
+**Applies to**: All Contract files under `docs/features/<slug>/testing/contracts/`.
+
+**Source**: `contract-journey-test-model` task 4 — `pkg/contract/validate.go` enforces these rules.
