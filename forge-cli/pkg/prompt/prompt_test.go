@@ -753,6 +753,82 @@ func TestSynthesize_GenScripts_NoTypeSuffix(t *testing.T) {
 	}
 }
 
+// --- Consolidate/Drift non-interactive mode tests ---
+
+func TestSynthesize_ConsolidateTemplate_NonInteractive(t *testing.T) {
+	dir := t.TempDir()
+	tasks := map[string]task.Task{
+		"T-test-5": {
+			ID:     "T-test-5",
+			Title:  "Consolidate specs",
+			Status: "pending",
+			File:   "T-test-5.md",
+			Record: "records/T-test-5.md",
+			Type:   task.TypeDocGenerationConsolidate,
+			Scope:  "backend",
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "T-test-5"}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Must instruct non-interactive mode for pipeline execution.
+	if !strings.Contains(result, "non-interactive") {
+		t.Error("consolidate template should mention non-interactive mode")
+	}
+
+	// Must NOT instruct the agent to block or wait for user confirmation.
+	if strings.Contains(result, "blocked") {
+		t.Error("consolidate template should NOT mention 'blocked' — auto mode should proceed")
+	}
+
+	// Must invoke the consolidate-specs skill.
+	if !strings.Contains(result, `Skill(skill="forge:consolidate-specs"`) {
+		t.Error("consolidate template should invoke forge:consolidate-specs skill")
+	}
+}
+
+func TestSynthesize_DriftTemplate_NonInteractive(t *testing.T) {
+	dir := t.TempDir()
+	tasks := map[string]task.Task{
+		"T-quick-5": {
+			ID:     "T-quick-5",
+			Title:  "Drift detection",
+			Status: "pending",
+			File:   "T-quick-5.md",
+			Record: "records/T-quick-5.md",
+			Type:   task.TypeDocGenerationDrift,
+			Scope:  "backend",
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "T-quick-5"}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Must instruct non-interactive mode for pipeline execution.
+	if !strings.Contains(result, "non-interactive") {
+		t.Error("drift template should mention non-interactive mode")
+	}
+
+	// Must NOT instruct the agent to block or wait for user confirmation.
+	if strings.Contains(result, "blocked") {
+		t.Error("drift template should NOT mention 'blocked' — auto mode should proceed")
+	}
+
+	// Must invoke the consolidate-specs skill.
+	if !strings.Contains(result, `Skill(skill="forge:consolidate-specs"`) {
+		t.Error("drift template should invoke forge:consolidate-specs skill")
+	}
+}
+
 func TestExtractTestTypeArg(t *testing.T) {
 	tests := []struct {
 		id   string

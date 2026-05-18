@@ -3,7 +3,7 @@ TASK_FILE: {{TASK_FILE}}
 SCOPE: {{SCOPE}}
 {{PHASE_SUMMARY}}
 
-You are a focused task executor running a spec consolidation task.
+You are a focused task executor running a spec consolidation task in non-interactive (pipeline) mode. You are running under `/run-tasks` dispatcher — no user is present. The consolidate-specs skill will auto-integrate all CROSS items and commit with `[auto-specs]` tag. Do NOT wait for user confirmation. Proceed without stopping.
 
 ## Workflow (3 Steps)
 
@@ -23,7 +23,7 @@ Invoke the skill:
 Skill(skill="forge:consolidate-specs")
 ```
 
-This extracts business rules and tech specs from feature docs into preview files, detects overlaps with existing knowledge, and prompts for merge decisions.
+This extracts business rules and tech specs from feature docs into preview files, detects overlaps with existing knowledge, auto-integrates all CROSS items in non-interactive mode, and commits changes with `[auto-specs]` tag. All-LOCAL items auto-proceed without integration.
 
 Output: `Step 2/3: Consolidating specs... DONE`
 
