@@ -4,11 +4,11 @@ author: faner
 status: Draft
 ---
 
-# Proposal: Expert Template Architecture for Eval Pipeline
+# Proposal: Expert File Architecture for Eval Pipeline
 
 ## Problem
 
-doc-scorer agent definition embeds ALL domain expert personas in a single monolithic prompt. When evaluating a PRD, the scorer sees persona descriptions for proposals, UI, QA, harness, etc. — creating noise that reduces evaluation precision. Each invocation should only see the expert persona relevant to the document type being evaluated.
+doc-scorer agent definition embeds ALL domain expert role descriptions in a single monolithic prompt. When evaluating a PRD, the scorer sees role descriptions for proposals, UI, QA, harness, etc. — creating noise that reduces evaluation precision. Each invocation should only see the expert role relevant to the document type being evaluated.
 
 ### Evidence
 
@@ -23,7 +23,7 @@ The eval pipeline is a core quality gate. Imprecise scoring leads to either: (a)
 
 ## Proposed Solution
 
-Eliminate `doc-scorer.md` and `doc-reviser.md` agent definitions entirely. Split into two layers: **protocol files** (generic workflow) and **expert files** (scorer persona + domain knowledge). Reviser uses only a protocol file — it doesn't need domain knowledge because attack points already prescribe what to fix. Eval composes protocol + expert into a prompt and spawns `general-purpose` agents directly.
+Eliminate `doc-scorer.md` and `doc-reviser.md` agent definitions entirely. Split into two layers: **protocol files** (generic workflow) and **expert files** (scorer role + domain knowledge). Reviser uses a protocol file + rubric (to understand what "good" looks like) + merged attacks. It doesn't need domain-specific expert files because attack points already prescribe what to fix. Eval composes protocol + expert into per-expert prompts and spawns `general-purpose` agents directly.
 
 ### Architecture
 
@@ -31,7 +31,7 @@ Eliminate `doc-scorer.md` and `doc-reviser.md` agent definitions entirely. Split
 agents/experts/
   protocol/
     scorer-protocol.md    # Three-phase adversarial scoring protocol
-    reviser-protocol.md   # Generic attack-point-driven revision workflow (no persona needed)
+    reviser-protocol.md   # Generic attack-point-driven revision workflow (no expert file needed)
   scorer/
     cto.md                # CTO persona for proposals
     pm.md                 # PM persona for PRDs
@@ -44,7 +44,7 @@ agents/experts/
     ux-auditor.md         # UX auditor for validate-ux
 ```
 
-No `reviser/` subdirectory. The reviser is a generic executor — it reads attack points (which already contain domain-informed prescriptions) and edits documents. Domain knowledge lives only in scorer experts.
+No `reviser/` subdirectory. The reviser is a generic executor — it reads attack points (which already contain domain-informed prescriptions), reads the rubric (to understand target quality), and edits documents. Domain knowledge lives only in scorer expert files.
 
 ### Dispatch Table (in eval SKILL.md)
 
@@ -72,27 +72,27 @@ Iteration N:
                           │
   if score < target:
     eval reads protocol/reviser-protocol.md
-    eval composes prompt: [reviser-protocol + merged-attacks]
+    eval composes prompt: [reviser-protocol + rubric + merged-attacks]
     [reviser agent] ──→ edits docs
     → next iteration
 ```
 
 ### Innovation Highlights
 
-- **Protocol-persona separation**: Scoring protocol (three-phase adversarial, verification stance, output format) is a single file shared by all experts. Expert files contain ONLY persona + domain-specific failure patterns (~20 lines each). Protocol changes propagate everywhere via one file.
+- **Protocol–expert separation**: Scoring protocol (three-phase adversarial, verification stance, output format) is a single file shared by all experts. Expert files contain ONLY role description + domain-specific failure patterns (~20 lines each). Scorer protocol changes propagate to all scorer experts via one file.
 - **No agent definition files**: `doc-scorer.md` and `doc-reviser.md` are deleted. Eval spawns `general-purpose` agents with composed prompts, passing `model: "sonnet"`.
 - **Multi-expert parallel scoring**: Types like PRD get scored by PM + QA in parallel, producing diverse attack angles that a single persona cannot.
 - **LLM-based semantic dedup**: Overlapping attack points from different experts are merged via LLM in the main session, not string matching.
-- **Reviser is domain-agnostic**: Attack points already contain domain-informed prescriptions ("rewrite as Given/When/Then"). Reviser executes, doesn't diagnose.
+- **Reviser is domain-agnostic**: Attack points already contain domain-informed prescriptions ("rewrite as Given/When/Then"). Reviser reads rubric + attacks and executes fixes, doesn't diagnose.
 
 ## Requirements Analysis
 
 ### Key Scenarios
 
-1. **Single-expert eval (harness, validate-code, validate-ux)**: One expert scores via general-purpose agent. Same behavior as today but with cleaner, focused prompt.
-2. **Multi-expert eval (prd)**: PM + QA experts score in parallel. Eval LLM-merges attacks, averages scores for gate decision.
-3. **Iteration loop**: Same as today — score → gate → revise — but reviser receives merged attacks from all experts. Reviser is generic, no persona needed.
-4. **Backward compat**: Types not in the dispatch table use a generic fallback expert. Existing behavior preserved.
+1. **Single-expert eval (harness, validate-code, validate-ux)**: One expert scores via general-purpose agent. Behavior equivalent to current single-scorer approach with cleaner prompt.
+2. **Multi-expert eval (prd)**: PM + QA experts score in parallel — this is a new behavior (currently PRD uses single PM scorer). Eval LLM-merges attacks, averages scores for gate decision.
+3. **Iteration loop**: Same as today — score → gate → revise — but reviser receives merged attacks from all experts plus rubric for quality reference. Reviser is generic, no expert file needed.
+4. **Fallback**: Types not in the dispatch table use a generic fallback expert file (equivalent to current `*(unmapped)` persona row).
 
 ### Non-Functional Requirements
 
@@ -147,7 +147,7 @@ No external dependencies. All changes are within the forge plugin.
 - Update eval SKILL.md:
   - Add type→experts dispatch table
   - Compose scorer prompt from protocol + expert file
-  - Compose reviser prompt from protocol only (generic)
+  - Compose reviser prompt from protocol + rubric (reviser reads rubric for quality reference, same as current behavior)
   - Spawn `general-purpose` agents with `model: "sonnet"` and composed prompts
   - Parallel multi-expert spawning
   - LLM-based semantic dedup of attack points (main session)
@@ -174,11 +174,11 @@ No external dependencies. All changes are within the forge plugin.
 
 ## Success Criteria
 
-- [ ] Each scorer invocation receives exactly one expert persona — no cross-domain noise
-- [ ] Multi-expert types (prd) produce attack points from at least 2 distinct perspectives
+- [ ] Each scorer invocation loads exactly one expert file — no cross-domain content in prompt
+- [ ] Multi-expert types (prd) produce attack points from at least 2 distinct expert perspectives
 - [ ] Gate decision uses averaged score across all experts
-- [ ] Single-expert types produce equivalent output to current behavior
-- [ ] Reviser works identically to current behavior (generic, no persona)
+- [ ] Single-expert types score within ±50 points of current behavior on the same document
+- [ ] Reviser receives rubric + merged attacks (same inputs as current behavior)
 - [ ] `doc-scorer.md` and `doc-reviser.md` are deleted; no agent definition files remain
 - [ ] All expert/protocol files are distributed with the plugin package
 
