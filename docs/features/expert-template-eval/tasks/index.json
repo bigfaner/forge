@@ -8,7 +8,7 @@
       "title": "Extract scorer and reviser protocols",
       "priority": "P0",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-extract-protocols.md",
       "record": "records/1-extract-protocols.md",
       "type": "documentation"
