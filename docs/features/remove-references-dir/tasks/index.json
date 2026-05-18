@@ -28,7 +28,7 @@
       "title": "Inline step0-profile-resolution, type-assignment, and intent-propagation into consuming skills",
       "priority": "P1",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "3-inline-task-type-refs.md",
       "record": "records/3-inline-task-type-refs.md",
       "type": "documentation"
