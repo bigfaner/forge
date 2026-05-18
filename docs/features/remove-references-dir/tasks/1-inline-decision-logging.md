@@ -4,7 +4,7 @@ title: "Inline decision-logging.md into consuming skills"
 priority: "P1"
 estimated_time: "30m"
 dependencies: []
-type: "refactor"
+type: "documentation"
 mainSession: false
 ---
 

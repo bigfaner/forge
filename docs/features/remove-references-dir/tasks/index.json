@@ -11,7 +11,7 @@
       "status": "pending",
       "file": "1-inline-decision-logging.md",
       "record": "records/1-inline-decision-logging.md",
-      "type": "refactor"
+      "type": "documentation"
     },
     "2-inline-knowledge-extraction": {
       "id": "2",
@@ -21,7 +21,7 @@
       "status": "pending",
       "file": "2-inline-knowledge-extraction.md",
       "record": "records/2-inline-knowledge-extraction.md",
-      "type": "refactor"
+      "type": "documentation"
     },
     "3-inline-task-type-refs": {
       "id": "3",
@@ -31,7 +31,7 @@
       "status": "pending",
       "file": "3-inline-task-type-refs.md",
       "record": "records/3-inline-task-type-refs.md",
-      "type": "refactor"
+      "type": "documentation"
     },
     "4-inline-gen-sitemap-examples": {
       "id": "4",
@@ -41,7 +41,7 @@
       "status": "pending",
       "file": "4-inline-gen-sitemap-examples.md",
       "record": "records/4-inline-gen-sitemap-examples.md",
-      "type": "refactor"
+      "type": "documentation"
     },
     "5-relocate-cli-schema": {
       "id": "5",
@@ -51,8 +51,7 @@
       "status": "pending",
       "file": "5-relocate-cli-schema.md",
       "record": "records/5-relocate-cli-schema.md",
-      "scope": "backend",
-      "type": "refactor"
+      "type": "documentation"
     },
     "6-update-docs-remove-dir": {
       "id": "6",
@@ -69,7 +68,22 @@
       "status": "pending",
       "file": "6-update-docs-remove-dir.md",
       "record": "records/6-update-docs-remove-dir.md",
-      "type": "cleanup"
+      "type": "documentation"
+    },
+    "eval-doc": {
+      "id": "T-eval-doc",
+      "title": "Evaluate Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "6"
+      ],
+      "status": "pending",
+      "file": "eval-doc.md",
+      "record": "records/eval-doc.md",
+      "scope": "all",
+      "noTest": true,
+      "type": "doc-evaluation"
     }
   },
   "statusEnum": [

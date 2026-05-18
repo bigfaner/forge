@@ -4,9 +4,7 @@ title: "Move forge-config schema and example YAML to CLI, update test paths"
 priority: "P1"
 estimated_time: "30m"
 dependencies: []
-scope: "backend"
-breaking: false
-type: "refactor"
+type: "documentation"
 mainSession: false
 ---
 

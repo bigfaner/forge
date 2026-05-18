@@ -4,7 +4,7 @@ title: "Inline step0-profile-resolution, type-assignment, and intent-propagation
 priority: "P1"
 estimated_time: "30m"
 dependencies: []
-type: "refactor"
+type: "documentation"
 mainSession: false
 ---
 

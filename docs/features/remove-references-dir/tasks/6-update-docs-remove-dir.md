@@ -4,7 +4,7 @@ title: "Update forge-distribution.md and remove references/ directory"
 priority: "P1"
 estimated_time: "20m"
 dependencies: ["1", "2", "3", "4", "5"]
-type: "cleanup"
+type: "documentation"
 mainSession: false
 ---
 

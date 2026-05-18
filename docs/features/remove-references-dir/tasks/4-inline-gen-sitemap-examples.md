@@ -4,7 +4,7 @@ title: "Inline config.yaml and sitemap.json examples into gen-sitemap command"
 priority: "P1"
 estimated_time: "15m"
 dependencies: []
-type: "refactor"
+type: "documentation"
 mainSession: false
 ---
 
