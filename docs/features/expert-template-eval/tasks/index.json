@@ -32,7 +32,7 @@
         "1",
         "2"
       ],
-      "status": "pending",
+      "status": "blocked",
       "file": "3-update-eval-skill.md",
       "record": "records/3-update-eval-skill.md",
       "breaking": true,
