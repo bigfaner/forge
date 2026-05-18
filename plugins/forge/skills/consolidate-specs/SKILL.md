@@ -11,7 +11,7 @@ Extract key business rules and technical specifications from feature documents i
 **Core principle**: Consolidation extracts cross-cutting knowledge that outlives a single feature. Feature-specific details stay in the feature; reusable rules and specs are promoted. Drift detection ensures project-level specs remain accurate as the codebase evolves.
 
 <HARD-GATE>
-- Do NOT integrate specs without explicit user confirmation
+- Do NOT integrate specs without explicit user confirmation (exception: non-interactive mode auto-integrates per Step 6)
 - Do NOT overwrite existing project-level spec files — append only, unless drift is detected in Step 9
 - Do NOT run if `specs/.integrated` marker exists (idempotent)
 - Do NOT infer rules not explicitly stated in source documents
@@ -40,7 +40,7 @@ If `prd/prd-spec.md` and `design/tech-design.md` do not exist, the skill runs in
 
 1. **No extractable rules**: The PRD/design contains no explicit business rules or technical conventions (e.g., pure CRUD with no domain logic). Mark task as completed.
 2. **All items are LOCAL**: After extraction, every item is feature-specific with no cross-cutting candidates. Generate preview files but skip integration. Mark task as completed.
-3. **Non-interactive session**: Running under `/run-tasks` dispatcher with no user present and CROSS items exist. Write preview files, mark task as `blocked`, and note "User review required for integration."
+3. **Non-interactive session**: Running under `/run-tasks` dispatcher with no user present and CROSS items exist. Auto-integrate all CROSS items without blocking. Commit with `[auto-specs]` tag for traceability (see Step 6 and Step 11 for non-interactive mode details).
 
 ## Workflow
 
@@ -241,6 +241,20 @@ Then proceed directly to **Step 13** (Record Task). The preview files remain for
 
 ## Step 6: Present to User for Review
 
+### Non-Interactive Mode
+
+When running under `/run-tasks` dispatcher (no user present), skip interactive review and auto-integrate all `[CROSS]` items:
+
+1. Auto-approve all `[CROSS]` items for integration into their detected target files
+2. For overlaps with existing entries: use `[skip]` (keep both) by default — safer than auto-replacing
+3. For domain overlap warnings (>50% shared keywords): keep files separate, but include the warning note in the commit message
+4. Auto-write `review-choices.md` with all CROSS items listed as "Approved for Integration"
+5. Proceed directly to Step 7
+
+This mode is safe because spec errors have no runtime risk and git revert provides perfect rollback. The `[auto-specs]` commit tag (Step 11) enables easy identification and batch revert.
+
+### Interactive Mode
+
 Display the preview with categorization and detected overlaps:
 
 ```
@@ -401,7 +415,8 @@ For each rule classified as `drifted` or `orphaned` in Step 9:
 
 3. **Detect implicit new rules**: While scanning the code for drift, if you discover new patterns, conventions, or business logic that should be documented at the project level but are not in any spec file:
    - Extract the candidate rule with `[CROSS]` classification
-   - Present to user for confirmation before appending
+   - **Interactive mode**: Present to user for confirmation before appending
+   - **Non-interactive mode**: Auto-append with `[auto-specs]` tag — include in commit message
    - Append confirmed rules to the appropriate spec file with a new project-global ID
 
 4. **Re-derive `domains` frontmatter**: When a file's content changes substantially (rules updated, added, or removed), re-derive the `domains` field per the Domain Derivation Rules. Compare the new domain set against the existing one:
@@ -416,15 +431,16 @@ For each rule classified as `drifted` or `orphaned` in Step 9:
 
 ## Step 11: Commit Spec Changes
 
-If any spec files were modified in Step 10:
+If any spec files were modified in Step 7 (integration) or Step 10 (drift fix):
 
 1. Stage all changed files under `docs/business-rules/` and `docs/conventions/`
 2. Commit with a descriptive message listing:
    - Which rule IDs were updated (drift fix)
    - Which rule IDs were removed (orphaned) and why
    - Which rule IDs were added (implicit new rules)
+3. **Non-interactive mode**: Include `[auto-specs]` tag in the commit message for traceability. This enables `git log --grep="[auto-specs]"` to find all auto-integrated commits. Include overlap warnings (>50% domain overlap) as notes in the commit message body.
 
-Example commit message:
+Example commit message (interactive mode):
 
 ```
 chore(specs): drift auto-fix — 2 updated, 1 removed, 1 added
@@ -439,6 +455,27 @@ Removed:
 Added:
   - TECH-error-006: implicit error wrapping convention (user-confirmed)
 ```
+
+Example commit message (non-interactive mode):
+
+```
+chore(specs): [auto-specs] auto-integrate — 3 added + drift auto-fix
+
+Added:
+  - BIZ-auth-002: session token validation rule
+  - TECH-api-004: rate limiting convention
+  - TECH-error-006: error wrapping pattern
+
+Updated:
+  - BIZ-auth-001: align with renamed validateToken → verifySession
+
+Overlap warnings:
+  - docs/conventions/error-handling.md and docs/conventions/error-reporting.md share 66% domains (kept separate)
+
+Review: git diff HEAD~1 | Revert: git revert HEAD
+```
+
+The `[auto-specs]` tag must always be present when running in non-interactive (pipeline) mode, including drift-only mode (Steps 9-11). This ensures all automated spec changes are traceable and reversible.
 
 If no changes were made (all rules `current`), skip this step.
 
@@ -546,7 +583,11 @@ Omit `coverage` from record.json — the noTest flag in index.json auto-sets it.
 - Drift detection compares rule keywords against actual code — not simple text matching (mitigates false positives)
 - Deleted rules must be recorded in commit message with ID and deletion reason
 - Project-global IDs must be preserved during auto-fix (only update description/behavior text)
-- New implicit rules from code are extracted with `[CROSS]` classification and presented to user before appending
+- New implicit rules from code are extracted with `[CROSS]` classification and presented to user before appending (auto-appended in non-interactive mode)
+- Non-interactive mode auto-integrates all `[CROSS]` items without blocking — commit includes `[auto-specs]` tag for traceability
+- `[auto-specs]` commits must be separate from code change commits — spec changes get their own commit
+- Drift-only path (Steps 9-11) also uses `[auto-specs]` commit tag when running in non-interactive mode
+- Interactive mode behavior is unchanged — CROSS items still prompt user for confirmation
 - `domains` frontmatter is derived from spec ID keywords and source keywords — never invented by the agent
 - Each file gets 3-7 specific domain keywords (not generic terms like "rule", "spec", "requirement")
 - The existing `title` frontmatter behavior is unchanged — `domains` is an additive field

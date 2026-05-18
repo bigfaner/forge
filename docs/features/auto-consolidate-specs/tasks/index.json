@@ -1,0 +1,56 @@
+{
+  "feature": "auto-consolidate-specs",
+  "proposal": "docs/proposals/auto-consolidate-specs/proposal.md",
+  "created": "2026-05-18",
+  "tasks": {
+    "1-skill-auto-integrate": {
+      "id": "1",
+      "title": "SKILL.md non-interactive auto-integration + [auto-specs] commit",
+      "priority": "P0",
+      "estimatedTime": "1-2h",
+      "status": "completed",
+      "file": "1-skill-auto-integrate.md",
+      "record": "records/1-skill-auto-integrate.md",
+      "scope": "backend",
+      "type": "enhancement"
+    },
+    "2-task-templates-auto-mode": {
+      "id": "2",
+      "title": "Task templates — remove user confirmation, adapt for auto mode",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-task-templates-auto-mode.md",
+      "record": "records/2-task-templates-auto-mode.md",
+      "scope": "backend",
+      "type": "enhancement"
+    },
+    "3-quick-mode-enablement": {
+      "id": "3",
+      "title": "Enable consolidate-specs in quick mode",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "status": "pending",
+      "file": "3-quick-mode-enablement.md",
+      "record": "records/3-quick-mode-enablement.md",
+      "scope": "backend",
+      "type": "feature"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
