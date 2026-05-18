@@ -77,6 +77,11 @@ func checkFeatureCompletion() *completionResult {
 		return nil
 	}
 
+	// Already completed by a previous hook run — skip entirely.
+	if state := feature.ReadForgeState(projectRoot); state != nil && state.CompletedAt != "" {
+		return nil
+	}
+
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
 	index, err := task.LoadIndex(indexPath)
 	if err != nil {
@@ -149,7 +154,12 @@ func completeFeature(result *completionResult) error {
 	}
 	fmt.Fprintf(os.Stderr, "[feature:complete] Status committed: %s\n", commaFiles)
 
-	// 5. Optional push
+	// 5. Mark state.json so future hook runs skip this feature
+	if err := feature.MarkFeatureCompleted(result.ProjectRoot); err != nil {
+		fmt.Fprintf(os.Stderr, "[feature:complete] Warning: failed to mark state: %v\n", err)
+	}
+
+	// 6. Optional push
 	if enabled, _ := isGitPushEnabled(result.ProjectRoot); enabled {
 		if err := gitPush(result.ProjectRoot); err != nil {
 			// Push failure is non-blocking — already logged in gitPush
@@ -187,11 +197,15 @@ func updateFileStatus(filePath, value string) error {
 	frontmatter := rest[:closeIdx]
 	body := rest[closeIdx+4:] // after \n---
 
-	// Replace the status line in frontmatter
+	// Find and update the status line in frontmatter
 	lines := strings.Split(frontmatter, "\n")
 	found := false
 	for i, line := range lines {
 		if strings.HasPrefix(line, "status:") {
+			// Idempotent: skip if already set to target value
+			if strings.TrimSpace(line) == "status: "+value {
+				return nil
+			}
 			lines[i] = fmt.Sprintf("status: %s", value)
 			found = true
 			break

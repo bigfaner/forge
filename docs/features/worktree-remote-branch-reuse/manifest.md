@@ -1,6 +1,6 @@
 ---
 feature: "worktree-remote-branch-reuse"
-status: tasks
+status: completed
 mode: quick
 ---
 
