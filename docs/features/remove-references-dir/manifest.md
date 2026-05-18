@@ -1,6 +1,7 @@
 ---
+
 feature: "remove-references-dir"
-status: tasks
+status: completed
 mode: quick
 ---
 
