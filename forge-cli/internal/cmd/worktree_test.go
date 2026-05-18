@@ -270,6 +270,346 @@ func TestWorktreeStart_ResumesFromExistingBranch(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// worktree start: remote branch resolution
+// ---------------------------------------------------------------------------
+
+func TestWorktreeStart_CreatesFromRemoteBranch(t *testing.T) {
+	resetSourceBranchFlag(t)
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	origRunClaude := runClaudeFunc
+	runClaudeFunc = func(_ []string) error { return nil }
+	defer func() { runClaudeFunc = origRunClaude }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a "remote" repo, push a branch to it, then the slug branch
+	// only exists on the remote (origin), not locally.
+	remoteDir := t.TempDir()
+	if err := exec.Command("git", "init", "--bare", remoteDir).Run(); err != nil {
+		t.Fatalf("git init --bare remote: %v", err)
+	}
+	if err := exec.Command("git", "-C", dir, "remote", "add", "origin", remoteDir).Run(); err != nil {
+		t.Fatalf("git remote add: %v", err)
+	}
+
+	// Create a branch with a distinct commit, push it to origin
+	slug := "remote-branch-test"
+	if err := exec.Command("git", "-C", dir, "checkout", "-b", slug).Run(); err != nil {
+		t.Fatalf("git checkout -b %s: %v", slug, err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "remote.txt"), []byte("from remote"), 0o644); err != nil {
+		t.Fatalf("write remote.txt: %v", err)
+	}
+	if err := exec.Command("git", "-C", dir, "add", ".").Run(); err != nil {
+		t.Fatalf("git add: %v", err)
+	}
+	if err := exec.Command("git", "-C", dir, "commit", "-m", "remote commit").Run(); err != nil {
+		t.Fatalf("git commit: %v", err)
+	}
+	// Push to origin
+	if err := exec.Command("git", "-C", dir, "push", "origin", slug).Run(); err != nil {
+		t.Fatalf("git push origin %s: %v", slug, err)
+	}
+
+	// Delete the LOCAL branch (go back to master first)
+	if err := exec.Command("git", "-C", dir, "checkout", "master").Run(); err != nil {
+		t.Fatalf("git checkout master: %v", err)
+	}
+	if err := exec.Command("git", "-C", dir, "branch", "-D", slug).Run(); err != nil {
+		t.Fatalf("git branch -D %s: %v", slug, err)
+	}
+
+	// Now: origin/<slug> exists, local <slug> does not.
+	// forge worktree start <slug> should detect the remote branch.
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "start", slug})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify worktree was created
+	if _, err := os.Stat(targetDir); os.IsNotExist(err) {
+		t.Errorf("worktree directory %s should exist", targetDir)
+	}
+
+	// Verify the worktree has the remote.txt file (proving it was based on the remote branch)
+	if _, err := os.Stat(filepath.Join(targetDir, "remote.txt")); os.IsNotExist(err) {
+		t.Errorf("worktree should have remote.txt (created from remote branch origin/%s)", slug)
+	}
+
+	// Verify stdout mentions remote branch
+	stdout := buf.String()
+	if !strings.Contains(stdout, "origin/"+slug) {
+		t.Errorf("stdout should mention remote branch, got: %s", stdout)
+	}
+}
+
+func TestWorktreeStart_RemoteBranchIgnoresSourceBranch(t *testing.T) {
+	resetSourceBranchFlag(t)
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	origRunClaude := runClaudeFunc
+	runClaudeFunc = func(_ []string) error { return nil }
+	defer func() { runClaudeFunc = origRunClaude }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Set up remote
+	remoteDir := t.TempDir()
+	if err := exec.Command("git", "init", "--bare", remoteDir).Run(); err != nil {
+		t.Fatalf("git init --bare remote: %v", err)
+	}
+	if err := exec.Command("git", "-C", dir, "remote", "add", "origin", remoteDir).Run(); err != nil {
+		t.Fatalf("git remote add: %v", err)
+	}
+
+	// Create "develop" branch with a file
+	if err := exec.Command("git", "-C", dir, "checkout", "-b", "develop").Run(); err != nil {
+		t.Fatalf("git checkout -b develop: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "develop.txt"), []byte("develop"), 0o644); err != nil {
+		t.Fatalf("write develop.txt: %v", err)
+	}
+	if err := exec.Command("git", "-C", dir, "add", ".").Run(); err != nil {
+		t.Fatalf("git add: %v", err)
+	}
+	if err := exec.Command("git", "-C", dir, "commit", "-m", "develop commit").Run(); err != nil {
+		t.Fatalf("git commit: %v", err)
+	}
+
+	// Create the slug branch from develop (has develop.txt + remote-marker.txt)
+	slug := "remote-slug"
+	if err := exec.Command("git", "-C", dir, "checkout", "-b", slug).Run(); err != nil {
+		t.Fatalf("git checkout -b %s: %v", slug, err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "remote-marker.txt"), []byte("from remote"), 0o644); err != nil {
+		t.Fatalf("write remote-marker.txt: %v", err)
+	}
+	if err := exec.Command("git", "-C", dir, "add", ".").Run(); err != nil {
+		t.Fatalf("git add: %v", err)
+	}
+	if err := exec.Command("git", "-C", dir, "commit", "-m", "slug commit").Run(); err != nil {
+		t.Fatalf("git commit: %v", err)
+	}
+
+	// Push slug branch to origin
+	if err := exec.Command("git", "-C", dir, "push", "origin", slug).Run(); err != nil {
+		t.Fatalf("git push origin %s: %v", slug, err)
+	}
+
+	// Push develop to origin too (so --source-branch is valid)
+	if err := exec.Command("git", "-C", dir, "push", "origin", "develop").Run(); err != nil {
+		t.Fatalf("git push origin develop: %v", err)
+	}
+
+	// Delete local slug branch only (keep develop local for source-branch validation)
+	if err := exec.Command("git", "-C", dir, "checkout", "develop").Run(); err != nil {
+		t.Fatalf("git checkout develop: %v", err)
+	}
+	if err := exec.Command("git", "-C", dir, "branch", "-D", slug).Run(); err != nil {
+		t.Fatalf("git branch -D %s: %v", slug, err)
+	}
+
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", "develop").Run()
+	})
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	// Use --source-branch develop, but remote branch should take priority
+	rootCmd.SetArgs([]string{"worktree", "start", slug, "--source-branch", "develop"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify worktree was created from remote branch (has remote-marker.txt)
+	if _, err := os.Stat(filepath.Join(targetDir, "remote-marker.txt")); os.IsNotExist(err) {
+		t.Errorf("worktree should have remote-marker.txt (created from remote branch, ignoring --source-branch)")
+	}
+}
+
+func TestWorktreeStart_FetchFailureDoesNotBlockWorktree(t *testing.T) {
+	resetSourceBranchFlag(t)
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	origRunClaude := runClaudeFunc
+	runClaudeFunc = func(_ []string) error { return nil }
+	defer func() { runClaudeFunc = origRunClaude }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Add a fake remote that will fail to fetch (nonexistent path)
+	if err := exec.Command("git", "-C", dir, "remote", "add", "origin", "/nonexistent/path/to/remote").Run(); err != nil {
+		t.Fatalf("git remote add: %v", err)
+	}
+
+	slug := "fetch-fail-test"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "start", slug})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("fetch failure should not block worktree creation, got error: %v", err)
+	}
+
+	// Verify worktree was created (fallback to HEAD)
+	if _, err := os.Stat(targetDir); os.IsNotExist(err) {
+		t.Errorf("worktree directory %s should exist even after fetch failure", targetDir)
+	}
+}
+
+func TestWorktreeStart_LocalBranchTakesPriorityOverRemote(t *testing.T) {
+	resetSourceBranchFlag(t)
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	origRunClaude := runClaudeFunc
+	runClaudeFunc = func(_ []string) error { return nil }
+	defer func() { runClaudeFunc = origRunClaude }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Set up remote with a branch
+	remoteDir := t.TempDir()
+	if err := exec.Command("git", "init", "--bare", remoteDir).Run(); err != nil {
+		t.Fatalf("git init --bare remote: %v", err)
+	}
+	if err := exec.Command("git", "-C", dir, "remote", "add", "origin", remoteDir).Run(); err != nil {
+		t.Fatalf("git remote add: %v", err)
+	}
+
+	slug := "priority-test"
+
+	// Create remote branch with "remote-marker.txt"
+	if err := exec.Command("git", "-C", dir, "checkout", "-b", slug).Run(); err != nil {
+		t.Fatalf("git checkout -b %s: %v", slug, err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "remote-marker.txt"), []byte("remote"), 0o644); err != nil {
+		t.Fatalf("write remote-marker.txt: %v", err)
+	}
+	if err := exec.Command("git", "-C", dir, "add", ".").Run(); err != nil {
+		t.Fatalf("git add: %v", err)
+	}
+	if err := exec.Command("git", "-C", dir, "commit", "-m", "remote version").Run(); err != nil {
+		t.Fatalf("git commit: %v", err)
+	}
+	if err := exec.Command("git", "-C", dir, "push", "origin", slug).Run(); err != nil {
+		t.Fatalf("git push origin %s: %v", slug, err)
+	}
+
+	// Now modify local branch to have "local-marker.txt" instead
+	if err := os.WriteFile(filepath.Join(dir, "local-marker.txt"), []byte("local"), 0o644); err != nil {
+		t.Fatalf("write local-marker.txt: %v", err)
+	}
+	if err := exec.Command("git", "-C", dir, "add", ".").Run(); err != nil {
+		t.Fatalf("git add: %v", err)
+	}
+	if err := exec.Command("git", "-C", dir, "commit", "-m", "local version").Run(); err != nil {
+		t.Fatalf("git commit: %v", err)
+	}
+
+	// Go back to master; local branch still exists
+	if err := exec.Command("git", "-C", dir, "checkout", "master").Run(); err != nil {
+		t.Fatalf("git checkout master: %v", err)
+	}
+
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "start", slug})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Local branch takes priority: worktree should have local-marker.txt
+	if _, err := os.Stat(filepath.Join(targetDir, "local-marker.txt")); os.IsNotExist(err) {
+		t.Errorf("worktree should have local-marker.txt (local branch takes priority over remote)")
+	}
+
+	// Should NOT mention remote branch in stdout (since local was used)
+	stdout := buf.String()
+	if strings.Contains(stdout, "origin/") {
+		t.Errorf("stdout should NOT mention remote branch when local exists, got: %s", stdout)
+	}
+}
+
+// ---------------------------------------------------------------------------
 // worktree start: not in a git repo
 // ---------------------------------------------------------------------------
 

@@ -263,18 +263,35 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 		sourceBranch = cfg.Worktree.SourceBranch
 	}
 
-	// Check if branch already exists
-	branchExists := false
+	// Layer 1: Check if local branch already exists
+	localBranchExists := false
 	if _, err := git.Run(projectRoot, "rev-parse", "--verify", slug); err == nil {
-		branchExists = true
+		localBranchExists = true
 	}
 
-	// Create the worktree
-	if branchExists {
-		// Resume: create worktree from existing branch
+	// Layer 2: Fetch from origin (best-effort) and check remote branch
+	remoteBranchExists := false
+	if !localBranchExists {
+		// Best-effort fetch: failure degrades gracefully (no remote, offline, etc.)
+		if _, fetchErr := git.Run(projectRoot, "fetch", "origin"); fetchErr != nil {
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: git fetch origin failed: %v\n", fetchErr)
+		}
+		if _, err := git.Run(projectRoot, "rev-parse", "--verify", "remotes/origin/"+slug); err == nil {
+			remoteBranchExists = true
+		}
+	}
+
+	// Create the worktree using three-layer resolution
+	switch {
+	case localBranchExists:
+		// Layer 1: Resume from existing local branch
 		_, err = git.Run(projectRoot, "worktree", "add", targetDir, slug)
-	} else {
-		// Pre-validate source branch if specified
+	case remoteBranchExists:
+		// Layer 2: Create from remote tracking branch
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "creating worktree from remote branch origin/%s\n", slug)
+		_, err = git.Run(projectRoot, "worktree", "add", "-b", slug, targetDir, "origin/"+slug)
+	default:
+		// Layer 3: Pre-validate source branch if specified
 		if sourceBranch != "" {
 			if _, err := git.Run(projectRoot, "rev-parse", "--verify", sourceBranch); err != nil {
 				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: source branch %q not found\n", sourceBranch)
