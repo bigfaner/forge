@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -2445,5 +2446,212 @@ func TestWorktreeResume_LaunchesClaudeInExistingWorktree(t *testing.T) {
 	absTarget, _ := filepath.Abs(targetDir)
 	if capturedWd != absTarget {
 		t.Errorf("claude should have been launched in %s, got %s", absTarget, capturedWd)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// worktree start: table-driven remote branch detection (mocked gitRunFunc)
+// ---------------------------------------------------------------------------
+
+// mockGitResponse is a simplified mock response for git commands.
+type mockGitResponse struct {
+	output string
+	err    error
+}
+
+func TestWorktreeStart_RemoteBranchResolution(t *testing.T) {
+	tests := []struct {
+		name               string
+		slug               string
+		sourceBranch       string // --source-branch flag (empty = not set)
+		mockResponses      map[string]mockGitResponse
+		wantErr            bool
+		wantStdoutContains string
+		wantStderrContains string
+		wantWorktreeArgs   []string // the git worktree add args prefix that should be used
+	}{
+		{
+			name:         "remote branch exists, local does not, no source-branch",
+			slug:         "remote-only-feature",
+			sourceBranch: "",
+			mockResponses: map[string]mockGitResponse{
+				"rev-parse --verify remote-only-feature":                {err: fmt.Errorf("not found")},
+				"fetch origin":                                          {},
+				"rev-parse --verify remotes/origin/remote-only-feature": {},
+				"worktree add -b remote-only-feature":                   {},
+			},
+			wantErr:            false,
+			wantStdoutContains: "origin/remote-only-feature",
+			wantWorktreeArgs:   []string{"worktree", "add", "-b", "remote-only-feature"},
+		},
+		{
+			name:         "fetch fails, no remote branch, falls back to HEAD",
+			slug:         "fetch-fail-feature",
+			sourceBranch: "",
+			mockResponses: map[string]mockGitResponse{
+				"rev-parse --verify fetch-fail-feature":                {err: fmt.Errorf("not found")},
+				"fetch origin":                                         {err: fmt.Errorf("network error")},
+				"rev-parse --verify remotes/origin/fetch-fail-feature": {err: fmt.Errorf("not found")},
+				"worktree add -b fetch-fail-feature":                   {},
+			},
+			wantErr:            false,
+			wantStderrContains: "warning: git fetch origin failed",
+			wantWorktreeArgs:   []string{"worktree", "add", "-b", "fetch-fail-feature"},
+		},
+		{
+			name:         "both local and remote absent, creates from HEAD",
+			slug:         "new-feature",
+			sourceBranch: "",
+			mockResponses: map[string]mockGitResponse{
+				"rev-parse --verify new-feature":                {err: fmt.Errorf("not found")},
+				"fetch origin":                                  {},
+				"rev-parse --verify remotes/origin/new-feature": {err: fmt.Errorf("not found")},
+				"worktree add -b new-feature":                   {},
+			},
+			wantErr:          false,
+			wantWorktreeArgs: []string{"worktree", "add", "-b", "new-feature"},
+		},
+		{
+			name:         "source-branch set but remote branch exists, remote wins",
+			slug:         "remote-wins-feature",
+			sourceBranch: "develop",
+			mockResponses: map[string]mockGitResponse{
+				"rev-parse --verify remote-wins-feature":                {err: fmt.Errorf("not found")},
+				"fetch origin":                                          {},
+				"rev-parse --verify remotes/origin/remote-wins-feature": {},
+				"worktree add -b remote-wins-feature":                   {},
+			},
+			wantErr:            false,
+			wantStdoutContains: "origin/remote-wins-feature",
+			wantWorktreeArgs:   []string{"worktree", "add", "-b", "remote-wins-feature"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resetSourceBranchFlag(t)
+
+			// Mock claude in PATH
+			origLookPath := lookPathFunc
+			lookPathFunc = func(name string) (string, error) {
+				if name == "claude" {
+					return "/usr/bin/claude", nil
+				}
+				return exec.LookPath(name)
+			}
+			defer func() { lookPathFunc = origLookPath }()
+
+			// Mock claude launch
+			origRunClaude := runClaudeFunc
+			runClaudeFunc = func(_ []string) error { return nil }
+			defer func() { runClaudeFunc = origRunClaude }()
+
+			// Track which git worktree add args were used
+			var capturedWorktreeArgs []string
+			origGitRun := gitRunFunc
+			gitRunFunc = func(_ string, args ...string) (string, error) {
+				key := strings.Join(args, " ")
+
+				// Helper: extract target dir from worktree add args and create it
+				// Capture worktree add args specifically
+				if len(args) >= 3 && args[0] == "worktree" && args[1] == "add" {
+					capturedWorktreeArgs = args
+				}
+				maybeCreateTarget := func() {
+					if len(args) >= 4 && args[0] == "worktree" && args[1] == "add" {
+						// worktree add targetDir slug (layer 1) or worktree add -b slug targetDir [ref] (layer 2/3)
+						targetIdx := 2
+						if args[2] == "-b" {
+							targetIdx = 4
+						}
+						if targetIdx < len(args) {
+							_ = os.MkdirAll(args[targetIdx], 0o755)
+						}
+					}
+				}
+				// Check for exact match first
+				if resp, ok := tt.mockResponses[key]; ok {
+					if resp.err == nil {
+						maybeCreateTarget()
+					}
+					return resp.output, resp.err
+				}
+
+				// Check for prefix match (worktree add args include dynamic target path)
+				for pattern, resp := range tt.mockResponses {
+					if strings.HasPrefix(key, pattern) {
+						if resp.err == nil {
+							maybeCreateTarget()
+						}
+						return resp.output, resp.err
+					}
+				}
+
+				// Default: no error for unmocked commands
+				return "", nil
+			}
+			defer func() { gitRunFunc = origGitRun }()
+
+			// Set up isolated git repo (real git init for IsGitRepository check)
+			dir := initGitRepoForWorktree(t)
+			t.Setenv("CLAUDE_PROJECT_DIR", dir)
+			origWd, _ := os.Getwd()
+			t.Cleanup(func() { _ = os.Chdir(origWd) })
+			_ = os.Chdir(dir)
+
+			buf := new(bytes.Buffer)
+			rootCmd.SetOut(buf)
+			rootCmd.SetErr(buf)
+
+			cmdArgs := []string{"worktree", "start", tt.slug}
+			if tt.sourceBranch != "" {
+				cmdArgs = append(cmdArgs, "--source-branch", tt.sourceBranch)
+			}
+			rootCmd.SetArgs(cmdArgs)
+
+			err := rootCmd.Execute()
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("expected error, got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			// Check stdout
+			if tt.wantStdoutContains != "" {
+				stdout := buf.String()
+				if !strings.Contains(stdout, tt.wantStdoutContains) {
+					t.Errorf("stdout should contain %q, got: %s", tt.wantStdoutContains, stdout)
+				}
+			}
+
+			// Check stderr
+			if tt.wantStderrContains != "" {
+				stderr := buf.String()
+				if !strings.Contains(stderr, tt.wantStderrContains) {
+					t.Errorf("stderr should contain %q, got: %s", tt.wantStderrContains, stderr)
+				}
+			}
+
+			// Check worktree args prefix
+			if tt.wantWorktreeArgs != nil {
+				if capturedWorktreeArgs == nil {
+					t.Fatal("expected worktree add command to be called, but it wasn't")
+				}
+				for i, want := range tt.wantWorktreeArgs {
+					if i >= len(capturedWorktreeArgs) {
+						t.Errorf("worktree args too short: want %q at index %d, got %v", want, i, capturedWorktreeArgs)
+						break
+					}
+					if want != capturedWorktreeArgs[i] {
+						t.Errorf("worktree args[%d] = %q, want %q, full args: %v", i, capturedWorktreeArgs[i], want, capturedWorktreeArgs)
+					}
+				}
+			}
+		})
 	}
 }

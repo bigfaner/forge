@@ -1,45 +1,39 @@
 {
-  "feature": "worktree-remote-branch-reuse",
-  "proposal": "docs/proposals/worktree-remote-branch-reuse/proposal.md",
-  "created": "2026-05-18",
-  "tasks": {
-    "1-remote-branch-resolution": {
-      "id": "1",
-      "title": "Implement three-layer branch resolution for worktree start",
-      "priority": "P0",
-      "estimatedTime": "1.5h",
-      "status": "completed",
-      "file": "1-remote-branch-resolution.md",
-      "record": "records/1-remote-branch-resolution.md",
-      "scope": "backend",
-      "type": "enhancement"
-    },
-    "2-remote-branch-tests": {
-      "id": "2",
-      "title": "Add tests for remote branch detection and fetch-failure fallback",
-      "priority": "P0",
-      "estimatedTime": "1h",
-      "dependencies": [
-        "1"
-      ],
-      "status": "pending",
-      "file": "2-remote-branch-tests.md",
-      "record": "records/2-remote-branch-tests.md",
-      "scope": "backend",
-      "type": "enhancement"
-    }
-  },
-  "statusEnum": [
-    "pending",
-    "in_progress",
-    "completed",
-    "blocked",
-    "skipped",
-    "rejected"
-  ],
-  "priorityEnum": [
-    "P0",
-    "P1",
-    "P2"
-  ]
+	"feature": "worktree-remote-branch-reuse",
+	"proposal": "docs/proposals/worktree-remote-branch-reuse/proposal.md",
+	"created": "2026-05-18",
+	"tasks": {
+		"1-remote-branch-resolution": {
+			"id": "1",
+			"title": "Implement three-layer branch resolution for worktree start",
+			"priority": "P0",
+			"estimatedTime": "1.5h",
+			"status": "completed",
+			"file": "1-remote-branch-resolution.md",
+			"record": "records/1-remote-branch-resolution.md",
+			"scope": "backend",
+			"type": "enhancement"
+		},
+		"2-remote-branch-tests": {
+			"id": "2",
+			"title": "Add tests for remote branch detection and fetch-failure fallback",
+			"priority": "P0",
+			"estimatedTime": "1h",
+			"dependencies": ["1"],
+			"status": "completed",
+			"file": "2-remote-branch-tests.md",
+			"record": "records/2-remote-branch-tests.md",
+			"scope": "backend",
+			"type": "enhancement"
+		}
+	},
+	"statusEnum": [
+		"pending",
+		"in_progress",
+		"completed",
+		"blocked",
+		"skipped",
+		"rejected"
+	],
+	"priorityEnum": ["P0", "P1", "P2"]
 }

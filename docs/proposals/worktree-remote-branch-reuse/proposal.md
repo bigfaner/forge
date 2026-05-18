@@ -1,6 +1,6 @@
 ---
 name: worktree-remote-branch-reuse
-status: Draft
+status: Approved
 date: 2026-05-18
 ---
 

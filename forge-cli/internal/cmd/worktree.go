@@ -19,6 +19,9 @@ import (
 // Overridable for testing.
 var listWorktreesFunc = git.ListWorktrees
 
+// gitRunFunc executes a git command. Overridable for testing.
+var gitRunFunc = git.Run
+
 var worktreeCmd = &cobra.Command{
 	Use:   "worktree",
 	Short: "Manage git worktrees for feature development",
@@ -265,7 +268,7 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 
 	// Layer 1: Check if local branch already exists
 	localBranchExists := false
-	if _, err := git.Run(projectRoot, "rev-parse", "--verify", slug); err == nil {
+	if _, err := gitRunFunc(projectRoot, "rev-parse", "--verify", slug); err == nil {
 		localBranchExists = true
 	}
 
@@ -273,10 +276,10 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 	remoteBranchExists := false
 	if !localBranchExists {
 		// Best-effort fetch: failure degrades gracefully (no remote, offline, etc.)
-		if _, fetchErr := git.Run(projectRoot, "fetch", "origin"); fetchErr != nil {
+		if _, fetchErr := gitRunFunc(projectRoot, "fetch", "origin"); fetchErr != nil {
 			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: git fetch origin failed: %v\n", fetchErr)
 		}
-		if _, err := git.Run(projectRoot, "rev-parse", "--verify", "remotes/origin/"+slug); err == nil {
+		if _, err := gitRunFunc(projectRoot, "rev-parse", "--verify", "remotes/origin/"+slug); err == nil {
 			remoteBranchExists = true
 		}
 	}
@@ -285,15 +288,15 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 	switch {
 	case localBranchExists:
 		// Layer 1: Resume from existing local branch
-		_, err = git.Run(projectRoot, "worktree", "add", targetDir, slug)
+		_, err = gitRunFunc(projectRoot, "worktree", "add", targetDir, slug)
 	case remoteBranchExists:
 		// Layer 2: Create from remote tracking branch
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "creating worktree from remote branch origin/%s\n", slug)
-		_, err = git.Run(projectRoot, "worktree", "add", "-b", slug, targetDir, "origin/"+slug)
+		_, err = gitRunFunc(projectRoot, "worktree", "add", "-b", slug, targetDir, "origin/"+slug)
 	default:
 		// Layer 3: Pre-validate source branch if specified
 		if sourceBranch != "" {
-			if _, err := git.Run(projectRoot, "rev-parse", "--verify", sourceBranch); err != nil {
+			if _, err := gitRunFunc(projectRoot, "rev-parse", "--verify", sourceBranch); err != nil {
 				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: source branch %q not found\n", sourceBranch)
 				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "hint: verify the branch exists locally or fetch from remote\n")
 				return fmt.Errorf("source branch not found: %s", sourceBranch)
@@ -305,7 +308,7 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 		if sourceBranch != "" {
 			args = append(args, sourceBranch)
 		}
-		_, err = git.Run(projectRoot, args...)
+		_, err = gitRunFunc(projectRoot, args...)
 	}
 	if err != nil {
 		return fmt.Errorf("git worktree add: %w", err)
