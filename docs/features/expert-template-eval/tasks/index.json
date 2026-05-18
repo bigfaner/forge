@@ -1,0 +1,68 @@
+{
+  "feature": "expert-template-eval",
+  "proposal": "docs/proposals/expert-template-eval/proposal.md",
+  "created": "2026-05-19",
+  "tasks": {
+    "1-extract-protocols": {
+      "id": "1",
+      "title": "Extract scorer and reviser protocols",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "1-extract-protocols.md",
+      "record": "records/1-extract-protocols.md",
+      "type": "documentation"
+    },
+    "2-create-expert-files": {
+      "id": "2",
+      "title": "Create 9 scorer expert files",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "status": "pending",
+      "file": "2-create-expert-files.md",
+      "record": "records/2-create-expert-files.md",
+      "type": "documentation"
+    },
+    "3-update-eval-skill": {
+      "id": "3",
+      "title": "Update eval SKILL.md for expert-based orchestration",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1",
+        "2"
+      ],
+      "status": "pending",
+      "file": "3-update-eval-skill.md",
+      "record": "records/3-update-eval-skill.md",
+      "breaking": true,
+      "type": "documentation"
+    },
+    "4-cleanup-old-agents": {
+      "id": "4",
+      "title": "Delete old agent definitions and update distribution docs",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "3"
+      ],
+      "status": "pending",
+      "file": "4-cleanup-old-agents.md",
+      "record": "records/4-cleanup-old-agents.md",
+      "type": "cleanup"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

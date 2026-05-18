@@ -1,7 +1,7 @@
 ---
 created: 2026-05-18
 author: faner
-status: Draft
+status: Approved
 ---
 
 # Proposal: Expert File Architecture for Eval Pipeline
