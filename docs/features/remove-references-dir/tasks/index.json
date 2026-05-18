@@ -1,0 +1,88 @@
+{
+  "feature": "remove-references-dir",
+  "proposal": "docs/proposals/remove-references-dir/proposal.md",
+  "created": "2026-05-19",
+  "tasks": {
+    "1-inline-decision-logging": {
+      "id": "1",
+      "title": "Inline decision-logging.md into consuming skills",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "status": "pending",
+      "file": "1-inline-decision-logging.md",
+      "record": "records/1-inline-decision-logging.md",
+      "type": "refactor"
+    },
+    "2-inline-knowledge-extraction": {
+      "id": "2",
+      "title": "Inline knowledge-extraction.md into consuming skills and commands",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "status": "pending",
+      "file": "2-inline-knowledge-extraction.md",
+      "record": "records/2-inline-knowledge-extraction.md",
+      "type": "refactor"
+    },
+    "3-inline-task-type-refs": {
+      "id": "3",
+      "title": "Inline step0-profile-resolution, type-assignment, and intent-propagation into consuming skills",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "status": "pending",
+      "file": "3-inline-task-type-refs.md",
+      "record": "records/3-inline-task-type-refs.md",
+      "type": "refactor"
+    },
+    "4-inline-gen-sitemap-examples": {
+      "id": "4",
+      "title": "Inline config.yaml and sitemap.json examples into gen-sitemap command",
+      "priority": "P1",
+      "estimatedTime": "15m",
+      "status": "pending",
+      "file": "4-inline-gen-sitemap-examples.md",
+      "record": "records/4-inline-gen-sitemap-examples.md",
+      "type": "refactor"
+    },
+    "5-relocate-cli-schema": {
+      "id": "5",
+      "title": "Move forge-config schema and example YAML to CLI, update test paths",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "status": "pending",
+      "file": "5-relocate-cli-schema.md",
+      "record": "records/5-relocate-cli-schema.md",
+      "scope": "backend",
+      "type": "refactor"
+    },
+    "6-update-docs-remove-dir": {
+      "id": "6",
+      "title": "Update forge-distribution.md and remove references/ directory",
+      "priority": "P1",
+      "estimatedTime": "20m",
+      "dependencies": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "status": "pending",
+      "file": "6-update-docs-remove-dir.md",
+      "record": "records/6-update-docs-remove-dir.md",
+      "type": "cleanup"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
