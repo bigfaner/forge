@@ -1,7 +1,7 @@
 ---
 created: 2026-05-18
 author: faner
-status: Draft
+status: Approved
 ---
 
 # Proposal: Task Type Code/Docs Boundary
@@ -38,13 +38,23 @@ Meta type  (特殊处理): gate
 如果任务只修改 .md / .yaml / .json（非编译产物），无论意图是"实现新功能"还是"写文档"，type 必须为 documentation。
 ```
 
-**2. quality-gate 执行点增加 type 检查**
+**2. Go 代码：`testableTypes` 扩展**
 
-在所有 quality-gate 触发点（submit-task、guide.md、prompt synthesis）统一规则：
+`forge-cli/pkg/task/build.go` 的 `testableTypes` 当前只有 `{feature, enhancement, fix}`，缺少 `cleanup` 和 `refactor`。导致 cleanup/refactor 任务被当作 docs-only，不走 quality-gate 也不生成 test pipeline。
+
+修正：将 `cleanup` 和 `refactor` 加入 `testableTypes`，使 `IsTestableType` 和 `needsTestPipeline` 正确识别它们。
+
+**3. Go 代码：submit-task quality-gate 改用 type 驱动**
+
+`forge-cli/internal/cmd/submit.go` 当前仅用 `t.NoTest` 决定是否跳过 quality-gate。修正为：`!t.NoTest && IsTestableType(t.Type)` 才触发 quality-gate。同时，coverage auto-set（`coverage = -1.0`）也应对非 testable type 生效。
+
+**4. quality-gate 执行点（guide.md）增加 type 检查**
+
+guide.md quality-gate 协议统一规则：
 
 > 当 `type === "documentation"` 时，跳过 compile / fmt / lint / test。等同于 `noTest: true`。
 
-**3. task 生成器（quick-tasks、breakdown-tasks）强化分类**
+**5. task 生成器（quick-tasks、breakdown-tasks）强化分类**
 
 当检测到 docs-only feature 时，使用 `task-doc.md` 模板（已设 `type: "documentation"`），而非 `task.md` 模板（默认 `type: "feature"`）。
 
@@ -84,7 +94,8 @@ Meta type  (特殊处理): gate
 - 修改 `plugins/forge/` 下的文件前必须先加载 `docs/conventions/forge-distribution.md`
 - `type-assignment.md` 是 shared reference，被 quick-tasks 和 breakdown-tasks 引用
 - `guide.md` 是全局 hook，所有 task-executing 工作流读取
-- 不需要修改 Go 代码（`isDocsOnlyFeature()` 的 type-based 检测已正确）
+- Go 代码变更涉及 `forge-cli/`，需遵循 TDD（RED → GREEN → REFACTOR），版本号需 bump
+- `testableTypes` 扩展后，`isDocsOnly()`（quality_gate.go）和 `needsTestPipeline()`（build.go）自动受益——它们已使用 `IsTestableType`
 
 ## Alternatives & Industry Benchmarking
 
@@ -99,7 +110,7 @@ Meta type  (特殊处理): gate
 
 ### Technical Feasibility
 
-纯 markdown 变更。改 3 个文件，~50 行新增文字。无代码变更、无 schema 变更。
+8 个文件变更：5 个 markdown（skill/reference 文档）+ 2 个 Go 文件 + 1 个测试文件。Go 变更范围小（修改 map + 条件判断），测试用 table-driven 覆盖。
 
 ### Resource & Timeline
 
@@ -109,7 +120,9 @@ Meta type  (特殊处理): gate
 | 2 | 更新 `guide.md` quality-gate 协议增加 type 检查 | 15min |
 | 3 | 更新 `submit-task` 检查 type=documentation | 15min |
 | 4 | 更新 quick-tasks / breakdown-tasks 的 docs-only 检测引导 | 15min |
-| **Total** | | **~1h** |
+| 5 | Go: 扩展 `testableTypes`，修改 submit.go quality-gate skip 逻辑 | 30min |
+| 6 | Go: 单元测试覆盖 | 30min |
+| **Total** | | **~2h** |
 
 ## Scope
 
@@ -120,10 +133,12 @@ Meta type  (特殊处理): gate
 - `plugins/forge/skills/submit-task/SKILL.md` — type 检查跳过 quality-gate
 - `plugins/forge/skills/quick-tasks/SKILL.md` — 强化 docs-only 分类引导
 - `plugins/forge/skills/breakdown-tasks/SKILL.md` — 强化 docs-only 分类引导
+- `forge-cli/pkg/task/build.go` — `testableTypes` 增加 cleanup 和 refactor
+- `forge-cli/internal/cmd/submit.go` — quality-gate skip 改用 `IsTestableType` 驱动
+- Go 单元测试覆盖上述变更
 
 ### Out of Scope
 
-- Go 代码变更（`isDocsOnlyFeature()` 已正确检查 type）
 - `noTest` 字段废弃
 - `docs-only-fast-path` 提案的范围（技能文档中的 skip 行为记录）
 - `notest-docs-only-detection` 提案（不同方案，保留但不实施）
@@ -143,3 +158,6 @@ Meta type  (特殊处理): gate
 - [ ] `submit-task` skill 检查 type 并跳过 quality-gate
 - [ ] quick-tasks / breakdown-tasks 的 docs-only 分类引导更新
 - [ ] 纯 markdown feature（如 eval-adversarial-scorer 风格）的任务自动标 `type: "documentation"`
+- [ ] `testableTypes` 包含 cleanup 和 refactor，`IsTestableType` 正确返回 true
+- [ ] submit.go quality-gate skip 同时检查 `noTest` 和 `IsTestableType`
+- [ ] Go 单元测试覆盖 `testableTypes` 扩展和 submit type-based skip
