@@ -13,6 +13,6 @@ auto:
   cleanCode:
     quick: false
     full: true
-  gitPush: false
+  gitPush: true
 worktree:
   source-branch: v3.0.0
