@@ -8,12 +8,13 @@ mode: quick
 
 <!-- Status flow: tasks -> in-progress -> completed -->
 
+Remove the non-standard `plugins/forge/references/` directory by inlining all shared reference content directly into consuming skills/commands and relocating CLI-specific files to the CLI repository. Six tasks cover the full migration, ending with directory deletion and documentation update.
+
 ## Documents
 
 | Document | Path |
 |----------|------|
 | Proposal | ../../proposals/remove-references-dir/proposal.md |
-| Test Cases | testing/test-cases.md |
 
 ## Tasks
 

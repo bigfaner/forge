@@ -17,6 +17,8 @@ Update `docs/conventions/forge-distribution.md` to remove all documentation of t
 - `docs/proposals/remove-references-dir/proposal.md` — Source proposal
 - `docs/conventions/forge-distribution.md` — Distribution convention doc to update
 
+> **Note:** Line numbers are approximate and may drift. Search for `references/` in the distribution doc to locate exact sections.
+
 ## Affected Files
 
 ### Modify

@@ -18,6 +18,8 @@ Replace `${CLAUDE_SKILL_DIR}/../references/shared/config.yaml` and `${CLAUDE_SKI
 - `plugins/forge/references/shared/config.yaml` — Config template to inline
 - `plugins/forge/references/shared/sitemap.json` — Sitemap example to inline
 
+> **Note:** Line numbers are approximate and may drift. Search for `references/shared/config.yaml` or `references/shared/sitemap.json` to locate exact reference sites.
+
 ## Affected Files
 
 ### Modify

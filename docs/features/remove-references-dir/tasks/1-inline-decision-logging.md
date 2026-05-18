@@ -17,6 +17,8 @@ Replace `${CLAUDE_SKILL_DIR}/../../references/shared/decision-logging.md` read i
 - `docs/proposals/remove-references-dir/proposal.md` — Source proposal
 - `plugins/forge/references/shared/decision-logging.md` — Content to inline
 
+> **Note:** Line numbers are approximate and may drift. Search for `references/shared/decision-logging` to locate exact reference sites.
+
 ## Affected Files
 
 ### Modify

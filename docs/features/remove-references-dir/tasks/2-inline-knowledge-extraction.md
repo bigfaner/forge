@@ -17,6 +17,8 @@ Replace `${CLAUDE_SKILL_DIR}/../../references/shared/knowledge-extraction.md` (s
 - `docs/proposals/remove-references-dir/proposal.md` — Source proposal
 - `plugins/forge/references/shared/knowledge-extraction.md` — Content to inline
 
+> **Note:** Line numbers are approximate and may drift. Search for `references/shared/knowledge-extraction` to locate exact reference sites.
+
 ## Affected Files
 
 ### Modify

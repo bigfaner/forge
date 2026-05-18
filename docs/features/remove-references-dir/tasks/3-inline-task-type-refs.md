@@ -19,6 +19,8 @@ Replace 3 reference file read instructions in breakdown-tasks and quick-tasks sk
 - `plugins/forge/references/shared/type-assignment.md` — Type mapping table
 - `plugins/forge/references/shared/intent-propagation.md` — Intent propagation logic
 
+> **Note:** Line numbers are approximate and may drift. Search for `references/shared/step0-profile-resolution`, `references/shared/type-assignment`, or `references/shared/intent-propagation` to locate exact reference sites.
+
 ## Affected Files
 
 ### Modify
