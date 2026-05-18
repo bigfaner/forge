@@ -54,30 +54,30 @@ func TestExtractDesignMd_DescriptionMentionsAllPlatforms(t *testing.T) {
 	}
 }
 
-// --- Test: allowed_tools includes image analysis capability ---
+// --- Test: allowed-tools includes image analysis capability ---
 
 func TestExtractDesignMd_AllowedToolsIncludesImageCapability(t *testing.T) {
 	content := readExtractDesignMd(t)
 	fm := extractYamlFrontmatter(content)
 
-	// Find allowed_tools line
-	if !strings.Contains(fm, "allowed_tools") {
-		t.Fatal("frontmatter missing allowed_tools field")
+	// Find allowed-tools line
+	if !strings.Contains(fm, "allowed-tools:") {
+		t.Fatal("frontmatter missing allowed-tools field")
 	}
 
 	// Must include a tool capable of reading images (Read or an image analysis tool)
-	hasImageCapability := strings.Contains(fm, `"Read"`) ||
-		strings.Contains(fm, `"mcp__*analyze_image*"`) ||
-		strings.Contains(fm, `"mcp__*`)
+	hasImageCapability := strings.Contains(fm, "Read") ||
+		strings.Contains(fm, "mcp__*analyze_image*") ||
+		strings.Contains(fm, "mcp__*")
 
 	if !hasImageCapability {
 		// At minimum, Read must be present (it supports image files)
-		t.Error("allowed_tools must include Read or image analysis tool for TUI screenshot support")
+		t.Error("allowed-tools must include Read or image analysis tool for TUI screenshot support")
 	}
 
 	// Must also include WebFetch (web extraction needs it)
-	if !strings.Contains(fm, `"WebFetch"`) {
-		t.Error("allowed_tools must include WebFetch for web extraction")
+	if !strings.Contains(fm, "WebFetch") {
+		t.Error("allowed-tools must include WebFetch for web extraction")
 	}
 }
 

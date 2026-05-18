@@ -45,7 +45,7 @@ Read the generated report.
 
 - `docs/features/<slug>/prd/prd-spec.md` -- PRD with user flows
 - `docs/features/<slug>/prd/prd-user-stories.md` -- User stories with acceptance criteria
-- `plugins/forge/skills/eval/rubrics/validate-ux.md` -- Rubric definition (1000 pts, 10 dimensions)
+- `../../../eval/rubrics/validate-ux.md` -- Rubric definition (1000 pts, 10 dimensions)
 
 ## Acceptance Criteria
 

@@ -45,7 +45,7 @@ Read the generated report.
 
 - `docs/proposals/<slug>/proposal.md` -- Source proposal (primary input for quick mode)
 - `docs/features/<slug>/prd/prd-spec.md` -- PRD with user flows (if exists)
-- `plugins/forge/skills/eval/rubrics/validate-ux.md` -- Rubric definition (1000 pts, 10 dimensions)
+- `../../../eval/rubrics/validate-ux.md` -- Rubric definition (1000 pts, 10 dimensions)
 
 ## Acceptance Criteria
 

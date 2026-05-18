@@ -1,7 +1,7 @@
 ---
 name: run-tasks
 description: Autonomous task dispatcher that continuously claims tasks and dispatches to subagents.
-allowed_tools: ["Bash", "Read", "Agent", "TaskOutput", "Skill"]
+allowed-tools: Bash Read Agent TaskOutput Skill
 ---
 
 # /run-tasks

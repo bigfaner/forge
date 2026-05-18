@@ -1,7 +1,7 @@
 ---
 name: clean-code
 description: Simplify and clean up code. Supports scoped cleanup (git diff, files, directories) with optional quality gate.
-allowed_tools: ["Bash", "Read", "Edit", "Write", "Glob", "Grep"]
+allowed-tools: Bash Read Edit Write Glob Grep
 ---
 
 # Clean Code

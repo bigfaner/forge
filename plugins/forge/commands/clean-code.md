@@ -1,7 +1,7 @@
 ---
 name: clean-code
 description: Simplify and clean up code. Optionally specify paths to scope cleanup.
-allowed_tools: ["Bash", "Read", "Edit", "Write", "Glob", "Grep"]
+allowed-tools: Bash Read Edit Write Glob Grep
 ---
 
 Simplify and clean up code. Supports optional paths to scope cleanup to specific files or directories.

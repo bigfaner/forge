@@ -1,6 +1,7 @@
 ---
 name: consolidate-specs
 description: Extract business rules and tech specs from feature docs into preview files, detect overlaps with existing knowledge, user confirms before integrating to project-level dirs. Also detects and fixes spec drift against the current codebase.
+argument-hint: "[--slug <feature-slug>]"
 ---
 
 # /consolidate-specs

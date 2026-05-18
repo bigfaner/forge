@@ -1,6 +1,7 @@
 ---
 name: ui-design
 description: Use after PRD ui-functions are defined to create UI design specifications. Supports design style selection and HTML prototype generation.
+effort: high
 ---
 
 # UI Design

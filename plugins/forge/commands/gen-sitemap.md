@@ -1,14 +1,8 @@
 ---
 name: gen-sitemap
 description: Auto-generate and maintain sitemap.json for a web app. Uses agent-browser to explore routes, capture accessibility tree, and discover dynamic states. Preserves element IDs across runs.
-allowed_tools: ["Bash", "Read", "Write", "Grep", "Glob"]
-argument-hints:
-  - name: base-url
-    description: Application base URL to explore (e.g. http://localhost:3456). Optional if config.yaml exists.
-    required: false
-  - name: api-base-url
-    description: Backend API base URL (e.g. http://localhost:8080). Optional if config.yaml exists.
-    required: false
+allowed-tools: Bash Read Write Grep Glob
+argument-hint: "[base-url] [api-base-url]"
 ---
 
 # /gen-sitemap

@@ -42,7 +42,7 @@ Read the generated report at `docs/features/<slug>/eval/validate-code.md`.
 
 - `docs/features/<slug>/prd/prd-spec.md` — PRD with user scenarios
 - `docs/features/<slug>/prd/prd-user-stories.md` — User stories with acceptance criteria
-- `plugins/forge/skills/eval/rubrics/validate-code.md` — Rubric definition
+- `../../../eval/rubrics/validate-code.md` — Rubric definition
 
 ## Acceptance Criteria
 

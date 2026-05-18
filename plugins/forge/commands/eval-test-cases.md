@@ -1,13 +1,7 @@
 ---
 name: eval-test-cases
 description: Evaluate test cases for downstream executability. Dispatches per-type eval when per-type files exist, falls back to monolithic eval otherwise.
-argument-hints:
-  - name: target
-    description: Target score threshold (default: 900).
-    required: false
-  - name: iterations
-    description: Max adversarial iterations (default: 6).
-    required: false
+argument-hint: "[--target 900] [--iterations 6]"
 ---
 
 # Eval Test Cases

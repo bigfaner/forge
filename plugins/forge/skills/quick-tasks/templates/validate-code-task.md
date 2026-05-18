@@ -42,7 +42,7 @@ Read the generated report at `docs/features/<slug>/eval/validate-code.md`.
 
 - `docs/proposals/<slug>/proposal.md` — Source proposal (primary input for quick mode)
 - `docs/features/<slug>/prd/prd-spec.md` — PRD with user scenarios (if exists)
-- `plugins/forge/skills/eval/rubrics/validate-code.md` — Rubric definition
+- `../../../eval/rubrics/validate-code.md` — Rubric definition
 
 ## Acceptance Criteria
 

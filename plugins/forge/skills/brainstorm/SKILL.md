@@ -1,6 +1,7 @@
 ---
 name: brainstorm
 description: Use when a user has a vague idea or feature request and needs to explore it before formalizing into a PRD. Outputs a structured proposal document.
+argument-hint: "[idea or feature description]"
 ---
 
 # Brainstorm

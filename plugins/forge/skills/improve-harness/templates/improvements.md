@@ -2,7 +2,7 @@
 date: YYYY-MM-DD
 report: "./YYYY-MM-DD.md"
 snapshot: "./YYYY-MM-DD-snapshot.md"
-rubric: "plugins/forge/skills/eval/rubrics/harness.md"
+rubric: "../../../eval/rubrics/harness.md"
 next_eval_report: ""  # filled after re-running /eval-harness
 language: "[Auto-detected]"
 ---

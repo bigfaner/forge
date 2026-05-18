@@ -1,7 +1,7 @@
 ---
 name: execute-task
 description: Execute single task with focused TDD workflow.
-allowed_tools: ["Bash", "Read", "Agent", "TaskOutput", "Skill"]
+allowed-tools: Bash Read Agent TaskOutput Skill
 ---
 
 # /execute-task
