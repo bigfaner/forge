@@ -39,12 +39,12 @@ type AutoConfig struct {
 }
 
 // AutoConfigDefaults returns an AutoConfig with backward-compatible defaults:
-// e2eTest: quick=false, full=true; consolidateSpecs: quick=false, full=true;
+// e2eTest: quick=false, full=true; consolidateSpecs: quick=true, full=true;
 // cleanCode=false, gitPush=false.
 func AutoConfigDefaults() AutoConfig {
 	return AutoConfig{
 		E2eTest:          ModeToggle{Quick: false, Full: true},
-		ConsolidateSpecs: ModeToggle{Quick: false, Full: true},
+		ConsolidateSpecs: ModeToggle{Quick: true, Full: true},
 		CleanCode:        ModeToggle{Quick: false, Full: false},
 		GitPush:          false,
 	}

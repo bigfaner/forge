@@ -156,13 +156,16 @@ func TestGetBreakdownTestTasks_DefaultsMatchOldBehavior(t *testing.T) {
 	}
 }
 
-func TestGetQuickTestTasks_DefaultsProduceNoTasks(t *testing.T) {
+func TestGetQuickTestTasks_DefaultsProduceNoE2ETasks(t *testing.T) {
 	auto := profile.AutoConfigDefaults()
 	tasks := GetQuickTestTasks([]profile.Language{"go"}, []string{"cli"}, auto)
 
-	// Defaults: e2eTest.quick=false, consolidateSpecs.quick=false → no quick test tasks
-	if len(tasks) != 0 {
-		t.Fatalf("expected 0 quick tasks with defaults (quick=false), got %d", len(tasks))
+	// Defaults: e2eTest.quick=false, consolidateSpecs.quick=true → only spec drift task
+	if len(tasks) != 1 {
+		t.Fatalf("expected 1 quick task (spec drift) with defaults, got %d", len(tasks))
+	}
+	if tasks[0].ID != "T-quick-specs-1" {
+		t.Errorf("expected T-quick-specs-1, got %q", tasks[0].ID)
 	}
 }
 

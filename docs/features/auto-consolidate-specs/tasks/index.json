@@ -33,7 +33,7 @@
       "title": "Enable consolidate-specs in quick mode",
       "priority": "P1",
       "estimatedTime": "30min",
-      "status": "pending",
+      "status": "completed",
       "file": "3-quick-mode-enablement.md",
       "record": "records/3-quick-mode-enablement.md",
       "scope": "backend",

@@ -8,7 +8,7 @@ auto:
     quick: false
     full: true
   consolidateSpecs:
-    quick: false
+    quick: true
     full: true
   cleanCode:
     quick: false
