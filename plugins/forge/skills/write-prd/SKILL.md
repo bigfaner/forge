@@ -1,6 +1,8 @@
 ---
 name: write-prd
 description: Use when user provides requirements or feature requests that need to be formalized into a structured PRD document through collaborative dialogue.
+argument-hint: "[feature description or requirements]"
+effort: high
 ---
 
 # Write PRD

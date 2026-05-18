@@ -1,7 +1,7 @@
 ---
 name: init-justfile
 description: Scaffold a Justfile with standard forge targets for the current project.
-allowed-tools: ['Bash', 'Read', 'Write', 'Edit']
+allowed-tools: Bash Read Write Edit
 disable-model-invocation: true
 argument-hint: '[--lang go|rust|python|node] [--type frontend|backend|mixed] [--force]'
 ---

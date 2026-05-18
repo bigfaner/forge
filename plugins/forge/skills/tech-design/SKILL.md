@@ -1,6 +1,7 @@
 ---
 name: tech-design
 description: Use after PRD (and UI design if applicable) is finalized to create technical design with architecture and implementation details.
+effort: high
 ---
 
 # Tech Design

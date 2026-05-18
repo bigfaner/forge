@@ -1,11 +1,8 @@
 ---
 name: git-commit
 description: Create a git commit following Conventional Commits specification.
-allowed_tools: ["Bash", "Read"]
-argument-hints:
-  - name: scope
-    description: Optional commit scope (e.g. api, cli, core). Auto-detected from changes if omitted.
-    required: false
+allowed-tools: Bash Read
+argument-hint: "[scope]"
 ---
 
 Create a git commit following Conventional Commits specification.

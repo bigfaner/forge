@@ -1,6 +1,7 @@
 ---
 name: learn
 description: Unified knowledge accumulation skill. Capture decisions, lessons, conventions, and business rules from a single entry point. Absorbs /record-decision and /learn-lesson.
+argument-hint: "[decision|lesson|convention topic description]"
 ---
 
 # /learn
