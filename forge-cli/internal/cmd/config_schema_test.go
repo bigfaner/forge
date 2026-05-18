@@ -178,6 +178,12 @@ func TestConfigSchemaBackwardCompatible(t *testing.T) {
 		if r == "auto" {
 			t.Error("'auto' must not be required — existing configs without auto block must continue to work")
 		}
+		if r == "test-framework" {
+			t.Error("'test-framework' must not be required — existing configs without it must continue to work")
+		}
+		if r == "test-command" {
+			t.Error("'test-command' must not be required — existing configs without it must continue to work")
+		}
 	}
 
 	// Root additionalProperties: false must be preserved
@@ -207,6 +213,8 @@ func TestConfigExampleDocumentsAllAutoFields(t *testing.T) {
 		"gitPush:",
 		"quick:",
 		"full:",
+		"test-framework:",
+		"test-command:",
 	}
 	for _, field := range requiredFields {
 		if !strings.Contains(content, field) {
@@ -230,5 +238,48 @@ func TestConfigExampleDocumentsAllAutoFields(t *testing.T) {
 		if !required && count < 1 {
 			t.Errorf("example YAML should contain %q at least once", val)
 		}
+	}
+}
+
+func TestConfigSchemaTestFrameworkFields(t *testing.T) {
+	data, err := os.ReadFile(schemaPath(t))
+	if err != nil {
+		t.Fatalf("read schema: %v", err)
+	}
+
+	var schema map[string]any
+	if err := json.Unmarshal(data, &schema); err != nil {
+		t.Fatalf("parse schema JSON: %v", err)
+	}
+
+	props, ok := schema["properties"].(map[string]any)
+	if !ok {
+		t.Fatal("schema missing 'properties' object")
+	}
+
+	// test-framework must be a string
+	tfProp, ok := props["test-framework"]
+	if !ok {
+		t.Fatal("schema properties missing 'test-framework' key")
+	}
+	tfObj, ok := tfProp.(map[string]any)
+	if !ok {
+		t.Fatal("'test-framework' property is not an object")
+	}
+	if tfObj["type"] != "string" {
+		t.Errorf("test-framework.type = %v, want 'string'", tfObj["type"])
+	}
+
+	// test-command must be a string
+	tcProp, ok := props["test-command"]
+	if !ok {
+		t.Fatal("schema properties missing 'test-command' key")
+	}
+	tcObj, ok := tcProp.(map[string]any)
+	if !ok {
+		t.Fatal("'test-command' property is not an object")
+	}
+	if tcObj["type"] != "string" {
+		t.Errorf("test-command.type = %v, want 'string'", tcObj["type"])
 	}
 }

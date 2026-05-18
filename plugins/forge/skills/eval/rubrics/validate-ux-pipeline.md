@@ -4,7 +4,7 @@ Reference file for eval's validate-ux pre-processing. Loaded by `${CLAUDE_SKILL_
 
 ## Project Type Detection
 
-Resolve project type from `forge testing interfaces`:
+Resolve project type from `forge test interfaces`:
 
 | Interface | Project Type | Execution Method | Operation Unit | Capture |
 |------------|-------------|-----------------|----------------|---------|
@@ -12,7 +12,7 @@ Resolve project type from `forge testing interfaces`:
 | `web-ui` | Web | agent-browser | URL + element selector + action | Screenshot + accessibility tree |
 | `tui` | TUI | Bash stdin pipe | Key sequence (non-interactive only) | Terminal output |
 
-Detection priority: project interfaces -> `forge testing detect` -> ask user.
+Detection priority: project interfaces -> `forge test detect` -> ask user.
 
 TUI constraint: first version covers non-interactive scenarios only (initial render, help output, invalid input response).
 

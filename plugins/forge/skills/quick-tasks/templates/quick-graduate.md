@@ -1,6 +1,6 @@
 ---
 id: "T-quick-4"
-title: "Graduate Quick Test Scripts"
+title: "Promote Quick Test Scripts"
 priority: "P1"
 estimated_time: "15min"
 dependencies: ["T-quick-3"]
@@ -9,47 +9,45 @@ noTest: false
 mainSession: false
 ---
 
-# Graduate Quick Test Scripts
+# Promote Quick Test Scripts
 
 ## Description
 
-Call `/graduate-tests` skill to migrate feature test scripts from `tests/e2e/features/<slug>/` to the
-project-wide regression suite at `tests/e2e/<target>/`.
+Run `forge test promote <journey>` to promote the journey's test scripts from @feature tags to @regression tags.
 
 This task is a gate: it only proceeds if e2e tests are passing.
 
 ## Reference Files
 
-- `tests/e2e/features/<slug>/results/latest.md` — Must show status = PASS before graduating
-- `tests/e2e/features/<slug>/` — Source scripts to migrate
-- `tests/e2e/` — Destination regression suite
+- `tests/<journey>/results/latest.md` — Must show status = PASS before promoting
+- `tests/<journey>/` — Journey test scripts with @feature tags
 
 ## Acceptance Criteria
 
-- [ ] `tests/e2e/features/<slug>/results/latest.md` shows status = PASS
-- [ ] `tests/e2e/.graduated/<slug>` marker exists
-- [ ] Spec files present in `tests/e2e/<module>/`
+- [ ] Journey tests pass (verified by promote command)
+- [ ] All @feature tags replaced with @regression tags
+- [ ] No code changes other than tag replacements
 
 ## Implementation Notes
 
 **Step 1: Verify e2e passed**
 
-Read `tests/e2e/features/<slug>/results/latest.md`. Check status field.
+Read `tests/<journey>/results/latest.md`. Check status field.
 
-- Status = PASS → proceed to Step 2
-- Status = FAIL → mark task `blocked` and stop
+- Status = PASS -> proceed to Step 2
+- Status = FAIL -> mark task `blocked` and stop
 
-**Step 2: Graduate**
+**Step 2: Promote**
 
-Run `/graduate-tests` skill. The skill will:
-- Read each spec file and understand its content
-- Decide classification by functional module (split / merge / keep as-is)
-- Migrate to `tests/e2e/<module>/`
-- Validate TypeScript compilation post-migration
-- Rewrite import paths
-- Create graduation marker `tests/e2e/.graduated/<slug>`
+Run `forge test promote <journey>`. The command will:
+- Run the journey's tests automatically
+- On pass, replace @feature with @regression in all test files under the journey
+- Refuse promotion if any test fails
 
-**Step 3: Record**
+**Step 3: Verify**
 
-Mark task completed. T-quick-5 will run full regression to verify the
-graduated scripts integrate cleanly with the existing suite.
+Run `git diff` to confirm only tag changes were made, no other code modifications.
+
+**Step 4: Record**
+
+Mark task completed.

@@ -50,11 +50,11 @@ ls docs/features/<slug>/prd/prd-spec.md
 
 ## Step 0: Detect Test Language
 
-1. **Detect language**: Run `forge testing detect` to auto-detect the project's test language(s) from file signals.
+1. **Detect language**: Run `forge test detect` to auto-detect the project's test language(s) from file signals.
 2. **On failure** (no language detected): ask the user to add `languages` to `.forge/config.yaml` (e.g., `languages: [go]`).
 
 <HARD-RULE>
-Do NOT silently default to any language. If `forge testing detect` returns no result and the user cannot configure `languages`, abort the skill.
+Do NOT silently default to any language. If `forge test detect` returns no result and the user cannot configure `languages`, abort the skill.
 </HARD-RULE>
 
 ## Step 1: Read Manifest → PRD

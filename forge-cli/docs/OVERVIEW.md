@@ -80,7 +80,7 @@ Override with `--force`: `forge task submit <id> --data record.json --force`
 | `forge verify-task-done` | PreToolUse (git commit) | Verify task completion status, block commits for incomplete tasks |
 | `forge cleanup` | Stop | Clean up state files for completed, blocked, or rejected tasks |
 | `forge quality-gate` | Stop hook | Check if all tasks are completed, and if so, automatically run tests |
-| `forge profile` | Profile resolution | Resolve active test profile from config or project structure |
+| `forge test` | Test resolution | Resolve active test language/framework from config or project structure |
 | `forge task index` | Index generation | Build or rebuild index.json from .md files with test task generation |
 | `forge prompt get-by-task-id <id>` | Prompt synthesis | Generate agent prompt for a task based on its type; `--fix-record-missed` for recovery |
 | `forge forensic` | Session analysis | Search/extract past session transcripts for deviation analysis |
@@ -88,15 +88,21 @@ Override with `--force`: `forge task submit <id> --data record.json --force`
 | `forge e2e validate-specs` | Spec validation | AST validation against generated Playwright spec files |
 | `forge version` | Version info | Print CLI version |
 
-**`forge profile` subcommands:**
+**`forge test` subcommands:**
 
 | Command | Description |
 |---------|-------------|
-| `forge profile` | Resolve active profile(s): reads `.forge/config.yaml`, falls back to file-signal detection |
-| `forge profile set <name>` | Persist a profile choice to `.forge/config.yaml` |
-| `forge profile detect` | Run detection only (ignores existing config) |
-| `forge profile get <name> --<flag>` | Get profile data: `--manifest`, `--generate`, `--run`, `--graduate`, `--justfile`, `--template <file>` |
-| `forge profile --json` | Machine-readable JSON output |
+| `forge test` | Resolve active language(s): reads `.forge/config.yaml`, falls back to file-signal detection |
+| `forge test detect` | Run detection only (ignores existing config) |
+| `forge test get generate` | Get generate strategy |
+| `forge test get run` | Get run strategy |
+| `forge test get justfile` | Get justfile recipes |
+| `forge test get template <file>` | Get a specific template file |
+| `forge test interfaces` | Get project interface types |
+| `forge test framework` | Resolve test framework |
+| `forge test promote <journey>` | Promote journey's @feature tags to @regression |
+| `forge test run-journey <name>` | Run a journey in isolated temp directory |
+| `forge test verify` | Detect contract breakage against current code |
 
 **Profile detection signals:**
 
@@ -131,9 +137,9 @@ Override with `--force`: `forge task submit <id> --data record.json --force`
 - If `tests/e2e/features/<feature>/` exists but no graduation marker, hook prints a WARNING to guide migration
 
 **e2e test script graduation model:**
-- Graduation is agent-driven via T-test-4 (`graduate-tests` task) — not automatic
-- T-test-4 checks `testing/results/latest.md` for PASS status before calling `/graduate-tests`
-- Graduation marker: `tests/e2e/.graduated/<slug>` (YAML with schema_version, status, timestamp, source, targets, modules, testCount)
+- Promotion is done via `forge test promote <journey>` — runs tests first, then replaces @feature with @regression
+- Tag-based lifecycle: `@feature` (newly generated) -> `@regression` (verified, promoted)
+- CI selects via `forge test run --tags regression` or `--tags feature`
 - Source scripts at `tests/e2e/features/<feature>/` are reorganized into `tests/e2e/<target>/` after graduation
 
 **Test command auto-detection order (project-level):**
@@ -179,8 +185,8 @@ project-root/
 │           ├── 1.1-<title>.md     # Task details
 │           └── records/            # Execution records
 ├── tests/
-│   └── e2e/                       # Post-graduation regression test suite
-│       ├── .graduated/            # Graduation marker files
+│   └── e2e/                       # Regression test suite (promoted via tags)
+│       ├── .graduated/            # Legacy `tests/e2e/.graduated/` marker files
 │       │   └── <slug>             # YAML marker (schema_version, status, timestamp, source, targets, modules, testCount)
 │       ├── ui/<page>/             # UI tests (aggregated by page)
 │       │   └── ui.spec.ts
@@ -258,7 +264,7 @@ type Task struct {
 | `test-pipeline.gen-scripts` | Test script generation |
 | `test-pipeline.run` | E2E test execution |
 | `test-pipeline.gen-and-run` | Combined test script generation and execution (quick mode) |
-| `test-pipeline.graduate` | Test graduation to regression suite |
+| `test-pipeline.promote` | Tag-based promotion: @feature -> @regression |
 | `test-pipeline.verify-regression` | Regression verification |
 
 ### TaskIndex

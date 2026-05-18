@@ -93,8 +93,8 @@ func TestListProfileTemplates(t *testing.T) {
 		wantCount int
 		wantErr   bool
 	}{
-		{"go", 2, false},
-		{"javascript", 8, false},
+		{"go", 3, false},
+		{"javascript", 9, false},
 		{"unknown", 0, true},
 	}
 

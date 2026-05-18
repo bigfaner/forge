@@ -330,7 +330,7 @@ Note: verify-task-done only validates status; it does not delete any files.
     │ Warn if e2e     │
     │ scripts exist   │
     │ but not         │
-    │ graduated       │
+    │ promoted        │
     └────────┬────────┘
               │
               ▼

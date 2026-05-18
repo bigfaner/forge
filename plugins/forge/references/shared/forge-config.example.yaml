@@ -16,6 +16,16 @@ interfaces:
 # languages:
 #   - javascript
 
+# Override the test framework for code generation.
+# Built-in frameworks: go-testing, pytest, mocha, junit5, rust-test, maestro
+# Omit to use the default framework for the detected language.
+# Custom framework names are also accepted.
+# test-framework: pytest
+
+# Override the command used to run tests.
+# Omit to use the default command for the detected framework.
+# test-command: go test ./...
+
 # Auto-behavior configuration (all optional — omit the block for backward-compatible defaults)
 # Each mode-scoped field has quick/full sub-keys to control pipeline behavior per mode.
 auto:

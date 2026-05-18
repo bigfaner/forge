@@ -84,11 +84,13 @@ type WorktreeConfig struct {
 
 // ForgeConfig represents the .forge/config.yaml structure.
 type ForgeConfig struct {
-	ProjectType string          `yaml:"project-type"`
-	Interfaces  []string        `yaml:"interfaces"`
-	Languages   []string        `yaml:"languages"`
-	Auto        *AutoConfig     `yaml:"auto,omitempty"`
-	Worktree    *WorktreeConfig `yaml:"worktree,omitempty"`
+	ProjectType   string          `yaml:"project-type"`
+	Interfaces    []string        `yaml:"interfaces"`
+	Languages     []string        `yaml:"languages"`
+	TestFramework string          `yaml:"test-framework,omitempty"`
+	TestCommand   string          `yaml:"test-command,omitempty"`
+	Auto          *AutoConfig     `yaml:"auto,omitempty"`
+	Worktree      *WorktreeConfig `yaml:"worktree,omitempty"`
 }
 
 // KnownLanguages is the set of valid language keys.
@@ -322,6 +324,12 @@ var configKeyAccessors = map[string]configKeyAccessor{
 	},
 	"languages": {
 		slice: func(c *ForgeConfig) ([]string, bool) { return c.Languages, len(c.Languages) > 0 },
+	},
+	"test-framework": {
+		scalar: func(c *ForgeConfig) (string, bool) { return c.TestFramework, c.TestFramework != "" },
+	},
+	"test-command": {
+		scalar: func(c *ForgeConfig) (string, bool) { return c.TestCommand, c.TestCommand != "" },
 	},
 }
 

@@ -8,7 +8,7 @@
       "title": "Journey-Driven 测试模型定义与目录规范",
       "priority": "P0",
       "estimatedTime": "3h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-model-and-directory-spec.md",
       "record": "records/1-model-and-directory-spec.md",
       "scope": "all",
@@ -22,7 +22,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2-config-driven-framework.md",
       "record": "records/2-config-driven-framework.md",
       "scope": "backend",
@@ -36,7 +36,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3-gen-journeys-skill.md",
       "record": "records/3-gen-journeys-skill.md",
       "scope": "backend",
@@ -50,7 +50,7 @@
       "dependencies": [
         "3"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-gen-contracts-tui-await.md",
       "record": "records/4-gen-contracts-tui-await.md",
       "scope": "backend",
@@ -65,7 +65,7 @@
         "2",
         "4"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "5-gen-test-scripts-template-migration.md",
       "record": "records/5-gen-test-scripts-template-migration.md",
       "scope": "backend",
@@ -79,7 +79,7 @@
       "dependencies": [
         "5"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "6-run-tests-journey-isolation.md",
       "record": "records/6-run-tests-journey-isolation.md",
       "scope": "backend",
@@ -93,7 +93,7 @@
       "dependencies": [
         "4"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "7-forge-test-verify.md",
       "record": "records/7-forge-test-verify.md",
       "scope": "backend",
@@ -108,7 +108,7 @@
         "5",
         "6"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "8-cli-rename-tag-promotion.md",
       "record": "records/8-cli-rename-tag-promotion.md",
       "breaking": true,

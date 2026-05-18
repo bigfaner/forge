@@ -18,12 +18,12 @@ Test script generation is handled by the `/gen-test-scripts` skill.
 
 ## Step 0: Resolve Language and Interfaces
 
-1. **Detect language**: Run `forge testing detect` to auto-detect the project's test language(s) from file signals.
+1. **Detect language**: Run `forge test detect` to auto-detect the project's test language(s) from file signals.
 2. **On failure** (no language detected): ask the user to add `languages` to `.forge/config.yaml` (e.g., `languages: [go]`).
-3. **Load interfaces**: Run `forge testing interfaces` to get the project's active interface types.
+3. **Load interfaces**: Run `forge test interfaces` to get the project's active interface types.
 
 <HARD-RULE>
-Do NOT silently default to any language. If `forge testing detect` returns no result and the user cannot configure `languages`, abort the skill.
+Do NOT silently default to any language. If `forge test detect` returns no result and the user cannot configure `languages`, abort the skill.
 </HARD-RULE>
 
 ## Prerequisites
@@ -75,7 +75,7 @@ Only extract acceptance criteria that **explicitly exist** in the PRD. Forbidden
 
 Determine which interface types the project exposes:
 
-1. **Project interfaces** (primary): Run `forge testing interfaces` to get the active interface types. Mapping: `web-ui`->UI, `tui`->TUI, `mobile-ui`->Mobile, `api`->API, `cli`->CLI.
+1. **Project interfaces** (primary): Run `forge test interfaces` to get the active interface types. Mapping: `web-ui`->UI, `tui`->TUI, `mobile-ui`->Mobile, `api`->API, `cli`->CLI.
 2. **PRD signal** (secondary): A "web application" has web-ui+api; a "CLI tool" has cli.
 3. **Codebase signal** (tertiary): Scan for evidence (e.g., `package.json` with react for web-ui, `cmd/` + cobra for cli, route handlers for api, terminal rendering libs for tui, `android/`/`ios/` for mobile-ui).
 

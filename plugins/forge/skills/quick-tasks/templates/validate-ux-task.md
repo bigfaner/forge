@@ -27,7 +27,7 @@ forge eval --type validate-ux
 
 This command:
 1. Reads the PRD/proposal to extract user flows
-2. Resolves project type via `forge testing interfaces` (CLI/Web/TUI)
+2. Resolves project type via `forge test interfaces` (CLI/Web/TUI)
 3. Compiles and installs the project binary
 4. Translates user actions to executable operations per project type
 5. Executes flows, captures outputs, runs effect verification
@@ -67,7 +67,7 @@ Read the generated report.
 
 - The eval runs with `iterations: 1`, so there is no revise loop
 - Pre-processing executes in a git worktree to isolate side effects
-- Project type is auto-detected from `forge testing interfaces`: `cli` -> CLI, `web-ui` -> Web, `tui` -> TUI
+- Project type is auto-detected from `forge test interfaces`: `cli` -> CLI, `web-ui` -> Web, `tui` -> TUI
 - CLI projects: operations are shell commands; Web: uses agent-browser with sitemap.json; TUI: stdin pipe with non-interactive commands
 - In quick mode, the proposal's In Scope and Success Criteria sections serve as the flow source when no PRD exists
 - If the feature is docs-only (no runtime code), this task can be skipped -- mark as completed with note "docs-only feature, no runtime to validate"

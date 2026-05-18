@@ -42,6 +42,7 @@ Read `${CLAUDE_SKILL_DIR}/../../references/shared/step0-profile-resolution.md` f
 - **Single language**: one detected language (default behavior, no per-language suffixing needed)
 - **Multiple languages**: two or more detected languages (triggers per-language task suffixing in Step 4)
 
+
 ## Step 1: Read Proposal
 
 Determine the feature slug from the proposal directory name. Read `docs/proposals/<slug>/proposal.md` — the sole input document. Extract:

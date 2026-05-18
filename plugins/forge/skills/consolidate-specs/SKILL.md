@@ -19,7 +19,7 @@ Extract key business rules and technical specifications from feature documents i
 
 ## When to Use
 
-- As T-specs-1 after all e2e tests graduate (standard task pipeline)
+- As T-specs-1 after all e2e tests are promoted (standard task pipeline)
 - User invokes `/consolidate-specs` manually at any time
 
 ## Prerequisites
@@ -562,5 +562,5 @@ Omit `coverage` from record.json — the noTest flag in index.json auto-sets it.
 |-------|-------------|
 | `/write-prd` | Upstream: source of business rules |
 | `/tech-design` | Upstream: source of technical specs |
-| `/graduate-tests` | Predecessor: T-test-4 before this T-specs-1 |
+| `forge test promote` | Predecessor: T-test-4 before this T-specs-1 |
 | `/submit-task` | Downstream: records task completion |
