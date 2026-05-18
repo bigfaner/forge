@@ -7,7 +7,7 @@ import (
 	"forge-cli/pkg/profile"
 )
 
-// defaultAuto is the current default (quick=false for e2e/specs).
+// defaultAuto is the current default (consolidateSpecs quick=true, e2eTest quick=false).
 var defaultAuto = profile.AutoConfigDefaults()
 
 // allEnabledAuto enables all auto-behaviors for tests that need quick + full tasks.
@@ -691,5 +691,29 @@ func TestGetQuickTestTasks_PerType_ThreeTypes(t *testing.T) {
 	}
 	if !depSet["T-quick-2-tui"] || !depSet["T-quick-2-api"] || !depSet["T-quick-2-cli"] {
 		t.Errorf("T-quick-3 missing expected deps, got %v", tasks[4].Dependencies)
+	}
+}
+
+func TestGetQuickTestTasks_DefaultAuto_IncludesSpecDrift(t *testing.T) {
+	// Verify that default auto config (ConsolidateSpecs.Quick=true) generates T-quick-specs-1.
+	// E2eTest.Quick is false by default, so no e2e tasks — only the drift task.
+	tasks := GetQuickTestTasks([]profile.Language{"go"}, []string{"cli"}, defaultAuto)
+
+	if len(tasks) != 1 {
+		t.Fatalf("expected 1 task (spec drift only), got %d", len(tasks))
+	}
+
+	if tasks[0].ID != "T-quick-specs-1" {
+		t.Errorf("task ID = %q, want T-quick-specs-1", tasks[0].ID)
+	}
+	if tasks[0].Type != TypeDocGenerationDrift {
+		t.Errorf("task Type = %q, want %q", tasks[0].Type, TypeDocGenerationDrift)
+	}
+	if !tasks[0].NoTest {
+		t.Error("T-quick-specs-1 NoTest should be true")
+	}
+	// No e2e dependency since E2eTest.Quick is false
+	if len(tasks[0].Dependencies) != 0 {
+		t.Errorf("T-quick-specs-1 should have no deps without e2e tasks, got %v", tasks[0].Dependencies)
 	}
 }

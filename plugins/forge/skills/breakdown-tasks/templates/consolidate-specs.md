@@ -36,7 +36,7 @@ If ALL extracted items are `[LOCAL]` (no cross-cutting candidates), generate pre
 
 If no extractable rules found in PRD/design, mark task completed.
 
-If running under `/run-tasks` (non-interactive session) and CROSS items exist, write preview files and mark task as `blocked` with note "User review required for integration." Do NOT auto-integrate.
+If running under `/run-tasks` (non-interactive session) and CROSS items exist, auto-integrate all CROSS items without blocking. The consolidate-specs skill handles this automatically in non-interactive mode (see SKILL.md Step 6). Commits include `[auto-specs]` tag for traceability and easy revert.
 
 ## User Stories
 
@@ -65,14 +65,16 @@ Run `/consolidate-specs` skill. The skill will:
   - `[LOCAL]`: Only meaningful within this feature
 - Detect overlaps with existing entries in `docs/decisions/` and `docs/lessons/`
 
-**Step 3: Early exit or user review**
+**Step 3: Early exit or review**
 
 If ALL items are `[LOCAL]`, skip to Step 5 (record as completed, no integration).
 
-Otherwise, present the preview files to the user:
-- List all `[CROSS]` items with suggested target files (`docs/business-rules/<domain>.md`, `docs/conventions/<topic>.md`)
-- User decides which to integrate and which to skip
-- Write choices to `docs/features/<slug>/specs/review-choices.md`
+Otherwise, handle CROSS items based on execution mode:
+- **Non-interactive (pipeline)**: The consolidate-specs skill auto-integrates all CROSS items without user confirmation. Commits include `[auto-specs]` tag. Proceed directly to Step 4.
+- **Interactive (manual)**: Present the preview files to the user:
+  - List all `[CROSS]` items with suggested target files (`docs/business-rules/<domain>.md`, `docs/conventions/<topic>.md`)
+  - User decides which to integrate and which to skip
+  - Write choices to `docs/features/<slug>/specs/review-choices.md`
 
 **Step 4: Integrate approved items**
 

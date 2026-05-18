@@ -14,12 +14,12 @@ func TestReadAutoConfig_MissingConfig(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	// Missing config should return defaults: e2eTest quick=false/full=true, consolidateSpecs quick=false/full=true, cleanCode false
+	// Missing config should return defaults: e2eTest quick=false/full=true, consolidateSpecs quick=true/full=true, cleanCode false
 	if auto.E2eTest.Quick || !auto.E2eTest.Full {
 		t.Errorf("E2eTest defaults = %+v, want {Quick:false Full:true}", auto.E2eTest)
 	}
-	if auto.ConsolidateSpecs.Quick || !auto.ConsolidateSpecs.Full {
-		t.Errorf("ConsolidateSpecs defaults = %+v, want {Quick:false Full:true}", auto.ConsolidateSpecs)
+	if !auto.ConsolidateSpecs.Quick || !auto.ConsolidateSpecs.Full {
+		t.Errorf("ConsolidateSpecs defaults = %+v, want {Quick:true Full:true}", auto.ConsolidateSpecs)
 	}
 	if auto.CleanCode.Quick || auto.CleanCode.Full {
 		t.Errorf("CleanCode defaults = %+v, want {Quick:false Full:false}", auto.CleanCode)
@@ -113,9 +113,9 @@ auto:
 	if !auto.E2eTest.Full {
 		t.Error("E2eTest.Full should be true (default)")
 	}
-	// consolidateSpecs not in YAML → defaults: quick=false, full=true
-	if auto.ConsolidateSpecs.Quick || !auto.ConsolidateSpecs.Full {
-		t.Errorf("ConsolidateSpecs should default to false/true, got %+v", auto.ConsolidateSpecs)
+	// consolidateSpecs not in YAML → defaults: quick=true, full=true
+	if !auto.ConsolidateSpecs.Quick || !auto.ConsolidateSpecs.Full {
+		t.Errorf("ConsolidateSpecs should default to true/true, got %+v", auto.ConsolidateSpecs)
 	}
 	if auto.CleanCode.Quick || auto.CleanCode.Full {
 		t.Errorf("CleanCode should default to false/false, got %+v", auto.CleanCode)
@@ -142,12 +142,12 @@ func TestReadAutoConfig_NoAutoBlock(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	// All defaults should apply: e2eTest quick=false/full=true, consolidateSpecs quick=false/full=true
+	// All defaults should apply: e2eTest quick=false/full=true, consolidateSpecs quick=true/full=true
 	if auto.E2eTest.Quick || !auto.E2eTest.Full {
 		t.Errorf("E2eTest defaults = %+v, want {Quick:false Full:true}", auto.E2eTest)
 	}
-	if auto.ConsolidateSpecs.Quick || !auto.ConsolidateSpecs.Full {
-		t.Errorf("ConsolidateSpecs defaults = %+v, want {Quick:false Full:true}", auto.ConsolidateSpecs)
+	if !auto.ConsolidateSpecs.Quick || !auto.ConsolidateSpecs.Full {
+		t.Errorf("ConsolidateSpecs defaults = %+v, want {Quick:true Full:true}", auto.ConsolidateSpecs)
 	}
 	if auto.CleanCode.Quick || auto.CleanCode.Full {
 		t.Errorf("CleanCode defaults = %+v, want {Quick:false Full:false}", auto.CleanCode)
