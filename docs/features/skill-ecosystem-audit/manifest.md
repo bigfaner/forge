@@ -1,6 +1,7 @@
 ---
+
 feature: "skill-ecosystem-audit"
-status: tasks
+status: completed
 mode: quick
 ---
 
