@@ -8,7 +8,7 @@
       "title": "Inline decision-logging.md into consuming skills",
       "priority": "P1",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "1-inline-decision-logging.md",
       "record": "records/1-inline-decision-logging.md",
       "type": "documentation"
