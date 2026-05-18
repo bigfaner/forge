@@ -48,7 +48,7 @@
       "title": "Move forge-config schema and example YAML to CLI, update test paths",
       "priority": "P1",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "5-relocate-cli-schema.md",
       "record": "records/5-relocate-cli-schema.md",
       "type": "documentation"

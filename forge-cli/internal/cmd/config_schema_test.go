@@ -11,8 +11,8 @@ import (
 // schemaPath resolves the forge-config schema relative to the test binary.
 func schemaPath(t *testing.T) string {
 	t.Helper()
-	// Test runs from forge-cli/internal/cmd/; schema is in plugins/forge/references/shared/
-	p := filepath.Join("..", "..", "..", "plugins", "forge", "references", "shared", "forge-config.schema.json")
+	// Test runs from forge-cli/internal/cmd/; schema is in testdata/
+	p := filepath.Join("testdata", "forge-config.schema.json")
 	abs, err := filepath.Abs(p)
 	if err != nil {
 		t.Fatalf("resolve schema path: %v", err)
@@ -194,7 +194,7 @@ func TestConfigSchemaBackwardCompatible(t *testing.T) {
 
 func TestConfigExampleDocumentsAllAutoFields(t *testing.T) {
 	// Verify the example YAML contains all 7 auto fields with comments
-	examplePath := filepath.Join("..", "..", "..", "plugins", "forge", "references", "shared", "forge-config.example.yaml")
+	examplePath := filepath.Join("testdata", "forge-config.example.yaml")
 	abs, err := filepath.Abs(examplePath)
 	if err != nil {
 		t.Fatalf("resolve example path: %v", err)
