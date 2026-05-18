@@ -32,7 +32,7 @@
         "1",
         "2"
       ],
-      "status": "blocked",
+      "status": "completed",
       "file": "3-update-eval-skill.md",
       "record": "records/3-update-eval-skill.md",
       "breaking": true,
@@ -46,7 +46,7 @@
       "dependencies": [
         "3"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-cleanup-old-agents.md",
       "record": "records/4-cleanup-old-agents.md",
       "type": "cleanup"

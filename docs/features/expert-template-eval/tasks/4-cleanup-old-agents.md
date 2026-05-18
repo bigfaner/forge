@@ -4,7 +4,7 @@ title: "Delete old agent definitions and update distribution docs"
 priority: "P1"
 estimated_time: "30m"
 dependencies: ["3"]
-type: "cleanup"
+type: "documentation"
 mainSession: false
 ---
 
