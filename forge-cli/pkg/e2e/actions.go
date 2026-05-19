@@ -51,12 +51,8 @@ func runJust(recipe string, args ...string) ([]byte, error) {
 	return out, nil
 }
 
-// Run executes e2e tests using the configured profile.
+// Run executes e2e tests using just test-e2e.
 func Run(opts RunOpts) error {
-	if _, err := ResolveProfile(opts.ProjectRoot); err != nil {
-		return err
-	}
-
 	args := []string{}
 	if opts.Feature != "" {
 		// Validate feature directory exists before invoking just
@@ -75,23 +71,14 @@ func Run(opts RunOpts) error {
 	return nil
 }
 
-// Setup installs e2e dependencies for the configured profile.
-func Setup(opts RunOpts) error {
-	if _, err := ResolveProfile(opts.ProjectRoot); err != nil {
-		return err
-	}
-
+// Setup installs e2e dependencies.
+func Setup(_ RunOpts) error {
 	_, err := runJust("e2e-setup")
 	return err
 }
 
 // Verify scans e2e test files for unresolved VERIFY markers.
 func Verify(opts RunOpts) error {
-	// Validate profile is configured (all profiles use the same scan logic)
-	if _, err := ResolveProfile(opts.ProjectRoot); err != nil {
-		return err
-	}
-
 	// Determine scan directory
 	scanDir := filepath.Join(opts.ProjectRoot, "tests", "e2e")
 	if opts.Feature != "" {
@@ -138,21 +125,13 @@ func Verify(opts RunOpts) error {
 }
 
 // Compile runs a compile-only check on e2e test files.
-func Compile(projectRoot string) error {
-	if _, err := ResolveProfile(projectRoot); err != nil {
-		return err
-	}
-
+func Compile(_ string) error {
 	_, err := runJust("e2e-compile")
 	return err
 }
 
 // Discover lists all e2e test cases without running them.
-func Discover(projectRoot string) error {
-	if _, err := ResolveProfile(projectRoot); err != nil {
-		return err
-	}
-
+func Discover(_ string) error {
 	out, err := runJust("e2e-discover")
 	if err != nil {
 		return err

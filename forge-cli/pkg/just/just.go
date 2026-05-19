@@ -8,8 +8,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-
-	"forge-cli/pkg/profile"
 )
 
 // GateRecipe defines one step in the quality gate sequence.
@@ -62,28 +60,23 @@ func RunCapture(dir string, name string, args ...string) (string, bool) {
 	return string(output), err == nil
 }
 
-// ResolveScope applies scope resolution: only pass scope to just if project is mixed.
-// Reads project-type from .forge/config.yaml directly — no subprocess call.
+// ResolveScope applies scope resolution: only pass scope to just if the justfile
+// has recipes that accept a scope argument. Probes by running `just --dry-run compile <scope>`.
 func ResolveScope(projectRoot, scope string) string {
 	if scope == "" || scope == "all" {
 		return ""
 	}
-	cfg, err := profile.ReadConfig(projectRoot)
-	if err != nil || cfg == nil {
+	if !HasJustfile(projectRoot) {
 		return ""
 	}
-	projectType := strings.TrimSpace(cfg.ProjectType)
-	switch projectType {
-	case "mixed":
+	// Probe whether the compile recipe accepts a scope argument.
+	// If `just --dry-run compile <scope>` succeeds, the recipe takes scope.
+	c := exec.Command("just", "--dry-run", "compile", scope)
+	c.Dir = projectRoot
+	if c.Run() == nil {
 		return scope
-	case "frontend", "backend":
-		return ""
-	default:
-		if projectType != "" {
-			fmt.Fprintf(os.Stderr, "WARNING: unexpected project-type %q, expected frontend/backend/mixed; skipping scope\n", projectType)
-		}
-		return ""
 	}
+	return ""
 }
 
 // RunGate executes the gate sequence in order.
