@@ -10,9 +10,9 @@ status: Draft
 
 Three-layer Convention-driven architecture replacing the embedded Profile system. The change spans two codebases: **Go CLI** (forge-cli) and **Plugin Skills** (skills/). No new infrastructure — Convention files use the existing `docs/conventions/` directory and `domains` frontmatter loading mechanism.
 
-**Approach**: Delete `pkg/profile/` entirely. Create a minimal `pkg/forgeconfig/` package for retained config types (`AutoConfig`, `ModeToggle`, `WorktreeConfig`). Rewrite all Profile consumers to either use `forgeconfig` (for config access) or remove language/framework dependencies entirely (for test generation, which moves to LLM + Convention).
+**Approach**: Delete `pkg/profile/` entirely. Extract retained config types from `pkg/profile/config.go` into a new `pkg/forgeconfig/` package, preserving the default-tracking `raw` map mechanism. Rewrite all Profile consumers to either use `forgeconfig` (for config access) or remove language/framework dependencies entirely (for test generation, which moves to LLM + Convention).
 
-**Key Decision** [Decision]: Create `pkg/forgeconfig/` as a minimal config package rather than keeping a hollowed-out `pkg/profile/`. This avoids confusion — any reference to "profile" in the codebase after this feature should be a bug, not a legacy path.
+**Key Decision** [Decision]: Create `pkg/forgeconfig/` by extracting and simplifying `pkg/profile/config.go` — not rewriting from scratch. This preserves the `raw` map field in `AutoConfig` that tracks which YAML keys were explicitly set vs absent (needed to distinguish "explicitly set to false" from "not in YAML"). After extraction, remove all Profile-specific code (languages, interfaces, test-framework, project-type fields and their resolution logic).
 
 ## Architecture
 
@@ -101,7 +101,9 @@ type AutoConfig struct {
     E2eTest          ModeToggle `yaml:"e2eTest"`
     ConsolidateSpecs ModeToggle `yaml:"consolidateSpecs"`
     CleanCode        ModeToggle `yaml:"cleanCode"`
+    Validation       ModeToggle `yaml:"validation"` // gates validate-code/validate-ux tasks
     GitPush          bool       `yaml:"gitPush"`
+    raw              map[string]map[string]bool // tracks explicit vs default values (preserved from profile)
 }
 
 type ModeToggle struct {
@@ -115,7 +117,7 @@ type WorktreeConfig struct {
 }
 
 func ReadConfig(projectRoot string) (*Config, error)
-func ReadAutoConfig(projectRoot string) (*AutoConfig, error)
+func ReadAutoConfig(projectRoot string) (AutoConfig, error) // value type, not pointer (matches current profile)
 func GetConfigValue(projectRoot, key string) (string, error)
 func WriteConfig(projectRoot string, cfg *Config) error
 ```
@@ -143,7 +145,7 @@ func SmokeTestName(journey string) string
 
 **Removed**: `FrameworkInfo` field from `TestGenerationOpts`, `GenerateGoTest()`, `GeneratePythonTest()`, `GenerateJSTest()`, `GenerateDispatched()`, `FeatureTag()`, `RegressionTag()`.
 
-**Tag handling** [Decision]: `FeatureTag`/`RegressionTag` removed from Go code. `forge test promote` discovers tag syntax by regex-scanning the existing test file for known tag patterns (`//go:build \w+`, `@pytest.mark.\w+`, `describe\w+`, etc.) rather than from a framework database. This makes promote framework-agnostic without Convention access.
+**Tag handling** [Decision]: `FeatureTag`/`RegressionTag` removed from `pkg/journey/`. `forge test promote` already has no profile dependency — it uses hardcoded `strings.Contains` checks for `@feature` and language-specific replacements (`//go:build feature` for Go, `@pytest.mark.feature` for Python, `@Tag("feature")` for Java). These hardcoded patterns remain unchanged. Adding new languages to promote requires code changes, but this is out of scope for this feature.
 
 ### I-3: pkg/task — Simplified Task Generation
 
@@ -156,8 +158,17 @@ type TestTaskDef struct {
 }
 
 type BuildIndexOpts struct {
-    AutoConfig *forgeconfig.AutoConfig
-    // No Languages, TestInterfaces, or StrategyResolver
+    // Retained from current struct (8 fields → 5):
+    FeatureSlug string                   // unchanged
+    ProjectRoot string                   // unchanged
+    TasksDir    string                   // unchanged (absolute path to tasks/)
+    IndexPath   string                   // unchanged (absolute path to index.json)
+    AutoConfig  forgeconfig.AutoConfig   // type changes from profile.AutoConfig
+
+    // Removed fields:
+    // Languages       []string         — no longer needed; no per-language tasks
+    // TestInterfaces  []string         — no longer needed; no interface-based task splitting
+    // ResolveStrategy StrategyResolver — no longer needed; no strategy embedding
 }
 
 func GetBreakdownTestTasks(auto forgeconfig.AutoConfig) []TestTaskDef
@@ -183,10 +194,11 @@ type RunOpts struct {
 ### I-5: pkg/just — Simplified Scope Resolution
 
 ```go
-func ResolveScope(projectRoot string, verb string, scope string) []string
+// Signature unchanged — keeps (projectRoot, scope) → string
+func ResolveScope(projectRoot, scope string) string
 ```
 
-**Change**: Remove `profile.ReadConfig` dependency for `ProjectType`. Instead, try-based resolution: attempt `just <verb> <scope>` — if recipe not found, fall back to `just <verb>` without scope argument.
+**Change**: Remove `profile.ReadConfig` dependency for `ProjectType`. Current logic: if `project-type == "mixed"` → pass scope; otherwise suppress. New logic: check if justfile has a scoped recipe variant via `just --list`. If a `<verb>-<scope>` or `<verb> <scope>` recipe exists → return scope; otherwise return empty string. This is a recipe-existence check rather than a config-driven decision, and produces the same behavior for all project types.
 
 ### I-6: Plugin Skills — Convention-Driven Interfaces
 
@@ -217,6 +229,27 @@ func ResolveScope(projectRoot string, verb string, scope string) []string
 - Step 3: Present findings / ask user to select framework
 - Step 4: Write `docs/conventions/testing-<scope>.md` with minimal structure
 - Output: Convention file with Framework + Assertion + Tags + Result Format sections
+
+**Convention merge semantics**: When multiple Convention files have overlapping `domains`, the LLM merges at the **section level** — each section from the last-loaded file overwrites the same section from earlier files. If two files both declare `Framework`, the later file's Framework wins. Sections unique to each file are preserved. The skill logs a note about the overlap for user awareness.
+
+### Consumer File Enumeration
+
+Every file that imports `pkg/profile` and its required change:
+
+| File | Current Profile Usage | Change |
+|------|-----------------------|--------|
+| `pkg/profile/*.go` (entire dir) | Core package | DELETE |
+| `pkg/profile/languages/` (6 dirs) | Embedded strategy content | DELETE |
+| `internal/cmd/test.go` | 8 subcommands (detect, get, interfaces, framework) | Remove 4 subcommands; keep verify, promote, run-journey |
+| `internal/cmd/config.go` | `forge config init` collects languages/interfaces | Simplify to auto.* + worktree only |
+| `internal/cmd/init.go` | `forge init` collects project-type/languages/interfaces | Simplify to auto.* + worktree only |
+| `internal/cmd/index.go` | `forge task index` resolves languages/interfaces/strategy | Remove language resolution; use auto.E2eTest toggle only |
+| `internal/cmd/add.go` | `forge task add` rebuilds index with languages/strategy | Remove language/strategy from rebuild |
+| `pkg/journey/journey.go` | `FrameworkInfo`, `FeatureTag`/`RegressionTag`, `Generate*` | Remove all Generate* and tag functions; keep TestOutputDir, SmokeTestName |
+| `pkg/task/testgen.go` | `profile.Language`, `profile.AutoConfig`, per-language tasks | Change to `forgeconfig.AutoConfig`; remove per-language task gen; keep Validation toggle |
+| `pkg/task/build.go` | `StrategyResolver`, `Languages`, `TestInterfaces`, `profile.AutoConfig` | Remove 3 fields; change AutoConfig type; keep FeatureSlug/ProjectRoot/TasksDir/IndexPath |
+| `pkg/e2e/e2e.go` | `profile.ReadLanguages`, `profile.IsKnownLanguage` | Remove both calls; test exec via just |
+| `pkg/just/just.go` | `profile.ReadConfig` for ProjectType | Replace with recipe-existence check via `just --list` |
 
 ## Data Models
 
@@ -281,7 +314,6 @@ worktree:
 | Convention vs Reconnaissance conflict | Convention wins, log conflict | "Convention declares `<X>` but existing tests use `<Y>`. Using Convention value." |
 | `just e2e-compile` recipe missing | Block generation | "Missing justfile `e2e-compile` recipe. Run `/forge:init-justfile` first, or add a recipe manually." |
 | Compile gate failed (all retries) | Block task, preserve generated files | Output compile error + generated file path + recovery actions: check Convention, run test-guide, or manually edit |
-| `forge test promote` finds no tag pattern | Skip tag promotion | "No test tag pattern found in `<file>`. Skipping promotion." |
 
 ### Propagation Strategy
 
@@ -300,12 +332,14 @@ No existing-page integrations — not applicable.
 
 ### Regression-First Approach
 
-The 126+ existing e2e tests in forge-cli are the primary validation mechanism. No new unit tests for the removed code — the testing strategy is "everything that worked before must still work."
+The 126+ existing e2e tests in forge-cli are the primary validation mechanism.
+
+**Unit test strategy for rewritten packages**: `pkg/forgeconfig/` is extracted (not rewritten) from `pkg/profile/config.go`, so existing config tests transfer. `pkg/just/ResolveScope` gets new tests for recipe-existence logic. Other simplified packages (journey, task, e2e) lose code rather than gain it — their existing tests are updated to match the simplified interfaces. No new unit test files are created; existing test files are updated alongside their source files.
 
 | Phase | Test Type | Tool | What to Test | Gate |
 |-------|-----------|------|--------------|------|
 | Phase 0 (POC) | Compile rate | `just e2e-compile` | gen-test-scripts output compiles on 3 frameworks | >= 70% first-pass rate |
-| Phase 1 (Profile removal) | Regression | `go build ./...`, `go test ./...` | Go CLI compiles and all unit tests pass | 100% pass |
+| Phase 1 (Profile removal) | Regression | `go build ./...`, `go test ./...` | Go CLI compiles and all unit tests pass (updated for simplified interfaces) | 100% pass |
 | Phase 2 (Skill rewrites) | End-to-end | gen-test-scripts → `just e2e-compile` → `just e2e-test` | Full pipeline on forge-cli's 126+ Journeys | >= 85% first-pass compile rate; 100% test pass |
 | Phase 3 (test-guide) | Functional | `/forge:test-guide` → gen-test-scripts → compile | Convention generation → code generation pipeline | Convention file valid; generated code compiles |
 | Validation | Diff equivalence | diff Convention-generated vs Profile-generated | Framework core patterns (import, assertion, tag) identical | 0 diff on core patterns |
@@ -317,7 +351,11 @@ The 126+ existing e2e tests in forge-cli are the primary validation mechanism. N
 3. **Malformed Convention**: Missing Assertion section. Skill proceeds with LLM defaults, outputs warning.
 4. **Compile gate failure**: Generated code fails `just e2e-compile`. Skill retries with error feedback, then blocks with recovery guidance on exhaustion.
 5. **Multi-framework**: `testing-go.md` and `testing-javascript.md` coexist. gen-test-scripts loads only the relevant one per Journey.
-6. **forge test promote**: Discovers `//go:build e2e` tag in existing file, promotes to `//go:build e2e && regression`. No Profile needed.
+6. **forge test promote**: Unchanged — uses hardcoded `@feature` → `@regression` replacement, no Profile dependency.
+
+### Performance Baseline
+
+PRD requires "generation time should not increase by more than 20% vs Profile-based generation." Current Profile-based gen-test-scripts generation time is not systematically measured — it varies by Journey complexity and LLM response time. The 20% threshold will be measured by comparing generation timestamps on a representative sample of 10 Journeys before and after the change. If baseline measurement is not available before implementation, the target is waived in favor of the compile-rate target (85%) as the primary quality metric.
 
 ### Import Audit Gate
 
@@ -366,5 +404,5 @@ Pre-deletion verification: `grep -r "pkg/profile" forge-cli/` must return zero r
 | Approach | Pros | Cons | Why Not Chosen |
 |----------|------|------|----------------|
 | Keep hollowed-out `pkg/profile/` with config types only | Fewer import changes | Misleading name — any "profile" reference after this feature should be a bug | New `pkg/forgeconfig/` package makes the clean break explicit |
-| Hardcode tag patterns in `forge test promote` | Simpler than regex scanning | Couples promote to known frameworks, same problem as Profile | Regex scan is more flexible and requires no framework knowledge |
 | Store test-command in config.yaml | Allows override for non-just users | Adds config surface for an already-standardized path (justfile) | Users modify justfile directly; no config needed |
+| Rewrite `pkg/forgeconfig/` from scratch | Clean implementation | Loses subtle default-tracking logic (`raw` map) | Extract from `pkg/profile/config.go` preserves proven behavior |
