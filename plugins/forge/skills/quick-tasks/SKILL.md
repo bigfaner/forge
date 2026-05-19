@@ -82,7 +82,9 @@ For each task, fill from proposal context: Description (Problem + Solution), Acc
 
 ### Type Assignment
 
-Read `${CLAUDE_SKILL_DIR}/../../references/shared/type-assignment.md` for the type-to-assignment mapping table.
+Read `${CLAUDE_SKILL_DIR}/../../references/shared/type-assignment.md` for the full classification table and examples.
+
+**Rule: classify by output artifact, not by intent.** When all affected files are non-compilable, non-runnable artifacts (`.md`, `.yaml`, `.json` under `skills/`, `docs/`, `references/`), the type **must** be `documentation` — even if the intent is to "implement" or "enhance" something. See type-assignment.md "Classification by Output Artifact" section for the Code/Doc/Meta categories and application guide.
 
 ### Intent Propagation
 

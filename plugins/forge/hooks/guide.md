@@ -112,7 +112,7 @@ All task-executing workflows (`/execute-task`, `task-executor` agent, `/fix-bug`
 
 Quality gate sequence: `just compile → just fmt → just lint → just test`. On failure: compile → fix & retry; fmt → WARNING (non-blocking, toolchain issue); lint → self-fix (1 retry) then blocked; test → fix & retry.
 
-Documentation tasks (`noTest: true` in task frontmatter) skip the quality gate entirely — no compile, fmt, lint, or test step is required.
+Tasks with `type: "documentation"` or `noTest: true` in task frontmatter skip the quality gate entirely — no compile, fmt, lint, or test step is required. `type: "documentation"` is the primary skip trigger (docs-only tasks classified by output artifact). `noTest: true` is retained as an explicit override for edge cases (e.g., a code task that does not require tests).
 
 ### Scope Resolution
 
@@ -132,7 +132,7 @@ After all tasks done, runs as final safety net (no scope — project-wide):
 2. Project-wide tests: `just test`
 3. E2E regression: `just e2e-setup → just probe → just test-e2e`
 
-`forge quality-gate` automatically skips docs-only features (all tasks have `noTest: true`). For mixed features, only the non-documentation tasks are gated.
+`forge quality-gate` automatically skips docs-only features (all tasks have `type: "documentation"` or `noTest: true`). For mixed features, only the non-documentation tasks are gated.
 
 On failure at any step, a P0 fix-task is automatically created. Run `forge task claim` to pick it up.
 

@@ -1235,18 +1235,18 @@ func TestIsDocsOnly(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "has cleanup task (not testable)",
+			name: "has cleanup task (testable)",
 			tasks: map[string]task.Task{
 				"t1": {ID: "1", Type: task.TypeCleanup},
 			},
-			want: true,
+			want: false,
 		},
 		{
-			name: "has refactor task (not testable)",
+			name: "has refactor task (testable)",
 			tasks: map[string]task.Task{
 				"t1": {ID: "1", Type: task.TypeRefactor},
 			},
-			want: true,
+			want: false,
 		},
 		{
 			name: "has feature task (testable)",
