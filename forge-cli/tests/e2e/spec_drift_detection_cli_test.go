@@ -103,8 +103,9 @@ func TestTC_004_QuickPipelineIncludesTQuick5WithDriftType(t *testing.T) {
 		"testgen.go should define T-quick-doc-drift ID")
 	assert.Contains(t, content, "TypeDocDrift",
 		"T-quick-doc-drift should use TypeDocDrift type")
-	assert.Contains(t, content, "NoTest: true",
-		"T-quick-doc-drift should have NoTest: true")
+	// NoTest removed; TypeDocDrift is non-testable by IsTestableType
+	assert.Contains(t, content, "TypeDocDrift",
+		"T-quick-doc-drift should have non-testable type")
 	assert.Contains(t, content, `Scope: "all"`,
 		"T-quick-doc-drift should have Scope: all")
 	assert.Contains(t, content, `"Detect Spec Drift"`,

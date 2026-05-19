@@ -657,9 +657,9 @@ func TestValidateRecordData_ForceOverride(t *testing.T) {
 	}
 }
 
-// ---------- validateRecordData no-test task ----------
+// ---------- validateRecordData non-testable task ----------
 
-func TestValidateRecordData_NoTestTask(t *testing.T) {
+func TestValidateRecordData_NonTestableTask(t *testing.T) {
 	rd := &task.RecordData{
 		Status:       "completed",
 		Summary:      "Docs only",
@@ -674,7 +674,7 @@ func TestValidateRecordData_NoTestTask(t *testing.T) {
 		validateRecordData(rd, false)
 	})
 	if strings.Contains(out, "ERROR") {
-		t.Errorf("coverage=-1.0 should pass for no-test tasks, got: %s", out)
+		t.Errorf("coverage=-1.0 should pass for non-testable tasks, got: %s", out)
 	}
 }
 

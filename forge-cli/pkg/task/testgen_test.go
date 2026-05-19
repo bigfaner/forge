@@ -141,12 +141,9 @@ func TestGetQuickTestTasks_SingleProfile(t *testing.T) {
 	if tasks[4].Dependencies[0] != "T-quick-verify-regression" {
 		t.Errorf("drift detection should depend on verify-regression, got %v", tasks[4].Dependencies)
 	}
-	// T-quick-doc-drift type and NoTest
+	// T-quick-doc-drift type
 	if tasks[4].Type != TypeDocDrift {
 		t.Errorf("T-quick-doc-drift Type = %q, want %q", tasks[4].Type, TypeDocDrift)
-	}
-	if !tasks[4].NoTest {
-		t.Error("T-quick-doc-drift NoTest should be true")
 	}
 	if tasks[4].Scope != "all" {
 		t.Errorf("T-quick-doc-drift Scope = %q, want %q", tasks[4].Scope, "all")
@@ -224,7 +221,7 @@ func TestGenerateTestTaskMD_SharedTask(t *testing.T) {
 		ID: "T-test-gen-cases", Key: "gen-test-cases",
 		Title: "Generate Test Cases", Priority: "P1",
 		EstimatedTime: "1-2h", Dependencies: []string{},
-		Type: TypeTestGenCases, Scope: "all", NoTest: true,
+		Type: TypeTestGenCases, Scope: "all",
 	}
 
 	content, err := GenerateTestTaskMD(def, "my-feature")
@@ -233,8 +230,8 @@ func TestGenerateTestTaskMD_SharedTask(t *testing.T) {
 	}
 
 	s := string(content)
-	if !strings.Contains(s, "noTest: true") {
-		t.Error("missing noTest in frontmatter")
+	if strings.Contains(s, "noTest") {
+		t.Error("noTest should not appear in frontmatter")
 	}
 }
 
@@ -277,9 +274,6 @@ func TestGetDocEvalTask(t *testing.T) {
 	}
 	if task.Type != TypeDocEval {
 		t.Errorf("Type = %q, want %q", task.Type, TypeDocEval)
-	}
-	if !task.NoTest {
-		t.Error("NoTest should be true")
 	}
 	if task.Title == "" {
 		t.Error("Title should not be empty")
@@ -708,9 +702,6 @@ func TestGetQuickTestTasks_DefaultAuto_IncludesSpecDrift(t *testing.T) {
 	}
 	if tasks[0].Type != TypeDocDrift {
 		t.Errorf("task Type = %q, want %q", tasks[0].Type, TypeDocDrift)
-	}
-	if !tasks[0].NoTest {
-		t.Error("T-quick-doc-drift NoTest should be true")
 	}
 	// No e2e dependency since E2eTest.Quick is false
 	if len(tasks[0].Dependencies) != 0 {

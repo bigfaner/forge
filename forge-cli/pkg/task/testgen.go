@@ -18,7 +18,6 @@ type TestTaskDef struct {
 	Dependencies    []string
 	Type            string
 	Scope           string
-	NoTest          bool
 	MainSession     bool
 	Breaking        bool
 	Language        profile.Language // empty for shared tasks
@@ -46,13 +45,13 @@ func GetBreakdownTestTasks(languages []profile.Language, interfaces []string, au
 		tasks = append(tasks, TestTaskDef{
 			Key: "gen-test-cases", ID: "T-test-gen-cases",
 			Title: "Generate e2e Test Cases", Priority: "P1", EstimatedTime: "1-2h",
-			Type: TypeTestGenCases, Scope: "all", NoTest: true,
+			Type: TypeTestGenCases, Scope: "all",
 			StrategyKind: "generate",
 		})
 		tasks = append(tasks, TestTaskDef{
 			Key: "eval-test-cases", ID: "T-test-eval-cases",
 			Title: "Evaluate e2e Test Cases", Priority: "P1", EstimatedTime: "30min",
-			Type: TypeTestEvalCases, Scope: "all", NoTest: true, MainSession: true,
+			Type: TypeTestEvalCases, Scope: "all", MainSession: true,
 		})
 
 		// Per-language tasks with per-type gen-scripts
@@ -93,12 +92,12 @@ func GetBreakdownTestTasks(languages []profile.Language, interfaces []string, au
 		tasks = append(tasks, TestTaskDef{
 			Key: "validate-code", ID: "T-validate-code",
 			Title: "Validate Code Quality", Priority: "P2", EstimatedTime: "15min",
-			Type: TypeValidationCode, Scope: "all", NoTest: true, MainSession: false,
+			Type: TypeValidationCode, Scope: "all", MainSession: false,
 		})
 		tasks = append(tasks, TestTaskDef{
 			Key: "validate-ux", ID: "T-validate-ux",
 			Title: "Validate User Experience", Priority: "P2", EstimatedTime: "15min",
-			Type: TypeValidationUx, Scope: "all", NoTest: true, MainSession: true,
+			Type: TypeValidationUx, Scope: "all", MainSession: true,
 		})
 	}
 
@@ -107,7 +106,7 @@ func GetBreakdownTestTasks(languages []profile.Language, interfaces []string, au
 		tasks = append(tasks, TestTaskDef{
 			Key: "consolidate-specs", ID: "T-specs-consolidate",
 			Title: "Consolidate Specs", Priority: "P2", EstimatedTime: "20min",
-			Type: TypeDocConsolidate, Scope: "all", NoTest: true,
+			Type: TypeDocConsolidate, Scope: "all",
 		})
 	}
 
@@ -116,7 +115,7 @@ func GetBreakdownTestTasks(languages []profile.Language, interfaces []string, au
 		tasks = append(tasks, TestTaskDef{
 			Key: "clean-code", ID: "T-clean-code",
 			Title: "Simplify and Clean Code", Priority: "P2", EstimatedTime: "20min",
-			Type: TypeCleanCode, Scope: "all", NoTest: true,
+			Type: TypeCleanCode, Scope: "all",
 		})
 	}
 
@@ -145,7 +144,7 @@ func GetQuickTestTasks(languages []profile.Language, interfaces []string, auto p
 			tasks = append(tasks, TestTaskDef{
 				Key: "quick-test-cases-" + string(lang), ID: "T-quick-gen-cases" + s,
 				Title: fmt.Sprintf("Generate Quick Test Cases (%s)", lang), Priority: "P1", EstimatedTime: "30min-1h",
-				Type: TypeTestGenCases, Scope: "all", NoTest: true, Language: lang,
+				Type: TypeTestGenCases, Scope: "all", Language: lang,
 				StrategyKind: "generate",
 			})
 			for _, typ := range interfaces {
@@ -177,12 +176,12 @@ func GetQuickTestTasks(languages []profile.Language, interfaces []string, auto p
 		tasks = append(tasks, TestTaskDef{
 			Key: "validate-code", ID: "T-validate-code",
 			Title: "Validate Code Quality", Priority: "P2", EstimatedTime: "15min",
-			Type: TypeValidationCode, Scope: "all", NoTest: true, MainSession: false,
+			Type: TypeValidationCode, Scope: "all", MainSession: false,
 		})
 		tasks = append(tasks, TestTaskDef{
 			Key: "validate-ux", ID: "T-validate-ux",
 			Title: "Validate User Experience", Priority: "P2", EstimatedTime: "15min",
-			Type: TypeValidationUx, Scope: "all", NoTest: true, MainSession: true,
+			Type: TypeValidationUx, Scope: "all", MainSession: true,
 		})
 	}
 
@@ -191,7 +190,7 @@ func GetQuickTestTasks(languages []profile.Language, interfaces []string, auto p
 		tasks = append(tasks, TestTaskDef{
 			Key: "quick-drift-detection", ID: "T-quick-doc-drift",
 			Title: "Detect Spec Drift", Priority: "P2", EstimatedTime: "15min",
-			Type: TypeDocDrift, Scope: "all", NoTest: true,
+			Type: TypeDocDrift, Scope: "all",
 		})
 	}
 
@@ -200,7 +199,7 @@ func GetQuickTestTasks(languages []profile.Language, interfaces []string, auto p
 		tasks = append(tasks, TestTaskDef{
 			Key: "quick-clean-code", ID: "T-clean-code",
 			Title: "Simplify and Clean Code", Priority: "P2", EstimatedTime: "20min",
-			Type: TypeCleanCode, Scope: "all", NoTest: true,
+			Type: TypeCleanCode, Scope: "all",
 		})
 	}
 
@@ -224,9 +223,6 @@ func GenerateTestTaskMD(def TestTaskDef, _ string) ([]byte, error) {
 	fmt.Fprintf(&buf, "scope: %q\n", def.Scope)
 	if def.Language != "" {
 		fmt.Fprintf(&buf, "profile: %q\n", def.Language)
-	}
-	if def.NoTest {
-		buf.WriteString("noTest: true\n")
 	}
 	if def.MainSession {
 		buf.WriteString("mainSession: true\n")
@@ -592,7 +588,6 @@ func (d TestTaskDef) TaskFromFile() Task {
 		Breaking:      d.Breaking,
 		Scope:         d.Scope,
 		MainSession:   d.MainSession,
-		NoTest:        d.NoTest,
 		Type:          d.Type,
 		Profile:       string(d.Language),
 	}
@@ -609,7 +604,6 @@ func GetDocEvalTask() TestTaskDef {
 		EstimatedTime: "30min",
 		Type:          TypeDocEval,
 		Scope:         "all",
-		NoTest:        true,
 	}
 }
 

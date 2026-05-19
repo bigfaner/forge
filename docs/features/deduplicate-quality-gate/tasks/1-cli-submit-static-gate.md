@@ -1,6 +1,6 @@
 ---
 id: "1"
-title: "CLI submit gate — static gate for non-breaking tasks + zero metrics acceptance"
+title: "CLI submit gate — static gate for non-breaking tasks"
 priority: "P1"
 estimated_time: "1-2h"
 dependencies: []
@@ -10,7 +10,7 @@ type: "coding.cleanup"
 mainSession: false
 ---
 
-# 1: CLI Submit Gate — Static Gate + Zero Metrics
+# 1: CLI Submit Gate — Static Gate
 
 ## Description
 
@@ -21,7 +21,7 @@ Replace with a tiered model:
 - **breaking=false** + `coding.*` type: static gate (`LintGateSequence()`: compile→fmt→lint)
 - **non-`coding.*` types**: skip entirely (already handled by `IsTestableType()`)
 
-Also update `validateRecordData()` to accept zero test metrics for non-breaking coding tasks (the agent ran targeted tests during development, not `just test`).
+The agent runs targeted tests during development and reports metrics from those tests at submit time. `validateRecordData()` remains unchanged — agents always have test evidence from targeted tests.
 
 ## Reference Files
 - `docs/proposals/deduplicate-quality-gate/proposal.md` — Source proposal (Tiered Test Execution Model)
@@ -31,8 +31,7 @@ Also update `validateRecordData()` to accept zero test metrics for non-breaking 
 
 - [ ] `validateQualityGate()` reads `t.Breaking` to choose gate sequence: breaking → `DefaultGateSequence()`, non-breaking → `LintGateSequence()`
 - [ ] Non-`coding.*` types skip the quality gate entirely (existing behavior, unchanged)
-- [ ] `validateRecordData()` accepts `testsPassed=0` + `testsFailed=0` for non-breaking coding tasks (set coverage=-1.0)
-- [ ] Breaking coding tasks still require test evidence in `validateRecordData()`
+- [ ] `validateRecordData()` unchanged — agents always report metrics from targeted tests`
 - [ ] `forge task submit` for a non-breaking coding task passes with only compile+fmt+lint
 - [ ] `forge task submit` for a breaking coding task requires compile+fmt+lint+test
 - [ ] Existing tests pass; new tests cover the tiered gate logic
@@ -45,6 +44,6 @@ Also update `validateRecordData()` to accept zero test metrics for non-breaking 
 ## Implementation Notes
 
 - `forge-cli/internal/cmd/submit.go` line 492: `validateQualityGate()` currently always calls `just.DefaultGateSequence()`. Change to conditionally use `just.LintGateSequence()` when `!t.Breaking`.
-- `forge-cli/internal/cmd/submit.go` lines 129-133 and 318-323: `validateRecordData()` currently rejects zero test evidence. Add a condition to accept it for non-breaking tasks.
+- `validateRecordData()` is NOT modified — agents always collect and report metrics from their targeted test runs.
 - `forge-cli/pkg/just/just.go` line 34: `LintGateSequence()` returns compile→fmt→lint. Already used by `quality_gate.go` line 152.
 - TDD: write tests for both gate paths (breaking and non-breaking) before modifying production code.

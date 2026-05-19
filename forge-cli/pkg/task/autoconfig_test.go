@@ -50,9 +50,6 @@ func TestGetBreakdownTestTasks_CleanCodeFullTrue(t *testing.T) {
 			if task.Type != TypeCleanCode {
 				t.Errorf("T-clean-code-1 Type = %q, want %q", task.Type, TypeCleanCode)
 			}
-			if !task.NoTest {
-				t.Error("T-clean-code-1 NoTest should be true")
-			}
 		}
 	}
 	if !found {
@@ -113,9 +110,6 @@ func TestGetQuickTestTasks_CleanCodeQuickTrue(t *testing.T) {
 			found = true
 			if task.Type != TypeCleanCode {
 				t.Errorf("T-clean-code-1 Type = %q, want %q", task.Type, TypeCleanCode)
-			}
-			if !task.NoTest {
-				t.Error("T-clean-code-1 NoTest should be true")
 			}
 		}
 	}

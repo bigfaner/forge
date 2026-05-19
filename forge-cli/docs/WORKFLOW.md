@@ -162,7 +162,7 @@ for each dep in T.Dependencies:
                     ┌─────────────────────┐
                     │ Quality gate check  │
                     │ (completed only,    │
-                    │  not NoTest,        │
+                    │  testable type,        │
                     │  not --force):      │
                     │ just compile → fmt  │
                     │ → lint → test      │

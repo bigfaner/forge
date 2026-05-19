@@ -125,7 +125,6 @@ func executeClaim() (*ClaimResult, error) {
 		Breaking:      t.Breaking,
 		Scope:         t.Scope,
 		MainSession:   t.MainSession,
-		NoTest:        t.NoTest,
 		Type:          t.Type,
 		Profile:       t.Profile,
 	}

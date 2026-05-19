@@ -113,9 +113,6 @@ type Task struct {
 	// MainSession indicates this task must run in the main session (not dispatched to task-executor).
 	// Used by tasks that need to spawn subagents (e.g., eval-test-cases spawns doc-scorer/doc-reviser).
 	MainSession bool `json:"mainSession,omitempty"`
-	// NoTest indicates this task does not require tests (e.g., documentation-only tasks).
-	// When true, quality gate and test evidence checks are skipped, and coverage is auto-set to -1.0.
-	NoTest bool `json:"noTest,omitempty"`
 	// Type is the task execution type (e.g. "coding.feature", "coding.fix", "gate").
 	// Required for all tasks after migration; validated by task validate.
 	// omitempty allows existing index.json files to load without error.
@@ -212,9 +209,7 @@ type TaskState struct { //nolint:revive // intentional naming for API clarity
 	Scope string `json:"scope,omitempty"`
 	// MainSession mirrors Task.MainSession for the claimed task.
 	MainSession bool `json:"mainSession,omitempty"`
-	// NoTest mirrors Task.NoTest for the claimed task.
-	NoTest bool `json:"noTest,omitempty"`
-	// Type mirrors Task.Type for the claimed task (same pattern as MainSession, NoTest).
+	// Type mirrors Task.Type for the claimed task (same pattern as MainSession).
 	Type string `json:"type,omitempty"`
 	// Profile mirrors Task.Profile for the claimed task.
 	Profile string `json:"profile,omitempty"`

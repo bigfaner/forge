@@ -95,7 +95,7 @@ func TestContract_Claim_NewTask(t *testing.T) {
 	tk := &task.Task{
 		ID: "1.1", Title: "Do stuff", Priority: "P0", Status: "pending",
 		File: "1.1.md", Record: "records/1.1.md",
-		Breaking: true, MainSession: true, NoTest: false,
+		Breaking: true, MainSession: true,
 		Type: "coding.feature", Scope: "backend",
 		Dependencies: []string{"1.0"}, EstimatedTime: "30min",
 	}

@@ -33,7 +33,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "file": "3-remove-notest-flag.md",
       "record": "records/3-remove-notest-flag.md",
       "breaking": true,
