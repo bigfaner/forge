@@ -45,7 +45,7 @@
       "title": "Submit-task SKILL.md cleanup — remove CLI-enforced validation rules",
       "priority": "P2",
       "estimatedTime": "30min",
-      "status": "pending",
+      "status": "completed",
       "file": "4-submit-skill-cleanup.md",
       "record": "records/4-submit-skill-cleanup.md",
       "type": "doc"

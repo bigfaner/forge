@@ -55,12 +55,12 @@ Post-task completion: create execution record + update task status.
 | `keyDecisions`        | array  | warning  | Key design decisions. Missing = warning (completed status only) |
 | `testsPassed`         | int    | context  | Number of tests passed. See Metrics Collection below |
 | `testsFailed`         | int    | context  | Number of tests failed. >0 with completed = auto-downgrade to blocked |
-| `coverage`            | float  | context  | Coverage percentage. Auto-set to `-1.0` for `noTest: true` or non-`coding.*` type tasks |
+| `coverage`            | float  | context  | Coverage percentage. Auto-set to `-1.0` for non-`coding.*` type tasks |
 | `acceptanceCriteria`  | array  | warning  | `{criterion, met}` objects. Missing = warning; any `met:false` = hard error (overridable) |
 | `notes`               | string | optional | Optional notes or observations               |
 | `typeReclassification` | object | optional | When executor discovers task type doesn't match actual work |
 
-> **context** = required for `completed` tasks with a `coding.*` type; auto-relaxed when `noTest: true` or type does not start with `coding.`.
+> **context** = required for `completed` tasks with a `coding.*` type; auto-relaxed when type does not start with `coding.`.
 
 ## Type Reclassification
 
@@ -91,14 +91,10 @@ Before writing `record.json`, you MUST collect real metrics from the project's t
 Coverage rules:
 
 - `coverage` = actual percentage from test runner output
-- `coverage` = `-1.0` is auto-set by CLI for tasks with `noTest: true` or a non-`coding.*` type (e.g., `doc*`, `test.*`, `validation.*`). For testable tasks (any `coding.*` type), always report real metrics.
+- `coverage` = `-1.0` is auto-set by CLI for non-`coding.*` type tasks (e.g., `doc*`, `test.*`, `validation.*`). For testable tasks (any `coding.*` type), always report real metrics.
 - Never write `0.0` unless the runner actually reported 0%
 
-Example commands (use whatever matches the project's toolchain):
-
-```
-just test [scope]
-```
+Capture metrics from the targeted test runs you performed during task development (framework-native commands on changed code). Report the actual pass/fail counts and coverage from those runs.
 
 </HARD-RULE>
 
@@ -130,57 +126,11 @@ The CLI command provides schema validation, consistent output format, and potent
 Bypassing the command defeats the purpose of the skill.
 </EXTREMELY-IMPORTANT>
 
-## What `forge task submit` Does (One Command = 2 Operations)
+## What `forge task submit` Does
 
-```
-forge task submit <TASK_ID> --data docs/features/{slug}/tasks/process/record.json
-```
-
-This single command automatically:
-
-1. ✅ Generates `records/*.md` from JSON
-2. ✅ Updates `index.json` status
-
-After running, check the STATUS field in the output:
+`forge task submit` generates the execution record and updates task status. After running, check the STATUS field:
 - `STATUS: completed` → task recorded successfully, proceed to commit
 - `STATUS: blocked` → task was auto-downgraded (e.g. test failures), **do NOT commit**
-
-## Validation Rules (enforced by CLI)
-
-### Quality Gate Pre-check
-
-When `status=completed`, `--force` is NOT used, and the task has a testable type (any type with the `coding.*` prefix), `forge task submit` automatically runs the full quality gate before accepting the record. The testable-type check uses prefix matching: `IsTestableType(type) = strings.HasPrefix(type, "coding.")`.
-
-**Skip conditions** (quality gate is bypassed entirely when either applies):
-- `noTest: true` in task frontmatter — explicit override for edge cases
-- Type does not start with `coding.` — docs-only tasks (`doc*`), test pipeline (`test.*`), validation (`validation.*`), and meta types (`gate`) all skip the gate
-
-The `noTest: true` field is retained for edge-case override (e.g., a code task that does not require tests). For standard docs-only tasks, the `doc*` type prefix is the primary skip trigger — no additional `noTest` field is needed.
-
-```
-just compile [scope] → just fmt [scope] → just lint [scope] → just test [scope]
-```
-
-This gate runs via `validateQualityGate()` in record.go. If any step fails, the record is rejected with an error. Fix the errors and re-run `forge task submit`, or use `--force` to bypass.
-
-### Data Validation
-
-`forge task submit` will reject the following combinations:
-
-| Condition | Error | Fix |
-|-----------|-------|-----|
-| `status=completed` + `testsFailed > 0` | Auto-downgrade to `blocked` (**non-overridable**) | Fix the test failures, then re-record with `status: "completed"` |
-| `status=completed` + `testsPassed=0` + `testsFailed=0` + `coverage >= 0` | No test evidence (overridable) | Ensure task has `noTest: true` (CLI auto-sets coverage), or run tests and report results |
-| `status=completed` + any `acceptanceCriteria.met=false` | Unmet acceptance criteria (overridable) | Fix the issue, or set `status: "blocked"` |
-| `summary` is empty or whitespace | Missing summary | Provide a summary |
-
-Override quality gate, test evidence, and AC validation with `--force`:
-```bash
-forge task submit <TASK_ID> --data record.json --force
-```
-
-Note: auto-downgrade (`completed` + `testsFailed > 0` → `blocked`) is **never** overridden by `--force`. Fix the failing tests first.
-Use `--force` only when you have a specific reason (document it in `notes`).
 
 ## Forbidden Operations
 
