@@ -8,7 +8,7 @@
       "title": "Inject Karpathy principles into coding-feature and coding-enhancement templates",
       "priority": "P1",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "1-inject-principles-feature-enhancement.md",
       "record": "records/1-inject-principles-feature-enhancement.md",
       "type": "doc"
