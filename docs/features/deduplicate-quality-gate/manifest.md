@@ -1,6 +1,6 @@
 ---
 feature: "deduplicate-quality-gate"
-status: tasks
+status: completed
 mode: quick
 ---
 
