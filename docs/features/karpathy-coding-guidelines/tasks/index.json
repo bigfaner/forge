@@ -28,7 +28,7 @@
       "title": "Inject Surgical Changes principle into coding-refactor template",
       "priority": "P1",
       "estimatedTime": "20m",
-      "status": "pending",
+      "status": "completed",
       "file": "3-inject-principles-refactor.md",
       "record": "records/3-inject-principles-refactor.md",
       "type": "doc"
