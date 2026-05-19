@@ -1,0 +1,24 @@
+---
+title: "Prompt Template Instruction Hierarchy"
+domains: [prompt, template, CODING_PRINCIPLES, IMPORTANT, HARD-GATE, instruction]
+---
+
+# Prompt Template Instruction Hierarchy
+
+Forge 的 coding.* 提示词模板采用三级指令层次，由弱到强：
+
+1. **`<CODING_PRINCIPLES>`** — 行为指南（自律遵循）。定义 agent 在执行任务时应遵循的行为准则，如"先思考再编码""最小修改范围"。用大写 XML 标签包裹以提高 LLM 关注度。
+2. **`<IMPORTANT>`** — 任务级硬约束（必须遵循）。定义不可违反的规则，如"Hard Rules override your default approach"。
+3. **`<HARD-GATE>`** — 流程级强制检查点（不可绕过）。定义必须通过的验证条件，如"If the bug cannot be reproduced, STOP"。
+
+### 位置规则
+
+- `<CODING_PRINCIPLES>` 置于角色描述之后、工作流步骤（`## Workflow`）之前。
+- `<IMPORTANT>` 置于工作流步骤内部，靠近其约束的步骤。
+- `<HARD-GATE>` 置于需要强制检查的步骤内部。
+
+### 设计原则
+
+- 无时序冲突：行为守则不与工作流步骤产生执行顺序矛盾。
+- 无语义重叠：与现有规则重叠时合并为统一表述，不并存。
+- 指令层次清晰：三级标签各有明确语义，不混用。
