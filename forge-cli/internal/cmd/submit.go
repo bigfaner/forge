@@ -136,8 +136,10 @@ func runSubmit(_ *cobra.Command, args []string) {
 	validateRecordData(rd, submitForce)
 
 	// Quality gate pre-check for completed tasks (unless --force, noTest, or non-testable type)
+	// Tiered model: breaking tasks run full gate (compile+fmt+lint+test),
+	// non-breaking coding tasks run static gate (compile+fmt+lint).
 	if rd.Status == "completed" && !submitForce && !t.NoTest && task.IsTestableType(t.Type) {
-		validateQualityGate(projectRoot, t.Scope)
+		validateQualityGate(projectRoot, t.Scope, t.Breaking)
 	}
 
 	// Validate status
@@ -487,10 +489,16 @@ func formatCriteria(criteria []task.AcceptanceCriterion) string {
 	return strings.Join(lines, "\n")
 }
 
-// validateQualityGate runs the full quality gate (compile -> fmt -> lint -> test).
+// validateQualityGate runs the quality gate based on the task's breaking flag.
+// breaking=true: full gate (compile -> fmt -> lint -> test).
+// breaking=false: static gate (compile -> fmt -> lint), skipping test.
 // On failure, exits with AIError containing concise error output.
-func validateQualityGate(projectRoot, scope string) {
-	just.RunGate(projectRoot, scope, just.DefaultGateSequence(), func(step, output string) {
+func validateQualityGate(projectRoot, scope string, breaking bool) {
+	steps := just.LintGateSequence()
+	if breaking {
+		steps = just.DefaultGateSequence()
+	}
+	just.RunGate(projectRoot, scope, steps, func(step, output string) {
 		concise := just.ExtractConciseError(output, 10)
 		Exit(NewAIError(ErrValidation,
 			fmt.Sprintf("Quality gate failed at step: just %s", step),

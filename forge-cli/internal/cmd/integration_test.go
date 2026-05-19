@@ -1299,7 +1299,7 @@ test:
 	exited := false
 	// validateQualityGate calls Exit on failure which calls os.Exit(1).
 	// For success path, it just returns.
-	validateQualityGate(dir, "")
+	validateQualityGate(dir, "", true)
 	_ = exited
 }
 
@@ -1328,7 +1328,7 @@ test:
 	}
 
 	if os.Getenv("TEST_QUALITY_GATE_COMPILE_FAIL") == "1" {
-		validateQualityGate(dir, "")
+		validateQualityGate(dir, "", true)
 		return
 	}
 
@@ -1373,7 +1373,7 @@ test:
 	}
 
 	if os.Getenv("TEST_QUALITY_GATE_LINT_FAIL") == "1" {
-		validateQualityGate(dir, "")
+		validateQualityGate(dir, "", true)
 		return
 	}
 
@@ -1415,7 +1415,7 @@ test:
 	}
 
 	if os.Getenv("TEST_QUALITY_GATE_TEST_FAIL") == "1" {
-		validateQualityGate(dir, "")
+		validateQualityGate(dir, "", true)
 		return
 	}
 
@@ -1435,7 +1435,7 @@ test:
 func TestValidateQualityGate_NoJustfile(t *testing.T) {
 	dir := t.TempDir()
 	// No justfile -- RunGate returns true immediately, no exit
-	validateQualityGate(dir, "")
+	validateQualityGate(dir, "", true)
 }
 
 func TestValidateQualityGate_FmtNonBlockingFailure(t *testing.T) {
@@ -1463,7 +1463,7 @@ test:
 	}
 
 	// Should not exit -- fmt is non-blocking
-	validateQualityGate(dir, "")
+	validateQualityGate(dir, "", true)
 }
 
 // ---------- write*Output MkdirAll error paths ----------

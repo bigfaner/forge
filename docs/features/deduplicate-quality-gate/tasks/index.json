@@ -5,10 +5,10 @@
   "tasks": {
     "1-cli-submit-static-gate": {
       "id": "1",
-      "title": "CLI submit gate — static gate for non-breaking tasks + zero metrics acceptance",
+      "title": "CLI submit gate — static gate for non-breaking tasks",
       "priority": "P1",
       "estimatedTime": "1-2h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-cli-submit-static-gate.md",
       "record": "records/1-cli-submit-static-gate.md",
       "scope": "backend",
