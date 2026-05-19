@@ -38,7 +38,7 @@
       "title": "Inject principles into coding-cleanup template",
       "priority": "P1",
       "estimatedTime": "20m",
-      "status": "pending",
+      "status": "completed",
       "file": "4-inject-principles-cleanup.md",
       "record": "records/4-inject-principles-cleanup.md",
       "type": "doc"
