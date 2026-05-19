@@ -862,13 +862,13 @@ func TestExecuteClaim_ScopeEmptyWhenNotSet(t *testing.T) {
 	}
 }
 
-func TestPrintTaskDetails_BreakingInOutput(t *testing.T) {
+func TestPrintTaskDetails_NoBreakingInOutput(t *testing.T) {
 	dir := t.TempDir()
 	if err := feature.EnsureFeatureDir(dir, "feat"); err != nil {
 		t.Fatal(err)
 	}
 
-	t.Run("breaking true", func(t *testing.T) {
+	t.Run("breaking true - not emitted", func(t *testing.T) {
 		tk := &task.Task{
 			ID: "1.1", Title: "T", Priority: "P0", Status: "pending",
 			File: "1.1.md", Record: "records/1.1.md", Breaking: true,
@@ -876,12 +876,12 @@ func TestPrintTaskDetails_BreakingInOutput(t *testing.T) {
 		out := captureStdout(func() {
 			printTaskDetails("t1", tk, dir, "feat")
 		})
-		if !strings.Contains(out, "BREAKING: true") {
-			t.Errorf("expected BREAKING: true in output, got: %s", out)
+		if strings.Contains(out, "BREAKING") {
+			t.Errorf("BREAKING should not appear in output, got: %s", out)
 		}
 	})
 
-	t.Run("breaking false", func(t *testing.T) {
+	t.Run("breaking false - not emitted", func(t *testing.T) {
 		tk := &task.Task{
 			ID: "1.1", Title: "T", Priority: "P0", Status: "pending",
 			File: "1.1.md", Record: "records/1.1.md",
@@ -889,8 +889,8 @@ func TestPrintTaskDetails_BreakingInOutput(t *testing.T) {
 		out := captureStdout(func() {
 			printTaskDetails("t1", tk, dir, "feat")
 		})
-		if strings.Contains(out, "BREAKING:") {
-			t.Errorf("expected no BREAKING line when false, got: %s", out)
+		if strings.Contains(out, "BREAKING") {
+			t.Errorf("BREAKING should not appear in output, got: %s", out)
 		}
 	})
 }

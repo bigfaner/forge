@@ -840,8 +840,8 @@ func TestPrintTaskDetails_Breaking(t *testing.T) {
 	out := captureStdout(func() {
 		printTaskDetails("gate-2", t2, "/project", "test")
 	})
-	if !strings.Contains(out, "BREAKING: true") {
-		t.Errorf("expected BREAKING field, got: %s", out)
+	if strings.Contains(out, "BREAKING") {
+		t.Errorf("BREAKING should not appear in output, got: %s", out)
 	}
 	if !strings.Contains(out, "FEATURE: test") {
 		t.Errorf("expected FEATURE: test, got: %s", out)

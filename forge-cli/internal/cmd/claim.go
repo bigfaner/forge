@@ -351,9 +351,6 @@ func printTaskDetails(key string, t *task.Task, projectRoot, featureSlug string)
 	PrintFieldIfNotEmpty("FEATURE", featureSlug)
 	PrintField("FILE", filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, t.File)))
 	PrintFieldIfNotEmpty("SCOPE", t.Scope)
-	if t.Breaking {
-		PrintField("BREAKING", "true")
-	}
 	if t.MainSession {
 		PrintField("MAIN_SESSION", "true")
 	}
