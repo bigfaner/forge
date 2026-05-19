@@ -33,7 +33,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "in_progress",
+      "status": "completed",
       "file": "3-remove-notest-flag.md",
       "record": "records/3-remove-notest-flag.md",
       "breaking": true,
@@ -55,7 +55,7 @@
       "title": "Remove dispatcher breaking gate from run-tasks.md and execute-task.md",
       "priority": "P1",
       "estimatedTime": "30min",
-      "status": "pending",
+      "status": "completed",
       "file": "5-remove-dispatcher-breaking-gate.md",
       "record": "records/5-remove-dispatcher-breaking-gate.md",
       "type": "doc"
