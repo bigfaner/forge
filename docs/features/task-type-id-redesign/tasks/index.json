@@ -38,7 +38,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3-update-prompt-pipeline.md",
       "record": "records/3-update-prompt-pipeline.md",
       "breaking": true,
