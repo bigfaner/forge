@@ -35,8 +35,8 @@ Check previous stage artifacts. Abort and prompt user if missing:
 | Artifact | Missing prompt |
 |----------|----------------|
 | `Justfile` with `e2e-setup` recipe | Run `/init-justfile` first |
-| `tests/e2e/features/<slug>/` directory | Run `/gen-test-scripts` first |
-| At least one test file (extension from detected language) in `tests/e2e/features/<slug>/` | Run `/gen-test-scripts` first |
+| `tests/<journey>/` directory (at least one) | Run `/gen-test-scripts` first |
+| At least one test file (extension from detected language) in `tests/<journey>/` | Run `/gen-test-scripts` first |
 
 <PRINCIPLE>
 **Shared infrastructure first.** Before executing any test actions, verify that shared dependencies are complete and functional. Shared file names are defined in the language's strategy. If shared files are missing symbols imported by test files, all tests will fail at the import stage. When inconsistencies are found, go back to `/gen-test-scripts` to fix shared dependencies before running tests.
@@ -54,7 +54,7 @@ If the Justfile is missing or does not contain the `e2e-setup` recipe, abort and
 > Justfile is missing or does not contain the `e2e-setup` recipe. Run `/init-justfile` to scaffold the required targets, then retry.
 
 ```bash
-ls tests/e2e/features/<slug>/
+ls tests/<journey>/
 ```
 
 **Note**: `<slug>` is the current feature name, obtained via `forge feature` command.
@@ -72,7 +72,7 @@ slug=$(forge feature 2>/dev/null | grep '^FEATURE:' | sed 's/^FEATURE:[[:space:]
 - After `/gen-test-scripts` has generated test scripts
 
 **Skip:**
-- `tests/e2e/features/<slug>/` doesn't exist (run `/gen-test-scripts` first)
+- `tests/<journey>/` doesn't exist (run `/gen-test-scripts` first)
 
 ## Workflow
 
@@ -87,7 +87,7 @@ Run `just e2e-setup` (idempotent — installs deps per language):
 ```bash
 just e2e-setup
 mkdir -p tests/e2e/results/
-mkdir -p tests/e2e/features/<slug>/results/
+mkdir -p tests/<journey>/results/
 ```
 
 Server lifecycle is embedded in `test-e2e`.
@@ -142,7 +142,7 @@ Fill in:
 
 **Screenshots**: Follow the strategy's `run.md` for screenshot discovery paths. When available, use `glob tests/e2e/results/**/*.png` to discover screenshots.
 
-Write to: `tests/e2e/features/<slug>/results/latest.md`
+Write to: `tests/<journey>/results/latest.md`
 
 **For failed UI tests with screenshots**: Use the `mcp__zai-mcp-server__analyze_image` tool to examine screenshots and add diagnostic notes.
 
@@ -165,14 +165,14 @@ Failed tests:
 - TC-NNN: {failure reason}
 - TC-NNN: {failure reason}
 
-Report: tests/e2e/features/<slug>/results/latest.md
+Report: tests/<journey>/results/latest.md
 ```
 
 If all tests pass:
 
 ```
 E2E Test Results: X/X passed
-Report: tests/e2e/features/<slug>/results/latest.md
+Report: tests/<journey>/results/latest.md
 ```
 
 ## Timeout Configuration

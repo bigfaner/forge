@@ -79,32 +79,4 @@ Task CLI manages task lifecycle within feature workflows.
 
 ## Automation Config
 
-### Auto-Behavior Configuration
-
-The `auto` block in `.forge/config.yaml` controls which automated tasks are generated during `forge task index` and post-pipeline actions. Each setting can be toggled independently per pipeline mode (quick vs full).
-
-```yaml
-auto:
-  e2eTest:
-    quick: true        # Generate T-quick-1~4 e2e test tasks in quick mode
-    full: true         # Generate T-test-1~4.5 e2e test tasks in full mode
-  consolidateSpecs:
-    quick: true        # Generate T-quick-specs-1 (spec sync + drift) in quick mode
-    full: true         # Generate T-specs-1 (spec sync + drift) in full mode
-  cleanCode:
-    quick: false       # Generate T-clean-code-1 (runs /simplify) in quick mode
-    full: false        # Generate T-clean-code-1 (runs /simplify) in full mode
-  gitPush: false       # Auto git push after all-completed hook passes
-```
-
-| Setting | Default | Effect when `true` |
-|---------|---------|-------------------|
-| `auto.e2eTest.quick` | true | Quick mode generates e2e test tasks (T-quick-1~4) |
-| `auto.e2eTest.full` | true | Full mode generates e2e test tasks (T-test-1~4.5) |
-| `auto.consolidateSpecs.quick` | true | Quick mode generates T-quick-specs-1 |
-| `auto.consolidateSpecs.full` | true | Full mode generates T-specs-1 |
-| `auto.cleanCode.quick` | false | Quick mode appends T-clean-code-1 before test tasks |
-| `auto.cleanCode.full` | false | Full mode appends T-clean-code-1 before test tasks |
-| `auto.gitPush` | false | Runs `git push` after all-completed hook passes |
-
-Defaults are backward-compatible: existing behaviors default to `true`, new behaviors (`cleanCode`, `gitPush`) default to `false` (opt-in). Projects without an `auto` block get all defaults. Pipeline mode is set at feature creation time: `mode: quick` (streamlined, no PRD/design) or `mode: full` (complete pipeline with PRD and design phases).
+The `auto` block in `.forge/config.yaml` controls automated task generation during `forge task index`. Settings: `e2eTest`, `consolidateSpecs`, `cleanCode`, `gitPush` — each with `quick`/`full` sub-keys. Defaults: `e2eTest` and `consolidateSpecs` are `true`, `cleanCode` and `gitPush` are `false`. See `quick-tasks/SKILL.md` or `breakdown-tasks/SKILL.md` for details.

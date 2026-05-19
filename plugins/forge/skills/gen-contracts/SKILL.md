@@ -37,7 +37,7 @@ Check previous stage artifacts. Abort and prompt user if missing:
 | Artifact | Missing prompt |
 |----------|----------------|
 | `docs/features/<slug>/testing/journeys/manifest.md` | Run `/gen-journeys` first |
-| At least one Journey file in `docs/features/<slug>/testing/journeys/` | Run `/gen-jneys` first |
+| At least one Journey file in `docs/features/<slug>/testing/journeys/` | Run `/gen-journeys` first |
 
 `<slug>` from `forge feature`.
 

@@ -1,6 +1,6 @@
 ---
 name: clean-code
-description: Simplify and clean up code. Optionally specify paths to scope cleanup.
+description: Simplify and clean up code. Supports scoped cleanup (git diff, files, directories) with optional quality gate.
 allowed-tools: Bash Read Edit Write Glob Grep
 ---
 

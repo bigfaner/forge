@@ -190,7 +190,7 @@ Do not proceed to commit if any pre-existing test is newly failing. Investigate 
 ## Step 6: Commit
 
 ```
-Skill(skill="git-commit")
+Skill(skill="forge:git-commit")
 ```
 
 The commit must include both the fix and the tests in a single atomic commit.
