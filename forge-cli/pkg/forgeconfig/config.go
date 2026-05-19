@@ -88,10 +88,13 @@ type WorktreeConfig struct {
 }
 
 // Config represents the .forge/config.yaml structure.
-// Only retained fields: auto and worktree. Unknown fields are silently ignored.
+// Retained fields: auto, worktree, test-framework, test-command.
+// Unknown fields (project-type, languages, interfaces) are silently ignored.
 type Config struct {
-	Auto     *AutoConfig     `yaml:"auto,omitempty"`
-	Worktree *WorktreeConfig `yaml:"worktree,omitempty"`
+	Auto          *AutoConfig     `yaml:"auto,omitempty"`
+	Worktree      *WorktreeConfig `yaml:"worktree,omitempty"`
+	TestFramework string          `yaml:"test-framework,omitempty"`
+	TestCommand   string          `yaml:"test-command,omitempty"`
 }
 
 // configPath returns the path to .forge/config.yaml.
@@ -233,6 +236,7 @@ var ErrKeyNotFound = fmt.Errorf("config key not found")
 // GetConfigValue returns the value for a given key from .forge/config.yaml.
 // For scalar values, returns the raw string; for arrays, joins with newline.
 // Supports dot-notation for nested keys (e.g. "auto.gitPush", "worktree.source-branch").
+// Also supports top-level keys: "test-framework", "test-command".
 // Returns empty string and ErrKeyNotFound if the key doesn't exist or has zero value.
 func GetConfigValue(projectRoot, key string) (string, error) {
 	// Handle dot-notation auto keys
@@ -247,6 +251,28 @@ func GetConfigValue(projectRoot, key string) (string, error) {
 	if val, ok, err := getWorktreeKeyValue(projectRoot, key); ok || err != nil {
 		if err != nil {
 			return "", err
+		}
+		return val, nil
+	}
+
+	// Handle top-level scalar keys
+	switch key {
+	case "test-framework", "test-command":
+		cfg, err := ReadConfig(projectRoot)
+		if err != nil {
+			return "", err
+		}
+		if cfg == nil {
+			return "", ErrKeyNotFound
+		}
+		var val string
+		if key == "test-framework" {
+			val = cfg.TestFramework
+		} else {
+			val = cfg.TestCommand
+		}
+		if val == "" {
+			return "", ErrKeyNotFound
 		}
 		return val, nil
 	}

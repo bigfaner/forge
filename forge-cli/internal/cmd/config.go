@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"forge-cli/pkg/feature"
-	"forge-cli/pkg/profile"
+	"forge-cli/pkg/forgeconfig"
 	"forge-cli/pkg/project"
 
 	"github.com/spf13/cobra"
@@ -21,7 +21,7 @@ import (
 var configCmd = &cobra.Command{
 	Use:   "config",
 	Short: "Manage forge configuration",
-	Long:  `Manage .forge/config.yaml for project settings like project-type, languages, and interfaces.`,
+	Long:  `Manage .forge/config.yaml for project settings like auto-behavior and worktree.`,
 }
 
 var configGetCmd = &cobra.Command{
@@ -42,7 +42,7 @@ var configInitCmd = &cobra.Command{
 	Short: "Interactively initialize .forge/config.yaml",
 	Long: `Interactively create or reconfigure .forge/config.yaml.
 
-Collects project-type, languages, and interfaces through stdin prompts.`,
+Collects auto-behavior and worktree settings through stdin prompts.`,
 	RunE: runConfigInit,
 }
 
@@ -75,7 +75,7 @@ func runConfigGet(cmd *cobra.Command, args []string) error {
 	key := args[0]
 	projectRoot := resolveProjectRoot(cmd)
 
-	value, err := profile.GetConfigValue(projectRoot, key)
+	value, err := forgeconfig.GetConfigValue(projectRoot, key)
 	if err != nil {
 		return err
 	}
@@ -102,62 +102,56 @@ func runConfigInit(cmd *cobra.Command, _ []string) error {
 		}
 	}
 
-	// Step 1: Project type
-	write(out, "\nSelect project type:\n")
-	write(out, "  1. frontend\n")
-	write(out, "  2. backend\n")
-	write(out, "  3. mixed\n")
-	write(out, "Enter number [2]: ")
+	// Collect auto-behavior settings
+	write(out, "\nAuto-behavior settings:\n")
 
-	input, _ := reader.ReadString('\n')
-	input = strings.TrimSpace(input)
-	projectType := "backend"
-	switch input {
-	case "1":
-		projectType = "frontend"
-	case "2", "":
-		projectType = "backend"
-	case "3":
-		projectType = "mixed"
+	write(out, "  Auto-run e2e tests in quick mode? [y/N] ")
+	autoE2eQuick := readBool(reader, false)
+
+	write(out, "  Auto-run e2e tests in full mode? [Y/n] ")
+	autoE2eFull := readBool(reader, true)
+
+	write(out, "  Auto-consolidate specs in quick mode? [Y/n] ")
+	autoConsolidateQuick := readBool(reader, true)
+
+	write(out, "  Auto-consolidate specs in full mode? [Y/n] ")
+	autoConsolidateFull := readBool(reader, true)
+
+	write(out, "  Auto code cleanup in quick mode? [y/N] ")
+	autoCleanQuick := readBool(reader, false)
+
+	write(out, "  Auto code cleanup in full mode? [y/N] ")
+	autoCleanFull := readBool(reader, false)
+
+	write(out, "  Auto git push after all tasks complete? [y/N] ")
+	autoGitPush := readBool(reader, false)
+
+	// Collect worktree settings
+	write(out, "\nWorktree settings (press Enter to skip):\n")
+
+	write(out, "  Source branch for worktrees [default: HEAD]: ")
+	sourceBranch, _ := reader.ReadString('\n')
+	sourceBranch = strings.TrimSpace(sourceBranch)
+
+	write(out, "  Copy files (space-separated, e.g. '.env .env.local'): ")
+	copyInput, _ := reader.ReadString('\n')
+	copyFiles := parseSpaceSeparated(copyInput)
+
+	// Build config
+	cfg := forgeconfig.Config{
+		Auto: &forgeconfig.AutoConfig{
+			E2eTest:          forgeconfig.ModeToggle{Quick: autoE2eQuick, Full: autoE2eFull},
+			ConsolidateSpecs: forgeconfig.ModeToggle{Quick: autoConsolidateQuick, Full: autoConsolidateFull},
+			CleanCode:        forgeconfig.ModeToggle{Quick: autoCleanQuick, Full: autoCleanFull},
+			GitPush:          autoGitPush,
+		},
 	}
 
-	// Step 2: Test profiles
-	write(out, "\nSelect test profiles (enter numbers, space-separated, then 'done'):\n")
-	for i, p := range profile.KnownLanguages {
-		write(out, "  %d. %s\n", i+1, p)
-	}
-	write(out, "Selections: ")
-
-	input, _ = reader.ReadString('\n')
-	selectedProfiles := parseMultiSelect(input, profile.KnownLanguages)
-
-	// Step 3: Interfaces
-	var availableIfaces []string
-	if len(selectedProfiles) > 0 {
-		union, err := profile.UnionLanguageInterfaces(selectedProfiles)
-		if err != nil {
-			return fmt.Errorf("resolve interfaces: %w", err)
+	if sourceBranch != "" || len(copyFiles) > 0 {
+		cfg.Worktree = &forgeconfig.WorktreeConfig{
+			SourceBranch: sourceBranch,
+			CopyFiles:    copyFiles,
 		}
-		availableIfaces = union
-	}
-
-	var selectedIfaces []string
-	if len(availableIfaces) > 0 {
-		write(out, "\nSelect interfaces from detected profiles:\n")
-		for i, c := range availableIfaces {
-			write(out, "  %d. %s\n", i+1, c)
-		}
-		write(out, "Selections: ")
-
-		input, _ = reader.ReadString('\n')
-		selectedIfaces = parseMultiSelect(input, availableIfaces)
-	}
-
-	// Write config
-	cfg := profile.ForgeConfig{
-		ProjectType: projectType,
-		Languages:   selectedProfiles,
-		Interfaces:  selectedIfaces,
 	}
 
 	if err := writeConfigFile(configFile, &cfg); err != nil {
@@ -166,6 +160,25 @@ func runConfigInit(cmd *cobra.Command, _ []string) error {
 
 	write(out, "\nConfig written to %s\n", configFile)
 	return nil
+}
+
+// readBool reads a y/n answer from the reader, returning the default on empty input.
+func readBool(reader *bufio.Reader, defaultVal bool) bool {
+	input, _ := reader.ReadString('\n')
+	input = strings.TrimSpace(strings.ToLower(input))
+	if input == "" {
+		return defaultVal
+	}
+	return input == "y" || input == "yes"
+}
+
+// parseSpaceSeparated splits input by whitespace, trimming and filtering empty strings.
+func parseSpaceSeparated(input string) []string {
+	input = strings.TrimSpace(input)
+	if input == "" {
+		return nil
+	}
+	return strings.Fields(input)
 }
 
 // parseMultiSelect parses space-separated numbers from user input
@@ -188,8 +201,8 @@ func parseMultiSelect(input string, options []string) []string {
 	return selected
 }
 
-// writeConfigFile writes ForgeConfig to the given path, creating parent dirs.
-func writeConfigFile(path string, cfg *profile.ForgeConfig) error {
+// writeConfigFile writes forgeconfig.Config to the given path, creating parent dirs.
+func writeConfigFile(path string, cfg *forgeconfig.Config) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("create .forge dir: %w", err)
 	}

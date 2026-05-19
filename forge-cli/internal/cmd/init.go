@@ -10,8 +10,8 @@ import (
 
 	"forge-cli/internal/embedded"
 	"forge-cli/pkg/feature"
+	"forge-cli/pkg/forgeconfig"
 	"forge-cli/pkg/just"
-	"forge-cli/pkg/profile"
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
@@ -200,90 +200,14 @@ func runConfigInitIfNeeded(projectRoot string) initAction {
 		}
 	}
 
-	// Step 1: Project type
-	projectType := "backend"
-	if err := huh.NewForm(huh.NewGroup(
-		huh.NewSelect[string]().
-			Title("What type of project is this?").
-			Description("Determines scope rules for generated tasks (frontend, backend, or both).").
-			Options(
-				huh.NewOption("Frontend (UI-focused)", "frontend"),
-				huh.NewOption("Backend (server/API)", "backend"),
-				huh.NewOption("Mixed (full-stack)", "mixed"),
-			).
-			Value(&projectType),
-	)).Run(); err != nil {
-		if errors.Is(err, huh.ErrUserAborted) {
-			return initAction{status: "CANCELLED", target: ".forge/config.yaml", detail: "Ctrl+C"}
-		}
-		return initAction{status: "FAILED", target: ".forge/config.yaml", detail: err.Error()}
-	}
-
-	// Step 2: Test profile
-	selectedProfile := ""
-	profileOpts := make([]huh.Option[string], 0, len(profile.KnownLanguages)+1)
-	profileOpts = append(profileOpts, huh.NewOption("None — skip test generation", ""))
-	for _, p := range profile.KnownLanguages {
-		profileOpts = append(profileOpts, huh.NewOption(p, p))
-	}
-	if err := huh.NewForm(huh.NewGroup(
-		huh.NewSelect[string]().
-			Title("Which test framework does this project use?").
-			Description("Select a profile matching your test tooling, or skip test task generation.").
-			Options(profileOpts...).
-			Value(&selectedProfile),
-	)).Run(); err != nil {
-		if errors.Is(err, huh.ErrUserAborted) {
-			return initAction{status: "CANCELLED", target: ".forge/config.yaml", detail: "Ctrl+C"}
-		}
-		return initAction{status: "FAILED", target: ".forge/config.yaml", detail: err.Error()}
-	}
-
-	var selectedProfiles []string
-	if selectedProfile != "" {
-		selectedProfiles = []string{selectedProfile}
-	}
-
-	// Step 3: Interfaces (only if profile selected)
-	var selectedIfaces []string
-	if len(selectedProfiles) > 0 {
-		union, err := profile.UnionLanguageInterfaces(selectedProfiles)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "WARNING: could not resolve interfaces: %v\n", err)
-		} else if len(union) > 0 {
-			selectedIfaces = make([]string, len(union))
-			copy(selectedIfaces, union)
-			ifaceOpts := make([]huh.Option[string], 0, len(union))
-			for _, c := range union {
-				ifaceOpts = append(ifaceOpts, huh.NewOption(c, c).Selected(true))
-			}
-			if err := huh.NewForm(huh.NewGroup(
-				huh.NewMultiSelect[string]().
-					Title("Which test interfaces should be enabled?").
-					Description("Controls which test task types are generated. Space to toggle, Enter to confirm.").
-					Options(ifaceOpts...).
-					Limit(0).
-					Value(&selectedIfaces),
-			)).Run(); err != nil {
-				if errors.Is(err, huh.ErrUserAborted) {
-					return initAction{status: "CANCELLED", target: ".forge/config.yaml", detail: "Ctrl+C"}
-				}
-				return initAction{status: "FAILED", target: ".forge/config.yaml", detail: err.Error()}
-			}
-		}
-	}
-
-	// Step 4: Auto-behavior config
-	auto, cancelled := askAutoBehavior(len(selectedProfiles) > 0)
+	// Auto-behavior config
+	auto, cancelled := askAutoBehavior()
 	if cancelled {
 		return initAction{status: "CANCELLED", target: ".forge/config.yaml", detail: "Ctrl+C"}
 	}
 
-	cfg := profile.ForgeConfig{
-		ProjectType: projectType,
-		Languages:   selectedProfiles,
-		Interfaces:  selectedIfaces,
-		Auto:        auto,
+	cfg := forgeconfig.Config{
+		Auto: auto,
 	}
 
 	if err := writeConfigFile(configFile, &cfg); err != nil {
@@ -309,53 +233,51 @@ func hlMode(mode string) string {
 
 // askAutoBehavior runs the auto-behavior config steps, one question per screen.
 // Returns the config and whether the user cancelled.
-func askAutoBehavior(hasProfiles bool) (*profile.AutoConfig, bool) {
-	defaults := profile.AutoConfigDefaults()
-	auto := &profile.AutoConfig{}
-
-	if hasProfiles {
-		val, ok := askConfirm(
-			fmt.Sprintf("%s: auto-run e2e tests?", hlMode("Quick")),
-			fmt.Sprintf("Automatically run end-to-end tests during %s (lightweight verification after each task).", hl("quick mode")),
-			defaults.E2eTest.Quick,
-		)
-		if !ok {
-			return nil, true
-		}
-		auto.E2eTest.Quick = val
-
-		val, ok = askConfirm(
-			fmt.Sprintf("%s: auto-run e2e tests?", hlMode("Full")),
-			fmt.Sprintf("Automatically run end-to-end tests during %s (comprehensive coverage).", hl("full mode")),
-			defaults.E2eTest.Full,
-		)
-		if !ok {
-			return nil, true
-		}
-		auto.E2eTest.Full = val
-
-		val, ok = askConfirm(
-			fmt.Sprintf("%s: auto-consolidate specs?", hlMode("Quick")),
-			fmt.Sprintf("Automatically extract and consolidate specs from code after %s tasks.", hl("quick-mode")),
-			defaults.ConsolidateSpecs.Quick,
-		)
-		if !ok {
-			return nil, true
-		}
-		auto.ConsolidateSpecs.Quick = val
-
-		val, ok = askConfirm(
-			fmt.Sprintf("%s: auto-consolidate specs?", hlMode("Full")),
-			fmt.Sprintf("Automatically extract and consolidate specs from code after %s tasks.", hl("full-mode")),
-			defaults.ConsolidateSpecs.Full,
-		)
-		if !ok {
-			return nil, true
-		}
-		auto.ConsolidateSpecs.Full = val
-	}
+func askAutoBehavior() (*forgeconfig.AutoConfig, bool) {
+	defaults := forgeconfig.AutoConfigDefaults()
+	auto := &forgeconfig.AutoConfig{}
 
 	val, ok := askConfirm(
+		fmt.Sprintf("%s: auto-run e2e tests?", hlMode("Quick")),
+		fmt.Sprintf("Automatically run end-to-end tests during %s (lightweight verification after each task).", hl("quick mode")),
+		defaults.E2eTest.Quick,
+	)
+	if !ok {
+		return nil, true
+	}
+	auto.E2eTest.Quick = val
+
+	val, ok = askConfirm(
+		fmt.Sprintf("%s: auto-run e2e tests?", hlMode("Full")),
+		fmt.Sprintf("Automatically run end-to-end tests during %s (comprehensive coverage).", hl("full mode")),
+		defaults.E2eTest.Full,
+	)
+	if !ok {
+		return nil, true
+	}
+	auto.E2eTest.Full = val
+
+	val, ok = askConfirm(
+		fmt.Sprintf("%s: auto-consolidate specs?", hlMode("Quick")),
+		fmt.Sprintf("Automatically extract and consolidate specs from code after %s tasks.", hl("quick-mode")),
+		defaults.ConsolidateSpecs.Quick,
+	)
+	if !ok {
+		return nil, true
+	}
+	auto.ConsolidateSpecs.Quick = val
+
+	val, ok = askConfirm(
+		fmt.Sprintf("%s: auto-consolidate specs?", hlMode("Full")),
+		fmt.Sprintf("Automatically extract and consolidate specs from code after %s tasks.", hl("full-mode")),
+		defaults.ConsolidateSpecs.Full,
+	)
+	if !ok {
+		return nil, true
+	}
+	auto.ConsolidateSpecs.Full = val
+
+	val, ok = askConfirm(
 		fmt.Sprintf("%s: auto code cleanup?", hlMode("Quick")),
 		fmt.Sprintf("Automatically simplify and clean code during %s.", hl("quick mode")),
 		defaults.CleanCode.Quick,

@@ -8,8 +8,8 @@ import (
 	"text/tabwriter"
 
 	"forge-cli/pkg/feature"
+	"forge-cli/pkg/forgeconfig"
 	"forge-cli/pkg/git"
-	"forge-cli/pkg/profile"
 	"forge-cli/pkg/project"
 
 	"github.com/spf13/cobra"
@@ -252,7 +252,7 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 	}
 
 	// Load config for source-branch and copy-files
-	cfg, _ := profile.ReadConfig(projectRoot)
+	cfg, _ := forgeconfig.ReadConfig(projectRoot)
 
 	// Pre-validate copy-files BEFORE git worktree add (to avoid orphan worktrees)
 	var copyFiles []string

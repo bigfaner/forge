@@ -10,8 +10,8 @@ import (
 
 	"forge-cli/internal/embedded"
 	"forge-cli/pkg/feature"
+	"forge-cli/pkg/forgeconfig"
 	"forge-cli/pkg/just"
-	"forge-cli/pkg/profile"
 )
 
 // setupInitTest creates a temp directory with optional pre-existing files.
@@ -54,11 +54,10 @@ func testConfigInit(projectRoot string) initAction {
 	configFile := filepath.Join(projectRoot, feature.ForgeDir, feature.ForgeConfigFileName)
 
 	// Write a sensible default config for testing
-	cfg := profile.ForgeConfig{
-		ProjectType: "backend",
-		Languages:   []string{"go"},
-		Interfaces:  []string{"tui", "api", "cli"},
-		Auto:        autoConfigDefaults(),
+	auto := autoConfigDefaults()
+	auto.GitPush = true // Explicitly set to true to differentiate from empty/zero configs
+	cfg := forgeconfig.Config{
+		Auto: auto,
 	}
 
 	if err := writeConfigFile(configFile, &cfg); err != nil {
@@ -75,8 +74,8 @@ func testConfigInit(projectRoot string) initAction {
 }
 
 // autoConfigDefaults returns a default AutoConfig for tests.
-func autoConfigDefaults() *profile.AutoConfig {
-	d := profile.AutoConfigDefaults()
+func autoConfigDefaults() *forgeconfig.AutoConfig {
+	d := forgeconfig.AutoConfigDefaults()
 	return &d
 }
 
@@ -239,8 +238,8 @@ func TestInitCommand(t *testing.T) {
 			t.Fatalf("config.yaml not created: %v", err)
 		}
 
-		if !strings.Contains(string(data), "project-type: backend") {
-			t.Errorf("expected 'project-type: backend' in config, got %q", string(data))
+		if !strings.Contains(string(data), "auto:") {
+			t.Errorf("expected 'auto:' in config, got %q", string(data))
 		}
 	})
 
@@ -250,7 +249,7 @@ func TestInitCommand(t *testing.T) {
 		if err := os.MkdirAll(forgeDir, 0o755); err != nil {
 			t.Fatal(err)
 		}
-		existingConfig := "project-type: frontend\n"
+		existingConfig := "auto:\n  gitPush: false\n"
 		if err := os.WriteFile(env.path(feature.ForgeDir, feature.ForgeConfigFileName), []byte(existingConfig), 0o644); err != nil {
 			t.Fatal(err)
 		}
@@ -261,11 +260,11 @@ func TestInitCommand(t *testing.T) {
 		}
 
 		data, _ := os.ReadFile(env.path(feature.ForgeDir, feature.ForgeConfigFileName))
-		if strings.Contains(string(data), "frontend") {
+		if strings.Contains(string(data), "gitPush: false") {
 			t.Error("existing config should have been overwritten")
 		}
-		if !strings.Contains(string(data), "backend") {
-			t.Error("expected reconfigured config to contain backend")
+		if !strings.Contains(string(data), "auto:") {
+			t.Error("expected reconfigured config to contain auto")
 		}
 	})
 

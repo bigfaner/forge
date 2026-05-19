@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"forge-cli/pkg/feature"
-	"forge-cli/pkg/profile"
+	"forge-cli/pkg/forgeconfig"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/task"
 
@@ -256,7 +256,7 @@ func gitPush(projectRoot string) error {
 
 // isGitPushEnabled reads auto.gitPush from .forge/config.yaml.
 func isGitPushEnabled(projectRoot string) (bool, error) {
-	auto, err := profile.ReadAutoConfig(projectRoot)
+	auto, err := forgeconfig.ReadAutoConfig(projectRoot)
 	if err != nil {
 		return false, err
 	}

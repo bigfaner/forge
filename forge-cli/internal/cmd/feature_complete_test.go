@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"forge-cli/pkg/feature"
-	"forge-cli/pkg/profile"
+	"forge-cli/pkg/forgeconfig"
 	"forge-cli/pkg/task"
 )
 
@@ -582,5 +582,5 @@ func TestUpdateFileStatus_NoFrontmatter(t *testing.T) {
 	}
 }
 
-// Verify the profile import is used (prevents compile errors).
-var _ = profile.ReadAutoConfig
+// Verify the forgeconfig import is used (prevents compile errors).
+var _ = forgeconfig.ReadAutoConfig
