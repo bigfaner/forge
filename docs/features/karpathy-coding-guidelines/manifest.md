@@ -1,6 +1,6 @@
 ---
 feature: "karpathy-coding-guidelines"
-status: tasks
+status: completed
 mode: quick
 ---
 
