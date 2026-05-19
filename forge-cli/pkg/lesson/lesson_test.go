@@ -213,6 +213,69 @@ func TestDiscover_OldestSortsLast(t *testing.T) {
 	assert.Equal(t, "lesson-old", lessons[1].Name, "oldest lesson should come last")
 }
 
+func TestDiscover_CreatedField(t *testing.T) {
+	dir := t.TempDir()
+	lessonsDir := filepath.Join(dir, LessonsDir)
+	require.NoError(t, os.MkdirAll(lessonsDir, 0755))
+
+	content := `---
+created: 2026-05-10
+tags:
+  - testing
+title: "Created field lesson"
+---
+`
+	require.NoError(t, os.WriteFile(filepath.Join(lessonsDir, "lesson-created.md"), []byte(content), 0644))
+
+	lessons, err := Discover(dir)
+	assert.NoError(t, err)
+	require.Len(t, lessons, 1)
+
+	l := lessons[0]
+	assert.Equal(t, "2026-05-10", l.Created)
+	assert.Equal(t, "Created field lesson", l.Title)
+}
+
+func TestDiscover_CreatedTakesPriorityOverDate(t *testing.T) {
+	dir := t.TempDir()
+	lessonsDir := filepath.Join(dir, LessonsDir)
+	require.NoError(t, os.MkdirAll(lessonsDir, 0755))
+
+	content := `---
+created: 2026-04-15
+date: 2026-01-01
+title: "Both fields"
+---
+`
+	require.NoError(t, os.WriteFile(filepath.Join(lessonsDir, "lesson-both.md"), []byte(content), 0644))
+
+	lessons, err := Discover(dir)
+	assert.NoError(t, err)
+	require.Len(t, lessons, 1)
+
+	// created should win over date
+	assert.Equal(t, "2026-04-15", lessons[0].Created)
+}
+
+func TestDiscover_DateFieldStillWorks(t *testing.T) {
+	dir := t.TempDir()
+	lessonsDir := filepath.Join(dir, LessonsDir)
+	require.NoError(t, os.MkdirAll(lessonsDir, 0755))
+
+	content := `---
+date: 2026-03-20
+title: "Date field only"
+---
+`
+	require.NoError(t, os.WriteFile(filepath.Join(lessonsDir, "lesson-date.md"), []byte(content), 0644))
+
+	lessons, err := Discover(dir)
+	assert.NoError(t, err)
+	require.Len(t, lessons, 1)
+
+	assert.Equal(t, "2026-03-20", lessons[0].Created)
+}
+
 func TestInferCategory(t *testing.T) {
 	tests := []struct {
 		name     string

@@ -17,6 +17,7 @@ const LessonsDir = "docs/lessons"
 
 // Metadata holds the parsed frontmatter fields from a lesson .md file.
 type Metadata struct {
+	Created  string   `yaml:"created"`
 	Date     string   `yaml:"date"`
 	Tags     []string `yaml:"tags"`
 	Title    string   `yaml:"title"`
@@ -84,7 +85,10 @@ func Discover(projectRoot string) ([]Lesson, error) {
 		}
 
 		name := strings.TrimSuffix(entry.Name(), ".md")
-		created := meta.Date
+		created := meta.Created
+		if created == "" {
+			created = meta.Date
+		}
 		if created == "" {
 			created = info.ModTime().Format("2006-01-02")
 		}

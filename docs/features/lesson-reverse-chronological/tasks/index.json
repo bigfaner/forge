@@ -19,7 +19,7 @@
       "title": "Fix Go parser to support created frontmatter field",
       "priority": "P2",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "2-fix-created-field.md",
       "record": "records/2-fix-created-field.md",
       "scope": "backend",
