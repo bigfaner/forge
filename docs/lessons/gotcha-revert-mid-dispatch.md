@@ -1,4 +1,4 @@
-# Reverting Code Mid-Dispatch Breaks Task Dependency Chain
+# Debugging with git checkout Leaves HEAD on Wrong Branch
 
 **Date:** 2026-05-20
 **Feature:** test-knowledge-convention-driven
@@ -6,20 +6,23 @@
 
 ## Symptom
 
-Task dispatcher loops on blocked tasks after partial completion. Tasks that previously completed successfully show as pending, and their acceptance criteria can't be met because the code was reverted.
+After an active `/run-tasks` dispatch, the working tree shows pre-refactoring code. Tasks that previously completed appear pending with no records. Subsequent dispatches fail because prerequisites are missing.
 
 ## Root Cause
 
-During an active `/run-tasks` dispatch, reverting source files to a pre-refactoring state creates a mismatch between task definitions (which describe the refactoring) and the codebase state. The dispatcher re-claims tasks that appear pending (because index.json was also reverted), but the subagent finds the prerequisites missing.
+1. **Immediate cause**: HEAD was on `v3.0.0` instead of `test-knowledge-convention-driven`, so all subsequent commits (including subagent block-task commits) landed on the wrong branch.
+2. **Contributing factor**: During e2e debugging, ran `git checkout v3.0.0 -- .` to test clean-state e2e, then `git checkout test-knowledge-convention-driven -- .` to restore working directory — but this only restores files, not the branch itself.
+3. **Root mistake**: `git checkout <branch> -- .` restores working tree files from a branch without switching HEAD to that branch. The correct command is `git checkout <branch>` (without `-- .`).
 
 ## Fix
 
-Avoid reverting code during active dispatch loops. If a revert is necessary:
-1. Stop the dispatcher first
-2. Revert the code
-3. Re-index tasks to match the new code state (`forge task index`)
-4. Resume dispatching
+When debugging by temporarily checking out other branches:
+1. Use `git checkout <branch>` (full switch) instead of `git checkout <branch> -- .` (file-only)
+2. After debugging, switch back with `git checkout <original-branch>`
+3. Verify with `git branch --show-current` before resuming dispatch
+
+Recovery: `git stash` → `git checkout <correct-branch>` → `git stash pop` → `forge task index --feature <slug>` → resume `/run-tasks`.
 
 ## How to Apply
 
-When `/run-tasks` hits 3 consecutive failures after a revert, check `git log` for recent reverts before assuming a code bug. The fix is administrative (re-sync tasks), not technical.
+If `/run-tasks` shows unexpected task state after debugging, run `git branch --show-current` first. If on wrong branch, switch and re-index. The `gotcha-revert-mid-dispatch` pattern (stop → revert → re-index → resume) applies, but the actual trigger is branch confusion, not intentional revert.
