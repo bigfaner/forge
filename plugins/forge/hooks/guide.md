@@ -33,7 +33,7 @@ docs/
 
 `manifest.md` is the single entry point for a Feature. An AI agent reads this file to understand the full context:
 - **Documents** table: lists all document paths and auto-generated summaries
-- **Traceability** table: PRD → Design → Tasks mapping
+- **Tasks** table: task ID, title, status, and file path for each task
 - **Status** (feature-level): prd → design → tasks → in-progress → completed
   - Not to be confused with task-level statuses in index.json: pending, in_progress, completed, blocked, skipped, rejected
 
@@ -75,7 +75,7 @@ Task CLI manages task lifecycle within feature workflows.
 
 **Typical flow**: Before starting work, run `forge feature` → `forge task claim` to get a task → `forge task submit` to save results + update task status.
 
-> For record workflow details, see the `/submit-task` skill. For full command reference, run `forge -h` or `forge [command] -h`.
+> For record workflow details, see `plugins/forge/skills/submit-task/SKILL.md`. For full command reference, run `forge -h` or `forge [command] -h`.
 
 ## Automation Config
 
@@ -107,4 +107,4 @@ auto:
 | `auto.cleanCode.full` | false | Full mode appends T-clean-code-1 before test tasks |
 | `auto.gitPush` | false | Runs `git push` after all-completed hook passes |
 
-Defaults are backward-compatible: existing behaviors default to `true`, new behaviors (`cleanCode`, `gitPush`) default to `false` (opt-in). Projects without an `auto` block get all defaults.
+Defaults are backward-compatible: existing behaviors default to `true`, new behaviors (`cleanCode`, `gitPush`) default to `false` (opt-in). Projects without an `auto` block get all defaults. Pipeline mode is set at feature creation time: `mode: quick` (streamlined, no PRD/design) or `mode: full` (complete pipeline with PRD and design phases).
