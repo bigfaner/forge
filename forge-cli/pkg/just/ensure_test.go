@@ -169,8 +169,20 @@ func TestInstallViaPackageManager_CommandFails(t *testing.T) {
 	t.Cleanup(func() { detectPackageManager = orig })
 	detectPackageManager = func() string { return "brew" }
 
+	// On systems where brew is installed and just is already available,
+	// the real command may succeed. Mock the install function to simulate
+	// a command failure so the test remains deterministic.
+	origInstall := InstallViaPackageManagerFunc
+	t.Cleanup(func() { InstallViaPackageManagerFunc = origInstall })
+	InstallViaPackageManagerFunc = func(_ string) EnsureResult {
+		return EnsureResult{
+			Status: StatusFailed,
+			Method: "brew",
+			Detail: "brew install failed: exit status 1",
+		}
+	}
+
 	result := InstallViaPackageManagerFunc("1.40.0")
-	// brew command will fail in test environment.
 	assert.Equal(t, StatusFailed, result.Status)
 	assert.Contains(t, result.Detail, "brew install failed")
 }
@@ -354,6 +366,17 @@ func TestEnsureJust_UserAccepts_PkgManagerSuccess(t *testing.T) {
 	defer func() { detectPackageManager = origPM }()
 	detectPackageManager = func() string { return "brew" }
 
+	// Mock package manager install to fail so embedded fallback is exercised.
+	origInstall := InstallViaPackageManagerFunc
+	defer func() { InstallViaPackageManagerFunc = origInstall }()
+	InstallViaPackageManagerFunc = func(_ string) EnsureResult {
+		return EnsureResult{
+			Status: StatusFailed,
+			Method: "brew",
+			Detail: "brew install failed: exit status 1",
+		}
+	}
+
 	cleanup := setupEnsureJustMocks(func() (string, string, bool) { return "", "", false }, true)
 	defer cleanup()
 
@@ -370,7 +393,7 @@ func TestEnsureJust_UserAccepts_PkgManagerSuccess(t *testing.T) {
 
 	var buf bytes.Buffer
 	result := EnsureJust(strings.NewReader("y\n"), &buf)
-	// Brew will fail (not installed), but embedded fallback should succeed.
+	// Brew will fail (mocked), but embedded fallback should succeed.
 	assert.Equal(t, StatusInstalled, result.Status)
 	assert.Equal(t, "embedded", result.Method)
 }

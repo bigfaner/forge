@@ -2444,8 +2444,9 @@ func TestWorktreeResume_LaunchesClaudeInExistingWorktree(t *testing.T) {
 
 	// Verify claude was launched in the worktree directory
 	absTarget, _ := filepath.Abs(targetDir)
-	if capturedWd != absTarget {
-		t.Errorf("claude should have been launched in %s, got %s", absTarget, capturedWd)
+	resolvedTarget, _ := filepath.EvalSymlinks(absTarget)
+	if capturedWd != resolvedTarget {
+		t.Errorf("claude should have been launched in %s, got %s", resolvedTarget, capturedWd)
 	}
 }
 

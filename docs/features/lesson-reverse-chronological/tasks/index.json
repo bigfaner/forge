@@ -1,0 +1,66 @@
+{
+  "feature": "lesson-reverse-chronological",
+  "proposal": "docs/proposals/lesson-reverse-chronological/proposal.md",
+  "created": "2026-05-19",
+  "tasks": {
+    "1-sort-reverse-chronological": {
+      "id": "1",
+      "title": "Sort lesson list by file modification time in reverse chronological order",
+      "priority": "P2",
+      "estimatedTime": "30m",
+      "status": "completed",
+      "file": "1-sort-reverse-chronological.md",
+      "record": "records/1-sort-reverse-chronological.md",
+      "scope": "backend",
+      "type": "enhancement"
+    },
+    "2-fix-created-field": {
+      "id": "2",
+      "title": "Fix Go parser to support created frontmatter field",
+      "priority": "P2",
+      "estimatedTime": "30m",
+      "status": "completed",
+      "file": "2-fix-created-field.md",
+      "record": "records/2-fix-created-field.md",
+      "scope": "backend",
+      "type": "enhancement"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "fix unit-test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "quality-gate:unit-test",
+      "type": "fix"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-specs-1",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "scope": "all",
+      "noTest": true,
+      "type": "doc-generation.drift"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
