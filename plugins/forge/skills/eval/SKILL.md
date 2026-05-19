@@ -137,7 +137,7 @@ Multi-platform: run independent score→gate→revise loops per platform.
 
 ## Expert Dispatch Table
 
-Expert files are located at `${CLAUDE_SKILL_DIR}/../../agents/experts/scorer/`.
+Expert files are located at `experts/scorer/`.
 
 | type | scorer experts |
 |------|---------------|
@@ -163,11 +163,11 @@ You are a senior reviewer evaluating the document at {{DOC_DIR}} against the rub
 
 Resolve the eval type to its scorer expert(s) from the dispatch table above.
 
-Read the scorer protocol at `${CLAUDE_SKILL_DIR}/../../agents/experts/protocol/scorer-protocol.md`.
+Read the scorer protocol at `experts/protocol/scorer-protocol.md`.
 
 For each expert, compose a scorer prompt by concatenating:
 1. Scorer protocol content (with template variables replaced: `{{DOC_DIR}}`, `{{RUBRIC_PATH}}`, `{{REPORT_PATH}}`, `{{ITERATION}}`, `{{PREVIOUS_REPORT_PATH}}`)
-2. Expert file content (e.g., `${CLAUDE_SKILL_DIR}/../../agents/experts/scorer/pm.md`)
+2. Expert file content (e.g., `experts/scorer/pm.md`)
 3. Context injection (if `CONTEXT_CONTENT` was loaded in Step 1.4 — see below)
 
 **Context Injection**: If `CONTEXT_CONTENT` was loaded in Step 1.4, append the following section after the expert content in every composed prompt:
@@ -258,7 +258,7 @@ If proceeding to Step 4, report: `Iteration {{N}}/{{MAX}}: scored {{SCORE}}/{{SC
 
 ### 4.1 Compose Reviser Prompt
 
-Read the reviser protocol at `${CLAUDE_SKILL_DIR}/../../agents/experts/protocol/reviser-protocol.md`.
+Read the reviser protocol at `experts/protocol/reviser-protocol.md`.
 
 Compose the reviser prompt by concatenating:
 1. Reviser protocol content (with template variables replaced: `{{DOC_DIR}}`, `{{EVAL_REPORT_PATH}}`)
