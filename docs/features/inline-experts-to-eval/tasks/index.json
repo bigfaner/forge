@@ -34,7 +34,7 @@
       "dependencies": [
         "2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3-fix-eval-mechanism.md",
       "record": "records/3-fix-eval-mechanism.md",
       "type": "documentation"
