@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"forge-cli/pkg/feature"
+	"forge-cli/pkg/forgeconfig"
 	"forge-cli/pkg/profile"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/task"
@@ -66,41 +67,15 @@ func runIndex(_ *cobra.Command, _ []string) {
 		languages = langs
 	}
 
-	// Resolve interfaces: config.yaml > UnionLanguageInterfaces(languages)
-	var interfaces []string
-	cfg, _ := profile.ReadConfig(projectRoot)
-	if cfg != nil && len(cfg.Interfaces) > 0 {
-		interfaces = cfg.Interfaces
-	}
-	if len(interfaces) == 0 && len(languages) > 0 {
-		ifaces, err := profile.UnionLanguageInterfaces(languages)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "WARNING: failed to resolve interfaces: %v\n", err)
-		}
-		interfaces = ifaces
-	}
-
-	// Build strategy resolver
-	resolveStrategy := func(language, kind string) []byte {
-		content, err := profile.GetStrategy(language, kind)
-		if err != nil {
-			return nil
-		}
-		return content
-	}
-
 	opts := task.BuildIndexOpts{
-		FeatureSlug:     indexFeatureSlug,
-		ProjectRoot:     projectRoot,
-		TasksDir:        tasksDir,
-		IndexPath:       indexPath,
-		Languages:       languages,
-		TestInterfaces:  interfaces,
-		ResolveStrategy: resolveStrategy,
+		FeatureSlug: indexFeatureSlug,
+		ProjectRoot: projectRoot,
+		TasksDir:    tasksDir,
+		IndexPath:   indexPath,
 	}
 
 	// Read auto-behavior config (returns defaults when missing)
-	auto, err := profile.ReadAutoConfig(projectRoot)
+	auto, err := forgeconfig.ReadAutoConfig(projectRoot)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "WARNING: failed to read auto config: %v\n", err)
 	}

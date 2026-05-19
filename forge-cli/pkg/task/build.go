@@ -8,23 +8,16 @@ import (
 	"path/filepath"
 	"strings"
 
-	"forge-cli/pkg/profile"
+	"forge-cli/pkg/forgeconfig"
 )
-
-// StrategyResolver returns strategy content for a profile+kind pair.
-// Returns nil if not found (BuildIndex will use fallback body).
-type StrategyResolver func(profileName, kind string) []byte
 
 // BuildIndexOpts holds options for building the task index.
 type BuildIndexOpts struct {
-	FeatureSlug     string
-	ProjectRoot     string
-	TasksDir        string   // absolute path to tasks/
-	IndexPath       string   // absolute path to index.json
-	Languages       []string // flag > config.yaml > auto-detect
-	TestInterfaces  []string // config.yaml interfaces > UnionLanguageInterfaces(profiles) > none
-	ResolveStrategy StrategyResolver
-	AutoConfig      profile.AutoConfig // auto-behavior config (defaults filled by caller)
+	FeatureSlug string
+	ProjectRoot string
+	TasksDir    string                 // absolute path to tasks/
+	IndexPath   string                 // absolute path to index.json
+	AutoConfig  forgeconfig.AutoConfig // auto-behavior config (defaults filled by caller)
 }
 
 // BuildIndexResult holds the result of a BuildIndex operation.
@@ -55,14 +48,14 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 		index = NewTaskIndex(opts.FeatureSlug)
 	}
 
-	// 2. Detect mode
-	mode := detectMode(opts.ProjectRoot, opts.FeatureSlug)
+	// 2. Detect mode (reserved for caller use via GenerateTestTasks)
+	_ = detectMode(opts.ProjectRoot, opts.FeatureSlug)
 
 	// 3. Set feature metadata
 	setFeatureMetadata(index, opts.ProjectRoot, opts.FeatureSlug)
 
-	// 4. Use profiles from opts (caller resolves from config/flags)
-	profiles := opts.Languages
+	// 4. Profiles and interfaces resolved by caller (task 1.4)
+	// BuildIndex no longer holds Languages/TestInterfaces; caller injects them into generateTestTasks.
 
 	// 5. Scan .md files
 	existingKeys := make(map[string]bool) // track which keys come from .md files
@@ -272,49 +265,6 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 			index.SetTask(evalKey, task)
 			result.NewCount++
 		}
-	} else if needsTest && len(profiles) > 0 && len(opts.TestInterfaces) > 0 && mode != "" {
-		testTasks := generateTestTasks(mode, profiles, opts.TestInterfaces, opts.AutoConfig)
-		if len(testTasks) > 0 {
-			ResolveFirstTestDep(testTasks, index.TasksMap(), mode)
-		}
-
-		for i, td := range testTasks {
-			key := td.Key
-			existingKeys[key] = true
-
-			// Resolve strategy content for per-profile tasks
-			if td.Language != "" && td.StrategyKind != "" && opts.ResolveStrategy != nil {
-				testTasks[i].StrategyContent = opts.ResolveStrategy(string(td.Language), td.StrategyKind)
-			}
-
-			// Generate .md if missing
-			mdPath := filepath.Join(opts.TasksDir, key+".md")
-			if _, err := os.Stat(mdPath); os.IsNotExist(err) {
-				content, err := GenerateTestTaskMD(testTasks[i], opts.FeatureSlug)
-				if err != nil {
-					result.Warnings = append(result.Warnings, fmt.Sprintf("generate %s: %v", key, err))
-					continue
-				}
-				if err := os.WriteFile(mdPath, content, 0644); err != nil {
-					result.Warnings = append(result.Warnings, fmt.Sprintf("write %s: %v", key, err))
-					continue
-				}
-			}
-
-			task := td.TaskFromFile()
-
-			// Merge with existing (preserve runtime state)
-			if existing, found := index.ByID(td.ID); found {
-				task.Status = existing.Status
-				task.SourceTaskID = existing.SourceTaskID
-				task.BlockedReason = existing.BlockedReason
-				index.SetTask(key, task)
-				result.UpdatedCount++
-			} else {
-				index.SetTask(key, task)
-				result.NewCount++
-			}
-		}
 	}
 
 	// 8. Normalize task files (remove empty ## Hard Rules sections)
@@ -371,12 +321,9 @@ func setFeatureMetadata(index *TaskIndex, projectRoot, slug string) {
 	}
 }
 
-// generateTestTasks returns test task definitions for the given mode and languages.
-func generateTestTasks(mode string, profiles []string, capabilities []string, auto profile.AutoConfig) []TestTaskDef {
-	languages := make([]profile.Language, len(profiles))
-	for i, p := range profiles {
-		languages[i] = profile.Language(p)
-	}
+// GenerateTestTasks returns test task definitions for the given mode and languages.
+// Exported for use by caller (task 1.4).
+func GenerateTestTasks(mode string, languages []string, capabilities []string, auto forgeconfig.AutoConfig) []TestTaskDef {
 	switch mode {
 	case "breakdown":
 		return GetBreakdownTestTasks(languages, capabilities, auto)

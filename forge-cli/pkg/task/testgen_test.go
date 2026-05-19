@@ -4,21 +4,21 @@ import (
 	"strings"
 	"testing"
 
-	"forge-cli/pkg/profile"
+	"forge-cli/pkg/forgeconfig"
 )
 
 // defaultAuto is the current default (consolidateSpecs quick=true, e2eTest quick=false).
-var defaultAuto = profile.AutoConfigDefaults()
+var defaultAuto = forgeconfig.AutoConfigDefaults()
 
 // allEnabledAuto enables all auto-behaviors for tests that need quick + full tasks.
-var allEnabledAuto = profile.AutoConfig{
-	E2eTest:          profile.ModeToggle{Quick: true, Full: true},
-	ConsolidateSpecs: profile.ModeToggle{Quick: true, Full: true},
-	CleanCode:        profile.ModeToggle{Quick: false, Full: false},
+var allEnabledAuto = forgeconfig.AutoConfig{
+	E2eTest:          forgeconfig.ModeToggle{Quick: true, Full: true},
+	ConsolidateSpecs: forgeconfig.ModeToggle{Quick: true, Full: true},
+	CleanCode:        forgeconfig.ModeToggle{Quick: false, Full: false},
 }
 
 func TestGetBreakdownTestTasks_EmptyInterfaces(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]profile.Language{"go"}, nil, defaultAuto)
+	tasks := GetBreakdownTestTasks([]string{"go"}, nil, defaultAuto)
 
 	// No capabilities -> no test tasks generated
 	if len(tasks) != 0 {
@@ -27,7 +27,7 @@ func TestGetBreakdownTestTasks_EmptyInterfaces(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_SingleProfile(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]profile.Language{"go"}, []string{"cli"}, defaultAuto)
+	tasks := GetBreakdownTestTasks([]string{"go"}, []string{"cli"}, defaultAuto)
 
 	// Shared: gen-cases, eval-cases + per-type: gen-scripts-cli, run, graduate + shared: verify-regression, consolidate = 7
 	if len(tasks) != 7 {
@@ -61,15 +61,10 @@ func TestGetBreakdownTestTasks_SingleProfile(t *testing.T) {
 	if tasks[6].Dependencies[0] != "T-test-verify-regression" {
 		t.Errorf("consolidate should depend on verify-regression, got %v", tasks[6].Dependencies)
 	}
-
-	// Per-language tasks have Language
-	if tasks[2].Language != "go" {
-		t.Errorf("gen-scripts Language = %q, want go", tasks[2].Language)
-	}
 }
 
 func TestGetBreakdownTestTasks_MultiProfile(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]profile.Language{"javascript", "go"}, []string{"api"}, defaultAuto)
+	tasks := GetBreakdownTestTasks([]string{"javascript", "go"}, []string{"api"}, defaultAuto)
 
 	// 2 shared + (1 per-type-gen + run + graduate)*2 + 2 shared = 10
 	if len(tasks) != 10 {
@@ -96,7 +91,7 @@ func TestGetBreakdownTestTasks_MultiProfile(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_EmptyInterfaces(t *testing.T) {
-	tasks := GetQuickTestTasks([]profile.Language{"go"}, nil, allEnabledAuto)
+	tasks := GetQuickTestTasks([]string{"go"}, nil, allEnabledAuto)
 
 	// No capabilities -> no test tasks
 	if len(tasks) != 0 {
@@ -105,7 +100,7 @@ func TestGetQuickTestTasks_EmptyInterfaces(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_SingleProfile(t *testing.T) {
-	tasks := GetQuickTestTasks([]profile.Language{"go"}, []string{"cli"}, allEnabledAuto)
+	tasks := GetQuickTestTasks([]string{"go"}, []string{"cli"}, allEnabledAuto)
 
 	// gen-cases + gen-and-run-cli + graduate + verify-regression + drift = 5
 	if len(tasks) != 5 {
@@ -151,7 +146,7 @@ func TestGetQuickTestTasks_SingleProfile(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_MultiProfile(t *testing.T) {
-	tasks := GetQuickTestTasks([]profile.Language{"javascript", "go"}, []string{"api"}, allEnabledAuto)
+	tasks := GetQuickTestTasks([]string{"javascript", "go"}, []string{"api"}, allEnabledAuto)
 
 	// Profile-a: gen-cases + gen-and-run-api + graduate = 3
 	// Profile-b: same = 3
@@ -189,7 +184,7 @@ func TestGenerateTestTaskMD(t *testing.T) {
 		Title: "Generate Test Scripts (go, api)", Priority: "P1",
 		EstimatedTime: "1-2h", Dependencies: []string{"T-test-eval-cases"},
 		Type: TypeTestGenScripts, Scope: "all",
-		Language: "go", TestType: "api", StrategyKind: "generate",
+		TestType: "api", StrategyKind: "generate",
 	}
 
 	content, err := GenerateTestTaskMD(def, "my-feature")
@@ -210,9 +205,9 @@ func TestGenerateTestTaskMD(t *testing.T) {
 		t.Error("missing dependency in frontmatter")
 	}
 
-	// Check profile strategy content loaded
-	if !strings.Contains(s, "go") {
-		t.Error("missing profile name in body")
+	// Body references conventions (no longer embeds profile strategy)
+	if !strings.Contains(s, "docs/conventions/testing-") {
+		t.Error("body should reference docs/conventions/testing-*")
 	}
 }
 
@@ -242,7 +237,7 @@ func TestResolveFirstTestDep(t *testing.T) {
 			"2-gate":  {ID: "2.gate"},
 			"1.1-foo": {ID: "1.1"},
 		}
-		tasks := GetBreakdownTestTasks([]profile.Language{"go"}, []string{"cli"}, defaultAuto)
+		tasks := GetBreakdownTestTasks([]string{"go"}, []string{"cli"}, defaultAuto)
 		ResolveFirstTestDep(tasks, existing, "breakdown")
 		if tasks[0].Dependencies[0] != "2.gate" {
 			t.Errorf("T-test-gen-cases should depend on highest gate, got %v", tasks[0].Dependencies)
@@ -255,7 +250,7 @@ func TestResolveFirstTestDep(t *testing.T) {
 			"2-bar": {ID: "2"},
 			"3-baz": {ID: "3"},
 		}
-		tasks := GetQuickTestTasks([]profile.Language{"go"}, []string{"cli"}, allEnabledAuto)
+		tasks := GetQuickTestTasks([]string{"go"}, []string{"cli"}, allEnabledAuto)
 		ResolveFirstTestDep(tasks, existing, "quick")
 		if tasks[0].Dependencies[0] != "3" {
 			t.Errorf("T-quick-gen-cases should depend on max business task, got %v", tasks[0].Dependencies)
@@ -317,7 +312,7 @@ func TestResolveDocEvalDep(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_PerType_SingleProfile(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]profile.Language{"go"}, []string{"tui", "api"}, defaultAuto)
+	tasks := GetBreakdownTestTasks([]string{"go"}, []string{"tui", "api"}, defaultAuto)
 
 	// Shared: gen-cases, eval-cases + per-type-gen: 2 (tui, api) + run + graduate + verify-regression + consolidate = 8
 	if len(tasks) != 8 {
@@ -380,7 +375,7 @@ func TestGetBreakdownTestTasks_PerType_SingleProfile(t *testing.T) {
 
 func TestGetBreakdownTestTasks_PerType_MultiProfile(t *testing.T) {
 	tasks := GetBreakdownTestTasks(
-		[]profile.Language{"javascript", "go"},
+		[]string{"javascript", "go"},
 		[]string{"tui", "api"},
 		defaultAuto,
 	)
@@ -431,7 +426,7 @@ func TestGetBreakdownTestTasks_PerType_MultiProfile(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_PerType_SingleType(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]profile.Language{"go"}, []string{"api"}, defaultAuto)
+	tasks := GetBreakdownTestTasks([]string{"go"}, []string{"api"}, defaultAuto)
 
 	// Only api type -> one gen task
 	if len(tasks) != 7 {
@@ -457,7 +452,7 @@ func TestGetBreakdownTestTasks_PerType_SingleType(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_PerType_ThreeTypes(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]profile.Language{"go"}, []string{"tui", "api", "cli"}, defaultAuto)
+	tasks := GetBreakdownTestTasks([]string{"go"}, []string{"tui", "api", "cli"}, defaultAuto)
 
 	// 3 types -> 3 gen tasks
 	if len(tasks) != 9 {
@@ -483,7 +478,7 @@ func TestGenerateTestTaskMD_WithTestType(t *testing.T) {
 		Title: "Generate Test Scripts (go, api)", Priority: "P1",
 		EstimatedTime: "1-2h", Dependencies: []string{"T-test-eval-cases"},
 		Type: TypeTestGenScripts, Scope: "all",
-		Language: "go", TestType: "api", StrategyKind: "generate",
+		TestType: "api", StrategyKind: "generate",
 	}
 
 	content, err := GenerateTestTaskMD(def, "my-feature")
@@ -493,21 +488,17 @@ func TestGenerateTestTaskMD_WithTestType(t *testing.T) {
 
 	s := string(content)
 
-	// Check frontmatter has profile
-	if !strings.Contains(s, `profile: "go"`) {
-		t.Error("missing profile in frontmatter")
-	}
-	// Check body mentions type
+	// Check body mentions type and conventions
 	if !strings.Contains(s, "api") {
 		t.Error("missing test type in body")
 	}
-	if !strings.Contains(s, "go") {
-		t.Error("missing profile name in body")
+	if !strings.Contains(s, "docs/conventions/testing-") {
+		t.Error("body should reference docs/conventions/testing-*")
 	}
 }
 
 func TestGetQuickTestTasks_PerType_SingleProfile(t *testing.T) {
-	tasks := GetQuickTestTasks([]profile.Language{"go"}, []string{"tui", "api"}, allEnabledAuto)
+	tasks := GetQuickTestTasks([]string{"go"}, []string{"tui", "api"}, allEnabledAuto)
 
 	// Per-profile: gen-cases + per-type-gen-and-run(tui,api) + graduate = 4 + shared verify-regression + drift-detection = 6
 	if len(tasks) != 6 {
@@ -579,7 +570,7 @@ func TestGetQuickTestTasks_PerType_SingleProfile(t *testing.T) {
 
 func TestGetQuickTestTasks_PerType_MultiProfile(t *testing.T) {
 	tasks := GetQuickTestTasks(
-		[]profile.Language{"javascript", "go"},
+		[]string{"javascript", "go"},
 		[]string{"tui", "api"},
 		allEnabledAuto,
 	)
@@ -635,7 +626,7 @@ func TestGetQuickTestTasks_PerType_MultiProfile(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_PerType_SingleType(t *testing.T) {
-	tasks := GetQuickTestTasks([]profile.Language{"go"}, []string{"api"}, allEnabledAuto)
+	tasks := GetQuickTestTasks([]string{"go"}, []string{"api"}, allEnabledAuto)
 
 	// Only api type -> one gen-and-run task
 	// gen-cases + 1 gen-and-run-api + graduate + verify-regression + drift-detection = 5
@@ -668,7 +659,7 @@ func TestGetQuickTestTasks_PerType_SingleType(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_PerType_ThreeTypes(t *testing.T) {
-	tasks := GetQuickTestTasks([]profile.Language{"go"}, []string{"tui", "api", "cli"}, allEnabledAuto)
+	tasks := GetQuickTestTasks([]string{"go"}, []string{"tui", "api", "cli"}, allEnabledAuto)
 
 	// gen-cases + 3 per-type-gen-and-run + graduate + verify-regression + drift-detection = 7
 	if len(tasks) != 7 {
@@ -689,16 +680,16 @@ func TestGetQuickTestTasks_PerType_ThreeTypes(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_DefaultAuto_IncludesSpecDrift(t *testing.T) {
-	// Verify that default auto config (ConsolidateSpecs.Quick=true) generates T-quick-specs-1.
+	// Verify that default auto config (ConsolidateSpecs.Quick=true) generates spec drift task.
 	// E2eTest.Quick is false by default, so no e2e tasks — only the drift task.
-	tasks := GetQuickTestTasks([]profile.Language{"go"}, []string{"cli"}, defaultAuto)
+	tasks := GetQuickTestTasks([]string{"go"}, []string{"cli"}, defaultAuto)
 
 	if len(tasks) != 1 {
 		t.Fatalf("expected 1 task (spec drift only), got %d", len(tasks))
 	}
 
 	if tasks[0].ID != "T-quick-doc-drift" {
-		t.Errorf("task ID = %q, want T-quick-specs-1", tasks[0].ID)
+		t.Errorf("task ID = %q, want T-quick-doc-drift", tasks[0].ID)
 	}
 	if tasks[0].Type != TypeDocDrift {
 		t.Errorf("task Type = %q, want %q", tasks[0].Type, TypeDocDrift)
