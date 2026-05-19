@@ -1,0 +1,84 @@
+{
+  "feature": "inline-experts-to-eval",
+  "proposal": "docs/proposals/inline-experts-to-eval/proposal.md",
+  "created": "2026-05-19",
+  "tasks": {
+    "1-move-expert-files": {
+      "id": "1",
+      "title": "Move expert files from agents/ to skills/eval/experts/",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "status": "completed",
+      "file": "1-move-expert-files.md",
+      "record": "records/1-move-expert-files.md",
+      "type": "documentation"
+    },
+    "2-update-skill-paths": {
+      "id": "2",
+      "title": "Update expert path references in SKILL.md",
+      "priority": "P1",
+      "estimatedTime": "20m",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-update-skill-paths.md",
+      "record": "records/2-update-skill-paths.md",
+      "type": "documentation"
+    },
+    "3-fix-eval-mechanism": {
+      "id": "3",
+      "title": "Fix 5 eval mechanism issues in SKILL.md",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "2"
+      ],
+      "status": "completed",
+      "file": "3-fix-eval-mechanism.md",
+      "record": "records/3-fix-eval-mechanism.md",
+      "type": "documentation"
+    },
+    "4-update-distribution-doc": {
+      "id": "4",
+      "title": "Update forge-distribution.md for new expert location",
+      "priority": "P2",
+      "estimatedTime": "20m",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "4-update-distribution-doc.md",
+      "record": "records/4-update-distribution-doc.md",
+      "type": "documentation"
+    },
+    "eval-doc": {
+      "id": "T-eval-doc",
+      "title": "Evaluate Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "4"
+      ],
+      "status": "completed",
+      "file": "eval-doc.md",
+      "record": "records/eval-doc.md",
+      "scope": "all",
+      "noTest": true,
+      "type": "doc-evaluation"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

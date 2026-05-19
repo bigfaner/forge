@@ -137,7 +137,7 @@ Multi-platform: run independent score→gate→revise loops per platform.
 
 ## Expert Dispatch Table
 
-Expert files are located at `${CLAUDE_SKILL_DIR}/../../agents/experts/scorer/`.
+Expert files are located at `experts/scorer/`.
 
 | type | scorer experts |
 |------|---------------|
@@ -157,17 +157,21 @@ Fallback for unmapped types: use the generic inline prompt below (no expert file
 You are a senior reviewer evaluating the document at {{DOC_DIR}} against the rubric at {{RUBRIC_PATH}}. Apply the rubric strictly and identify all weaknesses.
 ```
 
+## Iteration Initialization
+
+Set `ITERATION = 1`, `MAX_ITERATIONS = resolved value from rubric or CLI`.
+
 ## Step 2: Invoke Scorer Subagent(s)
 
 ### 2.1 Compose Scorer Prompts
 
 Resolve the eval type to its scorer expert(s) from the dispatch table above.
 
-Read the scorer protocol at `${CLAUDE_SKILL_DIR}/../../agents/experts/protocol/scorer-protocol.md`.
+Read the scorer protocol at `experts/protocol/scorer-protocol.md`.
 
 For each expert, compose a scorer prompt by concatenating:
 1. Scorer protocol content (with template variables replaced: `{{DOC_DIR}}`, `{{RUBRIC_PATH}}`, `{{REPORT_PATH}}`, `{{ITERATION}}`, `{{PREVIOUS_REPORT_PATH}}`)
-2. Expert file content (e.g., `${CLAUDE_SKILL_DIR}/../../agents/experts/scorer/pm.md`)
+2. Expert file content (e.g., `experts/scorer/pm.md`)
 3. Context injection (if `CONTEXT_CONTENT` was loaded in Step 1.4 — see below)
 
 **Context Injection**: If `CONTEXT_CONTENT` was loaded in Step 1.4, append the following section after the expert content in every composed prompt:
@@ -218,8 +222,8 @@ Do NOT pass reviser change summaries to the scorer.
 
 After all scorer agents return:
 
-**For single-expert types**: extract directly:
-1. `SCORE: X/{{scale}}`
+**For single-expert types**: extract using robust score extraction:
+1. Extract score using regex `/SCORE:\s*(\d+)\/(\d+)/`. If pattern not found, scan the scorer agent's output for the last line matching a `number/number` pattern. If still not found, report error and stop.
 2. Per-dimension scores from `DIMENSIONS:` section
 3. Attack points from `ATTACKS:` section
 
@@ -233,6 +237,8 @@ Merge overlapping attack points from {{N}} expert evaluations. Keep unique attac
 
 1. [dimension]: [specific weakness] — [quote from document] — [what must improve]
 ```
+
+4. **Write merged report**: Write the merged attacks + averaged scores to `<doc_dir>/eval/iteration-{{N}}-merged.md`. This file serves as `EVAL_REPORT_PATH` for the reviser (Step 4.1). Single-expert types continue using `iteration-{{N}}.md` directly.
 
 `test-cases`, `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases`: If Step Actionability < 200, warn that gen-test-scripts is blocked.
 
@@ -250,21 +256,34 @@ Use the averaged score (for multi-expert types) or single score (for single-expe
 | Score < target, iterations remaining | Go to Step 4 |
 | Score < target, no iterations remaining | Go to Step 5 (report failure) |
 
-On "continue"/"keep going": run scorer again (Step 2), then re-evaluate this gate.
-
 If proceeding to Step 4, report: `Iteration {{N}}/{{MAX}}: scored {{SCORE}}/{{SCALE}} (target: {{TARGET}}). Revising...`
 
 ## Step 4: Invoke Reviser Subagent (only when Step 3b routes here)
 
 ### 4.1 Compose Reviser Prompt
 
-Read the reviser protocol at `${CLAUDE_SKILL_DIR}/../../agents/experts/protocol/reviser-protocol.md`.
+Read the reviser protocol at `experts/protocol/reviser-protocol.md`.
+
+Resolve `EVAL_REPORT_PATH`:
+- **Single-expert types**: `<doc_dir>/eval/iteration-{{N}}.md`
+- **Multi-expert types**: `<doc_dir>/eval/iteration-{{N}}-merged.md` (written in Step 2.3)
 
 Compose the reviser prompt by concatenating:
 1. Reviser protocol content (with template variables replaced: `{{DOC_DIR}}`, `{{EVAL_REPORT_PATH}}`)
 2. The merged `ATTACK_POINTS` from Step 2.3 (replacing the `{{ATTACK_POINTS}}` placeholder in the protocol)
+3. Context injection (if `CONTEXT_CONTENT` was loaded in Step 1.4 — see below)
 
-The reviser receives **only** the protocol + merged attacks. No rubric, no expert file.
+**Context Injection**: If `CONTEXT_CONTENT` was loaded in Step 1.4, append the following section after the attack points in the reviser prompt:
+
+```
+<injected-context>
+The following project reference material is provided for reality-checking the evaluated document. Use it to detect contradictions, violations, or gaps — do not evaluate the reference material itself.
+
+{{CONTEXT_CONTENT}}
+</injected-context>
+```
+
+The reviser receives **only** the protocol + merged attacks + optional context. No rubric, no expert file.
 
 ### 4.2 Spawn Reviser Agent
 
