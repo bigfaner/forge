@@ -10,7 +10,9 @@ created: 2026-05-19
 
 `breakdown-tasks/SKILL.md` is 421 lines (~23KB) with 6 conditional inclusion tags (HAS_UI, NO_UI, UI_ONLY, HAS_PLACEMENT, RULE, HAS_DB), verbose algorithm descriptions, and redundant rule restatements. This causes:
 
-1. **Execution instability** — observed in 3 of 8 recent task-generation runs (PR #117, #119, #121): LLMs applied UI-placement rules to backend-only features, omitted phase gates when PRD contained phase sections, and produced inconsistent scope assignments across runs with identical inputs. Root cause: the LLM evaluates 6 nested conditional tags inline and sometimes misclassifies which branch applies. Concrete example from PR #119: a backend-only feature (no `ui-design.md` artifact) generated tasks with `scope: frontend` and included a "Page Assembly" task — the LLM evaluated the HAS_UI tag as true despite the artifact being absent. Note: full failure output logs are not attached to this proposal; the PR references above contain the relevant task artifacts for verification, but reproducing the exact failure requires re-running the skill against the same input artifacts from those PRs.
+1. **Execution instability** — observed in 3 of 8 recent task-generation runs (PR #117, #119, #121): LLMs applied UI-placement rules to backend-only features, omitted phase gates when PRD contained phase sections, and produced inconsistent scope assignments across runs with identical inputs. Root cause: the LLM evaluates 6 nested conditional tags inline and sometimes misclassifies which branch applies.
+   - **Concrete failure (PR #119)**: a backend-only feature (no `ui-design.md` artifact) generated tasks with `scope: frontend` and included a "Page Assembly" task — the LLM evaluated the HAS_UI tag as true despite the artifact being absent.
+   - **Reproducibility note**: full failure output logs are not attached to this proposal. The PR references above contain the relevant task artifacts for verification, but reproducing the exact failure requires re-running the skill against the same input artifacts from those PRs.
 2. **Maintenance cost** — modifying one rule requires understanding the entire conditional tag network
 3. **Token waste** — 23KB base prompt + artifact files means high per-execution cost
 4. **Learning curve** — new contributors cannot reason about the skill without reading the entire 421-line file
@@ -89,33 +91,32 @@ Simpler features get bigger savings. The full-stack worst case still saves 33%.
 ### Structure: Before vs After
 
 ```
-BEFORE                                    AFTER
-breakdown-tasks/                          breakdown-tasks/
-├── SKILL.md              421L / 23KB    ├── SKILL.md              ~160L / ~8KB
-│   ALL rules inline                      │   ALWAYS-LOADED rules only:
-│   ALL conditional tags inline           │   · process flow + Condition Matrix
-│   → agent loads 23KB every time        │   · element mapping (non-UI rows)
-│                                         │   · scope / type / template selection
-│                                         │   · PRD coverage + granularity
-├── templates/                            │
-│   ├── task.md                           ├── rules/                               ← NEW
-│   ├── task-doc.md                       │   ├── phase-detection.md   ~2KB
-│   └── manifest-update-tasks.md          │   │   ⚡ IF PRD has phase structure
-│                                         │   │
-                                          │   ├── ui-placement.md      ~3KB
-                                          │   │   ⚡ IF ui/ui-design.md exists
-                                          │   │   ⚡ IF prd/prd-ui-functions.md exists
-                                          │   │
-                                          │   ├── db-schema.md         ~1KB
-                                          │   │   ⚡ IF design/er-diagram.md exists
-                                          │   │
-                                          │   └── existing-code-split.md ~1.5KB
-                                          │       ⚡ IF tech-design modifies shared code
-                                          │
-                                          ├── templates/                          (unchanged)
-                                          │   ├── task.md
-                                          │   ├── task-doc.md
-                                          │   └── manifest-update-tasks.md
+BEFORE                                     AFTER
+breakdown-tasks/                           breakdown-tasks/
+├── SKILL.md              421L / 23KB     ├── SKILL.md              ~160L / ~8KB
+│   ALL rules inline                       │   ALWAYS-LOADED rules only:
+│   ALL conditional tags inline            │   · process flow + Condition Matrix
+│   → agent loads 23KB every time          │   · element mapping (non-UI rows)
+│                                          │   · scope / type / template selection
+│                                          │   · PRD coverage + granularity
+├── templates/                             ├── rules/                               ← NEW
+│   ├── task.md                            │   ├── phase-detection.md   ~2KB
+│   ├── task-doc.md                        │   │   ⚡ IF PRD has phase structure
+│   └── manifest-update-tasks.md           │   │
+                                           │   ├── ui-placement.md      ~3KB
+                                           │   │   ⚡ IF ui/ui-design.md exists
+                                           │   │   ⚡ IF prd/prd-ui-functions.md exists
+                                           │   │
+                                           │   ├── db-schema.md         ~1KB
+                                           │   │   ⚡ IF design/er-diagram.md exists
+                                           │   │
+                                           │   └── existing-code-split.md ~1.5KB
+                                           │       ⚡ IF tech-design modifies shared code
+                                           │
+                                           ├── templates/                          (unchanged)
+                                           │   ├── task.md
+                                           │   ├── task-doc.md
+                                           │   └── manifest-update-tasks.md
 ```
 
 ## Industry Patterns & Prior Art
@@ -157,6 +158,17 @@ We chose deterministic file-existence checks over RAG-based retrieval because: (
 - `forge task` CLI commands (Steps 0, 4b, 5, 6 delegate to CLI — unchanged)
 - Task templates (`templates/task.md`, `templates/task-doc.md`)
 - Changing any task generation logic, output format, or CLI interface
+- Test cases document (the feature manifest references `testing/test-cases.md`, which will be created as part of task generation if needed — it is not a prerequisite for this refactor)
+
+### Migration Strategy
+
+The transition from the monolithic SKILL.md to the skeleton + rule files is performed as a single atomic commit:
+1. Create the `rules/` directory and all 4 rule files with extracted content
+2. Rewrite SKILL.md to the skeleton (keeping only always-loaded rules + condition-rule matrix)
+3. Run validation (success criterion: functionally identical output on both test cases)
+4. If validation passes, commit all changes together; if not, revert and iterate
+
+No intermediate state where both old and new structures exist — the commit either has the full refactor or none of it. This ensures the rollback plan (single `git revert`) is always viable.
 
 ### Error Handling & Edge Cases
 
@@ -229,6 +241,8 @@ This is intentionally not a programmatic constraint (no CLI pre-processing). The
 | `rules/existing-code-split.md` | Tech-design references modifications to existing shared code (interfaces, models, API contracts) | Artifact-update + feature sub-task split, sub-ID convention, when-to-apply threshold (>5 files or cross-layer). Depends on: Step 4a (task file creation), Step 5 (task dependencies) | ~1.5KB |
 
 **Stays in skeleton** (always loaded): element mapping base rows, scope algorithm, type assignment, intent propagation, template selection, PRD coverage check, granularity basics.
+
+**Source verification**: the "Depends on" references above map to process steps in the current `breakdown-tasks/SKILL.md`. To verify the extraction plan against the source, open the current SKILL.md and locate the step headers matching each dependency (e.g., "Step 3: Derive Phases" for phase-detection.md).
 
 Total conditional: ~7.5KB. Skeleton: ~8KB. Worst case (all loaded): ~15.5KB vs current 23KB.
 
