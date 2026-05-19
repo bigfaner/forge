@@ -8,7 +8,7 @@
       "title": "Extract ui-placement rule file",
       "priority": "P1",
       "estimatedTime": "1.5h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-extract-ui-placement-rule.md",
       "record": "records/1-extract-ui-placement-rule.md",
       "type": "doc"
