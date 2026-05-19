@@ -87,9 +87,9 @@ func TestExtractDesignMd_ArgumentHintsIncludesPlatform(t *testing.T) {
 	content := readExtractDesignMd(t)
 	fm := extractYamlFrontmatter(content)
 
-	// Must have argument-hints with a platform entry
-	if !strings.Contains(fm, "argument-hints") && !strings.Contains(fm, "argument_hints") {
-		t.Fatal("frontmatter missing argument-hints")
+	// Must have argument-hint with a platform entry
+	if !strings.Contains(fm, "argument-hint") && !strings.Contains(fm, "argument_hint") {
+		t.Fatal("frontmatter missing argument-hint")
 	}
 
 	// Must have a platform argument hint
