@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -41,7 +43,9 @@ var categoryPrefixes = map[string]string{
 	"hook-":    "hook",
 }
 
-// Discover walks docs/lessons/*.md and returns all lessons.
+// Discover walks docs/lessons/*.md and returns all lessons sorted by file
+// modification time in reverse chronological order (newest first).
+// Lessons with zero or missing modification times sort to the end.
 func Discover(projectRoot string) ([]Lesson, error) {
 	lessonsDir := filepath.Join(projectRoot, LessonsDir)
 	entries, err := os.ReadDir(lessonsDir)
@@ -52,13 +56,23 @@ func Discover(projectRoot string) ([]Lesson, error) {
 		return nil, fmt.Errorf("read lessons directory: %w", err)
 	}
 
-	var lessons []Lesson
+	type lessonWithTime struct {
+		lesson  Lesson
+		modTime time.Time
+	}
+
+	var items []lessonWithTime
 	for _, entry := range entries {
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
 			continue
 		}
 
 		filePath := filepath.Join(lessonsDir, entry.Name())
+		info, err := os.Stat(filePath)
+		if err != nil {
+			continue
+		}
+
 		data, err := os.ReadFile(filePath)
 		if err != nil {
 			continue
@@ -72,22 +86,39 @@ func Discover(projectRoot string) ([]Lesson, error) {
 		name := strings.TrimSuffix(entry.Name(), ".md")
 		created := meta.Date
 		if created == "" {
-			info, err := os.Stat(filePath)
-			if err == nil {
-				created = info.ModTime().Format("2006-01-02")
-			}
+			created = info.ModTime().Format("2006-01-02")
 		}
 
 		category := inferCategory(name)
 
-		lessons = append(lessons, Lesson{
-			Name:     name,
-			Title:    meta.Title,
-			Created:  created,
-			Tags:     meta.Tags,
-			Category: category,
-			FilePath: filepath.Join(LessonsDir, entry.Name()),
+		items = append(items, lessonWithTime{
+			lesson: Lesson{
+				Name:     name,
+				Title:    meta.Title,
+				Created:  created,
+				Tags:     meta.Tags,
+				Category: category,
+				FilePath: filepath.Join(LessonsDir, entry.Name()),
+			},
+			modTime: info.ModTime(),
 		})
+	}
+
+	sort.Slice(items, func(i, j int) bool {
+		mi, mj := items[i].modTime, items[j].modTime
+		// Zero mod times sort to the end.
+		if mi.IsZero() {
+			return false
+		}
+		if mj.IsZero() {
+			return true
+		}
+		return mi.After(mj)
+	})
+
+	lessons := make([]Lesson, len(items))
+	for i, it := range items {
+		lessons[i] = it.lesson
 	}
 
 	return lessons, nil

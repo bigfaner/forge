@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -162,6 +163,54 @@ func TestFindByName_NotFound(t *testing.T) {
 	_, err := FindByName(dir, "nonexistent")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "lesson not found")
+}
+
+func TestDiscover_SortedByModTimeDescending(t *testing.T) {
+	dir := t.TempDir()
+	lessonsDir := filepath.Join(dir, LessonsDir)
+	require.NoError(t, os.MkdirAll(lessonsDir, 0755))
+
+	// Create three lesson files with specific modification times.
+	fm := "---\ndate: 2026-01-01\ntitle: \"%s\"\n---\n"
+
+	require.NoError(t, os.WriteFile(filepath.Join(lessonsDir, "lesson-old.md"), []byte(fm), 0644))
+	require.NoError(t, os.Chtimes(filepath.Join(lessonsDir, "lesson-old.md"), time.Time{}, time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)))
+
+	require.NoError(t, os.WriteFile(filepath.Join(lessonsDir, "lesson-newest.md"), []byte(fm), 0644))
+	require.NoError(t, os.Chtimes(filepath.Join(lessonsDir, "lesson-newest.md"), time.Time{}, time.Date(2026, 5, 19, 0, 0, 0, 0, time.UTC)))
+
+	require.NoError(t, os.WriteFile(filepath.Join(lessonsDir, "lesson-mid.md"), []byte(fm), 0644))
+	require.NoError(t, os.Chtimes(filepath.Join(lessonsDir, "lesson-mid.md"), time.Time{}, time.Date(2026, 3, 15, 0, 0, 0, 0, time.UTC)))
+
+	lessons, err := Discover(dir)
+	require.NoError(t, err)
+	require.Len(t, lessons, 3)
+
+	// Sorted newest first: newest -> mid -> old.
+	assert.Equal(t, "lesson-newest", lessons[0].Name, "first lesson should be newest")
+	assert.Equal(t, "lesson-mid", lessons[1].Name, "second lesson should be mid")
+	assert.Equal(t, "lesson-old", lessons[2].Name, "third lesson should be oldest")
+}
+
+func TestDiscover_OldestSortsLast(t *testing.T) {
+	dir := t.TempDir()
+	lessonsDir := filepath.Join(dir, LessonsDir)
+	require.NoError(t, os.MkdirAll(lessonsDir, 0755))
+
+	fm := "---\ndate: 2026-01-01\ntitle: \"%s\"\n---\n"
+
+	require.NoError(t, os.WriteFile(filepath.Join(lessonsDir, "lesson-old.md"), []byte(fm), 0644))
+	require.NoError(t, os.Chtimes(filepath.Join(lessonsDir, "lesson-old.md"), time.Time{}, time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)))
+
+	require.NoError(t, os.WriteFile(filepath.Join(lessonsDir, "lesson-recent.md"), []byte(fm), 0644))
+	require.NoError(t, os.Chtimes(filepath.Join(lessonsDir, "lesson-recent.md"), time.Time{}, time.Date(2026, 5, 19, 0, 0, 0, 0, time.UTC)))
+
+	lessons, err := Discover(dir)
+	require.NoError(t, err)
+	require.Len(t, lessons, 2)
+
+	assert.Equal(t, "lesson-recent", lessons[0].Name, "most recently modified lesson should come first")
+	assert.Equal(t, "lesson-old", lessons[1].Name, "oldest lesson should come last")
 }
 
 func TestInferCategory(t *testing.T) {
