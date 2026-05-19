@@ -568,6 +568,8 @@ func TestTypeConstants(t *testing.T) {
 		{TypeCodingEnhancement, "coding.enhancement"},
 		{TypeCodingCleanup, "coding.cleanup"},
 		{TypeCodingRefactor, "coding.refactor"},
+		{TypeCodingFix, "coding.fix"},
+		{TypeCodingClean, "coding.clean"},
 		{TypeDoc, "doc"},
 		{TypeDocEval, "doc.eval"},
 		{TypeDocSummary, "doc.summary"},
@@ -577,10 +579,13 @@ func TestTypeConstants(t *testing.T) {
 		{TypeTestEvalCases, "test.eval-cases"},
 		{TypeTestGenScripts, "test.gen-scripts"},
 		{TypeTestRun, "test.run"},
+		{TypeTestGenAndRun, "test.gen-and-run"},
 		{TypeTestGraduate, "test.graduate"},
 		{TypeTestVerifyRegression, "test.verify-regression"},
-		{TypeCodingFix, "coding.fix"},
+		{TypeValidationCode, "validation.code"},
+		{TypeValidationUx, "validation.ux"},
 		{TypeGate, "gate"},
+		{TypeCleanCode, "code-quality.simplify"},
 	}
 	for _, tt := range tests {
 		if tt.constant != tt.expected {

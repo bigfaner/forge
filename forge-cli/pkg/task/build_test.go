@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"forge-cli/pkg/profile"
 )
 
 // writeTaskMD writes a minimal task .md file with frontmatter.
@@ -750,17 +752,79 @@ func TestIsTestTaskID(t *testing.T) {
 		id   string
 		want bool
 	}{
+		// T-test-* prefix
 		{"T-test-gen-cases", true},
-		{"T-test-2a", true},
+		{"T-test-gen-scripts", true},
+		{"T-test-gen-scripts-api", true},
+		{"T-test-run", true},
+		{"T-test-runa", true},
+		{"T-test-graduate", true},
+		{"T-test-eval-cases", true},
+		// T-quick-* prefix
 		{"T-quick-gen-cases", true},
+		{"T-quick-gen-casesa", true},
+		{"T-quick-gen-and-run", true},
+		{"T-quick-graduate", true},
+		{"T-quick-verify-regression", true},
+		// T-specs-* prefix
+		{"T-specs-consolidate", true},
+		// T-clean-* prefix
+		{"T-clean-code", true},
+		// T-validate-* prefix
+		{"T-validate-code", true},
+		{"T-validate-ux", true},
+		// T-eval-* prefix
+		{"T-eval-doc", true},
+		// Non-test IDs
 		{"1", false},
 		{"1.gate", false},
+		{"1.summary", false},
 		{"fix-1", false},
+		{"disc-1", false},
+		{"", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.id, func(t *testing.T) {
 			if got := isTestTaskID(tt.id); got != tt.want {
 				t.Errorf("isTestTaskID(%q) = %v, want %v", tt.id, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestIsAutoGenTaskID(t *testing.T) {
+	tests := []struct {
+		id   string
+		want bool
+	}{
+		// Test pipeline IDs
+		{"T-test-gen-cases", true},
+		{"T-test-run", true},
+		{"T-quick-gen-cases", true},
+		{"T-quick-verify-regression", true},
+		{"T-specs-consolidate", true},
+		{"T-clean-code", true},
+		{"T-validate-code", true},
+		{"T-validate-ux", true},
+		// Doc eval
+		{"T-eval-doc", true},
+		// Gate and summary suffixes
+		{"1.gate", true},
+		{"2.gate", true},
+		{"1.summary", true},
+		{"3.summary", true},
+		// Business tasks -> false
+		{"1", false},
+		{"1.1", false},
+		{"2.3", false},
+		{"fix-1", false},
+		{"disc-1", false},
+		{"", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.id, func(t *testing.T) {
+			if got := isAutoGenTaskID(tt.id); got != tt.want {
+				t.Errorf("isAutoGenTaskID(%q) = %v, want %v", tt.id, got, tt.want)
 			}
 		})
 	}
@@ -1166,12 +1230,30 @@ func TestIsTestableType(t *testing.T) {
 		typ  string
 		want bool
 	}{
+		// coding.* prefix -> true
 		{TypeCodingFeature, true},
 		{TypeCodingEnhancement, true},
 		{TypeCodingFix, true},
 		{TypeCodingCleanup, true},
 		{TypeCodingRefactor, true},
+		{TypeCodingClean, true},
+		// doc prefix -> false
 		{TypeDoc, false},
+		{TypeDocEval, false},
+		{TypeDocSummary, false},
+		{TypeDocConsolidate, false},
+		{TypeDocDrift, false},
+		// test.* prefix -> false
+		{TypeTestGenCases, false},
+		{TypeTestGenScripts, false},
+		{TypeTestRun, false},
+		{TypeTestGenAndRun, false},
+		// validation.* prefix -> false
+		{TypeValidationCode, false},
+		{TypeValidationUx, false},
+		// other
+		{TypeGate, false},
+		{TypeCleanCode, false},
 		{"unknown", false},
 		{"", false},
 	}
@@ -1531,4 +1613,167 @@ func TestBuildIndex_DeterministicOutput(t *testing.T) {
 	}
 
 	// The key invariant is that output JSON is identical (verified above).
+}
+
+func TestBuildIndex_ValidationTasksGenerated(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "breakdown")
+
+	// Business task + gates for dep resolution
+	writeTaskMDWithType(t, tasksDir, "1-feat.md", "1.1", "Feature Task", TypeCodingFeature, nil)
+	writeTaskMD(t, tasksDir, "1-gate.md", "1.gate", "Phase 1 Gate", nil)
+	writeTaskMD(t, tasksDir, "2-gate.md", "2.gate", "Phase 2 Gate", nil)
+
+	auto := profile.AutoConfig{
+		E2eTest:          profile.ModeToggle{Full: true},
+		Validation:       profile.ModeToggle{Full: true},
+		ConsolidateSpecs: profile.ModeToggle{Full: true},
+	}
+
+	opts := BuildIndexOpts{
+		FeatureSlug:    "test-feature",
+		ProjectRoot:    projectRoot,
+		TasksDir:       tasksDir,
+		IndexPath:      indexPath,
+		Languages:      []string{"go"},
+		TestInterfaces: []string{"cli"},
+		AutoConfig:     auto,
+	}
+
+	result, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("BuildIndex: %v", err)
+	}
+
+	data, _ := os.ReadFile(indexPath)
+	var idx taskIndexJSON
+	_ = json.Unmarshal(data, &idx)
+
+	// Verify T-validate-code exists
+	validateCode, ok := idx.Tasks["validate-code"]
+	if !ok {
+		t.Fatal("validate-code not in index")
+	}
+	if validateCode.ID != "T-validate-code" {
+		t.Errorf("validate-code ID = %q, want T-validate-code", validateCode.ID)
+	}
+	if validateCode.Type != TypeValidationCode {
+		t.Errorf("validate-code type = %q, want %q", validateCode.Type, TypeValidationCode)
+	}
+	if !validateCode.NoTest {
+		t.Error("validate-code should have noTest=true")
+	}
+	if validateCode.MainSession {
+		t.Error("validate-code should have mainSession=false")
+	}
+
+	// Verify T-validate-ux exists
+	validateUx, ok := idx.Tasks["validate-ux"]
+	if !ok {
+		t.Fatal("validate-ux not in index")
+	}
+	if validateUx.ID != "T-validate-ux" {
+		t.Errorf("validate-ux ID = %q, want T-validate-ux", validateUx.ID)
+	}
+	if validateUx.Type != TypeValidationUx {
+		t.Errorf("validate-ux type = %q, want %q", validateUx.Type, TypeValidationUx)
+	}
+	if !validateUx.NoTest {
+		t.Error("validate-ux should have noTest=true")
+	}
+	if !validateUx.MainSession {
+		t.Error("validate-ux should have mainSession=true")
+	}
+
+	// validate-code should depend on T-test-verify-regression
+	if len(validateCode.Dependencies) == 0 || validateCode.Dependencies[0] != "T-test-verify-regression" {
+		t.Errorf("validate-code deps = %v, want [T-test-verify-regression]", validateCode.Dependencies)
+	}
+
+	_ = result
+}
+
+func TestBuildIndex_ValidationTasksNotGenerated(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "breakdown")
+
+	writeTaskMDWithType(t, tasksDir, "1-feat.md", "1.1", "Feature Task", TypeCodingFeature, nil)
+	writeTaskMD(t, tasksDir, "1-gate.md", "1.gate", "Phase 1 Gate", nil)
+
+	// AutoConfig with validation disabled (default)
+	auto := profile.AutoConfig{
+		E2eTest:          profile.ModeToggle{Full: true},
+		Validation:       profile.ModeToggle{Full: false},
+		ConsolidateSpecs: profile.ModeToggle{Full: true},
+	}
+
+	opts := BuildIndexOpts{
+		FeatureSlug:    "test-feature",
+		ProjectRoot:    projectRoot,
+		TasksDir:       tasksDir,
+		IndexPath:      indexPath,
+		Languages:      []string{"go"},
+		TestInterfaces: []string{"cli"},
+		AutoConfig:     auto,
+	}
+
+	if _, err := BuildIndex(opts); err != nil {
+		t.Fatalf("BuildIndex: %v", err)
+	}
+
+	data, _ := os.ReadFile(indexPath)
+	var idx taskIndexJSON
+	_ = json.Unmarshal(data, &idx)
+
+	if _, ok := idx.Tasks["validate-code"]; ok {
+		t.Error("validate-code should NOT exist when validation disabled")
+	}
+	if _, ok := idx.Tasks["validate-ux"]; ok {
+		t.Error("validate-ux should NOT exist when validation disabled")
+	}
+}
+
+func TestBuildIndex_QuickValidationTasks(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "quick")
+
+	writeTaskMD(t, tasksDir, "1-foo.md", "1", "Foo Task", nil)
+
+	auto := profile.AutoConfig{
+		E2eTest:          profile.ModeToggle{Quick: true},
+		Validation:       profile.ModeToggle{Quick: true},
+		ConsolidateSpecs: profile.ModeToggle{Quick: true},
+	}
+
+	opts := BuildIndexOpts{
+		FeatureSlug:    "test-feature",
+		ProjectRoot:    projectRoot,
+		TasksDir:       tasksDir,
+		IndexPath:      indexPath,
+		Languages:      []string{"go"},
+		TestInterfaces: []string{"cli"},
+		AutoConfig:     auto,
+	}
+
+	if _, err := BuildIndex(opts); err != nil {
+		t.Fatalf("BuildIndex: %v", err)
+	}
+
+	data, _ := os.ReadFile(indexPath)
+	var idx taskIndexJSON
+	_ = json.Unmarshal(data, &idx)
+
+	// Verify validation tasks exist in quick mode
+	validateCode, ok := idx.Tasks["validate-code"]
+	if !ok {
+		t.Fatal("validate-code not in index for quick mode")
+	}
+	if validateCode.Type != TypeValidationCode {
+		t.Errorf("validate-code type = %q, want %q", validateCode.Type, TypeValidationCode)
+	}
+
+	validateUx, ok := idx.Tasks["validate-ux"]
+	if !ok {
+		t.Fatal("validate-ux not in index for quick mode")
+	}
+	if validateUx.Type != TypeValidationUx {
+		t.Errorf("validate-ux type = %q, want %q", validateUx.Type, TypeValidationUx)
+	}
 }

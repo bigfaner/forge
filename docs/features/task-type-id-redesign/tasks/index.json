@@ -79,7 +79,7 @@
         "2",
         "3"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "6-add-go-unit-tests.md",
       "record": "records/6-add-go-unit-tests.md",
       "scope": "backend",
