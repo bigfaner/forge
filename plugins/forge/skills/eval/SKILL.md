@@ -135,31 +135,42 @@ Multi-platform: run independent score→gate→revise loops per platform.
 | `validate-code` | 1) Read PRD → extract user scenarios list (from prd-spec.md flow descriptions and prd-user-stories.md acceptance criteria). 2) Run `git diff <base-branch>...HEAD` to get changed files and diff hunks. 3) Compile changed file list. 4) Pass PRD scenarios + diff + file list to scorer as assembled input. |
 | `validate-ux` | **Two-phase pre-processing** (must execute in git worktree or temp dir). Full sub-pipeline: `${CLAUDE_SKILL_DIR}/rubrics/validate-ux-pipeline.md`. |
 
-## Step 2: Invoke Scorer Subagent
+## Expert Dispatch Table
 
-Spawn `doc-scorer` via Agent tool (subagent_type: `forge:doc-scorer` or `general-purpose`).
+Expert files are located at `${CLAUDE_SKILL_DIR}/../../agents/experts/scorer/`.
 
-Inputs:
-- `DOC_DIR` = document directory
-- `RUBRIC_PATH` = resolved rubric file
-- `REPORT_PATH` = `<doc_dir>/eval/iteration-{{N}}.md`
-  - `harness`: `docs/harness-reports/YYYY-MM-DD.md`
-  - `consistency`: `docs/features/<slug>/eval-consistency/eval/iteration-{{N}}.md`
-  - `proposal`: `docs/proposals/<slug>/eval/iteration-{{N}}.md`
-  - `validate-code`: `docs/features/<slug>/eval/validate-code.md`
-  - `validate-ux`: `docs/features/<slug>/eval/validate-ux.md`
-- `ITERATION` = current iteration (1-based)
-- `PREVIOUS_REPORT_PATH` = previous report (only if iteration > 1)
+| type | scorer experts |
+|------|---------------|
+| `proposal` | `[cto]` |
+| `prd` | `[pm, qa]` |
+| `design` | `[architect]` |
+| `ui-web`, `ui-mobile`, `ui-tui` | `[ux-engineer]` |
+| `test-cases`, `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases` | `[qa]` |
+| `consistency` | `[editor]` |
+| `harness` | `[harness-engineer]` |
+| `validate-code` | `[code-reviewer]` |
+| `validate-ux` | `[ux-auditor]` |
 
-Type-specific inputs:
-- `ui-*`: add `PRD_PATH` = `docs/features/<slug>/prd/prd-ui-functions.md` (if exists)
-- `test-cases`, `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases`: add `PRD_FILES` = paths to prd-spec.md and prd-user-stories.md
-- `consistency`: add `SCOPE` = value from `--scope`
-- `validate-ux`: add `UX_SNAPSHOT_PATH` = path to generated `ux-snapshot.md`
+Fallback for unmapped types: use the generic inline prompt below (no expert file loaded).
 
-Do NOT pass reviser change summaries to the scorer.
+```
+You are a senior reviewer evaluating the document at {{DOC_DIR}} against the rubric at {{RUBRIC_PATH}}. Apply the rubric strictly and identify all weaknesses.
+```
 
-**Context Injection**: If `CONTEXT_CONTENT` was loaded in Step 1.4, append the following section to the scorer prompt:
+## Step 2: Invoke Scorer Subagent(s)
+
+### 2.1 Compose Scorer Prompts
+
+Resolve the eval type to its scorer expert(s) from the dispatch table above.
+
+Read the scorer protocol at `${CLAUDE_SKILL_DIR}/../../agents/experts/protocol/scorer-protocol.md`.
+
+For each expert, compose a scorer prompt by concatenating:
+1. Scorer protocol content (with template variables replaced: `{{DOC_DIR}}`, `{{RUBRIC_PATH}}`, `{{REPORT_PATH}}`, `{{ITERATION}}`, `{{PREVIOUS_REPORT_PATH}}`)
+2. Expert file content (e.g., `${CLAUDE_SKILL_DIR}/../../agents/experts/scorer/pm.md`)
+3. Context injection (if `CONTEXT_CONTENT` was loaded in Step 1.4 — see below)
+
+**Context Injection**: If `CONTEXT_CONTENT` was loaded in Step 1.4, append the following section after the expert content in every composed prompt:
 
 ```
 <injected-context>
@@ -169,10 +180,59 @@ The following project reference material is provided for reality-checking the ev
 </injected-context>
 ```
 
-After scorer returns, extract:
+For unmapped types (not in dispatch table), compose a single prompt using the generic inline fallback above plus the scorer protocol (with variables replaced) plus context injection.
+
+### 2.2 Spawn Scorer Agents
+
+Spawn each composed prompt as a `general-purpose` agent via the Agent tool with `model: "sonnet"`.
+
+- **Single-expert types**: spawn one agent.
+- **Multi-expert types** (e.g., `prd` → `[pm, qa]`): spawn multiple agents **in parallel** (multiple Agent tool calls in a single message). Each agent receives its own composed prompt and writes to its own report path.
+
+Common inputs for all agents:
+- `DOC_DIR` = document directory
+- `RUBRIC_PATH` = resolved rubric file
+- `ITERATION` = current iteration (1-based)
+- `PREVIOUS_REPORT_PATH` = previous report (only if iteration > 1)
+
+Report paths per expert (for multi-expert types, each expert writes to a separate report):
+- `REPORT_PATH` = `<doc_dir>/eval/iteration-{{N}}.md` (single-expert)
+- `REPORT_PATH` = `<doc_dir>/eval/iteration-{{N}}-{{expert}}.md` (multi-expert)
+
+Type-specific report path overrides:
+- `harness`: `docs/harness-reports/YYYY-MM-DD.md`
+- `consistency`: `docs/features/<slug>/eval-consistency/eval/iteration-{{N}}.md`
+- `proposal`: `docs/proposals/<slug>/eval/iteration-{{N}}.md`
+- `validate-code`: `docs/features/<slug>/eval/validate-code.md`
+- `validate-ux`: `docs/features/<slug>/eval/validate-ux.md`
+
+Type-specific inputs:
+- `ui-*`: add `PRD_PATH` = `docs/features/<slug>/prd/prd-ui-functions.md` (if exists)
+- `test-cases`, `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases`: add `PRD_FILES` = paths to prd-spec.md and prd-user-stories.md
+- `consistency`: add `SCOPE` = value from `--scope`
+- `validate-ux`: add `UX_SNAPSHOT_PATH` = path to generated `ux-snapshot.md`
+
+Do NOT pass reviser change summaries to the scorer.
+
+### 2.3 Collect and Merge Results
+
+After all scorer agents return:
+
+**For single-expert types**: extract directly:
 1. `SCORE: X/{{scale}}`
 2. Per-dimension scores from `DIMENSIONS:` section
 3. Attack points from `ATTACKS:` section
+
+**For multi-expert types**:
+1. Extract score and attacks from each expert's output
+2. **Gate score**: average the total scores across all experts (rounded to nearest integer)
+3. **Attack points merge**: LLM-merge attack points from all experts in the main session using this prompt:
+
+```
+Merge overlapping attack points from {{N}} expert evaluations. Keep unique attacks from each. Combine duplicates into single attacks preserving the strongest prescription. Do not remove any unique attack. Output the merged list in the same format:
+
+1. [dimension]: [specific weakness] — [quote from document] — [what must improve]
+```
 
 `test-cases`, `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases`: If Step Actionability < 200, warn that gen-test-scripts is blocked.
 
@@ -181,6 +241,8 @@ After scorer returns, extract:
 Skip gate and reviser. Go directly to Step 5.
 
 ## Step 3b: Decision Gate (Main Session)
+
+Use the averaged score (for multi-expert types) or single score (for single-expert types) from Step 2.3.
 
 | Condition | Action |
 |-----------|--------|
@@ -194,10 +256,24 @@ If proceeding to Step 4, report: `Iteration {{N}}/{{MAX}}: scored {{SCORE}}/{{SC
 
 ## Step 4: Invoke Reviser Subagent (only when Step 3b routes here)
 
-Spawn `doc-reviser` via Agent tool (subagent_type: `forge:doc-reviser` or `general-purpose`).
+### 4.1 Compose Reviser Prompt
+
+Read the reviser protocol at `${CLAUDE_SKILL_DIR}/../../agents/experts/protocol/reviser-protocol.md`.
+
+Compose the reviser prompt by concatenating:
+1. Reviser protocol content (with template variables replaced: `{{DOC_DIR}}`, `{{EVAL_REPORT_PATH}}`)
+2. The merged `ATTACK_POINTS` from Step 2.3 (replacing the `{{ATTACK_POINTS}}` placeholder in the protocol)
+
+The reviser receives **only** the protocol + merged attacks. No rubric, no expert file.
+
+### 4.2 Spawn Reviser Agent
+
+Spawn as a `general-purpose` agent via the Agent tool with `model: "sonnet"`.
 
 Inputs:
-- `DOC_DIR`, `RUBRIC_PATH`, `EVAL_REPORT_PATH`, `ATTACK_POINTS`
+- `DOC_DIR`
+- `EVAL_REPORT_PATH`
+- `ATTACK_POINTS` (merged)
 
 Type-specific constraints:
 - `consistency`: Do NOT modify `prd/`. Classify attack points by fix target before invoking.

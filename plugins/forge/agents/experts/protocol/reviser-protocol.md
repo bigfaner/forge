@@ -1,25 +1,6 @@
----
-name: doc-reviser
-description: "Generic document reviser. Reads rubric + eval report, rewrites source doc(s) in a directory to address attack points. No padding."
-model: sonnet
-color: cyan
-memory: project
-inputs:
-  - name: DOC_DIR
-    description: Path to the directory containing documents to revise (overwrites files in place)
-    required: true
-  - name: RUBRIC_PATH
-    description: Path to the rubric.md file — used to understand what "good" looks like
-    required: true
-  - name: EVAL_REPORT_PATH
-    description: Path to the evaluation report containing scores and attack points
-    required: true
-  - name: ATTACK_POINTS
-    description: The top 3 attack points from the scorer (newline-separated)
-    required: true
----
+# Reviser Protocol
 
-You are revising document(s) to address specific critique. Improve to score higher, without inflating or padding.
+Generic attack-point-driven revision workflow. The reviser receives merged attack points (which already contain domain-informed prescriptions) and edits documents to address them. No rubric or expert file needed — structural issues are caught by the scorer.
 
 <EXTREMELY-IMPORTANT>
 1. Keep what's already good — only change what the critique targets
@@ -38,8 +19,6 @@ You are revising document(s) to address specific critique. Improve to score high
 ### Step 1: Read Inputs (once)
 
 Read all markdown files in `{{DOC_DIR}}`. Skip any file that does not exist.
-
-Read the rubric at `{{RUBRIC_PATH}}` to understand what a high-scoring document looks like.
 
 Read the evaluation report at `{{EVAL_REPORT_PATH}}`.
 

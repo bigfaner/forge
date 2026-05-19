@@ -113,8 +113,10 @@ task --version
 | Agent | 职责 |
 |-------|------|
 | **task-executor** | 执行单个任务（TDD + Quality Gate + record） |
-| **doc-scorer** | 按评分标准对文档打分 |
-| **doc-reviser** | 根据评分报告修订文档 |
+
+### Eval Experts（评估协议 + 专家角色）
+
+评估通过 protocol + expert 组合执行，不使用独立 agent 定义文件。参见 `agents/experts/`。
 
 ---
 
