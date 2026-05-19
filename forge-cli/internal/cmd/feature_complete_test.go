@@ -260,6 +260,33 @@ func TestUpdateManifestStatus(t *testing.T) {
 	}
 }
 
+func TestUpdateManifestStatusNoBlankLineInFrontmatter(t *testing.T) {
+	dir := t.TempDir()
+	manifestPath := filepath.Join(dir, "manifest.md")
+	content := "---\nfeature: test\nstatus: active\nmode: quick\n---\n# Feature test\n"
+	if err := os.WriteFile(manifestPath, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := updateFileStatus(manifestPath, "completed"); err != nil {
+		t.Fatalf("updateFileStatus failed: %v", err)
+	}
+
+	data, err := os.ReadFile(manifestPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	text := string(data)
+	// Must NOT have a blank line between opening --- and first frontmatter field
+	if strings.HasPrefix(text, "---\n\n") {
+		t.Errorf("frontmatter must not have blank line after opening ---, got:\n%s", text)
+	}
+	if !strings.HasPrefix(text, "---\nfeature:") {
+		t.Errorf("frontmatter must start with ---\\n<field>, got:\n%s", text)
+	}
+}
+
 func TestUpdateProposalStatus(t *testing.T) {
 	dir := t.TempDir()
 	proposalPath := filepath.Join(dir, "proposal.md")

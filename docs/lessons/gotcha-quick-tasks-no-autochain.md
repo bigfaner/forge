@@ -24,5 +24,5 @@ Use `/quick` for the full automated pipeline (brainstorm → tasks → execute).
 
 ## Related Files
 - `plugins/forge/skills/quick-tasks/SKILL.md`
-- `plugins/forge/skills/quick/SKILL.md`
-- `plugins/forge/skills/run-tasks/SKILL.md`
+- `plugins/forge/commands/quick.md`
+- `plugins/forge/commands/run-tasks.md`

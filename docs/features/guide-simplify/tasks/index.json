@@ -1,0 +1,45 @@
+{
+  "feature": "guide-simplify",
+  "proposal": "docs/proposals/guide-simplify/proposal.md",
+  "created": "2026-05-19",
+  "tasks": {
+    "1-restructure-guide": {
+      "id": "1",
+      "title": "Restructure guide.md into 3 thematic sections",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "1-restructure-guide.md",
+      "record": "records/1-restructure-guide.md",
+      "type": "documentation"
+    },
+    "eval-doc": {
+      "id": "T-eval-doc",
+      "title": "Evaluate Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "eval-doc.md",
+      "record": "records/eval-doc.md",
+      "scope": "all",
+      "noTest": true,
+      "type": "doc-evaluation"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

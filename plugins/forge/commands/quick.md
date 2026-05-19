@@ -38,13 +38,15 @@ Invoke the brainstorm skill:
 Skill(skill="forge:brainstorm")
 ```
 
-This produces `docs/proposals/<slug>/proposal.md` through interactive dialogue with the user. The brainstorm skill handles all user interaction and commits the proposal.
+brainstorm runs its full interactive flow: structured dialogue, user commit approval, and an optional eval-proposal step. When it completes, `docs/proposals/<slug>/proposal.md` is committed.
 
-After brainstorm completes, extract the feature slug from the proposal directory path.
+After brainstorm completes, extract the feature slug from the proposal directory path. Each downstream skill (quick-tasks, run-tasks) derives the slug independently from the filesystem — no explicit passing needed.
 
-## Step 2: User Confirmation
+## Step 2: Task Generation Gate
 
-Read the generated `docs/proposals/<slug>/proposal.md` and present a summary:
+The user already approved and committed the proposal in Step 1. This gate confirms whether to proceed to **task generation** — not proposal approval.
+
+Read `docs/proposals/<slug>/proposal.md` and present a summary:
 
 ```
 ## Quick Mode: Proposal Summary
@@ -68,7 +70,7 @@ Use `AskUserQuestion` with three options:
 | **Abort** | Stop cleanly |
 
 <EXTREMELY-IMPORTANT>
-This confirmation is MANDATORY. The proposal is the sole input for the entire quick mode pipeline — no PRD or design will be created to correct course. A wrong direction here means all downstream tasks are wasted.
+This gate is MANDATORY. The proposal is the sole input for the entire quick mode pipeline — no PRD or design will be created to correct course. A wrong direction here means all downstream tasks are wasted.
 </EXTREMELY-IMPORTANT>
 
 ### Status Transition: Draft → Approved
@@ -92,7 +94,7 @@ Skill(skill="forge:quick-tasks")
 ```
 
 This produces:
-- `docs/features/<slug>/tasks/*.md` — task files (1-10 business + optional T-quick-1~4, T-quick-specs-1)
+- `docs/features/<slug>/tasks/*.md` — task files (1-10 business tasks + auto-generated test tasks)
 - `docs/features/<slug>/tasks/index.json` — task index (compatible with `/run-tasks`)
 - `docs/features/<slug>/manifest.md` — simplified manifest
 
@@ -106,38 +108,36 @@ Recommend using the full pipeline: /write-prd → /tech-design → /breakdown-ta
 ## Step 3→4 Transition
 
 <EXTREMELY-IMPORTANT>
-After quick-tasks completes — including its Step 8 commit — you MUST **immediately proceed** to Step 4 (run-tasks) with **zero intermediate output**. Specifically:
+After quick-tasks completes successfully, you MUST **immediately proceed** to Step 4 (run-tasks) with **zero intermediate output**. Specifically:
 
 1. **Do NOT** output any summary, recap, or status message between quick-tasks and run-tasks.
 2. **Do NOT** pause for user confirmation. The user already confirmed in Step 2.
 3. **Do NOT** ask the user anything. Invoke run-tasks directly.
-4. **Do NOT** perform any intermediate actions (file reads, git status, exploratory analysis) between the two skills.
+4. **Do NOT** perform any intermediate actions (file reads, git status, exploratory analysis) between the two steps.
 
-If quick-tasks Step 8 commit fails, stop and fix the issue before proceeding. Only proceed to run-tasks after the commit succeeds.
+If quick-tasks reports any failure, stop and fix the issue before proceeding. Only proceed to run-tasks after quick-tasks completes without errors.
 </EXTREMELY-IMPORTANT>
 
 ## Step 4: Execute Tasks
 
-Invoke the run-tasks command to auto-execute all tasks:
+Invoke the run-tasks command:
 
 ```
 Skill(skill="forge:run-tasks")
 ```
 
-The existing run-tasks dispatcher will:
-1. Read `index.json`
-2. Claim tasks in dependency order
-3. Dispatch to task-executor subagents
-4. Run breaking gates (compile + fmt + lint + test)
-5. Handle fix tasks on failure
-6. Run all-completed hook as final safety net
+`run-tasks` reads `index.json`, claims tasks in dependency order, and dispatches to task-executor subagents. Quality gates (compile + fmt + lint + test) run for breaking tasks. Failures auto-create fix tasks with retry loops. On completion, run-tasks presents extracted knowledge for user confirmation and prints a summary. See `run-tasks` command for full behavior.
 
 ## Error Handling
 
 | Situation | Action |
 |-----------|--------|
 | Brainstorm fails | Stop, user can retry |
-| User aborts at confirmation | Stop cleanly |
+| User aborts at confirmation gate | Stop cleanly |
 | quick-tasks exceeds 10 task limit | Stop, recommend full pipeline |
-| `forge task validate-index` fails | Stop, fix index.json issues |
-| run-tasks encounters failures | Handled by dispatcher (fix tasks, retries) |
+| quick-tasks fails (validation, commit, language) | Stop, fix reported issue |
+| run-tasks: single task failure | Dispatcher auto-creates fix task, continues |
+| run-tasks: MAIN_SESSION task fails | Follow task doc error section; if missing, fix-task + continue |
+| run-tasks: agent timeout | Mark blocked, increment failure counter, continue |
+| run-tasks: 3 consecutive failures | Pipeline stops, report summary |
+| run-tasks: loop ends (no tasks) | Pipeline completes, knowledge extraction runs |

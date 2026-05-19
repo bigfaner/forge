@@ -108,7 +108,8 @@ function Install-App {
         New-Item -ItemType Directory -Path $InstallDir | Out-Null
     }
 
-    # Copy binary (resolve relative to project root, not CWD)
+    # Atomic replacement: copy to temp file then rename
+    # MoveTo is atomic on NTFS, avoids race with hooks reading the binary
     $ScriptDir = Split-Path -Parent $MyInvocation.ScriptName
     if (-not $ScriptDir) {
         $ScriptDir = $PSScriptRoot
@@ -116,8 +117,10 @@ function Install-App {
     $ProjectRoot = Split-Path -Parent $ScriptDir
     $SourcePath = Join-Path $ProjectRoot (Join-Path $BinDir $AppName)
     $DestPath = Join-Path $InstallDir $AppName
+    $TempPath = "$DestPath.new"
 
-    Copy-Item -Path $SourcePath -Destination $DestPath -Force
+    Copy-Item -Path $SourcePath -Destination $TempPath -Force
+    Move-Item -Path $TempPath -Destination $DestPath -Force
 
     Write-Info "Installation complete: $DestPath"
 }
