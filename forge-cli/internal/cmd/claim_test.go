@@ -564,26 +564,26 @@ func TestClaimNextTask_NonNumericID(t *testing.T) {
 		wantKey string
 	}{
 		{
-			name: "non-numeric T-test-1 claimable after all numeric tasks done",
+			name: "non-numeric T-test-gen-cases claimable after all numeric tasks done",
 			tasks: map[string]task.Task{
 				"biz-1":    {ID: "1.1", Priority: "P0", Status: "completed"},
-				"t-test-1": {ID: "T-test-1", Priority: "P1", Status: "pending", Dependencies: []string{"1.1"}},
+				"t-test-1": {ID: "T-test-gen-cases", Priority: "P1", Status: "pending", Dependencies: []string{"1.1"}},
 			},
 			wantKey: "t-test-1",
 		},
 		{
 			name: "only non-numeric pending task with no deps is claimable",
 			tasks: map[string]task.Task{
-				"t-test-1": {ID: "T-test-1", Priority: "P1", Status: "pending"},
+				"t-test-1": {ID: "T-test-gen-cases", Priority: "P1", Status: "pending"},
 			},
 			wantKey: "t-test-1",
 		},
 		{
-			name: "T-test-2 claimable after T-test-1 completed",
+			name: "T-test-gen-scripts claimable after T-test-gen-cases completed",
 			tasks: map[string]task.Task{
 				"biz-1":    {ID: "1.1", Priority: "P0", Status: "completed"},
-				"t-test-1": {ID: "T-test-1", Priority: "P1", Status: "completed", Dependencies: []string{"1.1"}},
-				"t-test-2": {ID: "T-test-2", Priority: "P1", Status: "pending", Dependencies: []string{"T-test-1"}},
+				"t-test-1": {ID: "T-test-gen-cases", Priority: "P1", Status: "completed", Dependencies: []string{"1.1"}},
+				"t-test-2": {ID: "T-test-gen-scripts", Priority: "P1", Status: "pending", Dependencies: []string{"T-test-gen-cases"}},
 			},
 			wantKey: "t-test-2",
 		},
@@ -608,14 +608,14 @@ func TestClaimNextTask_NonNumericID(t *testing.T) {
 }
 
 func TestClaimNextTask_NonNumericBlocked(t *testing.T) {
-	// T-test-1 blocked because its dependency (1.1) is still pending
+	// T-test-gen-cases blocked because its dependency (1.1) is still pending
 	index := &task.TaskIndex{
 		StatusEnum:   []string{"pending", "in_progress", "completed"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
 	}
 	index.SetTasks(map[string]task.Task{
 		"biz-1":    {ID: "1.1", Priority: "P0", Status: "pending"},
-		"t-test-1": {ID: "T-test-1", Priority: "P1", Status: "pending", Dependencies: []string{"1.1"}},
+		"t-test-1": {ID: "T-test-gen-cases", Priority: "P1", Status: "pending", Dependencies: []string{"1.1"}},
 	})
 	key, _, err := claimNextTask(index)
 	if err != nil {

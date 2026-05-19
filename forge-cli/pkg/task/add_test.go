@@ -437,8 +437,8 @@ func TestApplyVars(t *testing.T) {
 		{
 			name:     "user variable",
 			tmpl:     "source: {{SOURCE_TASK_ID}}",
-			opts:     AddTaskOpts{Vars: map[string]string{"SOURCE_TASK_ID": "T-test-3"}},
-			expected: "source: T-test-3",
+			opts:     AddTaskOpts{Vars: map[string]string{"SOURCE_TASK_ID": "T-test-run"}},
+			expected: "source: T-test-run",
 		},
 		{
 			name:     "user var overrides builtin",
@@ -507,7 +507,7 @@ func TestCreateTaskMarkdown_TemplateMode(t *testing.T) {
 		Description: "Selector [data-testid='submit-btn'] not found.",
 		Template:    "fix-task",
 		Vars: map[string]string{
-			"SOURCE_TASK_ID": "T-test-3",
+			"SOURCE_TASK_ID": "T-test-run",
 			"SOURCE_FILES":   "src/components/Login.tsx",
 			"TEST_SCRIPT":    "tests/e2e/features/auth/login.spec.ts",
 			"TEST_RESULTS":   "tests/e2e/features/auth/results/latest.md",

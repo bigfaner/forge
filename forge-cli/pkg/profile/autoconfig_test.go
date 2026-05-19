@@ -24,6 +24,9 @@ func TestReadAutoConfig_MissingConfig(t *testing.T) {
 	if auto.CleanCode.Quick || auto.CleanCode.Full {
 		t.Errorf("CleanCode defaults = %+v, want {Quick:false Full:false}", auto.CleanCode)
 	}
+	if auto.Validation.Quick || auto.Validation.Full {
+		t.Errorf("Validation defaults = %+v, want {Quick:false Full:false}", auto.Validation)
+	}
 	if auto.GitPush {
 		t.Errorf("GitPush default = %v, want false", auto.GitPush)
 	}
@@ -78,6 +81,9 @@ auto:
 	if !auto.CleanCode.Full {
 		t.Error("CleanCode.Full should be true")
 	}
+	if auto.Validation.Quick || auto.Validation.Full {
+		t.Errorf("Validation should default to false/false, got %+v", auto.Validation)
+	}
 	if !auto.GitPush {
 		t.Error("GitPush should be true")
 	}
@@ -120,6 +126,9 @@ auto:
 	if auto.CleanCode.Quick || auto.CleanCode.Full {
 		t.Errorf("CleanCode should default to false/false, got %+v", auto.CleanCode)
 	}
+	if auto.Validation.Quick || auto.Validation.Full {
+		t.Errorf("Validation should default to false/false, got %+v", auto.Validation)
+	}
 }
 
 func TestReadAutoConfig_NoAutoBlock(t *testing.T) {
@@ -151,5 +160,8 @@ func TestReadAutoConfig_NoAutoBlock(t *testing.T) {
 	}
 	if auto.CleanCode.Quick || auto.CleanCode.Full {
 		t.Errorf("CleanCode defaults = %+v, want {Quick:false Full:false}", auto.CleanCode)
+	}
+	if auto.Validation.Quick || auto.Validation.Full {
+		t.Errorf("Validation defaults = %+v, want {Quick:false Full:false}", auto.Validation)
 	}
 }

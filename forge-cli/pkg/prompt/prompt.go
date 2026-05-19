@@ -86,7 +86,7 @@ func Synthesize(opts SynthesizeOpts) (string, error) {
 //
 // Available placeholders (all use {{NAME}} syntax):
 //
-//	{{TASK_ID}}         — task ID (e.g. "2.1", "T-test-1")
+//	{{TASK_ID}}         — task ID (e.g. "2.1", "T-test-gen-cases")
 //	{{TASK_FILE}}       — absolute path to the task markdown file
 //	{{SCOPE}}           — task scope (empty string when "all" or unspecified)
 //	{{FEATURE_SLUG}}    — feature slug (e.g. "auth-refresh")
@@ -186,7 +186,7 @@ func PhaseDetect(projectRoot, featureSlug, taskID string) string {
 }
 
 // phaseOf extracts the integer phase number from a task ID.
-// "2.1" → 2, "1.gate" → 1, "T-test-1" → -1 (non-integer prefix).
+// "2.1" → 2, "1.gate" → 1, "T-test-gen-cases" → -1 (non-integer prefix).
 func phaseOf(id string) int {
 	parts := strings.SplitN(id, ".", 2)
 	n, err := strconv.Atoi(parts[0])
@@ -282,8 +282,8 @@ func isLabelWithEmptyValue(line string) bool {
 
 // genScriptBases lists the task ID bases that support per-type gen-scripts or gen-and-run.
 var genScriptBases = []string{
-	"T-test-2",
-	"T-quick-2",
+	"T-test-gen-scripts",
+	"T-quick-gen-and-run",
 }
 
 // extractTestTypeArg extracts the --type argument from a type-suffixed task ID.

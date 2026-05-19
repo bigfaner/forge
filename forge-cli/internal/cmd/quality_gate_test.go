@@ -1258,8 +1258,8 @@ func TestIsDocsOnly(t *testing.T) {
 		{
 			name: "test-pipeline tasks only",
 			tasks: map[string]task.Task{
-				"t1": {ID: "T-quick-1", Type: task.TypeTestGenCases},
-				"t2": {ID: "T-quick-2", Type: task.TypeTestGenScripts},
+				"t1": {ID: "T-quick-gen-cases", Type: task.TypeTestGenCases},
+				"t2": {ID: "T-quick-gen-and-run", Type: task.TypeTestGenAndRun},
 			},
 			want: true,
 		},
@@ -1267,7 +1267,7 @@ func TestIsDocsOnly(t *testing.T) {
 			name: "mixed documentation and test-pipeline",
 			tasks: map[string]task.Task{
 				"t1": {ID: "1", Type: task.TypeDoc},
-				"t2": {ID: "T-quick-1", Type: task.TypeTestRun},
+				"t2": {ID: "T-quick-verify-regression", Type: task.TypeTestRun},
 			},
 			want: true,
 		},

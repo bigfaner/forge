@@ -39,13 +39,13 @@ Some content`,
 		{
 			name: "minimal frontmatter",
 			input: `---
-id: "T-test-1"
+id: "T-test-gen-cases"
 title: "Generate Test Cases"
 type: "test-pipeline.gen-cases"
 ---
 
 Body here`,
-			wantID:    "T-test-1",
+			wantID:    "T-test-gen-cases",
 			wantTitle: "Generate Test Cases",
 			wantType:  "test-pipeline.gen-cases",
 			wantBody:  "\n\nBody here",

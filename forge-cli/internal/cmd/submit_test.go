@@ -964,11 +964,11 @@ func TestAutoRestoreSourceTask_KeyDiffersFromID(t *testing.T) {
 			Feature: "test",
 		}
 		index.SetTasks(map[string]task.Task{
-			"run-e2e-tests": {ID: "T-test-3", Status: "blocked", Dependencies: []string{"fix-1"}},
-			"fix-1":         {ID: "fix-1", Status: "completed", SourceTaskID: "T-test-3"},
+			"run-e2e-tests": {ID: "T-test-run", Status: "blocked", Dependencies: []string{"fix-1"}},
+			"fix-1":         {ID: "fix-1", Status: "completed", SourceTaskID: "T-test-run"},
 		})
 
-		autoRestoreSourceTask(index, "T-test-3")
+		autoRestoreSourceTask(index, "T-test-run")
 
 		if index.TasksMap()["run-e2e-tests"].Status != "pending" {
 			t.Errorf("expected pending, got %s", index.TasksMap()["run-e2e-tests"].Status)
@@ -980,7 +980,7 @@ func TestAutoRestoreSourceTask_KeyDiffersFromID(t *testing.T) {
 			Feature: "test",
 		}
 		index.SetTasks(map[string]task.Task{
-			"run-e2e-tests": {ID: "T-test-3", Status: "blocked", Dependencies: []string{"fix-1"}},
+			"run-e2e-tests": {ID: "T-test-run", Status: "blocked", Dependencies: []string{"fix-1"}},
 			"fix-1":         {ID: "fix-1", Status: "completed"},
 		})
 
@@ -995,12 +995,12 @@ func TestAutoRestoreSourceTask_KeyDiffersFromID(t *testing.T) {
 			Feature: "test",
 		}
 		index.SetTasks(map[string]task.Task{
-			"run-e2e-tests": {ID: "T-test-3", Status: "blocked", Dependencies: []string{"fix-1", "fix-2"}},
+			"run-e2e-tests": {ID: "T-test-run", Status: "blocked", Dependencies: []string{"fix-1", "fix-2"}},
 			"fix-1":         {ID: "fix-1", Status: "completed"},
 			"fix-2":         {ID: "fix-2", Status: "pending"},
 		})
 
-		autoRestoreSourceTask(index, "T-test-3")
+		autoRestoreSourceTask(index, "T-test-run")
 
 		if index.TasksMap()["run-e2e-tests"].Status != "blocked" {
 			t.Errorf("should stay blocked with incomplete deps, got %s", index.TasksMap()["run-e2e-tests"].Status)
@@ -1028,19 +1028,19 @@ func TestAutoRestoreSourceTask_KeyDiffersFromID(t *testing.T) {
 			Feature: "test",
 		}
 		index.SetTasks(map[string]task.Task{
-			"run-e2e-tests": {ID: "T-test-3", Status: "blocked", Dependencies: []string{"fix-1"}},
+			"run-e2e-tests": {ID: "T-test-run", Status: "blocked", Dependencies: []string{"fix-1"}},
 			"fix-1":         {ID: "fix-1", Status: "completed"},
 		})
 
-		autoRestoreSourceTask(index, "T-test-3")
+		autoRestoreSourceTask(index, "T-test-run")
 
 		_, hasSlugKey := index.TasksMap()["run-e2e-tests"]
-		_, hasIDKey := index.TasksMap()["T-test-3"]
+		_, hasIDKey := index.TasksMap()["T-test-run"]
 		if !hasSlugKey {
 			t.Error("slug key 'run-e2e-tests' was lost after restore")
 		}
 		if hasIDKey {
-			t.Error("should not create duplicate entry under ID key 'T-test-3'")
+			t.Error("should not create duplicate entry under ID key 'T-test-run'")
 		}
 		if index.TasksMap()["run-e2e-tests"].Status != "pending" {
 			t.Errorf("expected pending, got %s", index.TasksMap()["run-e2e-tests"].Status)
@@ -1054,11 +1054,11 @@ func TestAutoRestoreSourceTask_SlugKeyedFullChain(t *testing.T) {
 			Feature: "test",
 		}
 		index.SetTasks(map[string]task.Task{
-			"run-e2e":  {ID: "T-test-3", Status: "blocked", Dependencies: []string{"T-fix-7"}},
+			"run-e2e":  {ID: "T-test-run", Status: "blocked", Dependencies: []string{"T-fix-7"}},
 			"fix-auth": {ID: "T-fix-7", Status: "completed"},
 		})
 
-		autoRestoreSourceTask(index, "T-test-3")
+		autoRestoreSourceTask(index, "T-test-run")
 
 		if index.TasksMap()["run-e2e"].Status != "pending" {
 			t.Errorf("should restore with slug-keyed dep completed, got %s", index.TasksMap()["run-e2e"].Status)
@@ -1070,12 +1070,12 @@ func TestAutoRestoreSourceTask_SlugKeyedFullChain(t *testing.T) {
 			Feature: "test",
 		}
 		index.SetTasks(map[string]task.Task{
-			"run-e2e": {ID: "T-test-3", Status: "blocked", Dependencies: []string{"1.x"}},
+			"run-e2e": {ID: "T-test-run", Status: "blocked", Dependencies: []string{"1.x"}},
 			"1.1":     {ID: "1.1", Status: "completed"},
 			"1.2":     {ID: "1.2", Status: "completed"},
 		})
 
-		autoRestoreSourceTask(index, "T-test-3")
+		autoRestoreSourceTask(index, "T-test-run")
 
 		if index.TasksMap()["run-e2e"].Status != "pending" {
 			t.Errorf("should restore with wildcard all completed, got %s", index.TasksMap()["run-e2e"].Status)
@@ -1087,11 +1087,11 @@ func TestAutoRestoreSourceTask_SlugKeyedFullChain(t *testing.T) {
 			Feature: "test",
 		}
 		index.SetTasks(map[string]task.Task{
-			"run-e2e":  {ID: "T-test-3", Status: "completed", Dependencies: []string{"T-fix-7"}},
+			"run-e2e":  {ID: "T-test-run", Status: "completed", Dependencies: []string{"T-fix-7"}},
 			"fix-auth": {ID: "T-fix-7", Status: "completed"},
 		})
 
-		autoRestoreSourceTask(index, "T-test-3")
+		autoRestoreSourceTask(index, "T-test-run")
 
 		if index.TasksMap()["run-e2e"].Status != "completed" {
 			t.Error("completed source should not be changed")
@@ -1103,10 +1103,10 @@ func TestAutoRestoreSourceTask_SlugKeyedFullChain(t *testing.T) {
 			Feature: "test",
 		}
 		index.SetTasks(map[string]task.Task{
-			"run-e2e": {ID: "T-test-3", Status: "skipped", Dependencies: []string{}},
+			"run-e2e": {ID: "T-test-run", Status: "skipped", Dependencies: []string{}},
 		})
 
-		autoRestoreSourceTask(index, "T-test-3")
+		autoRestoreSourceTask(index, "T-test-run")
 
 		if index.TasksMap()["run-e2e"].Status != "skipped" {
 			t.Error("skipped source should not be changed")
@@ -1118,10 +1118,10 @@ func TestAutoRestoreSourceTask_SlugKeyedFullChain(t *testing.T) {
 			Feature: "test",
 		}
 		index.SetTasks(map[string]task.Task{
-			"run-e2e": {ID: "T-test-3", Status: "blocked", Dependencies: []string{}},
+			"run-e2e": {ID: "T-test-run", Status: "blocked", Dependencies: []string{}},
 		})
 
-		autoRestoreSourceTask(index, "T-test-3")
+		autoRestoreSourceTask(index, "T-test-run")
 
 		if index.TasksMap()["run-e2e"].Status != "pending" {
 			t.Errorf("blocked with no deps should restore, got %s", index.TasksMap()["run-e2e"].Status)
@@ -1133,13 +1133,13 @@ func TestAutoRestoreSourceTask_SlugKeyedFullChain(t *testing.T) {
 			Feature: "test",
 		}
 		index.SetTasks(map[string]task.Task{
-			"run-e2e":  {ID: "T-test-3", Status: "blocked", Dependencies: []string{"T-fix-7"}},
+			"run-e2e":  {ID: "T-test-run", Status: "blocked", Dependencies: []string{"T-fix-7"}},
 			"fix-auth": {ID: "T-fix-7", Status: "completed"},
 		})
 
-		autoRestoreSourceTask(index, "T-test-3")
+		autoRestoreSourceTask(index, "T-test-run")
 		// Second call: status is now "pending", should be no-op
-		autoRestoreSourceTask(index, "T-test-3")
+		autoRestoreSourceTask(index, "T-test-run")
 
 		if index.TasksMap()["run-e2e"].Status != "pending" {
 			t.Errorf("should stay pending after second call, got %s", index.TasksMap()["run-e2e"].Status)
@@ -1151,8 +1151,8 @@ func TestAutoRestoreSourceTask_SlugKeyedFullChain(t *testing.T) {
 			Feature: "test",
 		}
 		index.SetTasks(map[string]task.Task{
-			"run-e2e":  {ID: "T-test-3", Status: "blocked", Dependencies: []string{"T-fix-A"}},
-			"fix-auth": {ID: "T-fix-A", Status: "blocked", Dependencies: []string{"fix-B"}, SourceTaskID: "T-test-3"},
+			"run-e2e":  {ID: "T-test-run", Status: "blocked", Dependencies: []string{"T-fix-A"}},
+			"fix-auth": {ID: "T-fix-A", Status: "blocked", Dependencies: []string{"fix-B"}, SourceTaskID: "T-test-run"},
 			"fix-B":    {ID: "fix-B", Status: "completed", SourceTaskID: "T-fix-A"},
 		})
 

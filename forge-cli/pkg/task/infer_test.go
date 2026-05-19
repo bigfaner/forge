@@ -14,39 +14,35 @@ func TestInferType(t *testing.T) {
 		{"2.gate", TypeGate},
 
 		// Breakdown test tasks (exact match)
-		{"T-test-1", TypeTestGenCases},
-		{"T-test-2", TypeTestGenScripts},
-		{"T-test-3", TypeTestRun},
-		{"T-test-4", TypeTestGraduate},
-		{"T-test-4.5", TypeTestVerifyRegression},
-		{"T-test-5", TypeDocConsolidate},
-
-		// T-test-1b is a special case: exact match for eval-cases (NOT a profile suffix)
-		// It's checked before profileSuffixedID, so it returns TypeTestEvalCases.
-		{"T-test-1b", TypeTestEvalCases},
+		{"T-test-gen-cases", TypeTestGenCases},
+		{"T-test-gen-scripts", TypeTestGenScripts},
+		{"T-test-run", TypeTestRun},
+		{"T-test-graduate", TypeTestGraduate},
+		{"T-test-verify-regression", TypeTestVerifyRegression},
+		{"T-test-eval-cases", TypeTestEvalCases},
 
 		// Breakdown test tasks (profile-suffixed)
-		{"T-test-1a", TypeTestGenCases},
-		{"T-test-1c", TypeTestGenCases},
-		{"T-test-2a", TypeTestGenScripts},
-		{"T-test-2b", TypeTestGenScripts},
-		{"T-test-3a", TypeTestRun},
-		{"T-test-3b", TypeTestRun},
-		{"T-test-4a", TypeTestGraduate},
-		{"T-test-4b", TypeTestGraduate},
+		{"T-test-gen-casesa", TypeTestGenCases},
+		{"T-test-gen-casesc", TypeTestGenCases},
+		{"T-test-gen-scriptsa", TypeTestGenScripts},
+		{"T-test-gen-scripts", TypeTestGenScripts},
+		{"T-test-runa", TypeTestRun},
+		{"T-test-runb", TypeTestRun},
+		{"T-test-graduatea", TypeTestGraduate},
+		{"T-test-graduateb", TypeTestGraduate},
 
 		// Quick test tasks (profile-suffixed)
-		{"T-quick-1a", TypeTestGenCases},
-		{"T-quick-1b", TypeTestGenCases},
-		{"T-quick-2a", TypeTestGenAndRun},
-		{"T-quick-2b", TypeTestGenAndRun},
-		{"T-quick-3a", TypeTestGraduate},
-		{"T-quick-3b", TypeTestGraduate},
-		{"T-quick-4a", TypeTestVerifyRegression},
-		{"T-quick-4b", TypeTestVerifyRegression},
-		{"T-quick-5", TypeDocDrift},
-		{"T-quick-5a", TypeDocDrift},
-		{"T-quick-5b", TypeDocDrift},
+		{"T-quick-gen-casesa", TypeTestGenCases},
+		{"T-quick-gen-casesb", TypeTestGenCases},
+		{"T-quick-gen-and-runa", TypeTestGenAndRun},
+		{"T-quick-gen-and-runb", TypeTestGenAndRun},
+		{"T-quick-graduatea", TypeTestGraduate},
+		{"T-quick-graduateb", TypeTestGraduate},
+		{"T-quick-verify-regressiona", TypeTestVerifyRegression},
+		{"T-quick-verify-regressionb", TypeTestVerifyRegression},
+		{"T-quick-doc-drift", TypeDocDrift},
+		{"T-quick-doc-drifta", TypeDocDrift},
+		{"T-quick-doc-driftb", TypeDocDrift},
 
 		// Fix tasks
 		{"fix-1", TypeCodingFix},
@@ -56,30 +52,34 @@ func TestInferType(t *testing.T) {
 		// Doc evaluation task
 		{"T-eval-doc", TypeDocEval},
 
+		// Validation tasks
+		{"T-validate-code", TypeValidationCode},
+		{"T-validate-ux", TypeValidationUx},
+
 		// Type-suffixed test tasks (per-type split)
-		{"T-test-2-api", TypeTestGenScripts},
-		{"T-test-2-tui", TypeTestGenScripts},
-		{"T-test-2-cli", TypeTestGenScripts},
-		{"T-test-2-web-ui", TypeTestGenScripts},
-		{"T-test-3-api", TypeTestRun},
-		{"T-test-4-api", TypeTestGraduate},
-		{"T-quick-2-api", TypeTestGenAndRun},
-		{"T-quick-2-tui", TypeTestGenAndRun},
-		{"T-quick-3-cli", TypeTestGraduate},
-		{"T-quick-4-api", ""},
+		{"T-test-gen-scripts-api", TypeTestGenScripts},
+		{"T-test-gen-scripts-tui", TypeTestGenScripts},
+		{"T-test-gen-scripts-cli", TypeTestGenScripts},
+		{"T-test-gen-scripts-web-ui", TypeTestGenScripts},
+		{"T-test-run-api", TypeTestRun},
+		{"T-test-graduate-api", TypeTestGraduate},
+		{"T-quick-gen-and-run-api", TypeTestGenAndRun},
+		{"T-quick-gen-and-run-tui", TypeTestGenAndRun},
+		{"T-quick-graduate-cli", TypeTestGraduate},
+		{"T-quick-verify-regression-api", ""},
 
 		// Profile-suffixed + type-suffixed
-		{"T-test-2a-api", TypeTestGenScripts},
-		{"T-test-2b-tui", TypeTestGenScripts},
-		{"T-test-3a-cli", TypeTestRun},
-		{"T-quick-2a-api", TypeTestGenAndRun},
-		{"T-quick-2b-tui", TypeTestGenAndRun},
-		{"T-quick-3a-cli", TypeTestGraduate},
+		{"T-test-gen-scriptsa-api", TypeTestGenScripts},
+		{"T-test-gen-scriptsb-tui", TypeTestGenScripts},
+		{"T-test-runa-cli", TypeTestRun},
+		{"T-quick-gen-and-runa-api", TypeTestGenAndRun},
+		{"T-quick-gen-and-runb-tui", TypeTestGenAndRun},
+		{"T-quick-graduatea-cli", TypeTestGraduate},
 
-		// Type suffix on T-test-1 should NOT match (exact + profileSuffixed only)
-		{"T-test-1-api", ""},
-		{"T-test-4.5-api", ""},
-		{"T-test-5-api", ""},
+		// Type suffix on T-test-gen-cases should NOT match (exact + profileSuffixed only)
+		{"T-test-gen-cases-api", ""},
+		{"T-test-verify-regression-api", ""},
+		{"T-specs-consolidate-api", ""},
 
 		// Unknown IDs return empty string (no TypeCodingFeature fallback)
 		{"1.1", ""},
@@ -94,9 +94,9 @@ func TestInferType(t *testing.T) {
 		{"refactor", ""},
 
 		// Renamed and new IDs
-		{"T-specs-1", TypeDocConsolidate},
-		{"T-quick-specs-1", TypeDocDrift},
-		{"T-clean-code-1", TypeCleanCode},
+		{"T-specs-consolidate", TypeDocConsolidate},
+		{"T-quick-doc-drift", TypeDocDrift},
+		{"T-clean-code", TypeCleanCode},
 	}
 
 	for _, tt := range tests {
@@ -115,16 +115,16 @@ func TestExtractTypeSuffix(t *testing.T) {
 		base string
 		want string
 	}{
-		{"T-test-2-api", "T-test-2", "api"},
-		{"T-test-2a-tui", "T-test-2", "tui"},
-		{"T-test-2-web-ui", "T-test-2", "web-ui"},
-		{"T-test-2a-web-ui", "T-test-2", "web-ui"},
-		{"T-quick-2-cli", "T-quick-2", "cli"},
-		{"T-quick-2b-api", "T-quick-2", "api"},
-		{"T-test-2", "T-test-2", ""},        // exact match
-		{"T-test-2a", "T-test-2", ""},       // profile suffix only
-		{"T-test-1-api", "T-test-1", "api"}, // syntactically valid, but InferType won't route it
-		{"random", "T-test-2", ""},          // wrong base
+		{"T-test-gen-scripts-api", "T-test-gen-scripts", "api"},
+		{"T-test-gen-scriptsa-tui", "T-test-gen-scripts", "tui"},
+		{"T-test-gen-scripts-web-ui", "T-test-gen-scripts", "web-ui"},
+		{"T-test-gen-scriptsa-web-ui", "T-test-gen-scripts", "web-ui"},
+		{"T-quick-gen-and-run-cli", "T-quick-gen-and-run", "cli"},
+		{"T-quick-gen-and-runb-api", "T-quick-gen-and-run", "api"},
+		{"T-test-gen-scripts", "T-test-gen-scripts", ""},    // exact match
+		{"T-test-gen-scriptsa", "T-test-gen-scripts", ""},   // profile suffix only
+		{"T-test-gen-cases-api", "T-test-gen-cases", "api"}, // syntactically valid, but InferType won't route it
+		{"random", "T-test-gen-scripts", ""},                // wrong base
 	}
 
 	for _, tt := range tests {

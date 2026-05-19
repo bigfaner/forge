@@ -5,44 +5,48 @@ import "strings"
 // InferType infers the task type from the task ID using pattern matching.
 // Returns empty string for unknown IDs (no fallback).
 //
-// Handles profile-suffixed IDs from the test profile system (D9):
-// single profile: T-test-2, T-test-3, T-test-4 (no suffix)
-// multi profile:  T-test-2a, T-test-2b, T-test-3a, ... (letter suffix)
+// Handles profile-suffixed IDs from the test profile system:
+// single profile: T-test-gen-scripts, T-test-run, T-test-graduate (no suffix)
+// multi profile:  T-test-gen-scriptsa, T-test-gen-scriptsb, T-test-runa, ... (letter suffix)
 //
 // Handles type-suffixed IDs from per-type test pipeline split:
-// no profile:   T-test-2-api, T-test-2-tui, T-test-2-cli (type suffix after number)
-// with profile: T-test-2a-api, T-test-2b-tui (profile letter + type suffix)
+// no profile:   T-test-gen-scripts-api, T-test-gen-scripts-tui, T-test-gen-scripts-cli (type suffix)
+// with profile: T-test-gen-scriptsa-api, T-test-gen-scriptsb-tui (profile letter + type suffix)
 func InferType(id string) string {
 	switch {
 	case strings.HasSuffix(id, ".summary"):
 		return TypeDocSummary
 	case strings.HasSuffix(id, ".gate"):
 		return TypeGate
-	case id == "T-test-1b":
+	case id == "T-test-eval-cases":
 		return TypeTestEvalCases
-	case id == "T-test-1", profileSuffixedID(id, "T-test-1"):
+	case id == "T-test-gen-cases", profileSuffixedID(id, "T-test-gen-cases"):
 		return TypeTestGenCases
-	case id == "T-test-2", profileSuffixedID(id, "T-test-2"), typeSuffixedID(id, "T-test-2"):
+	case id == "T-test-gen-scripts", profileSuffixedID(id, "T-test-gen-scripts"), typeSuffixedID(id, "T-test-gen-scripts"):
 		return TypeTestGenScripts
-	case id == "T-test-3", profileSuffixedID(id, "T-test-3"), typeSuffixedID(id, "T-test-3"):
+	case id == "T-test-run", profileSuffixedID(id, "T-test-run"), typeSuffixedID(id, "T-test-run"):
 		return TypeTestRun
-	case id == "T-test-4", profileSuffixedID(id, "T-test-4"), typeSuffixedID(id, "T-test-4"):
+	case id == "T-test-graduate", profileSuffixedID(id, "T-test-graduate"), typeSuffixedID(id, "T-test-graduate"):
 		return TypeTestGraduate
-	case id == "T-test-4.5":
+	case id == "T-test-verify-regression":
 		return TypeTestVerifyRegression
-	case id == "T-test-5", id == "T-specs-1":
+	case id == "T-specs-consolidate":
 		return TypeDocConsolidate
-	case profileSuffixedID(id, "T-quick-1"):
+	case id == "T-validate-code":
+		return TypeValidationCode
+	case id == "T-validate-ux":
+		return TypeValidationUx
+	case profileSuffixedID(id, "T-quick-gen-cases"):
 		return TypeTestGenCases
-	case profileSuffixedID(id, "T-quick-2"), typeSuffixedID(id, "T-quick-2"):
+	case profileSuffixedID(id, "T-quick-gen-and-run"), typeSuffixedID(id, "T-quick-gen-and-run"):
 		return TypeTestGenAndRun
-	case profileSuffixedID(id, "T-quick-3"), typeSuffixedID(id, "T-quick-3"):
+	case profileSuffixedID(id, "T-quick-graduate"), typeSuffixedID(id, "T-quick-graduate"):
 		return TypeTestGraduate
-	case profileSuffixedID(id, "T-quick-4"):
+	case profileSuffixedID(id, "T-quick-verify-regression"):
 		return TypeTestVerifyRegression
-	case id == "T-quick-5", id == "T-quick-specs-1", profileSuffixedID(id, "T-quick-5"), profileSuffixedID(id, "T-quick-specs-1"):
+	case id == "T-quick-doc-drift", profileSuffixedID(id, "T-quick-doc-drift"):
 		return TypeDocDrift
-	case id == "T-clean-code-1":
+	case id == "T-clean-code":
 		return TypeCleanCode
 	case strings.HasPrefix(id, "fix-") || strings.HasPrefix(id, "disc-"):
 		return TypeCodingFix
@@ -54,8 +58,8 @@ func InferType(id string) string {
 }
 
 // profileSuffixedID checks if id matches the pattern "base" + single lowercase letter.
-// e.g., profileSuffixedID("T-test-2a", "T-test-2") → true
-// e.g., profileSuffixedID("T-test-2", "T-test-2") → false (exact match handled separately)
+// e.g., profileSuffixedID("T-test-gen-scriptsa", "T-test-gen-scripts") → true
+// e.g., profileSuffixedID("T-test-gen-scripts", "T-test-gen-scripts") → false (exact match handled separately)
 func profileSuffixedID(id, base string) bool {
 	if !strings.HasPrefix(id, base) {
 		return false
@@ -68,11 +72,11 @@ func profileSuffixedID(id, base string) bool {
 }
 
 // typeSuffixedID checks if id matches the pattern "base" + optional profile letter + "-" + capability.
-// e.g., typeSuffixedID("T-test-2-api", "T-test-2") → true
-// e.g., typeSuffixedID("T-test-2a-api", "T-test-2") → true
-// e.g., typeSuffixedID("T-test-2-web-ui", "T-test-2") → true
-// e.g., typeSuffixedID("T-test-2a", "T-test-2") → false (profile suffix only, no type)
-// e.g., typeSuffixedID("T-test-2", "T-test-2") → false (exact match handled separately)
+// e.g., typeSuffixedID("T-test-gen-scripts-api", "T-test-gen-scripts") → true
+// e.g., typeSuffixedID("T-test-gen-scriptsa-api", "T-test-gen-scripts") → true
+// e.g., typeSuffixedID("T-test-gen-scripts-web-ui", "T-test-gen-scripts") → true
+// e.g., typeSuffixedID("T-test-gen-scriptsa", "T-test-gen-scripts") → false (profile suffix only, no type)
+// e.g., typeSuffixedID("T-test-gen-scripts", "T-test-gen-scripts") → false (exact match handled separately)
 func typeSuffixedID(id, base string) bool {
 	if !strings.HasPrefix(id, base) {
 		return false
@@ -106,9 +110,9 @@ func typeSuffixedID(id, base string) bool {
 
 // ExtractTypeSuffix extracts the type/capability suffix from a type-suffixed task ID.
 // Returns empty string if no type suffix is present.
-// e.g., ExtractTypeSuffix("T-test-2-api", "T-test-2") → "api"
-// e.g., ExtractTypeSuffix("T-test-2a-tui", "T-test-2") → "tui"
-// e.g., ExtractTypeSuffix("T-test-2", "T-test-2") → ""
+// e.g., ExtractTypeSuffix("T-test-gen-scripts-api", "T-test-gen-scripts") → "api"
+// e.g., ExtractTypeSuffix("T-test-gen-scriptsa-tui", "T-test-gen-scripts") → "tui"
+// e.g., ExtractTypeSuffix("T-test-gen-scripts", "T-test-gen-scripts") → ""
 func ExtractTypeSuffix(id, base string) string {
 	if !typeSuffixedID(id, base) {
 		return ""

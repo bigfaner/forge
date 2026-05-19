@@ -750,9 +750,9 @@ func TestIsTestTaskID(t *testing.T) {
 		id   string
 		want bool
 	}{
-		{"T-test-1", true},
+		{"T-test-gen-cases", true},
 		{"T-test-2a", true},
-		{"T-quick-1", true},
+		{"T-quick-gen-cases", true},
 		{"1", false},
 		{"1.gate", false},
 		{"fix-1", false},
@@ -908,7 +908,7 @@ func TestBuildIndex_StageGatesTestTaskExclusion(t *testing.T) {
 
 	// Phase 1: 1 business task + 1 T-test task = only 1 business task (below threshold)
 	writeTaskMD(t, tasksDir, "1-foo.md", "1.1", "Business Task", nil)
-	writeTaskMD(t, tasksDir, "test-1.md", "T-test-1", "Test Task", nil)
+	writeTaskMD(t, tasksDir, "test-1.md", "T-test-gen-cases", "Test Task", nil)
 
 	// Phase 2: 2 business tasks (qualifies)
 	writeTaskMD(t, tasksDir, "2-bar.md", "2.1", "Phase 2 Task 1", nil)
@@ -1044,10 +1044,10 @@ func TestNeedsTestPipeline(t *testing.T) {
 		{
 			name: "business tasks with auto-generated tasks mixed in",
 			tasks: map[string]Task{
-				"1-doc":    {ID: "1.1", Type: TypeDoc},
-				"2-doc":    {ID: "1.2", Type: TypeDoc},
-				"1.gate":   {ID: "1.gate", Type: TypeGate},
-				"T-test-1": {ID: "T-test-1", Type: TypeTestGenCases},
+				"1-doc":            {ID: "1.1", Type: TypeDoc},
+				"2-doc":            {ID: "1.2", Type: TypeDoc},
+				"1.gate":           {ID: "1.gate", Type: TypeGate},
+				"T-test-gen-cases": {ID: "T-test-gen-cases", Type: TypeTestGenCases},
 			},
 			want: false,
 		},
@@ -1143,9 +1143,9 @@ func TestNeedsDocEval(t *testing.T) {
 		{
 			name: "auto-generated tasks mixed with documentation still returns true",
 			tasks: map[string]Task{
-				"1-doc":    {ID: "1.1", Type: TypeDoc},
-				"1.gate":   {ID: "1.gate", Type: TypeGate},
-				"T-test-1": {ID: "T-test-1", Type: TypeTestGenCases},
+				"1-doc":            {ID: "1.1", Type: TypeDoc},
+				"1.gate":           {ID: "1.gate", Type: TypeGate},
+				"T-test-gen-cases": {ID: "T-test-gen-cases", Type: TypeTestGenCases},
 			},
 			want: true,
 		},
@@ -1471,7 +1471,7 @@ func TestBuildIndex_WithInterfaces_ProducesPerTypeTasks(t *testing.T) {
 	if !ok {
 		t.Fatal("quick-gen-and-run-go-cli not in index")
 	}
-	if task.ID != "T-quick-2-cli" {
+	if task.ID != "T-quick-gen-and-run-cli" {
 		t.Errorf("per-type task ID = %q, want T-quick-2-cli", task.ID)
 	}
 	if task.Profile != "go" {

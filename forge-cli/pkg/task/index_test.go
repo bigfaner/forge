@@ -240,7 +240,7 @@ func TestByID(t *testing.T) {
 		Feature: "test-feature",
 		tasks: map[string]Task{
 			"task1":   {ID: "1.1", Title: "Task 1", Status: "pending"},
-			"run-e2e": {ID: "T-test-3", Title: "Run e2e", Status: "pending"},
+			"run-e2e": {ID: "T-test-run", Title: "Run e2e", Status: "pending"},
 			"disc-1":  {ID: "disc-1", Title: "Discovery", Status: "pending"},
 		},
 	}
@@ -256,7 +256,7 @@ func TestByID(t *testing.T) {
 	})
 
 	t.Run("key differs from ID, lookup by ID", func(t *testing.T) {
-		got, ok := index.ByID("T-test-3")
+		got, ok := index.ByID("T-test-run")
 		if !ok {
 			t.Fatal("ByID() returned false")
 		}
@@ -270,8 +270,8 @@ func TestByID(t *testing.T) {
 		if !ok {
 			t.Fatal("ByID() returned false")
 		}
-		if got.ID != "T-test-3" {
-			t.Errorf("ID = %q, want %q", got.ID, "T-test-3")
+		if got.ID != "T-test-run" {
+			t.Errorf("ID = %q, want %q", got.ID, "T-test-run")
 		}
 	})
 
@@ -297,7 +297,7 @@ func TestFindTask(t *testing.T) {
 		tasks: map[string]Task{
 			"task1":   {ID: "1.1", Title: "Task 1", Status: "pending"},
 			"task2":   {ID: "1.2", Title: "Task 2", Status: "pending"},
-			"run-e2e": {ID: "T-test-3", Title: "Run e2e", Status: "pending"},
+			"run-e2e": {ID: "T-test-run", Title: "Run e2e", Status: "pending"},
 		},
 	}
 
@@ -310,8 +310,8 @@ func TestFindTask(t *testing.T) {
 	}{
 		{"find by key (key==ID)", "task1", "task1", "1.1", false},
 		{"find by ID", "1.2", "task2", "1.2", false},
-		{"find by ID when key differs", "T-test-3", "run-e2e", "T-test-3", false},
-		{"find by key when key differs from ID", "run-e2e", "run-e2e", "T-test-3", false},
+		{"find by ID when key differs", "T-test-run", "run-e2e", "T-test-run", false},
+		{"find by key when key differs from ID", "run-e2e", "run-e2e", "T-test-run", false},
 		{"not found", "nonexistent", "", "", true},
 	}
 

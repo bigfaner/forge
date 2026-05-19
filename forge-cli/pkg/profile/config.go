@@ -32,6 +32,7 @@ type AutoConfig struct {
 	E2eTest          ModeToggle `yaml:"e2eTest"`
 	ConsolidateSpecs ModeToggle `yaml:"consolidateSpecs"`
 	CleanCode        ModeToggle `yaml:"cleanCode"`
+	Validation       ModeToggle `yaml:"validation"`
 	GitPush          bool       `yaml:"gitPush"`
 	// raw tracks which sub-fields were explicitly present in the YAML.
 	// Used by applyDefaults to distinguish "false" from "missing".
@@ -40,12 +41,13 @@ type AutoConfig struct {
 
 // AutoConfigDefaults returns an AutoConfig with backward-compatible defaults:
 // e2eTest: quick=false, full=true; consolidateSpecs: quick=true, full=true;
-// cleanCode=false, gitPush=false.
+// cleanCode=false, validation=false, gitPush=false.
 func AutoConfigDefaults() AutoConfig {
 	return AutoConfig{
 		E2eTest:          ModeToggle{Quick: false, Full: true},
 		ConsolidateSpecs: ModeToggle{Quick: true, Full: true},
 		CleanCode:        ModeToggle{Quick: false, Full: false},
+		Validation:       ModeToggle{Quick: false, Full: false},
 		GitPush:          false,
 	}
 }
@@ -55,6 +57,7 @@ func (a AutoConfig) IsZero() bool {
 	return a.E2eTest == ModeToggle{} &&
 		a.ConsolidateSpecs == ModeToggle{} &&
 		a.CleanCode == ModeToggle{} &&
+		a.Validation == ModeToggle{} &&
 		!a.GitPush
 }
 
@@ -72,6 +75,9 @@ func (a AutoConfig) WithDefaults() AutoConfig {
 	}
 	if a.CleanCode == (ModeToggle{}) {
 		a.CleanCode = d.CleanCode
+	}
+	if a.Validation == (ModeToggle{}) {
+		a.Validation = d.Validation
 	}
 	return a
 }
@@ -236,7 +242,7 @@ func parseAutoRaw(data []byte) (map[string]map[string]bool, error) {
 
 	result := make(map[string]map[string]bool)
 
-	modeFields := []string{"e2eTest", "consolidateSpecs", "cleanCode"}
+	modeFields := []string{"e2eTest", "consolidateSpecs", "cleanCode", "validation"}
 	for _, field := range modeFields {
 		node := findMappingKey(autoNode, field)
 		if node == nil {
@@ -288,6 +294,7 @@ func (a *AutoConfig) applyDefaults() {
 	applyModeDefault(&a.E2eTest, a.raw, "e2eTest", d.E2eTest)
 	applyModeDefault(&a.ConsolidateSpecs, a.raw, "consolidateSpecs", d.ConsolidateSpecs)
 	applyModeDefault(&a.CleanCode, a.raw, "cleanCode", d.CleanCode)
+	applyModeDefault(&a.Validation, a.raw, "validation", d.Validation)
 }
 
 // applyModeDefault sets default values for a ModeToggle field using per-mode defaults.

@@ -713,11 +713,11 @@ func TestValidatorRun_FeatureBased(t *testing.T) {
 
 func TestValidateTTest1Template_UnresolvedPlaceholder(t *testing.T) {
 	dir := t.TempDir()
-	taskFile := filepath.Join(dir, "T-test-1.md")
+	taskFile := filepath.Join(dir, "T-test-gen-cases.md")
 	_ = os.WriteFile(taskFile, []byte("# Task\nReplace {{LAST_BUSINESS_TASK_ID}} with actual ID\n"), 0644)
 
 	v := &validator{}
-	v.validateFirstTestTaskTemplate(taskFile, "T-test-1", []string{"{{LAST_BUSINESS_TASK_ID}}"})
+	v.validateFirstTestTaskTemplate(taskFile, "T-test-gen-cases", []string{"{{LAST_BUSINESS_TASK_ID}}"})
 	if len(v.errors) == 0 {
 		t.Error("expected error for unresolved placeholder")
 	}
@@ -728,11 +728,11 @@ func TestValidateTTest1Template_UnresolvedPlaceholder(t *testing.T) {
 
 func TestValidateTTest1Template_ResolvedPlaceholder(t *testing.T) {
 	dir := t.TempDir()
-	taskFile := filepath.Join(dir, "T-test-1.md")
+	taskFile := filepath.Join(dir, "T-test-gen-cases.md")
 	_ = os.WriteFile(taskFile, []byte("# Task\nDepends on 1.5\n"), 0644)
 
 	v := &validator{}
-	v.validateFirstTestTaskTemplate(taskFile, "T-test-1", []string{"{{LAST_BUSINESS_TASK_ID}}"})
+	v.validateFirstTestTaskTemplate(taskFile, "T-test-gen-cases", []string{"{{LAST_BUSINESS_TASK_ID}}"})
 	if len(v.errors) != 0 {
 		t.Errorf("expected no errors, got: %v", v.errors)
 	}
@@ -1263,7 +1263,7 @@ func TestRunValidate_InvalidFile(t *testing.T) {
 
 func TestValidateTTest1Template_MissingFile(t *testing.T) {
 	v := &validator{}
-	v.validateFirstTestTaskTemplate("/nonexistent/task.md", "T-test-1", []string{"{{LAST_BUSINESS_TASK_ID}}"})
+	v.validateFirstTestTaskTemplate("/nonexistent/task.md", "T-test-gen-cases", []string{"{{LAST_BUSINESS_TASK_ID}}"})
 	if len(v.errors) != 0 {
 		t.Errorf("missing file should not add errors, got: %v", v.errors)
 	}
@@ -2053,8 +2053,8 @@ func TestRunAllCompleted_NotAllDone(t *testing.T) {
 
 func TestRunRecord_AutoRestore_SlugKeyedSource(t *testing.T) {
 	dir := setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
-		"run-e2e":  {ID: "T-test-3", Title: "Run e2e tests", Status: "blocked", Priority: "P0", File: "T-test-3.md", Record: "records/T-test-3.md", Dependencies: []string{"fix-auth"}},
-		"fix-auth": {ID: "fix-auth", Title: "Fix auth", Status: "in_progress", Priority: "P0", File: "fix-auth.md", Record: "records/fix-auth.md", SourceTaskID: "T-test-3"},
+		"run-e2e":  {ID: "T-test-run", Title: "Run e2e tests", Status: "blocked", Priority: "P0", File: "T-test-run.md", Record: "records/T-test-run.md", Dependencies: []string{"fix-auth"}},
+		"fix-auth": {ID: "fix-auth", Title: "Fix auth", Status: "in_progress", Priority: "P0", File: "fix-auth.md", Record: "records/fix-auth.md", SourceTaskID: "T-test-run"},
 	}})
 
 	rd := task.RecordData{
@@ -2099,15 +2099,15 @@ func TestRunRecord_AutoRestore_SlugKeyedSource(t *testing.T) {
 	}
 
 	// No duplicate key created under task ID
-	if _, hasDup := index.TasksMap()["T-test-3"]; hasDup {
-		t.Error("should not create duplicate entry under ID key 'T-test-3'")
+	if _, hasDup := index.TasksMap()["T-test-run"]; hasDup {
+		t.Error("should not create duplicate entry under ID key 'T-test-run'")
 	}
 }
 
 func TestRunRecord_FixTaskAutoDowngrade_NoRestore(t *testing.T) {
 	dir := setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
-		"source": {ID: "T-test-3", Title: "Run e2e tests", Status: "blocked", Priority: "P0", File: "T-test-3.md", Record: "records/T-test-3.md", Dependencies: []string{"fix-1"}},
-		"fix-1":  {ID: "fix-1", Title: "Fix auth", Status: "in_progress", Priority: "P0", File: "fix-1.md", Record: "records/fix-1.md", SourceTaskID: "T-test-3"},
+		"source": {ID: "T-test-run", Title: "Run e2e tests", Status: "blocked", Priority: "P0", File: "T-test-run.md", Record: "records/T-test-run.md", Dependencies: []string{"fix-1"}},
+		"fix-1":  {ID: "fix-1", Title: "Fix auth", Status: "in_progress", Priority: "P0", File: "fix-1.md", Record: "records/fix-1.md", SourceTaskID: "T-test-run"},
 	}})
 
 	rd := task.RecordData{
@@ -2249,9 +2249,9 @@ func TestRunRecord_AutoDowngrade_ThenClaim(t *testing.T) {
 
 func TestRunRecord_MultiFixTask_PartialDowngrade(t *testing.T) {
 	dir := setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
-		"source": {ID: "T-test-3", Title: "Run e2e tests", Status: "blocked", Priority: "P0", File: "T-test-3.md", Record: "records/T-test-3.md", Dependencies: []string{"fix-1", "fix-2"}},
-		"fix-1":  {ID: "fix-1", Title: "Fix auth", Status: "in_progress", Priority: "P0", File: "fix-1.md", Record: "records/fix-1.md", SourceTaskID: "T-test-3"},
-		"fix-2":  {ID: "fix-2", Title: "Fix timeout", Status: "pending", Priority: "P0", File: "fix-2.md", Record: "records/fix-2.md", SourceTaskID: "T-test-3"},
+		"source": {ID: "T-test-run", Title: "Run e2e tests", Status: "blocked", Priority: "P0", File: "T-test-run.md", Record: "records/T-test-run.md", Dependencies: []string{"fix-1", "fix-2"}},
+		"fix-1":  {ID: "fix-1", Title: "Fix auth", Status: "in_progress", Priority: "P0", File: "fix-1.md", Record: "records/fix-1.md", SourceTaskID: "T-test-run"},
+		"fix-2":  {ID: "fix-2", Title: "Fix timeout", Status: "pending", Priority: "P0", File: "fix-2.md", Record: "records/fix-2.md", SourceTaskID: "T-test-run"},
 	}})
 
 	// Step 1: Record fix-1 as completed

@@ -346,7 +346,7 @@ func TestValidator_ValidateFilesExist(t *testing.T) {
 		}
 	})
 
-	t.Run("T-test-1 with unresolved placeholder", func(t *testing.T) {
+	t.Run("T-test-gen-cases with unresolved placeholder", func(t *testing.T) {
 		dir := t.TempDir()
 		featureSlug := "test-feature"
 
@@ -356,10 +356,10 @@ func TestValidator_ValidateFilesExist(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		// Create T-test-1.md with unresolved placeholder
+		// Create T-test-gen-cases.md with unresolved placeholder
 		taskFile := filepath.Join(tasksDir, "T-test-1.md")
 		content := `---
-id: "T-test-1"
+id: "T-test-gen-cases"
 dependencies: [{{LAST_BUSINESS_TASK_ID}}]
 ---
 `
@@ -369,7 +369,7 @@ dependencies: [{{LAST_BUSINESS_TASK_ID}}]
 
 		v := &validator{filePath: filepath.Join(dir, "docs", "features", featureSlug, "tasks", "index.json")}
 		v.validateFilesExist(featureSlug, map[string]task.Task{
-			"t-test-1": {ID: "T-test-1", File: "T-test-1.md"},
+			"t-test-1": {ID: "T-test-gen-cases", File: "T-test-1.md"},
 		})
 
 		if len(v.errors) != 1 {
@@ -380,7 +380,7 @@ dependencies: [{{LAST_BUSINESS_TASK_ID}}]
 		}
 	})
 
-	t.Run("T-test-1 with resolved placeholder", func(t *testing.T) {
+	t.Run("T-test-gen-cases with resolved placeholder", func(t *testing.T) {
 		dir := t.TempDir()
 		featureSlug := "test-feature"
 
@@ -390,10 +390,10 @@ dependencies: [{{LAST_BUSINESS_TASK_ID}}]
 			t.Fatal(err)
 		}
 
-		// Create T-test-1.md with resolved placeholder
+		// Create T-test-gen-cases.md with resolved placeholder
 		taskFile := filepath.Join(tasksDir, "T-test-1.md")
 		content := `---
-id: "T-test-1"
+id: "T-test-gen-cases"
 dependencies: ["1.5"]
 ---
 `
@@ -403,7 +403,7 @@ dependencies: ["1.5"]
 
 		v := &validator{filePath: filepath.Join(dir, "docs", "features", featureSlug, "tasks", "index.json")}
 		v.validateFilesExist(featureSlug, map[string]task.Task{
-			"t-test-1": {ID: "T-test-1", File: "T-test-1.md"},
+			"t-test-1": {ID: "T-test-gen-cases", File: "T-test-1.md"},
 		})
 
 		if len(v.errors) != 0 {
@@ -1477,7 +1477,7 @@ func TestValidator_QuickMode(t *testing.T) {
 		index.SetTasks(map[string]task.Task{
 			"task1":            {ID: "1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1-task.md", Type: "coding.feature"},
 			"task2":            {ID: "2", Title: "Task 2", Status: "pending", Priority: "P0", Dependencies: []string{"1"}, File: "2-task.md", Type: "coding.feature"},
-			"quick-test-cases": {ID: "T-quick-1", Title: "Test Cases", Status: "pending", Priority: "P1", Dependencies: []string{"2"}, File: "quick-test-cases.md", Type: "test.gen-cases"},
+			"quick-test-cases": {ID: "T-quick-gen-cases", Title: "Test Cases", Status: "pending", Priority: "P1", Dependencies: []string{"2"}, File: "quick-test-cases.md", Type: "test.gen-cases"},
 		})
 
 		for _, fname := range []string{"1-task.md", "2-task.md", "quick-test-cases.md"} {
@@ -1631,7 +1631,7 @@ func TestValidator_QuickMode_FirstTestTaskPlaceholder(t *testing.T) {
 
 		taskFile := filepath.Join(tasksDir, "quick-test-cases.md")
 		content := `---
-id: "T-quick-1"
+id: "T-quick-gen-cases"
 dependencies: [{{T_QUICK_1_DEP}}]
 ---
 `
@@ -1641,7 +1641,7 @@ dependencies: [{{T_QUICK_1_DEP}}]
 
 		v := &validator{filePath: filepath.Join(dir, "docs", "features", featureSlug, "tasks", "index.json")}
 		v.validateFilesExist(featureSlug, map[string]task.Task{
-			"quick-test-cases": {ID: "T-quick-1", File: "quick-test-cases.md"},
+			"quick-test-cases": {ID: "T-quick-gen-cases", File: "quick-test-cases.md"},
 		})
 
 		if len(v.errors) != 1 {
@@ -1663,7 +1663,7 @@ dependencies: [{{T_QUICK_1_DEP}}]
 
 		taskFile := filepath.Join(tasksDir, "quick-test-cases.md")
 		content := `---
-id: "T-quick-1"
+id: "T-quick-gen-cases"
 dependencies: ["2"]
 ---
 `
@@ -1673,7 +1673,7 @@ dependencies: ["2"]
 
 		v := &validator{filePath: filepath.Join(dir, "docs", "features", featureSlug, "tasks", "index.json")}
 		v.validateFilesExist(featureSlug, map[string]task.Task{
-			"quick-test-cases": {ID: "T-quick-1", File: "quick-test-cases.md"},
+			"quick-test-cases": {ID: "T-quick-gen-cases", File: "quick-test-cases.md"},
 		})
 
 		if len(v.errors) != 0 {

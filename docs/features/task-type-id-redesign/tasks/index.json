@@ -23,7 +23,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "in_progress",
+      "status": "completed",
       "file": "2-rename-task-ids.md",
       "record": "records/2-rename-task-ids.md",
       "breaking": true,

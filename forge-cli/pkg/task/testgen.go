@@ -44,13 +44,13 @@ func GetBreakdownTestTasks(languages []profile.Language, interfaces []string, au
 	// Shared tasks (gated by auto.E2eTest.Full)
 	if auto.E2eTest.Full {
 		tasks = append(tasks, TestTaskDef{
-			Key: "gen-test-cases", ID: "T-test-1",
+			Key: "gen-test-cases", ID: "T-test-gen-cases",
 			Title: "Generate e2e Test Cases", Priority: "P1", EstimatedTime: "1-2h",
 			Type: TypeTestGenCases, Scope: "all", NoTest: true,
 			StrategyKind: "generate",
 		})
 		tasks = append(tasks, TestTaskDef{
-			Key: "eval-test-cases", ID: "T-test-1b",
+			Key: "eval-test-cases", ID: "T-test-eval-cases",
 			Title: "Evaluate e2e Test Cases", Priority: "P1", EstimatedTime: "30min",
 			Type: TypeTestEvalCases, Scope: "all", NoTest: true, MainSession: true,
 		})
@@ -60,20 +60,20 @@ func GetBreakdownTestTasks(languages []profile.Language, interfaces []string, au
 			s := suffixLetter(i, suffix)
 			for _, typ := range interfaces {
 				tasks = append(tasks, TestTaskDef{
-					Key: "gen-test-scripts-" + string(lang) + "-" + typ, ID: "T-test-2" + s + "-" + typ,
+					Key: "gen-test-scripts-" + string(lang) + "-" + typ, ID: "T-test-gen-scripts" + s + "-" + typ,
 					Title: fmt.Sprintf("Generate Test Scripts (%s, %s)", lang, typ), Priority: "P1", EstimatedTime: "1-2h",
 					Type: TypeTestGenScripts, Scope: "all", Language: lang, TestType: typ,
 					StrategyKind: "generate",
 				})
 			}
 			tasks = append(tasks, TestTaskDef{
-				Key: "run-e2e-tests-" + string(lang), ID: "T-test-3" + s,
+				Key: "run-e2e-tests-" + string(lang), ID: "T-test-run" + s,
 				Title: fmt.Sprintf("Run e2e Tests (%s)", lang), Priority: "P1", EstimatedTime: "30min-1h",
 				Type: TypeTestRun, Scope: "all", Language: lang,
 				StrategyKind: "run",
 			})
 			tasks = append(tasks, TestTaskDef{
-				Key: "graduate-tests-" + string(lang), ID: "T-test-4" + s,
+				Key: "graduate-tests-" + string(lang), ID: "T-test-graduate" + s,
 				Title: fmt.Sprintf("Graduate Test Scripts (%s)", lang), Priority: "P1", EstimatedTime: "30min",
 				Type: TypeTestGraduate, Scope: "all", Language: lang,
 				StrategyKind: "graduate",
@@ -82,16 +82,30 @@ func GetBreakdownTestTasks(languages []profile.Language, interfaces []string, au
 
 		// More shared tasks
 		tasks = append(tasks, TestTaskDef{
-			Key: "verify-regression", ID: "T-test-4.5",
+			Key: "verify-regression", ID: "T-test-verify-regression",
 			Title: "Verify Full E2E Regression", Priority: "P1", EstimatedTime: "15-30min",
 			Type: TypeTestVerifyRegression, Scope: "all",
 		})
 	}
 
-	// Spec consolidation (gated by auto.ConsolidateSpecs.Full, renamed from T-test-5 to T-specs-1)
+	// Validation tasks (gated by auto.Validation.Full)
+	if auto.Validation.Full {
+		tasks = append(tasks, TestTaskDef{
+			Key: "validate-code", ID: "T-validate-code",
+			Title: "Validate Code Quality", Priority: "P2", EstimatedTime: "15min",
+			Type: TypeValidationCode, Scope: "all", NoTest: true, MainSession: false,
+		})
+		tasks = append(tasks, TestTaskDef{
+			Key: "validate-ux", ID: "T-validate-ux",
+			Title: "Validate User Experience", Priority: "P2", EstimatedTime: "15min",
+			Type: TypeValidationUx, Scope: "all", NoTest: true, MainSession: true,
+		})
+	}
+
+	// Spec consolidation (gated by auto.ConsolidateSpecs.Full)
 	if auto.ConsolidateSpecs.Full {
 		tasks = append(tasks, TestTaskDef{
-			Key: "consolidate-specs", ID: "T-specs-1",
+			Key: "consolidate-specs", ID: "T-specs-consolidate",
 			Title: "Consolidate Specs", Priority: "P2", EstimatedTime: "20min",
 			Type: TypeDocConsolidate, Scope: "all", NoTest: true,
 		})
@@ -100,7 +114,7 @@ func GetBreakdownTestTasks(languages []profile.Language, interfaces []string, au
 	// Clean code task (gated by auto.CleanCode.Full)
 	if auto.CleanCode.Full {
 		tasks = append(tasks, TestTaskDef{
-			Key: "clean-code", ID: "T-clean-code-1",
+			Key: "clean-code", ID: "T-clean-code",
 			Title: "Simplify and Clean Code", Priority: "P2", EstimatedTime: "20min",
 			Type: TypeCleanCode, Scope: "all", NoTest: true,
 		})
@@ -129,21 +143,21 @@ func GetQuickTestTasks(languages []profile.Language, interfaces []string, auto p
 		for i, lang := range languages {
 			s := suffixLetter(i, suffix)
 			tasks = append(tasks, TestTaskDef{
-				Key: "quick-test-cases-" + string(lang), ID: "T-quick-1" + s,
+				Key: "quick-test-cases-" + string(lang), ID: "T-quick-gen-cases" + s,
 				Title: fmt.Sprintf("Generate Quick Test Cases (%s)", lang), Priority: "P1", EstimatedTime: "30min-1h",
 				Type: TypeTestGenCases, Scope: "all", NoTest: true, Language: lang,
 				StrategyKind: "generate",
 			})
 			for _, typ := range interfaces {
 				tasks = append(tasks, TestTaskDef{
-					Key: "quick-gen-and-run-" + string(lang) + "-" + typ, ID: "T-quick-2" + s + "-" + typ,
+					Key: "quick-gen-and-run-" + string(lang) + "-" + typ, ID: "T-quick-gen-and-run" + s + "-" + typ,
 					Title: fmt.Sprintf("Generate and Run Quick Test Scripts (%s, %s)", lang, typ), Priority: "P1", EstimatedTime: "1-2h",
 					Type: TypeTestGenAndRun, Scope: "all", Language: lang, TestType: typ,
 					StrategyKind: "generate",
 				})
 			}
 			tasks = append(tasks, TestTaskDef{
-				Key: "quick-graduate-" + string(lang), ID: "T-quick-3" + s,
+				Key: "quick-graduate-" + string(lang), ID: "T-quick-graduate" + s,
 				Title: fmt.Sprintf("Graduate Quick Test Scripts (%s)", lang), Priority: "P1", EstimatedTime: "15min",
 				Type: TypeTestGraduate, Scope: "all", Language: lang,
 				StrategyKind: "graduate",
@@ -152,16 +166,30 @@ func GetQuickTestTasks(languages []profile.Language, interfaces []string, auto p
 
 		// Shared
 		tasks = append(tasks, TestTaskDef{
-			Key: "quick-verify-regression", ID: "T-quick-4",
+			Key: "quick-verify-regression", ID: "T-quick-verify-regression",
 			Title: "Verify Quick E2E Regression", Priority: "P1", EstimatedTime: "15min",
 			Type: TypeTestVerifyRegression, Scope: "all",
 		})
 	}
 
-	// Spec drift detection (gated by auto.ConsolidateSpecs.Quick, renamed from T-quick-5 to T-quick-specs-1)
+	// Validation tasks (gated by auto.Validation.Quick)
+	if auto.Validation.Quick {
+		tasks = append(tasks, TestTaskDef{
+			Key: "validate-code", ID: "T-validate-code",
+			Title: "Validate Code Quality", Priority: "P2", EstimatedTime: "15min",
+			Type: TypeValidationCode, Scope: "all", NoTest: true, MainSession: false,
+		})
+		tasks = append(tasks, TestTaskDef{
+			Key: "validate-ux", ID: "T-validate-ux",
+			Title: "Validate User Experience", Priority: "P2", EstimatedTime: "15min",
+			Type: TypeValidationUx, Scope: "all", NoTest: true, MainSession: true,
+		})
+	}
+
+	// Spec drift detection (gated by auto.ConsolidateSpecs.Quick)
 	if auto.ConsolidateSpecs.Quick {
 		tasks = append(tasks, TestTaskDef{
-			Key: "quick-drift-detection", ID: "T-quick-specs-1",
+			Key: "quick-drift-detection", ID: "T-quick-doc-drift",
 			Title: "Detect Spec Drift", Priority: "P2", EstimatedTime: "15min",
 			Type: TypeDocDrift, Scope: "all", NoTest: true,
 		})
@@ -170,7 +198,7 @@ func GetQuickTestTasks(languages []profile.Language, interfaces []string, auto p
 	// Clean code task (gated by auto.CleanCode.Quick)
 	if auto.CleanCode.Quick {
 		tasks = append(tasks, TestTaskDef{
-			Key: "quick-clean-code", ID: "T-clean-code-1",
+			Key: "quick-clean-code", ID: "T-clean-code",
 			Title: "Simplify and Clean Code", Priority: "P2", EstimatedTime: "20min",
 			Type: TypeCleanCode, Scope: "all", NoTest: true,
 		})
@@ -242,16 +270,17 @@ func formatYAMLList(items []string) string {
 
 // resolveBreakdownDeps sets dependency chains for breakdown test tasks.
 func resolveBreakdownDeps(tasks []TestTaskDef, languages []profile.Language, _ bool, interfaces []string, auto profile.AutoConfig) {
-	// T-test-1 depends on last gate or last summary (placeholder, caller resolves)
-	// T-test-1b depends on T-test-1
-	// Per-profile: T-test-2<L>-<type> depends on T-test-1b
-	//              T-test-3<L> depends on ALL T-test-2<L>-<type> for its profile
-	//              T-test-4<L> depends on T-test-3<L>
-	// T-test-4.5 depends on all T-test-4<L> (or T-test-4 if single)
-	// T-specs-1 depends on T-test-4.5 (if e2e tasks exist) or last business task
-	// T-clean-code-1 depends on last business task
+	// T-test-gen-cases depends on last gate or last summary (placeholder, caller resolves)
+	// T-test-eval-cases depends on T-test-gen-cases
+	// Per-profile: T-test-gen-scripts<L>-<type> depends on T-test-eval-cases
+	//              T-test-run<L> depends on ALL T-test-gen-scripts<L>-<type> for its profile
+	//              T-test-graduate<L> depends on T-test-run<L>
+	// T-test-verify-regression depends on all T-test-graduate<L> (or T-test-graduate if single)
+	// T-validate-code depends on T-test-verify-regression (if e2e tasks exist)
+	// T-specs-consolidate depends on T-test-verify-regression (if e2e tasks exist) or last business task
+	// T-clean-code depends on last business task
 
-	if !auto.E2eTest.Full && !auto.ConsolidateSpecs.Full && !auto.CleanCode.Full {
+	if !auto.E2eTest.Full && !auto.ConsolidateSpecs.Full && !auto.CleanCode.Full && !auto.Validation.Full {
 		return // no tasks to wire
 	}
 
@@ -259,9 +288,9 @@ func resolveBreakdownDeps(tasks []TestTaskDef, languages []profile.Language, _ b
 	e2eCount := 0
 
 	if auto.E2eTest.Full {
-		// T-test-1b -> T-test-1
+		// T-test-eval-cases -> T-test-gen-cases
 		if len(tasks) > 1 {
-			tasks[1].Dependencies = []string{"T-test-1"}
+			tasks[1].Dependencies = []string{"T-test-gen-cases"}
 		}
 
 		profileStart := 2 // index 2 is first per-language task
@@ -270,9 +299,9 @@ func resolveBreakdownDeps(tasks []TestTaskDef, languages []profile.Language, _ b
 		for i := range languages {
 			blockStart := profileStart + i*blockSize
 
-			// All per-type gen-scripts depend on T-test-1b
+			// All per-type gen-scripts depend on T-test-eval-cases
 			for j := 0; j < nTypes; j++ {
-				tasks[blockStart+j].Dependencies = []string{"T-test-1b"}
+				tasks[blockStart+j].Dependencies = []string{"T-test-eval-cases"}
 			}
 
 			// Run depends on all per-type gen-scripts for this profile
@@ -288,7 +317,7 @@ func resolveBreakdownDeps(tasks []TestTaskDef, languages []profile.Language, _ b
 			graduate.Dependencies = []string{run.ID}
 		}
 
-		// T-test-4.5 depends on all graduate tasks
+		// T-test-verify-regression depends on all graduate tasks
 		sharedStart := profileStart + len(languages)*blockSize
 		if len(tasks) > sharedStart {
 			verifyReg := &tasks[sharedStart]
@@ -301,22 +330,28 @@ func resolveBreakdownDeps(tasks []TestTaskDef, languages []profile.Language, _ b
 		e2eCount = sharedStart + 1 // number of e2e tasks
 	}
 
-	// T-specs-1 depends on last e2e task (T-test-4.5) or nothing if no e2e tasks
+	// T-validate-code depends on T-test-verify-regression (if e2e tasks exist)
+	validateIdx := findTaskIndex(tasks, "T-validate-code")
+	if validateIdx >= 0 && auto.E2eTest.Full && e2eCount > 0 {
+		tasks[validateIdx].Dependencies = []string{"T-test-verify-regression"}
+	}
+
+	// T-specs-consolidate depends on T-test-verify-regression (if e2e tasks exist) or nothing
 	if auto.ConsolidateSpecs.Full {
-		specsIdx := findTaskIndex(tasks, "T-specs-1")
+		specsIdx := findTaskIndex(tasks, "T-specs-consolidate")
 		if specsIdx >= 0 && auto.E2eTest.Full && e2eCount > 0 {
-			tasks[specsIdx].Dependencies = []string{"T-test-4.5"}
+			tasks[specsIdx].Dependencies = []string{"T-test-verify-regression"}
 		}
 	}
 
-	// T-clean-code-1 depends on last business task (resolved by caller via ResolveFirstTestDep)
-	// The first test task depends on T-clean-code-1 when both exist (resolved in BuildIndex)
+	// T-clean-code depends on last business task (resolved by caller via ResolveFirstTestDep)
+	// The first test task depends on T-clean-code when both exist (resolved in BuildIndex)
 	_ = e2eStart
 }
 
 // resolveQuickDeps sets dependency chains for quick test tasks.
 func resolveQuickDeps(tasks []TestTaskDef, languages []profile.Language, _ bool, interfaces []string, auto profile.AutoConfig) {
-	if !auto.E2eTest.Quick && !auto.ConsolidateSpecs.Quick && !auto.CleanCode.Quick {
+	if !auto.E2eTest.Quick && !auto.ConsolidateSpecs.Quick && !auto.CleanCode.Quick && !auto.Validation.Quick {
 		return // no tasks to wire
 	}
 
@@ -343,7 +378,7 @@ func resolveQuickDeps(tasks []TestTaskDef, languages []profile.Language, _ bool,
 			graduate.Dependencies = genDeps
 		}
 
-		// T-quick-4 depends on all graduate tasks
+		// T-quick-verify-regression depends on all graduate tasks
 		sharedStart := len(languages) * blockSize
 		if len(tasks) > sharedStart {
 			var gradDeps []string
@@ -354,15 +389,23 @@ func resolveQuickDeps(tasks []TestTaskDef, languages []profile.Language, _ bool,
 		}
 	}
 
-	// T-quick-specs-1 depends on T-quick-4 (if e2e tasks exist) or nothing
-	if auto.ConsolidateSpecs.Quick {
-		idx := findTaskIndex(tasks, "T-quick-specs-1")
-		if idx >= 0 && auto.E2eTest.Quick {
-			tasks[idx].Dependencies = []string{"T-quick-4"}
+	// T-validate-code depends on T-quick-verify-regression (if e2e tasks exist) or nothing
+	if auto.Validation.Quick {
+		validateIdx := findTaskIndex(tasks, "T-validate-code")
+		if validateIdx >= 0 && auto.E2eTest.Quick {
+			tasks[validateIdx].Dependencies = []string{"T-quick-verify-regression"}
 		}
 	}
 
-	// T-clean-code-1 depends on last business task (resolved by caller via ResolveFirstTestDep)
+	// T-quick-doc-drift depends on T-quick-verify-regression (if e2e tasks exist) or nothing
+	if auto.ConsolidateSpecs.Quick {
+		idx := findTaskIndex(tasks, "T-quick-doc-drift")
+		if idx >= 0 && auto.E2eTest.Quick {
+			tasks[idx].Dependencies = []string{"T-quick-verify-regression"}
+		}
+	}
+
+	// T-clean-code depends on last business task (resolved by caller via ResolveFirstTestDep)
 }
 
 // findTaskIndex finds the index of the task with the given ID. Returns -1 if not found.
@@ -401,7 +444,7 @@ func suffixLetter(i int, useSuffix bool) string {
 // ResolveFirstTestDep resolves the first test task's dependency.
 // For breakdown: depends on the highest-phase gate, or last summary if no gate.
 // For quick: depends on the max business task ID.
-// When T-clean-code-1 exists, it is inserted between business tasks and test tasks.
+// When T-clean-code exists, it is inserted between business tasks and test tasks.
 // Returns the updated tasks with first-test-task deps set.
 func ResolveFirstTestDep(tasks []TestTaskDef, existingTasks map[string]Task, mode string) {
 	if len(tasks) == 0 {
@@ -418,13 +461,13 @@ func ResolveFirstTestDep(tasks []TestTaskDef, existingTasks map[string]Task, mod
 			return
 		}
 
-		cleanIdx := findTaskIndex(tasks, "T-clean-code-1")
-		firstTestIdx := findTaskIndex(tasks, "T-test-1")
+		cleanIdx := findTaskIndex(tasks, "T-clean-code")
+		firstTestIdx := findTaskIndex(tasks, "T-test-gen-cases")
 
 		if cleanIdx >= 0 {
 			tasks[cleanIdx].Dependencies = []string{dep}
 			if firstTestIdx >= 0 {
-				tasks[firstTestIdx].Dependencies = []string{"T-clean-code-1"}
+				tasks[firstTestIdx].Dependencies = []string{"T-clean-code"}
 			}
 		} else if firstTestIdx >= 0 {
 			tasks[firstTestIdx].Dependencies = []string{dep}
@@ -436,13 +479,13 @@ func ResolveFirstTestDep(tasks []TestTaskDef, existingTasks map[string]Task, mod
 			return
 		}
 
-		cleanIdx := findTaskIndex(tasks, "T-clean-code-1")
-		firstTestIdx := findTaskIndexByPrefix(tasks, "T-quick-1")
+		cleanIdx := findTaskIndex(tasks, "T-clean-code")
+		firstTestIdx := findTaskIndexByPrefix(tasks, "T-quick-gen-cases")
 
 		if cleanIdx >= 0 {
 			tasks[cleanIdx].Dependencies = []string{dep}
 			if firstTestIdx >= 0 {
-				tasks[firstTestIdx].Dependencies = []string{"T-clean-code-1"}
+				tasks[firstTestIdx].Dependencies = []string{"T-clean-code"}
 			}
 		} else if firstTestIdx >= 0 {
 			tasks[firstTestIdx].Dependencies = []string{dep}
@@ -589,11 +632,12 @@ func ResolveDocEvalDep(task *TestTaskDef, existingTasks map[string]Task) {
 
 // isAutoGenForDep returns true for auto-generated task IDs that should be
 // excluded from dependency resolution (they are not business tasks).
+// Includes validation tasks which are auto-generated pipeline tasks.
 func isAutoGenForDep(id string) bool {
 	if isTestTaskID(id) {
 		return true
 	}
-	if id == "T-eval-doc" {
+	if id == "T-eval-doc" || id == "T-validate-code" || id == "T-validate-ux" {
 		return true
 	}
 	if strings.HasSuffix(id, ".gate") || strings.HasSuffix(id, ".summary") {

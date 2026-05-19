@@ -21,7 +21,7 @@ func TestRunMigrate_HappyPath(t *testing.T) {
 			"t-gate":  {ID: "1.gate", Title: "Gate", Status: "pending", File: "1-gate.md", Record: "records/1-gate.md"},
 			"t-sum":   {ID: "1.summary", Title: "Summary", Status: "pending", File: "1-summary.md", Record: "records/1-summary.md"},
 			"t-fix":   {ID: "fix-1", Title: "Fix", Status: "pending", File: "fix-1.md", Record: "records/fix-1.md"},
-			"t-test1": {ID: "T-test-1", Title: "Gen cases", Status: "pending", File: "T-test-1.md", Record: "records/T-test-1.md"},
+			"t-test1": {ID: "T-test-gen-cases", Title: "Gen cases", Status: "pending", File: "T-test-gen-cases.md", Record: "records/T-test-gen-cases.md"},
 		},
 	})
 
@@ -167,13 +167,13 @@ func TestRunMigrate_AllKnownIDPatterns(t *testing.T) {
 		{"2.summary", task.TypeDocSummary},
 		{"fix-1", task.TypeCodingFix},
 		{"disc-1", task.TypeCodingFix},
-		{"T-test-1", task.TypeTestGenCases},
-		{"T-test-1b", task.TypeTestEvalCases},
-		{"T-test-2", task.TypeTestGenScripts},
-		{"T-test-3", task.TypeTestRun},
-		{"T-test-4", task.TypeTestGraduate},
-		{"T-test-4.5", task.TypeTestVerifyRegression},
-		{"T-test-5", task.TypeDocConsolidate},
+		{"T-test-gen-cases", task.TypeTestGenCases},
+		{"T-test-eval-cases", task.TypeTestEvalCases},
+		{"T-test-gen-scripts", task.TypeTestGenScripts},
+		{"T-test-run", task.TypeTestRun},
+		{"T-test-graduate", task.TypeTestGraduate},
+		{"T-test-verify-regression", task.TypeTestVerifyRegression},
+		{"T-specs-consolidate", task.TypeDocConsolidate},
 	}
 
 	for _, tc := range cases {

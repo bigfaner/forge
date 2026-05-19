@@ -87,33 +87,33 @@ func TestTC_003_DriftTypeIsValidInValidateIndex(t *testing.T) {
 		"validate-index should not report unknown type errors for doc-generation.drift")
 }
 
-// --- TC-004: Quick test tasks include T-quick-5 with doc-generation.drift type ---
+// --- TC-004: Quick test tasks include T-quick-doc-drift with doc-generation.drift type ---
 
-// Traceability: TC-004 -> Task 2 AC (T-quick-5 generation)
+// Traceability: TC-004 -> Task 2 AC (T-quick-doc-drift generation)
 func TestTC_004_QuickPipelineIncludesTQuick5WithDriftType(t *testing.T) {
-	// Verify the code defines T-quick-5 with correct properties
+	// Verify the code defines T-quick-doc-drift with correct properties
 	projectRoot := testkit.ProjectRoot(t)
 	testgenPath := filepath.Join(projectRoot, "pkg", "task", "testgen.go")
 	data, err := os.ReadFile(testgenPath)
 	require.NoError(t, err)
 	content := string(data)
 
-	// Verify T-quick-5 definition exists with drift type
-	assert.Contains(t, content, `"T-quick-5"`,
-		"testgen.go should define T-quick-5 ID")
+	// Verify T-quick-doc-drift definition exists with drift type
+	assert.Contains(t, content, `"T-quick-doc-drift"`,
+		"testgen.go should define T-quick-doc-drift ID")
 	assert.Contains(t, content, "TypeDocDrift",
-		"T-quick-5 should use TypeDocDrift type")
+		"T-quick-doc-drift should use TypeDocDrift type")
 	assert.Contains(t, content, "NoTest: true",
-		"T-quick-5 should have NoTest: true")
+		"T-quick-doc-drift should have NoTest: true")
 	assert.Contains(t, content, `Scope: "all"`,
-		"T-quick-5 should have Scope: all")
+		"T-quick-doc-drift should have Scope: all")
 	assert.Contains(t, content, `"Detect Spec Drift"`,
-		"T-quick-5 title should contain 'Drift'")
+		"T-quick-doc-drift title should contain 'Drift'")
 }
 
-// --- TC-005: T-quick-5 depends on T-quick-4 in quick pipeline ---
+// --- TC-005: T-quick-doc-drift depends on T-quick-verify-regression in quick pipeline ---
 
-// Traceability: TC-005 -> Task 2 AC (T-quick-5 deps)
+// Traceability: TC-005 -> Task 2 AC (T-quick-doc-drift deps)
 func TestTC_005_TQuick5DependsOnTQuick4(t *testing.T) {
 	projectRoot := testkit.ProjectRoot(t)
 	testgenPath := filepath.Join(projectRoot, "pkg", "task", "testgen.go")
@@ -121,12 +121,12 @@ func TestTC_005_TQuick5DependsOnTQuick4(t *testing.T) {
 	require.NoError(t, err)
 	content := string(data)
 
-	// Verify resolveQuickDeps sets T-quick-5 dependency on T-quick-4
-	assert.Contains(t, content, `"T-quick-4"`,
-		"resolveQuickDeps should set T-quick-5 dependency on T-quick-4")
+	// Verify resolveQuickDeps sets T-quick-doc-drift dependency on T-quick-verify-regression
+	assert.Contains(t, content, `"T-quick-verify-regression"`,
+		"resolveQuickDeps should set T-quick-doc-drift dependency on T-quick-verify-regression")
 }
 
-// --- TC-006: T-quick-5 appears after T-quick-4 in task generation order ---
+// --- TC-006: T-quick-doc-drift appears after T-quick-verify-regression in task generation order ---
 
 // Traceability: TC-006 -> Task 2 AC (task order)
 func TestTC_006_TQuick5AppearsAfterTQuick4(t *testing.T) {
@@ -136,33 +136,33 @@ func TestTC_006_TQuick5AppearsAfterTQuick4(t *testing.T) {
 	require.NoError(t, err)
 	content := string(data)
 
-	// T-quick-4 is defined at index len(profiles)*3, T-quick-5 at len(profiles)*3+1
-	// Verify the order: T-quick-4 appears before T-quick-5 in the file
-	quick4Idx := strings.Index(content, `"T-quick-4"`)
-	quick5Idx := strings.Index(content, `"T-quick-5"`)
-	assert.Greater(t, quick4Idx, -1, "T-quick-4 should be defined")
-	assert.Greater(t, quick5Idx, -1, "T-quick-5 should be defined")
-	assert.Less(t, quick4Idx, quick5Idx,
-		"T-quick-4 should appear before T-quick-5 in testgen.go")
+	// T-quick-verify-regression is defined at index len(profiles)*3, T-quick-doc-drift at len(profiles)*3+1
+	// Verify the order: T-quick-verify-regression appears before T-quick-doc-drift in the file
+	verifyRegIdx := strings.Index(content, `"T-quick-verify-regression"`)
+	driftIdx := strings.Index(content, `"T-quick-doc-drift"`)
+	assert.Greater(t, verifyRegIdx, -1, "T-quick-verify-regression should be defined")
+	assert.Greater(t, driftIdx, -1, "T-quick-doc-drift should be defined")
+	assert.Less(t, verifyRegIdx, driftIdx,
+		"T-quick-verify-regression should appear before T-quick-doc-drift in testgen.go")
 }
 
-// --- TC-007: T-test-5 description includes drift detection in breakdown mode ---
+// --- TC-007: T-specs-consolidate description includes drift detection in breakdown mode ---
 
 // Traceability: TC-007 -> Task 3 AC (breakdown-tasks SKILL.md references drift detection)
 func TestTC_007_TTest5DescriptionIncludesDriftDetection(t *testing.T) {
-	// Verify breakdown-tasks SKILL.md references drift detection for T-test-5
+	// Verify breakdown-tasks SKILL.md references drift detection for T-specs-consolidate
 	skillPath := findRepoFile(t,
 		filepath.Join("plugins", "forge", "skills", "breakdown-tasks", "SKILL.md"))
 	data, err := os.ReadFile(skillPath)
 	require.NoError(t, err)
 	content := string(data)
 
-	assert.Contains(t, content, "T-test-5",
-		"breakdown-tasks SKILL.md should mention T-test-5")
+	assert.Contains(t, content, "T-specs-consolidate",
+		"breakdown-tasks SKILL.md should mention T-specs-consolidate")
 	assert.True(t,
 		strings.Contains(strings.ToLower(content), "drift") ||
 			strings.Contains(content, "consolidate"),
-		"breakdown-tasks SKILL.md T-test-5 description should reference consolidation/drift detection")
+		"breakdown-tasks SKILL.md T-specs-consolidate description should reference consolidation/drift detection")
 }
 
 // --- TC-008: consolidate-specs SKILL.md contains Steps 9-11 ---
@@ -325,9 +325,9 @@ func TestTC_012_ConsolidateSpecsSupportsDriftOnlyMode(t *testing.T) {
 		"SKILL.md drift-only mode should reference Steps 9-11")
 }
 
-// --- TC-013: breakdown-tasks SKILL.md references drift detection for T-test-5 ---
+// --- TC-013: breakdown-tasks SKILL.md references drift detection for T-specs-consolidate ---
 
-// Traceability: TC-013 -> Task 3 AC (breakdown-tasks SKILL.md references T-test-5 drift detection)
+// Traceability: TC-013 -> Task 3 AC (breakdown-tasks SKILL.md references T-specs-consolidate drift detection)
 func TestTC_013_BreakdownTasksReferencesDriftForTTest5(t *testing.T) {
 	skillPath := findRepoFile(t,
 		filepath.Join("plugins", "forge", "skills", "breakdown-tasks", "SKILL.md"))
@@ -335,16 +335,16 @@ func TestTC_013_BreakdownTasksReferencesDriftForTTest5(t *testing.T) {
 	require.NoError(t, err)
 	content := string(data)
 
-	assert.Contains(t, content, "T-test-5",
-		"breakdown-tasks SKILL.md should mention T-test-5")
+	assert.Contains(t, content, "T-specs-consolidate",
+		"breakdown-tasks SKILL.md should mention T-specs-consolidate")
 	assert.True(t,
 		strings.Contains(strings.ToLower(content), "drift"),
-		"breakdown-tasks SKILL.md should mention drift detection for T-test-5")
+		"breakdown-tasks SKILL.md should mention drift detection for T-specs-consolidate")
 }
 
-// --- TC-014: guide.md reflects T-quick-5 and drift detection flow ---
+// --- TC-014: guide.md reflects T-quick-doc-drift and drift detection flow ---
 
-// Traceability: TC-014 -> Task 4 AC (guide T-quick-5)
+// Traceability: TC-014 -> Task 4 AC (guide T-quick-doc-drift)
 func TestTC_014_GuideReflectsTQuick5AndDriftDetection(t *testing.T) {
 	guidePath := findRepoFile(t,
 		filepath.Join("plugins", "forge", "hooks", "guide.md"))
@@ -352,9 +352,9 @@ func TestTC_014_GuideReflectsTQuick5AndDriftDetection(t *testing.T) {
 	require.NoError(t, err)
 	content := string(data)
 
-	// Verify Quick Mode section references T-quick-5
-	assert.Contains(t, content, "T-quick-5",
-		"guide.md should reference T-quick-5 in Quick Mode section")
+	// Verify Quick Mode section references T-quick-doc-drift
+	assert.Contains(t, content, "T-quick-doc-drift",
+		"guide.md should reference T-quick-doc-drift in Quick Mode section")
 
 	// Verify drift detection is mentioned
 	assert.True(t,
@@ -425,25 +425,25 @@ func TestTC_017_AllExistingTestsPass(t *testing.T) {
 		"all existing tests should pass: %s", string(out))
 }
 
-// --- TC-018: Task ID T-quick-5 infers type as doc-generation.drift ---
+// --- TC-018: Task ID T-quick-doc-drift infers type as doc-generation.drift ---
 
 // Traceability: TC-018 -> Task 2 AC (type inference)
 func TestTC_018_TaskIDInfersDriftType(t *testing.T) {
-	// Verify type inference for T-quick-5, T-quick-5a, T-quick-5b via code inspection
+	// Verify type inference for T-quick-doc-drift, T-quick-doc-drifta, T-quick-doc-driftb via code inspection
 	projectRoot := testkit.ProjectRoot(t)
 	inferPath := filepath.Join(projectRoot, "pkg", "task", "infer.go")
 	data, err := os.ReadFile(inferPath)
 	require.NoError(t, err)
 	content := string(data)
 
-	// Verify T-quick-5 infers doc-generation.drift
-	assert.Contains(t, content, `"T-quick-5"`,
-		"infer.go should handle T-quick-5")
+	// Verify T-quick-doc-drift infers doc-generation.drift
+	assert.Contains(t, content, `"T-quick-doc-drift"`,
+		"infer.go should handle T-quick-doc-drift")
 	assert.Contains(t, content, "TypeDocDrift",
-		"T-quick-5 should infer TypeDocDrift")
+		"T-quick-doc-drift should infer TypeDocDrift")
 
-	// Verify profile-suffixed variants (T-quick-5a, T-quick-5b) also handled
-	// The profileSuffixedID function handles T-quick-5 + letter suffix
+	// Verify profile-suffixed variants (T-quick-doc-drifta, T-quick-doc-driftb) also handled
+	// The profileSuffixedID function handles T-quick-doc-drift + letter suffix
 	assert.Contains(t, content, "profileSuffixedID",
 		"infer.go should use profileSuffixedID for variant handling")
 }
