@@ -80,7 +80,7 @@
       "dependencies": [
         "1.4"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "1.5-delete-profile.md",
       "record": "records/1.5-delete-profile.md",
       "scope": "backend",
