@@ -1,6 +1,7 @@
 ---
+
 feature: "lesson-reverse-chronological"
-status: tasks
+status: completed
 mode: quick
 ---
 
