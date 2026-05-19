@@ -1,6 +1,6 @@
 ---
 feature: "test-knowledge-convention-driven"
-status: prd
+status: design
 ---
 
 # Feature: test-knowledge-convention-driven
@@ -13,6 +13,7 @@ status: prd
 |----------|------|---------|
 | PRD Spec | prd/prd-spec.md | Replace Profile system with user-editable Convention files; full Profile removal, config cleanup, skill rewrites, new test-guide command; compile gate with recovery; phase gates with go/no-go criteria |
 | User Stories | prd/prd-user-stories.md | 6 stories with error scenario ACs covering non-default frameworks, Convention bootstrap, cold start, backward compatibility, multi-framework management, and compile gate recovery |
+| Tech Design | design/tech-design.md | Three-layer Convention-driven architecture; pkg/forgeconfig extraction; 12 consumer files enumerated; section-level merge semantics; regression-first testing |
 
 ## Traceability
 
