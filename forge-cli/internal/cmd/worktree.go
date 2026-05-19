@@ -163,6 +163,12 @@ func runWorktreeResume(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("worktree not found: %s", targetDir)
 	}
 
+	// Evaluate symlinks so the path matches os.Getwd() on macOS (/var → /private/var).
+	targetDir, err = filepath.EvalSymlinks(targetDir)
+	if err != nil {
+		return fmt.Errorf("resolve target path: %w", err)
+	}
+
 	// Verify it's a git worktree (.git file or directory must exist)
 	gitFile := filepath.Join(targetDir, ".git")
 	if _, err := os.Stat(gitFile); os.IsNotExist(err) {
@@ -405,6 +411,10 @@ func listForgeFeatures(projectRoot string) map[string]bool {
 // Rejects absolute paths and paths containing ".." traversals.
 func validateCopyFilePath(relPath string) error {
 	if filepath.IsAbs(relPath) {
+		return fmt.Errorf("copy-file path must be relative, got absolute: %s", relPath)
+	}
+	// Reject Windows-style absolute paths (e.g. C:\Windows) on all platforms.
+	if len(relPath) >= 2 && relPath[1] == ':' && (relPath[2] == '\\' || relPath[2] == '/') {
 		return fmt.Errorf("copy-file path must be relative, got absolute: %s", relPath)
 	}
 	if strings.Contains(relPath, "..") {
