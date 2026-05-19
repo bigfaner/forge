@@ -55,12 +55,12 @@ Post-task completion: create execution record + update task status.
 | `keyDecisions`        | array  | warning  | Key design decisions. Missing = warning (completed status only) |
 | `testsPassed`         | int    | context  | Number of tests passed. See Metrics Collection below |
 | `testsFailed`         | int    | context  | Number of tests failed. >0 with completed = auto-downgrade to blocked |
-| `coverage`            | float  | context  | Coverage percentage. Auto-set to `-1.0` for `noTest: true` or `type: "documentation"` tasks |
+| `coverage`            | float  | context  | Coverage percentage. Auto-set to `-1.0` for `noTest: true` or non-`coding.*` type tasks |
 | `acceptanceCriteria`  | array  | warning  | `{criterion, met}` objects. Missing = warning; any `met:false` = hard error (overridable) |
 | `notes`               | string | optional | Optional notes or observations               |
 | `typeReclassification` | object | optional | When executor discovers task type doesn't match actual work |
 
-> **context** = required for `completed` tasks with a testable type; auto-relaxed when `noTest: true` or `type: "documentation"`.
+> **context** = required for `completed` tasks with a `coding.*` type; auto-relaxed when `noTest: true` or type does not start with `coding.`.
 
 ## Type Reclassification
 
@@ -91,7 +91,7 @@ Before writing `record.json`, you MUST collect real metrics from the project's t
 Coverage rules:
 
 - `coverage` = actual percentage from test runner output
-- `coverage` = `-1.0` is auto-set by CLI for tasks with `noTest: true` or `type: "documentation"`. For testable tasks, always report real metrics.
+- `coverage` = `-1.0` is auto-set by CLI for tasks with `noTest: true` or a non-`coding.*` type (e.g., `doc*`, `test.*`, `validation.*`). For testable tasks (any `coding.*` type), always report real metrics.
 - Never write `0.0` unless the runner actually reported 0%
 
 Example commands (use whatever matches the project's toolchain):
@@ -149,13 +149,13 @@ After running, check the STATUS field in the output:
 
 ### Quality Gate Pre-check
 
-When `status=completed`, `--force` is NOT used, and the task has a testable type (not `noTest: true` and not `type: "documentation"`), `forge task submit` automatically runs the full quality gate before accepting the record:
+When `status=completed`, `--force` is NOT used, and the task has a testable type (any type with the `coding.*` prefix), `forge task submit` automatically runs the full quality gate before accepting the record. The testable-type check uses prefix matching: `IsTestableType(type) = strings.HasPrefix(type, "coding.")`.
 
 **Skip conditions** (quality gate is bypassed entirely when either applies):
 - `noTest: true` in task frontmatter — explicit override for edge cases
-- `type: "documentation"` — docs-only tasks that produce non-compilable output (`.md`, `.yaml`, `.json` under `skills/`, `docs/`, etc.)
+- Type does not start with `coding.` — docs-only tasks (`doc*`), test pipeline (`test.*`), validation (`validation.*`), and meta types (`gate`) all skip the gate
 
-The `noTest: true` field is retained for edge-case override (e.g., a code task that does not require tests). For standard docs-only tasks, `type: "documentation"` is the primary skip trigger — no additional `noTest` field is needed.
+The `noTest: true` field is retained for edge-case override (e.g., a code task that does not require tests). For standard docs-only tasks, the `doc*` type prefix is the primary skip trigger — no additional `noTest` field is needed.
 
 ```
 just compile [scope] → just fmt [scope] → just lint [scope] → just test [scope]
