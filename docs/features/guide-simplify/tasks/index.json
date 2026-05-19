@@ -8,7 +8,7 @@
       "title": "Restructure guide.md into 3 thematic sections",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-restructure-guide.md",
       "record": "records/1-restructure-guide.md",
       "type": "documentation"

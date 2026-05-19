@@ -29,75 +29,6 @@ docs/
 
 > Agents read `docs/business-rules/` and `docs/conventions/` during task execution for domain constraints and coding standards. Each file carries a `domains` frontmatter field (auto-managed by `/consolidate-specs`) with topic keywords — agents use it to load only files relevant to the current task, skipping the rest. `/consolidate-specs` also performs drift verification to keep specs in sync with code.
 
-## Skill Workflow
-
-```mermaid
-graph LR
-    A["/brainstorm<br>proposal.md"] --> B["/write-prd<br>prd/*.{3} + manifest.md"]
-    B --> C["/eval-prd<br>eval report"]
-    C -->|"has UI"| G["/ui-design<br>ui/ui-design.md"]
-    G --> H["/eval-ui<br>eval report"]
-    H --> G1["prototype"]
-    G1 --> G2{"👤 review"}
-    G2 -->|"approved"| D
-    C -->|"no UI"| D["/tech-design<br>design/*.{2} + manifest.md"]
-    D --> D1{"db-schema?"}
-    D1 -->|"yes"| D2["er-diagram + schema.sql"]
-    D2 --> D3{"👤 review"}
-    D3 -->|"approved"| E
-    D1 -->|"no"| E["/eval-design<br>eval report"]
-    E --> F["/breakdown-tasks<br>tasks/*.md + manifest.md"]
-```
-
-```mermaid
-graph LR
-    F["/breakdown-tasks<br><i>appends T-test-1..5 (with 1b, 4.5)</i>"] --> T1["/gen-sitemap*<br>sitemap.json"]
-    T1 --> T2["/gen-test-cases<br>test-cases.md"]
-    T2 --> T2b["/eval-test-cases<br>eval report"]
-    T2b --> T3["/gen-test-scripts<br>tests/e2e/features/"]
-    T3 --> T4["/run-e2e-tests<br>results/"]
-    T4 --> T4b["forge test promote<br>@feature -> @regression"]
-    T4b --> T4c["verify-regression<br>regression check"]
-    T4c --> T5["/consolidate-specs<br>specs/{biz,tech}-specs.md + drift audit"]
-```
-
-> * /gen-sitemap is a prerequisite command (called by T-test-1), not a standalone T-test task.
-
-Each skill checks prerequisites with `ls` before execution; aborts and prompts user if missing.
-
-### Quick Mode
-
-For features (1-10 tasks), use the streamlined pipeline:
-
-```mermaid
-graph LR
-    Q0["/quick"] --> Q1["/brainstorm<br>proposal.md"]
-    Q1 --> Q2{"human confirm"}
-    Q2 -->|"yes"| Q3["/quick-tasks<br>tasks/*.md + index.json"]
-    Q2 -->|"revise"| Q1
-    Q3 --> Q4["/run-tasks<br>auto-execute"]
-```
-
-**When to use Quick Mode:**
-- 1-10 tasks maximum
-- No complex architecture decisions needed
-- Proposal provides enough context (no PRD/design needed)
-
-**When to use Full Mode:**
-- Feature requires >10 tasks
-- Requires PRD with acceptance criteria
-- Needs tech design with architecture decisions
-- Has UI design requirements
-- Needs multi-phase execution with gates
-
-**Quick mode differences:**
-- No PRD, no design, no eval steps
-- `proposal.md` is the sole input document
-- Flat task list (no phases, no gates, no summaries)
-- T-quick-1~4 test tasks + optional T-quick-specs-1 (subset of T-test pipeline: skips gen-sitemap prerequisite, eval-test-cases; merged gen-and-run replaces separate gen-scripts + run; T-quick-specs-1 adds spec consolidation + drift detection when `auto.consolidateSpecs.quick=true`)
-- Simplified manifest (no Traceability table)
-- Docs-only features auto-detected: no test tasks, generates T-eval-doc instead
-
 ### Manifest
 
 `manifest.md` is the single entry point for a Feature. An AI agent reads this file to understand the full context:
@@ -106,7 +37,9 @@ graph LR
 - **Status** (feature-level): prd → design → tasks → in-progress → completed
   - Not to be confused with task-level statuses in index.json: pending, in_progress, completed, blocked, skipped, rejected
 
-## Quality Gate Protocol
+## Execution Rules
+
+### Quality Gate Protocol
 
 All task-executing workflows (`/execute-task`, `task-executor` agent, `/fix-bug`, `type: fix` tasks) MUST pass the quality gate before recording completion.
 
@@ -135,6 +68,16 @@ After all tasks done, runs as final safety net (no scope — project-wide):
 `forge quality-gate` automatically skips docs-only features (all tasks have `type: "documentation"` or `noTest: true`). For mixed features, only the non-documentation tasks are gated.
 
 On failure at any step, a P0 fix-task is automatically created. Run `forge task claim` to pick it up.
+
+### Task-CLI
+
+Task CLI manages task lifecycle within feature workflows.
+
+**Typical flow**: Before starting work, run `forge feature` → `forge task claim` to get a task → `forge task submit` to save results + update task status.
+
+> For record workflow details, see the `/submit-task` skill. For full command reference, run `forge -h` or `forge [command] -h`.
+
+## Automation Config
 
 ### Auto-Behavior Configuration
 
@@ -165,76 +108,3 @@ auto:
 | `auto.gitPush` | false | Runs `git push` after all-completed hook passes |
 
 Defaults are backward-compatible: existing behaviors default to `true`, new behaviors (`cleanCode`, `gitPush`) default to `false` (opt-in). Projects without an `auto` block get all defaults.
-
-## Testing Lifecycle
-
-Three layers of testing, each with distinct purpose and trigger:
-
-| Layer | Command | Scope | When |
-|---|---|---|---|
-| Unit Tests | `just test [scope]` | Task-level | Every task verify step (Quality Gate) |
-| Feature E2E | `just test-e2e --feature <slug>` | Feature-level | T-test-3 after scripts generated |
-| Regression Suite | `tests/e2e/` | Project-level | all-completed hook; promoted via `forge test promote` |
-
-```
-Unit (per task) ──→ Feature E2E (T-test-3) ──→ Regression (forge test promote)
-       ↑ Quality Gate enforces              ↑ tag: @feature → @regression
-```
-
-### Evaluation Parameter Exceptions
-
-All `/eval-*` commands delegate to the generic `eval` skill (`skills/eval/SKILL.md`) with type-specific rubrics from `skills/eval/rubrics/`. Default: 900 target / 3 iterations. Exceptions:
-
-| Command | Rubric | Target | Iterations | Reason |
-|---------|--------|--------|------------|--------|
-| `/eval-ui` | `rubrics/ui-web.md` (or `ui-mobile.md`, `ui-tui.md`) | 950 | 3 | UI design requires higher visual fidelity |
-| `/eval-test-cases` | `rubrics/test-cases.md` | 900 | 6 | Test cases need more refinement cycles |
-| `/eval-harness` | `rubrics/harness.md` | N/A (100-point scale) | N/A | Infrastructure health check, not adversarial |
-
-### Knowledge Accumulation
-
-Manual entry and automatic extraction of project knowledge into `docs/decisions/`, `docs/lessons/`, `docs/conventions/`, and `docs/business-rules/`.
-
-#### `/learn` — Unified Manual Entry
-
-Use `/learn` to capture ad-hoc knowledge at any point (debugging insights, mid-task discoveries, spontaneous realizations). Supports interactive mode (no args) and direct-input mode (with args). Identifies knowledge type(s) automatically and writes to the appropriate directory.
-
-```
-/learn                              # Interactive — agent asks what you learned
-/learn "race condition, use sync.Map"  # Direct — skip the question
-```
-
-Multi-type capture: a single input can produce entries in multiple directories (e.g., both a lesson and a decision). For bulk extraction from feature docs, `/learn` delegates to `/consolidate-specs`.
-
-#### Auto-Extract Triggers
-
-Knowledge extraction runs automatically at pipeline completion points. When notable knowledge is detected (architectural decisions, novel patterns, gotchas, business rules), it is extracted and presented for user confirmation before writing. Silent when nothing notable is found.
-
-| Trigger Point | What to scan | Knowledge types |
-|---------------|-------------|-----------------|
-| `run-tasks` completes all tasks | Task outcomes, code changes, manifest | Architectural decisions, patterns, gotchas, business rules |
-| `fix-bug` completes | Root cause analysis, fix approach | Non-obvious root causes, debugging patterns |
-| `write-prd` completes | PRD content | New business rules, user-facing constraints |
-| `tech-design` completes | Design document | Architecture decisions, dependency choices, data model decisions |
-
-#### `/consolidate-specs` — Bulk Extraction + Drift Detection
-
-Extracts business rules and tech specs from feature docs into project-level directories. Performs drift verification to keep specs in sync with code. Also maintains the auto-generated vocabulary index used by `/learn` and auto-extract triggers for classification suggestions.
-
-### Other Auxiliary Skills
-
-These skills operate outside the main workflow:
-
-| Skill | Purpose |
-|-------|---------|
-| `/eval-consistency` | Cross-document consistency check and fix (PRD, Design, UI, Tasks); delegates to generic `eval` skill with `rubrics/consistency.md` |
-| `/forensic` | Analyze past session transcripts to identify root causes of agent deviations |
-| `/improve-harness` | Dynamically implement harness improvements from `/eval-harness` report |
-
-## Task-CLI
-
-Task CLI manages task lifecycle within feature workflows.
-
-**Typical flow**: Before starting work, run `forge feature` → `forge task claim` to get a task → `forge task submit` to save results + update task status.
-
-> For record workflow details, see the `/submit-task` skill. For full command reference, run `forge -h` or `forge [command] -h`.
