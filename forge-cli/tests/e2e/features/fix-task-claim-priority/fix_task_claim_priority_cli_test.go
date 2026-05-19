@@ -176,7 +176,7 @@ func TestTC_001_PendingFixTaskBlocksDependentBusinessTask(t *testing.T) {
 		"fix-1": {
 			ID: "fix-1", Title: "Fix Task 1", Priority: "P0",
 			Status: "pending", File: "fix-1.md", Record: "",
-			Type: "fix", SourceTaskID: "3",
+			Type: "coding.fix", SourceTaskID: "3",
 		},
 		"4": {
 			ID: "4", Title: "Task 4", Priority: "P0",
@@ -208,7 +208,7 @@ func TestTC_002_CompletedFixTaskAllowsDependentBusinessTask(t *testing.T) {
 		"fix-1": {
 			ID: "fix-1", Title: "Fix Task 1", Priority: "P0",
 			Status: "completed", File: "fix-1.md", Record: "",
-			Type: "fix", SourceTaskID: "3",
+			Type: "coding.fix", SourceTaskID: "3",
 		},
 		"4": {
 			ID: "4", Title: "Task 4", Priority: "P0",
@@ -277,12 +277,12 @@ func TestTC_004_FixChainBlocksDependentTaskUntilAllFixTasksComplete(t *testing.T
 		"fix-1": {
 			ID: "fix-1", Title: "Fix Task 1", Priority: "P0",
 			Status: "completed", File: "fix-1.md", Record: "",
-			Type: "fix", SourceTaskID: "3",
+			Type: "coding.fix", SourceTaskID: "3",
 		},
 		"fix-2": {
 			ID: "fix-2", Title: "Fix Task 2", Priority: "P0",
 			Status: "pending", File: "fix-2.md", Record: "",
-			Type: "fix", SourceTaskID: "3",
+			Type: "coding.fix", SourceTaskID: "3",
 		},
 		"4": {
 			ID: "4", Title: "Task 4", Priority: "P0",
@@ -325,7 +325,7 @@ func TestTC_005_UnrelatedFixTaskDoesNotBlockTaskWithDifferentDependency(t *testi
 		"fix-1": {
 			ID: "fix-1", Title: "Fix Task 1", Priority: "P0",
 			Status: "pending", File: "fix-1.md", Record: "",
-			Type: "fix", SourceTaskID: "2",
+			Type: "coding.fix", SourceTaskID: "2",
 		},
 		"4": {
 			ID: "4", Title: "Task 4", Priority: "P0",

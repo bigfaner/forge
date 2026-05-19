@@ -34,7 +34,7 @@ func resetQueryFlags() {
 func TestQuery_DefaultOutput(t *testing.T) {
 	resetQueryFlags()
 	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
-		"phase1-1-task": {ID: "1", Title: "Test task", Status: "pending", Priority: "P1", File: "1.md", Record: "records/1.md", Type: "feature"},
+		"phase1-1-task": {ID: "1", Title: "Test task", Status: "pending", Priority: "P1", File: "1.md", Record: "records/1.md", Type: "coding.feature"},
 	}})
 
 	rootCmd.SetArgs([]string{"task", "query", "1"})
@@ -66,7 +66,7 @@ func TestQuery_DefaultOutput(t *testing.T) {
 func TestQuery_VerboseOutput(t *testing.T) {
 	resetQueryFlags()
 	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
-		"phase1-1-task": {ID: "1", Title: "Test task", Status: "pending", Priority: "P1", Type: "feature", File: "1.md", Record: "records/1.md", Dependencies: []string{"2", "3"}},
+		"phase1-1-task": {ID: "1", Title: "Test task", Status: "pending", Priority: "P1", Type: "coding.feature", File: "1.md", Record: "records/1.md", Dependencies: []string{"2", "3"}},
 	}})
 
 	rootCmd.SetArgs([]string{"task", "query", "1", "--verbose"})
@@ -80,7 +80,7 @@ func TestQuery_VerboseOutput(t *testing.T) {
 		"TITLE: Test task",
 		"STATUS: pending",
 		"PRIORITY: P1",
-		"TYPE: feature",
+		"TYPE: coding.feature",
 		"DEPENDENCIES:",
 		"  2",
 		"  3",
@@ -101,7 +101,7 @@ func TestQuery_VerboseOutput(t *testing.T) {
 func TestQuery_VerboseShorthand(t *testing.T) {
 	resetQueryFlags()
 	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
-		"t1": {ID: "1", Title: "Short flag test", Status: "completed", Priority: "P0", Type: "fix", File: "1.md", Record: "records/1.md"},
+		"t1": {ID: "1", Title: "Short flag test", Status: "completed", Priority: "P0", Type: "coding.fix", File: "1.md", Record: "records/1.md"},
 	}})
 
 	rootCmd.SetArgs([]string{"task", "query", "1", "-v"})
@@ -117,9 +117,9 @@ func TestQuery_VerboseShorthand(t *testing.T) {
 func TestQuery_VerboseWithRelatedFixes(t *testing.T) {
 	resetQueryFlags()
 	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
-		"source-task": {ID: "5", Title: "Source task", Status: "completed", Priority: "P0", Type: "feature", File: "5.md", Record: "records/5.md"},
-		"fix-task-1":  {ID: "5.1", Title: "Fix issue A", Status: "pending", Priority: "P1", Type: "fix", File: "5.1.md", Record: "records/5.1.md", SourceTaskID: "5"},
-		"fix-task-2":  {ID: "5.2", Title: "Fix issue B", Status: "completed", Priority: "P2", Type: "fix", File: "5.2.md", Record: "records/5.2.md", SourceTaskID: "5"},
+		"source-task": {ID: "5", Title: "Source task", Status: "completed", Priority: "P0", Type: "coding.feature", File: "5.md", Record: "records/5.md"},
+		"fix-task-1":  {ID: "5.1", Title: "Fix issue A", Status: "pending", Priority: "P1", Type: "coding.fix", File: "5.1.md", Record: "records/5.1.md", SourceTaskID: "5"},
+		"fix-task-2":  {ID: "5.2", Title: "Fix issue B", Status: "completed", Priority: "P2", Type: "coding.fix", File: "5.2.md", Record: "records/5.2.md", SourceTaskID: "5"},
 	}})
 
 	rootCmd.SetArgs([]string{"task", "query", "5", "-v"})
@@ -141,7 +141,7 @@ func TestQuery_VerboseWithRelatedFixes(t *testing.T) {
 func TestQuery_VerboseNoRelatedFixes(t *testing.T) {
 	resetQueryFlags()
 	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
-		"t1": {ID: "1", Title: "No fixes", Status: "pending", Priority: "P2", Type: "cleanup", File: "1.md", Record: "records/1.md"},
+		"t1": {ID: "1", Title: "No fixes", Status: "pending", Priority: "P2", Type: "coding.cleanup", File: "1.md", Record: "records/1.md"},
 	}})
 
 	rootCmd.SetArgs([]string{"task", "query", "1", "-v"})
@@ -157,7 +157,7 @@ func TestQuery_VerboseNoRelatedFixes(t *testing.T) {
 func TestQuery_VerboseWithScope(t *testing.T) {
 	resetQueryFlags()
 	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
-		"t1": {ID: "1", Title: "Scoped task", Status: "pending", Priority: "P1", Type: "feature", File: "1.md", Record: "records/1.md", Scope: "backend"},
+		"t1": {ID: "1", Title: "Scoped task", Status: "pending", Priority: "P1", Type: "coding.feature", File: "1.md", Record: "records/1.md", Scope: "backend"},
 	}})
 
 	rootCmd.SetArgs([]string{"task", "query", "1", "-v"})
@@ -173,7 +173,7 @@ func TestQuery_VerboseWithScope(t *testing.T) {
 func TestQuery_VerboseEmptyScope(t *testing.T) {
 	resetQueryFlags()
 	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
-		"t1": {ID: "1", Title: "No scope", Status: "pending", Priority: "P1", Type: "feature", File: "1.md", Record: "records/1.md"},
+		"t1": {ID: "1", Title: "No scope", Status: "pending", Priority: "P1", Type: "coding.feature", File: "1.md", Record: "records/1.md"},
 	}})
 
 	rootCmd.SetArgs([]string{"task", "query", "1", "-v"})
@@ -224,7 +224,7 @@ func TestQuery_DefaultBreakingTrue(t *testing.T) {
 func TestQuery_VerboseWithNoDependencies(t *testing.T) {
 	resetQueryFlags()
 	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
-		"t1": {ID: "1", Title: "No deps", Status: "pending", Priority: "P1", Type: "feature", File: "1.md", Record: "records/1.md"},
+		"t1": {ID: "1", Title: "No deps", Status: "pending", Priority: "P1", Type: "coding.feature", File: "1.md", Record: "records/1.md"},
 	}})
 
 	rootCmd.SetArgs([]string{"task", "query", "1", "-v"})

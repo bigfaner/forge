@@ -363,15 +363,15 @@ func countFixTasks(index *task.TaskIndex, step string) int {
 }
 
 // fixTypeFromStep returns the deterministic task type for a quality gate failure step.
-// compile/test failures → TypeFix, fmt/lint failures → TypeCleanup.
+// compile/test failures → TypeCodingFix, fmt/lint failures → TypeCodingCleanup.
 func fixTypeFromStep(step string) string {
 	switch step {
 	case "compile", "unit-test", "test-e2e":
-		return task.TypeFix
+		return task.TypeCodingFix
 	case "fmt", "lint":
-		return task.TypeCleanup
+		return task.TypeCodingCleanup
 	default:
-		return task.TypeFix
+		return task.TypeCodingFix
 	}
 }
 
@@ -416,7 +416,7 @@ func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) (st
 	// Vars["SOURCE_TASK_ID"] diverges intentionally for template rendering.
 	taskType := fixTypeFromStep(step)
 	tmplName := "fix-task"
-	if taskType == task.TypeCleanup {
+	if taskType == task.TypeCodingCleanup {
 		tmplName = "cleanup-task"
 	}
 

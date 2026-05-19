@@ -40,22 +40,22 @@ func setupFeatureDir(t *testing.T, projectRoot string, tasks map[string]task.Tas
 
 func TestSynthesize_AllTypes(t *testing.T) {
 	types := []string{
-		task.TypeFeature,
-		task.TypeEnhancement,
-		task.TypeCleanup,
-		task.TypeRefactor,
-		task.TypeDocumentation,
-		task.TypeDocEvaluation,
-		task.TypeDocGenerationSummary,
-		task.TypeDocGenerationConsolidate,
-		task.TypeDocGenerationDrift,
-		task.TypeTestPipelineGenCases,
-		task.TypeTestPipelineEvalCases,
-		task.TypeTestPipelineGenScripts,
-		task.TypeTestPipelineRun,
-		task.TypeTestPipelineGraduate,
-		task.TypeTestPipelineVerifyRegression,
-		task.TypeFix,
+		task.TypeCodingFeature,
+		task.TypeCodingEnhancement,
+		task.TypeCodingCleanup,
+		task.TypeCodingRefactor,
+		task.TypeDoc,
+		task.TypeDocEval,
+		task.TypeDocSummary,
+		task.TypeDocConsolidate,
+		task.TypeDocDrift,
+		task.TypeTestGenCases,
+		task.TypeTestEvalCases,
+		task.TypeTestGenScripts,
+		task.TypeTestRun,
+		task.TypeTestGraduate,
+		task.TypeTestVerifyRegression,
+		task.TypeCodingFix,
 		task.TypeGate,
 		task.TypeCleanCode,
 	}
@@ -104,7 +104,7 @@ func TestSynthesize_FixRecordMissed(t *testing.T) {
 			Status: "pending",
 			File:   "1.1-impl.md",
 			Record: "records/1.1-impl.md",
-			Type:   task.TypeFeature,
+			Type:   task.TypeCodingFeature,
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -198,7 +198,7 @@ func TestSynthesize_FeatureTemplate_HasTDDWorkflow(t *testing.T) {
 			Status: "pending",
 			File:   "1.1.md",
 			Record: "records/1.1.md",
-			Type:   task.TypeFeature,
+			Type:   task.TypeCodingFeature,
 			Scope:  "backend",
 		},
 	}
@@ -226,7 +226,7 @@ func TestSynthesize_EnhancementTemplate_HasTDDWorkflow(t *testing.T) {
 			Status: "pending",
 			File:   "1.1.md",
 			Record: "records/1.1.md",
-			Type:   task.TypeEnhancement,
+			Type:   task.TypeCodingEnhancement,
 			Scope:  "backend",
 		},
 	}
@@ -251,7 +251,7 @@ func TestSynthesize_CleanupTemplate_NoTDD(t *testing.T) {
 			Status: "pending",
 			File:   "1.1.md",
 			Record: "records/1.1.md",
-			Type:   task.TypeCleanup,
+			Type:   task.TypeCodingCleanup,
 			Scope:  "backend",
 		},
 	}
@@ -279,7 +279,7 @@ func TestSynthesize_RefactorTemplate_NoTDD(t *testing.T) {
 			Status: "pending",
 			File:   "1.1.md",
 			Record: "records/1.1.md",
-			Type:   task.TypeRefactor,
+			Type:   task.TypeCodingRefactor,
 			Scope:  "backend",
 		},
 	}
@@ -310,7 +310,7 @@ func TestSynthesize_EmptyPhaseSummary_NoResidual(t *testing.T) {
 			Status: "pending",
 			File:   "1.1-impl.md",
 			Record: "records/1.1-impl.md",
-			Type:   task.TypeFeature,
+			Type:   task.TypeCodingFeature,
 			Scope:  "backend",
 		},
 	}
@@ -353,7 +353,7 @@ func TestSynthesize_NonEmptyPhaseSummary_Preserved(t *testing.T) {
 			Status: "completed",
 			File:   "1.1-impl.md",
 			Record: "records/1.1-impl.md",
-			Type:   task.TypeFeature,
+			Type:   task.TypeCodingFeature,
 			Scope:  "backend",
 		},
 		"2.1-impl": {
@@ -362,7 +362,7 @@ func TestSynthesize_NonEmptyPhaseSummary_Preserved(t *testing.T) {
 			Status: "pending",
 			File:   "2.1-impl.md",
 			Record: "records/2.1-impl.md",
-			Type:   task.TypeFeature,
+			Type:   task.TypeCodingFeature,
 			Scope:  "backend",
 		},
 	}
@@ -405,7 +405,7 @@ func TestSynthesize_EmptyScope_NoTrailingSpace(t *testing.T) {
 			Status: "pending",
 			File:   "1.1-impl.md",
 			Record: "records/1.1-impl.md",
-			Type:   task.TypeFeature,
+			Type:   task.TypeCodingFeature,
 			Scope:  "", // empty scope
 		},
 	}
@@ -441,7 +441,7 @@ func TestSynthesize_EmptyProfile_NoResidual(t *testing.T) {
 			Status: "pending",
 			File:   "1.1-impl.md",
 			Record: "records/1.1-impl.md",
-			Type:   task.TypeTestPipelineGenScripts,
+			Type:   task.TypeTestGenScripts,
 			Scope:  "backend",
 		},
 	}
@@ -475,7 +475,7 @@ func TestPhaseDetect_NewPhase(t *testing.T) {
 			Status: "completed",
 			File:   "1.1-impl.md",
 			Record: "records/1.1-impl.md",
-			Type:   task.TypeFeature,
+			Type:   task.TypeCodingFeature,
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -506,7 +506,7 @@ func TestPhaseDetect_SamePhase(t *testing.T) {
 			Status: "completed",
 			File:   "1.1-impl.md",
 			Record: "records/1.1-impl.md",
-			Type:   task.TypeFeature,
+			Type:   task.TypeCodingFeature,
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -528,7 +528,7 @@ func TestPhaseDetect_FirstPhase(t *testing.T) {
 			Status: "pending",
 			File:   "1.1-impl.md",
 			Record: "records/1.1-impl.md",
-			Type:   task.TypeFeature,
+			Type:   task.TypeCodingFeature,
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -549,7 +549,7 @@ func TestPhaseDetect_SummaryFileMissing(t *testing.T) {
 			Status: "completed",
 			File:   "1.1-impl.md",
 			Record: "records/1.1-impl.md",
-			Type:   task.TypeFeature,
+			Type:   task.TypeCodingFeature,
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -569,27 +569,27 @@ func TestInferType(t *testing.T) {
 		expected string
 	}{
 		// Summary suffix
-		{"1.summary", task.TypeDocGenerationSummary},
-		{"2.summary", task.TypeDocGenerationSummary},
+		{"1.summary", task.TypeDocSummary},
+		{"2.summary", task.TypeDocSummary},
 		// Gate suffix
 		{"1.gate", task.TypeGate},
 		{"3.gate", task.TypeGate},
 		// T-test exact IDs
-		{"T-test-1", task.TypeTestPipelineGenCases},
-		{"T-test-1b", task.TypeTestPipelineEvalCases},
-		{"T-test-2", task.TypeTestPipelineGenScripts},
-		{"T-test-3", task.TypeTestPipelineRun},
-		{"T-test-4", task.TypeTestPipelineGraduate},
-		{"T-test-4.5", task.TypeTestPipelineVerifyRegression},
-		{"T-test-5", task.TypeDocGenerationConsolidate},
+		{"T-test-1", task.TypeTestGenCases},
+		{"T-test-1b", task.TypeTestEvalCases},
+		{"T-test-2", task.TypeTestGenScripts},
+		{"T-test-3", task.TypeTestRun},
+		{"T-test-4", task.TypeTestGraduate},
+		{"T-test-4.5", task.TypeTestVerifyRegression},
+		{"T-test-5", task.TypeDocConsolidate},
 		// T-quick-5 drift detection
-		{"T-quick-5", task.TypeDocGenerationDrift},
-		{"T-quick-5a", task.TypeDocGenerationDrift},
+		{"T-quick-5", task.TypeDocDrift},
+		{"T-quick-5a", task.TypeDocDrift},
 		// Fix prefix
-		{"fix-1", task.TypeFix},
-		{"fix-auth-bug", task.TypeFix},
-		{"disc-1", task.TypeFix},
-		{"disc-2", task.TypeFix},
+		{"fix-1", task.TypeCodingFix},
+		{"fix-auth-bug", task.TypeCodingFix},
+		{"disc-1", task.TypeCodingFix},
+		{"disc-2", task.TypeCodingFix},
 		// Default: empty (no fallback)
 		{"1.1", ""},
 		{"2.3", ""},
@@ -680,7 +680,7 @@ func TestSynthesize_GenScripts_WithTypeSuffix(t *testing.T) {
 					Status: "pending",
 					File:   tt.taskID + ".md",
 					Record: "records/" + tt.taskID + ".md",
-					Type:   task.TypeTestPipelineGenScripts,
+					Type:   task.TypeTestGenScripts,
 					Scope:  "backend",
 				},
 			}
@@ -727,7 +727,7 @@ func TestSynthesize_GenScripts_NoTypeSuffix(t *testing.T) {
 					Status: "pending",
 					File:   tt.taskID + ".md",
 					Record: "records/" + tt.taskID + ".md",
-					Type:   task.TypeTestPipelineGenScripts,
+					Type:   task.TypeTestGenScripts,
 					Scope:  "backend",
 				},
 			}
@@ -764,7 +764,7 @@ func TestSynthesize_ConsolidateTemplate_NonInteractive(t *testing.T) {
 			Status: "pending",
 			File:   "T-test-5.md",
 			Record: "records/T-test-5.md",
-			Type:   task.TypeDocGenerationConsolidate,
+			Type:   task.TypeDocConsolidate,
 			Scope:  "backend",
 		},
 	}
@@ -801,7 +801,7 @@ func TestSynthesize_DriftTemplate_NonInteractive(t *testing.T) {
 			Status: "pending",
 			File:   "T-quick-5.md",
 			Record: "records/T-quick-5.md",
-			Type:   task.TypeDocGenerationDrift,
+			Type:   task.TypeDocDrift,
 			Scope:  "backend",
 		},
 	}

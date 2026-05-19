@@ -8,7 +8,7 @@
       "title": "Rename type constants and implement prefix checks",
       "priority": "P1",
       "estimatedTime": "50min",
-      "status": "pending",
+      "status": "completed",
       "file": "1-rename-type-constants.md",
       "record": "records/1-rename-type-constants.md",
       "breaking": true,
@@ -23,7 +23,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "file": "2-rename-task-ids.md",
       "record": "records/2-rename-task-ids.md",
       "breaking": true,

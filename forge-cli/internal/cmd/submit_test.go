@@ -1192,8 +1192,8 @@ func TestFillRecordTemplate_TypeReclassification(t *testing.T) {
 			TestsPassed: 3,
 			Coverage:    80.0,
 			TypeReclassification: &task.TypeReclassification{
-				OriginalType: "fix",
-				ActualType:   "cleanup",
+				OriginalType: "coding.fix",
+				ActualType:   "coding.cleanup",
 				Reason:       "e2e test TestTC_003_Login has race condition in assertion timing",
 			},
 		}
@@ -1202,10 +1202,10 @@ func TestFillRecordTemplate_TypeReclassification(t *testing.T) {
 		if !strings.Contains(content, "## Type Reclassification") {
 			t.Error("should contain Type Reclassification heading")
 		}
-		if !strings.Contains(content, "- Original: fix") {
+		if !strings.Contains(content, "- Original: coding.fix") {
 			t.Error("should contain original type")
 		}
-		if !strings.Contains(content, "- Actual: cleanup") {
+		if !strings.Contains(content, "- Actual: coding.cleanup") {
 			t.Error("should contain actual type")
 		}
 		if !strings.Contains(content, "- Reason: e2e test TestTC_003_Login has race condition") {
@@ -1221,8 +1221,8 @@ func TestFillRecordTemplate_TypeReclassification(t *testing.T) {
 			TestsPassed: 1,
 			Coverage:    50.0,
 			TypeReclassification: &task.TypeReclassification{
-				OriginalType: "fix",
-				ActualType:   "cleanup",
+				OriginalType: "coding.fix",
+				ActualType:   "coding.cleanup",
 				Reason:       "flaky test",
 			},
 		}
@@ -1408,7 +1408,7 @@ func TestSubmit_NonTestableTypeSkipsQualityGate(t *testing.T) {
 		if os.Getenv("TEST_SUBMIT_DOC_SKIPS_QG") == "1" {
 			setupFullProject(t, SetupOpts{
 				Tasks: map[string]task.Task{
-					"t1": {ID: "1", Title: "Doc Task", Status: "pending", File: "1.md", Record: "records/1.md", Type: task.TypeDocumentation},
+					"t1": {ID: "1", Title: "Doc Task", Status: "pending", File: "1.md", Record: "records/1.md", Type: task.TypeDoc},
 				},
 			})
 
@@ -1434,7 +1434,7 @@ func TestSubmit_NonTestableTypeSkipsQualityGate(t *testing.T) {
 		if os.Getenv("TEST_SUBMIT_FEAT_RUNS_QG") == "1" {
 			setupFullProject(t, SetupOpts{
 				Tasks: map[string]task.Task{
-					"t1": {ID: "1", Title: "Feature Task", Status: "pending", File: "1.md", Record: "records/1.md", Type: task.TypeFeature},
+					"t1": {ID: "1", Title: "Feature Task", Status: "pending", File: "1.md", Record: "records/1.md", Type: task.TypeCodingFeature},
 				},
 			})
 
@@ -1467,7 +1467,7 @@ func TestSubmit_NonTestableTypeAutoSetCoverage(t *testing.T) {
 		if os.Getenv("TEST_SUBMIT_DOC_AUTO_COV") == "1" {
 			setupFullProject(t, SetupOpts{
 				Tasks: map[string]task.Task{
-					"t1": {ID: "1", Title: "Doc Task", Status: "pending", File: "1.md", Record: "records/1.md", Type: task.TypeDocumentation},
+					"t1": {ID: "1", Title: "Doc Task", Status: "pending", File: "1.md", Record: "records/1.md", Type: task.TypeDoc},
 				},
 			})
 

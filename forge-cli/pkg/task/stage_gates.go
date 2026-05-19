@@ -128,7 +128,7 @@ func GenerateSummaryMD(phase PhaseInfo, featureSlug string) ([]byte, error) {
 	buf.WriteString("priority: \"P0\"\n")
 	buf.WriteString("estimated_time: \"15min\"\n")
 	fmt.Fprintf(&buf, "dependencies: %v\n", formatYAMLList(deps))
-	buf.WriteString("type: \"doc-generation.summary\"\n")
+	buf.WriteString("type: \"doc.summary\"\n")
 	buf.WriteString("mainSession: false\n")
 	buf.WriteString("---\n\n")
 

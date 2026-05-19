@@ -27,7 +27,7 @@ type AddTaskOpts struct {
 	SourceTaskID  string            // Source task ID: auto-injects {{SOURCE_TASK_ID}} and adds this task as source dependency
 	BlockSource   bool              // Block source task before resolution (preserves fix-chain model)
 	IDPrefix      string            // Auto-generate ID as prefix-N; empty defaults to "disc"
-	Type          string            // Task type (e.g. TypeFix, TypeCleanup). Empty = no type set.
+	Type          string            // Task type (e.g. TypeCodingFix, TypeCodingCleanup). Empty = no type set.
 }
 
 // terminalStatuses are task statuses that indicate the task is done.

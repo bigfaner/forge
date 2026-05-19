@@ -402,22 +402,18 @@ func shouldSkipFile(name string) bool {
 
 // isTestTaskID returns true for test pipeline task IDs.
 func isTestTaskID(id string) bool {
-	return strings.HasPrefix(id, "T-test-") || strings.HasPrefix(id, "T-quick-") || strings.HasPrefix(id, "T-clean-code-")
-}
-
-// testableTypes are task types that have testable runtime behavior.
-// Features containing any of these types need the full test pipeline.
-var testableTypes = map[string]bool{
-	TypeFeature:     true,
-	TypeEnhancement: true,
-	TypeFix:         true,
-	TypeCleanup:     true,
-	TypeRefactor:    true,
+	return strings.HasPrefix(id, "T-test-") ||
+		strings.HasPrefix(id, "T-quick-") ||
+		strings.HasPrefix(id, "T-specs-") ||
+		strings.HasPrefix(id, "T-clean-") ||
+		strings.HasPrefix(id, "T-validate-") ||
+		strings.HasPrefix(id, "T-eval-")
 }
 
 // IsTestableType returns true if the given task type has testable runtime behavior.
+// Uses prefix matching: any type starting with "coding." is testable.
 func IsTestableType(typ string) bool {
-	return testableTypes[typ]
+	return strings.HasPrefix(typ, "coding.")
 }
 
 // needsTestPipeline returns true when any non-auto-gen task has a testable
@@ -428,7 +424,7 @@ func needsTestPipeline(tasks map[string]Task) bool {
 		if isAutoGenTaskID(t.ID) {
 			continue
 		}
-		if testableTypes[t.Type] {
+		if IsTestableType(t.Type) {
 			return true
 		}
 	}
@@ -436,7 +432,9 @@ func needsTestPipeline(tasks map[string]Task) bool {
 }
 
 // needsDocEval returns true when ALL non-auto-gen tasks have type documentation.
-// An empty task map returns true.
+// Only tasks with exactly TypeDoc trigger doc-eval; doc subtypes (doc.eval, doc.summary, etc.)
+// are evaluations/generations themselves and should not trigger another doc-eval.
+// An empty task map returns false.
 func needsDocEval(tasks map[string]Task) bool {
 	hasBusinessTask := false
 	for _, t := range tasks {
@@ -444,7 +442,7 @@ func needsDocEval(tasks map[string]Task) bool {
 			continue
 		}
 		hasBusinessTask = true
-		if t.Type != TypeDocumentation {
+		if t.Type != TypeDoc {
 			return false
 		}
 	}

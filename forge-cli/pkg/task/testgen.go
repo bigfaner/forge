@@ -46,13 +46,13 @@ func GetBreakdownTestTasks(languages []profile.Language, interfaces []string, au
 		tasks = append(tasks, TestTaskDef{
 			Key: "gen-test-cases", ID: "T-test-1",
 			Title: "Generate e2e Test Cases", Priority: "P1", EstimatedTime: "1-2h",
-			Type: TypeTestPipelineGenCases, Scope: "all", NoTest: true,
+			Type: TypeTestGenCases, Scope: "all", NoTest: true,
 			StrategyKind: "generate",
 		})
 		tasks = append(tasks, TestTaskDef{
 			Key: "eval-test-cases", ID: "T-test-1b",
 			Title: "Evaluate e2e Test Cases", Priority: "P1", EstimatedTime: "30min",
-			Type: TypeTestPipelineEvalCases, Scope: "all", NoTest: true, MainSession: true,
+			Type: TypeTestEvalCases, Scope: "all", NoTest: true, MainSession: true,
 		})
 
 		// Per-language tasks with per-type gen-scripts
@@ -62,20 +62,20 @@ func GetBreakdownTestTasks(languages []profile.Language, interfaces []string, au
 				tasks = append(tasks, TestTaskDef{
 					Key: "gen-test-scripts-" + string(lang) + "-" + typ, ID: "T-test-2" + s + "-" + typ,
 					Title: fmt.Sprintf("Generate Test Scripts (%s, %s)", lang, typ), Priority: "P1", EstimatedTime: "1-2h",
-					Type: TypeTestPipelineGenScripts, Scope: "all", Language: lang, TestType: typ,
+					Type: TypeTestGenScripts, Scope: "all", Language: lang, TestType: typ,
 					StrategyKind: "generate",
 				})
 			}
 			tasks = append(tasks, TestTaskDef{
 				Key: "run-e2e-tests-" + string(lang), ID: "T-test-3" + s,
 				Title: fmt.Sprintf("Run e2e Tests (%s)", lang), Priority: "P1", EstimatedTime: "30min-1h",
-				Type: TypeTestPipelineRun, Scope: "all", Language: lang,
+				Type: TypeTestRun, Scope: "all", Language: lang,
 				StrategyKind: "run",
 			})
 			tasks = append(tasks, TestTaskDef{
 				Key: "graduate-tests-" + string(lang), ID: "T-test-4" + s,
 				Title: fmt.Sprintf("Graduate Test Scripts (%s)", lang), Priority: "P1", EstimatedTime: "30min",
-				Type: TypeTestPipelineGraduate, Scope: "all", Language: lang,
+				Type: TypeTestGraduate, Scope: "all", Language: lang,
 				StrategyKind: "graduate",
 			})
 		}
@@ -84,7 +84,7 @@ func GetBreakdownTestTasks(languages []profile.Language, interfaces []string, au
 		tasks = append(tasks, TestTaskDef{
 			Key: "verify-regression", ID: "T-test-4.5",
 			Title: "Verify Full E2E Regression", Priority: "P1", EstimatedTime: "15-30min",
-			Type: TypeTestPipelineVerifyRegression, Scope: "all",
+			Type: TypeTestVerifyRegression, Scope: "all",
 		})
 	}
 
@@ -93,7 +93,7 @@ func GetBreakdownTestTasks(languages []profile.Language, interfaces []string, au
 		tasks = append(tasks, TestTaskDef{
 			Key: "consolidate-specs", ID: "T-specs-1",
 			Title: "Consolidate Specs", Priority: "P2", EstimatedTime: "20min",
-			Type: TypeDocGenerationConsolidate, Scope: "all", NoTest: true,
+			Type: TypeDocConsolidate, Scope: "all", NoTest: true,
 		})
 	}
 
@@ -131,21 +131,21 @@ func GetQuickTestTasks(languages []profile.Language, interfaces []string, auto p
 			tasks = append(tasks, TestTaskDef{
 				Key: "quick-test-cases-" + string(lang), ID: "T-quick-1" + s,
 				Title: fmt.Sprintf("Generate Quick Test Cases (%s)", lang), Priority: "P1", EstimatedTime: "30min-1h",
-				Type: TypeTestPipelineGenCases, Scope: "all", NoTest: true, Language: lang,
+				Type: TypeTestGenCases, Scope: "all", NoTest: true, Language: lang,
 				StrategyKind: "generate",
 			})
 			for _, typ := range interfaces {
 				tasks = append(tasks, TestTaskDef{
 					Key: "quick-gen-and-run-" + string(lang) + "-" + typ, ID: "T-quick-2" + s + "-" + typ,
 					Title: fmt.Sprintf("Generate and Run Quick Test Scripts (%s, %s)", lang, typ), Priority: "P1", EstimatedTime: "1-2h",
-					Type: TypeTestPipelineGenAndRun, Scope: "all", Language: lang, TestType: typ,
+					Type: TypeTestGenAndRun, Scope: "all", Language: lang, TestType: typ,
 					StrategyKind: "generate",
 				})
 			}
 			tasks = append(tasks, TestTaskDef{
 				Key: "quick-graduate-" + string(lang), ID: "T-quick-3" + s,
 				Title: fmt.Sprintf("Graduate Quick Test Scripts (%s)", lang), Priority: "P1", EstimatedTime: "15min",
-				Type: TypeTestPipelineGraduate, Scope: "all", Language: lang,
+				Type: TypeTestGraduate, Scope: "all", Language: lang,
 				StrategyKind: "graduate",
 			})
 		}
@@ -154,7 +154,7 @@ func GetQuickTestTasks(languages []profile.Language, interfaces []string, auto p
 		tasks = append(tasks, TestTaskDef{
 			Key: "quick-verify-regression", ID: "T-quick-4",
 			Title: "Verify Quick E2E Regression", Priority: "P1", EstimatedTime: "15min",
-			Type: TypeTestPipelineVerifyRegression, Scope: "all",
+			Type: TypeTestVerifyRegression, Scope: "all",
 		})
 	}
 
@@ -163,7 +163,7 @@ func GetQuickTestTasks(languages []profile.Language, interfaces []string, auto p
 		tasks = append(tasks, TestTaskDef{
 			Key: "quick-drift-detection", ID: "T-quick-specs-1",
 			Title: "Detect Spec Drift", Priority: "P2", EstimatedTime: "15min",
-			Type: TypeDocGenerationDrift, Scope: "all", NoTest: true,
+			Type: TypeDocDrift, Scope: "all", NoTest: true,
 		})
 	}
 
@@ -564,7 +564,7 @@ func GetDocEvalTask() TestTaskDef {
 		Title:         "Evaluate Documentation Quality",
 		Priority:      "P1",
 		EstimatedTime: "30min",
-		Type:          TypeDocEvaluation,
+		Type:          TypeDocEval,
 		Scope:         "all",
 		NoTest:        true,
 	}

@@ -401,15 +401,15 @@ func TestTaskTypeFieldSerialization(t *testing.T) {
 			Title:  "Impl Task",
 			Status: "pending",
 			File:   "tasks/1.1.md",
-			Type:   TypeFeature,
+			Type:   TypeCodingFeature,
 		}
 		data, err := json.Marshal(task)
 		if err != nil {
 			t.Fatalf("json.Marshal failed: %v", err)
 		}
 		got := string(data)
-		if !strings.Contains(got, `"type":"feature"`) {
-			t.Errorf("JSON = %s, want to contain %q", got, `"type":"feature"`)
+		if !strings.Contains(got, `"type":"coding.feature"`) {
+			t.Errorf("JSON = %s, want to contain %q", got, `"type":"coding.feature"`)
 		}
 	})
 
@@ -431,13 +431,13 @@ func TestTaskTypeFieldSerialization(t *testing.T) {
 	})
 
 	t.Run("type field deserializes from JSON", func(t *testing.T) {
-		jsonStr := `{"id":"1.1","title":"Fix Task","type":"fix","status":"pending","file":"tasks/1.1.md"}`
+		jsonStr := `{"id":"1.1","title":"Fix Task","type":"coding.fix","status":"pending","file":"tasks/1.1.md"}`
 		var task Task
 		if err := json.Unmarshal([]byte(jsonStr), &task); err != nil {
 			t.Fatalf("json.Unmarshal failed: %v", err)
 		}
-		if task.Type != TypeFix {
-			t.Errorf("Type = %q, want %q", task.Type, TypeFix)
+		if task.Type != TypeCodingFix {
+			t.Errorf("Type = %q, want %q", task.Type, TypeCodingFix)
 		}
 	})
 
@@ -548,13 +548,13 @@ func TestTaskStateTypeFieldSerialization(t *testing.T) {
 	})
 
 	t.Run("TaskState type deserializes from JSON", func(t *testing.T) {
-		jsonStr := `{"task_id":"1.1","key":"task1","title":"Fix Task","type":"fix","startedTime":"2024-01-01 10:00"}`
+		jsonStr := `{"task_id":"1.1","key":"task1","title":"Fix Task","type":"coding.fix","startedTime":"2024-01-01 10:00"}`
 		var state TaskState
 		if err := json.Unmarshal([]byte(jsonStr), &state); err != nil {
 			t.Fatalf("json.Unmarshal failed: %v", err)
 		}
-		if state.Type != TypeFix {
-			t.Errorf("Type = %q, want %q", state.Type, TypeFix)
+		if state.Type != TypeCodingFix {
+			t.Errorf("Type = %q, want %q", state.Type, TypeCodingFix)
 		}
 	})
 }
@@ -564,22 +564,22 @@ func TestTypeConstants(t *testing.T) {
 		constant string
 		expected string
 	}{
-		{TypeFeature, "feature"},
-		{TypeEnhancement, "enhancement"},
-		{TypeCleanup, "cleanup"},
-		{TypeRefactor, "refactor"},
-		{TypeDocumentation, "documentation"},
-		{TypeDocEvaluation, "doc-evaluation"},
-		{TypeDocGenerationSummary, "doc-generation.summary"},
-		{TypeDocGenerationConsolidate, "doc-generation.consolidate"},
-		{TypeDocGenerationDrift, "doc-generation.drift"},
-		{TypeTestPipelineGenCases, "test-pipeline.gen-cases"},
-		{TypeTestPipelineEvalCases, "test-pipeline.eval-cases"},
-		{TypeTestPipelineGenScripts, "test-pipeline.gen-scripts"},
-		{TypeTestPipelineRun, "test-pipeline.run"},
-		{TypeTestPipelineGraduate, "test-pipeline.graduate"},
-		{TypeTestPipelineVerifyRegression, "test-pipeline.verify-regression"},
-		{TypeFix, "fix"},
+		{TypeCodingFeature, "coding.feature"},
+		{TypeCodingEnhancement, "coding.enhancement"},
+		{TypeCodingCleanup, "coding.cleanup"},
+		{TypeCodingRefactor, "coding.refactor"},
+		{TypeDoc, "doc"},
+		{TypeDocEval, "doc.eval"},
+		{TypeDocSummary, "doc.summary"},
+		{TypeDocConsolidate, "doc.consolidate"},
+		{TypeDocDrift, "doc.drift"},
+		{TypeTestGenCases, "test.gen-cases"},
+		{TypeTestEvalCases, "test.eval-cases"},
+		{TypeTestGenScripts, "test.gen-scripts"},
+		{TypeTestRun, "test.run"},
+		{TypeTestGraduate, "test.graduate"},
+		{TypeTestVerifyRegression, "test.verify-regression"},
+		{TypeCodingFix, "coding.fix"},
 		{TypeGate, "gate"},
 	}
 	for _, tt := range tests {
@@ -592,23 +592,26 @@ func TestTypeConstants(t *testing.T) {
 func TestValidTypes(t *testing.T) {
 	t.Run("ValidTypes contains all type constants", func(t *testing.T) {
 		allTypes := []string{
-			TypeFeature,
-			TypeEnhancement,
-			TypeCleanup,
-			TypeRefactor,
-			TypeDocumentation,
-			TypeDocEvaluation,
-			TypeDocGenerationSummary,
-			TypeDocGenerationConsolidate,
-			TypeDocGenerationDrift,
-			TypeTestPipelineGenCases,
-			TypeTestPipelineEvalCases,
-			TypeTestPipelineGenScripts,
-			TypeTestPipelineRun,
-			TypeTestPipelineGenAndRun,
-			TypeTestPipelineGraduate,
-			TypeTestPipelineVerifyRegression,
-			TypeFix,
+			TypeCodingFeature,
+			TypeCodingEnhancement,
+			TypeCodingCleanup,
+			TypeCodingRefactor,
+			TypeDoc,
+			TypeDocEval,
+			TypeDocSummary,
+			TypeDocConsolidate,
+			TypeDocDrift,
+			TypeTestGenCases,
+			TypeTestEvalCases,
+			TypeTestGenScripts,
+			TypeTestRun,
+			TypeTestGenAndRun,
+			TypeTestGraduate,
+			TypeTestVerifyRegression,
+			TypeValidationCode,
+			TypeValidationUx,
+			TypeCodingFix,
+			TypeCodingClean,
 			TypeGate,
 			TypeCleanCode,
 		}

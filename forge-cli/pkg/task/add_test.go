@@ -1876,7 +1876,7 @@ func TestAddTask_TypeField_Persisted(t *testing.T) {
 	id, err := AddTask(indexPath, AddTaskOpts{
 		Title:    "Cleanup dead code",
 		Priority: "P1",
-		Type:     "cleanup",
+		Type:     "coding.cleanup",
 	})
 	if err != nil {
 		t.Fatalf("AddTask failed: %v", err)
@@ -1887,8 +1887,8 @@ func TestAddTask_TypeField_Persisted(t *testing.T) {
 		t.Fatalf("LoadIndex failed: %v", err)
 	}
 	task := index.tasks[id]
-	if task.Type != "cleanup" {
-		t.Errorf("expected type 'cleanup', got %q", task.Type)
+	if task.Type != "coding.cleanup" {
+		t.Errorf("expected type 'coding.cleanup', got %q", task.Type)
 	}
 }
 
@@ -1915,9 +1915,9 @@ func TestBuildTaskMarkdown_IncludesType(t *testing.T) {
 		Title:    "Enhance logging",
 		Priority: "P1",
 		Status:   "pending",
-		Type:     "enhancement",
+		Type:     "coding.enhancement",
 	})
-	if !strings.Contains(content, `type: "enhancement"`) {
+	if !strings.Contains(content, `type: "coding.enhancement"`) {
 		t.Errorf("expected type in frontmatter, got:\n%s", content)
 	}
 }
@@ -1941,7 +1941,7 @@ func TestCreateTaskMarkdown_WithTypeInFrontmatter(t *testing.T) {
 		Title:    "Refactor handler",
 		Priority: "P1",
 		Status:   "pending",
-		Type:     "refactor",
+		Type:     "coding.refactor",
 	}
 	if err := CreateTaskMarkdown(dir, "disc-1.md", opts); err != nil {
 		t.Fatalf("CreateTaskMarkdown failed: %v", err)
@@ -1951,7 +1951,7 @@ func TestCreateTaskMarkdown_WithTypeInFrontmatter(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read file failed: %v", err)
 	}
-	if !strings.Contains(string(data), `type: "refactor"`) {
+	if !strings.Contains(string(data), `type: "coding.refactor"`) {
 		t.Errorf("expected type in frontmatter, got:\n%s", string(data))
 	}
 }

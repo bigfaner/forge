@@ -120,8 +120,8 @@ func TestGetQuickTestTasks_SingleProfile(t *testing.T) {
 	}
 
 	// T-quick-2-cli type is gen-and-run
-	if tasks[1].Type != TypeTestPipelineGenAndRun {
-		t.Errorf("T-quick-2-cli Type = %q, want %q", tasks[1].Type, TypeTestPipelineGenAndRun)
+	if tasks[1].Type != TypeTestGenAndRun {
+		t.Errorf("T-quick-2-cli Type = %q, want %q", tasks[1].Type, TypeTestGenAndRun)
 	}
 
 	// Chain: 2->1, 3->2
@@ -142,8 +142,8 @@ func TestGetQuickTestTasks_SingleProfile(t *testing.T) {
 		t.Errorf("drift detection should depend on verify-regression, got %v", tasks[4].Dependencies)
 	}
 	// T-quick-specs-1 type and NoTest
-	if tasks[4].Type != TypeDocGenerationDrift {
-		t.Errorf("T-quick-specs-1 Type = %q, want %q", tasks[4].Type, TypeDocGenerationDrift)
+	if tasks[4].Type != TypeDocDrift {
+		t.Errorf("T-quick-specs-1 Type = %q, want %q", tasks[4].Type, TypeDocDrift)
 	}
 	if !tasks[4].NoTest {
 		t.Error("T-quick-specs-1 NoTest should be true")
@@ -181,8 +181,8 @@ func TestGetQuickTestTasks_MultiProfile(t *testing.T) {
 	if tasks[7].Dependencies[0] != "T-quick-4" {
 		t.Errorf("drift detection should depend on verify-regression, got %v", tasks[7].Dependencies)
 	}
-	if tasks[7].Type != TypeDocGenerationDrift {
-		t.Errorf("T-quick-specs-1 Type = %q, want %q", tasks[7].Type, TypeDocGenerationDrift)
+	if tasks[7].Type != TypeDocDrift {
+		t.Errorf("T-quick-specs-1 Type = %q, want %q", tasks[7].Type, TypeDocDrift)
 	}
 }
 
@@ -191,7 +191,7 @@ func TestGenerateTestTaskMD(t *testing.T) {
 		ID: "T-test-2a-api", Key: "gen-test-scripts-go-api",
 		Title: "Generate Test Scripts (go, api)", Priority: "P1",
 		EstimatedTime: "1-2h", Dependencies: []string{"T-test-1b"},
-		Type: TypeTestPipelineGenScripts, Scope: "all",
+		Type: TypeTestGenScripts, Scope: "all",
 		Language: "go", TestType: "api", StrategyKind: "generate",
 	}
 
@@ -206,7 +206,7 @@ func TestGenerateTestTaskMD(t *testing.T) {
 	if !strings.Contains(s, `id: "T-test-2a-api"`) {
 		t.Error("missing id in frontmatter")
 	}
-	if !strings.Contains(s, `type: "test-pipeline.gen-scripts"`) {
+	if !strings.Contains(s, `type: "test.gen-scripts"`) {
 		t.Error("missing type in frontmatter")
 	}
 	if !strings.Contains(s, `"T-test-1b"`) {
@@ -224,7 +224,7 @@ func TestGenerateTestTaskMD_SharedTask(t *testing.T) {
 		ID: "T-test-1", Key: "gen-test-cases",
 		Title: "Generate Test Cases", Priority: "P1",
 		EstimatedTime: "1-2h", Dependencies: []string{},
-		Type: TypeTestPipelineGenCases, Scope: "all", NoTest: true,
+		Type: TypeTestGenCases, Scope: "all", NoTest: true,
 	}
 
 	content, err := GenerateTestTaskMD(def, "my-feature")
@@ -275,8 +275,8 @@ func TestGetDocEvalTask(t *testing.T) {
 	if task.Key != "eval-doc" {
 		t.Errorf("Key = %q, want eval-doc", task.Key)
 	}
-	if task.Type != TypeDocEvaluation {
-		t.Errorf("Type = %q, want %q", task.Type, TypeDocEvaluation)
+	if task.Type != TypeDocEval {
+		t.Errorf("Type = %q, want %q", task.Type, TypeDocEval)
 	}
 	if !task.NoTest {
 		t.Error("NoTest should be true")
@@ -296,9 +296,9 @@ func TestGetDocEvalTask(t *testing.T) {
 func TestResolveDocEvalDep(t *testing.T) {
 	t.Run("sets dependency on last business task", func(t *testing.T) {
 		existing := map[string]Task{
-			"1-doc":    {ID: "1.1", Type: TypeDocumentation},
-			"2-doc":    {ID: "1.2", Type: TypeDocumentation},
-			"T-test-1": {ID: "T-test-1", Type: TypeTestPipelineGenCases},
+			"1-doc":    {ID: "1.1", Type: TypeDoc},
+			"2-doc":    {ID: "1.2", Type: TypeDoc},
+			"T-test-1": {ID: "T-test-1", Type: TypeTestGenCases},
 		}
 		task := GetDocEvalTask()
 		ResolveDocEvalDep(&task, existing)
@@ -488,7 +488,7 @@ func TestGenerateTestTaskMD_WithTestType(t *testing.T) {
 		ID: "T-test-2-api", Key: "gen-test-scripts-go-api",
 		Title: "Generate Test Scripts (go, api)", Priority: "P1",
 		EstimatedTime: "1-2h", Dependencies: []string{"T-test-1b"},
-		Type: TypeTestPipelineGenScripts, Scope: "all",
+		Type: TypeTestGenScripts, Scope: "all",
 		Language: "go", TestType: "api", StrategyKind: "generate",
 	}
 
@@ -534,11 +534,11 @@ func TestGetQuickTestTasks_PerType_SingleProfile(t *testing.T) {
 	}
 
 	// T-quick-2-tui and T-quick-2-api are gen-and-run type
-	if tasks[1].Type != TypeTestPipelineGenAndRun {
-		t.Errorf("T-quick-2-tui Type = %q, want %q", tasks[1].Type, TypeTestPipelineGenAndRun)
+	if tasks[1].Type != TypeTestGenAndRun {
+		t.Errorf("T-quick-2-tui Type = %q, want %q", tasks[1].Type, TypeTestGenAndRun)
 	}
-	if tasks[2].Type != TypeTestPipelineGenAndRun {
-		t.Errorf("T-quick-2-api Type = %q, want %q", tasks[2].Type, TypeTestPipelineGenAndRun)
+	if tasks[2].Type != TypeTestGenAndRun {
+		t.Errorf("T-quick-2-api Type = %q, want %q", tasks[2].Type, TypeTestGenAndRun)
 	}
 
 	// Keys include type suffix
@@ -663,8 +663,8 @@ func TestGetQuickTestTasks_PerType_SingleType(t *testing.T) {
 	}
 
 	// T-quick-2-api type is gen-and-run
-	if tasks[1].Type != TypeTestPipelineGenAndRun {
-		t.Errorf("T-quick-2-api Type = %q, want %q", tasks[1].Type, TypeTestPipelineGenAndRun)
+	if tasks[1].Type != TypeTestGenAndRun {
+		t.Errorf("T-quick-2-api Type = %q, want %q", tasks[1].Type, TypeTestGenAndRun)
 	}
 
 	// T-quick-3 depends on single gen-and-run task
@@ -706,8 +706,8 @@ func TestGetQuickTestTasks_DefaultAuto_IncludesSpecDrift(t *testing.T) {
 	if tasks[0].ID != "T-quick-specs-1" {
 		t.Errorf("task ID = %q, want T-quick-specs-1", tasks[0].ID)
 	}
-	if tasks[0].Type != TypeDocGenerationDrift {
-		t.Errorf("task Type = %q, want %q", tasks[0].Type, TypeDocGenerationDrift)
+	if tasks[0].Type != TypeDocDrift {
+		t.Errorf("task Type = %q, want %q", tasks[0].Type, TypeDocDrift)
 	}
 	if !tasks[0].NoTest {
 		t.Error("T-quick-specs-1 NoTest should be true")

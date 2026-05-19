@@ -22,14 +22,14 @@ func TestValidator_ValidateTasks(t *testing.T) {
 		{
 			name: "valid tasks",
 			tasks: map[string]task.Task{
-				"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "task.md", Type: "feature"},
+				"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "task.md", Type: "coding.feature"},
 			},
 			wantErrors: 0,
 		},
 		{
 			name: "missing id",
 			tasks: map[string]task.Task{
-				"task1": {Title: "Task 1", File: "task.md", Type: "feature"},
+				"task1": {Title: "Task 1", File: "task.md", Type: "coding.feature"},
 			},
 			wantErrors:      1,
 			wantErrContains: []string{"missing 'id'"},
@@ -37,7 +37,7 @@ func TestValidator_ValidateTasks(t *testing.T) {
 		{
 			name: "missing title",
 			tasks: map[string]task.Task{
-				"task1": {ID: "1.1", File: "task.md", Type: "feature"},
+				"task1": {ID: "1.1", File: "task.md", Type: "coding.feature"},
 			},
 			wantErrors:      1,
 			wantErrContains: []string{"missing 'title'"},
@@ -45,7 +45,7 @@ func TestValidator_ValidateTasks(t *testing.T) {
 		{
 			name: "missing file",
 			tasks: map[string]task.Task{
-				"task1": {ID: "1.1", Title: "Task 1", Type: "feature"},
+				"task1": {ID: "1.1", Title: "Task 1", Type: "coding.feature"},
 			},
 			wantErrors:      1,
 			wantErrContains: []string{"missing 'file'"},
@@ -53,7 +53,7 @@ func TestValidator_ValidateTasks(t *testing.T) {
 		{
 			name: "invalid status",
 			tasks: map[string]task.Task{
-				"task1": {ID: "1.1", Title: "Task 1", File: "task.md", Status: "invalid", Type: "feature"},
+				"task1": {ID: "1.1", Title: "Task 1", File: "task.md", Status: "invalid", Type: "coding.feature"},
 			},
 			wantErrors:      1,
 			wantErrContains: []string{"invalid status"},
@@ -61,7 +61,7 @@ func TestValidator_ValidateTasks(t *testing.T) {
 		{
 			name: "invalid priority",
 			tasks: map[string]task.Task{
-				"task1": {ID: "1.1", Title: "Task 1", File: "task.md", Priority: "P5", Type: "feature"},
+				"task1": {ID: "1.1", Title: "Task 1", File: "task.md", Priority: "P5", Type: "coding.feature"},
 			},
 			wantErrors:      1,
 			wantErrContains: []string{"invalid priority"},
@@ -424,7 +424,7 @@ func TestValidator_Run(t *testing.T) {
 			PriorityEnum: []string{"P0", "P1", "P2"},
 		}
 		index.SetTasks(map[string]task.Task{
-			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "task.md", Type: "feature"},
+			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "task.md", Type: "coding.feature"},
 		})
 
 		// Create task file
@@ -1475,9 +1475,9 @@ func TestValidator_QuickMode(t *testing.T) {
 			PriorityEnum: []string{"P0", "P1", "P2"},
 		}
 		index.SetTasks(map[string]task.Task{
-			"task1":            {ID: "1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1-task.md", Type: "feature"},
-			"task2":            {ID: "2", Title: "Task 2", Status: "pending", Priority: "P0", Dependencies: []string{"1"}, File: "2-task.md", Type: "feature"},
-			"quick-test-cases": {ID: "T-quick-1", Title: "Test Cases", Status: "pending", Priority: "P1", Dependencies: []string{"2"}, File: "quick-test-cases.md", Type: "test-pipeline.gen-cases"},
+			"task1":            {ID: "1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1-task.md", Type: "coding.feature"},
+			"task2":            {ID: "2", Title: "Task 2", Status: "pending", Priority: "P0", Dependencies: []string{"1"}, File: "2-task.md", Type: "coding.feature"},
+			"quick-test-cases": {ID: "T-quick-1", Title: "Test Cases", Status: "pending", Priority: "P1", Dependencies: []string{"2"}, File: "quick-test-cases.md", Type: "test.gen-cases"},
 		})
 
 		for _, fname := range []string{"1-task.md", "2-task.md", "quick-test-cases.md"} {
@@ -1527,7 +1527,7 @@ func TestValidator_QuickMode(t *testing.T) {
 			"priorityEnum": []string{"P0", "P1", "P2"},
 			"tasks": map[string]interface{}{
 				"task1": map[string]interface{}{
-					"id": "1", "title": "Task", "status": "pending", "priority": "P0", "file": "task.md", "scope": "all", "type": "feature",
+					"id": "1", "title": "Task", "status": "pending", "priority": "P0", "file": "task.md", "scope": "all", "type": "coding.feature",
 				},
 			},
 		}
@@ -1591,7 +1591,7 @@ func TestValidator_QuickMode(t *testing.T) {
 			PriorityEnum: []string{"P0", "P1", "P2"},
 		}
 		index.SetTasks(map[string]task.Task{
-			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "task.md", Type: "feature"},
+			"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "task.md", Type: "coding.feature"},
 		})
 
 		taskFile := filepath.Join(dir, "task.md")
@@ -1685,7 +1685,7 @@ dependencies: ["2"]
 func TestValidator_ValidateTasks_RejectedStatusValid(t *testing.T) {
 	v := &validator{filePath: "test.json"}
 	tasks := map[string]task.Task{
-		"a": {ID: "1.1", Title: "Task", File: "1.1.md", Status: "rejected", Type: "feature"},
+		"a": {ID: "1.1", Title: "Task", File: "1.1.md", Status: "rejected", Type: "coding.feature"},
 	}
 	v.validateTasks(tasks)
 	if len(v.errors) != 0 {

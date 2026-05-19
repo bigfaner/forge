@@ -129,8 +129,8 @@ func TestGenerateSummaryMD(t *testing.T) {
 	if !strings.Contains(s, `id: "1.summary"`) {
 		t.Error("missing id: 1.summary")
 	}
-	if !strings.Contains(s, `type: "doc-generation.summary"`) {
-		t.Error("missing type: doc-generation.summary")
+	if !strings.Contains(s, `type: "doc.summary"`) {
+		t.Error("missing type: doc.summary")
 	}
 	if !strings.Contains(s, `"1.1"`) || !strings.Contains(s, `"1.2"`) {
 		t.Error("missing dependency on business task IDs")

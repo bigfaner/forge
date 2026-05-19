@@ -283,7 +283,7 @@ func checkDependenciesMet(index *task.TaskIndex, selfID string, t task.Task) (bo
 	// pending/in_progress, the dependency is not truly met.
 	for _, dep := range t.Dependencies {
 		for _, other := range index.TasksMap() {
-			if other.ID != selfID && other.Type == "fix" && other.SourceTaskID == dep &&
+			if other.ID != selfID && other.Type == task.TypeCodingFix && other.SourceTaskID == dep &&
 				(other.Status == "pending" || other.Status == "in_progress") {
 				unmet = append(unmet, other.ID)
 			}
@@ -294,7 +294,7 @@ func checkDependenciesMet(index *task.TaskIndex, selfID string, t task.Task) (bo
 	// If a fix task with sourceTaskID == selfID is still pending/in_progress,
 	// this task should not be claimed (--block-source scenario).
 	for _, other := range index.TasksMap() {
-		if other.Type == "fix" && other.SourceTaskID == selfID &&
+		if other.Type == task.TypeCodingFix && other.SourceTaskID == selfID &&
 			(other.Status == "pending" || other.Status == "in_progress") {
 			unmet = append(unmet, other.ID)
 		}

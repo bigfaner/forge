@@ -59,7 +59,7 @@ func defaultTaskContent(filename string) string {
 id: %q
 title: "Test task %s"
 priority: "P1"
-type: "feature"
+type: "coding.feature"
 ---
 
 # Task %s
@@ -859,7 +859,7 @@ func TestTC_019_RejectsPathTraversalInTaskIDs(t *testing.T) {
 id: "../1.1"
 title: "Traversal attempt"
 priority: "P1"
-type: "feature"
+type: "coding.feature"
 ---
 
 # Traversal

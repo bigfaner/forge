@@ -101,8 +101,8 @@ func TestTC_004_QuickPipelineIncludesTQuick5WithDriftType(t *testing.T) {
 	// Verify T-quick-5 definition exists with drift type
 	assert.Contains(t, content, `"T-quick-5"`,
 		"testgen.go should define T-quick-5 ID")
-	assert.Contains(t, content, "TypeDocGenerationDrift",
-		"T-quick-5 should use TypeDocGenerationDrift type")
+	assert.Contains(t, content, "TypeDocDrift",
+		"T-quick-5 should use TypeDocDrift type")
 	assert.Contains(t, content, "NoTest: true",
 		"T-quick-5 should have NoTest: true")
 	assert.Contains(t, content, `Scope: "all"`,
@@ -439,8 +439,8 @@ func TestTC_018_TaskIDInfersDriftType(t *testing.T) {
 	// Verify T-quick-5 infers doc-generation.drift
 	assert.Contains(t, content, `"T-quick-5"`,
 		"infer.go should handle T-quick-5")
-	assert.Contains(t, content, "TypeDocGenerationDrift",
-		"T-quick-5 should infer TypeDocGenerationDrift")
+	assert.Contains(t, content, "TypeDocDrift",
+		"T-quick-5 should infer TypeDocDrift")
 
 	// Verify profile-suffixed variants (T-quick-5a, T-quick-5b) also handled
 	// The profileSuffixedID function handles T-quick-5 + letter suffix

@@ -24,7 +24,7 @@ func writeTaskMD(t *testing.T, dir, filename, id, title string, deps []string) {
 	// Auto-gen IDs (gates, summaries, test tasks) get their type from InferType.
 	taskType := InferType(id)
 	if taskType == "" {
-		taskType = TypeFeature
+		taskType = TypeCodingFeature
 	}
 	content := "---\nid: " + `"` + id + `"` + "\ntitle: " + `"` + title + `"` +
 		"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: " + `"` + taskType + `"` +
@@ -513,8 +513,8 @@ func TestBuildIndex_TypeInference(t *testing.T) {
 	if idx.Tasks["1-gate"].Type != "gate" {
 		t.Errorf("explicit type = %q, want gate", idx.Tasks["1-gate"].Type)
 	}
-	if idx.Tasks["2-bar"].Type != TypeFeature {
-		t.Errorf("inferred type = %q, want %q", idx.Tasks["2-bar"].Type, TypeFeature)
+	if idx.Tasks["2-bar"].Type != TypeCodingFeature {
+		t.Errorf("inferred type = %q, want %q", idx.Tasks["2-bar"].Type, TypeCodingFeature)
 	}
 }
 
@@ -544,7 +544,7 @@ func TestBuildIndex_WithTestTasks(t *testing.T) {
 	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "breakdown")
 
 	// Create a business task (feature type) and gate tasks for dep resolution
-	writeTaskMDWithType(t, tasksDir, "1-feat.md", "1.1", "Feature Task", TypeFeature, nil)
+	writeTaskMDWithType(t, tasksDir, "1-feat.md", "1.1", "Feature Task", TypeCodingFeature, nil)
 	writeTaskMD(t, tasksDir, "1-gate.md", "1.gate", "Phase 1 Gate", nil)
 	writeTaskMD(t, tasksDir, "2-gate.md", "2.gate", "Phase 2 Gate", nil)
 
@@ -612,7 +612,7 @@ func TestBuildIndex_WithTestTasks(t *testing.T) {
 func TestBuildIndex_TestTasksIdempotent(t *testing.T) {
 	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "breakdown")
 
-	writeTaskMDWithType(t, tasksDir, "1-feat.md", "1.1", "Feature Task", TypeFeature, nil)
+	writeTaskMDWithType(t, tasksDir, "1-feat.md", "1.1", "Feature Task", TypeCodingFeature, nil)
 	writeTaskMD(t, tasksDir, "1-gate.md", "1.gate", "Gate", nil)
 
 	opts := BuildIndexOpts{
@@ -815,8 +815,8 @@ func TestBuildIndex_StageGatesGenerated(t *testing.T) {
 
 	if task, ok := idx.Tasks["1.summary"]; !ok {
 		t.Error("1.summary not in index")
-	} else if task.Type != TypeDocGenerationSummary {
-		t.Errorf("1.summary type = %q, want %q", task.Type, TypeDocGenerationSummary)
+	} else if task.Type != TypeDocSummary {
+		t.Errorf("1.summary type = %q, want %q", task.Type, TypeDocSummary)
 	}
 	if task, ok := idx.Tasks["1.gate"]; !ok {
 		t.Error("1.gate not in index")
@@ -992,51 +992,51 @@ func TestNeedsTestPipeline(t *testing.T) {
 		{
 			name: "feature type needs test pipeline",
 			tasks: map[string]Task{
-				"1-feat": {ID: "1.1", Type: TypeFeature},
-				"2-doc":  {ID: "1.2", Type: TypeDocumentation},
+				"1-feat": {ID: "1.1", Type: TypeCodingFeature},
+				"2-doc":  {ID: "1.2", Type: TypeDoc},
 			},
 			want: true,
 		},
 		{
 			name: "enhancement type needs test pipeline",
 			tasks: map[string]Task{
-				"1-enh": {ID: "1.1", Type: TypeEnhancement},
+				"1-enh": {ID: "1.1", Type: TypeCodingEnhancement},
 			},
 			want: true,
 		},
 		{
 			name: "fix type needs test pipeline",
 			tasks: map[string]Task{
-				"1-fix": {ID: "fix-1", Type: TypeFix},
+				"1-fix": {ID: "fix-1", Type: TypeCodingFix},
 			},
 			want: true,
 		},
 		{
 			name: "documentation-only does NOT need test pipeline",
 			tasks: map[string]Task{
-				"1-doc": {ID: "1.1", Type: TypeDocumentation},
-				"2-doc": {ID: "1.2", Type: TypeDocumentation},
+				"1-doc": {ID: "1.1", Type: TypeDoc},
+				"2-doc": {ID: "1.2", Type: TypeDoc},
 			},
 			want: false,
 		},
 		{
 			name: "cleanup-only needs test pipeline",
 			tasks: map[string]Task{
-				"1-clean": {ID: "1.1", Type: TypeCleanup},
+				"1-clean": {ID: "1.1", Type: TypeCodingCleanup},
 			},
 			want: true,
 		},
 		{
 			name: "refactor-only needs test pipeline",
 			tasks: map[string]Task{
-				"1-ref": {ID: "1.1", Type: TypeRefactor},
+				"1-ref": {ID: "1.1", Type: TypeCodingRefactor},
 			},
 			want: true,
 		},
 		{
 			name: "only auto-generated tasks (no business tasks) returns false",
 			tasks: map[string]Task{
-				"1.summary": {ID: "1.summary", Type: TypeDocGenerationSummary},
+				"1.summary": {ID: "1.summary", Type: TypeDocSummary},
 				"1.gate":    {ID: "1.gate", Type: TypeGate},
 			},
 			want: false,
@@ -1044,10 +1044,10 @@ func TestNeedsTestPipeline(t *testing.T) {
 		{
 			name: "business tasks with auto-generated tasks mixed in",
 			tasks: map[string]Task{
-				"1-doc":    {ID: "1.1", Type: TypeDocumentation},
-				"2-doc":    {ID: "1.2", Type: TypeDocumentation},
+				"1-doc":    {ID: "1.1", Type: TypeDoc},
+				"2-doc":    {ID: "1.2", Type: TypeDoc},
 				"1.gate":   {ID: "1.gate", Type: TypeGate},
-				"T-test-1": {ID: "T-test-1", Type: TypeTestPipelineGenCases},
+				"T-test-1": {ID: "T-test-1", Type: TypeTestGenCases},
 			},
 			want: false,
 		},
@@ -1059,8 +1059,8 @@ func TestNeedsTestPipeline(t *testing.T) {
 		{
 			name: "mixed feature and cleanup needs test pipeline",
 			tasks: map[string]Task{
-				"1-feat":  {ID: "1.1", Type: TypeFeature},
-				"2-clean": {ID: "1.2", Type: TypeCleanup},
+				"1-feat":  {ID: "1.1", Type: TypeCodingFeature},
+				"2-clean": {ID: "1.2", Type: TypeCodingCleanup},
 			},
 			want: true,
 		},
@@ -1085,52 +1085,52 @@ func TestNeedsDocEval(t *testing.T) {
 		{
 			name: "documentation-only needs doc eval",
 			tasks: map[string]Task{
-				"1-doc": {ID: "1.1", Type: TypeDocumentation},
-				"2-doc": {ID: "1.2", Type: TypeDocumentation},
+				"1-doc": {ID: "1.1", Type: TypeDoc},
+				"2-doc": {ID: "1.2", Type: TypeDoc},
 			},
 			want: true,
 		},
 		{
 			name: "feature type does NOT need doc eval",
 			tasks: map[string]Task{
-				"1-feat": {ID: "1.1", Type: TypeFeature},
+				"1-feat": {ID: "1.1", Type: TypeCodingFeature},
 			},
 			want: false,
 		},
 		{
 			name: "fix type does NOT need doc eval",
 			tasks: map[string]Task{
-				"1-fix": {ID: "fix-1", Type: TypeFix},
+				"1-fix": {ID: "fix-1", Type: TypeCodingFix},
 			},
 			want: false,
 		},
 		{
 			name: "cleanup-only does NOT need doc eval",
 			tasks: map[string]Task{
-				"1-clean": {ID: "1.1", Type: TypeCleanup},
+				"1-clean": {ID: "1.1", Type: TypeCodingCleanup},
 			},
 			want: false,
 		},
 		{
 			name: "mixed documentation and feature does NOT need doc eval",
 			tasks: map[string]Task{
-				"1-doc":  {ID: "1.1", Type: TypeDocumentation},
-				"2-feat": {ID: "1.2", Type: TypeFeature},
+				"1-doc":  {ID: "1.1", Type: TypeDoc},
+				"2-feat": {ID: "1.2", Type: TypeCodingFeature},
 			},
 			want: false,
 		},
 		{
 			name: "doc-evaluation type does NOT need doc eval (not documentation)",
 			tasks: map[string]Task{
-				"1-doc":  {ID: "1.1", Type: TypeDocumentation},
-				"2-eval": {ID: "1.2", Type: TypeDocEvaluation},
+				"1-doc":  {ID: "1.1", Type: TypeDoc},
+				"2-eval": {ID: "1.2", Type: TypeDocEval},
 			},
 			want: false,
 		},
 		{
 			name: "only auto-generated tasks returns false (no business tasks)",
 			tasks: map[string]Task{
-				"1.summary": {ID: "1.summary", Type: TypeDocGenerationSummary},
+				"1.summary": {ID: "1.summary", Type: TypeDocSummary},
 				"1.gate":    {ID: "1.gate", Type: TypeGate},
 			},
 			want: false,
@@ -1143,9 +1143,9 @@ func TestNeedsDocEval(t *testing.T) {
 		{
 			name: "auto-generated tasks mixed with documentation still returns true",
 			tasks: map[string]Task{
-				"1-doc":    {ID: "1.1", Type: TypeDocumentation},
+				"1-doc":    {ID: "1.1", Type: TypeDoc},
 				"1.gate":   {ID: "1.gate", Type: TypeGate},
-				"T-test-1": {ID: "T-test-1", Type: TypeTestPipelineGenCases},
+				"T-test-1": {ID: "T-test-1", Type: TypeTestGenCases},
 			},
 			want: true,
 		},
@@ -1166,12 +1166,12 @@ func TestIsTestableType(t *testing.T) {
 		typ  string
 		want bool
 	}{
-		{TypeFeature, true},
-		{TypeEnhancement, true},
-		{TypeFix, true},
-		{TypeCleanup, true},
-		{TypeRefactor, true},
-		{TypeDocumentation, false},
+		{TypeCodingFeature, true},
+		{TypeCodingEnhancement, true},
+		{TypeCodingFix, true},
+		{TypeCodingCleanup, true},
+		{TypeCodingRefactor, true},
+		{TypeDoc, false},
 		{"unknown", false},
 		{"", false},
 	}
@@ -1221,8 +1221,8 @@ func TestBuildIndex_DocsOnlySkipsGatesAndTests(t *testing.T) {
 	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "quick")
 
 	// Create 2 documentation tasks in same phase (would normally trigger gate generation)
-	writeTaskMDWithType(t, tasksDir, "1-doc.md", "1.1", "Doc Task 1", TypeDocumentation, nil)
-	writeTaskMDWithType(t, tasksDir, "2-doc.md", "1.2", "Doc Task 2", TypeDocumentation, []string{"1.1"})
+	writeTaskMDWithType(t, tasksDir, "1-doc.md", "1.1", "Doc Task 1", TypeDoc, nil)
+	writeTaskMDWithType(t, tasksDir, "2-doc.md", "1.2", "Doc Task 2", TypeDoc, []string{"1.1"})
 
 	opts := BuildIndexOpts{
 		FeatureSlug:    "test-feature",
@@ -1265,8 +1265,8 @@ func TestBuildIndex_DocsOnlySkipsGatesAndTests(t *testing.T) {
 func TestBuildIndex_DocsOnlyGeneratesEvalDoc(t *testing.T) {
 	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "quick")
 
-	writeTaskMDWithType(t, tasksDir, "1-doc.md", "1.1", "Doc Task 1", TypeDocumentation, nil)
-	writeTaskMDWithType(t, tasksDir, "2-doc.md", "1.2", "Doc Task 2", TypeDocumentation, []string{"1.1"})
+	writeTaskMDWithType(t, tasksDir, "1-doc.md", "1.1", "Doc Task 1", TypeDoc, nil)
+	writeTaskMDWithType(t, tasksDir, "2-doc.md", "1.2", "Doc Task 2", TypeDoc, []string{"1.1"})
 
 	opts := BuildIndexOpts{
 		FeatureSlug:    "test-feature",
@@ -1299,8 +1299,8 @@ func TestBuildIndex_DocsOnlyGeneratesEvalDoc(t *testing.T) {
 	if evalTask.ID != "T-eval-doc" {
 		t.Errorf("eval-doc ID = %q, want T-eval-doc", evalTask.ID)
 	}
-	if evalTask.Type != TypeDocEvaluation {
-		t.Errorf("eval-doc type = %q, want %q", evalTask.Type, TypeDocEvaluation)
+	if evalTask.Type != TypeDocEval {
+		t.Errorf("eval-doc type = %q, want %q", evalTask.Type, TypeDocEval)
 	}
 	if !evalTask.NoTest {
 		t.Error("eval-doc should have noTest=true")
@@ -1326,8 +1326,8 @@ func TestBuildIndex_CodeFeatureUnchanged(t *testing.T) {
 	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "quick")
 
 	// Feature with feature-type tasks should generate test pipeline and stage gates
-	writeTaskMDWithType(t, tasksDir, "1-feat.md", "1.1", "Feature Task 1", TypeFeature, nil)
-	writeTaskMDWithType(t, tasksDir, "2-feat.md", "1.2", "Feature Task 2", TypeFeature, []string{"1.1"})
+	writeTaskMDWithType(t, tasksDir, "1-feat.md", "1.1", "Feature Task 1", TypeCodingFeature, nil)
+	writeTaskMDWithType(t, tasksDir, "2-feat.md", "1.2", "Feature Task 2", TypeCodingFeature, []string{"1.1"})
 
 	opts := BuildIndexOpts{
 		FeatureSlug:    "test-feature",
@@ -1369,7 +1369,7 @@ func TestBuildIndex_MissingTypeAllowedForAutoGenTasks(t *testing.T) {
 
 	// Create a feature task (has type) and a gate task file without explicit type
 	// (gates use InferType)
-	writeTaskMDWithType(t, tasksDir, "1-feat.md", "1.1", "Feature Task", TypeFeature, nil)
+	writeTaskMDWithType(t, tasksDir, "1-feat.md", "1.1", "Feature Task", TypeCodingFeature, nil)
 
 	// Write a gate file without type in frontmatter - should be OK since InferType handles it
 	gateContent := "---\nid: \"1.gate\"\ntitle: \"Phase 1 Gate\"\npriority: \"P0\"\nestimated_time: \"1h\"\nscope: \"all\"\n---\n\n# Gate\n"
@@ -1396,7 +1396,7 @@ func TestBuildIndex_MissingTypeAllowedForAutoGenTasks(t *testing.T) {
 func TestBuildIndex_EmptyTestInterfaces_NoTestTasks(t *testing.T) {
 	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "breakdown")
 
-	writeTaskMDWithType(t, tasksDir, "1-feat.md", "1.1", "Feature Task", TypeFeature, nil)
+	writeTaskMDWithType(t, tasksDir, "1-feat.md", "1.1", "Feature Task", TypeCodingFeature, nil)
 	writeTaskMD(t, tasksDir, "1-gate.md", "1.gate", "Phase 1 Gate", nil)
 	writeTaskMD(t, tasksDir, "2-gate.md", "2.gate", "Phase 2 Gate", nil)
 

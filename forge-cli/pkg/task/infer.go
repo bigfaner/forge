@@ -15,39 +15,39 @@ import "strings"
 func InferType(id string) string {
 	switch {
 	case strings.HasSuffix(id, ".summary"):
-		return TypeDocGenerationSummary
+		return TypeDocSummary
 	case strings.HasSuffix(id, ".gate"):
 		return TypeGate
 	case id == "T-test-1b":
-		return TypeTestPipelineEvalCases
+		return TypeTestEvalCases
 	case id == "T-test-1", profileSuffixedID(id, "T-test-1"):
-		return TypeTestPipelineGenCases
+		return TypeTestGenCases
 	case id == "T-test-2", profileSuffixedID(id, "T-test-2"), typeSuffixedID(id, "T-test-2"):
-		return TypeTestPipelineGenScripts
+		return TypeTestGenScripts
 	case id == "T-test-3", profileSuffixedID(id, "T-test-3"), typeSuffixedID(id, "T-test-3"):
-		return TypeTestPipelineRun
+		return TypeTestRun
 	case id == "T-test-4", profileSuffixedID(id, "T-test-4"), typeSuffixedID(id, "T-test-4"):
-		return TypeTestPipelineGraduate
+		return TypeTestGraduate
 	case id == "T-test-4.5":
-		return TypeTestPipelineVerifyRegression
+		return TypeTestVerifyRegression
 	case id == "T-test-5", id == "T-specs-1":
-		return TypeDocGenerationConsolidate
+		return TypeDocConsolidate
 	case profileSuffixedID(id, "T-quick-1"):
-		return TypeTestPipelineGenCases
+		return TypeTestGenCases
 	case profileSuffixedID(id, "T-quick-2"), typeSuffixedID(id, "T-quick-2"):
-		return TypeTestPipelineGenAndRun
+		return TypeTestGenAndRun
 	case profileSuffixedID(id, "T-quick-3"), typeSuffixedID(id, "T-quick-3"):
-		return TypeTestPipelineGraduate
+		return TypeTestGraduate
 	case profileSuffixedID(id, "T-quick-4"):
-		return TypeTestPipelineVerifyRegression
+		return TypeTestVerifyRegression
 	case id == "T-quick-5", id == "T-quick-specs-1", profileSuffixedID(id, "T-quick-5"), profileSuffixedID(id, "T-quick-specs-1"):
-		return TypeDocGenerationDrift
+		return TypeDocDrift
 	case id == "T-clean-code-1":
 		return TypeCleanCode
 	case strings.HasPrefix(id, "fix-") || strings.HasPrefix(id, "disc-"):
-		return TypeFix
+		return TypeCodingFix
 	case id == "T-eval-doc":
-		return TypeDocEvaluation
+		return TypeDocEval
 	default:
 		return ""
 	}

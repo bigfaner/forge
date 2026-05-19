@@ -8,80 +8,80 @@ func TestInferType(t *testing.T) {
 		want string
 	}{
 		// Summary and gate
-		{"1.summary", TypeDocGenerationSummary},
-		{"2.summary", TypeDocGenerationSummary},
+		{"1.summary", TypeDocSummary},
+		{"2.summary", TypeDocSummary},
 		{"1.gate", TypeGate},
 		{"2.gate", TypeGate},
 
 		// Breakdown test tasks (exact match)
-		{"T-test-1", TypeTestPipelineGenCases},
-		{"T-test-2", TypeTestPipelineGenScripts},
-		{"T-test-3", TypeTestPipelineRun},
-		{"T-test-4", TypeTestPipelineGraduate},
-		{"T-test-4.5", TypeTestPipelineVerifyRegression},
-		{"T-test-5", TypeDocGenerationConsolidate},
+		{"T-test-1", TypeTestGenCases},
+		{"T-test-2", TypeTestGenScripts},
+		{"T-test-3", TypeTestRun},
+		{"T-test-4", TypeTestGraduate},
+		{"T-test-4.5", TypeTestVerifyRegression},
+		{"T-test-5", TypeDocConsolidate},
 
 		// T-test-1b is a special case: exact match for eval-cases (NOT a profile suffix)
-		// It's checked before profileSuffixedID, so it returns TypeTestPipelineEvalCases.
-		{"T-test-1b", TypeTestPipelineEvalCases},
+		// It's checked before profileSuffixedID, so it returns TypeTestEvalCases.
+		{"T-test-1b", TypeTestEvalCases},
 
 		// Breakdown test tasks (profile-suffixed)
-		{"T-test-1a", TypeTestPipelineGenCases},
-		{"T-test-1c", TypeTestPipelineGenCases},
-		{"T-test-2a", TypeTestPipelineGenScripts},
-		{"T-test-2b", TypeTestPipelineGenScripts},
-		{"T-test-3a", TypeTestPipelineRun},
-		{"T-test-3b", TypeTestPipelineRun},
-		{"T-test-4a", TypeTestPipelineGraduate},
-		{"T-test-4b", TypeTestPipelineGraduate},
+		{"T-test-1a", TypeTestGenCases},
+		{"T-test-1c", TypeTestGenCases},
+		{"T-test-2a", TypeTestGenScripts},
+		{"T-test-2b", TypeTestGenScripts},
+		{"T-test-3a", TypeTestRun},
+		{"T-test-3b", TypeTestRun},
+		{"T-test-4a", TypeTestGraduate},
+		{"T-test-4b", TypeTestGraduate},
 
 		// Quick test tasks (profile-suffixed)
-		{"T-quick-1a", TypeTestPipelineGenCases},
-		{"T-quick-1b", TypeTestPipelineGenCases},
-		{"T-quick-2a", TypeTestPipelineGenAndRun},
-		{"T-quick-2b", TypeTestPipelineGenAndRun},
-		{"T-quick-3a", TypeTestPipelineGraduate},
-		{"T-quick-3b", TypeTestPipelineGraduate},
-		{"T-quick-4a", TypeTestPipelineVerifyRegression},
-		{"T-quick-4b", TypeTestPipelineVerifyRegression},
-		{"T-quick-5", TypeDocGenerationDrift},
-		{"T-quick-5a", TypeDocGenerationDrift},
-		{"T-quick-5b", TypeDocGenerationDrift},
+		{"T-quick-1a", TypeTestGenCases},
+		{"T-quick-1b", TypeTestGenCases},
+		{"T-quick-2a", TypeTestGenAndRun},
+		{"T-quick-2b", TypeTestGenAndRun},
+		{"T-quick-3a", TypeTestGraduate},
+		{"T-quick-3b", TypeTestGraduate},
+		{"T-quick-4a", TypeTestVerifyRegression},
+		{"T-quick-4b", TypeTestVerifyRegression},
+		{"T-quick-5", TypeDocDrift},
+		{"T-quick-5a", TypeDocDrift},
+		{"T-quick-5b", TypeDocDrift},
 
 		// Fix tasks
-		{"fix-1", TypeFix},
-		{"fix-2", TypeFix},
-		{"disc-1", TypeFix},
+		{"fix-1", TypeCodingFix},
+		{"fix-2", TypeCodingFix},
+		{"disc-1", TypeCodingFix},
 
 		// Doc evaluation task
-		{"T-eval-doc", TypeDocEvaluation},
+		{"T-eval-doc", TypeDocEval},
 
 		// Type-suffixed test tasks (per-type split)
-		{"T-test-2-api", TypeTestPipelineGenScripts},
-		{"T-test-2-tui", TypeTestPipelineGenScripts},
-		{"T-test-2-cli", TypeTestPipelineGenScripts},
-		{"T-test-2-web-ui", TypeTestPipelineGenScripts},
-		{"T-test-3-api", TypeTestPipelineRun},
-		{"T-test-4-api", TypeTestPipelineGraduate},
-		{"T-quick-2-api", TypeTestPipelineGenAndRun},
-		{"T-quick-2-tui", TypeTestPipelineGenAndRun},
-		{"T-quick-3-cli", TypeTestPipelineGraduate},
+		{"T-test-2-api", TypeTestGenScripts},
+		{"T-test-2-tui", TypeTestGenScripts},
+		{"T-test-2-cli", TypeTestGenScripts},
+		{"T-test-2-web-ui", TypeTestGenScripts},
+		{"T-test-3-api", TypeTestRun},
+		{"T-test-4-api", TypeTestGraduate},
+		{"T-quick-2-api", TypeTestGenAndRun},
+		{"T-quick-2-tui", TypeTestGenAndRun},
+		{"T-quick-3-cli", TypeTestGraduate},
 		{"T-quick-4-api", ""},
 
 		// Profile-suffixed + type-suffixed
-		{"T-test-2a-api", TypeTestPipelineGenScripts},
-		{"T-test-2b-tui", TypeTestPipelineGenScripts},
-		{"T-test-3a-cli", TypeTestPipelineRun},
-		{"T-quick-2a-api", TypeTestPipelineGenAndRun},
-		{"T-quick-2b-tui", TypeTestPipelineGenAndRun},
-		{"T-quick-3a-cli", TypeTestPipelineGraduate},
+		{"T-test-2a-api", TypeTestGenScripts},
+		{"T-test-2b-tui", TypeTestGenScripts},
+		{"T-test-3a-cli", TypeTestRun},
+		{"T-quick-2a-api", TypeTestGenAndRun},
+		{"T-quick-2b-tui", TypeTestGenAndRun},
+		{"T-quick-3a-cli", TypeTestGraduate},
 
 		// Type suffix on T-test-1 should NOT match (exact + profileSuffixed only)
 		{"T-test-1-api", ""},
 		{"T-test-4.5-api", ""},
 		{"T-test-5-api", ""},
 
-		// Unknown IDs return empty string (no TypeFeature fallback)
+		// Unknown IDs return empty string (no TypeCodingFeature fallback)
 		{"1.1", ""},
 		{"2.3", ""},
 		{"", ""},
@@ -94,8 +94,8 @@ func TestInferType(t *testing.T) {
 		{"refactor", ""},
 
 		// Renamed and new IDs
-		{"T-specs-1", TypeDocGenerationConsolidate},
-		{"T-quick-specs-1", TypeDocGenerationDrift},
+		{"T-specs-1", TypeDocConsolidate},
+		{"T-quick-specs-1", TypeDocDrift},
 		{"T-clean-code-1", TypeCleanCode},
 	}
 

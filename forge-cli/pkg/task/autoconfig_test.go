@@ -295,15 +295,15 @@ func TestGetQuickTestTasks_SpecsDependsOnVerifyRegression(t *testing.T) {
 
 func TestInferType_TSpecs1(t *testing.T) {
 	got := InferType("T-specs-1")
-	if got != TypeDocGenerationConsolidate {
-		t.Errorf("InferType(T-specs-1) = %q, want %q", got, TypeDocGenerationConsolidate)
+	if got != TypeDocConsolidate {
+		t.Errorf("InferType(T-specs-1) = %q, want %q", got, TypeDocConsolidate)
 	}
 }
 
 func TestInferType_TQuickSpecs1(t *testing.T) {
 	got := InferType("T-quick-specs-1")
-	if got != TypeDocGenerationDrift {
-		t.Errorf("InferType(T-quick-specs-1) = %q, want %q", got, TypeDocGenerationDrift)
+	if got != TypeDocDrift {
+		t.Errorf("InferType(T-quick-specs-1) = %q, want %q", got, TypeDocDrift)
 	}
 }
 
