@@ -48,7 +48,7 @@
       "title": "Inject Karpathy principles into fix-bug command",
       "priority": "P1",
       "estimatedTime": "45m",
-      "status": "pending",
+      "status": "completed",
       "file": "5-inject-principles-fixbug.md",
       "record": "records/5-inject-principles-fixbug.md",
       "type": "doc"
