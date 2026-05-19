@@ -1384,9 +1384,6 @@ func TestBuildIndex_DocsOnlyGeneratesEvalDoc(t *testing.T) {
 	if evalTask.Type != TypeDocEval {
 		t.Errorf("eval-doc type = %q, want %q", evalTask.Type, TypeDocEval)
 	}
-	if !evalTask.NoTest {
-		t.Error("eval-doc should have noTest=true")
-	}
 	// Should depend on last business task
 	if len(evalTask.Dependencies) == 0 {
 		t.Error("eval-doc has no dependencies")
@@ -1659,9 +1656,6 @@ func TestBuildIndex_ValidationTasksGenerated(t *testing.T) {
 	if validateCode.Type != TypeValidationCode {
 		t.Errorf("validate-code type = %q, want %q", validateCode.Type, TypeValidationCode)
 	}
-	if !validateCode.NoTest {
-		t.Error("validate-code should have noTest=true")
-	}
 	if validateCode.MainSession {
 		t.Error("validate-code should have mainSession=false")
 	}
@@ -1676,9 +1670,6 @@ func TestBuildIndex_ValidationTasksGenerated(t *testing.T) {
 	}
 	if validateUx.Type != TypeValidationUx {
 		t.Errorf("validate-ux type = %q, want %q", validateUx.Type, TypeValidationUx)
-	}
-	if !validateUx.NoTest {
-		t.Error("validate-ux should have noTest=true")
 	}
 	if !validateUx.MainSession {
 		t.Error("validate-ux should have mainSession=true")

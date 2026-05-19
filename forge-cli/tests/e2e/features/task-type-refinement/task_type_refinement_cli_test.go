@@ -473,7 +473,7 @@ func TestTC_TypeRefine_018_RecordHasReclassificationWhenTypeShifts(t *testing.T)
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "T-reclass-1.md"), []byte(taskContent), 0644))
 	defer os.RemoveAll(featureDir)
 
-	indexJSON := fmt.Sprintf(`{"feature":%q,"proposal":"docs/proposals/test/proposal.md","statusEnum":["pending","in_progress","completed","blocked","skipped","rejected"],"priorityEnum":["P0","P1","P2"],"tasks":{"T-reclass-1":{"id":"T-reclass-1","title":"Reclass test","priority":"P1","status":"in_progress","file":"T-reclass-1.md","record":"records/T-reclass-1.md","type":"fix","noTest":true}}}`, featureSlug)
+	indexJSON := fmt.Sprintf(`{"feature":%q,"proposal":"docs/proposals/test/proposal.md","statusEnum":["pending","in_progress","completed","blocked","skipped","rejected"],"priorityEnum":["P0","P1","P2"],"tasks":{"T-reclass-1":{"id":"T-reclass-1","title":"Reclass test","priority":"P1","status":"in_progress","file":"T-reclass-1.md","record":"records/T-reclass-1.md","type":"fix"}}}`, featureSlug)
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "index.json"), []byte(indexJSON), 0644))
 
 	forgeDir := filepath.Join(projectRoot, ".forge")
@@ -517,7 +517,7 @@ func TestTC_TypeRefine_019_RecordOmitsReclassificationWhenNoShift(t *testing.T) 
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "T-noclass-1.md"), []byte(taskContent), 0644))
 	defer os.RemoveAll(featureDir)
 
-	indexJSON := fmt.Sprintf(`{"feature":%q,"proposal":"docs/proposals/test/proposal.md","statusEnum":["pending","in_progress","completed","blocked","skipped","rejected"],"priorityEnum":["P0","P1","P2"],"tasks":{"T-noclass-1":{"id":"T-noclass-1","title":"No reclass test","priority":"P1","status":"in_progress","file":"T-noclass-1.md","record":"records/T-noclass-1.md","type":"feature","noTest":true}}}`, featureSlug)
+	indexJSON := fmt.Sprintf(`{"feature":%q,"proposal":"docs/proposals/test/proposal.md","statusEnum":["pending","in_progress","completed","blocked","skipped","rejected"],"priorityEnum":["P0","P1","P2"],"tasks":{"T-noclass-1":{"id":"T-noclass-1","title":"No reclass test","priority":"P1","status":"in_progress","file":"T-noclass-1.md","record":"records/T-noclass-1.md","type":"feature"}}}`, featureSlug)
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "index.json"), []byte(indexJSON), 0644))
 
 	forgeDir := filepath.Join(projectRoot, ".forge")

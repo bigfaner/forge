@@ -122,7 +122,7 @@ func TestValidateRecordData(t *testing.T) {
 		}
 	})
 
-	t.Run("noTest task with coverage=-1 skips validation", func(t *testing.T) {
+	t.Run("coverage=-1 skips validation", func(t *testing.T) {
 		rd := &task.RecordData{
 			Status:      "completed",
 			Summary:     "Documentation-only task",
@@ -142,14 +142,14 @@ func TestValidateRecordData(t *testing.T) {
 		output := string(buf[:n])
 
 		if strings.Contains(output, "ERROR") {
-			t.Errorf("noTest task should skip test evidence check, got: %s", output)
+			t.Errorf("coverage=-1 should skip test evidence check, got: %s", output)
 		}
 	})
 
-	t.Run("noTest task with testsPassed > 0 passes validation", func(t *testing.T) {
+	t.Run("non-testable task with testsPassed > 0 passes validation", func(t *testing.T) {
 		rd := &task.RecordData{
 			Status:       "completed",
-			Summary:      "Ran some tests despite noTest flag",
+			Summary:      "Ran some tests despite non-testable type",
 			Coverage:     80.0,
 			TestsPassed:  5,
 			TestsFailed:  0,
@@ -170,7 +170,7 @@ func TestValidateRecordData(t *testing.T) {
 		output := string(buf[:n])
 
 		if strings.Contains(output, "ERROR") {
-			t.Errorf("noTest + testsPassed > 0 should pass, got: %s", output)
+			t.Errorf("non-testable + testsPassed > 0 should pass, got: %s", output)
 		}
 	})
 
@@ -602,11 +602,10 @@ func TestFillRecordTemplate(t *testing.T) {
 			},
 		},
 		{
-			name: "noTest task with coverage=-1",
+			name: "non-testable task with coverage=-1",
 			task: &task.Task{
-				ID:     "1.7",
-				Title:  "Write PRD",
-				NoTest: true,
+				ID:    "1.7",
+				Title: "Write PRD",
 			},
 			recordData: &task.RecordData{
 				Status:   "completed",
@@ -615,7 +614,7 @@ func TestFillRecordTemplate(t *testing.T) {
 			},
 			startedTime: "2026-04-06 10:00",
 			checkContains: []string{
-				"Tests Executed**: No (noTest task)",
+				"Tests Executed**: No",
 				"Coverage**: N/A (task has no tests)",
 			},
 		},
@@ -712,20 +711,16 @@ func TestFormatCoverage(t *testing.T) {
 func TestFormatTestsExecuted(t *testing.T) {
 	tests := []struct {
 		coverage float64
-		noTest   bool
 		want     string
 	}{
-		{-1.0, true, "No (noTest task)"},
-		{-1.0, false, "No"},
-		{0.0, false, "Yes"},
-		{85.5, false, "Yes"},
-		{0.0, true, "No (noTest task)"},
-		{80.0, true, "No (noTest task)"},
+		{-1.0, "No"},
+		{0.0, "Yes"},
+		{85.5, "Yes"},
 	}
 	for _, tt := range tests {
-		got := formatTestsExecuted(tt.coverage, tt.noTest)
+		got := formatTestsExecuted(tt.coverage)
 		if got != tt.want {
-			t.Errorf("formatTestsExecuted(%v, %v) = %q, want %q", tt.coverage, tt.noTest, got, tt.want)
+			t.Errorf("formatTestsExecuted(%v) = %q, want %q", tt.coverage, got, tt.want)
 		}
 	}
 }
@@ -1458,6 +1453,110 @@ func TestSubmit_NonTestableTypeSkipsQualityGate(t *testing.T) {
 		out := string(output)
 		if !strings.Contains(out, "Quality gate failed") {
 			t.Errorf("feature type should run quality gate, got: %s", out)
+		}
+	})
+}
+
+// TestSubmit_TieredQualityGate verifies that breaking tasks run the full gate
+// (compile+fmt+lint+test) while non-breaking coding tasks run only the static
+// gate (compile+fmt+lint).
+func TestSubmit_TieredQualityGate(t *testing.T) {
+	t.Run("breaking coding task runs full gate including test", func(t *testing.T) {
+		if os.Getenv("TEST_SUBMIT_BREAKING_FULL_GATE") == "1" {
+			setupFullProject(t, SetupOpts{
+				Tasks: map[string]task.Task{
+					"t1": {ID: "1", Title: "Fix Task", Status: "pending", File: "1.md", Record: "records/1.md", Type: task.TypeCodingFeature, Breaking: true},
+				},
+			})
+
+			dir, _ := os.Getwd()
+			// Create a justfile where test fails — this should cause quality gate failure
+			justfile := "compile:\n\t@true\nfmt:\n\t@true\nlint:\n\t@true\ntest:\n\t@echo \"test fails\" && exit 1\n"
+			_ = os.WriteFile(filepath.Join(dir, "justfile"), []byte(justfile), 0644)
+
+			dataPath := filepath.Join(dir, "record.json")
+			jsonData := `{"status":"completed","summary":"Fix done","testsPassed":3,"coverage":80.0}`
+			_ = os.WriteFile(dataPath, []byte(jsonData), 0644)
+
+			submitDataPath = dataPath
+			submitForce = false
+			runSubmit(submitCmd, []string{"1"})
+			return
+		}
+		cmd := exec.Command(os.Args[0], "-test.run=TestSubmit_TieredQualityGate/breaking_coding_task_runs_full_gate_including_test")
+		cmd.Env = append(os.Environ(), "TEST_SUBMIT_BREAKING_FULL_GATE=1")
+		output, _ := cmd.CombinedOutput()
+		out := string(output)
+		if !strings.Contains(out, "Quality gate failed") {
+			t.Errorf("breaking task should run full gate including test, got: %s", out)
+		}
+		if !strings.Contains(out, "test") {
+			t.Errorf("expected failure at test step for breaking task, got: %s", out)
+		}
+	})
+
+	t.Run("non-breaking coding task skips test in gate", func(t *testing.T) {
+		if os.Getenv("TEST_SUBMIT_NONBREAKING_STATIC_GATE") == "1" {
+			setupFullProject(t, SetupOpts{
+				Tasks: map[string]task.Task{
+					"t1": {ID: "1", Title: "Cleanup Task", Status: "pending", File: "1.md", Record: "records/1.md", Type: task.TypeCodingCleanup, Breaking: false},
+				},
+			})
+
+			dir, _ := os.Getwd()
+			// Create a justfile where compile+fmt+lint pass but test fails.
+			// Non-breaking should succeed because test is not in the static gate.
+			justfile := "compile:\n\t@true\nfmt:\n\t@true\nlint:\n\t@true\ntest:\n\t@echo \"test fails\" && exit 1\n"
+			_ = os.WriteFile(filepath.Join(dir, "justfile"), []byte(justfile), 0644)
+
+			dataPath := filepath.Join(dir, "record.json")
+			jsonData := `{"status":"completed","summary":"Cleanup done","testsPassed":3,"coverage":80.0,"keyDecisions":["d1"],"acceptanceCriteria":[{"criterion":"works","met":true}]}`
+			_ = os.WriteFile(dataPath, []byte(jsonData), 0644)
+
+			submitDataPath = dataPath
+			submitForce = false
+			runSubmit(submitCmd, []string{"1"})
+			return
+		}
+		cmd := exec.Command(os.Args[0], "-test.run=TestSubmit_TieredQualityGate/non-breaking_coding_task_skips_test_in_gate")
+		cmd.Env = append(os.Environ(), "TEST_SUBMIT_NONBREAKING_STATIC_GATE=1")
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Errorf("non-breaking task should pass with static gate (test failure ignored), got error: %v, output: %s", err, string(output))
+		}
+	})
+
+	t.Run("non-breaking coding task fails when lint fails", func(t *testing.T) {
+		if os.Getenv("TEST_SUBMIT_NONBREAKING_LINT_FAIL") == "1" {
+			setupFullProject(t, SetupOpts{
+				Tasks: map[string]task.Task{
+					"t1": {ID: "1", Title: "Cleanup Task", Status: "pending", File: "1.md", Record: "records/1.md", Type: task.TypeCodingCleanup, Breaking: false},
+				},
+			})
+
+			dir, _ := os.Getwd()
+			// Create a justfile where compile+fmt pass but lint fails
+			justfile := "compile:\n\t@true\nfmt:\n\t@true\nlint:\n\t@echo \"lint fails\" && exit 1\ntest:\n\t@true\n"
+			_ = os.WriteFile(filepath.Join(dir, "justfile"), []byte(justfile), 0644)
+
+			dataPath := filepath.Join(dir, "record.json")
+			jsonData := `{"status":"completed","summary":"Cleanup done","testsPassed":3,"coverage":80.0}`
+			_ = os.WriteFile(dataPath, []byte(jsonData), 0644)
+
+			submitDataPath = dataPath
+			submitForce = false
+			runSubmit(submitCmd, []string{"1"})
+			return
+		}
+		cmd := exec.Command(os.Args[0], "-test.run=TestSubmit_TieredQualityGate/non-breaking_coding_task_fails_when_lint_fails")
+		cmd.Env = append(os.Environ(), "TEST_SUBMIT_NONBREAKING_LINT_FAIL=1")
+		output, _ := cmd.CombinedOutput()
+		out := string(output)
+		if !strings.Contains(out, "Quality gate failed") {
+			t.Errorf("non-breaking task should fail when lint fails, got: %s", out)
+		}
+		if !strings.Contains(out, "lint") {
+			t.Errorf("expected failure at lint step, got: %s", out)
 		}
 	})
 }

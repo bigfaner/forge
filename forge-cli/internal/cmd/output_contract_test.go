@@ -95,7 +95,7 @@ func TestContract_Claim_NewTask(t *testing.T) {
 	tk := &task.Task{
 		ID: "1.1", Title: "Do stuff", Priority: "P0", Status: "pending",
 		File: "1.1.md", Record: "records/1.1.md",
-		Breaking: true, MainSession: true, NoTest: false,
+		Breaking: true, MainSession: true,
 		Type: "coding.feature", Scope: "backend",
 		Dependencies: []string{"1.0"}, EstimatedTime: "30min",
 	}
@@ -121,11 +121,12 @@ func TestContract_Claim_NewTask(t *testing.T) {
 	if !hasField(lines, "SCOPE", "backend") {
 		t.Errorf("expected SCOPE: backend")
 	}
-	if !hasField(lines, "BREAKING", "true") {
-		t.Errorf("expected BREAKING: true")
-	}
 	if !hasField(lines, "MAIN_SESSION", "true") {
 		t.Errorf("expected MAIN_SESSION: true")
+	}
+	// BREAKING must NOT appear (removed from claim output)
+	if !hasNoField(lines, "BREAKING") {
+		t.Errorf("BREAKING should not appear in claim output")
 	}
 	// Removed fields must NOT appear
 	for _, field := range []string{"KEY", "TITLE", "PRIORITY", "STATUS", "ESTIMATED_TIME",
@@ -200,8 +201,9 @@ func TestContract_Claim_Continue(t *testing.T) {
 	if !hasField(lines, "SCOPE", "backend") {
 		t.Errorf("expected SCOPE: backend")
 	}
-	if !hasField(lines, "BREAKING", "true") {
-		t.Errorf("expected BREAKING: true")
+	// BREAKING must NOT appear (removed from claim output)
+	if !hasNoField(lines, "BREAKING") {
+		t.Errorf("BREAKING should not appear in CONTINUE output")
 	}
 	if !hasField(lines, "MAIN_SESSION", "true") {
 		t.Errorf("expected MAIN_SESSION: true")
@@ -237,16 +239,15 @@ func TestContract_Claim_FieldOrder(t *testing.T) {
 	if idx := fieldIndex(lines, "ACTION"); idx != 0 {
 		t.Errorf("ACTION should be at index 0, got %d", idx)
 	}
-	// Expected order: ACTION, TASK_ID, TYPE, FEATURE, FILE, SCOPE, BREAKING, MAIN_SESSION
+	// Expected order: ACTION, TASK_ID, TYPE, FEATURE, FILE, SCOPE, MAIN_SESSION
 	taskIDIdx := fieldIndex(lines, "TASK_ID")
 	typeIdx := fieldIndex(lines, "TYPE")
 	featureIdx := fieldIndex(lines, "FEATURE")
 	fileIdx := fieldIndex(lines, "FILE")
 	scopeIdx := fieldIndex(lines, "SCOPE")
-	brkIdx := fieldIndex(lines, "BREAKING")
 	mainIdx := fieldIndex(lines, "MAIN_SESSION")
 
-	if taskIDIdx == -1 || typeIdx == -1 || featureIdx == -1 || fileIdx == -1 || scopeIdx == -1 || brkIdx == -1 || mainIdx == -1 {
+	if taskIDIdx == -1 || typeIdx == -1 || featureIdx == -1 || fileIdx == -1 || scopeIdx == -1 || mainIdx == -1 {
 		t.Fatalf("missing expected fields, got: %v", lines)
 	}
 
@@ -263,11 +264,13 @@ func TestContract_Claim_FieldOrder(t *testing.T) {
 	if fileIdx >= scopeIdx {
 		t.Errorf("FILE (%d) should come before SCOPE (%d)", fileIdx, scopeIdx)
 	}
-	if scopeIdx >= brkIdx {
-		t.Errorf("SCOPE (%d) should come before BREAKING (%d)", scopeIdx, brkIdx)
+	if scopeIdx >= mainIdx {
+		t.Errorf("SCOPE (%d) should come before MAIN_SESSION (%d)", scopeIdx, mainIdx)
 	}
-	if brkIdx >= mainIdx {
-		t.Errorf("BREAKING (%d) should come before MAIN_SESSION (%d)", brkIdx, mainIdx)
+
+	// BREAKING must NOT appear (removed from claim output)
+	if idx := fieldIndex(lines, "BREAKING"); idx != -1 {
+		t.Errorf("BREAKING should not appear in output, found at index %d", idx)
 	}
 
 	// Removed fields must not appear

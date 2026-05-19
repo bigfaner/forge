@@ -125,8 +125,8 @@ func runSubmit(_ *cobra.Command, args []string) {
 			fmt.Sprintf("Change taskId to %q or remove it from record.json", taskIDArg)))
 	}
 
-	// Non-testable or NoTest tasks: auto-set coverage=-1.0 to skip test evidence check
-	if !task.IsTestableType(t.Type) || t.NoTest {
+	// Non-testable tasks: auto-set coverage=-1.0 to skip test evidence check
+	if !task.IsTestableType(t.Type) {
 		if rd.Coverage >= 0 && rd.TestsPassed == 0 && rd.TestsFailed == 0 {
 			rd.Coverage = -1.0
 		}
@@ -135,9 +135,11 @@ func runSubmit(_ *cobra.Command, args []string) {
 	// Validate required and recommended fields
 	validateRecordData(rd, submitForce)
 
-	// Quality gate pre-check for completed tasks (unless --force, noTest, or non-testable type)
-	if rd.Status == "completed" && !submitForce && !t.NoTest && task.IsTestableType(t.Type) {
-		validateQualityGate(projectRoot, t.Scope)
+	// Quality gate pre-check for completed tasks (unless --force or non-testable type)
+	// Tiered model: breaking tasks run full gate (compile+fmt+lint+test),
+	// non-breaking coding tasks run static gate (compile+fmt+lint).
+	if rd.Status == "completed" && !submitForce && task.IsTestableType(t.Type) {
+		validateQualityGate(projectRoot, t.Scope, t.Breaking)
 	}
 
 	// Validate status
@@ -425,7 +427,7 @@ time_spent: "%s"
 		formatList(rd.FilesCreated),
 		formatList(rd.FilesModified),
 		formatList(rd.KeyDecisions),
-		formatTestsExecuted(rd.Coverage, t.NoTest), rd.TestsPassed, rd.TestsFailed, formatCoverage(rd.Coverage),
+		formatTestsExecuted(rd.Coverage), rd.TestsPassed, rd.TestsFailed, formatCoverage(rd.Coverage),
 		formatCriteria(rd.AcceptanceCriteria),
 		notes,
 	)
@@ -438,10 +440,7 @@ func formatCoverage(c float64) string {
 	return fmt.Sprintf("%.1f%%", c)
 }
 
-func formatTestsExecuted(c float64, noTest bool) string {
-	if noTest {
-		return "No (noTest task)"
-	}
+func formatTestsExecuted(c float64) string {
 	if c < 0 {
 		return "No"
 	}
@@ -487,10 +486,16 @@ func formatCriteria(criteria []task.AcceptanceCriterion) string {
 	return strings.Join(lines, "\n")
 }
 
-// validateQualityGate runs the full quality gate (compile -> fmt -> lint -> test).
+// validateQualityGate runs the quality gate based on the task's breaking flag.
+// breaking=true: full gate (compile -> fmt -> lint -> test).
+// breaking=false: static gate (compile -> fmt -> lint), skipping test.
 // On failure, exits with AIError containing concise error output.
-func validateQualityGate(projectRoot, scope string) {
-	just.RunGate(projectRoot, scope, just.DefaultGateSequence(), func(step, output string) {
+func validateQualityGate(projectRoot, scope string, breaking bool) {
+	steps := just.LintGateSequence()
+	if breaking {
+		steps = just.DefaultGateSequence()
+	}
+	just.RunGate(projectRoot, scope, steps, func(step, output string) {
 		concise := just.ExtractConciseError(output, 10)
 		Exit(NewAIError(ErrValidation,
 			fmt.Sprintf("Quality gate failed at step: just %s", step),

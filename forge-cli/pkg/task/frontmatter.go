@@ -17,7 +17,6 @@ type FrontmatterData struct {
 	Scope         string   `yaml:"scope"`
 	Breaking      bool     `yaml:"breaking"`
 	MainSession   bool     `yaml:"mainSession"`
-	NoTest        bool     `yaml:"noTest"`
 	Type          string   `yaml:"type"`
 	Profile       string   `yaml:"profile"`
 }

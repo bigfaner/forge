@@ -657,9 +657,9 @@ func TestValidateRecordData_ForceOverride(t *testing.T) {
 	}
 }
 
-// ---------- validateRecordData no-test task ----------
+// ---------- validateRecordData non-testable task ----------
 
-func TestValidateRecordData_NoTestTask(t *testing.T) {
+func TestValidateRecordData_NonTestableTask(t *testing.T) {
 	rd := &task.RecordData{
 		Status:       "completed",
 		Summary:      "Docs only",
@@ -674,7 +674,7 @@ func TestValidateRecordData_NoTestTask(t *testing.T) {
 		validateRecordData(rd, false)
 	})
 	if strings.Contains(out, "ERROR") {
-		t.Errorf("coverage=-1.0 should pass for no-test tasks, got: %s", out)
+		t.Errorf("coverage=-1.0 should pass for non-testable tasks, got: %s", out)
 	}
 }
 
@@ -840,8 +840,8 @@ func TestPrintTaskDetails_Breaking(t *testing.T) {
 	out := captureStdout(func() {
 		printTaskDetails("gate-2", t2, "/project", "test")
 	})
-	if !strings.Contains(out, "BREAKING: true") {
-		t.Errorf("expected BREAKING field, got: %s", out)
+	if strings.Contains(out, "BREAKING") {
+		t.Errorf("BREAKING should not appear in output, got: %s", out)
 	}
 	if !strings.Contains(out, "FEATURE: test") {
 		t.Errorf("expected FEATURE: test, got: %s", out)
@@ -1299,7 +1299,7 @@ test:
 	exited := false
 	// validateQualityGate calls Exit on failure which calls os.Exit(1).
 	// For success path, it just returns.
-	validateQualityGate(dir, "")
+	validateQualityGate(dir, "", true)
 	_ = exited
 }
 
@@ -1328,7 +1328,7 @@ test:
 	}
 
 	if os.Getenv("TEST_QUALITY_GATE_COMPILE_FAIL") == "1" {
-		validateQualityGate(dir, "")
+		validateQualityGate(dir, "", true)
 		return
 	}
 
@@ -1373,7 +1373,7 @@ test:
 	}
 
 	if os.Getenv("TEST_QUALITY_GATE_LINT_FAIL") == "1" {
-		validateQualityGate(dir, "")
+		validateQualityGate(dir, "", true)
 		return
 	}
 
@@ -1415,7 +1415,7 @@ test:
 	}
 
 	if os.Getenv("TEST_QUALITY_GATE_TEST_FAIL") == "1" {
-		validateQualityGate(dir, "")
+		validateQualityGate(dir, "", true)
 		return
 	}
 
@@ -1435,7 +1435,7 @@ test:
 func TestValidateQualityGate_NoJustfile(t *testing.T) {
 	dir := t.TempDir()
 	// No justfile -- RunGate returns true immediately, no exit
-	validateQualityGate(dir, "")
+	validateQualityGate(dir, "", true)
 }
 
 func TestValidateQualityGate_FmtNonBlockingFailure(t *testing.T) {
@@ -1463,7 +1463,7 @@ test:
 	}
 
 	// Should not exit -- fmt is non-blocking
-	validateQualityGate(dir, "")
+	validateQualityGate(dir, "", true)
 }
 
 // ---------- write*Output MkdirAll error paths ----------

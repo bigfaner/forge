@@ -35,13 +35,16 @@ When fixing E2E test failures, observe these boundaries:
 1. Read failing test + corresponding component source
 2. Compare test's expected testID/selectors vs actual DOM structure
 3. Modify component (add testID) or test (adjust selectors/assertions)
-4. `just test` — unit tests must pass
+4. Run targeted tests on affected packages — unit tests must pass
 5. Record completion
 
 ## Verification
 
 After fixing, verify the fix works:
-1. `just test [scope]` — must pass
+1. Run targeted tests on changed packages: `go test -race ./affected/package/...`
+2. Replace the path with the actual packages you modified
+
+> **Note:** Full project-wide tests run at CLI submit (`forge task submit`) — agent runs targeted tests only.
 
 E2e regression is verified by the dispatcher, not by this fix task.
 

@@ -119,7 +119,6 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 			Breaking:      fm.Breaking,
 			Scope:         fm.Scope,
 			MainSession:   fm.MainSession,
-			NoTest:        fm.NoTest,
 			Type:          taskType,
 			Profile:       fm.Profile,
 		}
@@ -224,7 +223,6 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 				Breaking:      fm.Breaking,
 				Scope:         fm.Scope,
 				MainSession:   fm.MainSession,
-				NoTest:        fm.NoTest,
 				Type:          taskType,
 				Profile:       fm.Profile,
 			}

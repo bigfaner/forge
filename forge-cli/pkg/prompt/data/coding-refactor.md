@@ -11,7 +11,7 @@ External behavior = function signatures, return types, observable output (stdout
 
 Before starting, verify all three conditions:
 1. `git status` is clean (no uncommitted changes) — refactoring requires a clean starting state for safe rollback
-2. `just test {{SCOPE}}` passes — refactoring on a red test suite is undefined behavior (you can't verify "no behavior change" if the baseline is already broken)
+2. Targeted tests pass (`go test -race ./affected/package/...`) — refactoring on a red test suite is undefined behavior (you can't verify "no behavior change" if the baseline is already broken)
 3. If current branch is main/trunk, output a warning but allow (team conventions vary)
 
 If any check fails, stop and report.
@@ -92,13 +92,13 @@ The goal is to keep the codebase compilable at every intermediate step. Never de
   - If the module has explicit export lists, update them accordingly
   - Be aware that re-export aliases may affect bundler optimization (tree-shaking)
 - If circular dependency detected: place alias in a thin shim module, or skip alias and migrate all callers in one batch instead
-- Run quick verification: `just compile {{SCOPE}} && just test {{SCOPE}}`
+- Run quick verification: `just compile {{SCOPE}} && go test -race ./affected/package/...`
 - All tests must pass — old code is untouched, new code coexists
 
 **Phase B — Migrate callers in small batches:**
 - Group affected files into batches (see batch sizing below)
 - Per batch: update references from old name to new name across all syntactic layers in those files
-- After each batch: `just compile {{SCOPE}} && just test {{SCOPE}}`
+- After each batch: `just compile {{SCOPE}} && go test -race ./affected/package/...`
 - If a batch fails: fix within the batch and retry. Max 3 retries per batch.
 - Continue to next batch only after current batch passes
 
@@ -128,28 +128,39 @@ Replacement order within each file: longest identifier first → shortest last (
 #### Behavioral Refactors
 
 Proceed incrementally — make one change, verify, make the next.
-- After each logical change: `just compile {{SCOPE}} && just test {{SCOPE}}`
+- After each logical change: `just compile {{SCOPE}} && go test -race ./affected/package/...`
 - Max 3 retries per failure. If still failing, stop and report.
 
 Output: `Step 3/4: Refactoring... DONE`
 
-### Step 4: Full Verification (Quality Gate)
+### Step 4: Static Checks + Targeted Tests
 
-Run the complete quality gate as a final check:
+Run the final quality checks:
+
+**Static checks** — execute in strict sequential order, stop at first failure:
 
 ```bash
 just compile {{SCOPE}}
 just fmt {{SCOPE}}
 just lint {{SCOPE}}
-just test {{SCOPE}}
 ```
+
+**Targeted tests** — run framework-native test commands on changed packages/files only:
+
+```bash
+go test -race -cover ./changed/package/...
+```
+
+Replace `./changed/package/...` with the actual import paths of packages you modified. Run targeted tests for each affected package.
+
+> **Note:** Full project-wide tests run at CLI submit (`forge task submit`) — agent runs targeted tests only.
 
 | Failed step | Action |
 |---|---|
 | `compile` | Grep for remaining old references, fix, retry (max 3 times) |
 | `fmt` | If `just fmt` produces changes: `git diff --name-only` to list affected files. Then `git stash && just fmt {{SCOPE}} && git diff --name-only && git stash pop` to get baseline. Compare: if refactor-touched files have new fmt issues, fix them. If only pre-existing files changed, continue. |
 | `lint` | If `just lint` fails: `git stash && just lint {{SCOPE}}` to check pre-existing. New lint errors from refactor must be fixed. Pre-existing ones can be skipped. Max 3 retries. |
-| `test` | Distinguish: assertion changes → `BEHAVIOR_CHANGE_DETECTED` + skip; reference updates → fix + retry (max 3 times) |
+| `targeted test` | Distinguish: assertion changes → `BEHAVIOR_CHANGE_DETECTED` + skip; reference updates → fix + retry (max 3 times) |
 
 Coverage is informational for refactoring — output the number but do not gate on it. Refactoring should not significantly change coverage. If coverage drops >2%, investigate and report.
 

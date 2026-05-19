@@ -217,7 +217,6 @@ func TestPrintTaskDetails(t *testing.T) {
 			},
 			wantContains: []string{
 				"SCOPE: backend",
-				"BREAKING: true",
 				"MAIN_SESSION: true",
 			},
 		},

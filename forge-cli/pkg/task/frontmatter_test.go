@@ -92,7 +92,7 @@ Call gen-test-scripts`,
 			wantBody:  "\n\nCall gen-test-scripts",
 		},
 		{
-			name: "old noTest field still parsed",
+			name: "unknown noTest field gracefully ignored",
 			input: `---
 id: "1.summary"
 title: "Summary"

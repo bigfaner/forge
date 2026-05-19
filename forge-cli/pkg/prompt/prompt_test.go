@@ -265,8 +265,8 @@ func TestSynthesize_CleanupTemplate_NoTDD(t *testing.T) {
 	if strings.Contains(result, "RED") {
 		t.Error("cleanup template should NOT mention RED/TDD step")
 	}
-	if !strings.Contains(result, "Quality Gate") {
-		t.Error("cleanup template should mention Quality Gate")
+	if !strings.Contains(result, "Targeted Tests") {
+		t.Error("cleanup template should mention Targeted Tests")
 	}
 }
 

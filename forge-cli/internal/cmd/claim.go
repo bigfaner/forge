@@ -125,7 +125,6 @@ func executeClaim() (*ClaimResult, error) {
 		Breaking:      t.Breaking,
 		Scope:         t.Scope,
 		MainSession:   t.MainSession,
-		NoTest:        t.NoTest,
 		Type:          t.Type,
 		Profile:       t.Profile,
 	}
@@ -351,9 +350,6 @@ func printTaskDetails(key string, t *task.Task, projectRoot, featureSlug string)
 	PrintFieldIfNotEmpty("FEATURE", featureSlug)
 	PrintField("FILE", filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, t.File)))
 	PrintFieldIfNotEmpty("SCOPE", t.Scope)
-	if t.Breaking {
-		PrintField("BREAKING", "true")
-	}
 	if t.MainSession {
 		PrintField("MAIN_SESSION", "true")
 	}
