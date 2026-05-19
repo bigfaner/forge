@@ -164,6 +164,33 @@ Read `templates/manifest-quick.md` for the format. Write to `docs/features/<slug
 forge task validate-index docs/features/<slug>/tasks/index.json
 ```
 
+## Step 8: Commit Planning Artifacts
+
+After Step 7 validation passes, commit all generated planning artifacts as a single commit. This step only executes if `forge task validate-index` succeeded in Step 7.
+
+<HARD-RULE>
+- Stage only planning artifact paths — never use `git add -A` or `git add .`
+- Only execute this step if Step 7 validation passed. If validation failed, skip this step entirely and fix the issue first.
+</HARD-RULE>
+
+1. **Verify validation passed**: Confirm Step 7 completed without errors. If it failed, do NOT proceed — return to fix the issue.
+
+2. **Stage planning artifacts**: Use explicit file paths to stage only the generated planning files. The feature slug determines the directory:
+
+```bash
+git add docs/features/<slug>/tasks/*.md docs/features/<slug>/tasks/index.json docs/features/<slug>/manifest.md
+```
+
+3. **Commit**: Use Conventional Commits format:
+
+```bash
+git commit -m "docs(<slug>): add quick-tasks planning artifacts"
+```
+
+Replace `<slug>` with the actual feature slug (e.g., `git commit -m "docs(auto-consolidate-specs): add quick-tasks planning artifacts"`).
+
+**Dirty working tree**: If other uncommitted changes exist in the working tree, this step only stages and commits the planning artifacts listed above. Other changes remain unstaged and are not affected.
+
 ## Output Checklist
 
 - [ ] `docs/features/<slug>/tasks/` contains 1-10 business task files
@@ -172,6 +199,7 @@ forge task validate-index docs/features/<slug>/tasks/index.json
 - [ ] Every Success Criterion covered by ≥1 task
 - [ ] Dependency graph is a DAG (no cycles)
 - [ ] `docs/features/<slug>/manifest.md` written with `mode: quick`
+- [ ] Planning artifacts committed (task .md files, index.json, manifest.md)
 
 ## Integration
 

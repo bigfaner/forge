@@ -103,6 +103,19 @@ If quick-tasks reports >10 tasks needed, STOP and recommend the full pipeline:
 Recommend using the full pipeline: /write-prd → /tech-design → /breakdown-tasks"
 ```
 
+## Step 3→4 Transition
+
+<EXTREMELY-IMPORTANT>
+After quick-tasks completes — including its Step 8 commit — you MUST **immediately proceed** to Step 4 (run-tasks) with **zero intermediate output**. Specifically:
+
+1. **Do NOT** output any summary, recap, or status message between quick-tasks and run-tasks.
+2. **Do NOT** pause for user confirmation. The user already confirmed in Step 2.
+3. **Do NOT** ask the user anything. Invoke run-tasks directly.
+4. **Do NOT** perform any intermediate actions (file reads, git status, exploratory analysis) between the two skills.
+
+If quick-tasks Step 8 commit fails, stop and fix the issue before proceeding. Only proceed to run-tasks after the commit succeeds.
+</EXTREMELY-IMPORTANT>
+
 ## Step 4: Execute Tasks
 
 Invoke the run-tasks command to auto-execute all tasks:
