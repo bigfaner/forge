@@ -50,7 +50,7 @@
       "title": "Delete dead templates and bump version",
       "priority": "P2",
       "estimatedTime": "7min",
-      "status": "pending",
+      "status": "completed",
       "file": "4-delete-dead-templates.md",
       "record": "records/4-delete-dead-templates.md",
       "scope": "all",
