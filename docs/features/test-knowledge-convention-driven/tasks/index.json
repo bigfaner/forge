@@ -10,7 +10,7 @@
       "title": "POC: Validate LLM Convention compliance",
       "priority": "P0",
       "estimatedTime": "4h",
-      "status": "pending",
+      "status": "completed",
       "file": "0.1-poc-convention-compliance.md",
       "record": "records/0.1-poc-convention-compliance.md",
       "scope": "all",
