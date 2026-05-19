@@ -1,6 +1,6 @@
 ---
 feature: "task-type-id-redesign"
-status: tasks
+status: completed
 mode: quick
 ---
 
