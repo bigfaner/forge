@@ -54,6 +54,18 @@
       "scope": "backend",
       "type": "feature"
     },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "fix unit-test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "quality-gate:unit-test",
+      "type": "fix"
+    },
     "quick-drift-detection": {
       "id": "T-quick-specs-1",
       "title": "Detect Spec Drift",
