@@ -411,6 +411,8 @@ var testableTypes = map[string]bool{
 	TypeFeature:     true,
 	TypeEnhancement: true,
 	TypeFix:         true,
+	TypeCleanup:     true,
+	TypeRefactor:    true,
 }
 
 // IsTestableType returns true if the given task type has testable runtime behavior.

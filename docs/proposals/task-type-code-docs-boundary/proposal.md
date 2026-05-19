@@ -1,7 +1,7 @@
 ---
 created: 2026-05-18
 author: faner
-status: Draft
+status: Approved
 ---
 
 # Proposal: Task Type Code/Docs Boundary
@@ -78,17 +78,25 @@ func isDocsOnlyType(typ string) bool {
 }
 ```
 
-### 3. `submit.go` 增加类型检查
+**2. Go 代码：`testableTypes` 扩展**
 
-```go
-// Before: 只看 noTest
-if rd.Status == "completed" && !submitForce && !t.NoTest {
+`forge-cli/pkg/task/build.go` 的 `testableTypes` 当前只有 `{feature, enhancement, fix}`，缺少 `cleanup` 和 `refactor`。导致 cleanup/refactor 任务被当作 docs-only，不走 quality-gate 也不生成 test pipeline。
+
+修正：将 `cleanup` 和 `refactor` 加入 `testableTypes`，使 `IsTestableType` 和 `needsTestPipeline` 正确识别它们。
+
+**3. Go 代码：submit-task quality-gate 改用 type 驱动**
+
+`forge-cli/internal/cmd/submit.go` 当前仅用 `t.NoTest` 决定是否跳过 quality-gate。修正为：`!t.NoTest && IsTestableType(t.Type)` 才触发 quality-gate。同时，coverage auto-set（`coverage = -1.0`）也应对非 testable type 生效。
+
+**4. quality-gate 执行点（guide.md）增加 type 检查**
+
+guide.md quality-gate 协议统一规则：
 
 // After: noTest 或非 coding 类型均跳过
 if rd.Status == "completed" && !submitForce && !t.NoTest && task.IsTestableType(t.Type) {
 ```
 
-### 4. 可读的自动生成任务 ID
+**5. task 生成器（quick-tasks、breakdown-tasks）强化分类**
 
 | 旧 ID | 新 ID | 类型 |
 |--------|-------|------|
@@ -145,9 +153,11 @@ Profile 后缀保留：`T-test-gen-scripts-a`（profile a）、`T-test-gen-scrip
 
 ### D3: InferType 仍为映射表
 
-**选择**: ID 和 type 之间保持显式映射，不从 ID 推导 type
-
-**理由**: ID 后缀不完全等同于类型名。映射表的 key 变得更可读，但逻辑结构不变。
+- 修改 `plugins/forge/` 下的文件前必须先加载 `docs/conventions/forge-distribution.md`
+- `type-assignment.md` 是 shared reference，被 quick-tasks 和 breakdown-tasks 引用
+- `guide.md` 是全局 hook，所有 task-executing 工作流读取
+- Go 代码变更涉及 `forge-cli/`，需遵循 TDD（RED → GREEN → REFACTOR），版本号需 bump
+- `testableTypes` 扩展后，`isDocsOnly()`（quality_gate.go）和 `needsTestPipeline()`（build.go）自动受益——它们已使用 `IsTestableType`
 
 ### D4: `noTest` 保留作为显式覆盖
 
@@ -157,40 +167,32 @@ Profile 后缀保留：`T-test-gen-scripts-a`（profile a）、`T-test-gen-scrip
 
 ### Key Scenarios
 
-1. **纯 markdown feature**: 所有任务 `type: "doc"` → `IsTestableType` 返回 false → 跳过 quality-gate → 生成 `T-eval-doc`
-2. **纯 code feature**: 任务 `type: "coding.feature"` → `IsTestableType` 返回 true → 走 quality-gate → 生成测试管线
-3. **Mixed feature**: 部分 `doc`，部分 `coding.enhancement` → 各自按 type 决定 → 整体有 coding 任务 → 生成测试管线
-4. **向后兼容**: 旧 index.json（`type: "feature"`）→ `IsTestableType` 返回 false → 需重新生成 index.json
+8 个文件变更：5 个 markdown（skill/reference 文档）+ 2 个 Go 文件 + 1 个测试文件。Go 变更范围小（修改 map + 条件判断），测试用 table-driven 覆盖。
 
 ### Constraints & Dependencies
 
-- 修改 `plugins/forge/` 下的文件前必须先加载 `docs/conventions/forge-distribution.md`
-- 类型常量重命名影响 `types.go`、`build.go`、`infer.go`、`prompt.go`、`submit.go`、`quality_gate.go`
-- Task ID 重命名影响 `infer.go`、`testgen.go`
-- Prompt template 文件名需与新类型名对齐
+| Step | Task | 预计时间 |
+|------|------|---------|
+| 1 | 更新 `type-assignment.md` 增加判定规则 | 15min |
+| 2 | 更新 `guide.md` quality-gate 协议增加 type 检查 | 15min |
+| 3 | 更新 `submit-task` 检查 type=documentation | 15min |
+| 4 | 更新 quick-tasks / breakdown-tasks 的 docs-only 检测引导 | 15min |
+| 5 | Go: 扩展 `testableTypes`，修改 submit.go quality-gate skip 逻辑 | 30min |
+| 6 | Go: 单元测试覆盖 | 30min |
+| **Total** | | **~2h** |
 
 ## Scope
 
 ### In Scope
 
-**Go 代码变更**：
-- `forge-cli/pkg/task/types.go` — 重命名 19 个类型常量
-- `forge-cli/pkg/task/build.go` — `testableTypes` map → `IsTestableType` 前缀判断
-- `forge-cli/pkg/task/infer.go` — 映射 key 从数字更新为可读字符串
-- `forge-cli/pkg/task/testgen.go` — 更新生成的 task ID
-- `forge-cli/pkg/prompt/prompt.go` — 更新 `typeToTemplate` keys
-- `forge-cli/pkg/prompt/data/*.md` — 文件重命名对齐新类型名
-- `forge-cli/internal/cmd/submit.go` — 增加 `IsTestableType` 检查
-- `forge-cli/internal/cmd/quality_gate.go` — `isDocsOnly` 用前缀判断
-
-**Agent 指导变更**：
-- `plugins/forge/references/shared/type-assignment.md` — 更新类型表 + 分类规则
-- `plugins/forge/hooks/guide.md` — quality-gate 协议更新
-- `plugins/forge/skills/submit-task/SKILL.md` — type 检查逻辑
-- `plugins/forge/skills/quick-tasks/SKILL.md` — docs-only 检测引导
-- `plugins/forge/skills/breakdown-tasks/SKILL.md` — docs-only 检测引导
-- `plugins/forge/skills/quick-tasks/templates/task*.md` — 更新默认 type 值
-- `plugins/forge/skills/breakdown-tasks/templates/task*.md` — 更新默认 type 值
+- `plugins/forge/references/shared/type-assignment.md` — 增加 code/docs 判定规则
+- `plugins/forge/hooks/guide.md` — quality-gate 协议增加 `type: "documentation"` 跳过规则
+- `plugins/forge/skills/submit-task/SKILL.md` — type 检查跳过 quality-gate
+- `plugins/forge/skills/quick-tasks/SKILL.md` — 强化 docs-only 分类引导
+- `plugins/forge/skills/breakdown-tasks/SKILL.md` — 强化 docs-only 分类引导
+- `forge-cli/pkg/task/build.go` — `testableTypes` 增加 cleanup 和 refactor
+- `forge-cli/internal/cmd/submit.go` — quality-gate skip 改用 `IsTestableType` 驱动
+- Go 单元测试覆盖上述变更
 
 ### Out of Scope
 
@@ -209,10 +211,11 @@ Profile 后缀保留：`T-test-gen-scripts-a`（profile a）、`T-test-gen-scrip
 
 ## Success Criteria
 
-- [ ] Go 类型常量全部使用 `coding.`/`doc`/`test.`/`gate` 命名
-- [ ] `IsTestableType` 使用 `strings.HasPrefix(typ, "coding.")`，不再依赖 map
-- [ ] `submit.go` 检查 `IsTestableType` 决定是否走 quality-gate
-- [ ] 自动生成任务 ID 可读（`T-quick-doc-drift` 而非 `T-quick-5`）
-- [ ] `infer.go` 映射表 key 更新为可读字符串
-- [ ] 现有测试全部通过
-- [ ] 纯 markdown feature 的任务自动标 `type: "doc"`
+- [ ] `type-assignment.md` 明确 "按产出物分类" 规则，包含 code types / doc type 分类表
+- [ ] `guide.md` quality-gate 协议明确 `type: "documentation"` 跳过 quality-gate
+- [ ] `submit-task` skill 检查 type 并跳过 quality-gate
+- [ ] quick-tasks / breakdown-tasks 的 docs-only 分类引导更新
+- [ ] 纯 markdown feature（如 eval-adversarial-scorer 风格）的任务自动标 `type: "documentation"`
+- [ ] `testableTypes` 包含 cleanup 和 refactor，`IsTestableType` 正确返回 true
+- [ ] submit.go quality-gate skip 同时检查 `noTest` 和 `IsTestableType`
+- [ ] Go 单元测试覆盖 `testableTypes` 扩展和 submit type-based skip
