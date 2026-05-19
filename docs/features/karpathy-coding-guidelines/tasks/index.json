@@ -18,7 +18,7 @@
       "title": "Inject Karpathy principles into coding-fix template, replacing existing rules",
       "priority": "P1",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "2-inject-principles-fix.md",
       "record": "records/2-inject-principles-fix.md",
       "type": "doc"
