@@ -1,7 +1,7 @@
 ---
 name: run-tasks
 description: Autonomous task dispatcher that continuously claims tasks and dispatches to subagents.
-allowed-tools: Bash Read Agent TaskOutput Skill
+allowed-tools: Bash Read Agent Skill
 ---
 
 # /run-tasks
@@ -30,6 +30,7 @@ flowchart TD
 3. NO running tests directly — EXCEPT in Step 3 (Breaking Task Gate) where `just test` is executed as quality gate
 4. 30-minute timeout per task
 5. 3 consecutive failures → STOP (tracked by failure counter below)
+6. Do NOT use `run_in_background` or poll subagent status with `TaskOutput` — dispatch Agent in foreground and wait for notification
 </EXTREMELY-IMPORTANT>
 
 ## Execution Loop
@@ -67,7 +68,7 @@ Else: proceed to Step 2.
 
 ### Step 2: Dispatch + Verify
 
-**2a. Dispatch** — `Agent(subagent_type="forge:task-executor", prompt="Execute task <TASK_ID>")`. Subagent calls `forge prompt get-by-task-id` internally. **Timeout**: 30 min.
+**2a. Dispatch** — `Agent(subagent_type="forge:task-executor", prompt="Execute task <TASK_ID>")`. Subagent calls `forge prompt get-by-task-id` internally. **Timeout**: 30 min. **Do NOT use `run_in_background`** — dispatch in foreground and wait for the Agent call to return. Do NOT poll subagent status with `TaskOutput`. The Agent tool blocks until completion; you will be notified when it finishes.
 
 **2b. Verify Record** — Run `forge task status <TASK_ID>`:
 - **STATUS == "completed"**: proceed to Step 3.
