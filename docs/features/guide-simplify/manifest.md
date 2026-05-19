@@ -1,6 +1,7 @@
 ---
+
 feature: "guide-simplify"
-status: tasks
+status: completed
 mode: quick
 ---
 
