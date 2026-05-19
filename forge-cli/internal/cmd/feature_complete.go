@@ -198,7 +198,7 @@ func updateFileStatus(filePath, value string) error {
 	body := rest[closeIdx+4:] // after \n---
 
 	// Find and update the status line in frontmatter
-	lines := strings.Split(frontmatter, "\n")
+	lines := strings.Split(strings.TrimPrefix(frontmatter, "\n"), "\n")
 	found := false
 	for i, line := range lines {
 		if strings.HasPrefix(line, "status:") {

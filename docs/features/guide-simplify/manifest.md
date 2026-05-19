@@ -1,5 +1,4 @@
 ---
-
 feature: "guide-simplify"
 status: completed
 mode: quick
