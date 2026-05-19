@@ -27,6 +27,7 @@ type BuildIndexResult struct {
 	PreservedCount      int
 	StageGatesGenerated int
 	Warnings            []string
+	Index               *TaskIndex
 }
 
 // BuildIndex scans .md files and generates/updates index.json.
@@ -289,6 +290,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 		return nil, fmt.Errorf("save index: %w", err)
 	}
 
+	result.Index = index
 	return result, nil
 }
 

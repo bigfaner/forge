@@ -1,17 +1,17 @@
-// Package forgeconfig provides types and functions for reading/writing
-// the .forge/config.yaml file. This package extracts only the retained
-// config types from the legacy profile package: auto and worktree blocks.
-package forgeconfig
+// Package profile provides test profile resolution utilities.
+package profile
 
 import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 
 	"gopkg.in/yaml.v3"
 )
 
+// Config path constants (mirrored from feature package to avoid import cycle).
 const (
 	forgeDir        = ".forge"
 	forgeConfigFile = "config.yaml"
@@ -19,6 +19,7 @@ const (
 
 // ModeToggle holds per-mode (quick/full) boolean flags.
 // The zero-value defaults to true for both modes (backward compat).
+// Use pointer types or explicit default-filling for fields that default to false.
 type ModeToggle struct {
 	Quick bool `yaml:"quick"`
 	Full  bool `yaml:"full"`
@@ -26,7 +27,7 @@ type ModeToggle struct {
 
 // AutoConfig controls which auto-generated tasks are produced by `forge task index`.
 // When the `auto` block is missing from config, all fields use defaults that match
-// pre-auto-behavior.
+// pre-auto-behavior behavior.
 type AutoConfig struct {
 	E2eTest          ModeToggle `yaml:"e2eTest"`
 	ConsolidateSpecs ModeToggle `yaml:"consolidateSpecs"`
@@ -87,14 +88,96 @@ type WorktreeConfig struct {
 	CopyFiles    []string `yaml:"copy-files"`
 }
 
-// Config represents the .forge/config.yaml structure.
-type Config struct {
-	Auto          *AutoConfig     `yaml:"auto,omitempty"`
-	Worktree      *WorktreeConfig `yaml:"worktree,omitempty"`
+// ForgeConfig represents the .forge/config.yaml structure.
+type ForgeConfig struct {
+	ProjectType   string          `yaml:"project-type"`
+	Interfaces    []string        `yaml:"interfaces"`
+	Languages     []string        `yaml:"languages"`
 	TestFramework string          `yaml:"test-framework,omitempty"`
 	TestCommand   string          `yaml:"test-command,omitempty"`
-	Languages     []string        `yaml:"languages,omitempty"`
-	Interfaces    []string        `yaml:"interfaces,omitempty"`
+	Auto          *AutoConfig     `yaml:"auto,omitempty"`
+	Worktree      *WorktreeConfig `yaml:"worktree,omitempty"`
+}
+
+// KnownLanguages is the set of valid language keys.
+var KnownLanguages = []string{
+	"go",
+	"javascript",
+	"mobile",
+	"java",
+	"rust",
+	"python",
+}
+
+// IsKnownLanguage checks whether a language key is valid.
+func IsKnownLanguage(name string) bool {
+	return slices.Contains(KnownLanguages, name)
+}
+
+// ReadLanguages reads languages from .forge/config.yaml.
+// Returns config.Languages if set, otherwise auto-detects via DetectLanguages.
+// Returns empty slice (not error) if file doesn't exist or key is missing and detection finds nothing.
+func ReadLanguages(projectRoot string) ([]string, error) {
+	path := configPath(projectRoot)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return detectLanguagesAsStrings(projectRoot)
+		}
+		return nil, fmt.Errorf("read config: %w", err)
+	}
+
+	var cfg ForgeConfig
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return nil, fmt.Errorf("parse config: %w", err)
+	}
+
+	if len(cfg.Languages) > 0 {
+		return cfg.Languages, nil
+	}
+
+	return detectLanguagesAsStrings(projectRoot)
+}
+
+// ReadInterfaces reads interfaces from .forge/config.yaml.
+// Returns config.Interfaces if set, otherwise defaults to union of all
+// detected languages' capabilities via the languageCapabilities map in embed.go.
+func ReadInterfaces(projectRoot string) ([]string, error) {
+	path := configPath(projectRoot)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return defaultInterfaces(projectRoot)
+		}
+		return nil, fmt.Errorf("read config: %w", err)
+	}
+
+	var cfg ForgeConfig
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return nil, fmt.Errorf("parse config: %w", err)
+	}
+
+	if len(cfg.Interfaces) > 0 {
+		return cfg.Interfaces, nil
+	}
+
+	return defaultInterfaces(projectRoot)
+}
+
+// defaultInterfaces detects profiles and returns the union of their interfaces.
+func defaultInterfaces(projectRoot string) ([]string, error) {
+	langs, err := DetectLanguages(projectRoot)
+	if err != nil {
+		return nil, err
+	}
+	if len(langs) == 0 {
+		return nil, nil
+	}
+	strs, err := languagesToStrings(langs)
+	if err != nil {
+		return nil, err
+	}
+	return UnionLanguageInterfaces(strs)
 }
 
 // configPath returns the path to .forge/config.yaml.
@@ -102,10 +185,9 @@ func configPath(projectRoot string) string {
 	return filepath.Join(projectRoot, forgeDir, forgeConfigFile)
 }
 
-// ReadConfig reads the Config from .forge/config.yaml.
+// ReadConfig reads the full ForgeConfig from .forge/config.yaml.
 // Returns nil, nil if file doesn't exist.
-// Unknown fields in the YAML are silently ignored.
-func ReadConfig(projectRoot string) (*Config, error) {
+func ReadConfig(projectRoot string) (*ForgeConfig, error) {
 	path := configPath(projectRoot)
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -115,7 +197,7 @@ func ReadConfig(projectRoot string) (*Config, error) {
 		return nil, fmt.Errorf("read config: %w", err)
 	}
 
-	var cfg Config
+	var cfg ForgeConfig
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return nil, fmt.Errorf("parse config: %w", err)
 	}
@@ -134,7 +216,6 @@ func ReadConfig(projectRoot string) (*Config, error) {
 
 // ReadAutoConfig reads the auto config block from .forge/config.yaml.
 // Returns defaults when the block is missing or the file doesn't exist.
-// Returns value type (AutoConfig), not pointer.
 func ReadAutoConfig(projectRoot string) (AutoConfig, error) {
 	cfg, err := ReadConfig(projectRoot)
 	if err != nil {
@@ -153,6 +234,7 @@ func parseAutoRaw(data []byte) (map[string]map[string]bool, error) {
 		return nil, err
 	}
 
+	// Find the "auto" mapping node
 	autoNode := findMappingKey(&root, "auto")
 	if autoNode == nil {
 		return nil, fmt.Errorf("auto block not found")
@@ -185,6 +267,7 @@ func findMappingKey(node *yaml.Node, key string) *yaml.Node {
 	if node == nil {
 		return nil
 	}
+	// If the node itself is a document, look at its content
 	if node.Kind == yaml.DocumentNode && len(node.Content) > 0 {
 		return findMappingKey(node.Content[0], key)
 	}
@@ -233,10 +316,33 @@ func applyModeDefault(mt *ModeToggle, raw map[string]map[string]bool, field stri
 // ErrKeyNotFound is returned when a config key does not exist or has a zero value.
 var ErrKeyNotFound = fmt.Errorf("config key not found")
 
+// configKeyMap maps CLI key names to ForgeConfig struct field accessors.
+type configKeyAccessor struct {
+	scalar func(*ForgeConfig) (string, bool)
+	slice  func(*ForgeConfig) ([]string, bool)
+}
+
+var configKeyAccessors = map[string]configKeyAccessor{
+	"project-type": {
+		scalar: func(c *ForgeConfig) (string, bool) { return c.ProjectType, c.ProjectType != "" },
+	},
+	"interfaces": {
+		slice: func(c *ForgeConfig) ([]string, bool) { return c.Interfaces, len(c.Interfaces) > 0 },
+	},
+	"languages": {
+		slice: func(c *ForgeConfig) ([]string, bool) { return c.Languages, len(c.Languages) > 0 },
+	},
+	"test-framework": {
+		scalar: func(c *ForgeConfig) (string, bool) { return c.TestFramework, c.TestFramework != "" },
+	},
+	"test-command": {
+		scalar: func(c *ForgeConfig) (string, bool) { return c.TestCommand, c.TestCommand != "" },
+	},
+}
+
 // GetConfigValue returns the value for a given key from .forge/config.yaml.
 // For scalar values, returns the raw string; for arrays, joins with newline.
 // Supports dot-notation for nested keys (e.g. "auto.gitPush", "worktree.source-branch").
-// Also supports top-level keys: "test-framework", "test-command".
 // Returns empty string and ErrKeyNotFound if the key doesn't exist or has zero value.
 func GetConfigValue(projectRoot, key string) (string, error) {
 	// Handle dot-notation auto keys
@@ -255,32 +361,40 @@ func GetConfigValue(projectRoot, key string) (string, error) {
 		return val, nil
 	}
 
-	// Handle top-level scalar keys
-	switch key {
-	case "test-framework", "test-command":
-		cfg, err := ReadConfig(projectRoot)
-		if err != nil {
-			return "", err
-		}
-		if cfg == nil {
-			return "", ErrKeyNotFound
-		}
-		var val string
-		if key == "test-framework" {
-			val = cfg.TestFramework
-		} else {
-			val = cfg.TestCommand
-		}
-		if val == "" {
+	accessor, ok := configKeyAccessors[key]
+	if !ok {
+		return "", ErrKeyNotFound
+	}
+
+	cfg, err := ReadConfig(projectRoot)
+	if err != nil {
+		return "", err
+	}
+	if cfg == nil {
+		return "", ErrKeyNotFound
+	}
+
+	if accessor.scalar != nil {
+		val, found := accessor.scalar(cfg)
+		if !found {
 			return "", ErrKeyNotFound
 		}
 		return val, nil
+	}
+
+	if accessor.slice != nil {
+		vals, found := accessor.slice(cfg)
+		if !found {
+			return "", ErrKeyNotFound
+		}
+		return joinSlice(vals), nil
 	}
 
 	return "", ErrKeyNotFound
 }
 
 // getAutoKeyValue handles dot-notation keys for the auto config block.
+// Returns (value, true, nil) if the key was handled, ("", false, nil) if not an auto key.
 func getAutoKeyValue(projectRoot, key string) (string, bool, error) {
 	if key != "auto.gitPush" {
 		return "", false, nil
@@ -295,6 +409,7 @@ func getAutoKeyValue(projectRoot, key string) (string, bool, error) {
 }
 
 // getWorktreeKeyValue handles dot-notation keys for the worktree config block.
+// Returns (value, true, nil) if the key was handled, ("", false, nil) if not a worktree key.
 func getWorktreeKeyValue(projectRoot, key string) (string, bool, error) {
 	if key != "worktree.source-branch" && key != "worktree.copy-files" {
 		return "", false, nil
@@ -336,16 +451,26 @@ func joinSlice(vals []string) string {
 	return result
 }
 
-// WriteConfig writes a Config to .forge/config.yaml.
-// Creates the file and directory if they don't exist.
-func WriteConfig(projectRoot string, cfg *Config) error {
+// WriteLanguages writes languages to .forge/config.yaml.
+// Creates the file if it doesn't exist. Preserves other keys if the file exists.
+func WriteLanguages(projectRoot string, languages []string) error {
 	path := configPath(projectRoot)
 
+	// Ensure .forge/ directory exists
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("create .forge dir: %w", err)
 	}
 
-	out, err := yaml.Marshal(cfg)
+	// Read existing config to preserve other keys
+	var cfg ForgeConfig
+	data, err := os.ReadFile(path)
+	if err == nil {
+		_ = yaml.Unmarshal(data, &cfg)
+	}
+
+	cfg.Languages = languages
+
+	out, err := yaml.Marshal(&cfg)
 	if err != nil {
 		return fmt.Errorf("marshal config: %w", err)
 	}
@@ -355,4 +480,27 @@ func WriteConfig(projectRoot string, cfg *Config) error {
 	}
 
 	return nil
+}
+
+// languagesToStrings converts []Language to []string for compatibility with
+// config and interface resolution functions that operate on string keys.
+// Preserves nil: if langs is nil, returns nil (not empty slice).
+func languagesToStrings(langs []Language) ([]string, error) {
+	if langs == nil {
+		return nil, nil
+	}
+	result := make([]string, len(langs))
+	for i, l := range langs {
+		result[i] = string(l)
+	}
+	return result, nil
+}
+
+// detectLanguagesAsStrings calls DetectLanguages and converts the result to []string.
+func detectLanguagesAsStrings(projectRoot string) ([]string, error) {
+	langs, err := DetectLanguages(projectRoot)
+	if err != nil {
+		return nil, err
+	}
+	return languagesToStrings(langs)
 }
