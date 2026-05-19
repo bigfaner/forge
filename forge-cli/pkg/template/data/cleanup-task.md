@@ -31,7 +31,10 @@ Fix only the reported style/lint issues. Do not refactor adjacent code.
 ## Verification
 
 After fixing, verify the cleanup works:
-1. `just test [scope]` — must pass
+1. Run targeted tests on changed packages: `go test -race ./affected/package/...`
+2. Replace the path with the actual packages you modified
+
+> **Note:** Full project-wide tests run at CLI submit (`forge task submit`) — agent runs targeted tests only.
 
 E2e regression is verified by the dispatcher, not by this cleanup task.
 

@@ -65,7 +65,7 @@
       "title": "Update skill templates with targeted test instructions",
       "priority": "P2",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "6-skill-templates-targeted-tests.md",
       "record": "records/6-skill-templates-targeted-tests.md",
       "type": "doc"
