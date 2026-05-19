@@ -91,9 +91,11 @@ install() {
     # Create installation directory
     mkdir -p "${INSTALL_DIR}"
 
-    # Copy binary
-    cp "${BIN_DIR}/${APP_NAME}" "${INSTALL_DIR}/${APP_NAME}"
-    chmod +x "${INSTALL_DIR}/${APP_NAME}"
+    # Atomic replacement: copy to temp file then rename
+    # mv on same filesystem is atomic, avoids race with hooks reading the binary
+    cp "${BIN_DIR}/${APP_NAME}" "${INSTALL_DIR}/${APP_NAME}.new"
+    chmod +x "${INSTALL_DIR}/${APP_NAME}.new"
+    mv -f "${INSTALL_DIR}/${APP_NAME}.new" "${INSTALL_DIR}/${APP_NAME}"
 
     log_info "Installation complete: ${INSTALL_DIR}/${APP_NAME}"
 }
