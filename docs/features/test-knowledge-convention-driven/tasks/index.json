@@ -139,7 +139,7 @@
       "dependencies": [
         "1.gate"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2.2-rewrite-run-e2e-tests.md",
       "record": "records/2.2-rewrite-run-e2e-tests.md",
       "scope": "all",
