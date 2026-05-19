@@ -10,7 +10,7 @@
       "title": "POC: Validate LLM Convention compliance",
       "priority": "P0",
       "estimatedTime": "4h",
-      "status": "pending",
+      "status": "completed",
       "file": "0.1-poc-convention-compliance.md",
       "record": "records/0.1-poc-convention-compliance.md",
       "scope": "all",
@@ -314,7 +314,6 @@
       "file": "clean-code.md",
       "record": "records/clean-code.md",
       "scope": "all",
-      "noTest": true,
       "type": "code-quality.simplify"
     },
     "consolidate-specs": {
@@ -329,7 +328,6 @@
       "file": "consolidate-specs.md",
       "record": "records/consolidate-specs.md",
       "scope": "all",
-      "noTest": true,
       "type": "doc.consolidate"
     },
     "eval-test-cases": {
@@ -345,7 +343,6 @@
       "record": "records/eval-test-cases.md",
       "scope": "all",
       "mainSession": true,
-      "noTest": true,
       "type": "test.eval-cases"
     },
     "gen-test-cases": {
@@ -360,7 +357,6 @@
       "file": "gen-test-cases.md",
       "record": "records/gen-test-cases.md",
       "scope": "all",
-      "noTest": true,
       "type": "test.gen-cases"
     },
     "gen-test-scripts-go-cli": {

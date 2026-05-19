@@ -3,6 +3,9 @@ name: gen-test-scripts
 description: Generate executable test scripts from Contract specifications. Journey-driven: generates test code with @feature tags directly into tests/<journey>/.
 conventions:
   - testing-isolation.md
+  - testing-go.md
+  - testing-ginkgo.md
+  - testing-vitest.md
 ---
 
 # Gen Test Scripts
@@ -21,17 +24,26 @@ gen-journeys -> gen-contracts -> gen-test-scripts -> run-tests
 Input: Contract specifications (from gen-contracts) + Fact Table (from code reconnaissance).
 Output: Executable test code with `@feature` tags in `tests/<journey>/`.
 
-## Step 0: Resolve Language and Strategy
+## Step 0: Load Convention Files
 
-1. **Detect language**: Run `forge test detect` to auto-detect the project's test language(s) from file signals.
-2. **On failure** (no language detected): ask the user to add `languages` to `.forge/config.yaml` (e.g., `languages: [go]`).
-3. **Load strategy**: Run `forge test get generate` to load the generate strategy for the detected language.
-4. **Resolve framework**: Run `forge test framework` to determine the test framework and its code conventions.
+Load test framework knowledge from Convention files (no Profile/CLI dependency).
 
-Use the loaded strategy and framework for all subsequent steps.
+1. **List Convention files**: Glob `docs/conventions/testing-*.md` in the project root.
+2. **Filter by domains**: Read each file's YAML frontmatter `domains` field. Keep files whose `domains` contain `testing`.
+3. **Resolve framework**: Determine the target framework from:
+   - Existing test files in the project (scan `tests/` for file patterns like `*_test.go`, `*.test.ts`)
+   - User specification if ambiguous
+   - If no Convention files found: proceed with LLM defaults + Code Reconnaissance (Step 2)
+4. **Load matching Convention**: Read the Convention file(s) whose domains match the detected framework.
+   - For Go: load `testing-go.md` (standard testing) or `testing-ginkgo.md` (Ginkgo BDD)
+   - For TypeScript/JavaScript: load `testing-vitest.md`
+   - If multiple Convention files match, use the most specific one
+5. **Convention vs Reconnaissance conflict**: Convention values take precedence. Log any conflict for user awareness.
+
+Use the loaded Convention content for all framework-specific rules in subsequent steps.
 
 <HARD-RULE>
-Do NOT silently default to any language. If `forge test detect` returns no result and the user cannot configure `languages`, abort the skill.
+If no Convention files are found and no framework can be detected from existing test files, ask the user which framework to use. Do NOT silently default.
 </HARD-RULE>
 
 ## Step 1: Read Contract Specifications
@@ -197,27 +209,24 @@ Every Journey MUST have at least 1 smoke test. The smoke test MUST only test the
 
 ### Framework-Specific Rules
 
-Follow the active strategy's `generate.md` for all framework-specific patterns:
+Follow the loaded Convention file for all framework-specific patterns:
 
 <EXTREMELY-IMPORTANT>
-All framework-specific rules (test runner, assertion library, imports, HTTP client, process execution, anti-patterns) are defined in the active strategy's `generate.md` (loaded in Step 0). Read and follow those rules precisely.
+All framework-specific rules (test runner, assertion library, imports, HTTP client, process execution, anti-patterns) are defined in the Convention file loaded in Step 0. Read and follow those rules precisely.
 
-- Use ONLY the framework specified in the strategy's `generate.md`
-- Import paths and naming conventions follow the framework's conventions
+- Use ONLY the framework specified in the Convention file
+- Import paths and naming conventions follow the Convention's conventions
+- Convention sections: Framework, Assertion, Tags, Result Format, Import Patterns, Code Style, Anti-patterns, Helpers
 </EXTREMELY-IMPORTANT>
 
-### Built-in Templates (Default, Overridable)
+### Templates (Convention-Driven)
 
-The 6 built-in language profiles serve as default templates. When a project has zero custom template configuration:
+Convention files contain all framework-specific patterns (imports, assertion syntax, helpers, anti-patterns). Use the Convention's Code Style and Helpers sections as the template for generated code.
 
-1. `forge test get template <filename>` returns built-in template content.
-2. Built-in templates define: test file structure, helper functions, auth setup patterns.
-3. Zero-config output equals built-in template output (diff is empty).
-
-Custom template override: When `.forge/config.yaml` declares a custom template directory path, `gen-test-scripts` uses templates from that path instead of built-in ones.
+If the project has a custom template directory configured (`.forge/config.yaml` `test-template-dir`), load templates from that path. Otherwise, use the Convention file content as the authoritative template source.
 
 <HARD-RULE>
-**Template override**: If `test-template-dir` is set in config, load templates from that directory. Otherwise, use built-in default templates from `forge test get template`.
+**Template override**: If `test-template-dir` is set in config, load templates from that directory. Otherwise, use Convention file patterns as the template source.
 </HARD-RULE>
 
 ## Step 4: Post-Generation Verification
@@ -260,12 +269,14 @@ Before writing, scan existing test files in the module for matching function nam
 
 | Situation | Action |
 |-----------|--------|
-| Language detection fails | Ask user to configure `languages` in config.yaml |
+| No Convention files found | Proceed with LLM defaults + Code Reconnaissance. Suggest running `/forge:test-guide` to create one. |
+| Convention file missing required sections | Proceed with LLM defaults for missing sections. Log warning. |
 | Contract files not found | Abort with prompt to run `/gen-contracts` |
 | Fact Table lookup fails for a descriptor | Keep `// VERIFY:` marker, do not fabricate regex |
 | Compilation fails post-generation | Fix generated code, re-run compile check |
 | No test files generated | Abort with clear diagnostic message |
-| Custom template path not found | Fall back to built-in templates with WARNING |
+| Custom template path not found | Fall back to Convention file patterns with WARNING |
+| Convention vs Reconnaissance conflict | Convention wins, log conflict for user awareness |
 
 ## Related Skills
 
