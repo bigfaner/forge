@@ -1,0 +1,114 @@
+{
+  "feature": "task-type-id-redesign",
+  "proposal": "docs/proposals/task-type-id-redesign/proposal.md",
+  "created": "2026-05-19",
+  "tasks": {
+    "1-rename-type-constants": {
+      "id": "1",
+      "title": "Rename type constants and implement prefix checks",
+      "priority": "P1",
+      "estimatedTime": "50min",
+      "status": "pending",
+      "file": "1-rename-type-constants.md",
+      "record": "records/1-rename-type-constants.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "refactor"
+    },
+    "2-rename-task-ids": {
+      "id": "2",
+      "title": "Rename task IDs and update generation/inference",
+      "priority": "P1",
+      "estimatedTime": "55min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-rename-task-ids.md",
+      "record": "records/2-rename-task-ids.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "refactor"
+    },
+    "3-update-prompt-pipeline": {
+      "id": "3",
+      "title": "Update prompt pipeline",
+      "priority": "P1",
+      "estimatedTime": "25min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "3-update-prompt-pipeline.md",
+      "record": "records/3-update-prompt-pipeline.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "refactor"
+    },
+    "4-delete-dead-templates": {
+      "id": "4",
+      "title": "Delete dead templates and bump version",
+      "priority": "P2",
+      "estimatedTime": "7min",
+      "status": "pending",
+      "file": "4-delete-dead-templates.md",
+      "record": "records/4-delete-dead-templates.md",
+      "scope": "all",
+      "type": "cleanup"
+    },
+    "5-update-skill-docs": {
+      "id": "5",
+      "title": "Update skill documentation",
+      "priority": "P2",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "5-update-skill-docs.md",
+      "record": "records/5-update-skill-docs.md",
+      "type": "documentation"
+    },
+    "6-add-go-unit-tests": {
+      "id": "6",
+      "title": "Add Go unit tests for type/ID/prefix changes",
+      "priority": "P1",
+      "estimatedTime": "40min",
+      "dependencies": [
+        "1",
+        "2",
+        "3"
+      ],
+      "status": "pending",
+      "file": "6-add-go-unit-tests.md",
+      "record": "records/6-add-go-unit-tests.md",
+      "scope": "backend",
+      "type": "enhancement"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-specs-1",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "pending",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "scope": "all",
+      "noTest": true,
+      "type": "doc-generation.drift"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
