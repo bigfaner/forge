@@ -504,3 +504,86 @@ func TestWorktreeConfig(t *testing.T) {
 		}
 	})
 }
+
+func TestGetConfigValueLegacyKeys(t *testing.T) {
+	t.Run("test-framework returns value", func(t *testing.T) {
+		dir := setupConfig(t, "test-framework: playwright\n")
+		val, err := GetConfigValue(dir, "test-framework")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "playwright" {
+			t.Errorf("expected 'playwright', got %q", val)
+		}
+	})
+
+	t.Run("test-framework absent returns error", func(t *testing.T) {
+		dir := setupConfig(t, "auto:\n  gitPush: true\n")
+		_, err := GetConfigValue(dir, "test-framework")
+		if err != ErrKeyNotFound {
+			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		}
+	})
+
+	t.Run("test-framework empty returns error", func(t *testing.T) {
+		dir := setupConfig(t, "test-framework: \"\"\n")
+		_, err := GetConfigValue(dir, "test-framework")
+		if err != ErrKeyNotFound {
+			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		}
+	})
+
+	t.Run("test-command returns value", func(t *testing.T) {
+		dir := setupConfig(t, "test-command: npm test\n")
+		val, err := GetConfigValue(dir, "test-command")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "npm test" {
+			t.Errorf("expected 'npm test', got %q", val)
+		}
+	})
+
+	t.Run("test-command absent returns error", func(t *testing.T) {
+		dir := setupConfig(t, "auto:\n  gitPush: true\n")
+		_, err := GetConfigValue(dir, "test-command")
+		if err != ErrKeyNotFound {
+			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		}
+	})
+
+	t.Run("missing file returns error for test-framework", func(t *testing.T) {
+		dir := t.TempDir()
+		_, err := GetConfigValue(dir, "test-framework")
+		if err != ErrKeyNotFound {
+			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		}
+	})
+}
+
+func TestWriteConfigAutoBlock(t *testing.T) {
+	t.Run("write and read auto block", func(t *testing.T) {
+		dir := t.TempDir()
+		cfg := &Config{
+			Auto: &AutoConfig{
+				E2eTest:          ModeToggle{Quick: false, Full: true},
+				ConsolidateSpecs: ModeToggle{Quick: true, Full: true},
+				GitPush:          true,
+			},
+		}
+		if err := WriteConfig(dir, cfg); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		readback, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if readback.Auto == nil {
+			t.Fatal("expected Auto non-nil")
+		}
+		if readback.Auto.GitPush != true {
+			t.Errorf("expected GitPush true, got %v", readback.Auto.GitPush)
+		}
+	})
+}

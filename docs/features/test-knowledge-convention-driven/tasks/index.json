@@ -21,7 +21,7 @@
       "title": "Create pkg/forgeconfig package",
       "priority": "P0",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "1.1-create-forgeconfig.md",
       "record": "records/1.1-create-forgeconfig.md",
       "scope": "backend",
