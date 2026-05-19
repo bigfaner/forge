@@ -1,0 +1,82 @@
+{
+  "feature": "simplify-breakdown-tasks-prompt",
+  "proposal": "docs/proposals/simplify-breakdown-tasks-prompt/proposal.md",
+  "created": "2026-05-19",
+  "tasks": {
+    "1-extract-ui-placement-rule": {
+      "id": "1",
+      "title": "Extract ui-placement rule file",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "status": "pending",
+      "file": "1-extract-ui-placement-rule.md",
+      "record": "records/1-extract-ui-placement-rule.md",
+      "type": "doc"
+    },
+    "2-extract-phase-db-existing-rules": {
+      "id": "2",
+      "title": "Extract phase-detection, db-schema, and existing-code-split rule files",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "2-extract-phase-db-existing-rules.md",
+      "record": "records/2-extract-phase-db-existing-rules.md",
+      "type": "doc"
+    },
+    "3-rewrite-skill-skeleton": {
+      "id": "3",
+      "title": "Rewrite SKILL.md skeleton with condition-rule matrix",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1",
+        "2"
+      ],
+      "status": "pending",
+      "file": "3-rewrite-skill-skeleton.md",
+      "record": "records/3-rewrite-skill-skeleton.md",
+      "type": "doc"
+    },
+    "4-validate-output-equivalence": {
+      "id": "4",
+      "title": "Validate output equivalence",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "3"
+      ],
+      "status": "pending",
+      "file": "4-validate-output-equivalence.md",
+      "record": "records/4-validate-output-equivalence.md",
+      "type": "doc"
+    },
+    "eval-doc": {
+      "id": "T-eval-doc",
+      "title": "Evaluate Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "4"
+      ],
+      "status": "pending",
+      "file": "eval-doc.md",
+      "record": "records/eval-doc.md",
+      "scope": "all",
+      "noTest": true,
+      "type": "doc.eval"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
