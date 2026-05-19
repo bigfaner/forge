@@ -564,26 +564,26 @@ func TestClaimNextTask_NonNumericID(t *testing.T) {
 		wantKey string
 	}{
 		{
-			name: "non-numeric T-test-1 claimable after all numeric tasks done",
+			name: "non-numeric T-test-gen-cases claimable after all numeric tasks done",
 			tasks: map[string]task.Task{
 				"biz-1":    {ID: "1.1", Priority: "P0", Status: "completed"},
-				"t-test-1": {ID: "T-test-1", Priority: "P1", Status: "pending", Dependencies: []string{"1.1"}},
+				"t-test-1": {ID: "T-test-gen-cases", Priority: "P1", Status: "pending", Dependencies: []string{"1.1"}},
 			},
 			wantKey: "t-test-1",
 		},
 		{
 			name: "only non-numeric pending task with no deps is claimable",
 			tasks: map[string]task.Task{
-				"t-test-1": {ID: "T-test-1", Priority: "P1", Status: "pending"},
+				"t-test-1": {ID: "T-test-gen-cases", Priority: "P1", Status: "pending"},
 			},
 			wantKey: "t-test-1",
 		},
 		{
-			name: "T-test-2 claimable after T-test-1 completed",
+			name: "T-test-gen-scripts claimable after T-test-gen-cases completed",
 			tasks: map[string]task.Task{
 				"biz-1":    {ID: "1.1", Priority: "P0", Status: "completed"},
-				"t-test-1": {ID: "T-test-1", Priority: "P1", Status: "completed", Dependencies: []string{"1.1"}},
-				"t-test-2": {ID: "T-test-2", Priority: "P1", Status: "pending", Dependencies: []string{"T-test-1"}},
+				"t-test-1": {ID: "T-test-gen-cases", Priority: "P1", Status: "completed", Dependencies: []string{"1.1"}},
+				"t-test-2": {ID: "T-test-gen-scripts", Priority: "P1", Status: "pending", Dependencies: []string{"T-test-gen-cases"}},
 			},
 			wantKey: "t-test-2",
 		},
@@ -608,14 +608,14 @@ func TestClaimNextTask_NonNumericID(t *testing.T) {
 }
 
 func TestClaimNextTask_NonNumericBlocked(t *testing.T) {
-	// T-test-1 blocked because its dependency (1.1) is still pending
+	// T-test-gen-cases blocked because its dependency (1.1) is still pending
 	index := &task.TaskIndex{
 		StatusEnum:   []string{"pending", "in_progress", "completed"},
 		PriorityEnum: []string{"P0", "P1", "P2"},
 	}
 	index.SetTasks(map[string]task.Task{
 		"biz-1":    {ID: "1.1", Priority: "P0", Status: "pending"},
-		"t-test-1": {ID: "T-test-1", Priority: "P1", Status: "pending", Dependencies: []string{"1.1"}},
+		"t-test-1": {ID: "T-test-gen-cases", Priority: "P1", Status: "pending", Dependencies: []string{"1.1"}},
 	})
 	key, _, err := claimNextTask(index)
 	if err != nil {
@@ -950,7 +950,7 @@ func TestExecuteClaim_TypePropagatedToState(t *testing.T) {
 	}
 	index.SetTasks(map[string]task.Task{
 		"t1": {ID: "1.1", Title: "Impl task", Status: "pending", Priority: "P0",
-			File: "1.1.md", Record: "records/1.1.md", Type: "feature"},
+			File: "1.1.md", Record: "records/1.1.md", Type: "coding.feature"},
 	})
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)
@@ -968,8 +968,8 @@ func TestExecuteClaim_TypePropagatedToState(t *testing.T) {
 		t.Fatalf("executeClaim() error = %v", err)
 	}
 
-	if result.Task.Type != "feature" {
-		t.Errorf("Task.Type = %q, want %q", result.Task.Type, "feature")
+	if result.Task.Type != "coding.feature" {
+		t.Errorf("Task.Type = %q, want %q", result.Task.Type, "coding.feature")
 	}
 
 	statePath := feature.GetTaskStatePath(dir, "test-feature")
@@ -977,8 +977,8 @@ func TestExecuteClaim_TypePropagatedToState(t *testing.T) {
 	if err != nil || state == nil {
 		t.Fatalf("failed to load state: %v", err)
 	}
-	if state.Type != "feature" {
-		t.Errorf("state.Type = %q, want %q", state.Type, "feature")
+	if state.Type != "coding.feature" {
+		t.Errorf("state.Type = %q, want %q", state.Type, "coding.feature")
 	}
 }
 
@@ -1096,7 +1096,7 @@ func TestCheckDependenciesMet_PendingFixTaskBlocks(t *testing.T) {
 		index.SetTasks(map[string]task.Task{
 			"3":     {ID: "3", Status: "completed"},
 			"4":     {ID: "4", Status: "pending", Dependencies: []string{"3"}},
-			"fix-1": {ID: "fix-1", Status: "pending", SourceTaskID: "3", Type: "fix"},
+			"fix-1": {ID: "fix-1", Status: "pending", SourceTaskID: "3", Type: "coding.fix"},
 		})
 		met, unmet := checkDependenciesMet(index, "4", index.TasksMap()["4"])
 		if met {
@@ -1113,7 +1113,7 @@ func TestCheckDependenciesMet_PendingFixTaskBlocks(t *testing.T) {
 		index.SetTasks(map[string]task.Task{
 			"3":     {ID: "3", Status: "completed"},
 			"4":     {ID: "4", Status: "pending", Dependencies: []string{"3"}},
-			"fix-1": {ID: "fix-1", Status: "completed", SourceTaskID: "3", Type: "fix"},
+			"fix-1": {ID: "fix-1", Status: "completed", SourceTaskID: "3", Type: "coding.fix"},
 		})
 		met, _ := checkDependenciesMet(index, "4", index.TasksMap()["4"])
 		if !met {
@@ -1127,7 +1127,7 @@ func TestCheckDependenciesMet_PendingFixTaskBlocks(t *testing.T) {
 		index.SetTasks(map[string]task.Task{
 			"3":     {ID: "3", Status: "completed"},
 			"4":     {ID: "4", Status: "pending", Dependencies: []string{"3"}},
-			"fix-1": {ID: "fix-1", Status: "pending", SourceTaskID: "2", Type: "fix"},
+			"fix-1": {ID: "fix-1", Status: "pending", SourceTaskID: "2", Type: "coding.fix"},
 		})
 		met, _ := checkDependenciesMet(index, "4", index.TasksMap()["4"])
 		if !met {
@@ -1141,7 +1141,7 @@ func TestCheckDependenciesMet_PendingFixTaskBlocks(t *testing.T) {
 		index.SetTasks(map[string]task.Task{
 			"3":     {ID: "3", Status: "completed"},
 			"4":     {ID: "4", Status: "pending", Dependencies: []string{"3"}},
-			"fix-1": {ID: "fix-1", Status: "in_progress", SourceTaskID: "3", Type: "fix"},
+			"fix-1": {ID: "fix-1", Status: "in_progress", SourceTaskID: "3", Type: "coding.fix"},
 		})
 		met, _ := checkDependenciesMet(index, "4", index.TasksMap()["4"])
 		if met {
@@ -1155,8 +1155,8 @@ func TestCheckDependenciesMet_PendingFixTaskBlocks(t *testing.T) {
 		index.SetTasks(map[string]task.Task{
 			"3":     {ID: "3", Status: "completed"},
 			"4":     {ID: "4", Status: "pending", Dependencies: []string{"3"}},
-			"fix-1": {ID: "fix-1", Status: "completed", SourceTaskID: "3", Type: "fix"},
-			"fix-2": {ID: "fix-2", Status: "pending", SourceTaskID: "3", Type: "fix"},
+			"fix-1": {ID: "fix-1", Status: "completed", SourceTaskID: "3", Type: "coding.fix"},
+			"fix-2": {ID: "fix-2", Status: "pending", SourceTaskID: "3", Type: "coding.fix"},
 		})
 		met, _ := checkDependenciesMet(index, "4", index.TasksMap()["4"])
 		if met {
@@ -1169,8 +1169,8 @@ func TestCheckDependenciesMet_PendingFixTaskBlocks(t *testing.T) {
 		index.SetTasks(map[string]task.Task{
 			"3":     {ID: "3", Status: "completed"},
 			"4":     {ID: "4", Status: "pending", Dependencies: []string{"3"}},
-			"fix-1": {ID: "fix-1", Status: "completed", SourceTaskID: "3", Type: "fix"},
-			"fix-2": {ID: "fix-2", Status: "completed", SourceTaskID: "3", Type: "fix"},
+			"fix-1": {ID: "fix-1", Status: "completed", SourceTaskID: "3", Type: "coding.fix"},
+			"fix-2": {ID: "fix-2", Status: "completed", SourceTaskID: "3", Type: "coding.fix"},
 		})
 		met, _ := checkDependenciesMet(index, "4", index.TasksMap()["4"])
 		if !met {
@@ -1196,7 +1196,7 @@ func TestCheckDependenciesMet_PendingFixTaskBlocks(t *testing.T) {
 		index.SetTasks(map[string]task.Task{
 			"3":     {ID: "3", Status: "completed"},
 			"4":     {ID: "4", Status: "pending", Dependencies: []string{"3"}},
-			"fix-1": {ID: "fix-1", Status: "pending", Type: "fix"},
+			"fix-1": {ID: "fix-1", Status: "pending", Type: "coding.fix"},
 		})
 		met, _ := checkDependenciesMet(index, "4", index.TasksMap()["4"])
 		if !met {
@@ -1214,7 +1214,7 @@ func TestCheckDependenciesMet_SelfBlock(t *testing.T) {
 		index := &task.TaskIndex{Feature: "test"}
 		index.SetTasks(map[string]task.Task{
 			"3":     {ID: "3", Status: "pending", Dependencies: []string{}},
-			"fix-1": {ID: "fix-1", Status: "pending", SourceTaskID: "3", Type: "fix"},
+			"fix-1": {ID: "fix-1", Status: "pending", SourceTaskID: "3", Type: "coding.fix"},
 		})
 		met, unmet := checkDependenciesMet(index, "3", index.TasksMap()["3"])
 		if met {
@@ -1230,7 +1230,7 @@ func TestCheckDependenciesMet_SelfBlock(t *testing.T) {
 		index := &task.TaskIndex{Feature: "test"}
 		index.SetTasks(map[string]task.Task{
 			"3":     {ID: "3", Status: "pending", Dependencies: []string{}},
-			"fix-1": {ID: "fix-1", Status: "in_progress", SourceTaskID: "3", Type: "fix"},
+			"fix-1": {ID: "fix-1", Status: "in_progress", SourceTaskID: "3", Type: "coding.fix"},
 		})
 		met, _ := checkDependenciesMet(index, "3", index.TasksMap()["3"])
 		if met {
@@ -1243,7 +1243,7 @@ func TestCheckDependenciesMet_SelfBlock(t *testing.T) {
 		index := &task.TaskIndex{Feature: "test"}
 		index.SetTasks(map[string]task.Task{
 			"3":     {ID: "3", Status: "pending", Dependencies: []string{}},
-			"fix-1": {ID: "fix-1", Status: "completed", SourceTaskID: "3", Type: "fix"},
+			"fix-1": {ID: "fix-1", Status: "completed", SourceTaskID: "3", Type: "coding.fix"},
 		})
 		met, _ := checkDependenciesMet(index, "3", index.TasksMap()["3"])
 		if !met {
@@ -1258,7 +1258,7 @@ func TestCheckDependenciesMet_SelfBlock(t *testing.T) {
 		index.SetTasks(map[string]task.Task{
 			"2":     {ID: "2", Status: "completed"},
 			"3":     {ID: "3", Status: "pending", Dependencies: []string{"2"}},
-			"fix-1": {ID: "fix-1", Status: "pending", SourceTaskID: "3", Type: "fix"},
+			"fix-1": {ID: "fix-1", Status: "pending", SourceTaskID: "3", Type: "coding.fix"},
 		})
 		met, _ := checkDependenciesMet(index, "3", index.TasksMap()["3"])
 		if met {
@@ -1273,7 +1273,7 @@ func TestCheckDependenciesMet_SelfBlock(t *testing.T) {
 		index.SetTasks(map[string]task.Task{
 			"2":     {ID: "2", Status: "completed"},
 			"3":     {ID: "3", Status: "pending", Dependencies: []string{}},
-			"fix-1": {ID: "fix-1", Status: "pending", SourceTaskID: "2", Type: "fix"},
+			"fix-1": {ID: "fix-1", Status: "pending", SourceTaskID: "2", Type: "coding.fix"},
 		})
 		met, _ := checkDependenciesMet(index, "3", index.TasksMap()["3"])
 		if !met {
@@ -1286,8 +1286,8 @@ func TestCheckDependenciesMet_SelfBlock(t *testing.T) {
 		index := &task.TaskIndex{Feature: "test"}
 		index.SetTasks(map[string]task.Task{
 			"3":     {ID: "3", Status: "pending", Dependencies: []string{}},
-			"fix-1": {ID: "fix-1", Status: "completed", SourceTaskID: "3", Type: "fix"},
-			"fix-2": {ID: "fix-2", Status: "pending", SourceTaskID: "3", Type: "fix"},
+			"fix-1": {ID: "fix-1", Status: "completed", SourceTaskID: "3", Type: "coding.fix"},
+			"fix-2": {ID: "fix-2", Status: "pending", SourceTaskID: "3", Type: "coding.fix"},
 		})
 		met, _ := checkDependenciesMet(index, "3", index.TasksMap()["3"])
 		if met {
@@ -1317,7 +1317,7 @@ func TestClaimNextTask_FixTaskClaimedBeforeBusiness(t *testing.T) {
 		}
 		index.SetTasks(map[string]task.Task{
 			"3":     {ID: "3", Status: "completed", Priority: "P0"},
-			"fix-1": {ID: "fix-1", Status: "pending", Priority: "P0", SourceTaskID: "3", Type: "fix", Dependencies: []string{}},
+			"fix-1": {ID: "fix-1", Status: "pending", Priority: "P0", SourceTaskID: "3", Type: "coding.fix", Dependencies: []string{}},
 			"4":     {ID: "4", Status: "pending", Priority: "P0", Dependencies: []string{"3"}},
 		})
 		key, _, err := claimNextTask(index)
@@ -1339,8 +1339,8 @@ func TestClaimNextTask_FixTaskClaimedBeforeBusiness(t *testing.T) {
 		}
 		index.SetTasks(map[string]task.Task{
 			"3":     {ID: "3", Status: "completed", Priority: "P0"},
-			"fix-1": {ID: "fix-1", Status: "completed", Priority: "P0", SourceTaskID: "3", Type: "fix"},
-			"fix-2": {ID: "fix-2", Status: "pending", Priority: "P0", SourceTaskID: "3", Type: "fix", Dependencies: []string{}},
+			"fix-1": {ID: "fix-1", Status: "completed", Priority: "P0", SourceTaskID: "3", Type: "coding.fix"},
+			"fix-2": {ID: "fix-2", Status: "pending", Priority: "P0", SourceTaskID: "3", Type: "coding.fix", Dependencies: []string{}},
 			"4":     {ID: "4", Status: "pending", Priority: "P0", Dependencies: []string{"3"}},
 		})
 		key, _, err := claimNextTask(index)
@@ -1417,7 +1417,7 @@ func TestClaimNextTask_LazyUnblockScan(t *testing.T) {
 		index.SetTasks(map[string]task.Task{
 			"task1": {ID: "1", Title: "Task 1", Priority: "P0", Status: "completed", Dependencies: []string{}},
 			"task2": {ID: "2", Title: "Task 2", Priority: "P0", Status: "blocked", Dependencies: []string{"1"}},
-			"fix-1": {ID: "fix-1", Status: "pending", Priority: "P0", SourceTaskID: "2", Type: "fix", Dependencies: []string{}},
+			"fix-1": {ID: "fix-1", Status: "pending", Priority: "P0", SourceTaskID: "2", Type: "coding.fix", Dependencies: []string{}},
 		})
 
 		key, _, err := claimNextTask(index)
@@ -1526,7 +1526,7 @@ func TestClaimNextTask_BlockSourceLifecycle(t *testing.T) {
 		}
 		index.SetTasks(map[string]task.Task{
 			"source": {ID: "1", Title: "Source task", Priority: "P0", Status: "blocked", Dependencies: []string{}},
-			"fix-1":  {ID: "fix-1", Status: "completed", Priority: "P0", SourceTaskID: "1", Type: "fix", Dependencies: []string{}},
+			"fix-1":  {ID: "fix-1", Status: "completed", Priority: "P0", SourceTaskID: "1", Type: "coding.fix", Dependencies: []string{}},
 		})
 
 		key, gotTask, err := claimNextTask(index)
@@ -1550,7 +1550,7 @@ func TestClaimNextTask_BlockSourceLifecycle(t *testing.T) {
 		}
 		index.SetTasks(map[string]task.Task{
 			"source": {ID: "1", Title: "Source task", Priority: "P0", Status: "blocked", Dependencies: []string{}},
-			"fix-1":  {ID: "fix-1", Status: "in_progress", Priority: "P0", SourceTaskID: "1", Type: "fix", Dependencies: []string{}},
+			"fix-1":  {ID: "fix-1", Status: "in_progress", Priority: "P0", SourceTaskID: "1", Type: "coding.fix", Dependencies: []string{}},
 		})
 
 		_, _, err := claimNextTask(index)
@@ -1571,8 +1571,8 @@ func TestClaimNextTask_BlockSourceLifecycle(t *testing.T) {
 		}
 		index.SetTasks(map[string]task.Task{
 			"source": {ID: "1", Title: "Source task", Priority: "P0", Status: "blocked", Dependencies: []string{}},
-			"fix-1":  {ID: "fix-1", Status: "completed", Priority: "P0", SourceTaskID: "1", Type: "fix", Dependencies: []string{}},
-			"fix-2":  {ID: "fix-2", Status: "completed", Priority: "P0", SourceTaskID: "1", Type: "fix", Dependencies: []string{}},
+			"fix-1":  {ID: "fix-1", Status: "completed", Priority: "P0", SourceTaskID: "1", Type: "coding.fix", Dependencies: []string{}},
+			"fix-2":  {ID: "fix-2", Status: "completed", Priority: "P0", SourceTaskID: "1", Type: "coding.fix", Dependencies: []string{}},
 		})
 
 		key, gotTask, err := claimNextTask(index)
@@ -1598,7 +1598,7 @@ func TestClaimNextTask_BlockSourceLifecycle(t *testing.T) {
 		index.SetTasks(map[string]task.Task{
 			"source": {ID: "1", Title: "Source task", Priority: "P0", Status: "blocked", Dependencies: []string{"2"}},
 			"dep":    {ID: "2", Title: "Dep task", Priority: "P0", Status: "pending", Dependencies: []string{}},
-			"fix-1":  {ID: "fix-1", Status: "completed", Priority: "P0", SourceTaskID: "1", Type: "fix", Dependencies: []string{}},
+			"fix-1":  {ID: "fix-1", Status: "completed", Priority: "P0", SourceTaskID: "1", Type: "coding.fix", Dependencies: []string{}},
 		})
 
 		key, _, err := claimNextTask(index)

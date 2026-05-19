@@ -17,8 +17,8 @@ func TestGetBreakdownTestTasks_E2eTestFullFalse(t *testing.T) {
 	// No e2e test tasks, no consolidate (consolidate depends on e2e test chain in breakdown)
 	// Only tasks generated should be T-specs-1 (consolidate is separate gate)
 	for _, task := range tasks {
-		if task.ID == "T-test-1" || task.ID == "T-test-1b" || task.ID == "T-test-2-cli" ||
-			task.ID == "T-test-3" || task.ID == "T-test-4" || task.ID == "T-test-4.5" {
+		if task.ID == "T-test-gen-cases" || task.ID == "T-test-eval-cases" || task.ID == "T-test-gen-scripts-cli" ||
+			task.ID == "T-test-run" || task.ID == "T-test-graduate" || task.ID == "T-test-verify-regression" {
 			t.Errorf("e2e test task %s should not be generated when e2eTest.full=false", task.ID)
 		}
 	}
@@ -31,7 +31,7 @@ func TestGetBreakdownTestTasks_ConsolidateSpecsFullFalse(t *testing.T) {
 	tasks := GetBreakdownTestTasks([]profile.Language{"go"}, []string{"cli"}, auto)
 
 	for _, task := range tasks {
-		if task.ID == "T-specs-1" {
+		if task.ID == "T-specs-consolidate" {
 			t.Error("T-specs-1 should not be generated when consolidateSpecs.full=false")
 		}
 	}
@@ -45,7 +45,7 @@ func TestGetBreakdownTestTasks_CleanCodeFullTrue(t *testing.T) {
 
 	found := false
 	for _, task := range tasks {
-		if task.ID == "T-clean-code-1" {
+		if task.ID == "T-clean-code" {
 			found = true
 			if task.Type != TypeCleanCode {
 				t.Errorf("T-clean-code-1 Type = %q, want %q", task.Type, TypeCleanCode)
@@ -67,7 +67,7 @@ func TestGetBreakdownTestTasks_CleanCodeFullFalse(t *testing.T) {
 	tasks := GetBreakdownTestTasks([]profile.Language{"go"}, []string{"cli"}, auto)
 
 	for _, task := range tasks {
-		if task.ID == "T-clean-code-1" {
+		if task.ID == "T-clean-code" {
 			t.Error("T-clean-code-1 should not be generated when cleanCode.full=false")
 		}
 	}
@@ -81,8 +81,8 @@ func TestGetQuickTestTasks_E2eTestQuickFalse(t *testing.T) {
 
 	// No e2e test tasks
 	for _, task := range tasks {
-		if task.ID == "T-quick-1" || task.ID == "T-quick-2-cli" ||
-			task.ID == "T-quick-3" || task.ID == "T-quick-4" {
+		if task.ID == "T-quick-gen-cases" || task.ID == "T-quick-2-cli" ||
+			task.ID == "T-quick-graduate" || task.ID == "T-quick-verify-regression" {
 			t.Errorf("e2e test task %s should not be generated when e2eTest.quick=false", task.ID)
 		}
 	}
@@ -95,7 +95,7 @@ func TestGetQuickTestTasks_ConsolidateSpecsQuickFalse(t *testing.T) {
 	tasks := GetQuickTestTasks([]profile.Language{"go"}, []string{"cli"}, auto)
 
 	for _, task := range tasks {
-		if task.ID == "T-quick-specs-1" {
+		if task.ID == "T-quick-doc-drift" {
 			t.Error("T-quick-specs-1 should not be generated when consolidateSpecs.quick=false")
 		}
 	}
@@ -109,7 +109,7 @@ func TestGetQuickTestTasks_CleanCodeQuickTrue(t *testing.T) {
 
 	found := false
 	for _, task := range tasks {
-		if task.ID == "T-clean-code-1" {
+		if task.ID == "T-clean-code" {
 			found = true
 			if task.Type != TypeCleanCode {
 				t.Errorf("T-clean-code-1 Type = %q, want %q", task.Type, TypeCleanCode)
@@ -131,7 +131,7 @@ func TestGetQuickTestTasks_CleanCodeQuickFalse(t *testing.T) {
 	tasks := GetQuickTestTasks([]profile.Language{"go"}, []string{"cli"}, auto)
 
 	for _, task := range tasks {
-		if task.ID == "T-clean-code-1" {
+		if task.ID == "T-clean-code" {
 			t.Error("T-clean-code-1 should not be generated when cleanCode.quick=false")
 		}
 	}
@@ -148,7 +148,7 @@ func TestGetBreakdownTestTasks_DefaultsMatchOldBehavior(t *testing.T) {
 		t.Fatalf("expected 7 tasks with defaults, got %d", len(tasks))
 	}
 
-	wantIDs := []string{"T-test-1", "T-test-1b", "T-test-2-cli", "T-test-3", "T-test-4", "T-test-4.5", "T-specs-1"}
+	wantIDs := []string{"T-test-gen-cases", "T-test-eval-cases", "T-test-gen-scripts-cli", "T-test-run", "T-test-graduate", "T-test-verify-regression", "T-specs-consolidate"}
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
 			t.Errorf("tasks[%d].ID = %q, want %q", i, tasks[i].ID, want)
@@ -164,7 +164,7 @@ func TestGetQuickTestTasks_DefaultsProduceNoE2ETasks(t *testing.T) {
 	if len(tasks) != 1 {
 		t.Fatalf("expected 1 quick task (spec drift) with defaults, got %d", len(tasks))
 	}
-	if tasks[0].ID != "T-quick-specs-1" {
+	if tasks[0].ID != "T-quick-doc-drift" {
 		t.Errorf("expected T-quick-specs-1, got %q", tasks[0].ID)
 	}
 }
@@ -179,7 +179,7 @@ func TestGetBreakdownTestTasks_CleanCodeDependsOnVerifyRegression(t *testing.T) 
 
 	// Find T-clean-code-1 and verify its dependencies
 	for _, task := range tasks {
-		if task.ID == "T-clean-code-1" {
+		if task.ID == "T-clean-code" {
 			// In breakdown mode, T-clean-code-1 should not have deps set yet
 			// (resolved later by ResolveFirstTestDep)
 			return
@@ -201,7 +201,7 @@ func TestGetQuickTestTasks_CleanCodeNoE2e(t *testing.T) {
 	if len(tasks) != 1 {
 		t.Fatalf("expected 1 task, got %d: %+v", len(tasks), tasks)
 	}
-	if tasks[0].ID != "T-clean-code-1" {
+	if tasks[0].ID != "T-clean-code" {
 		t.Errorf("task ID = %q, want T-clean-code-1", tasks[0].ID)
 	}
 }
@@ -219,7 +219,7 @@ func TestGetBreakdownTestTasks_NoE2eWithCleanCode(t *testing.T) {
 	if len(tasks) != 1 {
 		t.Fatalf("expected 1 task, got %d: %+v", len(tasks), tasks)
 	}
-	if tasks[0].ID != "T-clean-code-1" {
+	if tasks[0].ID != "T-clean-code" {
 		t.Errorf("task ID = %q, want T-clean-code-1", tasks[0].ID)
 	}
 }
@@ -236,7 +236,7 @@ func TestGetBreakdownTestTasks_OnlyConsolidateSpecs(t *testing.T) {
 	if len(tasks) != 1 {
 		t.Fatalf("expected 1 task, got %d: %+v", len(tasks), tasks)
 	}
-	if tasks[0].ID != "T-specs-1" {
+	if tasks[0].ID != "T-specs-consolidate" {
 		t.Errorf("task ID = %q, want T-specs-1", tasks[0].ID)
 	}
 }
@@ -252,7 +252,7 @@ func TestGetQuickTestTasks_OnlyConsolidateSpecs(t *testing.T) {
 	if len(tasks) != 1 {
 		t.Fatalf("expected 1 task, got %d: %+v", len(tasks), tasks)
 	}
-	if tasks[0].ID != "T-quick-specs-1" {
+	if tasks[0].ID != "T-quick-doc-drift" {
 		t.Errorf("task ID = %q, want T-quick-specs-1", tasks[0].ID)
 	}
 }
@@ -265,8 +265,8 @@ func TestGetBreakdownTestTasks_SpecsDependsOnVerifyRegression(t *testing.T) {
 
 	// Find T-specs-1
 	for _, task := range tasks {
-		if task.ID == "T-specs-1" {
-			if len(task.Dependencies) != 1 || task.Dependencies[0] != "T-test-4.5" {
+		if task.ID == "T-specs-consolidate" {
+			if len(task.Dependencies) != 1 || task.Dependencies[0] != "T-test-verify-regression" {
 				t.Errorf("T-specs-1 deps = %v, want [T-test-4.5]", task.Dependencies)
 			}
 			return
@@ -281,8 +281,8 @@ func TestGetQuickTestTasks_SpecsDependsOnVerifyRegression(t *testing.T) {
 
 	// Find T-quick-specs-1
 	for _, task := range tasks {
-		if task.ID == "T-quick-specs-1" {
-			if len(task.Dependencies) != 1 || task.Dependencies[0] != "T-quick-4" {
+		if task.ID == "T-quick-doc-drift" {
+			if len(task.Dependencies) != 1 || task.Dependencies[0] != "T-quick-verify-regression" {
 				t.Errorf("T-quick-specs-1 deps = %v, want [T-quick-4]", task.Dependencies)
 			}
 			return
@@ -294,21 +294,21 @@ func TestGetQuickTestTasks_SpecsDependsOnVerifyRegression(t *testing.T) {
 // --- InferType tests for new IDs ---
 
 func TestInferType_TSpecs1(t *testing.T) {
-	got := InferType("T-specs-1")
-	if got != TypeDocGenerationConsolidate {
-		t.Errorf("InferType(T-specs-1) = %q, want %q", got, TypeDocGenerationConsolidate)
+	got := InferType("T-specs-consolidate")
+	if got != TypeDocConsolidate {
+		t.Errorf("InferType(T-specs-1) = %q, want %q", got, TypeDocConsolidate)
 	}
 }
 
 func TestInferType_TQuickSpecs1(t *testing.T) {
-	got := InferType("T-quick-specs-1")
-	if got != TypeDocGenerationDrift {
-		t.Errorf("InferType(T-quick-specs-1) = %q, want %q", got, TypeDocGenerationDrift)
+	got := InferType("T-quick-doc-drift")
+	if got != TypeDocDrift {
+		t.Errorf("InferType(T-quick-specs-1) = %q, want %q", got, TypeDocDrift)
 	}
 }
 
 func TestInferType_TCleanCode1(t *testing.T) {
-	got := InferType("T-clean-code-1")
+	got := InferType("T-clean-code")
 	if got != TypeCleanCode {
 		t.Errorf("InferType(T-clean-code-1) = %q, want %q", got, TypeCleanCode)
 	}
@@ -355,10 +355,10 @@ func TestGetQuickTestTasks_CleanCodeAndSpecsNoE2e(t *testing.T) {
 	if len(tasks) != 2 {
 		t.Fatalf("expected 2 tasks, got %d: %+v", len(tasks), tasks)
 	}
-	if tasks[0].ID != "T-quick-specs-1" {
+	if tasks[0].ID != "T-quick-doc-drift" {
 		t.Errorf("tasks[0].ID = %q, want T-quick-specs-1", tasks[0].ID)
 	}
-	if tasks[1].ID != "T-clean-code-1" {
+	if tasks[1].ID != "T-clean-code" {
 		t.Errorf("tasks[1].ID = %q, want T-clean-code-1", tasks[1].ID)
 	}
 }

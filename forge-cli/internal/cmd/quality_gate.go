@@ -40,7 +40,7 @@ var qualityGateCmd = &cobra.Command{
 			Exits 0 silently if any task is still pending, in_progress, or blocked (no-op).
 			If all done: runs project-wide unit/integration tests, then e2e regression.
 
-			Feature e2e tests are run by T-test-3 (run-e2e-tests task), not this hook.
+			Feature e2e tests are run by T-test-run (run-e2e-tests task), not this hook.
 			This hook is the project health gate: unit tests + regression suite.
 
 			Use -v to see why the command exits early (useful for debugging).`,
@@ -143,7 +143,7 @@ func runQualityGate(_ *cobra.Command, _ []string) {
 	if just.FileExists(e2eScriptsDir) && !just.FileExists(markerPath) {
 		fmt.Fprintln(os.Stderr,
 			"WARNING: feature e2e scripts exist but haven't been run or promoted.\n"+
-				"  Add T-test-3 (run-e2e-tests) and T-test-4 (promote) to your task index,\n"+
+				"  Add T-test-run (run-e2e-tests) and T-test-graduate (promote) to your task index,\n"+
 				"  or run /run-e2e-tests and forge test promote <journey> manually.")
 	}
 
@@ -363,15 +363,15 @@ func countFixTasks(index *task.TaskIndex, step string) int {
 }
 
 // fixTypeFromStep returns the deterministic task type for a quality gate failure step.
-// compile/test failures → TypeFix, fmt/lint failures → TypeCleanup.
+// compile/test failures → TypeCodingFix, fmt/lint failures → TypeCodingCleanup.
 func fixTypeFromStep(step string) string {
 	switch step {
 	case "compile", "unit-test", "test-e2e":
-		return task.TypeFix
+		return task.TypeCodingFix
 	case "fmt", "lint":
-		return task.TypeCleanup
+		return task.TypeCodingCleanup
 	default:
-		return task.TypeFix
+		return task.TypeCodingFix
 	}
 }
 
@@ -416,7 +416,7 @@ func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) (st
 	// Vars["SOURCE_TASK_ID"] diverges intentionally for template rendering.
 	taskType := fixTypeFromStep(step)
 	tmplName := "fix-task"
-	if taskType == task.TypeCleanup {
+	if taskType == task.TypeCodingCleanup {
 		tmplName = "cleanup-task"
 	}
 

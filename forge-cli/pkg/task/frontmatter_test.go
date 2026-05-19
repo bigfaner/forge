@@ -26,26 +26,26 @@ dependencies:
 scope: "all"
 breaking: true
 mainSession: false
-type: "feature"
+type: "coding.feature"
 ---
 
 # Task body here
 Some content`,
 			wantID:    "1.1",
 			wantTitle: "Define Interfaces",
-			wantType:  "feature",
+			wantType:  "coding.feature",
 			wantBody:  "\n\n# Task body here\nSome content",
 		},
 		{
 			name: "minimal frontmatter",
 			input: `---
-id: "T-test-1"
+id: "T-test-gen-cases"
 title: "Generate Test Cases"
 type: "test-pipeline.gen-cases"
 ---
 
 Body here`,
-			wantID:    "T-test-1",
+			wantID:    "T-test-gen-cases",
 			wantTitle: "Generate Test Cases",
 			wantType:  "test-pipeline.gen-cases",
 			wantBody:  "\n\nBody here",

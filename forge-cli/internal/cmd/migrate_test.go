@@ -21,7 +21,7 @@ func TestRunMigrate_HappyPath(t *testing.T) {
 			"t-gate":  {ID: "1.gate", Title: "Gate", Status: "pending", File: "1-gate.md", Record: "records/1-gate.md"},
 			"t-sum":   {ID: "1.summary", Title: "Summary", Status: "pending", File: "1-summary.md", Record: "records/1-summary.md"},
 			"t-fix":   {ID: "fix-1", Title: "Fix", Status: "pending", File: "fix-1.md", Record: "records/fix-1.md"},
-			"t-test1": {ID: "T-test-1", Title: "Gen cases", Status: "pending", File: "T-test-1.md", Record: "records/T-test-1.md"},
+			"t-test1": {ID: "T-test-gen-cases", Title: "Gen cases", Status: "pending", File: "T-test-gen-cases.md", Record: "records/T-test-gen-cases.md"},
 		},
 	})
 
@@ -45,11 +45,11 @@ func TestRunMigrate_HappyPath(t *testing.T) {
 	}
 
 	cases := map[string]string{
-		"t1":      task.TypeFeature, // unknown ID → conservative default is "feature"
+		"t1":      task.TypeCodingFeature, // unknown ID → conservative default is "feature"
 		"t-gate":  task.TypeGate,
-		"t-sum":   task.TypeDocGenerationSummary,
-		"t-fix":   task.TypeFix,
-		"t-test1": task.TypeTestPipelineGenCases,
+		"t-sum":   task.TypeDocSummary,
+		"t-fix":   task.TypeCodingFix,
+		"t-test1": task.TypeTestGenCases,
 	}
 	for key, wantType := range cases {
 		got := index.TasksMap()[key].Type
@@ -110,8 +110,8 @@ func TestRunMigrate_Idempotent(t *testing.T) {
 	}
 
 	// InferType("1.1") → "" (no fallback), migrate defaults to feature (conservative default)
-	if index.TasksMap()["t1"].Type != task.TypeFeature {
-		t.Errorf("type = %q, want %q", index.TasksMap()["t1"].Type, task.TypeFeature)
+	if index.TasksMap()["t1"].Type != task.TypeCodingFeature {
+		t.Errorf("type = %q, want %q", index.TasksMap()["t1"].Type, task.TypeCodingFeature)
 	}
 }
 
@@ -163,17 +163,17 @@ func TestRunMigrate_AllKnownIDPatterns(t *testing.T) {
 		{"2.3", ""},
 		{"1.gate", task.TypeGate},
 		{"2.gate", task.TypeGate},
-		{"1.summary", task.TypeDocGenerationSummary},
-		{"2.summary", task.TypeDocGenerationSummary},
-		{"fix-1", task.TypeFix},
-		{"disc-1", task.TypeFix},
-		{"T-test-1", task.TypeTestPipelineGenCases},
-		{"T-test-1b", task.TypeTestPipelineEvalCases},
-		{"T-test-2", task.TypeTestPipelineGenScripts},
-		{"T-test-3", task.TypeTestPipelineRun},
-		{"T-test-4", task.TypeTestPipelineGraduate},
-		{"T-test-4.5", task.TypeTestPipelineVerifyRegression},
-		{"T-test-5", task.TypeDocGenerationConsolidate},
+		{"1.summary", task.TypeDocSummary},
+		{"2.summary", task.TypeDocSummary},
+		{"fix-1", task.TypeCodingFix},
+		{"disc-1", task.TypeCodingFix},
+		{"T-test-gen-cases", task.TypeTestGenCases},
+		{"T-test-eval-cases", task.TypeTestEvalCases},
+		{"T-test-gen-scripts", task.TypeTestGenScripts},
+		{"T-test-run", task.TypeTestRun},
+		{"T-test-graduate", task.TypeTestGraduate},
+		{"T-test-verify-regression", task.TypeTestVerifyRegression},
+		{"T-specs-consolidate", task.TypeDocConsolidate},
 	}
 
 	for _, tc := range cases {

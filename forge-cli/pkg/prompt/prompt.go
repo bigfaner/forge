@@ -19,26 +19,29 @@ import (
 var templateFS embed.FS
 
 // typeToTemplate maps task type constants to their embed template filenames.
+// Filename convention: type name with '.' replaced by '-' (e.g., coding.feature -> coding-feature.md).
 var typeToTemplate = map[string]string{
-	task.TypeFeature:                      "data/feature.md",
-	task.TypeEnhancement:                  "data/enhancement.md",
-	task.TypeCleanup:                      "data/cleanup.md",
-	task.TypeRefactor:                     "data/refactor.md",
-	task.TypeDocumentation:                "data/documentation.md",
-	task.TypeDocEvaluation:                "data/doc-evaluation.md",
-	task.TypeDocGenerationSummary:         "data/doc-generation-summary.md",
-	task.TypeDocGenerationConsolidate:     "data/doc-generation-consolidate.md",
-	task.TypeDocGenerationDrift:           "data/doc-generation-drift.md",
-	task.TypeTestPipelineGenCases:         "data/test-pipeline-gen-cases.md",
-	task.TypeTestPipelineEvalCases:        "data/test-pipeline-eval-cases.md",
-	task.TypeTestPipelineGenScripts:       "data/test-pipeline-gen-scripts.md",
-	task.TypeTestPipelineRun:              "data/test-pipeline-run.md",
-	task.TypeTestPipelineGenAndRun:        "data/test-pipeline-gen-and-run.md",
-	task.TypeTestPipelineGraduate:         "data/test-pipeline-graduate.md",
-	task.TypeTestPipelineVerifyRegression: "data/test-pipeline-verify-regression.md",
-	task.TypeFix:                          "data/fix.md",
-	task.TypeGate:                         "data/gate.md",
-	task.TypeCleanCode:                    "data/clean-code.md",
+	task.TypeCodingFeature:        "data/coding-feature.md",
+	task.TypeCodingEnhancement:    "data/coding-enhancement.md",
+	task.TypeCodingCleanup:        "data/coding-cleanup.md",
+	task.TypeCodingRefactor:       "data/coding-refactor.md",
+	task.TypeDoc:                  "data/doc.md",
+	task.TypeDocEval:              "data/doc-eval.md",
+	task.TypeDocSummary:           "data/doc-summary.md",
+	task.TypeDocConsolidate:       "data/doc-consolidate.md",
+	task.TypeDocDrift:             "data/doc-drift.md",
+	task.TypeTestGenCases:         "data/test-gen-cases.md",
+	task.TypeTestEvalCases:        "data/test-eval-cases.md",
+	task.TypeTestGenScripts:       "data/test-gen-scripts.md",
+	task.TypeTestRun:              "data/test-run.md",
+	task.TypeTestGenAndRun:        "data/test-gen-and-run.md",
+	task.TypeTestGraduate:         "data/test-graduate.md",
+	task.TypeTestVerifyRegression: "data/test-verify-regression.md",
+	task.TypeCodingFix:            "data/coding-fix.md",
+	task.TypeValidationCode:       "data/validation-code.md",
+	task.TypeValidationUx:         "data/validation-ux.md",
+	task.TypeGate:                 "data/gate.md",
+	task.TypeCleanCode:            "data/clean-code.md",
 }
 
 // SynthesizeOpts holds inputs for prompt synthesis.
@@ -86,7 +89,7 @@ func Synthesize(opts SynthesizeOpts) (string, error) {
 //
 // Available placeholders (all use {{NAME}} syntax):
 //
-//	{{TASK_ID}}         — task ID (e.g. "2.1", "T-test-1")
+//	{{TASK_ID}}         — task ID (e.g. "2.1", "T-test-gen-cases")
 //	{{TASK_FILE}}       — absolute path to the task markdown file
 //	{{SCOPE}}           — task scope (empty string when "all" or unspecified)
 //	{{FEATURE_SLUG}}    — feature slug (e.g. "auth-refresh")
@@ -186,7 +189,7 @@ func PhaseDetect(projectRoot, featureSlug, taskID string) string {
 }
 
 // phaseOf extracts the integer phase number from a task ID.
-// "2.1" → 2, "1.gate" → 1, "T-test-1" → -1 (non-integer prefix).
+// "2.1" → 2, "1.gate" → 1, "T-test-gen-cases" → -1 (non-integer prefix).
 func phaseOf(id string) int {
 	parts := strings.SplitN(id, ".", 2)
 	n, err := strconv.Atoi(parts[0])
@@ -282,8 +285,8 @@ func isLabelWithEmptyValue(line string) bool {
 
 // genScriptBases lists the task ID bases that support per-type gen-scripts or gen-and-run.
 var genScriptBases = []string{
-	"T-test-2",
-	"T-quick-2",
+	"T-test-gen-scripts",
+	"T-quick-gen-and-run",
 }
 
 // extractTestTypeArg extracts the --type argument from a type-suffixed task ID.

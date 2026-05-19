@@ -7,26 +7,30 @@ import (
 )
 
 // Task type constants define the valid execution types.
+// Naming convention: prefix-based categories (coding.*, doc*, test.*, validation.*).
 const (
-	TypeFeature                      = "feature"
-	TypeEnhancement                  = "enhancement"
-	TypeCleanup                      = "cleanup"
-	TypeRefactor                     = "refactor"
-	TypeDocumentation                = "documentation"
-	TypeDocEvaluation                = "doc-evaluation"
-	TypeDocGenerationSummary         = "doc-generation.summary"
-	TypeDocGenerationConsolidate     = "doc-generation.consolidate"
-	TypeDocGenerationDrift           = "doc-generation.drift"
-	TypeTestPipelineGenCases         = "test-pipeline.gen-cases"
-	TypeTestPipelineEvalCases        = "test-pipeline.eval-cases"
-	TypeTestPipelineGenScripts       = "test-pipeline.gen-scripts"
-	TypeTestPipelineRun              = "test-pipeline.run"
-	TypeTestPipelineGenAndRun        = "test-pipeline.gen-and-run"
-	TypeTestPipelineGraduate         = "test-pipeline.graduate"
-	TypeTestPipelineVerifyRegression = "test-pipeline.verify-regression"
-	TypeFix                          = "fix"
-	TypeGate                         = "gate"
-	TypeCleanCode                    = "code-quality.simplify"
+	TypeCodingFeature        = "coding.feature"
+	TypeCodingEnhancement    = "coding.enhancement"
+	TypeCodingCleanup        = "coding.cleanup"
+	TypeCodingRefactor       = "coding.refactor"
+	TypeCodingFix            = "coding.fix"
+	TypeCodingClean          = "coding.clean"
+	TypeDoc                  = "doc"
+	TypeDocEval              = "doc.eval"
+	TypeDocSummary           = "doc.summary"
+	TypeDocConsolidate       = "doc.consolidate"
+	TypeDocDrift             = "doc.drift"
+	TypeTestGenCases         = "test.gen-cases"
+	TypeTestEvalCases        = "test.eval-cases"
+	TypeTestGenScripts       = "test.gen-scripts"
+	TypeTestRun              = "test.run"
+	TypeTestGenAndRun        = "test.gen-and-run"
+	TypeTestGraduate         = "test.graduate"
+	TypeTestVerifyRegression = "test.verify-regression"
+	TypeValidationCode       = "validation.code"
+	TypeValidationUx         = "validation.ux"
+	TypeGate                 = "gate"
+	TypeCleanCode            = "code-quality.simplify"
 )
 
 // TaskTypeInfo describes a single task type for display and discovery.
@@ -38,48 +42,54 @@ type TaskTypeInfo struct { //nolint:revive // intentional naming for API clarity
 // TaskTypeRegistry is the centralized source of truth for all supported task types.
 // Each entry's Description follows verb+object format and is <= 60 chars.
 var TaskTypeRegistry = []TaskTypeInfo{
-	{Name: TypeFeature, Description: "implement new runtime behavior"},
-	{Name: TypeEnhancement, Description: "enhance existing behavior"},
-	{Name: TypeCleanup, Description: "remove dead code or fix technical debt"},
-	{Name: TypeRefactor, Description: "restructure code without behavior change"},
-	{Name: TypeDocumentation, Description: "write or update documentation"},
-	{Name: TypeDocEvaluation, Description: "evaluate documentation quality"},
-	{Name: TypeFix, Description: "fix a bug or issue"},
+	{Name: TypeCodingFeature, Description: "implement new runtime behavior"},
+	{Name: TypeCodingEnhancement, Description: "enhance existing behavior"},
+	{Name: TypeCodingCleanup, Description: "remove dead code or fix technical debt"},
+	{Name: TypeCodingRefactor, Description: "restructure code without behavior change"},
+	{Name: TypeCodingFix, Description: "fix a bug or issue"},
+	{Name: TypeCodingClean, Description: "clean code without changing behavior"},
+	{Name: TypeDoc, Description: "write or update documentation"},
+	{Name: TypeDocEval, Description: "evaluate documentation quality"},
+	{Name: TypeDocSummary, Description: "generate documentation summary"},
+	{Name: TypeDocConsolidate, Description: "consolidate documentation files"},
+	{Name: TypeDocDrift, Description: "detect and fix spec drift against codebase"},
+	{Name: TypeTestGenCases, Description: "generate test cases from acceptance criteria"},
+	{Name: TypeTestEvalCases, Description: "evaluate generated test cases for quality"},
+	{Name: TypeTestGenScripts, Description: "generate executable test scripts"},
+	{Name: TypeTestRun, Description: "run test scripts and collect results"},
+	{Name: TypeTestGenAndRun, Description: "generate and run test scripts in one session"},
+	{Name: TypeTestGraduate, Description: "graduate tests to regression suite"},
+	{Name: TypeTestVerifyRegression, Description: "verify regression suite after graduation"},
+	{Name: TypeValidationCode, Description: "validate code quality and correctness"},
+	{Name: TypeValidationUx, Description: "validate user experience quality"},
 	{Name: TypeGate, Description: "validate quality gate before proceeding"},
-	{Name: TypeDocGenerationSummary, Description: "generate documentation summary"},
-	{Name: TypeDocGenerationConsolidate, Description: "consolidate documentation files"},
-	{Name: TypeDocGenerationDrift, Description: "detect and fix spec drift against codebase"},
-	{Name: TypeTestPipelineGenCases, Description: "generate test cases from acceptance criteria"},
-	{Name: TypeTestPipelineEvalCases, Description: "evaluate generated test cases for quality"},
-	{Name: TypeTestPipelineGenScripts, Description: "generate executable test scripts"},
-	{Name: TypeTestPipelineRun, Description: "run test scripts and collect results"},
-	{Name: TypeTestPipelineGenAndRun, Description: "generate and run test scripts in one session"},
-	{Name: TypeTestPipelineGraduate, Description: "graduate tests to regression suite"},
-	{Name: TypeTestPipelineVerifyRegression, Description: "verify regression suite after graduation"},
 	{Name: TypeCleanCode, Description: "simplify and clean up code quality"},
 }
 
 // ValidTypes is the complete set of valid task type values.
 var ValidTypes = map[string]bool{
-	TypeFeature:                      true,
-	TypeEnhancement:                  true,
-	TypeCleanup:                      true,
-	TypeRefactor:                     true,
-	TypeDocumentation:                true,
-	TypeDocEvaluation:                true,
-	TypeDocGenerationSummary:         true,
-	TypeDocGenerationConsolidate:     true,
-	TypeDocGenerationDrift:           true,
-	TypeTestPipelineGenCases:         true,
-	TypeTestPipelineEvalCases:        true,
-	TypeTestPipelineGenScripts:       true,
-	TypeTestPipelineRun:              true,
-	TypeTestPipelineGenAndRun:        true,
-	TypeTestPipelineGraduate:         true,
-	TypeTestPipelineVerifyRegression: true,
-	TypeFix:                          true,
-	TypeGate:                         true,
-	TypeCleanCode:                    true,
+	TypeCodingFeature:        true,
+	TypeCodingEnhancement:    true,
+	TypeCodingCleanup:        true,
+	TypeCodingRefactor:       true,
+	TypeCodingFix:            true,
+	TypeCodingClean:          true,
+	TypeDoc:                  true,
+	TypeDocEval:              true,
+	TypeDocSummary:           true,
+	TypeDocConsolidate:       true,
+	TypeDocDrift:             true,
+	TypeTestGenCases:         true,
+	TypeTestEvalCases:        true,
+	TypeTestGenScripts:       true,
+	TypeTestRun:              true,
+	TypeTestGenAndRun:        true,
+	TypeTestGraduate:         true,
+	TypeTestVerifyRegression: true,
+	TypeValidationCode:       true,
+	TypeValidationUx:         true,
+	TypeGate:                 true,
+	TypeCleanCode:            true,
 }
 
 // Task represents a single task in the feature index.
@@ -106,7 +116,7 @@ type Task struct {
 	// NoTest indicates this task does not require tests (e.g., documentation-only tasks).
 	// When true, quality gate and test evidence checks are skipped, and coverage is auto-set to -1.0.
 	NoTest bool `json:"noTest,omitempty"`
-	// Type is the task execution type (e.g. "feature", "fix", "gate").
+	// Type is the task execution type (e.g. "coding.feature", "coding.fix", "gate").
 	// Required for all tasks after migration; validated by task validate.
 	// omitempty allows existing index.json files to load without error.
 	Type string `json:"type,omitempty"`

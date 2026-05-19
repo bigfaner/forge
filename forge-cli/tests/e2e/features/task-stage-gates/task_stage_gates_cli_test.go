@@ -59,7 +59,7 @@ func defaultTaskContent(filename string) string {
 id: %q
 title: "Test task %s"
 priority: "P1"
-type: "feature"
+type: "coding.feature"
 ---
 
 # Task %s
@@ -310,8 +310,8 @@ func TestTC_004_ExcludesTestOnlyPhases(t *testing.T) {
 	featureSlug := "test-stage-gates-004"
 	tmpRoot, cleanup := stageGateTestDir(t, featureSlug, []string{
 		"1.1.md:" + taskContentWithType("1.1.md", "feature"),
-		"T-test-1.md:" + taskContentWithType("T-test-1.md", "testTask"),
-		"T-quick-1.md:" + taskContentWithType("T-quick-1.md", "testTask"),
+		"T-test-gen-cases.md:" + taskContentWithType("T-test-gen-cases.md", "testTask"),
+		"T-quick-gen-cases.md:" + taskContentWithType("T-quick-gen-cases.md", "testTask"),
 	})
 	defer cleanup()
 
@@ -336,7 +336,7 @@ func TestTC_005_FiltersTestTasksFromBusinessCount(t *testing.T) {
 	tmpRoot, cleanup := stageGateTestDir(t, featureSlug, []string{
 		"1.1-task.md",
 		"1.2-task.md",
-		"T-test-1.md:" + taskContentWithType("T-test-1.md", "testTask"),
+		"T-test-gen-cases.md:" + taskContentWithType("T-test-gen-cases.md", "testTask"),
 	})
 	defer cleanup()
 
@@ -345,7 +345,7 @@ func TestTC_005_FiltersTestTasksFromBusinessCount(t *testing.T) {
 
 	tasksDir := filepath.Join(tmpRoot, "docs", "features", featureSlug, "tasks")
 
-	// Summary generated (business count = 2, excluding test task T-test-1)
+	// Summary generated (business count = 2, excluding test task T-test-gen-cases)
 	assert.FileExists(t, filepath.Join(tasksDir, "1.summary.md"))
 
 	// Summary depends_on should NOT include the test task
@@ -354,7 +354,7 @@ func TestTC_005_FiltersTestTasksFromBusinessCount(t *testing.T) {
 	require.True(t, ok)
 	depStrs := toStringSlice(deps)
 	for _, d := range depStrs {
-		assert.NotEqual(t, "T-test-1", d, "test task should not appear in summary dependencies")
+		assert.NotEqual(t, "T-test-gen-cases", d, "test task should not appear in summary dependencies")
 	}
 }
 
@@ -859,7 +859,7 @@ func TestTC_019_RejectsPathTraversalInTaskIDs(t *testing.T) {
 id: "../1.1"
 title: "Traversal attempt"
 priority: "P1"
-type: "feature"
+type: "coding.feature"
 ---
 
 # Traversal

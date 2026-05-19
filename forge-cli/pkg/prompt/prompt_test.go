@@ -40,22 +40,22 @@ func setupFeatureDir(t *testing.T, projectRoot string, tasks map[string]task.Tas
 
 func TestSynthesize_AllTypes(t *testing.T) {
 	types := []string{
-		task.TypeFeature,
-		task.TypeEnhancement,
-		task.TypeCleanup,
-		task.TypeRefactor,
-		task.TypeDocumentation,
-		task.TypeDocEvaluation,
-		task.TypeDocGenerationSummary,
-		task.TypeDocGenerationConsolidate,
-		task.TypeDocGenerationDrift,
-		task.TypeTestPipelineGenCases,
-		task.TypeTestPipelineEvalCases,
-		task.TypeTestPipelineGenScripts,
-		task.TypeTestPipelineRun,
-		task.TypeTestPipelineGraduate,
-		task.TypeTestPipelineVerifyRegression,
-		task.TypeFix,
+		task.TypeCodingFeature,
+		task.TypeCodingEnhancement,
+		task.TypeCodingCleanup,
+		task.TypeCodingRefactor,
+		task.TypeDoc,
+		task.TypeDocEval,
+		task.TypeDocSummary,
+		task.TypeDocConsolidate,
+		task.TypeDocDrift,
+		task.TypeTestGenCases,
+		task.TypeTestEvalCases,
+		task.TypeTestGenScripts,
+		task.TypeTestRun,
+		task.TypeTestGraduate,
+		task.TypeTestVerifyRegression,
+		task.TypeCodingFix,
 		task.TypeGate,
 		task.TypeCleanCode,
 	}
@@ -104,7 +104,7 @@ func TestSynthesize_FixRecordMissed(t *testing.T) {
 			Status: "pending",
 			File:   "1.1-impl.md",
 			Record: "records/1.1-impl.md",
-			Type:   task.TypeFeature,
+			Type:   task.TypeCodingFeature,
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -198,7 +198,7 @@ func TestSynthesize_FeatureTemplate_HasTDDWorkflow(t *testing.T) {
 			Status: "pending",
 			File:   "1.1.md",
 			Record: "records/1.1.md",
-			Type:   task.TypeFeature,
+			Type:   task.TypeCodingFeature,
 			Scope:  "backend",
 		},
 	}
@@ -226,7 +226,7 @@ func TestSynthesize_EnhancementTemplate_HasTDDWorkflow(t *testing.T) {
 			Status: "pending",
 			File:   "1.1.md",
 			Record: "records/1.1.md",
-			Type:   task.TypeEnhancement,
+			Type:   task.TypeCodingEnhancement,
 			Scope:  "backend",
 		},
 	}
@@ -251,7 +251,7 @@ func TestSynthesize_CleanupTemplate_NoTDD(t *testing.T) {
 			Status: "pending",
 			File:   "1.1.md",
 			Record: "records/1.1.md",
-			Type:   task.TypeCleanup,
+			Type:   task.TypeCodingCleanup,
 			Scope:  "backend",
 		},
 	}
@@ -279,7 +279,7 @@ func TestSynthesize_RefactorTemplate_NoTDD(t *testing.T) {
 			Status: "pending",
 			File:   "1.1.md",
 			Record: "records/1.1.md",
-			Type:   task.TypeRefactor,
+			Type:   task.TypeCodingRefactor,
 			Scope:  "backend",
 		},
 	}
@@ -310,7 +310,7 @@ func TestSynthesize_EmptyPhaseSummary_NoResidual(t *testing.T) {
 			Status: "pending",
 			File:   "1.1-impl.md",
 			Record: "records/1.1-impl.md",
-			Type:   task.TypeFeature,
+			Type:   task.TypeCodingFeature,
 			Scope:  "backend",
 		},
 	}
@@ -353,7 +353,7 @@ func TestSynthesize_NonEmptyPhaseSummary_Preserved(t *testing.T) {
 			Status: "completed",
 			File:   "1.1-impl.md",
 			Record: "records/1.1-impl.md",
-			Type:   task.TypeFeature,
+			Type:   task.TypeCodingFeature,
 			Scope:  "backend",
 		},
 		"2.1-impl": {
@@ -362,7 +362,7 @@ func TestSynthesize_NonEmptyPhaseSummary_Preserved(t *testing.T) {
 			Status: "pending",
 			File:   "2.1-impl.md",
 			Record: "records/2.1-impl.md",
-			Type:   task.TypeFeature,
+			Type:   task.TypeCodingFeature,
 			Scope:  "backend",
 		},
 	}
@@ -405,7 +405,7 @@ func TestSynthesize_EmptyScope_NoTrailingSpace(t *testing.T) {
 			Status: "pending",
 			File:   "1.1-impl.md",
 			Record: "records/1.1-impl.md",
-			Type:   task.TypeFeature,
+			Type:   task.TypeCodingFeature,
 			Scope:  "", // empty scope
 		},
 	}
@@ -441,7 +441,7 @@ func TestSynthesize_EmptyProfile_NoResidual(t *testing.T) {
 			Status: "pending",
 			File:   "1.1-impl.md",
 			Record: "records/1.1-impl.md",
-			Type:   task.TypeTestPipelineGenScripts,
+			Type:   task.TypeTestGenScripts,
 			Scope:  "backend",
 		},
 	}
@@ -475,7 +475,7 @@ func TestPhaseDetect_NewPhase(t *testing.T) {
 			Status: "completed",
 			File:   "1.1-impl.md",
 			Record: "records/1.1-impl.md",
-			Type:   task.TypeFeature,
+			Type:   task.TypeCodingFeature,
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -506,7 +506,7 @@ func TestPhaseDetect_SamePhase(t *testing.T) {
 			Status: "completed",
 			File:   "1.1-impl.md",
 			Record: "records/1.1-impl.md",
-			Type:   task.TypeFeature,
+			Type:   task.TypeCodingFeature,
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -528,7 +528,7 @@ func TestPhaseDetect_FirstPhase(t *testing.T) {
 			Status: "pending",
 			File:   "1.1-impl.md",
 			Record: "records/1.1-impl.md",
-			Type:   task.TypeFeature,
+			Type:   task.TypeCodingFeature,
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -549,7 +549,7 @@ func TestPhaseDetect_SummaryFileMissing(t *testing.T) {
 			Status: "completed",
 			File:   "1.1-impl.md",
 			Record: "records/1.1-impl.md",
-			Type:   task.TypeFeature,
+			Type:   task.TypeCodingFeature,
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -569,27 +569,27 @@ func TestInferType(t *testing.T) {
 		expected string
 	}{
 		// Summary suffix
-		{"1.summary", task.TypeDocGenerationSummary},
-		{"2.summary", task.TypeDocGenerationSummary},
+		{"1.summary", task.TypeDocSummary},
+		{"2.summary", task.TypeDocSummary},
 		// Gate suffix
 		{"1.gate", task.TypeGate},
 		{"3.gate", task.TypeGate},
 		// T-test exact IDs
-		{"T-test-1", task.TypeTestPipelineGenCases},
-		{"T-test-1b", task.TypeTestPipelineEvalCases},
-		{"T-test-2", task.TypeTestPipelineGenScripts},
-		{"T-test-3", task.TypeTestPipelineRun},
-		{"T-test-4", task.TypeTestPipelineGraduate},
-		{"T-test-4.5", task.TypeTestPipelineVerifyRegression},
-		{"T-test-5", task.TypeDocGenerationConsolidate},
-		// T-quick-5 drift detection
-		{"T-quick-5", task.TypeDocGenerationDrift},
-		{"T-quick-5a", task.TypeDocGenerationDrift},
+		{"T-test-gen-cases", task.TypeTestGenCases},
+		{"T-test-eval-cases", task.TypeTestEvalCases},
+		{"T-test-gen-scripts", task.TypeTestGenScripts},
+		{"T-test-run", task.TypeTestRun},
+		{"T-test-graduate", task.TypeTestGraduate},
+		{"T-test-verify-regression", task.TypeTestVerifyRegression},
+		{"T-specs-consolidate", task.TypeDocConsolidate},
+		// T-quick-doc-drift drift detection
+		{"T-quick-doc-drift", task.TypeDocDrift},
+		{"T-quick-doc-drifta", task.TypeDocDrift},
 		// Fix prefix
-		{"fix-1", task.TypeFix},
-		{"fix-auth-bug", task.TypeFix},
-		{"disc-1", task.TypeFix},
-		{"disc-2", task.TypeFix},
+		{"fix-1", task.TypeCodingFix},
+		{"fix-auth-bug", task.TypeCodingFix},
+		{"disc-1", task.TypeCodingFix},
+		{"disc-2", task.TypeCodingFix},
 		// Default: empty (no fallback)
 		{"1.1", ""},
 		{"2.3", ""},
@@ -610,8 +610,8 @@ func TestInferType(t *testing.T) {
 func TestSynthesize_CleanCodeTemplate_InvokesSkill(t *testing.T) {
 	dir := t.TempDir()
 	tasks := map[string]task.Task{
-		"T-clean-code-1": {
-			ID:     "T-clean-code-1",
+		"T-clean-code": {
+			ID:     "T-clean-code",
 			Title:  "Clean code task",
 			Status: "pending",
 			File:   "T-clean-code-1.md",
@@ -622,7 +622,7 @@ func TestSynthesize_CleanCodeTemplate_InvokesSkill(t *testing.T) {
 	}
 	setupFeatureDir(t, dir, tasks)
 
-	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "T-clean-code-1"}
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "T-clean-code"}
 	result, err := Synthesize(opts)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -630,7 +630,7 @@ func TestSynthesize_CleanCodeTemplate_InvokesSkill(t *testing.T) {
 	if !strings.Contains(result, `Skill(skill="forge:clean-code")`) {
 		t.Error("clean-code template should invoke forge:clean-code skill")
 	}
-	if !strings.Contains(result, "T-clean-code-1") {
+	if !strings.Contains(result, "T-clean-code") {
 		t.Error("clean-code template should contain the task ID")
 	}
 }
@@ -645,26 +645,26 @@ func TestSynthesize_GenScripts_WithTypeSuffix(t *testing.T) {
 		dontWant     string
 	}{
 		{
-			name:         "T-test-2-api includes --type api",
-			taskID:       "T-test-2-api",
+			name:         "T-test-gen-scripts-api includes --type api",
+			taskID:       "T-test-gen-scripts-api",
 			wantContains: `Skill(skill="forge:gen-test-scripts" --type api)`,
 			dontWant:     `{{TEST_TYPE_ARG}}`,
 		},
 		{
-			name:         "T-test-2a-tui includes --type tui",
-			taskID:       "T-test-2a-tui",
+			name:         "T-test-gen-scriptsa-tui includes --type tui",
+			taskID:       "T-test-gen-scriptsa-tui",
 			wantContains: `Skill(skill="forge:gen-test-scripts" --type tui)`,
 			dontWant:     `{{TEST_TYPE_ARG}}`,
 		},
 		{
-			name:         "T-quick-2-cli includes --type cli",
-			taskID:       "T-quick-2-cli",
+			name:         "T-quick-gen-and-run-cli includes --type cli",
+			taskID:       "T-quick-gen-and-run-cli",
 			wantContains: `Skill(skill="forge:gen-test-scripts" --type cli)`,
 			dontWant:     `{{TEST_TYPE_ARG}}`,
 		},
 		{
-			name:         "T-quick-2b-web-ui includes --type web-ui",
-			taskID:       "T-quick-2b-web-ui",
+			name:         "T-quick-gen-and-runb-web-ui includes --type web-ui",
+			taskID:       "T-quick-gen-and-runb-web-ui",
 			wantContains: `Skill(skill="forge:gen-test-scripts" --type web-ui)`,
 			dontWant:     `{{TEST_TYPE_ARG}}`,
 		},
@@ -680,7 +680,7 @@ func TestSynthesize_GenScripts_WithTypeSuffix(t *testing.T) {
 					Status: "pending",
 					File:   tt.taskID + ".md",
 					Record: "records/" + tt.taskID + ".md",
-					Type:   task.TypeTestPipelineGenScripts,
+					Type:   task.TypeTestGenScripts,
 					Scope:  "backend",
 				},
 			}
@@ -711,10 +711,10 @@ func TestSynthesize_GenScripts_NoTypeSuffix(t *testing.T) {
 		name   string
 		taskID string
 	}{
-		{"T-test-2", "T-test-2"},
-		{"T-test-2a", "T-test-2a"},
-		{"T-quick-2", "T-quick-2"},
-		{"T-quick-2a", "T-quick-2a"},
+		{"T-test-gen-scripts", "T-test-gen-scripts"},
+		{"T-test-gen-scriptsa", "T-test-gen-scriptsa"},
+		{"T-quick-gen-and-run", "T-quick-gen-and-run"},
+		{"T-quick-gen-and-runa", "T-quick-gen-and-runa"},
 	}
 
 	for _, tt := range tests {
@@ -727,7 +727,7 @@ func TestSynthesize_GenScripts_NoTypeSuffix(t *testing.T) {
 					Status: "pending",
 					File:   tt.taskID + ".md",
 					Record: "records/" + tt.taskID + ".md",
-					Type:   task.TypeTestPipelineGenScripts,
+					Type:   task.TypeTestGenScripts,
 					Scope:  "backend",
 				},
 			}
@@ -758,19 +758,19 @@ func TestSynthesize_GenScripts_NoTypeSuffix(t *testing.T) {
 func TestSynthesize_ConsolidateTemplate_NonInteractive(t *testing.T) {
 	dir := t.TempDir()
 	tasks := map[string]task.Task{
-		"T-test-5": {
-			ID:     "T-test-5",
+		"T-specs-consolidate": {
+			ID:     "T-specs-consolidate",
 			Title:  "Consolidate specs",
 			Status: "pending",
-			File:   "T-test-5.md",
-			Record: "records/T-test-5.md",
-			Type:   task.TypeDocGenerationConsolidate,
+			File:   "T-specs-consolidate.md",
+			Record: "records/T-specs-consolidate.md",
+			Type:   task.TypeDocConsolidate,
 			Scope:  "backend",
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
 
-	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "T-test-5"}
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "T-specs-consolidate"}
 	result, err := Synthesize(opts)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -795,19 +795,19 @@ func TestSynthesize_ConsolidateTemplate_NonInteractive(t *testing.T) {
 func TestSynthesize_DriftTemplate_NonInteractive(t *testing.T) {
 	dir := t.TempDir()
 	tasks := map[string]task.Task{
-		"T-quick-5": {
-			ID:     "T-quick-5",
+		"T-quick-doc-drift": {
+			ID:     "T-quick-doc-drift",
 			Title:  "Drift detection",
 			Status: "pending",
-			File:   "T-quick-5.md",
-			Record: "records/T-quick-5.md",
-			Type:   task.TypeDocGenerationDrift,
+			File:   "T-quick-doc-drift.md",
+			Record: "records/T-quick-doc-drift.md",
+			Type:   task.TypeDocDrift,
 			Scope:  "backend",
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
 
-	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "T-quick-5"}
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "T-quick-doc-drift"}
 	result, err := Synthesize(opts)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -834,13 +834,13 @@ func TestExtractTestTypeArg(t *testing.T) {
 		id   string
 		want string
 	}{
-		{"T-test-2-api", " --type api"},
-		{"T-test-2a-tui", " --type tui"},
-		{"T-quick-2-cli", " --type cli"},
-		{"T-quick-2b-web-ui", " --type web-ui"},
-		{"T-test-2", ""},
-		{"T-test-2a", ""},
-		{"T-quick-2", ""},
+		{"T-test-gen-scripts-api", " --type api"},
+		{"T-test-gen-scriptsa-tui", " --type tui"},
+		{"T-quick-gen-and-run-cli", " --type cli"},
+		{"T-quick-gen-and-runb-web-ui", " --type web-ui"},
+		{"T-test-gen-scripts", ""},
+		{"T-test-gen-scriptsa", ""},
+		{"T-quick-gen-and-run", ""},
 		{"T-test-3-api", ""}, // not a gen-scripts base
 		{"1.1", ""},
 	}

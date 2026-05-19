@@ -425,7 +425,7 @@ func TestTC_TypeRefine_014_PromptReturnsRefactorTemplate(t *testing.T) {
 
 // --- TC-015: forge creates fix-typed dynamic task on compile failure ---
 
-// Traceability: TC-015 -> Task 4 AC-1, Proposal D4 (compile failure -> TypeFix)
+// Traceability: TC-015 -> Task 4 AC-1, Proposal D4 (compile failure -> TypeCodingFix)
 func TestTC_TypeRefine_015_FixTypeFromCompileFailureIsFix(t *testing.T) {
 	projectRoot := trFindProjectRoot(t)
 	stdout, _, exitCode := trRunForge(t, projectRoot, "task", "list-types")
@@ -436,7 +436,7 @@ func TestTC_TypeRefine_015_FixTypeFromCompileFailureIsFix(t *testing.T) {
 
 // --- TC-016: forge creates cleanup-typed dynamic task on fmt failure ---
 
-// Traceability: TC-016 -> Task 4 AC-2, Proposal D4 (fmt failure -> TypeCleanup)
+// Traceability: TC-016 -> Task 4 AC-2, Proposal D4 (fmt failure -> TypeCodingCleanup)
 func TestTC_TypeRefine_016_FixTypeFromFmtFailureIsCleanup(t *testing.T) {
 	projectRoot := trFindProjectRoot(t)
 	stdout, _, exitCode := trRunForge(t, projectRoot, "task", "list-types")
@@ -447,7 +447,7 @@ func TestTC_TypeRefine_016_FixTypeFromFmtFailureIsCleanup(t *testing.T) {
 
 // --- TC-017: forge creates cleanup-typed dynamic task on lint failure ---
 
-// Traceability: TC-017 -> Task 4 AC-2, Proposal D4 (lint failure -> TypeCleanup)
+// Traceability: TC-017 -> Task 4 AC-2, Proposal D4 (lint failure -> TypeCodingCleanup)
 func TestTC_TypeRefine_017_FixTypeFromLintFailureIsCleanup(t *testing.T) {
 	projectRoot := trFindProjectRoot(t)
 	stdout, _, exitCode := trRunForge(t, projectRoot, "task", "list-types")

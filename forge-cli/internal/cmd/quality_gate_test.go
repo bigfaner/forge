@@ -674,12 +674,12 @@ func TestAddFixTask_TypeFromStep(t *testing.T) {
 		step     string
 		wantType string
 	}{
-		{"compile", task.TypeFix},
-		{"fmt", task.TypeCleanup},
-		{"lint", task.TypeCleanup},
-		{"unit-test", task.TypeFix},
-		{"test-e2e", task.TypeFix},
-		{"unknown-step", task.TypeFix}, // default fallback
+		{"compile", task.TypeCodingFix},
+		{"fmt", task.TypeCodingCleanup},
+		{"lint", task.TypeCodingCleanup},
+		{"unit-test", task.TypeCodingFix},
+		{"test-e2e", task.TypeCodingFix},
+		{"unknown-step", task.TypeCodingFix}, // default fallback
 	}
 
 	for _, tc := range tests {
@@ -714,9 +714,9 @@ func TestAddFixTask_TemplateSelection(t *testing.T) {
 		wantType    string
 		wantSnippet string // distinctive text in the generated .md
 	}{
-		{"compile", task.TypeFix, "type: \"fix\""},
-		{"fmt", task.TypeCleanup, "type: \"cleanup\""},
-		{"lint", task.TypeCleanup, "type: \"cleanup\""},
+		{"compile", task.TypeCodingFix, "type: \"fix\""},
+		{"fmt", task.TypeCodingCleanup, "type: \"cleanup\""},
+		{"lint", task.TypeCodingCleanup, "type: \"cleanup\""},
 	}
 
 	for _, tc := range tests {
@@ -1193,16 +1193,16 @@ func TestIsDocsOnly(t *testing.T) {
 		{
 			name: "only documentation tasks",
 			tasks: map[string]task.Task{
-				"t1": {ID: "1", Type: task.TypeDocumentation},
-				"t2": {ID: "2", Type: task.TypeDocumentation},
+				"t1": {ID: "1", Type: task.TypeDoc},
+				"t2": {ID: "2", Type: task.TypeDoc},
 			},
 			want: true,
 		},
 		{
 			name: "documentation plus doc-evaluation",
 			tasks: map[string]task.Task{
-				"t1": {ID: "1", Type: task.TypeDocumentation},
-				"t2": {ID: "T-eval-doc", Type: task.TypeDocEvaluation},
+				"t1": {ID: "1", Type: task.TypeDoc},
+				"t2": {ID: "T-eval-doc", Type: task.TypeDocEval},
 			},
 			want: true,
 		},
@@ -1214,60 +1214,60 @@ func TestIsDocsOnly(t *testing.T) {
 		{
 			name: "has feature task",
 			tasks: map[string]task.Task{
-				"t1": {ID: "1", Type: task.TypeDocumentation},
-				"t2": {ID: "2", Type: task.TypeFeature},
+				"t1": {ID: "1", Type: task.TypeDoc},
+				"t2": {ID: "2", Type: task.TypeCodingFeature},
 			},
 			want: false,
 		},
 		{
 			name: "has enhancement task",
 			tasks: map[string]task.Task{
-				"t1": {ID: "1", Type: task.TypeEnhancement},
+				"t1": {ID: "1", Type: task.TypeCodingEnhancement},
 			},
 			want: false,
 		},
 		{
 			name: "has fix task",
 			tasks: map[string]task.Task{
-				"t1": {ID: "1", Type: task.TypeDocumentation},
-				"f1": {ID: "fix-1", Type: task.TypeFix},
+				"t1": {ID: "1", Type: task.TypeDoc},
+				"f1": {ID: "fix-1", Type: task.TypeCodingFix},
 			},
 			want: false,
 		},
 		{
 			name: "has cleanup task (testable)",
 			tasks: map[string]task.Task{
-				"t1": {ID: "1", Type: task.TypeCleanup},
+				"t1": {ID: "1", Type: task.TypeCodingCleanup},
 			},
 			want: false,
 		},
 		{
 			name: "has refactor task (testable)",
 			tasks: map[string]task.Task{
-				"t1": {ID: "1", Type: task.TypeRefactor},
+				"t1": {ID: "1", Type: task.TypeCodingRefactor},
 			},
 			want: false,
 		},
 		{
 			name: "has feature task (testable)",
 			tasks: map[string]task.Task{
-				"t1": {ID: "1", Type: task.TypeFeature},
+				"t1": {ID: "1", Type: task.TypeCodingFeature},
 			},
 			want: false,
 		},
 		{
 			name: "test-pipeline tasks only",
 			tasks: map[string]task.Task{
-				"t1": {ID: "T-quick-1", Type: task.TypeTestPipelineGenCases},
-				"t2": {ID: "T-quick-2", Type: task.TypeTestPipelineGenScripts},
+				"t1": {ID: "T-quick-gen-cases", Type: task.TypeTestGenCases},
+				"t2": {ID: "T-quick-gen-and-run", Type: task.TypeTestGenAndRun},
 			},
 			want: true,
 		},
 		{
 			name: "mixed documentation and test-pipeline",
 			tasks: map[string]task.Task{
-				"t1": {ID: "1", Type: task.TypeDocumentation},
-				"t2": {ID: "T-quick-1", Type: task.TypeTestPipelineRun},
+				"t1": {ID: "1", Type: task.TypeDoc},
+				"t2": {ID: "T-quick-verify-regression", Type: task.TypeTestRun},
 			},
 			want: true,
 		},
@@ -1294,15 +1294,15 @@ func TestCheckAllCompleted_DocsOnlyFlag(t *testing.T) {
 		{
 			name: "documentation only sets DocsOnly true",
 			tasks: map[string]task.Task{
-				"t1": {ID: "1", Status: "completed", Type: task.TypeDocumentation},
-				"t2": {ID: "T-eval-doc", Status: "completed", Type: task.TypeDocEvaluation},
+				"t1": {ID: "1", Status: "completed", Type: task.TypeDoc},
+				"t2": {ID: "T-eval-doc", Status: "completed", Type: task.TypeDocEval},
 			},
 			wantDocsOnly: true,
 		},
 		{
 			name: "feature task sets DocsOnly false",
 			tasks: map[string]task.Task{
-				"t1": {ID: "1", Status: "completed", Type: task.TypeFeature},
+				"t1": {ID: "1", Status: "completed", Type: task.TypeCodingFeature},
 			},
 			wantDocsOnly: false,
 		},
