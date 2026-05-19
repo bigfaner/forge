@@ -18,7 +18,7 @@
       "title": "Extract phase-detection, db-schema, and existing-code-split rule files",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "2-extract-phase-db-existing-rules.md",
       "record": "records/2-extract-phase-db-existing-rules.md",
       "type": "doc"
