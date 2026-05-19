@@ -20,7 +20,7 @@ func TestTC_001_HelpOutputShowsCommandGroups(t *testing.T) {
 	assert.Equal(t, 0, exitCode, "forge --help should exit 0")
 
 	// Verify 5 command groups
-	commandGroups := []string{"task", "e2e", "forensic", "profile", "prompt"}
+	commandGroups := []string{"task", "e2e", "forensic", "test", "prompt"}
 	for _, group := range commandGroups {
 		assert.True(t, strings.Contains(out, group),
 			"help output should contain command group: %s", group)

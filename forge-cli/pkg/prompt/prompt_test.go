@@ -431,38 +431,6 @@ func TestSynthesize_EmptyScope_NoTrailingSpace(t *testing.T) {
 	}
 }
 
-func TestSynthesize_EmptyProfile_NoResidual(t *testing.T) {
-	// Test pipeline templates with no profile set.
-	dir := t.TempDir()
-	tasks := map[string]task.Task{
-		"1.1-impl": {
-			ID:     "1.1",
-			Title:  "Test task",
-			Status: "pending",
-			File:   "1.1-impl.md",
-			Record: "records/1.1-impl.md",
-			Type:   task.TypeTestGenScripts,
-			Scope:  "backend",
-		},
-	}
-	setupFeatureDir(t, dir, tasks)
-
-	opts := SynthesizeOpts{
-		ProjectRoot: dir,
-		FeatureSlug: "test-feature",
-		TaskID:      "1.1",
-	}
-	result, err := Synthesize(opts)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	// "PROFILE: " (with trailing space and no value) should not appear.
-	if strings.Contains(result, "PROFILE: \n") || strings.Contains(result, "PROFILE: \r\n") {
-		t.Errorf("result contains empty PROFILE label:\n%s", result)
-	}
-}
-
 // --- PhaseDetect tests ---
 
 func TestPhaseDetect_NewPhase(t *testing.T) {

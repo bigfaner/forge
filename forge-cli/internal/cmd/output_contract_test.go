@@ -130,7 +130,7 @@ func TestContract_Claim_NewTask(t *testing.T) {
 	}
 	// Removed fields must NOT appear
 	for _, field := range []string{"KEY", "TITLE", "PRIORITY", "STATUS", "ESTIMATED_TIME",
-		"DEPENDENCIES", "PROFILE", "NO_TEST", "RECORD"} {
+		"DEPENDENCIES", "NO_TEST", "RECORD"} {
 		if !hasNoField(lines, field) {
 			t.Errorf("removed field %s should not appear in output: %v", field, lines)
 		}

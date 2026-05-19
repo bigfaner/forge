@@ -631,15 +631,6 @@ func TestBuildIndex_MultiProfile(t *testing.T) {
 	if total != 1 {
 		t.Errorf("total = %d (new=%d, updated=%d), want 1", total, result.NewCount, result.UpdatedCount)
 	}
-
-	// Business task has empty profile
-	data, _ := os.ReadFile(indexPath)
-	var idx taskIndexJSON
-	_ = json.Unmarshal(data, &idx)
-
-	if idx.Tasks["1-foo"].Profile != "" {
-		t.Errorf("1-foo profile = %q, want empty", idx.Tasks["1-foo"].Profile)
-	}
 }
 
 func TestDetectMode(t *testing.T) {

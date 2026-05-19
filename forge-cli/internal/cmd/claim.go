@@ -126,7 +126,6 @@ func executeClaim() (*ClaimResult, error) {
 		Scope:         t.Scope,
 		MainSession:   t.MainSession,
 		Type:          t.Type,
-		Profile:       t.Profile,
 	}
 	if err := task.SaveState(statePath, state); err != nil {
 		return nil, err
