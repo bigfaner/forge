@@ -1,0 +1,52 @@
+[
+  {
+    "phase": 0,
+    "name": "POC: Validate LLM Convention Compliance",
+    "source": "PRD-explicit",
+    "gates": [
+      {
+        "afterPhase": 0,
+        "description": "First-pass compile rate >= 70% on 3 frameworks (Go testing, ginkgo, vitest). If not met, reconsider approach."
+      }
+    ]
+  },
+  {
+    "phase": 1,
+    "name": "Profile Removal + Config Cleanup",
+    "source": "PRD-explicit",
+    "gates": [
+      {
+        "afterPhase": 1,
+        "description": "go build ./... succeeds; all existing tests pass; grep -r pkg/profile returns zero results"
+      }
+    ]
+  },
+  {
+    "phase": 2,
+    "name": "Skill Rewrites",
+    "source": "PRD-explicit",
+    "gates": [
+      {
+        "afterPhase": 2,
+        "description": "gen-test-scripts >= 85% first-pass compile rate; run-e2e-tests parses results correctly; init-justfile generates valid recipes"
+      }
+    ]
+  },
+  {
+    "phase": 3,
+    "name": "test-guide + Convention Bootstrap",
+    "source": "PRD-explicit",
+    "gates": [
+      {
+        "afterPhase": 3,
+        "description": "/forge:test-guide generates valid Convention file in < 5 min; Convention loaded correctly by gen-test-scripts"
+      }
+    ]
+  },
+  {
+    "phase": 4,
+    "name": "Validation",
+    "source": "PRD-explicit",
+    "gates": []
+  }
+]
