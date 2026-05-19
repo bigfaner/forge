@@ -244,7 +244,7 @@ func gitCommitFiles(projectRoot string, files []string, message string) error {
 // gitPush pushes to the remote. Errors are logged to stderr but not returned
 // (non-blocking: exit code is always 0 per hook protocol).
 func gitPush(projectRoot string) error {
-	cmd := exec.Command("git", "push")
+	cmd := exec.Command("git", "push", "-u", "origin", "HEAD")
 	cmd.Dir = projectRoot
 	output, err := cmd.CombinedOutput()
 	if err != nil {

@@ -102,7 +102,70 @@ Write entries immediately, one per identified type. Do not ask for confirmation 
 
 ### Decision Entry
 
-1. Read `${CLAUDE_SKILL_DIR}/../../references/shared/decision-logging.md` for the authoritative format.
+1. Use the following authoritative decision-logging protocol for the decision entry format.
+
+**Type Mapping**:
+
+| Number | Type Name          | File Path                  |
+|--------|--------------------|----------------------------|
+| 1      | Architecture       | architecture.md            |
+| 2      | Interface          | interface.md               |
+| 3      | Data Model         | data-model.md              |
+| 4      | Dependencies       | dependencies.md            |
+| 5      | Error Handling     | error-handling.md          |
+| 6      | Testing            | testing.md                 |
+| 7      | Security           | security.md                |
+| 8      | Local Dev & Deployment | local-dev-deployment.md |
+
+All type files live under `docs/decisions/`.
+
+**Decision Entry Row Format**:
+
+Append to the end of `docs/decisions/<type>.md`:
+
+```
+| YYYY-MM-DD | <feature-slug> | <Decision, one sentence> | <Rationale, one sentence> | <source> |
+```
+
+Field constraints:
+- `Date`: ISO 8601 (YYYY-MM-DD)
+- `Feature`: feature slug, e.g. `feat-log-decisions`; use `-` if unknown
+- `Decision`: single sentence, max 80 characters
+- `Rationale`: single sentence, max 80 characters
+- `Source`: `<feature-slug>/<file>.md §<Section>` or `manual`
+
+**Manifest Update Protocol**:
+
+Target file: `docs/decisions/manifest.md`
+
+*Operation A — Categories table*: Find the row matching the decision type. Increment the `Decisions` count by 1. Set `Last Updated` to today's date (YYYY-MM-DD).
+
+*Operation B — Recent Decisions table*: Insert a new row immediately below the table header (newest first). Keep a maximum of 10 rows; remove the oldest row if the count exceeds 10.
+
+Row format:
+
+```
+| YYYY-MM-DD | <feature-slug> | <Type Name> | <Decision, one sentence> | <source> |
+```
+
+**Error Handling**:
+
+| Scenario | Handling |
+|----------|----------|
+| `docs/decisions/` directory does not exist | Auto-create the directory plus all 8 type files and `manifest.md` from their initial templates before archiving |
+| `manifest.md` is missing | Rebuild it from the manifest template before archiving |
+| Type file header row is missing (file corrupted or empty) | Prepend the standard header before appending the new row: `# <Type Name> Decisions\n\n\| Date \| Feature \| Decision \| Rationale \| Source \|\n\|------\|---------\|----------\|-----------\|--------\|` |
+
+**Type File Initial State**:
+
+Each type file should have this structure when first created:
+
+```markdown
+# <Type Name> Decisions
+
+| Date | Feature | Decision | Rationale | Source |
+|------|---------|----------|-----------|--------|
+```
 2. Read `templates/decision-entry.md` for the row template.
 3. Determine: date (today), feature slug (current feature or `-`), decision text, rationale, source (`/learn` or `manual`).
 4. If `docs/decisions/` does not exist, auto-create the directory plus all 8 type files and `manifest.md` following decision-logging.md Section 8.

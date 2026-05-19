@@ -11,25 +11,28 @@ tags: [local-dev-deployment, architecture]
 
 ## Root Cause
 
-1. **Symptom**: 3 commits ahead of remote, no push happened after task completion.
-2. **Direct cause**: The branch `eval-adversarial-scorer` has no upstream tracking set (`git branch -vv` shows no `[origin/...]`).
-3. **Root cause**: `gitPush: true` in forge config tells the agent to push after commits, but `git push` without `-u` on an untracked branch fails silently (or is skipped). Worktree branches created by `EnterWorktree` don't automatically set upstream tracking.
+1. **Symptom**: Commits ahead of remote, no push happened after task completion.
+2. **Direct cause**: New feature branch has no upstream tracking set (`git branch -vv` shows no `[origin/...]`).
+3. **Code cause**: `feature_complete.go:247` `gitPush()` runs bare `git push` — fails on untracked branches with "no upstream branch". Error is logged to stderr but non-blocking (hook protocol exits 0), so the failure is invisible.
+4. **Why it happens every time**: Worktree branches created by `EnterWorktree` (or `git checkout -b`) don't set upstream tracking. The first `git push` must include `-u`.
 
 ## Solution
 
-After creating a worktree branch (or any new feature branch), set upstream tracking immediately:
+Fixed `gitPush()` to use `git push -u origin HEAD` instead of bare `git push`. This sets upstream tracking on first push and works for all subsequent pushes.
 
 ```bash
-git push -u origin <branch-name>
-```
+# Before (broken for new branches)
+git push
 
-Or ensure the task executor / run-tasks flow does this as part of branch setup.
+# After (works for both new and existing branches)
+git push -u origin HEAD
+```
 
 ## Reusable Pattern
 
-When `gitPush: true` is set in forge config, verify that the current branch has upstream tracking before assuming pushes will work. If `git branch -vv` shows no `[origin/...]` tracking, push with `-u` first.
+When implementing a `git push` wrapper, always use `git push -u origin HEAD` to handle both new and existing branches. Never assume upstream tracking is set.
 
 ## Related Files
 
-- `.forge/config.yaml` — `gitPush: true` setting
-- Worktree branch creation flow
+- `forge-cli/internal/cmd/feature_complete.go` — `gitPush()` function
+- `.forge/config.yaml` — `auto.gitPush: true` setting

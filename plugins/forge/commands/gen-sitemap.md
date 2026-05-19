@@ -39,7 +39,30 @@ After installation, re-run this command.
 Before executing the workflow, resolve configuration sources:
 
 1. Check if `tests/e2e/config.yaml` exists
-2. **If not found**: copy from template `${CLAUDE_SKILL_DIR}/../references/shared/config.yaml` to `tests/e2e/config.yaml`, then **abort and prompt the user**:
+2. **If not found**: create `tests/e2e/config.yaml` from the following template, then **abort and prompt the user**:
+
+```yaml
+# E2E Test Environment Configuration
+# Adjust values to match your local/dev environment
+# IMPORTANT: add config.yaml to .gitignore to prevent credential leaks
+
+# Application URLs
+baseUrl: http://localhost:3456        # Frontend URL
+apiBaseUrl: http://localhost:8080     # Backend API URL
+
+# Default timeout (ms)
+timeout: 30000
+
+# Auth credentials (used by loginViaUI and getApiToken)
+username: admin
+password: password
+
+# Login page locators (optional — overrides regex defaults in loginViaUI)
+loginLocators:
+  usernameField: "username|email"
+  passwordField: "password"
+  submitButton: "login|sign in|submit"
+```
 
 ```
 Created tests/e2e/config.yaml (template). Please fill in values for your environment and re-run.
@@ -69,7 +92,89 @@ This ensures agent-browser can access authenticated pages without exploration in
 
 ## Schema
 
-See `${CLAUDE_SKILL_DIR}/../references/shared/sitemap.json` for a full example.
+Full example:
+
+```json
+{
+	"baseUrl": "http://localhost:3456",
+	"updatedAt": "2026-04-25T10:00:00Z",
+	"layout": {
+		"name": "AppLayout",
+		"wraps": ["/", "/settings", "/tasks/:id"],
+		"elements": [
+			{ "id": "L-001", "role": "navigation", "name": "Main nav" },
+			{ "id": "L-002", "role": "link", "name": "Dashboard" },
+			{ "id": "L-003", "role": "link", "name": "Settings" },
+			{ "id": "L-004", "role": "link", "name": "Profile" },
+			{ "id": "L-005", "role": "button", "name": "Logout" }
+		]
+	},
+	"pages": [
+		{
+			"route": "/login",
+			"title": "Login",
+			"elements": [
+				{ "id": "E-030", "role": "heading", "name": "Sign In", "level": 1 },
+				{ "id": "E-031", "role": "textbox", "name": "Username", "label": "Username", "placeholder": "Enter username" },
+				{ "id": "E-032", "role": "textbox", "name": "Password", "label": "Password", "placeholder": "Enter password" },
+				{ "id": "E-033", "role": "button", "name": "Login" }
+			]
+		},
+		{
+			"route": "/",
+			"title": "Dashboard",
+			"elements": [
+				{ "id": "E-001", "role": "heading", "name": "Dashboard", "level": 1 },
+				{ "id": "E-002", "role": "button", "name": "Add Task" },
+				{ "id": "E-003", "role": "textbox", "label": "Search", "placeholder": "Search tasks..." }
+			],
+			"states": [
+				{
+					"name": "add-task-modal",
+					"trigger": "E-002",
+					"elements": [
+						{ "id": "E-004", "role": "dialog", "name": "Add Task" },
+						{ "id": "E-005", "role": "textbox", "label": "Task Title" },
+						{ "id": "E-006", "role": "button", "name": "Save" },
+						{ "id": "E-007", "role": "button", "name": "Cancel" }
+					]
+				}
+			]
+		},
+		{
+			"route": "/settings",
+			"title": "Settings",
+			"elements": [
+				{ "id": "E-010", "role": "heading", "name": "Settings", "level": 1 },
+				{ "id": "E-011", "role": "tab", "name": "General" },
+				{ "id": "E-012", "role": "tab", "name": "Notifications" },
+				{ "id": "E-013", "role": "button", "name": "Save" }
+			]
+		},
+		{
+			"route": "/tasks/:id",
+			"title": "Task Detail",
+			"elements": [
+				{ "id": "E-020", "role": "heading", "name": "Task Detail", "level": 1 },
+				{ "id": "E-021", "role": "button", "name": "Edit" },
+				{ "id": "E-022", "role": "button", "name": "Delete" },
+				{ "id": "E-023", "role": "link", "name": "Back" }
+			],
+			"states": [
+				{
+					"name": "delete-confirm",
+					"trigger": "E-022",
+					"elements": [
+						{ "id": "E-024", "role": "dialog", "name": "Confirm Delete" },
+						{ "id": "E-025", "role": "button", "name": "Confirm" },
+						{ "id": "E-026", "role": "button", "name": "Cancel" }
+					]
+				}
+			]
+		}
+	]
+}
+```
 
 **Key fields:**
 
