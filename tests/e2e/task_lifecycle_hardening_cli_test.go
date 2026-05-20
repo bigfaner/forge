@@ -200,7 +200,7 @@ func tlhReadIndex(t *testing.T, projectRoot string) tlhIndexFixture {
 
 // Traceability: TC-001 -> Task 1 / AC-1 ("checkDependenciesMet returns false when an active fix-task has SourceTaskID == selfID")
 func TestTC_001_ActiveFixTaskWithSourceTaskIDEqSelfBlocksClaim(t *testing.T) {
-	// Setup: pending task "3" (no deps), pending fix-task "fix-1" (SourceTaskID="3", Type="fix")
+	// Setup: pending task "3" (no deps), pending fix-task "fix-1" (SourceTaskID="3", Type="coding.fix")
 	projectRoot := tlhSetupFeatureFixture(t, map[string]tlhTaskEntry{
 		"3": {
 			ID: "3", Title: "Task 3", Priority: "P0",
@@ -209,7 +209,7 @@ func TestTC_001_ActiveFixTaskWithSourceTaskIDEqSelfBlocksClaim(t *testing.T) {
 		"fix-1": {
 			ID: "fix-1", Title: "Fix Task 1", Priority: "P0",
 			Status: "pending", File: "fix-1.md", Record: "",
-			Type: "fix", SourceTaskID: "3",
+			Type: "coding.fix", SourceTaskID: "3",
 		},
 	})
 
@@ -227,7 +227,7 @@ func TestTC_001_ActiveFixTaskWithSourceTaskIDEqSelfBlocksClaim(t *testing.T) {
 
 // Traceability: TC-002 -> Task 1 / AC-1 (extended -- active includes in_progress status)
 func TestTC_002_InProgressFixTaskWithSourceTaskIDEqSelfBlocksClaim(t *testing.T) {
-	// Setup: pending task "3" (no deps), in_progress fix-task "fix-1" (SourceTaskID="3", Type="fix")
+	// Setup: pending task "3" (no deps), in_progress fix-task "fix-1" (SourceTaskID="3", Type="coding.fix")
 	projectRoot := tlhSetupFeatureFixture(t, map[string]tlhTaskEntry{
 		"3": {
 			ID: "3", Title: "Task 3", Priority: "P0",
@@ -236,7 +236,7 @@ func TestTC_002_InProgressFixTaskWithSourceTaskIDEqSelfBlocksClaim(t *testing.T)
 		"fix-1": {
 			ID: "fix-1", Title: "Fix Task 1", Priority: "P0",
 			Status: "in_progress", File: "fix-1.md", Record: "",
-			Type: "fix", SourceTaskID: "3",
+			Type: "coding.fix", SourceTaskID: "3",
 		},
 	})
 
@@ -249,7 +249,7 @@ func TestTC_002_InProgressFixTaskWithSourceTaskIDEqSelfBlocksClaim(t *testing.T)
 
 // Traceability: TC-003 -> Task 1 / AC-2 ("checkDependenciesMet returns true when fix-task targeting self is completed")
 func TestTC_003_CompletedFixTaskTargetingSelfDoesNotBlock(t *testing.T) {
-	// Setup: pending task "3" (no deps), completed fix-task "fix-1" (SourceTaskID="3", Type="fix")
+	// Setup: pending task "3" (no deps), completed fix-task "fix-1" (SourceTaskID="3", Type="coding.fix")
 	projectRoot := tlhSetupFeatureFixture(t, map[string]tlhTaskEntry{
 		"3": {
 			ID: "3", Title: "Task 3", Priority: "P0",
@@ -258,7 +258,7 @@ func TestTC_003_CompletedFixTaskTargetingSelfDoesNotBlock(t *testing.T) {
 		"fix-1": {
 			ID: "fix-1", Title: "Fix Task 1", Priority: "P0",
 			Status: "completed", File: "fix-1.md", Record: "",
-			Type: "fix", SourceTaskID: "3",
+			Type: "coding.fix", SourceTaskID: "3",
 		},
 	})
 
@@ -277,7 +277,7 @@ func TestTC_003_CompletedFixTaskTargetingSelfDoesNotBlock(t *testing.T) {
 // Traceability: TC-004 -> Task 1 / AC-1 + Proposal flowchart (node A4)
 func TestTC_004_SelfBlockTakesPrecedenceOverMetRegularDependencies(t *testing.T) {
 	// Setup: completed task "2", pending task "3" (depends on "2"),
-	// pending fix-task "fix-1" (SourceTaskID="3", Type="fix")
+	// pending fix-task "fix-1" (SourceTaskID="3", Type="coding.fix")
 	projectRoot := tlhSetupFeatureFixture(t, map[string]tlhTaskEntry{
 		"2": {
 			ID: "2", Title: "Task 2", Priority: "P0",
@@ -291,7 +291,7 @@ func TestTC_004_SelfBlockTakesPrecedenceOverMetRegularDependencies(t *testing.T)
 		"fix-1": {
 			ID: "fix-1", Title: "Fix Task 1", Priority: "P0",
 			Status: "pending", File: "fix-1.md", Record: "",
-			Type: "fix", SourceTaskID: "3",
+			Type: "coding.fix", SourceTaskID: "3",
 		},
 	})
 
@@ -308,7 +308,7 @@ func TestTC_004_SelfBlockTakesPrecedenceOverMetRegularDependencies(t *testing.T)
 // Traceability: TC-005 -> Task 1 / AC-3 ("Existing behavior unchanged for tasks without active fix-tasks targeting them")
 func TestTC_005_FixTaskTargetingOtherTaskDoesNotCauseSelfBlock(t *testing.T) {
 	// Setup: completed task "2", pending task "3" (no deps),
-	// pending fix-task "fix-1" (SourceTaskID="2", Type="fix" -- targets task 2, not task 3)
+	// pending fix-task "fix-1" (SourceTaskID="2", Type="coding.fix" -- targets task 2, not task 3)
 	projectRoot := tlhSetupFeatureFixture(t, map[string]tlhTaskEntry{
 		"2": {
 			ID: "2", Title: "Task 2", Priority: "P0",
@@ -321,7 +321,7 @@ func TestTC_005_FixTaskTargetingOtherTaskDoesNotCauseSelfBlock(t *testing.T) {
 		"fix-1": {
 			ID: "fix-1", Title: "Fix Task 1", Priority: "P0",
 			Status: "pending", File: "fix-1.md", Record: "",
-			Type: "fix", SourceTaskID: "2",
+			Type: "coding.fix", SourceTaskID: "2",
 		},
 	})
 
@@ -348,12 +348,12 @@ func TestTC_006_MultipleFixTasksTargetingSelfMustAllComplete(t *testing.T) {
 		"fix-1": {
 			ID: "fix-1", Title: "Fix Task 1", Priority: "P0",
 			Status: "completed", File: "fix-1.md", Record: "",
-			Type: "fix", SourceTaskID: "3",
+			Type: "coding.fix", SourceTaskID: "3",
 		},
 		"fix-2": {
 			ID: "fix-2", Title: "Fix Task 2", Priority: "P0",
 			Status: "pending", File: "fix-2.md", Record: "",
-			Type: "fix", SourceTaskID: "3",
+			Type: "coding.fix", SourceTaskID: "3",
 		},
 	})
 
@@ -491,7 +491,7 @@ func TestTC_010_MultipleBlockedTasksUnblockedSimultaneously(t *testing.T) {
 // Traceability: TC-011 -> Task 2 / AC-7 + Proposal SC-2 ("Fix-task in progress targeting the task keeps it blocked")
 func TestTC_011_BlockedTaskWithActiveFixTargetingItStaysBlocked(t *testing.T) {
 	// Setup: completed task "1", blocked task "2" (depends on "1"),
-	// pending fix-task "fix-1" (SourceTaskID="2", Type="fix")
+	// pending fix-task "fix-1" (SourceTaskID="2", Type="coding.fix")
 	projectRoot := tlhSetupFeatureFixture(t, map[string]tlhTaskEntry{
 		"1": {
 			ID: "1", Title: "Task 1", Priority: "P0",
@@ -505,7 +505,7 @@ func TestTC_011_BlockedTaskWithActiveFixTargetingItStaysBlocked(t *testing.T) {
 		"fix-1": {
 			ID: "fix-1", Title: "Fix Task 1", Priority: "P0",
 			Status: "pending", File: "fix-1.md", Record: "",
-			Type: "fix", SourceTaskID: "2",
+			Type: "coding.fix", SourceTaskID: "2",
 		},
 	})
 
@@ -530,7 +530,7 @@ func TestTC_011_BlockedTaskWithActiveFixTargetingItStaysBlocked(t *testing.T) {
 
 // Traceability: TC-012 -> Proposal SC-3 + Task 2 / AC-4
 func TestTC_012_FixCompletedAutoUnblocksBlockedSourceTask(t *testing.T) {
-	// Setup: blocked source task "1" (no deps), completed fix-task "fix-1" (SourceTaskID="1", Type="fix")
+	// Setup: blocked source task "1" (no deps), completed fix-task "fix-1" (SourceTaskID="1", Type="coding.fix")
 	projectRoot := tlhSetupFeatureFixture(t, map[string]tlhTaskEntry{
 		"1": {
 			ID: "1", Title: "Source task", Priority: "P0",
@@ -539,7 +539,7 @@ func TestTC_012_FixCompletedAutoUnblocksBlockedSourceTask(t *testing.T) {
 		"fix-1": {
 			ID: "fix-1", Title: "Fix Task 1", Priority: "P0",
 			Status: "completed", File: "fix-1.md", Record: "",
-			Type: "fix", SourceTaskID: "1",
+			Type: "coding.fix", SourceTaskID: "1",
 		},
 	})
 
@@ -557,7 +557,7 @@ func TestTC_012_FixCompletedAutoUnblocksBlockedSourceTask(t *testing.T) {
 
 // Traceability: TC-013 -> Proposal SC-3 (negative case -- fix still active)
 func TestTC_013_SourceStaysBlockedWhenFixIsStillInProgress(t *testing.T) {
-	// Setup: blocked source task "1" (no deps), in_progress fix-task "fix-1" (SourceTaskID="1", Type="fix")
+	// Setup: blocked source task "1" (no deps), in_progress fix-task "fix-1" (SourceTaskID="1", Type="coding.fix")
 	projectRoot := tlhSetupFeatureFixture(t, map[string]tlhTaskEntry{
 		"1": {
 			ID: "1", Title: "Source task", Priority: "P0",
@@ -566,7 +566,7 @@ func TestTC_013_SourceStaysBlockedWhenFixIsStillInProgress(t *testing.T) {
 		"fix-1": {
 			ID: "fix-1", Title: "Fix Task 1", Priority: "P0",
 			Status: "in_progress", File: "fix-1.md", Record: "",
-			Type: "fix", SourceTaskID: "1",
+			Type: "coding.fix", SourceTaskID: "1",
 		},
 	})
 

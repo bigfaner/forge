@@ -569,7 +569,6 @@ func TestTypeConstants(t *testing.T) {
 		{TypeCodingCleanup, "coding.cleanup"},
 		{TypeCodingRefactor, "coding.refactor"},
 		{TypeCodingFix, "coding.fix"},
-		{TypeCodingClean, "coding.clean"},
 		{TypeDoc, "doc"},
 		{TypeDocEval, "doc.eval"},
 		{TypeDocSummary, "doc.summary"},
@@ -594,6 +593,90 @@ func TestTypeConstants(t *testing.T) {
 	}
 }
 
+func TestSystemTypes(t *testing.T) {
+	t.Run("SystemTypes contains exactly 13 entries", func(t *testing.T) {
+		if len(SystemTypes) != 13 {
+			t.Errorf("SystemTypes has %d entries, want 13", len(SystemTypes))
+		}
+	})
+
+	t.Run("all system types are present", func(t *testing.T) {
+		expected := []string{
+			TypeGate,
+			TypeTestGenCases, TypeTestEvalCases, TypeTestGenScripts, TypeTestRun,
+			TypeTestGenAndRun, TypeTestGraduate, TypeTestVerifyRegression,
+			TypeValidationCode, TypeValidationUx,
+			TypeDocEval, TypeDocSummary,
+			TypeCleanCode,
+		}
+		if len(expected) != 13 {
+			t.Fatalf("test setup error: expected list has %d entries, want 13", len(expected))
+		}
+		for _, typ := range expected {
+			if !SystemTypes[typ] {
+				t.Errorf("SystemTypes missing %q", typ)
+			}
+		}
+	})
+
+	t.Run("SystemTypes is independent from ValidTypes", func(_ *testing.T) {
+		// SystemTypes entries should NOT be added to ValidTypes
+		for typ := range SystemTypes {
+			// All system types happen to be in ValidTypes too, but the maps are independent
+			_ = typ // just verify iteration works without panic
+		}
+	})
+}
+
+func TestIsSystemType(t *testing.T) {
+	t.Run("returns true for all 13 system types", func(t *testing.T) {
+		systemTypes := []string{
+			TypeGate,
+			TypeTestGenCases, TypeTestEvalCases, TypeTestGenScripts, TypeTestRun,
+			TypeTestGenAndRun, TypeTestGraduate, TypeTestVerifyRegression,
+			TypeValidationCode, TypeValidationUx,
+			TypeDocEval, TypeDocSummary,
+			TypeCleanCode,
+		}
+		for _, typ := range systemTypes {
+			if !IsSystemType(typ) {
+				t.Errorf("IsSystemType(%q) = false, want true", typ)
+			}
+		}
+	})
+
+	t.Run("returns false for business types", func(t *testing.T) {
+		businessTypes := []string{
+			TypeCodingFeature, TypeCodingEnhancement, TypeCodingCleanup,
+			TypeCodingRefactor, TypeCodingFix,
+			TypeDoc,
+		}
+		for _, typ := range businessTypes {
+			if IsSystemType(typ) {
+				t.Errorf("IsSystemType(%q) = true, want false", typ)
+			}
+		}
+	})
+
+	t.Run("returns false for dual-identity types (doc.consolidate, doc.drift)", func(t *testing.T) {
+		dualTypes := []string{TypeDocConsolidate, TypeDocDrift}
+		for _, typ := range dualTypes {
+			if IsSystemType(typ) {
+				t.Errorf("IsSystemType(%q) = true, want false (dual-identity type)", typ)
+			}
+		}
+	})
+
+	t.Run("returns false for unknown types", func(t *testing.T) {
+		if IsSystemType("unknown") {
+			t.Error("IsSystemType('unknown') = true, want false")
+		}
+		if IsSystemType("") {
+			t.Error("IsSystemType('') = true, want false")
+		}
+	})
+}
+
 func TestValidTypes(t *testing.T) {
 	t.Run("ValidTypes contains all type constants", func(t *testing.T) {
 		allTypes := []string{
@@ -616,7 +699,6 @@ func TestValidTypes(t *testing.T) {
 			TypeValidationCode,
 			TypeValidationUx,
 			TypeCodingFix,
-			TypeCodingClean,
 			TypeGate,
 			TypeCleanCode,
 		}

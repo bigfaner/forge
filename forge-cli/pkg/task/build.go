@@ -136,11 +136,24 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 		if !existingKeys[key] {
 			continue // auto-generated tasks are not from .md files
 		}
-		if isAutoGenTaskID(t.ID) {
+		if IsAutoGenTaskID(t.ID) {
 			continue // auto-generated tasks use InferType
 		}
 		if t.Type == "" {
 			return nil, fmt.Errorf("task %s has empty type (set type in frontmatter or use a recognizable ID pattern)", t.File)
+		}
+	}
+
+	// 5.5.0 Validate: non-auto-gen tasks must not use system types
+	for key, t := range index.TasksMap() {
+		if !existingKeys[key] {
+			continue // auto-generated tasks are not from .md files
+		}
+		if IsAutoGenTaskID(t.ID) {
+			continue // auto-generated tasks are allowed to use system types
+		}
+		if IsSystemType(t.Type) {
+			return nil, fmt.Errorf("task '%s': type '%s' is a system-reserved type (reserved: %s)", t.ID, t.Type, FormatSystemTypes())
 		}
 	}
 
@@ -366,7 +379,7 @@ func IsTestableType(typ string) bool {
 // An empty task map returns false.
 func needsTestPipeline(tasks map[string]Task) bool {
 	for _, t := range tasks {
-		if isAutoGenTaskID(t.ID) {
+		if IsAutoGenTaskID(t.ID) {
 			continue
 		}
 		if IsTestableType(t.Type) {
@@ -383,7 +396,7 @@ func needsTestPipeline(tasks map[string]Task) bool {
 func needsDocEval(tasks map[string]Task) bool {
 	hasBusinessTask := false
 	for _, t := range tasks {
-		if isAutoGenTaskID(t.ID) {
+		if IsAutoGenTaskID(t.ID) {
 			continue
 		}
 		hasBusinessTask = true
@@ -394,10 +407,10 @@ func needsDocEval(tasks map[string]Task) bool {
 	return hasBusinessTask
 }
 
-// isAutoGenTaskID returns true for task IDs that are auto-generated
+// IsAutoGenTaskID returns true for task IDs that are auto-generated
 // (test pipeline, gates, summaries, T-eval-doc).
 // fix- and disc- tasks are NOT auto-generated; they are business tasks (they modify code).
-func isAutoGenTaskID(id string) bool {
+func IsAutoGenTaskID(id string) bool {
 	if isTestTaskID(id) {
 		return true
 	}
