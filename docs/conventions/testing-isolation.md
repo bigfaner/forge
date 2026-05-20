@@ -128,6 +128,9 @@ cmd := exec.Command(forgeBinary, "task", "claim") // NOT exec.Command("forge", .
 cmd := exec.Command("forge", "task", "claim")
 ```
 
-**Scope**: All e2e test packages under `tests/e2e/` that invoke the forge CLI binary.
+**Scope**: All e2e test packages that invoke the forge CLI binary:
+- `tests/e2e/` (including `tests/e2e/features/` sub-packages) — uses `forge_binary.go` init() + `TestMain` alias pattern
+- `tests/e2e/justfile-canonical-e2e/` — uses `TestMain` direct build pattern
+- `forge-cli/tests/e2e/` (including `forge-cli/tests/e2e/features/` sub-packages) — uses `TestMain` build + `testkit.SetForgeBinary` propagation
 
 **Source**: `/learn` entry 2026-05-20 — 8/36 e2e tests failed because they ran against system-installed forge from `main` branch instead of the feature branch binary.
