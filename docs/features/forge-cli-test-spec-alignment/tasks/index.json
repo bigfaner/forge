@@ -45,7 +45,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2-migrate-plugin-task-lifecycle-feature-mgmt.md",
       "record": "records/2-migrate-plugin-task-lifecycle-feature-mgmt.md",
       "scope": "backend",
