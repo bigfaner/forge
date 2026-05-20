@@ -60,13 +60,6 @@ func TestPrintFields_PanicsOnOddArgs(t *testing.T) {
 	PrintFields("K1", "v1", "K2") //nolint:staticcheck // intentionally odd to test panic
 }
 
-func TestPrintKeyValue(t *testing.T) {
-	out := captureStdout(func() { PrintKeyValue("A", "B") })
-	if !strings.Contains(out, "A: B") {
-		t.Errorf("expected 'A: B', got: %s", out)
-	}
-}
-
 func TestPrintResult(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -84,13 +77,6 @@ func TestPrintResult(t *testing.T) {
 				t.Errorf("expected %q, got: %s", tt.want, out)
 			}
 		})
-	}
-}
-
-func TestPrintError(t *testing.T) {
-	out := captureStdout(func() { PrintError("bad thing") })
-	if !strings.Contains(out, "ERROR: bad thing") {
-		t.Errorf("expected error prefix, got: %s", out)
 	}
 }
 

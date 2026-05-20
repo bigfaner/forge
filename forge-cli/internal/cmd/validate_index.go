@@ -482,13 +482,11 @@ func (v *validator) validateLiveness(tasks map[string]task.Task) {
 			if strings.HasSuffix(dep, ".x") {
 				prefix := strings.TrimSuffix(dep, ".x")
 				prefixWithDot := prefix + "."
-				wildcardHasMatch := false
 				for _, other := range tasks {
 					if other.ID == t.ID {
 						continue
 					}
 					if strings.HasPrefix(other.ID, prefixWithDot) && isBusinessTask(other.ID) {
-						wildcardHasMatch = true
 						if other.Status != "completed" && other.Status != "skipped" {
 							allDepsCompleted = false
 							if other.Status == "pending" || other.Status == "in_progress" {
@@ -497,8 +495,6 @@ func (v *validator) validateLiveness(tasks map[string]task.Task) {
 						}
 					}
 				}
-				// Wildcard matches no tasks — vacuously satisfied
-				_ = wildcardHasMatch
 				continue
 			}
 			depTask, found := tasks[dep]

@@ -79,11 +79,6 @@ func PrintFieldIfNotEmptySlice(key string, values []string) {
 	}
 }
 
-// PrintKeyValue prints a simple key-value line (alias for PrintField).
-func PrintKeyValue(key, value string) {
-	fmt.Printf("%s: %s\n", key, value)
-}
-
 // PrintSection prints a section header (uppercase with colon).
 // Example: PrintSection("ERRORS") -> "ERRORS:"
 func PrintSection(name string) {
@@ -99,11 +94,6 @@ func PrintResult(status, details string) {
 	} else {
 		fmt.Printf("RESULT: %s\n", status)
 	}
-}
-
-// PrintError prints an error line with prefix.
-func PrintError(msg string) {
-	fmt.Printf("ERROR: %s\n", msg)
 }
 
 // PrintWarning prints a warning line with prefix.

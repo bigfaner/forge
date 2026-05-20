@@ -251,8 +251,8 @@ func checkDependenciesMet(index *task.TaskIndex, selfID string, t task.Task) (bo
 	for _, dep := range t.Dependencies {
 		if strings.HasSuffix(dep, ".x") {
 			prefix := strings.TrimSuffix(dep, ".x")
-			found := false
 			prefixWithDot := prefix + "."
+			found := false
 			for _, other := range index.TasksMap() {
 				if other.ID == selfID {
 					continue
@@ -266,16 +266,20 @@ func checkDependenciesMet(index *task.TaskIndex, selfID string, t task.Task) (bo
 				continue
 			}
 		} else {
+			found := false
 			for _, other := range index.TasksMap() {
 				if other.ID == dep {
 					if other.Status != "completed" && other.Status != "skipped" {
 						unmet = append(unmet, dep)
 					}
+					found = true
 					break
 				}
 			}
+			_ = found // unknown deps are vacuously satisfied
 		}
 	}
+
 	// Check for pending fix tasks whose SourceTaskID matches any dependency.
 	// If task depends on X and a fix task with sourceTaskID "X" is still
 	// pending/in_progress, the dependency is not truly met.

@@ -381,15 +381,6 @@ func runWorktreeList(cmd *cobra.Command, _ []string) error {
 	return w.Flush()
 }
 
-// resolveSourceBranch returns the effective source branch based on priority:
-// flag > config > empty (HEAD).
-func resolveSourceBranch(flagValue, configBranch string) string {
-	if flagValue != "" {
-		return flagValue
-	}
-	return configBranch
-}
-
 // listForgeFeatures returns a set of feature slugs that exist under docs/features/.
 func listForgeFeatures(projectRoot string) map[string]bool {
 	featuresDir := filepath.Join(projectRoot, feature.FeaturesDir)
