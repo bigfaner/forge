@@ -46,7 +46,7 @@
         "2",
         "3"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-simplify-e2e-setup.md",
       "record": "records/4-simplify-e2e-setup.md",
       "scope": "backend",
