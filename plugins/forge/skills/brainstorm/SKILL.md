@@ -8,7 +8,7 @@ argument-hint: "[idea or feature description]"
 
 From vague idea to structured proposal, through relentless collaborative dialogue.
 
-**Core principle**: Relentlessly interview every aspect of the idea until reaching shared understanding. Before investing in a PRD, confirm the problem is worth solving.
+**Core principle**: Help the user clarify what they truly need through structured dialogue. The goal is shared understanding — not filtering ideas, but making implicit assumptions explicit so the right path becomes obvious. Pseudo-requirements die naturally when the thinking is clear.
 
 <HARD-GATE>
 Do NOT write any code or take implementation action. This skill produces a proposal document only.
@@ -21,7 +21,7 @@ Do NOT write any code or take implementation action. This skill produces a propo
 ## Process Flow
 
 ```
-Analyze context → Walk the design tree → Propose approaches → Define scope → Write proposal → Commit
+Analyze context → Walk the design tree → Propose approaches → Define scope → Write proposal → Commit → Adversarial eval
 ```
 
 ## Step 1: Analyze Context
@@ -30,7 +30,7 @@ Before asking any question, search the codebase for related features, docs, prop
 
 ## Step 2: Walk the Design Tree
 
-Interview the user relentlessly about every aspect of the idea until reaching shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one-by-one. For each question, provide your recommended answer.
+Interview the user about every aspect of the idea until reaching shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one-by-one. For each question, provide your recommended answer.
 
 **CRITICAL**: Use `AskUserQuestion` tool for ALL questions. One question at a time.
 
@@ -52,14 +52,27 @@ Two clusters provide direction — traverse based on dependencies, not fixed ord
 
 Backtrack when a branch reveals an earlier assumption was wrong. Derive questions from findings, not templates — reference concrete facts.
 
+### Need Gate (embedded at every decision point)
+
+As the design tree reveals specific features or capabilities, apply this clarification check **before diving into how to implement each one**. The gate triggers when a concrete feature crystallizes from the discussion — not on the initial vague idea, but on each actionable feature point that emerges.
+
+**Three checks (in order)**:
+
+1. **Simpler alternative?** — Search for existing tools, commands, pipe compositions, or ecosystem utilities that already solve this. If found → propose the simpler path.
+2. **Is this the real need?** — Hypothesize the user's underlying goal (Y). Confirm with the user before challenging: "I understand your core need is [Y] — is that right?" Only after confirmation, assess whether X is the best path to Y.
+3. **Why now?** — "What happens if we defer this?" If the cost of delay is low → suggest deferring until a real need emerges.
+
+**If the user overrides the gate** (insists on proceeding despite a simpler alternative or deferral suggestion): accept and record `Challenge Override: user chose to proceed. Reason: <user's reason or "not stated">.` in the proposal. Do NOT keep challenging after an override.
+
+For the full protocol including search strategy, Y-confirmation flow, and timing criteria, see `rules/challenge-protocol.md`.
+
 ### Challenge Protocol
 
-Challenge is mandatory at every decision point, not a separate step. For the full challenge toolkit (5 Whys, XY Detection, Assumption Flip, Stress Test, Occam's Razor), evidence requirements, and tone guidelines, see `rules/challenge-protocol.md`.
+Challenge is mandatory at every decision point, not a separate step. For the full challenge toolkit, evidence requirements, and tone guidelines, see `rules/challenge-protocol.md`.
 
 **Key rules**:
 - Every challenge must cite one of: codebase facts, logical consistency, or domain common sense
 - Challenges must be rationally prudent, not hostile: state observation → present evidence → pose question
-- Occam's Razor applies throughout: prefer the simplest viable explanation or approach
 
 ## Step 3: Propose Approaches
 
