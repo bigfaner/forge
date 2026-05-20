@@ -73,7 +73,7 @@
       "dependencies": [
         "5"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "6-slim-infra-design-domain.md",
       "record": "records/6-slim-infra-design-domain.md",
       "type": "doc"

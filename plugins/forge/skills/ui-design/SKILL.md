@@ -75,87 +75,14 @@ Then read the platform-specific navigation rules from `templates/platforms/{web,
 
 ## Step 3: Select Design Style
 
-Select design style based on the platform identified in Step 2.5.
+Select design style based on the platform identified in Step 2.5. Follow the priority chain and platform-specific rules in `${CLAUDE_SKILL_DIR}/rules/style-selection.md`:
 
-### For Web / Mobile Platform
+1. **Check for user-provided DESIGN.md** (project root or feature directory) -- use directly if found.
+2. **If no user-provided style**: let the user choose from built-in styles (5 web/mobile styles or 2 TUI themes).
+3. **If built-in styles insufficient**: clone additional styles from the awesome-design-md repo.
+4. **Multi-platform**: select a style independently for each platform.
 
-Select design style by priority:
-
-#### Priority 1: User-provided DESIGN.md
-
-Check the following locations; use directly if found:
-
-- Project root `DESIGN.md`
-- Feature directory `docs/features/<slug>/ui/style.md`
-
-If the user specifies a custom path, prioritize that.
-
-#### Priority 2: Built-in Web/Mobile Styles
-
-If no user-provided DESIGN.md, let the user choose from 5 built-in styles:
-
-| Style           | Vibe                     | Best for                                     |
-| --------------- | ------------------------ | -------------------------------------------- |
-| **Vercel**      | Black & white minimal, developer-tool feel | Developer platforms, CLI tools, technical docs |
-| **Shadcn**      | Zinc neutral, functional minimalism | SaaS, admin panels, tool applications        |
-| **Tailwind UI** | Indigo primary, professional warmth | General SaaS, marketing pages, enterprise    |
-| **Stripe**      | Purple gradients, light elegance | Fintech, brand sites, payment products       |
-| **Apple**       | Generous whitespace, image-driven, premium | Consumer products, brand sites, marketing     |
-
-Use `AskUserQuestion` tool for user selection with brief descriptions.
-
-Built-in style files located at: `templates/styles/{vercel,shadcn,tailwind-ui,stripe,apple}.md`
-
-#### Priority 3: Clone More Styles from Repo
-
-If the 5 built-in styles are insufficient, clone additional styles from the awesome-design-md repo:
-
-```bash
-# Clone to a temp directory (not into project)
-git clone --depth 1 git@github.com:VoltAgent/awesome-design-md.git /tmp/awesome-design-md
-
-# Then use npx to fetch a specific site's DESIGN.md:
-npx getdesign@latest add <site-name>
-```
-
-> Note: The repo's DESIGN.md files are hosted externally at getdesign.md. The `npx getdesign@latest` CLI fetches them.
-
-### For TUI Platform
-
-TUI has its own design style selection, separate from web/mobile.
-
-#### Priority 1: User-provided DESIGN.md
-
-Same check as web: project root `DESIGN.md` or feature directory `docs/features/<slug>/ui/style.md`.
-
-If a user-provided DESIGN.md is found, use it directly as the TUI design system. Skip theme selection.
-
-#### Priority 2: Built-in TUI Themes
-
-If no user-provided DESIGN.md, let the user choose from 2 built-in TUI themes:
-
-| Theme              | Vibe                                         | Best for                                      |
-| ------------------ | -------------------------------------------- | --------------------------------------------- |
-| **Modern Dark**    | 256-color, box-drawing chars, dark bg, high contrast, compact density | Most CLI tools, developer dashboards, monitoring apps |
-| **Minimal ASCII**  | 16-color, pure ASCII chars, default terminal bg, loose density, max compatibility | Minimal tools, SSH sessions, legacy terminals, CI output |
-
-Use `AskUserQuestion` tool for user selection with brief descriptions.
-
-Built-in TUI theme files located at: `templates/styles/{modern-dark-tui,minimal-ascii-tui}.md`
-
-### Using the Selected Style
-
-Inline the selected style content as the `Design System` section in `ui-design.md`. All subsequent component designs must follow the style's color, typography, and component specifications.
-
-### Multi-Platform Features
-
-When the PRD declares multiple platforms (e.g., `platform: web, tui`):
-- Select a style for EACH platform independently (web/mobile style + TUI theme)
-- Each platform will produce its own `ui-design-{platform}.md` file
-- Output file naming:
-  - Single platform (web): `ui/ui-design.md`
-  - Single platform (tui): `ui/ui-design-tui.md`
-  - Multi-platform: `ui/ui-design-web.md` + `ui/ui-design-tui.md`
+Inline the selected style content as the `Design System` section in `ui-design.md`.
 
 ## Step 4: Draft UI Design
 
@@ -170,22 +97,9 @@ For each UI function, define:
 
 ### TUI Panel Design Requirements
 
-When platform=tui, each panel MUST include all 5 mandatory structural requirements from the TUI lesson:
-
-1. **ASCII Layout Mockup** — box-drawing (or ASCII) illustration showing the exact visual structure of the panel
-2. **Dimensions** — concrete numeric values for every size (e.g., "panel width: 60 chars"). No "approximately" or "appropriate".
-3. **Character Palette** — every visual element must specify its Unicode character (with code point) and selection reason
-4. **Color Mapping** — foreground/background color codes from the theme palette for every visual element
-5. **Edge Cases** — must cover 5 mandatory scenarios: (1) narrow terminal 80x24, (2) wide terminal 140+col, (3) mixed numeric widths, (4) long strings/paths >50 chars, (5) no data
-
-<HARD-RULE>
-These 5 structural requirements are MANDATORY for every TUI panel. Skipping any item is a spec defect. This is the key lesson from the deep-drill-analytics feature — without enforcement, agents skip visual specs and produce iterative trial-and-error fix/style commits.
-</HARD-RULE>
-
-In addition to the 5 structural requirements, each TUI panel must also specify:
-- **States** (loading, empty, error, populated)
-- **Key Bindings** (what keys interact with this panel, from `platforms/tui.md` keymap)
-- **Data Binding** (UI element → data field)
+When platform=tui, each panel MUST include all mandatory structural requirements per `${CLAUDE_SKILL_DIR}/rules/tui-panel-requirements.md`:
+- 5 mandatory structural items: ASCII mockup, dimensions, character palette, color mapping, edge cases
+- Additional per-panel specs: states, key bindings, data binding
 
 All design decisions must follow the design style selected in Step 3.
 
