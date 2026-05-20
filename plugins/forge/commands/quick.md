@@ -46,6 +46,28 @@ After brainstorm completes, extract the feature slug from the proposal directory
 
 The user already approved and committed the proposal in Step 1. This gate confirms whether to proceed to **task generation** — not proposal approval.
 
+<EXTREMELY-IMPORTANT>
+### Auto-Skip Configuration Check (Step 2 Entry)
+
+At the very beginning of Step 2, before presenting any summary or confirmation prompt, execute the following config check:
+
+```bash
+forge config get auto.runTasks
+```
+
+Capture stdout (trimmed) and exit code. Then:
+
+| Exit Code | stdout contains `quick: true` | Action |
+|-----------|-------------------------------|--------|
+| 0 | Yes | **Skip the confirmation gate entirely.** Update proposal status `Draft → Approved` (see Status Transition below), then proceed directly to Step 3. |
+| 0 | No (or `quick: false`) | Present the confirmation gate (full Step 2 flow below). |
+| Non-zero (config missing/read error) | — | **Fallback: skip the confirmation gate** (same as `quick: true`). This preserves quick mode's streamlined nature. |
+
+This check MUST happen at Step 2 entry — not during brainstorm, not after the summary is shown. The gate logic below is preserved but conditionally bypassed based on this config value.
+</EXTREMELY-IMPORTANT>
+
+### Confirmation Gate (shown only when `auto.runTasks.quick: false`)
+
 Read `docs/proposals/<slug>/proposal.md` and present a summary:
 
 ```
@@ -70,12 +92,12 @@ Use `AskUserQuestion` with three options:
 | **Abort** | Stop cleanly |
 
 <EXTREMELY-IMPORTANT>
-This gate is MANDATORY. The proposal is the sole input for the entire quick mode pipeline — no PRD or design will be created to correct course. A wrong direction here means all downstream tasks are wasted.
+This gate is MANDATORY when `auto.runTasks.quick: false`. The proposal is the sole input for the entire quick mode pipeline — no PRD or design will be created to correct course. A wrong direction here means all downstream tasks are wasted.
 </EXTREMELY-IMPORTANT>
 
 ### Status Transition: Draft → Approved
 
-When the user selects **"Yes, generate tasks"**, update the proposal frontmatter status:
+When the user selects **"Yes, generate tasks"**, OR when the confirmation gate is auto-skipped (`auto.runTasks.quick: true`), update the proposal frontmatter status:
 
 ```
 Edit(file_path="docs/proposals/<slug>/proposal.md",
