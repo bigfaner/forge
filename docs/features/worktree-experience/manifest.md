@@ -1,6 +1,6 @@
 ---
 feature: "worktree-experience"
-status: tasks
+status: completed
 mode: quick
 ---
 
