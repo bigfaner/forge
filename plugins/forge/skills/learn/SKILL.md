@@ -67,8 +67,6 @@ This looks like a bulk extraction from feature documents. Use /consolidate-specs
 
 For each identified type, classify the entry using the shared 8-category vocabulary.
 
-### 8-Category Vocabulary
-
 | Category | Tag | Decision Type File |
 |----------|-----|-------------------|
 | Architecture | `architecture` | `architecture.md` |
@@ -86,95 +84,21 @@ For each identified type, classify the entry using the shared 8-category vocabul
 - When auto-generated vocabulary is available (from `/consolidate-specs`), use it to refine suggestions
 - When vocabulary is not available, classify based on the 8-category defaults above
 
-### Per-Type Classification
-
-**Decision**: Map to one of the 8 type files in `docs/decisions/`. Select the best-fit type number (1-8).
-
-**Lesson**: Select 1-4 tags from the vocabulary + one category prefix for the filename.
-
-**Convention**: Determine the target topic file in `docs/conventions/` (existing or new). Derive domain keywords from content.
-
-**Business-Rule**: Determine the target domain file in `docs/business-rules/` (existing or new). Derive domain keywords from content.
-
 ## Step 3: Write
 
 Write entries immediately, one per identified type. Do not ask for confirmation before writing.
 
 ### Decision Entry
 
-1. Use the following authoritative decision-logging protocol for the decision entry format.
-
-**Type Mapping**:
-
-| Number | Type Name          | File Path                  |
-|--------|--------------------|----------------------------|
-| 1      | Architecture       | architecture.md            |
-| 2      | Interface          | interface.md               |
-| 3      | Data Model         | data-model.md              |
-| 4      | Dependencies       | dependencies.md            |
-| 5      | Error Handling     | error-handling.md          |
-| 6      | Testing            | testing.md                 |
-| 7      | Security           | security.md                |
-| 8      | Local Dev & Deployment | local-dev-deployment.md |
-
-All type files live under `docs/decisions/`.
-
-**Decision Entry Row Format**:
-
-Append to the end of `docs/decisions/<type>.md`:
-
-```
-| YYYY-MM-DD | <feature-slug> | <Decision, one sentence> | <Rationale, one sentence> | <source> |
-```
-
-Field constraints:
-- `Date`: ISO 8601 (YYYY-MM-DD)
-- `Feature`: feature slug, e.g. `feat-log-decisions`; use `-` if unknown
-- `Decision`: single sentence, max 80 characters
-- `Rationale`: single sentence, max 80 characters
-- `Source`: `<feature-slug>/<file>.md §<Section>` or `manual`
-
-**Manifest Update Protocol**:
-
-Target file: `docs/decisions/manifest.md`
-
-*Operation A — Categories table*: Find the row matching the decision type. Increment the `Decisions` count by 1. Set `Last Updated` to today's date (YYYY-MM-DD).
-
-*Operation B — Recent Decisions table*: Insert a new row immediately below the table header (newest first). Keep a maximum of 10 rows; remove the oldest row if the count exceeds 10.
-
-Row format:
-
-```
-| YYYY-MM-DD | <feature-slug> | <Type Name> | <Decision, one sentence> | <source> |
-```
-
-**Error Handling**:
-
-| Scenario | Handling |
-|----------|----------|
-| `docs/decisions/` directory does not exist | Auto-create the directory plus all 8 type files and `manifest.md` from their initial templates before archiving |
-| `manifest.md` is missing | Rebuild it from the manifest template before archiving |
-| Type file header row is missing (file corrupted or empty) | Prepend the standard header before appending the new row: `# <Type Name> Decisions\n\n\| Date \| Feature \| Decision \| Rationale \| Source \|\n\|------\|---------\|----------\|-----------\|--------\|` |
-
-**Type File Initial State**:
-
-Each type file should have this structure when first created:
-
-```markdown
-# <Type Name> Decisions
-
-| Date | Feature | Decision | Rationale | Source |
-|------|---------|----------|-----------|--------|
-```
-2. Read `templates/decision-entry.md` for the row template.
-3. Determine: date (today), feature slug (current feature or `-`), decision text, rationale, source (`/learn` or `manual`).
-4. If `docs/decisions/` does not exist, auto-create the directory plus all 8 type files and `manifest.md` following decision-logging.md Section 8.
-5. Append a decision row to `docs/decisions/<type>.md` (Section 6 row format).
-6. Update `docs/decisions/manifest.md` (Section 7 manifest update protocol).
+1. Read `templates/decision-entry.md` for the row format, field constraints, manifest update protocol, and directory bootstrap behavior.
+2. Determine: date (today), feature slug (current feature or `-`), decision text, rationale, source (`/learn` or `manual`).
+3. If `docs/decisions/` does not exist, auto-create the directory plus all 8 type files and `manifest.md` following the template's directory bootstrap section.
+4. Append a decision row to `docs/decisions/<type>.md`.
+5. Update `docs/decisions/manifest.md` (categories table + recent decisions table).
 
 ### Lesson Entry
 
-1. Read `templates/lesson-entry.md` for the file template.
+1. Read `templates/lesson-entry.md` for the file format, tag vocabulary, and naming convention.
 2. Generate filename: `<category-prefix><slug>.md` in `docs/lessons/`.
 3. Fill the template sections: Problem, Root Cause (trace causal chain at least 3 levels deep), Solution, Reusable Pattern.
 4. Set frontmatter: `created` (today's date), `tags` (from vocabulary).
@@ -182,7 +106,7 @@ Each type file should have this structure when first created:
 
 ### Convention Entry
 
-1. Read `templates/convention-entry.md` for the entry format.
+1. Read `templates/convention-entry.md` for the entry format and project-global ID encoding.
 2. Determine target file: existing `docs/conventions/<topic>.md` or create new.
 3. Assign project-global ID: `TECH-<topic>-<NNN>` (find max existing NNN + 1).
 4. If creating new file: write frontmatter with `title` and `domains` (3-7 keywords derived from content).
@@ -190,7 +114,7 @@ Each type file should have this structure when first created:
 
 ### Business-Rule Entry
 
-1. Read `templates/convention-entry.md` for the entry format.
+1. Read `templates/convention-entry.md` for the entry format and project-global ID encoding.
 2. Determine target file: existing `docs/business-rules/<domain>.md` or create new.
 3. Assign project-global ID: `BIZ-<domain>-<NNN>` (find max existing NNN + 1).
 4. If creating new file: write frontmatter with `title` and `domains` (3-7 keywords derived from content).
@@ -234,7 +158,7 @@ If any target directory does not exist:
 
 | Directory | Bootstrap behavior |
 |-----------|-------------------|
-| `docs/decisions/` | Auto-create all 8 type files + `manifest.md` per decision-logging.md Section 8 |
+| `docs/decisions/` | Auto-create all 8 type files + `manifest.md` per `templates/decision-entry.md` |
 | `docs/lessons/` | Auto-create the directory |
 | `docs/conventions/` | Auto-create the directory |
 | `docs/business-rules/` | Auto-create the directory |
@@ -242,7 +166,7 @@ If any target directory does not exist:
 ## Compatibility
 
 All file formats remain compatible with `/consolidate-specs` overlap detection:
-- Decision row format matches decision-logging.md Section 6
+- Decision row format matches `templates/decision-entry.md`
 - Lesson frontmatter `tags` use the 8-category vocabulary
 - Convention/business-rule entries use project-global IDs (`TECH-<topic>-<NNN>`, `BIZ-<domain>-<NNN>`)
 - Domain frontmatter follows the derivation rules from `/consolidate-specs`

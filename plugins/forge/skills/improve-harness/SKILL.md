@@ -128,7 +128,7 @@ After implementing, verify the fix addresses the specific finding:
 1. **For scripts**: Run the script, confirm it detects violations
 2. **For docs**: Check file exists, content is correct
 3. **For config**: Parse config, confirm setting is applied
-4. **For project tests**: Run `just test [scope]` to ensure nothing broke
+4. **For project tests**: Run `just test <scope>` to ensure nothing broke
 
 ### 4.4 Append to Record Immediately
 
