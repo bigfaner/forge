@@ -128,7 +128,7 @@
       "title": "Migrate forge-cli/tests/e2e/ Journeys: test-generation + spec-drift",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "9-migrate-cli-test-gen-spec-drift.md",
       "record": "records/9-migrate-cli-test-gen-spec-drift.md",
       "scope": "backend",
