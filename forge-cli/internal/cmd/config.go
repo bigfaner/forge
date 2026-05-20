@@ -129,6 +129,18 @@ func runConfigInit(cmd *cobra.Command, _ []string) error {
 	write(out, "  Auto validation in full mode? [y/N] ")
 	autoValidationFull := readBool(reader, false)
 
+	write(out, "  Auto run tasks in quick mode? [Y/n] ")
+	autoRunTasksQuick := readBool(reader, true)
+
+	write(out, "  Auto run tasks in full mode? [y/N] ")
+	autoRunTasksFull := readBool(reader, false)
+
+	write(out, "  Auto knowledge save in quick mode? [Y/n] ")
+	autoKnowledgeSaveQuick := readBool(reader, true)
+
+	write(out, "  Auto knowledge save in full mode? [y/N] ")
+	autoKnowledgeSaveFull := readBool(reader, false)
+
 	write(out, "  Auto git push after all tasks complete? [y/N] ")
 	autoGitPush := readBool(reader, false)
 
@@ -150,6 +162,8 @@ func runConfigInit(cmd *cobra.Command, _ []string) error {
 			ConsolidateSpecs: forgeconfig.ModeToggle{Quick: autoConsolidateQuick, Full: autoConsolidateFull},
 			CleanCode:        forgeconfig.ModeToggle{Quick: autoCleanQuick, Full: autoCleanFull},
 			Validation:       forgeconfig.ModeToggle{Quick: autoValidationQuick, Full: autoValidationFull},
+			RunTasks:         forgeconfig.ModeToggle{Quick: autoRunTasksQuick, Full: autoRunTasksFull},
+			KnowledgeSave:    forgeconfig.ModeToggle{Quick: autoKnowledgeSaveQuick, Full: autoKnowledgeSaveFull},
 			GitPush:          autoGitPush,
 		},
 	}

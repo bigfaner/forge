@@ -46,7 +46,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-init-guided-config.md",
       "record": "records/4-init-guided-config.md",
       "scope": "backend",

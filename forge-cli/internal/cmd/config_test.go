@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"forge-cli/pkg/feature"
+	"forge-cli/pkg/forgeconfig"
 )
 
 func TestConfigGetCommand(t *testing.T) {
@@ -185,9 +186,10 @@ func TestConfigInitCommand(t *testing.T) {
 		dir := t.TempDir()
 
 		// Simulate user input: y (e2e quick), y (e2e full), y (consolidate quick), y (consolidate full),
-		// n (clean quick), n (clean full), n (validation quick), n (validation full), y (git push),
-		// main (source branch), .env (copy files)
-		input := "y\ny\ny\ny\nn\nn\nn\nn\ny\nmain\n.env\n"
+		// n (clean quick), n (clean full), n (validation quick), n (validation full),
+		// y (runTasks quick), y (runTasks full), y (knowledgeSave quick), n (knowledgeSave full),
+		// y (git push), main (source branch), .env (copy files)
+		input := "y\ny\ny\ny\nn\nn\nn\nn\ny\ny\ny\nn\ny\nmain\n.env\n"
 		var stdin bytes.Buffer
 		stdin.WriteString(input)
 		var stdout bytes.Buffer
@@ -265,8 +267,9 @@ func TestConfigInitCommand(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		// Answer 'y' to reconfigure, then select defaults for all auto settings (including validation), no worktree
-		input := "y\ny\ny\ny\ny\nn\nn\nn\nn\nn\n\n\n"
+		// Answer 'y' to reconfigure, then defaults for all auto settings (validation, runTasks, knowledgeSave), no worktree
+		// 13 auto prompts (all enter for defaults) + 2 worktree prompts (empty)
+		input := "y\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
 		var stdin bytes.Buffer
 		stdin.WriteString(input)
 		var stdout bytes.Buffer
@@ -291,11 +294,12 @@ func TestConfigInitCommand(t *testing.T) {
 	t.Run("validation prompts between cleanCode and gitPush", func(t *testing.T) {
 		dir := t.TempDir()
 
-		// All defaults: enter through all prompts (7 auto prompts + empty source + empty copy)
+		// All defaults: enter through all prompts (11 auto prompts + empty source + empty copy)
 		// Order: e2e quick, e2e full, consolidate quick, consolidate full,
-		// clean quick, clean full, validation quick, validation full, git push,
-		// source branch, copy files
-		input := "\n\n\n\n\n\n\n\n\n\n\n"
+		// clean quick, clean full, validation quick, validation full,
+		// runTasks quick, runTasks full, knowledgeSave quick, knowledgeSave full,
+		// git push, source branch, copy files
+		input := "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
 		var stdin bytes.Buffer
 		stdin.WriteString(input)
 		var stdout bytes.Buffer
@@ -316,17 +320,18 @@ func TestConfigInitCommand(t *testing.T) {
 			t.Errorf("expected 'validation' in prompts, got %q", output)
 		}
 
-		// Verify validation appears between cleanCode and gitPush in prompt output
+		// Verify validation appears between cleanCode and runTasks in prompt output
 		cleanIdx := strings.Index(output, "cleanup")
 		validationIdx := strings.Index(output, "validation")
+		runTasksIdx := strings.Index(output, "run tasks")
 		gitPushIdx := strings.Index(output, "git push")
 
-		if cleanIdx == -1 || validationIdx == -1 || gitPushIdx == -1 {
+		if cleanIdx == -1 || validationIdx == -1 || runTasksIdx == -1 || gitPushIdx == -1 {
 			t.Fatalf("missing expected prompts in output: %q", output)
 		}
-		if cleanIdx >= validationIdx || validationIdx >= gitPushIdx {
-			t.Errorf("validation prompts should appear between cleanCode and gitPush: clean=%d, validation=%d, gitPush=%d",
-				cleanIdx, validationIdx, gitPushIdx)
+		if cleanIdx >= validationIdx || validationIdx >= runTasksIdx || runTasksIdx >= gitPushIdx {
+			t.Errorf("order should be cleanup < validation < runTasks < gitPush: clean=%d, validation=%d, runTasks=%d, gitPush=%d",
+				cleanIdx, validationIdx, runTasksIdx, gitPushIdx)
 		}
 
 		// Verify config file has validation block
@@ -347,9 +352,11 @@ func TestConfigInitCommand(t *testing.T) {
 
 		// Enable validation for both quick and full modes
 		// Order: e2e quick(y), e2e full(y), consolidate quick(n), consolidate full(n),
-		// clean quick(n), clean full(n), validation quick(y), validation full(y), git push(n),
-		// source branch(empty), copy files(empty)
-		input := "y\ny\nn\nn\nn\nn\ny\ny\nn\n\n\n"
+		// clean quick(n), clean full(n), validation quick(y), validation full(y),
+		// runTasks quick(enter/default), runTasks full(enter/default),
+		// knowledgeSave quick(enter/default), knowledgeSave full(enter/default),
+		// git push(n), source branch(empty), copy files(empty)
+		input := "y\ny\nn\nn\nn\nn\ny\ny\n\n\n\n\nn\n\n\n"
 		var stdin bytes.Buffer
 		stdin.WriteString(input)
 		var stdout bytes.Buffer
@@ -375,6 +382,105 @@ func TestConfigInitCommand(t *testing.T) {
 		}
 		if !strings.Contains(content, "quick: true") {
 			t.Errorf("expected 'quick: true' in config, got %q", content)
+		}
+	})
+
+	t.Run("runTasks and knowledgeSave prompts and values", func(t *testing.T) {
+		dir := t.TempDir()
+
+		// Enable runTasks full and knowledgeSave full, disable runTasks quick and knowledgeSave quick
+		// Order: e2e quick(enter), e2e full(enter), consolidate quick(enter), consolidate full(enter),
+		// clean quick(enter), clean full(enter), validation quick(enter), validation full(enter),
+		// runTasks quick(n), runTasks full(y),
+		// knowledgeSave quick(n), knowledgeSave full(y),
+		// git push(enter), source branch(empty), copy files(empty)
+		input := "\n\n\n\n\n\n\n\nn\ny\nn\ny\n\n\n\n"
+		var stdin bytes.Buffer
+		stdin.WriteString(input)
+		var stdout bytes.Buffer
+
+		rootCmd.SetIn(&stdin)
+		rootCmd.SetOut(&stdout)
+		rootCmd.SetArgs([]string{"config", "init", "--project-root", dir})
+
+		err := rootCmd.Execute()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		output := stdout.String()
+		if !strings.Contains(output, "run tasks") {
+			t.Errorf("expected 'run tasks' in prompts, got %q", output)
+		}
+		if !strings.Contains(output, "knowledge save") {
+			t.Errorf("expected 'knowledge save' in prompts, got %q", output)
+		}
+
+		configFile := filepath.Join(dir, feature.ForgeDir, feature.ForgeConfigFileName)
+		data, err := os.ReadFile(configFile)
+		if err != nil {
+			t.Fatalf("config file not created: %v", err)
+		}
+
+		content := string(data)
+		if !strings.Contains(content, "runTasks:") {
+			t.Errorf("expected 'runTasks:' in config, got %q", content)
+		}
+		if !strings.Contains(content, "knowledgeSave:") {
+			t.Errorf("expected 'knowledgeSave:' in config, got %q", content)
+		}
+	})
+
+	t.Run("runTasks defaults match AutoConfigDefaults", func(t *testing.T) {
+		dir := t.TempDir()
+
+		// All defaults (press enter for all prompts)
+		input := "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+		var stdin bytes.Buffer
+		stdin.WriteString(input)
+		var stdout bytes.Buffer
+
+		rootCmd.SetIn(&stdin)
+		rootCmd.SetOut(&stdout)
+		rootCmd.SetArgs([]string{"config", "init", "--project-root", dir})
+
+		err := rootCmd.Execute()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		configFile := filepath.Join(dir, feature.ForgeDir, feature.ForgeConfigFileName)
+		data, err := os.ReadFile(configFile)
+		if err != nil {
+			t.Fatalf("config file not created: %v", err)
+		}
+
+		content := string(data)
+		// Defaults: runTasks quick=true, full=false; knowledgeSave quick=true, full=false
+		if !strings.Contains(content, "runTasks:") {
+			t.Errorf("expected 'runTasks:' in config, got %q", content)
+		}
+		if !strings.Contains(content, "knowledgeSave:") {
+			t.Errorf("expected 'knowledgeSave:' in config, got %q", content)
+		}
+
+		// Verify the full config round-trips correctly
+		read, err := forgeconfig.ReadAutoConfig(dir)
+		if err != nil {
+			t.Fatalf("ReadAutoConfig failed: %v", err)
+		}
+		defaults := forgeconfig.AutoConfigDefaults()
+		if read.RunTasks.Quick != defaults.RunTasks.Quick {
+			t.Errorf("runTasks quick: expected %v, got %v", defaults.RunTasks.Quick, read.RunTasks.Quick)
+		}
+		if read.RunTasks.Full != defaults.RunTasks.Full {
+			t.Errorf("runTasks full: expected %v, got %v", defaults.RunTasks.Full, read.RunTasks.Full)
+		}
+		if read.KnowledgeSave.Quick != defaults.KnowledgeSave.Quick {
+			t.Errorf("knowledgeSave quick: expected %v, got %v", defaults.KnowledgeSave.Quick, read.KnowledgeSave.Quick)
+		}
+		if read.KnowledgeSave.Full != defaults.KnowledgeSave.Full {
+			t.Errorf("knowledgeSave full: expected %v, got %v", defaults.KnowledgeSave.Full, read.KnowledgeSave.Full)
 		}
 	})
 }
