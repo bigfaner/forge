@@ -24,8 +24,8 @@ task-cli/check.out
 node_modules/
 task-cli/*.out
 test-results/.last-run.json
-tests/e2e/results/.last-run.json
-tests/e2e/results/*/error-context.md
+tests/e2e/results/
+tests/e2e/features/*/results/ 
 tests/results/
 .forge/state.json
 docs/features/*/tasks/process/
@@ -34,5 +34,3 @@ docs/features/*/tasks/process/
 forge-cli/internal/embedded/just/binaries/*
 !forge-cli/internal/embedded/just/binaries/just-*
 docs/features/*/tasks/index.json.lock
-# Forge runtime
-tests/results/.last-run.json
