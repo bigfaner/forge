@@ -18,12 +18,22 @@ Test script generation is handled by the `/gen-test-scripts` skill.
 
 ## Step 0: Resolve Language and Interfaces
 
-1. **Detect language**: Run `forge test detect` to auto-detect the project's test language(s) from file signals.
-2. **On failure** (no language detected): ask the user to add `languages` to `.forge/config.yaml` (e.g., `languages: [go]`).
-3. **Load interfaces**: Run `forge test interfaces` to get the project's active interface types.
+1. **Detect language**: Check the project root directory for language indicator files:
+   - `package.json` → JavaScript/TypeScript
+   - `go.mod` → Go
+   - `Cargo.toml` → Rust
+   - `pyproject.toml` or `setup.py` → Python
+
+   Fallback: check `.forge/config.yaml` for a `languages` field.
+   On failure (no language detected): ask the user to add `languages` to `.forge/config.yaml` (e.g., `languages: [go]`).
+2. **Load interfaces**: Examine the project structure and configuration to determine the project's active interface types:
+   - Check `docs/conventions/` for interface type configuration
+   - Check project directory structure: `pages/` or `src/components/` → web-ui, `cmd/` with cobra/spf13 imports → cli, route handlers (`api/`, `routes/`) → api, terminal rendering libs (bubbletea, tview) → tui, `android/`/`ios/` → mobile-ui
+   - Check `.forge/config.yaml` for a `project-type` field
+   - Check `package.json` dependencies: react/vue/next → web-ui, express/fastify → api
 
 <HARD-RULE>
-Do NOT silently default to any language. If `forge test detect` returns no result and the user cannot configure `languages`, abort the skill.
+Do NOT silently default to any language. If language detection via project files returns no result and the user cannot configure `languages`, abort the skill.
 </HARD-RULE>
 
 ## Prerequisites
@@ -75,7 +85,12 @@ Only extract acceptance criteria that **explicitly exist** in the PRD. Forbidden
 
 Determine which interface types the project exposes:
 
-1. **Project interfaces** (primary): Run `forge test interfaces` to get the active interface types. Mapping: `web-ui`->UI, `tui`->TUI, `mobile-ui`->Mobile, `api`->API, `cli`->CLI.
+1. **Project interfaces** (primary): Examine the project structure and configuration to determine the active interface types:
+   - Check `docs/conventions/` for interface type configuration
+   - Check project directory structure: `pages/` or `src/components/` → web-ui, `cmd/` with cobra/spf13 imports → cli, route handlers (`api/`, `routes/`) → api, terminal rendering libs (bubbletea, tview) → tui, `android/`/`ios/` → mobile-ui
+   - Check `.forge/config.yaml` for a `project-type` field
+   - Check `package.json` dependencies: react/vue/next → web-ui, express/fastify → api
+   Mapping: `web-ui`->UI, `tui`->TUI, `mobile-ui`->Mobile, `api`->API, `cli`->CLI.
 2. **PRD signal** (secondary): A "web application" has web-ui+api; a "CLI tool" has cli.
 3. **Codebase signal** (tertiary): Scan for evidence (e.g., `package.json` with react for web-ui, `cmd/` + cobra for cli, route handlers for api, terminal rendering libs for tui, `android/`/`ios/` for mobile-ui).
 

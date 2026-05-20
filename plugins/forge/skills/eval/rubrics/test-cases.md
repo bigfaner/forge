@@ -46,7 +46,7 @@ The test-cases.md must contain these sections:
 
 ### 3. Interface Accuracy (130 pts)
 
-This dimension adapts based on the project's active interfaces. Read the project's interfaces (resolved via `forge test interfaces`) to determine the active interface types (`web-ui`, `tui`, `mobile-ui`, `api`, `cli`). Then select the matching evaluation criteria:
+This dimension adapts based on the project's active interfaces. Read the project's interfaces (resolved by examining project structure: `docs/conventions/` for interface type configuration, project directory structure like `pages/`→web-ui, `cmd/`→cli, `api/`→api, terminal rendering libs→tui, `android/`/`ios/`→mobile-ui, `.forge/config.yaml` `project-type` field) to determine the active interface types (`web-ui`, `tui`, `mobile-ui`, `api`, `cli`). Then select the matching evaluation criteria:
 
 | Interface | Dimension name | Evaluation focus |
 |-----------|---------------|------------------|

@@ -54,7 +54,7 @@ If the PRD has no explicit priority marking, default P0 for the first story's AC
 - **Test ID**: cli/<command>/<title-slug>
 - **Pre-conditions**: {What must be true before testing}
 - **Steps**:
-  1. {Exact command invocation, e.g., forge deploy --env staging}
+  1. {Exact command invocation, e.g., forge task query --status pending}
   2. {Additional commands or verification steps if needed}
 - **Expected**: {Exit code, stdout content, stderr content}
 - **Priority**: P0 | P1 | P2
@@ -101,5 +101,5 @@ Write to `docs/features/<slug>/testing/cli-test-cases.md`. Number test cases fro
 
 | TC ID | Source | Type | Target | Priority |
 |-------|--------|------|--------|----------|
-| TC-001 | Story 1 / AC-1 | CLI | cli/deploy | P0 |
+| TC-001 | Story 1 / AC-1 | CLI | cli/task-query | P0 |
 ```

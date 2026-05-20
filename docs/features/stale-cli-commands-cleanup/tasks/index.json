@@ -8,7 +8,7 @@
       "title": "替换所有 skill 文件中的过期 CLI 命令引用",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-fix-stale-cli-refs.md",
       "record": "records/1-fix-stale-cli-refs.md",
       "type": "doc"

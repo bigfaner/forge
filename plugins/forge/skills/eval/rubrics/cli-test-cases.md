@@ -38,7 +38,7 @@ The cli-test-cases.md must contain these sections:
 
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| Steps are concrete actions | 0-90 | Each step describes a single, unambiguous CLI invocation. "`forge task list --status pending`" not "List pending tasks". "`forge task add --title 'test'`" not "Create a task" |
+| Steps are concrete actions | 0-90 | Each step describes a single, unambiguous CLI invocation. "`forge task query --status pending`" not "List pending tasks". "`forge task add --title 'test'`" not "Create a task" |
 | Expected results are verifiable | 0-90 | Every expected result can be objectively verified: specific exit code, stdout content, stderr content. Not "should work" or "command succeeds" |
 | Preconditions are explicit | 0-70 | TCs with dependencies (existing config, initialized project, specific state) declare them in Pre-conditions. No implicit assumptions |
 

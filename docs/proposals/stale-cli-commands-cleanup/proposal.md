@@ -1,7 +1,7 @@
 ---
 created: 2026-05-20
 author: "fanhuifeng"
-status: Draft
+status: Approved
 ---
 
 # Proposal: 清理 Skill 中引用的已移除 CLI 命令
