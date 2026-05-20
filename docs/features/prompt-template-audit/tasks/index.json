@@ -18,7 +18,7 @@
       "title": "P1: 修复 coding-fix 模板缺失和顺序问题",
       "priority": "P1",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "2-fix-coding-fix-template.md",
       "record": "records/2-fix-coding-fix-template.md",
       "type": "doc"
