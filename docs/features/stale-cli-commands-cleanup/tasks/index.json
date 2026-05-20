@@ -18,7 +18,7 @@
       "title": "创建 forge CLI 命令参考文档",
       "priority": "P2",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "2-create-cli-reference.md",
       "record": "records/2-create-cli-reference.md",
       "type": "doc"
