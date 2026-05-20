@@ -2724,6 +2724,11 @@ func TestWorktreeResume_LaunchesClaudeInExistingWorktree(t *testing.T) {
 	}
 	defer func() { lookPathFunc = origLookPath }()
 
+	// Simulate -c not supported to test basic launch behavior
+	origResumeSupport := claudeSupportsContinueFlagFunc
+	claudeSupportsContinueFlagFunc = func() bool { return false }
+	defer func() { claudeSupportsContinueFlagFunc = origResumeSupport }()
+
 	// Capture claude launch args and working directory
 	var capturedArgs []string
 	var capturedWd string
@@ -2781,6 +2786,143 @@ func TestWorktreeResume_LaunchesClaudeInExistingWorktree(t *testing.T) {
 	resolvedTarget, _ := filepath.EvalSymlinks(absTarget)
 	if capturedWd != resolvedTarget {
 		t.Errorf("claude should have been launched in %s, got %s", resolvedTarget, capturedWd)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// worktree resume: -c session restore
+// ---------------------------------------------------------------------------
+
+func TestWorktreeResume_UsesContinueFlagWhenSupported(t *testing.T) {
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	// Simulate claude -c support
+	origResumeSupport := claudeSupportsContinueFlagFunc
+	claudeSupportsContinueFlagFunc = func() bool { return true }
+	defer func() { claudeSupportsContinueFlagFunc = origResumeSupport }()
+
+	// Capture claude launch args
+	var capturedArgs []string
+	origRunClaude := runClaudeFunc
+	runClaudeFunc = func(args []string) error {
+		capturedArgs = args
+		return nil
+	}
+	defer func() { runClaudeFunc = origRunClaude }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a real worktree
+	slug := "resume-with-continue"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	if err := os.MkdirAll(filepath.Dir(targetDir), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	cmd := exec.Command("git", "worktree", "add", "-b", slug, targetDir)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "resume", slug})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify claude was launched with -c --dangerously-skip-permissions
+	if len(capturedArgs) < 2 {
+		t.Fatalf("expected at least 2 args, got %v", capturedArgs)
+	}
+	if capturedArgs[0] != "-c" {
+		t.Errorf("first arg should be '-c', got %q", capturedArgs[0])
+	}
+	if capturedArgs[1] != "--dangerously-skip-permissions" {
+		t.Errorf("second arg should be '--dangerously-skip-permissions', got %q", capturedArgs[1])
+	}
+}
+
+func TestWorktreeResume_FallsBackWhenContinueNotSupported(t *testing.T) {
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	// Simulate claude -c NOT supported
+	origResumeSupport := claudeSupportsContinueFlagFunc
+	claudeSupportsContinueFlagFunc = func() bool { return false }
+	defer func() { claudeSupportsContinueFlagFunc = origResumeSupport }()
+
+	// Capture claude launch args
+	var capturedArgs []string
+	origRunClaude := runClaudeFunc
+	runClaudeFunc = func(args []string) error {
+		capturedArgs = args
+		return nil
+	}
+	defer func() { runClaudeFunc = origRunClaude }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a real worktree
+	slug := "resume-no-continue"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	if err := os.MkdirAll(filepath.Dir(targetDir), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	cmd := exec.Command("git", "worktree", "add", "-b", slug, targetDir)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "resume", slug})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify claude was launched WITHOUT -c, just --dangerously-skip-permissions
+	if len(capturedArgs) != 1 {
+		t.Fatalf("expected 1 arg, got %v", capturedArgs)
+	}
+	if capturedArgs[0] != "--dangerously-skip-permissions" {
+		t.Errorf("arg should be '--dangerously-skip-permissions', got %q", capturedArgs[0])
 	}
 }
 

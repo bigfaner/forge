@@ -199,7 +199,9 @@ func runHardCleanup(cmd *cobra.Command, projectRoot, branchName string) error {
 var worktreeResumeCmd = &cobra.Command{
 	Use:   "resume <slug>",
 	Short: "Re-launch Claude in an existing worktree",
-	Long: `Launch claude --dangerously-skip-permissions in an existing worktree directory.
+	Long: `Launch claude with session restore (-c) and --dangerously-skip-permissions in an
+existing worktree directory. If the -c flag is not supported by the installed
+Claude CLI, falls back to launching without session restore.
 
 Verifies that the worktree exists and is a valid git worktree before launching.`,
 	Args: cobra.ExactArgs(1),
@@ -266,6 +268,12 @@ func runWorktreeResume(cmd *cobra.Command, args []string) error {
 	}
 
 	allArgs := []string{"--dangerously-skip-permissions"}
+
+	// Add -c flag for session restore if supported
+	if claudeSupportsContinueFlagFunc() {
+		allArgs = append([]string{"-c"}, allArgs...)
+	}
+
 	return runClaudeFunc(allArgs)
 }
 
