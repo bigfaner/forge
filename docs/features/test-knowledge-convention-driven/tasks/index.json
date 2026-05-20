@@ -353,7 +353,7 @@
       "dependencies": [
         "T-clean-code"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "gen-test-cases.md",
       "record": "records/gen-test-cases.md",
       "scope": "all",
