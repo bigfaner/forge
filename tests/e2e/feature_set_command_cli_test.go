@@ -41,7 +41,7 @@ func setupProjectDir(t *testing.T) string {
 // Returns combined output and exit code. Does NOT fatalf on failure.
 func forgeFeatureSet(t *testing.T, projectRoot, slug string) (string, int) {
 	t.Helper()
-	cmd := exec.Command(forgeBinary, "feature", "set", slug)
+	cmd := exec.Command(ForgeBinary, "feature", "set", slug)
 	cmd.Env = append(os.Environ(), "CLAUDE_PROJECT_DIR="+projectRoot)
 	out, err := cmd.CombinedOutput()
 	exitCode := 0
@@ -59,7 +59,7 @@ func forgeFeatureSet(t *testing.T, projectRoot, slug string) (string, int) {
 // Returns combined output and exit code. Does NOT fatalf on failure.
 func forgeFeature(t *testing.T, projectRoot string) (string, int) {
 	t.Helper()
-	cmd := exec.Command(forgeBinary, "feature")
+	cmd := exec.Command(ForgeBinary, "feature")
 	cmd.Env = append(os.Environ(), "CLAUDE_PROJECT_DIR="+projectRoot)
 	out, err := cmd.CombinedOutput()
 	exitCode := 0
@@ -77,7 +77,7 @@ func forgeFeature(t *testing.T, projectRoot string) (string, int) {
 // Returns combined output and exit code. Does NOT fatalf on failure.
 func forgeFeatureVerbose(t *testing.T, projectRoot string) (string, int) {
 	t.Helper()
-	cmd := exec.Command(forgeBinary, "feature", "-v")
+	cmd := exec.Command(ForgeBinary, "feature", "-v")
 	cmd.Env = append(os.Environ(), "CLAUDE_PROJECT_DIR="+projectRoot)
 	out, err := cmd.CombinedOutput()
 	exitCode := 0
@@ -95,7 +95,7 @@ func forgeFeatureVerbose(t *testing.T, projectRoot string) (string, int) {
 // Returns combined output and exit code.
 func forgeFeaturePositional(t *testing.T, projectRoot, slug string) (string, int) {
 	t.Helper()
-	cmd := exec.Command(forgeBinary, "feature", slug)
+	cmd := exec.Command(ForgeBinary, "feature", slug)
 	cmd.Env = append(os.Environ(), "CLAUDE_PROJECT_DIR="+projectRoot)
 	out, err := cmd.CombinedOutput()
 	exitCode := 0
@@ -461,13 +461,13 @@ func TestTC_020_VerboseFlagLocalToFeatureCommandOnly(t *testing.T) {
 	assert.Equal(t, 0, exitCode, "forge feature -v should be recognized, output: %s", out)
 
 	// Scenario 2: forge feature set -v my-feature should NOT be recognized
-	cmd := exec.Command(forgeBinary, "feature", "set", "-v", "my-feature")
+	cmd := exec.Command(ForgeBinary, "feature", "set", "-v", "my-feature")
 	cmd.Env = append(os.Environ(), "CLAUDE_PROJECT_DIR="+projectRoot)
 	out2, err := cmd.CombinedOutput()
 	assert.Error(t, err, "forge feature set -v should fail or produce error, output: %s", string(out2))
 
 	// Scenario 3: forge feature list -v should NOT be recognized
-	cmd3 := exec.Command(forgeBinary, "feature", "list", "-v")
+	cmd3 := exec.Command(ForgeBinary, "feature", "list", "-v")
 	cmd3.Env = append(os.Environ(), "CLAUDE_PROJECT_DIR="+projectRoot)
 	out3, err3 := cmd3.CombinedOutput()
 	assert.Error(t, err3, "forge feature list -v should fail or produce error, output: %s", string(out3))

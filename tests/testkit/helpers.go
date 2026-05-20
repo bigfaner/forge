@@ -1,6 +1,6 @@
 //go:build e2e
 
-package e2e
+package testkit
 
 import (
 	"os/exec"
@@ -9,15 +9,10 @@ import (
 	"time"
 )
 
-// forgeCmd returns an exec.Cmd for the forge CLI binary built from source.
-func forgeCmd(args ...string) *exec.Cmd {
-	return exec.Command(forgeBinary, args...)
-}
-
-// runCLI executes a forge CLI command and returns combined output.
-func runCLI(t *testing.T, args ...string) string {
+// RunCLI executes a forge CLI command and returns combined output.
+func RunCLI(t *testing.T, args ...string) string {
 	t.Helper()
-	cmd := forgeCmd(args...)
+	cmd := exec.Command(ForgeBinary, args...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("CLI command failed: %s: %s", err, out)
@@ -25,11 +20,11 @@ func runCLI(t *testing.T, args ...string) string {
 	return string(out)
 }
 
-// runCLIRaw executes a forge CLI command and returns output and exit code.
-// Unlike runCLI, it does not fatalf on non-zero exit — useful for negative tests.
-func runCLIRaw(t *testing.T, args ...string) (string, int) {
+// RunCLIRaw executes a forge CLI command and returns output and exit code.
+// Unlike RunCLI, it does not fatalf on non-zero exit -- useful for negative tests.
+func RunCLIRaw(t *testing.T, args ...string) (string, int) {
 	t.Helper()
-	cmd := forgeCmd(args...)
+	cmd := exec.Command(ForgeBinary, args...)
 	out, err := cmd.CombinedOutput()
 	exitCode := 0
 	if err != nil {
@@ -42,9 +37,9 @@ func runCLIRaw(t *testing.T, args ...string) (string, int) {
 	return string(out), exitCode
 }
 
-// parseBlock extracts lines between "---" separators from raw CLI output.
+// ParseBlock extracts lines between "---" separators from raw CLI output.
 // Returns the inner lines (without separators) or fails the test.
-func parseBlock(t *testing.T, raw string) []string {
+func ParseBlock(t *testing.T, raw string) []string {
 	t.Helper()
 	lines := strings.Split(strings.TrimSpace(raw), "\n")
 	if len(lines) < 2 || strings.TrimSpace(lines[0]) != "---" || strings.TrimSpace(lines[len(lines)-1]) != "---" {
@@ -58,8 +53,8 @@ func parseBlock(t *testing.T, raw string) []string {
 	return result
 }
 
-// hasField checks that a parsed block contains a "KEY: value" line.
-func hasField(lines []string, key, value string) bool {
+// HasField checks that a parsed block contains a "KEY: value" line.
+func HasField(lines []string, key, value string) bool {
 	prefix := key + ": "
 	for _, l := range lines {
 		if strings.HasPrefix(l, prefix) {
@@ -72,8 +67,8 @@ func hasField(lines []string, key, value string) bool {
 	return false
 }
 
-// hasNoField checks that a parsed block does NOT contain any line starting with key.
-func hasNoField(lines []string, key string) bool {
+// HasNoField checks that a parsed block does NOT contain any line starting with key.
+func HasNoField(lines []string, key string) bool {
 	prefix := key + ": "
 	for _, l := range lines {
 		if strings.HasPrefix(l, prefix) {
@@ -83,8 +78,8 @@ func hasNoField(lines []string, key string) bool {
 	return true
 }
 
-// fieldIndex returns the index of the line starting with key+": ", or -1.
-func fieldIndex(lines []string, key string) int {
+// FieldIndex returns the index of the line starting with key+": ", or -1.
+func FieldIndex(lines []string, key string) int {
 	prefix := key + ": "
 	for i, l := range lines {
 		if strings.HasPrefix(l, prefix) {
@@ -94,8 +89,8 @@ func fieldIndex(lines []string, key string) int {
 	return -1
 }
 
-// fieldValue returns the value for the given key, or "" if not found.
-func fieldValue(lines []string, key string) string {
+// FieldValue returns the value for the given key, or "" if not found.
+func FieldValue(lines []string, key string) string {
 	prefix := key + ": "
 	for _, l := range lines {
 		if strings.HasPrefix(l, prefix) {
@@ -105,8 +100,8 @@ func fieldValue(lines []string, key string) string {
 	return ""
 }
 
-// withRetry retries a function until it succeeds or max retries exceeded.
-func withRetry(t *testing.T, fn func() error, maxRetries int, delay time.Duration) {
+// WithRetry retries a function until it succeeds or max retries exceeded.
+func WithRetry(t *testing.T, fn func() error, maxRetries int, delay time.Duration) {
 	t.Helper()
 	var err error
 	for i := 0; i < maxRetries; i++ {

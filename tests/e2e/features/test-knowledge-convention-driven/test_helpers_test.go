@@ -5,7 +5,7 @@ package e2etestconv
 import (
 	"os/exec"
 
-	e2etests "e2e-tests"
+	e2etests "forge-tests/e2e"
 )
 
 // forgeCmd returns an exec.Cmd for the forge CLI binary built from source.

@@ -8,7 +8,7 @@
       "title": "Extract testkit + restructure tests/e2e/ Go module",
       "priority": "P0",
       "estimatedTime": "2h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-extract-testkit-plugin-tests.md",
       "record": "records/1-extract-testkit-plugin-tests.md",
       "breaking": true,

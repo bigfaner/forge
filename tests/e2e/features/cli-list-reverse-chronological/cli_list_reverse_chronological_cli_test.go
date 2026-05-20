@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	e2etests "e2e-tests"
+	e2etests "forge-tests/e2e"
 
 	"github.com/stretchr/testify/assert"
 )

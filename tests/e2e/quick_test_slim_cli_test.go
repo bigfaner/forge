@@ -150,7 +150,7 @@ func quickSlimAddBusinessTask(t *testing.T, dir, slug string) {
 // quickSlimRunIndex runs forge task index and returns the output.
 func quickSlimRunIndex(t *testing.T, dir, slug string) []byte {
 	t.Helper()
-	bin := forgeBinary
+	bin := ForgeBinary
 	cmd := exec.Command(bin, "task", "index", "--feature", slug)
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()
@@ -353,7 +353,7 @@ func TestTC_007_BreakdownModeUnchangedByQuickMerge(t *testing.T) {
 	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"coding.feature\"\nscope: \"all\"\n---\n\n# Task One\n"
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "1-task-one.md"), []byte(taskMD), 0644))
 
-	bin := forgeBinary
+	bin := ForgeBinary
 	cmd := exec.Command(bin, "task", "index", "--feature", "test-qts-007")
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()

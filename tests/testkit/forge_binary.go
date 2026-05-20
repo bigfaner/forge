@@ -1,6 +1,6 @@
 //go:build e2e
 
-package e2e
+package testkit
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 // ForgeBinary is the path to a forge CLI binary built from the current source tree.
 // Built once at package init and used by all e2e tests to ensure they test the code
 // on the current branch, not the system-installed binary.
-// Sub-packages import this via `import e2etests "forge-tests/e2e"`.
+// Sub-packages import this via `import testkit "forge-tests/testkit"`.
 var ForgeBinary string
 
 var forgeBinaryOnce sync.Once

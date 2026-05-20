@@ -1,4 +1,4 @@
-module e2e-tests
+module forge-tests
 
 go 1.26.1
 
