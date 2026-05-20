@@ -8,7 +8,7 @@
       "title": "Add auto.validation and worktree prompts to forge init (huh TUI)",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-add-init-prompts.md",
       "record": "records/1-add-init-prompts.md",
       "scope": "backend",

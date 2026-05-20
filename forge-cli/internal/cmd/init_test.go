@@ -56,6 +56,7 @@ func testConfigInit(projectRoot string) initAction {
 	// Write a sensible default config for testing
 	auto := autoConfigDefaults()
 	auto.GitPush = true // Explicitly set to true to differentiate from empty/zero configs
+	auto.Validation = forgeconfig.ModeToggle{Quick: true, Full: true}
 	cfg := forgeconfig.Config{
 		Auto: auto,
 	}
@@ -530,4 +531,150 @@ func TestEnsureResultToAction(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestInitConfigWithValidation(t *testing.T) {
+	t.Run("config includes validation field", func(t *testing.T) {
+		env := newInitTestEnv(t)
+
+		err := env.run()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		configFile := env.path(feature.ForgeDir, feature.ForgeConfigFileName)
+		data, err := os.ReadFile(configFile)
+		if err != nil {
+			t.Fatalf("config.yaml not created: %v", err)
+		}
+
+		content := string(data)
+		if !strings.Contains(content, "validation:") {
+			t.Errorf("expected 'validation:' in config, got %q", content)
+		}
+		if !strings.Contains(content, "quick: true") {
+			t.Errorf("expected 'quick: true' for validation in config, got %q", content)
+		}
+		if !strings.Contains(content, "full: true") {
+			t.Errorf("expected 'full: true' for validation in config, got %q", content)
+		}
+	})
+}
+
+func TestInitConfigWithWorktree(t *testing.T) {
+	t.Run("config includes worktree when provided", func(t *testing.T) {
+		orig := configInitFunc
+		configInitFunc = func(projectRoot string) initAction {
+			configFile := filepath.Join(projectRoot, feature.ForgeDir, feature.ForgeConfigFileName)
+			auto := autoConfigDefaults()
+			cfg := forgeconfig.Config{
+				Auto: auto,
+				Worktree: &forgeconfig.WorktreeConfig{
+					SourceBranch: "main",
+					CopyFiles:    []string{".env", ".env.local"},
+				},
+			}
+			if err := writeConfigFile(configFile, &cfg); err != nil {
+				return initAction{status: "FAILED", target: ".forge/config.yaml", detail: err.Error()}
+			}
+			return initAction{status: "CREATED", target: ".forge/config.yaml", detail: "with worktree"}
+		}
+		defer func() { configInitFunc = orig }()
+
+		env := &initTestEnv{dir: t.TempDir()}
+		err := env.run()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		configFile := env.path(feature.ForgeDir, feature.ForgeConfigFileName)
+		data, err := os.ReadFile(configFile)
+		if err != nil {
+			t.Fatalf("config.yaml not created: %v", err)
+		}
+
+		content := string(data)
+		if !strings.Contains(content, "worktree:") {
+			t.Errorf("expected 'worktree:' in config, got %q", content)
+		}
+		if !strings.Contains(content, "source-branch: main") {
+			t.Errorf("expected 'source-branch: main' in config, got %q", content)
+		}
+		if !strings.Contains(content, ".env") {
+			t.Errorf("expected '.env' in copy-files, got %q", content)
+		}
+	})
+
+	t.Run("config omits worktree when both fields empty", func(t *testing.T) {
+		orig := configInitFunc
+		configInitFunc = func(projectRoot string) initAction {
+			configFile := filepath.Join(projectRoot, feature.ForgeDir, feature.ForgeConfigFileName)
+			auto := autoConfigDefaults()
+			cfg := forgeconfig.Config{
+				Auto:     auto,
+				Worktree: nil, // No worktree when skipped
+			}
+			if err := writeConfigFile(configFile, &cfg); err != nil {
+				return initAction{status: "FAILED", target: ".forge/config.yaml", detail: err.Error()}
+			}
+			return initAction{status: "CREATED", target: ".forge/config.yaml", detail: "no worktree"}
+		}
+		defer func() { configInitFunc = orig }()
+
+		env := &initTestEnv{dir: t.TempDir()}
+		err := env.run()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		configFile := env.path(feature.ForgeDir, feature.ForgeConfigFileName)
+		data, err := os.ReadFile(configFile)
+		if err != nil {
+			t.Fatalf("config.yaml not created: %v", err)
+		}
+
+		content := string(data)
+		if strings.Contains(content, "worktree:") {
+			t.Errorf("worktree block should not be present when skipped, got %q", content)
+		}
+	})
+}
+
+func TestWorktreeConfigRoundTrip(t *testing.T) {
+	t.Run("worktree config round-trips through YAML", func(t *testing.T) {
+		dir := t.TempDir()
+		cfg := &forgeconfig.Config{
+			Auto: func() *forgeconfig.AutoConfig {
+				d := forgeconfig.AutoConfigDefaults()
+				return &d
+			}(),
+			Worktree: &forgeconfig.WorktreeConfig{
+				SourceBranch: "develop",
+				CopyFiles:    []string{".env", ".env.local"},
+			},
+		}
+
+		configFile := filepath.Join(dir, feature.ForgeDir, feature.ForgeConfigFileName)
+		if err := writeConfigFile(configFile, cfg); err != nil {
+			t.Fatalf("writeConfigFile failed: %v", err)
+		}
+
+		read, err := forgeconfig.ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("ReadConfig failed: %v", err)
+		}
+
+		if read.Worktree == nil {
+			t.Fatal("worktree should not be nil")
+		}
+		if read.Worktree.SourceBranch != "develop" {
+			t.Errorf("expected source-branch 'develop', got %q", read.Worktree.SourceBranch)
+		}
+		if len(read.Worktree.CopyFiles) != 2 {
+			t.Errorf("expected 2 copy-files, got %d", len(read.Worktree.CopyFiles))
+		}
+		if read.Worktree.CopyFiles[0] != ".env" || read.Worktree.CopyFiles[1] != ".env.local" {
+			t.Errorf("copy-files mismatch: %v", read.Worktree.CopyFiles)
+		}
+	})
 }
