@@ -1,6 +1,6 @@
 ---
 feature: "forge-cli-test-spec-alignment"
-status: tasks
+status: completed
 mode: quick
 ---
 
