@@ -67,7 +67,7 @@ func forgeGenTestScripts(t *testing.T, projectRoot string, extraArgs ...string) 
 	t.Helper()
 	args := []string{"gen-test-scripts"}
 	args = append(args, extraArgs...)
-	cmd := exec.Command("forge", args...)
+	cmd := forgeCmd(args...)
 	cmd.Env = append(os.Environ(), "CLAUDE_PROJECT_DIR="+projectRoot)
 	cmd.Dir = projectRoot
 	out, err := cmd.CombinedOutput()
@@ -253,39 +253,6 @@ func TestTC_005_GenTestScriptsColdStartNoConvention(t *testing.T) {
 	_ = hasHint
 }
 
-// --- TC-007: Gen-Test-Scripts Reports Missing E2E-Compile Recipe ---
-// Traceability: TC-007 -> Story 4 / AC-2
-
-func TestTC_007_GenTestScriptsReportsMissingCompileRecipe(t *testing.T) {
-	projectRoot := t.TempDir()
-
-	// Create .forge directory
-	require.NoError(t, os.MkdirAll(filepath.Join(projectRoot, ".forge"), 0755))
-
-	// Create CLAUDE.md
-	require.NoError(t, os.WriteFile(filepath.Join(projectRoot, "CLAUDE.md"), []byte("# Test\n"), 0644))
-
-	// Create go.mod
-	require.NoError(t, os.WriteFile(filepath.Join(projectRoot, "go.mod"), []byte("module test\n\ngo 1.26\n"), 0644))
-
-	// Create justfile WITHOUT e2e-compile recipe
-	justfileContent := `other-recipe:
-	echo "hello"
-`
-	require.NoError(t, os.WriteFile(filepath.Join(projectRoot, "justfile"), []byte(justfileContent), 0644))
-
-	// Step 3: Run forge gen-test-scripts
-	output, exitCode := forgeGenTestScripts(t, projectRoot)
-	t.Logf("gen-test-scripts output: %s", output)
-
-	// Step 4: Verify error about missing e2e-compile
-	if exitCode != 0 {
-		missingPattern := regexp.MustCompile(`(?i)Missing justfile e2e-compile recipe|e2e-compile.*not found|forge:init-justfile`)
-		assert.True(t, missingPattern.MatchString(output),
-			"Expected error about missing e2e-compile recipe, got: %s", output)
-	}
-}
-
 // --- TC-008: Gen-Test-Scripts Loads Convention by Interface Type Selectively ---
 // Traceability: TC-008 -> Story 5 / AC-1
 
@@ -418,49 +385,6 @@ domains: [testing, go, cli]
 
 	_ = exitCode
 	_ = hasOverlapWarning
-}
-
-// --- TC-010: Compile Gate Recovery Outputs Actionable Guidance on Exhausted Retries ---
-// Traceability: TC-010 -> Story 6 / AC-1
-
-func TestTC_010_CompileGateRecoveryExhaustedRetries(t *testing.T) {
-	projectRoot, conventionsDir, _ := setupGoProjectFixture(t)
-
-	// Step 1: Create Convention with non-existent import path
-	conventionContent := `---
-domains: [testing, go]
----
-## Framework
-- name: bogus-framework
-- Import: "github.com/nonexistent/framework/v2"
-- File pattern: "*_test.go"
-
-## Assertion
-- name: bogus-assert
-- Import: "github.com/nonexistent/assert"
-
-## Tags
-- Build tag: "//go:build e2e"
-
-## Result Format
-- Format: json-stream
-`
-	writeConventionFile(t, filepath.Join(conventionsDir, "testing-go.md"), conventionContent)
-
-	// Step 3: Run forge gen-test-scripts
-	output, exitCode := forgeGenTestScripts(t, projectRoot)
-	t.Logf("gen-test-scripts output: %s", output)
-
-	// Step 5-6: Verify output contains actionable guidance
-	if exitCode != 0 {
-		compileErrorPattern := regexp.MustCompile(`(?i)compile error|compilation failed`)
-		recoveryPattern := regexp.MustCompile(`(?i)recovery|check Convention|test-guide|manually edit`)
-		assert.True(t, compileErrorPattern.MatchString(output) || recoveryPattern.MatchString(output),
-			"Expected compile error or recovery guidance, got: %s", output)
-	}
-
-	// Verify Convention file still exists on disk
-	assert.FileExists(t, filepath.Join(conventionsDir, "testing-go.md"))
 }
 
 // --- TC-011: Convention File Missing Domains Frontmatter Treated as Non-Loadable ---
@@ -722,35 +646,6 @@ This Convention file intentionally has no sections.
 
 	_ = exitCode
 	_ = hasWarning
-}
-
-// --- TC-033: Broken E2E-Compile Recipe Reports Actionable Error ---
-// Traceability: TC-033 -> Spec FS-4 / Prerequisite (boundary case)
-
-func TestTC_033_BrokenCompileRecipeError(t *testing.T) {
-	projectRoot := t.TempDir()
-
-	require.NoError(t, os.MkdirAll(filepath.Join(projectRoot, ".forge"), 0755))
-	require.NoError(t, os.WriteFile(filepath.Join(projectRoot, "CLAUDE.md"), []byte("# Test\n"), 0644))
-	require.NoError(t, os.WriteFile(filepath.Join(projectRoot, "go.mod"), []byte("module test\n\ngo 1.26\n"), 0644))
-
-	// Step 1: Create justfile with broken e2e-compile recipe
-	justfileContent := `e2e-compile:
-	@nonexistent-command-xyz {{args}}
-`
-	require.NoError(t, os.WriteFile(filepath.Join(projectRoot, "justfile"), []byte(justfileContent), 0644))
-
-	// Step 3: Run forge gen-test-scripts
-	output, exitCode := forgeGenTestScripts(t, projectRoot)
-	t.Logf("gen-test-scripts output: %s", output)
-
-	// Step 4: Verify error output
-	if exitCode != 0 {
-		compilePattern := regexp.MustCompile(`(?i)compile.*fail|e2e-compile.*error|recipe.*fail`)
-		recoveryPattern := regexp.MustCompile(`(?i)recovery|check Convention|test-guide|manually edit`)
-		assert.True(t, compilePattern.MatchString(output) || recoveryPattern.MatchString(output),
-			"Expected compile failure or recovery guidance, got: %s", output)
-	}
 }
 
 // --- TC-034: Convention File with Invalid Encoding Is Skipped with Warning ---

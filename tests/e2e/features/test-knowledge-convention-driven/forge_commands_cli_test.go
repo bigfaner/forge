@@ -49,7 +49,7 @@ worktree:
 	require.NoError(t, os.WriteFile(filepath.Join(projectRoot, "CLAUDE.md"), []byte("# Test\n"), 0644))
 
 	// Step 2: Run forge task index (should not error on legacy fields)
-	cmd := exec.Command("forge", "task", "index")
+	cmd := forgeCmd( "task", "index")
 	cmd.Env = append(os.Environ(), "CLAUDE_PROJECT_DIR="+projectRoot)
 	cmd.Dir = projectRoot
 	out, err := cmd.CombinedOutput()
@@ -66,7 +66,7 @@ worktree:
 		"stderr should not reference legacy fields, got: %s", stderr)
 
 	// Step 3: Run forge config get to verify config is readable
-	cmd = exec.Command("forge", "config", "get", "auto.e2e-test.full")
+	cmd = forgeCmd( "config", "get", "auto.e2e-test.full")
 	cmd.Env = append(os.Environ(), "CLAUDE_PROJECT_DIR="+projectRoot)
 	cmd.Dir = projectRoot
 	out, err = cmd.CombinedOutput()
@@ -85,7 +85,7 @@ func TestTC_012_CommandsWorkAfterProfileRemoval(t *testing.T) {
 	projectRoot := setupExistingForgeProject(t)
 
 	// Step 1: Run forge task index
-	cmd := exec.Command("forge", "task", "index", "--feature", "test-knowledge-convention-driven")
+	cmd := forgeCmd("task", "index", "--feature", "test-knowledge-convention-driven")
 	cmd.Env = append(os.Environ(), "CLAUDE_PROJECT_DIR="+projectRoot)
 	cmd.Dir = projectRoot
 	out, err := cmd.CombinedOutput()
@@ -128,7 +128,7 @@ func TestTC_013_ConfigInitWorksWithoutLegacyFields(t *testing.T) {
 
 	// Run forge config init with piped input (non-interactive)
 	// Using "echo" to provide defaults for all prompts
-	cmd := exec.Command("forge", "config", "init")
+	cmd := forgeCmd("config", "init")
 	cmd.Env = append(os.Environ(), "CLAUDE_PROJECT_DIR="+projectRoot)
 	cmd.Dir = projectRoot
 	cmd.Stdin = strings.NewReader("\nn\n\n\n\n\n\n")
@@ -158,7 +158,7 @@ func TestTC_025_TaskAddWorksWithoutProfileDependency(t *testing.T) {
 	projectRoot := setupForgeProjectWithFeature(t)
 
 	// Step 2: Run forge task add
-	cmd := exec.Command("forge", "task", "add",
+	cmd := forgeCmd("task", "add",
 		"--title", "test-task-convention",
 		"--description", "test description for convention-driven feature")
 	cmd.Env = append(os.Environ(), "CLAUDE_PROJECT_DIR="+projectRoot)
@@ -221,7 +221,7 @@ func TestTC_026_ForgeInitCreatesProjectWithoutLegacyFields(t *testing.T) {
 	projectRoot := t.TempDir()
 
 	// Step 1: Run forge init with --skip-just to avoid just installation issues
-	cmd := exec.Command("forge", "init", "--project-root", projectRoot, "--skip-just")
+	cmd := forgeCmd("init", "--project-root", projectRoot, "--skip-just")
 	cmd.Dir = projectRoot
 	out, err := cmd.CombinedOutput()
 	t.Logf("forge init output: %s", string(out))

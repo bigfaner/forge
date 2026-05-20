@@ -21,7 +21,7 @@ func runForgeTestCommand(t *testing.T, subcommand string, extraArgs ...string) (
 	t.Helper()
 	args := []string{"test", subcommand}
 	args = append(args, extraArgs...)
-	cmd := exec.Command("forge", args...)
+	cmd := forgeCmd(args...)
 	out, err := cmd.CombinedOutput()
 	exitCode := 0
 	if err != nil {

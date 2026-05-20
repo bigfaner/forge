@@ -11,8 +11,6 @@ import (
 )
 
 // forgeBinary is the path to a forge CLI binary built from the current source tree.
-// Built once in TestMain and used by all e2e tests to ensure they test the code
-// on the current branch, not the system-installed binary.
 var forgeBinary string
 
 func TestMain(m *testing.M) {
@@ -32,11 +30,10 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	code := m.Run()
-	os.Exit(code)
+	os.Exit(m.Run())
 }
 
-// forgeCLIDir returns the forge-cli module root directory.
+// forgeCLIDir returns the forge-cli module root directory containing go.mod and cmd/forge.
 func forgeCLIDir() string {
 	dir, err := os.Getwd()
 	if err != nil {
@@ -55,4 +52,9 @@ func forgeCLIDir() string {
 		}
 		dir = parent
 	}
+}
+
+// forgeCmd returns an exec.Cmd for the forge CLI binary built from source.
+func forgeCmd(args ...string) *exec.Cmd {
+	return exec.Command(forgeBinary, args...)
 }

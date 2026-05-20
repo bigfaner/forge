@@ -41,7 +41,7 @@ Test task for verifying task index works without Profile dependency.
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "tc014-task.md"), []byte(taskContent), 0644))
 
 	// Step 2: Run forge task index
-	cmd := exec.Command("forge", "task", "index", "--feature", "test-feature")
+	cmd := forgeCmd( "task", "index", "--feature", "test-feature")
 	cmd.Env = append(os.Environ(), "CLAUDE_PROJECT_DIR="+projectRoot)
 	cmd.Dir = projectRoot
 	out, err := cmd.CombinedOutput()
@@ -198,7 +198,7 @@ func TestDrift(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(testDir, "drift_test.go"), []byte(requireTest), 0644))
 
 	// Step 3: Run forge consolidate-specs
-	cmd := exec.Command("forge", "consolidate-specs")
+	cmd := forgeCmd( "consolidate-specs")
 	cmd.Env = append(os.Environ(), "CLAUDE_PROJECT_DIR="+projectRoot)
 	cmd.Dir = projectRoot
 	out, err := cmd.CombinedOutput()
