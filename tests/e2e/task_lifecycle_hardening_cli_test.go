@@ -209,7 +209,7 @@ func TestTC_001_ActiveFixTaskWithSourceTaskIDEqSelfBlocksClaim(t *testing.T) {
 		"fix-1": {
 			ID: "fix-1", Title: "Fix Task 1", Priority: "P0",
 			Status: "pending", File: "fix-1.md", Record: "",
-			Type: "fix", SourceTaskID: "3",
+			Type: "coding.fix", SourceTaskID: "3",
 		},
 	})
 
@@ -236,7 +236,7 @@ func TestTC_002_InProgressFixTaskWithSourceTaskIDEqSelfBlocksClaim(t *testing.T)
 		"fix-1": {
 			ID: "fix-1", Title: "Fix Task 1", Priority: "P0",
 			Status: "in_progress", File: "fix-1.md", Record: "",
-			Type: "fix", SourceTaskID: "3",
+			Type: "coding.fix", SourceTaskID: "3",
 		},
 	})
 
@@ -258,7 +258,7 @@ func TestTC_003_CompletedFixTaskTargetingSelfDoesNotBlock(t *testing.T) {
 		"fix-1": {
 			ID: "fix-1", Title: "Fix Task 1", Priority: "P0",
 			Status: "completed", File: "fix-1.md", Record: "",
-			Type: "fix", SourceTaskID: "3",
+			Type: "coding.fix", SourceTaskID: "3",
 		},
 	})
 
@@ -291,7 +291,7 @@ func TestTC_004_SelfBlockTakesPrecedenceOverMetRegularDependencies(t *testing.T)
 		"fix-1": {
 			ID: "fix-1", Title: "Fix Task 1", Priority: "P0",
 			Status: "pending", File: "fix-1.md", Record: "",
-			Type: "fix", SourceTaskID: "3",
+			Type: "coding.fix", SourceTaskID: "3",
 		},
 	})
 
@@ -321,7 +321,7 @@ func TestTC_005_FixTaskTargetingOtherTaskDoesNotCauseSelfBlock(t *testing.T) {
 		"fix-1": {
 			ID: "fix-1", Title: "Fix Task 1", Priority: "P0",
 			Status: "pending", File: "fix-1.md", Record: "",
-			Type: "fix", SourceTaskID: "2",
+			Type: "coding.fix", SourceTaskID: "2",
 		},
 	})
 
@@ -348,12 +348,12 @@ func TestTC_006_MultipleFixTasksTargetingSelfMustAllComplete(t *testing.T) {
 		"fix-1": {
 			ID: "fix-1", Title: "Fix Task 1", Priority: "P0",
 			Status: "completed", File: "fix-1.md", Record: "",
-			Type: "fix", SourceTaskID: "3",
+			Type: "coding.fix", SourceTaskID: "3",
 		},
 		"fix-2": {
 			ID: "fix-2", Title: "Fix Task 2", Priority: "P0",
 			Status: "pending", File: "fix-2.md", Record: "",
-			Type: "fix", SourceTaskID: "3",
+			Type: "coding.fix", SourceTaskID: "3",
 		},
 	})
 
@@ -505,7 +505,7 @@ func TestTC_011_BlockedTaskWithActiveFixTargetingItStaysBlocked(t *testing.T) {
 		"fix-1": {
 			ID: "fix-1", Title: "Fix Task 1", Priority: "P0",
 			Status: "pending", File: "fix-1.md", Record: "",
-			Type: "fix", SourceTaskID: "2",
+			Type: "coding.fix", SourceTaskID: "2",
 		},
 	})
 
@@ -539,7 +539,7 @@ func TestTC_012_FixCompletedAutoUnblocksBlockedSourceTask(t *testing.T) {
 		"fix-1": {
 			ID: "fix-1", Title: "Fix Task 1", Priority: "P0",
 			Status: "completed", File: "fix-1.md", Record: "",
-			Type: "fix", SourceTaskID: "1",
+			Type: "coding.fix", SourceTaskID: "1",
 		},
 	})
 
@@ -566,7 +566,7 @@ func TestTC_013_SourceStaysBlockedWhenFixIsStillInProgress(t *testing.T) {
 		"fix-1": {
 			ID: "fix-1", Title: "Fix Task 1", Priority: "P0",
 			Status: "in_progress", File: "fix-1.md", Record: "",
-			Type: "fix", SourceTaskID: "1",
+			Type: "coding.fix", SourceTaskID: "1",
 		},
 	})
 

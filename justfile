@@ -120,7 +120,7 @@ test-e2e feature="":
 e2e-setup force="":
     #!/usr/bin/env bash
     set -euo pipefail
-    cd forge-cli && go build -o bin/forge.exe ./cmd/forge/
+    cd forge-cli && go build -o bin/forge.exe ./cmd/forge/ && cp bin/forge.exe bin/forge
     cd tests/e2e && go build -tags=e2e ./...
     echo "OK: compilation verified"
 
