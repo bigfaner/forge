@@ -34,6 +34,7 @@ status: Draft
 - **误标拦截**：Skill 创建任务，类型为 `gate` → BuildIndex / validate-index 报错
 - **自动生成豁免**：`forge task index` 生成 `T-test-*`、`*.gate` 等任务 → 不受限制
 - **质量门 fix 任务**：`addFixTask()` 创建 `coding.fix` / `coding.cleanup` 任务 → 通过校验
+- **手动创建 doc.* 任务**：用户为老项目手动创建 `doc.consolidate` 或 `doc.drift` 任务 → 通过校验（双重身份类型，既可自动生成也可手动创建）
 - **新增业务类型**：未来在 `types.go` 新增类型，不在黑名单中 → 自动合法
 
 ### Non-Functional Requirements
@@ -75,11 +76,13 @@ status: Draft
 
 ### In Scope
 
-- 在 `types.go` 新增 `SystemTypes` 集合（15 种系统类型）+ `IsSystemType()` 函数
+- 在 `types.go` 新增 `SystemTypes` 集合（13 种系统类型）+ `IsSystemType()` 函数
+  - 系统类型：`gate`、`test.*`（7种）、`validation.*`（2种）、`doc.eval`、`doc.summary`、`code-quality.simplify`
+  - 排除（双重身份，可做业务任务）：`doc.consolidate`、`doc.drift`
 - `BuildIndex()` 拦截：非自动生成任务 + 类型命中 SystemTypes → 报错
 - `validate-index` 拦截：同上校验逻辑
-- 更新 `quick-tasks/SKILL.md` 类型分配表（移除 `gate` 等系统类型）
-- 更新 `breakdown-tasks/SKILL.md` 类型分配表（同上）
+- 更新 `quick-tasks/SKILL.md` 类型分配表（移除 `gate` 等系统类型，添加 `doc.consolidate`、`doc.drift` 作为合法业务类型）
+- 更新 `breakdown-tasks/SKILL.md` 类型分配表（同上，添加 `doc.consolidate`、`doc.drift`）
 - 清理 `coding.clean`（TypeCodingClean）死代码：从 types.go、ValidTypes、TaskTypeRegistry、测试文件中移除
 - 补充/更新相关单元测试
 
