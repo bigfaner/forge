@@ -130,3 +130,14 @@ DESIGN.md written to project root
 - If `DESIGN.md` already exists and the user declines overwrite, abort immediately without writing.
 - All extracted values must come from actual CSS/HTML analysis. Mark estimated values with `(estimated)`.
 </EXTREMELY-IMPORTANT>
+
+## Error Handling
+
+| Scenario | Action |
+|----------|--------|
+| URL unreachable (network error, timeout) | Report error with URL. Suggest checking URL and network. Abort. |
+| URL returns 4xx/5xx | Report status code. Suggest verifying URL. Abort. |
+| CSS extraction returns empty (Layers 1-3 all fail) | Fall back to Layer 4 (agent-browser) if local. Otherwise fall back to Layer 5 (visual inference, mark all as `(estimated)`), warn user about accuracy. |
+| agent-browser not available (Layer 4) | Skip Layer 4, use Layer 5. Warn user: "agent-browser unavailable, using visual inference (lower accuracy)". |
+| TUI screenshot not found or unreadable | Report error with path. Suggest providing a valid local file path. Abort. |
+| TUI screenshot quality too low | Report specific quality issue (blurry, low-res, unreadable). Suggest: use native screenshot tool, ensure text legibility, capture at 1x scale. Abort. |

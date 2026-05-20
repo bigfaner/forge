@@ -9,6 +9,8 @@ effort: high
 
 ## Prerequisites
 
+Feature-relative paths (no prefix) resolve from `docs/features/<slug>/`. Exception: `proposal` uses full path `docs/proposals/<slug>/`.
+
 | Type | Required Artifact |
 |------|-------------------|
 | `proposal` | `docs/proposals/<slug>/proposal.md` |

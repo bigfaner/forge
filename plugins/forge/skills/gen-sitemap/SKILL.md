@@ -28,6 +28,8 @@ If it fails, install first:
 npx agent-browser@latest install
 ```
 
+If install also fails (network error, permission denied, incompatible Node version), proceed without agent-browser: skip Steps 3-4 link crawling and dynamic state exploration. Build sitemap from router registry only (Step 2a) and notify user: "agent-browser unavailable. Sitemap built from static route analysis only — dynamic states and SPA client-side routes may be incomplete."
+
 <HARD-RULE>
 Always use a version-qualified `npx agent-browser@latest` invocation. Do not use bare `npx agent-browser` (unpinned) — it may pull breaking changes between runs. For CI reproducibility, consider pinning to a specific version (e.g. `agent-browser@0.4.x`) in your environment.
 </HARD-RULE>
@@ -163,7 +165,10 @@ Combine router registry with link-crawling for complete coverage:
    ab('open <base-url>')
    ab('wait --load networkidle')
    links = abJson('snapshot -i')  // extract all role=link nodes' href
-3. Filter to same-origin paths (exclude external links, `mailto:`, `javascript:`)
+3. Filter to same-origin paths:
+   - Keep: paths under baseUrl's origin (compare `new URL(href).origin === new URL(baseUrl).origin`)
+   - Keep: relative paths (no protocol, e.g., `/about`, `./page`)
+   - Exclude: external links (different origin), `mailto:`, `tel:`, `javascript:`, `data:`, `#fragment-only`
 4. Deduplicate to get crawled route list
 5. Recursively extract links from each new route (breadth-first, max depth 3)
 6. Merge: router routes + crawled routes = complete route list

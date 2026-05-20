@@ -37,7 +37,7 @@ Do NOT silently default to any language. If detect returns nothing and user cann
 </HARD-RULE>
 
 ## Step 1: Read All Documents
-Read `manifest.md`, then all available: `prd/prd-spec.md`, `design/tech-design.md`, `design/api-handbook.md` (if exists), `design/er-diagram.md` (if exists), `design/schema.sql` (if exists), `prd/prd-user-stories.md` (if exists), `prd/prd-ui-functions.md` (if exists), `ui/ui-design.md` (if exists).
+Feature-relative paths below resolve from `docs/features/<slug>/`. Read `manifest.md`, then all available: `prd/prd-spec.md`, `design/tech-design.md`, `design/api-handbook.md` (if exists), `design/er-diagram.md` (if exists), `design/schema.sql` (if exists), `prd/prd-user-stories.md` (if exists), `prd/prd-ui-functions.md` (if exists), `ui/ui-design.md` (if exists).
 
 IF `rules/ui-placement.md` loaded, apply its UI Prototype Reading and Placement Validation. IF `rules/phase-detection.md` loaded, apply its phase detection.
 
