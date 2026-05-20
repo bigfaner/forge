@@ -33,7 +33,7 @@
       "title": "Remove --hard: delete worktree + branch + prune",
       "priority": "P1",
       "estimatedTime": "1.5h",
-      "status": "pending",
+      "status": "completed",
       "file": "3-remove-hard.md",
       "record": "records/3-remove-hard.md",
       "scope": "backend",

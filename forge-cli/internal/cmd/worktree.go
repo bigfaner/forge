@@ -55,7 +55,13 @@ var worktreeRemoveCmd = &cobra.Command{
 
 The branch is preserved after removal so you can merge it later with
 'git merge <slug>'. Fails if the worktree has uncommitted changes —
-commit or stash first.`,
+commit or stash first.
+
+Use --hard to also delete the local branch and prune stale administrative
+files. Without --hard, only the worktree directory is removed.
+
+Use --force with --hard to force deletion even when the worktree has
+uncommitted changes or the branch is not fully merged.`,
 	Args: cobra.ExactArgs(1),
 	RunE: runWorktreeRemove,
 }
@@ -66,6 +72,9 @@ func runWorktreeRemove(cmd *cobra.Command, args []string) error {
 	if slug == "" {
 		return fmt.Errorf("slug must not be empty")
 	}
+
+	hard, _ := cmd.Flags().GetBool("hard")
+	force, _ := cmd.Flags().GetBool("force")
 
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
@@ -102,13 +111,24 @@ func runWorktreeRemove(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Use git worktree remove (not manual directory deletion)
-	_, err = git.Run(projectRoot, "worktree", "remove", targetDir)
+	// Build git worktree remove args
+	removeArgs := []string{"worktree", "remove"}
+	if force {
+		removeArgs = append(removeArgs, "--force")
+	}
+	removeArgs = append(removeArgs, targetDir)
+
+	// Use git worktree remove
+	_, err = git.Run(projectRoot, removeArgs...)
 	if err != nil {
 		// Check if error is due to uncommitted changes
 		errMsg := err.Error()
 		if strings.Contains(errMsg, "dirty") || strings.Contains(errMsg, "modified") ||
 			strings.Contains(errMsg, "local changes") {
+			if hard && !force {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: uncommitted changes in worktree — use --force to discard\n")
+				return fmt.Errorf("uncommitted changes in worktree: %w", err)
+			}
 			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: worktree has uncommitted changes\n")
 			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "hint: commit or stash your changes before removing, or use --force to discard\n")
 			return fmt.Errorf("uncommitted changes in worktree: %w", err)
@@ -116,7 +136,54 @@ func runWorktreeRemove(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("git worktree remove: %w", err)
 	}
 
-	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Removed worktree %q (branch %s preserved)\n", slug, branchName)
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Removed worktree %q\n", slug)
+
+	// --hard: also delete branch and prune
+	if !hard {
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Branch %s preserved\n", branchName)
+		return nil
+	}
+
+	return runHardCleanup(cmd, projectRoot, branchName)
+}
+
+// runHardCleanup performs branch deletion and worktree pruning after worktree removal.
+func runHardCleanup(cmd *cobra.Command, projectRoot, branchName string) error {
+	// Delete local branch (only local — never remote)
+	branchDeleted := false
+	if branchName != "" {
+		// Try safe delete first (git branch -d)
+		_, err := git.Run(projectRoot, "branch", "-d", branchName)
+		if err != nil {
+			// Check if the error is about unmerged changes
+			errMsg := err.Error()
+			if strings.Contains(errMsg, "not fully merged") || strings.Contains(errMsg, "unmerged") {
+				// --hard without --force: warn but still allow deletion per Hard Rules
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Warning: branch %q is not fully merged\n", branchName)
+				_, err = git.Run(projectRoot, "branch", "-D", branchName)
+				if err != nil {
+					_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Skipped branch deletion: %v\n", err)
+				} else {
+					branchDeleted = true
+				}
+			} else {
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Skipped branch deletion: %v\n", err)
+			}
+		} else {
+			branchDeleted = true
+		}
+	} else {
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Skipped branch deletion: branch name unknown\n")
+	}
+
+	if branchDeleted {
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Deleted branch %q\n", branchName)
+	}
+
+	// Prune stale worktree administrative files
+	_, _ = git.Run(projectRoot, "worktree", "prune")
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Pruned stale worktree administrative files\n")
+
 	return nil
 }
 
@@ -214,6 +281,9 @@ func init() {
 	worktreeStartCmd.Flags().StringP("source-branch", "b", "", "source branch for the new worktree (default: HEAD)")
 	worktreeStartCmd.Flags().Bool("no-launch", false, "create worktree without launching claude")
 	worktreeStartCmd.Flags().BoolP("interactive", "i", false, "interactively select a proposal or feature")
+
+	worktreeRemoveCmd.Flags().Bool("hard", false, "delete worktree, local branch, and prune stale administrative files")
+	worktreeRemoveCmd.Flags().Bool("force", false, "force removal even with uncommitted changes (use with --hard)")
 }
 
 func runWorktreeStart(cmd *cobra.Command, args []string) error {
