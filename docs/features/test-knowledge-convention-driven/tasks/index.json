@@ -211,7 +211,7 @@
         "2.gate",
         "3.1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3.2-convention-documentation.md",
       "record": "records/3.2-convention-documentation.md",
       "scope": "all",
