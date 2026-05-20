@@ -1,6 +1,6 @@
 ---
 feature: "stale-cli-commands-cleanup"
-status: tasks
+status: completed
 mode: quick
 ---
 
