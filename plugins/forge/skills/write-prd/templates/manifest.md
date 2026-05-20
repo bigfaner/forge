@@ -1,5 +1,6 @@
 ---
 feature: "{{FEATURE_SLUG}}"
+created: "{{DATE}}"
 status: prd
 ---
 

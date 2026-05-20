@@ -153,7 +153,7 @@ If the language was not detected in Step 0, pass it explicitly: `forge task inde
 
 ## Step 6: Create Manifest
 
-Read `templates/manifest-quick.md` for the format. Write to `docs/features/<slug>/manifest.md`.
+Read `templates/manifest-quick.md` for the format. Write to `docs/features/<slug>/manifest.md`. Replace `{{DATE}}` with today's date in `YYYY-MM-DD` format.
 
 ## Step 7: Validate
 

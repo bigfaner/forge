@@ -8,7 +8,7 @@
       "title": "Manifest 模板添加 created frontmatter",
       "priority": "P2",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "1-add-created-to-manifest-templates.md",
       "record": "records/1-add-created-to-manifest-templates.md",
       "type": "doc"
