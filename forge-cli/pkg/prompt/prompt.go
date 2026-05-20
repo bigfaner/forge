@@ -285,14 +285,12 @@ func isLabelWithEmptyValue(line string) bool {
 	if line == "" {
 		return false
 	}
-	colonIdx := strings.Index(line, ":")
-	if colonIdx < 0 {
+	before, after, found := strings.Cut(line, ":")
+	if !found {
 		return false
 	}
-	// Everything after the colon must be empty or only whitespace.
-	after := strings.TrimSpace(line[colonIdx+1:])
-	// The part before the colon must look like a word (no spaces).
-	before := strings.TrimSpace(line[:colonIdx])
+	before = strings.TrimSpace(before)
+	after = strings.TrimSpace(after)
 	if before == "" || strings.Contains(before, " ") {
 		return false
 	}
