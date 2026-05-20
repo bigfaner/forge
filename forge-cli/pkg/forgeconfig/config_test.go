@@ -561,6 +561,238 @@ func TestGetConfigValueLegacyKeys(t *testing.T) {
 	})
 }
 
+func TestReadConfig_CoverageBlock(t *testing.T) {
+	t.Run("coverage block parsed with defaults", func(t *testing.T) {
+		dir := setupConfig(t, `coverage:
+  coding.feature:
+    type: percentage
+    percentage: 90
+  coding.refactor:
+    type: maintain
+`)
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.Coverage == nil {
+			t.Fatal("expected Coverage non-nil")
+		}
+		strategy, ok := cfg.Coverage.ByType["coding.feature"]
+		if !ok {
+			t.Fatal("expected coding.feature strategy")
+		}
+		if strategy.Type != "percentage" {
+			t.Errorf("coding.feature type = %q, want percentage", strategy.Type)
+		}
+		if strategy.Percentage == nil || *strategy.Percentage != 90 {
+			t.Errorf("coding.feature percentage = %v, want 90", strategy.Percentage)
+		}
+
+		refactor, ok := cfg.Coverage.ByType["coding.refactor"]
+		if !ok {
+			t.Fatal("expected coding.refactor strategy")
+		}
+		if refactor.Type != "maintain" {
+			t.Errorf("coding.refactor type = %q, want maintain", refactor.Type)
+		}
+		if refactor.Percentage != nil {
+			t.Errorf("coding.refactor percentage = %v, want nil", refactor.Percentage)
+		}
+	})
+
+	t.Run("coverage absent is nil", func(t *testing.T) {
+		dir := setupConfig(t, "auto:\n  gitPush: true\n")
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.Coverage != nil {
+			t.Error("expected Coverage nil when not configured")
+		}
+	})
+
+	t.Run("coverage with unknown fields silently ignored", func(t *testing.T) {
+		dir := setupConfig(t, `coverage:
+  coding.feature:
+    type: percentage
+    percentage: 80
+    unknown-extra: value
+`)
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.Coverage == nil {
+			t.Fatal("expected Coverage non-nil")
+		}
+		strategy := cfg.Coverage.ByType["coding.feature"]
+		if strategy.Type != "percentage" {
+			t.Errorf("type = %q, want percentage", strategy.Type)
+		}
+	})
+}
+
+func TestCoverageConfigDefaults(t *testing.T) {
+	defaults := CoverageConfigDefaults()
+	if len(defaults.ByType) == 0 {
+		t.Error("expected non-empty default strategies")
+	}
+
+	tests := []struct {
+		taskType     string
+		wantType     string
+		wantPct      int
+		wantMaintain bool
+	}{
+		{"coding.feature", "percentage", 80, false},
+		{"coding.enhancement", "percentage", 60, false},
+		{"coding.fix", "percentage", 60, false},
+		{"coding.refactor", "maintain", 0, true},
+		{"coding.cleanup", "maintain", 0, true},
+		{"coding.clean", "maintain", 0, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.taskType, func(t *testing.T) {
+			s, ok := defaults.ByType[tt.taskType]
+			if !ok {
+				t.Fatalf("no default for %q", tt.taskType)
+			}
+			if s.Type != tt.wantType {
+				t.Errorf("type = %q, want %q", s.Type, tt.wantType)
+			}
+			if tt.wantMaintain {
+				if s.Percentage != nil {
+					t.Errorf("percentage = %v, want nil for maintain", s.Percentage)
+				}
+			} else {
+				if s.Percentage == nil || *s.Percentage != tt.wantPct {
+					t.Errorf("percentage = %v, want %d", s.Percentage, tt.wantPct)
+				}
+			}
+		})
+	}
+}
+
+func TestCoverageConfigDefaults_UnknownType(t *testing.T) {
+	defaults := CoverageConfigDefaults()
+	_, ok := defaults.ByType["coding.unknown"]
+	if ok {
+		t.Error("expected no default for unknown type")
+	}
+}
+
+func TestCoverageConfigDefaults_Immutable(t *testing.T) {
+	d1 := CoverageConfigDefaults()
+	d2 := CoverageConfigDefaults()
+	// Mutating one should not affect the other
+	delete(d1.ByType, "coding.feature")
+	if _, ok := d2.ByType["coding.feature"]; !ok {
+		t.Error("mutating one default affected the other")
+	}
+}
+
+func TestReadCoverageConfig(t *testing.T) {
+	t.Run("missing config returns defaults", func(t *testing.T) {
+		dir := t.TempDir()
+		coverage, err := ReadCoverageConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		defaults := CoverageConfigDefaults()
+		if len(coverage.ByType) != len(defaults.ByType) {
+			t.Errorf("coverage types = %d, want %d", len(coverage.ByType), len(defaults.ByType))
+		}
+		for k, v := range defaults.ByType {
+			got, ok := coverage.ByType[k]
+			if !ok {
+				t.Errorf("missing default for %q", k)
+				continue
+			}
+			if got.Type != v.Type {
+				t.Errorf("type for %q = %q, want %q", k, got.Type, v.Type)
+			}
+		}
+	})
+
+	t.Run("partial config merges with defaults", func(t *testing.T) {
+		dir := setupConfig(t, `coverage:
+  coding.feature:
+    type: percentage
+    percentage: 95
+`)
+		coverage, err := ReadCoverageConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		// coding.feature should be overridden
+		s := coverage.ByType["coding.feature"]
+		if s.Percentage == nil || *s.Percentage != 95 {
+			t.Errorf("coding.feature percentage = %v, want 95", s.Percentage)
+		}
+		// Other defaults should still be present
+		if _, ok := coverage.ByType["coding.refactor"]; !ok {
+			t.Error("expected coding.refactor default to be present")
+		}
+	})
+}
+
+func TestGetConfigValue_CoverageKeys(t *testing.T) {
+	t.Run("coverage.coding.feature returns percentage", func(t *testing.T) {
+		dir := setupConfig(t, `coverage:
+  coding.feature:
+    type: percentage
+    percentage: 80
+  coding.refactor:
+    type: maintain
+`)
+		val, err := GetConfigValue(dir, "coverage.coding.feature")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "80" {
+			t.Errorf("expected '80', got %q", val)
+		}
+	})
+
+	t.Run("coverage.coding.refactor returns maintain", func(t *testing.T) {
+		dir := setupConfig(t, `coverage:
+  coding.refactor:
+    type: maintain
+`)
+		val, err := GetConfigValue(dir, "coverage.coding.refactor")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "maintain" {
+			t.Errorf("expected 'maintain', got %q", val)
+		}
+	})
+
+	t.Run("coverage.unknown-type returns error", func(t *testing.T) {
+		dir := setupConfig(t, `coverage:
+  coding.feature:
+    type: percentage
+    percentage: 80
+`)
+		_, err := GetConfigValue(dir, "coverage.unknown.type")
+		if err != ErrKeyNotFound {
+			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		}
+	})
+
+	t.Run("coverage key with no config returns default", func(t *testing.T) {
+		dir := t.TempDir()
+		val, err := GetConfigValue(dir, "coverage.coding.feature")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "80" {
+			t.Errorf("expected '80' (default), got %q", val)
+		}
+	})
+}
+
 func TestWriteConfigAutoBlock(t *testing.T) {
 	t.Run("write and read auto block", func(t *testing.T) {
 		dir := t.TempDir()

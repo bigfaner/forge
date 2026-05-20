@@ -120,6 +120,10 @@ type Task struct {
 	// BlockedReason records why a task entered blocked state.
 	// Written by run-tasks when task prompt exits non-zero.
 	BlockedReason string `json:"blockedReason,omitempty"`
+	// Coverage is an optional per-task coverage override from frontmatter.
+	// nil means use the global coverage config default for the task type.
+	// Non-nil (including 0) means the task has an explicit coverage target.
+	Coverage *int `json:"coverage,omitempty"`
 }
 
 // TaskIndex represents the index.json structure for a feature.

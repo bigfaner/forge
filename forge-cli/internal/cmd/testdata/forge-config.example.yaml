@@ -59,3 +59,26 @@ auto:
 #   copy-files:
 #     - .env
 #     - .env.local
+
+# Coverage strategy configuration (optional — omit the block for built-in defaults)
+# Per task type, choose a strategy:
+#   - percentage: target a specific coverage percentage
+#   - maintain: keep existing coverage, don't add new tests
+# Built-in defaults (used when this block is omitted):
+#   coding.feature: 80%, coding.enhancement/fix: 60%, coding.refactor/cleanup/clean: maintain
+# coverage:
+#   coding.feature:
+#     type: percentage
+#     percentage: 80
+#   coding.enhancement:
+#     type: percentage
+#     percentage: 60
+#   coding.fix:
+#     type: percentage
+#     percentage: 60
+#   coding.refactor:
+#     type: maintain
+#   coding.cleanup:
+#     type: maintain
+#   coding.clean:
+#     type: maintain

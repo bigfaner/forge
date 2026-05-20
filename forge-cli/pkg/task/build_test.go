@@ -1655,3 +1655,98 @@ func TestBuildIndex_QuickValidationTasks(t *testing.T) {
 		t.Error("T-validate-ux not found in generated tasks for quick mode")
 	}
 }
+
+func TestBuildIndex_CoverageFieldPropagation(t *testing.T) {
+	t.Run("coverage field propagates from frontmatter to task", func(t *testing.T) {
+		projectRoot, tasksDir, indexPath := setupBuildEnv(t, "")
+
+		// Write task with coverage: 95
+		content := "---\nid: \"1\"\ntitle: \"Covered Task\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"coding.feature\"\nscope: \"all\"\ncoverage: 95\n---\n\n# Task\n"
+		if err := os.WriteFile(filepath.Join(tasksDir, "1-foo.md"), []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		opts := BuildIndexOpts{
+			FeatureSlug: "test-feature",
+			ProjectRoot: projectRoot,
+			TasksDir:    tasksDir,
+			IndexPath:   indexPath,
+		}
+
+		if _, err := BuildIndex(opts); err != nil {
+			t.Fatalf("BuildIndex: %v", err)
+		}
+
+		data, _ := os.ReadFile(indexPath)
+		var idx taskIndexJSON
+		_ = json.Unmarshal(data, &idx)
+
+		task := idx.Tasks["1-foo"]
+		if task.Coverage == nil {
+			t.Fatal("expected Coverage non-nil")
+		}
+		if *task.Coverage != 95 {
+			t.Errorf("Coverage = %d, want 95", *task.Coverage)
+		}
+	})
+
+	t.Run("coverage absent is nil", func(t *testing.T) {
+		projectRoot, tasksDir, indexPath := setupBuildEnv(t, "")
+
+		writeTaskMD(t, tasksDir, "1-foo.md", "1", "No Coverage", nil)
+
+		opts := BuildIndexOpts{
+			FeatureSlug: "test-feature",
+			ProjectRoot: projectRoot,
+			TasksDir:    tasksDir,
+			IndexPath:   indexPath,
+		}
+
+		if _, err := BuildIndex(opts); err != nil {
+			t.Fatalf("BuildIndex: %v", err)
+		}
+
+		data, _ := os.ReadFile(indexPath)
+		var idx taskIndexJSON
+		_ = json.Unmarshal(data, &idx)
+
+		task := idx.Tasks["1-foo"]
+		if task.Coverage != nil {
+			t.Errorf("expected Coverage nil, got %d", *task.Coverage)
+		}
+	})
+
+	t.Run("coverage preserved across rebuild", func(t *testing.T) {
+		projectRoot, tasksDir, indexPath := setupBuildEnv(t, "")
+
+		content := "---\nid: \"1\"\ntitle: \"Covered Task\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"coding.feature\"\nscope: \"all\"\ncoverage: 90\n---\n\n# Task\n"
+		if err := os.WriteFile(filepath.Join(tasksDir, "1-foo.md"), []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		opts := BuildIndexOpts{
+			FeatureSlug: "test-feature",
+			ProjectRoot: projectRoot,
+			TasksDir:    tasksDir,
+			IndexPath:   indexPath,
+		}
+
+		if _, err := BuildIndex(opts); err != nil {
+			t.Fatalf("first build: %v", err)
+		}
+
+		// Second build
+		if _, err := BuildIndex(opts); err != nil {
+			t.Fatalf("second build: %v", err)
+		}
+
+		data, _ := os.ReadFile(indexPath)
+		var idx taskIndexJSON
+		_ = json.Unmarshal(data, &idx)
+
+		task := idx.Tasks["1-foo"]
+		if task.Coverage == nil || *task.Coverage != 90 {
+			t.Errorf("Coverage after rebuild = %v, want 90", task.Coverage)
+		}
+	})
+}

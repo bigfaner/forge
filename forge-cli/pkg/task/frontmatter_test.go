@@ -4,6 +4,67 @@ import (
 	"testing"
 )
 
+func TestParseFrontmatter_CoverageField(t *testing.T) {
+	t.Run("coverage present", func(t *testing.T) {
+		input := `---
+id: "1"
+title: "Task"
+type: "coding.feature"
+coverage: 95
+---
+
+Body`
+		fm, _, err := ParseFrontmatter([]byte(input))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if fm.Coverage == nil {
+			t.Fatal("expected Coverage non-nil")
+		}
+		if *fm.Coverage != 95 {
+			t.Errorf("Coverage = %d, want 95", *fm.Coverage)
+		}
+	})
+
+	t.Run("coverage absent is nil", func(t *testing.T) {
+		input := `---
+id: "1"
+title: "Task"
+type: "coding.feature"
+---
+
+Body`
+		fm, _, err := ParseFrontmatter([]byte(input))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if fm.Coverage != nil {
+			t.Errorf("expected Coverage nil, got %d", *fm.Coverage)
+		}
+	})
+
+	t.Run("coverage zero is valid", func(t *testing.T) {
+		input := `---
+id: "1"
+title: "Task"
+type: "coding.feature"
+coverage: 0
+---
+
+Body`
+		fm, _, err := ParseFrontmatter([]byte(input))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if fm.Coverage == nil {
+			t.Fatal("expected Coverage non-nil even for zero value")
+		}
+		if *fm.Coverage != 0 {
+			t.Errorf("Coverage = %d, want 0", *fm.Coverage)
+		}
+	})
+}
+
 func TestParseFrontmatter(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -110,6 +171,21 @@ Summary body`,
 			wantID:    "1",
 			wantTitle: "Task",
 			wantBody:  "",
+		},
+		{
+			name: "frontmatter with coverage field",
+			input: `---
+id: "1"
+title: "Task with coverage"
+type: "coding.feature"
+coverage: 90
+---
+
+Body here`,
+			wantID:    "1",
+			wantTitle: "Task with coverage",
+			wantType:  "coding.feature",
+			wantBody:  "\n\nBody here",
 		},
 	}
 

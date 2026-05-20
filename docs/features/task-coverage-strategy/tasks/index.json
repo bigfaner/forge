@@ -8,7 +8,7 @@
       "title": "Add coverage config schema, parsing, and frontmatter field",
       "priority": "P1",
       "estimatedTime": "2h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-config-and-frontmatter.md",
       "record": "records/1-config-and-frontmatter.md",
       "scope": "backend",
@@ -51,7 +51,6 @@
       "file": "quick-drift-detection.md",
       "record": "records/quick-drift-detection.md",
       "scope": "all",
-      "noTest": true,
       "type": "doc.drift"
     }
   },
