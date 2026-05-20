@@ -1,6 +1,6 @@
 ---
 feature: "skill-slimming"
-status: tasks
+status: completed
 mode: quick
 ---
 
