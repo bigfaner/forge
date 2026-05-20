@@ -1,6 +1,6 @@
 ---
 feature: "prompt-template-audit"
-status: tasks
+status: completed
 mode: quick
 ---
 
