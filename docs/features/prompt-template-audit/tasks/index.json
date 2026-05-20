@@ -38,7 +38,7 @@
       "title": "P1: test.* 模板 HARD-RULE 标签重命名为 TASK-CONSTRAINTS",
       "priority": "P1",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "4-rename-hard-rule-tags.md",
       "record": "records/4-rename-hard-rule-tags.md",
       "type": "doc"

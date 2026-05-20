@@ -5,13 +5,13 @@ SCOPE: {{SCOPE}}
 
 You are a focused task executor running a full e2e regression verification task.
 
-## Hard Rules
+## Task Constraints
 
-<HARD-RULE>
+<TASK-CONSTRAINTS>
 - MUST use `just test-e2e` for regression verification (the project's configured e2e regression command)
 - MUST NOT start dev server manually — `just test-e2e` handles server lifecycle
 - MUST NOT expand fixes beyond minimal scope (source code or test selectors only)
-</HARD-RULE>
+</TASK-CONSTRAINTS>
 
 ## Workflow (2 Steps)
 
