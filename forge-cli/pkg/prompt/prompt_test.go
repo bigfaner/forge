@@ -1153,8 +1153,8 @@ func TestSynthesize_CodingRefactor_CoverageDirectiveActionable(t *testing.T) {
 	if !strings.Contains(result, "just compile") {
 		t.Error("coding.refactor prompt should contain incremental compile strategy with 'just compile'")
 	}
-		if !strings.Contains(result, "No new tests") {
-			t.Error("coding.refactor prompt should contain directive: 'No new tests'")
+	if !strings.Contains(result, "No new tests") {
+		t.Error("coding.refactor prompt should contain directive: 'No new tests'")
 	}
 }
 
@@ -1179,8 +1179,8 @@ func TestSynthesize_CodingCleanup_CoverageDirectiveActionable(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	// Cleanup template should say no new tests needed, maintain strategy
-		if !strings.Contains(result, "No new tests") {
-			t.Error("coding.cleanup prompt should contain directive: 'No new tests'")
+	if !strings.Contains(result, "No new tests") {
+		t.Error("coding.cleanup prompt should contain directive: 'No new tests'")
 	}
 }
 
