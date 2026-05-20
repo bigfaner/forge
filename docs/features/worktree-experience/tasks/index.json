@@ -1,0 +1,116 @@
+{
+  "feature": "worktree-experience",
+  "proposal": "docs/proposals/worktree-experience/proposal.md",
+  "created": "2026-05-20",
+  "tasks": {
+    "1-start-refactor": {
+      "id": "1",
+      "title": "Refactor start: branch-first creation + --no-launch flag",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "status": "completed",
+      "file": "1-start-refactor.md",
+      "record": "records/1-start-refactor.md",
+      "scope": "backend",
+      "type": "coding.enhancement"
+    },
+    "2-start-interactive": {
+      "id": "2",
+      "title": "Start interactive mode: -i flag for proposal/feature selection",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-start-interactive.md",
+      "record": "records/2-start-interactive.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "3-remove-hard": {
+      "id": "3",
+      "title": "Remove --hard: delete worktree + branch + prune",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "status": "completed",
+      "file": "3-remove-hard.md",
+      "record": "records/3-remove-hard.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "4-push-subcommand": {
+      "id": "4",
+      "title": "Add worktree push subcommand",
+      "priority": "P2",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "4-push-subcommand.md",
+      "record": "records/4-push-subcommand.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "5-status-subcommand": {
+      "id": "5",
+      "title": "Add worktree status subcommand",
+      "priority": "P2",
+      "estimatedTime": "1.5h",
+      "status": "completed",
+      "file": "5-status-subcommand.md",
+      "record": "records/5-status-subcommand.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "6-resume-session": {
+      "id": "6",
+      "title": "Resume with claude -c session restore",
+      "priority": "P2",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "6-resume-session.md",
+      "record": "records/6-resume-session.md",
+      "scope": "backend",
+      "type": "coding.enhancement"
+    },
+    "7-shell-completion": {
+      "id": "7",
+      "title": "Shell completion for start/remove/resume subcommands",
+      "priority": "P2",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1",
+        "3",
+        "6"
+      ],
+      "status": "completed",
+      "file": "7-shell-completion.md",
+      "record": "records/7-shell-completion.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "scope": "all",
+      "type": "doc.drift"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

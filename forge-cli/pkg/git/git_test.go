@@ -351,3 +351,47 @@ func TestRun_OutputTrimmed(t *testing.T) {
 		t.Errorf("output should be trimmed, got %q", out)
 	}
 }
+
+// ---------------------------------------------------------------------------
+// IsInsideWorktree
+// ---------------------------------------------------------------------------
+
+func TestIsInsideWorktree_NotGitDir(t *testing.T) {
+	dir := t.TempDir()
+	if IsInsideWorktree(dir) {
+		t.Error("expected false for non-git directory")
+	}
+}
+
+func TestIsInsideWorktree_RegularGitRepo(t *testing.T) {
+	dir := initGitRepo(t)
+	if IsInsideWorktree(dir) {
+		t.Error("expected false for regular git repo (.git is a directory)")
+	}
+}
+
+func TestIsInsideWorktree_LinkedWorktree(t *testing.T) {
+	// Simulate a linked worktree: .git is a file, not a directory
+	dir := t.TempDir()
+	mainRepo := t.TempDir()
+	gitFile := filepath.Join(dir, ".git")
+	content := "gitdir: " + strings.ReplaceAll(filepath.Join(mainRepo, ".git", "worktrees", "my-wt"), "\\", "/") + "\n"
+	if err := os.WriteFile(gitFile, []byte(content), 0o644); err != nil {
+		t.Fatalf("write .git file: %v", err)
+	}
+	if !IsInsideWorktree(dir) {
+		t.Error("expected true for linked worktree (.git is a file)")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Push
+// ---------------------------------------------------------------------------
+
+func TestPush_NotGitRepo(t *testing.T) {
+	dir := t.TempDir()
+	_, err := Push(dir)
+	if err == nil {
+		t.Error("expected error when pushing from non-git directory")
+	}
+}

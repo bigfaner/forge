@@ -1,9 +1,12 @@
 package cmd
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 
@@ -11,8 +14,10 @@ import (
 	"forge-cli/pkg/forgeconfig"
 	"forge-cli/pkg/git"
 	"forge-cli/pkg/project"
+	"forge-cli/pkg/proposal"
 
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 )
 
 // listWorktreesFunc lists git worktrees for a project root.
@@ -21,6 +26,15 @@ var listWorktreesFunc = git.ListWorktrees
 
 // gitRunFunc executes a git command. Overridable for testing.
 var gitRunFunc = git.Run
+
+// gitPushFunc pushes to remote. Overridable for testing.
+var gitPushFunc = git.Push
+
+// isInsideWorktreeFunc checks if inside a linked worktree. Overridable for testing.
+var isInsideWorktreeFunc = git.IsInsideWorktree
+
+// getCurrentBranchFunc returns the current branch name. Overridable for testing.
+var getCurrentBranchFunc = git.GetCurrentBranch
 
 var worktreeCmd = &cobra.Command{
 	Use:   "worktree",
@@ -50,7 +64,13 @@ var worktreeRemoveCmd = &cobra.Command{
 
 The branch is preserved after removal so you can merge it later with
 'git merge <slug>'. Fails if the worktree has uncommitted changes —
-commit or stash first.`,
+commit or stash first.
+
+Use --hard to also delete the local branch and prune stale administrative
+files. Without --hard, only the worktree directory is removed.
+
+Use --force with --hard to force deletion even when the worktree has
+uncommitted changes or the branch is not fully merged.`,
 	Args: cobra.ExactArgs(1),
 	RunE: runWorktreeRemove,
 }
@@ -61,6 +81,9 @@ func runWorktreeRemove(cmd *cobra.Command, args []string) error {
 	if slug == "" {
 		return fmt.Errorf("slug must not be empty")
 	}
+
+	hard, _ := cmd.Flags().GetBool("hard")
+	force, _ := cmd.Flags().GetBool("force")
 
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
@@ -97,13 +120,24 @@ func runWorktreeRemove(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Use git worktree remove (not manual directory deletion)
-	_, err = git.Run(projectRoot, "worktree", "remove", targetDir)
+	// Build git worktree remove args
+	removeArgs := []string{"worktree", "remove"}
+	if force {
+		removeArgs = append(removeArgs, "--force")
+	}
+	removeArgs = append(removeArgs, targetDir)
+
+	// Use git worktree remove
+	_, err = git.Run(projectRoot, removeArgs...)
 	if err != nil {
 		// Check if error is due to uncommitted changes
 		errMsg := err.Error()
 		if strings.Contains(errMsg, "dirty") || strings.Contains(errMsg, "modified") ||
 			strings.Contains(errMsg, "local changes") {
+			if hard && !force {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: uncommitted changes in worktree — use --force to discard\n")
+				return fmt.Errorf("uncommitted changes in worktree: %w", err)
+			}
 			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: worktree has uncommitted changes\n")
 			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "hint: commit or stash your changes before removing, or use --force to discard\n")
 			return fmt.Errorf("uncommitted changes in worktree: %w", err)
@@ -111,14 +145,63 @@ func runWorktreeRemove(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("git worktree remove: %w", err)
 	}
 
-	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Removed worktree %q (branch %s preserved)\n", slug, branchName)
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Removed worktree %q\n", slug)
+
+	// --hard: also delete branch and prune
+	if !hard {
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Branch %s preserved\n", branchName)
+		return nil
+	}
+
+	return runHardCleanup(cmd, projectRoot, branchName)
+}
+
+// runHardCleanup performs branch deletion and worktree pruning after worktree removal.
+func runHardCleanup(cmd *cobra.Command, projectRoot, branchName string) error {
+	// Delete local branch (only local — never remote)
+	branchDeleted := false
+	if branchName != "" {
+		// Try safe delete first (git branch -d)
+		_, err := git.Run(projectRoot, "branch", "-d", branchName)
+		if err != nil {
+			// Check if the error is about unmerged changes
+			errMsg := err.Error()
+			if strings.Contains(errMsg, "not fully merged") || strings.Contains(errMsg, "unmerged") {
+				// --hard without --force: warn but still allow deletion per Hard Rules
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Warning: branch %q is not fully merged\n", branchName)
+				_, err = git.Run(projectRoot, "branch", "-D", branchName)
+				if err != nil {
+					_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Skipped branch deletion: %v\n", err)
+				} else {
+					branchDeleted = true
+				}
+			} else {
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Skipped branch deletion: %v\n", err)
+			}
+		} else {
+			branchDeleted = true
+		}
+	} else {
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Skipped branch deletion: branch name unknown\n")
+	}
+
+	if branchDeleted {
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Deleted branch %q\n", branchName)
+	}
+
+	// Prune stale worktree administrative files
+	_, _ = git.Run(projectRoot, "worktree", "prune")
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Pruned stale worktree administrative files\n")
+
 	return nil
 }
 
 var worktreeResumeCmd = &cobra.Command{
 	Use:   "resume <slug>",
 	Short: "Re-launch Claude in an existing worktree",
-	Long: `Launch claude --dangerously-skip-permissions in an existing worktree directory.
+	Long: `Launch claude with session restore (-c) and --dangerously-skip-permissions in an
+existing worktree directory. If the -c flag is not supported by the installed
+Claude CLI, falls back to launching without session restore.
 
 Verifies that the worktree exists and is a valid git worktree before launching.`,
 	Args: cobra.ExactArgs(1),
@@ -185,11 +268,187 @@ func runWorktreeResume(cmd *cobra.Command, args []string) error {
 	}
 
 	allArgs := []string{"--dangerously-skip-permissions"}
+
+	// Add -c <slug> for session restore if supported
+	if claudeSupportsContinueFlagFunc() {
+		allArgs = append([]string{"-c", slug}, allArgs...)
+	}
+
 	return runClaudeFunc(allArgs)
 }
 
+var worktreePushCmd = &cobra.Command{
+	Use:   "push",
+	Short: "Push the current worktree branch to remote",
+	Long: `Push the current worktree's branch to origin with upstream tracking set.
+
+Must be run inside a linked worktree (not the main worktree on its default branch).
+Uses "git push -u origin HEAD" to push and set the upstream tracking reference.`,
+	Args: cobra.NoArgs,
+	RunE: runWorktreePush,
+}
+
+func runWorktreePush(cmd *cobra.Command, _ []string) error {
+	projectRoot, err := project.FindProjectRoot()
+	if err != nil {
+		return fmt.Errorf("find project root: %w", err)
+	}
+
+	if !git.IsGitRepository(projectRoot) {
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: not a git repository: %s\n", projectRoot)
+		return fmt.Errorf("not a git repository: %s", projectRoot)
+	}
+
+	// Hard Rule: must detect worktree context before pushing
+	if !isInsideWorktreeFunc(projectRoot) {
+		_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "error: not inside a worktree")
+		_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "hint: run this command from within a forge worktree directory")
+		return fmt.Errorf("not inside a worktree")
+	}
+
+	// Hard Rule: refuse to push from main worktree's main branch
+	branch := getCurrentBranchFunc(projectRoot)
+	if branch == "main" || branch == "master" {
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: refusing to push default branch %q\n", branch)
+		_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "hint: switch to a feature branch before pushing")
+		return fmt.Errorf("refusing to push default branch: %s", branch)
+	}
+
+	// Push with upstream tracking
+	output, err := gitPushFunc(projectRoot)
+	if err != nil {
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: push failed: %v\n", err)
+		return fmt.Errorf("push failed: %w", err)
+	}
+
+	if output != "" {
+		_, _ = fmt.Fprint(cmd.OutOrStdout(), output)
+	}
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Pushed branch %q to origin\n", branch)
+	return nil
+}
+
+var worktreeStatusCmd = &cobra.Command{
+	Use:   "status [<slug>]",
+	Short: "Show worktree status",
+	Long: `Display the status of a forge-managed worktree: branch name, latest commit,
+and uncommitted files list.
+
+When no slug is provided, shows status for all forge-managed worktrees.
+This command is strictly read-only — it never modifies any filesystem state.`,
+	Args: cobra.MaximumNArgs(1),
+	RunE: runWorktreeStatus,
+}
+
+func runWorktreeStatus(cmd *cobra.Command, args []string) error {
+	projectRoot, err := project.FindProjectRoot()
+	if err != nil {
+		return fmt.Errorf("find project root: %w", err)
+	}
+
+	if !git.IsGitRepository(projectRoot) {
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: not a git repository: %s\n", projectRoot)
+		return fmt.Errorf("not a git repository: %s", projectRoot)
+	}
+
+	entries, err := listWorktreesFunc(projectRoot)
+	if err != nil {
+		return fmt.Errorf("list worktrees: %w", err)
+	}
+
+	// Build set of forge-managed feature slugs
+	forgeFeatures := listForgeFeatures(projectRoot)
+
+	if len(args) == 1 {
+		// Specific slug requested
+		return showWorktreeStatus(cmd, projectRoot, entries, forgeFeatures, args[0])
+	}
+
+	// No slug: show status for all forge-managed worktrees
+	return showAllWorktreeStatus(cmd, projectRoot, entries, forgeFeatures)
+}
+
+// showWorktreeStatus displays status for a specific worktree slug.
+func showWorktreeStatus(cmd *cobra.Command, projectRoot string, entries []git.WorktreeEntry, _ map[string]bool, slug string) error {
+	// Find the worktree by slug
+	var found *git.WorktreeEntry
+	for i := range entries {
+		if entries[i].Name() == slug {
+			found = &entries[i]
+			break
+		}
+	}
+
+	if found == nil {
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: worktree %q not found\n", slug)
+		return fmt.Errorf("worktree %q not found", slug)
+	}
+
+	printWorktreeStatus(cmd, projectRoot, found)
+	return nil
+}
+
+// showAllWorktreeStatus displays status for all forge-managed worktrees.
+func showAllWorktreeStatus(cmd *cobra.Command, projectRoot string, entries []git.WorktreeEntry, forgeFeatures map[string]bool) error {
+	// Filter to forge-managed worktrees (non-main, with matching feature slug)
+	var forgeWorktrees []git.WorktreeEntry
+	for _, entry := range entries {
+		name := entry.Name()
+		if !entry.IsMain && forgeFeatures[name] {
+			forgeWorktrees = append(forgeWorktrees, entry)
+		}
+	}
+
+	if len(forgeWorktrees) == 0 {
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "No forge-managed worktrees found")
+		return nil
+	}
+
+	for i := range forgeWorktrees {
+		printWorktreeStatus(cmd, projectRoot, &forgeWorktrees[i])
+	}
+	return nil
+}
+
+// printWorktreeStatus prints the status of a single worktree using structured output format.
+// This is a read-only operation — it only reads git state, never modifies it.
+func printWorktreeStatus(cmd *cobra.Command, _ string, entry *git.WorktreeEntry) {
+	worktreePath := entry.Path
+
+	// Branch name
+	branch := entry.Branch
+	if branch == "" {
+		branch = "(detached)"
+	}
+
+	// Latest commit: git log -1 --oneline
+	commitInfo := ""
+	if output, err := gitRunFunc(worktreePath, "log", "-1", "--oneline"); err == nil {
+		commitInfo = output
+	}
+
+	// Uncommitted files: git status --porcelain
+	var uncommittedFiles []string
+	if output, err := gitRunFunc(worktreePath, "status", "--porcelain"); err == nil && output != "" {
+		uncommittedFiles = strings.Split(output, "\n")
+	}
+
+	// Print structured output using PrintBlockStart/PrintField/PrintBlockEnd pattern
+	w := cmd.OutOrStdout()
+	_, _ = fmt.Fprintln(w, "---")
+	_, _ = fmt.Fprintf(w, "WORKTREE: %s\n", entry.Name())
+	_, _ = fmt.Fprintf(w, "BRANCH: %s\n", branch)
+	_, _ = fmt.Fprintf(w, "COMMIT: %s\n", commitInfo)
+	if len(uncommittedFiles) > 0 {
+		_, _ = fmt.Fprintf(w, "UNCOMMITTED: %s\n", strings.Join(uncommittedFiles, ", "))
+	} else {
+		_, _ = fmt.Fprintln(w, "UNCOMMITTED: (none)")
+	}
+	_, _ = fmt.Fprintln(w, "---")
+}
+
 var worktreeStartCmd = &cobra.Command{
-	Use:   "start <slug>",
+	Use:   "start [slug]",
 	Short: "Create a worktree and launch Claude in it",
 	Long: `Create a git worktree at .forge/worktrees/<slug> with branch <slug> from HEAD,
 then launch claude --dangerously-skip-permissions in the worktree directory.
@@ -198,26 +457,79 @@ If branch <slug> already exists, creates the worktree from that branch
 (resume context).
 
 The source branch for new worktrees can be set via --source-branch / -b flag
-or worktree.source-branch in .forge/config.yaml. Priority: flag > config > HEAD.`,
-	Args: cobra.ExactArgs(1),
+or worktree.source-branch in .forge/config.yaml. Priority: flag > config > HEAD.
+
+Use -i/--interactive to select a proposal or feature from a list.`,
+	Args: cobra.MaximumNArgs(1),
 	RunE: runWorktreeStart,
 }
 
 func init() {
 	worktreeStartCmd.Flags().StringP("source-branch", "b", "", "source branch for the new worktree (default: HEAD)")
+	worktreeStartCmd.Flags().Bool("no-launch", false, "create worktree without launching claude")
+	worktreeStartCmd.Flags().BoolP("interactive", "i", false, "interactively select a proposal or feature")
+
+	worktreeRemoveCmd.Flags().Bool("hard", false, "delete worktree, local branch, and prune stale administrative files")
+	worktreeRemoveCmd.Flags().Bool("force", false, "force removal even with uncommitted changes (use with --hard)")
+
+	// Shell completion functions
+	worktreeStartCmd.ValidArgsFunction = worktreeStartCompletion
+	worktreeRemoveCmd.ValidArgsFunction = worktreeRemoveCompletion
+	worktreeResumeCmd.ValidArgsFunction = worktreeResumeCompletion
+
+	worktreeCmd.AddCommand(worktreePushCmd)
+	worktreeCmd.AddCommand(worktreeStatusCmd)
 }
 
 func runWorktreeStart(cmd *cobra.Command, args []string) error {
-	slug := args[0]
-
-	if slug == "" {
-		return fmt.Errorf("slug must not be empty")
+	slug := ""
+	if len(args) > 0 {
+		slug = args[0]
 	}
 
-	// Pre-flight: verify claude binary exists in PATH
-	if _, err := lookPathFunc("claude"); err != nil {
-		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: claude binary not found in PATH\n")
-		return fmt.Errorf("claude: %w", err)
+	// Interactive mode: prompt user to select a proposal or feature
+	interactive, _ := cmd.Flags().GetBool("interactive")
+	if slug == "" && interactive {
+		// Find project root first (needed for scanning)
+		projectRoot, err := project.FindProjectRoot()
+		if err != nil {
+			return fmt.Errorf("find project root: %w", err)
+		}
+
+		// Check TTY
+		if !isTerminalFunc() {
+			_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "error: interactive mode requires a terminal (TTY)")
+			return fmt.Errorf("interactive mode requires a terminal")
+		}
+
+		items := listUnfinishedItems(projectRoot)
+		if len(items) == 0 {
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "No unfinished proposals or features found.")
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Create one with: forge proposal <slug> or forge feature <slug>")
+			return nil
+		}
+
+		selected, err := promptSelection(items, cmd.OutOrStdout())
+		if err != nil {
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: %v\n", err)
+			return err
+		}
+		slug = selected
+	}
+
+	if slug == "" {
+		return fmt.Errorf("slug is required (provide as argument or use -i for interactive selection)")
+	}
+
+	// Check --no-launch early: skip claude pre-flight when not launching
+	noLaunch, _ := cmd.Flags().GetBool("no-launch")
+
+	// Pre-flight: verify claude binary exists in PATH (skip when --no-launch)
+	if !noLaunch {
+		if _, err := lookPathFunc("claude"); err != nil {
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: claude binary not found in PATH\n")
+			return fmt.Errorf("claude: %w", err)
+		}
 	}
 
 	// Find project root
@@ -290,15 +602,23 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Create the worktree using three-layer resolution
+	// Create the worktree using three-layer resolution with branch-first approach
 	switch {
 	case localBranchExists:
 		// Layer 1: Resume from existing local branch
 		_, err = gitRunFunc(projectRoot, "worktree", "add", targetDir, slug)
 	case remoteBranchExists:
-		// Layer 2: Create from remote tracking branch
+		// Layer 2: Create branch from remote tracking branch, then add worktree
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "creating worktree from remote branch origin/%s\n", slug)
-		_, err = gitRunFunc(projectRoot, "worktree", "add", "-b", slug, targetDir, "origin/"+slug)
+		_, err = gitRunFunc(projectRoot, "branch", slug, "origin/"+slug)
+		if err != nil {
+			return fmt.Errorf("git branch %s origin/%s: %w", slug, slug, err)
+		}
+		_, err = gitRunFunc(projectRoot, "worktree", "add", targetDir, slug)
+		if err != nil {
+			// Cleanup: remove the branch we just created
+			_, _ = gitRunFunc(projectRoot, "branch", "-D", slug)
+		}
 	default:
 		// Layer 3: Pre-validate source branch if specified
 		if sourceBranch != "" {
@@ -309,12 +629,20 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 			}
 		}
 
-		// New: create worktree with new branch from source
-		args := []string{"worktree", "add", "-b", slug, targetDir}
+		// Branch-first: create branch from source, then add worktree
+		branchArgs := []string{"branch", slug}
 		if sourceBranch != "" {
-			args = append(args, sourceBranch)
+			branchArgs = append(branchArgs, sourceBranch)
 		}
-		_, err = gitRunFunc(projectRoot, args...)
+		_, err = gitRunFunc(projectRoot, branchArgs...)
+		if err != nil {
+			return fmt.Errorf("git branch %s: %w", slug, err)
+		}
+		_, err = gitRunFunc(projectRoot, "worktree", "add", targetDir, slug)
+		if err != nil {
+			// Cleanup: remove the branch we just created
+			_, _ = gitRunFunc(projectRoot, "branch", "-D", slug)
+		}
 	}
 	if err != nil {
 		return fmt.Errorf("git worktree add: %w", err)
@@ -323,6 +651,12 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 	// Copy configured files from project root to worktree
 	if err := copyFilesToWorktree(projectRoot, targetDir, copyFiles); err != nil {
 		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: copy-files failed: %v\n", err)
+	}
+
+	// --no-launch: print path and exit without launching claude
+	if noLaunch {
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "worktree created at %s\n", targetDir)
+		return nil
 	}
 
 	// Launch claude in the worktree directory
@@ -452,4 +786,240 @@ func copyFilesToWorktree(projectRoot, worktreeDir string, copyFiles []string) er
 		}
 	}
 	return nil
+}
+
+// selectableItem represents a proposal or feature that can be selected interactively.
+type selectableItem struct {
+	Slug   string // directory name (used as slug)
+	Type   string // "proposal" or "feature"
+	Status string // frontmatter status, e.g. "Draft", "in_progress", "completed"
+}
+
+// listUnfinishedItems scans docs/proposals/ and docs/features/ for unfinished work.
+//
+// Proposals are considered unfinished if their status is not "completed".
+// Features are considered unfinished if their manifest status is not "completed".
+// Proposals appear before features in the returned list.
+func listUnfinishedItems(projectRoot string) []selectableItem {
+	var items []selectableItem
+
+	// Scan proposals: any proposal directory with status != "completed"
+	proposals, err := proposal.Discover(projectRoot)
+	if err == nil {
+		for _, p := range proposals {
+			if strings.EqualFold(p.Status, "completed") {
+				continue
+			}
+			status := p.Status
+			if status == "" {
+				status = "Draft"
+			}
+			items = append(items, selectableItem{
+				Slug:   p.Slug,
+				Type:   "proposal",
+				Status: status,
+			})
+		}
+	}
+
+	// Scan features: any feature directory with manifest status != "completed"
+	featuresDir := filepath.Join(projectRoot, feature.FeaturesDir)
+	entries, err := os.ReadDir(featuresDir)
+	if err == nil {
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				continue
+			}
+			slug := entry.Name()
+
+			// Skip if already listed as a proposal
+			if containsSlug(items, slug) {
+				continue
+			}
+
+			manifestPath := filepath.Join(featuresDir, slug, feature.ManifestFileName)
+			status := readManifestStatus(manifestPath)
+
+			if strings.EqualFold(status, "completed") {
+				continue
+			}
+			if status == "" {
+				status = "active"
+			}
+
+			items = append(items, selectableItem{
+				Slug:   slug,
+				Type:   "feature",
+				Status: status,
+			})
+		}
+	}
+
+	return items
+}
+
+// containsSlug checks if a selectableItem with the given slug exists.
+func containsSlug(items []selectableItem, slug string) bool {
+	for _, item := range items {
+		if item.Slug == slug {
+			return true
+		}
+	}
+	return false
+}
+
+// readManifestStatus reads the status field from a manifest.md frontmatter.
+// Returns empty string if file doesn't exist or frontmatter can't be parsed.
+func readManifestStatus(manifestPath string) string {
+	data, err := os.ReadFile(manifestPath)
+	if err != nil {
+		return ""
+	}
+
+	var meta struct {
+		Status string `yaml:"status"`
+	}
+	if err := parseFrontmatter(data, &meta); err != nil {
+		return ""
+	}
+	return meta.Status
+}
+
+// parseFrontmatter extracts YAML frontmatter from markdown content.
+func parseFrontmatter(content []byte, target any) error {
+	text := string(content)
+	if !strings.HasPrefix(text, "---") {
+		return nil
+	}
+	text = text[3:]
+	closeIdx := strings.Index(text, "\n---")
+	if closeIdx < 0 {
+		return nil
+	}
+	yamlContent := text[:closeIdx]
+	return yaml.Unmarshal([]byte(yamlContent), target)
+}
+
+// stdinFunc is the function used to read from stdin. Overridable for testing.
+var stdinFunc = defaultStdinRead
+
+// defaultStdinRead reads a line from stdin.
+func defaultStdinRead() (string, error) {
+	reader := bufio.NewReader(os.Stdin)
+	line, err := reader.ReadString('\n')
+	if err != nil && err != io.EOF {
+		return "", err
+	}
+	return strings.TrimSpace(line), nil
+}
+
+// isTerminalFunc checks if stdin is connected to a terminal (TTY).
+// Overridable for testing.
+var isTerminalFunc = defaultIsTerminal
+
+func defaultIsTerminal() bool {
+	fi, err := os.Stdin.Stat()
+	if err != nil {
+		return false
+	}
+	return fi.Mode()&os.ModeCharDevice != 0
+}
+
+// promptSelection presents a numbered list and reads the user's choice.
+// Returns the selected slug, or empty string if selection is invalid.
+func promptSelection(items []selectableItem, stdout io.Writer) (string, error) {
+	_, _ = fmt.Fprintln(stdout, "Select a proposal or feature:")
+	_, _ = fmt.Fprintln(stdout)
+	for i, item := range items {
+		_, _ = fmt.Fprintf(stdout, "  %d. [%s] %s (%s)\n", i+1, item.Type, item.Slug, item.Status)
+	}
+	_, _ = fmt.Fprintln(stdout)
+	_, _ = fmt.Fprint(stdout, "Enter number: ")
+
+	line, err := stdinFunc()
+	if err != nil {
+		return "", fmt.Errorf("read input: %w", err)
+	}
+
+	num, err := strconv.Atoi(line)
+	if err != nil {
+		return "", fmt.Errorf("invalid selection: %q", line)
+	}
+
+	if num < 1 || num > len(items) {
+		return "", fmt.Errorf("selection %d out of range (1-%d)", num, len(items))
+	}
+
+	return items[num-1].Slug, nil
+}
+
+// ---------------------------------------------------------------------------
+// Shell completion functions
+// ---------------------------------------------------------------------------
+
+// worktreeStartCompletion returns unfinished proposal/feature slugs for shell completion.
+// Hard Rule: return empty list on error (never return error to shell).
+func worktreeStartCompletion(_ *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	// If a slug arg is already provided, no more completion needed
+	if len(args) > 0 {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+
+	projectRoot, err := project.FindProjectRoot()
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+
+	items := listUnfinishedItems(projectRoot)
+
+	var completions []string
+	for _, item := range items {
+		if strings.HasPrefix(item.Slug, toComplete) {
+			completions = append(completions, item.Slug+"\t"+item.Type)
+		}
+	}
+
+	return completions, cobra.ShellCompDirectiveNoFileComp
+}
+
+// worktreeRemoveCompletion returns existing non-main worktree slugs for shell completion.
+// Hard Rule: return empty list on error (never return error to shell).
+func worktreeRemoveCompletion(_ *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return worktreeSlugCompletion(args, toComplete)
+}
+
+// worktreeResumeCompletion returns existing non-main worktree slugs for shell completion.
+// Hard Rule: return empty list on error (never return error to shell).
+func worktreeResumeCompletion(_ *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return worktreeSlugCompletion(args, toComplete)
+}
+
+// worktreeSlugCompletion returns non-main worktree slugs filtered by toComplete prefix.
+func worktreeSlugCompletion(args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	if len(args) > 0 {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+
+	projectRoot, err := project.FindProjectRoot()
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+
+	entries, err := listWorktreesFunc(projectRoot)
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+
+	var completions []string
+	for _, entry := range entries {
+		if entry.IsMain {
+			continue
+		}
+		name := entry.Name()
+		if strings.HasPrefix(name, toComplete) {
+			completions = append(completions, name)
+		}
+	}
+
+	return completions, cobra.ShellCompDirectiveNoFileComp
 }

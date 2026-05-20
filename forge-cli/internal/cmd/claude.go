@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -16,12 +17,29 @@ var lookPathFunc = exec.LookPath
 // Variable for testability.
 var runClaudeFunc = defaultRunClaude
 
+// claudeSupportsContinueFlagFunc checks whether the installed claude CLI
+// supports the -c / --continue flag. Overridable for testing.
+var claudeSupportsContinueFlagFunc = defaultClaudeSupportsContinueFlag
+
 func defaultRunClaude(args []string) error {
 	cmd := exec.Command("claude", args...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
+}
+
+// defaultClaudeSupportsContinueFlag probes claude --help for the -c flag.
+// Returns true if the flag is present, false otherwise.
+func defaultClaudeSupportsContinueFlag() bool {
+	cmd := exec.Command("claude", "--help")
+	output, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+	helpText := string(output)
+	// Look for "-c" or "--continue" in the help output
+	return strings.Contains(helpText, "-c,") || strings.Contains(helpText, "--continue")
 }
 
 var claudeCmd = &cobra.Command{

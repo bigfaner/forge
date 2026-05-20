@@ -12,6 +12,8 @@ import (
 	"forge-cli/pkg/feature"
 
 	gitPkg "forge-cli/pkg/git"
+
+	"github.com/spf13/cobra"
 )
 
 // ---------------------------------------------------------------------------
@@ -1649,6 +1651,371 @@ func TestWorktreeRemove_ErrorWhenNotGitRepo(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// worktree remove --hard: hard removal tests
+// ---------------------------------------------------------------------------
+
+// resetHardFlag resets the --hard flag on worktreeRemoveCmd.
+func resetHardFlag(t *testing.T) {
+	t.Helper()
+	t.Cleanup(func() {
+		f := worktreeRemoveCmd.Flags().Lookup("hard")
+		if f != nil {
+			f.Changed = false
+			_ = f.Value.Set("false")
+		}
+	})
+}
+
+// resetForceFlag resets the --force flag on worktreeRemoveCmd.
+func resetForceFlag(t *testing.T) {
+	t.Helper()
+	t.Cleanup(func() {
+		f := worktreeRemoveCmd.Flags().Lookup("force")
+		if f != nil {
+			f.Changed = false
+			_ = f.Value.Set("false")
+		}
+	})
+}
+
+func TestWorktreeRemove_Hard_RemovesWorktreeAndBranch(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create worktree
+	slug := "hard-remove-test"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	if err := os.MkdirAll(filepath.Dir(targetDir), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	cmd := exec.Command("git", "worktree", "add", "-b", slug, targetDir)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	resetHardFlag(t)
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "remove", slug, "--hard"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Worktree directory should no longer exist
+	if _, err := os.Stat(targetDir); !os.IsNotExist(err) {
+		t.Errorf("worktree directory %s should have been removed", targetDir)
+	}
+
+	// Branch should also be deleted
+	output, err := exec.Command("git", "-C", dir, "branch", "--list", slug).Output()
+	if err != nil {
+		t.Fatalf("git branch --list: %v", err)
+	}
+	if strings.Contains(string(output), slug) {
+		t.Errorf("branch %q should have been deleted with --hard", slug)
+	}
+
+	// Output should report all three steps
+	outputStr := buf.String()
+	if !strings.Contains(outputStr, "Removed worktree") {
+		t.Errorf("output should mention worktree removal, got:\n%s", outputStr)
+	}
+	if !strings.Contains(outputStr, "Deleted branch") {
+		t.Errorf("output should mention branch deletion, got:\n%s", outputStr)
+	}
+	if !strings.Contains(outputStr, "Pruned") {
+		t.Errorf("output should mention pruning, got:\n%s", outputStr)
+	}
+}
+
+func TestWorktreeRemove_Hard_UnmergedBranch_WarnsButProceeds(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a worktree and make a commit on the branch (so it's not merged into main)
+	slug := "unmerged-branch"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	if err := os.MkdirAll(filepath.Dir(targetDir), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	cmd := exec.Command("git", "worktree", "add", "-b", slug, targetDir)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+
+	// Make a commit on the branch that is NOT on main
+	unmergedFile := filepath.Join(targetDir, "uncommitted.txt")
+	if err := os.WriteFile(unmergedFile, []byte("unique content"), 0o644); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+	cmd = exec.Command("git", "add", ".")
+	cmd.Dir = targetDir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git add: %v", err)
+	}
+	cmd = exec.Command("git", "commit", "-m", "unmerged commit")
+	cmd.Dir = targetDir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git commit: %v", err)
+	}
+
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	resetHardFlag(t)
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "remove", slug, "--hard"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Branch should be deleted (unmerged but --hard without --force still allows it per Hard Rules)
+	output, err := exec.Command("git", "-C", dir, "branch", "--list", slug).Output()
+	if err != nil {
+		t.Fatalf("git branch --list: %v", err)
+	}
+	if strings.Contains(string(output), slug) {
+		t.Errorf("branch %q should have been deleted", slug)
+	}
+
+	// Should warn about unmerged branch
+	stderr := buf.String()
+	if !strings.Contains(stderr, "not fully merged") && !strings.Contains(stderr, "unmerged") {
+		t.Errorf("should warn about unmerged branch, got:\n%s", stderr)
+	}
+}
+
+func TestWorktreeRemove_Hard_UncommittedChanges_Blocks(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	slug := "hard-dirty"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	if err := os.MkdirAll(filepath.Dir(targetDir), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	cmd := exec.Command("git", "worktree", "add", "-b", slug, targetDir)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	// Create uncommitted changes
+	dirtyFile := filepath.Join(targetDir, "dirty.txt")
+	if err := os.WriteFile(dirtyFile, []byte("uncommitted"), 0o644); err != nil {
+		t.Fatalf("write dirty file: %v", err)
+	}
+
+	resetHardFlag(t)
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "remove", slug, "--hard"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Error("expected error when worktree has uncommitted changes with --hard (no --force)")
+	}
+	stderr := buf.String()
+	if !strings.Contains(stderr, "uncommitted changes") {
+		t.Errorf("error should mention uncommitted changes, got: %s", stderr)
+	}
+
+	// Branch should still exist (removal was blocked)
+	output, err := exec.Command("git", "-C", dir, "branch", "--list", slug).Output()
+	if err != nil {
+		t.Fatalf("git branch --list: %v", err)
+	}
+	if !strings.Contains(string(output), slug) {
+		t.Errorf("branch %q should still exist when --hard is blocked by uncommitted changes", slug)
+	}
+}
+
+func TestWorktreeRemove_HardForce_UncommittedChanges_Proceeds(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	slug := "hard-force-dirty"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	if err := os.MkdirAll(filepath.Dir(targetDir), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	cmd := exec.Command("git", "worktree", "add", "-b", slug, targetDir)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	// Create uncommitted changes
+	dirtyFile := filepath.Join(targetDir, "dirty.txt")
+	if err := os.WriteFile(dirtyFile, []byte("uncommitted"), 0o644); err != nil {
+		t.Fatalf("write dirty file: %v", err)
+	}
+
+	resetHardFlag(t)
+	resetForceFlag(t)
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "remove", slug, "--hard", "--force"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Worktree should be removed
+	if _, err := os.Stat(targetDir); !os.IsNotExist(err) {
+		t.Errorf("worktree directory %s should have been removed", targetDir)
+	}
+
+	// Branch should be deleted
+	output, err := exec.Command("git", "-C", dir, "branch", "--list", slug).Output()
+	if err != nil {
+		t.Fatalf("git branch --list: %v", err)
+	}
+	if strings.Contains(string(output), slug) {
+		t.Errorf("branch %q should have been deleted with --hard --force", slug)
+	}
+}
+
+func TestWorktreeRemove_WithoutHard_BehaviorUnchanged(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	slug := "no-hard-test"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	if err := os.MkdirAll(filepath.Dir(targetDir), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	cmd := exec.Command("git", "worktree", "add", "-b", slug, targetDir)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "remove", slug})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Worktree removed, branch preserved
+	if _, err := os.Stat(targetDir); !os.IsNotExist(err) {
+		t.Errorf("worktree directory %s should have been removed", targetDir)
+	}
+	output, err := exec.Command("git", "-C", dir, "branch", "--list", slug).Output()
+	if err != nil {
+		t.Fatalf("git branch --list: %v", err)
+	}
+	if !strings.Contains(string(output), slug) {
+		t.Errorf("branch %q should still exist without --hard", slug)
+	}
+
+	// Output should say "preserved"
+	outputStr := buf.String()
+	if !strings.Contains(outputStr, "preserved") {
+		t.Errorf("output should say 'preserved', got:\n%s", outputStr)
+	}
+}
+
+func TestWorktreeRemove_Hard_ReportsSkippedBranchIfAlreadyGone(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	slug := "hard-branch-gone"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	if err := os.MkdirAll(filepath.Dir(targetDir), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	cmd := exec.Command("git", "worktree", "add", "-b", slug, targetDir)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	// Override listWorktreesFunc to return a non-existent branch name.
+	// This simulates the case where the branch name cannot be resolved.
+	origListWorktrees := listWorktreesFunc
+	listWorktreesFunc = func(_ string) ([]gitPkg.WorktreeEntry, error) {
+		return []gitPkg.WorktreeEntry{
+			{Path: targetDir, Branch: "nonexistent-branch-xyz"},
+		}, nil
+	}
+	defer func() { listWorktreesFunc = origListWorktrees }()
+
+	resetHardFlag(t)
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "remove", slug, "--hard"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	outputStr := buf.String()
+	if !strings.Contains(outputStr, "Skipped branch deletion") {
+		t.Errorf("should report skipped branch deletion when branch unknown, got:\n%s", outputStr)
+	}
+}
+
+// ---------------------------------------------------------------------------
 // listForgeFeatures helper
 // ---------------------------------------------------------------------------
 
@@ -1691,6 +2058,19 @@ func resetSourceBranchFlag(t *testing.T) {
 		if f != nil {
 			f.Changed = false
 			_ = f.Value.Set("")
+		}
+	})
+}
+
+// resetNoLaunchFlag resets the --no-launch flag on worktreeStartCmd to
+// prevent state leakage between tests.
+func resetNoLaunchFlag(t *testing.T) {
+	t.Helper()
+	t.Cleanup(func() {
+		f := worktreeStartCmd.Flags().Lookup("no-launch")
+		if f != nil {
+			f.Changed = false
+			_ = f.Value.Set("false")
 		}
 	})
 }
@@ -2346,6 +2726,11 @@ func TestWorktreeResume_LaunchesClaudeInExistingWorktree(t *testing.T) {
 	}
 	defer func() { lookPathFunc = origLookPath }()
 
+	// Simulate -c not supported to test basic launch behavior
+	origResumeSupport := claudeSupportsContinueFlagFunc
+	claudeSupportsContinueFlagFunc = func() bool { return false }
+	defer func() { claudeSupportsContinueFlagFunc = origResumeSupport }()
+
 	// Capture claude launch args and working directory
 	var capturedArgs []string
 	var capturedWd string
@@ -2407,6 +2792,146 @@ func TestWorktreeResume_LaunchesClaudeInExistingWorktree(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// worktree resume: -c session restore
+// ---------------------------------------------------------------------------
+
+func TestWorktreeResume_UsesContinueFlagWhenSupported(t *testing.T) {
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	// Simulate claude -c support
+	origResumeSupport := claudeSupportsContinueFlagFunc
+	claudeSupportsContinueFlagFunc = func() bool { return true }
+	defer func() { claudeSupportsContinueFlagFunc = origResumeSupport }()
+
+	// Capture claude launch args
+	var capturedArgs []string
+	origRunClaude := runClaudeFunc
+	runClaudeFunc = func(args []string) error {
+		capturedArgs = args
+		return nil
+	}
+	defer func() { runClaudeFunc = origRunClaude }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a real worktree
+	slug := "resume-with-continue"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	if err := os.MkdirAll(filepath.Dir(targetDir), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	cmd := exec.Command("git", "worktree", "add", "-b", slug, targetDir)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "resume", slug})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify claude was launched with -c <slug> --dangerously-skip-permissions
+	if len(capturedArgs) < 3 {
+		t.Fatalf("expected at least 3 args, got %v", capturedArgs)
+	}
+	if capturedArgs[0] != "-c" {
+		t.Errorf("first arg should be '-c', got %q", capturedArgs[0])
+	}
+	if capturedArgs[1] != slug {
+		t.Errorf("second arg should be slug %q, got %q", slug, capturedArgs[1])
+	}
+	if capturedArgs[2] != "--dangerously-skip-permissions" {
+		t.Errorf("third arg should be '--dangerously-skip-permissions', got %q", capturedArgs[2])
+	}
+}
+
+func TestWorktreeResume_FallsBackWhenContinueNotSupported(t *testing.T) {
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	// Simulate claude -c NOT supported
+	origResumeSupport := claudeSupportsContinueFlagFunc
+	claudeSupportsContinueFlagFunc = func() bool { return false }
+	defer func() { claudeSupportsContinueFlagFunc = origResumeSupport }()
+
+	// Capture claude launch args
+	var capturedArgs []string
+	origRunClaude := runClaudeFunc
+	runClaudeFunc = func(args []string) error {
+		capturedArgs = args
+		return nil
+	}
+	defer func() { runClaudeFunc = origRunClaude }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a real worktree
+	slug := "resume-no-continue"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	if err := os.MkdirAll(filepath.Dir(targetDir), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	cmd := exec.Command("git", "worktree", "add", "-b", slug, targetDir)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "resume", slug})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify claude was launched WITHOUT -c, just --dangerously-skip-permissions
+	if len(capturedArgs) != 1 {
+		t.Fatalf("expected 1 arg, got %v", capturedArgs)
+	}
+	if capturedArgs[0] != "--dangerously-skip-permissions" {
+		t.Errorf("arg should be '--dangerously-skip-permissions', got %q", capturedArgs[0])
+	}
+}
+
+// ---------------------------------------------------------------------------
 // worktree start: table-driven remote branch detection (mocked gitRunFunc)
 // ---------------------------------------------------------------------------
 
@@ -2415,6 +2940,461 @@ type mockGitResponse struct {
 	output string
 	err    error
 }
+
+// ---------------------------------------------------------------------------
+// worktree start: --no-launch flag
+// ---------------------------------------------------------------------------
+
+func TestWorktreeStart_NoLaunchFlagRegistered(t *testing.T) {
+	flag := worktreeStartCmd.Flags().Lookup("no-launch")
+	if flag == nil {
+		t.Fatal("worktree start command should have --no-launch flag")
+	}
+	if flag.DefValue != "false" {
+		t.Errorf("no-launch default should be false, got %q", flag.DefValue)
+	}
+}
+
+func TestWorktreeStart_NoLaunch_CreatesWorktreeWithoutLaunchingClaude(t *testing.T) {
+	resetSourceBranchFlag(t)
+	resetNoLaunchFlag(t)
+
+	// Make claude available (but should NOT be called)
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	// Track whether claude was called
+	claudeCalled := false
+	origRunClaude := runClaudeFunc
+	runClaudeFunc = func(_ []string) error {
+		claudeCalled = true
+		return nil
+	}
+	defer func() { runClaudeFunc = origRunClaude }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	slug := "no-launch-test"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "start", slug, "--no-launch"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify worktree was created
+	if _, err := os.Stat(targetDir); os.IsNotExist(err) {
+		t.Errorf("worktree directory %s should exist", targetDir)
+	}
+
+	// Verify claude was NOT called
+	if claudeCalled {
+		t.Error("claude should NOT have been launched with --no-launch")
+	}
+
+	// Verify stdout contains the worktree path
+	stdout := buf.String()
+	if !strings.Contains(stdout, targetDir) {
+		t.Errorf("stdout should contain worktree path %q, got: %s", targetDir, stdout)
+	}
+}
+
+func TestWorktreeStart_NoLaunch_WithSourceBranch(t *testing.T) {
+	resetSourceBranchFlag(t)
+	resetNoLaunchFlag(t)
+
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	origRunClaude := runClaudeFunc
+	runClaudeFunc = func(_ []string) error { return nil }
+	defer func() { runClaudeFunc = origRunClaude }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a "develop" branch with a distinct file
+	if err := exec.Command("git", "-C", dir, "checkout", "-b", "develop").Run(); err != nil {
+		t.Fatalf("git checkout -b develop: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "develop.txt"), []byte("develop"), 0o644); err != nil {
+		t.Fatalf("write develop.txt: %v", err)
+	}
+	if err := exec.Command("git", "-C", dir, "add", ".").Run(); err != nil {
+		t.Fatalf("git add: %v", err)
+	}
+	if err := exec.Command("git", "-C", dir, "commit", "-m", "develop commit").Run(); err != nil {
+		t.Fatalf("git commit: %v", err)
+	}
+	if err := exec.Command("git", "-C", dir, "checkout", "master").Run(); err != nil {
+		t.Fatalf("git checkout master: %v", err)
+	}
+
+	slug := "no-launch-source"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", "develop").Run()
+	})
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "start", slug, "--source-branch", "develop", "--no-launch"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify worktree was created from develop (has develop.txt)
+	if _, err := os.Stat(filepath.Join(targetDir, "develop.txt")); os.IsNotExist(err) {
+		t.Errorf("worktree should have develop.txt (created from develop branch)")
+	}
+}
+
+func TestWorktreeStart_WithoutNoLaunch_LaunchesClaude(t *testing.T) {
+	resetSourceBranchFlag(t)
+	resetNoLaunchFlag(t)
+
+	// Make claude available
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	// Capture claude launch
+	claudeCalled := false
+	origRunClaude := runClaudeFunc
+	runClaudeFunc = func(_ []string) error {
+		claudeCalled = true
+		return nil
+	}
+	defer func() { runClaudeFunc = origRunClaude }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	slug := "with-launch-test"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "start", slug})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify claude WAS called (default behavior)
+	if !claudeCalled {
+		t.Error("claude should have been launched without --no-launch (default behavior)")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// worktree start: branch-first creation
+// ---------------------------------------------------------------------------
+
+func TestWorktreeStart_BranchFirstCreation_NewBranchFromHead(t *testing.T) {
+	resetSourceBranchFlag(t)
+	resetNoLaunchFlag(t)
+
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	origRunClaude := runClaudeFunc
+	runClaudeFunc = func(_ []string) error { return nil }
+	defer func() { runClaudeFunc = origRunClaude }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	slug := "branch-first-test"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "start", slug})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify worktree was created
+	if _, err := os.Stat(targetDir); os.IsNotExist(err) {
+		t.Errorf("worktree directory %s should exist", targetDir)
+	}
+
+	// Verify the branch exists independently (not just as part of worktree)
+	output, err := exec.Command("git", "-C", dir, "branch", "--list", slug).Output()
+	if err != nil {
+		t.Fatalf("git branch --list: %v", err)
+	}
+	if !strings.Contains(string(output), slug) {
+		t.Errorf("branch %q should exist", slug)
+	}
+}
+
+func TestWorktreeStart_BranchFirstCreation_SkipsCheckoutWhenBranchExists(t *testing.T) {
+	resetSourceBranchFlag(t)
+	resetNoLaunchFlag(t)
+
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	origRunClaude := runClaudeFunc
+	runClaudeFunc = func(_ []string) error { return nil }
+	defer func() { runClaudeFunc = origRunClaude }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	slug := "existing-branch-first"
+	// Pre-create the branch
+	if err := exec.Command("git", "-C", dir, "branch", slug).Run(); err != nil {
+		t.Fatalf("git branch %s: %v", slug, err)
+	}
+
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "start", slug})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify worktree was created (existing branch should just be used)
+	if _, err := os.Stat(targetDir); os.IsNotExist(err) {
+		t.Errorf("worktree directory %s should exist", targetDir)
+	}
+}
+
+func TestWorktreeStart_BranchFirstCreation_WithSourceBranch(t *testing.T) {
+	resetSourceBranchFlag(t)
+	resetNoLaunchFlag(t)
+
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	origRunClaude := runClaudeFunc
+	runClaudeFunc = func(_ []string) error { return nil }
+	defer func() { runClaudeFunc = origRunClaude }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create "staging" branch with unique file
+	if err := exec.Command("git", "-C", dir, "checkout", "-b", "staging").Run(); err != nil {
+		t.Fatalf("git checkout -b staging: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "staging.txt"), []byte("staging"), 0o644); err != nil {
+		t.Fatalf("write staging.txt: %v", err)
+	}
+	if err := exec.Command("git", "-C", dir, "add", ".").Run(); err != nil {
+		t.Fatalf("git add: %v", err)
+	}
+	if err := exec.Command("git", "-C", dir, "commit", "-m", "staging commit").Run(); err != nil {
+		t.Fatalf("git commit: %v", err)
+	}
+	if err := exec.Command("git", "-C", dir, "checkout", "master").Run(); err != nil {
+		t.Fatalf("git checkout master: %v", err)
+	}
+
+	slug := "branch-first-source"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", "staging").Run()
+	})
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "start", slug, "--source-branch", "staging"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify worktree was created from staging (has staging.txt)
+	if _, err := os.Stat(filepath.Join(targetDir, "staging.txt")); os.IsNotExist(err) {
+		t.Errorf("worktree should have staging.txt (created from staging branch)")
+	}
+
+	// Verify the branch was created from staging (not from HEAD)
+	output, err := exec.Command("git", "-C", dir, "log", "--oneline", "-1", slug).Output()
+	if err != nil {
+		t.Fatalf("git log: %v", err)
+	}
+	if !strings.Contains(string(output), "staging commit") {
+		t.Errorf("branch should be based on staging, got: %s", string(output))
+	}
+}
+
+func TestWorktreeStart_BranchFirstCreation_CleansUpBranchOnWorktreeFailure(t *testing.T) {
+	resetSourceBranchFlag(t)
+	resetNoLaunchFlag(t)
+
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	origRunClaude := runClaudeFunc
+	runClaudeFunc = func(_ []string) error { return nil }
+	defer func() { runClaudeFunc = origRunClaude }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	slug := "cleanup-test"
+
+	// Make worktree add fail by mocking git
+	var branchCreated bool
+	origGitRun := gitRunFunc
+	gitRunFunc = func(_ string, args ...string) (string, error) {
+		// Track if branch was created via `git branch <slug>`
+		if len(args) >= 2 && args[0] == "branch" && args[1] == slug {
+			branchCreated = true
+			return "", nil
+		}
+		// Make worktree add fail
+		if len(args) >= 2 && args[0] == "worktree" && args[1] == "add" {
+			return "", fmt.Errorf("worktree add failed")
+		}
+		// Allow other git commands
+		return origGitRun(dir, args...)
+	}
+	defer func() { gitRunFunc = origGitRun }()
+
+	// Also need to mock branch deletion cleanup
+	var branchDeleted bool
+	cleanupOrigGitRun := gitRunFunc
+	gitRunFunc = func(root string, args ...string) (string, error) {
+		if len(args) >= 3 && args[0] == "branch" && args[1] == "-D" && args[2] == slug {
+			branchDeleted = true
+			return "", nil
+		}
+		return cleanupOrigGitRun(root, args...)
+	}
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "start", slug})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Error("expected error when worktree add fails")
+	}
+
+	// Verify branch was created
+	if !branchCreated {
+		t.Error("branch should have been created before worktree add")
+	}
+
+	// Verify branch was cleaned up after failure
+	if !branchDeleted {
+		t.Error("branch should have been cleaned up after worktree add failure")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// worktree start: table-driven remote branch detection (mocked gitRunFunc)
+// ---------------------------------------------------------------------------
 
 func TestWorktreeStart_RemoteBranchResolution(t *testing.T) {
 	tests := []struct {
@@ -2435,11 +3415,12 @@ func TestWorktreeStart_RemoteBranchResolution(t *testing.T) {
 				"rev-parse --verify remote-only-feature":                {err: fmt.Errorf("not found")},
 				"fetch origin":                                          {},
 				"rev-parse --verify remotes/origin/remote-only-feature": {},
-				"worktree add -b remote-only-feature":                   {},
+				"branch remote-only-feature":                            {},
+				"worktree add":                                          {},
 			},
 			wantErr:            false,
 			wantStdoutContains: "origin/remote-only-feature",
-			wantWorktreeArgs:   []string{"worktree", "add", "-b", "remote-only-feature"},
+			wantWorktreeArgs:   []string{"worktree", "add"},
 		},
 		{
 			name:         "fetch fails, no remote branch, falls back to HEAD",
@@ -2449,11 +3430,12 @@ func TestWorktreeStart_RemoteBranchResolution(t *testing.T) {
 				"rev-parse --verify fetch-fail-feature":                {err: fmt.Errorf("not found")},
 				"fetch origin":                                         {err: fmt.Errorf("network error")},
 				"rev-parse --verify remotes/origin/fetch-fail-feature": {err: fmt.Errorf("not found")},
-				"worktree add -b fetch-fail-feature":                   {},
+				"branch fetch-fail-feature":                            {},
+				"worktree add":                                         {},
 			},
 			wantErr:            false,
 			wantStderrContains: "warning: git fetch origin failed",
-			wantWorktreeArgs:   []string{"worktree", "add", "-b", "fetch-fail-feature"},
+			wantWorktreeArgs:   []string{"worktree", "add"},
 		},
 		{
 			name:         "both local and remote absent, creates from HEAD",
@@ -2463,10 +3445,11 @@ func TestWorktreeStart_RemoteBranchResolution(t *testing.T) {
 				"rev-parse --verify new-feature":                {err: fmt.Errorf("not found")},
 				"fetch origin":                                  {},
 				"rev-parse --verify remotes/origin/new-feature": {err: fmt.Errorf("not found")},
-				"worktree add -b new-feature":                   {},
+				"branch new-feature":                            {},
+				"worktree add":                                  {},
 			},
 			wantErr:          false,
-			wantWorktreeArgs: []string{"worktree", "add", "-b", "new-feature"},
+			wantWorktreeArgs: []string{"worktree", "add"},
 		},
 		{
 			name:         "source-branch set but remote branch exists, remote wins",
@@ -2476,11 +3459,12 @@ func TestWorktreeStart_RemoteBranchResolution(t *testing.T) {
 				"rev-parse --verify remote-wins-feature":                {err: fmt.Errorf("not found")},
 				"fetch origin":                                          {},
 				"rev-parse --verify remotes/origin/remote-wins-feature": {},
-				"worktree add -b remote-wins-feature":                   {},
+				"branch remote-wins-feature":                            {},
+				"worktree add":                                          {},
 			},
 			wantErr:            false,
 			wantStdoutContains: "origin/remote-wins-feature",
-			wantWorktreeArgs:   []string{"worktree", "add", "-b", "remote-wins-feature"},
+			wantWorktreeArgs:   []string{"worktree", "add"},
 		},
 	}
 
@@ -2515,15 +3499,10 @@ func TestWorktreeStart_RemoteBranchResolution(t *testing.T) {
 					capturedWorktreeArgs = args
 				}
 				maybeCreateTarget := func() {
-					if len(args) >= 4 && args[0] == "worktree" && args[1] == "add" {
-						// worktree add targetDir slug (layer 1) or worktree add -b slug targetDir [ref] (layer 2/3)
-						targetIdx := 2
-						if args[2] == "-b" {
-							targetIdx = 4
-						}
-						if targetIdx < len(args) {
-							_ = os.MkdirAll(args[targetIdx], 0o755)
-						}
+					if len(args) >= 3 && args[0] == "worktree" && args[1] == "add" {
+						// worktree add targetDir [slug] (branch-first: no -b flag)
+						// The target dir is always args[2]
+						_ = os.MkdirAll(args[2], 0o755)
 					}
 				}
 				// Check for exact match first
@@ -2611,4 +3590,1512 @@ func TestWorktreeStart_RemoteBranchResolution(t *testing.T) {
 			}
 		})
 	}
+}
+
+// ---------------------------------------------------------------------------
+// interactive mode: listUnfinishedItems
+// ---------------------------------------------------------------------------
+
+func TestListUnfinishedItems_EmptyDir(t *testing.T) {
+	dir := t.TempDir()
+	items := listUnfinishedItems(dir)
+	if len(items) != 0 {
+		t.Errorf("expected no items for empty dir, got %d", len(items))
+	}
+}
+
+func TestListUnfinishedItems_NoDir(t *testing.T) {
+	dir := t.TempDir()
+	// Neither docs/proposals/ nor docs/features/ exist
+	items := listUnfinishedItems(dir)
+	if len(items) != 0 {
+		t.Errorf("expected no items when dirs don't exist, got %d", len(items))
+	}
+}
+
+func TestListUnfinishedItems_SkipsCompletedProposal(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create a completed proposal
+	proposalDir := filepath.Join(dir, "docs", "proposals", "done-proposal")
+	if err := os.MkdirAll(proposalDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	content := "---\nstatus: completed\ncreated: 2026-01-01\n---\n# Done"
+	if err := os.WriteFile(filepath.Join(proposalDir, "proposal.md"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	items := listUnfinishedItems(dir)
+	if len(items) != 0 {
+		t.Errorf("expected no items for completed proposal, got %d", len(items))
+	}
+}
+
+func TestListUnfinishedItems_IncludesDraftProposal(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create a draft proposal
+	proposalDir := filepath.Join(dir, "docs", "proposals", "my-proposal")
+	if err := os.MkdirAll(proposalDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	content := "---\nstatus: Draft\ncreated: 2026-01-01\n---\n# Draft"
+	if err := os.WriteFile(filepath.Join(proposalDir, "proposal.md"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	items := listUnfinishedItems(dir)
+	if len(items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(items))
+	}
+	if items[0].Slug != "my-proposal" {
+		t.Errorf("expected slug 'my-proposal', got %q", items[0].Slug)
+	}
+	if items[0].Type != "proposal" {
+		t.Errorf("expected type 'proposal', got %q", items[0].Type)
+	}
+	if items[0].Status != "Draft" {
+		t.Errorf("expected status 'Draft', got %q", items[0].Status)
+	}
+}
+
+func TestListUnfinishedItems_IncludesProposalWithNoStatus(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create a proposal with no status field
+	proposalDir := filepath.Join(dir, "docs", "proposals", "no-status-proposal")
+	if err := os.MkdirAll(proposalDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	content := "---\ncreated: 2026-01-01\n---\n# No Status"
+	if err := os.WriteFile(filepath.Join(proposalDir, "proposal.md"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	items := listUnfinishedItems(dir)
+	if len(items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(items))
+	}
+	if items[0].Status != "Draft" {
+		t.Errorf("expected status 'Draft' for proposal without status, got %q", items[0].Status)
+	}
+}
+
+func TestListUnfinishedItems_IncludesFeatureWithoutManifest(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create a feature directory without manifest.md
+	featureDir := filepath.Join(dir, "docs", "features", "my-feature", "tasks")
+	if err := os.MkdirAll(featureDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	items := listUnfinishedItems(dir)
+	if len(items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(items))
+	}
+	if items[0].Slug != "my-feature" {
+		t.Errorf("expected slug 'my-feature', got %q", items[0].Slug)
+	}
+	if items[0].Type != "feature" {
+		t.Errorf("expected type 'feature', got %q", items[0].Type)
+	}
+	if items[0].Status != "active" {
+		t.Errorf("expected status 'active', got %q", items[0].Status)
+	}
+}
+
+func TestListUnfinishedItems_SkipsCompletedFeature(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create a feature directory with completed manifest
+	featureDir := filepath.Join(dir, "docs", "features", "completed-feat")
+	if err := os.MkdirAll(featureDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	manifest := "---\nstatus: completed\n---\n# Completed"
+	if err := os.WriteFile(filepath.Join(featureDir, "manifest.md"), []byte(manifest), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	items := listUnfinishedItems(dir)
+	if len(items) != 0 {
+		t.Errorf("expected no items for completed feature, got %d", len(items))
+	}
+}
+
+func TestListUnfinishedItems_IncludesFeatureWithStatus(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create a feature directory with in_progress manifest
+	featureDir := filepath.Join(dir, "docs", "features", "active-feat")
+	if err := os.MkdirAll(featureDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	manifest := "---\nstatus: in_progress\n---\n# Active"
+	if err := os.WriteFile(filepath.Join(featureDir, "manifest.md"), []byte(manifest), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	items := listUnfinishedItems(dir)
+	if len(items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(items))
+	}
+	if items[0].Status != "in_progress" {
+		t.Errorf("expected status 'in_progress', got %q", items[0].Status)
+	}
+}
+
+func TestListUnfinishedItems_DoesNotDuplicateProposalSlug(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create both a proposal and a feature with the same slug
+	proposalDir := filepath.Join(dir, "docs", "proposals", "shared-slug")
+	if err := os.MkdirAll(proposalDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	content := "---\nstatus: Draft\ncreated: 2026-01-01\n---\n# Proposal"
+	if err := os.WriteFile(filepath.Join(proposalDir, "proposal.md"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	featureDir := filepath.Join(dir, "docs", "features", "shared-slug")
+	if err := os.MkdirAll(featureDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	items := listUnfinishedItems(dir)
+	if len(items) != 1 {
+		t.Fatalf("expected 1 item (no duplicate), got %d", len(items))
+	}
+	if items[0].Type != "proposal" {
+		t.Errorf("expected type 'proposal' (proposal takes priority), got %q", items[0].Type)
+	}
+}
+
+func TestListUnfinishedItems_MixedProposalsAndFeatures(t *testing.T) {
+	dir := t.TempDir()
+
+	// Proposal 1: Draft
+	p1Dir := filepath.Join(dir, "docs", "proposals", "draft-proposal")
+	if err := os.MkdirAll(p1Dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(p1Dir, "proposal.md"), []byte("---\nstatus: Draft\ncreated: 2026-01-01\n---\n# P1"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Proposal 2: completed (should be skipped)
+	p2Dir := filepath.Join(dir, "docs", "proposals", "done-proposal")
+	if err := os.MkdirAll(p2Dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(p2Dir, "proposal.md"), []byte("---\nstatus: completed\ncreated: 2026-01-01\n---\n# P2"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Feature 1: active
+	f1Dir := filepath.Join(dir, "docs", "features", "active-feat")
+	if err := os.MkdirAll(f1Dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Feature 2: completed (should be skipped)
+	f2Dir := filepath.Join(dir, "docs", "features", "done-feat")
+	if err := os.MkdirAll(f2Dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(f2Dir, "manifest.md"), []byte("---\nstatus: completed\n---\n# Done"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	items := listUnfinishedItems(dir)
+	if len(items) != 2 {
+		t.Fatalf("expected 2 items (1 draft proposal + 1 active feature), got %d: %+v", len(items), items)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// interactive mode: promptSelection
+// ---------------------------------------------------------------------------
+
+func TestPromptSelection_ValidNumber(t *testing.T) {
+	items := []selectableItem{
+		{Slug: "foo", Type: "proposal", Status: "Draft"},
+		{Slug: "bar", Type: "feature", Status: "active"},
+	}
+
+	// Mock stdin to return "1"
+	origStdin := stdinFunc
+	stdinFunc = func() (string, error) { return "1", nil }
+	defer func() { stdinFunc = origStdin }()
+
+	var buf bytes.Buffer
+	slug, err := promptSelection(items, &buf)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if slug != "foo" {
+		t.Errorf("expected slug 'foo', got %q", slug)
+	}
+
+	// Verify output contains the numbered list
+	output := buf.String()
+	if !strings.Contains(output, "1.") || !strings.Contains(output, "foo") {
+		t.Errorf("output should contain numbered list, got:\n%s", output)
+	}
+}
+
+func TestPromptSelection_SecondItem(t *testing.T) {
+	items := []selectableItem{
+		{Slug: "foo", Type: "proposal", Status: "Draft"},
+		{Slug: "bar", Type: "feature", Status: "active"},
+	}
+
+	origStdin := stdinFunc
+	stdinFunc = func() (string, error) { return "2", nil }
+	defer func() { stdinFunc = origStdin }()
+
+	var buf bytes.Buffer
+	slug, err := promptSelection(items, &buf)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if slug != "bar" {
+		t.Errorf("expected slug 'bar', got %q", slug)
+	}
+}
+
+func TestPromptSelection_InvalidNumber(t *testing.T) {
+	items := []selectableItem{
+		{Slug: "foo", Type: "proposal", Status: "Draft"},
+	}
+
+	origStdin := stdinFunc
+	stdinFunc = func() (string, error) { return "5", nil }
+	defer func() { stdinFunc = origStdin }()
+
+	var buf bytes.Buffer
+	_, err := promptSelection(items, &buf)
+	if err == nil {
+		t.Error("expected error for out-of-range selection")
+	}
+}
+
+func TestPromptSelection_NonNumericInput(t *testing.T) {
+	items := []selectableItem{
+		{Slug: "foo", Type: "proposal", Status: "Draft"},
+	}
+
+	origStdin := stdinFunc
+	stdinFunc = func() (string, error) { return "abc", nil }
+	defer func() { stdinFunc = origStdin }()
+
+	var buf bytes.Buffer
+	_, err := promptSelection(items, &buf)
+	if err == nil {
+		t.Error("expected error for non-numeric input")
+	}
+}
+
+func TestPromptSelection_StdinError(t *testing.T) {
+	items := []selectableItem{
+		{Slug: "foo", Type: "proposal", Status: "Draft"},
+	}
+
+	origStdin := stdinFunc
+	stdinFunc = func() (string, error) { return "", fmt.Errorf("stdin error") }
+	defer func() { stdinFunc = origStdin }()
+
+	var buf bytes.Buffer
+	_, err := promptSelection(items, &buf)
+	if err == nil {
+		t.Error("expected error for stdin failure")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// interactive mode: -i flag registration
+// ---------------------------------------------------------------------------
+
+func TestWorktreeStart_InteractiveFlagRegistered(t *testing.T) {
+	flag := worktreeStartCmd.Flags().Lookup("interactive")
+	if flag == nil {
+		t.Fatal("worktree start command should have --interactive flag")
+	}
+	if flag.Shorthand != "i" {
+		t.Errorf("interactive shorthand should be 'i', got %q", flag.Shorthand)
+	}
+	if flag.DefValue != "false" {
+		t.Errorf("interactive default should be false, got %q", flag.DefValue)
+	}
+}
+
+func TestWorktreeStart_SlugArgIsOptional(t *testing.T) {
+	// The command should accept 0 args when using -i
+	// MaximumNArgs(1) should allow 0 or 1 args
+	if worktreeStartCmd.Args == nil {
+		t.Fatal("worktreeStartCmd.Args should not be nil")
+	}
+	// Test that 0 args is accepted by Args validator (but will fail at runtime without -i)
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "start"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Error("expected error when no slug and no -i flag")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// interactive mode: slug takes precedence over -i
+// ---------------------------------------------------------------------------
+
+func TestWorktreeStart_SlugTakesPrecedenceOverInteractive(t *testing.T) {
+	resetSourceBranchFlag(t)
+	resetInteractiveFlag(t)
+
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	origRunClaude := runClaudeFunc
+	runClaudeFunc = func(_ []string) error { return nil }
+	defer func() { runClaudeFunc = origRunClaude }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	slug := "slug-precedence-test"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	// Both -i and slug provided: slug should take precedence
+	rootCmd.SetArgs([]string{"worktree", "start", slug, "-i"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify worktree was created with the provided slug
+	if _, err := os.Stat(targetDir); os.IsNotExist(err) {
+		t.Errorf("worktree directory %s should exist", targetDir)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// interactive mode: empty list handling
+// ---------------------------------------------------------------------------
+
+func TestWorktreeStart_InteractiveEmptyList(t *testing.T) {
+	resetSourceBranchFlag(t)
+	resetInteractiveFlag(t)
+
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	// Override isTerminal to return true
+	origIsTerminal := isTerminalFunc
+	isTerminalFunc = func() bool { return true }
+	defer func() { isTerminalFunc = origIsTerminal }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// No proposals or features in this git repo
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "start", "-i"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	stdout := buf.String()
+	if !strings.Contains(stdout, "No unfinished proposals or features found") {
+		t.Errorf("output should mention no items found, got:\n%s", stdout)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// interactive mode: non-TTY detection
+// ---------------------------------------------------------------------------
+
+func TestWorktreeStart_InteractiveNonTTY(t *testing.T) {
+	resetSourceBranchFlag(t)
+	resetInteractiveFlag(t)
+
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	// Override isTerminal to return false (non-TTY)
+	origIsTerminal := isTerminalFunc
+	isTerminalFunc = func() bool { return false }
+	defer func() { isTerminalFunc = origIsTerminal }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "start", "-i"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Error("expected error when interactive mode used in non-TTY")
+	}
+	stderr := buf.String()
+	if !strings.Contains(stderr, "terminal") {
+		t.Errorf("error should mention terminal, got: %s", stderr)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// interactive mode: successful selection
+// ---------------------------------------------------------------------------
+
+func TestWorktreeStart_InteractiveSelectsProposal(t *testing.T) {
+	resetSourceBranchFlag(t)
+	resetInteractiveFlag(t)
+
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	origRunClaude := runClaudeFunc
+	runClaudeFunc = func(_ []string) error { return nil }
+	defer func() { runClaudeFunc = origRunClaude }()
+
+	// Override isTerminal to return true
+	origIsTerminal := isTerminalFunc
+	isTerminalFunc = func() bool { return true }
+	defer func() { isTerminalFunc = origIsTerminal }()
+
+	// Mock stdin to return "1"
+	origStdin := stdinFunc
+	stdinFunc = func() (string, error) { return "1", nil }
+	defer func() { stdinFunc = origStdin }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a proposal
+	proposalDir := filepath.Join(dir, "docs", "proposals", "interactive-test")
+	if err := os.MkdirAll(proposalDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	content := "---\nstatus: Draft\ncreated: 2026-01-01\n---\n# Test"
+	if err := os.WriteFile(filepath.Join(proposalDir, "proposal.md"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	targetDir := filepath.Join(dir, ".forge", "worktrees", "interactive-test")
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", "interactive-test").Run()
+	})
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "start", "-i"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify worktree was created with the selected slug
+	if _, err := os.Stat(targetDir); os.IsNotExist(err) {
+		t.Errorf("worktree directory %s should exist", targetDir)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// interactive mode: no slug and no -i
+// ---------------------------------------------------------------------------
+
+func TestWorktreeStart_NoSlugNoInteractive(t *testing.T) {
+	resetSourceBranchFlag(t)
+	resetInteractiveFlag(t)
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "start"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Error("expected error when no slug and no -i flag")
+	}
+	if !strings.Contains(err.Error(), "slug") {
+		t.Errorf("error should mention slug requirement, got: %v", err)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// resetInteractiveFlag resets the --interactive flag on worktreeStartCmd.
+// ---------------------------------------------------------------------------
+
+func resetInteractiveFlag(t *testing.T) {
+	t.Helper()
+	t.Cleanup(func() {
+		f := worktreeStartCmd.Flags().Lookup("interactive")
+		if f != nil {
+			f.Changed = false
+			_ = f.Value.Set("false")
+		}
+	})
+}
+
+// ---------------------------------------------------------------------------
+// worktree push: subcommand registration
+// ---------------------------------------------------------------------------
+
+func TestWorktreeCmd_HasPushSubcommand(t *testing.T) {
+	subcommands := worktreeCmd.Commands()
+	found := false
+	for _, cmd := range subcommands {
+		if cmd.Name() == "push" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("worktree group should have 'push' subcommand")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// worktree push: error cases
+// ---------------------------------------------------------------------------
+
+func TestWorktreePush_ErrorWhenNotInWorktree(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Ensure isInsideWorktreeFunc returns false (default for regular repo)
+	origInsideWt := isInsideWorktreeFunc
+	defer func() { isInsideWorktreeFunc = origInsideWt }()
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "push"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Error("expected error when not inside a worktree")
+	}
+	stderr := buf.String()
+	if !strings.Contains(stderr, "not inside a worktree") {
+		t.Errorf("error should mention worktree context, got: %s", stderr)
+	}
+}
+
+func TestWorktreePush_ErrorOnDefaultBranch(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Override to simulate being inside a worktree on default branch
+	origInsideWt := isInsideWorktreeFunc
+	isInsideWorktreeFunc = func(_ string) bool { return true }
+	defer func() { isInsideWorktreeFunc = origInsideWt }()
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "push"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Error("expected error when on default branch in worktree")
+	}
+	stderr := buf.String()
+	if !strings.Contains(stderr, "refusing to push default branch") {
+		t.Errorf("error should mention refusing default branch, got: %s", stderr)
+	}
+}
+
+func TestWorktreePush_ErrorOnPushFailure(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Override to simulate worktree on a feature branch
+	origInsideWt := isInsideWorktreeFunc
+	isInsideWorktreeFunc = func(_ string) bool { return true }
+	defer func() { isInsideWorktreeFunc = origInsideWt }()
+
+	origBranchFunc := getCurrentBranchFunc
+	getCurrentBranchFunc = func(_ string) string { return "feature/my-branch" }
+	defer func() { getCurrentBranchFunc = origBranchFunc }()
+
+	// Override gitPushFunc to simulate failure
+	origPushFunc := gitPushFunc
+	gitPushFunc = func(_ string) (string, error) {
+		return "", fmt.Errorf("network error: connection refused")
+	}
+	defer func() { gitPushFunc = origPushFunc }()
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "push"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Error("expected error when push fails")
+	}
+	stderr := buf.String()
+	if !strings.Contains(stderr, "push failed") {
+		t.Errorf("error should mention push failure, got: %s", stderr)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// worktree push: happy path
+// ---------------------------------------------------------------------------
+
+func TestWorktreePush_Success(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Override to simulate worktree on a feature branch
+	origInsideWt := isInsideWorktreeFunc
+	isInsideWorktreeFunc = func(_ string) bool { return true }
+	defer func() { isInsideWorktreeFunc = origInsideWt }()
+
+	origBranchFunc := getCurrentBranchFunc
+	getCurrentBranchFunc = func(_ string) string { return "my-feature" }
+	defer func() { getCurrentBranchFunc = origBranchFunc }()
+
+	// Override gitPushFunc to simulate success
+	origPushFunc := gitPushFunc
+	gitPushFunc = func(_ string) (string, error) {
+		return "", nil
+	}
+	defer func() { gitPushFunc = origPushFunc }()
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "push"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	stdout := buf.String()
+	if !strings.Contains(stdout, "Pushed branch") {
+		t.Errorf("output should confirm push, got: %s", stdout)
+	}
+	if !strings.Contains(stdout, "my-feature") {
+		t.Errorf("output should mention branch name, got: %s", stdout)
+	}
+}
+
+func TestWorktreePush_PrintsPushOutput(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Override to simulate worktree on a feature branch
+	origInsideWt := isInsideWorktreeFunc
+	isInsideWorktreeFunc = func(_ string) bool { return true }
+	defer func() { isInsideWorktreeFunc = origInsideWt }()
+
+	origBranchFunc := getCurrentBranchFunc
+	getCurrentBranchFunc = func(_ string) string { return "feature/test" }
+	defer func() { getCurrentBranchFunc = origBranchFunc }()
+
+	// Override gitPushFunc to return push output
+	origPushFunc := gitPushFunc
+	gitPushFunc = func(_ string) (string, error) {
+		return "remote: Enumerating objects: 5, done.\nTo github.com:user/repo.git\n", nil
+	}
+	defer func() { gitPushFunc = origPushFunc }()
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "push"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	stdout := buf.String()
+	if !strings.Contains(stdout, "Enumerating objects") {
+		t.Errorf("output should include push output, got: %s", stdout)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// worktree status: command registration
+// ---------------------------------------------------------------------------
+
+func TestWorktreeCmd_HasStatusSubcommand(t *testing.T) {
+	subcommands := worktreeCmd.Commands()
+	found := false
+	for _, cmd := range subcommands {
+		if cmd.Name() == "status" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("worktree group should have 'status' subcommand")
+	}
+}
+
+func TestWorktreeStatusCmd_AcceptsOptionalSlug(t *testing.T) {
+	// status accepts 0 or 1 args
+	if worktreeStatusCmd.Args != nil {
+		// cobra.MaximumNArgs returns a PositionalArgs function
+		// Verify it allows 0 and 1 args
+		if err := worktreeStatusCmd.Args(worktreeStatusCmd, []string{}); err != nil {
+			t.Errorf("status should accept 0 args: %v", err)
+		}
+		if err := worktreeStatusCmd.Args(worktreeStatusCmd, []string{"my-slug"}); err != nil {
+			t.Errorf("status should accept 1 arg: %v", err)
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// worktree status: error cases
+// ---------------------------------------------------------------------------
+
+func TestWorktreeStatus_ErrorWhenNotGitRepo(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "status", "my-slug"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Error("expected error when not a git repo")
+	}
+	stderr := buf.String()
+	if !strings.Contains(stderr, "not a git repository") {
+		t.Errorf("error should mention 'not a git repository', got: %s", stderr)
+	}
+}
+
+func TestWorktreeStatus_ErrorOnNonExistentSlug(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "status", "non-existent-slug"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Error("expected error for non-existent slug")
+	}
+	stderr := buf.String()
+	if !strings.Contains(stderr, "not found") {
+		t.Errorf("error should mention 'not found', got: %s", stderr)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// worktree status: specific slug — shows branch, commit, uncommitted files
+// ---------------------------------------------------------------------------
+
+func TestWorktreeStatus_ShowsBranchAndCommit(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a real worktree
+	slug := "status-test-wt"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	cmd := exec.Command("git", "worktree", "add", targetDir, "-b", slug)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "status", slug})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	stdout := buf.String()
+	if !strings.Contains(stdout, "BRANCH:") {
+		t.Errorf("output should contain BRANCH:, got: %s", stdout)
+	}
+	if !strings.Contains(stdout, slug) {
+		t.Errorf("output should mention slug/branch %s, got: %s", slug, stdout)
+	}
+	if !strings.Contains(stdout, "COMMIT:") {
+		t.Errorf("output should contain COMMIT:, got: %s", stdout)
+	}
+	if !strings.Contains(stdout, "initial") {
+		t.Errorf("output should contain latest commit message, got: %s", stdout)
+	}
+	if !strings.Contains(stdout, "---") {
+		t.Errorf("output should use structured block format (---), got: %s", stdout)
+	}
+}
+
+func TestWorktreeStatus_ShowsUncommittedFiles(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a real worktree
+	slug := "status-dirty-wt"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	cmd := exec.Command("git", "worktree", "add", targetDir, "-b", slug)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	// Create an uncommitted file in the worktree
+	uncommittedFile := filepath.Join(targetDir, "dirty-file.txt")
+	if err := os.WriteFile(uncommittedFile, []byte("dirty"), 0o644); err != nil {
+		t.Fatalf("write dirty file: %v", err)
+	}
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "status", slug})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	stdout := buf.String()
+	if !strings.Contains(stdout, "UNCOMMITTED:") {
+		t.Errorf("output should contain UNCOMMITTED:, got: %s", stdout)
+	}
+	if !strings.Contains(stdout, "dirty-file.txt") {
+		t.Errorf("output should list dirty-file.txt, got: %s", stdout)
+	}
+}
+
+func TestWorktreeStatus_CleanWorktree(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a real worktree
+	slug := "status-clean-wt"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	cmd := exec.Command("git", "worktree", "add", targetDir, "-b", slug)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "status", slug})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	stdout := buf.String()
+	if !strings.Contains(stdout, "UNCOMMITTED:") {
+		t.Errorf("output should contain UNCOMMITTED: (none), got: %s", stdout)
+	}
+	if strings.Contains(stdout, "dirty-file") {
+		t.Errorf("clean worktree should not list dirty files, got: %s", stdout)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// worktree status: no slug — shows all forge-managed worktrees
+// ---------------------------------------------------------------------------
+
+func TestWorktreeStatus_NoSlug_ShowsAllForgeWorktrees(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create two worktrees
+	slug1 := "status-all-wt1"
+	slug2 := "status-all-wt2"
+	for _, slug := range []string{slug1, slug2} {
+		targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+		cmd := exec.Command("git", "worktree", "add", targetDir, "-b", slug)
+		cmd.Dir = dir
+		if err := cmd.Run(); err != nil {
+			t.Fatalf("git worktree add %s: %v", slug, err)
+		}
+		t.Cleanup(func() {
+			td := filepath.Join(dir, ".forge", "worktrees", slug)
+			_ = exec.Command("git", "worktree", "remove", td, "--force").Run()
+			_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+		})
+	}
+
+	// Create feature dir so worktrees are forge-managed
+	featureDir := filepath.Join(dir, "docs", "features", "status-all-wt1")
+	if err := os.MkdirAll(featureDir, 0o755); err != nil {
+		t.Fatalf("create feature dir: %v", err)
+	}
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "status"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	stdout := buf.String()
+	// Should show the forge-managed worktree
+	if !strings.Contains(stdout, "BRANCH:") {
+		t.Errorf("output should contain BRANCH:, got: %s", stdout)
+	}
+	if !strings.Contains(stdout, "COMMIT:") {
+		t.Errorf("output should contain COMMIT:, got: %s", stdout)
+	}
+}
+
+func TestWorktreeStatus_NoSlug_NoWorktrees(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "status"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	stdout := buf.String()
+	if !strings.Contains(stdout, "No forge-managed worktrees found") {
+		t.Errorf("output should indicate no forge-managed worktrees, got: %s", stdout)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// worktree status: read-only guarantee
+// ---------------------------------------------------------------------------
+
+func TestWorktreeStatus_IsReadOnly(t *testing.T) {
+	// Verify the status command does not modify filesystem state.
+	// We check by running status on a clean worktree and verifying
+	// the directory mtime doesn't change and git status stays clean.
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	slug := "readonly-wt"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	cmd := exec.Command("git", "worktree", "add", targetDir, "-b", slug)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	// Get git status before
+	cmd = exec.Command("git", "status", "--porcelain")
+	cmd.Dir = targetDir
+	beforeStatus, _ := cmd.Output()
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "status", slug})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Get git status after
+	cmd = exec.Command("git", "status", "--porcelain")
+	cmd.Dir = targetDir
+	afterStatus, _ := cmd.Output()
+
+	if string(beforeStatus) != string(afterStatus) {
+		t.Errorf("status command modified filesystem state: before=%q after=%q", beforeStatus, afterStatus)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Shell completion: ValidArgsFunction registration
+// ---------------------------------------------------------------------------
+
+func TestWorktreeStartCmd_HasValidArgsFunction(t *testing.T) {
+	if worktreeStartCmd.ValidArgsFunction == nil {
+		t.Error("worktreeStartCmd should have a ValidArgsFunction for shell completion")
+	}
+}
+
+func TestWorktreeRemoveCmd_HasValidArgsFunction(t *testing.T) {
+	if worktreeRemoveCmd.ValidArgsFunction == nil {
+		t.Error("worktreeRemoveCmd should have a ValidArgsFunction for shell completion")
+	}
+}
+
+func TestWorktreeResumeCmd_HasValidArgsFunction(t *testing.T) {
+	if worktreeResumeCmd.ValidArgsFunction == nil {
+		t.Error("worktreeResumeCmd should have a ValidArgsFunction for shell completion")
+	}
+}
+
+func TestWorktreeListCmd_NoValidArgsFunction(t *testing.T) {
+	if worktreeListCmd.ValidArgsFunction != nil {
+		t.Error("worktreeListCmd should NOT have a ValidArgsFunction (list takes no slug arg)")
+	}
+}
+
+func TestWorktreePushCmd_NoValidArgsFunction(t *testing.T) {
+	if worktreePushCmd.ValidArgsFunction != nil {
+		t.Error("worktreePushCmd should NOT have a ValidArgsFunction (push takes no slug arg)")
+	}
+}
+
+func TestWorktreeStatusCmd_NoValidArgsFunction(t *testing.T) {
+	if worktreeStatusCmd.ValidArgsFunction != nil {
+		t.Error("worktreeStatusCmd should NOT have a ValidArgsFunction (status uses optional slug)")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Shell completion: start — unfinished proposal/feature slugs
+// ---------------------------------------------------------------------------
+
+func TestWorktreeStartCompletion_UnfinishedItems(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create proposal and feature directories
+	propDir := filepath.Join(dir, "docs", "proposals", "my-proposal")
+	if err := os.MkdirAll(propDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(propDir, "proposal.md"), []byte("---\nstatus: Draft\n---\n# Test"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	featDir := filepath.Join(dir, "docs", "features", "my-feature")
+	if err := os.MkdirAll(featDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(featDir, "manifest.md"), []byte("---\nstatus: in_progress\n---\n# Test"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	completions, directive := worktreeStartCmd.ValidArgsFunction(worktreeStartCmd, []string{}, "")
+	if directive != cobra.ShellCompDirectiveNoFileComp {
+		t.Errorf("expected ShellCompDirectiveNoFileComp, got %v", directive)
+	}
+
+	var slugs []string
+	for _, c := range completions {
+		parts := strings.SplitN(c, "\t", 2)
+		slugs = append(slugs, parts[0])
+	}
+
+	if !containsStr(slugs, "my-proposal") {
+		t.Errorf("expected completions to contain 'my-proposal', got %v", slugs)
+	}
+	if !containsStr(slugs, "my-feature") {
+		t.Errorf("expected completions to contain 'my-feature', got %v", slugs)
+	}
+}
+
+func TestWorktreeStartCompletion_FilterByPrefix(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create two proposals
+	for _, slug := range []string{"alpha-proposal", "beta-proposal"} {
+		propDir := filepath.Join(dir, "docs", "proposals", slug)
+		if err := os.MkdirAll(propDir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(propDir, "proposal.md"), []byte("---\nstatus: Draft\n---\n# Test"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	completions, _ := worktreeStartCmd.ValidArgsFunction(worktreeStartCmd, []string{}, "alpha")
+
+	var slugs []string
+	for _, c := range completions {
+		parts := strings.SplitN(c, "\t", 2)
+		slugs = append(slugs, parts[0])
+	}
+
+	if !containsStr(slugs, "alpha-proposal") {
+		t.Errorf("expected completions to contain 'alpha-proposal', got %v", slugs)
+	}
+	if containsStr(slugs, "beta-proposal") {
+		t.Errorf("expected completions NOT to contain 'beta-proposal' when filtering by 'alpha', got %v", slugs)
+	}
+}
+
+func TestWorktreeStartCompletion_SkipsCompleted(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a completed proposal — should not appear in completions
+	propDir := filepath.Join(dir, "docs", "proposals", "done-proposal")
+	if err := os.MkdirAll(propDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(propDir, "proposal.md"), []byte("---\nstatus: completed\n---\n# Done"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	completions, _ := worktreeStartCmd.ValidArgsFunction(worktreeStartCmd, []string{}, "")
+
+	var slugs []string
+	for _, c := range completions {
+		parts := strings.SplitN(c, "\t", 2)
+		slugs = append(slugs, parts[0])
+	}
+
+	if containsStr(slugs, "done-proposal") {
+		t.Errorf("completed proposals should not appear in completions, got %v", slugs)
+	}
+}
+
+func TestWorktreeStartCompletion_ErrorReturnsEmpty(t *testing.T) {
+	// No project root → FindProjectRoot will fail → should return empty list
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	completions, directive := worktreeStartCmd.ValidArgsFunction(worktreeStartCmd, []string{}, "")
+	if len(completions) != 0 {
+		t.Errorf("error should return empty completions, got %v", completions)
+	}
+	if directive != cobra.ShellCompDirectiveNoFileComp {
+		t.Errorf("expected ShellCompDirectiveNoFileComp on error, got %v", directive)
+	}
+}
+
+func TestWorktreeStartCompletion_AlreadyHasArg(t *testing.T) {
+	// When args already has a slug (cobra.ExactArgs or arg already provided), return empty
+	completions, directive := worktreeStartCmd.ValidArgsFunction(worktreeStartCmd, []string{"existing-slug"}, "")
+	if len(completions) != 0 {
+		t.Errorf("should return empty when arg already provided, got %v", completions)
+	}
+	if directive != cobra.ShellCompDirectiveNoFileComp {
+		t.Errorf("expected ShellCompDirectiveNoFileComp, got %v", directive)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Shell completion: remove/resume — existing worktree slugs
+// ---------------------------------------------------------------------------
+
+func TestWorktreeRemoveCompletion_ExistingSlugs(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Override listWorktreesFunc to return predictable results
+	origList := listWorktreesFunc
+	listWorktreesFunc = func(_ string) ([]gitPkg.WorktreeEntry, error) {
+		return []gitPkg.WorktreeEntry{
+			{Path: dir, Branch: "main", IsMain: true},
+			{Path: filepath.Join(dir, ".forge", "worktrees", "feature-a"), Branch: "feature-a"},
+			{Path: filepath.Join(dir, ".forge", "worktrees", "feature-b"), Branch: "feature-b"},
+		}, nil
+	}
+	defer func() { listWorktreesFunc = origList }()
+
+	completions, directive := worktreeRemoveCmd.ValidArgsFunction(worktreeRemoveCmd, []string{}, "")
+	if directive != cobra.ShellCompDirectiveNoFileComp {
+		t.Errorf("expected ShellCompDirectiveNoFileComp, got %v", directive)
+	}
+
+	var slugs []string
+	for _, c := range completions {
+		parts := strings.SplitN(c, "\t", 2)
+		slugs = append(slugs, parts[0])
+	}
+
+	// Main worktree (basename of dir) should not appear
+	mainName := filepath.Base(dir)
+	if containsStr(slugs, mainName) {
+		t.Errorf("main worktree %q should not appear, got %v", mainName, slugs)
+	}
+	if !containsStr(slugs, "feature-a") {
+		t.Errorf("expected 'feature-a' in completions, got %v", slugs)
+	}
+	if !containsStr(slugs, "feature-b") {
+		t.Errorf("expected 'feature-b' in completions, got %v", slugs)
+	}
+}
+
+func TestWorktreeRemoveCompletion_FilterByPrefix(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	origList := listWorktreesFunc
+	listWorktreesFunc = func(_ string) ([]gitPkg.WorktreeEntry, error) {
+		return []gitPkg.WorktreeEntry{
+			{Path: dir, Branch: "main", IsMain: true},
+			{Path: filepath.Join(dir, ".forge", "worktrees", "alpha"), Branch: "alpha"},
+			{Path: filepath.Join(dir, ".forge", "worktrees", "beta"), Branch: "beta"},
+		}, nil
+	}
+	defer func() { listWorktreesFunc = origList }()
+
+	completions, _ := worktreeRemoveCmd.ValidArgsFunction(worktreeRemoveCmd, []string{}, "alp")
+
+	var slugs []string
+	for _, c := range completions {
+		parts := strings.SplitN(c, "\t", 2)
+		slugs = append(slugs, parts[0])
+	}
+
+	if !containsStr(slugs, "alpha") {
+		t.Errorf("expected 'alpha' when filtering by 'alp', got %v", slugs)
+	}
+	if containsStr(slugs, "beta") {
+		t.Errorf("expected 'beta' to be filtered out when prefix is 'alp', got %v", slugs)
+	}
+}
+
+func TestWorktreeRemoveCompletion_ErrorReturnsEmpty(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	origList := listWorktreesFunc
+	listWorktreesFunc = func(_ string) ([]gitPkg.WorktreeEntry, error) {
+		return nil, fmt.Errorf("simulated error")
+	}
+	defer func() { listWorktreesFunc = origList }()
+
+	completions, directive := worktreeRemoveCmd.ValidArgsFunction(worktreeRemoveCmd, []string{}, "")
+	if len(completions) != 0 {
+		t.Errorf("error should return empty completions, got %v", completions)
+	}
+	if directive != cobra.ShellCompDirectiveNoFileComp {
+		t.Errorf("expected ShellCompDirectiveNoFileComp on error, got %v", directive)
+	}
+}
+
+func TestWorktreeResumeCompletion_ExistingSlugs(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	origList := listWorktreesFunc
+	listWorktreesFunc = func(_ string) ([]gitPkg.WorktreeEntry, error) {
+		return []gitPkg.WorktreeEntry{
+			{Path: dir, Branch: "main", IsMain: true},
+			{Path: filepath.Join(dir, ".forge", "worktrees", "resume-me"), Branch: "resume-me"},
+		}, nil
+	}
+	defer func() { listWorktreesFunc = origList }()
+
+	completions, directive := worktreeResumeCmd.ValidArgsFunction(worktreeResumeCmd, []string{}, "")
+	if directive != cobra.ShellCompDirectiveNoFileComp {
+		t.Errorf("expected ShellCompDirectiveNoFileComp, got %v", directive)
+	}
+
+	var slugs []string
+	for _, c := range completions {
+		parts := strings.SplitN(c, "\t", 2)
+		slugs = append(slugs, parts[0])
+	}
+
+	if !containsStr(slugs, "resume-me") {
+		t.Errorf("expected 'resume-me' in completions, got %v", slugs)
+	}
+}
+
+func TestWorktreeResumeCompletion_ErrorReturnsEmpty(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	origList := listWorktreesFunc
+	listWorktreesFunc = func(_ string) ([]gitPkg.WorktreeEntry, error) {
+		return nil, fmt.Errorf("simulated error")
+	}
+	defer func() { listWorktreesFunc = origList }()
+
+	completions, directive := worktreeResumeCmd.ValidArgsFunction(worktreeResumeCmd, []string{}, "")
+	if len(completions) != 0 {
+		t.Errorf("error should return empty completions, got %v", completions)
+	}
+	if directive != cobra.ShellCompDirectiveNoFileComp {
+		t.Errorf("expected ShellCompDirectiveNoFileComp on error, got %v", directive)
+	}
+}
+
+func TestWorktreeRemoveCompletion_ExcludesMainWorktree(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	origList := listWorktreesFunc
+	listWorktreesFunc = func(_ string) ([]gitPkg.WorktreeEntry, error) {
+		return []gitPkg.WorktreeEntry{
+			{Path: dir, Branch: "main", IsMain: true},
+		}, nil
+	}
+	defer func() { listWorktreesFunc = origList }()
+
+	completions, _ := worktreeRemoveCmd.ValidArgsFunction(worktreeRemoveCmd, []string{}, "")
+	if len(completions) != 0 {
+		t.Errorf("only main worktree — should return empty, got %v", completions)
+	}
+}
+
+// containsStr checks if a string slice contains the given value.
+func containsStr(slice []string, val string) bool {
+	for _, s := range slice {
+		if s == val {
+			return true
+		}
+	}
+	return false
 }

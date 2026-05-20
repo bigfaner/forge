@@ -52,6 +52,7 @@ func init() {
 	worktreeCmd.AddCommand(worktreeListCmd)
 	worktreeCmd.AddCommand(worktreeRemoveCmd)
 	worktreeCmd.AddCommand(worktreeResumeCmd)
+	worktreeCmd.AddCommand(worktreeStatusCmd)
 
 	// Task group subcommands
 	taskCmd.AddCommand(claimCmd)

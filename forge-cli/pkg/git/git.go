@@ -127,6 +127,27 @@ func GetFeatureFromGit(projectRoot string) string {
 	return ExtractFeatureFromBranch(branch)
 }
 
+// IsInsideWorktree returns true if the directory is a linked git worktree
+// (i.e., .git is a file pointing to the main repository's worktrees directory).
+func IsInsideWorktree(projectRoot string) bool {
+	gitPath := filepath.Join(projectRoot, ".git")
+	info, err := os.Lstat(gitPath)
+	if err != nil {
+		return false
+	}
+	return !info.IsDir()
+}
+
+// Push pushes the current branch to origin with upstream tracking set.
+// Uses "git push -u origin HEAD" pattern.
+func Push(projectRoot string) (string, error) {
+	out, err := Run(projectRoot, "push", "-u", "origin", "HEAD")
+	if err != nil {
+		return "", fmt.Errorf("git push: %w", err)
+	}
+	return out, nil
+}
+
 // Run executes a git command and returns the output.
 func Run(projectRoot string, args ...string) (string, error) {
 	cmd := exec.Command("git", args...)
