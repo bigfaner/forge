@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
@@ -91,53 +90,6 @@ type quickSlimTaskEntry struct {
 	EstimatedTime string   `json:"estimatedTime,omitempty"`
 }
 
-// quickSlimBinPath caches the built forge binary path.
-var quickSlimBinPath string
-
-// quickSlimBin returns the path to the forge binary, building it if necessary.
-func quickSlimBin(t *testing.T) string {
-	t.Helper()
-	if quickSlimBinPath != "" {
-		if _, err := os.Stat(quickSlimBinPath); err == nil {
-			return quickSlimBinPath
-		}
-	}
-	binName := "forge"
-	if runtime.GOOS == "windows" {
-		binName = "forge.exe"
-	}
-	_, thisFile, _, ok := runtime.Caller(0)
-	if !ok {
-		t.Fatal("runtime.Caller failed")
-	}
-	dir := filepath.Dir(thisFile)
-	for dir != "/" && dir != "" {
-		if _, err := os.Stat(filepath.Join(dir, "justfile")); err == nil {
-			break
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			break
-		}
-		dir = parent
-	}
-	binPath := filepath.Join(dir, "forge-cli", "bin", binName)
-	if _, err := os.Stat(binPath); err != nil {
-		cliDir := filepath.Join(dir, "forge-cli")
-		buildCmd := exec.Command("go", "build", "-o", binPath, "./cmd/forge/")
-		buildCmd.Dir = cliDir
-		if out, err := buildCmd.CombinedOutput(); err != nil {
-			t.Fatalf("failed to build forge binary: %s: %s", err, out)
-		}
-	}
-	absPath, err := filepath.Abs(binPath)
-	if err != nil {
-		t.Fatalf("failed to resolve binary path: %s", err)
-	}
-	quickSlimBinPath = absPath
-	return absPath
-}
-
 // quickSlimSetupProject creates a temp project with quick mode structure.
 func quickSlimSetupProject(t *testing.T, slug string, testProfiles []string, testCasesContent string) string {
 	t.Helper()
@@ -198,7 +150,7 @@ func quickSlimAddBusinessTask(t *testing.T, dir, slug string) {
 // quickSlimRunIndex runs forge task index and returns the output.
 func quickSlimRunIndex(t *testing.T, dir, slug string) []byte {
 	t.Helper()
-	bin := quickSlimBin(t)
+	bin := forgeBinary
 	cmd := exec.Command(bin, "task", "index", "--feature", slug)
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()
@@ -401,7 +353,7 @@ func TestTC_007_BreakdownModeUnchangedByQuickMerge(t *testing.T) {
 	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"coding.feature\"\nscope: \"all\"\n---\n\n# Task One\n"
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "1-task-one.md"), []byte(taskMD), 0644))
 
-	bin := quickSlimBin(t)
+	bin := forgeBinary
 	cmd := exec.Command(bin, "task", "index", "--feature", "test-qts-007")
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()

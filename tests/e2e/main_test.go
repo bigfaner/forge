@@ -8,12 +8,14 @@ import (
 )
 
 // forgeBinary is an alias for ForgeBinary for backward compatibility within this package.
-// The actual build happens in forge_binary.go init().
-var forgeBinary = ForgeBinary
+// Set in TestMain (after init()) to capture the value populated by forge_binary.go init().
+var forgeBinary string
 
 func TestMain(m *testing.M) {
 	// Binary is already built by forge_binary.go init().
-	// TestMain only drives test execution.
+	// Copy the value now so all test functions see the correct path.
+	forgeBinary = ForgeBinary
+
 	code := m.Run()
 	os.Exit(code)
 }
