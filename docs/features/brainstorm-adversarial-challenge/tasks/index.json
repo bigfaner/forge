@@ -1,0 +1,45 @@
+{
+  "feature": "brainstorm-adversarial-challenge",
+  "proposal": "docs/proposals/brainstorm-adversarial-challenge/proposal.md",
+  "created": "2026-05-20",
+  "tasks": {
+    "1-challenge-protocol": {
+      "id": "1",
+      "title": "Embed adversarial challenge tools into brainstorm skill",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "status": "pending",
+      "file": "1-challenge-protocol.md",
+      "record": "records/1-challenge-protocol.md",
+      "type": "doc"
+    },
+    "eval-doc": {
+      "id": "T-eval-doc",
+      "title": "Evaluate Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "eval-doc.md",
+      "record": "records/eval-doc.md",
+      "scope": "all",
+      "noTest": true,
+      "type": "doc.eval"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
