@@ -1,6 +1,6 @@
 ---
 title: "Prompt Template Instruction Hierarchy"
-domains: [prompt, template, CODING_PRINCIPLES, EXTREMELY-IMPORTANT, HARD-GATE, instruction]
+domains: [prompt, template, CODING_PRINCIPLES, EXTREMELY-IMPORTANT, HARD-GATE, TASK-CONSTRAINTS, instruction]
 ---
 
 # Prompt Template Instruction Hierarchy
@@ -22,3 +22,10 @@ Forge 的提示词模板采用三级指令层次，由弱到强：
 - 无时序冲突：行为守则不与工作流步骤产生执行顺序矛盾。
 - 无语义重叠：与现有规则重叠时合并为统一表述，不并存。
 - 指令层次清晰：三级标签各有明确语义，不混用。
+
+### 模板级约束与任务级约束的区分
+
+- **`<TASK-CONSTRAINTS>`** — 模板级工作流约束。定义模板自身对 agent 执行流程的强制要求（如"必须通过 Skill 调用，禁止直接执行"）。用于 test.* 模板，由模板设计者设定。
+- **Hard Rules** — 任务级约束。定义具体任务文件中的不可违反规则（如文件范围限制、命令限制），由任务创建者设定，模板通过 `<IMPORTANT>` 标签注入 agent 上下文。
+
+两者命名不同以避免混淆：TASK-CONSTRAINTS 是模板设计约束，Hard Rules 是任务执行约束。
