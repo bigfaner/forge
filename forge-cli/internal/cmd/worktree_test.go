@@ -12,6 +12,8 @@ import (
 	"forge-cli/pkg/feature"
 
 	gitPkg "forge-cli/pkg/git"
+
+	"github.com/spf13/cobra"
 )
 
 // ---------------------------------------------------------------------------
@@ -4732,4 +4734,368 @@ func TestWorktreeStatus_IsReadOnly(t *testing.T) {
 	if string(beforeStatus) != string(afterStatus) {
 		t.Errorf("status command modified filesystem state: before=%q after=%q", beforeStatus, afterStatus)
 	}
+}
+
+// ---------------------------------------------------------------------------
+// Shell completion: ValidArgsFunction registration
+// ---------------------------------------------------------------------------
+
+func TestWorktreeStartCmd_HasValidArgsFunction(t *testing.T) {
+	if worktreeStartCmd.ValidArgsFunction == nil {
+		t.Error("worktreeStartCmd should have a ValidArgsFunction for shell completion")
+	}
+}
+
+func TestWorktreeRemoveCmd_HasValidArgsFunction(t *testing.T) {
+	if worktreeRemoveCmd.ValidArgsFunction == nil {
+		t.Error("worktreeRemoveCmd should have a ValidArgsFunction for shell completion")
+	}
+}
+
+func TestWorktreeResumeCmd_HasValidArgsFunction(t *testing.T) {
+	if worktreeResumeCmd.ValidArgsFunction == nil {
+		t.Error("worktreeResumeCmd should have a ValidArgsFunction for shell completion")
+	}
+}
+
+func TestWorktreeListCmd_NoValidArgsFunction(t *testing.T) {
+	if worktreeListCmd.ValidArgsFunction != nil {
+		t.Error("worktreeListCmd should NOT have a ValidArgsFunction (list takes no slug arg)")
+	}
+}
+
+func TestWorktreePushCmd_NoValidArgsFunction(t *testing.T) {
+	if worktreePushCmd.ValidArgsFunction != nil {
+		t.Error("worktreePushCmd should NOT have a ValidArgsFunction (push takes no slug arg)")
+	}
+}
+
+func TestWorktreeStatusCmd_NoValidArgsFunction(t *testing.T) {
+	if worktreeStatusCmd.ValidArgsFunction != nil {
+		t.Error("worktreeStatusCmd should NOT have a ValidArgsFunction (status uses optional slug)")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Shell completion: start — unfinished proposal/feature slugs
+// ---------------------------------------------------------------------------
+
+func TestWorktreeStartCompletion_UnfinishedItems(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create proposal and feature directories
+	propDir := filepath.Join(dir, "docs", "proposals", "my-proposal")
+	if err := os.MkdirAll(propDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(propDir, "proposal.md"), []byte("---\nstatus: Draft\n---\n# Test"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	featDir := filepath.Join(dir, "docs", "features", "my-feature")
+	if err := os.MkdirAll(featDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(featDir, "manifest.md"), []byte("---\nstatus: in_progress\n---\n# Test"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	completions, directive := worktreeStartCmd.ValidArgsFunction(worktreeStartCmd, []string{}, "")
+	if directive != cobra.ShellCompDirectiveNoFileComp {
+		t.Errorf("expected ShellCompDirectiveNoFileComp, got %v", directive)
+	}
+
+	var slugs []string
+	for _, c := range completions {
+		parts := strings.SplitN(c, "\t", 2)
+		slugs = append(slugs, parts[0])
+	}
+
+	if !containsStr(slugs, "my-proposal") {
+		t.Errorf("expected completions to contain 'my-proposal', got %v", slugs)
+	}
+	if !containsStr(slugs, "my-feature") {
+		t.Errorf("expected completions to contain 'my-feature', got %v", slugs)
+	}
+}
+
+func TestWorktreeStartCompletion_FilterByPrefix(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create two proposals
+	for _, slug := range []string{"alpha-proposal", "beta-proposal"} {
+		propDir := filepath.Join(dir, "docs", "proposals", slug)
+		if err := os.MkdirAll(propDir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(propDir, "proposal.md"), []byte("---\nstatus: Draft\n---\n# Test"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	completions, _ := worktreeStartCmd.ValidArgsFunction(worktreeStartCmd, []string{}, "alpha")
+
+	var slugs []string
+	for _, c := range completions {
+		parts := strings.SplitN(c, "\t", 2)
+		slugs = append(slugs, parts[0])
+	}
+
+	if !containsStr(slugs, "alpha-proposal") {
+		t.Errorf("expected completions to contain 'alpha-proposal', got %v", slugs)
+	}
+	if containsStr(slugs, "beta-proposal") {
+		t.Errorf("expected completions NOT to contain 'beta-proposal' when filtering by 'alpha', got %v", slugs)
+	}
+}
+
+func TestWorktreeStartCompletion_SkipsCompleted(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a completed proposal — should not appear in completions
+	propDir := filepath.Join(dir, "docs", "proposals", "done-proposal")
+	if err := os.MkdirAll(propDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(propDir, "proposal.md"), []byte("---\nstatus: completed\n---\n# Done"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	completions, _ := worktreeStartCmd.ValidArgsFunction(worktreeStartCmd, []string{}, "")
+
+	var slugs []string
+	for _, c := range completions {
+		parts := strings.SplitN(c, "\t", 2)
+		slugs = append(slugs, parts[0])
+	}
+
+	if containsStr(slugs, "done-proposal") {
+		t.Errorf("completed proposals should not appear in completions, got %v", slugs)
+	}
+}
+
+func TestWorktreeStartCompletion_ErrorReturnsEmpty(t *testing.T) {
+	// No project root → FindProjectRoot will fail → should return empty list
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	completions, directive := worktreeStartCmd.ValidArgsFunction(worktreeStartCmd, []string{}, "")
+	if len(completions) != 0 {
+		t.Errorf("error should return empty completions, got %v", completions)
+	}
+	if directive != cobra.ShellCompDirectiveNoFileComp {
+		t.Errorf("expected ShellCompDirectiveNoFileComp on error, got %v", directive)
+	}
+}
+
+func TestWorktreeStartCompletion_AlreadyHasArg(t *testing.T) {
+	// When args already has a slug (cobra.ExactArgs or arg already provided), return empty
+	completions, directive := worktreeStartCmd.ValidArgsFunction(worktreeStartCmd, []string{"existing-slug"}, "")
+	if len(completions) != 0 {
+		t.Errorf("should return empty when arg already provided, got %v", completions)
+	}
+	if directive != cobra.ShellCompDirectiveNoFileComp {
+		t.Errorf("expected ShellCompDirectiveNoFileComp, got %v", directive)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Shell completion: remove/resume — existing worktree slugs
+// ---------------------------------------------------------------------------
+
+func TestWorktreeRemoveCompletion_ExistingSlugs(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Override listWorktreesFunc to return predictable results
+	origList := listWorktreesFunc
+	listWorktreesFunc = func(_ string) ([]gitPkg.WorktreeEntry, error) {
+		return []gitPkg.WorktreeEntry{
+			{Path: dir, Branch: "main", IsMain: true},
+			{Path: filepath.Join(dir, ".forge", "worktrees", "feature-a"), Branch: "feature-a"},
+			{Path: filepath.Join(dir, ".forge", "worktrees", "feature-b"), Branch: "feature-b"},
+		}, nil
+	}
+	defer func() { listWorktreesFunc = origList }()
+
+	completions, directive := worktreeRemoveCmd.ValidArgsFunction(worktreeRemoveCmd, []string{}, "")
+	if directive != cobra.ShellCompDirectiveNoFileComp {
+		t.Errorf("expected ShellCompDirectiveNoFileComp, got %v", directive)
+	}
+
+	var slugs []string
+	for _, c := range completions {
+		parts := strings.SplitN(c, "\t", 2)
+		slugs = append(slugs, parts[0])
+	}
+
+	// Main worktree (basename of dir) should not appear
+	mainName := filepath.Base(dir)
+	if containsStr(slugs, mainName) {
+		t.Errorf("main worktree %q should not appear, got %v", mainName, slugs)
+	}
+	if !containsStr(slugs, "feature-a") {
+		t.Errorf("expected 'feature-a' in completions, got %v", slugs)
+	}
+	if !containsStr(slugs, "feature-b") {
+		t.Errorf("expected 'feature-b' in completions, got %v", slugs)
+	}
+}
+
+func TestWorktreeRemoveCompletion_FilterByPrefix(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	origList := listWorktreesFunc
+	listWorktreesFunc = func(_ string) ([]gitPkg.WorktreeEntry, error) {
+		return []gitPkg.WorktreeEntry{
+			{Path: dir, Branch: "main", IsMain: true},
+			{Path: filepath.Join(dir, ".forge", "worktrees", "alpha"), Branch: "alpha"},
+			{Path: filepath.Join(dir, ".forge", "worktrees", "beta"), Branch: "beta"},
+		}, nil
+	}
+	defer func() { listWorktreesFunc = origList }()
+
+	completions, _ := worktreeRemoveCmd.ValidArgsFunction(worktreeRemoveCmd, []string{}, "alp")
+
+	var slugs []string
+	for _, c := range completions {
+		parts := strings.SplitN(c, "\t", 2)
+		slugs = append(slugs, parts[0])
+	}
+
+	if !containsStr(slugs, "alpha") {
+		t.Errorf("expected 'alpha' when filtering by 'alp', got %v", slugs)
+	}
+	if containsStr(slugs, "beta") {
+		t.Errorf("expected 'beta' to be filtered out when prefix is 'alp', got %v", slugs)
+	}
+}
+
+func TestWorktreeRemoveCompletion_ErrorReturnsEmpty(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	origList := listWorktreesFunc
+	listWorktreesFunc = func(_ string) ([]gitPkg.WorktreeEntry, error) {
+		return nil, fmt.Errorf("simulated error")
+	}
+	defer func() { listWorktreesFunc = origList }()
+
+	completions, directive := worktreeRemoveCmd.ValidArgsFunction(worktreeRemoveCmd, []string{}, "")
+	if len(completions) != 0 {
+		t.Errorf("error should return empty completions, got %v", completions)
+	}
+	if directive != cobra.ShellCompDirectiveNoFileComp {
+		t.Errorf("expected ShellCompDirectiveNoFileComp on error, got %v", directive)
+	}
+}
+
+func TestWorktreeResumeCompletion_ExistingSlugs(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	origList := listWorktreesFunc
+	listWorktreesFunc = func(_ string) ([]gitPkg.WorktreeEntry, error) {
+		return []gitPkg.WorktreeEntry{
+			{Path: dir, Branch: "main", IsMain: true},
+			{Path: filepath.Join(dir, ".forge", "worktrees", "resume-me"), Branch: "resume-me"},
+		}, nil
+	}
+	defer func() { listWorktreesFunc = origList }()
+
+	completions, directive := worktreeResumeCmd.ValidArgsFunction(worktreeResumeCmd, []string{}, "")
+	if directive != cobra.ShellCompDirectiveNoFileComp {
+		t.Errorf("expected ShellCompDirectiveNoFileComp, got %v", directive)
+	}
+
+	var slugs []string
+	for _, c := range completions {
+		parts := strings.SplitN(c, "\t", 2)
+		slugs = append(slugs, parts[0])
+	}
+
+	if !containsStr(slugs, "resume-me") {
+		t.Errorf("expected 'resume-me' in completions, got %v", slugs)
+	}
+}
+
+func TestWorktreeResumeCompletion_ErrorReturnsEmpty(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	origList := listWorktreesFunc
+	listWorktreesFunc = func(_ string) ([]gitPkg.WorktreeEntry, error) {
+		return nil, fmt.Errorf("simulated error")
+	}
+	defer func() { listWorktreesFunc = origList }()
+
+	completions, directive := worktreeResumeCmd.ValidArgsFunction(worktreeResumeCmd, []string{}, "")
+	if len(completions) != 0 {
+		t.Errorf("error should return empty completions, got %v", completions)
+	}
+	if directive != cobra.ShellCompDirectiveNoFileComp {
+		t.Errorf("expected ShellCompDirectiveNoFileComp on error, got %v", directive)
+	}
+}
+
+func TestWorktreeRemoveCompletion_ExcludesMainWorktree(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	origList := listWorktreesFunc
+	listWorktreesFunc = func(_ string) ([]gitPkg.WorktreeEntry, error) {
+		return []gitPkg.WorktreeEntry{
+			{Path: dir, Branch: "main", IsMain: true},
+		}, nil
+	}
+	defer func() { listWorktreesFunc = origList }()
+
+	completions, _ := worktreeRemoveCmd.ValidArgsFunction(worktreeRemoveCmd, []string{}, "")
+	if len(completions) != 0 {
+		t.Errorf("only main worktree — should return empty, got %v", completions)
+	}
+}
+
+// containsStr checks if a string slice contains the given value.
+func containsStr(slice []string, val string) bool {
+	for _, s := range slice {
+		if s == val {
+			return true
+		}
+	}
+	return false
 }

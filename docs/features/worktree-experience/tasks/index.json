@@ -82,7 +82,7 @@
         "3",
         "6"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "7-shell-completion.md",
       "record": "records/7-shell-completion.md",
       "scope": "backend",

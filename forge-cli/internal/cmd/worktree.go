@@ -472,6 +472,11 @@ func init() {
 	worktreeRemoveCmd.Flags().Bool("hard", false, "delete worktree, local branch, and prune stale administrative files")
 	worktreeRemoveCmd.Flags().Bool("force", false, "force removal even with uncommitted changes (use with --hard)")
 
+	// Shell completion functions
+	worktreeStartCmd.ValidArgsFunction = worktreeStartCompletion
+	worktreeRemoveCmd.ValidArgsFunction = worktreeRemoveCompletion
+	worktreeResumeCmd.ValidArgsFunction = worktreeResumeCompletion
+
 	worktreeCmd.AddCommand(worktreePushCmd)
 	worktreeCmd.AddCommand(worktreeStatusCmd)
 }
@@ -946,4 +951,75 @@ func promptSelection(items []selectableItem, stdout io.Writer) (string, error) {
 	}
 
 	return items[num-1].Slug, nil
+}
+
+// ---------------------------------------------------------------------------
+// Shell completion functions
+// ---------------------------------------------------------------------------
+
+// worktreeStartCompletion returns unfinished proposal/feature slugs for shell completion.
+// Hard Rule: return empty list on error (never return error to shell).
+func worktreeStartCompletion(_ *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	// If a slug arg is already provided, no more completion needed
+	if len(args) > 0 {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+
+	projectRoot, err := project.FindProjectRoot()
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+
+	items := listUnfinishedItems(projectRoot)
+
+	var completions []string
+	for _, item := range items {
+		if strings.HasPrefix(item.Slug, toComplete) {
+			completions = append(completions, item.Slug+"\t"+item.Type)
+		}
+	}
+
+	return completions, cobra.ShellCompDirectiveNoFileComp
+}
+
+// worktreeRemoveCompletion returns existing non-main worktree slugs for shell completion.
+// Hard Rule: return empty list on error (never return error to shell).
+func worktreeRemoveCompletion(_ *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return worktreeSlugCompletion(args, toComplete)
+}
+
+// worktreeResumeCompletion returns existing non-main worktree slugs for shell completion.
+// Hard Rule: return empty list on error (never return error to shell).
+func worktreeResumeCompletion(_ *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return worktreeSlugCompletion(args, toComplete)
+}
+
+// worktreeSlugCompletion returns non-main worktree slugs filtered by toComplete prefix.
+func worktreeSlugCompletion(args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	if len(args) > 0 {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+
+	projectRoot, err := project.FindProjectRoot()
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+
+	entries, err := listWorktreesFunc(projectRoot)
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+
+	var completions []string
+	for _, entry := range entries {
+		if entry.IsMain {
+			continue
+		}
+		name := entry.Name()
+		if strings.HasPrefix(name, toComplete) {
+			completions = append(completions, name)
+		}
+	}
+
+	return completions, cobra.ShellCompDirectiveNoFileComp
 }
