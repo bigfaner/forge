@@ -1,6 +1,6 @@
 ---
 feature: "brainstorm-adversarial-challenge"
-status: tasks
+status: completed
 mode: quick
 ---
 
