@@ -255,7 +255,27 @@ If no vocabulary exists (no prior `/consolidate-specs` run), classify unassisted
 
 If no candidates pass the "notable" heuristics (below), **produce no output**. Do not ask the user anything. Return silently.
 
-#### Step 5: Present for user confirmation
+#### Step 4.5: Auto-save configuration check
+
+Before presenting candidates, check the auto-save configuration:
+
+```bash
+forge config get auto.knowledgeSave
+```
+
+Capture stdout (trimmed) and exit code. Then:
+
+| Exit Code | Mode match | Action |
+|-----------|-----------|--------|
+| 0 | Mode value is `true` | **Skip Step 5 entirely.** Treat all candidates as confirmed, proceed directly to Step 6. |
+| 0 | Mode value is `false` | Present Step 5 confirmation (full flow below). |
+| Non-zero (config missing/read error) | — | **Fallback: present Step 5 confirmation** (same as `false`). |
+
+Mode context: `quick` when invoked via `/quick` pipeline, `full` when invoked via full pipeline. Parse the config output format `quick:<val> full:<val>` and select the value matching the current mode.
+
+#### Step 5: Present for user confirmation (skipped when auto-save is enabled)
+
+This step is **only executed** when the auto-save configuration check (Step 4.5) returns `false` for the current mode.
 
 Use AskUserQuestion to present extracted candidates:
 

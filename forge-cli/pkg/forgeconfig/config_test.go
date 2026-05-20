@@ -140,6 +140,9 @@ func TestReadAutoConfig(t *testing.T) {
 		if !auto.RunTasks.Quick || auto.RunTasks.Full {
 			t.Errorf("RunTasks defaults = %+v, want {Quick:true Full:false}", auto.RunTasks)
 		}
+		if !auto.KnowledgeSave.Quick || auto.KnowledgeSave.Full {
+			t.Errorf("KnowledgeSave defaults = %+v, want {Quick:true Full:false}", auto.KnowledgeSave)
+		}
 	})
 
 	t.Run("full auto block", func(t *testing.T) {
@@ -450,6 +453,9 @@ func TestAutoConfigDefaults(t *testing.T) {
 	if !defaults.RunTasks.Quick || defaults.RunTasks.Full {
 		t.Errorf("RunTasks = %+v, want {Quick:true Full:false}", defaults.RunTasks)
 	}
+	if !defaults.KnowledgeSave.Quick || defaults.KnowledgeSave.Full {
+		t.Errorf("KnowledgeSave = %+v, want {Quick:true Full:false}", defaults.KnowledgeSave)
+	}
 }
 
 func TestAutoConfigIsZero(t *testing.T) {
@@ -471,6 +477,13 @@ func TestAutoConfigIsZero(t *testing.T) {
 		a := AutoConfig{RunTasks: ModeToggle{Quick: true, Full: false}}
 		if a.IsZero() {
 			t.Error("expected AutoConfig with RunTasks set to be non-zero")
+		}
+	})
+
+	t.Run("only KnowledgeSave set is not zero", func(t *testing.T) {
+		a := AutoConfig{KnowledgeSave: ModeToggle{Quick: true, Full: false}}
+		if a.IsZero() {
+			t.Error("expected AutoConfig with KnowledgeSave set to be non-zero")
 		}
 	})
 }
@@ -844,6 +857,41 @@ func TestWriteConfigAutoBlock(t *testing.T) {
 		}
 		if readback.Auto.GitPush != true {
 			t.Errorf("expected GitPush true, got %v", readback.Auto.GitPush)
+		}
+	})
+}
+
+func TestGetConfigValue_KnowledgeSave(t *testing.T) {
+	t.Run("auto.knowledgeSave default returns quick:true full:false", func(t *testing.T) {
+		dir := t.TempDir()
+		val, err := GetConfigValue(dir, "auto.knowledgeSave")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "quick:true full:false" {
+			t.Errorf("expected 'quick:true full:false', got %q", val)
+		}
+	})
+
+	t.Run("auto.knowledgeSave explicit", func(t *testing.T) {
+		dir := setupConfig(t, "auto:\n  knowledgeSave:\n    quick: false\n    full: true\n")
+		val, err := GetConfigValue(dir, "auto.knowledgeSave")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "quick:false full:true" {
+			t.Errorf("expected 'quick:false full:true', got %q", val)
+		}
+	})
+
+	t.Run("auto.knowledgeSave partial applies default", func(t *testing.T) {
+		dir := setupConfig(t, "auto:\n  knowledgeSave:\n    full: true\n")
+		val, err := GetConfigValue(dir, "auto.knowledgeSave")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "quick:true full:true" {
+			t.Errorf("expected 'quick:true full:true' (quick defaulted), got %q", val)
 		}
 	})
 }

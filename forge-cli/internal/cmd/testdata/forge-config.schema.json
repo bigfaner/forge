@@ -100,6 +100,23 @@
           },
           "additionalProperties": false
         },
+        "knowledgeSave": {
+          "type": "object",
+          "description": "Whether auto knowledge extraction saves silently for each pipeline mode.",
+          "properties": {
+            "quick": {
+              "type": "boolean",
+              "description": "Auto-save extracted knowledge in quick mode (no confirmation dialog).",
+              "default": true
+            },
+            "full": {
+              "type": "boolean",
+              "description": "Auto-save extracted knowledge in full mode (no confirmation dialog).",
+              "default": false
+            }
+          },
+          "additionalProperties": false
+        },
         "gitPush": {
           "type": "boolean",
           "description": "Automatically push to remote after all-completed hook passes.",

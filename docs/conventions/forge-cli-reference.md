@@ -85,6 +85,7 @@ domains: [cli, commands, reference, skills]
 | `forge worktree list` | 列出所有 git worktree | `worktree.go` |
 | `forge worktree remove <slug>` | 移除 worktree 但保留其分支 | `worktree.go` |
 | `forge worktree resume <slug>` | 在已有 worktree 中重新启动 Claude | `worktree.go` |
+| `forge worktree status [<slug>]` | 显示 worktree 状态（分支、提交、未提交文件列表）；无参数时显示所有 worktree | `worktree.go` |
 
 ### forge config — 配置管理
 
