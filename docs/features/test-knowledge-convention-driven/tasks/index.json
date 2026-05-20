@@ -268,7 +268,7 @@
         "3.gate",
         "4.1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4.2-diff-equivalence.md",
       "record": "records/4.2-diff-equivalence.md",
       "scope": "all",
