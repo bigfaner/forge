@@ -1,6 +1,6 @@
 ---
 title: "Task Lifecycle Rules"
-domains: [state-machine, transition, terminal, blocked, completed, pending]
+domains: [state-machine, transition, terminal, blocked, completed, pending, type-validation, system-types]
 ---
 
 # Task Lifecycle Rules
@@ -29,3 +29,14 @@ _Source: feature/forge-cli-v3_
 **Rule**: Submitting a result for a task already in a terminal state (`completed` or `rejected`) via `forge task submit` is currently NOT enforced at the code level -- the submit command does not check whether the task is already terminal. The `forge task status` command enforces terminal-state guards (blocks transitions from `completed`/`rejected` unless `--force`), but `forge task submit` overwrites the status unconditionally. This is a known gap; use `--force` flag on the status command for deliberate recovery, and avoid re-submitting for already-terminal tasks.
 **Context**: Guarantees that completed/rejected tasks cannot be accidentally overwritten while allowing deliberate recovery.
 **Source**: feature/forge-cli-v3 BIZ-002
+
+## Type Validation
+
+### BIZ-task-lifecycle-003: System Type Exclusion
+
+**Rule**: Non-auto-generated tasks (`.md` files created by Skills or users) MUST NOT use system-reserved types. System types are: `gate`, `test.gen-cases`, `test.eval-cases`, `test.gen-scripts`, `test.run`, `test.gen-and-run`, `test.graduate`, `test.verify-regression`, `validation.code`, `validation.ux`, `doc.eval`, `doc.summary`, `code-quality.simplify` (13 total). Auto-generated tasks (identified by `IsAutoGenTaskID()` matching `T-test-*`, `T-quick-*`, `T-specs-*`, `T-clean-*`, `T-validate-*`, `T-eval-*`, `*.gate`, `*.summary` ID patterns) are exempt. Enforcement occurs in both `BuildIndex()` and `validate-index`. Error message includes the specific invalid type and full system type list.
+
+**Dual-identity exception**: `doc.consolidate` and `doc.drift` are NOT in SystemTypes — they can be both auto-generated (by `forge task index`) and manually created by Skills for legacy projects.
+
+**Context**: Prevents Skills from accidentally assigning pipeline-managed types to business tasks, which would cause scheduling anomalies (wrong stage-gate routing, test pipeline misdetection). The blacklist approach avoids maintenance burden since system types form a stable closed set while business types grow.
+**Source**: feature/system-type-exclusion
