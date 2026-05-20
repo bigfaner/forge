@@ -8,7 +8,7 @@
       "title": "Refactor start: branch-first creation + --no-launch flag",
       "priority": "P1",
       "estimatedTime": "1.5h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-start-refactor.md",
       "record": "records/1-start-refactor.md",
       "scope": "backend",

@@ -205,6 +205,7 @@ or worktree.source-branch in .forge/config.yaml. Priority: flag > config > HEAD.
 
 func init() {
 	worktreeStartCmd.Flags().StringP("source-branch", "b", "", "source branch for the new worktree (default: HEAD)")
+	worktreeStartCmd.Flags().Bool("no-launch", false, "create worktree without launching claude")
 }
 
 func runWorktreeStart(cmd *cobra.Command, args []string) error {
@@ -214,10 +215,15 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("slug must not be empty")
 	}
 
-	// Pre-flight: verify claude binary exists in PATH
-	if _, err := lookPathFunc("claude"); err != nil {
-		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: claude binary not found in PATH\n")
-		return fmt.Errorf("claude: %w", err)
+	// Check --no-launch early: skip claude pre-flight when not launching
+	noLaunch, _ := cmd.Flags().GetBool("no-launch")
+
+	// Pre-flight: verify claude binary exists in PATH (skip when --no-launch)
+	if !noLaunch {
+		if _, err := lookPathFunc("claude"); err != nil {
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: claude binary not found in PATH\n")
+			return fmt.Errorf("claude: %w", err)
+		}
 	}
 
 	// Find project root
@@ -290,15 +296,23 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Create the worktree using three-layer resolution
+	// Create the worktree using three-layer resolution with branch-first approach
 	switch {
 	case localBranchExists:
 		// Layer 1: Resume from existing local branch
 		_, err = gitRunFunc(projectRoot, "worktree", "add", targetDir, slug)
 	case remoteBranchExists:
-		// Layer 2: Create from remote tracking branch
+		// Layer 2: Create branch from remote tracking branch, then add worktree
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "creating worktree from remote branch origin/%s\n", slug)
-		_, err = gitRunFunc(projectRoot, "worktree", "add", "-b", slug, targetDir, "origin/"+slug)
+		_, err = gitRunFunc(projectRoot, "branch", slug, "origin/"+slug)
+		if err != nil {
+			return fmt.Errorf("git branch %s origin/%s: %w", slug, slug, err)
+		}
+		_, err = gitRunFunc(projectRoot, "worktree", "add", targetDir, slug)
+		if err != nil {
+			// Cleanup: remove the branch we just created
+			_, _ = gitRunFunc(projectRoot, "branch", "-D", slug)
+		}
 	default:
 		// Layer 3: Pre-validate source branch if specified
 		if sourceBranch != "" {
@@ -309,12 +323,20 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 			}
 		}
 
-		// New: create worktree with new branch from source
-		args := []string{"worktree", "add", "-b", slug, targetDir}
+		// Branch-first: create branch from source, then add worktree
+		branchArgs := []string{"branch", slug}
 		if sourceBranch != "" {
-			args = append(args, sourceBranch)
+			branchArgs = append(branchArgs, sourceBranch)
 		}
-		_, err = gitRunFunc(projectRoot, args...)
+		_, err = gitRunFunc(projectRoot, branchArgs...)
+		if err != nil {
+			return fmt.Errorf("git branch %s: %w", slug, err)
+		}
+		_, err = gitRunFunc(projectRoot, "worktree", "add", targetDir, slug)
+		if err != nil {
+			// Cleanup: remove the branch we just created
+			_, _ = gitRunFunc(projectRoot, "branch", "-D", slug)
+		}
 	}
 	if err != nil {
 		return fmt.Errorf("git worktree add: %w", err)
@@ -323,6 +345,12 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 	// Copy configured files from project root to worktree
 	if err := copyFilesToWorktree(projectRoot, targetDir, copyFiles); err != nil {
 		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: copy-files failed: %v\n", err)
+	}
+
+	// --no-launch: print path and exit without launching claude
+	if noLaunch {
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "worktree created at %s\n", targetDir)
+		return nil
 	}
 
 	// Launch claude in the worktree directory
