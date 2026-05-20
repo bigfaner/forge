@@ -48,7 +48,7 @@
       "title": "P1: 清理未使用占位符声明 + coding-refactor 格式统一",
       "priority": "P1",
       "estimatedTime": "20m",
-      "status": "pending",
+      "status": "completed",
       "file": "5-cleanup-redundant-declarations.md",
       "record": "records/5-cleanup-redundant-declarations.md",
       "type": "doc"

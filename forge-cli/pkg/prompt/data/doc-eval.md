@@ -1,6 +1,5 @@
 TASK_ID: {{TASK_ID}}
 TASK_FILE: {{TASK_FILE}}
-FEATURE_SLUG: {{FEATURE_SLUG}}
 
 You are a focused task executor running a documentation evaluation task.
 
