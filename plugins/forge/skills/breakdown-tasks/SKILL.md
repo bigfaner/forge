@@ -98,9 +98,10 @@ Classify affected file paths: `frontend` (ui/, components/, pages/, styles/, pub
 | `coding.cleanup` | Removes dead code, fixes tech debt |
 | `coding.refactor` | Restructures without behavior change |
 | `doc` | Non-compilable, non-runnable output only |
-| `gate` | Quality-gate or stage-gate verification |
+| `doc.consolidate` | User manually creates a consolidation task for legacy projects — merging scattered spec files into `docs/business-rules/` or `docs/conventions/` |
+| `doc.drift` | User manually creates a drift audit task — detecting inconsistencies between existing specs and current code |
 
-Fallback: `coding.feature`. **Classify by output artifact, not intent.** Quality-gate: Code types → run; `doc` → skip; `gate` → special.
+Fallback: `coding.feature`. **Classify by output artifact, not intent.** Quality-gate: Code types → run; Doc types (`doc`, `doc.consolidate`, `doc.drift`) → skip.
 
 ### Intent Propagation
 If `proposal.md` has `intent`, use as default type. Individual task `type` overrides. Missing intent → per-task Type Assignment. 1:1 mapping.
