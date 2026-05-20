@@ -86,45 +86,7 @@ Every Journey in the manifest MUST be processed. Do not skip Journeys based on R
 
 ### Step 2: Code Reconnaissance (Build Fact Table)
 
-Read source code to extract ground-truth values for enriching Contracts with real context.
-
-**This step is REQUIRED** -- gen-contracts needs code context to produce accurate State dimensions, Input schemas, and Side-effect declarations.
-
-**Generic reconnaissance reads**:
-
-| Source | What to extract |
-|--------|-----------------|
-| CLI entry points | Command names, flag names, flag types, output patterns |
-| API handlers | Request/response schemas, status codes, middleware |
-| TUI model files | Model struct fields, Cmd definitions, Msg types, View rendering |
-| Config files | Port numbers, base paths, timeout values, auth mechanisms |
-| State storage | File paths, JSON schemas, database tables |
-| Hook definitions | Hook names, trigger conditions, parameter schemas |
-
-**TUI-specific reconnaissance** (when `tui` interface detected):
-
-| Source | What to extract |
-|--------|-----------------|
-| Cmd definitions | Cmd function names, async behavior (do they return Msg?) |
-| Batch usage | `tea.Batch()` calls and their Cmd arguments |
-| Timeout configurations | Any timeout constants, default wait durations |
-| Model transitions | Init -> Idle -> Processing -> Result states |
-
-Build Fact Table with source citations:
-
-```markdown
-## Fact Table
-| Key | Value | Source |
-|-----|-------|--------|
-| CLI_COMMAND_FEATURE | forge feature | cmd/feature.go:15 |
-| TUI_AWAIT_TIMEOUT | 3000ms | internal/tui/config.go:8 |
-```
-
-<HARD-RULE>
-- Every Fact Table value must cite source file and line number. Unknown sources -> `UNKNOWN`. Do not fabricate.
-- Fact Table values inform State dimension and Input dimension declarations. Use them to ground semantic descriptors in real code.
-- When the project does not expose a state query interface, set `state-verification: partial` or `state-verification: deferred` in the Contract.
-</HARD-RULE>
+Read source code to extract ground-truth values. Follow the full reconnaissance procedure per `${CLAUDE_SKILL_DIR}/rules/code-reconnaissance.md`, including generic and TUI-specific reconnaissance tables, Fact Table format, and source citation rules.
 
 ### Step 3: Generate Contracts
 
@@ -154,165 +116,35 @@ Journey "task-lifecycle":
 
 #### 3.2 Six-Dimension Declaration
 
-For each Outcome, declare all six dimensions. Four are mandatory (non-empty), two are optional:
-
-**Mandatory** (every Outcome MUST have non-empty values):
-
-| Dimension | Content | Source |
-|-----------|---------|--------|
-| Preconditions | State that must hold before execution | Journey edge case preconditions + Fact Table state info |
-| Input | What goes into the system | Journey user action + Fact Table command/flag/endpoint info |
-| Output | What the system produces | Journey expected result + Fact Table output patterns |
-| State | How system state changes | Fact Table state storage info + output inference |
-
-**Optional** (may be omitted; omission = no constraint):
-
-| Dimension | Content | When to include |
-|-----------|---------|-----------------|
-| Side-effect | External effects (hooks, network calls, async Cmds) | When Fact Table reveals side effects |
-| Invariants (step-level) | Properties within the step | When the step has internal consistency requirements |
-
-**Side-effect defaults**: When omitted, Side-effect defaults to `none`.
-**Step-level Invariants defaults**: When omitted, no step-level invariant constraint.
+For each Outcome, declare all six dimensions per `${CLAUDE_SKILL_DIR}/rules/dimension-rules.md`: four mandatory (Preconditions, Input, Output, State) and two optional (Side-effect, Invariants).
 
 #### 3.3 Semantic Descriptors
 
-All dimension values use semantic descriptors -- natural language descriptions of expected behavior.
-
-**Rules**:
-- MUST NOT contain regex syntax (`\d`, `.*`, `[^...]`, `(?:...)`, `\s`, `\w`, `\b`, `$`, `^` as anchor, etc.)
-- MUST NOT contain framework-specific assertion patterns
-- MUST be natural language expressing business intent
-
-**Good examples**:
-- `"success confirmation containing feature-slug"`
-- `"task status changed from pending to in_progress"`
-- `"stderr contains error message about missing feature"`
-
-**Bad examples** (these belong in gen-test-scripts):
-- `"Feature\s+([\w-]+)\s+created"` (regex)
-- `"assert.Equal(t, 0, exitCode)"` (framework assertion)
-- `"matches pattern /task_\d+/"` (regex reference)
-
-<HARD-RULE>
-Semantic descriptors MUST NOT contain regex syntax. gen-contracts stage does not generate regex. If you find yourself writing a pattern match, replace it with a natural language description of what the pattern matches.
-</HARD-RULE>
+All dimension values use semantic descriptors per `${CLAUDE_SKILL_DIR}/rules/dimension-rules.md`. MUST NOT contain regex syntax. MUST be natural language expressing business intent.
 
 #### 3.4 Multi-Outcome Preconditions Mutual Exclusivity
 
-Each Outcome within a Step MUST have Preconditions that are mutually exclusive with all other Outcomes in the same Step.
-
-**Mutual exclusivity rule**: For any given system state, at most one Outcome's Preconditions can be satisfied. This prevents combinatorial explosion.
-
-**Validation**: Before writing a Contract, verify that no two Outcomes in the same Step have identical or overlapping Preconditions. If overlap is detected:
-1. Differentiate the Preconditions (add a distinguishing condition)
-2. If impossible, merge the Outcomes into a single Outcome with disjunctive Preconditions
-3. Never write Outcomes whose Preconditions can be simultaneously satisfied
-
-<HARD-RULE>
-Outcomes MUST be mutually exclusive by Preconditions. If two Outcomes' Preconditions can both be true for the same system state, the Contract is invalid and must be fixed before writing.
-</HARD-RULE>
-
-**Outcome count checkpoint**: Steps with more than 5 Outcomes trigger a review. Consider merging semantically similar Outcomes. Do not automatically exceed 5 Outcomes without explicit justification.
+Each Outcome within a Step MUST have mutually exclusive Preconditions per `${CLAUDE_SKILL_DIR}/rules/dimension-rules.md`. Outcome count checkpoint: steps with > 5 Outcomes trigger a review.
 
 #### 3.5 TUI Async Cmd Await Semantics
 
-For TUI Steps involving asynchronous operations, declare `await` semantics in the Contract:
-
-**Declaration format**:
-```
-- Input: key "d" await 3000ms
-```
-
-**Rules**:
-- `await <N>ms` = wait for all pending Cmds to complete, up to N milliseconds
-- Default timeout: `tui-await-timeout` from `.forge/config.yaml` capabilities, or 3000ms if not configured
-- Timeout behavior: fail-fast, report the timed-out Cmd name
-- `tea.Batch(cmd1, cmd2)`: all concurrent Cmds must complete before proceeding
-
-**Outcome modeling for async TUI Steps**:
-
-```
-Outcome "diagnosis-loaded":
-  Preconditions: "session loaded, call tree visible, entry expanded"
-  Input: key "d" await 3000ms
-  Output: "view contains diagnosis summary panel"
-  State: "Model.diagnosis_panel field set to visible"
-
-Outcome "diagnosis-timeout":
-  Preconditions: "session loaded, call tree visible, entry expanded, async Cmd takes longer than 3000ms"
-  Input: key "d" await 3000ms
-  Output: "error message containing timed-out Cmd name, fail-fast"
-  State: "unchanged from pre-Cmd state"
-```
-
-<HARD-RULE>
-TUI async Steps MUST include a timeout Outcome when the Step has async Cmds. The timeout Outcome's Preconditions must include the timeout condition (async Cmd exceeds await duration). The timeout Outcome must report the timed-out Cmd name in its Output.
-</HARD-RULE>
+For TUI Steps involving async operations, declare `await` semantics per `${CLAUDE_SKILL_DIR}/rules/tui-async.md`, including timeout outcomes for async Cmds.
 
 #### 3.6 State Verification Levels
 
-When a project does not expose a state query interface, the State dimension degrades gracefully:
-
-| Level | Declaration | When to use |
-|-------|-------------|-------------|
-| `full` | (default, no annotation needed) | Project exposes state query (CLI flag, API endpoint, file read) |
-| `partial` | `<!-- state-verification: partial -->` | State fields can be inferred from Output only |
-| `deferred` | `<!-- state-verification: deferred -->` + `limitations` section | Some state fields cannot be inferred |
-
-gen-contracts determines the level automatically from Fact Table reconnaissance:
-1. If the Fact Table contains state query interfaces (file paths, CLI flags, API endpoints) -> `full`
-2. If state fields appear in output patterns -> `partial`
-3. Otherwise -> `deferred`
+Determine state verification level (full/partial/deferred) from Fact Table reconnaissance per `${CLAUDE_SKILL_DIR}/rules/tui-async.md`.
 
 #### 3.7 Journey-Level Invariants
 
-Every Contract file MUST end with a `## Journey Invariants` section containing at least one cross-step invariant.
-
-**Source**: Journey-level Invariants come from the Journey document's `## Journey Invariants` section. Copy them verbatim into every Contract file for that Journey.
-
-**At least 1 invariant is mandatory**. If the Journey document has no declared Invariants, generate at least one from the workflow analysis (e.g., "feature_slug consistent across all steps" or "working directory unchanged between steps").
+Every Contract file MUST end with a `## Journey Invariants` section per `${CLAUDE_SKILL_DIR}/rules/tui-async.md`. At least 1 invariant is mandatory.
 
 #### 3.8 Batch Processing
 
-When a single Journey has more than 15 Contracts or the estimated token count exceeds 50k, automatically split into multiple batches:
-
-- **Batch 1**: Happy path Outcomes (all steps' success Outcomes)
-- **Batch 2+**: Edge case Outcomes grouped by semantic similarity
-
-Split batches are merged back into complete Contract files (one per Step). The merged result must be structurally identical to a single-batch generation.
-
-<HARD-RULE>
-Batch splitting occurs within a Journey, not across Journeys. Each Journey is always processed completely before moving to the next. Merged Contract files must not lose or duplicate any Outcome or dimension.
-</HARD-RULE>
+Auto-split into batches when Contracts > 15 or tokens > 50k per `${CLAUDE_SKILL_DIR}/rules/tui-async.md`.
 
 ### Step 4: Validate Contracts
 
-After generating all Contracts for a Journey, validate each one:
-
-| Check | Rule |
-|-------|------|
-| Mandatory dimensions | Each Outcome MUST have non-empty: Preconditions, Input, Output, State |
-| Semantic descriptor purity | No dimension value may contain regex syntax |
-| Outcome name uniqueness | Outcome names within a Step MUST be unique |
-| Preconditions mutual exclusivity | Different Outcomes' Preconditions MUST be distinguishable |
-| Journey Invariants | Every Contract file MUST have a `## Journey Invariants` section with at least 1 entry |
-| Side-effect default | When Side-effect is omitted or empty, it defaults to `none` |
-| Outcome count checkpoint | Steps with > 5 Outcomes trigger a review warning |
-| Unclassified validation points | Any validation point that cannot be mapped to a dimension MUST go to Invariants with `dimension: unclassified` annotation |
-
-**Validation failure handling**:
-- If mandatory dimensions are empty: fix the Contract (add content from Journey + Fact Table)
-- If semantic descriptors contain regex: rewrite as natural language
-- If Preconditions are not mutually exclusive: differentiate or merge Outcomes
-- If Journey Invariants are missing: generate from workflow analysis
-
-<HARD-RULE>
-- Semantic descriptors MUST NOT contain regex syntax.
-- Outcome Preconditions MUST be mutually exclusive.
-- Steps with > 5 Outcomes trigger an LLM review checkpoint.
-- Validation points that cannot be classified into existing dimensions MUST go to Invariants with `dimension: unclassified` annotation.
-</HARD-RULE>
+After generating all Contracts for a Journey, validate each one per `${CLAUDE_SKILL_DIR}/rules/validation.md`. Apply validation checks and failure handling as defined in the rules file.
 
 ### Step 5: Write Output
 
@@ -332,18 +164,7 @@ Output path is strictly `tests/<journey>/_contracts/`. No other locations.
 
 ## Error Handling
 
-| Situation | Action |
-|-----------|--------|
-| Journey manifest missing | Abort with prompt to run `/gen-journeys` |
-| Journey file not found | Abort with error listing the missing file path |
-| Language detection fails | Ask user to configure `languages` in config.yaml |
-| Interface detection fails | Ask user to configure `interfaces` in config.yaml |
-| Source files not found for Fact Table | Mark as `UNKNOWN`, do not fabricate values |
-| State verification level ambiguous | Default to `partial`, annotate with comment |
-| Mandatory dimension empty after generation | Fix using Journey + Fact Table context, retry once |
-| Semantic descriptor contains regex | Rewrite as natural language |
-| Preconditions not mutually exclusive | Differentiate or merge Outcomes |
-| Journey Invariants missing | Generate from workflow analysis |
+See `${CLAUDE_SKILL_DIR}/rules/validation.md` for the complete error handling table.
 
 ## Related Skills
 

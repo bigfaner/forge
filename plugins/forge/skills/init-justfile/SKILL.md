@@ -102,59 +102,11 @@ If `--type` is provided, skip project type detection (1a). Entry point detection
 
 #### 1a. Project type detection
 
-```bash
-ls package.json go.mod Cargo.toml pyproject.toml 2>/dev/null
-```
-
-**Detection signal mapping:**
-
-| Marker File      | Signal   |
-| ---------------- | -------- |
-| `package.json`   | frontend |
-| `go.mod`         | backend  |
-| `Cargo.toml`     | backend  |
-| `pyproject.toml` | backend  |
-
-**Classification algorithm:**
-
-1. Check for each marker file's existence in the project root.
-2. Count frontend vs backend signals and classify:
-   - Exactly one frontend signal AND exactly one backend signal -> **`mixed`**
-   - Exactly one frontend signal, no backend signals -> **`frontend`**
-   - Exactly one backend signal, no frontend signals -> **`backend`**
-   - Neither set has signals -> **Error**: "Error: no known project markers detected (expected one of: package.json, go.mod, Cargo.toml, pyproject.toml)" -- abort, do NOT generate a justfile.
-   - Multiple backend signals (e.g. `go.mod` + `Cargo.toml`) -> **Error**: "Error: multiple backend markers detected -- not supported" -- abort.
-
-**For `mixed` projects, also detect root paths:**
-
-```bash
-find . -name package.json -not -path '*/node_modules/*' -maxdepth 3 | head -1 | xargs dirname
-find . \( -name go.mod -o -name Cargo.toml -o -name pyproject.toml \) -maxdepth 3 | head -1 | xargs dirname
-```
-
-Record these as `FRONTEND_DIR` and `BACKEND_DIR` (e.g. `./frontend`, `./backend`). Use `.` if the marker is in the project root.
-
-#### 1b. Backend entry point detection
-
-For **backend** and **mixed** projects, detect the entry point:
-
-| Language | Marker           | Entry point detection (`BACKEND_ENTRY`)                                           |
-| -------- | ---------------- | --------------------------------------------------------------------------------- |
-| Go       | `go.mod`         | `ls cmd/*/main.go` -> `cmd/<name>/main.go`; else `ls main.go` -> `.`              |
-| Rust     | `Cargo.toml`     | `grep '\[\[bin\]\]' Cargo.toml` -> `--bin <name>`; else empty                      |
-| Python   | `pyproject.toml` | `ls src/__init__.py` -> `-m src`; `ls main.py` -> `main.py`; `ls app.py` -> `app.py` |
-
-Record `BACKEND_ENTRY` from the detected entry point.
-
-#### 1c. Frontend run script detection
-
-For **frontend** and **mixed** projects, detect available npm scripts:
-
-```bash
-node -e "const s=JSON.parse(require('fs').readFileSync('package.json')).scripts||{}; console.log(s.start ? 'start' : s.preview ? 'preview' : 'dev')"
-```
-
-Record as `FRONTEND_RUN_SCRIPT` (e.g. `start`, `preview`, or `dev`).
+Detect project type and entry points per `${CLAUDE_SKILL_DIR}/rules/project-detection.md`. This covers:
+- Marker file scanning and classification (frontend/backend/mixed)
+- Mixed project root path detection (`FRONTEND_DIR`, `BACKEND_DIR`)
+- Backend entry point detection (`BACKEND_ENTRY`)
+- Frontend run script detection (`FRONTEND_RUN_SCRIPT`)
 
 ### Step 2: Check Existing Justfile
 
@@ -298,24 +250,12 @@ For long-running recipes (`run`, `dev`): execute via `timeout 10 just <recipe> 2
 
 #### 4c. Self-correction rules
 
-When a recipe fails in Phase 2, analyze the error and apply corrections:
+When a recipe fails in Phase 2, analyze the error and apply corrections per `${CLAUDE_SKILL_DIR}/rules/self-correction.md`:
 
-| Error Pattern                         | Recipe                        | Fix                                                                                                                                                                                        |
-| ------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `npm error Missing script: "start"`   | `run` (node/mixed)            | Replace `npm run start` -> `npm run preview` in justfile, retry                                                                                                                             |
-| `npm error Missing script: "preview"` | `run` (node/mixed)            | Replace -> `npm run dev` in justfile, retry                                                                                                                                                 |
-| `npm error Missing script: "dev"`     | `dev` (node/mixed)            | Replace -> `npm run start` in justfile, retry                                                                                                                                               |
-| `can't load package: no Go files`     | `run`/`dev`/`compile` (go)    | Scan for `cmd/*/main.go`, update entry point in justfile, retry                                                                                                                            |
-| `CGO_ENABLED=1` available             | `test` (go)                   | Add `-race` flag to `go test` recipe for race detection, retry                                                                                                                             |
-| `command not found: golangci-lint`    | `lint`/`check` (go)           | In `lint`: replace `golangci-lint run ./...` -> `go vet ./...`. In `check`: replace `golangci-lint run ./... && go vet ./...` -> `go vet ./...`. Retry both.                                 |
-| `command not found: uvicorn`          | `dev` (python)                | Replace -> `python -m src --reload` or skip with comment, retry                                                                                                                             |
-| `command not found: ruff`             | `lint`/`fmt`/`check` (python) | In `lint`: replace `ruff check .` -> `python -m flake8`. In `check`: replace `ruff check .` -> `python -m flake8` (keep `&& python -m py_compile src/`). In `fmt`: skip with comment. Retry. |
-
-For each fix:
-
-1. Edit the justfile to apply the correction.
-2. Re-run the failed command (actual execution, same method as Phase 2).
-3. If it still fails after 2 attempts, leave the recipe as-is and report the failure in the output.
+1. Match the error against known error patterns (npm missing scripts, Go package issues, missing linters/formatters).
+2. Edit the justfile to apply the correction.
+3. Re-run the failed command (actual execution, same method as Phase 2).
+4. If it still fails after 2 attempts, leave the recipe as-is and report the failure in the output.
 
 #### 4d. Report verification results
 

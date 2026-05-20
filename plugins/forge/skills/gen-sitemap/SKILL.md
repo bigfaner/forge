@@ -69,36 +69,12 @@ This ensures agent-browser can access authenticated pages without exploration in
 
 ## Schema
 
-Read the full example at `${CLAUDE_SKILL_DIR}/templates/sitemap-example.json`.
-
-**Key fields:**
-
-| Field | Description |
-|-------|-------------|
-| `baseUrl` | Application base URL (e.g. `http://localhost:3456`) |
-| `updatedAt` | Last update time (RFC3339 format) |
-| `layout.name` | Layout component name (e.g. `AppLayout`) |
-| `layout.wraps` | List of routes sharing this layout |
-| `layout.elements[]` | Layout-level shared elements (sidebar, top nav, etc.), ID format `L-NNN` |
-| `pages[].elements[].role` | Accessibility role (button, heading, etc.) |
-| `pages[].elements[].name` | Accessibility name |
-| `pages[].elements[].level` | Heading level (heading role only) |
-| `pages[].elements[].label` | Associated label text (form elements like textbox only) |
-| `pages[].elements[].placeholder` | Placeholder text (textbox only) |
-| `pages[].states[]` | Dynamic states (modal, tab panel, dropdown, etc.) |
-| `pages[].states[].trigger` | Trigger element ID (e.g. `"E-002"`) |
-| `pages[].states[].elements` | Elements within the state (also with E-NNN IDs) |
-
-**Layout elements vs page elements:**
-
-- `layout.elements`: Elements shared across all wrapped pages (navbar, sidebar, footer), ID format `L-NNN`
-- `pages[].elements`: Elements unique to the current page, ID format `E-NNN`
-- During test script generation, layout elements are available in any wrapped page
+See `${CLAUDE_SKILL_DIR}/rules/schema.md` for the complete field reference, layout-vs-page element distinction, element ID assignment rules, and dynamic route parameterization rules.
 
 ## Workflow
 
 ```
-1. Load existing sitemap → 2. Analyze layout & build route registry → 3. Discover routes → 4. Explore pages → 5. Merge & dedup & validate → 6. Write
+1. Load existing sitemap -> 2. Analyze layout & build route registry -> 3. Discover routes -> 4. Explore pages -> 5. Merge & dedup & validate -> 6. Write
 ```
 
 ### Step 1: Load Existing Sitemap
@@ -133,12 +109,11 @@ If no existing sitemap, start numbering from `E-001`.
    - Layout-wrapped vs standalone classification
 
 3. Identify layout nesting:
-   <Route element={<AppLayout />}>      ← shared layout
+   <Route element={<AppLayout />}>      <- shared layout
      <Route path="/" element={<Dashboard />} />
      <Route path="/settings" element={<Settings />} />
-     ...
    </Route>
-   <Route path="/login">                ← no layout (standalone page)
+   <Route path="/login">                <- no layout (standalone page)
 
 4. Record:
    - layout.name: layout component name (e.g. `AppLayout`)
@@ -168,11 +143,11 @@ Visit up to 5 wrapped routes with agent-browser:
   // ... up to 5 routes total
 
 Compute intersection: elements present in ALL visited snapshots with same role+name
-→ These are shared elements (sidebar, nav, header, footer, etc.)
+-> These are shared elements (sidebar, nav, header, footer, etc.)
 
 Classify shared elements:
-- Layout-level (sidebar, top nav, footer) → layout.elements with L-NNN IDs
-- Pattern-level (e.g. breadcrumb on multiple but not all pages) → noted as "partial-shared"
+- Layout-level (sidebar, top nav, footer) -> layout.elements with L-NNN IDs
+- Pattern-level (e.g. breadcrumb on multiple but not all pages) -> noted as "partial-shared"
   (still assigned to individual pages, but identified for awareness)
 ```
 
@@ -195,17 +170,7 @@ Combine router registry with link-crawling for complete coverage:
 7. Report source counts: "12 routes from router, 1 additional from crawling"
 ```
 
-**Dynamic route handling**: Routes with parameters (e.g. `/tasks/123`) are recorded as template form `/tasks/:id`. Parameterization rules:
-
-| URL segment pattern | Replace with | Example |
-|---------------------|-------------|---------|
-| Pure numeric | `:id` | `/tasks/42` → `/tasks/:id` |
-| UUID format | `:uuid` | `/orders/550e8400-...` → `/orders/:uuid` |
-| 32-char hex | `:hash` | `/files/a1b2c3d4e5f6...` → `/files/:hash` |
-
-During deduplication, routes with the same template keep only one entry. `layout.wraps` also uses template form.
-
-Also merge manually added routes from existing sitemap that are not found by either source.
+**Dynamic route handling**: Parameterization rules are defined in `${CLAUDE_SKILL_DIR}/rules/schema.md`.
 
 ### Step 4: Explore Pages
 
@@ -225,79 +190,9 @@ Compare the snapshot against `layout.elements`, filtering out elements matching 
 Only page-specific content area elements are included in `pages[].elements`.
 </HARD-RULE>
 
-#### Base Element Extraction
+#### Element Extraction & Dynamic State Exploration
 
-1. Get page title
-2. Extract elements from snapshot with filters:
-   - Exclude elements already in `layout.elements` (matched by `role + name`)
-   - `role` ∈ the full ARIA role set:
-     {button, link, heading, textbox, checkbox, radio, combobox, tab, dialog, alert, navigation, search, form, menuitem, switch,
-      table, row, cell, columnheader, rowheader,
-      grid, listbox, option, list, listitem,
-      tooltip, progressbar, meter, slider, spinbutton,
-      status, log, marquee, timer,
-      img, separator, group, region,
-      feed, article, figure, caption}
-   - `name` is non-empty
-3. For each element, record full attributes:
-   - Common: `{ role, name }`
-   - heading: additionally record `level`
-   - textbox/combobox: additionally record `label` (associated label text) and `placeholder`
-
-#### Dynamic State Exploration
-
-Explore dynamic states triggered by multiple interaction types:
-
-**1. Click triggers** (existing): For elements with role=button/tab/disclosure and non-empty name:
-
-```
-ab('click @eN')
-ab('wait --load networkidle')
-state_snapshot = abJson('snapshot -i')
-// Extract new elements (compare with base snapshot)
-ab('press Escape')  // or ab('click @close_btn') to reset
-```
-
-**2. Hover triggers**: For elements with tooltip or aria-describedby attributes:
-
-```
-ab('hover @eN')
-ab('wait --load networkidle')
-state_snapshot = abJson('snapshot -i')
-// Extract new elements (tooltip content)
-ab('move 0 0')  // move mouse away to reset
-```
-
-**3. Scroll triggers**: For elements with role=feed, role=list with overflow, or scrollable containers:
-
-```
-ab('scroll @eN down')
-ab('wait --load networkidle')
-state_snapshot = abJson('snapshot -i')
-// Extract new elements (lazy-loaded content)
-ab('scroll @eN up')  // scroll back to reset
-```
-
-**4. Form submission triggers**: For elements with role=form:
-
-```
-// Fill required fields with test data
-ab('fill @required_field "test value"')
-ab('click @submit_button')
-ab('wait --load networkidle')
-state_snapshot = abJson('snapshot -i')
-// Extract new elements (validation results, success/error messages)
-ab('press Escape')  // or navigate back to reset
-```
-
-For each trigger type:
-1. Compare state snapshot with base snapshot, extract new elements
-2. Record as `states` entry: `{ name, trigger: "<elementID>", elements: [...] }`
-3. `trigger` references the trigger element's E-NNN ID (e.g. `"E-002"`)
-4. In-state elements also receive E-NNN IDs
-5. Reset to base state before exploring next trigger
-
-> **Note**: `@eN` is agent-browser CLI's element reference syntax, used only during sitemap generation. Generated test scripts (`*.spec.ts`) must NOT use `@eN`; they must use Playwright Locator API.
+See `${CLAUDE_SKILL_DIR}/rules/page-exploration.md` for element extraction rules, ARIA role filter set, and dynamic state exploration procedures (click, hover, scroll, form submission triggers).
 
 ```
 ab('close')
@@ -305,64 +200,11 @@ ab('close')
 
 ### Step 5: Merge, Dedup & Validate
 
-#### 5a. Element Merge
-
-For each element (including layout and in-states elements), match against existing sitemap using the `route + role + name` triplet:
-
-- **Match found** → preserve existing ID
-- **No match** → assign new ID (current max ID + 1)
-- **Existing ID has no match** → element was removed, delete from sitemap
-
-#### 5b. Post-Collection Dedup
-
-After merging all elements, scan for uncaught shared elements:
-
-```
-1. For each element across all pages:
-   - If same role+name appears in ≥2 pages AND exists in layout.elements → already handled
-   - If same role+name appears in ≥2 pages BUT NOT in layout.elements:
-     → Uncaught shared element
-     → Promote to layout.elements (if wrapped by layout)
-     → Remove from individual page element lists
-
-2. Report promotions: "3 elements promoted to shared: Breadcrumb (was on 5 pages), PageTitle (was on 3 pages)"
-```
-
-#### 5c. Stale Route Detection
-
-```
-For each route in the existing sitemap:
-1. Check if route exists in the new route registry (Step 2a) or was discovered by crawling (Step 3)
-2. If NOT found in either source:
-   - Mark as "potentially stale"
-   - Attempt to open the route with agent-browser
-   - If 404/redirect → remove from sitemap
-   - If still loads → keep with a warning in the change report
-3. Report: "2 stale routes removed: /old-page, /deprecated-feature"
-```
-
-#### 5d. Validation
-
-```
-1. JSON schema validation:
-   - All pages have route + title + elements (non-empty arrays)
-   - All elements have id + role + name (non-empty)
-   - All state triggers reference existing element IDs
-   - Layout wraps reference existing page routes
-   - No duplicate element IDs across the entire sitemap
-   - No duplicate routes
-
-2. Structural integrity:
-   - Layout element IDs (L-NNN) are unique
-   - Page element IDs (E-NNN) are unique
-   - No gaps in ID numbering (orphan check)
-
-3. Completeness check:
-   - Every route from the route registry (Step 2a) has a corresponding page entry
-   - Report MISSING routes: routes found in router but not explored
-
-On validation failure: write sitemap anyway, but include validation warnings in the change report.
-```
+See `${CLAUDE_SKILL_DIR}/rules/merge-validation.md` for the complete rules on:
+- 5a. Element merge (ID preservation/reassignment)
+- 5b. Post-collection dedup (promote uncaught shared elements)
+- 5c. Stale route detection
+- 5d. Validation (JSON schema, structural integrity, completeness)
 
 ### Step 6: Write
 
@@ -382,14 +224,6 @@ Sitemap updated: docs/sitemap/sitemap.json
   17 unchanged
 
 Validation: PASS / Validation: 2 WARNINGS
-  ⚠ Route /admin found in router but not explored (requires special auth)
-  ⚠ Route /deprecated-feature still loads but not in router
+  Warning: Route /admin found in router but not explored (requires special auth)
+  Warning: Route /deprecated-feature still loads but not in router
 ```
-
-## Element ID Assignment Rules
-
-- **Layout elements**: format `L-NNN`, globally unique, independent numbering space
-- **Page elements**: format `E-NNN`, globally unique (base and states share ID space)
-- First generation: start from `L-001` and `E-001` respectively
-- Incremental update: new elements start from current max ID + 1
-- IDs are never reused (deleted IDs are not recycled)

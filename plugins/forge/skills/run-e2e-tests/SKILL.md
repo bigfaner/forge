@@ -42,7 +42,6 @@ Check previous stage artifacts. Abort and prompt user if missing:
 **Justfile check** (must pass before proceeding):
 
 ```bash
-# Verify Justfile exists and contains e2e-setup recipe
 test -f Justfile && grep -q "^e2e-setup:" Justfile
 ```
 
@@ -50,11 +49,7 @@ If the Justfile is missing or does not contain the `e2e-setup` recipe, abort and
 
 > Justfile is missing or does not contain the `e2e-setup` recipe. Run `/init-justfile` to scaffold the required targets, then retry.
 
-```bash
-ls tests/<journey>/
-```
-
-**Note**: `<slug>` is the current feature name, obtained via `forge feature` command.
+**Feature slug** (obtained via `forge feature`):
 
 ```bash
 slug=$(forge feature 2>/dev/null | grep '^FEATURE:' | sed 's/^FEATURE:[[:space:]]*//')
@@ -71,11 +66,6 @@ slug=$(forge feature 2>/dev/null | grep '^FEATURE:' | sed 's/^FEATURE:[[:space:]
 
 Scan `docs/conventions/` for files with `domains` containing `testing` and load the **Result Format** section from each matched file.
 
-```bash
-# List convention files
-ls docs/conventions/
-```
-
 For each convention file whose frontmatter `domains` includes `testing`, read the file and extract:
 
 1. **format-type**: One of `json-stream`, `json-report`, `text-verbose`
@@ -87,11 +77,11 @@ Parsing logic must be driven by Convention Result Format section, not framework 
 
 **Convention merge semantics**: When multiple Convention files match, merge at section level. If two files both declare a Result Format section, the later file's values win. Log a note about the overlap for user awareness.
 
-**Fallback — no Convention found**: If no Convention files exist in `docs/conventions/`, proceed with `text-verbose` as the default format-type. Use generic text-based parsing: scan output lines for PASS/FAIL/SKIP patterns and extract test names from leading markers.
+**Fallback -- no Convention found**: If no Convention files exist in `docs/conventions/`, proceed with `text-verbose` as the default format-type. Use generic text-based parsing: scan output lines for PASS/FAIL/SKIP patterns and extract test names from leading markers.
 
 ### Step 1: Setup Environment
 
-Run `just e2e-setup` (idempotent — installs deps per language):
+Run `just e2e-setup` (idempotent -- installs deps per language):
 
 ```bash
 just e2e-setup
@@ -99,9 +89,7 @@ mkdir -p tests/e2e/results/
 mkdir -p tests/<journey>/results/
 ```
 
-Server lifecycle is embedded in the justfile recipes.
-Calling `just e2e-test` (Step 3) automatically ensures servers are started and healthy.
-No manual server management needed.
+Server lifecycle is embedded in the justfile recipes. Calling `just e2e-test` (Step 3) automatically ensures servers are started and healthy.
 
 ### Step 2: Verify Scripts
 
@@ -115,7 +103,7 @@ If this fails, return to `/gen-test-scripts` to resolve the `// VERIFY:` markers
 
 ### Step 3: Run Test Specs
 
-**Run all specs** via justfile:
+Run all specs via justfile:
 
 ```bash
 just e2e-test --feature <slug>
@@ -131,66 +119,11 @@ Parse test results based on the **format-type** loaded from Convention in Step 0
 
 **Guard**: Before parsing, verify result output exists and is valid. If result output is missing or empty: report the error with the test runner's console output as evidence, and abort report generation. Do NOT attempt to parse missing/malformed output.
 
-#### Format: json-stream
-
-Each line is an independent JSON object representing a test event. Process line-by-line:
-
-1. **Event types**: `run` (test started), `pass` (test passed), `fail` (test failed), `skip` (test skipped), `output` (captured stdout/stderr)
-2. **Grouping**: Group events by test name. Each test starts with a `run` event and ends with a `pass`, `fail`, or `skip` event
-3. **Output collection**: Concatenate all `output` events for a test to build its log
-4. **Duration**: Use the `Elapsed` field from the terminal event (`pass`/`fail`/`skip`)
-5. **TC ID extraction**: Extract from test name using pattern `TC[_-](\d+)`, normalize to `TC-NNN`
-
-**Common fields** (may vary by ecosystem, adapt field names to actual JSON structure):
-- Test name: `Test` or `name`
-- Status: `Action` or `status` (`pass`/`fail`/`skip`)
-- Duration: `Elapsed` or `duration`
-- Output: `Output` or `message`
-
-#### Format: json-report
-
-A single JSON document containing all test results. Parse the complete structure:
-
-1. **Structure**: Typically a tree of suite -> test cases with nested results
-2. **Traversal**: Walk the suite hierarchy, collecting each leaf test case
-3. **Status mapping**: Map the report's status field to pass/fail/skip
-4. **TC ID extraction**: Extract from test name using pattern `TC[_-](\d+)`, normalize to `TC-NNN`
-
-**Common fields** (may vary by ecosystem, adapt field names to actual JSON structure):
-- Suite container: `suites` or `results`
-- Test name: `name` or `title`
-- Status: `status` or `outcome` (map to pass/fail/skip)
-- Duration: `duration` or `time`
-- Error: `error` or `message`
-
-#### Format: text-verbose
-
-Plain text output from verbose test runners. Parse using line-by-line scanning:
-
-1. **Test start**: Lines matching patterns like `=== RUN`, `running test:`, `PASS:`, `FAIL:`, `SKIP:`, or `ok ` / `FAIL `
-2. **Test end**: Lines with pass/fail/skip indicators
-3. **Duration**: Extract from trailing duration patterns like `(0.01s)`, `in 0.01s`, `[0.01s]`
-4. **TC ID extraction**: Extract from test name using pattern `TC[_-](\d+)`, normalize to `TC-NNN`
-5. **Error collection**: Lines between a FAIL marker and the next test start or summary separator are error output
-
-**Generic fallback pattern**: When Convention is absent and text-verbose is assumed, scan for:
-- `PASS` or `ok` lines -> passing test
-- `FAIL` or `FAILED` lines -> failing test
-- `SKIP` or `SKIPPED` lines -> skipped test
-
-#### Format-agnostic rules
-
-Regardless of format-type, these rules always apply:
-
-- **TC ID extraction**: Pattern `TC[_-](\d+)` from test name, normalize separator to hyphen → `TC-NNN`
-- **Test type classification**: Infer from test name or content — UI tests reference pages/elements, API tests reference endpoints, CLI tests reference commands. When uncertain, classify as the dominant type for the project.
-- **Error messages**: Always capture the full error text, not just the first line
+For detailed parsing strategies per format-type, see `rules/result-parsing.md`.
 
 ### Step 5: Generate Report
 
-Read the template at `${CLAUDE_SKILL_DIR}/templates/e2e-report.md`. Fill in results.
-
-Fill in:
+Read the template at `${CLAUDE_SKILL_DIR}/templates/e2e-report.md`. Fill in:
 - Summary statistics (total/pass/fail/skip per type)
 - Per-test-case results with evidence
 - Failed test details with error messages
@@ -245,50 +178,11 @@ Report: tests/<journey>/results/latest.md
 
 ## Failure Diagnosis
 
-### App Health First Gate
-
-When tests fail, the first step is determining whether the **app itself is healthy**. E2E test error signals cannot distinguish "test wrote wrong selector" from "app crashed and renders nothing" — both produce "element not found".
+When tests fail, follow the diagnostic flow in `rules/failure-diagnosis.md`. Key gate:
 
 <HARD-RULE>
-When **>30% of tests fail simultaneously**, do NOT proceed to individual test fix tasks. Run app health diagnostics first. Batch failures almost always indicate an app-level problem, not per-test issues.
+When **>30% of tests fail simultaneously**, do NOT proceed to individual test fix tasks. Run app health diagnostics first.
 </HARD-RULE>
-
-| Failure ratio | Likely cause | First action |
-|---|---|---|
-| **>30%** tests fail simultaneously | App health problem | Check failure evidence (screenshots, error logs) for systemic issues |
-| 10-30% partial failure | Possibly test issues | Spot check 2-3 failures before deciding |
-| <10% few failures | Per-test issues | Proceed to per-test fix tasks |
-
-**App health diagnostic flow** (run in order, stop at first positive finding):
-
-1. **Check failure evidence** — screenshots, error messages, console output for systemic patterns (e.g., all returning same error code, blank screens)
-2. **Check app infrastructure** — verify the application server is running, dependencies are installed, configuration is correct
-3. **Verify app responds** — manually test the app's health endpoint or main interface
-4. **Only after app is confirmed healthy** — proceed to individual test failure analysis
-
-### General Failure Analysis
-
-When tests fail, do not stop at the first visible error message. Follow these rules to avoid misdiagnosis:
-
-<PRINCIPLE>
-**Surface-level errors are often secondary effects.** The first error message in test output is frequently a symptom, not the root cause. Look for the underlying issue rather than treating each failure independently.
-</PRINCIPLE>
-
-**Diagnostic checklist when batch failures occur:**
-
-1. **Check for cascade patterns** — if many tests fail with the same symptom (e.g., all 404 on `undefined` in URL paths), the root cause is in shared setup, not individual tests. One setup failure leaves all its module-level variables uninitialized.
-
-2. **Ask the contradiction question** — "Why does this test fail when other tests with the same pattern pass?" If many tests use the same setup and pass, the failure is specific to this test's setup, not a platform issue.
-
-3. **Verify backend health** — after code changes, the backend must be rebuilt AND restarted before re-running e2e. Check:
-   - Did the health check (`just probe`) actually pass?
-   - Are there backend logs showing the failed requests?
-   - Did a rate limit or connection reset occur during setup?
-
-4. **Investigate setup blocks step-by-step** — when setup is suspected:
-   - Add temporary logging between steps to identify which operation fails
-   - Run the setup code manually to isolate the issue
-   - Use the test runner's debug mode to step through
 
 ## Related Skills
 

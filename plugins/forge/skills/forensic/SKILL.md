@@ -87,11 +87,6 @@ Present the session list to the user and confirm which sessions to analyze.
 For each confirmed session, extract compact evidence:
 
 ```bash
-# Derive JSONL path from sessionId
-# Path pattern: ~/.claude/projects/<project-hash>/<sessionId>.jsonl
-# Use forge forensic to discover the project path automatically, or construct it:
-#   ~/.claude/projects/<project-hash>/${CLAUDE_SESSION_ID}.jsonl
-
 mkdir -p docs/forensics/<slug>/evidence
 
 forge forensic extract ~/.claude/projects/<project-hash>/<SESSION_ID>.jsonl --out docs/forensics/<slug>/evidence
@@ -171,16 +166,7 @@ Trace the causal chain at least 3 levels deep:
 3. Root cause: Why the agent made that decision (instruction gap, context missing, wrong assumption)
 </HARD-RULE>
 
-**Deviation categories** (use these to classify each finding):
-
-| Category | Description | Example |
-|----------|-------------|---------|
-| `instruction-gap` | Skill definition missing a critical rule | No instruction to handle MAIN_SESSION flag |
-| `context-starvation` | Agent lacked necessary information | Agent didn't see the record.json content |
-| `trust-without-verify` | Agent trusted its own output | Marked AC as met without running the artifact |
-| `wrong-priority` | Agent followed wrong priority | Chose "efficiency" over "safety" |
-| `scope-creep` | Agent exceeded its defined scope | Task executor claimed multiple tasks |
-| `pipeline-gap` | No enforcement between stages | Dispatcher checked file existence, not content |
+Classify each finding using the deviation categories defined in `rules/deviation-categories.md` (instruction-gap, context-starvation, trust-without-verify, wrong-priority, scope-creep, pipeline-gap).
 
 ### Step 5: Generate Report
 

@@ -1,0 +1,23 @@
+# Constraints and Rules
+
+- Only extract rules that are **explicitly stated** in source documents -- do not infer
+- Feature-specific implementation details stay in the feature, not in specs
+- Never overwrite existing project-level spec files -- append and merge, unless drift is detected in Step 9
+- Overlap detection uses tag matching for lessons and filename matching for decisions
+- Project-global IDs use filename-derived prefix + file-internal sequence
+- Drift detection compares rule keywords against actual code -- not simple text matching (mitigates false positives)
+- Deleted rules must be recorded in commit message with ID and deletion reason
+- Project-global IDs must be preserved during auto-fix (only update description/behavior text)
+- New implicit rules from code are extracted with `[CROSS]` classification and presented to user before appending (auto-appended in non-interactive mode)
+- Non-interactive mode auto-integrates all `[CROSS]` items without blocking -- commit includes `[auto-specs]` tag for traceability
+- `[auto-specs]` commits must be separate from code change commits -- spec changes get their own commit
+- Drift-only path (Steps 9-11) also uses `[auto-specs]` commit tag when running in non-interactive mode
+- Interactive mode behavior is unchanged -- CROSS items still prompt user for confirmation
+- `domains` frontmatter is derived from spec ID keywords and source keywords -- never invented by the agent
+- Each file gets 3-7 specific domain keywords (not generic terms like "rule", "spec", "requirement")
+- The existing `title` frontmatter behavior is unchanged -- `domains` is an additive field
+- Domain overlap >50% between files triggers a warning during the user confirmation step (Step 6)
+- During drift detection (Steps 9-10), `domains` are re-derived when file content changes substantially
+- Vocabulary index (`docs/.vocabulary.md`) is auto-generated and must not be manually edited -- regenerated on every run
+- Vocabulary always includes the base 8 categories regardless of knowledge directory contents
+- `/learn` and auto-extract triggers may accept values outside the vocabulary -- vocabulary is suggestive, not restrictive
