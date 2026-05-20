@@ -1,6 +1,16 @@
 //go:build e2e
 
-package e2etestconv
+package commandregression
+
+import (
+	"os/exec"
+	"regexp"
+	"testing"
+
+	testkit "forge-tests/testkit"
+
+	"github.com/stretchr/testify/assert"
+)
 
 // ==============================================================================
 // Removed forge test commands — CLI e2e tests for feature: test-knowledge-convention-driven
@@ -8,20 +18,12 @@ package e2etestconv
 // should return errors after Profile removal.
 // ==============================================================================
 
-import (
-	"os/exec"
-	"regexp"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-)
-
 // runForgeTestCommand runs a forge test subcommand and returns output + exit code.
 func runForgeTestCommand(t *testing.T, subcommand string, extraArgs ...string) (string, int) {
 	t.Helper()
 	args := []string{"test", subcommand}
 	args = append(args, extraArgs...)
-	cmd := forgeCmd(args...)
+	cmd := exec.Command(testkit.ForgeBinary, args...)
 	out, err := cmd.CombinedOutput()
 	exitCode := 0
 	if err != nil {

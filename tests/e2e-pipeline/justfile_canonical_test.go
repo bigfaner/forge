@@ -1,6 +1,6 @@
 //go:build e2e
 
-package justfile_canonical_e2e
+package e2epipeline
 
 import (
 	"os"
@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	testkit "forge-tests/testkit"
 )
 
 // --- Command Delegation ---
@@ -179,8 +181,7 @@ func TestTC_007_VerifyFindsVerifyMarkersInTestFiles(t *testing.T) {
 func TestTC_008_JustNotOnPathReturnsActionableErrorForRun(t *testing.T) {
 	dir := setupTempProject(t, "go-test")
 	// Set PATH to empty to simulate just not being on PATH
-	bin := forgeBinary(t)
-	cmd := exec.Command(bin, "e2e", "run")
+	cmd := exec.Command(testkit.ForgeBinary, "e2e", "run")
 	cmd.Dir = dir
 	cmd.Env = []string{"PATH="}
 	out, err := cmd.CombinedOutput()
@@ -197,8 +198,7 @@ func TestTC_008_JustNotOnPathReturnsActionableErrorForRun(t *testing.T) {
 // Traceability: TC-009 -> Proposal Error [1], Task 2 AC [7]
 func TestTC_009_JustNotOnPathReturnsActionableErrorForSetup(t *testing.T) {
 	dir := setupTempProject(t, "go-test")
-	bin := forgeBinary(t)
-	cmd := exec.Command(bin, "e2e", "setup")
+	cmd := exec.Command(testkit.ForgeBinary, "e2e", "setup")
 	cmd.Dir = dir
 	cmd.Env = []string{"PATH="}
 	out, err := cmd.CombinedOutput()
@@ -215,8 +215,7 @@ func TestTC_009_JustNotOnPathReturnsActionableErrorForSetup(t *testing.T) {
 // Traceability: TC-010 -> Proposal Error [1], Task 2 AC [7]
 func TestTC_010_JustNotOnPathReturnsActionableErrorForCompile(t *testing.T) {
 	dir := setupTempProject(t, "go-test")
-	bin := forgeBinary(t)
-	cmd := exec.Command(bin, "e2e", "compile")
+	cmd := exec.Command(testkit.ForgeBinary, "e2e", "compile")
 	cmd.Dir = dir
 	cmd.Env = []string{"PATH="}
 	out, err := cmd.CombinedOutput()
@@ -233,8 +232,7 @@ func TestTC_010_JustNotOnPathReturnsActionableErrorForCompile(t *testing.T) {
 // Traceability: TC-011 -> Proposal Error [1], Task 2 AC [7]
 func TestTC_011_JustNotOnPathReturnsActionableErrorForDiscover(t *testing.T) {
 	dir := setupTempProject(t, "go-test")
-	bin := forgeBinary(t)
-	cmd := exec.Command(bin, "e2e", "discover")
+	cmd := exec.Command(testkit.ForgeBinary, "e2e", "discover")
 	cmd.Dir = dir
 	cmd.Env = []string{"PATH="}
 	out, err := cmd.CombinedOutput()
@@ -364,4 +362,3 @@ func TestTC_019_NoProfileReturnsErrNoProfileForDiscover(t *testing.T) {
 		t.Fatalf("expected 'no e2e profile configured' error, got: %q", output)
 	}
 }
-

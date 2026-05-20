@@ -1,6 +1,6 @@
 //go:build e2e
 
-package justfile_canonical_e2e
+package e2epipeline
 
 import (
 	"os"
@@ -8,29 +8,14 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	testkit "forge-tests/testkit"
 )
-
-// forgeBinaryPath is set by TestMain to the temp-built forge binary path.
-var forgeBinaryPath string
-
-func forgeBinary(t *testing.T) string {
-	t.Helper()
-	return forgeBinaryPath
-}
-
-// runForge executes the forge binary with given args and returns combined output.
-func runForge(t *testing.T, args ...string) ([]byte, error) {
-	t.Helper()
-	bin := forgeBinary(t)
-	cmd := exec.Command(bin, args...)
-	return cmd.CombinedOutput()
-}
 
 // runForgeInDir executes the forge binary in a specific directory.
 func runForgeInDir(t *testing.T, dir string, args ...string) ([]byte, error) {
 	t.Helper()
-	bin := forgeBinary(t)
-	cmd := exec.Command(bin, args...)
+	cmd := exec.Command(testkit.ForgeBinary, args...)
 	cmd.Dir = dir
 	return cmd.CombinedOutput()
 }

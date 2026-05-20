@@ -1,6 +1,6 @@
 //go:build e2e
 
-package e2e
+package testsuitehealth
 
 import (
 	"crypto/sha256"
@@ -22,8 +22,8 @@ func projectRootQuality() string {
 	if !ok {
 		return ""
 	}
-	// thisFile: .../tests/e2e/e2e_test_quality_cleanup_cli_test.go
-	// up 2: e2e -> tests -> project root
+	// thisFile: .../tests/test-suite-health/e2e_test_quality_cleanup_test.go
+	// up 2: test-suite-health -> tests -> project root
 	dir := filepath.Join(filepath.Dir(thisFile), "..", "..")
 	abs, err := filepath.Abs(dir)
 	if err != nil {
@@ -97,13 +97,6 @@ func TestTC_002_DeletedTestFunctionsDoNotExist(t *testing.T) {
 	}
 
 	checks := []check{
-		{
-			file: filepath.Join(root, "tests", "e2e", "simplify_e2e_tests_cli_test.go"),
-			patterns: []string{
-				`TestTC_003_`,
-				`TestTC_004_`,
-			},
-		},
 		{
 			file: filepath.Join(root, "tests", "e2e", "feature_set_command_cli_test.go"),
 			patterns: []string{

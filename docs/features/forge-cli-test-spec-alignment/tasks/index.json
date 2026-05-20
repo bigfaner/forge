@@ -73,7 +73,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-migrate-plugin-remaining-journeys.md",
       "record": "records/4-migrate-plugin-remaining-journeys.md",
       "scope": "backend",

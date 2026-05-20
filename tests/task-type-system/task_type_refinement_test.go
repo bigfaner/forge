@@ -1,6 +1,6 @@
 //go:build e2e
 
-package e2etasktype
+package tasktypesystem
 
 import (
 	"encoding/json"
@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	e2etests "forge-tests/e2e"
+	testkit "forge-tests/testkit"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -23,11 +23,11 @@ import (
 
 // indexJSON represents the top-level index.json structure for test fixtures.
 type indexJSON struct {
-	Feature      string                `json:"feature"`
-	Proposal     string                `json:"proposal,omitempty"`
-	StatusEnum   []string              `json:"statusEnum"`
-	PriorityEnum []string              `json:"priorityEnum"`
-	Tasks        map[string]indexTask  `json:"tasks"`
+	Feature      string               `json:"feature"`
+	Proposal     string               `json:"proposal,omitempty"`
+	StatusEnum   []string             `json:"statusEnum"`
+	PriorityEnum []string             `json:"priorityEnum"`
+	Tasks        map[string]indexTask `json:"tasks"`
 }
 
 // indexTask represents a single task entry in a test fixture index.json.
@@ -91,7 +91,7 @@ func setupTempFeature(t *testing.T, tasks map[string]indexTask) string {
 // Returns combined output and exit code.
 func forgeCmd(t *testing.T, projectRoot string, args ...string) (string, int) {
 	t.Helper()
-	cmd := exec.Command(e2etests.ForgeBinary, args...)
+	cmd := exec.Command(testkit.ForgeBinary, args...)
 	cmd.Env = append(os.Environ(), "CLAUDE_PROJECT_DIR="+projectRoot)
 	out, err := cmd.CombinedOutput()
 	exitCode := 0
@@ -147,7 +147,7 @@ func hasTaskWithPrefix(tasks map[string]indexTask, prefix string) bool {
 // ---------------------------------------------------------------------------
 
 func TestTC_001_ListTypesDisplaysFourNewBusinessTypes(t *testing.T) {
-	cmd := exec.Command(e2etests.ForgeBinary, "task", "list-types")
+	cmd := exec.Command(testkit.ForgeBinary, "task", "list-types")
 	out, err := cmd.CombinedOutput()
 	assert.NoError(t, err, "forge task list-types should succeed")
 
@@ -163,7 +163,7 @@ func TestTC_001_ListTypesDisplaysFourNewBusinessTypes(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestTC_002_ListTypesShowsDeprecatedImplementation(t *testing.T) {
-	cmd := exec.Command(e2etests.ForgeBinary, "task", "list-types")
+	cmd := exec.Command(testkit.ForgeBinary, "task", "list-types")
 	out, err := cmd.CombinedOutput()
 	assert.NoError(t, err, "forge task list-types should succeed")
 
@@ -179,10 +179,10 @@ func TestTC_002_ListTypesShowsDeprecatedImplementation(t *testing.T) {
 
 func TestTC_003_ValidateIndexAcceptsNewTypeValues(t *testing.T) {
 	tasks := map[string]indexTask{
-		"1-feat": {ID: "1.1", Title: "Feature task", Priority: "P0", Status: "pending", File: "1-feat.md", Type: "coding.feature"},
-		"2-enh":  {ID: "1.2", Title: "Enhancement task", Priority: "P1", Status: "pending", File: "2-enh.md", Type: "coding.enhancement"},
+		"1-feat":  {ID: "1.1", Title: "Feature task", Priority: "P0", Status: "pending", File: "1-feat.md", Type: "coding.feature"},
+		"2-enh":   {ID: "1.2", Title: "Enhancement task", Priority: "P1", Status: "pending", File: "2-enh.md", Type: "coding.enhancement"},
 		"3-clean": {ID: "1.3", Title: "Cleanup task", Priority: "P2", Status: "pending", File: "3-clean.md", Type: "coding.cleanup"},
-		"4-ref":  {ID: "1.4", Title: "Refactor task", Priority: "P1", Status: "pending", File: "4-ref.md", Type: "coding.refactor"},
+		"4-ref":   {ID: "1.4", Title: "Refactor task", Priority: "P1", Status: "pending", File: "4-ref.md", Type: "coding.refactor"},
 	}
 	dir := setupTempFeature(t, tasks)
 
@@ -454,7 +454,7 @@ func TestTC_014_PromptReturnsRefactorTemplate(t *testing.T) {
 func TestTC_015_QualityGateCreatesFixTypeOnCompileFailure(t *testing.T) {
 	// Verify that fixTypeFromStep returns "fix" for compile step.
 	// This tests the mapping logic: compile failures -> TypeFix.
-	cmd := exec.Command(e2etests.ForgeBinary, "task", "list-types")
+	cmd := exec.Command(testkit.ForgeBinary, "task", "list-types")
 	out, err := cmd.CombinedOutput()
 	if !assert.NoError(t, err, "forge task list-types should succeed") {
 		return
@@ -476,7 +476,7 @@ func TestTC_015_QualityGateCreatesFixTypeOnCompileFailure(t *testing.T) {
 func TestTC_016_QualityGateCreatesCleanupTypeOnFmtFailure(t *testing.T) {
 	// Verify that fixTypeFromStep returns "cleanup" for fmt step.
 	// This tests the mapping logic: fmt failures -> TypeCleanup.
-	cmd := exec.Command(e2etests.ForgeBinary, "task", "list-types")
+	cmd := exec.Command(testkit.ForgeBinary, "task", "list-types")
 	out, err := cmd.CombinedOutput()
 	if !assert.NoError(t, err, "forge task list-types should succeed") {
 		return
@@ -497,7 +497,7 @@ func TestTC_016_QualityGateCreatesCleanupTypeOnFmtFailure(t *testing.T) {
 func TestTC_017_QualityGateCreatesCleanupTypeOnLintFailure(t *testing.T) {
 	// Verify that fixTypeFromStep returns "cleanup" for lint step.
 	// This tests the mapping logic: lint failures -> TypeCleanup.
-	cmd := exec.Command(e2etests.ForgeBinary, "task", "list-types")
+	cmd := exec.Command(testkit.ForgeBinary, "task", "list-types")
 	out, err := cmd.CombinedOutput()
 	if !assert.NoError(t, err, "forge task list-types should succeed") {
 		return
@@ -507,7 +507,7 @@ func TestTC_017_QualityGateCreatesCleanupTypeOnLintFailure(t *testing.T) {
 	}
 
 	// The actual behavior is verified by inspecting fixTypeFromStep logic:
-	// lint -> TypeCleanup ("cleanup")
+	// lint -> TypeCleanup
 }
 
 // ---------------------------------------------------------------------------
@@ -644,7 +644,7 @@ func TestTC_019_RecordOmitsReclassificationWhenNoShift(t *testing.T) {
 
 func TestTC_020_MigrateMapsImplementationToFeature(t *testing.T) {
 	tasks := map[string]indexTask{
-		"1-impl": {ID: "1.1", Title: "Implementation task", Priority: "P0", Status: "pending", File: "1-impl.md", Type: "implementation"},
+		"1-impl":  {ID: "1.1", Title: "Implementation task", Priority: "P0", Status: "pending", File: "1-impl.md", Type: "implementation"},
 		"2-clean": {ID: "1.2", Title: "Cleanup task", Priority: "P1", Status: "pending", File: "2-clean.md", Type: "coding.cleanup"},
 	}
 	dir := setupTempFeature(t, tasks)

@@ -1,6 +1,18 @@
 //go:build e2e
 
-package e2e
+package testsuitehealth
+
+import (
+	"os"
+	"path/filepath"
+	"regexp"
+	"runtime"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
 
 // ==============================================================================
 // gen-journeys skill structure tests — feature: contract-journey-test-model
@@ -15,21 +27,27 @@ package e2e
 //   - Single Journey per generation, auto-batch when context window exceeded
 // ==============================================================================
 
-import (
-	"os"
-	"path/filepath"
-	"regexp"
-	"strings"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-)
+// projectRootGenJourneys returns the forge project root directory.
+func projectRootGenJourneys(t *testing.T) string {
+	t.Helper()
+	_, thisFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("cannot determine test file location")
+	}
+	// thisFile: .../tests/test-suite-health/gen_journeys_skill_test.go
+	// up 2: test-suite-health -> tests -> project root
+	dir := filepath.Join(filepath.Dir(thisFile), "..", "..")
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		t.Fatalf("cannot resolve project root: %s", err)
+	}
+	return abs
+}
 
 // skillRoot returns the gen-journeys skill directory.
 func skillRoot(t *testing.T) string {
 	t.Helper()
-	return filepath.Join(projectRoot(t), "plugins", "forge", "skills", "gen-journeys")
+	return filepath.Join(projectRootGenJourneys(t), "plugins", "forge", "skills", "gen-journeys")
 }
 
 // TC-001: gen-journeys skill directory exists with SKILL.md

@@ -1,6 +1,6 @@
 //go:build e2e
 
-package e2e
+package qualitygate
 
 import (
 	"encoding/json"
@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	testkit "forge-tests/testkit"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -36,10 +38,10 @@ type qgTaskEntry struct {
 
 // qgIndexFixture represents the top-level index.json structure.
 type qgIndexFixture struct {
-	Feature      string                  `json:"feature"`
-	StatusEnum   []string                `json:"statusEnum"`
-	PriorityEnum []string                `json:"priorityEnum"`
-	Tasks        map[string]qgTaskEntry  `json:"tasks"`
+	Feature      string                 `json:"feature"`
+	StatusEnum   []string               `json:"statusEnum"`
+	PriorityEnum []string               `json:"priorityEnum"`
+	Tasks        map[string]qgTaskEntry `json:"tasks"`
 }
 
 // qgSetupProject creates a temp project dir with go.mod and feature structure.
@@ -139,7 +141,7 @@ test:
 // Returns combined output and exit code. Does NOT fatalf on failure.
 func qgRunQualityGate(t *testing.T, projectRoot string) (string, int) {
 	t.Helper()
-	cmd := exec.Command(ForgeBinary, "quality-gate")
+	cmd := exec.Command(testkit.ForgeBinary, "quality-gate")
 	cmd.Env = append(os.Environ(), "CLAUDE_PROJECT_DIR="+projectRoot)
 	out, err := cmd.CombinedOutput()
 	exitCode := 0
