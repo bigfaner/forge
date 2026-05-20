@@ -1,0 +1,80 @@
+{
+  "feature": "auto-knowledge-save",
+  "proposal": "docs/proposals/auto-knowledge-save/proposal.md",
+  "created": "2026-05-20",
+  "tasks": {
+    "1-add-knowledge-save-config": {
+      "id": "1",
+      "title": "Add KnowledgeSave ModeToggle to AutoConfig + JSON Schema + config get",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "1-add-knowledge-save-config.md",
+      "record": "records/1-add-knowledge-save-config.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "2-remove-run-tasks-knowledge-review": {
+      "id": "2",
+      "title": "Remove run-tasks knowledge review section",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "status": "pending",
+      "file": "2-remove-run-tasks-knowledge-review.md",
+      "record": "records/2-remove-run-tasks-knowledge-review.md",
+      "type": "doc"
+    },
+    "3-update-knowledge-extraction-skills": {
+      "id": "3",
+      "title": "Update knowledge extraction in fix-bug, write-prd, tech-design",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "3-update-knowledge-extraction-skills.md",
+      "record": "records/3-update-knowledge-extraction-skills.md",
+      "type": "doc"
+    },
+    "4-init-guided-config": {
+      "id": "4",
+      "title": "Add knowledgeSave and runTasks to forge init guided config",
+      "priority": "P1",
+      "estimatedTime": "45m",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "4-init-guided-config.md",
+      "record": "records/4-init-guided-config.md",
+      "scope": "backend",
+      "type": "coding.enhancement"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "pending",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "scope": "all",
+      "type": "doc.drift"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
