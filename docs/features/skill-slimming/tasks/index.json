@@ -112,7 +112,7 @@
       "dependencies": [
         "8"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "9-slim-utility-domain.md",
       "record": "records/9-slim-utility-domain.md",
       "type": "doc"
