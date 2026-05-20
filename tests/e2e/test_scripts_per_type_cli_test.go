@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
@@ -29,60 +28,10 @@ type taskEntry struct {
 	File     string `json:"file,omitempty"`
 }
 
-// forgeBinPath caches the built forge binary path.
-var forgeBinPath string
-
-// forgeBin returns the path to the forge binary, building it if necessary.
-func forgeBin(t *testing.T) string {
-	t.Helper()
-	if forgeBinPath != "" {
-		if _, err := os.Stat(forgeBinPath); err == nil {
-			return forgeBinPath
-		}
-	}
-	binName := "forge"
-	if runtime.GOOS == "windows" {
-		binName = "forge.exe"
-	}
-	// Resolve forge-cli directory relative to this test file
-	_, thisFile, _, ok := runtime.Caller(0)
-	if !ok {
-		t.Fatal("runtime.Caller failed")
-	}
-	// Walk up to project root (contains justfile)
-	dir := filepath.Dir(thisFile)
-	for dir != "/" && dir != "" {
-		if _, err := os.Stat(filepath.Join(dir, "justfile")); err == nil {
-			break
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			break
-		}
-		dir = parent
-	}
-	binPath := filepath.Join(dir, "forge-cli", "bin", binName)
-	if _, err := os.Stat(binPath); err != nil {
-		cliDir := filepath.Join(dir, "forge-cli")
-		buildCmd := exec.Command("go", "build", "-o", binPath, "./cmd/forge/")
-		buildCmd.Dir = cliDir
-		if out, err := buildCmd.CombinedOutput(); err != nil {
-			t.Fatalf("failed to build forge binary: %s: %s", err, out)
-		}
-	}
-	absPath, err := filepath.Abs(binPath)
-	if err != nil {
-		t.Fatalf("failed to resolve binary path: %s", err)
-	}
-	forgeBinPath = absPath
-	return absPath
-}
-
 // runForge executes the forge binary with given args and returns combined output.
 func runForge(t *testing.T, args ...string) ([]byte, error) {
 	t.Helper()
-	bin := forgeBin(t)
-	cmd := exec.Command(bin, args...)
+	cmd := exec.Command(forgeBinary, args...)
 	return cmd.CombinedOutput()
 }
 
@@ -193,7 +142,7 @@ func TestTC_001_TaskIndexCreatesPerTypeTasksForMultiType(t *testing.T) {
 	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"coding.feature\"\nscope: \"all\"\n---\n\n# Task One\n"
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "1-task-one.md"), []byte(taskMD), 0644))
 
-	bin := forgeBin(t)
+	bin := forgeBinary
 	cmd := exec.Command(bin, "task", "index", "--feature", "multi-type-feat")
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()
@@ -222,7 +171,7 @@ func TestTC_002_TaskIndexPerTypeTasksHaveCorrectType(t *testing.T) {
 	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"coding.feature\"\nscope: \"all\"\n---\n\n# Task One\n"
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "1-task-one.md"), []byte(taskMD), 0644))
 
-	bin := forgeBin(t)
+	bin := forgeBinary
 	cmd := exec.Command(bin, "task", "index", "--feature", "type-check-feat")
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()
@@ -250,7 +199,7 @@ func TestTC_003_TaskIndexSingleTypeCreatesOneGenTask(t *testing.T) {
 	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"coding.feature\"\nscope: \"all\"\n---\n\n# Task One\n"
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "1-task-one.md"), []byte(taskMD), 0644))
 
-	bin := forgeBin(t)
+	bin := forgeBinary
 	cmd := exec.Command(bin, "task", "index", "--feature", "single-type-feat")
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()
@@ -280,7 +229,7 @@ func TestTC_004_TaskIndexWithoutTestCasesUsesProfileCapabilities(t *testing.T) {
 	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"coding.feature\"\nscope: \"all\"\n---\n\n# Task One\n"
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "1-task-one.md"), []byte(taskMD), 0644))
 
-	bin := forgeBin(t)
+	bin := forgeBinary
 	cmd := exec.Command(bin, "task", "index", "--feature", "no-types-feat")
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()
@@ -309,7 +258,7 @@ func TestTC_005_TaskIndexZeroTypeTestCasesUsesProfileCapabilities(t *testing.T) 
 	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"coding.feature\"\nscope: \"all\"\n---\n\n# Task One\n"
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "1-task-one.md"), []byte(taskMD), 0644))
 
-	bin := forgeBin(t)
+	bin := forgeBinary
 	cmd := exec.Command(bin, "task", "index", "--feature", "zero-types-feat")
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()
@@ -338,7 +287,7 @@ func TestTC_006_TaskIndexRunDependsOnAllPerTypeGenTasks(t *testing.T) {
 	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"coding.feature\"\nscope: \"all\"\n---\n\n# Task One\n"
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "1-task-one.md"), []byte(taskMD), 0644))
 
-	bin := forgeBin(t)
+	bin := forgeBinary
 	cmd := exec.Command(bin, "task", "index", "--feature", "deps-feat")
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()
@@ -372,7 +321,7 @@ func TestTC_007_TaskIndexMultiProfilePerTypeTasks(t *testing.T) {
 	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"coding.feature\"\nscope: \"all\"\n---\n\n# Task One\n"
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "1-task-one.md"), []byte(taskMD), 0644))
 
-	bin := forgeBin(t)
+	bin := forgeBinary
 	cmd := exec.Command(bin, "task", "index", "--feature", "multi-prof-feat")
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()
@@ -430,7 +379,7 @@ func TestTC_008_TaskIndexQuickModePerTypeTasks(t *testing.T) {
 	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"coding.feature\"\nscope: \"all\"\n---\n\n# Task One\n"
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "1-task-one.md"), []byte(taskMD), 0644))
 
-	bin := forgeBin(t)
+	bin := forgeBinary
 	cmd := exec.Command(bin, "task", "index", "--feature", "quick-type-feat")
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()
@@ -468,7 +417,7 @@ func TestTC_009_PerTypeGenScriptsMdContainsTestType(t *testing.T) {
 	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"coding.feature\"\nscope: \"all\"\n---\n\n# Task One\n"
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "1-task-one.md"), []byte(taskMD), 0644))
 
-	bin := forgeBin(t)
+	bin := forgeBinary
 	cmd := exec.Command(bin, "task", "index", "--feature", "type-md-feat")
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()
@@ -509,7 +458,7 @@ func TestTC_010_TaskIndexPerTypeIdempotent(t *testing.T) {
 	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"coding.feature\"\nscope: \"all\"\n---\n\n# Task One\n"
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "1-task-one.md"), []byte(taskMD), 0644))
 
-	bin := forgeBin(t)
+	bin := forgeBinary
 
 	// Run index twice
 	for i := 0; i < 2; i++ {
@@ -547,7 +496,7 @@ func TestTC_011_PerTypeGenScriptsMdHasCorrectTaskIDs(t *testing.T) {
 	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"coding.feature\"\nscope: \"all\"\n---\n\n# Task One\n"
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "1-task-one.md"), []byte(taskMD), 0644))
 
-	bin := forgeBin(t)
+	bin := forgeBinary
 	cmd := exec.Command(bin, "task", "index", "--feature", "tid-feat")
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()
@@ -580,7 +529,7 @@ func TestTC_012_TaskIndexSharedInfrastructureNotDuplicated(t *testing.T) {
 	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"coding.feature\"\nscope: \"all\"\n---\n\n# Task One\n"
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "1-task-one.md"), []byte(taskMD), 0644))
 
-	bin := forgeBin(t)
+	bin := forgeBinary
 	cmd := exec.Command(bin, "task", "index", "--feature", "shared-feat")
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()

@@ -139,7 +139,7 @@ test:
 // Returns combined output and exit code. Does NOT fatalf on failure.
 func qgRunQualityGate(t *testing.T, projectRoot string) (string, int) {
 	t.Helper()
-	cmd := exec.Command("forge", "quality-gate")
+	cmd := exec.Command(forgeBinary, "quality-gate")
 	cmd.Env = append(os.Environ(), "CLAUDE_PROJECT_DIR="+projectRoot)
 	out, err := cmd.CombinedOutput()
 	exitCode := 0

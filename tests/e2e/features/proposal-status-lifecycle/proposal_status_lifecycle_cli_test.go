@@ -1,6 +1,6 @@
 //go:build e2e
 
-package e2e
+package e2epsl
 
 import (
 	"os"
@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	e2etests "e2e-tests"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -49,7 +51,7 @@ func createFeaturePSL(t *testing.T, projectDir, slug, manifestStatus string) {
 // runForgePSL runs the forge CLI in a given working directory.
 func runForgePSL(t *testing.T, dir string, args ...string) string {
 	t.Helper()
-	cmd := exec.Command("forge", args...)
+	cmd := exec.Command(e2etests.ForgeBinary, args...)
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()
 	if err != nil {

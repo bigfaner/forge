@@ -1,6 +1,6 @@
 //go:build e2e
 
-package e2e
+package e2etestconv
 
 // ==============================================================================
 // forge gen-test-scripts — CLI e2e tests for feature: test-knowledge-convention-driven

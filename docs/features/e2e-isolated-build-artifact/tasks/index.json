@@ -1,0 +1,107 @@
+{
+  "feature": "e2e-isolated-build-artifact",
+  "proposal": "docs/proposals/e2e-isolated-build-artifact/proposal.md",
+  "created": "2026-05-20",
+  "tasks": {
+    "1-isolate-forge-cli-e2e": {
+      "id": "1",
+      "title": "Isolate forge-cli/tests/e2e/ to TestMain auto-build",
+      "priority": "P1",
+      "estimatedTime": "1-2h",
+      "status": "completed",
+      "file": "1-isolate-forge-cli-e2e.md",
+      "record": "records/1-isolate-forge-cli-e2e.md",
+      "scope": "backend",
+      "type": "coding.enhancement"
+    },
+    "2-isolate-justfile-canonical-e2e": {
+      "id": "2",
+      "title": "Isolate justfile-canonical-e2e/ to TestMain auto-build",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "2-isolate-justfile-canonical-e2e.md",
+      "record": "records/2-isolate-justfile-canonical-e2e.md",
+      "scope": "backend",
+      "type": "coding.enhancement"
+    },
+    "3-fix-tests-e2e-features": {
+      "id": "3",
+      "title": "Fix tests/e2e/ feature tests to use TestMain-built binary",
+      "priority": "P1",
+      "estimatedTime": "1-2h",
+      "status": "completed",
+      "file": "3-fix-tests-e2e-features.md",
+      "record": "records/3-fix-tests-e2e-features.md",
+      "scope": "backend",
+      "type": "coding.enhancement"
+    },
+    "4-simplify-e2e-setup": {
+      "id": "4",
+      "title": "Simplify e2e-setup in justfile to optional cache optimization",
+      "priority": "P2",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1",
+        "2",
+        "3"
+      ],
+      "status": "completed",
+      "file": "4-simplify-e2e-setup.md",
+      "record": "records/4-simplify-e2e-setup.md",
+      "scope": "backend",
+      "type": "coding.enhancement"
+    },
+    "5-update-testing-isolation-convention": {
+      "id": "5",
+      "title": "Update TEST-isolation-004 scope to cover all test locations",
+      "priority": "P2",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1",
+        "2",
+        "3"
+      ],
+      "status": "completed",
+      "file": "5-update-testing-isolation-convention.md",
+      "record": "records/5-update-testing-isolation-convention.md",
+      "type": "doc"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "fix unit-test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "quality-gate:unit-test",
+      "type": "coding.fix"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "scope": "all",
+      "type": "doc.drift"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

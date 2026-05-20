@@ -86,7 +86,7 @@ func setupFeatureFixture(t *testing.T, tasks map[string]taskEntry) string {
 // Returns combined output and exit code. Does NOT fatalf on failure.
 func forgeClaim(t *testing.T, projectRoot string) (string, int) {
 	t.Helper()
-	cmd := exec.Command("forge", "task", "claim")
+	cmd := exec.Command(forgeBinary, "task", "claim")
 	cmd.Env = append(os.Environ(), "CLAUDE_PROJECT_DIR="+projectRoot)
 	out, err := cmd.CombinedOutput()
 	exitCode := 0
