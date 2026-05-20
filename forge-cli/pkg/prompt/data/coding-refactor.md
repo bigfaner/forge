@@ -17,6 +17,9 @@ Touch only what the refactoring scope explicitly requires. Do not "improve," ren
 - When in doubt about whether a change is in scope, it probably isn't.
 </CODING_PRINCIPLES>
 
+COVERAGE_STRATEGY: {{COVERAGE_STRATEGY}}
+COVERAGE_TARGET: {{COVERAGE_TARGET}}
+
 ## Pre-check
 
 Before starting, verify all three conditions:
