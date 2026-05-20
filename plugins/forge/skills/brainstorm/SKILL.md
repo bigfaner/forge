@@ -43,15 +43,56 @@ Interview the user relentlessly about every aspect of the idea until reaching sh
 
 ### Decision Clusters
 
-Three clusters provide direction — traverse freely based on dependencies, not fixed order:
+Two clusters provide direction — traverse based on dependencies, not fixed order. Each cluster has **mandatory** challenge tools embedded within it:
 
-| Cluster       | Drives questions about                                  |
-| ------------- | ------------------------------------------------------- |
-| **Problem**   | Core problem, affected users, urgency, cost of inaction |
-| **Solution**  | Success criteria, must-haves, user workflows            |
-| **Challenge** | Simpler alternatives, risks, blind spots                |
+| Cluster       | Drives questions about                                  | Embedded Challenge Tools         |
+| ------------- | ------------------------------------------------------- | -------------------------------- |
+| **Problem**   | Core problem, affected users, urgency, cost of inaction | **5 Whys** + **XY Problem Detection** |
+| **Solution**  | Success criteria, must-haves, user workflows            | **Assumption Flip** + **Stress Test** |
 
 Backtrack when a branch reveals an earlier assumption was wrong. Derive questions from findings, not templates — reference concrete facts.
+
+### Challenge Protocol
+
+Challenge is not a separate step — it is a **mandatory behavior** embedded in every decision point. Each challenge must be grounded in facts (see Fact-Driven Principle below). Empty or vague questioning is forbidden.
+
+#### Challenge Tools
+
+| Tool | When to Use | Trigger Condition | Termination Condition |
+|------|-------------|-------------------|----------------------|
+| **5 Whys** | Problem Cluster — drill into root cause | User states a surface-level symptom or vague pain point | Root cause identified (causal chain reaches a fundamental constraint), OR 3 consecutive "why" answers are consistent |
+| **XY Problem Detection** | Problem Cluster — detect when user's stated need may not be the real need | User asks for a specific solution rather than describing a problem | User confirms the actual underlying problem, OR user provides clear rationale for why the specific solution is needed |
+| **Assumption Flip** | Solution Cluster — validate critical assumptions | User presents a solution that depends on an unverified assumption | Assumption is confirmed by evidence, OR assumption is overturned and solution is adjusted, OR user provides sufficient domain expertise as evidence |
+| **Stress Test** | Solution Cluster — expose hidden risks in seemingly perfect solutions | User seems satisfied with a solution without considering edge cases | All identified edge cases are addressed, OR user explicitly accepts residual risk with documented rationale |
+| **Occam's Razor** | Both Clusters — meta-principle applied at all times | Multiple competing explanations or solutions coexist | Simplest viable option selected, OR complexity is justified by concrete evidence |
+
+#### Fact-Driven Principle
+
+Every challenge must cite one of three evidence types:
+
+1. **Codebase facts** — existing implementations, architecture patterns, API contracts found in the codebase
+2. **Logical consistency** — internal contradictions, circular reasoning, or gaps in the user's own argument
+3. **Domain common sense** — widely accepted knowledge in the relevant technical or business domain
+
+For greenfield projects (no existing codebase), rely on logical consistency and domain common sense. The absence of code does not excuse challenges from providing evidence.
+
+#### Challenge Tone
+
+Challenges must be **rationally prudent**, not hostile. Every challenge follows this structure:
+
+1. **State the observation** — what was said or assumed
+2. **Present the evidence** — cite a specific fact from the three evidence types
+3. **Pose the question** — ask what the implication is
+
+Example: "You mentioned caching as the solution for latency. The current p99 latency is 50ms (codebase fact: `src/api/middleware/timer.ts`). At this level, network round-trip dominates — caching may not address the actual bottleneck. What does the latency breakdown show?"
+
+#### Occam's Razor (Meta-Principle)
+
+Throughout the entire brainstorm, when multiple explanations or approaches coexist, prefer the simplest one that satisfies all known constraints. This is not a separate tool to invoke — it is a standing principle that applies to every decision:
+
+- If a simple explanation covers the observed problem, do not propose complex alternatives without evidence requiring complexity
+- If a straightforward approach meets all success criteria, do not add sophistication without justification
+- When the user proposes a complex solution, ask: "Is there a simpler way to achieve the same outcome?"
 
 ## Step 3: Propose Approaches
 

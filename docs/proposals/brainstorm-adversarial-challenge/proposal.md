@@ -1,7 +1,7 @@
 ---
 created: 2026-05-20
 author: "fanhuifeng"
-status: Draft
+status: Approved
 ---
 
 # Proposal: Brainstorm Adversarial Challenge Enhancement
