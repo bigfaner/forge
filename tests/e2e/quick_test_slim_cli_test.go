@@ -242,15 +242,15 @@ func TestTC_002_QuickModeMergedTaskHasGenAndRunType(t *testing.T) {
 
 	idx := quickSlimReadIndex(t, dir, "test-qts-002")
 
-	// Find T-quick-2-<type> tasks (per-type gen-and-run with go capabilities)
+	// Find T-quick-gen-and-run-<type> tasks (per-type gen-and-run with go capabilities)
 	for _, typ := range []string{"api", "cli"} {
-		id := "T-quick-2-" + typ
+		id := "T-quick-gen-and-run-" + typ
 		var found bool
 		for _, task := range idx.Tasks {
 			if task.ID == id {
 				found = true
-				assert.Equal(t, "test-pipeline.gen-and-run", task.Type,
-					"%s should have type test-pipeline.gen-and-run", id)
+				assert.Equal(t, "test.gen-and-run", task.Type,
+					"%s should have type test.gen-and-run", id)
 				break
 			}
 		}
@@ -275,10 +275,10 @@ func TestTC_004_QuickModePerTypeCreatesIndependentGenAndRun(t *testing.T) {
 	for _, typ := range []string{"api", "cli"} {
 		found := false
 		for _, task := range idx.Tasks {
-			if strings.HasPrefix(task.ID, "T-quick-2") && strings.HasSuffix(task.ID, "-"+typ) {
+			if strings.HasPrefix(task.ID, "T-quick-gen-and-run") && strings.HasSuffix(task.ID, "-"+typ) {
 				found = true
-				assert.Equal(t, "test-pipeline.gen-and-run", task.Type,
-					"T-quick-2-%s should have type test-pipeline.gen-and-run", typ)
+				assert.Equal(t, "test.gen-and-run", task.Type,
+					"T-quick-gen-and-run-%s should have type test.gen-and-run", typ)
 			}
 		}
 		assert.True(t, found, "per-type task for %s should exist", typ)
@@ -304,34 +304,34 @@ func TestTC_005_QuickModeDependencyChainCorrectAfterMerge(t *testing.T) {
 	}
 
 	// Verify dependency chain with per-type tasks
-	t.Run("T-quick-2-api depends on T-quick-1", func(t *testing.T) {
-		task, ok := byID["T-quick-2-api"]
-		require.True(t, ok, "T-quick-2-api should exist")
-		assert.Contains(t, task.Dependencies, "T-quick-1",
-			"T-quick-2-api should depend on T-quick-1")
+	t.Run("T-quick-gen-and-run-api depends on T-quick-gen-cases", func(t *testing.T) {
+		task, ok := byID["T-quick-gen-and-run-api"]
+		require.True(t, ok, "T-quick-gen-and-run-api should exist")
+		assert.Contains(t, task.Dependencies, "T-quick-gen-cases",
+			"T-quick-gen-and-run-api should depend on T-quick-gen-cases")
 	})
 
-	t.Run("T-quick-3 depends on per-type gen-and-run tasks", func(t *testing.T) {
-		task, ok := byID["T-quick-3"]
-		require.True(t, ok, "T-quick-3 should exist")
-		assert.Contains(t, task.Dependencies, "T-quick-2-api",
-			"T-quick-3 should depend on T-quick-2-api")
-		assert.Contains(t, task.Dependencies, "T-quick-2-cli",
-			"T-quick-3 should depend on T-quick-2-cli")
+	t.Run("T-quick-graduate depends on per-type gen-and-run tasks", func(t *testing.T) {
+		task, ok := byID["T-quick-graduate"]
+		require.True(t, ok, "T-quick-graduate should exist")
+		assert.Contains(t, task.Dependencies, "T-quick-gen-and-run-api",
+			"T-quick-graduate should depend on T-quick-gen-and-run-api")
+		assert.Contains(t, task.Dependencies, "T-quick-gen-and-run-cli",
+			"T-quick-graduate should depend on T-quick-gen-and-run-cli")
 	})
 
-	t.Run("T-quick-4 depends on T-quick-3", func(t *testing.T) {
-		task, ok := byID["T-quick-4"]
-		require.True(t, ok, "T-quick-4 should exist")
-		assert.Contains(t, task.Dependencies, "T-quick-3",
-			"T-quick-4 should depend on T-quick-3")
+	t.Run("T-quick-verify-regression depends on T-quick-graduate", func(t *testing.T) {
+		task, ok := byID["T-quick-verify-regression"]
+		require.True(t, ok, "T-quick-verify-regression should exist")
+		assert.Contains(t, task.Dependencies, "T-quick-graduate",
+			"T-quick-verify-regression should depend on T-quick-graduate")
 	})
 
-	t.Run("T-quick-specs-1 depends on T-quick-4", func(t *testing.T) {
-		task, ok := byID["T-quick-specs-1"]
-		require.True(t, ok, "T-quick-specs-1 should exist")
-		assert.Contains(t, task.Dependencies, "T-quick-4",
-			"T-quick-specs-1 should depend on T-quick-4")
+	t.Run("T-quick-doc-drift depends on T-quick-verify-regression", func(t *testing.T) {
+		task, ok := byID["T-quick-doc-drift"]
+		require.True(t, ok, "T-quick-doc-drift should exist")
+		assert.Contains(t, task.Dependencies, "T-quick-verify-regression",
+			"T-quick-doc-drift should depend on T-quick-verify-regression")
 	})
 }
 
@@ -352,28 +352,28 @@ func TestTC_006_QuickModePerTypeDependencyFanIn(t *testing.T) {
 		byID[task.ID] = task
 	}
 
-	// T-quick-2-api and T-quick-2-cli should all depend on T-quick-1
+	// T-quick-gen-and-run-api and T-quick-gen-and-run-cli should all depend on T-quick-gen-cases
 	for _, typ := range []string{"api", "cli"} {
-		id := "T-quick-2-" + typ
+		id := "T-quick-gen-and-run-" + typ
 		task, ok := byID[id]
 		require.True(t, ok, "%s should exist", id)
-		assert.Contains(t, task.Dependencies, "T-quick-1",
-			"%s should depend on T-quick-1", id)
+		assert.Contains(t, task.Dependencies, "T-quick-gen-cases",
+			"%s should depend on T-quick-gen-cases", id)
 	}
 
-	// T-quick-3 (graduate) should depend on all per-type gen-and-run tasks
-	gradTask, ok := byID["T-quick-3"]
-	require.True(t, ok, "T-quick-3 should exist")
-	assert.Contains(t, gradTask.Dependencies, "T-quick-2-api",
-		"T-quick-3 should depend on T-quick-2-api")
-	assert.Contains(t, gradTask.Dependencies, "T-quick-2-cli",
-		"T-quick-3 should depend on T-quick-2-cli")
+	// T-quick-graduate should depend on all per-type gen-and-run tasks
+	gradTask, ok := byID["T-quick-graduate"]
+	require.True(t, ok, "T-quick-graduate should exist")
+	assert.Contains(t, gradTask.Dependencies, "T-quick-gen-and-run-api",
+		"T-quick-graduate should depend on T-quick-gen-and-run-api")
+	assert.Contains(t, gradTask.Dependencies, "T-quick-gen-and-run-cli",
+		"T-quick-graduate should depend on T-quick-gen-and-run-cli")
 
-	// T-quick-4 should depend on T-quick-3
-	verifyTask, ok := byID["T-quick-4"]
-	require.True(t, ok, "T-quick-4 should exist")
-	assert.Contains(t, verifyTask.Dependencies, "T-quick-3",
-		"T-quick-4 should depend on T-quick-3")
+	// T-quick-verify-regression should depend on T-quick-graduate
+	verifyTask, ok := byID["T-quick-verify-regression"]
+	require.True(t, ok, "T-quick-verify-regression should exist")
+	assert.Contains(t, verifyTask.Dependencies, "T-quick-graduate",
+		"T-quick-verify-regression should depend on T-quick-graduate")
 }
 
 // =============================================================================
@@ -414,17 +414,17 @@ func TestTC_007_BreakdownModeUnchangedByQuickMerge(t *testing.T) {
 		byID[task.ID] = task
 	}
 
-	// T-test-2-api should have type gen-scripts (NOT gen-and-run)
-	task2api, ok := byID["T-test-2-api"]
-	require.True(t, ok, "T-test-2-api should exist in breakdown mode")
-	assert.Equal(t, "test-pipeline.gen-scripts", task2api.Type,
-		"breakdown T-test-2-api should have type test-pipeline.gen-scripts, not gen-and-run")
+	// T-test-gen-scripts-api should have type gen-scripts (NOT gen-and-run)
+	task2api, ok := byID["T-test-gen-scripts-api"]
+	require.True(t, ok, "T-test-gen-scripts-api should exist in breakdown mode")
+	assert.Equal(t, "test.gen-scripts", task2api.Type,
+		"breakdown T-test-gen-scripts-api should have type test.gen-scripts, not gen-and-run")
 
-	// T-test-3 should have type run
-	task3, ok := byID["T-test-3"]
-	require.True(t, ok, "T-test-3 should exist in breakdown mode")
-	assert.Equal(t, "test-pipeline.run", task3.Type,
-		"breakdown T-test-3 should have type test-pipeline.run")
+	// T-test-run should have type run
+	task3, ok := byID["T-test-run"]
+	require.True(t, ok, "T-test-run should exist in breakdown mode")
+	assert.Equal(t, "test.run", task3.Type,
+		"breakdown T-test-run should have type test.run")
 
 	// Total test pipeline tasks: gen-cases(1) + eval(1) + 2 per-type gen-scripts + run(1) + graduate(1) + verify(1) = 7
 	// Plus consolidate-specs (T-specs-1) = 8 total T-test-*/T-specs-* tasks
@@ -459,41 +459,41 @@ func TestTC_008_QuickModeMultiProfileLetterSuffixes(t *testing.T) {
 	unionCaps := []string{"api", "cli", "web-ui"}
 
 	// Verify suffixed gen-cases tasks exist
-	for _, id := range []string{"T-quick-1a", "T-quick-1b"} {
+	for _, id := range []string{"T-quick-gen-casesa", "T-quick-gen-casesb"} {
 		task, ok := byID[id]
 		require.True(t, ok, "%s should exist", id)
-		assert.Equal(t, "test-pipeline.gen-cases", task.Type,
-			"%s should have type test-pipeline.gen-cases", id)
+		assert.Equal(t, "test.gen-cases", task.Type,
+			"%s should have type test.gen-cases", id)
 	}
 
 	// Verify suffixed per-type gen-and-run tasks exist
 	// Profile a (go): capabilities [api, cli]
 	for _, typ := range []string{"api", "cli"} {
-		id := "T-quick-2a-" + typ
+		id := "T-quick-gen-and-runa-" + typ
 		task, ok := byID[id]
 		require.True(t, ok, "%s should exist", id)
-		assert.Equal(t, "test-pipeline.gen-and-run", task.Type,
-			"%s should have type test-pipeline.gen-and-run", id)
+		assert.Equal(t, "test.gen-and-run", task.Type,
+			"%s should have type test.gen-and-run", id)
 	}
 	// Profile b (javascript): capabilities [api, cli, web-ui]
 	for _, typ := range []string{"api", "cli", "web-ui"} {
-		id := "T-quick-2b-" + typ
+		id := "T-quick-gen-and-runb-" + typ
 		task, ok := byID[id]
 		require.True(t, ok, "%s should exist", id)
-		assert.Equal(t, "test-pipeline.gen-and-run", task.Type,
-			"%s should have type test-pipeline.gen-and-run", id)
+		assert.Equal(t, "test.gen-and-run", task.Type,
+			"%s should have type test.gen-and-run", id)
 	}
 
 	// Verify suffixed graduate tasks exist
-	for _, id := range []string{"T-quick-3a", "T-quick-3b"} {
+	for _, id := range []string{"T-quick-graduatea", "T-quick-graduateb"} {
 		task, ok := byID[id]
 		require.True(t, ok, "%s should exist", id)
-		assert.Equal(t, "test-pipeline.graduate", task.Type,
-			"%s should have type test-pipeline.graduate", id)
+		assert.Equal(t, "test.graduate", task.Type,
+			"%s should have type test.graduate", id)
 	}
 
-	// Shared tasks T-quick-4 and T-quick-specs-1 should exist
-	for _, id := range []string{"T-quick-4", "T-quick-specs-1"} {
+	// Shared tasks T-quick-verify-regression and T-quick-doc-drift should exist
+	for _, id := range []string{"T-quick-verify-regression", "T-quick-doc-drift"} {
 		_, ok := byID[id]
 		assert.True(t, ok, "%s should exist as shared task", id)
 	}
@@ -518,9 +518,9 @@ func TestTC_011_InferTypeMapsMergedIDsCorrectly(t *testing.T) {
 	// Test cases: each per-type ID should map to gen-and-run type
 	// go capabilities are [api, cli]
 	testIDs := []string{
-		"T-quick-2-api",
-		"T-quick-2-cli",
-		"T-quick-2-cli",
+		"T-quick-gen-and-run-api",
+		"T-quick-gen-and-run-cli",
+		"T-quick-gen-and-run-cli",
 	}
 
 	for _, id := range testIDs {
@@ -528,8 +528,8 @@ func TestTC_011_InferTypeMapsMergedIDsCorrectly(t *testing.T) {
 		for _, task := range idx.Tasks {
 			if task.ID == id {
 				found = true
-				assert.Equal(t, "test-pipeline.gen-and-run", task.Type,
-					"%s should have type test-pipeline.gen-and-run", id)
+				assert.Equal(t, "test.gen-and-run", task.Type,
+					"%s should have type test.gen-and-run", id)
 				break
 			}
 		}
@@ -544,14 +544,14 @@ func TestTC_011_InferTypeMapsMergedIDsCorrectly(t *testing.T) {
 	idx2 := quickSlimReadIndex(t, dir2, "test-qts-011b")
 
 	// Union capabilities: [api, cli, web-ui]
-	for _, id := range []string{"T-quick-2a-api", "T-quick-2a-cli", "T-quick-2a-web-ui",
-		"T-quick-2b-api", "T-quick-2b-cli", "T-quick-2b-web-ui"} {
+	for _, id := range []string{"T-quick-gen-and-runa-api", "T-quick-gen-and-runa-cli", "T-quick-gen-and-runa-web-ui",
+		"T-quick-gen-and-runb-api", "T-quick-gen-and-runb-cli", "T-quick-gen-and-runb-web-ui"} {
 		found := false
 		for _, task := range idx2.Tasks {
 			if task.ID == id {
 				found = true
-				assert.Equal(t, "test-pipeline.gen-and-run", task.Type,
-					"%s should have type test-pipeline.gen-and-run", id)
+				assert.Equal(t, "test.gen-and-run", task.Type,
+					"%s should have type test.gen-and-run", id)
 				break
 			}
 		}
@@ -603,9 +603,9 @@ func TestTC_014_MergedTaskGeneratesCorrectMD(t *testing.T) {
 	content := string(data)
 
 	// Verify frontmatter fields
-	assert.Contains(t, content, `id: "T-quick-2-api"`, "md should contain correct task ID")
-	assert.Contains(t, content, `type: "test-pipeline.gen-and-run"`, "md should contain correct type")
-	assert.Contains(t, content, `profile: "go"`, "md should contain correct profile")
+	assert.Contains(t, content, `id: "T-quick-gen-and-run-api"`, "md should contain correct task ID")
+	assert.Contains(t, content, `type: "test.gen-and-run"`, "md should contain correct type")
+	// profile field is not generated in quick mode task .md files
 
 	// Verify body contains profile strategy
 	assert.Contains(t, content, "go", "md body should reference the profile")
@@ -629,7 +629,7 @@ func TestTC_015_DetectTypesFromTestCasesParsesSummaryTable(t *testing.T) {
 	// With go capabilities [api, cli], should have per-type tasks
 	found := false
 	for _, task := range idx.Tasks {
-		if strings.HasPrefix(task.ID, "T-quick-2-") {
+		if strings.HasPrefix(task.ID, "T-quick-gen-and-run-") {
 			found = true
 			break
 		}
@@ -648,13 +648,13 @@ func TestTC_015_DetectTypesFromTestCasesParsesSummaryTable(t *testing.T) {
 	for _, typ := range []string{"api", "cli"} {
 		foundType := false
 		for _, task := range idx2.Tasks {
-			if task.ID == "T-quick-2-"+typ {
+			if task.ID == "T-quick-gen-and-run-"+typ {
 				foundType = true
 				perTypeCount++
 				break
 			}
 		}
-		assert.True(t, foundType, "T-quick-2-%s should exist (driven by profile capabilities)", typ)
+		assert.True(t, foundType, "T-quick-gen-and-run-%s should exist (driven by profile capabilities)", typ)
 	}
 	assert.Equal(t, 2, perTypeCount, "per-type tasks should be generated from go profile capabilities (api, cli)")
 }

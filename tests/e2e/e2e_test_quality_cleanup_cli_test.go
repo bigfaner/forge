@@ -238,6 +238,11 @@ func TestTC_006_NoStaticFileTextGrepTests(t *testing.T) {
 		if err != nil {
 			return err
 		}
+		// Skip features/ subdirectory — those are self-contained feature tests
+		// that read their own generated artifacts, not static source files.
+		if d.IsDir() && d.Name() == "features" {
+			return filepath.SkipDir
+		}
 		if !d.IsDir() && strings.HasSuffix(d.Name(), "_test.go") {
 			testFiles = append(testFiles, path)
 		}
