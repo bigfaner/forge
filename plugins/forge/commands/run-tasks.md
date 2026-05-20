@@ -92,9 +92,9 @@ Return to Step 1.
 
 ## Post-Completion
 
-After loop ends, print: "All tasks completed. T-test-3, T-test-4, and T-test-4.5 handle e2e verification, graduation, and regression automatically."
+After loop ends, print: "All tasks completed. T-test-run, T-test-graduate, and T-test-verify-regression handle e2e verification, graduation, and regression automatically."
 
-If index lacks T-test-3/T-test-4, suggest: "Run `/run-e2e-tests` then `forge test promote <journey>`."
+If index lacks T-test-run/T-test-graduate, suggest: "Run `/run-e2e-tests` then `forge test promote <journey>`."
 
 Do NOT run e2e tests from the dispatcher.
 

@@ -72,6 +72,12 @@ Reference specific products, open-source projects, or published patterns. -->
 ### Dependency Readiness
 <!-- Are external APIs/services available and stable? Are upstream prerequisites in place? -->
 
+## Assumptions Challenged
+
+| Assumption | Challenge Tool | Finding |
+|------------|---------------|---------|
+| <!-- state the assumption that was tested --> | <!-- 5 Whys / XY Detection / Assumption Flip / Stress Test / Occam's Razor --> | <!-- Confirmed / Overturned / Refined: what the challenge revealed --> |
+
 ## Scope
 
 ### In Scope

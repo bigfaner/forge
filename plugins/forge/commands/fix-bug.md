@@ -11,6 +11,13 @@ Systematic bug fix workflow: **Reproduce → Test → Fix → Verify**.
 
 Core principle: never touch production code until a failing test proves the bug exists.
 
+<CODING_PRINCIPLES>
+- Think Before Coding: Before writing any fix, restate the bug and its suspected root cause in your own words. Verify your diagnosis against the evidence — do not jump to the first plausible explanation. If the root cause is ambiguous, investigate further before proceeding.
+- Simplicity First: Fix only what is broken. No speculative changes, no "while I'm here" improvements, no refactoring. Trivial fixes (typos, config) use judgment — full analysis is not needed.
+- Surgical Changes: Modify only the code directly on the failing path. Do not touch neighboring code, reformat unrelated lines, or refactor tangential logic. Scope boundary = failing code path only.
+- Goal-Driven Execution: Define a clear, verifiable success condition: the specific test(s) that fail before the fix and pass after. After implementation, confirm the condition is met — if not, iterate.
+</CODING_PRINCIPLES>
+
 ## Parameters
 
 | Parameter | Default | Description |
@@ -27,7 +34,6 @@ Core principle: never touch production code until a failing test proves the bug 
 
 <EXTREMELY-IMPORTANT>
 - Never touch production code until a failing test proves the bug exists (Step 3 before Step 4)
-- Fix only what the failing tests require — no scope creep, no refactoring, no "improvements"
 - Tests and fix must be committed together in a single atomic commit
 - If the bug cannot be reproduced (Step 2), STOP and report — do not write tests or fix code for an unconfirmed bug
 - All quality gate checks must pass before committing (Step 5)
@@ -146,10 +152,8 @@ just test-e2e --feature <slug>
 
 With failing tests in place, implement the minimal fix.
 
-**Principles:**
-- Fix only what the failing tests require — no scope creep
-- Do not refactor surrounding code
-- Do not add features or "improvements"
+**Guidelines:**
+- Follow <CODING_PRINCIPLES> — Simplicity First and Surgical Changes define the scope boundary
 - If the root cause is in a dependency, document it and apply the minimal workaround
 
 **Root cause note** — before moving on, write one sentence in a code comment or commit body:

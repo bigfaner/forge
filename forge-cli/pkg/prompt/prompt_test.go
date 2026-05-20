@@ -797,6 +797,53 @@ func TestSynthesize_DriftTemplate_NonInteractive(t *testing.T) {
 	}
 }
 
+// --- Coding principles injection tests ---
+
+func TestSynthesize_CodingTemplates_ContainCodingPrinciples(t *testing.T) {
+	codingTypes := []struct {
+		typ     string
+		typeVal string
+	}{
+		{"feature", task.TypeCodingFeature},
+		{"enhancement", task.TypeCodingEnhancement},
+		{"fix", task.TypeCodingFix},
+		{"refactor", task.TypeCodingRefactor},
+		{"cleanup", task.TypeCodingCleanup},
+	}
+
+	for _, ct := range codingTypes {
+		t.Run(ct.typ, func(t *testing.T) {
+			dir := t.TempDir()
+			taskID := "1.1"
+			tasks := map[string]task.Task{
+				taskID: {
+					ID:     taskID,
+					Title:  "Coding task",
+					Status: "pending",
+					File:   "1.1.md",
+					Record: "records/1.1.md",
+					Type:   ct.typeVal,
+					Scope:  "backend",
+				},
+			}
+			setupFeatureDir(t, dir, tasks)
+
+			opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: taskID}
+			result, err := Synthesize(opts)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if !strings.Contains(result, "<CODING_PRINCIPLES>") {
+				t.Errorf("%s template: synthesized prompt missing <CODING_PRINCIPLES> opening tag", ct.typ)
+			}
+			if !strings.Contains(result, "</CODING_PRINCIPLES>") {
+				t.Errorf("%s template: synthesized prompt missing </CODING_PRINCIPLES> closing tag", ct.typ)
+			}
+		})
+	}
+}
+
 func TestExtractTestTypeArg(t *testing.T) {
 	tests := []struct {
 		id   string
