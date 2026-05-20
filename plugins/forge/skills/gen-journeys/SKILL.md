@@ -111,7 +111,7 @@ High-risk Journeys MUST have edge case count >= happy path step count. If extrac
 
 ## Step 4: Generate Per-Journey Files
 
-For each Journey, generate a Markdown file using `${CLAUDE_SKILL_DIR}/templates/journey.md`.
+For each Journey, generate a Markdown file using `templates/journey.md`.
 
 **Output location**: `docs/features/<slug>/testing/journeys/<journey-name>.md`
 

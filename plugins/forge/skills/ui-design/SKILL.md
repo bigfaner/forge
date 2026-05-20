@@ -75,7 +75,7 @@ Then read the platform-specific navigation rules from `templates/platforms/{web,
 
 ## Step 3: Select Design Style
 
-Select design style based on the platform identified in Step 2.5. Follow the priority chain and platform-specific rules in `${CLAUDE_SKILL_DIR}/rules/style-selection.md`:
+Select design style based on the platform identified in Step 2.5. Follow the priority chain and platform-specific rules in `rules/style-selection.md`:
 
 1. **Check for user-provided DESIGN.md** (project root or feature directory) -- use directly if found.
 2. **If no user-provided style**: let the user choose from built-in styles (5 web/mobile styles or 2 TUI themes).
@@ -97,7 +97,7 @@ For each UI function, define:
 
 ### TUI Panel Design Requirements
 
-When platform=tui, each panel MUST include all mandatory structural requirements per `${CLAUDE_SKILL_DIR}/rules/tui-panel-requirements.md`:
+When platform=tui, each panel MUST include all mandatory structural requirements per `rules/tui-panel-requirements.md`:
 - 5 mandatory structural items: ASCII mockup, dimensions, character palette, color mapping, edge cases
 - Additional per-panel specs: states, key bindings, data binding
 

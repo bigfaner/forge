@@ -19,4 +19,4 @@ Based on visual analysis, match against these characteristics to identify the cl
 | Stripe | Purple gradient buttons, light gray background (#f6f9fc), weight-300 display |
 | Apple | Pure white background, generous whitespace, SF Pro, rounded capsule buttons |
 
-Read the corresponding built-in style file: `${CLAUDE_SKILL_DIR}/../ui-design/templates/styles/<name>.md`
+Read the corresponding built-in style file from the ui-design skill: `ui-design/templates/styles/<name>.md` (resolve relative to the skills parent directory)

@@ -113,7 +113,7 @@ Present incrementally, section by section:
 | Testing        | Test strategy           |
 | Security       | Security considerations |
 
-After drafting each section, apply the quality checks from `${CLAUDE_SKILL_DIR}/rules/design-quality-checks.md`:
+After drafting each section, apply the quality checks from `rules/design-quality-checks.md`:
 - PRD Coverage Verification (5.1)
 - Breakdown-Readiness Check (5.2)
 - Cross-Layer Data Map (5.3)
@@ -141,10 +141,10 @@ Present `er-diagram.md` and `schema.sql` alongside the Data Models cross-referen
 
 Triggered automatically after user approves the tech-design in Step 6.
 
-Follow the archiving flow in `${CLAUDE_SKILL_DIR}/rules/decision-archiving.md`:
+Follow the archiving flow in `rules/decision-archiving.md`:
 - Scan for key decisions marked in the tech-design document
 - Display candidate list for user selection (archive all / specific / none / edit)
-- Write decision entries to `docs/decisions/<type>.md` using `${CLAUDE_SKILL_DIR}/templates/decision-entry.md`
+- Write decision entries to `docs/decisions/<type>.md` using `templates/decision-entry.md`
 - Update `docs/decisions/manifest.md` per the manifest update protocol
 
 If no key decisions exist, silently skip this step.
@@ -176,7 +176,7 @@ After committing, use `AskUserQuestion` to ask:
 
 ## Step 11: Auto-Extract Knowledge
 
-After writing design documents and updating the manifest, run the knowledge extraction routine per `${CLAUDE_SKILL_DIR}/rules/knowledge-extraction.md` to capture knowledge that Step 7 may have missed.
+After writing design documents and updating the manifest, run the knowledge extraction routine per `rules/knowledge-extraction.md` to capture knowledge that Step 7 may have missed.
 
 Extraction covers four knowledge types: Decisions, Lessons, Conventions, Business Rules. Only genuinely non-obvious knowledge is extracted (conservative approach). User confirmation is required before writing to any knowledge directory.
 

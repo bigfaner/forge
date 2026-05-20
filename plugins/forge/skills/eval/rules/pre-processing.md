@@ -9,4 +9,4 @@
 | `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases` | Resolve test language via `forge test detect`. Pass project interfaces to scorer. |
 | `prd` | Detect mode: `prd-ui-functions.md` exists -> Mode A (with UI), else Mode B (no UI). |
 | `validate-code` | 1) Read PRD -> extract user scenarios list (from prd-spec.md flow descriptions and prd-user-stories.md acceptance criteria). 2) Run `git diff <base-branch>...HEAD` to get changed files and diff hunks. 3) Compile changed file list. 4) Pass PRD scenarios + diff + file list to scorer as assembled input. |
-| `validate-ux` | **Two-phase pre-processing** (must execute in git worktree or temp dir). Full sub-pipeline: `${CLAUDE_SKILL_DIR}/rubrics/validate-ux-pipeline.md`. |
+| `validate-ux` | **Two-phase pre-processing** (must execute in git worktree or temp dir). Full sub-pipeline: `rubrics/validate-ux-pipeline.md`. |

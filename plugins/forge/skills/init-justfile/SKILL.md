@@ -102,7 +102,7 @@ If `--type` is provided, skip project type detection (1a). Entry point detection
 
 #### 1a. Project type detection
 
-Detect project type and entry points per `${CLAUDE_SKILL_DIR}/rules/project-detection.md`. This covers:
+Detect project type and entry points per `rules/project-detection.md`. This covers:
 - Marker file scanning and classification (frontend/backend/mixed)
 - Mixed project root path detection (`FRONTEND_DIR`, `BACKEND_DIR`)
 - Backend entry point detection (`BACKEND_ENTRY`)
@@ -250,7 +250,7 @@ For long-running recipes (`run`, `dev`): execute via `timeout 10 just <recipe> 2
 
 #### 4c. Self-correction rules
 
-When a recipe fails in Phase 2, analyze the error and apply corrections per `${CLAUDE_SKILL_DIR}/rules/self-correction.md`:
+When a recipe fails in Phase 2, analyze the error and apply corrections per `rules/self-correction.md`:
 
 1. Match the error against known error patterns (npm missing scripts, Go package issues, missing linters/formatters).
 2. Edit the justfile to apply the correction.

@@ -309,11 +309,11 @@ Resolve any remaining markers using Fact Table values.
 
 #### Antipattern Guard & Duplicate Name Check
 
-See `${CLAUDE_SKILL_DIR}/rules/quality-gates.md` for the forbidden pattern list and duplicate name collision rules.
+See `rules/quality-gates.md` for the forbidden pattern list and duplicate name collision rules.
 
 ## Error Handling
 
-See `${CLAUDE_SKILL_DIR}/rules/quality-gates.md` for the complete error handling table covering Convention, Contract, Fact Table, compile gate, and template resolution failures.
+See `rules/quality-gates.md` for the complete error handling table covering Convention, Contract, Fact Table, compile gate, and template resolution failures.
 
 ## Related Skills
 

@@ -1,6 +1,6 @@
 # Sitemap Schema Reference
 
-Read the full example at `${CLAUDE_SKILL_DIR}/templates/sitemap-example.json`.
+Read the full example at `templates/sitemap-example.json`.
 
 ## Key Fields
 

@@ -132,25 +132,24 @@ hooks.json 和 shell 脚本可以通过环境变量引用 plugin 安装位置：
 }
 ```
 
-### Skills/Commands — 使用 `${CLAUDE_SKILL_DIR}`
+### Skills/Commands — 使用相对路径
 
-Skill 文件（SKILL.md）和 Command 文件（.md）中的路径由 Claude 通过 Read 工具解析，工作目录是用户项目根目录，不是文件所在目录。因此必须使用 `${CLAUDE_SKILL_DIR}` 变量构建绝对路径。
-
-`${CLAUDE_SKILL_DIR}` 在 skill 内容加载时自动替换为 SKILL.md 所在目录的绝对路径（分发后为 `~/.claude/plugins/cache/forge/forge/<version>/skills/<name>/`）。
+Skill 文件（SKILL.md）和 Command 文件（.md）中的路径使用相对于当前文件所在目录的相对路径。Claude 知道 SKILL.md 的文件位置，能够正确解析相对路径引用。
 
 **路径规则：**
 
 | 引用目标 | 路径风格 | 示例 |
 |---------|---------|------|
-| skill/command 内部文件 | 相对路径 | `templates/decision-entry.md`、`rubrics/<type>.md` |
+| skill/command 内部文件 | 相对路径 | `rules/platform-routing.md`、`templates/decision-entry.md`、`rubrics/<type>.md` |
+| 跨 skill 文件 | 描述性路径 + 上下文 | `ui-design/templates/styles/<name>.md`（注明 resolve relative to the skills parent directory） |
 | 用户项目文件 | 项目相对路径 | `docs/decisions/<type>.md` |
 | forge CLI | 命令名 | `forge task claim` |
 
-**模板文件（templates/）**：不是 SKILL.md，不经过 skill 内容加载机制，`${CLAUDE_SKILL_DIR}` 替换不适用。模板中的跨 skill 引用路径由读取该模板的 SKILL.md 在执行时负责解析。如果模板需要引用其他 skill 的资源（如 eval rubrics），SKILL.md 应在指令中提供正确的 `${CLAUDE_SKILL_DIR}` 解析后路径，而非在模板中硬编码。
+**模板文件（templates/）**：不是 SKILL.md，不经过 skill 内容加载机制。模板中的跨 skill 引用路径由读取该模板的 SKILL.md 在执行时负责解析。如果模板需要引用其他 skill 的资源（如 eval rubrics），SKILL.md 应在指令中提供正确的路径，而非在模板中硬编码。
 
 **禁止：**
 - 项目根路径（`plugins/forge/...`）— 分发后路径不存在
-- SKILL.md/command 文件中使用相对路径（`../../...`、`templates/...`）— 从用户项目根解析，指向错误位置
+- `${CLAUDE_SKILL_DIR}` 变量 — 使用相对路径替代，保持 SKILL.md 内容自描述
 
 ## 6. 两条 Pipeline
 

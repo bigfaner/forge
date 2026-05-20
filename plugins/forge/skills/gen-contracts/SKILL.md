@@ -86,7 +86,7 @@ Every Journey in the manifest MUST be processed. Do not skip Journeys based on R
 
 ### Step 2: Code Reconnaissance (Build Fact Table)
 
-Read source code to extract ground-truth values. Follow the full reconnaissance procedure per `${CLAUDE_SKILL_DIR}/rules/code-reconnaissance.md`, including generic and TUI-specific reconnaissance tables, Fact Table format, and source citation rules.
+Read source code to extract ground-truth values. Follow the full reconnaissance procedure per `rules/code-reconnaissance.md`, including generic and TUI-specific reconnaissance tables, Fact Table format, and source citation rules.
 
 ### Step 3: Generate Contracts
 
@@ -116,35 +116,35 @@ Journey "task-lifecycle":
 
 #### 3.2 Six-Dimension Declaration
 
-For each Outcome, declare all six dimensions per `${CLAUDE_SKILL_DIR}/rules/dimension-rules.md`: four mandatory (Preconditions, Input, Output, State) and two optional (Side-effect, Invariants).
+For each Outcome, declare all six dimensions per `rules/dimension-rules.md`: four mandatory (Preconditions, Input, Output, State) and two optional (Side-effect, Invariants).
 
 #### 3.3 Semantic Descriptors
 
-All dimension values use semantic descriptors per `${CLAUDE_SKILL_DIR}/rules/dimension-rules.md`. MUST NOT contain regex syntax. MUST be natural language expressing business intent.
+All dimension values use semantic descriptors per `rules/dimension-rules.md`. MUST NOT contain regex syntax. MUST be natural language expressing business intent.
 
 #### 3.4 Multi-Outcome Preconditions Mutual Exclusivity
 
-Each Outcome within a Step MUST have mutually exclusive Preconditions per `${CLAUDE_SKILL_DIR}/rules/dimension-rules.md`. Outcome count checkpoint: steps with > 5 Outcomes trigger a review.
+Each Outcome within a Step MUST have mutually exclusive Preconditions per `rules/dimension-rules.md`. Outcome count checkpoint: steps with > 5 Outcomes trigger a review.
 
 #### 3.5 TUI Async Cmd Await Semantics
 
-For TUI Steps involving async operations, declare `await` semantics per `${CLAUDE_SKILL_DIR}/rules/tui-async.md`, including timeout outcomes for async Cmds.
+For TUI Steps involving async operations, declare `await` semantics per `rules/tui-async.md`, including timeout outcomes for async Cmds.
 
 #### 3.6 State Verification Levels
 
-Determine state verification level (full/partial/deferred) from Fact Table reconnaissance per `${CLAUDE_SKILL_DIR}/rules/tui-async.md`.
+Determine state verification level (full/partial/deferred) from Fact Table reconnaissance per `rules/tui-async.md`.
 
 #### 3.7 Journey-Level Invariants
 
-Every Contract file MUST end with a `## Journey Invariants` section per `${CLAUDE_SKILL_DIR}/rules/tui-async.md`. At least 1 invariant is mandatory.
+Every Contract file MUST end with a `## Journey Invariants` section per `rules/tui-async.md`. At least 1 invariant is mandatory.
 
 #### 3.8 Batch Processing
 
-Auto-split into batches when Contracts > 15 or tokens > 50k per `${CLAUDE_SKILL_DIR}/rules/tui-async.md`.
+Auto-split into batches when Contracts > 15 or tokens > 50k per `rules/tui-async.md`.
 
 ### Step 4: Validate Contracts
 
-After generating all Contracts for a Journey, validate each one per `${CLAUDE_SKILL_DIR}/rules/validation.md`. Apply validation checks and failure handling as defined in the rules file.
+After generating all Contracts for a Journey, validate each one per `rules/validation.md`. Apply validation checks and failure handling as defined in the rules file.
 
 ### Step 5: Write Output
 
@@ -154,7 +154,7 @@ Write Contract files to `tests/<journey>/_contracts/`.
 - `<N>` is the 1-based step ordinal
 - `<action-slug>` is a kebab-case summary of the Step's primary action
 
-**Template**: Use `${CLAUDE_SKILL_DIR}/templates/contract.md` for the file structure. Use `${CLAUDE_SKILL_DIR}/templates/outcome-block.md` for each Outcome block.
+**Template**: Use `templates/contract.md` for the file structure. Use `templates/outcome-block.md` for each Outcome block.
 
 **Create directories**: Create `tests/<journey>/_contracts/` if it does not exist.
 
@@ -164,7 +164,7 @@ Output path is strictly `tests/<journey>/_contracts/`. No other locations.
 
 ## Error Handling
 
-See `${CLAUDE_SKILL_DIR}/rules/validation.md` for the complete error handling table.
+See `rules/validation.md` for the complete error handling table.
 
 ## Related Skills
 

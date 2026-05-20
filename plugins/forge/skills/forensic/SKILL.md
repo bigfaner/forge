@@ -114,7 +114,7 @@ Evidence files are intermediate artifacts. Each extract produces ~10-20KB regard
 From the evidence's `skillsUsed` field (or user's `--skill` parameter), read the relevant skill definitions:
 
 ```
-${CLAUDE_SKILL_DIR}/../<skill-name>/SKILL.md
+<skill-name>/SKILL.md (resolve relative to the skills parent directory)
 ```
 
 Extract the rules that the agent should have followed:
@@ -140,7 +140,7 @@ Read the extracted evidence JSON from `docs/forensics/<slug>/evidence/evidence.j
 | Action | Duration | Detail |
 |--------|----------|--------|
 | Agent (doc-scorer) | 142.3s | eval-design scoring... |
-| Read | 0.8s | ${CLAUDE_SKILL_DIR}/../... |
+| Read | 0.8s | skills/<skill-name>/SKILL.md |
 | Bash | 45.2s | go test -race -cover ./... |
 | Edit | 0.3s | internal/cmd/forensic.go |
 

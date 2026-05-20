@@ -45,11 +45,11 @@ Detect the project's language and framework from file system signals. This step 
 
 #### 1a. Detect language signals
 
-Detect language from marker files and apply the classification algorithm per `${CLAUDE_SKILL_DIR}/rules/signal-detection.md`.
+Detect language from marker files and apply the classification algorithm per `rules/signal-detection.md`.
 
 #### 1b. Detect framework details (warm start)
 
-For each detected language, probe for framework-specific signals per `${CLAUDE_SKILL_DIR}/rules/signal-detection.md`. Record detected frameworks in `detected_frameworks`. This is a warm-start signal -- it narrows the candidate list but does NOT override Step 2's test file analysis.
+For each detected language, probe for framework-specific signals per `rules/signal-detection.md`. Record detected frameworks in `detected_frameworks`. This is a warm-start signal -- it narrows the candidate list but does NOT override Step 2's test file analysis.
 
 ### Step 2: Scan Test Files & Extract Patterns
 
@@ -57,15 +57,15 @@ Scan existing test files to extract concrete patterns. This is the most importan
 
 #### 2a. Locate test files
 
-Use Glob to find test files by language-specific patterns per `${CLAUDE_SKILL_DIR}/rules/pattern-extraction.md`. Focus on `tests/` and `tests/e2e/` directories first (forge convention), then project-wide.
+Use Glob to find test files by language-specific patterns per `rules/pattern-extraction.md`. Focus on `tests/` and `tests/e2e/` directories first (forge convention), then project-wide.
 
 #### 2b. Extract patterns from test files
 
-For each test file found, extract imports, tags/markers, test function naming, and assertion style per `${CLAUDE_SKILL_DIR}/rules/pattern-extraction.md`.
+For each test file found, extract imports, tags/markers, test function naming, and assertion style per `rules/pattern-extraction.md`.
 
 #### 2c. Compile findings
 
-Summarize extracted patterns into a structured finding per `${CLAUDE_SKILL_DIR}/rules/pattern-extraction.md`.
+Summarize extracted patterns into a structured finding per `rules/pattern-extraction.md`.
 
 **If no test files found** (cold start): proceed to Step 3 with framework candidates only (no extracted patterns).
 
@@ -108,7 +108,7 @@ Confirm? (y/n/edit)
 
 #### 3b. Cold start (no test files found)
 
-Present framework candidates for the detected language per `${CLAUDE_SKILL_DIR}/rules/convention-structure.md` cold start table. Ask user to select from listed options.
+Present framework candidates for the detected language per `rules/convention-structure.md` cold start table. Ask user to select from listed options.
 
 After user selects framework, present the proposed Convention sections (using LLM knowledge of that framework's defaults) and ask for confirmation.
 
@@ -134,7 +134,7 @@ mkdir -p docs/conventions
 
 #### 4b. Write Convention file
 
-Write `docs/conventions/testing-<scope>.md` following the fixed section structure per `${CLAUDE_SKILL_DIR}/rules/convention-structure.md`.
+Write `docs/conventions/testing-<scope>.md` following the fixed section structure per `rules/convention-structure.md`.
 
 #### 4c. Report result
 
@@ -166,7 +166,7 @@ Changes:
 
 ## File Signal Reference
 
-See `${CLAUDE_SKILL_DIR}/rules/signal-detection.md` for the complete file signal detection reference.
+See `rules/signal-detection.md` for the complete file signal detection reference.
 
 ## Notes
 

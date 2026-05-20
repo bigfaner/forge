@@ -123,7 +123,7 @@ For detailed parsing strategies per format-type, see `rules/result-parsing.md`.
 
 ### Step 5: Generate Report
 
-Read the template at `${CLAUDE_SKILL_DIR}/templates/e2e-report.md`. Fill in:
+Read the template at `templates/e2e-report.md`. Fill in:
 - Summary statistics (total/pass/fail/skip per type)
 - Per-test-case results with evidence
 - Failed test details with error messages

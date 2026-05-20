@@ -41,7 +41,7 @@ Resolution: explicit `--type` in `<command-args>` → command name `/eval-<type>
 
 ### Rubric Context Frontmatter (optional)
 
-Rubrics may declare a `context` frontmatter field to inject project reality files into the scorer prompt. See `${CLAUDE_SKILL_DIR}/rules/rubric-context.md` for the full specification. Rubrics without `context` continue to work unchanged.
+Rubrics may declare a `context` frontmatter field to inject project reality files into the scorer prompt. See `rules/rubric-context.md` for the full specification. Rubrics without `context` continue to work unchanged.
 
 ## Architecture
 
@@ -111,11 +111,11 @@ Multi-platform: run independent score→gate→revise loops per platform.
 
 ### 1.4 Pre-Processing by Type
 
-Apply type-specific pre-processing per `${CLAUDE_SKILL_DIR}/rules/pre-processing.md` before scoring. All types: if rubric has `context` frontmatter, load filtered context files and concatenate into `CONTEXT_CONTENT`.
+Apply type-specific pre-processing per `rules/pre-processing.md` before scoring. All types: if rubric has `context` frontmatter, load filtered context files and concatenate into `CONTEXT_CONTENT`.
 
 ## Expert Dispatch Table
 
-Resolve eval type to scorer expert(s) per `${CLAUDE_SKILL_DIR}/rules/scorer-composition.md`.
+Resolve eval type to scorer expert(s) per `rules/scorer-composition.md`.
 
 ## Iteration Initialization
 
@@ -125,7 +125,7 @@ Set `ITERATION = 1`, `MAX_ITERATIONS = resolved value from rubric or CLI`.
 
 ### 2.1 Compose Scorer Prompts
 
-Compose scorer prompts per `${CLAUDE_SKILL_DIR}/rules/scorer-composition.md`: read scorer protocol, resolve expert(s) from dispatch table, concatenate protocol + expert + context injection. Apply context injection template from the rules file if `CONTEXT_CONTENT` was loaded in Step 1.4.
+Compose scorer prompts per `rules/scorer-composition.md`: read scorer protocol, resolve expert(s) from dispatch table, concatenate protocol + expert + context injection. Apply context injection template from the rules file if `CONTEXT_CONTENT` was loaded in Step 1.4.
 
 ### 2.2 Spawn Scorer Agents
 
@@ -134,11 +134,11 @@ Spawn each composed prompt as a `general-purpose` agent via the Agent tool with 
 - **Single-expert types**: spawn one agent.
 - **Multi-expert types** (e.g., `prd` → `[pm, qa]`): spawn multiple agents **in parallel** (multiple Agent tool calls in a single message). Each agent receives its own composed prompt and writes to its own report path.
 
-Report paths, type-specific inputs, and type-specific report path overrides per `${CLAUDE_SKILL_DIR}/rules/scorer-composition.md`.
+Report paths, type-specific inputs, and type-specific report path overrides per `rules/scorer-composition.md`.
 
 ### 2.3 Collect and Merge Results
 
-Score extraction and multi-expert merging per `${CLAUDE_SKILL_DIR}/rules/scorer-composition.md`.
+Score extraction and multi-expert merging per `rules/scorer-composition.md`.
 
 ## Step 3a: Single-Pass (iterations ≤ 1)
 
@@ -160,7 +160,7 @@ If proceeding to Step 4, report: `Iteration {{N}}/{{MAX}}: scored {{SCORE}}/{{SC
 
 ### 4.1 Compose Reviser Prompt
 
-Compose reviser prompt per `${CLAUDE_SKILL_DIR}/rules/reviser-composition.md`: read reviser protocol, resolve `EVAL_REPORT_PATH`, concatenate protocol + merged attacks + context injection. Apply context injection template from the rules file if `CONTEXT_CONTENT` was loaded in Step 1.4.
+Compose reviser prompt per `rules/reviser-composition.md`: read reviser protocol, resolve `EVAL_REPORT_PATH`, concatenate protocol + merged attacks + context injection. Apply context injection template from the rules file if `CONTEXT_CONTENT` was loaded in Step 1.4.
 
 ### 4.2 Spawn Reviser Agent
 
@@ -168,13 +168,13 @@ Spawn as a `general-purpose` agent via the Agent tool with `model: "sonnet"`.
 
 Inputs: `DOC_DIR`, `EVAL_REPORT_PATH`, `ATTACK_POINTS` (merged).
 
-Type-specific constraints per `${CLAUDE_SKILL_DIR}/rules/reviser-composition.md`.
+Type-specific constraints per `rules/reviser-composition.md`.
 
 After reviser completes: increment iteration counter, return to Step 2.
 
 ## Step 5: Final Report
 
-Generate report per `${CLAUDE_SKILL_DIR}/rules/report-format.md`: include final score, iteration summary, score progression table, dimension breakdown, and outcome. Apply type-specific additions as defined in the rules file.
+Generate report per `rules/report-format.md`: include final score, iteration summary, score progression table, dimension breakdown, and outcome. Apply type-specific additions as defined in the rules file.
 
 ## Step 6: Next Step
 
@@ -197,4 +197,4 @@ Ask user via `AskUserQuestion`:
 
 ## Rubric Reference
 
-All rubrics: `rubrics/<type>.md`. See `${CLAUDE_SKILL_DIR}/rules/rubric-reference.md` for the complete scale/target/iterations reference table.
+All rubrics: `rubrics/<type>.md`. See `rules/rubric-reference.md` for the complete scale/target/iterations reference table.

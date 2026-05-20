@@ -1,6 +1,6 @@
 # validate-ux Sub-Pipeline
 
-Reference file for eval's validate-ux pre-processing. Loaded by `${CLAUDE_SKILL_DIR}/SKILL.md`.
+Reference file for eval's validate-ux pre-processing. Loaded by `SKILL.md`.
 
 ## Project Type Detection
 

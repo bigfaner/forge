@@ -39,7 +39,7 @@ After installation, re-run this command.
 Before executing the workflow, resolve configuration sources:
 
 1. Check if `tests/e2e/config.yaml` exists
-2. **If not found**: read the template at `${CLAUDE_SKILL_DIR}/templates/e2e-config.yaml`, write it to `tests/e2e/config.yaml`, then **abort and prompt the user**:
+2. **If not found**: read the template at `templates/e2e-config.yaml`, write it to `tests/e2e/config.yaml`, then **abort and prompt the user**:
 
 ```
 Created tests/e2e/config.yaml (template). Please fill in values for your environment and re-run.
@@ -69,7 +69,7 @@ This ensures agent-browser can access authenticated pages without exploration in
 
 ## Schema
 
-See `${CLAUDE_SKILL_DIR}/rules/schema.md` for the complete field reference, layout-vs-page element distinction, element ID assignment rules, and dynamic route parameterization rules.
+See `rules/schema.md` for the complete field reference, layout-vs-page element distinction, element ID assignment rules, and dynamic route parameterization rules.
 
 ## Workflow
 
@@ -170,7 +170,7 @@ Combine router registry with link-crawling for complete coverage:
 7. Report source counts: "12 routes from router, 1 additional from crawling"
 ```
 
-**Dynamic route handling**: Parameterization rules are defined in `${CLAUDE_SKILL_DIR}/rules/schema.md`.
+**Dynamic route handling**: Parameterization rules are defined in `rules/schema.md`.
 
 ### Step 4: Explore Pages
 
@@ -192,7 +192,7 @@ Only page-specific content area elements are included in `pages[].elements`.
 
 #### Element Extraction & Dynamic State Exploration
 
-See `${CLAUDE_SKILL_DIR}/rules/page-exploration.md` for element extraction rules, ARIA role filter set, and dynamic state exploration procedures (click, hover, scroll, form submission triggers).
+See `rules/page-exploration.md` for element extraction rules, ARIA role filter set, and dynamic state exploration procedures (click, hover, scroll, form submission triggers).
 
 ```
 ab('close')
@@ -200,7 +200,7 @@ ab('close')
 
 ### Step 5: Merge, Dedup & Validate
 
-See `${CLAUDE_SKILL_DIR}/rules/merge-validation.md` for the complete rules on:
+See `rules/merge-validation.md` for the complete rules on:
 - 5a. Element merge (ID preservation/reassignment)
 - 5b. Post-collection dedup (promote uncaught shared elements)
 - 5c. Stale route detection

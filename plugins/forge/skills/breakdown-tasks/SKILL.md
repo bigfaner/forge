@@ -24,7 +24,7 @@ Evaluate each row independently. Load ONLY if condition is true. Rule files are 
 | `rules/db-schema.md` | `design/er-diagram.md` exists | 2, 4a |
 | `rules/existing-code-split.md` | Tech-design modifies existing shared code | 4a |
 
-Read applicable files via `${CLAUDE_SKILL_DIR}/rules/<filename>`.
+Read applicable files via `rules/<filename>`.
 
 ## Docs-Only Fast Path
 

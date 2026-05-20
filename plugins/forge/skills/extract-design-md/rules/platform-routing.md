@@ -56,6 +56,6 @@ When `--platform tui`, the input must be a **local file path** to a terminal scr
    | modern-dark-tui | Dark background, 256-color (xterm-256), box-drawing + block elements, compact density |
    | minimal-ascii-tui | Default terminal background, 16-color (standard ANSI), pure ASCII characters, loose density |
 
-   Read the corresponding built-in style file: `${CLAUDE_SKILL_DIR}/../ui-design/templates/styles/<name>.md`
+   Read the corresponding built-in style file from the ui-design skill: `ui-design/templates/styles/<name>.md` (resolve relative to the skills parent directory)
 
-5. **Build TUI design tokens and write DESIGN.md**: Read the template at `${CLAUDE_SKILL_DIR}/templates/design-tui.md`. Fill in results from analysis. All extracted values must be marked `(estimated)`.
+5. **Build TUI design tokens and write DESIGN.md**: Read the template at `templates/design-tui.md`. Fill in results from analysis. All extracted values must be marked `(estimated)`.

@@ -32,10 +32,10 @@ Then route to the appropriate extraction section:
 | Platform | Input | Extraction Method |
 |----------|-------|-------------------|
 | `web` (default) | URL | CSS extraction from HTML (Layers 1-5 in Step 2) |
-| `mobile` | URL | Mobile-adapted CSS extraction (see `${CLAUDE_SKILL_DIR}/rules/platform-routing.md`) |
-| `tui` | Local screenshot path | AI vision analysis (see `${CLAUDE_SKILL_DIR}/rules/platform-routing.md`) |
+| `mobile` | URL | Mobile-adapted CSS extraction (see `rules/platform-routing.md`) |
+| `tui` | Local screenshot path | AI vision analysis (see `rules/platform-routing.md`) |
 
-For **mobile** and **tui** platform-specific extraction details, follow the rules in `${CLAUDE_SKILL_DIR}/rules/platform-routing.md`.
+For **mobile** and **tui** platform-specific extraction details, follow the rules in `rules/platform-routing.md`.
 
 ## Step 1: Get URL
 
@@ -71,7 +71,7 @@ Target dimensions:
 
 ### Extraction Strategy (by priority)
 
-SPAs (React/Vue, etc.) have styles not in HTML source. Extract layer by layer, stopping at the first successful layer. Follow the 5-layer strategy in `${CLAUDE_SKILL_DIR}/rules/extraction-layers.md`:
+SPAs (React/Vue, etc.) have styles not in HTML source. Extract layer by layer, stopping at the first successful layer. Follow the 5-layer strategy in `rules/extraction-layers.md`:
 
 1. **Layer 1**: Trace CSS bundle from HTML source
 2. **Layer 2**: Extract CSS custom properties (design tokens)
@@ -81,14 +81,14 @@ SPAs (React/Vue, etc.) have styles not in HTML source. Extract layer by layer, s
 
 ## Step 3: Match Strategy
 
-Use `AskUserQuestion` to let the user choose a generation strategy. Follow the match options and built-in style identification rules in `${CLAUDE_SKILL_DIR}/rules/match-strategy.md`:
+Use `AskUserQuestion` to let the user choose a generation strategy. Follow the match options and built-in style identification rules in `rules/match-strategy.md`:
 
 | Option | Description |
 |--------|-------------|
 | Match closest built-in style, customize on top | Identify the closest built-in style, override differences with extracted tokens |
 | Fully custom from web app extraction | Generate an independent DESIGN.md entirely from analysis results |
 
-If "match built-in" is chosen, match against built-in style characteristics per `${CLAUDE_SKILL_DIR}/rules/match-strategy.md` and read the corresponding style file.
+If "match built-in" is chosen, match against built-in style characteristics per `rules/match-strategy.md` and read the corresponding style file.
 
 ## Step 4: Build Design Tokens
 
@@ -111,9 +111,9 @@ Select template based on platform:
 
 | Platform | Template | Additional sections |
 |----------|----------|-------------------|
-| `web` | `${CLAUDE_SKILL_DIR}/templates/design-web.md` | — |
-| `mobile` | `${CLAUDE_SKILL_DIR}/templates/design-web.md` | Append `${CLAUDE_SKILL_DIR}/templates/design-mobile.md` after "Responsive Behavior", before "Signature Patterns" |
-| `tui` | `${CLAUDE_SKILL_DIR}/templates/design-tui.md` | — |
+| `web` | `templates/design-web.md` | — |
+| `mobile` | `templates/design-web.md` | Append `templates/design-mobile.md` after "Responsive Behavior", before "Signature Patterns" |
+| `tui` | `templates/design-tui.md` | — |
 
 Write the design system to `DESIGN.md` in the project root.
 

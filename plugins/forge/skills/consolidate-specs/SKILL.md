@@ -91,7 +91,7 @@ Scan PRD documents for:
 For each extracted rule:
 - Preserve the original context (why the rule exists)
 - Note which feature(s) it applies to
-- Classify as `[CROSS]` or `[LOCAL]` per `${CLAUDE_SKILL_DIR}/rules/spec-classification.md`
+- Classify as `[CROSS]` or `[LOCAL]` per `rules/spec-classification.md`
 
 ## Step 4: Extract Technical Specifications (tech-specs.md)
 
@@ -104,7 +104,7 @@ Scan design documents for:
 5. **Security patterns** -- authentication, authorization, data protection
 6. **Data model rules** -- soft-delete patterns, audit fields, indexing conventions
 
-For each extracted spec, apply the same `[CROSS]`/`[LOCAL]` classification from `${CLAUDE_SKILL_DIR}/rules/spec-classification.md`.
+For each extracted spec, apply the same `[CROSS]`/`[LOCAL]` classification from `rules/spec-classification.md`.
 
 ## Step 5: Generate Preview Files + Detect Overlaps
 
@@ -116,15 +116,15 @@ docs/features/<slug>/specs/
   tech-specs.md    -- Extracted technical specifications
 ```
 
-Use output formats from `${CLAUDE_SKILL_DIR}/templates/biz-specs.md` and `${CLAUDE_SKILL_DIR}/templates/tech-specs.md`.
+Use output formats from `templates/biz-specs.md` and `templates/tech-specs.md`.
 
-Before presenting to user (Step 6), scan for related existing entries per `${CLAUDE_SKILL_DIR}/rules/overlap-detection.md`.
+Before presenting to user (Step 6), scan for related existing entries per `rules/overlap-detection.md`.
 
 ### Early exit
 
 If ALL extracted items are `[LOCAL]`, write the preview files but do NOT proceed to Step 6.
 
-Write `docs/features/<slug>/specs/.integrated` for the early-exit case using the early-exit marker template from `${CLAUDE_SKILL_DIR}/templates/markers.md`.
+Write `docs/features/<slug>/specs/.integrated` for the early-exit case using the early-exit marker template from `templates/markers.md`.
 
 Then proceed directly to **Step 13** (Record Task). The preview files remain for traceability.
 
@@ -174,7 +174,7 @@ Ask the user:
 4. For each overlap: `[skip]` keep both, or `[replace]` delete old entry and write new?
 5. For each domain overlap warning (>50% shared keywords): merge the files, keep separate, or adjust target file?
 
-Write the user's choices to `docs/features/<slug>/specs/review-choices.md` using the template from `${CLAUDE_SKILL_DIR}/templates/review-choices.md`.
+Write the user's choices to `docs/features/<slug>/specs/review-choices.md` using the template from `templates/review-choices.md`.
 
 ## Step 7: Integrate Approved Specs
 
@@ -182,17 +182,17 @@ For each item listed as "Approved" in `review-choices.md`:
 
 **Business rules** -> append to `docs/business-rules/<domain>.md`:
 - Create the file if it doesn't exist
-- When creating a new file, write frontmatter per `${CLAUDE_SKILL_DIR}/rules/spec-classification.md` and `${CLAUDE_SKILL_DIR}/rules/domain-frontmatter.md`
+- When creating a new file, write frontmatter per `rules/spec-classification.md` and `rules/domain-frontmatter.md`
 - Add a source reference linking back to the feature
 - Group by rule category within the file
 
 **Technical specs** -> append to `docs/conventions/<topic>.md`:
 - Create the file if it doesn't exist
-- When creating a new file, write frontmatter per `${CLAUDE_SKILL_DIR}/rules/spec-classification.md` and `${CLAUDE_SKILL_DIR}/rules/domain-frontmatter.md`
+- When creating a new file, write frontmatter per `rules/spec-classification.md` and `rules/domain-frontmatter.md`
 - Add a source reference linking back to the feature
 - Group by spec category within the file
 
-Assign project-global IDs per `${CLAUDE_SKILL_DIR}/rules/spec-classification.md`.
+Assign project-global IDs per `rules/spec-classification.md`.
 
 ### Overlap Resolution
 
@@ -205,7 +205,7 @@ For each user-approved "replace" choice from Step 6:
 
 ## Step 8: Write Integration Marker + Update Manifest
 
-Write `docs/features/<slug>/specs/.integrated` using the standard integration marker template from `${CLAUDE_SKILL_DIR}/templates/markers.md`.
+Write `docs/features/<slug>/specs/.integrated` using the standard integration marker template from `templates/markers.md`.
 
 Update `docs/features/<slug>/manifest.md` to reference the integrated specs.
 
@@ -249,7 +249,7 @@ For each rule classified as `drifted` or `orphaned` in Step 9:
    - **Non-interactive mode**: Auto-append with `[auto-specs]` tag -- include in commit message
    - Append confirmed rules to the appropriate spec file with a new project-global ID
 
-4. **Re-derive `domains` frontmatter**: When a file's content changes substantially (rules updated, added, or removed), re-derive the `domains` field per `${CLAUDE_SKILL_DIR}/rules/domain-frontmatter.md`. Compare the new domain set against the existing one:
+4. **Re-derive `domains` frontmatter**: When a file's content changes substantially (rules updated, added, or removed), re-derive the `domains` field per `rules/domain-frontmatter.md`. Compare the new domain set against the existing one:
    - If domains have changed, update the frontmatter in-place
    - If the updated `domains` cause a new >50% overlap with another file's domains, flag in the commit message and notify the user
 
@@ -264,7 +264,7 @@ For each rule classified as `drifted` or `orphaned` in Step 9:
 If any spec files were modified in Step 7 (integration) or Step 10 (drift fix):
 
 1. Stage all changed files under `docs/business-rules/` and `docs/conventions/`
-2. Commit with a descriptive message using templates from `${CLAUDE_SKILL_DIR}/templates/commit-messages.md`:
+2. Commit with a descriptive message using templates from `templates/commit-messages.md`:
    - Which rule IDs were updated (drift fix)
    - Which rule IDs were removed (orphaned) and why
    - Which rule IDs were added (implicit new rules)
@@ -312,7 +312,7 @@ The base 8-category vocabulary is always included, even when no knowledge files 
 
 ### Output Format
 
-Use the output template from `${CLAUDE_SKILL_DIR}/templates/vocabulary-index.md`.
+Use the output template from `templates/vocabulary-index.md`.
 
 ### Idempotency
 
@@ -336,7 +336,7 @@ Omit `coverage` from record.json -- the noTest flag in index.json auto-sets it.
 
 ## Rules
 
-See `${CLAUDE_SKILL_DIR}/rules/constraints.md` for the complete list of constraints and rules governing this skill.
+See `rules/constraints.md` for the complete list of constraints and rules governing this skill.
 
 ## Related Skills
 
