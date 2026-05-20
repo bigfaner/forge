@@ -8,7 +8,7 @@
       "title": "Add post-loop artifact commit step to run-tasks",
       "priority": "P2",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "1-commit-remaining-artifacts.md",
       "record": "records/1-commit-remaining-artifacts.md",
       "type": "doc"

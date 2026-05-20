@@ -244,3 +244,29 @@ If a duplicate is found, exclude the candidate and do not present it. The heuris
 - Silent when no notable knowledge is detected — no output, no prompts
 - All output formats must be compatible with `/learn` skill and `/consolidate-specs` overlap detection
 - Deduplication runs before presentation — never present a duplicate of existing knowledge
+
+### Commit Remaining Artifacts
+
+After knowledge extraction (Step 6: Write confirmed knowledge), detect and commit any uncommitted artifacts left in the working tree.
+
+Do NOT run this step if the loop ended due to 3 consecutive failures (incomplete feature).
+
+#### Step 7: Detect and commit artifacts
+
+1. Run `git status --porcelain` to list all uncommitted files.
+
+2. Filter results to feature-scope paths only:
+   - `docs/features/<slug>/` (feature workspace: tasks, manifest, records)
+   - `docs/decisions/` (extracted decisions)
+   - `docs/lessons/` (extracted lessons)
+   - `docs/conventions/` (extracted conventions)
+   - `docs/business-rules/` (extracted business rules)
+
+   `<slug>` is the active feature slug resolved in Step 0.
+
+3. If filtered results are non-empty:
+   - `git add` each matched path explicitly (NOT `git add -A` or `git add .` — only the filtered paths)
+   - `git commit` with message: `chore(<slug>): commit post-loop artifacts`
+   - Print: "Committed N post-loop artifact(s) for <slug>."
+
+4. If filtered results are empty: skip silently — no output, no commit.
