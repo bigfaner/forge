@@ -253,7 +253,7 @@
       "dependencies": [
         "3.gate"
       ],
-      "status": "blocked",
+      "status": "completed",
       "file": "4.1-regression-validation.md",
       "record": "records/4.1-regression-validation.md",
       "scope": "all",
