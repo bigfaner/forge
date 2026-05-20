@@ -8,7 +8,7 @@
       "title": "Isolate forge-cli/tests/e2e/ to TestMain auto-build",
       "priority": "P1",
       "estimatedTime": "1-2h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-isolate-forge-cli-e2e.md",
       "record": "records/1-isolate-forge-cli-e2e.md",
       "scope": "backend",
