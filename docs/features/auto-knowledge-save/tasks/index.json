@@ -8,7 +8,7 @@
       "title": "Add KnowledgeSave ModeToggle to AutoConfig + JSON Schema + config get",
       "priority": "P0",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-add-knowledge-save-config.md",
       "record": "records/1-add-knowledge-save-config.md",
       "breaking": true,
