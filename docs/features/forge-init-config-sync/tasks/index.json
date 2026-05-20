@@ -19,7 +19,7 @@
       "title": "Add auto.validation prompts to forge config init (stdin)",
       "priority": "P1",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "2-add-config-init-validation.md",
       "record": "records/2-add-config-init-validation.md",
       "scope": "backend",
