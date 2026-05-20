@@ -1,7 +1,7 @@
 ---
 created: 2026-05-20
 author: "faner"
-status: Draft
+status: Approved
 ---
 
 # Proposal: Karpathy Coding Guidelines — 四原则注入 Coding 提示词模板
