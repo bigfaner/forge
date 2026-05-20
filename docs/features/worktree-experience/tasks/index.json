@@ -66,7 +66,7 @@
       "title": "Resume with claude -c session restore",
       "priority": "P2",
       "estimatedTime": "1h",
-      "status": "in_progress",
+      "status": "completed",
       "file": "6-resume-session.md",
       "record": "records/6-resume-session.md",
       "scope": "backend",

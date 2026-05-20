@@ -2849,15 +2849,18 @@ func TestWorktreeResume_UsesContinueFlagWhenSupported(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	// Verify claude was launched with -c --dangerously-skip-permissions
-	if len(capturedArgs) < 2 {
-		t.Fatalf("expected at least 2 args, got %v", capturedArgs)
+	// Verify claude was launched with -c <slug> --dangerously-skip-permissions
+	if len(capturedArgs) < 3 {
+		t.Fatalf("expected at least 3 args, got %v", capturedArgs)
 	}
 	if capturedArgs[0] != "-c" {
 		t.Errorf("first arg should be '-c', got %q", capturedArgs[0])
 	}
-	if capturedArgs[1] != "--dangerously-skip-permissions" {
-		t.Errorf("second arg should be '--dangerously-skip-permissions', got %q", capturedArgs[1])
+	if capturedArgs[1] != slug {
+		t.Errorf("second arg should be slug %q, got %q", slug, capturedArgs[1])
+	}
+	if capturedArgs[2] != "--dangerously-skip-permissions" {
+		t.Errorf("third arg should be '--dangerously-skip-permissions', got %q", capturedArgs[2])
 	}
 }
 
