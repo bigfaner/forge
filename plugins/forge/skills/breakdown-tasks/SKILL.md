@@ -109,7 +109,7 @@ If `proposal.md` has `intent`, use as default type. Individual task `type` overr
 All Affected Files non-compilable → `templates/task-doc.md`. Any compilable/runnable → `templates/task.md`.
 
 ### 4b. Test Tasks (auto-generated)
-**Do NOT create manually.** CLI handles T-test-1 through T-test-4.5, expansion, fix-tasks. Fix-task override:
+**Do NOT create manually.** CLI handles test pipeline tasks (T-test-*), expansion, fix-tasks. Fix-task override:
 ```bash
 forge task add --template fix-task --title "Fix: <desc>" --source-task-id <id> --block-source --var SOURCE_FILES="<paths>" --var TEST_SCRIPT="<test>" --var TEST_RESULTS="<results>" --var DESCRIPTION="<cause>"
 ```
