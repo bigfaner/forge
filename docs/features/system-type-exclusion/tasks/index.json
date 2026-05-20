@@ -47,7 +47,7 @@
       "title": "fix test-e2e: just test-e2e failure in quality gate",
       "priority": "P0",
       "estimatedTime": "30min",
-      "status": "in_progress",
+      "status": "completed",
       "file": "fix-1.md",
       "record": "records/fix-1.md",
       "breaking": true,
