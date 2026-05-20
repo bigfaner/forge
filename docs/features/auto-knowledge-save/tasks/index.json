@@ -20,7 +20,7 @@
       "title": "Remove run-tasks knowledge review section",
       "priority": "P1",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "2-remove-run-tasks-knowledge-review.md",
       "record": "records/2-remove-run-tasks-knowledge-review.md",
       "type": "doc"
