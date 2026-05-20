@@ -3,106 +3,136 @@
   "proposal": "docs/proposals/forge-cli-test-spec-alignment/proposal.md",
   "created": "2026-05-20",
   "tasks": {
-    "1-extract-testkit-restructure-module": {
+    "1-extract-testkit-plugin-tests": {
       "id": "1",
-      "title": "Extract testkit package and restructure Go module",
+      "title": "Extract testkit + restructure tests/e2e/ Go module",
       "priority": "P0",
       "estimatedTime": "2h",
       "status": "pending",
-      "file": "1-extract-testkit-restructure-module.md",
-      "record": "records/1-extract-testkit-restructure-module.md",
+      "file": "1-extract-testkit-plugin-tests.md",
+      "record": "records/1-extract-testkit-plugin-tests.md",
       "breaking": true,
       "scope": "backend",
       "type": "coding.refactor"
     },
-    "2-migrate-task-lifecycle-journey": {
-      "id": "2",
-      "title": "Migrate task-lifecycle Journey",
-      "priority": "P1",
-      "estimatedTime": "2h",
-      "dependencies": [
-        "1"
-      ],
-      "status": "pending",
-      "file": "2-migrate-task-lifecycle-journey.md",
-      "record": "records/2-migrate-task-lifecycle-journey.md",
-      "scope": "backend",
-      "type": "coding.refactor"
-    },
-    "3-migrate-feature-management-journey": {
-      "id": "3",
-      "title": "Migrate feature-management Journey",
-      "priority": "P1",
-      "estimatedTime": "2h",
-      "dependencies": [
-        "1"
-      ],
-      "status": "pending",
-      "file": "3-migrate-feature-management-journey.md",
-      "record": "records/3-migrate-feature-management-journey.md",
-      "scope": "backend",
-      "type": "coding.refactor"
-    },
-    "4-migrate-test-generation-journey": {
-      "id": "4",
-      "title": "Migrate test-generation Journey",
-      "priority": "P1",
-      "estimatedTime": "2h",
-      "dependencies": [
-        "1"
-      ],
-      "status": "pending",
-      "file": "4-migrate-test-generation-journey.md",
-      "record": "records/4-migrate-test-generation-journey.md",
-      "scope": "backend",
-      "type": "coding.refactor"
-    },
-    "5-migrate-test-suite-health-journey": {
-      "id": "5",
-      "title": "Migrate test-suite-health Journey",
-      "priority": "P1",
-      "estimatedTime": "1h",
-      "dependencies": [
-        "1"
-      ],
-      "status": "pending",
-      "file": "5-migrate-test-suite-health-journey.md",
-      "record": "records/5-migrate-test-suite-health-journey.md",
-      "scope": "backend",
-      "type": "coding.refactor"
-    },
-    "6-migrate-small-journeys": {
-      "id": "6",
-      "title": "Migrate small Journeys (quality-gate, task-type-system, e2e-pipeline, command-regression)",
-      "priority": "P1",
-      "estimatedTime": "2h",
-      "dependencies": [
-        "1"
-      ],
-      "status": "pending",
-      "file": "6-migrate-small-journeys.md",
-      "record": "records/6-migrate-small-journeys.md",
-      "scope": "backend",
-      "type": "coding.refactor"
-    },
-    "7-cleanup-old-structure": {
-      "id": "7",
-      "title": "Cleanup old structure and update justfile",
+    "10-cleanup-both-structures": {
+      "id": "10",
+      "title": "Cleanup both old structures + update justfiles",
       "priority": "P0",
-      "estimatedTime": "1h",
+      "estimatedTime": "2h",
       "dependencies": [
         "2",
         "3",
         "4",
         "5",
-        "6"
+        "6",
+        "7",
+        "8",
+        "9"
       ],
       "status": "pending",
-      "file": "7-cleanup-old-structure.md",
-      "record": "records/7-cleanup-old-structure.md",
+      "file": "10-cleanup-both-structures.md",
+      "record": "records/10-cleanup-both-structures.md",
       "breaking": true,
       "scope": "backend",
       "type": "coding.cleanup"
+    },
+    "2-migrate-plugin-task-lifecycle-feature-mgmt": {
+      "id": "2",
+      "title": "Migrate tests/e2e/ Journeys: task-lifecycle + feature-management",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-migrate-plugin-task-lifecycle-feature-mgmt.md",
+      "record": "records/2-migrate-plugin-task-lifecycle-feature-mgmt.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "3-migrate-plugin-test-generation": {
+      "id": "3",
+      "title": "Migrate tests/e2e/ Journey: test-generation",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "3-migrate-plugin-test-generation.md",
+      "record": "records/3-migrate-plugin-test-generation.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "4-migrate-plugin-remaining-journeys": {
+      "id": "4",
+      "title": "Migrate tests/e2e/ remaining Journeys: quality-gate, task-type-system, e2e-pipeline, command-regression, test-suite-health",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "4-migrate-plugin-remaining-journeys.md",
+      "record": "records/4-migrate-plugin-remaining-journeys.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "5-migrate-cli-task-lifecycle-quality-gate": {
+      "id": "5",
+      "title": "Migrate forge-cli/tests/e2e/ Journeys: task-lifecycle + quality-gate",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "status": "pending",
+      "file": "5-migrate-cli-task-lifecycle-quality-gate.md",
+      "record": "records/5-migrate-cli-task-lifecycle-quality-gate.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "6-migrate-cli-justfile-integration": {
+      "id": "6",
+      "title": "Migrate forge-cli/tests/e2e/ Journey: justfile-integration",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "status": "pending",
+      "file": "6-migrate-cli-justfile-integration.md",
+      "record": "records/6-migrate-cli-justfile-integration.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "7-migrate-cli-type-system-error-scope": {
+      "id": "7",
+      "title": "Migrate forge-cli/tests/e2e/ Journeys: task-type-system + error-handling + scope-resolution",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "status": "pending",
+      "file": "7-migrate-cli-type-system-error-scope.md",
+      "record": "records/7-migrate-cli-type-system-error-scope.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "8-migrate-cli-commands-skill-ops": {
+      "id": "8",
+      "title": "Migrate forge-cli/tests/e2e/ Journeys: forge-commands + skill-ops",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "status": "pending",
+      "file": "8-migrate-cli-commands-skill-ops.md",
+      "record": "records/8-migrate-cli-commands-skill-ops.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "9-migrate-cli-test-gen-spec-drift": {
+      "id": "9",
+      "title": "Migrate forge-cli/tests/e2e/ Journeys: test-generation + spec-drift",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "9-migrate-cli-test-gen-spec-drift.md",
+      "record": "records/9-migrate-cli-test-gen-spec-drift.md",
+      "scope": "backend",
+      "type": "coding.refactor"
     },
     "quick-drift-detection": {
       "id": "T-quick-doc-drift",
