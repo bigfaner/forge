@@ -1,6 +1,6 @@
 ---
 feature: "forge-init-config-sync"
-status: tasks
+status: completed
 mode: quick
 ---
 
