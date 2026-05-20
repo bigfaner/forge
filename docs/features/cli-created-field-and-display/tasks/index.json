@@ -29,7 +29,7 @@
       "title": "列表命令 slug 列动态宽度",
       "priority": "P2",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "3-dynamic-slug-column-width.md",
       "record": "records/3-dynamic-slug-column-width.md",
       "scope": "backend",

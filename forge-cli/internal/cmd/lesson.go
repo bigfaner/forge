@@ -46,14 +46,17 @@ func runLessonList(projectRoot string) {
 		return
 	}
 
+	// Calculate dynamic name column width.
+	slugWidth := calcSlugColWidth(mapLessonsToNameLens(lessons))
+
 	PrintBlockStart()
 	PrintField("LESSONS", fmt.Sprintf("%d found", len(lessons)))
 	fmt.Println()
 
 	// Table header
-	fmt.Printf("  %-35s %-12s %-15s %-12s\n", "NAME", "CREATED", "CATEGORY", "TAGS")
-	fmt.Printf("  %-35s %-12s %-15s %-12s\n",
-		strings.Repeat("-", 35),
+	fmt.Printf("  %-s %-12s %-15s %-12s\n", padRight("NAME", slugWidth), "CREATED", "CATEGORY", "TAGS")
+	fmt.Printf("  %-s %-12s %-15s %-12s\n",
+		strings.Repeat("-", slugWidth),
 		strings.Repeat("-", 10),
 		strings.Repeat("-", 10),
 		strings.Repeat("-", 10))
@@ -63,8 +66,8 @@ func runLessonList(projectRoot string) {
 		if len(l.Tags) > 0 {
 			tags = strings.Join(l.Tags, ", ")
 		}
-		fmt.Printf("  %-35s %-12s %-15s %-12s\n",
-			truncateSlug(l.Name, 35),
+		fmt.Printf("  %-s %-12s %-15s %-12s\n",
+			padRight(truncateSlug(l.Name, slugWidth), slugWidth),
 			l.Created,
 			l.Category,
 			tags)
@@ -110,4 +113,13 @@ func newErrLessonNotFound(name string) *AIError {
 		"Check the name is correct (without .md extension)",
 		"ls docs/lessons/",
 	)
+}
+
+// mapLessonsToNameLens extracts name lengths from lesson list.
+func mapLessonsToNameLens(lessons []lesson.Lesson) []int {
+	lens := make([]int, len(lessons))
+	for i, l := range lessons {
+		lens[i] = len(l.Name)
+	}
+	return lens
 }

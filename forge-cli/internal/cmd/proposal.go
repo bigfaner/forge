@@ -53,14 +53,17 @@ func runProposalList(projectRoot string) {
 		return proposals[i].Created > proposals[j].Created
 	})
 
+	// Calculate dynamic slug column width.
+	slugWidth := calcSlugColWidth(mapProposalsToSlugLens(proposals))
+
 	PrintBlockStart()
 	PrintField("PROPOSALS", fmt.Sprintf("%d found", len(proposals)))
 	fmt.Println()
 
 	// Table header
-	fmt.Printf("  %-30s %-12s %-10s %-4s %s\n", "SLUG", "CREATED", "STATUS", "PRD", "FEATURE")
-	fmt.Printf("  %-30s %-12s %-10s %-4s %s\n",
-		strings.Repeat("-", 30),
+	fmt.Printf("  %-s %-12s %-10s %-4s %s\n", padRight("SLUG", slugWidth), "CREATED", "STATUS", "PRD", "FEATURE")
+	fmt.Printf("  %-s %-12s %-10s %-4s %s\n",
+		strings.Repeat("-", slugWidth),
 		strings.Repeat("-", 10),
 		strings.Repeat("-", 8),
 		strings.Repeat("-", 3),
@@ -75,8 +78,8 @@ func runProposalList(projectRoot string) {
 		if p.FeatureStatus != "" {
 			featureStatus = p.FeatureStatus
 		}
-		fmt.Printf("  %-30s %-12s %-10s %-4s %s\n",
-			truncateSlug(p.Slug, 30),
+		fmt.Printf("  %-s %-12s %-10s %-4s %s\n",
+			padRight(truncateSlug(p.Slug, slugWidth), slugWidth),
 			p.Created,
 			p.Status,
 			prdMark,
@@ -119,6 +122,47 @@ func truncateSlug(s string, maxLen int) string {
 		return s
 	}
 	return s[:maxLen-3] + "..."
+}
+
+const (
+	slugColMinWidth = 30
+	slugColMaxWidth = 60
+)
+
+// calcSlugColWidth returns the dynamic column width for slug/name display.
+// Width = clamp(max(30, maxSlugLen+2), 60).
+func calcSlugColWidth(slugLens []int) int {
+	maxLen := 0
+	for _, l := range slugLens {
+		if l > maxLen {
+			maxLen = l
+		}
+	}
+	width := maxLen + 2
+	if width < slugColMinWidth {
+		width = slugColMinWidth
+	}
+	if width > slugColMaxWidth {
+		width = slugColMaxWidth
+	}
+	return width
+}
+
+// mapProposalsToSlugLens extracts slug lengths from proposal list.
+func mapProposalsToSlugLens(proposals []proposal.Proposal) []int {
+	lens := make([]int, len(proposals))
+	for i, p := range proposals {
+		lens[i] = len(p.Slug)
+	}
+	return lens
+}
+
+// padRight pads a string to exactly n characters with trailing spaces.
+func padRight(s string, n int) string {
+	if len(s) >= n {
+		return s
+	}
+	return s + strings.Repeat(" ", n-len(s))
 }
 
 func newErrProposalDiscovery(err error) *AIError {

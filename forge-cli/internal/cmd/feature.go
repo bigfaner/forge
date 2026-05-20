@@ -215,15 +215,18 @@ func runFeatureList(_ *cobra.Command, _ []string) {
 		return
 	}
 
+	// Calculate dynamic slug column width.
+	slugWidth := calcSlugColWidth(mapFeaturesToSlugLens(features))
+
 	PrintBlockStart()
 	PrintField("FEATURES", fmt.Sprintf("%d found", len(features)))
 	fmt.Println()
 
 	// Table header
-	fmt.Printf("  %-30s %-12s %-10s %-10s %-10s %-10s %-10s\n",
-		"SLUG", "STATUS", "PROGRESS", "PRD", "DESIGN", "UI", "TESTS")
-	fmt.Printf("  %-30s %-12s %-10s %-10s %-10s %-10s %-10s\n",
-		strings.Repeat("-", 30),
+	fmt.Printf("  %-s %-12s %-10s %-10s %-10s %-10s %-10s\n",
+		padRight("SLUG", slugWidth), "STATUS", "PROGRESS", "PRD", "DESIGN", "UI", "TESTS")
+	fmt.Printf("  %-s %-12s %-10s %-10s %-10s %-10s %-10s\n",
+		strings.Repeat("-", slugWidth),
 		strings.Repeat("-", 10),
 		strings.Repeat("-", 8),
 		strings.Repeat("-", 5),
@@ -233,8 +236,8 @@ func runFeatureList(_ *cobra.Command, _ []string) {
 
 	for _, f := range features {
 		progress := fmt.Sprintf("%d/%d", f.Completed, f.Total)
-		fmt.Printf("  %-30s %-12s %-10s %-10s %-10s %-10s %-10s\n",
-			truncateSlug(f.Slug, 30),
+		fmt.Printf("  %-s %-12s %-10s %-10s %-10s %-10s %-10s\n",
+			padRight(truncateSlug(f.Slug, slugWidth), slugWidth),
 			f.Status,
 			progress,
 			scoreDisplay(f.PRDScore),
@@ -460,4 +463,13 @@ func newErrFeatureDiscovery(err error) *AIError {
 		"Ensure docs/features/ directory exists",
 		"ls docs/features/",
 	)
+}
+
+// mapFeaturesToSlugLens extracts slug lengths from feature list.
+func mapFeaturesToSlugLens(features []featureInfo) []int {
+	lens := make([]int, len(features))
+	for i, f := range features {
+		lens[i] = len(f.Slug)
+	}
+	return lens
 }
