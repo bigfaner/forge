@@ -70,13 +70,7 @@ just fmt {{SCOPE}}
 just lint {{SCOPE}}
 ```
 
-**Targeted tests** — run framework-native test commands on changed packages/files only:
-
-```bash
-go test -race -cover ./changed/package/...
-```
-
-Replace `./changed/package/...` with the actual import paths of packages you modified. Run targeted tests for each affected package.
+**Targeted tests** — run the project's test command on changed packages/modules only. Use the appropriate framework-native command for this project (e.g., `go test`, `pytest`, `jest`). Scope to the files or packages you modified.
 
 > **Note:** Full project-wide tests run at CLI submit (`forge task submit`) — agent runs targeted tests only.
 

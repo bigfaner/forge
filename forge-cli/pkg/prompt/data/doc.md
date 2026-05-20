@@ -13,8 +13,12 @@ Output: `Step 1/3: Reading task definition... DONE`
 
 ### Step 2: Execute Document Work
 
-Perform the documentation work described in the task file:
-- Create new documents or modify existing ones as specified
+First, identify the task type from the task file description:
+- **Create**: Write a new document from scratch. Follow the project's documentation conventions for structure, naming, and placement.
+- **Modify**: Update an existing document. Read the current content first, then apply the specified changes while preserving the overall structure and style.
+- **Delete**: Remove a document. Confirm the task explicitly requires deletion, verify no other documents reference it (or update those references), then remove the file.
+
+Then execute according to the identified type:
 - Follow the project's existing documentation conventions and style
 - Ensure cross-references to other documents are accurate
 - Use consistent terminology throughout

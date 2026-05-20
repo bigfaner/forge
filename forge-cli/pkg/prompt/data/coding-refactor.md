@@ -16,7 +16,7 @@ External behavior = function signatures, return types, observable output (stdout
 
 Before starting, verify all three conditions:
 1. `git status` is clean (no uncommitted changes) — refactoring requires a clean starting state for safe rollback
-2. Targeted tests pass (`go test -race ./affected/package/...`) — refactoring on a red test suite is undefined behavior (you can't verify "no behavior change" if the baseline is already broken)
+2. Targeted tests pass — run the project's test command on affected packages/modules. Refactoring on a red test suite is undefined behavior (you can't verify "no behavior change" if the baseline is already broken)
 3. If current branch is main/trunk, output a warning but allow (team conventions vary)
 
 If any check fails, stop and report.
@@ -102,13 +102,13 @@ The goal is to keep the codebase compilable at every intermediate step. Never de
   - If the module has explicit export lists, update them accordingly
   - Be aware that re-export aliases may affect bundler optimization (tree-shaking)
 - If circular dependency detected: place alias in a thin shim module, or skip alias and migrate all callers in one batch instead
-- Run quick verification: `just compile {{SCOPE}} && go test -race ./affected/package/...`
+- Run quick verification: `just compile {{SCOPE}}` and run targeted tests on affected packages/modules
 - All tests must pass — old code is untouched, new code coexists
 
 **Phase B — Migrate callers in small batches:**
 - Group affected files into batches (see batch sizing below)
 - Per batch: update references from old name to new name across all syntactic layers in those files
-- After each batch: `just compile {{SCOPE}} && go test -race ./affected/package/...`
+- After each batch: `just compile {{SCOPE}}` and run targeted tests on affected packages/modules
 - If a batch fails: fix within the batch and retry. Max 3 retries per batch.
 - Continue to next batch only after current batch passes
 
@@ -138,7 +138,7 @@ Replacement order within each file: longest identifier first → shortest last (
 #### Behavioral Refactors
 
 Proceed incrementally — make one change, verify, make the next.
-- After each logical change: `just compile {{SCOPE}} && go test -race ./affected/package/...`
+- After each logical change: `just compile {{SCOPE}}` and run targeted tests on affected packages/modules
 - Max 3 retries per failure. If still failing, stop and report.
 
 Output: `Step 3/4: Refactoring... DONE`
@@ -155,13 +155,7 @@ just fmt {{SCOPE}}
 just lint {{SCOPE}}
 ```
 
-**Targeted tests** — run framework-native test commands on changed packages/files only:
-
-```bash
-go test -race -cover ./changed/package/...
-```
-
-Replace `./changed/package/...` with the actual import paths of packages you modified. Run targeted tests for each affected package.
+**Targeted tests** — run the project's test command on changed packages/modules only. Use the appropriate framework-native command for this project (e.g., `go test`, `pytest`, `jest`). Scope to the files or packages you modified.
 
 > **Note:** Full project-wide tests run at CLI submit (`forge task submit`) — agent runs targeted tests only.
 
