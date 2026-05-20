@@ -1,0 +1,122 @@
+{
+  "feature": "prompt-template-audit",
+  "proposal": "docs/proposals/prompt-template-audit/proposal.md",
+  "created": "2026-05-20",
+  "tasks": {
+    "1-fix-double-submit": {
+      "id": "1",
+      "title": "P0: 移除6个模板的显式submit步骤（双重提交）",
+      "priority": "P0",
+      "estimatedTime": "30m",
+      "status": "pending",
+      "file": "1-fix-double-submit.md",
+      "record": "records/1-fix-double-submit.md",
+      "type": "doc"
+    },
+    "2-fix-coding-fix-template": {
+      "id": "2",
+      "title": "P1: 修复 coding-fix 模板缺失和顺序问题",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "status": "pending",
+      "file": "2-fix-coding-fix-template.md",
+      "record": "records/2-fix-coding-fix-template.md",
+      "type": "doc"
+    },
+    "3-fix-gate-template": {
+      "id": "3",
+      "title": "P1: 修复 gate 模板缺失 conventions 和 PHASE_SUMMARY",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "status": "pending",
+      "file": "3-fix-gate-template.md",
+      "record": "records/3-fix-gate-template.md",
+      "type": "doc"
+    },
+    "4-rename-hard-rule-tags": {
+      "id": "4",
+      "title": "P1: test.* 模板 HARD-RULE 标签重命名为 TASK-CONSTRAINTS",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "status": "pending",
+      "file": "4-rename-hard-rule-tags.md",
+      "record": "records/4-rename-hard-rule-tags.md",
+      "type": "doc"
+    },
+    "5-cleanup-redundant-declarations": {
+      "id": "5",
+      "title": "P1: 清理未使用占位符声明 + coding-refactor 格式统一",
+      "priority": "P1",
+      "estimatedTime": "20m",
+      "status": "pending",
+      "file": "5-cleanup-redundant-declarations.md",
+      "record": "records/5-cleanup-redundant-declarations.md",
+      "type": "doc"
+    },
+    "6-enhance-template-precision": {
+      "id": "6",
+      "title": "P2: 增强模板指令精确度",
+      "priority": "P2",
+      "estimatedTime": "45m",
+      "dependencies": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "status": "pending",
+      "file": "6-enhance-template-precision.md",
+      "record": "records/6-enhance-template-precision.md",
+      "type": "doc"
+    },
+    "7-p3-template-misc-optimization": {
+      "id": "7",
+      "title": "P3: coding-refactor fmt处理简化 + coding-enhancement同步注释",
+      "priority": "P2",
+      "estimatedTime": "20m",
+      "dependencies": [
+        "6"
+      ],
+      "status": "pending",
+      "file": "7-p3-template-misc-optimization.md",
+      "record": "records/7-p3-template-misc-optimization.md",
+      "type": "doc"
+    },
+    "8-prompt-go-comments": {
+      "id": "8",
+      "title": "P3: prompt.go 添加占位符 escaping 警告注释",
+      "priority": "P2",
+      "estimatedTime": "15m",
+      "status": "pending",
+      "file": "8-prompt-go-comments.md",
+      "record": "records/8-prompt-go-comments.md",
+      "scope": "backend",
+      "type": "coding.enhancement"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "pending",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "scope": "all",
+      "type": "doc.drift"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
