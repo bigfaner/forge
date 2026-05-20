@@ -19,7 +19,7 @@
       "title": "Isolate justfile-canonical-e2e/ to TestMain auto-build",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "2-isolate-justfile-canonical-e2e.md",
       "record": "records/2-isolate-justfile-canonical-e2e.md",
       "scope": "backend",
