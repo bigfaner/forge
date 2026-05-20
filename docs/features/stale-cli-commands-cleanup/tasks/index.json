@@ -1,0 +1,54 @@
+{
+  "feature": "stale-cli-commands-cleanup",
+  "proposal": "docs/proposals/stale-cli-commands-cleanup/proposal.md",
+  "created": "2026-05-20",
+  "tasks": {
+    "1-fix-stale-cli-refs": {
+      "id": "1",
+      "title": "替换所有 skill 文件中的过期 CLI 命令引用",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "1-fix-stale-cli-refs.md",
+      "record": "records/1-fix-stale-cli-refs.md",
+      "type": "doc"
+    },
+    "2-create-cli-reference": {
+      "id": "2",
+      "title": "创建 forge CLI 命令参考文档",
+      "priority": "P2",
+      "estimatedTime": "30m",
+      "status": "pending",
+      "file": "2-create-cli-reference.md",
+      "record": "records/2-create-cli-reference.md",
+      "type": "doc"
+    },
+    "eval-doc": {
+      "id": "T-eval-doc",
+      "title": "Evaluate Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "2"
+      ],
+      "status": "pending",
+      "file": "eval-doc.md",
+      "record": "records/eval-doc.md",
+      "scope": "all",
+      "type": "doc.eval"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
