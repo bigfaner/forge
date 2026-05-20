@@ -177,10 +177,10 @@ func TestTC_002_ListTypesShowsDeprecatedImplementation(t *testing.T) {
 
 func TestTC_003_ValidateIndexAcceptsNewTypeValues(t *testing.T) {
 	tasks := map[string]indexTask{
-		"1-feat": {ID: "1.1", Title: "Feature task", Priority: "P0", Status: "pending", File: "1-feat.md", Type: "feature"},
-		"2-enh":  {ID: "1.2", Title: "Enhancement task", Priority: "P1", Status: "pending", File: "2-enh.md", Type: "enhancement"},
-		"3-clean": {ID: "1.3", Title: "Cleanup task", Priority: "P2", Status: "pending", File: "3-clean.md", Type: "cleanup"},
-		"4-ref":  {ID: "1.4", Title: "Refactor task", Priority: "P1", Status: "pending", File: "4-ref.md", Type: "refactor"},
+		"1-feat": {ID: "1.1", Title: "Feature task", Priority: "P0", Status: "pending", File: "1-feat.md", Type: "coding.feature"},
+		"2-enh":  {ID: "1.2", Title: "Enhancement task", Priority: "P1", Status: "pending", File: "2-enh.md", Type: "coding.enhancement"},
+		"3-clean": {ID: "1.3", Title: "Cleanup task", Priority: "P2", Status: "pending", File: "3-clean.md", Type: "coding.cleanup"},
+		"4-ref":  {ID: "1.4", Title: "Refactor task", Priority: "P1", Status: "pending", File: "4-ref.md", Type: "coding.refactor"},
 	}
 	dir := setupTempFeature(t, tasks)
 
@@ -197,7 +197,7 @@ func TestTC_003_ValidateIndexAcceptsNewTypeValues(t *testing.T) {
 
 func TestTC_004_BuildIndexGeneratesPipelineForFeature(t *testing.T) {
 	tasks := map[string]indexTask{
-		"1-feat": {ID: "1.1", Title: "Feature task", Priority: "P0", Status: "pending", File: "1-feat.md", Type: "feature"},
+		"1-feat": {ID: "1.1", Title: "Feature task", Priority: "P0", Status: "pending", File: "1-feat.md", Type: "coding.feature"},
 	}
 	dir := setupTempFeature(t, tasks)
 
@@ -216,7 +216,7 @@ func TestTC_004_BuildIndexGeneratesPipelineForFeature(t *testing.T) {
 
 func TestTC_005_BuildIndexGeneratesPipelineForEnhancement(t *testing.T) {
 	tasks := map[string]indexTask{
-		"1-enh": {ID: "1.1", Title: "Enhancement task", Priority: "P0", Status: "pending", File: "1-enh.md", Type: "enhancement"},
+		"1-enh": {ID: "1.1", Title: "Enhancement task", Priority: "P0", Status: "pending", File: "1-enh.md", Type: "coding.enhancement"},
 	}
 	dir := setupTempFeature(t, tasks)
 
@@ -235,7 +235,7 @@ func TestTC_005_BuildIndexGeneratesPipelineForEnhancement(t *testing.T) {
 
 func TestTC_006_BuildIndexGeneratesPipelineForFix(t *testing.T) {
 	tasks := map[string]indexTask{
-		"1-fix": {ID: "fix-1", Title: "Fix task", Priority: "P0", Status: "pending", File: "1-fix.md", Type: "fix"},
+		"1-fix": {ID: "fix-1", Title: "Fix task", Priority: "P0", Status: "pending", File: "1-fix.md", Type: "coding.fix"},
 	}
 	dir := setupTempFeature(t, tasks)
 
@@ -254,7 +254,7 @@ func TestTC_006_BuildIndexGeneratesPipelineForFix(t *testing.T) {
 
 func TestTC_007_BuildIndexSkipsPipelineForCleanupOnly(t *testing.T) {
 	tasks := map[string]indexTask{
-		"1-clean": {ID: "1.1", Title: "Cleanup task", Priority: "P1", Status: "pending", File: "1-clean.md", Type: "cleanup"},
+		"1-clean": {ID: "1.1", Title: "Cleanup task", Priority: "P1", Status: "pending", File: "1-clean.md", Type: "coding.cleanup"},
 	}
 	dir := setupTempFeature(t, tasks)
 
@@ -275,7 +275,7 @@ func TestTC_007_BuildIndexSkipsPipelineForCleanupOnly(t *testing.T) {
 
 func TestTC_008_BuildIndexSkipsPipelineForRefactorOnly(t *testing.T) {
 	tasks := map[string]indexTask{
-		"1-ref": {ID: "1.1", Title: "Refactor task", Priority: "P1", Status: "pending", File: "1-ref.md", Type: "refactor"},
+		"1-ref": {ID: "1.1", Title: "Refactor task", Priority: "P1", Status: "pending", File: "1-ref.md", Type: "coding.refactor"},
 	}
 	dir := setupTempFeature(t, tasks)
 
@@ -319,8 +319,8 @@ func TestTC_009_BuildIndexGeneratesEvalDocForDocumentationOnly(t *testing.T) {
 
 func TestTC_010_BuildIndexNoPipelineNoEvalForCleanupRefactor(t *testing.T) {
 	tasks := map[string]indexTask{
-		"1-clean": {ID: "1.1", Title: "Cleanup task", Priority: "P1", Status: "pending", File: "1-clean.md", Type: "cleanup"},
-		"2-ref":   {ID: "1.2", Title: "Refactor task", Priority: "P1", Status: "pending", File: "2-ref.md", Type: "refactor"},
+		"1-clean": {ID: "1.1", Title: "Cleanup task", Priority: "P1", Status: "pending", File: "1-clean.md", Type: "coding.cleanup"},
+		"2-ref":   {ID: "1.2", Title: "Refactor task", Priority: "P1", Status: "pending", File: "2-ref.md", Type: "coding.refactor"},
 	}
 	dir := setupTempFeature(t, tasks)
 
@@ -343,7 +343,7 @@ func TestTC_010_BuildIndexNoPipelineNoEvalForCleanupRefactor(t *testing.T) {
 
 func TestTC_011_QualityGateSkipsForCleanupOnly(t *testing.T) {
 	tasks := map[string]indexTask{
-		"1-clean": {ID: "1.1", Title: "Cleanup task", Priority: "P1", Status: "completed", File: "1-clean.md", Type: "cleanup", Record: "records/1-clean.md"},
+		"1-clean": {ID: "1.1", Title: "Cleanup task", Priority: "P1", Status: "completed", File: "1-clean.md", Type: "coding.cleanup", Record: "records/1-clean.md"},
 	}
 	dir := setupTempFeature(t, tasks)
 
@@ -384,7 +384,7 @@ func TestTC_011_QualityGateSkipsForCleanupOnly(t *testing.T) {
 
 func TestTC_012_PromptReturnsFeatureTemplate(t *testing.T) {
 	tasks := map[string]indexTask{
-		"1-feat": {ID: "1.1", Title: "Feature task", Priority: "P0", Status: "pending", File: "1-feat.md", Type: "feature"},
+		"1-feat": {ID: "1.1", Title: "Feature task", Priority: "P0", Status: "pending", File: "1-feat.md", Type: "coding.feature"},
 	}
 	dir := setupTempFeature(t, tasks)
 
@@ -407,7 +407,7 @@ func TestTC_012_PromptReturnsFeatureTemplate(t *testing.T) {
 
 func TestTC_013_PromptReturnsCleanupTemplate(t *testing.T) {
 	tasks := map[string]indexTask{
-		"1-clean": {ID: "1.1", Title: "Cleanup task", Priority: "P1", Status: "pending", File: "1-clean.md", Type: "cleanup"},
+		"1-clean": {ID: "1.1", Title: "Cleanup task", Priority: "P1", Status: "pending", File: "1-clean.md", Type: "coding.cleanup"},
 	}
 	dir := setupTempFeature(t, tasks)
 
@@ -429,7 +429,7 @@ func TestTC_013_PromptReturnsCleanupTemplate(t *testing.T) {
 
 func TestTC_014_PromptReturnsRefactorTemplate(t *testing.T) {
 	tasks := map[string]indexTask{
-		"1-ref": {ID: "1.1", Title: "Refactor task", Priority: "P1", Status: "pending", File: "1-ref.md", Type: "refactor"},
+		"1-ref": {ID: "1.1", Title: "Refactor task", Priority: "P1", Status: "pending", File: "1-ref.md", Type: "coding.refactor"},
 	}
 	dir := setupTempFeature(t, tasks)
 
@@ -515,7 +515,7 @@ func TestTC_017_QualityGateCreatesCleanupTypeOnLintFailure(t *testing.T) {
 
 func TestTC_018_RecordHasReclassificationWhenTypeShifts(t *testing.T) {
 	tasks := map[string]indexTask{
-		"1-fix": {ID: "fix-1", Title: "Fix task", Priority: "P0", Status: "in_progress", File: "1-fix.md", Type: "fix", Record: "records/1-fix.md"},
+		"1-fix": {ID: "fix-1", Title: "Fix task", Priority: "P0", Status: "in_progress", File: "1-fix.md", Type: "coding.fix", Record: "records/1-fix.md"},
 	}
 	dir := setupTempFeature(t, tasks)
 
@@ -582,7 +582,7 @@ func TestTC_018_RecordHasReclassificationWhenTypeShifts(t *testing.T) {
 
 func TestTC_019_RecordOmitsReclassificationWhenNoShift(t *testing.T) {
 	tasks := map[string]indexTask{
-		"1-feat": {ID: "1.1", Title: "Feature task", Priority: "P0", Status: "in_progress", File: "1-feat.md", Type: "feature", Record: "records/1-feat.md"},
+		"1-feat": {ID: "1.1", Title: "Feature task", Priority: "P0", Status: "in_progress", File: "1-feat.md", Type: "coding.feature", Record: "records/1-feat.md"},
 	}
 	dir := setupTempFeature(t, tasks)
 
@@ -643,7 +643,7 @@ func TestTC_019_RecordOmitsReclassificationWhenNoShift(t *testing.T) {
 func TestTC_020_MigrateMapsImplementationToFeature(t *testing.T) {
 	tasks := map[string]indexTask{
 		"1-impl": {ID: "1.1", Title: "Implementation task", Priority: "P0", Status: "pending", File: "1-impl.md", Type: "implementation"},
-		"2-clean": {ID: "1.2", Title: "Cleanup task", Priority: "P1", Status: "pending", File: "2-clean.md", Type: "cleanup"},
+		"2-clean": {ID: "1.2", Title: "Cleanup task", Priority: "P1", Status: "pending", File: "2-clean.md", Type: "coding.cleanup"},
 	}
 	dir := setupTempFeature(t, tasks)
 

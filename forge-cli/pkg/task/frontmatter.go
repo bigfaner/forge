@@ -18,6 +18,7 @@ type FrontmatterData struct {
 	Breaking      bool     `yaml:"breaking"`
 	MainSession   bool     `yaml:"mainSession"`
 	Type          string   `yaml:"type"`
+	Coverage      *int     `yaml:"coverage"`
 }
 
 // ParseFrontmatter extracts YAML frontmatter from a markdown file.

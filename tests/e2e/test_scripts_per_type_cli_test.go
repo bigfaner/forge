@@ -214,7 +214,7 @@ func TestTC_001_TaskIndexCreatesPerTypeTasksForMultiType(t *testing.T) {
 // TC-002: forge task index creates per-type tasks with correct type field
 // ==============================================================================
 
-// Traceability: TC-002 -> test-scripts-per-type proposal: task type = test-pipeline.gen-scripts
+// Traceability: TC-002 -> test-scripts-per-type proposal: task type = test.gen-scripts
 func TestTC_002_TaskIndexPerTypeTasksHaveCorrectType(t *testing.T) {
 	dir := setupFeatureProject(t, "type-check-feat", true, []string{"go"}, multiTypeTestCases)
 
@@ -233,8 +233,8 @@ func TestTC_002_TaskIndexPerTypeTasksHaveCorrectType(t *testing.T) {
 	for _, key := range []string{"gen-test-scripts-go-api", "gen-test-scripts-go-cli"} {
 		task, ok := idx.Tasks[key]
 		require.True(t, ok, "task %s should exist", key)
-		assert.Equal(t, "test-pipeline.gen-scripts", task.Type,
-			"task %s should have type test-pipeline.gen-scripts", key)
+		assert.Equal(t, "test.gen-scripts", task.Type,
+			"task %s should have type test.gen-scripts", key)
 	}
 }
 
@@ -356,8 +356,8 @@ func TestTC_006_TaskIndexRunDependsOnAllPerTypeGenTasks(t *testing.T) {
 	require.NoError(t, err, "run task .md file should exist")
 	runMDContent := string(runMDData)
 
-	assert.Contains(t, runMDContent, "T-test-2-api", "run task should depend on T-test-2-api")
-	assert.Contains(t, runMDContent, "T-test-2-cli", "run task should depend on T-test-2-cli")
+	assert.Contains(t, runMDContent, "T-test-gen-scripts-api", "run task should depend on T-test-gen-scripts-api")
+	assert.Contains(t, runMDContent, "T-test-gen-scripts-cli", "run task should depend on T-test-gen-scripts-cli")
 }
 
 // ==============================================================================
@@ -411,9 +411,9 @@ func TestTC_007_TaskIndexMultiProfilePerTypeTasks(t *testing.T) {
 		content := string(mdData)
 		// ID should have profile letter suffix (a for javascript, b for go)
 		if strings.HasPrefix(key, "gen-test-scripts-javascript") {
-			assert.Contains(t, content, "T-test-2a-", "%s.md should have profile-a suffixed ID", key)
+			assert.Contains(t, content, "T-test-gen-scriptsa-", "%s.md should have profile-a suffixed ID", key)
 		} else {
-			assert.Contains(t, content, "T-test-2b-", "%s.md should have profile-b suffixed ID", key)
+			assert.Contains(t, content, "T-test-gen-scriptsb-", "%s.md should have profile-b suffixed ID", key)
 		}
 	}
 }
@@ -452,8 +452,8 @@ func TestTC_008_TaskIndexQuickModePerTypeTasks(t *testing.T) {
 	require.NoError(t, err, "quick graduate task .md should exist")
 	gradContent := string(gradMDData)
 
-	assert.Contains(t, gradContent, "T-quick-2-api", "quick graduate task should depend on T-quick-2-api")
-	assert.Contains(t, gradContent, "T-quick-2-cli", "quick graduate task should depend on T-quick-2-cli")
+	assert.Contains(t, gradContent, "T-quick-gen-and-run-api", "quick graduate task should depend on T-quick-gen-and-run-api")
+	assert.Contains(t, gradContent, "T-quick-gen-and-run-cli", "quick graduate task should depend on T-quick-gen-and-run-cli")
 }
 
 // ==============================================================================
@@ -558,8 +558,8 @@ func TestTC_011_PerTypeGenScriptsMdHasCorrectTaskIDs(t *testing.T) {
 	// Verify task IDs have type suffix
 	// go capabilities: [api, cli]
 	expectedIDs := map[string]string{
-		"gen-test-scripts-go-api": "T-test-2-api",
-		"gen-test-scripts-go-cli": "T-test-2-cli",
+		"gen-test-scripts-go-api": "T-test-gen-scripts-api",
+		"gen-test-scripts-go-cli": "T-test-gen-scripts-cli",
 	}
 	for key, wantID := range expectedIDs {
 		task, ok := idx.Tasks[key]
@@ -600,5 +600,5 @@ func TestTC_012_TaskIndexSharedInfrastructureNotDuplicated(t *testing.T) {
 	// Verify shared tasks have correct types
 	genCases, ok := idx.Tasks["gen-test-cases"]
 	require.True(t, ok)
-	assert.Equal(t, "test-pipeline.gen-cases", genCases.Type)
+	assert.Equal(t, "test.gen-cases", genCases.Type)
 }

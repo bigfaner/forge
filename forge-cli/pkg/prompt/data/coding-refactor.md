@@ -85,6 +85,11 @@ Output: `Step 2/4: Impact mapping... DONE (type: <structural|behavioral>, files:
 
 ### Step 3: Refactor
 
+<IMPORTANT>
+覆盖率策略: {{COVERAGE_STRATEGY}} — {{COVERAGE_TARGET}}。不新增测试，不追求高覆盖率。
+增量编译策略: 修改一个文件后立即 `just compile {{SCOPE}}` → 通过则继续下一个文件 → 失败则立即修复当前文件，不要继续修改其他文件。
+</IMPORTANT>
+
 **Universal constraints:**
 - External behavior must remain unchanged
 - If test assertions need changes, the refactor is changing behavior — output `BEHAVIOR_CHANGE_DETECTED: <description>` and skip that specific change. Continue with the rest.
@@ -172,7 +177,7 @@ Replace `./changed/package/...` with the actual import paths of packages you mod
 | `lint` | If `just lint` fails: `git stash && just lint {{SCOPE}}` to check pre-existing. New lint errors from refactor must be fixed. Pre-existing ones can be skipped. Max 3 retries. |
 | `targeted test` | Distinguish: assertion changes → `BEHAVIOR_CHANGE_DETECTED` + skip; reference updates → fix + retry (max 3 times) |
 
-Coverage is informational for refactoring — output the number but do not gate on it. Refactoring should not significantly change coverage. If coverage drops >2%, investigate and report.
+Coverage is informational for refactoring — output the number but do not gate on it. If coverage drops >2%, investigate and report.
 
 Max 3 retries at this step. If still failing after 3 attempts, stop and report the task as blocked with details of the last failure.
 

@@ -844,6 +844,346 @@ func TestSynthesize_CodingTemplates_ContainCodingPrinciples(t *testing.T) {
 	}
 }
 
+// --- Coverage target injection tests ---
+
+func TestSynthesize_CodingFeature_DefaultCoverageTarget(t *testing.T) {
+	dir := t.TempDir()
+	tasks := map[string]task.Task{
+		"1.1": {
+			ID:     "1.1",
+			Title:  "Feature task",
+			Status: "pending",
+			File:   "1.1.md",
+			Record: "records/1.1.md",
+			Type:   task.TypeCodingFeature,
+			Scope:  "backend",
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "1.1"}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(result, "percentage") {
+		t.Error("coding.feature prompt should contain COVERAGE_STRATEGY 'percentage'")
+	}
+	if !strings.Contains(result, "达到 80% 测试覆盖率") {
+		t.Error("coding.feature prompt should contain COVERAGE_TARGET '达到 80% 测试覆盖率'")
+	}
+}
+
+func TestSynthesize_CodingFix_DefaultCoverageTarget(t *testing.T) {
+	dir := t.TempDir()
+	tasks := map[string]task.Task{
+		"fix-1": {
+			ID:     "fix-1",
+			Title:  "Fix task",
+			Status: "pending",
+			File:   "fix-1.md",
+			Record: "records/fix-1.md",
+			Type:   task.TypeCodingFix,
+			Scope:  "backend",
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "fix-1"}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(result, "percentage") {
+		t.Error("coding.fix prompt should contain COVERAGE_STRATEGY 'percentage'")
+	}
+	if !strings.Contains(result, "达到 60% 测试覆盖率") {
+		t.Error("coding.fix prompt should contain COVERAGE_TARGET '达到 60% 测试覆盖率'")
+	}
+}
+
+func TestSynthesize_CodingRefactor_MaintainStrategy(t *testing.T) {
+	dir := t.TempDir()
+	tasks := map[string]task.Task{
+		"1.1": {
+			ID:     "1.1",
+			Title:  "Refactor task",
+			Status: "pending",
+			File:   "1.1.md",
+			Record: "records/1.1.md",
+			Type:   task.TypeCodingRefactor,
+			Scope:  "backend",
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "1.1"}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(result, "maintain") {
+		t.Error("coding.refactor prompt should contain COVERAGE_STRATEGY 'maintain'")
+	}
+	if !strings.Contains(result, "保持现有覆盖率，下降不超过 2%") {
+		t.Error("coding.refactor prompt should contain COVERAGE_TARGET '保持现有覆盖率，下降不超过 2%'")
+	}
+}
+
+func TestSynthesize_FrontmatterCoverageOverridesConfig(t *testing.T) {
+	dir := t.TempDir()
+	coverage90 := 90
+	tasks := map[string]task.Task{
+		"1.1": {
+			ID:       "1.1",
+			Title:    "Feature task with custom coverage",
+			Status:   "pending",
+			File:     "1.1.md",
+			Record:   "records/1.1.md",
+			Type:     task.TypeCodingFeature,
+			Scope:    "backend",
+			Coverage: &coverage90,
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "1.1"}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// Frontmatter coverage=90 should override the default 80
+	if !strings.Contains(result, "达到 90% 测试覆盖率") {
+		t.Errorf("frontmatter coverage=90 should produce '达到 90%% 测试覆盖率', got:\n%s", result)
+	}
+}
+
+func TestSynthesize_NonTestableType_NoCoverageInjection(t *testing.T) {
+	nonTestableTypes := []string{
+		task.TypeDoc,
+		task.TypeDocEval,
+		task.TypeDocSummary,
+		task.TypeDocConsolidate,
+		task.TypeDocDrift,
+		task.TypeGate,
+		task.TypeTestGenCases,
+		task.TypeTestEvalCases,
+		task.TypeTestGenScripts,
+		task.TypeTestRun,
+		task.TypeCleanCode,
+	}
+
+	for _, typ := range nonTestableTypes {
+		t.Run(typ, func(t *testing.T) {
+			dir := t.TempDir()
+			taskID := "1.1"
+			tasks := map[string]task.Task{
+				taskID: {
+					ID:     taskID,
+					Title:  "Non-testable task",
+					Status: "pending",
+					File:   "1.1.md",
+					Record: "records/1.1.md",
+					Type:   typ,
+					Scope:  "backend",
+				},
+			}
+			setupFeatureDir(t, dir, tasks)
+
+			opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: taskID}
+			result, err := Synthesize(opts)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if strings.Contains(result, "COVERAGE_TARGET") {
+				t.Errorf("%s template: should not contain unreplaced COVERAGE_TARGET placeholder", typ)
+			}
+			if strings.Contains(result, "COVERAGE_STRATEGY") {
+				t.Errorf("%s template: should not contain unreplaced COVERAGE_STRATEGY placeholder", typ)
+			}
+		})
+	}
+}
+
+func TestSynthesize_ConfigCoverageOverridesDefault(t *testing.T) {
+	// Create a config.yaml with custom coverage for coding.feature
+	dir := t.TempDir()
+	forgeDir := filepath.Join(dir, ".forge")
+	if err := os.MkdirAll(forgeDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	configContent := `coverage:
+  coding.feature:
+    type: percentage
+    percentage: 75
+`
+	if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(configContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	tasks := map[string]task.Task{
+		"1.1": {
+			ID:     "1.1",
+			Title:  "Feature task",
+			Status: "pending",
+			File:   "1.1.md",
+			Record: "records/1.1.md",
+			Type:   task.TypeCodingFeature,
+			Scope:  "backend",
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "1.1"}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// Config overrides default: 75 instead of 80
+	if !strings.Contains(result, "达到 75% 测试覆盖率") {
+		t.Errorf("config coverage=75 should produce '达到 75%% 测试覆盖率', got:\n%s", result)
+	}
+}
+
+// --- Coverage directive actionability tests ---
+// Verify that templates contain actionable instructions guiding agent behavior.
+
+func TestSynthesize_CodingFeature_CoverageDirectiveActionable(t *testing.T) {
+	dir := t.TempDir()
+	tasks := map[string]task.Task{
+		"1.1": {
+			ID:     "1.1",
+			Title:  "Feature task",
+			Status: "pending",
+			File:   "1.1.md",
+			Record: "records/1.1.md",
+			Type:   task.TypeCodingFeature,
+			Scope:  "backend",
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "1.1"}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// Feature template should tell agent to stop adding tests when target is reached
+	if !strings.Contains(result, "达到目标后停止补充测试") {
+		t.Error("coding.feature prompt should contain actionable directive: '达到目标后停止补充测试'")
+	}
+}
+
+func TestSynthesize_CodingEnhancement_CoverageDirectiveActionable(t *testing.T) {
+	dir := t.TempDir()
+	tasks := map[string]task.Task{
+		"1.1": {
+			ID:     "1.1",
+			Title:  "Enhancement task",
+			Status: "pending",
+			File:   "1.1.md",
+			Record: "records/1.1.md",
+			Type:   task.TypeCodingEnhancement,
+			Scope:  "backend",
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "1.1"}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// Enhancement template should tell agent to stop adding tests when target is reached
+	if !strings.Contains(result, "达到目标后停止补充测试") {
+		t.Error("coding.enhancement prompt should contain actionable directive: '达到目标后停止补充测试'")
+	}
+}
+
+func TestSynthesize_CodingFix_CoverageDirectiveActionable(t *testing.T) {
+	dir := t.TempDir()
+	tasks := map[string]task.Task{
+		"fix-1": {
+			ID:     "fix-1",
+			Title:  "Fix task",
+			Status: "pending",
+			File:   "fix-1.md",
+			Record: "records/fix-1.md",
+			Type:   task.TypeCodingFix,
+			Scope:  "backend",
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "fix-1"}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// Fix template should tell agent to write targeted tests, not chase high coverage
+	if !strings.Contains(result, "写针对性修复测试") {
+		t.Error("coding.fix prompt should contain actionable directive: '写针对性修复测试'")
+	}
+	if !strings.Contains(result, "达到目标后停止补充测试") {
+		t.Error("coding.fix prompt should contain actionable directive: '达到目标后停止补充测试'")
+	}
+}
+
+func TestSynthesize_CodingRefactor_CoverageDirectiveActionable(t *testing.T) {
+	dir := t.TempDir()
+	tasks := map[string]task.Task{
+		"1.1": {
+			ID:     "1.1",
+			Title:  "Refactor task",
+			Status: "pending",
+			File:   "1.1.md",
+			Record: "records/1.1.md",
+			Type:   task.TypeCodingRefactor,
+			Scope:  "backend",
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "1.1"}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// Refactor template should contain incremental compile strategy
+	if !strings.Contains(result, "just compile") {
+		t.Error("coding.refactor prompt should contain incremental compile strategy with 'just compile'")
+	}
+	if !strings.Contains(result, "不新增测试") {
+		t.Error("coding.refactor prompt should contain directive: '不新增测试'")
+	}
+}
+
+func TestSynthesize_CodingCleanup_CoverageDirectiveActionable(t *testing.T) {
+	dir := t.TempDir()
+	tasks := map[string]task.Task{
+		"1.1": {
+			ID:     "1.1",
+			Title:  "Cleanup task",
+			Status: "pending",
+			File:   "1.1.md",
+			Record: "records/1.1.md",
+			Type:   task.TypeCodingCleanup,
+			Scope:  "backend",
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "1.1"}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// Cleanup template should say no new tests needed, maintain strategy
+	if !strings.Contains(result, "不新增测试") {
+		t.Error("coding.cleanup prompt should contain directive: '不新增测试'")
+	}
+}
+
 func TestExtractTestTypeArg(t *testing.T) {
 	tests := []struct {
 		id   string

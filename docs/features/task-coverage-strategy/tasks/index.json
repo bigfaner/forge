@@ -1,0 +1,118 @@
+{
+  "feature": "task-coverage-strategy",
+  "proposal": "docs/proposals/task-coverage-strategy/proposal.md",
+  "created": "2026-05-20",
+  "tasks": {
+    "1-config-and-frontmatter": {
+      "id": "1",
+      "title": "Add coverage config schema, parsing, and frontmatter field",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "status": "completed",
+      "file": "1-config-and-frontmatter.md",
+      "record": "records/1-config-and-frontmatter.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "2-prompt-synthesis": {
+      "id": "2",
+      "title": "Inject coverage target into prompt synthesis",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-prompt-synthesis.md",
+      "record": "records/2-prompt-synthesis.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "3-template-updates": {
+      "id": "3",
+      "title": "Update coding-type prompt templates with coverage directives",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "2"
+      ],
+      "status": "completed",
+      "file": "3-template-updates.md",
+      "record": "records/3-template-updates.md",
+      "scope": "backend",
+      "type": "coding.enhancement"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "fix unit-test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "quality-gate:unit-test",
+      "type": "coding.fix"
+    },
+    "fix-2": {
+      "id": "fix-2",
+      "title": "fix test-e2e: just test-e2e failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-2.md",
+      "record": "records/fix-2.md",
+      "breaking": true,
+      "sourceTaskID": "quality-gate:test-e2e",
+      "type": "coding.fix"
+    },
+    "fix-3": {
+      "id": "fix-3",
+      "title": "fix test-e2e: just test-e2e failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-3.md",
+      "record": "records/fix-3.md",
+      "breaking": true,
+      "sourceTaskID": "quality-gate:test-e2e",
+      "type": "coding.fix"
+    },
+    "fix-4": {
+      "id": "fix-4",
+      "title": "fix test-e2e: just test-e2e failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-4.md",
+      "record": "records/fix-4.md",
+      "breaking": true,
+      "sourceTaskID": "quality-gate:test-e2e",
+      "type": "coding.fix"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "scope": "all",
+      "type": "doc.drift"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

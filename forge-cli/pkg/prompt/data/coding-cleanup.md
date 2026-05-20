@@ -34,6 +34,10 @@ If the task file contains ## Hard Rules with MUST/MUST NOT directives:
 
 ### Step 2: Make Improvements
 
+<IMPORTANT>
+覆盖率策略: {{COVERAGE_STRATEGY}} — {{COVERAGE_TARGET}}。不新增测试，通过现有测试保持覆盖率。
+</IMPORTANT>
+
 Apply the cleanup changes described in the task file. This may include:
 - Removing dead code, unused declarations, or obsolete files
 - Fixing existing tests

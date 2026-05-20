@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"forge-cli/pkg/feature"
+	"forge-cli/pkg/forgeconfig"
 	"forge-cli/pkg/task"
 )
 
@@ -125,6 +126,16 @@ func renderTemplate(templateFile string, opts SynthesizeOpts, t task.Task) (stri
 	// Extract type suffix from task ID for per-type gen-scripts tasks.
 	testTypeArg := extractTestTypeArg(t.ID)
 	result = strings.ReplaceAll(result, "{{TEST_TYPE_ARG}}", testTypeArg)
+
+	// Inject coverage target for testable (coding.*) task types.
+	// Non-testable types get empty strings; cleanTemplateOutput removes the empty labels.
+	coverageStrategy := ""
+	coverageTarget := ""
+	if task.IsTestableType(t.Type) {
+		coverageStrategy, coverageTarget = resolveCoverage(opts.ProjectRoot, t)
+	}
+	result = strings.ReplaceAll(result, "{{COVERAGE_STRATEGY}}", coverageStrategy)
+	result = strings.ReplaceAll(result, "{{COVERAGE_TARGET}}", coverageTarget)
 
 	result = cleanTemplateOutput(result)
 
@@ -297,4 +308,35 @@ func extractTestTypeArg(id string) string {
 		}
 	}
 	return ""
+}
+
+// resolveCoverage determines the effective coverage strategy and target text
+// for a given task. Priority: task frontmatter coverage > config per-type > built-in default.
+// Returns (strategy, targetText) where strategy is "percentage" or "maintain",
+// and targetText is the human-readable instruction for the agent.
+func resolveCoverage(projectRoot string, t task.Task) (string, string) {
+	// Priority 1: task frontmatter coverage field overrides everything.
+	if t.Coverage != nil {
+		return "percentage", fmt.Sprintf("达到 %d%% 测试覆盖率", *t.Coverage)
+	}
+
+	// Priority 2: config per-type, falling back to built-in defaults.
+	coverageConfig, _ := forgeconfig.ReadCoverageConfig(projectRoot)
+	strategy, ok := coverageConfig.ByType[t.Type]
+	if !ok {
+		// Unknown type: no coverage instruction
+		return "", ""
+	}
+
+	switch strategy.Type {
+	case "percentage":
+		if strategy.Percentage != nil {
+			return "percentage", fmt.Sprintf("达到 %d%% 测试覆盖率", *strategy.Percentage)
+		}
+		return "percentage", ""
+	case "maintain":
+		return "maintain", "保持现有覆盖率，下降不超过 2%"
+	default:
+		return "", ""
+	}
 }

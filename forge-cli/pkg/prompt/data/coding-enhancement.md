@@ -36,6 +36,10 @@ If the task file contains ## Hard Rules with MUST/MUST NOT directives:
 
 ### Step 2: TDD Implementation
 
+<IMPORTANT>
+覆盖率策略: {{COVERAGE_STRATEGY}} — 目标: {{COVERAGE_TARGET}}。达到目标后停止补充测试。
+</IMPORTANT>
+
 Follow the TDD cycle for each enhancement requirement:
 
 ```

@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -87,10 +88,62 @@ type WorktreeConfig struct {
 	CopyFiles    []string `yaml:"copy-files"`
 }
 
+// CoverageStrategy defines the coverage strategy for a single task type.
+// Two strategy types are supported:
+//   - "percentage": target a specific coverage percentage
+//   - "maintain": keep existing coverage, don't add new tests
+type CoverageStrategy struct {
+	Type       string `yaml:"type"`
+	Percentage *int   `yaml:"percentage,omitempty"`
+}
+
+// CoverageConfig holds per-task-type coverage strategies.
+type CoverageConfig struct {
+	ByType map[string]CoverageStrategy `yaml:",inline"`
+}
+
+// CoverageConfigDefaults returns built-in default coverage strategies.
+// Returns a fresh map each time to prevent mutation issues.
+func CoverageConfigDefaults() CoverageConfig {
+	feature := 80
+	enhancement := 60
+	fix := 60
+	return CoverageConfig{
+		ByType: map[string]CoverageStrategy{
+			"coding.feature":     {Type: "percentage", Percentage: &feature},
+			"coding.enhancement": {Type: "percentage", Percentage: &enhancement},
+			"coding.fix":         {Type: "percentage", Percentage: &fix},
+			"coding.refactor":    {Type: "maintain"},
+			"coding.cleanup":     {Type: "maintain"},
+			"coding.clean":       {Type: "maintain"},
+		},
+	}
+}
+
+// ReadCoverageConfig reads the coverage config block from .forge/config.yaml.
+// Returns defaults when the block is missing or the file doesn't exist.
+// User-provided values are merged on top of defaults.
+func ReadCoverageConfig(projectRoot string) (CoverageConfig, error) {
+	cfg, err := ReadConfig(projectRoot)
+	if err != nil {
+		return CoverageConfigDefaults(), err
+	}
+	if cfg == nil || cfg.Coverage == nil {
+		return CoverageConfigDefaults(), nil
+	}
+	// Merge: start with defaults, overlay user-provided
+	result := CoverageConfigDefaults()
+	for k, v := range cfg.Coverage.ByType {
+		result.ByType[k] = v
+	}
+	return result, nil
+}
+
 // Config represents the .forge/config.yaml structure.
 type Config struct {
 	Auto          *AutoConfig     `yaml:"auto,omitempty"`
 	Worktree      *WorktreeConfig `yaml:"worktree,omitempty"`
+	Coverage      *CoverageConfig `yaml:"coverage,omitempty"`
 	TestFramework string          `yaml:"test-framework,omitempty"`
 	TestCommand   string          `yaml:"test-command,omitempty"`
 	Languages     []string        `yaml:"languages,omitempty"`
@@ -235,7 +288,7 @@ var ErrKeyNotFound = fmt.Errorf("config key not found")
 
 // GetConfigValue returns the value for a given key from .forge/config.yaml.
 // For scalar values, returns the raw string; for arrays, joins with newline.
-// Supports dot-notation for nested keys (e.g. "auto.gitPush", "worktree.source-branch").
+// Supports dot-notation for nested keys (e.g. "auto.gitPush", "worktree.source-branch", "coverage.coding.feature").
 // Also supports top-level keys: "test-framework", "test-command".
 // Returns empty string and ErrKeyNotFound if the key doesn't exist or has zero value.
 func GetConfigValue(projectRoot, key string) (string, error) {
@@ -249,6 +302,14 @@ func GetConfigValue(projectRoot, key string) (string, error) {
 
 	// Handle dot-notation worktree keys
 	if val, ok, err := getWorktreeKeyValue(projectRoot, key); ok || err != nil {
+		if err != nil {
+			return "", err
+		}
+		return val, nil
+	}
+
+	// Handle coverage.* keys
+	if val, ok, err := getCoverageKeyValue(projectRoot, key); ok || err != nil {
 		if err != nil {
 			return "", err
 		}
@@ -334,6 +395,42 @@ func joinSlice(vals []string) string {
 		result += v
 	}
 	return result
+}
+
+// getCoverageKeyValue handles dot-notation keys for the coverage config block.
+// Key format: "coverage.<task-type>" (e.g. "coverage.coding.feature").
+// Returns the strategy type or percentage value as a string.
+func getCoverageKeyValue(projectRoot, key string) (string, bool, error) {
+	if !strings.HasPrefix(key, "coverage.") {
+		return "", false, nil
+	}
+
+	taskType := strings.TrimPrefix(key, "coverage.")
+	if taskType == "" {
+		return "", false, nil
+	}
+
+	coverage, err := ReadCoverageConfig(projectRoot)
+	if err != nil {
+		return "", true, err
+	}
+
+	strategy, ok := coverage.ByType[taskType]
+	if !ok {
+		return "", true, ErrKeyNotFound
+	}
+
+	switch strategy.Type {
+	case "maintain":
+		return "maintain", true, nil
+	case "percentage":
+		if strategy.Percentage != nil {
+			return strconv.Itoa(*strategy.Percentage), true, nil
+		}
+		return "", true, ErrKeyNotFound
+	default:
+		return "", true, ErrKeyNotFound
+	}
 }
 
 // WriteConfig writes a Config to .forge/config.yaml.
