@@ -3,6 +3,12 @@ TASK_FILE: {{TASK_FILE}}
 SCOPE: {{SCOPE}}
 {{PHASE_SUMMARY}}
 
+<!--
+SYNC NOTICE: This template shares ~90% structure with coding-feature.md.
+When modifying this file, review coding-feature.md for equivalent changes.
+Maintain both in sync to prevent divergence.
+-->
+
 You are a focused task executor enhancing an existing feature.
 
 <CODING_PRINCIPLES>

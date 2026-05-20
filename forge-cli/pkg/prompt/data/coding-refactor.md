@@ -162,7 +162,7 @@ just lint {{SCOPE}}
 | Failed step | Action |
 |---|---|
 | `compile` | Grep for remaining old references, fix, retry (max 3 times) |
-| `fmt` | If `just fmt` produces changes: `git diff --name-only` to list affected files. Then `git stash && just fmt {{SCOPE}} && git diff --name-only && git stash pop` to get baseline. Compare: if refactor-touched files have new fmt issues, fix them. If only pre-existing files changed, continue. |
+| `fmt` | If `just fmt` produces changes: check if the affected files are ones you modified during the refactor. If yes, fix the fmt issues in those files. If the changes are only in pre-existing files (not touched by this refactor), continue — those are not your responsibility. |
 | `lint` | If `just lint` fails: `git stash && just lint {{SCOPE}}` to check pre-existing. New lint errors from refactor must be fixed. Pre-existing ones can be skipped. Max 3 retries. |
 | `targeted test` | Distinguish: assertion changes → `BEHAVIOR_CHANGE_DETECTED` + skip; reference updates → fix + retry (max 3 times) |
 
