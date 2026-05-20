@@ -4048,3 +4048,199 @@ func resetInteractiveFlag(t *testing.T) {
 		}
 	})
 }
+
+// ---------------------------------------------------------------------------
+// worktree push: subcommand registration
+// ---------------------------------------------------------------------------
+
+func TestWorktreeCmd_HasPushSubcommand(t *testing.T) {
+	subcommands := worktreeCmd.Commands()
+	found := false
+	for _, cmd := range subcommands {
+		if cmd.Name() == "push" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("worktree group should have 'push' subcommand")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// worktree push: error cases
+// ---------------------------------------------------------------------------
+
+func TestWorktreePush_ErrorWhenNotInWorktree(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Ensure isInsideWorktreeFunc returns false (default for regular repo)
+	origInsideWt := isInsideWorktreeFunc
+	defer func() { isInsideWorktreeFunc = origInsideWt }()
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "push"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Error("expected error when not inside a worktree")
+	}
+	stderr := buf.String()
+	if !strings.Contains(stderr, "not inside a worktree") {
+		t.Errorf("error should mention worktree context, got: %s", stderr)
+	}
+}
+
+func TestWorktreePush_ErrorOnDefaultBranch(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Override to simulate being inside a worktree on default branch
+	origInsideWt := isInsideWorktreeFunc
+	isInsideWorktreeFunc = func(_ string) bool { return true }
+	defer func() { isInsideWorktreeFunc = origInsideWt }()
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "push"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Error("expected error when on default branch in worktree")
+	}
+	stderr := buf.String()
+	if !strings.Contains(stderr, "refusing to push default branch") {
+		t.Errorf("error should mention refusing default branch, got: %s", stderr)
+	}
+}
+
+func TestWorktreePush_ErrorOnPushFailure(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Override to simulate worktree on a feature branch
+	origInsideWt := isInsideWorktreeFunc
+	isInsideWorktreeFunc = func(_ string) bool { return true }
+	defer func() { isInsideWorktreeFunc = origInsideWt }()
+
+	origBranchFunc := getCurrentBranchFunc
+	getCurrentBranchFunc = func(_ string) string { return "feature/my-branch" }
+	defer func() { getCurrentBranchFunc = origBranchFunc }()
+
+	// Override gitPushFunc to simulate failure
+	origPushFunc := gitPushFunc
+	gitPushFunc = func(_ string) (string, error) {
+		return "", fmt.Errorf("network error: connection refused")
+	}
+	defer func() { gitPushFunc = origPushFunc }()
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "push"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Error("expected error when push fails")
+	}
+	stderr := buf.String()
+	if !strings.Contains(stderr, "push failed") {
+		t.Errorf("error should mention push failure, got: %s", stderr)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// worktree push: happy path
+// ---------------------------------------------------------------------------
+
+func TestWorktreePush_Success(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Override to simulate worktree on a feature branch
+	origInsideWt := isInsideWorktreeFunc
+	isInsideWorktreeFunc = func(_ string) bool { return true }
+	defer func() { isInsideWorktreeFunc = origInsideWt }()
+
+	origBranchFunc := getCurrentBranchFunc
+	getCurrentBranchFunc = func(_ string) string { return "my-feature" }
+	defer func() { getCurrentBranchFunc = origBranchFunc }()
+
+	// Override gitPushFunc to simulate success
+	origPushFunc := gitPushFunc
+	gitPushFunc = func(_ string) (string, error) {
+		return "", nil
+	}
+	defer func() { gitPushFunc = origPushFunc }()
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "push"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	stdout := buf.String()
+	if !strings.Contains(stdout, "Pushed branch") {
+		t.Errorf("output should confirm push, got: %s", stdout)
+	}
+	if !strings.Contains(stdout, "my-feature") {
+		t.Errorf("output should mention branch name, got: %s", stdout)
+	}
+}
+
+func TestWorktreePush_PrintsPushOutput(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Override to simulate worktree on a feature branch
+	origInsideWt := isInsideWorktreeFunc
+	isInsideWorktreeFunc = func(_ string) bool { return true }
+	defer func() { isInsideWorktreeFunc = origInsideWt }()
+
+	origBranchFunc := getCurrentBranchFunc
+	getCurrentBranchFunc = func(_ string) string { return "feature/test" }
+	defer func() { getCurrentBranchFunc = origBranchFunc }()
+
+	// Override gitPushFunc to return push output
+	origPushFunc := gitPushFunc
+	gitPushFunc = func(_ string) (string, error) {
+		return "remote: Enumerating objects: 5, done.\nTo github.com:user/repo.git\n", nil
+	}
+	defer func() { gitPushFunc = origPushFunc }()
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "push"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	stdout := buf.String()
+	if !strings.Contains(stdout, "Enumerating objects") {
+		t.Errorf("output should include push output, got: %s", stdout)
+	}
+}

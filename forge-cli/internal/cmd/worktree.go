@@ -27,6 +27,15 @@ var listWorktreesFunc = git.ListWorktrees
 // gitRunFunc executes a git command. Overridable for testing.
 var gitRunFunc = git.Run
 
+// gitPushFunc pushes to remote. Overridable for testing.
+var gitPushFunc = git.Push
+
+// isInsideWorktreeFunc checks if inside a linked worktree. Overridable for testing.
+var isInsideWorktreeFunc = git.IsInsideWorktree
+
+// getCurrentBranchFunc returns the current branch name. Overridable for testing.
+var getCurrentBranchFunc = git.GetCurrentBranch
+
 var worktreeCmd = &cobra.Command{
 	Use:   "worktree",
 	Short: "Manage git worktrees for feature development",
@@ -260,6 +269,57 @@ func runWorktreeResume(cmd *cobra.Command, args []string) error {
 	return runClaudeFunc(allArgs)
 }
 
+var worktreePushCmd = &cobra.Command{
+	Use:   "push",
+	Short: "Push the current worktree branch to remote",
+	Long: `Push the current worktree's branch to origin with upstream tracking set.
+
+Must be run inside a linked worktree (not the main worktree on its default branch).
+Uses "git push -u origin HEAD" to push and set the upstream tracking reference.`,
+	Args: cobra.NoArgs,
+	RunE: runWorktreePush,
+}
+
+func runWorktreePush(cmd *cobra.Command, _ []string) error {
+	projectRoot, err := project.FindProjectRoot()
+	if err != nil {
+		return fmt.Errorf("find project root: %w", err)
+	}
+
+	if !git.IsGitRepository(projectRoot) {
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: not a git repository: %s\n", projectRoot)
+		return fmt.Errorf("not a git repository: %s", projectRoot)
+	}
+
+	// Hard Rule: must detect worktree context before pushing
+	if !isInsideWorktreeFunc(projectRoot) {
+		_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "error: not inside a worktree")
+		_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "hint: run this command from within a forge worktree directory")
+		return fmt.Errorf("not inside a worktree")
+	}
+
+	// Hard Rule: refuse to push from main worktree's main branch
+	branch := getCurrentBranchFunc(projectRoot)
+	if branch == "main" || branch == "master" {
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: refusing to push default branch %q\n", branch)
+		_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "hint: switch to a feature branch before pushing")
+		return fmt.Errorf("refusing to push default branch: %s", branch)
+	}
+
+	// Push with upstream tracking
+	output, err := gitPushFunc(projectRoot)
+	if err != nil {
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: push failed: %v\n", err)
+		return fmt.Errorf("push failed: %w", err)
+	}
+
+	if output != "" {
+		_, _ = fmt.Fprint(cmd.OutOrStdout(), output)
+	}
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Pushed branch %q to origin\n", branch)
+	return nil
+}
+
 var worktreeStartCmd = &cobra.Command{
 	Use:   "start [slug]",
 	Short: "Create a worktree and launch Claude in it",
@@ -284,6 +344,8 @@ func init() {
 
 	worktreeRemoveCmd.Flags().Bool("hard", false, "delete worktree, local branch, and prune stale administrative files")
 	worktreeRemoveCmd.Flags().Bool("force", false, "force removal even with uncommitted changes (use with --hard)")
+
+	worktreeCmd.AddCommand(worktreePushCmd)
 }
 
 func runWorktreeStart(cmd *cobra.Command, args []string) error {

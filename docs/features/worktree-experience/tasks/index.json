@@ -44,7 +44,7 @@
       "title": "Add worktree push subcommand",
       "priority": "P2",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "4-push-subcommand.md",
       "record": "records/4-push-subcommand.md",
       "scope": "backend",
