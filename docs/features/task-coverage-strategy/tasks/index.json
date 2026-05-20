@@ -1,0 +1,71 @@
+{
+  "feature": "task-coverage-strategy",
+  "proposal": "docs/proposals/task-coverage-strategy/proposal.md",
+  "created": "2026-05-20",
+  "tasks": {
+    "1-config-and-frontmatter": {
+      "id": "1",
+      "title": "Add coverage config schema, parsing, and frontmatter field",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "status": "pending",
+      "file": "1-config-and-frontmatter.md",
+      "record": "records/1-config-and-frontmatter.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "2-prompt-synthesis": {
+      "id": "2",
+      "title": "Inject coverage target into prompt synthesis",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-prompt-synthesis.md",
+      "record": "records/2-prompt-synthesis.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "3-template-updates": {
+      "id": "3",
+      "title": "Update coding-type prompt templates with coverage directives",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "2"
+      ],
+      "status": "pending",
+      "file": "3-template-updates.md",
+      "record": "records/3-template-updates.md",
+      "scope": "backend",
+      "type": "coding.enhancement"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "pending",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "scope": "all",
+      "noTest": true,
+      "type": "doc.drift"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
