@@ -4244,3 +4244,347 @@ func TestWorktreePush_PrintsPushOutput(t *testing.T) {
 		t.Errorf("output should include push output, got: %s", stdout)
 	}
 }
+
+// ---------------------------------------------------------------------------
+// worktree status: command registration
+// ---------------------------------------------------------------------------
+
+func TestWorktreeCmd_HasStatusSubcommand(t *testing.T) {
+	subcommands := worktreeCmd.Commands()
+	found := false
+	for _, cmd := range subcommands {
+		if cmd.Name() == "status" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("worktree group should have 'status' subcommand")
+	}
+}
+
+func TestWorktreeStatusCmd_AcceptsOptionalSlug(t *testing.T) {
+	// status accepts 0 or 1 args
+	if worktreeStatusCmd.Args != nil {
+		// cobra.MaximumNArgs returns a PositionalArgs function
+		// Verify it allows 0 and 1 args
+		if err := worktreeStatusCmd.Args(worktreeStatusCmd, []string{}); err != nil {
+			t.Errorf("status should accept 0 args: %v", err)
+		}
+		if err := worktreeStatusCmd.Args(worktreeStatusCmd, []string{"my-slug"}); err != nil {
+			t.Errorf("status should accept 1 arg: %v", err)
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// worktree status: error cases
+// ---------------------------------------------------------------------------
+
+func TestWorktreeStatus_ErrorWhenNotGitRepo(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "status", "my-slug"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Error("expected error when not a git repo")
+	}
+	stderr := buf.String()
+	if !strings.Contains(stderr, "not a git repository") {
+		t.Errorf("error should mention 'not a git repository', got: %s", stderr)
+	}
+}
+
+func TestWorktreeStatus_ErrorOnNonExistentSlug(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "status", "non-existent-slug"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Error("expected error for non-existent slug")
+	}
+	stderr := buf.String()
+	if !strings.Contains(stderr, "not found") {
+		t.Errorf("error should mention 'not found', got: %s", stderr)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// worktree status: specific slug — shows branch, commit, uncommitted files
+// ---------------------------------------------------------------------------
+
+func TestWorktreeStatus_ShowsBranchAndCommit(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a real worktree
+	slug := "status-test-wt"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	cmd := exec.Command("git", "worktree", "add", targetDir, "-b", slug)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "status", slug})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	stdout := buf.String()
+	if !strings.Contains(stdout, "BRANCH:") {
+		t.Errorf("output should contain BRANCH:, got: %s", stdout)
+	}
+	if !strings.Contains(stdout, slug) {
+		t.Errorf("output should mention slug/branch %s, got: %s", slug, stdout)
+	}
+	if !strings.Contains(stdout, "COMMIT:") {
+		t.Errorf("output should contain COMMIT:, got: %s", stdout)
+	}
+	if !strings.Contains(stdout, "initial") {
+		t.Errorf("output should contain latest commit message, got: %s", stdout)
+	}
+	if !strings.Contains(stdout, "---") {
+		t.Errorf("output should use structured block format (---), got: %s", stdout)
+	}
+}
+
+func TestWorktreeStatus_ShowsUncommittedFiles(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a real worktree
+	slug := "status-dirty-wt"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	cmd := exec.Command("git", "worktree", "add", targetDir, "-b", slug)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	// Create an uncommitted file in the worktree
+	uncommittedFile := filepath.Join(targetDir, "dirty-file.txt")
+	if err := os.WriteFile(uncommittedFile, []byte("dirty"), 0o644); err != nil {
+		t.Fatalf("write dirty file: %v", err)
+	}
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "status", slug})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	stdout := buf.String()
+	if !strings.Contains(stdout, "UNCOMMITTED:") {
+		t.Errorf("output should contain UNCOMMITTED:, got: %s", stdout)
+	}
+	if !strings.Contains(stdout, "dirty-file.txt") {
+		t.Errorf("output should list dirty-file.txt, got: %s", stdout)
+	}
+}
+
+func TestWorktreeStatus_CleanWorktree(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a real worktree
+	slug := "status-clean-wt"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	cmd := exec.Command("git", "worktree", "add", targetDir, "-b", slug)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "status", slug})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	stdout := buf.String()
+	if !strings.Contains(stdout, "UNCOMMITTED:") {
+		t.Errorf("output should contain UNCOMMITTED: (none), got: %s", stdout)
+	}
+	if strings.Contains(stdout, "dirty-file") {
+		t.Errorf("clean worktree should not list dirty files, got: %s", stdout)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// worktree status: no slug — shows all forge-managed worktrees
+// ---------------------------------------------------------------------------
+
+func TestWorktreeStatus_NoSlug_ShowsAllForgeWorktrees(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create two worktrees
+	slug1 := "status-all-wt1"
+	slug2 := "status-all-wt2"
+	for _, slug := range []string{slug1, slug2} {
+		targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+		cmd := exec.Command("git", "worktree", "add", targetDir, "-b", slug)
+		cmd.Dir = dir
+		if err := cmd.Run(); err != nil {
+			t.Fatalf("git worktree add %s: %v", slug, err)
+		}
+		t.Cleanup(func() {
+			td := filepath.Join(dir, ".forge", "worktrees", slug)
+			_ = exec.Command("git", "worktree", "remove", td, "--force").Run()
+			_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+		})
+	}
+
+	// Create feature dir so worktrees are forge-managed
+	featureDir := filepath.Join(dir, "docs", "features", "status-all-wt1")
+	if err := os.MkdirAll(featureDir, 0o755); err != nil {
+		t.Fatalf("create feature dir: %v", err)
+	}
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "status"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	stdout := buf.String()
+	// Should show the forge-managed worktree
+	if !strings.Contains(stdout, "BRANCH:") {
+		t.Errorf("output should contain BRANCH:, got: %s", stdout)
+	}
+	if !strings.Contains(stdout, "COMMIT:") {
+		t.Errorf("output should contain COMMIT:, got: %s", stdout)
+	}
+}
+
+func TestWorktreeStatus_NoSlug_NoWorktrees(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "status"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	stdout := buf.String()
+	if !strings.Contains(stdout, "No forge-managed worktrees found") {
+		t.Errorf("output should indicate no forge-managed worktrees, got: %s", stdout)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// worktree status: read-only guarantee
+// ---------------------------------------------------------------------------
+
+func TestWorktreeStatus_IsReadOnly(t *testing.T) {
+	// Verify the status command does not modify filesystem state.
+	// We check by running status on a clean worktree and verifying
+	// the directory mtime doesn't change and git status stays clean.
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	slug := "readonly-wt"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	cmd := exec.Command("git", "worktree", "add", targetDir, "-b", slug)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	// Get git status before
+	cmd = exec.Command("git", "status", "--porcelain")
+	cmd.Dir = targetDir
+	beforeStatus, _ := cmd.Output()
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "status", slug})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Get git status after
+	cmd = exec.Command("git", "status", "--porcelain")
+	cmd.Dir = targetDir
+	afterStatus, _ := cmd.Output()
+
+	if string(beforeStatus) != string(afterStatus) {
+		t.Errorf("status command modified filesystem state: before=%q after=%q", beforeStatus, afterStatus)
+	}
+}

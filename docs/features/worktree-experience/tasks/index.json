@@ -55,7 +55,7 @@
       "title": "Add worktree status subcommand",
       "priority": "P2",
       "estimatedTime": "1.5h",
-      "status": "pending",
+      "status": "completed",
       "file": "5-status-subcommand.md",
       "record": "records/5-status-subcommand.md",
       "scope": "backend",
