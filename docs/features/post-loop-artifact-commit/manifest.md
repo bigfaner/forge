@@ -8,12 +8,15 @@ mode: quick
 
 <!-- Status flow: tasks -> in-progress -> completed -->
 
+## Description
+
+Automatically commit uncommitted artifacts (task records, index updates, knowledge entries) remaining in the working tree after `run-tasks` completes its post-completion flow.
+
 ## Documents
 
 | Document | Path |
 |----------|------|
 | Proposal | ../../proposals/post-loop-artifact-commit/proposal.md |
-| Test Cases | testing/test-cases.md |
 
 ## Tasks
 

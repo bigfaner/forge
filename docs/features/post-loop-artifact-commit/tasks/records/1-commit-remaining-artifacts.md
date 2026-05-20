@@ -13,7 +13,7 @@ Added 'Commit Remaining Artifacts' section to run-tasks Post-Completion flow aft
 ## Changes
 
 ### Files Created
-无
+None
 
 ### Files Modified
 - plugins/forge/commands/run-tasks.md
@@ -38,4 +38,4 @@ Added 'Commit Remaining Artifacts' section to run-tasks Post-Completion flow aft
 - [x] Does NOT run when loop ended due to 3 consecutive failures (matches Knowledge Review guard)
 
 ## Notes
-无
+None
