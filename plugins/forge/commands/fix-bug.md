@@ -138,12 +138,12 @@ Add an e2e test only when the bug is observable at the API, CLI, or UI surface.
 | API endpoint | `tests/e2e/features/<slug>/api.spec.ts` | fetch |
 | CLI command | `tests/e2e/features/<slug>/cli.spec.ts` | child_process |
 
-Bug fix tests go to the `features/` staging area, same as feature tests. This ensures `just test-e2e --feature <slug>` can discover and run them.
+Bug fix tests go to the `features/` staging area, same as feature tests. This ensures `just e2e-test --feature <slug>` can discover and run them.
 
-Run `just test-e2e --feature <slug>` — it **must fail** before the fix:
+Run `just e2e-test --feature <slug>` — it **must fail** before the fix:
 
 ```bash
-just test-e2e --feature <slug>
+just e2e-test --feature <slug>
 ```
 
 ---
@@ -176,7 +176,7 @@ Strict sequential order. Stop at first failure. See Forge Guide Quality Gate Pro
 E2E (if written in Step 3b):
 
 ```bash
-just test-e2e --feature <slug>
+just e2e-test --feature <slug>
 ```
 
 **Verification checklist:**

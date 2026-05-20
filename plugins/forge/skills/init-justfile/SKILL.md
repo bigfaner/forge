@@ -45,7 +45,7 @@ If version < 1.50.0: `cargo install just`
 | `run`          | No       | Start the service                                                                                 |
 | `dev`          | No       | Hot-reload development mode                                                                       |
 | `test`         | Yes      | Unit + integration tests                                                                          |
-| `test-e2e`     | No       | E2E tests; `--feature <slug>` for single feature                                                  |
+| `e2e-test`     | No       | E2E tests; `--feature <slug>` for single feature                                                  |
 | `lint`         | No       | Static analysis                                                                                   |
 | `fmt`          | No       | Auto-format code                                                                                  |
 | `check`        | No       | lint + compile (CI gate)                                                                          |
@@ -115,11 +115,11 @@ ls justfile Justfile 2>/dev/null
 ```
 
 - If `justfile` or `Justfile` already exists:
-  - Check if it already contains `e2e-compile`, `test-e2e`, and `e2e-setup` recipes:
+  - Check if it already contains `e2e-compile`, `e2e-test`, and `e2e-setup` recipes:
     ```bash
-    just --list 2>/dev/null | grep -E 'e2e-compile|test-e2e|e2e-setup'
+    just --list 2>/dev/null | grep -E 'e2e-compile|e2e-test|e2e-setup'
     ```
-  - **If all three e2e recipes exist**: Output "justfile already contains e2e recipes (e2e-compile, test-e2e, e2e-setup). Skipping e2e recipe generation." Proceed to Step 4 for verification only.
+  - **If all three e2e recipes exist**: Output "justfile already contains e2e recipes (e2e-compile, e2e-test, e2e-setup). Skipping e2e recipe generation." Proceed to Step 4 for verification only.
   - **If some e2e recipes are missing**: Proceed to Step 3 to append only the missing recipes.
   - Check for boundary markers (`# --- forge standard recipes ---` / `# --- end forge standard recipes ---`).
   - **If boundary markers exist**: proceed to Step 3 (boundary marker merge).
@@ -130,7 +130,7 @@ ls justfile Justfile 2>/dev/null
 
 ### Step 3: Generate e2e Recipes and Assemble Justfile
 
-This step generates e2e-compile, test-e2e, and e2e-setup recipes from Convention knowledge and LLM understanding of the detected framework.
+This step generates e2e-compile, e2e-test, and e2e-setup recipes from Convention knowledge and LLM understanding of the detected framework.
 
 #### 3a. Generate e2e recipes from Convention
 
@@ -141,7 +141,7 @@ Using the Convention Framework, Tags, and Result Format sections loaded in Step 
 - Convention provides test runner (e.g., `go test`) and build tag (e.g., `//go:build e2e`) -> construct compile-check command (e.g., `go test -c ./tests/e2e/... -tags=e2e -o /dev/null` or `go vet -tags=e2e ./tests/e2e/...`)
 - Convention provides file pattern and test runner (e.g., `vitest run`) -> construct type-check command (e.g., `npx tsc --noEmit` or `vitest run --passWithNoTests --run false`)
 
-**test-e2e recipe**: Generate a recipe that runs e2e tests. The recipe body is derived from the Convention's Result Format execution command:
+**e2e-test recipe**: Generate a recipe that runs e2e tests. The recipe body is derived from the Convention's Result Format execution command:
 
 - Convention provides execution command (e.g., `go test ./tests/e2e/... -v -tags=e2e -json`) -> use as recipe body
 - Convention provides test runner and output flags (e.g., `vitest run --reporter=json`) -> construct test command
@@ -244,7 +244,7 @@ Execute each recipe for real to catch runtime errors. Recipes are classified by 
 | **Destructive** (modifies files or creates artifacts) | `build`, `fmt`, `clean`    | Execute directly (artifacts can be cleaned; fmt changes are welcome)                      |
 | **Idempotent** (installs dependencies)                | `install`, `e2e-setup`     | Execute directly                                                                          |
 | **Long-running** (starts servers)                     | `run`, `dev`               | Execute with timeout (10s), kill after timeout -- success = process still alive at timeout |
-| **Expensive** (runs full test suite)                  | `test`, `test-e2e`         | Skip actual execution; verified by `--dry-run` only                                       |
+| **Expensive** (runs full test suite)                  | `test`, `e2e-test`         | Skip actual execution; verified by `--dry-run` only                                       |
 
 For long-running recipes (`run`, `dev`): execute via `timeout 10 just <recipe> 2>&1 || true`. A crash before timeout ("missing script", "can't load package") is a runtime failure.
 
@@ -267,7 +267,7 @@ Verification results:
   [ok] build           -> go build ./... (executed)
   [ok] test            -> go test ./... (dry-run only)
   [ok] e2e-compile     -> go test -c ./tests/e2e/... -tags=e2e -o /dev/null (dry-run only)
-  [ok] test-e2e        -> go test ./tests/e2e/... -v -tags=e2e -json (dry-run only)
+  [ok] e2e-test        -> go test ./tests/e2e/... -v -tags=e2e -json (dry-run only)
   [ok] e2e-setup       -> go mod download (executed)
   [fix] run            -> FIXED: updated entry point (executed, self-corrected)
   [ok] dev             -> go run cmd/server/main.go (executed, 10s timeout)
@@ -286,8 +286,8 @@ Targets:
   just compile                    -> go vet ./...
   just test                       -> go test ./...
   just e2e-compile                -> go test -c ./tests/e2e/... -tags=e2e -o /dev/null
-  just test-e2e                   -> go test ./tests/e2e/... -v -tags=e2e -json
-  just test-e2e --feature <slug>  -> feature tests in tests/e2e/features/<slug>/
+  just e2e-test                   -> go test ./tests/e2e/... -v -tags=e2e -json
+  just e2e-test --feature <slug>  -> feature tests in tests/e2e/features/<slug>/
   just e2e-setup                  -> go mod download
   ... (all standard targets listed with resolved commands)
 
@@ -310,11 +310,11 @@ Run `/forge:test-guide` to create a Convention file for consistent future genera
 
 ## Notes
 
-- **just >= 1.50.0**: `[arg("feature", long)]` generates `--feature <value>` named option syntax; callers (CI, `forge quality-gate`) must pass the slug: `just test-e2e --feature <slug>`
+- **just >= 1.50.0**: `[arg("feature", long)]` generates `--feature <value>` named option syntax; callers (CI, `forge quality-gate`) must pass the slug: `just e2e-test --feature <slug>`
 - Makefile migration: preserve original command logic, adjust only format
-- **Convention-driven e2e recipes**: The e2e-compile, test-e2e, and e2e-setup recipes are generated from Convention Framework/Tags/Result Format sections. No hardcoded framework templates. The LLM constructs recipes based on Convention content.
+- **Convention-driven e2e recipes**: The e2e-compile, e2e-test, and e2e-setup recipes are generated from Convention Framework/Tags/Result Format sections. No hardcoded framework templates. The LLM constructs recipes based on Convention content.
 - **Cold start**: When no Convention files exist, the LLM generates recipes from common patterns for the detected language. These recipes use conservative defaults and may need manual adjustment.
-- **Targets invoked by forge skills**: `compile`, `build`, `test`, `test-e2e`, `install`, `e2e-setup`, `e2e-compile`, `e2e-verify`. The remaining targets (`run`, `dev`, `lint`, `fmt`, `check`, `clean`, `ci`) are for manual use and are not called by any skill.
+- **Targets invoked by forge skills**: `compile`, `build`, `test`, `e2e-test`, `install`, `e2e-setup`, `e2e-compile`, `e2e-verify`. The remaining targets (`run`, `dev`, `lint`, `fmt`, `check`, `clean`, `ci`) are for manual use and are not called by any skill.
 - **Idempotency**: `e2e-setup` and `install` are designed to be idempotent (safe to run multiple times). Other recipes (`build`, `compile`, `test`) are not -- they always re-execute.
 - **Mixed project scope**: forge skills resolve scope from `forge task claim` output or `process/state.json` and pass it to `just <verb>`. Pass `just compile frontend` or `just compile backend` manually to target a single side outside of a task context.
 

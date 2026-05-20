@@ -16,7 +16,7 @@ test:
     @echo "Error: test recipe not implemented — edit justfile to add test command" >&2 && exit 1
 
 [arg("feature", long)]
-test-e2e feature="":
+e2e-test feature="":
     #!/usr/bin/env bash
     set -euo pipefail
     if [ "{{feature}}" != "" ]; then

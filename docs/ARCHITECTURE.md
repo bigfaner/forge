@@ -259,8 +259,8 @@ Quality Gate        T-test-3              all-completed hook
 | 层 | 命令 | 范围 | 触发 | 通过标准 |
 |---|---|---|---|---|
 | **Unit** | `just test [scope]` | 任务级 | 每任务 Quality Gate | 全部通过 + 覆盖率 >= 80% |
-| **Feature E2E** | `just test-e2e --feature <slug>` | 功能级 | T-test-3 | Playwright 报告全绿 |
-| **Regression** | `just test-e2e` | 项目级 | all-completed hook | 全部回归用例通过 |
+| **Feature E2E** | `just e2e-test --feature <slug>` | 功能级 | T-test-3 | Playwright 报告全绿 |
+| **Regression** | `just e2e-test` | 项目级 | all-completed hook | 全部回归用例通过 |
 
 ### 测试生成管道（Full Mode T-test-1~7）
 
@@ -366,7 +366,7 @@ Hooks 在关键生命周期事件自动触发，确保状态一致性：
 2. 项目级测试：
    just test
 3. E2E 回归：
-   just e2e-setup → just probe → just test-e2e
+   just e2e-setup → just probe → just e2e-test
 ```
 
 任何一步失败都会报告问题。

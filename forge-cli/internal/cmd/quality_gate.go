@@ -181,14 +181,14 @@ func runQualityGate(_ *cobra.Command, _ []string) {
 	}
 
 	// Step 3: Full e2e regression (promoted scripts in tests/e2e/)
-	if just.HasJustfile(result.ProjectRoot) && just.HasRecipe(result.ProjectRoot, "test-e2e") {
+	if just.HasJustfile(result.ProjectRoot) && just.HasRecipe(result.ProjectRoot, "e2e-test") {
 		e2eReady := true
 		if just.HasRecipe(result.ProjectRoot, "e2e-setup") {
 			fmt.Fprintln(os.Stderr, "--- Ensuring e2e dependencies (just e2e-setup) ---")
 			setupOutput, setupSuccess := just.RunCapture(result.ProjectRoot, "just", "e2e-setup")
 			if !setupSuccess {
 				fmt.Fprintln(os.Stderr, "WARNING: e2e-setup failed; skipping e2e regression")
-				fmt.Fprintln(os.Stderr, "  To retry manually: just e2e-setup && just test-e2e")
+				fmt.Fprintln(os.Stderr, "  To retry manually: just e2e-setup && just e2e-test")
 				if setupOutput != "" {
 					if err := writeRegressionRawOutput(result.ProjectRoot, "=== e2e-setup failure ===\n"+setupOutput); err != nil {
 						fmt.Fprintf(os.Stderr, "WARNING: failed to write setup output: %v\n", err)
@@ -202,13 +202,13 @@ func runQualityGate(_ *cobra.Command, _ []string) {
 		if e2eReady {
 			if !e2eprobe.ProbeServers(result.ProjectRoot, "") {
 				fmt.Fprintln(os.Stderr, "WARNING: e2e server health check failed; skipping e2e regression")
-				fmt.Fprintln(os.Stderr, "  Start dev server and retry: just dev && just test-e2e")
+				fmt.Fprintln(os.Stderr, "  Start dev server and retry: just dev && just e2e-test")
 				e2eReady = false
 			}
 		}
 		if e2eReady {
-			fmt.Fprintln(os.Stderr, "--- Running full e2e regression (just test-e2e) ---")
-			regressionOutput, regSuccess := just.RunCapture(result.ProjectRoot, "just", "test-e2e")
+			fmt.Fprintln(os.Stderr, "--- Running full e2e regression (just e2e-test) ---")
+			regressionOutput, regSuccess := just.RunCapture(result.ProjectRoot, "just", "e2e-test")
 			if !regSuccess {
 				fmt.Fprintln(os.Stderr, "ERROR: e2e regression failed")
 				errorDocPath := "tests/e2e/results/raw-output.txt"
@@ -217,11 +217,11 @@ func runQualityGate(_ *cobra.Command, _ []string) {
 						fmt.Fprintf(os.Stderr, "WARNING: failed to write raw-output.txt: %v\n", err)
 					}
 				}
-				fixID, fixErr := addFixTask(result.ProjectRoot, result.FeatureSlug, "test-e2e", regressionOutput, errorDocPath)
+				fixID, fixErr := addFixTask(result.ProjectRoot, result.FeatureSlug, "e2e-test", regressionOutput, errorDocPath)
 				if fixErr != nil {
 					fmt.Fprintf(os.Stderr, "WARNING: %v\n", fixErr)
 				}
-				handleGateFailure("test-e2e", errorDocPath, fixID, just.ExtractConciseError(regressionOutput, 5))
+				handleGateFailure("e2e-test", errorDocPath, fixID, just.ExtractConciseError(regressionOutput, 5))
 			}
 		}
 	}
@@ -239,13 +239,13 @@ func handleGateFailure(step, errorDocPath, fixID, concise string) {
 		"compile":   "fix compilation errors",
 		"lint":      "fix lint errors",
 		"unit-test": "fix failing tests",
-		"test-e2e":  "fix failing e2e tests",
+		"e2e-test":  "fix failing e2e tests",
 	}
 	label := map[string]string{
 		"compile":   "Project compilation",
 		"lint":      "Lint check",
 		"unit-test": "Unit tests",
-		"test-e2e":  "E2e regression tests",
+		"e2e-test":  "E2e regression tests",
 	}
 
 	g := guide[step]
@@ -366,7 +366,7 @@ func countFixTasks(index *task.TaskIndex, step string) int {
 // compile/test failures → TypeCodingFix, fmt/lint failures → TypeCodingCleanup.
 func fixTypeFromStep(step string) string {
 	switch step {
-	case "compile", "unit-test", "test-e2e":
+	case "compile", "unit-test", "e2e-test":
 		return task.TypeCodingFix
 	case "fmt", "lint":
 		return task.TypeCodingCleanup

@@ -16,7 +16,7 @@ test:
     npm test
 
 [arg("feature", long)]
-test-e2e feature="":
+e2e-test feature="":
     #!/usr/bin/env bash
     set -euo pipefail
     # --- Server Lifecycle (idempotent) ---

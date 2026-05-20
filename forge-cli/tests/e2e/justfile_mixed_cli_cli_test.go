@@ -182,14 +182,14 @@ func TestTC_MIX_016_ProjectTypeHasNoScopeParameter(t *testing.T) {
 		"Expected probe to NOT have scope=\"\" parameter")
 }
 
-// Traceability: TC-MIX-017 -> AC: test-e2e has no scope parameter
+// Traceability: TC-MIX-017 -> AC: e2e-test has no scope parameter
 func TestTC_MIX_017_TestE2eHasNoScopeParameter(t *testing.T) {
 	template := getMixedTemplate(t)
-	re := regexp.MustCompile(`test-e2e[^:]*:`)
+	re := regexp.MustCompile(`e2e-test[^:]*:`)
 	match := re.FindString(template)
-	assert.NotEmpty(t, match, "Expected test-e2e recipe in mixed template")
+	assert.NotEmpty(t, match, "Expected e2e-test recipe in mixed template")
 	assert.False(t, strings.Contains(match, `scope=""`),
-		"Expected test-e2e to NOT have scope=\"\" parameter")
+		"Expected e2e-test to NOT have scope=\"\" parameter")
 }
 
 // Traceability: TC-MIX-018 -> AC: ci has no scope parameter
@@ -234,13 +234,13 @@ func TestTC_MIX_021_MixedTemplateHasForgeBoundaryMarkers(t *testing.T) {
 
 // Traceability: TC-MIX-022 -> AC: All recipes present
 // Note: project-type has been removed (replaced by forge probe); probe recipe added.
-// Total: 15 recipes (compile, build, run, dev, test, test-e2e, lint, fmt, check,
+// Total: 15 recipes (compile, build, run, dev, test, e2e-test, lint, fmt, check,
 // clean, install, ci, e2e-setup, probe, e2e-verify).
 func TestTC_MIX_022_All15RecipesArePresentInMixedTemplate(t *testing.T) {
 	template := getMixedTemplate(t)
 	expectedRecipes := []string{
 		"compile", "build", "run", "dev",
-		"test", "test-e2e", "lint", "fmt", "check",
+		"test", "e2e-test", "lint", "fmt", "check",
 		"clean", "install", "ci", "e2e-setup", "probe", "e2e-verify",
 	}
 	for _, recipe := range expectedRecipes {

@@ -20,7 +20,7 @@ forge-cli/pkg/testing/languages/<key>/
 | `generate.md` | AI-readable prompt for test script generation (framework-specific rules) |
 | `run.md` | AI-readable prompt for test execution and result parsing |
 | `graduate.md` | AI-readable prompt for test migration from staging to regression |
-| `justfile-recipes` | Justfile recipe bodies for `test-e2e`, `e2e-setup`, `e2e-verify` |
+| `justfile-recipes` | Justfile recipe bodies for `e2e-test`, `e2e-setup`, `e2e-verify` |
 
 ## Language Key Convention
 
@@ -87,7 +87,7 @@ Each strategy file (`generate.md`, `run.md`, `graduate.md`) is an AI-readable pr
 
 Must define three recipes:
 
-1. **test-e2e** -- Run tests, support `--feature <slug>` for single-feature runs
+1. **e2e-test** -- Run tests, support `--feature <slug>` for single-feature runs
 2. **e2e-setup** -- Install dependencies (idempotent)
 3. **e2e-verify** -- Check for unresolved `// VERIFY:` markers (use language's file extension)
 

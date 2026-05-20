@@ -17,7 +17,7 @@ import (
 // error handling, and boundary-marker idempotency.
 
 // The 11 standard command names always present in the generated justfile per Spec 5.1.
-// Template-provided recipes (test-e2e, e2e-setup, e2e-verify, project-type) are
+// Template-provided recipes (e2e-test, e2e-setup, e2e-verify, project-type) are
 // injected by the active profile manifest and may not appear in all project types.
 var standardCommands = []string{
 	"compile", "build", "run", "dev", "test",

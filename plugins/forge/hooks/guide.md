@@ -63,7 +63,7 @@ Before each `just <verb>` command, resolve scope from the task's `scope` field:
 After all tasks done, runs as final safety net (no scope — project-wide):
 1. Quality gate: `just compile → just fmt → just lint`
 2. Project-wide tests: `just test`
-3. E2E regression: `just e2e-setup → just probe → just test-e2e`
+3. E2E regression: `just e2e-setup → just probe → just e2e-test`
 
 `forge quality-gate` automatically skips docs-only features (all tasks have a `doc*` type prefix or `noTest: true`). For mixed features, only tasks with `coding.*` type prefix are gated.
 

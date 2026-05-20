@@ -18,7 +18,7 @@ import (
 // Note: The current justfile is a Go-backend project using `cd forge-cli` prefix.
 // Scoped recipes accept a scope parameter but don't dispatch by scope (no case/esac).
 // The project-type recipe has been removed — project type is now read from .forge/config.yaml
-// via `forge probe`. Template recipes (test-e2e, e2e-setup, e2e-verify) are provided by
+// via `forge probe`. Template recipes (e2e-test, e2e-setup, e2e-verify) are provided by
 // the profile manifest, not baked into the justfile.
 
 // --- TC-FJ-001 to TC-FJ-010: Standard recipes presence ---
@@ -65,7 +65,7 @@ func TestTC_FJ_002_TenScopedRecipesUseScopeParameter(t *testing.T) {
 
 // Traceability: TC-FJ-003 -> AC: unscoped recipes present (no scope parameter)
 // ci recipe present without scope parameter.
-// Note: project-type, test-e2e, e2e-setup, e2e-verify are template-provided and may not
+// Note: project-type, e2e-test, e2e-setup, e2e-verify are template-provided and may not
 // appear in the generated justfile for a pure backend project.
 func TestTC_FJ_003_UnscopedRecipesPresent(t *testing.T) {
 	section := getStandardSection(t)
@@ -139,7 +139,7 @@ func TestTC_FJ_008_AllScopedRecipesHaveShebangWithSetEuoPipefail(t *testing.T) {
 			}
 		}
 		// Also check for unscoped recipes
-		for _, unscoped := range []string{"ci:", "test-e2e", "e2e-setup", "e2e-verify"} {
+		for _, unscoped := range []string{"ci:", "e2e-test", "e2e-setup", "e2e-verify"} {
 			idx := strings.Index(recipeToEnd[1:], unscoped)
 			if idx != -1 && idx+1 < nextRecipe {
 				nextRecipe = idx + 1
