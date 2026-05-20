@@ -22,6 +22,7 @@ domains: [cli, commands, reference, skills]
 | `forge probe` | HTTP 健康检查（用于 e2e 测试服务器） | `probe.go` |
 | `forge quality-gate` | 检查所有任务是否完成，然后运行测试 | `quality_gate.go` |
 | `forge verify-task-done` | 在 git commit 前验证任务完成状态 | `verify_task_done.go` |
+| `forge version` | 打印 CLI 版本号（隐藏命令，不出现在 --help 中） | `version.go` |
 | `forge claude` | 跳过权限检查启动 Claude CLI | `claude.go` |
 
 ## 命令组
@@ -80,10 +81,12 @@ domains: [cli, commands, reference, skills]
 
 | 命令 | 用途 | 源文件 |
 |------|------|--------|
-| `forge worktree start <slug>` | 创建 worktree 并在其中启动 Claude | `worktree.go` |
+| `forge worktree start [slug]` | 创建 worktree 并在其中启动 Claude（slug 可选，支持 `-i` 交互选择） | `worktree.go` |
 | `forge worktree list` | 列出所有 git worktree | `worktree.go` |
-| `forge worktree remove <slug>` | 移除 worktree 但保留其分支 | `worktree.go` |
+| `forge worktree remove <slug>` | 移除 worktree（`--hard` 删除分支，`--force` 强制） | `worktree.go` |
 | `forge worktree resume <slug>` | 在已有 worktree 中重新启动 Claude | `worktree.go` |
+| `forge worktree status [<slug>]` | 显示 worktree 状态（分支、提交、未提交文件）；无参数显示全部 | `worktree.go` |
+| `forge worktree push` | 推送当前 worktree 分支到远程并设置上游跟踪 | `worktree.go` |
 
 ### forge config — 配置管理
 
