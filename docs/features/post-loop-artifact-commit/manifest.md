@@ -1,6 +1,6 @@
 ---
 feature: "post-loop-artifact-commit"
-status: tasks
+status: completed
 mode: quick
 ---
 
