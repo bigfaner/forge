@@ -1,6 +1,6 @@
 ---
 feature: "system-type-exclusion"
-status: tasks
+status: completed
 mode: quick
 ---
 
