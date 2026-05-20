@@ -1682,6 +1682,135 @@ dependencies: ["2"]
 	})
 }
 
+// --- System type interception tests ---
+
+func TestValidator_ValidateTasks_SystemTypeRejectedForBusinessTask(t *testing.T) {
+	tests := []struct {
+		name            string
+		tasks           map[string]task.Task
+		wantErrors      int
+		wantErrContains []string
+	}{
+		{
+			name: "business task with gate type rejected",
+			tasks: map[string]task.Task{
+				"task1": {ID: "1", Title: "Task", File: "1.md", Type: "gate"},
+			},
+			wantErrors:      1,
+			wantErrContains: []string{"system-reserved type", "gate"},
+		},
+		{
+			name: "business task with test.gen-cases type rejected",
+			tasks: map[string]task.Task{
+				"task1": {ID: "1", Title: "Task", File: "1.md", Type: "test.gen-cases"},
+			},
+			wantErrors:      1,
+			wantErrContains: []string{"system-reserved type", "test.gen-cases"},
+		},
+		{
+			name: "business task with code-quality.simplify type rejected",
+			tasks: map[string]task.Task{
+				"task1": {ID: "1", Title: "Task", File: "1.md", Type: "code-quality.simplify"},
+			},
+			wantErrors:      1,
+			wantErrContains: []string{"system-reserved type", "code-quality.simplify"},
+		},
+		{
+			name: "business task with coding.feature passes",
+			tasks: map[string]task.Task{
+				"task1": {ID: "1", Title: "Task", File: "1.md", Type: "coding.feature"},
+			},
+			wantErrors: 0,
+		},
+		{
+			name: "business task with coding.fix passes",
+			tasks: map[string]task.Task{
+				"task1": {ID: "fix-1", Title: "Fix", File: "fix.md", Type: "coding.fix"},
+			},
+			wantErrors: 0,
+		},
+		{
+			name: "business task with coding.cleanup passes",
+			tasks: map[string]task.Task{
+				"task1": {ID: "clean-1", Title: "Cleanup", File: "clean.md", Type: "coding.cleanup"},
+			},
+			wantErrors: 0,
+		},
+		{
+			name: "business task with doc type passes",
+			tasks: map[string]task.Task{
+				"task1": {ID: "1", Title: "Doc", File: "1.md", Type: "doc"},
+			},
+			wantErrors: 0,
+		},
+		{
+			name: "business task with doc.consolidate passes",
+			tasks: map[string]task.Task{
+				"task1": {ID: "1", Title: "Consolidate", File: "1.md", Type: "doc.consolidate"},
+			},
+			wantErrors: 0,
+		},
+		{
+			name: "auto-gen gate task with gate type passes",
+			tasks: map[string]task.Task{
+				"gate": {ID: "1.gate", Title: "Gate", File: "gate.md", Type: "gate"},
+			},
+			wantErrors: 0,
+		},
+		{
+			name: "auto-gen summary task with doc.summary passes",
+			tasks: map[string]task.Task{
+				"summary": {ID: "1.summary", Title: "Summary", File: "summary.md", Type: "doc.summary"},
+			},
+			wantErrors: 0,
+		},
+		{
+			name: "auto-gen test task with test.gen-cases passes",
+			tasks: map[string]task.Task{
+				"test": {ID: "T-test-gen-cases", Title: "Test", File: "test.md", Type: "test.gen-cases"},
+			},
+			wantErrors: 0,
+		},
+		{
+			name: "auto-gen T-eval-doc with doc.eval passes",
+			tasks: map[string]task.Task{
+				"eval": {ID: "T-eval-doc", Title: "Eval", File: "eval.md", Type: "doc.eval"},
+			},
+			wantErrors: 0,
+		},
+		{
+			name: "multiple system type violations",
+			tasks: map[string]task.Task{
+				"task1": {ID: "1", Title: "Task 1", File: "1.md", Type: "gate"},
+				"task2": {ID: "2", Title: "Task 2", File: "2.md", Type: "validation.code"},
+			},
+			wantErrors: 2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := &validator{}
+			v.validateTasks(tt.tasks)
+			if len(v.errors) != tt.wantErrors {
+				t.Errorf("got %d errors, want %d: %v", len(v.errors), tt.wantErrors, v.errors)
+			}
+			for _, want := range tt.wantErrContains {
+				found := false
+				for _, e := range v.errors {
+					if contains(e, want) {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("missing error containing %q, got %v", want, v.errors)
+				}
+			}
+		})
+	}
+}
+
 func TestValidator_ValidateTasks_RejectedStatusValid(t *testing.T) {
 	v := &validator{filePath: "test.json"}
 	tasks := map[string]task.Task{

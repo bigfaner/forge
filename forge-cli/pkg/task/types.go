@@ -3,6 +3,8 @@ package task
 
 import (
 	"encoding/json"
+	"sort"
+	"strings"
 	"time"
 )
 
@@ -113,6 +115,16 @@ var SystemTypes = map[string]bool{
 // Business types and dual-identity types (doc.consolidate, doc.drift) return false.
 func IsSystemType(typ string) bool {
 	return SystemTypes[typ]
+}
+
+// FormatSystemTypes returns a comma-separated list of all system type names for error messages.
+func FormatSystemTypes() string {
+	names := make([]string, 0, len(SystemTypes))
+	for name := range SystemTypes {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return strings.Join(names, ", ")
 }
 
 // Task represents a single task in the feature index.

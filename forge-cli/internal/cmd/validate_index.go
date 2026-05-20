@@ -135,6 +135,10 @@ func (v *validator) validateTasks(tasks map[string]task.Task) {
 		case !task.ValidTypes[t.Type]:
 			v.errors = append(v.errors, fmt.Sprintf("Task '%s': invalid type '%s'", key, t.Type))
 		}
+		// System type interception: non-auto-gen tasks must not use system types
+		if t.Type != "" && task.IsSystemType(t.Type) && !task.IsAutoGenTaskID(t.ID) {
+			v.errors = append(v.errors, fmt.Sprintf("Task '%s': type '%s' is a system-reserved type (reserved: %s)", t.ID, t.Type, task.FormatSystemTypes()))
+		}
 	}
 }
 

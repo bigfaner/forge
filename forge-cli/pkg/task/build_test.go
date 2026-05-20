@@ -489,7 +489,7 @@ func TestBuildIndex_TypeInference(t *testing.T) {
 	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "")
 
 	// Task with explicit type
-	content := "---\nid: \"1\"\ntitle: \"Gate\"\npriority: \"P1\"\ntype: \"gate\"\nscope: \"all\"\n---\n\n# Gate\n"
+	content := "---\nid: \"1\"\ntitle: \"Feature\"\npriority: \"P1\"\ntype: \"coding.feature\"\nscope: \"all\"\n---\n\n# Feature\n"
 	if err := os.WriteFile(filepath.Join(tasksDir, "1-gate.md"), []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -512,8 +512,8 @@ func TestBuildIndex_TypeInference(t *testing.T) {
 	var idx taskIndexJSON
 	_ = json.Unmarshal(data, &idx)
 
-	if idx.Tasks["1-gate"].Type != "gate" {
-		t.Errorf("explicit type = %q, want gate", idx.Tasks["1-gate"].Type)
+	if idx.Tasks["1-gate"].Type != "coding.feature" {
+		t.Errorf("explicit type = %q, want coding.feature", idx.Tasks["1-gate"].Type)
 	}
 	if idx.Tasks["2-bar"].Type != TypeCodingFeature {
 		t.Errorf("inferred type = %q, want %q", idx.Tasks["2-bar"].Type, TypeCodingFeature)
@@ -750,8 +750,8 @@ func TestIsAutoGenTaskID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.id, func(t *testing.T) {
-			if got := isAutoGenTaskID(tt.id); got != tt.want {
-				t.Errorf("isAutoGenTaskID(%q) = %v, want %v", tt.id, got, tt.want)
+			if got := IsAutoGenTaskID(tt.id); got != tt.want {
+				t.Errorf("IsAutoGenTaskID(%q) = %v, want %v", tt.id, got, tt.want)
 			}
 		})
 	}
@@ -1263,6 +1263,100 @@ func TestBuildIndex_DocsOnlySkipsGatesAndTests(t *testing.T) {
 			continue
 		}
 		t.Errorf("unexpected file %s (docs-only should not generate gates or tests)", name)
+	}
+}
+
+// --- System type interception tests ---
+
+func TestBuildIndex_SystemTypeRejectedForBusinessTask(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "quick")
+
+	// Non-auto-gen task using a system type (gate)
+	writeTaskMDWithType(t, tasksDir, "1-gate.md", "1", "User Gate Task", TypeGate, nil)
+
+	opts := BuildIndexOpts{
+		FeatureSlug: "test-feature",
+		ProjectRoot: projectRoot,
+		TasksDir:    tasksDir,
+		IndexPath:   indexPath,
+	}
+
+	_, err := BuildIndex(opts)
+	if err == nil {
+		t.Fatal("expected error for business task using system type, got nil")
+	}
+	if !strings.Contains(err.Error(), "system-reserved type") {
+		t.Errorf("error should mention system-reserved type, got: %v", err)
+	}
+	if !strings.Contains(err.Error(), TypeGate) {
+		t.Errorf("error should mention the offending type %q, got: %v", TypeGate, err)
+	}
+	if !strings.Contains(err.Error(), "reserved:") {
+		t.Errorf("error should include reserved list, got: %v", err)
+	}
+}
+
+func TestBuildIndex_SystemTypeAllowedForAutoGenTask(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "quick")
+
+	// Auto-gen task ID using system type should pass
+	// Write a gate file (auto-gen ID pattern: *.gate)
+	gateContent := "---\nid: \"1.gate\"\ntitle: \"Phase 1 Gate\"\npriority: \"P0\"\ntype: \"gate\"\nscope: \"all\"\n---\n\n# Gate\n"
+	if err := os.WriteFile(filepath.Join(tasksDir, "1-gate.md"), []byte(gateContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	opts := BuildIndexOpts{
+		FeatureSlug: "test-feature",
+		ProjectRoot: projectRoot,
+		TasksDir:    tasksDir,
+		IndexPath:   indexPath,
+	}
+
+	_, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("auto-gen task using system type should pass, got: %v", err)
+	}
+}
+
+func TestBuildIndex_FixTaskPassesValidation(t *testing.T) {
+	// coding.fix and coding.cleanup are NOT system types, so they should pass
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "quick")
+
+	writeTaskMDWithType(t, tasksDir, "fix-1.md", "fix-1", "Fix Task", TypeCodingFix, nil)
+	writeTaskMDWithType(t, tasksDir, "clean-1.md", "clean-1", "Cleanup Task", TypeCodingCleanup, nil)
+
+	opts := BuildIndexOpts{
+		FeatureSlug: "test-feature",
+		ProjectRoot: projectRoot,
+		TasksDir:    tasksDir,
+		IndexPath:   indexPath,
+	}
+
+	_, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("coding.fix and coding.cleanup should pass validation, got: %v", err)
+	}
+}
+
+func TestBuildIndex_BusinessTypeAllowed(t *testing.T) {
+	// doc, doc.consolidate, doc.drift are business types (not in SystemTypes)
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "quick")
+
+	writeTaskMDWithType(t, tasksDir, "1-doc.md", "1", "Doc Task", TypeDoc, nil)
+	writeTaskMDWithType(t, tasksDir, "2-consolidate.md", "2", "Consolidate Task", TypeDocConsolidate, nil)
+	writeTaskMDWithType(t, tasksDir, "3-drift.md", "3", "Drift Task", TypeDocDrift, nil)
+
+	opts := BuildIndexOpts{
+		FeatureSlug: "test-feature",
+		ProjectRoot: projectRoot,
+		TasksDir:    tasksDir,
+		IndexPath:   indexPath,
+	}
+
+	_, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("business types (doc, doc.consolidate, doc.drift) should pass, got: %v", err)
 	}
 }
 
