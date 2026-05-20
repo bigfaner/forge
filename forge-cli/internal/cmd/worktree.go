@@ -1,9 +1,12 @@
 package cmd
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 
@@ -11,8 +14,10 @@ import (
 	"forge-cli/pkg/forgeconfig"
 	"forge-cli/pkg/git"
 	"forge-cli/pkg/project"
+	"forge-cli/pkg/proposal"
 
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 )
 
 // listWorktreesFunc lists git worktrees for a project root.
@@ -189,7 +194,7 @@ func runWorktreeResume(cmd *cobra.Command, args []string) error {
 }
 
 var worktreeStartCmd = &cobra.Command{
-	Use:   "start <slug>",
+	Use:   "start [slug]",
 	Short: "Create a worktree and launch Claude in it",
 	Long: `Create a git worktree at .forge/worktrees/<slug> with branch <slug> from HEAD,
 then launch claude --dangerously-skip-permissions in the worktree directory.
@@ -198,21 +203,57 @@ If branch <slug> already exists, creates the worktree from that branch
 (resume context).
 
 The source branch for new worktrees can be set via --source-branch / -b flag
-or worktree.source-branch in .forge/config.yaml. Priority: flag > config > HEAD.`,
-	Args: cobra.ExactArgs(1),
+or worktree.source-branch in .forge/config.yaml. Priority: flag > config > HEAD.
+
+Use -i/--interactive to select a proposal or feature from a list.`,
+	Args: cobra.MaximumNArgs(1),
 	RunE: runWorktreeStart,
 }
 
 func init() {
 	worktreeStartCmd.Flags().StringP("source-branch", "b", "", "source branch for the new worktree (default: HEAD)")
 	worktreeStartCmd.Flags().Bool("no-launch", false, "create worktree without launching claude")
+	worktreeStartCmd.Flags().BoolP("interactive", "i", false, "interactively select a proposal or feature")
 }
 
 func runWorktreeStart(cmd *cobra.Command, args []string) error {
-	slug := args[0]
+	slug := ""
+	if len(args) > 0 {
+		slug = args[0]
+	}
+
+	// Interactive mode: prompt user to select a proposal or feature
+	interactive, _ := cmd.Flags().GetBool("interactive")
+	if slug == "" && interactive {
+		// Find project root first (needed for scanning)
+		projectRoot, err := project.FindProjectRoot()
+		if err != nil {
+			return fmt.Errorf("find project root: %w", err)
+		}
+
+		// Check TTY
+		if !isTerminalFunc() {
+			_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "error: interactive mode requires a terminal (TTY)")
+			return fmt.Errorf("interactive mode requires a terminal")
+		}
+
+		items := listUnfinishedItems(projectRoot)
+		if len(items) == 0 {
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "No unfinished proposals or features found.")
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Create one with: forge proposal <slug> or forge feature <slug>")
+			return nil
+		}
+
+		selected, err := promptSelection(items, cmd.OutOrStdout())
+		if err != nil {
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: %v\n", err)
+			return err
+		}
+		slug = selected
+	}
 
 	if slug == "" {
-		return fmt.Errorf("slug must not be empty")
+		return fmt.Errorf("slug is required (provide as argument or use -i for interactive selection)")
 	}
 
 	// Check --no-launch early: skip claude pre-flight when not launching
@@ -480,4 +521,169 @@ func copyFilesToWorktree(projectRoot, worktreeDir string, copyFiles []string) er
 		}
 	}
 	return nil
+}
+
+// selectableItem represents a proposal or feature that can be selected interactively.
+type selectableItem struct {
+	Slug   string // directory name (used as slug)
+	Type   string // "proposal" or "feature"
+	Status string // frontmatter status, e.g. "Draft", "in_progress", "completed"
+}
+
+// listUnfinishedItems scans docs/proposals/ and docs/features/ for unfinished work.
+//
+// Proposals are considered unfinished if their status is not "completed".
+// Features are considered unfinished if their manifest status is not "completed".
+// Proposals appear before features in the returned list.
+func listUnfinishedItems(projectRoot string) []selectableItem {
+	var items []selectableItem
+
+	// Scan proposals: any proposal directory with status != "completed"
+	proposals, err := proposal.Discover(projectRoot)
+	if err == nil {
+		for _, p := range proposals {
+			if strings.EqualFold(p.Status, "completed") {
+				continue
+			}
+			status := p.Status
+			if status == "" {
+				status = "Draft"
+			}
+			items = append(items, selectableItem{
+				Slug:   p.Slug,
+				Type:   "proposal",
+				Status: status,
+			})
+		}
+	}
+
+	// Scan features: any feature directory with manifest status != "completed"
+	featuresDir := filepath.Join(projectRoot, feature.FeaturesDir)
+	entries, err := os.ReadDir(featuresDir)
+	if err == nil {
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				continue
+			}
+			slug := entry.Name()
+
+			// Skip if already listed as a proposal
+			if containsSlug(items, slug) {
+				continue
+			}
+
+			manifestPath := filepath.Join(featuresDir, slug, feature.ManifestFileName)
+			status := readManifestStatus(manifestPath)
+
+			if strings.EqualFold(status, "completed") {
+				continue
+			}
+			if status == "" {
+				status = "active"
+			}
+
+			items = append(items, selectableItem{
+				Slug:   slug,
+				Type:   "feature",
+				Status: status,
+			})
+		}
+	}
+
+	return items
+}
+
+// containsSlug checks if a selectableItem with the given slug exists.
+func containsSlug(items []selectableItem, slug string) bool {
+	for _, item := range items {
+		if item.Slug == slug {
+			return true
+		}
+	}
+	return false
+}
+
+// readManifestStatus reads the status field from a manifest.md frontmatter.
+// Returns empty string if file doesn't exist or frontmatter can't be parsed.
+func readManifestStatus(manifestPath string) string {
+	data, err := os.ReadFile(manifestPath)
+	if err != nil {
+		return ""
+	}
+
+	var meta struct {
+		Status string `yaml:"status"`
+	}
+	if err := parseFrontmatter(data, &meta); err != nil {
+		return ""
+	}
+	return meta.Status
+}
+
+// parseFrontmatter extracts YAML frontmatter from markdown content.
+func parseFrontmatter(content []byte, target any) error {
+	text := string(content)
+	if !strings.HasPrefix(text, "---") {
+		return nil
+	}
+	text = text[3:]
+	closeIdx := strings.Index(text, "\n---")
+	if closeIdx < 0 {
+		return nil
+	}
+	yamlContent := text[:closeIdx]
+	return yaml.Unmarshal([]byte(yamlContent), target)
+}
+
+// stdinFunc is the function used to read from stdin. Overridable for testing.
+var stdinFunc = defaultStdinRead
+
+// defaultStdinRead reads a line from stdin.
+func defaultStdinRead() (string, error) {
+	reader := bufio.NewReader(os.Stdin)
+	line, err := reader.ReadString('\n')
+	if err != nil && err != io.EOF {
+		return "", err
+	}
+	return strings.TrimSpace(line), nil
+}
+
+// isTerminalFunc checks if stdin is connected to a terminal (TTY).
+// Overridable for testing.
+var isTerminalFunc = defaultIsTerminal
+
+func defaultIsTerminal() bool {
+	fi, err := os.Stdin.Stat()
+	if err != nil {
+		return false
+	}
+	return fi.Mode()&os.ModeCharDevice != 0
+}
+
+// promptSelection presents a numbered list and reads the user's choice.
+// Returns the selected slug, or empty string if selection is invalid.
+func promptSelection(items []selectableItem, stdout io.Writer) (string, error) {
+	_, _ = fmt.Fprintln(stdout, "Select a proposal or feature:")
+	_, _ = fmt.Fprintln(stdout)
+	for i, item := range items {
+		_, _ = fmt.Fprintf(stdout, "  %d. [%s] %s (%s)\n", i+1, item.Type, item.Slug, item.Status)
+	}
+	_, _ = fmt.Fprintln(stdout)
+	_, _ = fmt.Fprint(stdout, "Enter number: ")
+
+	line, err := stdinFunc()
+	if err != nil {
+		return "", fmt.Errorf("read input: %w", err)
+	}
+
+	num, err := strconv.Atoi(line)
+	if err != nil {
+		return "", fmt.Errorf("invalid selection: %q", line)
+	}
+
+	if num < 1 || num > len(items) {
+		return "", fmt.Errorf("selection %d out of range (1-%d)", num, len(items))
+	}
+
+	return items[num-1].Slug, nil
 }

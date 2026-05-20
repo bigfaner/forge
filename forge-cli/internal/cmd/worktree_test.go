@@ -3079,3 +3079,607 @@ func TestWorktreeStart_RemoteBranchResolution(t *testing.T) {
 		})
 	}
 }
+
+// ---------------------------------------------------------------------------
+// interactive mode: listUnfinishedItems
+// ---------------------------------------------------------------------------
+
+func TestListUnfinishedItems_EmptyDir(t *testing.T) {
+	dir := t.TempDir()
+	items := listUnfinishedItems(dir)
+	if len(items) != 0 {
+		t.Errorf("expected no items for empty dir, got %d", len(items))
+	}
+}
+
+func TestListUnfinishedItems_NoDir(t *testing.T) {
+	dir := t.TempDir()
+	// Neither docs/proposals/ nor docs/features/ exist
+	items := listUnfinishedItems(dir)
+	if len(items) != 0 {
+		t.Errorf("expected no items when dirs don't exist, got %d", len(items))
+	}
+}
+
+func TestListUnfinishedItems_SkipsCompletedProposal(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create a completed proposal
+	proposalDir := filepath.Join(dir, "docs", "proposals", "done-proposal")
+	if err := os.MkdirAll(proposalDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	content := "---\nstatus: completed\ncreated: 2026-01-01\n---\n# Done"
+	if err := os.WriteFile(filepath.Join(proposalDir, "proposal.md"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	items := listUnfinishedItems(dir)
+	if len(items) != 0 {
+		t.Errorf("expected no items for completed proposal, got %d", len(items))
+	}
+}
+
+func TestListUnfinishedItems_IncludesDraftProposal(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create a draft proposal
+	proposalDir := filepath.Join(dir, "docs", "proposals", "my-proposal")
+	if err := os.MkdirAll(proposalDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	content := "---\nstatus: Draft\ncreated: 2026-01-01\n---\n# Draft"
+	if err := os.WriteFile(filepath.Join(proposalDir, "proposal.md"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	items := listUnfinishedItems(dir)
+	if len(items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(items))
+	}
+	if items[0].Slug != "my-proposal" {
+		t.Errorf("expected slug 'my-proposal', got %q", items[0].Slug)
+	}
+	if items[0].Type != "proposal" {
+		t.Errorf("expected type 'proposal', got %q", items[0].Type)
+	}
+	if items[0].Status != "Draft" {
+		t.Errorf("expected status 'Draft', got %q", items[0].Status)
+	}
+}
+
+func TestListUnfinishedItems_IncludesProposalWithNoStatus(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create a proposal with no status field
+	proposalDir := filepath.Join(dir, "docs", "proposals", "no-status-proposal")
+	if err := os.MkdirAll(proposalDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	content := "---\ncreated: 2026-01-01\n---\n# No Status"
+	if err := os.WriteFile(filepath.Join(proposalDir, "proposal.md"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	items := listUnfinishedItems(dir)
+	if len(items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(items))
+	}
+	if items[0].Status != "Draft" {
+		t.Errorf("expected status 'Draft' for proposal without status, got %q", items[0].Status)
+	}
+}
+
+func TestListUnfinishedItems_IncludesFeatureWithoutManifest(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create a feature directory without manifest.md
+	featureDir := filepath.Join(dir, "docs", "features", "my-feature", "tasks")
+	if err := os.MkdirAll(featureDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	items := listUnfinishedItems(dir)
+	if len(items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(items))
+	}
+	if items[0].Slug != "my-feature" {
+		t.Errorf("expected slug 'my-feature', got %q", items[0].Slug)
+	}
+	if items[0].Type != "feature" {
+		t.Errorf("expected type 'feature', got %q", items[0].Type)
+	}
+	if items[0].Status != "active" {
+		t.Errorf("expected status 'active', got %q", items[0].Status)
+	}
+}
+
+func TestListUnfinishedItems_SkipsCompletedFeature(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create a feature directory with completed manifest
+	featureDir := filepath.Join(dir, "docs", "features", "completed-feat")
+	if err := os.MkdirAll(featureDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	manifest := "---\nstatus: completed\n---\n# Completed"
+	if err := os.WriteFile(filepath.Join(featureDir, "manifest.md"), []byte(manifest), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	items := listUnfinishedItems(dir)
+	if len(items) != 0 {
+		t.Errorf("expected no items for completed feature, got %d", len(items))
+	}
+}
+
+func TestListUnfinishedItems_IncludesFeatureWithStatus(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create a feature directory with in_progress manifest
+	featureDir := filepath.Join(dir, "docs", "features", "active-feat")
+	if err := os.MkdirAll(featureDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	manifest := "---\nstatus: in_progress\n---\n# Active"
+	if err := os.WriteFile(filepath.Join(featureDir, "manifest.md"), []byte(manifest), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	items := listUnfinishedItems(dir)
+	if len(items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(items))
+	}
+	if items[0].Status != "in_progress" {
+		t.Errorf("expected status 'in_progress', got %q", items[0].Status)
+	}
+}
+
+func TestListUnfinishedItems_DoesNotDuplicateProposalSlug(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create both a proposal and a feature with the same slug
+	proposalDir := filepath.Join(dir, "docs", "proposals", "shared-slug")
+	if err := os.MkdirAll(proposalDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	content := "---\nstatus: Draft\ncreated: 2026-01-01\n---\n# Proposal"
+	if err := os.WriteFile(filepath.Join(proposalDir, "proposal.md"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	featureDir := filepath.Join(dir, "docs", "features", "shared-slug")
+	if err := os.MkdirAll(featureDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	items := listUnfinishedItems(dir)
+	if len(items) != 1 {
+		t.Fatalf("expected 1 item (no duplicate), got %d", len(items))
+	}
+	if items[0].Type != "proposal" {
+		t.Errorf("expected type 'proposal' (proposal takes priority), got %q", items[0].Type)
+	}
+}
+
+func TestListUnfinishedItems_MixedProposalsAndFeatures(t *testing.T) {
+	dir := t.TempDir()
+
+	// Proposal 1: Draft
+	p1Dir := filepath.Join(dir, "docs", "proposals", "draft-proposal")
+	if err := os.MkdirAll(p1Dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(p1Dir, "proposal.md"), []byte("---\nstatus: Draft\ncreated: 2026-01-01\n---\n# P1"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Proposal 2: completed (should be skipped)
+	p2Dir := filepath.Join(dir, "docs", "proposals", "done-proposal")
+	if err := os.MkdirAll(p2Dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(p2Dir, "proposal.md"), []byte("---\nstatus: completed\ncreated: 2026-01-01\n---\n# P2"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Feature 1: active
+	f1Dir := filepath.Join(dir, "docs", "features", "active-feat")
+	if err := os.MkdirAll(f1Dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Feature 2: completed (should be skipped)
+	f2Dir := filepath.Join(dir, "docs", "features", "done-feat")
+	if err := os.MkdirAll(f2Dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(f2Dir, "manifest.md"), []byte("---\nstatus: completed\n---\n# Done"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	items := listUnfinishedItems(dir)
+	if len(items) != 2 {
+		t.Fatalf("expected 2 items (1 draft proposal + 1 active feature), got %d: %+v", len(items), items)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// interactive mode: promptSelection
+// ---------------------------------------------------------------------------
+
+func TestPromptSelection_ValidNumber(t *testing.T) {
+	items := []selectableItem{
+		{Slug: "foo", Type: "proposal", Status: "Draft"},
+		{Slug: "bar", Type: "feature", Status: "active"},
+	}
+
+	// Mock stdin to return "1"
+	origStdin := stdinFunc
+	stdinFunc = func() (string, error) { return "1", nil }
+	defer func() { stdinFunc = origStdin }()
+
+	var buf bytes.Buffer
+	slug, err := promptSelection(items, &buf)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if slug != "foo" {
+		t.Errorf("expected slug 'foo', got %q", slug)
+	}
+
+	// Verify output contains the numbered list
+	output := buf.String()
+	if !strings.Contains(output, "1.") || !strings.Contains(output, "foo") {
+		t.Errorf("output should contain numbered list, got:\n%s", output)
+	}
+}
+
+func TestPromptSelection_SecondItem(t *testing.T) {
+	items := []selectableItem{
+		{Slug: "foo", Type: "proposal", Status: "Draft"},
+		{Slug: "bar", Type: "feature", Status: "active"},
+	}
+
+	origStdin := stdinFunc
+	stdinFunc = func() (string, error) { return "2", nil }
+	defer func() { stdinFunc = origStdin }()
+
+	var buf bytes.Buffer
+	slug, err := promptSelection(items, &buf)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if slug != "bar" {
+		t.Errorf("expected slug 'bar', got %q", slug)
+	}
+}
+
+func TestPromptSelection_InvalidNumber(t *testing.T) {
+	items := []selectableItem{
+		{Slug: "foo", Type: "proposal", Status: "Draft"},
+	}
+
+	origStdin := stdinFunc
+	stdinFunc = func() (string, error) { return "5", nil }
+	defer func() { stdinFunc = origStdin }()
+
+	var buf bytes.Buffer
+	_, err := promptSelection(items, &buf)
+	if err == nil {
+		t.Error("expected error for out-of-range selection")
+	}
+}
+
+func TestPromptSelection_NonNumericInput(t *testing.T) {
+	items := []selectableItem{
+		{Slug: "foo", Type: "proposal", Status: "Draft"},
+	}
+
+	origStdin := stdinFunc
+	stdinFunc = func() (string, error) { return "abc", nil }
+	defer func() { stdinFunc = origStdin }()
+
+	var buf bytes.Buffer
+	_, err := promptSelection(items, &buf)
+	if err == nil {
+		t.Error("expected error for non-numeric input")
+	}
+}
+
+func TestPromptSelection_StdinError(t *testing.T) {
+	items := []selectableItem{
+		{Slug: "foo", Type: "proposal", Status: "Draft"},
+	}
+
+	origStdin := stdinFunc
+	stdinFunc = func() (string, error) { return "", fmt.Errorf("stdin error") }
+	defer func() { stdinFunc = origStdin }()
+
+	var buf bytes.Buffer
+	_, err := promptSelection(items, &buf)
+	if err == nil {
+		t.Error("expected error for stdin failure")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// interactive mode: -i flag registration
+// ---------------------------------------------------------------------------
+
+func TestWorktreeStart_InteractiveFlagRegistered(t *testing.T) {
+	flag := worktreeStartCmd.Flags().Lookup("interactive")
+	if flag == nil {
+		t.Fatal("worktree start command should have --interactive flag")
+	}
+	if flag.Shorthand != "i" {
+		t.Errorf("interactive shorthand should be 'i', got %q", flag.Shorthand)
+	}
+	if flag.DefValue != "false" {
+		t.Errorf("interactive default should be false, got %q", flag.DefValue)
+	}
+}
+
+func TestWorktreeStart_SlugArgIsOptional(t *testing.T) {
+	// The command should accept 0 args when using -i
+	// MaximumNArgs(1) should allow 0 or 1 args
+	if worktreeStartCmd.Args == nil {
+		t.Fatal("worktreeStartCmd.Args should not be nil")
+	}
+	// Test that 0 args is accepted by Args validator (but will fail at runtime without -i)
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "start"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Error("expected error when no slug and no -i flag")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// interactive mode: slug takes precedence over -i
+// ---------------------------------------------------------------------------
+
+func TestWorktreeStart_SlugTakesPrecedenceOverInteractive(t *testing.T) {
+	resetSourceBranchFlag(t)
+	resetInteractiveFlag(t)
+
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	origRunClaude := runClaudeFunc
+	runClaudeFunc = func(_ []string) error { return nil }
+	defer func() { runClaudeFunc = origRunClaude }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	slug := "slug-precedence-test"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	// Both -i and slug provided: slug should take precedence
+	rootCmd.SetArgs([]string{"worktree", "start", slug, "-i"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify worktree was created with the provided slug
+	if _, err := os.Stat(targetDir); os.IsNotExist(err) {
+		t.Errorf("worktree directory %s should exist", targetDir)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// interactive mode: empty list handling
+// ---------------------------------------------------------------------------
+
+func TestWorktreeStart_InteractiveEmptyList(t *testing.T) {
+	resetSourceBranchFlag(t)
+	resetInteractiveFlag(t)
+
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	// Override isTerminal to return true
+	origIsTerminal := isTerminalFunc
+	isTerminalFunc = func() bool { return true }
+	defer func() { isTerminalFunc = origIsTerminal }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// No proposals or features in this git repo
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "start", "-i"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	stdout := buf.String()
+	if !strings.Contains(stdout, "No unfinished proposals or features found") {
+		t.Errorf("output should mention no items found, got:\n%s", stdout)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// interactive mode: non-TTY detection
+// ---------------------------------------------------------------------------
+
+func TestWorktreeStart_InteractiveNonTTY(t *testing.T) {
+	resetSourceBranchFlag(t)
+	resetInteractiveFlag(t)
+
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	// Override isTerminal to return false (non-TTY)
+	origIsTerminal := isTerminalFunc
+	isTerminalFunc = func() bool { return false }
+	defer func() { isTerminalFunc = origIsTerminal }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "start", "-i"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Error("expected error when interactive mode used in non-TTY")
+	}
+	stderr := buf.String()
+	if !strings.Contains(stderr, "terminal") {
+		t.Errorf("error should mention terminal, got: %s", stderr)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// interactive mode: successful selection
+// ---------------------------------------------------------------------------
+
+func TestWorktreeStart_InteractiveSelectsProposal(t *testing.T) {
+	resetSourceBranchFlag(t)
+	resetInteractiveFlag(t)
+
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	origRunClaude := runClaudeFunc
+	runClaudeFunc = func(_ []string) error { return nil }
+	defer func() { runClaudeFunc = origRunClaude }()
+
+	// Override isTerminal to return true
+	origIsTerminal := isTerminalFunc
+	isTerminalFunc = func() bool { return true }
+	defer func() { isTerminalFunc = origIsTerminal }()
+
+	// Mock stdin to return "1"
+	origStdin := stdinFunc
+	stdinFunc = func() (string, error) { return "1", nil }
+	defer func() { stdinFunc = origStdin }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a proposal
+	proposalDir := filepath.Join(dir, "docs", "proposals", "interactive-test")
+	if err := os.MkdirAll(proposalDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	content := "---\nstatus: Draft\ncreated: 2026-01-01\n---\n# Test"
+	if err := os.WriteFile(filepath.Join(proposalDir, "proposal.md"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	targetDir := filepath.Join(dir, ".forge", "worktrees", "interactive-test")
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", "interactive-test").Run()
+	})
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "start", "-i"})
+
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify worktree was created with the selected slug
+	if _, err := os.Stat(targetDir); os.IsNotExist(err) {
+		t.Errorf("worktree directory %s should exist", targetDir)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// interactive mode: no slug and no -i
+// ---------------------------------------------------------------------------
+
+func TestWorktreeStart_NoSlugNoInteractive(t *testing.T) {
+	resetSourceBranchFlag(t)
+	resetInteractiveFlag(t)
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	rootCmd.SetArgs([]string{"worktree", "start"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Error("expected error when no slug and no -i flag")
+	}
+	if !strings.Contains(err.Error(), "slug") {
+		t.Errorf("error should mention slug requirement, got: %v", err)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// resetInteractiveFlag resets the --interactive flag on worktreeStartCmd.
+// ---------------------------------------------------------------------------
+
+func resetInteractiveFlag(t *testing.T) {
+	t.Helper()
+	t.Cleanup(func() {
+		f := worktreeStartCmd.Flags().Lookup("interactive")
+		if f != nil {
+			f.Changed = false
+			_ = f.Value.Set("false")
+		}
+	})
+}
