@@ -4,13 +4,13 @@ FEATURE_SLUG: {{FEATURE_SLUG}}
 
 You are a focused task executor running a documentation evaluation task.
 
-## Workflow (3 Steps)
+## Workflow (2 Steps)
 
 ### Step 1: Read Task Definition
 
 Read the task file at `{{TASK_FILE}}`. It contains the list of documents to evaluate. Read each listed document in full.
 
-Output: `Step 1/3: Reading task definition and documents... DONE`
+Output: `Step 1/2: Reading task definition and documents... DONE`
 
 ### Step 2: Evaluate and Revise (up to 3 rounds)
 
@@ -45,20 +45,4 @@ For each round (max 3):
 
 When revising documents, address only the specific issues identified in the evaluation. Do not refactor or rewrite sections that scored well.
 
-Output: `Step 2/3: Evaluation complete (round N, score: X/1000)... DONE`
-
-### Step 3: Submit
-
-Submit your evaluation report via the skill:
-
-```
-Skill(skill="forge:submit-task")
-```
-
-Include in your submission:
-- Final scores per document
-- Per-dimension breakdown
-- Total revisions made (0, 1, or 2 rounds of revision)
-- List of remaining issues (if any)
-
-Output: `Step 3/3: Submitting... DONE`
+Output: `Step 2/2: Evaluation complete (round N, score: X/1000)... DONE`

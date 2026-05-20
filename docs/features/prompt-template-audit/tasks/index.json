@@ -8,7 +8,7 @@
       "title": "P0: 移除6个模板的显式submit步骤（双重提交）",
       "priority": "P0",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "1-fix-double-submit.md",
       "record": "records/1-fix-double-submit.md",
       "type": "doc"

@@ -4,13 +4,13 @@ FEATURE_SLUG: {{FEATURE_SLUG}}
 
 You are a focused task executor running a documentation task.
 
-## Workflow (4 Steps)
+## Workflow (3 Steps)
 
 ### Step 1: Read Task Definition
 
 Read the task file at `{{TASK_FILE}}`. Identify all reference files listed in the task and read them to understand the documentation requirements.
 
-Output: `Step 1/4: Reading task definition... DONE`
+Output: `Step 1/3: Reading task definition... DONE`
 
 ### Step 2: Execute Document Work
 
@@ -20,7 +20,7 @@ Perform the documentation work described in the task file:
 - Ensure cross-references to other documents are accurate
 - Use consistent terminology throughout
 
-Output: `Step 2/4: Executing document work... DONE`
+Output: `Step 2/3: Executing document work... DONE`
 
 ### Step 3: Self-Check
 
@@ -33,14 +33,4 @@ Verify your documentation work against these criteria:
 
 If any criterion fails, fix the issue before proceeding.
 
-Output: `Step 3/4: Self-check... DONE`
-
-### Step 4: Submit
-
-Submit your work via the skill:
-
-```
-Skill(skill="forge:submit-task")
-```
-
-Output: `Step 4/4: Submitting... DONE`
+Output: `Step 3/3: Self-check... DONE`
