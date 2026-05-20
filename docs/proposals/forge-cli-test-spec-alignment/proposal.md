@@ -13,7 +13,7 @@ Forge 的测试管道已采纳 Journey-Driven Test Model（见 `docs/proposals/c
 ### 当前结构（按 feature/command 组织）
 
 ```
-tests/e2e/                                    (Go module: e2e-tests, package: e2e)
+tests/                                    (Go module: e2e-tests, package: e2e)
   main_test.go                                (TestMain: binary alias)
   forge_binary.go                             (init: build binary, shared via import)
   helpers_test.go                             (shared helpers: parseBlock, hasField, etc.)
@@ -39,7 +39,7 @@ tests/e2e/                                    (Go module: e2e-tests, package: e2
 ### 目标结构（按 Journey 组织）
 
 ```
-tests/e2e/
+tests/
   testkit/                                    (共享基础设施包，供所有 Journey import)
     forge_binary.go                           (init: build binary → ForgeBinary)
     helpers.go                                (parseBlock, hasField, withRetry 等)
@@ -110,14 +110,14 @@ tests/e2e/
 
 将 `forge_binary.go` 和 `helpers_test.go` 提取为独立的 `testkit` 包，供所有 Journey 包 import。这替换当前根目录的共享基础设施。
 
-- `tests/e2e/testkit/forge_binary.go` — `ForgeBinary` 变量 + `ForgeCmd()` 函数（从 forge_binary.go 移出）
-- `tests/e2e/testkit/helpers.go` — `ParseBlock`, `HasField`, `FieldValue`, `WithRetry` 等公开函数（从 helpers_test.go 移出）
+- `tests/testkit/forge_binary.go` — `ForgeBinary` 变量 + `ForgeCmd()` 函数（从 forge_binary.go 移出）
+- `tests/testkit/helpers.go` — `ParseBlock`, `HasField`, `FieldValue`, `WithRetry` 等公开函数（从 helpers_test.go 移出）
 
 ### 2. 创建 Journey 目录并迁移测试文件
 
 按用户工作流将现有测试文件分组到 8 个 Journey 目录。每个 Journey 是独立的 Go 包（有自己的 `TestMain` 和 helpers），import testkit 获取共享二进制和工具函数。
 
-> **目录层级说明**：规范定义路径为 `tests/<journey-name>/`，但本提案保持在 `tests/e2e/<journey-name>/` 下。原因：`tests/e2e/` 是一个独立 Go module（`e2e-tests`），与 forge-cli 模块解耦；直接放在 `tests/` 下需要创建新的 Go module 或修改 go.work，增加不必要的复杂度。
+> **目录层级说明**：`tests/e2e/go.mod` 上移为 `tests/go.mod`（module 名改为 `forge-tests`），消除旧模型遗留的 `e2e/` 中间目录。Journey 直接组织在 `tests/<journey-name>/` 下，与规范路径一致。
 
 映射关系：
 
@@ -138,10 +138,11 @@ tests/e2e/
 
 ### 4. 更新构建配置
 
+- 将 `tests/e2e/go.mod` 上移为 `tests/go.mod`（module 名改为 `forge-tests`）
+- 删除 `tests/e2e/` 中间目录
 - 删除根目录的 `main_test.go`、`forge_binary.go`、`helpers_test.go`（已迁移到 testkit）
 - 每个 Journey 包添加自己的 `main_test.go`（调用 testkit 设置）
-- 更新 justfile 中的 `test-e2e` 命令以适应新目录结构
-- 更新 go.work 或模块配置（如果适用）
+- 更新 justfile 中的 `test-e2e` 命令路径（`./tests/e2e/...` → `./tests/...`）
 
 ## Alternatives
 
@@ -159,8 +160,8 @@ tests/e2e/
 - 迁移现有测试文件到 8 个 Journey 目录
 - 为每个 Journey 创建 `contracts/` 目录和 Contract 规范文件
 - 每个 Journey 包的 `main_test.go` 和 `helpers_test.go`
-- 更新 justfile 中的 E2E 测试命令
-- 清理旧的根目录文件和 features/ 目录
+- 更新 justfile 中的 E2E 测试命令路径
+- 清理旧的 `tests/e2e/` 目录、根目录文件和 features/ 目录
 - 更新 `.graduated/` 标记文件位置（如果适用）
 - **去除重复或无效的测试用例**：迁移过程中识别并删除重复测试（相同命令+相同场景的多次覆盖）、已失效测试（测试已移除命令或已变更行为的测试）
 
@@ -187,5 +188,5 @@ tests/e2e/
 - [ ] 所有 23 个现有测试文件成功迁移到对应 Journey 目录
 - [ ] 共享基础设施提取到 testkit 包，所有 Journey 包正确 import
 - [ ] `just test-e2e` 通过所有迁移后的测试（去除重复/无效用例后数量可能减少）
-- [ ] 旧的根目录测试文件和 features/ 目录已清理
+- [ ] 旧的 `tests/e2e/` 目录已清理，go.mod 上移到 `tests/go.mod`
 - [ ] 每个 Contract 规范文件包含完整的六维度声明
