@@ -72,7 +72,7 @@
       "title": "Detect Spec Drift",
       "priority": "P2",
       "estimatedTime": "15min",
-      "status": "pending",
+      "status": "in_progress",
       "file": "quick-drift-detection.md",
       "record": "records/quick-drift-detection.md",
       "scope": "all",
