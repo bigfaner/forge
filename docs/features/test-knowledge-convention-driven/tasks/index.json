@@ -338,7 +338,7 @@
       "dependencies": [
         "T-test-gen-cases"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "eval-test-cases.md",
       "record": "records/eval-test-cases.md",
       "scope": "all",
@@ -367,7 +367,7 @@
       "dependencies": [
         "T-test-eval-cases"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "gen-test-scripts-go-cli.md",
       "record": "records/gen-test-scripts-go-cli.md",
       "scope": "all",
