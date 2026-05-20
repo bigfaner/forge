@@ -36,7 +36,7 @@
       "dependencies": [
         "2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3-template-updates.md",
       "record": "records/3-template-updates.md",
       "scope": "backend",

@@ -1045,6 +1045,145 @@ func TestSynthesize_ConfigCoverageOverridesDefault(t *testing.T) {
 	}
 }
 
+// --- Coverage directive actionability tests ---
+// Verify that templates contain actionable instructions guiding agent behavior.
+
+func TestSynthesize_CodingFeature_CoverageDirectiveActionable(t *testing.T) {
+	dir := t.TempDir()
+	tasks := map[string]task.Task{
+		"1.1": {
+			ID:     "1.1",
+			Title:  "Feature task",
+			Status: "pending",
+			File:   "1.1.md",
+			Record: "records/1.1.md",
+			Type:   task.TypeCodingFeature,
+			Scope:  "backend",
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "1.1"}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// Feature template should tell agent to stop adding tests when target is reached
+	if !strings.Contains(result, "达到目标后停止补充测试") {
+		t.Error("coding.feature prompt should contain actionable directive: '达到目标后停止补充测试'")
+	}
+}
+
+func TestSynthesize_CodingEnhancement_CoverageDirectiveActionable(t *testing.T) {
+	dir := t.TempDir()
+	tasks := map[string]task.Task{
+		"1.1": {
+			ID:     "1.1",
+			Title:  "Enhancement task",
+			Status: "pending",
+			File:   "1.1.md",
+			Record: "records/1.1.md",
+			Type:   task.TypeCodingEnhancement,
+			Scope:  "backend",
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "1.1"}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// Enhancement template should tell agent to stop adding tests when target is reached
+	if !strings.Contains(result, "达到目标后停止补充测试") {
+		t.Error("coding.enhancement prompt should contain actionable directive: '达到目标后停止补充测试'")
+	}
+}
+
+func TestSynthesize_CodingFix_CoverageDirectiveActionable(t *testing.T) {
+	dir := t.TempDir()
+	tasks := map[string]task.Task{
+		"fix-1": {
+			ID:     "fix-1",
+			Title:  "Fix task",
+			Status: "pending",
+			File:   "fix-1.md",
+			Record: "records/fix-1.md",
+			Type:   task.TypeCodingFix,
+			Scope:  "backend",
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "fix-1"}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// Fix template should tell agent to write targeted tests, not chase high coverage
+	if !strings.Contains(result, "写针对性修复测试") {
+		t.Error("coding.fix prompt should contain actionable directive: '写针对性修复测试'")
+	}
+	if !strings.Contains(result, "达到目标后停止补充测试") {
+		t.Error("coding.fix prompt should contain actionable directive: '达到目标后停止补充测试'")
+	}
+}
+
+func TestSynthesize_CodingRefactor_CoverageDirectiveActionable(t *testing.T) {
+	dir := t.TempDir()
+	tasks := map[string]task.Task{
+		"1.1": {
+			ID:     "1.1",
+			Title:  "Refactor task",
+			Status: "pending",
+			File:   "1.1.md",
+			Record: "records/1.1.md",
+			Type:   task.TypeCodingRefactor,
+			Scope:  "backend",
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "1.1"}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// Refactor template should contain incremental compile strategy
+	if !strings.Contains(result, "just compile") {
+		t.Error("coding.refactor prompt should contain incremental compile strategy with 'just compile'")
+	}
+	if !strings.Contains(result, "不新增测试") {
+		t.Error("coding.refactor prompt should contain directive: '不新增测试'")
+	}
+}
+
+func TestSynthesize_CodingCleanup_CoverageDirectiveActionable(t *testing.T) {
+	dir := t.TempDir()
+	tasks := map[string]task.Task{
+		"1.1": {
+			ID:     "1.1",
+			Title:  "Cleanup task",
+			Status: "pending",
+			File:   "1.1.md",
+			Record: "records/1.1.md",
+			Type:   task.TypeCodingCleanup,
+			Scope:  "backend",
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "1.1"}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// Cleanup template should say no new tests needed, maintain strategy
+	if !strings.Contains(result, "不新增测试") {
+		t.Error("coding.cleanup prompt should contain directive: '不新增测试'")
+	}
+}
+
 func TestExtractTestTypeArg(t *testing.T) {
 	tests := []struct {
 		id   string

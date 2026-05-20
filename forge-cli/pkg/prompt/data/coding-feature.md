@@ -12,9 +12,6 @@ You are a focused task executor implementing a new feature.
 - Goal-Driven Execution: Define a clear, verifiable success condition before starting. After implementation, confirm the condition is met — if not, iterate.
 </CODING_PRINCIPLES>
 
-COVERAGE_STRATEGY: {{COVERAGE_STRATEGY}}
-COVERAGE_TARGET: {{COVERAGE_TARGET}}
-
 ## Workflow (3 Steps)
 
 ### Step 1: Read Task Definition
@@ -38,6 +35,10 @@ If the task file contains ## Hard Rules with MUST/MUST NOT directives:
 </IMPORTANT>
 
 ### Step 2: TDD Implementation
+
+<IMPORTANT>
+覆盖率策略: {{COVERAGE_STRATEGY}} — 目标: {{COVERAGE_TARGET}}。达到目标后停止补充测试。
+</IMPORTANT>
 
 Follow the TDD cycle for each requirement:
 
