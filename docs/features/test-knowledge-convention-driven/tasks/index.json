@@ -125,7 +125,7 @@
       "dependencies": [
         "1.gate"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2.1-rewrite-gen-test-scripts.md",
       "record": "records/2.1-rewrite-gen-test-scripts.md",
       "scope": "all",
