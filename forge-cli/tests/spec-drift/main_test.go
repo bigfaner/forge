@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"forge-cli/tests/e2e/testkit"
+	"forge-cli/tests/testkit"
 )
 
 // forgeBinary is the path to a forge CLI binary built from the current source tree.

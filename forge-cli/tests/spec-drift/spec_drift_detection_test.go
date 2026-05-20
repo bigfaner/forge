@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"forge-cli/tests/e2e/testkit"
+	"forge-cli/tests/testkit"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

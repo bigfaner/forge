@@ -28,28 +28,24 @@ func projectRootSimplify(t *testing.T) string {
 	return abs
 }
 
-// e2eRoot returns the tests/e2e/ directory.
-func e2eRoot(t *testing.T) string {
-	t.Helper()
-	return filepath.Join(projectRootSimplify(t), "tests", "e2e")
-}
-
 // TC-001: Verify tui-ui-design directory deleted
 // Traceability: TC-001 -> Proposal Success Criterion 1
 func TestTC_001_Simplify_VerifyTuiUiDesignDirectoryDeleted(t *testing.T) {
-	tuiDir := filepath.Join(e2eRoot(t), "tui-ui-design")
-
-	_, err := os.Stat(tuiDir)
+	// Old tests/e2e/ has been fully removed — tui-ui-design subdirectory
+	// no longer exists by virtue of the parent being gone.
+	e2eDir := filepath.Join(projectRootSimplify(t), "tests", "e2e")
+	_, err := os.Stat(e2eDir)
 	assert.True(t, os.IsNotExist(err),
-		"directory tests/e2e/tui-ui-design/ should not exist, but it does")
+		"tests/e2e/ directory should have been removed during cleanup")
 }
 
 // TC-002: Verify justfile-canonical-e2e directory has been consolidated into e2e-pipeline journey
 // Traceability: TC-002 -> Proposal Success Criterion 2 (consolidated into e2e-pipeline journey)
 func TestTC_002_Simplify_VerifyJustfileCanonicalE2eDirectoryConsolidated(t *testing.T) {
-	oldDir := filepath.Join(e2eRoot(t), "justfile-canonical-e2e")
-
-	_, err := os.Stat(oldDir)
+	// Old tests/e2e/ has been fully removed — justfile-canonical-e2e subdirectory
+	// no longer exists by virtue of the parent being gone.
+	e2eDir := filepath.Join(projectRootSimplify(t), "tests", "e2e")
+	_, err := os.Stat(e2eDir)
 	assert.True(t, os.IsNotExist(err),
-		"directory tests/e2e/justfile-canonical-e2e/ should not exist (consolidated into tests/e2e-pipeline/)")
+		"tests/e2e/ directory should have been removed during cleanup")
 }
