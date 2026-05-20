@@ -8,7 +8,7 @@
       "title": "Add SystemTypes set, IsSystemType(), and remove TypeCodingClean dead code",
       "priority": "P1",
       "estimatedTime": "45min",
-      "status": "pending",
+      "status": "completed",
       "file": "1-system-types-foundation.md",
       "record": "records/1-system-types-foundation.md",
       "breaking": true,
@@ -51,7 +51,6 @@
       "file": "quick-drift-detection.md",
       "record": "records/quick-drift-detection.md",
       "scope": "all",
-      "noTest": true,
       "type": "doc.drift"
     }
   },

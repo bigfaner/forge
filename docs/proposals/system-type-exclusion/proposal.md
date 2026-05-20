@@ -1,7 +1,7 @@
 ---
 created: 2026-05-20
 author: "fanhuifeng"
-status: Draft
+status: Approved
 ---
 
 # Proposal: 系统类型排除——防止业务任务使用 CLI 自动生成的任务类型

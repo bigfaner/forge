@@ -14,7 +14,6 @@ const (
 	TypeCodingCleanup        = "coding.cleanup"
 	TypeCodingRefactor       = "coding.refactor"
 	TypeCodingFix            = "coding.fix"
-	TypeCodingClean          = "coding.clean"
 	TypeDoc                  = "doc"
 	TypeDocEval              = "doc.eval"
 	TypeDocSummary           = "doc.summary"
@@ -47,7 +46,6 @@ var TaskTypeRegistry = []TaskTypeInfo{
 	{Name: TypeCodingCleanup, Description: "remove dead code or fix technical debt"},
 	{Name: TypeCodingRefactor, Description: "restructure code without behavior change"},
 	{Name: TypeCodingFix, Description: "fix a bug or issue"},
-	{Name: TypeCodingClean, Description: "clean code without changing behavior"},
 	{Name: TypeDoc, Description: "write or update documentation"},
 	{Name: TypeDocEval, Description: "evaluate documentation quality"},
 	{Name: TypeDocSummary, Description: "generate documentation summary"},
@@ -73,7 +71,6 @@ var ValidTypes = map[string]bool{
 	TypeCodingCleanup:        true,
 	TypeCodingRefactor:       true,
 	TypeCodingFix:            true,
-	TypeCodingClean:          true,
 	TypeDoc:                  true,
 	TypeDocEval:              true,
 	TypeDocSummary:           true,
@@ -90,6 +87,32 @@ var ValidTypes = map[string]bool{
 	TypeValidationUx:         true,
 	TypeGate:                 true,
 	TypeCleanCode:            true,
+}
+
+// SystemTypes is the set of auto-generated system task types (13 total).
+// These types are created by the forge pipeline, not by users.
+// Dual-identity types (doc.consolidate, doc.drift) are excluded because
+// they can also serve as business tasks.
+var SystemTypes = map[string]bool{
+	TypeGate:                 true,
+	TypeTestGenCases:         true,
+	TypeTestEvalCases:        true,
+	TypeTestGenScripts:       true,
+	TypeTestRun:              true,
+	TypeTestGenAndRun:        true,
+	TypeTestGraduate:         true,
+	TypeTestVerifyRegression: true,
+	TypeValidationCode:       true,
+	TypeValidationUx:         true,
+	TypeDocEval:              true,
+	TypeDocSummary:           true,
+	TypeCleanCode:            true,
+}
+
+// IsSystemType returns true if the given type is an auto-generated system type.
+// Business types and dual-identity types (doc.consolidate, doc.drift) return false.
+func IsSystemType(typ string) bool {
+	return SystemTypes[typ]
 }
 
 // Task represents a single task in the feature index.

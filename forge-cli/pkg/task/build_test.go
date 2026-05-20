@@ -1163,7 +1163,6 @@ func TestIsTestableType(t *testing.T) {
 		{TypeCodingFix, true},
 		{TypeCodingCleanup, true},
 		{TypeCodingRefactor, true},
-		{TypeCodingClean, true},
 		// doc prefix -> false
 		{TypeDoc, false},
 		{TypeDocEval, false},
