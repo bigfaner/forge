@@ -206,8 +206,15 @@ func runConfigInitIfNeeded(projectRoot string) initAction {
 		return initAction{status: "CANCELLED", target: ".forge/config.yaml", detail: "Ctrl+C"}
 	}
 
+	// Worktree config (optional)
+	worktree, cancelled := askWorktreeConfig()
+	if cancelled {
+		return initAction{status: "CANCELLED", target: ".forge/config.yaml", detail: "Ctrl+C"}
+	}
+
 	cfg := forgeconfig.Config{
-		Auto: auto,
+		Auto:     auto,
+		Worktree: worktree,
 	}
 
 	if err := writeConfigFile(configFile, &cfg); err != nil {
@@ -298,6 +305,26 @@ func askAutoBehavior() (*forgeconfig.AutoConfig, bool) {
 	auto.CleanCode.Full = val
 
 	val, ok = askConfirm(
+		fmt.Sprintf("%s: auto validation?", hlMode("Quick")),
+		fmt.Sprintf("Automatically run validation checks during %s (lightweight quality gates after each task).", hl("quick mode")),
+		defaults.Validation.Quick,
+	)
+	if !ok {
+		return nil, true
+	}
+	auto.Validation.Quick = val
+
+	val, ok = askConfirm(
+		fmt.Sprintf("%s: auto validation?", hlMode("Full")),
+		fmt.Sprintf("Automatically run validation checks during %s (comprehensive quality gates).", hl("full mode")),
+		defaults.Validation.Full,
+	)
+	if !ok {
+		return nil, true
+	}
+	auto.Validation.Full = val
+
+	val, ok = askConfirm(
 		"Auto git push after all tasks complete?",
 		"Push to remote automatically when every task in a run finishes successfully.",
 		defaults.GitPush,
@@ -308,6 +335,57 @@ func askAutoBehavior() (*forgeconfig.AutoConfig, bool) {
 	auto.GitPush = val
 
 	return auto, false
+}
+
+// askWorktreeConfig runs the optional worktree config steps.
+// Returns nil if both source-branch and copy-files are empty (skippable).
+// Returns (config, cancelled).
+func askWorktreeConfig() (*forgeconfig.WorktreeConfig, bool) {
+	var sourceBranch string
+	err := huh.NewForm(huh.NewGroup(
+		huh.NewInput().
+			Title("Worktree source branch (leave empty to skip)").
+			Description("Branch to use as the base for new worktrees (e.g. main, develop).").
+			Value(&sourceBranch),
+	)).Run()
+	if err != nil {
+		if errors.Is(err, huh.ErrUserAborted) {
+			return nil, true
+		}
+		return nil, true
+	}
+
+	var copyFiles []string
+	// Only ask about copy-files if user provided a source branch
+	if sourceBranch != "" {
+		err = huh.NewForm(huh.NewGroup(
+			huh.NewMultiSelect[string]().
+				Title("Files to copy into worktrees").
+				Description("Select files that should be copied from the source branch when creating a worktree.").
+				Options(
+					huh.NewOption(".env", ".env"),
+					huh.NewOption(".env.local", ".env.local"),
+					huh.NewOption(".env.development", ".env.development"),
+				).
+				Value(&copyFiles),
+		)).Run()
+		if err != nil {
+			if errors.Is(err, huh.ErrUserAborted) {
+				return nil, true
+			}
+			return nil, true
+		}
+	}
+
+	// Both empty means no worktree config block
+	if sourceBranch == "" && len(copyFiles) == 0 {
+		return nil, false
+	}
+
+	return &forgeconfig.WorktreeConfig{
+		SourceBranch: sourceBranch,
+		CopyFiles:    copyFiles,
+	}, false
 }
 
 // askConfirm shows a single confirm prompt. Returns (value, ok).

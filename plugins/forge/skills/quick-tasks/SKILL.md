@@ -36,11 +36,17 @@ graph LR
 
 ## Step 0: Resolve Language
 
-1. **Detect language**: Run `forge test detect` to auto-detect the project's test language(s) from file signals.
+1. **Detect language**: Check the project root directory for language indicator files:
+   - `package.json` → JavaScript/TypeScript
+   - `go.mod` → Go
+   - `Cargo.toml` → Rust
+   - `pyproject.toml` or `setup.py` → Python
+
+   Fallback: check `.forge/config.yaml` for a `languages` field.
 2. **On failure** (no language detected): ask the user to add `languages` to `.forge/config.yaml` (e.g., `languages: [go]`).
 
 <HARD-RULE>
-Do NOT silently default to any language. If `forge test detect` returns no result and the user cannot configure `languages`, abort the skill.
+Do NOT silently default to any language. If language detection via project files returns no result and the user cannot configure `languages`, abort the skill.
 </HARD-RULE>
 
 **Language resolution outcome**:

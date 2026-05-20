@@ -173,7 +173,6 @@ type TaskIndex struct { //nolint:revive // intentional naming for API clarity
 	tasks        map[string]Task
 	StatusEnum   []string
 	PriorityEnum []string
-	TestCommand  string
 	E2ERound     int // current fix-e2e round (0 = no failures yet)
 }
 
@@ -188,7 +187,6 @@ type taskIndexJSON struct {
 	Tasks        map[string]Task `json:"tasks"`
 	StatusEnum   []string        `json:"statusEnum,omitempty"`
 	PriorityEnum []string        `json:"priorityEnum,omitempty"`
-	TestCommand  string          `json:"testCommand,omitempty"`
 	E2ERound     int             `json:"e2eRound,omitempty"`
 }
 
@@ -204,7 +202,6 @@ func (ti TaskIndex) MarshalJSON() ([]byte, error) {
 		Tasks:        ti.tasks,
 		StatusEnum:   ti.StatusEnum,
 		PriorityEnum: ti.PriorityEnum,
-		TestCommand:  ti.TestCommand,
 		E2ERound:     ti.E2ERound,
 	})
 }
@@ -224,7 +221,6 @@ func (ti *TaskIndex) UnmarshalJSON(data []byte) error {
 	ti.tasks = j.Tasks
 	ti.StatusEnum = j.StatusEnum
 	ti.PriorityEnum = j.PriorityEnum
-	ti.TestCommand = j.TestCommand
 	ti.E2ERound = j.E2ERound
 	return nil
 }

@@ -34,11 +34,7 @@ func runTestPromote(_ *cobra.Command, args []string) {
 	}
 
 	// Run the journey's tests first
-	cfg, err := resolveJourneyExecutionConfig(projectRoot)
-	if err != nil {
-		Exit(NewAIError(ErrValidation, "Cannot resolve journey execution config", err.Error(),
-			"Set test-command in .forge/config.yaml", "echo 'test-command: go test ./...' >> .forge/config.yaml"))
-	}
+	cfg := resolveJourneyExecutionConfig(projectRoot)
 
 	workDir, cleanup, err := createJourneyWorkDir(projectRoot, journeyName)
 	if err != nil {

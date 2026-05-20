@@ -12,7 +12,7 @@ import (
 // runCLI executes a forge CLI command and returns combined output.
 func runCLI(t *testing.T, args ...string) string {
 	t.Helper()
-	cmd := exec.Command("forge", args...)
+	cmd := exec.Command(forgeBinary, args...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("CLI command failed: %s: %s", err, out)
@@ -23,7 +23,7 @@ func runCLI(t *testing.T, args ...string) string {
 // runCLIWithResult executes a forge CLI command and returns stdout, stderr, and exit code.
 func runCLIWithResult(t *testing.T, args ...string) (stdout, stderr string, exitCode int) {
 	t.Helper()
-	cmd := exec.Command("forge", args...)
+	cmd := exec.Command(forgeBinary, args...)
 	var stdoutBuf, stderrBuf strings.Builder
 	cmd.Stdout = &stdoutBuf
 	cmd.Stderr = &stderrBuf
@@ -39,7 +39,7 @@ func runCLIWithResult(t *testing.T, args ...string) (stdout, stderr string, exit
 
 // runCLIExitCode executes a forge CLI command and returns exit code and combined output.
 func runCLIExitCode(args ...string) (int, string) {
-	cmd := exec.Command("forge", args...)
+	cmd := exec.Command(forgeBinary, args...)
 	out, err := cmd.CombinedOutput()
 	if exitErr, ok := err.(*exec.ExitError); ok {
 		return exitErr.ExitCode(), string(out)

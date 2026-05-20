@@ -16,12 +16,10 @@ import (
 
 func TestCheckAllCompleted(t *testing.T) {
 	tests := []struct {
-		name        string
-		tasks       map[string]task.Task
-		testCommand string
-		forgeState  bool
-		wantNil     bool
-		wantTestCmd string
+		name       string
+		tasks      map[string]task.Task
+		forgeState bool
+		wantNil    bool
 	}{
 		{
 			name: "all completed with forge state returns result",
@@ -79,16 +77,6 @@ func TestCheckAllCompleted(t *testing.T) {
 			wantNil:    false,
 		},
 		{
-			name: "testCommand from index.json is propagated",
-			tasks: map[string]task.Task{
-				"t1": {ID: "1.1", Status: "completed"},
-			},
-			testCommand: "make test",
-			forgeState:  true,
-			wantNil:     false,
-			wantTestCmd: "make test",
-		},
-		{
 			name: "no forge state returns nil even if all tasks completed",
 			tasks: map[string]task.Task{
 				"t1": {ID: "1.1", Status: "completed"},
@@ -98,7 +86,6 @@ func TestCheckAllCompleted(t *testing.T) {
 			wantNil:    true,
 		},
 	}
-
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := t.TempDir()
@@ -107,24 +94,20 @@ func TestCheckAllCompleted(t *testing.T) {
 			if err := feature.EnsureFeatureDir(dir, "test"); err != nil {
 				t.Fatal(err)
 			}
-
 			indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
 			index := &task.TaskIndex{
-				Feature:     "test",
-				StatusEnum:  []string{"pending", "in_progress", "completed", "blocked", "skipped"},
-				TestCommand: tc.testCommand,
+				Feature:    "test",
+				StatusEnum: []string{"pending", "in_progress", "completed", "blocked", "skipped"},
 			}
 			index.SetTasks(tc.tasks)
 			if err := task.SaveIndex(indexPath, index); err != nil {
 				t.Fatal(err)
 			}
-
 			if tc.forgeState {
 				if err := feature.WriteForgeState(dir, "test"); err != nil {
 					t.Fatal(err)
 				}
 			}
-
 			result := checkAllCompleted(false)
 
 			if tc.wantNil {
@@ -133,20 +116,14 @@ func TestCheckAllCompleted(t *testing.T) {
 				}
 				return
 			}
-
 			if result == nil {
 				t.Fatal("expected non-nil result, got nil")
 			}
-
 			if result.FeatureSlug != "test" {
 				t.Errorf("FeatureSlug = %q, want %q", result.FeatureSlug, "test")
 			}
 			if result.ProjectRoot == "" {
 				t.Error("ProjectRoot should not be empty")
-			}
-
-			if result.TestCommand != tc.wantTestCmd {
-				t.Errorf("TestCommand = %q, want %q", result.TestCommand, tc.wantTestCmd)
 			}
 		})
 	}
@@ -158,7 +135,6 @@ func TestCheckAllCompleted_NoFeature(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(dir, feature.FeaturesDir), 0755); err != nil {
 		t.Fatal(err)
 	}
-
 	result := checkAllCompleted(false)
 	if result != nil {
 		t.Errorf("expected nil result when no feature set, got %+v", result)
@@ -173,7 +149,6 @@ func TestCheckAllCompleted_NoProject(t *testing.T) {
 		}
 		return
 	}
-
 	tmpDir := t.TempDir()
 	cmd := exec.Command(os.Args[0], "-test.run=TestCheckAllCompleted_NoProject")
 	// Build clean env: clear CLAUDE_PROJECT_DIR and PROJECT_ROOT so FindProjectRoot
@@ -205,7 +180,6 @@ func TestHasJustfile(t *testing.T) {
 		{name: "both present", files: []string{"justfile", "Justfile"}, want: true},
 		{name: "unrelated files only", files: []string{"Makefile", "go.mod"}, want: false},
 	}
-
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := t.TempDir()
@@ -225,7 +199,6 @@ func TestHasJustRecipe(t *testing.T) {
 	if _, err := exec.LookPath("just"); err != nil {
 		t.Skip("just not installed, skipping")
 	}
-
 	t.Run("recipe exists", func(t *testing.T) {
 		dir := t.TempDir()
 		content := "test:\n    echo ok\n"
@@ -450,7 +423,6 @@ func TestExtractSourceFiles(t *testing.T) {
 			want:   "handler.go",
 		},
 	}
-
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			got := extractSourceFiles(tc.output)
@@ -471,7 +443,6 @@ func helperSetup(t *testing.T) (projectRoot, featureSlug, indexPath string) {
 	if err := feature.EnsureFeatureDir(projectRoot, featureSlug); err != nil {
 		t.Fatal(err)
 	}
-
 	indexPath = filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
 	index := task.NewTaskIndex(featureSlug)
 	index.SetTasks(map[string]task.Task{
@@ -496,7 +467,6 @@ func TestAddFixTask_BasicCompile(t *testing.T) {
 	if taskID == "" {
 		t.Fatal("expected non-empty task ID")
 	}
-
 	updatedIndex, err := task.LoadIndex(indexPath)
 	if err != nil {
 		t.Fatal(err)
@@ -505,7 +475,6 @@ func TestAddFixTask_BasicCompile(t *testing.T) {
 	if !exists {
 		t.Fatalf("task %s not found in index", taskID)
 	}
-
 	if addedTask.Priority != "P0" {
 		t.Errorf("priority = %q, want P0", addedTask.Priority)
 	}
@@ -521,7 +490,6 @@ func TestAddFixTask_BasicCompile(t *testing.T) {
 	if addedTask.SourceTaskID != "quality-gate:compile" {
 		t.Errorf("sourceTaskID = %q, want %q", addedTask.SourceTaskID, "quality-gate:compile")
 	}
-
 	// Verify task markdown content
 	mdPath := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug), taskID+".md")
 	data, err := os.ReadFile(mdPath)
@@ -547,7 +515,6 @@ func TestAddFixTask_BasicCompile(t *testing.T) {
 	if !strings.Contains(content, "Verification") {
 		t.Error("task markdown should contain Verification section from fix-task template")
 	}
-
 	// Verify forge state was reset
 	state := feature.ReadForgeState(projectRoot)
 	if state == nil {
@@ -568,7 +535,6 @@ func TestAddFixTask_StepSpecificTestScripts(t *testing.T) {
 		{"unit-test", "just test"},
 		{"e2e-test", "just e2e-test"},
 	}
-
 	for _, tc := range tests {
 		t.Run(tc.step, func(t *testing.T) {
 			projectRoot, featureSlug, _ := helperSetup(t)
@@ -579,7 +545,6 @@ func TestAddFixTask_StepSpecificTestScripts(t *testing.T) {
 			if taskID == "" {
 				t.Fatal("expected non-empty task ID")
 			}
-
 			mdPath := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug), taskID+".md")
 			data, err := os.ReadFile(mdPath)
 			if err != nil {
@@ -604,7 +569,6 @@ func TestAddFixTask_TypeFromStep(t *testing.T) {
 		{"e2e-test", task.TypeCodingFix},
 		{"unknown-step", task.TypeCodingFix}, // default fallback
 	}
-
 	for _, tc := range tests {
 		t.Run(tc.step, func(t *testing.T) {
 			projectRoot, featureSlug, indexPath := helperSetup(t)
@@ -615,7 +579,6 @@ func TestAddFixTask_TypeFromStep(t *testing.T) {
 			if taskID == "" {
 				t.Fatal("expected non-empty task ID")
 			}
-
 			updatedIndex, err := task.LoadIndex(indexPath)
 			if err != nil {
 				t.Fatal(err)
@@ -641,7 +604,6 @@ func TestAddFixTask_TemplateSelection(t *testing.T) {
 		{"fmt", task.TypeCodingCleanup, "type: \"cleanup\""},
 		{"lint", task.TypeCodingCleanup, "type: \"cleanup\""},
 	}
-
 	for _, tc := range tests {
 		t.Run(tc.step, func(t *testing.T) {
 			projectRoot, featureSlug, _ := helperSetup(t)
@@ -649,7 +611,6 @@ func TestAddFixTask_TemplateSelection(t *testing.T) {
 			if addErr != nil {
 				t.Fatalf("unexpected error: %v", addErr)
 			}
-
 			mdPath := filepath.Join(projectRoot, "docs", "features", featureSlug, "tasks", taskID+".md")
 			content, err := os.ReadFile(mdPath)
 			if err != nil {
@@ -672,7 +633,6 @@ func TestAddFixTask_EmptyOutput(t *testing.T) {
 	if taskID == "" {
 		t.Fatal("expected non-empty task ID even with empty output")
 	}
-
 	mdPath := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug), taskID+".md")
 	data, err := os.ReadFile(mdPath)
 	if err != nil {
@@ -694,7 +654,6 @@ func TestAddFixTask_NoSourceFilesInOutput(t *testing.T) {
 	if taskID == "" {
 		t.Fatal("expected task ID")
 	}
-
 	mdPath := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug), taskID+".md")
 	data, err := os.ReadFile(mdPath)
 	if err != nil {
@@ -716,16 +675,13 @@ func TestAddFixTask_SequentialIDs(t *testing.T) {
 			t.Fatalf("unexpected error: %v", e)
 		}
 	}
-
 	if id1 == "" || id2 == "" || id3 == "" {
 		t.Fatalf("expected 3 valid IDs, got %q %q %q", id1, id2, id3)
 	}
-
 	// IDs should be different (max+1 via template prefix)
 	if id1 == id2 || id2 == id3 || id1 == id3 {
 		t.Errorf("expected unique IDs, got %q %q %q", id1, id2, id3)
 	}
-
 	// All should be in index
 	idx, _ := task.LoadIndex(indexPath)
 	count := 0
@@ -749,7 +705,6 @@ func TestAddFixTask_TitleContainsStep(t *testing.T) {
 	if taskID == "" {
 		t.Fatal("expected task ID")
 	}
-
 	mdPath := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug), taskID+".md")
 	data, err := os.ReadFile(mdPath)
 	if err != nil {
@@ -771,7 +726,6 @@ func TestAddFixTask_DescriptionContainsErrorDoc(t *testing.T) {
 	if taskID == "" {
 		t.Fatal("expected task ID")
 	}
-
 	mdPath := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug), taskID+".md")
 	data, err := os.ReadFile(mdPath)
 	if err != nil {
@@ -793,12 +747,10 @@ func TestAddFixTask_ForgeStateResetEachTime(t *testing.T) {
 	if state == nil || state.AllCompleted {
 		t.Fatal("after first addFixTask, forge state should exist with allCompleted=false")
 	}
-
 	// Write allCompleted=true to simulate next completion cycle
 	if err := feature.WriteForgeState(projectRoot, featureSlug); err != nil {
 		t.Fatal(err)
 	}
-
 	// Second add should reset again
 	if _, err := addFixTask(projectRoot, featureSlug, "lint", "b.go:2: error", "tests/results/out.txt"); err != nil {
 		t.Fatalf("unexpected error on second add: %v", err)
@@ -895,7 +847,6 @@ func TestCountFixTasks(t *testing.T) {
 			want: 3,
 		},
 	}
-
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			index := task.NewTaskIndex("test")
@@ -922,7 +873,6 @@ func TestAddFixTask_CapEnforced(t *testing.T) {
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)
 	}
-
 	taskID, capErr := addFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt")
 	if capErr == nil {
 		t.Errorf("expected error when 3 active fix-tasks exist, got nil (taskID=%q)", taskID)
@@ -945,7 +895,6 @@ func TestAddFixTask_CapAllowsUnderLimit(t *testing.T) {
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)
 	}
-
 	taskID, capErr := addFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt")
 	if capErr != nil {
 		t.Fatalf("expected no error with 2 active fix-tasks, got %v", capErr)
@@ -969,7 +918,6 @@ func TestAddFixTask_CumulativeCountBlocksAtCap(t *testing.T) {
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)
 	}
-
 	taskID, capErr := addFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt")
 	if capErr == nil {
 		t.Errorf("expected error when 3 cumulative fix-tasks exist, got nil (taskID=%q)", taskID)
@@ -996,7 +944,6 @@ func TestHandleGateFailure_DistinctReasons(t *testing.T) {
 		{"unknown-step", "fix-5", "Unknown-step check failed in quality-gate hook", "fix the issue", true, false, "Fix task fix-5 added (P0, breaking)"},
 		{"compile", "", "Project compilation failed in quality-gate hook", "fix compilation errors", false, true, "Failed to add fix task automatically"},
 	}
-
 	for _, tc := range tests {
 		name := tc.step
 		if tc.fixID == "" {
@@ -1045,7 +992,6 @@ func TestCheckAllCompleted_RejectedTaskReturnsNil(t *testing.T) {
 	if err := os.MkdirAll(tasksDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-
 	index := task.NewTaskIndex(featureSlug)
 	index.SetTasks(map[string]task.Task{
 		"task-a": {ID: "1.1", Status: "completed", File: "1.1.md"},
@@ -1058,7 +1004,6 @@ func TestCheckAllCompleted_RejectedTaskReturnsNil(t *testing.T) {
 	if err := feature.WriteForgeState(projectRoot, featureSlug); err != nil {
 		t.Fatal(err)
 	}
-
 	result := checkAllCompleted(false)
 	if result != nil {
 		t.Error("rejected task should prevent quality-gate from proceeding")
@@ -1072,7 +1017,6 @@ func TestCheckAllCompleted_ForgeStateConsumedOnSuccess(t *testing.T) {
 	if err := feature.EnsureFeatureDir(dir, "test"); err != nil {
 		t.Fatal(err)
 	}
-
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
 	index := &task.TaskIndex{
 		Feature:    "test",
@@ -1087,19 +1031,16 @@ func TestCheckAllCompleted_ForgeStateConsumedOnSuccess(t *testing.T) {
 	if err := feature.WriteForgeState(dir, "test"); err != nil {
 		t.Fatal(err)
 	}
-
 	// First call should succeed and consume the state
 	result := checkAllCompleted(false)
 	if result == nil {
 		t.Fatal("first call should return result")
 	}
-
 	// Forge state should be cleared
 	state := feature.ReadForgeState(dir)
 	if state != nil {
 		t.Error("forge state should be cleared after checkAllCompleted consumes it")
 	}
-
 	// Second call should return nil (no state)
 	result2 := checkAllCompleted(false)
 	if result2 != nil {
@@ -1195,7 +1136,6 @@ func TestIsDocsOnly(t *testing.T) {
 			want: true,
 		},
 	}
-
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			index := task.NewTaskIndex("test")
@@ -1230,7 +1170,6 @@ func TestCheckAllCompleted_DocsOnlyFlag(t *testing.T) {
 			wantDocsOnly: false,
 		},
 	}
-
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := t.TempDir()
@@ -1238,7 +1177,6 @@ func TestCheckAllCompleted_DocsOnlyFlag(t *testing.T) {
 			if err := feature.EnsureFeatureDir(dir, "test"); err != nil {
 				t.Fatal(err)
 			}
-
 			indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
 			index := &task.TaskIndex{
 				Feature:    "test",
@@ -1251,7 +1189,6 @@ func TestCheckAllCompleted_DocsOnlyFlag(t *testing.T) {
 			if err := feature.WriteForgeState(dir, "test"); err != nil {
 				t.Fatal(err)
 			}
-
 			result := checkAllCompleted(false)
 			if result == nil {
 				t.Fatal("expected non-nil result")
@@ -1269,14 +1206,12 @@ func TestCheckAllCompleted_ManyCompletedTasks(t *testing.T) {
 	if err := feature.EnsureFeatureDir(dir, "test"); err != nil {
 		t.Fatal(err)
 	}
-
 	tasks := make(map[string]task.Task)
 	for i := range 20 {
 		id := fmt.Sprintf("1.%d", i+1)
 		key := fmt.Sprintf("task-%d", i+1)
 		tasks[key] = task.Task{ID: id, Status: "completed"}
 	}
-
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
 	index := &task.TaskIndex{
 		Feature:    "test",
@@ -1289,7 +1224,6 @@ func TestCheckAllCompleted_ManyCompletedTasks(t *testing.T) {
 	if err := feature.WriteForgeState(dir, "test"); err != nil {
 		t.Fatal(err)
 	}
-
 	result := checkAllCompleted(false)
 	if result == nil {
 		t.Fatal("expected result with many completed tasks")
@@ -1302,7 +1236,6 @@ func TestCheckAllCompleted_AllBlockedReturnsNil(t *testing.T) {
 	if err := feature.EnsureFeatureDir(dir, "test"); err != nil {
 		t.Fatal(err)
 	}
-
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
 	index := &task.TaskIndex{
 		Feature:    "test",
@@ -1318,7 +1251,6 @@ func TestCheckAllCompleted_AllBlockedReturnsNil(t *testing.T) {
 	if err := feature.WriteForgeState(dir, "test"); err != nil {
 		t.Fatal(err)
 	}
-
 	result := checkAllCompleted(false)
 	if result != nil {
 		t.Error("all blocked tasks should return nil")
@@ -1331,7 +1263,6 @@ func TestCheckAllCompleted_MixedCompletedSkippedRejected(t *testing.T) {
 	if err := feature.EnsureFeatureDir(dir, "test"); err != nil {
 		t.Fatal(err)
 	}
-
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
 	index := &task.TaskIndex{
 		Feature:    "test",
@@ -1348,7 +1279,6 @@ func TestCheckAllCompleted_MixedCompletedSkippedRejected(t *testing.T) {
 	if err := feature.WriteForgeState(dir, "test"); err != nil {
 		t.Fatal(err)
 	}
-
 	// rejected is not completed or skipped, so should return nil
 	result := checkAllCompleted(false)
 	if result != nil {
@@ -1362,7 +1292,6 @@ func TestCheckAllCompleted_VerboseMode(t *testing.T) {
 	if err := feature.EnsureFeatureDir(dir, "test"); err != nil {
 		t.Fatal(err)
 	}
-
 	// No forge state -> should return nil but not error
 	result := checkAllCompleted(true)
 	if result != nil {
@@ -1380,7 +1309,6 @@ func TestAddFixTask_StepScopedSentinel(t *testing.T) {
 		{"unit-test", "quality-gate:unit-test"},
 		{"e2e-test", "quality-gate:e2e-test"},
 	}
-
 	for _, tc := range tests {
 		t.Run(tc.step, func(t *testing.T) {
 			projectRoot, featureSlug, indexPath := helperSetup(t)
@@ -1392,7 +1320,6 @@ func TestAddFixTask_StepScopedSentinel(t *testing.T) {
 			if taskID == "" {
 				t.Fatal("expected non-empty task ID")
 			}
-
 			updatedIndex, err := task.LoadIndex(indexPath)
 			if err != nil {
 				t.Fatal(err)
@@ -1401,7 +1328,6 @@ func TestAddFixTask_StepScopedSentinel(t *testing.T) {
 			if !exists {
 				t.Fatalf("task %s not found in index", taskID)
 			}
-
 			if addedTask.SourceTaskID != tc.wantSentinel {
 				t.Errorf("SourceTaskID = %q, want %q", addedTask.SourceTaskID, tc.wantSentinel)
 			}
@@ -1423,13 +1349,11 @@ func TestAddFixTask_CrossStepIndependence(t *testing.T) {
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)
 	}
-
 	// compile is at cap -> should fail
 	_, capErr := addFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt")
 	if capErr == nil {
 		t.Error("expected cap error for compile step at limit")
 	}
-
 	// lint has no fix tasks -> should succeed
 	taskID, lintErr := addFixTask(projectRoot, featureSlug, "lint", "b.go:2: error", "tests/results/out.txt")
 	if lintErr != nil {
@@ -1438,7 +1362,6 @@ func TestAddFixTask_CrossStepIndependence(t *testing.T) {
 	if taskID == "" {
 		t.Fatal("expected non-empty task ID for lint fix task")
 	}
-
 	// unit-test has no fix tasks -> should succeed
 	taskID2, unitErr := addFixTask(projectRoot, featureSlug, "unit-test", "c.go:3: error", "tests/results/out.txt")
 	if unitErr != nil {
@@ -1459,7 +1382,6 @@ func TestAddFixTask_VarsSourceTaskIDRemainsNA(t *testing.T) {
 	if taskID == "" {
 		t.Fatal("expected non-empty task ID")
 	}
-
 	mdPath := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug), taskID+".md")
 	data, err := os.ReadFile(mdPath)
 	if err != nil {
@@ -1481,7 +1403,6 @@ func TestAddFixTask_TaskAddFailure(t *testing.T) {
 	if err := os.Remove(indexPath); err != nil {
 		t.Fatal(err)
 	}
-
 	taskID, addErr := addFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt")
 	if addErr == nil {
 		t.Fatalf("expected error when task add fails (no index), got nil (taskID=%q)", taskID)
@@ -1512,14 +1433,12 @@ func TestAddFixTask_MarkdownCreationError(t *testing.T) {
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)
 	}
-
 	tasksDir := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug))
 	// Create a directory named "fix-2.md" so os.WriteFile fails (can't write to a directory)
 	blockerPath := filepath.Join(tasksDir, "fix-2.md")
 	if err := os.MkdirAll(blockerPath, 0755); err != nil {
 		t.Fatal(err)
 	}
-
 	taskID, addErr := addFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt")
 	if addErr == nil {
 		t.Fatalf("expected error when markdown creation fails, got nil (taskID=%q)", taskID)
@@ -1558,15 +1477,14 @@ func TestRunUnitTestStep_RetryPass(t *testing.T) {
 	projectRoot, featureSlug, _ := helperSetup(t)
 
 	callCount := 0
-	mockRun := func(_, _ string) (string, bool) {
+	mockRun := func(_ string) (string, bool) {
 		callCount++
 		if callCount == 1 {
 			return "FAIL: TestFlaky", false
 		}
 		return "ok", true
 	}
-
-	passed, fixID, fixErr := runUnitTestStep(projectRoot, featureSlug, mockRun, "")
+	passed, fixID, fixErr := runUnitTestStep(projectRoot, featureSlug, mockRun)
 	if !passed {
 		t.Error("expected passed=true when retry succeeds")
 	}
@@ -1584,11 +1502,10 @@ func TestRunUnitTestStep_RetryPass(t *testing.T) {
 func TestRunUnitTestStep_RetryFail(t *testing.T) {
 	projectRoot, featureSlug, _ := helperSetup(t)
 
-	mockRun := func(_, _ string) (string, bool) {
+	mockRun := func(_ string) (string, bool) {
 		return "FAIL: TestReal", false
 	}
-
-	passed, fixID, fixErr := runUnitTestStep(projectRoot, featureSlug, mockRun, "")
+	passed, fixID, fixErr := runUnitTestStep(projectRoot, featureSlug, mockRun)
 	if passed {
 		t.Error("expected passed=false when both attempts fail")
 	}
@@ -1598,7 +1515,6 @@ func TestRunUnitTestStep_RetryFail(t *testing.T) {
 	if fixErr != nil {
 		t.Errorf("expected no error from runUnitTestStep, got %v", fixErr)
 	}
-
 	// Verify fix task markdown mentions retry
 	mdPath := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug), fixID+".md")
 	data, err := os.ReadFile(mdPath)
@@ -1615,12 +1531,11 @@ func TestRunUnitTestStep_FirstPass(t *testing.T) {
 	projectRoot, featureSlug, _ := helperSetup(t)
 
 	callCount := 0
-	mockRun := func(_, _ string) (string, bool) {
+	mockRun := func(_ string) (string, bool) {
 		callCount++
 		return "ok", true
 	}
-
-	passed, fixID, fixErr := runUnitTestStep(projectRoot, featureSlug, mockRun, "")
+	passed, fixID, fixErr := runUnitTestStep(projectRoot, featureSlug, mockRun)
 	if !passed {
 		t.Error("expected passed=true on first pass")
 	}
@@ -1639,16 +1554,14 @@ func TestRunUnitTestStep_RetryOutputInDescription(t *testing.T) {
 	projectRoot, featureSlug, _ := helperSetup(t)
 
 	callCount := 0
-	mockRun := func(_, _ string) (string, bool) {
+	mockRun := func(_ string) (string, bool) {
 		callCount++
 		return fmt.Sprintf("attempt %d output: FAIL: TestX", callCount), false
 	}
-
-	passed, fixID, _ := runUnitTestStep(projectRoot, featureSlug, mockRun, "")
+	passed, fixID, _ := runUnitTestStep(projectRoot, featureSlug, mockRun)
 	if passed {
 		t.Error("expected passed=false")
 	}
-
 	mdPath := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug), fixID+".md")
 	data, err := os.ReadFile(mdPath)
 	if err != nil {

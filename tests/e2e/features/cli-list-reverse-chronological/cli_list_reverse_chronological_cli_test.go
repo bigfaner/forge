@@ -1,6 +1,6 @@
 //go:build e2e
 
-package e2e
+package e2eclilistr
 
 import (
 	"os"
@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	e2etests "e2e-tests"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -117,7 +119,7 @@ func extractSlugsFromTable(t *testing.T, output string) []string {
 // runForge runs the forge CLI in a given working directory.
 func runForge(t *testing.T, dir string, args ...string) string {
 	t.Helper()
-	cmd := exec.Command("forge", args...)
+	cmd := exec.Command(e2etests.ForgeBinary, args...)
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -129,7 +131,7 @@ func runForge(t *testing.T, dir string, args ...string) string {
 // runForgeRaw runs the forge CLI in a given working directory, returning output and exit code.
 func runForgeRaw(t *testing.T, dir string, args ...string) (string, int) {
 	t.Helper()
-	cmd := exec.Command("forge", args...)
+	cmd := exec.Command(e2etests.ForgeBinary, args...)
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()
 	exitCode := 0

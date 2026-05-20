@@ -116,13 +116,17 @@ test-e2e feature="":
       | go-junit-report > results/report.xml 2>/dev/null \
       || go test -v -tags=e2e -timeout=10m $feature_flag
 
-# e2e-setup: verify compilation (idempotent, go-test profile)
+# e2e-setup: optional cache warm-up — pre-builds forge binary for faster test startup.
+# E2E tests auto-build via TestMain, so this recipe is NOT required before running tests.
+# Use it to prime the Go build cache and skip the ~2-5s build during your next test run.
 e2e-setup force="":
     #!/usr/bin/env bash
     set -euo pipefail
+    # Optional: pre-builds forge binary for faster test startup (cache optimization)
     cd forge-cli && go build -o bin/forge.exe ./cmd/forge/ && cp bin/forge.exe bin/forge
+    # Optional: pre-compile e2e test packages to warm the build cache
     cd tests/e2e && go build -tags=e2e ./...
-    echo "OK: compilation verified"
+    echo "OK: build cache warmed (optional — tests auto-build via TestMain)"
 
 # e2e-verify: check for unresolved // VERIFY: markers (go-test profile)
 [arg("feature", long)]

@@ -6,41 +6,16 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"testing"
 	"time"
 )
 
-// forgeBinary returns the path to the forge binary, built if needed.
-// It caches the path in a package variable for reuse across tests.
+// forgeBinaryPath is set by TestMain to the temp-built forge binary path.
 var forgeBinaryPath string
 
 func forgeBinary(t *testing.T) string {
 	t.Helper()
-	if forgeBinaryPath != "" {
-		if _, err := os.Stat(forgeBinaryPath); err == nil {
-			return forgeBinaryPath
-		}
-	}
-	binName := "forge"
-	if runtime.GOOS == "windows" {
-		binName = "forge.exe"
-	}
-	binPath := filepath.Join("..", "..", "..", "forge-cli", "bin", binName)
-	if _, err := os.Stat(binPath); err != nil {
-		// Build the binary
-		buildCmd := exec.Command("go", "build", "-o", binPath, "./cmd/forge/")
-		buildCmd.Dir = filepath.Join("..", "..", "..", "forge-cli")
-		if out, err := buildCmd.CombinedOutput(); err != nil {
-			t.Fatalf("failed to build forge binary: %s: %s", err, out)
-		}
-	}
-	absPath, err := filepath.Abs(binPath)
-	if err != nil {
-		t.Fatalf("failed to resolve binary path: %s", err)
-	}
-	forgeBinaryPath = absPath
-	return absPath
+	return forgeBinaryPath
 }
 
 // runForge executes the forge binary with given args and returns combined output.

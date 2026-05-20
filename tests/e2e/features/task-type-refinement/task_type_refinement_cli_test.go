@@ -1,6 +1,6 @@
 //go:build e2e
 
-package e2e
+package e2etasktype
 
 import (
 	"encoding/json"
@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	e2etests "e2e-tests"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -89,7 +91,7 @@ func setupTempFeature(t *testing.T, tasks map[string]indexTask) string {
 // Returns combined output and exit code.
 func forgeCmd(t *testing.T, projectRoot string, args ...string) (string, int) {
 	t.Helper()
-	cmd := exec.Command("forge", args...)
+	cmd := exec.Command(e2etests.ForgeBinary, args...)
 	cmd.Env = append(os.Environ(), "CLAUDE_PROJECT_DIR="+projectRoot)
 	out, err := cmd.CombinedOutput()
 	exitCode := 0
@@ -145,7 +147,7 @@ func hasTaskWithPrefix(tasks map[string]indexTask, prefix string) bool {
 // ---------------------------------------------------------------------------
 
 func TestTC_001_ListTypesDisplaysFourNewBusinessTypes(t *testing.T) {
-	cmd := exec.Command("forge", "task", "list-types")
+	cmd := exec.Command(e2etests.ForgeBinary, "task", "list-types")
 	out, err := cmd.CombinedOutput()
 	assert.NoError(t, err, "forge task list-types should succeed")
 
@@ -161,7 +163,7 @@ func TestTC_001_ListTypesDisplaysFourNewBusinessTypes(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestTC_002_ListTypesShowsDeprecatedImplementation(t *testing.T) {
-	cmd := exec.Command("forge", "task", "list-types")
+	cmd := exec.Command(e2etests.ForgeBinary, "task", "list-types")
 	out, err := cmd.CombinedOutput()
 	assert.NoError(t, err, "forge task list-types should succeed")
 
@@ -452,7 +454,7 @@ func TestTC_014_PromptReturnsRefactorTemplate(t *testing.T) {
 func TestTC_015_QualityGateCreatesFixTypeOnCompileFailure(t *testing.T) {
 	// Verify that fixTypeFromStep returns "fix" for compile step.
 	// This tests the mapping logic: compile failures -> TypeFix.
-	cmd := exec.Command("forge", "task", "list-types")
+	cmd := exec.Command(e2etests.ForgeBinary, "task", "list-types")
 	out, err := cmd.CombinedOutput()
 	if !assert.NoError(t, err, "forge task list-types should succeed") {
 		return
@@ -474,7 +476,7 @@ func TestTC_015_QualityGateCreatesFixTypeOnCompileFailure(t *testing.T) {
 func TestTC_016_QualityGateCreatesCleanupTypeOnFmtFailure(t *testing.T) {
 	// Verify that fixTypeFromStep returns "cleanup" for fmt step.
 	// This tests the mapping logic: fmt failures -> TypeCleanup.
-	cmd := exec.Command("forge", "task", "list-types")
+	cmd := exec.Command(e2etests.ForgeBinary, "task", "list-types")
 	out, err := cmd.CombinedOutput()
 	if !assert.NoError(t, err, "forge task list-types should succeed") {
 		return
@@ -495,7 +497,7 @@ func TestTC_016_QualityGateCreatesCleanupTypeOnFmtFailure(t *testing.T) {
 func TestTC_017_QualityGateCreatesCleanupTypeOnLintFailure(t *testing.T) {
 	// Verify that fixTypeFromStep returns "cleanup" for lint step.
 	// This tests the mapping logic: lint failures -> TypeCleanup.
-	cmd := exec.Command("forge", "task", "list-types")
+	cmd := exec.Command(e2etests.ForgeBinary, "task", "list-types")
 	out, err := cmd.CombinedOutput()
 	if !assert.NoError(t, err, "forge task list-types should succeed") {
 		return

@@ -5,8 +5,8 @@
 | **All types** | If rubric has `context` frontmatter, load filtered context files: (1) for each string in `conventions`, glob `docs/conventions/<string>*.md` and read matching files; (2) if `business-rules: auto`, glob `docs/business-rules/*.md` and read all, else read listed filenames. Concatenate into `CONTEXT_CONTENT` for Step 2 injection. Skip missing files silently (no error, no abort). |
 | `harness` | Gather project context, write snapshot. Scorer evaluates snapshot, not raw files. |
 | `consistency` | Assemble document bundle -- copy relevant docs into flat directory for scorer. |
-| `test-cases` | Resolve test language via `forge test detect`. Pass project interfaces to scorer. |
-| `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases` | Resolve test language via `forge test detect`. Pass project interfaces to scorer. |
+| `test-cases` | Resolve test language by checking project root for language indicator files (`package.json` → JavaScript/TypeScript, `go.mod` → Go, `Cargo.toml` → Rust, `pyproject.toml`/`setup.py` → Python). Fallback: `.forge/config.yaml` `languages` field. Pass project interfaces to scorer. |
+| `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases` | Resolve test language by checking project root for language indicator files (`package.json` → JavaScript/TypeScript, `go.mod` → Go, `Cargo.toml` → Rust, `pyproject.toml`/`setup.py` → Python). Fallback: `.forge/config.yaml` `languages` field. Pass project interfaces to scorer. |
 | `prd` | Detect mode: `prd-ui-functions.md` exists -> Mode A (with UI), else Mode B (no UI). |
 | `validate-code` | 1) Read PRD -> extract user scenarios list (from prd-spec.md flow descriptions and prd-user-stories.md acceptance criteria). 2) Run `git diff <base-branch>...HEAD` to get changed files and diff hunks. 3) Compile changed file list. 4) Pass PRD scenarios + diff + file list to scorer as assembled input. |
 | `validate-ux` | **Two-phase pre-processing** (must execute in git worktree or temp dir). Full sub-pipeline: `rubrics/validate-ux-pipeline.md`. |

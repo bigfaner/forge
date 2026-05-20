@@ -26,7 +26,7 @@ func TestTC_010_SubmitTaskMissingResultFlagReturnsError(t *testing.T) {
 	// Submit requires --data or stdin input. Without either, the command
 	// should fail with exit code 1. The error may be "task not found" (if
 	// task doesn't exist) or "no input" (if task exists but no data provided).
-	cmd := exec.Command("forge", "task", "submit", "T-impl-1")
+	cmd := exec.Command(forgeBinary, "task", "submit", "T-impl-1")
 	out, err := cmd.CombinedOutput()
 
 	assert.Error(t, err, "submit without data should fail")

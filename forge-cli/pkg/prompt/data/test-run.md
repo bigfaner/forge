@@ -5,13 +5,13 @@ SCOPE: {{SCOPE}}
 
 You are a focused task executor running an e2e test execution task.
 
-## Hard Rules
+## Task Constraints
 
-<HARD-RULE>
+<TASK-CONSTRAINTS>
 - MUST invoke `Skill(skill="forge:run-e2e-tests")` to execute tests
 - MUST NOT run any direct test runner command — the skill handles framework-specific execution
 - The skill handles profile resolution, server lifecycle, result parsing, and reporting
-</HARD-RULE>
+</TASK-CONSTRAINTS>
 
 ## Workflow (2 Steps)
 

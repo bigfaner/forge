@@ -12,11 +12,20 @@ import (
 	"time"
 )
 
+// forgeBinaryPath is set by SetForgeBinary. Defaults to "forge" for backward compatibility.
+var forgeBinaryPath = "forge"
+
+// SetForgeBinary sets the path to the forge CLI binary used by RunCLI, RunCLIExitCode,
+// and RunCLIWithResult. Call this from TestMain after building the binary from source.
+func SetForgeBinary(path string) {
+	forgeBinaryPath = path
+}
+
 // RunCLI executes a forge CLI command and returns combined output.
 // Fails the test if the command exits non-zero.
 func RunCLI(t *testing.T, args ...string) string {
 	t.Helper()
-	cmd := exec.Command("forge", args...)
+	cmd := exec.Command(forgeBinaryPath, args...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("CLI command failed: %s: %s", err, out)
@@ -26,7 +35,7 @@ func RunCLI(t *testing.T, args ...string) string {
 
 // RunCLIExitCode executes a forge CLI command and returns exit code and combined output.
 func RunCLIExitCode(args ...string) (int, string) {
-	cmd := exec.Command("forge", args...)
+	cmd := exec.Command(forgeBinaryPath, args...)
 	out, err := cmd.CombinedOutput()
 	if exitErr, ok := err.(*exec.ExitError); ok {
 		return exitErr.ExitCode(), string(out)
@@ -40,7 +49,7 @@ func RunCLIExitCode(args ...string) (int, string) {
 // RunCLIWithResult executes a forge CLI command and returns stdout, stderr, and exit code.
 func RunCLIWithResult(t *testing.T, args ...string) (stdout, stderr string, exitCode int) {
 	t.Helper()
-	cmd := exec.Command("forge", args...)
+	cmd := exec.Command(forgeBinaryPath, args...)
 	var stdoutBuf, stderrBuf strings.Builder
 	cmd.Stdout = &stdoutBuf
 	cmd.Stderr = &stderrBuf

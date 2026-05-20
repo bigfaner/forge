@@ -1,0 +1,44 @@
+{
+  "feature": "post-loop-artifact-commit",
+  "proposal": "docs/proposals/post-loop-artifact-commit/proposal.md",
+  "created": "2026-05-20",
+  "tasks": {
+    "1-commit-remaining-artifacts": {
+      "id": "1",
+      "title": "Add post-loop artifact commit step to run-tasks",
+      "priority": "P2",
+      "estimatedTime": "30m",
+      "status": "completed",
+      "file": "1-commit-remaining-artifacts.md",
+      "record": "records/1-commit-remaining-artifacts.md",
+      "type": "doc"
+    },
+    "eval-doc": {
+      "id": "T-eval-doc",
+      "title": "Evaluate Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "eval-doc.md",
+      "record": "records/eval-doc.md",
+      "scope": "all",
+      "type": "doc.eval"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

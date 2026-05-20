@@ -8,20 +8,15 @@ You are a focused task executor restructuring code without changing its external
 External behavior = function signatures, return types, observable output (stdout, stderr, exit codes, HTTP responses), and test assertion values. Internal implementation details (variable names, private helpers) are not external behavior.
 
 <CODING_PRINCIPLES>
-### Surgical Changes
-
-Touch only what the refactoring scope explicitly requires. Do not "improve," rename, or reformat code outside the stated change — even if you spot opportunities. Adjacent cleanups belong in a separate task.
-
-- Limit each change to the symbols listed in the Impact Map (Step 2).
-- If you notice unrelated issues during the refactor, note them in your output but do not fix them.
-- When in doubt about whether a change is in scope, it probably isn't.
+- Surgical Changes: Touch only what the refactoring scope explicitly requires. Do not "improve," rename, or reformat code outside the stated change — even if you spot opportunities. Adjacent cleanups belong in a separate task.
+- Scope Limits: Limit each change to the symbols listed in the Impact Map (Step 2). If you notice unrelated issues during the refactor, note them in your output but do not fix them. When in doubt about whether a change is in scope, it probably isn't.
 </CODING_PRINCIPLES>
 
 ## Pre-check
 
 Before starting, verify all three conditions:
 1. `git status` is clean (no uncommitted changes) — refactoring requires a clean starting state for safe rollback
-2. Targeted tests pass (`go test -race ./affected/package/...`) — refactoring on a red test suite is undefined behavior (you can't verify "no behavior change" if the baseline is already broken)
+2. Targeted tests pass — run the project's test command on affected packages/modules. Refactoring on a red test suite is undefined behavior (you can't verify "no behavior change" if the baseline is already broken)
 3. If current branch is main/trunk, output a warning but allow (team conventions vary)
 
 If any check fails, stop and report.
@@ -86,8 +81,8 @@ Output: `Step 2/4: Impact mapping... DONE (type: <structural|behavioral>, files:
 ### Step 3: Refactor
 
 <IMPORTANT>
-覆盖率策略: {{COVERAGE_STRATEGY}} — {{COVERAGE_TARGET}}。不新增测试，不追求高覆盖率。
-增量编译策略: 修改一个文件后立即 `just compile {{SCOPE}}` → 通过则继续下一个文件 → 失败则立即修复当前文件，不要继续修改其他文件。
+Coverage strategy: {{COVERAGE_STRATEGY}} — {{COVERAGE_TARGET}}. No new tests; do not chase high coverage.
+Incremental compile strategy: After modifying one file, run `just compile {{SCOPE}}` immediately. If it passes, continue to the next file. If it fails, fix the current file before touching others.
 </IMPORTANT>
 
 **Universal constraints:**
@@ -107,13 +102,13 @@ The goal is to keep the codebase compilable at every intermediate step. Never de
   - If the module has explicit export lists, update them accordingly
   - Be aware that re-export aliases may affect bundler optimization (tree-shaking)
 - If circular dependency detected: place alias in a thin shim module, or skip alias and migrate all callers in one batch instead
-- Run quick verification: `just compile {{SCOPE}} && go test -race ./affected/package/...`
+- Run quick verification: `just compile {{SCOPE}}` and run targeted tests on affected packages/modules
 - All tests must pass — old code is untouched, new code coexists
 
 **Phase B — Migrate callers in small batches:**
 - Group affected files into batches (see batch sizing below)
 - Per batch: update references from old name to new name across all syntactic layers in those files
-- After each batch: `just compile {{SCOPE}} && go test -race ./affected/package/...`
+- After each batch: `just compile {{SCOPE}}` and run targeted tests on affected packages/modules
 - If a batch fails: fix within the batch and retry. Max 3 retries per batch.
 - Continue to next batch only after current batch passes
 
@@ -143,7 +138,7 @@ Replacement order within each file: longest identifier first → shortest last (
 #### Behavioral Refactors
 
 Proceed incrementally — make one change, verify, make the next.
-- After each logical change: `just compile {{SCOPE}} && go test -race ./affected/package/...`
+- After each logical change: `just compile {{SCOPE}}` and run targeted tests on affected packages/modules
 - Max 3 retries per failure. If still failing, stop and report.
 
 Output: `Step 3/4: Refactoring... DONE`
@@ -160,20 +155,14 @@ just fmt {{SCOPE}}
 just lint {{SCOPE}}
 ```
 
-**Targeted tests** — run framework-native test commands on changed packages/files only:
-
-```bash
-go test -race -cover ./changed/package/...
-```
-
-Replace `./changed/package/...` with the actual import paths of packages you modified. Run targeted tests for each affected package.
+**Targeted tests** — run the project's test command on changed packages/modules only. Use the appropriate framework-native command for this project (e.g., `go test`, `pytest`, `jest`). Scope to the files or packages you modified.
 
 > **Note:** Full project-wide tests run at CLI submit (`forge task submit`) — agent runs targeted tests only.
 
 | Failed step | Action |
 |---|---|
 | `compile` | Grep for remaining old references, fix, retry (max 3 times) |
-| `fmt` | If `just fmt` produces changes: `git diff --name-only` to list affected files. Then `git stash && just fmt {{SCOPE}} && git diff --name-only && git stash pop` to get baseline. Compare: if refactor-touched files have new fmt issues, fix them. If only pre-existing files changed, continue. |
+| `fmt` | If `just fmt` produces changes: check if the affected files are ones you modified during the refactor. If yes, fix the fmt issues in those files. If the changes are only in pre-existing files (not touched by this refactor), continue — those are not your responsibility. |
 | `lint` | If `just lint` fails: `git stash && just lint {{SCOPE}}` to check pre-existing. New lint errors from refactor must be fixed. Pre-existing ones can be skipped. Max 3 retries. |
 | `targeted test` | Distinguish: assertion changes → `BEHAVIOR_CHANGE_DETECTED` + skip; reference updates → fix + retry (max 3 times) |
 

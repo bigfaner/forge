@@ -143,12 +143,11 @@ Override with `--force`: `forge task submit <id> --data record.json --force`
 - Source scripts at `tests/e2e/features/<feature>/` are reorganized into `tests/e2e/<target>/` after graduation
 
 **Test command auto-detection order (project-level):**
-1. `testCommand` field in `index.json` (explicit configuration)
-2. `justfile`/`Justfile` contains `test` recipe -> `just test`
-3. `Makefile` contains `test:` target -> `make test`
-4. `go.mod` exists -> `go test ./...`
-5. `package.json` contains `scripts.test` -> `npm test`
-6. `pytest.ini` / `pyproject.toml` exists -> `pytest`
+1. `justfile`/`Justfile` contains `test` recipe -> `just test`
+2. `Makefile` contains `test:` target -> `make test`
+3. `go.mod` exists -> `go test ./...`
+4. `package.json` contains `scripts.test` -> `npm test`
+5. `pytest.ini` / `pyproject.toml` exists -> `pytest`
 
 **e2e test detection order:**
 1. `justfile`/`Justfile` contains `test-e2e` recipe -> `just test-e2e`
@@ -280,7 +279,6 @@ type TaskIndex struct {
     Tasks        map[string]Task `json:"tasks"`
     StatusEnum   []string        `json:"statusEnum,omitempty"`
     PriorityEnum []string        `json:"priorityEnum,omitempty"`
-    TestCommand  string          `json:"testCommand,omitempty"`
     E2ERound     int             `json:"e2eRound,omitempty"` // current fix-e2e round (0 = no failures yet)
 }
 ```

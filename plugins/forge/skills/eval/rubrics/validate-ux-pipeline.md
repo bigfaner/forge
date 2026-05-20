@@ -4,7 +4,11 @@ Reference file for eval's validate-ux pre-processing. Loaded by `SKILL.md`.
 
 ## Project Type Detection
 
-Resolve project type from `forge test interfaces`:
+Resolve project type by examining the project structure and configuration:
+- Check `docs/conventions/` for interface type configuration
+- Check project directory structure: `pages/` or `src/components/` → web-ui, `cmd/` with cobra/spf13 imports → cli, route handlers (`api/`, `routes/`) → api, terminal rendering libs (bubbletea, tview) → tui, `android/`/`ios/` → mobile-ui
+- Check `.forge/config.yaml` for a `project-type` field
+- Check `package.json` dependencies: react/vue/next → web-ui, express/fastify → api
 
 | Interface | Project Type | Execution Method | Operation Unit | Capture |
 |------------|-------------|-----------------|----------------|---------|
@@ -12,7 +16,7 @@ Resolve project type from `forge test interfaces`:
 | `web-ui` | Web | agent-browser | URL + element selector + action | Screenshot + accessibility tree |
 | `tui` | TUI | Bash stdin pipe | Key sequence (non-interactive only) | Terminal output |
 
-Detection priority: project interfaces -> `forge test detect` -> ask user.
+Detection priority: project interfaces -> language detection via project files (check `package.json`, `go.mod`, `Cargo.toml`, `pyproject.toml`/`setup.py`) -> ask user.
 
 TUI constraint: first version covers non-interactive scenarios only (initial render, help output, invalid input response).
 

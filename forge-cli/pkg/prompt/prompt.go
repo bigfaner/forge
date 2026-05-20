@@ -88,6 +88,13 @@ func Synthesize(opts SynthesizeOpts) (string, error) {
 
 // renderTemplate reads the embed template and substitutes placeholders.
 //
+// WARNING: Placeholder substitution uses strings.ReplaceAll with no escaping
+// mechanism. Template content must not contain bare placeholder strings like
+// {{TASK_ID}}, {{TASK_FILE}}, etc., or they will be silently replaced at
+// runtime. This includes code examples, documentation snippets, or any text
+// that coincidentally matches the {{...}} pattern. If literal {{...}} is ever
+// needed in a template, an escaping mechanism must be implemented first.
+//
 // Available placeholders (all use {{NAME}} syntax):
 //
 //	{{TASK_ID}}         — task ID (e.g. "2.1", "T-test-gen-cases")
@@ -278,14 +285,12 @@ func isLabelWithEmptyValue(line string) bool {
 	if line == "" {
 		return false
 	}
-	colonIdx := strings.Index(line, ":")
-	if colonIdx < 0 {
+	before, after, found := strings.Cut(line, ":")
+	if !found {
 		return false
 	}
-	// Everything after the colon must be empty or only whitespace.
-	after := strings.TrimSpace(line[colonIdx+1:])
-	// The part before the colon must look like a word (no spaces).
-	before := strings.TrimSpace(line[:colonIdx])
+	before = strings.TrimSpace(before)
+	after = strings.TrimSpace(after)
 	if before == "" || strings.Contains(before, " ") {
 		return false
 	}
@@ -293,6 +298,14 @@ func isLabelWithEmptyValue(line string) bool {
 }
 
 // genScriptBases lists the task ID bases that support per-type gen-scripts or gen-and-run.
+//
+// Each base corresponds to a specific task ID format in the index:
+//   - "T-test-gen-scripts"     → tasks like "T-test-gen-scripts-api", "T-test-gen-scripts-ui"
+//   - "T-quick-gen-and-run"    → tasks like "T-quick-gen-and-run-cli"
+//
+// The type suffix (the part after the base) determines the --type argument passed
+// to the gen-script command at runtime. Adding a new base here requires that the
+// corresponding task ID format is also recognized by task.ExtractTypeSuffix.
 var genScriptBases = []string{
 	"T-test-gen-scripts",
 	"T-quick-gen-and-run",
