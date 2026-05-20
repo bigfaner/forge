@@ -1,6 +1,6 @@
 ---
 feature: "task-coverage-strategy"
-status: tasks
+status: completed
 mode: quick
 ---
 
