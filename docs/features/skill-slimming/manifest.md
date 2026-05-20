@@ -18,9 +18,9 @@ mode: quick
 
 | ID | Title | Status | File |
 |----|-------|--------|------|
-| 1 | Slim consolidate-specs (607→≤350 lines) | pending | tasks/1-slim-consolidate-specs.md |
-| 2 | Slim tech-design (472→≤350 lines) | pending | tasks/2-slim-tech-design.md |
-| 3 | Slim write-prd (407→≤350 lines) | pending | tasks/3-slim-write-prd.md |
+| 1 | Slim consolidate-specs (348→≤200 lines) | pending | tasks/1-slim-consolidate-specs.md |
+| 2 | Slim tech-design (190→≤150 lines) | pending | tasks/2-slim-tech-design.md |
+| 3 | Slim write-prd (231→≤180 lines) | pending | tasks/3-slim-write-prd.md |
 | 4 | Slim eval/quality domain (eval + gen-contracts + test-guide) | pending | tasks/4-slim-eval-quality-domain.md |
 | 5 | Slim generation domain (gen-sitemap + gen-journeys + gen-test-cases + gen-test-scripts) | pending | tasks/5-slim-generation-domain.md |
 | 6 | Slim infra/design domain (init-justfile + ui-design + extract-design-md) | pending | tasks/6-slim-infra-design-domain.md |

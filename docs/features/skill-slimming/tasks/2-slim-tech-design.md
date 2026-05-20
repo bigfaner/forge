@@ -1,6 +1,6 @@
 ---
 id: "2"
-title: "Slim tech-design (472→≤350 lines)"
+title: "Slim tech-design (190→≤150 lines)"
 priority: "P1"
 estimated_time: "1-2h"
 dependencies: ["1"]
@@ -8,10 +8,10 @@ type: "doc"
 mainSession: false
 ---
 
-# 2: Slim tech-design (472→≤350 lines)
+# 2: Slim tech-design (190→≤150 lines)
 
 ## Description
-按 Splitting Heuristic 规则，将 `tech-design/SKILL.md`（当前 472 行）拆分为 SKILL.md + rules/ + templates/。参照 Task 1 的拆分结构和粒度保持一致性。
+按 Splitting Heuristic 规则，精简 `tech-design/SKILL.md`（当前 190 行 + 649 行辅助文件）。重点在精简冗余文本和消除歧义。参照 Task 1 的处理风格保持一致性。
 
 ## Reference Files
 - `docs/proposals/skill-slimming/proposal.md` — Splitting Heuristic
@@ -22,13 +22,12 @@ mainSession: false
 ### Create
 | File | Description |
 |------|-------------|
-| `plugins/forge/skills/tech-design/rules/*.md` | 规则细节（评估标准、约束条件等） |
-| `plugins/forge/skills/tech-design/templates/*.md` | 输出模板（如有内联模板） |
+| `plugins/forge/skills/tech-design/rules/*.md` | 规则细节（如有需从 SKILL.md 移出的内容） |
 
 ### Modify
 | File | Changes |
 |------|---------|
-| `plugins/forge/skills/tech-design/SKILL.md` | 保留流程骨架，移除规则细节和模板 |
+| `plugins/forge/skills/tech-design/SKILL.md` | 精简冗余、消除歧义 |
 
 ## Acceptance Criteria
 - [ ] SKILL.md 行数 ≤ 350 行
@@ -42,4 +41,4 @@ mainSession: false
 - 不改变 skill 的输入/输出契约
 
 ## Implementation Notes
-- tech-design 有 8 个辅助文件（templates/、rules/、examples/），部分已存在——检查是否可复用现有目录结构，避免重复创建
+- tech-design 有 10 个辅助文件（649 行），已有丰富的 templates/ 和 rules/ 目录——检查是否可复用现有目录结构，避免重复创建

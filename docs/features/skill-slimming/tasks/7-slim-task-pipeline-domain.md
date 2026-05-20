@@ -11,7 +11,7 @@ mainSession: false
 # 7: Slim task pipeline domain (breakdown-tasks + quick-tasks + submit-task)
 
 ## Description
-对任务管线域的 3 个 skill 进行精简：breakdown-tasks（144 行）、quick-tasks（208 行）、submit-task（156 行）。这些文件较小，主要做精简和消歧，不一定需要拆分。
+对任务管线域的 3 个 skill 进行精简：breakdown-tasks（144 行）、quick-tasks（173 行）、submit-task（156 行）。这些文件较小，主要做精简和消歧，不一定需要拆分。
 
 ## Reference Files
 - `docs/proposals/skill-slimming/proposal.md` — Splitting Heuristic
@@ -36,5 +36,5 @@ mainSession: false
 - 不改变 skill 的输入/输出契约
 
 ## Implementation Notes
-- breakdown-tasks 有 7 个辅助文件（350 行），quick-tasks 有 3 个（93 行），submit-task 无辅助文件
+- breakdown-tasks 有 8 个辅助文件（378 行），quick-tasks 有 3 个（93 行），submit-task 无辅助文件
 - 这些文件较小（144-208 行），重点在消歧和精简冗余文本，而非拆分

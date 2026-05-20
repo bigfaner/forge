@@ -11,7 +11,7 @@ mainSession: false
 # 6: Slim infra/design domain (init-justfile + ui-design + extract-design-md)
 
 ## Description
-对基础设施/设计域的 3 个 skill 进行精简和拆分：init-justfile（387 行）、ui-design（314 行）、extract-design-md（242 行）。
+对基础设施/设计域的 3 个 skill 进行精简和消歧：init-justfile（327 行）、ui-design（228 行）、extract-design-md（132 行）。
 
 ## Reference Files
 - `docs/proposals/skill-slimming/proposal.md` — Splitting Heuristic
@@ -44,6 +44,6 @@ mainSession: false
 - 不改变 skill 的输入/输出契约
 
 ## Implementation Notes
-- init-justfile 有 6 个 templates/ 文件（1023 行）——大量 justfile 变体内联在 SKILL.md 或 templates/ 中，评估是否可进一步拆分
-- ui-design 有 13 个辅助文件（1658 行）——已有 templates/platforms/ 和 templates/styles/，优先复用
-- extract-design-md 有 3 个辅助文件（246 行），可能只需精简
+- init-justfile 有 2 个辅助文件（79 行），可能只需精简和消歧
+- ui-design 有 15 个辅助文件（1759 行）——已有 templates/platforms/ 和 templates/styles/，优先复用
+- extract-design-md 有 6 个辅助文件（382 行），可能只需精简

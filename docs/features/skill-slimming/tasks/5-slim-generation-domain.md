@@ -11,7 +11,7 @@ mainSession: false
 # 5: Slim generation domain (gen-sitemap + gen-journeys + gen-test-cases + gen-test-scripts)
 
 ## Description
-对生成域的 4 个 skill 进行精简和拆分：gen-sitemap（395 行）、gen-journeys（211 行）、gen-test-cases（136 行）、gen-test-scripts（350 行）。
+对生成域的 4 个 skill 进行精简和消歧：gen-sitemap（229 行）、gen-journeys（211 行）、gen-test-cases（136 行）、gen-test-scripts（325 行）。
 
 ## Reference Files
 - `docs/proposals/skill-slimming/proposal.md` — Splitting Heuristic
@@ -46,6 +46,6 @@ mainSession: false
 - 不改变 skill 的输入/输出契约
 
 ## Implementation Notes
-- gen-sitemap 有 2 个辅助文件（99 行），gen-journeys 有 1 个（89 行）——评估现有文件是否已分担内容
-- gen-test-cases 有 11 个辅助文件（843 行），gen-test-scripts 有 15 个（1723 行）——已有丰富的 templates/ 和 types/ 目录，优先复用
+- gen-sitemap 有 3 个辅助文件（182 行），gen-journeys 有 1 个（89 行）——评估现有文件是否已分担内容
+- gen-test-cases 有 11 个辅助文件（843 行），gen-test-scripts 有 7 个（889 行）——已有丰富的 templates/ 和 types/ 目录，优先复用
 - gen-test-cases 仅 136 行，可能只需要精简（消歧、清理冗余），不需要拆分

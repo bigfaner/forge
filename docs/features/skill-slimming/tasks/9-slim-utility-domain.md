@@ -11,7 +11,7 @@ mainSession: false
 # 9: Slim utility domain (clean-code + run-e2e-tests)
 
 ## Description
-对工具域的 2 个 skill 进行精简：clean-code（190 行）、run-e2e-tests（299 行）。这是最后一个任务组。
+对工具域的 2 个 skill 进行精简：clean-code（190 行）、run-e2e-tests（193 行）。这是最后一个任务组。
 
 ## Reference Files
 - `docs/proposals/skill-slimming/proposal.md` — Splitting Heuristic
@@ -35,6 +35,6 @@ mainSession: false
 - 不改变 skill 的输入/输出契约
 
 ## Implementation Notes
-- clean-code 有 1 个辅助文件（16 行），run-e2e-tests 有 1 个（33 行）
+- clean-code 有 1 个辅助文件（16 行），run-e2e-tests 有 3 个（147 行）
 - 两个文件都较小，重点在消歧和清理
 - 作为最后一个任务，完成后验证所有 22 个 skill 的总行数是否达到 25%+ 减少目标
