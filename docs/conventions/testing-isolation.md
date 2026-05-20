@@ -1,6 +1,6 @@
 ---
 title: "Testing Isolation Conventions"
-domains: [isolation, TempDir, CLAUDE_PROJECT_DIR, fixture, sandbox]
+domains: [isolation, TempDir, CLAUDE_PROJECT_DIR, fixture, sandbox, binary, TestMain]
 ---
 
 # Testing Isolation Conventions
@@ -91,3 +91,43 @@ func ensureFeatureDir(t *testing.T, root, slug string) {
 ```
 
 **Source**: `disc-1` fix — `ensureFeatureDir` in `feature_set_command_cli_test.go` was missing `tasks/index.json`.
+
+### TEST-isolation-004: E2E Tests Must Compile a Dedicated Forge Binary
+
+**Requirement**: E2E test suites MUST compile a forge binary from the current source tree (via `go build` in `TestMain`) and use that binary for all `exec.Command` invocations. Tests MUST NOT rely on the system-installed `forge` binary via `$PATH` resolution.
+
+**Why**: The system-installed `forge` binary may come from a different branch (e.g., `main`). E2e tests that test branch-specific features or behavior changes will produce false failures (new commands missing, removed commands still present, modified output format unchanged). Building from source guarantees the binary matches the code under test. Additionally, using the production binary risks corrupting its state or confusing test results with real project operations.
+
+**Pattern**:
+
+```go
+var forgeBinary string
+
+func TestMain(m *testing.M) {
+    tmpDir, _ := os.MkdirTemp("", "forge-e2e-*")
+    defer os.RemoveAll(tmpDir)
+
+    forgeBinary = filepath.Join(tmpDir, "forge-test")
+    cmd := exec.Command("go", "build", "-o", forgeBinary, "./cmd/forge")
+    if out, err := cmd.CombinedOutput(); err != nil {
+        fmt.Fprintf(os.Stderr, "build failed: %s\n%s", err, out)
+        os.Exit(1)
+    }
+
+    os.Exit(m.Run())
+}
+
+// In test functions:
+cmd := exec.Command(forgeBinary, "task", "claim") // NOT exec.Command("forge", ...)
+```
+
+**Anti-pattern**:
+
+```go
+// BAD: resolves to system-installed forge, may be from a different branch
+cmd := exec.Command("forge", "task", "claim")
+```
+
+**Scope**: All e2e test packages under `tests/e2e/` that invoke the forge CLI binary.
+
+**Source**: `/learn` entry 2026-05-20 — 8/36 e2e tests failed because they ran against system-installed forge from `main` branch instead of the feature branch binary.

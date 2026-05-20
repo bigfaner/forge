@@ -397,7 +397,7 @@
       "dependencies": [
         "T-test-gen-scripts-cli"
       ],
-      "status": "pending",
+      "status": "blocked",
       "file": "run-e2e-tests-go.md",
       "record": "records/run-e2e-tests-go.md",
       "scope": "all",

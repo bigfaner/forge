@@ -35,3 +35,9 @@ status: tasks
 | Story 4: Backward compatibility (user-stories) | I-1 forgeconfig (tech-design) | — | — | 1.1, 1.5, 4.1, 4.2 |
 | Story 5: Multi-framework (user-stories) | Convention merge semantics (tech-design) | — | — | 3.1, 3.2 |
 | Story 6: Compile gate recovery (user-stories) | Error Handling (tech-design) | — | — | 2.1 |
+
+## Test Cases
+
+| Type | File | Count | Status |
+|------|------|-------|--------|
+| CLI | testing/cli-test-cases.md | 36 | Draft |
