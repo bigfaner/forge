@@ -1,6 +1,7 @@
 package lesson
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -90,7 +91,7 @@ func TestDiscover_CategoryInference(t *testing.T) {
 	}
 }
 
-func TestDiscover_NoFrontmatterFallsBackToModTime(t *testing.T) {
+func TestDiscover_NoFrontmatterCreatedIsEmpty(t *testing.T) {
 	dir := t.TempDir()
 	lessonsDir := filepath.Join(dir, LessonsDir)
 	require.NoError(t, os.MkdirAll(lessonsDir, 0755))
@@ -101,7 +102,8 @@ func TestDiscover_NoFrontmatterFallsBackToModTime(t *testing.T) {
 	lessons, err := Discover(dir)
 	assert.NoError(t, err)
 	require.Len(t, lessons, 1)
-	assert.NotEmpty(t, lessons[0].Created)
+	// Without frontmatter, Created is empty — sorting falls back to mtime.
+	assert.Empty(t, lessons[0].Created)
 	assert.Equal(t, "gotcha", lessons[0].Category)
 }
 
@@ -165,31 +167,35 @@ func TestFindByName_NotFound(t *testing.T) {
 	assert.Contains(t, err.Error(), "lesson not found")
 }
 
-func TestDiscover_SortedByModTimeDescending(t *testing.T) {
+func TestDiscover_SortedByCreatedDescending(t *testing.T) {
 	dir := t.TempDir()
 	lessonsDir := filepath.Join(dir, LessonsDir)
 	require.NoError(t, os.MkdirAll(lessonsDir, 0755))
 
-	// Create three lesson files with specific modification times.
-	fm := "---\ndate: 2026-01-01\ntitle: \"%s\"\n---\n"
+	// Create three lesson files with different created dates.
+	// Use lexicographically different order from date order to verify proper sorting.
+	lessons := []struct {
+		filename string
+		created  string
+	}{
+		{"lesson-alpha", "2026-01-15"},
+		{"lesson-beta", "2026-03-10"},
+		{"lesson-gamma", "2026-02-01"},
+	}
 
-	require.NoError(t, os.WriteFile(filepath.Join(lessonsDir, "lesson-old.md"), []byte(fm), 0644))
-	require.NoError(t, os.Chtimes(filepath.Join(lessonsDir, "lesson-old.md"), time.Time{}, time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)))
+	for _, l := range lessons {
+		content := fmt.Sprintf("---\ncreated: %s\ntitle: \"%s\"\n---\n", l.created, l.filename)
+		require.NoError(t, os.WriteFile(filepath.Join(lessonsDir, l.filename+".md"), []byte(content), 0644))
+	}
 
-	require.NoError(t, os.WriteFile(filepath.Join(lessonsDir, "lesson-newest.md"), []byte(fm), 0644))
-	require.NoError(t, os.Chtimes(filepath.Join(lessonsDir, "lesson-newest.md"), time.Time{}, time.Date(2026, 5, 19, 0, 0, 0, 0, time.UTC)))
-
-	require.NoError(t, os.WriteFile(filepath.Join(lessonsDir, "lesson-mid.md"), []byte(fm), 0644))
-	require.NoError(t, os.Chtimes(filepath.Join(lessonsDir, "lesson-mid.md"), time.Time{}, time.Date(2026, 3, 15, 0, 0, 0, 0, time.UTC)))
-
-	lessons, err := Discover(dir)
+	result, err := Discover(dir)
 	require.NoError(t, err)
-	require.Len(t, lessons, 3)
+	require.Len(t, result, 3)
 
-	// Sorted newest first: newest -> mid -> old.
-	assert.Equal(t, "lesson-newest", lessons[0].Name, "first lesson should be newest")
-	assert.Equal(t, "lesson-mid", lessons[1].Name, "second lesson should be mid")
-	assert.Equal(t, "lesson-old", lessons[2].Name, "third lesson should be oldest")
+	// Sorted newest first by created: beta (Mar 10) > gamma (Feb 1) > alpha (Jan 15).
+	assert.Equal(t, "lesson-beta", result[0].Name, "first lesson should be newest by created")
+	assert.Equal(t, "lesson-gamma", result[1].Name, "second lesson should be mid by created")
+	assert.Equal(t, "lesson-alpha", result[2].Name, "third lesson should be oldest by created")
 }
 
 func TestDiscover_OldestSortsLast(t *testing.T) {
@@ -197,20 +203,63 @@ func TestDiscover_OldestSortsLast(t *testing.T) {
 	lessonsDir := filepath.Join(dir, LessonsDir)
 	require.NoError(t, os.MkdirAll(lessonsDir, 0755))
 
-	fm := "---\ndate: 2026-01-01\ntitle: \"%s\"\n---\n"
+	oldContent := "---\ncreated: 2020-01-01\ntitle: \"old\"\n---\n"
+	require.NoError(t, os.WriteFile(filepath.Join(lessonsDir, "lesson-old.md"), []byte(oldContent), 0644))
 
-	require.NoError(t, os.WriteFile(filepath.Join(lessonsDir, "lesson-old.md"), []byte(fm), 0644))
-	require.NoError(t, os.Chtimes(filepath.Join(lessonsDir, "lesson-old.md"), time.Time{}, time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)))
-
-	require.NoError(t, os.WriteFile(filepath.Join(lessonsDir, "lesson-recent.md"), []byte(fm), 0644))
-	require.NoError(t, os.Chtimes(filepath.Join(lessonsDir, "lesson-recent.md"), time.Time{}, time.Date(2026, 5, 19, 0, 0, 0, 0, time.UTC)))
+	recentContent := "---\ncreated: 2026-05-19\ntitle: \"recent\"\n---\n"
+	require.NoError(t, os.WriteFile(filepath.Join(lessonsDir, "lesson-recent.md"), []byte(recentContent), 0644))
 
 	lessons, err := Discover(dir)
 	require.NoError(t, err)
 	require.Len(t, lessons, 2)
 
-	assert.Equal(t, "lesson-recent", lessons[0].Name, "most recently modified lesson should come first")
+	assert.Equal(t, "lesson-recent", lessons[0].Name, "lesson with newer created date should come first")
 	assert.Equal(t, "lesson-old", lessons[1].Name, "oldest lesson should come last")
+}
+
+func TestDiscover_MtimeFallbackWhenNoCreated(t *testing.T) {
+	dir := t.TempDir()
+	lessonsDir := filepath.Join(dir, LessonsDir)
+	require.NoError(t, os.MkdirAll(lessonsDir, 0755))
+
+	// Lessons without created/date fields — should fall back to mtime.
+	content := "---\ntitle: \"no-date\"\n---\n"
+
+	require.NoError(t, os.WriteFile(filepath.Join(lessonsDir, "lesson-old-fallback.md"), []byte(content), 0644))
+	require.NoError(t, os.Chtimes(filepath.Join(lessonsDir, "lesson-old-fallback.md"), time.Time{}, time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)))
+
+	require.NoError(t, os.WriteFile(filepath.Join(lessonsDir, "lesson-new-fallback.md"), []byte(content), 0644))
+	require.NoError(t, os.Chtimes(filepath.Join(lessonsDir, "lesson-new-fallback.md"), time.Time{}, time.Date(2026, 5, 19, 0, 0, 0, 0, time.UTC)))
+
+	lessons, err := Discover(dir)
+	require.NoError(t, err)
+	require.Len(t, lessons, 2)
+
+	assert.Equal(t, "lesson-new-fallback", lessons[0].Name, "lesson with newer mtime should come first (fallback)")
+	assert.Equal(t, "lesson-old-fallback", lessons[1].Name, "lesson with older mtime should come last (fallback)")
+}
+
+func TestDiscover_CreatedTakesPriorityOverMtime(t *testing.T) {
+	dir := t.TempDir()
+	lessonsDir := filepath.Join(dir, LessonsDir)
+	require.NoError(t, os.MkdirAll(lessonsDir, 0755))
+
+	// Lesson with older mtime but newer created date should sort first.
+	newCreatedContent := "---\ncreated: 2026-05-01\ntitle: \"new-created\"\n---\n"
+	require.NoError(t, os.WriteFile(filepath.Join(lessonsDir, "lesson-new-created.md"), []byte(newCreatedContent), 0644))
+	require.NoError(t, os.Chtimes(filepath.Join(lessonsDir, "lesson-new-created.md"), time.Time{}, time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)))
+
+	// Lesson with newer mtime but older created date should sort second.
+	oldCreatedContent := "---\ncreated: 2026-01-01\ntitle: \"old-created\"\n---\n"
+	require.NoError(t, os.WriteFile(filepath.Join(lessonsDir, "lesson-old-created.md"), []byte(oldCreatedContent), 0644))
+	require.NoError(t, os.Chtimes(filepath.Join(lessonsDir, "lesson-old-created.md"), time.Time{}, time.Date(2026, 5, 19, 0, 0, 0, 0, time.UTC)))
+
+	lessons, err := Discover(dir)
+	require.NoError(t, err)
+	require.Len(t, lessons, 2)
+
+	assert.Equal(t, "lesson-new-created", lessons[0].Name, "lesson with newer created date should sort first regardless of mtime")
+	assert.Equal(t, "lesson-old-created", lessons[1].Name, "lesson with older created date should sort after")
 }
 
 func TestDiscover_CreatedField(t *testing.T) {

@@ -18,7 +18,7 @@
       "title": "统一 feature/lesson 排序为 created 降序",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "2-unify-sorting-to-created.md",
       "record": "records/2-unify-sorting-to-created.md",
       "scope": "backend",

@@ -44,9 +44,9 @@ var categoryPrefixes = map[string]string{
 	"hook-":    "hook",
 }
 
-// Discover walks docs/lessons/*.md and returns all lessons sorted by file
-// modification time in reverse chronological order (newest first).
-// Lessons with zero or missing modification times sort to the end.
+// Discover walks docs/lessons/*.md and returns all lessons sorted by
+// frontmatter created field descending (newest first), with mtime as fallback.
+// Lessons without a created field fall back to file modification time.
 func Discover(projectRoot string) ([]Lesson, error) {
 	lessonsDir := filepath.Join(projectRoot, LessonsDir)
 	entries, err := os.ReadDir(lessonsDir)
@@ -57,12 +57,12 @@ func Discover(projectRoot string) ([]Lesson, error) {
 		return nil, fmt.Errorf("read lessons directory: %w", err)
 	}
 
-	type lessonWithTime struct {
+	type lessonWithMeta struct {
 		lesson  Lesson
 		modTime time.Time
 	}
 
-	var items []lessonWithTime
+	var items []lessonWithMeta
 	for _, entry := range entries {
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
 			continue
@@ -89,13 +89,10 @@ func Discover(projectRoot string) ([]Lesson, error) {
 		if created == "" {
 			created = meta.Date
 		}
-		if created == "" {
-			created = info.ModTime().Format("2006-01-02")
-		}
 
 		category := inferCategory(name)
 
-		items = append(items, lessonWithTime{
+		items = append(items, lessonWithMeta{
 			lesson: Lesson{
 				Name:     name,
 				Title:    meta.Title,
@@ -109,8 +106,20 @@ func Discover(projectRoot string) ([]Lesson, error) {
 	}
 
 	sort.Slice(items, func(i, j int) bool {
+		ci, cj := items[i].lesson.Created, items[j].lesson.Created
+		// Items with created field sort before items without (descending).
+		if ci != "" && cj != "" {
+			return ci > cj
+		}
+		// If only one has created, it sorts first.
+		if ci != "" {
+			return true
+		}
+		if cj != "" {
+			return false
+		}
+		// Both missing created: fall back to mtime descending.
 		mi, mj := items[i].modTime, items[j].modTime
-		// Zero mod times sort to the end.
 		if mi.IsZero() {
 			return false
 		}
