@@ -79,4 +79,4 @@ Task CLI manages task lifecycle within feature workflows.
 
 ## Automation Config
 
-The `auto` block in `.forge/config.yaml` controls automated task generation during `forge task index`. Settings: `e2eTest`, `consolidateSpecs`, `cleanCode`, `gitPush` — each with `quick`/`full` sub-keys. Defaults: `e2eTest` and `consolidateSpecs` are `true`, `cleanCode` and `gitPush` are `false`. See `quick-tasks/SKILL.md` or `breakdown-tasks/SKILL.md` for details.
+The `auto` block in `.forge/config.yaml` controls automated task generation during `forge task index`. Settings: `e2eTest`, `consolidateSpecs`, `cleanCode`, `gitPush`, `runTasks` — each with `quick`/`full` sub-keys. Defaults: `e2eTest` and `consolidateSpecs` are `true`; `cleanCode`, `gitPush`, and `runTasks.full` are `false`; `runTasks.quick` is `true`. `runTasks` controls whether `/quick` skips the Step 2 confirmation gate and auto-executes after brainstorm approval. See `quick-tasks/SKILL.md` or `breakdown-tasks/SKILL.md` for details.
