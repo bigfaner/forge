@@ -1,6 +1,6 @@
 ---
 feature: "e2e-isolated-build-artifact"
-status: tasks
+status: completed
 mode: quick
 ---
 
