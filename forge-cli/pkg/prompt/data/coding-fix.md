@@ -47,7 +47,7 @@ Output: `Step 2/4: Locating affected code... DONE`
 ### Step 3: Fix
 
 <IMPORTANT>
-覆盖率策略: {{COVERAGE_STRATEGY}} — 目标: {{COVERAGE_TARGET}}。写针对性修复测试，达到目标后停止补充测试。
+Coverage strategy: {{COVERAGE_STRATEGY}} — Target: {{COVERAGE_TARGET}}. Write targeted fix tests; stop adding once the target is reached.
 </IMPORTANT>
 
 Apply minimal fix. Preserve existing functionality. Do not refactor unrelated code.

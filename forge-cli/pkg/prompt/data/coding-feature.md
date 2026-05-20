@@ -37,7 +37,7 @@ If the task file contains ## Hard Rules with MUST/MUST NOT directives:
 ### Step 2: TDD Implementation
 
 <IMPORTANT>
-覆盖率策略: {{COVERAGE_STRATEGY}} — 目标: {{COVERAGE_TARGET}}。达到目标后停止补充测试。
+Coverage strategy: {{COVERAGE_STRATEGY}} — Target: {{COVERAGE_TARGET}}. Stop adding tests once the target is reached.
 </IMPORTANT>
 
 First, extract test requirements from the task file's Acceptance Criteria. Each checkbox item maps to one or more test cases. List them before writing any code.

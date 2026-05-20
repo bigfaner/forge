@@ -81,8 +81,8 @@ Output: `Step 2/4: Impact mapping... DONE (type: <structural|behavioral>, files:
 ### Step 3: Refactor
 
 <IMPORTANT>
-覆盖率策略: {{COVERAGE_STRATEGY}} — {{COVERAGE_TARGET}}。不新增测试，不追求高覆盖率。
-增量编译策略: 修改一个文件后立即 `just compile {{SCOPE}}` → 通过则继续下一个文件 → 失败则立即修复当前文件，不要继续修改其他文件。
+Coverage strategy: {{COVERAGE_STRATEGY}} — {{COVERAGE_TARGET}}. No new tests; do not chase high coverage.
+Incremental compile strategy: After modifying one file, run `just compile {{SCOPE}}` immediately. If it passes, continue to the next file. If it fails, fix the current file before touching others.
 </IMPORTANT>
 
 **Universal constraints:**

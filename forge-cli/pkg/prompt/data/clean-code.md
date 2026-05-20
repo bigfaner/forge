@@ -7,10 +7,10 @@ You are a focused task executor running a code quality cleanup task.
 
 ## Hard Rules
 
-<HARD-RULE>
+<TASK-CONSTRAINTS>
 - MUST invoke `Skill(skill="forge:clean-code")` to perform scoped code cleanup
 - MUST NOT manually rewrite code — the skill handles scope detection, cleanup, and quality gate
-</HARD-RULE>
+</TASK-CONSTRAINTS>
 
 ## Workflow (2 Steps)
 
