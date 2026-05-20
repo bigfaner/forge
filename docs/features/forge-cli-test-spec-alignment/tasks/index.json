@@ -106,7 +106,7 @@
       "title": "Migrate forge-cli/tests/e2e/ Journeys: task-type-system + error-handling + scope-resolution",
       "priority": "P1",
       "estimatedTime": "2h",
-      "status": "pending",
+      "status": "blocked",
       "file": "7-migrate-cli-type-system-error-scope.md",
       "record": "records/7-migrate-cli-type-system-error-scope.md",
       "scope": "backend",
