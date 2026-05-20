@@ -387,12 +387,11 @@ They are owned by T-test-3 (`run-e2e-tests` task) in the task chain.
 This hook is the project health gate: unit/integration tests + regression suite.
 
 **Test command detection order:**
-1. `testCommand` field in `index.json`
-2. `justfile`/`Justfile` contains `test` recipe -> `just test`
-3. `Makefile` (with test: target) -> `make test`
-4. `go.mod` → `go test ./...`
-5. `package.json` (with scripts.test) → `npm test`
-6. `pytest.ini` / `pyproject.toml` → `pytest`
+1. `justfile`/`Justfile` contains `test` recipe -> `just test`
+2. `Makefile` (with test: target) -> `make test`
+3. `go.mod` → `go test ./...`
+4. `package.json` (with scripts.test) → `npm test`
+5. `pytest.ini` / `pyproject.toml` → `pytest`
 
 ---
 

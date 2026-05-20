@@ -8,8 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
-	"forge-cli/pkg/forgeconfig"
 )
 
 // ContractFailure records a single contract dimension failure.
@@ -71,36 +69,14 @@ func (r JourneyResult) FormatReport() string {
 
 // JourneyExecutionConfig holds resolved configuration for journey execution.
 type JourneyExecutionConfig struct {
-	TestCommand string
-	Language    string
+	ProjectRoot string
 }
 
-// resolveJourneyExecutionConfig reads test execution settings from project config.
-func resolveJourneyExecutionConfig(projectRoot string) (*JourneyExecutionConfig, error) {
-	// Read test-command from config
-	testCmd, err := readTestCommand(projectRoot)
-	if err != nil {
-		return nil, err
-	}
-
+// resolveJourneyExecutionConfig creates the journey execution config.
+func resolveJourneyExecutionConfig(projectRoot string) *JourneyExecutionConfig {
 	return &JourneyExecutionConfig{
-		TestCommand: testCmd,
-	}, nil
-}
-
-// readTestCommand reads the test-command field from .forge/config.yaml.
-func readTestCommand(projectRoot string) (string, error) {
-	cfg, err := forgeconfig.ReadConfig(projectRoot)
-	if err != nil {
-		return "", fmt.Errorf("failed to read config: %w", err)
+		ProjectRoot: projectRoot,
 	}
-	if cfg == nil {
-		return "", fmt.Errorf("no .forge/config.yaml found; set test-command in config")
-	}
-	if cfg.TestCommand == "" {
-		return "", fmt.Errorf("test-command not set in .forge/config.yaml; add 'test-command: go test ./...' (or your project's test command)")
-	}
-	return cfg.TestCommand, nil
 }
 
 // createJourneyWorkDir creates an isolated temporary directory for a journey.
@@ -150,30 +126,18 @@ func copyFileToWorkDir(projectRoot, workDir, filename string) error {
 	return nil
 }
 
-// executeJourneyInIsolation runs a journey's test command in its isolated work directory.
-// The test command is executed with the work dir as cwd.
+// executeJourneyInIsolation runs a journey's e2e tests using `just e2e-test`
+// from the project root with the journey filter.
 // Returns the execution result with output and exit code.
-func executeJourneyInIsolation(cfg *JourneyExecutionConfig, workDir, journeyName string) JourneyResult {
+func executeJourneyInIsolation(cfg *JourneyExecutionConfig, _, journeyName string) JourneyResult {
 	start := time.Now()
 	result := JourneyResult{
 		JourneyName: journeyName,
 	}
 
-	// Parse the test command into command name and args
-	parts := strings.Fields(cfg.TestCommand)
-	if len(parts) == 0 {
-		result.Passed = false
-		result.Error = "empty test command"
-		result.Duration = time.Since(start)
-		return result
-	}
-
-	cmdName := parts[0]
-	cmdArgs := parts[1:]
-
-	cmd := exec.Command(cmdName, cmdArgs...)
-	cmd.Dir = workDir
-	cmd.Env = append(os.Environ(), "CLAUDE_PROJECT_DIR="+workDir)
+	cmd := exec.Command("just", "e2e-test", journeyName)
+	cmd.Dir = cfg.ProjectRoot
+	cmd.Env = append(os.Environ(), "FORGE_JOURNEY="+journeyName)
 
 	output, err := cmd.CombinedOutput()
 	result.Output = string(output)
@@ -186,7 +150,7 @@ func executeJourneyInIsolation(cfg *JourneyExecutionConfig, workDir, journeyName
 		if ok := isErrorType(err, &exitErr); ok {
 			result.ExitCode = exitErr.ExitCode()
 		}
-		result.Error = fmt.Sprintf("test command failed: %v", err)
+		result.Error = fmt.Sprintf("just e2e-test %s failed: %v", journeyName, err)
 	} else {
 		result.Passed = true
 		result.ExitCode = 0

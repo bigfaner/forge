@@ -81,25 +81,6 @@ func TestConfigGetCommand(t *testing.T) {
 		}
 	})
 
-	t.Run("test-command returns value", func(t *testing.T) {
-		dir := setupConfig(t, "test-command: go test ./...\n")
-
-		var stdout bytes.Buffer
-		rootCmd.SetOut(&stdout)
-		rootCmd.SetErr(os.Stderr)
-		rootCmd.SetArgs([]string{"config", "get", "test-command", "--project-root", dir})
-
-		err := rootCmd.Execute()
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-
-		output := strings.TrimSpace(stdout.String())
-		if output != "go test ./..." {
-			t.Errorf("expected 'go test ./...', got %q", output)
-		}
-	})
-
 	t.Run("worktree.source-branch returns value", func(t *testing.T) {
 		dir := setupConfig(t, "worktree:\n  source-branch: develop\n")
 
@@ -203,8 +184,10 @@ func TestConfigInitCommand(t *testing.T) {
 	t.Run("writes config with auto and worktree", func(t *testing.T) {
 		dir := t.TempDir()
 
-		// Simulate user input: y (e2e quick), y (e2e full), y (consolidate quick), y (consolidate full), n (clean quick), n (clean full), y (git push), main (source branch), .env (copy files)
-		input := "y\ny\ny\ny\nn\nn\ny\nmain\n.env\n"
+		// Simulate user input: y (e2e quick), y (e2e full), y (consolidate quick), y (consolidate full),
+		// n (clean quick), n (clean full), n (validation quick), n (validation full), y (git push),
+		// main (source branch), .env (copy files)
+		input := "y\ny\ny\ny\nn\nn\nn\nn\ny\nmain\n.env\n"
 		var stdin bytes.Buffer
 		stdin.WriteString(input)
 		var stdout bytes.Buffer
@@ -282,8 +265,8 @@ func TestConfigInitCommand(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		// Answer 'y' to reconfigure, then select defaults for all auto settings, no worktree
-		input := "y\ny\ny\ny\ny\nn\nn\nn\n\n\n"
+		// Answer 'y' to reconfigure, then select defaults for all auto settings (including validation), no worktree
+		input := "y\ny\ny\ny\ny\nn\nn\nn\nn\nn\n\n\n"
 		var stdin bytes.Buffer
 		stdin.WriteString(input)
 		var stdout bytes.Buffer
@@ -302,6 +285,96 @@ func TestConfigInitCommand(t *testing.T) {
 		content := string(data)
 		if !strings.Contains(content, "auto:") {
 			t.Errorf("config should contain auto, got %q", content)
+		}
+	})
+
+	t.Run("validation prompts between cleanCode and gitPush", func(t *testing.T) {
+		dir := t.TempDir()
+
+		// All defaults: enter through all prompts (7 auto prompts + empty source + empty copy)
+		// Order: e2e quick, e2e full, consolidate quick, consolidate full,
+		// clean quick, clean full, validation quick, validation full, git push,
+		// source branch, copy files
+		input := "\n\n\n\n\n\n\n\n\n\n\n"
+		var stdin bytes.Buffer
+		stdin.WriteString(input)
+		var stdout bytes.Buffer
+
+		rootCmd.SetIn(&stdin)
+		rootCmd.SetOut(&stdout)
+		rootCmd.SetArgs([]string{"config", "init", "--project-root", dir})
+
+		err := rootCmd.Execute()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		output := stdout.String()
+
+		// Verify validation prompts appear in output
+		if !strings.Contains(output, "validation") {
+			t.Errorf("expected 'validation' in prompts, got %q", output)
+		}
+
+		// Verify validation appears between cleanCode and gitPush in prompt output
+		cleanIdx := strings.Index(output, "cleanup")
+		validationIdx := strings.Index(output, "validation")
+		gitPushIdx := strings.Index(output, "git push")
+
+		if cleanIdx == -1 || validationIdx == -1 || gitPushIdx == -1 {
+			t.Fatalf("missing expected prompts in output: %q", output)
+		}
+		if cleanIdx >= validationIdx || validationIdx >= gitPushIdx {
+			t.Errorf("validation prompts should appear between cleanCode and gitPush: clean=%d, validation=%d, gitPush=%d",
+				cleanIdx, validationIdx, gitPushIdx)
+		}
+
+		// Verify config file has validation block
+		configFile := filepath.Join(dir, feature.ForgeDir, feature.ForgeConfigFileName)
+		data, err := os.ReadFile(configFile)
+		if err != nil {
+			t.Fatalf("config file not created: %v", err)
+		}
+
+		content := string(data)
+		if !strings.Contains(content, "validation:") {
+			t.Errorf("expected 'validation:' in config, got %q", content)
+		}
+	})
+
+	t.Run("validation values are stored in config", func(t *testing.T) {
+		dir := t.TempDir()
+
+		// Enable validation for both quick and full modes
+		// Order: e2e quick(y), e2e full(y), consolidate quick(n), consolidate full(n),
+		// clean quick(n), clean full(n), validation quick(y), validation full(y), git push(n),
+		// source branch(empty), copy files(empty)
+		input := "y\ny\nn\nn\nn\nn\ny\ny\nn\n\n\n"
+		var stdin bytes.Buffer
+		stdin.WriteString(input)
+		var stdout bytes.Buffer
+
+		rootCmd.SetIn(&stdin)
+		rootCmd.SetOut(&stdout)
+		rootCmd.SetArgs([]string{"config", "init", "--project-root", dir})
+
+		err := rootCmd.Execute()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		configFile := filepath.Join(dir, feature.ForgeDir, feature.ForgeConfigFileName)
+		data, err := os.ReadFile(configFile)
+		if err != nil {
+			t.Fatalf("config file not created: %v", err)
+		}
+
+		content := string(data)
+		if !strings.Contains(content, "validation:") {
+			t.Errorf("expected 'validation:' in config, got %q", content)
+		}
+		if !strings.Contains(content, "quick: true") {
+			t.Errorf("expected 'quick: true' in config, got %q", content)
 		}
 	})
 }

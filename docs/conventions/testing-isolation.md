@@ -92,11 +92,13 @@ func ensureFeatureDir(t *testing.T, root, slug string) {
 
 **Source**: `disc-1` fix — `ensureFeatureDir` in `feature_set_command_cli_test.go` was missing `tasks/index.json`.
 
-### TEST-isolation-004: E2E Tests Must Compile a Dedicated Forge Binary
+### TEST-isolation-004: E2E Tests Should Compile a Dedicated Forge Binary
 
-**Requirement**: E2E test suites MUST compile a forge binary from the current source tree (via `go build` in `TestMain`) and use that binary for all `exec.Command` invocations. Tests MUST NOT rely on the system-installed `forge` binary via `$PATH` resolution.
+**Requirement**: E2E test files and suites that invoke forge CLI commands SHOULD compile a forge binary from the current source tree (via `go build`) and use that binary for all `exec.Command` invocations, rather than relying on the system-installed `forge` binary via `$PATH` resolution. New e2e test files MUST follow this pattern. Legacy tests using `exec.Command("forge", ...)` via `helpers_test.go` / `testkit/helpers.go` are acceptable but should be migrated when modified.
 
 **Why**: The system-installed `forge` binary may come from a different branch (e.g., `main`). E2e tests that test branch-specific features or behavior changes will produce false failures (new commands missing, removed commands still present, modified output format unchanged). Building from source guarantees the binary matches the code under test. Additionally, using the production binary risks corrupting its state or confusing test results with real project operations.
+
+**Current state**: Some e2e test files compile a dedicated binary (e.g., `spec_drift_detection_cli_test.go`, `features/task-stage-gates/`, `features/task-type-refinement/`, `features/forge-init-install-just/`). The shared helpers (`helpers_test.go`, `testkit/helpers.go`) still use `exec.Command("forge", ...)` and have not been migrated.
 
 **Pattern**:
 

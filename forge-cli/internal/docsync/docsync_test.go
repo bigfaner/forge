@@ -251,7 +251,7 @@ func TestTestDetectionOrderMatch(t *testing.T) {
 	workflow := readDoc(t, root, "WORKFLOW.md")
 
 	// The actual order from all_completed.go runProjectTests()
-	expectedOrder := []string{"testCommand", "justfile", "Makefile", "go.mod", "package.json", "pytest"}
+	expectedOrder := []string{"justfile", "Makefile", "go.mod", "package.json", "pytest"}
 
 	// Check OVERVIEW.md
 	overviewOrder := extractNumberedItemsAfterHeading(overview, "**Test command auto-detection order")
@@ -487,7 +487,7 @@ func assertOrder(t *testing.T, docName string, detected, expected []string) {
 
 	// Normalize: extract keyword from each item
 	normalize := func(s string) string {
-		keywords := []string{"testCommand", "justfile", "Makefile", "go.mod", "package.json", "pytest"}
+		keywords := []string{"justfile", "Makefile", "go.mod", "package.json", "pytest"}
 		for _, kw := range keywords {
 			if strings.Contains(s, kw) {
 				return kw

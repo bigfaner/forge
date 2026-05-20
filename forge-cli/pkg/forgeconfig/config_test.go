@@ -533,22 +533,11 @@ func TestGetConfigValueLegacyKeys(t *testing.T) {
 		}
 	})
 
-	t.Run("test-command returns value", func(t *testing.T) {
+	t.Run("test-command returns error (removed field)", func(t *testing.T) {
 		dir := setupConfig(t, "test-command: npm test\n")
-		val, err := GetConfigValue(dir, "test-command")
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if val != "npm test" {
-			t.Errorf("expected 'npm test', got %q", val)
-		}
-	})
-
-	t.Run("test-command absent returns error", func(t *testing.T) {
-		dir := setupConfig(t, "auto:\n  gitPush: true\n")
 		_, err := GetConfigValue(dir, "test-command")
 		if err != ErrKeyNotFound {
-			t.Errorf("expected ErrKeyNotFound, got %v", err)
+			t.Errorf("expected ErrKeyNotFound for removed test-command key, got %v", err)
 		}
 	})
 

@@ -123,6 +123,12 @@ func runConfigInit(cmd *cobra.Command, _ []string) error {
 	write(out, "  Auto code cleanup in full mode? [y/N] ")
 	autoCleanFull := readBool(reader, false)
 
+	write(out, "  Auto validation in quick mode? [y/N] ")
+	autoValidationQuick := readBool(reader, false)
+
+	write(out, "  Auto validation in full mode? [y/N] ")
+	autoValidationFull := readBool(reader, false)
+
 	write(out, "  Auto git push after all tasks complete? [y/N] ")
 	autoGitPush := readBool(reader, false)
 
@@ -143,6 +149,7 @@ func runConfigInit(cmd *cobra.Command, _ []string) error {
 			E2eTest:          forgeconfig.ModeToggle{Quick: autoE2eQuick, Full: autoE2eFull},
 			ConsolidateSpecs: forgeconfig.ModeToggle{Quick: autoConsolidateQuick, Full: autoConsolidateFull},
 			CleanCode:        forgeconfig.ModeToggle{Quick: autoCleanQuick, Full: autoCleanFull},
+			Validation:       forgeconfig.ModeToggle{Quick: autoValidationQuick, Full: autoValidationFull},
 			GitPush:          autoGitPush,
 		},
 	}

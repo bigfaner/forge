@@ -21,7 +21,7 @@ import (
 
 // testRunFunc is the signature for running project tests.
 // Returns (output, success).
-type testRunFunc func(projectRoot, testCommand string) (string, bool)
+type testRunFunc func(projectRoot string) (string, bool)
 
 var qualityGateVerbose bool
 
@@ -55,8 +55,7 @@ func init() {
 type AllCompletedResult struct {
 	FeatureSlug string
 	ProjectRoot string
-	TestCommand string // empty if not set in index.json
-	DocsOnly    bool   // true if no implementation or fix tasks exist
+	DocsOnly    bool // true if no implementation or fix tasks exist
 }
 
 // checkAllCompleted verifies all tasks are done and returns test context.
@@ -106,7 +105,6 @@ func checkAllCompleted(verbose bool) *AllCompletedResult {
 	return &AllCompletedResult{
 		FeatureSlug: featureSlug,
 		ProjectRoot: projectRoot,
-		TestCommand: index.TestCommand,
 		DocsOnly:    isDocsOnly(index),
 	}
 }
@@ -169,7 +167,7 @@ func runQualityGate(_ *cobra.Command, _ []string) {
 	fmt.Fprintln(os.Stderr, "--- Running project-wide tests ---")
 	unitPassed, unitFixID, unitErr := runUnitTestStep(
 		result.ProjectRoot, result.FeatureSlug,
-		testrunner.RunProjectTests, result.TestCommand,
+		testrunner.RunProjectTests,
 	)
 	if unitErr != nil {
 		fmt.Fprintf(os.Stderr, "WARNING: %v\n", unitErr)
@@ -279,15 +277,15 @@ func handleGateFailure(step, errorDocPath, fixID, concise string) {
 // On first failure, tests are re-run once. If retry passes, a warning is logged and
 // no fix task is created. If retry also fails, a fix task is created with both outputs.
 // Returns (passed, fixTaskID, error).
-func runUnitTestStep(projectRoot, featureSlug string, runTest testRunFunc, testCommand string) (bool, string, error) {
-	unitOutput, unitSuccess := runTest(projectRoot, testCommand)
+func runUnitTestStep(projectRoot, featureSlug string, runTest testRunFunc) (bool, string, error) {
+	unitOutput, unitSuccess := runTest(projectRoot)
 	if unitSuccess {
 		return true, "", nil
 	}
 
 	// First attempt failed — retry once.
 	fmt.Fprintln(os.Stderr, "WARNING: unit tests failed on first attempt, retrying once...")
-	retryOutput, retrySuccess := runTest(projectRoot, testCommand)
+	retryOutput, retrySuccess := runTest(projectRoot)
 	if retrySuccess {
 		fmt.Fprintln(os.Stderr, "WARNING: unit tests passed on retry (transient failure)")
 		return true, "", nil

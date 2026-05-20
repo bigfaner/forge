@@ -1,6 +1,6 @@
 ---
 name: forge-init-config-sync
-status: Draft
+status: Approved
 date: 2026-05-20
 ---
 

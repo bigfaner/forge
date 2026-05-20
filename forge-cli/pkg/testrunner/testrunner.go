@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"forge-cli/pkg/just"
@@ -55,21 +54,8 @@ func hasMakeTarget(projectRoot, target string) bool {
 }
 
 // RunProjectTests detects and runs the project's test command.
-// Falls through: just → make → go → npm → pytest → warning.
-func RunProjectTests(projectRoot, testCommand string) (string, bool) {
-	if testCommand != "" {
-		var c *exec.Cmd
-		if runtime.GOOS == "windows" {
-			c = exec.Command("cmd", "/C", testCommand)
-		} else {
-			c = exec.Command("sh", "-c", testCommand)
-		}
-		c.Dir = projectRoot
-		output, err := c.CombinedOutput()
-		fmt.Fprint(os.Stderr, string(output))
-		return string(output), err == nil
-	}
-
+// Falls through: just -> make -> go -> npm -> pytest -> warning.
+func RunProjectTests(projectRoot string) (string, bool) {
 	switch {
 	case just.HasJustfile(projectRoot) && just.HasRecipe(projectRoot, "test"):
 		return just.RunCapture(projectRoot, "just", "test")
@@ -82,7 +68,7 @@ func RunProjectTests(projectRoot, testCommand string) (string, bool) {
 	case just.FileExists(filepath.Join(projectRoot, "pytest.ini")) || just.FileExists(filepath.Join(projectRoot, "pyproject.toml")):
 		return just.RunCapture(projectRoot, "pytest")
 	default:
-		fmt.Println("WARNING: No test command found. Set testCommand in index.json.")
+		fmt.Println("WARNING: No test command found. Ensure justfile has a 'test' recipe, or add go.mod/package.json/pytest.ini.")
 		return "", true
 	}
 }

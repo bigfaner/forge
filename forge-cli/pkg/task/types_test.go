@@ -318,7 +318,6 @@ func TestTaskIndexJSONRoundTrip_AllFields(t *testing.T) {
 		tasks:        map[string]Task{"t1": {ID: "1.1", Title: "Task", Status: "pending"}},
 		StatusEnum:   []string{"pending", "completed"},
 		PriorityEnum: []string{"P0", "P1"},
-		TestCommand:  "go test ./...",
 		E2ERound:     3,
 	}
 
@@ -331,10 +330,7 @@ func TestTaskIndexJSONRoundTrip_AllFields(t *testing.T) {
 	if !strings.Contains(string(data), `"tasks"`) {
 		t.Errorf("JSON output missing \"tasks\" key: %s", data)
 	}
-	// Verify TestCommand and E2ERound appear in raw output
-	if !strings.Contains(string(data), `"testCommand"`) {
-		t.Errorf("JSON output missing \"testCommand\" key: %s", data)
-	}
+	// Verify E2ERound appears in raw output
 	if !strings.Contains(string(data), `"e2eRound"`) {
 		t.Errorf("JSON output missing \"e2eRound\" key: %s", data)
 	}
@@ -349,7 +345,6 @@ func TestTaskIndexJSONRoundTrip_AllFields(t *testing.T) {
 	assertField(t, "Design", loaded.Design, original.Design)
 	assertField(t, "Created", loaded.Created, original.Created)
 	assertField(t, "Status", loaded.Status, original.Status)
-	assertField(t, "TestCommand", loaded.TestCommand, original.TestCommand)
 	assertField(t, "E2ERound", loaded.E2ERound, original.E2ERound)
 	if loaded.TaskCount() != original.TaskCount() {
 		t.Errorf("TaskCount = %d, want %d", loaded.TaskCount(), original.TaskCount())
