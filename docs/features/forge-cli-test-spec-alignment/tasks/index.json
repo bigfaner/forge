@@ -95,7 +95,7 @@
       "title": "Migrate forge-cli/tests/e2e/ Journey: justfile-integration",
       "priority": "P1",
       "estimatedTime": "2h",
-      "status": "pending",
+      "status": "completed",
       "file": "6-migrate-cli-justfile-integration.md",
       "record": "records/6-migrate-cli-justfile-integration.md",
       "scope": "backend",
