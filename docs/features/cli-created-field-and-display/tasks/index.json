@@ -1,0 +1,63 @@
+{
+  "feature": "cli-created-field-and-display",
+  "proposal": "docs/proposals/cli-created-field-and-display/proposal.md",
+  "created": "2026-05-21",
+  "tasks": {
+    "1-add-created-to-manifest-templates": {
+      "id": "1",
+      "title": "Manifest 模板添加 created frontmatter",
+      "priority": "P2",
+      "estimatedTime": "30m",
+      "status": "pending",
+      "file": "1-add-created-to-manifest-templates.md",
+      "record": "records/1-add-created-to-manifest-templates.md",
+      "type": "doc"
+    },
+    "2-unify-sorting-to-created": {
+      "id": "2",
+      "title": "统一 feature/lesson 排序为 created 降序",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "2-unify-sorting-to-created.md",
+      "record": "records/2-unify-sorting-to-created.md",
+      "scope": "backend",
+      "type": "coding.enhancement"
+    },
+    "3-dynamic-slug-column-width": {
+      "id": "3",
+      "title": "列表命令 slug 列动态宽度",
+      "priority": "P2",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "3-dynamic-slug-column-width.md",
+      "record": "records/3-dynamic-slug-column-width.md",
+      "scope": "backend",
+      "type": "coding.enhancement"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "pending",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "scope": "all",
+      "type": "doc.drift"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
