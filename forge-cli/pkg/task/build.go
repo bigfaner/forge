@@ -49,8 +49,8 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 		index = NewTaskIndex(opts.FeatureSlug)
 	}
 
-	// 2. Detect mode (reserved for caller use via GenerateTestTasks)
-	_ = detectMode(opts.ProjectRoot, opts.FeatureSlug)
+	// 2. Detect mode
+	mode := detectMode(opts.ProjectRoot, opts.FeatureSlug)
 
 	// 3. Set feature metadata
 	setFeatureMetadata(index, opts.ProjectRoot, opts.FeatureSlug)
@@ -265,6 +265,43 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 		} else {
 			index.SetTask(evalKey, task)
 			result.NewCount++
+		}
+	}
+
+	// 7.5 Generate test pipeline tasks
+	if needsTest && mode != "" {
+		languages, _ := forgeconfig.ReadLanguages(opts.ProjectRoot)
+		capabilities, _ := forgeconfig.ReadInterfaces(opts.ProjectRoot)
+		testTasks := GenerateTestTasks(mode, languages, capabilities, opts.AutoConfig)
+		for _, td := range testTasks {
+			ttKey := td.Key
+			existingKeys[ttKey] = true
+
+			// Generate .md if missing
+			mdPath := filepath.Join(opts.TasksDir, ttKey+".md")
+			if _, err := os.Stat(mdPath); os.IsNotExist(err) {
+				content, genErr := GenerateTestTaskMD(td, opts.FeatureSlug)
+				if genErr != nil {
+					result.Warnings = append(result.Warnings, fmt.Sprintf("generate %s: %v", ttKey, genErr))
+					continue
+				}
+				if writeErr := os.WriteFile(mdPath, content, 0644); writeErr != nil {
+					result.Warnings = append(result.Warnings, fmt.Sprintf("write %s: %v", ttKey, writeErr))
+					continue
+				}
+			}
+
+			t := td.TaskFromFile()
+			if existing, found := index.ByID(td.ID); found {
+				t.Status = existing.Status
+				t.SourceTaskID = existing.SourceTaskID
+				t.BlockedReason = existing.BlockedReason
+				index.SetTask(ttKey, t)
+				result.UpdatedCount++
+			} else {
+				index.SetTask(ttKey, t)
+				result.NewCount++
+			}
 		}
 	}
 
