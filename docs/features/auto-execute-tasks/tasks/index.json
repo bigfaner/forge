@@ -1,0 +1,68 @@
+{
+  "feature": "auto-execute-tasks",
+  "proposal": "docs/proposals/auto-execute-tasks/proposal.md",
+  "created": "2026-05-20",
+  "tasks": {
+    "1-add-runtasks-config": {
+      "id": "1",
+      "title": "Add RunTasks ModeToggle to AutoConfig",
+      "priority": "P0",
+      "estimatedTime": "20m",
+      "status": "pending",
+      "file": "1-add-runtasks-config.md",
+      "record": "records/1-add-runtasks-config.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "2-quick-skip-confirmation": {
+      "id": "2",
+      "title": "Add config check logic to quick.md",
+      "priority": "P0",
+      "estimatedTime": "15m",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-quick-skip-confirmation.md",
+      "record": "records/2-quick-skip-confirmation.md",
+      "type": "doc"
+    },
+    "3-update-forge-guide": {
+      "id": "3",
+      "title": "Update forge guide for runTasks",
+      "priority": "P1",
+      "estimatedTime": "10m",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "3-update-forge-guide.md",
+      "record": "records/3-update-forge-guide.md",
+      "type": "doc"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "pending",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "scope": "all",
+      "type": "doc.drift"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
