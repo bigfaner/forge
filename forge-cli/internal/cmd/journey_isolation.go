@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"forge-cli/pkg/profile"
+	"forge-cli/pkg/forgeconfig"
 )
 
 // ContractFailure records a single contract dimension failure.
@@ -77,17 +77,6 @@ type JourneyExecutionConfig struct {
 
 // resolveJourneyExecutionConfig reads test execution settings from project config.
 func resolveJourneyExecutionConfig(projectRoot string) (*JourneyExecutionConfig, error) {
-	// Resolve language
-	language, err := resolveLanguageFromFlags(projectRoot)
-	if err != nil {
-		// Fallback: try reading from config directly without --language flag
-		languages, langErr := profile.ReadLanguages(projectRoot)
-		if langErr != nil || len(languages) == 0 {
-			return nil, fmt.Errorf("cannot resolve language: %v", err)
-		}
-		language = languages[0]
-	}
-
 	// Read test-command from config
 	testCmd, err := readTestCommand(projectRoot)
 	if err != nil {
@@ -96,13 +85,12 @@ func resolveJourneyExecutionConfig(projectRoot string) (*JourneyExecutionConfig,
 
 	return &JourneyExecutionConfig{
 		TestCommand: testCmd,
-		Language:    language,
 	}, nil
 }
 
 // readTestCommand reads the test-command field from .forge/config.yaml.
 func readTestCommand(projectRoot string) (string, error) {
-	cfg, err := profile.ReadConfig(projectRoot)
+	cfg, err := forgeconfig.ReadConfig(projectRoot)
 	if err != nil {
 		return "", fmt.Errorf("failed to read config: %w", err)
 	}

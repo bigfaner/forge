@@ -8,13 +8,13 @@ import (
 	"testing"
 )
 
-// extractDesignMdPath returns the path to the extract-design-md command file.
+// extractDesignMdPath returns the path to the extract-design-md skill file.
 func extractDesignMdPath(t *testing.T) string {
 	t.Helper()
 	root := projectRoot(t)
-	p := filepath.Join(root, "..", "plugins", "forge", "commands", "extract-design-md.md")
+	p := filepath.Join(root, "..", "plugins", "forge", "skills", "extract-design-md", "SKILL.md")
 	if _, err := os.Stat(p); os.IsNotExist(err) {
-		t.Fatalf("command file not found: %s", p)
+		t.Fatalf("skill file not found: %s", p)
 	}
 	return p
 }
@@ -267,7 +267,14 @@ func TestExtractDesignMd_MobileAdapterDocumentsSafeAreaHandling(t *testing.T) {
 // --- Test: Mobile DESIGN.md template extends web template ---
 
 func TestExtractDesignMd_MobileTemplateExtendsWebTemplate(t *testing.T) {
-	content := readExtractDesignMd(t)
+	// Read the mobile template file directly (the skill references it via template path)
+	root := projectRoot(t)
+	mobileTemplatePath := filepath.Join(root, "..", "plugins", "forge", "skills", "extract-design-md", "templates", "design-mobile.md")
+	data, err := os.ReadFile(mobileTemplatePath)
+	if err != nil {
+		t.Fatalf("cannot read mobile template: %v", err)
+	}
+	content := string(data)
 
 	// Mobile DESIGN.md must extend the web template with mobile-specific sections
 	// Must have mobile-specific sections in the output template
@@ -444,7 +451,14 @@ func TestExtractDesignMd_TuiMarksAllValuesAsEstimated(t *testing.T) {
 // --- Test: TUI output structure aligns with modern-dark-tui sections ---
 
 func TestExtractDesignMd_TuiOutputAlignsWithModernDarkTui(t *testing.T) {
-	content := readExtractDesignMd(t)
+	// Read the TUI template file directly (the skill references it via template path)
+	root := projectRoot(t)
+	tuiTemplatePath := filepath.Join(root, "..", "plugins", "forge", "skills", "extract-design-md", "templates", "design-tui.md")
+	data, err := os.ReadFile(tuiTemplatePath)
+	if err != nil {
+		t.Fatalf("cannot read TUI template: %v", err)
+	}
+	content := string(data)
 
 	// TUI output must have sections matching modern-dark-tui.md structure:
 	// Color Space, Character Set, Character Palette Reference, Color Palette, Panel Layout
@@ -530,29 +544,29 @@ func TestExtractDesignMd_TuiMentionsBoxDrawingAndBlockElements(t *testing.T) {
 	}
 }
 
-// --- Test: Command remains a single file ---
+// --- Test: Skill file exists as SKILL.md in skill directory ---
 
-func TestExtractDesignMd_CommandIsSingleFile(t *testing.T) {
+func TestExtractDesignMd_SkillFileExists(t *testing.T) {
 	root := projectRoot(t)
 
-	// Check that extract-design-md exists as a single .md file (not a directory)
-	mdPath := filepath.Join(root, "..", "plugins", "forge", "commands", "extract-design-md.md")
-	dirPath := filepath.Join(root, "..", "plugins", "forge", "commands", "extract-design-md")
-
-	mdExists := false
-	if _, err := os.Stat(mdPath); err == nil {
-		mdExists = true
-	}
+	// Check that extract-design-md exists as a skill directory with SKILL.md
+	skillDir := filepath.Join(root, "..", "plugins", "forge", "skills", "extract-design-md")
+	skillMD := filepath.Join(skillDir, "SKILL.md")
 
 	dirExists := false
-	if info, err := os.Stat(dirPath); err == nil && info.IsDir() {
+	if info, err := os.Stat(skillDir); err == nil && info.IsDir() {
 		dirExists = true
 	}
 
-	if !mdExists {
-		t.Error("extract-design-md.md file does not exist")
+	mdExists := false
+	if _, err := os.Stat(skillMD); err == nil {
+		mdExists = true
 	}
-	if dirExists {
-		t.Error("extract-design-md exists as a directory — command must remain a single file")
+
+	if !dirExists {
+		t.Error("extract-design-md skill directory does not exist")
+	}
+	if !mdExists {
+		t.Error("extract-design-md SKILL.md file does not exist in skill directory")
 	}
 }

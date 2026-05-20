@@ -117,9 +117,6 @@ type Task struct {
 	// Required for all tasks after migration; validated by task validate.
 	// omitempty allows existing index.json files to load without error.
 	Type string `json:"type,omitempty"`
-	// Profile indicates the test language associated with this task (e.g. "go", "javascript").
-	// Set by task index for per-profile test tasks; empty for business tasks and shared test tasks.
-	Profile string `json:"profile,omitempty"`
 	// BlockedReason records why a task entered blocked state.
 	// Written by run-tasks when task prompt exits non-zero.
 	BlockedReason string `json:"blockedReason,omitempty"`
@@ -211,8 +208,6 @@ type TaskState struct { //nolint:revive // intentional naming for API clarity
 	MainSession bool `json:"mainSession,omitempty"`
 	// Type mirrors Task.Type for the claimed task (same pattern as MainSession).
 	Type string `json:"type,omitempty"`
-	// Profile mirrors Task.Profile for the claimed task.
-	Profile string `json:"profile,omitempty"`
 }
 
 // RecordData represents the JSON input for record generation.

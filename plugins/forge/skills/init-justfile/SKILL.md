@@ -3,7 +3,7 @@ name: init-justfile
 description: Scaffold a Justfile with standard forge targets for the current project.
 allowed-tools: Bash Read Write Edit
 disable-model-invocation: true
-argument-hint: '[--lang go|rust|python|node] [--type frontend|backend|mixed] [--force]'
+argument-hint: '[--type frontend|backend|mixed] [--force]'
 ---
 
 # /init-justfile
@@ -33,7 +33,6 @@ If version < 1.50.0: `cargo install just`
 
 | Parameter | Values                         | Default       | Description                                      |
 | --------- | ------------------------------ | ------------- | ------------------------------------------------ |
-| `--lang`  | `go`, `rust`, `python`, `node` | (auto-detect) | Override language detection                      |
 | `--type`  | `frontend`, `backend`, `mixed` | (auto-detect) | Override project type                            |
 | `--force` | (flag)                         | false         | Overwrite existing justfile without confirmation |
 
@@ -41,7 +40,6 @@ If version < 1.50.0: `cargo install just`
 
 | Target         | Required | Purpose                                                                                           |
 | -------------- | -------- | ------------------------------------------------------------------------------------------------- |
-| `project-type` | Yes      | ~~Removed~~ — project type now stored in `.forge/config.yaml` via `forge config get project-type` |
 | `compile`      | No       | Type-check and transpile for fast feedback                                                        |
 | `build`        | No       | Full compile and package                                                                          |
 | `run`          | No       | Start the service                                                                                 |
@@ -55,27 +53,41 @@ If version < 1.50.0: `cargo install just`
 | `install`      | No       | Install dependencies (idempotent)                                                                 |
 | `ci`           | No       | Full CI pipeline                                                                                  |
 | `e2e-setup`    | No       | Install e2e dependencies (idempotent)                                                             |
+| `e2e-compile`  | No       | Compile-check e2e tests without running                                                           |
 | `e2e-verify`   | No       | Check for unresolved `// VERIFY:` markers                                                         |
 
 ## Workflow
 
 ```
-0. Resolve test language → 1. Detect project type + language + entry points → 2. Check existing justfile → 3. Assemble and write → 4. Verify and self-correct → 5. Output confirmation
+0. Load Convention → 1. Detect project type + entry points → 2. Check existing justfile → 3. Generate e2e recipes + assemble and write → 4. Verify and self-correct → 5. Output confirmation
 ```
 
-### Step 0: Resolve Test Language
+### Step 0: Load Convention
 
-1. **Detect language**: Run `forge test detect` to auto-detect the project's test language(s) from file signals.
-2. **On failure** (no language detected): ask the user to add `languages` to `.forge/config.yaml` (e.g., `languages: [go]`).
-3. **Load justfile recipes**: Run `forge test get justfile` for the language-specific e2e recipe bodies.
+Load test framework knowledge from Convention files. This provides the information needed to generate e2e recipes in Step 3.
 
-The `test-e2e`, `e2e-setup`, and `e2e-verify` recipes are generated from the language's `justfile-recipes` file, not from the language template.
+1. List files in `docs/conventions/` directory.
+2. For each file with `domains` frontmatter containing `testing`, read the file.
+3. Extract the **Framework** section from the loaded Convention files.
+4. From the Framework section, note:
+   - Framework name (e.g., "Go testing package + testify/assert", "Vitest", "Ginkgo v2 + Gomega")
+   - File pattern (e.g., `*_test.go`, `*.test.ts`)
+   - Test runner (e.g., `go test`, `vitest run`, `ginkgo`)
+   - Build tag / marker (e.g., `//go:build e2e`)
+   - Result format output flags (e.g., `-json -v`, `--reporter=json`)
+5. Also extract the **Tags** section for build-tag/marker syntax.
+6. Also extract the **Result Format** section for execution command patterns.
 
 <HARD-RULE>
-Do NOT silently default to any language. If `forge test detect` returns no result and the user cannot configure `languages`, abort the skill.
+Do NOT use framework-specific recipe templates. Generate e2e recipes from Convention content and LLM knowledge of the framework. The LLM constructs recipes based on the Convention description, not from hardcoded templates.
 </HARD-RULE>
 
-### Step 1: Detect Project Type, Language, and Entry Points
+**If no Convention files found** (cold start):
+- Proceed to Step 1 for file signal detection.
+- LLM will generate e2e recipes from common patterns for the detected language/framework.
+- Output hint: "No test Convention files found in docs/conventions/. Recipes will use LLM defaults. Run `/forge:test-guide` to create a Convention file."
+
+### Step 1: Detect Project Type and Entry Points
 
 ```bash
 just --version 2>/dev/null | awk '{print $2}' | awk -F. '$1 > 1 || ($1 == 1 && $2 >= 50)' | grep -q .
@@ -84,22 +96,9 @@ just --version 2>/dev/null | awk '{print $2}' | awk -F. '$1 > 1 || ($1 == 1 && $
 
 #### Parameter override
 
-If `--lang` and/or `--type` are provided, skip all or part of auto-detection:
+If `--type` is provided, skip project type detection (1a). Entry point detection (1b/1c) still runs for the detected language.
 
-1. **`--lang` and `--type` both set**: Skip all detection (1a/1b/1c). Use `--lang` for template selection, `--type` for project-type output. Use placeholder defaults from the table below.
-2. **`--lang` only**: Skip 1a (marker detection) and 1b/1c (language-specific detection). Run a simplified 1a just to determine `--type` if no markers exist, otherwise use detected type.
-3. **`--type` only**: Run 1a to detect language from markers, but override the project-type classification with `--type`. Run 1b/1c for the detected language.
-4. **Neither set**: Full auto-detection (existing behavior).
-
-**Placeholder defaults when skipping detection:**
-
-| Placeholder    | Go  | Rust       | Python           | Node  |
-| -------------- | --- | ---------- | ---------------- | ----- |
-| `ENTRY_POINT`  | `.` | `` (empty) | `main.py`        | N/A   |
-| `DEV_COMMAND`  | N/A | N/A        | `python main.py` | N/A   |
-| `ENTRY_SCRIPT` | N/A | N/A        | N/A              | `dev` |
-
-For `mixed` projects via parameters, `FRONTEND_DIR` and `BACKEND_DIR` both default to `.`.
+**Neither set**: Full auto-detection.
 
 #### 1a. Project type detection
 
@@ -120,11 +119,11 @@ ls package.json go.mod Cargo.toml pyproject.toml 2>/dev/null
 
 1. Check for each marker file's existence in the project root.
 2. Count frontend vs backend signals and classify:
-   - Exactly one frontend signal AND exactly one backend signal → **`mixed`**
-   - Exactly one frontend signal, no backend signals → **`frontend`**
-   - Exactly one backend signal, no frontend signals → **`backend`**
-   - Neither set has signals → **Error**: "Error: no known project markers detected (expected one of: package.json, go.mod, Cargo.toml, pyproject.toml)" — abort, do NOT generate a justfile.
-   - Multiple backend signals (e.g. `go.mod` + `Cargo.toml`) → **Error**: "Error: multiple backend markers detected — not supported" — abort.
+   - Exactly one frontend signal AND exactly one backend signal -> **`mixed`**
+   - Exactly one frontend signal, no backend signals -> **`frontend`**
+   - Exactly one backend signal, no frontend signals -> **`backend`**
+   - Neither set has signals -> **Error**: "Error: no known project markers detected (expected one of: package.json, go.mod, Cargo.toml, pyproject.toml)" -- abort, do NOT generate a justfile.
+   - Multiple backend signals (e.g. `go.mod` + `Cargo.toml`) -> **Error**: "Error: multiple backend markers detected -- not supported" -- abort.
 
 **For `mixed` projects, also detect root paths:**
 
@@ -135,17 +134,17 @@ find . \( -name go.mod -o -name Cargo.toml -o -name pyproject.toml \) -maxdepth 
 
 Record these as `FRONTEND_DIR` and `BACKEND_DIR` (e.g. `./frontend`, `./backend`). Use `.` if the marker is in the project root.
 
-#### 1b. Backend language + entry point detection
+#### 1b. Backend entry point detection
 
-For **backend** and **mixed** projects, detect the backend language (already known from marker file) and the entry point:
+For **backend** and **mixed** projects, detect the entry point:
 
-| Language | Marker           | Entry point detection (`BACKEND_ENTRY`)                                           | `ENTRY_POINT` placeholder value | `DEV_COMMAND` placeholder value                        |
-| -------- | ---------------- | --------------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------ |
-| Go       | `go.mod`         | `ls cmd/*/main.go` → `cmd/<name>/main.go`; else `ls main.go` → `.`                | `cmd/server/main.go` or `.`     | N/A (uses `BACKEND_DEV` row)                           |
-| Rust     | `Cargo.toml`     | `grep '\[\[bin\]\]' Cargo.toml` → `--bin <name>`; else empty                      | `--bin server` or `` (empty)    | N/A (uses `BACKEND_DEV` row)                           |
-| Python   | `pyproject.toml` | `ls src/__init__.py` → `-m src`; `ls main.py` → `main.py`; `ls app.py` → `app.py` | `-m src` / `main.py` / `app.py` | `uvicorn src:app --reload` or `python -m src --reload` |
+| Language | Marker           | Entry point detection (`BACKEND_ENTRY`)                                           |
+| -------- | ---------------- | --------------------------------------------------------------------------------- |
+| Go       | `go.mod`         | `ls cmd/*/main.go` -> `cmd/<name>/main.go`; else `ls main.go` -> `.`              |
+| Rust     | `Cargo.toml`     | `grep '\[\[bin\]\]' Cargo.toml` -> `--bin <name>`; else empty                      |
+| Python   | `pyproject.toml` | `ls src/__init__.py` -> `-m src`; `ls main.py` -> `main.py`; `ls app.py` -> `app.py` |
 
-Record `BACKEND_ENTRY` from the detected entry point. For Python `DEV_COMMAND`: use `uvicorn src:app --reload` if uvicorn is available, else `python -m src --reload`.
+Record `BACKEND_ENTRY` from the detected entry point.
 
 #### 1c. Frontend run script detection
 
@@ -164,79 +163,103 @@ ls justfile Justfile 2>/dev/null
 ```
 
 - If `justfile` or `Justfile` already exists:
+  - Check if it already contains `e2e-compile`, `e2e-test`, and `e2e-setup` recipes:
+    ```bash
+    just --list 2>/dev/null | grep -E 'e2e-compile|e2e-test|e2e-setup'
+    ```
+  - **If all three e2e recipes exist**: Output "justfile already contains e2e recipes (e2e-compile, e2e-test, e2e-setup). Skipping e2e recipe generation." Proceed to Step 4 for verification only.
+  - **If some e2e recipes are missing**: Proceed to Step 3 to append only the missing recipes.
   - Check for boundary markers (`# --- forge standard recipes ---` / `# --- end forge standard recipes ---`).
-  - **If boundary markers exist**: proceed to Step 3 (boundary marker merge). No confirmation needed — only the marked section will be replaced; custom recipes outside markers are preserved.
+  - **If boundary markers exist**: proceed to Step 3 (boundary marker merge).
   - **If boundary markers do NOT exist** (user's justfile has no forge markers):
-    - If `--force` flag was provided: skip confirmation, proceed to Step 3 (merge within boundary markers if they exist, or overwrite entire file if they don't).
+    - If `--force` flag was provided: skip confirmation, proceed to Step 3.
     - If `--force` flag was NOT provided: prompt the user: "A justfile already exists without forge markers. Overwrite? (y/n)". If user declines, abort without modifying the file.
 - If no justfile exists: proceed to Step 3 (create new file).
 
-### Step 3: Assemble and Write Justfile
+### Step 3: Generate e2e Recipes and Assemble Justfile
 
-#### Template selection
+This step generates e2e-compile, e2e-test, and e2e-setup recipes from Convention knowledge and LLM understanding of the detected framework.
 
-If `--lang` is provided, select template directly:
+#### 3a. Generate e2e recipes from Convention
 
-| `--lang` value             | Template                                                   |
-| -------------------------- | ---------------------------------------------------------- |
-| `go`                       | `templates/go.just`     |
-| `rust`                     | `templates/rust.just`   |
-| `python`                   | `templates/python.just` |
-| `node`                     | `templates/node.just`   |
-| (mixed via `--type mixed`) | `templates/mixed.just`  |
+Using the Convention Framework, Tags, and Result Format sections loaded in Step 0:
 
-If `--lang` is not provided, detect from marker files:
+**e2e-compile recipe**: Generate a recipe that compiles/checks e2e tests without running them. The recipe body is derived from the Convention's test runner and build tag info:
 
-| Marker file         | Template                                                    |
-| ------------------- | ----------------------------------------------------------- |
-| `go.mod`            | `templates/go.just`      |
-| `Cargo.toml`        | `templates/rust.just`    |
-| `pyproject.toml`    | `templates/python.just`  |
-| `package.json` only | `templates/node.just`    |
-| mixed               | `templates/mixed.just`   |
-| none matched        | `templates/generic.just` |
+- Convention provides test runner (e.g., `go test`) and build tag (e.g., `//go:build e2e`) -> construct compile-check command (e.g., `go test -c ./tests/e2e/... -tags=e2e -o /dev/null` or `go vet -tags=e2e ./tests/e2e/...`)
+- Convention provides file pattern and test runner (e.g., `vitest run`) -> construct type-check command (e.g., `npx tsc --noEmit` or `vitest run --passWithNoTests --run false`)
 
-Write to `justfile` (lowercase).
+**e2e-test recipe**: Generate a recipe that runs e2e tests. The recipe body is derived from the Convention's Result Format execution command:
 
-#### Placeholder substitution
+- Convention provides execution command (e.g., `go test ./tests/e2e/... -v -tags=e2e -json`) -> use as recipe body
+- Convention provides test runner and output flags (e.g., `vitest run --reporter=json`) -> construct test command
 
-For **single-language templates** (`go.just`, `rust.just`, `python.just`, `node.just`):
+**e2e-setup recipe**: Generate a recipe that installs e2e test dependencies:
 
-| Placeholder    | Scope       | Replaced with                      | Example                                               |
-| -------------- | ----------- | ---------------------------------- | ----------------------------------------------------- |
-| `ENTRY_POINT`  | Go/Rust     | `BACKEND_ENTRY` from Step 1b       | `cmd/server/main.go`, `.`, `--bin server`, `` (empty) |
-| `DEV_COMMAND`  | Python only | Dev server command from Step 1b    | `uvicorn src:app --reload`, `python -m src --reload`  |
-| `ENTRY_SCRIPT` | Node only   | `FRONTEND_RUN_SCRIPT` from Step 1c | `start` / `preview` / `dev`                           |
+- Convention indicates Go -> `go mod download`
+- Convention indicates Node/Vitest -> `npm install` or `npx playwright install`
+- Convention indicates Python -> `pip install -e ".[test]"` or `pip install pytest`
+- Multiple frameworks in mixed project -> combine setup steps
 
-For **mixed projects** (`mixed.just`):
+**If no Convention was loaded** (cold start): LLM generates e2e recipes based on file signals detected in Step 1:
 
-Replace `FRONTEND_DIR` and `BACKEND_DIR` with the paths detected in Step 1a. Additionally, replace all `BACKEND_*` and `FRONTEND_*` placeholders based on detected backend language:
+- `go.mod` detected -> generate Go e2e recipes using `go test` with `-tags=e2e`
+- `package.json` detected -> generate Node e2e recipes using `npx vitest run` or appropriate test runner
+- `Cargo.toml` detected -> generate Rust e2e recipes using `cargo test`
+- `pyproject.toml` detected -> generate Python e2e recipes using `pytest`
 
-| Placeholder       | Go                                                   | Rust                          | Python                           |
-| ----------------- | ---------------------------------------------------- | ----------------------------- | -------------------------------- |
-| `BACKEND_COMPILE` | `go vet ./...`                                       | `cargo check`                 | `python -m py_compile src/`      |
-| `BACKEND_BUILD`   | `go build ./...`                                     | `cargo build --release`       | `python -m build`                |
-| `BACKEND_RUN`     | `go run <BACKEND_ENTRY>`                             | `cargo run <BACKEND_ENTRY>`   | `python <BACKEND_ENTRY>`         |
-| `BACKEND_DEV`     | `go run <BACKEND_ENTRY>`                             | `cargo run <BACKEND_ENTRY>`   | `uvicorn src:app --reload`       |
-| `BACKEND_TEST`    | `go test ./...`                                      | `cargo test`                  | `pytest`                         |
-| `BACKEND_LINT`    | `golangci-lint run ./...`                            | `cargo clippy -- -D warnings` | `ruff check .`                   |
-| `BACKEND_FMT`     | `gofmt -w .`                                         | `cargo fmt`                   | `ruff format .`                  |
-| `BACKEND_CLEAN`   | `go clean ./...`                                     | `cargo clean`                 | `rm -rf build/ dist/ *.egg-info` |
-| `BACKEND_INSTALL` | `go mod download`                                    | `cargo fetch`                 | `pip install -e .`               |
-| `FRONTEND_RUN`    | `npm run <FRONTEND_RUN_SCRIPT>` (value from Step 1c) | (same)                        | (same)                           |
-| `FRONTEND_DEV`    | `npm run dev` (all backend langs)                    | (same)                        | (same)                           |
+The LLM uses conservative strategies for cold start recipes (most common patterns per language).
 
-Note: `go test` omits `-race` flag by default — it requires CGO which is unavailable on some platforms (notably Windows). See Step 4c for auto-detection.
+#### 3b. Generate non-e2e recipes
 
-#### Boundary marker merge
+Generate standard project recipes (compile, build, test, run, dev, lint, fmt, check, clean, install, ci) based on detected language and project type from Step 1. The LLM constructs these from its knowledge of common tooling per language:
 
-When markers exist (`# --- forge standard recipes ---` / `# --- end forge standard recipes ---`), replace everything between them (inclusive) with the new template, preserving user recipes outside. Otherwise write the full template as a new file.
+| Language | compile          | test            | lint                   | fmt               |
+| -------- | ---------------- | --------------- | ---------------------- | ----------------- |
+| Go       | `go vet ./...`   | `go test ./...` | `golangci-lint run ./...` | `gofmt -w .`      |
+| Rust     | `cargo check`    | `cargo test`    | `cargo clippy -- -D warnings` | `cargo fmt` |
+| Python   | `python -m py_compile src/` | `pytest` | `ruff check .` | `ruff format .` |
+| Node     | `npx tsc --noEmit` | `npm test`   | `npx eslint .`         | `npx prettier --write .` |
+
+For **mixed** projects, generate recipes with scope parameter:
+
+```just
+compile scope="":
+    #!/usr/bin/env bash
+    if [ -n "{{ scope }}" ]; then
+        case "{{ scope }}" in
+            backend)  {{ BACKEND_COMPILE }} ;;
+            frontend) {{ FRONTEND_COMPILE }} ;;
+            *)        {{ BACKEND_COMPILE }} && {{ FRONTEND_COMPILE }} ;;
+        esac
+    else
+        {{ BACKEND_COMPILE }} && {{ FRONTEND_COMPILE }}
+    fi
+```
+
+#### 3c. Placeholder substitution
+
+For **single-language** projects:
+
+| Placeholder    | Scope       | Replaced with                      |
+| -------------- | ----------- | ---------------------------------- |
+| `ENTRY_POINT`  | Go/Rust     | `BACKEND_ENTRY` from Step 1b       |
+| `DEV_COMMAND`  | Python only | Dev server command from Step 1b    |
+| `ENTRY_SCRIPT` | Node only   | `FRONTEND_RUN_SCRIPT` from Step 1c |
+
+For **mixed** projects, replace `FRONTEND_DIR`, `BACKEND_DIR`, and all `BACKEND_*`/`FRONTEND_*` placeholders.
+
+#### 3d. Boundary marker merge
+
+When markers exist (`# --- forge standard recipes ---` / `# --- end forge standard recipes ---`), replace everything between them (inclusive) with the new recipes, preserving user recipes outside. Otherwise write the full template as a new file.
+
+If justfile exists and is missing only some e2e recipes: append only the missing recipes without touching existing content.
 
 ### Step 4: Verify and Self-Correct
 
-Two-phase verification: `--dry-run` catches syntax/structure errors, actual execution catches runtime errors (missing scripts, wrong entry points, unavailable tools).
+Two-phase verification: `--dry-run` catches syntax/structure errors, actual execution catches runtime errors.
 
-#### 4a. Phase 1 — Dry-run (syntax check)
+#### 4a. Phase 1 -- Dry-run (syntax check)
 
 Run each recipe with `--dry-run` to verify recipe syntax, variable expansion, and command structure:
 
@@ -252,13 +275,14 @@ just --dry-run lint
 just --dry-run fmt
 just --dry-run check
 just --dry-run e2e-setup
+just --dry-run e2e-compile
 ```
 
 For mixed projects, also verify `--dry-run compile` and `--dry-run run` with `backend`/`frontend` scope arguments.
 
 Fix any syntax failures before proceeding to Phase 2.
 
-#### 4b. Phase 2 — Actual execution (runtime check)
+#### 4b. Phase 2 -- Actual execution (runtime check)
 
 Execute each recipe for real to catch runtime errors. Recipes are classified by execution safety:
 
@@ -267,10 +291,10 @@ Execute each recipe for real to catch runtime errors. Recipes are classified by 
 | **Safe** (fast, no side effects)                      | `compile`, `lint`, `check` | Execute directly                                                                          |
 | **Destructive** (modifies files or creates artifacts) | `build`, `fmt`, `clean`    | Execute directly (artifacts can be cleaned; fmt changes are welcome)                      |
 | **Idempotent** (installs dependencies)                | `install`, `e2e-setup`     | Execute directly                                                                          |
-| **Long-running** (starts servers)                     | `run`, `dev`               | Execute with timeout (10s), kill after timeout — success = process still alive at timeout |
+| **Long-running** (starts servers)                     | `run`, `dev`               | Execute with timeout (10s), kill after timeout -- success = process still alive at timeout |
 | **Expensive** (runs full test suite)                  | `test`, `test-e2e`         | Skip actual execution; verified by `--dry-run` only                                       |
 
-For long-running recipes (`run`, `dev`): execute via `timeout 10 just <recipe> 2>&1 || true`. A crash before timeout ("missing script", "can't load package") is a runtime failure. For mixed, also verify scoped variants.
+For long-running recipes (`run`, `dev`): execute via `timeout 10 just <recipe> 2>&1 || true`. A crash before timeout ("missing script", "can't load package") is a runtime failure.
 
 #### 4c. Self-correction rules
 
@@ -278,14 +302,14 @@ When a recipe fails in Phase 2, analyze the error and apply corrections:
 
 | Error Pattern                         | Recipe                        | Fix                                                                                                                                                                                        |
 | ------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `npm error Missing script: "start"`   | `run` (node/mixed)            | Replace `npm run start` → `npm run preview` in justfile, retry                                                                                                                             |
-| `npm error Missing script: "preview"` | `run` (node/mixed)            | Replace → `npm run dev` in justfile, retry                                                                                                                                                 |
-| `npm error Missing script: "dev"`     | `dev` (node/mixed)            | Replace → `npm run start` in justfile, retry                                                                                                                                               |
+| `npm error Missing script: "start"`   | `run` (node/mixed)            | Replace `npm run start` -> `npm run preview` in justfile, retry                                                                                                                             |
+| `npm error Missing script: "preview"` | `run` (node/mixed)            | Replace -> `npm run dev` in justfile, retry                                                                                                                                                 |
+| `npm error Missing script: "dev"`     | `dev` (node/mixed)            | Replace -> `npm run start` in justfile, retry                                                                                                                                               |
 | `can't load package: no Go files`     | `run`/`dev`/`compile` (go)    | Scan for `cmd/*/main.go`, update entry point in justfile, retry                                                                                                                            |
 | `CGO_ENABLED=1` available             | `test` (go)                   | Add `-race` flag to `go test` recipe for race detection, retry                                                                                                                             |
-| `command not found: golangci-lint`    | `lint`/`check` (go)           | In `lint`: replace `golangci-lint run ./...` → `go vet ./...`. In `check`: replace `golangci-lint run ./... && go vet ./...` → `go vet ./...`. Retry both.                                 |
-| `command not found: uvicorn`          | `dev` (python)                | Replace → `python -m src --reload` or skip with comment, retry                                                                                                                             |
-| `command not found: ruff`             | `lint`/`fmt`/`check` (python) | In `lint`: replace `ruff check .` → `python -m flake8`. In `check`: replace `ruff check .` → `python -m flake8` (keep `&& python -m py_compile src/`). In `fmt`: skip with comment. Retry. |
+| `command not found: golangci-lint`    | `lint`/`check` (go)           | In `lint`: replace `golangci-lint run ./...` -> `go vet ./...`. In `check`: replace `golangci-lint run ./... && go vet ./...` -> `go vet ./...`. Retry both.                                 |
+| `command not found: uvicorn`          | `dev` (python)                | Replace -> `python -m src --reload` or skip with comment, retry                                                                                                                             |
+| `command not found: ruff`             | `lint`/`fmt`/`check` (python) | In `lint`: replace `ruff check .` -> `python -m flake8`. In `check`: replace `ruff check .` -> `python -m flake8` (keep `&& python -m py_compile src/`). In `fmt`: skip with comment. Retry. |
 
 For each fix:
 
@@ -299,14 +323,16 @@ After all recipes have been verified (or corrected):
 
 ```
 Verification results:
-  ✓ project-type    → "mixed" (from .forge/config.yaml)
-  ✓ compile         → go vet ./... + npx tsc --noEmit (executed)
-  ✓ build           → go build ./... + npm run build (executed)
-  ✓ test            → go test ./... + npm test (dry-run only)
-  ✗ run             → FIXED: npm start → npm run preview (executed, self-corrected)
-  ✓ dev             → go run cmd/server/main.go + npm run dev (executed, 10s timeout)
-  ✓ install         → go mod download + npm install (executed)
-  ✗ lint            → golangci-lint not found, replaced with go vet (executed, self-corrected)
+  [ok] compile         -> go vet ./... (executed)
+  [ok] build           -> go build ./... (executed)
+  [ok] test            -> go test ./... (dry-run only)
+  [ok] e2e-compile     -> go test -c ./tests/e2e/... -tags=e2e -o /dev/null (dry-run only)
+  [ok] e2e-test        -> go test ./tests/e2e/... -v -tags=e2e -json (dry-run only)
+  [ok] e2e-setup       -> go mod download (executed)
+  [fix] run            -> FIXED: updated entry point (executed, self-corrected)
+  [ok] dev             -> go run cmd/server/main.go (executed, 10s timeout)
+  [ok] install         -> go mod download (executed)
+  [fix] lint           -> golangci-lint not found, replaced with go vet (executed, self-corrected)
 
 2 issues auto-corrected. Edit justfile to customize further.
 ```
@@ -317,28 +343,45 @@ Verification results:
 Created justfile with standard forge targets (Go project)
 
 Targets:
-  forge config get project-type   → "backend" (from .forge/config.yaml)
-  just compile                    → go vet ./...
-  just test                       → go test ./...
-  just test-e2e --feature <slug>  → feature tests in tests/e2e/features/<slug>/
-  ... (all 15 standard targets listed with resolved commands)
+  just compile                    -> go vet ./...
+  just test                       -> go test ./...
+  just e2e-compile                -> go test -c ./tests/e2e/... -tags=e2e -o /dev/null
+  just e2e-test                   -> go test ./tests/e2e/... -v -tags=e2e -json
+  just test-e2e --feature <slug>  -> feature tests in tests/e2e/features/<slug>/
+  just e2e-setup                  -> go mod download
+  ... (all standard targets listed with resolved commands)
 
+Convention: docs/conventions/testing-go.md (Go testing package + testify/assert)
 Edit justfile to customize commands for your project.
 forge quality-gate will now use `just test` automatically.
+```
+
+If no Convention was used:
+
+```
+Created justfile with standard forge targets (Go project)
+
+Targets:
+  ... (all standard targets listed with resolved commands)
+
+No Convention file found. Recipes generated from LLM defaults.
+Run `/forge:test-guide` to create a Convention file for consistent future generation.
 ```
 
 ## Notes
 
 - **just >= 1.50.0**: `[arg("feature", long)]` generates `--feature <value>` named option syntax; callers (CI, `forge quality-gate`) must pass the slug: `just test-e2e --feature <slug>`
 - Makefile migration: preserve original command logic, adjust only format
-- **e2e tests are language-aware**: The `test-e2e`, `e2e-setup`, and `e2e-verify` recipes are generated from the active language's `justfile-recipes` file (retrieved via `forge test get justfile`). Each language defines its own execution commands. For JavaScript/Playwright, this still uses `npx playwright test` and requires Node.js.
-- **Targets invoked by forge skills**: `compile`, `build`, `test`, `test-e2e`, `install`, `e2e-setup`, `e2e-verify`. The remaining targets (`run`, `dev`, `lint`, `fmt`, `check`, `clean`, `ci`) are for manual use and are not called by any skill. (`project-type` was removed — project type is now read from `.forge/config.yaml` via `forge config get project-type`.)
-- **Idempotency**: `e2e-setup` and `install` are designed to be idempotent (safe to run multiple times). Other recipes (`build`, `compile`, `test`) are not — they always re-execute.
-- **Mixed project scope**: forge skills resolve scope from `forge task claim` output or `process/state.json` and pass it to `just <verb>` when `forge config get project-type` returns `mixed`. Pass `just compile frontend` or `just compile backend` manually to target a single side outside of a task context.
+- **Convention-driven e2e recipes**: The e2e-compile, e2e-test, and e2e-setup recipes are generated from Convention Framework/Tags/Result Format sections. No hardcoded framework templates. The LLM constructs recipes based on Convention content.
+- **Cold start**: When no Convention files exist, the LLM generates recipes from common patterns for the detected language. These recipes use conservative defaults and may need manual adjustment.
+- **Targets invoked by forge skills**: `compile`, `build`, `test`, `test-e2e`, `install`, `e2e-setup`, `e2e-compile`, `e2e-verify`. The remaining targets (`run`, `dev`, `lint`, `fmt`, `check`, `clean`, `ci`) are for manual use and are not called by any skill.
+- **Idempotency**: `e2e-setup` and `install` are designed to be idempotent (safe to run multiple times). Other recipes (`build`, `compile`, `test`) are not -- they always re-execute.
+- **Mixed project scope**: forge skills resolve scope from `forge task claim` output or `process/state.json` and pass it to `just <verb>`. Pass `just compile frontend` or `just compile backend` manually to target a single side outside of a task context.
 
 <EXTREMELY-IMPORTANT>
 - MANUAL-ONLY. Do NOT auto-invoke this skill from other skills or agents. Only invoke when user explicitly runs `/init-justfile`.
 - If an existing justfile lacks forge boundary markers and `--force` is not set, you MUST prompt the user before overwriting. Never silently destroy user customizations.
 - Only the section between `# --- forge standard recipes ---` / `# --- end forge standard recipes ---` markers may be replaced. Recipes outside markers must be preserved verbatim.
 - After writing, you MUST run the verification steps (dry-run + actual execution) and report all results.
+- Do NOT use framework-specific recipe templates. Generate e2e recipes from Convention content and LLM knowledge only.
 </EXTREMELY-IMPORTANT>

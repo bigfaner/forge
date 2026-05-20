@@ -1,6 +1,6 @@
 ---
 name: run-e2e-tests
-description: Execute e2e test scripts and generate a results report. Language-aware: auto-detects test framework from project files via forge test CLI to determine execution commands and result parsing.
+description: Execute e2e test scripts and generate a results report. Convention-driven: loads Result Format from docs/conventions/ to determine parsing strategy.
 ---
 
 # Run E2E Tests
@@ -16,17 +16,15 @@ This skill only executes existing test scripts and reports results. Forbidden:
 - "Fixing" tests during execution to make them pass
 </HARD-GATE>
 
-## Step 0: Resolve Language and Strategy
+## When to Use
 
-1. **Detect language**: Run `forge test detect` to auto-detect the project's test language(s) from file signals.
-2. **On failure** (no language detected): ask the user to add `languages` to `.forge/config.yaml` (e.g., `languages: [go]`).
-3. **Load strategy**: Run `forge test get run` to load the run strategy for the detected language.
+**Trigger:**
+- User asks to "run e2e tests" or "run tests"
+- User provides `/run-e2e-tests` command
+- After `/gen-test-scripts` has generated test scripts
 
-Use the loaded strategy for all subsequent steps.
-
-<HARD-RULE>
-Do NOT silently default to any language. If `forge test detect` returns no result and the user cannot configure `languages`, abort the skill.
-</HARD-RULE>
+**Skip:**
+- `tests/<journey>/` doesn't exist (run `/gen-test-scripts` first)
 
 ## Prerequisites
 
@@ -36,10 +34,9 @@ Check previous stage artifacts. Abort and prompt user if missing:
 |----------|----------------|
 | `Justfile` with `e2e-setup` recipe | Run `/init-justfile` first |
 | `tests/<journey>/` directory (at least one) | Run `/gen-test-scripts` first |
-| At least one test file (extension from detected language) in `tests/<journey>/` | Run `/gen-test-scripts` first |
 
 <PRINCIPLE>
-**Shared infrastructure first.** Before executing any test actions, verify that shared dependencies are complete and functional. Shared file names are defined in the language's strategy. If shared files are missing symbols imported by test files, all tests will fail at the import stage. When inconsistencies are found, go back to `/gen-test-scripts` to fix shared dependencies before running tests.
+**Shared infrastructure first.** Before executing any test actions, verify that shared dependencies are complete and functional. Shared file names are defined in the Convention's Framework section. If shared files are missing symbols imported by test files, all tests will fail at the import stage. When inconsistencies are found, go back to `/gen-test-scripts` to fix shared dependencies before running tests.
 </PRINCIPLE>
 
 **Justfile check** (must pass before proceeding):
@@ -61,24 +58,36 @@ ls tests/<journey>/
 
 ```bash
 slug=$(forge feature 2>/dev/null | grep '^FEATURE:' | sed 's/^FEATURE:[[:space:]]*//')
-[ -z "$slug" ] && echo "Error: no active feature — run \`forge feature <slug>\` first" >&2 && exit 1
+[ -z "$slug" ] && echo "Error: no active feature -- run \`forge feature <slug>\` first" >&2 && exit 1
 ```
-
-## When to Use
-
-**Trigger:**
-- User asks to "run e2e tests" or "run tests"
-- User provides `/run-e2e-tests` command
-- After `/gen-test-scripts` has generated test scripts
-
-**Skip:**
-- `tests/<journey>/` doesn't exist (run `/gen-test-scripts` first)
 
 ## Workflow
 
 ```
-0. Resolve language + strategy → 1. Setup → 2. Verify → 3. Run specs → 4. Collect results → 5. Generate report → 6. Teardown
+0. Load Convention Result Format -> 1. Setup -> 2. Verify -> 3. Run tests -> 4. Parse results -> 5. Generate report -> 6. Teardown
 ```
+
+### Step 0: Load Convention Result Format
+
+Scan `docs/conventions/` for files with `domains` containing `testing` and load the **Result Format** section from each matched file.
+
+```bash
+# List convention files
+ls docs/conventions/
+```
+
+For each convention file whose frontmatter `domains` includes `testing`, read the file and extract:
+
+1. **format-type**: One of `json-stream`, `json-report`, `text-verbose`
+2. **output-flags**: The flags passed to the test runner (e.g., `-json -v`, `--reporter=json`)
+
+<HARD-RULE>
+Parsing logic must be driven by Convention Result Format section, not framework name. The format-type determines the parsing strategy; never branch on language or framework identity.
+</HARD-RULE>
+
+**Convention merge semantics**: When multiple Convention files match, merge at section level. If two files both declare a Result Format section, the later file's values win. Log a note about the overlap for user awareness.
+
+**Fallback — no Convention found**: If no Convention files exist in `docs/conventions/`, proceed with `text-verbose` as the default format-type. Use generic text-based parsing: scan output lines for PASS/FAIL/SKIP patterns and extract test names from leading markers.
 
 ### Step 1: Setup Environment
 
@@ -90,8 +99,8 @@ mkdir -p tests/e2e/results/
 mkdir -p tests/<journey>/results/
 ```
 
-Server lifecycle is embedded in `test-e2e`.
-Calling `just test-e2e` (Step 3) automatically ensures servers are started and healthy.
+Server lifecycle is embedded in the justfile recipes.
+Calling `just e2e-test` (Step 3) automatically ensures servers are started and healthy.
 No manual server management needed.
 
 ### Step 2: Verify Scripts
@@ -106,29 +115,80 @@ If this fails, return to `/gen-test-scripts` to resolve the `// VERIFY:` markers
 
 ### Step 3: Run Test Specs
 
-**Run all specs** via justfile (language-aware execution):
+**Run all specs** via justfile:
 
 ```bash
-just test-e2e --feature <slug>
+just e2e-test --feature <slug>
 ```
 
-Execution details (command, config behavior, result output path) are defined in the active strategy's `run.md`.
+Capture the full stdout/stderr output for result parsing in Step 4.
 
-### Step 4: Collect Results
+If the Convention declares specific output-flags, these are already embedded in the justfile recipe. The skill does not pass additional flags.
 
-**Guard**: Before parsing, verify the result output exists and is valid. The result file path and format are defined in the strategy's `run.md`.
+### Step 4: Parse Results
 
-If the result file is missing or empty: report the error to the user with the test runner's console output as evidence, and abort report generation. Do NOT attempt to parse a missing/malformed file.
+Parse test results based on the **format-type** loaded from Convention in Step 0.
 
-Parse test results following the format described in the active strategy's `run.md`. The `run.md` defines:
-- Result file location and format (JSON, XML, text, etc.)
-- Field mapping (status, duration, error message, stack trace)
-- Suite/test case traversal strategy
-- TC ID extraction rules
+**Guard**: Before parsing, verify result output exists and is valid. If result output is missing or empty: report the error with the test runner's console output as evidence, and abort report generation. Do NOT attempt to parse missing/malformed output.
+
+#### Format: json-stream
+
+Each line is an independent JSON object representing a test event. Process line-by-line:
+
+1. **Event types**: `run` (test started), `pass` (test passed), `fail` (test failed), `skip` (test skipped), `output` (captured stdout/stderr)
+2. **Grouping**: Group events by test name. Each test starts with a `run` event and ends with a `pass`, `fail`, or `skip` event
+3. **Output collection**: Concatenate all `output` events for a test to build its log
+4. **Duration**: Use the `Elapsed` field from the terminal event (`pass`/`fail`/`skip`)
+5. **TC ID extraction**: Extract from test name using pattern `TC[_-](\d+)`, normalize to `TC-NNN`
+
+**Common fields** (may vary by ecosystem, adapt field names to actual JSON structure):
+- Test name: `Test` or `name`
+- Status: `Action` or `status` (`pass`/`fail`/`skip`)
+- Duration: `Elapsed` or `duration`
+- Output: `Output` or `message`
+
+#### Format: json-report
+
+A single JSON document containing all test results. Parse the complete structure:
+
+1. **Structure**: Typically a tree of suite -> test cases with nested results
+2. **Traversal**: Walk the suite hierarchy, collecting each leaf test case
+3. **Status mapping**: Map the report's status field to pass/fail/skip
+4. **TC ID extraction**: Extract from test name using pattern `TC[_-](\d+)`, normalize to `TC-NNN`
+
+**Common fields** (may vary by ecosystem, adapt field names to actual JSON structure):
+- Suite container: `suites` or `results`
+- Test name: `name` or `title`
+- Status: `status` or `outcome` (map to pass/fail/skip)
+- Duration: `duration` or `time`
+- Error: `error` or `message`
+
+#### Format: text-verbose
+
+Plain text output from verbose test runners. Parse using line-by-line scanning:
+
+1. **Test start**: Lines matching patterns like `=== RUN`, `running test:`, `PASS:`, `FAIL:`, `SKIP:`, or `ok ` / `FAIL `
+2. **Test end**: Lines with pass/fail/skip indicators
+3. **Duration**: Extract from trailing duration patterns like `(0.01s)`, `in 0.01s`, `[0.01s]`
+4. **TC ID extraction**: Extract from test name using pattern `TC[_-](\d+)`, normalize to `TC-NNN`
+5. **Error collection**: Lines between a FAIL marker and the next test start or summary separator are error output
+
+**Generic fallback pattern**: When Convention is absent and text-verbose is assumed, scan for:
+- `PASS` or `ok` lines -> passing test
+- `FAIL` or `FAILED` lines -> failing test
+- `SKIP` or `SKIPPED` lines -> skipped test
+
+#### Format-agnostic rules
+
+Regardless of format-type, these rules always apply:
+
+- **TC ID extraction**: Pattern `TC[_-](\d+)` from test name, normalize separator to hyphen → `TC-NNN`
+- **Test type classification**: Infer from test name or content — UI tests reference pages/elements, API tests reference endpoints, CLI tests reference commands. When uncertain, classify as the dominant type for the project.
+- **Error messages**: Always capture the full error text, not just the first line
 
 ### Step 5: Generate Report
 
-Read the template at `templates/e2e-report.md`. Fill in results using the strategy's result format.
+Read the template at `${CLAUDE_SKILL_DIR}/templates/e2e-report.md`. Fill in results.
 
 Fill in:
 - Summary statistics (total/pass/fail/skip per type)
@@ -136,15 +196,9 @@ Fill in:
 - Failed test details with error messages
 - Screenshot paths for UI tests
 
-**Test type classification**: Follow the rules in the active strategy's `run.md` for classifying tests by type (UI/API/CLI).
-
-**TC ID extraction**: Extract from test title using pattern `TC-\d+`.
-
-**Screenshots**: Follow the strategy's `run.md` for screenshot discovery paths. When available, use `glob tests/e2e/results/**/*.png` to discover screenshots.
+**Screenshots**: Use `glob tests/e2e/results/**/*.png` to discover screenshots. When available, use the `mcp__zai-mcp-server__analyze_image` tool to examine screenshots and add diagnostic notes.
 
 Write to: `tests/<journey>/results/latest.md`
-
-**For failed UI tests with screenshots**: Use the `mcp__zai-mcp-server__analyze_image` tool to examine screenshots and add diagnostic notes.
 
 ### Step 6: Teardown
 
@@ -154,6 +208,7 @@ Write to: `tests/<journey>/results/latest.md`
 1. Kill tracked servers: `for f in tests/e2e/results/.pid-*; do [ -f "$f" ] && kill "$(tr -d '\r' < "$f")" 2>/dev/null || true; rm -f "$f"; done`
 2. Clean up temporary files
 </HARD-RULE>
+
 ## Output
 
 After completion, report to the user:
@@ -175,10 +230,6 @@ E2E Test Results: X/X passed
 Report: tests/<journey>/results/latest.md
 ```
 
-## Timeout Configuration
-
-Timeout settings are language-specific. See the active strategy's `run.md` for details on timeout hierarchy and configuration.
-
 ## Error Handling
 
 | Situation | Action | Retries |
@@ -189,6 +240,8 @@ Timeout settings are language-specific. See the active strategy's `run.md` for d
 | `e2e-verify` finds unresolved `// VERIFY:` markers | Return to `/gen-test-scripts` to resolve markers | 0 |
 | Test timeout | Mark as FAIL with timeout reason | 0 |
 | Test file doesn't compile | Report compilation error, skip that file | 0 |
+| Convention file has no Result Format section | Fallback to text-verbose parsing, log a note | 0 |
+| Result output missing or empty | Report error with console output, abort report generation | 0 |
 
 ## Failure Diagnosis
 

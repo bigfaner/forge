@@ -14,7 +14,7 @@ var e2eDiscoverCmd = &cobra.Command{
 	Use:   "discover",
 	Short: "List all e2e test cases without running",
 	Long: `List all discovered e2e test cases for the current feature without running them.
-Uses the active profile's discovery mechanism (e.g. npx playwright test --list,
+Uses the project's discovery mechanism (e.g. npx playwright test --list,
 go test -list, python -m pytest --collect-only).`,
 	Run: runE2EDiscover,
 }

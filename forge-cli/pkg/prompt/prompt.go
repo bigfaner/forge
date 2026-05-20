@@ -94,7 +94,6 @@ func Synthesize(opts SynthesizeOpts) (string, error) {
 //	{{SCOPE}}           — task scope (empty string when "all" or unspecified)
 //	{{FEATURE_SLUG}}    — feature slug (e.g. "auth-refresh")
 //	{{PHASE_SUMMARY}}   — "PHASE_SUMMARY: <path>" or empty (injected line)
-//	{{PROFILE}}         — test profile for per-profile tasks (e.g. "playwright")
 //	{{TEST_TYPE_ARG}}   — " --type <capability>" or empty (for per-type gen-scripts)
 func renderTemplate(templateFile string, opts SynthesizeOpts, t task.Task) (string, error) {
 	data, err := templateFS.ReadFile(templateFile)
@@ -122,7 +121,6 @@ func renderTemplate(templateFile string, opts SynthesizeOpts, t task.Task) (stri
 	result = strings.ReplaceAll(result, "{{SCOPE}}", scope)
 	result = strings.ReplaceAll(result, "{{FEATURE_SLUG}}", opts.FeatureSlug)
 	result = strings.ReplaceAll(result, "{{PHASE_SUMMARY}}", phaseSummaryLine)
-	result = strings.ReplaceAll(result, "{{PROFILE}}", t.Profile)
 
 	// Extract type suffix from task ID for per-type gen-scripts tasks.
 	testTypeArg := extractTestTypeArg(t.ID)

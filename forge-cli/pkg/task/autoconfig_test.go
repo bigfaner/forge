@@ -3,19 +3,18 @@ package task
 import (
 	"testing"
 
-	"forge-cli/pkg/profile"
+	"forge-cli/pkg/forgeconfig"
 )
 
 // --- AutoConfig gating tests ---
 
 func TestGetBreakdownTestTasks_E2eTestFullFalse(t *testing.T) {
-	auto := profile.AutoConfigDefaults()
+	auto := forgeconfig.AutoConfigDefaults()
 	auto.E2eTest.Full = false
 
-	tasks := GetBreakdownTestTasks([]profile.Language{"go"}, []string{"cli"}, auto)
+	tasks := GetBreakdownTestTasks([]string{"go"}, []string{"cli"}, auto)
 
 	// No e2e test tasks, no consolidate (consolidate depends on e2e test chain in breakdown)
-	// Only tasks generated should be T-specs-1 (consolidate is separate gate)
 	for _, task := range tasks {
 		if task.ID == "T-test-gen-cases" || task.ID == "T-test-eval-cases" || task.ID == "T-test-gen-scripts-cli" ||
 			task.ID == "T-test-run" || task.ID == "T-test-graduate" || task.ID == "T-test-verify-regression" {
@@ -25,56 +24,56 @@ func TestGetBreakdownTestTasks_E2eTestFullFalse(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_ConsolidateSpecsFullFalse(t *testing.T) {
-	auto := profile.AutoConfigDefaults()
+	auto := forgeconfig.AutoConfigDefaults()
 	auto.ConsolidateSpecs.Full = false
 
-	tasks := GetBreakdownTestTasks([]profile.Language{"go"}, []string{"cli"}, auto)
+	tasks := GetBreakdownTestTasks([]string{"go"}, []string{"cli"}, auto)
 
 	for _, task := range tasks {
 		if task.ID == "T-specs-consolidate" {
-			t.Error("T-specs-1 should not be generated when consolidateSpecs.full=false")
+			t.Error("T-specs-consolidate should not be generated when consolidateSpecs.full=false")
 		}
 	}
 }
 
 func TestGetBreakdownTestTasks_CleanCodeFullTrue(t *testing.T) {
-	auto := profile.AutoConfigDefaults()
+	auto := forgeconfig.AutoConfigDefaults()
 	auto.CleanCode.Full = true
 
-	tasks := GetBreakdownTestTasks([]profile.Language{"go"}, []string{"cli"}, auto)
+	tasks := GetBreakdownTestTasks([]string{"go"}, []string{"cli"}, auto)
 
 	found := false
 	for _, task := range tasks {
 		if task.ID == "T-clean-code" {
 			found = true
 			if task.Type != TypeCleanCode {
-				t.Errorf("T-clean-code-1 Type = %q, want %q", task.Type, TypeCleanCode)
+				t.Errorf("T-clean-code Type = %q, want %q", task.Type, TypeCleanCode)
 			}
 		}
 	}
 	if !found {
-		t.Error("T-clean-code-1 should be generated when cleanCode.full=true")
+		t.Error("T-clean-code should be generated when cleanCode.full=true")
 	}
 }
 
 func TestGetBreakdownTestTasks_CleanCodeFullFalse(t *testing.T) {
-	auto := profile.AutoConfigDefaults()
+	auto := forgeconfig.AutoConfigDefaults()
 	auto.CleanCode.Full = false
 
-	tasks := GetBreakdownTestTasks([]profile.Language{"go"}, []string{"cli"}, auto)
+	tasks := GetBreakdownTestTasks([]string{"go"}, []string{"cli"}, auto)
 
 	for _, task := range tasks {
 		if task.ID == "T-clean-code" {
-			t.Error("T-clean-code-1 should not be generated when cleanCode.full=false")
+			t.Error("T-clean-code should not be generated when cleanCode.full=false")
 		}
 	}
 }
 
 func TestGetQuickTestTasks_E2eTestQuickFalse(t *testing.T) {
-	auto := profile.AutoConfigDefaults()
+	auto := forgeconfig.AutoConfigDefaults()
 	auto.E2eTest.Quick = false
 
-	tasks := GetQuickTestTasks([]profile.Language{"go"}, []string{"cli"}, auto)
+	tasks := GetQuickTestTasks([]string{"go"}, []string{"cli"}, auto)
 
 	// No e2e test tasks
 	for _, task := range tasks {
@@ -86,47 +85,47 @@ func TestGetQuickTestTasks_E2eTestQuickFalse(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_ConsolidateSpecsQuickFalse(t *testing.T) {
-	auto := profile.AutoConfigDefaults()
+	auto := forgeconfig.AutoConfigDefaults()
 	auto.ConsolidateSpecs.Quick = false
 
-	tasks := GetQuickTestTasks([]profile.Language{"go"}, []string{"cli"}, auto)
+	tasks := GetQuickTestTasks([]string{"go"}, []string{"cli"}, auto)
 
 	for _, task := range tasks {
 		if task.ID == "T-quick-doc-drift" {
-			t.Error("T-quick-specs-1 should not be generated when consolidateSpecs.quick=false")
+			t.Error("T-quick-doc-drift should not be generated when consolidateSpecs.quick=false")
 		}
 	}
 }
 
 func TestGetQuickTestTasks_CleanCodeQuickTrue(t *testing.T) {
-	auto := profile.AutoConfigDefaults()
+	auto := forgeconfig.AutoConfigDefaults()
 	auto.CleanCode.Quick = true
 
-	tasks := GetQuickTestTasks([]profile.Language{"go"}, []string{"cli"}, auto)
+	tasks := GetQuickTestTasks([]string{"go"}, []string{"cli"}, auto)
 
 	found := false
 	for _, task := range tasks {
 		if task.ID == "T-clean-code" {
 			found = true
 			if task.Type != TypeCleanCode {
-				t.Errorf("T-clean-code-1 Type = %q, want %q", task.Type, TypeCleanCode)
+				t.Errorf("T-clean-code Type = %q, want %q", task.Type, TypeCleanCode)
 			}
 		}
 	}
 	if !found {
-		t.Error("T-clean-code-1 should be generated when cleanCode.quick=true")
+		t.Error("T-clean-code should be generated when cleanCode.quick=true")
 	}
 }
 
 func TestGetQuickTestTasks_CleanCodeQuickFalse(t *testing.T) {
-	auto := profile.AutoConfigDefaults()
+	auto := forgeconfig.AutoConfigDefaults()
 	auto.CleanCode.Quick = false
 
-	tasks := GetQuickTestTasks([]profile.Language{"go"}, []string{"cli"}, auto)
+	tasks := GetQuickTestTasks([]string{"go"}, []string{"cli"}, auto)
 
 	for _, task := range tasks {
 		if task.ID == "T-clean-code" {
-			t.Error("T-clean-code-1 should not be generated when cleanCode.quick=false")
+			t.Error("T-clean-code should not be generated when cleanCode.quick=false")
 		}
 	}
 }
@@ -134,8 +133,8 @@ func TestGetQuickTestTasks_CleanCodeQuickFalse(t *testing.T) {
 // --- Backward compat: defaults produce same behavior as before ---
 
 func TestGetBreakdownTestTasks_DefaultsMatchOldBehavior(t *testing.T) {
-	auto := profile.AutoConfigDefaults()
-	tasks := GetBreakdownTestTasks([]profile.Language{"go"}, []string{"cli"}, auto)
+	auto := forgeconfig.AutoConfigDefaults()
+	tasks := GetBreakdownTestTasks([]string{"go"}, []string{"cli"}, auto)
 
 	// Should produce exactly 7 tasks (same as before)
 	if len(tasks) != 7 {
@@ -151,138 +150,138 @@ func TestGetBreakdownTestTasks_DefaultsMatchOldBehavior(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_DefaultsProduceNoE2ETasks(t *testing.T) {
-	auto := profile.AutoConfigDefaults()
-	tasks := GetQuickTestTasks([]profile.Language{"go"}, []string{"cli"}, auto)
+	auto := forgeconfig.AutoConfigDefaults()
+	tasks := GetQuickTestTasks([]string{"go"}, []string{"cli"}, auto)
 
-	// Defaults: e2eTest.quick=false, consolidateSpecs.quick=true → only spec drift task
+	// Defaults: e2eTest.quick=false, consolidateSpecs.quick=true -> only spec drift task
 	if len(tasks) != 1 {
 		t.Fatalf("expected 1 quick task (spec drift) with defaults, got %d", len(tasks))
 	}
 	if tasks[0].ID != "T-quick-doc-drift" {
-		t.Errorf("expected T-quick-specs-1, got %q", tasks[0].ID)
+		t.Errorf("expected T-quick-doc-drift, got %q", tasks[0].ID)
 	}
 }
 
 // --- Clean code task dependency wiring ---
 
 func TestGetBreakdownTestTasks_CleanCodeDependsOnVerifyRegression(t *testing.T) {
-	auto := profile.AutoConfigDefaults()
+	auto := forgeconfig.AutoConfigDefaults()
 	auto.CleanCode.Full = true
 
-	tasks := GetBreakdownTestTasks([]profile.Language{"go"}, []string{"cli"}, auto)
+	tasks := GetBreakdownTestTasks([]string{"go"}, []string{"cli"}, auto)
 
-	// Find T-clean-code-1 and verify its dependencies
+	// Find T-clean-code and verify its dependencies
 	for _, task := range tasks {
 		if task.ID == "T-clean-code" {
-			// In breakdown mode, T-clean-code-1 should not have deps set yet
+			// In breakdown mode, T-clean-code should not have deps set yet
 			// (resolved later by ResolveFirstTestDep)
 			return
 		}
 	}
-	t.Error("T-clean-code-1 not found")
+	t.Error("T-clean-code not found")
 }
 
 func TestGetQuickTestTasks_CleanCodeNoE2e(t *testing.T) {
 	// When e2e tests and consolidate specs are disabled but clean code is enabled
-	auto := profile.AutoConfigDefaults()
+	auto := forgeconfig.AutoConfigDefaults()
 	auto.E2eTest.Quick = false
 	auto.ConsolidateSpecs.Quick = false
 	auto.CleanCode.Quick = true
 
-	tasks := GetQuickTestTasks([]profile.Language{"go"}, []string{"cli"}, auto)
+	tasks := GetQuickTestTasks([]string{"go"}, []string{"cli"}, auto)
 
-	// Should have exactly 1 task (T-clean-code-1)
+	// Should have exactly 1 task (T-clean-code)
 	if len(tasks) != 1 {
 		t.Fatalf("expected 1 task, got %d: %+v", len(tasks), tasks)
 	}
 	if tasks[0].ID != "T-clean-code" {
-		t.Errorf("task ID = %q, want T-clean-code-1", tasks[0].ID)
+		t.Errorf("task ID = %q, want T-clean-code", tasks[0].ID)
 	}
 }
 
 func TestGetBreakdownTestTasks_NoE2eWithCleanCode(t *testing.T) {
 	// When e2e tests and consolidate specs are disabled but clean code is enabled
-	auto := profile.AutoConfigDefaults()
+	auto := forgeconfig.AutoConfigDefaults()
 	auto.E2eTest.Full = false
 	auto.ConsolidateSpecs.Full = false
 	auto.CleanCode.Full = true
 
-	tasks := GetBreakdownTestTasks([]profile.Language{"go"}, []string{"cli"}, auto)
+	tasks := GetBreakdownTestTasks([]string{"go"}, []string{"cli"}, auto)
 
-	// Should have T-clean-code-1 only (no e2e test tasks)
+	// Should have T-clean-code only (no e2e test tasks)
 	if len(tasks) != 1 {
 		t.Fatalf("expected 1 task, got %d: %+v", len(tasks), tasks)
 	}
 	if tasks[0].ID != "T-clean-code" {
-		t.Errorf("task ID = %q, want T-clean-code-1", tasks[0].ID)
+		t.Errorf("task ID = %q, want T-clean-code", tasks[0].ID)
 	}
 }
 
 func TestGetBreakdownTestTasks_OnlyConsolidateSpecs(t *testing.T) {
 	// When e2e tests are disabled but consolidate specs is enabled
-	auto := profile.AutoConfigDefaults()
+	auto := forgeconfig.AutoConfigDefaults()
 	auto.E2eTest.Full = false
 	auto.ConsolidateSpecs.Full = true
 
-	tasks := GetBreakdownTestTasks([]profile.Language{"go"}, []string{"cli"}, auto)
+	tasks := GetBreakdownTestTasks([]string{"go"}, []string{"cli"}, auto)
 
-	// Should have T-specs-1 only
+	// Should have T-specs-consolidate only
 	if len(tasks) != 1 {
 		t.Fatalf("expected 1 task, got %d: %+v", len(tasks), tasks)
 	}
 	if tasks[0].ID != "T-specs-consolidate" {
-		t.Errorf("task ID = %q, want T-specs-1", tasks[0].ID)
+		t.Errorf("task ID = %q, want T-specs-consolidate", tasks[0].ID)
 	}
 }
 
 func TestGetQuickTestTasks_OnlyConsolidateSpecs(t *testing.T) {
-	auto := profile.AutoConfigDefaults()
+	auto := forgeconfig.AutoConfigDefaults()
 	auto.E2eTest.Quick = false
 	auto.ConsolidateSpecs.Quick = true
 
-	tasks := GetQuickTestTasks([]profile.Language{"go"}, []string{"cli"}, auto)
+	tasks := GetQuickTestTasks([]string{"go"}, []string{"cli"}, auto)
 
-	// Should have T-quick-specs-1 only
+	// Should have T-quick-doc-drift only
 	if len(tasks) != 1 {
 		t.Fatalf("expected 1 task, got %d: %+v", len(tasks), tasks)
 	}
 	if tasks[0].ID != "T-quick-doc-drift" {
-		t.Errorf("task ID = %q, want T-quick-specs-1", tasks[0].ID)
+		t.Errorf("task ID = %q, want T-quick-doc-drift", tasks[0].ID)
 	}
 }
 
-// --- T-specs-1 dependency in breakdown mode when e2e tasks exist ---
+// --- T-specs-consolidate dependency in breakdown mode when e2e tasks exist ---
 
 func TestGetBreakdownTestTasks_SpecsDependsOnVerifyRegression(t *testing.T) {
-	auto := profile.AutoConfigDefaults()
-	tasks := GetBreakdownTestTasks([]profile.Language{"go"}, []string{"cli"}, auto)
+	auto := forgeconfig.AutoConfigDefaults()
+	tasks := GetBreakdownTestTasks([]string{"go"}, []string{"cli"}, auto)
 
-	// Find T-specs-1
+	// Find T-specs-consolidate
 	for _, task := range tasks {
 		if task.ID == "T-specs-consolidate" {
 			if len(task.Dependencies) != 1 || task.Dependencies[0] != "T-test-verify-regression" {
-				t.Errorf("T-specs-1 deps = %v, want [T-test-4.5]", task.Dependencies)
+				t.Errorf("T-specs-consolidate deps = %v, want [T-test-verify-regression]", task.Dependencies)
 			}
 			return
 		}
 	}
-	t.Error("T-specs-1 not found")
+	t.Error("T-specs-consolidate not found")
 }
 
 func TestGetQuickTestTasks_SpecsDependsOnVerifyRegression(t *testing.T) {
 	auto := allEnabledAuto
-	tasks := GetQuickTestTasks([]profile.Language{"go"}, []string{"cli"}, auto)
+	tasks := GetQuickTestTasks([]string{"go"}, []string{"cli"}, auto)
 
-	// Find T-quick-specs-1
+	// Find T-quick-doc-drift
 	for _, task := range tasks {
 		if task.ID == "T-quick-doc-drift" {
 			if len(task.Dependencies) != 1 || task.Dependencies[0] != "T-quick-verify-regression" {
-				t.Errorf("T-quick-specs-1 deps = %v, want [T-quick-4]", task.Dependencies)
+				t.Errorf("T-quick-doc-drift deps = %v, want [T-quick-verify-regression]", task.Dependencies)
 			}
 			return
 		}
 	}
-	t.Error("T-quick-specs-1 not found")
+	t.Error("T-quick-doc-drift not found")
 }
 
 // --- InferType tests for new IDs ---
@@ -290,69 +289,69 @@ func TestGetQuickTestTasks_SpecsDependsOnVerifyRegression(t *testing.T) {
 func TestInferType_TSpecs1(t *testing.T) {
 	got := InferType("T-specs-consolidate")
 	if got != TypeDocConsolidate {
-		t.Errorf("InferType(T-specs-1) = %q, want %q", got, TypeDocConsolidate)
+		t.Errorf("InferType(T-specs-consolidate) = %q, want %q", got, TypeDocConsolidate)
 	}
 }
 
 func TestInferType_TQuickSpecs1(t *testing.T) {
 	got := InferType("T-quick-doc-drift")
 	if got != TypeDocDrift {
-		t.Errorf("InferType(T-quick-specs-1) = %q, want %q", got, TypeDocDrift)
+		t.Errorf("InferType(T-quick-doc-drift) = %q, want %q", got, TypeDocDrift)
 	}
 }
 
 func TestInferType_TCleanCode1(t *testing.T) {
 	got := InferType("T-clean-code")
 	if got != TypeCleanCode {
-		t.Errorf("InferType(T-clean-code-1) = %q, want %q", got, TypeCleanCode)
+		t.Errorf("InferType(T-clean-code) = %q, want %q", got, TypeCleanCode)
 	}
 }
 
 // --- All auto=false produces zero tasks ---
 
 func TestGetBreakdownTestTasks_AllAutoOff(t *testing.T) {
-	auto := profile.AutoConfig{
-		E2eTest:          profile.ModeToggle{Quick: false, Full: false},
-		ConsolidateSpecs: profile.ModeToggle{Quick: false, Full: false},
-		CleanCode:        profile.ModeToggle{Quick: false, Full: false},
+	auto := forgeconfig.AutoConfig{
+		E2eTest:          forgeconfig.ModeToggle{Quick: false, Full: false},
+		ConsolidateSpecs: forgeconfig.ModeToggle{Quick: false, Full: false},
+		CleanCode:        forgeconfig.ModeToggle{Quick: false, Full: false},
 	}
 
-	tasks := GetBreakdownTestTasks([]profile.Language{"go"}, []string{"cli"}, auto)
+	tasks := GetBreakdownTestTasks([]string{"go"}, []string{"cli"}, auto)
 	if len(tasks) != 0 {
 		t.Errorf("expected 0 tasks with all auto off, got %d", len(tasks))
 	}
 }
 
 func TestGetQuickTestTasks_AllAutoOff(t *testing.T) {
-	auto := profile.AutoConfig{
-		E2eTest:          profile.ModeToggle{Quick: false, Full: false},
-		ConsolidateSpecs: profile.ModeToggle{Quick: false, Full: false},
-		CleanCode:        profile.ModeToggle{Quick: false, Full: false},
+	auto := forgeconfig.AutoConfig{
+		E2eTest:          forgeconfig.ModeToggle{Quick: false, Full: false},
+		ConsolidateSpecs: forgeconfig.ModeToggle{Quick: false, Full: false},
+		CleanCode:        forgeconfig.ModeToggle{Quick: false, Full: false},
 	}
 
-	tasks := GetQuickTestTasks([]profile.Language{"go"}, []string{"cli"}, auto)
+	tasks := GetQuickTestTasks([]string{"go"}, []string{"cli"}, auto)
 	if len(tasks) != 0 {
 		t.Errorf("expected 0 tasks with all auto off, got %d", len(tasks))
 	}
 }
 
-// --- T-clean-code-1 only + consolidate ---
+// --- T-clean-code only + consolidate ---
 
 func TestGetQuickTestTasks_CleanCodeAndSpecsNoE2e(t *testing.T) {
-	auto := profile.AutoConfigDefaults()
+	auto := forgeconfig.AutoConfigDefaults()
 	auto.E2eTest.Quick = false
 	auto.CleanCode.Quick = true
 	auto.ConsolidateSpecs.Quick = true
 
-	tasks := GetQuickTestTasks([]profile.Language{"go"}, []string{"cli"}, auto)
+	tasks := GetQuickTestTasks([]string{"go"}, []string{"cli"}, auto)
 
 	if len(tasks) != 2 {
 		t.Fatalf("expected 2 tasks, got %d: %+v", len(tasks), tasks)
 	}
 	if tasks[0].ID != "T-quick-doc-drift" {
-		t.Errorf("tasks[0].ID = %q, want T-quick-specs-1", tasks[0].ID)
+		t.Errorf("tasks[0].ID = %q, want T-quick-doc-drift", tasks[0].ID)
 	}
 	if tasks[1].ID != "T-clean-code" {
-		t.Errorf("tasks[1].ID = %q, want T-clean-code-1", tasks[1].ID)
+		t.Errorf("tasks[1].ID = %q, want T-clean-code", tasks[1].ID)
 	}
 }

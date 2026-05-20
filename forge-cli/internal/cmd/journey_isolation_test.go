@@ -429,9 +429,6 @@ func TestJourneyExecutionConfig_ResolvesFromProject(t *testing.T) {
 	if cfg.TestCommand != "go test ./..." {
 		t.Errorf("expected test-command 'go test ./...', got %q", cfg.TestCommand)
 	}
-	if cfg.Language != "go" {
-		t.Errorf("expected language 'go', got %q", cfg.Language)
-	}
 }
 
 func TestJourneyExecutionConfig_NoLanguage(t *testing.T) {

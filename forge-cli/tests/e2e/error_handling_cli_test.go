@@ -75,19 +75,6 @@ func TestTC_040_TaskSubmitMissingIndexReturnsError(t *testing.T) {
 	t.Skip("requires manual setup: feature directory without index.json")
 }
 
-// Traceability: TC-041 -> Spec Error Handling Table
-func TestTC_041_ProfileGetInvalidProfileReturnsErrorWithList(t *testing.T) {
-	// profile get requires a flag (--manifest, --generate, etc.) to specify what to retrieve.
-	// With --manifest flag, it will validate the profile name.
-	exitCode, out := testkit.RunCLIExitCode("profile", "get", "nonexistent-profile", "--manifest")
-
-	assert.Equal(t, 1, exitCode,
-		"profile get with invalid name should exit 1")
-	lower := strings.ToLower(out)
-	assert.True(t, strings.Contains(lower, "unknown") || strings.Contains(lower, "failed") || strings.Contains(lower, "invalid"),
-		"output should mention unknown/failed/invalid profile: %s", out)
-}
-
 // assertTaskNotFound verifies the standard task-not-found error pattern.
 func assertTaskNotFound(t *testing.T, output, taskID string) {
 	t.Helper()

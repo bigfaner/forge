@@ -15,10 +15,9 @@ var e2eSetupForce bool
 var e2eSetupCmd = &cobra.Command{
 	Use:   "setup",
 	Short: "Install e2e dependencies (idempotent)",
-	Long: `Install external dependencies for the configured e2e test profile.
-Idempotent: safe to run multiple times. Uses the active profile from
-.forge/config.yaml to determine what to install (e.g. Playwright browsers,
-Go test tools, pytest packages).`,
+	Long: `Install external dependencies for e2e tests.
+Idempotent: safe to run multiple times. Determines what to install based
+on the project's test framework (e.g. Playwright browsers, Go test tools, pytest packages).`,
 	Run: runE2ESetup,
 }
 

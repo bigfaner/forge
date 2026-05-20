@@ -8,8 +8,8 @@ import (
 	"text/tabwriter"
 
 	"forge-cli/pkg/feature"
+	"forge-cli/pkg/forgeconfig"
 	"forge-cli/pkg/git"
-	"forge-cli/pkg/profile"
 	"forge-cli/pkg/project"
 
 	"github.com/spf13/cobra"
@@ -252,7 +252,7 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 	}
 
 	// Load config for source-branch and copy-files
-	cfg, _ := profile.ReadConfig(projectRoot)
+	cfg, _ := forgeconfig.ReadConfig(projectRoot)
 
 	// Pre-validate copy-files BEFORE git worktree add (to avoid orphan worktrees)
 	var copyFiles []string
@@ -379,15 +379,6 @@ func runWorktreeList(cmd *cobra.Command, _ []string) error {
 		_, _ = fmt.Fprintf(w, "%s\t%s\t%s%s\n", name, branch, entry.Path, suffix)
 	}
 	return w.Flush()
-}
-
-// resolveSourceBranch returns the effective source branch based on priority:
-// flag > config > empty (HEAD).
-func resolveSourceBranch(flagValue, configBranch string) string {
-	if flagValue != "" {
-		return flagValue
-	}
-	return configBranch
 }
 
 // listForgeFeatures returns a set of feature slugs that exist under docs/features/.

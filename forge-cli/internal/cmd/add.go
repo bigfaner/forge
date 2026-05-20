@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"forge-cli/pkg/feature"
-	"forge-cli/pkg/profile"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/task"
 	tmpl "forge-cli/pkg/template"
@@ -203,31 +202,12 @@ func executeAdd(cmd *cobra.Command) (*AddResult, error) {
 	}
 
 	// Rebuild index from all .md files (canonical merge)
-	profiles, _ := profile.ReadLanguages(projectRoot)
 
-	// Resolve interfaces: config.yaml > UnionLanguageInterfaces(profiles)
-	var capabilities []string
-	cfg, _ := profile.ReadConfig(projectRoot)
-	if cfg != nil && len(cfg.Interfaces) > 0 {
-		capabilities = cfg.Interfaces
-	}
-	if len(capabilities) == 0 && len(profiles) > 0 {
-		caps, _ := profile.UnionLanguageInterfaces(profiles)
-		capabilities = caps
-	}
-
-	resolveStrategy := func(profileName, kind string) []byte {
-		content, _ := profile.GetStrategy(profileName, kind)
-		return content
-	}
 	buildOpts := task.BuildIndexOpts{
-		FeatureSlug:     featureSlug,
-		ProjectRoot:     projectRoot,
-		TasksDir:        tasksDir,
-		IndexPath:       indexPath,
-		Languages:       profiles,
-		TestInterfaces:  capabilities,
-		ResolveStrategy: resolveStrategy,
+		FeatureSlug: featureSlug,
+		ProjectRoot: projectRoot,
+		TasksDir:    tasksDir,
+		IndexPath:   indexPath,
 	}
 	if _, err := task.BuildIndex(buildOpts); err != nil {
 		fmt.Fprintf(os.Stderr, "WARNING: failed to rebuild index: %v\n", err)

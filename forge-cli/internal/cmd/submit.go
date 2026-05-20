@@ -171,7 +171,7 @@ func runSubmit(_ *cobra.Command, args []string) {
 	}
 
 	// Write-once protection: block overwrite unless --force is set
-	if info, err := os.Stat(recordPath); err == nil {
+	if _, err := os.Stat(recordPath); err == nil {
 		// File exists
 		if !submitForce {
 			Exit(NewAIError(ErrValidation,
@@ -180,7 +180,6 @@ func runSubmit(_ *cobra.Command, args []string) {
 				"Use --force to overwrite, or create a fix task instead",
 				fmt.Sprintf("forge task submit %s --data record.json --force", t.ID)))
 		}
-		_ = info
 		fmt.Fprintf(os.Stderr, "WARNING: Overwriting existing record at %s\n", recordPath)
 	} else if !os.IsNotExist(err) {
 		// Unexpected error from os.Stat (e.g., permission issue)

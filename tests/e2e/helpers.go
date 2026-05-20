@@ -9,10 +9,15 @@ import (
 	"time"
 )
 
-// runCLI executes a CLI command and returns combined output.
+// forgeCmd returns an exec.Cmd for the forge CLI binary built from source.
+func forgeCmd(args ...string) *exec.Cmd {
+	return exec.Command(forgeBinary, args...)
+}
+
+// runCLI executes a forge CLI command and returns combined output.
 func runCLI(t *testing.T, args ...string) string {
 	t.Helper()
-	cmd := exec.Command(args[0], args[1:]...)
+	cmd := forgeCmd(args...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("CLI command failed: %s: %s", err, out)
@@ -20,11 +25,11 @@ func runCLI(t *testing.T, args ...string) string {
 	return string(out)
 }
 
-// runCLIRaw executes a CLI command and returns output, exit code, and error.
+// runCLIRaw executes a forge CLI command and returns output and exit code.
 // Unlike runCLI, it does not fatalf on non-zero exit — useful for negative tests.
 func runCLIRaw(t *testing.T, args ...string) (string, int) {
 	t.Helper()
-	cmd := exec.Command(args[0], args[1:]...)
+	cmd := forgeCmd(args...)
 	out, err := cmd.CombinedOutput()
 	exitCode := 0
 	if err != nil {

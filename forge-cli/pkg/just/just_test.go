@@ -58,22 +58,10 @@ func TestExtractConciseError(t *testing.T) {
 	})
 }
 
-// writeForgeConfig creates a .forge/config.yaml in dir with the given content.
-func writeForgeConfig(t *testing.T, dir, content string) {
-	t.Helper()
-	forgeDir := filepath.Join(dir, ".forge")
-	if err := os.MkdirAll(forgeDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(content), 0o644); err != nil {
-		t.Fatal(err)
-	}
-}
-
 func TestResolveScope(t *testing.T) {
 	t.Run("empty scope returns empty", func(t *testing.T) {
 		dir := t.TempDir()
-		writeForgeConfig(t, dir, "project-type: mixed\n")
+		writeJustfile(t, dir, "compile frontend:\n  echo ok\n")
 		got := ResolveScope(dir, "")
 		if got != "" {
 			t.Errorf("expected empty, got %q", got)
@@ -82,70 +70,38 @@ func TestResolveScope(t *testing.T) {
 
 	t.Run("all scope returns empty", func(t *testing.T) {
 		dir := t.TempDir()
-		writeForgeConfig(t, dir, "project-type: mixed\n")
+		writeJustfile(t, dir, "compile frontend:\n  echo ok\n")
 		got := ResolveScope(dir, "all")
 		if got != "" {
 			t.Errorf("expected empty, got %q", got)
 		}
 	})
 
-	t.Run("nonexistent dir returns empty", func(t *testing.T) {
-		got := ResolveScope("/nonexistent/path/12345", "frontend")
-		if got != "" {
-			t.Errorf("expected empty for nonexistent dir, got %q", got)
-		}
-	})
-
-	t.Run("no config file returns empty", func(t *testing.T) {
+	t.Run("no justfile returns empty", func(t *testing.T) {
 		dir := t.TempDir()
 		got := ResolveScope(dir, "frontend")
 		if got != "" {
-			t.Errorf("expected empty without config file, got %q", got)
+			t.Errorf("expected empty without justfile, got %q", got)
 		}
 	})
 
-	t.Run("config without project-type returns empty", func(t *testing.T) {
+	t.Run("scoped recipe returns scope", func(t *testing.T) {
 		dir := t.TempDir()
-		writeForgeConfig(t, dir, "languages:\n  - go\n")
-		got := ResolveScope(dir, "frontend")
-		if got != "" {
-			t.Errorf("expected empty without project-type key, got %q", got)
-		}
-	})
-
-	t.Run("mixed project-type returns scope", func(t *testing.T) {
-		dir := t.TempDir()
-		writeForgeConfig(t, dir, "project-type: mixed\n")
+		// Justfile with a scoped recipe: "compile frontend"
+		writeJustfile(t, dir, "compile frontend:\n  echo ok\n")
 		got := ResolveScope(dir, "frontend")
 		if got != "frontend" {
 			t.Errorf("expected frontend, got %q", got)
 		}
 	})
 
-	t.Run("backend project-type returns empty", func(t *testing.T) {
+	t.Run("unscoped recipe returns empty", func(t *testing.T) {
 		dir := t.TempDir()
-		writeForgeConfig(t, dir, "project-type: backend\n")
+		// Justfile with no scoped recipe — "compile" takes no arguments
+		writeJustfile(t, dir, "compile:\n  echo ok\n")
 		got := ResolveScope(dir, "frontend")
 		if got != "" {
-			t.Errorf("expected empty for backend project, got %q", got)
-		}
-	})
-
-	t.Run("frontend project-type returns empty", func(t *testing.T) {
-		dir := t.TempDir()
-		writeForgeConfig(t, dir, "project-type: frontend\n")
-		got := ResolveScope(dir, "backend")
-		if got != "" {
-			t.Errorf("expected empty for frontend project, got %q", got)
-		}
-	})
-
-	t.Run("unknown project-type returns empty with warning", func(t *testing.T) {
-		dir := t.TempDir()
-		writeForgeConfig(t, dir, "project-type: unknown\n")
-		got := ResolveScope(dir, "frontend")
-		if got != "" {
-			t.Errorf("expected empty for unknown project type, got %q", got)
+			t.Errorf("expected empty for unscoped recipe, got %q", got)
 		}
 	})
 }
@@ -368,16 +324,15 @@ func TestRunGate(t *testing.T) {
 		}
 	})
 
-	t.Run("scope passed for mixed project", func(t *testing.T) {
+	t.Run("scope passed when scoped recipe exists", func(t *testing.T) {
 		dir := t.TempDir()
-		writeForgeConfig(t, dir, "project-type: mixed\n")
 		writeJustfile(t, dir, "compile frontend:\n  echo ok\n")
 		steps := []GateRecipe{
 			{Name: "compile", Optional: false, Blocking: true},
 		}
 		passed := RunGate(dir, "frontend", steps, nil)
 		if !passed {
-			t.Error("expected true with scope resolution for mixed project")
+			t.Error("expected true with scope resolution for scoped recipe")
 		}
 	})
 

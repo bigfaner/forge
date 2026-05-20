@@ -1,8 +1,6 @@
 ---
 name: gen-test-scripts
 description: Generate executable test scripts from Contract specifications. Journey-driven: generates test code with @feature tags directly into tests/<journey>/.
-conventions:
-  - testing-isolation.md
 ---
 
 # Gen Test Scripts
@@ -21,20 +19,111 @@ gen-journeys -> gen-contracts -> gen-test-scripts -> run-tests
 Input: Contract specifications (from gen-contracts) + Fact Table (from code reconnaissance).
 Output: Executable test code with `@feature` tags in `tests/<journey>/`.
 
-## Step 0: Resolve Language and Strategy
+## Step 0: Load Convention Files
 
-1. **Detect language**: Run `forge test detect` to auto-detect the project's test language(s) from file signals.
-2. **On failure** (no language detected): ask the user to add `languages` to `.forge/config.yaml` (e.g., `languages: [go]`).
-3. **Load strategy**: Run `forge test get generate` to load the generate strategy for the detected language.
-4. **Resolve framework**: Run `forge test framework` to determine the test framework and its code conventions.
+Load test framework knowledge from Convention files (no Profile/CLI dependency).
 
-Use the loaded strategy and framework for all subsequent steps.
+### 0.1 Discover Convention Files
+
+1. Glob `docs/conventions/testing-*.md` in the project root.
+2. Read each file's YAML frontmatter `domains` field.
+3. Keep files whose `domains` contain `testing`.
+4. Skip files with no `domains` frontmatter — output warning: "Convention file `<path>` has no domains frontmatter. Skipping."
+5. Skip files that cannot be read (permissions, encoding) — output warning: "Cannot read Convention file `<path>`: `<error>`. Skipping."
+
+### 0.2 Resolve Target Framework
+
+Determine the target framework from the available signals:
+
+1. **Convention file match**: If Convention files exist, their `domains` indicate the framework (e.g., `[testing, go]` = Go testing, `[testing, javascript]` = JS testing).
+2. **Existing test file scan**: Scan `tests/` for file patterns to confirm the Convention's framework matches the project.
+3. **User specification**: If multiple Convention files match or signals are ambiguous, ask the user which framework to use.
+4. **No Convention found**: Proceed with LLM defaults + Code Reconnaissance (Step 1). Output hint: "No test Convention files found in `docs/conventions/`. Generation will use LLM defaults. Run `/forge:test-guide` to create one."
 
 <HARD-RULE>
-Do NOT silently default to any language. If `forge test detect` returns no result and the user cannot configure `languages`, abort the skill.
+If no Convention files are found and no framework can be detected from existing test files, ask the user which framework to use. Do NOT silently default.
 </HARD-RULE>
 
-## Step 1: Read Contract Specifications
+### 0.3 Validate Convention Content
+
+For the loaded Convention file(s), check required sections: `Framework`, `Assertion`, `Tags`, `Result Format`.
+
+- **Missing required section**: Log warning listing missing sections. Proceed with LLM defaults for that section's area. Example: "Convention file `<path>` is missing sections: Assertion, Tags. Using LLM defaults for those sections."
+- **Invalid section content** (e.g., empty Framework name): Treat as missing. Log warning.
+- **Multiple Convention files with overlapping domains**: Merge at section level — last-loaded file's section wins for conflicting sections. Log a note about the overlap for user awareness.
+- **Convention vs Reconnaissance conflict** (detected in Step 1): Convention wins. Log the conflict for user awareness.
+
+Use the loaded Convention content for all framework-specific rules in subsequent steps.
+
+## Step 1: Code Reconnaissance (Build Fact Table)
+
+Read source code to extract ground-truth values for semantic descriptor resolution AND test framework patterns.
+
+### 1.1 Framework Reconnaissance
+
+Scan existing test files for framework-specific patterns to supplement or validate Convention:
+
+| Source | What to extract | Purpose |
+|--------|-----------------|---------|
+| Test file names | File pattern (`*_test.go`, `*.test.ts`) | Confirm Convention's `file-pattern` |
+| Test file imports | Assertion library, test runner imports | Confirm Convention's `Assertion` section |
+| Build tags / markers | Tag syntax (`//go:build e2e`, `@pytest.mark.e2e`) | Confirm Convention's `Tags` section |
+| Test function signatures | Naming pattern, parameter types | Infer naming conventions |
+| Test helper files | Utility patterns, fixture setup | Infer project-specific test patterns |
+
+If no test files exist and no file signals are recognizable, Reconnaissance produces an empty Fact Table for framework columns. This is expected cold-start behavior — proceed with Convention alone, or LLM defaults if no Convention.
+
+### 1.2 Domain Reconnaissance
+
+Extract ground-truth values from application source code for semantic descriptor resolution:
+
+| Source | What to extract |
+|--------|-----------------|
+| CLI entry points | Command names, flag names, output format strings |
+| API handlers | Request/response schemas, status codes |
+| TUI components | Model fields, View output patterns |
+| Config files | Ports, base paths, auth mechanisms |
+| Auth implementation | Login endpoint, token field, header format |
+
+### 1.3 Build Fact Table
+
+Combine all reconnaissance into a single Fact Table with source citations:
+
+```markdown
+## Fact Table
+| Key | Value | Source |
+|-----|-------|--------|
+| CLI_TASK_CLAIM_OUTPUT | claimed task <task_id> | internal/cmd/claim.go:42 |
+| CLI_FEATURE_CREATE_OUTPUT | Feature <slug> created successfully | internal/cmd/feature.go:45 |
+| TEST_FRAMEWORK | go-testing | tests/e2e/step1_test.go (import analysis) |
+| TEST_ASSERTION_LIB | testify/assert | tests/e2e/step1_test.go:3 (import) |
+| TEST_BUILD_TAG | //go:build e2e | tests/e2e/step1_test.go:1 |
+```
+
+<HARD-RULE>
+- Every Fact Table value must cite source file and line number. Unknown sources -> `UNKNOWN`. Do not fabricate.
+- Fact Table values drive semantic descriptor to regex conversion. All `// VERIFY:` markers must be resolved using Fact Table values.
+- When Reconnaissance finds signals that conflict with Convention -> Convention wins, but log the conflict for user awareness.
+</HARD-RULE>
+
+### 1.4 Semantic Descriptor to Regex Conversion
+
+Contract Output dimensions use semantic descriptors (natural language), not regex. This step converts them to precise regex patterns:
+
+1. For each Outcome's Output dimension, look up matching Fact Table entries.
+2. Convert the Fact Table value to a regex pattern:
+   - Placeholder tokens like `<task_id>` become named capture groups: `(?P<task_id>[\w-]+)`
+   - Literal text is regex-escaped.
+3. If no Fact Table match is found, keep the original descriptor as a `// VERIFY:` marker.
+
+Example pipeline:
+```
+Semantic descriptor: "success confirmation containing feature-slug"
+  -> Fact Table lookup: CLI_FEATURE_CREATE_OUTPUT = "Feature my-feature created successfully"
+  -> Generated regex: Feature\s+([\w-]+)\s+created\ successfully
+```
+
+## Step 2: Read Contract Specifications
 
 **Input discovery** — find the Contract files for the target Journey:
 
@@ -80,52 +169,6 @@ step-action: "forge task claim"
 **Single Journey per invocation**: Do not attempt to process multiple Journeys in one gen-test-scripts invocation. If Contracts span multiple Journeys, abort and ask the user to specify which Journey to generate.
 </HARD-RULE>
 
-## Step 2: Code Reconnaissance (Build Fact Table)
-
-Read source code to extract ground-truth values for semantic descriptor resolution.
-
-**Reconnaissance reads**:
-
-| Source | What to extract |
-|--------|-----------------|
-| CLI entry points | Command names, flag names, output format strings |
-| API handlers | Request/response schemas, status codes |
-| TUI components | Model fields, View output patterns |
-| Config files | Ports, base paths, auth mechanisms |
-| Auth implementation | Login endpoint, token field, header format |
-
-Build Fact Table with source citations:
-
-```markdown
-## Fact Table
-| Key | Value | Source |
-|-----|-------|--------|
-| CLI_TASK_CLAIM_OUTPUT | claimed task <task_id> | internal/cmd/claim.go:42 |
-| CLI_FEATURE_CREATE_OUTPUT | Feature <slug> created successfully | internal/cmd/feature.go:45 |
-```
-
-<HARD-RULE>
-- Every Fact Table value must cite source file and line number. Unknown sources -> `UNKNOWN`. Do not fabricate.
-- Fact Table values drive semantic descriptor to regex conversion. All `// VERIFY:` markers must be resolved using Fact Table values.
-</HARD-RULE>
-
-### Semantic Descriptor to Regex Conversion
-
-Contract Output dimensions use semantic descriptors (natural language), not regex. This step converts them to precise regex patterns:
-
-1. For each Outcome's Output dimension, look up matching Fact Table entries.
-2. Convert the Fact Table value to a regex pattern:
-   - Placeholder tokens like `<task_id>` become named capture groups: `(?P<task_id>[\w-]+)`
-   - Literal text is regex-escaped.
-3. If no Fact Table match is found, keep the original descriptor as a `// VERIFY:` marker.
-
-Example pipeline:
-```
-Semantic descriptor: "success confirmation containing feature-slug"
-  -> Fact Table lookup: CLI_FEATURE_CREATE_OUTPUT = "Feature my-feature created successfully"
-  -> Generated regex: Feature\s+([\w-]+)\s+created\ successfully
-```
-
 ## Step 3: Generate Test Code
 
 For each Contract step, generate test code following the resolved framework's conventions.
@@ -153,15 +196,9 @@ tests/
 
 ### @feature Tags
 
-All generated test files must include `@feature` tags using the framework's native mechanism:
+All generated test files MUST include `@feature` tags. The tag format and mechanism are defined by the Convention file's **Tags** section. Read and follow the Convention's tag syntax precisely.
 
-| Framework | Tag format |
-|-----------|------------|
-| Go testing | `//go:build feature` (build tag at top of file) |
-| pytest | `pytestmark = pytest.mark.feature` (module-level mark) |
-| mocha | `describe("@feature", () => { ... })` (wrapper describe) |
-| JUnit5 | `@Tag("feature")` (class/method annotation) |
-| Rust test | `#[cfg(feature = "feature")]` (cfg attribute) |
+If the Convention file does not have a Tags section, ask the user which tag format to use. Common formats for reference only — do NOT auto-select without Convention or user input.
 
 ### Step Test Generation
 
@@ -169,7 +206,7 @@ For each Contract step, generate a test file containing one test function per Ou
 
 1. Each test function validates one Outcome's assertions.
 2. Use `t.TempDir()` or framework equivalent for isolation.
-3. Assert Output matches the regex pattern from Step 2.
+3. Assert Output matches the regex pattern from Step 1.
 4. Assert State changes as specified in the Contract.
 5. Include traceability comment linking back to the Contract.
 
@@ -197,41 +234,72 @@ Every Journey MUST have at least 1 smoke test. The smoke test MUST only test the
 
 ### Framework-Specific Rules
 
-Follow the active strategy's `generate.md` for all framework-specific patterns:
-
 <EXTREMELY-IMPORTANT>
-All framework-specific rules (test runner, assertion library, imports, HTTP client, process execution, anti-patterns) are defined in the active strategy's `generate.md` (loaded in Step 0). Read and follow those rules precisely.
+All framework-specific rules (test runner, assertion library, imports, HTTP client, process execution, anti-patterns) are defined in the Convention file loaded in Step 0. Read and follow those rules precisely.
 
-- Use ONLY the framework specified in the strategy's `generate.md`
-- Import paths and naming conventions follow the framework's conventions
+- Use ONLY the framework specified in the Convention file
+- Import paths and naming conventions follow the Convention's conventions
+- Convention sections: Framework, Assertion, Tags, Result Format, Import Patterns, Code Style, Anti-patterns, Helpers
 </EXTREMELY-IMPORTANT>
 
-### Built-in Templates (Default, Overridable)
+### Templates (Convention-Driven)
 
-The 6 built-in language profiles serve as default templates. When a project has zero custom template configuration:
+Convention files contain all framework-specific patterns (imports, assertion syntax, helpers, anti-patterns). Use the Convention's Code Style and Helpers sections as the template for generated code.
 
-1. `forge test get template <filename>` returns built-in template content.
-2. Built-in templates define: test file structure, helper functions, auth setup patterns.
-3. Zero-config output equals built-in template output (diff is empty).
-
-Custom template override: When `.forge/config.yaml` declares a custom template directory path, `gen-test-scripts` uses templates from that path instead of built-in ones.
+If the project has a custom template directory configured (`.forge/config.yaml` `test-template-dir`), load templates from that path. Otherwise, use the Convention file content as the authoritative template source.
 
 <HARD-RULE>
-**Template override**: If `test-template-dir` is set in config, load templates from that directory. Otherwise, use built-in default templates from `forge test get template`.
+**Template override**: If `test-template-dir` is set in config, load templates from that directory. Otherwise, use Convention file patterns as the template source.
 </HARD-RULE>
 
-## Step 4: Post-Generation Verification
+## Step 4: Compile Gate
 
-After generating all test files, run verification checks:
+After generating all test files, run a compile gate to verify generated code correctness.
 
-### Compilation Check
+### 4.1 Prerequisite Check
 
-Run the appropriate compilation command:
-- Go: `go build ./tests/<journey>/...` or `go test -c ./tests/<journey>/...`
-- Python: `pytest --collect-only tests/<journey>/`
-- JavaScript: `tsc --noEmit`
+Verify `just e2e-compile` recipe exists:
 
-### VERIFY Marker Check
+```bash
+just --list | grep e2e-compile
+```
+
+If the recipe is missing:
+- Block generation
+- Output: "Missing justfile `e2e-compile` recipe. Run `/forge:init-justfile` first, or add a recipe manually."
+- Do not proceed with compile check
+
+### 4.2 Compile and Retry
+
+Run the compile gate:
+
+```bash
+just e2e-compile
+```
+
+| Result | Action |
+|--------|--------|
+| Pass | Proceed to post-generation checks (Step 4.3) |
+| Fail (attempt 1) | Feed compile error + generated file content back to LLM. Regenerate the failing file. Retry compile. |
+| Fail (attempt 2) | Feed compile error again. Regenerate with explicit error analysis. Retry compile. |
+| Fail (attempt 3) | Block task. Output error details + recovery guidance. Do NOT delete generated files. |
+
+### 4.3 Recovery on Exhaustion
+
+If all compile attempts fail:
+
+1. Output the compile error to the user with the generated file path
+2. Suggest recovery actions:
+   - (a) Check Convention file for incorrect framework/assertion declarations
+   - (b) Run `/forge:test-guide` to regenerate Convention from project analysis
+   - (c) Manually edit the generated test file to fix compilation
+3. Do not auto-delete the generated file — leave it for user inspection
+
+### 4.4 Post-Compile Checks
+
+After compile passes, run these additional checks:
+
+#### VERIFY Marker Check
 
 Scan generated files for unresolved `// VERIFY:` markers:
 ```bash
@@ -239,7 +307,7 @@ grep -rn '// VERIFY:' tests/<journey>/
 ```
 Resolve any remaining markers using Fact Table values.
 
-### Antipattern Guard
+#### Antipattern Guard
 
 Verify each generated test function does not match any forbidden pattern:
 
@@ -252,7 +320,7 @@ Verify each generated test function does not match any forbidden pattern:
 | 5 | Duplicate test function names across packages | Scan for collisions; unique names with journey slug |
 | 6 | Static-file text grep (assert on source file content) | Test runtime behavior only |
 
-### Duplicate Name Check
+#### Duplicate Name Check
 
 Before writing, scan existing test files in the module for matching function names. If a collision is found, use a unique name that includes the journey slug.
 
@@ -260,12 +328,17 @@ Before writing, scan existing test files in the module for matching function nam
 
 | Situation | Action |
 |-----------|--------|
-| Language detection fails | Ask user to configure `languages` in config.yaml |
+| No Convention files found | Proceed with LLM defaults + Code Reconnaissance. Output hint: "No test Convention files found in `docs/conventions/`. Generation will use LLM defaults. Run `/forge:test-guide` to create one." |
+| Convention file missing required sections | Proceed with LLM defaults for missing sections. Log warning listing missing sections. |
+| Convention file unreadable | Skip file, log warning with file path and error. |
+| Convention file has no `domains` frontmatter | Skip file, log warning. |
+| Convention vs Reconnaissance conflict | Convention wins, log conflict for user awareness. |
 | Contract files not found | Abort with prompt to run `/gen-contracts` |
 | Fact Table lookup fails for a descriptor | Keep `// VERIFY:` marker, do not fabricate regex |
-| Compilation fails post-generation | Fix generated code, re-run compile check |
+| `just e2e-compile` recipe missing | Block generation. Output actionable error with recovery instructions. |
+| Compile gate failed (all retries) | Block task. Output error + file path + recovery actions. Preserve generated files. |
 | No test files generated | Abort with clear diagnostic message |
-| Custom template path not found | Fall back to built-in templates with WARNING |
+| Custom template path not found | Fall back to Convention file patterns with WARNING |
 
 ## Related Skills
 
@@ -274,3 +347,4 @@ Before writing, scan existing test files in the module for matching function nam
 | `/gen-journeys` | Generate Journey narratives from PRD |
 | `/gen-contracts` | Generate Contract specifications from Journeys |
 | `/run-e2e-tests` | Execute test scripts and report results |
+| `/forge:test-guide` | Generate a Convention file for test framework configuration |

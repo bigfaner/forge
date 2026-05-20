@@ -24,84 +24,8 @@ func TestConfigGetCommand(t *testing.T) {
 		return dir
 	}
 
-	t.Run("project-type returns plain text", func(t *testing.T) {
-		dir := setupConfig(t, "project-type: backend\nlanguages:\n  - go\n")
-
-		var stdout, stderr bytes.Buffer
-		rootCmd.SetOut(&stdout)
-		rootCmd.SetErr(&stderr)
-		rootCmd.SetArgs([]string{"config", "get", "project-type", "--project-root", dir})
-
-		err := rootCmd.Execute()
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-
-		output := strings.TrimSpace(stdout.String())
-		if output != "backend" {
-			t.Errorf("expected 'backend', got %q", output)
-		}
-	})
-
-	t.Run("interfaces returns one per line", func(t *testing.T) {
-		dir := setupConfig(t, "interfaces:\n  - tui\n  - api\n  - cli\n")
-
-		var stdout, stderr bytes.Buffer
-		rootCmd.SetOut(&stdout)
-		rootCmd.SetErr(&stderr)
-		rootCmd.SetArgs([]string{"config", "get", "interfaces", "--project-root", dir})
-
-		err := rootCmd.Execute()
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-
-		output := strings.TrimSpace(stdout.String())
-		if output != "tui\napi\ncli" {
-			t.Errorf("expected 'tui\\napi\\ncli', got %q", output)
-		}
-	})
-
-	t.Run("nonexistent key exits with error", func(t *testing.T) {
-		dir := setupConfig(t, "project-type: backend\n")
-
-		var stdout, stderr bytes.Buffer
-		rootCmd.SetOut(&stdout)
-		rootCmd.SetErr(&stderr)
-		rootCmd.SetArgs([]string{"config", "get", "nonexistent", "--project-root", dir})
-
-		err := rootCmd.Execute()
-		if err == nil {
-			t.Fatal("expected error for nonexistent key")
-		}
-	})
-
-	t.Run("missing config file exits with error", func(t *testing.T) {
-		dir := t.TempDir()
-
-		var stdout, stderr bytes.Buffer
-		rootCmd.SetOut(&stdout)
-		rootCmd.SetErr(&stderr)
-		rootCmd.SetArgs([]string{"config", "get", "project-type", "--project-root", dir})
-
-		// Silence usage on error so only the error message is captured
-		configGetCmd.SilenceUsage = true
-		defer func() { configGetCmd.SilenceUsage = false }()
-
-		err := rootCmd.Execute()
-		if err == nil {
-			t.Fatal("expected error for missing config")
-		}
-
-		// stdout should not contain a config value (usage is suppressed)
-		output := strings.TrimSpace(stdout.String())
-		if output != "" && !strings.Contains(output, "Usage") {
-			t.Errorf("expected no config value output, got %q", output)
-		}
-	})
-
 	t.Run("auto.gitPush returns true", func(t *testing.T) {
-		dir := setupConfig(t, "languages:\n  - go\nauto:\n  gitPush: true\n")
+		dir := setupConfig(t, "auto:\n  gitPush: true\n")
 
 		var stdout bytes.Buffer
 		rootCmd.SetOut(&stdout)
@@ -120,7 +44,7 @@ func TestConfigGetCommand(t *testing.T) {
 	})
 
 	t.Run("auto.gitPush returns false when absent", func(t *testing.T) {
-		dir := setupConfig(t, "languages:\n  - go\n")
+		dir := setupConfig(t, "auto:\n  e2eTest:\n    quick: true\n")
 
 		var stdout bytes.Buffer
 		rootCmd.SetOut(&stdout)
@@ -138,30 +62,8 @@ func TestConfigGetCommand(t *testing.T) {
 		}
 	})
 
-	t.Run("output is plain text no formatting blocks", func(t *testing.T) {
-		dir := setupConfig(t, "project-type: mixed\ninterfaces:\n  - tui\n")
-
-		var stdout bytes.Buffer
-		rootCmd.SetOut(&stdout)
-		rootCmd.SetErr(os.Stderr)
-		rootCmd.SetArgs([]string{"config", "get", "project-type", "--project-root", dir})
-
-		err := rootCmd.Execute()
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-
-		output := stdout.String()
-		if strings.Contains(output, "```") {
-			t.Errorf("output should not contain formatting blocks, got %q", output)
-		}
-		if strings.HasPrefix(output, "> ") {
-			t.Errorf("output should not have block markers, got %q", output)
-		}
-	})
-
 	t.Run("test-framework returns value", func(t *testing.T) {
-		dir := setupConfig(t, "languages:\n  - go\ntest-framework: pytest\n")
+		dir := setupConfig(t, "test-framework: pytest\n")
 
 		var stdout bytes.Buffer
 		rootCmd.SetOut(&stdout)
@@ -180,7 +82,7 @@ func TestConfigGetCommand(t *testing.T) {
 	})
 
 	t.Run("test-command returns value", func(t *testing.T) {
-		dir := setupConfig(t, "languages:\n  - go\ntest-command: go test ./...\n")
+		dir := setupConfig(t, "test-command: go test ./...\n")
 
 		var stdout bytes.Buffer
 		rootCmd.SetOut(&stdout)
@@ -197,14 +99,112 @@ func TestConfigGetCommand(t *testing.T) {
 			t.Errorf("expected 'go test ./...', got %q", output)
 		}
 	})
+
+	t.Run("worktree.source-branch returns value", func(t *testing.T) {
+		dir := setupConfig(t, "worktree:\n  source-branch: develop\n")
+
+		var stdout bytes.Buffer
+		rootCmd.SetOut(&stdout)
+		rootCmd.SetErr(os.Stderr)
+		rootCmd.SetArgs([]string{"config", "get", "worktree.source-branch", "--project-root", dir})
+
+		err := rootCmd.Execute()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		output := strings.TrimSpace(stdout.String())
+		if output != "develop" {
+			t.Errorf("expected 'develop', got %q", output)
+		}
+	})
+
+	t.Run("worktree.copy-files returns one per line", func(t *testing.T) {
+		dir := setupConfig(t, "worktree:\n  copy-files:\n    - .env\n    - .env.local\n")
+
+		var stdout bytes.Buffer
+		rootCmd.SetOut(&stdout)
+		rootCmd.SetErr(os.Stderr)
+		rootCmd.SetArgs([]string{"config", "get", "worktree.copy-files", "--project-root", dir})
+
+		err := rootCmd.Execute()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		output := strings.TrimSpace(stdout.String())
+		if output != ".env\n.env.local" {
+			t.Errorf("expected '.env\\n.env.local', got %q", output)
+		}
+	})
+
+	t.Run("nonexistent key exits with error", func(t *testing.T) {
+		dir := setupConfig(t, "auto:\n  gitPush: true\n")
+
+		var stdout, stderr bytes.Buffer
+		rootCmd.SetOut(&stdout)
+		rootCmd.SetErr(&stderr)
+		rootCmd.SetArgs([]string{"config", "get", "nonexistent", "--project-root", dir})
+
+		err := rootCmd.Execute()
+		if err == nil {
+			t.Fatal("expected error for nonexistent key")
+		}
+	})
+
+	t.Run("missing config file exits with error", func(t *testing.T) {
+		dir := t.TempDir()
+
+		var stdout, stderr bytes.Buffer
+		rootCmd.SetOut(&stdout)
+		rootCmd.SetErr(&stderr)
+		rootCmd.SetArgs([]string{"config", "get", "test-framework", "--project-root", dir})
+
+		// Silence usage on error so only the error message is captured
+		configGetCmd.SilenceUsage = true
+		defer func() { configGetCmd.SilenceUsage = false }()
+
+		err := rootCmd.Execute()
+		if err == nil {
+			t.Fatal("expected error for missing config")
+		}
+
+		// stdout should not contain a config value (usage is suppressed)
+		output := strings.TrimSpace(stdout.String())
+		if output != "" && !strings.Contains(output, "Usage") {
+			t.Errorf("expected no config value output, got %q", output)
+		}
+	})
+
+	t.Run("output is plain text no formatting blocks", func(t *testing.T) {
+		dir := setupConfig(t, "worktree:\n  source-branch: main\n")
+
+		var stdout bytes.Buffer
+		rootCmd.SetOut(&stdout)
+		rootCmd.SetErr(os.Stderr)
+		rootCmd.SetArgs([]string{"config", "get", "worktree.source-branch", "--project-root", dir})
+
+		err := rootCmd.Execute()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		output := stdout.String()
+		if strings.Contains(output, "```") {
+			t.Errorf("output should not contain formatting blocks, got %q", output)
+		}
+		if strings.HasPrefix(output, "> ") {
+			t.Errorf("output should not have block markers, got %q", output)
+		}
+	})
 }
 
 func TestConfigInitCommand(t *testing.T) {
-	t.Run("writes config with all fields", func(t *testing.T) {
+	t.Run("writes config with auto and worktree", func(t *testing.T) {
 		dir := t.TempDir()
 
-		// Simulate user input: backend, 1 (go), done, 1 (tui), done
-		input := "backend\n1\ndone\n1\ndone\n"
+		// Simulate user input: y (e2e quick), y (e2e full), y (consolidate quick), y (consolidate full), n (clean quick), n (clean full), y (git push), main (source branch), .env (copy files)
+		input := "y\ny\ny\ny\nn\nn\ny\nmain\n.env\n"
 		var stdin bytes.Buffer
 		stdin.WriteString(input)
 		var stdout bytes.Buffer
@@ -226,8 +226,11 @@ func TestConfigInitCommand(t *testing.T) {
 		}
 
 		content := string(data)
-		if !strings.Contains(content, "project-type: backend") {
-			t.Errorf("expected project-type in config, got %q", content)
+		if !strings.Contains(content, "auto:") {
+			t.Errorf("expected auto in config, got %q", content)
+		}
+		if !strings.Contains(content, "worktree:") {
+			t.Errorf("expected worktree in config, got %q", content)
 		}
 	})
 
@@ -237,7 +240,7 @@ func TestConfigInitCommand(t *testing.T) {
 		if err := os.MkdirAll(forgeDir, 0o755); err != nil {
 			t.Fatal(err)
 		}
-		existingConfig := "project-type: old\n"
+		existingConfig := "auto:\n  gitPush: true\n"
 		if err := os.WriteFile(filepath.Join(forgeDir, feature.ForgeConfigFileName), []byte(existingConfig), 0o644); err != nil {
 			t.Fatal(err)
 		}
@@ -259,7 +262,7 @@ func TestConfigInitCommand(t *testing.T) {
 
 		// Config should be unchanged
 		data, _ := os.ReadFile(filepath.Join(forgeDir, feature.ForgeConfigFileName))
-		if !strings.Contains(string(data), "project-type: old") {
+		if !strings.Contains(string(data), "gitPush: true") {
 			t.Errorf("config should not have been modified, got %q", string(data))
 		}
 
@@ -274,13 +277,13 @@ func TestConfigInitCommand(t *testing.T) {
 		if err := os.MkdirAll(forgeDir, 0o755); err != nil {
 			t.Fatal(err)
 		}
-		existingConfig := "project-type: old\n"
+		existingConfig := "auto:\n  gitPush: false\n"
 		if err := os.WriteFile(filepath.Join(forgeDir, feature.ForgeConfigFileName), []byte(existingConfig), 0o644); err != nil {
 			t.Fatal(err)
 		}
 
-		// Answer 'y' to reconfigure, then select frontend, no profiles, no caps
-		input := "y\n1\n\n\n"
+		// Answer 'y' to reconfigure, then select defaults for all auto settings, no worktree
+		input := "y\ny\ny\ny\ny\nn\nn\nn\n\n\n"
 		var stdin bytes.Buffer
 		stdin.WriteString(input)
 		var stdout bytes.Buffer
@@ -296,80 +299,9 @@ func TestConfigInitCommand(t *testing.T) {
 
 		// Config should be updated
 		data, _ := os.ReadFile(filepath.Join(forgeDir, feature.ForgeConfigFileName))
-		if !strings.Contains(string(data), "project-type: frontend") {
-			t.Errorf("config should be updated to frontend, got %q", string(data))
-		}
-	})
-
-	t.Run("interfaces populated from profile union", func(t *testing.T) {
-		dir := t.TempDir()
-
-		// Input: project-type=backend(2), profile=go(1), interfaces=all(1 2 3)
-		input := "2\n1\n1 2 3\n"
-		var stdin bytes.Buffer
-		stdin.WriteString(input)
-		var stdout bytes.Buffer
-
-		rootCmd.SetIn(&stdin)
-		rootCmd.SetOut(&stdout)
-		rootCmd.SetArgs([]string{"config", "init", "--project-root", dir})
-
-		err := rootCmd.Execute()
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-
-		configFile := filepath.Join(dir, feature.ForgeDir, feature.ForgeConfigFileName)
-		data, err := os.ReadFile(configFile)
-		if err != nil {
-			t.Fatalf("config file not created: %v", err)
-		}
-
 		content := string(data)
-		// go interfaces: api, cli (sorted)
-		for _, iface := range []string{"api", "cli"} {
-			if !strings.Contains(content, iface) {
-				t.Errorf("expected interface %q in config, got:\n%s", iface, content)
-			}
-		}
-		if !strings.Contains(content, "languages") {
-			t.Errorf("expected languages in config, got:\n%s", content)
-		}
-	})
-
-	t.Run("interfaces empty when no profile selected", func(t *testing.T) {
-		dir := t.TempDir()
-
-		// Input: project-type=frontend(1), profile=none(empty)
-		input := "1\n\n"
-		var stdin bytes.Buffer
-		stdin.WriteString(input)
-		var stdout bytes.Buffer
-
-		rootCmd.SetIn(&stdin)
-		rootCmd.SetOut(&stdout)
-		rootCmd.SetArgs([]string{"config", "init", "--project-root", dir})
-
-		err := rootCmd.Execute()
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-
-		configFile := filepath.Join(dir, feature.ForgeDir, feature.ForgeConfigFileName)
-		data, err := os.ReadFile(configFile)
-		if err != nil {
-			t.Fatalf("config file not created: %v", err)
-		}
-
-		content := string(data)
-		if !strings.Contains(content, "project-type: frontend") {
-			t.Errorf("expected frontend project type, got:\n%s", content)
-		}
-		// No profile-specific interfaces when no profile selected
-		for _, iface := range []string{"api", "cli", "tui", "web-ui"} {
-			if strings.Contains(content, "- "+iface) {
-				t.Errorf("expected no profile interfaces when no profile selected, got:\n%s", content)
-			}
+		if !strings.Contains(content, "auto:") {
+			t.Errorf("config should contain auto, got %q", content)
 		}
 	})
 }

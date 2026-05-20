@@ -1079,50 +1079,6 @@ func TestWorktreeStart_SourceBranchFlagRegistered(t *testing.T) {
 	}
 }
 
-func TestResolveSourceBranch(t *testing.T) {
-	tests := []struct {
-		name         string
-		flagValue    string
-		configBranch string
-		want         string
-	}{
-		{
-			name:         "flag overrides everything",
-			flagValue:    "develop",
-			configBranch: "main",
-			want:         "develop",
-		},
-		{
-			name:         "flag overrides empty config",
-			flagValue:    "v3.0.0",
-			configBranch: "",
-			want:         "v3.0.0",
-		},
-		{
-			name:         "config used when no flag",
-			flagValue:    "",
-			configBranch: "develop",
-			want:         "develop",
-		},
-		{
-			name:         "empty when neither set",
-			flagValue:    "",
-			configBranch: "",
-			want:         "",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := resolveSourceBranch(tt.flagValue, tt.configBranch)
-			if got != tt.want {
-				t.Errorf("resolveSourceBranch(%q, %q) = %q, want %q",
-					tt.flagValue, tt.configBranch, got, tt.want)
-			}
-		})
-	}
-}
-
 func TestWorktreeStart_ConfigSourceBranchErrorWhenBranchNotFound(t *testing.T) {
 	resetSourceBranchFlag(t)
 	origLookPath := lookPathFunc

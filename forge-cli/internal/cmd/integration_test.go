@@ -1468,19 +1468,6 @@ test:
 
 // ---------- write*Output MkdirAll error paths ----------
 
-func TestWriteRawOutput_MkdirAllError(t *testing.T) {
-	dir := t.TempDir()
-	// Create a file where the directory should be, so MkdirAll fails
-	resultsDir := filepath.Join(dir, feature.GetFeatureTestingResultsDir("test"))
-	_ = os.MkdirAll(filepath.Dir(resultsDir), 0755)
-	_ = os.WriteFile(resultsDir, []byte("blocker"), 0644)
-
-	err := writeRawOutput(dir, "test", "output")
-	if err == nil {
-		t.Error("expected error when MkdirAll fails")
-	}
-}
-
 func TestWriteUnitTestRawOutput_MkdirAllError(t *testing.T) {
 	dir := t.TempDir()
 	// Create a file where tests/results/ should be, so MkdirAll fails

@@ -1,36 +1,91 @@
 package e2e
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"forge-cli/pkg/feature"
 )
 
-// setupProfile creates a temp directory with a valid profile config.
-func setupProfile(t *testing.T, profileName string) string {
-	t.Helper()
-	dir := t.TempDir()
-	forgeDir := filepath.Join(dir, feature.ForgeDir)
-	if err := os.MkdirAll(forgeDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	configContent := fmt.Sprintf("languages:\n  - %s\n", profileName)
-	if err := os.WriteFile(filepath.Join(forgeDir, feature.ForgeConfigFileName), []byte(configContent), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	return dir
+// stubExec is a hand-rolled mock matching project convention (no testify/gomock).
+type stubExec struct {
+	responses map[string]execResponse
 }
 
-// setupProfileWithE2E creates a temp dir with a valid profile and e2e test directory.
-// Used by TestVerify which needs the directory structure for file scanning.
-func setupProfileWithE2E(t *testing.T, profileName string) string {
+type execResponse struct {
+	output []byte
+	err    error
+}
+
+func (s *stubExec) Run(name string, args ...string) ([]byte, error) {
+	key := name + " " + strings.Join(args, " ")
+	if r, ok := s.responses[key]; ok {
+		return r.output, r.err
+	}
+	return nil, fmt.Errorf("stubExec: unexpected command: %s", key)
+}
+
+func TestStubExec(t *testing.T) {
+	t.Run("returns configured response", func(t *testing.T) {
+		s := &stubExec{responses: map[string]execResponse{
+			"echo hello": {output: []byte("hello\n"), err: nil},
+		}}
+
+		out, err := s.Run("echo", "hello")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if string(out) != "hello\n" {
+			t.Fatalf("expected 'hello\\n', got %q", string(out))
+		}
+	})
+
+	t.Run("returns error for unexpected command", func(t *testing.T) {
+		s := &stubExec{responses: map[string]execResponse{}}
+
+		_, err := s.Run("unknown", "cmd")
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if !strings.Contains(err.Error(), "stubExec: unexpected command") {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("returns configured error", func(t *testing.T) {
+		s := &stubExec{responses: map[string]execResponse{
+			"fail cmd": {output: nil, err: fmt.Errorf("command failed")},
+		}}
+
+		_, err := s.Run("fail", "cmd")
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if err.Error() != "command failed" {
+			t.Fatalf("expected 'command failed', got %q", err.Error())
+		}
+	})
+}
+
+func TestRealExecImplementsExecRunner(_ *testing.T) {
+	// Compile-time interface check
+	var _ ExecRunner = RealExec{}
+}
+
+func TestRunnerDefault(t *testing.T) {
+	// Verify runner is set to RealExec by default
+	_, ok := runner.(RealExec)
+	if !ok {
+		t.Fatal("expected runner to be RealExec by default")
+	}
+}
+
+// setupE2EDir creates a temp dir with an e2e test directory.
+// Used by tests that need the directory structure for file scanning.
+func setupE2EDir(t *testing.T) string {
 	t.Helper()
-	dir := setupProfile(t, profileName)
+	dir := t.TempDir()
 	e2eDir := filepath.Join(dir, "tests", "e2e")
 	if err := os.MkdirAll(e2eDir, 0o755); err != nil {
 		t.Fatal(err)
@@ -44,7 +99,7 @@ func setupProfileWithE2E(t *testing.T, profileName string) string {
 
 func TestRun(t *testing.T) {
 	t.Run("delegates to just test-e2e", func(t *testing.T) {
-		dir := setupProfile(t, "go")
+		dir := t.TempDir()
 		s := &stubExec{responses: map[string]execResponse{
 			"just test-e2e": {output: []byte("ok\n"), err: nil},
 		}}
@@ -59,7 +114,7 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("passes feature as justfile argument", func(t *testing.T) {
-		dir := setupProfile(t, "go")
+		dir := t.TempDir()
 		// Create feature directory so Run's existence check passes
 		featureDir := filepath.Join(dir, "tests", "e2e", "features", "my-feature")
 		if err := os.MkdirAll(featureDir, 0o755); err != nil {
@@ -79,7 +134,7 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("just not on PATH returns actionable error", func(t *testing.T) {
-		dir := setupProfile(t, "go")
+		dir := t.TempDir()
 		s := &stubExec{responses: map[string]execResponse{
 			"just test-e2e": {output: nil, err: fmt.Errorf("exec: \"just\": executable file not found in $PATH")},
 		}}
@@ -97,7 +152,7 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("just failure returns formatted error", func(t *testing.T) {
-		dir := setupProfile(t, "go")
+		dir := t.TempDir()
 		s := &stubExec{responses: map[string]execResponse{
 			"just test-e2e": {output: []byte("first line of error\nsecond line"), err: fmt.Errorf("exit status 1")},
 		}}
@@ -116,22 +171,11 @@ func TestRun(t *testing.T) {
 			t.Fatalf("expected error to contain first line of stderr, got %q", err.Error())
 		}
 	})
-
-	t.Run("no profile returns ErrNoProfile", func(t *testing.T) {
-		dir := t.TempDir()
-		err := Run(RunOpts{ProjectRoot: dir})
-		if err == nil {
-			t.Fatal("expected error")
-		}
-		if !errors.Is(err, ErrNoProfile) {
-			t.Fatalf("expected ErrNoProfile, got %v", err)
-		}
-	})
 }
 
 func TestSetup(t *testing.T) {
 	t.Run("delegates to just e2e-setup", func(t *testing.T) {
-		dir := setupProfile(t, "go")
+		dir := t.TempDir()
 		s := &stubExec{responses: map[string]execResponse{
 			"just e2e-setup": {output: []byte(""), err: nil},
 		}}
@@ -146,7 +190,7 @@ func TestSetup(t *testing.T) {
 	})
 
 	t.Run("just not on PATH returns actionable error", func(t *testing.T) {
-		dir := setupProfile(t, "go")
+		dir := t.TempDir()
 		s := &stubExec{responses: map[string]execResponse{
 			"just e2e-setup": {output: nil, err: fmt.Errorf("exec: \"just\": executable file not found in $PATH")},
 		}}
@@ -164,7 +208,7 @@ func TestSetup(t *testing.T) {
 	})
 
 	t.Run("just failure returns formatted error", func(t *testing.T) {
-		dir := setupProfile(t, "javascript")
+		dir := t.TempDir()
 		s := &stubExec{responses: map[string]execResponse{
 			"just e2e-setup": {output: []byte("EACCES: permission denied\n"), err: fmt.Errorf("exit status 1")},
 		}}
@@ -180,19 +224,11 @@ func TestSetup(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	})
-
-	t.Run("no profile returns ErrNoProfile", func(t *testing.T) {
-		dir := t.TempDir()
-		err := Setup(RunOpts{ProjectRoot: dir})
-		if !errors.Is(err, ErrNoProfile) {
-			t.Fatalf("expected ErrNoProfile, got %v", err)
-		}
-	})
 }
 
 func TestVerify(t *testing.T) {
-	t.Run("go profile scans for VERIFY markers", func(t *testing.T) {
-		dir := setupProfileWithE2E(t, "go")
+	t.Run("scans for VERIFY markers", func(t *testing.T) {
+		dir := setupE2EDir(t)
 		// Write a file without VERIFY markers
 		e2eDir := filepath.Join(dir, "tests", "e2e")
 		if err := os.WriteFile(filepath.Join(e2eDir, "clean_test.go"), []byte("package e2e\n// no markers\n"), 0o644); err != nil {
@@ -210,7 +246,7 @@ func TestVerify(t *testing.T) {
 	})
 
 	t.Run("finds VERIFY markers returns error", func(t *testing.T) {
-		dir := setupProfileWithE2E(t, "go")
+		dir := setupE2EDir(t)
 		e2eDir := filepath.Join(dir, "tests", "e2e")
 		if err := os.WriteFile(filepath.Join(e2eDir, "has_verify_test.go"), []byte("// VERIFY: placeholder\npackage e2e\n"), 0o644); err != nil {
 			t.Fatal(err)
@@ -230,26 +266,18 @@ func TestVerify(t *testing.T) {
 	})
 
 	t.Run("feature not found returns ErrFeatureNotFound", func(t *testing.T) {
-		dir := setupProfileWithE2E(t, "go")
+		dir := setupE2EDir(t)
 
 		err := Verify(RunOpts{ProjectRoot: dir, Feature: "nonexistent"})
-		if !errors.Is(err, ErrFeatureNotFound) {
-			t.Fatalf("expected ErrFeatureNotFound, got %v", err)
-		}
-	})
-
-	t.Run("no profile returns ErrNoProfile", func(t *testing.T) {
-		dir := t.TempDir()
-		err := Verify(RunOpts{ProjectRoot: dir})
-		if !errors.Is(err, ErrNoProfile) {
-			t.Fatalf("expected ErrNoProfile, got %v", err)
+		if !strings.Contains(err.Error(), "feature not found") {
+			t.Fatalf("expected feature not found error, got %v", err)
 		}
 	})
 }
 
 func TestCompile(t *testing.T) {
 	t.Run("delegates to just e2e-compile", func(t *testing.T) {
-		dir := setupProfile(t, "go")
+		dir := t.TempDir()
 		s := &stubExec{responses: map[string]execResponse{
 			"just e2e-compile": {output: []byte(""), err: nil},
 		}}
@@ -264,7 +292,7 @@ func TestCompile(t *testing.T) {
 	})
 
 	t.Run("just not on PATH returns actionable error", func(t *testing.T) {
-		dir := setupProfile(t, "go")
+		dir := t.TempDir()
 		s := &stubExec{responses: map[string]execResponse{
 			"just e2e-compile": {output: nil, err: fmt.Errorf("exec: \"just\": executable file not found in $PATH")},
 		}}
@@ -282,7 +310,7 @@ func TestCompile(t *testing.T) {
 	})
 
 	t.Run("just failure returns formatted error", func(t *testing.T) {
-		dir := setupProfile(t, "go")
+		dir := t.TempDir()
 		s := &stubExec{responses: map[string]execResponse{
 			"just e2e-compile": {output: []byte("./tests/e2e/main_test.go:15: undefined: Foo\n"), err: fmt.Errorf("exit status 1")},
 		}}
@@ -298,19 +326,11 @@ func TestCompile(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	})
-
-	t.Run("no profile returns ErrNoProfile", func(t *testing.T) {
-		dir := t.TempDir()
-		err := Compile(dir)
-		if !errors.Is(err, ErrNoProfile) {
-			t.Fatalf("expected ErrNoProfile, got %v", err)
-		}
-	})
 }
 
 func TestDiscover(t *testing.T) {
 	t.Run("delegates to just e2e-discover", func(t *testing.T) {
-		dir := setupProfile(t, "go")
+		dir := t.TempDir()
 		s := &stubExec{responses: map[string]execResponse{
 			"just e2e-discover": {output: []byte("TestExample\n"), err: nil},
 		}}
@@ -325,7 +345,7 @@ func TestDiscover(t *testing.T) {
 	})
 
 	t.Run("just not on PATH returns actionable error", func(t *testing.T) {
-		dir := setupProfile(t, "go")
+		dir := t.TempDir()
 		s := &stubExec{responses: map[string]execResponse{
 			"just e2e-discover": {output: nil, err: fmt.Errorf("exec: \"just\": executable file not found in $PATH")},
 		}}
@@ -343,7 +363,7 @@ func TestDiscover(t *testing.T) {
 	})
 
 	t.Run("just failure returns formatted error", func(t *testing.T) {
-		dir := setupProfile(t, "go")
+		dir := t.TempDir()
 		s := &stubExec{responses: map[string]execResponse{
 			"just e2e-discover": {output: []byte("build constraints exclude all tests\n"), err: fmt.Errorf("exit status 1")},
 		}}
@@ -357,14 +377,6 @@ func TestDiscover(t *testing.T) {
 		}
 		if !strings.Contains(err.Error(), "just e2e-discover failed:") {
 			t.Fatalf("unexpected error: %v", err)
-		}
-	})
-
-	t.Run("no profile returns ErrNoProfile", func(t *testing.T) {
-		dir := t.TempDir()
-		err := Discover(dir)
-		if !errors.Is(err, ErrNoProfile) {
-			t.Fatalf("expected ErrNoProfile, got %v", err)
 		}
 	})
 }
