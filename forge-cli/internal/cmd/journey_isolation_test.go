@@ -22,7 +22,7 @@ func setupJourneyProject(t *testing.T) string {
 		t.Fatal(err)
 	}
 
-	// Create .forge/config.yaml with test-command
+	// Create .forge/config.yaml
 	configDir := filepath.Join(dir, ".forge")
 	if err := os.MkdirAll(configDir, 0755); err != nil {
 		t.Fatal(err)
@@ -204,52 +204,6 @@ func TestJourneyIsolation_CopyFiles_OriginalUnmodified(t *testing.T) {
 	}
 }
 
-// --- Test: readTestCommand ---
-
-func TestReadTestCommand_FromConfig(t *testing.T) {
-	dir := setupJourneyProject(t)
-
-	cmd, err := readTestCommand(dir)
-	if err != nil {
-		t.Fatalf("readTestCommand failed: %v", err)
-	}
-	if cmd != "go test ./..." {
-		t.Errorf("expected 'go test ./...', got %q", cmd)
-	}
-}
-
-func TestReadTestCommand_NoConfig(t *testing.T) {
-	dir := setupJourneyProjectWithoutConfig(t)
-
-	_, err := readTestCommand(dir)
-	if err == nil {
-		t.Error("expected error when no test-command configured")
-	}
-	if !strings.Contains(err.Error(), "test-command") {
-		t.Errorf("error should mention test-command, got: %v", err)
-	}
-}
-
-func TestReadTestCommand_EmptyTestCommand(t *testing.T) {
-	dir := t.TempDir()
-	t.Setenv("CLAUDE_PROJECT_DIR", dir)
-
-	configDir := filepath.Join(dir, ".forge")
-	if err := os.MkdirAll(configDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	// Config exists but has no test-command
-	configContent := "languages:\n  - go\n"
-	if err := os.WriteFile(filepath.Join(configDir, "config.yaml"), []byte(configContent), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	_, err := readTestCommand(dir)
-	if err == nil {
-		t.Error("expected error when test-command is empty")
-	}
-}
-
 // --- Test: JourneyResult ---
 
 func TestJourneyResult_ContractFailure_Format(t *testing.T) {
@@ -395,12 +349,8 @@ func TestJourneyIsolation_ParallelExecution_ResultsConsistent(t *testing.T) {
 // --- Test: run-journey CLI command ---
 
 func TestTestingRunJourney_NoTestCommand(t *testing.T) {
-	dir := setupJourneyProjectWithoutConfig(t)
-	// Should fail because no test-command configured.
-	// The CLI command will os.Exit(1) on error, so we test the
-	// underlying readTestCommand function instead (tested separately
-	// in TestReadTestCommand_NoConfig).
-	_ = dir
+	_ = setupJourneyProjectWithoutConfig(t)
+	// No longer requires test-command in config. Journey execution uses just e2e-test.
 }
 
 func TestTestingRunJourney_CommandRegistered(t *testing.T) {
@@ -421,13 +371,10 @@ func TestTestingRunJourney_CommandRegistered(t *testing.T) {
 func TestJourneyExecutionConfig_ResolvesFromProject(t *testing.T) {
 	dir := setupJourneyProject(t)
 
-	cfg, err := resolveJourneyExecutionConfig(dir)
-	if err != nil {
-		t.Fatalf("resolveJourneyExecutionConfig failed: %v", err)
-	}
+	cfg := resolveJourneyExecutionConfig(dir)
 
-	if cfg.TestCommand != "go test ./..." {
-		t.Errorf("expected test-command 'go test ./...', got %q", cfg.TestCommand)
+	if cfg.ProjectRoot != dir {
+		t.Errorf("expected ProjectRoot %q, got %q", dir, cfg.ProjectRoot)
 	}
 }
 
@@ -435,14 +382,9 @@ func TestJourneyExecutionConfig_NoLanguage(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 
-	// Only CLAUDE.md, no language signal
-	if err := os.WriteFile(filepath.Join(dir, "CLAUDE.md"), []byte("# test\n"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	_, err := resolveJourneyExecutionConfig(dir)
-	if err == nil {
-		t.Error("expected error when no language resolved")
+	cfg := resolveJourneyExecutionConfig(dir)
+	if cfg.ProjectRoot != dir {
+		t.Errorf("expected ProjectRoot %q, got %q", dir, cfg.ProjectRoot)
 	}
 }
 
@@ -662,109 +604,5 @@ func TestContractFailure_FormatDetail(t *testing.T) {
 	}
 	if !strings.Contains(formatted, "Task <task_id> claimed") {
 		t.Errorf("should contain actual value, got: %s", formatted)
-	}
-}
-
-// --- Test: executeJourneyInIsolation ---
-
-func TestExecuteJourneyInIsolation_SuccessfulCommand(t *testing.T) {
-	dir := t.TempDir()
-
-	// Create a simple script that exits 0
-	scriptPath := filepath.Join(dir, "test-script.sh")
-	if err := os.WriteFile(scriptPath, []byte("#!/bin/sh\necho 'all tests passed'\n"), 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	cfg := &JourneyExecutionConfig{
-		TestCommand: fmt.Sprintf("sh %s", scriptPath),
-		Language:    "go",
-	}
-
-	result := executeJourneyInIsolation(cfg, dir, "test-journey")
-
-	if !result.Passed {
-		t.Errorf("expected passing result, got error: %s", result.Error)
-	}
-	if result.ExitCode != 0 {
-		t.Errorf("expected exit code 0, got %d", result.ExitCode)
-	}
-	if !strings.Contains(result.Output, "all tests passed") {
-		t.Errorf("expected output to contain 'all tests passed', got: %q", result.Output)
-	}
-}
-
-func TestExecuteJourneyInIsolation_FailingCommand(t *testing.T) {
-	dir := t.TempDir()
-
-	// Create a script that exits 1
-	scriptPath := filepath.Join(dir, "fail-script.sh")
-	if err := os.WriteFile(scriptPath, []byte("#!/bin/sh\necho 'test failed' >&2\nexit 1\n"), 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	cfg := &JourneyExecutionConfig{
-		TestCommand: fmt.Sprintf("sh %s", scriptPath),
-		Language:    "go",
-	}
-
-	result := executeJourneyInIsolation(cfg, dir, "failing-journey")
-
-	if result.Passed {
-		t.Error("expected failing result")
-	}
-	if result.ExitCode != 1 {
-		t.Errorf("expected exit code 1, got %d", result.ExitCode)
-	}
-	if !strings.Contains(result.Output, "test failed") {
-		t.Errorf("expected output to contain 'test failed', got: %q", result.Output)
-	}
-}
-
-func TestExecuteJourneyInIsolation_EmptyCommand(t *testing.T) {
-	dir := t.TempDir()
-
-	cfg := &JourneyExecutionConfig{
-		TestCommand: "",
-		Language:    "go",
-	}
-
-	result := executeJourneyInIsolation(cfg, dir, "empty-cmd-journey")
-
-	if result.Passed {
-		t.Error("expected failing result for empty command")
-	}
-	if !strings.Contains(result.Error, "empty test command") {
-		t.Errorf("expected 'empty test command' error, got: %s", result.Error)
-	}
-}
-
-func TestExecuteJourneyInIsolation_SetsWorkDirAsCwd(t *testing.T) {
-	dir := t.TempDir()
-	workDir := filepath.Join(dir, "workdir")
-	if err := os.MkdirAll(workDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	// Script that writes a marker file to current directory
-	scriptPath := filepath.Join(dir, "cwd-script.sh")
-	if err := os.WriteFile(scriptPath, []byte("#!/bin/sh\ntouch marker-file.txt\n"), 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	cfg := &JourneyExecutionConfig{
-		TestCommand: fmt.Sprintf("sh %s", scriptPath),
-		Language:    "go",
-	}
-
-	result := executeJourneyInIsolation(cfg, workDir, "cwd-journey")
-
-	if !result.Passed {
-		t.Errorf("expected passing result, got error: %s", result.Error)
-	}
-	// Verify the marker file was created in workDir (proving cwd was set correctly)
-	markerPath := filepath.Join(workDir, "marker-file.txt")
-	if _, err := os.Stat(markerPath); os.IsNotExist(err) {
-		t.Errorf("marker file should exist in workDir %s, proving cwd was set correctly", workDir)
 	}
 }

@@ -25,17 +25,14 @@ func TestConfigSchemaAutoBlock(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read schema: %v", err)
 	}
-
 	var schema map[string]any
 	if err := json.Unmarshal(data, &schema); err != nil {
 		t.Fatalf("parse schema JSON: %v", err)
 	}
-
 	props, ok := schema["properties"].(map[string]any)
 	if !ok {
 		t.Fatal("schema missing 'properties' object")
 	}
-
 	autoProp, ok := props["auto"]
 	if !ok {
 		t.Fatal("schema properties missing 'auto' key")
@@ -44,20 +41,16 @@ func TestConfigSchemaAutoBlock(t *testing.T) {
 	if !ok {
 		t.Fatal("'auto' property is not an object")
 	}
-
 	if autoObj["type"] != "object" {
 		t.Errorf("auto.type = %v, want 'object'", autoObj["type"])
 	}
-
 	if autoObj["additionalProperties"] != false {
 		t.Errorf("auto.additionalProperties = %v, want false", autoObj["additionalProperties"])
 	}
-
 	autoProps, ok := autoObj["properties"].(map[string]any)
 	if !ok {
 		t.Fatal("auto missing 'properties' object")
 	}
-
 	// Verify all expected sub-objects exist with quick/full booleans
 	modeFields := []string{"e2eTest", "consolidateSpecs", "cleanCode"}
 	for _, field := range modeFields {
@@ -71,12 +64,10 @@ func TestConfigSchemaAutoBlock(t *testing.T) {
 		if fieldObj["additionalProperties"] != false {
 			t.Errorf("auto.%s.additionalProperties = %v, want false", field, fieldObj["additionalProperties"])
 		}
-
 		fieldProps, ok := fieldObj["properties"].(map[string]any)
 		if !ok {
 			t.Fatalf("auto.%s missing 'properties' object", field)
 		}
-
 		for _, mode := range []string{"quick", "full"} {
 			modeProp, ok := fieldProps[mode].(map[string]any)
 			if !ok {
@@ -87,7 +78,6 @@ func TestConfigSchemaAutoBlock(t *testing.T) {
 			}
 		}
 	}
-
 	// Verify gitPush is a boolean
 	gitPush, ok := autoProps["gitPush"].(map[string]any)
 	if !ok {
@@ -103,12 +93,10 @@ func TestConfigSchemaAutoDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read schema: %v", err)
 	}
-
 	var schema map[string]any
 	if err := json.Unmarshal(data, &schema); err != nil {
 		t.Fatalf("parse schema JSON: %v", err)
 	}
-
 	autoRaw, ok := schema["properties"].(map[string]any)["auto"]
 	if !ok {
 		t.Fatal("schema properties missing 'auto' key — cannot verify defaults")
@@ -121,7 +109,6 @@ func TestConfigSchemaAutoDefaults(t *testing.T) {
 	if !ok {
 		t.Fatal("auto missing 'properties' object — cannot verify defaults")
 	}
-
 	// Verify defaults per Hard Rules:
 	// e2eTest.{quick,true; full,true}
 	// consolidateSpecs.{quick,true; full,true}
@@ -132,7 +119,6 @@ func TestConfigSchemaAutoDefaults(t *testing.T) {
 		"consolidateSpecs": {"quick": true, "full": true},
 		"cleanCode":        {"quick": false, "full": false},
 	}
-
 	for field, modes := range expectedDefaults {
 		fieldProps := autoProps[field].(map[string]any)["properties"].(map[string]any)
 		for mode, expected := range modes {
@@ -147,7 +133,6 @@ func TestConfigSchemaAutoDefaults(t *testing.T) {
 			}
 		}
 	}
-
 	gitPushDefault := autoProps["gitPush"].(map[string]any)["default"]
 	if gitPushDefault != false {
 		t.Errorf("auto.gitPush.default = %v, want false", gitPushDefault)
@@ -159,12 +144,10 @@ func TestConfigSchemaBackwardCompatible(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read schema: %v", err)
 	}
-
 	var schema map[string]any
 	if err := json.Unmarshal(data, &schema); err != nil {
 		t.Fatalf("parse schema JSON: %v", err)
 	}
-
 	// 'auto' must not be in 'required' — existing configs without auto block must pass
 	required, ok := schema["required"]
 	if !ok {
@@ -181,11 +164,7 @@ func TestConfigSchemaBackwardCompatible(t *testing.T) {
 		if r == "test-framework" {
 			t.Error("'test-framework' must not be required — existing configs without it must continue to work")
 		}
-		if r == "test-command" {
-			t.Error("'test-command' must not be required — existing configs without it must continue to work")
-		}
 	}
-
 	// Root additionalProperties: false must be preserved
 	if schema["additionalProperties"] != false {
 		t.Error("root schema additionalProperties must be false")
@@ -214,14 +193,12 @@ func TestConfigExampleDocumentsAllAutoFields(t *testing.T) {
 		"quick:",
 		"full:",
 		"test-framework:",
-		"test-command:",
 	}
 	for _, field := range requiredFields {
 		if !strings.Contains(content, field) {
 			t.Errorf("example YAML missing field %q", field)
 		}
 	}
-
 	// Verify specific default values appear in the example
 	expectedValues := map[string]bool{
 		"quick: true":    false, // must appear at least once (e2eTest, consolidateSpecs)
@@ -241,22 +218,19 @@ func TestConfigExampleDocumentsAllAutoFields(t *testing.T) {
 	}
 }
 
-func TestConfigSchemaTestFrameworkFields(t *testing.T) {
+func TestConfigSchemaTestFrameworkField(t *testing.T) {
 	data, err := os.ReadFile(schemaPath(t))
 	if err != nil {
 		t.Fatalf("read schema: %v", err)
 	}
-
 	var schema map[string]any
 	if err := json.Unmarshal(data, &schema); err != nil {
 		t.Fatalf("parse schema JSON: %v", err)
 	}
-
 	props, ok := schema["properties"].(map[string]any)
 	if !ok {
 		t.Fatal("schema missing 'properties' object")
 	}
-
 	// test-framework must be a string
 	tfProp, ok := props["test-framework"]
 	if !ok {
@@ -268,18 +242,5 @@ func TestConfigSchemaTestFrameworkFields(t *testing.T) {
 	}
 	if tfObj["type"] != "string" {
 		t.Errorf("test-framework.type = %v, want 'string'", tfObj["type"])
-	}
-
-	// test-command must be a string
-	tcProp, ok := props["test-command"]
-	if !ok {
-		t.Fatal("schema properties missing 'test-command' key")
-	}
-	tcObj, ok := tcProp.(map[string]any)
-	if !ok {
-		t.Fatal("'test-command' property is not an object")
-	}
-	if tcObj["type"] != "string" {
-		t.Errorf("test-command.type = %v, want 'string'", tcObj["type"])
 	}
 }

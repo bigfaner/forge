@@ -106,7 +106,7 @@ func TestHasNpmTestScript(t *testing.T) {
 func TestRunProjectTests(t *testing.T) {
 	t.Run("no test framework returns true with empty output", func(t *testing.T) {
 		dir := t.TempDir()
-		output, ok := RunProjectTests(dir, "")
+		output, ok := RunProjectTests(dir)
 		if !ok {
 			t.Error("expected ok=true for no test command")
 		}
@@ -118,36 +118,17 @@ func TestRunProjectTests(t *testing.T) {
 	t.Run("no test framework prints warning to stdout", func(t *testing.T) {
 		dir := t.TempDir()
 		out := captureStdout(func() {
-			RunProjectTests(dir, "")
+			RunProjectTests(dir)
 		})
 		if !strings.Contains(out, "WARNING") {
 			t.Errorf("expected warning when no test command found, got: %s", out)
 		}
 	})
 
-	t.Run("custom testCommand success", func(t *testing.T) {
-		dir := t.TempDir()
-		output, ok := RunProjectTests(dir, "echo custom-test-ok")
-		if !ok {
-			t.Error("expected ok=true for passing custom command")
-		}
-		if !strings.Contains(output, "custom-test-ok") {
-			t.Errorf("expected custom output, got %q", output)
-		}
-	})
-
-	t.Run("custom testCommand failure returns false", func(t *testing.T) {
-		dir := t.TempDir()
-		_, ok := RunProjectTests(dir, "exit 1")
-		if ok {
-			t.Error("expected ok=false for failing custom command")
-		}
-	})
-
 	t.Run("go.mod uses go test", func(t *testing.T) {
 		dir := t.TempDir()
 		_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n\ngo 1.21\n"), 0644)
-		_, ok := RunProjectTests(dir, "")
+		_, ok := RunProjectTests(dir)
 		_ = ok // may succeed or fail, just verify no panic
 	})
 
@@ -156,7 +137,7 @@ func TestRunProjectTests(t *testing.T) {
 		pkg := `{"scripts": {"test": "echo npm-test-pass"}}`
 		_ = os.WriteFile(filepath.Join(dir, "package.json"), []byte(pkg), 0644)
 		out := captureStderr(func() {
-			RunProjectTests(dir, "")
+			RunProjectTests(dir)
 		})
 		if !strings.Contains(out, "npm-test-pass") {
 			t.Errorf("expected npm test output, got: %s", out)
@@ -167,7 +148,7 @@ func TestRunProjectTests(t *testing.T) {
 		dir := t.TempDir()
 		_ = os.WriteFile(filepath.Join(dir, "pytest.ini"), []byte("[pytest]\n"), 0644)
 		out := captureStderr(func() {
-			RunProjectTests(dir, "")
+			RunProjectTests(dir)
 		})
 		_ = out // just verify no panic
 	})
@@ -176,7 +157,7 @@ func TestRunProjectTests(t *testing.T) {
 		dir := t.TempDir()
 		_ = os.WriteFile(filepath.Join(dir, "justfile"), []byte("test:\n    echo just-test-output\n"), 0644)
 		out := captureStderr(func() {
-			RunProjectTests(dir, "")
+			RunProjectTests(dir)
 		})
 		_ = out // just verify no panic
 	})
@@ -188,7 +169,7 @@ func TestRunProjectTests(t *testing.T) {
 		dir := t.TempDir()
 		_ = os.WriteFile(filepath.Join(dir, "Makefile"), []byte("test:\n\t@echo make-test-output\n"), 0644)
 		out := captureStderr(func() {
-			RunProjectTests(dir, "")
+			RunProjectTests(dir)
 		})
 		if !strings.Contains(out, "make-test-output") {
 			t.Errorf("expected make test output, got: %s", out)

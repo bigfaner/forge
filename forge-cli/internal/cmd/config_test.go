@@ -81,25 +81,6 @@ func TestConfigGetCommand(t *testing.T) {
 		}
 	})
 
-	t.Run("test-command returns value", func(t *testing.T) {
-		dir := setupConfig(t, "test-command: go test ./...\n")
-
-		var stdout bytes.Buffer
-		rootCmd.SetOut(&stdout)
-		rootCmd.SetErr(os.Stderr)
-		rootCmd.SetArgs([]string{"config", "get", "test-command", "--project-root", dir})
-
-		err := rootCmd.Execute()
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-
-		output := strings.TrimSpace(stdout.String())
-		if output != "go test ./..." {
-			t.Errorf("expected 'go test ./...', got %q", output)
-		}
-	})
-
 	t.Run("worktree.source-branch returns value", func(t *testing.T) {
 		dir := setupConfig(t, "worktree:\n  source-branch: develop\n")
 

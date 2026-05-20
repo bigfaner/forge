@@ -145,7 +145,6 @@ type Config struct {
 	Worktree      *WorktreeConfig `yaml:"worktree,omitempty"`
 	Coverage      *CoverageConfig `yaml:"coverage,omitempty"`
 	TestFramework string          `yaml:"test-framework,omitempty"`
-	TestCommand   string          `yaml:"test-command,omitempty"`
 	Languages     []string        `yaml:"languages,omitempty"`
 	Interfaces    []string        `yaml:"interfaces,omitempty"`
 }
@@ -289,7 +288,7 @@ var ErrKeyNotFound = fmt.Errorf("config key not found")
 // GetConfigValue returns the value for a given key from .forge/config.yaml.
 // For scalar values, returns the raw string; for arrays, joins with newline.
 // Supports dot-notation for nested keys (e.g. "auto.gitPush", "worktree.source-branch", "coverage.coding.feature").
-// Also supports top-level keys: "test-framework", "test-command".
+// Also supports top-level keys: "test-framework".
 // Returns empty string and ErrKeyNotFound if the key doesn't exist or has zero value.
 func GetConfigValue(projectRoot, key string) (string, error) {
 	// Handle dot-notation auto keys
@@ -317,8 +316,7 @@ func GetConfigValue(projectRoot, key string) (string, error) {
 	}
 
 	// Handle top-level scalar keys
-	switch key {
-	case "test-framework", "test-command":
+	if key == "test-framework" {
 		cfg, err := ReadConfig(projectRoot)
 		if err != nil {
 			return "", err
@@ -326,16 +324,10 @@ func GetConfigValue(projectRoot, key string) (string, error) {
 		if cfg == nil {
 			return "", ErrKeyNotFound
 		}
-		var val string
-		if key == "test-framework" {
-			val = cfg.TestFramework
-		} else {
-			val = cfg.TestCommand
-		}
-		if val == "" {
+		if cfg.TestFramework == "" {
 			return "", ErrKeyNotFound
 		}
-		return val, nil
+		return cfg.TestFramework, nil
 	}
 
 	return "", ErrKeyNotFound

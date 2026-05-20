@@ -38,11 +38,10 @@ Tag lifecycle:
 var testRunJourneyCmd = &cobra.Command{
 	Use:   "run-journey <journey-name>",
 	Short: "Run a single journey in isolated temp directory",
-	Long: `Run a single journey's test command in an isolated temporary directory.
+	Long: `Run a single journey's e2e tests in an isolated temporary directory.
 
-Reads the test-command from .forge/config.yaml and executes it in the journey's
-isolated work directory. The temp directory is cleaned up after execution,
-regardless of success or failure.
+Runs just e2e-test from the project root with the journey name as filter.
+The temp directory is cleaned up after execution, regardless of success or failure.
 
 The journey name is used as part of the temp directory path for traceability.
 
@@ -72,11 +71,7 @@ func runTestRunJourney(_ *cobra.Command, args []string) {
 		Exit(ErrProjectNotFound())
 	}
 
-	cfg, err := resolveJourneyExecutionConfig(projectRoot)
-	if err != nil {
-		Exit(NewAIError(ErrValidation, "Cannot resolve journey execution config", err.Error(),
-			"Set test-command in .forge/config.yaml", "echo 'test-command: go test ./...' >> .forge/config.yaml"))
-	}
+	cfg := resolveJourneyExecutionConfig(projectRoot)
 
 	// Create isolated work directory
 	workDir, cleanup, err := createJourneyWorkDir(projectRoot, journeyName)

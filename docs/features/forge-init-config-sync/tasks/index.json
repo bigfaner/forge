@@ -30,7 +30,7 @@
       "title": "Remove test-command from Config and refactor consumers",
       "priority": "P1",
       "estimatedTime": "2h",
-      "status": "pending",
+      "status": "completed",
       "file": "3-remove-test-command.md",
       "record": "records/3-remove-test-command.md",
       "breaking": true,
