@@ -1,6 +1,6 @@
 ---
 feature: "auto-execute-tasks"
-status: tasks
+status: completed
 mode: quick
 ---
 
