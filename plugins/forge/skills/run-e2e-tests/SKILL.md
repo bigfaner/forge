@@ -89,7 +89,7 @@ mkdir -p tests/e2e/results/
 mkdir -p tests/<journey>/results/
 ```
 
-Server lifecycle is embedded in the justfile recipes. Calling `just e2e-test` (Step 3) automatically ensures servers are started and healthy.
+Server lifecycle is embedded in the justfile recipes. Calling `just test-e2e` (Step 3) automatically ensures servers are started and healthy.
 
 ### Step 2: Verify Scripts
 
@@ -106,7 +106,7 @@ If this fails, return to `/gen-test-scripts` to resolve the `// VERIFY:` markers
 Run all specs via justfile:
 
 ```bash
-just e2e-test --feature <slug>
+just test-e2e --feature <slug>
 ```
 
 Capture the full stdout/stderr output for result parsing in Step 4.
