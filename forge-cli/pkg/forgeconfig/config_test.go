@@ -137,6 +137,9 @@ func TestReadAutoConfig(t *testing.T) {
 		if auto.GitPush {
 			t.Errorf("GitPush default = %v, want false", auto.GitPush)
 		}
+		if !auto.RunTasks.Quick || auto.RunTasks.Full {
+			t.Errorf("RunTasks defaults = %+v, want {Quick:true Full:false}", auto.RunTasks)
+		}
 	})
 
 	t.Run("full auto block", func(t *testing.T) {
@@ -153,6 +156,9 @@ func TestReadAutoConfig(t *testing.T) {
   validation:
     quick: true
     full: false
+  runTasks:
+    quick: false
+    full: true
   gitPush: true
 `)
 		auto, err := ReadAutoConfig(dir)
@@ -185,6 +191,12 @@ func TestReadAutoConfig(t *testing.T) {
 		}
 		if !auto.GitPush {
 			t.Error("GitPush should be true")
+		}
+		if auto.RunTasks.Quick {
+			t.Error("RunTasks.Quick should be false")
+		}
+		if !auto.RunTasks.Full {
+			t.Error("RunTasks.Full should be true")
 		}
 	})
 
@@ -435,6 +447,9 @@ func TestAutoConfigDefaults(t *testing.T) {
 	if defaults.GitPush {
 		t.Errorf("GitPush = %v, want false", defaults.GitPush)
 	}
+	if !defaults.RunTasks.Quick || defaults.RunTasks.Full {
+		t.Errorf("RunTasks = %+v, want {Quick:true Full:false}", defaults.RunTasks)
+	}
 }
 
 func TestAutoConfigIsZero(t *testing.T) {
@@ -449,6 +464,13 @@ func TestAutoConfigIsZero(t *testing.T) {
 		a := AutoConfigDefaults()
 		if a.IsZero() {
 			t.Error("expected defaults to be non-zero")
+		}
+	})
+
+	t.Run("only RunTasks set is not zero", func(t *testing.T) {
+		a := AutoConfig{RunTasks: ModeToggle{Quick: true, Full: false}}
+		if a.IsZero() {
+			t.Error("expected AutoConfig with RunTasks set to be non-zero")
 		}
 	})
 }
@@ -471,6 +493,23 @@ func TestAutoConfigWithDefaults(t *testing.T) {
 		}
 		if result.E2eTest != (ModeToggle{Quick: false, Full: true}) {
 			t.Errorf("E2eTest should default to {Quick:false Full:true}, got %+v", result.E2eTest)
+		}
+	})
+
+	t.Run("RunTasks defaults to quick:true full:false", func(t *testing.T) {
+		a := AutoConfig{}.WithDefaults()
+		if a.RunTasks.Quick != true || a.RunTasks.Full != false {
+			t.Errorf("RunTasks = %+v, want {Quick:true Full:false}", a.RunTasks)
+		}
+	})
+
+	t.Run("RunTasks preserved when set", func(t *testing.T) {
+		a := AutoConfig{
+			RunTasks: ModeToggle{Quick: false, Full: true},
+		}
+		result := a.WithDefaults()
+		if result.RunTasks.Quick != false || result.RunTasks.Full != true {
+			t.Errorf("RunTasks should be preserved as false/true, got %+v", result.RunTasks)
 		}
 	})
 }
@@ -805,6 +844,41 @@ func TestWriteConfigAutoBlock(t *testing.T) {
 		}
 		if readback.Auto.GitPush != true {
 			t.Errorf("expected GitPush true, got %v", readback.Auto.GitPush)
+		}
+	})
+}
+
+func TestGetConfigValue_RunTasks(t *testing.T) {
+	t.Run("auto.runTasks default returns quick:true full:false", func(t *testing.T) {
+		dir := t.TempDir()
+		val, err := GetConfigValue(dir, "auto.runTasks")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "quick:true full:false" {
+			t.Errorf("expected 'quick:true full:false', got %q", val)
+		}
+	})
+
+	t.Run("auto.runTasks explicit", func(t *testing.T) {
+		dir := setupConfig(t, "auto:\n  runTasks:\n    quick: false\n    full: true\n")
+		val, err := GetConfigValue(dir, "auto.runTasks")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "quick:false full:true" {
+			t.Errorf("expected 'quick:false full:true', got %q", val)
+		}
+	})
+
+	t.Run("auto.runTasks partial applies default", func(t *testing.T) {
+		dir := setupConfig(t, "auto:\n  runTasks:\n    full: true\n")
+		val, err := GetConfigValue(dir, "auto.runTasks")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "quick:true full:true" {
+			t.Errorf("expected 'quick:true full:true' (quick defaulted), got %q", val)
 		}
 	})
 }

@@ -8,7 +8,7 @@
       "title": "Add RunTasks ModeToggle to AutoConfig",
       "priority": "P0",
       "estimatedTime": "20m",
-      "status": "pending",
+      "status": "completed",
       "file": "1-add-runtasks-config.md",
       "record": "records/1-add-runtasks-config.md",
       "scope": "backend",
