@@ -1,7 +1,7 @@
 ---
 created: 2026-05-20
 author: faner
-status: Draft
+status: Approved
 ---
 
 # Proposal: 提取 Journey-Contract 测试模型为 Forge 默认知识

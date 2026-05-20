@@ -1,0 +1,45 @@
+{
+  "feature": "journey-contract-default-knowledge",
+  "proposal": "docs/proposals/journey-contract-default-knowledge/proposal.md",
+  "created": "2026-05-20",
+  "tasks": {
+    "1-write-convention-file": {
+      "id": "1",
+      "title": "撰写 Journey-Contract 测试模型 Convention 文件",
+      "priority": "P0",
+      "estimatedTime": "1-2h",
+      "status": "pending",
+      "file": "1-write-convention-file.md",
+      "record": "records/1-write-convention-file.md",
+      "mainSession": true,
+      "type": "doc"
+    },
+    "eval-doc": {
+      "id": "T-eval-doc",
+      "title": "Evaluate Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "eval-doc.md",
+      "record": "records/eval-doc.md",
+      "scope": "all",
+      "type": "doc.eval"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
