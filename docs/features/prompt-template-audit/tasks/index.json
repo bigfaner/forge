@@ -28,7 +28,7 @@
       "title": "P1: 修复 gate 模板缺失 conventions 和 PHASE_SUMMARY",
       "priority": "P1",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "3-fix-gate-template.md",
       "record": "records/3-fix-gate-template.md",
       "type": "doc"
