@@ -86,7 +86,7 @@
       "dependencies": [
         "6"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "7-slim-task-pipeline-domain.md",
       "record": "records/7-slim-task-pipeline-domain.md",
       "type": "doc"

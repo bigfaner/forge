@@ -91,7 +91,7 @@ Before writing `record.json`, you MUST collect real metrics from the project's t
 Coverage rules:
 
 - `coverage` = actual percentage from test runner output
-- `coverage` = `-1.0` is auto-set by CLI for non-`coding.*` type tasks (e.g., `doc*`, `test.*`, `validation.*`). For testable tasks (any `coding.*` type), always report real metrics.
+- `coverage` = `-1.0` is auto-set by CLI for non-`coding.*` type tasks (e.g., `doc`, `test.*`, `validation.*`). For testable tasks (any `coding.*` type), always report real metrics.
 - Never write `0.0` unless the runner actually reported 0%
 
 Capture metrics from the targeted test runs you performed during task development (framework-native commands on changed code). Report the actual pass/fail counts and coverage from those runs.

@@ -28,7 +28,7 @@ Read applicable files via `${CLAUDE_SKILL_DIR}/rules/<filename>`.
 
 ## Docs-Only Fast Path
 
-When all tasks are `type: "documentation"`, skip Step 0 and Step 4b. Step 5 is always mandatory. Detection: Step 1 scans artifacts → every element targets non-compilable files → docs-only.
+When all tasks are `type: "doc"` (non-compilable, non-runnable output only), skip Step 0 and Step 4b. Step 5 is always mandatory. Detection: Step 1 scans artifacts → every element targets non-compilable files → docs-only.
 
 ## Step 0: Resolve Language
 1. Run `forge test detect`. 2. On failure: user adds `languages` to `.forge/config.yaml`.
@@ -88,7 +88,7 @@ Populate **User Stories** from `prd/prd-user-stories.md` or note "No direct user
 **Hard Rules**: fill `{{HARD_RULES}}` only for critical constraints. Leave empty for normal tasks.
 
 ### Scope Assignment
-Classify affected file paths: `frontend` (ui/, components/, pages/, styles/, public/ or dir with package.json only); `backend` (cmd/, internal/, pkg/, api/ or dir with go.mod/Cargo.toml/pyproject.toml only); `src/` special case: go.mod/Cargo.toml without package.json → backend, reverse → frontend, both/neither → undetermined; else `undetermined`. Compute: all frontend → "frontend", all backend → "backend", otherwise → "all". Non-mixed projects always use "all".
+See `rules/scope-assignment.md` for path classification rules. Compute: all frontend → "frontend", all backend → "backend", otherwise → "all". Non-mixed projects always use "all".
 
 ### Type Assignment
 | Type | When to assign |
