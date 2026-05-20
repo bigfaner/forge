@@ -88,7 +88,7 @@
       "title": "P3: prompt.go 添加占位符 escaping 警告注释",
       "priority": "P2",
       "estimatedTime": "15m",
-      "status": "pending",
+      "status": "completed",
       "file": "8-prompt-go-comments.md",
       "record": "records/8-prompt-go-comments.md",
       "scope": "backend",

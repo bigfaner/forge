@@ -88,6 +88,13 @@ func Synthesize(opts SynthesizeOpts) (string, error) {
 
 // renderTemplate reads the embed template and substitutes placeholders.
 //
+// WARNING: Placeholder substitution uses strings.ReplaceAll with no escaping
+// mechanism. Template content must not contain bare placeholder strings like
+// {{TASK_ID}}, {{TASK_FILE}}, etc., or they will be silently replaced at
+// runtime. This includes code examples, documentation snippets, or any text
+// that coincidentally matches the {{...}} pattern. If literal {{...}} is ever
+// needed in a template, an escaping mechanism must be implemented first.
+//
 // Available placeholders (all use {{NAME}} syntax):
 //
 //	{{TASK_ID}}         — task ID (e.g. "2.1", "T-test-gen-cases")
@@ -293,6 +300,14 @@ func isLabelWithEmptyValue(line string) bool {
 }
 
 // genScriptBases lists the task ID bases that support per-type gen-scripts or gen-and-run.
+//
+// Each base corresponds to a specific task ID format in the index:
+//   - "T-test-gen-scripts"     → tasks like "T-test-gen-scripts-api", "T-test-gen-scripts-ui"
+//   - "T-quick-gen-and-run"    → tasks like "T-quick-gen-and-run-cli"
+//
+// The type suffix (the part after the base) determines the --type argument passed
+// to the gen-script command at runtime. Adding a new base here requires that the
+// corresponding task ID format is also recognized by task.ExtractTypeSuffix.
 var genScriptBases = []string{
 	"T-test-gen-scripts",
 	"T-quick-gen-and-run",
