@@ -129,7 +129,7 @@ func cleanForgeEnv() []string {
 // runForgeInDir runs forge CLI in a given working directory, fatalfing on non-zero exit.
 func runForgeInDir(t *testing.T, dir string, args ...string) string {
 	t.Helper()
-	cmd := exec.Command("forge", args...)
+	cmd := exec.Command(forgeBinary, args...)
 	cmd.Dir = dir
 	cmd.Env = cleanForgeEnv()
 	out, err := cmd.CombinedOutput()
@@ -142,7 +142,7 @@ func runForgeInDir(t *testing.T, dir string, args ...string) string {
 // runForgeInDirRaw runs forge CLI in a given working directory, returning output and exit code.
 func runForgeInDirRaw(t *testing.T, dir string, args ...string) (string, int) {
 	t.Helper()
-	cmd := exec.Command("forge", args...)
+	cmd := exec.Command(forgeBinary, args...)
 	cmd.Dir = dir
 	cmd.Env = cleanForgeEnv()
 	out, err := cmd.CombinedOutput()

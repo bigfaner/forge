@@ -30,7 +30,7 @@
       "title": "Fix tests/e2e/ feature tests to use TestMain-built binary",
       "priority": "P1",
       "estimatedTime": "1-2h",
-      "status": "pending",
+      "status": "blocked",
       "file": "3-fix-tests-e2e-features.md",
       "record": "records/3-fix-tests-e2e-features.md",
       "scope": "backend",
