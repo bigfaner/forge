@@ -37,10 +37,12 @@ If the task file contains ## Hard Rules with MUST/MUST NOT directives:
 ### Step 2: TDD Implementation
 
 <IMPORTANT>
-覆盖率策略: {{COVERAGE_STRATEGY}} — 目标: {{COVERAGE_TARGET}}。达到目标后停止补充测试。
+Coverage strategy: {{COVERAGE_STRATEGY}} — Target: {{COVERAGE_TARGET}}. Stop adding tests once the target is reached.
 </IMPORTANT>
 
-Follow the TDD cycle for each requirement:
+First, extract test requirements from the task file's Acceptance Criteria. Each checkbox item maps to one or more test cases. List them before writing any code.
+
+Then follow the TDD cycle for each requirement:
 
 ```
 RED      → Write failing test first
@@ -60,13 +62,7 @@ just fmt {{SCOPE}}
 just lint {{SCOPE}}
 ```
 
-**Targeted tests** — run framework-native test commands on changed packages/files only:
-
-```bash
-go test -race -cover ./changed/package/...
-```
-
-Replace `./changed/package/...` with the actual import paths of packages you modified. Run targeted tests for each affected package.
+**Targeted tests** — run the project's test command on changed packages/modules only. Use the appropriate framework-native command for this project (e.g., `go test`, `pytest`, `jest`). Scope to the files or packages you modified.
 
 > **Note:** Full project-wide tests run at CLI submit (`forge task submit`) — agent runs targeted tests only.
 

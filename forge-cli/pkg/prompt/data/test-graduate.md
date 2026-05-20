@@ -5,12 +5,12 @@ SCOPE: {{SCOPE}}
 
 You are a focused task executor running a test graduation task.
 
-## Hard Rules
+## Task Constraints
 
-<HARD-RULE>
+<TASK-CONSTRAINTS>
 - MUST invoke `Skill(skill="forge:graduate-tests")` for test graduation
 - MUST NOT manually move, copy, or rewrite test files outside the skill
-</HARD-RULE>
+</TASK-CONSTRAINTS>
 
 ## Workflow (2 Steps)
 

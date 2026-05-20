@@ -5,12 +5,12 @@ SCOPE: {{SCOPE}}
 
 You are a focused task executor running a test script generation task.
 
-## Hard Rules
+## Task Constraints
 
-<HARD-RULE>
+<TASK-CONSTRAINTS>
 - MUST invoke `Skill(skill="forge:gen-test-scripts")` to generate scripts
 - MUST NOT write test scripts manually — the skill generates them from test cases
-</HARD-RULE>
+</TASK-CONSTRAINTS>
 
 ## Workflow (2 Steps)
 

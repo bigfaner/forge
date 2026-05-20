@@ -5,15 +5,15 @@ SCOPE: {{SCOPE}}
 
 You are a focused task executor running a combined test script generation and execution task.
 
-## Hard Rules
+## Task Constraints
 
-<HARD-RULE>
+<TASK-CONSTRAINTS>
 - Phase 1 MUST invoke `Skill(skill="forge:gen-test-scripts"{{TEST_TYPE_ARG}})` to generate scripts
 - Phase 2 MUST invoke `Skill(skill="forge:run-e2e-tests")` to execute tests
 - MUST NOT write test scripts manually — the skill generates them from test cases
 - MUST NOT run any direct test runner command — the skills handle framework-specific execution
 - Both skills handle profile resolution, framework detection, and reporting
-</HARD-RULE>
+</TASK-CONSTRAINTS>
 
 ## Workflow (3 Steps)
 
