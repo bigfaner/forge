@@ -8,7 +8,7 @@
       "title": "Create types/_shared.md cross-type golden rules",
       "priority": "P0",
       "estimatedTime": "1-2h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-shared-golden-rules.md",
       "record": "records/1-shared-golden-rules.md",
       "type": "doc"
