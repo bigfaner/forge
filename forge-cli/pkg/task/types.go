@@ -8,6 +8,33 @@ import (
 	"time"
 )
 
+// Task ID suffix constants used for special task roles.
+const (
+	// IDSuffixGate is the suffix for quality gate tasks (e.g. "1.gate").
+	IDSuffixGate = ".gate"
+	// IDSuffixSummary is the suffix for phase summary tasks (e.g. "1.summary").
+	IDSuffixSummary = ".summary"
+	// IDSuffixWildcard is the suffix for wildcard dependencies (e.g. "1.x").
+	IDSuffixWildcard = ".x"
+	// IDPrefixTestPipeline is the prefix for auto-generated test pipeline tasks.
+	IDPrefixTestPipeline = "T-"
+)
+
+// IsBusinessTask returns true for task IDs that are regular business tasks:
+// not gate tasks, not summary tasks, and not auto-generated test pipeline tasks.
+func IsBusinessTask(id string) bool {
+	if strings.HasPrefix(id, IDPrefixTestPipeline) {
+		return false
+	}
+	if strings.HasSuffix(id, IDSuffixGate) {
+		return false
+	}
+	if strings.HasSuffix(id, IDSuffixSummary) {
+		return false
+	}
+	return true
+}
+
 // Task type constants define the valid execution types.
 // Naming convention: prefix-based categories (coding.*, doc*, test.*, validation.*).
 const (

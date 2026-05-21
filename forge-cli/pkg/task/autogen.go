@@ -432,7 +432,7 @@ func findHighestGateOrSummary(tasks map[string]Task) string {
 	bestPhase := 0
 
 	for _, t := range tasks {
-		if strings.HasSuffix(t.ID, ".gate") {
+		if strings.HasSuffix(t.ID, IDSuffixGate) {
 			phase := phaseFromID(t.ID)
 			if phase > bestPhase {
 				bestPhase = phase
@@ -447,7 +447,7 @@ func findHighestGateOrSummary(tasks map[string]Task) string {
 	// Fallback to last summary
 	bestPhase = 0
 	for _, t := range tasks {
-		if strings.HasSuffix(t.ID, ".summary") {
+		if strings.HasSuffix(t.ID, IDSuffixSummary) {
 			phase := phaseFromID(t.ID)
 			if phase > bestPhase {
 				bestPhase = phase
@@ -464,10 +464,10 @@ func findMaxBusinessTaskID(tasks map[string]Task) string {
 	var bestID string
 	for _, t := range tasks {
 		id := t.ID
-		if strings.HasPrefix(id, "T-") || strings.HasPrefix(id, "fix-") || strings.HasPrefix(id, "disc-") {
+		if strings.HasPrefix(id, IDPrefixTestPipeline) || strings.HasPrefix(id, "fix-") || strings.HasPrefix(id, "disc-") {
 			continue
 		}
-		if strings.HasSuffix(id, ".gate") || strings.HasSuffix(id, ".summary") {
+		if strings.HasSuffix(id, IDSuffixGate) || strings.HasSuffix(id, IDSuffixSummary) {
 			continue
 		}
 		n := numericID(id)
@@ -568,7 +568,7 @@ func isAutoGenForDep(id string) bool {
 	if id == "T-eval-doc" || id == "T-validate-code" || id == "T-validate-ux" {
 		return true
 	}
-	if strings.HasSuffix(id, ".gate") || strings.HasSuffix(id, ".summary") {
+	if strings.HasSuffix(id, IDSuffixGate) || strings.HasSuffix(id, IDSuffixSummary) {
 		return true
 	}
 	return false

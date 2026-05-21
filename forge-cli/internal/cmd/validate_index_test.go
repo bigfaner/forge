@@ -575,8 +575,8 @@ func TestIsBusinessTask(t *testing.T) {
 		{"10.summary", false},
 	}
 	for _, tt := range tests {
-		if got := isBusinessTask(tt.id); got != tt.want {
-			t.Errorf("isBusinessTask(%q) = %v, want %v", tt.id, got, tt.want)
+		if got := task.IsBusinessTask(tt.id); got != tt.want {
+			t.Errorf("task.IsBusinessTask(%q) = %v, want %v", tt.id, got, tt.want)
 		}
 	}
 }

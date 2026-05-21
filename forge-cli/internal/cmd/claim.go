@@ -249,15 +249,15 @@ func getTaskPhase(id string) int {
 func checkDependenciesMet(index *task.TaskIndex, selfID string, t task.Task) (bool, []string) {
 	var unmet []string
 	for _, dep := range t.Dependencies {
-		if strings.HasSuffix(dep, ".x") {
-			prefix := strings.TrimSuffix(dep, ".x")
+		if strings.HasSuffix(dep, task.IDSuffixWildcard) {
+			prefix := strings.TrimSuffix(dep, task.IDSuffixWildcard)
 			prefixWithDot := prefix + "."
 			found := false
 			for _, other := range index.TasksMap() {
 				if other.ID == selfID {
 					continue
 				}
-				if strings.HasPrefix(other.ID, prefixWithDot) && isBusinessTask(other.ID) && other.Status != "completed" && other.Status != "skipped" {
+				if strings.HasPrefix(other.ID, prefixWithDot) && task.IsBusinessTask(other.ID) && other.Status != "completed" && other.Status != "skipped" {
 					unmet = append(unmet, other.ID)
 					found = true
 				}

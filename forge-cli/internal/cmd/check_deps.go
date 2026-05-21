@@ -61,15 +61,15 @@ func runCheckDeps(_ *cobra.Command, _ []string) {
 
 	for key, t := range index.TasksMap() {
 		for _, dep := range t.Dependencies {
-			isWildcard := strings.HasSuffix(dep, ".x")
+			isWildcard := strings.HasSuffix(dep, task.IDSuffixWildcard)
 
 			if isWildcard {
-				prefix := strings.TrimSuffix(dep, ".x")
+				prefix := strings.TrimSuffix(dep, task.IDSuffixWildcard)
 				prefixWithDot := prefix + "."
 
 				var matches []string
 				for id := range taskIDs {
-					if strings.HasPrefix(id, prefixWithDot) && isBusinessTask(id) {
+					if strings.HasPrefix(id, prefixWithDot) && task.IsBusinessTask(id) {
 						matches = append(matches, id)
 					}
 				}

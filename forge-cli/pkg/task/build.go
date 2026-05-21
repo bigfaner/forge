@@ -458,7 +458,7 @@ func IsAutoGenTaskID(id string) bool {
 	if id == "T-eval-doc" {
 		return true
 	}
-	if strings.HasSuffix(id, ".gate") || strings.HasSuffix(id, ".summary") {
+	if strings.HasSuffix(id, IDSuffixGate) || strings.HasSuffix(id, IDSuffixSummary) {
 		return true
 	}
 	return false

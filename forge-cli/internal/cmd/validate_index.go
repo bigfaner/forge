@@ -150,13 +150,13 @@ func (v *validator) validateDependencies(tasks map[string]task.Task) {
 
 	for key, t := range tasks {
 		for _, dep := range t.Dependencies {
-			isWildcard := strings.HasSuffix(dep, ".x")
+			isWildcard := strings.HasSuffix(dep, task.IDSuffixWildcard)
 
 			if isWildcard {
-				prefix := strings.TrimSuffix(dep, ".x") + "."
+				prefix := strings.TrimSuffix(dep, task.IDSuffixWildcard) + "."
 				var matches []string
 				for id := range taskIDs {
-					if strings.HasPrefix(id, prefix) && isBusinessTask(id) {
+					if strings.HasPrefix(id, prefix) && task.IsBusinessTask(id) {
 						matches = append(matches, id)
 					}
 				}
@@ -178,7 +178,7 @@ func (v *validator) validateCircularDeps(tasks map[string]task.Task) {
 	}
 	for _, t := range tasks {
 		for _, dep := range t.Dependencies {
-			if !strings.HasSuffix(dep, ".x") && taskIDs[dep] {
+			if !strings.HasSuffix(dep, task.IDSuffixWildcard) && taskIDs[dep] {
 				graph[t.ID] = append(graph[t.ID], dep)
 			}
 		}
@@ -253,26 +253,21 @@ func (v *validator) validateFirstTestTaskTemplate(taskFile string, taskID string
 	}
 }
 
-// isBusinessTask returns true for tasks that are neither gate nor summary.
-func isBusinessTask(id string) bool {
-	return !strings.HasSuffix(id, ".gate") && !strings.HasSuffix(id, ".summary")
-}
-
 // V1: Wildcard self-dependency detection
 func (v *validator) validateWildcardSelfDeps(tasks map[string]task.Task) {
 	for key, t := range tasks {
 		for _, dep := range t.Dependencies {
-			if !strings.HasSuffix(dep, ".x") {
+			if !strings.HasSuffix(dep, task.IDSuffixWildcard) {
 				continue
 			}
-			prefix := strings.TrimSuffix(dep, ".x") + "."
-			if !strings.HasPrefix(t.ID, prefix) || !isBusinessTask(t.ID) {
+			prefix := strings.TrimSuffix(dep, task.IDSuffixWildcard) + "."
+			if !strings.HasPrefix(t.ID, prefix) || !task.IsBusinessTask(t.ID) {
 				continue
 			}
 			// This task's own ID matches the wildcard. Check if other business tasks also match.
 			others := 0
 			for _, other := range tasks {
-				if other.ID != t.ID && strings.HasPrefix(other.ID, prefix) && isBusinessTask(other.ID) {
+				if other.ID != t.ID && strings.HasPrefix(other.ID, prefix) && task.IsBusinessTask(other.ID) {
 					others++
 				}
 			}
@@ -295,7 +290,7 @@ func (v *validator) validateGateIntegrity(tasks map[string]task.Task) {
 	// Find all gate tasks
 	var gates []gateInfo
 	for key, t := range tasks {
-		if strings.HasSuffix(t.ID, ".gate") && t.Breaking {
+		if strings.HasSuffix(t.ID, task.IDSuffixGate) && t.Breaking {
 			gates = append(gates, gateInfo{key: key, id: t.ID})
 		}
 	}
@@ -332,7 +327,7 @@ func (v *validator) validateGateIntegrity(tasks map[string]task.Task) {
 		gateID := g.id
 		nextPhase := phase + 1
 		for key, t := range tasks {
-			if !isBusinessTask(t.ID) {
+			if !task.IsBusinessTask(t.ID) {
 				continue
 			}
 			if getTaskPhase(t.ID) != nextPhase {
@@ -362,13 +357,13 @@ func (v *validator) validatePhaseOrder(tasks map[string]task.Task) {
 	// Build a lookup for gate tasks (used to recognize transitive cross-phase deps)
 	gateIDs := make(map[string]bool)
 	for _, t := range tasks {
-		if strings.HasSuffix(t.ID, ".gate") && t.Breaking {
+		if strings.HasSuffix(t.ID, task.IDSuffixGate) && t.Breaking {
 			gateIDs[t.ID] = true
 		}
 	}
 
 	for key, t := range tasks {
-		if !isBusinessTask(t.ID) {
+		if !task.IsBusinessTask(t.ID) {
 			continue
 		}
 		phase := getTaskPhase(t.ID)
@@ -389,8 +384,8 @@ func (v *validator) validatePhaseOrder(tasks map[string]task.Task) {
 				break
 			}
 			// Check wildcard deps for cross-phase ordering
-			if strings.HasSuffix(dep, ".x") {
-				if wp, err := strconv.Atoi(strings.TrimSuffix(dep, ".x")); err == nil && wp < phase {
+			if strings.HasSuffix(dep, task.IDSuffixWildcard) {
+				if wp, err := strconv.Atoi(strings.TrimSuffix(dep, task.IDSuffixWildcard)); err == nil && wp < phase {
 					hasCrossPhaseDep = true
 					break
 				}
@@ -411,7 +406,7 @@ func (v *validator) validatePhaseSummaries(tasks map[string]task.Task) {
 	// Collect phases that have business tasks
 	phasesWithBusiness := make(map[int]bool)
 	for _, t := range tasks {
-		if isBusinessTask(t.ID) {
+		if task.IsBusinessTask(t.ID) {
 			if p := getTaskPhase(t.ID); p > 0 {
 				phasesWithBusiness[p] = true
 			}
@@ -483,14 +478,14 @@ func (v *validator) validateLiveness(tasks map[string]task.Task) {
 		allDepsCompleted := true
 		hasActiveDep := false
 		for _, dep := range t.Dependencies {
-			if strings.HasSuffix(dep, ".x") {
-				prefix := strings.TrimSuffix(dep, ".x")
+			if strings.HasSuffix(dep, task.IDSuffixWildcard) {
+				prefix := strings.TrimSuffix(dep, task.IDSuffixWildcard)
 				prefixWithDot := prefix + "."
 				for _, other := range tasks {
 					if other.ID == t.ID {
 						continue
 					}
-					if strings.HasPrefix(other.ID, prefixWithDot) && isBusinessTask(other.ID) {
+					if strings.HasPrefix(other.ID, prefixWithDot) && task.IsBusinessTask(other.ID) {
 						if other.Status != "completed" && other.Status != "skipped" {
 							allDepsCompleted = false
 							if other.Status == "pending" || other.Status == "in_progress" {

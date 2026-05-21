@@ -157,15 +157,15 @@ func getTransitionAction(from, to string) string {
 func checkUnmetDeps(index *task.TaskIndex, t *task.Task) []string {
 	var unmet []string
 	for _, dep := range t.Dependencies {
-		if strings.HasSuffix(dep, ".x") {
-			prefix := strings.TrimSuffix(dep, ".x")
+		if strings.HasSuffix(dep, task.IDSuffixWildcard) {
+			prefix := strings.TrimSuffix(dep, task.IDSuffixWildcard)
 			prefixWithDot := prefix + "."
 			found := false
 			for _, other := range index.TasksMap() {
 				if other.ID == t.ID {
 					continue
 				}
-				if strings.HasPrefix(other.ID, prefixWithDot) && isBusinessTask(other.ID) && other.Status != "completed" && other.Status != "skipped" {
+				if strings.HasPrefix(other.ID, prefixWithDot) && task.IsBusinessTask(other.ID) && other.Status != "completed" && other.Status != "skipped" {
 					unmet = append(unmet, other.ID)
 					found = true
 				}

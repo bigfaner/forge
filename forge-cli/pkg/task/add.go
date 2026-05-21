@@ -121,12 +121,12 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 
 	// Validate dependencies exist
 	for _, dep := range opts.Dependencies {
-		if strings.HasSuffix(dep, ".x") {
-			prefix := strings.TrimSuffix(dep, ".x")
+		if strings.HasSuffix(dep, IDSuffixWildcard) {
+			prefix := strings.TrimSuffix(dep, IDSuffixWildcard)
 			prefixWithDot := prefix + "."
 			found := false
 			for _, t := range index.tasks {
-				if strings.HasPrefix(t.ID, prefixWithDot) && isBusinessTaskID(t.ID) {
+				if strings.HasPrefix(t.ID, prefixWithDot) && IsBusinessTask(t.ID) {
 					found = true
 					break
 				}
@@ -371,14 +371,14 @@ func GetUnmetDependencies(indexPath string, taskID string) ([]string, error) {
 
 	var unmet []string
 	for _, dep := range foundTask.Dependencies {
-		if strings.HasSuffix(dep, ".x") {
-			prefix := strings.TrimSuffix(dep, ".x")
+		if strings.HasSuffix(dep, IDSuffixWildcard) {
+			prefix := strings.TrimSuffix(dep, IDSuffixWildcard)
 			prefixWithDot := prefix + "."
 			for _, other := range index.tasks {
 				if other.ID == foundTask.ID {
 					continue
 				}
-				if strings.HasPrefix(other.ID, prefixWithDot) && isBusinessTaskID(other.ID) && other.Status != "completed" && other.Status != "skipped" {
+				if strings.HasPrefix(other.ID, prefixWithDot) && IsBusinessTask(other.ID) && other.Status != "completed" && other.Status != "skipped" {
 					unmet = append(unmet, other.ID)
 				}
 			}
@@ -391,9 +391,4 @@ func GetUnmetDependencies(indexPath string, taskID string) ([]string, error) {
 		}
 	}
 	return unmet, nil
-}
-
-// isBusinessTaskID returns true for task IDs that are not gate or summary tasks.
-func isBusinessTaskID(id string) bool {
-	return !strings.HasSuffix(id, ".gate") && !strings.HasSuffix(id, ".summary")
 }

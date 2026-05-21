@@ -33,7 +33,7 @@ func DetectPhases(taskIDs []string) []PhaseInfo {
 			continue
 		}
 		// Skip gate/summary IDs
-		if strings.HasSuffix(id, ".summary") || strings.HasSuffix(id, ".gate") {
+		if strings.HasSuffix(id, IDSuffixSummary) || strings.HasSuffix(id, IDSuffixGate) {
 			continue
 		}
 
