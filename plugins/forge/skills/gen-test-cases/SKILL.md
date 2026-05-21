@@ -138,4 +138,4 @@ Include a **Summary** table (Type | File | Count | Total) and a **Cross-Type Tra
 |-------|-------|
 | `/write-prd` | Create PRD with acceptance criteria |
 | `/gen-test-scripts` | Generate executable scripts from test cases |
-| `/run-e2e-tests` | Execute test scripts and report results |
+| `/run-tests` | Execute test scripts and report results |
