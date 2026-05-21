@@ -18,7 +18,7 @@
     },
     "1.1-dead-code-deletion": {
       "id": "1.1",
-      "title": "Delete dead code (9 unused exports)",
+      "title": "Delete dead code (unused exports)",
       "priority": "P1",
       "estimatedTime": "1.5h",
       "dependencies": [
@@ -32,7 +32,7 @@
     },
     "1.2-naming-fixes": {
       "id": "1.2",
-      "title": "Naming fixes (13 items)",
+      "title": "Naming fixes (testgen → autogen + type renames)",
       "priority": "P1",
       "estimatedTime": "2h",
       "dependencies": [
@@ -46,9 +46,9 @@
     },
     "1.3-constants-and-exports": {
       "id": "1.3",
-      "title": "Extract magic values to constants + export isBusinessTask + NI fixes",
+      "title": "Extract magic values to constants + export IsBusinessTask",
       "priority": "P1",
-      "estimatedTime": "2h",
+      "estimatedTime": "1.5h",
       "dependencies": [
         "0.1"
       ],
@@ -119,9 +119,9 @@
     },
     "2.2-error-handling-foundation": {
       "id": "2.2",
-      "title": "Error handling foundation: AIError factories + Exit codes",
+      "title": "Error handling: new error codes + exit code differentiation",
       "priority": "P1",
-      "estimatedTime": "1.5h",
+      "estimatedTime": "1h",
       "dependencies": [
         "1.gate"
       ],
@@ -133,9 +133,9 @@
     },
     "2.3-atomic-write-primitives": {
       "id": "2.3",
-      "title": "Atomic write primitives: WithLock + AtomicWrite",
+      "title": "WithLock callback + atomic state writes",
       "priority": "P1",
-      "estimatedTime": "2h",
+      "estimatedTime": "1.5h",
       "dependencies": [
         "1.gate"
       ],
@@ -149,7 +149,7 @@
       "id": "2.4",
       "title": "Submit command refactor",
       "priority": "P1",
-      "estimatedTime": "2h",
+      "estimatedTime": "1.5h",
       "dependencies": [
         "1.gate",
         "2.1",
@@ -184,7 +184,7 @@
       "id": "2.6",
       "title": "Migrate index writers to WithLock pattern",
       "priority": "P1",
-      "estimatedTime": "2h",
+      "estimatedTime": "1.5h",
       "dependencies": [
         "1.gate",
         "2.3"
@@ -213,9 +213,9 @@
     },
     "2.8-quality-gate-fixes": {
       "id": "2.8",
-      "title": "Quality gate fixes + error handling migration",
+      "title": "Quality gate fixes + error handling",
       "priority": "P1",
-      "estimatedTime": "3h",
+      "estimatedTime": "2h",
       "dependencies": [
         "1.gate",
         "2.1",
@@ -265,7 +265,6 @@
       "estimatedTime": "15min",
       "dependencies": [
         "2.1",
-        "2.10",
         "2.2",
         "2.3",
         "2.4",
@@ -273,7 +272,8 @@
         "2.6",
         "2.7",
         "2.8",
-        "2.9"
+        "2.9",
+        "2.10"
       ],
       "status": "pending",
       "file": "2.summary.md",
@@ -312,9 +312,9 @@
     },
     "3.3-config-crud": {
       "id": "3.3",
-      "title": "Config set/get CRUD (7 auto keys)",
+      "title": "Config set/get CRUD",
       "priority": "P2",
-      "estimatedTime": "2h",
+      "estimatedTime": "1.5h",
       "dependencies": [
         "2.gate"
       ],
