@@ -1,6 +1,6 @@
 ---
 feature: "cli-created-field-and-display"
-status: tasks
+status: completed
 mode: quick
 created: "2026-05-21"
 ---
