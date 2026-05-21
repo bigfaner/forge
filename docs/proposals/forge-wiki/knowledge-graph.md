@@ -50,7 +50,7 @@ id: auth-jwt-decision
 title: "JWT Token 认证决策"
 description: "JWT Token 认证方案选型及理由"
 type: product
-concerns: [auth]
+concerns: [security/auth]
 artifacts: [api, web-spa]
 langs: [go]
 frameworks: [gin]
@@ -81,7 +81,7 @@ status: active
 每个 `concerns` 值是一个领域节点。
 
 ```
-concern:auth  concern:jwt  concern:api  concern:error-handling
+concern:security/auth  concern:security/encryption  concern:io  concern:error
 ```
 
 领域节点没有 frontmatter，由文档的 `concerns` 字段隐式定义。`forge kb concerns` 命令输出的是所有领域节点及其连接的文档数量。
@@ -192,7 +192,7 @@ auth-jwt-decision (2025-03) ──时间邻近── auth-api-gateway (2025-04)
 ### 完整图谱模型
 
 ```
-                    concern:auth
+                    concern:security/auth
                    ╱     |      ╲
     co-occurrence ╱      |       ╲ co-occurrence
                ╱        |        ╲
@@ -226,10 +226,10 @@ auth-jwt-decision (2025-03) ──时间邻近── auth-api-gateway (2025-04)
 v1 不构建显式图结构。多维度过滤等价于从 concern 节点出发的一跳查询：
 
 ```
-forge kb search --concerns auth --type language --langs go "token 刷新"
+forge kb search --concerns security/auth --type language --langs go "token 刷新"
          │
          ▼
-    concern:auth ──1跳──► [doc-A, doc-B, doc-C]
+    concern:security/auth ──1跳──► [doc-A, doc-B, doc-C]
                               │
                          --type/--langs 过滤
                               │
@@ -249,7 +249,7 @@ Agent 自主决定是否深入 doc-B。
 v2 构建显式图后，搜索流程升级为：
 
 ```
-forge kb search --concerns auth --type language --langs go "token 刷新"
+forge kb search --concerns security/auth --type language --langs go "token 刷新"
          │
          ▼
     Step 1: concerns 过滤 → 候选集 [doc-A, doc-B, doc-C]
