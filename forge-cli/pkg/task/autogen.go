@@ -8,8 +8,8 @@ import (
 	"forge-cli/pkg/forgeconfig"
 )
 
-// TestTaskDef defines a test task to be generated.
-type TestTaskDef struct {
+// AutoGenTaskDef defines an auto-generated task definition.
+type AutoGenTaskDef struct {
 	ID              string
 	Key             string // map key in index.json (e.g., "gen-test-cases", "gen-test-scripts-api")
 	Title           string
@@ -29,22 +29,22 @@ type TestTaskDef struct {
 // GetBreakdownTestTasks returns test task definitions for breakdown mode.
 // Interfaces are config-driven test types (e.g., "cli", "api"). Empty interfaces returns nil.
 // auto controls which task categories are generated.
-func GetBreakdownTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []TestTaskDef {
+func GetBreakdownTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []AutoGenTaskDef {
 	if len(interfaces) == 0 {
 		return nil
 	}
 
-	var tasks []TestTaskDef
+	var tasks []AutoGenTaskDef
 
 	// Shared tasks (gated by auto.E2eTest.Full)
 	if auto.E2eTest.Full {
-		tasks = append(tasks, TestTaskDef{
+		tasks = append(tasks, AutoGenTaskDef{
 			Key: "gen-test-cases", ID: "T-test-gen-cases",
 			Title: "Generate e2e Test Cases", Priority: "P1", EstimatedTime: "1-2h",
 			Type: TypeTestGenCases, Scope: "all",
 			StrategyKind: "generate",
 		})
-		tasks = append(tasks, TestTaskDef{
+		tasks = append(tasks, AutoGenTaskDef{
 			Key: "eval-test-cases", ID: "T-test-eval-cases",
 			Title: "Evaluate e2e Test Cases", Priority: "P1", EstimatedTime: "30min",
 			Type: TypeTestEvalCases, Scope: "all", MainSession: true,
@@ -52,7 +52,7 @@ func GetBreakdownTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []T
 
 		// Per-type gen-scripts (interface-only, no language loop)
 		for _, typ := range interfaces {
-			tasks = append(tasks, TestTaskDef{
+			tasks = append(tasks, AutoGenTaskDef{
 				Key: "gen-test-scripts-" + typ, ID: "T-test-gen-scripts-" + typ,
 				Title: fmt.Sprintf("Generate Test Scripts (%s)", typ), Priority: "P1", EstimatedTime: "1-2h",
 				Type: TypeTestGenScripts, Scope: "all", TestType: typ,
@@ -61,13 +61,13 @@ func GetBreakdownTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []T
 		}
 
 		// Single run + graduate (no language suffix)
-		tasks = append(tasks, TestTaskDef{
+		tasks = append(tasks, AutoGenTaskDef{
 			Key: "run-e2e-tests", ID: "T-test-run",
 			Title: "Run e2e Tests", Priority: "P1", EstimatedTime: "30min-1h",
 			Type: TypeTestRun, Scope: "all",
 			StrategyKind: "run",
 		})
-		tasks = append(tasks, TestTaskDef{
+		tasks = append(tasks, AutoGenTaskDef{
 			Key: "graduate-tests", ID: "T-test-graduate",
 			Title: "Graduate Test Scripts", Priority: "P1", EstimatedTime: "30min",
 			Type: TypeTestGraduate, Scope: "all",
@@ -75,7 +75,7 @@ func GetBreakdownTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []T
 		})
 
 		// Shared verify-regression
-		tasks = append(tasks, TestTaskDef{
+		tasks = append(tasks, AutoGenTaskDef{
 			Key: "verify-regression", ID: "T-test-verify-regression",
 			Title: "Verify Full E2E Regression", Priority: "P1", EstimatedTime: "15-30min",
 			Type: TypeTestVerifyRegression, Scope: "all",
@@ -84,12 +84,12 @@ func GetBreakdownTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []T
 
 	// Validation tasks (gated by auto.Validation.Full)
 	if auto.Validation.Full {
-		tasks = append(tasks, TestTaskDef{
+		tasks = append(tasks, AutoGenTaskDef{
 			Key: "validate-code", ID: "T-validate-code",
 			Title: "Validate Code Quality", Priority: "P2", EstimatedTime: "15min",
 			Type: TypeValidationCode, Scope: "all", MainSession: false,
 		})
-		tasks = append(tasks, TestTaskDef{
+		tasks = append(tasks, AutoGenTaskDef{
 			Key: "validate-ux", ID: "T-validate-ux",
 			Title: "Validate User Experience", Priority: "P2", EstimatedTime: "15min",
 			Type: TypeValidationUx, Scope: "all", MainSession: true,
@@ -98,7 +98,7 @@ func GetBreakdownTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []T
 
 	// Spec consolidation (gated by auto.ConsolidateSpecs.Full)
 	if auto.ConsolidateSpecs.Full {
-		tasks = append(tasks, TestTaskDef{
+		tasks = append(tasks, AutoGenTaskDef{
 			Key: "consolidate-specs", ID: "T-specs-consolidate",
 			Title: "Consolidate Specs", Priority: "P2", EstimatedTime: "20min",
 			Type: TypeDocConsolidate, Scope: "all",
@@ -107,7 +107,7 @@ func GetBreakdownTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []T
 
 	// Clean code task (gated by auto.CleanCode.Full)
 	if auto.CleanCode.Full {
-		tasks = append(tasks, TestTaskDef{
+		tasks = append(tasks, AutoGenTaskDef{
 			Key: "clean-code", ID: "T-clean-code",
 			Title: "Simplify and Clean Code", Priority: "P2", EstimatedTime: "20min",
 			Type: TypeCleanCode, Scope: "all",
@@ -123,30 +123,30 @@ func GetBreakdownTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []T
 // GetQuickTestTasks returns test task definitions for quick mode.
 // Interfaces are config-driven test types (e.g., "cli", "api"). Empty interfaces returns nil.
 // auto controls which task categories are generated.
-func GetQuickTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []TestTaskDef {
+func GetQuickTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []AutoGenTaskDef {
 	if len(interfaces) == 0 {
 		return nil
 	}
 
-	var tasks []TestTaskDef
+	var tasks []AutoGenTaskDef
 
 	// Per-type gen-and-run (gated by auto.E2eTest.Quick)
 	if auto.E2eTest.Quick {
-		tasks = append(tasks, TestTaskDef{
+		tasks = append(tasks, AutoGenTaskDef{
 			Key: "quick-test-cases", ID: "T-quick-gen-cases",
 			Title: "Generate Quick Test Cases", Priority: "P1", EstimatedTime: "30min-1h",
 			Type: TypeTestGenCases, Scope: "all",
 			StrategyKind: "generate",
 		})
 		for _, typ := range interfaces {
-			tasks = append(tasks, TestTaskDef{
+			tasks = append(tasks, AutoGenTaskDef{
 				Key: "quick-gen-and-run-" + typ, ID: "T-quick-gen-and-run-" + typ,
 				Title: fmt.Sprintf("Generate and Run Quick Test Scripts (%s)", typ), Priority: "P1", EstimatedTime: "1-2h",
 				Type: TypeTestGenAndRun, Scope: "all", TestType: typ,
 				StrategyKind: "generate",
 			})
 		}
-		tasks = append(tasks, TestTaskDef{
+		tasks = append(tasks, AutoGenTaskDef{
 			Key: "quick-graduate", ID: "T-quick-graduate",
 			Title: "Graduate Quick Test Scripts", Priority: "P1", EstimatedTime: "15min",
 			Type: TypeTestGraduate, Scope: "all",
@@ -154,7 +154,7 @@ func GetQuickTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []TestT
 		})
 
 		// Shared
-		tasks = append(tasks, TestTaskDef{
+		tasks = append(tasks, AutoGenTaskDef{
 			Key: "quick-verify-regression", ID: "T-quick-verify-regression",
 			Title: "Verify Quick E2E Regression", Priority: "P1", EstimatedTime: "15min",
 			Type: TypeTestVerifyRegression, Scope: "all",
@@ -163,12 +163,12 @@ func GetQuickTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []TestT
 
 	// Validation tasks (gated by auto.Validation.Quick)
 	if auto.Validation.Quick {
-		tasks = append(tasks, TestTaskDef{
+		tasks = append(tasks, AutoGenTaskDef{
 			Key: "validate-code", ID: "T-validate-code",
 			Title: "Validate Code Quality", Priority: "P2", EstimatedTime: "15min",
 			Type: TypeValidationCode, Scope: "all", MainSession: false,
 		})
-		tasks = append(tasks, TestTaskDef{
+		tasks = append(tasks, AutoGenTaskDef{
 			Key: "validate-ux", ID: "T-validate-ux",
 			Title: "Validate User Experience", Priority: "P2", EstimatedTime: "15min",
 			Type: TypeValidationUx, Scope: "all", MainSession: true,
@@ -177,7 +177,7 @@ func GetQuickTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []TestT
 
 	// Spec drift detection (gated by auto.ConsolidateSpecs.Quick)
 	if auto.ConsolidateSpecs.Quick {
-		tasks = append(tasks, TestTaskDef{
+		tasks = append(tasks, AutoGenTaskDef{
 			Key: "quick-drift-detection", ID: "T-quick-doc-drift",
 			Title: "Detect Spec Drift", Priority: "P2", EstimatedTime: "15min",
 			Type: TypeDocDrift, Scope: "all",
@@ -186,7 +186,7 @@ func GetQuickTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []TestT
 
 	// Clean code task (gated by auto.CleanCode.Quick)
 	if auto.CleanCode.Quick {
-		tasks = append(tasks, TestTaskDef{
+		tasks = append(tasks, AutoGenTaskDef{
 			Key: "quick-clean-code", ID: "T-clean-code",
 			Title: "Simplify and Clean Code", Priority: "P2", EstimatedTime: "20min",
 			Type: TypeCleanCode, Scope: "all",
@@ -199,7 +199,7 @@ func GetQuickTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []TestT
 }
 
 // GenerateTestTaskMD generates the .md file content for a test task.
-func GenerateTestTaskMD(def TestTaskDef, _ string) ([]byte, error) {
+func GenerateTestTaskMD(def AutoGenTaskDef, _ string) ([]byte, error) {
 	var buf strings.Builder
 
 	// Frontmatter
@@ -251,7 +251,7 @@ func formatYAMLList(items []string) string {
 }
 
 // resolveBreakdownDeps sets dependency chains for breakdown test tasks.
-func resolveBreakdownDeps(tasks []TestTaskDef, interfaces []string, auto forgeconfig.AutoConfig) {
+func resolveBreakdownDeps(tasks []AutoGenTaskDef, interfaces []string, auto forgeconfig.AutoConfig) {
 	if !auto.E2eTest.Full && !auto.ConsolidateSpecs.Full && !auto.CleanCode.Full && !auto.Validation.Full {
 		return // no tasks to wire
 	}
@@ -307,7 +307,7 @@ func resolveBreakdownDeps(tasks []TestTaskDef, interfaces []string, auto forgeco
 }
 
 // resolveQuickDeps sets dependency chains for quick test tasks.
-func resolveQuickDeps(tasks []TestTaskDef, interfaces []string, auto forgeconfig.AutoConfig) {
+func resolveQuickDeps(tasks []AutoGenTaskDef, interfaces []string, auto forgeconfig.AutoConfig) {
 	if !auto.E2eTest.Quick && !auto.ConsolidateSpecs.Quick && !auto.CleanCode.Quick && !auto.Validation.Quick {
 		return // no tasks to wire
 	}
@@ -355,7 +355,7 @@ func resolveQuickDeps(tasks []TestTaskDef, interfaces []string, auto forgeconfig
 }
 
 // findTaskIndex finds the index of the task with the given ID. Returns -1 if not found.
-func findTaskIndex(tasks []TestTaskDef, id string) int {
+func findTaskIndex(tasks []AutoGenTaskDef, id string) int {
 	for i, t := range tasks {
 		if t.ID == id {
 			return i
@@ -365,7 +365,7 @@ func findTaskIndex(tasks []TestTaskDef, id string) int {
 }
 
 // findTaskIndexByPrefix finds the index of the first task whose ID starts with the given prefix.
-func findTaskIndexByPrefix(tasks []TestTaskDef, prefix string) int {
+func findTaskIndexByPrefix(tasks []AutoGenTaskDef, prefix string) int {
 	for i, t := range tasks {
 		if strings.HasPrefix(t.ID, prefix) {
 			return i
@@ -379,7 +379,7 @@ func findTaskIndexByPrefix(tasks []TestTaskDef, prefix string) int {
 // For quick: depends on the max business task ID.
 // When T-clean-code exists, it is inserted between business tasks and test tasks.
 // Returns the updated tasks with first-test-task deps set.
-func ResolveFirstTestDep(tasks []TestTaskDef, existingTasks map[string]Task, mode string) {
+func ResolveFirstTestDep(tasks []AutoGenTaskDef, existingTasks map[string]Task, mode string) {
 	if len(tasks) == 0 {
 		return
 	}
@@ -509,8 +509,8 @@ func numericID(id string) int {
 	return n
 }
 
-// TaskFromFile builds a Task struct from a TestTaskDef.
-func (d TestTaskDef) TaskFromFile() Task {
+// TaskFromFile builds a Task struct from a AutoGenTaskDef.
+func (d AutoGenTaskDef) TaskFromFile() Task {
 	fileName := d.Key + ".md"
 	return Task{
 		ID:            d.ID,
@@ -528,10 +528,10 @@ func (d TestTaskDef) TaskFromFile() Task {
 	}
 }
 
-// GetDocEvalTask returns a TestTaskDef for the docs-only evaluation task (T-eval-doc).
+// GetDocEvalTask returns a AutoGenTaskDef for the docs-only evaluation task (T-eval-doc).
 // Dependencies are resolved separately by ResolveDocEvalDep.
-func GetDocEvalTask() TestTaskDef {
-	return TestTaskDef{
+func GetDocEvalTask() AutoGenTaskDef {
+	return AutoGenTaskDef{
 		Key:           "eval-doc",
 		ID:            "T-eval-doc",
 		Title:         "Evaluate Documentation Quality",
@@ -544,7 +544,7 @@ func GetDocEvalTask() TestTaskDef {
 
 // ResolveDocEvalDep sets the dependency of T-eval-doc on the last business task.
 // Uses lexicographic ordering to find the maximum task ID among business tasks.
-func ResolveDocEvalDep(task *TestTaskDef, existingTasks map[string]Task) {
+func ResolveDocEvalDep(task *AutoGenTaskDef, existingTasks map[string]Task) {
 	var bestID string
 	for _, t := range existingTasks {
 		if isAutoGenForDep(t.ID) {

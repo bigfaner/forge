@@ -377,7 +377,7 @@ func setFeatureMetadata(index *TaskIndex, projectRoot, slug string) {
 
 // GenerateTestTasks returns test task definitions for the given mode and interfaces.
 // Exported for use by caller (task 1.4).
-func GenerateTestTasks(mode string, capabilities []string, auto forgeconfig.AutoConfig) []TestTaskDef {
+func GenerateTestTasks(mode string, capabilities []string, auto forgeconfig.AutoConfig) []AutoGenTaskDef {
 	switch mode {
 	case "breakdown":
 		return GetBreakdownTestTasks(capabilities, auto)

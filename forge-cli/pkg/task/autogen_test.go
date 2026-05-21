@@ -109,7 +109,7 @@ func TestGetQuickTestTasks_SingleType(t *testing.T) {
 }
 
 func TestGenerateTestTaskMD(t *testing.T) {
-	def := TestTaskDef{
+	def := AutoGenTaskDef{
 		ID: "T-test-gen-scripts-api", Key: "gen-test-scripts-api",
 		Title: "Generate Test Scripts (api)", Priority: "P1",
 		EstimatedTime: "1-2h", Dependencies: []string{"T-test-eval-cases"},
@@ -139,7 +139,7 @@ func TestGenerateTestTaskMD(t *testing.T) {
 }
 
 func TestGenerateTestTaskMD_SharedTask(t *testing.T) {
-	def := TestTaskDef{
+	def := AutoGenTaskDef{
 		ID: "T-test-gen-cases", Key: "gen-test-cases",
 		Title: "Generate Test Cases", Priority: "P1",
 		EstimatedTime: "1-2h", Dependencies: []string{},
@@ -345,7 +345,7 @@ func TestGetBreakdownTestTasks_PerType_ThreeTypes(t *testing.T) {
 }
 
 func TestGenerateTestTaskMD_WithTestType(t *testing.T) {
-	def := TestTaskDef{
+	def := AutoGenTaskDef{
 		ID: "T-test-gen-scripts-api", Key: "gen-test-scripts-api",
 		Title: "Generate Test Scripts (api)", Priority: "P1",
 		EstimatedTime: "1-2h", Dependencies: []string{"T-test-eval-cases"},
