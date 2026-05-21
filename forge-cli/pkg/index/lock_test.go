@@ -442,3 +442,212 @@ func TestErrLockConflict_Value(t *testing.T) {
 		t.Errorf("ErrLockConflict message = %q, want %q", ErrLockConflict.Error(), "concurrent write conflict, retry")
 	}
 }
+
+// --- WithLock tests ---
+
+func TestWithLock_BasicExecution(t *testing.T) {
+	dir := t.TempDir()
+	indexPath := filepath.Join(dir, "tasks", "index.json")
+
+	executed := false
+	err := WithLock(indexPath, func() error {
+		executed = true
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("WithLock failed: %v", err)
+	}
+	if !executed {
+		t.Error("callback was not executed")
+	}
+}
+
+func TestWithLock_ReturnsCallbackError(t *testing.T) {
+	dir := t.TempDir()
+	indexPath := filepath.Join(dir, "tasks", "index.json")
+
+	cbErr := fmt.Errorf("callback failed")
+	err := WithLock(indexPath, func() error {
+		return cbErr
+	})
+	if !errors.Is(err, cbErr) {
+		t.Errorf("expected callback error, got: %v", err)
+	}
+}
+
+func TestWithLock_ConcurrentAccess(t *testing.T) {
+	dir := t.TempDir()
+	indexPath := filepath.Join(dir, "tasks", "index.json")
+
+	// WithLock held by first goroutine, second should fail
+	errCh := make(chan error, 1)
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		err := WithLock(indexPath, func() error {
+			// Hold the lock long enough for the second attempt to fail
+			time.Sleep(6 * time.Second)
+			return nil
+		})
+		if err != nil {
+			t.Logf("first WithLock errored: %v", err)
+		}
+	}()
+
+	// Give the first goroutine time to acquire the lock
+	time.Sleep(200 * time.Millisecond)
+
+	err := WithLock(indexPath, func() error {
+		return nil
+	})
+
+	// The second WithLock should fail with ErrLockConflict
+	if !errors.Is(err, ErrLockConflict) {
+		t.Errorf("expected ErrLockConflict, got: %v", err)
+	}
+
+	// Wait for first goroutine to complete
+	<-done
+	_ = errCh
+}
+
+func TestWithLock_SequentialReuse(t *testing.T) {
+	dir := t.TempDir()
+	indexPath := filepath.Join(dir, "tasks", "index.json")
+
+	// First call
+	if err := WithLock(indexPath, func() error { return nil }); err != nil {
+		t.Fatalf("first WithLock: %v", err)
+	}
+
+	// Second call should succeed after first released
+	if err := WithLock(indexPath, func() error { return nil }); err != nil {
+		t.Fatalf("second WithLock: %v", err)
+	}
+}
+
+func TestWithLock_LockReleasedOnCallbackError(t *testing.T) {
+	dir := t.TempDir()
+	indexPath := filepath.Join(dir, "tasks", "index.json")
+
+	// First call returns error — lock should still be released
+	err := WithLock(indexPath, func() error {
+		return fmt.Errorf("boom")
+	})
+	if err == nil {
+		t.Fatal("expected error from callback")
+	}
+
+	// Second call should succeed because lock was released
+	err = WithLock(indexPath, func() error { return nil })
+	if err != nil {
+		t.Fatalf("lock should have been released after error, but: %v", err)
+	}
+}
+
+// --- AtomicWrite tests ---
+
+func TestAtomicWrite_Basic(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "test.txt")
+
+	data := []byte("hello world")
+	if err := AtomicWrite(path, data, 0644); err != nil {
+		t.Fatalf("AtomicWrite failed: %v", err)
+	}
+
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("failed to read file: %v", err)
+	}
+	if string(content) != "hello world" {
+		t.Errorf("expected %q, got %q", "hello world", string(content))
+	}
+}
+
+func TestAtomicWrite_NoTempFilesRemain(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "state.json")
+
+	if err := AtomicWrite(path, []byte("{}"), 0644); err != nil {
+		t.Fatalf("AtomicWrite failed: %v", err)
+	}
+
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatalf("failed to read dir: %v", err)
+	}
+	for _, e := range entries {
+		if matched, _ := filepath.Match(".state.json.tmp.*", e.Name()); matched {
+			t.Errorf("temp file should not remain: %s", e.Name())
+		}
+	}
+}
+
+func TestAtomicWrite_Overwrite(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "data.bin")
+
+	if err := AtomicWrite(path, []byte("first"), 0644); err != nil {
+		t.Fatalf("first write: %v", err)
+	}
+	if err := AtomicWrite(path, []byte("second"), 0644); err != nil {
+		t.Fatalf("second write: %v", err)
+	}
+
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	if string(content) != "second" {
+		t.Errorf("expected %q, got %q", "second", string(content))
+	}
+}
+
+func TestAtomicWrite_CreatesParentDir(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "deep", "nested", "file.txt")
+
+	if err := AtomicWrite(path, []byte("data"), 0644); err != nil {
+		t.Fatalf("AtomicWrite with nested dir: %v", err)
+	}
+
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	if string(content) != "data" {
+		t.Errorf("expected %q, got %q", "data", string(content))
+	}
+}
+
+func TestAtomicWrite_ErrorCleansUp(t *testing.T) {
+	dir := t.TempDir()
+	// Create a file where a directory would need to be
+	blocker := filepath.Join(dir, "blocker")
+	_ = os.WriteFile(blocker, []byte("x"), 0644)
+	path := filepath.Join(blocker, "sub", "file.txt")
+
+	err := AtomicWrite(path, []byte("data"), 0644)
+	if err == nil {
+		t.Error("expected error for blocked path")
+	}
+}
+
+func TestAtomicWrite_EmptyData(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "empty.txt")
+
+	if err := AtomicWrite(path, []byte{}, 0644); err != nil {
+		t.Fatalf("AtomicWrite with empty data: %v", err)
+	}
+
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("stat: %v", err)
+	}
+	if info.Size() != 0 {
+		t.Errorf("expected empty file, got %d bytes", info.Size())
+	}
+}

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"forge-cli/pkg/index"
 )
 
 // LoadState loads the task state from the given file path.
@@ -24,7 +26,7 @@ func LoadState(path string) (*TaskState, error) {
 	return &state, nil
 }
 
-// SaveState saves the task state to the given file path.
+// SaveState saves the task state to the given file path using atomic write (temp+rename).
 func SaveState(path string, state *TaskState) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return fmt.Errorf("failed to create state directory: %w", err)
@@ -34,10 +36,7 @@ func SaveState(path string, state *TaskState) error {
 		return fmt.Errorf("failed to marshal state: %w", err)
 	}
 	data = append(data, '\n')
-	if err := os.WriteFile(path, data, 0644); err != nil {
-		return fmt.Errorf("failed to write state: %w", err)
-	}
-	return nil
+	return index.AtomicWrite(path, data, 0644)
 }
 
 // DeleteState removes the state file.

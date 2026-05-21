@@ -68,3 +68,16 @@ func UnlockFile(f *os.File) error {
 	}
 	return err
 }
+
+// WithLock acquires the advisory lock for indexPath, calls fn, then releases the lock.
+// The lock is always released (even if fn panics) via defer.
+// Returns ErrLockConflict if the lock cannot be acquired within the 5-second timeout.
+func WithLock(indexPath string, fn func() error) error {
+	lock, err := LockFile(indexPath)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = UnlockFile(lock) }()
+
+	return fn()
+}

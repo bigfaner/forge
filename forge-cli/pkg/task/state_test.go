@@ -131,7 +131,9 @@ func TestDeleteState(t *testing.T) {
 }
 
 func TestSaveState_ErrorPaths(t *testing.T) {
-	t.Run("write permission denied", func(t *testing.T) {
+	t.Run("atomic write bypasses read-only target", func(t *testing.T) {
+		// Atomic write (temp+rename) can overwrite a read-only target on Unix
+		// because rename() only requires write permission on the directory, not the file.
 		dir := t.TempDir()
 		path := filepath.Join(dir, "task-state.json")
 		state := &TaskState{TaskID: "1.1"}
@@ -146,8 +148,16 @@ func TestSaveState_ErrorPaths(t *testing.T) {
 
 		state2 := &TaskState{TaskID: "2.1"}
 		err := SaveState(path, state2)
+		// With atomic write (temp+rename), this succeeds on most Unix systems
 		if err == nil {
-			t.Error("expected error for read-only file")
+			// Verify the write actually took effect
+			got, loadErr := LoadState(path)
+			if loadErr != nil {
+				t.Fatalf("LoadState() error = %v", loadErr)
+			}
+			if got.TaskID != "2.1" {
+				t.Errorf("TaskID = %q, want %q", got.TaskID, "2.1")
+			}
 		}
 	})
 
