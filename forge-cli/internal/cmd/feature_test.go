@@ -345,34 +345,30 @@ func TestFeatureStatus_WithScores(t *testing.T) {
 	assert.Contains(t, output, "UI: —") // no UI design, should show em-dash
 }
 
-func TestFeatureList_SortedByManifestMtime(t *testing.T) {
+func TestFeatureList_SortedByCreatedDescending(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test-project\n"), 0644))
 
-	// Create features with different manifest mtimes
-	// We control mtime via os.Chtimes to guarantee ordering regardless of filesystem timing
-
+	// Create features with different created dates in frontmatter.
+	// Lexicographic order differs from date order to verify proper sorting.
 	type featureSpec struct {
-		slug  string
-		mtime time.Time
+		slug    string
+		created string
 	}
 	specs := []featureSpec{
-		{slug: "oldest-feature", mtime: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)},
-		{slug: "middle-feature", mtime: time.Date(2026, 3, 15, 12, 0, 0, 0, time.UTC)},
-		{slug: "newest-feature", mtime: time.Date(2026, 5, 16, 10, 0, 0, 0, time.UTC)},
+		{slug: "alpha-feature", created: "2026-01-15"},
+		{slug: "beta-feature", created: "2026-03-10"},
+		{slug: "gamma-feature", created: "2026-02-01"},
 	}
 
 	for _, spec := range specs {
 		featureDir := filepath.Join(dir, feature.FeaturesDir, spec.slug)
 		require.NoError(t, os.MkdirAll(featureDir, 0755))
 
-		manifestContent := fmt.Sprintf("---\nfeature: %s\nstatus: in-progress\n---\n", spec.slug)
+		manifestContent := fmt.Sprintf("---\nfeature: %s\nstatus: in-progress\ncreated: %s\n---\n", spec.slug, spec.created)
 		manifestPath := filepath.Join(featureDir, feature.ManifestFileName)
 		require.NoError(t, os.WriteFile(manifestPath, []byte(manifestContent), 0644))
-
-		// Set manifest mtime explicitly
-		require.NoError(t, os.Chtimes(manifestPath, spec.mtime, spec.mtime))
 
 		// Create task index
 		tasksDir := filepath.Join(featureDir, feature.TasksDirName)
@@ -394,40 +390,91 @@ func TestFeatureList_SortedByManifestMtime(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Verify features appear in reverse chronological order (newest first)
-	newestIdx := strings.Index(output, "newest-feature")
-	middleIdx := strings.Index(output, "middle-feature")
-	oldestIdx := strings.Index(output, "oldest-feature")
+	// Verify newest first: beta (Mar 10) > gamma (Feb 1) > alpha (Jan 15)
+	betaIdx := strings.Index(output, "beta-feature")
+	gammaIdx := strings.Index(output, "gamma-feature")
+	alphaIdx := strings.Index(output, "alpha-feature")
 
-	assert.True(t, newestIdx < middleIdx, "newest-feature should appear before middle-feature")
-	assert.True(t, middleIdx < oldestIdx, "middle-feature should appear before oldest-feature")
+	assert.True(t, betaIdx < gammaIdx, "beta-feature (Mar) should appear before gamma-feature (Feb)")
+	assert.True(t, gammaIdx < alphaIdx, "gamma-feature (Feb) should appear before alpha-feature (Jan)")
 }
 
-func TestFeatureList_MissingManifestSortsToEnd(t *testing.T) {
+func TestFeatureList_SortedByMtimeFallback(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test-project\n"), 0644))
 
-	// Create feature with a manifest
-	featureDir := filepath.Join(dir, feature.FeaturesDir, "with-manifest")
-	require.NoError(t, os.MkdirAll(featureDir, 0755))
-	manifestContent := "---\nfeature: with-manifest\nstatus: in-progress\n---\n"
-	manifestPath := filepath.Join(featureDir, feature.ManifestFileName)
-	require.NoError(t, os.WriteFile(manifestPath, []byte(manifestContent), 0644))
-	require.NoError(t, os.Chtimes(manifestPath, time.Date(2026, 5, 16, 10, 0, 0, 0, time.UTC), time.Date(2026, 5, 16, 10, 0, 0, 0, time.UTC)))
+	// Create features WITHOUT created field — should fall back to mtime.
+	type featureSpec struct {
+		slug  string
+		mtime time.Time
+	}
+	specs := []featureSpec{
+		{slug: "old-no-created", mtime: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{slug: "new-no-created", mtime: time.Date(2026, 5, 16, 10, 0, 0, 0, time.UTC)},
+	}
 
-	tasksDir := filepath.Join(featureDir, feature.TasksDirName)
-	require.NoError(t, os.MkdirAll(tasksDir, 0755))
-	index := &task.TaskIndex{Feature: "with-manifest"}
-	indexData, _ := json.Marshal(index)
-	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, feature.IndexFileName), indexData, 0644))
+	for _, spec := range specs {
+		featureDir := filepath.Join(dir, feature.FeaturesDir, spec.slug)
+		require.NoError(t, os.MkdirAll(featureDir, 0755))
 
-	// Create feature WITHOUT a manifest (no manifest.md file)
-	featureDir2 := filepath.Join(dir, feature.FeaturesDir, "no-manifest")
+		manifestContent := fmt.Sprintf("---\nfeature: %s\nstatus: in-progress\n---\n", spec.slug)
+		manifestPath := filepath.Join(featureDir, feature.ManifestFileName)
+		require.NoError(t, os.WriteFile(manifestPath, []byte(manifestContent), 0644))
+		require.NoError(t, os.Chtimes(manifestPath, spec.mtime, spec.mtime))
+
+		tasksDir := filepath.Join(featureDir, feature.TasksDirName)
+		require.NoError(t, os.MkdirAll(tasksDir, 0755))
+		index := &task.TaskIndex{Feature: spec.slug}
+		indexData, err := json.Marshal(index)
+		require.NoError(t, err)
+		require.NoError(t, os.WriteFile(filepath.Join(tasksDir, feature.IndexFileName), indexData, 0644))
+	}
+
+	origWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(origWd) }()
+	require.NoError(t, os.Chdir(dir))
+
+	output, err := captureOutput(func() error {
+		rootCmd.SetArgs([]string{"feature", "list"})
+		return rootCmd.Execute()
+	})
+	require.NoError(t, err)
+
+	newIdx := strings.Index(output, "new-no-created")
+	oldIdx := strings.Index(output, "old-no-created")
+	assert.True(t, newIdx < oldIdx, "feature with newer mtime should appear before older mtime when no created field")
+}
+
+func TestFeatureList_CreatedTakesPriorityOverMtime(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test-project\n"), 0644))
+
+	// Feature with older mtime but newer created date should sort first.
+	featureDir1 := filepath.Join(dir, feature.FeaturesDir, "old-mtime-new-created")
+	require.NoError(t, os.MkdirAll(featureDir1, 0755))
+	manifest1 := "---\nfeature: old-mtime-new-created\nstatus: in-progress\ncreated: 2026-05-01\n---\n"
+	manifestPath1 := filepath.Join(featureDir1, feature.ManifestFileName)
+	require.NoError(t, os.WriteFile(manifestPath1, []byte(manifest1), 0644))
+	require.NoError(t, os.Chtimes(manifestPath1, time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)))
+	tasksDir1 := filepath.Join(featureDir1, feature.TasksDirName)
+	require.NoError(t, os.MkdirAll(tasksDir1, 0755))
+	index1 := &task.TaskIndex{Feature: "old-mtime-new-created"}
+	indexData1, _ := json.Marshal(index1)
+	require.NoError(t, os.WriteFile(filepath.Join(tasksDir1, feature.IndexFileName), indexData1, 0644))
+
+	// Feature with newer mtime but older created date should sort second.
+	featureDir2 := filepath.Join(dir, feature.FeaturesDir, "new-mtime-old-created")
 	require.NoError(t, os.MkdirAll(featureDir2, 0755))
+	manifest2 := "---\nfeature: new-mtime-old-created\nstatus: in-progress\ncreated: 2026-01-01\n---\n"
+	manifestPath2 := filepath.Join(featureDir2, feature.ManifestFileName)
+	require.NoError(t, os.WriteFile(manifestPath2, []byte(manifest2), 0644))
+	require.NoError(t, os.Chtimes(manifestPath2, time.Date(2026, 5, 1, 0, 0, 0, 0, time.UTC), time.Date(2026, 5, 1, 0, 0, 0, 0, time.UTC)))
 	tasksDir2 := filepath.Join(featureDir2, feature.TasksDirName)
 	require.NoError(t, os.MkdirAll(tasksDir2, 0755))
-	index2 := &task.TaskIndex{Feature: "no-manifest"}
+	index2 := &task.TaskIndex{Feature: "new-mtime-old-created"}
 	indexData2, _ := json.Marshal(index2)
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir2, feature.IndexFileName), indexData2, 0644))
 
@@ -442,11 +489,59 @@ func TestFeatureList_MissingManifestSortsToEnd(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Feature with manifest should appear before feature without
-	withIdx := strings.Index(output, "with-manifest")
-	noIdx := strings.Index(output, "no-manifest")
+	newCreatedIdx := strings.Index(output, "old-mtime-new-created")
+	oldCreatedIdx := strings.Index(output, "new-mtime-old-created")
+	assert.True(t, newCreatedIdx < oldCreatedIdx, "feature with newer created date should sort first regardless of mtime")
+}
 
-	assert.True(t, withIdx < noIdx, "feature with manifest should appear before feature without manifest")
+func TestFeatureList_MissingCreatedSortsAfterCreated(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test-project\n"), 0644))
+
+	// Create feature WITH created field
+	featureDir := filepath.Join(dir, feature.FeaturesDir, "with-created")
+	require.NoError(t, os.MkdirAll(featureDir, 0755))
+	manifestContent := "---\nfeature: with-created\nstatus: in-progress\ncreated: 2026-05-16\n---\n"
+	manifestPath := filepath.Join(featureDir, feature.ManifestFileName)
+	require.NoError(t, os.WriteFile(manifestPath, []byte(manifestContent), 0644))
+
+	tasksDir := filepath.Join(featureDir, feature.TasksDirName)
+	require.NoError(t, os.MkdirAll(tasksDir, 0755))
+	index := &task.TaskIndex{Feature: "with-created"}
+	indexData, _ := json.Marshal(index)
+	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, feature.IndexFileName), indexData, 0644))
+
+	// Create feature WITHOUT created field (fallback to mtime, which sorts after valid created)
+	featureDir2 := filepath.Join(dir, feature.FeaturesDir, "no-created")
+	require.NoError(t, os.MkdirAll(featureDir2, 0755))
+	manifestContent2 := "---\nfeature: no-created\nstatus: in-progress\n---\n"
+	manifestPath2 := filepath.Join(featureDir2, feature.ManifestFileName)
+	require.NoError(t, os.WriteFile(manifestPath2, []byte(manifestContent2), 0644))
+	require.NoError(t, os.Chtimes(manifestPath2, time.Date(2026, 5, 16, 10, 0, 0, 0, time.UTC), time.Date(2026, 5, 16, 10, 0, 0, 0, time.UTC)))
+
+	tasksDir2 := filepath.Join(featureDir2, feature.TasksDirName)
+	require.NoError(t, os.MkdirAll(tasksDir2, 0755))
+	index2 := &task.TaskIndex{Feature: "no-created"}
+	indexData2, _ := json.Marshal(index2)
+	require.NoError(t, os.WriteFile(filepath.Join(tasksDir2, feature.IndexFileName), indexData2, 0644))
+
+	origWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(origWd) }()
+	require.NoError(t, os.Chdir(dir))
+
+	output, err := captureOutput(func() error {
+		rootCmd.SetArgs([]string{"feature", "list"})
+		return rootCmd.Execute()
+	})
+	require.NoError(t, err)
+
+	// Feature with created should appear before feature without created (fallback sorts to end)
+	withIdx := strings.Index(output, "with-created")
+	noIdx := strings.Index(output, "no-created")
+
+	assert.True(t, withIdx < noIdx, "feature with created field should appear before feature without created")
 }
 
 func TestFeatureSet_CreatesDirAndState(t *testing.T) {

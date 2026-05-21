@@ -175,7 +175,8 @@ type featureInfo struct {
 	TestScore     string
 	Completed     int
 	Total         int
-	ManifestMtime int64 // unix seconds of manifest.md mod time; 0 if missing/unreadable
+	Created       string // created field from manifest frontmatter (YYYY-MM-DD); empty if missing
+	ManifestMtime int64  // unix seconds of manifest.md mod time; 0 if missing/unreadable
 }
 
 func runFeatureList(_ *cobra.Command, _ []string) {
@@ -189,9 +190,23 @@ func runFeatureList(_ *cobra.Command, _ []string) {
 		Exit(newErrFeatureDiscovery(err))
 	}
 
-	// Sort by manifest mtime descending (newest first).
-	// Features with missing/unreadable manifest (mtime=0) sort to the end.
+	// Sort by created date descending (newest first).
+	// Created is stored as "YYYY-MM-DD" which sorts correctly lexicographically.
+	// Features without created field fall back to manifest mtime.
 	sort.Slice(features, func(i, j int) bool {
+		ci, cj := features[i].Created, features[j].Created
+		// Items with created field sort before items without (descending).
+		if ci != "" && cj != "" {
+			return ci > cj
+		}
+		// If only one has created, it sorts first.
+		if ci != "" {
+			return true
+		}
+		if cj != "" {
+			return false
+		}
+		// Both missing created: fall back to mtime descending.
 		return features[i].ManifestMtime > features[j].ManifestMtime
 	})
 
@@ -200,15 +215,18 @@ func runFeatureList(_ *cobra.Command, _ []string) {
 		return
 	}
 
+	// Calculate dynamic slug column width.
+	slugWidth := calcSlugColWidth(mapFeaturesToSlugLens(features))
+
 	PrintBlockStart()
 	PrintField("FEATURES", fmt.Sprintf("%d found", len(features)))
 	fmt.Println()
 
 	// Table header
-	fmt.Printf("  %-30s %-12s %-10s %-10s %-10s %-10s %-10s\n",
-		"SLUG", "STATUS", "PROGRESS", "PRD", "DESIGN", "UI", "TESTS")
-	fmt.Printf("  %-30s %-12s %-10s %-10s %-10s %-10s %-10s\n",
-		strings.Repeat("-", 30),
+	fmt.Printf("  %-s %-12s %-10s %-10s %-10s %-10s %-10s\n",
+		padRight("SLUG", slugWidth), "STATUS", "PROGRESS", "PRD", "DESIGN", "UI", "TESTS")
+	fmt.Printf("  %-s %-12s %-10s %-10s %-10s %-10s %-10s\n",
+		strings.Repeat("-", slugWidth),
 		strings.Repeat("-", 10),
 		strings.Repeat("-", 8),
 		strings.Repeat("-", 5),
@@ -218,8 +236,8 @@ func runFeatureList(_ *cobra.Command, _ []string) {
 
 	for _, f := range features {
 		progress := fmt.Sprintf("%d/%d", f.Completed, f.Total)
-		fmt.Printf("  %-30s %-12s %-10s %-10s %-10s %-10s %-10s\n",
-			truncateSlug(f.Slug, 30),
+		fmt.Printf("  %-s %-12s %-10s %-10s %-10s %-10s %-10s\n",
+			padRight(truncateSlug(f.Slug, slugWidth), slugWidth),
 			f.Status,
 			progress,
 			scoreDisplay(f.PRDScore),
@@ -322,16 +340,19 @@ func discoverFeatures(projectRoot string) ([]featureInfo, error) {
 		slug := entry.Name()
 		featureDir := filepath.Join(featuresDir, slug)
 
-		// Read manifest status and mtime
+		// Read manifest status, created, and mtime
 		status := ""
+		created := ""
 		var manifestMtime int64
 		manifestPath := filepath.Join(featureDir, feature.ManifestFileName)
 		if data, err := os.ReadFile(manifestPath); err == nil {
 			var meta struct {
-				Status string `yaml:"status"`
+				Status  string `yaml:"status"`
+				Created string `yaml:"created"`
 			}
 			if err := parseYAMLFrontmatter(data, &meta); err == nil {
 				status = meta.Status
+				created = meta.Created
 			}
 		}
 		if info, err := os.Stat(manifestPath); err == nil {
@@ -357,6 +378,7 @@ func discoverFeatures(projectRoot string) ([]featureInfo, error) {
 			Completed:     completed,
 			Total:         total,
 			ManifestMtime: manifestMtime,
+			Created:       created,
 		})
 	}
 
@@ -441,4 +463,13 @@ func newErrFeatureDiscovery(err error) *AIError {
 		"Ensure docs/features/ directory exists",
 		"ls docs/features/",
 	)
+}
+
+// mapFeaturesToSlugLens extracts slug lengths from feature list.
+func mapFeaturesToSlugLens(features []featureInfo) []int {
+	lens := make([]int, len(features))
+	for i, f := range features {
+		lens[i] = len(f.Slug)
+	}
+	return lens
 }

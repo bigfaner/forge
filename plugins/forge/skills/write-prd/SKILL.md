@@ -183,6 +183,7 @@ Placement rules, Navigation Architecture, and downstream impact rules — see `r
 
 Create `manifest.md` at the feature root using `templates/manifest.md`:
 - Fill in PRD entries and summaries
+- Replace `{{DATE}}` with today's date in `YYYY-MM-DD` format
 - Set status to `prd`
 - Include UI Functions row only if `prd/prd-ui-functions.md` was created
 

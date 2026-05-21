@@ -86,8 +86,8 @@ domains: [cli, commands, reference, skills]
 | `forge worktree list` | 列出所有 git worktree | `worktree.go` |
 | `forge worktree remove <slug>` | 移除 worktree（`--hard` 删除分支，`--force` 强制） | `worktree.go` |
 | `forge worktree resume <slug>` | 在已有 worktree 中重新启动 Claude | `worktree.go` |
-| `forge worktree status [<slug>]` | 显示 worktree 状态（分支、提交、未提交文件）；无参数显示全部 | `worktree.go` |
-| `forge worktree push` | 推送当前 worktree 分支到远程并设置上游跟踪 | `worktree.go` |
+| `forge worktree push` | 推送当前 worktree 分支到远程并设置 upstream 跟踪 | `worktree.go` |
+| `forge worktree status [<slug>]` | 显示 worktree 状态（分支、提交、未提交文件列表）；无参数时显示所有 worktree | `worktree.go` |
 
 ### forge config — 配置管理
 
@@ -118,6 +118,18 @@ domains: [cli, commands, reference, skills]
 | `forge forensic search [project-path]` | 在 history.jsonl 中搜索匹配的会话 | `forensic.go` |
 | `forge forensic extract <session-jsonl-path>` | 从会话记录中提取紧凑证据 | `forensic.go` |
 | `forge forensic subagents <session-dir-path>` | 列出会话的子 agent 记录 | `forensic.go` |
+
+## CLI 表格渲染约定
+
+列表命令（`forge feature list`、`forge lesson`、`forge proposal`）的 slug/name 列使用动态宽度：
+
+- **宽度计算**: `clamp(max(30, maxSlugLen + 2), 60)` — 最小 30 字符，最大 60 字符
+- **实现**: `calcSlugColWidth()` 计算宽度，`padRight()` 对齐，`truncateSlug()` 截断超长值
+- **新增列表命令时**必须遵循此模式（常量 `slugColMinWidth` / `slugColMaxWidth` 在 `proposal.go` 中定义）
+
+## 列表排序约定
+
+所有列表命令按 frontmatter `created` 字段（`YYYY-MM-DD` 格式）降序排列。缺少 `created` 时 fallback 到文件 mtime。git clone 会重置 mtime，因此 `created` frontmatter 是唯一可靠的创建时间源。
 
 ## 已移除的命令（禁止使用）
 
