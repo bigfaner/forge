@@ -118,7 +118,7 @@ Test naming convention:
 // e.g. "bug: returns null when input is empty string"
 ```
 
-Run `just test [scope]` — it **must fail** before the fix (apply **Scope Resolution** from Forge Guide before invoking):
+Run `just test` (pass `[scope]` from `--scope` parameter if specified) — it **must fail** before the fix:
 
 ```bash
 just test [scope]
@@ -165,13 +165,13 @@ With failing tests in place, implement the minimal fix.
 
 ## Step 5: Verify (Quality Gate)
 
-Execute the quality gate sequence. Apply **Scope Resolution** from the Forge Guide for each command:
+Execute the quality gate sequence (pass `[scope]` from `--scope` parameter if specified):
 
 ```
 just compile [scope] → just fmt [scope] → just lint [scope] → just test [scope]
 ```
 
-Strict sequential order. Stop at first failure. See Forge Guide Quality Gate Protocol for failure actions.
+Strict sequential order. Stop at first failure. On failure: compile → fix & retry; fmt → non-blocking warning; lint → self-fix (1 retry) then blocked; test → fix & retry.
 
 E2E (if written in Step 3b):
 
