@@ -1,0 +1,46 @@
+{
+  "feature": "decouple-test-tasks-from-languages",
+  "proposal": "docs/proposals/decouple-test-tasks-from-languages/proposal.md",
+  "created": "2026-05-21",
+  "tasks": {
+    "1-remove-language-from-test-pipeline": {
+      "id": "1",
+      "title": "Remove language dependency from test pipeline",
+      "priority": "P0",
+      "estimatedTime": "2-3h",
+      "status": "pending",
+      "file": "1-remove-language-from-test-pipeline.md",
+      "record": "records/1-remove-language-from-test-pipeline.md",
+      "breaking": true,
+      "scope": "backend",
+      "mainSession": true,
+      "type": "coding.refactor"
+    },
+    "2-update-docs-and-config": {
+      "id": "2",
+      "title": "Update documentation and project config for interface-only model",
+      "priority": "P1",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-update-docs-and-config.md",
+      "record": "records/2-update-docs-and-config.md",
+      "type": "doc"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
