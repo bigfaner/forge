@@ -4,9 +4,150 @@ conventions:
   - testing-mobile.md
 ---
 
-# Mobile Test Script Generation Instructions
+# Mobile Type Instructions
 
-Type-specific Steps for **Mobile** (touch, gestures, screen transitions) test script generation. Loaded by the dispatcher when interface detection identifies Mobile-type test cases.
+Type-specific generation instructions for **Mobile** (touch, gestures, screen transitions) test scripts. Loaded by the dispatcher when interface detection identifies Mobile-type test cases.
+
+This file defines two zones:
+
+- **Golden Rules**: Framework-agnostic constraints that govern all Mobile test generation. These rules are mandatory and cannot be overridden by Convention files.
+- **Reconnaissance Hints**: Discovery-only guidance for extracting Mobile-specific information from source code. Hints inform the Fact Table, not the generated code directly.
+
+## Golden Rules
+
+Mobile-specific constraints beyond the universal principles in `_shared.md` (Isolation, Determinism, Timeout Protection, Idempotency, Resource Cleanup).
+
+### App State Reset
+
+Every test must clean application state before execution. No test may depend on or leave behind state from a previous test.
+
+**Constraint**: Before each test executes, the application must be returned to a clean baseline state. Acceptable methods include: kill and clear application data, or uninstall and reinstall. The specific mechanism is defined by the active Convention, not by this rule.
+
+**Rationale**: Mobile applications accumulate persistent state (local storage, cached data, user preferences, authentication tokens) that causes order-dependent failures. A test that passes in isolation fails when run after another test that modified the app state.
+
+**Antipattern guard**: Tests that assume the app is in a specific state without enforcing it, or tests that rely on data created by a previous test.
+
+### Permission Handling
+
+System permission dialogs (camera, location, notifications, contacts) must be handled as a pre-step, not as an ad-hoc dismissal during test execution.
+
+**Constraint**: Permissions must be pre-authorized before test execution, or system permission dialogs must be explicitly handled as a setup step at the beginning of the test. No test may assume permissions are already granted, and no test may dismiss a permission dialog mid-flow without declaring it as a pre-step.
+
+**Rationale**: System permission dialogs are non-deterministic -- they appear on first request and not thereafter, or reappear after app reinstalls. Unhandled permission dialogs block test execution and cause timeout failures.
+
+**Antipattern guard**: Tests that trigger a permission-requiring action without first handling the permission dialog, or tests that assume a specific permission state.
+
+### Deep Link Pattern
+
+Opening the application via URL scheme is a supported navigation entry point. Tests may use deep links as an alternative to in-app navigation.
+
+**Constraint**: Deep links (URL schemes that open the application to a specific screen) are a valid navigation method for test setup. Tests using deep links must declare the URL scheme and target path explicitly. The deep link mechanism is provided by the Convention, not by this rule.
+
+**Rationale**: Deep links provide a fast, deterministic way to navigate to specific application states without traversing the full UI flow. This is especially valuable for tests that target screens deep in the navigation hierarchy.
+
+**Antipattern guard**: Tests that navigate through 5+ intermediate screens to reach a target when a deep link could skip directly to it.
+
+### Element Location Strategy
+
+Element selection follows an abstract priority chain, not a framework-specific selector syntax:
+
+1. **Accessibility ID**: Use accessibility labels, test IDs, or accessibility identifiers from Fact Table entries
+2. **Resource ID**: Use platform resource identifiers (Android resource ID, iOS accessibility identifier)
+3. **Text content**: Use visible text as a last resort for element identification
+
+**Constraint**: Tests must prefer stable, unique identifiers (accessibility labels, resource IDs) over visible text. Text-based element location is fragile -- it breaks when copy changes and fails when the same text appears in multiple elements.
+
+**Hard Rule**: Never guess accessibility label or resource ID values. Every identifier locator must come from a Fact Table entry. If the Fact Table has no entry for the needed element, use text-based location as a fallback.
+
+### Touch and Gesture Principles
+
+Touch interactions follow framework-agnostic action categories:
+
+| Action Category | Description | Examples |
+|----------------|-------------|----------|
+| Tap | Brief contact with a single element | Single tap, double-tap, tap-and-hold |
+| Swipe | Directional gesture across the screen | Swipe left/right/up/down, swipe to scroll |
+| Input | Text entry into focused fields | Type text, clear field, paste |
+| Navigate | Move between screens or application states | Navigate forward, navigate back, open deep link |
+| System | Platform-level interactions | Launch application, terminate application, send to background |
+
+**Constraint**: Generated test code expresses interactions using these abstract categories. The Convention translates these categories into framework-specific commands. Golden Rules do not contain any framework-specific command syntax.
+
+**Antipattern guard**: Tests that use pixel coordinates for touch interactions instead of element-based targeting. Coordinates are device-dependent and break across screen sizes.
+
+### Screen Transition Assertions
+
+After navigation steps, assert the expected screen is visible before proceeding. Navigation is asynchronous on mobile -- the next screen is not immediately available.
+
+**Constraint**: Every navigation action must be followed by an assertion confirming the target screen is visible. The assertion waits for the target element to appear within a timeout window. The timeout value comes from the Convention, not from the test code.
+
+**Rationale**: Mobile navigation involves animations, network loading, and state transitions that are inherently asynchronous. Proceeding without confirming the target screen causes subsequent interactions to target elements from the previous screen, producing false failures.
+
+**Antipattern guard**: Navigation actions without a follow-up screen assertion, or fixed-duration waits between navigation and interaction.
+
+### Application Lifecycle
+
+Tests must declare application lifecycle events explicitly. The application must be in a known state before and after each test.
+
+**Constraint**: Each test must define its application lifecycle: launch at start, terminate at end. The specific lifecycle mechanism is defined by the Convention. No test may assume the application is already running.
+
+**Rationale**: Application lifecycle state affects test behavior. A test that assumes the app is running will fail if the app was terminated by a previous test's cleanup. Explicit lifecycle declaration makes each test independently executable.
+
+**Antipattern guard**: Tests that do not launch the application at the start, or tests that do not clean up the application state at the end.
+
+## Reconnaissance Hints
+
+<!-- Discovery-only: information extracted here populates the Fact Table. These hints do not directly guide code generation. -->
+
+Mobile reconnaissance discovers the project's app structure, screen definitions, and navigation routes from source code and configuration files.
+
+### Search Targets
+
+| Target | What It Finds | Discovery Method |
+|--------|---------------|------------------|
+| App manifest (Android) | App package identifier | Search for `package=` in `AndroidManifest.xml` |
+| App manifest (iOS) | iOS bundle identifier | Search for `CFBundleIdentifier` in `.plist` files |
+| React Native screens | Screen definitions and navigation calls | Search for `Stack.Screen` or `navigation.navigate` in `.tsx`/`.jsx` files |
+| Flutter routes | Route definitions | Search for `Navigator.push`, `GetPage`, or `routes:` in `.dart` files |
+| Accessibility labels | Element identifiers for test targeting | Search for `accessibilityLabel`, `testID`, `accessibilityIdentifier` in `.tsx`/`.jsx`/`.swift`/`.kt` files |
+| Entry point | App entry point | Search for `AppRegistry` or `main()` in `.tsx`/`.jsx`/`.dart`/`.swift` files |
+| App configuration | App identifiers in config | Search for `appId`, `bundleId`, `applicationId` in `.json`/`.gradle`/`.yaml` files |
+| Existing test flows | Test framework and conventions | Search for test configuration files (`.yaml`, `.json`, feature files) |
+
+### Reconnaissance Procedure
+
+1. **Detect mobile framework**: Identify whether the project uses React Native, Flutter, native Android, or native iOS from file structure and dependency files.
+2. **Extract app identifier**: Find the app bundle identifier (Android package name or iOS bundle ID). This is required for launching the application in tests.
+3. **Map screen definitions**: Extract screen names and navigation routes from the source code.
+4. **Discover accessibility labels**: Find `testID`, `accessibilityLabel`, or resource ID values used in the app's components. These become element identifiers in test scripts.
+5. **Locate existing test configurations**: If the project already has mobile test configuration files, analyze their structure for conventions and patterns.
+
+### Reference Example for Maestro
+
+<!-- Reference example for Maestro -- not generation instructions -->
+
+The following Maestro YAML patterns illustrate how the abstract principles above map to a specific framework. This section is for reconnaissance reference only -- it shows what existing Maestro flows look like, not how to generate them.
+
+**Flow structure** typically follows: app identifier declaration, environment variables, lifecycle hooks, and a command sequence.
+
+**Touch mapping** -- Maestro's command syntax for the abstract action categories:
+
+| Action Category | Maestro Command |
+|----------------|-----------------|
+| Tap | `tapOn` |
+| Long press | `longPressOn` |
+| Swipe | `swipe` |
+| Scroll to element | `scroll` |
+| Text input | `tapOn` + `inputText` |
+| Navigate back | `back` |
+| Launch app | `launchApp` |
+| Terminate app | `killApp` |
+
+**Element location in Maestro** uses a priority: text match > resource ID > index > relative position.
+
+**Screen assertion in Maestro**: `assertVisible` and `assertNotVisible` commands confirm screen state.
+
+**App lifecycle in Maestro**: `onFlowStart: [launchApp]` and `onFlowEnd: [killApp]` hooks manage lifecycle.
 
 ## Classification Indicators
 
@@ -20,33 +161,6 @@ Classify test cases as **Mobile** when they involve any of:
 - Platform-specific UI components (bottom sheets, native dialogs, permissions)
 - Push notifications, deep links
 
-## Reconnaissance Strategy
-
-Mobile reconnaissance discovers the project's app structure, screen definitions, and navigation routes from source code and configuration files.
-
-### Search Commands
-
-Run these searches to discover Mobile interface details. Adapt file extensions to the project's language and framework.
-
-| Target | Grep Command | What It Finds |
-|--------|-------------|---------------|
-| App manifest (Android) | `grep -rn "package=" --include='AndroidManifest.xml' .` | App package identifier |
-| App manifest (iOS) | `grep -rn "CFBundleIdentifier" --include='*.plist' .` | iOS bundle identifier |
-| React Native screens | `grep -rn "Stack.Screen\\|navigation.navigate" --include='*.tsx' --include='*.jsx' .` | Screen definitions and navigation calls |
-| Flutter routes | `grep -rn "Navigator.push\\|GetPage\\|routes:" --include='*.dart' .` | Route definitions |
-| Maestro flow configs | `find . -name '*.yaml' -exec grep -l 'appId\\|launchApp' {} \\;` | Existing Maestro test files |
-| Accessibility labels | `grep -rn "accessibilityLabel\\|testID\\|accessibilityIdentifier" --include='*.tsx' --include='*.jsx' --include='*.swift' --include='*.kt' .` | Element identifiers for test targeting |
-| Entry point | `grep -rn "AppRegistry\\|main()" --include='*.tsx' --include='*.jsx' --include='*.dart' --include='*.swift' .` | App entry point |
-| App configuration | `grep -rn '"appId"\\|"bundleId"\\|"applicationId"' --include='*.json' --include='*.gradle' --include='*.yaml' .` | App identifiers in config files |
-
-### Reconnaissance Procedure
-
-1. **Detect mobile framework**: Run the grep commands above. Identify whether the project uses React Native, Flutter, native Android, or native iOS.
-2. **Extract app identifier**: Find the app bundle identifier (Android package name or iOS bundle ID). This is required for Maestro's `appId` field.
-3. **Map screen definitions**: Extract screen names and navigation routes from the source code.
-4. **Discover accessibility labels**: Find `testID`, `accessibilityLabel`, or resource ID values used in the app's components. These become element selectors in test scripts.
-5. **Locate existing Maestro flows**: If the project already has Maestro YAML files, analyze their structure for conventions and patterns.
-
 ## Fact Table Required Keys
 
 After reconnaissance, the Fact Table must contain at least these Mobile-specific entries for the completeness gate to pass:
@@ -57,9 +171,9 @@ After reconnaissance, the Fact Table must contain at least these Mobile-specific
 | `MOBILE_FRAMEWORK` | Detected mobile framework | `MOBILE_FRAMEWORK` = `react-native` |
 | `MOBILE_SCREEN_*` | At least one screen name entry | `MOBILE_SCREEN_LOGIN` = `Login` |
 
-**Minimum requirement**: `MOBILE_APP_ID` must be non-UNKNOWN. Without the app identifier, Maestro cannot launch the app and no tests can execute. If `MOBILE_APP_ID` is UNKNOWN, skip Mobile test generation and emit a WARNING.
+**Minimum requirement**: `MOBILE_APP_ID` must be non-UNKNOWN. Without the app identifier, the test framework cannot launch the app and no tests can execute. If `MOBILE_APP_ID` is UNKNOWN, skip Mobile test generation and emit a WARNING.
 
-**Completeness gate rule** (from SKILL.md Step 1.5): If all required keys for Mobile are UNKNOWN, do NOT generate Mobile tests. Individual UNKNOWN keys for screens or accessibility labels are acceptable -- generate tests for discovered screens only.
+**Completeness gate rule**: If all required keys for Mobile are UNKNOWN, do NOT generate Mobile tests. Individual UNKNOWN keys for screens or accessibility labels are acceptable -- generate tests for discovered screens only.
 
 ## Verification Method
 
@@ -67,141 +181,27 @@ Before generating Mobile test scripts, confirm the project is actually a mobile 
 
 Run these checks in order -- first success is sufficient:
 
-| Check | Command | Pass Condition |
-|-------|---------|----------------|
-| Maestro config | `find . -name '*.yaml' -exec grep -l 'appId' {} \\;` | At least one Maestro flow file found |
-| React Native | `grep -rn "react-native" package.json` | `react-native` in dependencies |
-| Flutter | `ls pubspec.yaml && grep "flutter" pubspec.yaml` | Flutter project detected |
-| Android manifest | `find . -name 'AndroidManifest.xml'` | Android manifest exists |
-| iOS bundle | `find . -name 'Info.plist' -exec grep -l "CFBundleIdentifier" {} \\;` | iOS bundle identifier found |
-| Expo | `grep -rn "expo" app.json` | Expo project detected |
+| Check | What to Look For |
+|-------|-------------------|
+| Mobile framework dependency | `react-native` in `package.json`, or Flutter in `pubspec.yaml`, or Expo in `app.json` |
+| Native project files | `AndroidManifest.xml` or `Info.plist` with `CFBundleIdentifier` |
+| Existing mobile test configs | Configuration files referencing mobile testing frameworks |
+| App manifest identifiers | Application ID in build configuration files |
 
 **If all checks fail**: The project is not a mobile application. Skip Mobile test generation and emit a WARNING suggesting the user verify the project is a mobile app.
 
-## Generation Patterns
-
-Mobile test cases translate to executable Maestro YAML flows. Follow the active strategy's `generate.md` for the Maestro-specific template structure (flow skeleton, env variables, lifecycle hooks).
-
-### Flow Skeleton
-
-Each Maestro flow follows this structure (from the Maestro strategy template):
-
-```yaml
-appId: ${MOBILE_APP_ID}
-name: TC-NNN Description
-# Traceability: TC-NNN -> {PRD Source}
-env:
-  KEY: ${VALUE}
-onFlowStart:
-  - launchApp
-onFlowEnd:
-  - killApp
-commands:
-  - ...
-```
-
-### Touch and Gesture Simulation
-
-Map test case step descriptions to Maestro commands:
-
-| Test Case Step Pattern | Maestro Command | Example |
-|------------------------|-----------------|---------|
-| "Tap the X button" | `tapOn` | `tapOn: { text: "Login" }` |
-| "Double-tap the item" | `tapOn` (double) | `tapOn: { text: "Item", repeat: 2 }` |
-| "Long-press the card" | `longPressOn` | `longPressOn: { text: "Card" }` |
-| "Swipe left" | `swipe` | `swipe: { direction: LEFT }` |
-| "Scroll to element" | `scroll` | `scroll: { to: { text: "Footer" } }` |
-| "Enter text in field" | `tapOn` + `inputText` | `tapOn: { text: "Email" }` then `inputText: user@example.com` |
-| "Press back button" | `back` | `back` |
-| "Launch app" | `launchApp` | `launchApp` |
-| "Kill app" | `killApp` | `killApp` |
-
-### Element Location via Accessibility Labels
-
-Maestro selects elements using a priority order (from the Maestro strategy's `generate.md`):
-
-| Priority | Method | Example |
-|----------|--------|---------|
-| 1 | Text match | `tapOn: { text: "Login" }` |
-| 2 | Resource ID | `tapOn: { id: "com.app:id/button" }` |
-| 3 | Index | `tapOn: { index: 0 }` |
-| 4 | Relative | `tapOn: { below: { text: "Label" } }` |
-
-When the test case references an accessibility label or resource ID discovered during reconnaissance, use it directly. When only a textual description is available, use text match.
-
-### Screen Transition Assertions
-
-After navigation steps, assert the expected screen is visible:
-
-```yaml
-commands:
-  - tapOn: { text: "Login" }
-  # ... login steps ...
-  - assertVisible: { text: "Dashboard" }
-```
-
-Map test case Expected fields to Maestro assertions:
-
-| Expected Pattern | Maestro Command |
-|------------------|-----------------|
-| "X is visible" | `assertVisible: { text: "X" }` |
-| "X is not visible" | `assertNotVisible: { text: "X" }` |
-
-### App Lifecycle Events
-
-Map lifecycle-related test case steps to Maestro hooks and commands:
-
-| Lifecycle Step | Maestro Mapping |
-|----------------|-----------------|
-| App launch (start of test) | `onFlowStart: [launchApp]` |
-| App kill (end of test) | `onFlowEnd: [killApp]` |
-| Send app to background | Not directly supported -- use `killApp` + `launchApp` as approximation |
-| Screenshot for evidence | `takeScreenshot: TC-NNN` |
-
-### Auth Pattern
-
-For test cases requiring authentication, use Maestro's `env` section with credential variables:
-
-```yaml
-env:
-  USERNAME: ${TEST_USERNAME}
-  PASSWORD: ${TEST_PASSWORD}
-commands:
-  - tapOn: { text: "Email" }
-  - inputText: ${USERNAME}
-  - tapOn: { text: "Password" }
-  - inputText: ${PASSWORD}
-  - tapOn: { text: "Sign in" }
-```
-
 ## Mobile Antipattern Guards
 
-Beyond the generic 6 antipattern guards in the main SKILL.md, Mobile-specific generation must avoid these additional patterns:
+Beyond the shared antipattern guards in `_shared.md` (Sleep-Based Waits, Hardcoded Configuration, Vacuous Assertions, Source-Code-Level Testing), Mobile-specific forbidden patterns:
 
-### 1. Device-Dependent Tests Without Fixture Isolation
-
-**Pattern**: Hardcoding device-specific values (screen dimensions, pixel coordinates, device model names) in test assertions.
-
-**Why harmful**: Tests pass on one device but fail on others with different screen sizes. CI runners may use emulators with different configurations than local devices.
-
-**Instead**: Use Maestro's device-agnostic selectors (`text`, `id`, `index`). Never reference pixel coordinates or device model strings. Let Maestro handle device abstraction.
-
-### 2. Hardcoded Wait Durations
-
-**Pattern**: Using `extendedWait` with fixed time durations (e.g., `extendedWait: { time: 5000 }`) to handle asynchronous loading.
-
-**Why harmful**: Makes tests slow (over-waiting on fast devices) and flaky (under-waiting on slow devices). Duration-based waits do not adapt to network conditions or device performance.
-
-**Instead**: Use `assertVisible` which waits automatically for the element to appear. Maestro's built-in assertion polling handles timing without explicit durations.
-
-### 3. Tests Requiring Physical Device Capabilities
-
-**Pattern**: Writing tests that depend on hardware sensors (camera, fingerprint reader, accelerometer, GPS) or physical device features that emulators may not support.
-
-**Why harmful**: Tests fail in CI environments that use emulators without sensor simulation. Creates a gap between CI and local development environments.
-
-**Instead**: Limit test scripts to interactions supported by Maestro's emulator/simulator environment (tap, swipe, text input, assertions). If a test case requires physical device capabilities, note it in a comment and mark it as requiring a physical device run -- do not generate an assertion that will fail in CI.
+| Pattern | Why Forbidden | What To Do Instead |
+|---------|--------------|-------------------|
+| **Pixel-coordinate-based interactions** | Coordinates are device-dependent and break across screen sizes and resolutions | Use element-based targeting (accessibility ID, resource ID, text) |
+| **State leakage between tests** | Tests that pass in isolation fail when run in sequence due to accumulated app state | Clean app state before each test (see Golden Rule: App State Reset) |
+| **Unhandled permission dialogs** | System dialogs block test execution and cause timeout failures | Pre-authorize permissions or handle dialogs as an explicit pre-step |
+| **Physical device capability assumptions** | Tests fail in CI environments using emulators without sensor simulation | Limit test scripts to interactions supported by emulator/simulator environments; mark tests requiring physical devices explicitly |
+| **Ad-hoc navigation without screen assertion** | Subsequent interactions target elements from the wrong screen, producing false failures | Assert target screen visibility after every navigation step (see Golden Rule: Screen Transition Assertions) |
 
 ## Output
 
-Mobile test scripts are written as Maestro YAML flows to `tests/e2e/features/<feature>/` following the strategy's template naming convention. Each flow includes a traceability comment linking back to the source test case ID.
+Mobile test scripts are written to `tests/<journey>/` following the active Convention's file naming and structure. Each test file includes a traceability comment linking back to the source Contract step.
