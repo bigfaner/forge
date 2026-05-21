@@ -112,9 +112,9 @@ test-e2e feature="":
     if [ -n "{{feature}}" ]; then
         feature_flag="-run TestTC.*$(echo '{{feature}}' | sed 's/.*/\u&/')"
     fi
-    cd tests/e2e && go test -v -tags=e2e -timeout=10m -json $feature_flag \
+    cd tests && go test -v -tags=e2e -timeout=10m -json $feature_flag ./... \
       | go-junit-report > results/report.xml 2>/dev/null \
-      || go test -v -tags=e2e -timeout=10m $feature_flag
+      || go test -v -tags=e2e -timeout=10m $feature_flag ./...
 
 # e2e-setup: optional cache warm-up — pre-builds forge binary for faster test startup.
 # E2E tests auto-build via TestMain, so this recipe is NOT required before running tests.
@@ -125,7 +125,7 @@ e2e-setup force="":
     # Optional: pre-builds forge binary for faster test startup (cache optimization)
     cd forge-cli && go build -o bin/forge.exe ./cmd/forge/ && cp bin/forge.exe bin/forge
     # Optional: pre-compile e2e test packages to warm the build cache
-    cd tests/e2e && go build -tags=e2e ./...
+    cd tests && go build -tags=e2e ./...
     echo "OK: build cache warmed (optional — tests auto-build via TestMain)"
 
 # e2e-verify: check for unresolved // VERIFY: markers (go-test profile)
@@ -137,9 +137,9 @@ e2e-verify feature="":
         echo "Usage: just e2e-verify --feature <slug>" >&2
         exit 1
     fi
-    search_dir="tests/e2e/features/{{feature}}"
+    search_dir="tests/{{feature}}"
     if [ ! -d "$search_dir" ]; then
-        search_dir="tests/e2e"
+        search_dir="tests"
     fi
     matches=$(grep -rn '// VERIFY:' "$search_dir/" --include='*_test.go' || true)
     if [ -n "$matches" ]; then
@@ -154,13 +154,13 @@ e2e-verify feature="":
 e2e-compile:
     #!/usr/bin/env bash
     set -euo pipefail
-    cd tests/e2e && go build -tags=e2e ./...
+    cd tests && go build -tags=e2e ./...
     echo "OK: Go compilation passed"
 
 # e2e-discover: list all e2e test cases without running them
 e2e-discover:
     #!/usr/bin/env bash
     set -euo pipefail
-    cd tests/e2e && go test -tags=e2e -list '.*' ./...
+    cd tests && go test -tags=e2e -list '.*' ./...
 
 # --- end forge standard recipes ---

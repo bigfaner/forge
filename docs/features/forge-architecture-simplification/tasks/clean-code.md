@@ -1,12 +1,11 @@
 ---
-id: "T-clean-code-1"
+id: "T-clean-code"
 title: "Simplify and Clean Code"
 priority: "P2"
 estimated_time: "20min"
-dependencies: ["3.gate"]
+dependencies: []
 type: "code-quality.simplify"
 scope: "all"
-noTest: true
 ---
 
 # Simplify and Clean Code

@@ -1,9 +1,7 @@
-project-type: backend
-interfaces:
-  - cli
-languages:
-  - go
 auto:
+  runTasks:
+    quick: true
+    full: false
   e2eTest:
     quick: false
     full: true
@@ -13,6 +11,12 @@ auto:
   cleanCode:
     quick: false
     full: true
+  validation:
+    quick: false
+    full: true
   gitPush: true
+languages:
+  - go
 worktree:
   source-branch: v3.0.0
+  copy-files: []

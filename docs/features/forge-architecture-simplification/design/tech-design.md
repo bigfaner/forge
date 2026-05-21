@@ -1,5 +1,6 @@
 ---
 created: 2026-05-18
+updated: 2026-05-21
 prd: prd/prd-spec.md
 status: Draft
 ---
@@ -45,8 +46,8 @@ forge-cli/
     ├── constants/                 # [新增] 统一常量 (LockTimeoutSeconds, 其他魔法值)
     │   └── forge.go
     ├── e2eprobe/                  # [修改] typed YAML unmarshal
-    └── profile/
-        └── config.go             # [修改] config set/get
+    └── forgeconfig/               # [已存在] 配置类型（原 profile 包已迁移至此）
+        └── config.go             # [修改] config set/get, 新增 runTasks/knowledgeSave 字段
 ```
 
 依赖方向严格保持：`cmd -> pkg`，禁止反向。
@@ -82,6 +83,7 @@ forge-cli/
 | `gopkg.in/yaml.v3` | Direct | Existing | Config YAML parsing (replace hand-written parser) |
 | `stretchr/testify` | Direct | Existing | Test assertions |
 | `charmbracelet/huh` | Indirect | Existing | Config init TUI (merge two paths) |
+| Go 1.25 | — | Existing | Minimum Go version |
 | **No new dependencies** | — | — | 所有变更使用 Go stdlib |
 
 ## Interfaces
@@ -246,7 +248,7 @@ func PreserveRuntimeFields(existing, newTask *Task) {
 ### Interface 4: Config Set/Get
 
 ```go
-// pkg/profile/config.go (extended)
+// pkg/forgeconfig/config.go (extended)
 
 // SetAutoKey sets a single auto configuration key.
 // Returns ErrInvalidInput if key is not a recognized auto field.
@@ -258,7 +260,7 @@ func SetAutoKey(projectRoot, key, value string) error
 func GetAutoKeyValue(projectRoot, key string) (string, bool, error)
 ```
 
-**Valid auto keys** (from `AutoConfig` struct): `e2eTest`, `consolidateSpecs`, `cleanCode`, `gitPush`. Any other key returns `ErrInvalidInput`.
+**Valid auto keys** (from `AutoConfig` struct in `pkg/forgeconfig/config.go`): `e2eTest`, `consolidateSpecs`, `cleanCode`, `validation`, `runTasks`, `gitPush`, `knowledgeSave`. Fields `e2eTest`–`knowledgeSave` are `ModeToggle` type (each has `Quick`/`Full` sub-fields); `gitPush` is plain `bool`. Any other key returns `ErrInvalidInput`.
 
 ## Data Models
 
@@ -386,7 +388,7 @@ Exit(err) → AIError.ExitCode() → prints to stderr + os.Exit(1|2)
 |------|---------|--------|
 | `worktree.go` | `fmt.Errorf` everywhere | AIError factory functions + `Exit()` |
 | `submit.go` | `fmt.Fprintln(os.Stderr) + os.Exit(1)`, `--force` bypass | AIError + `Exit()` (lock conflict → code 1, invalid transition → code 2). Remove `--force` flag. |
-| `status.go` | `isTransitionAllowed` + state mutation | Read-only: show task status only. Remove state mutation logic. |
+| `status.go` | `isTransitionAllowed` + state mutation + `--force` flag | Read-only: show task status only. Remove state mutation logic and `--force` flag. |
 | `reopen.go` | (new) | `ValidateTransition(current, "pending", RoleReopen)`. Only rejected/skipped → pending. |
 | `quality_gate.go` | Returns `nil` on infrastructure failure | Returns error (soft failure → code 1) |
 | `test_promote.go` | `os.Exit(1)` on path traversal | AIError + `Exit()` (path traversal → code 2) |
@@ -412,7 +414,7 @@ No existing-page integrations — not applicable (CLI-only feature).
 | pkg/index | Unit | testing + testify | WithLock concurrent access | Lock conflict detection |
 | pkg/index | Unit | testing + testify | SaveStateAtomic crash safety | Temp file cleanup on error |
 | cmd/* | Characterization | testing + testify | Current behavior locked (Phase 0) | All SM/QG paths |
-| cmd/* | Integration | forge test | End-to-end command behavior | 126+ existing tests |
+| cmd/* | Integration | forge test | End-to-end command behavior | 1591 existing tests |
 | Plugin | Skill eval | Manual | eval/SKILL.md backup+rollback | Manual verification |
 
 ### Key Test Scenarios
@@ -503,8 +505,8 @@ No existing-page integrations — not applicable (CLI-only feature).
 | **ES-2** Rollback | Eval SKILL.md Step 1 backup | Plugin changes |
 | **ES-3** Reviser context | CONTEXT_CONTENT injection | Plugin changes |
 | **ES-4** Scope validation | doc-reviser scope check | Plugin changes |
-| **CE-1** Config set | SetAutoKey | Interface 4 |
-| **CE-2** Config get coverage | GetAutoKeyValue extension | Interface 4 |
+| **CE-1** Config set | SetAutoKey in `pkg/forgeconfig/` | Interface 4 |
+| **CE-2** Config get coverage | GetAutoKeyValue extension (7 auto keys) | Interface 4 |
 | **CE-3** Config init complete | Merge to huh TUI | W8 implementation |
 | **CE-4** Schema version | Version field in ForgeConfig | W10 implementation |
 | **CE-5** Schema enum alignment | Schema + CLI sync | W10 implementation |
@@ -522,7 +524,7 @@ No existing-page integrations — not applicable (CLI-only feature).
 - [ ] W5 Windows lock: Does `LockFileEx` on Windows NTFS provide the same exclusive-lock semantics as `flock` on POSIX? (Go/No-Go checkpoint)
 - [ ] W5 lock crash recovery: If a process holding the advisory lock crashes, does POSIX `flock` release automatically? Verify on Linux and macOS. If not, stale lock will block all writers.
 - [ ] W12 package split: How to handle unexported helpers that are shared between commands moving to different packages? (export vs extract to `internal/`)
-- [ ] Import cycle resolution: `pkg/constants/` as new package may create cycles with `pkg/feature/` and `pkg/profile/` — verify with `go build` before Phase 1. If cycle found, move constants to `pkg/task/constants.go`.
+- [ ] Import cycle resolution: `pkg/constants/` as new package may create cycles with `pkg/feature/` and `pkg/forgeconfig/` — verify with `go build` before Phase 1. If cycle found, move constants to `pkg/task/constants.go`.
 - [ ] CH-4 `isBusinessTask` dedup: Export as `IsBusinessTask` to `pkg/task/` in Phase 1. Three duplicates (`cmd/validate_index.go`, `pkg/prompt/prompt.go`, `pkg/task/add.go`) → single canonical location.
 - [ ] `--force` removal: `--force` flag removed from submit/claim/status. `task reopen` is the only mechanism for leaving rejected/skipped states. Completed tasks are irreversible (create subtask instead).
 
