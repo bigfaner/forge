@@ -552,7 +552,6 @@ func TestInferType(t *testing.T) {
 		{"T-specs-consolidate", task.TypeDocConsolidate},
 		// T-quick-doc-drift drift detection
 		{"T-quick-doc-drift", task.TypeDocDrift},
-		{"T-quick-doc-drifta", task.TypeDocDrift},
 		// Fix prefix
 		{"fix-1", task.TypeCodingFix},
 		{"fix-auth-bug", task.TypeCodingFix},
@@ -619,8 +618,8 @@ func TestSynthesize_GenScripts_WithTypeSuffix(t *testing.T) {
 			dontWant:     `{{TEST_TYPE_ARG}}`,
 		},
 		{
-			name:         "T-test-gen-scriptsa-tui includes --type tui",
-			taskID:       "T-test-gen-scriptsa-tui",
+			name:         "T-test-gen-scripts-tui includes --type tui",
+			taskID:       "T-test-gen-scripts-tui",
 			wantContains: `Skill(skill="forge:gen-test-scripts" --type tui)`,
 			dontWant:     `{{TEST_TYPE_ARG}}`,
 		},
@@ -631,8 +630,8 @@ func TestSynthesize_GenScripts_WithTypeSuffix(t *testing.T) {
 			dontWant:     `{{TEST_TYPE_ARG}}`,
 		},
 		{
-			name:         "T-quick-gen-and-runb-web-ui includes --type web-ui",
-			taskID:       "T-quick-gen-and-runb-web-ui",
+			name:         "T-quick-gen-and-run-web-ui includes --type web-ui",
+			taskID:       "T-quick-gen-and-run-web-ui",
 			wantContains: `Skill(skill="forge:gen-test-scripts" --type web-ui)`,
 			dontWant:     `{{TEST_TYPE_ARG}}`,
 		},
@@ -1190,11 +1189,11 @@ func TestExtractTestTypeArg(t *testing.T) {
 		want string
 	}{
 		{"T-test-gen-scripts-api", " --type api"},
-		{"T-test-gen-scriptsa-tui", " --type tui"},
+		{"T-test-gen-scripts-tui", " --type tui"},
 		{"T-quick-gen-and-run-cli", " --type cli"},
-		{"T-quick-gen-and-runb-web-ui", " --type web-ui"},
+		{"T-quick-gen-and-run-web-ui", " --type web-ui"},
 		{"T-test-gen-scripts", ""},
-		{"T-test-gen-scriptsa", ""},
+		{"T-test-gen-scripts", ""},
 		{"T-quick-gen-and-run", ""},
 		{"T-test-3-api", ""}, // not a gen-scripts base
 		{"1.1", ""},

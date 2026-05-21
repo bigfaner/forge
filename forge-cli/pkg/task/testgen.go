@@ -11,7 +11,7 @@ import (
 // TestTaskDef defines a test task to be generated.
 type TestTaskDef struct {
 	ID              string
-	Key             string // map key in index.json (e.g., "gen-test-cases", "gen-test-scripts-go")
+	Key             string // map key in index.json (e.g., "gen-test-cases", "gen-test-scripts-api")
 	Title           string
 	Priority        string
 	EstimatedTime   string
@@ -27,15 +27,12 @@ type TestTaskDef struct {
 }
 
 // GetBreakdownTestTasks returns test task definitions for breakdown mode.
-// With 0 or 1 language, uses no suffix. With 2+ languages, uses letter suffixes.
 // Interfaces are config-driven test types (e.g., "cli", "api"). Empty interfaces returns nil.
 // auto controls which task categories are generated.
-func GetBreakdownTestTasks(languages []string, interfaces []string, auto forgeconfig.AutoConfig) []TestTaskDef {
+func GetBreakdownTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []TestTaskDef {
 	if len(interfaces) == 0 {
 		return nil
 	}
-
-	suffix := profileSuffix(languages)
 
 	var tasks []TestTaskDef
 
@@ -53,32 +50,31 @@ func GetBreakdownTestTasks(languages []string, interfaces []string, auto forgeco
 			Type: TypeTestEvalCases, Scope: "all", MainSession: true,
 		})
 
-		// Per-language tasks with per-type gen-scripts
-		for i, lang := range languages {
-			s := suffixLetter(i, suffix)
-			for _, typ := range interfaces {
-				tasks = append(tasks, TestTaskDef{
-					Key: "gen-test-scripts-" + lang + "-" + typ, ID: "T-test-gen-scripts" + s + "-" + typ,
-					Title: fmt.Sprintf("Generate Test Scripts (%s, %s)", lang, typ), Priority: "P1", EstimatedTime: "1-2h",
-					Type: TypeTestGenScripts, Scope: "all", TestType: typ,
-					StrategyKind: "generate",
-				})
-			}
+		// Per-type gen-scripts (interface-only, no language loop)
+		for _, typ := range interfaces {
 			tasks = append(tasks, TestTaskDef{
-				Key: "run-e2e-tests-" + lang, ID: "T-test-run" + s,
-				Title: fmt.Sprintf("Run e2e Tests (%s)", lang), Priority: "P1", EstimatedTime: "30min-1h",
-				Type: TypeTestRun, Scope: "all",
-				StrategyKind: "run",
-			})
-			tasks = append(tasks, TestTaskDef{
-				Key: "graduate-tests-" + lang, ID: "T-test-graduate" + s,
-				Title: fmt.Sprintf("Graduate Test Scripts (%s)", lang), Priority: "P1", EstimatedTime: "30min",
-				Type: TypeTestGraduate, Scope: "all",
-				StrategyKind: "graduate",
+				Key: "gen-test-scripts-" + typ, ID: "T-test-gen-scripts-" + typ,
+				Title: fmt.Sprintf("Generate Test Scripts (%s)", typ), Priority: "P1", EstimatedTime: "1-2h",
+				Type: TypeTestGenScripts, Scope: "all", TestType: typ,
+				StrategyKind: "generate",
 			})
 		}
 
-		// More shared tasks
+		// Single run + graduate (no language suffix)
+		tasks = append(tasks, TestTaskDef{
+			Key: "run-e2e-tests", ID: "T-test-run",
+			Title: "Run e2e Tests", Priority: "P1", EstimatedTime: "30min-1h",
+			Type: TypeTestRun, Scope: "all",
+			StrategyKind: "run",
+		})
+		tasks = append(tasks, TestTaskDef{
+			Key: "graduate-tests", ID: "T-test-graduate",
+			Title: "Graduate Test Scripts", Priority: "P1", EstimatedTime: "30min",
+			Type: TypeTestGraduate, Scope: "all",
+			StrategyKind: "graduate",
+		})
+
+		// Shared verify-regression
 		tasks = append(tasks, TestTaskDef{
 			Key: "verify-regression", ID: "T-test-verify-regression",
 			Title: "Verify Full E2E Regression", Priority: "P1", EstimatedTime: "15-30min",
@@ -118,8 +114,8 @@ func GetBreakdownTestTasks(languages []string, interfaces []string, auto forgeco
 		})
 	}
 
-	// Set filenames and dependency chains
-	resolveBreakdownDeps(tasks, languages, suffix, interfaces, auto)
+	// Set dependency chains
+	resolveBreakdownDeps(tasks, interfaces, auto)
 
 	return tasks
 }
@@ -127,40 +123,35 @@ func GetBreakdownTestTasks(languages []string, interfaces []string, auto forgeco
 // GetQuickTestTasks returns test task definitions for quick mode.
 // Interfaces are config-driven test types (e.g., "cli", "api"). Empty interfaces returns nil.
 // auto controls which task categories are generated.
-func GetQuickTestTasks(languages []string, interfaces []string, auto forgeconfig.AutoConfig) []TestTaskDef {
+func GetQuickTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []TestTaskDef {
 	if len(interfaces) == 0 {
 		return nil
 	}
 
-	suffix := profileSuffix(languages)
-
 	var tasks []TestTaskDef
 
-	// Per-profile with per-type gen-and-run (gated by auto.E2eTest.Quick)
+	// Per-type gen-and-run (gated by auto.E2eTest.Quick)
 	if auto.E2eTest.Quick {
-		for i, lang := range languages {
-			s := suffixLetter(i, suffix)
+		tasks = append(tasks, TestTaskDef{
+			Key: "quick-test-cases", ID: "T-quick-gen-cases",
+			Title: "Generate Quick Test Cases", Priority: "P1", EstimatedTime: "30min-1h",
+			Type: TypeTestGenCases, Scope: "all",
+			StrategyKind: "generate",
+		})
+		for _, typ := range interfaces {
 			tasks = append(tasks, TestTaskDef{
-				Key: "quick-test-cases-" + lang, ID: "T-quick-gen-cases" + s,
-				Title: fmt.Sprintf("Generate Quick Test Cases (%s)", lang), Priority: "P1", EstimatedTime: "30min-1h",
-				Type: TypeTestGenCases, Scope: "all",
+				Key: "quick-gen-and-run-" + typ, ID: "T-quick-gen-and-run-" + typ,
+				Title: fmt.Sprintf("Generate and Run Quick Test Scripts (%s)", typ), Priority: "P1", EstimatedTime: "1-2h",
+				Type: TypeTestGenAndRun, Scope: "all", TestType: typ,
 				StrategyKind: "generate",
 			})
-			for _, typ := range interfaces {
-				tasks = append(tasks, TestTaskDef{
-					Key: "quick-gen-and-run-" + lang + "-" + typ, ID: "T-quick-gen-and-run" + s + "-" + typ,
-					Title: fmt.Sprintf("Generate and Run Quick Test Scripts (%s, %s)", lang, typ), Priority: "P1", EstimatedTime: "1-2h",
-					Type: TypeTestGenAndRun, Scope: "all", TestType: typ,
-					StrategyKind: "generate",
-				})
-			}
-			tasks = append(tasks, TestTaskDef{
-				Key: "quick-graduate-" + lang, ID: "T-quick-graduate" + s,
-				Title: fmt.Sprintf("Graduate Quick Test Scripts (%s)", lang), Priority: "P1", EstimatedTime: "15min",
-				Type: TypeTestGraduate, Scope: "all",
-				StrategyKind: "graduate",
-			})
 		}
+		tasks = append(tasks, TestTaskDef{
+			Key: "quick-graduate", ID: "T-quick-graduate",
+			Title: "Graduate Quick Test Scripts", Priority: "P1", EstimatedTime: "15min",
+			Type: TypeTestGraduate, Scope: "all",
+			StrategyKind: "graduate",
+		})
 
 		// Shared
 		tasks = append(tasks, TestTaskDef{
@@ -202,7 +193,7 @@ func GetQuickTestTasks(languages []string, interfaces []string, auto forgeconfig
 		})
 	}
 
-	resolveQuickDeps(tasks, languages, suffix, interfaces, auto)
+	resolveQuickDeps(tasks, interfaces, auto)
 
 	return tasks
 }
@@ -260,13 +251,10 @@ func formatYAMLList(items []string) string {
 }
 
 // resolveBreakdownDeps sets dependency chains for breakdown test tasks.
-func resolveBreakdownDeps(tasks []TestTaskDef, languages []string, _ bool, interfaces []string, auto forgeconfig.AutoConfig) {
+func resolveBreakdownDeps(tasks []TestTaskDef, interfaces []string, auto forgeconfig.AutoConfig) {
 	if !auto.E2eTest.Full && !auto.ConsolidateSpecs.Full && !auto.CleanCode.Full && !auto.Validation.Full {
 		return // no tasks to wire
 	}
-
-	e2eStart := 0
-	e2eCount := 0
 
 	if auto.E2eTest.Full {
 		// T-test-eval-cases -> T-test-gen-cases
@@ -274,100 +262,77 @@ func resolveBreakdownDeps(tasks []TestTaskDef, languages []string, _ bool, inter
 			tasks[1].Dependencies = []string{"T-test-gen-cases"}
 		}
 
-		profileStart := 2 // index 2 is first per-language task
+		// gen-scripts start at index 2
+		genStart := 2
 		nTypes := len(interfaces)
-		blockSize := nTypes + 2 // gen-per-type + run + graduate
-		for i := range languages {
-			blockStart := profileStart + i*blockSize
 
-			// All per-type gen-scripts depend on T-test-eval-cases
-			for j := 0; j < nTypes; j++ {
-				tasks[blockStart+j].Dependencies = []string{"T-test-eval-cases"}
-			}
-
-			// Run depends on all per-type gen-scripts for this profile
-			run := &tasks[blockStart+nTypes]
-			var genDeps []string
-			for j := 0; j < nTypes; j++ {
-				genDeps = append(genDeps, tasks[blockStart+j].ID)
-			}
-			run.Dependencies = genDeps
-
-			// Graduate depends on run
-			graduate := &tasks[blockStart+nTypes+1]
-			graduate.Dependencies = []string{run.ID}
+		// All gen-scripts depend on T-test-eval-cases
+		for j := 0; j < nTypes; j++ {
+			tasks[genStart+j].Dependencies = []string{"T-test-eval-cases"}
 		}
 
-		// T-test-verify-regression depends on all graduate tasks
-		sharedStart := profileStart + len(languages)*blockSize
-		if len(tasks) > sharedStart {
-			verifyReg := &tasks[sharedStart]
-			var gradDeps []string
-			for i := range languages {
-				gradDeps = append(gradDeps, tasks[profileStart+i*blockSize+nTypes+1].ID)
-			}
-			verifyReg.Dependencies = gradDeps
+		// Run depends on all gen-scripts
+		runIdx := genStart + nTypes
+		var genDeps []string
+		for j := 0; j < nTypes; j++ {
+			genDeps = append(genDeps, tasks[genStart+j].ID)
 		}
-		e2eCount = sharedStart + 1 // number of e2e tasks
+		tasks[runIdx].Dependencies = genDeps
+
+		// Graduate depends on run
+		gradIdx := runIdx + 1
+		tasks[gradIdx].Dependencies = []string{tasks[runIdx].ID}
+
+		// Verify-regression depends on graduate
+		verifyIdx := gradIdx + 1
+		tasks[verifyIdx].Dependencies = []string{tasks[gradIdx].ID}
 	}
 
 	// T-validate-code depends on T-test-verify-regression (if e2e tasks exist)
 	validateIdx := findTaskIndex(tasks, "T-validate-code")
-	if validateIdx >= 0 && auto.E2eTest.Full && e2eCount > 0 {
+	if validateIdx >= 0 && auto.E2eTest.Full {
 		tasks[validateIdx].Dependencies = []string{"T-test-verify-regression"}
 	}
 
 	// T-specs-consolidate depends on T-test-verify-regression (if e2e tasks exist) or nothing
 	if auto.ConsolidateSpecs.Full {
 		specsIdx := findTaskIndex(tasks, "T-specs-consolidate")
-		if specsIdx >= 0 && auto.E2eTest.Full && e2eCount > 0 {
+		if specsIdx >= 0 && auto.E2eTest.Full {
 			tasks[specsIdx].Dependencies = []string{"T-test-verify-regression"}
 		}
 	}
 
 	// T-clean-code depends on last business task (resolved by caller via ResolveFirstTestDep)
 	// The first test task depends on T-clean-code when both exist (resolved in BuildIndex)
-	_ = e2eStart
 }
 
 // resolveQuickDeps sets dependency chains for quick test tasks.
-func resolveQuickDeps(tasks []TestTaskDef, languages []string, _ bool, interfaces []string, auto forgeconfig.AutoConfig) {
+func resolveQuickDeps(tasks []TestTaskDef, interfaces []string, auto forgeconfig.AutoConfig) {
 	if !auto.E2eTest.Quick && !auto.ConsolidateSpecs.Quick && !auto.CleanCode.Quick && !auto.Validation.Quick {
 		return // no tasks to wire
 	}
 
 	if auto.E2eTest.Quick {
 		nTypes := len(interfaces)
-		blockSize := 1 + nTypes + 1 // gen-cases + gen-per-type + graduate
-		for i := range languages {
-			blockStart := i * blockSize
 
-			genCases := &tasks[blockStart]
-			// genCases deps are placeholder (resolved by BuildIndex)
+		// gen-cases is index 0 (deps resolved by BuildIndex)
 
-			// All per-type gen-and-run depend on gen-cases
-			for j := 0; j < nTypes; j++ {
-				tasks[blockStart+1+j].Dependencies = []string{genCases.ID}
-			}
-
-			// Graduate depends on all per-type gen-and-run for this profile
-			graduate := &tasks[blockStart+1+nTypes]
-			var genDeps []string
-			for j := 0; j < nTypes; j++ {
-				genDeps = append(genDeps, tasks[blockStart+1+j].ID)
-			}
-			graduate.Dependencies = genDeps
+		// All gen-and-run depend on gen-cases
+		for j := 0; j < nTypes; j++ {
+			tasks[1+j].Dependencies = []string{"T-quick-gen-cases"}
 		}
 
-		// T-quick-verify-regression depends on all graduate tasks
-		sharedStart := len(languages) * blockSize
-		if len(tasks) > sharedStart {
-			var gradDeps []string
-			for i := range languages {
-				gradDeps = append(gradDeps, tasks[i*blockSize+1+nTypes].ID)
-			}
-			tasks[sharedStart].Dependencies = gradDeps
+		// Graduate depends on all gen-and-run
+		gradIdx := 1 + nTypes
+		var genDeps []string
+		for j := 0; j < nTypes; j++ {
+			genDeps = append(genDeps, tasks[1+j].ID)
 		}
+		tasks[gradIdx].Dependencies = genDeps
+
+		// Verify-regression depends on graduate
+		verifyIdx := gradIdx + 1
+		tasks[verifyIdx].Dependencies = []string{tasks[gradIdx].ID}
 	}
 
 	// T-validate-code depends on T-quick-verify-regression (if e2e tasks exist) or nothing
@@ -407,19 +372,6 @@ func findTaskIndexByPrefix(tasks []TestTaskDef, prefix string) int {
 		}
 	}
 	return -1
-}
-
-// profileSuffix returns true if languages need letter suffixes (2+).
-func profileSuffix(languages []string) bool {
-	return len(languages) > 1
-}
-
-// suffixLetter returns the letter suffix for the i-th profile.
-func suffixLetter(i int, useSuffix bool) string {
-	if !useSuffix {
-		return ""
-	}
-	return string(rune('a' + i))
 }
 
 // ResolveFirstTestDep resolves the first test task's dependency.
@@ -511,7 +463,6 @@ func findMaxBusinessTaskID(tasks map[string]Task) string {
 	maxN := 0
 	var bestID string
 	for _, t := range tasks {
-		// Skip test tasks, gates, summaries, fix tasks
 		id := t.ID
 		if strings.HasPrefix(id, "T-") || strings.HasPrefix(id, "fix-") || strings.HasPrefix(id, "disc-") {
 			continue
@@ -610,7 +561,6 @@ func ResolveDocEvalDep(task *TestTaskDef, existingTasks map[string]Task) {
 
 // isAutoGenForDep returns true for auto-generated task IDs that should be
 // excluded from dependency resolution (they are not business tasks).
-// Includes validation tasks which are auto-generated pipeline tasks.
 func isAutoGenForDep(id string) bool {
 	if isTestTaskID(id) {
 		return true

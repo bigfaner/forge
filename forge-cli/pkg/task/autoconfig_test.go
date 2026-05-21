@@ -12,7 +12,7 @@ func TestGetBreakdownTestTasks_E2eTestFullFalse(t *testing.T) {
 	auto := forgeconfig.AutoConfigDefaults()
 	auto.E2eTest.Full = false
 
-	tasks := GetBreakdownTestTasks([]string{"go"}, []string{"cli"}, auto)
+	tasks := GetBreakdownTestTasks([]string{"cli"}, auto)
 
 	// No e2e test tasks, no consolidate (consolidate depends on e2e test chain in breakdown)
 	for _, task := range tasks {
@@ -27,7 +27,7 @@ func TestGetBreakdownTestTasks_ConsolidateSpecsFullFalse(t *testing.T) {
 	auto := forgeconfig.AutoConfigDefaults()
 	auto.ConsolidateSpecs.Full = false
 
-	tasks := GetBreakdownTestTasks([]string{"go"}, []string{"cli"}, auto)
+	tasks := GetBreakdownTestTasks([]string{"cli"}, auto)
 
 	for _, task := range tasks {
 		if task.ID == "T-specs-consolidate" {
@@ -40,7 +40,7 @@ func TestGetBreakdownTestTasks_CleanCodeFullTrue(t *testing.T) {
 	auto := forgeconfig.AutoConfigDefaults()
 	auto.CleanCode.Full = true
 
-	tasks := GetBreakdownTestTasks([]string{"go"}, []string{"cli"}, auto)
+	tasks := GetBreakdownTestTasks([]string{"cli"}, auto)
 
 	found := false
 	for _, task := range tasks {
@@ -60,7 +60,7 @@ func TestGetBreakdownTestTasks_CleanCodeFullFalse(t *testing.T) {
 	auto := forgeconfig.AutoConfigDefaults()
 	auto.CleanCode.Full = false
 
-	tasks := GetBreakdownTestTasks([]string{"go"}, []string{"cli"}, auto)
+	tasks := GetBreakdownTestTasks([]string{"cli"}, auto)
 
 	for _, task := range tasks {
 		if task.ID == "T-clean-code" {
@@ -73,7 +73,7 @@ func TestGetQuickTestTasks_E2eTestQuickFalse(t *testing.T) {
 	auto := forgeconfig.AutoConfigDefaults()
 	auto.E2eTest.Quick = false
 
-	tasks := GetQuickTestTasks([]string{"go"}, []string{"cli"}, auto)
+	tasks := GetQuickTestTasks([]string{"cli"}, auto)
 
 	// No e2e test tasks
 	for _, task := range tasks {
@@ -88,7 +88,7 @@ func TestGetQuickTestTasks_ConsolidateSpecsQuickFalse(t *testing.T) {
 	auto := forgeconfig.AutoConfigDefaults()
 	auto.ConsolidateSpecs.Quick = false
 
-	tasks := GetQuickTestTasks([]string{"go"}, []string{"cli"}, auto)
+	tasks := GetQuickTestTasks([]string{"cli"}, auto)
 
 	for _, task := range tasks {
 		if task.ID == "T-quick-doc-drift" {
@@ -101,7 +101,7 @@ func TestGetQuickTestTasks_CleanCodeQuickTrue(t *testing.T) {
 	auto := forgeconfig.AutoConfigDefaults()
 	auto.CleanCode.Quick = true
 
-	tasks := GetQuickTestTasks([]string{"go"}, []string{"cli"}, auto)
+	tasks := GetQuickTestTasks([]string{"cli"}, auto)
 
 	found := false
 	for _, task := range tasks {
@@ -121,7 +121,7 @@ func TestGetQuickTestTasks_CleanCodeQuickFalse(t *testing.T) {
 	auto := forgeconfig.AutoConfigDefaults()
 	auto.CleanCode.Quick = false
 
-	tasks := GetQuickTestTasks([]string{"go"}, []string{"cli"}, auto)
+	tasks := GetQuickTestTasks([]string{"cli"}, auto)
 
 	for _, task := range tasks {
 		if task.ID == "T-clean-code" {
@@ -134,7 +134,7 @@ func TestGetQuickTestTasks_CleanCodeQuickFalse(t *testing.T) {
 
 func TestGetBreakdownTestTasks_DefaultsMatchOldBehavior(t *testing.T) {
 	auto := forgeconfig.AutoConfigDefaults()
-	tasks := GetBreakdownTestTasks([]string{"go"}, []string{"cli"}, auto)
+	tasks := GetBreakdownTestTasks([]string{"cli"}, auto)
 
 	// Should produce exactly 7 tasks (same as before)
 	if len(tasks) != 7 {
@@ -151,7 +151,7 @@ func TestGetBreakdownTestTasks_DefaultsMatchOldBehavior(t *testing.T) {
 
 func TestGetQuickTestTasks_DefaultsProduceNoE2ETasks(t *testing.T) {
 	auto := forgeconfig.AutoConfigDefaults()
-	tasks := GetQuickTestTasks([]string{"go"}, []string{"cli"}, auto)
+	tasks := GetQuickTestTasks([]string{"cli"}, auto)
 
 	// Defaults: e2eTest.quick=false, consolidateSpecs.quick=true -> only spec drift task
 	if len(tasks) != 1 {
@@ -168,7 +168,7 @@ func TestGetBreakdownTestTasks_CleanCodeDependsOnVerifyRegression(t *testing.T) 
 	auto := forgeconfig.AutoConfigDefaults()
 	auto.CleanCode.Full = true
 
-	tasks := GetBreakdownTestTasks([]string{"go"}, []string{"cli"}, auto)
+	tasks := GetBreakdownTestTasks([]string{"cli"}, auto)
 
 	// Find T-clean-code and verify its dependencies
 	for _, task := range tasks {
@@ -188,7 +188,7 @@ func TestGetQuickTestTasks_CleanCodeNoE2e(t *testing.T) {
 	auto.ConsolidateSpecs.Quick = false
 	auto.CleanCode.Quick = true
 
-	tasks := GetQuickTestTasks([]string{"go"}, []string{"cli"}, auto)
+	tasks := GetQuickTestTasks([]string{"cli"}, auto)
 
 	// Should have exactly 1 task (T-clean-code)
 	if len(tasks) != 1 {
@@ -206,7 +206,7 @@ func TestGetBreakdownTestTasks_NoE2eWithCleanCode(t *testing.T) {
 	auto.ConsolidateSpecs.Full = false
 	auto.CleanCode.Full = true
 
-	tasks := GetBreakdownTestTasks([]string{"go"}, []string{"cli"}, auto)
+	tasks := GetBreakdownTestTasks([]string{"cli"}, auto)
 
 	// Should have T-clean-code only (no e2e test tasks)
 	if len(tasks) != 1 {
@@ -223,7 +223,7 @@ func TestGetBreakdownTestTasks_OnlyConsolidateSpecs(t *testing.T) {
 	auto.E2eTest.Full = false
 	auto.ConsolidateSpecs.Full = true
 
-	tasks := GetBreakdownTestTasks([]string{"go"}, []string{"cli"}, auto)
+	tasks := GetBreakdownTestTasks([]string{"cli"}, auto)
 
 	// Should have T-specs-consolidate only
 	if len(tasks) != 1 {
@@ -239,7 +239,7 @@ func TestGetQuickTestTasks_OnlyConsolidateSpecs(t *testing.T) {
 	auto.E2eTest.Quick = false
 	auto.ConsolidateSpecs.Quick = true
 
-	tasks := GetQuickTestTasks([]string{"go"}, []string{"cli"}, auto)
+	tasks := GetQuickTestTasks([]string{"cli"}, auto)
 
 	// Should have T-quick-doc-drift only
 	if len(tasks) != 1 {
@@ -254,7 +254,7 @@ func TestGetQuickTestTasks_OnlyConsolidateSpecs(t *testing.T) {
 
 func TestGetBreakdownTestTasks_SpecsDependsOnVerifyRegression(t *testing.T) {
 	auto := forgeconfig.AutoConfigDefaults()
-	tasks := GetBreakdownTestTasks([]string{"go"}, []string{"cli"}, auto)
+	tasks := GetBreakdownTestTasks([]string{"cli"}, auto)
 
 	// Find T-specs-consolidate
 	for _, task := range tasks {
@@ -270,7 +270,7 @@ func TestGetBreakdownTestTasks_SpecsDependsOnVerifyRegression(t *testing.T) {
 
 func TestGetQuickTestTasks_SpecsDependsOnVerifyRegression(t *testing.T) {
 	auto := allEnabledAuto
-	tasks := GetQuickTestTasks([]string{"go"}, []string{"cli"}, auto)
+	tasks := GetQuickTestTasks([]string{"cli"}, auto)
 
 	// Find T-quick-doc-drift
 	for _, task := range tasks {
@@ -316,7 +316,7 @@ func TestGetBreakdownTestTasks_AllAutoOff(t *testing.T) {
 		CleanCode:        forgeconfig.ModeToggle{Quick: false, Full: false},
 	}
 
-	tasks := GetBreakdownTestTasks([]string{"go"}, []string{"cli"}, auto)
+	tasks := GetBreakdownTestTasks([]string{"cli"}, auto)
 	if len(tasks) != 0 {
 		t.Errorf("expected 0 tasks with all auto off, got %d", len(tasks))
 	}
@@ -329,7 +329,7 @@ func TestGetQuickTestTasks_AllAutoOff(t *testing.T) {
 		CleanCode:        forgeconfig.ModeToggle{Quick: false, Full: false},
 	}
 
-	tasks := GetQuickTestTasks([]string{"go"}, []string{"cli"}, auto)
+	tasks := GetQuickTestTasks([]string{"cli"}, auto)
 	if len(tasks) != 0 {
 		t.Errorf("expected 0 tasks with all auto off, got %d", len(tasks))
 	}
@@ -343,7 +343,7 @@ func TestGetQuickTestTasks_CleanCodeAndSpecsNoE2e(t *testing.T) {
 	auto.CleanCode.Quick = true
 	auto.ConsolidateSpecs.Quick = true
 
-	tasks := GetQuickTestTasks([]string{"go"}, []string{"cli"}, auto)
+	tasks := GetQuickTestTasks([]string{"cli"}, auto)
 
 	if len(tasks) != 2 {
 		t.Fatalf("expected 2 tasks, got %d: %+v", len(tasks), tasks)

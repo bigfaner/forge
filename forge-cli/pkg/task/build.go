@@ -283,9 +283,11 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 
 	// 7.5 Generate test pipeline tasks
 	if needsTest && mode != "" {
-		languages, _ := forgeconfig.ReadLanguages(opts.ProjectRoot)
 		capabilities, _ := forgeconfig.ReadInterfaces(opts.ProjectRoot)
-		testTasks := GenerateTestTasks(mode, languages, capabilities, opts.AutoConfig)
+		if len(capabilities) == 0 {
+			result.Warnings = append(result.Warnings, "No interfaces configured in .forge/config.yaml. Test pipeline tasks will not be generated. Add an 'interfaces' field to enable:\n  interfaces:\n    - api\n    - cli")
+		}
+		testTasks := GenerateTestTasks(mode, capabilities, opts.AutoConfig)
 		for _, td := range testTasks {
 			ttKey := td.Key
 			existingKeys[ttKey] = true
@@ -373,14 +375,14 @@ func setFeatureMetadata(index *TaskIndex, projectRoot, slug string) {
 	}
 }
 
-// GenerateTestTasks returns test task definitions for the given mode and languages.
+// GenerateTestTasks returns test task definitions for the given mode and interfaces.
 // Exported for use by caller (task 1.4).
-func GenerateTestTasks(mode string, languages []string, capabilities []string, auto forgeconfig.AutoConfig) []TestTaskDef {
+func GenerateTestTasks(mode string, capabilities []string, auto forgeconfig.AutoConfig) []TestTaskDef {
 	switch mode {
 	case "breakdown":
-		return GetBreakdownTestTasks(languages, capabilities, auto)
+		return GetBreakdownTestTasks(capabilities, auto)
 	case "quick":
-		return GetQuickTestTasks(languages, capabilities, auto)
+		return GetQuickTestTasks(capabilities, auto)
 	default:
 		return nil
 	}
