@@ -10,7 +10,7 @@
       "title": "Characterization tests for current behavior",
       "priority": "P0",
       "estimatedTime": "3h",
-      "status": "pending",
+      "status": "completed",
       "file": "0.1-characterization-tests.md",
       "record": "records/0.1-characterization-tests.md",
       "scope": "backend",
