@@ -1,9 +1,0 @@
-{
-  "entries": [
-    {
-      "targetPath": "tests/e2e/cli_list_reverse_chronological_cli_test.go",
-      "wasExistingBeforeMerge": false,
-      "status": "done"
-    }
-  ]
-}

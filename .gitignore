@@ -24,8 +24,6 @@ task-cli/check.out
 node_modules/
 task-cli/*.out
 test-results/.last-run.json
-tests/e2e/results/
-tests/e2e/features/*/results/ 
 tests/results/
 .forge/state.json
 docs/features/*/tasks/process/
