@@ -8,7 +8,7 @@
       "title": "Rewrite run-e2e-tests → run-tests as pure executor",
       "priority": "P0",
       "estimatedTime": "90m",
-      "status": "pending",
+      "status": "completed",
       "file": "1-rewrite-run-tests-skill.md",
       "record": "records/1-rewrite-run-tests-skill.md",
       "type": "doc"
