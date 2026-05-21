@@ -1,7 +1,7 @@
 ---
 feature: "run-tests-decouple"
 created: "2026-05-21"
-status: tasks
+status: completed
 mode: quick
 ---
 
