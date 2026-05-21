@@ -23,3 +23,5 @@
 ## Failed Tests Detail
 
 {{FAILED_DETAILS}}
+
+{{SCREENSHOTS_SECTION}}

@@ -369,5 +369,5 @@ See `rules/quality-gates.md` for the complete error handling table covering Conv
 |-------|-------|
 | `/gen-journeys` | Generate Journey narratives from PRD |
 | `/gen-contracts` | Generate Contract specifications from Journeys |
-| `/run-e2e-tests` | Execute test scripts and report results |
+| `/run-tests` | Execute test scripts and report results |
 | `/forge:test-guide` | Generate a Convention file for test framework configuration |

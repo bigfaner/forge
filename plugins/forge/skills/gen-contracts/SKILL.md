@@ -173,7 +173,7 @@ See `rules/validation.md` for the complete error handling table.
 |-------|-------|
 | `/gen-journeys` | Generate Journey documents (input source) |
 | `/gen-test-scripts` | Generate executable test code from Contracts |
-| `/run-e2e-tests` | Execute test scripts and report results |
+| `/run-tests` | Execute test scripts and report results |
 
 ## Reference
 
