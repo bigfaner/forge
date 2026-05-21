@@ -1,7 +1,7 @@
 ---
 created: 2026-05-21
 author: fanhuifeng
-status: Draft
+status: Approved
 ---
 
 # Proposal: Decouple Test Tasks from Languages

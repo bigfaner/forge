@@ -8,7 +8,7 @@
       "title": "Remove language dependency from test pipeline",
       "priority": "P0",
       "estimatedTime": "2-3h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-remove-language-from-test-pipeline.md",
       "record": "records/1-remove-language-from-test-pipeline.md",
       "breaking": true,
@@ -24,7 +24,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2-update-docs-and-config.md",
       "record": "records/2-update-docs-and-config.md",
       "type": "doc"
