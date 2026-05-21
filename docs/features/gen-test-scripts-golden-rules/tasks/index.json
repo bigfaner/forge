@@ -1,0 +1,86 @@
+{
+  "feature": "gen-test-scripts-golden-rules",
+  "proposal": "docs/proposals/gen-test-scripts-golden-rules/proposal.md",
+  "created": "2026-05-21",
+  "tasks": {
+    "1-shared-golden-rules": {
+      "id": "1",
+      "title": "Create types/_shared.md cross-type golden rules",
+      "priority": "P0",
+      "estimatedTime": "1-2h",
+      "status": "pending",
+      "file": "1-shared-golden-rules.md",
+      "record": "records/1-shared-golden-rules.md",
+      "type": "doc"
+    },
+    "2-cli-tui-api-golden-rules": {
+      "id": "2",
+      "title": "Restructure cli.md, tui.md, api.md with golden rules",
+      "priority": "P0",
+      "estimatedTime": "1-2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-cli-tui-api-golden-rules.md",
+      "record": "records/2-cli-tui-api-golden-rules.md",
+      "type": "doc"
+    },
+    "3-ui-mobile-golden-rules": {
+      "id": "3",
+      "title": "Restructure ui.md and rewrite mobile.md with golden rules",
+      "priority": "P0",
+      "estimatedTime": "1-2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "3-ui-mobile-golden-rules.md",
+      "record": "records/3-ui-mobile-golden-rules.md",
+      "type": "doc"
+    },
+    "4-skill-md-integration": {
+      "id": "4",
+      "title": "Integrate types/ into SKILL.md with loading logic",
+      "priority": "P0",
+      "estimatedTime": "1-2h",
+      "dependencies": [
+        "1",
+        "2",
+        "3"
+      ],
+      "status": "pending",
+      "file": "4-skill-md-integration.md",
+      "record": "records/4-skill-md-integration.md",
+      "scope": "all",
+      "type": "doc"
+    },
+    "eval-doc": {
+      "id": "T-eval-doc",
+      "title": "Evaluate Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "4"
+      ],
+      "status": "pending",
+      "file": "eval-doc.md",
+      "record": "records/eval-doc.md",
+      "scope": "all",
+      "type": "doc.eval"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
