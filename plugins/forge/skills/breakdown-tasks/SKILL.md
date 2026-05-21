@@ -119,7 +119,7 @@ forge task add --template fix-task --title "Fix: <desc>" --source-task-id <id> -
 ```bash
 forge task index --feature <slug>
 ```
-Scans `.md`, auto-generates stage-gates + test tasks, produces `index.json`, validates. Pass `--languages <l1>,<l2>` if Step 0 undetected.
+Scans `.md`, auto-generates stage-gates + test tasks (based on `interfaces` in `.forge/config.yaml`), produces `index.json`, validates.
 
 ## Step 6: Validate
 ```bash
@@ -141,5 +141,5 @@ Read `templates/manifest-update-tasks.md`. Fill 5-column traceability (PRD Secti
 - [ ] Shared-code splits applied (>5 files or cross-layer)
 - [ ] UI tasks reference prototypes (if applicable)
 - [ ] User Stories populated
-- [ ] Test tasks match language expansion
+- [ ] Test tasks match interface config
 - [ ] `manifest.md` updated with traceability + `status: tasks`
