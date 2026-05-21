@@ -23,7 +23,6 @@ var (
 	submitDataPath string
 	submitJSON     bool
 	submitQuiet    bool
-	submitForce    bool
 )
 
 var submitCmd = &cobra.Command{
@@ -67,7 +66,6 @@ func init() {
 	submitCmd.Flags().StringVar(&submitDataPath, "data", "", "Path to JSON data file")
 	submitCmd.Flags().BoolVar(&submitJSON, "json", false, "Output result as JSON")
 	submitCmd.Flags().BoolVar(&submitQuiet, "quiet", false, "Minimal output")
-	submitCmd.Flags().BoolVar(&submitForce, "force", false, "Override validation errors (use with caution)")
 }
 
 func runSubmit(_ *cobra.Command, args []string) {
@@ -85,31 +83,37 @@ func runSubmit(_ *cobra.Command, args []string) {
 
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
 
-	// Acquire advisory lock to prevent concurrent write conflicts
-	lock, err := indexPkg.LockFile(indexPath)
-	if err != nil {
-		if errors.Is(err, indexPkg.ErrLockConflict) {
+	// Wrap all index-modifying logic in WithLock for concurrent write safety
+	if lockErr := indexPkg.WithLock(indexPath, func() error {
+		return doSubmit(projectRoot, featureSlug, indexPath, taskIDArg)
+	}); lockErr != nil {
+		if errors.Is(lockErr, indexPkg.ErrLockConflict) {
 			fmt.Fprintln(os.Stderr, "concurrent write conflict, retry")
 			os.Exit(1)
 		}
-		fmt.Fprintf(os.Stderr, "failed to create lock file: %v\n", err)
+		if aiErr, ok := lockErr.(*AIError); ok {
+			Exit(aiErr)
+		}
+		fmt.Fprintf(os.Stderr, "failed to acquire lock: %v\n", lockErr)
 		os.Exit(1)
 	}
-	defer func() { _ = indexPkg.UnlockFile(lock) }()
+}
 
+// doSubmit contains the core submit logic, executed under the advisory lock.
+func doSubmit(projectRoot, featureSlug, indexPath, taskIDArg string) error {
 	idx, err := task.LoadIndex(indexPath)
 	if err != nil {
-		Exit(ErrFileNotFound(indexPath))
+		return ErrFileNotFound(indexPath)
 	}
 
 	key, t, err := task.FindTask(idx, taskIDArg)
 	if err != nil {
-		Exit(ErrTaskNotFound(taskIDArg))
+		return ErrTaskNotFound(taskIDArg)
 	}
 
 	rd, err := readSubmitData(submitDataPath)
 	if err != nil {
-		Exit(ErrNoInput(err.Error()))
+		return ErrNoInput(err.Error())
 	}
 
 	if rd.Status == "" {
@@ -132,17 +136,37 @@ func runSubmit(_ *cobra.Command, args []string) {
 		}
 	}
 
-	// Validate required and recommended fields
-	validateRecordData(rd, submitForce)
+	// Capture intended status before validateRecordData may auto-downgrade
+	targetStatus := rd.Status
 
-	// Quality gate pre-check for completed tasks (unless --force or non-testable type)
+	// Validate required and recommended fields
+	validateRecordData(rd)
+
+	// State machine validation: check transition before proceeding
+	if targetStatus == "completed" {
+		if transitionErr := task.ValidateTransition(t.Status, "completed", task.RoleSubmit); transitionErr != nil {
+			te := transitionErr.(*task.TransitionError)
+			return NewErrInvalidTransition(t.Status, "completed", te.Msg)
+		}
+	}
+
+	// Quality gate pre-check for completed tasks (non-testable types excluded)
 	// Tiered model: breaking tasks run full gate (compile+fmt+lint+test),
 	// non-breaking coding tasks run static gate (compile+fmt+lint).
-	if rd.Status == "completed" && !submitForce && task.IsTestableType(t.Type) {
+	if targetStatus == "completed" && task.IsTestableType(t.Type) {
 		validateQualityGate(projectRoot, t.Scope, t.Breaking)
 	}
 
-	// Validate status
+	// After validateRecordData, rd.Status may have been auto-downgraded (completed -> blocked)
+	if rd.Status != targetStatus && rd.Status == "blocked" {
+		// Auto-downgrade: validate the blocked transition
+		if transitionErr := task.ValidateTransition(t.Status, "blocked", task.RoleSubmit); transitionErr != nil {
+			te := transitionErr.(*task.TransitionError)
+			return NewErrInvalidTransition(t.Status, "blocked", te.Msg)
+		}
+	}
+
+	// Validate status against index statusEnum
 	validStatus := false
 	for _, s := range idx.StatusEnum {
 		if s == rd.Status {
@@ -151,7 +175,7 @@ func runSubmit(_ *cobra.Command, args []string) {
 		}
 	}
 	if !validStatus {
-		Exit(ErrInvalidStatus(rd.Status, idx.StatusEnum))
+		return ErrInvalidStatus(rd.Status, idx.StatusEnum)
 	}
 
 	// Read startedTime from task-state.json
@@ -170,32 +194,18 @@ func runSubmit(_ *cobra.Command, args []string) {
 		Exit(NewAIError(ErrValidation, "Failed to create record directory", err.Error(), "Check directory permissions", "mkdir -p "+filepath.Dir(recordPath)))
 	}
 
-	// Write-once protection: block overwrite unless --force is set
-	if _, err := os.Stat(recordPath); err == nil {
-		// File exists
-		if !submitForce {
-			Exit(NewAIError(ErrValidation,
-				fmt.Sprintf("Record for task %s already exists at %s", t.ID, recordPath),
-				"Record file already exists — overwriting would destroy audit history",
-				"Use --force to overwrite, or create a fix task instead",
-				fmt.Sprintf("forge task submit %s --data record.json --force", t.ID)))
-		}
-		fmt.Fprintf(os.Stderr, "WARNING: Overwriting existing record at %s\n", recordPath)
-	} else if !os.IsNotExist(err) {
-		// Unexpected error from os.Stat (e.g., permission issue)
-		Exit(NewAIError(ErrValidation,
-			"Failed to check record file existence",
-			err.Error(),
-			"Check file permissions",
-			"ls -la "+recordPath))
-	}
-
 	if err := os.WriteFile(recordPath, []byte(content), 0644); err != nil {
 		Exit(NewAIError(ErrValidation, "Failed to write record file", err.Error(), "Check file permissions", "cat "+recordPath))
 	}
 
 	// Update task status in index
 	t.Status = rd.Status
+
+	// Set BlockedReason on auto-downgrade
+	if rd.Status == "blocked" && targetStatus == "completed" {
+		t.BlockedReason = fmt.Sprintf("auto-downgrade: testsFailed=%d", rd.TestsFailed)
+	}
+
 	idx.SetTask(key, *t)
 
 	// Auto-restore: if this fix-task completed or skipped, check if source can be unblocked
@@ -218,6 +228,8 @@ func runSubmit(_ *cobra.Command, args []string) {
 		PrintField("STATUS", rd.Status)
 		PrintBlockEnd()
 	}
+
+	return nil
 }
 
 // saveIndexAndSignalCompletion saves the index atomically and writes .forge/state.json
@@ -287,13 +299,13 @@ func readSubmitData(dataPath string) (*task.RecordData, error) {
 // validateRecordData checks required and recommended fields in task.RecordData.
 // Hard-required fields (missing = error): summary
 // Auto-downgrade: completed + testsFailed > 0 → blocked (non-overridable)
-// Hard validation for completed tasks (overridable with --force):
+// Hard validation for completed tasks:
 //   - testsPassed=0 && testsFailed=0 with coverage >= 0
 //   - any acceptanceCriteria with met=false
 //
 // Recommended fields for "completed" status (missing = warning):
 //   - keyDecisions, acceptanceCriteria
-func validateRecordData(rd *task.RecordData, force bool) {
+func validateRecordData(rd *task.RecordData) {
 	var missing []string
 
 	// Hard-required fields
@@ -315,8 +327,8 @@ func validateRecordData(rd *task.RecordData, force bool) {
 		return
 	}
 
-	// Hard validation for completed tasks (unless --force)
-	if !force {
+	// Hard validation for completed tasks
+	{
 		// Reject completed with no test evidence (unless coverage=-1.0 signals "no tests")
 		if rd.Coverage >= 0 && rd.TestsPassed == 0 && rd.TestsFailed == 0 {
 			Exit(ErrNoTestEvidence())
@@ -500,6 +512,6 @@ func validateQualityGate(projectRoot, scope string, breaking bool) {
 			fmt.Sprintf("Quality gate failed at step: just %s", step),
 			concise,
 			"Fix the errors above and re-run task record",
-			"Or use --force to bypass the quality gate"))
+			"Or set status to 'blocked' and create a fix task"))
 	})
 }

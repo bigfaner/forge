@@ -20,16 +20,13 @@ import (
 // ============================================================================
 
 // ---------------------------------------------------------------------------
-// TestSubmit_CurrentBehavior_AllowsCompletedResubmit
+// TestSubmit_RejectsCompletedResubmit
 //
-// Current behavior: submit on a completed task succeeds without error.
-// The submit command does not check whether the task is already in a terminal
-// state — it overwrites status unconditionally (BIZ-task-lifecycle-002 gap).
-//
-// Desired future behavior (Phase 2): submit on a terminal task should fail
-// unless --force is used.
+// Submit on a completed task is rejected by the state machine.
+// ValidateTransition(current="completed", target="completed", role=RoleSubmit)
+// returns an error because completed is a terminal state.
 // ---------------------------------------------------------------------------
-func TestSubmit_CurrentBehavior_AllowsCompletedResubmit(t *testing.T) {
+func TestSubmit_RejectsCompletedResubmit(t *testing.T) {
 	if os.Getenv("TEST_CHAR_SUBMIT_COMPLETED_RESUBMIT") == "1" {
 		setupFullProject(t, SetupOpts{
 			Tasks: map[string]task.Task{
@@ -38,10 +35,6 @@ func TestSubmit_CurrentBehavior_AllowsCompletedResubmit(t *testing.T) {
 		})
 
 		dir, _ := os.Getwd()
-
-		// Write existing record so write-once protection triggers without --force
-		recordPath := filepath.Join(dir, "docs", "features", "test", "tasks", "records", "1.md")
-		_ = os.WriteFile(recordPath, []byte("existing record"), 0644)
 
 		dataPath := filepath.Join(dir, "record.json")
 		rd := task.RecordData{
@@ -55,18 +48,21 @@ func TestSubmit_CurrentBehavior_AllowsCompletedResubmit(t *testing.T) {
 		_ = os.WriteFile(dataPath, rdJSON, 0644)
 
 		submitDataPath = dataPath
-		submitForce = true // need --force to overwrite the existing record file
 		submitJSON = false
 		submitQuiet = false
 		runSubmit(submitCmd, []string{"1"})
 		return
 	}
 
-	cmd := exec.Command(os.Args[0], "-test.run=TestSubmit_CurrentBehavior_AllowsCompletedResubmit")
+	cmd := exec.Command(os.Args[0], "-test.run=TestSubmit_RejectsCompletedResubmit")
 	cmd.Env = append(os.Environ(), "TEST_CHAR_SUBMIT_COMPLETED_RESUBMIT=1")
 	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Errorf("CURRENT BEHAVIOR: submit on completed task should succeed (this is a known gap). Got error: %v\n%s", err, string(output))
+	if err == nil {
+		t.Error("expected error: submit on completed task should be rejected by state machine")
+	}
+	out := string(output)
+	if !strings.Contains(out, "INVALID_TRANSITION") {
+		t.Errorf("expected INVALID_TRANSITION error, got: %s", out)
 	}
 }
 
@@ -540,17 +536,12 @@ func TestStatus_AllowsMutation(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// TestSubmit_AutoDowngrade_NoBlockedReason
+// TestSubmit_AutoDowngrade_SetsBlockedReason
 //
-// Current behavior (SM-6): auto-downgrade sets status to "blocked" but does
-// NOT set BlockedReason on the task. The auto-downgrade happens in
-// validateRecordData which mutates rd.Status but has no access to the Task
-// struct's BlockedReason field. The index update only sets t.Status = rd.Status.
-//
-// Desired future behavior (Phase 2): auto-downgrade should set BlockedReason
-// to something like "auto-downgrade: N test failures".
+// Auto-downgrade sets status to "blocked" and sets BlockedReason on the task.
+// The BlockedReason format is "auto-downgrade: testsFailed=N".
 // ---------------------------------------------------------------------------
-func TestSubmit_AutoDowngrade_NoBlockedReason(t *testing.T) {
+func TestSubmit_AutoDowngrade_SetsBlockedReason(t *testing.T) {
 	dir := setupFullProject(t, SetupOpts{
 		Tasks: map[string]task.Task{
 			"t1": {ID: "1", Title: "Task 1", Status: "in_progress", Type: task.TypeCodingFeature, File: "1.md", Record: "records/1.md"},
@@ -575,7 +566,6 @@ func TestSubmit_AutoDowngrade_NoBlockedReason(t *testing.T) {
 	submitDataPath = dataPath
 	submitJSON = false
 	submitQuiet = false
-	submitForce = false
 
 	_ = captureStdout(func() {
 		runSubmit(nil, []string{"1"})
@@ -589,8 +579,8 @@ func TestSubmit_AutoDowngrade_NoBlockedReason(t *testing.T) {
 		t.Fatalf("expected auto-downgrade to blocked, got %s", task1.Status)
 	}
 
-	// CURRENT BEHAVIOR (SM-6): BlockedReason is NOT set after auto-downgrade
-	if task1.BlockedReason != "" {
-		t.Errorf("CURRENT BEHAVIOR: BlockedReason should be empty after auto-downgrade (SM-6 gap). Got: %q", task1.BlockedReason)
+	// BlockedReason should be set after auto-downgrade
+	if task1.BlockedReason != "auto-downgrade: testsFailed=2" {
+		t.Errorf("expected BlockedReason 'auto-downgrade: testsFailed=2', got %q", task1.BlockedReason)
 	}
 }

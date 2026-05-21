@@ -19,7 +19,7 @@ func TestValidateRecordData(t *testing.T) {
 			Summary: "",
 		}
 		if os.Getenv("TEST_VALIDATE_EMPTY_SUMMARY") == "1" {
-			validateRecordData(rd, false)
+			validateRecordData(rd)
 			return
 		}
 		cmd := exec.Command(os.Args[0], "-test.run=TestValidateRecordData/empty_summary_triggers_hard_error")
@@ -32,7 +32,7 @@ func TestValidateRecordData(t *testing.T) {
 
 	t.Run("whitespace-only summary triggers hard error", func(t *testing.T) {
 		if os.Getenv("TEST_VALIDATE_WS_SUMMARY") == "1" {
-			validateRecordData(&task.RecordData{Status: "completed", Summary: "   "}, false)
+			validateRecordData(&task.RecordData{Status: "completed", Summary: "   "})
 			return
 		}
 		cmd := exec.Command(os.Args[0], "-test.run=TestValidateRecordData/whitespace-only_summary_triggers_hard_error")
@@ -54,7 +54,7 @@ func TestValidateRecordData(t *testing.T) {
 		old := os.Stderr
 		r, w, _ := os.Pipe()
 		os.Stderr = w
-		validateRecordData(rd, false)
+		validateRecordData(rd)
 		_ = w.Close()
 		os.Stderr = old
 
@@ -78,7 +78,7 @@ func TestValidateRecordData(t *testing.T) {
 			TestsFailed: 2,
 			Coverage:    60.0,
 		}
-		validateRecordData(rd, true)
+		validateRecordData(rd)
 
 		if rd.Status != "blocked" {
 			t.Errorf("expected status downgraded even with force=true, got %q", rd.Status)
@@ -87,7 +87,7 @@ func TestValidateRecordData(t *testing.T) {
 
 	t.Run("completed without test evidence triggers hard error", func(t *testing.T) {
 		if os.Getenv("TEST_VALIDATE_NO_TESTS") == "1" {
-			validateRecordData(&task.RecordData{Status: "completed", Summary: "Did the work", TestsPassed: 0, TestsFailed: 0, Coverage: 0}, false)
+			validateRecordData(&task.RecordData{Status: "completed", Summary: "Did the work", TestsPassed: 0, TestsFailed: 0, Coverage: 0})
 			return
 		}
 		cmd := exec.Command(os.Args[0], "-test.run=TestValidateRecordData/completed_without_test_evidence_triggers_hard_error")
@@ -109,7 +109,7 @@ func TestValidateRecordData(t *testing.T) {
 		old := os.Stderr
 		r, w, _ := os.Pipe()
 		os.Stderr = w
-		validateRecordData(rd, false)
+		validateRecordData(rd)
 		_ = w.Close()
 		os.Stderr = old
 
@@ -133,7 +133,7 @@ func TestValidateRecordData(t *testing.T) {
 		old := os.Stderr
 		r, w, _ := os.Pipe()
 		os.Stderr = w
-		validateRecordData(rd, false)
+		validateRecordData(rd)
 		_ = w.Close()
 		os.Stderr = old
 
@@ -161,7 +161,7 @@ func TestValidateRecordData(t *testing.T) {
 		old := os.Stderr
 		r, w, _ := os.Pipe()
 		os.Stderr = w
-		validateRecordData(rd, false)
+		validateRecordData(rd)
 		_ = w.Close()
 		os.Stderr = old
 
@@ -186,7 +186,7 @@ func TestValidateRecordData(t *testing.T) {
 		old := os.Stderr
 		r, w, _ := os.Pipe()
 		os.Stderr = w
-		validateRecordData(rd, false)
+		validateRecordData(rd)
 		_ = w.Close()
 		os.Stderr = old
 
@@ -210,7 +210,7 @@ func TestValidateRecordData(t *testing.T) {
 					{Criterion: "works", Met: true},
 					{Criterion: "edge case", Met: false},
 				},
-			}, false)
+			})
 			return
 		}
 		cmd := exec.Command(os.Args[0], "-test.run=TestValidateRecordData/completed_with_unmet_AC_triggers_hard_error")
@@ -235,7 +235,7 @@ func TestValidateRecordData(t *testing.T) {
 		old := os.Stderr
 		r, w, _ := os.Pipe()
 		os.Stderr = w
-		validateRecordData(rd, false)
+		validateRecordData(rd)
 		_ = w.Close()
 		os.Stderr = old
 
@@ -245,30 +245,6 @@ func TestValidateRecordData(t *testing.T) {
 
 		if strings.Contains(output, "ERROR") {
 			t.Errorf("blocked status should allow unmet AC, got: %s", output)
-		}
-	})
-
-	t.Run("force overrides test evidence check", func(t *testing.T) {
-		rd := &task.RecordData{
-			Status:      "completed",
-			Summary:     "Force override",
-			TestsPassed: 0,
-			TestsFailed: 0,
-			Coverage:    0,
-		}
-		old := os.Stderr
-		r, w, _ := os.Pipe()
-		os.Stderr = w
-		validateRecordData(rd, true)
-		_ = w.Close()
-		os.Stderr = old
-
-		buf := make([]byte, 1024)
-		n, _ := r.Read(buf)
-		output := string(buf[:n])
-
-		if strings.Contains(output, "ERROR") {
-			t.Errorf("force should override test evidence check, got: %s", output)
 		}
 	})
 
@@ -282,7 +258,7 @@ func TestValidateRecordData(t *testing.T) {
 		old := os.Stderr
 		r, w, _ := os.Pipe()
 		os.Stderr = w
-		validateRecordData(rd, false)
+		validateRecordData(rd)
 		_ = w.Close()
 		os.Stderr = old
 
@@ -308,7 +284,7 @@ func TestValidateRecordData(t *testing.T) {
 		old := os.Stderr
 		r, w, _ := os.Pipe()
 		os.Stderr = w
-		validateRecordData(rd, false)
+		validateRecordData(rd)
 		_ = w.Close()
 		os.Stderr = old
 
@@ -1294,49 +1270,14 @@ func TestValidateRecordData_RejectedSkipsCompletedChecks(_ *testing.T) {
 		Coverage: -1.0,
 	}
 	// Should not exit or error — rejected skips completed validation
-	validateRecordData(rd, false)
+	validateRecordData(rd)
 }
 
-// TestRecordExistsCheck tests the write-once protection for record files.
+// TestRecordExistsCheck tests record file creation.
 // Uses the subprocess pattern (like TestValidateRecordData) because runSubmit calls Exit().
 func TestRecordExistsCheck(t *testing.T) {
-	t.Run("submit fails when record already exists without force", func(t *testing.T) {
-		if os.Getenv("TEST_RECORD_EXISTS_NO_FORCE") == "1" {
-			setupFullProject(t, SetupOpts{
-				Tasks: map[string]task.Task{
-					"t1": {ID: "1", Title: "T1", Status: "pending", File: "1.md", Record: "records/1.md"},
-				},
-			})
-
-			dir, _ := os.Getwd()
-			recordPath := filepath.Join(dir, "docs", "features", "test", "tasks", "records", "1.md")
-			_ = os.WriteFile(recordPath, []byte("existing record"), 0644)
-
-			dataPath := filepath.Join(dir, "record.json")
-			jsonData := `{"status":"completed","summary":"Done","testsPassed":1,"coverage":50.0}`
-			_ = os.WriteFile(dataPath, []byte(jsonData), 0644)
-
-			submitDataPath = dataPath
-			submitForce = false
-			runSubmit(submitCmd, []string{"1"})
-			return
-		}
-		cmd := exec.Command(os.Args[0], "-test.run=TestRecordExistsCheck/submit_fails_when_record_already_exists_without_force")
-		cmd.Env = append(os.Environ(), "TEST_RECORD_EXISTS_NO_FORCE=1")
-		output, _ := cmd.CombinedOutput()
-		if !strings.Contains(string(output), "already exists") {
-			t.Errorf("expected 'already exists' error, got: %s", string(output))
-		}
-		if !strings.Contains(string(output), "VALIDATION_ERROR") {
-			t.Errorf("expected VALIDATION_ERROR code, got: %s", string(output))
-		}
-		if !strings.Contains(string(output), "--force") {
-			t.Errorf("expected hint to mention --force, got: %s", string(output))
-		}
-	})
-
-	t.Run("submit with --force overwrites existing record with warning", func(t *testing.T) {
-		if os.Getenv("TEST_RECORD_EXISTS_FORCE") == "1" {
+	t.Run("submit overwrites existing record", func(t *testing.T) {
+		if os.Getenv("TEST_RECORD_OVERWRITE") == "1" {
 			setupFullProject(t, SetupOpts{
 				Tasks: map[string]task.Task{
 					"t1": {ID: "1", Title: "T1", Status: "pending", File: "1.md", Record: "records/1.md"},
@@ -1352,20 +1293,14 @@ func TestRecordExistsCheck(t *testing.T) {
 			_ = os.WriteFile(dataPath, []byte(jsonData), 0644)
 
 			submitDataPath = dataPath
-			submitForce = true
 			runSubmit(submitCmd, []string{"1"})
 			return
 		}
-		cmd := exec.Command(os.Args[0], "-test.run=TestRecordExistsCheck/submit_with_--force_overwrites_existing_record_with_warning")
-		cmd.Env = append(os.Environ(), "TEST_RECORD_EXISTS_FORCE=1")
-		output, _ := cmd.CombinedOutput()
-		out := string(output)
-		if !strings.Contains(out, "WARNING") || !strings.Contains(out, "Overwriting") {
-			t.Errorf("expected WARNING about overwriting on stderr, got: %s", out)
-		}
-		// Should succeed (exit code 0)
-		if !cmd.ProcessState.Success() {
-			t.Errorf("expected success exit, got: %s", out)
+		cmd := exec.Command(os.Args[0], "-test.run=TestRecordExistsCheck/submit_overwrites_existing_record")
+		cmd.Env = append(os.Environ(), "TEST_RECORD_OVERWRITE=1")
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Errorf("expected success (no more write-once protection), got error: %v, output: %s", err, string(output))
 		}
 	})
 
@@ -1378,14 +1313,12 @@ func TestRecordExistsCheck(t *testing.T) {
 			})
 
 			dir, _ := os.Getwd()
-			// Ensure record file does NOT exist (it shouldn't by default)
 
 			dataPath := filepath.Join(dir, "record.json")
 			jsonData := `{"status":"completed","summary":"New record","testsPassed":3,"coverage":70.0,"keyDecisions":["d1"],"acceptanceCriteria":[{"criterion":"works","met":true}]}`
 			_ = os.WriteFile(dataPath, []byte(jsonData), 0644)
 
 			submitDataPath = dataPath
-			submitForce = false
 			runSubmit(submitCmd, []string{"1"})
 			return
 		}
@@ -1413,7 +1346,6 @@ func TestSubmit_NonTestableTypeSkipsQualityGate(t *testing.T) {
 			_ = os.WriteFile(dataPath, []byte(jsonData), 0644)
 
 			submitDataPath = dataPath
-			submitForce = false
 			runSubmit(submitCmd, []string{"1"})
 			return
 		}
@@ -1443,7 +1375,6 @@ func TestSubmit_NonTestableTypeSkipsQualityGate(t *testing.T) {
 			_ = os.WriteFile(dataPath, []byte(jsonData), 0644)
 
 			submitDataPath = dataPath
-			submitForce = false
 			runSubmit(submitCmd, []string{"1"})
 			return
 		}
@@ -1479,7 +1410,6 @@ func TestSubmit_TieredQualityGate(t *testing.T) {
 			_ = os.WriteFile(dataPath, []byte(jsonData), 0644)
 
 			submitDataPath = dataPath
-			submitForce = false
 			runSubmit(submitCmd, []string{"1"})
 			return
 		}
@@ -1514,7 +1444,6 @@ func TestSubmit_TieredQualityGate(t *testing.T) {
 			_ = os.WriteFile(dataPath, []byte(jsonData), 0644)
 
 			submitDataPath = dataPath
-			submitForce = false
 			runSubmit(submitCmd, []string{"1"})
 			return
 		}
@@ -1544,7 +1473,6 @@ func TestSubmit_TieredQualityGate(t *testing.T) {
 			_ = os.WriteFile(dataPath, []byte(jsonData), 0644)
 
 			submitDataPath = dataPath
-			submitForce = false
 			runSubmit(submitCmd, []string{"1"})
 			return
 		}
@@ -1576,7 +1504,6 @@ func TestSubmit_NonTestableTypeAutoSetCoverage(t *testing.T) {
 			_ = os.WriteFile(dataPath, []byte(jsonData), 0644)
 
 			submitDataPath = dataPath
-			submitForce = false
 			runSubmit(submitCmd, []string{"1"})
 			return
 		}

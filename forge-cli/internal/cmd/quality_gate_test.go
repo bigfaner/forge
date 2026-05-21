@@ -1036,12 +1036,12 @@ func TestCheckAllCompleted_ForgeStateConsumedOnSuccess(t *testing.T) {
 	if result == nil {
 		t.Fatal("first call should return result")
 	}
-	// Forge state should be cleared
+	// Forge state should be consumed (AllCompleted set to false)
 	state := feature.ReadForgeState(dir)
-	if state != nil {
-		t.Error("forge state should be cleared after checkAllCompleted consumes it")
+	if state != nil && state.AllCompleted {
+		t.Error("forge state should have AllCompleted=false after checkAllCompleted consumes it")
 	}
-	// Second call should return nil (no state)
+	// Second call should return nil (AllCompleted=false, not signaling)
 	result2 := checkAllCompleted(false)
 	if result2 != nil {
 		t.Error("second call should return nil after state was consumed")

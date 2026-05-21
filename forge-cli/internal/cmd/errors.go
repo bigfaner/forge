@@ -255,8 +255,8 @@ func ErrNoTestEvidence() *AIError {
 		ErrValidation,
 		"Cannot mark task completed with no test evidence",
 		"testsPassed=0 and testsFailed=0 with status=completed suggests tests were not actually run",
-		"Either (1) run tests and report results, or (2) use --force to override",
-		"forge task submit <id> --data record.json  (with real test metrics)\nforge task submit <id> --data record.json --force  (override, use cautiously)",
+		"Run tests and report results, or set status to 'blocked' and create a fix task",
+		"forge task submit <id> --data record.json  (with real test metrics)",
 	)
 }
 

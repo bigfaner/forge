@@ -354,7 +354,6 @@ func TestRunRecord_HappyPath(t *testing.T) {
 	submitDataPath = dataPath
 	submitJSON = false
 	submitQuiet = false
-	submitForce = false
 
 	out := captureStdout(func() {
 		runSubmit(nil, []string{"1.1"})
@@ -401,7 +400,6 @@ func TestRunRecord_JSONOutput(t *testing.T) {
 	submitDataPath = dataPath
 	submitJSON = true
 	submitQuiet = false
-	submitForce = false
 
 	out := captureStdout(func() {
 		runSubmit(nil, []string{"1.1"})
@@ -441,7 +439,6 @@ func TestRunRecord_QuietOutput(t *testing.T) {
 	submitDataPath = dataPath
 	submitJSON = false
 	submitQuiet = true
-	submitForce = false
 
 	out := captureStdout(func() {
 		runSubmit(nil, []string{"1.1"})
@@ -634,29 +631,6 @@ func TestSaveIndexAndSignalCompletion_IncompleteTasks(t *testing.T) {
 	}
 }
 
-// ---------- validateRecordData ----------
-
-func TestValidateRecordData_ForceOverride(t *testing.T) {
-	rd := &task.RecordData{
-		Status:      "completed",
-		Summary:     "Done",
-		TestsPassed: 0,
-		TestsFailed: 0,
-		Coverage:    50.0,
-		AcceptanceCriteria: []task.AcceptanceCriterion{
-			{Criterion: "Works", Met: false},
-		},
-	}
-
-	// Should not exit when force=true
-	out := captureStderr2(func() {
-		validateRecordData(rd, true)
-	})
-	if strings.Contains(out, "ERROR") {
-		t.Errorf("force should suppress validation errors, got: %s", out)
-	}
-}
-
 // ---------- validateRecordData non-testable task ----------
 
 func TestValidateRecordData_NonTestableTask(t *testing.T) {
@@ -671,7 +645,7 @@ func TestValidateRecordData_NonTestableTask(t *testing.T) {
 	}
 
 	out := captureStderr2(func() {
-		validateRecordData(rd, false)
+		validateRecordData(rd)
 	})
 	if strings.Contains(out, "ERROR") {
 		t.Errorf("coverage=-1.0 should pass for non-testable tasks, got: %s", out)
@@ -1131,7 +1105,6 @@ func TestRunRecord_BlockedStatus(t *testing.T) {
 	submitDataPath = dataPath
 	submitJSON = false
 	submitQuiet = false
-	submitForce = false
 
 	out := captureStdout(func() {
 		runSubmit(nil, []string{"1.1"})
@@ -1844,8 +1817,8 @@ func TestForgeStateLifecycle(t *testing.T) {
 	}
 
 	state = feature.ReadForgeState(dir)
-	if state != nil {
-		t.Error("state.json should be deleted after all-completed consumes it")
+	if state != nil && state.AllCompleted {
+		t.Error("state.json should have AllCompleted=false after all-completed consumes it")
 	}
 }
 
@@ -2062,7 +2035,6 @@ func TestRunRecord_AutoRestore_SlugKeyedSource(t *testing.T) {
 	submitDataPath = dataPath
 	submitJSON = false
 	submitQuiet = false
-	submitForce = false
 
 	_ = captureStdout(func() {
 		runSubmit(nil, []string{"fix-auth"})
@@ -2115,7 +2087,6 @@ func TestRunRecord_FixTaskAutoDowngrade_NoRestore(t *testing.T) {
 	submitDataPath = dataPath
 	submitJSON = false
 	submitQuiet = false
-	submitForce = false
 
 	_ = captureStdout(func() {
 		runSubmit(nil, []string{"fix-1"})
@@ -2158,7 +2129,6 @@ func TestRunRecord_AutoDowngrade_ThenCleanup(t *testing.T) {
 	submitDataPath = dataPath
 	submitJSON = false
 	submitQuiet = false
-	submitForce = false
 
 	_ = captureStdout(func() {
 		runSubmit(nil, []string{"1.1"})
@@ -2211,7 +2181,6 @@ func TestRunRecord_AutoDowngrade_ThenClaim(t *testing.T) {
 	submitDataPath = dataPath
 	submitJSON = false
 	submitQuiet = false
-	submitForce = false
 
 	_ = captureStdout(func() {
 		runSubmit(nil, []string{"1.1"})
@@ -2260,7 +2229,6 @@ func TestRunRecord_MultiFixTask_PartialDowngrade(t *testing.T) {
 	submitDataPath = dataPath1
 	submitJSON = false
 	submitQuiet = false
-	submitForce = false
 
 	_ = captureStdout(func() {
 		runSubmit(nil, []string{"fix-1"})
