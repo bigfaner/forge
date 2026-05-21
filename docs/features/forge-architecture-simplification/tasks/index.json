@@ -95,7 +95,7 @@
       "dependencies": [
         "1.gate"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2.1-state-machine.md",
       "record": "records/2.1-state-machine.md",
       "scope": "backend",
