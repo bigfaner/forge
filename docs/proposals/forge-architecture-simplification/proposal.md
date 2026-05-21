@@ -1,8 +1,8 @@
 ---
 created: 2026-05-17
-updated: 2026-05-18
+updated: 2026-05-20
 author: "faner + Claude"
-status: Draft
+status: Approved
 ---
 
 # Proposal: Forge Architecture Simplification
@@ -48,6 +48,19 @@ Forge v3.0.0-rc.1 的架构存在 19 个系统性缺陷模式（78 个存续 + 6
 **新增**（6 项，来自 #112 和 #113 合并）：
 - MV-8~MV-10: 新测试模型命令的魔法值（`"tests"` 路径、`"exit code 0/1"` 匹配、`"CLAUDE_PROJECT_DIR="` 前缀）
 - TM-1~TM-3: test promote 路径遍历、test verify 静默解析失败、unverifiable 标记为 OK
+
+### Re-evaluation (2026-05-20)
+
+> 最近合入 `worktree-experience`、`journey-contract-default-knowledge`、`auto-execute-tasks` 后重新评估。
+
+**结论：84 个缺陷全部存活，原方案 4 阶段 32 任务仍然成立。**
+
+- `worktree-experience`：纯增量功能（worktree 生命周期），未触及任何缺陷区域
+- `journey-contract-default-knowledge`：测试模型约定，未触及任何缺陷区域
+- `auto-execute-tasks`：新增 `auto.runTasks` 配置项，仅影响 `/quick` 确认门，未触及任何缺陷区域
+- NM-7（schema 命名）：部分修复——`forge-config.schema.json` 已改为 `Interfaces`，但 Go 代码仍用旧名
+
+**重叠处理**：`task-executor-prompt-congruence` proposal（含 P0 bug：blocked 任务仍被 commit）与 Pattern 1/2/3/6/9 有局部重叠。决策：**先执行 architecture-simplification 的状态机任务（W4, tasks 2.1-2.8），自然覆盖重叠部分。之后再评估 task-executor-prompt-congruence 的非重叠部分是否仍有必要。**
 
 ---
 

@@ -47,6 +47,12 @@ auto:
   # Default: false (opt-in — off by default)
   gitPush: false
 
+  # Whether auto knowledge extraction saves silently for each pipeline mode.
+  # Default: quick=true, full=false (quick mode auto-saves, full mode asks for confirmation)
+  knowledgeSave:
+    quick: true
+    full: false
+
 # Worktree creation configuration (optional — omit the block for default behavior)
 # source-branch: default branch to create worktrees from (defaults to HEAD)
 # copy-files: files to copy from project root into new worktrees (e.g., .env files)

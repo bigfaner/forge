@@ -1,14 +1,13 @@
 ---
-id: "T-test-1"
+id: "T-test-gen-cases"
 title: "Generate e2e Test Cases"
 priority: "P1"
 estimated_time: "1-2h"
-dependencies: ["T-clean-code-1"]
-type: "test-pipeline.gen-cases"
+dependencies: []
+type: "test.gen-cases"
 scope: "all"
-noTest: true
 ---
 
 # Generate e2e Test Cases
 
-Execute this test pipeline task.
+Read docs/conventions/testing-*.md for test generation strategy.

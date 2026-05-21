@@ -1,6 +1,6 @@
 ---
 feature: "journey-contract-default-knowledge"
-status: tasks
+status: completed
 mode: quick
 ---
 

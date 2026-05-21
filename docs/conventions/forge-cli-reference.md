@@ -24,6 +24,7 @@ domains: [cli, commands, reference, skills]
 | `forge verify-task-done` | 在 git commit 前验证任务完成状态 | `verify_task_done.go` |
 | `forge version` | 打印 CLI 版本号（隐藏命令，不出现在 --help 中） | `version.go` |
 | `forge claude` | 跳过权限检查启动 Claude CLI | `claude.go` |
+| `forge version` | 打印 CLI 版本号 | `version.go` |
 
 ## 命令组
 

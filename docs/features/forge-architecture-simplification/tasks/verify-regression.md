@@ -1,10 +1,10 @@
 ---
-id: "T-test-4.5"
+id: "T-test-verify-regression"
 title: "Verify Full E2E Regression"
 priority: "P1"
 estimated_time: "15-30min"
-dependencies: ["T-test-4"]
-type: "test-pipeline.verify-regression"
+dependencies: ["T-test-graduate"]
+type: "test.verify-regression"
 scope: "all"
 ---
 

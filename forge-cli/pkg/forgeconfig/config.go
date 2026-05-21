@@ -33,7 +33,9 @@ type AutoConfig struct {
 	ConsolidateSpecs ModeToggle `yaml:"consolidateSpecs"`
 	CleanCode        ModeToggle `yaml:"cleanCode"`
 	Validation       ModeToggle `yaml:"validation"`
+	RunTasks         ModeToggle `yaml:"runTasks"`
 	GitPush          bool       `yaml:"gitPush"`
+	KnowledgeSave    ModeToggle `yaml:"knowledgeSave"`
 	// raw tracks which sub-fields were explicitly present in the YAML.
 	// Used by applyDefaults to distinguish "false" from "missing".
 	raw map[string]map[string]bool
@@ -48,7 +50,9 @@ func AutoConfigDefaults() AutoConfig {
 		ConsolidateSpecs: ModeToggle{Quick: true, Full: true},
 		CleanCode:        ModeToggle{Quick: false, Full: false},
 		Validation:       ModeToggle{Quick: false, Full: false},
+		RunTasks:         ModeToggle{Quick: true, Full: false},
 		GitPush:          false,
+		KnowledgeSave:    ModeToggle{Quick: true, Full: false},
 	}
 }
 
@@ -58,7 +62,9 @@ func (a AutoConfig) IsZero() bool {
 		a.ConsolidateSpecs == ModeToggle{} &&
 		a.CleanCode == ModeToggle{} &&
 		a.Validation == ModeToggle{} &&
-		!a.GitPush
+		a.RunTasks == ModeToggle{} &&
+		!a.GitPush &&
+		a.KnowledgeSave == ModeToggle{}
 }
 
 // WithDefaults returns an AutoConfig with defaults applied for any zero-value fields.
@@ -78,6 +84,12 @@ func (a AutoConfig) WithDefaults() AutoConfig {
 	}
 	if a.Validation == (ModeToggle{}) {
 		a.Validation = d.Validation
+	}
+	if a.RunTasks == (ModeToggle{}) {
+		a.RunTasks = d.RunTasks
+	}
+	if a.KnowledgeSave == (ModeToggle{}) {
+		a.KnowledgeSave = d.KnowledgeSave
 	}
 	return a
 }
@@ -212,7 +224,7 @@ func parseAutoRaw(data []byte) (map[string]map[string]bool, error) {
 
 	result := make(map[string]map[string]bool)
 
-	modeFields := []string{"e2eTest", "consolidateSpecs", "cleanCode", "validation"}
+	modeFields := []string{"e2eTest", "consolidateSpecs", "cleanCode", "validation", "runTasks", "knowledgeSave"}
 	for _, field := range modeFields {
 		node := findMappingKey(autoNode, field)
 		if node == nil {
@@ -257,6 +269,8 @@ func (a *AutoConfig) applyDefaults() {
 		a.E2eTest = d.E2eTest
 		a.ConsolidateSpecs = d.ConsolidateSpecs
 		a.CleanCode = d.CleanCode
+		a.RunTasks = d.RunTasks
+		a.KnowledgeSave = d.KnowledgeSave
 		return
 	}
 
@@ -264,6 +278,8 @@ func (a *AutoConfig) applyDefaults() {
 	applyModeDefault(&a.ConsolidateSpecs, a.raw, "consolidateSpecs", d.ConsolidateSpecs)
 	applyModeDefault(&a.CleanCode, a.raw, "cleanCode", d.CleanCode)
 	applyModeDefault(&a.Validation, a.raw, "validation", d.Validation)
+	applyModeDefault(&a.RunTasks, a.raw, "runTasks", d.RunTasks)
+	applyModeDefault(&a.KnowledgeSave, a.raw, "knowledgeSave", d.KnowledgeSave)
 }
 
 // applyModeDefault sets default values for a ModeToggle field using per-mode defaults.
@@ -335,6 +351,22 @@ func GetConfigValue(projectRoot, key string) (string, error) {
 
 // getAutoKeyValue handles dot-notation keys for the auto config block.
 func getAutoKeyValue(projectRoot, key string) (string, bool, error) {
+	if key == "auto.runTasks" {
+		auto, err := ReadAutoConfig(projectRoot)
+		if err != nil {
+			return "", true, err
+		}
+		return fmt.Sprintf("quick:%v full:%v", auto.RunTasks.Quick, auto.RunTasks.Full), true, nil
+	}
+
+	if key == "auto.knowledgeSave" {
+		auto, err := ReadAutoConfig(projectRoot)
+		if err != nil {
+			return "", true, err
+		}
+		return fmt.Sprintf("quick:%v full:%v", auto.KnowledgeSave.Quick, auto.KnowledgeSave.Full), true, nil
+	}
+
 	if key != "auto.gitPush" {
 		return "", false, nil
 	}

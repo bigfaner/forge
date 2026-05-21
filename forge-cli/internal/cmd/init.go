@@ -325,6 +325,46 @@ func askAutoBehavior() (*forgeconfig.AutoConfig, bool) {
 	auto.Validation.Full = val
 
 	val, ok = askConfirm(
+		fmt.Sprintf("%s: auto-run tasks?", hlMode("Quick")),
+		fmt.Sprintf("Automatically claim and execute tasks during %s.", hl("quick mode")),
+		defaults.RunTasks.Quick,
+	)
+	if !ok {
+		return nil, true
+	}
+	auto.RunTasks.Quick = val
+
+	val, ok = askConfirm(
+		fmt.Sprintf("%s: auto-run tasks?", hlMode("Full")),
+		fmt.Sprintf("Automatically claim and execute tasks during %s.", hl("full mode")),
+		defaults.RunTasks.Full,
+	)
+	if !ok {
+		return nil, true
+	}
+	auto.RunTasks.Full = val
+
+	val, ok = askConfirm(
+		fmt.Sprintf("%s: auto knowledge save?", hlMode("Quick")),
+		fmt.Sprintf("Automatically save knowledge after %s tasks.", hl("quick mode")),
+		defaults.KnowledgeSave.Quick,
+	)
+	if !ok {
+		return nil, true
+	}
+	auto.KnowledgeSave.Quick = val
+
+	val, ok = askConfirm(
+		fmt.Sprintf("%s: auto knowledge save?", hlMode("Full")),
+		fmt.Sprintf("Automatically save knowledge after %s tasks.", hl("full mode")),
+		defaults.KnowledgeSave.Full,
+	)
+	if !ok {
+		return nil, true
+	}
+	auto.KnowledgeSave.Full = val
+
+	val, ok = askConfirm(
 		"Auto git push after all tasks complete?",
 		"Push to remote automatically when every task in a run finishes successfully.",
 		defaults.GitPush,

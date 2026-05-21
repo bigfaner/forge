@@ -8,7 +8,7 @@
       "title": "撰写 Journey-Contract 测试模型 Convention 文件",
       "priority": "P0",
       "estimatedTime": "1-2h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-write-convention-file.md",
       "record": "records/1-write-convention-file.md",
       "mainSession": true,
@@ -22,7 +22,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "eval-doc.md",
       "record": "records/eval-doc.md",
       "scope": "all",

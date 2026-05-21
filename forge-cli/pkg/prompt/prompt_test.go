@@ -1069,8 +1069,8 @@ func TestSynthesize_CodingFeature_CoverageDirectiveActionable(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	// Feature template should tell agent to stop adding tests when target is reached
-	if !strings.Contains(result, "达到目标后停止补充测试") {
-		t.Error("coding.feature prompt should contain actionable directive: '达到目标后停止补充测试'")
+	if !strings.Contains(result, "Stop adding tests once the target is reached") {
+		t.Error("coding.feature prompt should contain actionable directive: 'Stop adding tests once the target is reached'")
 	}
 }
 
@@ -1095,8 +1095,8 @@ func TestSynthesize_CodingEnhancement_CoverageDirectiveActionable(t *testing.T) 
 		t.Fatalf("unexpected error: %v", err)
 	}
 	// Enhancement template should tell agent to stop adding tests when target is reached
-	if !strings.Contains(result, "达到目标后停止补充测试") {
-		t.Error("coding.enhancement prompt should contain actionable directive: '达到目标后停止补充测试'")
+	if !strings.Contains(result, "Stop adding tests once the target is reached") {
+		t.Error("coding.enhancement prompt should contain actionable directive: 'Stop adding tests once the target is reached'")
 	}
 }
 
@@ -1121,11 +1121,11 @@ func TestSynthesize_CodingFix_CoverageDirectiveActionable(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	// Fix template should tell agent to write targeted tests, not chase high coverage
-	if !strings.Contains(result, "写针对性修复测试") {
-		t.Error("coding.fix prompt should contain actionable directive: '写针对性修复测试'")
+	if !strings.Contains(result, "Write targeted fix tests") {
+		t.Error("coding.fix prompt should contain actionable directive: 'Write targeted fix tests'")
 	}
-	if !strings.Contains(result, "达到目标后停止补充测试") {
-		t.Error("coding.fix prompt should contain actionable directive: '达到目标后停止补充测试'")
+	if !strings.Contains(result, "stop adding once the target is reached") {
+		t.Error("coding.fix prompt should contain actionable directive: 'stop adding once the target is reached'")
 	}
 }
 
