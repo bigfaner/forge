@@ -16,24 +16,14 @@ This skill only generates test case documents (testing/{type}-test-cases.md), no
 Test script generation is handled by the `/gen-test-scripts` skill.
 </HARD-GATE>
 
-## Step 0: Resolve Language and Interfaces
+## Step 0: Resolve Language
 
-1. **Detect language**: Check the project root directory for language indicator files:
-   - `package.json` → JavaScript/TypeScript
-   - `go.mod` → Go
-   - `Cargo.toml` → Rust
-   - `pyproject.toml` or `setup.py` → Python
-
-   Fallback: check `.forge/config.yaml` for a `languages` field.
-   On failure (no language detected): ask the user to add `languages` to `.forge/config.yaml` (e.g., `languages: [go]`).
-2. **Load interfaces**: Examine the project structure and configuration to determine the project's active interface types:
-   - Check `docs/conventions/` for interface type configuration
-   - Check project directory structure: `pages/` or `src/components/` → web-ui, `cmd/` with cobra/spf13 imports → cli, route handlers (`api/`, `routes/`) → api, terminal rendering libs (bubbletea, tview) → tui, `android/`/`ios/` → mobile-ui
-   - Check `.forge/config.yaml` for a `project-type` field
-   - Check `package.json` dependencies: react/vue/next → web-ui, express/fastify → api
+1. Load Convention files from `docs/conventions/` by `domains` frontmatter (match `testing`, `go`, `typescript`, etc.). Extract language from `Framework` section.
+2. Fallback: scan existing source/test files (`go.mod`, `package.json`, `*_test.go`, etc.). Also check subdirectories for monorepo.
+3. On failure: ask user.
 
 <HARD-RULE>
-Do NOT silently default to any language. If language detection via project files returns no result and the user cannot configure `languages`, abort the skill.
+Do NOT silently default to any language.
 </HARD-RULE>
 
 ## Prerequisites

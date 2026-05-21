@@ -31,9 +31,11 @@ Read applicable files via `rules/<filename>`.
 When all tasks are `type: "doc"` (non-compilable, non-runnable output only), skip Step 0 and Step 4b. Step 5 is always mandatory. Detection: Step 1 scans artifacts → every element targets non-compilable files → docs-only.
 
 ## Step 0: Resolve Language
-1. Check the project root directory for language indicator files: `package.json` → JavaScript/TypeScript, `go.mod` → Go, `Cargo.toml` → Rust, `pyproject.toml` or `setup.py` → Python. Fallback: check `.forge/config.yaml` for a `languages` field. 2. On failure: user adds `languages` to `.forge/config.yaml`.
+1. Load Convention files from `docs/conventions/` by `domains` frontmatter (match `testing`, `go`, `typescript`, etc.). Extract language from `Framework` section.
+2. Fallback: scan existing source/test files (`go.mod`, `package.json`, `*_test.go`, etc.). Also check subdirectories for monorepo.
+3. On failure: ask user.
 <HARD-RULE>
-Do NOT silently default to any language. If detection returns nothing and user cannot configure, abort.
+Do NOT silently default to any language.
 </HARD-RULE>
 
 ## Step 1: Read All Documents

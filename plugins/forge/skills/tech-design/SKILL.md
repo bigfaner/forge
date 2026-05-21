@@ -50,17 +50,12 @@ ls docs/features/<slug>/prd/prd-spec.md
 
 ## Step 0: Detect Test Language
 
-1. **Detect language**: Check the project root directory for language indicator files:
-   - `package.json` → JavaScript/TypeScript
-   - `go.mod` → Go
-   - `Cargo.toml` → Rust
-   - `pyproject.toml` or `setup.py` → Python
-
-   Fallback: check `.forge/config.yaml` for a `languages` field.
-2. **On failure** (no language detected): ask the user to add `languages` to `.forge/config.yaml` (e.g., `languages: [go]`).
+1. Load Convention files from `docs/conventions/` by `domains` frontmatter (match `testing`, `go`, `typescript`, etc.). Extract language from `Framework` section.
+2. Fallback: scan existing source/test files (`go.mod`, `package.json`, `*_test.go`, etc.). Also check subdirectories for monorepo.
+3. On failure: ask user.
 
 <HARD-RULE>
-Do NOT silently default to any language. If language detection via project files returns no result and the user cannot configure `languages`, abort the skill.
+Do NOT silently default to any language.
 </HARD-RULE>
 
 ## Step 1: Read Manifest → PRD

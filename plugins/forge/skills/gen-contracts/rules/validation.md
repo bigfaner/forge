@@ -32,7 +32,7 @@ After generating all Contracts for a Journey, validate each one:
 |-----------|--------|
 | Journey manifest missing | Abort with prompt to run `/gen-journeys` |
 | Journey file not found | Abort with error listing the missing file path |
-| Language detection fails | Detect from project files (`go.mod`, `package.json`, etc.) or ask user to specify |
+| Language detection fails | Load Convention files from `docs/conventions/` by `domains` frontmatter (match `testing`, `go`, `typescript`, etc.), extract from `Framework` section. Fallback: scan source/test files. If still unresolved, ask user |
 | Interface detection fails | Ask user to configure `interfaces` in config.yaml |
 | Source files not found for Fact Table | Mark as `UNKNOWN`, do not fabricate values |
 | State verification level ambiguous | Default to `partial`, annotate with comment |

@@ -43,22 +43,13 @@ Check previous stage artifacts. Abort and prompt user if missing:
 
 ## Step 0: Resolve Language and Interfaces
 
-1. **Detect language**: Check the project root directory for language indicator files:
-   - `package.json` → JavaScript/TypeScript
-   - `go.mod` → Go
-   - `Cargo.toml` → Rust
-   - `pyproject.toml` or `setup.py` → Python
-
-   Fallback: check `.forge/config.yaml` for a `languages` field.
-   On failure (no language detected): ask the user to add `languages` to `.forge/config.yaml`.
-2. **Detect interfaces**: Examine the project structure and configuration to determine which interface types (cli, api, tui, web-ui, mobile) the project exposes:
-   - Check `docs/conventions/` for interface type configuration
-   - Check project directory structure: `pages/` or `src/components/` → web-ui, `cmd/` with cobra/spf13 imports → cli, route handlers (`api/`, `routes/`) → api, terminal rendering libs (bubbletea, tview) → tui, `android/`/`ios/` → mobile-ui
-   - Check `.forge/config.yaml` for a `project-type` field
-   - Check `package.json` dependencies: react/vue/next → web-ui, express/fastify → api
+1. Load Convention files from `docs/conventions/` by `domains` frontmatter (match `testing`, `go`, `typescript`, etc.). Extract language from `Framework` section.
+2. Fallback: scan existing source/test files (`go.mod`, `package.json`, `*_test.go`, etc.). Also check subdirectories for monorepo.
+3. On failure: ask user.
+4. **Detect interfaces**: Check `.forge/config.yaml`, `docs/conventions/`, project directory structure, and dependencies for interface types (cli, api, tui, web-ui, mobile).
 
 <HARD-RULE>
-Do NOT silently default to any language or interface. If detection fails and the user cannot configure, abort the skill.
+Do NOT silently default to any language or interface.
 </HARD-RULE>
 
 ## Convention Loading
