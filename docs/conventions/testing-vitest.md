@@ -54,7 +54,6 @@ describe('@feature', () => {
 
 - **Output flags**: `--reporter=verbose` or `--reporter=json`
 - **Format type**: `json-report` (structured JSON output)
-- **Execution command**: `vitest run --reporter=json`
 
 ### JSON Report Structure
 

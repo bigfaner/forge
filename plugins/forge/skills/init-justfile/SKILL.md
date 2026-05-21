@@ -76,7 +76,7 @@ Load test framework knowledge from Convention files. This provides the informati
    - Build tag / marker (e.g., `//go:build e2e`)
    - Result format output flags (e.g., `-json -v`, `--reporter=json`)
 5. Also extract the **Tags** section for build-tag/marker syntax.
-6. Also extract the **Result Format** section for execution command patterns.
+6. Also extract the **Result Format** section for output flags and format type.
 
 <HARD-RULE>
 Do NOT use framework-specific recipe templates. Generate e2e recipes from Convention content and LLM knowledge of the framework. The LLM constructs recipes based on the Convention description, not from hardcoded templates.
@@ -132,19 +132,21 @@ ls justfile Justfile 2>/dev/null
 
 This step generates e2e-compile, e2e-test, and e2e-setup recipes from Convention knowledge and LLM understanding of the detected framework.
 
-#### 3a. Generate e2e recipes from Convention
+#### 3a. Generate e2e recipes from Convention and Config
 
-Using the Convention Framework, Tags, and Result Format sections loaded in Step 0:
+Using the Convention Framework, Tags, and Result Format sections loaded in Step 0, plus execution commands from Config:
 
 **e2e-compile recipe**: Generate a recipe that compiles/checks e2e tests without running them. The recipe body is derived from the Convention's test runner and build tag info:
 
 - Convention provides test runner (e.g., `go test`) and build tag (e.g., `//go:build e2e`) -> construct compile-check command (e.g., `go test -c ./tests/e2e/... -tags=e2e -o /dev/null` or `go vet -tags=e2e ./tests/e2e/...`)
 - Convention provides file pattern and test runner (e.g., `vitest run`) -> construct type-check command (e.g., `npx tsc --noEmit` or `vitest run --passWithNoTests --run false`)
 
-**e2e-test recipe**: Generate a recipe that runs e2e tests. The recipe body is derived from the Convention's Result Format execution command:
+**e2e-test recipe**: Generate a recipe that runs e2e tests. The recipe body is derived from Config `test.execution.run`:
 
-- Convention provides execution command (e.g., `go test ./tests/e2e/... -v -tags=e2e -json`) -> use as recipe body
-- Convention provides test runner and output flags (e.g., `vitest run --reporter=json`) -> construct test command
+1. Read `.forge/config.yaml` and look for `test.execution.run` field.
+2. If Config provides the execution command (e.g., `go test ./tests/e2e/... -v -tags=e2e -json`), use it as the recipe body.
+3. If Config is missing or `test.execution.run` is absent, fall back to constructing the command from Convention's test runner + Result Format output flags (e.g., `vitest run --reporter=json`).
+4. If both Config and Convention are absent (cold start), prompt the user: "No execution command configured. Add `test.execution.run` to `.forge/config.yaml` or re-run after creating a Convention file."
 
 **e2e-setup recipe**: Generate a recipe that installs e2e test dependencies:
 

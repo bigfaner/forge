@@ -45,7 +45,6 @@ package e2e
 
 - **Output flags**: `-json -v`
 - **Format type**: `json-stream` (one JSON object per line)
-- **Execution command**: `go test ./tests/e2e/... -v -tags=e2e -json`
 
 ### JSON Stream Fields
 

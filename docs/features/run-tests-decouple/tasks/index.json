@@ -21,7 +21,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2-convention-init-justfile-cleanup.md",
       "record": "records/2-convention-init-justfile-cleanup.md",
       "type": "doc"
