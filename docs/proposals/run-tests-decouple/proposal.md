@@ -1,7 +1,7 @@
 ---
 created: 2026-05-21
 author: faner
-status: Draft
+status: Approved
 ---
 
 # Proposal: Decouple run-tests from e2e/just Hardcoding
@@ -48,6 +48,7 @@ v3.0.0 正在重构测试体系（test profile 系统、Convention-driven 模型
 **数据流变更**：
 ```
 Before: Convention Result Format → init-justfile 生成 recipe → run-e2e-tests 调用 recipe
+
 After:  Config test.execution   → run-tests 直接执行
         Config test.execution   → init-justfile 生成 recipe（供手动使用 / CI 调用）
         Convention Result Format → run-tests 解析结果（仅 format-type + output-flags）
@@ -93,7 +94,7 @@ test:
 1. 读取 Convention Result Format 的 `format-type` 和 `Output flags`
 2. 检查 `test.execution.run` 命令中是否包含所需的 output flags
 3. 如果不匹配，报错：
-   > Convention declares format-type `json-stream` which requires output flags `-json`, but `test.execution.run` does not include these flags. Either add the flags to your run command, or change Convention's format-type to `text-verbose`.
+   > Convention 声明 format-type `json-stream` 需要 output flags `-json`，但 `test.execution.run` 中未包含这些 flags。请在 run 命令中添加对应 flags，或将 Convention 的 format-type 改为 `text-verbose`。
 
 此验证在 Step 0（加载 Convention）和 Step 1（读取 config）之后、执行之前进行。
 
@@ -176,7 +177,7 @@ test:
 - 修改 `init-justfile` Step 3a 数据源：从 Config `test.execution.run` 读取执行命令（而非 Convention Execution command）
 - 删除 `gen-test-scripts/templates/` 整个目录（validate-specs.mjs + test + fixtures + 27MB node_modules）。已确认 init-justfile、gen-test-scripts、run-e2e-tests 三个 skill 均不引用此目录
 - 泛化报告模板（`e2e-report.md` → `test-report.md`）：去除 e2e 专属文案、Screenshots 段落条件渲染、测试类型分类动态生成
-- 更新所有 `run-e2e-tests` 引用：
+- 更新所有 `run-e2e-tests` 引用（共 5 处：4 处文件内引用 + 1 处 skill 目录名重命名）：
   - `plugins/forge/commands/run-tasks.md` 第 97 行
   - `plugins/forge/skills/gen-contracts/SKILL.md` 第 176 行
   - `plugins/forge/skills/gen-test-cases/SKILL.md` 第 141 行
@@ -188,6 +189,16 @@ test:
 - `graduate-tests` skill 的重命名（如果它存在 `/run-e2e-tests` 引用则一并更新）
 - 其他 skill 中 e2e 命名引用的全面清理（如 hooks/guide.md 中的命令列表）
 - 其他 Convention 文件的非 Result Format 部分修改
+
+## Migration Guide
+
+已有项目从 `run-e2e-tests` 迁移到 `run-tests` 的步骤：
+
+1. **添加配置**：在 `.forge/config.yaml` 中添加 `test.execution` 节点，将当前 justfile 中的 e2e 命令填入
+2. **更新命令**：将 `/run-e2e-tests` 替换为 `/run-tests`（不保留旧名称 alias）
+3. **清理 Convention**：Convention 文件中的 `Execution command` 字段将被移除，无需手动操作
+
+**Breaking Change**：`run-e2e-tests` 命令不再可用，所有调用方必须切换到 `run-tests`。
 
 ## Key Risks
 
@@ -209,4 +220,4 @@ test:
 - [ ] init-justfile 从 Config 读取执行命令生成 recipe（而非 Convention）
 - [ ] `gen-test-scripts/templates/` 目录已被删除（减少 27MB）
 - [ ] 报告模板中不含 "E2E" 字样，Screenshots 段落条件渲染
-- [ ] 所有 5 处 `run-e2e-tests` 引用已更新为 `run-tests`
+- [ ] 所有 `run-e2e-tests` 引用已更新为 `run-tests`（4 处文件引用 + skill 目录重命名）
