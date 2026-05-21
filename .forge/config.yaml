@@ -16,7 +16,6 @@ auto:
     full: true
   gitPush: true
 interfaces:
-  - api
   - cli
 worktree:
   source-branch: v3.0.0
