@@ -314,24 +314,24 @@ func TestGetConfigValue(t *testing.T) {
 	t.Run("worktree.source-branch absent returns error", func(t *testing.T) {
 		dir := setupConfig(t, "auto:\n  gitPush: true\n")
 		_, err := GetConfigValue(dir, "worktree.source-branch")
-		if err != ErrKeyNotFound {
-			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound, got %v", err)
 		}
 	})
 
 	t.Run("worktree.copy-files absent returns error", func(t *testing.T) {
 		dir := setupConfig(t, "auto:\n  gitPush: true\n")
 		_, err := GetConfigValue(dir, "worktree.copy-files")
-		if err != ErrKeyNotFound {
-			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound, got %v", err)
 		}
 	})
 
 	t.Run("unknown key returns error", func(t *testing.T) {
 		dir := setupConfig(t, "auto:\n  gitPush: true\n")
 		_, err := GetConfigValue(dir, "nonexistent")
-		if err != ErrKeyNotFound {
-			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound, got %v", err)
 		}
 	})
 
@@ -349,32 +349,32 @@ func TestGetConfigValue(t *testing.T) {
 	t.Run("missing file returns error for worktree key", func(t *testing.T) {
 		dir := t.TempDir()
 		_, err := GetConfigValue(dir, "worktree.source-branch")
-		if err != ErrKeyNotFound {
-			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound, got %v", err)
 		}
 	})
 
 	t.Run("unknown key returns error with no file", func(t *testing.T) {
 		dir := t.TempDir()
 		_, err := GetConfigValue(dir, "something.weird")
-		if err != ErrKeyNotFound {
-			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound, got %v", err)
 		}
 	})
 
 	t.Run("worktree present but source-branch empty returns error", func(t *testing.T) {
 		dir := setupConfig(t, "worktree:\n  copy-files:\n    - .env\n")
 		_, err := GetConfigValue(dir, "worktree.source-branch")
-		if err != ErrKeyNotFound {
-			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound, got %v", err)
 		}
 	})
 
 	t.Run("worktree present but copy-files empty returns error", func(t *testing.T) {
 		dir := setupConfig(t, "worktree:\n  source-branch: develop\n")
 		_, err := GetConfigValue(dir, "worktree.copy-files")
-		if err != ErrKeyNotFound {
-			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound, got %v", err)
 		}
 	})
 }
@@ -387,7 +387,7 @@ func TestWriteConfig(t *testing.T) {
 				SourceBranch: "main",
 			},
 		}
-		if err := WriteConfig(dir, cfg); err != nil {
+		if err := writeConfig(dir, cfg); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
@@ -410,7 +410,7 @@ func TestWriteConfig(t *testing.T) {
 				SourceBranch: "develop",
 			},
 		}
-		if err := WriteConfig(dir, cfg1); err != nil {
+		if err := writeConfig(dir, cfg1); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
@@ -419,7 +419,7 @@ func TestWriteConfig(t *testing.T) {
 				SourceBranch: "main",
 			},
 		}
-		if err := WriteConfig(dir, cfg2); err != nil {
+		if err := writeConfig(dir, cfg2); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
@@ -572,32 +572,32 @@ func TestGetConfigValueLegacyKeys(t *testing.T) {
 	t.Run("test-framework absent returns error", func(t *testing.T) {
 		dir := setupConfig(t, "auto:\n  gitPush: true\n")
 		_, err := GetConfigValue(dir, "test-framework")
-		if err != ErrKeyNotFound {
-			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound, got %v", err)
 		}
 	})
 
 	t.Run("test-framework empty returns error", func(t *testing.T) {
 		dir := setupConfig(t, "test-framework: \"\"\n")
 		_, err := GetConfigValue(dir, "test-framework")
-		if err != ErrKeyNotFound {
-			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound, got %v", err)
 		}
 	})
 
 	t.Run("test-command returns error (removed field)", func(t *testing.T) {
 		dir := setupConfig(t, "test-command: npm test\n")
 		_, err := GetConfigValue(dir, "test-command")
-		if err != ErrKeyNotFound {
-			t.Errorf("expected ErrKeyNotFound for removed test-command key, got %v", err)
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound for removed test-command key, got %v", err)
 		}
 	})
 
 	t.Run("missing file returns error for test-framework", func(t *testing.T) {
 		dir := t.TempDir()
 		_, err := GetConfigValue(dir, "test-framework")
-		if err != ErrKeyNotFound {
-			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound, got %v", err)
 		}
 	})
 }
@@ -817,8 +817,8 @@ func TestGetConfigValue_CoverageKeys(t *testing.T) {
     percentage: 80
 `)
 		_, err := GetConfigValue(dir, "coverage.unknown.type")
-		if err != ErrKeyNotFound {
-			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound, got %v", err)
 		}
 	})
 
@@ -844,7 +844,7 @@ func TestWriteConfigAutoBlock(t *testing.T) {
 				GitPush:          true,
 			},
 		}
-		if err := WriteConfig(dir, cfg); err != nil {
+		if err := writeConfig(dir, cfg); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 

@@ -13,7 +13,7 @@ import (
 
 func TestDiscover_EmptyDir(t *testing.T) {
 	dir := t.TempDir()
-	lessonsDir := filepath.Join(dir, LessonsDir)
+	lessonsDir := filepath.Join(dir, "docs/lessons")
 	require.NoError(t, os.MkdirAll(lessonsDir, 0755))
 
 	lessons, err := Discover(dir)
@@ -31,7 +31,7 @@ func TestDiscover_NoDir(t *testing.T) {
 
 func TestDiscover_SingleLesson(t *testing.T) {
 	dir := t.TempDir()
-	lessonsDir := filepath.Join(dir, LessonsDir)
+	lessonsDir := filepath.Join(dir, "docs/lessons")
 	require.NoError(t, os.MkdirAll(lessonsDir, 0755))
 
 	content := `---
@@ -77,7 +77,7 @@ func TestDiscover_CategoryInference(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.filename, func(t *testing.T) {
 			dir := t.TempDir()
-			lessonsDir := filepath.Join(dir, LessonsDir)
+			lessonsDir := filepath.Join(dir, "docs/lessons")
 			require.NoError(t, os.MkdirAll(lessonsDir, 0755))
 
 			content := "---\ndate: 2026-01-01\n---\n"
@@ -93,7 +93,7 @@ func TestDiscover_CategoryInference(t *testing.T) {
 
 func TestDiscover_NoFrontmatterCreatedIsEmpty(t *testing.T) {
 	dir := t.TempDir()
-	lessonsDir := filepath.Join(dir, LessonsDir)
+	lessonsDir := filepath.Join(dir, "docs/lessons")
 	require.NoError(t, os.MkdirAll(lessonsDir, 0755))
 
 	content := []byte("# No Frontmatter\n\nJust content.")
@@ -109,7 +109,7 @@ func TestDiscover_NoFrontmatterCreatedIsEmpty(t *testing.T) {
 
 func TestDiscover_SkipsDirectories(t *testing.T) {
 	dir := t.TempDir()
-	lessonsDir := filepath.Join(dir, LessonsDir)
+	lessonsDir := filepath.Join(dir, "docs/lessons")
 	require.NoError(t, os.MkdirAll(filepath.Join(lessonsDir, "subdir"), 0755))
 
 	lessons, err := Discover(dir)
@@ -119,7 +119,7 @@ func TestDiscover_SkipsDirectories(t *testing.T) {
 
 func TestDiscover_SkipsNonMdFiles(t *testing.T) {
 	dir := t.TempDir()
-	lessonsDir := filepath.Join(dir, LessonsDir)
+	lessonsDir := filepath.Join(dir, "docs/lessons")
 	require.NoError(t, os.MkdirAll(lessonsDir, 0755))
 
 	require.NoError(t, os.WriteFile(filepath.Join(lessonsDir, "notes.txt"), []byte("text"), 0644))
@@ -131,7 +131,7 @@ func TestDiscover_SkipsNonMdFiles(t *testing.T) {
 
 func TestDiscover_MultipleLessons(t *testing.T) {
 	dir := t.TempDir()
-	lessonsDir := filepath.Join(dir, LessonsDir)
+	lessonsDir := filepath.Join(dir, "docs/lessons")
 	require.NoError(t, os.MkdirAll(lessonsDir, 0755))
 
 	for _, name := range []string{"gotcha-a.md", "pattern-b.md", "lesson-c.md"} {
@@ -146,7 +146,7 @@ func TestDiscover_MultipleLessons(t *testing.T) {
 
 func TestFindByName_Found(t *testing.T) {
 	dir := t.TempDir()
-	lessonsDir := filepath.Join(dir, LessonsDir)
+	lessonsDir := filepath.Join(dir, "docs/lessons")
 	require.NoError(t, os.MkdirAll(lessonsDir, 0755))
 
 	content := "---\ndate: 2026-03-15\ntitle: Found lesson\n---\n"
@@ -169,7 +169,7 @@ func TestFindByName_NotFound(t *testing.T) {
 
 func TestDiscover_SortedByCreatedDescending(t *testing.T) {
 	dir := t.TempDir()
-	lessonsDir := filepath.Join(dir, LessonsDir)
+	lessonsDir := filepath.Join(dir, "docs/lessons")
 	require.NoError(t, os.MkdirAll(lessonsDir, 0755))
 
 	// Create three lesson files with different created dates.
@@ -200,7 +200,7 @@ func TestDiscover_SortedByCreatedDescending(t *testing.T) {
 
 func TestDiscover_OldestSortsLast(t *testing.T) {
 	dir := t.TempDir()
-	lessonsDir := filepath.Join(dir, LessonsDir)
+	lessonsDir := filepath.Join(dir, "docs/lessons")
 	require.NoError(t, os.MkdirAll(lessonsDir, 0755))
 
 	oldContent := "---\ncreated: 2020-01-01\ntitle: \"old\"\n---\n"
@@ -219,7 +219,7 @@ func TestDiscover_OldestSortsLast(t *testing.T) {
 
 func TestDiscover_MtimeFallbackWhenNoCreated(t *testing.T) {
 	dir := t.TempDir()
-	lessonsDir := filepath.Join(dir, LessonsDir)
+	lessonsDir := filepath.Join(dir, "docs/lessons")
 	require.NoError(t, os.MkdirAll(lessonsDir, 0755))
 
 	// Lessons without created/date fields — should fall back to mtime.
@@ -241,7 +241,7 @@ func TestDiscover_MtimeFallbackWhenNoCreated(t *testing.T) {
 
 func TestDiscover_CreatedTakesPriorityOverMtime(t *testing.T) {
 	dir := t.TempDir()
-	lessonsDir := filepath.Join(dir, LessonsDir)
+	lessonsDir := filepath.Join(dir, "docs/lessons")
 	require.NoError(t, os.MkdirAll(lessonsDir, 0755))
 
 	// Lesson with older mtime but newer created date should sort first.
@@ -264,7 +264,7 @@ func TestDiscover_CreatedTakesPriorityOverMtime(t *testing.T) {
 
 func TestDiscover_CreatedField(t *testing.T) {
 	dir := t.TempDir()
-	lessonsDir := filepath.Join(dir, LessonsDir)
+	lessonsDir := filepath.Join(dir, "docs/lessons")
 	require.NoError(t, os.MkdirAll(lessonsDir, 0755))
 
 	content := `---
@@ -287,7 +287,7 @@ title: "Created field lesson"
 
 func TestDiscover_CreatedTakesPriorityOverDate(t *testing.T) {
 	dir := t.TempDir()
-	lessonsDir := filepath.Join(dir, LessonsDir)
+	lessonsDir := filepath.Join(dir, "docs/lessons")
 	require.NoError(t, os.MkdirAll(lessonsDir, 0755))
 
 	content := `---
@@ -308,7 +308,7 @@ title: "Both fields"
 
 func TestDiscover_DateFieldStillWorks(t *testing.T) {
 	dir := t.TempDir()
-	lessonsDir := filepath.Join(dir, LessonsDir)
+	lessonsDir := filepath.Join(dir, "docs/lessons")
 	require.NoError(t, os.MkdirAll(lessonsDir, 0755))
 
 	content := `---

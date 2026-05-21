@@ -51,8 +51,8 @@ func (e *ActiveFixExistsError) Error() string {
 	return fmt.Sprintf("active fix tasks already exist for source %s: %s", e.SourceTaskID, strings.Join(e.ActiveFixIDs, ", "))
 }
 
-// HasActiveFixTasks returns IDs of fix tasks targeting sourceTaskID that are not in a terminal state.
-func HasActiveFixTasks(index *TaskIndex, sourceTaskID string) []string {
+// hasActiveFixTasks returns IDs of fix tasks targeting sourceTaskID that are not in a terminal state.
+func hasActiveFixTasks(index *TaskIndex, sourceTaskID string) []string {
 	var active []string
 	for _, t := range index.tasks {
 		if t.SourceTaskID == sourceTaskID && !terminalStatuses[t.Status] {
@@ -158,7 +158,7 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 		}
 
 		// Dedup check (pure read): if active fix tasks already exist, skip — no mutation needed.
-		if activeFixes := HasActiveFixTasks(index, opts.SourceTaskID); len(activeFixes) > 0 {
+		if activeFixes := hasActiveFixTasks(index, opts.SourceTaskID); len(activeFixes) > 0 {
 			return "", &ActiveFixExistsError{
 				SourceTaskID: opts.SourceTaskID,
 				ActiveFixIDs: activeFixes,

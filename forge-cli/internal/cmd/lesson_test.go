@@ -5,8 +5,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"forge-cli/pkg/lesson"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -35,7 +33,7 @@ func TestLessonList_WithLessons(t *testing.T) {
 	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644))
 
-	lessonsDir := filepath.Join(dir, lesson.LessonsDir)
+	lessonsDir := filepath.Join(dir, "docs/lessons")
 	require.NoError(t, os.MkdirAll(lessonsDir, 0755))
 
 	// Create lessons
@@ -65,7 +63,7 @@ func TestLessonDetail_Found(t *testing.T) {
 	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644))
 
-	lessonsDir := filepath.Join(dir, lesson.LessonsDir)
+	lessonsDir := filepath.Join(dir, "docs/lessons")
 	require.NoError(t, os.MkdirAll(lessonsDir, 0755))
 
 	content := "---\ndate: 2026-03-15\ntags: [testing, e2e]\ntitle: My Lesson\n---\n"
@@ -94,7 +92,7 @@ func TestLessonDetail_NoTags(t *testing.T) {
 	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644))
 
-	lessonsDir := filepath.Join(dir, lesson.LessonsDir)
+	lessonsDir := filepath.Join(dir, "docs/lessons")
 	require.NoError(t, os.MkdirAll(lessonsDir, 0755))
 
 	content := "---\ndate: 2026-01-01\n---\n"

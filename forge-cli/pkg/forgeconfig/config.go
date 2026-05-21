@@ -298,14 +298,14 @@ func applyModeDefault(mt *ModeToggle, raw map[string]map[string]bool, field stri
 	}
 }
 
-// ErrKeyNotFound is returned when a config key does not exist or has a zero value.
-var ErrKeyNotFound = fmt.Errorf("config key not found")
+// errKeyNotFound is returned when a config key does not exist or has a zero value.
+var errKeyNotFound = fmt.Errorf("config key not found")
 
 // GetConfigValue returns the value for a given key from .forge/config.yaml.
 // For scalar values, returns the raw string; for arrays, joins with newline.
 // Supports dot-notation for nested keys (e.g. "auto.gitPush", "worktree.source-branch", "coverage.coding.feature").
 // Also supports top-level keys: "test-framework".
-// Returns empty string and ErrKeyNotFound if the key doesn't exist or has zero value.
+// Returns empty string and errKeyNotFound if the key doesn't exist or has zero value.
 func GetConfigValue(projectRoot, key string) (string, error) {
 	// Handle dot-notation auto keys
 	if val, ok, err := getAutoKeyValue(projectRoot, key); ok || err != nil {
@@ -338,15 +338,15 @@ func GetConfigValue(projectRoot, key string) (string, error) {
 			return "", err
 		}
 		if cfg == nil {
-			return "", ErrKeyNotFound
+			return "", errKeyNotFound
 		}
 		if cfg.TestFramework == "" {
-			return "", ErrKeyNotFound
+			return "", errKeyNotFound
 		}
 		return cfg.TestFramework, nil
 	}
 
-	return "", ErrKeyNotFound
+	return "", errKeyNotFound
 }
 
 // getAutoKeyValue handles dot-notation keys for the auto config block.
@@ -410,23 +410,23 @@ func getWorktreeKeyValue(projectRoot, key string) (string, bool, error) {
 		return "", true, err
 	}
 	if cfg == nil || cfg.Worktree == nil {
-		return "", true, ErrKeyNotFound
+		return "", true, errKeyNotFound
 	}
 
 	switch key {
 	case "worktree.source-branch":
 		if cfg.Worktree.SourceBranch == "" {
-			return "", true, ErrKeyNotFound
+			return "", true, errKeyNotFound
 		}
 		return cfg.Worktree.SourceBranch, true, nil
 	case "worktree.copy-files":
 		if len(cfg.Worktree.CopyFiles) == 0 {
-			return "", true, ErrKeyNotFound
+			return "", true, errKeyNotFound
 		}
 		return joinSlice(cfg.Worktree.CopyFiles), true, nil
 	}
 
-	return "", true, ErrKeyNotFound
+	return "", true, errKeyNotFound
 }
 
 // joinSlice joins slice values with newline for plain-text output.
@@ -461,7 +461,7 @@ func getCoverageKeyValue(projectRoot, key string) (string, bool, error) {
 
 	strategy, ok := coverage.ByType[taskType]
 	if !ok {
-		return "", true, ErrKeyNotFound
+		return "", true, errKeyNotFound
 	}
 
 	switch strategy.Type {
@@ -471,15 +471,15 @@ func getCoverageKeyValue(projectRoot, key string) (string, bool, error) {
 		if strategy.Percentage != nil {
 			return strconv.Itoa(*strategy.Percentage), true, nil
 		}
-		return "", true, ErrKeyNotFound
+		return "", true, errKeyNotFound
 	default:
-		return "", true, ErrKeyNotFound
+		return "", true, errKeyNotFound
 	}
 }
 
-// WriteConfig writes a Config to .forge/config.yaml.
+// writeConfig writes a Config to .forge/config.yaml.
 // Creates the file and directory if they don't exist.
-func WriteConfig(projectRoot string, cfg *Config) error {
+func writeConfig(projectRoot string, cfg *Config) error {
 	path := configPath(projectRoot)
 
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {

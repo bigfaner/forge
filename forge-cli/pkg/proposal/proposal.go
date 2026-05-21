@@ -12,8 +12,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Metadata holds the parsed frontmatter fields from a proposal.md file.
-type Metadata struct {
+// metadata holds the parsed frontmatter fields from a proposal.md file.
+type metadata struct {
 	Created string `yaml:"created"`
 	Author  string `yaml:"author"`
 	Status  string `yaml:"status"`
@@ -55,7 +55,7 @@ func Discover(projectRoot string) ([]Proposal, error) {
 			continue // skip directories without proposal.md
 		}
 
-		var meta Metadata
+		var meta metadata
 		if err := parseFrontmatter(data, &meta); err != nil {
 			continue // skip malformed frontmatter
 		}

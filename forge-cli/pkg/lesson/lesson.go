@@ -12,11 +12,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// LessonsDir is the base directory for lessons.
-const LessonsDir = "docs/lessons"
+// lessonsDir is the base directory for lessons.
+const lessonsDir = "docs/lessons"
 
-// Metadata holds the parsed frontmatter fields from a lesson .md file.
-type Metadata struct {
+// metadata holds the parsed frontmatter fields from a lesson .md file.
+type metadata struct {
 	Created  string   `yaml:"created"`
 	Date     string   `yaml:"date"`
 	Tags     []string `yaml:"tags"`
@@ -48,7 +48,7 @@ var categoryPrefixes = map[string]string{
 // frontmatter created field descending (newest first), with mtime as fallback.
 // Lessons without a created field fall back to file modification time.
 func Discover(projectRoot string) ([]Lesson, error) {
-	lessonsDir := filepath.Join(projectRoot, LessonsDir)
+	lessonsDir := filepath.Join(projectRoot, lessonsDir)
 	entries, err := os.ReadDir(lessonsDir)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -79,7 +79,7 @@ func Discover(projectRoot string) ([]Lesson, error) {
 			continue
 		}
 
-		var meta Metadata
+		var meta metadata
 		if err := parseFrontmatter(data, &meta); err != nil {
 			continue
 		}
@@ -99,7 +99,7 @@ func Discover(projectRoot string) ([]Lesson, error) {
 				Created:  created,
 				Tags:     meta.Tags,
 				Category: category,
-				FilePath: filepath.Join(LessonsDir, entry.Name()),
+				FilePath: filepath.Join(lessonsDir, entry.Name()),
 			},
 			modTime: info.ModTime(),
 		})
