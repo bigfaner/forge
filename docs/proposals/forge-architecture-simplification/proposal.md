@@ -2,7 +2,7 @@
 created: 2026-05-17
 updated: 2026-05-20
 author: "faner + Claude"
-status: Draft
+status: Approved
 ---
 
 # Proposal: Forge Architecture Simplification

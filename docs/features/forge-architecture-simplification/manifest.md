@@ -15,7 +15,7 @@ status: tasks
 | User Stories | prd/prd-user-stories.md | 7 个用户故事覆盖 3 个角色（CLI 开发者、Plugin 开发者、终端用户） |
 | Tech Design | design/tech-design.md | 4 接口设计（StateMachine、AtomicWrite、PreserveFields、ConfigCRUD）+ 错误处理策略 + 测试策略 |
 | State Diagram | design/state-transition-diagram.md | 任务状态流转图（6 状态 + 4 角色 + reopen 机制） |
-| Tasks | tasks/index.json | 32 任务（18 业务 + 阶段门 + 测试），4 阶段渐进式 |
+| Tasks | tasks/index.json | 35 任务（18 业务 + 阶段门 + 测试管道），4 阶段渐进式 |
 
 ## Traceability
 
@@ -25,7 +25,7 @@ status: tasks
 | BC-1~10 Behavioral Correctness | Interface 1: StateMachine | — | — | 2.1, 2.4, 2.5, 2.7, 2.8 |
 | EC-1~8 Error Clarity | Error Handling | — | — | 2.2, 2.8, 2.10 |
 | ES-1~4 Eval Safety | Plugin Changes | — | — | 2.9 |
-| CE-1~5 Configuration Empowerment | Interface 4: Config CRUD | — | — | 3.2, 3.3, 3.4 |
+| CE-1~5 Configuration Empowerment (7 auto keys) | Interface 4: Config CRUD in `pkg/forgeconfig/` | — | — | 3.2, 3.3, 3.4 |
 | CC-1~4 CLI Consistency | W8 Implementation | — | — | 3.1, 3.2 |
 | CH-1~4 Code Health | W1/W2 Implementation | — | — | 1.1, 1.2, 1.3 |
 | Phase 0 Characterization | Testing Strategy | — | — | 0.1 |

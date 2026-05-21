@@ -3,7 +3,7 @@
   "prd": "prd/prd-spec.md",
   "design": "design/tech-design.md",
   "proposal": "docs/proposals/forge-architecture-simplification/proposal.md",
-  "created": "2026-05-18",
+  "created": "2026-05-21",
   "tasks": {
     "0.1-characterization-tests": {
       "id": "0.1",
@@ -14,7 +14,7 @@
       "file": "0.1-characterization-tests.md",
       "record": "records/0.1-characterization-tests.md",
       "scope": "backend",
-      "type": "feature"
+      "type": "coding.feature"
     },
     "1.1-dead-code-deletion": {
       "id": "1.1",
@@ -28,7 +28,7 @@
       "file": "1.1-dead-code-deletion.md",
       "record": "records/1.1-dead-code-deletion.md",
       "scope": "backend",
-      "type": "cleanup"
+      "type": "coding.cleanup"
     },
     "1.2-naming-fixes": {
       "id": "1.2",
@@ -42,11 +42,11 @@
       "file": "1.2-naming-fixes.md",
       "record": "records/1.2-naming-fixes.md",
       "scope": "backend",
-      "type": "refactor"
+      "type": "coding.refactor"
     },
     "1.3-constants-and-exports": {
       "id": "1.3",
-      "title": "Extract magic values to constants + export isBusinessTask",
+      "title": "Extract magic values to constants + export isBusinessTask + NI fixes",
       "priority": "P1",
       "estimatedTime": "2h",
       "dependencies": [
@@ -56,7 +56,7 @@
       "file": "1.3-constants-and-exports.md",
       "record": "records/1.3-constants-and-exports.md",
       "scope": "backend",
-      "type": "refactor"
+      "type": "coding.refactor"
     },
     "1.gate": {
       "id": "1.gate",
@@ -85,7 +85,7 @@
       "status": "pending",
       "file": "1.summary.md",
       "record": "records/1.summary.md",
-      "type": "doc-generation.summary"
+      "type": "doc.summary"
     },
     "2.1-state-machine": {
       "id": "2.1",
@@ -99,7 +99,7 @@
       "file": "2.1-state-machine.md",
       "record": "records/2.1-state-machine.md",
       "scope": "backend",
-      "type": "feature"
+      "type": "coding.feature"
     },
     "2.10-test-command-hardening": {
       "id": "2.10",
@@ -115,7 +115,7 @@
       "record": "records/2.10-test-command-hardening.md",
       "breaking": true,
       "scope": "backend",
-      "type": "enhancement"
+      "type": "coding.enhancement"
     },
     "2.2-error-handling-foundation": {
       "id": "2.2",
@@ -129,7 +129,7 @@
       "file": "2.2-error-handling-foundation.md",
       "record": "records/2.2-error-handling-foundation.md",
       "scope": "backend",
-      "type": "feature"
+      "type": "coding.feature"
     },
     "2.3-atomic-write-primitives": {
       "id": "2.3",
@@ -143,7 +143,7 @@
       "file": "2.3-atomic-write-primitives.md",
       "record": "records/2.3-atomic-write-primitives.md",
       "scope": "backend",
-      "type": "feature"
+      "type": "coding.feature"
     },
     "2.4-submit-refactor": {
       "id": "2.4",
@@ -161,7 +161,7 @@
       "record": "records/2.4-submit-refactor.md",
       "breaking": true,
       "scope": "backend",
-      "type": "enhancement"
+      "type": "coding.enhancement"
     },
     "2.5-reopen-status-readonly": {
       "id": "2.5",
@@ -178,7 +178,7 @@
       "record": "records/2.5-reopen-status-readonly.md",
       "breaking": true,
       "scope": "backend",
-      "type": "feature"
+      "type": "coding.feature"
     },
     "2.6-migrate-writers-withlock": {
       "id": "2.6",
@@ -194,7 +194,7 @@
       "record": "records/2.6-migrate-writers-withlock.md",
       "breaking": true,
       "scope": "backend",
-      "type": "refactor"
+      "type": "coding.refactor"
     },
     "2.7-buildindex-preserve": {
       "id": "2.7",
@@ -209,7 +209,7 @@
       "file": "2.7-buildindex-preserve.md",
       "record": "records/2.7-buildindex-preserve.md",
       "scope": "backend",
-      "type": "enhancement"
+      "type": "coding.enhancement"
     },
     "2.8-quality-gate-fixes": {
       "id": "2.8",
@@ -227,7 +227,7 @@
       "record": "records/2.8-quality-gate-fixes.md",
       "breaking": true,
       "scope": "backend",
-      "type": "enhancement"
+      "type": "coding.enhancement"
     },
     "2.9-eval-pipeline-safety": {
       "id": "2.9",
@@ -242,7 +242,7 @@
       "file": "2.9-eval-pipeline-safety.md",
       "record": "records/2.9-eval-pipeline-safety.md",
       "scope": "all",
-      "type": "enhancement"
+      "type": "coding.enhancement"
     },
     "2.gate": {
       "id": "2.gate",
@@ -278,7 +278,7 @@
       "status": "pending",
       "file": "2.summary.md",
       "record": "records/2.summary.md",
-      "type": "doc-generation.summary"
+      "type": "doc.summary"
     },
     "3.1-rune-migration": {
       "id": "3.1",
@@ -293,7 +293,7 @@
       "record": "records/3.1-rune-migration.md",
       "breaking": true,
       "scope": "backend",
-      "type": "refactor"
+      "type": "coding.refactor"
     },
     "3.2-config-init-merge": {
       "id": "3.2",
@@ -308,11 +308,11 @@
       "record": "records/3.2-config-init-merge.md",
       "breaking": true,
       "scope": "backend",
-      "type": "refactor"
+      "type": "coding.refactor"
     },
     "3.3-config-crud": {
       "id": "3.3",
-      "title": "Config set/get CRUD",
+      "title": "Config set/get CRUD (7 auto keys)",
       "priority": "P2",
       "estimatedTime": "2h",
       "dependencies": [
@@ -322,7 +322,7 @@
       "file": "3.3-config-crud.md",
       "record": "records/3.3-config-crud.md",
       "scope": "backend",
-      "type": "feature"
+      "type": "coding.feature"
     },
     "3.4-schema-version-enum": {
       "id": "3.4",
@@ -337,7 +337,7 @@
       "record": "records/3.4-schema-version-enum.md",
       "breaking": true,
       "scope": "backend",
-      "type": "enhancement"
+      "type": "coding.enhancement"
     },
     "3.gate": {
       "id": "3.gate",
@@ -367,127 +367,155 @@
       "status": "pending",
       "file": "3.summary.md",
       "record": "records/3.summary.md",
-      "type": "doc-generation.summary"
+      "type": "doc.summary"
     },
     "clean-code": {
-      "id": "T-clean-code-1",
+      "id": "T-clean-code",
       "title": "Simplify and Clean Code",
       "priority": "P2",
       "estimatedTime": "20min",
-      "dependencies": [
-        "3.gate"
-      ],
       "status": "pending",
       "file": "clean-code.md",
       "record": "records/clean-code.md",
       "scope": "all",
-      "noTest": true,
       "type": "code-quality.simplify"
     },
     "consolidate-specs": {
-      "id": "T-specs-1",
+      "id": "T-specs-consolidate",
       "title": "Consolidate Specs",
       "priority": "P2",
       "estimatedTime": "20min",
       "dependencies": [
-        "T-test-4.5"
+        "T-test-verify-regression"
       ],
       "status": "pending",
       "file": "consolidate-specs.md",
       "record": "records/consolidate-specs.md",
       "scope": "all",
-      "noTest": true,
-      "type": "doc-generation.consolidate"
+      "type": "doc.consolidate"
     },
     "eval-test-cases": {
-      "id": "T-test-1b",
+      "id": "T-test-eval-cases",
       "title": "Evaluate e2e Test Cases",
       "priority": "P1",
       "estimatedTime": "30min",
       "dependencies": [
-        "T-test-1"
+        "T-test-gen-cases"
       ],
       "status": "pending",
       "file": "eval-test-cases.md",
       "record": "records/eval-test-cases.md",
       "scope": "all",
       "mainSession": true,
-      "noTest": true,
-      "type": "test-pipeline.eval-cases"
+      "type": "test.eval-cases"
     },
     "gen-test-cases": {
-      "id": "T-test-1",
+      "id": "T-test-gen-cases",
       "title": "Generate e2e Test Cases",
       "priority": "P1",
       "estimatedTime": "1-2h",
-      "dependencies": [
-        "T-clean-code-1"
-      ],
       "status": "pending",
       "file": "gen-test-cases.md",
       "record": "records/gen-test-cases.md",
       "scope": "all",
-      "noTest": true,
-      "type": "test-pipeline.gen-cases"
+      "type": "test.gen-cases"
+    },
+    "gen-test-scripts-go-api": {
+      "id": "T-test-gen-scripts-api",
+      "title": "Generate Test Scripts (go, api)",
+      "priority": "P1",
+      "estimatedTime": "1-2h",
+      "dependencies": [
+        "T-test-eval-cases"
+      ],
+      "status": "pending",
+      "file": "gen-test-scripts-go-api.md",
+      "record": "records/gen-test-scripts-go-api.md",
+      "scope": "all",
+      "type": "test.gen-scripts"
     },
     "gen-test-scripts-go-cli": {
-      "id": "T-test-2-cli",
+      "id": "T-test-gen-scripts-cli",
       "title": "Generate Test Scripts (go, cli)",
       "priority": "P1",
       "estimatedTime": "1-2h",
       "dependencies": [
-        "T-test-1b"
+        "T-test-eval-cases"
       ],
       "status": "pending",
       "file": "gen-test-scripts-go-cli.md",
       "record": "records/gen-test-scripts-go-cli.md",
       "scope": "all",
-      "type": "test-pipeline.gen-scripts",
-      "profile": "go"
+      "type": "test.gen-scripts"
     },
     "graduate-tests-go": {
-      "id": "T-test-4",
+      "id": "T-test-graduate",
       "title": "Graduate Test Scripts (go)",
       "priority": "P1",
       "estimatedTime": "30min",
       "dependencies": [
-        "T-test-3"
+        "T-test-run"
       ],
       "status": "pending",
       "file": "graduate-tests-go.md",
       "record": "records/graduate-tests-go.md",
       "scope": "all",
-      "type": "test-pipeline.graduate",
-      "profile": "go"
+      "type": "test.graduate"
     },
     "run-e2e-tests-go": {
-      "id": "T-test-3",
+      "id": "T-test-run",
       "title": "Run e2e Tests (go)",
       "priority": "P1",
       "estimatedTime": "30min-1h",
       "dependencies": [
-        "T-test-2-cli"
+        "T-test-gen-scripts-api",
+        "T-test-gen-scripts-cli"
       ],
       "status": "pending",
       "file": "run-e2e-tests-go.md",
       "record": "records/run-e2e-tests-go.md",
       "scope": "all",
-      "type": "test-pipeline.run",
-      "profile": "go"
+      "type": "test.run"
+    },
+    "validate-code": {
+      "id": "T-validate-code",
+      "title": "Validate Code Quality",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "T-test-verify-regression"
+      ],
+      "status": "pending",
+      "file": "validate-code.md",
+      "record": "records/validate-code.md",
+      "scope": "all",
+      "type": "validation.code"
+    },
+    "validate-ux": {
+      "id": "T-validate-ux",
+      "title": "Validate User Experience",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "pending",
+      "file": "validate-ux.md",
+      "record": "records/validate-ux.md",
+      "scope": "all",
+      "mainSession": true,
+      "type": "validation.ux"
     },
     "verify-regression": {
-      "id": "T-test-4.5",
+      "id": "T-test-verify-regression",
       "title": "Verify Full E2E Regression",
       "priority": "P1",
       "estimatedTime": "15-30min",
       "dependencies": [
-        "T-test-4"
+        "T-test-graduate"
       ],
       "status": "pending",
       "file": "verify-regression.md",
       "record": "records/verify-regression.md",
       "scope": "all",
-      "type": "test-pipeline.verify-regression"
+      "type": "test.verify-regression"
     }
   },
   "statusEnum": [

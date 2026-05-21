@@ -1,12 +1,11 @@
 ---
-id: "T-specs-1"
+id: "T-specs-consolidate"
 title: "Consolidate Specs"
 priority: "P2"
 estimated_time: "20min"
-dependencies: ["T-test-4.5"]
-type: "doc-generation.consolidate"
+dependencies: ["T-test-verify-regression"]
+type: "doc.consolidate"
 scope: "all"
-noTest: true
 ---
 
 # Consolidate Specs
