@@ -169,6 +169,54 @@ step-action: "forge task claim"
 **Single Journey per invocation**: Do not attempt to process multiple Journeys in one gen-test-scripts invocation. If Contracts span multiple Journeys, abort and ask the user to specify which Journey to generate.
 </HARD-RULE>
 
+## Step 2.5: Load Type Rules
+
+After reading Contract files (Step 2) and before generating test code (Step 3), load type-specific Golden Rules that constrain generation.
+
+<HARD-RULE>
+types/ Golden Rules define non-overridable principle constraints. Convention provides framework implementation details. When both cover the same aspect, Golden Rules' principles take precedence, Convention's implementation details supplement areas Golden Rules don't cover.
+</HARD-RULE>
+
+<HARD-RULE>
+Reconnaissance Hints in type files are discovery aids only. Information discovered via Hints must be converted to Fact Table values, not used directly in generation instructions.
+</HARD-RULE>
+
+### 2.5.1 Extract Interface Types from Contracts
+
+Read each Contract file parsed in Step 2 and collect all interface types referenced in Actions and Outcomes:
+
+1. Examine `step-action` fields for interface indicators (CLI commands, HTTP methods, UI interactions, TUI rendering, mobile gestures).
+2. Examine Outcome `Output` dimensions for interface-specific assertions (exit codes → CLI, HTTP status codes → API, element selectors → UI/TUI/Mobile).
+3. Record the detected type set (e.g., `{CLI, API}`).
+
+### 2.5.2 Load Shared Principles
+
+Always load `types/_shared.md` regardless of detected types. This file defines the five cross-type universal principles (Isolation, Determinism, Timeout Protection, Idempotency, Resource Cleanup) and shared antipattern guards.
+
+### 2.5.3 Load Type-Specific Rules
+
+For each interface type in the detected set, load the corresponding type file:
+
+1. Map interface type to filename: `CLI` → `types/cli.md`, `TUI` → `types/tui.md`, `UI` → `types/ui.md`, `Mobile` → `types/mobile.md`, `API` → `types/api.md`.
+2. Read each matched type file via Read tool.
+3. Extract Golden Rules (generation constraints) and Reconnaissance Hints (discovery aids).
+
+Do NOT load type files for interface types not detected in the Contracts. No speculative bulk loading.
+
+<HARD-RULE>
+`_shared.md` is ALWAYS loaded regardless of detected types. Only type files matching detected interface types are loaded — no speculative bulk loading.
+</HARD-RULE>
+
+### 2.5.4 Token Budget Warning
+
+If the detected type set contains more than 3 types, emit:
+
+```
+WARNING: Detected {N} interface types ({type list}). Loading all type rules may consume significant token budget. Consider splitting the Journey into type-specific sub-Journeys.
+```
+
+Proceed with generation — the warning is advisory, not blocking.
+
 ## Step 3: Generate Test Code
 
 For each Contract step, generate test code following the resolved framework's conventions.
