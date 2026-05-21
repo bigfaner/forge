@@ -125,7 +125,7 @@
       "dependencies": [
         "1.gate"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2.2-error-handling-foundation.md",
       "record": "records/2.2-error-handling-foundation.md",
       "scope": "backend",

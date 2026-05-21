@@ -23,6 +23,14 @@ const (
 	ErrConflict ErrorCode = "CONFLICT"
 	// ErrValidation indicates validation failure.
 	ErrValidation ErrorCode = "VALIDATION_ERROR"
+	// ErrInvalidTransition indicates an invalid state transition was attempted.
+	ErrInvalidTransition ErrorCode = "INVALID_TRANSITION"
+	// ErrInvalidPath indicates a path traversal or invalid path was detected.
+	ErrInvalidPath ErrorCode = "INVALID_PATH"
+	// ErrEvalParseFailure indicates a parse failure during evaluation.
+	ErrEvalParseFailure ErrorCode = "EVAL_PARSE_FAILURE"
+	// ErrContractUnverifiable indicates a contract cannot be verified.
+	ErrContractUnverifiable ErrorCode = "CONTRACT_UNVERIFIABLE"
 )
 
 // AIError represents a structured error with AI-friendly context.
@@ -39,6 +47,18 @@ func (e *AIError) Error() string {
 	return e.Message
 }
 
+// ExitCode returns the exit code for the error.
+// Blocking errors (policy violations, invalid transitions) return 2.
+// Retryable errors (transient failures, not found) return 1.
+func (e *AIError) ExitCode() int {
+	switch e.Code {
+	case ErrInvalidTransition, ErrInvalidPath, ErrContractUnverifiable:
+		return 2
+	default:
+		return 1
+	}
+}
+
 // NewAIError creates a new AI-friendly error.
 func NewAIError(code ErrorCode, message, cause, hint, action string) *AIError {
 	return &AIError{
@@ -50,13 +70,15 @@ func NewAIError(code ErrorCode, message, cause, hint, action string) *AIError {
 	}
 }
 
-// Exit prints the AI-friendly error and exits.
+// Exit prints the AI-friendly error and exits with an appropriate exit code.
+// AIError uses ExitCode() for differentiated exit codes (1 for retryable, 2 for blocking).
+// Non-AIError always exits with code 1.
 func Exit(err error) {
 	if aiErr, ok := err.(*AIError); ok {
 		printAIError(aiErr)
-	} else {
-		fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
+		os.Exit(aiErr.ExitCode())
 	}
+	fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
 	os.Exit(1)
 }
 
@@ -268,5 +290,49 @@ func ErrInvalidDependency(deps []string) *AIError {
 		"Referenced task IDs do not exist in index.json",
 		"Check that dependency IDs are correct",
 		"forge task check-deps",
+	)
+}
+
+// NewErrInvalidTransition creates an error for invalid state transitions.
+func NewErrInvalidTransition(from, to, hint string) *AIError {
+	return NewAIError(
+		ErrInvalidTransition,
+		fmt.Sprintf("Invalid transition: %s -> %s", from, to),
+		fmt.Sprintf("Transition from %s to %s is not allowed", from, to),
+		hint,
+		"forge task check-deps",
+	)
+}
+
+// NewErrInvalidPath creates an error for path traversal or invalid path attempts.
+func NewErrInvalidPath(input string) *AIError {
+	return NewAIError(
+		ErrInvalidPath,
+		fmt.Sprintf("Invalid path: %s", input),
+		fmt.Sprintf("Path contains traversal or illegal characters: %s", input),
+		"Use a simple filename without directory traversal (..) or absolute paths",
+		"Provide a relative filename without .. segments",
+	)
+}
+
+// NewErrEvalParseFailure creates an error for parse failures during evaluation.
+func NewErrEvalParseFailure(raw string) *AIError {
+	return NewAIError(
+		ErrEvalParseFailure,
+		"Failed to parse evaluation output",
+		fmt.Sprintf("Could not parse: %s", raw),
+		"Ensure the evaluation output is in the expected format",
+		"Retry with corrected evaluation output format",
+	)
+}
+
+// NewErrContractUnverifiable creates an error when a contract cannot be verified.
+func NewErrContractUnverifiable(contractPath string) *AIError {
+	return NewAIError(
+		ErrContractUnverifiable,
+		fmt.Sprintf("Contract unverifiable: %s", contractPath),
+		fmt.Sprintf("The contract at %s could not be verified against the implementation", contractPath),
+		"Check that the contract matches the actual implementation behavior",
+		"Update the contract or the implementation to match",
 	)
 }

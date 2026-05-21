@@ -3,6 +3,8 @@ package cmd
 import (
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAIError_Error(t *testing.T) {
@@ -145,4 +147,120 @@ func TestErrInvalidStatus(t *testing.T) {
 			t.Errorf("Cause should mention statusEnum: %s", err.Cause)
 		}
 	})
+}
+
+// --- New error code constants ---
+
+func TestNewErrorCodeConstants(t *testing.T) {
+	assert.Equal(t, ErrorCode("INVALID_TRANSITION"), ErrInvalidTransition)
+	assert.Equal(t, ErrorCode("INVALID_PATH"), ErrInvalidPath)
+	assert.Equal(t, ErrorCode("EVAL_PARSE_FAILURE"), ErrEvalParseFailure)
+	assert.Equal(t, ErrorCode("CONTRACT_UNVERIFIABLE"), ErrContractUnverifiable)
+}
+
+// --- New factory functions ---
+
+func TestNewErrInvalidTransition(t *testing.T) {
+	err := NewErrInvalidTransition("completed", "pending", "use reopen instead")
+	assert.Equal(t, ErrInvalidTransition, err.Code)
+	assert.Contains(t, err.Message, "completed")
+	assert.Contains(t, err.Message, "pending")
+	assert.NotEmpty(t, err.Cause)
+	assert.Contains(t, err.Hint, "reopen")
+	assert.NotEmpty(t, err.Action)
+}
+
+func TestNewErrInvalidPath(t *testing.T) {
+	err := NewErrInvalidPath("../../../etc/passwd")
+	assert.Equal(t, ErrInvalidPath, err.Code)
+	assert.Contains(t, err.Message, "path")
+	assert.Contains(t, err.Cause, "..")
+	assert.NotEmpty(t, err.Hint)
+	assert.NotEmpty(t, err.Action)
+}
+
+func TestNewErrEvalParseFailure(t *testing.T) {
+	err := NewErrEvalParseFailure("score: not-a-number")
+	assert.Equal(t, ErrEvalParseFailure, err.Code)
+	assert.Contains(t, err.Message, "parse")
+	assert.Contains(t, err.Cause, "score")
+	assert.NotEmpty(t, err.Hint)
+	assert.NotEmpty(t, err.Action)
+}
+
+func TestNewErrContractUnverifiable(t *testing.T) {
+	err := NewErrContractUnverifiable("contracts/api.md")
+	assert.Equal(t, ErrContractUnverifiable, err.Code)
+	assert.Contains(t, err.Message, "unverifiable")
+	assert.Contains(t, err.Cause, "contracts/api.md")
+	assert.NotEmpty(t, err.Hint)
+	assert.NotEmpty(t, err.Action)
+}
+
+// --- ExitCode method ---
+
+func TestExitCode_BlockingErrors(t *testing.T) {
+	blockingCodes := []ErrorCode{
+		ErrInvalidTransition,
+		ErrInvalidPath,
+		ErrContractUnverifiable,
+	}
+	for _, code := range blockingCodes {
+		err := &AIError{Code: code, Message: "test"}
+		assert.Equal(t, 2, err.ExitCode(), "expected exit code 2 for %s", code)
+	}
+}
+
+func TestExitCode_RetryableErrors(t *testing.T) {
+	retryableCodes := []ErrorCode{
+		ErrEvalParseFailure,
+		ErrNoProject,
+		ErrNoFeature,
+		ErrNotFound,
+		ErrConflict,
+		ErrInvalidInput,
+		ErrValidation,
+	}
+	for _, code := range retryableCodes {
+		err := &AIError{Code: code, Message: "test"}
+		assert.Equal(t, 1, err.ExitCode(), "expected exit code 1 for %s", code)
+	}
+}
+
+func TestExitCode_DefaultRetryable(t *testing.T) {
+	err := &AIError{Code: ErrorCode("UNKNOWN_CODE"), Message: "test"}
+	assert.Equal(t, 1, err.ExitCode(), "unknown error codes should default to exit code 1")
+}
+
+// --- Existing error behavior unchanged ---
+
+func TestExistingFactoryFunctionsUnchanged(t *testing.T) {
+	tests := []struct {
+		name     string
+		err      *AIError
+		wantCode ErrorCode
+	}{
+		{"ErrProjectNotFound", ErrProjectNotFound(), ErrNoProject},
+		{"ErrFeatureNotSet", ErrFeatureNotSet(), ErrNoFeature},
+		{"ErrTaskNotFound", ErrTaskNotFound("1.0"), ErrNotFound},
+		{"ErrNoInput", ErrNoInput("detail"), ErrInvalidInput},
+		{"ErrInvalidJSON", ErrInvalidJSON("file.json", "bad"), ErrValidation},
+		{"ErrFileNotFound", ErrFileNotFound("x.txt"), ErrNotFound},
+		{"ErrNoPendingTasks", ErrNoPendingTasks(), ErrNotFound},
+		{"ErrDependenciesNotMet", ErrDependenciesNotMet("1.0", []string{"0.1"}), ErrConflict},
+		{"ErrDataIntegrity", ErrDataIntegrity([]string{"x"}), ErrConflict},
+		{"ErrInvalidStatus", ErrInvalidStatus("bad", []string{"ok"}), ErrValidation},
+		{"ErrMissingFields", ErrMissingFields([]string{"x"}), ErrValidation},
+		{"ErrFeatureNotFound", ErrFeatureNotFound("slug"), ErrNotFound},
+		{"ErrNoTestEvidence", ErrNoTestEvidence(), ErrValidation},
+		{"ErrUnmetAcceptanceCriteria", ErrUnmetAcceptanceCriteria([]string{"x"}), ErrValidation},
+		{"ErrTaskIDConflict", ErrTaskIDConflict("1.0"), ErrConflict},
+		{"ErrInvalidDependency", ErrInvalidDependency([]string{"9.9"}), ErrValidation},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.wantCode, tt.err.Code)
+			assert.NotEmpty(t, tt.err.Message)
+		})
+	}
 }
