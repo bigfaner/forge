@@ -1,7 +1,7 @@
 ---
 created: 2026-05-21
 author: faner
-status: Draft
+status: Approved
 ---
 
 # Proposal: gen-test-scripts 内建类型黄金守则
