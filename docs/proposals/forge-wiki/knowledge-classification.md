@@ -15,16 +15,17 @@
 
 | 决策 | 选择 | 理由 |
 |------|------|------|
-| 多少个维度 | 三个维度 + 一个层级声明 | 层级决定维度的作用方式，维度之间严格正交 |
+| 多少个维度 | 三个维度 + 一个层级声明 | 层级决定维度的作用方式，维度之间尽量正交 |
 | 语言/框架是维度还是属性 | 维度（language 层级） | Go 错误处理和 Java 异常处理是硬边界，不是排序权重 |
 | 跨语言知识如何处理 | langs 为空 | 空 langs = 跨语言，匹配所有搜索 |
-| 非技术知识如何处理 | type 声明层级 | product/business 知识不填 stack，使用业务 concern 值 |
+| 非技术知识如何处理 | type 声明层级 | product/business 知识不填 langs/frameworks |
+| concern 是否分技术/业务 | 统一为单一层次化列表 | 技术/业务二分法导致同一概念跨两个值域（如 auth/security），Agent 推断困难 |
 
 ## 知识层级（type）
 
 type 声明知识的抽象层级，决定哪些维度参与匹配。
 
-| 值 | 语义 | 举例 | stack | artifact |
+| 值 | 语义 | 举例 | langs/frameworks | artifact |
 |---|------|------|-------|----------|
 | `language` | 语言/框架特定的实现知识 | Go error wrapping、React hooks 规范、Spring Bean 配置 | 必填 | 必填 |
 | `design` | 跨语言的架构与设计知识 | RESTful 设计原则、微服务拆分策略、Strategy 模式 | 空（跨语言） | 必填 |
@@ -36,8 +37,10 @@ type 声明知识的抽象层级，决定哪些维度参与匹配。
 | 维度 | language | design | product | business |
 |------|------|--------|---------|----------|
 | artifact | 必填，参与匹配 | 必填，参与匹配 | 可选 | 通常不填 |
-| concern | 用技术值，参与匹配 | 用技术值，参与匹配 | 用业务值，参与匹配 | 用业务值，参与匹配 |
+| concern | 统一值域，参与匹配 | 统一值域，参与匹配 | 统一值域，参与匹配 | 统一值域，参与匹配 |
 | langs + frameworks | 必填，参与匹配 | 空（跨语言） | 空 | 空 |
+
+> **关键变化**：concern 不再根据 type 使用不同值域。所有层级共用一个层次化的 concern 列表。type 只决定 langs/frameworks 是否参与匹配。
 
 ## 维度一：Artifact（软件形态）
 
@@ -55,42 +58,104 @@ type 声明知识的抽象层级，决定哪些维度参与匹配。
 | `daemon` | 守护进程/后台服务 | systemd 配置、常驻进程、无直接用户交互 |
 | `desktop` | 桌面应用 | 依赖 Electron/Tauri/Qt |
 | `embedded` | 嵌入式/固件 | 跨平台编译目标、依赖 embedded-hal/Arduino |
+| `batch` | 批处理/定时任务 | cron 配置、ETL 管道、一次性脚本 |
+| `plugin` | 插件/扩展 | Forge skill、VSCode 扩展、Chrome 扩展 |
+| `infra` | 基础设施即代码 | Terraform/Pulumi/Ansible |
 
 **互斥性**：一个产出物在同一时刻不可能既是 `cli` 又是 `api`。但一条知识可适用于多种形态（用数组表示），一个项目也可包含多种形态（全栈 = `web-spa` + `api`）。
 
 ## 维度二：Concern（关注点）
 
-描述知识解决的技术或业务关注点。根据 type 使用不同组的值。
+描述知识解决什么问题。**统一为单一层次化列表**，技术关注点和业务领域关注点共享同一个值域。
 
-### 技术关注点（language / design）
+### 层次化 Concern 列表
 
-| 值 | 语义 | 知识举例 |
-|---|------|---------|
-| `structure` | 项目结构与模块组织 | 目录布局、模块划分、依赖管理 |
-| `io` | 输入输出与数据流 | CLI 参数解析、HTTP 请求响应、文件读写、消息队列 |
-| `display` | 界面呈现 | 组件设计、样式规范、响应式布局、终端渲染 |
-| `state` | 状态管理与数据模型 | Redux store、数据库 schema、缓存策略 |
-| `control` | 流程控制与业务逻辑 | 算法实现、工作流引擎、状态机、协议 |
-| `error` | 错误处理与异常管理 | 错误码体系、错误传播、重试策略、降级方案 |
-| `testing` | 测试策略与方法 | 单元测试、集成测试、E2E、mock 策略 |
-| `security` | 安全与权限 | 认证、授权、加密、输入校验、漏洞防护 |
-| `perf` | 性能与资源管理 | 并发模型、内存优化、延迟分析、吞吐调优 |
-| `deploy` | 构建与部署 | CI/CD、容器化、环境配置、灰度发布 |
-| `dx` | 开发者体验 | 工具链、调试技巧、文档规范、开发环境配置 |
+用 `/` 表示父子关系。父级是宽泛的领域，子级是具体的关注点。
 
-### 业务关注点（product / business）
+```
+# ─── 核心技术关注点 ───
+structure               # 项目结构与模块组织
+  ├── directory-layout  #   目录布局
+  ├── module-design     #   模块划分
+  └── dependency-mgmt   #   依赖管理
 
-| 值 | 语义 | 知识举例 |
-|---|------|---------|
-| `auth` | 认证授权领域 | 用户注册登录、权限模型、SSO 集成 |
-| `payment` | 支付领域 | 支付流程、对账规则、退款策略 |
-| `compliance` | 合规与审计 | 数据保留策略、审计日志、GDPR |
-| `data-privacy` | 数据隐私 | 个人信息处理、数据脱敏、跨境传输 |
-| `user-management` | 用户管理 | 用户生命周期、角色模型、租户隔离 |
-| `inventory` | 库存管理 | 库存扣减、补货策略、库存快照 |
-| *自定义* | 用户自行扩展 | 无预定义限制，直接用领域名称 |
+io                      # 输入输出与数据流
+display                 # 界面呈现
+state                   # 状态管理与数据模型
+control                 # 流程控制与业务逻辑
 
-> 业务关注点是开放的——上表列出的是常见示例，用户可根据项目领域自行定义新值。直接用领域名称作为 concern 值，无需前缀或特殊语法。例如物流项目用 `concerns: [logistics]`，医疗项目用 `concerns: [medical]`。
+error                   # 错误处理与异常管理
+
+testing                 # 测试策略与方法
+  ├── unit              #   单元测试
+  ├── integration       #   集成测试
+  └── e2e               #   端到端测试
+
+security                # 安全
+  ├── auth              #   认证授权（登录、权限、SSO、JWT/Session 选型）
+  ├── encryption        #   加密（TLS、密钥管理、数据加密）
+  ├── input-validation  #   输入校验（XSS、SQL 注入防护）
+  └── vulnerability     #   漏洞防护（CVE、依赖审计）
+
+perf                    # 性能与资源管理
+
+deploy                  # 构建与部署
+  ├── ci-cd             #   CI/CD 流水线
+  ├── containerization  #   容器化（Docker、K8s）
+  └── env-config        #   环境配置
+
+dx                      # 开发者体验
+
+# ─── 业务领域关注点 ───
+payment                 # 支付领域
+compliance              # 合规与审计
+data-privacy            # 数据隐私
+user-management         # 用户管理
+inventory               # 库存管理
+logistics               # 物流
+*自定义*                # 用户自行扩展
+```
+
+### 层次匹配规则
+
+搜索父级 concern 时，自动匹配其子级；搜索子级时，不匹配父级和兄弟：
+
+```
+搜索 concerns: [security]
+  → 匹配 concerns: [security]           ✅（精确）
+  → 匹配 concerns: [security/auth]      ✅（子级）
+  → 匹配 concerns: [security/encryption] ✅（子级）
+  → 不匹配 concerns: [error]            ❌（无关）
+
+搜索 concerns: [security/auth]
+  → 匹配 concerns: [security/auth]      ✅（精确）
+  → 不匹配 concerns: [security]         ❌（父级不匹配子级搜索）
+  → 不匹配 concerns: [security/encryption] ❌（兄弟不互匹配）
+```
+
+> 搜索范围越宽泛（用父级），召回越多；搜索越精确（用子级），结果越聚焦。
+
+### 为什么不再区分技术/业务 concern
+
+旧设计中 `auth` 是业务 concern，`security` 是技术 concern，导致：
+- Agent 难以判断"添加 JWT 认证"该搜 `auth` 还是 `security`
+- 同一概念被拆到两个值域，违反分面互斥性
+
+新设计中 `security/auth` 统一了两个视角：
+- `type=language` + `concerns: [security/auth]` → 认证的技术实现知识
+- `type=product` + `concerns: [security/auth]` → 认证方案的产品决策
+
+concern 描述"解决什么问题"，type 描述"知识的抽象层级"，两者正交。
+
+### 扩展规范
+
+业务领域关注点是开放的——用户可根据项目领域自行定义新值。
+
+**命名规范**：
+- 使用英文小写，连字符分隔：`data-privacy` 而非 `dataPrivacy`
+- 使用领域通用名称，避免项目特定名称：`payment` 而非 `stripe-integration`
+- 大领域用父级，子领域用 `/`：`payment/refund`、`payment/settlement`
+- 参考：如果团队已有领域词汇表（如 DDD 中的 bounded context 名称），优先复用
 
 ## 维度三：Language（编程语言）
 
@@ -151,7 +216,7 @@ id: go-api-error-handling          # 唯一标识
 title: "Go API 错误处理规范"         # 显示名称
 description: "Go 后端 API 的错误码设计、错误包装、HTTP 状态码映射"  # 搜索结果预览
 type: language                          # language | design | product | business
-concerns: [error, io]              # 至少一个
+concerns: [error, io]              # 至少一个，支持层次语法（如 security/auth）
 
 # === 条件必填 ===
 artifacts: [api]                   # language/design 必填，product 可选，business 通常不填
@@ -213,10 +278,19 @@ tags: [fmt.Errorf, errors.Is, errors.As]
 id: gin-middleware-convention
 type: language
 artifacts: [api]
-concerns: [io, security]
+concerns: [io, security/auth]       # 层次化 concern：认证授权
 langs: [go]
 frameworks: [gin]                   # Gin 特定知识
 tags: [middleware, context, handler]
+
+# ─── Language 知识：JWT 实现 ───
+id: go-jwt-implementation
+type: language
+artifacts: [api]
+concerns: [security/auth]           # 认证的技术实现
+langs: [go]
+frameworks: [gin]
+tags: [jwt, token-refresh, rsa]
 
 # ─── Design 知识：RESTful API 设计原则 ───
 id: restful-api-design
@@ -235,14 +309,14 @@ concerns: [structure, control]
 id: auth-decision-jwt-vs-session
 type: product
 artifacts: [api, web-spa]           # 前后端都相关
-concerns: [auth]                    # 业务关注点
+concerns: [security/auth]           # 同一个 concern，不同层级
 tags: [jwt, session, oauth, decision]
 
 # ─── Business 知识：支付对账规则 ───
 id: payment-reconciliation-rules
 type: business
 artifacts: []                       # 不限软件形态
-concerns: [payment, compliance]     # 业务关注点
+concerns: [payment, compliance]     # 业务领域关注点
 tags: [reconciliation, settlement, audit]
 
 # ─── 通用知识：Git 提交规范 ───
@@ -255,6 +329,16 @@ tags: [conventional-commits, git]
 ## 匹配算法
 
 ```python
+def concern_ancestor_match(doc_concerns, search_concerns):
+    """层次匹配：搜索父级时匹配子级，搜索子级时不匹配父级"""
+    for sc in search_concerns:
+        for dc in doc_concerns:
+            if dc == sc:                    # 精确匹配
+                return True
+            if dc.startswith(sc + '/'):     # doc 是 search 的子级
+                return True
+    return False
+
 def matches(doc, search):
     # 通用知识直接匹配
     if doc.scope == 'universal':
@@ -264,8 +348,8 @@ def matches(doc, search):
     if doc.type != search.type:
         return False
 
-    # concern 必须有交集
-    if not set(doc.concerns) & set(search.concerns):
+    # concern 层次匹配
+    if not concern_ancestor_match(doc.concerns, search.concerns):
         return False
 
     # artifact 匹配（空 = 不限）
@@ -286,25 +370,37 @@ def matches(doc, search):
     return True
 ```
 
-**匹配示例**：搜索 `type=language, artifacts=[api], concerns=[error], langs=[go], frameworks=[gin]`
+**匹配示例**：搜索 `type=language, artifacts=[api], concerns=[security], langs=[go], frameworks=[gin]`
 
-| 知识文档 | langs | frameworks | 结果 |
-|---------|-------|-----------|------|
-| Go API 错误处理 | go | 空（通用） | ✅ 语言匹配，无框架限制 |
-| Go Gin 中间件 | go | gin | ✅ 语言+框架都匹配 |
-| Go Cobra CLI 错误 | go | cobra | ✅ 语言匹配，但 artifact=cli 无交集 → ❌ |
-| Java Spring 错误 | java | spring | ❌ 语言不匹配 |
-| API 错误设计原则 | — | — | ❌ type=design 不匹配 |
-| Git 提交规范 | — | — | ✅ 通用知识 |
+| 知识文档 | concerns | 结果 |
+|---------|----------|------|
+| Go Gin 认证中间件 | security/auth | ✅ security 匹配 security/auth（子级） |
+| Go API 错误处理 | error | ❌ concern 不匹配 |
+| Go Gin 错误中间件 | error, io | ❌ concern 不匹配 |
+| 认证方案决策（product） | security/auth | ❌ type=product ≠ language |
+| Git 提交规范 | dx | ✅ 通用知识 |
 
 ## 排序算法
 
 ```python
+def concern_match_depth(doc_concern, search_concern):
+    """层次匹配的深度得分：精确匹配 > 近层子级 > 远层子级"""
+    if doc_concern == search_concern:
+        return 3.0    # 精确匹配，最高分
+    if doc_concern.startswith(search_concern + '/'):
+        depth = doc_concern.count('/') - search_concern.count('/')
+        return max(3.0 - depth * 0.5, 1.0)  # 每深一层减 0.5，最低 1.0
+    return 0.0
+
 def rank(doc, search):
     score = 0.0
 
-    # 1. Concern 重叠度（所有类型都适用）
-    score += len(set(doc.concerns) & set(search.concerns)) * 3.0
+    # 1. Concern 层次匹配深度（所有类型都适用）
+    concern_score = 0.0
+    for dc in doc.concerns:
+        for sc in search.concerns:
+            concern_score += concern_match_depth(dc, sc)
+    score += concern_score
 
     # 2. Artifact 特异性（有 artifact 限制 = 更具体）
     if doc.artifacts:
@@ -314,13 +410,13 @@ def rank(doc, search):
     # 3. Language 精确度（仅 language 类型）
     if doc.type == 'language' and doc.langs:
         lang_overlap = len(set(doc.langs) & set(search.langs))
-        score += lang_overlap * 3.0  # 语言精确匹配
+        score += lang_overlap * 3.0
 
     # 4. Framework 精确度（仅 language 类型，空 = 通用知识加分）
     if doc.type == 'language':
         if doc.frameworks:
             fw_overlap = len(set(doc.frameworks) & set(search.frameworks))
-            score += fw_overlap * 2.5  # 框架精确匹配
+            score += fw_overlap * 2.5
         else:
             score += 1.0  # 语言级通用知识，额外加分（适用面广）
 
@@ -332,19 +428,27 @@ def rank(doc, search):
     score += math.exp(-days_old / 180) * 0.5
 
     # 7. Source type 权重
-    weights = {'convention': 1.3, 'pattern': 1.2, 'decision': 1.0, 'lesson': 1.0, 'anti-pattern': 1.1, 'reference': 0.8}
+    weights = {'convention': 1.3, 'pattern': 1.2, 'decision': 1.0,
+               'lesson': 1.0, 'anti-pattern': 1.1, 'reference': 0.8}
     score *= weights.get(doc.source_type, 1.0)
+
+    # 8. Universal 知识惩罚（降低噪音，不过度占据搜索结果）
+    if doc.scope == 'universal':
+        score *= 0.7
 
     return score
 ```
 
-**排序效果示例**：搜索 `type=language, artifacts=[api], concerns=[error], langs=[go], frameworks=[gin]`
+**排序效果示例**：搜索 `type=language, artifacts=[api], concerns=[security], langs=[go], frameworks=[gin]`
 
-| 知识文档 | langs | frameworks | 排名因素 | 排名 |
-|---------|-------|-----------|---------|------|
-| Go Gin 错误中间件 | go | gin | concern(3)+artifact(2)+lang(3)+fw(2.5) = 10.5 | **1** |
-| Go API 错误码设计 | go | 空 | concern(3)+artifact(2)+lang(3)+通用(1) = 9 | **2** |
-| API 错误处理通用 | 空 | 空 | concern(3)+artifact(2) = 5 | **3** |
+| 知识文档 | concerns | 排名因素 | 排名 |
+|---------|----------|---------|------|
+| Go Gin 认证中间件 | security/auth | concern-精确(3)+artifact(2)+lang(3)+fw(2.5) = 10.5 | **1** |
+| Go 安全通用规范 | security | concern-精确(3)+artifact(2)+lang(3)+通用(1) = 9 | **2** |
+| Go 加密实现 | security/encryption | concern-子级(2.5)+artifact(2)+lang(3)+fw(2.5) = 10 | **1*** |
+| Git 提交规范 | dx | concern(0)+universal 惩罚 | 低 |
+
+> *注：加密实现虽然 concern 是子级匹配（2.5 < 3），但有 framework 精确匹配加分，可能超过通用安全规范。排序会根据具体文档的维度匹配度动态调整。
 
 ## 项目配置
 
@@ -383,54 +487,97 @@ frameworks: [gin]
 
 ### Concern 推断
 
-Concern 不在项目配置中静态声明，由 Agent 根据当前任务动态推断：
+Concern 不在项目配置中静态声明，由 CLI 从任务关键词推断（简化模式）或由 Agent 指定（精确模式）：
 
 | 任务描述 | 推断的 concerns | 推断的 type |
 |---------|----------------|------------|
 | "修复 API 端点的错误返回格式" | error, io | language |
-| "添加用户认证功能" | security, state | language |
+| "添加用户认证功能" | security/auth | language |
 | "重构目录结构为 Clean Architecture" | structure | design |
 | "评估 REST vs gRPC 的选型" | io, control | product |
 | "梳理支付对账的业务规则" | payment, compliance | business |
-| "添加 E2E 测试" | testing | language |
+| "添加 E2E 测试" | testing/e2e | language |
 | "优化首屏加载速度" | perf, display | language |
 
 ## 搜索命令
+
+### 简化模式（默认）
+
+Agent 只传关键词，CLI 自动填充维度参数：
+
+```bash
+forge kb search "token refresh"
+```
+
+CLI 内部自动完成：
+1. 从 `.forge/config.yaml` 读取 `artifacts`、`langs`、`frameworks`
+2. 从 query 关键词推断 `concerns`（如 "token refresh" → `security/auth`）
+3. 在所有 `type` 层级中搜索，按匹配度排序
+
+### 精确模式（可选）
+
+需要精确控制时，手动指定维度参数：
 
 ```bash
 forge kb search \
   --type language \                  # 知识层级
   --artifacts api \              # 软件形态（从项目配置）
-  --concerns error,security \    # 关注点（从任务推断）
+  --concerns security/auth \    # 关注点（支持层次语法）
   --langs go \                   # 语言（从项目配置/自动检测）
   --frameworks gin \             # 框架（从项目配置/自动检测）
   "token refresh"                # 关键词
 ```
 
-| 参数 | 来源 | 何时可省略 |
-|------|------|-----------|
-| `--type` | Agent 从任务推断 | 不可省略 |
-| `--artifacts` | 项目配置 artifact | product/business 可省略 |
-| `--concerns` | Agent 从任务推断 | 不可省略 |
-| `--langs` | 项目配置 + 自动检测 | 非 language 类型省略 |
-| `--frameworks` | 项目配置 + 自动检测 | 非 language 类型省略 |
+| 参数 | 来源 | 简化模式 | 精确模式 |
+|------|------|---------|---------|
+| `--type` | Agent 从任务推断 | 省略（搜索所有层级） | 不可省略 |
+| `--artifacts` | 项目配置 | 自动填充 | 可省略 |
+| `--concerns` | Agent/CLI 推断 | CLI 从 query 推断 | 不可省略 |
+| `--langs` | 项目配置 | 自动填充 | 非 language 类型省略 |
+| `--frameworks` | 项目配置 | 自动填充 | 非 language 类型省略 |
 
 省略的参数 = 不限制该维度，扩大搜索范围。信息越全，结果越精准；信息不全，降级为更宽泛的搜索。
 
 ### 多类型搜索
 
-Agent 可以连续搜索不同层级的知识：
+简化模式下 CLI 自动搜索所有层级，无需手动多次调用。精确模式下 Agent 可以连续搜索不同层级：
 
 ```bash
-# 先查代码级知识（最精准）
-forge kb search --type language --artifacts api --concerns error --langs go --frameworks gin "错误处理"
+# 精确模式：先查代码级知识（最精准）
+forge kb search --type language --artifacts api --concerns security/auth --langs go "JWT 认证"
 
 # 再查设计级知识（跨语言参考）
-forge kb search --type design --artifacts api --concerns error "错误处理设计"
+forge kb search --type design --artifacts api --concerns security/auth "认证方案设计"
 
 # 还可以查产品决策背景
-forge kb search --type product --concerns error "错误处理方案选型"
+forge kb search --type product --concerns security/auth "认证方案选型"
 ```
+
+### 搜索降级策略
+
+当精确搜索结果不足时，CLI 按以下梯度自动降级：
+
+```
+精确搜索 → 去 frameworks → 去 langs → 去 artifacts → 去 type → 只留 concerns + 关键词
+```
+
+降级结果分组返回，标注降级了哪些维度：
+
+```
+## 精确匹配（language / api / go / gin / security/auth）
+## go-gin-auth-middleware
+- type: language | concerns: [security/auth] | langs: [go]
+- Gin 中间件认证规范
+
+## 降级搜索（已去掉 frameworks 限制）
+## go-auth-common
+- type: language | concerns: [security/auth] | langs: [go]
+- Go 通用认证工具库使用规范
+```
+
+降级梯度原则：从最具体的维度开始去掉，保留最能区分知识相关性的维度。`concerns` 最后保留，因为它表达"解决什么问题"，是最核心的匹配信号。
+
+降级到只剩 concerns 后，还可通过 concern 层次关系进一步扩展（搜索 `security/auth` → 扩展到 `security` → 找到通用安全知识）。
 
 ## 全景分类示例
 
