@@ -1,7 +1,7 @@
 ---
 feature: "decouple-test-tasks-from-languages"
 created: "2026-05-21"
-status: tasks
+status: completed
 mode: quick
 ---
 
