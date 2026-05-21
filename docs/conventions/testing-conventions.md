@@ -94,7 +94,6 @@ Declares how test results are produced and parsed.
 |-------|------|-------------|
 | Output flags | string | Command-line flags for machine-readable output |
 | Format type | enum | One of: `json-stream`, `json-report`, `text-verbose` |
-| Execution command | string | Full command to execute tests |
 
 **Format type reference:**
 
@@ -162,7 +161,6 @@ package e2e
 
 - **Output flags**: -json
 - **Format type**: json-stream
-- **Execution command**: go test -json -tags=e2e ./tests/e2e/...
 
 ## Import Patterns
 
@@ -242,7 +240,6 @@ def test_tc_001_feature():
 
 - **Output flags**: --json-report --json-report-file=results.json
 - **Format type**: json-report
-- **Execution command**: pytest --json-report --json-report-file=results.json tests/e2e/
 
 ## Import Patterns
 
@@ -315,7 +312,6 @@ describe('Feature', { tags: ['@e2e'] }, () => {
 
 - **Output flags**: --reporter=json
 - **Format type**: json-report
-- **Execution command**: npx vitest run --reporter=json tests/e2e/
 
 ## Import Patterns
 

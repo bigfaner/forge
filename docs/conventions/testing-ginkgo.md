@@ -45,7 +45,6 @@ package e2e
 
 - **Output flags**: `-json -v`
 - **Format type**: `json-stream` (same as Go testing — one JSON object per line)
-- **Execution command**: `ginkgo -v --json-report report.json ./tests/e2e/...` or `go test ./tests/e2e/... -v -tags=e2e -json`
 
 ## Import Patterns
 
