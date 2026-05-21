@@ -351,32 +351,52 @@ func GetConfigValue(projectRoot, key string) (string, error) {
 
 // getAutoKeyValue handles dot-notation keys for the auto config block.
 func getAutoKeyValue(projectRoot, key string) (string, bool, error) {
-	if key == "auto.runTasks" {
+	switch key {
+	case "auto.runTasks":
 		auto, err := ReadAutoConfig(projectRoot)
 		if err != nil {
 			return "", true, err
 		}
 		return fmt.Sprintf("quick:%v full:%v", auto.RunTasks.Quick, auto.RunTasks.Full), true, nil
-	}
-
-	if key == "auto.knowledgeSave" {
+	case "auto.runTasks.quick":
+		auto, err := ReadAutoConfig(projectRoot)
+		if err != nil {
+			return "", true, err
+		}
+		return strconv.FormatBool(auto.RunTasks.Quick), true, nil
+	case "auto.runTasks.full":
+		auto, err := ReadAutoConfig(projectRoot)
+		if err != nil {
+			return "", true, err
+		}
+		return strconv.FormatBool(auto.RunTasks.Full), true, nil
+	case "auto.knowledgeSave":
 		auto, err := ReadAutoConfig(projectRoot)
 		if err != nil {
 			return "", true, err
 		}
 		return fmt.Sprintf("quick:%v full:%v", auto.KnowledgeSave.Quick, auto.KnowledgeSave.Full), true, nil
-	}
-
-	if key != "auto.gitPush" {
+	case "auto.knowledgeSave.quick":
+		auto, err := ReadAutoConfig(projectRoot)
+		if err != nil {
+			return "", true, err
+		}
+		return strconv.FormatBool(auto.KnowledgeSave.Quick), true, nil
+	case "auto.knowledgeSave.full":
+		auto, err := ReadAutoConfig(projectRoot)
+		if err != nil {
+			return "", true, err
+		}
+		return strconv.FormatBool(auto.KnowledgeSave.Full), true, nil
+	case "auto.gitPush":
+		auto, err := ReadAutoConfig(projectRoot)
+		if err != nil {
+			return "", true, err
+		}
+		return strconv.FormatBool(auto.GitPush), true, nil
+	default:
 		return "", false, nil
 	}
-
-	auto, err := ReadAutoConfig(projectRoot)
-	if err != nil {
-		return "", true, err
-	}
-
-	return strconv.FormatBool(auto.GitPush), true, nil
 }
 
 // getWorktreeKeyValue handles dot-notation keys for the worktree config block.

@@ -929,4 +929,37 @@ func TestGetConfigValue_RunTasks(t *testing.T) {
 			t.Errorf("expected 'quick:true full:true' (quick defaulted), got %q", val)
 		}
 	})
+
+	t.Run("auto.runTasks.quick returns bool", func(t *testing.T) {
+		dir := setupConfig(t, "auto:\n  runTasks:\n    quick: true\n    full: false\n")
+		val, err := GetConfigValue(dir, "auto.runTasks.quick")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "true" {
+			t.Errorf("expected 'true', got %q", val)
+		}
+	})
+
+	t.Run("auto.runTasks.full returns bool", func(t *testing.T) {
+		dir := setupConfig(t, "auto:\n  runTasks:\n    quick: false\n    full: true\n")
+		val, err := GetConfigValue(dir, "auto.runTasks.full")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "true" {
+			t.Errorf("expected 'true', got %q", val)
+		}
+	})
+
+	t.Run("auto.runTasks.quick returns default when absent", func(t *testing.T) {
+		dir := t.TempDir()
+		val, err := GetConfigValue(dir, "auto.runTasks.quick")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "true" {
+			t.Errorf("expected 'true' (default), got %q", val)
+		}
+	})
 }
