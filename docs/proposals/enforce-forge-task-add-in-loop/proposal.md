@@ -42,10 +42,33 @@ This is a straightforward adoption of an existing mechanism. `forge task add` wi
 ### Key Scenarios
 
 - **Happy path**: task-executor executes a task successfully, no fix tasks needed
-- **Complex error during execution**: task-executor encounters a large compilation failure, creates a fix task via `forge task add`, blocks the current task, returns to dispatcher
+- **Complex error during execution**: task-executor encounters an error during strategy steps, tries ~3 approaches to resolve it within the same execution — if the same error keeps recurring, AI judges this needs a dedicated fix task, creates it via `forge task add --block-source`, pauses the current task, returns to dispatcher
+- **Simple error (inline fix)**: a one-off command failure (network timeout, missing dependency, simple lint) that the executor resolves on first retry — no fix task created, normal execution continues
 - **Dispatched task blocked**: run-tasks verifies a dispatched task is blocked, creates fix task via `forge task add`, continues loop
 - **Main session task blocked**: run-tasks detects main session task failure, creates fix task via `forge task add`, continues loop
 - **Dedup safety**: if task-executor already created a fix task, run-tasks calling `forge task add` again hits `HasActiveFixTasks()` and skips gracefully
+
+### Error Classification
+
+Not all errors warrant a fix task. The task-executor uses AI judgment to classify:
+
+| Category | Examples | Action |
+|----------|----------|--------|
+| Simple/transient | Network timeout, missing dependency, single command failure, formatting lint | Inline fix (retry or auto-fix), continue execution |
+| Complex/recurring | Same error persists after ~3 attempts, large compilation failure, cross-file refactoring needed | Create `coding.fix` task via `forge task add`, pause current task |
+
+Decision flow:
+
+```
+Execute strategy step → error
+  → Can AI fix inline? (low effort, obvious cause)
+    → Yes: fix it, continue
+    → No: is this the same/similar error after ~3 approaches?
+      → No: try another approach
+      → Yes: create coding.fix task via forge task add, pause, STOP
+```
+
+All fix tasks use the `fix-task` template (type `coding.fix`). No distinction between error categories — the template is universal and quality-gate handles all fix types the same way.
 
 ### Non-Functional Requirements
 
