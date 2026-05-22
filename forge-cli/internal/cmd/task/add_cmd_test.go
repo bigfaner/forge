@@ -1,4 +1,4 @@
-package cmd
+package task
 
 import (
 	"os"
@@ -17,8 +17,8 @@ func TestAddCmd_WithTemplateAndVars(t *testing.T) {
 	}})
 
 	output, err := captureOutput(func() error {
-		rootCmd.SetArgs([]string{
-			"task", "add",
+		Cmd.SetArgs([]string{
+			"add",
 			"--title", "Fix: login bug",
 			"--template", "fix-task",
 			"--source-task-id", "1.1",
@@ -27,7 +27,7 @@ func TestAddCmd_WithTemplateAndVars(t *testing.T) {
 			"--var", "TEST_SCRIPT=tests/e2e/auth.spec.ts",
 			"--var", "TEST_RESULTS=results/latest.md",
 		})
-		return rootCmd.Execute()
+		return Cmd.Execute()
 	})
 	if err != nil {
 		t.Fatalf("add command failed: %v", err)
@@ -126,12 +126,12 @@ func TestAddCmd_UnknownTemplateReturnsError(t *testing.T) {
 		setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 			"1.1": {ID: "1.1", Title: "Existing", Priority: "P0", Status: "completed", File: "1.1.md", Record: "records/1.1.md"},
 		}})
-		rootCmd.SetArgs([]string{
-			"task", "add",
+		Cmd.SetArgs([]string{
+			"add",
 			"--title", "Fix: test",
 			"--template", "nonexistent",
 		})
-		_ = rootCmd.Execute()
+		_ = Cmd.Execute()
 		return
 	}
 	cmd := exec.Command(os.Args[0], "-test.run=TestAddCmd_UnknownTemplateReturnsError")
@@ -149,12 +149,12 @@ func TestAddCmd_DedupSkipsActiveFix(t *testing.T) {
 
 	// First add succeeds
 	output, err := captureOutput(func() error {
-		rootCmd.SetArgs([]string{
-			"task", "add",
+		Cmd.SetArgs([]string{
+			"add",
 			"--title", "Fix: first attempt",
 			"--source-task-id", "1.1",
 		})
-		return rootCmd.Execute()
+		return Cmd.Execute()
 	})
 	if err != nil {
 		t.Fatalf("first add failed: %v", err)
@@ -165,12 +165,12 @@ func TestAddCmd_DedupSkipsActiveFix(t *testing.T) {
 
 	// Second add for same source should be skipped (first fix is still active/pending)
 	output, err = captureOutput(func() error {
-		rootCmd.SetArgs([]string{
-			"task", "add",
+		Cmd.SetArgs([]string{
+			"add",
 			"--title", "Fix: second attempt",
 			"--source-task-id", "1.1",
 		})
-		return rootCmd.Execute()
+		return Cmd.Execute()
 	})
 	if err != nil {
 		t.Fatalf("dedup add should not error, got: %v", err)
@@ -189,13 +189,13 @@ func TestAddCmd_BlockSource(t *testing.T) {
 	}})
 
 	output, err := captureOutput(func() error {
-		rootCmd.SetArgs([]string{
-			"task", "add",
+		Cmd.SetArgs([]string{
+			"add",
 			"--title", "Fix: blocked source",
 			"--source-task-id", "1.1",
 			"--block-source",
 		})
-		return rootCmd.Execute()
+		return Cmd.Execute()
 	})
 	if err != nil {
 		t.Fatalf("add with --block-source failed: %v", err)

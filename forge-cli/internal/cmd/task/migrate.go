@@ -1,7 +1,8 @@
-package cmd
+package task
 
 import (
 	"fmt"
+	"forge-cli/internal/cmd/base"
 	"path/filepath"
 
 	"forge-cli/pkg/feature"
@@ -30,12 +31,12 @@ Aborts with exit code 1 if any task is in_progress, leaving index.json unchanged
 func runMigrate(_ *cobra.Command, _ []string) error {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		Exit(ErrProjectNotFound())
+		base.Exit(base.ErrProjectNotFound())
 	}
 
 	featureSlug, err := feature.RequireFeature(projectRoot)
 	if err != nil {
-		Exit(ErrFeatureNotSet())
+		base.Exit(base.ErrFeatureNotSet())
 	}
 
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
@@ -68,7 +69,7 @@ func runMigrate(_ *cobra.Command, _ []string) error {
 
 		return indexPkg.SaveIndexAtomic(indexPath, index)
 	}); err != nil {
-		Exit(fmt.Errorf("migrate: %w", err))
+		base.Exit(fmt.Errorf("migrate: %w", err))
 	}
 
 	fmt.Printf("Migrated %d tasks. Run task validate to verify.\n", taskCount)

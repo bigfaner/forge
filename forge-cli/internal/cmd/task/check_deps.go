@@ -1,7 +1,8 @@
-package cmd
+package task
 
 import (
 	"fmt"
+	"forge-cli/internal/cmd/base"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -36,18 +37,18 @@ type depInfo struct {
 func runCheckDeps(_ *cobra.Command, _ []string) error {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		return ErrProjectNotFound()
+		return base.ErrProjectNotFound()
 	}
 
 	featureSlug, err := feature.RequireFeature(projectRoot)
 	if err != nil {
-		return ErrFeatureNotSet()
+		return base.ErrFeatureNotSet()
 	}
 
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
 	index, err := task.LoadIndex(indexPath)
 	if err != nil {
-		return ErrFileNotFound(indexPath)
+		return base.ErrFileNotFound(indexPath)
 	}
 
 	// Collect all task IDs
@@ -96,7 +97,7 @@ func runCheckDeps(_ *cobra.Command, _ []string) error {
 	}
 
 	// Output results
-	PrintSection("TASKS")
+	base.PrintSection("TASKS")
 	var sortedIDs []string
 	for id := range taskIDs {
 		sortedIDs = append(sortedIDs, id)
@@ -112,28 +113,28 @@ func runCheckDeps(_ *cobra.Command, _ []string) error {
 		return len(partsI) < len(partsJ)
 	})
 	for _, id := range sortedIDs {
-		PrintListItem(id)
+		base.PrintListItem(id)
 	}
 
 	// Output dependencies section
-	PrintSection("DEPENDENCIES")
+	base.PrintSection("DEPENDENCIES")
 	for _, di := range depInfos {
 		if di.isWildcard {
-			PrintListItem(fmt.Sprintf("%s -> [%s] (wildcard)", di.taskID, di.dependency))
+			base.PrintListItem(fmt.Sprintf("%s -> [%s] (wildcard)", di.taskID, di.dependency))
 		} else {
-			PrintListItem(fmt.Sprintf("%s -> %s", di.taskID, di.dependency))
+			base.PrintListItem(fmt.Sprintf("%s -> %s", di.taskID, di.dependency))
 		}
 	}
 
 	if len(errors) > 0 {
-		PrintSection("ERRORS")
+		base.PrintSection("ERRORS")
 		for _, e := range errors {
-			PrintListItem(e)
+			base.PrintListItem(e)
 		}
-		PrintResult("FAIL", fmt.Sprintf("%d error(s)", len(errors)))
+		base.PrintResult("FAIL", fmt.Sprintf("%d error(s)", len(errors)))
 		return fmt.Errorf("%d dependency error(s)", len(errors))
 	}
 
-	PrintResult("PASS", fmt.Sprintf("%d tasks checked", len(taskIDs)))
+	base.PrintResult("PASS", fmt.Sprintf("%d tasks checked", len(taskIDs)))
 	return nil
 }

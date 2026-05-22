@@ -1,8 +1,9 @@
-package cmd
+package task
 
 import (
 	"encoding/json"
 	"fmt"
+	"forge-cli/internal/cmd/base"
 	"os"
 	"path/filepath"
 	"sort"
@@ -44,11 +45,11 @@ func runValidateIndex(_ *cobra.Command, args []string) error {
 	} else {
 		projectRoot, err := project.FindProjectRoot()
 		if err != nil {
-			Exit(ErrProjectNotFound())
+			base.Exit(base.ErrProjectNotFound())
 		}
 		slug, err := feature.RequireFeature(projectRoot)
 		if err != nil {
-			Exit(ErrFeatureNotSet())
+			base.Exit(base.ErrFeatureNotSet())
 		}
 		filePath = filepath.Join(projectRoot, feature.GetFeatureIndexFile(slug))
 	}
@@ -71,16 +72,16 @@ type validator struct {
 func (v *validator) run() error {
 	data, err := os.ReadFile(v.filePath)
 	if err != nil {
-		return ErrFileNotFound(v.filePath)
+		return base.ErrFileNotFound(v.filePath)
 	}
 
 	var idx task.TaskIndex
 	if err := json.Unmarshal(data, &idx); err != nil {
-		return ErrInvalidJSON(v.filePath, err.Error())
+		return base.ErrInvalidJSON(v.filePath, err.Error())
 	}
 
 	if idx.Feature == "" {
-		return NewAIError(ErrValidation, "Missing required field", "'feature' field is empty", "Add feature name to index.json", "Add \"feature\": \"<name>\" to index.json")
+		return base.NewAIError(base.ErrValidation, "Missing required field", "'feature' field is empty", "Add feature name to index.json", "Add \"feature\": \"<name>\" to index.json")
 	}
 
 	v.info = append(v.info, fmt.Sprintf("Feature: %s", idx.Feature))
@@ -109,7 +110,7 @@ func (v *validator) run() error {
 	v.validatePhaseSummaries(idx.TasksMap())
 	v.validateLiveness(idx.TasksMap())
 	if !v.printResults() {
-		return NewAIError(ErrValidation, "Validation failed", fmt.Sprintf("%d errors found", len(v.errors)), "Fix errors in index.json", "cat "+v.filePath)
+		return base.NewAIError(base.ErrValidation, "Validation failed", fmt.Sprintf("%d errors found", len(v.errors)), "Fix errors in index.json", "cat "+v.filePath)
 	}
 	return nil
 }
@@ -433,34 +434,34 @@ func (v *validator) validatePhaseSummaries(tasks map[string]task.Task) {
 
 func (v *validator) printResults() bool {
 	if len(v.info) > 0 {
-		PrintSection("INFO")
+		base.PrintSection("INFO")
 		sort.Strings(v.info)
 		for _, i := range v.info {
-			PrintListItem(i)
+			base.PrintListItem(i)
 		}
 	}
 
 	if len(v.warnings) > 0 {
-		PrintSection("WARNINGS")
+		base.PrintSection("WARNINGS")
 		sort.Strings(v.warnings)
 		for _, w := range v.warnings {
-			PrintListItem(w)
+			base.PrintListItem(w)
 		}
 	}
 
 	if len(v.errors) > 0 {
-		PrintSection("ERRORS")
+		base.PrintSection("ERRORS")
 		sort.Strings(v.errors)
 		for _, e := range v.errors {
-			PrintListItem(e)
+			base.PrintListItem(e)
 		}
 	}
 
 	if len(v.errors) == 0 {
-		PrintResult("PASS", v.filePath)
+		base.PrintResult("PASS", v.filePath)
 		return true
 	}
-	PrintResult("FAIL", fmt.Sprintf("%s (%d errors)", v.filePath, len(v.errors)))
+	base.PrintResult("FAIL", fmt.Sprintf("%s (%d errors)", v.filePath, len(v.errors)))
 	return false
 }
 

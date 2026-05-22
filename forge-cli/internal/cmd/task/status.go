@@ -1,6 +1,7 @@
-package cmd
+package task
 
 import (
+	"forge-cli/internal/cmd/base"
 	"path/filepath"
 	"strings"
 
@@ -26,12 +27,12 @@ func runStatus(_ *cobra.Command, args []string) error {
 
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		Exit(ErrProjectNotFound())
+		base.Exit(base.ErrProjectNotFound())
 	}
 
 	featureSlug, err := feature.RequireFeature(projectRoot)
 	if err != nil {
-		Exit(ErrFeatureNotSet())
+		base.Exit(base.ErrFeatureNotSet())
 	}
 
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
@@ -39,20 +40,20 @@ func runStatus(_ *cobra.Command, args []string) error {
 	// Query mode: display task status
 	index, err := task.LoadIndex(indexPath)
 	if err != nil {
-		Exit(ErrFileNotFound(indexPath))
+		base.Exit(base.ErrFileNotFound(indexPath))
 	}
 
 	key, t, err := task.FindTask(index, taskIDArg)
 	if err != nil {
-		Exit(ErrTaskNotFound(taskIDArg))
+		base.Exit(base.ErrTaskNotFound(taskIDArg))
 	}
 
 	_ = key
 
-	PrintBlockStart()
-	PrintField("TASK_ID", t.ID)
-	PrintField("STATUS", t.Status)
-	PrintBlockEnd()
+	base.PrintBlockStart()
+	base.PrintField("TASK_ID", t.ID)
+	base.PrintField("STATUS", t.Status)
+	base.PrintBlockEnd()
 	return nil
 }
 

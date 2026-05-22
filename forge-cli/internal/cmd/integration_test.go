@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 
+	"forge-cli/internal/cmd/base"
+	taskpkg "forge-cli/internal/cmd/task"
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/task"
 	"forge-cli/pkg/testrunner"
@@ -386,12 +388,12 @@ func TestRunRecord_HappyPath(t *testing.T) {
 	statePath := feature.GetTaskStatePath(dir, "test")
 	_ = task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1", StartedTime: "2026-01-01 10:00"})
 
-	submitDataPath = dataPath
-	submitJSON = false
-	submitQuiet = false
+	*taskpkg.ExportSubmitDataPath = dataPath
+	*taskpkg.ExportSubmitJSON = false
+	*taskpkg.ExportSubmitQuiet = false
 
 	out := captureStdout(func() {
-		_ = runSubmit(nil, []string{"1.1"})
+		_ = taskpkg.ExportRunSubmit(nil, []string{"1.1"})
 	})
 
 	if !strings.Contains(out, "STATUS: completed") {
@@ -432,12 +434,12 @@ func TestRunRecord_JSONOutput(t *testing.T) {
 	statePath := feature.GetTaskStatePath(dir, "test")
 	_ = task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1", StartedTime: "2026-01-01 10:00"})
 
-	submitDataPath = dataPath
-	submitJSON = true
-	submitQuiet = false
+	*taskpkg.ExportSubmitDataPath = dataPath
+	*taskpkg.ExportSubmitJSON = true
+	*taskpkg.ExportSubmitQuiet = false
 
 	out := captureStdout(func() {
-		_ = runSubmit(nil, []string{"1.1"})
+		_ = taskpkg.ExportRunSubmit(nil, []string{"1.1"})
 	})
 
 	if !strings.Contains(out, `"recordFile"`) {
@@ -471,12 +473,12 @@ func TestRunRecord_QuietOutput(t *testing.T) {
 	statePath := feature.GetTaskStatePath(dir, "test")
 	_ = task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1", StartedTime: "2026-01-01 10:00"})
 
-	submitDataPath = dataPath
-	submitJSON = false
-	submitQuiet = true
+	*taskpkg.ExportSubmitDataPath = dataPath
+	*taskpkg.ExportSubmitJSON = false
+	*taskpkg.ExportSubmitQuiet = true
 
 	out := captureStdout(func() {
-		_ = runSubmit(nil, []string{"1.1"})
+		_ = taskpkg.ExportRunSubmit(nil, []string{"1.1"})
 	})
 
 	if strings.Contains(out, "TASK_ID") {
@@ -496,7 +498,7 @@ func TestExecuteClaim_DataIntegrityError(t *testing.T) {
 	statePath := feature.GetTaskStatePath(dir, "test")
 	_ = task.SaveState(statePath, &task.TaskState{TaskID: "9.9", Key: "nonexistent", StartedTime: "2026-01-01 10:00"})
 
-	_, err := executeClaim()
+	_, err := taskpkg.ExportExecuteClaim()
 	if err == nil {
 		t.Error("expected data integrity error")
 	}
@@ -515,7 +517,7 @@ func TestExecuteClaim_CompletedStateClaimNew(t *testing.T) {
 	statePath := feature.GetTaskStatePath(dir, "test")
 	_ = task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1", StartedTime: "2026-01-01 10:00"})
 
-	result, err := executeClaim()
+	result, err := taskpkg.ExportExecuteClaim()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -536,7 +538,7 @@ func TestExecuteClaim_BlockedTaskClearsStateAndProceeds(t *testing.T) {
 	statePath := feature.GetTaskStatePath(dir, "test")
 	_ = task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1", StartedTime: "2026-01-01 10:00"})
 
-	result, err := executeClaim()
+	result, err := taskpkg.ExportExecuteClaim()
 	// Lazy unblock scan auto-transitions blocked task with no deps to pending, then claims it.
 	if err != nil {
 		t.Fatalf("expected no error (blocked task auto-unblocked), got: %v", err)
@@ -567,7 +569,7 @@ func TestClaimNextTask_SuspendedTask_NotAutoUnblocked(t *testing.T) {
 			},
 		})
 
-		_, _, err := claimNextTask(index)
+		_, _, err := taskpkg.ExportClaimNextTask(index)
 		if err == nil {
 			t.Fatal("expected error (no eligible tasks), but claimNextTask succeeded")
 		}
@@ -595,7 +597,7 @@ func TestClaimNextTask_SuspendedTask_NotAutoUnblocked(t *testing.T) {
 			},
 		})
 
-		key, _, err := claimNextTask(index)
+		key, _, err := taskpkg.ExportClaimNextTask(index)
 		if err != nil {
 			t.Fatalf("expected auto-unblock to work, got: %v", err)
 		}
@@ -624,8 +626,8 @@ func TestValidatorRun_WithFileArg(t *testing.T) {
 	_ = os.WriteFile(indexPath, data, 0644)
 
 	out := captureStdout(func() {
-		v := &validator{filePath: indexPath}
-		if err := v.run(); err != nil {
+		v := taskpkg.NewExportValidator(indexPath)
+		if err := v.ExportValidatorRun(); err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
 	})
@@ -640,8 +642,8 @@ func TestValidatorRun_InvalidJSON(t *testing.T) {
 	indexPath := filepath.Join(dir, "index.json")
 	_ = os.WriteFile(indexPath, []byte("not json"), 0644)
 
-	v := &validator{filePath: indexPath}
-	err := v.run()
+	v := taskpkg.NewExportValidator(indexPath)
+	err := v.ExportValidatorRun()
 	if err == nil {
 		t.Error("expected error for invalid JSON")
 	}
@@ -660,7 +662,7 @@ func TestFillRecordTemplate_NonCompletedStatus(t *testing.T) {
 		Coverage:     -1.0,
 	}
 
-	content := fillRecordTemplate(t2, rd, "2026-01-01 10:00")
+	content := taskpkg.ExportFillRecordTemplate(t2, rd, "2026-01-01 10:00")
 	if !strings.Contains(content, `status: "blocked"`) {
 		t.Errorf("expected blocked status, got: %s", content)
 	}
@@ -685,7 +687,7 @@ func TestFillRecordTemplate_WithNotes(t *testing.T) {
 		},
 	}
 
-	content := fillRecordTemplate(t2, rd, "")
+	content := taskpkg.ExportFillRecordTemplate(t2, rd, "")
 	if !strings.Contains(content, "Custom notes here") {
 		t.Errorf("expected custom notes, got: %s", content)
 	}
@@ -718,7 +720,7 @@ func TestSaveIndexAndSignalCompletion_IncompleteTasks(t *testing.T) {
 	_ = task.SaveIndex(indexPath, index)
 
 	// Should NOT write forge state since not all tasks are done
-	_ = saveIndexAndSignalCompletion(indexPath, dir, "test", index)
+	_ = taskpkg.ExportSaveIndexAndSignalCompletion(indexPath, dir, "test", index)
 
 	forgeState := feature.ReadForgeState(dir)
 	if forgeState != nil {
@@ -740,7 +742,7 @@ func TestValidateRecordData_NonTestableTask(t *testing.T) {
 	}
 
 	out := captureStderr2(func() {
-		validateRecordData(rd)
+		taskpkg.ExportValidateRecordData(rd)
 	})
 	if strings.Contains(out, "ERROR") {
 		t.Errorf("coverage=-1.0 should pass for non-testable tasks, got: %s", out)
@@ -768,8 +770,8 @@ func TestValidatorRun_FeatureBased(t *testing.T) {
 	_ = os.Chdir(dir)
 
 	out := captureStdout(func() {
-		v := &validator{filePath: indexPath}
-		if err := v.run(); err != nil {
+		v := taskpkg.NewExportValidator(indexPath)
+		if err := v.ExportValidatorRun(); err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
 	})
@@ -785,13 +787,13 @@ func TestValidateTTest1Template_UnresolvedPlaceholder(t *testing.T) {
 	taskFile := filepath.Join(dir, "T-test-gen-cases.md")
 	_ = os.WriteFile(taskFile, []byte("# Task\nReplace {{LAST_BUSINESS_TASK_ID}} with actual ID\n"), 0644)
 
-	v := &validator{}
-	v.validateFirstTestTaskTemplate(taskFile, "T-test-gen-cases", []string{"{{LAST_BUSINESS_TASK_ID}}"})
-	if len(v.errors) == 0 {
+	v := taskpkg.NewExportValidator("")
+	v.ExportValidateFirstTestTaskTemplate(taskFile, "T-test-gen-cases", []string{"{{LAST_BUSINESS_TASK_ID}}"})
+	if len(v.ExportErrors()) == 0 {
 		t.Error("expected error for unresolved placeholder")
 	}
-	if !strings.Contains(v.errors[0], "{{LAST_BUSINESS_TASK_ID}}") {
-		t.Errorf("error should mention placeholder: %s", v.errors[0])
+	if !strings.Contains(v.ExportErrors()[0], "{{LAST_BUSINESS_TASK_ID}}") {
+		t.Errorf("error should mention placeholder: %s", v.ExportErrors()[0])
 	}
 }
 
@@ -800,10 +802,10 @@ func TestValidateTTest1Template_ResolvedPlaceholder(t *testing.T) {
 	taskFile := filepath.Join(dir, "T-test-gen-cases.md")
 	_ = os.WriteFile(taskFile, []byte("# Task\nDepends on 1.5\n"), 0644)
 
-	v := &validator{}
-	v.validateFirstTestTaskTemplate(taskFile, "T-test-gen-cases", []string{"{{LAST_BUSINESS_TASK_ID}}"})
-	if len(v.errors) != 0 {
-		t.Errorf("expected no errors, got: %v", v.errors)
+	v := taskpkg.NewExportValidator("")
+	v.ExportValidateFirstTestTaskTemplate(taskFile, "T-test-gen-cases", []string{"{{LAST_BUSINESS_TASK_ID}}"})
+	if len(v.ExportErrors()) != 0 {
+		t.Errorf("expected no errors, got: %v", v.ExportErrors())
 	}
 }
 
@@ -834,7 +836,7 @@ func TestReadRecordData_FromFile(t *testing.T) {
 	path := filepath.Join(dir, "record.json")
 	_ = os.WriteFile(path, data, 0644)
 
-	result, err := readSubmitData(path)
+	result, err := taskpkg.ExportReadSubmitData(path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -848,7 +850,7 @@ func TestReadRecordData_InvalidJSON(t *testing.T) {
 	path := filepath.Join(dir, "record.json")
 	_ = os.WriteFile(path, []byte("not json"), 0644)
 
-	_, err := readSubmitData(path)
+	_, err := taskpkg.ExportReadSubmitData(path)
 	if err == nil {
 		t.Error("expected error for invalid JSON")
 	}
@@ -858,7 +860,7 @@ func TestReadRecordData_InvalidJSON(t *testing.T) {
 
 func TestWarnMissingFields(t *testing.T) {
 	out := captureStderr2(func() {
-		WarnMissingFields([]string{"keyDecisions", "acceptanceCriteria"})
+		base.WarnMissingFields([]string{"keyDecisions", "acceptanceCriteria"})
 	})
 	if !strings.Contains(out, "WARNING") {
 		t.Errorf("expected warning output, got: %s", out)
@@ -872,7 +874,7 @@ func TestWarnMissingFields(t *testing.T) {
 
 func TestParseSegment_DefaultAlphabetic(t *testing.T) {
 	// Unknown alphabetic segment should return 0, false
-	val, isNum := parseSegment([]string{"unknown"}, 0)
+	val, isNum := taskpkg.ExportParseSegment([]string{"unknown"}, 0)
 	if isNum {
 		t.Error("expected non-numeric for 'unknown'")
 	}
@@ -882,7 +884,7 @@ func TestParseSegment_DefaultAlphabetic(t *testing.T) {
 }
 
 func TestParseSegment_OutOfRange(t *testing.T) {
-	val, isNum := parseSegment([]string{"1"}, 1)
+	val, isNum := taskpkg.ExportParseSegment([]string{"1"}, 1)
 	if !isNum {
 		t.Error("expected numeric for missing segment")
 	}
@@ -907,7 +909,7 @@ func TestPrintTaskDetails_Breaking(t *testing.T) {
 	}
 
 	out := captureStdout(func() {
-		printTaskDetails("gate-2", t2, "/project", "test")
+		taskpkg.ExportPrintTaskDetails("gate-2", t2, "/project", "test")
 	})
 	if strings.Contains(out, "BREAKING") {
 		t.Errorf("BREAKING should not appear in output, got: %s", out)
@@ -924,7 +926,7 @@ func TestPrintTaskDetails_Breaking(t *testing.T) {
 
 func TestRunStatus_Update(t *testing.T) {
 	// Status command uses ExactArgs(1), cobra rejects 2-arg calls at framework level.
-	err := statusCmd.Args(statusCmd, []string{"1.1", "blocked"})
+	err := taskpkg.StatusCmd.Args(taskpkg.StatusCmd, []string{"1.1", "blocked"})
 	if err == nil {
 		t.Error("expected ExactArgs(1) to reject 2 arguments for status mutation")
 	}
@@ -938,7 +940,7 @@ func TestExecuteClaim_NoProject(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chdir(origWd) })
 	_ = os.Chdir(tmpDir)
 
-	_, err := executeClaim()
+	_, err := taskpkg.ExportExecuteClaim()
 	if err == nil {
 		t.Error("expected error for no project root")
 	}
@@ -975,7 +977,7 @@ func TestExecuteClaim_SaveIndexError(t *testing.T) {
 	_ = os.Chmod(tasksDir, 0555)
 	t.Cleanup(func() { _ = os.Chmod(tasksDir, 0755) })
 
-	_, err := executeClaim()
+	_, err := taskpkg.ExportExecuteClaim()
 	if err == nil {
 		t.Error("expected error when lock cannot be acquired")
 	}
@@ -989,7 +991,7 @@ func TestRunClaim_Output(t *testing.T) {
 	}})
 
 	out := captureStdout(func() {
-		_ = runClaim(nil, []string{})
+		_ = taskpkg.ExportRunClaim(nil, []string{})
 	})
 	if !strings.Contains(out, "ACTION: CLAIMED") {
 		t.Errorf("expected CLAIMED output, got: %s", out)
@@ -1009,7 +1011,7 @@ func TestRunCheck_AllValid(t *testing.T) {
 
 	out := captureStdout(func() {
 		captureStderr2(func() {
-			_ = runCheckDeps(nil, []string{})
+			_ = taskpkg.ExportRunCheckDeps(nil, []string{})
 		})
 	})
 	if !strings.Contains(out, "PASS") {
@@ -1047,8 +1049,8 @@ func TestRunValidate_Integration(t *testing.T) {
 	_ = os.WriteFile(filepath.Join(tasksDir, "1.1.md"), []byte("# T1"), 0644)
 
 	out := captureStdout(func() {
-		v := &validator{filePath: indexPath}
-		if err := v.run(); err != nil {
+		v := taskpkg.NewExportValidator(indexPath)
+		if err := v.ExportValidatorRun(); err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
 	})
@@ -1079,7 +1081,7 @@ func TestSaveIndexAndSignalCompletion_AllDone(t *testing.T) {
 	_ = task.SaveIndex(indexPath, index)
 
 	out := captureStderr2(func() {
-		_ = saveIndexAndSignalCompletion(indexPath, dir, "test", index)
+		_ = taskpkg.ExportSaveIndexAndSignalCompletion(indexPath, dir, "test", index)
 	})
 
 	// Forge state should be written
@@ -1098,7 +1100,7 @@ func TestRunValidate_NoArgs(t *testing.T) {
 	}})
 
 	out := captureStdout(func() {
-		_ = runValidateIndex(nil, []string{})
+		_ = taskpkg.ExportRunValidateIndex(nil, []string{})
 	})
 	if !strings.Contains(out, "PASS") {
 		t.Errorf("expected PASS via feature resolution, got: %s", out)
@@ -1115,7 +1117,7 @@ func TestRunCheck_WildcardMatch(t *testing.T) {
 
 	out := captureStdout(func() {
 		captureStderr2(func() {
-			_ = runCheckDeps(nil, []string{})
+			_ = taskpkg.ExportRunCheckDeps(nil, []string{})
 		})
 	})
 	if !strings.Contains(out, "PASS") {
@@ -1130,7 +1132,7 @@ func TestRunCheck_WildcardMatch(t *testing.T) {
 
 func TestReadRecordData_NoData(t *testing.T) {
 	// When no --data flag and no stdin pipe
-	_, err := readSubmitData("")
+	_, err := taskpkg.ExportReadSubmitData("")
 	if err == nil {
 		t.Error("expected error when no data provided")
 	}
@@ -1158,7 +1160,7 @@ func TestCheckExistingTaskState_LoadFail(t *testing.T) {
 	_ = os.MkdirAll(filepath.Dir(statePath), 0755)
 	_ = os.WriteFile(statePath, []byte("invalid json"), 0644)
 
-	continueTask, hasIssues, issues := checkExistingTaskState(dir, index, statePath)
+	continueTask, hasIssues, issues := taskpkg.ExportCheckExistingTaskState(dir, index, statePath)
 	if continueTask {
 		t.Error("should not continue with invalid state")
 	}
@@ -1188,12 +1190,12 @@ func TestRunRecord_BlockedStatus(t *testing.T) {
 	statePath := feature.GetTaskStatePath(dir, "test")
 	_ = task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1", StartedTime: "2026-01-01 10:00"})
 
-	submitDataPath = dataPath
-	submitJSON = false
-	submitQuiet = false
+	*taskpkg.ExportSubmitDataPath = dataPath
+	*taskpkg.ExportSubmitJSON = false
+	*taskpkg.ExportSubmitQuiet = false
 
 	out := captureStdout(func() {
-		_ = runSubmit(nil, []string{"1.1"})
+		_ = taskpkg.ExportRunSubmit(nil, []string{"1.1"})
 	})
 	if !strings.Contains(out, "STATUS: blocked") {
 		t.Errorf("expected blocked status, got: %s", out)
@@ -1311,8 +1313,8 @@ func TestRunFeature_None(t *testing.T) {
 // ---------- runValidateIndex with invalid file ----------
 
 func TestRunValidate_InvalidFile(t *testing.T) {
-	v := &validator{filePath: "/nonexistent/path/index.json"}
-	err := v.run()
+	v := taskpkg.NewExportValidator("/nonexistent/path/index.json")
+	err := v.ExportValidatorRun()
 	if err == nil {
 		t.Error("expected error for nonexistent file")
 	}
@@ -1321,10 +1323,10 @@ func TestRunValidate_InvalidFile(t *testing.T) {
 // ---------- validateTTest1Template file read error ----------
 
 func TestValidateTTest1Template_MissingFile(t *testing.T) {
-	v := &validator{}
-	v.validateFirstTestTaskTemplate("/nonexistent/task.md", "T-test-gen-cases", []string{"{{LAST_BUSINESS_TASK_ID}}"})
-	if len(v.errors) != 0 {
-		t.Errorf("missing file should not add errors, got: %v", v.errors)
+	v := taskpkg.NewExportValidator("")
+	v.ExportValidateFirstTestTaskTemplate("/nonexistent/task.md", "T-test-gen-cases", []string{"{{LAST_BUSINESS_TASK_ID}}"})
+	if len(v.ExportErrors()) != 0 {
+		t.Errorf("missing file should not add errors, got: %v", v.ExportErrors())
 	}
 }
 
@@ -1358,7 +1360,7 @@ test:
 	exited := false
 	// validateQualityGate calls Exit on failure which calls os.Exit(1).
 	// For success path, it just returns.
-	validateQualityGate(dir, "", true)
+	taskpkg.ExportValidateQualityGate(dir, "", true)
 	_ = exited
 }
 
@@ -1390,13 +1392,13 @@ test:
 		func() {
 			defer func() {
 				if r := recover(); r != nil {
-					if aiErr, ok := r.(*AIError); ok {
-						Exit(aiErr)
+					if aiErr, ok := r.(*base.AIError); ok {
+						base.Exit(aiErr)
 					}
 					os.Exit(1)
 				}
 			}()
-			validateQualityGate(dir, "", true)
+			taskpkg.ExportValidateQualityGate(dir, "", true)
 		}()
 		return
 	}
@@ -1442,7 +1444,7 @@ test:
 	}
 
 	if os.Getenv("TEST_QUALITY_GATE_LINT_FAIL") == "1" {
-		validateQualityGate(dir, "", true)
+		taskpkg.ExportValidateQualityGate(dir, "", true)
 		return
 	}
 
@@ -1484,7 +1486,7 @@ test:
 	}
 
 	if os.Getenv("TEST_QUALITY_GATE_TEST_FAIL") == "1" {
-		validateQualityGate(dir, "", true)
+		taskpkg.ExportValidateQualityGate(dir, "", true)
 		return
 	}
 
@@ -1504,7 +1506,7 @@ test:
 func TestValidateQualityGate_NoJustfile(t *testing.T) {
 	dir := t.TempDir()
 	// No justfile -- RunGate returns true immediately, no exit
-	validateQualityGate(dir, "", true)
+	taskpkg.ExportValidateQualityGate(dir, "", true)
 }
 
 func TestValidateQualityGate_FmtNonBlockingFailure(t *testing.T) {
@@ -1532,7 +1534,7 @@ test:
 	}
 
 	// Should not exit -- fmt is non-blocking
-	validateQualityGate(dir, "", true)
+	taskpkg.ExportValidateQualityGate(dir, "", true)
 }
 
 // ---------- write*Output MkdirAll error paths ----------
@@ -1565,7 +1567,7 @@ func TestWriteRegressionRawOutput_MkdirAllError(t *testing.T) {
 
 func TestRunValidate_NoProjectRoot(t *testing.T) {
 	if os.Getenv("TEST_RUN_VALIDATE_NO_PROJECT") == "1" {
-		_ = runValidateIndex(nil, []string{})
+		_ = taskpkg.ExportRunValidateIndex(nil, []string{})
 		return
 	}
 
@@ -1593,7 +1595,7 @@ func TestRunValidate_NoProjectRoot(t *testing.T) {
 
 func TestRunValidate_NoFeatureSet(t *testing.T) {
 	if os.Getenv("TEST_RUN_VALIDATE_NO_FEATURE") == "1" {
-		_ = runValidateIndex(nil, []string{})
+		_ = taskpkg.ExportRunValidateIndex(nil, []string{})
 		return
 	}
 
@@ -1623,7 +1625,7 @@ func TestRunValidate_NoFeatureSet(t *testing.T) {
 
 func TestRunValidate_IndexFileNotFound(t *testing.T) {
 	if os.Getenv("TEST_RUN_VALIDATE_NO_INDEX") == "1" {
-		_ = runValidateIndex(nil, []string{})
+		_ = taskpkg.ExportRunValidateIndex(nil, []string{})
 		return
 	}
 
@@ -1656,8 +1658,8 @@ func TestRunValidate_IndexFileNotFound(t *testing.T) {
 
 func TestRunCheck_NoProjectRoot(t *testing.T) {
 	if os.Getenv("TEST_RUN_CHECK_NO_PROJECT") == "1" {
-		if err := runCheckDeps(nil, []string{}); err != nil {
-			Exit(err)
+		if err := taskpkg.ExportRunCheckDeps(nil, []string{}); err != nil {
+			base.Exit(err)
 		}
 		return
 	}
@@ -1685,8 +1687,8 @@ func TestRunCheck_NoProjectRoot(t *testing.T) {
 
 func TestRunCheck_NoFeatureSet(t *testing.T) {
 	if os.Getenv("TEST_RUN_CHECK_NO_FEATURE") == "1" {
-		if err := runCheckDeps(nil, []string{}); err != nil {
-			Exit(err)
+		if err := taskpkg.ExportRunCheckDeps(nil, []string{}); err != nil {
+			base.Exit(err)
 		}
 		return
 	}
@@ -1716,8 +1718,8 @@ func TestRunCheck_NoFeatureSet(t *testing.T) {
 
 func TestRunCheck_IndexFileNotFound(t *testing.T) {
 	if os.Getenv("TEST_RUN_CHECK_NO_INDEX") == "1" {
-		if err := runCheckDeps(nil, []string{}); err != nil {
-			Exit(err)
+		if err := taskpkg.ExportRunCheckDeps(nil, []string{}); err != nil {
+			base.Exit(err)
 		}
 		return
 	}
@@ -1754,8 +1756,8 @@ func TestRunCheck_InvalidDeps(t *testing.T) {
 	}})
 
 	if os.Getenv("TEST_RUN_CHECK_INVALID_DEPS") == "1" {
-		if err := runCheckDeps(nil, []string{}); err != nil {
-			Exit(err)
+		if err := taskpkg.ExportRunCheckDeps(nil, []string{}); err != nil {
+			base.Exit(err)
 		}
 		return
 	}
@@ -1802,8 +1804,8 @@ func TestSaveIndexAndSignalCompletion_SaveIndexError(t *testing.T) {
 	defer func() { _ = os.Chmod(indexDir, 0755) }()
 
 	if os.Getenv("TEST_SAVE_INDEX_ERROR") == "1" {
-		if err := saveIndexAndSignalCompletion(indexPath, dir, "test", index); err != nil {
-			Exit(err)
+		if err := taskpkg.ExportSaveIndexAndSignalCompletion(indexPath, dir, "test", index); err != nil {
+			base.Exit(err)
 		}
 		return
 	}
@@ -1844,7 +1846,7 @@ func TestSaveIndexAndSignalCompletion_WriteForgeStateWarning(t *testing.T) {
 	_ = os.MkdirAll(filepath.Join(forgeDir, "state.json"), 0755)
 
 	out := captureStderr2(func() {
-		_ = saveIndexAndSignalCompletion(indexPath, dir, "test", index)
+		_ = taskpkg.ExportSaveIndexAndSignalCompletion(indexPath, dir, "test", index)
 	})
 	if !strings.Contains(out, "WARNING") {
 		t.Errorf("expected warning about failed forge state write, got: %s", out)
@@ -1878,7 +1880,7 @@ func TestForgeStateLifecycle(t *testing.T) {
 	_ = os.Chdir(dir)
 
 	// Phase 1: claim creates state.json with allCompleted=false
-	claimResult, err := executeClaim()
+	claimResult, err := taskpkg.ExportExecuteClaim()
 	if err != nil {
 		t.Fatalf("claim failed: %v", err)
 	}
@@ -1891,7 +1893,7 @@ func TestForgeStateLifecycle(t *testing.T) {
 	}
 
 	// Phase 2: record overwrites state.json with allCompleted=true
-	submitDataPath := filepath.Join(dir, "docs", "features", "lf", "tasks", "process", "record.json")
+	*taskpkg.ExportSubmitDataPath = filepath.Join(dir, "docs", "features", "lf", "tasks", "process", "record.json")
 	rd := map[string]any{
 		"taskId":      "1.1",
 		"status":      "completed",
@@ -1901,9 +1903,9 @@ func TestForgeStateLifecycle(t *testing.T) {
 		"testsFailed": 0,
 	}
 	rdJSON, _ := json.Marshal(rd)
-	_ = os.WriteFile(submitDataPath, rdJSON, 0644)
+	_ = os.WriteFile(*taskpkg.ExportSubmitDataPath, rdJSON, 0644)
 
-	rootCmd.SetArgs([]string{"task", "submit", claimResult.Task.ID, "--data", submitDataPath})
+	rootCmd.SetArgs([]string{"task", "submit", claimResult.Task.ID, "--data", *taskpkg.ExportSubmitDataPath})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("record failed: %v", err)
 	}
@@ -1932,8 +1934,8 @@ func TestForgeStateLifecycle(t *testing.T) {
 
 func TestErrTaskIDConflict(t *testing.T) {
 	err := ErrTaskIDConflict("1.1")
-	if err.Code != ErrConflict {
-		t.Errorf("Code = %q, want %q", err.Code, ErrConflict)
+	if err.Code != base.ErrConflict {
+		t.Errorf("Code = %q, want %q", err.Code, base.ErrConflict)
 	}
 	if !strings.Contains(err.Message, "1.1") {
 		t.Errorf("Message should contain '1.1', got %q", err.Message)
@@ -1942,8 +1944,8 @@ func TestErrTaskIDConflict(t *testing.T) {
 
 func TestErrInvalidDependency(t *testing.T) {
 	err := ErrInvalidDependency([]string{"2.1", "2.2"})
-	if err.Code != ErrValidation {
-		t.Errorf("Code = %q, want %q", err.Code, ErrValidation)
+	if err.Code != base.ErrValidation {
+		t.Errorf("Code = %q, want %q", err.Code, base.ErrValidation)
 	}
 	if !strings.Contains(err.Message, "2.1") {
 		t.Errorf("Message should contain '2.1', got %q", err.Message)
@@ -1954,7 +1956,7 @@ func TestErrInvalidDependency(t *testing.T) {
 
 func TestExit_NonAIError(t *testing.T) {
 	if os.Getenv("TEST_EXIT_PLAIN_ERR") == "1" {
-		Exit(fmt.Errorf("plain error"))
+		base.Exit(fmt.Errorf("plain error"))
 		return
 	}
 
@@ -1973,8 +1975,8 @@ func TestExit_NonAIError(t *testing.T) {
 
 func TestRunAdd_NoProject(t *testing.T) {
 	if os.Getenv("TEST_RUN_ADD_NO_PROJECT") == "1" {
-		addTitle = "Test"
-		_ = runAdd(nil, []string{})
+		*taskpkg.ExportAddTitle = "Test"
+		_ = taskpkg.ExportRunAdd(nil, []string{})
 		return
 	}
 
@@ -2003,9 +2005,9 @@ func TestRunAdd_Success(t *testing.T) {
 	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{}})
 
 	if os.Getenv("TEST_RUN_ADD_SUCCESS") == "1" {
-		addTitle = "New Task"
-		addPriority = "P1"
-		_ = runAdd(nil, []string{})
+		*taskpkg.ExportAddTitle = "New Task"
+		*taskpkg.ExportAddPriority = "P1"
+		_ = taskpkg.ExportRunAdd(nil, []string{})
 		return
 	}
 
@@ -2083,7 +2085,7 @@ func TestRunVerifyCompletion_Fail(t *testing.T) {
 
 	if os.Getenv("TEST_RUN_VERIFY_FAIL") == "1" {
 		if err := runVerifyTaskDone(nil, []string{}); err != nil {
-			Exit(err)
+			base.Exit(err)
 		}
 		return
 	}
@@ -2140,12 +2142,12 @@ func TestRunRecord_AutoRestore_SlugKeyedSource(t *testing.T) {
 	statePath := feature.GetTaskStatePath(dir, "test")
 	_ = task.SaveState(statePath, &task.TaskState{TaskID: "fix-auth", Key: "fix-auth", StartedTime: "2026-01-01 10:00"})
 
-	submitDataPath = dataPath
-	submitJSON = false
-	submitQuiet = false
+	*taskpkg.ExportSubmitDataPath = dataPath
+	*taskpkg.ExportSubmitJSON = false
+	*taskpkg.ExportSubmitQuiet = false
 
 	_ = captureStdout(func() {
-		_ = runSubmit(nil, []string{"fix-auth"})
+		_ = taskpkg.ExportRunSubmit(nil, []string{"fix-auth"})
 	})
 
 	// Verify source task was auto-restored
@@ -2192,12 +2194,12 @@ func TestRunRecord_FixTaskAutoDowngrade_NoRestore(t *testing.T) {
 	statePath := feature.GetTaskStatePath(dir, "test")
 	_ = task.SaveState(statePath, &task.TaskState{TaskID: "fix-1", Key: "fix-1", StartedTime: "2026-01-01 10:00"})
 
-	submitDataPath = dataPath
-	submitJSON = false
-	submitQuiet = false
+	*taskpkg.ExportSubmitDataPath = dataPath
+	*taskpkg.ExportSubmitJSON = false
+	*taskpkg.ExportSubmitQuiet = false
 
 	_ = captureStdout(func() {
-		_ = runSubmit(nil, []string{"fix-1"})
+		_ = taskpkg.ExportRunSubmit(nil, []string{"fix-1"})
 	})
 
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
@@ -2234,12 +2236,12 @@ func TestRunRecord_AutoDowngrade_ThenCleanup(t *testing.T) {
 	statePath := feature.GetTaskStatePath(dir, "test")
 	_ = task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "task1", StartedTime: "2026-01-01 10:00"})
 
-	submitDataPath = dataPath
-	submitJSON = false
-	submitQuiet = false
+	*taskpkg.ExportSubmitDataPath = dataPath
+	*taskpkg.ExportSubmitJSON = false
+	*taskpkg.ExportSubmitQuiet = false
 
 	_ = captureStdout(func() {
-		_ = runSubmit(nil, []string{"1.1"})
+		_ = taskpkg.ExportRunSubmit(nil, []string{"1.1"})
 	})
 
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
@@ -2286,12 +2288,12 @@ func TestRunRecord_AutoDowngrade_ThenClaim(t *testing.T) {
 	statePath := feature.GetTaskStatePath(dir, "test")
 	_ = task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "task1", StartedTime: "2026-01-01 10:00"})
 
-	submitDataPath = dataPath
-	submitJSON = false
-	submitQuiet = false
+	*taskpkg.ExportSubmitDataPath = dataPath
+	*taskpkg.ExportSubmitJSON = false
+	*taskpkg.ExportSubmitQuiet = false
 
 	_ = captureStdout(func() {
-		_ = runSubmit(nil, []string{"1.1"})
+		_ = taskpkg.ExportRunSubmit(nil, []string{"1.1"})
 	})
 
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
@@ -2302,7 +2304,7 @@ func TestRunRecord_AutoDowngrade_ThenClaim(t *testing.T) {
 
 	// task1 is blocked with unmet dep (1.0 pending). Lazy scan keeps it blocked.
 	// task0 (P0) and task2 (P1) are pending. task0 should be claimed.
-	result, err := executeClaim()
+	result, err := taskpkg.ExportExecuteClaim()
 	if err != nil {
 		t.Fatalf("claim should succeed after blocked task cleanup: %v", err)
 	}
@@ -2334,12 +2336,12 @@ func TestRunRecord_MultiFixTask_PartialDowngrade(t *testing.T) {
 	statePath := feature.GetTaskStatePath(dir, "test")
 	_ = task.SaveState(statePath, &task.TaskState{TaskID: "fix-1", Key: "fix-1", StartedTime: "2026-01-01 10:00"})
 
-	submitDataPath = dataPath1
-	submitJSON = false
-	submitQuiet = false
+	*taskpkg.ExportSubmitDataPath = dataPath1
+	*taskpkg.ExportSubmitJSON = false
+	*taskpkg.ExportSubmitQuiet = false
 
 	_ = captureStdout(func() {
-		_ = runSubmit(nil, []string{"fix-1"})
+		_ = taskpkg.ExportRunSubmit(nil, []string{"fix-1"})
 	})
 
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
@@ -2367,10 +2369,10 @@ func TestRunRecord_MultiFixTask_PartialDowngrade(t *testing.T) {
 	dataPath2 := filepath.Join(dir, "record2.json")
 	_ = os.WriteFile(dataPath2, rd2JSON, 0644)
 
-	submitDataPath = dataPath2
+	*taskpkg.ExportSubmitDataPath = dataPath2
 
 	_ = captureStdout(func() {
-		_ = runSubmit(nil, []string{"fix-2"})
+		_ = taskpkg.ExportRunSubmit(nil, []string{"fix-2"})
 	})
 
 	index, _ = task.LoadIndex(indexPath)

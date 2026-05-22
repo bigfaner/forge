@@ -1,4 +1,4 @@
-package cmd
+package task
 
 import (
 	"os"
@@ -75,7 +75,7 @@ func TestListTypesCmd(t *testing.T) {
 
 	t.Run("registered under task parent", func(t *testing.T) {
 		found := false
-		for _, sub := range taskCmd.Commands() {
+		for _, sub := range Cmd.Commands() {
 			if sub.Name() == "list-types" {
 				found = true
 				break

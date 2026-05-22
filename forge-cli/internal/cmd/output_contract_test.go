@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	taskpkg "forge-cli/internal/cmd/task"
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/task"
 )
@@ -101,7 +102,7 @@ func TestContract_Claim_NewTask(t *testing.T) {
 	}
 
 	out := captureStdout(func() {
-		printNewTask("task1", tk, dir, "feat")
+		taskpkg.ExportPrintNewTask("task1", tk, dir, "feat")
 	})
 	lines := parseBlock(t, out)
 
@@ -147,7 +148,7 @@ func TestContract_Claim_NewTask_ConditionalAbsent(t *testing.T) {
 	}
 
 	out := captureStdout(func() {
-		printNewTask("t1", tk, dir, "feat")
+		taskpkg.ExportPrintNewTask("t1", tk, dir, "feat")
 	})
 	lines := parseBlock(t, out)
 
@@ -182,7 +183,7 @@ func TestContract_Claim_Continue(t *testing.T) {
 	}
 
 	out := captureStdout(func() {
-		printContinueTask(state, tk, dir, "feat")
+		taskpkg.ExportPrintContinueTask(state, tk, dir, "feat")
 	})
 	lines := parseBlock(t, out)
 
@@ -231,7 +232,7 @@ func TestContract_Claim_FieldOrder(t *testing.T) {
 	}
 
 	out := captureStdout(func() {
-		printNewTask("k1", tk, dir, "feat")
+		taskpkg.ExportPrintNewTask("k1", tk, dir, "feat")
 	})
 	lines := parseBlock(t, out)
 

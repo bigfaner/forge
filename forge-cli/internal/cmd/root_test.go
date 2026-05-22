@@ -3,6 +3,8 @@ package cmd
 import (
 	"bytes"
 	"testing"
+
+	taskpkg "forge-cli/internal/cmd/task"
 )
 
 func TestRootCmd_Structure(t *testing.T) {
@@ -60,7 +62,7 @@ func TestRootCmd_VersionIsHidden(t *testing.T) {
 }
 
 func TestRootCmd_TaskGroupHasSubcommands(t *testing.T) {
-	subcommands := taskCmd.Commands()
+	subcommands := taskpkg.Cmd.Commands()
 	if len(subcommands) == 0 {
 		t.Error("task group should have subcommands")
 	}

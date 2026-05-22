@@ -1,7 +1,8 @@
-package cmd
+package task
 
 import (
 	"fmt"
+	"forge-cli/internal/cmd/base"
 	"os"
 	"path/filepath"
 	"sort"
@@ -33,7 +34,7 @@ The task is selected based on:
 func runClaim(_ *cobra.Command, _ []string) error {
 	result, err := executeClaim()
 	if err != nil {
-		Exit(err)
+		base.Exit(err)
 	}
 
 	// Print result
@@ -60,12 +61,12 @@ type ClaimResult struct {
 func executeClaim() (*ClaimResult, error) {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		return nil, ErrProjectNotFound()
+		return nil, base.ErrProjectNotFound()
 	}
 
 	featureSlug, err := feature.RequireFeature(projectRoot)
 	if err != nil {
-		return nil, ErrFeatureNotSet()
+		return nil, base.ErrFeatureNotSet()
 	}
 
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
@@ -74,14 +75,14 @@ func executeClaim() (*ClaimResult, error) {
 	// Read-only check: no lock needed.
 	index, err := task.LoadIndex(indexPath)
 	if err != nil {
-		return nil, NewAIError(ErrNotFound, "Failed to load task index", err.Error(), "Run `forge task index --feature "+featureSlug+"` to generate it", "forge task index --feature "+featureSlug)
+		return nil, base.NewAIError(base.ErrNotFound, "Failed to load task index", err.Error(), "Run `forge task index --feature "+featureSlug+"` to generate it", "forge task index --feature "+featureSlug)
 	}
 
 	// Check for existing task state
 	continueTask, hasIssues, issues := checkExistingTaskState(projectRoot, index, statePath)
 
 	if hasIssues {
-		return nil, ErrDataIntegrity(issues)
+		return nil, base.ErrDataIntegrity(issues)
 	}
 
 	if continueTask {
@@ -105,7 +106,7 @@ func executeClaim() (*ClaimResult, error) {
 		// Re-load index inside lock (it may have changed since our read-only check).
 		idx, err := task.LoadIndex(indexPath)
 		if err != nil {
-			return NewAIError(ErrNotFound, "Failed to load task index", err.Error(), "Run `forge task index --feature "+featureSlug+"` to generate it", "forge task index --feature "+featureSlug)
+			return base.NewAIError(base.ErrNotFound, "Failed to load task index", err.Error(), "Run `forge task index --feature "+featureSlug+"` to generate it", "forge task index --feature "+featureSlug)
 		}
 
 		k, claimedTask, err := claimNextTask(idx)
@@ -114,7 +115,7 @@ func executeClaim() (*ClaimResult, error) {
 		}
 
 		if err := indexPkg.SaveIndexAtomic(indexPath, idx); err != nil {
-			return NewAIError(ErrConflict, "Failed to save index", err.Error(), "Check index.json is writable", "cat "+indexPath)
+			return base.NewAIError(base.ErrConflict, "Failed to save index", err.Error(), "Check index.json is writable", "cat "+indexPath)
 		}
 
 		key, t = k, claimedTask
@@ -228,7 +229,7 @@ func claimNextTask(index *task.TaskIndex) (string, *task.Task, error) {
 		}
 	}
 	if !hasPending {
-		return "", nil, ErrNoPendingTasks()
+		return "", nil, base.ErrNoPendingTasks()
 	}
 
 	for key, t := range index.TasksMap() {
@@ -372,27 +373,27 @@ func parseSegment(parts []string, i int) (int, bool) {
 
 func printTaskDetails(key string, t *task.Task, projectRoot, featureSlug string) {
 	_ = key // key is still used internally for routing, but no longer emitted
-	PrintField("TASK_ID", t.ID)
-	PrintFieldIfNotEmpty("TYPE", t.Type)
-	PrintFieldIfNotEmpty("FEATURE", featureSlug)
-	PrintField("FILE", filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, t.File)))
-	PrintFieldIfNotEmpty("SCOPE", t.Scope)
+	base.PrintField("TASK_ID", t.ID)
+	base.PrintFieldIfNotEmpty("TYPE", t.Type)
+	base.PrintFieldIfNotEmpty("FEATURE", featureSlug)
+	base.PrintField("FILE", filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, t.File)))
+	base.PrintFieldIfNotEmpty("SCOPE", t.Scope)
 	if t.MainSession {
-		PrintField("MAIN_SESSION", "true")
+		base.PrintField("MAIN_SESSION", "true")
 	}
 }
 
 func printContinueTask(state *task.TaskState, t *task.Task, projectRoot, featureSlug string) {
-	PrintBlockStart()
-	PrintField("ACTION", "CONTINUE")
+	base.PrintBlockStart()
+	base.PrintField("ACTION", "CONTINUE")
 	printTaskDetails(state.Key, t, projectRoot, featureSlug)
-	PrintField("STARTED_AT", state.StartedTime)
-	PrintBlockEnd()
+	base.PrintField("STARTED_AT", state.StartedTime)
+	base.PrintBlockEnd()
 }
 
 func printNewTask(key string, t *task.Task, projectRoot, featureSlug string) {
-	PrintBlockStart()
-	PrintField("ACTION", "CLAIMED")
+	base.PrintBlockStart()
+	base.PrintField("ACTION", "CLAIMED")
 	printTaskDetails(key, t, projectRoot, featureSlug)
-	PrintBlockEnd()
+	base.PrintBlockEnd()
 }

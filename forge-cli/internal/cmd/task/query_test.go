@@ -1,4 +1,4 @@
-package cmd
+package task
 
 import (
 	"bytes"
@@ -37,9 +37,9 @@ func TestQuery_DefaultOutput(t *testing.T) {
 		"phase1-1-task": {ID: "1", Title: "Test task", Status: "pending", Priority: "P1", File: "1.md", Record: "records/1.md", Type: "coding.feature"},
 	}})
 
-	rootCmd.SetArgs([]string{"task", "query", "1"})
+	Cmd.SetArgs([]string{"query", "1"})
 	output := captureQueryOutput(t, func() {
-		_ = rootCmd.Execute()
+		_ = Cmd.Execute()
 	})
 
 	if !strings.Contains(output, "TASK_ID: 1") {
@@ -69,9 +69,9 @@ func TestQuery_VerboseOutput(t *testing.T) {
 		"phase1-1-task": {ID: "1", Title: "Test task", Status: "pending", Priority: "P1", Type: "coding.feature", File: "1.md", Record: "records/1.md", Dependencies: []string{"2", "3"}},
 	}})
 
-	rootCmd.SetArgs([]string{"task", "query", "1", "--verbose"})
+	Cmd.SetArgs([]string{"query", "1", "--verbose"})
 	output := captureQueryOutput(t, func() {
-		_ = rootCmd.Execute()
+		_ = Cmd.Execute()
 	})
 
 	expected := []string{
@@ -104,9 +104,9 @@ func TestQuery_VerboseShorthand(t *testing.T) {
 		"t1": {ID: "1", Title: "Short flag test", Status: "completed", Priority: "P0", Type: "coding.fix", File: "1.md", Record: "records/1.md"},
 	}})
 
-	rootCmd.SetArgs([]string{"task", "query", "1", "-v"})
+	Cmd.SetArgs([]string{"query", "1", "-v"})
 	output := captureQueryOutput(t, func() {
-		_ = rootCmd.Execute()
+		_ = Cmd.Execute()
 	})
 
 	if !strings.Contains(output, "KEY: t1") {
@@ -122,9 +122,9 @@ func TestQuery_VerboseWithRelatedFixes(t *testing.T) {
 		"fix-task-2":  {ID: "5.2", Title: "Fix issue B", Status: "completed", Priority: "P2", Type: "coding.fix", File: "5.2.md", Record: "records/5.2.md", SourceTaskID: "5"},
 	}})
 
-	rootCmd.SetArgs([]string{"task", "query", "5", "-v"})
+	Cmd.SetArgs([]string{"query", "5", "-v"})
 	output := captureQueryOutput(t, func() {
-		_ = rootCmd.Execute()
+		_ = Cmd.Execute()
 	})
 
 	if !strings.Contains(output, "RELATED_FIXES:") {
@@ -144,9 +144,9 @@ func TestQuery_VerboseNoRelatedFixes(t *testing.T) {
 		"t1": {ID: "1", Title: "No fixes", Status: "pending", Priority: "P2", Type: "coding.cleanup", File: "1.md", Record: "records/1.md"},
 	}})
 
-	rootCmd.SetArgs([]string{"task", "query", "1", "-v"})
+	Cmd.SetArgs([]string{"query", "1", "-v"})
 	output := captureQueryOutput(t, func() {
-		_ = rootCmd.Execute()
+		_ = Cmd.Execute()
 	})
 
 	if strings.Contains(output, "RELATED_FIXES:") {
@@ -160,9 +160,9 @@ func TestQuery_VerboseWithScope(t *testing.T) {
 		"t1": {ID: "1", Title: "Scoped task", Status: "pending", Priority: "P1", Type: "coding.feature", File: "1.md", Record: "records/1.md", Scope: "backend"},
 	}})
 
-	rootCmd.SetArgs([]string{"task", "query", "1", "-v"})
+	Cmd.SetArgs([]string{"query", "1", "-v"})
 	output := captureQueryOutput(t, func() {
-		_ = rootCmd.Execute()
+		_ = Cmd.Execute()
 	})
 
 	if !strings.Contains(output, "SCOPE: backend") {
@@ -176,9 +176,9 @@ func TestQuery_VerboseEmptyScope(t *testing.T) {
 		"t1": {ID: "1", Title: "No scope", Status: "pending", Priority: "P1", Type: "coding.feature", File: "1.md", Record: "records/1.md"},
 	}})
 
-	rootCmd.SetArgs([]string{"task", "query", "1", "-v"})
+	Cmd.SetArgs([]string{"query", "1", "-v"})
 	output := captureQueryOutput(t, func() {
-		_ = rootCmd.Execute()
+		_ = Cmd.Execute()
 	})
 
 	for _, line := range strings.Split(output, "\n") {
@@ -195,9 +195,9 @@ func TestQuery_DefaultOutputWithScope(t *testing.T) {
 		"t1": {ID: "1", Title: "Scoped", Status: "pending", File: "1.md", Record: "records/1.md", Scope: "backend"},
 	}})
 
-	rootCmd.SetArgs([]string{"task", "query", "1"})
+	Cmd.SetArgs([]string{"query", "1"})
 	output := captureQueryOutput(t, func() {
-		_ = rootCmd.Execute()
+		_ = Cmd.Execute()
 	})
 
 	if !strings.Contains(output, "SCOPE: backend") {
@@ -211,9 +211,9 @@ func TestQuery_DefaultBreakingTrue(t *testing.T) {
 		"t1": {ID: "1", Title: "Breaking", Status: "pending", File: "1.md", Record: "records/1.md", Breaking: true},
 	}})
 
-	rootCmd.SetArgs([]string{"task", "query", "1"})
+	Cmd.SetArgs([]string{"query", "1"})
 	output := captureQueryOutput(t, func() {
-		_ = rootCmd.Execute()
+		_ = Cmd.Execute()
 	})
 
 	if !strings.Contains(output, "BREAKING: true") {
@@ -227,9 +227,9 @@ func TestQuery_VerboseWithNoDependencies(t *testing.T) {
 		"t1": {ID: "1", Title: "No deps", Status: "pending", Priority: "P1", Type: "coding.feature", File: "1.md", Record: "records/1.md"},
 	}})
 
-	rootCmd.SetArgs([]string{"task", "query", "1", "-v"})
+	Cmd.SetArgs([]string{"query", "1", "-v"})
 	output := captureQueryOutput(t, func() {
-		_ = rootCmd.Execute()
+		_ = Cmd.Execute()
 	})
 
 	if strings.Contains(output, "DEPENDENCIES:") {

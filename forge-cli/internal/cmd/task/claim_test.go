@@ -1,4 +1,4 @@
-package cmd
+package task
 
 import (
 	"os"
@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"forge-cli/internal/cmd/base"
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/task"
 )
@@ -472,11 +473,11 @@ func TestExecuteClaim_MissingIndexJSON(t *testing.T) {
 		t.Fatal("expected error when index.json is missing")
 	}
 
-	aiErr, ok := err.(*AIError)
+	aiErr, ok := err.(*base.AIError)
 	if !ok {
-		t.Fatalf("expected *AIError, got %T", err)
+		t.Fatalf("expected *base.AIError, got %T", err)
 	}
-	if aiErr.Code != ErrNotFound {
+	if aiErr.Code != base.ErrNotFound {
 		t.Errorf("expected code NOT_FOUND, got %q", aiErr.Code)
 	}
 	if !strings.Contains(aiErr.Hint, "forge task index") {

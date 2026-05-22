@@ -1,4 +1,4 @@
-package cmd
+package task
 
 import (
 	"os"
@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"forge-cli/internal/cmd/base"
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/task"
 )
@@ -25,7 +26,7 @@ func TestReopen_RejectedToPending(t *testing.T) {
 
 	out := captureStdout(func() {
 		if err := runReopen(nil, []string{"1.1"}); err != nil {
-			Exit(err)
+			base.Exit(err)
 		}
 	})
 	if !strings.Contains(out, "STATUS: pending") {
@@ -56,7 +57,7 @@ func TestReopen_SkippedToPending(t *testing.T) {
 
 	out := captureStdout(func() {
 		if err := runReopen(nil, []string{"1.1"}); err != nil {
-			Exit(err)
+			base.Exit(err)
 		}
 	})
 	if !strings.Contains(out, "STATUS: pending") {
@@ -82,7 +83,7 @@ func TestReopen_CompletedBlocked(t *testing.T) {
 			"t1": {ID: "1.1", Title: "Completed Task", Status: "completed", Priority: "P0", File: "1.1.md", Record: "records/1.1.md"},
 		}})
 		if err := runReopen(nil, []string{"1.1"}); err != nil {
-			Exit(err)
+			base.Exit(err)
 		}
 		return
 	}
@@ -122,7 +123,7 @@ func TestReopen_NonTerminalBlocked(t *testing.T) {
 					"t1": {ID: "1.1", Title: "Task", Status: tt.status, Priority: "P0", File: "1.1.md", Record: "records/1.1.md"},
 				}})
 				if err := runReopen(nil, []string{"1.1"}); err != nil {
-					Exit(err)
+					base.Exit(err)
 				}
 				return
 			}
@@ -152,7 +153,7 @@ func TestReopen_TaskNotFound(t *testing.T) {
 			"t1": {ID: "1.1", Title: "Task", Status: "rejected", Priority: "P0", File: "1.1.md"},
 		}})
 		if err := runReopen(nil, []string{"9.9"}); err != nil {
-			Exit(err)
+			base.Exit(err)
 		}
 		return
 	}
@@ -233,8 +234,8 @@ func TestReopen_WithLock(t *testing.T) {
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
 
 	// Use runReopen which goes through WithLock
-	rootCmd.SetArgs([]string{"task", "reopen", "1.1"})
-	if err := rootCmd.Execute(); err != nil {
+	Cmd.SetArgs([]string{"reopen", "1.1"})
+	if err := Cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -316,12 +317,12 @@ func TestReopen_CLI_Integration(t *testing.T) {
 	})
 
 	// Build args for root command
-	rootCmd.SetArgs([]string{"task", "reopen", "1.1"})
+	Cmd.SetArgs([]string{"reopen", "1.1"})
 	_ = dir
 
 	// Capture output
 	out := captureStdout(func() {
-		if err := rootCmd.Execute(); err != nil {
+		if err := Cmd.Execute(); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	})
@@ -352,7 +353,7 @@ func TestReopen_WithLock_SaveIndexError(t *testing.T) {
 		defer func() { _ = os.Chmod(tasksDir, 0755) }()
 
 		if err := runReopen(nil, []string{"1.1"}); err != nil {
-			Exit(err)
+			base.Exit(err)
 		}
 		return
 	}
@@ -375,7 +376,7 @@ func TestReopen_WithLock_SaveIndexError(t *testing.T) {
 func TestReopen_NoProject(t *testing.T) {
 	if os.Getenv("TEST_REOPEN_NO_PROJECT") == "1" {
 		if err := runReopen(nil, []string{"1.1"}); err != nil {
-			Exit(err)
+			base.Exit(err)
 		}
 		return
 	}

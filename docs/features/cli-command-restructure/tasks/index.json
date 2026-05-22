@@ -34,13 +34,15 @@
       "priority": "P1",
       "estimatedTime": "1.5h",
       "dependencies": [
-        "2"
+        "2",
+        "fix-1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3-move-task-group.md",
       "record": "records/3-move-task-group.md",
       "scope": "backend",
-      "type": "coding.refactor"
+      "type": "coding.refactor",
+      "blockedReason": "Continuing with the refactor; base package extraction already done"
     },
     "4-move-test-group": {
       "id": "4",
@@ -130,6 +132,17 @@
       "record": "records/9-cleanup-tests.md",
       "scope": "backend",
       "type": "coding.cleanup"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "Fix: circular dependency and shared utility extraction for task package move",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "pending",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "3"
     },
     "quick-drift-detection": {
       "id": "T-quick-doc-drift",

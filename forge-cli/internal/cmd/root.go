@@ -4,6 +4,8 @@ package cmd
 import (
 	"os"
 
+	taskpkg "forge-cli/internal/cmd/task"
+
 	"github.com/spf13/cobra"
 )
 
@@ -24,8 +26,11 @@ func Execute() {
 }
 
 func init() {
+	// Initialize task subcommands
+	taskpkg.Register()
+
 	// Group parents (5)
-	rootCmd.AddCommand(taskCmd)
+	rootCmd.AddCommand(taskpkg.Cmd)
 	rootCmd.AddCommand(forensicCmd)
 	rootCmd.AddCommand(testCmd)
 	rootCmd.AddCommand(promptCmd)
@@ -53,19 +58,7 @@ func init() {
 	worktreeCmd.AddCommand(worktreeResumeCmd)
 	worktreeCmd.AddCommand(worktreeStatusCmd)
 
-	// Task group subcommands
-	taskCmd.AddCommand(claimCmd)
-	taskCmd.AddCommand(submitCmd)
-	taskCmd.AddCommand(statusCmd)
-	taskCmd.AddCommand(queryCmd)
-	taskCmd.AddCommand(checkDepsCmd)
-	taskCmd.AddCommand(validateIndexCmd)
-	taskCmd.AddCommand(addCmd)
-	taskCmd.AddCommand(indexCmd)
-	taskCmd.AddCommand(migrateCmd)
-	taskCmd.AddCommand(listTypesCmd)
-	taskCmd.AddCommand(reopenCmd)
-	taskCmd.AddCommand(transitionCmd)
+	// Task group subcommands — registered via taskpkg.Register() above
 
 	// Prompt group subcommands
 	promptCmd.AddCommand(promptGetCmd)

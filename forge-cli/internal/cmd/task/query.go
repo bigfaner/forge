@@ -1,7 +1,8 @@
-package cmd
+package task
 
 import (
 	"fmt"
+	"forge-cli/internal/cmd/base"
 	"path/filepath"
 	"sort"
 
@@ -35,23 +36,23 @@ func runQuery(_ *cobra.Command, args []string) error {
 
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		Exit(ErrProjectNotFound())
+		base.Exit(base.ErrProjectNotFound())
 	}
 
 	featureSlug, err := feature.RequireFeature(projectRoot)
 	if err != nil {
-		Exit(ErrFeatureNotSet())
+		base.Exit(base.ErrFeatureNotSet())
 	}
 
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
 	index, err := task.LoadIndex(indexPath)
 	if err != nil {
-		Exit(ErrFileNotFound(indexPath))
+		base.Exit(base.ErrFileNotFound(indexPath))
 	}
 
 	key, t, err := task.FindTask(index, taskIDArg)
 	if err != nil {
-		Exit(ErrTaskNotFound(taskIDArg))
+		base.Exit(base.ErrTaskNotFound(taskIDArg))
 	}
 
 	if queryVerbose {
@@ -63,34 +64,34 @@ func runQuery(_ *cobra.Command, args []string) error {
 }
 
 func printDefaultQuery(t *task.Task) {
-	PrintBlockStart()
-	PrintField("TASK_ID", t.ID)
-	PrintField("STATUS", t.Status)
-	PrintFieldIfNotEmpty("SCOPE", t.Scope)
+	base.PrintBlockStart()
+	base.PrintField("TASK_ID", t.ID)
+	base.PrintField("STATUS", t.Status)
+	base.PrintFieldIfNotEmpty("SCOPE", t.Scope)
 	if t.Breaking {
-		PrintField("BREAKING", "true")
+		base.PrintField("BREAKING", "true")
 	}
-	PrintBlockEnd()
+	base.PrintBlockEnd()
 }
 
 func printVerboseQuery(key string, t *task.Task, featureSlug string, index *task.TaskIndex) {
-	PrintBlockStart()
-	PrintField("KEY", key)
-	PrintField("TASK_ID", t.ID)
-	PrintField("TITLE", t.Title)
-	PrintField("STATUS", t.Status)
-	PrintField("PRIORITY", t.Priority)
-	PrintFieldIfNotEmpty("TYPE", t.Type)
-	PrintFieldIfNotEmpty("SCOPE", t.Scope)
+	base.PrintBlockStart()
+	base.PrintField("KEY", key)
+	base.PrintField("TASK_ID", t.ID)
+	base.PrintField("TITLE", t.Title)
+	base.PrintField("STATUS", t.Status)
+	base.PrintField("PRIORITY", t.Priority)
+	base.PrintFieldIfNotEmpty("TYPE", t.Type)
+	base.PrintFieldIfNotEmpty("SCOPE", t.Scope)
 	if len(t.Dependencies) > 0 {
-		PrintField("DEPENDENCIES:", "")
+		base.PrintField("DEPENDENCIES:", "")
 		for _, dep := range t.Dependencies {
-			PrintListItem(dep)
+			base.PrintListItem(dep)
 		}
 	}
-	PrintField("TASK_FILE", feature.GetTaskFile(featureSlug, t.File))
-	PrintField("RECORD_FILE", feature.GetTaskFile(featureSlug, t.Record))
-	PrintBlockEnd()
+	base.PrintField("TASK_FILE", feature.GetTaskFile(featureSlug, t.File))
+	base.PrintField("RECORD_FILE", feature.GetTaskFile(featureSlug, t.Record))
+	base.PrintBlockEnd()
 
 	// RELATED_FIXES: find tasks whose SourceTaskID matches this task's ID
 	var fixes []task.Task
@@ -104,9 +105,9 @@ func printVerboseQuery(key string, t *task.Task, featureSlug string, index *task
 		sort.Slice(fixes, func(i, j int) bool {
 			return fixes[i].ID < fixes[j].ID
 		})
-		PrintField("RELATED_FIXES:", "")
+		base.PrintField("RELATED_FIXES:", "")
 		for _, fix := range fixes {
-			PrintListItem(fmt.Sprintf("%s [%s] %s", fix.ID, fix.Status, fix.Title))
+			base.PrintListItem(fmt.Sprintf("%s [%s] %s", fix.ID, fix.Status, fix.Title))
 		}
 	}
 }

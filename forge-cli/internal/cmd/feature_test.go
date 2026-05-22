@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	taskpkg "forge-cli/internal/cmd/task"
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/task"
 
@@ -902,7 +903,7 @@ func TestRunQuery(t *testing.T) {
 
 func TestRunStatus(t *testing.T) {
 	// Status command uses ExactArgs(1), cobra rejects 2-arg mutation calls.
-	err := statusCmd.Args(statusCmd, []string{"1.1", "blocked"})
+	err := taskpkg.StatusCmd.Args(taskpkg.StatusCmd, []string{"1.1", "blocked"})
 	if err == nil {
 		t.Error("expected ExactArgs(1) to reject 2 arguments")
 	}

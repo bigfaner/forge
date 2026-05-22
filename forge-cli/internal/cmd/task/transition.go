@@ -1,7 +1,8 @@
-package cmd
+package task
 
 import (
 	"errors"
+	"forge-cli/internal/cmd/base"
 	"path/filepath"
 
 	"forge-cli/pkg/feature"
@@ -45,12 +46,12 @@ func runTransition(_ *cobra.Command, args []string) error {
 
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		return ErrProjectNotFound()
+		return base.ErrProjectNotFound()
 	}
 
 	featureSlug, err := feature.RequireFeature(projectRoot)
 	if err != nil {
-		return ErrFeatureNotSet()
+		return base.ErrFeatureNotSet()
 	}
 
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
@@ -59,12 +60,12 @@ func runTransition(_ *cobra.Command, args []string) error {
 		return doTransition(indexPath, taskIDArg, targetStatus)
 	}); lockErr != nil {
 		if errors.Is(lockErr, indexPkg.ErrLockConflict) {
-			return NewAIError(ErrConflict, "Concurrent write conflict", "Retry the command", "", "")
+			return base.NewAIError(base.ErrConflict, "Concurrent write conflict", "Retry the command", "", "")
 		}
-		if aiErr, ok := lockErr.(*AIError); ok {
+		if aiErr, ok := lockErr.(*base.AIError); ok {
 			return aiErr
 		}
-		return NewAIError(ErrConflict, "Failed to acquire lock", lockErr.Error(), "", "")
+		return base.NewAIError(base.ErrConflict, "Failed to acquire lock", lockErr.Error(), "", "")
 	}
 	return nil
 }
@@ -72,18 +73,18 @@ func runTransition(_ *cobra.Command, args []string) error {
 func doTransition(indexPath, taskIDArg, targetStatus string) error {
 	index, err := task.LoadIndex(indexPath)
 	if err != nil {
-		return ErrFileNotFound(indexPath)
+		return base.ErrFileNotFound(indexPath)
 	}
 
 	key, t, err := task.FindTask(index, taskIDArg)
 	if err != nil {
-		return ErrTaskNotFound(taskIDArg)
+		return base.ErrTaskNotFound(taskIDArg)
 	}
 
 	// Validate via state machine (RoleManual enables blocked -> pending)
 	if transitionErr := task.ValidateTransition(t.Status, targetStatus, task.RoleManual); transitionErr != nil {
 		te := transitionErr.(*task.TransitionError)
-		return NewErrInvalidTransition(t.Status, targetStatus, te.Msg)
+		return base.NewErrInvalidTransition(t.Status, targetStatus, te.Msg)
 	}
 
 	// Validate target status against index enum
@@ -95,7 +96,7 @@ func doTransition(indexPath, taskIDArg, targetStatus string) error {
 		}
 	}
 	if !valid {
-		return ErrInvalidStatus(targetStatus, index.StatusEnum)
+		return base.ErrInvalidStatus(targetStatus, index.StatusEnum)
 	}
 
 	t.Status = targetStatus
@@ -106,13 +107,13 @@ func doTransition(indexPath, taskIDArg, targetStatus string) error {
 	index.SetTask(key, *t)
 
 	if err := indexPkg.SaveIndexAtomic(indexPath, index); err != nil {
-		return NewAIError(ErrConflict, "Failed to save index", err.Error(), "Check index.json is writable", "cat "+indexPath)
+		return base.NewAIError(base.ErrConflict, "Failed to save index", err.Error(), "Check index.json is writable", "cat "+indexPath)
 	}
 
-	PrintBlockStart()
-	PrintField("TASK_ID", t.ID)
-	PrintField("STATUS", t.Status)
-	PrintField("REASON", transitionReason)
-	PrintBlockEnd()
+	base.PrintBlockStart()
+	base.PrintField("TASK_ID", t.ID)
+	base.PrintField("STATUS", t.Status)
+	base.PrintField("REASON", transitionReason)
+	base.PrintBlockEnd()
 	return nil
 }

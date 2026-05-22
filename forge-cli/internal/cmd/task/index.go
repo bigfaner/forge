@@ -1,7 +1,8 @@
-package cmd
+package task
 
 import (
 	"fmt"
+	"forge-cli/internal/cmd/base"
 	"os"
 	"path/filepath"
 
@@ -33,13 +34,13 @@ func init() {
 func runIndex(_ *cobra.Command, _ []string) error {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		return ErrProjectNotFound()
+		return base.ErrProjectNotFound()
 	}
 
 	// Validate feature dir exists
 	featureDir := filepath.Join(projectRoot, feature.GetFeatureDir(indexFeatureSlug))
 	if _, err := os.Stat(featureDir); os.IsNotExist(err) {
-		return ErrFeatureNotFound(indexFeatureSlug)
+		return base.ErrFeatureNotFound(indexFeatureSlug)
 	}
 
 	tasksDir := filepath.Join(projectRoot, feature.GetFeatureTasksDir(indexFeatureSlug))
@@ -78,18 +79,18 @@ func runIndex(_ *cobra.Command, _ []string) error {
 	}
 
 	// Print summary
-	PrintBlockStart()
-	PrintField("ACTION", "INDEX_BUILT")
-	PrintField("FEATURE", indexFeatureSlug)
-	PrintField("INDEX", indexPath)
-	PrintField("NEW", fmt.Sprintf("%d", result.NewCount))
-	PrintField("UPDATED", fmt.Sprintf("%d", result.UpdatedCount))
-	PrintField("PRESERVED", fmt.Sprintf("%d", result.PreservedCount))
-	PrintBlockEnd()
+	base.PrintBlockStart()
+	base.PrintField("ACTION", "INDEX_BUILT")
+	base.PrintField("FEATURE", indexFeatureSlug)
+	base.PrintField("INDEX", indexPath)
+	base.PrintField("NEW", fmt.Sprintf("%d", result.NewCount))
+	base.PrintField("UPDATED", fmt.Sprintf("%d", result.UpdatedCount))
+	base.PrintField("PRESERVED", fmt.Sprintf("%d", result.PreservedCount))
+	base.PrintBlockEnd()
 
 	// Print warnings
 	for _, w := range result.Warnings {
-		PrintWarning(w)
+		base.PrintWarning(w)
 	}
 
 	// Run validation on the generated index

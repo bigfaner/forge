@@ -1,4 +1,4 @@
-package cmd
+package task
 
 import (
 	"os"
@@ -186,12 +186,12 @@ func TestRunMigrate_AllKnownIDPatterns(t *testing.T) {
 
 // TestMigrateCmd_RegisteredInRoot verifies migrateCmd is registered.
 func TestMigrateCmd_RegisteredInRoot(t *testing.T) {
-	for _, cmd := range taskCmd.Commands() {
+	for _, cmd := range Cmd.Commands() {
 		if cmd.Use == "migrate" || cmd.Name() == "migrate" {
 			return
 		}
 	}
-	t.Error("migrateCmd not registered in taskCmd")
+	t.Error("migrateCmd not registered in Cmd")
 }
 
 // TestRunMigrate_NoProject_ExitsWithError verifies error when no project root.

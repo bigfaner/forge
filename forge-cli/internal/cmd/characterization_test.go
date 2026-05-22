@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	taskpkg "forge-cli/internal/cmd/task"
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/task"
 )
@@ -47,10 +48,10 @@ func TestSubmit_RejectsCompletedResubmit(t *testing.T) {
 		rdJSON, _ := json.Marshal(rd)
 		_ = os.WriteFile(dataPath, rdJSON, 0644)
 
-		submitDataPath = dataPath
-		submitJSON = false
-		submitQuiet = false
-		if err := runSubmit(submitCmd, []string{"1"}); err != nil {
+		*taskpkg.ExportSubmitDataPath = dataPath
+		*taskpkg.ExportSubmitJSON = false
+		*taskpkg.ExportSubmitQuiet = false
+		if err := taskpkg.ExportRunSubmit(taskpkg.ExportSubmitCmd, []string{"1"}); err != nil {
 			Exit(err)
 		}
 		return
@@ -95,22 +96,22 @@ func TestAdd_BlockSource_CurrentBehavior_AllowsCompletedToBlocked(t *testing.T) 
 		})
 
 		// Reset flag defaults
-		addTitle = "Fix task"
-		addPriority = "P0"
-		addBreaking = true
-		addID = ""
-		addDependsOn = ""
-		addEstimatedTime = ""
-		addDescription = "Fix something"
-		addTemplate = ""
-		addVars = nil
-		addSourceTaskID = "1"
-		addBlockSource = true
-		addType = task.TypeCodingFix
+		*taskpkg.ExportAddTitle = "Fix task"
+		*taskpkg.ExportAddPriority = "P0"
+		*taskpkg.ExportAddBreaking = true
+		*taskpkg.ExportAddID = ""
+		*taskpkg.ExportAddDependsOn = ""
+		*taskpkg.ExportAddEstimatedTime = ""
+		*taskpkg.ExportAddDescription = "Fix something"
+		*taskpkg.ExportAddTemplate = ""
+		*taskpkg.ExportAddVars = nil
+		*taskpkg.ExportAddSourceTaskID = "1"
+		*taskpkg.ExportAddBlockSource = true
+		*taskpkg.ExportAddType = task.TypeCodingFix
 
 		// executeAdd should succeed — current behavior does not validate
 		// that the source task is non-terminal
-		result, err := executeAdd(nil)
+		result, err := taskpkg.ExportExecuteAdd(nil)
 		if err != nil {
 			t.Fatalf("CURRENT BEHAVIOR: add --block-source should succeed on completed source. Got error: %v", err)
 		}
@@ -168,9 +169,9 @@ func TestClaim_AutoUnblock_CurrentBehavior(t *testing.T) {
 			},
 		})
 
-		_, _, err := claimNextTask(index)
+		_, _, err := taskpkg.ExportClaimNextTask(index)
 		if err != nil {
-			t.Fatalf("claimNextTask() error = %v", err)
+			t.Fatalf("taskpkg.ExportClaimNextTask() error = %v", err)
 		}
 
 		// After auto-unblock, task2 should be in_progress (claimed)
@@ -202,9 +203,9 @@ func TestClaim_AutoUnblock_CurrentBehavior(t *testing.T) {
 			},
 		})
 
-		key, _, err := claimNextTask(index)
+		key, _, err := taskpkg.ExportClaimNextTask(index)
 		if err != nil {
-			t.Fatalf("claimNextTask() error = %v", err)
+			t.Fatalf("taskpkg.ExportClaimNextTask() error = %v", err)
 		}
 		if key != "task2" {
 			t.Errorf("expected key 'task2', got %q", key)
@@ -471,7 +472,7 @@ func TestStatus_AllowsMutation(t *testing.T) {
 	targets := []string{"blocked", "in_progress", "skipped", "rejected", "completed", "pending"}
 	for _, target := range targets {
 		t.Run("rejects_"+target, func(t *testing.T) {
-			err := statusCmd.Args(statusCmd, []string{"1.1", target})
+			err := taskpkg.StatusCmd.Args(taskpkg.StatusCmd, []string{"1.1", target})
 			if err == nil {
 				t.Errorf("expected ExactArgs(1) to reject 2nd arg %q", target)
 			}
@@ -507,12 +508,12 @@ func TestSubmit_AutoDowngrade_SetsBlockedReason(t *testing.T) {
 	statePath := feature.GetTaskStatePath(dir, "test")
 	_ = task.SaveState(statePath, &task.TaskState{TaskID: "1", Key: "t1", StartedTime: "2026-01-01 10:00"})
 
-	submitDataPath = dataPath
-	submitJSON = false
-	submitQuiet = false
+	*taskpkg.ExportSubmitDataPath = dataPath
+	*taskpkg.ExportSubmitJSON = false
+	*taskpkg.ExportSubmitQuiet = false
 
 	_ = captureStdout(func() {
-		_ = runSubmit(nil, []string{"1"})
+		_ = taskpkg.ExportRunSubmit(nil, []string{"1"})
 	})
 
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))

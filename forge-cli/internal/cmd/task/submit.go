@@ -1,9 +1,10 @@
-package cmd
+package task
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"forge-cli/internal/cmd/base"
 	"io"
 	"os"
 	"path/filepath"
@@ -73,12 +74,12 @@ func runSubmit(_ *cobra.Command, args []string) error {
 
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		return ErrProjectNotFound()
+		return base.ErrProjectNotFound()
 	}
 
 	featureSlug, err := feature.RequireFeature(projectRoot)
 	if err != nil {
-		return ErrFeatureNotSet()
+		return base.ErrFeatureNotSet()
 	}
 
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
@@ -88,12 +89,12 @@ func runSubmit(_ *cobra.Command, args []string) error {
 		return doSubmit(projectRoot, featureSlug, indexPath, taskIDArg)
 	}); lockErr != nil {
 		if errors.Is(lockErr, indexPkg.ErrLockConflict) {
-			return NewAIError(ErrConflict, "Concurrent write conflict", "Retry the command", "", "")
+			return base.NewAIError(base.ErrConflict, "Concurrent write conflict", "Retry the command", "", "")
 		}
-		if aiErr, ok := lockErr.(*AIError); ok {
+		if aiErr, ok := lockErr.(*base.AIError); ok {
 			return aiErr
 		}
-		return NewAIError(ErrConflict, "Failed to acquire lock", lockErr.Error(), "", "")
+		return base.NewAIError(base.ErrConflict, "Failed to acquire lock", lockErr.Error(), "", "")
 	}
 	return nil
 }
@@ -102,17 +103,17 @@ func runSubmit(_ *cobra.Command, args []string) error {
 func doSubmit(projectRoot, featureSlug, indexPath, taskIDArg string) error {
 	idx, err := task.LoadIndex(indexPath)
 	if err != nil {
-		return ErrFileNotFound(indexPath)
+		return base.ErrFileNotFound(indexPath)
 	}
 
 	key, t, err := task.FindTask(idx, taskIDArg)
 	if err != nil {
-		return ErrTaskNotFound(taskIDArg)
+		return base.ErrTaskNotFound(taskIDArg)
 	}
 
 	rd, err := readSubmitData(submitDataPath)
 	if err != nil {
-		return ErrNoInput(err.Error())
+		return base.ErrNoInput(err.Error())
 	}
 
 	if rd.Status == "" {
@@ -121,7 +122,7 @@ func doSubmit(projectRoot, featureSlug, indexPath, taskIDArg string) error {
 
 	// Validate taskId matches CLI arg if provided
 	if rd.TaskID != "" && rd.TaskID != taskIDArg {
-		return NewAIError(ErrValidation,
+		return base.NewAIError(base.ErrValidation,
 			fmt.Sprintf("taskId mismatch: JSON has %q, CLI arg is %q", rd.TaskID, taskIDArg),
 			"The taskId in record.json does not match the task being recorded",
 			"Either omit taskId from JSON or ensure it matches the CLI argument",
@@ -145,7 +146,7 @@ func doSubmit(projectRoot, featureSlug, indexPath, taskIDArg string) error {
 	if targetStatus == "completed" {
 		if transitionErr := task.ValidateTransition(t.Status, "completed", task.RoleSubmit); transitionErr != nil {
 			te := transitionErr.(*task.TransitionError)
-			return NewErrInvalidTransition(t.Status, "completed", te.Msg)
+			return base.NewErrInvalidTransition(t.Status, "completed", te.Msg)
 		}
 	}
 
@@ -161,7 +162,7 @@ func doSubmit(projectRoot, featureSlug, indexPath, taskIDArg string) error {
 		// Auto-downgrade: validate the blocked transition
 		if transitionErr := task.ValidateTransition(t.Status, "blocked", task.RoleSubmit); transitionErr != nil {
 			te := transitionErr.(*task.TransitionError)
-			return NewErrInvalidTransition(t.Status, "blocked", te.Msg)
+			return base.NewErrInvalidTransition(t.Status, "blocked", te.Msg)
 		}
 	}
 
@@ -174,7 +175,7 @@ func doSubmit(projectRoot, featureSlug, indexPath, taskIDArg string) error {
 		}
 	}
 	if !validStatus {
-		return ErrInvalidStatus(rd.Status, idx.StatusEnum)
+		return base.ErrInvalidStatus(rd.Status, idx.StatusEnum)
 	}
 
 	// Read startedTime from task-state.json
@@ -190,11 +191,11 @@ func doSubmit(projectRoot, featureSlug, indexPath, taskIDArg string) error {
 	// Write record file
 	recordPath := filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, t.Record))
 	if err := os.MkdirAll(filepath.Dir(recordPath), 0755); err != nil {
-		return NewAIError(ErrValidation, "Failed to create record directory", err.Error(), "Check directory permissions", "mkdir -p "+filepath.Dir(recordPath))
+		return base.NewAIError(base.ErrValidation, "Failed to create record directory", err.Error(), "Check directory permissions", "mkdir -p "+filepath.Dir(recordPath))
 	}
 
 	if err := os.WriteFile(recordPath, []byte(content), 0644); err != nil {
-		return NewAIError(ErrValidation, "Failed to write record file", err.Error(), "Check file permissions", "cat "+recordPath)
+		return base.NewAIError(base.ErrValidation, "Failed to write record file", err.Error(), "Check file permissions", "cat "+recordPath)
 	}
 
 	// Update task status in index
@@ -225,9 +226,9 @@ func doSubmit(projectRoot, featureSlug, indexPath, taskIDArg string) error {
 		data, _ := json.Marshal(result)
 		fmt.Println(string(data))
 	} else if !submitQuiet {
-		PrintBlockStart()
-		PrintField("STATUS", rd.Status)
-		PrintBlockEnd()
+		base.PrintBlockStart()
+		base.PrintField("STATUS", rd.Status)
+		base.PrintBlockEnd()
 	}
 
 	return nil
@@ -237,7 +238,7 @@ func doSubmit(projectRoot, featureSlug, indexPath, taskIDArg string) error {
 // if all tasks are completed or skipped (rejected does not count as done).
 func saveIndexAndSignalCompletion(indexPath, projectRoot, featureSlug string, idx *task.TaskIndex) error {
 	if err := indexPkg.SaveIndexAtomic(indexPath, idx); err != nil {
-		return NewAIError(ErrConflict, "Failed to update task index", err.Error(), "Check index.json is writable", "cat "+indexPath)
+		return base.NewAIError(base.ErrConflict, "Failed to update task index", err.Error(), "Check index.json is writable", "cat "+indexPath)
 	}
 
 	allDone := true
@@ -316,7 +317,7 @@ func validateRecordData(rd *task.RecordData) {
 	}
 
 	if len(missing) > 0 {
-		Exit(ErrMissingFields(missing))
+		base.Exit(base.ErrMissingFields(missing))
 	}
 
 	// Auto-downgrade: completed with test failures → blocked (non-overridable)
@@ -333,7 +334,7 @@ func validateRecordData(rd *task.RecordData) {
 	{
 		// Reject completed with no test evidence (unless coverage=-1.0 signals "no tests")
 		if rd.Coverage >= 0 && rd.TestsPassed == 0 && rd.TestsFailed == 0 {
-			Exit(ErrNoTestEvidence())
+			base.Exit(base.ErrNoTestEvidence())
 		}
 
 		// Reject completed with unmet acceptance criteria
@@ -345,7 +346,7 @@ func validateRecordData(rd *task.RecordData) {
 				}
 			}
 			if len(unmet) > 0 {
-				Exit(ErrUnmetAcceptanceCriteria(unmet))
+				base.Exit(base.ErrUnmetAcceptanceCriteria(unmet))
 			}
 		}
 	}
@@ -359,7 +360,7 @@ func validateRecordData(rd *task.RecordData) {
 		recommended = append(recommended, "acceptanceCriteria")
 	}
 	if len(recommended) > 0 {
-		WarnMissingFields(recommended)
+		base.WarnMissingFields(recommended)
 	}
 }
 
@@ -502,7 +503,7 @@ func formatCriteria(criteria []task.AcceptanceCriterion) string {
 // validateQualityGate runs the quality gate based on the task's breaking flag.
 // breaking=true: full gate (compile -> fmt -> lint -> test).
 // breaking=false: static gate (compile -> fmt -> lint), skipping test.
-// On failure, exits with AIError containing concise error output.
+// On failure, exits with base.AIError containing concise error output.
 func validateQualityGate(projectRoot, scope string, breaking bool) {
 	steps := just.LintGateSequence()
 	if breaking {
@@ -510,7 +511,7 @@ func validateQualityGate(projectRoot, scope string, breaking bool) {
 	}
 	just.RunGate(projectRoot, scope, steps, func(step, output string) {
 		concise := just.ExtractConciseError(output, 10)
-		panic(NewAIError(ErrValidation,
+		panic(base.NewAIError(base.ErrValidation,
 			fmt.Sprintf("Quality gate failed at step: just %s", step),
 			concise,
 			"Fix the errors above and re-run task record",

@@ -1,8 +1,9 @@
-package cmd
+package task
 
 import (
 	"errors"
 	"fmt"
+	"forge-cli/internal/cmd/base"
 	"os"
 	"path/filepath"
 	"strings"
@@ -74,49 +75,49 @@ func runAdd(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		var dedupErr *task.ActiveFixExistsError
 		if errors.As(err, &dedupErr) {
-			PrintBlockStart()
-			PrintField("ACTION", "SKIPPED")
-			PrintField("REASON", dedupErr.Error())
-			PrintBlockEnd()
+			base.PrintBlockStart()
+			base.PrintField("ACTION", "SKIPPED")
+			base.PrintField("REASON", dedupErr.Error())
+			base.PrintBlockEnd()
 			return nil
 		}
-		Exit(err)
+		base.Exit(err)
 	}
 
-	PrintBlockStart()
-	PrintField("ACTION", "ADDED")
-	PrintField("KEY", result.ID)
-	PrintField("TASK_ID", result.ID)
-	PrintField("TITLE", result.Title)
-	PrintField("PRIORITY", result.Priority)
-	PrintField("STATUS", result.Status)
-	PrintField("FILE", result.File)
-	PrintField("RECORD", result.Record)
+	base.PrintBlockStart()
+	base.PrintField("ACTION", "ADDED")
+	base.PrintField("KEY", result.ID)
+	base.PrintField("TASK_ID", result.ID)
+	base.PrintField("TITLE", result.Title)
+	base.PrintField("PRIORITY", result.Priority)
+	base.PrintField("STATUS", result.Status)
+	base.PrintField("FILE", result.File)
+	base.PrintField("RECORD", result.Record)
 	if result.Breaking {
-		PrintField("BREAKING", "true")
+		base.PrintField("BREAKING", "true")
 	}
 	if result.SourceBlocked != "" {
-		PrintField("SOURCE_BLOCKED", result.SourceBlocked)
+		base.PrintField("SOURCE_BLOCKED", result.SourceBlocked)
 	}
-	PrintFieldIfNotEmptySlice("DEPENDENCIES", result.Dependencies)
-	PrintBlockEnd()
+	base.PrintFieldIfNotEmptySlice("DEPENDENCIES", result.Dependencies)
+	base.PrintBlockEnd()
 	return nil
 }
 
 func executeAdd(cmd *cobra.Command) (*AddResult, error) {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		return nil, ErrProjectNotFound()
+		return nil, base.ErrProjectNotFound()
 	}
 
 	featureSlug, err := feature.RequireFeature(projectRoot)
 	if err != nil {
-		return nil, ErrFeatureNotSet()
+		return nil, base.ErrFeatureNotSet()
 	}
 
 	// Validate title
 	if addTitle == "" {
-		return nil, ErrNoInput("title is required")
+		return nil, base.ErrNoInput("title is required")
 	}
 
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
@@ -135,7 +136,7 @@ func executeAdd(cmd *cobra.Command) (*AddResult, error) {
 
 	// Validate type
 	if addType != "" && !task.ValidTypes[addType] {
-		return nil, ErrNoInput(fmt.Sprintf("invalid type %q. Run 'forge list-types' to see valid types", addType))
+		return nil, base.ErrNoInput(fmt.Sprintf("invalid type %q. Run 'forge list-types' to see valid types", addType))
 	}
 
 	// Parse --var key=value flags
@@ -143,7 +144,7 @@ func executeAdd(cmd *cobra.Command) (*AddResult, error) {
 	for _, v := range addVars {
 		parts := strings.SplitN(v, "=", 2)
 		if len(parts) != 2 || parts[0] == "" {
-			return nil, ErrNoInput(fmt.Sprintf("invalid --var format: %q (expected key=value)", v))
+			return nil, base.ErrNoInput(fmt.Sprintf("invalid --var format: %q (expected key=value)", v))
 		}
 		vars[parts[0]] = parts[1]
 	}
@@ -166,7 +167,7 @@ func executeAdd(cmd *cobra.Command) (*AddResult, error) {
 	// Apply template defaults for fixed fields
 	if addTemplate != "" {
 		if _, err := tmpl.Get(addTemplate); err != nil {
-			return nil, ErrNoInput(fmt.Sprintf("template %q not found. Available: %v", addTemplate, tmpl.List()))
+			return nil, base.ErrNoInput(fmt.Sprintf("template %q not found. Available: %v", addTemplate, tmpl.List()))
 		}
 		defs, err := tmpl.GetDefaults(addTemplate)
 		if err == nil {
@@ -189,10 +190,10 @@ func executeAdd(cmd *cobra.Command) (*AddResult, error) {
 	if err != nil {
 		errMsg := err.Error()
 		if strings.Contains(errMsg, "task ID already exists") {
-			return nil, ErrTaskIDConflict(addID)
+			return nil, base.ErrTaskIDConflict(addID)
 		}
 		if strings.Contains(errMsg, "dependency not found") {
-			return nil, ErrInvalidDependency(deps)
+			return nil, base.ErrInvalidDependency(deps)
 		}
 		return nil, fmt.Errorf("failed to add task: %w", err)
 	}
