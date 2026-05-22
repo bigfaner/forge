@@ -44,6 +44,7 @@ var worktreeCmd = &cobra.Command{
 Each worktree is created inside the project at .forge/worktrees/<slug> with a
 branch named <slug>. Forge's feature auto-detection resolves the correct
 feature from the worktree name.`,
+	Args: cobra.NoArgs,
 }
 
 var worktreeListCmd = &cobra.Command{
@@ -54,6 +55,7 @@ var worktreeListCmd = &cobra.Command{
 Worktrees whose name matches a feature slug in docs/features/ are marked as
 forge-managed. The main worktree (current project) is distinguished from
 feature worktrees.`,
+	Args: cobra.NoArgs,
 	RunE: runWorktreeList,
 }
 

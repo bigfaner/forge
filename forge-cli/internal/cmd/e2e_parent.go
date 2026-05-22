@@ -7,4 +7,5 @@ import (
 var e2eCmd = &cobra.Command{
 	Use:   "e2e",
 	Short: "End-to-end test management",
+	Args:  cobra.NoArgs,
 }

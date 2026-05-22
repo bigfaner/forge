@@ -32,13 +32,14 @@ Subcommands:
   search    Find sessions in ~/.claude/history.jsonl
   extract   Extract thinking/tool chains from a session JSONL
   subagents List subagent transcripts for a session`,
+	Args: cobra.NoArgs,
 }
 
 var forensicSearchCmd = &cobra.Command{
 	Use:   "search [project-path]",
 	Short: "Search history.jsonl for matching sessions",
 	Args:  cobra.MaximumNArgs(1),
-	Run:   runForensicSearch,
+	RunE:  runForensicSearch,
 }
 
 var forensicExtractCmd = &cobra.Command{
@@ -51,14 +52,14 @@ Output modes:
   --out <dir>     Write to arbitrary directory
   (default)       Print JSON to stdout`,
 	Args: cobra.ExactArgs(1),
-	Run:  runForensicExtract,
+	RunE: runForensicExtract,
 }
 
 var forensicSubagentsCmd = &cobra.Command{
 	Use:   "subagents <session-dir-path>",
 	Short: "List subagent transcripts for a session",
 	Args:  cobra.ExactArgs(1),
-	Run:   runForensicSubagents,
+	RunE:  runForensicSubagents,
 }
 
 func init() {
@@ -342,7 +343,7 @@ type subagentInfo struct {
 
 // ── search ──────────────────────────────────────────────────────────
 
-func runForensicSearch(_ *cobra.Command, args []string) {
+func runForensicSearch(_ *cobra.Command, args []string) error {
 	projectPath := ""
 	if len(args) > 0 {
 		projectPath = args[0]
@@ -350,13 +351,13 @@ func runForensicSearch(_ *cobra.Command, args []string) {
 
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		Exit(NewAIError(ErrNotFound, "Cannot determine home directory", err.Error(), "", ""))
+		return NewAIError(ErrNotFound, "Cannot determine home directory", err.Error(), "", "")
 	}
 	histPath := filepath.Join(homeDir, ".claude", "history.jsonl")
 
 	f, err := os.Open(histPath)
 	if err != nil {
-		Exit(NewAIError(ErrNotFound, "Cannot open history.jsonl", err.Error(), "", ""))
+		return NewAIError(ErrNotFound, "Cannot open history.jsonl", err.Error(), "", "")
 	}
 	defer func() { _ = f.Close() }()
 
@@ -425,11 +426,12 @@ func runForensicSearch(_ *cobra.Command, args []string) {
 
 	out, _ := json.MarshalIndent(sorted, "", "  ")
 	fmt.Println(string(out))
+	return nil
 }
 
 // ── extract ─────────────────────────────────────────────────────────
 
-func runForensicExtract(_ *cobra.Command, args []string) {
+func runForensicExtract(_ *cobra.Command, args []string) error {
 	jsonlPath := args[0]
 
 	// Resolve output directory: --slug > --out > auto-derive from session ID
@@ -444,7 +446,7 @@ func runForensicExtract(_ *cobra.Command, args []string) {
 
 	f, err := os.Open(jsonlPath)
 	if err != nil {
-		Exit(NewAIError(ErrNotFound, "Cannot open transcript", err.Error(), "", ""))
+		return NewAIError(ErrNotFound, "Cannot open transcript", err.Error(), "", "")
 	}
 	defer func() { _ = f.Close() }()
 
@@ -723,7 +725,7 @@ func runForensicExtract(_ *cobra.Command, args []string) {
 		_ = os.MkdirAll(forensicOutDir, 0755)
 		outPath := filepath.Join(forensicOutDir, "evidence.json")
 		if err := os.WriteFile(outPath, out, 0644); err != nil {
-			Exit(NewAIError(ErrNotFound, "Cannot write evidence file", err.Error(), "", ""))
+			return NewAIError(ErrNotFound, "Cannot write evidence file", err.Error(), "", "")
 		}
 		copyFile(jsonlPath, filepath.Join(forensicOutDir, filepath.Base(jsonlPath)))
 		fmt.Println(outPath)
@@ -797,13 +799,13 @@ func firstThinking(blocks []contentBlock) string {
 
 // ── subagents ───────────────────────────────────────────────────────
 
-func runForensicSubagents(_ *cobra.Command, args []string) {
+func runForensicSubagents(_ *cobra.Command, args []string) error {
 	sessionDir := args[0]
 	subDir := filepath.Join(sessionDir, "subagents")
 
 	entries, err := os.ReadDir(subDir)
 	if err != nil {
-		Exit(NewAIError(ErrNotFound, "No subagents directory", err.Error(), "", ""))
+		return NewAIError(ErrNotFound, "No subagents directory", err.Error(), "", "")
 	}
 
 	agents := []subagentInfo{}
@@ -833,6 +835,7 @@ func runForensicSubagents(_ *cobra.Command, args []string) {
 
 	out, _ := json.MarshalIndent(agents, "", "  ")
 	fmt.Println(string(out))
+	return nil
 }
 
 // ── helpers ─────────────────────────────────────────────────────────

@@ -13,6 +13,7 @@ var rootCmd = &cobra.Command{
 	Long: `A unified CLI tool for managing tasks in Claude Code projects.
 
 Supports the docs/features/<slug>/ directory structure for task management.`,
+	Args: cobra.NoArgs,
 }
 
 // Execute runs the root command.

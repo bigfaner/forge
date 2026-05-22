@@ -7,4 +7,5 @@ import (
 var taskCmd = &cobra.Command{
 	Use:   "task",
 	Short: "Manage task lifecycle",
+	Args:  cobra.NoArgs,
 }

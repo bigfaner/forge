@@ -22,6 +22,7 @@ var configCmd = &cobra.Command{
 	Use:   "config",
 	Short: "Manage forge configuration",
 	Long:  `Manage .forge/config.yaml for project settings like auto-behavior and worktree.`,
+	Args:  cobra.NoArgs,
 }
 
 var configGetCmd = &cobra.Command{
@@ -43,6 +44,7 @@ var configInitCmd = &cobra.Command{
 	Long: `Interactively create or reconfigure .forge/config.yaml.
 
 Collects auto-behavior and worktree settings through stdin prompts.`,
+	Args: cobra.NoArgs,
 	RunE: runConfigInit,
 }
 
