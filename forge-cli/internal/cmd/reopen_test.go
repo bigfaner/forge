@@ -289,13 +289,13 @@ func TestStatus_ReadOnly_AnyStatusArgument(t *testing.T) {
 	}
 	// Starting from "pending" status
 	tests := []testCase{
-		{"pending", true},
-		{"in_progress", true},
+		{"pending", false},
+		{"in_progress", false},
 		{"completed", false}, // only RoleSubmit can reach completed
-		{"blocked", true},
-		{"skipped", true},
-		{"rejected", true},
-		{"invalid_status", true}, // no rule blocks it, catch-all allows
+		{"blocked", false},
+		{"skipped", false},
+		{"rejected", false},
+		{"invalid_status", false}, // no rule blocks it, catch-all allows
 	}
 
 	for _, tt := range tests {
@@ -323,10 +323,10 @@ func TestStatus_ReadOnly_AnyStatusArgument(t *testing.T) {
 				}
 			} else {
 				if err == nil {
-					t.Errorf("expected error for status %q (should be blocked)", tt.status)
+					t.Errorf("expected error for status %q (status is read-only)", tt.status)
 				}
-				if !strings.Contains(out, "INVALID_TRANSITION") {
-					t.Errorf("expected INVALID_TRANSITION for arg %q, got: %s", tt.status, out)
+				if !strings.Contains(out, "task status is read-only") {
+					t.Errorf("expected \"task status is read-only\" for arg %q, got: %s", tt.status, out)
 				}
 			}
 		})

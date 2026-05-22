@@ -1,67 +1,10 @@
 package cmd
 
 import (
-	"strings"
 	"testing"
 
 	"forge-cli/pkg/task"
 )
-
-func TestIsTransitionAllowed(t *testing.T) {
-	tests := []struct {
-		from string
-		to   string
-		want bool
-	}{
-		// Same status (idempotent)
-		{"pending", "pending", true},
-		{"in_progress", "in_progress", true},
-		{"completed", "completed", true},
-		{"blocked", "blocked", true},
-		// Valid forward transitions
-		{"pending", "in_progress", true},
-		{"pending", "blocked", true},
-		{"pending", "skipped", true},
-		{"in_progress", "blocked", true},
-		{"in_progress", "pending", true},
-		{"in_progress", "skipped", true},
-		{"blocked", "pending", true},
-		{"blocked", "skipped", true},
-		{"skipped", "pending", true},
-		// Terminal state guards
-		{"completed", "pending", false},
-		{"completed", "in_progress", false},
-		{"completed", "blocked", false},
-		{"completed", "skipped", false},
-		{"completed", "rejected", false},
-		// Rejected is terminal
-		{"rejected", "pending", false},
-		{"rejected", "in_progress", false},
-		{"rejected", "blocked", false},
-		{"rejected", "skipped", false},
-		{"rejected", "completed", false},
-		{"rejected", "rejected", true},
-		// Must use task record
-		{"in_progress", "completed", false},
-		{"pending", "completed", false},
-		{"blocked", "completed", false},
-		{"skipped", "completed", false},
-		// Transitions to rejected allowed from non-terminal states
-		{"pending", "rejected", true},
-		{"in_progress", "rejected", true},
-		{"blocked", "rejected", true},
-		{"skipped", "rejected", true},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.from+"->"+tt.to, func(t *testing.T) {
-			got := isTransitionAllowed(tt.from, tt.to)
-			if got != tt.want {
-				t.Errorf("isTransitionAllowed(%q, %q) = %v, want %v", tt.from, tt.to, got, tt.want)
-			}
-		})
-	}
-}
 
 func TestCheckUnmetDeps_Wildcard(t *testing.T) {
 	tests := []struct {
@@ -314,55 +257,6 @@ func TestCheckUnmetDeps_KeyDiffersFromID_EdgeCases(t *testing.T) {
 			t.Errorf("expected 2 unmet, got %d: %v", len(unmet), unmet)
 		}
 	})
-}
-
-func TestGetTransitionHint(t *testing.T) {
-	tests := []struct {
-		from string
-		to   string
-		want string
-	}{
-		{"completed", "pending", "completed is a terminal state"},
-		{"completed", "in_progress", "completed is a terminal state"},
-		{"rejected", "pending", "rejected is a terminal state"},
-		{"rejected", "in_progress", "rejected is a terminal state"},
-		{"in_progress", "completed", "use 'forge task submit' to complete a task with quality gate"},
-		{"pending", "completed", "use 'forge task submit' to complete a task with quality gate"},
-		{"pending", "in_progress", "transition pending -> in_progress is not allowed"},
-		{"blocked", "pending", "transition blocked -> pending is not allowed"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.from+"->"+tt.to, func(t *testing.T) {
-			got := getTransitionHint(tt.from, tt.to)
-			if !strings.Contains(got, tt.want) {
-				t.Errorf("getTransitionHint(%q, %q) = %q, want to contain %q", tt.from, tt.to, got, tt.want)
-			}
-		})
-	}
-}
-
-func TestGetTransitionAction(t *testing.T) {
-	tests := []struct {
-		from string
-		to   string
-		want string
-	}{
-		{"completed", "pending", "use --force to override"},
-		{"completed", "blocked", "use --force to override"},
-		{"rejected", "pending", "use --force to override"},
-		{"rejected", "blocked", "use --force to override"},
-		{"in_progress", "completed", "forge task submit"},
-		{"pending", "completed", "forge task submit"},
-		{"pending", "in_progress", "use --force to override"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.from+"->"+tt.to, func(t *testing.T) {
-			got := getTransitionAction(tt.from, tt.to)
-			if !strings.Contains(got, tt.want) {
-				t.Errorf("getTransitionAction(%q, %q) = %q, want to contain %q", tt.from, tt.to, got, tt.want)
-			}
-		})
-	}
 }
 
 func TestCheckUnmetDeps_RejectedDepNotSatisfied(t *testing.T) {

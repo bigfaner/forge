@@ -839,15 +839,12 @@ func TestRunStatus_Update(t *testing.T) {
 	cmd := exec.Command(os.Args[0], "-test.run=TestRunStatus_Update")
 	cmd.Env = append(os.Environ(), "TEST_STATUS_UPDATE_MUTATION=1")
 	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("status mutation command should succeed, got error: %v, output: %s", err, string(output))
+	if err == nil {
+		t.Error("expected error: status command is now read-only, mutation should fail")
 	}
 	out := string(output)
-	if !strings.Contains(out, "TASK_ID: 1.1") {
-		t.Errorf("expected TASK_ID: 1.1 in output, got: %s", out)
-	}
-	if !strings.Contains(out, "STATUS: blocked") {
-		t.Errorf("expected STATUS: blocked in output, got: %s", out)
+	if !strings.Contains(out, "task status is read-only") {
+		t.Errorf("expected 'task status is read-only', got: %s", out)
 	}
 }
 

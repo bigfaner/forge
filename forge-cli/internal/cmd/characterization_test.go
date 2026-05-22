@@ -460,43 +460,44 @@ func TestBuildIndex_Orphan_WarningOnly(t *testing.T) {
 // ---------------------------------------------------------------------------
 // TestStatus_AllowsMutation
 //
-// Status command with 2 args mutates task status via the state machine.
-// Non-terminal, non-completed transitions are allowed.
-// Terminal/completed transitions are blocked by the state machine.
+// Status command is now READ-ONLY. 2-arg mutation calls return an error.
+// Non-terminal transitions that were previously allowed are now rejected.
+// Use "forge task submit" to complete a task or "forge task reopen" to
+// re-activate rejected/skipped tasks.
 // ---------------------------------------------------------------------------
 func TestStatus_AllowsMutation(t *testing.T) {
 	type testCase struct {
 		name   string
 		from   string
 		to     string
-		wantOK bool // true = mutation should succeed; false = state machine rejects
+		wantOK bool // all cases are false — status is read-only
 	}
 	tests := []testCase{
-		// Allowed: non-terminal, non-completed transitions
-		{"pending_to_blocked", "pending", "blocked", true},
-		{"pending_to_in_progress", "pending", "in_progress", true},
-		{"pending_to_skipped", "pending", "skipped", true},
-		{"pending_to_rejected", "pending", "rejected", true},
-		{"in_progress_to_pending", "in_progress", "pending", true},
-		{"in_progress_to_blocked", "in_progress", "blocked", true},
-		{"in_progress_to_skipped", "in_progress", "skipped", true},
-		{"in_progress_to_rejected", "in_progress", "rejected", true},
-		// Allowed: no specific rule blocks these
-		{"blocked_to_skipped", "blocked", "skipped", true},
-		{"blocked_to_rejected", "blocked", "rejected", true},
-		// Blocked: dependencies must be checked first
+		// All blocked: status command is now read-only
+		{"pending_to_blocked", "pending", "blocked", false},
+		{"pending_to_in_progress", "pending", "in_progress", false},
+		{"pending_to_skipped", "pending", "skipped", false},
+		{"pending_to_rejected", "pending", "rejected", false},
+		{"in_progress_to_pending", "in_progress", "pending", false},
+		{"in_progress_to_blocked", "in_progress", "blocked", false},
+		{"in_progress_to_skipped", "in_progress", "skipped", false},
+		{"in_progress_to_rejected", "in_progress", "rejected", false},
+		// All blocked: status command is now read-only
+		{"blocked_to_skipped", "blocked", "skipped", false},
+		{"blocked_to_rejected", "blocked", "rejected", false},
+		// All blocked: status command is now read-only
 		{"blocked_to_pending", "blocked", "pending", false},
 		{"blocked_to_in_progress", "blocked", "in_progress", false},
-		// Blocked: skipped is terminal (only reopen role)
+		// All blocked: status command is now read-only
 		{"skipped_to_pending", "skipped", "pending", false},
 		{"skipped_to_in_progress", "skipped", "in_progress", false},
 		{"skipped_to_blocked", "skipped", "blocked", false},
-		// Blocked: rejected is terminal (only reopen role)
+		// All blocked: status command is now read-only
 		{"rejected_to_pending", "rejected", "pending", false},
-		// Blocked: completed is terminal
+		// All blocked: status command is now read-only
 		{"completed_to_pending", "completed", "pending", false},
 		{"completed_to_in_progress", "completed", "in_progress", false},
-		// Blocked: only submit role can reach completed
+		// All blocked: status command is now read-only
 		{"in_progress_to_completed", "in_progress", "completed", false},
 		{"pending_to_completed", "pending", "completed", false},
 	}
@@ -526,10 +527,10 @@ func TestStatus_AllowsMutation(t *testing.T) {
 				}
 			} else {
 				if err == nil {
-					t.Errorf("expected error for %s -> %s (should be blocked by state machine)", tt.from, tt.to)
+					t.Errorf("expected error for %s -> %s (status is read-only)", tt.from, tt.to)
 				}
-				if !strings.Contains(out, "INVALID_TRANSITION") {
-					t.Errorf("expected INVALID_TRANSITION for %s -> %s, got: %s", tt.from, tt.to, out)
+				if !strings.Contains(out, "task status is read-only") {
+					t.Errorf("expected 'task status is read-only' for %s -> %s, got: %s", tt.from, tt.to, out)
 				}
 			}
 		})
