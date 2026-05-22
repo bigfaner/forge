@@ -1,0 +1,159 @@
+{
+  "feature": "cli-command-restructure",
+  "proposal": "docs/proposals/cli-command-restructure/proposal.md",
+  "created": "2026-05-22",
+  "tasks": {
+    "1-delete-dead-code": {
+      "id": "1",
+      "title": "Delete dead code: forge e2e group, forge probe, pkg/e2e",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "1-delete-dead-code.md",
+      "record": "records/1-delete-dead-code.md",
+      "scope": "backend",
+      "type": "coding.cleanup"
+    },
+    "2-migrate-helpers": {
+      "id": "2",
+      "title": "Migrate test_results.go and journey_isolation.go to pkg/testrunner",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-migrate-helpers.md",
+      "record": "records/2-migrate-helpers.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "3-move-task-group": {
+      "id": "3",
+      "title": "Move forge task group to task/ subdirectory",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "2"
+      ],
+      "status": "pending",
+      "file": "3-move-task-group.md",
+      "record": "records/3-move-task-group.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "4-move-test-group": {
+      "id": "4",
+      "title": "Move forge test group to test/ subdirectory",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "2"
+      ],
+      "status": "pending",
+      "file": "4-move-test-group.md",
+      "record": "records/4-move-test-group.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "5-move-feature-group": {
+      "id": "5",
+      "title": "Move forge feature group to feature/ subdirectory",
+      "priority": "P2",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "2"
+      ],
+      "status": "pending",
+      "file": "5-move-feature-group.md",
+      "record": "records/5-move-feature-group.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "6-move-worktree-group": {
+      "id": "6",
+      "title": "Move forge worktree group to worktree/ subdirectory",
+      "priority": "P2",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "2"
+      ],
+      "status": "pending",
+      "file": "6-move-worktree-group.md",
+      "record": "records/6-move-worktree-group.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "7-move-forensic-group": {
+      "id": "7",
+      "title": "Move forge forensic group to forensic/ subdirectory",
+      "priority": "P2",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "2"
+      ],
+      "status": "pending",
+      "file": "7-move-forensic-group.md",
+      "record": "records/7-move-forensic-group.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "8-move-prompt-group": {
+      "id": "8",
+      "title": "Move forge prompt group to prompt/ subdirectory",
+      "priority": "P2",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "2"
+      ],
+      "status": "pending",
+      "file": "8-move-prompt-group.md",
+      "record": "records/8-move-prompt-group.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "9-cleanup-tests": {
+      "id": "9",
+      "title": "Clean up remaining tests, contracts, and verify final structure",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8"
+      ],
+      "status": "pending",
+      "file": "9-cleanup-tests.md",
+      "record": "records/9-cleanup-tests.md",
+      "scope": "backend",
+      "type": "coding.cleanup"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "pending",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "scope": "all",
+      "type": "doc.drift"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
