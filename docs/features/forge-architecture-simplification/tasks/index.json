@@ -453,6 +453,17 @@
       "sourceTaskID": "2.7",
       "type": "coding.fix"
     },
+    "fix.5": {
+      "id": "fix.5",
+      "title": "Fix ErrFileNotFound type mismatch in worktree.go",
+      "priority": "P0",
+      "status": "completed",
+      "file": "fix.5.md",
+      "record": "records/fix.5.md",
+      "breaking": true,
+      "sourceTaskID": "2.8",
+      "type": "coding.fix"
+    },
     "gen-test-cases": {
       "id": "T-test-gen-cases",
       "title": "Generate e2e Test Cases",
