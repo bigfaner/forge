@@ -21,7 +21,7 @@ Code cleanup applying five refinement principles. Supports three scope modes: us
 - No files in scope
 - All files in scope are documentation-only
 
-## Workflow
+## Process Flow
 
 ```
 Step 1: Scope Detection → Step 2: Code Cleanup → Step 3: Quality Gate (optional) → Step 4: Cleanup Summary

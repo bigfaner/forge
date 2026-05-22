@@ -36,7 +36,7 @@ Read the latest `/eval-harness` report and implement improvements for each findi
 | Snapshot (raw evidence)   | `docs/harness-reports/YYYY-MM-DD-snapshot.md`  | Original context the scorer evaluated; useful when investigating findings |
 | P0/P1/P2 classification   | Defined in `eval` rubric for harness type      | P0 = score 0 on any criterion; P1 = < 50%; P2 = < 80%                     |
 
-## Workflow
+## Process Flow
 
 ```
 1. Read report → 2. Extract findings → 3. Init record → 4. Fix one by one (append record after each) → 5. Finalize

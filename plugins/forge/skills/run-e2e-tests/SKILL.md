@@ -56,7 +56,7 @@ slug=$(forge feature 2>/dev/null | grep '^FEATURE:' | sed 's/^FEATURE:[[:space:]
 [ -z "$slug" ] && echo "Error: no active feature -- run \`forge feature <slug>\` first" >&2 && exit 1
 ```
 
-## Workflow
+## Process Flow
 
 ```
 0. Load Convention Result Format -> 1. Setup -> 2. Verify -> 3. Run tests -> 4. Parse results -> 5. Generate report -> 6. Teardown

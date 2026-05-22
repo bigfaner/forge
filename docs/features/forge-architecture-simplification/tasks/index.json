@@ -238,7 +238,7 @@
         "1.gate",
         "2.2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2.9-eval-pipeline-safety.md",
       "record": "records/2.9-eval-pipeline-safety.md",
       "scope": "all",

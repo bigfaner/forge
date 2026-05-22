@@ -73,7 +73,7 @@ This ensures agent-browser can access authenticated pages without exploration in
 
 See `rules/schema.md` for the complete field reference, layout-vs-page element distinction, element ID assignment rules, and dynamic route parameterization rules.
 
-## Workflow
+## Process Flow
 
 ```
 1. Load existing sitemap -> 2. Analyze layout & build route registry -> 3. Discover routes -> 4. Explore pages -> 5. Merge & dedup & validate -> 6. Write

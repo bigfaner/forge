@@ -56,7 +56,7 @@ If version < 1.50.0: `cargo install just`
 | `e2e-compile`  | No       | Compile-check e2e tests without running                                                           |
 | `e2e-verify`   | No       | Check for unresolved `// VERIFY:` markers                                                         |
 
-## Workflow
+## Process Flow
 
 ```
 0. Load Convention → 1. Detect project type + entry points → 2. Check existing justfile → 3. Generate e2e recipes + assemble and write → 4. Verify and self-correct → 5. Output confirmation

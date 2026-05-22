@@ -38,7 +38,7 @@ User responds with free-form text. Agent proceeds to classification.
 
 Skip the prompt. Use the provided text directly. Proceed to classification.
 
-## Workflow
+## Process Flow
 
 ```
 1. Identify knowledge type(s) -> 2. Classify -> 3. Write -> 4. Report
