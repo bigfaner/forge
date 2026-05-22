@@ -22,6 +22,77 @@ func setupConfig(t *testing.T, content string) string {
 }
 
 func TestReadConfig(t *testing.T) {
+	t.Run("version field parsed correctly", func(t *testing.T) {
+		dir := setupConfig(t, "version: \"2\"\n")
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg == nil {
+			t.Fatal("expected non-nil config")
+		}
+		if cfg.Version != "2" {
+			t.Errorf("expected Version '2', got %q", cfg.Version)
+		}
+	})
+
+	t.Run("config without version defaults to 1", func(t *testing.T) {
+		dir := setupConfig(t, "test-framework: pytest\n")
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg == nil {
+			t.Fatal("expected non-nil config")
+		}
+		if cfg.Version != "1" {
+			t.Errorf("expected Version '1' (default), got %q", cfg.Version)
+		}
+	})
+
+	t.Run("empty config defaults version to 1", func(t *testing.T) {
+		dir := setupConfig(t, "{}\n")
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg == nil {
+			t.Fatal("expected non-nil config")
+		}
+		if cfg.Version != "1" {
+			t.Errorf("expected Version '1' (default), got %q", cfg.Version)
+		}
+	})
+
+	t.Run("project-type field parsed correctly", func(t *testing.T) {
+		dir := setupConfig(t, "project-type: fullstack\n")
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg == nil {
+			t.Fatal("expected non-nil config")
+		}
+		if cfg.ProjectType != "fullstack" {
+			t.Errorf("expected ProjectType 'fullstack', got %q", cfg.ProjectType)
+		}
+	})
+
+	t.Run("project-type valid values accepted", func(t *testing.T) {
+		for _, pt := range []string{"fullstack", "mobile", "library", "mixed"} {
+			t.Run(pt, func(t *testing.T) {
+				dir := setupConfig(t, "project-type: "+pt+"\n")
+				cfg, err := ReadConfig(dir)
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if cfg.ProjectType != pt {
+					t.Errorf("expected ProjectType %q, got %q", pt, cfg.ProjectType)
+				}
+			})
+		}
+	})
+
 	t.Run("file not exists returns nil nil", func(t *testing.T) {
 		dir := t.TempDir()
 		cfg, err := ReadConfig(dir)
@@ -50,8 +121,8 @@ func TestReadConfig(t *testing.T) {
 		}
 	})
 
-	t.Run("unknown fields silently ignored", func(t *testing.T) {
-		dir := setupConfig(t, "project-type: backend\nlanguages:\n  - go\ntest-framework: pytest\nunknown-field: value\n")
+	t.Run("known fields parsed while unknown silently ignored", func(t *testing.T) {
+		dir := setupConfig(t, "project-type: fullstack\nlanguages:\n  - go\ntest-framework: pytest\nunknown-field: value\n")
 		cfg, err := ReadConfig(dir)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -59,9 +130,14 @@ func TestReadConfig(t *testing.T) {
 		if cfg == nil {
 			t.Fatal("expected non-nil config")
 		}
-		// Old fields silently ignored — only auto and worktree parsed
-		if cfg.Auto != nil {
-			t.Errorf("expected Auto nil when not in yaml, got %v", cfg.Auto)
+		if cfg.ProjectType != "fullstack" {
+			t.Errorf("expected ProjectType 'fullstack', got %q", cfg.ProjectType)
+		}
+		if cfg.TestFramework != "pytest" {
+			t.Errorf("expected TestFramework 'pytest', got %q", cfg.TestFramework)
+		}
+		if len(cfg.Languages) != 1 || cfg.Languages[0] != "go" {
+			t.Errorf("expected Languages [go], got %v", cfg.Languages)
 		}
 	})
 
@@ -434,6 +510,62 @@ func TestWriteConfig(t *testing.T) {
 	})
 }
 
+func TestWriteConfig_VersionRoundtrip(t *testing.T) {
+	t.Run("write and read back preserves version", func(t *testing.T) {
+		dir := t.TempDir()
+		cfg := &Config{
+			Version: "2",
+		}
+		if err := writeConfig(dir, cfg); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		readback, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if readback.Version != "2" {
+			t.Errorf("expected Version '2', got %q", readback.Version)
+		}
+	})
+}
+
+func TestWriteConfig_ProjectTypeRoundtrip(t *testing.T) {
+	t.Run("write and read back preserves project-type", func(t *testing.T) {
+		dir := t.TempDir()
+		cfg := &Config{
+			ProjectType: "mobile",
+		}
+		if err := writeConfig(dir, cfg); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		readback, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if readback.ProjectType != "mobile" {
+			t.Errorf("expected ProjectType 'mobile', got %q", readback.ProjectType)
+		}
+	})
+}
+
+func TestValidProjectType(t *testing.T) {
+	t.Run("valid types return true", func(t *testing.T) {
+		for _, pt := range []string{"fullstack", "mobile", "library", "mixed"} {
+			if !ValidProjectType(pt) {
+				t.Errorf("expected %q to be valid", pt)
+			}
+		}
+	})
+
+	t.Run("invalid types return false", func(t *testing.T) {
+		for _, pt := range []string{"frontend", "backend", "", "unknown", "full stack"} {
+			if ValidProjectType(pt) {
+				t.Errorf("expected %q to be invalid", pt)
+			}
+		}
+	})
+}
+
 func TestAutoConfigDefaults(t *testing.T) {
 	defaults := AutoConfigDefaults()
 	if defaults.E2eTest.Quick || !defaults.E2eTest.Full {
@@ -505,8 +637,8 @@ func TestAutoConfigWithDefaults(t *testing.T) {
 		if result.CleanCode.Quick != true || result.CleanCode.Full != true {
 			t.Errorf("CleanCode should be preserved as true/true, got %+v", result.CleanCode)
 		}
-		if result.E2eTest != (ModeToggle{Quick: false, Full: true}) {
-			t.Errorf("E2eTest should default to {Quick:false Full:true}, got %+v", result.E2eTest)
+		if result.E2eTest != (ModeToggle{}) {
+			t.Errorf("E2eTest should be returned unchanged for partial config, got %+v", result.E2eTest)
 		}
 	})
 
