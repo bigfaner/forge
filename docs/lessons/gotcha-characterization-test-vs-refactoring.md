@@ -20,14 +20,33 @@ tags: [testing, architecture]
 
 ## Solution
 
-**分派层面解决**：改变行为的重构任务（breaking=true）应当在其任务描述中**显式声明哪些定标测试需要更新，以及新行为的预期**，而不是让后续的 fix 任务去反向推断。
+### 分派层面：任务描述预填影响范围
+
+改变行为的重构任务（breaking=true）应当在其任务描述中**显式声明哪些定标测试需要更新，以及新行为的预期**，而不是让后续的 fix 任务去反向推断。
 
 例如，task 2.8 的描述应包含：
 > 注：此重构会修改 `--block-source` 的行为——完成后，`TestAddCmd_BlockSource` 中的 `source 1.1 should be blocked` 断言应更新为 `source 1.1 is NOT blocked under new behavior`。
 
+### 执行层面：Impact Declaration 机制（PRESERVE/EVOLVE）
+
+在重构执行模板的 Impact Mapping 步骤后新增 **Impact Declaration** 子步骤：执行器在动手修改代码前，先分析并声明哪些测试的行为预期会发生变化（**EVOLVE**），哪些必须保持不变（**PRESERVE**）。
+
+重构过程中：
+- **EVOLVE** 分类的测试失败 → 视为预期变化，执行器直接更新测试断言
+- **PRESERVE** 分类的测试失败 → 触发暂停并创建 fix 任务
+- 未出现在声明中的测试失败 → 同样触发暂停（安全网兜底）
+
+EVOLVE 声明必须附带 `reason` 和 `expected_change`，空理由的 EVOLVE 视为无效。声明作为执行输出的一部分可追溯。
+
+这是对传统重构定义（"不改变外部行为"）的务实修正。行业标准的重构定义假设行为不变，但在实际的大型代码库演进中，"重构"经常包含有意图的行为简化。此方案在保留安全网（PRESERVE + 未声明 = 暂停）的同时，为 EVOLVE 类测试提供了显式通道。
+
+灵感来源：Michael Feathers《Working Effectively with Legacy Code》——定标测试记录的是"当前行为"而非"正确行为"，当意图性重构改变行为时，测试应随之演进。
+
 ## Reusable Pattern
 
 **定标测试的双刃剑**：定标测试记录当前行为以捕获非预期变化，但在意图性重构中会成为卡点。任何改变行为的重构任务必须同时承担更新相关定标测试的责任，不能让后续 fix 任务去推断"这到底是不是预期变化"。
+
+**Impact Declaration 前置声明**：重构执行器在动手修改代码前，必须主动分析并声明影响范围（PRESERVE/EVOLVE 分类）。这一前置声明将"反应式检测行为变化 → 暂停 → 创建 fix 任务 → fix 卡死"的恶性循环，转变为"前置声明 → 预期内自动处理 → 声明范围外安全网暂停"的可控流程。
 
 ## Example
 
