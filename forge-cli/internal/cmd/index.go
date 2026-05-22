@@ -7,6 +7,7 @@ import (
 
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/forgeconfig"
+	indexPkg "forge-cli/pkg/index"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/task"
 
@@ -67,8 +68,11 @@ func runIndex(_ *cobra.Command, _ []string) {
 		Exit(fmt.Errorf("build index: %w", err))
 	}
 
-	// Save index
-	if err := task.SaveIndex(indexPath, result.Index); err != nil {
+	// Save index atomically under lock (BuildIndex already saves internally,
+	// but the lock ensures exclusive access during the full rebuild cycle).
+	if err := indexPkg.WithLock(indexPath, func() error {
+		return indexPkg.SaveIndexAtomic(indexPath, result.Index)
+	}); err != nil {
 		Exit(fmt.Errorf("save index: %w", err))
 	}
 

@@ -885,13 +885,14 @@ func TestExecuteClaim_SaveIndexError(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chdir(origWd) })
 	_ = os.Chdir(dir)
 
-	// Make index.json read-only so task.SaveIndex (os.WriteFile) fails
-	_ = os.Chmod(indexPath, 0444)
-	defer func() { _ = os.Chmod(indexPath, 0644) }()
+	// Make the tasks directory non-writable so WithLock (LockFile) fails
+	tasksDir := filepath.Dir(indexPath)
+	_ = os.Chmod(tasksDir, 0555)
+	t.Cleanup(func() { _ = os.Chmod(tasksDir, 0755) })
 
 	_, err := executeClaim()
 	if err == nil {
-		t.Error("expected error when save index fails")
+		t.Error("expected error when lock cannot be acquired")
 	}
 }
 

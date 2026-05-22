@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"forge-cli/pkg/feature"
+	indexPkg "forge-cli/pkg/index"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/prompt"
 	"forge-cli/pkg/task"
@@ -39,33 +39,36 @@ func runMigrate(_ *cobra.Command, _ []string) {
 
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
 
-	index, err := task.LoadIndex(indexPath)
-	if err != nil {
-		Exit(fmt.Errorf("load index: %w", err))
-	}
-
-	// Pre-flight check: abort if any task is in_progress.
-	for _, t := range index.TasksMap() {
-		if t.Status == feature.StatusInProgress {
-			fmt.Fprintf(os.Stderr, "error: task %q is in_progress — finish or pause it before migrating\n", t.ID)
-			os.Exit(1)
+	taskCount := 0
+	if err := indexPkg.WithLock(indexPath, func() error {
+		index, err := task.LoadIndex(indexPath)
+		if err != nil {
+			return fmt.Errorf("load index: %w", err)
 		}
-	}
 
-	// Infer and set type for every task.
-	tasks := index.TasksMap()
-	for key, t := range tasks {
-		inferred := prompt.InferType(t.ID)
-		if inferred == "" {
-			inferred = task.TypeCodingFeature
+		// Pre-flight check: abort if any task is in_progress.
+		for _, t := range index.TasksMap() {
+			if t.Status == feature.StatusInProgress {
+				return fmt.Errorf("task %q is in_progress — finish or pause it before migrating", t.ID)
+			}
 		}
-		t.Type = inferred
-		index.SetTask(key, t)
+
+		// Infer and set type for every task.
+		tasks := index.TasksMap()
+		taskCount = len(tasks)
+		for key, t := range tasks {
+			inferred := prompt.InferType(t.ID)
+			if inferred == "" {
+				inferred = task.TypeCodingFeature
+			}
+			t.Type = inferred
+			index.SetTask(key, t)
+		}
+
+		return indexPkg.SaveIndexAtomic(indexPath, index)
+	}); err != nil {
+		Exit(fmt.Errorf("migrate: %w", err))
 	}
 
-	if err := task.SaveIndex(indexPath, index); err != nil {
-		Exit(fmt.Errorf("save index: %w", err))
-	}
-
-	fmt.Printf("Migrated %d tasks. Run task validate to verify.\n", len(tasks))
+	fmt.Printf("Migrated %d tasks. Run task validate to verify.\n", taskCount)
 }

@@ -77,7 +77,7 @@ func doReopen(indexPath, taskIDArg string) error {
 	t.Status = "pending"
 	index.SetTask(key, *t)
 
-	if err := task.SaveIndex(indexPath, index); err != nil {
+	if err := indexPkg.SaveIndexAtomic(indexPath, index); err != nil {
 		return NewAIError(ErrConflict, "Failed to save index", err.Error(), "Check index.json is writable", "cat "+indexPath)
 	}
 

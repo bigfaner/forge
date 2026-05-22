@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"forge-cli/pkg/forgeconfig"
+	indexPkg "forge-cli/pkg/index"
 )
 
 // BuildIndexOpts holds options for building the task index.
@@ -340,7 +341,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 	}
 
 	// 9. Save index
-	if err := SaveIndex(opts.IndexPath, index); err != nil {
+	if err := indexPkg.SaveIndexAtomic(opts.IndexPath, index); err != nil {
 		return nil, fmt.Errorf("save index: %w", err)
 	}
 

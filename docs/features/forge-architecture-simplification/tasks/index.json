@@ -189,7 +189,7 @@
         "1.gate",
         "2.3"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2.6-migrate-writers-withlock.md",
       "record": "records/2.6-migrate-writers-withlock.md",
       "breaking": true,

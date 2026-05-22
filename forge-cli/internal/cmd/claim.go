@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"forge-cli/pkg/feature"
+	indexPkg "forge-cli/pkg/index"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/task"
 
@@ -66,13 +67,15 @@ func executeClaim() (*ClaimResult, error) {
 	}
 
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
+	statePath := feature.GetTaskStatePath(projectRoot, featureSlug)
+
+	// Read-only check: no lock needed.
 	index, err := task.LoadIndex(indexPath)
 	if err != nil {
 		return nil, NewAIError(ErrNotFound, "Failed to load task index", err.Error(), "Run `forge task index --feature "+featureSlug+"` to generate it", "forge task index --feature "+featureSlug)
 	}
 
 	// Check for existing task state
-	statePath := feature.GetTaskStatePath(projectRoot, featureSlug)
 	continueTask, hasIssues, issues := checkExistingTaskState(projectRoot, index, statePath)
 
 	if hasIssues {
@@ -93,14 +96,28 @@ func executeClaim() (*ClaimResult, error) {
 		}, nil
 	}
 
-	// Claim new task
-	key, t, err := claimNextTask(index)
-	if err != nil {
-		return nil, err
-	}
+	// Claim new task — wrapped in WithLock for atomic read-modify-write.
+	var key string
+	var t *task.Task
+	if err := indexPkg.WithLock(indexPath, func() error {
+		// Re-load index inside lock (it may have changed since our read-only check).
+		idx, err := task.LoadIndex(indexPath)
+		if err != nil {
+			return NewAIError(ErrNotFound, "Failed to load task index", err.Error(), "Run `forge task index --feature "+featureSlug+"` to generate it", "forge task index --feature "+featureSlug)
+		}
 
-	// Update index
-	if err := task.SaveIndex(indexPath, index); err != nil {
+		k, claimedTask, err := claimNextTask(idx)
+		if err != nil {
+			return err
+		}
+
+		if err := indexPkg.SaveIndexAtomic(indexPath, idx); err != nil {
+			return NewAIError(ErrConflict, "Failed to save index", err.Error(), "Check index.json is writable", "cat "+indexPath)
+		}
+
+		key, t = k, claimedTask
+		return nil
+	}); err != nil {
 		return nil, err
 	}
 

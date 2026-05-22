@@ -365,7 +365,7 @@ func TestReopen_CLI_Integration(t *testing.T) {
 // ---------------------------------------------------------------------------
 // TestReopen_WithLock_SaveIndexError
 //
-// Verify error handling when SaveIndex fails under lock.
+// Verify error handling when WithLock fails.
 // ---------------------------------------------------------------------------
 func TestReopen_WithLock_SaveIndexError(t *testing.T) {
 	if os.Getenv("TEST_REOPEN_SAVE_ERROR") == "1" {
@@ -374,9 +374,10 @@ func TestReopen_WithLock_SaveIndexError(t *testing.T) {
 		}})
 
 		indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
-		// Make index read-only so SaveIndex fails
-		_ = os.Chmod(indexPath, 0444)
-		defer func() { _ = os.Chmod(indexPath, 0644) }()
+		// Make tasks directory read-only so LockFile fails
+		tasksDir := filepath.Dir(indexPath)
+		_ = os.Chmod(tasksDir, 0555)
+		defer func() { _ = os.Chmod(tasksDir, 0755) }()
 
 		runReopen(nil, []string{"1.1"})
 		return
@@ -386,11 +387,11 @@ func TestReopen_WithLock_SaveIndexError(t *testing.T) {
 	cmd.Env = append(os.Environ(), "TEST_REOPEN_SAVE_ERROR=1")
 	output, err := cmd.CombinedOutput()
 	if err == nil {
-		t.Error("expected error when save index fails")
+		t.Error("expected error when lock cannot be acquired")
 	}
 	out := string(output)
-	if !strings.Contains(out, "CONFLICT") {
-		t.Errorf("expected CONFLICT error, got: %s", out)
+	if !strings.Contains(out, "failed to acquire lock") {
+		t.Errorf("expected lock acquisition error, got: %s", out)
 	}
 }
 
