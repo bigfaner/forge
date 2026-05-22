@@ -8,6 +8,24 @@ import (
 	"forge-cli/pkg/forgeconfig"
 )
 
+// uiInterfaces is the set of interface types that have a visual UI
+// and therefore require UX validation.
+var uiInterfaces = map[string]bool{
+	"tui":    true,
+	"web":    true,
+	"mobile": true,
+}
+
+// hasUIInterface returns true if any interface has a visual UI.
+func hasUIInterface(interfaces []string) bool {
+	for _, typ := range interfaces {
+		if uiInterfaces[typ] {
+			return true
+		}
+	}
+	return false
+}
+
 // AutoGenTaskDef defines an auto-generated task definition.
 type AutoGenTaskDef struct {
 	ID              string
@@ -387,8 +405,12 @@ func ResolveFirstTestDep(tasks []AutoGenTaskDef, existingTasks map[string]Task, 
 	switch mode {
 	case "breakdown":
 		dep := findHighestGateOrSummary(existingTasks)
-		if dep == "" {
-			dep = findMaxBusinessTaskID(existingTasks)
+		lastBiz := findMaxBusinessTaskID(existingTasks)
+		// Prefer last business task when it's in a higher phase than the highest gate.
+		// Handles the case where the final phase has only 1 task (no gate generated),
+		// so the test chain must depend on that task, not an earlier-phase gate.
+		if lastBiz != "" && (dep == "" || phaseFromID(lastBiz) > phaseFromID(dep)) {
+			dep = lastBiz
 		}
 		if dep == "" {
 			return

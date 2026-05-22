@@ -17,6 +17,12 @@ var allEnabledAuto = forgeconfig.AutoConfig{
 	CleanCode:        forgeconfig.ModeToggle{Quick: false, Full: false},
 }
 
+// validationAuto enables validation + e2e for testing validate-ux gating.
+var validationAuto = forgeconfig.AutoConfig{
+	E2eTest:          forgeconfig.ModeToggle{Quick: true, Full: true},
+	Validation:       forgeconfig.ModeToggle{Quick: true, Full: true},
+}
+
 func TestGetBreakdownTestTasks_EmptyInterfaces(t *testing.T) {
 	tasks := GetBreakdownTestTasks(nil, defaultAuto)
 
@@ -168,6 +174,23 @@ func TestResolveFirstTestDep(t *testing.T) {
 		ResolveFirstTestDep(tasks, existing, "breakdown")
 		if tasks[0].Dependencies[0] != "2.gate" {
 			t.Errorf("T-test-gen-cases should depend on highest gate, got %v", tasks[0].Dependencies)
+		}
+	})
+
+	t.Run("breakdown picks last business task over lower gate", func(t *testing.T) {
+		// Phase 3 has 1 task (no gate generated), phase 2 has a gate.
+		// Test chain must depend on the last business task (3.1), not the highest gate (2.gate).
+		existing := map[string]Task{
+			"1-gate":  {ID: "1.gate"},
+			"2-gate":  {ID: "2.gate"},
+			"1.1-foo": {ID: "1.1"},
+			"2.1-bar": {ID: "2.1"},
+			"3.1-baz": {ID: "3.1"},
+		}
+		tasks := GetBreakdownTestTasks([]string{"cli"}, defaultAuto)
+		ResolveFirstTestDep(tasks, existing, "breakdown")
+		if tasks[0].Dependencies[0] != "3.1" {
+			t.Errorf("T-test-gen-cases should depend on last business task (3.1) when it's in a higher phase than highest gate (2.gate), got %v", tasks[0].Dependencies)
 		}
 	})
 
@@ -478,6 +501,83 @@ func TestGetQuickTestTasks_PerType_ThreeTypes(t *testing.T) {
 	}
 	if !depSet["T-quick-gen-and-run-tui"] || !depSet["T-quick-gen-and-run-api"] || !depSet["T-quick-gen-and-run-cli"] {
 		t.Errorf("T-quick-graduate missing expected deps, got %v", tasks[4].Dependencies)
+	}
+}
+
+// --- validate-ux should only be generated when interfaces include UI types ---
+
+func TestGetBreakdownTestTasks_ValidateUx_SkippedForCLIOnly(t *testing.T) {
+	tasks := GetBreakdownTestTasks([]string{"cli"}, validationAuto)
+
+	for _, task := range tasks {
+		if task.ID == "T-validate-ux" {
+			t.Error("validate-ux should not be generated for CLI-only projects (no visual UI)")
+		}
+	}
+}
+
+func TestGetQuickTestTasks_ValidateUx_SkippedForCLIOnly(t *testing.T) {
+	tasks := GetQuickTestTasks([]string{"cli"}, validationAuto)
+
+	for _, task := range tasks {
+		if task.ID == "T-validate-ux" {
+			t.Error("validate-ux should not be generated for CLI-only projects (no visual UI)")
+		}
+	}
+}
+
+func TestGetBreakdownTestTasks_ValidateUx_SkippedForAPIOnly(t *testing.T) {
+	tasks := GetBreakdownTestTasks([]string{"api"}, validationAuto)
+
+	for _, task := range tasks {
+		if task.ID == "T-validate-ux" {
+			t.Error("validate-ux should not be generated for API-only projects (no visual UI)")
+		}
+	}
+}
+
+func TestGetBreakdownTestTasks_ValidateUx_IncludedForTUI(t *testing.T) {
+	tasks := GetBreakdownTestTasks([]string{"tui"}, validationAuto)
+
+	found := false
+	for _, task := range tasks {
+		if task.ID == "T-validate-ux" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("validate-ux should be generated for TUI projects (has visual UI)")
+	}
+}
+
+func TestGetBreakdownTestTasks_ValidateUx_IncludedForMixed(t *testing.T) {
+	tasks := GetBreakdownTestTasks([]string{"cli", "tui"}, validationAuto)
+
+	found := false
+	for _, task := range tasks {
+		if task.ID == "T-validate-ux" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("validate-ux should be generated when interfaces include UI types (tui)")
+	}
+}
+
+func TestGetBreakdownTestTasks_ValidateUx_CodeStillGenerated(t *testing.T) {
+	tasks := GetBreakdownTestTasks([]string{"cli"}, validationAuto)
+
+	found := false
+	for _, task := range tasks {
+		if task.ID == "T-validate-code" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("validate-code should still be generated for CLI projects")
 	}
 }
 
