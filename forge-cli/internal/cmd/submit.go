@@ -59,7 +59,7 @@ Optional fields: taskId (verified against CLI arg if provided), status (default:
                  filesCreated, filesModified, keyDecisions, testsPassed,
                  testsFailed, coverage, acceptanceCriteria, notes`,
 	Args: cobra.ExactArgs(1),
-	Run:  runSubmit,
+	RunE: runSubmit,
 }
 
 func init() {
@@ -68,17 +68,17 @@ func init() {
 	submitCmd.Flags().BoolVar(&submitQuiet, "quiet", false, "Minimal output")
 }
 
-func runSubmit(_ *cobra.Command, args []string) {
+func runSubmit(_ *cobra.Command, args []string) error {
 	taskIDArg := args[0]
 
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		Exit(ErrProjectNotFound())
+		return ErrProjectNotFound()
 	}
 
 	featureSlug, err := feature.RequireFeature(projectRoot)
 	if err != nil {
-		Exit(ErrFeatureNotSet())
+		return ErrFeatureNotSet()
 	}
 
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
@@ -88,15 +88,14 @@ func runSubmit(_ *cobra.Command, args []string) {
 		return doSubmit(projectRoot, featureSlug, indexPath, taskIDArg)
 	}); lockErr != nil {
 		if errors.Is(lockErr, indexPkg.ErrLockConflict) {
-			fmt.Fprintln(os.Stderr, "concurrent write conflict, retry")
-			os.Exit(1)
+			return NewAIError(ErrConflict, "Concurrent write conflict", "Retry the command", "", "")
 		}
 		if aiErr, ok := lockErr.(*AIError); ok {
-			Exit(aiErr)
+			return aiErr
 		}
-		fmt.Fprintf(os.Stderr, "failed to acquire lock: %v\n", lockErr)
-		os.Exit(1)
+		return NewAIError(ErrConflict, "Failed to acquire lock", lockErr.Error(), "", "")
 	}
+	return nil
 }
 
 // doSubmit contains the core submit logic, executed under the advisory lock.
@@ -122,11 +121,11 @@ func doSubmit(projectRoot, featureSlug, indexPath, taskIDArg string) error {
 
 	// Validate taskId matches CLI arg if provided
 	if rd.TaskID != "" && rd.TaskID != taskIDArg {
-		Exit(NewAIError(ErrValidation,
+		return NewAIError(ErrValidation,
 			fmt.Sprintf("taskId mismatch: JSON has %q, CLI arg is %q", rd.TaskID, taskIDArg),
 			"The taskId in record.json does not match the task being recorded",
 			"Either omit taskId from JSON or ensure it matches the CLI argument",
-			fmt.Sprintf("Change taskId to %q or remove it from record.json", taskIDArg)))
+			fmt.Sprintf("Change taskId to %q or remove it from record.json", taskIDArg))
 	}
 
 	// Non-testable tasks: auto-set coverage=-1.0 to skip test evidence check
@@ -191,11 +190,11 @@ func doSubmit(projectRoot, featureSlug, indexPath, taskIDArg string) error {
 	// Write record file
 	recordPath := filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, t.Record))
 	if err := os.MkdirAll(filepath.Dir(recordPath), 0755); err != nil {
-		Exit(NewAIError(ErrValidation, "Failed to create record directory", err.Error(), "Check directory permissions", "mkdir -p "+filepath.Dir(recordPath)))
+		return NewAIError(ErrValidation, "Failed to create record directory", err.Error(), "Check directory permissions", "mkdir -p "+filepath.Dir(recordPath))
 	}
 
 	if err := os.WriteFile(recordPath, []byte(content), 0644); err != nil {
-		Exit(NewAIError(ErrValidation, "Failed to write record file", err.Error(), "Check file permissions", "cat "+recordPath))
+		return NewAIError(ErrValidation, "Failed to write record file", err.Error(), "Check file permissions", "cat "+recordPath)
 	}
 
 	// Update task status in index
@@ -213,7 +212,9 @@ func doSubmit(projectRoot, featureSlug, indexPath, taskIDArg string) error {
 		autoRestoreSourceTask(idx, t.SourceTaskID)
 	}
 
-	saveIndexAndSignalCompletion(indexPath, projectRoot, featureSlug, idx)
+	if err := saveIndexAndSignalCompletion(indexPath, projectRoot, featureSlug, idx); err != nil {
+		return err
+	}
 
 	if submitJSON {
 		result := map[string]string{
@@ -234,9 +235,9 @@ func doSubmit(projectRoot, featureSlug, indexPath, taskIDArg string) error {
 
 // saveIndexAndSignalCompletion saves the index atomically and writes .forge/state.json
 // if all tasks are completed or skipped (rejected does not count as done).
-func saveIndexAndSignalCompletion(indexPath, projectRoot, featureSlug string, idx *task.TaskIndex) {
+func saveIndexAndSignalCompletion(indexPath, projectRoot, featureSlug string, idx *task.TaskIndex) error {
 	if err := indexPkg.SaveIndexAtomic(indexPath, idx); err != nil {
-		Exit(NewAIError(ErrConflict, "Failed to update task index", err.Error(), "Check index.json is writable", "cat "+indexPath))
+		return NewAIError(ErrConflict, "Failed to update task index", err.Error(), "Check index.json is writable", "cat "+indexPath)
 	}
 
 	allDone := true
@@ -251,6 +252,7 @@ func saveIndexAndSignalCompletion(indexPath, projectRoot, featureSlug string, id
 			fmt.Fprintf(os.Stderr, "WARNING: failed to write forge state: %v\n", err)
 		}
 	}
+	return nil
 }
 
 // autoRestoreSourceTask checks if a blocked source task can be unblocked.
@@ -508,7 +510,7 @@ func validateQualityGate(projectRoot, scope string, breaking bool) {
 	}
 	just.RunGate(projectRoot, scope, steps, func(step, output string) {
 		concise := just.ExtractConciseError(output, 10)
-		Exit(NewAIError(ErrValidation,
+		panic(NewAIError(ErrValidation,
 			fmt.Sprintf("Quality gate failed at step: just %s", step),
 			concise,
 			"Fix the errors above and re-run task record",
