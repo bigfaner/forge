@@ -222,7 +222,7 @@
         "2.2",
         "2.3"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2.8-quality-gate-fixes.md",
       "record": "records/2.8-quality-gate-fixes.md",
       "breaking": true,

@@ -213,41 +213,40 @@ func TestClaim_AutoUnblock_CurrentBehavior(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// TestQualityGate_SourceTaskID_IsSentinel
+// TestQualityGate_SourceTaskID_IsEmpty
 //
-// Current behavior: addFixTask uses SourceTaskID "quality-gate:<step>" as a
-// sentinel value. This is NOT a real task ID — it's a synthetic identifier
-// used for cumulative counting via countFixTasks. The Vars["SOURCE_TASK_ID"]
-// is set to "N/A (project-wide gate)" for template rendering.
-//
-// This test verifies that the sentinel format is "quality-gate:<step>" and
-// that countFixTasks correctly counts tasks with this sentinel.
+// Phase 2: addFixTask no longer uses SourceTaskID "quality-gate:<step>" sentinel.
+// SourceTaskID is now empty. countFixTasks identifies fix-tasks by title prefix
+// "fix <step>:" only, and counts active (non-terminal) tasks only.
 // ---------------------------------------------------------------------------
-func TestQualityGate_SourceTaskID_IsSentinel(t *testing.T) {
-	t.Run("sentinel format is quality-gate:STEP", func(t *testing.T) {
+func TestQualityGate_SourceTaskID_IsEmpty(t *testing.T) {
+	t.Run("countFixTasks matches by title prefix only", func(t *testing.T) {
 		index := &task.TaskIndex{Feature: "test"}
 		index.SetTasks(map[string]task.Task{
 			"fix-1": {
 				ID:           "fix-1",
 				Title:        "fix compile: compile failure in quality gate",
-				SourceTaskID: "quality-gate:compile",
+				SourceTaskID: "",
+				Status:       "pending",
 				Type:         task.TypeCodingFix,
 			},
 			"fix-2": {
 				ID:           "fix-2",
 				Title:        "fix compile: compile failure in quality gate",
-				SourceTaskID: "quality-gate:compile",
+				SourceTaskID: "",
+				Status:       "in_progress",
 				Type:         task.TypeCodingFix,
 			},
 			"fix-3": {
 				ID:           "fix-3",
 				Title:        "fix lint: lint failure in quality gate",
-				SourceTaskID: "quality-gate:lint",
+				SourceTaskID: "",
+				Status:       "pending",
 				Type:         task.TypeCodingCleanup,
 			},
 		})
 
-		// countFixTasks counts ALL fix-tasks (completed + active) for a step
+		// countFixTasks matches by title prefix, not SourceTaskID
 		compileCount := countFixTasks(index, "compile")
 		if compileCount != 2 {
 			t.Errorf("expected 2 compile fix-tasks, got %d", compileCount)
@@ -264,44 +263,41 @@ func TestQualityGate_SourceTaskID_IsSentinel(t *testing.T) {
 		}
 	})
 
-	t.Run("countFixTasks counts completed fix-tasks too (not active-only)", func(t *testing.T) {
+	t.Run("countFixTasks excludes completed fix-tasks (active-only)", func(t *testing.T) {
 		index := &task.TaskIndex{Feature: "test"}
 		index.SetTasks(map[string]task.Task{
 			"fix-1": {
 				ID:           "fix-1",
 				Title:        "fix compile: compile failure in quality gate",
-				SourceTaskID: "quality-gate:compile",
+				SourceTaskID: "",
 				Status:       "completed",
 				Type:         task.TypeCodingFix,
 			},
 			"fix-2": {
 				ID:           "fix-2",
 				Title:        "fix compile: compile failure in quality gate",
-				SourceTaskID: "quality-gate:compile",
+				SourceTaskID: "",
 				Status:       "pending",
 				Type:         task.TypeCodingFix,
 			},
 		})
 
 		count := countFixTasks(index, "compile")
-		// CURRENT BEHAVIOR: counts ALL fix-tasks regardless of status
-		if count != 2 {
-			t.Errorf("CURRENT BEHAVIOR: countFixTasks should count all fix-tasks (completed + pending). Got %d", count)
+		// Active-only: only pending/in_progress/blocked count
+		if count != 1 {
+			t.Errorf("countFixTasks should count only active fix-tasks (not completed). Got %d", count)
 		}
 	})
 }
 
 // ---------------------------------------------------------------------------
-// TestQualityGate_CountFixTasks_CountsAll
+// TestQualityGate_CountFixTasks_CountsActiveOnly
 //
-// Current behavior: countFixTasks counts ALL fix-tasks for a step regardless
-// of status (completed + active + blocked + skipped). It identifies fix-tasks
-// by having a non-empty SourceTaskID AND a title with prefix "fix <step>:".
-//
-// Desired future behavior (Phase 2): may want to count only active fix-tasks
-// for the cap check.
+// Phase 2: countFixTasks counts only active (non-terminal) fix-tasks for a step.
+// It identifies fix-tasks by title prefix "fix <step>:" (no longer requires
+// SourceTaskID). Terminal statuses (completed, rejected, skipped) are excluded.
 // ---------------------------------------------------------------------------
-func TestQualityGate_CountFixTasks_CountsAll(t *testing.T) {
+func TestQualityGate_CountFixTasks_CountsActiveOnly(t *testing.T) {
 	tests := []struct {
 		name  string
 		step  string
@@ -309,12 +305,12 @@ func TestQualityGate_CountFixTasks_CountsAll(t *testing.T) {
 		want  int
 	}{
 		{
-			"counts completed fix-tasks",
+			"excludes completed fix-tasks",
 			"compile",
 			map[string]task.Task{
 				"fix-1": {ID: "fix-1", Title: "fix compile: error", SourceTaskID: "quality-gate:compile", Status: "completed", Type: task.TypeCodingFix},
 			},
-			1,
+			0,
 		},
 		{
 			"counts pending fix-tasks",
@@ -333,22 +329,22 @@ func TestQualityGate_CountFixTasks_CountsAll(t *testing.T) {
 			1,
 		},
 		{
-			"counts skipped fix-tasks",
+			"excludes skipped fix-tasks",
 			"compile",
 			map[string]task.Task{
 				"fix-1": {ID: "fix-1", Title: "fix compile: error", SourceTaskID: "quality-gate:compile", Status: "skipped", Type: task.TypeCodingFix},
 			},
-			1,
+			0,
 		},
 		{
-			"mix of statuses",
+			"mix of statuses — active only",
 			"compile",
 			map[string]task.Task{
 				"fix-1": {ID: "fix-1", Title: "fix compile: error", SourceTaskID: "quality-gate:compile", Status: "completed", Type: task.TypeCodingFix},
 				"fix-2": {ID: "fix-2", Title: "fix compile: error", SourceTaskID: "quality-gate:compile", Status: "pending", Type: task.TypeCodingFix},
 				"fix-3": {ID: "fix-3", Title: "fix compile: error", SourceTaskID: "quality-gate:compile", Status: "blocked", Type: task.TypeCodingFix},
 			},
-			3,
+			2,
 		},
 		{
 			"excludes different step",
@@ -359,12 +355,12 @@ func TestQualityGate_CountFixTasks_CountsAll(t *testing.T) {
 			0,
 		},
 		{
-			"excludes tasks without SourceTaskID",
+			"counts tasks without SourceTaskID (matched by title)",
 			"compile",
 			map[string]task.Task{
 				"fix-1": {ID: "fix-1", Title: "fix compile: error", SourceTaskID: "", Status: "pending", Type: task.TypeCodingFix},
 			},
-			0,
+			1,
 		},
 		{
 			"excludes tasks without title prefix",

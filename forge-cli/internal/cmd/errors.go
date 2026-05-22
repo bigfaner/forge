@@ -336,3 +336,58 @@ func NewErrContractUnverifiable(contractPath string) *AIError {
 		"Update the contract or the implementation to match",
 	)
 }
+
+// ErrNotGitRepository creates an error for non-git directories.
+func ErrNotGitRepository(path string) *AIError {
+	return NewAIError(
+		ErrInvalidInput,
+		fmt.Sprintf("Not a git repository: %s", path),
+		"The directory is not a git repository",
+		"Run from a git repository directory",
+		"git init && forge <command>",
+	)
+}
+
+// ErrNotInsideWorktree creates an error when a command requires worktree context.
+func ErrNotInsideWorktree() *AIError {
+	return NewAIError(
+		ErrInvalidInput,
+		"Not inside a worktree",
+		"The command requires being run from within a forge worktree directory",
+		"Run this command from within a forge worktree directory",
+		"forge worktree start <slug>",
+	)
+}
+
+// ErrRefusingDefaultBranch creates an error when trying to push from main/master.
+func ErrRefusingDefaultBranch(branch string) *AIError {
+	return NewAIError(
+		ErrInvalidInput,
+		fmt.Sprintf("Refusing to push default branch: %s", branch),
+		"Cannot push from the main or master branch",
+		"Switch to a feature branch before pushing",
+		"git checkout -b <feature-branch>",
+	)
+}
+
+// ErrSlugRequired creates an error when a slug argument is missing.
+func ErrSlugRequired() *AIError {
+	return NewAIError(
+		ErrInvalidInput,
+		"Slug is required",
+		"A feature slug must be provided as an argument",
+		"Provide a slug argument or use -i for interactive selection",
+		"forge worktree <command> <slug>",
+	)
+}
+
+// ErrSourceBranchNotFound creates an error for missing source branch.
+func ErrSourceBranchNotFound(branch string) *AIError {
+	return NewAIError(
+		ErrNotFound,
+		fmt.Sprintf("Source branch not found: %s", branch),
+		"The specified source branch does not exist locally",
+		"Verify the branch exists locally or fetch from remote",
+		"git fetch origin && forge worktree start <slug>",
+	)
+}

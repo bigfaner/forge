@@ -1812,7 +1812,7 @@ func TestForgeStateLifecycle(t *testing.T) {
 	}
 
 	// Phase 3: all-completed reads and deletes state.json
-	result := checkAllCompleted(false)
+	result, _ := checkAllCompleted(false)
 	if result == nil {
 		t.Fatal("checkAllCompleted should return result when all done with state")
 	}
