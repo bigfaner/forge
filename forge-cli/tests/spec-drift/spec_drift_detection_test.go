@@ -89,14 +89,14 @@ func TestTC_003_DriftTypeIsValidInValidateIndex(t *testing.T) {
 func TestTC_004_QuickPipelineIncludesTQuick5WithDriftType(t *testing.T) {
 	// Verify the code defines T-quick-doc-drift with correct properties
 	projectRoot := testkit.ProjectRoot(t)
-	testgenPath := filepath.Join(projectRoot, "pkg", "task", "testgen.go")
-	data, err := os.ReadFile(testgenPath)
+	autogenPath := filepath.Join(projectRoot, "pkg", "task", "autogen.go")
+	data, err := os.ReadFile(autogenPath)
 	require.NoError(t, err)
 	content := string(data)
 
 	// Verify T-quick-doc-drift definition exists with drift type
 	assert.Contains(t, content, `"T-quick-doc-drift"`,
-		"testgen.go should define T-quick-doc-drift ID")
+		"autogen.go should define T-quick-doc-drift ID")
 	assert.Contains(t, content, "TypeDocDrift",
 		"T-quick-doc-drift should use TypeDocDrift type")
 	// NoTest removed; TypeDocDrift is non-testable by IsTestableType
@@ -113,8 +113,8 @@ func TestTC_004_QuickPipelineIncludesTQuick5WithDriftType(t *testing.T) {
 // Traceability: TC-005 -> Task 2 AC (T-quick-doc-drift deps)
 func TestTC_005_TQuick5DependsOnTQuick4(t *testing.T) {
 	projectRoot := testkit.ProjectRoot(t)
-	testgenPath := filepath.Join(projectRoot, "pkg", "task", "testgen.go")
-	data, err := os.ReadFile(testgenPath)
+	autogenPath := filepath.Join(projectRoot, "pkg", "task", "autogen.go")
+	data, err := os.ReadFile(autogenPath)
 	require.NoError(t, err)
 	content := string(data)
 
@@ -128,8 +128,8 @@ func TestTC_005_TQuick5DependsOnTQuick4(t *testing.T) {
 // Traceability: TC-006 -> Task 2 AC (task order)
 func TestTC_006_TQuick5AppearsAfterTQuick4(t *testing.T) {
 	projectRoot := testkit.ProjectRoot(t)
-	testgenPath := filepath.Join(projectRoot, "pkg", "task", "testgen.go")
-	data, err := os.ReadFile(testgenPath)
+	autogenPath := filepath.Join(projectRoot, "pkg", "task", "autogen.go")
+	data, err := os.ReadFile(autogenPath)
 	require.NoError(t, err)
 	content := string(data)
 
@@ -140,7 +140,7 @@ func TestTC_006_TQuick5AppearsAfterTQuick4(t *testing.T) {
 	assert.Greater(t, verifyRegIdx, -1, "T-quick-verify-regression should be defined")
 	assert.Greater(t, driftIdx, -1, "T-quick-doc-drift should be defined")
 	assert.Less(t, verifyRegIdx, driftIdx,
-		"T-quick-verify-regression should appear before T-quick-doc-drift in testgen.go")
+		"T-quick-verify-regression should appear before T-quick-doc-drift in autogen.go")
 }
 
 // --- TC-007: T-specs-consolidate description includes drift detection in breakdown mode ---

@@ -42,7 +42,7 @@ If `prd/prd-spec.md` and `design/tech-design.md` do not exist, the skill runs in
 2. **All items are LOCAL**: After extraction, every item is feature-specific with no cross-cutting candidates. Generate preview files but skip integration. Mark task as completed.
 3. **Non-interactive session**: Running under `/run-tasks` dispatcher with no user present and CROSS items exist. Auto-integrate all CROSS items without blocking. Commit with `[auto-specs]` tag for traceability (see Step 6 and Step 11 for non-interactive mode details).
 
-## Workflow
+## Process Flow
 
 ```
 Step 1: Check idempotency marker

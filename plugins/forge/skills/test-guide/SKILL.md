@@ -19,7 +19,7 @@ Guide users through creating test Convention files (`docs/conventions/testing-<s
 | `--scope`  | language or framework name | (auto-detect)  | Override the Convention file scope (e.g., `go`, `javascript`, `python`) |
 | `--force`  | (flag)                    | false           | Overwrite existing Convention file without confirmation |
 
-## Workflow
+## Process Flow
 
 ```
 0. Check existing Convention files -> 1. Scan file signals -> 2. Scan test files & extract patterns -> 3. Present findings & confirm -> 4. Write Convention file

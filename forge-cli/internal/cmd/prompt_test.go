@@ -26,7 +26,7 @@ func TestRunPrompt_Success(t *testing.T) {
 
 	out := captureStdout(func() {
 		promptFixRecordMissed = false
-		runPrompt(nil, []string{"1.1"})
+		_ = runPrompt(nil, []string{"1.1"})
 	})
 
 	if out == "" {
@@ -54,7 +54,7 @@ func TestRunPrompt_FixRecordMissed(t *testing.T) {
 
 	out := captureStdout(func() {
 		promptFixRecordMissed = true
-		runPrompt(nil, []string{"1.1"})
+		_ = runPrompt(nil, []string{"1.1"})
 	})
 	promptFixRecordMissed = false // reset
 
@@ -75,7 +75,7 @@ func TestRunPrompt_TypeMissing_ExitsWithError(t *testing.T) {
 
 	if os.Getenv("TEST_PROMPT_TYPE_MISSING") == "1" {
 		promptFixRecordMissed = false
-		runPrompt(nil, []string{"1.1"})
+		_ = runPrompt(nil, []string{"1.1"})
 		return
 	}
 
@@ -101,7 +101,7 @@ func TestRunPrompt_UnknownType_ExitsWithError(t *testing.T) {
 
 	if os.Getenv("TEST_PROMPT_UNKNOWN_TYPE") == "1" {
 		promptFixRecordMissed = false
-		runPrompt(nil, []string{"1.1"})
+		_ = runPrompt(nil, []string{"1.1"})
 		return
 	}
 
@@ -137,7 +137,7 @@ func TestPromptCmd_RegisteredInRoot(t *testing.T) {
 func TestRunPrompt_NoProject_ExitsWithError(t *testing.T) {
 	if os.Getenv("TEST_PROMPT_NO_PROJECT") == "1" {
 		promptFixRecordMissed = false
-		runPrompt(nil, []string{"1.1"})
+		_ = runPrompt(nil, []string{"1.1"})
 		return
 	}
 
@@ -166,7 +166,7 @@ func TestRunPrompt_NoProject_ExitsWithError(t *testing.T) {
 func TestRunPrompt_NoFeature_ExitsWithError(t *testing.T) {
 	if os.Getenv("TEST_PROMPT_NO_FEATURE") == "1" {
 		promptFixRecordMissed = false
-		runPrompt(nil, []string{"1.1"})
+		_ = runPrompt(nil, []string{"1.1"})
 		return
 	}
 

@@ -20,10 +20,10 @@ var proposalCmd = &cobra.Command{
 Without arguments: lists all proposals in table format.
 With a slug argument: shows detailed information for that proposal.`,
 	Args: cobra.MaximumNArgs(1),
-	Run:  runProposal,
+	RunE: runProposal,
 }
 
-func runProposal(_ *cobra.Command, args []string) {
+func runProposal(_ *cobra.Command, args []string) error {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
 		Exit(ErrProjectNotFound())
@@ -34,6 +34,7 @@ func runProposal(_ *cobra.Command, args []string) {
 	} else {
 		runProposalDetail(projectRoot, args[0])
 	}
+	return nil
 }
 
 func runProposalList(projectRoot string) {

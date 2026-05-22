@@ -298,7 +298,7 @@ func TestBuildIndex_FrontmatterUpdate(t *testing.T) {
 	}
 }
 
-func TestBuildIndex_OrphanDetection(t *testing.T) {
+func TestBuildIndex_OrphanCleanup(t *testing.T) {
 	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "")
 
 	// Create index with a task
@@ -328,6 +328,7 @@ func TestBuildIndex_OrphanDetection(t *testing.T) {
 	if result.PreservedCount != 1 {
 		t.Errorf("PreservedCount = %d, want 1", result.PreservedCount)
 	}
+	// Verify orphan warning still appears
 	found := false
 	for _, w := range result.Warnings {
 		if len(w) > 6 && w[:6] == "orphan" {
@@ -336,6 +337,10 @@ func TestBuildIndex_OrphanDetection(t *testing.T) {
 	}
 	if !found {
 		t.Errorf("expected orphan warning, got %v", result.Warnings)
+	}
+	// Verify orphan is removed from the index
+	if _, ok := result.Index.ByID("1"); ok {
+		t.Error("orphan task '1' should be removed from index, but still present")
 	}
 }
 

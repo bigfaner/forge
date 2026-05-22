@@ -110,7 +110,7 @@ func TestReadForgeState(t *testing.T) {
 }
 
 func TestClearForgeState(t *testing.T) {
-	t.Run("deletes existing file", func(t *testing.T) {
+	t.Run("writes allCompleted=false instead of deleting", func(t *testing.T) {
 		dir := t.TempDir()
 		_ = WriteForgeState(dir, "test")
 
@@ -118,15 +118,30 @@ func TestClearForgeState(t *testing.T) {
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
-		if _, err := os.Stat(GetForgeStatePath(dir)); !os.IsNotExist(err) {
-			t.Error("expected file to be deleted")
+
+		// File should still exist
+		statePath := GetForgeStatePath(dir)
+		if _, err := os.Stat(statePath); os.IsNotExist(err) {
+			t.Fatal("state file should still exist after ClearForgeState")
+		}
+
+		// allCompleted should be false
+		state := ReadForgeState(dir)
+		if state == nil {
+			t.Fatal("expected non-nil state after ClearForgeState")
+		}
+		if state.AllCompleted {
+			t.Error("allCompleted should be false after ClearForgeState")
+		}
+		if state.Feature != "test" {
+			t.Errorf("feature = %q, want %q", state.Feature, "test")
 		}
 	})
 
 	t.Run("no error when file doesn't exist", func(t *testing.T) {
 		dir := t.TempDir()
 		err := ClearForgeState(dir)
-		if err != nil && !os.IsNotExist(err) {
+		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
 	})
@@ -199,4 +214,68 @@ func TestEnsureForgeState(t *testing.T) {
 			t.Error("allCompleted should be false after EnsureForgeState overwrite")
 		}
 	})
+}
+
+func TestMarkFeatureCompleted(t *testing.T) {
+	t.Run("sets completedAt on existing state", func(t *testing.T) {
+		dir := t.TempDir()
+		_ = EnsureForgeState(dir, "test-feature")
+
+		err := MarkFeatureCompleted(dir)
+		if err != nil {
+			t.Fatalf("MarkFeatureCompleted() error = %v", err)
+		}
+
+		state := ReadForgeState(dir)
+		if state == nil {
+			t.Fatal("expected non-nil state")
+		}
+		if state.CompletedAt == "" {
+			t.Error("completedAt should be set")
+		}
+		if state.Feature != "test-feature" {
+			t.Errorf("feature should be preserved, got %q", state.Feature)
+		}
+	})
+
+	t.Run("no-op when state file does not exist", func(t *testing.T) {
+		dir := t.TempDir()
+		err := MarkFeatureCompleted(dir)
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("no-op when state file is malformed", func(t *testing.T) {
+		dir := t.TempDir()
+		statePath := GetForgeStatePath(dir)
+		_ = os.MkdirAll(filepath.Dir(statePath), 0755)
+		_ = os.WriteFile(statePath, []byte("not json"), 0644)
+
+		err := MarkFeatureCompleted(dir)
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+	})
+}
+
+func TestForgeState_AtomicWriteNoTempFiles(t *testing.T) {
+	dir := t.TempDir()
+
+	// Write multiple times and verify no temp files remain
+	for i := 0; i < 5; i++ {
+		_ = WriteForgeState(dir, "test")
+		_ = EnsureForgeState(dir, "test")
+	}
+
+	forgeDir := filepath.Join(dir, ForgeDir)
+	entries, err := os.ReadDir(forgeDir)
+	if err != nil {
+		t.Fatalf("failed to read dir: %v", err)
+	}
+	for _, e := range entries {
+		if matched, _ := filepath.Match(".state.json.tmp.*", e.Name()); matched {
+			t.Errorf("temp file should not remain: %s", e.Name())
+		}
+	}
 }

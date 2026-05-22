@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"forge-cli/pkg/index"
 )
 
 // ForgeState represents the session-level runtime state in .forge/state.json.
@@ -31,7 +33,7 @@ func WriteForgeState(projectRoot, featureSlug string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(statePath, data, 0644)
+	return index.AtomicWrite(statePath, data, 0644)
 }
 
 // MarkFeatureCompleted sets completedAt on the existing state.json.
@@ -55,7 +57,7 @@ func MarkFeatureCompleted(projectRoot string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(statePath, updated, 0644)
+	return index.AtomicWrite(statePath, updated, 0644)
 }
 
 // EnsureForgeDir creates the .forge/ directory at project root if it doesn't exist.
@@ -83,7 +85,7 @@ func EnsureForgeState(projectRoot, featureSlug string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(statePath, data, 0644)
+	return index.AtomicWrite(statePath, data, 0644)
 }
 
 // ReadForgeState reads .forge/state.json. Returns nil if the file doesn't exist.
@@ -100,8 +102,19 @@ func ReadForgeState(projectRoot string) *ForgeState {
 	return &state
 }
 
-// ClearForgeState removes .forge/state.json.
+// ClearForgeState writes .forge/state.json with allCompleted=false.
+// The file is preserved (not deleted) so the workspace marker remains.
 func ClearForgeState(projectRoot string) error {
 	statePath := GetForgeStatePath(projectRoot)
-	return os.Remove(statePath)
+	state := ReadForgeState(projectRoot)
+	if state == nil {
+		return nil // no state file — nothing to clear
+	}
+	state.AllCompleted = false
+	state.UpdatedAt = time.Now().Format(time.RFC3339)
+	data, err := json.Marshal(state)
+	if err != nil {
+		return err
+	}
+	return index.AtomicWrite(statePath, data, 0644)
 }

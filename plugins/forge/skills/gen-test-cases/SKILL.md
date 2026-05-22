@@ -44,7 +44,7 @@ This skill can be invoked manually or as the standard task T-test-1 appended by 
 - User provides `/gen-test-cases` command
 - After PRD is finalized, before or after implementation
 
-## Workflow
+## Process Flow
 
 ```
 1. Read PRD → 2. Extract AC → 2.5. Detect interfaces → 2.6. Load conventions → 3. Per-type loop → 3.5. Validate routes → 4. Generate manifest

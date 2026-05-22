@@ -13,6 +13,7 @@ var rootCmd = &cobra.Command{
 	Long: `A unified CLI tool for managing tasks in Claude Code projects.
 
 Supports the docs/features/<slug>/ directory structure for task management.`,
+	Args: cobra.NoArgs,
 }
 
 // Execute runs the root command.
@@ -65,6 +66,7 @@ func init() {
 	taskCmd.AddCommand(indexCmd)
 	taskCmd.AddCommand(migrateCmd)
 	taskCmd.AddCommand(listTypesCmd)
+	taskCmd.AddCommand(reopenCmd)
 
 	// E2E group subcommands (6 total)
 	e2eCmd.AddCommand(validateSpecsCmd)

@@ -18,7 +18,7 @@ Subcommands:
   run-journey <name>  — run a single journey in isolated temp directory
   verify              — detect contract breakage against current code`,
 	Args: cobra.NoArgs,
-	Run:  runTestHelp,
+	RunE: runTestHelp,
 }
 
 var testPromoteCmd = &cobra.Command{
@@ -32,7 +32,7 @@ the promotion is refused and a failure report is printed.
 Tag lifecycle:
   @feature (newly generated, under validation) -> @regression (verified, regression)`,
 	Args: cobra.ExactArgs(1),
-	Run:  runTestPromote,
+	RunE: runTestPromote,
 }
 
 var testRunJourneyCmd = &cobra.Command{
@@ -47,7 +47,7 @@ The journey name is used as part of the temp directory path for traceability.
 
 Output is a structured block with journey name, result, duration, and any failures.`,
 	Args: cobra.ExactArgs(1),
-	Run:  runTestRunJourney,
+	RunE: runTestRunJourney,
 }
 
 func init() {
@@ -55,15 +55,16 @@ func init() {
 	testCmd.AddCommand(testRunJourneyCmd)
 }
 
-func runTestHelp(_ *cobra.Command, _ []string) {
+func runTestHelp(_ *cobra.Command, _ []string) error {
 	PrintBlockStart()
 	PrintField("USAGE", "forge test <subcommand>")
 	PrintField("SUBCOMMANDS", "promote, run-journey, verify")
 	PrintField("HINT", "Run 'forge test verify' to check contracts, 'forge test promote <journey>' to graduate features")
 	PrintBlockEnd()
+	return nil
 }
 
-func runTestRunJourney(_ *cobra.Command, args []string) {
+func runTestRunJourney(_ *cobra.Command, args []string) error {
 	journeyName := args[0]
 
 	projectRoot, err := project.FindProjectRoot()
@@ -86,4 +87,5 @@ func runTestRunJourney(_ *cobra.Command, args []string) {
 
 	// Output the result report
 	fmt.Print(result.FormatReport())
+	return nil
 }

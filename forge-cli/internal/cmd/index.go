@@ -7,6 +7,7 @@ import (
 
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/forgeconfig"
+	indexPkg "forge-cli/pkg/index"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/task"
 
@@ -20,7 +21,8 @@ var indexCmd = &cobra.Command{
 	Short: "Build or rebuild index.json from task markdown files",
 	Long: `Scan .md files in the feature's tasks/ directory and generate/update index.json.
 Idempotent: re-running with no changes produces the same output.`,
-	Run: runIndex,
+	Args: cobra.NoArgs,
+	RunE: runIndex,
 }
 
 func init() {
@@ -28,16 +30,16 @@ func init() {
 	_ = indexCmd.MarkFlagRequired("feature")
 }
 
-func runIndex(_ *cobra.Command, _ []string) {
+func runIndex(_ *cobra.Command, _ []string) error {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		Exit(ErrProjectNotFound())
+		return ErrProjectNotFound()
 	}
 
 	// Validate feature dir exists
 	featureDir := filepath.Join(projectRoot, feature.GetFeatureDir(indexFeatureSlug))
 	if _, err := os.Stat(featureDir); os.IsNotExist(err) {
-		Exit(ErrFeatureNotFound(indexFeatureSlug))
+		return ErrFeatureNotFound(indexFeatureSlug)
 	}
 
 	tasksDir := filepath.Join(projectRoot, feature.GetFeatureTasksDir(indexFeatureSlug))
@@ -45,7 +47,7 @@ func runIndex(_ *cobra.Command, _ []string) {
 
 	// Ensure tasks dir exists
 	if err := os.MkdirAll(tasksDir, 0755); err != nil {
-		Exit(fmt.Errorf("create tasks dir: %w", err))
+		return fmt.Errorf("create tasks dir: %w", err)
 	}
 
 	// Read auto-behavior config (returns defaults when missing)
@@ -64,12 +66,15 @@ func runIndex(_ *cobra.Command, _ []string) {
 
 	result, err := task.BuildIndex(opts)
 	if err != nil {
-		Exit(fmt.Errorf("build index: %w", err))
+		return fmt.Errorf("build index: %w", err)
 	}
 
-	// Save index
-	if err := task.SaveIndex(indexPath, result.Index); err != nil {
-		Exit(fmt.Errorf("save index: %w", err))
+	// Save index atomically under lock (BuildIndex already saves internally,
+	// but the lock ensures exclusive access during the full rebuild cycle).
+	if err := indexPkg.WithLock(indexPath, func() error {
+		return indexPkg.SaveIndexAtomic(indexPath, result.Index)
+	}); err != nil {
+		return fmt.Errorf("save index: %w", err)
 	}
 
 	// Print summary
@@ -92,4 +97,5 @@ func runIndex(_ *cobra.Command, _ []string) {
 	if err := v.run(); err != nil {
 		fmt.Fprintf(os.Stderr, "NOTE: fix validation errors above and re-run 'forge task index --feature %s'\n", indexFeatureSlug)
 	}
+	return nil
 }

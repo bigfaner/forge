@@ -35,7 +35,8 @@ quick mode), commits, and optionally pushes to remote.
 
 This command is designed as a Stop hook — it always exits 0 so it
 never blocks the agent stop flow.`,
-	Run: runFeatureCompleteCmd,
+	Args: cobra.NoArgs,
+	RunE: runFeatureCompleteCmd,
 }
 
 var ifDone bool
@@ -47,21 +48,21 @@ func init() {
 
 // runFeatureCompleteCmd is the cobra Run function for the complete subcommand.
 // Always exits 0 (hook protocol: non-blocking).
-func runFeatureCompleteCmd(_ *cobra.Command, _ []string) {
+func runFeatureCompleteCmd(_ *cobra.Command, _ []string) error {
 	if !ifDone {
 		// Without --if-done flag, this is a no-op (safety guard).
-		os.Exit(0)
+		return nil
 	}
 
 	result := checkFeatureCompletion()
 	if result == nil {
-		os.Exit(0)
+		return nil
 	}
 
 	if err := completeFeature(result); err != nil {
 		fmt.Fprintf(os.Stderr, "[feature:complete] Error: %v\n", err)
 	}
-	os.Exit(0)
+	return nil
 }
 
 // checkFeatureCompletion verifies all tasks are done and returns context for completion.

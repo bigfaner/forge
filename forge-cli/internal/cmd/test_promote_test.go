@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // --- Test: promote command registered ---
@@ -322,6 +324,40 @@ func TestPromoteJourneyTags_MultipleLanguages(t *testing.T) {
 }
 
 // --- Test: PromoteDiffSummary ---
+
+// --- Test: validateJourneyName path traversal ---
+
+func TestValidateJourneyName_RejectsPathTraversal(t *testing.T) {
+	err := validateJourneyName("../other-journey")
+	assert.Equal(t, ErrInvalidPath, err.Code)
+	assert.Contains(t, err.Cause, "..")
+}
+
+func TestValidateJourneyName_RejectsDoubleDot(t *testing.T) {
+	err := validateJourneyName("foo/../../bar")
+	assert.Equal(t, ErrInvalidPath, err.Code)
+	assert.Contains(t, err.Cause, "..")
+}
+
+func TestValidateJourneyName_RejectsAbsolutePath(t *testing.T) {
+	err := validateJourneyName("/etc/passwd")
+	assert.Equal(t, ErrInvalidPath, err.Code)
+}
+
+func TestValidateJourneyName_AcceptsSimpleName(t *testing.T) {
+	err := validateJourneyName("my-journey")
+	assert.Nil(t, err)
+}
+
+func TestValidateJourneyName_AcceptsHyphenatedName(t *testing.T) {
+	err := validateJourneyName("task-lifecycle")
+	assert.Nil(t, err)
+}
+
+func TestValidateJourneyName_RejectsJustDotDot(t *testing.T) {
+	err := validateJourneyName("..")
+	assert.Equal(t, ErrInvalidPath, err.Code)
+}
 
 func TestPromoteDiffSummary_ShowsChanges(t *testing.T) {
 	dir := t.TempDir()

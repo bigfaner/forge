@@ -50,7 +50,7 @@ flowchart LR
     B --> B1["subagents<br>transcripts"]
 ```
 
-## Workflow
+## Process Flow
 
 <HARD-RULE>
 After completing each workflow step, report its elapsed time in the format `[Step N: <duration>]`. This ensures the user can see progress even when analysis takes several minutes. Example output after each step:

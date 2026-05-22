@@ -91,8 +91,8 @@ func TestWorktreeStart_ErrorWhenClaudeNotInPath(t *testing.T) {
 		t.Error("expected error when claude binary not found")
 	}
 	stderr := buf.String()
-	if !strings.Contains(stderr, "claude") {
-		t.Errorf("error should mention 'claude', got: %s", stderr)
+	if !strings.Contains(stderr, "Claude binary not found") {
+		t.Errorf("error should mention 'Claude binary not found', got: %s", stderr)
 	}
 }
 
@@ -2598,8 +2598,8 @@ func TestWorktreeResume_ErrorWhenClaudeNotInPath(t *testing.T) {
 		t.Error("expected error when claude binary not found")
 	}
 	stderr := buf.String()
-	if !strings.Contains(stderr, "claude") {
-		t.Errorf("error should mention 'claude', got: %s", stderr)
+	if !strings.Contains(stderr, "Claude binary not found") {
+		t.Errorf("error should mention 'Claude binary not found', got: %s", stderr)
 	}
 }
 
@@ -2707,8 +2707,8 @@ func TestWorktreeResume_ErrorWhenDirExistsButNotWorktree(t *testing.T) {
 		t.Error("expected error when directory is not a git worktree")
 	}
 	stderr := buf.String()
-	if !strings.Contains(stderr, "not a git worktree") {
-		t.Errorf("error should mention 'not a git worktree', got: %s", stderr)
+	if !strings.Contains(stderr, "Not a git worktree") {
+		t.Errorf("error should mention 'Not a git worktree', got: %s", stderr)
 	}
 }
 
@@ -4176,8 +4176,8 @@ func TestWorktreeStart_NoSlugNoInteractive(t *testing.T) {
 	if err == nil {
 		t.Error("expected error when no slug and no -i flag")
 	}
-	if !strings.Contains(err.Error(), "slug") {
-		t.Errorf("error should mention slug requirement, got: %v", err)
+	if !strings.Contains(err.Error(), "Slug is required") {
+		t.Errorf("error should mention 'Slug is required', got: %v", err)
 	}
 }
 
@@ -4266,8 +4266,8 @@ func TestWorktreePush_ErrorOnDefaultBranch(t *testing.T) {
 		t.Error("expected error when on default branch in worktree")
 	}
 	stderr := buf.String()
-	if !strings.Contains(stderr, "refusing to push default branch") {
-		t.Errorf("error should mention refusing default branch, got: %s", stderr)
+	if !strings.Contains(stderr, "Refusing to push default branch") {
+		t.Errorf("error should mention 'Refusing to push default branch', got: %s", stderr)
 	}
 }
 
@@ -4304,8 +4304,8 @@ func TestWorktreePush_ErrorOnPushFailure(t *testing.T) {
 		t.Error("expected error when push fails")
 	}
 	stderr := buf.String()
-	if !strings.Contains(stderr, "push failed") {
-		t.Errorf("error should mention push failure, got: %s", stderr)
+	if !strings.Contains(stderr, "Push failed") {
+		t.Errorf("error should mention 'Push failed', got: %s", stderr)
 	}
 }
 
@@ -4445,7 +4445,7 @@ func TestWorktreeStatus_ErrorWhenNotGitRepo(t *testing.T) {
 		t.Error("expected error when not a git repo")
 	}
 	stderr := buf.String()
-	if !strings.Contains(stderr, "not a git repository") {
+	if !strings.Contains(stderr, "Not a git repository") {
 		t.Errorf("error should mention 'not a git repository', got: %s", stderr)
 	}
 }

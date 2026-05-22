@@ -5,6 +5,10 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"forge-cli/pkg/contract"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // --- Test: forge test verify command registered ---
@@ -22,9 +26,9 @@ func TestTestVerify_CommandRegistered(t *testing.T) {
 	}
 }
 
-// --- Test: forge test verify with no contracts reports empty ---
+// --- Test: forge test verify with no contracts returns unverifiable (Exit via Total==0) ---
 
-func TestTestVerify_NoContracts_ReportsEmpty(t *testing.T) {
+func TestTestVerify_NoContracts_ReturnsEmpty(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("CLAUDE_PROJECT_DIR", dir)
 
@@ -33,20 +37,11 @@ func TestTestVerify_NoContracts_ReportsEmpty(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	output, err := captureOutput(func() error {
-		rootCmd.SetArgs([]string{"test", "verify"})
-		return rootCmd.Execute()
-	})
-	if err != nil {
-		t.Fatalf("test verify failed: %v", err)
-	}
-
-	if !strings.Contains(output, "Scanning 0 Contracts") {
-		t.Errorf("expected 'Scanning 0 Contracts' in output, got: %s", output)
-	}
-	if !strings.Contains(output, "Summary:") {
-		t.Errorf("expected 'Summary:' in output, got: %s", output)
-	}
+	// Verify() returns empty summary without error; runTestVerify handles Total==0 via Exit()
+	collector := contract.RealFactCollector{}
+	summary, err := contract.Verify(dir, collector)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, summary.Total)
 }
 
 // --- Test: forge test verify with contracts produces report ---

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -901,9 +902,15 @@ func TestRunQuery(t *testing.T) {
 }
 
 func TestRunStatus(t *testing.T) {
-	dir := t.TempDir()
-	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	if os.Getenv("TEST_RUN_STATUS_MUTATION") == "1" {
+		rootCmd.SetArgs([]string{"task", "status", "1.1", "blocked"})
+		if err := rootCmd.Execute(); err != nil {
+			fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
+		}
+		return
+	}
 
+	dir := t.TempDir()
 	goMod := filepath.Join(dir, "go.mod")
 	if err := os.WriteFile(goMod, []byte("module test-project\n\ngo 1.21\n"), 0644); err != nil {
 		t.Fatal(err)
@@ -932,35 +939,21 @@ func TestRunStatus(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Ensure feature directory structure exists
 	if err := feature.EnsureFeatureDir(dir, "test-feature"); err != nil {
 		t.Fatal(err)
 	}
 
-	origWd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
+	cmd := exec.Command(os.Args[0], "-test.run=TestRunStatus")
+	cmd.Env = append(os.Environ(),
+		"TEST_RUN_STATUS_MUTATION=1",
+		"CLAUDE_PROJECT_DIR="+dir)
+	cmd.Dir = dir
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Error("expected non-zero exit: status mutation should fail")
 	}
-	defer func() { _ = os.Chdir(origWd) }()
-
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
-
-	_, err = captureOutput(func() error {
-		rootCmd.SetArgs([]string{"task", "status", "1.1", "blocked"})
-		return rootCmd.Execute()
-	})
-	if err != nil {
-		t.Fatalf("status command failed: %v", err)
-	}
-
-	updatedIndex, err := task.LoadIndex(indexPath)
-	if err != nil {
-		t.Fatalf("failed to load updated index: %v", err)
-	}
-	if updatedIndex.TasksMap()["task1"].Status != "blocked" {
-		t.Errorf("expected status 'blocked', got %q", updatedIndex.TasksMap()["task1"].Status)
+	if !strings.Contains(string(output), "task status is read-only") {
+		t.Errorf("expected 'task status is read-only' in output, got: %s", string(output))
 	}
 }
 

@@ -65,7 +65,7 @@ After language/interface resolution and before entering the workflow steps, load
 Convention loading is non-blocking. Missing convention files are silently skipped.
 </HARD-RULE>
 
-## Workflow
+## Process Flow
 
 ```
 0. Resolve language + interfaces -> 1. Read Journeys -> 2. Code Reconnaissance (Fact Table) -> 3. Generate Contracts -> 4. Validate -> 5. Write Output

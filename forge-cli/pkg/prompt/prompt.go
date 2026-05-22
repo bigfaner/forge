@@ -172,7 +172,7 @@ func PhaseDetect(projectRoot, featureSlug, taskID string) string {
 		if t.Status != feature.StatusCompleted {
 			continue
 		}
-		if !isBusinessTask(t.ID) {
+		if !task.IsBusinessTask(t.ID) {
 			continue
 		}
 		p := phaseOf(t.ID)
@@ -213,21 +213,6 @@ func phaseOf(id string) int {
 		return -1
 	}
 	return n
-}
-
-// isBusinessTask returns true if the task ID is a regular business task
-// (not a gate, summary, or T- prefixed test pipeline task).
-func isBusinessTask(id string) bool {
-	if strings.HasPrefix(id, "T-") {
-		return false
-	}
-	if strings.HasSuffix(id, ".gate") {
-		return false
-	}
-	if strings.HasSuffix(id, ".summary") {
-		return false
-	}
-	return true
 }
 
 // InferType infers the task type from the task ID.

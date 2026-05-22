@@ -15,7 +15,7 @@ func TestListTypesCmd(t *testing.T) {
 		r, w, _ := os.Pipe()
 		os.Stdout = w
 
-		runListTypes(nil, []string{})
+		_ = runListTypes(nil, []string{})
 
 		_ = w.Close()
 		os.Stdout = old

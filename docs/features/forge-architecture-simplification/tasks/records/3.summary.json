@@ -1,0 +1,92 @@
+{
+  "summary": {
+    "tasksCompleted": [
+      "3.1.1 — Fix 6 syntax errors (extra closing parentheses) in submit.go and test_promote.go; added missing return nil to saveIndexAndSignalCompletion",
+      "3.1.2 — Add cobra Args validation (cobra.NoArgs) to 9 commands: rootCmd, configCmd, configInitCmd, taskCmd, e2eCmd, forensicCmd, promptCmd, worktreeCmd, worktreeListCmd; claudeCmd excluded due to DisableFlagParsing",
+      "3.1.3 — Unify command output with PrintBlock/PrintField/PrintWarning/PrintListItem helpers across 7 files; replace os.Exit calls with return nil/error in verify_task_done.go and quality_gate.go; fix build issues (missing returns, unused imports, duplicate return nil)",
+      "3.2 — Delete bufio config init code path; delegate forge config init to huh TUI via runConfigInitHuh wrapper; simplify config_test.go with configInitFunc override pattern",
+      "3.3 — Add SetConfigValue in pkg/forgeconfig/config.go with dot-notation key dispatch; wire forge config set CLI command; refactor getAutoKeyValue to generic field dispatch; 82.5% test coverage",
+      "3.4 — Add Version field (int, omitempty, default 1) to Config struct; sync enum values between schema JSON and Go const block (fullstack/mobile/library/mixed); update forge-config.example.yaml project-type from frontend to fullstack"
+    ],
+    "keyDecisions": [
+      "[3.1.1] Removed extra closing parentheses from 6 NewAIError calls that prevented go build from passing; added missing return nil in saveIndexAndSignalCompletion",
+      "[3.1.2] claudeCmd excluded from Args validation because DisableFlagParsing:true requires transparent passthrough of all arguments to the claude binary; parent/group commands all got cobra.NoArgs to prevent accidental positional argument usage",
+      "[3.1.3] Used PrintListItem for indented list items instead of raw fmt.Printf; os.Exit(0) in RunE functions replaced with return nil; os.Exit(2) in verify_task_done.go replaced with return error",
+      "[3.2] Added runConfigInitHuh wrapper that delegates to configInitFunc (same variable used by forge init); simplified config_test.go to use configInitFunc override pattern like init_test.go; all 7 auto fields confirmed exposed in askAutoBehavior()",
+      "[3.3] SetConfigValue uses dot-notation key dispatch similar to GetConfigValue approach; getAutoKeyValue refactored from repetitive switch to generic field dispatch using autoModeField helper; auto.{field} (ModeToggle) sets both quick and full to same bool value",
+      "[3.4] Version field uses omitempty tag for backward compatibility with default 1; ValidProjectType validation function restricts to fullstack/mobile/library/mixed (removed frontend and backend)"
+    ],
+    "typesAndInterfacesChanged": [
+      {
+        "type": "cobra.Command.Args",
+        "file": "forge-cli/internal/cmd/root.go, config.go, task_parent.go, e2e_parent.go, forensic.go, prompt_parent.go, worktree.go",
+        "change": "Added .Args validator fields (cobra.NoArgs) to 9 command definitions",
+        "blastRadius": "9 files (7 command files)"
+      },
+      {
+        "type": "AIError constructor calls",
+        "file": "forge-cli/internal/cmd/submit.go, test_promote.go",
+        "change": "Fixed 6 malformed NewAIError calls with extra closing parentheses",
+        "blastRadius": "2 files"
+      },
+      {
+        "type": "PrintBlock formatting",
+        "file": "forge-cli/internal/cmd/query.go, check_deps.go, verify_task_done.go, quality_gate.go, forensic.go, test.go, reopen.go",
+        "change": "Applied PrintListItem/PrintField/PrintWarning helpers; removed raw fmt.Printf and os.Exit calls",
+        "blastRadius": "7 files"
+      },
+      {
+        "type": "runConfigInit function",
+        "file": "forge-cli/internal/cmd/config.go",
+        "change": "Deleted bufio-based init; replaced with runConfigInitHuh wrapper",
+        "blastRadius": "2 files (config.go, config_test.go)"
+      },
+      {
+        "type": "SetConfigValue function",
+        "file": "forge-cli/pkg/forgeconfig/config.go",
+        "change": "New exported function with dot-notation key dispatch for setting config values",
+        "blastRadius": "2 files (config.go, config_test.go)"
+      },
+      {
+        "type": "Config.Version field",
+        "file": "forge-cli/pkg/forgeconfig/config.go",
+        "change": "New int field with omitempty tag; defaults to 1 for backward compatibility",
+        "blastRadius": "1 file"
+      },
+      {
+        "type": "Config.ProjectType field + validation",
+        "file": "forge-cli/pkg/forgeconfig/config.go",
+        "change": "New field with ValidProjectType validation function; valid values: fullstack, mobile, library, mixed",
+        "blastRadius": "1 file"
+      },
+      {
+        "type": "forge-config.schema.json enum",
+        "file": "forge-cli/internal/cmd/testdata/forge-config.schema.json",
+        "change": "Synced enum values to match Go const block (fullstack/mobile/library/mixed)",
+        "blastRadius": "1 file"
+      },
+      {
+        "type": "forge-config.example.yaml",
+        "file": "forge-cli/internal/cmd/testdata/forge-config.example.yaml",
+        "change": "Changed project-type from frontend to fullstack",
+        "blastRadius": "1 file"
+      }
+    ],
+    "conventionsEstablished": [
+      "All cobra commands must have appropriate .Args validators (NoArgs for group/parent commands, specific validators for leaf commands); DisableFlagParsing commands are exempt",
+      "Command output must use PrintBlock formatting helpers (PrintListItem, PrintField, PrintWarning) instead of raw fmt.Printf",
+      "os.Exit() must not be called in RunE functions — use return nil for success or return error for failure",
+      "Config initialization flows must go through huh TUI, not bufio scanner; all 7 auto fields must be exposed in interactors",
+      "Config set uses dot-notation key dispatch with autoModeField helper for generic field access",
+      "New Config struct fields should use omitempty tag for backward compatibility with existing config files",
+      "Schema JSON enum and Go const block enums must be kept in sync — single source of truth for project types",
+      "Version field defaults to 1 for configs without the field, ensuring no breaking change for existing users"
+    ],
+    "deviationsFromDesign": [
+      "PrintBlock formatting was applied to 7 files (not just query.go and check_deps.go as the tech-design primarily mentioned) — forensic.go, test.go, reopen.go, verify_task_done.go, and quality_gate.go also needed formatting cleanup during the unified formatting pass",
+      "Config CRUD (3.3) closely followed Interface 4 in the tech-design with no significant deviations; the autoModeField helper refactoring was an implementation improvement not specified in the design",
+      "Schema version/enum task (3.4) was simpler than anticipated because Version and ProjectType fields were already partially implemented in the working tree before the task started",
+      "The tech-design described project-type enums as fullstack/mobile/library/mixed, but did not explicitly specify removing frontend/backend — this was discovered during implementation as a necessary alignment step"
+    ]
+  }
+}

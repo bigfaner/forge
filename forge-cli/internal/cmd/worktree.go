@@ -44,6 +44,7 @@ var worktreeCmd = &cobra.Command{
 Each worktree is created inside the project at .forge/worktrees/<slug> with a
 branch named <slug>. Forge's feature auto-detection resolves the correct
 feature from the worktree name.`,
+	Args: cobra.NoArgs,
 }
 
 var worktreeListCmd = &cobra.Command{
@@ -54,6 +55,7 @@ var worktreeListCmd = &cobra.Command{
 Worktrees whose name matches a feature slug in docs/features/ are marked as
 forge-managed. The main worktree (current project) is distinguished from
 feature worktrees.`,
+	Args: cobra.NoArgs,
 	RunE: runWorktreeList,
 }
 
@@ -79,7 +81,7 @@ func runWorktreeRemove(cmd *cobra.Command, args []string) error {
 	slug := args[0]
 
 	if slug == "" {
-		return fmt.Errorf("slug must not be empty")
+		return ErrSlugRequired()
 	}
 
 	hard, _ := cmd.Flags().GetBool("hard")
@@ -87,25 +89,23 @@ func runWorktreeRemove(cmd *cobra.Command, args []string) error {
 
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		return fmt.Errorf("find project root: %w", err)
+		return ErrProjectNotFound()
 	}
 
 	if !git.IsGitRepository(projectRoot) {
-		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: not a git repository: %s\n", projectRoot)
-		return fmt.Errorf("not a git repository: %s", projectRoot)
+		return ErrNotGitRepository(projectRoot)
 	}
 
 	// Resolve worktree path
 	targetDir := filepath.Join(projectRoot, ".forge", "worktrees", slug)
 	targetDir, err = filepath.Abs(targetDir)
 	if err != nil {
-		return fmt.Errorf("resolve target path: %w", err)
+		return NewAIError(ErrInvalidInput, fmt.Sprintf("Unable to resolve target path: %v", err), "Failed to resolve the worktree directory path", "Check that the path is valid", "forge worktree list")
 	}
 
 	// Check that the worktree directory exists
 	if _, err := os.Stat(targetDir); os.IsNotExist(err) {
-		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: worktree not found: %s\n", targetDir)
-		return fmt.Errorf("worktree not found: %s", targetDir)
+		return NewAIError(ErrNotFound, fmt.Sprintf("Worktree not found: %s", targetDir), "The worktree directory does not exist", "Verify the slug is correct", "forge worktree list")
 	}
 
 	// Look up the branch name before removal
@@ -142,7 +142,7 @@ func runWorktreeRemove(cmd *cobra.Command, args []string) error {
 			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "hint: commit or stash your changes before removing, or use --force to discard\n")
 			return fmt.Errorf("uncommitted changes in worktree: %w", err)
 		}
-		return fmt.Errorf("git worktree remove: %w", err)
+		return NewAIError(ErrConflict, fmt.Sprintf("Failed to remove worktree: %v", err), "Git worktree remove command failed", "Check git status and retry", "forge worktree list")
 	}
 
 	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Removed worktree %q\n", slug)
@@ -208,55 +208,51 @@ Verifies that the worktree exists and is a valid git worktree before launching.`
 	RunE: runWorktreeResume,
 }
 
-func runWorktreeResume(cmd *cobra.Command, args []string) error {
+func runWorktreeResume(_ *cobra.Command, args []string) error {
 	slug := args[0]
 
 	if slug == "" {
-		return fmt.Errorf("slug must not be empty")
+		return ErrSlugRequired()
 	}
 
 	// Pre-flight: verify claude binary exists in PATH
 	if _, err := lookPathFunc("claude"); err != nil {
-		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: claude binary not found in PATH\n")
-		return fmt.Errorf("claude: %w", err)
+		return NewAIError(ErrNotFound, "Claude binary not found in PATH", "The claude CLI is required but not installed", "Install Claude Code or check your PATH", "pip install claude-code")
 	}
 
 	// Find project root
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		return fmt.Errorf("find project root: %w", err)
+		return ErrProjectNotFound()
 	}
 
 	// Verify we're in a git repository
 	if !git.IsGitRepository(projectRoot) {
-		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: not a git repository: %s\n", projectRoot)
-		return fmt.Errorf("not a git repository: %s", projectRoot)
+		return ErrNotGitRepository(projectRoot)
 	}
 
 	// Resolve worktree path
 	targetDir := filepath.Join(projectRoot, ".forge", "worktrees", slug)
 	targetDir, err = filepath.Abs(targetDir)
 	if err != nil {
-		return fmt.Errorf("resolve target path: %w", err)
+		return NewAIError(ErrInvalidInput, fmt.Sprintf("Unable to resolve target path: %v", err), "Failed to resolve the worktree directory path", "Check that the path is valid", "forge worktree list")
 	}
 
 	// Check that the worktree directory exists
 	if _, err := os.Stat(targetDir); os.IsNotExist(err) {
-		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: worktree not found: %s\n", targetDir)
-		return fmt.Errorf("worktree not found: %s", targetDir)
+		return NewAIError(ErrNotFound, fmt.Sprintf("Worktree not found: %s", targetDir), "The worktree directory does not exist", "Verify the slug is correct", "forge worktree list")
 	}
 
 	// Evaluate symlinks so the path matches os.Getwd() on macOS (/var → /private/var).
 	targetDir, err = filepath.EvalSymlinks(targetDir)
 	if err != nil {
-		return fmt.Errorf("resolve target path: %w", err)
+		return NewAIError(ErrInvalidInput, fmt.Sprintf("Unable to resolve target path: %v", err), "Failed to resolve the worktree directory path", "Check that the path is valid", "forge worktree list")
 	}
 
 	// Verify it's a git worktree (.git file or directory must exist)
 	gitFile := filepath.Join(targetDir, ".git")
 	if _, err := os.Stat(gitFile); os.IsNotExist(err) {
-		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: %s is not a git worktree\n", targetDir)
-		return fmt.Errorf("%s is not a git worktree", targetDir)
+		return NewAIError(ErrInvalidInput, fmt.Sprintf("Not a git worktree: %s", targetDir), "The directory is not a git worktree", "Ensure the slug corresponds to a valid worktree", "forge worktree list")
 	}
 
 	// Launch claude in the worktree directory
@@ -264,7 +260,7 @@ func runWorktreeResume(cmd *cobra.Command, args []string) error {
 	defer func() { _ = os.Chdir(origDir) }()
 
 	if err := os.Chdir(targetDir); err != nil {
-		return fmt.Errorf("change to worktree directory: %w", err)
+		return NewAIError(ErrInvalidInput, fmt.Sprintf("Failed to change to worktree directory: %v", err), "Could not change directory", "Check that the worktree path is accessible", "ls .forge/worktrees/")
 	}
 
 	allArgs := []string{"--dangerously-skip-permissions"}
@@ -291,34 +287,30 @@ Uses "git push -u origin HEAD" to push and set the upstream tracking reference.`
 func runWorktreePush(cmd *cobra.Command, _ []string) error {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		return fmt.Errorf("find project root: %w", err)
+		return ErrProjectNotFound()
 	}
 
 	if !git.IsGitRepository(projectRoot) {
-		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: not a git repository: %s\n", projectRoot)
-		return fmt.Errorf("not a git repository: %s", projectRoot)
+		return ErrNotGitRepository(projectRoot)
 	}
 
 	// Hard Rule: must detect worktree context before pushing
 	if !isInsideWorktreeFunc(projectRoot) {
 		_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "error: not inside a worktree")
 		_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "hint: run this command from within a forge worktree directory")
-		return fmt.Errorf("not inside a worktree")
+		return ErrNotInsideWorktree()
 	}
 
 	// Hard Rule: refuse to push from main worktree's main branch
 	branch := getCurrentBranchFunc(projectRoot)
 	if branch == "main" || branch == "master" {
-		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: refusing to push default branch %q\n", branch)
-		_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "hint: switch to a feature branch before pushing")
-		return fmt.Errorf("refusing to push default branch: %s", branch)
+		return ErrRefusingDefaultBranch(branch)
 	}
 
 	// Push with upstream tracking
 	output, err := gitPushFunc(projectRoot)
 	if err != nil {
-		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: push failed: %v\n", err)
-		return fmt.Errorf("push failed: %w", err)
+		return NewAIError(ErrConflict, fmt.Sprintf("Push failed: %v", err), "Git push command failed", "Check remote connectivity and branch status", "git push -u origin HEAD")
 	}
 
 	if output != "" {
@@ -343,17 +335,16 @@ This command is strictly read-only — it never modifies any filesystem state.`,
 func runWorktreeStatus(cmd *cobra.Command, args []string) error {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		return fmt.Errorf("find project root: %w", err)
+		return ErrProjectNotFound()
 	}
 
 	if !git.IsGitRepository(projectRoot) {
-		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: not a git repository: %s\n", projectRoot)
-		return fmt.Errorf("not a git repository: %s", projectRoot)
+		return ErrNotGitRepository(projectRoot)
 	}
 
 	entries, err := listWorktreesFunc(projectRoot)
 	if err != nil {
-		return fmt.Errorf("list worktrees: %w", err)
+		return NewAIError(ErrNotFound, fmt.Sprintf("Failed to list worktrees: %v", err), "Could not enumerate git worktrees", "Check git status", "git worktree list")
 	}
 
 	// Build set of forge-managed feature slugs
@@ -380,8 +371,7 @@ func showWorktreeStatus(cmd *cobra.Command, projectRoot string, entries []git.Wo
 	}
 
 	if found == nil {
-		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: worktree %q not found\n", slug)
-		return fmt.Errorf("worktree %q not found", slug)
+		return NewAIError(ErrNotFound, fmt.Sprintf("Worktree not found: %s", slug), "No worktree exists with that slug", "Verify the slug is correct", "forge worktree list")
 	}
 
 	printWorktreeStatus(cmd, projectRoot, found)
@@ -493,13 +483,13 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 		// Find project root first (needed for scanning)
 		projectRoot, err := project.FindProjectRoot()
 		if err != nil {
-			return fmt.Errorf("find project root: %w", err)
+			return ErrProjectNotFound()
 		}
 
 		// Check TTY
 		if !isTerminalFunc() {
 			_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "error: interactive mode requires a terminal (TTY)")
-			return fmt.Errorf("interactive mode requires a terminal")
+			return NewAIError(ErrInvalidInput, "Interactive mode requires a terminal (TTY)", "The -i flag requires a real terminal", "Run without -i or use a TTY", "forge worktree start <slug>")
 		}
 
 		items := listUnfinishedItems(projectRoot)
@@ -518,7 +508,7 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 	}
 
 	if slug == "" {
-		return fmt.Errorf("slug is required (provide as argument or use -i for interactive selection)")
+		return ErrSlugRequired()
 	}
 
 	// Check --no-launch early: skip claude pre-flight when not launching
@@ -527,33 +517,31 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 	// Pre-flight: verify claude binary exists in PATH (skip when --no-launch)
 	if !noLaunch {
 		if _, err := lookPathFunc("claude"); err != nil {
-			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: claude binary not found in PATH\n")
-			return fmt.Errorf("claude: %w", err)
+			return NewAIError(ErrNotFound, "Claude binary not found in PATH", "The claude CLI is required but not installed", "Install Claude Code or check your PATH", "pip install claude-code")
 		}
 	}
 
 	// Find project root
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		return fmt.Errorf("find project root: %w", err)
+		return ErrProjectNotFound()
 	}
 
 	// Verify we're in a git repository
 	if !git.IsGitRepository(projectRoot) {
-		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: not a git repository: %s\n", projectRoot)
-		return fmt.Errorf("not a git repository: %s", projectRoot)
+		return ErrNotGitRepository(projectRoot)
 	}
 
 	// Compute target directory inside project: .forge/worktrees/<slug>
 	targetDir := filepath.Join(projectRoot, ".forge", "worktrees", slug)
 	targetDir, err = filepath.Abs(targetDir)
 	if err != nil {
-		return fmt.Errorf("resolve target path: %w", err)
+		return NewAIError(ErrInvalidInput, fmt.Sprintf("Unable to resolve target path: %v", err), "Failed to resolve the worktree directory path", "Check that the path is valid", "forge worktree list")
 	}
 
 	// Ensure .forge/worktrees/ parent directory exists
 	if err := os.MkdirAll(filepath.Dir(targetDir), 0o755); err != nil {
-		return fmt.Errorf("create worktrees directory: %w", err)
+		return NewAIError(ErrInvalidInput, fmt.Sprintf("Failed to create worktrees directory: %v", err), "Could not create .forge/worktrees directory", "Check filesystem permissions", "mkdir -p .forge/worktrees")
 	}
 
 	// Check if target directory already exists
@@ -612,7 +600,7 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "creating worktree from remote branch origin/%s\n", slug)
 		_, err = gitRunFunc(projectRoot, "branch", slug, "origin/"+slug)
 		if err != nil {
-			return fmt.Errorf("git branch %s origin/%s: %w", slug, slug, err)
+			return NewAIError(ErrConflict, fmt.Sprintf("Failed to create branch from remote: %v", err), "Git branch from remote failed", "Check remote connectivity", "git fetch origin")
 		}
 		_, err = gitRunFunc(projectRoot, "worktree", "add", targetDir, slug)
 		if err != nil {
@@ -636,7 +624,7 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 		}
 		_, err = gitRunFunc(projectRoot, branchArgs...)
 		if err != nil {
-			return fmt.Errorf("git branch %s: %w", slug, err)
+			return NewAIError(ErrConflict, fmt.Sprintf("Failed to create branch: %v", err), "Git branch command failed", "Check that the source branch exists", "git branch")
 		}
 		_, err = gitRunFunc(projectRoot, "worktree", "add", targetDir, slug)
 		if err != nil {
@@ -645,7 +633,7 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 		}
 	}
 	if err != nil {
-		return fmt.Errorf("git worktree add: %w", err)
+		return NewAIError(ErrConflict, fmt.Sprintf("Failed to add worktree: %v", err), "Git worktree add command failed", "Check for conflicts with existing branches", "git worktree list")
 	}
 
 	// Copy configured files from project root to worktree
@@ -664,7 +652,7 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 	defer func() { _ = os.Chdir(origDir) }()
 
 	if err := os.Chdir(targetDir); err != nil {
-		return fmt.Errorf("change to worktree directory: %w", err)
+		return NewAIError(ErrInvalidInput, fmt.Sprintf("Failed to change to worktree directory: %v", err), "Could not change directory", "Check that the worktree path is accessible", "ls .forge/worktrees/")
 	}
 
 	allArgs := []string{"--dangerously-skip-permissions"}
@@ -674,17 +662,16 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 func runWorktreeList(cmd *cobra.Command, _ []string) error {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		return fmt.Errorf("find project root: %w", err)
+		return ErrProjectNotFound()
 	}
 
 	if !git.IsGitRepository(projectRoot) {
-		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: not a git repository: %s\n", projectRoot)
-		return fmt.Errorf("not a git repository: %s", projectRoot)
+		return ErrNotGitRepository(projectRoot)
 	}
 
 	entries, err := listWorktreesFunc(projectRoot)
 	if err != nil {
-		return fmt.Errorf("list worktrees: %w", err)
+		return NewAIError(ErrNotFound, fmt.Sprintf("Failed to list worktrees: %v", err), "Could not enumerate git worktrees", "Check git status", "git worktree list")
 	}
 
 	if len(entries) == 0 {
@@ -736,14 +723,14 @@ func listForgeFeatures(projectRoot string) map[string]bool {
 // Rejects absolute paths and paths containing ".." traversals.
 func validateCopyFilePath(relPath string) error {
 	if filepath.IsAbs(relPath) {
-		return fmt.Errorf("copy-file path must be relative, got absolute: %s", relPath)
+		return NewAIError(ErrInvalidPath, fmt.Sprintf("Copy-file path must be relative: %s", relPath), "Absolute paths are not allowed for copy-files", "Use a relative path", "forge config set worktree.copy-files [path]")
 	}
 	// Reject Windows-style absolute paths (e.g. C:\Windows) on all platforms.
 	if len(relPath) >= 2 && relPath[1] == ':' && (relPath[2] == '\\' || relPath[2] == '/') {
-		return fmt.Errorf("copy-file path must be relative, got absolute: %s", relPath)
+		return NewAIError(ErrInvalidPath, fmt.Sprintf("Copy-file path must be relative: %s", relPath), "Absolute paths are not allowed for copy-files", "Use a relative path", "forge config set worktree.copy-files [path]")
 	}
 	if strings.Contains(relPath, "..") {
-		return fmt.Errorf("copy-file path must not contain '..': %s", relPath)
+		return NewAIError(ErrInvalidPath, fmt.Sprintf("Copy-file path must not contain \"..\": %s", relPath), "Path traversal is not allowed", "Use a simple relative path without ..", relPath)
 	}
 	return nil
 }
@@ -758,7 +745,7 @@ func validateCopyFiles(projectRoot string, copyFiles []string) error {
 		}
 		fullPath := filepath.Join(projectRoot, relPath)
 		if _, err := os.Stat(fullPath); os.IsNotExist(err) {
-			return fmt.Errorf("copy-file not found in project root: %s", relPath)
+			return NewAIError(ErrNotFound, fmt.Sprintf("Copy-file not found: %s", relPath), "The specified copy-file does not exist in the project root", "Verify the file exists", "ls "+relPath)
 		}
 	}
 	return nil
@@ -774,15 +761,15 @@ func copyFilesToWorktree(projectRoot, worktreeDir string, copyFiles []string) er
 
 		data, err := os.ReadFile(src)
 		if err != nil {
-			return fmt.Errorf("read %s: %w", relPath, err)
+			return NewAIError(ErrNotFound, fmt.Sprintf("Failed to read %s: %v", relPath, err), "Could not read the source file", "Check file exists and is readable", "cat "+relPath)
 		}
 
 		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-			return fmt.Errorf("create directory for %s: %w", relPath, err)
+			return NewAIError(ErrInvalidInput, fmt.Sprintf("Failed to create directory for %s: %v", relPath, err), "Could not create parent directory", "Check destination permissions", "mkdir -p "+relPath)
 		}
 
 		if err := os.WriteFile(dst, data, 0o644); err != nil {
-			return fmt.Errorf("write %s: %w", relPath, err)
+			return NewAIError(ErrInvalidInput, fmt.Sprintf("Failed to write %s: %v", relPath, err), "Could not write the destination file", "Check destination permissions", "ls -la "+relPath)
 		}
 	}
 	return nil

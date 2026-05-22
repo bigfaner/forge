@@ -73,11 +73,12 @@ func setupFullProject(t *testing.T, opts SetupOpts) (dir string) {
 		t.Fatal(err)
 	}
 
-	// Create task markdown files
+	// Create task markdown files (with proper frontmatter for BuildIndex compatibility)
 	tasksDir := filepath.Join(dir, feature.GetFeatureTasksDir(featureName))
 	for _, t2 := range opts.Tasks {
 		if t2.File != "" {
-			if err := os.WriteFile(filepath.Join(tasksDir, t2.File), []byte("# "+t2.Title), 0644); err != nil {
+			content := buildTestTaskMD(t2)
+			if err := os.WriteFile(filepath.Join(tasksDir, t2.File), []byte(content), 0644); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -110,6 +111,39 @@ func setupFullProject(t *testing.T, opts SetupOpts) (dir string) {
 		}
 	}
 	return dir
+}
+
+// buildTestTaskMD generates markdown with YAML frontmatter for a test task.
+// This ensures BuildIndex can parse the file and preserve the task in the index.
+func buildTestTaskMD(t task.Task) string {
+	var b strings.Builder
+	b.WriteString("---\n")
+	fmt.Fprintf(&b, "id: %q\n", t.ID)
+	fmt.Fprintf(&b, "title: %q\n", t.Title)
+	if t.Priority != "" {
+		fmt.Fprintf(&b, "priority: %q\n", t.Priority)
+	}
+	if t.Status != "" {
+		fmt.Fprintf(&b, "status: %q\n", t.Status)
+	}
+	if t.Type != "" {
+		fmt.Fprintf(&b, "type: %q\n", t.Type)
+	}
+	if len(t.Dependencies) > 0 {
+		b.WriteString("dependencies:\n")
+		for _, d := range t.Dependencies {
+			fmt.Fprintf(&b, "  - %q\n", d)
+		}
+	}
+	if t.Breaking {
+		b.WriteString("breaking: true\n")
+	}
+	if t.EstimatedTime != "" {
+		fmt.Fprintf(&b, "estimated_time: %q\n", t.EstimatedTime)
+	}
+	b.WriteString("---\n\n")
+	fmt.Fprintf(&b, "# %s\n", t.Title)
+	return b.String()
 }
 
 // ---------- verifyTaskCompletion ----------
@@ -354,10 +388,9 @@ func TestRunRecord_HappyPath(t *testing.T) {
 	submitDataPath = dataPath
 	submitJSON = false
 	submitQuiet = false
-	submitForce = false
 
 	out := captureStdout(func() {
-		runSubmit(nil, []string{"1.1"})
+		_ = runSubmit(nil, []string{"1.1"})
 	})
 
 	if !strings.Contains(out, "STATUS: completed") {
@@ -401,10 +434,9 @@ func TestRunRecord_JSONOutput(t *testing.T) {
 	submitDataPath = dataPath
 	submitJSON = true
 	submitQuiet = false
-	submitForce = false
 
 	out := captureStdout(func() {
-		runSubmit(nil, []string{"1.1"})
+		_ = runSubmit(nil, []string{"1.1"})
 	})
 
 	if !strings.Contains(out, `"recordFile"`) {
@@ -441,10 +473,9 @@ func TestRunRecord_QuietOutput(t *testing.T) {
 	submitDataPath = dataPath
 	submitJSON = false
 	submitQuiet = true
-	submitForce = false
 
 	out := captureStdout(func() {
-		runSubmit(nil, []string{"1.1"})
+		_ = runSubmit(nil, []string{"1.1"})
 	})
 
 	if strings.Contains(out, "TASK_ID") {
@@ -626,34 +657,11 @@ func TestSaveIndexAndSignalCompletion_IncompleteTasks(t *testing.T) {
 	_ = task.SaveIndex(indexPath, index)
 
 	// Should NOT write forge state since not all tasks are done
-	saveIndexAndSignalCompletion(indexPath, dir, "test", index)
+	_ = saveIndexAndSignalCompletion(indexPath, dir, "test", index)
 
 	forgeState := feature.ReadForgeState(dir)
 	if forgeState != nil {
 		t.Error("forge state should NOT be written when tasks are incomplete")
-	}
-}
-
-// ---------- validateRecordData ----------
-
-func TestValidateRecordData_ForceOverride(t *testing.T) {
-	rd := &task.RecordData{
-		Status:      "completed",
-		Summary:     "Done",
-		TestsPassed: 0,
-		TestsFailed: 0,
-		Coverage:    50.0,
-		AcceptanceCriteria: []task.AcceptanceCriterion{
-			{Criterion: "Works", Met: false},
-		},
-	}
-
-	// Should not exit when force=true
-	out := captureStderr2(func() {
-		validateRecordData(rd, true)
-	})
-	if strings.Contains(out, "ERROR") {
-		t.Errorf("force should suppress validation errors, got: %s", out)
 	}
 }
 
@@ -671,7 +679,7 @@ func TestValidateRecordData_NonTestableTask(t *testing.T) {
 	}
 
 	out := captureStderr2(func() {
-		validateRecordData(rd, false)
+		validateRecordData(rd)
 	})
 	if strings.Contains(out, "ERROR") {
 		t.Errorf("coverage=-1.0 should pass for non-testable tasks, got: %s", out)
@@ -851,26 +859,26 @@ func TestPrintTaskDetails_Breaking(t *testing.T) {
 	}
 }
 
-// ---------- runStatus update mode ----------
+// ---------- runStatus is read-only ----------
 
 func TestRunStatus_Update(t *testing.T) {
-	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
-		"t1": {ID: "1.1", Title: "Status Task", Status: "pending", Priority: "P0", File: "1.1.md", Record: "records/1.1.md", Dependencies: []string{}},
-	}})
-
-	out := captureStdout(func() {
-		runStatus(nil, []string{"1.1", "blocked"})
-	})
-	if !strings.Contains(out, "STATUS: blocked") {
-		t.Errorf("expected updated status, got: %s", out)
+	if os.Getenv("TEST_STATUS_UPDATE_MUTATION") == "1" {
+		setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
+			"t1": {ID: "1.1", Title: "Status Task", Status: "pending", Priority: "P0", File: "1.1.md", Record: "records/1.1.md", Dependencies: []string{}},
+		}})
+		_ = runStatus(nil, []string{"1.1", "blocked"})
+		return
 	}
 
-	// Verify index was updated
-	dir, _ := os.Getwd()
-	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
-	index, _ := task.LoadIndex(indexPath)
-	if index.TasksMap()["t1"].Status != "blocked" {
-		t.Errorf("index status = %q, want blocked", index.TasksMap()["t1"].Status)
+	cmd := exec.Command(os.Args[0], "-test.run=TestRunStatus_Update")
+	cmd.Env = append(os.Environ(), "TEST_STATUS_UPDATE_MUTATION=1")
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Error("expected error: status command is now read-only, mutation should fail")
+	}
+	out := string(output)
+	if !strings.Contains(out, "task status is read-only") {
+		t.Errorf("expected 'task status is read-only', got: %s", out)
 	}
 }
 
@@ -911,13 +919,14 @@ func TestExecuteClaim_SaveIndexError(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chdir(origWd) })
 	_ = os.Chdir(dir)
 
-	// Make index.json read-only so task.SaveIndex (os.WriteFile) fails
-	_ = os.Chmod(indexPath, 0444)
-	defer func() { _ = os.Chmod(indexPath, 0644) }()
+	// Make the tasks directory non-writable so WithLock (LockFile) fails
+	tasksDir := filepath.Dir(indexPath)
+	_ = os.Chmod(tasksDir, 0555)
+	t.Cleanup(func() { _ = os.Chmod(tasksDir, 0755) })
 
 	_, err := executeClaim()
 	if err == nil {
-		t.Error("expected error when save index fails")
+		t.Error("expected error when lock cannot be acquired")
 	}
 }
 
@@ -929,7 +938,7 @@ func TestRunClaim_Output(t *testing.T) {
 	}})
 
 	out := captureStdout(func() {
-		runClaim(nil, []string{})
+		_ = runClaim(nil, []string{})
 	})
 	if !strings.Contains(out, "ACTION: CLAIMED") {
 		t.Errorf("expected CLAIMED output, got: %s", out)
@@ -949,7 +958,7 @@ func TestRunCheck_AllValid(t *testing.T) {
 
 	out := captureStdout(func() {
 		captureStderr2(func() {
-			runCheckDeps(nil, []string{})
+			_ = runCheckDeps(nil, []string{})
 		})
 	})
 	if !strings.Contains(out, "PASS") {
@@ -1019,7 +1028,7 @@ func TestSaveIndexAndSignalCompletion_AllDone(t *testing.T) {
 	_ = task.SaveIndex(indexPath, index)
 
 	out := captureStderr2(func() {
-		saveIndexAndSignalCompletion(indexPath, dir, "test", index)
+		_ = saveIndexAndSignalCompletion(indexPath, dir, "test", index)
 	})
 
 	// Forge state should be written
@@ -1038,7 +1047,7 @@ func TestRunValidate_NoArgs(t *testing.T) {
 	}})
 
 	out := captureStdout(func() {
-		runValidateIndex(nil, []string{})
+		_ = runValidateIndex(nil, []string{})
 	})
 	if !strings.Contains(out, "PASS") {
 		t.Errorf("expected PASS via feature resolution, got: %s", out)
@@ -1055,7 +1064,7 @@ func TestRunCheck_WildcardMatch(t *testing.T) {
 
 	out := captureStdout(func() {
 		captureStderr2(func() {
-			runCheckDeps(nil, []string{})
+			_ = runCheckDeps(nil, []string{})
 		})
 	})
 	if !strings.Contains(out, "PASS") {
@@ -1131,10 +1140,9 @@ func TestRunRecord_BlockedStatus(t *testing.T) {
 	submitDataPath = dataPath
 	submitJSON = false
 	submitQuiet = false
-	submitForce = false
 
 	out := captureStdout(func() {
-		runSubmit(nil, []string{"1.1"})
+		_ = runSubmit(nil, []string{"1.1"})
 	})
 	if !strings.Contains(out, "STATUS: blocked") {
 		t.Errorf("expected blocked status, got: %s", out)
@@ -1242,7 +1250,7 @@ func TestRunFeature_None(t *testing.T) {
 	_ = os.Chdir(dir)
 
 	out := captureStdout(func() {
-		runFeature(nil, []string{})
+		_ = runFeature(nil, []string{})
 	})
 	if !strings.Contains(out, "(none)") {
 		t.Errorf("expected (none) for no feature, got: %s", out)
@@ -1328,7 +1336,17 @@ test:
 	}
 
 	if os.Getenv("TEST_QUALITY_GATE_COMPILE_FAIL") == "1" {
-		validateQualityGate(dir, "", true)
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					if aiErr, ok := r.(*AIError); ok {
+						Exit(aiErr)
+					}
+					os.Exit(1)
+				}
+			}()
+			validateQualityGate(dir, "", true)
+		}()
 		return
 	}
 
@@ -1496,7 +1514,7 @@ func TestWriteRegressionRawOutput_MkdirAllError(t *testing.T) {
 
 func TestRunValidate_NoProjectRoot(t *testing.T) {
 	if os.Getenv("TEST_RUN_VALIDATE_NO_PROJECT") == "1" {
-		runValidateIndex(nil, []string{})
+		_ = runValidateIndex(nil, []string{})
 		return
 	}
 
@@ -1524,7 +1542,7 @@ func TestRunValidate_NoProjectRoot(t *testing.T) {
 
 func TestRunValidate_NoFeatureSet(t *testing.T) {
 	if os.Getenv("TEST_RUN_VALIDATE_NO_FEATURE") == "1" {
-		runValidateIndex(nil, []string{})
+		_ = runValidateIndex(nil, []string{})
 		return
 	}
 
@@ -1554,7 +1572,7 @@ func TestRunValidate_NoFeatureSet(t *testing.T) {
 
 func TestRunValidate_IndexFileNotFound(t *testing.T) {
 	if os.Getenv("TEST_RUN_VALIDATE_NO_INDEX") == "1" {
-		runValidateIndex(nil, []string{})
+		_ = runValidateIndex(nil, []string{})
 		return
 	}
 
@@ -1587,7 +1605,9 @@ func TestRunValidate_IndexFileNotFound(t *testing.T) {
 
 func TestRunCheck_NoProjectRoot(t *testing.T) {
 	if os.Getenv("TEST_RUN_CHECK_NO_PROJECT") == "1" {
-		runCheckDeps(nil, []string{})
+		if err := runCheckDeps(nil, []string{}); err != nil {
+			Exit(err)
+		}
 		return
 	}
 
@@ -1614,7 +1634,9 @@ func TestRunCheck_NoProjectRoot(t *testing.T) {
 
 func TestRunCheck_NoFeatureSet(t *testing.T) {
 	if os.Getenv("TEST_RUN_CHECK_NO_FEATURE") == "1" {
-		runCheckDeps(nil, []string{})
+		if err := runCheckDeps(nil, []string{}); err != nil {
+			Exit(err)
+		}
 		return
 	}
 
@@ -1643,7 +1665,9 @@ func TestRunCheck_NoFeatureSet(t *testing.T) {
 
 func TestRunCheck_IndexFileNotFound(t *testing.T) {
 	if os.Getenv("TEST_RUN_CHECK_NO_INDEX") == "1" {
-		runCheckDeps(nil, []string{})
+		if err := runCheckDeps(nil, []string{}); err != nil {
+			Exit(err)
+		}
 		return
 	}
 
@@ -1679,7 +1703,9 @@ func TestRunCheck_InvalidDeps(t *testing.T) {
 	}})
 
 	if os.Getenv("TEST_RUN_CHECK_INVALID_DEPS") == "1" {
-		runCheckDeps(nil, []string{})
+		if err := runCheckDeps(nil, []string{}); err != nil {
+			Exit(err)
+		}
 		return
 	}
 
@@ -1725,7 +1751,9 @@ func TestSaveIndexAndSignalCompletion_SaveIndexError(t *testing.T) {
 	defer func() { _ = os.Chmod(indexDir, 0755) }()
 
 	if os.Getenv("TEST_SAVE_INDEX_ERROR") == "1" {
-		saveIndexAndSignalCompletion(indexPath, dir, "test", index)
+		if err := saveIndexAndSignalCompletion(indexPath, dir, "test", index); err != nil {
+			Exit(err)
+		}
 		return
 	}
 
@@ -1765,7 +1793,7 @@ func TestSaveIndexAndSignalCompletion_WriteForgeStateWarning(t *testing.T) {
 	_ = os.MkdirAll(filepath.Join(forgeDir, "state.json"), 0755)
 
 	out := captureStderr2(func() {
-		saveIndexAndSignalCompletion(indexPath, dir, "test", index)
+		_ = saveIndexAndSignalCompletion(indexPath, dir, "test", index)
 	})
 	if !strings.Contains(out, "WARNING") {
 		t.Errorf("expected warning about failed forge state write, got: %s", out)
@@ -1838,14 +1866,14 @@ func TestForgeStateLifecycle(t *testing.T) {
 	}
 
 	// Phase 3: all-completed reads and deletes state.json
-	result := checkAllCompleted(false)
+	result, _ := checkAllCompleted(false)
 	if result == nil {
 		t.Fatal("checkAllCompleted should return result when all done with state")
 	}
 
 	state = feature.ReadForgeState(dir)
-	if state != nil {
-		t.Error("state.json should be deleted after all-completed consumes it")
+	if state != nil && state.AllCompleted {
+		t.Error("state.json should have AllCompleted=false after all-completed consumes it")
 	}
 }
 
@@ -1895,7 +1923,7 @@ func TestExit_NonAIError(t *testing.T) {
 func TestRunAdd_NoProject(t *testing.T) {
 	if os.Getenv("TEST_RUN_ADD_NO_PROJECT") == "1" {
 		addTitle = "Test"
-		runAdd(nil, []string{})
+		_ = runAdd(nil, []string{})
 		return
 	}
 
@@ -1926,7 +1954,7 @@ func TestRunAdd_Success(t *testing.T) {
 	if os.Getenv("TEST_RUN_ADD_SUCCESS") == "1" {
 		addTitle = "New Task"
 		addPriority = "P1"
-		runAdd(nil, []string{})
+		_ = runAdd(nil, []string{})
 		return
 	}
 
@@ -1953,7 +1981,7 @@ func TestRunCleanup_Success(t *testing.T) {
 	_ = task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1"})
 
 	if os.Getenv("TEST_RUN_CLEANUP") == "1" {
-		runCleanup(nil, []string{})
+		_ = runCleanup(nil, []string{})
 		return
 	}
 
@@ -1981,7 +2009,7 @@ func TestRunVerifyCompletion_Success(t *testing.T) {
 	_ = task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1"})
 
 	if os.Getenv("TEST_RUN_VERIFY_OK") == "1" {
-		runVerifyTaskDone(nil, []string{})
+		_ = runVerifyTaskDone(nil, []string{})
 		return
 	}
 
@@ -2003,7 +2031,9 @@ func TestRunVerifyCompletion_Fail(t *testing.T) {
 	_ = task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1"})
 
 	if os.Getenv("TEST_RUN_VERIFY_FAIL") == "1" {
-		runVerifyTaskDone(nil, []string{})
+		if err := runVerifyTaskDone(nil, []string{}); err != nil {
+			Exit(err)
+		}
 		return
 	}
 
@@ -2026,7 +2056,7 @@ func TestRunAllCompleted_NotAllDone(t *testing.T) {
 	}})
 
 	if os.Getenv("TEST_RUN_ALL_COMPLETED_NOT_DONE") == "1" {
-		runQualityGate(nil, []string{})
+		_ = runQualityGate(nil, []string{})
 		return
 	}
 
@@ -2062,10 +2092,9 @@ func TestRunRecord_AutoRestore_SlugKeyedSource(t *testing.T) {
 	submitDataPath = dataPath
 	submitJSON = false
 	submitQuiet = false
-	submitForce = false
 
 	_ = captureStdout(func() {
-		runSubmit(nil, []string{"fix-auth"})
+		_ = runSubmit(nil, []string{"fix-auth"})
 	})
 
 	// Verify source task was auto-restored
@@ -2115,10 +2144,9 @@ func TestRunRecord_FixTaskAutoDowngrade_NoRestore(t *testing.T) {
 	submitDataPath = dataPath
 	submitJSON = false
 	submitQuiet = false
-	submitForce = false
 
 	_ = captureStdout(func() {
-		runSubmit(nil, []string{"fix-1"})
+		_ = runSubmit(nil, []string{"fix-1"})
 	})
 
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
@@ -2158,10 +2186,9 @@ func TestRunRecord_AutoDowngrade_ThenCleanup(t *testing.T) {
 	submitDataPath = dataPath
 	submitJSON = false
 	submitQuiet = false
-	submitForce = false
 
 	_ = captureStdout(func() {
-		runSubmit(nil, []string{"1.1"})
+		_ = runSubmit(nil, []string{"1.1"})
 	})
 
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
@@ -2211,10 +2238,9 @@ func TestRunRecord_AutoDowngrade_ThenClaim(t *testing.T) {
 	submitDataPath = dataPath
 	submitJSON = false
 	submitQuiet = false
-	submitForce = false
 
 	_ = captureStdout(func() {
-		runSubmit(nil, []string{"1.1"})
+		_ = runSubmit(nil, []string{"1.1"})
 	})
 
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
@@ -2260,10 +2286,9 @@ func TestRunRecord_MultiFixTask_PartialDowngrade(t *testing.T) {
 	submitDataPath = dataPath1
 	submitJSON = false
 	submitQuiet = false
-	submitForce = false
 
 	_ = captureStdout(func() {
-		runSubmit(nil, []string{"fix-1"})
+		_ = runSubmit(nil, []string{"fix-1"})
 	})
 
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
@@ -2294,7 +2319,7 @@ func TestRunRecord_MultiFixTask_PartialDowngrade(t *testing.T) {
 	submitDataPath = dataPath2
 
 	_ = captureStdout(func() {
-		runSubmit(nil, []string{"fix-2"})
+		_ = runSubmit(nil, []string{"fix-2"})
 	})
 
 	index, _ = task.LoadIndex(indexPath)

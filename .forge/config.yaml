@@ -4,7 +4,7 @@ auto:
     full: false
   e2eTest:
     quick: false
-    full: true
+    full: false
   consolidateSpecs:
     quick: true
     full: true
@@ -13,7 +13,7 @@ auto:
     full: true
   validation:
     quick: false
-    full: true
+    full: false
   gitPush: true
 interfaces:
   - cli

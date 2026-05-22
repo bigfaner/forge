@@ -3,6 +3,7 @@ package forgeconfig
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -21,6 +22,77 @@ func setupConfig(t *testing.T, content string) string {
 }
 
 func TestReadConfig(t *testing.T) {
+	t.Run("version field parsed correctly", func(t *testing.T) {
+		dir := setupConfig(t, "version: \"2\"\n")
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg == nil {
+			t.Fatal("expected non-nil config")
+		}
+		if cfg.Version != "2" {
+			t.Errorf("expected Version '2', got %q", cfg.Version)
+		}
+	})
+
+	t.Run("config without version defaults to 1", func(t *testing.T) {
+		dir := setupConfig(t, "test-framework: pytest\n")
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg == nil {
+			t.Fatal("expected non-nil config")
+		}
+		if cfg.Version != "1" {
+			t.Errorf("expected Version '1' (default), got %q", cfg.Version)
+		}
+	})
+
+	t.Run("empty config defaults version to 1", func(t *testing.T) {
+		dir := setupConfig(t, "{}\n")
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg == nil {
+			t.Fatal("expected non-nil config")
+		}
+		if cfg.Version != "1" {
+			t.Errorf("expected Version '1' (default), got %q", cfg.Version)
+		}
+	})
+
+	t.Run("project-type field parsed correctly", func(t *testing.T) {
+		dir := setupConfig(t, "project-type: fullstack\n")
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg == nil {
+			t.Fatal("expected non-nil config")
+		}
+		if cfg.ProjectType != "fullstack" {
+			t.Errorf("expected ProjectType 'fullstack', got %q", cfg.ProjectType)
+		}
+	})
+
+	t.Run("project-type valid values accepted", func(t *testing.T) {
+		for _, pt := range []string{"fullstack", "mobile", "library", "mixed"} {
+			t.Run(pt, func(t *testing.T) {
+				dir := setupConfig(t, "project-type: "+pt+"\n")
+				cfg, err := ReadConfig(dir)
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if cfg.ProjectType != pt {
+					t.Errorf("expected ProjectType %q, got %q", pt, cfg.ProjectType)
+				}
+			})
+		}
+	})
+
 	t.Run("file not exists returns nil nil", func(t *testing.T) {
 		dir := t.TempDir()
 		cfg, err := ReadConfig(dir)
@@ -49,8 +121,8 @@ func TestReadConfig(t *testing.T) {
 		}
 	})
 
-	t.Run("unknown fields silently ignored", func(t *testing.T) {
-		dir := setupConfig(t, "project-type: backend\nlanguages:\n  - go\ntest-framework: pytest\nunknown-field: value\n")
+	t.Run("known fields parsed while unknown silently ignored", func(t *testing.T) {
+		dir := setupConfig(t, "project-type: fullstack\nlanguages:\n  - go\ntest-framework: pytest\nunknown-field: value\n")
 		cfg, err := ReadConfig(dir)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -58,9 +130,14 @@ func TestReadConfig(t *testing.T) {
 		if cfg == nil {
 			t.Fatal("expected non-nil config")
 		}
-		// Old fields silently ignored — only auto and worktree parsed
-		if cfg.Auto != nil {
-			t.Errorf("expected Auto nil when not in yaml, got %v", cfg.Auto)
+		if cfg.ProjectType != "fullstack" {
+			t.Errorf("expected ProjectType 'fullstack', got %q", cfg.ProjectType)
+		}
+		if cfg.TestFramework != "pytest" {
+			t.Errorf("expected TestFramework 'pytest', got %q", cfg.TestFramework)
+		}
+		if len(cfg.Languages) != 1 || cfg.Languages[0] != "go" {
+			t.Errorf("expected Languages [go], got %v", cfg.Languages)
 		}
 	})
 
@@ -314,24 +391,24 @@ func TestGetConfigValue(t *testing.T) {
 	t.Run("worktree.source-branch absent returns error", func(t *testing.T) {
 		dir := setupConfig(t, "auto:\n  gitPush: true\n")
 		_, err := GetConfigValue(dir, "worktree.source-branch")
-		if err != ErrKeyNotFound {
-			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound, got %v", err)
 		}
 	})
 
 	t.Run("worktree.copy-files absent returns error", func(t *testing.T) {
 		dir := setupConfig(t, "auto:\n  gitPush: true\n")
 		_, err := GetConfigValue(dir, "worktree.copy-files")
-		if err != ErrKeyNotFound {
-			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound, got %v", err)
 		}
 	})
 
 	t.Run("unknown key returns error", func(t *testing.T) {
 		dir := setupConfig(t, "auto:\n  gitPush: true\n")
 		_, err := GetConfigValue(dir, "nonexistent")
-		if err != ErrKeyNotFound {
-			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound, got %v", err)
 		}
 	})
 
@@ -349,32 +426,32 @@ func TestGetConfigValue(t *testing.T) {
 	t.Run("missing file returns error for worktree key", func(t *testing.T) {
 		dir := t.TempDir()
 		_, err := GetConfigValue(dir, "worktree.source-branch")
-		if err != ErrKeyNotFound {
-			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound, got %v", err)
 		}
 	})
 
 	t.Run("unknown key returns error with no file", func(t *testing.T) {
 		dir := t.TempDir()
 		_, err := GetConfigValue(dir, "something.weird")
-		if err != ErrKeyNotFound {
-			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound, got %v", err)
 		}
 	})
 
 	t.Run("worktree present but source-branch empty returns error", func(t *testing.T) {
 		dir := setupConfig(t, "worktree:\n  copy-files:\n    - .env\n")
 		_, err := GetConfigValue(dir, "worktree.source-branch")
-		if err != ErrKeyNotFound {
-			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound, got %v", err)
 		}
 	})
 
 	t.Run("worktree present but copy-files empty returns error", func(t *testing.T) {
 		dir := setupConfig(t, "worktree:\n  source-branch: develop\n")
 		_, err := GetConfigValue(dir, "worktree.copy-files")
-		if err != ErrKeyNotFound {
-			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound, got %v", err)
 		}
 	})
 }
@@ -387,7 +464,7 @@ func TestWriteConfig(t *testing.T) {
 				SourceBranch: "main",
 			},
 		}
-		if err := WriteConfig(dir, cfg); err != nil {
+		if err := writeConfig(dir, cfg); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
@@ -410,7 +487,7 @@ func TestWriteConfig(t *testing.T) {
 				SourceBranch: "develop",
 			},
 		}
-		if err := WriteConfig(dir, cfg1); err != nil {
+		if err := writeConfig(dir, cfg1); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
@@ -419,7 +496,7 @@ func TestWriteConfig(t *testing.T) {
 				SourceBranch: "main",
 			},
 		}
-		if err := WriteConfig(dir, cfg2); err != nil {
+		if err := writeConfig(dir, cfg2); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
@@ -429,6 +506,62 @@ func TestWriteConfig(t *testing.T) {
 		}
 		if readback.Worktree.SourceBranch != "main" {
 			t.Errorf("expected 'main' after overwrite, got %q", readback.Worktree.SourceBranch)
+		}
+	})
+}
+
+func TestWriteConfig_VersionRoundtrip(t *testing.T) {
+	t.Run("write and read back preserves version", func(t *testing.T) {
+		dir := t.TempDir()
+		cfg := &Config{
+			Version: "2",
+		}
+		if err := writeConfig(dir, cfg); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		readback, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if readback.Version != "2" {
+			t.Errorf("expected Version '2', got %q", readback.Version)
+		}
+	})
+}
+
+func TestWriteConfig_ProjectTypeRoundtrip(t *testing.T) {
+	t.Run("write and read back preserves project-type", func(t *testing.T) {
+		dir := t.TempDir()
+		cfg := &Config{
+			ProjectType: "mobile",
+		}
+		if err := writeConfig(dir, cfg); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		readback, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if readback.ProjectType != "mobile" {
+			t.Errorf("expected ProjectType 'mobile', got %q", readback.ProjectType)
+		}
+	})
+}
+
+func TestValidProjectType(t *testing.T) {
+	t.Run("valid types return true", func(t *testing.T) {
+		for _, pt := range []string{"fullstack", "mobile", "library", "mixed"} {
+			if !ValidProjectType(pt) {
+				t.Errorf("expected %q to be valid", pt)
+			}
+		}
+	})
+
+	t.Run("invalid types return false", func(t *testing.T) {
+		for _, pt := range []string{"frontend", "backend", "", "unknown", "full stack"} {
+			if ValidProjectType(pt) {
+				t.Errorf("expected %q to be invalid", pt)
+			}
 		}
 	})
 }
@@ -504,8 +637,8 @@ func TestAutoConfigWithDefaults(t *testing.T) {
 		if result.CleanCode.Quick != true || result.CleanCode.Full != true {
 			t.Errorf("CleanCode should be preserved as true/true, got %+v", result.CleanCode)
 		}
-		if result.E2eTest != (ModeToggle{Quick: false, Full: true}) {
-			t.Errorf("E2eTest should default to {Quick:false Full:true}, got %+v", result.E2eTest)
+		if result.E2eTest != (ModeToggle{}) {
+			t.Errorf("E2eTest should be returned unchanged for partial config, got %+v", result.E2eTest)
 		}
 	})
 
@@ -572,32 +705,32 @@ func TestGetConfigValueLegacyKeys(t *testing.T) {
 	t.Run("test-framework absent returns error", func(t *testing.T) {
 		dir := setupConfig(t, "auto:\n  gitPush: true\n")
 		_, err := GetConfigValue(dir, "test-framework")
-		if err != ErrKeyNotFound {
-			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound, got %v", err)
 		}
 	})
 
 	t.Run("test-framework empty returns error", func(t *testing.T) {
 		dir := setupConfig(t, "test-framework: \"\"\n")
 		_, err := GetConfigValue(dir, "test-framework")
-		if err != ErrKeyNotFound {
-			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound, got %v", err)
 		}
 	})
 
 	t.Run("test-command returns error (removed field)", func(t *testing.T) {
 		dir := setupConfig(t, "test-command: npm test\n")
 		_, err := GetConfigValue(dir, "test-command")
-		if err != ErrKeyNotFound {
-			t.Errorf("expected ErrKeyNotFound for removed test-command key, got %v", err)
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound for removed test-command key, got %v", err)
 		}
 	})
 
 	t.Run("missing file returns error for test-framework", func(t *testing.T) {
 		dir := t.TempDir()
 		_, err := GetConfigValue(dir, "test-framework")
-		if err != ErrKeyNotFound {
-			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound, got %v", err)
 		}
 	})
 }
@@ -817,8 +950,8 @@ func TestGetConfigValue_CoverageKeys(t *testing.T) {
     percentage: 80
 `)
 		_, err := GetConfigValue(dir, "coverage.unknown.type")
-		if err != ErrKeyNotFound {
-			t.Errorf("expected ErrKeyNotFound, got %v", err)
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound, got %v", err)
 		}
 	})
 
@@ -844,7 +977,7 @@ func TestWriteConfigAutoBlock(t *testing.T) {
 				GitPush:          true,
 			},
 		}
-		if err := WriteConfig(dir, cfg); err != nil {
+		if err := writeConfig(dir, cfg); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
@@ -857,6 +990,139 @@ func TestWriteConfigAutoBlock(t *testing.T) {
 		}
 		if readback.Auto.GitPush != true {
 			t.Errorf("expected GitPush true, got %v", readback.Auto.GitPush)
+		}
+	})
+}
+
+func TestSetConfigValue(t *testing.T) {
+	t.Run("auto.gitPush set to true", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := SetConfigValue(dir, "auto.gitPush", "true"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		val, err := GetConfigValue(dir, "auto.gitPush")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "true" {
+			t.Errorf("expected 'true', got %q", val)
+		}
+	})
+
+	t.Run("auto.cleanCode.quick set to false", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := SetConfigValue(dir, "auto.cleanCode.quick", "false"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		val, err := GetConfigValue(dir, "auto.cleanCode.quick")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "false" {
+			t.Errorf("expected 'false', got %q", val)
+		}
+	})
+
+	t.Run("auto.e2eTest.full set to true", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := SetConfigValue(dir, "auto.e2eTest.full", "true"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		val, err := GetConfigValue(dir, "auto.e2eTest.full")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "true" {
+			t.Errorf("expected 'true', got %q", val)
+		}
+	})
+
+	t.Run("worktree.source-branch set to develop", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := SetConfigValue(dir, "worktree.source-branch", "develop"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		val, err := GetConfigValue(dir, "worktree.source-branch")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "develop" {
+			t.Errorf("expected 'develop', got %q", val)
+		}
+	})
+
+	t.Run("test-framework set to pytest", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := SetConfigValue(dir, "test-framework", "pytest"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		val, err := GetConfigValue(dir, "test-framework")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "pytest" {
+			t.Errorf("expected 'pytest', got %q", val)
+		}
+	})
+
+	t.Run("unknown key returns meaningful error", func(t *testing.T) {
+		dir := t.TempDir()
+		err := SetConfigValue(dir, "nonexistent", "value")
+		if err == nil {
+			t.Fatal("expected error for unknown key")
+		}
+		if !strings.Contains(err.Error(), "unknown config key") {
+			t.Errorf("expected 'unknown config key' in error, got %v", err)
+		}
+	})
+
+	t.Run("invalid bool value returns error", func(t *testing.T) {
+		dir := t.TempDir()
+		err := SetConfigValue(dir, "auto.gitPush", "notabool")
+		if err == nil {
+			t.Fatal("expected error for invalid bool")
+		}
+	})
+
+	t.Run("set and verify persistence with existing config", func(t *testing.T) {
+		dir := setupConfig(t, "auto:\n  gitPush: false\n")
+		if err := SetConfigValue(dir, "auto.gitPush", "true"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		val, err := GetConfigValue(dir, "auto.gitPush")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "true" {
+			t.Errorf("expected 'true', got %q", val)
+		}
+	})
+
+	t.Run("auto.cleanCode set both quick and full", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := SetConfigValue(dir, "auto.cleanCode", "true"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		val, err := GetConfigValue(dir, "auto.cleanCode")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "quick:true full:true" {
+			t.Errorf("expected 'quick:true full:true', got %q", val)
+		}
+	})
+
+	t.Run("coverage set", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := SetConfigValue(dir, "coverage.coding.feature", "90"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		val, err := GetConfigValue(dir, "coverage.coding.feature")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "90" {
+			t.Errorf("expected '90', got %q", val)
 		}
 	})
 }

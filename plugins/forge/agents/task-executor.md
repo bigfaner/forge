@@ -4,6 +4,8 @@ description: "Thin executor: runs task prompt internally, follows the synthesize
 model: sonnet
 color: green
 memory: project
+inputs:
+  - task-id
 ---
 
 ## Hard Constraints

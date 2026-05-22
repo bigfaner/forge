@@ -19,12 +19,13 @@ var cleanupCmd = &cobra.Command{
 Called as a Stop hook to clean up:
   - docs/features/<feature>/tasks/process/state.json
   - docs/features/<feature>/tasks/process/record.json (if exists)`,
-	Run: runCleanup,
+	Args: cobra.NoArgs,
+	RunE: runCleanup,
 }
 
-func runCleanup(_ *cobra.Command, _ []string) {
+func runCleanup(_ *cobra.Command, _ []string) error {
 	cleanupCompletedTaskState()
-	os.Exit(0)
+	return nil
 }
 
 // cleanupCompletedTaskState removes state.json when task is completed.

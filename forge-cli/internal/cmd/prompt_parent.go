@@ -7,4 +7,5 @@ import (
 var promptCmd = &cobra.Command{
 	Use:   "prompt",
 	Short: "Manage agent execution prompts",
+	Args:  cobra.NoArgs,
 }

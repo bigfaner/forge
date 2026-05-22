@@ -9,9 +9,9 @@ import "strings"
 // T-test-gen-scripts-api, T-test-gen-scripts-cli (type suffix)
 func InferType(id string) string {
 	switch {
-	case strings.HasSuffix(id, ".summary"):
+	case strings.HasSuffix(id, IDSuffixSummary):
 		return TypeDocSummary
-	case strings.HasSuffix(id, ".gate"):
+	case strings.HasSuffix(id, IDSuffixGate):
 		return TypeGate
 	case id == "T-test-eval-cases":
 		return TypeTestEvalCases

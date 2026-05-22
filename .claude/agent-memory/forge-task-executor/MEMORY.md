@@ -1,1 +1,2 @@
 - [Gate: Fix or Block, Never Force](feedback_gate-force-over-fix.md) -- gate task rejection means fix the gap, don't --force past it
+- [Subprocess Test Error Propagation](fix-subprocess-test-error-propagate.md) -- after AIError refactoring, propagate errors via Exit(), not `_ =` in subprocess tests

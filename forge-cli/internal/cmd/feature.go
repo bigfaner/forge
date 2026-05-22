@@ -30,7 +30,7 @@ Subcommands:
   list            List all features
   status <slug>   Show feature status detail`,
 	Args: cobra.MaximumNArgs(1),
-	Run:  runFeature,
+	RunE: runFeature,
 }
 
 var featureListCmd = &cobra.Command{
@@ -38,7 +38,7 @@ var featureListCmd = &cobra.Command{
 	Short: "List all features",
 	Long:  "List all features with status, progress, and scores.",
 	Args:  cobra.NoArgs,
-	Run:   runFeatureList,
+	RunE:  runFeatureList,
 }
 
 var featureStatusCmd = &cobra.Command{
@@ -46,7 +46,7 @@ var featureStatusCmd = &cobra.Command{
 	Short: "Show feature status detail",
 	Long:  "Show detailed status for a feature including manifest, task counts, and artifact scores.",
 	Args:  cobra.ExactArgs(1),
-	Run:   runFeatureStatus,
+	RunE:  runFeatureStatus,
 }
 
 var featureSetCmd = &cobra.Command{
@@ -58,7 +58,7 @@ and ensuring the feature directory structure exists.
 This provides an explicit override for feature resolution,
 complementing the existing implicit resolution from git context.`,
 	Args: exactArgsNonEmpty(1),
-	Run:  runFeatureSet,
+	RunE: runFeatureSet,
 }
 
 // exactArgsNonEmpty returns a cobra.Args validator that requires exactly n arguments,
@@ -84,10 +84,10 @@ func init() {
 	featureCmd.AddCommand(featureSetCmd)
 }
 
-func runFeature(_ *cobra.Command, args []string) {
+func runFeature(_ *cobra.Command, args []string) error {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		Exit(ErrProjectNotFound())
+		return ErrProjectNotFound()
 	}
 
 	if len(args) == 0 {
@@ -98,12 +98,12 @@ func runFeature(_ *cobra.Command, args []string) {
 				PrintBlockStart()
 				PrintField("FEATURE", "(none)")
 				PrintBlockEnd()
-				return
+				return nil
 			}
 			PrintBlockStart()
 			PrintField("FEATURE", fmt.Sprintf("%s (from: %s)", slug, source))
 			PrintBlockEnd()
-			return
+			return nil
 		}
 
 		slug, err := feature.GetCurrentFeature(projectRoot)
@@ -111,58 +111,60 @@ func runFeature(_ *cobra.Command, args []string) {
 			PrintBlockStart()
 			PrintField("FEATURE", "(none)")
 			PrintBlockEnd()
-			return
+			return nil
 		}
 		PrintBlockStart()
 		PrintField("FEATURE", slug)
 		PrintBlockEnd()
-		return
+		return nil
 	}
 
 	// Set feature
 	slug := args[0]
 	if err := feature.SetFeature(projectRoot, slug); err != nil {
-		Exit(ErrFeatureNotFound(slug))
+		return ErrFeatureNotFound(slug)
 	}
 	PrintBlockStart()
 	PrintField("FEATURE", slug)
 	PrintBlockEnd()
+	return nil
 }
 
-func runFeatureSet(_ *cobra.Command, args []string) {
+func runFeatureSet(_ *cobra.Command, args []string) error {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		Exit(ErrProjectNotFound())
+		return ErrProjectNotFound()
 	}
 
 	slug := args[0]
 	if slug == "" {
-		Exit(ErrNoInput("feature slug is required"))
+		return ErrNoInput("feature slug is required")
 	}
 
 	if err := feature.EnsureFeatureDir(projectRoot, slug); err != nil {
-		Exit(NewAIError(
+		return NewAIError(
 			ErrNotFound,
 			fmt.Sprintf("Failed to create feature directory for: %s", slug),
 			err.Error(),
 			"Check filesystem permissions",
 			"ls docs/features/",
-		))
+		)
 	}
 
 	if err := feature.EnsureForgeState(projectRoot, slug); err != nil {
-		Exit(NewAIError(
+		return NewAIError(
 			ErrNotFound,
 			fmt.Sprintf("Failed to write state for feature: %s", slug),
 			err.Error(),
 			"Check .forge/ directory permissions",
 			"ls -la .forge/",
-		))
+		)
 	}
 
 	PrintBlockStart()
 	PrintField("FEATURE", slug)
 	PrintBlockEnd()
+	return nil
 }
 
 // featureInfo holds information about a discovered feature.
@@ -179,15 +181,15 @@ type featureInfo struct {
 	ManifestMtime int64  // unix seconds of manifest.md mod time; 0 if missing/unreadable
 }
 
-func runFeatureList(_ *cobra.Command, _ []string) {
+func runFeatureList(_ *cobra.Command, _ []string) error {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		Exit(ErrProjectNotFound())
+		return ErrProjectNotFound()
 	}
 
 	features, err := discoverFeatures(projectRoot)
 	if err != nil {
-		Exit(newErrFeatureDiscovery(err))
+		return newErrFeatureDiscovery(err)
 	}
 
 	// Sort by created date descending (newest first).
@@ -212,7 +214,7 @@ func runFeatureList(_ *cobra.Command, _ []string) {
 
 	if len(features) == 0 {
 		fmt.Fprintln(os.Stderr, "no features found")
-		return
+		return nil
 	}
 
 	// Calculate dynamic slug column width.
@@ -248,18 +250,19 @@ func runFeatureList(_ *cobra.Command, _ []string) {
 
 	fmt.Println()
 	PrintBlockEnd()
+	return nil
 }
 
-func runFeatureStatus(_ *cobra.Command, args []string) {
+func runFeatureStatus(_ *cobra.Command, args []string) error {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		Exit(ErrProjectNotFound())
+		return ErrProjectNotFound()
 	}
 
 	slug := args[0]
 	featureDir := filepath.Join(projectRoot, feature.FeaturesDir, slug)
 	if _, err := os.Stat(featureDir); os.IsNotExist(err) {
-		Exit(ErrFeatureNotFound(slug))
+		return ErrFeatureNotFound(slug)
 	}
 
 	// Read manifest
@@ -319,6 +322,7 @@ func runFeatureStatus(_ *cobra.Command, args []string) {
 	PrintField("UI", scoreDisplay(uiScore))
 
 	PrintBlockEnd()
+	return nil
 }
 
 // discoverFeatures walks docs/features/*/manifest.md and collects feature info.

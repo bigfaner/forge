@@ -15,12 +15,16 @@ import (
 // runTestPromote promotes a journey's @feature tags to @regression.
 // It first runs the journey's tests, then on success replaces @feature with @regression
 // in all test files under the journey directory.
-func runTestPromote(_ *cobra.Command, args []string) {
+func runTestPromote(_ *cobra.Command, args []string) error {
 	journeyName := args[0]
+
+	if err := validateJourneyName(journeyName); err != nil {
+		return err
+	}
 
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		Exit(ErrProjectNotFound())
+		return ErrProjectNotFound()
 	}
 
 	// Validate the journey directory exists
@@ -38,18 +42,19 @@ func runTestPromote(_ *cobra.Command, args []string) {
 
 	workDir, cleanup, err := createJourneyWorkDir(projectRoot, journeyName)
 	if err != nil {
-		Exit(NewAIError(ErrValidation, "Failed to create journey work directory", err.Error(),
-			"Check temp directory permissions", "forge test promote "+journeyName))
+		return NewAIError(ErrValidation, "Failed to create journey work directory", err.Error(),
+			"Check temp directory permissions", "forge test promote "+journeyName)
 	}
 
 	result := executeJourneyInIsolation(cfg, workDir, journeyName)
 
 	if !result.Passed {
-		// Cleanup before exit (defer won't run after os.Exit)
 		cleanup()
-		fmt.Fprintln(os.Stderr, "PROMOTION REFUSED: journey tests failed")
-		fmt.Print(result.FormatReport())
-		os.Exit(1)
+		Exit(NewAIError(ErrValidation,
+			"Journey tests failed, promotion refused",
+			"One or more tests in the journey did not pass",
+			"Fix the failing tests before promoting",
+			"forge test run-journey "+journeyName))
 	}
 
 	cleanup()
@@ -57,9 +62,9 @@ func runTestPromote(_ *cobra.Command, args []string) {
 	// Find all test files under the journey directory and replace @feature with @regression
 	filesModified, err := promoteJourneyTags(journeyDir)
 	if err != nil {
-		Exit(NewAIError(ErrValidation, "Failed to promote tags", err.Error(),
+		return NewAIError(ErrValidation, "Failed to promote tags", err.Error(),
 			"Check file permissions in journey directory",
-			"forge test promote "+journeyName))
+			"forge test promote "+journeyName)
 	}
 
 	PrintBlockStart()
@@ -68,6 +73,16 @@ func runTestPromote(_ *cobra.Command, args []string) {
 	PrintField("FILES_MODIFIED", fmt.Sprintf("%d", filesModified))
 	PrintField("TAG_CHANGE", "@feature -> @regression")
 	PrintBlockEnd()
+	return nil
+}
+
+// validateJourneyName checks that the journey name does not contain path traversal.
+// Uses filepath.Base() and rejects ".." components per Hard Rules.
+func validateJourneyName(name string) *AIError {
+	if filepath.Base(name) != name || strings.Contains(name, "..") {
+		return NewErrInvalidPath(name)
+	}
+	return nil
 }
 
 // promoteJourneyTags walks the journey directory, finds test files, and replaces

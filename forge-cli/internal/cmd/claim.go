@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"forge-cli/pkg/feature"
+	indexPkg "forge-cli/pkg/index"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/task"
 
@@ -25,10 +26,11 @@ The task is selected based on:
 1. All dependencies must be met
 2. Priority (P0 > P1 > P2)
 3. Task ID (semantic version ordering)`,
-	Run: runClaim,
+	Args: cobra.NoArgs,
+	RunE: runClaim,
 }
 
-func runClaim(_ *cobra.Command, _ []string) {
+func runClaim(_ *cobra.Command, _ []string) error {
 	result, err := executeClaim()
 	if err != nil {
 		Exit(err)
@@ -40,6 +42,7 @@ func runClaim(_ *cobra.Command, _ []string) {
 	} else {
 		printNewTask(result.Key, result.Task, result.ProjectRoot, result.FeatureSlug)
 	}
+	return nil
 }
 
 // ClaimResult represents the result of a claim operation
@@ -66,13 +69,15 @@ func executeClaim() (*ClaimResult, error) {
 	}
 
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
+	statePath := feature.GetTaskStatePath(projectRoot, featureSlug)
+
+	// Read-only check: no lock needed.
 	index, err := task.LoadIndex(indexPath)
 	if err != nil {
 		return nil, NewAIError(ErrNotFound, "Failed to load task index", err.Error(), "Run `forge task index --feature "+featureSlug+"` to generate it", "forge task index --feature "+featureSlug)
 	}
 
 	// Check for existing task state
-	statePath := feature.GetTaskStatePath(projectRoot, featureSlug)
 	continueTask, hasIssues, issues := checkExistingTaskState(projectRoot, index, statePath)
 
 	if hasIssues {
@@ -93,14 +98,28 @@ func executeClaim() (*ClaimResult, error) {
 		}, nil
 	}
 
-	// Claim new task
-	key, t, err := claimNextTask(index)
-	if err != nil {
-		return nil, err
-	}
+	// Claim new task — wrapped in WithLock for atomic read-modify-write.
+	var key string
+	var t *task.Task
+	if err := indexPkg.WithLock(indexPath, func() error {
+		// Re-load index inside lock (it may have changed since our read-only check).
+		idx, err := task.LoadIndex(indexPath)
+		if err != nil {
+			return NewAIError(ErrNotFound, "Failed to load task index", err.Error(), "Run `forge task index --feature "+featureSlug+"` to generate it", "forge task index --feature "+featureSlug)
+		}
 
-	// Update index
-	if err := task.SaveIndex(indexPath, index); err != nil {
+		k, claimedTask, err := claimNextTask(idx)
+		if err != nil {
+			return err
+		}
+
+		if err := indexPkg.SaveIndexAtomic(indexPath, idx); err != nil {
+			return NewAIError(ErrConflict, "Failed to save index", err.Error(), "Check index.json is writable", "cat "+indexPath)
+		}
+
+		key, t = k, claimedTask
+		return nil
+	}); err != nil {
 		return nil, err
 	}
 
@@ -249,15 +268,15 @@ func getTaskPhase(id string) int {
 func checkDependenciesMet(index *task.TaskIndex, selfID string, t task.Task) (bool, []string) {
 	var unmet []string
 	for _, dep := range t.Dependencies {
-		if strings.HasSuffix(dep, ".x") {
-			prefix := strings.TrimSuffix(dep, ".x")
+		if strings.HasSuffix(dep, task.IDSuffixWildcard) {
+			prefix := strings.TrimSuffix(dep, task.IDSuffixWildcard)
 			prefixWithDot := prefix + "."
 			found := false
 			for _, other := range index.TasksMap() {
 				if other.ID == selfID {
 					continue
 				}
-				if strings.HasPrefix(other.ID, prefixWithDot) && isBusinessTask(other.ID) && other.Status != "completed" && other.Status != "skipped" {
+				if strings.HasPrefix(other.ID, prefixWithDot) && task.IsBusinessTask(other.ID) && other.Status != "completed" && other.Status != "skipped" {
 					unmet = append(unmet, other.ID)
 					found = true
 				}

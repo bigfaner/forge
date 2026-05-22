@@ -44,7 +44,8 @@ var qualityGateCmd = &cobra.Command{
 			This hook is the project health gate: unit tests + regression suite.
 
 			Use -v to see why the command exits early (useful for debugging).`,
-	Run: runQualityGate,
+	Args: cobra.NoArgs,
+	RunE: runQualityGate,
 }
 
 func init() {
@@ -59,19 +60,20 @@ type AllCompletedResult struct {
 }
 
 // checkAllCompleted verifies all tasks are done and returns test context.
-// Returns nil when tasks are not all done — caller should exit silently.
-func checkAllCompleted(verbose bool) *AllCompletedResult {
+// Returns (nil, nil) when tasks are not all done — caller should exit silently.
+// Returns (nil, error) for infrastructure failures (no project, no feature).
+func checkAllCompleted(verbose bool) (*AllCompletedResult, error) {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
 		Debugf(verbose, "project root not found: %v", err)
-		return nil
+		return nil, ErrProjectNotFound()
 	}
 	Debugf(verbose, "project root: %s", projectRoot)
 
 	featureSlug, err := feature.GetCurrentFeature(projectRoot)
 	if err != nil {
 		Debugf(verbose, "feature not found: %v", err)
-		return nil
+		return nil, ErrFeatureNotSet()
 	}
 	Debugf(verbose, "feature: %s", featureSlug)
 
@@ -79,7 +81,7 @@ func checkAllCompleted(verbose bool) *AllCompletedResult {
 	forgeState := feature.ReadForgeState(projectRoot)
 	if forgeState == nil || !forgeState.AllCompleted {
 		Debugf(verbose, "no forge state with allCompleted — skipping")
-		return nil
+		return nil, nil
 	}
 	Debugf(verbose, "forge state: feature=%s allCompleted=true", forgeState.Feature)
 
@@ -90,7 +92,7 @@ func checkAllCompleted(verbose bool) *AllCompletedResult {
 	index, err := task.LoadIndex(indexPath)
 	if err != nil {
 		Debugf(verbose, "index.json not found: %s (%v)", indexPath, err)
-		return nil
+		return nil, nil
 	}
 	Debugf(verbose, "loaded index: %d tasks", index.TaskCount())
 
@@ -98,7 +100,7 @@ func checkAllCompleted(verbose bool) *AllCompletedResult {
 	for _, t := range index.TasksMap() {
 		if t.Status != feature.StatusCompleted && t.Status != feature.StatusSkipped {
 			Debugf(verbose, "task %s is %s — not all done", t.ID, t.Status)
-			return nil
+			return nil, nil
 		}
 	}
 
@@ -106,7 +108,7 @@ func checkAllCompleted(verbose bool) *AllCompletedResult {
 		FeatureSlug: featureSlug,
 		ProjectRoot: projectRoot,
 		DocsOnly:    isDocsOnly(index),
-	}
+	}, nil
 }
 
 // isDocsOnly returns true if no task has a testable runtime behavior type.
@@ -121,10 +123,13 @@ func isDocsOnly(index *task.TaskIndex) bool {
 	return true
 }
 
-func runQualityGate(_ *cobra.Command, _ []string) {
-	result := checkAllCompleted(qualityGateVerbose)
+func runQualityGate(_ *cobra.Command, _ []string) error {
+	result, err := checkAllCompleted(qualityGateVerbose)
+	if err != nil {
+		Exit(err)
+	}
 	if result == nil {
-		os.Exit(0) // not all done is normal, exit silently
+		return nil // not all done is normal, exit silently
 	}
 
 	fmt.Fprintf(os.Stderr, "=== All tasks completed for feature: %s ===\n", result.FeatureSlug)
@@ -222,7 +227,9 @@ func runQualityGate(_ *cobra.Command, _ []string) {
 				handleGateFailure("e2e-test", errorDocPath, fixID, just.ExtractConciseError(regressionOutput, 5))
 			}
 		}
+		return nil
 	}
+	return nil
 }
 
 // handleGateFailure prints the hook JSON block reason and exits.
@@ -345,17 +352,22 @@ func extractSourceFiles(output string) string {
 	return strings.Join(files, ", ")
 }
 
-// countFixTasks counts ALL fix-tasks for a step regardless of status (completed +
-// active + blocked + skipped). A fix-task is identified by having a non-empty
-// SourceTaskID AND a title with the prefix "fix <step>:".
+// countFixTasks counts active (non-terminal) fix-tasks for a step.
+// A fix-task is identified by having a title with the prefix "fix <step>:".
+// Terminal statuses (completed, rejected, skipped) are excluded from the count.
+// This ensures the fix-task cap reflects work-in-progress only.
 func countFixTasks(index *task.TaskIndex, step string) int {
 	count := 0
 	prefix := "fix " + step + ":"
 	for _, t := range index.TasksMap() {
-		if t.SourceTaskID != "" &&
-			strings.HasPrefix(t.Title, prefix) {
-			count++
+		if !strings.HasPrefix(t.Title, prefix) {
+			continue
 		}
+		// Exclude terminal statuses
+		if t.Status == "completed" || t.Status == "rejected" || t.Status == "skipped" {
+			continue
+		}
+		count++
 	}
 	return count
 }
@@ -410,8 +422,8 @@ func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) (st
 
 	// Build opts — Priority/Breaking/EstimatedTime intentionally hardcoded
 	// (not read from template defaults) since this is a programmatic caller.
-	// SourceTaskID uses step-scoped sentinel for cumulative counting;
-	// Vars["SOURCE_TASK_ID"] diverges intentionally for template rendering.
+	// SourceTaskID is deliberately empty (project-wide gate has no source task).
+	// Vars["SOURCE_TASK_ID"] is "N/A (project-wide gate)" for template rendering.
 	taskType := fixTypeFromStep(step)
 	tmplName := "fix-task"
 	if taskType == task.TypeCodingCleanup {
@@ -424,7 +436,6 @@ func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) (st
 		EstimatedTime: "30min",
 		Breaking:      true,
 		Description:   description,
-		SourceTaskID:  "quality-gate:" + step,
 		Template:      tmplName,
 		Type:          taskType,
 		Vars: map[string]string{

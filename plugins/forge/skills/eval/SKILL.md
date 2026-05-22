@@ -49,13 +49,17 @@ Rubrics may declare a `context` frontmatter field to inject project reality file
 ```mermaid
 flowchart TD
     A([Start]) --> B["1. Resolve Type & Load Rubric"]
-    B --> C{"iterations ≤ 1?"}
+    B --> BAK["1.5 Backup DOC_DIR"]
+    BAK --> C{"iterations ≤ 1?"}
     C -->|"yes"| D["2a. Score (subagent)"]
     D --> E["3a. Final Report"]
     C -->|"no"| F["2b. Score (subagent)"]
-    F --> G{"3b. Gate (main session)"}
+    F --> PARSE{"Parse valid?"}
+    PARSE -->|"yes"| G{"3b. Gate (main session)"}
+    PARSE -->|"no"| ERR["Halt with error"]
     G -->|"score >= target"| E
-    G -->|"score < target, no iterations left"| E
+    G -->|"score < target, no iterations left"| ROLL["5. Rollback DOC_DIR from backup"]
+    ROLL --> E
     G -->|"score < target, iterations remaining"| H["4. Revise (subagent)"]
     H --> F
 ```
@@ -113,6 +117,16 @@ Multi-platform: run independent score→gate→revise loops per platform.
 
 Apply type-specific pre-processing per `rules/pre-processing.md` before scoring. All types: if rubric has `context` frontmatter, load filtered context files and concatenate into `CONTEXT_CONTENT`.
 
+### 1.5 Create Backup
+
+After `DOC_DIR` is fully resolved and pre-processing is complete, create a backup of the document directory:
+
+```bash
+cp -r "$DOC_DIR" "${DOC_DIR}.bak"
+```
+
+This backup is used for automatic rollback if all iterations are exhausted without reaching the target score (see Step 5: Rollback on Failure). If no `DOC_DIR` was resolved (e.g., `harness` type), skip backup creation silently.
+
 ## Expert Dispatch Table
 
 Resolve eval type to scorer expert(s) per `rules/scorer-composition.md`.
@@ -139,6 +153,8 @@ Report paths, type-specific inputs, and type-specific report path overrides per 
 ### 2.3 Collect and Merge Results
 
 Score extraction and multi-expert merging per `rules/scorer-composition.md`.
+
+**Parse failure handling**: If the scorer subagent output cannot be parsed (no valid `SCORE: X/SCALE` pattern found in any scorer report), halt the pipeline with a clear error. This is a retryable failure — the agent should re-run eval with different input or debug the scorer prompt. Do NOT crash, do NOT proceed with zero score, do NOT continue with silent default values.
 
 ## Step 3a: Single-Pass (iterations ≤ 1)
 
@@ -175,6 +191,16 @@ After reviser completes: increment iteration counter, return to Step 2.
 ## Step 5: Final Report
 
 Generate report per `rules/report-format.md`: include final score, iteration summary, score progression table, dimension breakdown, and outcome. Apply type-specific additions as defined in the rules file.
+
+**Rollback on failure**: If the final score is below target AND all iterations are exhausted (failure outcome), restore the original documents from the Step 1 backup:
+
+```bash
+rm -rf "$DOC_DIR"
+cp -r "${DOC_DIR}.bak" "$DOC_DIR"
+rm -rf "${DOC_DIR}.bak"
+```
+
+This ensures that failed evals do not leave documents in a partially revised state. If no backup exists (e.g., backup was skipped in Step 1.5), skip rollback silently.
 
 ## Step 6: Next Step
 

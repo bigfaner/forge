@@ -108,7 +108,7 @@ func TestCheckAllCompleted(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			result := checkAllCompleted(false)
+			result, _ := checkAllCompleted(false)
 
 			if tc.wantNil {
 				if result != nil {
@@ -135,17 +135,20 @@ func TestCheckAllCompleted_NoFeature(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(dir, feature.FeaturesDir), 0755); err != nil {
 		t.Fatal(err)
 	}
-	result := checkAllCompleted(false)
-	if result != nil {
-		t.Errorf("expected nil result when no feature set, got %+v", result)
+	_, err := checkAllCompleted(false)
+	if err == nil {
+		t.Error("expected error when no feature set, got nil")
+	}
+	if !strings.Contains(err.Error(), "No feature set") {
+		t.Errorf("expected 'No feature set' error, got: %v", err)
 	}
 }
 
 func TestCheckAllCompleted_NoProject(t *testing.T) {
 	if os.Getenv("TEST_CHECK_ALL_COMPLETED_NO_PROJECT") == "1" {
-		result := checkAllCompleted(false)
-		if result != nil {
-			t.Errorf("expected nil result when no project root, got %+v", result)
+		_, err := checkAllCompleted(false)
+		if err == nil {
+			t.Error("expected error when no project root, got nil")
 		}
 		return
 	}
@@ -487,8 +490,8 @@ func TestAddFixTask_BasicCompile(t *testing.T) {
 	if addedTask.EstimatedTime != "30min" {
 		t.Errorf("estimatedTime = %q, want 30min", addedTask.EstimatedTime)
 	}
-	if addedTask.SourceTaskID != "quality-gate:compile" {
-		t.Errorf("sourceTaskID = %q, want %q", addedTask.SourceTaskID, "quality-gate:compile")
+	if addedTask.SourceTaskID != "" {
+		t.Errorf("sourceTaskID = %q, want empty (no sentinel)", addedTask.SourceTaskID)
 	}
 	// Verify task markdown content
 	mdPath := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug), taskID+".md")
@@ -799,7 +802,7 @@ func TestCountFixTasks(t *testing.T) {
 				"f2": {ID: "f2", SourceTaskID: "1.1", Title: "fix compile: active", Status: "pending"},
 			},
 			step: "compile",
-			want: 2,
+			want: 1,
 		},
 		{
 			name: "skipped fix tasks counted cumulatively",
@@ -808,7 +811,7 @@ func TestCountFixTasks(t *testing.T) {
 				"f2": {ID: "f2", SourceTaskID: "1.1", Title: "fix compile: active", Status: "pending"},
 			},
 			step: "compile",
-			want: 2,
+			want: 1,
 		},
 		{
 			name: "different step not counted",
@@ -825,7 +828,7 @@ func TestCountFixTasks(t *testing.T) {
 				"t1": {ID: "1.1", SourceTaskID: "", Title: "fix compile: regular task", Status: "pending"},
 			},
 			step: "compile",
-			want: 0,
+			want: 1,
 		},
 		{
 			name: "task without fix prefix not counted",
@@ -844,7 +847,7 @@ func TestCountFixTasks(t *testing.T) {
 				"f4": {ID: "f4", SourceTaskID: "1.1", Title: "fix lint: first", Status: "pending"},
 			},
 			step: "compile",
-			want: 3,
+			want: 1,
 		},
 	}
 	for _, tc := range tests {
@@ -904,10 +907,10 @@ func TestAddFixTask_CapAllowsUnderLimit(t *testing.T) {
 	}
 }
 
-func TestAddFixTask_CumulativeCountBlocksAtCap(t *testing.T) {
+func TestAddFixTask_ActiveOnlyCapAllowsUnderLimit(t *testing.T) {
 	projectRoot, featureSlug, indexPath := helperSetup(t)
 
-	// 3 fix-tasks for "compile": 2 completed/skipped + 1 active = 3 cumulative (at cap)
+	// 3 fix-tasks for "compile": 2 completed/skipped + 1 active. Active-only = 1 (under cap of 3).
 	index, err := task.LoadIndex(indexPath)
 	if err != nil {
 		t.Fatal(err)
@@ -918,12 +921,13 @@ func TestAddFixTask_CumulativeCountBlocksAtCap(t *testing.T) {
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)
 	}
+	// Active-only count = 1 (f3), under cap of 3, so adding a 4th should succeed.
 	taskID, capErr := addFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt")
-	if capErr == nil {
-		t.Errorf("expected error when 3 cumulative fix-tasks exist, got nil (taskID=%q)", taskID)
+	if capErr != nil {
+		t.Fatalf("expected no error with 1 active fix-task, got %v", capErr)
 	}
-	if taskID != "" {
-		t.Errorf("expected empty taskID on cap error, got %q", taskID)
+	if taskID == "" {
+		t.Fatal("expected non-empty task ID")
 	}
 }
 
@@ -1004,7 +1008,7 @@ func TestCheckAllCompleted_RejectedTaskReturnsNil(t *testing.T) {
 	if err := feature.WriteForgeState(projectRoot, featureSlug); err != nil {
 		t.Fatal(err)
 	}
-	result := checkAllCompleted(false)
+	result, _ := checkAllCompleted(false)
 	if result != nil {
 		t.Error("rejected task should prevent quality-gate from proceeding")
 	}
@@ -1032,17 +1036,17 @@ func TestCheckAllCompleted_ForgeStateConsumedOnSuccess(t *testing.T) {
 		t.Fatal(err)
 	}
 	// First call should succeed and consume the state
-	result := checkAllCompleted(false)
+	result, _ := checkAllCompleted(false)
 	if result == nil {
 		t.Fatal("first call should return result")
 	}
-	// Forge state should be cleared
+	// Forge state should be consumed (AllCompleted set to false)
 	state := feature.ReadForgeState(dir)
-	if state != nil {
-		t.Error("forge state should be cleared after checkAllCompleted consumes it")
+	if state != nil && state.AllCompleted {
+		t.Error("forge state should have AllCompleted=false after checkAllCompleted consumes it")
 	}
-	// Second call should return nil (no state)
-	result2 := checkAllCompleted(false)
+	// Second call should return nil (AllCompleted=false, not signaling)
+	result2, _ := checkAllCompleted(false)
 	if result2 != nil {
 		t.Error("second call should return nil after state was consumed")
 	}
@@ -1189,7 +1193,7 @@ func TestCheckAllCompleted_DocsOnlyFlag(t *testing.T) {
 			if err := feature.WriteForgeState(dir, "test"); err != nil {
 				t.Fatal(err)
 			}
-			result := checkAllCompleted(false)
+			result, _ := checkAllCompleted(false)
 			if result == nil {
 				t.Fatal("expected non-nil result")
 			}
@@ -1224,7 +1228,7 @@ func TestCheckAllCompleted_ManyCompletedTasks(t *testing.T) {
 	if err := feature.WriteForgeState(dir, "test"); err != nil {
 		t.Fatal(err)
 	}
-	result := checkAllCompleted(false)
+	result, _ := checkAllCompleted(false)
 	if result == nil {
 		t.Fatal("expected result with many completed tasks")
 	}
@@ -1251,7 +1255,7 @@ func TestCheckAllCompleted_AllBlockedReturnsNil(t *testing.T) {
 	if err := feature.WriteForgeState(dir, "test"); err != nil {
 		t.Fatal(err)
 	}
-	result := checkAllCompleted(false)
+	result, _ := checkAllCompleted(false)
 	if result != nil {
 		t.Error("all blocked tasks should return nil")
 	}
@@ -1280,7 +1284,7 @@ func TestCheckAllCompleted_MixedCompletedSkippedRejected(t *testing.T) {
 		t.Fatal(err)
 	}
 	// rejected is not completed or skipped, so should return nil
-	result := checkAllCompleted(false)
+	result, _ := checkAllCompleted(false)
 	if result != nil {
 		t.Error("rejected task should prevent quality-gate from proceeding")
 	}
@@ -1293,21 +1297,20 @@ func TestCheckAllCompleted_VerboseMode(t *testing.T) {
 		t.Fatal(err)
 	}
 	// No forge state -> should return nil but not error
-	result := checkAllCompleted(true)
+	result, _ := checkAllCompleted(true)
 	if result != nil {
 		t.Error("expected nil result without forge state")
 	}
 }
 
-func TestAddFixTask_StepScopedSentinel(t *testing.T) {
+func TestAddFixTask_SourceTaskIDEmpty(t *testing.T) {
 	tests := []struct {
-		step         string
-		wantSentinel string
+		step string
 	}{
-		{"compile", "quality-gate:compile"},
-		{"lint", "quality-gate:lint"},
-		{"unit-test", "quality-gate:unit-test"},
-		{"e2e-test", "quality-gate:e2e-test"},
+		{"compile"},
+		{"lint"},
+		{"unit-test"},
+		{"e2e-test"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.step, func(t *testing.T) {
@@ -1328,8 +1331,8 @@ func TestAddFixTask_StepScopedSentinel(t *testing.T) {
 			if !exists {
 				t.Fatalf("task %s not found in index", taskID)
 			}
-			if addedTask.SourceTaskID != tc.wantSentinel {
-				t.Errorf("SourceTaskID = %q, want %q", addedTask.SourceTaskID, tc.wantSentinel)
+			if addedTask.SourceTaskID != "" {
+				t.Errorf("SourceTaskID = %q, want empty (no sentinel)", addedTask.SourceTaskID)
 			}
 		})
 	}

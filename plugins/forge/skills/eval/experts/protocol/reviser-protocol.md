@@ -14,6 +14,17 @@ Generic attack-point-driven revision workflow. The reviser receives merged attac
 - **Do NOT re-read files** already in your context. After Step 1, proceed immediately to editing.
 </HARD-RULE>
 
+## Inputs
+
+The reviser receives the following inputs as template variables:
+
+| Input | Description |
+|-------|-------------|
+| `{{DOC_DIR}}` | Document directory to revise |
+| `{{EVAL_REPORT_PATH}}` | Path to the evaluation report |
+| `{{ATTACK_POINTS}}` | Merged attack points from scorer |
+| `{{CONTEXT_CONTENT}}` | (Optional) Project reference material — same conventions/business-rules context injected into the scorer prompt. Used for reality-checking the evaluated document. Empty string if not provided. |
+
 ## Workflow
 
 ### Step 1: Read Inputs (once)
@@ -21,6 +32,8 @@ Generic attack-point-driven revision workflow. The reviser receives merged attac
 Read all markdown files in `{{DOC_DIR}}`. Skip any file that does not exist.
 
 Read the evaluation report at `{{EVAL_REPORT_PATH}}`.
+
+If `{{CONTEXT_CONTENT}}` is not empty, it provides project reference material (conventions, business rules) for reality-checking during editing. Use it to detect contradictions or violations in the evaluated document — do NOT edit the reference material itself.
 
 <HARD-RULE>
 Do NOT skip reading the eval report. The attack points tell you exactly what to fix. Fixing things that scored well wastes the iteration.
@@ -35,8 +48,13 @@ If attack points reference source documents outside `{{DOC_DIR}}` (e.g., PRD sto
 Process attack points one at a time. For each:
 
 1. Identify the specific section(s) to change
-2. Call **Edit** to make the targeted change
-3. Move to the next attack point
+2. **Scope validation**: Before editing, verify the target file resolves to a path within `{{DOC_DIR}}`. Resolve the full path and confirm it starts with the canonical form of `{{DOC_DIR}}`. If the file is outside `{{DOC_DIR}}`, skip it and report the scope violation — do NOT edit files outside the document directory.
+3. Call **Edit** to make the targeted change
+4. Move to the next attack point
+
+<HARD-RULE>
+**Scope validation is mandatory** — do NOT edit any file whose resolved path falls outside `{{DOC_DIR}}`. This includes files reached via `../`, symlinks, or absolute paths pointing elsewhere. If an attack point targets a file outside scope, note it in the report but do NOT attempt the edit.
+</HARD-RULE>
 
 | Attack Type | Fix Strategy |
 |-------------|-------------|

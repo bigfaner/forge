@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	indexPkg "forge-cli/pkg/index"
 	tmpl "forge-cli/pkg/template"
 )
 
@@ -51,8 +52,8 @@ func (e *ActiveFixExistsError) Error() string {
 	return fmt.Sprintf("active fix tasks already exist for source %s: %s", e.SourceTaskID, strings.Join(e.ActiveFixIDs, ", "))
 }
 
-// HasActiveFixTasks returns IDs of fix tasks targeting sourceTaskID that are not in a terminal state.
-func HasActiveFixTasks(index *TaskIndex, sourceTaskID string) []string {
+// hasActiveFixTasks returns IDs of fix tasks targeting sourceTaskID that are not in a terminal state.
+func hasActiveFixTasks(index *TaskIndex, sourceTaskID string) []string {
 	var active []string
 	for _, t := range index.tasks {
 		if t.SourceTaskID == sourceTaskID && !terminalStatuses[t.Status] {
@@ -80,139 +81,146 @@ func ResolveSourceTask(index *TaskIndex, sourceID string) string {
 	return current
 }
 
-// AddTask validates opts, adds a task to the index, and saves it.
+// AddTask validates opts, adds a task to the index, and saves it atomically.
 // Returns the generated or provided task ID.
 func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 	if opts.Title == "" {
 		return "", fmt.Errorf("title is required")
 	}
 
-	index, err := LoadIndex(indexPath)
-	if err != nil {
-		return "", fmt.Errorf("load index: %w", err)
-	}
-
-	// Defaults
-	if opts.Status == "" {
-		opts.Status = "pending"
-	}
-	if opts.Priority == "" {
-		opts.Priority = "P1"
-	}
-
-	// Auto-generate ID if empty
-	if opts.ID == "" {
-		prefix := opts.IDPrefix
-		if prefix == "" {
-			prefix = "disc"
-		}
-		opts.ID = generateAutoID(prefix, index)
-	}
-
-	// Validate ID uniqueness
-	if _, exists := index.ByID(opts.ID); exists {
-		return "", fmt.Errorf("task ID already exists: %s", opts.ID)
-	}
-
-	// Validate priority
-	if !slices.Contains([]string{"P0", "P1", "P2"}, opts.Priority) {
-		return "", fmt.Errorf("invalid priority: %s (must be P0, P1, or P2)", opts.Priority)
-	}
-
-	// Validate dependencies exist
-	for _, dep := range opts.Dependencies {
-		if strings.HasSuffix(dep, ".x") {
-			prefix := strings.TrimSuffix(dep, ".x")
-			prefixWithDot := prefix + "."
-			found := false
-			for _, t := range index.tasks {
-				if strings.HasPrefix(t.ID, prefixWithDot) && isBusinessTaskID(t.ID) {
-					found = true
-					break
-				}
-			}
-			if !found {
-				return "", fmt.Errorf("wildcard dependency %q matches no business tasks", dep)
-			}
-		} else {
-			if _, exists := index.ByID(dep); !exists {
-				return "", fmt.Errorf("dependency not found: %s", dep)
-			}
-		}
-	}
-
-	// Derive file and record paths
-	fileName := opts.ID + ".md"
-	recordPath := "records/" + opts.ID + ".md"
-
-	// Source handling: dedup → block → resolve.
-	// Dedup is a pure read (no mutation), so it must come first.
-	// Block before resolution preserves the fix-chain model.
-	var srcKey string
-	var srcTask *Task
-	if opts.SourceTaskID != "" {
-		var k string
-		var t *Task
-		if foundK, foundT, err := FindTask(index, opts.SourceTaskID); err == nil {
-			k, t = foundK, foundT
+	var resultID string
+	if err := indexPkg.WithLock(indexPath, func() error {
+		index, err := LoadIndex(indexPath)
+		if err != nil {
+			return fmt.Errorf("load index: %w", err)
 		}
 
-		// Dedup check (pure read): if active fix tasks already exist, skip — no mutation needed.
-		if activeFixes := HasActiveFixTasks(index, opts.SourceTaskID); len(activeFixes) > 0 {
-			return "", &ActiveFixExistsError{
-				SourceTaskID: opts.SourceTaskID,
-				ActiveFixIDs: activeFixes,
-			}
+		// Defaults
+		if opts.Status == "" {
+			opts.Status = "pending"
+		}
+		if opts.Priority == "" {
+			opts.Priority = "P1"
 		}
 
-		// Only mutate after dedup passes.
-		if t != nil {
-			// Block source before resolution (--block-source flag).
-			// Prevents auto-resolve from flattening to root, preserving the chain.
-			if opts.BlockSource {
-				t.Status = "blocked"
+		// Auto-generate ID if empty
+		if opts.ID == "" {
+			prefix := opts.IDPrefix
+			if prefix == "" {
+				prefix = "disc"
 			}
+			opts.ID = generateAutoID(prefix, index)
+		}
 
-			// Source auto-resolution: when --source-task-id points to a COMPLETED/SKIPPED
-			// fix-task, trace the chain to find the root blocked task.
-			if t.Status == "completed" || t.Status == "skipped" {
-				resolved := ResolveSourceTask(index, opts.SourceTaskID)
-				if resolved != opts.SourceTaskID {
-					fmt.Fprintf(os.Stderr, "SOURCE-RESOLVE: %s \xe2\x86\x92 %s (source completed, resolving to root)\n", opts.SourceTaskID, resolved)
-					opts.SourceTaskID = resolved
-					if k2, t2, err2 := FindTask(index, opts.SourceTaskID); err2 == nil {
-						k, t = k2, t2
+		// Validate ID uniqueness
+		if _, exists := index.ByID(opts.ID); exists {
+			return fmt.Errorf("task ID already exists: %s", opts.ID)
+		}
+
+		// Validate priority
+		if !slices.Contains([]string{"P0", "P1", "P2"}, opts.Priority) {
+			return fmt.Errorf("invalid priority: %s (must be P0, P1, or P2)", opts.Priority)
+		}
+
+		// Validate dependencies exist
+		for _, dep := range opts.Dependencies {
+			if strings.HasSuffix(dep, IDSuffixWildcard) {
+				prefix := strings.TrimSuffix(dep, IDSuffixWildcard)
+				prefixWithDot := prefix + "."
+				found := false
+				for _, t := range index.tasks {
+					if strings.HasPrefix(t.ID, prefixWithDot) && IsBusinessTask(t.ID) {
+						found = true
+						break
 					}
 				}
+				if !found {
+					return fmt.Errorf("wildcard dependency %q matches no business tasks", dep)
+				}
+			} else {
+				if _, exists := index.ByID(dep); !exists {
+					return fmt.Errorf("dependency not found: %s", dep)
+				}
 			}
-			srcKey, srcTask = k, t
 		}
+
+		// Derive file and record paths
+		fileName := opts.ID + ".md"
+		recordPath := "records/" + opts.ID + ".md"
+
+		// Source handling: dedup -> block -> resolve.
+		// Dedup is a pure read (no mutation), so it must come first.
+		// Block before resolution preserves the fix-chain model.
+		var srcKey string
+		var srcTask *Task
+		if opts.SourceTaskID != "" {
+			var k string
+			var t *Task
+			if foundK, foundT, err := FindTask(index, opts.SourceTaskID); err == nil {
+				k, t = foundK, foundT
+			}
+
+			// Dedup check (pure read): if active fix tasks already exist, skip -- no mutation needed.
+			if activeFixes := hasActiveFixTasks(index, opts.SourceTaskID); len(activeFixes) > 0 {
+				return &ActiveFixExistsError{
+					SourceTaskID: opts.SourceTaskID,
+					ActiveFixIDs: activeFixes,
+				}
+			}
+
+			// Only mutate after dedup passes.
+			if t != nil {
+				// Block source before resolution (--block-source flag).
+				// Prevents auto-resolve from flattening to root, preserving the chain.
+				if opts.BlockSource {
+					t.Status = "blocked"
+				}
+
+				// Source auto-resolution: when --source-task-id points to a COMPLETED/SKIPPED
+				// fix-task, trace the chain to find the root blocked task.
+				if t.Status == "completed" || t.Status == "skipped" {
+					resolved := ResolveSourceTask(index, opts.SourceTaskID)
+					if resolved != opts.SourceTaskID {
+						fmt.Fprintf(os.Stderr, "SOURCE-RESOLVE: %s -> %s (source completed, resolving to root)\n", opts.SourceTaskID, resolved)
+						opts.SourceTaskID = resolved
+						if k2, t2, err2 := FindTask(index, opts.SourceTaskID); err2 == nil {
+							k, t = k2, t2
+						}
+					}
+				}
+				srcKey, srcTask = k, t
+			}
+		}
+
+		index.SetTask(opts.ID, Task{
+			ID:            opts.ID,
+			Title:         opts.Title,
+			Priority:      opts.Priority,
+			EstimatedTime: opts.EstimatedTime,
+			Dependencies:  opts.Dependencies,
+			Status:        opts.Status,
+			File:          fileName,
+			Record:        recordPath,
+			Breaking:      opts.Breaking,
+			SourceTaskID:  opts.SourceTaskID,
+			Type:          opts.Type,
+		})
+
+		if srcTask != nil && !slices.Contains(srcTask.Dependencies, opts.ID) {
+			srcTask.Dependencies = append(srcTask.Dependencies, opts.ID)
+			index.SetTask(srcKey, *srcTask)
+		}
+
+		if err := indexPkg.SaveIndexAtomic(indexPath, index); err != nil {
+			return fmt.Errorf("save index: %w", err)
+		}
+
+		resultID = opts.ID
+		return nil
+	}); err != nil {
+		return "", err
 	}
-
-	index.SetTask(opts.ID, Task{
-		ID:            opts.ID,
-		Title:         opts.Title,
-		Priority:      opts.Priority,
-		EstimatedTime: opts.EstimatedTime,
-		Dependencies:  opts.Dependencies,
-		Status:        opts.Status,
-		File:          fileName,
-		Record:        recordPath,
-		Breaking:      opts.Breaking,
-		SourceTaskID:  opts.SourceTaskID,
-		Type:          opts.Type,
-	})
-
-	if srcTask != nil && !slices.Contains(srcTask.Dependencies, opts.ID) {
-		srcTask.Dependencies = append(srcTask.Dependencies, opts.ID)
-		index.SetTask(srcKey, *srcTask)
-	}
-
-	if err := SaveIndex(indexPath, index); err != nil {
-		return "", fmt.Errorf("save index: %w", err)
-	}
-
-	return opts.ID, nil
+	return resultID, nil
 }
 
 // CreateTaskMarkdown writes a task markdown file with YAML frontmatter.
@@ -336,24 +344,26 @@ func generateAutoID(prefix string, index *TaskIndex) string {
 // AddDependency adds depID to the specified task's Dependencies in the index.
 // If depID is already listed, this is a no-op.
 func AddDependency(indexPath string, taskID string, depID string) error {
-	index, err := LoadIndex(indexPath)
-	if err != nil {
-		return fmt.Errorf("load index: %w", err)
-	}
+	return indexPkg.WithLock(indexPath, func() error {
+		index, err := LoadIndex(indexPath)
+		if err != nil {
+			return fmt.Errorf("load index: %w", err)
+		}
 
-	taskKey, foundTask, err := FindTask(index, taskID)
-	if err != nil {
-		return fmt.Errorf("task not found: %s", taskID)
-	}
+		taskKey, foundTask, err := FindTask(index, taskID)
+		if err != nil {
+			return fmt.Errorf("task not found: %s", taskID)
+		}
 
-	if slices.Contains(foundTask.Dependencies, depID) {
-		return nil
-	}
+		if slices.Contains(foundTask.Dependencies, depID) {
+			return nil
+		}
 
-	foundTask.Dependencies = append(foundTask.Dependencies, depID)
-	index.SetTask(taskKey, *foundTask)
+		foundTask.Dependencies = append(foundTask.Dependencies, depID)
+		index.SetTask(taskKey, *foundTask)
 
-	return SaveIndex(indexPath, index)
+		return indexPkg.SaveIndexAtomic(indexPath, index)
+	})
 }
 
 // GetUnmetDependencies returns the list of dependency IDs that are not "completed" or "skipped".
@@ -371,14 +381,14 @@ func GetUnmetDependencies(indexPath string, taskID string) ([]string, error) {
 
 	var unmet []string
 	for _, dep := range foundTask.Dependencies {
-		if strings.HasSuffix(dep, ".x") {
-			prefix := strings.TrimSuffix(dep, ".x")
+		if strings.HasSuffix(dep, IDSuffixWildcard) {
+			prefix := strings.TrimSuffix(dep, IDSuffixWildcard)
 			prefixWithDot := prefix + "."
 			for _, other := range index.tasks {
 				if other.ID == foundTask.ID {
 					continue
 				}
-				if strings.HasPrefix(other.ID, prefixWithDot) && isBusinessTaskID(other.ID) && other.Status != "completed" && other.Status != "skipped" {
+				if strings.HasPrefix(other.ID, prefixWithDot) && IsBusinessTask(other.ID) && other.Status != "completed" && other.Status != "skipped" {
 					unmet = append(unmet, other.ID)
 				}
 			}
@@ -391,9 +401,4 @@ func GetUnmetDependencies(indexPath string, taskID string) ([]string, error) {
 		}
 	}
 	return unmet, nil
-}
-
-// isBusinessTaskID returns true for task IDs that are not gate or summary tasks.
-func isBusinessTaskID(id string) bool {
-	return !strings.HasSuffix(id, ".gate") && !strings.HasSuffix(id, ".summary")
 }
