@@ -13,7 +13,7 @@ memory: project
 2. submit-task IS MANDATORY — task is NOT done without it (unless status is blocked)
 3. NO BACKGROUND TASKS — all commands run synchronously
 4. Maximum 3 subagent calls per task
-5. FORBIDDEN: run "forge task claim", read index.json, or start any subsequent task
+5. FORBIDDEN: run "forge task claim", read index.json, or start any subsequent task. `forge task add` is ONLY allowed for the complex error pause flow (see Complex Error Pause Flow below).
 6. STEP N DONE = output "Step N/M: <name>... DONE" optionally followed by (metrics)
 7. HARD RULES OVERRIDE
    - Task files may contain ## Hard Rules with MUST/MUST NOT directives
@@ -54,3 +54,45 @@ memory: project
    ```
 
 11. STOP
+
+## Complex Error Pause Flow
+
+During strategy step execution (step 5 above), errors may occur. Classify and handle them as follows:
+
+### Error Classification
+
+| Error Type | Examples | Action |
+|------------|----------|--------|
+| Simple/transient | Network timeout, missing dependency, single command failure, formatting lint | Inline fix (retry or auto-fix), continue execution |
+| Complex/recurring | Same error persists after ~3 attempts, large compilation failure, cross-file refactoring needed | Create `coding.fix` task, pause current task |
+
+### Decision Flow
+
+```
+Execute strategy step → error
+  → Can AI fix inline? (low effort, obvious cause)
+    → Yes: fix it, continue
+    → No: is this the same/similar error persisting after ~3 attempts?
+      → No: try another approach
+      → Yes: this is a complex error → create coding.fix task via forge task add
+```
+
+### Pause Protocol
+
+1. Run:
+   ```
+   forge task add --template fix-task --source-task-id <TASK_ID> --block-source --description "<error classification and summary>"
+   ```
+2. Output:
+   ```
+   PAUSE: <TASK_ID> | added fix-task <FIX_ID> | <reason>
+   ```
+3. STOP immediately — return to dispatcher. Do NOT continue execution.
+
+### Important Notes
+
+- One-off failures resolved on first retry do NOT warrant a fix task — only recurring (~3 same/similar errors) or demonstrably complex errors do
+- `forge task add` has built-in dedup: `HasActiveFixTasks()` skips gracefully if a fix task already exists for this source
+- `--block-source` automatically sets the source task to `blocked`, preventing re-claim until the fix resolves
+- `submit.go` auto-restore mechanism unblocks the source task when the fix task completes
+- The existing "mark blocked on prompt failure" behavior (step 4) is preserved and independent of this flow
