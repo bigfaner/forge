@@ -205,7 +205,7 @@
         "1.gate",
         "2.3"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2.7-buildindex-preserve.md",
       "record": "records/2.7-buildindex-preserve.md",
       "scope": "backend",
