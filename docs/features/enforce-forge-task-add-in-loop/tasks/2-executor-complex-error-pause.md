@@ -12,20 +12,35 @@ mainSession: false
 
 ## Description
 
-The task-executor subagent (`plugins/forge/agents/task-executor.md`) executes strategy steps for a coding.* task. When it encounters a recurring error that resists multiple attempts within the same execution, it should be able to pause the current task, create a specialized fix task, and return to the dispatcher.
+The task-executor subagent (`plugins/forge/agents/task-executor.md`) needs the ability to pause the current task and create a dedicated `coding.fix` task when it encounters a complex, recurring error during execution.
 
-The decision flow:
-1. Execute strategy steps normally
-2. If a step fails → AI tries to resolve it (~3 approaches max)
-3. If the same/similar error keeps recurring → AI judges this needs a dedicated fix task
-4. Run `forge task add --template fix-task --source-task-id <TASK_ID> --block-source --description "<error summary>"`
-5. Output `PAUSE: <TASK_ID> | added fix-task <FIX_ID> | <reason>`
-6. STOP — return to dispatcher
+### Error Classification
 
-Existing behaviors preserved:
-- If `forge prompt get-by-task-id` fails → mark blocked, STOP (unchanged)
-- If task completes normally → submit, commit, output DONE (unchanged)
-- One-shot command failures resolved on retry → continue normally (no fix task)
+Not all errors warrant a fix task. The executor uses AI judgment:
+
+| Error Type | Examples | Action |
+|------------|----------|--------|
+| Simple/transient | Network timeout, missing dependency, single command failure, formatting lint | Inline fix (retry or auto-fix), continue execution |
+| Complex/recurring | Same error persists after ~3 attempts, large compilation failure, cross-file refactoring needed | Create `coding.fix` task, pause current task |
+
+### Decision Flow
+
+```
+Execute strategy step → error
+  → Can AI fix inline? (low effort, obvious cause)
+    → Yes: fix it, continue
+    → No: is this the same/similar error persisting after ~3 attempts?
+      → No: try another approach
+      → Yes: this is a complex error → create coding.fix task via forge task add
+```
+
+All fix tasks use `--template fix-task` (type `coding.fix`), regardless of error category.
+
+### Pause Protocol
+
+1. Run: `forge task add --template fix-task --source-task-id <TASK_ID> --block-source --description "<error classification and summary>"`
+2. Output: `PAUSE: <TASK_ID> | added fix-task <FIX_ID> | <reason>`
+3. STOP immediately — return to dispatcher
 
 ## Reference Files
 - `docs/proposals/enforce-forge-task-add-in-loop/proposal.md` — Source proposal
@@ -35,21 +50,21 @@ Existing behaviors preserved:
 ### Modify
 | File | Changes |
 |------|---------|
-| `plugins/forge/agents/task-executor.md` | Add complex error pause flow with forge task add |
+| `plugins/forge/agents/task-executor.md` | Add complex error pause flow with error classification and forge task add |
 
 ## Acceptance Criteria
-- [ ] task-executor.md documents the AI decision criteria for creating a fix task (recurring error after ~3 attempts within the same execution)
-- [ ] task-executor.md includes the exact `forge task add` command with correct flags
+- [ ] task-executor.md documents the error classification (inline fix vs. fix task)
+- [ ] task-executor.md documents the decision flow: try ~3 approaches → create fix task if recurring
+- [ ] task-executor.md includes the exact `forge task add` command with `--template fix-task`, `--source-task-id`, `--block-source`, `--description`
 - [ ] task-executor.md specifies the `PAUSE` output format
-- [ ] task-executor.md specifies that the executor must STOP after pausing
-- [ ] Existing hard constraints remain intact: ONE TASK PER INVOCATION, submit-task mandatory, NO background tasks
+- [ ] task-executor.md specifies that the executor must STOP immediately after pausing
+- [ ] Existing hard constraints are updated: `forge task add` is allowed for the pause flow; `forge task claim`, `read index.json`, `start any subsequent task` remain forbidden
 - [ ] Existing "mark blocked on prompt failure" behavior is preserved
-- [ ] The simple-error flow (one-off failure resolved on retry) is documented as NOT warranting a fix task
-- [ ] The forbidden actions list is updated to allow `forge task add` only for the pause flow
+- [ ] The simple-error flow (one-off failure resolved inline) is documented as NOT warranting a fix task
 
 ## Implementation Notes
-- The `forge task add` command already has dedup — if the dispatcher later tries to add another fix for the same source, `HasActiveFixTasks()` will detect the one created by the executor and skip
-- The `--block-source` flag automatically sets the source task to `blocked`, preventing re-claim until the fix task is resolved
-- The `submit.go` auto-restore mechanism will automatically unblock the source task when the fix task completes
-- The executor must NOT continue execution after pausing — it's ONE TASK PER INVOCATION
-- The executor's Hard Constraints #5 currently says "FORBIDDEN: run forge task claim, read index.json, or start any subsequent task" — this should be clarified to allow `forge task add` for the pause flow
+- The `forge task add` command has built-in dedup — if the dispatcher later tries to add a fix for the same source, `HasActiveFixTasks()` skips gracefully
+- `--block-source` automatically sets the source task to `blocked`, preventing re-claim until the fix resolves
+- `submit.go` auto-restore mechanism unblocks the source task when the fix task completes
+- The executor must NOT continue execution after pausing — hard constraint: ONE TASK PER INVOCATION
+- The executor's Hard Constraints #5 currently says "FORBIDDEN: run forge task claim, read index.json, or start any subsequent task" — update to allow `forge task add` for pause flow while keeping others forbidden
