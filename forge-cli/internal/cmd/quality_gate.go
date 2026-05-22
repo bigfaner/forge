@@ -37,13 +37,13 @@ var qualityGateCmd = &cobra.Command{
 	Use:   "quality-gate",
 	Short: "Check if all tasks are done, then run tests",
 	Long: `Checks if every task in the current feature is completed or skipped.
-			Exits 0 silently if any task is still pending, in_progress, or blocked (no-op).
-			If all done: runs project-wide unit/integration tests, then e2e regression.
+Exits 0 silently if any task is still pending, in_progress, or blocked (no-op).
+If all done: runs project-wide unit/integration tests, then e2e regression.
 
-			Feature e2e tests are run by T-test-run (run-e2e-tests task), not this hook.
-			This hook is the project health gate: unit tests + regression suite.
+Feature e2e tests are run by T-test-run (run-e2e-tests task), not this hook.
+This hook is the project health gate: unit tests + regression suite.
 
-			Use -v to see why the command exits early (useful for debugging).`,
+Use -v to see why the command exits early (useful for debugging).`,
 	Args: cobra.NoArgs,
 	RunE: runQualityGate,
 }

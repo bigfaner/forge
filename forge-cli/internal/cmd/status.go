@@ -17,19 +17,12 @@ var statusCmd = &cobra.Command{
 	Long: `Query the status of a task.
 
 Use "forge task submit" to complete a task or "forge task reopen" to re-activate rejected/skipped tasks.`,
-	Args: cobra.RangeArgs(1, 2),
+	Args: cobra.ExactArgs(1),
 	RunE: runStatus,
 }
 
 func runStatus(_ *cobra.Command, args []string) error {
 	taskIDArg := args[0]
-
-	// Status command is now read-only: reject 2-arg mutation calls
-	if len(args) > 1 {
-		Exit(NewAIError(ErrInvalidInput,
-			"task status is read-only. Use forge task submit to complete a task.",
-			"", "", ""))
-	}
 
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {

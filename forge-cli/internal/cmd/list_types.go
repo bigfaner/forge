@@ -11,8 +11,13 @@ import (
 var listTypesCmd = &cobra.Command{
 	Use:   "list-types",
 	Short: "List all supported task types",
-	Args:  cobra.NoArgs,
-	RunE:  runListTypes,
+	Long: `List all task types registered in the system.
+
+Output format: one line per type as "TYPE_NAME  DESCRIPTION".
+
+Use this to discover valid type values for "forge task add --type".`,
+	Args: cobra.NoArgs,
+	RunE: runListTypes,
 }
 
 func runListTypes(_ *cobra.Command, _ []string) error {

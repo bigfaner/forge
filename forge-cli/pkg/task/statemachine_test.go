@@ -16,6 +16,7 @@ func TestTransitionRoleConstants(t *testing.T) {
 		{RoleClaim, "claim"},
 		{RoleReopen, "reopen"},
 		{RoleAuto, "auto"},
+		{RoleManual, "manual"},
 	}
 	for _, tt := range tests {
 		if string(tt.role) != tt.expected {
@@ -521,6 +522,22 @@ func TestValidateTransition_FullMatrix(t *testing.T) {
 		{"in_progress", "rejected", RoleSubmit, true},
 		{"blocked", "rejected", RoleSubmit, true},
 		{"blocked", "skipped", RoleSubmit, true},
+
+
+			// manual (RoleManual) overrides
+			{"blocked", "pending", RoleManual, true},
+			{"blocked", "in_progress", RoleManual, true},
+			{"blocked", "skipped", RoleManual, true},
+			{"blocked", "rejected", RoleManual, true},
+			{"pending", "skipped", RoleManual, true},
+			{"pending", "rejected", RoleManual, true},
+			{"in_progress", "blocked", RoleManual, true},
+			{"in_progress", "skipped", RoleManual, true},
+			{"in_progress", "rejected", RoleManual, true},
+			{"completed", "pending", RoleManual, false},
+			{"rejected", "pending", RoleManual, false},
+			{"skipped", "pending", RoleManual, false},
+			{"pending", "completed", RoleManual, false},
 	}
 
 	for _, tc := range cases {
@@ -564,6 +581,56 @@ func TestNoForceParameter(_ *testing.T) {
 	// This is a compile-time check: ValidateTransition does not accept a force parameter.
 	// The function signature is ValidateTransition(current, target string, role TransitionRole) error
 	// No test needed, this is enforced by the API.
+}
+
+// --- RoleManual: manual override transitions ---
+
+func TestValidateTransition_ManualUnblock(t *testing.T) {
+	if err := ValidateTransition("blocked", "pending", RoleManual); err != nil {
+		t.Errorf("blocked -> pending (manual) should be allowed, got: %v", err)
+	}
+}
+
+func TestValidateTransition_ManualUnblockToInProgress(t *testing.T) {
+	if err := ValidateTransition("blocked", "in_progress", RoleManual); err != nil {
+		t.Errorf("blocked -> in_progress (manual) should be allowed, got: %v", err)
+	}
+}
+
+func TestValidateTransition_ManualCompletedBlocked(t *testing.T) {
+	if err := ValidateTransition("pending", "completed", RoleManual); err == nil {
+		t.Error("pending -> completed (manual) should be blocked — use submit")
+	}
+}
+
+func TestValidateTransition_ManualSkip(t *testing.T) {
+	if err := ValidateTransition("blocked", "skipped", RoleManual); err != nil {
+		t.Errorf("blocked -> skipped (manual) should be allowed, got: %v", err)
+	}
+	if err := ValidateTransition("in_progress", "skipped", RoleManual); err != nil {
+		t.Errorf("in_progress -> skipped (manual) should be allowed, got: %v", err)
+	}
+	if err := ValidateTransition("pending", "skipped", RoleManual); err != nil {
+		t.Errorf("pending -> skipped (manual) should be allowed, got: %v", err)
+	}
+}
+
+func TestValidateTransition_ManualReject(t *testing.T) {
+	if err := ValidateTransition("blocked", "rejected", RoleManual); err != nil {
+		t.Errorf("blocked -> rejected (manual) should be allowed, got: %v", err)
+	}
+	if err := ValidateTransition("in_progress", "rejected", RoleManual); err != nil {
+		t.Errorf("in_progress -> rejected (manual) should be allowed, got: %v", err)
+	}
+}
+
+func TestValidateTransition_ManualCompletedTerminal(t *testing.T) {
+	if err := ValidateTransition("completed", "skipped", RoleManual); err == nil {
+		t.Error("completed -> skipped (manual) should be blocked — completed is terminal")
+	}
+	if err := ValidateTransition("completed", "pending", RoleManual); err == nil {
+		t.Error("completed -> pending (manual) should be blocked — completed is terminal")
+	}
 }
 
 // --- Helper ---

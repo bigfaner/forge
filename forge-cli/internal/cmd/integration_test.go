@@ -862,23 +862,10 @@ func TestPrintTaskDetails_Breaking(t *testing.T) {
 // ---------- runStatus is read-only ----------
 
 func TestRunStatus_Update(t *testing.T) {
-	if os.Getenv("TEST_STATUS_UPDATE_MUTATION") == "1" {
-		setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
-			"t1": {ID: "1.1", Title: "Status Task", Status: "pending", Priority: "P0", File: "1.1.md", Record: "records/1.1.md", Dependencies: []string{}},
-		}})
-		_ = runStatus(nil, []string{"1.1", "blocked"})
-		return
-	}
-
-	cmd := exec.Command(os.Args[0], "-test.run=TestRunStatus_Update")
-	cmd.Env = append(os.Environ(), "TEST_STATUS_UPDATE_MUTATION=1")
-	output, err := cmd.CombinedOutput()
+	// Status command uses ExactArgs(1), cobra rejects 2-arg calls at framework level.
+	err := statusCmd.Args(statusCmd, []string{"1.1", "blocked"})
 	if err == nil {
-		t.Error("expected error: status command is now read-only, mutation should fail")
-	}
-	out := string(output)
-	if !strings.Contains(out, "task status is read-only") {
-		t.Errorf("expected 'task status is read-only', got: %s", out)
+		t.Error("expected ExactArgs(1) to reject 2 arguments for status mutation")
 	}
 }
 
@@ -899,6 +886,9 @@ func TestExecuteClaim_NoProject(t *testing.T) {
 // ---------- executeClaim: save index error ----------
 
 func TestExecuteClaim_SaveIndexError(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Unix chmod 0555 does not prevent writes on Windows")
+	}
 	dir := t.TempDir()
 	_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644)
 	_ = feature.EnsureFeatureDir(dir, "test")

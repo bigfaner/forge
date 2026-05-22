@@ -17,6 +17,8 @@ const (
 	RoleReopen TransitionRole = "reopen"
 	// RoleAuto represents auto-downgrade or auto-unblock.
 	RoleAuto TransitionRole = "auto"
+	// RoleManual represents manual operator override (forge task transition).
+	RoleManual TransitionRole = "manual"
 )
 
 // TransitionError is returned when a state transition is not allowed.
@@ -62,6 +64,10 @@ var transitionTable = []TransitionRule{
 
 	// Submit can auto-downgrade in_progress to blocked
 	{From: "in_progress", To: "blocked", Role: RoleSubmit, Allowed: true, GuardMsg: ""},
+
+	// Manual override: operator can unblock or resolve any non-completed task
+	{From: "blocked", To: "pending", Role: RoleManual, Allowed: true, GuardMsg: ""},
+	{From: "blocked", To: "in_progress", Role: RoleManual, Allowed: true, GuardMsg: ""},
 
 	// blocked -> pending/in_progress requires dependency check (phase 2)
 	{From: "blocked", To: "pending", Role: "", Allowed: false, GuardMsg: "dependencies must be checked first"},

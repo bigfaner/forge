@@ -67,6 +67,7 @@ func init() {
 	taskCmd.AddCommand(migrateCmd)
 	taskCmd.AddCommand(listTypesCmd)
 	taskCmd.AddCommand(reopenCmd)
+	taskCmd.AddCommand(transitionCmd)
 
 	// E2E group subcommands (6 total)
 	e2eCmd.AddCommand(validateSpecsCmd)

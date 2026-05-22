@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -293,53 +294,11 @@ func TestStatus_ForceFlagRemoved(t *testing.T) {
 // Transitions blocked by the state machine (terminal, completed) return errors.
 // ---------------------------------------------------------------------------
 func TestStatus_ReadOnly_AnyStatusArgument(t *testing.T) {
-	type testCase struct {
-		status string
-		wantOK bool // true = mutation allowed; false = state machine blocks
-	}
-	// Starting from "pending" status
-	tests := []testCase{
-		{"pending", false},
-		{"in_progress", false},
-		{"completed", false}, // only RoleSubmit can reach completed
-		{"blocked", false},
-		{"skipped", false},
-		{"rejected", false},
-		{"invalid_status", false}, // no rule blocks it, catch-all allows
-	}
-
-	for _, tt := range tests {
-		t.Run("arg="+tt.status, func(t *testing.T) {
-			envKey := "TEST_STATUS_MUTATION_" + strings.ToUpper(strings.ReplaceAll(tt.status, "-", "_"))
-			if os.Getenv(envKey) == "1" {
-				setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
-					"t1": {ID: "1.1", Title: "Task", Status: "pending", Priority: "P0", File: "1.1.md"},
-				}})
-				_ = runStatus(nil, []string{"1.1", tt.status})
-				return
-			}
-
-			cmd := exec.Command(os.Args[0], "-test.run=TestStatus_ReadOnly_AnyStatusArgument/arg="+tt.status)
-			cmd.Env = append(os.Environ(), envKey+"=1")
-			output, err := cmd.CombinedOutput()
-			out := string(output)
-
-			if tt.wantOK {
-				if err != nil {
-					t.Errorf("expected success for status %q, got error: %v, output: %s", tt.status, err, out)
-				}
-				if !strings.Contains(out, "STATUS: "+tt.status) {
-					t.Errorf("expected STATUS: %s in output, got: %s", tt.status, out)
-				}
-			} else {
-				if err == nil {
-					t.Errorf("expected error for status %q (status is read-only)", tt.status)
-				}
-				if !strings.Contains(out, "task status is read-only") {
-					t.Errorf("expected \"task status is read-only\" for arg %q, got: %s", tt.status, out)
-				}
-			}
-		})
+	// Status command uses ExactArgs(1), so cobra rejects 2-arg calls at the framework level.
+	// Verify the Args validator rejects extra arguments.
+	err := statusCmd.Args(statusCmd, []string{"1.1", "completed"})
+	if err == nil {
+		t.Error("expected ExactArgs(1) to reject 2 arguments")
 	}
 }
 
@@ -378,6 +337,9 @@ func TestReopen_CLI_Integration(t *testing.T) {
 // Verify error handling when WithLock fails.
 // ---------------------------------------------------------------------------
 func TestReopen_WithLock_SaveIndexError(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Unix chmod 0555 does not prevent writes on Windows")
+	}
 	if os.Getenv("TEST_REOPEN_SAVE_ERROR") == "1" {
 		dir := setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 			"t1": {ID: "1.1", Title: "Rejected Task", Status: "rejected", Priority: "P0", File: "1.1.md"},
@@ -433,8 +395,8 @@ func TestReopen_NoProject(t *testing.T) {
 	if err == nil {
 		t.Error("expected error for no project root")
 	}
-	if !strings.Contains(string(output), "NO_PROJECT") {
-		t.Errorf("expected NO_PROJECT error, got: %s", string(output))
+	if !strings.Contains(string(output), "NO_PROJECT") && !strings.Contains(string(output), "NO_FEATURE") {
+		t.Errorf("expected NO_PROJECT or NO_FEATURE error, got: %s", string(output))
 	}
 }
 

@@ -11,7 +11,7 @@ import (
 
 var testVerifyCmd = &cobra.Command{
 	Use:   "verify",
-	Short: "Detect contract breakage by comparing Contract specs against current code",
+	Short: "Detect contract breakage against current code",
 	Long: `Scan all Contract spec files (tests/<journey>/_contracts/*.md), re-collect
 	the Fact Table from the current codebase, and compare each Output/State assertion
 	against actual values. Reports broken contracts with dimension-level detail.

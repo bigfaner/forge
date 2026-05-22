@@ -31,7 +31,7 @@ var (
 )
 
 var addCmd = &cobra.Command{
-	Use:   "add --title TITLE [--id ID] [--type TYPE] [--priority P0|P1|P2] [--depends-on ID,ID] [--breaking] [--description TEXT] [--template NAME] [--var KEY=VALUE]",
+	Use:   "add --title TITLE [flags]",
 	Short: "Add a new task to the current feature",
 	Long: `Add a new task dynamically. Validates inputs and writes files.
 The CLI is a pure tool — the caller decides what to add.`,

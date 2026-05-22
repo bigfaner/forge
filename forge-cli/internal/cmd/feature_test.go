@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -902,61 +901,14 @@ func TestRunQuery(t *testing.T) {
 }
 
 func TestRunStatus(t *testing.T) {
-	if os.Getenv("TEST_RUN_STATUS_MUTATION") == "1" {
-		rootCmd.SetArgs([]string{"task", "status", "1.1", "blocked"})
-		if err := rootCmd.Execute(); err != nil {
-			fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
+		// Status command uses ExactArgs(1), cobra rejects 2-arg mutation calls.
+		err := statusCmd.Args(statusCmd, []string{"1.1", "blocked"})
+		if err == nil {
+			t.Error("expected ExactArgs(1) to reject 2 arguments")
 		}
-		return
 	}
 
-	dir := t.TempDir()
-	goMod := filepath.Join(dir, "go.mod")
-	if err := os.WriteFile(goMod, []byte("module test-project\n\ngo 1.21\n"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	featureDir := filepath.Join(dir, "docs", "features", "test-feature")
-	tasksDir := filepath.Join(featureDir, "tasks")
-	indexPath := filepath.Join(tasksDir, "index.json")
-
-	if err := os.MkdirAll(tasksDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	index := &task.TaskIndex{
-		Feature:      "test-feature",
-		PRD:          "prd/prd-spec.md",
-		Design:       "design/tech-design.md",
-		StatusEnum:   []string{"pending", "in_progress", "completed", "blocked", "skipped"},
-		PriorityEnum: []string{"P0", "P1", "P2"},
-	}
-	index.SetTasks(map[string]task.Task{
-		"task1": {ID: "1.1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1.1.md", Record: "1.1.md"},
-	})
-
-	if err := task.SaveIndex(indexPath, index); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := feature.EnsureFeatureDir(dir, "test-feature"); err != nil {
-		t.Fatal(err)
-	}
-
-	cmd := exec.Command(os.Args[0], "-test.run=TestRunStatus")
-	cmd.Env = append(os.Environ(),
-		"TEST_RUN_STATUS_MUTATION=1",
-		"CLAUDE_PROJECT_DIR="+dir)
-	cmd.Dir = dir
-	output, err := cmd.CombinedOutput()
-	if err == nil {
-		t.Error("expected non-zero exit: status mutation should fail")
-	}
-	if !strings.Contains(string(output), "task status is read-only") {
-		t.Errorf("expected 'task status is read-only' in output, got: %s", string(output))
-	}
-}
-
+	
 func TestRunCheck(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("CLAUDE_PROJECT_DIR", dir)

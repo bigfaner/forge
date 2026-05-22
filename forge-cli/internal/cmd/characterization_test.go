@@ -466,72 +466,14 @@ func TestBuildIndex_Orphan_WarningOnly(t *testing.T) {
 // re-activate rejected/skipped tasks.
 // ---------------------------------------------------------------------------
 func TestStatus_AllowsMutation(t *testing.T) {
-	type testCase struct {
-		name   string
-		from   string
-		to     string
-		wantOK bool // all cases are false — status is read-only
-	}
-	tests := []testCase{
-		// All blocked: status command is now read-only
-		{"pending_to_blocked", "pending", "blocked", false},
-		{"pending_to_in_progress", "pending", "in_progress", false},
-		{"pending_to_skipped", "pending", "skipped", false},
-		{"pending_to_rejected", "pending", "rejected", false},
-		{"in_progress_to_pending", "in_progress", "pending", false},
-		{"in_progress_to_blocked", "in_progress", "blocked", false},
-		{"in_progress_to_skipped", "in_progress", "skipped", false},
-		{"in_progress_to_rejected", "in_progress", "rejected", false},
-		// All blocked: status command is now read-only
-		{"blocked_to_skipped", "blocked", "skipped", false},
-		{"blocked_to_rejected", "blocked", "rejected", false},
-		// All blocked: status command is now read-only
-		{"blocked_to_pending", "blocked", "pending", false},
-		{"blocked_to_in_progress", "blocked", "in_progress", false},
-		// All blocked: status command is now read-only
-		{"skipped_to_pending", "skipped", "pending", false},
-		{"skipped_to_in_progress", "skipped", "in_progress", false},
-		{"skipped_to_blocked", "skipped", "blocked", false},
-		// All blocked: status command is now read-only
-		{"rejected_to_pending", "rejected", "pending", false},
-		// All blocked: status command is now read-only
-		{"completed_to_pending", "completed", "pending", false},
-		{"completed_to_in_progress", "completed", "in_progress", false},
-		// All blocked: status command is now read-only
-		{"in_progress_to_completed", "in_progress", "completed", false},
-		{"pending_to_completed", "pending", "completed", false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			envKey := "TEST_CHAR_STATUS_" + strings.ToUpper(tt.name)
-			if os.Getenv(envKey) == "1" {
-				setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
-					"t1": {ID: "1.1", Title: "Task", Status: tt.from, Priority: "P0", File: "1.1.md", Record: "records/1.1.md"},
-				}})
-				_ = runStatus(nil, []string{"1.1", tt.to})
-				return
-			}
-
-			cmd := exec.Command(os.Args[0], "-test.run=TestStatus_AllowsMutation/"+tt.name)
-			cmd.Env = append(os.Environ(), envKey+"=1")
-			output, err := cmd.CombinedOutput()
-			out := string(output)
-
-			if tt.wantOK {
-				if err != nil {
-					t.Errorf("expected success for %s -> %s, got error: %v, output: %s", tt.from, tt.to, err, out)
-				}
-				if !strings.Contains(out, "STATUS: "+tt.to) {
-					t.Errorf("expected STATUS: %s in output for %s -> %s, got: %s", tt.to, tt.from, tt.to, out)
-				}
-			} else {
-				if err == nil {
-					t.Errorf("expected error for %s -> %s (status is read-only)", tt.from, tt.to)
-				}
-				if !strings.Contains(out, "task status is read-only") {
-					t.Errorf("expected 'task status is read-only' for %s -> %s, got: %s", tt.from, tt.to, out)
-				}
+	// Status command uses ExactArgs(1), so cobra rejects 2-arg mutation calls.
+	// Verify the Args validator rejects extra arguments for various target statuses.
+	targets := []string{"blocked", "in_progress", "skipped", "rejected", "completed", "pending"}
+	for _, target := range targets {
+		t.Run("rejects_"+target, func(t *testing.T) {
+			err := statusCmd.Args(statusCmd, []string{"1.1", target})
+			if err == nil {
+				t.Errorf("expected ExactArgs(1) to reject 2nd arg %q", target)
 			}
 		})
 	}

@@ -25,7 +25,7 @@ var (
 
 var forensicCmd = &cobra.Command{
 	Use:   "forensic",
-	Short: "Analyze Claude Code session transcripts for agent deviation forensics",
+	Short: "Analyze session transcripts for agent deviation forensics",
 	Long: `Extract and analyze evidence from Claude Code session transcripts.
 
 Subcommands:
