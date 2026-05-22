@@ -204,8 +204,12 @@ func claimNextTask(index *task.TaskIndex) (string, *task.Task, error) {
 
 	// Lazy unblock scan: check blocked tasks and auto-transition eligible ones to pending.
 	// Runs before the hasPending check so newly-unblocked tasks are visible.
+	// Skips manually blocked tasks (ManualBlock=true) to prevent infinite claim loops.
 	for key, t := range index.TasksMap() {
 		if t.Status != "blocked" {
+			continue
+		}
+		if t.ManualBlock {
 			continue
 		}
 		if met, _ := checkDependenciesMet(index, t.ID, t); met {

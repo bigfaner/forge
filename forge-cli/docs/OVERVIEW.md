@@ -245,6 +245,7 @@ type Task struct {
     Type          string   `json:"type,omitempty"`          // Task execution type; required after migration
     Profile       string   `json:"profile,omitempty"`       // Test profile name (e.g. "web-playwright"); set by task index for per-profile test tasks
     BlockedReason string   `json:"blockedReason,omitempty"` // Why this task entered blocked state; written by run-tasks when task prompt fails
+    ManualBlock   bool     `json:"manualBlock,omitempty"`   // Manually blocked by operator (forge task transition); auto-unblock skips these
     Coverage      *int     `json:"coverage,omitempty"`       // Per-task coverage override from frontmatter; nil = use global default
 }
 ```

@@ -100,6 +100,9 @@ func doTransition(indexPath, taskIDArg, targetStatus string) error {
 	t.Status = targetStatus
 	if targetStatus == "blocked" {
 		t.BlockedReason = transitionReason
+		t.ManualBlock = true
+	} else {
+		t.ManualBlock = false
 	}
 
 	index.SetTask(key, *t)

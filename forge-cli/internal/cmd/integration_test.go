@@ -548,6 +548,67 @@ func TestExecuteClaim_BlockedTaskClearsStateAndProceeds(t *testing.T) {
 	}
 }
 
+func TestClaimNextTask_ManualBlock_SkipsAutoUnblock(t *testing.T) {
+	t.Run("manually blocked task is not auto-unblocked", func(t *testing.T) {
+		index := &task.TaskIndex{
+			StatusEnum:   []string{"pending", "in_progress", "completed", "blocked"},
+			PriorityEnum: []string{"P0", "P1", "P2"},
+		}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1", Title: "Dep", Priority: "P0", Status: "completed", Dependencies: []string{}},
+			"task2": {
+				ID:            "2",
+				Title:         "Manually blocked",
+				Priority:      "P0",
+				Status:        "blocked",
+				Dependencies:  []string{"1"},
+				BlockedReason: "waiting on external API",
+				ManualBlock:   true,
+			},
+		})
+
+		_, _, err := claimNextTask(index)
+		if err == nil {
+			t.Fatal("expected error (no eligible tasks), but claimNextTask succeeded")
+		}
+
+		task2 := index.TasksMap()["task2"]
+		if task2.Status != "blocked" {
+			t.Errorf("manually blocked task should stay blocked, got %s", task2.Status)
+		}
+	})
+
+	t.Run("system blocked task without ManualBlock is auto-unblocked", func(t *testing.T) {
+		index := &task.TaskIndex{
+			StatusEnum:   []string{"pending", "in_progress", "completed", "blocked"},
+			PriorityEnum: []string{"P0", "P1", "P2"},
+		}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1", Title: "Dep", Priority: "P0", Status: "completed", Dependencies: []string{}},
+			"task2": {
+				ID:            "2",
+				Title:         "System blocked",
+				Priority:      "P0",
+				Status:        "blocked",
+				Dependencies:  []string{"1"},
+				BlockedReason: "auto-downgrade: testsFailed=2",
+			},
+		})
+
+		key, _, err := claimNextTask(index)
+		if err != nil {
+			t.Fatalf("expected auto-unblock to work, got: %v", err)
+		}
+		if key != "task2" {
+			t.Errorf("expected key 'task2', got %q", key)
+		}
+		task2 := index.TasksMap()["task2"]
+		if task2.Status != "in_progress" {
+			t.Errorf("system blocked task should be auto-unblocked to in_progress, got %s", task2.Status)
+		}
+	})
+}
+
 // ---------- runValidateIndex direct validator ----------
 
 func TestValidatorRun_WithFileArg(t *testing.T) {
