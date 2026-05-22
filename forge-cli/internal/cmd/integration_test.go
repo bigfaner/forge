@@ -390,7 +390,7 @@ func TestRunRecord_HappyPath(t *testing.T) {
 	submitQuiet = false
 
 	out := captureStdout(func() {
-		runSubmit(nil, []string{"1.1"})
+		_ = runSubmit(nil, []string{"1.1"})
 	})
 
 	if !strings.Contains(out, "STATUS: completed") {
@@ -436,7 +436,7 @@ func TestRunRecord_JSONOutput(t *testing.T) {
 	submitQuiet = false
 
 	out := captureStdout(func() {
-		runSubmit(nil, []string{"1.1"})
+		_ = runSubmit(nil, []string{"1.1"})
 	})
 
 	if !strings.Contains(out, `"recordFile"`) {
@@ -475,7 +475,7 @@ func TestRunRecord_QuietOutput(t *testing.T) {
 	submitQuiet = true
 
 	out := captureStdout(func() {
-		runSubmit(nil, []string{"1.1"})
+		_ = runSubmit(nil, []string{"1.1"})
 	})
 
 	if strings.Contains(out, "TASK_ID") {
@@ -657,7 +657,7 @@ func TestSaveIndexAndSignalCompletion_IncompleteTasks(t *testing.T) {
 	_ = task.SaveIndex(indexPath, index)
 
 	// Should NOT write forge state since not all tasks are done
-	saveIndexAndSignalCompletion(indexPath, dir, "test", index)
+	_ = saveIndexAndSignalCompletion(indexPath, dir, "test", index)
 
 	forgeState := feature.ReadForgeState(dir)
 	if forgeState != nil {
@@ -866,7 +866,7 @@ func TestRunStatus_Update(t *testing.T) {
 		setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 			"t1": {ID: "1.1", Title: "Status Task", Status: "pending", Priority: "P0", File: "1.1.md", Record: "records/1.1.md", Dependencies: []string{}},
 		}})
-		runStatus(nil, []string{"1.1", "blocked"})
+		_ = runStatus(nil, []string{"1.1", "blocked"})
 		return
 	}
 
@@ -938,7 +938,7 @@ func TestRunClaim_Output(t *testing.T) {
 	}})
 
 	out := captureStdout(func() {
-		runClaim(nil, []string{})
+		_ = runClaim(nil, []string{})
 	})
 	if !strings.Contains(out, "ACTION: CLAIMED") {
 		t.Errorf("expected CLAIMED output, got: %s", out)
@@ -958,7 +958,7 @@ func TestRunCheck_AllValid(t *testing.T) {
 
 	out := captureStdout(func() {
 		captureStderr2(func() {
-			runCheckDeps(nil, []string{})
+			_ = runCheckDeps(nil, []string{})
 		})
 	})
 	if !strings.Contains(out, "PASS") {
@@ -1028,7 +1028,7 @@ func TestSaveIndexAndSignalCompletion_AllDone(t *testing.T) {
 	_ = task.SaveIndex(indexPath, index)
 
 	out := captureStderr2(func() {
-		saveIndexAndSignalCompletion(indexPath, dir, "test", index)
+		_ = saveIndexAndSignalCompletion(indexPath, dir, "test", index)
 	})
 
 	// Forge state should be written
@@ -1047,7 +1047,7 @@ func TestRunValidate_NoArgs(t *testing.T) {
 	}})
 
 	out := captureStdout(func() {
-		runValidateIndex(nil, []string{})
+		_ = runValidateIndex(nil, []string{})
 	})
 	if !strings.Contains(out, "PASS") {
 		t.Errorf("expected PASS via feature resolution, got: %s", out)
@@ -1064,7 +1064,7 @@ func TestRunCheck_WildcardMatch(t *testing.T) {
 
 	out := captureStdout(func() {
 		captureStderr2(func() {
-			runCheckDeps(nil, []string{})
+			_ = runCheckDeps(nil, []string{})
 		})
 	})
 	if !strings.Contains(out, "PASS") {
@@ -1142,7 +1142,7 @@ func TestRunRecord_BlockedStatus(t *testing.T) {
 	submitQuiet = false
 
 	out := captureStdout(func() {
-		runSubmit(nil, []string{"1.1"})
+		_ = runSubmit(nil, []string{"1.1"})
 	})
 	if !strings.Contains(out, "STATUS: blocked") {
 		t.Errorf("expected blocked status, got: %s", out)
@@ -1250,7 +1250,7 @@ func TestRunFeature_None(t *testing.T) {
 	_ = os.Chdir(dir)
 
 	out := captureStdout(func() {
-		runFeature(nil, []string{})
+		_ = runFeature(nil, []string{})
 	})
 	if !strings.Contains(out, "(none)") {
 		t.Errorf("expected (none) for no feature, got: %s", out)
@@ -1336,7 +1336,17 @@ test:
 	}
 
 	if os.Getenv("TEST_QUALITY_GATE_COMPILE_FAIL") == "1" {
-		validateQualityGate(dir, "", true)
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					if aiErr, ok := r.(*AIError); ok {
+						Exit(aiErr)
+					}
+					os.Exit(1)
+				}
+			}()
+			validateQualityGate(dir, "", true)
+		}()
 		return
 	}
 
@@ -1504,7 +1514,7 @@ func TestWriteRegressionRawOutput_MkdirAllError(t *testing.T) {
 
 func TestRunValidate_NoProjectRoot(t *testing.T) {
 	if os.Getenv("TEST_RUN_VALIDATE_NO_PROJECT") == "1" {
-		runValidateIndex(nil, []string{})
+		_ = runValidateIndex(nil, []string{})
 		return
 	}
 
@@ -1532,7 +1542,7 @@ func TestRunValidate_NoProjectRoot(t *testing.T) {
 
 func TestRunValidate_NoFeatureSet(t *testing.T) {
 	if os.Getenv("TEST_RUN_VALIDATE_NO_FEATURE") == "1" {
-		runValidateIndex(nil, []string{})
+		_ = runValidateIndex(nil, []string{})
 		return
 	}
 
@@ -1562,7 +1572,7 @@ func TestRunValidate_NoFeatureSet(t *testing.T) {
 
 func TestRunValidate_IndexFileNotFound(t *testing.T) {
 	if os.Getenv("TEST_RUN_VALIDATE_NO_INDEX") == "1" {
-		runValidateIndex(nil, []string{})
+		_ = runValidateIndex(nil, []string{})
 		return
 	}
 
@@ -1595,7 +1605,9 @@ func TestRunValidate_IndexFileNotFound(t *testing.T) {
 
 func TestRunCheck_NoProjectRoot(t *testing.T) {
 	if os.Getenv("TEST_RUN_CHECK_NO_PROJECT") == "1" {
-		runCheckDeps(nil, []string{})
+		if err := runCheckDeps(nil, []string{}); err != nil {
+			Exit(err)
+		}
 		return
 	}
 
@@ -1622,7 +1634,9 @@ func TestRunCheck_NoProjectRoot(t *testing.T) {
 
 func TestRunCheck_NoFeatureSet(t *testing.T) {
 	if os.Getenv("TEST_RUN_CHECK_NO_FEATURE") == "1" {
-		runCheckDeps(nil, []string{})
+		if err := runCheckDeps(nil, []string{}); err != nil {
+			Exit(err)
+		}
 		return
 	}
 
@@ -1651,7 +1665,9 @@ func TestRunCheck_NoFeatureSet(t *testing.T) {
 
 func TestRunCheck_IndexFileNotFound(t *testing.T) {
 	if os.Getenv("TEST_RUN_CHECK_NO_INDEX") == "1" {
-		runCheckDeps(nil, []string{})
+		if err := runCheckDeps(nil, []string{}); err != nil {
+			Exit(err)
+		}
 		return
 	}
 
@@ -1687,7 +1703,9 @@ func TestRunCheck_InvalidDeps(t *testing.T) {
 	}})
 
 	if os.Getenv("TEST_RUN_CHECK_INVALID_DEPS") == "1" {
-		runCheckDeps(nil, []string{})
+		if err := runCheckDeps(nil, []string{}); err != nil {
+			Exit(err)
+		}
 		return
 	}
 
@@ -1733,7 +1751,9 @@ func TestSaveIndexAndSignalCompletion_SaveIndexError(t *testing.T) {
 	defer func() { _ = os.Chmod(indexDir, 0755) }()
 
 	if os.Getenv("TEST_SAVE_INDEX_ERROR") == "1" {
-		saveIndexAndSignalCompletion(indexPath, dir, "test", index)
+		if err := saveIndexAndSignalCompletion(indexPath, dir, "test", index); err != nil {
+			Exit(err)
+		}
 		return
 	}
 
@@ -1773,7 +1793,7 @@ func TestSaveIndexAndSignalCompletion_WriteForgeStateWarning(t *testing.T) {
 	_ = os.MkdirAll(filepath.Join(forgeDir, "state.json"), 0755)
 
 	out := captureStderr2(func() {
-		saveIndexAndSignalCompletion(indexPath, dir, "test", index)
+		_ = saveIndexAndSignalCompletion(indexPath, dir, "test", index)
 	})
 	if !strings.Contains(out, "WARNING") {
 		t.Errorf("expected warning about failed forge state write, got: %s", out)
@@ -1903,7 +1923,7 @@ func TestExit_NonAIError(t *testing.T) {
 func TestRunAdd_NoProject(t *testing.T) {
 	if os.Getenv("TEST_RUN_ADD_NO_PROJECT") == "1" {
 		addTitle = "Test"
-		runAdd(nil, []string{})
+		_ = runAdd(nil, []string{})
 		return
 	}
 
@@ -1934,7 +1954,7 @@ func TestRunAdd_Success(t *testing.T) {
 	if os.Getenv("TEST_RUN_ADD_SUCCESS") == "1" {
 		addTitle = "New Task"
 		addPriority = "P1"
-		runAdd(nil, []string{})
+		_ = runAdd(nil, []string{})
 		return
 	}
 
@@ -1961,7 +1981,7 @@ func TestRunCleanup_Success(t *testing.T) {
 	_ = task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1"})
 
 	if os.Getenv("TEST_RUN_CLEANUP") == "1" {
-		runCleanup(nil, []string{})
+		_ = runCleanup(nil, []string{})
 		return
 	}
 
@@ -1989,7 +2009,7 @@ func TestRunVerifyCompletion_Success(t *testing.T) {
 	_ = task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1"})
 
 	if os.Getenv("TEST_RUN_VERIFY_OK") == "1" {
-		runVerifyTaskDone(nil, []string{})
+		_ = runVerifyTaskDone(nil, []string{})
 		return
 	}
 
@@ -2011,7 +2031,9 @@ func TestRunVerifyCompletion_Fail(t *testing.T) {
 	_ = task.SaveState(statePath, &task.TaskState{TaskID: "1.1", Key: "t1"})
 
 	if os.Getenv("TEST_RUN_VERIFY_FAIL") == "1" {
-		runVerifyTaskDone(nil, []string{})
+		if err := runVerifyTaskDone(nil, []string{}); err != nil {
+			Exit(err)
+		}
 		return
 	}
 
@@ -2034,7 +2056,7 @@ func TestRunAllCompleted_NotAllDone(t *testing.T) {
 	}})
 
 	if os.Getenv("TEST_RUN_ALL_COMPLETED_NOT_DONE") == "1" {
-		runQualityGate(nil, []string{})
+		_ = runQualityGate(nil, []string{})
 		return
 	}
 
@@ -2072,7 +2094,7 @@ func TestRunRecord_AutoRestore_SlugKeyedSource(t *testing.T) {
 	submitQuiet = false
 
 	_ = captureStdout(func() {
-		runSubmit(nil, []string{"fix-auth"})
+		_ = runSubmit(nil, []string{"fix-auth"})
 	})
 
 	// Verify source task was auto-restored
@@ -2124,7 +2146,7 @@ func TestRunRecord_FixTaskAutoDowngrade_NoRestore(t *testing.T) {
 	submitQuiet = false
 
 	_ = captureStdout(func() {
-		runSubmit(nil, []string{"fix-1"})
+		_ = runSubmit(nil, []string{"fix-1"})
 	})
 
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
@@ -2166,7 +2188,7 @@ func TestRunRecord_AutoDowngrade_ThenCleanup(t *testing.T) {
 	submitQuiet = false
 
 	_ = captureStdout(func() {
-		runSubmit(nil, []string{"1.1"})
+		_ = runSubmit(nil, []string{"1.1"})
 	})
 
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
@@ -2218,7 +2240,7 @@ func TestRunRecord_AutoDowngrade_ThenClaim(t *testing.T) {
 	submitQuiet = false
 
 	_ = captureStdout(func() {
-		runSubmit(nil, []string{"1.1"})
+		_ = runSubmit(nil, []string{"1.1"})
 	})
 
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
@@ -2266,7 +2288,7 @@ func TestRunRecord_MultiFixTask_PartialDowngrade(t *testing.T) {
 	submitQuiet = false
 
 	_ = captureStdout(func() {
-		runSubmit(nil, []string{"fix-1"})
+		_ = runSubmit(nil, []string{"fix-1"})
 	})
 
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
@@ -2297,7 +2319,7 @@ func TestRunRecord_MultiFixTask_PartialDowngrade(t *testing.T) {
 	submitDataPath = dataPath2
 
 	_ = captureStdout(func() {
-		runSubmit(nil, []string{"fix-2"})
+		_ = runSubmit(nil, []string{"fix-2"})
 	})
 
 	index, _ = task.LoadIndex(indexPath)

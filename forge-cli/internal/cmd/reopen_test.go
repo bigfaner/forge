@@ -23,7 +23,9 @@ func TestReopen_RejectedToPending(t *testing.T) {
 	}})
 
 	out := captureStdout(func() {
-		runReopen(nil, []string{"1.1"})
+		if err := runReopen(nil, []string{"1.1"}); err != nil {
+			Exit(err)
+		}
 	})
 	if !strings.Contains(out, "STATUS: pending") {
 		t.Errorf("expected status pending, got: %s", out)
@@ -52,7 +54,9 @@ func TestReopen_SkippedToPending(t *testing.T) {
 	}})
 
 	out := captureStdout(func() {
-		runReopen(nil, []string{"1.1"})
+		if err := runReopen(nil, []string{"1.1"}); err != nil {
+			Exit(err)
+		}
 	})
 	if !strings.Contains(out, "STATUS: pending") {
 		t.Errorf("expected status pending, got: %s", out)
@@ -76,7 +80,9 @@ func TestReopen_CompletedBlocked(t *testing.T) {
 		setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 			"t1": {ID: "1.1", Title: "Completed Task", Status: "completed", Priority: "P0", File: "1.1.md", Record: "records/1.1.md"},
 		}})
-		runReopen(nil, []string{"1.1"})
+		if err := runReopen(nil, []string{"1.1"}); err != nil {
+			Exit(err)
+		}
 		return
 	}
 
@@ -114,7 +120,9 @@ func TestReopen_NonTerminalBlocked(t *testing.T) {
 				setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 					"t1": {ID: "1.1", Title: "Task", Status: tt.status, Priority: "P0", File: "1.1.md", Record: "records/1.1.md"},
 				}})
-				runReopen(nil, []string{"1.1"})
+				if err := runReopen(nil, []string{"1.1"}); err != nil {
+					Exit(err)
+				}
 				return
 			}
 
@@ -142,7 +150,9 @@ func TestReopen_TaskNotFound(t *testing.T) {
 		setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 			"t1": {ID: "1.1", Title: "Task", Status: "rejected", Priority: "P0", File: "1.1.md"},
 		}})
-		runReopen(nil, []string{"9.9"})
+		if err := runReopen(nil, []string{"9.9"}); err != nil {
+			Exit(err)
+		}
 		return
 	}
 
@@ -305,7 +315,7 @@ func TestStatus_ReadOnly_AnyStatusArgument(t *testing.T) {
 				setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 					"t1": {ID: "1.1", Title: "Task", Status: "pending", Priority: "P0", File: "1.1.md"},
 				}})
-				runStatus(nil, []string{"1.1", tt.status})
+				_ = runStatus(nil, []string{"1.1", tt.status})
 				return
 			}
 
@@ -379,7 +389,9 @@ func TestReopen_WithLock_SaveIndexError(t *testing.T) {
 		_ = os.Chmod(tasksDir, 0555)
 		defer func() { _ = os.Chmod(tasksDir, 0755) }()
 
-		runReopen(nil, []string{"1.1"})
+		if err := runReopen(nil, []string{"1.1"}); err != nil {
+			Exit(err)
+		}
 		return
 	}
 
@@ -390,7 +402,7 @@ func TestReopen_WithLock_SaveIndexError(t *testing.T) {
 		t.Error("expected error when lock cannot be acquired")
 	}
 	out := string(output)
-	if !strings.Contains(out, "failed to acquire lock") {
+	if !strings.Contains(out, "Failed to acquire lock") {
 		t.Errorf("expected lock acquisition error, got: %s", out)
 	}
 }
@@ -400,7 +412,9 @@ func TestReopen_WithLock_SaveIndexError(t *testing.T) {
 // ---------------------------------------------------------------------------
 func TestReopen_NoProject(t *testing.T) {
 	if os.Getenv("TEST_REOPEN_NO_PROJECT") == "1" {
-		runReopen(nil, []string{"1.1"})
+		if err := runReopen(nil, []string{"1.1"}); err != nil {
+			Exit(err)
+		}
 		return
 	}
 

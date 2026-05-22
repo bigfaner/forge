@@ -287,7 +287,7 @@ func TestForensicExtract_ThinkingAndToolCalls(t *testing.T) {
 	forensicOutDir = outDir
 
 	out := captureStdout(func() {
-		runForensicExtract(nil, []string{jsonlPath})
+		_ = runForensicExtract(nil, []string{jsonlPath})
 	})
 
 	if !strings.Contains(out, outDir) {
@@ -380,7 +380,7 @@ func TestForensicExtract_InvalidJSONLines(t *testing.T) {
 	outDir := filepath.Join(t.TempDir(), "evidence")
 	forensicOutDir = outDir
 	captureStdout(func() {
-		runForensicExtract(nil, []string{jsonlPath})
+		_ = runForensicExtract(nil, []string{jsonlPath})
 	})
 	data, _ := os.ReadFile(filepath.Join(outDir, "evidence.json"))
 	var result extractResult
@@ -396,7 +396,9 @@ func TestForensicExtract_InvalidJSONLines(t *testing.T) {
 
 func TestForensicExtract_FileNotFound(t *testing.T) {
 	if os.Getenv("TEST_FORENSIC_EXTRACT_MISSING") == "1" {
-		runForensicExtract(nil, []string{"/nonexistent/file.jsonl"})
+		if err := runForensicExtract(nil, []string{"/nonexistent/file.jsonl"}); err != nil {
+			Exit(err)
+		}
 		return
 	}
 
@@ -446,7 +448,7 @@ func TestForensicExtract_AttachmentInvokedSkills(t *testing.T) {
 	outDir := filepath.Join(dir, "evidence")
 	forensicOutDir = outDir
 	captureStdout(func() {
-		runForensicExtract(nil, []string{jsonlPath})
+		_ = runForensicExtract(nil, []string{jsonlPath})
 	})
 
 	data, _ := os.ReadFile(filepath.Join(outDir, "evidence.json"))
@@ -498,7 +500,7 @@ func TestForensicExtract_AttachmentInvokedSkillsDedup(t *testing.T) {
 	outDir := filepath.Join(dir, "evidence")
 	forensicOutDir = outDir
 	captureStdout(func() {
-		runForensicExtract(nil, []string{jsonlPath})
+		_ = runForensicExtract(nil, []string{jsonlPath})
 	})
 
 	data, _ := os.ReadFile(filepath.Join(outDir, "evidence.json"))
@@ -550,7 +552,7 @@ func TestForensicExtract_HookEvents(t *testing.T) {
 	outDir := filepath.Join(dir, "evidence")
 	forensicOutDir = outDir
 	captureStdout(func() {
-		runForensicExtract(nil, []string{jsonlPath})
+		_ = runForensicExtract(nil, []string{jsonlPath})
 	})
 
 	data, _ := os.ReadFile(filepath.Join(outDir, "evidence.json"))
@@ -619,7 +621,7 @@ func TestForensicExtract_EditedFiles(t *testing.T) {
 	outDir := filepath.Join(dir, "evidence")
 	forensicOutDir = outDir
 	captureStdout(func() {
-		runForensicExtract(nil, []string{jsonlPath})
+		_ = runForensicExtract(nil, []string{jsonlPath})
 	})
 
 	data, _ := os.ReadFile(filepath.Join(outDir, "evidence.json"))
@@ -665,7 +667,7 @@ func TestForensicExtract_ToolResultWithoutMetadata(t *testing.T) {
 	outDir := filepath.Join(dir, "evidence")
 	forensicOutDir = outDir
 	captureStdout(func() {
-		runForensicExtract(nil, []string{jsonlPath})
+		_ = runForensicExtract(nil, []string{jsonlPath})
 	})
 
 	data, _ := os.ReadFile(filepath.Join(outDir, "evidence.json"))
@@ -775,7 +777,7 @@ func TestForensicExtract_CopiesSourceJSONL(t *testing.T) {
 	outDir := filepath.Join(dir, "evidence")
 	forensicOutDir = outDir
 	captureStdout(func() {
-		runForensicExtract(nil, []string{jsonlPath})
+		_ = runForensicExtract(nil, []string{jsonlPath})
 	})
 
 	// Source JSONL should be copied alongside evidence.json
@@ -798,7 +800,7 @@ func TestForensicExtract_NoCopyWithoutOutDir(t *testing.T) {
 	forensicOutDir = ""
 	// Stdout mode — no file operations, no copy
 	out := captureStdout(func() {
-		runForensicExtract(nil, []string{jsonlPath})
+		_ = runForensicExtract(nil, []string{jsonlPath})
 	})
 	if !strings.Contains(out, "hello") {
 		t.Errorf("stdout mode should output JSON, got: %s", out)
@@ -821,7 +823,7 @@ func TestForensicSubagents_WithMeta(t *testing.T) {
 	_ = os.WriteFile(filepath.Join(subDir, "agent-abc123.jsonl"), []byte(""), 0644)
 
 	out := captureStdout(func() {
-		runForensicSubagents(nil, []string{dir})
+		_ = runForensicSubagents(nil, []string{dir})
 	})
 
 	var agents []subagentInfo
@@ -845,7 +847,7 @@ func TestForensicSubagents_SkipsDirs(t *testing.T) {
 	// Only a directory, no .meta.json files
 
 	out := captureStdout(func() {
-		runForensicSubagents(nil, []string{dir})
+		_ = runForensicSubagents(nil, []string{dir})
 	})
 
 	var agents []subagentInfo
@@ -858,7 +860,9 @@ func TestForensicSubagents_SkipsDirs(t *testing.T) {
 
 func TestForensicSubagents_NoDir(t *testing.T) {
 	if os.Getenv("TEST_FORENSIC_SUBAGENTS_NODIR") == "1" {
-		runForensicSubagents(nil, []string{"/nonexistent"})
+		if err := runForensicSubagents(nil, []string{"/nonexistent"}); err != nil {
+			Exit(err)
+		}
 		return
 	}
 
@@ -1037,7 +1041,7 @@ func extractTestdata(t *testing.T, filename string) extractResult {
 	forensicOutDir = outDir
 	forensicSlug = ""
 	captureStdout(func() {
-		runForensicExtract(nil, []string{jsonlPath})
+		_ = runForensicExtract(nil, []string{jsonlPath})
 	})
 	data, err := os.ReadFile(filepath.Join(outDir, "evidence.json"))
 	if err != nil {
@@ -1116,7 +1120,7 @@ func TestGolden_ExtractFixBugSession(t *testing.T) {
 	outDir := filepath.Join(t.TempDir(), "evidence")
 	forensicOutDir = outDir
 	captureStdout(func() {
-		runForensicExtract(nil, []string{jsonlPath})
+		_ = runForensicExtract(nil, []string{jsonlPath})
 	})
 
 	data, err := os.ReadFile(filepath.Join(outDir, "evidence.json"))
@@ -1313,7 +1317,7 @@ func TestGolden_Subagents(t *testing.T) {
 	sessionDir := filepath.Join(testdataDir, "subagents-session")
 
 	out := captureStdout(func() {
-		runForensicSubagents(nil, []string{sessionDir})
+		_ = runForensicSubagents(nil, []string{sessionDir})
 	})
 
 	var agents []subagentInfo
@@ -1343,7 +1347,7 @@ func TestGolden_ExtractSubagentTranscript(t *testing.T) {
 	outDir := filepath.Join(t.TempDir(), "evidence")
 	forensicOutDir = outDir
 	captureStdout(func() {
-		runForensicExtract(nil, []string{transcriptPath})
+		_ = runForensicExtract(nil, []string{transcriptPath})
 	})
 
 	data, err := os.ReadFile(filepath.Join(outDir, "evidence.json"))
@@ -1445,7 +1449,7 @@ func TestGolden_SlugFlag(t *testing.T) {
 	forensicSlug = "my-investigation"
 
 	out := captureStdout(func() {
-		runForensicExtract(nil, []string{jsonlPath})
+		_ = runForensicExtract(nil, []string{jsonlPath})
 	})
 
 	expectedDir := filepath.Join("docs", "forensics", "my-investigation", "evidence")
@@ -1478,7 +1482,7 @@ func TestGolden_AutoDeriveSlug(t *testing.T) {
 	forensicSlug = ""
 
 	out := captureStdout(func() {
-		runForensicExtract(nil, []string{jsonlPath})
+		_ = runForensicExtract(nil, []string{jsonlPath})
 	})
 
 	expectedDir := filepath.Join("docs", "forensics", sessionID, "evidence")
@@ -1510,7 +1514,7 @@ func TestGolden_ExplicitOutWithoutSlug(t *testing.T) {
 	forensicSlug = ""
 
 	captureStdout(func() {
-		runForensicExtract(nil, []string{jsonlPath})
+		_ = runForensicExtract(nil, []string{jsonlPath})
 	})
 
 	data, err := os.ReadFile(filepath.Join(customOut, "evidence.json"))
@@ -1639,7 +1643,7 @@ func TestGolden_SlugOverridesOut(t *testing.T) {
 	forensicSlug = "slug-wins"
 
 	out := captureStdout(func() {
-		runForensicExtract(nil, []string{jsonlPath})
+		_ = runForensicExtract(nil, []string{jsonlPath})
 	})
 
 	// --slug should override --out

@@ -50,7 +50,9 @@ func TestSubmit_RejectsCompletedResubmit(t *testing.T) {
 		submitDataPath = dataPath
 		submitJSON = false
 		submitQuiet = false
-		runSubmit(submitCmd, []string{"1"})
+		if err := runSubmit(submitCmd, []string{"1"}); err != nil {
+			Exit(err)
+		}
 		return
 	}
 
@@ -507,7 +509,7 @@ func TestStatus_AllowsMutation(t *testing.T) {
 				setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 					"t1": {ID: "1.1", Title: "Task", Status: tt.from, Priority: "P0", File: "1.1.md", Record: "records/1.1.md"},
 				}})
-				runStatus(nil, []string{"1.1", tt.to})
+				_ = runStatus(nil, []string{"1.1", tt.to})
 				return
 			}
 
@@ -568,7 +570,7 @@ func TestSubmit_AutoDowngrade_SetsBlockedReason(t *testing.T) {
 	submitQuiet = false
 
 	_ = captureStdout(func() {
-		runSubmit(nil, []string{"1"})
+		_ = runSubmit(nil, []string{"1"})
 	})
 
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
