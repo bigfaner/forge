@@ -335,14 +335,14 @@ func resolveBreakdownDeps(tasks []AutoGenTaskDef, interfaces []string, auto forg
 		nTypes := len(interfaces)
 
 		// All gen-scripts depend on T-test-eval-cases
-		for j := 0; j < nTypes; j++ {
+		for j := range nTypes {
 			tasks[genStart+j].Dependencies = []string{"T-test-eval-cases"}
 		}
 
 		// Run depends on all gen-scripts
 		runIdx := genStart + nTypes
 		var genDeps []string
-		for j := 0; j < nTypes; j++ {
+		for j := range nTypes {
 			genDeps = append(genDeps, tasks[genStart+j].ID)
 		}
 		tasks[runIdx].Dependencies = genDeps
@@ -386,14 +386,14 @@ func resolveQuickDeps(tasks []AutoGenTaskDef, interfaces []string, auto forgecon
 		// gen-cases is index 0 (deps resolved by BuildIndex)
 
 		// All gen-and-run depend on gen-cases
-		for j := 0; j < nTypes; j++ {
+		for j := range nTypes {
 			tasks[1+j].Dependencies = []string{"T-quick-gen-cases"}
 		}
 
 		// Graduate depends on all gen-and-run
 		gradIdx := 1 + nTypes
 		var genDeps []string
-		for j := 0; j < nTypes; j++ {
+		for j := range nTypes {
 			genDeps = append(genDeps, tasks[1+j].ID)
 		}
 		tasks[gradIdx].Dependencies = genDeps
