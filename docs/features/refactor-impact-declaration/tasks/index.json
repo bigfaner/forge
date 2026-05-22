@@ -8,7 +8,7 @@
       "title": "Add Impact Declaration to coding-refactor.md template",
       "priority": "P1",
       "estimatedTime": "45m",
-      "status": "pending",
+      "status": "completed",
       "file": "1-impact-declaration-template.md",
       "record": "records/1-impact-declaration-template.md",
       "scope": "backend",

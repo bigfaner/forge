@@ -76,7 +76,45 @@ Before writing any code, determine the full scope of changes.
    - Is the scope proportional to the benefit? (Renaming 200 files for a cosmetic name improvement is probably not worth it.)
    - If the answer is "no" to either, output `REFACTOR_LOW_VALUE: <reason>` and proceed only if the task file explicitly requires it.
 
-Output: `Step 2/4: Impact mapping... DONE (type: <structural|behavioral>, files: N, layers: <list>, dynamic_coupling: <none|found: details>)`
+6. **Impact Declaration** — before any code changes, classify every affected test as PRESERVE or EVOLVE:
+
+   Analyze the tests identified in step 2 (syntactic layers 3-4: test data structures, test assertions). For each test that the refactor will touch or affect, determine whether its expected behavior will change.
+
+   Output a structured declaration:
+
+   ```
+   IMPACT_DECLARATION:
+   - test: <fully qualified test function name>
+     classification: PRESERVE | EVOLVE
+     reason: <why this test is PRESERVE or EVOLVE>
+     expected_change: <only for EVOLVE — what assertion/value will change and to what>  (EVOLVE only)
+   ```
+
+   **Classification rules:**
+   - **PRESERVE**: Test verifies behavior that must remain unchanged by this refactor. Failure means regression.
+   - **EVOLVE**: Test verifies behavior that this refactor intentionally changes. Failure is expected; update test assertions to match new behavior.
+
+   **EVOLVE validation:**
+   - Every EVOLVE entry MUST have both `reason` and `expected_change` filled in.
+   - If reason is empty, vague (e.g., "test needs update"), or expected_change is missing: reclassify as PRESERVE.
+   - Over-declaring EVOLVE to avoid pauses is a misuse — EVOLVE is for intentional behavioral shifts only.
+
+   **Example declaration:**
+   ```
+   IMPACT_DECLARATION:
+   - test: TestAddCmd_BlockSource
+     classification: EVOLVE
+     reason: Removing SourceTaskID sentinel changes --block-source blocking semantics; task 1.1 is no longer auto-blocked
+     expected_change: assertion "source 1.1 should be blocked" → "source 1.1 is NOT blocked under new behavior"
+
+   - test: TestAddCmd_Validation
+     classification: PRESERVE
+     reason: Input validation logic is not modified by this refactor
+   ```
+
+   **No tests affected?** Output: `IMPACT_DECLARATION: no tests in scope — all changes are non-behavioral`
+
+Output: `Step 2/4: Impact mapping... DONE (type: <structural|behavioral>, files: N, layers: <list>, dynamic_coupling: <none|found: details>, impact_declaration: <N PRESERVE / N EVOLVE>)`
 
 ### Step 3: Refactor
 
@@ -86,9 +124,12 @@ Incremental compile strategy: After modifying one file, run `just compile {{SCOP
 </IMPORTANT>
 
 **Universal constraints:**
-- External behavior must remain unchanged
-- If test assertions need changes, the refactor is changing behavior — output `BEHAVIOR_CHANGE_DETECTED: <description>` and skip that specific change. Continue with the rest.
-- Do not write new failing tests — refactoring is verified by existing tests staying green
+- External behavior must remain unchanged (except for EVOLVE-classified tests)
+- If a test assertion needs changes:
+  1. Check the IMPACT_DECLARATION from Step 2
+  2. If the test is classified as **EVOLVE**: update the test assertion to match the new behavior. This is an expected change — proceed without alarm.
+  3. If the test is classified as **PRESERVE** or **not declared**: output `BEHAVIOR_CHANGE_DETECTED: <description>` and skip that specific change. Continue with the rest.
+- Do not write new failing tests — refactoring is verified by existing tests staying green (PRESERVE) or updated assertions being correct (EVOLVE)
 
 #### Structural Refactors: Add → Migrate → Remove
 
@@ -164,7 +205,7 @@ just lint {{SCOPE}}
 | `compile` | Grep for remaining old references, fix, retry (max 3 times) |
 | `fmt` | If `just fmt` produces changes: check if the affected files are ones you modified during the refactor. If yes, fix the fmt issues in those files. If the changes are only in pre-existing files (not touched by this refactor), continue — those are not your responsibility. |
 | `lint` | If `just lint` fails: `git stash && just lint {{SCOPE}}` to check pre-existing. New lint errors from refactor must be fixed. Pre-existing ones can be skipped. Max 3 retries. |
-| `targeted test` | Distinguish: assertion changes → `BEHAVIOR_CHANGE_DETECTED` + skip; reference updates → fix + retry (max 3 times) |
+| `targeted test` | Check IMPACT_DECLARATION for the failing test: **EVOLVE** → update test assertion to match new behavior, then re-run; **PRESERVE** or **not declared** → `BEHAVIOR_CHANGE_DETECTED` + skip; reference updates (import paths, renamed symbols) → fix + retry (max 3 times) |
 
 Coverage is informational for refactoring — output the number but do not gate on it. If coverage drops >2%, investigate and report.
 
