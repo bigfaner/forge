@@ -67,7 +67,7 @@ func TestCalcSlugColWidth(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := calcSlugColWidth(tt.slugLens)
+			got := CalcSlugColWidth(tt.slugLens)
 			assert.Equal(t, tt.want, got)
 		})
 	}
@@ -181,7 +181,7 @@ func TestTruncateSlug_WithDynamicWidth(t *testing.T) {
 	// When slug exceeds dynamic width, it should still truncate
 	dynamicWidth := 44 // e.g., maxSlugLen=42, 42+2=44
 	longSlug := "this-is-an-extremely-long-slug-that-exceeds-sixty-chars-and-should-be-truncated"
-	result := truncateSlug(longSlug, dynamicWidth)
+	result := TruncateSlug(longSlug, dynamicWidth)
 	assert.Equal(t, dynamicWidth, len(result))
 	assert.True(t, strings.HasSuffix(result, "..."))
 }

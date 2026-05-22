@@ -1,4 +1,8 @@
-package cmd
+// Package feature contains all forge feature subcommand implementations.
+//
+// Commands are registered into the CLI tree via Register(), called from
+// the parent cmd package during initialization.
+package feature
 
 import (
 	"encoding/json"
@@ -8,6 +12,7 @@ import (
 	"sort"
 	"strings"
 
+	"forge-cli/internal/cmd/base"
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/task"
@@ -18,7 +23,8 @@ import (
 
 var verbose bool
 
-var featureCmd = &cobra.Command{
+// Cmd is the parent feature command, exported for use by the cmd package.
+var Cmd = &cobra.Command{
 	Use:   "feature [slug]",
 	Short: "Set or display the current feature",
 	Long: `Set or display the current feature context.
@@ -61,6 +67,14 @@ complementing the existing implicit resolution from git context.`,
 	RunE: runFeatureSet,
 }
 
+// Register adds all feature subcommands to Cmd.
+func Register() {
+	Cmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "show resolution source")
+	Cmd.AddCommand(featureListCmd)
+	Cmd.AddCommand(featureStatusCmd)
+	Cmd.AddCommand(featureSetCmd)
+}
+
 // exactArgsNonEmpty returns a cobra.Args validator that requires exactly n arguments,
 // each non-empty. Returns an error for empty strings instead of calling os.Exit.
 func exactArgsNonEmpty(n int) cobra.PositionalArgs {
@@ -77,17 +91,10 @@ func exactArgsNonEmpty(n int) cobra.PositionalArgs {
 	}
 }
 
-func init() {
-	featureCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "show resolution source")
-	featureCmd.AddCommand(featureListCmd)
-	featureCmd.AddCommand(featureStatusCmd)
-	featureCmd.AddCommand(featureSetCmd)
-}
-
 func runFeature(_ *cobra.Command, args []string) error {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		return ErrProjectNotFound()
+		return base.ErrProjectNotFound()
 	}
 
 	if len(args) == 0 {
@@ -95,55 +102,55 @@ func runFeature(_ *cobra.Command, args []string) error {
 		if verbose {
 			slug, source, err := feature.GetCurrentFeatureWithSource(projectRoot)
 			if err != nil {
-				PrintBlockStart()
-				PrintField("FEATURE", "(none)")
-				PrintBlockEnd()
+				base.PrintBlockStart()
+				base.PrintField("FEATURE", "(none)")
+				base.PrintBlockEnd()
 				return nil
 			}
-			PrintBlockStart()
-			PrintField("FEATURE", fmt.Sprintf("%s (from: %s)", slug, source))
-			PrintBlockEnd()
+			base.PrintBlockStart()
+			base.PrintField("FEATURE", fmt.Sprintf("%s (from: %s)", slug, source))
+			base.PrintBlockEnd()
 			return nil
 		}
 
 		slug, err := feature.GetCurrentFeature(projectRoot)
 		if err != nil {
-			PrintBlockStart()
-			PrintField("FEATURE", "(none)")
-			PrintBlockEnd()
+			base.PrintBlockStart()
+			base.PrintField("FEATURE", "(none)")
+			base.PrintBlockEnd()
 			return nil
 		}
-		PrintBlockStart()
-		PrintField("FEATURE", slug)
-		PrintBlockEnd()
+		base.PrintBlockStart()
+		base.PrintField("FEATURE", slug)
+		base.PrintBlockEnd()
 		return nil
 	}
 
 	// Set feature
 	slug := args[0]
 	if err := feature.SetFeature(projectRoot, slug); err != nil {
-		return ErrFeatureNotFound(slug)
+		return base.ErrFeatureNotFound(slug)
 	}
-	PrintBlockStart()
-	PrintField("FEATURE", slug)
-	PrintBlockEnd()
+	base.PrintBlockStart()
+	base.PrintField("FEATURE", slug)
+	base.PrintBlockEnd()
 	return nil
 }
 
 func runFeatureSet(_ *cobra.Command, args []string) error {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		return ErrProjectNotFound()
+		return base.ErrProjectNotFound()
 	}
 
 	slug := args[0]
 	if slug == "" {
-		return ErrNoInput("feature slug is required")
+		return base.ErrNoInput("feature slug is required")
 	}
 
 	if err := feature.EnsureFeatureDir(projectRoot, slug); err != nil {
-		return NewAIError(
-			ErrNotFound,
+		return base.NewAIError(
+			base.ErrNotFound,
 			fmt.Sprintf("Failed to create feature directory for: %s", slug),
 			err.Error(),
 			"Check filesystem permissions",
@@ -152,8 +159,8 @@ func runFeatureSet(_ *cobra.Command, args []string) error {
 	}
 
 	if err := feature.EnsureForgeState(projectRoot, slug); err != nil {
-		return NewAIError(
-			ErrNotFound,
+		return base.NewAIError(
+			base.ErrNotFound,
 			fmt.Sprintf("Failed to write state for feature: %s", slug),
 			err.Error(),
 			"Check .forge/ directory permissions",
@@ -161,9 +168,9 @@ func runFeatureSet(_ *cobra.Command, args []string) error {
 		)
 	}
 
-	PrintBlockStart()
-	PrintField("FEATURE", slug)
-	PrintBlockEnd()
+	base.PrintBlockStart()
+	base.PrintField("FEATURE", slug)
+	base.PrintBlockEnd()
 	return nil
 }
 
@@ -184,7 +191,7 @@ type featureInfo struct {
 func runFeatureList(_ *cobra.Command, _ []string) error {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		return ErrProjectNotFound()
+		return base.ErrProjectNotFound()
 	}
 
 	features, err := discoverFeatures(projectRoot)
@@ -218,15 +225,15 @@ func runFeatureList(_ *cobra.Command, _ []string) error {
 	}
 
 	// Calculate dynamic slug column width.
-	slugWidth := calcSlugColWidth(mapFeaturesToSlugLens(features))
+	slugWidth := base.CalcSlugColWidth(mapFeaturesToSlugLens(features))
 
-	PrintBlockStart()
-	PrintField("FEATURES", fmt.Sprintf("%d found", len(features)))
+	base.PrintBlockStart()
+	base.PrintField("FEATURES", fmt.Sprintf("%d found", len(features)))
 	fmt.Println()
 
 	// Table header
 	fmt.Printf("  %-s %-12s %-10s %-10s %-10s %-10s %-10s\n",
-		padRight("SLUG", slugWidth), "STATUS", "PROGRESS", "PRD", "DESIGN", "UI", "TESTS")
+		base.PadRight("SLUG", slugWidth), "STATUS", "PROGRESS", "PRD", "DESIGN", "UI", "TESTS")
 	fmt.Printf("  %-s %-12s %-10s %-10s %-10s %-10s %-10s\n",
 		strings.Repeat("-", slugWidth),
 		strings.Repeat("-", 10),
@@ -239,7 +246,7 @@ func runFeatureList(_ *cobra.Command, _ []string) error {
 	for _, f := range features {
 		progress := fmt.Sprintf("%d/%d", f.Completed, f.Total)
 		fmt.Printf("  %-s %-12s %-10s %-10s %-10s %-10s %-10s\n",
-			padRight(truncateSlug(f.Slug, slugWidth), slugWidth),
+			base.PadRight(base.TruncateSlug(f.Slug, slugWidth), slugWidth),
 			f.Status,
 			progress,
 			scoreDisplay(f.PRDScore),
@@ -249,20 +256,20 @@ func runFeatureList(_ *cobra.Command, _ []string) error {
 	}
 
 	fmt.Println()
-	PrintBlockEnd()
+	base.PrintBlockEnd()
 	return nil
 }
 
 func runFeatureStatus(_ *cobra.Command, args []string) error {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		return ErrProjectNotFound()
+		return base.ErrProjectNotFound()
 	}
 
 	slug := args[0]
 	featureDir := filepath.Join(projectRoot, feature.FeaturesDir, slug)
 	if _, err := os.Stat(featureDir); os.IsNotExist(err) {
-		return ErrFeatureNotFound(slug)
+		return base.ErrFeatureNotFound(slug)
 	}
 
 	// Read manifest
@@ -297,31 +304,31 @@ func runFeatureStatus(_ *cobra.Command, args []string) error {
 	designScore := readScoreFromFrontmatter(filepath.Join(featureDir, feature.DesignDirName, feature.TechDesignFile))
 	uiScore := readScoreFromFrontmatter(filepath.Join(featureDir, feature.UIDirName, feature.UIDesignFile))
 
-	PrintBlockStart()
-	PrintField("SLUG", slug)
-	PrintField("STATUS", manifestStatus)
-	PrintFieldIfNotEmpty("FILE", filepath.Join(feature.FeaturesDir, slug, feature.ManifestFileName))
+	base.PrintBlockStart()
+	base.PrintField("SLUG", slug)
+	base.PrintField("STATUS", manifestStatus)
+	base.PrintFieldIfNotEmpty("FILE", filepath.Join(feature.FeaturesDir, slug, feature.ManifestFileName))
 	fmt.Println()
 
-	PrintSection("TASKS")
+	base.PrintSection("TASKS")
 	if taskStats != nil {
 		for _, status := range []string{"pending", "in_progress", "completed", "blocked", "skipped", "rejected"} {
 			if count, ok := taskStats[status]; ok {
-				PrintListItem(fmt.Sprintf("%s: %d", status, count))
+				base.PrintListItem(fmt.Sprintf("%s: %d", status, count))
 			}
 		}
-		PrintField("TOTAL", fmt.Sprintf("%d", total))
+		base.PrintField("TOTAL", fmt.Sprintf("%d", total))
 	} else {
-		PrintField("TOTAL", "0 (no index.json)")
+		base.PrintField("TOTAL", "0 (no index.json)")
 	}
 
 	fmt.Println()
-	PrintSection("ARTIFACTS")
-	PrintField("PRD", scoreDisplay(prdScore))
-	PrintField("DESIGN", scoreDisplay(designScore))
-	PrintField("UI", scoreDisplay(uiScore))
+	base.PrintSection("ARTIFACTS")
+	base.PrintField("PRD", scoreDisplay(prdScore))
+	base.PrintField("DESIGN", scoreDisplay(designScore))
+	base.PrintField("UI", scoreDisplay(uiScore))
 
-	PrintBlockEnd()
+	base.PrintBlockEnd()
 	return nil
 }
 
@@ -459,9 +466,9 @@ func defaultParseYAML(data []byte, target any) error {
 	return yaml.Unmarshal(data, target)
 }
 
-func newErrFeatureDiscovery(err error) *AIError {
-	return NewAIError(
-		ErrNotFound,
+func newErrFeatureDiscovery(err error) *base.AIError {
+	return base.NewAIError(
+		base.ErrNotFound,
 		"Failed to discover features",
 		err.Error(),
 		"Ensure docs/features/ directory exists",

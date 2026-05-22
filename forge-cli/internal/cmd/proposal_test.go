@@ -321,7 +321,7 @@ func TestTruncateSlug(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		result := truncateSlug(tt.input, tt.maxLen)
+		result := TruncateSlug(tt.input, tt.maxLen)
 		assert.LessOrEqual(t, len(result), tt.maxLen)
 		if tt.input == "short" {
 			assert.Equal(t, "short", result)

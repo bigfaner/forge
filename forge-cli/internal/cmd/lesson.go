@@ -46,14 +46,14 @@ func runLessonList(projectRoot string) error {
 	}
 
 	// Calculate dynamic name column width.
-	slugWidth := calcSlugColWidth(mapLessonsToNameLens(lessons))
+	slugWidth := CalcSlugColWidth(mapLessonsToNameLens(lessons))
 
 	PrintBlockStart()
 	PrintField("LESSONS", fmt.Sprintf("%d found", len(lessons)))
 	fmt.Println()
 
 	// Table header
-	fmt.Printf("  %-s %-12s %-15s %-12s\n", padRight("NAME", slugWidth), "CREATED", "CATEGORY", "TAGS")
+	fmt.Printf("  %-s %-12s %-15s %-12s\n", PadRight("NAME", slugWidth), "CREATED", "CATEGORY", "TAGS")
 	fmt.Printf("  %-s %-12s %-15s %-12s\n",
 		strings.Repeat("-", slugWidth),
 		strings.Repeat("-", 10),
@@ -66,7 +66,7 @@ func runLessonList(projectRoot string) error {
 			tags = strings.Join(l.Tags, ", ")
 		}
 		fmt.Printf("  %-s %-12s %-15s %-12s\n",
-			padRight(truncateSlug(l.Name, slugWidth), slugWidth),
+			PadRight(TruncateSlug(l.Name, slugWidth), slugWidth),
 			l.Created,
 			l.Category,
 			tags)

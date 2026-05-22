@@ -29,3 +29,10 @@ func Debugf(verbose bool, format string, args ...any) {
 		fmt.Fprintf(os.Stderr, "[debug] "+format+"\n", args...)
 	}
 }
+
+// Re-export slug formatting utilities from base package for backward compatibility.
+var (
+	CalcSlugColWidth = base.CalcSlugColWidth
+	TruncateSlug     = base.TruncateSlug
+	PadRight         = base.PadRight
+)

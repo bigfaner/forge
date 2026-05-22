@@ -1302,8 +1302,9 @@ func TestRunFeature_None(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chdir(origWd) })
 	_ = os.Chdir(dir)
 
-	out := captureStdout(func() {
-		_ = runFeature(nil, []string{})
+	out, _ := captureOutput(func() error {
+		rootCmd.SetArgs([]string{"feature"})
+		return rootCmd.Execute()
 	})
 	if !strings.Contains(out, "(none)") {
 		t.Errorf("expected (none) for no feature, got: %s", out)

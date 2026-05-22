@@ -1,4 +1,4 @@
-package cmd
+package feature
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"forge-cli/pkg/feature"
+	featurepkg "forge-cli/pkg/feature"
 	"forge-cli/pkg/forgeconfig"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/task"
@@ -43,7 +43,7 @@ var ifDone bool
 
 func init() {
 	featureCompleteCmd.Flags().BoolVar(&ifDone, "if-done", false, "only act when all tasks are completed or skipped")
-	featureCmd.AddCommand(featureCompleteCmd)
+	Cmd.AddCommand(featureCompleteCmd)
 }
 
 // runFeatureCompleteCmd is the cobra Run function for the complete subcommand.
@@ -73,17 +73,17 @@ func checkFeatureCompletion() *completionResult {
 		return nil
 	}
 
-	featureSlug, err := feature.GetCurrentFeature(projectRoot)
+	featureSlug, err := featurepkg.GetCurrentFeature(projectRoot)
 	if err != nil {
 		return nil
 	}
 
 	// Already completed by a previous hook run — skip entirely.
-	if state := feature.ReadForgeState(projectRoot); state != nil && state.CompletedAt != "" {
+	if state := featurepkg.ReadForgeState(projectRoot); state != nil && state.CompletedAt != "" {
 		return nil
 	}
 
-	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
+	indexPath := filepath.Join(projectRoot, featurepkg.GetFeatureIndexFile(featureSlug))
 	index, err := task.LoadIndex(indexPath)
 	if err != nil {
 		return nil
@@ -91,21 +91,21 @@ func checkFeatureCompletion() *completionResult {
 
 	// All tasks must be completed or skipped (rejected does not count as done).
 	for _, t := range index.TasksMap() {
-		if t.Status != feature.StatusCompleted && t.Status != feature.StatusSkipped {
+		if t.Status != featurepkg.StatusCompleted && t.Status != featurepkg.StatusSkipped {
 			return nil
 		}
 	}
 
 	// Detect pipeline mode: proposal.md in feature directory = quick mode.
-	featureDir := filepath.Join(projectRoot, feature.FeaturesDir, featureSlug)
-	proposalPath := filepath.Join(featureDir, feature.ProposalFileName)
+	featureDir := filepath.Join(projectRoot, featurepkg.FeaturesDir, featureSlug)
+	proposalPath := filepath.Join(featureDir, featurepkg.ProposalFileName)
 	_, proposalErr := os.Stat(proposalPath)
 	quickMode := proposalErr == nil
 
-	manifestRel := filepath.Join(feature.FeaturesDir, featureSlug, feature.ManifestFileName)
+	manifestRel := filepath.Join(featurepkg.FeaturesDir, featureSlug, featurepkg.ManifestFileName)
 	proposalRel := ""
 	if quickMode {
-		proposalRel = filepath.Join(feature.FeaturesDir, featureSlug, feature.ProposalFileName)
+		proposalRel = filepath.Join(featurepkg.FeaturesDir, featureSlug, featurepkg.ProposalFileName)
 	}
 
 	return &completionResult{
@@ -119,9 +119,9 @@ func checkFeatureCompletion() *completionResult {
 
 // completeFeature performs the status update, commit, and optional push.
 func completeFeature(result *completionResult) error {
-	featureDir := filepath.Join(result.ProjectRoot, feature.FeaturesDir, result.FeatureSlug)
+	featureDir := filepath.Join(result.ProjectRoot, featurepkg.FeaturesDir, result.FeatureSlug)
 
-	manifestPath := filepath.Join(featureDir, feature.ManifestFileName)
+	manifestPath := filepath.Join(featureDir, featurepkg.ManifestFileName)
 
 	// 1. Update manifest.md status to completed
 	if err := updateFileStatus(manifestPath, "completed"); err != nil {
@@ -130,7 +130,7 @@ func completeFeature(result *completionResult) error {
 
 	// 2. In quick mode, also update proposal.md status
 	if result.QuickMode {
-		proposalPath := filepath.Join(featureDir, feature.ProposalFileName)
+		proposalPath := filepath.Join(featureDir, featurepkg.ProposalFileName)
 		if err := updateFileStatus(proposalPath, "Completed"); err != nil {
 			return fmt.Errorf("update proposal: %w", err)
 		}
@@ -138,9 +138,9 @@ func completeFeature(result *completionResult) error {
 
 	// 3. Build list of files to commit (only specific paths — never broad staging)
 	var filesToCommit []string
-	filesToCommit = append(filesToCommit, filepath.Join(feature.FeaturesDir, result.FeatureSlug, feature.ManifestFileName))
+	filesToCommit = append(filesToCommit, filepath.Join(featurepkg.FeaturesDir, result.FeatureSlug, featurepkg.ManifestFileName))
 	if result.QuickMode {
-		filesToCommit = append(filesToCommit, filepath.Join(feature.FeaturesDir, result.FeatureSlug, feature.ProposalFileName))
+		filesToCommit = append(filesToCommit, filepath.Join(featurepkg.FeaturesDir, result.FeatureSlug, featurepkg.ProposalFileName))
 	}
 
 	// 4. Git commit
@@ -156,7 +156,7 @@ func completeFeature(result *completionResult) error {
 	fmt.Fprintf(os.Stderr, "[feature:complete] Status committed: %s\n", commaFiles)
 
 	// 5. Mark state.json so future hook runs skip this feature
-	if err := feature.MarkFeatureCompleted(result.ProjectRoot); err != nil {
+	if err := featurepkg.MarkFeatureCompleted(result.ProjectRoot); err != nil {
 		fmt.Fprintf(os.Stderr, "[feature:complete] Warning: failed to mark state: %v\n", err)
 	}
 

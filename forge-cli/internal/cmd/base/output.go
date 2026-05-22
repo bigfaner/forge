@@ -87,3 +87,44 @@ func Debugf(verbose bool, format string, args ...any) {
 		fmt.Fprintf(os.Stderr, "[debug] "+format+"\n", args)
 	}
 }
+
+// Slug column sizing constants for dynamic table formatting.
+const (
+	SlugColMinWidth = 30
+	SlugColMaxWidth = 60
+)
+
+// CalcSlugColWidth returns the dynamic column width for slug/name display.
+// Width = clamp(max(30, maxSlugLen+2), 60).
+func CalcSlugColWidth(slugLens []int) int {
+	maxLen := 0
+	for _, l := range slugLens {
+		if l > maxLen {
+			maxLen = l
+		}
+	}
+	width := maxLen + 2
+	if width < SlugColMinWidth {
+		width = SlugColMinWidth
+	}
+	if width > SlugColMaxWidth {
+		width = SlugColMaxWidth
+	}
+	return width
+}
+
+// TruncateSlug shortens a string to maxLen with ellipsis.
+func TruncateSlug(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen-3] + "..."
+}
+
+// PadRight pads a string to exactly n characters with trailing spaces.
+func PadRight(s string, n int) string {
+	if len(s) >= n {
+		return s
+	}
+	return s + strings.Repeat(" ", n-len(s))
+}

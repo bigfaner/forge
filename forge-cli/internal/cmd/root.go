@@ -4,6 +4,7 @@ package cmd
 import (
 	"os"
 
+	featurepkg "forge-cli/internal/cmd/feature"
 	taskpkg "forge-cli/internal/cmd/task"
 	testpkg "forge-cli/internal/cmd/test"
 
@@ -28,6 +29,7 @@ func Execute() {
 
 func init() {
 	// Initialize subcommand groups
+	featurepkg.Register()
 	taskpkg.Register()
 	testpkg.Register()
 
@@ -42,7 +44,7 @@ func init() {
 	rootCmd.AddCommand(cleanupCmd)
 	rootCmd.AddCommand(qualityGateCmd)
 	rootCmd.AddCommand(verifyTaskDoneCmd)
-	rootCmd.AddCommand(featureCmd)
+	rootCmd.AddCommand(featurepkg.Cmd)
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(configCmd)
 	rootCmd.AddCommand(proposalCmd)
