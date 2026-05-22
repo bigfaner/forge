@@ -1,7 +1,7 @@
 ---
 feature: "refactor-impact-declaration"
 created: "2026-05-22"
-status: tasks
+status: completed
 mode: quick
 ---
 
