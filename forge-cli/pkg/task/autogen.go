@@ -107,11 +107,13 @@ func GetBreakdownTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []A
 			Title: "Validate Code Quality", Priority: "P2", EstimatedTime: "15min",
 			Type: TypeValidationCode, Scope: "all", MainSession: false,
 		})
-		tasks = append(tasks, AutoGenTaskDef{
-			Key: "validate-ux", ID: "T-validate-ux",
-			Title: "Validate User Experience", Priority: "P2", EstimatedTime: "15min",
-			Type: TypeValidationUx, Scope: "all", MainSession: true,
-		})
+		if hasUIInterface(interfaces) {
+			tasks = append(tasks, AutoGenTaskDef{
+				Key: "validate-ux", ID: "T-validate-ux",
+				Title: "Validate User Experience", Priority: "P2", EstimatedTime: "15min",
+				Type: TypeValidationUx, Scope: "all", MainSession: true,
+			})
+		}
 	}
 
 	// Spec consolidation (gated by auto.ConsolidateSpecs.Full)
@@ -186,11 +188,13 @@ func GetQuickTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []AutoG
 			Title: "Validate Code Quality", Priority: "P2", EstimatedTime: "15min",
 			Type: TypeValidationCode, Scope: "all", MainSession: false,
 		})
-		tasks = append(tasks, AutoGenTaskDef{
-			Key: "validate-ux", ID: "T-validate-ux",
-			Title: "Validate User Experience", Priority: "P2", EstimatedTime: "15min",
-			Type: TypeValidationUx, Scope: "all", MainSession: true,
-		})
+		if hasUIInterface(interfaces) {
+			tasks = append(tasks, AutoGenTaskDef{
+				Key: "validate-ux", ID: "T-validate-ux",
+				Title: "Validate User Experience", Priority: "P2", EstimatedTime: "15min",
+				Type: TypeValidationUx, Scope: "all", MainSession: true,
+			})
+		}
 	}
 
 	// Spec drift detection (gated by auto.ConsolidateSpecs.Quick)
