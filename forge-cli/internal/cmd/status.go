@@ -1,38 +1,31 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"forge-cli/pkg/feature"
+	indexPkg "forge-cli/pkg/index"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/task"
 
 	"github.com/spf13/cobra"
 )
 
-var statusForce bool
-
 var statusCmd = &cobra.Command{
-	Use:   "status <task-id> [status]",
-	Short: "Query or update task status",
-	Long: `Query or update the status of a task.
+	Use:   "status <task-id> [<status>]",
+	Short: "Query or set task status",
+	Long: `Query the status of a task, or set it to a new status.
 
-Without status argument: query current status.
-With status argument: update to new status.
+With one argument, displays the current status of the task.
+With two arguments, sets the task to the given status (e.g., "blocked").
 
-State machine guards:
-  - completed and rejected are terminal (cannot leave without --force)
-  - in_progress -> completed is blocked (use "forge task submit" instead)
-  - pending/in_progress transitions require all dependencies to be completed or skipped`,
+Use "forge task submit" to complete a task or "forge task reopen" to re-activate rejected/skipped tasks.`,
 	Args: cobra.RangeArgs(1, 2),
 	Run:  runStatus,
-}
-
-func init() {
-	statusCmd.Flags().BoolVar(&statusForce, "force", false, "Override state machine guards (use with caution)")
 }
 
 func runStatus(_ *cobra.Command, args []string) {
@@ -49,6 +42,27 @@ func runStatus(_ *cobra.Command, args []string) {
 	}
 
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
+
+	if len(args) > 1 {
+		// Mutation mode: set task status
+		statusArg := args[1]
+		if err := indexPkg.WithLock(indexPath, func() error {
+			return doSetStatus(indexPath, taskIDArg, statusArg)
+		}); err != nil {
+			if errors.Is(err, indexPkg.ErrLockConflict) {
+				fmt.Fprintln(os.Stderr, "concurrent write conflict, retry")
+				os.Exit(1)
+			}
+			if aiErr, ok := err.(*AIError); ok {
+				Exit(aiErr)
+			}
+			fmt.Fprintf(os.Stderr, "failed to update status: %v\n", err)
+			os.Exit(1)
+		}
+		return
+	}
+
+	// Query mode: display task status
 	index, err := task.LoadIndex(indexPath)
 	if err != nil {
 		Exit(ErrFileNotFound(indexPath))
@@ -59,57 +73,44 @@ func runStatus(_ *cobra.Command, args []string) {
 		Exit(ErrTaskNotFound(taskIDArg))
 	}
 
-	// Query mode: only one argument
-	if len(args) == 1 {
-		PrintBlockStart()
-		PrintField("TASK_ID", t.ID)
-		PrintField("STATUS", t.Status)
-		PrintBlockEnd()
-		return
+	_ = key
+
+	PrintBlockStart()
+	PrintField("TASK_ID", t.ID)
+	PrintField("STATUS", t.Status)
+	PrintBlockEnd()
+}
+
+// doSetStatus mutates a task's status after validating the transition.
+func doSetStatus(indexPath, taskIDArg, statusArg string) error {
+	index, err := task.LoadIndex(indexPath)
+	if err != nil {
+		return ErrFileNotFound(indexPath)
 	}
 
-	// Update mode: two arguments
-	newStatus := args[1]
-
-	// Validate status is in enum
-	if !slices.Contains(index.StatusEnum, newStatus) {
-		Exit(ErrInvalidStatus(newStatus, index.StatusEnum))
+	key, t, err := task.FindTask(index, taskIDArg)
+	if err != nil {
+		return ErrTaskNotFound(taskIDArg)
 	}
 
-	// State machine validation (unless --force)
-	if !statusForce && !isTransitionAllowed(t.Status, newStatus) {
-		Exit(NewAIError(ErrValidation,
-			fmt.Sprintf("Invalid transition: %s -> %s", t.Status, newStatus),
-			fmt.Sprintf("Current status is %s", t.Status),
-			getTransitionHint(t.Status, newStatus),
-			getTransitionAction(t.Status, newStatus),
-		))
+	// Validate transition using state machine
+	if transitionErr := task.ValidateTransition(t.Status, statusArg, ""); transitionErr != nil {
+		te := transitionErr.(*task.TransitionError)
+		return NewErrInvalidTransition(t.Status, statusArg, te.Msg)
 	}
 
-	// Dependency check for pending and in_progress transitions
-	if newStatus == "pending" || newStatus == "in_progress" {
-		unmet := checkUnmetDeps(index, t)
-		if len(unmet) > 0 {
-			PrintBlockStart()
-			PrintField("TASK_ID", t.ID)
-			PrintField("STATUS", t.Status)
-			fmt.Printf("WARNING: %s has unmet dependencies: %s. Status not changed.\n", t.ID, strings.Join(unmet, ", "))
-			PrintBlockEnd()
-			return
-		}
-	}
-
-	t.Status = newStatus
+	t.Status = statusArg
 	index.SetTask(key, *t)
 
 	if err := task.SaveIndex(indexPath, index); err != nil {
-		Exit(NewAIError(ErrConflict, "Failed to save index", err.Error(), "Check index.json is writable", "cat "+indexPath))
+		return NewAIError(ErrConflict, "Failed to save index", err.Error(), "Check index.json is writable", "cat "+indexPath)
 	}
 
 	PrintBlockStart()
 	PrintField("TASK_ID", t.ID)
 	PrintField("STATUS", t.Status)
 	PrintBlockEnd()
+	return nil
 }
 
 // isTransitionAllowed returns true if the state transition is valid.

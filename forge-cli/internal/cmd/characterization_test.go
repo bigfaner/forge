@@ -460,76 +460,77 @@ func TestBuildIndex_Orphan_WarningOnly(t *testing.T) {
 // ---------------------------------------------------------------------------
 // TestStatus_AllowsMutation
 //
-// Current behavior: the status command allows state changes via the 2-arg
-// form for non-terminal transitions. The isTransitionAllowed function blocks:
-//   - completed -> anything (without --force)
-//   - rejected -> anything (without --force)
-//   - anything -> completed (must use submit)
-//
-// But it allows all other transitions including:
-//   - pending -> blocked (skipping in_progress)
-//   - in_progress -> pending (regression)
-//   - in_progress -> skipped (skipping submit)
-//   - blocked -> in_progress (skipping pending)
-//
-// This test verifies the permissive current behavior for non-terminal transitions.
+// Status command with 2 args mutates task status via the state machine.
+// Non-terminal, non-completed transitions are allowed.
+// Terminal/completed transitions are blocked by the state machine.
 // ---------------------------------------------------------------------------
 func TestStatus_AllowsMutation(t *testing.T) {
-	tests := []struct {
-		name    string
-		from    string
-		to      string
-		force   bool
-		allowed bool
-	}{
-		// Allowed non-terminal transitions (current permissive behavior)
-		{"pending -> blocked", "pending", "blocked", false, true},
-		{"pending -> in_progress", "pending", "in_progress", false, true},
-		{"pending -> skipped", "pending", "skipped", false, true},
-		{"pending -> rejected", "pending", "rejected", false, true},
-		{"in_progress -> pending", "in_progress", "pending", false, true},
-		{"in_progress -> blocked", "in_progress", "blocked", false, true},
-		{"in_progress -> skipped", "in_progress", "skipped", false, true},
-		{"in_progress -> rejected", "in_progress", "rejected", false, true},
-		{"blocked -> pending", "blocked", "pending", false, true},
-		{"blocked -> in_progress", "blocked", "in_progress", false, true},
-		{"blocked -> skipped", "blocked", "skipped", false, true},
-		{"blocked -> rejected", "blocked", "rejected", false, true},
-		{"skipped -> pending", "skipped", "pending", false, true},
-		{"skipped -> in_progress", "skipped", "in_progress", false, true},
-		{"skipped -> blocked", "skipped", "blocked", false, true},
-
-		// Blocked transitions (terminal guards)
-		{"completed -> pending", "completed", "pending", false, false},
-		{"completed -> in_progress", "completed", "in_progress", false, false},
-		{"rejected -> pending", "rejected", "pending", false, false},
-		{"anything -> completed", "in_progress", "completed", false, false},
-		{"pending -> completed", "pending", "completed", false, false},
-
-		// Same state (allowed)
-		{"pending -> pending", "pending", "pending", false, true},
-		{"completed -> completed", "completed", "completed", false, true},
-
-		// Force overrides
-		{"completed -> pending with --force", "completed", "pending", true, true},
-		{"rejected -> pending with --force", "rejected", "pending", true, true},
-		{"in_progress -> completed with --force", "in_progress", "completed", true, true},
+	type testCase struct {
+		name   string
+		from   string
+		to     string
+		wantOK bool // true = mutation should succeed; false = state machine rejects
+	}
+	tests := []testCase{
+		// Allowed: non-terminal, non-completed transitions
+		{"pending_to_blocked", "pending", "blocked", true},
+		{"pending_to_in_progress", "pending", "in_progress", true},
+		{"pending_to_skipped", "pending", "skipped", true},
+		{"pending_to_rejected", "pending", "rejected", true},
+		{"in_progress_to_pending", "in_progress", "pending", true},
+		{"in_progress_to_blocked", "in_progress", "blocked", true},
+		{"in_progress_to_skipped", "in_progress", "skipped", true},
+		{"in_progress_to_rejected", "in_progress", "rejected", true},
+		// Allowed: no specific rule blocks these
+		{"blocked_to_skipped", "blocked", "skipped", true},
+		{"blocked_to_rejected", "blocked", "rejected", true},
+		// Blocked: dependencies must be checked first
+		{"blocked_to_pending", "blocked", "pending", false},
+		{"blocked_to_in_progress", "blocked", "in_progress", false},
+		// Blocked: skipped is terminal (only reopen role)
+		{"skipped_to_pending", "skipped", "pending", false},
+		{"skipped_to_in_progress", "skipped", "in_progress", false},
+		{"skipped_to_blocked", "skipped", "blocked", false},
+		// Blocked: rejected is terminal (only reopen role)
+		{"rejected_to_pending", "rejected", "pending", false},
+		// Blocked: completed is terminal
+		{"completed_to_pending", "completed", "pending", false},
+		{"completed_to_in_progress", "completed", "in_progress", false},
+		// Blocked: only submit role can reach completed
+		{"in_progress_to_completed", "in_progress", "completed", false},
+		{"pending_to_completed", "pending", "completed", false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// isTransitionAllowed(from, to) returns true if the transition is valid.
-			// When force=true, the caller skips the check entirely (not handled here).
-			// We test isTransitionAllowed directly for the non-force path.
-			var got bool
-			if tt.force {
-				// With --force, the caller bypasses isTransitionAllowed entirely
-				got = true
-			} else {
-				got = isTransitionAllowed(tt.from, tt.to)
+			envKey := "TEST_CHAR_STATUS_" + strings.ToUpper(tt.name)
+			if os.Getenv(envKey) == "1" {
+				setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
+					"t1": {ID: "1.1", Title: "Task", Status: tt.from, Priority: "P0", File: "1.1.md", Record: "records/1.1.md"},
+				}})
+				runStatus(nil, []string{"1.1", tt.to})
+				return
 			}
-			if got != tt.allowed {
-				t.Errorf("isTransitionAllowed(%q, %q) = %v, want %v", tt.from, tt.to, got, tt.allowed)
+
+			cmd := exec.Command(os.Args[0], "-test.run=TestStatus_AllowsMutation/"+tt.name)
+			cmd.Env = append(os.Environ(), envKey+"=1")
+			output, err := cmd.CombinedOutput()
+			out := string(output)
+
+			if tt.wantOK {
+				if err != nil {
+					t.Errorf("expected success for %s -> %s, got error: %v, output: %s", tt.from, tt.to, err, out)
+				}
+				if !strings.Contains(out, "STATUS: "+tt.to) {
+					t.Errorf("expected STATUS: %s in output for %s -> %s, got: %s", tt.to, tt.from, tt.to, out)
+				}
+			} else {
+				if err == nil {
+					t.Errorf("expected error for %s -> %s (should be blocked by state machine)", tt.from, tt.to)
+				}
+				if !strings.Contains(out, "INVALID_TRANSITION") {
+					t.Errorf("expected INVALID_TRANSITION for %s -> %s, got: %s", tt.from, tt.to, out)
+				}
 			}
 		})
 	}

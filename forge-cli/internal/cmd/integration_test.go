@@ -825,26 +825,29 @@ func TestPrintTaskDetails_Breaking(t *testing.T) {
 	}
 }
 
-// ---------- runStatus update mode ----------
+// ---------- runStatus is read-only ----------
 
 func TestRunStatus_Update(t *testing.T) {
-	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
-		"t1": {ID: "1.1", Title: "Status Task", Status: "pending", Priority: "P0", File: "1.1.md", Record: "records/1.1.md", Dependencies: []string{}},
-	}})
-
-	out := captureStdout(func() {
+	if os.Getenv("TEST_STATUS_UPDATE_MUTATION") == "1" {
+		setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
+			"t1": {ID: "1.1", Title: "Status Task", Status: "pending", Priority: "P0", File: "1.1.md", Record: "records/1.1.md", Dependencies: []string{}},
+		}})
 		runStatus(nil, []string{"1.1", "blocked"})
-	})
-	if !strings.Contains(out, "STATUS: blocked") {
-		t.Errorf("expected updated status, got: %s", out)
+		return
 	}
 
-	// Verify index was updated
-	dir, _ := os.Getwd()
-	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
-	index, _ := task.LoadIndex(indexPath)
-	if index.TasksMap()["t1"].Status != "blocked" {
-		t.Errorf("index status = %q, want blocked", index.TasksMap()["t1"].Status)
+	cmd := exec.Command(os.Args[0], "-test.run=TestRunStatus_Update")
+	cmd.Env = append(os.Environ(), "TEST_STATUS_UPDATE_MUTATION=1")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("status mutation command should succeed, got error: %v, output: %s", err, string(output))
+	}
+	out := string(output)
+	if !strings.Contains(out, "TASK_ID: 1.1") {
+		t.Errorf("expected TASK_ID: 1.1 in output, got: %s", out)
+	}
+	if !strings.Contains(out, "STATUS: blocked") {
+		t.Errorf("expected STATUS: blocked in output, got: %s", out)
 	}
 }
 

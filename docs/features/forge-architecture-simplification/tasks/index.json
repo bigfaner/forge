@@ -265,6 +265,7 @@
       "estimatedTime": "15min",
       "dependencies": [
         "2.1",
+        "2.10",
         "2.2",
         "2.3",
         "2.4",
@@ -272,8 +273,7 @@
         "2.6",
         "2.7",
         "2.8",
-        "2.9",
-        "2.10"
+        "2.9"
       ],
       "status": "pending",
       "file": "2.summary.md",
@@ -409,6 +409,17 @@
       "mainSession": true,
       "type": "test.eval-cases"
     },
+    "fix.1": {
+      "id": "fix.1",
+      "title": "Fix TestRunStatus silent failure in internal/cmd",
+      "priority": "P0",
+      "status": "completed",
+      "file": "fix.1.md",
+      "record": "records/fix.1.md",
+      "breaking": true,
+      "sourceTaskID": "2.4",
+      "type": "coding.fix"
+    },
     "gen-test-cases": {
       "id": "T-test-gen-cases",
       "title": "Generate e2e Test Cases",
@@ -419,6 +430,34 @@
       "record": "records/gen-test-cases.md",
       "scope": "all",
       "type": "test.gen-cases"
+    },
+    "gen-test-scripts-api": {
+      "id": "T-test-gen-scripts-api",
+      "title": "Generate Test Scripts (api)",
+      "priority": "P1",
+      "estimatedTime": "1-2h",
+      "dependencies": [
+        "T-test-eval-cases"
+      ],
+      "status": "pending",
+      "file": "gen-test-scripts-api.md",
+      "record": "records/gen-test-scripts-api.md",
+      "scope": "all",
+      "type": "test.gen-scripts"
+    },
+    "gen-test-scripts-cli": {
+      "id": "T-test-gen-scripts-cli",
+      "title": "Generate Test Scripts (cli)",
+      "priority": "P1",
+      "estimatedTime": "1-2h",
+      "dependencies": [
+        "T-test-eval-cases"
+      ],
+      "status": "pending",
+      "file": "gen-test-scripts-cli.md",
+      "record": "records/gen-test-scripts-cli.md",
+      "scope": "all",
+      "type": "test.gen-scripts"
     },
     "gen-test-scripts-go-api": {
       "id": "T-test-gen-scripts-api",
@@ -448,6 +487,20 @@
       "scope": "all",
       "type": "test.gen-scripts"
     },
+    "graduate-tests": {
+      "id": "T-test-graduate",
+      "title": "Graduate Test Scripts",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "T-test-run"
+      ],
+      "status": "pending",
+      "file": "graduate-tests.md",
+      "record": "records/graduate-tests.md",
+      "scope": "all",
+      "type": "test.graduate"
+    },
     "graduate-tests-go": {
       "id": "T-test-graduate",
       "title": "Graduate Test Scripts (go)",
@@ -461,6 +514,21 @@
       "record": "records/graduate-tests-go.md",
       "scope": "all",
       "type": "test.graduate"
+    },
+    "run-e2e-tests": {
+      "id": "T-test-run",
+      "title": "Run e2e Tests",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "T-test-gen-scripts-api",
+        "T-test-gen-scripts-cli"
+      ],
+      "status": "pending",
+      "file": "run-e2e-tests.md",
+      "record": "records/run-e2e-tests.md",
+      "scope": "all",
+      "type": "test.run"
     },
     "run-e2e-tests-go": {
       "id": "T-test-run",
