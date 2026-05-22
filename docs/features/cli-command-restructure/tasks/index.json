@@ -107,7 +107,7 @@
       "dependencies": [
         "2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "8-move-prompt-group.md",
       "record": "records/8-move-prompt-group.md",
       "scope": "backend",

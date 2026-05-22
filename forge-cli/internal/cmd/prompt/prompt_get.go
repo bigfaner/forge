@@ -1,11 +1,12 @@
-package cmd
+package prompt
 
 import (
 	"fmt"
 
+	"forge-cli/internal/cmd/base"
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/project"
-	"forge-cli/pkg/prompt"
+	promptpkg "forge-cli/pkg/prompt"
 
 	"github.com/spf13/cobra"
 )
@@ -35,24 +36,24 @@ func runPrompt(_ *cobra.Command, args []string) error {
 
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		Exit(ErrProjectNotFound())
+		base.Exit(base.ErrProjectNotFound())
 	}
 
 	featureSlug, err := feature.GetCurrentFeature(projectRoot)
 	if err != nil {
-		Exit(ErrFeatureNotSet())
+		base.Exit(base.ErrFeatureNotSet())
 	}
 
-	opts := prompt.SynthesizeOpts{
+	opts := promptpkg.SynthesizeOpts{
 		ProjectRoot:     projectRoot,
 		FeatureSlug:     featureSlug,
 		TaskID:          taskID,
 		FixRecordMissed: promptFixRecordMissed,
 	}
 
-	result, err := prompt.Synthesize(opts)
+	result, err := promptpkg.Synthesize(opts)
 	if err != nil {
-		Exit(fmt.Errorf("%w", err))
+		base.Exit(fmt.Errorf("%w", err))
 	}
 
 	fmt.Print(result)

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	forensicpkg "forge-cli/internal/cmd/forensic"
+	promptpkg "forge-cli/internal/cmd/prompt"
 	taskpkg "forge-cli/internal/cmd/task"
 	testpkg "forge-cli/internal/cmd/test"
 )
@@ -83,7 +84,7 @@ func TestRootCmd_TaskGroupHasSubcommands(t *testing.T) {
 }
 
 func TestRootCmd_PromptGroupHasGetByTaskId(t *testing.T) {
-	subcommands := promptCmd.Commands()
+	subcommands := promptpkg.Cmd.Commands()
 	found := false
 	for _, cmd := range subcommands {
 		if cmd.Name() == "get-by-task-id" {

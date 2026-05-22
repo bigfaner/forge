@@ -71,11 +71,11 @@ domains: [cli, commands, reference, skills]
 
 ### forge prompt — Agent 执行提示词管理
 
-源文件：`prompt_parent.go`
+源文件：`prompt/register.go`, `prompt/prompt_get.go`
 
 | 命令 | 用途 | 源文件 |
 |------|------|--------|
-| `forge prompt get-by-task-id <id>` | 为任务合成 agent 提示词 | `prompt_get.go` |
+| `forge prompt get-by-task-id <id>` | 为任务合成 agent 提示词 | `prompt/prompt_get.go` |
 
 ### forge worktree — Git Worktree 管理
 

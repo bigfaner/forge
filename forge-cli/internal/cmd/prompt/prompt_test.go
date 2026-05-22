@@ -1,26 +1,121 @@
-package cmd
+package prompt
 
 import (
+	"bytes"
+	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
+	"forge-cli/internal/cmd/base"
+	"forge-cli/pkg/feature"
 	"forge-cli/pkg/task"
 )
 
+// captureStdout captures stdout during a function execution.
+func captureStdout(f func()) string {
+	var buf bytes.Buffer
+	old := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+	f()
+	_ = w.Close()
+	os.Stdout = old
+	_, _ = buf.ReadFrom(r)
+	return buf.String()
+}
+
+// setupFullProject creates a fully configured test project.
+func setupFullProject(t *testing.T, tasks map[string]task.Task) {
+	t.Helper()
+	dir := t.TempDir()
+
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+
+	if err := os.WriteFile(dir+"/go.mod", []byte("module test\n\ngo 1.21\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := feature.EnsureFeatureDir(dir, "test"); err != nil {
+		t.Fatal(err)
+	}
+
+	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
+	index := &task.TaskIndex{
+		Feature:      "test",
+		PRD:          "prd/prd-spec.md",
+		Design:       "design/tech-design.md",
+		StatusEnum:   []string{"pending", "in_progress", "completed", "blocked", "skipped"},
+		PriorityEnum: []string{"P0", "P1", "P2"},
+	}
+	if len(tasks) > 0 {
+		index.SetTasks(tasks)
+	}
+	if err := task.SaveIndex(indexPath, index); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create task markdown files
+	tasksDir := filepath.Join(dir, feature.GetFeatureTasksDir("test"))
+	for _, t2 := range tasks {
+		if t2.File != "" {
+			content := buildTestTaskMD(t2)
+			if err := os.WriteFile(tasksDir+"/"+t2.File, []byte(content), 0644); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+
+	// Create records dir
+	if err := os.MkdirAll(tasksDir+"/records", 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Set working dir
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+
+	// Set feature
+	if err := feature.SetFeature(dir, "test"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// buildTestTaskMD generates markdown with YAML frontmatter for a test task.
+func buildTestTaskMD(t task.Task) string {
+	var b strings.Builder
+	b.WriteString("---\n")
+	b.WriteString("id: " + `"` + t.ID + `"` + "\n")
+	b.WriteString("title: " + `"` + t.Title + `"` + "\n")
+	if t.Priority != "" {
+		b.WriteString("priority: " + `"` + t.Priority + `"` + "\n")
+	}
+	if t.Status != "" {
+		b.WriteString("status: " + `"` + t.Status + `"` + "\n")
+	}
+	if t.Type != "" {
+		b.WriteString("type: " + `"` + t.Type + `"` + "\n")
+	}
+	b.WriteString("---\n\n")
+	b.WriteString("# " + t.Title + "\n")
+	return b.String()
+}
+
 func TestRunPrompt_Success(t *testing.T) {
-	setupFullProject(t, SetupOpts{
-		Tasks: map[string]task.Task{
-			"t1": {
-				ID:     "1.1",
-				Title:  "Test task",
-				Status: "pending",
-				File:   "1.1.md",
-				Record: "records/1.1.md",
-				Type:   task.TypeCodingFeature,
-				Scope:  "backend",
-			},
+	setupFullProject(t, map[string]task.Task{
+		"t1": {
+			ID:     "1.1",
+			Title:  "Test task",
+			Status: "pending",
+			File:   "1.1.md",
+			Record: "records/1.1.md",
+			Type:   task.TypeCodingFeature,
+			Scope:  "backend",
 		},
 	})
 
@@ -38,17 +133,15 @@ func TestRunPrompt_Success(t *testing.T) {
 }
 
 func TestRunPrompt_FixRecordMissed(t *testing.T) {
-	setupFullProject(t, SetupOpts{
-		Tasks: map[string]task.Task{
-			"t1": {
-				ID:     "1.1",
-				Title:  "Test task",
-				Status: "pending",
-				File:   "1.1.md",
-				Record: "records/1.1.md",
-				Type:   task.TypeCodingFeature,
-				Scope:  "backend",
-			},
+	setupFullProject(t, map[string]task.Task{
+		"t1": {
+			ID:     "1.1",
+			Title:  "Test task",
+			Status: "pending",
+			File:   "1.1.md",
+			Record: "records/1.1.md",
+			Type:   task.TypeCodingFeature,
+			Scope:  "backend",
 		},
 	})
 
@@ -67,10 +160,8 @@ func TestRunPrompt_FixRecordMissed(t *testing.T) {
 }
 
 func TestRunPrompt_TypeMissing_ExitsWithError(t *testing.T) {
-	setupFullProject(t, SetupOpts{
-		Tasks: map[string]task.Task{
-			"t1": {ID: "1.1", Title: "No type", Status: "pending", File: "1.1.md", Record: "records/1.1.md", Type: ""},
-		},
+	setupFullProject(t, map[string]task.Task{
+		"t1": {ID: "1.1", Title: "No type", Status: "pending", File: "1.1.md", Record: "records/1.1.md", Type: ""},
 	})
 
 	if os.Getenv("TEST_PROMPT_TYPE_MISSING") == "1" {
@@ -93,10 +184,8 @@ func TestRunPrompt_TypeMissing_ExitsWithError(t *testing.T) {
 }
 
 func TestRunPrompt_UnknownType_ExitsWithError(t *testing.T) {
-	setupFullProject(t, SetupOpts{
-		Tasks: map[string]task.Task{
-			"t1": {ID: "1.1", Title: "Unknown type", Status: "pending", File: "1.1.md", Record: "records/1.1.md", Type: "unknown-xyz"},
-		},
+	setupFullProject(t, map[string]task.Task{
+		"t1": {ID: "1.1", Title: "Unknown type", Status: "pending", File: "1.1.md", Record: "records/1.1.md", Type: "unknown-xyz"},
 	})
 
 	if os.Getenv("TEST_PROMPT_UNKNOWN_TYPE") == "1" {
@@ -116,22 +205,6 @@ func TestRunPrompt_UnknownType_ExitsWithError(t *testing.T) {
 	if !strings.Contains(string(output), "unknown type") {
 		t.Errorf("expected 'unknown type' in stderr, got: %s", string(output))
 	}
-}
-
-func TestPromptCmd_RegisteredInRoot(t *testing.T) {
-	for _, cmd := range rootCmd.Commands() {
-		if cmd.Name() == "prompt" {
-			// Verify it has the get-by-task-id subcommand
-			for _, sub := range cmd.Commands() {
-				if sub.Name() == "get-by-task-id" {
-					return
-				}
-			}
-			t.Error("prompt command does not have get-by-task-id subcommand")
-			return
-		}
-	}
-	t.Error("promptCmd not registered in rootCmd")
 }
 
 func TestRunPrompt_NoProject_ExitsWithError(t *testing.T) {
@@ -195,5 +268,22 @@ func TestRunPrompt_NoFeature_ExitsWithError(t *testing.T) {
 	}
 	if !strings.Contains(string(output), "NO_FEATURE") {
 		t.Errorf("expected NO_FEATURE error, got: %s", string(output))
+	}
+}
+
+func TestExit_NonAIError(t *testing.T) {
+	if os.Getenv("TEST_EXIT_PLAIN_ERR") == "1" {
+		base.Exit(fmt.Errorf("plain error"))
+		return
+	}
+
+	cmd := exec.Command(os.Args[0], "-test.run=TestExit_NonAIError")
+	cmd.Env = append(os.Environ(), "TEST_EXIT_PLAIN_ERR=1")
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Error("expected non-zero exit")
+	}
+	if !strings.Contains(string(output), "ERROR: plain error") {
+		t.Errorf("expected plain error message, got: %s", string(output))
 	}
 }

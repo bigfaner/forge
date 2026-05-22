@@ -6,6 +6,7 @@ import (
 
 	featurepkg "forge-cli/internal/cmd/feature"
 	forensicpkg "forge-cli/internal/cmd/forensic"
+	promptpkg "forge-cli/internal/cmd/prompt"
 	taskpkg "forge-cli/internal/cmd/task"
 	testpkg "forge-cli/internal/cmd/test"
 	worktreepkg "forge-cli/internal/cmd/worktree"
@@ -33,6 +34,7 @@ func init() {
 	// Initialize subcommand groups
 	featurepkg.Register()
 	forensicpkg.Register()
+	promptpkg.Register()
 	taskpkg.Register()
 	testpkg.Register()
 	worktreepkg.Register()
@@ -41,7 +43,7 @@ func init() {
 	rootCmd.AddCommand(taskpkg.Cmd)
 	rootCmd.AddCommand(forensicpkg.Cmd)
 	rootCmd.AddCommand(testpkg.Cmd)
-	rootCmd.AddCommand(promptCmd)
+	rootCmd.AddCommand(promptpkg.Cmd)
 	rootCmd.AddCommand(worktreepkg.Cmd)
 
 	// Top-level commands
@@ -61,7 +63,5 @@ func init() {
 
 	// Task group subcommands — registered via taskpkg.Register() above
 	// Worktree group subcommands — registered via worktreepkg.Register() above
-
-	// Prompt group subcommands
-	promptCmd.AddCommand(promptGetCmd)
+	// Prompt group subcommands — registered via promptpkg.Register() above
 }
