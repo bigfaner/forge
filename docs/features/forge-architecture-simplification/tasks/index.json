@@ -252,7 +252,7 @@
       "dependencies": [
         "2.summary"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2.gate.md",
       "record": "records/2.gate.md",
       "breaking": true,
@@ -491,7 +491,7 @@
       "title": "Generate e2e Test Cases",
       "priority": "P1",
       "estimatedTime": "1-2h",
-      "status": "pending",
+      "status": "completed",
       "file": "gen-test-cases.md",
       "record": "records/gen-test-cases.md",
       "scope": "all",
