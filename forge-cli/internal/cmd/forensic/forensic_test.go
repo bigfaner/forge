@@ -1,7 +1,7 @@
-package cmd
+package forensic
 
 import (
-	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -9,9 +9,24 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"forge-cli/internal/cmd/base"
 )
 
-// ── truncate ────────────────────────────────────────────────────────
+// captureStdout captures stdout output during f execution.
+func captureStdout(f func()) string {
+	var buf bytes.Buffer
+	old := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+	f()
+	_ = w.Close()
+	os.Stdout = old
+	_, _ = buf.ReadFrom(r)
+	return buf.String()
+}
+
+// -- truncate --
 
 func TestTruncate_Short(t *testing.T) {
 	got := truncate("hello", 10)
@@ -41,7 +56,7 @@ func TestTruncate_Zero(t *testing.T) {
 	}
 }
 
-// ── isAlphaNumeric ──────────────────────────────────────────────────
+// -- isAlphaNumeric --
 
 func TestIsAlphaNumeric(t *testing.T) {
 	tests := []struct {
@@ -66,7 +81,7 @@ func TestIsAlphaNumeric(t *testing.T) {
 	}
 }
 
-// ── extractUserContent ───────────────────────────────────────────────
+// -- extractUserContent --
 
 func TestExtractUserContent_NonUserRole(t *testing.T) {
 	entry := jsonlEntry{
@@ -143,7 +158,7 @@ func TestExtractUserContent_BlockPriorityOverRaw(t *testing.T) {
 	}
 }
 
-// ── detectSkills ────────────────────────────────────────────────────
+// -- detectSkills --
 
 func TestDetectSkills_ForgePrefix(t *testing.T) {
 	skills := []string{}
@@ -220,7 +235,7 @@ func TestDetectSkills_SkillNameBoundary(t *testing.T) {
 	}
 }
 
-// ── runForensicExtract ───────────────────────────────────────────────
+// -- runExtract --
 
 func TestForensicExtract_ThinkingAndToolCalls(t *testing.T) {
 	dir := t.TempDir()
@@ -283,18 +298,18 @@ func TestForensicExtract_ThinkingAndToolCalls(t *testing.T) {
 	}
 	_ = f.Close()
 
-	outDir := filepath.Join(dir, "evidence")
-	forensicOutDir = outDir
+	evDir := filepath.Join(dir, "evidence")
+	outDir = evDir
 
 	out := captureStdout(func() {
-		_ = runForensicExtract(nil, []string{jsonlPath})
+		_ = runExtract(nil, []string{jsonlPath})
 	})
 
-	if !strings.Contains(out, outDir) {
+	if !strings.Contains(out, evDir) {
 		t.Fatalf("expected output path, got: %s", out)
 	}
 
-	data, err := os.ReadFile(filepath.Join(outDir, "evidence.json"))
+	data, err := os.ReadFile(filepath.Join(evDir, "evidence.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -377,12 +392,12 @@ func TestForensicExtract_InvalidJSONLines(t *testing.T) {
 	_, _ = f.WriteString(`{"type":"user","message":{"role":"user","content":"hello"}}` + "\n")
 	_ = f.Close()
 
-	outDir := filepath.Join(t.TempDir(), "evidence")
-	forensicOutDir = outDir
+	evDir := filepath.Join(t.TempDir(), "evidence")
+	outDir = evDir
 	captureStdout(func() {
-		_ = runForensicExtract(nil, []string{jsonlPath})
+		_ = runExtract(nil, []string{jsonlPath})
 	})
-	data, _ := os.ReadFile(filepath.Join(outDir, "evidence.json"))
+	data, _ := os.ReadFile(filepath.Join(evDir, "evidence.json"))
 	var result extractResult
 	_ = json.Unmarshal(data, &result)
 
@@ -396,8 +411,8 @@ func TestForensicExtract_InvalidJSONLines(t *testing.T) {
 
 func TestForensicExtract_FileNotFound(t *testing.T) {
 	if os.Getenv("TEST_FORENSIC_EXTRACT_MISSING") == "1" {
-		if err := runForensicExtract(nil, []string{"/nonexistent/file.jsonl"}); err != nil {
-			Exit(err)
+		if err := runExtract(nil, []string{"/nonexistent/file.jsonl"}); err != nil {
+			base.Exit(err)
 		}
 		return
 	}
@@ -445,13 +460,13 @@ func TestForensicExtract_AttachmentInvokedSkills(t *testing.T) {
 	}
 	_ = f.Close()
 
-	outDir := filepath.Join(dir, "evidence")
-	forensicOutDir = outDir
+	evDir := filepath.Join(dir, "evidence")
+	outDir = evDir
 	captureStdout(func() {
-		_ = runForensicExtract(nil, []string{jsonlPath})
+		_ = runExtract(nil, []string{jsonlPath})
 	})
 
-	data, _ := os.ReadFile(filepath.Join(outDir, "evidence.json"))
+	data, _ := os.ReadFile(filepath.Join(evDir, "evidence.json"))
 	var result extractResult
 	_ = json.Unmarshal(data, &result)
 
@@ -497,13 +512,13 @@ func TestForensicExtract_AttachmentInvokedSkillsDedup(t *testing.T) {
 	}
 	_ = f.Close()
 
-	outDir := filepath.Join(dir, "evidence")
-	forensicOutDir = outDir
+	evDir := filepath.Join(dir, "evidence")
+	outDir = evDir
 	captureStdout(func() {
-		_ = runForensicExtract(nil, []string{jsonlPath})
+		_ = runExtract(nil, []string{jsonlPath})
 	})
 
-	data, _ := os.ReadFile(filepath.Join(outDir, "evidence.json"))
+	data, _ := os.ReadFile(filepath.Join(evDir, "evidence.json"))
 	var result extractResult
 	_ = json.Unmarshal(data, &result)
 
@@ -549,13 +564,13 @@ func TestForensicExtract_HookEvents(t *testing.T) {
 	}
 	_ = f.Close()
 
-	outDir := filepath.Join(dir, "evidence")
-	forensicOutDir = outDir
+	evDir := filepath.Join(dir, "evidence")
+	outDir = evDir
 	captureStdout(func() {
-		_ = runForensicExtract(nil, []string{jsonlPath})
+		_ = runExtract(nil, []string{jsonlPath})
 	})
 
-	data, _ := os.ReadFile(filepath.Join(outDir, "evidence.json"))
+	data, _ := os.ReadFile(filepath.Join(evDir, "evidence.json"))
 	var result extractResult
 	_ = json.Unmarshal(data, &result)
 
@@ -618,13 +633,13 @@ func TestForensicExtract_EditedFiles(t *testing.T) {
 	}
 	_ = f.Close()
 
-	outDir := filepath.Join(dir, "evidence")
-	forensicOutDir = outDir
+	evDir := filepath.Join(dir, "evidence")
+	outDir = evDir
 	captureStdout(func() {
-		_ = runForensicExtract(nil, []string{jsonlPath})
+		_ = runExtract(nil, []string{jsonlPath})
 	})
 
-	data, _ := os.ReadFile(filepath.Join(outDir, "evidence.json"))
+	data, _ := os.ReadFile(filepath.Join(evDir, "evidence.json"))
 	var result extractResult
 	_ = json.Unmarshal(data, &result)
 
@@ -664,13 +679,13 @@ func TestForensicExtract_ToolResultWithoutMetadata(t *testing.T) {
 	}
 	_ = f.Close()
 
-	outDir := filepath.Join(dir, "evidence")
-	forensicOutDir = outDir
+	evDir := filepath.Join(dir, "evidence")
+	outDir = evDir
 	captureStdout(func() {
-		_ = runForensicExtract(nil, []string{jsonlPath})
+		_ = runExtract(nil, []string{jsonlPath})
 	})
 
-	data, _ := os.ReadFile(filepath.Join(outDir, "evidence.json"))
+	data, _ := os.ReadFile(filepath.Join(evDir, "evidence.json"))
 	var result extractResult
 	_ = json.Unmarshal(data, &result)
 
@@ -774,14 +789,14 @@ func TestForensicExtract_CopiesSourceJSONL(t *testing.T) {
 	content := []byte(`{"type":"user","message":{"role":"user","content":"hello"}}` + "\n")
 	_ = os.WriteFile(jsonlPath, content, 0644)
 
-	outDir := filepath.Join(dir, "evidence")
-	forensicOutDir = outDir
+	evDir := filepath.Join(dir, "evidence")
+	outDir = evDir
 	captureStdout(func() {
-		_ = runForensicExtract(nil, []string{jsonlPath})
+		_ = runExtract(nil, []string{jsonlPath})
 	})
 
 	// Source JSONL should be copied alongside evidence.json
-	copiedPath := filepath.Join(outDir, "session.jsonl")
+	copiedPath := filepath.Join(evDir, "session.jsonl")
 	data, err := os.ReadFile(copiedPath)
 	if err != nil {
 		t.Fatalf("source JSONL not copied to output dir: %v", err)
@@ -797,17 +812,17 @@ func TestForensicExtract_NoCopyWithoutOutDir(t *testing.T) {
 
 	_ = os.WriteFile(jsonlPath, []byte(`{"type":"user","message":{"role":"user","content":"hello"}}`+"\n"), 0644)
 
-	forensicOutDir = ""
-	// Stdout mode — no file operations, no copy
+	outDir = ""
+	// Stdout mode -- no file operations, no copy
 	out := captureStdout(func() {
-		_ = runForensicExtract(nil, []string{jsonlPath})
+		_ = runExtract(nil, []string{jsonlPath})
 	})
 	if !strings.Contains(out, "hello") {
 		t.Errorf("stdout mode should output JSON, got: %s", out)
 	}
 }
 
-// ── runForensicSubagents ────────────────────────────────────────────
+// -- runSubagents --
 
 func TestForensicSubagents_WithMeta(t *testing.T) {
 	dir := t.TempDir()
@@ -823,7 +838,7 @@ func TestForensicSubagents_WithMeta(t *testing.T) {
 	_ = os.WriteFile(filepath.Join(subDir, "agent-abc123.jsonl"), []byte(""), 0644)
 
 	out := captureStdout(func() {
-		_ = runForensicSubagents(nil, []string{dir})
+		_ = runSubagents(nil, []string{dir})
 	})
 
 	var agents []subagentInfo
@@ -847,7 +862,7 @@ func TestForensicSubagents_SkipsDirs(t *testing.T) {
 	// Only a directory, no .meta.json files
 
 	out := captureStdout(func() {
-		_ = runForensicSubagents(nil, []string{dir})
+		_ = runSubagents(nil, []string{dir})
 	})
 
 	var agents []subagentInfo
@@ -860,8 +875,8 @@ func TestForensicSubagents_SkipsDirs(t *testing.T) {
 
 func TestForensicSubagents_NoDir(t *testing.T) {
 	if os.Getenv("TEST_FORENSIC_SUBAGENTS_NODIR") == "1" {
-		if err := runForensicSubagents(nil, []string{"/nonexistent"}); err != nil {
-			Exit(err)
+		if err := runSubagents(nil, []string{"/nonexistent"}); err != nil {
+			base.Exit(err)
 		}
 		return
 	}
@@ -877,7 +892,7 @@ func TestForensicSubagents_NoDir(t *testing.T) {
 	}
 }
 
-// ── runForensicSearch ────────────────────────────────────────────────
+// -- runSearch --
 
 func TestForensicSearch_WithKeyword(t *testing.T) {
 	// Create a temp history.jsonl
@@ -897,17 +912,16 @@ func TestForensicSearch_WithKeyword(t *testing.T) {
 	}
 	_ = f.Close()
 
-	// Override home to use our temp dir
-	t.Setenv("HOME", dir)
-
-	forensicKeyword = "eval-prd"
-	forensicSession = ""
-	forensicSkill = ""
-	forensicLast = 10
+	keyword = "eval-prd"
+	session = ""
+	skill = ""
+	last = 10
 
 	out := captureStdout(func() {
 		// Manually build the search with our temp history
-		searchWithHistPath("forge", histPath)
+		f2, _ := os.Open(histPath)
+		defer func() { _ = f2.Close() }()
+		searchWithProjectPath("forge", f2)
 	})
 
 	var results []sessionSummary
@@ -922,75 +936,7 @@ func TestForensicSearch_WithKeyword(t *testing.T) {
 	}
 }
 
-// searchWithHistPath is a test helper that runs search logic with a custom history path.
-func searchWithHistPath(projectPath, histPath string) {
-	f, err := os.Open(histPath)
-	if err != nil {
-		Exit(NewAIError(ErrNotFound, "Cannot open history.jsonl", err.Error(), "", ""))
-	}
-	defer func() { _ = f.Close() }()
-
-	sessions := map[string]*sessionSummary{}
-	scanner := newBufScanner(f)
-
-	for scanner.scan() {
-		var entry historyEntry
-		if err := json.Unmarshal(scanner.bytes(), &entry); err != nil {
-			continue
-		}
-		if projectPath != "" && !strings.Contains(entry.Project, projectPath) {
-			continue
-		}
-		if entry.SessionID == "" {
-			continue
-		}
-		if forensicSession != "" && !strings.HasPrefix(entry.SessionID, forensicSession) {
-			continue
-		}
-		if forensicKeyword != "" && !strings.Contains(strings.ToLower(entry.Display), strings.ToLower(forensicKeyword)) {
-			continue
-		}
-
-		ss, exists := sessions[entry.SessionID]
-		if !exists {
-			ss = &sessionSummary{SessionID: entry.SessionID, Project: entry.Project}
-			sessions[entry.SessionID] = ss
-		}
-		ss.MsgCount++
-		if entry.Timestamp > 0 {
-			ss.DateTime = "2023-11-14 22:13" // fixed for test determinism
-		}
-		if ss.FirstMsg == "" {
-			ss.FirstMsg = truncate(entry.Display, 80)
-		}
-	}
-
-	sorted := make([]*sessionSummary, 0, len(sessions))
-	for _, ss := range sessions {
-		sorted = append(sorted, ss)
-	}
-	if forensicLast < len(sorted) {
-		sorted = sorted[:forensicLast]
-	}
-	out, _ := json.MarshalIndent(sorted, "", "  ")
-	fmt.Println(string(out))
-}
-
-// bufScanner wraps bufio.Scanner for testability.
-type bufScanner struct {
-	*bufio.Scanner
-}
-
-func newBufScanner(f *os.File) *bufScanner {
-	s := bufio.NewScanner(f)
-	s.Buffer(make([]byte, 0, 1024*1024), 10*1024*1024)
-	return &bufScanner{s}
-}
-
-func (b *bufScanner) scan() bool    { return b.Scan() }
-func (b *bufScanner) bytes() []byte { return b.Bytes() }
-
-// ── jsonlMessage UnmarshalJSON ──────────────────────────────────────
+// -- jsonlMessage UnmarshalJSON --
 
 func TestJsonlMessage_Unmarshal_StringContent(t *testing.T) {
 	data := `{"id":"m1","role":"user","content":"hello world","model":"glm-5"}`
@@ -1025,25 +971,25 @@ func TestJsonlMessage_Unmarshal_EmptyContent(t *testing.T) {
 	}
 }
 
-// ── Testdata-based integration tests ────────────────────────────────
-// These tests use sampled session data from testdata/forensic/.
+// -- Testdata-based integration tests --
+// These tests use sampled session data from testdata/.
 // The JSONL files are sampled from real Claude Code sessions, preserving
 // all entry types but reduced to ~50-70 lines each.
 
-var testdataDir = filepath.Join("testdata", "forensic")
+var testdataDir = "testdata"
 
 // extractTestdata is a helper to extract evidence from a testdata JSONL.
 func extractTestdata(t *testing.T, filename string) extractResult {
 	t.Helper()
 	jsonlPath := filepath.Join(testdataDir, filename)
 
-	outDir := filepath.Join(t.TempDir(), "evidence")
-	forensicOutDir = outDir
-	forensicSlug = ""
+	evDir := filepath.Join(t.TempDir(), "evidence")
+	outDir = evDir
+	slug = ""
 	captureStdout(func() {
-		_ = runForensicExtract(nil, []string{jsonlPath})
+		_ = runExtract(nil, []string{jsonlPath})
 	})
-	data, err := os.ReadFile(filepath.Join(outDir, "evidence.json"))
+	data, err := os.ReadFile(filepath.Join(evDir, "evidence.json"))
 	if err != nil {
 		t.Fatalf("evidence file not created: %v", err)
 	}
@@ -1057,13 +1003,15 @@ func extractTestdata(t *testing.T, filename string) extractResult {
 func TestGolden_SearchHistory(t *testing.T) {
 	histPath := filepath.Join(testdataDir, "history.jsonl")
 
-	forensicKeyword = ""
-	forensicSession = ""
-	forensicSkill = ""
-	forensicLast = 10
+	keyword = ""
+	session = ""
+	skill = ""
+	last = 10
 
 	out := captureStdout(func() {
-		searchWithHistPath("coding-harness/forge", histPath)
+		f, _ := os.Open(histPath)
+		defer func() { _ = f.Close() }()
+		searchWithProjectPath("coding-harness/forge", f)
 	})
 
 	var results []sessionSummary
@@ -1092,13 +1040,15 @@ func TestGolden_SearchHistory(t *testing.T) {
 func TestGolden_SearchByKeyword(t *testing.T) {
 	histPath := filepath.Join(testdataDir, "history.jsonl")
 
-	forensicKeyword = "eval-prd"
-	forensicSession = ""
-	forensicSkill = ""
-	forensicLast = 10
+	keyword = "eval-prd"
+	session = ""
+	skill = ""
+	last = 10
 
 	out := captureStdout(func() {
-		searchWithHistPath("coding-harness/forge", histPath)
+		f, _ := os.Open(histPath)
+		defer func() { _ = f.Close() }()
+		searchWithProjectPath("coding-harness/forge", f)
 	})
 
 	var results []sessionSummary
@@ -1117,13 +1067,13 @@ func TestGolden_SearchByKeyword(t *testing.T) {
 func TestGolden_ExtractFixBugSession(t *testing.T) {
 	jsonlPath := filepath.Join(testdataDir, "fix-bug.jsonl")
 
-	outDir := filepath.Join(t.TempDir(), "evidence")
-	forensicOutDir = outDir
+	evDir := filepath.Join(t.TempDir(), "evidence")
+	outDir = evDir
 	captureStdout(func() {
-		_ = runForensicExtract(nil, []string{jsonlPath})
+		_ = runExtract(nil, []string{jsonlPath})
 	})
 
-	data, err := os.ReadFile(filepath.Join(outDir, "evidence.json"))
+	data, err := os.ReadFile(filepath.Join(evDir, "evidence.json"))
 	if err != nil {
 		t.Fatalf("evidence file not created: %v", err)
 	}
@@ -1213,7 +1163,7 @@ func TestGolden_ExtractFixBugSession(t *testing.T) {
 	}
 
 	// Source JSONL copied to output dir
-	copiedPath := filepath.Join(outDir, "fix-bug.jsonl")
+	copiedPath := filepath.Join(evDir, "fix-bug.jsonl")
 	if _, err := os.Stat(copiedPath); err != nil {
 		t.Error("source JSONL should be copied to output directory")
 	}
@@ -1317,7 +1267,7 @@ func TestGolden_Subagents(t *testing.T) {
 	sessionDir := filepath.Join(testdataDir, "subagents-session")
 
 	out := captureStdout(func() {
-		_ = runForensicSubagents(nil, []string{sessionDir})
+		_ = runSubagents(nil, []string{sessionDir})
 	})
 
 	var agents []subagentInfo
@@ -1344,13 +1294,13 @@ func TestGolden_Subagents(t *testing.T) {
 func TestGolden_ExtractSubagentTranscript(t *testing.T) {
 	transcriptPath := filepath.Join(testdataDir, "subagents-session", "subagents", "agent-a1b2c3d4.jsonl")
 
-	outDir := filepath.Join(t.TempDir(), "evidence")
-	forensicOutDir = outDir
+	evDir := filepath.Join(t.TempDir(), "evidence")
+	outDir = evDir
 	captureStdout(func() {
-		_ = runForensicExtract(nil, []string{transcriptPath})
+		_ = runExtract(nil, []string{transcriptPath})
 	})
 
-	data, err := os.ReadFile(filepath.Join(outDir, "evidence.json"))
+	data, err := os.ReadFile(filepath.Join(evDir, "evidence.json"))
 	if err != nil {
 		t.Fatalf("evidence file not created: %v", err)
 	}
@@ -1373,7 +1323,7 @@ func TestGolden_ExtractSubagentTranscript(t *testing.T) {
 	}
 
 	// Source JSONL copied
-	copied := filepath.Join(outDir, "agent-a1b2c3d4.jsonl")
+	copied := filepath.Join(evDir, "agent-a1b2c3d4.jsonl")
 	if _, err := os.Stat(copied); err != nil {
 		t.Error("source transcript should be copied to output directory")
 	}
@@ -1445,11 +1395,11 @@ func TestGolden_SlugFlag(t *testing.T) {
 	jsonlPath := filepath.Join(dir, sessionID+".jsonl")
 	_ = os.WriteFile(jsonlPath, []byte(`{"type":"user","message":{"role":"user","content":"hello"}}`+"\n"), 0644)
 
-	forensicOutDir = ""
-	forensicSlug = "my-investigation"
+	outDir = ""
+	slug = "my-investigation"
 
 	out := captureStdout(func() {
-		_ = runForensicExtract(nil, []string{jsonlPath})
+		_ = runExtract(nil, []string{jsonlPath})
 	})
 
 	expectedDir := filepath.Join("docs", "forensics", "my-investigation", "evidence")
@@ -1478,11 +1428,11 @@ func TestGolden_AutoDeriveSlug(t *testing.T) {
 	jsonlPath := filepath.Join(dir, sessionID+".jsonl")
 	_ = os.WriteFile(jsonlPath, []byte(`{"type":"user","message":{"role":"user","content":"test"}}`+"\n"), 0644)
 
-	forensicOutDir = ""
-	forensicSlug = ""
+	outDir = ""
+	slug = ""
 
 	out := captureStdout(func() {
-		_ = runForensicExtract(nil, []string{jsonlPath})
+		_ = runExtract(nil, []string{jsonlPath})
 	})
 
 	expectedDir := filepath.Join("docs", "forensics", sessionID, "evidence")
@@ -1510,11 +1460,11 @@ func TestGolden_ExplicitOutWithoutSlug(t *testing.T) {
 	_ = os.WriteFile(jsonlPath, []byte(`{"type":"user","message":{"role":"user","content":"x"}}`+"\n"), 0644)
 
 	customOut := filepath.Join(dir, "custom-output")
-	forensicOutDir = customOut
-	forensicSlug = ""
+	outDir = customOut
+	slug = ""
 
 	captureStdout(func() {
-		_ = runForensicExtract(nil, []string{jsonlPath})
+		_ = runExtract(nil, []string{jsonlPath})
 	})
 
 	data, err := os.ReadFile(filepath.Join(customOut, "evidence.json"))
@@ -1639,11 +1589,11 @@ func TestGolden_SlugOverridesOut(t *testing.T) {
 	_ = os.WriteFile(jsonlPath, []byte(`{"type":"user","message":{"role":"user","content":"x"}}`+"\n"), 0644)
 
 	customOut := filepath.Join(dir, "custom-output")
-	forensicOutDir = customOut
-	forensicSlug = "slug-wins"
+	outDir = customOut
+	slug = "slug-wins"
 
 	out := captureStdout(func() {
-		_ = runForensicExtract(nil, []string{jsonlPath})
+		_ = runExtract(nil, []string{jsonlPath})
 	})
 
 	// --slug should override --out
@@ -1663,3 +1613,6 @@ func TestGolden_SlugOverridesOut(t *testing.T) {
 
 	_ = os.RemoveAll("docs/forensics/slug-wins")
 }
+
+// Suppress unused import
+var _ = fmt.Sprintf

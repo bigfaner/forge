@@ -1,4 +1,4 @@
-package cmd
+package forensic
 
 import (
 	"bufio"
@@ -11,38 +11,28 @@ import (
 	"strings"
 	"time"
 
+	"forge-cli/internal/cmd/base"
+
 	"github.com/spf13/cobra"
 )
 
 var (
-	forensicKeyword string
-	forensicSession string
-	forensicSkill   string
-	forensicLast    int
-	forensicOutDir  string
-	forensicSlug    string
+	keyword string
+	session string
+	skill   string
+	last    int
+	outDir  string
+	slug    string
 )
 
-var forensicCmd = &cobra.Command{
-	Use:   "forensic",
-	Short: "Analyze session transcripts for agent deviation forensics",
-	Long: `Extract and analyze evidence from Claude Code session transcripts.
-
-Subcommands:
-  search    Find sessions in ~/.claude/history.jsonl
-  extract   Extract thinking/tool chains from a session JSONL
-  subagents List subagent transcripts for a session`,
-	Args: cobra.NoArgs,
-}
-
-var forensicSearchCmd = &cobra.Command{
+var searchCmd = &cobra.Command{
 	Use:   "search [project-path]",
 	Short: "Search history.jsonl for matching sessions",
 	Args:  cobra.MaximumNArgs(1),
-	RunE:  runForensicSearch,
+	RunE:  runSearch,
 }
 
-var forensicExtractCmd = &cobra.Command{
+var extractCmd = &cobra.Command{
 	Use:   "extract <session-jsonl-path>",
 	Short: "Extract compact evidence from a session transcript",
 	Long: `Extract thinking blocks, tool calls, hook events, and file edits from a session JSONL.
@@ -52,31 +42,27 @@ Output modes:
   --out <dir>     Write to arbitrary directory
   (default)       Print JSON to stdout`,
 	Args: cobra.ExactArgs(1),
-	RunE: runForensicExtract,
+	RunE: runExtract,
 }
 
-var forensicSubagentsCmd = &cobra.Command{
+var subagentsCmd = &cobra.Command{
 	Use:   "subagents <session-dir-path>",
 	Short: "List subagent transcripts for a session",
 	Args:  cobra.ExactArgs(1),
-	RunE:  runForensicSubagents,
+	RunE:  runSubagents,
 }
 
 func init() {
-	forensicSearchCmd.Flags().StringVar(&forensicKeyword, "keyword", "", "Filter sessions by keyword in user messages")
-	forensicSearchCmd.Flags().StringVar(&forensicSession, "session", "", "Filter by session ID prefix")
-	forensicSearchCmd.Flags().StringVar(&forensicSkill, "skill", "", "Filter by skill name invoked in session")
-	forensicSearchCmd.Flags().IntVar(&forensicLast, "last", 20, "Limit number of results")
+	searchCmd.Flags().StringVar(&keyword, "keyword", "", "Filter sessions by keyword in user messages")
+	searchCmd.Flags().StringVar(&session, "session", "", "Filter by session ID prefix")
+	searchCmd.Flags().StringVar(&skill, "skill", "", "Filter by skill name invoked in session")
+	searchCmd.Flags().IntVar(&last, "last", 20, "Limit number of results")
 
-	forensicExtractCmd.Flags().StringVar(&forensicOutDir, "out", "", "Write evidence JSON to directory (default: stdout)")
-	forensicExtractCmd.Flags().StringVar(&forensicSlug, "slug", "", "Write to docs/forensics/<slug>/evidence/ (default: session ID prefix)")
-
-	forensicCmd.AddCommand(forensicSearchCmd)
-	forensicCmd.AddCommand(forensicExtractCmd)
-	forensicCmd.AddCommand(forensicSubagentsCmd)
+	extractCmd.Flags().StringVar(&outDir, "out", "", "Write evidence JSON to directory (default: stdout)")
+	extractCmd.Flags().StringVar(&slug, "slug", "", "Write to docs/forensics/<slug>/evidence/ (default: session ID prefix)")
 }
 
-// ── data types ──────────────────────────────────────────────────────
+// -- data types --
 
 type historyEntry struct {
 	Display   string `json:"display"`
@@ -312,7 +298,7 @@ type extractSummary struct {
 	EndTime   string `json:"endTime"`
 	Duration  string `json:"duration"`
 
-	// Timing statistics (tool execution time from tool_use → tool_result)
+	// Timing statistics (tool execution time from tool_use -> tool_result)
 	TopSlowest      []timingEntry  `json:"topSlowest"`
 	TimingByTool    []timingAgg    `json:"timingByTool"`
 	TotalToolMs     int64          `json:"totalToolMs"`
@@ -341,9 +327,9 @@ type subagentInfo struct {
 	Transcript string `json:"transcript"`
 }
 
-// ── search ──────────────────────────────────────────────────────────
+// -- search --
 
-func runForensicSearch(_ *cobra.Command, args []string) error {
+func runSearch(_ *cobra.Command, args []string) error {
 	projectPath := ""
 	if len(args) > 0 {
 		projectPath = args[0]
@@ -351,16 +337,23 @@ func runForensicSearch(_ *cobra.Command, args []string) error {
 
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		return NewAIError(ErrNotFound, "Cannot determine home directory", err.Error(), "", "")
+		return base.NewAIError(base.ErrNotFound, "Cannot determine home directory", err.Error(), "", "")
 	}
 	histPath := filepath.Join(homeDir, ".claude", "history.jsonl")
 
 	f, err := os.Open(histPath)
 	if err != nil {
-		return NewAIError(ErrNotFound, "Cannot open history.jsonl", err.Error(), "", "")
+		return base.NewAIError(base.ErrNotFound, "Cannot open history.jsonl", err.Error(), "", "")
 	}
 	defer func() { _ = f.Close() }()
 
+	searchWithProjectPath(projectPath, f)
+	return nil
+}
+
+// searchWithProjectPath runs search logic against an already-opened file handle.
+// Exported for test use.
+func searchWithProjectPath(projectPath string, f *os.File) {
 	sessions := map[string]*sessionSummary{}
 
 	scanner := bufio.NewScanner(f)
@@ -378,16 +371,16 @@ func runForensicSearch(_ *cobra.Command, args []string) error {
 		if entry.SessionID == "" {
 			continue
 		}
-		if forensicSession != "" && !strings.HasPrefix(entry.SessionID, forensicSession) {
+		if session != "" && !strings.HasPrefix(entry.SessionID, session) {
 			continue
 		}
-		if forensicKeyword != "" && !strings.Contains(strings.ToLower(entry.Display), strings.ToLower(forensicKeyword)) {
+		if keyword != "" && !strings.Contains(strings.ToLower(entry.Display), strings.ToLower(keyword)) {
 			continue
 		}
-		if forensicSkill != "" {
+		if skill != "" {
 			lower := strings.ToLower(entry.Display)
-			if !strings.Contains(lower, "/"+strings.ToLower(forensicSkill)) &&
-				!strings.Contains(lower, "forge:"+strings.ToLower(forensicSkill)) {
+			if !strings.Contains(lower, "/"+strings.ToLower(skill)) &&
+				!strings.Contains(lower, "forge:"+strings.ToLower(skill)) {
 				continue
 			}
 		}
@@ -420,33 +413,32 @@ func runForensicSearch(_ *cobra.Command, args []string) error {
 		return sorted[i].DateTime > sorted[j].DateTime
 	})
 
-	if forensicLast < len(sorted) {
-		sorted = sorted[:forensicLast]
+	if last < len(sorted) {
+		sorted = sorted[:last]
 	}
 
 	out, _ := json.MarshalIndent(sorted, "", "  ")
 	fmt.Println(string(out))
-	return nil
 }
 
-// ── extract ─────────────────────────────────────────────────────────
+// -- extract --
 
-func runForensicExtract(_ *cobra.Command, args []string) error {
+func runExtract(_ *cobra.Command, args []string) error {
 	jsonlPath := args[0]
 
 	// Resolve output directory: --slug > --out > auto-derive from session ID
-	if forensicSlug != "" {
-		forensicOutDir = filepath.Join("docs", "forensics", forensicSlug, "evidence")
-	} else if forensicOutDir == "" {
+	if slug != "" {
+		outDir = filepath.Join("docs", "forensics", slug, "evidence")
+	} else if outDir == "" {
 		base := strings.TrimSuffix(filepath.Base(jsonlPath), ".jsonl")
 		if len(base) >= 8 {
-			forensicOutDir = filepath.Join("docs", "forensics", base, "evidence")
+			outDir = filepath.Join("docs", "forensics", base, "evidence")
 		}
 	}
 
 	f, err := os.Open(jsonlPath)
 	if err != nil {
-		return NewAIError(ErrNotFound, "Cannot open transcript", err.Error(), "", "")
+		return base.NewAIError(base.ErrNotFound, "Cannot open transcript", err.Error(), "", "")
 	}
 	defer func() { _ = f.Close() }()
 
@@ -469,7 +461,7 @@ func runForensicExtract(_ *cobra.Command, args []string) error {
 	scanner.Buffer(make([]byte, 0, 1024*1024), 10*1024*1024)
 
 	var firstTS, lastTS, prevTS string
-	// pending tool_use calls: toolUseID → {timestamp, tool, line, detail}
+	// pending tool_use calls: toolUseID -> {timestamp, tool, line, detail}
 	type pendingCall struct {
 		ts     string
 		tool   string
@@ -721,13 +713,13 @@ func runForensicExtract(_ *cobra.Command, args []string) error {
 	}
 	out, _ := json.MarshalIndent(result, "", "  ")
 
-	if forensicOutDir != "" {
-		_ = os.MkdirAll(forensicOutDir, 0755)
-		outPath := filepath.Join(forensicOutDir, "evidence.json")
+	if outDir != "" {
+		_ = os.MkdirAll(outDir, 0755)
+		outPath := filepath.Join(outDir, "evidence.json")
 		if err := os.WriteFile(outPath, out, 0644); err != nil {
-			return NewAIError(ErrNotFound, "Cannot write evidence file", err.Error(), "", "")
+			return base.NewAIError(base.ErrNotFound, "Cannot write evidence file", err.Error(), "", "")
 		}
-		copyFile(jsonlPath, filepath.Join(forensicOutDir, filepath.Base(jsonlPath)))
+		copyFile(jsonlPath, filepath.Join(outDir, filepath.Base(jsonlPath)))
 		fmt.Println(outPath)
 		printTimingSummary(&result.Summary)
 	} else {
@@ -798,15 +790,15 @@ func firstThinking(blocks []contentBlock) string {
 	return ""
 }
 
-// ── subagents ───────────────────────────────────────────────────────
+// -- subagents --
 
-func runForensicSubagents(_ *cobra.Command, args []string) error {
+func runSubagents(_ *cobra.Command, args []string) error {
 	sessionDir := args[0]
 	subDir := filepath.Join(sessionDir, "subagents")
 
 	entries, err := os.ReadDir(subDir)
 	if err != nil {
-		return NewAIError(ErrNotFound, "No subagents directory", err.Error(), "", "")
+		return base.NewAIError(base.ErrNotFound, "No subagents directory", err.Error(), "", "")
 	}
 
 	agents := []subagentInfo{}
@@ -839,7 +831,7 @@ func runForensicSubagents(_ *cobra.Command, args []string) error {
 	return nil
 }
 
-// ── helpers ─────────────────────────────────────────────────────────
+// -- helpers --
 
 func extractUserContent(entry jsonlEntry) string {
 	if entry.Message.Role != "user" {

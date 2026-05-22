@@ -93,7 +93,7 @@
       "dependencies": [
         "2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "7-move-forensic-group.md",
       "record": "records/7-move-forensic-group.md",
       "scope": "backend",

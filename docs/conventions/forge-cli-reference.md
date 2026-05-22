@@ -112,13 +112,13 @@ domains: [cli, commands, reference, skills]
 
 ### forge forensic — 会话取证分析
 
-源文件：`forensic.go`
+源文件：`forensic/register.go`, `forensic/forensic.go`
 
 | 命令 | 用途 | 源文件 |
 |------|------|--------|
-| `forge forensic search [project-path]` | 在 history.jsonl 中搜索匹配的会话 | `forensic.go` |
-| `forge forensic extract <session-jsonl-path>` | 从会话记录中提取紧凑证据 | `forensic.go` |
-| `forge forensic subagents <session-dir-path>` | 列出会话的子 agent 记录 | `forensic.go` |
+| `forge forensic search [project-path]` | 在 history.jsonl 中搜索匹配的会话 | `forensic/forensic.go` |
+| `forge forensic extract <session-jsonl-path>` | 从会话记录中提取紧凑证据 | `forensic/forensic.go` |
+| `forge forensic subagents <session-dir-path>` | 列出会话的子 agent 记录 | `forensic/forensic.go` |
 
 ## CLI 表格渲染约定
 

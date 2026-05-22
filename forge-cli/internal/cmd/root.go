@@ -5,6 +5,7 @@ import (
 	"os"
 
 	featurepkg "forge-cli/internal/cmd/feature"
+	forensicpkg "forge-cli/internal/cmd/forensic"
 	taskpkg "forge-cli/internal/cmd/task"
 	testpkg "forge-cli/internal/cmd/test"
 	worktreepkg "forge-cli/internal/cmd/worktree"
@@ -31,13 +32,14 @@ func Execute() {
 func init() {
 	// Initialize subcommand groups
 	featurepkg.Register()
+	forensicpkg.Register()
 	taskpkg.Register()
 	testpkg.Register()
 	worktreepkg.Register()
 
 	// Group parents (5)
 	rootCmd.AddCommand(taskpkg.Cmd)
-	rootCmd.AddCommand(forensicCmd)
+	rootCmd.AddCommand(forensicpkg.Cmd)
 	rootCmd.AddCommand(testpkg.Cmd)
 	rootCmd.AddCommand(promptCmd)
 	rootCmd.AddCommand(worktreepkg.Cmd)

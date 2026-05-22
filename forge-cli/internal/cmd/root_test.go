@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"testing"
 
+	forensicpkg "forge-cli/internal/cmd/forensic"
 	taskpkg "forge-cli/internal/cmd/task"
 	testpkg "forge-cli/internal/cmd/test"
 )
@@ -96,7 +97,7 @@ func TestRootCmd_PromptGroupHasGetByTaskId(t *testing.T) {
 }
 
 func TestRootCmd_ForensicGroupHasSubcommands(t *testing.T) {
-	subcommands := forensicCmd.Commands()
+	subcommands := forensicpkg.Cmd.Commands()
 	if len(subcommands) < 3 {
 		t.Errorf("forensic group should have at least 3 subcommands, got %d", len(subcommands))
 	}
