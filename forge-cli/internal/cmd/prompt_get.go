@@ -23,14 +23,14 @@ runtime values (task file path, record file path, scope, feature slug).
 Use --fix-record-missed to use the fix-record-missed recovery template
 regardless of the task's type.`,
 	Args: cobra.ExactArgs(1),
-	Run:  runPrompt,
+	RunE: runPrompt,
 }
 
 func init() {
 	promptGetCmd.Flags().BoolVar(&promptFixRecordMissed, "fix-record-missed", false, "Use fix-record-missed template")
 }
 
-func runPrompt(_ *cobra.Command, args []string) {
+func runPrompt(_ *cobra.Command, args []string) error {
 	taskID := args[0]
 
 	projectRoot, err := project.FindProjectRoot()
@@ -56,4 +56,5 @@ func runPrompt(_ *cobra.Command, args []string) {
 	}
 
 	fmt.Print(result)
+	return nil
 }

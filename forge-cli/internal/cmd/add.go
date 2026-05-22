@@ -35,7 +35,8 @@ var addCmd = &cobra.Command{
 	Short: "Add a new task to the current feature",
 	Long: `Add a new task dynamically. Validates inputs and writes files.
 The CLI is a pure tool — the caller decides what to add.`,
-	Run: runAdd,
+	Args: cobra.NoArgs,
+	RunE: runAdd,
 }
 
 func init() {
@@ -68,7 +69,7 @@ type AddResult struct {
 	SourceBlocked string // source task ID that was blocked (empty if --block-source not used)
 }
 
-func runAdd(cmd *cobra.Command, _ []string) {
+func runAdd(cmd *cobra.Command, _ []string) error {
 	result, err := executeAdd(cmd)
 	if err != nil {
 		var dedupErr *task.ActiveFixExistsError
@@ -77,7 +78,7 @@ func runAdd(cmd *cobra.Command, _ []string) {
 			PrintField("ACTION", "SKIPPED")
 			PrintField("REASON", dedupErr.Error())
 			PrintBlockEnd()
-			return
+			return nil
 		}
 		Exit(err)
 	}
@@ -99,6 +100,7 @@ func runAdd(cmd *cobra.Command, _ []string) {
 	}
 	PrintFieldIfNotEmptySlice("DEPENDENCIES", result.Dependencies)
 	PrintBlockEnd()
+	return nil
 }
 
 func executeAdd(cmd *cobra.Command) (*AddResult, error) {

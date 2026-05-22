@@ -26,10 +26,11 @@ The task is selected based on:
 1. All dependencies must be met
 2. Priority (P0 > P1 > P2)
 3. Task ID (semantic version ordering)`,
-	Run: runClaim,
+	Args: cobra.NoArgs,
+	RunE: runClaim,
 }
 
-func runClaim(_ *cobra.Command, _ []string) {
+func runClaim(_ *cobra.Command, _ []string) error {
 	result, err := executeClaim()
 	if err != nil {
 		Exit(err)
@@ -41,6 +42,7 @@ func runClaim(_ *cobra.Command, _ []string) {
 	} else {
 		printNewTask(result.Key, result.Task, result.ProjectRoot, result.FeatureSlug)
 	}
+	return nil
 }
 
 // ClaimResult represents the result of a claim operation

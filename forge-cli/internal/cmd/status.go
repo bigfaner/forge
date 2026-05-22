@@ -18,10 +18,10 @@ var statusCmd = &cobra.Command{
 
 Use "forge task submit" to complete a task or "forge task reopen" to re-activate rejected/skipped tasks.`,
 	Args: cobra.RangeArgs(1, 2),
-	Run:  runStatus,
+	RunE: runStatus,
 }
 
-func runStatus(_ *cobra.Command, args []string) {
+func runStatus(_ *cobra.Command, args []string) error {
 	taskIDArg := args[0]
 
 	// Status command is now read-only: reject 2-arg mutation calls
@@ -60,6 +60,7 @@ func runStatus(_ *cobra.Command, args []string) {
 	PrintField("TASK_ID", t.ID)
 	PrintField("STATUS", t.Status)
 	PrintBlockEnd()
+	return nil
 }
 
 // checkUnmetDeps returns dependency IDs that are not "completed" or "skipped".

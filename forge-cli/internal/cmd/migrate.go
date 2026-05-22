@@ -23,10 +23,11 @@ Migration is idempotent: tasks that already have a type field are overwritten
 with the inferred value.
 
 Aborts with exit code 1 if any task is in_progress, leaving index.json unchanged.`,
-	Run: runMigrate,
+	Args: cobra.NoArgs,
+	RunE: runMigrate,
 }
 
-func runMigrate(_ *cobra.Command, _ []string) {
+func runMigrate(_ *cobra.Command, _ []string) error {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
 		Exit(ErrProjectNotFound())
@@ -71,4 +72,5 @@ func runMigrate(_ *cobra.Command, _ []string) {
 	}
 
 	fmt.Printf("Migrated %d tasks. Run task validate to verify.\n", taskCount)
+	return nil
 }

@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	e2e "forge-cli/pkg/e2e"
 	"forge-cli/pkg/project"
@@ -16,19 +15,20 @@ var e2eSetupCmd = &cobra.Command{
 	Use:   "setup",
 	Short: "Install e2e dependencies (idempotent)",
 	Long: `Install external dependencies for e2e tests.
-Idempotent: safe to run multiple times. Determines what to install based
-on the project's test framework (e.g. Playwright browsers, Go test tools, pytest packages).`,
-	Run: runE2ESetup,
+	Idempotent: safe to run multiple times. Determines what to install based
+	on the project's test framework (e.g. Playwright browsers, Go test tools, pytest packages).`,
+	Args: cobra.NoArgs,
+	RunE: runE2ESetup,
 }
 
 func init() {
 	e2eSetupCmd.Flags().BoolVar(&e2eSetupForce, "force", false, "Force reinstall dependencies")
 }
 
-func runE2ESetup(_ *cobra.Command, _ []string) {
+func runE2ESetup(_ *cobra.Command, _ []string) error {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		Exit(ErrProjectNotFound())
+		return ErrProjectNotFound()
 	}
 
 	opts := e2e.RunOpts{
@@ -37,7 +37,7 @@ func runE2ESetup(_ *cobra.Command, _ []string) {
 	}
 
 	if err := e2e.Setup(opts); err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
-		os.Exit(1)
+		return fmt.Errorf("e2e setup: %w", err)
 	}
+	return nil
 }

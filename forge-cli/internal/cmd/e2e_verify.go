@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	e2e "forge-cli/pkg/e2e"
 	"forge-cli/pkg/project"
@@ -16,8 +15,9 @@ var e2eVerifyCmd = &cobra.Command{
 	Use:   "verify",
 	Short: "Check for unresolved VERIFY markers",
 	Long: `Scan generated e2e test files for unresolved VERIFY markers that indicate
-placeholder assertions needing human review.`,
-	Run: runE2EVerify,
+	placeholder assertions needing human review.`,
+	Args: cobra.NoArgs,
+	RunE: runE2EVerify,
 }
 
 func init() {
@@ -25,10 +25,10 @@ func init() {
 	_ = e2eVerifyCmd.MarkFlagRequired("feature")
 }
 
-func runE2EVerify(_ *cobra.Command, _ []string) {
+func runE2EVerify(_ *cobra.Command, _ []string) error {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		Exit(ErrProjectNotFound())
+		return ErrProjectNotFound()
 	}
 
 	opts := e2e.RunOpts{
@@ -37,7 +37,7 @@ func runE2EVerify(_ *cobra.Command, _ []string) {
 	}
 
 	if err := e2e.Verify(opts); err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
-		os.Exit(1)
+		return fmt.Errorf("e2e verify: %w", err)
 	}
+	return nil
 }

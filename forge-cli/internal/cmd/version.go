@@ -10,9 +10,11 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the CLI version",
 	Long:  `Print the version number of the task CLI.`,
-	Run:   runVersion,
+	Args:  cobra.NoArgs,
+	RunE:  runVersion,
 }
 
-func runVersion(_ *cobra.Command, _ []string) {
+func runVersion(_ *cobra.Command, _ []string) error {
 	PrintBlock("VERSION", version.GetVersion())
+	return nil
 }

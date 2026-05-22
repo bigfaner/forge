@@ -19,31 +19,30 @@ var lessonCmd = &cobra.Command{
 Without arguments: lists all lessons in table format.
 With a name argument: shows metadata and file path for that lesson.`,
 	Args: cobra.MaximumNArgs(1),
-	Run:  runLesson,
+	RunE: runLesson,
 }
 
-func runLesson(_ *cobra.Command, args []string) {
+func runLesson(_ *cobra.Command, args []string) error {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		Exit(ErrProjectNotFound())
+		return ErrProjectNotFound()
 	}
 
 	if len(args) == 0 {
-		runLessonList(projectRoot)
-	} else {
-		runLessonDetail(projectRoot, args[0])
+		return runLessonList(projectRoot)
 	}
+	return runLessonDetail(projectRoot, args[0])
 }
 
-func runLessonList(projectRoot string) {
+func runLessonList(projectRoot string) error {
 	lessons, err := lesson.Discover(projectRoot)
 	if err != nil {
-		Exit(newErrLessonDiscovery(err))
+		return newErrLessonDiscovery(err)
 	}
 
 	if len(lessons) == 0 {
 		fmt.Fprintln(os.Stderr, "no lessons found")
-		return
+		return nil
 	}
 
 	// Calculate dynamic name column width.
@@ -75,12 +74,13 @@ func runLessonList(projectRoot string) {
 
 	fmt.Println()
 	PrintBlockEnd()
+	return nil
 }
 
-func runLessonDetail(projectRoot, name string) {
+func runLessonDetail(projectRoot, name string) error {
 	l, err := lesson.FindByName(projectRoot, name)
 	if err != nil {
-		Exit(newErrLessonNotFound(name))
+		return newErrLessonNotFound(name)
 	}
 
 	PrintBlockStart()
@@ -93,6 +93,7 @@ func runLessonDetail(projectRoot, name string) {
 	}
 	PrintField("FILE", l.FilePath)
 	PrintBlockEnd()
+	return nil
 }
 
 func newErrLessonDiscovery(err error) *AIError {

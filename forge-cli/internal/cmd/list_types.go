@@ -12,11 +12,12 @@ var listTypesCmd = &cobra.Command{
 	Use:   "list-types",
 	Short: "List all supported task types",
 	Args:  cobra.NoArgs,
-	Run:   runListTypes,
+	RunE:  runListTypes,
 }
 
-func runListTypes(_ *cobra.Command, _ []string) {
+func runListTypes(_ *cobra.Command, _ []string) error {
 	for _, entry := range task.TaskTypeRegistry {
 		fmt.Printf("%s  %s\n", entry.Name, entry.Description)
 	}
+	return nil
 }

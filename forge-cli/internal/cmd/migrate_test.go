@@ -26,7 +26,7 @@ func TestRunMigrate_HappyPath(t *testing.T) {
 	})
 
 	out := captureStdout(func() {
-		runMigrate(nil, []string{})
+		_ = runMigrate(nil, []string{})
 	})
 
 	if !strings.Contains(out, "Migrated 5 tasks") {
@@ -70,7 +70,7 @@ func TestRunMigrate_StatusPreserved(t *testing.T) {
 	})
 
 	captureStdout(func() {
-		runMigrate(nil, []string{})
+		_ = runMigrate(nil, []string{})
 	})
 
 	dir, _ := os.Getwd()
@@ -99,8 +99,8 @@ func TestRunMigrate_Idempotent(t *testing.T) {
 		},
 	})
 
-	captureStdout(func() { runMigrate(nil, []string{}) })
-	captureStdout(func() { runMigrate(nil, []string{}) })
+	captureStdout(func() { _ = runMigrate(nil, []string{}) })
+	captureStdout(func() { _ = runMigrate(nil, []string{}) })
 
 	dir, _ := os.Getwd()
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
@@ -126,7 +126,7 @@ func TestRunMigrate_InProgress_ExitsWithError(t *testing.T) {
 	})
 
 	if os.Getenv("TEST_MIGRATE_IN_PROGRESS") == "1" {
-		runMigrate(nil, []string{})
+		_ = runMigrate(nil, []string{})
 		return
 	}
 
@@ -197,7 +197,7 @@ func TestMigrateCmd_RegisteredInRoot(t *testing.T) {
 // TestRunMigrate_NoProject_ExitsWithError verifies error when no project root.
 func TestRunMigrate_NoProject_ExitsWithError(t *testing.T) {
 	if os.Getenv("TEST_MIGRATE_NO_PROJECT") == "1" {
-		runMigrate(nil, []string{})
+		_ = runMigrate(nil, []string{})
 		return
 	}
 
@@ -226,7 +226,7 @@ func TestRunMigrate_NoProject_ExitsWithError(t *testing.T) {
 // TestRunMigrate_NoFeature_ExitsWithError verifies error when no feature is set.
 func TestRunMigrate_NoFeature_ExitsWithError(t *testing.T) {
 	if os.Getenv("TEST_MIGRATE_NO_FEATURE") == "1" {
-		runMigrate(nil, []string{})
+		_ = runMigrate(nil, []string{})
 		return
 	}
 

@@ -25,7 +25,8 @@ Exit codes:
   0 - No errors (warnings OK)
   1 - Validation errors found
   2 - Script failed to run or prerequisites missing`,
-	Run: runValidateSpecs,
+	Args: cobra.NoArgs,
+	RunE: runValidateSpecs,
 }
 
 // validationResult represents the JSON output from validate-specs.mjs.
@@ -48,15 +49,15 @@ var exitFunc = os.Exit
 // validateSpecsScriptPath is the relative path to the validation script from project root.
 const validateSpecsScriptRelPath = "plugins/forge/skills/gen-test-scripts/templates/validate-specs.mjs"
 
-func runValidateSpecs(_ *cobra.Command, _ []string) {
+func runValidateSpecs(_ *cobra.Command, _ []string) error {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		Exit(ErrProjectNotFound())
+		return ErrProjectNotFound()
 	}
 
 	slug, err := feature.RequireFeature(projectRoot)
 	if err != nil {
-		Exit(ErrFeatureNotSet())
+		return ErrFeatureNotSet()
 	}
 
 	// Find the validation script
@@ -64,22 +65,20 @@ func runValidateSpecs(_ *cobra.Command, _ []string) {
 	if err != nil {
 		fmt.Println("WARNING: validate-specs.mjs not found — skipping spec validation")
 		fmt.Printf("  HINT: Ensure %s exists in the project\n", validateSpecsScriptRelPath)
-		exitFunc(0)
-		return
+		return nil
 	}
 
 	// Discover spec files
 	specDir := filepath.Join(projectRoot, feature.E2EStagingDir, slug)
 	specFiles, err := discoverSpecFiles(specDir)
 	if err != nil {
-		Exit(NewAIError(
+		return NewAIError(
 			ErrNotFound,
 			"No spec files found",
 			fmt.Sprintf("Could not find spec files in %s: %v", specDir, err),
 			"Generate spec files first using gen-test-scripts",
 			"forge task check-deps",
-		))
-		return
+		)
 	}
 
 	fmt.Printf("Validating %d spec file(s) in %s\n", len(specFiles), specDir)
@@ -91,7 +90,10 @@ func runValidateSpecs(_ *cobra.Command, _ []string) {
 	}
 
 	exitCode := runValidateSpecsInternal(scriptPath, specDir, testCasesPath)
-	exitFunc(exitCode)
+	if exitCode != 0 {
+		return fmt.Errorf("spec validation failed with exit code %d", exitCode)
+	}
+	return nil
 }
 
 // runValidateSpecsInternal executes the validation script and prints results.

@@ -28,7 +28,8 @@ Validations:
   - Required fields present
   - Dependency references exist
   - No circular dependencies`,
-	Run: runValidateIndex,
+	Args: cobra.MaximumNArgs(1),
+	RunE: runValidateIndex,
 }
 
 var (
@@ -36,7 +37,7 @@ var (
 	validPriority = map[string]bool{"P0": true, "P1": true, "P2": true}
 )
 
-func runValidateIndex(_ *cobra.Command, args []string) {
+func runValidateIndex(_ *cobra.Command, args []string) error {
 	var filePath string
 	if len(args) > 0 {
 		filePath = args[0]
@@ -54,8 +55,9 @@ func runValidateIndex(_ *cobra.Command, args []string) {
 
 	v := &validator{filePath: filePath}
 	if err := v.run(); err != nil {
-		Exit(err)
+		return err
 	}
+	return nil
 }
 
 type validator struct {

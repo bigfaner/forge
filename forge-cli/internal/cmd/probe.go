@@ -15,16 +15,16 @@ var probeCmd = &cobra.Command{
 	Short: "HTTP health check for e2e servers",
 	Long: `Probe configured e2e test servers by performing HTTP health checks.
 
-Reads tests/e2e/config.yaml for baseUrl and apiBaseUrl, then probes each
-endpoint with an HTTP GET. Exits 0 if all endpoints respond, exit 1 if any
-fails. If no config.yaml exists, prints "OK: CLI-only project" and exits 0.
+	Reads tests/e2e/config.yaml for baseUrl and apiBaseUrl, then probes each
+	endpoint with an HTTP GET. Exits 0 if all endpoints respond, exit 1 if any
+	fails. If no config.yaml exists, prints "OK: CLI-only project" and exits 0.
 
-The optional [path] argument specifies the health check path (default: /health).`,
+	The optional [path] argument specifies the health check path (default: /health).`,
 	Args: cobra.MaximumNArgs(1),
-	Run:  runProbe,
+	RunE: runProbe,
 }
 
-func runProbe(_ *cobra.Command, args []string) {
+func runProbe(_ *cobra.Command, args []string) error {
 	path := "/health"
 	if len(args) == 1 {
 		path = args[0]
@@ -32,11 +32,13 @@ func runProbe(_ *cobra.Command, args []string) {
 
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
+		// CLI-only project, no servers to probe
 		fmt.Fprintln(os.Stderr, "OK: CLI-only project")
-		os.Exit(0)
+		return nil
 	}
 
 	if !e2eprobe.ProbeServers(projectRoot, path) {
-		os.Exit(1)
+		return fmt.Errorf("server probe failed: %s", path)
 	}
+	return nil
 }

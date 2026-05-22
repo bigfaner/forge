@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	e2e "forge-cli/pkg/e2e"
 	"forge-cli/pkg/project"
@@ -16,18 +15,19 @@ var e2eRunCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run e2e tests",
 	Long: `Run end-to-end tests for the current feature.
-Dispatches to the appropriate test runner (e.g. npx playwright test, go test, pytest).`,
-	Run: runE2ERun,
+	Dispatches to the appropriate test runner (e.g. npx playwright test, go test, pytest).`,
+	Args: cobra.NoArgs,
+	RunE: runE2ERun,
 }
 
 func init() {
 	e2eRunCmd.Flags().StringVar(&e2eRunFeature, "feature", "", "Run tests for a specific feature (empty = all)")
 }
 
-func runE2ERun(_ *cobra.Command, _ []string) {
+func runE2ERun(_ *cobra.Command, _ []string) error {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		Exit(ErrProjectNotFound())
+		return ErrProjectNotFound()
 	}
 
 	opts := e2e.RunOpts{
@@ -36,7 +36,7 @@ func runE2ERun(_ *cobra.Command, _ []string) {
 	}
 
 	if err := e2e.Run(opts); err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
-		os.Exit(1)
+		return fmt.Errorf("e2e run: %w", err)
 	}
+	return nil
 }

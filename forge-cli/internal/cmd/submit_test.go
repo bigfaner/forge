@@ -718,7 +718,7 @@ func TestSaveIndexAndSignalCompletion(t *testing.T) {
 			"t2": {ID: "1.2", Title: "Skipped", Status: "skipped", Priority: "P1", File: "1.2.md"},
 		})
 
-		saveIndexAndSignalCompletion(indexPath, dir, "test-f", index)
+		_ = saveIndexAndSignalCompletion(indexPath, dir, "test-f", index)
 
 		// Verify index was saved
 		data, err := os.ReadFile(indexPath)
@@ -752,7 +752,7 @@ func TestSaveIndexAndSignalCompletion(t *testing.T) {
 			"t2": {ID: "1.2", Title: "Pending", Status: "pending", Priority: "P1", File: "1.2.md"},
 		})
 
-		saveIndexAndSignalCompletion(indexPath, dir, "test-f", index)
+		_ = saveIndexAndSignalCompletion(indexPath, dir, "test-f", index)
 
 		// Verify forge state was NOT written
 		statePath := filepath.Join(dir, ".forge", "state.json")
@@ -1239,7 +1239,7 @@ func TestSaveIndexAndSignalCompletion_RejectedNotDone(t *testing.T) {
 	indexPath := filepath.Join(tasksDir, "index.json")
 	_ = task.SaveIndex(indexPath, index)
 
-	saveIndexAndSignalCompletion(indexPath, projectRoot, featureSlug, index)
+	_ = saveIndexAndSignalCompletion(indexPath, projectRoot, featureSlug, index)
 
 	// Should NOT write forge state because rejected != done
 	forgeState := feature.ReadForgeState(projectRoot)
@@ -1293,7 +1293,7 @@ func TestRecordExistsCheck(t *testing.T) {
 			_ = os.WriteFile(dataPath, []byte(jsonData), 0644)
 
 			submitDataPath = dataPath
-			runSubmit(submitCmd, []string{"1"})
+			_ = runSubmit(submitCmd, []string{"1"})
 			return
 		}
 		cmd := exec.Command(os.Args[0], "-test.run=TestRecordExistsCheck/submit_overwrites_existing_record")
@@ -1319,7 +1319,7 @@ func TestRecordExistsCheck(t *testing.T) {
 			_ = os.WriteFile(dataPath, []byte(jsonData), 0644)
 
 			submitDataPath = dataPath
-			runSubmit(submitCmd, []string{"1"})
+			_ = runSubmit(submitCmd, []string{"1"})
 			return
 		}
 		cmd := exec.Command(os.Args[0], "-test.run=TestRecordExistsCheck/submit_succeeds_when_record_does_not_exist")
@@ -1346,7 +1346,7 @@ func TestSubmit_NonTestableTypeSkipsQualityGate(t *testing.T) {
 			_ = os.WriteFile(dataPath, []byte(jsonData), 0644)
 
 			submitDataPath = dataPath
-			runSubmit(submitCmd, []string{"1"})
+			_ = runSubmit(submitCmd, []string{"1"})
 			return
 		}
 		cmd := exec.Command(os.Args[0], "-test.run=TestSubmit_NonTestableTypeSkipsQualityGate/documentation_type_skips_quality_gate")
@@ -1375,7 +1375,7 @@ func TestSubmit_NonTestableTypeSkipsQualityGate(t *testing.T) {
 			_ = os.WriteFile(dataPath, []byte(jsonData), 0644)
 
 			submitDataPath = dataPath
-			runSubmit(submitCmd, []string{"1"})
+			_ = runSubmit(submitCmd, []string{"1"})
 			return
 		}
 		cmd := exec.Command(os.Args[0], "-test.run=TestSubmit_NonTestableTypeSkipsQualityGate/feature_type_runs_quality_gate")
@@ -1410,7 +1410,7 @@ func TestSubmit_TieredQualityGate(t *testing.T) {
 			_ = os.WriteFile(dataPath, []byte(jsonData), 0644)
 
 			submitDataPath = dataPath
-			runSubmit(submitCmd, []string{"1"})
+			_ = runSubmit(submitCmd, []string{"1"})
 			return
 		}
 		cmd := exec.Command(os.Args[0], "-test.run=TestSubmit_TieredQualityGate/breaking_coding_task_runs_full_gate_including_test")
@@ -1444,7 +1444,7 @@ func TestSubmit_TieredQualityGate(t *testing.T) {
 			_ = os.WriteFile(dataPath, []byte(jsonData), 0644)
 
 			submitDataPath = dataPath
-			runSubmit(submitCmd, []string{"1"})
+			_ = runSubmit(submitCmd, []string{"1"})
 			return
 		}
 		cmd := exec.Command(os.Args[0], "-test.run=TestSubmit_TieredQualityGate/non-breaking_coding_task_skips_test_in_gate")
@@ -1473,7 +1473,7 @@ func TestSubmit_TieredQualityGate(t *testing.T) {
 			_ = os.WriteFile(dataPath, []byte(jsonData), 0644)
 
 			submitDataPath = dataPath
-			runSubmit(submitCmd, []string{"1"})
+			_ = runSubmit(submitCmd, []string{"1"})
 			return
 		}
 		cmd := exec.Command(os.Args[0], "-test.run=TestSubmit_TieredQualityGate/non-breaking_coding_task_fails_when_lint_fails")
@@ -1504,7 +1504,7 @@ func TestSubmit_NonTestableTypeAutoSetCoverage(t *testing.T) {
 			_ = os.WriteFile(dataPath, []byte(jsonData), 0644)
 
 			submitDataPath = dataPath
-			runSubmit(submitCmd, []string{"1"})
+			_ = runSubmit(submitCmd, []string{"1"})
 			return
 		}
 		cmd := exec.Command(os.Args[0], "-test.run=TestSubmit_NonTestableTypeAutoSetCoverage/documentation_type_auto-sets_coverage_to_-1")
