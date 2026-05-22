@@ -24,7 +24,6 @@ Feature-relative paths (no prefix) resolve from `docs/features/<slug>/`. Excepti
 | `api-test-cases` | `testing/api-test-cases.md` |
 | `cli-test-cases` | `testing/cli-test-cases.md` |
 | `consistency` | `manifest.md` + `prd/prd-spec.md` + at least one other doc |
-| `harness` | Project has CLAUDE.md or AGENTS.md |
 | `validate-code` | PRD (`prd/prd-spec.md` + `prd/prd-user-stories.md`) + git diff against base branch |
 | `validate-ux` | PRD + compilable project (binary or web server) |
 
@@ -34,7 +33,7 @@ If missing, tell user to create it first.
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `--type` | (required) | `proposal`, `prd`, `design`, `ui`, `ui-web`, `ui-mobile`, `ui-tui`, `test-cases`, `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases`, `consistency`, `harness`, `validate-code`, `validate-ux` |
+| `--type` | (required) | `proposal`, `prd`, `design`, `ui`, `ui-web`, `ui-mobile`, `ui-tui`, `test-cases`, `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases`, `consistency`, `validate-code`, `validate-ux` |
 | `--target` | rubric frontmatter | Override target score |
 | `--iterations` | rubric frontmatter | Override max iterations |
 | `--scope` | `docs` | `consistency` only: `docs` or `full` |
@@ -101,7 +100,6 @@ Parse rubric frontmatter: `scale`, `target`, `iterations`, `context`. CLI `--tar
 | `api-test-cases` | `docs/features/<slug>/testing/` |
 | `cli-test-cases` | `docs/features/<slug>/testing/` |
 | `consistency` | `docs/features/<slug>/` |
-| `harness` | `docs/harness-reports/` |
 | `validate-code` | `docs/features/<slug>/prd/` |
 | `validate-ux` | `docs/features/<slug>/prd/` |
 
@@ -217,7 +215,6 @@ Ask user via `AskUserQuestion`:
 | `test-cases` | `/gen-test-scripts` |
 | `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases` | `/gen-test-scripts` |
 | `consistency` | `/run-tasks` or re-eval |
-| `harness` | `/improve-harness` |
 | `validate-code` | `/run-tasks` (proceed to test pipeline) |
 | `validate-ux` | `/run-tasks` (feature complete) |
 
