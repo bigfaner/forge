@@ -420,6 +420,17 @@
       "sourceTaskID": "2.4",
       "type": "coding.fix"
     },
+    "fix.2": {
+      "id": "fix.2",
+      "title": "Fix compilation errors from task 2.5 (checkUnmetDeps, status_test)",
+      "priority": "P0",
+      "status": "completed",
+      "file": "fix.2.md",
+      "record": "records/fix.2.md",
+      "breaking": true,
+      "sourceTaskID": "2.5",
+      "type": "coding.fix"
+    },
     "gen-test-cases": {
       "id": "T-test-gen-cases",
       "title": "Generate e2e Test Cases",
