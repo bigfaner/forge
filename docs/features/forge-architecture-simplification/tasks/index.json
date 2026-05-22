@@ -275,7 +275,7 @@
         "2.8",
         "2.9"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2.summary.md",
       "record": "records/2.summary.md",
       "type": "doc.summary"
@@ -473,6 +473,17 @@
       "record": "records/fix.6.md",
       "breaking": true,
       "sourceTaskID": "2.10",
+      "type": "coding.fix"
+    },
+    "fix.7": {
+      "id": "fix.7",
+      "title": "Update characterization tests after SourceTaskID sentinel elimination",
+      "priority": "P0",
+      "status": "completed",
+      "file": "fix.7.md",
+      "record": "records/fix.7.md",
+      "breaking": true,
+      "sourceTaskID": "2.8",
       "type": "coding.fix"
     },
     "gen-test-cases": {
