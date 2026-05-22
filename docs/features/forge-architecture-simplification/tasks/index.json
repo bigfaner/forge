@@ -110,7 +110,7 @@
         "1.gate",
         "2.2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2.10-test-command-hardening.md",
       "record": "records/2.10-test-command-hardening.md",
       "breaking": true,

@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"forge-cli/pkg/contract"
 	"forge-cli/pkg/project"
@@ -38,13 +37,20 @@ func runTestVerify(_ *cobra.Command, _ []string) {
 	collector := contract.RealFactCollector{}
 	summary, err := contract.Verify(projectRoot, collector)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
-		os.Exit(1)
+		Exit(NewErrEvalParseFailure(err.Error()))
+	}
+
+	if summary.Total == 0 {
+		Exit(NewErrContractUnverifiable("no contracts to verify"))
 	}
 
 	fmt.Print(summary.FormatReport())
 
 	if summary.Broken > 0 {
-		os.Exit(1)
+		Exit(NewAIError(ErrValidation,
+			"Broken contracts detected",
+			fmt.Sprintf("%d contract(s) are broken", summary.Broken),
+			"Fix the broken contracts to match implementation",
+			"forge test verify"))
 	}
 }

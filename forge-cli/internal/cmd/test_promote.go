@@ -18,6 +18,10 @@ import (
 func runTestPromote(_ *cobra.Command, args []string) {
 	journeyName := args[0]
 
+	if err := validateJourneyName(journeyName); err != nil {
+		Exit(err)
+	}
+
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
 		Exit(ErrProjectNotFound())
@@ -45,11 +49,12 @@ func runTestPromote(_ *cobra.Command, args []string) {
 	result := executeJourneyInIsolation(cfg, workDir, journeyName)
 
 	if !result.Passed {
-		// Cleanup before exit (defer won't run after os.Exit)
 		cleanup()
-		fmt.Fprintln(os.Stderr, "PROMOTION REFUSED: journey tests failed")
-		fmt.Print(result.FormatReport())
-		os.Exit(1)
+		Exit(NewAIError(ErrValidation,
+			"Journey tests failed, promotion refused",
+			"One or more tests in the journey did not pass",
+			"Fix the failing tests before promoting",
+			"forge test run-journey "+journeyName))
 	}
 
 	cleanup()
@@ -68,6 +73,15 @@ func runTestPromote(_ *cobra.Command, args []string) {
 	PrintField("FILES_MODIFIED", fmt.Sprintf("%d", filesModified))
 	PrintField("TAG_CHANGE", "@feature -> @regression")
 	PrintBlockEnd()
+}
+
+// validateJourneyName checks that the journey name does not contain path traversal.
+// Uses filepath.Base() and rejects ".." components per Hard Rules.
+func validateJourneyName(name string) *AIError {
+	if filepath.Base(name) != name || strings.Contains(name, "..") {
+		return NewErrInvalidPath(name)
+	}
+	return nil
 }
 
 // promoteJourneyTags walks the journey directory, finds test files, and replaces
