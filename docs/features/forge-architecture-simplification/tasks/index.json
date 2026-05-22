@@ -464,6 +464,17 @@
       "sourceTaskID": "2.8",
       "type": "coding.fix"
     },
+    "fix.6": {
+      "id": "fix.6",
+      "title": "Fix undefined validateJourneyName in test_promote_test.go",
+      "priority": "P0",
+      "status": "completed",
+      "file": "fix.6.md",
+      "record": "records/fix.6.md",
+      "breaking": true,
+      "sourceTaskID": "2.10",
+      "type": "coding.fix"
+    },
     "gen-test-cases": {
       "id": "T-test-gen-cases",
       "title": "Generate e2e Test Cases",
