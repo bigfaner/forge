@@ -41,3 +41,7 @@ After all tasks done, `forge quality-gate` runs as a final safety net (project-w
 ### Task-CLI
 
 Task CLI manages task lifecycle. Run `forge -h` or `forge [command] -h` for full reference.
+
+Key commands for error recovery:
+- `forge task transition <id> <status> --reason "..."` — manually transition a task (unblock, skip, reject)
+- `forge task reopen <id>` — re-activate a rejected/skipped task back to pending

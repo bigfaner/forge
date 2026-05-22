@@ -30,11 +30,11 @@ inputs:
    - Run `forge prompt get-by-task-id <TASK_ID> --fix-record-missed`
 3. Otherwise:
    - Run `forge prompt get-by-task-id <TASK_ID>`
-4. If `forge prompt get-by-task-id` fails (non-zero exit), record the task as blocked: `forge task status <TASK_ID> blocked`, then STOP
+4. If `forge prompt get-by-task-id` fails (non-zero exit), STOP immediately — the dispatcher will handle the in_progress task on the next claim cycle
 5. Follow every step in the synthesized strategy exactly
 6. If you lose track of your strategy mid-execution, re-run `forge prompt get-by-task-id <TASK_ID>` to recover
 7. After all strategy steps are done, check if the task status is blocked:
-   - Run `forge task status <TASK_ID>` — if output is `blocked`, skip steps 8-9 and go to step 10
+   - Run `forge task status <TASK_ID>` — if STATUS output is `blocked`, skip steps 8-9 and go to step 10
 8. Invoke the skill:
 
    ```
@@ -83,7 +83,7 @@ Execute strategy step → error
 
 1. Run:
    ```
-   forge task add --template fix-task --source-task-id <TASK_ID> --block-source --description "<error classification and summary>"
+   forge task add --template fix-task --title "Fix: <concise error>" --source-task-id <TASK_ID> --block-source --description "<error classification and summary>"
    ```
 2. Output:
    ```
@@ -94,7 +94,7 @@ Execute strategy step → error
 ### Important Notes
 
 - One-off failures resolved on first retry do NOT warrant a fix task — only recurring (~3 same/similar errors) or demonstrably complex errors do
-- `forge task add` has built-in dedup: `HasActiveFixTasks()` skips gracefully if a fix task already exists for this source
+- `forge task add` has built-in dedup: it skips gracefully if a fix task already exists for this source
 - `--block-source` automatically sets the source task to `blocked`, preventing re-claim until the fix resolves
 - `submit.go` auto-restore mechanism unblocks the source task when the fix task completes
 - The existing "mark blocked on prompt failure" behavior (step 4) is preserved and independent of this flow

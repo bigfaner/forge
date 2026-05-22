@@ -21,7 +21,6 @@ forge task claim
 
 **Extract from claim output**:
 - `TASK_ID` (e.g., "2.1")
-- `KEY` (e.g., "2.1-implementation")
 - `FILE` (e.g., full absolute path to task file)
 - `MAIN_SESSION` (e.g., "true" or absent)
 - `SCOPE` (e.g., "frontend", "backend", or "all" — defaults to "all" if absent)
@@ -35,7 +34,7 @@ If `MAIN_SESSION == "true"`:
 2. Follow the instructions exactly — the task document specifies what skill to invoke, how to check outcome, and how to record the result.
 3. The dispatcher does NOT hardcode skill names or record logic — it delegates to the task document.
 4. If the task file lacks a `## Main Session Instructions` section, mark the task blocked and report: "MAIN_SESSION task missing Main Session Instructions section — task document is incomplete".
-5. After execution, verify the record file exists via `forge task query <TASK_ID>`. If STATUS is not `"completed"`, spawn fix task (same as Step 2 verify logic).
+5. After execution, verify the record file exists via `forge task status <TASK_ID>`. If STATUS is not `"completed"`, spawn fix task (same as Step 2 verify logic).
 6. Skip to Step 3 (STOP).
 
 Else:
@@ -61,12 +60,11 @@ The subagent internally runs `forge prompt get-by-task-id <TASK_ID>` to get the 
 After subagent returns, check the task's actual status via CLI:
 
 ```bash
-forge task query <TASK_ID>
+forge task status <TASK_ID>
 ```
 
 - **STATUS == `"completed"`**: proceed to Step 3 (STOP).
 - **STATUS != `"completed"`**: task was auto-downgraded (e.g. test failures).
-  **Auto-downgrade rule**: If `testsFailed > 0`, `forge task submit` automatically downgrades `completed` to `blocked` (non-overridable, even with `--force`). All tests must pass for completion.
   Spawn fix task using `--block-source` to atomically block the source:
   ```bash
   forge task add --template fix-task --title "Fix: <failure>" \
@@ -114,7 +112,7 @@ Output your final summary and STOP.
 | No available task | Stop, report |
 | Agent timeout | Mark blocked, stop |
 | Record missing | Dispatch `Agent(prompt="Fix record for task <TASK_ID>")` — subagent calls `forge prompt get-by-task-id --fix-record-missed` internally |
-| Main session task fails | Follow error handling in task document's `### Error Handling` section; if missing, `forge task add --template fix-task --block-source` |
+| Main session task fails | Follow error handling in task document's `### Error Handling` section; if missing, `forge task add --template fix-task --title "Fix: main session task failed" --block-source --source-task-id <TASK_ID>` |
 
 ## Rules
 

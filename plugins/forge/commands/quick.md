@@ -55,12 +55,12 @@ At the very beginning of Step 2, before presenting any summary or confirmation p
 forge config get auto.runTasks
 ```
 
-Capture stdout (trimmed) and exit code. Then:
+Capture stdout (trimmed) and exit code. Output format is plain text key:value pairs (e.g., `quick:true full:false`). Then:
 
-| Exit Code | stdout contains `quick: true` | Action |
+| Exit Code | stdout contains `quick:true` | Action |
 |-----------|-------------------------------|--------|
 | 0 | Yes | **Skip the confirmation gate entirely.** Update proposal status `Draft → Approved` (see Status Transition below), then proceed directly to Step 3. |
-| 0 | No (or `quick: false`) | Present the confirmation gate (full Step 2 flow below). |
+| 0 | No (or `quick:false`) | Present the confirmation gate (full Step 2 flow below). |
 | Non-zero (config missing/read error) | — | **Fallback: skip the confirmation gate** (same as `quick: true`). This preserves quick mode's streamlined nature. |
 
 This check MUST happen at Step 2 entry — not during brainstorm, not after the summary is shown. The gate logic below is preserved but conditionally bypassed based on this config value.

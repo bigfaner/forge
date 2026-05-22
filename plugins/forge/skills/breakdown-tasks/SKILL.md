@@ -93,13 +93,14 @@ Populate **User Stories** from `prd/prd-user-stories.md` or note "No direct user
 See `rules/scope-assignment.md` for path classification rules. Compute: all frontend → "frontend", all backend → "backend", otherwise → "all". Non-mixed projects always use "all".
 
 ### Type Assignment
+
 | Type | When to assign |
 |------|----------------|
-| `coding.feature` | New runtime behavior, capability, or files |
-| `coding.enhancement` | Improves existing behavior without new capabilities |
-| `coding.cleanup` | Removes dead code, fixes tech debt |
-| `coding.refactor` | Restructures without behavior change |
-| `doc` | Non-compilable, non-runnable output only |
+| `coding.feature` | Task adds new runtime behavior, new user-facing capability, or new files |
+| `coding.enhancement` | Task improves existing behavior without adding new capabilities |
+| `coding.cleanup` | Task removes dead code, fixes technical debt, or improves code hygiene |
+| `coding.refactor` | Task restructures code without changing behavior (rename, reorganize, extract) |
+| `doc` | Tasks producing only markdown, specs, or templates (non-compilable, non-runnable) |
 | `doc.consolidate` | User manually creates a consolidation task for legacy projects — merging scattered spec files into `docs/business-rules/` or `docs/conventions/` |
 | `doc.drift` | User manually creates a drift audit task — detecting inconsistencies between existing specs and current code |
 
@@ -114,7 +115,7 @@ All Affected Files non-compilable → `templates/task-doc.md`. Any compilable/ru
 ### 4b. Test Tasks (auto-generated)
 **Do NOT create manually.** CLI handles test pipeline tasks (T-test-*), expansion, fix-tasks. Fix-task override:
 ```bash
-forge task add --template fix-task --title "Fix: <desc>" --source-task-id <id> --block-source --var SOURCE_FILES="<paths>" --var TEST_SCRIPT="<test>" --var TEST_RESULTS="<results>" --var DESCRIPTION="<cause>"
+forge task add --template fix-task --title "Fix: <desc>" --source-task-id <TASK_ID> --block-source --var SOURCE_FILES="<paths>" --var TEST_SCRIPT="<test>" --var TEST_RESULTS="<results>" --description "<cause>"
 ```
 
 ## Step 5: Generate index.json

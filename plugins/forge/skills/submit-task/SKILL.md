@@ -14,8 +14,8 @@ Post-task completion: create execution record + update task status.
 
 | Location                                         | Purpose                     | Git Status        |
 | ------------------------------------------------ | --------------------------- | ----------------- |
-| `docs/features/{slug}/tasks/process/record.json` | In-progress execution notes | Not committed     |
-| `docs/features/{slug}/tasks/records/*.md`        | Final completed record      | Committed to repo |
+| `docs/features/<slug>/tasks/process/record.json` | In-progress execution notes | Not committed     |
+| `docs/features/<slug>/tasks/records/*.md`        | Final completed record      | Committed to repo |
 
 **Workflow:**
 
@@ -101,26 +101,25 @@ Capture metrics from the targeted test runs you performed during task developmen
 ## Usage
 
 ```bash
-# Step 1: Write progress to process/record.json (replace sample values with real metrics from above)
-echo '{"taskId":"3.3.1","status":"completed","summary":"...","filesCreated":["..."],"filesModified":["..."],"keyDecisions":["..."],"testsPassed":12,"testsFailed":0,"coverage":85.6,"acceptanceCriteria":[{"criterion":"...","met":true}]}' > docs/features/{slug}/tasks/process/record.json
+# Step 1: Write execution data to process/record.json using the Write tool
+# (replace sample values with real metrics collected above)
+# Target path: docs/features/<slug>/tasks/process/record.json
 
 # Step 2: Use CLI command (mandatory)
-forge task submit <TASK_ID> --data docs/features/{slug}/tasks/process/record.json
+forge task submit <TASK_ID> --data docs/features/<slug>/tasks/process/record.json
 ```
 
 <EXTREMELY-IMPORTANT>
 You MUST use the `forge task submit` CLI command. No exceptions.
 
-**ONLY ALLOWED PATH:** `docs/features/{slug}/tasks/process/record.json`
+**ONLY ALLOWED PATH:** `docs/features/<slug>/tasks/process/record.json`
 
 **DO NOT:**
 
 - Write directly to index.json
-- Use Python/JavaScript to modify JSON
-- Create record files manually
-- Use Bash echo/cat to write JSON
-- Think "both approaches achieve the same result"
-- Use any other file path (e.g., .claude/tmp/)
+- Write to `records/*.md` manually (CLI generates these)
+- Use `forge task status <id> completed` to set status (use `forge task submit`)
+- Use any other file path (e.g., `.claude/tmp/`)
 
 The CLI command provides schema validation, consistent output format, and potential hooks/side-effects.
 Bypassing the command defeats the purpose of the skill.
@@ -141,8 +140,8 @@ These actions will corrupt task state:
 | ---------------------------- | ------------------------------------------ |
 | `Write("records/*.md")`      | Bypasses CLI validation and hooks          |
 | Direct edit to `index.json`  | State becomes inconsistent                 |
-| `forge task status <id> completed` | Only for recovery when `forge task submit` fails |
-| Writing to wrong path        | CLI only reads from `process/record.json`  |
+| `forge task status <id> completed` | Status mutation removed — use `forge task submit` to complete tasks |
+| Writing record.json to wrong path | CLI only reads from `process/record.json`  |
 
 </EXTREMELY-IMPORTANT>
 
@@ -150,7 +149,6 @@ These actions will corrupt task state:
 
 If `forge task submit` fails and cannot be fixed:
 
-```bash
-# Manual status fix (last resort only)
-forge task status <TASK_ID> completed --force
-```
+1. Identify the root cause from the error output (missing fields, validation failure, state transition error)
+2. Fix the `record.json` data and re-run `forge task submit <TASK_ID> --data <path>`
+3. If the task is stuck in an invalid state, use `forge task add --template fix-task --title "Fix: submit failed" --source-task-id <TASK_ID> --block-source --description "Submit failed: <error>"` to block it and create a fix task

@@ -59,10 +59,13 @@ If `MAIN_SESSION == "true"`:
 
 1. Read task file at `FILE`, find `## Main Session Instructions` section.
 2. Follow instructions exactly (task document specifies skill, outcome, record logic).
-3. If section missing: run `forge task status <TASK_ID> blocked`, report error, continue to Step 3.
+3. If section missing: report error, create fix task to block it, then continue to Step 3:
+   ```bash
+   forge task add --template fix-task --title "Fix: MAIN_SESSION missing instructions" --source-task-id <TASK_ID> --block-source --description "MAIN_SESSION task missing Main Session Instructions section"
+   ```
 4. After execution, verify via `forge task status <TASK_ID>`. If STATUS != "completed", create fix task using `--block-source`:
    ```bash
-   forge task add --template fix-task \
+   forge task add --template fix-task --title "Fix: MAIN_SESSION task failed" \
      --source-task-id <TASK_ID> \
      --block-source \
      --description "Main session task <TASK_ID> failed — verify output and fix issues"
@@ -107,7 +110,7 @@ Return to Step 1.
 | Agent timeout | Mark blocked, continue |
 | Record missing | Dispatch fix-record subagent (2c) |
 | 3 consecutive failures | STOP |
-| Main session fails | Follow task doc's error section; if missing, `forge task add --template fix-task --source-task-id <TASK_ID> --block-source --description "Main session task failed"` then continue |
+| Main session fails | Follow task doc's error section; if missing, `forge task add --template fix-task --title "Fix: main session task failed" --source-task-id <TASK_ID> --block-source --description "Main session task failed"` then continue |
 
 ## Post-Completion
 
@@ -123,7 +126,7 @@ After the loop ends, detect and commit any uncommitted artifacts left in the wor
 
 Do NOT run this step if the loop ended due to 3 consecutive failures (incomplete feature).
 
-#### Step 7: Detect and commit artifacts
+#### Post-Loop: Detect and commit artifacts
 
 1. Run `git status --porcelain` to list all uncommitted files.
 

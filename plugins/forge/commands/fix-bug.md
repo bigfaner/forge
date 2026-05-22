@@ -271,7 +271,7 @@ Capture stdout (trimmed) and exit code. Then:
 | 0 | Mode value is `false` | Present Step 5 confirmation (full flow below). |
 | Non-zero (config missing/read error) | — | **Fallback: present Step 5 confirmation** (same as `false`). |
 
-Mode context: `quick` when invoked via `/quick` pipeline, `full` when invoked via full pipeline. Parse the config output format `quick:<val> full:<val>` and select the value matching the current mode.
+Mode context: `quick` when invoked via `/quick` pipeline, `full` when invoked via full pipeline. Output format is plain text key:value pairs (e.g., `quick:true full:false`). Parse and select the value matching the current mode.
 
 #### Step 5: Present for user confirmation (skipped when auto-save is enabled)
 

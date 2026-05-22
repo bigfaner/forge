@@ -54,7 +54,7 @@ If the PRD has no explicit priority marking, default P0 for the first story's AC
 - **Test ID**: cli/<command>/<title-slug>
 - **Pre-conditions**: {What must be true before testing}
 - **Steps**:
-  1. {Exact command invocation, e.g., forge task query --status pending}
+  1. {Exact command invocation, e.g., forge task query <task-id>}
   2. {Additional commands or verification steps if needed}
 - **Expected**: {Exit code, stdout content, stderr content}
 - **Priority**: P0 | P1 | P2
