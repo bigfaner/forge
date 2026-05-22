@@ -10,7 +10,6 @@ Expert files are located at `experts/scorer/`.
 | `ui-web`, `ui-mobile`, `ui-tui` | `[ux-engineer]` |
 | `test-cases`, `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases` | `[qa]` |
 | `consistency` | `[editor]` |
-| `harness` | `[harness-engineer]` |
 | `validate-code` | `[code-reviewer]` |
 | `validate-ux` | `[ux-auditor]` |
 
@@ -54,7 +53,6 @@ Report paths per expert (for multi-expert types, each expert writes to a separat
 - `REPORT_PATH` = `<doc_dir>/eval/iteration-{{N}}-{{expert}}.md` (multi-expert)
 
 Type-specific report path overrides:
-- `harness`: `docs/harness-reports/YYYY-MM-DD.md`
 - `consistency`: `docs/features/<slug>/eval-consistency/eval/iteration-{{N}}.md`
 - `proposal`: `docs/proposals/<slug>/eval/iteration-{{N}}.md`
 - `validate-code`: `docs/features/<slug>/eval/validate-code.md`
