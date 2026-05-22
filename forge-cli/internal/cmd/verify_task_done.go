@@ -24,15 +24,15 @@ Checks:
 Exit codes:
   0 - All checks passed
   2 - Verification failed`,
-	Run: runVerifyTaskDone,
+	Args: cobra.NoArgs,
+	RunE: runVerifyTaskDone,
 }
 
-func runVerifyTaskDone(_ *cobra.Command, _ []string) {
+func runVerifyTaskDone(_ *cobra.Command, _ []string) error {
 	if err := verifyTaskCompletion(); err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(2)
+		return err
 	}
-	os.Exit(0)
+	return nil
 }
 
 // verifyTaskCompletion verifies task completion before allowing git commit.

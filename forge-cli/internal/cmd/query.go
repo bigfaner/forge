@@ -23,14 +23,14 @@ var queryCmd = &cobra.Command{
   - Task ID (e.g., "1.2.3")
   - Task Key (e.g., "phase1-1.1.1-project-init")`,
 	Args: cobra.ExactArgs(1),
-	Run:  runQuery,
+	RunE: runQuery,
 }
 
 func init() {
 	queryCmd.Flags().BoolVarP(&queryVerbose, "verbose", "v", false, "show all task fields including related fixes")
 }
 
-func runQuery(_ *cobra.Command, args []string) {
+func runQuery(_ *cobra.Command, args []string) error {
 	taskIDArg := args[0]
 
 	projectRoot, err := project.FindProjectRoot()
@@ -59,6 +59,7 @@ func runQuery(_ *cobra.Command, args []string) {
 	} else {
 		printDefaultQuery(t)
 	}
+	return nil
 }
 
 func printDefaultQuery(t *task.Task) {
@@ -84,7 +85,7 @@ func printVerboseQuery(key string, t *task.Task, featureSlug string, index *task
 	if len(t.Dependencies) > 0 {
 		PrintField("DEPENDENCIES:", "")
 		for _, dep := range t.Dependencies {
-			fmt.Printf("  %s\n", dep)
+			PrintListItem(dep)
 		}
 	}
 	PrintField("TASK_FILE", feature.GetTaskFile(featureSlug, t.File))
@@ -105,7 +106,7 @@ func printVerboseQuery(key string, t *task.Task, featureSlug string, index *task
 		})
 		PrintField("RELATED_FIXES:", "")
 		for _, fix := range fixes {
-			fmt.Printf("  %s [%s] %s\n", fix.ID, fix.Status, fix.Title)
+			PrintListItem(fmt.Sprintf("%s [%s] %s", fix.ID, fix.Status, fix.Title))
 		}
 	}
 }

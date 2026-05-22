@@ -733,6 +733,7 @@ func runForensicExtract(_ *cobra.Command, args []string) error {
 	} else {
 		fmt.Println(string(out))
 	}
+	return nil
 }
 
 func printTimingSummary(s *extractSummary) {

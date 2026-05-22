@@ -44,7 +44,8 @@ var qualityGateCmd = &cobra.Command{
 			This hook is the project health gate: unit tests + regression suite.
 
 			Use -v to see why the command exits early (useful for debugging).`,
-	Run: runQualityGate,
+	Args: cobra.NoArgs,
+	RunE: runQualityGate,
 }
 
 func init() {
@@ -122,13 +123,13 @@ func isDocsOnly(index *task.TaskIndex) bool {
 	return true
 }
 
-func runQualityGate(_ *cobra.Command, _ []string) {
+func runQualityGate(_ *cobra.Command, _ []string) error {
 	result, err := checkAllCompleted(qualityGateVerbose)
 	if err != nil {
 		Exit(err)
 	}
 	if result == nil {
-		os.Exit(0) // not all done is normal, exit silently
+		return nil // not all done is normal, exit silently
 	}
 
 	fmt.Fprintf(os.Stderr, "=== All tasks completed for feature: %s ===\n", result.FeatureSlug)
@@ -226,7 +227,9 @@ func runQualityGate(_ *cobra.Command, _ []string) {
 				handleGateFailure("e2e-test", errorDocPath, fixID, just.ExtractConciseError(regressionOutput, 5))
 			}
 		}
+		return nil
 	}
+	return nil
 }
 
 // handleGateFailure prints the hook JSON block reason and exits.

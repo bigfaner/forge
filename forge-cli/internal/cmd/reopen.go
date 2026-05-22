@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"errors"
-	"fmt"
-	"os"
 	"path/filepath"
 
 	"forge-cli/pkg/feature"
@@ -19,25 +17,25 @@ var reopenCmd = &cobra.Command{
 	Short: "Re-activate a rejected or skipped task to pending",
 	Long: `Re-activate a rejected or skipped task back to pending status.
 
-Terminal state protection:
-  - completed tasks are NEVER re-openable
-  - only rejected and skipped tasks can be reopened
-  - reopen target is always pending (cannot specify other states)`,
+	Terminal state protection:
+	  - completed tasks are NEVER re-openable
+	  - only rejected and skipped tasks can be reopened
+	  - reopen target is always pending (cannot specify other states)`,
 	Args: cobra.ExactArgs(1),
-	Run:  runReopen,
+	RunE: runReopen,
 }
 
-func runReopen(_ *cobra.Command, args []string) {
+func runReopen(_ *cobra.Command, args []string) error {
 	taskIDArg := args[0]
 
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		Exit(ErrProjectNotFound())
+		return ErrProjectNotFound()
 	}
 
 	featureSlug, err := feature.RequireFeature(projectRoot)
 	if err != nil {
-		Exit(ErrFeatureNotSet())
+		return ErrFeatureNotSet()
 	}
 
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
@@ -46,15 +44,14 @@ func runReopen(_ *cobra.Command, args []string) {
 		return doReopen(indexPath, taskIDArg)
 	}); lockErr != nil {
 		if errors.Is(lockErr, indexPkg.ErrLockConflict) {
-			fmt.Fprintln(os.Stderr, "concurrent write conflict, retry")
-			os.Exit(1)
+			return NewAIError(ErrConflict, "Concurrent write conflict", "Retry the command", "Wait a moment and try again", "forge reopen "+taskIDArg)
 		}
 		if aiErr, ok := lockErr.(*AIError); ok {
-			Exit(aiErr)
+			return aiErr
 		}
-		fmt.Fprintf(os.Stderr, "failed to acquire lock: %v\n", lockErr)
-		os.Exit(1)
+		return NewAIError(ErrConflict, "Failed to acquire lock", lockErr.Error(), "Check index.json is not locked by another process", "cat "+indexPath)
 	}
+	return nil
 }
 
 func doReopen(indexPath, taskIDArg string) error {

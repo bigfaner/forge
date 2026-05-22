@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -22,7 +21,8 @@ var checkDepsCmd = &cobra.Command{
 Validates:
   - All dependencies reference existing tasks
   - Wildcard dependencies match at least one task`,
-	Run: runCheckDeps,
+	Args: cobra.NoArgs,
+	RunE: runCheckDeps,
 }
 
 type depInfo struct {
@@ -33,21 +33,21 @@ type depInfo struct {
 	isWildcard bool
 }
 
-func runCheckDeps(_ *cobra.Command, _ []string) {
+func runCheckDeps(_ *cobra.Command, _ []string) error {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		Exit(ErrProjectNotFound())
+		return ErrProjectNotFound()
 	}
 
 	featureSlug, err := feature.RequireFeature(projectRoot)
 	if err != nil {
-		Exit(ErrFeatureNotSet())
+		return ErrFeatureNotSet()
 	}
 
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
 	index, err := task.LoadIndex(indexPath)
 	if err != nil {
-		Exit(ErrFileNotFound(indexPath))
+		return ErrFileNotFound(indexPath)
 	}
 
 	// Collect all task IDs
@@ -119,9 +119,9 @@ func runCheckDeps(_ *cobra.Command, _ []string) {
 	PrintSection("DEPENDENCIES")
 	for _, di := range depInfos {
 		if di.isWildcard {
-			fmt.Printf("  %s -> [%s] (wildcard)\n", di.taskID, di.dependency)
+			PrintListItem(fmt.Sprintf("%s -> [%s] (wildcard)", di.taskID, di.dependency))
 		} else {
-			fmt.Printf("  %s -> %s\n", di.taskID, di.dependency)
+			PrintListItem(fmt.Sprintf("%s -> %s", di.taskID, di.dependency))
 		}
 	}
 
@@ -131,8 +131,9 @@ func runCheckDeps(_ *cobra.Command, _ []string) {
 			PrintListItem(e)
 		}
 		PrintResult("FAIL", fmt.Sprintf("%d error(s)", len(errors)))
-		os.Exit(1)
+		return fmt.Errorf("%d dependency error(s)", len(errors))
 	}
 
 	PrintResult("PASS", fmt.Sprintf("%d tasks checked", len(taskIDs)))
+	return nil
 }
