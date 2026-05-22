@@ -523,21 +523,20 @@ func TestValidateTransition_FullMatrix(t *testing.T) {
 		{"blocked", "rejected", RoleSubmit, true},
 		{"blocked", "skipped", RoleSubmit, true},
 
-
-			// manual (RoleManual) overrides
-			{"blocked", "pending", RoleManual, true},
-			{"blocked", "in_progress", RoleManual, true},
-			{"blocked", "skipped", RoleManual, true},
-			{"blocked", "rejected", RoleManual, true},
-			{"pending", "skipped", RoleManual, true},
-			{"pending", "rejected", RoleManual, true},
-			{"in_progress", "blocked", RoleManual, true},
-			{"in_progress", "skipped", RoleManual, true},
-			{"in_progress", "rejected", RoleManual, true},
-			{"completed", "pending", RoleManual, false},
-			{"rejected", "pending", RoleManual, false},
-			{"skipped", "pending", RoleManual, false},
-			{"pending", "completed", RoleManual, false},
+		// manual (RoleManual) overrides
+		{"blocked", "pending", RoleManual, true},
+		{"blocked", "in_progress", RoleManual, true},
+		{"blocked", "skipped", RoleManual, true},
+		{"blocked", "rejected", RoleManual, true},
+		{"pending", "skipped", RoleManual, true},
+		{"pending", "rejected", RoleManual, true},
+		{"in_progress", "blocked", RoleManual, true},
+		{"in_progress", "skipped", RoleManual, true},
+		{"in_progress", "rejected", RoleManual, true},
+		{"completed", "pending", RoleManual, false},
+		{"rejected", "pending", RoleManual, false},
+		{"skipped", "pending", RoleManual, false},
+		{"pending", "completed", RoleManual, false},
 	}
 
 	for _, tc := range cases {
