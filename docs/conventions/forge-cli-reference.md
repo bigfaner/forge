@@ -44,6 +44,8 @@ domains: [cli, commands, reference, skills]
 | `forge task index` | 从任务 markdown 文件构建或重建 index.json | `index.go` |
 | `forge task migrate` | 为所有任务推断 type 字段并迁移 index.json | `migrate.go` |
 | `forge task list-types` | 列出所有支持的任务类型 | `list_types.go` |
+| `forge task reopen <task-id>` | 重新打开已拒绝/跳过的任务（恢复为 pending） | `reopen.go` |
+| `forge task transition <task-id> <status> --reason` | 手动切换任务状态（操作员覆盖） | `transition.go` |
 
 ### forge e2e — 端到端测试管理
 
