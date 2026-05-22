@@ -8,7 +8,7 @@
     "project-type": {
       "type": "string",
       "description": "Project type for scope resolution.",
-      "enum": ["frontend", "backend", "fullstack", "mobile", "library"]
+      "enum": ["fullstack", "mobile", "library", "mixed"]
     },
     "interfaces": {
       "type": "array",

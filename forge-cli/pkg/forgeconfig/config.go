@@ -138,12 +138,35 @@ func ReadCoverageConfig(projectRoot string) (CoverageConfig, error) {
 
 // Config represents the .forge/config.yaml structure.
 type Config struct {
+	Version       string          `yaml:"version,omitempty"`
+	ProjectType   string          `yaml:"project-type,omitempty"`
 	Auto          *AutoConfig     `yaml:"auto,omitempty"`
 	Worktree      *WorktreeConfig `yaml:"worktree,omitempty"`
 	Coverage      *CoverageConfig `yaml:"coverage,omitempty"`
 	TestFramework string          `yaml:"test-framework,omitempty"`
 	Languages     []string        `yaml:"languages,omitempty"`
 	Interfaces    []string        `yaml:"interfaces,omitempty"`
+}
+
+// Valid project type values.
+const (
+	ProjectTypeFullstack = "fullstack"
+	ProjectTypeMobile    = "mobile"
+	ProjectTypeLibrary   = "library"
+	ProjectTypeMixed     = "mixed"
+)
+
+// ValidProjectTypes lists all valid project type values.
+var ValidProjectTypes = []string{ProjectTypeFullstack, ProjectTypeMobile, ProjectTypeLibrary, ProjectTypeMixed}
+
+// ValidProjectType returns true if the given project type is one of the valid values.
+func ValidProjectType(pt string) bool {
+	for _, v := range ValidProjectTypes {
+		if pt == v {
+			return true
+		}
+	}
+	return false
 }
 
 // configPath returns the path to .forge/config.yaml.
@@ -167,6 +190,12 @@ func ReadConfig(projectRoot string) (*Config, error) {
 	var cfg Config
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return nil, fmt.Errorf("parse config: %w", err)
+	}
+
+	// Default version to "1" for backward compatibility with configs
+	// created before the version field was introduced.
+	if cfg.Version == "" {
+		cfg.Version = "1"
 	}
 
 	// Parse auto block with explicit-set tracking for default filling
