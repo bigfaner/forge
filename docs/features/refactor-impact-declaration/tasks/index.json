@@ -1,0 +1,55 @@
+{
+  "feature": "refactor-impact-declaration",
+  "proposal": "docs/proposals/refactor-impact-declaration/proposal.md",
+  "created": "2026-05-22",
+  "tasks": {
+    "1-impact-declaration-template": {
+      "id": "1",
+      "title": "Add Impact Declaration to coding-refactor.md template",
+      "priority": "P1",
+      "estimatedTime": "45m",
+      "status": "pending",
+      "file": "1-impact-declaration-template.md",
+      "record": "records/1-impact-declaration-template.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "2-update-lesson": {
+      "id": "2",
+      "title": "Update lesson with Impact Declaration pattern",
+      "priority": "P2",
+      "estimatedTime": "15m",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-update-lesson.md",
+      "record": "records/2-update-lesson.md",
+      "type": "doc"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "pending",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "scope": "all",
+      "type": "doc.drift"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
