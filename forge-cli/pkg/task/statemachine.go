@@ -58,6 +58,10 @@ var transitionTable = []TransitionRule{
 	{From: "skipped", To: "pending", Role: RoleReopen, Allowed: true, GuardMsg: ""},
 	{From: "skipped", To: "*", Role: "", Allowed: false, GuardMsg: "task skipped, use forge task reopen"},
 
+	// Suspended cannot directly reach completed (must resume first).
+	// Placed before the general "submit -> completed" rule so it matches first.
+	{From: "suspended", To: "completed", Role: "", Allowed: false, GuardMsg: "use forge task transition to resume task first"},
+
 	// Only submit can reach completed
 	{From: "*", To: "completed", Role: RoleSubmit, Allowed: true, GuardMsg: ""},
 	{From: "*", To: "completed", Role: "", Allowed: false, GuardMsg: "use forge task submit"},
@@ -75,6 +79,19 @@ var transitionTable = []TransitionRule{
 
 	// pending -> blocked is always allowed (block-source, dependency wait)
 	{From: "pending", To: "blocked", Role: "", Allowed: true, GuardMsg: ""},
+
+	// --- suspended: operator manual hold ---
+	// Only RoleManual can enter suspended (from any non-terminal state).
+	{From: "*", To: "suspended", Role: RoleManual, Allowed: true, GuardMsg: ""},
+	{From: "*", To: "suspended", Role: "", Allowed: false, GuardMsg: "use forge task transition to suspend tasks"},
+	// Manual resume from suspended.
+	{From: "suspended", To: "pending", Role: RoleManual, Allowed: true, GuardMsg: ""},
+	{From: "suspended", To: "in_progress", Role: RoleManual, Allowed: true, GuardMsg: ""},
+	// Manual terminal decisions from suspended.
+	{From: "suspended", To: "skipped", Role: RoleManual, Allowed: true, GuardMsg: ""},
+	{From: "suspended", To: "rejected", Role: RoleManual, Allowed: true, GuardMsg: ""},
+	// Block system transitions from suspended to blocked (must resume first).
+	{From: "suspended", To: "blocked", Role: "", Allowed: false, GuardMsg: "use forge task transition to resume suspended task"},
 
 	// RoleReopen is only valid for rejected/skipped -> pending (handled above).
 	// Using reopen on non-terminal states is invalid.
@@ -123,7 +140,7 @@ func matchRule(rule TransitionRule, from, to string, role TransitionRole) bool {
 
 // depSatisfiedStatuses are the statuses that satisfy dependency checks.
 // "completed" and "skipped" satisfy dependencies.
-// "rejected", "blocked", "pending", "in_progress" do NOT satisfy.
+// "rejected", "blocked", "suspended", "pending", "in_progress" do NOT satisfy.
 var depSatisfiedStatuses = map[string]bool{
 	"completed": true,
 	"skipped":   true,

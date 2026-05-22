@@ -33,7 +33,7 @@ Validations:
 }
 
 var (
-	validStatus   = map[string]bool{"pending": true, "in_progress": true, "completed": true, "blocked": true, "skipped": true, "rejected": true}
+	validStatus   = map[string]bool{"pending": true, "in_progress": true, "completed": true, "blocked": true, "suspended": true, "skipped": true, "rejected": true}
 	validPriority = map[string]bool{"P0": true, "P1": true, "P2": true}
 )
 

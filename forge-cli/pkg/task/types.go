@@ -182,9 +182,6 @@ type Task struct {
 	// BlockedReason records why a task entered blocked state.
 	// Written by run-tasks when task prompt exits non-zero.
 	BlockedReason string `json:"blockedReason,omitempty"`
-	// ManualBlock marks a task as manually blocked by the operator (forge task transition).
-	// Auto-unblock skips these tasks, preventing the claim→unblock→claim infinite loop.
-	ManualBlock bool `json:"manualBlock,omitempty"`
 	// Coverage is an optional per-task coverage override from frontmatter.
 	// nil means use the global coverage config default for the task type.
 	// Non-nil (including 0) means the task has an explicit coverage target.
@@ -313,6 +310,7 @@ func NewTaskIndex(feature string) *TaskIndex {
 			"in_progress",
 			"completed",
 			"blocked",
+			"suspended",
 			"skipped",
 			"rejected",
 		},

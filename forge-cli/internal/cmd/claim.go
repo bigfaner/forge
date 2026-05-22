@@ -186,6 +186,10 @@ func checkExistingTaskState(_ string, index *task.TaskIndex, statePath string) (
 		fmt.Printf("Previous task '%s' is blocked. Claiming new task...\n", t.Title)
 		_ = task.DeleteState(statePath)
 		return false, false, nil
+	case "suspended":
+		fmt.Printf("Previous task '%s' is suspended. Claiming new task...\n", t.Title)
+		_ = task.DeleteState(statePath)
+		return false, false, nil
 	case "rejected":
 		fmt.Printf("Previous task '%s' was rejected. Claiming new task...\n", t.Title)
 		_ = task.DeleteState(statePath)
@@ -204,12 +208,9 @@ func claimNextTask(index *task.TaskIndex) (string, *task.Task, error) {
 
 	// Lazy unblock scan: check blocked tasks and auto-transition eligible ones to pending.
 	// Runs before the hasPending check so newly-unblocked tasks are visible.
-	// Skips manually blocked tasks (ManualBlock=true) to prevent infinite claim loops.
+	// Suspended tasks are naturally excluded (they have status "suspended", not "blocked").
 	for key, t := range index.TasksMap() {
 		if t.Status != "blocked" {
-			continue
-		}
-		if t.ManualBlock {
 			continue
 		}
 		if met, _ := checkDependenciesMet(index, t.ID, t); met {

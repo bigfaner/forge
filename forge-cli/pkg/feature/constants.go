@@ -74,6 +74,7 @@ const (
 	StatusInProgress = "in_progress"
 	StatusCompleted  = "completed"
 	StatusBlocked    = "blocked"
+	StatusSuspended  = "suspended"
 	StatusSkipped    = "skipped"
 	StatusRejected   = "rejected"
 )

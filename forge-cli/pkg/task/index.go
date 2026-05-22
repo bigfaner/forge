@@ -17,7 +17,18 @@ func LoadIndex(path string) (*TaskIndex, error) {
 	if err := json.Unmarshal(data, &index); err != nil {
 		return nil, fmt.Errorf("failed to parse index: %w", err)
 	}
+	index.ensureStatusEnumHas("suspended")
 	return &index, nil
+}
+
+// ensureStatusEnumHas adds the given status to StatusEnum if not already present.
+func (ti *TaskIndex) ensureStatusEnumHas(status string) {
+	for _, s := range ti.StatusEnum {
+		if s == status {
+			return
+		}
+	}
+	ti.StatusEnum = append(ti.StatusEnum, status)
 }
 
 // SaveIndex saves the task index to the given file path.

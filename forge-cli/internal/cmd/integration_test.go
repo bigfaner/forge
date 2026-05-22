@@ -548,22 +548,21 @@ func TestExecuteClaim_BlockedTaskClearsStateAndProceeds(t *testing.T) {
 	}
 }
 
-func TestClaimNextTask_ManualBlock_SkipsAutoUnblock(t *testing.T) {
-	t.Run("manually blocked task is not auto-unblocked", func(t *testing.T) {
+func TestClaimNextTask_SuspendedTask_NotAutoUnblocked(t *testing.T) {
+	t.Run("suspended task is not auto-unblocked", func(t *testing.T) {
 		index := &task.TaskIndex{
-			StatusEnum:   []string{"pending", "in_progress", "completed", "blocked"},
+			StatusEnum:   []string{"pending", "in_progress", "completed", "blocked", "suspended"},
 			PriorityEnum: []string{"P0", "P1", "P2"},
 		}
 		index.SetTasks(map[string]task.Task{
 			"task1": {ID: "1", Title: "Dep", Priority: "P0", Status: "completed", Dependencies: []string{}},
 			"task2": {
 				ID:            "2",
-				Title:         "Manually blocked",
+				Title:         "Suspended task",
 				Priority:      "P0",
-				Status:        "blocked",
+				Status:        "suspended",
 				Dependencies:  []string{"1"},
 				BlockedReason: "waiting on external API",
-				ManualBlock:   true,
 			},
 		})
 
@@ -573,12 +572,12 @@ func TestClaimNextTask_ManualBlock_SkipsAutoUnblock(t *testing.T) {
 		}
 
 		task2 := index.TasksMap()["task2"]
-		if task2.Status != "blocked" {
-			t.Errorf("manually blocked task should stay blocked, got %s", task2.Status)
+		if task2.Status != "suspended" {
+			t.Errorf("suspended task should stay suspended, got %s", task2.Status)
 		}
 	})
 
-	t.Run("system blocked task without ManualBlock is auto-unblocked", func(t *testing.T) {
+	t.Run("system blocked task is auto-unblocked", func(t *testing.T) {
 		index := &task.TaskIndex{
 			StatusEnum:   []string{"pending", "in_progress", "completed", "blocked"},
 			PriorityEnum: []string{"P0", "P1", "P2"},

@@ -633,6 +633,63 @@ func TestValidateTransition_ManualCompletedTerminal(t *testing.T) {
 	}
 }
 
+func TestValidateTransition_SuspendedEntry(t *testing.T) {
+	if err := ValidateTransition("pending", "suspended", RoleManual); err != nil {
+		t.Errorf("pending -> suspended (manual) should be allowed, got: %v", err)
+	}
+	if err := ValidateTransition("in_progress", "suspended", RoleManual); err != nil {
+		t.Errorf("in_progress -> suspended (manual) should be allowed, got: %v", err)
+	}
+	if err := ValidateTransition("pending", "suspended", RoleAuto); err == nil {
+		t.Error("pending -> suspended (auto) should be blocked")
+	}
+	if err := ValidateTransition("in_progress", "suspended", RoleSubmit); err == nil {
+		t.Error("in_progress -> suspended (submit) should be blocked")
+	}
+}
+
+func TestValidateTransition_SuspendedResume(t *testing.T) {
+	if err := ValidateTransition("suspended", "pending", RoleManual); err != nil {
+		t.Errorf("suspended -> pending (manual) should be allowed, got: %v", err)
+	}
+	if err := ValidateTransition("suspended", "in_progress", RoleManual); err != nil {
+		t.Errorf("suspended -> in_progress (manual) should be allowed, got: %v", err)
+	}
+}
+
+func TestValidateTransition_SuspendedTerminal(t *testing.T) {
+	if err := ValidateTransition("suspended", "skipped", RoleManual); err != nil {
+		t.Errorf("suspended -> skipped (manual) should be allowed, got: %v", err)
+	}
+	if err := ValidateTransition("suspended", "rejected", RoleManual); err != nil {
+		t.Errorf("suspended -> rejected (manual) should be allowed, got: %v", err)
+	}
+}
+
+func TestValidateTransition_SuspendedBlockedBySystem(t *testing.T) {
+	if err := ValidateTransition("suspended", "blocked", RoleAuto); err == nil {
+		t.Error("suspended -> blocked (auto) should be blocked")
+	}
+	if err := ValidateTransition("suspended", "blocked", RoleSubmit); err == nil {
+		t.Error("suspended -> blocked (submit) should be blocked")
+	}
+	if err := ValidateTransition("suspended", "completed", RoleSubmit); err == nil {
+		t.Error("suspended -> completed (submit) should be blocked — must resume first")
+	}
+}
+
+func TestValidateTransition_SuspendedReopen(t *testing.T) {
+	if err := ValidateTransition("suspended", "pending", RoleReopen); err == nil {
+		t.Error("suspended -> pending (reopen) should be blocked — reopen only for rejected/skipped")
+	}
+}
+
+func TestValidateTransition_SuspendedSameState(t *testing.T) {
+	if err := ValidateTransition("suspended", "suspended", RoleManual); err != nil {
+		t.Errorf("suspended -> suspended (same state noop) should be allowed, got: %v", err)
+	}
+}
+
 // --- Helper ---
 
 func containsStr(s, sub string) bool {

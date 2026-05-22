@@ -235,7 +235,7 @@ type Task struct {
     Priority      string   `json:"priority"`                // P0/P1/P2
     EstimatedTime string   `json:"estimatedTime,omitempty"` // Estimated time
     Dependencies  []string `json:"dependencies,omitempty"`  // List of dependency task IDs
-    Status        string   `json:"status"`                  // pending/in_progress/completed/blocked/skipped
+    Status        string   `json:"status"`                  // pending/in_progress/completed/blocked/suspended/skipped/rejected
     File          string   `json:"file"`                    // Task file
     Record        string   `json:"record"`                  // Record file
     Breaking      bool     `json:"breaking,omitempty"`      // Global change flag; triggers full test suite on completion
@@ -245,7 +245,6 @@ type Task struct {
     Type          string   `json:"type,omitempty"`          // Task execution type; required after migration
     Profile       string   `json:"profile,omitempty"`       // Test profile name (e.g. "web-playwright"); set by task index for per-profile test tasks
     BlockedReason string   `json:"blockedReason,omitempty"` // Why this task entered blocked state; written by run-tasks when task prompt fails
-    ManualBlock   bool     `json:"manualBlock,omitempty"`   // Manually blocked by operator (forge task transition); auto-unblock skips these
     Coverage      *int     `json:"coverage,omitempty"`       // Per-task coverage override from frontmatter; nil = use global default
 }
 ```

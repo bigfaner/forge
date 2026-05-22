@@ -386,3 +386,48 @@ func TestEnsureIndexDir(t *testing.T) {
 		}
 	})
 }
+
+func TestEnsureStatusEnumHas(t *testing.T) {
+	t.Run("adds status when missing", func(t *testing.T) {
+		idx := &TaskIndex{StatusEnum: []string{"pending", "completed"}}
+		idx.ensureStatusEnumHas("suspended")
+		found := false
+		for _, s := range idx.StatusEnum {
+			if s == "suspended" {
+				found = true
+			}
+		}
+		if !found {
+			t.Error("expected 'suspended' to be added to StatusEnum")
+		}
+	})
+	t.Run("no-op when already present", func(t *testing.T) {
+		idx := &TaskIndex{StatusEnum: []string{"pending", "suspended", "completed"}}
+		original := len(idx.StatusEnum)
+		idx.ensureStatusEnumHas("suspended")
+		if len(idx.StatusEnum) != original {
+			t.Errorf("StatusEnum should not grow, got %d items", len(idx.StatusEnum))
+		}
+	})
+}
+
+func TestLoadIndex_BackwardCompat_Suspended(t *testing.T) {
+	dir := t.TempDir()
+	oldJSON := `{"feature":"test","statusEnum":["pending","in_progress","completed","blocked","skipped","rejected"],"tasks":{}}`
+	indexPath := filepath.Join(dir, "index.json")
+	_ = os.WriteFile(indexPath, []byte(oldJSON), 0644)
+
+	idx, err := LoadIndex(indexPath)
+	if err != nil {
+		t.Fatalf("LoadIndex() error = %v", err)
+	}
+	found := false
+	for _, s := range idx.StatusEnum {
+		if s == "suspended" {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("expected 'suspended' to be auto-injected into StatusEnum for backward compat")
+	}
+}

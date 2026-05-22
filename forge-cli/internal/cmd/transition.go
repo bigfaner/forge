@@ -26,6 +26,7 @@ workflow (submit, claim, reopen):
   - Skip an uncompletable task:   forge task transition 1.2 skipped --reason "superseded by 2.1"
   - Reject a task:                forge task transition 1.2 rejected --reason "out of scope"
   - Block a task manually:        forge task transition 1.2 blocked --reason "waiting on external API"
+  - Suspend a task:               forge task transition 1.2 suspended --reason "waiting on external team"
 
 Terminal state protection: completed, rejected, and skipped tasks can NEVER be transitioned.
 Use "forge task reopen" for rejected/skipped -> pending.`,
@@ -98,11 +99,8 @@ func doTransition(indexPath, taskIDArg, targetStatus string) error {
 	}
 
 	t.Status = targetStatus
-	if targetStatus == "blocked" {
+	if targetStatus == "blocked" || targetStatus == "suspended" {
 		t.BlockedReason = transitionReason
-		t.ManualBlock = true
-	} else {
-		t.ManualBlock = false
 	}
 
 	index.SetTask(key, *t)

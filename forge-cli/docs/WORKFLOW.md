@@ -283,7 +283,8 @@ Note: verify-task-done only validates status; it does not delete any files.
                               ▼                               ▼
                     ┌─────────────────┐             ┌─────────────────┐
                     │ Task completed/  │             │ Task not         │
-                    │ blocked/rejected │             │ completed       │
+                    │ blocked/suspended│             │ completed       │
+                    │ /rejected        │             │ Keep state file  │
                     │ Delete state file│             │ Keep state file  │
                     └────────┬────────┘             └─────────────────┘
                               ▼
