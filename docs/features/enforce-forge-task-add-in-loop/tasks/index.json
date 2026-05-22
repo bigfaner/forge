@@ -8,10 +8,9 @@
       "title": "Enforce explicit forge task add in run-tasks dispatcher",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "in_progress",
+      "status": "completed",
       "file": "1-enforce-fix-task-add.md",
-      "record": "records/1-enforce-fix-task-add.md",
-      "type": "doc"
+      "record": "records/1-enforce-fix-task-add.md"
     },
     "2-executor-complex-error-pause": {
       "id": "2",
@@ -23,8 +22,7 @@
       ],
       "status": "pending",
       "file": "2-executor-complex-error-pause.md",
-      "record": "records/2-executor-complex-error-pause.md",
-      "type": "doc"
+      "record": "records/2-executor-complex-error-pause.md"
     },
     "eval-doc": {
       "id": "T-eval-doc",
@@ -37,8 +35,7 @@
       "status": "pending",
       "file": "eval-doc.md",
       "record": "records/eval-doc.md",
-      "scope": "all",
-      "type": "doc.eval"
+      "scope": "all"
     }
   },
   "statusEnum": [

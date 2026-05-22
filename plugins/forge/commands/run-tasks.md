@@ -60,7 +60,16 @@ If `MAIN_SESSION == "true"`:
 1. Read task file at `FILE`, find `## Main Session Instructions` section.
 2. Follow instructions exactly (task document specifies skill, outcome, record logic).
 3. If section missing: run `forge task status <TASK_ID> blocked`, report error, continue to Step 3.
-4. After execution, verify via `forge task status <TASK_ID>`. If STATUS != "completed", spawn fix task.
+4. After execution, verify via `forge task status <TASK_ID>`. If STATUS != "completed", create fix task using `--block-source`:
+   ```bash
+   forge task add --template fix-task \
+     --source-task-id <TASK_ID> \
+     --block-source \
+     --description "Main session task <TASK_ID> failed — verify output and fix issues"
+   ```
+   `forge task add` automatically deduplicates — check output:
+   - `ACTION: ADDED` → new fix task created
+   - `ACTION: SKIPPED` → active fix task already exists
 5. Skip to Step 3.
 
 Else: proceed to Step 2.
@@ -71,7 +80,17 @@ Else: proceed to Step 2.
 
 **2b. Verify Record** — Run `forge task status <TASK_ID>`:
 - **STATUS == "completed"**: proceed to Step 3 (Continue Loop).
-- **STATUS == "blocked"** (auto-downgraded): spawn fix task. Continue loop.
+- **STATUS == "blocked"** (auto-downgraded): create fix task using `--block-source`:
+  ```bash
+  forge task add --template fix-task --title "Fix: <failure>" \
+    --source-task-id <TASK_ID> \
+    --block-source \
+    --description "Dispatched task <TASK_ID> was auto-downgraded to blocked — test failures or record issues"
+  ```
+  `forge task add` automatically deduplicates — check output:
+  - `ACTION: ADDED` → new fix task created
+  - `ACTION: SKIPPED` → active fix task already exists
+  Continue loop.
 - **STATUS == "in_progress"** (no record created): proceed to 2c.
 
 **2c. Record-Missing Recovery** — `Agent(subagent_type="forge:task-executor", prompt="Fix record for task <TASK_ID>")`. Subagent detects "Fix record for" prefix and calls `forge prompt get-by-task-id <TASK_ID> --fix-record-missed` internally. After 2c, re-verify via 2b logic.
@@ -88,7 +107,7 @@ Return to Step 1.
 | Agent timeout | Mark blocked, continue |
 | Record missing | Dispatch fix-record subagent (2c) |
 | 3 consecutive failures | STOP |
-| Main session fails | Follow task doc's error section; if missing, fix-task + continue |
+| Main session fails | Follow task doc's error section; if missing, `forge task add --template fix-task --source-task-id <TASK_ID> --block-source --description "Main session task failed"` then continue |
 
 ## Post-Completion
 
