@@ -8,7 +8,7 @@
       "title": "Enforce explicit forge task add in run-tasks dispatcher",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "in_progress",
       "file": "1-enforce-fix-task-add.md",
       "record": "records/1-enforce-fix-task-add.md",
       "type": "doc"
