@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"forge-cli/pkg/project"
+	"forge-cli/pkg/testrunner"
 
 	"github.com/spf13/cobra"
 )
@@ -72,10 +73,10 @@ func runTestRunJourney(_ *cobra.Command, args []string) error {
 		Exit(ErrProjectNotFound())
 	}
 
-	cfg := resolveJourneyExecutionConfig(projectRoot)
+	cfg := testrunner.ResolveJourneyExecutionConfig(projectRoot)
 
 	// Create isolated work directory
-	workDir, cleanup, err := createJourneyWorkDir(projectRoot, journeyName)
+	workDir, cleanup, err := testrunner.CreateJourneyWorkDir(projectRoot, journeyName)
 	if err != nil {
 		Exit(NewAIError(ErrValidation, "Failed to create journey work directory", err.Error(),
 			"Check temp directory permissions", "forge test run-journey "+journeyName))
@@ -83,7 +84,7 @@ func runTestRunJourney(_ *cobra.Command, args []string) error {
 	defer cleanup()
 
 	// Execute the test command in isolation
-	result := executeJourneyInIsolation(cfg, workDir, journeyName)
+	result := testrunner.ExecuteJourneyInIsolation(cfg, workDir, journeyName)
 
 	// Output the result report
 	fmt.Print(result.FormatReport())

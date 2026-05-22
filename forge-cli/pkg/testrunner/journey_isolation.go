@@ -1,4 +1,4 @@
-package cmd
+package testrunner
 
 import (
 	"fmt"
@@ -72,17 +72,17 @@ type JourneyExecutionConfig struct {
 	ProjectRoot string
 }
 
-// resolveJourneyExecutionConfig creates the journey execution config.
-func resolveJourneyExecutionConfig(projectRoot string) *JourneyExecutionConfig {
+// ResolveJourneyExecutionConfig creates the journey execution config.
+func ResolveJourneyExecutionConfig(projectRoot string) *JourneyExecutionConfig {
 	return &JourneyExecutionConfig{
 		ProjectRoot: projectRoot,
 	}
 }
 
-// createJourneyWorkDir creates an isolated temporary directory for a journey.
+// CreateJourneyWorkDir creates an isolated temporary directory for a journey.
 // The directory name includes the journey name and a random suffix.
 // Returns the work dir path, a cleanup function, and any error.
-func createJourneyWorkDir(_, journeyName string) (string, func(), error) {
+func CreateJourneyWorkDir(_, journeyName string) (string, func(), error) {
 	// Create a temp dir in the system temp location (not inside project)
 	prefix := fmt.Sprintf("forge-journey-%s-", journeyName)
 	workDir, err := os.MkdirTemp("", prefix)
@@ -97,8 +97,8 @@ func createJourneyWorkDir(_, journeyName string) (string, func(), error) {
 	return workDir, cleanup, nil
 }
 
-// copyFileToWorkDir copies a single file from projectRoot to workDir.
-func copyFileToWorkDir(projectRoot, workDir, filename string) error {
+// CopyFileToWorkDir copies a single file from projectRoot to workDir.
+func CopyFileToWorkDir(projectRoot, workDir, filename string) error {
 	src := filepath.Join(projectRoot, filename)
 	dst := filepath.Join(workDir, filename)
 
@@ -126,10 +126,10 @@ func copyFileToWorkDir(projectRoot, workDir, filename string) error {
 	return nil
 }
 
-// executeJourneyInIsolation runs a journey's e2e tests using `just e2e-test`
+// ExecuteJourneyInIsolation runs a journey's e2e tests using `just e2e-test`
 // from the project root with the journey filter.
 // Returns the execution result with output and exit code.
-func executeJourneyInIsolation(cfg *JourneyExecutionConfig, _, journeyName string) JourneyResult {
+func ExecuteJourneyInIsolation(cfg *JourneyExecutionConfig, _, journeyName string) JourneyResult {
 	start := time.Now()
 	result := JourneyResult{
 		JourneyName: journeyName,

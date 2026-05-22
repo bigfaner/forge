@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"forge-cli/pkg/project"
+	"forge-cli/pkg/testrunner"
 
 	"github.com/spf13/cobra"
 )
@@ -38,15 +39,15 @@ func runTestPromote(_ *cobra.Command, args []string) error {
 	}
 
 	// Run the journey's tests first
-	cfg := resolveJourneyExecutionConfig(projectRoot)
+	cfg := testrunner.ResolveJourneyExecutionConfig(projectRoot)
 
-	workDir, cleanup, err := createJourneyWorkDir(projectRoot, journeyName)
+	workDir, cleanup, err := testrunner.CreateJourneyWorkDir(projectRoot, journeyName)
 	if err != nil {
 		return NewAIError(ErrValidation, "Failed to create journey work directory", err.Error(),
 			"Check temp directory permissions", "forge test promote "+journeyName)
 	}
 
-	result := executeJourneyInIsolation(cfg, workDir, journeyName)
+	result := testrunner.ExecuteJourneyInIsolation(cfg, workDir, journeyName)
 
 	if !result.Passed {
 		cleanup()

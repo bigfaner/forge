@@ -157,7 +157,7 @@ func runQualityGate(_ *cobra.Command, _ []string) error {
 		fmt.Fprintf(os.Stderr, "ERROR: %s check failed\n", step)
 		errorDocPath := "tests/results/unit-raw-output.txt"
 		if output != "" {
-			if err := writeUnitTestRawOutput(result.ProjectRoot, "=== "+step+" failure ===\n"+output); err != nil {
+			if err := testrunner.WriteUnitTestRawOutput(result.ProjectRoot, "=== "+step+" failure ===\n"+output); err != nil {
 				fmt.Fprintf(os.Stderr, "WARNING: failed to write %s output: %v\n", step, err)
 			}
 		}
@@ -193,7 +193,7 @@ func runQualityGate(_ *cobra.Command, _ []string) error {
 				fmt.Fprintln(os.Stderr, "WARNING: e2e-setup failed; skipping e2e regression")
 				fmt.Fprintln(os.Stderr, "  To retry manually: just e2e-setup && just e2e-test")
 				if setupOutput != "" {
-					if err := writeRegressionRawOutput(result.ProjectRoot, "=== e2e-setup failure ===\n"+setupOutput); err != nil {
+					if err := testrunner.WriteRegressionRawOutput(result.ProjectRoot, "=== e2e-setup failure ===\n"+setupOutput); err != nil {
 						fmt.Fprintf(os.Stderr, "WARNING: failed to write setup output: %v\n", err)
 					} else {
 						fmt.Fprintln(os.Stderr, "  Setup output saved to tests/e2e/results/raw-output.txt")
@@ -216,7 +216,7 @@ func runQualityGate(_ *cobra.Command, _ []string) error {
 				fmt.Fprintln(os.Stderr, "ERROR: e2e regression failed")
 				errorDocPath := "tests/e2e/results/raw-output.txt"
 				if regressionOutput != "" {
-					if err := writeRegressionRawOutput(result.ProjectRoot, regressionOutput); err != nil {
+					if err := testrunner.WriteRegressionRawOutput(result.ProjectRoot, regressionOutput); err != nil {
 						fmt.Fprintf(os.Stderr, "WARNING: failed to write raw-output.txt: %v\n", err)
 					}
 				}
@@ -306,7 +306,7 @@ func runUnitTestStep(projectRoot, featureSlug string, runTest testRunFunc) (bool
 		unitOutput, retryOutput,
 	)
 	if combinedOutput != "" {
-		if err := writeUnitTestRawOutput(projectRoot, combinedOutput); err != nil {
+		if err := testrunner.WriteUnitTestRawOutput(projectRoot, combinedOutput); err != nil {
 			fmt.Fprintf(os.Stderr, "WARNING: failed to write unit test output: %v\n", err)
 		}
 	}

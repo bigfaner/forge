@@ -13,6 +13,7 @@ import (
 
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/task"
+	"forge-cli/pkg/testrunner"
 )
 
 // SetupOpts configures the test project created by setupFullProject.
@@ -1201,13 +1202,13 @@ func TestRunRecord_BlockedStatus(t *testing.T) {
 
 // ---------- appendFixTask removed (agent handles fix tasks now) ----------
 
-// ---------- writeUnitTestRawOutput ----------
+// ---------- testrunner.WriteUnitTestRawOutput ----------
 
 // TestWriteUnitTestRawOutput_CompilePrefix verifies compile failure output is prefixed correctly.
 func TestWriteUnitTestRawOutput_CompilePrefix(t *testing.T) {
 	dir := t.TempDir()
 	compileOutput := "src/main.ts(10,5): error TS2345: Argument of type 'number' is not assignable"
-	err := writeUnitTestRawOutput(dir, "=== compile failure ===\n"+compileOutput)
+	err := testrunner.WriteUnitTestRawOutput(dir, "=== compile failure ===\n"+compileOutput)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1227,9 +1228,9 @@ func TestWriteUnitTestRawOutput(t *testing.T) {
 	dir := t.TempDir()
 	output := "FAIL\n--- FAIL: TestFoo (0.01s)"
 
-	err := writeUnitTestRawOutput(dir, output)
+	err := testrunner.WriteUnitTestRawOutput(dir, output)
 	if err != nil {
-		t.Fatalf("writeUnitTestRawOutput() error = %v", err)
+		t.Fatalf("testrunner.WriteUnitTestRawOutput() error = %v", err)
 	}
 
 	path := filepath.Join(dir, "tests", "results", "unit-raw-output.txt")
@@ -1245,7 +1246,7 @@ func TestWriteUnitTestRawOutput(t *testing.T) {
 func TestWriteUnitTestRawOutput_CreatesDir(t *testing.T) {
 	dir := t.TempDir()
 	// tests/results/ does not exist yet — function must create it
-	err := writeUnitTestRawOutput(dir, "output")
+	err := testrunner.WriteUnitTestRawOutput(dir, "output")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1254,15 +1255,15 @@ func TestWriteUnitTestRawOutput_CreatesDir(t *testing.T) {
 	}
 }
 
-// ---------- writeRegressionRawOutput ----------
+// ---------- testrunner.WriteRegressionRawOutput ----------
 
 func TestWriteRegressionRawOutput(t *testing.T) {
 	dir := t.TempDir()
 	output := "not ok 1 - login test\n  Error: expected 200, got 404"
 
-	err := writeRegressionRawOutput(dir, output)
+	err := testrunner.WriteRegressionRawOutput(dir, output)
 	if err != nil {
-		t.Fatalf("writeRegressionRawOutput() error = %v", err)
+		t.Fatalf("testrunner.WriteRegressionRawOutput() error = %v", err)
 	}
 
 	path := filepath.Join(dir, "tests", "e2e", "results", "raw-output.txt")
@@ -1277,7 +1278,7 @@ func TestWriteRegressionRawOutput(t *testing.T) {
 
 func TestWriteRegressionRawOutput_CreatesDir(t *testing.T) {
 	dir := t.TempDir()
-	err := writeRegressionRawOutput(dir, "output")
+	err := testrunner.WriteRegressionRawOutput(dir, "output")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1542,7 +1543,7 @@ func TestWriteUnitTestRawOutput_MkdirAllError(t *testing.T) {
 	testsDir := filepath.Join(dir, "tests")
 	_ = os.WriteFile(testsDir, []byte("blocker"), 0644)
 
-	err := writeUnitTestRawOutput(dir, "output")
+	err := testrunner.WriteUnitTestRawOutput(dir, "output")
 	if err == nil {
 		t.Error("expected error when MkdirAll fails")
 	}
@@ -1554,7 +1555,7 @@ func TestWriteRegressionRawOutput_MkdirAllError(t *testing.T) {
 	testsDir := filepath.Join(dir, "tests")
 	_ = os.WriteFile(testsDir, []byte("blocker"), 0644)
 
-	err := writeRegressionRawOutput(dir, "output")
+	err := testrunner.WriteRegressionRawOutput(dir, "output")
 	if err == nil {
 		t.Error("expected error when MkdirAll fails")
 	}
