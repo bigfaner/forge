@@ -1,7 +1,7 @@
 ---
 created: 2026-05-22
 author: "faner"
-status: Draft
+status: Approved
 ---
 
 # Proposal: 重构执行器的预期影响范围声明
