@@ -1,6 +1,6 @@
 ---
 feature: "forge-architecture-simplification"
-status: tasks
+status: completed
 ---
 
 # Feature: forge-architecture-simplification
