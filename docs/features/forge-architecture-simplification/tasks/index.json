@@ -442,6 +442,17 @@
       "sourceTaskID": "2.6",
       "type": "coding.fix"
     },
+    "fix.4": {
+      "id": "fix.4",
+      "title": "Fix undefined PreserveRuntimeFields in preserve_test.go",
+      "priority": "P0",
+      "status": "completed",
+      "file": "fix.4.md",
+      "record": "records/fix.4.md",
+      "breaking": true,
+      "sourceTaskID": "2.7",
+      "type": "coding.fix"
+    },
     "gen-test-cases": {
       "id": "T-test-gen-cases",
       "title": "Generate e2e Test Cases",
