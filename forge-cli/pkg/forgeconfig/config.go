@@ -68,28 +68,13 @@ func (a AutoConfig) IsZero() bool {
 }
 
 // WithDefaults returns an AutoConfig with defaults applied for any zero-value fields.
+// IMPORTANT: This cannot distinguish "user explicitly set ModeToggle{false, false}" from
+// "field was never set" because both equal ModeToggle{}. Use ReadConfig -> applyDefaults()
+// (which tracks raw YAML fields) for proper per-field defaults. This function only handles
+// the all-zero case (no config loaded at all).
 func (a AutoConfig) WithDefaults() AutoConfig {
 	if a.IsZero() {
 		return AutoConfigDefaults()
-	}
-	d := AutoConfigDefaults()
-	if a.E2eTest == (ModeToggle{}) {
-		a.E2eTest = d.E2eTest
-	}
-	if a.ConsolidateSpecs == (ModeToggle{}) {
-		a.ConsolidateSpecs = d.ConsolidateSpecs
-	}
-	if a.CleanCode == (ModeToggle{}) {
-		a.CleanCode = d.CleanCode
-	}
-	if a.Validation == (ModeToggle{}) {
-		a.Validation = d.Validation
-	}
-	if a.RunTasks == (ModeToggle{}) {
-		a.RunTasks = d.RunTasks
-	}
-	if a.KnowledgeSave == (ModeToggle{}) {
-		a.KnowledgeSave = d.KnowledgeSave
 	}
 	return a
 }
@@ -349,54 +334,224 @@ func GetConfigValue(projectRoot, key string) (string, error) {
 	return "", errKeyNotFound
 }
 
+// autoModeField returns the ModeToggle pointer for a given auto field name.
+func autoModeField(a *AutoConfig, field string) *ModeToggle {
+	switch field {
+	case "e2eTest":
+		return &a.E2eTest
+	case "consolidateSpecs":
+		return &a.ConsolidateSpecs
+	case "cleanCode":
+		return &a.CleanCode
+	case "validation":
+		return &a.Validation
+	case "runTasks":
+		return &a.RunTasks
+	case "knowledgeSave":
+		return &a.KnowledgeSave
+	}
+	return nil
+}
+
+// SetConfigValue sets a config value for a given dot-notation key in .forge/config.yaml.
+// Supported key patterns:
+//   - auto.{field}            (sets both quick and full of a ModeToggle)
+//   - auto.{field}.quick      (sets quick field of a ModeToggle)
+//   - auto.{field}.full       (sets full field of a ModeToggle)
+//   - auto.gitPush            (sets bool)
+//   - worktree.source-branch  (sets string)
+//   - test-framework          (sets string)
+//   - coverage.{task-type}    (sets coverage strategy)
+//
+// Returns an error for unknown keys or invalid values.
+func SetConfigValue(projectRoot, key, value string) error {
+	switch {
+	case strings.HasPrefix(key, "auto."):
+		return setAutoConfigValue(projectRoot, key, value)
+	case strings.HasPrefix(key, "worktree."):
+		return setWorktreeConfigValue(projectRoot, key, value)
+	case key == "test-framework":
+		cfg, err := readOrCreateConfig(projectRoot)
+		if err != nil {
+			return err
+		}
+		cfg.TestFramework = value
+		return writeConfig(projectRoot, cfg)
+	case strings.HasPrefix(key, "coverage."):
+		return setCoverageConfigValue(projectRoot, key, value)
+	default:
+		return fmt.Errorf("unknown config key: %s", key)
+	}
+}
+
+// readOrCreateConfig reads config or returns an empty Config if file doesn't exist.
+func readOrCreateConfig(projectRoot string) (*Config, error) {
+	cfg, err := ReadConfig(projectRoot)
+	if err != nil {
+		return nil, err
+	}
+	if cfg == nil {
+		cfg = &Config{}
+	}
+	if cfg.Auto == nil {
+		cfg.Auto = &AutoConfig{}
+	}
+	return cfg, nil
+}
+
+// setAutoConfigValue sets a value in the auto config block by dot-notation key.
+func setAutoConfigValue(projectRoot, key, value string) error {
+	cfg, err := readOrCreateConfig(projectRoot)
+	if err != nil {
+		return err
+	}
+
+	// auto.gitPush
+	if key == "auto.gitPush" {
+		b, err := strconv.ParseBool(value)
+		if err != nil {
+			return fmt.Errorf("invalid bool value for %s: %s", key, value)
+		}
+		cfg.Auto.GitPush = b
+		return writeConfig(projectRoot, cfg)
+	}
+
+	// auto.{field} or auto.{field}.{subfield}
+	rest := strings.TrimPrefix(key, "auto.")
+	parts := strings.SplitN(rest, ".", 2)
+
+	field := parts[0]
+	mt := autoModeField(cfg.Auto, field)
+	if mt == nil {
+		return fmt.Errorf("unknown config key: %s", key)
+	}
+
+	if len(parts) == 1 {
+		// auto.{field} — set both quick and full to the same bool value
+		b, err := strconv.ParseBool(value)
+		if err != nil {
+			return fmt.Errorf("invalid bool value for %s: %s", key, value)
+		}
+		mt.Quick = b
+		mt.Full = b
+		return writeConfig(projectRoot, cfg)
+	}
+
+	// auto.{field}.{subfield}
+	subfield := parts[1]
+	b, err := strconv.ParseBool(value)
+	if err != nil {
+		return fmt.Errorf("invalid bool value for %s: %s", key, value)
+	}
+	switch subfield {
+	case "quick":
+		mt.Quick = b
+	case "full":
+		mt.Full = b
+	default:
+		return fmt.Errorf("unknown config key: %s", key)
+	}
+
+	return writeConfig(projectRoot, cfg)
+}
+
+// setWorktreeConfigValue sets a value in the worktree config block by dot-notation key.
+func setWorktreeConfigValue(projectRoot, key, value string) error {
+	cfg, err := readOrCreateConfig(projectRoot)
+	if err != nil {
+		return err
+	}
+
+	switch key {
+	case "worktree.source-branch":
+		if cfg.Worktree == nil {
+			cfg.Worktree = &WorktreeConfig{}
+		}
+		cfg.Worktree.SourceBranch = value
+	default:
+		return fmt.Errorf("unknown config key: %s", key)
+	}
+
+	return writeConfig(projectRoot, cfg)
+}
+
+// setCoverageConfigValue sets a coverage strategy.
+func setCoverageConfigValue(projectRoot, key, value string) error {
+	cfg, err := readOrCreateConfig(projectRoot)
+	if err != nil {
+		return err
+	}
+
+	taskType := strings.TrimPrefix(key, "coverage.")
+	if taskType == "" {
+		return fmt.Errorf("unknown config key: %s", key)
+	}
+
+	if cfg.Coverage == nil {
+		cfg.Coverage = &CoverageConfig{ByType: make(map[string]CoverageStrategy)}
+	}
+
+	// Parse value: either "maintain" or a percentage number
+	pct, err := strconv.Atoi(value)
+	if err != nil {
+		return fmt.Errorf("invalid coverage value for %s: %s (expected percentage number)", key, value)
+	}
+
+	cfg.Coverage.ByType[taskType] = CoverageStrategy{
+		Type:       "percentage",
+		Percentage: &pct,
+	}
+
+	return writeConfig(projectRoot, cfg)
+}
+
 // getAutoKeyValue handles dot-notation keys for the auto config block.
 func getAutoKeyValue(projectRoot, key string) (string, bool, error) {
-	switch key {
-	case "auto.runTasks":
-		auto, err := ReadAutoConfig(projectRoot)
-		if err != nil {
-			return "", true, err
-		}
-		return fmt.Sprintf("quick:%v full:%v", auto.RunTasks.Quick, auto.RunTasks.Full), true, nil
-	case "auto.runTasks.quick":
-		auto, err := ReadAutoConfig(projectRoot)
-		if err != nil {
-			return "", true, err
-		}
-		return strconv.FormatBool(auto.RunTasks.Quick), true, nil
-	case "auto.runTasks.full":
-		auto, err := ReadAutoConfig(projectRoot)
-		if err != nil {
-			return "", true, err
-		}
-		return strconv.FormatBool(auto.RunTasks.Full), true, nil
-	case "auto.knowledgeSave":
-		auto, err := ReadAutoConfig(projectRoot)
-		if err != nil {
-			return "", true, err
-		}
-		return fmt.Sprintf("quick:%v full:%v", auto.KnowledgeSave.Quick, auto.KnowledgeSave.Full), true, nil
-	case "auto.knowledgeSave.quick":
-		auto, err := ReadAutoConfig(projectRoot)
-		if err != nil {
-			return "", true, err
-		}
-		return strconv.FormatBool(auto.KnowledgeSave.Quick), true, nil
-	case "auto.knowledgeSave.full":
-		auto, err := ReadAutoConfig(projectRoot)
-		if err != nil {
-			return "", true, err
-		}
-		return strconv.FormatBool(auto.KnowledgeSave.Full), true, nil
-	case "auto.gitPush":
+	// auto.gitPush is a simple bool
+	if key == "auto.gitPush" {
 		auto, err := ReadAutoConfig(projectRoot)
 		if err != nil {
 			return "", true, err
 		}
 		return strconv.FormatBool(auto.GitPush), true, nil
-	default:
+	}
+
+	// auto.{field} or auto.{field}.{subfield}
+	rest, ok := strings.CutPrefix(key, "auto.")
+	if !ok {
 		return "", false, nil
 	}
+
+	var field, subfield string
+	if idx := strings.Index(rest, "."); idx >= 0 {
+		field = rest[:idx]
+		subfield = rest[idx+1:]
+	} else {
+		field = rest
+	}
+
+	auto, err := ReadAutoConfig(projectRoot)
+	if err != nil {
+		return "", true, err
+	}
+
+	mt := autoModeField(&auto, field)
+	if mt == nil {
+		return "", false, nil
+	}
+
+	if subfield == "" {
+		return fmt.Sprintf("quick:%v full:%v", mt.Quick, mt.Full), true, nil
+	}
+
+	switch subfield {
+	case "quick":
+		return strconv.FormatBool(mt.Quick), true, nil
+	case "full":
+		return strconv.FormatBool(mt.Full), true, nil
+	}
+
+	return "", false, nil
 }
 
 // getWorktreeKeyValue handles dot-notation keys for the worktree config block.

@@ -3,6 +3,7 @@ package forgeconfig
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -857,6 +858,139 @@ func TestWriteConfigAutoBlock(t *testing.T) {
 		}
 		if readback.Auto.GitPush != true {
 			t.Errorf("expected GitPush true, got %v", readback.Auto.GitPush)
+		}
+	})
+}
+
+func TestSetConfigValue(t *testing.T) {
+	t.Run("auto.gitPush set to true", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := SetConfigValue(dir, "auto.gitPush", "true"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		val, err := GetConfigValue(dir, "auto.gitPush")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "true" {
+			t.Errorf("expected 'true', got %q", val)
+		}
+	})
+
+	t.Run("auto.cleanCode.quick set to false", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := SetConfigValue(dir, "auto.cleanCode.quick", "false"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		val, err := GetConfigValue(dir, "auto.cleanCode.quick")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "false" {
+			t.Errorf("expected 'false', got %q", val)
+		}
+	})
+
+	t.Run("auto.e2eTest.full set to true", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := SetConfigValue(dir, "auto.e2eTest.full", "true"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		val, err := GetConfigValue(dir, "auto.e2eTest.full")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "true" {
+			t.Errorf("expected 'true', got %q", val)
+		}
+	})
+
+	t.Run("worktree.source-branch set to develop", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := SetConfigValue(dir, "worktree.source-branch", "develop"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		val, err := GetConfigValue(dir, "worktree.source-branch")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "develop" {
+			t.Errorf("expected 'develop', got %q", val)
+		}
+	})
+
+	t.Run("test-framework set to pytest", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := SetConfigValue(dir, "test-framework", "pytest"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		val, err := GetConfigValue(dir, "test-framework")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "pytest" {
+			t.Errorf("expected 'pytest', got %q", val)
+		}
+	})
+
+	t.Run("unknown key returns meaningful error", func(t *testing.T) {
+		dir := t.TempDir()
+		err := SetConfigValue(dir, "nonexistent", "value")
+		if err == nil {
+			t.Fatal("expected error for unknown key")
+		}
+		if !strings.Contains(err.Error(), "unknown config key") {
+			t.Errorf("expected 'unknown config key' in error, got %v", err)
+		}
+	})
+
+	t.Run("invalid bool value returns error", func(t *testing.T) {
+		dir := t.TempDir()
+		err := SetConfigValue(dir, "auto.gitPush", "notabool")
+		if err == nil {
+			t.Fatal("expected error for invalid bool")
+		}
+	})
+
+	t.Run("set and verify persistence with existing config", func(t *testing.T) {
+		dir := setupConfig(t, "auto:\n  gitPush: false\n")
+		if err := SetConfigValue(dir, "auto.gitPush", "true"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		val, err := GetConfigValue(dir, "auto.gitPush")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "true" {
+			t.Errorf("expected 'true', got %q", val)
+		}
+	})
+
+	t.Run("auto.cleanCode set both quick and full", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := SetConfigValue(dir, "auto.cleanCode", "true"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		val, err := GetConfigValue(dir, "auto.cleanCode")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "quick:true full:true" {
+			t.Errorf("expected 'quick:true full:true', got %q", val)
+		}
+	})
+
+	t.Run("coverage set", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := SetConfigValue(dir, "coverage.coding.feature", "90"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		val, err := GetConfigValue(dir, "coverage.coding.feature")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "90" {
+			t.Errorf("expected '90', got %q", val)
 		}
 	})
 }

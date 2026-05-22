@@ -44,8 +44,34 @@ Collects auto-behavior and worktree settings through interactive prompts.`,
 	RunE: runConfigInitHuh,
 }
 
+var configSetCmd = &cobra.Command{
+	Use:   "set <key> <value>",
+	Short: "Set a config value",
+	Long: `Set a config value in .forge/config.yaml.
+
+	Supports dot-notation keys for nested config (e.g. "auto.gitPush true").
+	Returns an error for unknown keys or invalid values.`,
+	Args:          cobra.ExactArgs(2),
+	SilenceErrors: true,
+	SilenceUsage:  true,
+	RunE:          runConfigSet,
+}
+
+func runConfigSet(cmd *cobra.Command, args []string) error {
+	key := args[0]
+	value := args[1]
+	projectRoot := resolveProjectRoot(cmd)
+
+	if err := forgeconfig.SetConfigValue(projectRoot, key, value); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func init() {
 	configCmd.AddCommand(configGetCmd)
+	configCmd.AddCommand(configSetCmd)
 	configCmd.AddCommand(configInitCmd)
 
 	configCmd.PersistentFlags().String("project-root", "", "project root directory (defaults to auto-detection)")

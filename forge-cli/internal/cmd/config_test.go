@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"forge-cli/pkg/feature"
+	"forge-cli/pkg/forgeconfig"
 )
 
 func TestConfigGetCommand(t *testing.T) {
@@ -282,6 +283,170 @@ func TestConfigInitCommand(t *testing.T) {
 
 		if !strings.Contains(stdout.String(), "Config init cancelled") {
 			t.Errorf("expected 'Config init cancelled' in output, got %q", stdout.String())
+		}
+	})
+}
+
+func TestConfigSetCommand(t *testing.T) {
+	setupConfig := func(t *testing.T, content string) string {
+		t.Helper()
+		dir := t.TempDir()
+		forgeDir := filepath.Join(dir, feature.ForgeDir)
+		if err := os.MkdirAll(forgeDir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(forgeDir, feature.ForgeConfigFileName), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		return dir
+	}
+
+	t.Run("set auto.gitPush and verify with get", func(t *testing.T) {
+		dir := t.TempDir()
+
+		var stdout bytes.Buffer
+		rootCmd.SetOut(&stdout)
+		rootCmd.SetErr(os.Stderr)
+		rootCmd.SetArgs([]string{"config", "set", "auto.gitPush", "true", "--project-root", dir})
+
+		err := rootCmd.Execute()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		// Verify via get
+		val, err := forgeconfig.GetConfigValue(dir, "auto.gitPush")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "true" {
+			t.Errorf("expected 'true', got %q", val)
+		}
+	})
+
+	t.Run("set worktree.source-branch and verify", func(t *testing.T) {
+		dir := t.TempDir()
+
+		var stdout bytes.Buffer
+		rootCmd.SetOut(&stdout)
+		rootCmd.SetErr(os.Stderr)
+		rootCmd.SetArgs([]string{"config", "set", "worktree.source-branch", "develop", "--project-root", dir})
+
+		err := rootCmd.Execute()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		val, err := forgeconfig.GetConfigValue(dir, "worktree.source-branch")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "develop" {
+			t.Errorf("expected 'develop', got %q", val)
+		}
+	})
+
+	t.Run("set test-framework and verify with get command", func(t *testing.T) {
+		dir := t.TempDir()
+
+		var setStdout bytes.Buffer
+		rootCmd.SetOut(&setStdout)
+		rootCmd.SetErr(os.Stderr)
+		rootCmd.SetArgs([]string{"config", "set", "test-framework", "pytest", "--project-root", dir})
+		err := rootCmd.Execute()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		// Verify via get command
+		var getStdout bytes.Buffer
+		rootCmd.SetOut(&getStdout)
+		rootCmd.SetArgs([]string{"config", "get", "test-framework", "--project-root", dir})
+		err = rootCmd.Execute()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		output := strings.TrimSpace(getStdout.String())
+		if output != "pytest" {
+			t.Errorf("expected 'pytest', got %q", output)
+		}
+	})
+
+	t.Run("unknown key returns error", func(t *testing.T) {
+		dir := t.TempDir()
+
+		var stdout, stderr bytes.Buffer
+		rootCmd.SetOut(&stdout)
+		rootCmd.SetErr(&stderr)
+		rootCmd.SetArgs([]string{"config", "set", "nonexistent", "value", "--project-root", dir})
+
+		err := rootCmd.Execute()
+		if err == nil {
+			t.Fatal("expected error for unknown key")
+		}
+	})
+
+	t.Run("invalid args count returns error", func(t *testing.T) {
+		dir := t.TempDir()
+
+		var stdout, stderr bytes.Buffer
+		rootCmd.SetOut(&stdout)
+		rootCmd.SetErr(&stderr)
+		rootCmd.SetArgs([]string{"config", "set", "auto.gitPush", "--project-root", dir})
+
+		err := rootCmd.Execute()
+		if err == nil {
+			t.Fatal("expected error for missing value arg")
+		}
+	})
+
+	t.Run("set auto.cleanCode true then get returns combined format", func(t *testing.T) {
+		dir := t.TempDir()
+
+		var stdout bytes.Buffer
+		rootCmd.SetOut(&stdout)
+		rootCmd.SetErr(os.Stderr)
+		rootCmd.SetArgs([]string{"config", "set", "auto.cleanCode", "true", "--project-root", dir})
+		err := rootCmd.Execute()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		// Verify via get
+		var getStdout bytes.Buffer
+		rootCmd.SetOut(&getStdout)
+		rootCmd.SetArgs([]string{"config", "get", "auto.cleanCode", "--project-root", dir})
+		err = rootCmd.Execute()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		output := strings.TrimSpace(getStdout.String())
+		if output != "quick:true full:true" {
+			t.Errorf("expected 'quick:true full:true', got %q", output)
+		}
+	})
+
+	t.Run("set overwrites existing value", func(t *testing.T) {
+		dir := setupConfig(t, "auto:\n  gitPush: false\n")
+
+		var stdout bytes.Buffer
+		rootCmd.SetOut(&stdout)
+		rootCmd.SetErr(os.Stderr)
+		rootCmd.SetArgs([]string{"config", "set", "auto.gitPush", "true", "--project-root", dir})
+
+		err := rootCmd.Execute()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		val, err := forgeconfig.GetConfigValue(dir, "auto.gitPush")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "true" {
+			t.Errorf("expected 'true', got %q", val)
 		}
 	})
 }
