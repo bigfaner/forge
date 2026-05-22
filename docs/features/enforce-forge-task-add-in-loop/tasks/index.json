@@ -1,0 +1,57 @@
+{
+  "feature": "enforce-forge-task-add-in-loop",
+  "proposal": "docs/proposals/enforce-forge-task-add-in-loop/proposal.md",
+  "created": "2026-05-22",
+  "tasks": {
+    "1-enforce-fix-task-add": {
+      "id": "1",
+      "title": "Enforce explicit forge task add in run-tasks dispatcher",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "1-enforce-fix-task-add.md",
+      "record": "records/1-enforce-fix-task-add.md",
+      "type": "doc"
+    },
+    "2-executor-complex-error-pause": {
+      "id": "2",
+      "title": "Add complex error pause capability to task-executor",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-executor-complex-error-pause.md",
+      "record": "records/2-executor-complex-error-pause.md",
+      "type": "doc"
+    },
+    "eval-doc": {
+      "id": "T-eval-doc",
+      "title": "Evaluate Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "2"
+      ],
+      "status": "pending",
+      "file": "eval-doc.md",
+      "record": "records/eval-doc.md",
+      "scope": "all",
+      "type": "doc.eval"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
