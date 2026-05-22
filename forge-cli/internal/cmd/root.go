@@ -24,9 +24,8 @@ func Execute() {
 }
 
 func init() {
-	// Group parents (6)
+	// Group parents (5)
 	rootCmd.AddCommand(taskCmd)
-	rootCmd.AddCommand(e2eCmd)
 	rootCmd.AddCommand(forensicCmd)
 	rootCmd.AddCommand(testCmd)
 	rootCmd.AddCommand(promptCmd)
@@ -34,7 +33,6 @@ func init() {
 
 	// Top-level commands
 	rootCmd.AddCommand(cleanupCmd)
-	rootCmd.AddCommand(probeCmd)
 	rootCmd.AddCommand(qualityGateCmd)
 	rootCmd.AddCommand(verifyTaskDoneCmd)
 	rootCmd.AddCommand(featureCmd)
@@ -68,14 +66,6 @@ func init() {
 	taskCmd.AddCommand(listTypesCmd)
 	taskCmd.AddCommand(reopenCmd)
 	taskCmd.AddCommand(transitionCmd)
-
-	// E2E group subcommands (6 total)
-	e2eCmd.AddCommand(validateSpecsCmd)
-	e2eCmd.AddCommand(e2eRunCmd)
-	e2eCmd.AddCommand(e2eSetupCmd)
-	e2eCmd.AddCommand(e2eVerifyCmd)
-	e2eCmd.AddCommand(e2eCompileCmd)
-	e2eCmd.AddCommand(e2eDiscoverCmd)
 
 	// Prompt group subcommands
 	promptCmd.AddCommand(promptGetCmd)

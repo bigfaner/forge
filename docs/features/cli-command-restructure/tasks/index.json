@@ -8,7 +8,7 @@
       "title": "Delete dead code: forge e2e group, forge probe, pkg/e2e",
       "priority": "P0",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-delete-dead-code.md",
       "record": "records/1-delete-dead-code.md",
       "scope": "backend",
