@@ -1,12 +1,34 @@
 package task
 
 import (
+	"embed"
 	"fmt"
 	"path"
 	"strings"
 
 	"forge-cli/pkg/forgeconfig"
 )
+
+//go:embed data/*.md
+var autogenTemplateFS embed.FS
+
+// autogenTypeToFile maps task type constants to their embed template filenames.
+// Filename convention: type name with '.' replaced by '-' (e.g., test.gen-cases -> test-gen-cases.md).
+var autogenTypeToFile = map[string]string{
+	TypeTestGenCases:         "data/test-gen-cases.md",
+	TypeTestEvalCases:        "data/test-eval-cases.md",
+	TypeTestGenScripts:       "data/test-gen-scripts.md",
+	TypeTestGenAndRun:        "data/test-gen-and-run.md",
+	TypeTestRun:              "data/test-run.md",
+	TypeTestGraduate:         "data/test-graduate.md",
+	TypeTestVerifyRegression: "data/test-verify-regression.md",
+	TypeValidationCode:       "data/validation-code.md",
+	TypeValidationUx:         "data/validation-ux.md",
+	TypeDocEval:              "data/doc-eval.md",
+	TypeDocConsolidate:       "data/doc-consolidate.md",
+	TypeDocDrift:             "data/doc-drift.md",
+	TypeCleanCode:            "data/code-quality-simplify.md",
+}
 
 // uiInterfaces is the set of interface types that have a visual UI
 // and therefore require UX validation.
@@ -238,7 +260,31 @@ func GenerateTestTaskMD(def AutoGenTaskDef, _ string) ([]byte, error) {
 	}
 	buf.WriteString("---\n\n")
 
-	// Body — Convention-driven: tasks reference docs/conventions/ for test strategy
+	// Body — try embed template first, fallback to legacy behavior
+	templateFile, hasTemplate := autogenTypeToFile[def.Type]
+	if hasTemplate {
+		data, err := autogenTemplateFS.ReadFile(templateFile)
+		if err == nil {
+			// Template loaded successfully — use as body
+			buf.Write(data)
+
+			// Append TestType note if present
+			if def.TestType != "" {
+				fmt.Fprintf(&buf, "\nType: **%s**\n", def.TestType)
+			}
+
+			// Append StrategyContent after template content if present
+			if len(def.StrategyContent) > 0 {
+				buf.WriteString("\n\n")
+				buf.Write(def.StrategyContent)
+			}
+
+			return []byte(buf.String()), nil
+		}
+		// Template file read failed — fall through to legacy behavior
+	}
+
+	// Legacy fallback body generation
 	if def.StrategyKind != "" {
 		if len(def.StrategyContent) > 0 {
 			fmt.Fprintf(&buf, "# %s\n\n", def.Title)

@@ -19,8 +19,8 @@ var allEnabledAuto = forgeconfig.AutoConfig{
 
 // validationAuto enables validation + e2e for testing validate-ux gating.
 var validationAuto = forgeconfig.AutoConfig{
-	E2eTest:          forgeconfig.ModeToggle{Quick: true, Full: true},
-	Validation:       forgeconfig.ModeToggle{Quick: true, Full: true},
+	E2eTest:    forgeconfig.ModeToggle{Quick: true, Full: true},
+	Validation: forgeconfig.ModeToggle{Quick: true, Full: true},
 }
 
 func TestGetBreakdownTestTasks_EmptyInterfaces(t *testing.T) {
@@ -139,8 +139,9 @@ func TestGenerateTestTaskMD(t *testing.T) {
 	if !strings.Contains(s, `"T-test-eval-cases"`) {
 		t.Error("missing dependency in frontmatter")
 	}
-	if !strings.Contains(s, "docs/conventions/testing-") {
-		t.Error("body should reference docs/conventions/testing-*")
+	// Body now loaded from embed template, should contain skill invocation
+	if !strings.Contains(s, "forge:gen-test-scripts") {
+		t.Error("body should contain gen-test-scripts skill from embed template")
 	}
 }
 
@@ -385,8 +386,9 @@ func TestGenerateTestTaskMD_WithTestType(t *testing.T) {
 	if !strings.Contains(s, "api") {
 		t.Error("missing test type in body")
 	}
-	if !strings.Contains(s, "docs/conventions/testing-") {
-		t.Error("body should reference docs/conventions/testing-*")
+	// Body loaded from embed template with TestType appended
+	if !strings.Contains(s, "Type: **api**") {
+		t.Error("body should contain TestType note")
 	}
 }
 
@@ -596,5 +598,167 @@ func TestGetQuickTestTasks_DefaultAuto_IncludesSpecDrift(t *testing.T) {
 	}
 	if len(tasks[0].Dependencies) != 0 {
 		t.Errorf("T-quick-doc-drift should have no deps without e2e tasks, got %v", tasks[0].Dependencies)
+	}
+}
+
+// --- Embed template loading tests ---
+
+func TestGenerateTestTaskMD_EmbedTemplate_LoadsContent(t *testing.T) {
+	tests := []struct {
+		name         string
+		typ          string
+		wantContains string
+	}{
+		{"gen-cases", TypeTestGenCases, "forge:gen-test-cases"},
+		{"eval-cases", TypeTestEvalCases, "forge:eval"},
+		{"gen-scripts", TypeTestGenScripts, "forge:gen-test-scripts"},
+		{"gen-and-run", TypeTestGenAndRun, "forge:gen-test-scripts"},
+		{"run", TypeTestRun, "forge:run-e2e-tests"},
+		{"graduate", TypeTestGraduate, "forge:graduate-tests"},
+		{"verify-regression", TypeTestVerifyRegression, "just test-e2e"},
+		{"validation-code", TypeValidationCode, "just compile"},
+		{"validation-ux", TypeValidationUx, "UX"},
+		{"doc-eval", TypeDocEval, "8-dimension rubric"},
+		{"doc-consolidate", TypeDocConsolidate, "forge:consolidate-specs"},
+		{"doc-drift", TypeDocDrift, "forge:consolidate-specs"},
+		{"clean-code", TypeCleanCode, "forge:clean-code"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			def := AutoGenTaskDef{
+				ID: "T-test", Key: "test",
+				Title: "Test Task", Priority: "P1",
+				EstimatedTime: "1h", Type: tt.typ, Scope: "all",
+			}
+
+			content, err := GenerateTestTaskMD(def, "my-feature")
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			s := string(content)
+			if !strings.Contains(s, tt.wantContains) {
+				t.Errorf("body for type %q should contain %q", tt.typ, tt.wantContains)
+			}
+		})
+	}
+}
+
+func TestGenerateTestTaskMD_StrategyContentAppendedAfterTemplate(t *testing.T) {
+	def := AutoGenTaskDef{
+		ID: "T-test-gen-cases", Key: "gen-test-cases",
+		Title: "Generate Test Cases", Priority: "P1",
+		EstimatedTime: "1-2h", Type: TypeTestGenCases, Scope: "all",
+		StrategyKind:    "generate",
+		StrategyContent: []byte("# Custom Strategy\n\nUse this strategy."),
+	}
+
+	content, err := GenerateTestTaskMD(def, "my-feature")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	s := string(content)
+
+	// Should contain template content
+	if !strings.Contains(s, "forge:gen-test-cases") {
+		t.Error("body should contain template content")
+	}
+	// StrategyContent appended AFTER template
+	templateIdx := strings.Index(s, "forge:gen-test-cases")
+	strategyIdx := strings.Index(s, "Custom Strategy")
+	if strategyIdx <= templateIdx {
+		t.Error("StrategyContent should appear after template content")
+	}
+}
+
+func TestGenerateTestTaskMD_TestTypeNotedInBody(t *testing.T) {
+	def := AutoGenTaskDef{
+		ID: "T-test-gen-scripts-api", Key: "gen-test-scripts-api",
+		Title: "Generate Test Scripts (api)", Priority: "P1",
+		EstimatedTime: "1-2h", Type: TypeTestGenScripts, Scope: "all",
+		TestType: "api",
+	}
+
+	content, err := GenerateTestTaskMD(def, "my-feature")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	s := string(content)
+	if !strings.Contains(s, "Type: **api**") {
+		t.Error("body should contain TestType note")
+	}
+}
+
+func TestGenerateTestTaskMD_FrontmatterUnchanged(t *testing.T) {
+	def := AutoGenTaskDef{
+		ID: "T-test-gen-cases", Key: "gen-test-cases",
+		Title: "Generate Test Cases", Priority: "P1",
+		EstimatedTime: "1-2h", Dependencies: []string{"dep1"},
+		Type: TypeTestGenCases, Scope: "all",
+		MainSession: true,
+	}
+
+	content, err := GenerateTestTaskMD(def, "my-feature")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	s := string(content)
+
+	// Frontmatter fields unchanged
+	if !strings.Contains(s, `id: "T-test-gen-cases"`) {
+		t.Error("missing id in frontmatter")
+	}
+	if !strings.Contains(s, `title: "Generate Test Cases"`) {
+		t.Error("missing title in frontmatter")
+	}
+	if !strings.Contains(s, `priority: "P1"`) {
+		t.Error("missing priority in frontmatter")
+	}
+	if !strings.Contains(s, `"dep1"`) {
+		t.Error("missing dependency in frontmatter")
+	}
+	if !strings.Contains(s, `type: "test.gen-cases"`) {
+		t.Error("missing type in frontmatter")
+	}
+	if !strings.Contains(s, `scope: "all"`) {
+		t.Error("missing scope in frontmatter")
+	}
+	if !strings.Contains(s, "mainSession: true") {
+		t.Error("missing mainSession in frontmatter")
+	}
+}
+
+func TestAutogenTypeToFileMapping(t *testing.T) {
+	// Verify all 13 auto-gen types have a mapping entry
+	wantTypes := []string{
+		TypeTestGenCases, TypeTestEvalCases, TypeTestGenScripts,
+		TypeTestGenAndRun, TypeTestRun, TypeTestGraduate,
+		TypeTestVerifyRegression, TypeValidationCode, TypeValidationUx,
+		TypeDocEval, TypeDocConsolidate, TypeDocDrift, TypeCleanCode,
+	}
+
+	if len(autogenTypeToFile) != len(wantTypes) {
+		t.Errorf("autogenTypeToFile has %d entries, want %d", len(autogenTypeToFile), len(wantTypes))
+	}
+
+	for _, typ := range wantTypes {
+		file, ok := autogenTypeToFile[typ]
+		if !ok {
+			t.Errorf("type %q missing from autogenTypeToFile", typ)
+			continue
+		}
+		// Verify file can be read from embed FS
+		data, err := autogenTemplateFS.ReadFile(file)
+		if err != nil {
+			t.Errorf("cannot read template file %q for type %q: %v", file, typ, err)
+			continue
+		}
+		if len(data) == 0 {
+			t.Errorf("template file %q for type %q is empty", file, typ)
+		}
 	}
 }

@@ -8,7 +8,7 @@
       "title": "Create embed template files for auto-gen task types and update GenerateTestTaskMD()",
       "priority": "P1",
       "estimatedTime": "1-2h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-embed-templates.md",
       "record": "records/1-embed-templates.md",
       "scope": "backend",
