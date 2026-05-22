@@ -7,6 +7,7 @@ import (
 	featurepkg "forge-cli/internal/cmd/feature"
 	taskpkg "forge-cli/internal/cmd/task"
 	testpkg "forge-cli/internal/cmd/test"
+	worktreepkg "forge-cli/internal/cmd/worktree"
 
 	"github.com/spf13/cobra"
 )
@@ -32,13 +33,14 @@ func init() {
 	featurepkg.Register()
 	taskpkg.Register()
 	testpkg.Register()
+	worktreepkg.Register()
 
 	// Group parents (5)
 	rootCmd.AddCommand(taskpkg.Cmd)
 	rootCmd.AddCommand(forensicCmd)
 	rootCmd.AddCommand(testpkg.Cmd)
 	rootCmd.AddCommand(promptCmd)
-	rootCmd.AddCommand(worktreeCmd)
+	rootCmd.AddCommand(worktreepkg.Cmd)
 
 	// Top-level commands
 	rootCmd.AddCommand(cleanupCmd)
@@ -55,14 +57,8 @@ func init() {
 	// Version is hidden from --help but accessible via `forge version`
 	versionCmd.Hidden = true
 
-	// Worktree group subcommands
-	worktreeCmd.AddCommand(worktreeStartCmd)
-	worktreeCmd.AddCommand(worktreeListCmd)
-	worktreeCmd.AddCommand(worktreeRemoveCmd)
-	worktreeCmd.AddCommand(worktreeResumeCmd)
-	worktreeCmd.AddCommand(worktreeStatusCmd)
-
 	// Task group subcommands — registered via taskpkg.Register() above
+	// Worktree group subcommands — registered via worktreepkg.Register() above
 
 	// Prompt group subcommands
 	promptCmd.AddCommand(promptGetCmd)

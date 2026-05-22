@@ -79,7 +79,7 @@
       "dependencies": [
         "2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "6-move-worktree-group.md",
       "record": "records/6-move-worktree-group.md",
       "scope": "backend",

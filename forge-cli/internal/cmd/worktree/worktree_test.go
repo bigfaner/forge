@@ -1,4 +1,4 @@
-package cmd
+package worktree
 
 import (
 	"bytes"
@@ -16,29 +16,31 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func init() {
+	// Register subcommands so tests can execute them via Cmd.
+	Register()
+}
+
 // ---------------------------------------------------------------------------
 // worktree command group registration
 // ---------------------------------------------------------------------------
 
 func TestWorktreeCmd_RegisteredAsGroup(t *testing.T) {
-	found := false
-	for _, cmd := range rootCmd.Commands() {
-		if cmd.Name() == "worktree" {
-			found = true
-			// Parent command with no Run — only subcommands
-			if cmd.Run != nil && cmd.RunE != nil {
-				t.Error("worktreeCmd should have no Run/RunE (group parent only)")
-			}
-			break
-		}
+	// Cmd is the worktree group parent — it should have no Run/RunE
+	if Cmd.Run != nil && Cmd.RunE != nil {
+		t.Error("Cmd should have no Run/RunE (group parent only)")
 	}
-	if !found {
-		t.Error("worktree command should be registered as top-level command")
+	if Cmd.Name() != "worktree" {
+		t.Errorf("Cmd.Name() = %q, want %q", Cmd.Name(), "worktree")
+	}
+	// Should have subcommands registered via Register()
+	if len(Cmd.Commands()) == 0 {
+		t.Error("Cmd should have subcommands registered via Register()")
 	}
 }
 
 func TestWorktreeCmd_HasStartSubcommand(t *testing.T) {
-	subcommands := worktreeCmd.Commands()
+	subcommands := Cmd.Commands()
 	found := false
 	for _, cmd := range subcommands {
 		if cmd.Name() == "start" {
@@ -53,11 +55,11 @@ func TestWorktreeCmd_HasStartSubcommand(t *testing.T) {
 
 func TestWorktreeStartCmd_RequiresSlugArg(t *testing.T) {
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err == nil {
 		t.Error("expected error when slug argument is missing")
 	}
@@ -82,11 +84,11 @@ func TestWorktreeStart_ErrorWhenClaudeNotInPath(t *testing.T) {
 	_ = os.Chdir(dir)
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start", "test-slug"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", "test-slug"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err == nil {
 		t.Error("expected error when claude binary not found")
 	}
@@ -132,11 +134,11 @@ func TestWorktreeStart_ErrorWhenTargetDirExists(t *testing.T) {
 	t.Cleanup(func() { _ = os.RemoveAll(filepath.Dir(filepath.Dir(targetDir))) })
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start", "test-slug"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", "test-slug"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err == nil {
 		t.Error("expected error when target directory already exists")
 	}
@@ -187,11 +189,11 @@ func TestWorktreeStart_CreatesWorktreeAndLaunchesClaude(t *testing.T) {
 	})
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start", slug})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", slug})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -252,11 +254,11 @@ func TestWorktreeStart_ResumesFromExistingBranch(t *testing.T) {
 	})
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start", slug})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", slug})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -343,11 +345,11 @@ func TestWorktreeStart_CreatesFromRemoteBranch(t *testing.T) {
 	})
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start", slug})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", slug})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -454,12 +456,12 @@ func TestWorktreeStart_RemoteBranchIgnoresSourceBranch(t *testing.T) {
 	})
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
 	// Use --source-branch develop, but remote branch should take priority
-	rootCmd.SetArgs([]string{"worktree", "start", slug, "--source-branch", "develop"})
+	Cmd.SetArgs([]string{"start", slug, "--source-branch", "develop"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -504,11 +506,11 @@ func TestWorktreeStart_FetchFailureDoesNotBlockWorktree(t *testing.T) {
 	})
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start", slug})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", slug})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("fetch failure should not block worktree creation, got error: %v", err)
 	}
@@ -591,11 +593,11 @@ func TestWorktreeStart_LocalBranchTakesPriorityOverRemote(t *testing.T) {
 	})
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start", slug})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", slug})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -634,11 +636,11 @@ func TestWorktreeStart_ErrorWhenNotGitRepo(t *testing.T) {
 	_ = os.Chdir(dir)
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start", "test-slug"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", "test-slug"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err == nil {
 		t.Error("expected error when not in a git repository")
 	}
@@ -696,11 +698,11 @@ func TestWorktreeStart_SourceBranchFlag_CreatesFromSpecifiedBranch(t *testing.T)
 	})
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start", slug, "--source-branch", "develop"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", slug, "--source-branch", "develop"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -751,11 +753,11 @@ func TestWorktreeStart_SourceBranchShortFlag(t *testing.T) {
 	})
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start", slug, "-b", "release"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", slug, "-b", "release"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -784,11 +786,11 @@ func TestWorktreeStart_SourceBranchErrorWhenBranchNotFound(t *testing.T) {
 	_ = os.Chdir(dir)
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start", "test-slug", "--source-branch", "nonexistent-branch"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", "test-slug", "--source-branch", "nonexistent-branch"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err == nil {
 		t.Error("expected error when source branch does not exist")
 	}
@@ -855,11 +857,11 @@ func TestWorktreeStart_SourceBranchFromConfig(t *testing.T) {
 	})
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start", slug})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", slug})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -944,11 +946,11 @@ func TestWorktreeStart_FlagOverridesConfigSourceBranch(t *testing.T) {
 
 	// Flag says "v3" — should override config
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start", slug, "--source-branch", "v3"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", slug, "--source-branch", "v3"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1012,11 +1014,11 @@ func TestWorktreeStart_SourceBranchNotUsedForExistingBranch(t *testing.T) {
 
 	// Start with --source-branch develop, but branch already exists
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start", slug, "--source-branch", "develop"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", slug, "--source-branch", "develop"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1056,11 +1058,11 @@ func TestWorktreeStart_NoSourceBranch_DefaultsToHEAD(t *testing.T) {
 	})
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start", slug})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", slug})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1072,7 +1074,7 @@ func TestWorktreeStart_NoSourceBranch_DefaultsToHEAD(t *testing.T) {
 }
 
 func TestWorktreeStart_SourceBranchFlagRegistered(t *testing.T) {
-	flag := worktreeStartCmd.Flags().Lookup("source-branch")
+	flag := startCmd.Flags().Lookup("source-branch")
 	if flag == nil {
 		t.Fatal("worktree start command should have --source-branch flag")
 	}
@@ -1109,11 +1111,11 @@ func TestWorktreeStart_ConfigSourceBranchErrorWhenBranchNotFound(t *testing.T) {
 	}
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start", "test-slug"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", "test-slug"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err == nil {
 		t.Error("expected error when config source branch does not exist")
 	}
@@ -1156,11 +1158,11 @@ func TestWorktreeStart_WorktreeNameAutoDetection(t *testing.T) {
 	})
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start", slug})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", slug})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1206,11 +1208,11 @@ func TestWorktreeStart_CreatesWorktreeInsideDotForgeWorktrees(t *testing.T) {
 	})
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start", slug})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", slug})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1232,11 +1234,11 @@ func TestWorktreeStart_CreatesWorktreeInsideDotForgeWorktrees(t *testing.T) {
 func TestWorktreeStart_SlugValidation(t *testing.T) {
 	// Empty slug should fail
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start", ""})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", ""})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err == nil {
 		t.Error("expected error when slug is empty")
 	}
@@ -1247,7 +1249,7 @@ func TestWorktreeStart_SlugValidation(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestWorktreeCmd_HasListSubcommand(t *testing.T) {
-	subcommands := worktreeCmd.Commands()
+	subcommands := Cmd.Commands()
 	found := false
 	for _, cmd := range subcommands {
 		if cmd.Name() == "list" {
@@ -1272,11 +1274,11 @@ func TestWorktreeList_ShowsMainWorktree(t *testing.T) {
 	_ = os.Chdir(dir)
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "list"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"list"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1311,11 +1313,11 @@ func TestWorktreeList_ShowsMultipleWorktrees(t *testing.T) {
 	})
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "list"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"list"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1363,11 +1365,11 @@ func TestWorktreeList_MarksForgeManaged(t *testing.T) {
 	})
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "list"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"list"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1393,11 +1395,11 @@ func TestWorktreeList_NoWorktrees(t *testing.T) {
 	defer func() { listWorktreesFunc = origListWorktrees }()
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "list"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"list"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1416,11 +1418,11 @@ func TestWorktreeList_NotGitRepo(t *testing.T) {
 	_ = os.Chdir(dir)
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "list"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"list"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err == nil {
 		t.Error("expected error when not a git repo")
 	}
@@ -1431,7 +1433,7 @@ func TestWorktreeList_NotGitRepo(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestWorktreeCmd_HasRemoveSubcommand(t *testing.T) {
-	subcommands := worktreeCmd.Commands()
+	subcommands := Cmd.Commands()
 	found := false
 	for _, cmd := range subcommands {
 		if cmd.Name() == "remove" {
@@ -1446,11 +1448,11 @@ func TestWorktreeCmd_HasRemoveSubcommand(t *testing.T) {
 
 func TestWorktreeRemoveCmd_RequiresSlugArg(t *testing.T) {
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "remove"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"remove"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err == nil {
 		t.Error("expected error when slug argument is missing")
 	}
@@ -1484,11 +1486,11 @@ func TestWorktreeRemove_ResolvesDotForgeWorktreesPath(t *testing.T) {
 	})
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "remove", slug})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"remove", slug})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1532,11 +1534,11 @@ func TestWorktreeRemove_RemovesWorktreeAndKeepsBranch(t *testing.T) {
 	})
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "remove", slug})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"remove", slug})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1574,11 +1576,11 @@ func TestWorktreeRemove_ErrorWhenWorktreeNotFound(t *testing.T) {
 	_ = os.Chdir(dir)
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "remove", "nonexistent-worktree"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"remove", "nonexistent-worktree"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err == nil {
 		t.Error("expected error when worktree does not exist")
 	}
@@ -1618,11 +1620,11 @@ func TestWorktreeRemove_ErrorWhenUncommittedChanges(t *testing.T) {
 	}
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "remove", slug})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"remove", slug})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err == nil {
 		t.Error("expected error when worktree has uncommitted changes")
 	}
@@ -1640,11 +1642,11 @@ func TestWorktreeRemove_ErrorWhenNotGitRepo(t *testing.T) {
 	_ = os.Chdir(dir)
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "remove", "test-slug"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"remove", "test-slug"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err == nil {
 		t.Error("expected error when not in a git repository")
 	}
@@ -1654,11 +1656,11 @@ func TestWorktreeRemove_ErrorWhenNotGitRepo(t *testing.T) {
 // worktree remove --hard: hard removal tests
 // ---------------------------------------------------------------------------
 
-// resetHardFlag resets the --hard flag on worktreeRemoveCmd.
+// resetHardFlag resets the --hard flag on removeCmd.
 func resetHardFlag(t *testing.T) {
 	t.Helper()
 	t.Cleanup(func() {
-		f := worktreeRemoveCmd.Flags().Lookup("hard")
+		f := removeCmd.Flags().Lookup("hard")
 		if f != nil {
 			f.Changed = false
 			_ = f.Value.Set("false")
@@ -1666,11 +1668,11 @@ func resetHardFlag(t *testing.T) {
 	})
 }
 
-// resetForceFlag resets the --force flag on worktreeRemoveCmd.
+// resetForceFlag resets the --force flag on removeCmd.
 func resetForceFlag(t *testing.T) {
 	t.Helper()
 	t.Cleanup(func() {
-		f := worktreeRemoveCmd.Flags().Lookup("force")
+		f := removeCmd.Flags().Lookup("force")
 		if f != nil {
 			f.Changed = false
 			_ = f.Value.Set("false")
@@ -1703,11 +1705,11 @@ func TestWorktreeRemove_Hard_RemovesWorktreeAndBranch(t *testing.T) {
 
 	resetHardFlag(t)
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "remove", slug, "--hard"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"remove", slug, "--hard"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1781,11 +1783,11 @@ func TestWorktreeRemove_Hard_UnmergedBranch_WarnsButProceeds(t *testing.T) {
 
 	resetHardFlag(t)
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "remove", slug, "--hard"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"remove", slug, "--hard"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1836,11 +1838,11 @@ func TestWorktreeRemove_Hard_UncommittedChanges_Blocks(t *testing.T) {
 
 	resetHardFlag(t)
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "remove", slug, "--hard"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"remove", slug, "--hard"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err == nil {
 		t.Error("expected error when worktree has uncommitted changes with --hard (no --force)")
 	}
@@ -1890,11 +1892,11 @@ func TestWorktreeRemove_HardForce_UncommittedChanges_Proceeds(t *testing.T) {
 	resetHardFlag(t)
 	resetForceFlag(t)
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "remove", slug, "--hard", "--force"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"remove", slug, "--hard", "--force"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1937,11 +1939,11 @@ func TestWorktreeRemove_WithoutHard_BehaviorUnchanged(t *testing.T) {
 	})
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "remove", slug})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"remove", slug})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -2000,11 +2002,11 @@ func TestWorktreeRemove_Hard_ReportsSkippedBranchIfAlreadyGone(t *testing.T) {
 
 	resetHardFlag(t)
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "remove", slug, "--hard"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"remove", slug, "--hard"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -2048,13 +2050,13 @@ func TestListForgeFeatures(t *testing.T) {
 // Helpers
 // ---------------------------------------------------------------------------
 
-// resetSourceBranchFlag resets the --source-branch flag on worktreeStartCmd to
+// resetSourceBranchFlag resets the --source-branch flag on startCmd to
 // prevent state leakage between tests. Cobra flags persist across Execute calls
 // on the same Command instance.
 func resetSourceBranchFlag(t *testing.T) {
 	t.Helper()
 	t.Cleanup(func() {
-		f := worktreeStartCmd.Flags().Lookup("source-branch")
+		f := startCmd.Flags().Lookup("source-branch")
 		if f != nil {
 			f.Changed = false
 			_ = f.Value.Set("")
@@ -2062,12 +2064,12 @@ func resetSourceBranchFlag(t *testing.T) {
 	})
 }
 
-// resetNoLaunchFlag resets the --no-launch flag on worktreeStartCmd to
+// resetNoLaunchFlag resets the --no-launch flag on startCmd to
 // prevent state leakage between tests.
 func resetNoLaunchFlag(t *testing.T) {
 	t.Helper()
 	t.Cleanup(func() {
-		f := worktreeStartCmd.Flags().Lookup("no-launch")
+		f := startCmd.Flags().Lookup("no-launch")
 		if f != nil {
 			f.Changed = false
 			_ = f.Value.Set("false")
@@ -2368,11 +2370,11 @@ func TestWorktreeStart_CopyFilesFromConfig(t *testing.T) {
 	})
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start", slug})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", slug})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -2417,11 +2419,11 @@ func TestWorktreeStart_AbortsWhenCopyFileMissing(t *testing.T) {
 	}
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start", "test-slug"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", "test-slug"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err == nil {
 		t.Error("expected error when copy-file is missing from project root")
 	}
@@ -2472,11 +2474,11 @@ func TestWorktreeStart_NoCopyWhenConfigAbsent(t *testing.T) {
 	})
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start", slug})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", slug})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -2526,11 +2528,11 @@ func TestWorktreeStart_NoCopyWhenCopyFilesEmpty(t *testing.T) {
 	})
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start", slug})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", slug})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -2546,7 +2548,7 @@ func TestWorktreeStart_NoCopyWhenCopyFilesEmpty(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestWorktreeCmd_HasResumeSubcommand(t *testing.T) {
-	subcommands := worktreeCmd.Commands()
+	subcommands := Cmd.Commands()
 	found := false
 	for _, cmd := range subcommands {
 		if cmd.Name() == "resume" {
@@ -2561,11 +2563,11 @@ func TestWorktreeCmd_HasResumeSubcommand(t *testing.T) {
 
 func TestWorktreeResumeCmd_RequiresSlugArg(t *testing.T) {
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "resume"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"resume"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err == nil {
 		t.Error("expected error when slug argument is missing")
 	}
@@ -2589,11 +2591,11 @@ func TestWorktreeResume_ErrorWhenClaudeNotInPath(t *testing.T) {
 	_ = os.Chdir(dir)
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "resume", "test-slug"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"resume", "test-slug"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err == nil {
 		t.Error("expected error when claude binary not found")
 	}
@@ -2624,11 +2626,11 @@ func TestWorktreeResume_ErrorWhenWorktreeNotFound(t *testing.T) {
 	_ = os.Chdir(dir)
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "resume", "nonexistent-worktree"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"resume", "nonexistent-worktree"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err == nil {
 		t.Error("expected error when worktree does not exist")
 	}
@@ -2659,11 +2661,11 @@ func TestWorktreeResume_ErrorWhenNotGitRepo(t *testing.T) {
 	_ = os.Chdir(dir)
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "resume", "test-slug"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"resume", "test-slug"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err == nil {
 		t.Error("expected error when not in a git repository")
 	}
@@ -2698,11 +2700,11 @@ func TestWorktreeResume_ErrorWhenDirExistsButNotWorktree(t *testing.T) {
 	t.Cleanup(func() { _ = os.RemoveAll(targetDir) })
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "resume", slug})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"resume", slug})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err == nil {
 		t.Error("expected error when directory is not a git worktree")
 	}
@@ -2766,11 +2768,11 @@ func TestWorktreeResume_LaunchesClaudeInExistingWorktree(t *testing.T) {
 	})
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "resume", slug})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"resume", slug})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -2842,11 +2844,11 @@ func TestWorktreeResume_UsesContinueFlagWhenSupported(t *testing.T) {
 	})
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "resume", slug})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"resume", slug})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -2913,11 +2915,11 @@ func TestWorktreeResume_FallsBackWhenContinueNotSupported(t *testing.T) {
 	})
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "resume", slug})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"resume", slug})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -2946,7 +2948,7 @@ type mockGitResponse struct {
 // ---------------------------------------------------------------------------
 
 func TestWorktreeStart_NoLaunchFlagRegistered(t *testing.T) {
-	flag := worktreeStartCmd.Flags().Lookup("no-launch")
+	flag := startCmd.Flags().Lookup("no-launch")
 	if flag == nil {
 		t.Fatal("worktree start command should have --no-launch flag")
 	}
@@ -2992,11 +2994,11 @@ func TestWorktreeStart_NoLaunch_CreatesWorktreeWithoutLaunchingClaude(t *testing
 	})
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start", slug, "--no-launch"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", slug, "--no-launch"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -3067,11 +3069,11 @@ func TestWorktreeStart_NoLaunch_WithSourceBranch(t *testing.T) {
 	})
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start", slug, "--source-branch", "develop", "--no-launch"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", slug, "--source-branch", "develop", "--no-launch"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -3119,11 +3121,11 @@ func TestWorktreeStart_WithoutNoLaunch_LaunchesClaude(t *testing.T) {
 	})
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start", slug})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", slug})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -3169,11 +3171,11 @@ func TestWorktreeStart_BranchFirstCreation_NewBranchFromHead(t *testing.T) {
 	})
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start", slug})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", slug})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -3229,11 +3231,11 @@ func TestWorktreeStart_BranchFirstCreation_SkipsCheckoutWhenBranchExists(t *test
 	})
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start", slug})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", slug})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -3293,11 +3295,11 @@ func TestWorktreeStart_BranchFirstCreation_WithSourceBranch(t *testing.T) {
 	})
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start", slug, "--source-branch", "staging"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", slug, "--source-branch", "staging"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -3372,11 +3374,11 @@ func TestWorktreeStart_BranchFirstCreation_CleansUpBranchOnWorktreeFailure(t *te
 	}
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start", slug})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", slug})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err == nil {
 		t.Error("expected error when worktree add fails")
 	}
@@ -3536,16 +3538,16 @@ func TestWorktreeStart_RemoteBranchResolution(t *testing.T) {
 			_ = os.Chdir(dir)
 
 			buf := new(bytes.Buffer)
-			rootCmd.SetOut(buf)
-			rootCmd.SetErr(buf)
+			Cmd.SetOut(buf)
+			Cmd.SetErr(buf)
 
-			cmdArgs := []string{"worktree", "start", tt.slug}
+			cmdArgs := []string{"start", tt.slug}
 			if tt.sourceBranch != "" {
 				cmdArgs = append(cmdArgs, "--source-branch", tt.sourceBranch)
 			}
-			rootCmd.SetArgs(cmdArgs)
+			Cmd.SetArgs(cmdArgs)
 
-			err := rootCmd.Execute()
+			err := Cmd.Execute()
 
 			if tt.wantErr {
 				if err == nil {
@@ -3920,7 +3922,7 @@ func TestPromptSelection_StdinError(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestWorktreeStart_InteractiveFlagRegistered(t *testing.T) {
-	flag := worktreeStartCmd.Flags().Lookup("interactive")
+	flag := startCmd.Flags().Lookup("interactive")
 	if flag == nil {
 		t.Fatal("worktree start command should have --interactive flag")
 	}
@@ -3935,16 +3937,16 @@ func TestWorktreeStart_InteractiveFlagRegistered(t *testing.T) {
 func TestWorktreeStart_SlugArgIsOptional(t *testing.T) {
 	// The command should accept 0 args when using -i
 	// MaximumNArgs(1) should allow 0 or 1 args
-	if worktreeStartCmd.Args == nil {
-		t.Fatal("worktreeStartCmd.Args should not be nil")
+	if startCmd.Args == nil {
+		t.Fatal("startCmd.Args should not be nil")
 	}
 	// Test that 0 args is accepted by Args validator (but will fail at runtime without -i)
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err == nil {
 		t.Error("expected error when no slug and no -i flag")
 	}
@@ -3985,12 +3987,12 @@ func TestWorktreeStart_SlugTakesPrecedenceOverInteractive(t *testing.T) {
 	})
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
 	// Both -i and slug provided: slug should take precedence
-	rootCmd.SetArgs([]string{"worktree", "start", slug, "-i"})
+	Cmd.SetArgs([]string{"start", slug, "-i"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -4032,11 +4034,11 @@ func TestWorktreeStart_InteractiveEmptyList(t *testing.T) {
 	// No proposals or features in this git repo
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start", "-i"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", "-i"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -4076,11 +4078,11 @@ func TestWorktreeStart_InteractiveNonTTY(t *testing.T) {
 	_ = os.Chdir(dir)
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start", "-i"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", "-i"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err == nil {
 		t.Error("expected error when interactive mode used in non-TTY")
 	}
@@ -4144,11 +4146,11 @@ func TestWorktreeStart_InteractiveSelectsProposal(t *testing.T) {
 	})
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start", "-i"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", "-i"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -4168,11 +4170,11 @@ func TestWorktreeStart_NoSlugNoInteractive(t *testing.T) {
 	resetInteractiveFlag(t)
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "start"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err == nil {
 		t.Error("expected error when no slug and no -i flag")
 	}
@@ -4182,13 +4184,13 @@ func TestWorktreeStart_NoSlugNoInteractive(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// resetInteractiveFlag resets the --interactive flag on worktreeStartCmd.
+// resetInteractiveFlag resets the --interactive flag on startCmd.
 // ---------------------------------------------------------------------------
 
 func resetInteractiveFlag(t *testing.T) {
 	t.Helper()
 	t.Cleanup(func() {
-		f := worktreeStartCmd.Flags().Lookup("interactive")
+		f := startCmd.Flags().Lookup("interactive")
 		if f != nil {
 			f.Changed = false
 			_ = f.Value.Set("false")
@@ -4201,7 +4203,7 @@ func resetInteractiveFlag(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestWorktreeCmd_HasPushSubcommand(t *testing.T) {
-	subcommands := worktreeCmd.Commands()
+	subcommands := Cmd.Commands()
 	found := false
 	for _, cmd := range subcommands {
 		if cmd.Name() == "push" {
@@ -4230,11 +4232,11 @@ func TestWorktreePush_ErrorWhenNotInWorktree(t *testing.T) {
 	defer func() { isInsideWorktreeFunc = origInsideWt }()
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "push"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"push"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err == nil {
 		t.Error("expected error when not inside a worktree")
 	}
@@ -4257,11 +4259,11 @@ func TestWorktreePush_ErrorOnDefaultBranch(t *testing.T) {
 	defer func() { isInsideWorktreeFunc = origInsideWt }()
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "push"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"push"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err == nil {
 		t.Error("expected error when on default branch in worktree")
 	}
@@ -4295,11 +4297,11 @@ func TestWorktreePush_ErrorOnPushFailure(t *testing.T) {
 	defer func() { gitPushFunc = origPushFunc }()
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "push"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"push"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err == nil {
 		t.Error("expected error when push fails")
 	}
@@ -4337,11 +4339,11 @@ func TestWorktreePush_Success(t *testing.T) {
 	defer func() { gitPushFunc = origPushFunc }()
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "push"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"push"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -4378,11 +4380,11 @@ func TestWorktreePush_PrintsPushOutput(t *testing.T) {
 	defer func() { gitPushFunc = origPushFunc }()
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "push"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"push"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -4397,7 +4399,7 @@ func TestWorktreePush_PrintsPushOutput(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestWorktreeCmd_HasStatusSubcommand(t *testing.T) {
-	subcommands := worktreeCmd.Commands()
+	subcommands := Cmd.Commands()
 	found := false
 	for _, cmd := range subcommands {
 		if cmd.Name() == "status" {
@@ -4412,13 +4414,13 @@ func TestWorktreeCmd_HasStatusSubcommand(t *testing.T) {
 
 func TestWorktreeStatusCmd_AcceptsOptionalSlug(t *testing.T) {
 	// status accepts 0 or 1 args
-	if worktreeStatusCmd.Args != nil {
+	if statusCmd.Args != nil {
 		// cobra.MaximumNArgs returns a PositionalArgs function
 		// Verify it allows 0 and 1 args
-		if err := worktreeStatusCmd.Args(worktreeStatusCmd, []string{}); err != nil {
+		if err := statusCmd.Args(statusCmd, []string{}); err != nil {
 			t.Errorf("status should accept 0 args: %v", err)
 		}
-		if err := worktreeStatusCmd.Args(worktreeStatusCmd, []string{"my-slug"}); err != nil {
+		if err := statusCmd.Args(statusCmd, []string{"my-slug"}); err != nil {
 			t.Errorf("status should accept 1 arg: %v", err)
 		}
 	}
@@ -4436,11 +4438,11 @@ func TestWorktreeStatus_ErrorWhenNotGitRepo(t *testing.T) {
 	_ = os.Chdir(dir)
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "status", "my-slug"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"status", "my-slug"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err == nil {
 		t.Error("expected error when not a git repo")
 	}
@@ -4458,11 +4460,11 @@ func TestWorktreeStatus_ErrorOnNonExistentSlug(t *testing.T) {
 	_ = os.Chdir(dir)
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "status", "non-existent-slug"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"status", "non-existent-slug"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err == nil {
 		t.Error("expected error for non-existent slug")
 	}
@@ -4497,11 +4499,11 @@ func TestWorktreeStatus_ShowsBranchAndCommit(t *testing.T) {
 	})
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "status", slug})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"status", slug})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -4551,11 +4553,11 @@ func TestWorktreeStatus_ShowsUncommittedFiles(t *testing.T) {
 	}
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "status", slug})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"status", slug})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -4590,11 +4592,11 @@ func TestWorktreeStatus_CleanWorktree(t *testing.T) {
 	})
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "status", slug})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"status", slug})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -4643,11 +4645,11 @@ func TestWorktreeStatus_NoSlug_ShowsAllForgeWorktrees(t *testing.T) {
 	}
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "status"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"status"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -4670,11 +4672,11 @@ func TestWorktreeStatus_NoSlug_NoWorktrees(t *testing.T) {
 	_ = os.Chdir(dir)
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "status"})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"status"})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -4717,11 +4719,11 @@ func TestWorktreeStatus_IsReadOnly(t *testing.T) {
 	beforeStatus, _ := cmd.Output()
 
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
-	rootCmd.SetArgs([]string{"worktree", "status", slug})
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"status", slug})
 
-	err := rootCmd.Execute()
+	err := Cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -4741,38 +4743,38 @@ func TestWorktreeStatus_IsReadOnly(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestWorktreeStartCmd_HasValidArgsFunction(t *testing.T) {
-	if worktreeStartCmd.ValidArgsFunction == nil {
-		t.Error("worktreeStartCmd should have a ValidArgsFunction for shell completion")
+	if startCmd.ValidArgsFunction == nil {
+		t.Error("startCmd should have a ValidArgsFunction for shell completion")
 	}
 }
 
 func TestWorktreeRemoveCmd_HasValidArgsFunction(t *testing.T) {
-	if worktreeRemoveCmd.ValidArgsFunction == nil {
-		t.Error("worktreeRemoveCmd should have a ValidArgsFunction for shell completion")
+	if removeCmd.ValidArgsFunction == nil {
+		t.Error("removeCmd should have a ValidArgsFunction for shell completion")
 	}
 }
 
 func TestWorktreeResumeCmd_HasValidArgsFunction(t *testing.T) {
-	if worktreeResumeCmd.ValidArgsFunction == nil {
-		t.Error("worktreeResumeCmd should have a ValidArgsFunction for shell completion")
+	if resumeCmd.ValidArgsFunction == nil {
+		t.Error("resumeCmd should have a ValidArgsFunction for shell completion")
 	}
 }
 
 func TestWorktreeListCmd_NoValidArgsFunction(t *testing.T) {
-	if worktreeListCmd.ValidArgsFunction != nil {
-		t.Error("worktreeListCmd should NOT have a ValidArgsFunction (list takes no slug arg)")
+	if listCmd.ValidArgsFunction != nil {
+		t.Error("listCmd should NOT have a ValidArgsFunction (list takes no slug arg)")
 	}
 }
 
 func TestWorktreePushCmd_NoValidArgsFunction(t *testing.T) {
-	if worktreePushCmd.ValidArgsFunction != nil {
-		t.Error("worktreePushCmd should NOT have a ValidArgsFunction (push takes no slug arg)")
+	if pushCmd.ValidArgsFunction != nil {
+		t.Error("pushCmd should NOT have a ValidArgsFunction (push takes no slug arg)")
 	}
 }
 
 func TestWorktreeStatusCmd_NoValidArgsFunction(t *testing.T) {
-	if worktreeStatusCmd.ValidArgsFunction != nil {
-		t.Error("worktreeStatusCmd should NOT have a ValidArgsFunction (status uses optional slug)")
+	if statusCmd.ValidArgsFunction != nil {
+		t.Error("statusCmd should NOT have a ValidArgsFunction (status uses optional slug)")
 	}
 }
 
@@ -4804,7 +4806,7 @@ func TestWorktreeStartCompletion_UnfinishedItems(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	completions, directive := worktreeStartCmd.ValidArgsFunction(worktreeStartCmd, []string{}, "")
+	completions, directive := startCmd.ValidArgsFunction(startCmd, []string{}, "")
 	if directive != cobra.ShellCompDirectiveNoFileComp {
 		t.Errorf("expected ShellCompDirectiveNoFileComp, got %v", directive)
 	}
@@ -4841,7 +4843,7 @@ func TestWorktreeStartCompletion_FilterByPrefix(t *testing.T) {
 		}
 	}
 
-	completions, _ := worktreeStartCmd.ValidArgsFunction(worktreeStartCmd, []string{}, "alpha")
+	completions, _ := startCmd.ValidArgsFunction(startCmd, []string{}, "alpha")
 
 	var slugs []string
 	for _, c := range completions {
@@ -4873,7 +4875,7 @@ func TestWorktreeStartCompletion_SkipsCompleted(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	completions, _ := worktreeStartCmd.ValidArgsFunction(worktreeStartCmd, []string{}, "")
+	completions, _ := startCmd.ValidArgsFunction(startCmd, []string{}, "")
 
 	var slugs []string
 	for _, c := range completions {
@@ -4894,7 +4896,7 @@ func TestWorktreeStartCompletion_ErrorReturnsEmpty(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chdir(origWd) })
 	_ = os.Chdir(dir)
 
-	completions, directive := worktreeStartCmd.ValidArgsFunction(worktreeStartCmd, []string{}, "")
+	completions, directive := startCmd.ValidArgsFunction(startCmd, []string{}, "")
 	if len(completions) != 0 {
 		t.Errorf("error should return empty completions, got %v", completions)
 	}
@@ -4905,7 +4907,7 @@ func TestWorktreeStartCompletion_ErrorReturnsEmpty(t *testing.T) {
 
 func TestWorktreeStartCompletion_AlreadyHasArg(t *testing.T) {
 	// When args already has a slug (cobra.ExactArgs or arg already provided), return empty
-	completions, directive := worktreeStartCmd.ValidArgsFunction(worktreeStartCmd, []string{"existing-slug"}, "")
+	completions, directive := startCmd.ValidArgsFunction(startCmd, []string{"existing-slug"}, "")
 	if len(completions) != 0 {
 		t.Errorf("should return empty when arg already provided, got %v", completions)
 	}
@@ -4936,7 +4938,7 @@ func TestWorktreeRemoveCompletion_ExistingSlugs(t *testing.T) {
 	}
 	defer func() { listWorktreesFunc = origList }()
 
-	completions, directive := worktreeRemoveCmd.ValidArgsFunction(worktreeRemoveCmd, []string{}, "")
+	completions, directive := removeCmd.ValidArgsFunction(removeCmd, []string{}, "")
 	if directive != cobra.ShellCompDirectiveNoFileComp {
 		t.Errorf("expected ShellCompDirectiveNoFileComp, got %v", directive)
 	}
@@ -4977,7 +4979,7 @@ func TestWorktreeRemoveCompletion_FilterByPrefix(t *testing.T) {
 	}
 	defer func() { listWorktreesFunc = origList }()
 
-	completions, _ := worktreeRemoveCmd.ValidArgsFunction(worktreeRemoveCmd, []string{}, "alp")
+	completions, _ := removeCmd.ValidArgsFunction(removeCmd, []string{}, "alp")
 
 	var slugs []string
 	for _, c := range completions {
@@ -5006,7 +5008,7 @@ func TestWorktreeRemoveCompletion_ErrorReturnsEmpty(t *testing.T) {
 	}
 	defer func() { listWorktreesFunc = origList }()
 
-	completions, directive := worktreeRemoveCmd.ValidArgsFunction(worktreeRemoveCmd, []string{}, "")
+	completions, directive := removeCmd.ValidArgsFunction(removeCmd, []string{}, "")
 	if len(completions) != 0 {
 		t.Errorf("error should return empty completions, got %v", completions)
 	}
@@ -5031,7 +5033,7 @@ func TestWorktreeResumeCompletion_ExistingSlugs(t *testing.T) {
 	}
 	defer func() { listWorktreesFunc = origList }()
 
-	completions, directive := worktreeResumeCmd.ValidArgsFunction(worktreeResumeCmd, []string{}, "")
+	completions, directive := resumeCmd.ValidArgsFunction(resumeCmd, []string{}, "")
 	if directive != cobra.ShellCompDirectiveNoFileComp {
 		t.Errorf("expected ShellCompDirectiveNoFileComp, got %v", directive)
 	}
@@ -5060,7 +5062,7 @@ func TestWorktreeResumeCompletion_ErrorReturnsEmpty(t *testing.T) {
 	}
 	defer func() { listWorktreesFunc = origList }()
 
-	completions, directive := worktreeResumeCmd.ValidArgsFunction(worktreeResumeCmd, []string{}, "")
+	completions, directive := resumeCmd.ValidArgsFunction(resumeCmd, []string{}, "")
 	if len(completions) != 0 {
 		t.Errorf("error should return empty completions, got %v", completions)
 	}
@@ -5084,7 +5086,7 @@ func TestWorktreeRemoveCompletion_ExcludesMainWorktree(t *testing.T) {
 	}
 	defer func() { listWorktreesFunc = origList }()
 
-	completions, _ := worktreeRemoveCmd.ValidArgsFunction(worktreeRemoveCmd, []string{}, "")
+	completions, _ := removeCmd.ValidArgsFunction(removeCmd, []string{}, "")
 	if len(completions) != 0 {
 		t.Errorf("only main worktree — should return empty, got %v", completions)
 	}
