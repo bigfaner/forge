@@ -1,10 +1,12 @@
-package cmd
+package test
 
 import (
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"forge-cli/internal/cmd/base"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -13,7 +15,7 @@ import (
 
 func TestTestPromote_CommandRegistered(t *testing.T) {
 	found := false
-	for _, cmd := range testCmd.Commands() {
+	for _, cmd := range Cmd.Commands() {
 		if cmd.Name() == "promote" {
 			found = true
 			break
@@ -329,19 +331,19 @@ func TestPromoteJourneyTags_MultipleLanguages(t *testing.T) {
 
 func TestValidateJourneyName_RejectsPathTraversal(t *testing.T) {
 	err := validateJourneyName("../other-journey")
-	assert.Equal(t, ErrInvalidPath, err.Code)
+	assert.Equal(t, base.ErrInvalidPath, err.Code)
 	assert.Contains(t, err.Cause, "..")
 }
 
 func TestValidateJourneyName_RejectsDoubleDot(t *testing.T) {
 	err := validateJourneyName("foo/../../bar")
-	assert.Equal(t, ErrInvalidPath, err.Code)
+	assert.Equal(t, base.ErrInvalidPath, err.Code)
 	assert.Contains(t, err.Cause, "..")
 }
 
 func TestValidateJourneyName_RejectsAbsolutePath(t *testing.T) {
 	err := validateJourneyName("/etc/passwd")
-	assert.Equal(t, ErrInvalidPath, err.Code)
+	assert.Equal(t, base.ErrInvalidPath, err.Code)
 }
 
 func TestValidateJourneyName_AcceptsSimpleName(t *testing.T) {
@@ -356,7 +358,7 @@ func TestValidateJourneyName_AcceptsHyphenatedName(t *testing.T) {
 
 func TestValidateJourneyName_RejectsJustDotDot(t *testing.T) {
 	err := validateJourneyName("..")
-	assert.Equal(t, ErrInvalidPath, err.Code)
+	assert.Equal(t, base.ErrInvalidPath, err.Code)
 }
 
 func TestPromoteDiffSummary_ShowsChanges(t *testing.T) {

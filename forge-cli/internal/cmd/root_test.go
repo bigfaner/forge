@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	taskpkg "forge-cli/internal/cmd/task"
+	testpkg "forge-cli/internal/cmd/test"
 )
 
 func TestRootCmd_Structure(t *testing.T) {
@@ -102,7 +103,7 @@ func TestRootCmd_ForensicGroupHasSubcommands(t *testing.T) {
 }
 
 func TestRootCmd_TestGroupHasSubcommands(t *testing.T) {
-	subcommands := testCmd.Commands()
+	subcommands := testpkg.Cmd.Commands()
 	if len(subcommands) == 0 {
 		t.Error("test group should have subcommands")
 	}

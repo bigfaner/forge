@@ -11,21 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// --- Test: forge test verify command registered ---
-
-func TestTestVerify_CommandRegistered(t *testing.T) {
-	found := false
-	for _, cmd := range testCmd.Commands() {
-		if cmd.Name() == "verify" {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Error("test group missing 'verify' subcommand")
-	}
-}
-
 // --- Test: forge test verify with no contracts returns unverifiable (Exit via Total==0) ---
 
 func TestTestVerify_NoContracts_ReturnsEmpty(t *testing.T) {

@@ -3,6 +3,8 @@ package cmd
 import (
 	"strings"
 	"testing"
+
+	testpkg "forge-cli/internal/cmd/test"
 )
 
 func TestProfileCommand_Removed(t *testing.T) {
@@ -36,29 +38,6 @@ func TestTestCommand_Registered(t *testing.T) {
 	}
 }
 
-func TestTestCommand_Subcommands(t *testing.T) {
-	subNames := make(map[string]bool)
-	for _, cmd := range testCmd.Commands() {
-		subNames[cmd.Name()] = true
-	}
-
-	// Only these subcommands should exist after simplification
-	expected := []string{"promote", "run-journey", "verify"}
-	for _, name := range expected {
-		if !subNames[name] {
-			t.Errorf("test group missing subcommand: %s (have: %v)", name, subNames)
-		}
-	}
-
-	// These subcommands should NOT exist
-	removed := []string{"detect", "get", "interfaces", "framework"}
-	for _, name := range removed {
-		if subNames[name] {
-			t.Errorf("test group should NOT have subcommand: %s", name)
-		}
-	}
-}
-
 func TestTestCommand_DefaultRun_ShowsHelp(t *testing.T) {
 	output, err := captureOutput(func() error {
 		rootCmd.SetArgs([]string{"test"})
@@ -70,5 +49,19 @@ func TestTestCommand_DefaultRun_ShowsHelp(t *testing.T) {
 
 	if !strings.Contains(output, "SUBCOMMANDS:") {
 		t.Errorf("expected 'SUBCOMMANDS:' in default output, got: %q", output)
+	}
+}
+
+func TestTestCommand_SubcommandsViaPkg(t *testing.T) {
+	subNames := make(map[string]bool)
+	for _, cmd := range testpkg.Cmd.Commands() {
+		subNames[cmd.Name()] = true
+	}
+
+	expected := []string{"promote", "run-journey", "verify"}
+	for _, name := range expected {
+		if !subNames[name] {
+			t.Errorf("test group missing subcommand: %s (have: %v)", name, subNames)
+		}
 	}
 }

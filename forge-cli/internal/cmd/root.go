@@ -5,6 +5,7 @@ import (
 	"os"
 
 	taskpkg "forge-cli/internal/cmd/task"
+	testpkg "forge-cli/internal/cmd/test"
 
 	"github.com/spf13/cobra"
 )
@@ -26,13 +27,14 @@ func Execute() {
 }
 
 func init() {
-	// Initialize task subcommands
+	// Initialize subcommand groups
 	taskpkg.Register()
+	testpkg.Register()
 
 	// Group parents (5)
 	rootCmd.AddCommand(taskpkg.Cmd)
 	rootCmd.AddCommand(forensicCmd)
-	rootCmd.AddCommand(testCmd)
+	rootCmd.AddCommand(testpkg.Cmd)
 	rootCmd.AddCommand(promptCmd)
 	rootCmd.AddCommand(worktreeCmd)
 
