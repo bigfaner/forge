@@ -431,6 +431,17 @@
       "sourceTaskID": "2.5",
       "type": "coding.fix"
     },
+    "fix.3": {
+      "id": "fix.3",
+      "title": "Remove unused indexPkg imports from build.go and index.go",
+      "priority": "P0",
+      "status": "completed",
+      "file": "fix.3.md",
+      "record": "records/fix.3.md",
+      "breaking": true,
+      "sourceTaskID": "2.6",
+      "type": "coding.fix"
+    },
     "gen-test-cases": {
       "id": "T-test-gen-cases",
       "title": "Generate e2e Test Cases",
