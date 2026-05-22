@@ -11,4 +11,10 @@ func PreserveRuntimeFields(existing, newTask *Task) {
 	newTask.Status = existing.Status
 	newTask.SourceTaskID = existing.SourceTaskID
 	newTask.BlockedReason = existing.BlockedReason
+	// Preserve Dependencies: some are added programmatically (e.g., by AddTask for fix-task
+	// chains). If newTask (from frontmatter) has its own dependencies, they are superseded
+	// by the existing runtime state — the caller should update frontmatter for permanent changes.
+	if len(existing.Dependencies) > 0 {
+		newTask.Dependencies = existing.Dependencies
+	}
 }

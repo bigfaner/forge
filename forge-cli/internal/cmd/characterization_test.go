@@ -88,7 +88,7 @@ func TestAdd_BlockSource_CurrentBehavior_AllowsCompletedToBlocked(t *testing.T) 
 	t.Run("block-source reports blocked even for completed source", func(t *testing.T) {
 		dir := setupFullProject(t, SetupOpts{
 			Tasks: map[string]task.Task{
-				"source": {ID: "1", Title: "Source Task", Status: "completed", Priority: "P0", File: "1.md", Record: "records/1.md"},
+				"source": {ID: "1", Title: "Source Task", Status: "completed", Priority: "P0", Type: task.TypeCodingFeature, File: "1.md", Record: "records/1.md"},
 			},
 		})
 
@@ -122,7 +122,9 @@ func TestAdd_BlockSource_CurrentBehavior_AllowsCompletedToBlocked(t *testing.T) 
 		indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
 		index, _ := task.LoadIndex(indexPath)
 
-		srcTask, exists := index.ByID("source")
+		// After Phase 2, BuildIndex re-keys tasks by filename.
+		// The source task has File "1.md" so its key is "1", not "source".
+		srcTask, exists := index.ByID("1")
 		if !exists {
 			t.Fatal("source task not found in index")
 		}
@@ -438,18 +440,18 @@ func TestBuildIndex_Orphan_WarningOnly(t *testing.T) {
 		}
 	}
 	if !found {
-		t.Errorf("CURRENT BEHAVIOR: expected orphan warning, got %v", result.Warnings)
+		t.Errorf("PHASE 2: expected orphan warning for removed orphan, got %v", result.Warnings)
 	}
 
 	if result.PreservedCount != 1 {
-		t.Errorf("CURRENT BEHAVIOR: expected PreservedCount=1 (orphan preserved), got %d", result.PreservedCount)
+		t.Errorf("PHASE 2: expected PreservedCount=1 (orphan removed), got %d", result.PreservedCount)
 	}
 
-	// Verify the orphan is still in the index (not cleaned)
+	// PHASE 2 BEHAVIOR: orphan is removed from the index (not preserved)
 	index, _ := task.LoadIndex(indexPath)
 	_, exists := index.ByID("1")
-	if !exists {
-		t.Error("CURRENT BEHAVIOR: orphan task should be preserved in index, not removed")
+	if exists {
+		t.Error("PHASE 2: orphan task should be removed from index, not preserved")
 	}
 }
 

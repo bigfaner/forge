@@ -73,11 +73,12 @@ func setupFullProject(t *testing.T, opts SetupOpts) (dir string) {
 		t.Fatal(err)
 	}
 
-	// Create task markdown files
+	// Create task markdown files (with proper frontmatter for BuildIndex compatibility)
 	tasksDir := filepath.Join(dir, feature.GetFeatureTasksDir(featureName))
 	for _, t2 := range opts.Tasks {
 		if t2.File != "" {
-			if err := os.WriteFile(filepath.Join(tasksDir, t2.File), []byte("# "+t2.Title), 0644); err != nil {
+			content := buildTestTaskMD(t2)
+			if err := os.WriteFile(filepath.Join(tasksDir, t2.File), []byte(content), 0644); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -110,6 +111,39 @@ func setupFullProject(t *testing.T, opts SetupOpts) (dir string) {
 		}
 	}
 	return dir
+}
+
+// buildTestTaskMD generates markdown with YAML frontmatter for a test task.
+// This ensures BuildIndex can parse the file and preserve the task in the index.
+func buildTestTaskMD(t task.Task) string {
+	var b strings.Builder
+	b.WriteString("---\n")
+	fmt.Fprintf(&b, "id: %q\n", t.ID)
+	fmt.Fprintf(&b, "title: %q\n", t.Title)
+	if t.Priority != "" {
+		fmt.Fprintf(&b, "priority: %q\n", t.Priority)
+	}
+	if t.Status != "" {
+		fmt.Fprintf(&b, "status: %q\n", t.Status)
+	}
+	if t.Type != "" {
+		fmt.Fprintf(&b, "type: %q\n", t.Type)
+	}
+	if len(t.Dependencies) > 0 {
+		b.WriteString("dependencies:\n")
+		for _, d := range t.Dependencies {
+			fmt.Fprintf(&b, "  - %q\n", d)
+		}
+	}
+	if t.Breaking {
+		b.WriteString("breaking: true\n")
+	}
+	if t.EstimatedTime != "" {
+		fmt.Fprintf(&b, "estimated_time: %q\n", t.EstimatedTime)
+	}
+	b.WriteString("---\n\n")
+	fmt.Fprintf(&b, "# %s\n", t.Title)
+	return b.String()
 }
 
 // ---------- verifyTaskCompletion ----------

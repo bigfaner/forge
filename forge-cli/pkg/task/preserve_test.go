@@ -12,10 +12,10 @@ func TestPreserveRuntimeFields(t *testing.T) {
 		expected Task
 	}{
 		{
-			name:     "preserves all runtime fields",
-			existing: &Task{Status: "in_progress", SourceTaskID: "source-1", BlockedReason: "waiting for review"},
+			name:     "preserves all runtime fields including Dependencies",
+			existing: &Task{Status: "in_progress", SourceTaskID: "source-1", BlockedReason: "waiting for review", Dependencies: []string{"fix-1"}},
 			newTask:  Task{ID: "1", Title: "Test", Status: "pending"},
-			expected: Task{ID: "1", Title: "Test", Status: "in_progress", SourceTaskID: "source-1", BlockedReason: "waiting for review"},
+			expected: Task{ID: "1", Title: "Test", Status: "in_progress", SourceTaskID: "source-1", BlockedReason: "waiting for review", Dependencies: []string{"fix-1"}},
 		},
 		{
 			name:     "nil existing does nothing",
@@ -43,6 +43,16 @@ func TestPreserveRuntimeFields(t *testing.T) {
 			}
 			if newCopy.BlockedReason != tt.expected.BlockedReason {
 				t.Errorf("BlockedReason = %q, want %q", newCopy.BlockedReason, tt.expected.BlockedReason)
+			}
+			// Dependencies preservation
+			if len(newCopy.Dependencies) != len(tt.expected.Dependencies) {
+				t.Errorf("Dependencies = %v, want %v", newCopy.Dependencies, tt.expected.Dependencies)
+			} else {
+				for i, d := range newCopy.Dependencies {
+					if d != tt.expected.Dependencies[i] {
+						t.Errorf("Dependencies[%d] = %q, want %q", i, d, tt.expected.Dependencies[i])
+					}
+				}
 			}
 			// Ensure fields NOT in PreserveRuntimeFields are not affected
 			if newCopy.ID != tt.newTask.ID {
