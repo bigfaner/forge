@@ -1,7 +1,7 @@
 ---
 name: eval
 description: Generic document evaluation with scorer→gate→revise loop. Parameterized by rubric file. Supports 100-point and 1000-point scales. Detects UI platform for eval-ui. Skips reviser when iterations ≤ 1.
-argument-hint: "[--type <type>] [--target 900] [--iterations 3] [--freeform-expert]"
+argument-hint: "[--type <type>] [--target 900] [--iterations 3]"
 effort: high
 ---
 
@@ -36,12 +36,9 @@ If missing, tell user to create it first.
 | `--type` | (required) | `proposal`, `prd`, `design`, `ui`, `ui-web`, `ui-mobile`, `ui-tui`, `test-cases`, `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases`, `consistency`, `validate-code`, `validate-ux` |
 | `--target` | rubric frontmatter | Override target score |
 | `--iterations` | rubric frontmatter | Override max iterations |
-| `--freeform-expert` | (disabled) | `proposal` only: enable Phase 0 freeform expert review before rubric scoring |
 | `--scope` | `docs` | `consistency` only: `docs` or `full` |
 
 Resolution: explicit `--type` in `<command-args>` → command name `/eval-<type>` → ask user.
-
-**`--freeform-expert` behavior**: Only effective when `--type proposal`. Ignored silently for all other types (no error, no warning). When enabled, inserts Phase 0 (freeform expert review) before the standard rubric loop. When not provided, the eval pipeline runs identically to the current behavior — no Phase 0, no extra steps.
 
 ### Rubric Context Frontmatter (optional)
 
@@ -53,7 +50,7 @@ Rubrics may declare a `context` frontmatter field to inject project reality file
 flowchart TD
     A([Start]) --> B["1. Resolve Type & Load Rubric"]
     B --> BAK["1.5 Backup DOC_DIR"]
-    BAK --> P0{"--freeform-expert\n&& type == proposal?"}
+    BAK --> P0{"type == proposal?"}
     P0 -->|"no"| C{"iterations ≤ 1?"}
     P0 -->|"yes"| P0A["Phase 0: Expert Inference"]
     P0A --> P0B{"Expert confirmed?"}
@@ -143,9 +140,9 @@ cp -r "$DOC_DIR" "${DOC_DIR}.bak"
 
 This backup is used for automatic rollback if all iterations are exhausted without reaching the target score (see Step 5: Rollback on Failure). If no `DOC_DIR` was resolved (e.g., `harness` type), skip backup creation silently.
 
-## Phase 0: Freeform Expert Review (only when `--freeform-expert` and type is `proposal`)
+## Phase 0: Freeform Expert Review (proposal only — two-tier sequential approval)
 
-This phase is executed **only** when the user passes `--freeform-expert` and the resolved type is `proposal`. For all other types or when the parameter is absent, skip directly to the Expert Dispatch Table (standard flow). The orchestrator iron laws apply: Phase 0 delegates to subagents via Agent tool, the main session orchestrates.
+This phase is executed **by default** when the resolved type is `proposal`. The design follows a sequential approval model: domain expert reviews first (Phase 0), then CTO reviews via rubric (Steps 2–4). Domain-specific findings from Phase 0 are injected into the CTO rubric scorer, ensuring the CTO evaluation accounts for issues the rubric alone would miss. For all other types, skip directly to the Expert Dispatch Table. The orchestrator iron laws apply: Phase 0 delegates to subagents via Agent tool, the main session orchestrates.
 
 ### P0.1: Expert Reuse Check
 

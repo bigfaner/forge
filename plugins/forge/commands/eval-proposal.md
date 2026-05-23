@@ -1,6 +1,6 @@
 ---
 name: eval-proposal
-description: Evaluate a proposal document with 1000-point scoring, then run adversarial iterations until target score is met. Specify target score and max iterations.
-argument-hint: "[--target 900] [--iterations 3] [--freeform-expert]"
+description: Two-tier sequential evaluation: domain expert freeform review → CTO rubric scoring. Dynamic expert generated per proposal domain. Specify target score and max iterations.
+argument-hint: "[--target 900] [--iterations 3]"
 ---
-Skill(skill="forge:eval", args="--type proposal [--target N] [--iterations N] [--freeform-expert]")
+Skill(skill="forge:eval", args="--type proposal [--target N] [--iterations N]")
