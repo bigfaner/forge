@@ -78,7 +78,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "6-type-aware-validation.md",
       "record": "records/6-type-aware-validation.md",
       "scope": "backend",

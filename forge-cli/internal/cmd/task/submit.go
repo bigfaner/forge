@@ -139,7 +139,7 @@ func doSubmit(projectRoot, featureSlug, indexPath, taskIDArg string) error {
 	targetStatus := rd.Status
 
 	// Validate required and recommended fields
-	validateRecordData(rd)
+	validateRecordData(rd, t.Type)
 
 	// State machine validation: check transition before proceeding
 	if targetStatus == "completed" {
@@ -299,18 +299,24 @@ func readSubmitData(dataPath string) (*task.RecordData, error) {
 }
 
 // validateRecordData checks required and recommended fields in task.RecordData.
-// Hard-required fields (missing = error): summary
-// Auto-downgrade: completed + testsFailed > 0 → blocked (non-overridable)
-// Hard validation for completed tasks:
+// taskType determines which checks apply based on category:
+//   - coding: full validation (test evidence, testsFailed auto-downgrade)
+//   - doc/test/validation/gate: skip test evidence and testsFailed checks
+//
+// Hard-required fields (missing = error): summary (all categories)
+// Auto-downgrade (coding only): completed + testsFailed > 0 → blocked
+// Hard validation for completed coding tasks:
 //   - testsPassed=0 && testsFailed=0 with coverage >= 0
 //   - any acceptanceCriteria with met=false
 //
-// Recommended fields for "completed" status (missing = warning):
+// Recommended fields for "completed" status (missing = warning, all categories):
 //   - keyDecisions, acceptanceCriteria
-func validateRecordData(rd *task.RecordData) {
+func validateRecordData(rd *task.RecordData, taskType string) {
+	isCoding := task.CategoryForType(taskType) == task.CategoryCoding
+
 	var missing []string
 
-	// Hard-required fields
+	// Hard-required fields (all categories)
 	if strings.TrimSpace(rd.Summary) == "" {
 		missing = append(missing, "summary")
 	}
@@ -319,8 +325,8 @@ func validateRecordData(rd *task.RecordData) {
 		base.Exit(base.ErrMissingFields(missing))
 	}
 
-	// Auto-downgrade: completed with test failures → blocked (non-overridable)
-	if rd.Status == "completed" && rd.TestsFailed > 0 {
+	// Auto-downgrade (coding only): completed with test failures → blocked
+	if isCoding && rd.Status == "completed" && rd.TestsFailed > 0 {
 		fmt.Fprintf(os.Stderr, "---\nWARNING: %d test failures detected — auto-downgrading status from 'completed' to 'blocked'\nHINT: Fix test failures, then re-record with status 'completed'\n---\n", rd.TestsFailed)
 		rd.Status = "blocked"
 	}
@@ -329,28 +335,28 @@ func validateRecordData(rd *task.RecordData) {
 		return
 	}
 
-	// Hard validation for completed tasks
-	{
+	// Hard validation for completed tasks (coding only)
+	if isCoding {
 		// Reject completed with no test evidence (unless coverage=-1.0 signals "no tests")
 		if rd.Coverage >= 0 && rd.TestsPassed == 0 && rd.TestsFailed == 0 {
 			base.Exit(base.ErrNoTestEvidence())
 		}
+	}
 
-		// Reject completed with unmet acceptance criteria
-		if len(rd.AcceptanceCriteria) > 0 {
-			var unmet []string
-			for _, ac := range rd.AcceptanceCriteria {
-				if !ac.Met {
-					unmet = append(unmet, ac.Criterion)
-				}
+	// Reject completed with unmet acceptance criteria (all categories)
+	if len(rd.AcceptanceCriteria) > 0 {
+		var unmet []string
+		for _, ac := range rd.AcceptanceCriteria {
+			if !ac.Met {
+				unmet = append(unmet, ac.Criterion)
 			}
-			if len(unmet) > 0 {
-				base.Exit(base.ErrUnmetAcceptanceCriteria(unmet))
-			}
+		}
+		if len(unmet) > 0 {
+			base.Exit(base.ErrUnmetAcceptanceCriteria(unmet))
 		}
 	}
 
-	// Recommended fields for completed tasks
+	// Recommended fields for completed tasks (all categories)
 	var recommended []string
 	if len(rd.KeyDecisions) == 0 {
 		recommended = append(recommended, "keyDecisions")
