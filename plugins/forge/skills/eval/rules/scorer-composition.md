@@ -13,6 +13,7 @@ Expert files are located at `experts/scorer/`.
 | `contract` | `[qa]` |
 | `validate-code` | `[code-reviewer]` |
 | `validate-ux` | `[ux-auditor]` |
+| `harness` | _(uses generic inline fallback)_ |
 
 Fallback for unmapped types: use the generic inline prompt below (no expert file loaded).
 
