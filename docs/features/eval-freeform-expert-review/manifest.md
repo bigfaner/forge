@@ -9,6 +9,10 @@ mode: quick
 
 <!-- Status flow: tasks -> in-progress -> completed -->
 
+## Overview
+
+为 eval-proposal 增加 `--freeform-expert` 参数，启用后在 rubric 循环之前插入 Phase 0 自由专家评审阶段。动态生成领域专家进行纯叙事评审，提取 key findings 并注入 rubric scorer，覆盖 rubric 维度之外的盲点。
+
 ## Documents
 
 | Document | Path |

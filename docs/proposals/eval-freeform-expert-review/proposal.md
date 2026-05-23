@@ -8,7 +8,11 @@ status: Approved
 
 ## Problem
 
-eval-proposal 的评审体验过于机械化——固定 rubric 维度强制评分、三阶段流水线协议（推理审计→打分→盲点搜索），导致评审产出像一份检查清单而非专家洞察。rubric 覆盖了已知失败模式，但无法发现文档特有的、超出预设维度的问题。具体而言：rubric scorer 的 prompt 缺少领域特有上下文，导致 scorer 在已知维度上评分准确、在文档特有风险上视而不见。本提案不改变 rubric 本身（维度和评分标准保持不变），而是通过前置自由评审阶段，为 rubric scorer 补充其缺失的领域上下文，使 scorer 在评分时能"看到"rubric 维度之外的问题。注入机制的工作方式：提取的 key findings 以显式 attack points 列表形式追加到 scorer prompt 末尾，scorer 被要求在评分时回应这些 attack points。需明确界定：注入扩展的是 scorer 在固定 rubric 维度内的注意力范围（例如，在「隐藏成本」维度下，scorer 原本不会关注分布式一致性的脑裂成本，但注入后发现该维度后可以将其纳入考量），而非扩展评分维度本身。对于确实无法映射到任何 rubric 维度的发现（如纯架构层面的新颖风险），scorer 会将其记录在 blindspot 搜索阶段产出的「rubric 外发现」区域（以 `[beyond-rubric]` 标签标注，附在 eval report 的 ATTACKS 列表末尾，与 `[blindspot]` 标签并列），而非强行归入某个维度打分。
+eval-proposal 的评审体验过于机械化——固定 rubric 维度强制评分、三阶段流水线协议（推理审计→打分→盲点搜索），导致评审产出像一份检查清单而非专家洞察。rubric 覆盖了已知失败模式，但无法发现文档特有的、超出预设维度的问题。具体而言：rubric scorer 的 prompt 缺少领域特有上下文，导致 scorer 在已知维度上评分准确、在文档特有风险上视而不见。
+
+本提案不改变 rubric 本身（维度和评分标准保持不变），而是通过前置自由评审阶段（下称 **Phase 0**），为 rubric scorer 补充其缺失的领域上下文，使 scorer 在评分时能"看到"rubric 维度之外的问题。注入机制的工作方式：自由评审的叙事产出经过结构化提取后成为 **key findings**（JSON 数组），再以显式 **attack points** 列表形式追加到 scorer prompt 末尾，scorer 被要求在评分时回应这些 attack points。数据管道为：叙事 → 提取 key findings → 注入为 attack points。
+
+需明确界定：注入扩展的是 scorer 在固定 rubric 维度内的注意力范围（例如，在「隐藏成本」维度下，scorer 原本不会关注分布式一致性的脑裂成本，但注入后可将该风险纳入考量），而非扩展评分维度本身。对于确实无法映射到任何 rubric 维度的发现（如纯架构层面的新颖风险），scorer 会将其记录在 blindspot 搜索阶段产出的「rubric 外发现」区域（以 `[beyond-rubric]` 标签标注，附在 eval report 的 ATTACKS 列表末尾，与 `[blindspot]` 标签并列），而非强行归入某个维度打分。
 
 ### Evidence
 
