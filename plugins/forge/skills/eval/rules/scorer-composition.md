@@ -40,6 +40,23 @@ The following project reference material is provided for reality-checking the ev
 
 For unmapped types (not in dispatch table), compose a single prompt using the generic inline fallback above plus the scorer protocol (with variables replaced) plus context injection.
 
+# Freeform Findings Injection (Phase 0)
+
+When Phase 0 was executed and produced valid findings (i.e., `FREEFORM_INJECTION = true` in the eval skill), append the `<injected-freeform-findings>` block **after** all existing sections in the composed scorer prompt.
+
+Follow the injection rules in `rules/freeform-injection.md`:
+1. Format the validated findings array into `{{FORMATTED_FINDINGS}}` (one line per finding: `- **[severity]** summary | 原文引用: "quote"`)
+2. Wrap in `<injected-freeform-findings>` block with the standard header and instructions
+3. If `LOW_HIT_RATE = true`, include the partial extraction annotation and append the complete freeform review narrative
+
+**Order in final composed prompt** (when freeform injection is active):
+1. Scorer protocol (with template variables replaced)
+2. Expert file content
+3. `<injected-context>` block (if CONTEXT_CONTENT was loaded)
+4. `<injected-freeform-findings>` block (if FREEFORM_INJECTION = true)
+
+When `FREEFORM_INJECTION` is not set (no `--freeform-expert`, or Phase 0 degraded), no freeform block is added — the composed prompt is identical to the standard flow.
+
 # Scorer Agent Inputs
 
 Common inputs for all agents:
