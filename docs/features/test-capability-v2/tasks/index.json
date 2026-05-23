@@ -1,0 +1,346 @@
+{
+  "feature": "test-capability-v2",
+  "prd": "prd/prd-spec.md",
+  "design": "design/tech-design.md",
+  "proposal": "docs/proposals/test-capability-v2/proposal.md",
+  "created": "2026-05-23",
+  "tasks": {
+    "1.1-retire-gen-test-cases": {
+      "id": "1.1",
+      "title": "Retire gen-test-cases + eval-test-cases",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "status": "pending",
+      "file": "1.1-retire-gen-test-cases.md",
+      "record": "records/1.1-retire-gen-test-cases.md",
+      "scope": "all",
+      "type": "coding.cleanup"
+    },
+    "1.2-retire-test-graduate": {
+      "id": "1.2",
+      "title": "Retire test.graduate task type",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "status": "pending",
+      "file": "1.2-retire-test-graduate.md",
+      "record": "records/1.2-retire-test-graduate.md",
+      "scope": "all",
+      "type": "coding.cleanup"
+    },
+    "1.gate": {
+      "id": "1.gate",
+      "title": "Phase 1 Gate",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1.summary"
+      ],
+      "status": "pending",
+      "file": "1.gate.md",
+      "record": "records/1.gate.md",
+      "breaking": true,
+      "type": "gate"
+    },
+    "1.summary": {
+      "id": "1.summary",
+      "title": "Phase 1 Summary",
+      "priority": "P0",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "1.1",
+        "1.2"
+      ],
+      "status": "pending",
+      "file": "1.summary.md",
+      "record": "records/1.summary.md",
+      "type": "doc.summary"
+    },
+    "2.1-surface-rules": {
+      "id": "2.1",
+      "title": "Create Surface Rules + Detection",
+      "priority": "P0",
+      "estimatedTime": "3h",
+      "dependencies": [
+        "1.gate"
+      ],
+      "status": "pending",
+      "file": "2.1-surface-rules.md",
+      "record": "records/2.1-surface-rules.md",
+      "scope": "all",
+      "type": "coding.feature"
+    },
+    "2.10-quality-gate": {
+      "id": "2.10",
+      "title": "Update quality gate for multi-stage eval",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1.gate",
+        "2.2",
+        "2.3",
+        "2.9"
+      ],
+      "status": "pending",
+      "file": "2.10-quality-gate.md",
+      "record": "records/2.10-quality-gate.md",
+      "scope": "all",
+      "type": "coding.enhancement"
+    },
+    "2.2-eval-journey": {
+      "id": "2.2",
+      "title": "Create eval-journey rubric + command",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1.gate"
+      ],
+      "status": "pending",
+      "file": "2.2-eval-journey.md",
+      "record": "records/2.2-eval-journey.md",
+      "scope": "all",
+      "type": "coding.feature"
+    },
+    "2.3-eval-contract": {
+      "id": "2.3",
+      "title": "Create eval-contract rubric + command",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1.gate"
+      ],
+      "status": "pending",
+      "file": "2.3-eval-contract.md",
+      "record": "records/2.3-eval-contract.md",
+      "scope": "all",
+      "type": "coding.feature"
+    },
+    "2.4-fact-table-cli": {
+      "id": "2.4",
+      "title": "Implement forge fact CLI subcommand",
+      "priority": "P0",
+      "estimatedTime": "3h",
+      "dependencies": [
+        "1.gate"
+      ],
+      "status": "pending",
+      "file": "2.4-fact-table-cli.md",
+      "record": "records/2.4-fact-table-cli.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "2.5-risk-density": {
+      "id": "2.5",
+      "title": "Enhance gen-contracts with risk-driven density",
+      "priority": "P1",
+      "estimatedTime": "2.5h",
+      "dependencies": [
+        "1.gate",
+        "2.1"
+      ],
+      "status": "pending",
+      "file": "2.5-risk-density.md",
+      "record": "records/2.5-risk-density.md",
+      "scope": "all",
+      "type": "coding.enhancement"
+    },
+    "2.6-scripts-surface-diff": {
+      "id": "2.6",
+      "title": "Enhance gen-test-scripts for surface differentiation",
+      "priority": "P1",
+      "estimatedTime": "3h",
+      "dependencies": [
+        "1.gate",
+        "2.1"
+      ],
+      "status": "pending",
+      "file": "2.6-scripts-surface-diff.md",
+      "record": "records/2.6-scripts-surface-diff.md",
+      "scope": "all",
+      "type": "coding.enhancement"
+    },
+    "2.7-run-to-learn": {
+      "id": "2.7",
+      "title": "Implement Run-to-Learn mechanism",
+      "priority": "P1",
+      "estimatedTime": "3h",
+      "dependencies": [
+        "1.gate",
+        "2.4",
+        "2.6"
+      ],
+      "status": "pending",
+      "file": "2.7-run-to-learn.md",
+      "record": "records/2.7-run-to-learn.md",
+      "scope": "all",
+      "type": "coding.feature"
+    },
+    "2.8-env-readiness": {
+      "id": "2.8",
+      "title": "Add environment readiness detection",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1.gate",
+        "2.1"
+      ],
+      "status": "pending",
+      "file": "2.8-env-readiness.md",
+      "record": "records/2.8-env-readiness.md",
+      "scope": "all",
+      "type": "coding.enhancement"
+    },
+    "2.9-confidence-rating": {
+      "id": "2.9",
+      "title": "Add confidence rating system",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1.gate",
+        "2.4"
+      ],
+      "status": "pending",
+      "file": "2.9-confidence-rating.md",
+      "record": "records/2.9-confidence-rating.md",
+      "scope": "all",
+      "type": "coding.enhancement"
+    },
+    "2.gate": {
+      "id": "2.gate",
+      "title": "Phase 2 Gate",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "2.summary"
+      ],
+      "status": "pending",
+      "file": "2.gate.md",
+      "record": "records/2.gate.md",
+      "breaking": true,
+      "type": "gate"
+    },
+    "2.summary": {
+      "id": "2.summary",
+      "title": "Phase 2 Summary",
+      "priority": "P0",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "2.1",
+        "2.10",
+        "2.2",
+        "2.3",
+        "2.4",
+        "2.5",
+        "2.6",
+        "2.7",
+        "2.8",
+        "2.9"
+      ],
+      "status": "pending",
+      "file": "2.summary.md",
+      "record": "records/2.summary.md",
+      "type": "doc.summary"
+    },
+    "3.1-convention-migration": {
+      "id": "3.1",
+      "title": "Migrate existing conventions to new schema",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "2.gate"
+      ],
+      "status": "pending",
+      "file": "3.1-convention-migration.md",
+      "record": "records/3.1-convention-migration.md",
+      "scope": "all",
+      "type": "coding.refactor"
+    },
+    "3.2-convention-new": {
+      "id": "3.2",
+      "title": "Create Convention index + new conventions",
+      "priority": "P1",
+      "estimatedTime": "3.5h",
+      "dependencies": [
+        "2.gate",
+        "3.1"
+      ],
+      "status": "pending",
+      "file": "3.2-convention-new.md",
+      "record": "records/3.2-convention-new.md",
+      "scope": "all",
+      "type": "coding.feature"
+    },
+    "3.3-test-guide-enhance": {
+      "id": "3.3",
+      "title": "Enhance test-guide with auto-detect + draft generation",
+      "priority": "P1",
+      "estimatedTime": "3h",
+      "dependencies": [
+        "2.gate"
+      ],
+      "status": "pending",
+      "file": "3.3-test-guide-enhance.md",
+      "record": "records/3.3-test-guide-enhance.md",
+      "scope": "all",
+      "type": "coding.enhancement"
+    },
+    "3.4-metadata-inline": {
+      "id": "3.4",
+      "title": "Inline testing metadata into skill rules",
+      "priority": "P2",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "2.gate",
+        "3.1"
+      ],
+      "status": "pending",
+      "file": "3.4-metadata-inline.md",
+      "record": "records/3.4-metadata-inline.md",
+      "scope": "all",
+      "type": "coding.cleanup"
+    },
+    "3.gate": {
+      "id": "3.gate",
+      "title": "Phase 3 Gate",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "3.summary"
+      ],
+      "status": "pending",
+      "file": "3.gate.md",
+      "record": "records/3.gate.md",
+      "breaking": true,
+      "type": "gate"
+    },
+    "3.summary": {
+      "id": "3.summary",
+      "title": "Phase 3 Summary",
+      "priority": "P0",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "3.1",
+        "3.2",
+        "3.3",
+        "3.4"
+      ],
+      "status": "pending",
+      "file": "3.summary.md",
+      "record": "records/3.summary.md",
+      "type": "doc.summary"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
