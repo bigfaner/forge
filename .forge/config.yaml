@@ -1,10 +1,7 @@
 auto:
-  runTasks:
-    quick: true
-    full: false
   e2eTest:
     quick: false
-    full: false
+    full: true
   consolidateSpecs:
     quick: true
     full: true
@@ -13,10 +10,14 @@ auto:
     full: true
   validation:
     quick: false
+    full: true
+  runTasks:
+    quick: true
     full: false
   gitPush: true
-interfaces:
-  - cli
+  knowledgeSave:
+    quick: true
+    full: true
 worktree:
   source-branch: v3.0.0
   copy-files: []
