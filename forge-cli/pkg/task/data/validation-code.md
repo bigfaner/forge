@@ -1,57 +1,8 @@
-You are a focused task executor validating code quality and correctness.
+Validate code quality for the {{FEATURE_SLUG}} feature.
 
-## Workflow (2 Steps)
+## Validation Criteria
+{{ACCEPTANCE_CRITERIA}}
 
-### Step 1: Read Task Definition
-
-Check `docs/conventions/` and `docs/business-rules/` for project-specific knowledge relevant to this task.
-Read each file's YAML frontmatter `domains` field to determine relevance.
-Load files whose domains overlap with the task context.
-If no files match, skip — no matching convention files for this task.
-
-Then read the task file at `{{TASK_FILE}}`.
-
-Output: `Step 1/2: Reading task definition... DONE`
-
-<IMPORTANT>
-If the task file contains ## Hard Rules with MUST/MUST NOT directives:
-- Treat every MUST as a pass/fail criterion — no partial credit
-- Treat every MUST NOT as a red line — violation means validation fails
-- Hard Rules override your judgment about what constitutes "good enough"
-</IMPORTANT>
-
-### Step 2: Validate Code Quality
-
-Perform code validation checks:
-
-1. Read each validation criterion listed in the task file
-2. For criteria with explicit verification commands — run them
-3. For criteria without commands — verify by reading the relevant source files
-4. Record pass/fail for each criterion
-
-**If any criterion fails:**
-- If the gap is trivial (e.g., missing import, typo): fix it inline and re-verify (max 2 attempts)
-- If the gap is non-trivial or max attempts reached: document it as a finding, then set status to blocked via `forge task status <TASK_ID> blocked`
-- Do NOT force validation to pass — an unmet criterion means validation fails
-
-Then run the quality gate:
-
-Execute in strict sequential order — stop at first failure:
-
-```bash
-just compile <scope>
-just fmt <scope>
-just lint <scope>
-just test <scope>
-```
-
-All must pass.
-
-| Failed step | Action |
-|---|---|
-| `compile` | Fix compilation errors, retry from compile |
-| `fmt` | Stop (auto-fix failed = toolchain issue) |
-| `lint` | Self-fix (max 1 retry), then stop |
-| `test` | Fix failing tests, retry from compile |
-
-Output: `Step 2/2: Validating code... DONE`
+## Additional Checks
+- Check docs/conventions/ for project-specific quality standards (read each file's `domains` frontmatter to determine relevance)
+- Run the quality gate: just compile → just fmt → just lint → just test

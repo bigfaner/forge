@@ -62,6 +62,10 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 	// 3. Set feature metadata
 	setFeatureMetadata(index, opts.ProjectRoot, opts.FeatureSlug)
 
+	// 3.5 Build BodyContext from planning-time data (proposal/PRD + config)
+	capabilities, _ := forgeconfig.ReadInterfaces(opts.ProjectRoot)
+	bodyCtx := extractBodyContext(opts.ProjectRoot, opts.FeatureSlug, mode, capabilities)
+
 	// 4. Profiles and interfaces resolved by caller (task 1.4)
 	// BuildIndex no longer holds Languages/TestInterfaces; caller injects them into generateTestTasks.
 
@@ -265,7 +269,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 		// Generate .md if missing
 		mdPath := filepath.Join(opts.TasksDir, evalKey+".md")
 		if _, err := os.Stat(mdPath); os.IsNotExist(err) {
-			evalContent, err := GenerateTestTaskMD(evalTask, opts.FeatureSlug)
+			evalContent, err := GenerateTestTaskMD(evalTask, bodyCtx)
 			if err != nil {
 				result.Warnings = append(result.Warnings, fmt.Sprintf("generate %s: %v", evalKey, err))
 			} else if err := os.WriteFile(mdPath, evalContent, 0644); err != nil {
@@ -286,7 +290,6 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 
 	// 7.5 Generate test pipeline tasks
 	if needsTest && mode != "" {
-		capabilities, _ := forgeconfig.ReadInterfaces(opts.ProjectRoot)
 		if len(capabilities) == 0 {
 			result.Warnings = append(result.Warnings, "No interfaces configured in .forge/config.yaml. Test pipeline tasks will not be generated. Add an 'interfaces' field to enable:\n  interfaces:\n    - api\n    - cli")
 		}
@@ -298,7 +301,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 			// Generate .md if missing
 			mdPath := filepath.Join(opts.TasksDir, ttKey+".md")
 			if _, err := os.Stat(mdPath); os.IsNotExist(err) {
-				content, genErr := GenerateTestTaskMD(td, opts.FeatureSlug)
+				content, genErr := GenerateTestTaskMD(td, bodyCtx)
 				if genErr != nil {
 					result.Warnings = append(result.Warnings, fmt.Sprintf("generate %s: %v", ttKey, genErr))
 					continue

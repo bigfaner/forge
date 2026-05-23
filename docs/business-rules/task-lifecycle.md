@@ -27,7 +27,7 @@ _Source: feature/forge-cli-v3_
 
 ### BIZ-task-lifecycle-002: Terminal State Immutability
 
-**Rule**: Terminal states (`completed`, `rejected`, `skipped`) are enforced by the `ValidateTransition` state machine in `pkg/task/statemachine.go`. `forge task submit` validates transitions via `ValidateTransition(current, "completed", RoleSubmit)` before proceeding — attempting to submit a task already in a terminal state will fail with `INVALID_TRANSITION`. The only recovery path for `rejected`/`skipped` tasks is `forge task reopen` (transitions to `pending`). `completed` tasks are truly irreversible — no command can transition them. `forge task status` no longer supports `--force`; all manual overrides go through `forge task transition` (which also respects terminal state protection).
+**Rule**: Terminal states (`completed`, `rejected`, `skipped`) are enforced by the `ValidateTransition` state machine in `pkg/task/statemachine.go`. `forge task submit` validates transitions via `ValidateTransition(current, "completed", RoleSubmit)` before proceeding — attempting to submit a task already in a terminal state will fail with a `TransitionError`. The only recovery path for `rejected`/`skipped` tasks is `forge task reopen` (transitions to `pending`). `completed` tasks are truly irreversible — no command can transition them. `forge task status` no longer supports `--force`; all manual overrides go through `forge task transition` (which also respects terminal state protection).
 **Context**: Guarantees that completed/rejected/skipped tasks cannot be accidentally overwritten. The role-based transition table is the single authority for state validation.
 **Source**: feature/forge-cli-v3 BIZ-002
 
