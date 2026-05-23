@@ -80,7 +80,7 @@
       "title": "gen-journeys SKILL.md 适配：proposal.md 输入 + AUTO_COMMIT 模式",
       "priority": "P0",
       "estimatedTime": "1.5h",
-      "status": "pending",
+      "status": "completed",
       "file": "6-gen-journeys-skill.md",
       "record": "records/6-gen-journeys-skill.md",
       "type": "doc"
