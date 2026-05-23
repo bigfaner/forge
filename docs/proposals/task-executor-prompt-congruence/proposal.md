@@ -1,7 +1,7 @@
 ---
 created: 2026-05-20
 author: "faner + Claude"
-status: Draft
+status: Approved
 ---
 
 # Proposal: task-executor 与 prompt 模板契合度修复
