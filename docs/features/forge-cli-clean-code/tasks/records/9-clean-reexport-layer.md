@@ -1,14 +1,14 @@
 ---
 status: "completed"
-started: "2026-05-24 02:38"
-completed: "2026-05-24 03:09"
-time_spent: "~31m"
+started: "2026-05-24 03:11"
+completed: "2026-05-24 03:22"
+time_spent: "~11m"
 ---
 
 # Task Record: 9 Clean up re-export layer in errors.go and output.go
 
 ## Summary
-Removed re-export layer in errors.go and output.go. All cmd package callers now import base directly. Debugf kept as local inline (base version has variadic expansion bug).
+Verified re-export layer cleanup in errors.go and output.go already completed (commit 92ee20f9). All cmd package callers now import base directly. Debugf kept as inline function in output.go because base version has variadic expansion bug (args vs args...). Hard Rule prohibits modifying base/output.go.
 
 ## Changes
 
@@ -16,24 +16,12 @@ Removed re-export layer in errors.go and output.go. All cmd package callers now 
 无
 
 ### Files Modified
-- forge-cli/internal/cmd/errors.go
-- forge-cli/internal/cmd/output.go
-- forge-cli/internal/cmd/quality_gate.go
-- forge-cli/internal/cmd/research.go
-- forge-cli/internal/cmd/proposal.go
-- forge-cli/internal/cmd/lesson.go
-- forge-cli/internal/cmd/version.go
-- forge-cli/internal/cmd/errors_test.go
-- forge-cli/internal/cmd/output_test.go
-- forge-cli/internal/cmd/output_contract_test.go
-- forge-cli/internal/cmd/slug_width_test.go
-- forge-cli/internal/cmd/characterization_test.go
-- forge-cli/internal/cmd/integration_test.go
-- forge-cli/internal/cmd/proposal_test.go
+无
 
 ### Key Decisions
-- Kept Debugf as inline function in output.go because base.Debugf has a bug (passes args instead of args... to Fprintf)
-- Hard Rule prohibits modifying base/output.go, so the variadic bug remains in base but the correct version is preserved in cmd
+- Debugf kept as inline copy in cmd/output.go: base.Debugf has a variadic bug (passes args instead of args... to Fprintf), and Hard Rule prohibits modifying base/output.go
+- All other re-exported symbols fully removed from errors.go and output.go in prior commit
+- quality_gate.go and output_test.go correctly use the local Debugf (same-package, no import needed)
 
 ## Test Results
 - **Tests Executed**: Yes
@@ -42,12 +30,12 @@ Removed re-export layer in errors.go and output.go. All cmd package callers now 
 - **Coverage**: 67.4%
 
 ## Acceptance Criteria
-- [x] cmd.Debugf call sites changed to use correct Debugf
+- [x] cmd.Debugf call sites (10+ in quality_gate.go and elsewhere) correctly use Debugf
 - [x] All re-exported symbols in errors.go cleaned up
-- [x] All re-exported symbols in output.go cleaned up (except Debugf inline)
+- [x] All re-exported symbols in output.go cleaned up (Debugf retained as inline bugfix)
 - [x] go build ./... passes with zero errors
 - [x] go test ./... passes
-- [x] go vet ./... passes
+- [x] go vet ./... passes (confirms no dangling import references)
 
 ## Notes
-Debugf kept as inline copy in output.go because base.Debugf does not correctly expand variadic args. The re-export layer for all other symbols has been fully removed.
+Re-export layer removal was completed in commit 92ee20f9. This session verified all acceptance criteria still hold: go build, go vet, and go test all pass. The Debugf inline retention is intentional due to base package variadic bug.

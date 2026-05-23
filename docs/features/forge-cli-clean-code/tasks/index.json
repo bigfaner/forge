@@ -197,7 +197,7 @@
         "4",
         "fix-6"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "9-clean-reexport-layer.md",
       "record": "records/9-clean-reexport-layer.md",
       "breaking": true,
