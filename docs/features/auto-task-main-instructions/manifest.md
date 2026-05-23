@@ -1,7 +1,7 @@
 ---
 feature: "auto-task-main-instructions"
 created: "2026-05-23"
-status: tasks
+status: completed
 mode: quick
 ---
 
