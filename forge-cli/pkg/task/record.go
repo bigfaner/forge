@@ -230,6 +230,22 @@ func RenderCodingRecord(t *Task, rd *RecordData, startedTime string) string {
 	return renderRecordTemplate("data/record-coding.md", t, rd, startedTime)
 }
 
+// RenderRecord dispatches to the appropriate category-specific renderer.
+func RenderRecord(t *Task, rd *RecordData, startedTime string) string {
+	switch CategoryForType(t.Type) {
+	case CategoryDoc:
+		return RenderDocRecord(t, rd, startedTime)
+	case CategoryTest:
+		return RenderTestRecord(t, rd, startedTime)
+	case CategoryValidation:
+		return RenderValidationRecord(t, rd, startedTime)
+	case CategoryGate:
+		return RenderGateRecord(t, rd, startedTime)
+	default:
+		return RenderCodingRecord(t, rd, startedTime)
+	}
+}
+
 // RenderDocRecord renders the doc record template with the given data.
 func RenderDocRecord(t *Task, rd *RecordData, startedTime string) string {
 	return renderRecordTemplate("data/record-doc.md", t, rd, startedTime)

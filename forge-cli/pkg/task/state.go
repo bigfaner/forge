@@ -47,3 +47,47 @@ func DeleteState(path string) error {
 	}
 	return nil
 }
+
+// CheckExistingTaskState checks for an existing task state and determines
+// whether to continue an in-progress task or claim a new one.
+// Parameters: _ is unused (reserved for projectRoot), index is the task index,
+// statePath is the path to the state file.
+// Returns: (shouldContinue, hasIssues, issues).
+func CheckExistingTaskState(_ string, index *TaskIndex, statePath string) (bool, bool, []string) {
+	state, err := LoadState(statePath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: failed to load task state: %v\n", err)
+		return false, false, nil
+	}
+	if state == nil {
+		return false, false, nil
+	}
+
+	t, exists := index.ByID(state.Key)
+	if !exists {
+		return false, true, []string{fmt.Sprintf("Task key '%s' not found in index.json", state.Key)}
+	}
+
+	switch t.Status {
+	case "in_progress":
+		return true, false, nil
+	case "completed":
+		fmt.Printf("Previous task '%s' is completed. Claiming new task...\n", t.Title)
+		_ = DeleteState(statePath)
+		return false, false, nil
+	case "blocked":
+		fmt.Printf("Previous task '%s' is blocked. Claiming new task...\n", t.Title)
+		_ = DeleteState(statePath)
+		return false, false, nil
+	case "suspended":
+		fmt.Printf("Previous task '%s' is suspended. Claiming new task...\n", t.Title)
+		_ = DeleteState(statePath)
+		return false, false, nil
+	case "rejected":
+		fmt.Printf("Previous task '%s' was rejected. Claiming new task...\n", t.Title)
+		_ = DeleteState(statePath)
+		return false, false, nil
+	default:
+		return false, true, []string{fmt.Sprintf("Task '%s' has unexpected status: %s", t.Title, t.Status)}
+	}
+}

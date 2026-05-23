@@ -6,8 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strconv"
-	"strings"
 	"time"
 
 	"forge-cli/pkg/feature"
@@ -161,44 +159,10 @@ func executeClaim() (*ClaimResult, error) {
 	}, nil
 }
 
-func checkExistingTaskState(_ string, index *task.TaskIndex, statePath string) (bool, bool, []string) {
-	state, err := task.LoadState(statePath)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Warning: failed to load task state: %v\n", err)
-		return false, false, nil
-	}
-	if state == nil {
-		return false, false, nil
-	}
-
-	t, exists := index.ByID(state.Key)
-	if !exists {
-		return false, true, []string{fmt.Sprintf("Task key '%s' not found in index.json", state.Key)}
-	}
-
-	switch t.Status {
-	case "in_progress":
-		return true, false, nil
-	case "completed":
-		fmt.Printf("Previous task '%s' is completed. Claiming new task...\n", t.Title)
-		_ = task.DeleteState(statePath)
-		return false, false, nil
-	case "blocked":
-		fmt.Printf("Previous task '%s' is blocked. Claiming new task...\n", t.Title)
-		_ = task.DeleteState(statePath)
-		return false, false, nil
-	case "suspended":
-		fmt.Printf("Previous task '%s' is suspended. Claiming new task...\n", t.Title)
-		_ = task.DeleteState(statePath)
-		return false, false, nil
-	case "rejected":
-		fmt.Printf("Previous task '%s' was rejected. Claiming new task...\n", t.Title)
-		_ = task.DeleteState(statePath)
-		return false, false, nil
-	default:
-		return false, true, []string{fmt.Sprintf("Task '%s' has unexpected status: %s", t.Title, t.Status)}
-	}
-}
+// checkExistingTaskState delegates to pkg/task.CheckExistingTaskState.
+// Kept as alias for internal callers and tests.
+// Note: first parameter (projectRoot) is unused but preserved for API compatibility.
+var checkExistingTaskState = task.CheckExistingTaskState
 
 func claimNextTask(index *task.TaskIndex) (string, *task.Task, error) {
 	type taskWithKey struct {
@@ -260,16 +224,9 @@ func claimNextTask(index *task.TaskIndex) (string, *task.Task, error) {
 	return twk.key, &t, nil
 }
 
-func getTaskPhase(id string) int {
-	parts := strings.Split(id, ".")
-	if len(parts) > 0 {
-		phase, err := strconv.Atoi(parts[0])
-		if err == nil {
-			return phase
-		}
-	}
-	return -1
-}
+// getTaskPhase delegates to pkg/task.GetTaskPhase.
+// Kept as alias for internal callers and tests.
+var getTaskPhase = task.GetTaskPhase
 
 func checkDependenciesMet(index *task.TaskIndex, selfID string, t task.Task) (bool, []string) {
 	rawUnmet := task.GetUnmetDeps(index, selfID, t.Dependencies)
@@ -309,46 +266,9 @@ func checkDependenciesMet(index *task.TaskIndex, selfID string, t task.Task) (bo
 	return len(unmet) == 0, unmet
 }
 
-func compareVersionIDs(a, b string) bool {
-	partsA := strings.Split(a, ".")
-	partsB := strings.Split(b, ".")
-	maxLen := len(partsA)
-	if len(partsB) > maxLen {
-		maxLen = len(partsB)
-	}
-	for i := 0; i < maxLen; i++ {
-		na, aIsNum := parseSegment(partsA, i)
-		nb, bIsNum := parseSegment(partsB, i)
-		if aIsNum != bIsNum {
-			return aIsNum // numeric sorts before alphabetic
-		}
-		if na != nb {
-			return na < nb
-		}
-	}
-	return false
-}
-
-// parseSegment returns the numeric value of a segment and whether it's numeric.
-// Numeric segments (e.g., "1", "12") return their int value with true.
-// Alphabetic segments (e.g., "summary", "gate") return a lexicographic rank with false.
-func parseSegment(parts []string, i int) (int, bool) {
-	if i >= len(parts) {
-		return -1, true // missing segments sort before everything
-	}
-	if n, err := strconv.Atoi(parts[i]); err == nil {
-		return n, true
-	}
-	// Alphabetic segments: sort after all numeric, with deterministic order
-	switch parts[i] {
-	case "gate":
-		return 1, false
-	case "summary":
-		return 2, false
-	default:
-		return 0, false
-	}
-}
+// compareVersionIDs delegates to pkg/task.CompareVersionIDs.
+// Kept as alias for internal callers and tests.
+var compareVersionIDs = task.CompareVersionIDs
 
 func printTaskDetails(key string, t *task.Task, projectRoot, featureSlug string) {
 	_ = key // key is still used internally for routing, but no longer emitted

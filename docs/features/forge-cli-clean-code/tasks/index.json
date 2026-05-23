@@ -79,7 +79,7 @@
       "dependencies": [
         "9"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "14-testbridge-cleanup.md",
       "record": "records/14-testbridge-cleanup.md",
       "scope": "backend",

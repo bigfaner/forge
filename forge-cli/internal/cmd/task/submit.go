@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"forge-cli/internal/cmd/base"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -276,29 +275,9 @@ func autoRestoreSourceTask(index *task.TaskIndex, sourceTaskID string) {
 	fmt.Fprintf(os.Stderr, "AUTO-RESTORE: source task %s restored to pending (all deps completed or skipped)\n", sourceTaskID)
 }
 
-func readSubmitData(dataPath string) (*task.RecordData, error) {
-	var data []byte
-	var err error
-
-	if dataPath != "" {
-		data, err = os.ReadFile(dataPath)
-	} else {
-		stat, _ := os.Stdin.Stat()
-		if stat.Mode()&os.ModeNamedPipe == 0 && stat.Size() == 0 {
-			return nil, fmt.Errorf("no input: provide --data flag or pipe JSON to stdin")
-		}
-		data, err = io.ReadAll(os.Stdin)
-	}
-	if err != nil {
-		return nil, fmt.Errorf("failed to read record data: %w", err)
-	}
-
-	var rd task.RecordData
-	if err := json.Unmarshal(data, &rd); err != nil {
-		return nil, fmt.Errorf("failed to parse JSON: %w", err)
-	}
-	return &rd, nil
-}
+// readSubmitData delegates to pkg/task.ReadSubmitData.
+// Kept as alias for internal callers and tests.
+var readSubmitData = task.ReadSubmitData
 
 // validateRecordData checks required and recommended fields in task.RecordData.
 // taskType determines which checks apply based on category:
@@ -376,20 +355,9 @@ func validateRecordData(rd *task.RecordData, taskType string) error {
 	return nil
 }
 
-func fillRecordTemplate(t *task.Task, rd *task.RecordData, startedTime string) string {
-	switch task.CategoryForType(t.Type) {
-	case task.CategoryDoc:
-		return task.RenderDocRecord(t, rd, startedTime)
-	case task.CategoryTest:
-		return task.RenderTestRecord(t, rd, startedTime)
-	case task.CategoryValidation:
-		return task.RenderValidationRecord(t, rd, startedTime)
-	case task.CategoryGate:
-		return task.RenderGateRecord(t, rd, startedTime)
-	default:
-		return task.RenderCodingRecord(t, rd, startedTime)
-	}
-}
+// fillRecordTemplate delegates to pkg/task.RenderRecord.
+// Kept as alias for internal callers and tests.
+var fillRecordTemplate = task.RenderRecord
 
 // validateQualityGate runs the quality gate based on the task's breaking flag.
 // breaking=true: full gate (compile -> fmt -> lint -> test).
