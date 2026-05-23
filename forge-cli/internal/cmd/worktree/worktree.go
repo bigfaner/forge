@@ -362,9 +362,9 @@ func runWorktreeResume(_ *cobra.Command, args []string) error {
 
 	allArgs := []string{"--dangerously-skip-permissions"}
 
-	// Add -c <slug> for session restore if supported
+	// Add -c for session restore if supported (no positional arg — slug would be sent as message)
 	if claudeSupportsContinueFlagFunc() {
-		allArgs = append([]string{"-c", slug}, allArgs...)
+		allArgs = append([]string{"-c"}, allArgs...)
 	}
 
 	return runClaudeFunc(allArgs)
