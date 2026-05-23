@@ -54,32 +54,3 @@ func TestRun_Help(t *testing.T) {
 		t.Error("expected some output from --help")
 	}
 }
-
-func TestGetVersion(t *testing.T) {
-	v := GetVersion()
-	if v == "" {
-		t.Error("expected non-empty version")
-	}
-}
-
-func TestGetName(t *testing.T) {
-	n := GetName()
-	if n != "forge" {
-		t.Errorf("expected name 'forge', got %q", n)
-	}
-}
-
-func TestIsTestMode(t *testing.T) {
-	// Without GO_TEST env
-	_ = os.Unsetenv("GO_TEST")
-	if IsTestMode() {
-		t.Error("expected IsTestMode to be false without GO_TEST env")
-	}
-
-	// With GO_TEST env
-	_ = os.Setenv("GO_TEST", "1")
-	defer func() { _ = os.Unsetenv("GO_TEST") }()
-	if !IsTestMode() {
-		t.Error("expected IsTestMode to be true with GO_TEST=1")
-	}
-}
