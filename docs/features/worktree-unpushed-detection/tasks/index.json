@@ -8,7 +8,7 @@
       "title": "Show unpushed commit count in worktree status",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-status-unpushed-count.md",
       "record": "records/1-status-unpushed-count.md",
       "scope": "backend",

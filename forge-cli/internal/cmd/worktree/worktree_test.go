@@ -4610,6 +4610,115 @@ func TestWorktreeStatus_CleanWorktree(t *testing.T) {
 	}
 }
 
+func TestWorktreeStatus_ShowsUnpushedNoRemote(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a real worktree (no remote configured, so no upstream)
+	slug := "unpushed-no-remote-wt"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	cmd := exec.Command("git", "worktree", "add", targetDir, "-b", slug)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"status", slug})
+
+	err := Cmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	stdout := buf.String()
+	if !strings.Contains(stdout, "UNPUSHED:") {
+		t.Errorf("output should contain UNPUSHED:, got: %s", stdout)
+	}
+	if !strings.Contains(stdout, "UNPUSHED: no remote") {
+		t.Errorf("expected 'UNPUSHED: no remote', got: %s", stdout)
+	}
+}
+
+func TestWorktreeStatus_ShowsUnpushedCommits(t *testing.T) {
+	// Use mock to simulate 3 unpushed commits
+	orig := countUnpushedCommitsFunc
+	t.Cleanup(func() { countUnpushedCommitsFunc = orig })
+	countUnpushedCommitsFunc = func(_ string) (int, error) {
+		return 3, nil
+	}
+
+	// Directly test formatUnpushed
+	result := formatUnpushed("/fake/path")
+	if result != "3 commits" {
+		t.Errorf("expected '3 commits', got %q", result)
+	}
+}
+
+func TestWorktreeStatus_ShowsUnpushedNone(t *testing.T) {
+	// Use mock to simulate fully pushed (0 unpushed)
+	orig := countUnpushedCommitsFunc
+	t.Cleanup(func() { countUnpushedCommitsFunc = orig })
+	countUnpushedCommitsFunc = func(_ string) (int, error) {
+		return 0, nil
+	}
+
+	result := formatUnpushed("/fake/path")
+	if result != "(none)" {
+		t.Errorf("expected '(none)', got %q", result)
+	}
+}
+
+func TestWorktreeStatus_UnpushedFieldAfterUncommitted(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a real worktree
+	slug := "field-order-wt"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	cmd := exec.Command("git", "worktree", "add", targetDir, "-b", slug)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"status", slug})
+
+	err := Cmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	stdout := buf.String()
+	uncommittedIdx := strings.Index(stdout, "UNCOMMITTED:")
+	unpushedIdx := strings.Index(stdout, "UNPUSHED:")
+	if uncommittedIdx == -1 || unpushedIdx == -1 {
+		t.Fatalf("output should contain both UNCOMMITTED and UNPUSHED, got: %s", stdout)
+	}
+	if unpushedIdx <= uncommittedIdx {
+		t.Errorf("UNPUSHED should appear after UNCOMMITTED, got: %s", stdout)
+	}
+}
+
 // ---------------------------------------------------------------------------
 // worktree status: no slug — shows all forge-managed worktrees
 // ---------------------------------------------------------------------------
