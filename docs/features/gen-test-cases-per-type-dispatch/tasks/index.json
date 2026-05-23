@@ -11,7 +11,6 @@
       "status": "completed",
       "file": "1-refactor-skill-dispatcher.md",
       "record": "records/1-refactor-skill-dispatcher.md",
-      "noTest": true,
       "type": "documentation"
     },
     "2-create-per-type-instructions": {
@@ -25,7 +24,6 @@
       "status": "completed",
       "file": "2-create-per-type-instructions.md",
       "record": "records/2-create-per-type-instructions.md",
-      "noTest": true,
       "type": "documentation"
     },
     "3-create-per-type-templates": {
@@ -39,7 +37,6 @@
       "status": "completed",
       "file": "3-create-per-type-templates.md",
       "record": "records/3-create-per-type-templates.md",
-      "noTest": true,
       "type": "documentation"
     },
     "4-create-per-type-rubrics": {
@@ -53,7 +50,6 @@
       "status": "completed",
       "file": "4-create-per-type-rubrics.md",
       "record": "records/4-create-per-type-rubrics.md",
-      "noTest": true,
       "type": "documentation"
     },
     "5-update-eval-pipeline": {
@@ -67,7 +63,6 @@
       "status": "completed",
       "file": "5-update-eval-pipeline.md",
       "record": "records/5-update-eval-pipeline.md",
-      "noTest": true,
       "type": "documentation"
     },
     "6-update-gen-test-scripts": {
@@ -81,7 +76,6 @@
       "status": "completed",
       "file": "6-update-gen-test-scripts.md",
       "record": "records/6-update-gen-test-scripts.md",
-      "noTest": true,
       "type": "documentation"
     },
     "eval-doc": {
@@ -96,7 +90,6 @@
       "file": "eval-doc.md",
       "record": "records/eval-doc.md",
       "scope": "all",
-      "noTest": true,
       "type": "doc-evaluation"
     }
   },

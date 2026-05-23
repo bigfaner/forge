@@ -7,7 +7,6 @@ dependencies: ["3"]
 type: "test-pipeline.gen-cases"
 scope: "all"
 profile: "go-test"
-noTest: true
 ---
 
 # Generate Quick Test Cases (go-test)

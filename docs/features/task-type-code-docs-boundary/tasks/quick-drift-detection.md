@@ -6,7 +6,6 @@ estimated_time: "15min"
 dependencies: []
 type: "doc-generation.drift"
 scope: "all"
-noTest: true
 ---
 
 # Detect Spec Drift

@@ -51,7 +51,6 @@
       "file": "eval-doc.md",
       "record": "records/eval-doc.md",
       "scope": "all",
-      "noTest": true,
       "type": "doc-evaluation"
     }
   },

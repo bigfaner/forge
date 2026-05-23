@@ -6,7 +6,6 @@ estimated_time: "30min"
 dependencies: ["5"]
 type: "doc-evaluation"
 scope: "all"
-noTest: true
 ---
 
 # Evaluate Documentation Quality

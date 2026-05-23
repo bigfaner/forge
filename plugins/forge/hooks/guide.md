@@ -32,7 +32,7 @@ docs/
 
 ### Quality Gate Protocol
 
-All task-executing workflows MUST pass the quality gate before recording completion. Tasks with a `doc*` type prefix skip the quality gate; only `coding.*` type prefix tasks are gated. `noTest: true` overrides for edge cases.
+All task-executing workflows MUST pass the quality gate before recording completion. Tasks with a `doc*` type prefix skip the quality gate; only `coding.*` type prefix tasks are gated.
 
 ### All-Completed Hook
 

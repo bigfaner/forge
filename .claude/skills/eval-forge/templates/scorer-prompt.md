@@ -39,7 +39,7 @@ Read Go source code for behavioral alignment — these files provide ground trut
 
 | Source File | Purpose | Relevant Dimensions |
 |-------------|---------|---------------------|
-| `forge-cli/internal/cmd/submit.go` | Quality gates, `--force`, `noTest` handling, `validateRecordData` | D2: bypass resistance; D3: behavioral conflicts |
+| `forge-cli/internal/cmd/submit.go` | Quality gates, `--force`, `validateRecordData` | D2: bypass resistance; D3: behavioral conflicts |
 | `forge-cli/internal/cmd/status.go` | State machine transitions and guards | D1: manifest status machine; D5: reference accuracy |
 | `forge-cli/pkg/task/types.go` | Data model, status/priority enums | D1: manifest status machine; D5: reference accuracy |
 | `forge-cli/pkg/just/just.go` | Quality gate implementation (compile/fmt/lint/test steps) — read BOTH DefaultGateSequence and LintGateSequence | D2: bypass resistance; D3: behavioral conflicts |
@@ -103,13 +103,13 @@ Do NOT read the Regression Guard table in the rubric until Phase 2a is complete.
 - Every quality gate reference (compile, fmt, lint, test)
 - Every user confirmation point (AskUserQuestion, explicit approval)
 - Every conditional enforcement (gates that only trigger under certain conditions)
-- Every self-reported field (record.json metrics, task frontmatter values like `noTest`, `db-schema`)
+- Every self-reported field (record.json metrics, task frontmatter values like `db-schema`)
 
 **Step 2 — Trace enforcement chain for each claim.** For every entry in the registry:
 - Where is this enforced? Check: CLI command / hook / text-only / absent
 - What happens if the agent ignores it? Check: blocks execution / warns but continues / no consequence
 - Can the agent bypass it? Check: `--force` flag / missing prerequisite file / alternative tool path / self-declared value
-- Cross-reference with CLI source code: read `forge-cli/internal/cmd/submit.go` (quality gates, `--force` behavior, `noTest` handling, `validateRecordData`). Also read `forge-cli/pkg/just/just.go` (quality gate step implementation). Confirm CLI behavior matches SKILL.md descriptions. Identify gaps where SKILL.md describes enforcement that CLI doesn't implement.
+- Cross-reference with CLI source code: read `forge-cli/internal/cmd/submit.go` (quality gates, `--force` behavior, `validateRecordData`). Also read `forge-cli/pkg/just/just.go` (quality gate step implementation). Confirm CLI behavior matches SKILL.md descriptions. Identify gaps where SKILL.md describes enforcement that CLI doesn't implement.
 
 **Step 3 — Classify each enforcement gap.** For every claim where enforcement is absent or bypassable:
 - **[ARCHITECTURAL]**: Requires code-level change (CLI enforcement, cryptographic verification, etc.). Score it, report it, but mark as `[ARCHITECTURAL]` in ATTACKS so the reviser will NOT attempt to fix it. Adding HARD-RULE text for architectural bypasses is counterproductive — it inflates context without changing agent behavior.

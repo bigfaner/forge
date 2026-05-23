@@ -6,7 +6,6 @@ estimated_time: "1h"
 dependencies: []
 type: "documentation"
 mainSession: false
-noTest: true
 scope: "backend"
 ---
 

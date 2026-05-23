@@ -6,7 +6,6 @@ estimated_time: "2h"
 dependencies: ["1"]
 type: "documentation"
 mainSession: false
-noTest: true
 ---
 
 # 4: Create per-type rubrics (eval/rubrics/*-test-cases.md)

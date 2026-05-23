@@ -6,7 +6,6 @@ estimated_time: "1h"
 dependencies: ["1"]
 type: "documentation"
 mainSession: false
-noTest: true
 ---
 
 # 3: Create per-type templates (templates/*-test-cases.md)
