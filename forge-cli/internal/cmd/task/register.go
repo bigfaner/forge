@@ -17,6 +17,7 @@ func Register() {
 		indexCmd,
 		migrateCmd,
 		listTypesCmd,
+		listCmd,
 		reopenCmd,
 		transitionCmd,
 	)
