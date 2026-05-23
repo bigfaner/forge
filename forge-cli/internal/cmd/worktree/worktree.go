@@ -2,6 +2,7 @@ package worktree
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -28,6 +29,9 @@ var listWorktreesFunc = git.ListWorktrees
 
 // gitRunFunc executes a git command. Overridable for testing.
 var gitRunFunc = git.Run
+
+// countUnpushedCommitsFunc counts unpushed commits. Overridable for testing.
+var countUnpushedCommitsFunc = git.CountUnpushedCommits
 
 // gitPushFunc pushes to remote. Overridable for testing.
 var gitPushFunc = git.Push
@@ -212,6 +216,17 @@ func runWorktreeRemove(cmd *cobra.Command, args []string) error {
 				break
 			}
 		}
+	}
+
+	// Check for unpushed commits before removal (unless --force)
+	unpushedCount, unpushedErr := countUnpushedCommitsFunc(targetDir)
+	if !errors.Is(unpushedErr, git.ErrNoUpstream) && unpushedErr != nil {
+		// Unexpected error — report but don't block removal
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: could not check unpushed commits: %v\n", unpushedErr)
+	}
+	if unpushedErr == nil && unpushedCount > 0 && !force {
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: branch has %d unpushed commit(s) — push first, or use --force to discard\n", unpushedCount)
+		return fmt.Errorf("branch has %d unpushed commit(s)", unpushedCount)
 	}
 
 	// Build git worktree remove args
@@ -493,7 +508,30 @@ func printWorktreeStatus(cmd *cobra.Command, _ string, entry *git.WorktreeEntry)
 	} else {
 		_, _ = fmt.Fprintln(w, "UNCOMMITTED: (none)")
 	}
+
+	// Unpushed commits
+	unpushedStr := formatUnpushed(worktreePath)
+	_, _ = fmt.Fprintf(w, "UNPUSHED: %s\n", unpushedStr)
+
 	_, _ = fmt.Fprintln(w, "---")
+}
+
+// formatUnpushed returns a human-readable string for the unpushed commit count.
+func formatUnpushed(worktreePath string) string {
+	count, err := countUnpushedCommitsFunc(worktreePath)
+	if errors.Is(err, git.ErrNoUpstream) {
+		return "no remote"
+	}
+	if err != nil {
+		return "(unknown)"
+	}
+	if count == 0 {
+		return "(none)"
+	}
+	if count == 1 {
+		return "1 commit"
+	}
+	return fmt.Sprintf("%d commits", count)
 }
 
 func runWorktreeStart(cmd *cobra.Command, args []string) error {

@@ -3,12 +3,17 @@ package git
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
+
+// ErrNoUpstream indicates the branch has no upstream tracking branch configured.
+var ErrNoUpstream = errors.New("no upstream tracking branch")
 
 // GetCurrentBranch returns the current git branch name.
 // Returns empty string if not in a git repository.
@@ -161,4 +166,21 @@ func Run(projectRoot string, args ...string) (string, error) {
 	}
 
 	return strings.TrimSpace(stdout.String()), nil
+}
+
+// CountUnpushedCommits returns the number of local commits not yet pushed to
+// the upstream tracking branch. Uses "git rev-list --count @{u}..HEAD".
+// Returns ErrNoUpstream if the branch has no upstream tracking configured.
+func CountUnpushedCommits(dir string) (int, error) {
+	out, err := Run(dir, "rev-list", "--count", "@{u}..HEAD")
+	if err != nil {
+		return 0, ErrNoUpstream
+	}
+
+	count, parseErr := strconv.Atoi(out)
+	if parseErr != nil {
+		return 0, fmt.Errorf("parse unpushed count %q: %w", out, parseErr)
+	}
+
+	return count, nil
 }

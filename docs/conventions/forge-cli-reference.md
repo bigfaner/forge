@@ -114,8 +114,8 @@ domains: [cli, commands, reference, skills, task-list]
 列表命令（`forge feature list`、`forge lesson`、`forge proposal`）的 slug/name 列使用动态宽度：
 
 - **宽度计算**: `clamp(max(30, maxSlugLen + 2), 60)` — 最小 30 字符，最大 60 字符
-- **实现**: `calcSlugColWidth()` 计算宽度，`padRight()` 对齐，`truncateSlug()` 截断超长值
-- **新增列表命令时**必须遵循此模式（常量 `slugColMinWidth` / `slugColMaxWidth` 在 `proposal.go` 中定义）
+- **实现**: `CalcSlugColWidth()` 计算宽度，`PadRight()` 对齐，`TruncateSlug()` 截断超长值
+- **新增列表命令时**必须遵循此模式（常量 `SlugColMinWidth` / `SlugColMaxWidth` 在 `internal/cmd/base/output.go` 中定义）
 
 ## 列表排序约定
 
@@ -127,6 +127,8 @@ domains: [cli, commands, reference, skills, task-list]
 
 | 已移除命令 | 原所属组 | 说明 |
 |-----------|---------|------|
+| `forge probe` | 顶层 | 已移除。原为 HTTP 健康检查（用于 e2e 测试服务器） |
+| `forge e2e` (整组) | e2e | 已移除。包含 validate-specs, run, setup, verify, compile, discover 子命令 |
 | `forge test detect` | test | 已移除。通过读取项目文件（package.json / go.mod / Cargo.toml / pyproject.toml）推断测试语言 |
 | `forge test interfaces` | test | 已移除。通过读取项目结构和 `docs/conventions/` 推断接口类型 |
 | `forge test framework` | test | 已移除 |

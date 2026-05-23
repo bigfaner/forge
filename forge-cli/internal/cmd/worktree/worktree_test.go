@@ -4610,6 +4610,115 @@ func TestWorktreeStatus_CleanWorktree(t *testing.T) {
 	}
 }
 
+func TestWorktreeStatus_ShowsUnpushedNoRemote(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a real worktree (no remote configured, so no upstream)
+	slug := "unpushed-no-remote-wt"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	cmd := exec.Command("git", "worktree", "add", targetDir, "-b", slug)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"status", slug})
+
+	err := Cmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	stdout := buf.String()
+	if !strings.Contains(stdout, "UNPUSHED:") {
+		t.Errorf("output should contain UNPUSHED:, got: %s", stdout)
+	}
+	if !strings.Contains(stdout, "UNPUSHED: no remote") {
+		t.Errorf("expected 'UNPUSHED: no remote', got: %s", stdout)
+	}
+}
+
+func TestWorktreeStatus_ShowsUnpushedCommits(t *testing.T) {
+	// Use mock to simulate 3 unpushed commits
+	orig := countUnpushedCommitsFunc
+	t.Cleanup(func() { countUnpushedCommitsFunc = orig })
+	countUnpushedCommitsFunc = func(_ string) (int, error) {
+		return 3, nil
+	}
+
+	// Directly test formatUnpushed
+	result := formatUnpushed("/fake/path")
+	if result != "3 commits" {
+		t.Errorf("expected '3 commits', got %q", result)
+	}
+}
+
+func TestWorktreeStatus_ShowsUnpushedNone(t *testing.T) {
+	// Use mock to simulate fully pushed (0 unpushed)
+	orig := countUnpushedCommitsFunc
+	t.Cleanup(func() { countUnpushedCommitsFunc = orig })
+	countUnpushedCommitsFunc = func(_ string) (int, error) {
+		return 0, nil
+	}
+
+	result := formatUnpushed("/fake/path")
+	if result != "(none)" {
+		t.Errorf("expected '(none)', got %q", result)
+	}
+}
+
+func TestWorktreeStatus_UnpushedFieldAfterUncommitted(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a real worktree
+	slug := "field-order-wt"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	cmd := exec.Command("git", "worktree", "add", targetDir, "-b", slug)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"status", slug})
+
+	err := Cmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	stdout := buf.String()
+	uncommittedIdx := strings.Index(stdout, "UNCOMMITTED:")
+	unpushedIdx := strings.Index(stdout, "UNPUSHED:")
+	if uncommittedIdx == -1 || unpushedIdx == -1 {
+		t.Fatalf("output should contain both UNCOMMITTED and UNPUSHED, got: %s", stdout)
+	}
+	if unpushedIdx <= uncommittedIdx {
+		t.Errorf("UNPUSHED should appear after UNCOMMITTED, got: %s", stdout)
+	}
+}
+
 // ---------------------------------------------------------------------------
 // worktree status: no slug — shows all forge-managed worktrees
 // ---------------------------------------------------------------------------
@@ -5089,6 +5198,202 @@ func TestWorktreeRemoveCompletion_ExcludesMainWorktree(t *testing.T) {
 	completions, _ := removeCmd.ValidArgsFunction(removeCmd, []string{}, "")
 	if len(completions) != 0 {
 		t.Errorf("only main worktree — should return empty, got %v", completions)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// worktree remove: unpushed commit blocking
+// ---------------------------------------------------------------------------
+
+func TestWorktreeRemove_BlocksOnUnpushedCommits(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create worktree
+	slug := "unpushed-block-test"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	if err := os.MkdirAll(filepath.Dir(targetDir), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	cmd := exec.Command("git", "worktree", "add", "-b", slug, targetDir)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	// Mock countUnpushedCommitsFunc to return 3 unpushed commits
+	origCount := countUnpushedCommitsFunc
+	t.Cleanup(func() { countUnpushedCommitsFunc = origCount })
+	countUnpushedCommitsFunc = func(_ string) (int, error) {
+		return 3, nil
+	}
+
+	buf := new(bytes.Buffer)
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"remove", slug})
+
+	err := Cmd.Execute()
+	if err == nil {
+		t.Error("expected error when unpushed commits exist")
+	}
+	stderr := buf.String()
+	if !strings.Contains(stderr, "unpushed commit(s)") {
+		t.Errorf("error should mention unpushed commits, got: %s", stderr)
+	}
+	if !strings.Contains(stderr, "--force") {
+		t.Errorf("error should mention --force, got: %s", stderr)
+	}
+
+	// Worktree directory should still exist (removal was blocked)
+	if _, err := os.Stat(targetDir); os.IsNotExist(err) {
+		t.Error("worktree directory should still exist when blocked by unpushed check")
+	}
+}
+
+func TestWorktreeRemove_ForceOverridesUnpushedCheck(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create worktree
+	slug := "unpushed-force-test"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	if err := os.MkdirAll(filepath.Dir(targetDir), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	cmd := exec.Command("git", "worktree", "add", "-b", slug, targetDir)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	// Mock countUnpushedCommitsFunc to return 5 unpushed commits
+	origCount := countUnpushedCommitsFunc
+	t.Cleanup(func() { countUnpushedCommitsFunc = origCount })
+	countUnpushedCommitsFunc = func(_ string) (int, error) {
+		return 5, nil
+	}
+
+	resetForceFlag(t)
+	buf := new(bytes.Buffer)
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"remove", slug, "--force"})
+
+	err := Cmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error with --force: %v", err)
+	}
+
+	// Worktree should be removed despite unpushed commits
+	if _, err := os.Stat(targetDir); !os.IsNotExist(err) {
+		t.Error("worktree should have been removed with --force despite unpushed commits")
+	}
+}
+
+func TestWorktreeRemove_SkipsCheckWhenNoUpstream(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create worktree
+	slug := "no-upstream-skip-test"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	if err := os.MkdirAll(filepath.Dir(targetDir), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	cmd := exec.Command("git", "worktree", "add", "-b", slug, targetDir)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	// Mock countUnpushedCommitsFunc to return ErrNoUpstream
+	origCount := countUnpushedCommitsFunc
+	t.Cleanup(func() { countUnpushedCommitsFunc = origCount })
+	countUnpushedCommitsFunc = func(_ string) (int, error) {
+		return 0, gitPkg.ErrNoUpstream
+	}
+
+	buf := new(bytes.Buffer)
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"remove", slug})
+
+	err := Cmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error with ErrNoUpstream: %v", err)
+	}
+
+	// Worktree should be removed (ErrNoUpstream skips the check)
+	if _, err := os.Stat(targetDir); !os.IsNotExist(err) {
+		t.Error("worktree should have been removed when ErrNoUpstream (check skipped)")
+	}
+}
+
+func TestWorktreeRemove_ProceedsWhenZeroUnpushedCommits(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create worktree
+	slug := "zero-unpushed-test"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	if err := os.MkdirAll(filepath.Dir(targetDir), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	cmd := exec.Command("git", "worktree", "add", "-b", slug, targetDir)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	// Mock countUnpushedCommitsFunc to return 0 unpushed commits
+	origCount := countUnpushedCommitsFunc
+	t.Cleanup(func() { countUnpushedCommitsFunc = origCount })
+	countUnpushedCommitsFunc = func(_ string) (int, error) {
+		return 0, nil
+	}
+
+	buf := new(bytes.Buffer)
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"remove", slug})
+
+	err := Cmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error with 0 unpushed: %v", err)
+	}
+
+	// Worktree should be removed
+	if _, err := os.Stat(targetDir); !os.IsNotExist(err) {
+		t.Error("worktree should have been removed when 0 unpushed commits")
 	}
 }
 

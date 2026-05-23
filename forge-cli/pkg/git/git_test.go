@@ -1,6 +1,7 @@
 package git
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -393,5 +394,128 @@ func TestPush_NotGitRepo(t *testing.T) {
 	_, err := Push(dir)
 	if err == nil {
 		t.Error("expected error when pushing from non-git directory")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// ErrNoUpstream
+// ---------------------------------------------------------------------------
+
+func TestErrNoUpstream_IsSentinel(t *testing.T) {
+	err := ErrNoUpstream
+	if err == nil {
+		t.Error("ErrNoUpstream should be non-nil")
+	}
+	if err.Error() != "no upstream tracking branch" {
+		t.Errorf("unexpected error message: %q", err.Error())
+	}
+}
+
+// ---------------------------------------------------------------------------
+// CountUnpushedCommits
+// ---------------------------------------------------------------------------
+
+func TestCountUnpushedCommits_NoUpstream(t *testing.T) {
+	dir := initGitRepo(t)
+
+	count, err := CountUnpushedCommits(dir)
+	if count != 0 {
+		t.Errorf("expected count 0, got %d", count)
+	}
+	if err != ErrNoUpstream {
+		t.Errorf("expected ErrNoUpstream, got %v", err)
+	}
+}
+
+func TestCountUnpushedCommits_NoUpstream_OnFeatureBranch(t *testing.T) {
+	dir := initGitRepo(t)
+
+	// Create a feature branch (still no remote/upstream)
+	if err := runGit(dir, "checkout", "-b", "feature/test"); err != nil {
+		t.Fatalf("git checkout -b: %v", err)
+	}
+
+	count, err := CountUnpushedCommits(dir)
+	if count != 0 {
+		t.Errorf("expected count 0, got %d", count)
+	}
+	if err != ErrNoUpstream {
+		t.Errorf("expected ErrNoUpstream, got %v", err)
+	}
+}
+
+func TestCountUnpushedCommits_WithUpstream_ZeroUnpushed(t *testing.T) {
+	dir := initGitRepo(t)
+
+	// Create a "remote" repo and push to it to establish upstream tracking
+	remoteDir := t.TempDir()
+	if err := runGit(remoteDir, "init", "--bare"); err != nil {
+		t.Fatalf("git init --bare: %v", err)
+	}
+	if err := runGit(dir, "remote", "add", "origin", remoteDir); err != nil {
+		t.Fatalf("git remote add: %v", err)
+	}
+	// Push and set upstream
+	cmd := exec.Command("git", "push", "-u", "origin", "HEAD")
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git push -u origin HEAD: %v", err)
+	}
+
+	count, err := CountUnpushedCommits(dir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if count != 0 {
+		t.Errorf("expected 0 unpushed commits, got %d", count)
+	}
+}
+
+func TestCountUnpushedCommits_WithUpstream_SomeUnpushed(t *testing.T) {
+	dir := initGitRepo(t)
+
+	// Create a bare remote and push to set upstream
+	remoteDir := t.TempDir()
+	if err := runGit(remoteDir, "init", "--bare"); err != nil {
+		t.Fatalf("git init --bare: %v", err)
+	}
+	if err := runGit(dir, "remote", "add", "origin", remoteDir); err != nil {
+		t.Fatalf("git remote add: %v", err)
+	}
+	cmd := exec.Command("git", "push", "-u", "origin", "HEAD")
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git push -u origin HEAD: %v", err)
+	}
+
+	// Create 3 additional commits
+	for i := 0; i < 3; i++ {
+		f := filepath.Join(dir, fmt.Sprintf("file%d.txt", i))
+		if err := os.WriteFile(f, []byte(fmt.Sprintf("content %d", i)), 0o644); err != nil {
+			t.Fatalf("write file: %v", err)
+		}
+		if err := runGit(dir, "add", "."); err != nil {
+			t.Fatalf("git add: %v", err)
+		}
+		if err := runGit(dir, "commit", "-m", fmt.Sprintf("commit %d", i)); err != nil {
+			t.Fatalf("git commit: %v", err)
+		}
+	}
+
+	count, err := CountUnpushedCommits(dir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if count != 3 {
+		t.Errorf("expected 3 unpushed commits, got %d", count)
+	}
+}
+
+func TestCountUnpushedCommits_NotGitRepo(t *testing.T) {
+	dir := t.TempDir()
+
+	_, err := CountUnpushedCommits(dir)
+	if err == nil {
+		t.Error("expected error for non-git directory")
 	}
 }
