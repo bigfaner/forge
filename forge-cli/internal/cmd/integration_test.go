@@ -1934,7 +1934,7 @@ func TestForgeStateLifecycle(t *testing.T) {
 // ---------- error constructors ----------
 
 func TestErrTaskIDConflict(t *testing.T) {
-	err := ErrTaskIDConflict("1.1")
+	err := base.ErrTaskIDConflict("1.1")
 	if err.Code != base.ErrConflict {
 		t.Errorf("Code = %q, want %q", err.Code, base.ErrConflict)
 	}
@@ -1944,7 +1944,7 @@ func TestErrTaskIDConflict(t *testing.T) {
 }
 
 func TestErrInvalidDependency(t *testing.T) {
-	err := ErrInvalidDependency([]string{"2.1", "2.2"})
+	err := base.ErrInvalidDependency([]string{"2.1", "2.2"})
 	if err.Code != base.ErrValidation {
 		t.Errorf("Code = %q, want %q", err.Code, base.ErrValidation)
 	}

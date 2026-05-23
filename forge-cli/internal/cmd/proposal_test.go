@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"forge-cli/internal/cmd/base"
 	"forge-cli/pkg/feature"
 
 	"github.com/stretchr/testify/assert"
@@ -321,7 +322,7 @@ func TestTruncateSlug(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		result := TruncateSlug(tt.input, tt.maxLen)
+		result := base.TruncateSlug(tt.input, tt.maxLen)
 		assert.LessOrEqual(t, len(result), tt.maxLen)
 		if tt.input == "short" {
 			assert.Equal(t, "short", result)

@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"forge-cli/internal/cmd/base"
 	"forge-cli/pkg/feature"
 
 	"github.com/stretchr/testify/assert"
@@ -67,7 +68,7 @@ func TestCalcSlugColWidth(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := CalcSlugColWidth(tt.slugLens)
+			got := base.CalcSlugColWidth(tt.slugLens)
 			assert.Equal(t, tt.want, got)
 		})
 	}
@@ -181,7 +182,7 @@ func TestTruncateSlug_WithDynamicWidth(t *testing.T) {
 	// When slug exceeds dynamic width, it should still truncate
 	dynamicWidth := 44 // e.g., maxSlugLen=42, 42+2=44
 	longSlug := "this-is-an-extremely-long-slug-that-exceeds-sixty-chars-and-should-be-truncated"
-	result := TruncateSlug(longSlug, dynamicWidth)
+	result := base.TruncateSlug(longSlug, dynamicWidth)
 	assert.Equal(t, dynamicWidth, len(result))
 	assert.True(t, strings.HasSuffix(result, "..."))
 }

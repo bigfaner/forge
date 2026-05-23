@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"forge-cli/internal/cmd/base"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/research"
 
@@ -25,7 +26,7 @@ With a slug argument: shows detailed information for that report.`,
 func runResearch(_ *cobra.Command, args []string) error {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		return ErrProjectNotFound()
+		return base.ErrProjectNotFound()
 	}
 
 	if len(args) == 0 {
@@ -45,14 +46,14 @@ func runResearchList(projectRoot string) error {
 		return nil
 	}
 
-	slugWidth := CalcSlugColWidth(mapReportsToSlugLens(reports))
+	slugWidth := base.CalcSlugColWidth(mapReportsToSlugLens(reports))
 
-	PrintBlockStart()
-	PrintField("RESEARCH", fmt.Sprintf("%d found", len(reports)))
+	base.PrintBlockStart()
+	base.PrintField("RESEARCH", fmt.Sprintf("%d found", len(reports)))
 	fmt.Println()
 
 	// Table header
-	fmt.Printf("  %-s %-12s %-10s %s\n", PadRight("SLUG", slugWidth), "CREATED", "TOPIC", "MODE")
+	fmt.Printf("  %-s %-12s %-10s %s\n", base.PadRight("SLUG", slugWidth), "CREATED", "TOPIC", "MODE")
 	fmt.Printf("  %-s %-12s %-10s %s\n",
 		strings.Repeat("-", slugWidth),
 		strings.Repeat("-", 10),
@@ -69,14 +70,14 @@ func runResearchList(projectRoot string) error {
 			mode = r.Mode
 		}
 		fmt.Printf("  %-s %-12s %-10s %s\n",
-			PadRight(TruncateSlug(r.Slug, slugWidth), slugWidth),
+			base.PadRight(base.TruncateSlug(r.Slug, slugWidth), slugWidth),
 			r.Created,
 			topic,
 			mode)
 	}
 
 	fmt.Println()
-	PrintBlockEnd()
+	base.PrintBlockEnd()
 	return nil
 }
 
@@ -86,16 +87,16 @@ func runResearchDetail(projectRoot, slug string) error {
 		return newErrResearchNotFound(slug)
 	}
 
-	PrintBlockStart()
-	PrintField("SLUG", r.Slug)
-	PrintFieldIfNotEmpty("TOPIC", r.Topic)
-	PrintFieldIfNotEmpty("CREATED", r.Created)
-	PrintFieldIfNotEmpty("MODE", r.Mode)
+	base.PrintBlockStart()
+	base.PrintField("SLUG", r.Slug)
+	base.PrintFieldIfNotEmpty("TOPIC", r.Topic)
+	base.PrintFieldIfNotEmpty("CREATED", r.Created)
+	base.PrintFieldIfNotEmpty("MODE", r.Mode)
 	if len(r.Dimensions) > 0 {
-		PrintField("DIMENSIONS", strings.Join(r.Dimensions, ", "))
+		base.PrintField("DIMENSIONS", strings.Join(r.Dimensions, ", "))
 	}
-	PrintField("FILE", r.FilePath)
-	PrintBlockEnd()
+	base.PrintField("FILE", r.FilePath)
+	base.PrintBlockEnd()
 	return nil
 }
 
@@ -108,9 +109,9 @@ func mapReportsToSlugLens(reports []research.Report) []int {
 	return lens
 }
 
-func newErrResearchDiscovery(err error) *AIError {
-	return NewAIError(
-		ErrNotFound,
+func newErrResearchDiscovery(err error) *base.AIError {
+	return base.NewAIError(
+		base.ErrNotFound,
 		"Failed to discover research reports",
 		err.Error(),
 		"Ensure docs/research/ directory exists",
@@ -118,9 +119,9 @@ func newErrResearchDiscovery(err error) *AIError {
 	)
 }
 
-func newErrResearchNotFound(slug string) *AIError {
-	return NewAIError(
-		ErrNotFound,
+func newErrResearchNotFound(slug string) *base.AIError {
+	return base.NewAIError(
+		base.ErrNotFound,
 		fmt.Sprintf("Research report not found: %s", slug),
 		"No research report .md file found with this slug",
 		"Check the slug is correct (without .md extension)",

@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"forge-cli/internal/cmd/base"
 	"forge-cli/pkg/lesson"
 	"forge-cli/pkg/project"
 
@@ -25,7 +26,7 @@ With a name argument: shows metadata and file path for that lesson.`,
 func runLesson(_ *cobra.Command, args []string) error {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		return ErrProjectNotFound()
+		return base.ErrProjectNotFound()
 	}
 
 	if len(args) == 0 {
@@ -46,14 +47,14 @@ func runLessonList(projectRoot string) error {
 	}
 
 	// Calculate dynamic name column width.
-	slugWidth := CalcSlugColWidth(mapLessonsToNameLens(lessons))
+	slugWidth := base.CalcSlugColWidth(mapLessonsToNameLens(lessons))
 
-	PrintBlockStart()
-	PrintField("LESSONS", fmt.Sprintf("%d found", len(lessons)))
+	base.PrintBlockStart()
+	base.PrintField("LESSONS", fmt.Sprintf("%d found", len(lessons)))
 	fmt.Println()
 
 	// Table header
-	fmt.Printf("  %-s %-12s %-15s %-12s\n", PadRight("NAME", slugWidth), "CREATED", "CATEGORY", "TAGS")
+	fmt.Printf("  %-s %-12s %-15s %-12s\n", base.PadRight("NAME", slugWidth), "CREATED", "CATEGORY", "TAGS")
 	fmt.Printf("  %-s %-12s %-15s %-12s\n",
 		strings.Repeat("-", slugWidth),
 		strings.Repeat("-", 10),
@@ -66,14 +67,14 @@ func runLessonList(projectRoot string) error {
 			tags = strings.Join(l.Tags, ", ")
 		}
 		fmt.Printf("  %-s %-12s %-15s %-12s\n",
-			PadRight(TruncateSlug(l.Name, slugWidth), slugWidth),
+			base.PadRight(base.TruncateSlug(l.Name, slugWidth), slugWidth),
 			l.Created,
 			l.Category,
 			tags)
 	}
 
 	fmt.Println()
-	PrintBlockEnd()
+	base.PrintBlockEnd()
 	return nil
 }
 
@@ -83,22 +84,22 @@ func runLessonDetail(projectRoot, name string) error {
 		return newErrLessonNotFound(name)
 	}
 
-	PrintBlockStart()
-	PrintField("NAME", l.Name)
-	PrintFieldIfNotEmpty("TITLE", l.Title)
-	PrintField("CREATED", l.Created)
-	PrintField("CATEGORY", l.Category)
+	base.PrintBlockStart()
+	base.PrintField("NAME", l.Name)
+	base.PrintFieldIfNotEmpty("TITLE", l.Title)
+	base.PrintField("CREATED", l.Created)
+	base.PrintField("CATEGORY", l.Category)
 	if len(l.Tags) > 0 {
-		PrintField("TAGS", strings.Join(l.Tags, ", "))
+		base.PrintField("TAGS", strings.Join(l.Tags, ", "))
 	}
-	PrintField("FILE", l.FilePath)
-	PrintBlockEnd()
+	base.PrintField("FILE", l.FilePath)
+	base.PrintBlockEnd()
 	return nil
 }
 
-func newErrLessonDiscovery(err error) *AIError {
-	return NewAIError(
-		ErrNotFound,
+func newErrLessonDiscovery(err error) *base.AIError {
+	return base.NewAIError(
+		base.ErrNotFound,
 		"Failed to discover lessons",
 		err.Error(),
 		"Ensure docs/lessons/ directory exists",
@@ -106,9 +107,9 @@ func newErrLessonDiscovery(err error) *AIError {
 	)
 }
 
-func newErrLessonNotFound(name string) *AIError {
-	return NewAIError(
-		ErrNotFound,
+func newErrLessonNotFound(name string) *base.AIError {
+	return base.NewAIError(
+		base.ErrNotFound,
 		fmt.Sprintf("Lesson not found: %s", name),
 		"No lesson .md file found with this name",
 		"Check the name is correct (without .md extension)",

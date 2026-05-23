@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 
+	"forge-cli/internal/cmd/base"
 	"forge-cli/pkg/e2eprobe"
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/just"
@@ -66,14 +67,14 @@ func checkAllCompleted(verbose bool) (*AllCompletedResult, error) {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
 		Debugf(verbose, "project root not found: %v", err)
-		return nil, ErrProjectNotFound()
+		return nil, base.ErrProjectNotFound()
 	}
 	Debugf(verbose, "project root: %s", projectRoot)
 
 	featureSlug, err := feature.GetCurrentFeature(projectRoot)
 	if err != nil {
 		Debugf(verbose, "feature not found: %v", err)
-		return nil, ErrFeatureNotSet()
+		return nil, base.ErrFeatureNotSet()
 	}
 	Debugf(verbose, "feature: %s", featureSlug)
 
@@ -126,7 +127,7 @@ func isDocsOnly(index *task.TaskIndex) bool {
 func runQualityGate(_ *cobra.Command, _ []string) error {
 	result, err := checkAllCompleted(qualityGateVerbose)
 	if err != nil {
-		Exit(err)
+		base.Exit(err)
 	}
 	if result == nil {
 		return nil // not all done is normal, exit silently
