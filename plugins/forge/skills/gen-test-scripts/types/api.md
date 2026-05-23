@@ -162,6 +162,17 @@ API tests must verify error response contracts explicitly:
 - Do not write vacuous assertions like "response is not successful" or "returns an error"
 - Each error test case must assert the exact status code and at least one response body field
 
+## Test Ratio Constraint
+
+API surface targets a **balanced 50/50** ratio between Contract tests and Journey smoke tests.
+
+- **Formula**: `Contract test functions / (Contract test functions + Journey smoke test functions) × 100%`
+- **Target**: Approximately 50% Contract tests, 50% Journey smoke tests
+- **Implementation**: Generate Contract tests for each Outcome, PLUS generate enriched Journey smoke tests that cover both happy path AND at least 1 error path through the Journey
+- **Minimum**: Every Journey MUST have at least 1 smoke test (happy path). The "balanced" target means the smoke test suite should be substantive — testing multi-step API interactions end-to-end
+
+**Ratio guidance**: If the generated plan skews heavily toward Contract tests (>70%), add additional Journey smoke test scenarios (e.g., full CRUD lifecycle, multi-endpoint transactions). If the plan skews toward Journey smoke tests (>70%), ensure Contract tests cover individual endpoint Outcomes adequately.
+
 ## Output
 
 API test scripts are written to `tests/<journey>/` following the strategy's template naming convention. Each test function includes a traceability comment linking back to the source test case ID.

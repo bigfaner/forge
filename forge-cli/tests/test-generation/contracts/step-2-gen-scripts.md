@@ -36,7 +36,7 @@
 - Side-effect: none
 
 ## Outcome "element-field-required"
-- Preconditions: "gen-test-cases SKILL.md exists"
+- Preconditions: "gen-contracts SKILL.md exists"
 - Input: "Read SKILL.md content"
 - Output: "SKILL.md states Element is required, defines Element field, defines sitemap-missing fallback"
 - State: "no state changes"
@@ -44,5 +44,5 @@
 
 ## Journey Invariants
 - gen-test-scripts SKILL.md is the authoritative script generation skill
-- gen-test-cases SKILL.md is the authoritative test case generation skill
+- gen-contracts SKILL.md is the authoritative contract generation skill
 - Profile capabilities define valid --type filter values

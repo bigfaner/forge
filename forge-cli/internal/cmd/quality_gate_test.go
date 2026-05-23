@@ -1126,7 +1126,7 @@ func TestIsDocsOnly(t *testing.T) {
 		{
 			name: "test-pipeline tasks only",
 			tasks: map[string]task.Task{
-				"t1": {ID: "T-quick-gen-cases", Type: task.TypeTestGenCases},
+				"t1": {ID: "T-quick-gen-and-run-api", Type: task.TypeTestGenAndRun},
 				"t2": {ID: "T-quick-gen-and-run", Type: task.TypeTestGenAndRun},
 			},
 			want: true,

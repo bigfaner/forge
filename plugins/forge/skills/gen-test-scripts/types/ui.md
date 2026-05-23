@@ -165,6 +165,17 @@ Beyond the shared antipattern guards in `_shared.md` (Sleep-Based Waits, Hardcod
 | **Screenshot-only assertions** | Screenshots are non-deterministic across environments and provide weak signal | Use structural assertions (visibility, text content) as primary; screenshots as supplementary evidence only |
 | **Per-test authentication** | Multiplies execution time, introduces flakiness from repeated auth service calls | Login once at Journey setup, reuse session across tests (see Golden Rule: Session Reuse) |
 
+## Test Ratio Constraint
+
+WebUI surface targets a **balanced 50/50** ratio between Contract tests and Journey smoke tests.
+
+- **Formula**: `Contract test functions / (Contract test functions + Journey smoke test functions) × 100%`
+- **Target**: Approximately 50% Contract tests, 50% Journey smoke tests
+- **Implementation**: Generate Contract tests for each Outcome, PLUS generate enriched Journey smoke tests that cover both happy path AND at least 1 failure path through the Journey
+- **Minimum**: Every Journey MUST have at least 1 smoke test (happy path). The "balanced" target means the smoke test suite should be substantive — not just a trivial single-assertion test
+
+**Ratio guidance**: If the generated plan skews heavily toward Contract tests (>70%), add additional Journey smoke test scenarios (e.g., alternative failure paths, state transition tests). If the plan skews toward Journey smoke tests (>70%), ensure Contract tests cover individual Outcomes adequately.
+
 ## Output
 
 UI test scripts are written to `tests/<journey>/` following the active Convention's file naming and structure. Each test file includes a traceability comment linking back to the source Contract step.

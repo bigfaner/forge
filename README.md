@@ -88,11 +88,11 @@ task --version
 
 ### 评估（1000 分制，对抗式迭代至达标；`/eval-harness` 例外，使用 100 分制）
 
-`/eval-prd` · `/eval-design` · `/eval-ui` · `/eval-proposal` · `/eval-test-cases` · `/eval-consistency` · `/eval-harness`
+`/eval-prd` · `/eval-design` · `/eval-ui` · `/eval-proposal` · `/eval-journey` · `/eval-contract` · `/eval-consistency` · `/eval-harness`
 
 ### 测试生命周期
 
-`/gen-sitemap` → `/gen-test-cases` → `/eval-test-cases` → `/gen-test-scripts` → `/run-e2e-tests` → `/graduate-tests` → `verify-regression` → `/consolidate-specs`
+`/gen-sitemap` → `/gen-journeys` → `/eval-journey` → `/gen-contracts` → `/eval-contract` → `/gen-test-scripts` → `/run-tests` → `forge test promote` → `/consolidate-specs`
 
 ### 执行
 
@@ -140,7 +140,7 @@ docs/features/<slug>/
 ├── prd/                    # /write-prd 产出
 ├── design/                 # /tech-design 产出
 ├── ui/                     # /ui-design 产出（可选）
-├── testing/                # /gen-test-cases 产出
+├── testing/                # /gen-journeys + /gen-contracts 产出
 └── tasks/
     ├── index.json          # 任务定义
     ├── *.md                # 任务详情
@@ -199,15 +199,17 @@ go test -race -cover ./...
 
 | ID | 职责 |
 |----|------|
-| T-test-1 | 生成测试用例文档（先调 `/gen-sitemap` 如果 sitemap.json 缺失，再调 `/gen-test-cases`） |
-| T-test-1b | 评估测试用例的下游可执行性（main session 任务，调用 `/eval-test-cases`） |
-| T-test-2 | 从评估后的测试用例生成测试脚本（调用 `/gen-test-scripts`） |
-| T-test-3 | 执行 feature e2e 测试；失败则标记 blocked 并添加 fix task（P0），修复后重跑 |
-| T-test-4 | 验证 e2e 通过（检查 `latest.md`），然后晋升脚本到 `tests/e2e/` |
+| T-test-1 | 生成 Journey 文档（先调 `/gen-sitemap` 如果 sitemap.json 缺失，再调 `/gen-journeys`，含 surface 检测） |
+| T-test-1b | 评估 Journey 质量（main session 任务，调用 `/eval-journey`，总分 ≥850 且每维度不低于最低阈值） |
+| T-test-2 | 从 Journey 生成 Contract + 衍生边界 Outcome（调用 `/gen-contracts`，含风险驱动密度） |
+| T-test-2b | 评估 Contract 质量（main session 任务，调用 `/eval-contract`，同样 6 维度 1000 分制门禁） |
+| T-test-3 | 从 Contract + Convention 生成测试脚本（调用 `/gen-test-scripts`，按 surface 差异化策略） |
+| T-test-3b | 执行 feature e2e 测试（调用 `/run-tests`，含环境就绪检测 + 置信度评级）；失败则标记 blocked 并添加 fix task（P0） |
+| T-test-4 | 验证 e2e 通过（检查 `latest.md` + 置信度评级），然后 `forge test promote` 晋升脚本到 `tests/e2e/` |
 | T-test-4.5 | 运行完整回归套件；失败则标记 blocked 并添加 fix task（P0），修复后重跑 |
 | T-test-5 | 提取业务规则和技术规格，用户确认后合并（调用 `/consolidate-specs`） |
 
-依赖链：T-test-1 → T-test-1b → 每个 profile 的 T-test-2~4 串行 → T-test-4.5（依赖所有 T-test-4） → T-test-5。
+依赖链：T-test-1 → T-test-1b → T-test-2 → T-test-2b → T-test-3 → T-test-3b → T-test-4 → T-test-4.5 → T-test-5。
 
 ### Fix-task 命令
 

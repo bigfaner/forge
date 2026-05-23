@@ -157,6 +157,16 @@ Each CLI test must create its own isolated environment:
 - Set environment variables explicitly (do not rely on host environment).
 - Clean up created resources within the test scope.
 
+## Test Ratio Constraint
+
+CLI surface targets **Contract test ratio ≥ 80%**.
+
+- **Formula**: `Contract test functions / (Contract test functions + Journey smoke test functions) × 100%`
+- **Minimum**: For a Journey with N steps and M total Outcomes across all steps, generate M Contract test functions and exactly 1 Journey smoke test (happy path). This ensures ratio ≥ 80% for any Journey with ≥ 5 Outcomes.
+- **Small Journey adjustment**: If a Journey has fewer than 5 total Outcomes, the 1 smoke test still counts as only 1 function, so the ratio naturally stays high. Do NOT skip the smoke test to inflate the ratio — every Journey MUST have at least 1 smoke test.
+
+**Ratio enforcement rule**: If the generated test plan would result in Contract ratio < 80%, reduce the number of Journey smoke tests (minimum 1) before reducing Contract tests.
+
 ## Output
 
 CLI test scripts are written to `tests/<journey>/` following the strategy's template naming convention. Each test function includes a traceability comment linking back to the source test case ID.

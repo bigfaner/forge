@@ -259,8 +259,8 @@ func TestTSG_004_ExcludesTestOnlyPhases(t *testing.T) {
 	featureSlug := "test-stage-gates-004"
 	tmpRoot, cleanup := stageGateTestDir(t, featureSlug, []string{
 		"1.1.md:" + taskContentWithType("1.1.md", "feature"),
-		"T-test-gen-cases.md:" + taskContentWithType("T-test-gen-cases.md", "testTask"),
-		"T-quick-gen-cases.md:" + taskContentWithType("T-quick-gen-cases.md", "testTask"),
+		"T-test-gen-scripts-cli.md:" + taskContentWithType("T-test-gen-scripts-cli.md", "testTask"),
+		"T-quick-gen-and-run-cli.md:" + taskContentWithType("T-quick-gen-and-run-cli.md", "testTask"),
 	})
 	defer cleanup()
 
@@ -285,7 +285,7 @@ func TestTSG_005_FiltersTestTasksFromBusinessCount(t *testing.T) {
 	tmpRoot, cleanup := stageGateTestDir(t, featureSlug, []string{
 		"1.1-task.md",
 		"1.2-task.md",
-		"T-test-gen-cases.md:" + taskContentWithType("T-test-gen-cases.md", "testTask"),
+		"T-test-gen-scripts-cli.md:" + taskContentWithType("T-test-gen-scripts-cli.md", "testTask"),
 	})
 	defer cleanup()
 
@@ -294,7 +294,7 @@ func TestTSG_005_FiltersTestTasksFromBusinessCount(t *testing.T) {
 
 	tasksDir := filepath.Join(tmpRoot, "docs", "features", featureSlug, "tasks")
 
-	// Summary generated (business count = 2, excluding test task T-test-gen-cases)
+	// Summary generated (business count = 2, excluding test task T-test-gen-scripts-cli)
 	assert.FileExists(t, filepath.Join(tasksDir, "1.summary.md"))
 
 	// Summary depends_on should NOT include the test task
@@ -303,7 +303,7 @@ func TestTSG_005_FiltersTestTasksFromBusinessCount(t *testing.T) {
 	require.True(t, ok)
 	depStrs := toStringSlice(deps)
 	for _, d := range depStrs {
-		assert.NotEqual(t, "T-test-gen-cases", d, "test task should not appear in summary dependencies")
+		assert.NotEqual(t, "T-test-gen-scripts-cli", d, "test task should not appear in summary dependencies")
 	}
 }
 

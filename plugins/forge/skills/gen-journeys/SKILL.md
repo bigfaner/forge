@@ -15,6 +15,70 @@ This skill only generates Journey narrative documents (per-Journey Markdown file
 - `/gen-test-scripts` -- generates executable test code from Contracts
 </HARD-GATE>
 
+## Surface Detection
+
+Before processing PRD sources, detect the project's surface type. Surface determines testing strategy, required Outcomes, and test level emphasis.
+
+### Detection Process
+
+1. Read all surface rule files from `rules/surface-*.md` (each file defines detection signals for one surface type)
+2. Scan the project for signals defined in each rule file's "Detection Signals" section
+3. Match detected signals against the detection tables to determine the surface type
+
+### Signal Matching Table
+
+| Signal Combination | Surface Type |
+|---------|---------|
+| `main.go` + `cobra.Command` / `urfave/cli` | CLI |
+| `main.go` + `tea.Program` / `tview.Application` | TUI |
+| `package.json` + `React` / `Vue` / `Svelte` + browser DOM entry | WebUI |
+| `AndroidManifest.xml` or `*.xcodeproj` + UI framework dependency | Mobile |
+| `main.go` + `http.Handler` / `gin` / `echo` and no frontend entry | API |
+| `package.json` + `express` / `fastify` / `koa` and no frontend framework | API |
+| `pyproject.toml`/`setup.py` + `pytest`/`unittest` and no frontend entry | API |
+| `pom.xml`/`build.gradle` + `JUnit`/`TestNG` and no frontend entry | API |
+| `Cargo.toml` + `#[cfg(test)]`/`cargo test` and no frontend entry | CLI |
+| `package.json` + `commander` / `yargs` / `oclif` / `inquirer` and no frontend framework | CLI |
+| `package.json` + `blessed` / `ink` / `neo-blessed` and no frontend framework | TUI |
+| `pyproject.toml`/`setup.py` + `click`/`typer`/`argparse` and no frontend entry | CLI |
+| `pyproject.toml`/`setup.py` + `rich`/`textual`/`prompt_toolkit` and no frontend entry | TUI |
+| `Cargo.toml` + `clap`/`structopt`/`gum` and no frontend entry | CLI |
+| `Cargo.toml` + `ratatui`/`cursive` and no frontend entry | TUI |
+
+### Detection Outcomes
+
+| Outcome | Action |
+|---------|--------|
+| Single surface matched | Proceed with detected surface. Record detection result. |
+| Multiple surfaces matched | **Pause pipeline**. Report all matched signals and candidate surfaces. Ask user to confirm which surface type applies. |
+| No surface matched | **Pause pipeline**. Report all detected signals. Ask user to manually specify the surface type. |
+
+### Persist Detection Result
+
+After surface detection succeeds (single match or user confirmation), persist the result:
+
+1. Write the surface type to `.forge/config.yaml` in the `surface` field (e.g., `surface: cli`)
+2. Record the detection metadata for diagnostic purposes:
+   - `detected_surface`: the surface type string
+   - `matched_signals`: list of signals that triggered the match
+   - `confidence`: high / medium / low
+   - `all_signals`: all signals detected during scanning
+
+### Extensibility
+
+New surface types can be added by creating a new `rules/surface-<type>.md` file following the same 4-section structure (Detection Signals, General Testing Principles, Test Strategy Guidance, Required Outcome Reference). No pipeline code changes are needed.
+
+### Surface Rule Loading
+
+When generating Journeys, load the detected surface's rule file to inform:
+- Which boundary/error Outcomes must be derived (from "Required Outcome Reference")
+- Test level emphasis ratio (from "Test Strategy Guidance")
+- Risk-level Outcome density targets adjusted by surface-specific guidance
+
+<HARD-RULE>
+Surface detection must complete before Journey generation begins. If detection is ambiguous or fails, the pipeline must pause and wait for user input. Never proceed with a guessed surface type.
+</HARD-RULE>
+
 ## Prerequisites
 
 | Artifact | Missing prompt |
@@ -111,11 +175,13 @@ High-risk Journeys MUST have edge case count >= happy path step count. If extrac
 
 ## Step 4: Generate Per-Journey Files
 
-For each Journey, generate a Markdown file using `templates/journey.md`.
+For each Journey, generate a directory and Markdown file using `templates/journey.md`.
 
-**Output location**: `docs/features/<slug>/testing/journeys/<journey-name>.md`
+**Output location**: `docs/features/<slug>/testing/<journey-name>/journey.md`
 
-**One Journey = one file**. Output is organized by Journey (user workflow), NOT by interface type (CLI, API, TUI, etc.).
+Create the directory `docs/features/<slug>/testing/<journey-name>/` if it does not exist.
+
+**One Journey = one directory**. Output is organized by Journey (user workflow), NOT by interface type (CLI, API, TUI, etc.).
 
 <HARD-RULE>
 gen-journeys output must be in a format that gen-contracts can directly consume. Each Journey file must contain:
@@ -158,38 +224,19 @@ After generating all Journey files, validate each one:
 
 If validation fails, fix the Journey file before proceeding.
 
-## Step 6: Generate Index
-
-After all Journey files are written, generate a manifest index at `docs/features/<slug>/testing/journeys/manifest.md`:
-
-```yaml
----
-feature: "{{FEATURE_SLUG}}"
-generated: "{{DATE}}"
-journey-count: {{COUNT}}
----
-```
-
-Include a **Journeys Summary** table:
-
-| Journey | Risk | Happy Path Steps | Edge Cases | Source Stories | File |
-|---------|------|-----------------|------------|---------------|------|
-
-This index allows gen-contracts to discover all Journey files.
-
-## Step 7: Review & Commit
+## Step 6: Review & Commit
 
 <HARD-RULE>
 Do NOT commit documents automatically. Present all generated Journey files to the user for review and wait for explicit approval before committing.
 </HARD-RULE>
 
-1. Present all generated Journey files and the manifest to the user
+1. Present all generated Journey files to the user
 2. Wait for the user to review and approve (or request changes)
 3. Only commit after explicit user approval:
 
 ```bash
-git add docs/features/<slug>/testing/journeys/
-git commit -m "docs: generate journeys for <feature-slug>"
+git add docs/features/<slug>/testing/
+git commit -m "docs: generate journey <journey-name> for <feature-slug>"
 ```
 
 ## Related Skills

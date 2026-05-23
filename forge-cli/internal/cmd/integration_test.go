@@ -784,11 +784,11 @@ func TestValidatorRun_FeatureBased(t *testing.T) {
 
 func TestValidateTTest1Template_UnresolvedPlaceholder(t *testing.T) {
 	dir := t.TempDir()
-	taskFile := filepath.Join(dir, "T-test-gen-cases.md")
+	taskFile := filepath.Join(dir, "T-test-gen-scripts-cli.md")
 	_ = os.WriteFile(taskFile, []byte("# Task\nReplace {{LAST_BUSINESS_TASK_ID}} with actual ID\n"), 0644)
 
 	v := taskpkg.NewExportValidator("")
-	v.ExportValidateFirstTestTaskTemplate(taskFile, "T-test-gen-cases", []string{"{{LAST_BUSINESS_TASK_ID}}"})
+	v.ExportValidateFirstTestTaskTemplate(taskFile, "T-test-gen-scripts-cli", []string{"{{LAST_BUSINESS_TASK_ID}}"})
 	if len(v.ExportErrors()) == 0 {
 		t.Error("expected error for unresolved placeholder")
 	}
@@ -799,11 +799,11 @@ func TestValidateTTest1Template_UnresolvedPlaceholder(t *testing.T) {
 
 func TestValidateTTest1Template_ResolvedPlaceholder(t *testing.T) {
 	dir := t.TempDir()
-	taskFile := filepath.Join(dir, "T-test-gen-cases.md")
+	taskFile := filepath.Join(dir, "T-test-gen-scripts-cli.md")
 	_ = os.WriteFile(taskFile, []byte("# Task\nDepends on 1.5\n"), 0644)
 
 	v := taskpkg.NewExportValidator("")
-	v.ExportValidateFirstTestTaskTemplate(taskFile, "T-test-gen-cases", []string{"{{LAST_BUSINESS_TASK_ID}}"})
+	v.ExportValidateFirstTestTaskTemplate(taskFile, "T-test-gen-scripts-cli", []string{"{{LAST_BUSINESS_TASK_ID}}"})
 	if len(v.ExportErrors()) != 0 {
 		t.Errorf("expected no errors, got: %v", v.ExportErrors())
 	}
@@ -1325,7 +1325,7 @@ func TestRunValidate_InvalidFile(t *testing.T) {
 
 func TestValidateTTest1Template_MissingFile(t *testing.T) {
 	v := taskpkg.NewExportValidator("")
-	v.ExportValidateFirstTestTaskTemplate("/nonexistent/task.md", "T-test-gen-cases", []string{"{{LAST_BUSINESS_TASK_ID}}"})
+	v.ExportValidateFirstTestTaskTemplate("/nonexistent/task.md", "T-test-gen-scripts-cli", []string{"{{LAST_BUSINESS_TASK_ID}}"})
 	if len(v.ExportErrors()) != 0 {
 		t.Errorf("missing file should not add errors, got: %v", v.ExportErrors())
 	}

@@ -19,7 +19,8 @@
 Type-specific additions:
 - `harness`: priority improvement table (P0/P1/P2)
 - `consistency`: "Files Modified" and "Residual Issues"
-- `test-cases`, `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases`: Step Actionability blocking warning if < 200
 - `design`: Breakdown-Readiness gate status
+- `journey`: Per-dimension threshold pass/fail table; eval-skipped flag if parse failure after retry
+- `contract`: Per-dimension threshold pass/fail table; eval-skipped flag if parse failure after retry
 
 Save report to type-specific report path.

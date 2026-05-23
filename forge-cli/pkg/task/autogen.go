@@ -13,15 +13,14 @@ import (
 var autogenTemplateFS embed.FS
 
 // autogenTypeToFile maps task type constants to their embed template filenames.
-// Filename convention: type name with '.' replaced by '-' (e.g., test.gen-cases -> test-gen-cases.md).
+// Filename convention: type name with '.' replaced by '-' (e.g., test.gen-scripts -> test-gen-scripts.md).
 var autogenTypeToFile = map[string]string{
-	TypeTestGenCases:         "data/test-gen-cases.md",
-	TypeTestEvalCases:        "data/test-eval-cases.md",
 	TypeTestGenScripts:       "data/test-gen-scripts.md",
 	TypeTestGenAndRun:        "data/test-gen-and-run.md",
 	TypeTestRun:              "data/test-run.md",
-	TypeTestGraduate:         "data/test-graduate.md",
 	TypeTestVerifyRegression: "data/test-verify-regression.md",
+	TypeEvalJourney:          "data/eval-journey.md",
+	TypeEvalContract:         "data/eval-contract.md",
 	TypeValidationCode:       "data/validation-code.md",
 	TypeValidationUx:         "data/validation-ux.md",
 	TypeDocEval:              "data/doc-eval.md",
@@ -64,7 +63,7 @@ type BodyContext struct {
 // AutoGenTaskDef defines an auto-generated task definition.
 type AutoGenTaskDef struct {
 	ID              string
-	Key             string // map key in index.json (e.g., "gen-test-cases", "gen-test-scripts-api")
+	Key             string // map key in index.json (e.g., "gen-scripts", "gen-scripts-api")
 	Title           string
 	Priority        string
 	EstimatedTime   string
@@ -75,7 +74,7 @@ type AutoGenTaskDef struct {
 	Breaking        bool
 	TestType        string // per-type interface (e.g., "api", "tui", "cli"); empty for non-per-type tasks
 	FileName        string // .md filename (derived from key)
-	StrategyKind    string // "generate", "run", "graduate", or "" for generic
+	StrategyKind    string // "generate", "run" or "" for generic
 	StrategyContent []byte // resolved by caller from convention files
 }
 
@@ -91,16 +90,18 @@ func GetBreakdownTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []A
 
 	// Shared tasks (gated by auto.E2eTest.Full)
 	if auto.E2eTest.Full {
+		// Eval Journeys (after gen-journeys, before gen-contracts)
 		tasks = append(tasks, AutoGenTaskDef{
-			Key: "gen-test-cases", ID: "T-test-gen-cases",
-			Title: "Generate e2e Test Cases", Priority: "P1", EstimatedTime: "1-2h",
-			Type: TypeTestGenCases, Scope: "all",
-			StrategyKind: "generate",
+			Key: "eval-journey", ID: "T-eval-journey",
+			Title: "Evaluate Journey Quality", Priority: "P1", EstimatedTime: "20-30min",
+			Type: TypeEvalJourney, Scope: "all", MainSession: true,
 		})
+
+		// Eval Contracts (after gen-contracts, before gen-test-scripts)
 		tasks = append(tasks, AutoGenTaskDef{
-			Key: "eval-test-cases", ID: "T-test-eval-cases",
-			Title: "Evaluate e2e Test Cases", Priority: "P1", EstimatedTime: "30min",
-			Type: TypeTestEvalCases, Scope: "all", MainSession: true,
+			Key: "eval-contract", ID: "T-eval-contract",
+			Title: "Evaluate Contract Quality", Priority: "P1", EstimatedTime: "20-30min",
+			Type: TypeEvalContract, Scope: "all", MainSession: true,
 		})
 
 		// Per-type gen-scripts (interface-only, no language loop)
@@ -113,18 +114,12 @@ func GetBreakdownTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []A
 			})
 		}
 
-		// Single run + graduate (no language suffix)
+		// Single run (no language suffix)
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "run-e2e-tests", ID: "T-test-run",
 			Title: "Run e2e Tests", Priority: "P1", EstimatedTime: "30min-1h",
 			Type: TypeTestRun, Scope: "all",
 			StrategyKind: "run",
-		})
-		tasks = append(tasks, AutoGenTaskDef{
-			Key: "graduate-tests", ID: "T-test-graduate",
-			Title: "Graduate Test Scripts", Priority: "P1", EstimatedTime: "30min",
-			Type: TypeTestGraduate, Scope: "all",
-			StrategyKind: "graduate",
 		})
 
 		// Shared verify-regression
@@ -187,12 +182,6 @@ func GetQuickTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []AutoG
 
 	// Per-type gen-and-run (gated by auto.E2eTest.Quick)
 	if auto.E2eTest.Quick {
-		tasks = append(tasks, AutoGenTaskDef{
-			Key: "quick-test-cases", ID: "T-quick-gen-cases",
-			Title: "Generate Quick Test Cases", Priority: "P1", EstimatedTime: "30min-1h",
-			Type: TypeTestGenCases, Scope: "all",
-			StrategyKind: "generate",
-		})
 		for _, typ := range interfaces {
 			tasks = append(tasks, AutoGenTaskDef{
 				Key: "quick-gen-and-run-" + typ, ID: "T-quick-gen-and-run-" + typ,
@@ -201,14 +190,6 @@ func GetQuickTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []AutoG
 				StrategyKind: "generate",
 			})
 		}
-		tasks = append(tasks, AutoGenTaskDef{
-			Key: "quick-graduate", ID: "T-quick-graduate",
-			Title: "Graduate Quick Test Scripts", Priority: "P1", EstimatedTime: "15min",
-			Type: TypeTestGraduate, Scope: "all",
-			StrategyKind: "graduate",
-		})
-
-		// Shared
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "quick-verify-regression", ID: "T-quick-verify-regression",
 			Title: "Verify Quick E2E Regression", Priority: "P1", EstimatedTime: "15min",
@@ -409,7 +390,7 @@ func GenerateTestTaskMD(def AutoGenTaskDef, ctx BodyContext) ([]byte, error) {
 			}
 			buf.Write(def.StrategyContent)
 		} else {
-			fmt.Fprintf(&buf, "# %s\n\nRead docs/conventions/testing-*.md for test generation strategy.", def.Title)
+			fmt.Fprintf(&buf, "# %s\n\nRead docs/conventions/testing/ for test generation strategy.", def.Title)
 			if def.TestType != "" {
 				fmt.Fprintf(&buf, " Type: %q.", def.TestType)
 			}
@@ -441,18 +422,18 @@ func resolveBreakdownDeps(tasks []AutoGenTaskDef, interfaces []string, auto forg
 	}
 
 	if auto.E2eTest.Full {
-		// T-test-eval-cases -> T-test-gen-cases
-		if len(tasks) > 1 {
-			tasks[1].Dependencies = []string{"T-test-gen-cases"}
-		}
-
-		// gen-scripts start at index 2
-		genStart := 2
+		// Pipeline order: eval-journey(0) -> eval-contract(1) -> gen-scripts(2..2+n) -> run(2+n) -> verify(3+n)
+		evalJourneyIdx := 0
+		evalContractIdx := 1
 		nTypes := len(interfaces)
 
-		// All gen-scripts depend on T-test-eval-cases
+		// eval-contract depends on eval-journey
+		tasks[evalContractIdx].Dependencies = []string{tasks[evalJourneyIdx].ID}
+
+		// gen-scripts depend on eval-contract
+		genStart := 2
 		for j := range nTypes {
-			tasks[genStart+j].Dependencies = []string{"T-test-eval-cases"}
+			tasks[genStart+j].Dependencies = []string{tasks[evalContractIdx].ID}
 		}
 
 		// Run depends on all gen-scripts
@@ -463,15 +444,10 @@ func resolveBreakdownDeps(tasks []AutoGenTaskDef, interfaces []string, auto forg
 		}
 		tasks[runIdx].Dependencies = genDeps
 
-		// Graduate depends on run
-		gradIdx := runIdx + 1
-		tasks[gradIdx].Dependencies = []string{tasks[runIdx].ID}
-
-		// Verify-regression depends on graduate
-		verifyIdx := gradIdx + 1
-		tasks[verifyIdx].Dependencies = []string{tasks[gradIdx].ID}
+		// Verify-regression depends on run
+		verifyIdx := runIdx + 1
+		tasks[verifyIdx].Dependencies = []string{tasks[runIdx].ID}
 	}
-
 	// T-validate-code depends on T-test-verify-regression (if e2e tasks exist)
 	validateIdx := findTaskIndex(tasks, "T-validate-code")
 	if validateIdx >= 0 && auto.E2eTest.Full {
@@ -498,27 +474,14 @@ func resolveQuickDeps(tasks []AutoGenTaskDef, interfaces []string, auto forgecon
 
 	if auto.E2eTest.Quick {
 		nTypes := len(interfaces)
-
-		// gen-cases is index 0 (deps resolved by BuildIndex)
-
-		// All gen-and-run depend on gen-cases
-		for j := range nTypes {
-			tasks[1+j].Dependencies = []string{"T-quick-gen-cases"}
-		}
-
-		// Graduate depends on all gen-and-run
-		gradIdx := 1 + nTypes
+		// Verify-regression depends on all gen-and-run
+		verifyIdx := nTypes
 		var genDeps []string
 		for j := range nTypes {
-			genDeps = append(genDeps, tasks[1+j].ID)
+			genDeps = append(genDeps, tasks[j].ID)
 		}
-		tasks[gradIdx].Dependencies = genDeps
-
-		// Verify-regression depends on graduate
-		verifyIdx := gradIdx + 1
-		tasks[verifyIdx].Dependencies = []string{tasks[gradIdx].ID}
+		tasks[verifyIdx].Dependencies = genDeps
 	}
-
 	// T-validate-code depends on T-quick-verify-regression (if e2e tasks exist) or nothing
 	if auto.Validation.Quick {
 		validateIdx := findTaskIndex(tasks, "T-validate-code")
@@ -583,7 +546,11 @@ func ResolveFirstTestDep(tasks []AutoGenTaskDef, existingTasks map[string]Task, 
 		}
 
 		cleanIdx := findTaskIndex(tasks, "T-clean-code")
-		firstTestIdx := findTaskIndex(tasks, "T-test-gen-cases")
+		// First test pipeline task is either T-eval-journey or T-test-gen-scripts
+		firstTestIdx := findTaskIndex(tasks, "T-eval-journey")
+		if firstTestIdx < 0 {
+			firstTestIdx = findTaskIndexByPrefix(tasks, "T-test-gen-scripts")
+		}
 
 		if cleanIdx >= 0 {
 			tasks[cleanIdx].Dependencies = []string{dep}
@@ -601,7 +568,7 @@ func ResolveFirstTestDep(tasks []AutoGenTaskDef, existingTasks map[string]Task, 
 		}
 
 		cleanIdx := findTaskIndex(tasks, "T-clean-code")
-		firstTestIdx := findTaskIndexByPrefix(tasks, "T-quick-gen-cases")
+		firstTestIdx := findTaskIndexByPrefix(tasks, "T-quick-gen-and-run")
 
 		if cleanIdx >= 0 {
 			tasks[cleanIdx].Dependencies = []string{dep}

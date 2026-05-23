@@ -16,8 +16,8 @@ func TestGetBreakdownTestTasks_E2eTestFullFalse(t *testing.T) {
 
 	// No e2e test tasks, no consolidate (consolidate depends on e2e test chain in breakdown)
 	for _, task := range tasks {
-		if task.ID == "T-test-gen-cases" || task.ID == "T-test-eval-cases" || task.ID == "T-test-gen-scripts-cli" ||
-			task.ID == "T-test-run" || task.ID == "T-test-graduate" || task.ID == "T-test-verify-regression" {
+		if task.ID == "T-test-gen-scripts-cli" ||
+			task.ID == "T-test-run" || task.ID == "T-test-verify-regression" {
 			t.Errorf("e2e test task %s should not be generated when e2eTest.full=false", task.ID)
 		}
 	}
@@ -77,8 +77,8 @@ func TestGetQuickTestTasks_E2eTestQuickFalse(t *testing.T) {
 
 	// No e2e test tasks
 	for _, task := range tasks {
-		if task.ID == "T-quick-gen-cases" || task.ID == "T-quick-2-cli" ||
-			task.ID == "T-quick-graduate" || task.ID == "T-quick-verify-regression" {
+		if task.ID == "T-quick-gen-and-run-cli" ||
+			task.ID == "T-quick-verify-regression" {
 			t.Errorf("e2e test task %s should not be generated when e2eTest.quick=false", task.ID)
 		}
 	}
@@ -136,12 +136,12 @@ func TestGetBreakdownTestTasks_DefaultsMatchOldBehavior(t *testing.T) {
 	auto := forgeconfig.AutoConfigDefaults()
 	tasks := GetBreakdownTestTasks([]string{"cli"}, auto)
 
-	// Should produce exactly 7 tasks (same as before)
-	if len(tasks) != 7 {
-		t.Fatalf("expected 7 tasks with defaults, got %d", len(tasks))
+	// Should produce 6 tasks (eval-journey + eval-contract + gen-scripts + run + verify-regression + consolidate)
+	if len(tasks) != 6 {
+		t.Fatalf("expected 6 tasks with defaults, got %d", len(tasks))
 	}
 
-	wantIDs := []string{"T-test-gen-cases", "T-test-eval-cases", "T-test-gen-scripts-cli", "T-test-run", "T-test-graduate", "T-test-verify-regression", "T-specs-consolidate"}
+	wantIDs := []string{"T-eval-journey", "T-eval-contract", "T-test-gen-scripts-cli", "T-test-run", "T-test-verify-regression", "T-specs-consolidate"}
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
 			t.Errorf("tasks[%d].ID = %q, want %q", i, tasks[i].ID, want)
