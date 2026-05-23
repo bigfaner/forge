@@ -172,7 +172,7 @@ func TestInitCommand(t *testing.T) {
 		}
 
 		content := string(data)
-			expected := []string{
+		expected := []string{
 			"# Forge",
 			".forge/state.json",
 			".forge/test-state.json",
