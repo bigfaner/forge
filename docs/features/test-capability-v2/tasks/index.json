@@ -213,7 +213,7 @@
       "dependencies": [
         "2.summary"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2.gate.md",
       "record": "records/2.gate.md",
       "breaking": true,
@@ -249,7 +249,7 @@
       "dependencies": [
         "2.gate"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3.1-convention-migration.md",
       "record": "records/3.1-convention-migration.md",
       "scope": "all",
@@ -264,7 +264,7 @@
         "2.gate",
         "3.1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3.2-convention-new.md",
       "record": "records/3.2-convention-new.md",
       "scope": "all",
