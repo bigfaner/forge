@@ -35,7 +35,7 @@
       "dependencies": [
         "1.summary"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "1.gate.md",
       "record": "records/1.gate.md",
       "breaking": true,
@@ -63,7 +63,7 @@
       "dependencies": [
         "1.gate"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2.1-surface-rules.md",
       "record": "records/2.1-surface-rules.md",
       "scope": "all",

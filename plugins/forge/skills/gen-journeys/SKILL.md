@@ -15,6 +15,70 @@ This skill only generates Journey narrative documents (per-Journey Markdown file
 - `/gen-test-scripts` -- generates executable test code from Contracts
 </HARD-GATE>
 
+## Surface Detection
+
+Before processing PRD sources, detect the project's surface type. Surface determines testing strategy, required Outcomes, and test level emphasis.
+
+### Detection Process
+
+1. Read all surface rule files from `rules/surface-*.md` (each file defines detection signals for one surface type)
+2. Scan the project for signals defined in each rule file's "Detection Signals" section
+3. Match detected signals against the detection tables to determine the surface type
+
+### Signal Matching Table
+
+| Signal Combination | Surface Type |
+|---------|---------|
+| `main.go` + `cobra.Command` / `urfave/cli` | CLI |
+| `main.go` + `tea.Program` / `tview.Application` | TUI |
+| `package.json` + `React` / `Vue` / `Svelte` + browser DOM entry | WebUI |
+| `AndroidManifest.xml` or `*.xcodeproj` + UI framework dependency | Mobile |
+| `main.go` + `http.Handler` / `gin` / `echo` and no frontend entry | API |
+| `package.json` + `express` / `fastify` / `koa` and no frontend framework | API |
+| `pyproject.toml`/`setup.py` + `pytest`/`unittest` and no frontend entry | API |
+| `pom.xml`/`build.gradle` + `JUnit`/`TestNG` and no frontend entry | API |
+| `Cargo.toml` + `#[cfg(test)]`/`cargo test` and no frontend entry | CLI |
+| `package.json` + `commander` / `yargs` / `oclif` / `inquirer` and no frontend framework | CLI |
+| `package.json` + `blessed` / `ink` / `neo-blessed` and no frontend framework | TUI |
+| `pyproject.toml`/`setup.py` + `click`/`typer`/`argparse` and no frontend entry | CLI |
+| `pyproject.toml`/`setup.py` + `rich`/`textual`/`prompt_toolkit` and no frontend entry | TUI |
+| `Cargo.toml` + `clap`/`structopt`/`gum` and no frontend entry | CLI |
+| `Cargo.toml` + `ratatui`/`cursive` and no frontend entry | TUI |
+
+### Detection Outcomes
+
+| Outcome | Action |
+|---------|--------|
+| Single surface matched | Proceed with detected surface. Record detection result. |
+| Multiple surfaces matched | **Pause pipeline**. Report all matched signals and candidate surfaces. Ask user to confirm which surface type applies. |
+| No surface matched | **Pause pipeline**. Report all detected signals. Ask user to manually specify the surface type. |
+
+### Persist Detection Result
+
+After surface detection succeeds (single match or user confirmation), persist the result:
+
+1. Write the surface type to `.forge/config.yaml` in the `surface` field (e.g., `surface: cli`)
+2. Record the detection metadata for diagnostic purposes:
+   - `detected_surface`: the surface type string
+   - `matched_signals`: list of signals that triggered the match
+   - `confidence`: high / medium / low
+   - `all_signals`: all signals detected during scanning
+
+### Extensibility
+
+New surface types can be added by creating a new `rules/surface-<type>.md` file following the same 4-section structure (Detection Signals, General Testing Principles, Test Strategy Guidance, Required Outcome Reference). No pipeline code changes are needed.
+
+### Surface Rule Loading
+
+When generating Journeys, load the detected surface's rule file to inform:
+- Which boundary/error Outcomes must be derived (from "Required Outcome Reference")
+- Test level emphasis ratio (from "Test Strategy Guidance")
+- Risk-level Outcome density targets adjusted by surface-specific guidance
+
+<HARD-RULE>
+Surface detection must complete before Journey generation begins. If detection is ambiguous or fails, the pipeline must pause and wait for user input. Never proceed with a guessed surface type.
+</HARD-RULE>
+
 ## Prerequisites
 
 | Artifact | Missing prompt |
