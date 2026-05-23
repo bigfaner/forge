@@ -2,6 +2,7 @@ package feature
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -584,3 +585,191 @@ func TestUpdateFileStatus_NoFrontmatter(t *testing.T) {
 
 // Verify the forgeconfig import is used (prevents compile errors).
 var _ = forgeconfig.ReadAutoConfig
+
+// --- detectUncommittedArtifacts tests ---
+
+func TestDetectUncommittedArtifacts_FeatureScopeFiles(t *testing.T) {
+	dir := setupFeatureCompleteTest(t, map[string]task.Task{
+		"t1": {ID: "1", Status: "completed"},
+	}, false)
+
+	// Create uncommitted files in feature-scope paths
+	tasksDir := filepath.Join(dir, feature.FeaturesDir, "test-feature", feature.TasksDirName)
+	if err := os.WriteFile(filepath.Join(tasksDir, "record.json"), []byte("{}"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	decisionsDir := filepath.Join(dir, "docs", "decisions")
+	if err := os.MkdirAll(decisionsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(decisionsDir, "arch.md"), []byte("# Decision\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	artifacts := detectUncommittedArtifacts(dir, "test-feature")
+	if len(artifacts) < 2 {
+		t.Fatalf("expected at least 2 artifacts, got %d: %v", len(artifacts), artifacts)
+	}
+
+	hasRecord := false
+	hasDecision := false
+	for _, a := range artifacts {
+		if strings.Contains(a, "record.json") {
+			hasRecord = true
+		}
+		if strings.Contains(a, "decisions/arch.md") {
+			hasDecision = true
+		}
+	}
+	if !hasRecord {
+		t.Error("expected record.json in artifacts")
+	}
+	if !hasDecision {
+		t.Error("expected decisions/arch.md in artifacts")
+	}
+}
+
+func TestDetectUncommittedArtifacts_IgnoresUnrelatedFiles(t *testing.T) {
+	dir := setupFeatureCompleteTest(t, map[string]task.Task{
+		"t1": {ID: "1", Status: "completed"},
+	}, false)
+
+	// Create uncommitted file OUTSIDE feature-scope paths
+	if err := os.WriteFile(filepath.Join(dir, "unrelated.txt"), []byte("no"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	artifacts := detectUncommittedArtifacts(dir, "test-feature")
+	for _, a := range artifacts {
+		if strings.Contains(a, "unrelated.txt") {
+			t.Error("unrelated.txt should not be detected as artifact")
+		}
+	}
+}
+
+func TestDetectUncommittedArtifacts_NoUncommittedFiles(t *testing.T) {
+	dir := setupFeatureCompleteTest(t, map[string]task.Task{
+		"t1": {ID: "1", Status: "completed"},
+	}, false)
+
+	// Commit all setup files so working tree is clean
+	runGit(t, dir, "add", "docs/", ".forge/")
+	runGit(t, dir, "commit", "-m", "setup")
+
+	artifacts := detectUncommittedArtifacts(dir, "test-feature")
+	if len(artifacts) != 0 {
+		t.Errorf("expected 0 artifacts, got %d: %v", len(artifacts), artifacts)
+	}
+}
+
+func TestDetectUncommittedArtifacts_LessonsAndConventions(t *testing.T) {
+	dir := setupFeatureCompleteTest(t, map[string]task.Task{
+		"t1": {ID: "1", Status: "completed"},
+	}, false)
+
+	lessonsDir := filepath.Join(dir, "docs", "lessons")
+	if err := os.MkdirAll(lessonsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(lessonsDir, "gotcha-test.md"), []byte("# Lesson\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	conventionsDir := filepath.Join(dir, "docs", "conventions")
+	if err := os.MkdirAll(conventionsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(conventionsDir, "api.md"), []byte("# Convention\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	bizRulesDir := filepath.Join(dir, "docs", "business-rules")
+	if err := os.MkdirAll(bizRulesDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(bizRulesDir, "payment.md"), []byte("# Rule\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	artifacts := detectUncommittedArtifacts(dir, "test-feature")
+	if len(artifacts) < 3 {
+		t.Fatalf("expected at least 3 artifacts, got %d: %v", len(artifacts), artifacts)
+	}
+
+	hasLesson := false
+	hasConvention := false
+	hasBizRule := false
+	for _, a := range artifacts {
+		if strings.Contains(a, "lessons/gotcha-test.md") {
+			hasLesson = true
+		}
+		if strings.Contains(a, "conventions/api.md") {
+			hasConvention = true
+		}
+		if strings.Contains(a, "business-rules/payment.md") {
+			hasBizRule = true
+		}
+	}
+	if !hasLesson {
+		t.Error("expected lessons file in artifacts")
+	}
+	if !hasConvention {
+		t.Error("expected conventions file in artifacts")
+	}
+	if !hasBizRule {
+		t.Error("expected business-rules file in artifacts")
+	}
+}
+
+func TestCompleteFeature_BlocksOnArtifacts(t *testing.T) {
+	dir := setupFeatureCompleteTest(t, map[string]task.Task{
+		"t1": {ID: "1", Status: "completed"},
+	}, false)
+
+	// Create uncommitted artifact
+	lessonsDir := filepath.Join(dir, "docs", "lessons")
+	if err := os.MkdirAll(lessonsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(lessonsDir, "gotcha-test.md"), []byte("# Lesson\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	result := checkFeatureCompletion()
+	if result == nil {
+		t.Fatal("expected non-nil result")
+	}
+
+	// Capture stdout to verify block message
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	os.Stdout = w
+
+	err := completeFeature(result)
+	_ = w.Close()
+	os.Stdout = oldStdout
+
+	if err != nil {
+		t.Fatalf("completeFeature should not return error: %v", err)
+	}
+
+	var stdoutBuf strings.Builder
+	_, _ = io.Copy(&stdoutBuf, r)
+	stdout := stdoutBuf.String()
+
+	// Should output block JSON with artifact info
+	if !strings.Contains(stdout, `"decision":"block"`) && !strings.Contains(stdout, `"decision": "block"`) {
+		t.Errorf("expected block decision in stdout, got:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "lessons/gotcha-test.md") {
+		t.Errorf("expected artifact path in block reason, got:\n%s", stdout)
+	}
+
+	// Verify manifest was still committed
+	manifestPath := filepath.Join(dir, feature.FeaturesDir, "test-feature", feature.ManifestFileName)
+	data, _ := os.ReadFile(manifestPath)
+	if !strings.Contains(string(data), "status: completed") {
+		t.Error("manifest should still be updated to completed")
+	}
+}

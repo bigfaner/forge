@@ -11,6 +11,7 @@ import (
 	"forge-cli/pkg/forgeconfig"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/task"
+	"forge-cli/pkg/testrunner"
 
 	"github.com/spf13/cobra"
 )
@@ -32,6 +33,11 @@ var featureCompleteCmd = &cobra.Command{
 Run with --if-done to guard: exits 0 silently when not all tasks
 are completed or skipped. Updates manifest.md (and proposal.md in
 quick mode), commits, and optionally pushes to remote.
+
+When uncommitted post-loop artifacts are detected (feature workspace
+files, decisions, lessons, conventions, business-rules), outputs a
+block decision so the agent can commit them via /git-commit. The
+CompletedAt guard ensures artifact detection runs at most once.
 
 This command is designed as a Stop hook — it always exits 0 so it
 never blocks the agent stop flow.`,
@@ -160,14 +166,32 @@ func completeFeature(result *completionResult) error {
 		fmt.Fprintf(os.Stderr, "[feature:complete] Warning: failed to mark state: %v\n", err)
 	}
 
-	// 6. Optional push
+	// 6. Optional push (before artifact detection — if artifacts block the hook,
+	// the next run skips due to CompletedAt guard, so push must happen here).
 	if enabled, _ := isGitPushEnabled(result.ProjectRoot); enabled {
 		if err := gitPush(result.ProjectRoot); err != nil {
-			// Push failure is non-blocking — already logged in gitPush
 			_ = err
 		} else {
 			fmt.Fprintln(os.Stderr, "[feature:complete] Pushed to remote")
 		}
+	}
+
+	// 7. Detect uncommitted post-loop artifacts and block so agent can commit them.
+	// Runs at most once: CompletedAt guard in checkFeatureCompletion prevents re-entry.
+	artifacts := detectUncommittedArtifacts(result.ProjectRoot, result.FeatureSlug)
+	if len(artifacts) > 0 {
+		var fileList strings.Builder
+		for _, a := range artifacts {
+			fmt.Fprintf(&fileList, "\n  - %s", a)
+		}
+		reason := fmt.Sprintf(
+			"Post-loop artifacts detected for feature %s.%s\n\nUse /git-commit to commit these files.",
+			result.FeatureSlug, fileList.String())
+		testrunner.PrintHookJSON(map[string]any{
+			"decision": "block",
+			"reason":   reason,
+		})
+		return nil
 	}
 
 	return nil
@@ -262,4 +286,56 @@ func isGitPushEnabled(projectRoot string) (bool, error) {
 		return false, err
 	}
 	return auto.GitPush, nil
+}
+
+// artifactScopePaths lists directories whose uncommitted files qualify as post-loop artifacts.
+var artifactScopePaths = []string{
+	"docs/decisions/",
+	"docs/lessons/",
+	"docs/conventions/",
+	"docs/business-rules/",
+}
+
+// detectUncommittedArtifacts runs git status --porcelain and filters results to
+// feature-scope paths: the feature workspace and knowledge directories.
+func detectUncommittedArtifacts(projectRoot, featureSlug string) []string {
+	cmd := exec.Command("git", "status", "--porcelain", "-uall")
+	cmd.Dir = projectRoot
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil
+	}
+
+	if len(strings.TrimSpace(string(output))) == 0 {
+		return nil
+	}
+
+	featurePrefix := featurepkg.FeaturesDir + "/" + featureSlug + "/"
+	prefixes := append([]string{featurePrefix}, artifactScopePaths...)
+
+	var matched []string
+	for _, line := range strings.Split(string(output), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		// porcelain format: "XY path" — skip status chars (3 bytes)
+		if len(line) < 4 {
+			continue
+		}
+		path := line[3:]
+		// Renames: "old -> new"
+		if idx := strings.Index(path, " -> "); idx >= 0 {
+			path = path[idx+4:]
+		}
+		// Normalize separators
+		path = filepath.ToSlash(path)
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(path, prefix) {
+				matched = append(matched, path)
+				break
+			}
+		}
+	}
+	return matched
 }
