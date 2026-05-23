@@ -3,6 +3,11 @@ package cmd
 import (
 	"bytes"
 	"testing"
+
+	forensicpkg "forge-cli/internal/cmd/forensic"
+	promptpkg "forge-cli/internal/cmd/prompt"
+	taskpkg "forge-cli/internal/cmd/task"
+	testpkg "forge-cli/internal/cmd/test"
 )
 
 func TestRootCmd_Structure(t *testing.T) {
@@ -20,16 +25,16 @@ func TestRootCmd_Structure(t *testing.T) {
 		}
 	}
 
-	// 6 group parents
-	expectedGroups := []string{"task", "e2e", "forensic", "test", "prompt", "worktree"}
+	// 5 group parents
+	expectedGroups := []string{"task", "forensic", "test", "prompt", "worktree"}
 	for _, expected := range expectedGroups {
 		if !commandNames[expected] {
 			t.Errorf("missing group parent: %s (have: %v)", expected, commandNames)
 		}
 	}
 
-	// 6 top-level commands
-	expectedTopLevel := []string{"cleanup", "probe", "quality-gate", "verify-task-done", "feature", "version"}
+	// 5 top-level commands
+	expectedTopLevel := []string{"cleanup", "quality-gate", "verify-task-done", "feature", "version"}
 	for _, expected := range expectedTopLevel {
 		if !commandNames[expected] {
 			t.Errorf("missing top-level command: %s (have: %v)", expected, commandNames)
@@ -47,9 +52,9 @@ func TestRootCmd_HelpShowsTenVisibleEntries(t *testing.T) {
 			visibleCount++
 		}
 	}
-	// 6 groups + 6 visible top-level (version is hidden) + config + proposal + lesson + init + claude = 16 visible
-	if visibleCount != 16 {
-		t.Errorf("expected 16 visible commands, got %d", visibleCount)
+	// 5 groups + 4 visible top-level (version is hidden) + config + proposal + lesson + init + claude = 14 visible
+	if visibleCount != 14 {
+		t.Errorf("expected 14 visible commands, got %d", visibleCount)
 	}
 }
 
@@ -60,7 +65,7 @@ func TestRootCmd_VersionIsHidden(t *testing.T) {
 }
 
 func TestRootCmd_TaskGroupHasSubcommands(t *testing.T) {
-	subcommands := taskCmd.Commands()
+	subcommands := taskpkg.Cmd.Commands()
 	if len(subcommands) == 0 {
 		t.Error("task group should have subcommands")
 	}
@@ -78,22 +83,8 @@ func TestRootCmd_TaskGroupHasSubcommands(t *testing.T) {
 	}
 }
 
-func TestRootCmd_E2eGroupHasValidateSpecs(t *testing.T) {
-	subcommands := e2eCmd.Commands()
-	found := false
-	for _, cmd := range subcommands {
-		if cmd.Name() == "validate-specs" {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Error("e2e group should have validate-specs subcommand")
-	}
-}
-
 func TestRootCmd_PromptGroupHasGetByTaskId(t *testing.T) {
-	subcommands := promptCmd.Commands()
+	subcommands := promptpkg.Cmd.Commands()
 	found := false
 	for _, cmd := range subcommands {
 		if cmd.Name() == "get-by-task-id" {
@@ -107,14 +98,14 @@ func TestRootCmd_PromptGroupHasGetByTaskId(t *testing.T) {
 }
 
 func TestRootCmd_ForensicGroupHasSubcommands(t *testing.T) {
-	subcommands := forensicCmd.Commands()
+	subcommands := forensicpkg.Cmd.Commands()
 	if len(subcommands) < 3 {
 		t.Errorf("forensic group should have at least 3 subcommands, got %d", len(subcommands))
 	}
 }
 
 func TestRootCmd_TestGroupHasSubcommands(t *testing.T) {
-	subcommands := testCmd.Commands()
+	subcommands := testpkg.Cmd.Commands()
 	if len(subcommands) == 0 {
 		t.Error("test group should have subcommands")
 	}
@@ -134,7 +125,7 @@ func TestExecute_NoArgs(t *testing.T) {
 }
 
 func TestInit_RegistersCommands(t *testing.T) {
-	// Verify rootCmd has the expected 10 explicitly registered commands.
+	// Verify rootCmd has the expected explicit commands.
 	// Cobra auto-adds "completion" and "help" after first Execute(), so filter those.
 	commands := rootCmd.Commands()
 	explicit := []string{}
@@ -145,8 +136,8 @@ func TestInit_RegistersCommands(t *testing.T) {
 		}
 	}
 
-	// 6 groups + 6 top-level + config + proposal + lesson + init + claude = 17
-	if len(explicit) != 17 {
-		t.Errorf("expected 17 explicit commands, got %d: %v", len(explicit), explicit)
+	// 5 groups + 5 top-level + config + proposal + lesson + init + claude = 15
+	if len(explicit) != 15 {
+		t.Errorf("expected 15 explicit commands, got %d: %v", len(explicit), explicit)
 	}
 }

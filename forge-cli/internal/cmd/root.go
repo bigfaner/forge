@@ -4,6 +4,13 @@ package cmd
 import (
 	"os"
 
+	featurepkg "forge-cli/internal/cmd/feature"
+	forensicpkg "forge-cli/internal/cmd/forensic"
+	promptpkg "forge-cli/internal/cmd/prompt"
+	taskpkg "forge-cli/internal/cmd/task"
+	testpkg "forge-cli/internal/cmd/test"
+	worktreepkg "forge-cli/internal/cmd/worktree"
+
 	"github.com/spf13/cobra"
 )
 
@@ -24,20 +31,26 @@ func Execute() {
 }
 
 func init() {
-	// Group parents (6)
-	rootCmd.AddCommand(taskCmd)
-	rootCmd.AddCommand(e2eCmd)
-	rootCmd.AddCommand(forensicCmd)
-	rootCmd.AddCommand(testCmd)
-	rootCmd.AddCommand(promptCmd)
-	rootCmd.AddCommand(worktreeCmd)
+	// Initialize subcommand groups
+	featurepkg.Register()
+	forensicpkg.Register()
+	promptpkg.Register()
+	taskpkg.Register()
+	testpkg.Register()
+	worktreepkg.Register()
+
+	// Group parents (5)
+	rootCmd.AddCommand(taskpkg.Cmd)
+	rootCmd.AddCommand(forensicpkg.Cmd)
+	rootCmd.AddCommand(testpkg.Cmd)
+	rootCmd.AddCommand(promptpkg.Cmd)
+	rootCmd.AddCommand(worktreepkg.Cmd)
 
 	// Top-level commands
 	rootCmd.AddCommand(cleanupCmd)
-	rootCmd.AddCommand(probeCmd)
 	rootCmd.AddCommand(qualityGateCmd)
 	rootCmd.AddCommand(verifyTaskDoneCmd)
-	rootCmd.AddCommand(featureCmd)
+	rootCmd.AddCommand(featurepkg.Cmd)
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(configCmd)
 	rootCmd.AddCommand(proposalCmd)
@@ -48,35 +61,7 @@ func init() {
 	// Version is hidden from --help but accessible via `forge version`
 	versionCmd.Hidden = true
 
-	// Worktree group subcommands
-	worktreeCmd.AddCommand(worktreeStartCmd)
-	worktreeCmd.AddCommand(worktreeListCmd)
-	worktreeCmd.AddCommand(worktreeRemoveCmd)
-	worktreeCmd.AddCommand(worktreeResumeCmd)
-	worktreeCmd.AddCommand(worktreeStatusCmd)
-
-	// Task group subcommands
-	taskCmd.AddCommand(claimCmd)
-	taskCmd.AddCommand(submitCmd)
-	taskCmd.AddCommand(statusCmd)
-	taskCmd.AddCommand(queryCmd)
-	taskCmd.AddCommand(checkDepsCmd)
-	taskCmd.AddCommand(validateIndexCmd)
-	taskCmd.AddCommand(addCmd)
-	taskCmd.AddCommand(indexCmd)
-	taskCmd.AddCommand(migrateCmd)
-	taskCmd.AddCommand(listTypesCmd)
-	taskCmd.AddCommand(reopenCmd)
-	taskCmd.AddCommand(transitionCmd)
-
-	// E2E group subcommands (6 total)
-	e2eCmd.AddCommand(validateSpecsCmd)
-	e2eCmd.AddCommand(e2eRunCmd)
-	e2eCmd.AddCommand(e2eSetupCmd)
-	e2eCmd.AddCommand(e2eVerifyCmd)
-	e2eCmd.AddCommand(e2eCompileCmd)
-	e2eCmd.AddCommand(e2eDiscoverCmd)
-
-	// Prompt group subcommands
-	promptCmd.AddCommand(promptGetCmd)
+	// Task group subcommands — registered via taskpkg.Register() above
+	// Worktree group subcommands — registered via worktreepkg.Register() above
+	// Prompt group subcommands — registered via promptpkg.Register() above
 }
