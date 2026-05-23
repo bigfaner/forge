@@ -911,6 +911,216 @@ func TestGenerateTestTaskMD_BackwardCompat_EmptyBodyContext(t *testing.T) {
 	}
 }
 
+// --- Focused body content verification tests ---
+
+func TestRenderBody_FeatureSlug(t *testing.T) {
+	tests := []struct {
+		name        string
+		featureSlug string
+		want        string
+	}{
+		{"populated slug", "my-feature", "my-feature"},
+		{"empty slug", "", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			template := "Feature: {{FEATURE_SLUG}} is ready."
+			ctx := BodyContext{FeatureSlug: tt.featureSlug}
+			def := AutoGenTaskDef{}
+
+			result := renderBody(template, def, ctx)
+
+			if !strings.Contains(result, tt.want) {
+				t.Errorf("expected %q in result, got: %s", tt.want, result)
+			}
+			if strings.Contains(result, "{{FEATURE_SLUG}}") {
+				t.Error("FEATURE_SLUG placeholder should be resolved")
+			}
+		})
+	}
+}
+
+func TestRenderBody_ScopeAndInterfaces(t *testing.T) {
+	t.Run("populated scope and interfaces", func(t *testing.T) {
+		template := "## Feature Context\n- Scope: {{SCOPE}}\n- Test interfaces: {{INTERFACES}}"
+		ctx := BodyContext{
+			FeatureSlug: "feat",
+			Scope:       []string{"backend", "frontend"},
+			Interfaces:  []string{"api", "cli"},
+		}
+		def := AutoGenTaskDef{}
+
+		result := renderBody(template, def, ctx)
+
+		if !strings.Contains(result, "- backend") {
+			t.Error("scope item 'backend' should be present")
+		}
+		if !strings.Contains(result, "- frontend") {
+			t.Error("scope item 'frontend' should be present")
+		}
+		if !strings.Contains(result, "- api") {
+			t.Error("interface 'api' should be present")
+		}
+		if !strings.Contains(result, "- cli") {
+			t.Error("interface 'cli' should be present")
+		}
+		if strings.Contains(result, "{{SCOPE}}") {
+			t.Error("SCOPE placeholder should be resolved")
+		}
+		if strings.Contains(result, "{{INTERFACES}}") {
+			t.Error("INTERFACES placeholder should be resolved")
+		}
+	})
+}
+
+func TestRenderBody_AcceptanceCriteria(t *testing.T) {
+	t.Run("criteria filled as checklist", func(t *testing.T) {
+		template := "## Validation Criteria\n{{ACCEPTANCE_CRITERIA}}\n## End"
+		ctx := BodyContext{
+			FeatureSlug:        "feat",
+			AcceptanceCriteria: []string{"AC1: Login works", "AC2: Logout works"},
+		}
+		def := AutoGenTaskDef{}
+
+		result := renderBody(template, def, ctx)
+
+		if !strings.Contains(result, "- [ ] AC1: Login works") {
+			t.Error("first AC should be filled as unchecked checklist item")
+		}
+		if !strings.Contains(result, "- [ ] AC2: Logout works") {
+			t.Error("second AC should be filled as unchecked checklist item")
+		}
+		if strings.Contains(result, "{{ACCEPTANCE_CRITERIA}}") {
+			t.Error("ACCEPTANCE_CRITERIA placeholder should be resolved")
+		}
+	})
+}
+
+func TestRenderBody_EmptyFields(t *testing.T) {
+	t.Run("all fields empty uses fallbacks", func(t *testing.T) {
+		template := "Feature: {{FEATURE_SLUG}}\nMode: {{MODE}}\n## Scope\n{{SCOPE}}\n## Other\nInterfaces: {{INTERFACES}}\nType: {{TEST_TYPE}}\n{{ACCEPTANCE_CRITERIA}}"
+		ctx := BodyContext{}
+		def := AutoGenTaskDef{}
+
+		result := renderBody(template, def, ctx)
+
+		// Mode line omitted
+		if strings.Contains(result, "Mode:") {
+			t.Error("Mode line should be omitted when empty")
+		}
+		// Scope section omitted
+		if strings.Contains(result, "## Scope") {
+			t.Error("Scope section should be omitted when empty")
+		}
+		// Interfaces fallback
+		if !strings.Contains(result, "See .forge/config.yaml") {
+			t.Error("Empty interfaces should use fallback")
+		}
+		// TestType line omitted
+		if strings.Contains(result, "Type:") {
+			t.Error("TestType line should be omitted when empty")
+		}
+		// AcceptanceCriteria fallback
+		if !strings.Contains(result, "- [ ] All acceptance criteria met") {
+			t.Error("Empty acceptance criteria should use fallback")
+		}
+		// No leftover placeholders
+		for _, ph := range []string{"{{FEATURE_SLUG}}", "{{MODE}}", "{{SCOPE}}", "{{INTERFACES}}", "{{TEST_TYPE}}", "{{ACCEPTANCE_CRITERIA}}"} {
+			if strings.Contains(result, ph) {
+				t.Errorf("placeholder %s should be resolved", ph)
+			}
+		}
+	})
+}
+
+// TestBodyContentPerStrategy verifies each of the 13 task types gets correct body content
+// with a populated BodyContext, grouped by strategy (A/B/C).
+func TestBodyContentPerStrategy(t *testing.T) {
+	tests := []struct {
+		name         string
+		typ          string
+		testType     string // per-type interface suffix (e.g., "api")
+		ctx          BodyContext
+		wantContains []string
+	}{
+		// Strategy A: Feature context (slug + scope + interfaces injected)
+		{"gen-cases has feature context", TypeTestGenCases, "", BodyContext{
+			FeatureSlug: "feat", Mode: "quick", Scope: []string{"item1"}, Interfaces: []string{"api"},
+		}, []string{"feat", "quick mode", "- item1", "- api"}},
+		{"eval-cases has feature context", TypeTestEvalCases, "", BodyContext{
+			FeatureSlug: "feat", Scope: []string{"backend"},
+		}, []string{"feat", "- backend"}},
+		{"gen-scripts has feature context", TypeTestGenScripts, "api", BodyContext{
+			FeatureSlug: "feat",
+		}, []string{"feat", "api"}},
+		{"gen-and-run has feature context", TypeTestGenAndRun, "tui", BodyContext{
+			FeatureSlug: "feat",
+		}, []string{"feat", "tui"}},
+		{"run has feature context", TypeTestRun, "", BodyContext{
+			FeatureSlug: "feat", Scope: []string{"backend"},
+		}, []string{"feat", "- backend"}},
+		{"graduate has feature context", TypeTestGraduate, "", BodyContext{
+			FeatureSlug: "feat",
+		}, []string{"feat"}},
+		{"verify-regression has feature context", TypeTestVerifyRegression, "", BodyContext{
+			FeatureSlug: "feat", Scope: []string{"backend"},
+		}, []string{"feat", "- backend"}},
+
+		// Strategy B: Acceptance criteria pre-filled as validation checklist
+		{"validation-code has criteria", TypeValidationCode, "", BodyContext{
+			FeatureSlug: "feat", AcceptanceCriteria: []string{"AC1: works", "AC2: fast"},
+		}, []string{"feat", "- [ ] AC1: works", "- [ ] AC2: fast"}},
+		{"validation-ux has criteria", TypeValidationUx, "", BodyContext{
+			FeatureSlug: "feat", AcceptanceCriteria: []string{"AC1: accessible"},
+		}, []string{"feat", "- [ ] AC1: accessible"}},
+
+		// Strategy C: Discovery strategy steps present (git diff, directory scan)
+		{"doc-eval has discovery strategy", TypeDocEval, "", BodyContext{
+			FeatureSlug: "feat", Mode: "breakdown",
+		}, []string{"feat", "breakdown mode"}},
+		{"doc-consolidate has discovery strategy", TypeDocConsolidate, "", BodyContext{
+			FeatureSlug: "feat", Scope: []string{"backend"},
+		}, []string{"feat", "- backend", "Discovery Strategy"}},
+		{"doc-drift has git diff strategy", TypeDocDrift, "", BodyContext{
+			FeatureSlug: "feat",
+		}, []string{"feat", "git diff"}},
+		{"clean-code has git diff strategy", TypeCleanCode, "", BodyContext{
+			FeatureSlug: "feat",
+		}, []string{"feat", "git diff"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			def := AutoGenTaskDef{
+				ID: "T-test", Key: "test",
+				Title: "Test Task", Priority: "P1",
+				EstimatedTime: "1h", Type: tt.typ, Scope: "all",
+				TestType: tt.testType,
+			}
+
+			content, err := GenerateTestTaskMD(def, tt.ctx)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			s := string(content)
+			for _, want := range tt.wantContains {
+				if !strings.Contains(s, want) {
+					t.Errorf("type %q body should contain %q, got:\n%s", tt.typ, want, s)
+				}
+			}
+
+			// Verify no managed placeholders left unresolved
+			for _, ph := range []string{"{{FEATURE_SLUG}}", "{{MODE}}", "{{SCOPE}}", "{{INTERFACES}}", "{{TEST_TYPE}}", "{{ACCEPTANCE_CRITERIA}}"} {
+				if strings.Contains(s, ph) {
+					t.Errorf("type %q has unresolved placeholder %s", tt.typ, ph)
+				}
+			}
+		})
+	}
+}
+
 func TestAutogenTypeToFileMapping(t *testing.T) {
 	// Verify all 13 auto-gen types have a mapping entry
 	wantTypes := []string{

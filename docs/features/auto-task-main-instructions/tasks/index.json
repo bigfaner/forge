@@ -61,7 +61,7 @@
         "2",
         "4"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "5-update-tests.md",
       "record": "records/5-update-tests.md",
       "scope": "backend",
