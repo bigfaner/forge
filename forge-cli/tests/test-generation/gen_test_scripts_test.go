@@ -404,19 +404,9 @@ func TestTC_009_GenTestScriptsTypeFilterSkipsNonMatchingSteps(t *testing.T) {
 		"SKILL.md should describe filtered spec generation")
 }
 
-// --- TC-007: gen-test-cases Element field marked as required ---
+// --- TC-007: gen-test-cases retired (Element concept replaced by Journey-Contract pipeline) ---
 
-// Traceability: TC-007 -> SC "gen-test-cases SKILL.md 和模板中 Element 字段标记为必填"
+// Traceability: TC-007 -> retired; gen-test-cases skill removed in test-capability-v2
 func TestTC_007_GenTestCasesElementFieldMarkedRequired(t *testing.T) {
-	skillRelPath := filepath.Join("plugins", "forge", "skills", "gen-test-cases", "SKILL.md")
-	skillContent := readRepoFile(t, skillRelPath)
-
-	// SKILL.md states Element is required
-	assert.Regexp(t, `(?i)Element.*required`, skillContent, "SKILL.md should state Element is required")
-
-	// SKILL.md defines Element field in the generated test case format
-	assert.Contains(t, skillContent, "- **Element**", "SKILL.md should define Element field")
-
-	// Fallback behavior when sitemap is missing is defined
-	assert.Contains(t, skillContent, "sitemap-missing", "SKILL.md should define sitemap-missing fallback behavior")
+	t.Skip("gen-test-cases skill retired in test-capability-v2; Element concept replaced by Journey-Contract pipeline")
 }

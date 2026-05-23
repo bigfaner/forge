@@ -52,6 +52,8 @@ const (
 	TypeTestRun              = "test.run"
 	TypeTestGenAndRun        = "test.gen-and-run"
 	TypeTestVerifyRegression = "test.verify-regression"
+	TypeEvalJourney          = "eval.journey"
+	TypeEvalContract         = "eval.contract"
 	TypeValidationCode       = "validation.code"
 	TypeValidationUx         = "validation.ux"
 	TypeGate                 = "gate"
@@ -81,6 +83,8 @@ var TaskTypeRegistry = []TaskTypeInfo{
 	{Name: TypeTestRun, Description: "run test scripts and collect results"},
 	{Name: TypeTestGenAndRun, Description: "generate and run test scripts in one session"},
 	{Name: TypeTestVerifyRegression, Description: "verify regression suite after graduation"},
+	{Name: TypeEvalJourney, Description: "evaluate Journey quality with rubric scoring"},
+	{Name: TypeEvalContract, Description: "evaluate Contract quality with rubric scoring"},
 	{Name: TypeValidationCode, Description: "validate code quality and correctness"},
 	{Name: TypeValidationUx, Description: "validate user experience quality"},
 	{Name: TypeGate, Description: "validate quality gate before proceeding"},
@@ -103,13 +107,15 @@ var ValidTypes = map[string]bool{
 	TypeTestRun:              true,
 	TypeTestGenAndRun:        true,
 	TypeTestVerifyRegression: true,
+	TypeEvalJourney:          true,
+	TypeEvalContract:         true,
 	TypeValidationCode:       true,
 	TypeValidationUx:         true,
 	TypeGate:                 true,
 	TypeCleanCode:            true,
 }
 
-// SystemTypes is the set of auto-generated system task types (10 total).
+// SystemTypes is the set of auto-generated system task types (12 total).
 // These types are created by the forge pipeline, not by users.
 // Dual-identity types (doc.consolidate, doc.drift) are excluded because
 // they can also serve as business tasks.
@@ -119,6 +125,8 @@ var SystemTypes = map[string]bool{
 	TypeTestRun:              true,
 	TypeTestGenAndRun:        true,
 	TypeTestVerifyRegression: true,
+	TypeEvalJourney:          true,
+	TypeEvalContract:         true,
 	TypeValidationCode:       true,
 	TypeValidationUx:         true,
 	TypeDocEval:              true,
@@ -161,7 +169,7 @@ type Task struct {
 	// Empty for original tasks. Used by record auto-restore to unblock source when all deps complete.
 	SourceTaskID string `json:"sourceTaskID,omitempty"`
 	// MainSession indicates this task must run in the main session (not dispatched to task-executor).
-	// Used by tasks that need to spawn subagents (e.g., eval-test-cases spawns doc-scorer/doc-reviser).
+	// Used by tasks that need to spawn subagents (e.g., eval-journey/eval-contract spawns doc-scorer/doc-reviser).
 	MainSession bool `json:"mainSession,omitempty"`
 	// Type is the task execution type (e.g. "coding.feature", "coding.fix", "gate").
 	// Required for all tasks after migration; validated by task validate.

@@ -47,7 +47,37 @@ func runSummary(cmd *cobra.Command, _ []string) error {
 	printGroup(w, "BY CONFIDENCE", stats.ByConfidence, facttable.ValidConfidences)
 	printGroup(w, "BY KIND", stats.ByKind, facttable.ValidKinds)
 
+	// Coverage indicator: confirmed runtime facts ratio
+	runtimeCount := stats.BySource["runtime"]
+	confirmedCount := stats.ByConfidence["confirmed"]
+	if runtimeCount > 0 || confirmedCount > 0 {
+		ratio := 0.0
+		if stats.Total > 0 {
+			// Count facts that are both runtime AND confirmed
+			runtimeConfirmed := 0
+			for _, entry := range table {
+				if entry.Source == "runtime" && entry.Confidence == "confirmed" {
+					runtimeConfirmed++
+				}
+			}
+			ratio = float64(runtimeConfirmed) / float64(stats.Total) * 100
+		}
+		write(w, "[COVERAGE]\n")
+		write(w, "  runtime confirmed: %d / total: %d (%.1f%%)\n", countRuntimeConfirmed(table), stats.Total, ratio)
+		write(w, "\n")
+	}
+
 	return nil
+}
+
+func countRuntimeConfirmed(table facttable.FactTable) int {
+	n := 0
+	for _, entry := range table {
+		if entry.Source == "runtime" && entry.Confidence == "confirmed" {
+			n++
+		}
+	}
+	return n
 }
 
 func printGroup(w io.Writer, title string, counts map[string]int, validValues []string) {

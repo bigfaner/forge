@@ -13,12 +13,14 @@ import (
 var autogenTemplateFS embed.FS
 
 // autogenTypeToFile maps task type constants to their embed template filenames.
-// Filename convention: type name with '.' replaced by '-' (e.g., test.gen-cases -> test-gen-cases.md).
+// Filename convention: type name with '.' replaced by '-' (e.g., test.gen-scripts -> test-gen-scripts.md).
 var autogenTypeToFile = map[string]string{
 	TypeTestGenScripts:       "data/test-gen-scripts.md",
 	TypeTestGenAndRun:        "data/test-gen-and-run.md",
 	TypeTestRun:              "data/test-run.md",
 	TypeTestVerifyRegression: "data/test-verify-regression.md",
+	TypeEvalJourney:          "data/eval-journey.md",
+	TypeEvalContract:         "data/eval-contract.md",
 	TypeValidationCode:       "data/validation-code.md",
 	TypeValidationUx:         "data/validation-ux.md",
 	TypeDocEval:              "data/doc-eval.md",
@@ -61,7 +63,7 @@ type BodyContext struct {
 // AutoGenTaskDef defines an auto-generated task definition.
 type AutoGenTaskDef struct {
 	ID              string
-	Key             string // map key in index.json (e.g., "gen-test-cases", "gen-test-scripts-api")
+	Key             string // map key in index.json (e.g., "gen-scripts", "gen-scripts-api")
 	Title           string
 	Priority        string
 	EstimatedTime   string
@@ -88,6 +90,20 @@ func GetBreakdownTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []A
 
 	// Shared tasks (gated by auto.E2eTest.Full)
 	if auto.E2eTest.Full {
+		// Eval Journeys (after gen-journeys, before gen-contracts)
+		tasks = append(tasks, AutoGenTaskDef{
+			Key: "eval-journey", ID: "T-eval-journey",
+			Title: "Evaluate Journey Quality", Priority: "P1", EstimatedTime: "20-30min",
+			Type: TypeEvalJourney, Scope: "all", MainSession: true,
+		})
+
+		// Eval Contracts (after gen-contracts, before gen-test-scripts)
+		tasks = append(tasks, AutoGenTaskDef{
+			Key: "eval-contract", ID: "T-eval-contract",
+			Title: "Evaluate Contract Quality", Priority: "P1", EstimatedTime: "20-30min",
+			Type: TypeEvalContract, Scope: "all", MainSession: true,
+		})
+
 		// Per-type gen-scripts (interface-only, no language loop)
 		for _, typ := range interfaces {
 			tasks = append(tasks, AutoGenTaskDef{
@@ -406,9 +422,19 @@ func resolveBreakdownDeps(tasks []AutoGenTaskDef, interfaces []string, auto forg
 	}
 
 	if auto.E2eTest.Full {
-		// gen-scripts start at index 0 (no gen-cases/eval-cases anymore)
-		genStart := 0
+		// Pipeline order: eval-journey(0) -> eval-contract(1) -> gen-scripts(2..2+n) -> run(2+n) -> verify(3+n)
+		evalJourneyIdx := 0
+		evalContractIdx := 1
 		nTypes := len(interfaces)
+
+		// eval-contract depends on eval-journey
+		tasks[evalContractIdx].Dependencies = []string{tasks[evalJourneyIdx].ID}
+
+		// gen-scripts depend on eval-contract
+		genStart := 2
+		for j := range nTypes {
+			tasks[genStart+j].Dependencies = []string{tasks[evalContractIdx].ID}
+		}
 
 		// Run depends on all gen-scripts
 		runIdx := genStart + nTypes
@@ -520,7 +546,11 @@ func ResolveFirstTestDep(tasks []AutoGenTaskDef, existingTasks map[string]Task, 
 		}
 
 		cleanIdx := findTaskIndex(tasks, "T-clean-code")
-		firstTestIdx := findTaskIndexByPrefix(tasks, "T-test-gen-scripts")
+		// First test pipeline task is either T-eval-journey or T-test-gen-scripts
+		firstTestIdx := findTaskIndex(tasks, "T-eval-journey")
+		if firstTestIdx < 0 {
+			firstTestIdx = findTaskIndexByPrefix(tasks, "T-test-gen-scripts")
+		}
 
 		if cleanIdx >= 0 {
 			tasks[cleanIdx].Dependencies = []string{dep}

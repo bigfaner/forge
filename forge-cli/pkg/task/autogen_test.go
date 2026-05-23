@@ -34,27 +34,33 @@ func TestGetBreakdownTestTasks_EmptyInterfaces(t *testing.T) {
 func TestGetBreakdownTestTasks_SingleType(t *testing.T) {
 	tasks := GetBreakdownTestTasks([]string{"cli"}, defaultAuto)
 
-	// per-type: gen-scripts-cli + run + verify-regression + consolidate = 4
-	if len(tasks) != 4 {
-		t.Fatalf("expected 4 tasks, got %d", len(tasks))
+	// eval-journey + eval-contract + gen-scripts-cli + run + verify-regression + consolidate = 6
+	if len(tasks) != 6 {
+		t.Fatalf("expected 6 tasks, got %d", len(tasks))
 	}
 
-	wantIDs := []string{"T-test-gen-scripts-cli", "T-test-run", "T-test-verify-regression", "T-specs-consolidate"}
+	wantIDs := []string{"T-eval-journey", "T-eval-contract", "T-test-gen-scripts-cli", "T-test-run", "T-test-verify-regression", "T-specs-consolidate"}
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
 			t.Errorf("tasks[%d].ID = %q, want %q", i, tasks[i].ID, want)
 		}
 	}
 
-	// Dependency chain
-	if tasks[1].Dependencies[0] != "T-test-gen-scripts-cli" {
-		t.Errorf("run should depend on gen-scripts-cli, got %v", tasks[1].Dependencies)
+	// Dependency chain: eval-contract -> eval-journey, gen-scripts -> eval-contract, run -> gen-scripts, verify -> run, consolidate -> verify
+	if tasks[1].Dependencies[0] != "T-eval-journey" {
+		t.Errorf("eval-contract should depend on eval-journey, got %v", tasks[1].Dependencies)
 	}
-	if tasks[2].Dependencies[0] != "T-test-run" {
-		t.Errorf("verify-regression should depend on run, got %v", tasks[2].Dependencies)
+	if tasks[2].Dependencies[0] != "T-eval-contract" {
+		t.Errorf("gen-scripts should depend on eval-contract, got %v", tasks[2].Dependencies)
 	}
-	if tasks[3].Dependencies[0] != "T-test-verify-regression" {
-		t.Errorf("consolidate should depend on verify-regression, got %v", tasks[3].Dependencies)
+	if tasks[3].Dependencies[0] != "T-test-gen-scripts-cli" {
+		t.Errorf("run should depend on gen-scripts-cli, got %v", tasks[3].Dependencies)
+	}
+	if tasks[4].Dependencies[0] != "T-test-run" {
+		t.Errorf("verify-regression should depend on run, got %v", tasks[4].Dependencies)
+	}
+	if tasks[5].Dependencies[0] != "T-test-verify-regression" {
+		t.Errorf("consolidate should depend on verify-regression, got %v", tasks[5].Dependencies)
 	}
 }
 
@@ -243,12 +249,13 @@ func TestResolveDocEvalDep(t *testing.T) {
 func TestGetBreakdownTestTasks_PerType_TwoTypes(t *testing.T) {
 	tasks := GetBreakdownTestTasks([]string{"tui", "api"}, defaultAuto)
 
-	// per-type-gen: 2 (tui, api) + run + verify-regression + consolidate = 5
-	if len(tasks) != 5 {
-		t.Fatalf("expected 5 tasks, got %d", len(tasks))
+	// eval-journey + eval-contract + 2 gen-scripts(tui,api) + run + verify-regression + consolidate = 7
+	if len(tasks) != 7 {
+		t.Fatalf("expected 7 tasks, got %d", len(tasks))
 	}
 
 	wantIDs := []string{
+		"T-eval-journey", "T-eval-contract",
 		"T-test-gen-scripts-tui", "T-test-gen-scripts-api",
 		"T-test-run",
 		"T-test-verify-regression", "T-specs-consolidate",
@@ -260,47 +267,48 @@ func TestGetBreakdownTestTasks_PerType_TwoTypes(t *testing.T) {
 	}
 
 	// Keys include type suffix (no language)
-	if tasks[0].Key != "gen-test-scripts-tui" {
-		t.Errorf("tasks[0].Key = %q, want gen-test-scripts-tui", tasks[0].Key)
+	if tasks[2].Key != "gen-test-scripts-tui" {
+		t.Errorf("tasks[2].Key = %q, want gen-test-scripts-tui", tasks[2].Key)
 	}
-	if tasks[1].Key != "gen-test-scripts-api" {
-		t.Errorf("tasks[1].Key = %q, want gen-test-scripts-api", tasks[1].Key)
+	if tasks[3].Key != "gen-test-scripts-api" {
+		t.Errorf("tasks[3].Key = %q, want gen-test-scripts-api", tasks[3].Key)
 	}
 
 	// TestType field set
-	if tasks[0].TestType != "tui" {
-		t.Errorf("tasks[0].TestType = %q, want tui", tasks[0].TestType)
+	if tasks[2].TestType != "tui" {
+		t.Errorf("tasks[2].TestType = %q, want tui", tasks[2].TestType)
 	}
-	if tasks[1].TestType != "api" {
-		t.Errorf("tasks[1].TestType = %q, want api", tasks[1].TestType)
+	if tasks[3].TestType != "api" {
+		t.Errorf("tasks[3].TestType = %q, want api", tasks[3].TestType)
 	}
 
 	// T-test-run depends on ALL per-type gen-scripts tasks
-	if len(tasks[2].Dependencies) != 2 {
-		t.Fatalf("T-test-run should depend on 2 gen tasks, got %v", tasks[2].Dependencies)
+	if len(tasks[4].Dependencies) != 2 {
+		t.Fatalf("T-test-run should depend on 2 gen tasks, got %v", tasks[4].Dependencies)
 	}
 	depSet := make(map[string]bool)
-	for _, d := range tasks[2].Dependencies {
+	for _, d := range tasks[4].Dependencies {
 		depSet[d] = true
 	}
 	if !depSet["T-test-gen-scripts-tui"] || !depSet["T-test-gen-scripts-api"] {
-		t.Errorf("T-test-run deps should include T-test-gen-scripts-tui and T-test-gen-scripts-api, got %v", tasks[2].Dependencies)
+		t.Errorf("T-test-run deps should include T-test-gen-scripts-tui and T-test-gen-scripts-api, got %v", tasks[4].Dependencies)
 	}
 
 	// T-test-verify-regression depends on T-test-run
-	if tasks[3].Dependencies[0] != "T-test-run" {
-		t.Errorf("verify-regression should depend on run, got %v", tasks[3].Dependencies)
+	if tasks[5].Dependencies[0] != "T-test-run" {
+		t.Errorf("verify-regression should depend on run, got %v", tasks[5].Dependencies)
 	}
 }
 
 func TestGetBreakdownTestTasks_PerType_SingleType(t *testing.T) {
 	tasks := GetBreakdownTestTasks([]string{"api"}, defaultAuto)
 
-	if len(tasks) != 4 {
-		t.Fatalf("expected 4 tasks, got %d", len(tasks))
+	if len(tasks) != 6 {
+		t.Fatalf("expected 6 tasks, got %d", len(tasks))
 	}
 
 	wantIDs := []string{
+		"T-eval-journey", "T-eval-contract",
 		"T-test-gen-scripts-api",
 		"T-test-run", "T-test-verify-regression", "T-specs-consolidate",
 	}
@@ -310,29 +318,29 @@ func TestGetBreakdownTestTasks_PerType_SingleType(t *testing.T) {
 		}
 	}
 
-	if len(tasks[1].Dependencies) != 1 || tasks[1].Dependencies[0] != "T-test-gen-scripts-api" {
-		t.Errorf("T-test-run should depend on T-test-gen-scripts-api, got %v", tasks[1].Dependencies)
+	if len(tasks[3].Dependencies) != 1 || tasks[3].Dependencies[0] != "T-test-gen-scripts-api" {
+		t.Errorf("T-test-run should depend on T-test-gen-scripts-api, got %v", tasks[3].Dependencies)
 	}
 }
 
 func TestGetBreakdownTestTasks_PerType_ThreeTypes(t *testing.T) {
 	tasks := GetBreakdownTestTasks([]string{"tui", "api", "cli"}, defaultAuto)
 
-	// 3 types -> 3 gen tasks + run + verify-regression + consolidate = 6
-	if len(tasks) != 6 {
-		t.Fatalf("expected 6 tasks, got %d", len(tasks))
+	// eval-journey + eval-contract + 3 gen tasks + run + verify-regression + consolidate = 8
+	if len(tasks) != 8 {
+		t.Fatalf("expected 8 tasks, got %d", len(tasks))
 	}
 
 	// T-test-run depends on all 3 gen tasks
-	if len(tasks[3].Dependencies) != 3 {
-		t.Fatalf("T-test-run should depend on 3 gen tasks, got %v", tasks[3].Dependencies)
+	if len(tasks[5].Dependencies) != 3 {
+		t.Fatalf("T-test-run should depend on 3 gen tasks, got %v", tasks[5].Dependencies)
 	}
 	depSet := make(map[string]bool)
-	for _, d := range tasks[3].Dependencies {
+	for _, d := range tasks[5].Dependencies {
 		depSet[d] = true
 	}
 	if !depSet["T-test-gen-scripts-tui"] || !depSet["T-test-gen-scripts-api"] || !depSet["T-test-gen-scripts-cli"] {
-		t.Errorf("T-test-run missing expected deps, got %v", tasks[3].Dependencies)
+		t.Errorf("T-test-run missing expected deps, got %v", tasks[5].Dependencies)
 	}
 }
 
@@ -564,6 +572,8 @@ func TestGenerateTestTaskMD_EmbedTemplate_LoadsContent(t *testing.T) {
 		{"gen-and-run", TypeTestGenAndRun, "Phase 1"},
 		{"run", TypeTestRun, "staged e2e test scripts"},
 		{"verify-regression", TypeTestVerifyRegression, "just test-e2e"},
+		{"eval-journey", TypeEvalJourney, "6-dimension rubric"},
+		{"eval-contract", TypeEvalContract, "6-dimension rubric"},
 		{"validation-code", TypeValidationCode, "quality gate"},
 		{"validation-ux", TypeValidationUx, "accessibility, usability"},
 		{"doc-eval", TypeDocEval, "8-dimension rubric"},
@@ -1059,10 +1069,11 @@ func TestBodyContentPerStrategy(t *testing.T) {
 }
 
 func TestAutogenTypeToFileMapping(t *testing.T) {
-	// Verify all 11 auto-gen types have a mapping entry
+	// Verify all 12 auto-gen types have a mapping entry
 	wantTypes := []string{
 		TypeTestGenScripts, TypeTestGenAndRun, TypeTestRun,
-		TypeTestVerifyRegression, TypeValidationCode, TypeValidationUx,
+		TypeTestVerifyRegression, TypeEvalJourney, TypeEvalContract,
+		TypeValidationCode, TypeValidationUx,
 		TypeDocEval, TypeDocConsolidate, TypeDocDrift, TypeCleanCode,
 	}
 

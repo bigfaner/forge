@@ -586,9 +586,9 @@ func TestTypeConstants(t *testing.T) {
 }
 
 func TestSystemTypes(t *testing.T) {
-	t.Run("SystemTypes contains exactly 10 entries", func(t *testing.T) {
-		if len(SystemTypes) != 10 {
-			t.Errorf("SystemTypes has %d entries, want 10", len(SystemTypes))
+	t.Run("SystemTypes contains exactly 12 entries", func(t *testing.T) {
+		if len(SystemTypes) != 12 {
+			t.Errorf("SystemTypes has %d entries, want 12", len(SystemTypes))
 		}
 	})
 
@@ -600,9 +600,10 @@ func TestSystemTypes(t *testing.T) {
 			TypeValidationCode, TypeValidationUx,
 			TypeDocEval, TypeDocSummary,
 			TypeCleanCode,
+			TypeEvalJourney, TypeEvalContract,
 		}
-		if len(expected) != 10 {
-			t.Fatalf("test setup error: expected list has %d entries, want 10", len(expected))
+		if len(expected) != 12 {
+			t.Fatalf("test setup error: expected list has %d entries, want 12", len(expected))
 		}
 		for _, typ := range expected {
 			if !SystemTypes[typ] {
@@ -685,6 +686,8 @@ func TestValidTypes(t *testing.T) {
 			TypeTestRun,
 			TypeTestGenAndRun,
 			TypeTestVerifyRegression,
+			TypeEvalJourney,
+			TypeEvalContract,
 			TypeValidationCode,
 			TypeValidationUx,
 			TypeCodingFix,
