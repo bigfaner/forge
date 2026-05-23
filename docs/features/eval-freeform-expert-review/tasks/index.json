@@ -8,7 +8,7 @@
       "title": "Expert Profile Template \u0026 Inference Prompt",
       "priority": "P0",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-expert-profile-template.md",
       "record": "records/1-expert-profile-template.md",
       "type": "doc"
@@ -21,7 +21,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2-freeform-review-protocol.md",
       "record": "records/2-freeform-review-protocol.md",
       "type": "doc"
