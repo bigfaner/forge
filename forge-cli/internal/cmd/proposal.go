@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"sort"
 	"strings"
 
 	"forge-cli/pkg/project"
@@ -48,11 +47,8 @@ func runProposalList(projectRoot string) {
 		return
 	}
 
-	// Sort by Created date descending (newest first).
-	// Created is stored as "YYYY-MM-DD" which sorts correctly lexicographically.
-	sort.Slice(proposals, func(i, j int) bool {
-		return proposals[i].Created > proposals[j].Created
-	})
+	// Proposals are already sorted by Created descending (newest first)
+	// via infocmd.Discover.
 
 	// Calculate dynamic slug column width.
 	slugWidth := CalcSlugColWidth(mapProposalsToSlugLens(proposals))
