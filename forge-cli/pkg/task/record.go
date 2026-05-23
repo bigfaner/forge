@@ -35,6 +35,12 @@ type RecordTemplateData struct {
 	DocMetricsFormatted     string
 	ReferencedDocsFormatted string
 	ReviewStatusFormatted   string
+
+	// Test fields (used by record-test.md template)
+	CasesGeneratedFormatted string
+	CasesEvaluatedFormatted string
+	ScriptsCreatedFormatted string
+	TestResultsFormatted    string
 }
 
 // NewRecordTemplateData creates a RecordTemplateData from task, record data, and started time.
@@ -83,6 +89,10 @@ func NewRecordTemplateData(t *Task, rd *RecordData, startedTime string) *RecordT
 		DocMetricsFormatted:         formatWithFallback(rd.DocMetrics, "N/A"),
 		ReferencedDocsFormatted:     FormatList(rd.ReferencedDocs),
 		ReviewStatusFormatted:       formatWithFallback(rd.ReviewStatus, "N/A"),
+		CasesGeneratedFormatted:     formatIntWithFallback(rd.CasesGenerated),
+		CasesEvaluatedFormatted:     formatIntWithFallback(rd.CasesEvaluated),
+		ScriptsCreatedFormatted:     FormatList(rd.ScriptsCreated),
+		TestResultsFormatted:        formatWithFallback(rd.TestResults, "N/A"),
 	}
 }
 
@@ -126,6 +136,15 @@ func formatWithFallback(value, fallback string) string {
 		return fallback
 	}
 	return value
+}
+
+// formatIntWithFallback returns the string representation of n if positive,
+// otherwise returns "N/A".
+func formatIntWithFallback(n int) string {
+	if n > 0 {
+		return fmt.Sprintf("%d", n)
+	}
+	return "N/A"
 }
 
 // FormatCoverage formats coverage value for display.
@@ -194,6 +213,11 @@ func RenderCodingRecord(t *Task, rd *RecordData, startedTime string) string {
 // RenderDocRecord renders the doc record template with the given data.
 func RenderDocRecord(t *Task, rd *RecordData, startedTime string) string {
 	return renderRecordTemplate("data/record-doc.md", t, rd, startedTime)
+}
+
+// RenderTestRecord renders the test record template with the given data.
+func RenderTestRecord(t *Task, rd *RecordData, startedTime string) string {
+	return renderRecordTemplate("data/record-test.md", t, rd, startedTime)
 }
 
 // renderRecordTemplate renders a named record template with the given data.

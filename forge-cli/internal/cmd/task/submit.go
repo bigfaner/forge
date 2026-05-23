@@ -373,6 +373,8 @@ func fillRecordTemplate(t *task.Task, rd *task.RecordData, startedTime string) s
 	switch task.CategoryForType(t.Type) {
 	case task.CategoryDoc:
 		return task.RenderDocRecord(t, rd, startedTime)
+	case task.CategoryTest:
+		return task.RenderTestRecord(t, rd, startedTime)
 	default:
 		return task.RenderCodingRecord(t, rd, startedTime)
 	}
