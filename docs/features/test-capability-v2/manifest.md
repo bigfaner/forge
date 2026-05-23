@@ -1,7 +1,7 @@
 ---
 feature: "test-capability-v2"
 created: "2026-05-23"
-status: prd
+status: design
 ---
 
 # Feature: test-capability-v2
@@ -12,8 +12,9 @@ status: prd
 
 | Document | Path | Summary |
 |----------|------|---------|
-| PRD Spec | prd/prd-spec.md | 统一测试管线到 Journey-Contract，增强边界/异常衍生、风险驱动密度、场景差异化策略、Run-to-Learn 信息增强、置信度评级。退休 gen-test-cases + test.graduate |
-| User Stories | prd/prd-user-stories.md | 6 个用户故事覆盖管线统一、深度测试、场景差异化、评测门禁、通用性、Run-to-Learn |
+| PRD Spec | prd/prd-spec.md | 统一测试管线到 Journey-Contract，增强边界/异常衍生、风险驱动密度、surface 差异化策略、Run-to-Learn 信息增强、置信度评级。退休 gen-test-cases + test.graduate |
+| User Stories | prd/prd-user-stories.md | 7 个用户故事覆盖管线统一、深度测试、surface 差异化、评测门禁、通用性、Run-to-Learn、可扩展 surface 类型系统 |
+| Tech Design | design/tech-design.md | 5 个接口（Surface Rule、Convention、Fact Table、Convention Auto-Detect、Surface Persistence）、3 个数据模型、错误处理、质量门禁集成、PRD 覆盖追溯 |
 
 ## Traceability
 

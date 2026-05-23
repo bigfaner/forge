@@ -12,6 +12,42 @@ Test Capability 2.0 将 Forge 测试管线从双路径架构统一为 Journey-Co
 
 **核心约束**：主要改动在 Forge Plugin 层完成（skills/commands/rubrics/hooks），变更为 markdown 文件，通过 Plugin 分发机制到达用户环境。唯一例外：Fact Table 需要 Go CLI 子命令（`forge fact`）支持可靠的读写操作。
 
+**设计原则**：能由 LLM 从项目上下文推导的，不做成配置项。最小化配置，最大化 LLM 自主能力。
+
+## Directory Convention
+
+管线产物的存储位置约定：
+
+```
+项目根目录/
+├── .forge/
+│   ├── config.yaml              — surface 类型 + 其他配置
+│   └── fact-table.json          — 跨 feature 事实表
+│
+├── docs/
+│   ├── conventions/
+│   │   └── testing/             — 框架 Convention
+│   │       ├── index.md         — 索引文件（列出所有 Convention 的名称+描述+适用条件）
+│   │       ├── go.md
+│   │       ├── ginkgo.md
+│   │       ├── vitest.md
+│   │       ├── pytest.md        — [NEW]
+│   │       ├── junit.md         — [NEW]
+│   │       └── rust.md          — [NEW]
+│   └── features/
+│       └── <slug>/
+│           └── testing/
+│               └── <journey>/   — 按 Journey 聚合
+│                   ├── journey.md
+│                   └── contracts/
+│                       ├── step-1-<action>.md
+│                       └── step-2-<action>.md
+│
+└── tests/                       — 测试代码根目录
+    ├── testkit/                 — 共享测试基础设施
+    └── <journey-name>/          — 测试脚本（文件格式由 LLM 根据项目决定）
+```
+
 ## Architecture
 
 ### Layer Placement
@@ -31,14 +67,17 @@ Forge Plugin Layer (plugins/forge/)
 └── agents/          — subagent 定义（无变更）
 
 Go CLI Layer (forge binary)
-└── forge fact       — [NEW] Fact Table 读写子命令
-    ├── list         — 列表展示 fact 摘要
-    ├── get <id>     — 查看单条 fact 完整内容
-    └── summary      — 按 source/confidence/kind 统计
+├── forge fact       — [NEW] Fact Table 读写子命令
+│   ├── list         — 列表展示 fact 摘要
+│   ├── get <id>     — 查看单条 fact 完整内容
+│   └── summary      — 按 source/confidence/kind 统计
+└── forge config     — surface 类型读写
+    └── get surface  — 获取当前 surface 类型
 
 Project Data
 └── .forge/
-    └── fact-table.json — [NEW] 跨 feature 的系统事实表
+    ├── config.yaml        — surface + 其他配置
+    └── fact-table.json    — 跨 feature 事实表
 ```
 
 本功能不涉及 API 层、应用层、或数据库层。变更分布在 Plugin 层和 Go CLI 层。
@@ -79,11 +118,10 @@ Project Data
                 │                                                      │
                 │  ┌──────────────┐  ┌───────────────┐               │
                 │  │ conventions/ │  │ commands/     │               │
-                │  │ (migrated)   │  │ +eval-journey │               │
-                │  │ +pytest.md   │  │ +eval-contract│               │
-                │  │ +junit.md    │  │ -eval-test-cs │               │
-                │  │ +rust.md     │  └───────────────┘               │
-                │  └──────────────┘                                   │
+                │  │ testing/     │  │ +eval-journey │               │
+                │  │ (migrated)   │  │ +eval-contract│               │
+                │  │ +index.md    │  │ -eval-test-cs │               │
+                │  └──────────────┘  └───────────────┘               │
                 └─────────────────────────────────────────────────────┘
 
                 ┌─────────────────────────────────────────────────────┐
@@ -94,6 +132,10 @@ Project Data
                 │  │ list/get/    │  │ [NEW]         │               │
                 │  │ summary      │  └───────────────┘               │
                 │  └──────────────┘                                   │
+                │  ┌──────────────┐  ┌───────────────┐               │
+                │  │forge config  │  │ .forge/       │               │
+                │  │ get surface  │──│ config.yaml   │               │
+                │  └──────────────┘  └───────────────┘               │
                 └─────────────────────────────────────────────────────┘
 ```
 
@@ -101,11 +143,10 @@ Project Data
 
 | 依赖 | 类型 | 用途 |
 |------|------|------|
-| `docs/conventions/testing-*.md` | 内部 | Convention 文件被 gen-test-scripts 和 run-tests 读取 |
+| `docs/conventions/testing/` | 内部 | 框架 Convention，通过 index.md 索引按需加载 |
 | `plugins/forge/skills/eval/` | 内部 | eval-journey/eval-contract 复用现有 eval 框架 |
-| `docs/conventions/testing-journey-contract.md` | 内部 | Journey-Contract 模型定义 |
-| `docs/conventions/testing-conventions.md` | 内部 | Convention 文件结构定义（需迁移） |
 | `forge fact` CLI | 内部 | gen-test-scripts/run-tests 通过 CLI 读取 Fact Table |
+| `forge config get surface` | 内部 | 各 skill 读取 surface 类型 |
 | `.forge/fact-table.json` | 内部 | 跨 feature 的系统事实数据 |
 | Maestro CLI | 外部（可选） | Mobile surface 就绪检测 |
 | pytest / JUnit / cargo test | 外部（用户侧） | 新增内置 Convention 对应的测试框架 |
@@ -115,6 +156,8 @@ Project Data
 ### Interface 1: Surface Rules (Markdown)
 
 各 surface 类型的检测与策略指导，以 markdown rule 文件形式存在于 `skills/gen-journeys/rules/surface-*.md`。
+
+**Surface 与 Convention 正交分离**：Surface rule 定义"测什么、怎么隔离、关注什么"（测试策略），Convention 定义"用什么框架、怎么写断言"（框架知识）。两者运行时由 LLM 按需合并，不交叉引用。
 
 每个 surface rule 文件包含以下指导性内容：
 
@@ -141,7 +184,27 @@ Project Data
 
 **扩展方式**：新增 surface 类型只需添加一个 `surface-<type>.md` 文件，无需修改管线代码。
 
-### Interface 2: Fact Table Entry (JSON)
+### Interface 2: Convention Files (Markdown + Index)
+
+Convention 文件存放于 `docs/conventions/testing/`，定义框架知识（语法、命名、断言函数、文件模式）。与 Surface rule 正交——Convention 不知道 surface 的存在。
+
+**加载机制**：两级加载，LLM 自主路由。
+1. 读取 `docs/conventions/testing/index.md`（索引文件，列出所有 Convention 的名称、描述、适用条件）
+2. 根据项目上下文判断适用哪个 Convention，只加载对应的 `.md` 文件
+
+不使用 `domains` frontmatter 过滤。LLM 读取索引后自行判断相关性。
+
+**Convention 文件的 4 个 section**（迁移后）：
+- `framework` — 框架名称、语言、运行命令
+- `discovery` — 测试目录、文件模式、排除模式
+- `structure` — 套件模式、用例模式、hook 模式
+- `assertions` — 断言风格、自定义匹配器
+
+**迁移策略**：直接迁移，不保留旧 schema 兼容。一次性更新现有 3 个 Convention 文件。
+
+**新增内置 Convention**：pytest、JUnit、Rust/cargo test。
+
+### Interface 3: Fact Table (JSON + CLI)
 
 ```typescript
 FactEntry = {
@@ -167,7 +230,7 @@ FactEntry = {
 - 若 runtime `confidence` 非 `confirmed`，static fact 保留为 fallback（不删除）
 - 同一 `subject` 的不同 `kind` 共存
 
-### Interface 3: Eval Rubric Dimension (journey.md / contract.md)
+### Interface 4: Eval Rubric Dimension (journey.md / contract.md)
 
 共享评分维度框架，总分 1000：
 
@@ -190,36 +253,18 @@ context:
 - Surface Fitness（surface 适配）: 90/150
 - Internal Consistency（一致性）: 90/150
 
-### Interface 4: Convention File Schema (Migrated)
+### Interface 5: Surface Config (.forge/config.yaml)
 
-**迁移路径**: {Framework, Assertion, Tags, Result Format} → {framework, discovery, structure, assertions}
+Surface 检测结果持久化到 `.forge/config.yaml`，跨管线步骤传递。
 
-```markdown
-## framework
-- **name**: pytest                                    # 字符串，必需
-- **version**: ">=7.0"                               # 字符串，可选
-- **language**: python                                # 字符串，必需
-- **runner_command**: "pytest {test_dir} {flags}"     # 字符串，必需
-
-## discovery
-- **test_dir**: tests/                                # 字符串，必需
-- **file_pattern**: "test_*.py"                       # glob，必需
-- **exclude_pattern**: ""                             # glob，可选
-
-## structure
-- **suite_pattern**: "class Test{Feature}"            # 字符串，必需
-- **case_pattern**: "def test_{tc_id}_{description}"  # 字符串，必需
-- **hook_pattern**: "@pytest.fixture"                 # 字符串，必需
-
-## assertions
-- **style**: assert                                   # 枚举: assert|expect|should，必需
-- **custom_matchers**: ""                             # 字符串，可选
+```yaml
+# .forge/config.yaml 新增字段
+surface: cli  # 检测结果，用户可覆盖
 ```
 
-**迁移策略**：直接迁移，不保留旧 schema 兼容。
-1. Phase 3: 一次性更新现有 3 个 Convention 文件到新 section 名称
-2. gen-test-scripts 只读取新 section 名称（不回退旧名称）
-3. 完全移除旧 section 名称处理逻辑
+**读写方式**：`forge config get surface` / `forge config set surface <type>`
+
+**为什么持久化**：surface 类型需要跨 gen-journeys → gen-contracts → gen-test-scripts 多个步骤传递，且用户可能需要手动覆盖检测结果。
 
 ## Data Models
 
@@ -246,6 +291,31 @@ ConfidenceRating = {
   eval_bypassed: boolean
 }
 ```
+
+**评级阈值**：
+- `HIGH`：`confirmed_fact_ratio >= 0.80`（运行验证事实占比 ≥ 80%）
+- `MEDIUM`：`0.40 <= confirmed_fact_ratio < 0.80`（运行验证事实占比 40-80%）
+- `LOW`：`confirmed_fact_ratio < 0.40`（运行验证事实占比 < 40%）
+
+### Model 4: EvalSession
+
+```
+EvalSession = {
+  eval_result: {
+    total: int                              // 总分
+    dimensions: [{
+      name: str                             // 维度名
+      score: int                            // 得分
+      threshold: int                        // 最低阈值
+    }]
+    failed_dims: [str]                      // 未通过维度列表
+  }
+}
+```
+
+**存储位置**：`.forge/session.yaml`
+
+**用途**：eval-journey/eval-contract 的评分结果传递给 revise 步骤，revise 根据具体维度得分和未通过项进行针对性修正。每轮 eval 覆盖上一轮结果。
 
 ### Model 3: RunToLearnConfig
 
@@ -285,6 +355,25 @@ Exit codes follow BIZ-error-reporting-001:
 2. 恢复提示（遵循 BIZ-error-reporting-002）
 3. 当前管线状态上下文
 
+## Quality Gate Integration
+
+### 与 BIZ-quality-gate-001 的关系
+
+BIZ-quality-gate-001 管线（compile → fmt → lint → unit/integration → e2e）验证**项目源代码质量**，属于开发阶段门禁。新 eval 门禁（eval-journey → eval-contract）验证**测试管线产物的文档质量**，属于测试生成阶段门禁。
+
+**串行执行、独立判定**：
+
+```
+开发阶段（BIZ-quality-gate-001）  →  测试生成阶段（新 eval 门禁）
+compile → fmt → lint → unit/int   →  eval-journey → eval-contract → 置信度评级
+         ↓                                     ↓
+    源代码质量 pass/fail                 测试产物质量 pass/fail
+```
+
+**交汇点**：BIZ-quality-gate-001 的 e2e 测试结果作为 Fact Table 的 runtime 来源（`source: runtime`），影响下游置信度评级计算。
+
+**变更要点**：将现有单一门禁（gen-test-cases 评分）替换为多阶段门禁（eval-journey → eval-contract → 置信度评级），每阶段独立 pass/fail 判定，门禁结果汇入统一质量报告。
+
 ## Testing Strategy
 
 ### Per-Layer Test Plan
@@ -310,7 +399,7 @@ Exit codes follow BIZ-error-reporting-001:
 
 ### Overall Coverage Target
 
-每个 surface 类型至少 1 个 fixture 项目验证策略差异化。关键集成路径（管线回归、eval 门禁、R2L）覆盖集成测试。配置文件（Convention markdown）通过 schema 验证。非关键增强（test-guide auto-detect、draft generation）以人工验证为主。
+每个 surface 类型至少 1 个 fixture 项目验证策略差异化。关键集成路径（管线回归、eval 门禁、R2L）覆盖集成测试。Convention 文件通过 schema 验证。非关键增强（test-guide auto-detect、draft generation）以人工验证为主。
 
 ## Security Considerations
 
@@ -339,6 +428,7 @@ Exit codes follow BIZ-error-reporting-001:
 | eval-journey skill | 新 rubric + 命令 | `rubrics/journey.md`, `commands/eval-journey.md` |
 | eval-contract skill | 新 rubric + 命令 | `rubrics/contract.md`, `commands/eval-contract.md` |
 | Surface 检测 | Surface rule 文件 | `skills/gen-journeys/rules/surface-*.md` |
+| Surface 持久化 | config.yaml + CLI | `.forge/config.yaml`, `forge config get surface` |
 | 风险驱动密度 | gen-contracts 规则增强 | `skills/gen-contracts/rules/risk-density.md` |
 | 必须 Outcome | Surface rules + gen-contracts 增强 | `skills/gen-journeys/rules/surface-*.md` |
 | gen-test-scripts 增强 | 按 surface 策略规则 | `skills/gen-test-scripts/types/*.md` |
@@ -346,11 +436,15 @@ Exit codes follow BIZ-error-reporting-001:
 | 环境就绪检测 | run-tests 增强 | `skills/run-tests/rules/env-check.md` |
 | 置信度评级 | run-tests 增强 | `skills/run-tests/rules/confidence.md` |
 | Fact Table CLI | Go CLI 子命令 | `forge fact` (list/get/summary) |
+| 质量门禁更新 | 多阶段门禁替换单一门禁 | eval-journey → eval-contract → 置信度评级 |
+| BIZ-quality-gate-001 集成 | 串行执行、独立判定、e2e 结果汇入 Fact Table | 见 Quality Gate Integration 章节 |
 | **Phase 3: 通用性扩展** | | |
-| Convention schema 迁移 | 更新 schema + 迁移 | `docs/conventions/testing-conventions.md` |
-| pytest Convention | 新文件 | `docs/conventions/testing-pytest.md` |
-| JUnit Convention | 新文件 | `docs/conventions/testing-junit.md` |
-| Rust Convention | 新文件 | `docs/conventions/testing-rust.md` |
+| Convention 迁移 | 目录迁移 + schema 更新 | `docs/conventions/testing/` |
+| Convention 索引 | 新增 index.md | `docs/conventions/testing/index.md` |
+| pytest Convention | 新文件 | `docs/conventions/testing/pytest.md` |
+| JUnit Convention | 新文件 | `docs/conventions/testing/junit.md` |
+| Rust Convention | 新文件 | `docs/conventions/testing/rust.md` |
+| Testing 元数据内联 | 内联到各 skill rules | 删除 `testing-conventions.md`、`testing-journey-contract.md`、`testing-isolation.md` |
 | test-guide 自动检测 | 增强 | `skills/test-guide/rules/signal-detection.md` |
 | test-guide 草稿生成 | 增强 | `skills/test-guide/rules/draft-generation.md` |
 | **Stories** | | |
@@ -358,17 +452,28 @@ Exit codes follow BIZ-error-reporting-001:
 | Story 2: 深度测试 | risk-density + required_outcomes + strategy | `gen-contracts/rules/`, `gen-journeys/rules/surface-*.md` |
 | Story 3: Surface 差异化 | 按 surface 策略规则 | `gen-journeys/rules/surface-*.md`, `gen-test-scripts/types/` |
 | Story 4: Eval 门禁 | eval rubrics + 命令 | `rubrics/journey.md`, `rubrics/contract.md` |
-| Story 5: 通用性 | Convention 文件 + test-guide | `docs/conventions/`, `test-guide/` |
+| Story 5: 通用性 | Convention 文件 + test-guide | `docs/conventions/testing/`, `test-guide/` |
 | Story 6: Run-to-Learn | R2L 机制 + Fact Table CLI | `gen-test-scripts/rules/run-to-learn.md`, `.forge/fact-table.json`, `forge fact` CLI |
-| Story 7: 可扩展 surface | surface rules + 扩展指南 | `gen-journeys/rules/surface-*.md` |
+| Story 7: 可扩展 surface | surface rules + 扩展指南（新增 surface 只需添加 1 个 `surface-<type>.md` 文件） | `gen-journeys/rules/surface-*.md` |
 
 ## Open Questions
 
-- [x] ~~Convention schema 迁移：是否需要 `forge migrate-convention` 命令？~~ **已解决**：直接迁移，不保留兼容。Phase 3 中原位更新文件。
-- [x] ~~Surface 配置格式：YAML 配置文件 vs markdown rules？~~ **已解决**：Markdown rules 存放在 `skills/gen-journeys/rules/surface-*.md`。LLM-based skills 消费自然语言指导，不需要结构化配置文件。
-- [x] ~~Fact Table 存储位置：`docs/features/<slug>/testing/` vs `.forge/`？~~ **已解决**：`.forge/fact-table.json`（项目级，跨 feature 共享）。通过 `forge fact` CLI 子命令读写，保证更新语义正确性。
+- [x] ~~Convention schema 迁移~~ **已解决**：直接迁移，不保留兼容。
+- [x] ~~Surface 配置格式~~ **已解决**：Markdown rules，非 YAML 配置。
+- [x] ~~Fact Table 存储位置~~ **已解决**：`.forge/fact-table.json`，通过 `forge fact` CLI 读写。
+- [x] ~~Surface 与 Convention 的关系~~ **已解决**：正交分离。Surface 定义策略，Convention 定义框架知识，LLM 运行时合并。
+- [x] ~~Convention 加载机制~~ **已解决**：index.md 索引 + 按需加载，去掉 domains frontmatter。
+- [x] ~~Testing 元数据文件~~ **已解决**：内联到各 skill rules，不单独存在。
+- [x] ~~Contract 文档位置~~ **已解决**：从 `tests/<journey>/contracts/` 迁到 `docs/features/<slug>/testing/<journey>/contracts/`。
+- [x] ~~Convention 目录结构~~ **已解决**：迁移到 `docs/conventions/testing/` 子目录。
 
 ## Appendix
+
+### Design Principles
+
+1. **LLM 优先**：能由 LLM 从项目上下文推导的，不做成配置项。最小化配置，最大化 LLM 自主能力。
+2. **正交分离**：Surface（测试策略）与 Convention（框架知识）正交，运行时由 LLM 合并。
+3. **按需加载**：Convention 通过 index.md 索引按需加载，不全量读取。
 
 ### Alternatives Considered
 
@@ -377,12 +482,12 @@ Exit codes follow BIZ-error-reporting-001:
 | 为 eval-journey/eval-contract 新建独立 skill | 职责清晰 | 重复 eval 框架逻辑，更多文件维护 | 现有 eval 框架已支持参数化 rubric |
 | 在 Go 二进制中硬编码 surface 检测 | 更快、类型安全 | 需要 Go 代码改动，不可扩展 | Markdown rules 允许社区扩展而无需重新构建 |
 | YAML 配置文件定义 surface 类型 | 结构化、可机器解析 | 对 LLM 消费过于死板，增加不必要的抽象层 | Markdown rules 的原则 + 示例给 LLM 兼具指导性和灵活性 |
+| Convention 内嵌 surface 特定内容 | 一次加载获取全部 | Convention 数量爆炸（N frameworks × M surfaces），违反正交 | 正交分离 + LLM 运行时合并更灵活 |
 | 保留旧 Convention schema + 新增可选 | 零迁移成本 | 两种 schema 永久共存，造成混乱 | 直接迁移更简单；仅 3 个现有文件需更新 |
-| Fact Table 用 SQLite | 更好的查询能力 | 数据量级不匹配，增加依赖 | JSON 文件足够且透明 |
 | LLM 直接读写 JSON Fact Table | 无需 Go 代码 | LLM 操作 JSON 易出错，更新语义（merge/fallback）无法保证 | CLI 子命令保证结构化读写正确性 |
+| domains frontmatter 过滤 Convention | 精确路由 | 增加维护成本，每个文件都要写 frontmatter | index.md 索引 + LLM 自主判断更简洁 |
+| 测试元数据作为独立 Convention 文件 | 职责分离 | 无人消费，纯文档，增加文件数量 | 内联到各 skill rules 更直接 |
 
 ### References
 - PRD Spec: `docs/features/test-capability-v2/prd/prd-spec.md`
-- Journey-Contract Model: `docs/conventions/testing-journey-contract.md`
-- Convention File Structure: `docs/conventions/testing-conventions.md`
 - Forge Distribution Model: `docs/conventions/forge-distribution.md`

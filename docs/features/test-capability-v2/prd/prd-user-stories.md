@@ -38,10 +38,10 @@ feature: "test-capability-v2"
 
 ---
 
-## Story 3: 场景差异化 — 按场景类型定制测试策略
+## Story 3: surface 差异化 — 按 surface 类型定制测试策略
 
 **As a** Forge 用户（项目开发者）
-**I want to** 管线根据项目的场景类型（CLI/TUI/WebUI/Mobile/API）自动采用不同的测试策略和层级组合
+**I want to** 管线根据项目的 surface 类型（CLI/TUI/WebUI/Mobile/API）自动采用不同的测试策略和层级组合
 **So that** CLI 项目生成以 subprocess 断言为主的测试，WebUI 项目生成均衡的浏览器自动化测试，Mobile 项目生成 Maestro YAML 骨架，每种场景都能获得最适合的测试形态
 
 **Acceptance Criteria:**
@@ -86,7 +86,7 @@ feature: "test-capability-v2"
 - When 用户指出草稿中的错误部分
 - Then test-guide 基于用户反馈重新生成草稿（保留用户认可的部分，仅修正被指出的错误），最多重试 2 次；2 次重试耗尽后输出最终草稿供用户手动编辑，管线暂停等待用户确认
 - Given 内置 Convention 库
-- When 用户查看 Forge 插件的 `conventions/` 目录
+- When 用户查看 Forge 插件的 `docs/conventions/testing/` 目录
 - Then 包含 pytest、JUnit、Rust/cargo test 共 ≥ 3 个新增 Convention 文件
 
 ---
@@ -107,15 +107,15 @@ feature: "test-capability-v2"
 
 ---
 
-## Story 7: 可扩展场景类型系统 — 维护者新增场景类型
+## Story 7: 可扩展 surface 类型系统 — 维护者新增 surface 类型
 
 **As a** Forge 维护者
-**I want to** 通过添加一个场景类型配置文件（定义检测规则、测试策略、环境检测项、必须 Outcome），让新场景类型无缝接入测试管线
-**So that** 社区可以扩展 Forge 支持更多场景（如 Desktop/Electron、嵌入式、gRPC），而不需要修改管线核心代码
+**I want to** 通过添加一个 surface 类型配置文件（定义检测规则、测试策略、环境检测项、必须 Outcome），让新 surface 类型无缝接入测试管线
+**So that** 社区可以扩展 Forge 支持更多 surface（如 Desktop/Electron、嵌入式、gRPC），而不需要修改管线核心代码
 
 **Acceptance Criteria:**
-- Given 一个包含 `detect_rules`（项目文件信号模式）、`strategy`（AI 侧重比例）、`env_check`（环境就绪检测命令）、`required_outcomes`（必须衍生 Outcome 列表）的场景类型配置文件
-- When 将配置文件放入 `scenarios/` 目录
-- Then 管线自动识别新场景类型，`gen-journeys`/`gen-contracts`/`gen-test-scripts` 按配置的策略和规则执行，无需修改任何管线技能代码
-- And 新增场景类型后，已有场景类型（CLI/TUI/WebUI/Mobile/API）的测试生成结果不受影响（回归验证）：可接受的差异范围为——测试函数数量变化 ≤ 5%、无新增编译错误、eval 评分偏差 ≤ 30 分（同一 Journey/Contract 输入下）
-- And 新场景类型的 `required_outcomes` 配置自动反映到 eval rubric 的"场景适配"维度评分中：eval 评分时按该场景类型的 `required_outcomes` 列表检查 Outcome 覆盖率，缺少任何一个必须 Outcome 扣 30 分/个；新增场景类型需提交至少 1 个人工标注的 gold standard 文档对用于校准
+- Given 一个包含 `detect_rules`（项目文件信号模式）、`strategy`（AI 侧重比例）、`env_check`（环境就绪检测命令）、`required_outcomes`（必须衍生 Outcome 列表）的 surface 类型配置文件
+- When 将 surface rule 文件放入 `skills/gen-journeys/rules/` 目录
+- Then 管线自动识别新 surface 类型，`gen-journeys`/`gen-contracts`/`gen-test-scripts` 按配置的策略和规则执行，无需修改任何管线技能代码
+- And 新增 surface 类型后，已有 surface 类型（CLI/TUI/WebUI/Mobile/API）的测试生成结果不受影响（回归验证）：可接受的差异范围为——测试函数数量变化 ≤ 5%、无新增编译错误、eval 评分偏差 ≤ 30 分（同一 Journey/Contract 输入下）
+- And 新 surface 类型的 `required_outcomes` 配置自动反映到 eval rubric 的"场景适配"维度评分中：eval 评分时按该 surface 类型的 `required_outcomes` 列表检查 Outcome 覆盖率，缺少任何一个必须 Outcome 扣 30 分/个；新增 surface 类型需提交至少 1 个人工标注的 gold standard 文档对用于校准
