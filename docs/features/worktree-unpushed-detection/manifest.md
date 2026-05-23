@@ -1,7 +1,7 @@
 ---
 feature: "worktree-unpushed-detection"
 created: "2026-05-23"
-status: tasks
+status: completed
 mode: quick
 ---
 
