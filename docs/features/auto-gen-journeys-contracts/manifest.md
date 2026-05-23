@@ -1,7 +1,7 @@
 ---
 feature: "auto-gen-journeys-contracts"
 created: "2026-05-23"
-status: tasks
+status: completed
 mode: quick
 ---
 
