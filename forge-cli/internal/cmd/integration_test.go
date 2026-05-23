@@ -24,7 +24,7 @@ type SetupOpts struct {
 	Tasks map[string]task.Task
 	// State, if non-nil, creates a task-state.json in the process directory.
 	State *task.TaskState
-	// UseEnvVar, when true, sets CLAUDE_PROJECT_DIR instead of using go.mod+chdir+SetFeature.
+	// UseEnvVar, when true, sets CLAUDE_PROJECT_DIR instead of using go.mod+chdir+EnsureFeatureDir.
 	UseEnvVar bool
 	// FeatureName defaults to "test" if empty.
 	FeatureName string
@@ -35,7 +35,7 @@ type SetupOpts struct {
 // Always sets CLAUDE_PROJECT_DIR for isolation (FindProjectRoot resolves to temp dir
 // regardless of host environment). The UseEnvVar flag controls additional setup:
 //
-// UseEnvVar=false (default): also creates go.mod, chdirs, and calls feature.SetFeature.
+// UseEnvVar=false (default): also creates go.mod, chdirs, and calls feature.EnsureFeatureDir.
 // UseEnvVar=true: skips go.mod/chdir (env var alone is sufficient).
 func setupFullProject(t *testing.T, opts SetupOpts) (dir string) {
 	t.Helper()
@@ -109,7 +109,7 @@ func setupFullProject(t *testing.T, opts SetupOpts) (dir string) {
 		}
 
 		// Set feature
-		if err := feature.SetFeature(dir, featureName); err != nil {
+		if err := feature.EnsureFeatureDir(dir, featureName); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -763,7 +763,7 @@ func TestValidatorRun_FeatureBased(t *testing.T) {
 	}
 	_ = task.SaveIndex(indexPath, index)
 
-	_ = feature.SetFeature(dir, "test")
+	_ = feature.EnsureFeatureDir(dir, "test")
 
 	origWd, _ := os.Getwd()
 	t.Cleanup(func() { _ = os.Chdir(origWd) })
@@ -967,7 +967,7 @@ func TestExecuteClaim_SaveIndexError(t *testing.T) {
 	})
 	_ = task.SaveIndex(indexPath, index)
 
-	_ = feature.SetFeature(dir, "test")
+	_ = feature.EnsureFeatureDir(dir, "test")
 	origWd, _ := os.Getwd()
 	t.Cleanup(func() { _ = os.Chdir(origWd) })
 	_ = os.Chdir(dir)
@@ -1633,7 +1633,7 @@ func TestRunValidate_IndexFileNotFound(t *testing.T) {
 	dir := t.TempDir()
 	_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644)
 	_ = feature.EnsureFeatureDir(dir, "testf")
-	_ = feature.SetFeature(dir, "testf")
+	_ = feature.EnsureFeatureDir(dir, "testf")
 
 	cmd := exec.Command(os.Args[0], "-test.run=TestRunValidate_IndexFileNotFound")
 	// Clear env and set CLAUDE_PROJECT_DIR
@@ -1728,7 +1728,7 @@ func TestRunCheck_IndexFileNotFound(t *testing.T) {
 	dir := t.TempDir()
 	_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0644)
 	_ = feature.EnsureFeatureDir(dir, "testf")
-	_ = feature.SetFeature(dir, "testf")
+	_ = feature.EnsureFeatureDir(dir, "testf")
 
 	cmd := exec.Command(os.Args[0], "-test.run=TestRunCheck_IndexFileNotFound")
 	env := []string{}

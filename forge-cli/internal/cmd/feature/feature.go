@@ -128,7 +128,7 @@ func runFeature(_ *cobra.Command, args []string) error {
 
 	// Set feature
 	slug := args[0]
-	if err := feature.SetFeature(projectRoot, slug); err != nil {
+	if err := feature.EnsureFeatureDir(projectRoot, slug); err != nil {
 		return base.ErrFeatureNotFound(slug)
 	}
 	base.PrintBlockStart()

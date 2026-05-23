@@ -81,7 +81,7 @@ func setupFullProject(t *testing.T, tasks map[string]task.Task) {
 	}
 
 	// Set feature
-	if err := feature.SetFeature(dir, "test"); err != nil {
+	if err := feature.EnsureFeatureDir(dir, "test"); err != nil {
 		t.Fatal(err)
 	}
 }

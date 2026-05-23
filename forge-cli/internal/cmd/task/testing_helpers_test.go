@@ -19,7 +19,7 @@ type SetupOpts struct {
 	Tasks map[string]task.Task
 	// State, if non-nil, creates a task-state.json in the process directory.
 	State *task.TaskState
-	// UseEnvVar, when true, sets CLAUDE_PROJECT_DIR instead of using go.mod+chdir+SetFeature.
+	// UseEnvVar, when true, sets CLAUDE_PROJECT_DIR instead of using go.mod+chdir+EnsureFeatureDir.
 	UseEnvVar bool
 	// FeatureName defaults to "test" if empty.
 	FeatureName string
@@ -93,7 +93,7 @@ func setupFullProject(t *testing.T, opts SetupOpts) (dir string) {
 		if err := os.Chdir(dir); err != nil {
 			t.Fatal(err)
 		}
-		if err := feature.SetFeature(dir, featureName); err != nil {
+		if err := feature.EnsureFeatureDir(dir, featureName); err != nil {
 			t.Fatal(err)
 		}
 	}

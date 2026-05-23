@@ -127,13 +127,6 @@ func RequireFeature(projectRoot string) (string, error) {
 	return GetCurrentFeature(projectRoot)
 }
 
-// SetFeature creates the process directory for a feature.
-//
-// Deprecated: Use EnsureFeatureDir instead.
-func SetFeature(projectRoot, featureSlug string) error {
-	return EnsureFeatureDir(projectRoot, featureSlug)
-}
-
 // EnsureFeatureDir ensures the feature directory structure exists.
 func EnsureFeatureDir(projectRoot, featureSlug string) error {
 	dirs := []string{

@@ -181,7 +181,7 @@
       "dependencies": [
         "4"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "8-migrate-setfeature.md",
       "record": "records/8-migrate-setfeature.md",
       "breaking": true,

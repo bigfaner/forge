@@ -147,41 +147,6 @@ func TestGetCurrentFeature(t *testing.T) {
 	}
 }
 
-func TestSetFeature(t *testing.T) {
-	t.Run("creates feature directory structure", func(t *testing.T) {
-		dir := t.TempDir()
-		if err := SetFeature(dir, "test-feature"); err != nil {
-			t.Fatalf("SetFeature() error = %v", err)
-		}
-
-		expectedDirs := []string{
-			filepath.Join(dir, GetFeatureDir("test-feature")),
-			filepath.Join(dir, GetFeaturePRDDir("test-feature")),
-			filepath.Join(dir, GetFeatureDesignDir("test-feature")),
-			filepath.Join(dir, GetFeatureUIDesignDir("test-feature")),
-			filepath.Join(dir, GetFeatureTasksDir("test-feature")),
-			filepath.Join(dir, GetFeatureRecordsDir("test-feature")),
-			filepath.Join(dir, FeaturesDir, "test-feature", TasksDirName, ProcessDirName),
-		}
-
-		for _, expectedDir := range expectedDirs {
-			if _, err := os.Stat(expectedDir); os.IsNotExist(err) {
-				t.Errorf("directory %s was not created", expectedDir)
-			}
-		}
-	})
-
-	t.Run("idempotent", func(t *testing.T) {
-		dir := t.TempDir()
-		if err := SetFeature(dir, "test-feature"); err != nil {
-			t.Fatalf("first SetFeature() error = %v", err)
-		}
-		if err := SetFeature(dir, "test-feature"); err != nil {
-			t.Fatalf("second SetFeature() error = %v", err)
-		}
-	})
-}
-
 func TestRequireFeature(t *testing.T) {
 	t.Run("delegates to GetCurrentFeature", func(t *testing.T) {
 		dir := t.TempDir()
