@@ -30,7 +30,7 @@
       "title": "Update 13 embed template files with strategy-based content",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "3-update-templates.md",
       "record": "records/3-update-templates.md",
       "scope": "backend",

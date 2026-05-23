@@ -139,9 +139,9 @@ func TestGenerateTestTaskMD(t *testing.T) {
 	if !strings.Contains(s, `"T-test-eval-cases"`) {
 		t.Error("missing dependency in frontmatter")
 	}
-	// Body now loaded from embed template, should contain skill invocation
-	if !strings.Contains(s, "forge:gen-test-scripts") {
-		t.Error("body should contain gen-test-scripts skill from embed template")
+	// Body now loaded from embed template, should contain strategy-based content
+	if !strings.Contains(s, "executable test scripts") {
+		t.Error("body should contain strategy-based content from embed template")
 	}
 }
 
@@ -609,19 +609,19 @@ func TestGenerateTestTaskMD_EmbedTemplate_LoadsContent(t *testing.T) {
 		typ          string
 		wantContains string
 	}{
-		{"gen-cases", TypeTestGenCases, "forge:gen-test-cases"},
-		{"eval-cases", TypeTestEvalCases, "forge:eval"},
-		{"gen-scripts", TypeTestGenScripts, "forge:gen-test-scripts"},
-		{"gen-and-run", TypeTestGenAndRun, "forge:gen-test-scripts"},
-		{"run", TypeTestRun, "forge:run-e2e-tests"},
-		{"graduate", TypeTestGraduate, "forge:graduate-tests"},
+		{"gen-cases", TypeTestGenCases, "full traceability"},
+		{"eval-cases", TypeTestEvalCases, "Evaluate generated test cases"},
+		{"gen-scripts", TypeTestGenScripts, "executable test scripts"},
+		{"gen-and-run", TypeTestGenAndRun, "Phase 1"},
+		{"run", TypeTestRun, "staged e2e test scripts"},
+		{"graduate", TypeTestGraduate, "regression suite"},
 		{"verify-regression", TypeTestVerifyRegression, "just test-e2e"},
-		{"validation-code", TypeValidationCode, "just compile"},
-		{"validation-ux", TypeValidationUx, "UX"},
+		{"validation-code", TypeValidationCode, "quality gate"},
+		{"validation-ux", TypeValidationUx, "accessibility, usability"},
 		{"doc-eval", TypeDocEval, "8-dimension rubric"},
-		{"doc-consolidate", TypeDocConsolidate, "forge:consolidate-specs"},
-		{"doc-drift", TypeDocDrift, "forge:consolidate-specs"},
-		{"clean-code", TypeCleanCode, "forge:clean-code"},
+		{"doc-consolidate", TypeDocConsolidate, "CROSS items"},
+		{"doc-drift", TypeDocDrift, "git diff --name-only"},
+		{"clean-code", TypeCleanCode, "Simplify and clean"},
 	}
 
 	for _, tt := range tests {
@@ -662,11 +662,11 @@ func TestGenerateTestTaskMD_StrategyContentAppendedAfterTemplate(t *testing.T) {
 	s := string(content)
 
 	// Should contain template content
-	if !strings.Contains(s, "forge:gen-test-cases") {
+	if !strings.Contains(s, "full traceability") {
 		t.Error("body should contain template content")
 	}
 	// StrategyContent appended AFTER template
-	templateIdx := strings.Index(s, "forge:gen-test-cases")
+	templateIdx := strings.Index(s, "full traceability")
 	strategyIdx := strings.Index(s, "Custom Strategy")
 	if strategyIdx <= templateIdx {
 		t.Error("StrategyContent should appear after template content")
@@ -877,7 +877,7 @@ func TestGenerateTestTaskMD_WithBodyContext(t *testing.T) {
 		t.Error("missing id in frontmatter")
 	}
 	// Template body loaded (placeholder substitution applied)
-	if !strings.Contains(s, "forge:gen-test-cases") {
+	if !strings.Contains(s, "structured test cases") {
 		t.Error("body should contain template content")
 	}
 }
