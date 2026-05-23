@@ -1,6 +1,7 @@
 package task
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -34,33 +35,39 @@ func TestGetBreakdownTestTasks_EmptyInterfaces(t *testing.T) {
 func TestGetBreakdownTestTasks_SingleType(t *testing.T) {
 	tasks := GetBreakdownTestTasks([]string{"cli"}, defaultAuto)
 
-	// eval-journey + eval-contract + gen-scripts-cli + run + verify-regression + consolidate = 6
-	if len(tasks) != 6 {
-		t.Fatalf("expected 6 tasks, got %d", len(tasks))
+	// gen-journeys-cli + eval-journey + gen-contracts + eval-contract + gen-scripts-cli + run + verify-regression + consolidate = 8
+	if len(tasks) != 8 {
+		t.Fatalf("expected 8 tasks, got %d", len(tasks))
 	}
 
-	wantIDs := []string{"T-eval-journey", "T-eval-contract", "T-test-gen-scripts-cli", "T-test-run", "T-test-verify-regression", "T-specs-consolidate"}
+	wantIDs := []string{"T-test-gen-journeys-cli", "T-eval-journey", "T-test-gen-contracts", "T-eval-contract", "T-test-gen-scripts-cli", "T-test-run", "T-test-verify-regression", "T-specs-consolidate"}
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
 			t.Errorf("tasks[%d].ID = %q, want %q", i, tasks[i].ID, want)
 		}
 	}
 
-	// Dependency chain: eval-contract -> eval-journey, gen-scripts -> eval-contract, run -> gen-scripts, verify -> run, consolidate -> verify
-	if tasks[1].Dependencies[0] != "T-eval-journey" {
-		t.Errorf("eval-contract should depend on eval-journey, got %v", tasks[1].Dependencies)
+	// Dependency chain: eval-journey -> gen-journeys, gen-contracts -> eval-journey, eval-contract -> gen-contracts, gen-scripts -> eval-contract, run -> gen-scripts, verify -> run, consolidate -> verify
+	if tasks[1].Dependencies[0] != "T-test-gen-journeys-cli" {
+		t.Errorf("eval-journey should depend on gen-journeys-cli, got %v", tasks[1].Dependencies)
 	}
-	if tasks[2].Dependencies[0] != "T-eval-contract" {
-		t.Errorf("gen-scripts should depend on eval-contract, got %v", tasks[2].Dependencies)
+	if tasks[2].Dependencies[0] != "T-eval-journey" {
+		t.Errorf("gen-contracts should depend on eval-journey, got %v", tasks[2].Dependencies)
 	}
-	if tasks[3].Dependencies[0] != "T-test-gen-scripts-cli" {
-		t.Errorf("run should depend on gen-scripts-cli, got %v", tasks[3].Dependencies)
+	if tasks[3].Dependencies[0] != "T-test-gen-contracts" {
+		t.Errorf("eval-contract should depend on gen-contracts, got %v", tasks[3].Dependencies)
 	}
-	if tasks[4].Dependencies[0] != "T-test-run" {
-		t.Errorf("verify-regression should depend on run, got %v", tasks[4].Dependencies)
+	if tasks[4].Dependencies[0] != "T-eval-contract" {
+		t.Errorf("gen-scripts should depend on eval-contract, got %v", tasks[4].Dependencies)
 	}
-	if tasks[5].Dependencies[0] != "T-test-verify-regression" {
-		t.Errorf("consolidate should depend on verify-regression, got %v", tasks[5].Dependencies)
+	if tasks[5].Dependencies[0] != "T-test-gen-scripts-cli" {
+		t.Errorf("run should depend on gen-scripts-cli, got %v", tasks[5].Dependencies)
+	}
+	if tasks[6].Dependencies[0] != "T-test-run" {
+		t.Errorf("verify-regression should depend on run, got %v", tasks[6].Dependencies)
+	}
+	if tasks[7].Dependencies[0] != "T-test-verify-regression" {
+		t.Errorf("consolidate should depend on verify-regression, got %v", tasks[7].Dependencies)
 	}
 }
 
@@ -249,13 +256,16 @@ func TestResolveDocEvalDep(t *testing.T) {
 func TestGetBreakdownTestTasks_PerType_TwoTypes(t *testing.T) {
 	tasks := GetBreakdownTestTasks([]string{"tui", "api"}, defaultAuto)
 
-	// eval-journey + eval-contract + 2 gen-scripts(tui,api) + run + verify-regression + consolidate = 7
-	if len(tasks) != 7 {
-		t.Fatalf("expected 7 tasks, got %d", len(tasks))
+	// 2 gen-journeys + eval-journey + gen-contracts + eval-contract + 2 gen-scripts(tui,api) + run + verify-regression + consolidate = 10
+	if len(tasks) != 10 {
+		t.Fatalf("expected 10 tasks, got %d", len(tasks))
 	}
 
 	wantIDs := []string{
-		"T-eval-journey", "T-eval-contract",
+		"T-test-gen-journeys-tui", "T-test-gen-journeys-api",
+		"T-eval-journey",
+		"T-test-gen-contracts",
+		"T-eval-contract",
 		"T-test-gen-scripts-tui", "T-test-gen-scripts-api",
 		"T-test-run",
 		"T-test-verify-regression", "T-specs-consolidate",
@@ -266,49 +276,81 @@ func TestGetBreakdownTestTasks_PerType_TwoTypes(t *testing.T) {
 		}
 	}
 
-	// Keys include type suffix (no language)
-	if tasks[2].Key != "gen-test-scripts-tui" {
-		t.Errorf("tasks[2].Key = %q, want gen-test-scripts-tui", tasks[2].Key)
+	// gen-journeys keys include type suffix
+	if tasks[0].Key != "gen-journeys-tui" {
+		t.Errorf("tasks[0].Key = %q, want gen-journeys-tui", tasks[0].Key)
 	}
-	if tasks[3].Key != "gen-test-scripts-api" {
-		t.Errorf("tasks[3].Key = %q, want gen-test-scripts-api", tasks[3].Key)
+	if tasks[1].Key != "gen-journeys-api" {
+		t.Errorf("tasks[1].Key = %q, want gen-journeys-api", tasks[1].Key)
 	}
 
-	// TestType field set
-	if tasks[2].TestType != "tui" {
-		t.Errorf("tasks[2].TestType = %q, want tui", tasks[2].TestType)
+	// gen-scripts keys include type suffix
+	if tasks[5].Key != "gen-test-scripts-tui" {
+		t.Errorf("tasks[5].Key = %q, want gen-test-scripts-tui", tasks[5].Key)
 	}
-	if tasks[3].TestType != "api" {
-		t.Errorf("tasks[3].TestType = %q, want api", tasks[3].TestType)
+	if tasks[6].Key != "gen-test-scripts-api" {
+		t.Errorf("tasks[6].Key = %q, want gen-test-scripts-api", tasks[6].Key)
+	}
+
+	// TestType field set for gen-journeys
+	if tasks[0].TestType != "tui" {
+		t.Errorf("tasks[0].TestType = %q, want tui", tasks[0].TestType)
+	}
+	if tasks[1].TestType != "api" {
+		t.Errorf("tasks[1].TestType = %q, want api", tasks[1].TestType)
+	}
+
+	// TestType field set for gen-scripts
+	if tasks[5].TestType != "tui" {
+		t.Errorf("tasks[5].TestType = %q, want tui", tasks[5].TestType)
+	}
+	if tasks[6].TestType != "api" {
+		t.Errorf("tasks[6].TestType = %q, want api", tasks[6].TestType)
+	}
+
+	// eval-journey depends on ALL gen-journeys tasks
+	if len(tasks[2].Dependencies) != 2 {
+		t.Fatalf("T-eval-journey should depend on 2 gen-journeys tasks, got %v", tasks[2].Dependencies)
+	}
+	depSet := make(map[string]bool)
+	for _, d := range tasks[2].Dependencies {
+		depSet[d] = true
+	}
+	if !depSet["T-test-gen-journeys-tui"] || !depSet["T-test-gen-journeys-api"] {
+		t.Errorf("T-eval-journey deps should include both gen-journeys, got %v", tasks[2].Dependencies)
 	}
 
 	// T-test-run depends on ALL per-type gen-scripts tasks
-	if len(tasks[4].Dependencies) != 2 {
-		t.Fatalf("T-test-run should depend on 2 gen tasks, got %v", tasks[4].Dependencies)
+	if len(tasks[7].Dependencies) != 2 {
+		t.Fatalf("T-test-run should depend on 2 gen tasks, got %v", tasks[7].Dependencies)
 	}
-	depSet := make(map[string]bool)
-	for _, d := range tasks[4].Dependencies {
-		depSet[d] = true
+	depSet2 := make(map[string]bool)
+	for _, d := range tasks[7].Dependencies {
+		depSet2[d] = true
 	}
-	if !depSet["T-test-gen-scripts-tui"] || !depSet["T-test-gen-scripts-api"] {
-		t.Errorf("T-test-run deps should include T-test-gen-scripts-tui and T-test-gen-scripts-api, got %v", tasks[4].Dependencies)
+	if !depSet2["T-test-gen-scripts-tui"] || !depSet2["T-test-gen-scripts-api"] {
+		t.Errorf("T-test-run deps should include T-test-gen-scripts-tui and T-test-gen-scripts-api, got %v", tasks[7].Dependencies)
 	}
 
 	// T-test-verify-regression depends on T-test-run
-	if tasks[5].Dependencies[0] != "T-test-run" {
-		t.Errorf("verify-regression should depend on run, got %v", tasks[5].Dependencies)
+	if tasks[8].Dependencies[0] != "T-test-run" {
+		t.Errorf("verify-regression should depend on run, got %v", tasks[8].Dependencies)
 	}
 }
 
 func TestGetBreakdownTestTasks_PerType_SingleType(t *testing.T) {
 	tasks := GetBreakdownTestTasks([]string{"api"}, defaultAuto)
 
-	if len(tasks) != 6 {
-		t.Fatalf("expected 6 tasks, got %d", len(tasks))
+	// gen-journeys-api + eval-journey + gen-contracts + eval-contract + gen-scripts-api + run + verify-regression + consolidate = 8
+	if len(tasks) != 8 {
+		t.Fatalf("expected 8 tasks, got %d", len(tasks))
 	}
 
 	wantIDs := []string{
-		"T-eval-journey", "T-eval-contract",
+		"T-test-gen-journeys-api",
+		"T-eval-journey",
+		"T-test-gen-contracts",
+		"T-eval-contract",
 		"T-test-gen-scripts-api",
 		"T-test-run", "T-test-verify-regression", "T-specs-consolidate",
 	}
@@ -318,29 +360,33 @@ func TestGetBreakdownTestTasks_PerType_SingleType(t *testing.T) {
 		}
 	}
 
-	if len(tasks[3].Dependencies) != 1 || tasks[3].Dependencies[0] != "T-test-gen-scripts-api" {
-		t.Errorf("T-test-run should depend on T-test-gen-scripts-api, got %v", tasks[3].Dependencies)
+	if len(tasks[5].Dependencies) != 1 || tasks[5].Dependencies[0] != "T-test-gen-scripts-api" {
+		t.Errorf("T-test-run should depend on T-test-gen-scripts-api, got %v", tasks[5].Dependencies)
 	}
 }
 
 func TestGetBreakdownTestTasks_PerType_ThreeTypes(t *testing.T) {
 	tasks := GetBreakdownTestTasks([]string{"tui", "api", "cli"}, defaultAuto)
 
-	// eval-journey + eval-contract + 3 gen tasks + run + verify-regression + consolidate = 8
-	if len(tasks) != 8 {
-		t.Fatalf("expected 8 tasks, got %d", len(tasks))
+	// 3 gen-journeys + eval-journey + gen-contracts + eval-contract + 3 gen-scripts + run + verify-regression + consolidate = 12
+	if len(tasks) != 12 {
+		t.Fatalf("expected 12 tasks, got %d", len(tasks))
 	}
 
 	// T-test-run depends on all 3 gen tasks
-	if len(tasks[5].Dependencies) != 3 {
-		t.Fatalf("T-test-run should depend on 3 gen tasks, got %v", tasks[5].Dependencies)
+	runIdx := findTaskIndex(tasks, "T-test-run")
+	if runIdx < 0 {
+		t.Fatalf("T-test-run not found in tasks")
+	}
+	if len(tasks[runIdx].Dependencies) != 3 {
+		t.Fatalf("T-test-run should depend on 3 gen tasks, got %v", tasks[runIdx].Dependencies)
 	}
 	depSet := make(map[string]bool)
-	for _, d := range tasks[5].Dependencies {
+	for _, d := range tasks[runIdx].Dependencies {
 		depSet[d] = true
 	}
 	if !depSet["T-test-gen-scripts-tui"] || !depSet["T-test-gen-scripts-api"] || !depSet["T-test-gen-scripts-cli"] {
-		t.Errorf("T-test-run missing expected deps, got %v", tasks[5].Dependencies)
+		t.Errorf("T-test-run missing expected deps, got %v", tasks[runIdx].Dependencies)
 	}
 }
 
@@ -1227,5 +1273,276 @@ func TestAutogenTypeToFileMapping(t *testing.T) {
 		if len(data) == 0 {
 			t.Errorf("template file %q for type %q is empty", file, typ)
 		}
+	}
+}
+
+// --- Tests for gen-journeys/gen-contracts in Breakdown mode (Task 3) ---
+
+func TestGetBreakdownTestTasks_GenJourneysPerType(t *testing.T) {
+	tasks := GetBreakdownTestTasks([]string{"tui", "api"}, defaultAuto)
+
+	foundTUI := false
+	foundAPI := false
+	for _, task := range tasks {
+		if task.ID == "T-test-gen-journeys-tui" {
+			foundTUI = true
+			if task.Type != TypeTestGenJourneys {
+				t.Errorf("gen-journeys-tui Type = %q, want %q", task.Type, TypeTestGenJourneys)
+			}
+			if task.TestType != "tui" {
+				t.Errorf("gen-journeys-tui TestType = %q, want tui", task.TestType)
+			}
+			if task.StrategyKind != "interface" {
+				t.Errorf("gen-journeys-tui StrategyKind = %q, want interface", task.StrategyKind)
+			}
+		}
+		if task.ID == "T-test-gen-journeys-api" {
+			foundAPI = true
+			if task.Type != TypeTestGenJourneys {
+				t.Errorf("gen-journeys-api Type = %q, want %q", task.Type, TypeTestGenJourneys)
+			}
+			if task.TestType != "api" {
+				t.Errorf("gen-journeys-api TestType = %q, want api", task.TestType)
+			}
+			if task.StrategyKind != "interface" {
+				t.Errorf("gen-journeys-api StrategyKind = %q, want interface", task.StrategyKind)
+			}
+		}
+	}
+	if !foundTUI {
+		t.Error("missing T-test-gen-journeys-tui task")
+	}
+	if !foundAPI {
+		t.Error("missing T-test-gen-journeys-api task")
+	}
+}
+
+func TestGetBreakdownTestTasks_GenContracts(t *testing.T) {
+	tasks := GetBreakdownTestTasks([]string{"cli"}, defaultAuto)
+
+	found := false
+	for _, task := range tasks {
+		if task.ID == "T-test-gen-contracts" {
+			found = true
+			if task.Type != TypeTestGenContracts {
+				t.Errorf("gen-contracts Type = %q, want %q", task.Type, TypeTestGenContracts)
+			}
+		}
+	}
+	if !found {
+		t.Error("missing T-test-gen-contracts task")
+	}
+}
+
+func TestGetBreakdownTestTasks_NewOrdering(t *testing.T) {
+	tasks := GetBreakdownTestTasks([]string{"cli"}, defaultAuto)
+
+	wantOrder := []string{
+		"T-test-gen-journeys-cli",
+		"T-eval-journey",
+		"T-test-gen-contracts",
+		"T-eval-contract",
+		"T-test-gen-scripts-cli",
+		"T-test-run",
+		"T-test-verify-regression",
+		"T-specs-consolidate",
+	}
+
+	for i, want := range wantOrder {
+		if tasks[i].ID != want {
+			t.Errorf("tasks[%d].ID = %q, want %q", i, tasks[i].ID, want)
+		}
+	}
+}
+
+func TestGetBreakdownTestTasks_FullDependencyChain(t *testing.T) {
+	tasks := GetBreakdownTestTasks([]string{"cli", "api"}, defaultAuto)
+
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+
+	// gen-journeys tasks have no deps (pipeline entry points)
+	if len(byID["T-test-gen-journeys-cli"].Dependencies) != 0 {
+		t.Errorf("gen-journeys-cli should have no deps, got %v", byID["T-test-gen-journeys-cli"].Dependencies)
+	}
+	if len(byID["T-test-gen-journeys-api"].Dependencies) != 0 {
+		t.Errorf("gen-journeys-api should have no deps, got %v", byID["T-test-gen-journeys-api"].Dependencies)
+	}
+
+	// eval-journey depends on all gen-journeys
+	evalJourneyDeps := byID["T-eval-journey"].Dependencies
+	if len(evalJourneyDeps) != 2 {
+		t.Fatalf("eval-journey should depend on 2 gen-journeys, got %v", evalJourneyDeps)
+	}
+	depSet := make(map[string]bool)
+	for _, d := range evalJourneyDeps {
+		depSet[d] = true
+	}
+	if !depSet["T-test-gen-journeys-cli"] || !depSet["T-test-gen-journeys-api"] {
+		t.Errorf("eval-journey deps should include both gen-journeys, got %v", evalJourneyDeps)
+	}
+
+	// gen-contracts depends on eval-journey
+	if len(byID["T-test-gen-contracts"].Dependencies) != 1 || byID["T-test-gen-contracts"].Dependencies[0] != "T-eval-journey" {
+		t.Errorf("gen-contracts should depend on eval-journey, got %v", byID["T-test-gen-contracts"].Dependencies)
+	}
+
+	// eval-contract depends on gen-contracts
+	if len(byID["T-eval-contract"].Dependencies) != 1 || byID["T-eval-contract"].Dependencies[0] != "T-test-gen-contracts" {
+		t.Errorf("eval-contract should depend on gen-contracts, got %v", byID["T-eval-contract"].Dependencies)
+	}
+
+	// gen-scripts depend on eval-contract
+	if len(byID["T-test-gen-scripts-cli"].Dependencies) != 1 || byID["T-test-gen-scripts-cli"].Dependencies[0] != "T-eval-contract" {
+		t.Errorf("gen-scripts-cli should depend on eval-contract, got %v", byID["T-test-gen-scripts-cli"].Dependencies)
+	}
+	if len(byID["T-test-gen-scripts-api"].Dependencies) != 1 || byID["T-test-gen-scripts-api"].Dependencies[0] != "T-eval-contract" {
+		t.Errorf("gen-scripts-api should depend on eval-contract, got %v", byID["T-test-gen-scripts-api"].Dependencies)
+	}
+
+	// run depends on all gen-scripts
+	runDeps := byID["T-test-run"].Dependencies
+	if len(runDeps) != 2 {
+		t.Fatalf("run should depend on 2 gen-scripts, got %v", runDeps)
+	}
+	runDepSet := make(map[string]bool)
+	for _, d := range runDeps {
+		runDepSet[d] = true
+	}
+	if !runDepSet["T-test-gen-scripts-cli"] || !runDepSet["T-test-gen-scripts-api"] {
+		t.Errorf("run deps should include both gen-scripts, got %v", runDeps)
+	}
+
+	// verify-regression depends on run
+	if len(byID["T-test-verify-regression"].Dependencies) != 1 || byID["T-test-verify-regression"].Dependencies[0] != "T-test-run" {
+		t.Errorf("verify-regression should depend on run, got %v", byID["T-test-verify-regression"].Dependencies)
+	}
+}
+
+func TestFindTaskIndexOrPanic_PanicsOnMissing(t *testing.T) {
+	tasks := []AutoGenTaskDef{
+		{ID: "T-existing-1"},
+		{ID: "T-existing-2"},
+	}
+
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Fatal("expected panic when task not found, but did not panic")
+		}
+		msg := fmt.Sprintf("%v", r)
+		if !strings.Contains(msg, "T-missing") {
+			t.Errorf("panic message should contain missing task ID %q, got %q", "T-missing", msg)
+		}
+		if !strings.Contains(msg, "T-existing-1") {
+			t.Errorf("panic message should contain task ID T-existing-1, got %q", msg)
+		}
+		if !strings.Contains(msg, "T-existing-2") {
+			t.Errorf("panic message should contain task ID T-existing-2, got %q", msg)
+		}
+	}()
+
+	findTaskIndexOrPanic(tasks, "T-missing")
+}
+
+func TestFindTaskIndexOrPanic_ReturnsIndexWhenFound(t *testing.T) {
+	tasks := []AutoGenTaskDef{
+		{ID: "T-first"},
+		{ID: "T-second"},
+		{ID: "T-third"},
+	}
+
+	idx := findTaskIndexOrPanic(tasks, "T-second")
+	if idx != 1 {
+		t.Errorf("expected index 1, got %d", idx)
+	}
+}
+
+func TestGetBreakdownTestTasks_GenJourneysUsesEmbedTemplate(t *testing.T) {
+	def := AutoGenTaskDef{
+		ID: "T-test-gen-journeys-cli", Key: "gen-journeys-cli",
+		Title: "Generate Test Journeys (cli)", Priority: "P1",
+		EstimatedTime: "20-30min", Type: TypeTestGenJourneys, Scope: "all",
+		TestType: "cli", StrategyKind: "interface",
+	}
+	ctx := BodyContext{
+		FeatureSlug: "test-feature",
+		Mode:        "breakdown",
+	}
+
+	content, err := GenerateTestTaskMD(def, ctx)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	s := string(content)
+	if !strings.Contains(s, "Journey") {
+		t.Error("gen-journeys body should contain Journey content from embed template")
+	}
+	if !strings.Contains(s, "test-feature") {
+		t.Error("gen-journeys body should contain feature slug")
+	}
+	if !strings.Contains(s, "breakdown") {
+		t.Error("gen-journeys body should contain mode")
+	}
+}
+
+func TestGetBreakdownTestTasks_GenContractsUsesEmbedTemplate(t *testing.T) {
+	def := AutoGenTaskDef{
+		ID: "T-test-gen-contracts", Key: "gen-contracts",
+		Title: "Generate Test Contracts", Priority: "P1",
+		EstimatedTime: "30-45min", Type: TypeTestGenContracts, Scope: "all",
+	}
+	ctx := BodyContext{
+		FeatureSlug: "test-feature",
+		Mode:        "breakdown",
+	}
+
+	content, err := GenerateTestTaskMD(def, ctx)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	s := string(content)
+	if !strings.Contains(s, "Contract") {
+		t.Error("gen-contracts body should contain Contract content from embed template")
+	}
+	if !strings.Contains(s, "test-feature") {
+		t.Error("gen-contracts body should contain feature slug")
+	}
+}
+
+func TestGetBreakdownTestTasks_NoHardcodedIndices(t *testing.T) {
+	tasks := GetBreakdownTestTasks([]string{"cli"}, defaultAuto)
+
+	idSet := make(map[string]bool)
+	for _, t := range tasks {
+		idSet[t.ID] = true
+	}
+
+	for _, task := range tasks {
+		for _, dep := range task.Dependencies {
+			if !idSet[dep] {
+				t.Errorf("task %q depends on %q which is not in the task list", task.ID, dep)
+			}
+		}
+	}
+}
+
+func TestGetBreakdownTestTasks_RegressionStillValid(t *testing.T) {
+	tasks := GetBreakdownTestTasks([]string{"cli"}, defaultAuto)
+
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+
+	if byID["T-test-verify-regression"].Dependencies[0] != "T-test-run" {
+		t.Errorf("verify-regression should still depend on run, got %v", byID["T-test-verify-regression"].Dependencies)
+	}
+	if byID["T-test-run"].Dependencies[0] != "T-test-gen-scripts-cli" {
+		t.Errorf("run should still depend on gen-scripts-cli, got %v", byID["T-test-run"].Dependencies)
 	}
 }

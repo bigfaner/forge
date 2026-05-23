@@ -136,12 +136,12 @@ func TestGetBreakdownTestTasks_DefaultsMatchOldBehavior(t *testing.T) {
 	auto := forgeconfig.AutoConfigDefaults()
 	tasks := GetBreakdownTestTasks([]string{"cli"}, auto)
 
-	// Should produce 6 tasks (eval-journey + eval-contract + gen-scripts + run + verify-regression + consolidate)
-	if len(tasks) != 6 {
-		t.Fatalf("expected 6 tasks with defaults, got %d", len(tasks))
+	// Should produce 8 tasks (gen-journeys + eval-journey + gen-contracts + eval-contract + gen-scripts + run + verify-regression + consolidate)
+	if len(tasks) != 8 {
+		t.Fatalf("expected 8 tasks with defaults, got %d", len(tasks))
 	}
 
-	wantIDs := []string{"T-eval-journey", "T-eval-contract", "T-test-gen-scripts-cli", "T-test-run", "T-test-verify-regression", "T-specs-consolidate"}
+	wantIDs := []string{"T-test-gen-journeys-cli", "T-eval-journey", "T-test-gen-contracts", "T-eval-contract", "T-test-gen-scripts-cli", "T-test-run", "T-test-verify-regression", "T-specs-consolidate"}
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
 			t.Errorf("tasks[%d].ID = %q, want %q", i, tasks[i].ID, want)

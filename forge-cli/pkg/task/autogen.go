@@ -92,11 +92,28 @@ func GetBreakdownTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []A
 
 	// Shared tasks (gated by auto.E2eTest.Full)
 	if auto.E2eTest.Full {
+		// Per-type gen-journeys (first in pipeline)
+		for _, typ := range interfaces {
+			tasks = append(tasks, AutoGenTaskDef{
+				Key: "gen-journeys-" + typ, ID: "T-test-gen-journeys-" + typ,
+				Title: fmt.Sprintf("Generate Test Journeys (%s)", typ), Priority: "P1", EstimatedTime: "20-30min",
+				Type: TypeTestGenJourneys, Scope: "all", TestType: typ,
+				StrategyKind: "interface",
+			})
+		}
+
 		// Eval Journeys (after gen-journeys, before gen-contracts)
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "eval-journey", ID: "T-eval-journey",
 			Title: "Evaluate Journey Quality", Priority: "P1", EstimatedTime: "20-30min",
 			Type: TypeEvalJourney, Scope: "all", MainSession: true,
+		})
+
+		// Gen Contracts (after eval-journey, before eval-contract)
+		tasks = append(tasks, AutoGenTaskDef{
+			Key: "gen-contracts", ID: "T-test-gen-contracts",
+			Title: "Generate Test Contracts", Priority: "P1", EstimatedTime: "30-45min",
+			Type: TypeTestGenContracts, Scope: "all",
 		})
 
 		// Eval Contracts (after gen-contracts, before gen-test-scripts)
@@ -424,30 +441,42 @@ func resolveBreakdownDeps(tasks []AutoGenTaskDef, interfaces []string, auto forg
 	}
 
 	if auto.E2eTest.Full {
-		// Pipeline order: eval-journey(0) -> eval-contract(1) -> gen-scripts(2..2+n) -> run(2+n) -> verify(3+n)
-		evalJourneyIdx := 0
-		evalContractIdx := 1
-		nTypes := len(interfaces)
+		// Pipeline: gen-journeys-per-type -> eval-journey -> gen-contracts -> eval-contract -> gen-scripts-per-type -> run -> verify-regression
+		evalJourneyIdx := findTaskIndexOrPanic(tasks, "T-eval-journey")
+		genContractsIdx := findTaskIndexOrPanic(tasks, "T-test-gen-contracts")
+		evalContractIdx := findTaskIndexOrPanic(tasks, "T-eval-contract")
+		runIdx := findTaskIndexOrPanic(tasks, "T-test-run")
+		verifyIdx := findTaskIndexOrPanic(tasks, "T-test-verify-regression")
 
-		// eval-contract depends on eval-journey
-		tasks[evalContractIdx].Dependencies = []string{tasks[evalJourneyIdx].ID}
+		// eval-journey depends on all gen-journeys tasks
+		var genJourneysDeps []string
+		for _, typ := range interfaces {
+			idx := findTaskIndexOrPanic(tasks, "T-test-gen-journeys-"+typ)
+			genJourneysDeps = append(genJourneysDeps, tasks[idx].ID)
+		}
+		tasks[evalJourneyIdx].Dependencies = genJourneysDeps
+
+		// gen-contracts depends on eval-journey
+		tasks[genContractsIdx].Dependencies = []string{tasks[evalJourneyIdx].ID}
+
+		// eval-contract depends on gen-contracts
+		tasks[evalContractIdx].Dependencies = []string{tasks[genContractsIdx].ID}
 
 		// gen-scripts depend on eval-contract
-		genStart := 2
-		for j := range nTypes {
-			tasks[genStart+j].Dependencies = []string{tasks[evalContractIdx].ID}
+		for _, typ := range interfaces {
+			idx := findTaskIndexOrPanic(tasks, "T-test-gen-scripts-"+typ)
+			tasks[idx].Dependencies = []string{tasks[evalContractIdx].ID}
 		}
 
 		// Run depends on all gen-scripts
-		runIdx := genStart + nTypes
 		var genDeps []string
-		for j := range nTypes {
-			genDeps = append(genDeps, tasks[genStart+j].ID)
+		for _, typ := range interfaces {
+			idx := findTaskIndexOrPanic(tasks, "T-test-gen-scripts-"+typ)
+			genDeps = append(genDeps, tasks[idx].ID)
 		}
 		tasks[runIdx].Dependencies = genDeps
 
 		// Verify-regression depends on run
-		verifyIdx := runIdx + 1
 		tasks[verifyIdx].Dependencies = []string{tasks[runIdx].ID}
 	}
 	// T-validate-code depends on T-test-verify-regression (if e2e tasks exist)
@@ -523,6 +552,20 @@ func findTaskIndexByPrefix(tasks []AutoGenTaskDef, prefix string) int {
 	return -1
 }
 
+// findTaskIndexOrPanic finds the index of the task with the given ID.
+// Panics with a descriptive message (including all task IDs) if not found.
+func findTaskIndexOrPanic(tasks []AutoGenTaskDef, id string) int {
+	idx := findTaskIndex(tasks, id)
+	if idx < 0 {
+		var allIDs []string
+		for _, t := range tasks {
+			allIDs = append(allIDs, t.ID)
+		}
+		panic(fmt.Sprintf("findTaskIndex: task %q not found in tasks %v", id, allIDs))
+	}
+	return idx
+}
+
 // ResolveFirstTestDep resolves the first test task's dependency.
 // For breakdown: depends on the highest-phase gate, or last summary if no gate.
 // For quick: depends on the max business task ID.
@@ -548,8 +591,11 @@ func ResolveFirstTestDep(tasks []AutoGenTaskDef, existingTasks map[string]Task, 
 		}
 
 		cleanIdx := findTaskIndex(tasks, "T-clean-code")
-		// First test pipeline task is either T-eval-journey or T-test-gen-scripts
-		firstTestIdx := findTaskIndex(tasks, "T-eval-journey")
+		// First test pipeline task is gen-journeys, eval-journey, or gen-scripts (in priority order)
+		firstTestIdx := findTaskIndexByPrefix(tasks, "T-test-gen-journeys")
+		if firstTestIdx < 0 {
+			firstTestIdx = findTaskIndex(tasks, "T-eval-journey")
+		}
 		if firstTestIdx < 0 {
 			firstTestIdx = findTaskIndexByPrefix(tasks, "T-test-gen-scripts")
 		}
