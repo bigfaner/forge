@@ -191,7 +191,18 @@ for each dep in T.Dependencies:
         "originalType": "fix",
         "actualType": "cleanup",
         "reason": "flaky test, not introduced by this feature"
-    }
+    },
+    "referencedDocs": ["doc1.md"],
+    "reviewStatus": "approved",
+    "docMetrics": "50% coverage",
+    "casesGenerated": 12,
+    "casesEvaluated": 10,
+    "scriptsCreated": ["test1.sh"],
+    "testResults": "10 passed",
+    "validationPassed": true,
+    "issuesFound": ["issue1"],
+    "gatePassed": true,
+    "gateChecks": ["lint"]
 }
 ```
 
