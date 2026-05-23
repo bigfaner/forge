@@ -272,37 +272,16 @@ func getTaskPhase(id string) int {
 }
 
 func checkDependenciesMet(index *task.TaskIndex, selfID string, t task.Task) (bool, []string) {
+	rawUnmet := task.GetUnmetDeps(index, selfID, t.Dependencies)
+
+	// GetUnmetDeps reports missing exact deps as unmet, but for claim purposes
+	// unknown deps are vacuously satisfied (they don't block claiming).
 	var unmet []string
-	for _, dep := range t.Dependencies {
-		if strings.HasSuffix(dep, task.IDSuffixWildcard) {
-			prefix := strings.TrimSuffix(dep, task.IDSuffixWildcard)
-			prefixWithDot := prefix + "."
-			found := false
-			for _, other := range index.TasksMap() {
-				if other.ID == selfID {
-					continue
-				}
-				if strings.HasPrefix(other.ID, prefixWithDot) && task.IsBusinessTask(other.ID) && other.Status != "completed" && other.Status != "skipped" {
-					unmet = append(unmet, other.ID)
-					found = true
-				}
-			}
-			if !found {
-				continue
-			}
-		} else {
-			found := false
-			for _, other := range index.TasksMap() {
-				if other.ID == dep {
-					if other.Status != "completed" && other.Status != "skipped" {
-						unmet = append(unmet, dep)
-					}
-					found = true
-					break
-				}
-			}
-			_ = found // unknown deps are vacuously satisfied
+	for _, id := range rawUnmet {
+		if _, found := index.ByID(id); !found {
+			continue
 		}
+		unmet = append(unmet, id)
 	}
 
 	// Check for pending fix tasks whose SourceTaskID matches any dependency.

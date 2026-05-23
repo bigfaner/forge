@@ -62,19 +62,9 @@ func runCheckDeps(_ *cobra.Command, _ []string) error {
 
 	for key, t := range index.TasksMap() {
 		for _, dep := range t.Dependencies {
-			isWildcard := strings.HasSuffix(dep, task.IDSuffixWildcard)
+			matches, isWildcard := task.ResolveWildcardDep(index, dep)
 
 			if isWildcard {
-				prefix := strings.TrimSuffix(dep, task.IDSuffixWildcard)
-				prefixWithDot := prefix + "."
-
-				var matches []string
-				for id := range taskIDs {
-					if strings.HasPrefix(id, prefixWithDot) && task.IsBusinessTask(id) {
-						matches = append(matches, id)
-					}
-				}
-
 				if len(matches) == 0 {
 					errors = append(errors, fmt.Sprintf("Task %s (%s): wildcard '%s' matches NO tasks",
 						key, t.ID, dep))

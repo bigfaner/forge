@@ -152,7 +152,7 @@
       "dependencies": [
         "4"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "6-unify-dep-check.md",
       "record": "records/6-unify-dep-check.md",
       "scope": "backend",

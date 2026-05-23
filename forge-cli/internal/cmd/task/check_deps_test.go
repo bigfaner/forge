@@ -38,7 +38,7 @@ func TestValidator_IndirectRun(t *testing.T) {
 
 		v := &validator{filePath: indexPath}
 		v.validateTasks(index.TasksMap())
-		v.validateDependencies(index.TasksMap())
+		v.validateDependencies(index)
 		v.validateCircularDeps(index.TasksMap())
 		v.validateFilesExist(featureSlug, index.TasksMap())
 
@@ -117,7 +117,7 @@ func TestValidator_ComplexDependencies(t *testing.T) {
 		}
 
 		v := &validator{}
-		v.validateDependencies(tasks)
+		v.validateDependencies(task.NewTestIndex("test", tasks))
 		v.validateCircularDeps(tasks)
 
 		if len(v.errors) != 0 {

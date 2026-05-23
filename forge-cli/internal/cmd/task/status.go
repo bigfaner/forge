@@ -3,7 +3,6 @@ package task
 import (
 	"forge-cli/internal/cmd/base"
 	"path/filepath"
-	"strings"
 
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/project"
@@ -58,33 +57,7 @@ func runStatus(_ *cobra.Command, args []string) error {
 }
 
 // checkUnmetDeps returns dependency IDs that are not "completed" or "skipped".
-// Supports both exact IDs and wildcard patterns (e.g. "1.x").
-// selfID is excluded from wildcard matches to avoid self-matching.
+// Delegates to task.GetUnmetDeps which handles both exact IDs and wildcard patterns.
 func checkUnmetDeps(index *task.TaskIndex, t *task.Task) []string {
-	var unmet []string
-	for _, dep := range t.Dependencies {
-		if strings.HasSuffix(dep, task.IDSuffixWildcard) {
-			prefix := strings.TrimSuffix(dep, task.IDSuffixWildcard)
-			prefixWithDot := prefix + "."
-			found := false
-			for _, other := range index.TasksMap() {
-				if other.ID == t.ID {
-					continue
-				}
-				if strings.HasPrefix(other.ID, prefixWithDot) && task.IsBusinessTask(other.ID) && other.Status != "completed" && other.Status != "skipped" {
-					unmet = append(unmet, other.ID)
-					found = true
-				}
-			}
-			if !found {
-				continue
-			}
-		} else {
-			_, depTask, err := task.FindTask(index, dep)
-			if err != nil || (depTask.Status != "completed" && depTask.Status != "skipped") {
-				unmet = append(unmet, dep)
-			}
-		}
-	}
-	return unmet
+	return task.GetUnmetDeps(index, t.ID, t.Dependencies)
 }

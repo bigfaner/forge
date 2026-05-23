@@ -138,14 +138,6 @@ func matchRule(rule TransitionRule, from, to string, role TransitionRole) bool {
 	return true
 }
 
-// depSatisfiedStatuses are the statuses that satisfy dependency checks.
-// "completed" and "skipped" satisfy dependencies.
-// "rejected", "blocked", "suspended", "pending", "in_progress" do NOT satisfy.
-var depSatisfiedStatuses = map[string]bool{
-	"completed": true,
-	"skipped":   true,
-}
-
 // CheckTransitionDeps validates dependency satisfaction for blocked -> pending/in_progress.
 // Phase 2 of validation: call after ValidateTransition indicates dependency check needed.
 // Returns unmet dependency IDs, or nil if all deps are met (including canAutoUnblock check).
@@ -163,7 +155,7 @@ func CheckTransitionDeps(index *TaskIndex, taskID string) ([]string, error) {
 			unmet = append(unmet, depID)
 			continue
 		}
-		if !depSatisfiedStatuses[dep.Status] {
+		if !IsDepSatisfied(dep.Status) {
 			unmet = append(unmet, depID)
 		}
 	}
