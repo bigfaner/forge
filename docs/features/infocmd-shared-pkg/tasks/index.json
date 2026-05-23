@@ -51,7 +51,7 @@
       "dependencies": [
         "3"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-migrate-lesson.md",
       "record": "records/4-migrate-lesson.md",
       "scope": "backend",
