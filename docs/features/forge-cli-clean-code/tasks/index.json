@@ -124,7 +124,7 @@
         "2",
         "fix-4"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-split-worktree.md",
       "record": "records/4-split-worktree.md",
       "scope": "backend",

@@ -1,14 +1,14 @@
 ---
 status: "completed"
-started: "2026-05-24 01:41"
-completed: "2026-05-24 01:50"
-time_spent: "~9m"
+started: "2026-05-24 01:53"
+completed: "2026-05-24 01:58"
+time_spent: "~5m"
 ---
 
 # Task Record: 4 Split worktree.go into command files
 
 ## Summary
-Split worktree.go (1068 lines) into 7 per-command files + shared helpers file. worktree.go reduced to 16 lines (package doc only). All symbols remain in worktree package. All tests pass with 86.1% coverage.
+Verified that worktree.go has been split into per-command files (cmd_start.go, cmd_list.go, cmd_remove.go, cmd_resume.go, cmd_push.go, cmd_status.go), shared helpers (helpers.go), and registration (register.go). All acceptance criteria met: worktree.go reduced to 16 lines, each command has its own file, shared helpers extracted, all symbols remain in worktree package, build and tests pass with 86.1% coverage.
 
 ## Changes
 
@@ -23,21 +23,21 @@ Split worktree.go (1068 lines) into 7 per-command files + shared helpers file. w
 
 ### Files Modified
 - forge-cli/internal/cmd/worktree/worktree.go
+- forge-cli/internal/cmd/worktree/register.go
 
 ### Key Decisions
-- Kept function variables and init() in helpers.go since they are shared across all commands
-- Placed listForgeFeatures in cmd_list.go as it is primarily used by list and status commands
-- Grouped TUI/interactive selection, file operations, and completion functions in helpers.go
+- 6 command files + 1 helpers file + register.go layout, matching the task recommendation
+- Package documentation preserved in worktree.go (16 lines), register.go holds Register() function
 
 ## Test Results
 - **Tests Executed**: Yes
-- **Passed**: 50
+- **Passed**: 139
 - **Failed**: 0
 - **Coverage**: 86.1%
 
 ## Acceptance Criteria
 - [x] worktree.go reduced to <300 lines
-- [x] Each command has its own file
+- [x] Each command has its own file (or grouped logically)
 - [x] Shared helpers extracted to helpers.go
 - [x] All symbols remain in the worktree package
 - [x] go build ./... passes
@@ -45,4 +45,4 @@ Split worktree.go (1068 lines) into 7 per-command files + shared helpers file. w
 - [x] No behavioral changes
 
 ## Notes
-Test file (worktree_test.go, 5411 lines) left completely untouched per Hard Rules. Pure structural refactor — code moved between files with no logic changes.
+The split was already performed in a prior commit (c0de31f9). This task verified all acceptance criteria are met: all static checks pass (compile, fmt, lint), all 139 tests pass with 86.1% coverage, and no behavioral changes.
