@@ -8,7 +8,7 @@
       "title": "Add git status to run-tasks Post-Completion",
       "priority": "P1",
       "estimatedTime": "15m",
-      "status": "pending",
+      "status": "completed",
       "file": "1-add-git-status.md",
       "record": "records/1-add-git-status.md",
       "type": "doc"

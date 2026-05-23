@@ -121,3 +121,13 @@ If index lacks T-test-run/T-test-graduate, suggest: "Run `/run-tests` then `forg
 Do NOT run e2e tests from the dispatcher.
 
 Do NOT commit post-loop artifacts. The `forge feature complete --if-done` Stop hook detects uncommitted artifacts and blocks the agent to commit them via `/git-commit`. This ensures artifacts are committed only after quality-gate passes.
+
+### Git Status Summary
+
+After printing the completion message, display a concise git summary so the user has immediate visibility into the current state. Run the following commands, wrapping each in error handling — if any command fails, skip it silently and continue:
+
+1. **Branch info**: `git branch --show-current` and `git rev-list --left-right --count main...HEAD` (shows ahead/behind relative to main). Print as: `On branch <name>, <n> ahead / <m> behind main`.
+
+2. **Working tree changes**: `git status --short`. Print the raw output if non-empty, or "Working tree clean" if empty.
+
+If all git commands fail (e.g., not in a git repository), print nothing — the completion message above is sufficient.
