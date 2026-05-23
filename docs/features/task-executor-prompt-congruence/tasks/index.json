@@ -39,6 +39,17 @@
       "record": "records/3-prompt-go-scope-coverage-fix.md",
       "scope": "backend",
       "type": "coding.enhancement"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "fix unit-test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "type": "coding.fix"
     }
   },
   "statusEnum": [
