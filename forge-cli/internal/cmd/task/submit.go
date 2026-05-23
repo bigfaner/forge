@@ -364,7 +364,12 @@ func validateRecordData(rd *task.RecordData) {
 }
 
 func fillRecordTemplate(t *task.Task, rd *task.RecordData, startedTime string) string {
-	return task.RenderCodingRecord(t, rd, startedTime)
+	switch task.CategoryForType(t.Type) {
+	case task.CategoryDoc:
+		return task.RenderDocRecord(t, rd, startedTime)
+	default:
+		return task.RenderCodingRecord(t, rd, startedTime)
+	}
 }
 
 // validateQualityGate runs the quality gate based on the task's breaking flag.

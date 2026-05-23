@@ -30,6 +30,11 @@ type RecordTemplateData struct {
 	AcceptanceCriteriaFormatted string
 	Notes                       string
 	TypeReclassification        *TypeReclassification
+
+	// Doc fields (used by record-doc.md template)
+	DocMetricsFormatted     string
+	ReferencedDocsFormatted string
+	ReviewStatusFormatted   string
 }
 
 // NewRecordTemplateData creates a RecordTemplateData from task, record data, and started time.
@@ -75,6 +80,9 @@ func NewRecordTemplateData(t *Task, rd *RecordData, startedTime string) *RecordT
 		AcceptanceCriteriaFormatted: FormatCriteria(rd.AcceptanceCriteria),
 		Notes:                       notes,
 		TypeReclassification:        rd.TypeReclassification,
+		DocMetricsFormatted:         formatWithFallback(rd.DocMetrics, "N/A"),
+		ReferencedDocsFormatted:     FormatList(rd.ReferencedDocs),
+		ReviewStatusFormatted:       formatWithFallback(rd.ReviewStatus, "N/A"),
 	}
 }
 
@@ -110,6 +118,14 @@ func templateFormatCriteria(criteria []AcceptanceCriterion) string {
 // templateFormatDuration formats a duration.
 func templateFormatDuration(dur time.Duration) string {
 	return FormatDuration(dur)
+}
+
+// formatWithFallback returns the value if non-empty, otherwise returns the fallback.
+func formatWithFallback(value, fallback string) string {
+	if strings.TrimSpace(value) == "" {
+		return fallback
+	}
+	return value
 }
 
 // FormatCoverage formats coverage value for display.
@@ -173,6 +189,11 @@ func FormatCriteria(criteria []AcceptanceCriterion) string {
 // RenderCodingRecord renders the coding record template with the given data.
 func RenderCodingRecord(t *Task, rd *RecordData, startedTime string) string {
 	return renderRecordTemplate("data/record-coding.md", t, rd, startedTime)
+}
+
+// RenderDocRecord renders the doc record template with the given data.
+func RenderDocRecord(t *Task, rd *RecordData, startedTime string) string {
+	return renderRecordTemplate("data/record-doc.md", t, rd, startedTime)
 }
 
 // renderRecordTemplate renders a named record template with the given data.

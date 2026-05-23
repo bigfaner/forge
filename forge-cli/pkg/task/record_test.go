@@ -213,3 +213,233 @@ func TestFillRecordTemplate_Unchanged(t *testing.T) {
 		assert.Contains(t, got, "- Original: coding.fix")
 	})
 }
+
+// --- Doc record template tests ---
+
+// goldenDocInput returns a task with doc type and fully populated doc fields.
+func goldenDocInput() (*Task, *RecordData, string) {
+	return &Task{
+			ID:    "3",
+			Title: "Doc record template",
+		},
+		&RecordData{
+			Status:        "completed",
+			Summary:       "Created doc-specific record template",
+			FilesCreated:  []string{"pkg/task/data/record-doc.md"},
+			FilesModified: []string{"pkg/task/record.go"},
+			KeyDecisions:  []string{"Separate doc template from coding template"},
+			Coverage:      -1.0,
+			AcceptanceCriteria: []AcceptanceCriterion{
+				{Criterion: "Template renders Document Metrics", Met: true},
+				{Criterion: "No test-related sections", Met: true},
+			},
+			Notes:          "Doc tasks need no test metrics",
+			DocMetrics:     "5 docs reviewed, 2 updated",
+			ReferencedDocs: []string{"docs/guide.md", "docs/api.md"},
+			ReviewStatus:   "Approved by tech lead",
+		},
+		"2026-05-23 10:00"
+}
+
+// goldenDocEmptyInput returns a doc task with all doc fields empty.
+func goldenDocEmptyInput() (*Task, *RecordData, string) {
+	return &Task{
+			ID:    "5",
+			Title: "Write README",
+		},
+		&RecordData{
+			Status:   "completed",
+			Summary:  "Added README",
+			Coverage: -1.0,
+		},
+		"2026-05-23 10:00"
+}
+
+// goldenDocMixedInput returns a doc task with some fields populated, some empty.
+func goldenDocMixedInput() (*Task, *RecordData, string) {
+	return &Task{
+			ID:    "6",
+			Title: "Update API docs",
+		},
+		&RecordData{
+			Status:         "completed",
+			Summary:        "Updated API reference docs",
+			FilesModified:  []string{"docs/api.md"},
+			Coverage:       -1.0,
+			DocMetrics:     "3 endpoints documented",
+			ReferencedDocs: []string{"docs/architecture.md"},
+		},
+		"2026-05-23 10:00"
+}
+
+func TestRenderDocRecord(t *testing.T) {
+	t.Run("populated fields", func(t *testing.T) {
+		task, rd, startedTime := goldenDocInput()
+		got := RenderDocRecord(task, rd, startedTime)
+
+		// Shared sections
+		assert.Contains(t, got, "# Task Record: 3 Doc record template")
+		assert.Contains(t, got, "## Summary")
+		assert.Contains(t, got, "Created doc-specific record template")
+		assert.Contains(t, got, "### Files Created")
+		assert.Contains(t, got, "- pkg/task/data/record-doc.md")
+		assert.Contains(t, got, "### Files Modified")
+		assert.Contains(t, got, "- pkg/task/record.go")
+		assert.Contains(t, got, "### Key Decisions")
+		assert.Contains(t, got, "- Separate doc template from coding template")
+		assert.Contains(t, got, "## Acceptance Criteria")
+		assert.Contains(t, got, "- [x] Template renders Document Metrics")
+		assert.Contains(t, got, "## Notes")
+		assert.Contains(t, got, "Doc tasks need no test metrics")
+
+		// Doc-specific sections
+		assert.Contains(t, got, "## Document Metrics")
+		assert.Contains(t, got, "5 docs reviewed, 2 updated")
+		assert.Contains(t, got, "## Referenced Documents")
+		assert.Contains(t, got, "- docs/guide.md\n- docs/api.md")
+		assert.Contains(t, got, "## Review Status")
+		assert.Contains(t, got, "Approved by tech lead")
+
+		// NO test-related sections
+		assert.NotContains(t, got, "## Test Results")
+		assert.NotContains(t, got, "Tests Executed")
+		assert.NotContains(t, got, "Coverage")
+	})
+
+	t.Run("empty fields use fallbacks", func(t *testing.T) {
+		task, rd, startedTime := goldenDocEmptyInput()
+		got := RenderDocRecord(task, rd, startedTime)
+
+		assert.Contains(t, got, "# Task Record: 5 Write README")
+
+		// Empty fields should show fallbacks
+		assert.Contains(t, got, "## Document Metrics")
+		assert.Contains(t, got, "N/A")
+		assert.Contains(t, got, "## Referenced Documents")
+		assert.Contains(t, got, "无")
+		assert.Contains(t, got, "## Review Status")
+		assert.Contains(t, got, "N/A")
+
+		// Notes fallback
+		assert.Contains(t, got, "## Notes\n无")
+
+		// Shared sections show fallbacks
+		assert.Contains(t, got, "### Files Created\n无")
+		assert.Contains(t, got, "### Files Modified\n无")
+		assert.Contains(t, got, "### Key Decisions\n无")
+		assert.Contains(t, got, "## Acceptance Criteria\n无")
+
+		// Still no test sections
+		assert.NotContains(t, got, "## Test Results")
+		assert.NotContains(t, got, "Tests Executed")
+	})
+
+	t.Run("mixed populated and empty fields", func(t *testing.T) {
+		task, rd, startedTime := goldenDocMixedInput()
+		got := RenderDocRecord(task, rd, startedTime)
+
+		assert.Contains(t, got, "# Task Record: 6 Update API docs")
+
+		// Populated fields
+		assert.Contains(t, got, "## Document Metrics")
+		assert.Contains(t, got, "3 endpoints documented")
+		assert.Contains(t, got, "## Referenced Documents")
+		assert.Contains(t, got, "- docs/architecture.md")
+
+		// Empty ReviewStatus should fallback to N/A
+		assert.Contains(t, got, "## Review Status")
+		assert.Contains(t, got, "N/A")
+
+		// Files created empty
+		assert.Contains(t, got, "### Files Created\n无")
+		// Files modified populated
+		assert.Contains(t, got, "### Files Modified\n- docs/api.md")
+		// Key decisions empty
+		assert.Contains(t, got, "### Key Decisions\n无")
+
+		// Still no test sections
+		assert.NotContains(t, got, "## Test Results")
+	})
+
+	t.Run("blocked doc task", func(t *testing.T) {
+		task := &Task{ID: "7", Title: "Draft proposal"}
+		rd := &RecordData{
+			Status:       "blocked",
+			Summary:      "Blocked on missing reference",
+			DocMetrics:   "Draft in progress",
+			ReviewStatus: "Pending review",
+		}
+		got := RenderDocRecord(task, rd, "2026-05-23 10:00")
+
+		assert.Contains(t, got, `completed: "N/A"`)
+		assert.Contains(t, got, "## Document Metrics")
+		assert.Contains(t, got, "Draft in progress")
+		assert.Contains(t, got, "## Review Status")
+		assert.Contains(t, got, "Pending review")
+		assert.NotContains(t, got, "## Test Results")
+	})
+
+	t.Run("type reclassification in doc record", func(t *testing.T) {
+		task := &Task{ID: "8", Title: "Update docs"}
+		rd := &RecordData{
+			Status:   "completed",
+			Summary:  "Updated docs",
+			Coverage: -1.0,
+			TypeReclassification: &TypeReclassification{
+				OriginalType: "coding.feature",
+				ActualType:   "doc",
+				Reason:       "scope was documentation-only",
+			},
+		}
+		got := RenderDocRecord(task, rd, "2026-05-23 10:00")
+
+		assert.Contains(t, got, "## Type Reclassification")
+		assert.Contains(t, got, "- Original: coding.feature")
+		assert.Contains(t, got, "- Actual: doc")
+		assert.Contains(t, got, "- Reason: scope was documentation-only")
+		assert.NotContains(t, got, "## Test Results")
+	})
+}
+
+func TestFormatWithFallback(t *testing.T) {
+	t.Run("non-empty value", func(t *testing.T) {
+		assert.Equal(t, "hello", formatWithFallback("hello", "fallback"))
+	})
+	t.Run("empty string", func(t *testing.T) {
+		assert.Equal(t, "fallback", formatWithFallback("", "fallback"))
+	})
+	t.Run("whitespace only", func(t *testing.T) {
+		assert.Equal(t, "fallback", formatWithFallback("   ", "fallback"))
+	})
+}
+
+func TestRecordTemplateData_DocFields(t *testing.T) {
+	t.Run("doc fields populated", func(t *testing.T) {
+		task := &Task{ID: "3", Title: "Doc task"}
+		rd := &RecordData{
+			Status:         "completed",
+			Summary:        "Doc work",
+			Coverage:       -1.0,
+			DocMetrics:     "5 docs",
+			ReferencedDocs: []string{"a.md", "b.md"},
+			ReviewStatus:   "Approved",
+		}
+		data := NewRecordTemplateData(task, rd, "2026-05-23 10:00")
+		assert.Equal(t, "5 docs", data.DocMetricsFormatted)
+		assert.Equal(t, "- a.md\n- b.md", data.ReferencedDocsFormatted)
+		assert.Equal(t, "Approved", data.ReviewStatusFormatted)
+	})
+
+	t.Run("doc fields empty use fallbacks", func(t *testing.T) {
+		task := &Task{ID: "4", Title: "Doc task"}
+		rd := &RecordData{
+			Status:   "completed",
+			Summary:  "Doc work",
+			Coverage: -1.0,
+		}
+		data := NewRecordTemplateData(task, rd, "2026-05-23 10:00")
+		assert.Equal(t, "N/A", data.DocMetricsFormatted)
+		assert.Equal(t, "无", data.ReferencedDocsFormatted)
+		assert.Equal(t, "N/A", data.ReviewStatusFormatted)
+	})
+}
