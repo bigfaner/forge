@@ -278,7 +278,7 @@
       "dependencies": [
         "2.gate"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3.3-test-guide-enhance.md",
       "record": "records/3.3-test-guide-enhance.md",
       "scope": "all",
