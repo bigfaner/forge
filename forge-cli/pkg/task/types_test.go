@@ -569,6 +569,8 @@ func TestTypeConstants(t *testing.T) {
 		{TypeDocSummary, "doc.summary"},
 		{TypeDocConsolidate, "doc.consolidate"},
 		{TypeDocDrift, "doc.drift"},
+		{TypeTestGenContracts, "test.gen-contracts"},
+		{TypeTestGenJourneys, "test.gen-journeys"},
 		{TypeTestGenScripts, "test.gen-scripts"},
 		{TypeTestRun, "test.run"},
 		{TypeTestGenAndRun, "test.gen-and-run"},
@@ -586,15 +588,16 @@ func TestTypeConstants(t *testing.T) {
 }
 
 func TestSystemTypes(t *testing.T) {
-	t.Run("SystemTypes contains exactly 12 entries", func(t *testing.T) {
-		if len(SystemTypes) != 12 {
-			t.Errorf("SystemTypes has %d entries, want 12", len(SystemTypes))
+	t.Run("SystemTypes contains exactly 14 entries", func(t *testing.T) {
+		if len(SystemTypes) != 14 {
+			t.Errorf("SystemTypes has %d entries, want 14", len(SystemTypes))
 		}
 	})
 
 	t.Run("all system types are present", func(t *testing.T) {
 		expected := []string{
 			TypeGate,
+			TypeTestGenContracts, TypeTestGenJourneys,
 			TypeTestGenScripts, TypeTestRun,
 			TypeTestGenAndRun, TypeTestVerifyRegression,
 			TypeValidationCode, TypeValidationUx,
@@ -602,8 +605,8 @@ func TestSystemTypes(t *testing.T) {
 			TypeCleanCode,
 			TypeEvalJourney, TypeEvalContract,
 		}
-		if len(expected) != 12 {
-			t.Fatalf("test setup error: expected list has %d entries, want 12", len(expected))
+		if len(expected) != 14 {
+			t.Fatalf("test setup error: expected list has %d entries, want 14", len(expected))
 		}
 		for _, typ := range expected {
 			if !SystemTypes[typ] {
@@ -622,9 +625,10 @@ func TestSystemTypes(t *testing.T) {
 }
 
 func TestIsSystemType(t *testing.T) {
-	t.Run("returns true for all 10 system types", func(t *testing.T) {
+	t.Run("returns true for system types including gen-journeys and gen-contracts", func(t *testing.T) {
 		systemTypes := []string{
 			TypeGate,
+			TypeTestGenContracts, TypeTestGenJourneys,
 			TypeTestGenScripts, TypeTestRun,
 			TypeTestGenAndRun, TypeTestVerifyRegression,
 			TypeValidationCode, TypeValidationUx,
@@ -682,6 +686,8 @@ func TestValidTypes(t *testing.T) {
 			TypeDocSummary,
 			TypeDocConsolidate,
 			TypeDocDrift,
+			TypeTestGenContracts,
+			TypeTestGenJourneys,
 			TypeTestGenScripts,
 			TypeTestRun,
 			TypeTestGenAndRun,

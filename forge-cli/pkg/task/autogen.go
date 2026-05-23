@@ -21,6 +21,8 @@ var autogenTypeToFile = map[string]string{
 	TypeTestVerifyRegression: "data/test-verify-regression.md",
 	TypeEvalJourney:          "data/eval-journey.md",
 	TypeEvalContract:         "data/eval-contract.md",
+	TypeTestGenJourneys:      "data/test-gen-journeys.md",
+	TypeTestGenContracts:     "data/test-gen-contracts.md",
 	TypeValidationCode:       "data/validation-code.md",
 	TypeValidationUx:         "data/validation-ux.md",
 	TypeDocEval:              "data/doc-eval.md",

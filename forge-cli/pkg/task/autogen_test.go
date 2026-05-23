@@ -1069,12 +1069,13 @@ func TestBodyContentPerStrategy(t *testing.T) {
 }
 
 func TestAutogenTypeToFileMapping(t *testing.T) {
-	// Verify all 12 auto-gen types have a mapping entry
+	// Verify all auto-gen types have a mapping entry
 	wantTypes := []string{
 		TypeTestGenScripts, TypeTestGenAndRun, TypeTestRun,
 		TypeTestVerifyRegression, TypeEvalJourney, TypeEvalContract,
 		TypeValidationCode, TypeValidationUx,
 		TypeDocEval, TypeDocConsolidate, TypeDocDrift, TypeCleanCode,
+		TypeTestGenJourneys, TypeTestGenContracts,
 	}
 
 	if len(autogenTypeToFile) != len(wantTypes) {

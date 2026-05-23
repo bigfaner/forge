@@ -8,7 +8,7 @@
       "title": "新增 test.gen-journeys 和 test.gen-contracts 类型定义",
       "priority": "P0",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-add-gen-types.md",
       "record": "records/1-add-gen-types.md",
       "scope": "backend",
