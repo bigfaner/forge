@@ -71,6 +71,11 @@ For each In Scope bullet: estimate effort (1-2h), derive acceptance criteria fro
 
 **Scope Inference** (from task description semantics): UI/pages/components → `scope: "frontend"`, API/server/database/CLI → `scope: "backend"`, mixed/unclear → `scope: "all"`.
 
+**Priority**: P0 | P1 | P2. Classified by structural role in the proposal:
+- P0: implements the core solution mechanism described in the proposal — without this, the feature doesn't work
+- P1: implements supporting scope items or success criteria that complete the feature
+- P2: polish, edge cases, optional enhancements from the proposal's "Considerations" or "Future Work"
+
 ## Step 3: Create Task Files
 
 Read the appropriate template (see Template Selection below) for the task content structure. Create one task file per derived task in `docs/features/<slug>/tasks/`.

@@ -92,6 +92,13 @@ Populate **User Stories** from `prd/prd-user-stories.md` or note "No direct user
 ### Scope Assignment
 See `rules/scope-assignment.md` for path classification rules. Compute: all frontend → "frontend", all backend → "backend", otherwise → "all". Non-mixed projects always use "all".
 
+### Priority Assignment
+
+P0 | P1 | P2. Classified by structural properties, not subjective importance:
+- P0: blocks other tasks in the dependency graph, or fixes a broken pipeline
+- P1: directly maps to a PRD acceptance criterion or core user flow
+- P2: polish, optimization, or non-essential enhancement not traceable to a PRD AC
+
 ### Type Assignment
 
 | Type | When to assign |
