@@ -1,7 +1,7 @@
 ---
 created: 2026-05-23
 author: "faner"
-status: Draft
+status: Approved
 ---
 
 # Proposal: Type-Differentiated Task Record Templates
