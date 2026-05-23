@@ -207,10 +207,18 @@ internal/cmd/
 154、为什么生成任务的priority是"high"而不是"P1"？哪一种对AI和人更友好。done
 155、根据提案内容，临时生成一个专家角色进行深度评审。done
 156、quick-mode的任务上限更改为15。done
-157、追加一个任务：让agent检查任务是否达成预期目标？逻辑是否清晰？
+157、追加一个任务：让agent检查任务是否达成预期目标？逻辑是否清晰？->161
 158、后续使用真实项目验证forge plugin的测试能力。
 159、forge task list的各个列要隔得足够开，并且保持左对齐。done
-160、将 gen-journeys/gen-contracts 作为自动生成的测试任务，替换掉之前gen-test-cases等任务。
-161、如何防止agent未按照tech-design.md来实现呢？docs\lessons\gotcha-spec-authority-drift.md
-162、改进breakdown-tasks skill：Reference Files中的文档，如果只读一部分，指明section或行号范围。
-163、write-prd skill 只针对代码生成用户故事->测试脚本。纯文档任务不生成测试脚本，eval-doc任务核对有没有按照要求修改文档。
+160、将 gen-journeys/gen-contracts 作为自动生成的测试任务，替换掉之前gen-test-cases等任务。done
+161、如何防止agent未按照tech-design.md来实现呢？docs\lessons\gotcha-spec-authority-drift.md。doing
+162、改进quick-tasks / breakdown-tasks skill：Reference Files中的文档，如果只读一部分，指明section或行号范围。doing->161
+163、write-prd skill 只针对代码生成用户故事->测试脚本。纯文档任务不生成测试脚本，eval-doc任务核对有没有按照要求修改文档。done
+164、有些自动生成的任务，如果依赖很多动态信息，而且后续实践表明任务生成效果比较差，就改成由LLM生成。
+165、评估：直接根据自由专家的意见修改proposal。docs/lessons/arch-freeform-findings-indirect-influence.md . doing
+166、如果自由专家评估模式实践效果不错的话，则推广到prd、tech-design、ui-design等。
+167、PS Z:\project\ai\forge> forge worktree push review-doc-pipeline  
+    Error: unknown command "review-doc-pipeline" for "forge worktree push"
+168、调整auto.e2eTest配置项，just test、just unit-test
+169、缝合review-doc-pipeline与auto-gen-journeys-contracts提案的实现，避免任务pipeline断裂。
+170、forge task list --<slug>，查询指定feature的任务，即使任务在worktree中。
