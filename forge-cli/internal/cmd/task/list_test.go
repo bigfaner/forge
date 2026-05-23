@@ -195,6 +195,56 @@ func TestListCmd_Sorting(t *testing.T) {
 	})
 }
 
+func TestListCmd_ColumnAlignment(t *testing.T) {
+	t.Run("bug: columns misalign when IDs exceed fixed width", func(t *testing.T) {
+		tasks := map[string]task.Task{
+			"1":         {ID: "1", Title: "First task", Type: "coding.feature", Status: "completed"},
+			"1.summary": {ID: "1.summary", Title: "Summary", Type: "doc.summary", Status: "pending"},
+			"1.gate":    {ID: "1.gate", Title: "Phase Gate", Type: "gate", Status: "pending"},
+		}
+		_ = setupFullProject(t, SetupOpts{Tasks: tasks})
+
+		output := captureStdout(func() {
+			err := runList(nil, []string{})
+			if err != nil {
+				t.Fatalf("runList returned error: %v", err)
+			}
+		})
+
+		// Find the separator line to determine column widths
+		lines := strings.Split(output, "\n")
+		var sepLine string
+		for _, line := range lines {
+			if strings.HasPrefix(strings.TrimSpace(line), "---") {
+				sepLine = line
+				break
+			}
+		}
+		if sepLine == "" {
+			t.Fatalf("separator line not found in output:\n%s", output)
+		}
+
+		segments := strings.Split(sepLine, "  ")
+		if len(segments) != 4 {
+			t.Fatalf("expected 4 segments in separator, got %d: %q", len(segments), segments)
+		}
+
+		// ID column must accommodate the longest ID ("1.summary" = 9 chars)
+		idDashCount := len(strings.TrimRight(segments[0], " "))
+		if idDashCount < 9 {
+			t.Errorf("bug: ID column is %d chars wide but '1.summary' needs 9 — columns misalign\nseparator: %q\noutput:\n%s",
+				idDashCount, sepLine, output)
+		}
+
+		// TYPE column must accommodate the longest type ("doc.summary" = 11 chars)
+		typeDashCount := len(strings.TrimRight(segments[1], " "))
+		if typeDashCount < 11 {
+			t.Errorf("bug: TYPE column is %d chars wide but 'doc.summary' needs 11\nseparator: %q\noutput:\n%s",
+				typeDashCount, sepLine, output)
+		}
+	})
+}
+
 func TestListCmd_TitleTruncation(t *testing.T) {
 	t.Run("truncates long title", func(t *testing.T) {
 		longTitle := "This is a very long task title that should be truncated because it exceeds the maximum column width"

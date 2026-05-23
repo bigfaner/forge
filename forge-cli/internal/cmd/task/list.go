@@ -59,11 +59,31 @@ func runList(_ *cobra.Command, _ []string) error {
 	// Print header
 	fmt.Printf("%d found  (feature: %s)\n\n", len(sortedIDs), featureSlug)
 
-	// Column widths
-	idCol := 6
-	typeCol := 18
-	titleCol := titleMaxWidth
-	statusCol := 12
+	// Calculate dynamic column widths based on actual data
+	idCol := len("ID")
+	typeCol := len("TYPE")
+	titleCol := len("TITLE")
+	statusCol := len("STATUS")
+
+	for _, id := range sortedIDs {
+		t := tasks[id]
+		if len(t.ID) > idCol {
+			idCol = len(t.ID)
+		}
+		if len(t.Type) > typeCol {
+			typeCol = len(t.Type)
+		}
+		titleLen := len(t.Title)
+		if titleLen > titleMaxWidth {
+			titleLen = titleMaxWidth
+		}
+		if titleLen > titleCol {
+			titleCol = titleLen
+		}
+		if len(t.Status) > statusCol {
+			statusCol = len(t.Status)
+		}
+	}
 
 	// Print column headers
 	fmt.Printf("%s  %s  %s  %s\n",
@@ -85,7 +105,7 @@ func runList(_ *cobra.Command, _ []string) error {
 	// Print task rows
 	for _, id := range sortedIDs {
 		t := tasks[id]
-		title := base.TruncateSlug(t.Title, titleMaxWidth)
+		title := base.TruncateSlug(t.Title, titleCol)
 		fmt.Printf("%s  %s  %s  %s\n",
 			base.PadRight(t.ID, idCol),
 			base.PadRight(t.Type, typeCol),
