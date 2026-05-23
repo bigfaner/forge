@@ -59,29 +59,29 @@ func runList(_ *cobra.Command, _ []string) error {
 	// Print header
 	fmt.Printf("%d found  (feature: %s)\n\n", len(sortedIDs), featureSlug)
 
-	// Calculate dynamic column widths based on actual data
-	idCol := len("ID")
-	typeCol := len("TYPE")
-	titleCol := len("TITLE")
-	statusCol := len("STATUS")
+	// Calculate dynamic column widths based on display width (CJK-aware)
+	idCol := base.DisplayWidth("ID")
+	typeCol := base.DisplayWidth("TYPE")
+	titleCol := base.DisplayWidth("TITLE")
+	statusCol := base.DisplayWidth("STATUS")
 
 	for _, id := range sortedIDs {
 		t := tasks[id]
-		if len(t.ID) > idCol {
-			idCol = len(t.ID)
+		if base.DisplayWidth(t.ID) > idCol {
+			idCol = base.DisplayWidth(t.ID)
 		}
-		if len(t.Type) > typeCol {
-			typeCol = len(t.Type)
+		if base.DisplayWidth(t.Type) > typeCol {
+			typeCol = base.DisplayWidth(t.Type)
 		}
-		titleLen := len(t.Title)
+		titleLen := base.DisplayWidth(t.Title)
 		if titleLen > titleMaxWidth {
 			titleLen = titleMaxWidth
 		}
 		if titleLen > titleCol {
 			titleCol = titleLen
 		}
-		if len(t.Status) > statusCol {
-			statusCol = len(t.Status)
+		if base.DisplayWidth(t.Status) > statusCol {
+			statusCol = base.DisplayWidth(t.Status)
 		}
 	}
 
