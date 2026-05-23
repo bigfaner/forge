@@ -1,0 +1,89 @@
+{
+  "feature": "infocmd-shared-pkg",
+  "proposal": "docs/proposals/infocmd-shared-pkg/proposal.md",
+  "created": "2026-05-23",
+  "tasks": {
+    "1-create-infocmd-pkg": {
+      "id": "1",
+      "title": "创建 pkg/infocmd/ 共享工具包",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "status": "pending",
+      "file": "1-create-infocmd-pkg.md",
+      "record": "records/1-create-infocmd-pkg.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "2-migrate-research": {
+      "id": "2",
+      "title": "迁移 research 命令使用 pkg/infocmd/",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-migrate-research.md",
+      "record": "records/2-migrate-research.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "3-migrate-proposal": {
+      "id": "3",
+      "title": "迁移 proposal 命令使用 pkg/infocmd/",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "2"
+      ],
+      "status": "pending",
+      "file": "3-migrate-proposal.md",
+      "record": "records/3-migrate-proposal.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "4-migrate-lesson": {
+      "id": "4",
+      "title": "迁移 lesson 命令使用 pkg/infocmd/",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "3"
+      ],
+      "status": "pending",
+      "file": "4-migrate-lesson.md",
+      "record": "records/4-migrate-lesson.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "5-remove-dup-code": {
+      "id": "5",
+      "title": "清理旧包中的重复代码",
+      "priority": "P2",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "4"
+      ],
+      "status": "pending",
+      "file": "5-remove-dup-code.md",
+      "record": "records/5-remove-dup-code.md",
+      "scope": "backend",
+      "type": "coding.cleanup"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
