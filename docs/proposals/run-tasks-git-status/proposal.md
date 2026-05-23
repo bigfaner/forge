@@ -1,6 +1,6 @@
 ---
 name: run-tasks-git-status
-status: Draft
+status: Approved
 type: feature
 created: 2026-05-23
 ---
@@ -13,7 +13,7 @@ After `run-tasks` completes all tasks, the user has zero visibility into the cur
 
 ## Solution
 
-In the Post-Completion section of `run-tasks.md`, add instructions to display a concise git summary after the existing completion message:
+In the Post-Completion section of `run-tasks.md`, add instructions to display a concise git summary after the existing completion message (test task notification and artifact commit prohibition):
 
 1. **Branch info**: current branch name + ahead/behind relative to main
 2. **Working tree changes**: list of modified/untracked files (from `git status --short`)

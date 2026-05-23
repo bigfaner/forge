@@ -13,13 +13,13 @@ Added Git Status Summary subsection to run-tasks Post-Completion section. Instru
 ## Changes
 
 ### Files Created
-无
+None
 
 ### Files Modified
 - plugins/forge/commands/run-tasks.md
 
 ### Key Decisions
-无
+None
 
 ## Test Results
 - **Tests Executed**: No
