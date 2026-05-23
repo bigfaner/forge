@@ -1,7 +1,7 @@
 ---
 feature: "infocmd-shared-pkg"
 created: "2026-05-23"
-status: tasks
+status: completed
 mode: quick
 ---
 
