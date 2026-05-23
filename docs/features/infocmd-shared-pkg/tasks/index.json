@@ -65,7 +65,7 @@
       "dependencies": [
         "4"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "5-remove-dup-code.md",
       "record": "records/5-remove-dup-code.md",
       "scope": "backend",
