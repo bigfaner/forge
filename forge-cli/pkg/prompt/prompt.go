@@ -27,7 +27,7 @@ var typeToTemplate = map[string]string{
 	task.TypeCodingCleanup:        "data/coding-cleanup.md",
 	task.TypeCodingRefactor:       "data/coding-refactor.md",
 	task.TypeDoc:                  "data/doc.md",
-	task.TypeDocEval:              "data/doc-eval.md",
+	task.TypeDocReview:            "data/doc-review.md",
 	task.TypeDocSummary:           "data/doc-summary.md",
 	task.TypeDocConsolidate:       "data/doc-consolidate.md",
 	task.TypeDocDrift:             "data/doc-drift.md",

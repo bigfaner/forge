@@ -168,7 +168,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 
 	// 5.5.1 Detect pipeline needs
 	needsTest := needsTestPipeline(index.TasksMap())
-	needsEval := needsDocEval(index.TasksMap())
+	needsEval := needsReviewDoc(index.TasksMap())
 
 	// 6. Detect and clean up orphans
 	// Test tasks (T-test-*) are also cleaned up when they have no .md file AND
@@ -257,11 +257,11 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 		}
 	}
 
-	// 7. Generate test tasks or T-eval-doc
+	// 7. Generate test tasks or T-review-doc
 	if needsEval {
-		// Docs-only: generate T-eval-doc instead of test pipeline
-		evalTask := GetDocEvalTask()
-		ResolveDocEvalDep(&evalTask, index.TasksMap())
+		// Docs-only: generate T-review-doc instead of test pipeline
+		evalTask := GetReviewDocTask()
+		ResolveReviewDocDep(&evalTask, index.TasksMap())
 
 		evalKey := evalTask.Key
 		existingKeys[evalKey] = true
@@ -451,11 +451,11 @@ func needsTestPipeline(tasks map[string]Task) bool {
 	return false
 }
 
-// needsDocEval returns true when ALL non-auto-gen tasks have type documentation.
-// Only tasks with exactly TypeDoc trigger doc-eval; doc subtypes (doc.eval, doc.summary, etc.)
-// are evaluations/generations themselves and should not trigger another doc-eval.
+// needsReviewDoc returns true when ALL non-auto-gen tasks have type documentation.
+// Only tasks with exactly TypeDoc trigger doc-review; doc subtypes (doc.review, doc.summary, etc.)
+// are reviews/generations themselves and should not trigger another doc-review.
 // An empty task map returns false.
-func needsDocEval(tasks map[string]Task) bool {
+func needsReviewDoc(tasks map[string]Task) bool {
 	hasBusinessTask := false
 	for _, t := range tasks {
 		if IsAutoGenTaskID(t.ID) {
@@ -470,13 +470,13 @@ func needsDocEval(tasks map[string]Task) bool {
 }
 
 // IsAutoGenTaskID returns true for task IDs that are auto-generated
-// (test pipeline, gates, summaries, T-eval-doc).
+// (test pipeline, gates, summaries, T-review-doc).
 // fix- and disc- tasks are NOT auto-generated; they are business tasks (they modify code).
 func IsAutoGenTaskID(id string) bool {
 	if isTestTaskID(id) {
 		return true
 	}
-	if id == "T-eval-doc" {
+	if id == "T-review-doc" {
 		return true
 	}
 	if strings.HasSuffix(id, IDSuffixGate) || strings.HasSuffix(id, IDSuffixSummary) {

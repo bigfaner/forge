@@ -290,11 +290,11 @@ func TestTC_TypeRefine_008_BuildIndexSkipsPipelineForRefactorOnly(t *testing.T) 
 		"refactor-only feature should NOT have auto-gen test pipeline tasks")
 }
 
-// --- TC-009: forge build-index generates T-eval-doc for documentation-only feature ---
+// --- TC-009: forge build-index generates T-review-doc for documentation-only feature ---
 
-// Traceability: TC-009 -> Task 2 AC-2, Proposal D2 (needsDocEval true for documentation)
-func TestTC_TypeRefine_009_BuildIndexGeneratesEvalDocForDocumentationOnly(t *testing.T) {
-	featureSlug := "tr-eval-doc"
+// Traceability: TC-009 -> Task 2 AC-2, Proposal D2 (needsReviewDoc true for documentation)
+func TestTC_TypeRefine_009_BuildIndexGeneratesReviewDocForDocumentationOnly(t *testing.T) {
+	featureSlug := "tr-review-doc"
 	tmpRoot := trCreateFeatureDir(t, featureSlug, []string{
 		"biz-1.md:" + trTaskContentWithType("biz-1.md", "documentation"),
 	})
@@ -302,15 +302,15 @@ func TestTC_TypeRefine_009_BuildIndexGeneratesEvalDocForDocumentationOnly(t *tes
 	require.Equal(t, 0, exitCode, "task index should succeed")
 	idx := trParseIndexJSON(t, tmpRoot, featureSlug)
 	tasks := trGetTasksFromIndex(t, idx)
-	assert.True(t, trHasTaskWithIDPrefix(tasks, "T-eval-doc"),
-		"documentation-only feature should have T-eval-doc auto-gen task")
+	assert.True(t, trHasTaskWithIDPrefix(tasks, "T-review-doc"),
+		"documentation-only feature should have T-review-doc auto-gen task")
 	assert.False(t, trHasTaskWithIDPrefix(tasks, "T-test-"),
 		"documentation-only feature should NOT have test pipeline tasks")
 	assert.False(t, trHasTaskWithIDPrefix(tasks, "T-quick-"),
 		"documentation-only feature should NOT have quick test pipeline tasks")
 }
 
-// --- TC-010: forge build-index generates neither pipeline nor eval-doc for mixed cleanup-refactor ---
+// --- TC-010: forge build-index generates neither pipeline nor review-doc for mixed cleanup-refactor ---
 
 // Traceability: TC-010 -> Task 2 AC-5, Proposal D2 table row "only cleanup/refactor"
 func TestTC_TypeRefine_010_BuildIndexNoPipelineNoEvalForCleanupRefactor(t *testing.T) {

@@ -704,7 +704,9 @@ func TestIsTestTaskID(t *testing.T) {
 		{"T-validate-code", true},
 		{"T-validate-ux", true},
 		// T-eval-* prefix
-		{"T-eval-doc", true},
+		{"T-eval-journey", true},
+		// T-review-doc is NOT a test task ID (it's caught by IsAutoGenTaskID explicitly)
+		{"T-review-doc", false},
 		// Non-test IDs
 		{"1", false},
 		{"1.gate", false},
@@ -736,8 +738,8 @@ func TestIsAutoGenTaskID(t *testing.T) {
 		{"T-clean-code", true},
 		{"T-validate-code", true},
 		{"T-validate-ux", true},
-		// Doc eval
-		{"T-eval-doc", true},
+		// Doc review
+		{"T-review-doc", true},
 		// Gate and summary suffixes
 		{"1.gate", true},
 		{"2.gate", true},
@@ -1069,14 +1071,14 @@ func TestNeedsTestPipeline(t *testing.T) {
 	}
 }
 
-func TestNeedsDocEval(t *testing.T) {
+func TestNeedsReviewDoc(t *testing.T) {
 	tests := []struct {
 		name  string
 		tasks map[string]Task
 		want  bool
 	}{
 		{
-			name: "documentation-only needs doc eval",
+			name: "documentation-only needs doc review",
 			tasks: map[string]Task{
 				"1-doc": {ID: "1.1", Type: TypeDoc},
 				"2-doc": {ID: "1.2", Type: TypeDoc},
@@ -1084,28 +1086,28 @@ func TestNeedsDocEval(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "feature type does NOT need doc eval",
+			name: "feature type does NOT need doc review",
 			tasks: map[string]Task{
 				"1-feat": {ID: "1.1", Type: TypeCodingFeature},
 			},
 			want: false,
 		},
 		{
-			name: "fix type does NOT need doc eval",
+			name: "fix type does NOT need doc review",
 			tasks: map[string]Task{
 				"1-fix": {ID: "fix-1", Type: TypeCodingFix},
 			},
 			want: false,
 		},
 		{
-			name: "cleanup-only does NOT need doc eval",
+			name: "cleanup-only does NOT need doc review",
 			tasks: map[string]Task{
 				"1-clean": {ID: "1.1", Type: TypeCodingCleanup},
 			},
 			want: false,
 		},
 		{
-			name: "mixed documentation and feature does NOT need doc eval",
+			name: "mixed documentation and feature does NOT need doc review",
 			tasks: map[string]Task{
 				"1-doc":  {ID: "1.1", Type: TypeDoc},
 				"2-feat": {ID: "1.2", Type: TypeCodingFeature},
@@ -1113,10 +1115,10 @@ func TestNeedsDocEval(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "doc-evaluation type does NOT need doc eval (not documentation)",
+			name: "doc-review type does NOT need doc review (not documentation)",
 			tasks: map[string]Task{
-				"1-doc":  {ID: "1.1", Type: TypeDoc},
-				"2-eval": {ID: "1.2", Type: TypeDocEval},
+				"1-doc":    {ID: "1.1", Type: TypeDoc},
+				"2-review": {ID: "1.2", Type: TypeDocReview},
 			},
 			want: false,
 		},
@@ -1145,9 +1147,9 @@ func TestNeedsDocEval(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := needsDocEval(tt.tasks)
+			got := needsReviewDoc(tt.tasks)
 			if got != tt.want {
-				t.Errorf("needsDocEval() = %v, want %v", got, tt.want)
+				t.Errorf("needsReviewDoc() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -1166,7 +1168,7 @@ func TestIsTestableType(t *testing.T) {
 		{TypeCodingRefactor, true},
 		// doc prefix -> false
 		{TypeDoc, false},
-		{TypeDocEval, false},
+		{TypeDocReview, false},
 		{TypeDocSummary, false},
 		{TypeDocConsolidate, false},
 		{TypeDocDrift, false},
@@ -1259,7 +1261,7 @@ func TestBuildIndex_DocsOnlySkipsGatesAndTests(t *testing.T) {
 	entries, _ := os.ReadDir(tasksDir)
 	for _, e := range entries {
 		name := e.Name()
-		if name == "1-doc.md" || name == "2-doc.md" || name == "index.json" || name == "eval-doc.md" {
+		if name == "1-doc.md" || name == "2-doc.md" || name == "index.json" || name == "review-doc.md" {
 			continue
 		}
 		t.Errorf("unexpected file %s (docs-only should not generate gates or tests)", name)
@@ -1378,37 +1380,37 @@ func TestBuildIndex_DocsOnlyGeneratesEvalDoc(t *testing.T) {
 		t.Fatalf("BuildIndex error: %v", err)
 	}
 
-	// eval-doc.md should have been generated
-	if _, err := os.Stat(filepath.Join(tasksDir, "eval-doc.md")); os.IsNotExist(err) {
-		t.Error("eval-doc.md not generated for docs-only feature")
+	// review-doc.md should have been generated
+	if _, err := os.Stat(filepath.Join(tasksDir, "review-doc.md")); os.IsNotExist(err) {
+		t.Error("review-doc.md not generated for docs-only feature")
 	}
 
-	// Verify T-eval-doc is in the index
+	// Verify T-review-doc is in the index
 	data, _ := os.ReadFile(indexPath)
 	var idx taskIndexJSON
 	_ = json.Unmarshal(data, &idx)
 
-	evalTask, ok := idx.Tasks["eval-doc"]
+	evalTask, ok := idx.Tasks["review-doc"]
 	if !ok {
-		t.Fatal("eval-doc not in index")
+		t.Fatal("review-doc not in index")
 	}
-	if evalTask.ID != "T-eval-doc" {
-		t.Errorf("eval-doc ID = %q, want T-eval-doc", evalTask.ID)
+	if evalTask.ID != "T-review-doc" {
+		t.Errorf("review-doc ID = %q, want T-review-doc", evalTask.ID)
 	}
-	if evalTask.Type != TypeDocEval {
-		t.Errorf("eval-doc type = %q, want %q", evalTask.Type, TypeDocEval)
+	if evalTask.Type != TypeDocReview {
+		t.Errorf("review-doc type = %q, want %q", evalTask.Type, TypeDocReview)
 	}
 	// Should depend on last business task
 	if len(evalTask.Dependencies) == 0 {
-		t.Error("eval-doc has no dependencies")
+		t.Error("review-doc has no dependencies")
 	} else {
 		lastDep := evalTask.Dependencies[len(evalTask.Dependencies)-1]
 		if lastDep != "1.2" {
-			t.Errorf("eval-doc last dep = %q, want 1.2", lastDep)
+			t.Errorf("review-doc last dep = %q, want 1.2", lastDep)
 		}
 	}
 
-	// Count: 2 business + 1 eval-doc = 3
+	// Count: 2 business + 1 review-doc = 3
 	total := result.NewCount + result.UpdatedCount
 	if total != 3 {
 		t.Errorf("total tasks = %d (new=%d, updated=%d), want 3", total, result.NewCount, result.UpdatedCount)
