@@ -8,7 +8,7 @@
       "title": "Add forge task list subcommand",
       "priority": "P1",
       "estimatedTime": "1-2h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-add-list-command.md",
       "record": "records/1-add-list-command.md",
       "scope": "backend",
