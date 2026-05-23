@@ -1739,24 +1739,55 @@ func TestValidateRecordData_TypeAware(t *testing.T) {
 		}
 	})
 
-	t.Run("doc type missing keyDecisions still warns", func(t *testing.T) {
-		rd := &task.RecordData{
-			Status:  "completed",
-			Summary: "Doc task",
-		}
-		old := os.Stderr
-		r, w, _ := os.Pipe()
-		os.Stderr = w
-		validateRecordData(rd, task.TypeDoc)
-		_ = w.Close()
-		os.Stderr = old
+		t.Run("doc type missing keyDecisions does NOT warn", func(t *testing.T) {
+			rd := &task.RecordData{
+				Status:  "completed",
+				Summary: "Doc task",
+			}
+			old := os.Stderr
+			r, w, _ := os.Pipe()
+			os.Stderr = w
+			validateRecordData(rd, task.TypeDoc)
+			_ = w.Close()
+			os.Stderr = old
 
-		buf := make([]byte, 1024)
-		n, _ := r.Read(buf)
-		output := string(buf[:n])
+			buf := make([]byte, 1024)
+			n, _ := r.Read(buf)
+			output := string(buf[:n])
 
-		if !strings.Contains(output, "WARNING") {
-			t.Errorf("doc type should still warn about missing recommended fields, got: %s", output)
+			if strings.Contains(output, "WARNING") {
+				t.Errorf("doc type should NOT warn about missing recommended fields, got: %s", output)
+			}
+		})
+
+		nonCodeTypes := []struct {
+			name     string
+			taskType string
+		}{
+			{"gate", task.TypeGate},
+			{"validation", task.TypeValidationCode},
+			{"test", task.TypeTestGenCases},
 		}
-	})
-}
+		for _, tt := range nonCodeTypes {
+			t.Run(tt.name+" type missing keyDecisions does NOT warn", func(t *testing.T) {
+				rd := &task.RecordData{
+					Status:  "completed",
+					Summary: tt.name + " task done",
+				}
+				old := os.Stderr
+				r, w, _ := os.Pipe()
+				os.Stderr = w
+				validateRecordData(rd, tt.taskType)
+				_ = w.Close()
+				os.Stderr = old
+
+				buf := make([]byte, 1024)
+				n, _ := r.Read(buf)
+				output := string(buf[:n])
+
+				if strings.Contains(output, "WARNING") {
+					t.Errorf("%s type should NOT warn about missing recommended fields, got: %s", tt.name, output)
+				}
+			})
+		}
+	}

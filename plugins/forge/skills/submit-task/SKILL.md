@@ -6,24 +6,32 @@ argument-hint: "[task-id]"
 
 # Submit Task
 
-## Overview
+## Common Fields
 
-Post-task completion: create execution record + update task status.
+All categories share these fields:
+
+| Field                | Type                          | Required    | Description                                                |
+| -------------------- | ----------------------------- | ----------- | ---------------------------------------------------------- |
+| `taskId`             | string                        | auto        | Omit or match the CLI argument — CLI validates consistency |
+| `status`             | `"completed"` \| `"blocked"`  | required    | Task outcome                                               |
+| `summary`            | string                        | required    | What was accomplished                                      |
+| `filesCreated`       | string[]                      | optional    | Files created during execution                             |
+| `filesModified`      | string[]                      | optional    | Files modified during execution                            |
+| `acceptanceCriteria` | `Array<{criterion, met}>`     | recommended | Criteria with pass/fail                                    |
+| `notes`              | string                        | optional    | Additional observations                                    |
+
+## Common Rules
+
+- Format file rules take precedence over Common Fields when they conflict.
+- `acceptanceCriteria` with any `met: false` entry is rejected for `completed` status — use `blocked` instead.
+- `testsPassed`, `testsFailed`, `coverage` are coding-only. Do NOT include them in doc, test, validation, or gate records.
 
 ## File Locations
 
-| Location                                         | Purpose                     | Git Status        |
-| ------------------------------------------------ | --------------------------- | ----------------- |
-| `docs/features/<slug>/tasks/process/record.json` | In-progress execution notes | Not committed     |
-| `docs/features/<slug>/tasks/records/*.md`        | Final completed record      | Committed to repo |
-
-**Workflow:**
-
-```
-1. forge task claim    → writes process/state.json (current task)
-2. During execution    → write progress to process/record.json
-3. forge task submit --data → reads JSON, generates records/*.md, clears process/
-```
+| Location                                         | Purpose                     |
+| ------------------------------------------------ | --------------------------- |
+| `docs/features/<slug>/tasks/process/record.json` | In-progress (not committed) |
+| `docs/features/<slug>/tasks/records/*.md`        | Final record (committed)    |
 
 ## Step 1: Determine Record Format
 
@@ -39,82 +47,56 @@ data/record-format-{TASK_CATEGORY}.md
 
 **Fallback:** If `TASK_CATEGORY` is not in your context, run `forge task query <TASK_ID>` to retrieve it. Do NOT skip reading a format file.
 
+> `code-quality.simplify` maps to the `coding` category — use `record-format-coding.md`.
+
 ## Step 2: Write record.json
 
-Use the **complete JSON example** from your category's format file as the template. Construct record.json following that example — it already includes all required and optional fields for your task type.
+Use the JSON example from your category's format file as the template. Combine common fields with category-specific fields.
 
-## Type Reclassification
-
-When executing a task, you may discover that the assigned type doesn't match the actual work. For example, a `fix` task might turn out to be a flaky test cleanup, or a `feature` task might only involve refactoring existing code.
-
-In such cases, process the task according to its **actual type** and include a `typeReclassification` block in the JSON data:
-
-```json
-{
-  "taskId": "fix-1",
-  "status": "completed",
-  "summary": "Fixed flaky test by cleaning up test isolation",
-  "typeReclassification": {
-    "originalType": "fix",
-    "actualType": "cleanup",
-    "reason": "Root cause was test state leak between runs, not a code bug"
-  }
-}
-```
-
-The reclassification is recorded in the task's execution log for traceability. The original type in `index.json` is **not** changed — only the record documents the discrepancy.
-
-## Usage
+## Step 3: Submit via CLI
 
 ```bash
-# Step 1: Write execution data to process/record.json using the Write tool
-# (replace sample values with real metrics collected above)
-# Target path: docs/features/<slug>/tasks/process/record.json
-
-# Step 2: Use CLI command (mandatory)
 forge task submit <TASK_ID> --data docs/features/<slug>/tasks/process/record.json
 ```
 
 <EXTREMELY-IMPORTANT>
 You MUST use the `forge task submit` CLI command. No exceptions.
 
-**ONLY ALLOWED PATH:** `docs/features/<slug>/tasks/process/record.json`
-
-**DO NOT:**
-
-- Write directly to index.json
-- Write to `records/*.md` manually (CLI generates these)
-- Use `forge task status <id> completed` to set status (use `forge task submit`)
-- Use any other file path (e.g., `.claude/tmp/`)
-
-The CLI command provides schema validation, consistent output format, and potential hooks/side-effects.
-Bypassing the command defeats the purpose of the skill.
+ONLY ALLOWED PATH: `docs/features/<slug>/tasks/process/record.json`
 </EXTREMELY-IMPORTANT>
-
-## What `forge task submit` Does
-
-`forge task submit` generates the execution record and updates task status. After running, check the STATUS field:
-- `STATUS: completed` → task recorded successfully, proceed to commit
-- `STATUS: blocked` → task was auto-downgraded (e.g. test failures), **do NOT commit**
 
 ## Forbidden Operations
 
-<EXTREMELY-IMPORTANT>
-These actions will corrupt task state:
+| Operation                          | Why Forbidden                      |
+| ---------------------------------- | ---------------------------------- |
+| `Write("records/*.md")`            | Bypasses CLI validation and hooks  |
+| Direct edit to `index.json`        | State becomes inconsistent         |
+| `forge task status <id> completed` | Use `forge task submit` to complete|
+| Wrong record.json path             | CLI only reads from `process/`     |
 
-| Operation                    | Why Forbidden                              |
-| ---------------------------- | ------------------------------------------ |
-| `Write("records/*.md")`      | Bypasses CLI validation and hooks          |
-| Direct edit to `index.json`  | State becomes inconsistent                 |
-| `forge task status <id> completed` | Status mutation removed — use `forge task submit` to complete tasks |
-| Writing record.json to wrong path | CLI only reads from `process/record.json`  |
+## What `forge task submit` Does
 
-</EXTREMELY-IMPORTANT>
+Generates the execution record and updates task status. After running, check STATUS:
+- `STATUS: completed` → recorded successfully, proceed to commit
+- `STATUS: blocked` → auto-downgraded (e.g. test failures), **do NOT commit**
 
-## Recovery (Only when `forge task submit` fails)
+## Type Reclassification
 
-If `forge task submit` fails and cannot be fixed:
+When the assigned type doesn't match the actual work, process according to the **actual type** and include a `typeReclassification` block:
 
-1. Identify the root cause from the error output (missing fields, validation failure, state transition error)
-2. Fix the `record.json` data and re-run `forge task submit <TASK_ID> --data <path>`
-3. If the task is stuck in an invalid state, use `forge task add --template fix-task --title "Fix: submit failed" --source-task-id <TASK_ID> --block-source --description "Submit failed: <error>"` to block it and create a fix task
+```json
+{
+  "typeReclassification": {
+    "originalType": "coding.fix",
+    "actualType": "coding.cleanup",
+    "reason": "Root cause was test state leak between runs, not a code bug"
+  }
+}
+```
+
+The original type in `index.json` is **not** changed.
+
+## Recovery (when `forge task submit` fails)
+
+1. Fix `record.json` and re-run `forge task submit <TASK_ID> --data <path>`
+2. If stuck: `forge task add --template fix-task --title "Fix: submit failed" --source-task-id <TASK_ID> --block-source --description "Submit failed: <error>"`

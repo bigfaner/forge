@@ -356,16 +356,19 @@ func validateRecordData(rd *task.RecordData, taskType string) {
 		}
 	}
 
-	// Recommended fields for completed tasks (all categories)
-	var recommended []string
-	if len(rd.KeyDecisions) == 0 {
-		recommended = append(recommended, "keyDecisions")
-	}
-	if len(rd.AcceptanceCriteria) == 0 {
-		recommended = append(recommended, "acceptanceCriteria")
-	}
-	if len(recommended) > 0 {
-		base.WarnMissingFields(recommended)
+	// Recommended fields for completed tasks (coding only)
+	category := task.CategoryForType(taskType)
+	if category == task.CategoryCoding {
+		var recommended []string
+		if len(rd.KeyDecisions) == 0 {
+			recommended = append(recommended, "keyDecisions")
+		}
+		if len(rd.AcceptanceCriteria) == 0 {
+			recommended = append(recommended, "acceptanceCriteria")
+		}
+		if len(recommended) > 0 {
+			base.WarnMissingFields(recommended)
+		}
 	}
 }
 

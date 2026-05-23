@@ -6,33 +6,33 @@ Task types: `coding.feature`, `coding.enhancement`, `coding.cleanup`, `coding.re
 
 ```json
 {
-	"taskId": "3.3.1",
-	"status": "completed",
-	"summary": "What was implemented",
-	"filesCreated": ["src/components/Button.tsx"],
-	"filesModified": ["src/utils/helpers.ts"],
-	"keyDecisions": ["Decision 1"],
-	"testsPassed": 12,
-	"testsFailed": 0,
-	"coverage": 85.6,
-	"acceptanceCriteria": [{ "criterion": "Acceptance criterion 1", "met": true }],
-	"notes": "Optional observations"
+  "taskId": "3.3.1",
+  "status": "completed",
+  "summary": "Implemented Button component with accessibility support",
+  "filesCreated": ["src/components/Button.tsx"],
+  "filesModified": ["src/utils/helpers.ts"],
+  "keyDecisions": ["Used compound component pattern for flexibility"],
+  "testsPassed": 12,
+  "testsFailed": 0,
+  "coverage": 85.6,
+  "acceptanceCriteria": [{ "criterion": "Button renders all variants", "met": true }],
+  "notes": "Tested with screen reader"
 }
 ```
 
 ## Category-Specific Fields
 
-| Field          | Type  | Required | Description                                  |
-| -------------- | ----- | -------- | -------------------------------------------- |
-| `testsPassed`  | int   | context  | Number of tests passed                       |
-| `testsFailed`  | int   | context  | Number of tests failed. >0 with completed = auto-downgrade to blocked |
-| `coverage`     | float | context  | Coverage percentage from test runner         |
+| Field          | Type     | Required    | Description                          |
+| -------------- | -------- | ----------- | ------------------------------------ |
+| `testsPassed`  | int      | conditional | Number of tests passed               |
+| `testsFailed`  | int      | conditional | Number of tests failed               |
+| `coverage`     | float    | conditional | Coverage percentage from test runner |
+| `keyDecisions` | string[] | optional    | Key decisions made during execution  |
 
-> **context** = required for `completed` tasks with a `coding.*` type; auto-relaxed for other types.
+> `testsPassed`, `testsFailed`, `coverage`: required when `status: completed`; omit when `status: blocked`.
 
-## Metrics Collection
+## Rules
 
-Collect from the project's test runner. All numeric fields must come from actual output, never guessed or defaulted.
-
-- `coverage` = actual percentage from test runner output. Never write `0.0` unless the runner actually reported 0%.
-- Capture metrics from the targeted test runs you performed during task development.
+- `testsFailed > 0` with `completed` triggers auto-downgrade to `blocked`.
+- All metrics must come from actual test runner output — never guess or default.
+- Never write `0.0` for coverage unless the runner reported 0%.
