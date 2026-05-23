@@ -1,0 +1,75 @@
+{
+  "feature": "typed-task-records",
+  "proposal": "docs/proposals/typed-task-records/proposal.md",
+  "created": "2026-05-23",
+  "tasks": {
+    "1-category-and-recorddata": {
+      "id": "1",
+      "title": "Add CategoryForType() and doc-specific RecordData fields",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "1-category-and-recorddata.md",
+      "record": "records/1-category-and-recorddata.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "2-type-differentiated-rendering": {
+      "id": "2",
+      "title": "Refactor fillRecordTemplate() for type-differentiated rendering",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-type-differentiated-rendering.md",
+      "record": "records/2-type-differentiated-rendering.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "3-type-aware-validation": {
+      "id": "3",
+      "title": "Type-aware validation in validateRecordData()",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "3-type-aware-validation.md",
+      "record": "records/3-type-aware-validation.md",
+      "scope": "backend",
+      "type": "coding.enhancement"
+    },
+    "4-update-submit-skill": {
+      "id": "4",
+      "title": "Update submit-task SKILL.md with type-specific instructions",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "1",
+        "2",
+        "3"
+      ],
+      "status": "pending",
+      "file": "4-update-submit-skill.md",
+      "record": "records/4-update-submit-skill.md",
+      "type": "doc"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
