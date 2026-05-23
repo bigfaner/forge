@@ -34,7 +34,7 @@
       "dependencies": [
         "2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3-prompt-go-scope-coverage-fix.md",
       "record": "records/3-prompt-go-scope-coverage-fix.md",
       "scope": "backend",

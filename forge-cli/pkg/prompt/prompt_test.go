@@ -6,9 +6,25 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"unicode"
 
 	"forge-cli/pkg/task"
 )
+
+// intPtr returns a pointer to the given int value.
+func intPtr(v int) *int {
+	return &v
+}
+
+// containsChinese returns true if the string contains any CJK Unified Ideograph characters.
+func containsChinese(s string) bool {
+	for _, r := range s {
+		if unicode.Is(unicode.Han, r) {
+			return true
+		}
+	}
+	return false
+}
 
 // buildTestIndex writes a minimal index.json to dir and returns its path.
 func buildTestIndex(t *testing.T, dir string, tasks map[string]task.Task) string {
@@ -868,8 +884,8 @@ func TestSynthesize_CodingFeature_DefaultCoverageTarget(t *testing.T) {
 	if !strings.Contains(result, "percentage") {
 		t.Error("coding.feature prompt should contain COVERAGE_STRATEGY 'percentage'")
 	}
-	if !strings.Contains(result, "达到 80% 测试覆盖率") {
-		t.Error("coding.feature prompt should contain COVERAGE_TARGET '达到 80% 测试覆盖率'")
+	if !strings.Contains(result, "Achieve 80% test coverage") {
+		t.Error("coding.feature prompt should contain COVERAGE_TARGET 'Achieve 80% test coverage'")
 	}
 }
 
@@ -896,8 +912,8 @@ func TestSynthesize_CodingFix_DefaultCoverageTarget(t *testing.T) {
 	if !strings.Contains(result, "percentage") {
 		t.Error("coding.fix prompt should contain COVERAGE_STRATEGY 'percentage'")
 	}
-	if !strings.Contains(result, "达到 60% 测试覆盖率") {
-		t.Error("coding.fix prompt should contain COVERAGE_TARGET '达到 60% 测试覆盖率'")
+	if !strings.Contains(result, "Achieve 60% test coverage") {
+		t.Error("coding.fix prompt should contain COVERAGE_TARGET 'Achieve 60% test coverage'")
 	}
 }
 
@@ -924,8 +940,8 @@ func TestSynthesize_CodingRefactor_MaintainStrategy(t *testing.T) {
 	if !strings.Contains(result, "maintain") {
 		t.Error("coding.refactor prompt should contain COVERAGE_STRATEGY 'maintain'")
 	}
-	if !strings.Contains(result, "保持现有覆盖率，下降不超过 2%") {
-		t.Error("coding.refactor prompt should contain COVERAGE_TARGET '保持现有覆盖率，下降不超过 2%'")
+	if !strings.Contains(result, "Maintain existing coverage, no more than 2% decrease") {
+		t.Error("coding.refactor prompt should contain COVERAGE_TARGET 'Maintain existing coverage, no more than 2% decrease'")
 	}
 }
 
@@ -952,8 +968,8 @@ func TestSynthesize_FrontmatterCoverageOverridesConfig(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	// Frontmatter coverage=90 should override the default 80
-	if !strings.Contains(result, "达到 90% 测试覆盖率") {
-		t.Errorf("frontmatter coverage=90 should produce '达到 90%% 测试覆盖率', got:\n%s", result)
+	if !strings.Contains(result, "Achieve 90% test coverage") {
+		t.Errorf("frontmatter coverage=90 should produce 'Achieve 90%% test coverage', got:\n%s", result)
 	}
 }
 
@@ -1039,8 +1055,8 @@ func TestSynthesize_ConfigCoverageOverridesDefault(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	// Config overrides default: 75 instead of 80
-	if !strings.Contains(result, "达到 75% 测试覆盖率") {
-		t.Errorf("config coverage=75 should produce '达到 75%% 测试覆盖率', got:\n%s", result)
+	if !strings.Contains(result, "Achieve 75% test coverage") {
+		t.Errorf("config coverage=75 should produce 'Achieve 75%% test coverage', got:\n%s", result)
 	}
 }
 
@@ -1152,8 +1168,8 @@ func TestSynthesize_CodingRefactor_CoverageDirectiveActionable(t *testing.T) {
 	if !strings.Contains(result, "just compile") {
 		t.Error("coding.refactor prompt should contain incremental compile strategy with 'just compile'")
 	}
-	if !strings.Contains(result, "No new tests") {
-		t.Error("coding.refactor prompt should contain directive: 'No new tests'")
+	if !strings.Contains(result, "no new tests") {
+		t.Error("coding.refactor prompt should contain directive: 'no new tests'")
 	}
 }
 
@@ -1178,8 +1194,267 @@ func TestSynthesize_CodingCleanup_CoverageDirectiveActionable(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	// Cleanup template should say no new tests needed, maintain strategy
-	if !strings.Contains(result, "No new tests") {
-		t.Error("coding.cleanup prompt should contain directive: 'No new tests'")
+	if !strings.Contains(result, "no new tests") {
+		t.Error("coding.cleanup prompt should contain directive: 'no new tests'")
+	}
+}
+
+// --- resolveCoverage language and cleanup/refactor tests ---
+
+func TestResolveCoverage_EnglishText(t *testing.T) {
+	tests := []struct {
+		name         string
+		task         task.Task
+		wantStrategy string
+		wantTarget   string
+	}{
+		{
+			name: "frontmatter coverage returns English",
+			task: task.Task{
+				ID:       "1.1",
+				Type:     task.TypeCodingFeature,
+				Coverage: intPtr(90),
+			},
+			wantStrategy: "percentage",
+			wantTarget:   "Achieve 90% test coverage",
+		},
+		{
+			name: "refactor maintain strategy returns English",
+			task: task.Task{
+				ID:   "1.1",
+				Type: task.TypeCodingRefactor,
+			},
+			wantStrategy: "maintain",
+			wantTarget:   "Maintain existing coverage, no more than 2% decrease",
+		},
+		{
+			name: "cleanup maintain strategy returns English",
+			task: task.Task{
+				ID:   "1.1",
+				Type: task.TypeCodingCleanup,
+			},
+			wantStrategy: "maintain",
+			wantTarget:   "Maintain existing coverage, no more than 2% decrease",
+		},
+		{
+			name: "feature default returns English",
+			task: task.Task{
+				ID:   "1.1",
+				Type: task.TypeCodingFeature,
+			},
+			wantStrategy: "percentage",
+			wantTarget:   "Achieve 80% test coverage",
+		},
+		{
+			name: "fix default returns English",
+			task: task.Task{
+				ID:   "fix-1",
+				Type: task.TypeCodingFix,
+			},
+			wantStrategy: "percentage",
+			wantTarget:   "Achieve 60% test coverage",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			strategy, target := resolveCoverage(dir, tt.task)
+			if strategy != tt.wantStrategy {
+				t.Errorf("strategy = %q, want %q", strategy, tt.wantStrategy)
+			}
+			if target != tt.wantTarget {
+				t.Errorf("target = %q, want %q", target, tt.wantTarget)
+			}
+			// Verify no Chinese characters in output
+			if containsChinese(strategy) {
+				t.Errorf("strategy contains Chinese characters: %q", strategy)
+			}
+			if containsChinese(target) {
+				t.Errorf("target contains Chinese characters: %q", target)
+			}
+		})
+	}
+}
+
+func TestResolveCoverage_CleanupAndRefactor_SkipPercentageDirective(t *testing.T) {
+	// Even when frontmatter specifies a coverage percentage, cleanup/refactor
+	// should not inject a percentage target because their templates say "No new tests".
+	tests := []struct {
+		name       string
+		task       task.Task
+		wantStrat  string
+		wantTarget string
+	}{
+		{
+			name: "cleanup with frontmatter coverage skips percentage",
+			task: task.Task{
+				ID:       "1.1",
+				Type:     task.TypeCodingCleanup,
+				Coverage: intPtr(80),
+			},
+			wantStrat:  "maintain",
+			wantTarget: "Maintain existing coverage, no more than 2% decrease",
+		},
+		{
+			name: "refactor with frontmatter coverage skips percentage",
+			task: task.Task{
+				ID:       "1.1",
+				Type:     task.TypeCodingRefactor,
+				Coverage: intPtr(90),
+			},
+			wantStrat:  "maintain",
+			wantTarget: "Maintain existing coverage, no more than 2% decrease",
+		},
+		{
+			name: "cleanup default skips percentage",
+			task: task.Task{
+				ID:   "1.1",
+				Type: task.TypeCodingCleanup,
+			},
+			wantStrat:  "maintain",
+			wantTarget: "Maintain existing coverage, no more than 2% decrease",
+		},
+		{
+			name: "refactor default skips percentage",
+			task: task.Task{
+				ID:   "1.1",
+				Type: task.TypeCodingRefactor,
+			},
+			wantStrat:  "maintain",
+			wantTarget: "Maintain existing coverage, no more than 2% decrease",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			strategy, target := resolveCoverage(dir, tt.task)
+			if strategy != tt.wantStrat {
+				t.Errorf("strategy = %q, want %q", strategy, tt.wantStrat)
+			}
+			if target != tt.wantTarget {
+				t.Errorf("target = %q, want %q", target, tt.wantTarget)
+			}
+		})
+	}
+}
+
+// --- Scope resolution fallback tests ---
+
+func TestResolveScope_MismatchFallsBack(t *testing.T) {
+	tests := []struct {
+		name        string
+		projectType string
+		taskScope   string
+		wantScope   string
+	}{
+		{
+			name:        "backend project with frontend scope falls back to empty",
+			projectType: "backend",
+			taskScope:   "frontend",
+			wantScope:   "",
+		},
+		{
+			name:        "backend project with backend scope keeps scope",
+			projectType: "backend",
+			taskScope:   "backend",
+			wantScope:   "backend",
+		},
+		{
+			name:        "fullstack project with frontend scope keeps scope",
+			projectType: "fullstack",
+			taskScope:   "frontend",
+			wantScope:   "frontend",
+		},
+		{
+			name:        "fullstack project with backend scope keeps scope",
+			projectType: "fullstack",
+			taskScope:   "backend",
+			wantScope:   "backend",
+		},
+		{
+			name:        "no project type keeps scope",
+			projectType: "",
+			taskScope:   "frontend",
+			wantScope:   "frontend",
+		},
+		{
+			name:        "empty scope stays empty",
+			projectType: "backend",
+			taskScope:   "",
+			wantScope:   "",
+		},
+		{
+			name:        "all scope becomes empty",
+			projectType: "backend",
+			taskScope:   "all",
+			wantScope:   "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			// Create config.yaml if projectType is set
+			if tt.projectType != "" {
+				forgeDir := filepath.Join(dir, ".forge")
+				if err := os.MkdirAll(forgeDir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				configContent := "project-type: " + tt.projectType + "\n"
+				if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(configContent), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			got := resolveScope(dir, tt.taskScope)
+			if got != tt.wantScope {
+				t.Errorf("resolveScope(%q, %q) = %q, want %q", tt.projectType, tt.taskScope, got, tt.wantScope)
+			}
+		})
+	}
+}
+
+func TestSynthesize_ScopeMismatch_GeneratesDefaultCommand(t *testing.T) {
+	// Backend project + frontend scope → scope should be empty → no scope suffix on commands
+	dir := t.TempDir()
+	forgeDir := filepath.Join(dir, ".forge")
+	if err := os.MkdirAll(forgeDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	configContent := "project-type: backend\n"
+	if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(configContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	tasks := map[string]task.Task{
+		"1.1": {
+			ID:     "1.1",
+			Title:  "Frontend task in backend project",
+			Status: "pending",
+			File:   "1.1.md",
+			Record: "records/1.1.md",
+			Type:   task.TypeCodingFeature,
+			Scope:  "frontend",
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "1.1"}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Should not contain "SCOPE: frontend" since it's a mismatch
+	if strings.Contains(result, "SCOPE: frontend") {
+		t.Errorf("result should not contain 'SCOPE: frontend' for mismatched scope, got:\n%s", result)
+	}
+
+	// Should contain default commands without scope suffix
+	if !strings.Contains(result, "just compile") {
+		t.Error("result should contain 'just compile' default command")
 	}
 }
 
