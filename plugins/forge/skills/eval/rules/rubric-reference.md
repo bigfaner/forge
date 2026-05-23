@@ -14,3 +14,4 @@ All rubrics: `rubrics/<type>.md`
 | `harness` | 100 | 70 | 1 | Single-pass; no reviser |
 | `validate-code` | 1000 | 700 | 1 | Single-pass; scenario tracing; no reviser |
 | `validate-ux` | 1000 | 700 | 1 | Single-pass; two-phase (snapshot + score); no reviser |
+| `journey` | 1000 | 850 | 3 | Per-dimension min thresholds |

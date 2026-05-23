@@ -8,3 +8,4 @@
 | `prd` | Detect mode: `prd-ui-functions.md` exists -> Mode A (with UI), else Mode B (no UI). |
 | `validate-code` | 1) Read PRD -> extract user scenarios list (from prd-spec.md flow descriptions and prd-user-stories.md acceptance criteria). 2) Run `git diff <base-branch>...HEAD` to get changed files and diff hunks. 3) Compile changed file list. 4) Pass PRD scenarios + diff + file list to scorer as assembled input. |
 | `validate-ux` | **Two-phase pre-processing** (must execute in git worktree or temp dir). Full sub-pipeline: `rubrics/validate-ux-pipeline.md`. |
+| `journey` | Detect surface type from `.forge/config.yaml` `surface` field. Load the corresponding surface rule file (`skills/gen-journeys/rules/surface-<type>.md`) as additional context for the scorer. |

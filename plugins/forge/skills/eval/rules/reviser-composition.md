@@ -26,6 +26,6 @@ The reviser receives **only** the protocol + merged attacks + optional context. 
 # Reviser Type-Specific Constraints
 
 - `consistency`: Do NOT modify `prd/`. Classify attack points by fix target before invoking.
-After reviser completes:
+- `journey`: Revise Journey document based on failed dimensions and attack points. Preserve surface-specific `required_outcomes` structure. After reviser completes:
 - `consistency`: re-assemble document bundle
 - Increment iteration counter, return to Step 2
