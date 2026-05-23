@@ -3,13 +3,10 @@ package lesson
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
-	"sort"
 	"strings"
 	"time"
 
-	"gopkg.in/yaml.v3"
+	"forge-cli/pkg/infocmd"
 )
 
 // lessonsDir is the base directory for lessons.
@@ -44,111 +41,50 @@ var categoryPrefixes = map[string]string{
 	"hook-":    "hook",
 }
 
-// Discover walks docs/lessons/*.md and returns all lessons sorted by
-// frontmatter created field descending (newest first), with mtime as fallback.
-// Lessons without a created field fall back to file modification time.
-func Discover(projectRoot string) ([]Lesson, error) {
-	lessonsDir := filepath.Join(projectRoot, lessonsDir)
-	entries, err := os.ReadDir(lessonsDir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("read lessons directory: %w", err)
-	}
-
-	type lessonWithMeta struct {
-		lesson  Lesson
-		modTime time.Time
-	}
-
-	var items []lessonWithMeta
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
-			continue
-		}
-
-		filePath := filepath.Join(lessonsDir, entry.Name())
-		info, err := os.Stat(filePath)
-		if err != nil {
-			continue
-		}
-
-		data, err := os.ReadFile(filePath)
-		if err != nil {
-			continue
-		}
-
+// scanConfig is the infocmd.ScanConfig for lesson discovery.
+var scanConfig = infocmd.ScanConfig[Lesson]{
+	BaseDir:  lessonsDir,
+	IsSubdir: false,
+	IDKey:    func(l Lesson) string { return l.Name },
+	CreatedKey: func(l Lesson) string {
+		return l.Created
+	},
+	ParseEntry: func(name, path string, content []byte, _ time.Time) (Lesson, error) {
 		var meta metadata
-		if err := parseFrontmatter(data, &meta); err != nil {
-			continue
+		if err := infocmd.ParseFrontmatter(content, &meta); err != nil {
+			return Lesson{}, err
 		}
 
-		name := strings.TrimSuffix(entry.Name(), ".md")
 		created := meta.Created
 		if created == "" {
 			created = meta.Date
 		}
 
-		category := inferCategory(name)
+		return Lesson{
+			Name:     name,
+			Title:    meta.Title,
+			Created:  created,
+			Tags:     meta.Tags,
+			Category: inferCategory(name),
+			FilePath: path,
+		}, nil
+	},
+}
 
-		items = append(items, lessonWithMeta{
-			lesson: Lesson{
-				Name:     name,
-				Title:    meta.Title,
-				Created:  created,
-				Tags:     meta.Tags,
-				Category: category,
-				FilePath: filepath.Join(lessonsDir, entry.Name()),
-			},
-			modTime: info.ModTime(),
-		})
-	}
-
-	sort.Slice(items, func(i, j int) bool {
-		ci, cj := items[i].lesson.Created, items[j].lesson.Created
-		// Items with created field sort before items without (descending).
-		if ci != "" && cj != "" {
-			return ci > cj
-		}
-		// If only one has created, it sorts first.
-		if ci != "" {
-			return true
-		}
-		if cj != "" {
-			return false
-		}
-		// Both missing created: fall back to mtime descending.
-		mi, mj := items[i].modTime, items[j].modTime
-		if mi.IsZero() {
-			return false
-		}
-		if mj.IsZero() {
-			return true
-		}
-		return mi.After(mj)
-	})
-
-	lessons := make([]Lesson, len(items))
-	for i, it := range items {
-		lessons[i] = it.lesson
-	}
-
-	return lessons, nil
+// Discover walks docs/lessons/*.md and returns all lessons sorted by
+// frontmatter created field descending (newest first), with mtime as fallback.
+// Lessons without a created field fall back to file modification time.
+func Discover(projectRoot string) ([]Lesson, error) {
+	return infocmd.Discover(projectRoot, scanConfig)
 }
 
 // FindByName returns a single lesson by name (without .md extension), or an error if not found.
 func FindByName(projectRoot, name string) (*Lesson, error) {
-	lessons, err := Discover(projectRoot)
+	result, err := infocmd.FindByID(projectRoot, name, scanConfig)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("lesson not found: %s", name)
 	}
-	for _, l := range lessons {
-		if l.Name == name {
-			return &l, nil
-		}
-	}
-	return nil, fmt.Errorf("lesson not found: %s", name)
+	return result, nil
 }
 
 // inferCategory determines category from filename prefix.
@@ -159,22 +95,4 @@ func inferCategory(name string) string {
 		}
 	}
 	return ""
-}
-
-// parseFrontmatter extracts YAML frontmatter from markdown content.
-func parseFrontmatter(content []byte, target any) error {
-	text := string(content)
-
-	if !strings.HasPrefix(text, "---") {
-		return nil
-	}
-	text = text[3:]
-
-	closeIdx := strings.Index(text, "\n---")
-	if closeIdx < 0 {
-		return nil
-	}
-
-	yamlContent := text[:closeIdx]
-	return yaml.Unmarshal([]byte(yamlContent), target)
 }
