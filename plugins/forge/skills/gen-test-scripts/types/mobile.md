@@ -205,3 +205,49 @@ Beyond the shared antipattern guards in `_shared.md` (Sleep-Based Waits, Hardcod
 ## Output
 
 Mobile test scripts are written to `tests/<journey>/` following the active Convention's file naming and structure. Each test file includes a traceability comment linking back to the source Contract step.
+
+## Test Ratio Constraint (Best-Effort)
+
+Mobile surface follows a **best-effort** strategy — not measured by Contract test ratio.
+
+- **Output format**: Maestro YAML files (`.yaml` extension)
+- **Skeleton structure**: Each generated Maestro YAML MUST contain at minimum:
+  1. `appId` declaration (from Fact Table `MOBILE_APP_ID`)
+  2. `onFlowStart: [launchApp]` lifecycle hook
+  3. `onFlowEnd: [killApp]` lifecycle hook
+  4. Command sequence for the Contract step's happy path actions
+  5. `assertVisible` assertions for each expected screen state
+- **Deep link tests**: For each Journey step that navigates to a specific screen, generate an additional Maestro YAML file that:
+  1. Opens the app via URL scheme (e.g., `myapp://screen/detail`)
+  2. Asserts the target screen is visible
+  3. Verifies expected content on the target screen
+- **File naming**: `tests/<journey>/step<N>_<action>.yaml` for step tests, `tests/<journey>/step<N>_<action>_deeplink.yaml` for deep link variants
+
+### Manual-Only Marking
+
+Complex scenarios that cannot be reliably automated in Maestro YAML MUST be marked as `manual-only`:
+
+| Scenario | Why Manual |
+|----------|-----------|
+| Multi-finger gestures (pinch, rotate) | Maestro does not support complex multi-touch |
+| Physical device sensors (accelerometer, camera) | Emulator/simulator cannot replicate |
+| Biometric authentication (Face ID, fingerprint) | Requires physical device or special simulator config |
+| System-level interactions (notifications, clipboard) | Unreliable in automated environments |
+
+**Marking convention**: Generate a placeholder Maestro YAML with `manual-only` status:
+
+```yaml
+# MANUAL-ONLY: <reason>
+# This test scenario requires <capability> which cannot be automated via Maestro.
+# Manual test procedure: <description of what to test manually>
+
+appId: ${MOBILE_APP_ID}
+---
+- launchApp
+- assertVisible: "Home Screen"
+# Remaining steps require manual execution
+```
+
+<HARD-RULE>
+Mobile test generation MUST NOT fail the pipeline. Any generation issue results in a skeleton with `manual-only` markers or `gen-failed` annotation. Mobile tests are best-effort — incomplete coverage is acceptable.
+</HARD-RULE>

@@ -32,3 +32,7 @@ Before writing, scan existing test files in the module for matching function nam
 | Compile gate failed (all retries) | Block task. Output error + file path + recovery actions. Preserve generated files. |
 | No test files generated | Abort with clear diagnostic message |
 | Custom template path not found | Fall back to Convention file patterns with WARNING |
+| Syntax validation failed (attempt 1) | Auto-retry: regenerate the failing file with error context |
+| Syntax validation failed (attempt 2) | Mark file as `gen-failed`, skip in subsequent steps |
+| Import path resolution failed | Same as syntax validation: retry once, then `gen-failed` |
+| Surface type not in config.yaml | Auto-detect from code signals (Step 0.5.2), or ask user |

@@ -152,11 +152,12 @@
         "1.gate",
         "2.1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2.6-scripts-surface-diff.md",
       "record": "records/2.6-scripts-surface-diff.md",
       "scope": "all",
-      "type": "coding.enhancement"
+      "type": "coding.enhancement",
+      "blockedReason": "auto-downgrade: testsFailed=2"
     },
     "2.7-run-to-learn": {
       "id": "2.7",

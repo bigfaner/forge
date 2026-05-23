@@ -169,6 +169,16 @@ Each TUI test must assert both exit code and output content:
 2. Assert the captured output contains expected text or matches the expected pattern.
 3. For error scenarios, assert stderr contains the expected error message if the test case specifies one.
 
+## Test Ratio Constraint
+
+TUI surface targets **Contract test ratio ≥ 80%**.
+
+- **Formula**: `Contract test functions / (Contract test functions + Journey smoke test functions) × 100%`
+- **Minimum**: For a Journey with N steps and M total Outcomes across all steps, generate M Contract test functions and exactly 1 Journey smoke test (happy path). This ensures ratio ≥ 80% for any Journey with ≥ 5 Outcomes.
+- **Small Journey adjustment**: If a Journey has fewer than 5 total Outcomes, the 1 smoke test still counts as only 1 function, so the ratio naturally stays high. Do NOT skip the smoke test to inflate the ratio — every Journey MUST have at least 1 smoke test.
+
+**Ratio enforcement rule**: If the generated test plan would result in Contract ratio < 80%, reduce the number of Journey smoke tests (minimum 1) before reducing Contract tests.
+
 ## Output
 
 TUI test scripts are written to `tests/<journey>/` following the strategy's template naming convention. Each test function includes a traceability comment linking back to the source test case ID.
