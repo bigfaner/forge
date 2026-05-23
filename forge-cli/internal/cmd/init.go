@@ -37,13 +37,15 @@ func init() {
 
 // gitignoreEntries are the lines to append to .gitignore.
 var gitignoreEntries = []string{
-	"# Forge runtime",
+	"# Forge",
+	".forge/state.json",
+	".forge/test-state.json",
+	".forge/worktrees/",
 	"docs/features/*/tasks/process/",
 	"docs/features/*/tasks/index.json.lock",
-	".forge/state.json",
-	"tests/results/.last-run.json",
-	"tests/e2e/results/.last-run.json",
-	"tests/e2e/results/*/error-context.md",
+	"docs/features/*/testing/results/",
+	"tests/results/",
+	"tests/e2e/results/",
 }
 
 // initAction records a single action taken during init.

@@ -172,13 +172,16 @@ func TestInitCommand(t *testing.T) {
 		}
 
 		content := string(data)
-		expected := []string{
-			"# Forge runtime",
-			"docs/features/*/tasks/process/",
+			expected := []string{
+			"# Forge",
 			".forge/state.json",
-			"tests/results/.last-run.json",
-			"tests/e2e/results/.last-run.json",
-			"tests/e2e/results/*/error-context.md",
+			".forge/test-state.json",
+			".forge/worktrees/",
+			"docs/features/*/tasks/process/",
+			"docs/features/*/tasks/index.json.lock",
+			"docs/features/*/testing/results/",
+			"tests/results/",
+			"tests/e2e/results/",
 		}
 		for _, line := range expected {
 			if !strings.Contains(content, line) {
