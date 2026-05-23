@@ -1,0 +1,100 @@
+{
+  "feature": "eval-freeform-expert-review",
+  "proposal": "docs/proposals/eval-freeform-expert-review/proposal.md",
+  "created": "2026-05-23",
+  "tasks": {
+    "1-expert-profile-template": {
+      "id": "1",
+      "title": "Expert Profile Template \u0026 Inference Prompt",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "1-expert-profile-template.md",
+      "record": "records/1-expert-profile-template.md",
+      "type": "doc"
+    },
+    "2-freeform-review-protocol": {
+      "id": "2",
+      "title": "Freeform Review Protocol \u0026 Agent Prompt",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-freeform-review-protocol.md",
+      "record": "records/2-freeform-review-protocol.md",
+      "type": "doc"
+    },
+    "3-extraction-injection": {
+      "id": "3",
+      "title": "Extraction Prompt Template \u0026 Injection Mechanism",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "2"
+      ],
+      "status": "pending",
+      "file": "3-extraction-injection.md",
+      "record": "records/3-extraction-injection.md",
+      "type": "doc"
+    },
+    "4-expert-persistence": {
+      "id": "4",
+      "title": "Expert Persistence, Reuse \u0026 Deprecation",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "4-expert-persistence.md",
+      "record": "records/4-expert-persistence.md",
+      "type": "doc"
+    },
+    "5-eval-integration": {
+      "id": "5",
+      "title": "eval Skill Phase 0 Integration",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "status": "pending",
+      "file": "5-eval-integration.md",
+      "record": "records/5-eval-integration.md",
+      "type": "doc"
+    },
+    "eval-doc": {
+      "id": "T-eval-doc",
+      "title": "Evaluate Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "5"
+      ],
+      "status": "pending",
+      "file": "eval-doc.md",
+      "record": "records/eval-doc.md",
+      "scope": "all",
+      "type": "doc.eval"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
