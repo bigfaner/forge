@@ -5,31 +5,73 @@
   "tasks": {
     "1-category-and-recorddata": {
       "id": "1",
-      "title": "Add CategoryForType() and doc-specific RecordData fields",
+      "title": "Add CategoryForType() and extend RecordData for all categories",
       "priority": "P0",
-      "estimatedTime": "1h",
+      "estimatedTime": "1.5h",
       "status": "pending",
       "file": "1-category-and-recorddata.md",
       "record": "records/1-category-and-recorddata.md",
       "scope": "backend",
       "type": "coding.feature"
     },
-    "2-type-differentiated-rendering": {
+    "2-template-engine-coding": {
       "id": "2",
-      "title": "Refactor fillRecordTemplate() for type-differentiated rendering",
+      "title": "Template engine infrastructure and coding template",
       "priority": "P0",
       "estimatedTime": "1.5h",
       "dependencies": [
         "1"
       ],
       "status": "pending",
-      "file": "2-type-differentiated-rendering.md",
-      "record": "records/2-type-differentiated-rendering.md",
+      "file": "2-template-engine-coding.md",
+      "record": "records/2-template-engine-coding.md",
       "scope": "backend",
-      "type": "coding.refactor"
+      "type": "coding.feature"
     },
-    "3-type-aware-validation": {
+    "3-doc-template": {
       "id": "3",
+      "title": "Doc record template (record-doc.md)",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "2"
+      ],
+      "status": "pending",
+      "file": "3-doc-template.md",
+      "record": "records/3-doc-template.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "4-test-template": {
+      "id": "4",
+      "title": "Test record template (record-test.md)",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "2"
+      ],
+      "status": "pending",
+      "file": "4-test-template.md",
+      "record": "records/4-test-template.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "5-validation-gate-templates": {
+      "id": "5",
+      "title": "Validation and Gate record templates",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "2"
+      ],
+      "status": "pending",
+      "file": "5-validation-gate-templates.md",
+      "record": "records/5-validation-gate-templates.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "6-type-aware-validation": {
+      "id": "6",
       "title": "Type-aware validation in validateRecordData()",
       "priority": "P0",
       "estimatedTime": "1h",
@@ -37,25 +79,42 @@
         "1"
       ],
       "status": "pending",
-      "file": "3-type-aware-validation.md",
-      "record": "records/3-type-aware-validation.md",
+      "file": "6-type-aware-validation.md",
+      "record": "records/6-type-aware-validation.md",
       "scope": "backend",
       "type": "coding.enhancement"
     },
-    "4-update-submit-skill": {
-      "id": "4",
-      "title": "Update submit-task SKILL.md with type-specific instructions",
+    "7-update-submit-skill": {
+      "id": "7",
+      "title": "Update submit-task SKILL.md with per-type instructions",
       "priority": "P1",
       "estimatedTime": "30m",
       "dependencies": [
         "1",
         "2",
-        "3"
+        "3",
+        "4",
+        "5",
+        "6"
       ],
       "status": "pending",
-      "file": "4-update-submit-skill.md",
-      "record": "records/4-update-submit-skill.md",
+      "file": "7-update-submit-skill.md",
+      "record": "records/7-update-submit-skill.md",
       "type": "doc"
+    },
+    "8-update-prompt-templates": {
+      "id": "8",
+      "title": "Update prompt templates for type-specific record field awareness",
+      "priority": "P2",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "7"
+      ],
+      "status": "pending",
+      "file": "8-update-prompt-templates.md",
+      "record": "records/8-update-prompt-templates.md",
+      "scope": "backend",
+      "type": "coding.enhancement"
     }
   },
   "statusEnum": [
