@@ -77,8 +77,11 @@ func TestGetQuickTestTasks_E2eTestQuickFalse(t *testing.T) {
 
 	// No e2e test tasks
 	for _, task := range tasks {
-		if task.ID == "T-quick-gen-and-run-cli" ||
-			task.ID == "T-quick-verify-regression" {
+		if task.ID == "T-test-gen-journeys-cli" ||
+			task.ID == "T-test-gen-contracts" ||
+			task.ID == "T-test-gen-scripts-cli" ||
+			task.ID == "T-test-run" ||
+			task.ID == "T-test-verify-regression" {
 			t.Errorf("e2e test task %s should not be generated when e2eTest.quick=false", task.ID)
 		}
 	}
@@ -275,8 +278,8 @@ func TestGetQuickTestTasks_SpecsDependsOnVerifyRegression(t *testing.T) {
 	// Find T-quick-doc-drift
 	for _, task := range tasks {
 		if task.ID == "T-quick-doc-drift" {
-			if len(task.Dependencies) != 1 || task.Dependencies[0] != "T-quick-verify-regression" {
-				t.Errorf("T-quick-doc-drift deps = %v, want [T-quick-verify-regression]", task.Dependencies)
+			if len(task.Dependencies) != 1 || task.Dependencies[0] != "T-test-verify-regression" {
+				t.Errorf("T-quick-doc-drift deps = %v, want [T-test-verify-regression]", task.Dependencies)
 			}
 			return
 		}

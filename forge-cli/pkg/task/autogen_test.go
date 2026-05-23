@@ -82,30 +82,44 @@ func TestGetQuickTestTasks_EmptyInterfaces(t *testing.T) {
 func TestGetQuickTestTasks_SingleType(t *testing.T) {
 	tasks := GetQuickTestTasks([]string{"cli"}, allEnabledAuto)
 
-	// gen-and-run-cli + verify-regression + drift = 3
-	if len(tasks) != 3 {
-		t.Fatalf("expected 3 tasks, got %d", len(tasks))
+	// gen-journeys-cli + gen-contracts + gen-scripts-cli + run + verify-regression + drift = 6
+	if len(tasks) != 6 {
+		t.Fatalf("expected 6 tasks, got %d", len(tasks))
 	}
 
-	wantIDs := []string{"T-quick-gen-and-run-cli", "T-quick-verify-regression", "T-quick-doc-drift"}
+	wantIDs := []string{
+		"T-test-gen-journeys-cli",
+		"T-test-gen-contracts",
+		"T-test-gen-scripts-cli",
+		"T-test-run",
+		"T-test-verify-regression",
+		"T-quick-doc-drift",
+	}
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
 			t.Errorf("tasks[%d].ID = %q, want %q", i, tasks[i].ID, want)
 		}
 	}
 
-	if tasks[0].Type != TypeTestGenAndRun {
-		t.Errorf("T-quick-gen-and-run-cli Type = %q, want %q", tasks[0].Type, TypeTestGenAndRun)
+	// No gen-and-run tasks in Quick mode
+	for _, task := range tasks {
+		if task.Type == TypeTestGenAndRun {
+			t.Errorf("Quick mode should not contain gen-and-run tasks, found %q", task.ID)
+		}
 	}
 
-	if tasks[1].Dependencies[0] != "T-quick-gen-and-run-cli" {
-		t.Errorf("verify-regression should depend on gen-and-run, got %v", tasks[1].Dependencies)
+	if tasks[0].Type != TypeTestGenJourneys {
+		t.Errorf("T-test-gen-journeys-cli Type = %q, want %q", tasks[0].Type, TypeTestGenJourneys)
 	}
-	if tasks[2].Type != TypeDocDrift {
-		t.Errorf("T-quick-doc-drift Type = %q, want %q", tasks[2].Type, TypeDocDrift)
+	if tasks[1].Type != TypeTestGenContracts {
+		t.Errorf("T-test-gen-contracts Type = %q, want %q", tasks[1].Type, TypeTestGenContracts)
 	}
-	if tasks[2].Scope != "all" {
-		t.Errorf("T-quick-doc-drift Scope = %q, want %q", tasks[2].Scope, "all")
+
+	if tasks[5].Type != TypeDocDrift {
+		t.Errorf("T-quick-doc-drift Type = %q, want %q", tasks[5].Type, TypeDocDrift)
+	}
+	if tasks[5].Scope != "all" {
+		t.Errorf("T-quick-doc-drift Scope = %q, want %q", tasks[5].Scope, "all")
 	}
 }
 
@@ -417,14 +431,17 @@ func TestGenerateTestTaskMD_WithTestType(t *testing.T) {
 func TestGetQuickTestTasks_PerType_TwoTypes(t *testing.T) {
 	tasks := GetQuickTestTasks([]string{"tui", "api"}, allEnabledAuto)
 
-	// per-type-gen-and-run(tui,api) + verify-regression + drift-detection = 4
-	if len(tasks) != 4 {
-		t.Fatalf("expected 4 tasks, got %d", len(tasks))
+	// 2 gen-journeys + gen-contracts + 2 gen-scripts + run + verify-regression + drift = 8
+	if len(tasks) != 8 {
+		t.Fatalf("expected 8 tasks, got %d", len(tasks))
 	}
 
 	wantIDs := []string{
-		"T-quick-gen-and-run-tui", "T-quick-gen-and-run-api",
-		"T-quick-verify-regression",
+		"T-test-gen-journeys-tui", "T-test-gen-journeys-api",
+		"T-test-gen-contracts",
+		"T-test-gen-scripts-tui", "T-test-gen-scripts-api",
+		"T-test-run",
+		"T-test-verify-regression",
 		"T-quick-doc-drift",
 	}
 	for i, want := range wantIDs {
@@ -433,15 +450,15 @@ func TestGetQuickTestTasks_PerType_TwoTypes(t *testing.T) {
 		}
 	}
 
-	// Keys include type suffix (no language)
-	if tasks[0].Key != "quick-gen-and-run-tui" {
-		t.Errorf("tasks[0].Key = %q, want quick-gen-and-run-tui", tasks[0].Key)
+	// Keys include type suffix
+	if tasks[0].Key != "gen-journeys-tui" {
+		t.Errorf("tasks[0].Key = %q, want gen-journeys-tui", tasks[0].Key)
 	}
-	if tasks[1].Key != "quick-gen-and-run-api" {
-		t.Errorf("tasks[1].Key = %q, want quick-gen-and-run-api", tasks[1].Key)
+	if tasks[1].Key != "gen-journeys-api" {
+		t.Errorf("tasks[1].Key = %q, want gen-journeys-api", tasks[1].Key)
 	}
 
-	// TestType field set
+	// TestType field set for gen-journeys
 	if tasks[0].TestType != "tui" {
 		t.Errorf("tasks[0].TestType = %q, want tui", tasks[0].TestType)
 	}
@@ -449,30 +466,42 @@ func TestGetQuickTestTasks_PerType_TwoTypes(t *testing.T) {
 		t.Errorf("tasks[1].TestType = %q, want api", tasks[1].TestType)
 	}
 
-	// T-quick-verify-regression depends on ALL per-type gen-and-run tasks
-	if len(tasks[2].Dependencies) != 2 {
-		t.Fatalf("T-quick-verify-regression should depend on 2 gen-and-run tasks, got %v", tasks[2].Dependencies)
+	// TestType field set for gen-scripts
+	if tasks[3].TestType != "tui" {
+		t.Errorf("tasks[3].TestType = %q, want tui", tasks[3].TestType)
+	}
+	if tasks[4].TestType != "api" {
+		t.Errorf("tasks[4].TestType = %q, want api", tasks[4].TestType)
+	}
+
+	// gen-contracts depends on ALL gen-journeys tasks
+	gcIdx := findTaskIndexOrPanic(tasks, "T-test-gen-contracts")
+	if len(tasks[gcIdx].Dependencies) != 2 {
+		t.Fatalf("gen-contracts should depend on 2 gen-journeys, got %v", tasks[gcIdx].Dependencies)
 	}
 	depSet := make(map[string]bool)
-	for _, d := range tasks[2].Dependencies {
+	for _, d := range tasks[gcIdx].Dependencies {
 		depSet[d] = true
 	}
-	if !depSet["T-quick-gen-and-run-tui"] || !depSet["T-quick-gen-and-run-api"] {
-		t.Errorf("T-quick-verify-regression deps should include T-quick-gen-and-run-tui and T-quick-gen-and-run-api, got %v", tasks[2].Dependencies)
+	if !depSet["T-test-gen-journeys-tui"] || !depSet["T-test-gen-journeys-api"] {
+		t.Errorf("gen-contracts deps should include both gen-journeys, got %v", tasks[gcIdx].Dependencies)
 	}
 }
 
 func TestGetQuickTestTasks_PerType_SingleType(t *testing.T) {
 	tasks := GetQuickTestTasks([]string{"api"}, allEnabledAuto)
 
-	// 1 gen-and-run-api + verify-regression + drift-detection = 3
-	if len(tasks) != 3 {
-		t.Fatalf("expected 3 tasks, got %d", len(tasks))
+	// gen-journeys-api + gen-contracts + gen-scripts-api + run + verify-regression + drift = 6
+	if len(tasks) != 6 {
+		t.Fatalf("expected 6 tasks, got %d", len(tasks))
 	}
 
 	wantIDs := []string{
-		"T-quick-gen-and-run-api",
-		"T-quick-verify-regression",
+		"T-test-gen-journeys-api",
+		"T-test-gen-contracts",
+		"T-test-gen-scripts-api",
+		"T-test-run",
+		"T-test-verify-regression",
 		"T-quick-doc-drift",
 	}
 	for i, want := range wantIDs {
@@ -481,33 +510,52 @@ func TestGetQuickTestTasks_PerType_SingleType(t *testing.T) {
 		}
 	}
 
-	if tasks[0].Type != TypeTestGenAndRun {
-		t.Errorf("T-quick-gen-and-run-api Type = %q, want %q", tasks[0].Type, TypeTestGenAndRun)
+	if tasks[0].Type != TypeTestGenJourneys {
+		t.Errorf("T-test-gen-journeys-api Type = %q, want %q", tasks[0].Type, TypeTestGenJourneys)
+	}
+	if tasks[1].Type != TypeTestGenContracts {
+		t.Errorf("T-test-gen-contracts Type = %q, want %q", tasks[1].Type, TypeTestGenContracts)
 	}
 
-	if len(tasks[1].Dependencies) != 1 || tasks[1].Dependencies[0] != "T-quick-gen-and-run-api" {
-		t.Errorf("T-quick-verify-regression should depend on T-quick-gen-and-run-api, got %v", tasks[1].Dependencies)
+	// gen-contracts depends on gen-journeys-api
+	gcIdx := findTaskIndexOrPanic(tasks, "T-test-gen-contracts")
+	if len(tasks[gcIdx].Dependencies) != 1 || tasks[gcIdx].Dependencies[0] != "T-test-gen-journeys-api" {
+		t.Errorf("gen-contracts should depend on T-test-gen-journeys-api, got %v", tasks[gcIdx].Dependencies)
 	}
 }
 
 func TestGetQuickTestTasks_PerType_ThreeTypes(t *testing.T) {
 	tasks := GetQuickTestTasks([]string{"tui", "api", "cli"}, allEnabledAuto)
 
-	// 3 per-type-gen-and-run + verify-regression + drift-detection = 5
-	if len(tasks) != 5 {
-		t.Fatalf("expected 5 tasks, got %d", len(tasks))
+	// 3 gen-journeys + gen-contracts + 3 gen-scripts + run + verify-regression + drift = 10
+	if len(tasks) != 10 {
+		t.Fatalf("expected 10 tasks, got %d", len(tasks))
 	}
 
-	// T-quick-verify-regression depends on all 3 gen-and-run tasks
-	if len(tasks[3].Dependencies) != 3 {
-		t.Fatalf("T-quick-verify-regression should depend on 3 gen-and-run tasks, got %v", tasks[3].Dependencies)
+	// gen-contracts depends on all 3 gen-journeys
+	gcIdx := findTaskIndexOrPanic(tasks, "T-test-gen-contracts")
+	if len(tasks[gcIdx].Dependencies) != 3 {
+		t.Fatalf("gen-contracts should depend on 3 gen-journeys, got %v", tasks[gcIdx].Dependencies)
 	}
 	depSet := make(map[string]bool)
-	for _, d := range tasks[3].Dependencies {
+	for _, d := range tasks[gcIdx].Dependencies {
 		depSet[d] = true
 	}
-	if !depSet["T-quick-gen-and-run-tui"] || !depSet["T-quick-gen-and-run-api"] || !depSet["T-quick-gen-and-run-cli"] {
-		t.Errorf("T-quick-verify-regression missing expected deps, got %v", tasks[3].Dependencies)
+	if !depSet["T-test-gen-journeys-tui"] || !depSet["T-test-gen-journeys-api"] || !depSet["T-test-gen-journeys-cli"] {
+		t.Errorf("gen-contracts missing expected deps, got %v", tasks[gcIdx].Dependencies)
+	}
+
+	// run depends on all 3 gen-scripts
+	runIdx := findTaskIndexOrPanic(tasks, "T-test-run")
+	if len(tasks[runIdx].Dependencies) != 3 {
+		t.Fatalf("run should depend on 3 gen-scripts, got %v", tasks[runIdx].Dependencies)
+	}
+	runDepSet := make(map[string]bool)
+	for _, d := range tasks[runIdx].Dependencies {
+		runDepSet[d] = true
+	}
+	if !runDepSet["T-test-gen-scripts-tui"] || !runDepSet["T-test-gen-scripts-api"] || !runDepSet["T-test-gen-scripts-cli"] {
+		t.Errorf("run missing expected deps, got %v", tasks[runIdx].Dependencies)
 	}
 }
 
@@ -1545,4 +1593,153 @@ func TestGetBreakdownTestTasks_RegressionStillValid(t *testing.T) {
 	if byID["T-test-run"].Dependencies[0] != "T-test-gen-scripts-cli" {
 		t.Errorf("run should still depend on gen-scripts-cli, got %v", byID["T-test-run"].Dependencies)
 	}
+}
+
+// --- Quick mode staged across types topology tests (Task 4) ---
+
+func TestGetQuickTestTasks_NoGenAndRun(t *testing.T) {
+	tasks := GetQuickTestTasks([]string{"cli", "api"}, allEnabledAuto)
+
+	for _, task := range tasks {
+		if task.Type == TypeTestGenAndRun {
+			t.Errorf("Quick mode should not generate gen-and-run tasks, found %q (type=%q)", task.ID, task.Type)
+		}
+	}
+}
+
+func TestGetQuickTestTasks_StagedAcrossTypesDependencyChain(t *testing.T) {
+	tasks := GetQuickTestTasks([]string{"cli", "api"}, allEnabledAuto)
+
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+
+	// Stage 1: gen-journeys have no deps (pipeline entry points)
+	if len(byID["T-test-gen-journeys-cli"].Dependencies) != 0 {
+		t.Errorf("gen-journeys-cli should have no deps, got %v", byID["T-test-gen-journeys-cli"].Dependencies)
+	}
+	if len(byID["T-test-gen-journeys-api"].Dependencies) != 0 {
+		t.Errorf("gen-journeys-api should have no deps, got %v", byID["T-test-gen-journeys-api"].Dependencies)
+	}
+
+	// Stage 2: gen-contracts depends on all gen-journeys
+	gcDeps := byID["T-test-gen-contracts"].Dependencies
+	if len(gcDeps) != 2 {
+		t.Fatalf("gen-contracts should depend on 2 gen-journeys, got %v", gcDeps)
+	}
+	gcDepSet := make(map[string]bool)
+	for _, d := range gcDeps {
+		gcDepSet[d] = true
+	}
+	if !gcDepSet["T-test-gen-journeys-cli"] || !gcDepSet["T-test-gen-journeys-api"] {
+		t.Errorf("gen-contracts deps should include both gen-journeys, got %v", gcDeps)
+	}
+
+	// Stage 3: gen-scripts depend on gen-contracts
+	if len(byID["T-test-gen-scripts-cli"].Dependencies) != 1 || byID["T-test-gen-scripts-cli"].Dependencies[0] != "T-test-gen-contracts" {
+		t.Errorf("gen-scripts-cli should depend on gen-contracts, got %v", byID["T-test-gen-scripts-cli"].Dependencies)
+	}
+	if len(byID["T-test-gen-scripts-api"].Dependencies) != 1 || byID["T-test-gen-scripts-api"].Dependencies[0] != "T-test-gen-contracts" {
+		t.Errorf("gen-scripts-api should depend on gen-contracts, got %v", byID["T-test-gen-scripts-api"].Dependencies)
+	}
+
+	// Stage 4: run depends on all gen-scripts
+	runDeps := byID["T-test-run"].Dependencies
+	if len(runDeps) != 2 {
+		t.Fatalf("run should depend on 2 gen-scripts, got %v", runDeps)
+	}
+	runDepSet := make(map[string]bool)
+	for _, d := range runDeps {
+		runDepSet[d] = true
+	}
+	if !runDepSet["T-test-gen-scripts-cli"] || !runDepSet["T-test-gen-scripts-api"] {
+		t.Errorf("run deps should include both gen-scripts, got %v", runDeps)
+	}
+
+	// Stage 5: verify-regression depends on run
+	if len(byID["T-test-verify-regression"].Dependencies) != 1 || byID["T-test-verify-regression"].Dependencies[0] != "T-test-run" {
+		t.Errorf("verify-regression should depend on run, got %v", byID["T-test-verify-regression"].Dependencies)
+	}
+}
+
+func TestGetQuickTestTasks_GenJourneysPerType(t *testing.T) {
+	tasks := GetQuickTestTasks([]string{"tui", "api"}, allEnabledAuto)
+
+	foundTUI := false
+	foundAPI := false
+	for _, task := range tasks {
+		if task.ID == "T-test-gen-journeys-tui" {
+			foundTUI = true
+			if task.Type != TypeTestGenJourneys {
+				t.Errorf("gen-journeys-tui Type = %q, want %q", task.Type, TypeTestGenJourneys)
+			}
+			if task.TestType != "tui" {
+				t.Errorf("gen-journeys-tui TestType = %q, want tui", task.TestType)
+			}
+		}
+		if task.ID == "T-test-gen-journeys-api" {
+			foundAPI = true
+			if task.Type != TypeTestGenJourneys {
+				t.Errorf("gen-journeys-api Type = %q, want %q", task.Type, TypeTestGenJourneys)
+			}
+			if task.TestType != "api" {
+				t.Errorf("gen-journeys-api TestType = %q, want api", task.TestType)
+			}
+		}
+	}
+	if !foundTUI {
+		t.Error("missing T-test-gen-journeys-tui task in Quick mode")
+	}
+	if !foundAPI {
+		t.Error("missing T-test-gen-journeys-api task in Quick mode")
+	}
+}
+
+func TestGetQuickTestTasks_GenContracts(t *testing.T) {
+	tasks := GetQuickTestTasks([]string{"cli"}, allEnabledAuto)
+
+	found := false
+	for _, task := range tasks {
+		if task.ID == "T-test-gen-contracts" {
+			found = true
+			if task.Type != TypeTestGenContracts {
+				t.Errorf("gen-contracts Type = %q, want %q", task.Type, TypeTestGenContracts)
+			}
+		}
+	}
+	if !found {
+		t.Error("missing T-test-gen-contracts task in Quick mode")
+	}
+}
+
+func TestGetQuickTestTasks_NoHardcodedIndices(t *testing.T) {
+	tasks := GetQuickTestTasks([]string{"cli"}, allEnabledAuto)
+
+	idSet := make(map[string]bool)
+	for _, t := range tasks {
+		idSet[t.ID] = true
+	}
+
+	for _, task := range tasks {
+		for _, dep := range task.Dependencies {
+			if !idSet[dep] {
+				t.Errorf("task %q depends on %q which is not in the task list", task.ID, dep)
+			}
+		}
+	}
+}
+
+func TestGetQuickTestTasks_DriftDependsOnVerifyRegression(t *testing.T) {
+	tasks := GetQuickTestTasks([]string{"cli"}, allEnabledAuto)
+
+	for _, task := range tasks {
+		if task.ID == "T-quick-doc-drift" {
+			if len(task.Dependencies) != 1 || task.Dependencies[0] != "T-test-verify-regression" {
+				t.Errorf("T-quick-doc-drift should depend on T-test-verify-regression, got %v", task.Dependencies)
+			}
+			return
+		}
+	}
+	t.Error("T-quick-doc-drift not found")
 }

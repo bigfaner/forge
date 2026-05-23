@@ -15,6 +15,10 @@ func InferType(id string) string {
 		return TypeGate
 	case id == "T-test-gen-scripts", typeSuffixedID(id, "T-test-gen-scripts"):
 		return TypeTestGenScripts
+	case id == "T-test-gen-contracts":
+		return TypeTestGenContracts
+	case id == "T-test-gen-journeys", typeSuffixedID(id, "T-test-gen-journeys"):
+		return TypeTestGenJourneys
 	case id == "T-test-run":
 		return TypeTestRun
 	case id == "T-test-verify-regression":
