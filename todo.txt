@@ -205,7 +205,12 @@ internal/cmd/
 152、优化forge init自动追加到.gitignore的条目。done
 153、init-justfile对齐最新的设计：just unit-test单元测试、just test高级测试。另外，根据CLI、TUI等场景生成对应的命令。->107
 154、为什么生成任务的priority是"high"而不是"P1"？哪一种对AI和人更友好。done
-155、根据提案内容，临时生成一个专家角色进行深度评审
+155、根据提案内容，临时生成一个专家角色进行深度评审。done
 156、quick-mode的任务上限更改为15。done
-157、追加一个让agent检查任务是否达成预期目标？逻辑是否清晰？
+157、追加一个任务：让agent检查任务是否达成预期目标？逻辑是否清晰？
 158、后续使用真实项目验证forge plugin的测试能力。
+159、forge task list的各个列要隔得足够开，并且保持左对齐。done
+160、将 gen-journeys/gen-contracts 作为自动生成的测试任务，替换掉之前gen-test-cases等任务。
+161、如何防止agent未按照tech-design.md来实现呢？docs\lessons\gotcha-spec-authority-drift.md
+162、改进breakdown-tasks skill：Reference Files中的文档，如果只读一部分，指明section或行号范围。
+163、write-prd skill 只针对代码生成用户故事->测试脚本。纯文档任务不生成测试脚本，eval-doc任务核对有没有按照要求修改文档。
