@@ -22,7 +22,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2-research-cli-command.md",
       "record": "records/2-research-cli-command.md",
       "scope": "backend",
