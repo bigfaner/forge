@@ -139,7 +139,9 @@ func doSubmit(projectRoot, featureSlug, indexPath, taskIDArg string) error {
 	targetStatus := rd.Status
 
 	// Validate required and recommended fields
-	validateRecordData(rd, t.Type)
+	if err := validateRecordData(rd, t.Type); err != nil {
+		return err
+	}
 
 	// State machine validation: check transition before proceeding
 	if targetStatus == "completed" {
@@ -311,7 +313,7 @@ func readSubmitData(dataPath string) (*task.RecordData, error) {
 //
 // Recommended fields for "completed" status (missing = warning, all categories):
 //   - keyDecisions, acceptanceCriteria
-func validateRecordData(rd *task.RecordData, taskType string) {
+func validateRecordData(rd *task.RecordData, taskType string) error {
 	isCoding := task.CategoryForType(taskType) == task.CategoryCoding
 
 	var missing []string
@@ -322,7 +324,7 @@ func validateRecordData(rd *task.RecordData, taskType string) {
 	}
 
 	if len(missing) > 0 {
-		base.Exit(base.ErrMissingFields(missing))
+		return base.ErrMissingFields(missing)
 	}
 
 	// Auto-downgrade (coding only): completed with test failures → blocked
@@ -332,14 +334,14 @@ func validateRecordData(rd *task.RecordData, taskType string) {
 	}
 
 	if rd.Status != "completed" {
-		return
+		return nil
 	}
 
 	// Hard validation for completed tasks (coding only)
 	if isCoding {
 		// Reject completed with no test evidence (unless coverage=-1.0 signals "no tests")
 		if rd.Coverage >= 0 && rd.TestsPassed == 0 && rd.TestsFailed == 0 {
-			base.Exit(base.ErrNoTestEvidence())
+			return base.ErrNoTestEvidence()
 		}
 	}
 
@@ -352,7 +354,7 @@ func validateRecordData(rd *task.RecordData, taskType string) {
 			}
 		}
 		if len(unmet) > 0 {
-			base.Exit(base.ErrUnmetAcceptanceCriteria(unmet))
+			return base.ErrUnmetAcceptanceCriteria(unmet)
 		}
 	}
 
@@ -370,6 +372,8 @@ func validateRecordData(rd *task.RecordData, taskType string) {
 			base.WarnMissingFields(recommended)
 		}
 	}
+
+	return nil
 }
 
 func fillRecordTemplate(t *task.Task, rd *task.RecordData, startedTime string) string {
