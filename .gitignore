@@ -32,3 +32,8 @@ docs/features/*/tasks/process/
 forge-cli/internal/embedded/just/binaries/*
 !forge-cli/internal/embedded/just/binaries/just-*
 docs/features/*/tasks/index.json.lock
+# Forge
+.forge/test-state.json
+.forge/worktrees/
+docs/features/*/testing/results/
+tests/e2e/results/
