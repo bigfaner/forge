@@ -327,6 +327,18 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 		// This MUST run after PreserveRuntimeFields, which otherwise overwrites
 		// the correctly computed deps with stale values from the previous index.
 		ResolveFirstTestDep(testTasks, index.TasksMap(), mode)
+
+		// For mixed features (needsEval + needsTest), inject T-review-doc as a
+		// dependency of the first test pipeline task. This ensures review-doc
+		// executes before test generation, so tests are based on reviewed docs.
+		if needsEval && len(testTasks) > 0 {
+			firstTestIdx := findFirstTestTaskIdx(testTasks)
+			if firstTestIdx >= 0 {
+				testTasks[firstTestIdx].Dependencies = append(
+					[]string{"T-review-doc"}, testTasks[firstTestIdx].Dependencies...)
+			}
+		}
+
 		if len(testTasks) > 0 {
 			firstKey := testTasks[0].Key
 			if t, found := index.ByID(testTasks[0].ID); found {
@@ -451,22 +463,44 @@ func needsTestPipeline(tasks map[string]Task) bool {
 	return false
 }
 
-// needsReviewDoc returns true when ALL non-auto-gen tasks have type documentation.
-// Only tasks with exactly TypeDoc trigger doc-review; doc subtypes (doc.review, doc.summary, etc.)
-// are reviews/generations themselves and should not trigger another doc-review.
+// needsReviewDoc returns true when ANY non-auto-gen task has a doc-category type.
+// Uses CategoryForType to check: this covers TypeDoc, TypeDocConsolidate, TypeDocDrift, etc.
+// Doc subtypes that are system types (doc.review, doc.summary) cannot appear as business tasks
+// due to system-type validation, so they are effectively excluded.
 // An empty task map returns false.
 func needsReviewDoc(tasks map[string]Task) bool {
-	hasBusinessTask := false
 	for _, t := range tasks {
 		if IsAutoGenTaskID(t.ID) {
 			continue
 		}
-		hasBusinessTask = true
-		if t.Type != TypeDoc {
-			return false
+		if CategoryForType(t.Type) == CategoryDoc {
+			return true
 		}
 	}
-	return hasBusinessTask
+	return false
+}
+
+// findFirstTestTaskIdx returns the index of the first test pipeline task in the
+// generated task list. For breakdown mode this is T-eval-journey; for quick mode
+// this is the first T-quick-gen-and-run task.
+func findFirstTestTaskIdx(tasks []AutoGenTaskDef) int {
+	// Check breakdown mode first (T-eval-journey)
+	for i, t := range tasks {
+		if t.ID == "T-eval-journey" {
+			return i
+		}
+	}
+	// Quick mode: T-quick-gen-and-run*
+	for i, t := range tasks {
+		if strings.HasPrefix(t.ID, "T-quick-gen-and-run") {
+			return i
+		}
+	}
+	// Fallback: first task
+	if len(tasks) > 0 {
+		return 0
+	}
+	return -1
 }
 
 // IsAutoGenTaskID returns true for task IDs that are auto-generated

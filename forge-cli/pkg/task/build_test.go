@@ -95,6 +95,19 @@ func setupBuildEnv(t *testing.T, mode string) (projectRoot, tasksDir, indexPath 
 	return projectRoot, tasksDir, indexPath
 }
 
+// writeForgeConfig creates a .forge/config.yaml with an api interface for test task generation.
+func writeForgeConfig(t *testing.T, projectRoot string) {
+	t.Helper()
+	forgeDir := filepath.Join(projectRoot, ".forge")
+	if err := os.MkdirAll(forgeDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	configContent := "interfaces:\n  - api\n"
+	if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(configContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestBuildIndex_FreshBuild(t *testing.T) {
 	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "")
 
@@ -1107,20 +1120,34 @@ func TestNeedsReviewDoc(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "mixed documentation and feature does NOT need doc review",
+			name: "mixed documentation and feature DOES need doc review (any doc triggers it)",
 			tasks: map[string]Task{
 				"1-doc":  {ID: "1.1", Type: TypeDoc},
 				"2-feat": {ID: "1.2", Type: TypeCodingFeature},
 			},
-			want: false,
+			want: true,
 		},
 		{
-			name: "doc-review type does NOT need doc review (not documentation)",
+			name: "mixed doc and coding.fix DOES need doc review",
 			tasks: map[string]Task{
-				"1-doc":    {ID: "1.1", Type: TypeDoc},
-				"2-review": {ID: "1.2", Type: TypeDocReview},
+				"1-doc": {ID: "1.1", Type: TypeDoc},
+				"2-fix": {ID: "fix-1", Type: TypeCodingFix},
 			},
-			want: false,
+			want: true,
+		},
+		{
+			name: "doc.consolidate (category=doc) triggers doc review",
+			tasks: map[string]Task{
+				"1-consolidate": {ID: "1", Type: TypeDocConsolidate},
+			},
+			want: true,
+		},
+		{
+			name: "doc.drift (category=doc) triggers doc review",
+			tasks: map[string]Task{
+				"1-drift": {ID: "1", Type: TypeDocDrift},
+			},
+			want: true,
 		},
 		{
 			name: "only auto-generated tasks returns false (no business tasks)",
@@ -1152,6 +1179,252 @@ func TestNeedsReviewDoc(t *testing.T) {
 				t.Errorf("needsReviewDoc() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+// --- Task 2: Mixed feature routing tests ---
+
+func TestBuildIndex_MixedFeature_GeneratesBothPipelines(t *testing.T) {
+	// Mixed feature (doc + coding tasks) should generate BOTH T-review-doc AND test pipeline tasks
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "quick")
+	writeForgeConfig(t, projectRoot)
+
+	writeTaskMDWithType(t, tasksDir, "1-doc.md", "1", "Doc Task", TypeDoc, nil)
+	writeTaskMDWithType(t, tasksDir, "2-feat.md", "2", "Feature Task", TypeCodingFeature, []string{"1"})
+
+	opts := BuildIndexOpts{
+		FeatureSlug: "test-feature",
+		ProjectRoot: projectRoot,
+		TasksDir:    tasksDir,
+		IndexPath:   indexPath,
+		AutoConfig:  allEnabledAuto,
+	}
+
+	result, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("BuildIndex error: %v", err)
+	}
+
+	// Should generate: 2 business tasks + T-review-doc + test pipeline tasks
+	// review-doc.md should exist
+	if _, err := os.Stat(filepath.Join(tasksDir, "review-doc.md")); os.IsNotExist(err) {
+		t.Error("review-doc.md not generated for mixed feature")
+	}
+
+	data, _ := os.ReadFile(indexPath)
+	var idx taskIndexJSON
+	_ = json.Unmarshal(data, &idx)
+
+	// T-review-doc should be in the index
+	reviewDoc, ok := idx.Tasks["review-doc"]
+	if !ok {
+		t.Fatal("review-doc not in index for mixed feature")
+	}
+	if reviewDoc.ID != "T-review-doc" {
+		t.Errorf("review-doc ID = %q, want T-review-doc", reviewDoc.ID)
+	}
+
+	// Test pipeline tasks should also be in the index (at least quick-gen-and-run-cli)
+	foundTestTask := false
+	for key, t := range idx.Tasks {
+		if strings.HasPrefix(t.ID, "T-quick-gen-and-run") {
+			_ = key
+			foundTestTask = true
+			break
+		}
+	}
+	if !foundTestTask {
+		t.Error("no test pipeline tasks generated for mixed feature")
+	}
+
+	// Verify both needs are satisfied
+	_ = result
+}
+
+func TestBuildIndex_MixedFeature_ReviewDocBeforeTestPipeline(t *testing.T) {
+	// For mixed features, T-quick-gen-and-run should depend on T-review-doc
+	// (review-doc executes before test generation)
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "quick")
+	writeForgeConfig(t, projectRoot)
+
+	writeTaskMDWithType(t, tasksDir, "1-doc.md", "1", "Doc Task", TypeDoc, nil)
+	writeTaskMDWithType(t, tasksDir, "2-feat.md", "2", "Feature Task", TypeCodingFeature, []string{"1"})
+
+	opts := BuildIndexOpts{
+		FeatureSlug: "test-feature",
+		ProjectRoot: projectRoot,
+		TasksDir:    tasksDir,
+		IndexPath:   indexPath,
+		AutoConfig:  allEnabledAuto,
+	}
+
+	_, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("BuildIndex error: %v", err)
+	}
+
+	data, _ := os.ReadFile(indexPath)
+	var idx taskIndexJSON
+	_ = json.Unmarshal(data, &idx)
+
+	// T-review-doc should be in the index
+	reviewDoc, ok := idx.Tasks["review-doc"]
+	if !ok {
+		t.Fatal("review-doc not in index")
+	}
+	if reviewDoc.ID != "T-review-doc" {
+		t.Errorf("review-doc ID = %q, want T-review-doc", reviewDoc.ID)
+	}
+
+	// The first test pipeline task should depend on T-review-doc for mixed features
+	// Find the first quick-gen-and-run task
+	var firstTestTask *Task
+	var firstTestKey string
+	for key, t := range idx.Tasks {
+		if strings.HasPrefix(t.ID, "T-quick-gen-and-run") {
+			copied := t
+			firstTestTask = &copied
+			firstTestKey = key
+			break
+		}
+	}
+	if firstTestTask == nil {
+		t.Fatal("no test pipeline task found in index")
+	}
+	foundDep := false
+	for _, dep := range firstTestTask.Dependencies {
+		if dep == "T-review-doc" {
+			foundDep = true
+		}
+	}
+	if !foundDep {
+		t.Errorf("%s deps = %v, should include T-review-doc", firstTestKey, firstTestTask.Dependencies)
+	}
+}
+
+func TestBuildIndex_PureDocFeature_OnlyReviewDoc(t *testing.T) {
+	// Pure doc features: only T-review-doc, no test pipeline
+	// (This is already tested above, but this explicitly verifies the acceptance criteria)
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "quick")
+
+	writeTaskMDWithType(t, tasksDir, "1-doc.md", "1", "Doc Task", TypeDoc, nil)
+	writeTaskMDWithType(t, tasksDir, "2-doc.md", "2", "Doc Task 2", TypeDoc, []string{"1"})
+
+	opts := BuildIndexOpts{
+		FeatureSlug: "test-feature",
+		ProjectRoot: projectRoot,
+		TasksDir:    tasksDir,
+		IndexPath:   indexPath,
+		AutoConfig:  allEnabledAuto,
+	}
+
+	result, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("BuildIndex error: %v", err)
+	}
+
+	// Stage gates should NOT be generated for docs-only
+	if result.StageGatesGenerated != 0 {
+		t.Errorf("StageGatesGenerated = %d, want 0 (docs-only)", result.StageGatesGenerated)
+	}
+
+	// review-doc should exist
+	if _, err := os.Stat(filepath.Join(tasksDir, "review-doc.md")); os.IsNotExist(err) {
+		t.Error("review-doc.md not generated for docs-only feature")
+	}
+
+	// No test pipeline .md files should exist
+	entries, _ := os.ReadDir(tasksDir)
+	for _, e := range entries {
+		name := e.Name()
+		if name == "1-doc.md" || name == "2-doc.md" || name == "index.json" || name == "review-doc.md" {
+			continue
+		}
+		t.Errorf("unexpected file %s (docs-only should not generate test pipeline)", name)
+	}
+}
+
+func TestBuildIndex_PureCodeFeature_OnlyTestPipeline(t *testing.T) {
+	// Pure code features: only test pipeline, no T-review-doc
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "quick")
+
+	writeTaskMDWithType(t, tasksDir, "1-feat.md", "1", "Feature Task", TypeCodingFeature, nil)
+
+	opts := BuildIndexOpts{
+		FeatureSlug: "test-feature",
+		ProjectRoot: projectRoot,
+		TasksDir:    tasksDir,
+		IndexPath:   indexPath,
+		AutoConfig:  allEnabledAuto,
+	}
+
+	_, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("BuildIndex error: %v", err)
+	}
+
+	data, _ := os.ReadFile(indexPath)
+	var idx taskIndexJSON
+	_ = json.Unmarshal(data, &idx)
+
+	// review-doc should NOT exist for pure code features
+	if _, ok := idx.Tasks["review-doc"]; ok {
+		t.Error("review-doc should NOT exist for pure code feature")
+	}
+}
+
+func TestBuildIndex_MixedFeature_BreakdownMode_GenJourneysDependsOnReviewDoc(t *testing.T) {
+	// For breakdown mode mixed features, T-eval-journey should depend on T-review-doc
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "breakdown")
+	writeForgeConfig(t, projectRoot)
+
+	writeTaskMDWithType(t, tasksDir, "1-doc.md", "1.1", "Doc Task", TypeDoc, nil)
+	writeTaskMDWithType(t, tasksDir, "2-feat.md", "1.2", "Feature Task", TypeCodingFeature, []string{"1.1"})
+
+	opts := BuildIndexOpts{
+		FeatureSlug: "test-feature",
+		ProjectRoot: projectRoot,
+		TasksDir:    tasksDir,
+		IndexPath:   indexPath,
+		AutoConfig:  allEnabledAuto,
+	}
+
+	_, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("BuildIndex error: %v", err)
+	}
+
+	data, _ := os.ReadFile(indexPath)
+	var idx taskIndexJSON
+	_ = json.Unmarshal(data, &idx)
+
+	// T-review-doc should be in the index
+	reviewDoc, ok := idx.Tasks["review-doc"]
+	if !ok {
+		t.Fatal("review-doc not in index for breakdown mixed feature")
+	}
+	if reviewDoc.ID != "T-review-doc" {
+		t.Errorf("review-doc ID = %q, want T-review-doc", reviewDoc.ID)
+	}
+
+	// The first test pipeline task (T-eval-journey) should depend on T-review-doc
+	evalJourney, ok := idx.Tasks["eval-journey"]
+	if !ok {
+		// List available keys for debugging
+		var keys []string
+		for k := range idx.Tasks {
+			keys = append(keys, k)
+		}
+		t.Fatalf("eval-journey not in index. Available keys: %v", keys)
+	}
+	foundDep := false
+	for _, dep := range evalJourney.Dependencies {
+		if dep == "T-review-doc" {
+			foundDep = true
+		}
+	}
+	if !foundDep {
+		t.Errorf("eval-journey deps = %v, should include T-review-doc", evalJourney.Dependencies)
 	}
 }
 
