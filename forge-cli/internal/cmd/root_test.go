@@ -52,9 +52,9 @@ func TestRootCmd_HelpShowsTenVisibleEntries(t *testing.T) {
 			visibleCount++
 		}
 	}
-	// 5 groups + 4 visible top-level (version is hidden) + config + proposal + lesson + init + claude = 14 visible
-	if visibleCount != 14 {
-		t.Errorf("expected 14 visible commands, got %d", visibleCount)
+	// 5 groups + 4 visible top-level (version is hidden) + config + proposal + lesson + init + claude + worktree = 15 visible
+	if visibleCount != 15 {
+		t.Errorf("expected 15 visible commands, got %d", visibleCount)
 	}
 }
 
@@ -136,8 +136,8 @@ func TestInit_RegistersCommands(t *testing.T) {
 		}
 	}
 
-	// 5 groups + 5 top-level + config + proposal + lesson + init + claude = 15
-	if len(explicit) != 15 {
-		t.Errorf("expected 15 explicit commands, got %d: %v", len(explicit), explicit)
+	// 5 groups + 5 top-level + config + proposal + lesson + init + claude + worktree = 16
+	if len(explicit) != 16 {
+		t.Errorf("expected 16 explicit commands, got %d: %v", len(explicit), explicit)
 	}
 }
