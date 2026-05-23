@@ -385,6 +385,98 @@ func TestGenerateNonce(t *testing.T) {
 	assert.NotEmpty(t, nonce)
 }
 
+// --- RuntimeCoverage tests (R2L support) ---
+
+func TestConfirmedRuntimeSubjects_Empty(t *testing.T) {
+	table := FactTable{}
+	subjects := table.ConfirmedRuntimeSubjects()
+	assert.Empty(t, subjects)
+}
+
+func TestConfirmedRuntimeSubjects_OnlyStatic(t *testing.T) {
+	table := FactTable{
+		makeFactEntry("1", SourceStatic, "cli.forge", KindSignature, ConfidenceConfirmed, "t1", "v"),
+	}
+	subjects := table.ConfirmedRuntimeSubjects()
+	assert.Empty(t, subjects)
+}
+
+func TestConfirmedRuntimeSubjects_RuntimeConfirmed(t *testing.T) {
+	table := FactTable{
+		makeFactEntry("1", SourceRuntime, "cli.forge task claim", KindOutputFormat, ConfidenceConfirmed, "t1", "v"),
+		makeFactEntry("2", SourceRuntime, "cli.forge task submit", KindOutputFormat, ConfidenceConfirmed, "t2", "v"),
+		makeFactEntry("3", SourceRuntime, "cli.forge task status", KindOutputFormat, ConfidenceInferred, "t3", "v"),
+	}
+	subjects := table.ConfirmedRuntimeSubjects()
+	assert.Len(t, subjects, 2)
+	assert.True(t, subjects["cli.forge task claim"])
+	assert.True(t, subjects["cli.forge task submit"])
+	assert.False(t, subjects["cli.forge task status"])
+}
+
+func TestRuntimeCoverageRatio_NoOutcomes(t *testing.T) {
+	table := FactTable{
+		makeFactEntry("1", SourceRuntime, "a", KindOutputFormat, ConfidenceConfirmed, "t1", "v"),
+	}
+	ratio := table.RuntimeCoverageRatio(nil)
+	assert.Equal(t, 0.0, ratio)
+}
+
+func TestRuntimeCoverageRatio_FullCoverage(t *testing.T) {
+	table := FactTable{
+		makeFactEntry("1", SourceRuntime, "cli.forge task claim", KindOutputFormat, ConfidenceConfirmed, "t1", "v"),
+		makeFactEntry("2", SourceRuntime, "cli.forge task submit", KindOutputFormat, ConfidenceConfirmed, "t2", "v"),
+	}
+	outcomes := []string{"cli.forge task claim", "cli.forge task submit"}
+	ratio := table.RuntimeCoverageRatio(outcomes)
+	assert.Equal(t, 1.0, ratio)
+}
+
+func TestRuntimeCoverageRatio_PartialCoverage(t *testing.T) {
+	table := FactTable{
+		makeFactEntry("1", SourceRuntime, "cli.forge task claim", KindOutputFormat, ConfidenceConfirmed, "t1", "v"),
+	}
+	outcomes := []string{"cli.forge task claim", "cli.forge task submit", "cli.forge task status"}
+	ratio := table.RuntimeCoverageRatio(outcomes)
+
+	// 1 out of 3 = 0.333...
+	assert.InDelta(t, 0.333, ratio, 0.01)
+}
+
+func TestRuntimeCoverageRatio_ZeroCoverage(t *testing.T) {
+	table := FactTable{
+		makeFactEntry("1", SourceStatic, "a", KindOutputFormat, ConfidenceConfirmed, "t1", "v"),
+	}
+	outcomes := []string{"cli.forge task claim", "cli.forge task submit"}
+	ratio := table.RuntimeCoverageRatio(outcomes)
+	assert.Equal(t, 0.0, ratio)
+}
+
+func TestRuntimeCoverageRatio_OnlyConfirmedCounts(t *testing.T) {
+	table := FactTable{
+		makeFactEntry("1", SourceRuntime, "cli.forge task claim", KindOutputFormat, ConfidenceConfirmed, "t1", "v"),
+		makeFactEntry("2", SourceRuntime, "cli.forge task submit", KindOutputFormat, ConfidenceInferred, "t2", "v"),
+	}
+	outcomes := []string{"cli.forge task claim", "cli.forge task submit"}
+	ratio := table.RuntimeCoverageRatio(outcomes)
+
+	// Only "task claim" is confirmed runtime, "task submit" is inferred
+	// 1 out of 2 = 0.5
+	assert.Equal(t, 0.5, ratio)
+}
+
+func TestRuntimeCoverageRatio_EightyPercent(t *testing.T) {
+	table := FactTable{
+		makeFactEntry("1", SourceRuntime, "a", KindOutputFormat, ConfidenceConfirmed, "t1", "v"),
+		makeFactEntry("2", SourceRuntime, "b", KindOutputFormat, ConfidenceConfirmed, "t2", "v"),
+		makeFactEntry("3", SourceRuntime, "c", KindOutputFormat, ConfidenceConfirmed, "t3", "v"),
+		makeFactEntry("4", SourceRuntime, "d", KindOutputFormat, ConfidenceConfirmed, "t4", "v"),
+	}
+	outcomes := []string{"a", "b", "c", "d", "e"}
+	ratio := table.RuntimeCoverageRatio(outcomes)
+	assert.Equal(t, 0.8, ratio)
+}
+
 // --- CorruptError tests ---
 
 func TestCorruptError_Error(t *testing.T) {

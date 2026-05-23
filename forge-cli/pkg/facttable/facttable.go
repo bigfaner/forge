@@ -240,6 +240,41 @@ func (t FactTable) EffectiveEntries() FactTable {
 	return result
 }
 
+// ConfirmedRuntimeSubjects returns the set of unique subjects that have at
+// least one runtime+confirmed fact. Used by Run-to-Learn coverage calculation.
+func (t FactTable) ConfirmedRuntimeSubjects() map[string]bool {
+	subjects := make(map[string]bool)
+	for _, e := range t {
+		if e.Source == SourceRuntime && e.Confidence == ConfidenceConfirmed {
+			subjects[e.Subject] = true
+		}
+	}
+	return subjects
+}
+
+// RuntimeCoverageRatio computes the fraction of outcomeSubjects that are
+// covered by confirmed runtime facts. Returns a value in [0, 1].
+//
+//	outcomeSubjects = the set of subject strings derived from Contract Outcomes
+//	coverage = |confirmed runtime subjects ∩ outcomeSubjects| / |outcomeSubjects|
+//
+// Returns 0.0 if outcomeSubjects is empty.
+func (t FactTable) RuntimeCoverageRatio(outcomeSubjects []string) float64 {
+	if len(outcomeSubjects) == 0 {
+		return 0.0
+	}
+
+	confirmed := t.ConfirmedRuntimeSubjects()
+	covered := 0
+	for _, s := range outcomeSubjects {
+		if confirmed[s] {
+			covered++
+		}
+	}
+
+	return float64(covered) / float64(len(outcomeSubjects))
+}
+
 // GenerateNonce creates a short nonce for fact_id uniqueness.
 func GenerateNonce() string {
 	return fmt.Sprintf("%d", time.Now().UnixMilli()%100000)
