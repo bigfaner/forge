@@ -1,7 +1,7 @@
 ---
 feature: "run-tasks-git-status"
 created: "2026-05-23"
-status: tasks
+status: completed
 mode: quick
 ---
 
