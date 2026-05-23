@@ -6,7 +6,6 @@ estimated_time: "1h"
 dependencies: ["4"]
 type: "documentation"
 mainSession: false
-noTest: true
 ---
 
 # 5: Update eval skill table + eval-test-cases command

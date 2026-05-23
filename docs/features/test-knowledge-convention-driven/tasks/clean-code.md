@@ -6,7 +6,6 @@ estimated_time: "20min"
 dependencies: ["4.gate"]
 type: "code-quality.simplify"
 scope: "all"
-noTest: true
 ---
 
 # Simplify and Clean Code

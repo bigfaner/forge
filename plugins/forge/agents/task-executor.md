@@ -30,7 +30,7 @@ inputs:
    - Run `forge prompt get-by-task-id <TASK_ID> --fix-record-missed`
 3. Otherwise:
    - Run `forge prompt get-by-task-id <TASK_ID>`
-4. If `forge prompt get-by-task-id` fails (non-zero exit), STOP immediately — the dispatcher will handle the in_progress task on the next claim cycle
+4. If `forge prompt get-by-task-id` fails (non-zero exit), STOP immediately — evaluate Complex Error Pause Flow before stopping: if this is a recurring failure (~3 attempts), create a fix task via `forge task add`. Otherwise, the dispatcher will handle the in_progress task on the next claim cycle.
 5. Follow every step in the synthesized strategy exactly
 6. If you lose track of your strategy mid-execution, re-run `forge prompt get-by-task-id <TASK_ID>` to recover
 7. After all strategy steps are done, check if the task status is blocked:
@@ -41,7 +41,11 @@ inputs:
    Skill(skill="forge:submit-task")
    ```
 
-   The submit-task skill internally calls record-task for metrics collection via `just test`.
+   The submit-task skill generates the execution record and updates task status via `forge task submit`. Check the STATUS output: `completed` proceeds to git-commit; `blocked` skips commit (see step 8.5).
+
+8.5. After submit-task completes, check whether the task was auto-downgraded to blocked:
+   - If `forge task submit` output shows `STATUS: blocked`, do NOT proceed to step 9 (git-commit). Go directly to step 10 and output the blocked DONE format.
+   - If `STATUS: completed`, proceed to step 9 normally.
 
 9. Invoke the skill:
 
@@ -55,7 +59,20 @@ inputs:
    DONE: <TASK_ID> | ✅ | <commit-hash> | <one-line-summary>
    ```
 
+   If the task is blocked (from step 7 or step 8.5), use this format instead (no commit-hash):
+
+   ```
+   DONE: <TASK_ID> | blocked | <one-line-summary>
+   ```
+
 11. STOP
+
+## Retry Strategy
+
+All retry decisions throughout execution follow a uniform threshold of **~3 attempts**:
+- Simple/transient errors: retry inline up to ~3 times, then evaluate Complex Error Pause Flow
+- Template instructions that say "max 1 retry then stop" should be interpreted as: attempt inline fix, and if the same error persists after ~3 total attempts, evaluate whether a fix task is warranted
+- **STOP** in any context means: evaluate Complex Error Pause Flow first — if the error is recurring (~3 same/similar attempts), create a fix task and block the source task before stopping; if not, simply stop and let the dispatcher handle it
 
 ## Complex Error Pause Flow
 

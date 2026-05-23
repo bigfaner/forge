@@ -111,10 +111,7 @@ func renderTemplate(templateFile string, opts SynthesizeOpts, t task.Task) (stri
 
 	taskFile := filepath.Join(opts.ProjectRoot, feature.GetTaskFile(opts.FeatureSlug, t.File))
 
-	scope := t.Scope
-	if scope == "" || scope == "all" {
-		scope = ""
-	}
+	scope := resolveScope(opts.ProjectRoot, t.Scope)
 
 	phaseSummaryPath := PhaseDetect(opts.ProjectRoot, opts.FeatureSlug, opts.TaskID)
 
@@ -312,10 +309,20 @@ func extractTestTypeArg(id string) string {
 // for a given task. Priority: task frontmatter coverage > config per-type > built-in default.
 // Returns (strategy, targetText) where strategy is "percentage" or "maintain",
 // and targetText is the human-readable instruction for the agent.
+//
+// For coding.cleanup and coding.refactor types, percentage strategies are overridden
+// to "maintain" because their templates prescribe "No new tests" — a percentage target
+// would contradict that directive.
 func resolveCoverage(projectRoot string, t task.Task) (string, string) {
+	// coding.cleanup and coding.refactor always use maintain strategy
+	// because their templates say "No new tests" — a percentage target contradicts that.
+	if t.Type == task.TypeCodingCleanup || t.Type == task.TypeCodingRefactor {
+		return "maintain", "Maintain existing coverage, no more than 2% decrease"
+	}
+
 	// Priority 1: task frontmatter coverage field overrides everything.
 	if t.Coverage != nil {
-		return "percentage", fmt.Sprintf("达到 %d%% 测试覆盖率", *t.Coverage)
+		return "percentage", fmt.Sprintf("Achieve %d%% test coverage", *t.Coverage)
 	}
 
 	// Priority 2: config per-type, falling back to built-in defaults.
@@ -329,12 +336,54 @@ func resolveCoverage(projectRoot string, t task.Task) (string, string) {
 	switch strategy.Type {
 	case "percentage":
 		if strategy.Percentage != nil {
-			return "percentage", fmt.Sprintf("达到 %d%% 测试覆盖率", *strategy.Percentage)
+			return "percentage", fmt.Sprintf("Achieve %d%% test coverage", *strategy.Percentage)
 		}
 		return "percentage", ""
 	case "maintain":
-		return "maintain", "保持现有覆盖率，下降不超过 2%"
+		return "maintain", "Maintain existing coverage, no more than 2% decrease"
 	default:
 		return "", ""
 	}
+}
+
+// resolveScope determines the effective scope for template rendering.
+// When the project is single-scope (e.g. project-type "backend") and the task
+// scope doesn't match (e.g. scope "frontend"), the scope is cleared to prevent
+// generating invalid commands like "just compile frontend" on a backend-only project.
+// For multi-scope projects (fullstack, mixed) or when no project-type is configured,
+// the task scope is preserved as-is.
+func resolveScope(projectRoot, taskScope string) string {
+	// Empty or "all" scope is always cleared.
+	if taskScope == "" || taskScope == "all" {
+		return ""
+	}
+
+	// Read project-type from config.
+	cfg, err := forgeconfig.ReadConfig(projectRoot)
+	if err != nil || cfg == nil {
+		// No config file or read error: preserve scope as-is.
+		return taskScope
+	}
+
+	projectType := cfg.ProjectType
+	if projectType == "" {
+		// No project-type configured: preserve scope as-is.
+		return taskScope
+	}
+
+	// Single-scope project types: if the task scope doesn't match the project type,
+	// fall back to empty (no scope) so commands like "just compile" are generated
+	// without a scope suffix that would fail.
+	switch projectType {
+	case "backend":
+		if taskScope != "backend" {
+			return ""
+		}
+	case "frontend":
+		if taskScope != "frontend" {
+			return ""
+		}
+	}
+
+	return taskScope
 }

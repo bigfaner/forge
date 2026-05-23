@@ -62,7 +62,7 @@ Output: `Step 2/3: Implementing... DONE (N new tests)`
 
 ### Step 3: Static Checks + Targeted Tests
 
-**Static checks** — execute in strict sequential order, stop at first failure:
+**Static checks** — execute in strict sequential order:
 
 ```bash
 just compile {{SCOPE}}
@@ -77,8 +77,8 @@ just lint {{SCOPE}}
 | Failed step | Action |
 |---|---|
 | `compile` | Fix compilation errors, retry from compile |
-| `fmt` | Stop (auto-fix failed = toolchain issue) |
-| `lint` | Self-fix (max 1 retry), then stop |
+| `fmt` | **WARNING** (non-blocking) — if `just fmt` produces changes: check if the affected files are ones you modified. If yes, fix the fmt issues. If changes are only in pre-existing files, continue — those are not your responsibility. Log the warning in your output. |
+| `lint` | Self-fix (max 1 retry). If still failing, evaluate Complex Error Pause Flow — if the error persists after ~3 total attempts, create a fix task. Otherwise, stop and let the dispatcher handle it. |
 | `targeted test` | Fix failing tests, retry |
 
 Output: `Step 3/3: Verifying... DONE (coverage: N%)`

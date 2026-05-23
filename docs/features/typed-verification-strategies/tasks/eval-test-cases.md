@@ -6,7 +6,6 @@ estimated_time: "30min"
 dependencies: ["T-test-1"]
 type: "test-pipeline.eval-cases"
 scope: "all"
-noTest: true
 mainSession: true
 ---
 

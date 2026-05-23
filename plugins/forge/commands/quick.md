@@ -1,6 +1,6 @@
 ---
 name: quick
-description: Streamlined pipeline for features (1-10 coding tasks, doc tasks unlimited). Brainstorm -> tasks -> execute, no PRD or design.
+description: Streamlined pipeline for features (1-15 coding tasks, doc tasks unlimited). Brainstorm -> tasks -> execute, no PRD or design.
 allowed-tools: Bash Read Write Edit Grep Glob Agent Skill AskUserQuestion
 ---
 
@@ -18,14 +18,14 @@ flowchart TD
     B -->|"Revise"| A
     B -->|"Abort"| STOP["Stop"]
     C --> D["4. /run-tasks<br>auto-execute"]
-    C -->|">10 coding tasks"| FULL["STOP → recommend<br>full pipeline"]
+    C -->|">15 coding tasks"| FULL["STOP → recommend<br>full pipeline"]
 ```
 
 ## Core Rules
 
 <EXTREMELY-IMPORTANT>
 1. **Execute the pipeline in order.** Always start with Step 1 (brainstorm), regardless of how the user's input is phrased. Question-like inputs ("can we simplify X?", "should we refactor Y?") are NOT discussions — they are feature requests that brainstorm exists to shape into structured proposals. Do NOT substitute ad-hoc analysis (Explore agents, grep, file reads) for the pipeline.
-2. Maximum 10 coding tasks (`coding.*` type). Doc-type tasks (`doc*` type prefix) are unlimited. If brainstorm produces a proposal that needs >10 coding tasks, STOP and suggest the full pipeline.
+2. Maximum 15 coding tasks (`coding.*` type). Doc-type tasks (`doc*` type prefix) are unlimited. If brainstorm produces a proposal that needs >15 coding tasks, STOP and suggest the full pipeline.
 3. ONE feature per invocation.
 4. The /quick pipeline is for small, well-scoped features. If scope grows during brainstorm, recommend switching to full mode.
 </EXTREMELY-IMPORTANT>
@@ -116,14 +116,14 @@ Skill(skill="forge:quick-tasks")
 ```
 
 This produces:
-- `docs/features/<slug>/tasks/*.md` — task files (≤10 coding tasks + unlimited doc tasks + auto-generated test tasks)
+- `docs/features/<slug>/tasks/*.md` — task files (≤15 coding tasks + unlimited doc tasks + auto-generated test tasks)
 - `docs/features/<slug>/tasks/index.json` — task index (compatible with `/run-tasks`)
 - `docs/features/<slug>/manifest.md` — simplified manifest
 
-If quick-tasks reports >10 coding tasks needed, STOP and recommend the full pipeline:
+If quick-tasks reports >15 coding tasks needed, STOP and recommend the full pipeline:
 
 ```
-"This feature requires more than 10 coding tasks — too large for quick mode.
+"This feature requires more than 15 coding tasks — too large for quick mode.
 Recommend using the full pipeline: /write-prd → /tech-design → /breakdown-tasks"
 ```
 
@@ -156,7 +156,7 @@ Skill(skill="forge:run-tasks")
 |-----------|--------|
 | Brainstorm fails | Stop, user can retry |
 | User aborts at confirmation gate | Stop cleanly |
-| quick-tasks exceeds 10 coding task limit | Stop, recommend full pipeline |
+| quick-tasks exceeds 15 coding task limit | Stop, recommend full pipeline |
 | quick-tasks fails (validation, commit, language) | Stop, fix reported issue |
 | run-tasks: single task failure | Dispatcher auto-creates fix task, continues |
 | run-tasks: MAIN_SESSION task fails | Follow task doc error section; if missing, fix-task + continue |

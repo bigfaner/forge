@@ -6,7 +6,6 @@ estimated_time: "2h"
 dependencies: ["1"]
 type: "documentation"
 mainSession: false
-noTest: true
 ---
 
 # 2: Create per-type instruction files (types/*.md)

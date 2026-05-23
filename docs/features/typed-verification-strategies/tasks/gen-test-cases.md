@@ -6,7 +6,6 @@ estimated_time: "1-2h"
 dependencies: ["3.summary"]
 type: "test-pipeline.gen-cases"
 scope: "all"
-noTest: true
 ---
 
 # Generate e2e Test Cases

@@ -6,7 +6,6 @@ estimated_time: "30min"
 dependencies: ["T-test-gen-cases"]
 type: "test.eval-cases"
 scope: "all"
-noTest: true
 mainSession: true
 ---
 

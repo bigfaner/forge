@@ -91,7 +91,6 @@
       "file": "quick-drift-detection.md",
       "record": "records/quick-drift-detection.md",
       "scope": "all",
-      "noTest": true,
       "type": "doc.drift"
     }
   },

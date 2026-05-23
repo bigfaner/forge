@@ -6,7 +6,6 @@ estimated_time: "30min"
 dependencies: []
 status: pending
 breaking: true
-noTest: true
 ---
 
 # Fix: T-test-1b missing Main Session Instructions

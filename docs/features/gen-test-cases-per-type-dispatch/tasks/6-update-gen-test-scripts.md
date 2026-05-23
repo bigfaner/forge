@@ -6,7 +6,6 @@ estimated_time: "1.5h"
 dependencies: ["1"]
 type: "documentation"
 mainSession: false
-noTest: true
 ---
 
 # 6: Update gen-test-scripts input discovery + convention loading
