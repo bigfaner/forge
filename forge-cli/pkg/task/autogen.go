@@ -48,6 +48,19 @@ func hasUIInterface(interfaces []string) bool {
 	return false
 }
 
+// BodyContext carries planning-time data from BuildIndex() to template rendering.
+// It is populated by BuildIndex() and consumed by renderBody() to substitute
+// {{PLACEHOLDER}} tokens in embed template content.
+type BodyContext struct {
+	FeatureSlug        string   // feature slug from opts
+	Mode               string   // "quick" or "breakdown"
+	Scope              []string // in-scope items from proposal/PRD
+	SuccessCriteria    []string // success criteria from proposal/PRD
+	AcceptanceCriteria []string // PRD acceptance criteria (breakdown mode)
+	ProjectType        string   // from .forge/config.yaml
+	Interfaces         []string // test interfaces from config
+}
+
 // AutoGenTaskDef defines an auto-generated task definition.
 type AutoGenTaskDef struct {
 	ID              string
@@ -242,8 +255,110 @@ func GetQuickTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []AutoG
 	return tasks
 }
 
+// renderBody substitutes {{PLACEHOLDER}} tokens in templateContent with BodyContext fields.
+// Empty fields are handled per spec:
+//   - {{MODE}} with empty Mode: omits the line containing {{MODE}}
+//   - {{SCOPE}} with empty Scope: omits the section (## Scope ... next ## heading)
+//   - {{INTERFACES}} with empty Interfaces: "See .forge/config.yaml"
+//   - {{TEST_TYPE}} with empty TestType: omits the line containing {{TEST_TYPE}}
+//   - {{ACCEPTANCE_CRITERIA}} with empty AcceptanceCriteria: "- [ ] All acceptance criteria met"
+func renderBody(templateContent string, def AutoGenTaskDef, ctx BodyContext) string {
+	s := templateContent
+
+	// FEATURE_SLUG — always substituted (required field)
+	s = strings.ReplaceAll(s, "{{FEATURE_SLUG}}", ctx.FeatureSlug)
+
+	// MODE — omit line when empty
+	modeLine := ctx.Mode
+	if modeLine == "" {
+		s = removeLineContaining(s, "{{MODE}}")
+	} else {
+		s = strings.ReplaceAll(s, "{{MODE}}", modeLine)
+	}
+
+	// SCOPE — omit section when empty
+	if len(ctx.Scope) == 0 {
+		s = removeSection(s, "Scope")
+		// If no ## Scope heading was found, remove any residual placeholder
+		s = strings.ReplaceAll(s, "{{SCOPE}}", "")
+	} else {
+		var scopeLines []string
+		for _, item := range ctx.Scope {
+			scopeLines = append(scopeLines, "- "+item)
+		}
+		s = strings.ReplaceAll(s, "{{SCOPE}}", strings.Join(scopeLines, "\n"))
+	}
+
+	// INTERFACES — default when empty
+	if len(ctx.Interfaces) == 0 {
+		s = strings.ReplaceAll(s, "{{INTERFACES}}", "See .forge/config.yaml")
+	} else {
+		var ifaceLines []string
+		for _, iface := range ctx.Interfaces {
+			ifaceLines = append(ifaceLines, "- "+iface)
+		}
+		s = strings.ReplaceAll(s, "{{INTERFACES}}", strings.Join(ifaceLines, "\n"))
+	}
+
+	// TEST_TYPE — omit line when empty
+	testType := def.TestType
+	if testType == "" {
+		s = removeLineContaining(s, "{{TEST_TYPE}}")
+	} else {
+		s = strings.ReplaceAll(s, "{{TEST_TYPE}}", testType)
+	}
+
+	// ACCEPTANCE_CRITERIA — default when empty
+	if len(ctx.AcceptanceCriteria) == 0 {
+		s = strings.ReplaceAll(s, "{{ACCEPTANCE_CRITERIA}}", "- [ ] All acceptance criteria met")
+	} else {
+		var acLines []string
+		for _, ac := range ctx.AcceptanceCriteria {
+			acLines = append(acLines, "- [ ] "+ac)
+		}
+		s = strings.ReplaceAll(s, "{{ACCEPTANCE_CRITERIA}}", strings.Join(acLines, "\n"))
+	}
+
+	return s
+}
+
+// removeLineContaining removes the line that contains the target substring.
+func removeLineContaining(s, target string) string {
+	lines := strings.Split(s, "\n")
+	var kept []string
+	for _, line := range lines {
+		if !strings.Contains(line, target) {
+			kept = append(kept, line)
+		}
+	}
+	return strings.Join(kept, "\n")
+}
+
+// removeSection removes a ## heading section by title,
+// from the ## heading line up to (but not including) the next ## heading or end of string.
+func removeSection(s, headingTitle string) string {
+	lines := strings.Split(s, "\n")
+	var result []string
+	skip := false
+
+	for _, line := range lines {
+		if strings.HasPrefix(line, "## "+headingTitle) {
+			skip = true
+			continue
+		}
+		if skip && strings.HasPrefix(line, "## ") {
+			skip = false
+		}
+		if !skip {
+			result = append(result, line)
+		}
+	}
+
+	return strings.Join(result, "\n")
+}
+
 // GenerateTestTaskMD generates the .md file content for a test task.
-func GenerateTestTaskMD(def AutoGenTaskDef, _ string) ([]byte, error) {
+func GenerateTestTaskMD(def AutoGenTaskDef, ctx BodyContext) ([]byte, error) {
 	var buf strings.Builder
 
 	// Frontmatter
@@ -265,8 +380,9 @@ func GenerateTestTaskMD(def AutoGenTaskDef, _ string) ([]byte, error) {
 	if hasTemplate {
 		data, err := autogenTemplateFS.ReadFile(templateFile)
 		if err == nil {
-			// Template loaded successfully — use as body
-			buf.Write(data)
+			// Template loaded successfully — substitute placeholders and use as body
+			rendered := renderBody(string(data), def, ctx)
+			buf.WriteString(rendered)
 
 			// Append TestType note if present
 			if def.TestType != "" {
