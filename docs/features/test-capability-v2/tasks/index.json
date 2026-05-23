@@ -108,7 +108,7 @@
       "dependencies": [
         "1.gate"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2.3-eval-contract.md",
       "record": "records/2.3-eval-contract.md",
       "scope": "all",

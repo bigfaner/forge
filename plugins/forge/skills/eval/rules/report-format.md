@@ -21,5 +21,6 @@ Type-specific additions:
 - `consistency`: "Files Modified" and "Residual Issues"
 - `design`: Breakdown-Readiness gate status
 - `journey`: Per-dimension threshold pass/fail table; eval-skipped flag if parse failure after retry
+- `contract`: Per-dimension threshold pass/fail table; eval-skipped flag if parse failure after retry
 
 Save report to type-specific report path.

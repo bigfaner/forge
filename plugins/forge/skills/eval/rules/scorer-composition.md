@@ -10,6 +10,7 @@ Expert files are located at `experts/scorer/`.
 | `ui-web`, `ui-mobile`, `ui-tui` | `[ux-engineer]` |
 | `consistency` | `[editor]` |
 | `journey` | `[qa]` |
+| `contract` | `[qa]` |
 | `validate-code` | `[code-reviewer]` |
 | `validate-ux` | `[ux-auditor]` |
 
@@ -63,6 +64,7 @@ Type-specific inputs:
 - `consistency`: add `SCOPE` = value from `--scope`
 - `validate-ux`: add `UX_SNAPSHOT_PATH` = path to generated `ux-snapshot.md`
 - `journey`: add `SURFACE_TYPE` = value from `.forge/config.yaml` `surface` field; add `SURFACE_RULE_PATH` = `skills/gen-journeys/rules/surface-<type>.md`
+- `contract`: add `SURFACE_TYPE` = value from `.forge/config.yaml` `surface` field; add `SURFACE_RULE_PATH` = `skills/gen-journeys/rules/surface-<type>.md`
 
 Do NOT pass reviser change summaries to the scorer.
 
