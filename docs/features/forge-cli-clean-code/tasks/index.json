@@ -121,9 +121,10 @@
       "priority": "P1",
       "estimatedTime": "2h",
       "dependencies": [
-        "2"
+        "2",
+        "fix-4"
       ],
-      "status": "completed",
+      "status": "pending",
       "file": "4-split-worktree.md",
       "record": "records/4-split-worktree.md",
       "scope": "backend",
@@ -238,6 +239,18 @@
       "record": "records/fix-3.md",
       "breaking": true,
       "sourceTaskID": "3",
+      "type": "fix"
+    },
+    "fix-4": {
+      "id": "fix-4",
+      "title": "Fix: worktree.go duplicate declarations after split",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-4.md",
+      "record": "records/fix-4.md",
+      "breaking": true,
+      "sourceTaskID": "4",
       "type": "fix"
     }
   },
