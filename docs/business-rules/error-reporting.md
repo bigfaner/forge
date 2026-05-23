@@ -1,6 +1,6 @@
 ---
 title: "Error Reporting Rules"
-domains: [exit-code, stderr, actionable, recovery, hint]
+domains: [exit-code, stderr, actionable, recovery, hint, AIError, blocking]
 ---
 
 # Error Reporting Rules
@@ -11,7 +11,7 @@ _Source: feature/forge-cli-v3_
 
 ### BIZ-error-reporting-001: Consistent Exit Code Semantics
 
-**Rule**: Exit code 0 = success (or intentional no-op, e.g., "no tasks to clean up"). Exit code 1 = failure with descriptive stderr message. Exit code 2 = reserved for usage errors (Cobra default).
+**Rule**: Exit code 0 = success (or intentional no-op, e.g., "no tasks to clean up"). Exit code 1 = retryable failure (not found, validation error, conflict). Exit code 2 = blocking errors (invalid transition, invalid path, contract unverifiable). AIError's `ExitCode()` method differentiates: `INVALID_TRANSITION`, `INVALID_PATH`, `CONTRACT_UNVERIFIABLE` return 2; all other error codes return 1. Cobra usage errors also produce exit code 2 by default.
 **Context**: AI agents rely on exit codes to determine next action; consistent semantics prevent misinterpretation.
 **Source**: feature/forge-cli-v3 BIZ-008
 
