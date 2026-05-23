@@ -77,9 +77,10 @@
       "priority": "P1",
       "estimatedTime": "1.5h",
       "dependencies": [
-        "9"
+        "9",
+        "fix-7"
       ],
-      "status": "completed",
+      "status": "pending",
       "file": "14-testbridge-cleanup.md",
       "record": "records/14-testbridge-cleanup.md",
       "scope": "backend",
@@ -277,6 +278,18 @@
       "record": "records/fix-6.md",
       "breaking": true,
       "sourceTaskID": "9",
+      "type": "fix"
+    },
+    "fix-7": {
+      "id": "fix-7",
+      "title": "Fix: claimNextTask undefined after testbridge migration",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-7.md",
+      "record": "records/fix-7.md",
+      "breaking": true,
+      "sourceTaskID": "14",
       "type": "fix"
     }
   },
