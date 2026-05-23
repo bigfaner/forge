@@ -49,7 +49,7 @@ var lookPathFunc = exec.LookPath
 
 // runClaudeFunc executes claude with the given args.
 // Overridable for testing.
-var runClaudeFunc = defaultRunClaude
+var runClaudeFunc = base.RunClaude
 
 // claudeSupportsContinueFlagFunc checks whether the installed claude CLI
 // supports the -c / --continue flag. Overridable for testing.
@@ -65,14 +65,6 @@ var isTerminalFunc = defaultIsTerminal
 // ---------------------------------------------------------------------------
 // Default implementations
 // ---------------------------------------------------------------------------
-
-func defaultRunClaude(args []string) error {
-	cmd := exec.Command("claude", args...)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
-}
 
 func defaultClaudeSupportsContinueFlag() bool {
 	cmd := exec.Command("claude", "--help")
