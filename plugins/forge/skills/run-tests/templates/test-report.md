@@ -14,6 +14,26 @@
 
 ---
 
+## Confidence Rating
+
+**Level**: {{CONFIDENCE_LEVEL}} ({{CONFIDENCE_MARK}})
+**Confirmed Fact Ratio**: {{CONFIRMED_FACT_RATIO}}
+
+### Confidence Distribution
+
+| Level  | Count | Percentage |
+|--------|-------|------------|
+{{CONFIDENCE_DISTRIBUTION}}
+
+### Verification Summary
+
+| Mark   | Count |
+|--------|-------|
+| VERIFY | {{VERIFY_COUNT}} |
+| REVIEW | {{REVIEW_COUNT}} |
+
+---
+
 ## Results by Test Case
 
 {{RESULTS}}

@@ -218,6 +218,17 @@ Read the template at `templates/test-report.md`. Fill in:
 - Per-test-case results with evidence
 - Failed test details with error messages
 - Screenshot paths (for UI tests only)
+- Confidence rating section (see below)
+
+**Confidence Rating**: Read `rules/confidence.md` for rating rules. Compute the confidence rating:
+
+1. Collect all unique outcome subjects from Contract files
+2. Run `forge fact summary` to get Fact Table statistics
+3. Compute `confirmed_fact_ratio` = outcomes covered by runtime+confirmed facts / total outcomes
+4. Determine level (HIGH/MEDIUM/LOW) per thresholds in `rules/confidence.md`
+5. Check eval_skipped / eval_bypassed flags — either forces LOW
+6. Annotate each test file header with `// confidence: <LEVEL>` (or language-appropriate comment syntax)
+7. Add confidence distribution + VERIFY/REVIEW mark statistics to the report
 
 **Screenshots**: Use `glob ${results_dir}/**/*.png` to discover screenshots. When available, use the `mcp__zai-mcp-server__analyze_image` tool to examine screenshots and add diagnostic notes. Include screenshots section only when screenshot files are found.
 

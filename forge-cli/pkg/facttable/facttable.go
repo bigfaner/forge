@@ -275,6 +275,88 @@ func (t FactTable) RuntimeCoverageRatio(outcomeSubjects []string) float64 {
 	return float64(covered) / float64(len(outcomeSubjects))
 }
 
+// ConfidenceLevel represents a test confidence rating tier.
+type ConfidenceLevel string
+
+const (
+	// ConfidenceHigh means confirmed_fact_ratio >= 0.80.
+	ConfidenceHigh ConfidenceLevel = "HIGH"
+	// ConfidenceMedium means 0.40 <= confirmed_fact_ratio < 0.80.
+	ConfidenceMedium ConfidenceLevel = "MEDIUM"
+	// ConfidenceLow means confirmed_fact_ratio < 0.40.
+	ConfidenceLow ConfidenceLevel = "LOW"
+)
+
+// ConfidenceRating represents the confidence rating for a test run.
+// Based on the ratio of outcomes covered by confirmed runtime facts.
+type ConfidenceRating struct {
+	Level              ConfidenceLevel `json:"level"`
+	ConfirmedFactRatio float64         `json:"confirmed_fact_ratio"`
+	TotalOutcomes      int             `json:"total_outcomes"`
+	ConfirmedOutcomes  int             `json:"confirmed_outcomes"`
+	EvalSkipped        bool            `json:"eval_skipped"`
+	EvalBypassed       bool            `json:"eval_bypassed"`
+}
+
+// NeedsReview returns true for LOW confidence tests that require manual review.
+func (cr ConfidenceRating) NeedsReview() bool {
+	return cr.Level == ConfidenceLow
+}
+
+// VerifyMark returns "REVIEW" for LOW confidence and "VERIFY" otherwise.
+func (cr ConfidenceRating) VerifyMark() string {
+	if cr.Level == ConfidenceLow {
+		return "REVIEW"
+	}
+	return "VERIFY"
+}
+
+// ComputeConfidenceRating calculates the confidence rating for a test run
+// based on how many outcome subjects are covered by confirmed runtime facts.
+// eval_skipped or eval_bypassed forces the level to LOW regardless of ratio.
+func (t FactTable) ComputeConfidenceRating(outcomeSubjects []string, evalSkipped, evalBypassed bool) ConfidenceRating {
+	total := len(outcomeSubjects)
+	confirmed := 0
+
+	if total > 0 {
+		confirmedSubjects := t.ConfirmedRuntimeSubjects()
+		for _, s := range outcomeSubjects {
+			if confirmedSubjects[s] {
+				confirmed++
+			}
+		}
+	}
+
+	ratio := 0.0
+	if total > 0 {
+		ratio = float64(confirmed) / float64(total)
+	}
+
+	var level ConfidenceLevel
+	switch {
+	case ratio >= 0.80:
+		level = ConfidenceHigh
+	case ratio >= 0.40:
+		level = ConfidenceMedium
+	default:
+		level = ConfidenceLow
+	}
+
+	// eval_skipped or eval_bypassed forces LOW
+	if evalSkipped || evalBypassed {
+		level = ConfidenceLow
+	}
+
+	return ConfidenceRating{
+		Level:              level,
+		ConfirmedFactRatio: ratio,
+		TotalOutcomes:      total,
+		ConfirmedOutcomes:  confirmed,
+		EvalSkipped:        evalSkipped,
+		EvalBypassed:       evalBypassed,
+	}
+}
+
 // GenerateNonce creates a short nonce for fact_id uniqueness.
 func GenerateNonce() string {
 	return fmt.Sprintf("%d", time.Now().UnixMilli()%100000)
