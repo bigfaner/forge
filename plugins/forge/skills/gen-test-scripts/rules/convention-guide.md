@@ -1,16 +1,11 @@
 ---
-title: Testing Convention Files
-domains:
-  - testing
-  - e2e
-  - code-generation
+name: convention-guide
+description: Convention file structure, validation rules, merge semantics, and growth path for test framework knowledge files
 ---
 
-# Testing Convention Files
+# Convention File Structure Reference
 
-Convention files (`docs/conventions/testing-<scope>.md`) define the test generation rules for each language/framework combination. They are user-editable markdown files that provide framework knowledge to LLM-driven test generation, replacing the previous hardcoded Profile system.
-
-This document describes the Convention file structure, section schema, validation rules, and usage patterns.
+Convention files (`docs/conventions/testing-<scope>.md`) define the test generation rules for each language/framework combination. They are user-editable markdown files that provide framework knowledge to LLM-driven test generation.
 
 ## File Location and Naming
 
@@ -449,10 +444,6 @@ Add Anti-patterns and Helpers for the complete testing knowledge. Sufficient for
 |-----------|-------------|
 | `/forge:test-guide` | Generates Level 1 Convention files (required sections only) |
 | `/forge:gen-test-scripts` | Reads Convention files to generate test code |
-| `/forge:run-e2e-tests` | Reads Result Format section to parse test output |
+| `/forge:run-tests` | Reads Result Format section to parse test output |
 | `/forge:init-justfile` | Reads Framework section to generate justfile recipes |
 | `/forge:consolidate-specs` | Treats Convention files as standard conventions for drift detection |
-
-## Reference
-
-For the detailed technical specification behind this structure, see [design/convention-file-structure.md](../features/test-knowledge-convention-driven/design/convention-file-structure.md).

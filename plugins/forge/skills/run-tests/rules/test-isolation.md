@@ -1,6 +1,6 @@
 ---
-title: "Testing Isolation Conventions"
-domains: [isolation, TempDir, CLAUDE_PROJECT_DIR, fixture, sandbox, binary, TestMain]
+name: test-isolation
+description: Testing isolation conventions for unit and e2e tests -- every test must own its environment
 ---
 
 # Testing Isolation Conventions

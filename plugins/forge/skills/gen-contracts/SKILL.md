@@ -1,8 +1,6 @@
 ---
 name: gen-contracts
 description: Generate Contract specifications (six dimensions + semantic descriptors + multi-Outcome + Invariants) from Journey documents and code reconnaissance (Fact Table). Formalizes TUI async Cmd await semantics. Risk-driven Outcome density based on Journey risk_level, auto-derived boundary/error Outcomes from surface rules and Fact Table.
-conventions:
-  - testing-isolation.md
 ---
 
 # Gen Contracts
@@ -52,19 +50,6 @@ Check previous stage artifacts. Abort and prompt user if missing:
 
 <HARD-RULE>
 Do NOT silently default to any language or interface.
-</HARD-RULE>
-
-## Convention Loading
-
-After language/interface resolution and before entering the workflow steps, load project conventions into context.
-
-**Resolution algorithm**:
-
-1. **Project-wide conventions**: Read this skill's own frontmatter `conventions` field. For each filename, check `docs/conventions/{filename}` -- if it exists, read it into context; if missing, skip silently.
-2. **Interface-specific conventions**: For each detected interface, check `docs/conventions/testing-{interface}.md` -- if it exists, read it into context; if missing, skip silently.
-
-<HARD-RULE>
-Convention loading is non-blocking. Missing convention files are silently skipped.
 </HARD-RULE>
 
 ## Process Flow

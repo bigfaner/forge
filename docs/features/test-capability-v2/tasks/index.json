@@ -293,7 +293,7 @@
         "2.gate",
         "3.1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3.4-metadata-inline.md",
       "record": "records/3.4-metadata-inline.md",
       "scope": "all",
