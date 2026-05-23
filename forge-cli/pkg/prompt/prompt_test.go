@@ -65,8 +65,6 @@ func TestSynthesize_AllTypes(t *testing.T) {
 		task.TypeDocSummary,
 		task.TypeDocConsolidate,
 		task.TypeDocDrift,
-		task.TypeTestGenCases,
-		task.TypeTestEvalCases,
 		task.TypeTestGenScripts,
 		task.TypeTestRun,
 		task.TypeTestGraduate,
@@ -559,8 +557,6 @@ func TestInferType(t *testing.T) {
 		{"1.gate", task.TypeGate},
 		{"3.gate", task.TypeGate},
 		// T-test exact IDs
-		{"T-test-gen-cases", task.TypeTestGenCases},
-		{"T-test-eval-cases", task.TypeTestEvalCases},
 		{"T-test-gen-scripts", task.TypeTestGenScripts},
 		{"T-test-run", task.TypeTestRun},
 		{"T-test-graduate", task.TypeTestGraduate},
@@ -981,8 +977,6 @@ func TestSynthesize_NonTestableType_NoCoverageInjection(t *testing.T) {
 		task.TypeDocConsolidate,
 		task.TypeDocDrift,
 		task.TypeGate,
-		task.TypeTestGenCases,
-		task.TypeTestEvalCases,
 		task.TypeTestGenScripts,
 		task.TypeTestRun,
 		task.TypeCleanCode,
@@ -1559,8 +1553,6 @@ func TestSynthesize_DocTemplates_ContainRecordFieldHints(t *testing.T) {
 
 func TestSynthesize_TestTemplates_ContainRecordFieldHints(t *testing.T) {
 	testTypes := []string{
-		task.TypeTestGenCases,
-		task.TypeTestEvalCases,
 		task.TypeTestGenScripts,
 		task.TypeTestRun,
 		task.TypeTestGraduate,

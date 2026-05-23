@@ -170,7 +170,7 @@ Skill 文件（SKILL.md）和 Command 文件（.md）中的路径使用相对于
 ### 测试 Pipeline
 
 ```
-/gen-test-cases → /gen-test-scripts → /run-e2e-tests → forge test promote
+/gen-test-scripts → /run-e2e-tests → forge test promote
 ```
 
 ### 辅助 Skill（任意阶段可用）

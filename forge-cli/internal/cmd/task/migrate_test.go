@@ -21,7 +21,7 @@ func TestRunMigrate_HappyPath(t *testing.T) {
 			"t-gate":  {ID: "1.gate", Title: "Gate", Status: "pending", File: "1-gate.md", Record: "records/1-gate.md"},
 			"t-sum":   {ID: "1.summary", Title: "Summary", Status: "pending", File: "1-summary.md", Record: "records/1-summary.md"},
 			"t-fix":   {ID: "fix-1", Title: "Fix", Status: "pending", File: "fix-1.md", Record: "records/fix-1.md"},
-			"t-test1": {ID: "T-test-gen-cases", Title: "Gen cases", Status: "pending", File: "T-test-gen-cases.md", Record: "records/T-test-gen-cases.md"},
+			"t-test1": {ID: "T-test-gen-scripts-cli", Title: "Gen scripts", Status: "pending", File: "T-test-gen-scripts-cli.md", Record: "records/T-test-gen-scripts-cli.md"},
 		},
 	})
 
@@ -49,7 +49,7 @@ func TestRunMigrate_HappyPath(t *testing.T) {
 		"t-gate":  task.TypeGate,
 		"t-sum":   task.TypeDocSummary,
 		"t-fix":   task.TypeCodingFix,
-		"t-test1": task.TypeTestGenCases,
+		"t-test1": task.TypeTestGenScripts,
 	}
 	for key, wantType := range cases {
 		got := index.TasksMap()[key].Type
@@ -167,8 +167,6 @@ func TestRunMigrate_AllKnownIDPatterns(t *testing.T) {
 		{"2.summary", task.TypeDocSummary},
 		{"fix-1", task.TypeCodingFix},
 		{"disc-1", task.TypeCodingFix},
-		{"T-test-gen-cases", task.TypeTestGenCases},
-		{"T-test-eval-cases", task.TypeTestEvalCases},
 		{"T-test-gen-scripts", task.TypeTestGenScripts},
 		{"T-test-run", task.TypeTestRun},
 		{"T-test-graduate", task.TypeTestGraduate},

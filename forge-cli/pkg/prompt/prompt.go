@@ -31,8 +31,6 @@ var typeToTemplate = map[string]string{
 	task.TypeDocSummary:           "data/doc-summary.md",
 	task.TypeDocConsolidate:       "data/doc-consolidate.md",
 	task.TypeDocDrift:             "data/doc-drift.md",
-	task.TypeTestGenCases:         "data/test-gen-cases.md",
-	task.TypeTestEvalCases:        "data/test-eval-cases.md",
 	task.TypeTestGenScripts:       "data/test-gen-scripts.md",
 	task.TypeTestRun:              "data/test-run.md",
 	task.TypeTestGenAndRun:        "data/test-gen-and-run.md",

@@ -565,26 +565,26 @@ func TestClaimNextTask_NonNumericID(t *testing.T) {
 		wantKey string
 	}{
 		{
-			name: "non-numeric T-test-gen-cases claimable after all numeric tasks done",
+			name: "non-numeric T-test-gen-scripts claimable after all numeric tasks done",
 			tasks: map[string]task.Task{
 				"biz-1":    {ID: "1.1", Priority: "P0", Status: "completed"},
-				"t-test-1": {ID: "T-test-gen-cases", Priority: "P1", Status: "pending", Dependencies: []string{"1.1"}},
+				"t-test-1": {ID: "T-test-gen-scripts-cli", Priority: "P1", Status: "pending", Dependencies: []string{"1.1"}},
 			},
 			wantKey: "t-test-1",
 		},
 		{
 			name: "only non-numeric pending task with no deps is claimable",
 			tasks: map[string]task.Task{
-				"t-test-1": {ID: "T-test-gen-cases", Priority: "P1", Status: "pending"},
+				"t-test-1": {ID: "T-test-gen-scripts-cli", Priority: "P1", Status: "pending"},
 			},
 			wantKey: "t-test-1",
 		},
 		{
-			name: "T-test-gen-scripts claimable after T-test-gen-cases completed",
+			name: "T-test-gen-scripts-api claimable after T-test-gen-scripts-cli completed",
 			tasks: map[string]task.Task{
 				"biz-1":    {ID: "1.1", Priority: "P0", Status: "completed"},
-				"t-test-1": {ID: "T-test-gen-cases", Priority: "P1", Status: "completed", Dependencies: []string{"1.1"}},
-				"t-test-2": {ID: "T-test-gen-scripts", Priority: "P1", Status: "pending", Dependencies: []string{"T-test-gen-cases"}},
+				"t-test-1": {ID: "T-test-gen-scripts-cli", Priority: "P1", Status: "completed", Dependencies: []string{"1.1"}},
+				"t-test-2": {ID: "T-test-gen-scripts-api", Priority: "P1", Status: "pending", Dependencies: []string{"T-test-gen-scripts-cli"}},
 			},
 			wantKey: "t-test-2",
 		},
@@ -616,7 +616,7 @@ func TestClaimNextTask_NonNumericBlocked(t *testing.T) {
 	}
 	index.SetTasks(map[string]task.Task{
 		"biz-1":    {ID: "1.1", Priority: "P0", Status: "pending"},
-		"t-test-1": {ID: "T-test-gen-cases", Priority: "P1", Status: "pending", Dependencies: []string{"1.1"}},
+		"t-test-1": {ID: "T-test-gen-scripts-cli", Priority: "P1", Status: "pending", Dependencies: []string{"1.1"}},
 	})
 	key, _, err := claimNextTask(index)
 	if err != nil {

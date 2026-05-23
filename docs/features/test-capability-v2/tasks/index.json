@@ -10,7 +10,7 @@
       "title": "Retire gen-test-cases + eval-test-cases",
       "priority": "P0",
       "estimatedTime": "2h",
-      "status": "pending",
+      "status": "completed",
       "file": "1.1-retire-gen-test-cases.md",
       "record": "records/1.1-retire-gen-test-cases.md",
       "scope": "all",

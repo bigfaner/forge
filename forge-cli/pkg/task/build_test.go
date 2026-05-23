@@ -685,16 +685,16 @@ func TestIsTestTaskID(t *testing.T) {
 		want bool
 	}{
 		// T-test-* prefix
-		{"T-test-gen-cases", true},
+		{"T-test-gen-scripts-cli", true},
 		{"T-test-gen-scripts", true},
 		{"T-test-gen-scripts-api", true},
 		{"T-test-run", true},
 		{"T-test-runa", true},
 		{"T-test-graduate", true},
-		{"T-test-eval-cases", true},
+		{"T-test-verify-regression", true},
 		// T-quick-* prefix
-		{"T-quick-gen-cases", true},
-		{"T-quick-gen-casesa", true},
+		{"T-quick-gen-and-run-api", true},
+		{"T-quick-verify-regressiona", true},
 		{"T-quick-gen-and-run", true},
 		{"T-quick-graduate", true},
 		{"T-quick-verify-regression", true},
@@ -730,9 +730,9 @@ func TestIsAutoGenTaskID(t *testing.T) {
 		want bool
 	}{
 		// Test pipeline IDs
-		{"T-test-gen-cases", true},
+		{"T-test-gen-scripts-cli", true},
 		{"T-test-run", true},
-		{"T-quick-gen-cases", true},
+		{"T-quick-gen-and-run-api", true},
 		{"T-quick-verify-regression", true},
 		{"T-specs-consolidate", true},
 		{"T-clean-code", true},
@@ -904,7 +904,7 @@ func TestBuildIndex_StageGatesTestTaskExclusion(t *testing.T) {
 
 	// Phase 1: 1 business task + 1 T-test task = only 1 business task (below threshold)
 	writeTaskMD(t, tasksDir, "1-foo.md", "1.1", "Business Task", nil)
-	writeTaskMD(t, tasksDir, "test-1.md", "T-test-gen-cases", "Test Task", nil)
+	writeTaskMD(t, tasksDir, "test-1.md", "T-test-gen-scripts-cli", "Test Task", nil)
 
 	// Phase 2: 2 business tasks (qualifies)
 	writeTaskMD(t, tasksDir, "2-bar.md", "2.1", "Phase 2 Task 1", nil)
@@ -1040,10 +1040,9 @@ func TestNeedsTestPipeline(t *testing.T) {
 		{
 			name: "business tasks with auto-generated tasks mixed in",
 			tasks: map[string]Task{
-				"1-doc":            {ID: "1.1", Type: TypeDoc},
-				"2-doc":            {ID: "1.2", Type: TypeDoc},
-				"1.gate":           {ID: "1.gate", Type: TypeGate},
-				"T-test-gen-cases": {ID: "T-test-gen-cases", Type: TypeTestGenCases},
+				"1-doc":  {ID: "1.1", Type: TypeDoc},
+				"2-doc":  {ID: "1.2", Type: TypeDoc},
+				"1.gate": {ID: "1.gate", Type: TypeGate},
 			},
 			want: false,
 		},
@@ -1139,9 +1138,8 @@ func TestNeedsDocEval(t *testing.T) {
 		{
 			name: "auto-generated tasks mixed with documentation still returns true",
 			tasks: map[string]Task{
-				"1-doc":            {ID: "1.1", Type: TypeDoc},
-				"1.gate":           {ID: "1.gate", Type: TypeGate},
-				"T-test-gen-cases": {ID: "T-test-gen-cases", Type: TypeTestGenCases},
+				"1-doc":  {ID: "1.1", Type: TypeDoc},
+				"1.gate": {ID: "1.gate", Type: TypeGate},
 			},
 			want: true,
 		},
@@ -1175,7 +1173,6 @@ func TestIsTestableType(t *testing.T) {
 		{TypeDocConsolidate, false},
 		{TypeDocDrift, false},
 		// test.* prefix -> false
-		{TypeTestGenCases, false},
 		{TypeTestGenScripts, false},
 		{TypeTestRun, false},
 		{TypeTestGenAndRun, false},

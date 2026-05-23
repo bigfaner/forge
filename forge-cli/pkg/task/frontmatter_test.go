@@ -100,15 +100,15 @@ Some content`,
 		{
 			name: "minimal frontmatter",
 			input: `---
-id: "T-test-gen-cases"
+id: "T-test-gen-scripts-api"
 title: "Generate Test Cases"
-type: "test-pipeline.gen-cases"
+type: "test.gen-scripts"
 ---
 
 Body here`,
-			wantID:    "T-test-gen-cases",
+			wantID:    "T-test-gen-scripts-api",
 			wantTitle: "Generate Test Cases",
-			wantType:  "test-pipeline.gen-cases",
+			wantType:  "test.gen-scripts",
 			wantBody:  "\n\nBody here",
 		},
 		{

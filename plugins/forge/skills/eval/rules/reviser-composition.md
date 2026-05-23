@@ -26,9 +26,6 @@ The reviser receives **only** the protocol + merged attacks + optional context. 
 # Reviser Type-Specific Constraints
 
 - `consistency`: Do NOT modify `prd/`. Classify attack points by fix target before invoking.
-- `test-cases`: ONLY modify `test-cases.md`.
-- `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases`: ONLY modify `{type}-test-cases.md`.
-
 After reviser completes:
 - `consistency`: re-assemble document bundle
 - Increment iteration counter, return to Step 2

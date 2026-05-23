@@ -26,8 +26,6 @@ func TestCategoryForType_AllTypes(t *testing.T) {
 		{"doc.consolidate", TypeDocConsolidate, CategoryDoc},
 		{"doc.drift", TypeDocDrift, CategoryDoc},
 		// Test category (test.* prefix)
-		{"test.gen-cases", TypeTestGenCases, CategoryTest},
-		{"test.eval-cases", TypeTestEvalCases, CategoryTest},
 		{"test.gen-scripts", TypeTestGenScripts, CategoryTest},
 		{"test.run", TypeTestRun, CategoryTest},
 		{"test.gen-and-run", TypeTestGenAndRun, CategoryTest},

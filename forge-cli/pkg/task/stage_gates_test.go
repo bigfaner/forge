@@ -29,7 +29,7 @@ func TestDetectPhases_BasicPhases(t *testing.T) {
 }
 
 func TestDetectPhases_ExcludesTestTaskIDs(t *testing.T) {
-	taskIDs := []string{"1.1", "1.2", "T-test-gen-cases", "T-quick-gen-cases", "2.1"}
+	taskIDs := []string{"1.1", "1.2", "T-test-gen-scripts-cli", "T-quick-gen-and-run-cli", "2.1"}
 	phases := DetectPhases(taskIDs)
 
 	if len(phases) != 2 {

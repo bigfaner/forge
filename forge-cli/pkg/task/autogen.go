@@ -15,8 +15,6 @@ var autogenTemplateFS embed.FS
 // autogenTypeToFile maps task type constants to their embed template filenames.
 // Filename convention: type name with '.' replaced by '-' (e.g., test.gen-cases -> test-gen-cases.md).
 var autogenTypeToFile = map[string]string{
-	TypeTestGenCases:         "data/test-gen-cases.md",
-	TypeTestEvalCases:        "data/test-eval-cases.md",
 	TypeTestGenScripts:       "data/test-gen-scripts.md",
 	TypeTestGenAndRun:        "data/test-gen-and-run.md",
 	TypeTestRun:              "data/test-run.md",
@@ -91,18 +89,6 @@ func GetBreakdownTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []A
 
 	// Shared tasks (gated by auto.E2eTest.Full)
 	if auto.E2eTest.Full {
-		tasks = append(tasks, AutoGenTaskDef{
-			Key: "gen-test-cases", ID: "T-test-gen-cases",
-			Title: "Generate e2e Test Cases", Priority: "P1", EstimatedTime: "1-2h",
-			Type: TypeTestGenCases, Scope: "all",
-			StrategyKind: "generate",
-		})
-		tasks = append(tasks, AutoGenTaskDef{
-			Key: "eval-test-cases", ID: "T-test-eval-cases",
-			Title: "Evaluate e2e Test Cases", Priority: "P1", EstimatedTime: "30min",
-			Type: TypeTestEvalCases, Scope: "all", MainSession: true,
-		})
-
 		// Per-type gen-scripts (interface-only, no language loop)
 		for _, typ := range interfaces {
 			tasks = append(tasks, AutoGenTaskDef{
@@ -187,12 +173,6 @@ func GetQuickTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []AutoG
 
 	// Per-type gen-and-run (gated by auto.E2eTest.Quick)
 	if auto.E2eTest.Quick {
-		tasks = append(tasks, AutoGenTaskDef{
-			Key: "quick-test-cases", ID: "T-quick-gen-cases",
-			Title: "Generate Quick Test Cases", Priority: "P1", EstimatedTime: "30min-1h",
-			Type: TypeTestGenCases, Scope: "all",
-			StrategyKind: "generate",
-		})
 		for _, typ := range interfaces {
 			tasks = append(tasks, AutoGenTaskDef{
 				Key: "quick-gen-and-run-" + typ, ID: "T-quick-gen-and-run-" + typ,
@@ -441,19 +421,9 @@ func resolveBreakdownDeps(tasks []AutoGenTaskDef, interfaces []string, auto forg
 	}
 
 	if auto.E2eTest.Full {
-		// T-test-eval-cases -> T-test-gen-cases
-		if len(tasks) > 1 {
-			tasks[1].Dependencies = []string{"T-test-gen-cases"}
-		}
-
-		// gen-scripts start at index 2
-		genStart := 2
+		// gen-scripts start at index 0 (no gen-cases/eval-cases anymore)
+		genStart := 0
 		nTypes := len(interfaces)
-
-		// All gen-scripts depend on T-test-eval-cases
-		for j := range nTypes {
-			tasks[genStart+j].Dependencies = []string{"T-test-eval-cases"}
-		}
 
 		// Run depends on all gen-scripts
 		runIdx := genStart + nTypes
@@ -471,7 +441,6 @@ func resolveBreakdownDeps(tasks []AutoGenTaskDef, interfaces []string, auto forg
 		verifyIdx := gradIdx + 1
 		tasks[verifyIdx].Dependencies = []string{tasks[gradIdx].ID}
 	}
-
 	// T-validate-code depends on T-test-verify-regression (if e2e tasks exist)
 	validateIdx := findTaskIndex(tasks, "T-validate-code")
 	if validateIdx >= 0 && auto.E2eTest.Full {
@@ -499,18 +468,11 @@ func resolveQuickDeps(tasks []AutoGenTaskDef, interfaces []string, auto forgecon
 	if auto.E2eTest.Quick {
 		nTypes := len(interfaces)
 
-		// gen-cases is index 0 (deps resolved by BuildIndex)
-
-		// All gen-and-run depend on gen-cases
-		for j := range nTypes {
-			tasks[1+j].Dependencies = []string{"T-quick-gen-cases"}
-		}
-
 		// Graduate depends on all gen-and-run
-		gradIdx := 1 + nTypes
+		gradIdx := nTypes
 		var genDeps []string
 		for j := range nTypes {
-			genDeps = append(genDeps, tasks[1+j].ID)
+			genDeps = append(genDeps, tasks[j].ID)
 		}
 		tasks[gradIdx].Dependencies = genDeps
 
@@ -518,7 +480,6 @@ func resolveQuickDeps(tasks []AutoGenTaskDef, interfaces []string, auto forgecon
 		verifyIdx := gradIdx + 1
 		tasks[verifyIdx].Dependencies = []string{tasks[gradIdx].ID}
 	}
-
 	// T-validate-code depends on T-quick-verify-regression (if e2e tasks exist) or nothing
 	if auto.Validation.Quick {
 		validateIdx := findTaskIndex(tasks, "T-validate-code")
@@ -583,7 +544,7 @@ func ResolveFirstTestDep(tasks []AutoGenTaskDef, existingTasks map[string]Task, 
 		}
 
 		cleanIdx := findTaskIndex(tasks, "T-clean-code")
-		firstTestIdx := findTaskIndex(tasks, "T-test-gen-cases")
+		firstTestIdx := findTaskIndexByPrefix(tasks, "T-test-gen-scripts")
 
 		if cleanIdx >= 0 {
 			tasks[cleanIdx].Dependencies = []string{dep}
@@ -601,7 +562,7 @@ func ResolveFirstTestDep(tasks []AutoGenTaskDef, existingTasks map[string]Task, 
 		}
 
 		cleanIdx := findTaskIndex(tasks, "T-clean-code")
-		firstTestIdx := findTaskIndexByPrefix(tasks, "T-quick-gen-cases")
+		firstTestIdx := findTaskIndexByPrefix(tasks, "T-quick-gen-and-run")
 
 		if cleanIdx >= 0 {
 			tasks[cleanIdx].Dependencies = []string{dep}

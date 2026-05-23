@@ -8,7 +8,6 @@ Expert files are located at `experts/scorer/`.
 | `prd` | `[pm, qa]` |
 | `design` | `[architect]` |
 | `ui-web`, `ui-mobile`, `ui-tui` | `[ux-engineer]` |
-| `test-cases`, `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases` | `[qa]` |
 | `consistency` | `[editor]` |
 | `validate-code` | `[code-reviewer]` |
 | `validate-ux` | `[ux-auditor]` |
@@ -60,7 +59,6 @@ Type-specific report path overrides:
 
 Type-specific inputs:
 - `ui-*`: add `PRD_PATH` = `docs/features/<slug>/prd/prd-ui-functions.md` (if exists)
-- `test-cases`, `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases`: add `PRD_FILES` = paths to prd-spec.md and prd-user-stories.md
 - `consistency`: add `SCOPE` = value from `--scope`
 - `validate-ux`: add `UX_SNAPSHOT_PATH` = path to generated `ux-snapshot.md`
 
@@ -85,5 +83,3 @@ Merge overlapping attack points from {{N}} expert evaluations. Keep unique attac
 ```
 
 4. **Write merged report**: Write the merged attacks + averaged scores to `<doc_dir>/eval/iteration-{{N}}-merged.md`. This file serves as `EVAL_REPORT_PATH` for the reviser (Step 4.1). Single-expert types continue using `iteration-{{N}}.md` directly.
-
-`test-cases`, `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases`: If Step Actionability < 200, warn that gen-test-scripts is blocked.

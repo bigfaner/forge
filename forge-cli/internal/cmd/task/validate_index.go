@@ -231,11 +231,11 @@ func (v *validator) validateFilesExist(featureSlug string, tasks map[string]task
 		}
 
 		// Check for unresolved template placeholders in first-test task files
-		if t.ID == "T-test-gen-cases" {
-			v.validateFirstTestTaskTemplate(taskFile, "T-test-gen-cases", []string{"{{LAST_BUSINESS_TASK_ID}}", "{{T_TEST_1_DEP}}"})
+		if strings.HasPrefix(t.ID, "T-test-gen-scripts-") {
+			v.validateFirstTestTaskTemplate(taskFile, t.ID, []string{"{{LAST_BUSINESS_TASK_ID}}", "{{T_TEST_1_DEP}}"})
 		}
-		if t.ID == "T-quick-gen-cases" {
-			v.validateFirstTestTaskTemplate(taskFile, "T-quick-gen-cases", []string{"{{T_QUICK_1_DEP}}"})
+		if strings.HasPrefix(t.ID, "T-quick-gen-and-run-") {
+			v.validateFirstTestTaskTemplate(taskFile, t.ID, []string{"{{T_QUICK_1_DEP}}"})
 		}
 	}
 }

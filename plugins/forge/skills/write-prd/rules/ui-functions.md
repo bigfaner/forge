@@ -27,4 +27,3 @@ TUI uses keyboard-driven navigation (keymap + panels + modes) instead of pointer
 Placement determines how downstream skills structure their output:
 
 - **`/breakdown-tasks`**: `existing-page` generates a Build task + an Integrate task (wire component into existing page); `new-page` generates a Build task + a Page Assembly task (create page file, register route, compose components)
-- **`/gen-test-cases`**: auto-generates integration verification test cases for `existing-page` placements, ensuring the component is visible at the correct position in the target page

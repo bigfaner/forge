@@ -259,6 +259,5 @@ When **>30% of tests fail simultaneously**, do NOT proceed to individual test fi
 
 | Skill | Usage |
 |-------|-------|
-| `/gen-test-cases` | Generate test cases from PRD |
 | `/gen-test-scripts` | Generate executable test scripts |
 | `/graduate-tests` | Migrate passing tests to regression suite |

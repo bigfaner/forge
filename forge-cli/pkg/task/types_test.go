@@ -569,8 +569,6 @@ func TestTypeConstants(t *testing.T) {
 		{TypeDocSummary, "doc.summary"},
 		{TypeDocConsolidate, "doc.consolidate"},
 		{TypeDocDrift, "doc.drift"},
-		{TypeTestGenCases, "test.gen-cases"},
-		{TypeTestEvalCases, "test.eval-cases"},
 		{TypeTestGenScripts, "test.gen-scripts"},
 		{TypeTestRun, "test.run"},
 		{TypeTestGenAndRun, "test.gen-and-run"},
@@ -589,22 +587,22 @@ func TestTypeConstants(t *testing.T) {
 }
 
 func TestSystemTypes(t *testing.T) {
-	t.Run("SystemTypes contains exactly 13 entries", func(t *testing.T) {
-		if len(SystemTypes) != 13 {
-			t.Errorf("SystemTypes has %d entries, want 13", len(SystemTypes))
+	t.Run("SystemTypes contains exactly 11 entries", func(t *testing.T) {
+		if len(SystemTypes) != 11 {
+			t.Errorf("SystemTypes has %d entries, want 11", len(SystemTypes))
 		}
 	})
 
 	t.Run("all system types are present", func(t *testing.T) {
 		expected := []string{
 			TypeGate,
-			TypeTestGenCases, TypeTestEvalCases, TypeTestGenScripts, TypeTestRun,
+			TypeTestGenScripts, TypeTestRun,
 			TypeTestGenAndRun, TypeTestGraduate, TypeTestVerifyRegression,
 			TypeValidationCode, TypeValidationUx,
 			TypeDocEval, TypeDocSummary,
 			TypeCleanCode,
 		}
-		if len(expected) != 13 {
+		if len(expected) != 11 {
 			t.Fatalf("test setup error: expected list has %d entries, want 13", len(expected))
 		}
 		for _, typ := range expected {
@@ -627,7 +625,7 @@ func TestIsSystemType(t *testing.T) {
 	t.Run("returns true for all 13 system types", func(t *testing.T) {
 		systemTypes := []string{
 			TypeGate,
-			TypeTestGenCases, TypeTestEvalCases, TypeTestGenScripts, TypeTestRun,
+			TypeTestGenScripts, TypeTestRun,
 			TypeTestGenAndRun, TypeTestGraduate, TypeTestVerifyRegression,
 			TypeValidationCode, TypeValidationUx,
 			TypeDocEval, TypeDocSummary,
@@ -684,8 +682,6 @@ func TestValidTypes(t *testing.T) {
 			TypeDocSummary,
 			TypeDocConsolidate,
 			TypeDocDrift,
-			TypeTestGenCases,
-			TypeTestEvalCases,
 			TypeTestGenScripts,
 			TypeTestRun,
 			TypeTestGenAndRun,

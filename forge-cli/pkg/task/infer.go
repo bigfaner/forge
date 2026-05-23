@@ -13,10 +13,6 @@ func InferType(id string) string {
 		return TypeDocSummary
 	case strings.HasSuffix(id, IDSuffixGate):
 		return TypeGate
-	case id == "T-test-eval-cases":
-		return TypeTestEvalCases
-	case id == "T-test-gen-cases":
-		return TypeTestGenCases
 	case id == "T-test-gen-scripts", typeSuffixedID(id, "T-test-gen-scripts"):
 		return TypeTestGenScripts
 	case id == "T-test-run":
@@ -31,8 +27,6 @@ func InferType(id string) string {
 		return TypeValidationCode
 	case id == "T-validate-ux":
 		return TypeValidationUx
-	case id == "T-quick-gen-cases":
-		return TypeTestGenCases
 	case id == "T-quick-gen-and-run", typeSuffixedID(id, "T-quick-gen-and-run"):
 		return TypeTestGenAndRun
 	case id == "T-quick-graduate":

@@ -346,7 +346,7 @@ func TestValidator_ValidateFilesExist(t *testing.T) {
 		}
 	})
 
-	t.Run("T-test-gen-cases with unresolved placeholder", func(t *testing.T) {
+	t.Run("T-test-gen-scripts-cli with unresolved placeholder", func(t *testing.T) {
 		dir := t.TempDir()
 		featureSlug := "test-feature"
 
@@ -356,10 +356,10 @@ func TestValidator_ValidateFilesExist(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		// Create T-test-gen-cases.md with unresolved placeholder
+		// Create T-test-gen-scripts-cli.md with unresolved placeholder
 		taskFile := filepath.Join(tasksDir, "T-test-1.md")
 		content := `---
-id: "T-test-gen-cases"
+id: "T-test-gen-scripts-cli"
 dependencies: [{{LAST_BUSINESS_TASK_ID}}]
 ---
 `
@@ -369,7 +369,7 @@ dependencies: [{{LAST_BUSINESS_TASK_ID}}]
 
 		v := &validator{filePath: filepath.Join(dir, "docs", "features", featureSlug, "tasks", "index.json")}
 		v.validateFilesExist(featureSlug, map[string]task.Task{
-			"t-test-1": {ID: "T-test-gen-cases", File: "T-test-1.md"},
+			"t-test-1": {ID: "T-test-gen-scripts-cli", File: "T-test-1.md"},
 		})
 
 		if len(v.errors) != 1 {
@@ -380,7 +380,7 @@ dependencies: [{{LAST_BUSINESS_TASK_ID}}]
 		}
 	})
 
-	t.Run("T-test-gen-cases with resolved placeholder", func(t *testing.T) {
+	t.Run("T-test-gen-scripts-cli with resolved placeholder", func(t *testing.T) {
 		dir := t.TempDir()
 		featureSlug := "test-feature"
 
@@ -390,10 +390,10 @@ dependencies: [{{LAST_BUSINESS_TASK_ID}}]
 			t.Fatal(err)
 		}
 
-		// Create T-test-gen-cases.md with resolved placeholder
+		// Create T-test-gen-scripts-cli.md with resolved placeholder
 		taskFile := filepath.Join(tasksDir, "T-test-1.md")
 		content := `---
-id: "T-test-gen-cases"
+id: "T-test-gen-scripts-cli"
 dependencies: ["1.5"]
 ---
 `
@@ -403,7 +403,7 @@ dependencies: ["1.5"]
 
 		v := &validator{filePath: filepath.Join(dir, "docs", "features", featureSlug, "tasks", "index.json")}
 		v.validateFilesExist(featureSlug, map[string]task.Task{
-			"t-test-1": {ID: "T-test-gen-cases", File: "T-test-1.md"},
+			"t-test-1": {ID: "T-test-gen-scripts-cli", File: "T-test-1.md"},
 		})
 
 		if len(v.errors) != 0 {
@@ -1475,12 +1475,12 @@ func TestValidator_QuickMode(t *testing.T) {
 			PriorityEnum: []string{"P0", "P1", "P2"},
 		}
 		index.SetTasks(map[string]task.Task{
-			"task1":            {ID: "1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1-task.md", Type: "coding.feature"},
-			"task2":            {ID: "2", Title: "Task 2", Status: "pending", Priority: "P0", Dependencies: []string{"1"}, File: "2-task.md", Type: "coding.feature"},
-			"quick-test-cases": {ID: "T-quick-gen-cases", Title: "Test Cases", Status: "pending", Priority: "P1", Dependencies: []string{"2"}, File: "quick-test-cases.md", Type: "test.gen-cases"},
+			"task1":                 {ID: "1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1-task.md", Type: "coding.feature"},
+			"task2":                 {ID: "2", Title: "Task 2", Status: "pending", Priority: "P0", Dependencies: []string{"1"}, File: "2-task.md", Type: "coding.feature"},
+			"quick-gen-and-run-cli": {ID: "T-quick-gen-and-run-cli", Title: "Test Cases", Status: "pending", Priority: "P1", Dependencies: []string{"2"}, File: "quick-gen-and-run-cli.md", Type: "test.gen-and-run"},
 		})
 
-		for _, fname := range []string{"1-task.md", "2-task.md", "quick-test-cases.md"} {
+		for _, fname := range []string{"1-task.md", "2-task.md", "quick-gen-and-run-cli.md"} {
 			if err := os.WriteFile(filepath.Join(dir, fname), []byte("content"), 0644); err != nil {
 				t.Fatal(err)
 			}
@@ -1629,9 +1629,9 @@ func TestValidator_QuickMode_FirstTestTaskPlaceholder(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		taskFile := filepath.Join(tasksDir, "quick-test-cases.md")
+		taskFile := filepath.Join(tasksDir, "quick-gen-and-run-cli.md")
 		content := `---
-id: "T-quick-gen-cases"
+id: "T-quick-gen-and-run-cli"
 dependencies: [{{T_QUICK_1_DEP}}]
 ---
 `
@@ -1641,7 +1641,7 @@ dependencies: [{{T_QUICK_1_DEP}}]
 
 		v := &validator{filePath: filepath.Join(dir, "docs", "features", featureSlug, "tasks", "index.json")}
 		v.validateFilesExist(featureSlug, map[string]task.Task{
-			"quick-test-cases": {ID: "T-quick-gen-cases", File: "quick-test-cases.md"},
+			"quick-gen-and-run-cli": {ID: "T-quick-gen-and-run-cli", File: "quick-gen-and-run-cli.md"},
 		})
 
 		if len(v.errors) != 1 {
@@ -1661,9 +1661,9 @@ dependencies: [{{T_QUICK_1_DEP}}]
 			t.Fatal(err)
 		}
 
-		taskFile := filepath.Join(tasksDir, "quick-test-cases.md")
+		taskFile := filepath.Join(tasksDir, "quick-gen-and-run-cli.md")
 		content := `---
-id: "T-quick-gen-cases"
+id: "T-quick-gen-and-run-cli"
 dependencies: ["2"]
 ---
 `
@@ -1673,7 +1673,7 @@ dependencies: ["2"]
 
 		v := &validator{filePath: filepath.Join(dir, "docs", "features", featureSlug, "tasks", "index.json")}
 		v.validateFilesExist(featureSlug, map[string]task.Task{
-			"quick-test-cases": {ID: "T-quick-gen-cases", File: "quick-test-cases.md"},
+			"quick-gen-and-run-cli": {ID: "T-quick-gen-and-run-cli", File: "quick-gen-and-run-cli.md"},
 		})
 
 		if len(v.errors) != 0 {
@@ -1700,12 +1700,12 @@ func TestValidator_ValidateTasks_SystemTypeRejectedForBusinessTask(t *testing.T)
 			wantErrContains: []string{"system-reserved type", "gate"},
 		},
 		{
-			name: "business task with test.gen-cases type rejected",
+			name: "business task with test.gen-and-run type rejected",
 			tasks: map[string]task.Task{
-				"task1": {ID: "1", Title: "Task", File: "1.md", Type: "test.gen-cases"},
+				"task1": {ID: "1", Title: "Task", File: "1.md", Type: "test.gen-and-run"},
 			},
 			wantErrors:      1,
-			wantErrContains: []string{"system-reserved type", "test.gen-cases"},
+			wantErrContains: []string{"system-reserved type", "test.gen-and-run"},
 		},
 		{
 			name: "business task with code-quality.simplify type rejected",
@@ -1765,9 +1765,9 @@ func TestValidator_ValidateTasks_SystemTypeRejectedForBusinessTask(t *testing.T)
 			wantErrors: 0,
 		},
 		{
-			name: "auto-gen test task with test.gen-cases passes",
+			name: "auto-gen test task with test.gen-and-run passes",
 			tasks: map[string]task.Task{
-				"test": {ID: "T-test-gen-cases", Title: "Test", File: "test.md", Type: "test.gen-cases"},
+				"test": {ID: "T-test-gen-scripts-cli", Title: "Test", File: "test.md", Type: "test.gen-and-run"},
 			},
 			wantErrors: 0,
 		},

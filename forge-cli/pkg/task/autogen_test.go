@@ -34,12 +34,12 @@ func TestGetBreakdownTestTasks_EmptyInterfaces(t *testing.T) {
 func TestGetBreakdownTestTasks_SingleType(t *testing.T) {
 	tasks := GetBreakdownTestTasks([]string{"cli"}, defaultAuto)
 
-	// Shared: gen-cases, eval-cases + per-type: gen-scripts-cli + run + graduate + shared: verify-regression, consolidate = 7
-	if len(tasks) != 7 {
-		t.Fatalf("expected 7 tasks, got %d", len(tasks))
+	// per-type: gen-scripts-cli + run + graduate + verify-regression + consolidate = 5
+	if len(tasks) != 5 {
+		t.Fatalf("expected 5 tasks, got %d", len(tasks))
 	}
 
-	wantIDs := []string{"T-test-gen-cases", "T-test-eval-cases", "T-test-gen-scripts-cli", "T-test-run", "T-test-graduate", "T-test-verify-regression", "T-specs-consolidate"}
+	wantIDs := []string{"T-test-gen-scripts-cli", "T-test-run", "T-test-graduate", "T-test-verify-regression", "T-specs-consolidate"}
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
 			t.Errorf("tasks[%d].ID = %q, want %q", i, tasks[i].ID, want)
@@ -47,23 +47,17 @@ func TestGetBreakdownTestTasks_SingleType(t *testing.T) {
 	}
 
 	// Dependency chain
-	if tasks[1].Dependencies[0] != "T-test-gen-cases" {
-		t.Errorf("eval-cases should depend on gen-cases, got %v", tasks[1].Dependencies)
+	if tasks[1].Dependencies[0] != "T-test-gen-scripts-cli" {
+		t.Errorf("run should depend on gen-scripts-cli, got %v", tasks[1].Dependencies)
 	}
-	if tasks[2].Dependencies[0] != "T-test-eval-cases" {
-		t.Errorf("gen-scripts should depend on eval-cases, got %v", tasks[2].Dependencies)
+	if tasks[2].Dependencies[0] != "T-test-run" {
+		t.Errorf("graduate should depend on run, got %v", tasks[2].Dependencies)
 	}
-	if tasks[3].Dependencies[0] != "T-test-gen-scripts-cli" {
-		t.Errorf("run should depend on gen-scripts-cli, got %v", tasks[3].Dependencies)
+	if tasks[3].Dependencies[0] != "T-test-graduate" {
+		t.Errorf("verify-regression should depend on graduate, got %v", tasks[3].Dependencies)
 	}
-	if tasks[4].Dependencies[0] != "T-test-run" {
-		t.Errorf("graduate should depend on run, got %v", tasks[4].Dependencies)
-	}
-	if tasks[5].Dependencies[0] != "T-test-graduate" {
-		t.Errorf("verify-regression should depend on graduate, got %v", tasks[5].Dependencies)
-	}
-	if tasks[6].Dependencies[0] != "T-test-verify-regression" {
-		t.Errorf("consolidate should depend on verify-regression, got %v", tasks[6].Dependencies)
+	if tasks[4].Dependencies[0] != "T-test-verify-regression" {
+		t.Errorf("consolidate should depend on verify-regression, got %v", tasks[4].Dependencies)
 	}
 }
 
@@ -78,39 +72,36 @@ func TestGetQuickTestTasks_EmptyInterfaces(t *testing.T) {
 func TestGetQuickTestTasks_SingleType(t *testing.T) {
 	tasks := GetQuickTestTasks([]string{"cli"}, allEnabledAuto)
 
-	// gen-cases + gen-and-run-cli + graduate + verify-regression + drift = 5
-	if len(tasks) != 5 {
-		t.Fatalf("expected 5 tasks, got %d", len(tasks))
+	// gen-and-run-cli + graduate + verify-regression + drift = 4
+	if len(tasks) != 4 {
+		t.Fatalf("expected 4 tasks, got %d", len(tasks))
 	}
 
-	wantIDs := []string{"T-quick-gen-cases", "T-quick-gen-and-run-cli", "T-quick-graduate", "T-quick-verify-regression", "T-quick-doc-drift"}
+	wantIDs := []string{"T-quick-gen-and-run-cli", "T-quick-graduate", "T-quick-verify-regression", "T-quick-doc-drift"}
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
 			t.Errorf("tasks[%d].ID = %q, want %q", i, tasks[i].ID, want)
 		}
 	}
 
-	if tasks[1].Type != TypeTestGenAndRun {
-		t.Errorf("T-quick-gen-and-run-cli Type = %q, want %q", tasks[1].Type, TypeTestGenAndRun)
+	if tasks[0].Type != TypeTestGenAndRun {
+		t.Errorf("T-quick-gen-and-run-cli Type = %q, want %q", tasks[0].Type, TypeTestGenAndRun)
 	}
 
-	if tasks[1].Dependencies[0] != "T-quick-gen-cases" {
-		t.Errorf("gen-and-run should depend on gen-cases, got %v", tasks[1].Dependencies)
+	if tasks[1].Dependencies[0] != "T-quick-gen-and-run-cli" {
+		t.Errorf("graduate should depend on gen-and-run, got %v", tasks[1].Dependencies)
 	}
-	if tasks[2].Dependencies[0] != "T-quick-gen-and-run-cli" {
-		t.Errorf("graduate should depend on gen-and-run, got %v", tasks[2].Dependencies)
+	if tasks[2].Dependencies[0] != "T-quick-graduate" {
+		t.Errorf("verify-regression should depend on graduate, got %v", tasks[2].Dependencies)
 	}
-	if tasks[3].Dependencies[0] != "T-quick-graduate" {
-		t.Errorf("verify-regression should depend on graduate, got %v", tasks[3].Dependencies)
+	if tasks[3].Dependencies[0] != "T-quick-verify-regression" {
+		t.Errorf("drift detection should depend on verify-regression, got %v", tasks[3].Dependencies)
 	}
-	if tasks[4].Dependencies[0] != "T-quick-verify-regression" {
-		t.Errorf("drift detection should depend on verify-regression, got %v", tasks[4].Dependencies)
+	if tasks[3].Type != TypeDocDrift {
+		t.Errorf("T-quick-doc-drift Type = %q, want %q", tasks[3].Type, TypeDocDrift)
 	}
-	if tasks[4].Type != TypeDocDrift {
-		t.Errorf("T-quick-doc-drift Type = %q, want %q", tasks[4].Type, TypeDocDrift)
-	}
-	if tasks[4].Scope != "all" {
-		t.Errorf("T-quick-doc-drift Scope = %q, want %q", tasks[4].Scope, "all")
+	if tasks[3].Scope != "all" {
+		t.Errorf("T-quick-doc-drift Scope = %q, want %q", tasks[3].Scope, "all")
 	}
 }
 
@@ -118,7 +109,7 @@ func TestGenerateTestTaskMD(t *testing.T) {
 	def := AutoGenTaskDef{
 		ID: "T-test-gen-scripts-api", Key: "gen-test-scripts-api",
 		Title: "Generate Test Scripts (api)", Priority: "P1",
-		EstimatedTime: "1-2h", Dependencies: []string{"T-test-eval-cases"},
+		EstimatedTime: "1-2h", Dependencies: []string{},
 		Type: TypeTestGenScripts, Scope: "all",
 		TestType: "api", StrategyKind: "generate",
 	}
@@ -136,9 +127,6 @@ func TestGenerateTestTaskMD(t *testing.T) {
 	if !strings.Contains(s, `type: "test.gen-scripts"`) {
 		t.Error("missing type in frontmatter")
 	}
-	if !strings.Contains(s, `"T-test-eval-cases"`) {
-		t.Error("missing dependency in frontmatter")
-	}
 	// Body now loaded from embed template, should contain strategy-based content
 	if !strings.Contains(s, "executable test scripts") {
 		t.Error("body should contain strategy-based content from embed template")
@@ -147,10 +135,10 @@ func TestGenerateTestTaskMD(t *testing.T) {
 
 func TestGenerateTestTaskMD_SharedTask(t *testing.T) {
 	def := AutoGenTaskDef{
-		ID: "T-test-gen-cases", Key: "gen-test-cases",
-		Title: "Generate Test Cases", Priority: "P1",
-		EstimatedTime: "1-2h", Dependencies: []string{},
-		Type: TypeTestGenCases, Scope: "all",
+		ID: "T-test-run", Key: "run-e2e-tests",
+		Title: "Run e2e Tests", Priority: "P1",
+		EstimatedTime: "30min-1h", Dependencies: []string{},
+		Type: TypeTestRun, Scope: "all",
 	}
 
 	content, err := GenerateTestTaskMD(def, BodyContext{})
@@ -174,7 +162,7 @@ func TestResolveFirstTestDep(t *testing.T) {
 		tasks := GetBreakdownTestTasks([]string{"cli"}, defaultAuto)
 		ResolveFirstTestDep(tasks, existing, "breakdown")
 		if tasks[0].Dependencies[0] != "2.gate" {
-			t.Errorf("T-test-gen-cases should depend on highest gate, got %v", tasks[0].Dependencies)
+			t.Errorf("first test task should depend on highest gate, got %v", tasks[0].Dependencies)
 		}
 	})
 
@@ -191,7 +179,7 @@ func TestResolveFirstTestDep(t *testing.T) {
 		tasks := GetBreakdownTestTasks([]string{"cli"}, defaultAuto)
 		ResolveFirstTestDep(tasks, existing, "breakdown")
 		if tasks[0].Dependencies[0] != "3.1" {
-			t.Errorf("T-test-gen-cases should depend on last business task (3.1) when it's in a higher phase than highest gate (2.gate), got %v", tasks[0].Dependencies)
+			t.Errorf("first test task should depend on last business task (3.1) when it's in a higher phase than highest gate (2.gate), got %v", tasks[0].Dependencies)
 		}
 	})
 
@@ -204,7 +192,7 @@ func TestResolveFirstTestDep(t *testing.T) {
 		tasks := GetQuickTestTasks([]string{"cli"}, allEnabledAuto)
 		ResolveFirstTestDep(tasks, existing, "quick")
 		if tasks[0].Dependencies[0] != "3" {
-			t.Errorf("T-quick-gen-cases should depend on max business task, got %v", tasks[0].Dependencies)
+			t.Errorf("first quick test task should depend on max business task, got %v", tasks[0].Dependencies)
 		}
 	})
 }
@@ -235,9 +223,9 @@ func TestGetDocEvalTask(t *testing.T) {
 func TestResolveDocEvalDep(t *testing.T) {
 	t.Run("sets dependency on last business task", func(t *testing.T) {
 		existing := map[string]Task{
-			"1-doc":            {ID: "1.1", Type: TypeDoc},
-			"2-doc":            {ID: "1.2", Type: TypeDoc},
-			"T-test-gen-cases": {ID: "T-test-gen-cases", Type: TypeTestGenCases},
+			"1-doc":              {ID: "1.1", Type: TypeDoc},
+			"2-doc":              {ID: "1.2", Type: TypeDoc},
+			"T-test-gen-scripts": {ID: "T-test-gen-scripts-cli", Type: TypeTestGenScripts},
 		}
 		task := GetDocEvalTask()
 		ResolveDocEvalDep(&task, existing)
@@ -264,13 +252,12 @@ func TestResolveDocEvalDep(t *testing.T) {
 func TestGetBreakdownTestTasks_PerType_TwoTypes(t *testing.T) {
 	tasks := GetBreakdownTestTasks([]string{"tui", "api"}, defaultAuto)
 
-	// Shared: gen-cases, eval-cases + per-type-gen: 2 (tui, api) + run + graduate + verify-regression + consolidate = 8
-	if len(tasks) != 8 {
-		t.Fatalf("expected 8 tasks, got %d", len(tasks))
+	// per-type-gen: 2 (tui, api) + run + graduate + verify-regression + consolidate = 6
+	if len(tasks) != 6 {
+		t.Fatalf("expected 6 tasks, got %d", len(tasks))
 	}
 
 	wantIDs := []string{
-		"T-test-gen-cases", "T-test-eval-cases",
 		"T-test-gen-scripts-tui", "T-test-gen-scripts-api",
 		"T-test-run", "T-test-graduate",
 		"T-test-verify-regression", "T-specs-consolidate",
@@ -282,56 +269,47 @@ func TestGetBreakdownTestTasks_PerType_TwoTypes(t *testing.T) {
 	}
 
 	// Keys include type suffix (no language)
-	if tasks[2].Key != "gen-test-scripts-tui" {
-		t.Errorf("tasks[2].Key = %q, want gen-test-scripts-tui", tasks[2].Key)
+	if tasks[0].Key != "gen-test-scripts-tui" {
+		t.Errorf("tasks[0].Key = %q, want gen-test-scripts-tui", tasks[0].Key)
 	}
-	if tasks[3].Key != "gen-test-scripts-api" {
-		t.Errorf("tasks[3].Key = %q, want gen-test-scripts-api", tasks[3].Key)
+	if tasks[1].Key != "gen-test-scripts-api" {
+		t.Errorf("tasks[1].Key = %q, want gen-test-scripts-api", tasks[1].Key)
 	}
 
 	// TestType field set
-	if tasks[2].TestType != "tui" {
-		t.Errorf("tasks[2].TestType = %q, want tui", tasks[2].TestType)
+	if tasks[0].TestType != "tui" {
+		t.Errorf("tasks[0].TestType = %q, want tui", tasks[0].TestType)
 	}
-	if tasks[3].TestType != "api" {
-		t.Errorf("tasks[3].TestType = %q, want api", tasks[3].TestType)
+	if tasks[1].TestType != "api" {
+		t.Errorf("tasks[1].TestType = %q, want api", tasks[1].TestType)
 	}
 
 	// T-test-run depends on ALL per-type gen-scripts tasks
-	if len(tasks[4].Dependencies) != 2 {
-		t.Fatalf("T-test-run should depend on 2 gen tasks, got %v", tasks[4].Dependencies)
+	if len(tasks[2].Dependencies) != 2 {
+		t.Fatalf("T-test-run should depend on 2 gen tasks, got %v", tasks[2].Dependencies)
 	}
 	depSet := make(map[string]bool)
-	for _, d := range tasks[4].Dependencies {
+	for _, d := range tasks[2].Dependencies {
 		depSet[d] = true
 	}
 	if !depSet["T-test-gen-scripts-tui"] || !depSet["T-test-gen-scripts-api"] {
-		t.Errorf("T-test-run deps should include T-test-gen-scripts-tui and T-test-gen-scripts-api, got %v", tasks[4].Dependencies)
+		t.Errorf("T-test-run deps should include T-test-gen-scripts-tui and T-test-gen-scripts-api, got %v", tasks[2].Dependencies)
 	}
 
 	// T-test-graduate depends on T-test-run
-	if tasks[5].Dependencies[0] != "T-test-run" {
-		t.Errorf("graduate should depend on run, got %v", tasks[5].Dependencies)
-	}
-
-	// Per-type gen tasks depend on T-test-eval-cases
-	if tasks[2].Dependencies[0] != "T-test-eval-cases" {
-		t.Errorf("T-test-gen-scripts-tui should depend on T-test-eval-cases, got %v", tasks[2].Dependencies)
-	}
-	if tasks[3].Dependencies[0] != "T-test-eval-cases" {
-		t.Errorf("T-test-gen-scripts-api should depend on T-test-eval-cases, got %v", tasks[3].Dependencies)
+	if tasks[3].Dependencies[0] != "T-test-run" {
+		t.Errorf("graduate should depend on run, got %v", tasks[3].Dependencies)
 	}
 }
 
 func TestGetBreakdownTestTasks_PerType_SingleType(t *testing.T) {
 	tasks := GetBreakdownTestTasks([]string{"api"}, defaultAuto)
 
-	if len(tasks) != 7 {
-		t.Fatalf("expected 7 tasks, got %d", len(tasks))
+	if len(tasks) != 5 {
+		t.Fatalf("expected 5 tasks, got %d", len(tasks))
 	}
 
 	wantIDs := []string{
-		"T-test-gen-cases", "T-test-eval-cases",
 		"T-test-gen-scripts-api",
 		"T-test-run", "T-test-graduate",
 		"T-test-verify-regression", "T-specs-consolidate",
@@ -342,29 +320,29 @@ func TestGetBreakdownTestTasks_PerType_SingleType(t *testing.T) {
 		}
 	}
 
-	if len(tasks[3].Dependencies) != 1 || tasks[3].Dependencies[0] != "T-test-gen-scripts-api" {
-		t.Errorf("T-test-run should depend on T-test-gen-scripts-api, got %v", tasks[3].Dependencies)
+	if len(tasks[1].Dependencies) != 1 || tasks[1].Dependencies[0] != "T-test-gen-scripts-api" {
+		t.Errorf("T-test-run should depend on T-test-gen-scripts-api, got %v", tasks[1].Dependencies)
 	}
 }
 
 func TestGetBreakdownTestTasks_PerType_ThreeTypes(t *testing.T) {
 	tasks := GetBreakdownTestTasks([]string{"tui", "api", "cli"}, defaultAuto)
 
-	// 3 types -> 3 gen tasks
-	if len(tasks) != 9 {
-		t.Fatalf("expected 9 tasks, got %d", len(tasks))
+	// 3 types -> 3 gen tasks + run + graduate + verify-regression + consolidate = 7
+	if len(tasks) != 7 {
+		t.Fatalf("expected 7 tasks, got %d", len(tasks))
 	}
 
 	// T-test-run depends on all 3 gen tasks
-	if len(tasks[5].Dependencies) != 3 {
-		t.Fatalf("T-test-run should depend on 3 gen tasks, got %v", tasks[5].Dependencies)
+	if len(tasks[3].Dependencies) != 3 {
+		t.Fatalf("T-test-run should depend on 3 gen tasks, got %v", tasks[3].Dependencies)
 	}
 	depSet := make(map[string]bool)
-	for _, d := range tasks[5].Dependencies {
+	for _, d := range tasks[3].Dependencies {
 		depSet[d] = true
 	}
 	if !depSet["T-test-gen-scripts-tui"] || !depSet["T-test-gen-scripts-api"] || !depSet["T-test-gen-scripts-cli"] {
-		t.Errorf("T-test-run missing expected deps, got %v", tasks[5].Dependencies)
+		t.Errorf("T-test-run missing expected deps, got %v", tasks[3].Dependencies)
 	}
 }
 
@@ -372,7 +350,7 @@ func TestGenerateTestTaskMD_WithTestType(t *testing.T) {
 	def := AutoGenTaskDef{
 		ID: "T-test-gen-scripts-api", Key: "gen-test-scripts-api",
 		Title: "Generate Test Scripts (api)", Priority: "P1",
-		EstimatedTime: "1-2h", Dependencies: []string{"T-test-eval-cases"},
+		EstimatedTime: "1-2h", Dependencies: []string{},
 		Type: TypeTestGenScripts, Scope: "all",
 		TestType: "api", StrategyKind: "generate",
 	}
@@ -395,13 +373,12 @@ func TestGenerateTestTaskMD_WithTestType(t *testing.T) {
 func TestGetQuickTestTasks_PerType_TwoTypes(t *testing.T) {
 	tasks := GetQuickTestTasks([]string{"tui", "api"}, allEnabledAuto)
 
-	// gen-cases + per-type-gen-and-run(tui,api) + graduate + verify-regression + drift-detection = 6
-	if len(tasks) != 6 {
-		t.Fatalf("expected 6 tasks, got %d", len(tasks))
+	// per-type-gen-and-run(tui,api) + graduate + verify-regression + drift-detection = 5
+	if len(tasks) != 5 {
+		t.Fatalf("expected 5 tasks, got %d", len(tasks))
 	}
 
 	wantIDs := []string{
-		"T-quick-gen-cases",
 		"T-quick-gen-and-run-tui", "T-quick-gen-and-run-api",
 		"T-quick-graduate",
 		"T-quick-verify-regression",
@@ -414,57 +391,48 @@ func TestGetQuickTestTasks_PerType_TwoTypes(t *testing.T) {
 	}
 
 	// Keys include type suffix (no language)
-	if tasks[1].Key != "quick-gen-and-run-tui" {
-		t.Errorf("tasks[1].Key = %q, want quick-gen-and-run-tui", tasks[1].Key)
+	if tasks[0].Key != "quick-gen-and-run-tui" {
+		t.Errorf("tasks[0].Key = %q, want quick-gen-and-run-tui", tasks[0].Key)
 	}
-	if tasks[2].Key != "quick-gen-and-run-api" {
-		t.Errorf("tasks[2].Key = %q, want quick-gen-and-run-api", tasks[2].Key)
+	if tasks[1].Key != "quick-gen-and-run-api" {
+		t.Errorf("tasks[1].Key = %q, want quick-gen-and-run-api", tasks[1].Key)
 	}
 
 	// TestType field set
-	if tasks[1].TestType != "tui" {
-		t.Errorf("tasks[1].TestType = %q, want tui", tasks[1].TestType)
+	if tasks[0].TestType != "tui" {
+		t.Errorf("tasks[0].TestType = %q, want tui", tasks[0].TestType)
 	}
-	if tasks[2].TestType != "api" {
-		t.Errorf("tasks[2].TestType = %q, want api", tasks[2].TestType)
-	}
-
-	// Per-type gen-and-run depend on gen-cases
-	if tasks[1].Dependencies[0] != "T-quick-gen-cases" {
-		t.Errorf("T-quick-gen-and-run-tui should depend on T-quick-gen-cases, got %v", tasks[1].Dependencies)
-	}
-	if tasks[2].Dependencies[0] != "T-quick-gen-cases" {
-		t.Errorf("T-quick-gen-and-run-api should depend on T-quick-gen-cases, got %v", tasks[2].Dependencies)
+	if tasks[1].TestType != "api" {
+		t.Errorf("tasks[1].TestType = %q, want api", tasks[1].TestType)
 	}
 
 	// T-quick-graduate depends on ALL per-type gen-and-run tasks
-	if len(tasks[3].Dependencies) != 2 {
-		t.Fatalf("T-quick-graduate should depend on 2 gen-and-run tasks, got %v", tasks[3].Dependencies)
+	if len(tasks[2].Dependencies) != 2 {
+		t.Fatalf("T-quick-graduate should depend on 2 gen-and-run tasks, got %v", tasks[2].Dependencies)
 	}
 	depSet := make(map[string]bool)
-	for _, d := range tasks[3].Dependencies {
+	for _, d := range tasks[2].Dependencies {
 		depSet[d] = true
 	}
 	if !depSet["T-quick-gen-and-run-tui"] || !depSet["T-quick-gen-and-run-api"] {
-		t.Errorf("T-quick-graduate deps should include T-quick-gen-and-run-tui and T-quick-gen-and-run-api, got %v", tasks[3].Dependencies)
+		t.Errorf("T-quick-graduate deps should include T-quick-gen-and-run-tui and T-quick-gen-and-run-api, got %v", tasks[2].Dependencies)
 	}
 
 	// T-quick-verify-regression depends on T-quick-graduate
-	if tasks[4].Dependencies[0] != "T-quick-graduate" {
-		t.Errorf("verify-regression should depend on graduate, got %v", tasks[4].Dependencies)
+	if tasks[3].Dependencies[0] != "T-quick-graduate" {
+		t.Errorf("verify-regression should depend on graduate, got %v", tasks[3].Dependencies)
 	}
 }
 
 func TestGetQuickTestTasks_PerType_SingleType(t *testing.T) {
 	tasks := GetQuickTestTasks([]string{"api"}, allEnabledAuto)
 
-	// gen-cases + 1 gen-and-run-api + graduate + verify-regression + drift-detection = 5
-	if len(tasks) != 5 {
-		t.Fatalf("expected 5 tasks, got %d", len(tasks))
+	// 1 gen-and-run-api + graduate + verify-regression + drift-detection = 4
+	if len(tasks) != 4 {
+		t.Fatalf("expected 4 tasks, got %d", len(tasks))
 	}
 
 	wantIDs := []string{
-		"T-quick-gen-cases",
 		"T-quick-gen-and-run-api",
 		"T-quick-graduate",
 		"T-quick-verify-regression",
@@ -476,33 +444,33 @@ func TestGetQuickTestTasks_PerType_SingleType(t *testing.T) {
 		}
 	}
 
-	if tasks[1].Type != TypeTestGenAndRun {
-		t.Errorf("T-quick-gen-and-run-api Type = %q, want %q", tasks[1].Type, TypeTestGenAndRun)
+	if tasks[0].Type != TypeTestGenAndRun {
+		t.Errorf("T-quick-gen-and-run-api Type = %q, want %q", tasks[0].Type, TypeTestGenAndRun)
 	}
 
-	if len(tasks[2].Dependencies) != 1 || tasks[2].Dependencies[0] != "T-quick-gen-and-run-api" {
-		t.Errorf("T-quick-graduate should depend on T-quick-gen-and-run-api, got %v", tasks[2].Dependencies)
+	if len(tasks[1].Dependencies) != 1 || tasks[1].Dependencies[0] != "T-quick-gen-and-run-api" {
+		t.Errorf("T-quick-graduate should depend on T-quick-gen-and-run-api, got %v", tasks[1].Dependencies)
 	}
 }
 
 func TestGetQuickTestTasks_PerType_ThreeTypes(t *testing.T) {
 	tasks := GetQuickTestTasks([]string{"tui", "api", "cli"}, allEnabledAuto)
 
-	// gen-cases + 3 per-type-gen-and-run + graduate + verify-regression + drift-detection = 7
-	if len(tasks) != 7 {
-		t.Fatalf("expected 7 tasks, got %d", len(tasks))
+	// 3 per-type-gen-and-run + graduate + verify-regression + drift-detection = 6
+	if len(tasks) != 6 {
+		t.Fatalf("expected 6 tasks, got %d", len(tasks))
 	}
 
 	// T-quick-graduate depends on all 3 gen-and-run tasks
-	if len(tasks[4].Dependencies) != 3 {
-		t.Fatalf("T-quick-graduate should depend on 3 gen-and-run tasks, got %v", tasks[4].Dependencies)
+	if len(tasks[3].Dependencies) != 3 {
+		t.Fatalf("T-quick-graduate should depend on 3 gen-and-run tasks, got %v", tasks[3].Dependencies)
 	}
 	depSet := make(map[string]bool)
-	for _, d := range tasks[4].Dependencies {
+	for _, d := range tasks[3].Dependencies {
 		depSet[d] = true
 	}
 	if !depSet["T-quick-gen-and-run-tui"] || !depSet["T-quick-gen-and-run-api"] || !depSet["T-quick-gen-and-run-cli"] {
-		t.Errorf("T-quick-graduate missing expected deps, got %v", tasks[4].Dependencies)
+		t.Errorf("T-quick-graduate missing expected deps, got %v", tasks[3].Dependencies)
 	}
 }
 
@@ -609,8 +577,6 @@ func TestGenerateTestTaskMD_EmbedTemplate_LoadsContent(t *testing.T) {
 		typ          string
 		wantContains string
 	}{
-		{"gen-cases", TypeTestGenCases, "full traceability"},
-		{"eval-cases", TypeTestEvalCases, "Evaluate generated test cases"},
 		{"gen-scripts", TypeTestGenScripts, "executable test scripts"},
 		{"gen-and-run", TypeTestGenAndRun, "Phase 1"},
 		{"run", TypeTestRun, "staged e2e test scripts"},
@@ -647,9 +613,9 @@ func TestGenerateTestTaskMD_EmbedTemplate_LoadsContent(t *testing.T) {
 
 func TestGenerateTestTaskMD_StrategyContentAppendedAfterTemplate(t *testing.T) {
 	def := AutoGenTaskDef{
-		ID: "T-test-gen-cases", Key: "gen-test-cases",
-		Title: "Generate Test Cases", Priority: "P1",
-		EstimatedTime: "1-2h", Type: TypeTestGenCases, Scope: "all",
+		ID: "T-test-gen-scripts-api", Key: "gen-test-scripts-api",
+		Title: "Generate Test Scripts (api)", Priority: "P1",
+		EstimatedTime: "1-2h", Type: TypeTestGenScripts, Scope: "all",
 		StrategyKind:    "generate",
 		StrategyContent: []byte("# Custom Strategy\n\nUse this strategy."),
 	}
@@ -662,11 +628,11 @@ func TestGenerateTestTaskMD_StrategyContentAppendedAfterTemplate(t *testing.T) {
 	s := string(content)
 
 	// Should contain template content
-	if !strings.Contains(s, "full traceability") {
+	if !strings.Contains(s, "executable test scripts") {
 		t.Error("body should contain template content")
 	}
 	// StrategyContent appended AFTER template
-	templateIdx := strings.Index(s, "full traceability")
+	templateIdx := strings.Index(s, "executable test scripts")
 	strategyIdx := strings.Index(s, "Custom Strategy")
 	if strategyIdx <= templateIdx {
 		t.Error("StrategyContent should appear after template content")
@@ -694,10 +660,10 @@ func TestGenerateTestTaskMD_TestTypeNotedInBody(t *testing.T) {
 
 func TestGenerateTestTaskMD_FrontmatterUnchanged(t *testing.T) {
 	def := AutoGenTaskDef{
-		ID: "T-test-gen-cases", Key: "gen-test-cases",
-		Title: "Generate Test Cases", Priority: "P1",
-		EstimatedTime: "1-2h", Dependencies: []string{"dep1"},
-		Type: TypeTestGenCases, Scope: "all",
+		ID: "T-test-run", Key: "run-e2e-tests",
+		Title: "Run e2e Tests", Priority: "P1",
+		EstimatedTime: "30min-1h", Dependencies: []string{"dep1"},
+		Type: TypeTestRun, Scope: "all",
 		MainSession: true,
 	}
 
@@ -709,10 +675,10 @@ func TestGenerateTestTaskMD_FrontmatterUnchanged(t *testing.T) {
 	s := string(content)
 
 	// Frontmatter fields unchanged
-	if !strings.Contains(s, `id: "T-test-gen-cases"`) {
+	if !strings.Contains(s, `id: "T-test-run"`) {
 		t.Error("missing id in frontmatter")
 	}
-	if !strings.Contains(s, `title: "Generate Test Cases"`) {
+	if !strings.Contains(s, `title: "Run e2e Tests"`) {
 		t.Error("missing title in frontmatter")
 	}
 	if !strings.Contains(s, `priority: "P1"`) {
@@ -721,7 +687,7 @@ func TestGenerateTestTaskMD_FrontmatterUnchanged(t *testing.T) {
 	if !strings.Contains(s, `"dep1"`) {
 		t.Error("missing dependency in frontmatter")
 	}
-	if !strings.Contains(s, `type: "test.gen-cases"`) {
+	if !strings.Contains(s, `type: "test.run"`) {
 		t.Error("missing type in frontmatter")
 	}
 	if !strings.Contains(s, `scope: "all"`) {
@@ -857,9 +823,10 @@ func TestRenderBody_EmptyBodyContext_KnownPlaceholdersResolved(t *testing.T) {
 
 func TestGenerateTestTaskMD_WithBodyContext(t *testing.T) {
 	def := AutoGenTaskDef{
-		ID: "T-test-gen-cases", Key: "gen-test-cases",
-		Title: "Generate Test Cases", Priority: "P1",
-		EstimatedTime: "1-2h", Type: TypeTestGenCases, Scope: "all",
+		ID: "T-test-gen-scripts-api", Key: "gen-test-scripts-api",
+		Title: "Generate Test Scripts (api)", Priority: "P1",
+		EstimatedTime: "1-2h", Type: TypeTestGenScripts, Scope: "all",
+		TestType: "api",
 	}
 	ctx := BodyContext{
 		FeatureSlug: "my-feature",
@@ -873,20 +840,20 @@ func TestGenerateTestTaskMD_WithBodyContext(t *testing.T) {
 
 	s := string(content)
 	// Frontmatter still works
-	if !strings.Contains(s, `id: "T-test-gen-cases"`) {
+	if !strings.Contains(s, `id: "T-test-gen-scripts-api"`) {
 		t.Error("missing id in frontmatter")
 	}
 	// Template body loaded (placeholder substitution applied)
-	if !strings.Contains(s, "structured test cases") {
+	if !strings.Contains(s, "executable test scripts") {
 		t.Error("body should contain template content")
 	}
 }
 
 func TestGenerateTestTaskMD_BackwardCompat_EmptyBodyContext(t *testing.T) {
 	def := AutoGenTaskDef{
-		ID: "T-test-gen-cases", Key: "gen-test-cases",
-		Title: "Generate Test Cases", Priority: "P1",
-		EstimatedTime: "1-2h", Type: TypeTestGenCases, Scope: "all",
+		ID: "T-test-gen-scripts-api", Key: "gen-test-scripts-api",
+		Title: "Generate Test Scripts (api)", Priority: "P1",
+		EstimatedTime: "1-2h", Type: TypeTestGenScripts, Scope: "all",
 	}
 
 	// Passing empty BodyContext should produce same output as before
@@ -906,7 +873,7 @@ func TestGenerateTestTaskMD_BackwardCompat_EmptyBodyContext(t *testing.T) {
 			t.Errorf("managed placeholder %s should be resolved", ph)
 		}
 	}
-	if !strings.Contains(s, `id: "T-test-gen-cases"`) {
+	if !strings.Contains(s, `id: "T-test-gen-scripts-api"`) {
 		t.Error("frontmatter should be intact")
 	}
 }
@@ -1034,7 +1001,7 @@ func TestRenderBody_EmptyFields(t *testing.T) {
 	})
 }
 
-// TestBodyContentPerStrategy verifies each of the 13 task types gets correct body content
+// TestBodyContentPerStrategy verifies each task type gets correct body content
 // with a populated BodyContext, grouped by strategy (A/B/C).
 func TestBodyContentPerStrategy(t *testing.T) {
 	tests := []struct {
@@ -1045,12 +1012,6 @@ func TestBodyContentPerStrategy(t *testing.T) {
 		wantContains []string
 	}{
 		// Strategy A: Feature context (slug + scope + interfaces injected)
-		{"gen-cases has feature context", TypeTestGenCases, "", BodyContext{
-			FeatureSlug: "feat", Mode: "quick", Scope: []string{"item1"}, Interfaces: []string{"api"},
-		}, []string{"feat", "quick mode", "- item1", "- api"}},
-		{"eval-cases has feature context", TypeTestEvalCases, "", BodyContext{
-			FeatureSlug: "feat", Scope: []string{"backend"},
-		}, []string{"feat", "- backend"}},
 		{"gen-scripts has feature context", TypeTestGenScripts, "api", BodyContext{
 			FeatureSlug: "feat",
 		}, []string{"feat", "api"}},
@@ -1122,10 +1083,9 @@ func TestBodyContentPerStrategy(t *testing.T) {
 }
 
 func TestAutogenTypeToFileMapping(t *testing.T) {
-	// Verify all 13 auto-gen types have a mapping entry
+	// Verify all 11 auto-gen types have a mapping entry
 	wantTypes := []string{
-		TypeTestGenCases, TypeTestEvalCases, TypeTestGenScripts,
-		TypeTestGenAndRun, TypeTestRun, TypeTestGraduate,
+		TypeTestGenScripts, TypeTestGenAndRun, TypeTestRun, TypeTestGraduate,
 		TypeTestVerifyRegression, TypeValidationCode, TypeValidationUx,
 		TypeDocEval, TypeDocConsolidate, TypeDocDrift, TypeCleanCode,
 	}

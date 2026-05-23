@@ -14,15 +14,12 @@ func TestInferType(t *testing.T) {
 		{"2.gate", TypeGate},
 
 		// Breakdown test tasks (exact match)
-		{"T-test-gen-cases", TypeTestGenCases},
 		{"T-test-gen-scripts", TypeTestGenScripts},
 		{"T-test-run", TypeTestRun},
 		{"T-test-graduate", TypeTestGraduate},
 		{"T-test-verify-regression", TypeTestVerifyRegression},
-		{"T-test-eval-cases", TypeTestEvalCases},
 
 		// Quick test tasks (exact match)
-		{"T-quick-gen-cases", TypeTestGenCases},
 		{"T-quick-gen-and-run", TypeTestGenAndRun},
 		{"T-quick-graduate", TypeTestGraduate},
 		{"T-quick-verify-regression", TypeTestVerifyRegression},
@@ -49,7 +46,6 @@ func TestInferType(t *testing.T) {
 		{"T-quick-gen-and-run-tui", TypeTestGenAndRun},
 
 		// Type suffix on tasks that don't support it should NOT match
-		{"T-test-gen-cases-api", ""},
 		{"T-test-verify-regression-api", ""},
 		{"T-specs-consolidate-api", ""},
 		{"T-test-run-api", ""},
@@ -74,10 +70,8 @@ func TestInferType(t *testing.T) {
 		{"T-clean-code", TypeCleanCode},
 
 		// Old profile-suffixed IDs no longer match
-		{"T-test-gen-casesa", ""},
 		{"T-test-gen-scriptsa", ""},
 		{"T-test-runa", ""},
-		{"T-quick-gen-casesa", ""},
 		{"T-quick-graduatea", ""},
 		{"T-quick-verify-regressiona", ""},
 		{"T-quick-doc-drifta", ""},
@@ -104,9 +98,8 @@ func TestExtractTypeSuffix(t *testing.T) {
 		{"T-test-gen-scripts-web-ui", "T-test-gen-scripts", "web-ui"},
 		{"T-quick-gen-and-run-cli", "T-quick-gen-and-run", "cli"},
 		{"T-quick-gen-and-run-api", "T-quick-gen-and-run", "api"},
-		{"T-test-gen-scripts", "T-test-gen-scripts", ""},    // exact match, no type suffix
-		{"T-test-gen-cases-api", "T-test-gen-cases", "api"}, // syntactically valid, but InferType won't route it
-		{"random", "T-test-gen-scripts", ""},                // wrong base
+		{"T-test-gen-scripts", "T-test-gen-scripts", ""}, // exact match, no type suffix
+		{"random", "T-test-gen-scripts", ""},             // wrong base
 
 		// Old profile-suffixed IDs no longer extract correctly (profile letter is part of suffix)
 		{"T-test-gen-scriptsa-tui", "T-test-gen-scripts", ""}, // 'a' before '-' is not a valid type start

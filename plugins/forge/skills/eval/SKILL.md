@@ -17,12 +17,6 @@ Feature-relative paths (no prefix) resolve from `docs/features/<slug>/`. Excepti
 | `prd` | `prd/prd-spec.md` + `prd/prd-user-stories.md` |
 | `design` | `design/tech-design.md` |
 | `ui-web`, `ui-mobile`, `ui-tui` | `ui/ui-design.md` |
-| `test-cases` | `testing/test-cases.md` |
-| `ui-test-cases` | `testing/ui-test-cases.md` |
-| `tui-test-cases` | `testing/tui-test-cases.md` |
-| `mobile-test-cases` | `testing/mobile-test-cases.md` |
-| `api-test-cases` | `testing/api-test-cases.md` |
-| `cli-test-cases` | `testing/cli-test-cases.md` |
 | `consistency` | `manifest.md` + `prd/prd-spec.md` + at least one other doc |
 | `validate-code` | PRD (`prd/prd-spec.md` + `prd/prd-user-stories.md`) + git diff against base branch |
 | `validate-ux` | PRD + compilable project (binary or web server) |
@@ -33,7 +27,7 @@ If missing, tell user to create it first.
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `--type` | (required) | `proposal`, `prd`, `design`, `ui`, `ui-web`, `ui-mobile`, `ui-tui`, `test-cases`, `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases`, `consistency`, `validate-code`, `validate-ux` |
+| `--type` | (required) | `proposal`, `prd`, `design`, `ui`, `ui-web`, `ui-mobile`, `ui-tui`, `consistency`, `validate-code`, `validate-ux` |
 | `--target` | rubric frontmatter | Override target score |
 | `--iterations` | rubric frontmatter | Override max iterations |
 | `--scope` | `docs` | `consistency` only: `docs` or `full` |
@@ -93,12 +87,6 @@ Parse rubric frontmatter: `scale`, `target`, `iterations`, `context`. CLI `--tar
 | `prd` | `docs/features/<slug>/prd/` |
 | `design` | `docs/features/<slug>/design/` |
 | `ui-*` | `docs/features/<slug>/ui/` |
-| `test-cases` | `docs/features/<slug>/testing/` |
-| `ui-test-cases` | `docs/features/<slug>/testing/` |
-| `tui-test-cases` | `docs/features/<slug>/testing/` |
-| `mobile-test-cases` | `docs/features/<slug>/testing/` |
-| `api-test-cases` | `docs/features/<slug>/testing/` |
-| `cli-test-cases` | `docs/features/<slug>/testing/` |
 | `consistency` | `docs/features/<slug>/` |
 | `validate-code` | `docs/features/<slug>/prd/` |
 | `validate-ux` | `docs/features/<slug>/prd/` |
@@ -212,8 +200,6 @@ Ask user via `AskUserQuestion`:
 | `prd` | `/ui-design` or `/tech-design` |
 | `design` | `/breakdown-tasks` |
 | `ui-*` | `/tech-design` |
-| `test-cases` | `/gen-test-scripts` |
-| `ui-test-cases`, `tui-test-cases`, `mobile-test-cases`, `api-test-cases`, `cli-test-cases` | `/gen-test-scripts` |
 | `consistency` | `/run-tasks` or re-eval |
 | `validate-code` | `/run-tasks` (proceed to test pipeline) |
 | `validate-ux` | `/run-tasks` (feature complete) |
