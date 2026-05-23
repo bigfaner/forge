@@ -22,7 +22,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2-template-engine-coding.md",
       "record": "records/2-template-engine-coding.md",
       "scope": "backend",

@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"forge-cli/pkg/feature"
 	indexPkg "forge-cli/pkg/index"
@@ -365,139 +364,7 @@ func validateRecordData(rd *task.RecordData) {
 }
 
 func fillRecordTemplate(t *task.Task, rd *task.RecordData, startedTime string) string {
-	status := rd.Status
-	started := startedTime
-	if started == "" {
-		started = time.Now().Format("2006-01-02 15:04")
-	}
-	completed := time.Now().Format("2006-01-02 15:04")
-	if status != "completed" {
-		completed = "N/A"
-	}
-
-	// Calculate time spent
-	timeSpent := ""
-	startedT, err1 := time.Parse("2006-01-02 15:04", started)
-	completedT, err2 := time.Parse("2006-01-02 15:04", completed)
-	if err1 == nil && err2 == nil && completedT.After(startedT) {
-		dur := completedT.Sub(startedT)
-		timeSpent = formatDuration(dur)
-	}
-
-	notes := rd.Notes
-	if notes == "" {
-		notes = "无"
-	}
-
-	var reclassBlock string
-	if rd.TypeReclassification != nil {
-		reclassBlock = fmt.Sprintf(`## Type Reclassification
-- Original: %s
-- Actual: %s
-- Reason: %s
-
-`, rd.TypeReclassification.OriginalType, rd.TypeReclassification.ActualType, rd.TypeReclassification.Reason)
-	}
-
-	return fmt.Sprintf(`---
-status: "%s"
-started: "%s"
-completed: "%s"
-time_spent: "%s"
----
-
-# Task Record: %s %s
-
-## Summary
-%s
-
-%s## Changes
-
-### Files Created
-%s
-
-### Files Modified
-%s
-
-### Key Decisions
-%s
-
-## Test Results
-- **Tests Executed**: %s
-- **Passed**: %d
-- **Failed**: %d
-- **Coverage**: %s
-
-## Acceptance Criteria
-%s
-
-## Notes
-%s
-`,
-		status, started, completed, timeSpent,
-		t.ID, t.Title,
-		rd.Summary,
-		reclassBlock,
-		formatList(rd.FilesCreated),
-		formatList(rd.FilesModified),
-		formatList(rd.KeyDecisions),
-		formatTestsExecuted(rd.Coverage), rd.TestsPassed, rd.TestsFailed, formatCoverage(rd.Coverage),
-		formatCriteria(rd.AcceptanceCriteria),
-		notes,
-	)
-}
-
-func formatCoverage(c float64) string {
-	if c < 0 {
-		return "N/A (task has no tests)"
-	}
-	return fmt.Sprintf("%.1f%%", c)
-}
-
-func formatTestsExecuted(c float64) string {
-	if c < 0 {
-		return "No"
-	}
-	return "Yes"
-}
-
-func formatList(items []string) string {
-	if len(items) == 0 {
-		return "无"
-	}
-	lines := make([]string, len(items))
-	for i, item := range items {
-		lines[i] = "- " + item
-	}
-	return strings.Join(lines, "\n")
-}
-
-func formatDuration(dur time.Duration) string {
-	d := int(dur.Hours())
-	m := int(dur.Minutes()) % 60
-	switch {
-	case d > 0 && m > 0:
-		return fmt.Sprintf("~%dh %dm", d, m)
-	case d > 0:
-		return fmt.Sprintf("~%dh", d)
-	default:
-		return fmt.Sprintf("~%dm", m)
-	}
-}
-
-func formatCriteria(criteria []task.AcceptanceCriterion) string {
-	if len(criteria) == 0 {
-		return "无"
-	}
-	lines := make([]string, len(criteria))
-	for i, c := range criteria {
-		check := "[ ]"
-		if c.Met {
-			check = "[x]"
-		}
-		lines[i] = "- " + check + " " + c.Criterion
-	}
-	return strings.Join(lines, "\n")
+	return task.RenderCodingRecord(t, rd, startedTime)
 }
 
 // validateQualityGate runs the quality gate based on the task's breaking flag.

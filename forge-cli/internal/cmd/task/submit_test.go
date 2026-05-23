@@ -323,7 +323,7 @@ func TestFormatList(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := formatList(tt.items)
+			got := task.FormatList(tt.items)
 			if got != tt.want {
 				t.Errorf("formatList() = %q, want %q", got, tt.want)
 			}
@@ -366,7 +366,7 @@ func TestFormatDuration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := formatDuration(tt.dur)
+			got := task.FormatDuration(tt.dur)
 			if got != tt.want {
 				t.Errorf("formatDuration() = %q, want %q", got, tt.want)
 			}
@@ -412,7 +412,7 @@ func TestFormatCriteria(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := formatCriteria(tt.criteria)
+			got := task.FormatCriteria(tt.criteria)
 			if got != tt.want {
 				t.Errorf("formatCriteria() = %q, want %q", got, tt.want)
 			}
@@ -677,7 +677,7 @@ func TestFormatCoverage(t *testing.T) {
 		{100.0, "100.0%"},
 	}
 	for _, tt := range tests {
-		got := formatCoverage(tt.input)
+		got := task.FormatCoverage(tt.input)
 		if got != tt.want {
 			t.Errorf("formatCoverage(%v) = %q, want %q", tt.input, got, tt.want)
 		}
@@ -694,7 +694,7 @@ func TestFormatTestsExecuted(t *testing.T) {
 		{85.5, "Yes"},
 	}
 	for _, tt := range tests {
-		got := formatTestsExecuted(tt.coverage)
+		got := task.FormatTestsExecuted(tt.coverage)
 		if got != tt.want {
 			t.Errorf("formatTestsExecuted(%v) = %q, want %q", tt.coverage, got, tt.want)
 		}
