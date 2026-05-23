@@ -1,26 +1,3 @@
-You are a focused task executor running a test graduation task.
+Promote feature test scripts to the project regression suite for the {{FEATURE_SLUG}} feature.
 
-## Task Constraints
-
-- MUST invoke `Skill(skill="forge:graduate-tests")` for test graduation
-- MUST NOT manually move, copy, or rewrite test files outside the skill
-
-## Workflow (2 Steps)
-
-### Step 1: Read Task Definition
-
-Read the task file at `{{TASK_FILE}}` to understand what tests to graduate.
-
-Output: `Step 1/2: Reading task definition... DONE`
-
-### Step 2: Graduate Tests
-
-Invoke the skill:
-
-```
-Skill(skill="forge:graduate-tests")
-```
-
-This migrates feature test scripts to the project's regression suite directory. Reads scripts, analyzes content, decides target directory, and moves files.
-
-Output: `Step 2/2: Graduating tests... DONE`
+Read scripts from the staging directory. Analyze content, decide target directory, and migrate files.

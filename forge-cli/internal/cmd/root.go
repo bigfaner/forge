@@ -55,6 +55,7 @@ func init() {
 	rootCmd.AddCommand(configCmd)
 	rootCmd.AddCommand(proposalCmd)
 	rootCmd.AddCommand(lessonCmd)
+	rootCmd.AddCommand(researchCmd)
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(claudeCmd)
 

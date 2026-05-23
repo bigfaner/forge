@@ -1,6 +1,6 @@
 ---
 title: "Forge CLI 命令参考"
-domains: [cli, commands, reference, skills]
+domains: [cli, commands, reference, skills, task-list]
 ---
 
 # Forge CLI 命令参考
@@ -22,6 +22,7 @@ domains: [cli, commands, reference, skills]
 | `forge quality-gate` | 检查所有任务是否完成，然后运行测试 | `quality_gate.go` |
 | `forge verify-task-done` | 在 git commit 前验证任务完成状态 | `verify_task_done.go` |
 | `forge version` | 打印 CLI 版本号（隐藏命令，不出现在 --help 中） | `version.go` |
+| `forge research [slug]` | 列出或查看 research report 详情 | `research.go` |
 | `forge claude` | 跳过权限检查启动 Claude CLI | `claude.go` |
 
 ## 命令组
@@ -44,16 +45,17 @@ domains: [cli, commands, reference, skills]
 | `forge task list-types` | 列出所有支持的任务类型 | `list_types.go` |
 | `forge task reopen <task-id>` | 重新打开已拒绝/跳过的任务（恢复为 pending） | `reopen.go` |
 | `forge task transition <task-id> <status> --reason` | 手动切换任务状态（操作员覆盖） | `transition.go` |
+| `forge task list` | 列出当前 feature 的所有任务 | `list.go` |
 
 ### forge test — 测试工具
 
-源文件：`test.go`
+源文件：`test/test.go`
 
 | 命令 | 用途 | 源文件 |
 |------|------|--------|
-| `forge test promote <journey-name>` | 将 journey 的 @feature 标签提升为 @regression | `test_promote.go` |
-| `forge test run-journey <journey-name>` | 在隔离的临时目录中运行单个 journey | `journey_isolation.go` |
-| `forge test verify` | 对比 Contract spec 与当前代码，检测契约破坏 | `test_verify.go` |
+| `forge test promote <journey-name>` | 将 journey 的 @feature 标签提升为 @regression | `test/test_promote.go` |
+| `forge test run-journey <journey-name>` | 在隔离的临时目录中运行单个 journey | `test/test.go` |
+| `forge test verify` | 对比 Contract spec 与当前代码，检测契约破坏 | `test/test_verify.go` |
 
 ### forge prompt — Agent 执行提示词管理
 
@@ -83,6 +85,7 @@ domains: [cli, commands, reference, skills]
 | 命令 | 用途 | 源文件 |
 |------|------|--------|
 | `forge config get <key>` | 获取配置值（纯文本输出） | `config.go` |
+| `forge config set <key> <value>` | 设置配置值（支持 dot-notation 嵌套键） | `config.go` |
 | `forge config init` | 交互式初始化 .forge/config.yaml | `config.go` |
 
 ### forge feature — Feature 管理
@@ -130,5 +133,12 @@ domains: [cli, commands, reference, skills]
 | `forge test interfaces` | test | 已移除。通过读取项目结构和 `docs/conventions/` 推断接口类型 |
 | `forge test framework` | test | 已移除 |
 | `forge test get` | test | 已移除 |
+| `forge probe` | 顶层 | 已移除。e2e 探测功能集成到 `quality-gate` 中 |
+| `forge e2e validate-specs` | e2e | 已移除。整个 `forge e2e` 命令组不再存在 |
+| `forge e2e run` | e2e | 已移除。使用 `forge test run-journey` 替代 |
+| `forge e2e setup` | e2e | 已移除 |
+| `forge e2e verify` | e2e | 已移除。使用 `forge test verify` 替代 |
+| `forge e2e compile` | e2e | 已移除 |
+| `forge e2e discover` | e2e | 已移除 |
 
 > **维护提醒**：如果在 skill 编写中需要检测项目信息，请直接读取项目文件，不要依赖 CLI 命令。
