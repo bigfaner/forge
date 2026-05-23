@@ -565,7 +565,7 @@ func TestTypeConstants(t *testing.T) {
 		{TypeCodingRefactor, "coding.refactor"},
 		{TypeCodingFix, "coding.fix"},
 		{TypeDoc, "doc"},
-		{TypeDocEval, "doc.eval"},
+		{TypeDocReview, "doc.review"},
 		{TypeDocSummary, "doc.summary"},
 		{TypeDocConsolidate, "doc.consolidate"},
 		{TypeDocDrift, "doc.drift"},
@@ -598,7 +598,7 @@ func TestSystemTypes(t *testing.T) {
 			TypeTestGenScripts, TypeTestRun,
 			TypeTestGenAndRun, TypeTestVerifyRegression,
 			TypeValidationCode, TypeValidationUx,
-			TypeDocEval, TypeDocSummary,
+			TypeDocReview, TypeDocSummary,
 			TypeCleanCode,
 			TypeEvalJourney, TypeEvalContract,
 		}
@@ -628,7 +628,7 @@ func TestIsSystemType(t *testing.T) {
 			TypeTestGenScripts, TypeTestRun,
 			TypeTestGenAndRun, TypeTestVerifyRegression,
 			TypeValidationCode, TypeValidationUx,
-			TypeDocEval, TypeDocSummary,
+			TypeDocReview, TypeDocSummary,
 			TypeCleanCode,
 		}
 		for _, typ := range systemTypes {
@@ -678,7 +678,7 @@ func TestValidTypes(t *testing.T) {
 			TypeCodingCleanup,
 			TypeCodingRefactor,
 			TypeDoc,
-			TypeDocEval,
+			TypeDocReview,
 			TypeDocSummary,
 			TypeDocConsolidate,
 			TypeDocDrift,

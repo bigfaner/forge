@@ -23,7 +23,7 @@ var autogenTypeToFile = map[string]string{
 	TypeEvalContract:         "data/eval-contract.md",
 	TypeValidationCode:       "data/validation-code.md",
 	TypeValidationUx:         "data/validation-ux.md",
-	TypeDocEval:              "data/doc-eval.md",
+	TypeDocReview:            "data/doc-review.md",
 	TypeDocConsolidate:       "data/doc-consolidate.md",
 	TypeDocDrift:             "data/doc-drift.md",
 	TypeCleanCode:            "data/code-quality-simplify.md",
@@ -683,23 +683,23 @@ func (d AutoGenTaskDef) TaskFromFile() Task {
 	}
 }
 
-// GetDocEvalTask returns a AutoGenTaskDef for the docs-only evaluation task (T-eval-doc).
-// Dependencies are resolved separately by ResolveDocEvalDep.
-func GetDocEvalTask() AutoGenTaskDef {
+// GetReviewDocTask returns a AutoGenTaskDef for the docs-only review task (T-review-doc).
+// Dependencies are resolved separately by ResolveReviewDocDep.
+func GetReviewDocTask() AutoGenTaskDef {
 	return AutoGenTaskDef{
-		Key:           "eval-doc",
-		ID:            "T-eval-doc",
-		Title:         "Evaluate Documentation Quality",
+		Key:           "review-doc",
+		ID:            "T-review-doc",
+		Title:         "Review Documentation Quality",
 		Priority:      "P1",
 		EstimatedTime: "30min",
-		Type:          TypeDocEval,
+		Type:          TypeDocReview,
 		Scope:         "all",
 	}
 }
 
-// ResolveDocEvalDep sets the dependency of T-eval-doc on the last business task.
+// ResolveReviewDocDep sets the dependency of T-review-doc on the last business task.
 // Uses lexicographic ordering to find the maximum task ID among business tasks.
-func ResolveDocEvalDep(task *AutoGenTaskDef, existingTasks map[string]Task) {
+func ResolveReviewDocDep(task *AutoGenTaskDef, existingTasks map[string]Task) {
 	var bestID string
 	for _, t := range existingTasks {
 		if isAutoGenForDep(t.ID) {
@@ -720,7 +720,7 @@ func isAutoGenForDep(id string) bool {
 	if isTestTaskID(id) {
 		return true
 	}
-	if id == "T-eval-doc" || id == "T-validate-code" || id == "T-validate-ux" {
+	if id == "T-review-doc" || id == "T-validate-code" || id == "T-validate-ux" {
 		return true
 	}
 	if strings.HasSuffix(id, IDSuffixGate) || strings.HasSuffix(id, IDSuffixSummary) {

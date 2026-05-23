@@ -1067,10 +1067,10 @@ func TestIsDocsOnly(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "documentation plus doc-evaluation",
+			name: "documentation plus doc-review",
 			tasks: map[string]task.Task{
 				"t1": {ID: "1", Type: task.TypeDoc},
-				"t2": {ID: "T-eval-doc", Type: task.TypeDocEval},
+				"t2": {ID: "T-review-doc", Type: task.TypeDocReview},
 			},
 			want: true,
 		},
@@ -1162,7 +1162,7 @@ func TestCheckAllCompleted_DocsOnlyFlag(t *testing.T) {
 			name: "documentation only sets DocsOnly true",
 			tasks: map[string]task.Task{
 				"t1": {ID: "1", Status: "completed", Type: task.TypeDoc},
-				"t2": {ID: "T-eval-doc", Status: "completed", Type: task.TypeDocEval},
+				"t2": {ID: "T-review-doc", Status: "completed", Type: task.TypeDocReview},
 			},
 			wantDocsOnly: true,
 		},
