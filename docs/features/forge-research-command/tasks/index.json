@@ -1,0 +1,57 @@
+{
+  "feature": "forge-research-command",
+  "proposal": "docs/proposals/forge-research-command/proposal.md",
+  "created": "2026-05-23",
+  "tasks": {
+    "1-research-discovery": {
+      "id": "1",
+      "title": "Implement research discovery package",
+      "priority": "P0",
+      "estimatedTime": "1-2h",
+      "status": "pending",
+      "file": "1-research-discovery.md",
+      "record": "records/1-research-discovery.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "2-research-cli-command": {
+      "id": "2",
+      "title": "Add forge research CLI command",
+      "priority": "P0",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-research-cli-command.md",
+      "record": "records/2-research-cli-command.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "pending",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "scope": "all",
+      "type": "doc.drift"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
