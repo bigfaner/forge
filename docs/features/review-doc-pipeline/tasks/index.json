@@ -34,7 +34,7 @@
       "title": "Add conditional user stories to write-prd Step 7",
       "priority": "P1",
       "estimatedTime": "30min",
-      "status": "pending",
+      "status": "completed",
       "file": "3-write-prd-conditional-stories.md",
       "record": "records/3-write-prd-conditional-stories.md",
       "type": "doc"
