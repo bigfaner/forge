@@ -218,6 +218,17 @@ func runWorktreeRemove(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Check for unpushed commits before removal (unless --force)
+	unpushedCount, unpushedErr := countUnpushedCommitsFunc(targetDir)
+	if !errors.Is(unpushedErr, git.ErrNoUpstream) && unpushedErr != nil {
+		// Unexpected error — report but don't block removal
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: could not check unpushed commits: %v\n", unpushedErr)
+	}
+	if unpushedErr == nil && unpushedCount > 0 && !force {
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: branch has %d unpushed commit(s) — push first, or use --force to discard\n", unpushedCount)
+		return fmt.Errorf("branch has %d unpushed commit(s)", unpushedCount)
+	}
+
 	// Build git worktree remove args
 	removeArgs := []string{"worktree", "remove"}
 	if force {
