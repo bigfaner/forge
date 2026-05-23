@@ -1,0 +1,45 @@
+{
+  "feature": "run-tasks-git-status",
+  "proposal": "docs/proposals/run-tasks-git-status/proposal.md",
+  "created": "2026-05-23",
+  "tasks": {
+    "1-add-git-status": {
+      "id": "1",
+      "title": "Add git status to run-tasks Post-Completion",
+      "priority": "P1",
+      "estimatedTime": "15m",
+      "status": "pending",
+      "file": "1-add-git-status.md",
+      "record": "records/1-add-git-status.md",
+      "type": "doc"
+    },
+    "eval-doc": {
+      "id": "T-eval-doc",
+      "title": "Evaluate Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "eval-doc.md",
+      "record": "records/eval-doc.md",
+      "scope": "all",
+      "type": "doc.eval"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
