@@ -72,6 +72,7 @@ eval-journey 和 eval-contract 的 rubric 共享以下评分维度（总分 1000
 - [ ] 风险驱动测试密度：基于 Journey 的 risk_level 字段差异化衍生 Outcome 数量
 - [ ] Contract 测试（集成层）+ Journey 烟测试（E2E 层）生成，按场景类型差异化侧重比例
 - [ ] 场景差异化：CLI/TUI/WebUI/API 核心支持 + Mobile 尽力而为
+- [ ] 可扩展场景类型系统：场景类型配置文件（`scenarios/` 目录）定义检测规则、测试策略、环境检测项、必须 Outcome，eval rubric 根据配置动态适配评分
 - [ ] 内置 Convention 文件扩充（pytest、JUnit、Rust/cargo test）
 - [ ] test-guide 增强：自动扫描项目信号检测测试框架并生成 Convention 草稿
 - [ ] gen-test-scripts 适配增强后的合约规范和场景差异化
@@ -147,15 +148,8 @@ eval-journey 和 eval-contract 的 rubric 共享以下评分维度（总分 1000
   - **Low**：只读操作/纯展示/查询类功能
   - **Medium**：不属于上述两类的所有功能
 5. eval-journey 按 Scope 中 Eval Rubric 评分维度框架评估 Journey 质量（6 维度，总分 1000，每维度最低阈值：完整性 ≥ 120、语义纯度 ≥ 120）；未达阈值则自动迭代修正（最多 3 轮）。若 eval 评分因 LLM 输出无法解析而失败，记录错误日志并重试评分一次；重试仍失败则跳过门禁，标记该 Journey/Contract 为 `eval-skipped`，置信度自动降为 LOW。eval-skipped 降级策略：（1）下游步骤正常执行，不做阻断；（2）生成的测试文件头部标记 `eval-skipped: true` + `confidence: LOW`；（3）测试报告中单独列出 eval-skipped 项，提示用户人工审核 Journey/Contract 内容正确性；（4）用户审核后可手动清除 eval-skipped 标记，清除后置信度由 Fact Table 覆盖率重新计算
-6. gen-contracts 从 Journey 生成 6 维度合约规范，自动衍生边界/异常 Outcome
+6. gen-contracts 从 Journey 生成 6 维度合约规范，自动衍生边界/异常 Outcome。合约生成后执行 schema 验证（6 维度结构完整性 + Outcome Preconditions 互斥性检查）；验证失败则记录不符合项明细，自动重新生成一次（将 schema 错误作为反馈注入 prompt），重试仍失败则暂停管线，输出不符合项供人工修正
 7. eval-contract 按 Scope 中 Eval Rubric 评分维度框架评估 Contract 质量（同样的维度、阈值和失败处理逻辑）
-
-**PAUSE_J / PAUSE_C 恢复路径**（eval 3 轮迭代用尽后，用户可选择）：
-- **a. 跳过门禁继续**：忽略评分不足，下游正常执行。产物标记 `eval-bypassed: true`，置信度降为 LOW
-- **b. 放弃管线**：终止执行，输出已生成的中间产物（Journey/Contract 文档）供人工参考
-- **c. 修改后重跑**：用户手动修改 Journey/Contract 文档后，重新进入对应 eval 步骤（不计入自动迭代轮次）
-8. gen-contracts 从 Journey 生成 6 维度合约规范，自动衍生边界/异常 Outcome。合约生成后执行 schema 验证（6 维度结构完整性 + Outcome Preconditions 互斥性检查）；验证失败则记录不符合项明细，自动重新生成一次（将 schema 错误作为反馈注入 prompt），重试仍失败则暂停管线，输出不符合项供人工修正
-9. eval-contract 按 Scope 中 Eval Rubric 评分维度框架评估 Contract 质量（同样的维度、阈值和失败处理逻辑）
 
 **PAUSE_J / PAUSE_C 恢复路径**（eval 3 轮迭代用尽后，用户可选择）：
 - **a. 跳过门禁继续**：忽略评分不足，下游正常执行。产物标记 `eval-bypassed: true`，置信度降为 LOW
@@ -163,15 +157,15 @@ eval-journey 和 eval-contract 的 rubric 共享以下评分维度（总分 1000
 - **c. 修改后重跑**：用户手动修改 Journey/Contract 文档后，重新进入对应 eval 步骤（不计入自动迭代轮次）
 
 **阶段三：测试生成与增强**
-10. gen-test-scripts 根据 Contract + Convention 生成可执行测试代码，生成后执行语法/可执行性验证：检查（a）测试文件语法正确（通过框架 dry-run 或 `--list-tests` 模式验证可发现性）；（b）导入路径可解析（无 missing module 错误）。验证失败则自动重试生成一次，重试仍失败则标记该测试文件为 `gen-failed` 并跳过，不阻塞其余测试执行
-11. 可选：Run-to-Learn 迭代 — 运行骨架测试捕获实际输出，丰富 Fact Table，重新生成更精确的测试
-12. 场景特定环境就绪检测：验证执行环境是否准备好
-13. 为每个生成的测试标注置信度评级（HIGH/MEDIUM/LOW）
+8. gen-test-scripts 根据 Contract + Convention 生成可执行测试代码，生成后执行语法/可执行性验证：检查（a）测试文件语法正确（通过框架 dry-run 或 `--list-tests` 模式验证可发现性）；（b）导入路径可解析（无 missing module 错误）。验证失败则自动重试生成一次，重试仍失败则标记该测试文件为 `gen-failed` 并跳过，不阻塞其余测试执行
+9. 可选：Run-to-Learn 迭代 — 运行骨架测试捕获实际输出，丰富 Fact Table，重新生成更精确的测试。退出条件：≤ 3 轮，或 Fact Table 覆盖率 ≥ 80%（即"覆盖率达标"的绝对阈值）。骨架测试执行依赖环境就绪（步骤 10 的检测项），若环境不满足则跳过 R2L 直接使用静态信息
+10. 场景特定环境就绪检测：验证执行环境是否准备好
+11. 为每个生成的测试标注置信度评级（HIGH/MEDIUM/LOW）
 
 **阶段四：执行与报告**
-14. run-tests 执行生成的测试
-15. 输出测试报告（含置信度评级、VERIFY/REVIEW 标记统计）
-16. 若测试失败且用户选择自动修复（FIX_DECIDE）：区分失败类型——**脚本问题**（语法错误、导入缺失）回退到 gen-test-scripts 重新生成；**Contract 语义错误**（断言与实际行为不符）回退到 gen-contracts 重新生成合约。自动修复不超过 2 次，且修复后的测试不得降低断言严格度（如移除断言、放宽阈值）（**human-verified**：此约束由人工在 code review 中验证，无自动化检测机制）。修复耗尽后输出失败报告供人工处理
+12. run-tests 执行生成的测试
+13. 输出测试报告（含置信度评级、VERIFY/REVIEW 标记统计）
+14. 若测试失败且用户选择自动修复（FIX_DECIDE）：区分失败类型——**脚本问题**（语法错误、导入缺失）回退到 gen-test-scripts 重新生成；**Contract 语义错误**（断言与实际行为不符）回退到 gen-contracts 重新生成合约。自动修复不超过 2 次，且修复后的测试不得降低断言严格度（如移除断言、放宽阈值）（**human-verified**：此约束由人工在 code review 中验证，无自动化检测机制）。修复耗尽后输出失败报告供人工处理
 
 ### Data Flow Table
 

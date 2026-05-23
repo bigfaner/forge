@@ -84,7 +84,7 @@ feature: "test-capability-v2"
 - And 草稿通过 Convention schema 验证后，用户审核修改量评估方式为：`diff --stat` 统计用户修改行数占草稿总行数的比例；目标 ≤ 20%（此指标为人工审核参考，标记为 **human-verified**）
 - Given 用户拒绝 Convention 草稿
 - When 用户指出草稿中的错误部分
-- Then test-guide 基于用户反馈重新生成草稿（保留用户认可的部分，仅修正被指出的错误），最多重试 2 次
+- Then test-guide 基于用户反馈重新生成草稿（保留用户认可的部分，仅修正被指出的错误），最多重试 2 次；2 次重试耗尽后输出最终草稿供用户手动编辑，管线暂停等待用户确认
 - Given 内置 Convention 库
 - When 用户查看 Forge 插件的 `conventions/` 目录
 - Then 包含 pytest、JUnit、Rust/cargo test 共 ≥ 3 个新增 Convention 文件
