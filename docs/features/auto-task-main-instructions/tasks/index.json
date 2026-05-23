@@ -19,7 +19,7 @@
       "title": "Add BodyContext struct and renderBody placeholder substitution",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "2-body-context.md",
       "record": "records/2-body-context.md",
       "scope": "backend",
@@ -85,7 +85,8 @@
     "completed",
     "blocked",
     "skipped",
-    "rejected"
+    "rejected",
+    "suspended"
   ],
   "priorityEnum": [
     "P0",

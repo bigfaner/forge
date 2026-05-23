@@ -265,7 +265,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 		// Generate .md if missing
 		mdPath := filepath.Join(opts.TasksDir, evalKey+".md")
 		if _, err := os.Stat(mdPath); os.IsNotExist(err) {
-			evalContent, err := GenerateTestTaskMD(evalTask, opts.FeatureSlug)
+			evalContent, err := GenerateTestTaskMD(evalTask, BodyContext{})
 			if err != nil {
 				result.Warnings = append(result.Warnings, fmt.Sprintf("generate %s: %v", evalKey, err))
 			} else if err := os.WriteFile(mdPath, evalContent, 0644); err != nil {
@@ -298,7 +298,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 			// Generate .md if missing
 			mdPath := filepath.Join(opts.TasksDir, ttKey+".md")
 			if _, err := os.Stat(mdPath); os.IsNotExist(err) {
-				content, genErr := GenerateTestTaskMD(td, opts.FeatureSlug)
+				content, genErr := GenerateTestTaskMD(td, BodyContext{})
 				if genErr != nil {
 					result.Warnings = append(result.Warnings, fmt.Sprintf("generate %s: %v", ttKey, genErr))
 					continue

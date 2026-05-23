@@ -123,7 +123,7 @@ func TestGenerateTestTaskMD(t *testing.T) {
 		TestType: "api", StrategyKind: "generate",
 	}
 
-	content, err := GenerateTestTaskMD(def, "my-feature")
+	content, err := GenerateTestTaskMD(def, BodyContext{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -153,7 +153,7 @@ func TestGenerateTestTaskMD_SharedTask(t *testing.T) {
 		Type: TypeTestGenCases, Scope: "all",
 	}
 
-	content, err := GenerateTestTaskMD(def, "my-feature")
+	content, err := GenerateTestTaskMD(def, BodyContext{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -377,7 +377,7 @@ func TestGenerateTestTaskMD_WithTestType(t *testing.T) {
 		TestType: "api", StrategyKind: "generate",
 	}
 
-	content, err := GenerateTestTaskMD(def, "my-feature")
+	content, err := GenerateTestTaskMD(def, BodyContext{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -632,7 +632,7 @@ func TestGenerateTestTaskMD_EmbedTemplate_LoadsContent(t *testing.T) {
 				EstimatedTime: "1h", Type: tt.typ, Scope: "all",
 			}
 
-			content, err := GenerateTestTaskMD(def, "my-feature")
+			content, err := GenerateTestTaskMD(def, BodyContext{})
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -654,7 +654,7 @@ func TestGenerateTestTaskMD_StrategyContentAppendedAfterTemplate(t *testing.T) {
 		StrategyContent: []byte("# Custom Strategy\n\nUse this strategy."),
 	}
 
-	content, err := GenerateTestTaskMD(def, "my-feature")
+	content, err := GenerateTestTaskMD(def, BodyContext{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -681,7 +681,7 @@ func TestGenerateTestTaskMD_TestTypeNotedInBody(t *testing.T) {
 		TestType: "api",
 	}
 
-	content, err := GenerateTestTaskMD(def, "my-feature")
+	content, err := GenerateTestTaskMD(def, BodyContext{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -701,7 +701,7 @@ func TestGenerateTestTaskMD_FrontmatterUnchanged(t *testing.T) {
 		MainSession: true,
 	}
 
-	content, err := GenerateTestTaskMD(def, "my-feature")
+	content, err := GenerateTestTaskMD(def, BodyContext{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -729,6 +729,185 @@ func TestGenerateTestTaskMD_FrontmatterUnchanged(t *testing.T) {
 	}
 	if !strings.Contains(s, "mainSession: true") {
 		t.Error("missing mainSession in frontmatter")
+	}
+}
+
+// --- BodyContext and renderBody tests ---
+
+func TestRenderBody_SubstitutesAllPlaceholders(t *testing.T) {
+	template := `Feature: {{FEATURE_SLUG}}
+Mode: {{MODE}}
+Scope: {{SCOPE}}
+Interfaces: {{INTERFACES}}
+Test Type: {{TEST_TYPE}}
+Acceptance:
+{{ACCEPTANCE_CRITERIA}}`
+
+	ctx := BodyContext{
+		FeatureSlug:        "my-feature",
+		Mode:               "quick",
+		Scope:              []string{"backend", "frontend"},
+		Interfaces:         []string{"api", "cli"},
+		AcceptanceCriteria: []string{"AC1: works", "AC2: fast"},
+	}
+	def := AutoGenTaskDef{TestType: "api"}
+
+	result := renderBody(template, def, ctx)
+
+	if !strings.Contains(result, "Feature: my-feature") {
+		t.Error("FEATURE_SLUG not substituted")
+	}
+	if !strings.Contains(result, "Mode: quick") {
+		t.Error("MODE not substituted")
+	}
+	if !strings.Contains(result, "- backend\n- frontend") {
+		t.Errorf("SCOPE not substituted, got:\n%s", result)
+	}
+	if !strings.Contains(result, "- api\n- cli") {
+		t.Errorf("INTERFACES not substituted, got:\n%s", result)
+	}
+	if !strings.Contains(result, "Test Type: api") {
+		t.Error("TEST_TYPE not substituted")
+	}
+	if !strings.Contains(result, "- [ ] AC1: works") {
+		t.Errorf("ACCEPTANCE_CRITERIA not substituted, got:\n%s", result)
+	}
+}
+
+func TestRenderBody_EmptyMode_OmitsLine(t *testing.T) {
+	template := "Feature: {{FEATURE_SLUG}}\nMode: {{MODE}}\nDone"
+	ctx := BodyContext{FeatureSlug: "test"}
+	def := AutoGenTaskDef{}
+
+	result := renderBody(template, def, ctx)
+
+	if strings.Contains(result, "Mode:") {
+		t.Errorf("Mode line should be omitted when empty, got:\n%s", result)
+	}
+	if !strings.Contains(result, "Feature: test") {
+		t.Error("FEATURE_SLUG should still be present")
+	}
+}
+
+func TestRenderBody_EmptyScope_OmitsSection(t *testing.T) {
+	template := "Start\n## Scope\n{{SCOPE}}\n## End"
+	ctx := BodyContext{FeatureSlug: "test"}
+	def := AutoGenTaskDef{}
+
+	result := renderBody(template, def, ctx)
+
+	if strings.Contains(result, "## Scope") {
+		t.Errorf("Scope section should be omitted when empty, got:\n%s", result)
+	}
+	if !strings.Contains(result, "## End") {
+		t.Error("Content after scope section should remain")
+	}
+}
+
+func TestRenderBody_EmptyInterfaces_Default(t *testing.T) {
+	template := "Interfaces: {{INTERFACES}}"
+	ctx := BodyContext{FeatureSlug: "test"}
+	def := AutoGenTaskDef{}
+
+	result := renderBody(template, def, ctx)
+
+	if !strings.Contains(result, "See .forge/config.yaml") {
+		t.Errorf("Empty interfaces should default to 'See .forge/config.yaml', got:\n%s", result)
+	}
+}
+
+func TestRenderBody_EmptyTestType_OmitsLine(t *testing.T) {
+	template := "Feature: {{FEATURE_SLUG}}\nType: {{TEST_TYPE}}\nDone"
+	ctx := BodyContext{FeatureSlug: "test"}
+	def := AutoGenTaskDef{}
+
+	result := renderBody(template, def, ctx)
+
+	if strings.Contains(result, "Type:") {
+		t.Errorf("TestType line should be omitted when empty, got:\n%s", result)
+	}
+}
+
+func TestRenderBody_EmptyAcceptanceCriteria_Default(t *testing.T) {
+	template := "Acceptance:\n{{ACCEPTANCE_CRITERIA}}"
+	ctx := BodyContext{FeatureSlug: "test"}
+	def := AutoGenTaskDef{}
+
+	result := renderBody(template, def, ctx)
+
+	if !strings.Contains(result, "- [ ] All acceptance criteria met") {
+		t.Errorf("Empty acceptance criteria should default, got:\n%s", result)
+	}
+}
+
+func TestRenderBody_EmptyBodyContext_KnownPlaceholdersResolved(t *testing.T) {
+	template := "Feature: {{FEATURE_SLUG}}\nMode: {{MODE}}\n## Scope\n{{SCOPE}}\n## Other\nInterfaces: {{INTERFACES}}\nType: {{TEST_TYPE}}\nAcceptance:\n{{ACCEPTANCE_CRITERIA}}"
+	ctx := BodyContext{}
+	def := AutoGenTaskDef{}
+
+	result := renderBody(template, def, ctx)
+
+	knownPlaceholders := []string{"{{FEATURE_SLUG}}", "{{MODE}}", "{{SCOPE}}", "{{INTERFACES}}", "{{TEST_TYPE}}", "{{ACCEPTANCE_CRITERIA}}"}
+	for _, ph := range knownPlaceholders {
+		if strings.Contains(result, ph) {
+			t.Errorf("placeholder %s not resolved in output:\n%s", ph, result)
+		}
+	}
+}
+
+func TestGenerateTestTaskMD_WithBodyContext(t *testing.T) {
+	def := AutoGenTaskDef{
+		ID: "T-test-gen-cases", Key: "gen-test-cases",
+		Title: "Generate Test Cases", Priority: "P1",
+		EstimatedTime: "1-2h", Type: TypeTestGenCases, Scope: "all",
+	}
+	ctx := BodyContext{
+		FeatureSlug: "my-feature",
+		Mode:        "quick",
+	}
+
+	content, err := GenerateTestTaskMD(def, ctx)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	s := string(content)
+	// Frontmatter still works
+	if !strings.Contains(s, `id: "T-test-gen-cases"`) {
+		t.Error("missing id in frontmatter")
+	}
+	// Template body loaded (placeholder substitution applied)
+	if !strings.Contains(s, "forge:gen-test-cases") {
+		t.Error("body should contain template content")
+	}
+}
+
+func TestGenerateTestTaskMD_BackwardCompat_EmptyBodyContext(t *testing.T) {
+	def := AutoGenTaskDef{
+		ID: "T-test-gen-cases", Key: "gen-test-cases",
+		Title: "Generate Test Cases", Priority: "P1",
+		EstimatedTime: "1-2h", Type: TypeTestGenCases, Scope: "all",
+	}
+
+	// Passing empty BodyContext should produce same output as before
+	content, err := GenerateTestTaskMD(def, BodyContext{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	s := string(content)
+	// Only check our 6 managed placeholders are resolved
+	managed := []string{
+		"{{FEATURE_SLUG}}", "{{MODE}}", "{{SCOPE}}",
+		"{{INTERFACES}}", "{{TEST_TYPE}}", "{{ACCEPTANCE_CRITERIA}}",
+	}
+	for _, ph := range managed {
+		if strings.Contains(s, ph) {
+			t.Errorf("managed placeholder %s should be resolved", ph)
+		}
+	}
+	if !strings.Contains(s, `id: "T-test-gen-cases"`) {
+		t.Error("frontmatter should be intact")
 	}
 }
 
