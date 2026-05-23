@@ -139,8 +139,7 @@ type idSortKey struct {
 
 func sortKey(id string) idSortKey {
 	// Test pipeline IDs: T-1, T-2, etc.
-	if strings.HasPrefix(id, task.IDPrefixTestPipeline) {
-		numStr := strings.TrimPrefix(id, task.IDPrefixTestPipeline)
+	if numStr, ok := strings.CutPrefix(id, task.IDPrefixTestPipeline); ok {
 		num, _ := strconv.Atoi(numStr)
 		return idSortKey{isTestPipeline: true, numPrefix: num}
 	}
