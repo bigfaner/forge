@@ -1,3 +1,4 @@
+<!-- DEPRECATED: Replaced by test.gen-journeys + test.gen-contracts in v3.0.0 -->
 Generate and run test scripts for the {{FEATURE_SLUG}} feature.
 Test type: {{TEST_TYPE}}.
 
