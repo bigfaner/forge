@@ -143,40 +143,27 @@ func TestValidator_ComplexDependencies(t *testing.T) {
 	})
 }
 
-// Test check command logic indirectly
+// Test check command logic indirectly using the unified task.ResolveWildcardDep.
 func TestCheckLogic(t *testing.T) {
 	t.Run("valid dependencies", func(t *testing.T) {
-		taskIDs := map[string]bool{
-			"1.1": true,
-			"1.2": true,
-			"2.1": true,
-		}
-
-		tasks := map[string]task.Task{
-			"task1": {ID: "1.1", Dependencies: []string{}},
+		index := task.NewTestIndex("test", map[string]task.Task{
+			"task1": {ID: "1.1"},
 			"task2": {ID: "1.2", Dependencies: []string{"1.1"}},
 			"task3": {ID: "2.1", Dependencies: []string{"1.x"}}, // wildcard
-		}
+		})
 
 		var errors []string
-		for _, t := range tasks {
+		for _, t := range index.TasksMap() {
 			for _, dep := range t.Dependencies {
-				if hasSuffix(dep, ".x") || hasSuffix(dep, "x") {
-					prefix := trimSuffix(trimSuffix(dep, "x"), ".")
-					prefixWithDot := prefix + "."
-
-					var matches []string
-					for id := range taskIDs {
-						if hasPrefix(id, prefixWithDot) {
-							matches = append(matches, id)
-						}
-					}
-
+				matches, isWildcard := task.ResolveWildcardDep(index, dep)
+				if isWildcard {
 					if len(matches) == 0 {
 						errors = append(errors, "wildcard matches nothing")
 					}
-				} else if !taskIDs[dep] {
-					errors = append(errors, "dependency not found")
+				} else {
+					if _, found := index.ByID(dep); !found {
+						errors = append(errors, "dependency not found")
+					}
 				}
 			}
 		}
@@ -187,19 +174,20 @@ func TestCheckLogic(t *testing.T) {
 	})
 
 	t.Run("invalid dependencies", func(t *testing.T) {
-		taskIDs := map[string]bool{
-			"1.1": true,
-		}
-
-		tasks := map[string]task.Task{
+		index := task.NewTestIndex("test", map[string]task.Task{
 			"task1": {ID: "1.1", Dependencies: []string{"9.9"}}, // non-existent
-		}
+		})
 
 		var errors []string
-		for key, t := range tasks {
+		for key, t := range index.TasksMap() {
 			for _, dep := range t.Dependencies {
-				if !hasSuffix(dep, ".x") && !hasSuffix(dep, "x") {
-					if !taskIDs[dep] {
+				matches, isWildcard := task.ResolveWildcardDep(index, dep)
+				if isWildcard {
+					if len(matches) == 0 {
+						errors = append(errors, "wildcard matches nothing")
+					}
+				} else {
+					if _, found := index.ByID(dep); !found {
 						errors = append(errors, key+": dependency "+dep+" not found")
 					}
 				}
@@ -210,22 +198,6 @@ func TestCheckLogic(t *testing.T) {
 			t.Error("expected error for missing dependency")
 		}
 	})
-}
-
-// Helper functions for check logic
-func hasSuffix(s, suffix string) bool {
-	return len(s) >= len(suffix) && s[len(s)-len(suffix):] == suffix
-}
-
-func hasPrefix(s, prefix string) bool {
-	return len(s) >= len(prefix) && s[:len(prefix)] == prefix
-}
-
-func trimSuffix(s, suffix string) string {
-	if hasSuffix(s, suffix) {
-		return s[:len(s)-len(suffix)]
-	}
-	return s
 }
 
 func encodeIndex(index *task.TaskIndex) ([]byte, error) {
