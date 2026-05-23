@@ -22,7 +22,7 @@
       "dependencies": [
         "9"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "10-refactor-ask-auto-behavior.md",
       "record": "records/10-refactor-ask-auto-behavior.md",
       "scope": "backend",
