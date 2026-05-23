@@ -169,7 +169,6 @@ func TestRunMigrate_AllKnownIDPatterns(t *testing.T) {
 		{"disc-1", task.TypeCodingFix},
 		{"T-test-gen-scripts", task.TypeTestGenScripts},
 		{"T-test-run", task.TypeTestRun},
-		{"T-test-graduate", task.TypeTestGraduate},
 		{"T-test-verify-regression", task.TypeTestVerifyRegression},
 		{"T-specs-consolidate", task.TypeDocConsolidate},
 	}

@@ -146,7 +146,7 @@ func runQualityGate(_ *cobra.Command, _ []string) error {
 	if just.FileExists(e2eScriptsDir) && !just.FileExists(markerPath) {
 		fmt.Fprintln(os.Stderr,
 			"WARNING: feature e2e scripts exist but haven't been run or promoted.\n"+
-				"  Add T-test-run (run-e2e-tests) and T-test-graduate (promote) to your task index,\n"+
+				"  Add T-test-run (run-e2e-tests) to your task index,\n"+
 				"  or run /run-e2e-tests and forge test promote <journey> manually.")
 	}
 

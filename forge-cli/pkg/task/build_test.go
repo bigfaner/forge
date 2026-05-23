@@ -690,13 +690,11 @@ func TestIsTestTaskID(t *testing.T) {
 		{"T-test-gen-scripts-api", true},
 		{"T-test-run", true},
 		{"T-test-runa", true},
-		{"T-test-graduate", true},
 		{"T-test-verify-regression", true},
 		// T-quick-* prefix
 		{"T-quick-gen-and-run-api", true},
 		{"T-quick-verify-regressiona", true},
 		{"T-quick-gen-and-run", true},
-		{"T-quick-graduate", true},
 		{"T-quick-verify-regression", true},
 		// T-specs-* prefix
 		{"T-specs-consolidate", true},

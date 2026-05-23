@@ -442,13 +442,6 @@ func TestTC_008_QuickModeMultiProfileLetterSuffixes(t *testing.T) {
 		assert.Equal(t, "test.gen-and-run", task.Type,
 			"%s should have type test.gen-and-run", id)
 	}
-
-	// Verify suffixed graduate tasks exist
-	for _, id := range []string{"T-quick-graduatea", "T-quick-graduateb"} {
-		task, ok := byID[id]
-		require.True(t, ok, "%s should exist", id)
-		assert.Equal(t, "test.graduate", task.Type,
-			"%s should have type test.graduate", id)
 	}
 
 	// Shared tasks T-quick-verify-regression and T-quick-doc-drift should exist

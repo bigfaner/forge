@@ -16,12 +16,10 @@ func TestInferType(t *testing.T) {
 		// Breakdown test tasks (exact match)
 		{"T-test-gen-scripts", TypeTestGenScripts},
 		{"T-test-run", TypeTestRun},
-		{"T-test-graduate", TypeTestGraduate},
 		{"T-test-verify-regression", TypeTestVerifyRegression},
 
 		// Quick test tasks (exact match)
 		{"T-quick-gen-and-run", TypeTestGenAndRun},
-		{"T-quick-graduate", TypeTestGraduate},
 		{"T-quick-verify-regression", TypeTestVerifyRegression},
 		{"T-quick-doc-drift", TypeDocDrift},
 
@@ -49,8 +47,6 @@ func TestInferType(t *testing.T) {
 		{"T-test-verify-regression-api", ""},
 		{"T-specs-consolidate-api", ""},
 		{"T-test-run-api", ""},
-		{"T-test-graduate-api", ""},
-		{"T-quick-graduate-cli", ""},
 		{"T-quick-verify-regression-api", ""},
 
 		// Unknown IDs return empty string
@@ -72,7 +68,6 @@ func TestInferType(t *testing.T) {
 		// Old profile-suffixed IDs no longer match
 		{"T-test-gen-scriptsa", ""},
 		{"T-test-runa", ""},
-		{"T-quick-graduatea", ""},
 		{"T-quick-verify-regressiona", ""},
 		{"T-quick-doc-drifta", ""},
 	}

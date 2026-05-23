@@ -34,12 +34,12 @@ func TestGetBreakdownTestTasks_EmptyInterfaces(t *testing.T) {
 func TestGetBreakdownTestTasks_SingleType(t *testing.T) {
 	tasks := GetBreakdownTestTasks([]string{"cli"}, defaultAuto)
 
-	// per-type: gen-scripts-cli + run + graduate + verify-regression + consolidate = 5
-	if len(tasks) != 5 {
-		t.Fatalf("expected 5 tasks, got %d", len(tasks))
+	// per-type: gen-scripts-cli + run + verify-regression + consolidate = 4
+	if len(tasks) != 4 {
+		t.Fatalf("expected 4 tasks, got %d", len(tasks))
 	}
 
-	wantIDs := []string{"T-test-gen-scripts-cli", "T-test-run", "T-test-graduate", "T-test-verify-regression", "T-specs-consolidate"}
+	wantIDs := []string{"T-test-gen-scripts-cli", "T-test-run", "T-test-verify-regression", "T-specs-consolidate"}
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
 			t.Errorf("tasks[%d].ID = %q, want %q", i, tasks[i].ID, want)
@@ -51,13 +51,10 @@ func TestGetBreakdownTestTasks_SingleType(t *testing.T) {
 		t.Errorf("run should depend on gen-scripts-cli, got %v", tasks[1].Dependencies)
 	}
 	if tasks[2].Dependencies[0] != "T-test-run" {
-		t.Errorf("graduate should depend on run, got %v", tasks[2].Dependencies)
+		t.Errorf("verify-regression should depend on run, got %v", tasks[2].Dependencies)
 	}
-	if tasks[3].Dependencies[0] != "T-test-graduate" {
-		t.Errorf("verify-regression should depend on graduate, got %v", tasks[3].Dependencies)
-	}
-	if tasks[4].Dependencies[0] != "T-test-verify-regression" {
-		t.Errorf("consolidate should depend on verify-regression, got %v", tasks[4].Dependencies)
+	if tasks[3].Dependencies[0] != "T-test-verify-regression" {
+		t.Errorf("consolidate should depend on verify-regression, got %v", tasks[3].Dependencies)
 	}
 }
 
@@ -72,12 +69,12 @@ func TestGetQuickTestTasks_EmptyInterfaces(t *testing.T) {
 func TestGetQuickTestTasks_SingleType(t *testing.T) {
 	tasks := GetQuickTestTasks([]string{"cli"}, allEnabledAuto)
 
-	// gen-and-run-cli + graduate + verify-regression + drift = 4
-	if len(tasks) != 4 {
-		t.Fatalf("expected 4 tasks, got %d", len(tasks))
+	// gen-and-run-cli + verify-regression + drift = 3
+	if len(tasks) != 3 {
+		t.Fatalf("expected 3 tasks, got %d", len(tasks))
 	}
 
-	wantIDs := []string{"T-quick-gen-and-run-cli", "T-quick-graduate", "T-quick-verify-regression", "T-quick-doc-drift"}
+	wantIDs := []string{"T-quick-gen-and-run-cli", "T-quick-verify-regression", "T-quick-doc-drift"}
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
 			t.Errorf("tasks[%d].ID = %q, want %q", i, tasks[i].ID, want)
@@ -89,19 +86,13 @@ func TestGetQuickTestTasks_SingleType(t *testing.T) {
 	}
 
 	if tasks[1].Dependencies[0] != "T-quick-gen-and-run-cli" {
-		t.Errorf("graduate should depend on gen-and-run, got %v", tasks[1].Dependencies)
+		t.Errorf("verify-regression should depend on gen-and-run, got %v", tasks[1].Dependencies)
 	}
-	if tasks[2].Dependencies[0] != "T-quick-graduate" {
-		t.Errorf("verify-regression should depend on graduate, got %v", tasks[2].Dependencies)
+	if tasks[2].Type != TypeDocDrift {
+		t.Errorf("T-quick-doc-drift Type = %q, want %q", tasks[2].Type, TypeDocDrift)
 	}
-	if tasks[3].Dependencies[0] != "T-quick-verify-regression" {
-		t.Errorf("drift detection should depend on verify-regression, got %v", tasks[3].Dependencies)
-	}
-	if tasks[3].Type != TypeDocDrift {
-		t.Errorf("T-quick-doc-drift Type = %q, want %q", tasks[3].Type, TypeDocDrift)
-	}
-	if tasks[3].Scope != "all" {
-		t.Errorf("T-quick-doc-drift Scope = %q, want %q", tasks[3].Scope, "all")
+	if tasks[2].Scope != "all" {
+		t.Errorf("T-quick-doc-drift Scope = %q, want %q", tasks[2].Scope, "all")
 	}
 }
 
@@ -252,14 +243,14 @@ func TestResolveDocEvalDep(t *testing.T) {
 func TestGetBreakdownTestTasks_PerType_TwoTypes(t *testing.T) {
 	tasks := GetBreakdownTestTasks([]string{"tui", "api"}, defaultAuto)
 
-	// per-type-gen: 2 (tui, api) + run + graduate + verify-regression + consolidate = 6
-	if len(tasks) != 6 {
-		t.Fatalf("expected 6 tasks, got %d", len(tasks))
+	// per-type-gen: 2 (tui, api) + run + verify-regression + consolidate = 5
+	if len(tasks) != 5 {
+		t.Fatalf("expected 5 tasks, got %d", len(tasks))
 	}
 
 	wantIDs := []string{
 		"T-test-gen-scripts-tui", "T-test-gen-scripts-api",
-		"T-test-run", "T-test-graduate",
+		"T-test-run",
 		"T-test-verify-regression", "T-specs-consolidate",
 	}
 	for i, want := range wantIDs {
@@ -296,23 +287,22 @@ func TestGetBreakdownTestTasks_PerType_TwoTypes(t *testing.T) {
 		t.Errorf("T-test-run deps should include T-test-gen-scripts-tui and T-test-gen-scripts-api, got %v", tasks[2].Dependencies)
 	}
 
-	// T-test-graduate depends on T-test-run
+	// T-test-verify-regression depends on T-test-run
 	if tasks[3].Dependencies[0] != "T-test-run" {
-		t.Errorf("graduate should depend on run, got %v", tasks[3].Dependencies)
+		t.Errorf("verify-regression should depend on run, got %v", tasks[3].Dependencies)
 	}
 }
 
 func TestGetBreakdownTestTasks_PerType_SingleType(t *testing.T) {
 	tasks := GetBreakdownTestTasks([]string{"api"}, defaultAuto)
 
-	if len(tasks) != 5 {
-		t.Fatalf("expected 5 tasks, got %d", len(tasks))
+	if len(tasks) != 4 {
+		t.Fatalf("expected 4 tasks, got %d", len(tasks))
 	}
 
 	wantIDs := []string{
 		"T-test-gen-scripts-api",
-		"T-test-run", "T-test-graduate",
-		"T-test-verify-regression", "T-specs-consolidate",
+		"T-test-run", "T-test-verify-regression", "T-specs-consolidate",
 	}
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
@@ -328,9 +318,9 @@ func TestGetBreakdownTestTasks_PerType_SingleType(t *testing.T) {
 func TestGetBreakdownTestTasks_PerType_ThreeTypes(t *testing.T) {
 	tasks := GetBreakdownTestTasks([]string{"tui", "api", "cli"}, defaultAuto)
 
-	// 3 types -> 3 gen tasks + run + graduate + verify-regression + consolidate = 7
-	if len(tasks) != 7 {
-		t.Fatalf("expected 7 tasks, got %d", len(tasks))
+	// 3 types -> 3 gen tasks + run + verify-regression + consolidate = 6
+	if len(tasks) != 6 {
+		t.Fatalf("expected 6 tasks, got %d", len(tasks))
 	}
 
 	// T-test-run depends on all 3 gen tasks
@@ -373,14 +363,13 @@ func TestGenerateTestTaskMD_WithTestType(t *testing.T) {
 func TestGetQuickTestTasks_PerType_TwoTypes(t *testing.T) {
 	tasks := GetQuickTestTasks([]string{"tui", "api"}, allEnabledAuto)
 
-	// per-type-gen-and-run(tui,api) + graduate + verify-regression + drift-detection = 5
-	if len(tasks) != 5 {
-		t.Fatalf("expected 5 tasks, got %d", len(tasks))
+	// per-type-gen-and-run(tui,api) + verify-regression + drift-detection = 4
+	if len(tasks) != 4 {
+		t.Fatalf("expected 4 tasks, got %d", len(tasks))
 	}
 
 	wantIDs := []string{
 		"T-quick-gen-and-run-tui", "T-quick-gen-and-run-api",
-		"T-quick-graduate",
 		"T-quick-verify-regression",
 		"T-quick-doc-drift",
 	}
@@ -406,35 +395,29 @@ func TestGetQuickTestTasks_PerType_TwoTypes(t *testing.T) {
 		t.Errorf("tasks[1].TestType = %q, want api", tasks[1].TestType)
 	}
 
-	// T-quick-graduate depends on ALL per-type gen-and-run tasks
+	// T-quick-verify-regression depends on ALL per-type gen-and-run tasks
 	if len(tasks[2].Dependencies) != 2 {
-		t.Fatalf("T-quick-graduate should depend on 2 gen-and-run tasks, got %v", tasks[2].Dependencies)
+		t.Fatalf("T-quick-verify-regression should depend on 2 gen-and-run tasks, got %v", tasks[2].Dependencies)
 	}
 	depSet := make(map[string]bool)
 	for _, d := range tasks[2].Dependencies {
 		depSet[d] = true
 	}
 	if !depSet["T-quick-gen-and-run-tui"] || !depSet["T-quick-gen-and-run-api"] {
-		t.Errorf("T-quick-graduate deps should include T-quick-gen-and-run-tui and T-quick-gen-and-run-api, got %v", tasks[2].Dependencies)
-	}
-
-	// T-quick-verify-regression depends on T-quick-graduate
-	if tasks[3].Dependencies[0] != "T-quick-graduate" {
-		t.Errorf("verify-regression should depend on graduate, got %v", tasks[3].Dependencies)
+		t.Errorf("T-quick-verify-regression deps should include T-quick-gen-and-run-tui and T-quick-gen-and-run-api, got %v", tasks[2].Dependencies)
 	}
 }
 
 func TestGetQuickTestTasks_PerType_SingleType(t *testing.T) {
 	tasks := GetQuickTestTasks([]string{"api"}, allEnabledAuto)
 
-	// 1 gen-and-run-api + graduate + verify-regression + drift-detection = 4
-	if len(tasks) != 4 {
-		t.Fatalf("expected 4 tasks, got %d", len(tasks))
+	// 1 gen-and-run-api + verify-regression + drift-detection = 3
+	if len(tasks) != 3 {
+		t.Fatalf("expected 3 tasks, got %d", len(tasks))
 	}
 
 	wantIDs := []string{
 		"T-quick-gen-and-run-api",
-		"T-quick-graduate",
 		"T-quick-verify-regression",
 		"T-quick-doc-drift",
 	}
@@ -449,28 +432,28 @@ func TestGetQuickTestTasks_PerType_SingleType(t *testing.T) {
 	}
 
 	if len(tasks[1].Dependencies) != 1 || tasks[1].Dependencies[0] != "T-quick-gen-and-run-api" {
-		t.Errorf("T-quick-graduate should depend on T-quick-gen-and-run-api, got %v", tasks[1].Dependencies)
+		t.Errorf("T-quick-verify-regression should depend on T-quick-gen-and-run-api, got %v", tasks[1].Dependencies)
 	}
 }
 
 func TestGetQuickTestTasks_PerType_ThreeTypes(t *testing.T) {
 	tasks := GetQuickTestTasks([]string{"tui", "api", "cli"}, allEnabledAuto)
 
-	// 3 per-type-gen-and-run + graduate + verify-regression + drift-detection = 6
-	if len(tasks) != 6 {
-		t.Fatalf("expected 6 tasks, got %d", len(tasks))
+	// 3 per-type-gen-and-run + verify-regression + drift-detection = 5
+	if len(tasks) != 5 {
+		t.Fatalf("expected 5 tasks, got %d", len(tasks))
 	}
 
-	// T-quick-graduate depends on all 3 gen-and-run tasks
+	// T-quick-verify-regression depends on all 3 gen-and-run tasks
 	if len(tasks[3].Dependencies) != 3 {
-		t.Fatalf("T-quick-graduate should depend on 3 gen-and-run tasks, got %v", tasks[3].Dependencies)
+		t.Fatalf("T-quick-verify-regression should depend on 3 gen-and-run tasks, got %v", tasks[3].Dependencies)
 	}
 	depSet := make(map[string]bool)
 	for _, d := range tasks[3].Dependencies {
 		depSet[d] = true
 	}
 	if !depSet["T-quick-gen-and-run-tui"] || !depSet["T-quick-gen-and-run-api"] || !depSet["T-quick-gen-and-run-cli"] {
-		t.Errorf("T-quick-graduate missing expected deps, got %v", tasks[3].Dependencies)
+		t.Errorf("T-quick-verify-regression missing expected deps, got %v", tasks[3].Dependencies)
 	}
 }
 
@@ -580,7 +563,6 @@ func TestGenerateTestTaskMD_EmbedTemplate_LoadsContent(t *testing.T) {
 		{"gen-scripts", TypeTestGenScripts, "executable test scripts"},
 		{"gen-and-run", TypeTestGenAndRun, "Phase 1"},
 		{"run", TypeTestRun, "staged e2e test scripts"},
-		{"graduate", TypeTestGraduate, "regression suite"},
 		{"verify-regression", TypeTestVerifyRegression, "just test-e2e"},
 		{"validation-code", TypeValidationCode, "quality gate"},
 		{"validation-ux", TypeValidationUx, "accessibility, usability"},
@@ -1021,12 +1003,6 @@ func TestBodyContentPerStrategy(t *testing.T) {
 		{"run has feature context", TypeTestRun, "", BodyContext{
 			FeatureSlug: "feat", Scope: []string{"backend"},
 		}, []string{"feat", "- backend"}},
-		{"graduate has feature context", TypeTestGraduate, "", BodyContext{
-			FeatureSlug: "feat",
-		}, []string{"feat"}},
-		{"verify-regression has feature context", TypeTestVerifyRegression, "", BodyContext{
-			FeatureSlug: "feat", Scope: []string{"backend"},
-		}, []string{"feat", "- backend"}},
 
 		// Strategy B: Acceptance criteria pre-filled as validation checklist
 		{"validation-code has criteria", TypeValidationCode, "", BodyContext{
@@ -1085,7 +1061,7 @@ func TestBodyContentPerStrategy(t *testing.T) {
 func TestAutogenTypeToFileMapping(t *testing.T) {
 	// Verify all 11 auto-gen types have a mapping entry
 	wantTypes := []string{
-		TypeTestGenScripts, TypeTestGenAndRun, TypeTestRun, TypeTestGraduate,
+		TypeTestGenScripts, TypeTestGenAndRun, TypeTestRun,
 		TypeTestVerifyRegression, TypeValidationCode, TypeValidationUx,
 		TypeDocEval, TypeDocConsolidate, TypeDocDrift, TypeCleanCode,
 	}

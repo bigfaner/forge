@@ -21,7 +21,7 @@
       "title": "Retire test.graduate task type",
       "priority": "P0",
       "estimatedTime": "1.5h",
-      "status": "pending",
+      "status": "completed",
       "file": "1.2-retire-test-graduate.md",
       "record": "records/1.2-retire-test-graduate.md",
       "scope": "all",

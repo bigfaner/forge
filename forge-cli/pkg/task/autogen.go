@@ -18,7 +18,6 @@ var autogenTypeToFile = map[string]string{
 	TypeTestGenScripts:       "data/test-gen-scripts.md",
 	TypeTestGenAndRun:        "data/test-gen-and-run.md",
 	TypeTestRun:              "data/test-run.md",
-	TypeTestGraduate:         "data/test-graduate.md",
 	TypeTestVerifyRegression: "data/test-verify-regression.md",
 	TypeValidationCode:       "data/validation-code.md",
 	TypeValidationUx:         "data/validation-ux.md",
@@ -73,7 +72,7 @@ type AutoGenTaskDef struct {
 	Breaking        bool
 	TestType        string // per-type interface (e.g., "api", "tui", "cli"); empty for non-per-type tasks
 	FileName        string // .md filename (derived from key)
-	StrategyKind    string // "generate", "run", "graduate", or "" for generic
+	StrategyKind    string // "generate", "run" or "" for generic
 	StrategyContent []byte // resolved by caller from convention files
 }
 
@@ -99,18 +98,12 @@ func GetBreakdownTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []A
 			})
 		}
 
-		// Single run + graduate (no language suffix)
+		// Single run (no language suffix)
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "run-e2e-tests", ID: "T-test-run",
 			Title: "Run e2e Tests", Priority: "P1", EstimatedTime: "30min-1h",
 			Type: TypeTestRun, Scope: "all",
 			StrategyKind: "run",
-		})
-		tasks = append(tasks, AutoGenTaskDef{
-			Key: "graduate-tests", ID: "T-test-graduate",
-			Title: "Graduate Test Scripts", Priority: "P1", EstimatedTime: "30min",
-			Type: TypeTestGraduate, Scope: "all",
-			StrategyKind: "graduate",
 		})
 
 		// Shared verify-regression
@@ -181,14 +174,6 @@ func GetQuickTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []AutoG
 				StrategyKind: "generate",
 			})
 		}
-		tasks = append(tasks, AutoGenTaskDef{
-			Key: "quick-graduate", ID: "T-quick-graduate",
-			Title: "Graduate Quick Test Scripts", Priority: "P1", EstimatedTime: "15min",
-			Type: TypeTestGraduate, Scope: "all",
-			StrategyKind: "graduate",
-		})
-
-		// Shared
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "quick-verify-regression", ID: "T-quick-verify-regression",
 			Title: "Verify Quick E2E Regression", Priority: "P1", EstimatedTime: "15min",
@@ -433,13 +418,9 @@ func resolveBreakdownDeps(tasks []AutoGenTaskDef, interfaces []string, auto forg
 		}
 		tasks[runIdx].Dependencies = genDeps
 
-		// Graduate depends on run
-		gradIdx := runIdx + 1
-		tasks[gradIdx].Dependencies = []string{tasks[runIdx].ID}
-
-		// Verify-regression depends on graduate
-		verifyIdx := gradIdx + 1
-		tasks[verifyIdx].Dependencies = []string{tasks[gradIdx].ID}
+		// Verify-regression depends on run
+		verifyIdx := runIdx + 1
+		tasks[verifyIdx].Dependencies = []string{tasks[runIdx].ID}
 	}
 	// T-validate-code depends on T-test-verify-regression (if e2e tasks exist)
 	validateIdx := findTaskIndex(tasks, "T-validate-code")
@@ -467,18 +448,13 @@ func resolveQuickDeps(tasks []AutoGenTaskDef, interfaces []string, auto forgecon
 
 	if auto.E2eTest.Quick {
 		nTypes := len(interfaces)
-
-		// Graduate depends on all gen-and-run
-		gradIdx := nTypes
+		// Verify-regression depends on all gen-and-run
+		verifyIdx := nTypes
 		var genDeps []string
 		for j := range nTypes {
 			genDeps = append(genDeps, tasks[j].ID)
 		}
-		tasks[gradIdx].Dependencies = genDeps
-
-		// Verify-regression depends on graduate
-		verifyIdx := gradIdx + 1
-		tasks[verifyIdx].Dependencies = []string{tasks[gradIdx].ID}
+		tasks[verifyIdx].Dependencies = genDeps
 	}
 	// T-validate-code depends on T-quick-verify-regression (if e2e tasks exist) or nothing
 	if auto.Validation.Quick {

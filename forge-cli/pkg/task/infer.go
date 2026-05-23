@@ -17,8 +17,6 @@ func InferType(id string) string {
 		return TypeTestGenScripts
 	case id == "T-test-run":
 		return TypeTestRun
-	case id == "T-test-graduate":
-		return TypeTestGraduate
 	case id == "T-test-verify-regression":
 		return TypeTestVerifyRegression
 	case id == "T-specs-consolidate":
@@ -29,8 +27,6 @@ func InferType(id string) string {
 		return TypeValidationUx
 	case id == "T-quick-gen-and-run", typeSuffixedID(id, "T-quick-gen-and-run"):
 		return TypeTestGenAndRun
-	case id == "T-quick-graduate":
-		return TypeTestGraduate
 	case id == "T-quick-verify-regression":
 		return TypeTestVerifyRegression
 	case id == "T-quick-doc-drift":

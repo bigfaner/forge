@@ -34,7 +34,6 @@ var typeToTemplate = map[string]string{
 	task.TypeTestGenScripts:       "data/test-gen-scripts.md",
 	task.TypeTestRun:              "data/test-run.md",
 	task.TypeTestGenAndRun:        "data/test-gen-and-run.md",
-	task.TypeTestGraduate:         "data/test-graduate.md",
 	task.TypeTestVerifyRegression: "data/test-verify-regression.md",
 	task.TypeCodingFix:            "data/coding-fix.md",
 	task.TypeValidationCode:       "data/validation-code.md",

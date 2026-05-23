@@ -572,7 +572,6 @@ func TestTypeConstants(t *testing.T) {
 		{TypeTestGenScripts, "test.gen-scripts"},
 		{TypeTestRun, "test.run"},
 		{TypeTestGenAndRun, "test.gen-and-run"},
-		{TypeTestGraduate, "test.graduate"},
 		{TypeTestVerifyRegression, "test.verify-regression"},
 		{TypeValidationCode, "validation.code"},
 		{TypeValidationUx, "validation.ux"},
@@ -587,9 +586,9 @@ func TestTypeConstants(t *testing.T) {
 }
 
 func TestSystemTypes(t *testing.T) {
-	t.Run("SystemTypes contains exactly 11 entries", func(t *testing.T) {
-		if len(SystemTypes) != 11 {
-			t.Errorf("SystemTypes has %d entries, want 11", len(SystemTypes))
+	t.Run("SystemTypes contains exactly 10 entries", func(t *testing.T) {
+		if len(SystemTypes) != 10 {
+			t.Errorf("SystemTypes has %d entries, want 10", len(SystemTypes))
 		}
 	})
 
@@ -597,13 +596,13 @@ func TestSystemTypes(t *testing.T) {
 		expected := []string{
 			TypeGate,
 			TypeTestGenScripts, TypeTestRun,
-			TypeTestGenAndRun, TypeTestGraduate, TypeTestVerifyRegression,
+			TypeTestGenAndRun, TypeTestVerifyRegression,
 			TypeValidationCode, TypeValidationUx,
 			TypeDocEval, TypeDocSummary,
 			TypeCleanCode,
 		}
-		if len(expected) != 11 {
-			t.Fatalf("test setup error: expected list has %d entries, want 13", len(expected))
+		if len(expected) != 10 {
+			t.Fatalf("test setup error: expected list has %d entries, want 10", len(expected))
 		}
 		for _, typ := range expected {
 			if !SystemTypes[typ] {
@@ -622,11 +621,11 @@ func TestSystemTypes(t *testing.T) {
 }
 
 func TestIsSystemType(t *testing.T) {
-	t.Run("returns true for all 13 system types", func(t *testing.T) {
+	t.Run("returns true for all 10 system types", func(t *testing.T) {
 		systemTypes := []string{
 			TypeGate,
 			TypeTestGenScripts, TypeTestRun,
-			TypeTestGenAndRun, TypeTestGraduate, TypeTestVerifyRegression,
+			TypeTestGenAndRun, TypeTestVerifyRegression,
 			TypeValidationCode, TypeValidationUx,
 			TypeDocEval, TypeDocSummary,
 			TypeCleanCode,
@@ -685,7 +684,6 @@ func TestValidTypes(t *testing.T) {
 			TypeTestGenScripts,
 			TypeTestRun,
 			TypeTestGenAndRun,
-			TypeTestGraduate,
 			TypeTestVerifyRegression,
 			TypeValidationCode,
 			TypeValidationUx,

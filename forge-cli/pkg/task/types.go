@@ -51,7 +51,6 @@ const (
 	TypeTestGenScripts       = "test.gen-scripts"
 	TypeTestRun              = "test.run"
 	TypeTestGenAndRun        = "test.gen-and-run"
-	TypeTestGraduate         = "test.graduate"
 	TypeTestVerifyRegression = "test.verify-regression"
 	TypeValidationCode       = "validation.code"
 	TypeValidationUx         = "validation.ux"
@@ -81,7 +80,6 @@ var TaskTypeRegistry = []TaskTypeInfo{
 	{Name: TypeTestGenScripts, Description: "generate executable test scripts"},
 	{Name: TypeTestRun, Description: "run test scripts and collect results"},
 	{Name: TypeTestGenAndRun, Description: "generate and run test scripts in one session"},
-	{Name: TypeTestGraduate, Description: "graduate tests to regression suite"},
 	{Name: TypeTestVerifyRegression, Description: "verify regression suite after graduation"},
 	{Name: TypeValidationCode, Description: "validate code quality and correctness"},
 	{Name: TypeValidationUx, Description: "validate user experience quality"},
@@ -104,7 +102,6 @@ var ValidTypes = map[string]bool{
 	TypeTestGenScripts:       true,
 	TypeTestRun:              true,
 	TypeTestGenAndRun:        true,
-	TypeTestGraduate:         true,
 	TypeTestVerifyRegression: true,
 	TypeValidationCode:       true,
 	TypeValidationUx:         true,
@@ -112,7 +109,7 @@ var ValidTypes = map[string]bool{
 	TypeCleanCode:            true,
 }
 
-// SystemTypes is the set of auto-generated system task types (11 total).
+// SystemTypes is the set of auto-generated system task types (10 total).
 // These types are created by the forge pipeline, not by users.
 // Dual-identity types (doc.consolidate, doc.drift) are excluded because
 // they can also serve as business tasks.
@@ -121,7 +118,6 @@ var SystemTypes = map[string]bool{
 	TypeTestGenScripts:       true,
 	TypeTestRun:              true,
 	TypeTestGenAndRun:        true,
-	TypeTestGraduate:         true,
 	TypeTestVerifyRegression: true,
 	TypeValidationCode:       true,
 	TypeValidationUx:         true,
