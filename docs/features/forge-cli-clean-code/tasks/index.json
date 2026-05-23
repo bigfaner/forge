@@ -93,7 +93,7 @@
       "dependencies": [
         "fix-1"
       ],
-      "status": "blocked",
+      "status": "pending",
       "file": "2-gitignore-artifacts.md",
       "record": "records/2-gitignore-artifacts.md",
       "scope": "backend",
@@ -208,7 +208,7 @@
       "dependencies": [
         "fix-2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "fix-1.md",
       "record": "records/fix-1.md",
       "breaking": true,
