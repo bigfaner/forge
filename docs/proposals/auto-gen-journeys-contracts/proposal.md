@@ -1,7 +1,7 @@
 ---
 created: 2026-05-23
 author: "faner"
-status: Draft
+status: Approved
 ---
 
 # Proposal: 将 gen-journeys/gen-contracts 升级为自动生成的测试流水线任务

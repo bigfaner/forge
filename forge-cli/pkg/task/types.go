@@ -48,6 +48,8 @@ const (
 	TypeDocSummary           = "doc.summary"
 	TypeDocConsolidate       = "doc.consolidate"
 	TypeDocDrift             = "doc.drift"
+	TypeTestGenContracts     = "test.gen-contracts"
+	TypeTestGenJourneys      = "test.gen-journeys"
 	TypeTestGenScripts       = "test.gen-scripts"
 	TypeTestRun              = "test.run"
 	TypeTestGenAndRun        = "test.gen-and-run"
@@ -79,6 +81,8 @@ var TaskTypeRegistry = []TaskTypeInfo{
 	{Name: TypeDocSummary, Description: "generate documentation summary"},
 	{Name: TypeDocConsolidate, Description: "consolidate documentation files"},
 	{Name: TypeDocDrift, Description: "detect and fix spec drift against codebase"},
+	{Name: TypeTestGenContracts, Description: "generate test contracts from journeys"},
+	{Name: TypeTestGenJourneys, Description: "generate test journeys from specs"},
 	{Name: TypeTestGenScripts, Description: "generate executable test scripts"},
 	{Name: TypeTestRun, Description: "run test scripts and collect results"},
 	{Name: TypeTestGenAndRun, Description: "generate and run test scripts in one session"},
@@ -103,6 +107,8 @@ var ValidTypes = map[string]bool{
 	TypeDocSummary:           true,
 	TypeDocConsolidate:       true,
 	TypeDocDrift:             true,
+	TypeTestGenContracts:     true,
+	TypeTestGenJourneys:      true,
 	TypeTestGenScripts:       true,
 	TypeTestRun:              true,
 	TypeTestGenAndRun:        true,
@@ -115,12 +121,14 @@ var ValidTypes = map[string]bool{
 	TypeCleanCode:            true,
 }
 
-// SystemTypes is the set of auto-generated system task types (12 total).
+// SystemTypes is the set of auto-generated system task types (14 total).
 // These types are created by the forge pipeline, not by users.
 // Dual-identity types (doc.consolidate, doc.drift) are excluded because
 // they can also serve as business tasks.
 var SystemTypes = map[string]bool{
 	TypeGate:                 true,
+	TypeTestGenContracts:     true,
+	TypeTestGenJourneys:      true,
 	TypeTestGenScripts:       true,
 	TypeTestRun:              true,
 	TypeTestGenAndRun:        true,

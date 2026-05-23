@@ -1,0 +1,128 @@
+{
+  "feature": "auto-gen-journeys-contracts",
+  "proposal": "docs/proposals/auto-gen-journeys-contracts/proposal.md",
+  "created": "2026-05-23",
+  "tasks": {
+    "1-add-gen-types": {
+      "id": "1",
+      "title": "新增 test.gen-journeys 和 test.gen-contracts 类型定义",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "1-add-gen-types.md",
+      "record": "records/1-add-gen-types.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "2-embed-templates": {
+      "id": "2",
+      "title": "创建 embed 模板 test-gen-journeys.md 和 test-gen-contracts.md",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-embed-templates.md",
+      "record": "records/2-embed-templates.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "3-breakdown-mode": {
+      "id": "3",
+      "title": "autogen.go Breakdown 模式：插入 gen-journeys/gen-contracts 并重写依赖解析",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1",
+        "2"
+      ],
+      "status": "completed",
+      "file": "3-breakdown-mode.md",
+      "record": "records/3-breakdown-mode.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "4-quick-mode": {
+      "id": "4",
+      "title": "autogen.go Quick 模式：替换 gen-and-run 为 staged across types 拓扑",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1",
+        "2"
+      ],
+      "status": "completed",
+      "file": "4-quick-mode.md",
+      "record": "records/4-quick-mode.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "5-infer-resolve": {
+      "id": "5",
+      "title": "更新 infer.go 和 ResolveFirstTestDep 适配新任务类型",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "3",
+        "4"
+      ],
+      "status": "completed",
+      "file": "5-infer-resolve.md",
+      "record": "records/5-infer-resolve.md",
+      "scope": "backend",
+      "type": "coding.enhancement"
+    },
+    "6-gen-journeys-skill": {
+      "id": "6",
+      "title": "gen-journeys SKILL.md 适配：proposal.md 输入 + AUTO_COMMIT 模式",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "status": "completed",
+      "file": "6-gen-journeys-skill.md",
+      "record": "records/6-gen-journeys-skill.md",
+      "type": "doc"
+    },
+    "7-gen-contracts-skill": {
+      "id": "7",
+      "title": "gen-contracts SKILL.md 适配：SKIP_EVAL_GATE 路径",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "7-gen-contracts-skill.md",
+      "record": "records/7-gen-contracts-skill.md",
+      "type": "doc"
+    },
+    "8-architecture-docs": {
+      "id": "8",
+      "title": "更新 ARCHITECTURE.md 和相关文档",
+      "priority": "P2",
+      "estimatedTime": "0.5h",
+      "dependencies": [
+        "3",
+        "4",
+        "5"
+      ],
+      "status": "completed",
+      "file": "8-architecture-docs.md",
+      "record": "records/8-architecture-docs.md",
+      "type": "doc"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

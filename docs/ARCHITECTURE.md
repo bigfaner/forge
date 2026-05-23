@@ -262,20 +262,74 @@ Quality Gate        T-test-3              all-completed hook
 | **Feature E2E** | `just e2e-test --feature <slug>` | 功能级 | T-test-3 | Playwright 报告全绿 |
 | **Regression** | `just e2e-test` | 项目级 | all-completed hook | 全部回归用例通过 |
 
-### 测试生成管道（Full Mode T-test-1~5）
+### 测试生成管道
+
+#### Breakdown 模式（Full Mode）
+
+含 eval 质量关卡的完整链路，每个阶段自动生成对应任务：
 
 ```
-T-test-1: /gen-sitemap          → sitemap.json（页面元素映射）
-T-test-2: /gen-journeys         → testing/<journey>/journey.md（Journey 文档 + surface 检测 + 风险分级）
-          /eval-journey         → 评分报告（6 维度 1000 分制，总分 ≥850）
-T-test-3: /gen-contracts        → testing/<journey>/contracts/step-*.md（6 维度合约 + 边界衍生）
-          /eval-contract        → 评分报告（同样 6 维度门禁）
-T-test-4: /gen-test-scripts     → tests/<journey>/*（按 surface 差异化生成）
-          /run-tests            → results/latest.md（执行报告 + 置信度评级）
-T-test-5: forge test promote    → tests/e2e/（晋升到回归套件）
-T-test-6: /consolidate-specs    → 项目级规范提取
-T-test-7: (reserved)
+gen-journeys ──→ eval-journey ──→ gen-contracts ──→ eval-contract ──→ gen-scripts ──→ run ──→ verify
+     │                │                  │                  │               │            │
+     │                │                  │                  │               │            └─ forge test promote
+     │                │                  │                  │               └─ /run-tests
+     │                │                  │                  └─ /eval-contract（6 维度门禁）
+     │                │                  └─ /gen-contracts（6 维度合约 + 边界衍生）
+     │                └─ /eval-journey（6 维度 1000 分制，总分 ≥850）
+     └─ /gen-journeys（Journey 文档 + surface 检测 + 风险分级）
 ```
+
+**任务映射**：
+
+| 任务 | Skill | 产出 | 自动生成 |
+|------|-------|------|---------|
+| T-test-gen-journeys | `/gen-journeys` | `testing/<journey>/journey.md` | 是 |
+| T-test-eval-journey | `/eval-journey` | 评分报告 | 是 |
+| T-test-gen-contracts | `/gen-contracts` | `testing/<journey>/contracts/step-*.md` | 是 |
+| T-test-eval-contract | `/eval-contract` | 评分报告 | 是 |
+| T-test-gen-scripts | `/gen-test-scripts` | `tests/<journey>/*` | 是 |
+| T-test-run | `/run-tests` | `results/latest.md` | 是 |
+| T-test-promote | `forge test promote` | `tests/e2e/` | 是 |
+
+前置任务：`/gen-sitemap`（生成 `sitemap.json` 页面元素映射）。
+
+#### Quick 模式
+
+跳过 eval 质量关卡的精简链路，采用 **staged across types** 拓扑：
+
+```
+┌─────────────────────────────┐
+│ gen-journeys (各 type 并行)  │  ← 各 profile type 独立执行，无相互依赖
+│   ├─ type: api              │
+│   ├─ type: web              │
+│   └─ type: cli              │
+└──────────────┬──────────────┘
+               │ 汇聚：所有 type 的 Journey 完成后
+               ▼
+┌─────────────────────────────┐
+│ gen-contracts               │  ← 依赖全部 Journey 完成后执行代码侦察
+└──────────────┬──────────────┘
+               │
+               ▼
+┌─────────────────────────────┐
+│ gen-scripts (各 type 并行)   │
+└──────────────┬──────────────┘
+               │
+               ▼
+          run → verify
+```
+
+**与 Breakdown 模式的差异**：
+- 无 eval-journey / eval-contract 质量关卡
+- gen-journeys 以 `proposal.md` 为输入（非 PRD user stories）
+- gen-contracts 通过 `SKIP_EVAL_GATE=true` 跳过 eval 前置检查
+- gen-journeys 通过 `AUTO_COMMIT=true` 跳过人工审批
+- 若 gen-journeys 产出零 Journey（proposal.md 信息不足），任务 abort 并输出诊断信息
+
+#### 依赖解析
+
+- **Breakdown 模式**：基于 `findTaskIndexByPrefix` 的 ID 查找（非硬编码索引）
+- **Quick 模式**：staged across types 策略，所有 profile type 的 gen-journeys 并行执行后汇聚到 gen-contracts
 
 ### run-e2e-tests 内部流程
 

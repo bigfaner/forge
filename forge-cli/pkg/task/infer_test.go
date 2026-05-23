@@ -40,8 +40,15 @@ func TestInferType(t *testing.T) {
 		{"T-test-gen-scripts-tui", TypeTestGenScripts},
 		{"T-test-gen-scripts-cli", TypeTestGenScripts},
 		{"T-test-gen-scripts-web-ui", TypeTestGenScripts},
+		{"T-test-gen-journeys-api", TypeTestGenJourneys},
+		{"T-test-gen-journeys-tui", TypeTestGenJourneys},
+		{"T-test-gen-journeys-cli", TypeTestGenJourneys},
 		{"T-quick-gen-and-run-api", TypeTestGenAndRun},
 		{"T-quick-gen-and-run-tui", TypeTestGenAndRun},
+
+		// Gen-contracts exact match
+		{"T-test-gen-contracts", TypeTestGenContracts},
+		{"T-test-gen-journeys", TypeTestGenJourneys},
 
 		// Type suffix on tasks that don't support it should NOT match
 		{"T-test-verify-regression-api", ""},
@@ -70,6 +77,9 @@ func TestInferType(t *testing.T) {
 		{"T-test-runa", ""},
 		{"T-quick-verify-regressiona", ""},
 		{"T-quick-doc-drifta", ""},
+
+		// Hard Rule: gen-journeys type suffix with hyphenated types
+		{"T-test-gen-journeys-web-ui", TypeTestGenJourneys},
 	}
 
 	for _, tt := range tests {
@@ -94,7 +104,9 @@ func TestExtractTypeSuffix(t *testing.T) {
 		{"T-quick-gen-and-run-cli", "T-quick-gen-and-run", "cli"},
 		{"T-quick-gen-and-run-api", "T-quick-gen-and-run", "api"},
 		{"T-test-gen-scripts", "T-test-gen-scripts", ""}, // exact match, no type suffix
-		{"random", "T-test-gen-scripts", ""},             // wrong base
+		{"T-test-gen-journeys-api", "T-test-gen-journeys", "api"},
+		{"T-test-gen-journeys-tui", "T-test-gen-journeys", "tui"},
+		{"random", "T-test-gen-scripts", ""}, // wrong base
 
 		// Old profile-suffixed IDs no longer extract correctly (profile letter is part of suffix)
 		{"T-test-gen-scriptsa-tui", "T-test-gen-scripts", ""}, // 'a' before '-' is not a valid type start
