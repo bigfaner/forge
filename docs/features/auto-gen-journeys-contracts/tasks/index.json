@@ -90,7 +90,7 @@
       "title": "gen-contracts SKILL.md 适配：SKIP_EVAL_GATE 路径",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "7-gen-contracts-skill.md",
       "record": "records/7-gen-contracts-skill.md",
       "type": "doc"

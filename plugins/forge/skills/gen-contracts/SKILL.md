@@ -41,6 +41,16 @@ Check previous stage artifacts. Abort and prompt user if missing:
 
 `<slug>` from `forge feature`.
 
+### SKIP_EVAL_GATE Mode
+
+When the task context contains `SKIP_EVAL_GATE=true` (injected by Quick mode task templates), the eval report prerequisite is **conditionally waived**:
+
+- **Skip**: eval-journey report check (`testing/<journey>/.eval-report.md`) is bypassed entirely
+- **Proceed directly**: move to Step 1 (Read Journeys) and Step 2 (Code Reconnaissance) without eval verification
+- **Mark output**: every Contract file generated under SKIP_EVAL_GATE MUST include a frontmatter field `skip_eval: true` and a comment at the top of the body: `> **Note**: Contracts generated without eval-journey verification (SKIP_EVAL_GATE=true). Review with extra scrutiny.`
+
+**When SKIP_EVAL_GATE is NOT set** (Breakdown mode or manual `/gen-contracts` invocation): the eval report Blocker remains mandatory. Behavior is unchanged.
+
 ## Step 0: Resolve Language and Interfaces
 
 1. Read `docs/conventions/testing/index.md` to discover available Convention files. Select the Convention matching the project's language/framework based on index descriptions and project context. Load the selected Convention from `docs/conventions/testing/<convention>.md`.
