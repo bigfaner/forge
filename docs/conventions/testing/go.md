@@ -1,86 +1,29 @@
 ---
 title: "Go Testing Convention"
-domains: [testing, go]
 ---
 
 # Go Testing Convention
 
 Convention for generating Go test code using the standard `testing` package with `testify/assert`.
 
-## Framework
+## framework
 
-- **Name**: Go testing package + testify/assert
-- **File pattern**: `*_test.go`
-- **Package**: `e2e`
-- **Test runner**: `go test`
-- **Build tag**: `//go:build e2e` (mandatory on every test file)
+- **name**: Go testing package + testify/assert
+- **version**: go1.18+
+- **language**: Go
+- **runner_command**: `go test -v -json -tags=e2e`
 
-## Assertion
+## discovery
 
-- **Library**: `assert` from `github.com/stretchr/testify/assert` (NOT `require`)
-- **Key functions**:
-  - `assert.NoError(t, err, msg...)` — verify no error
-  - `assert.Equal(t, expected, actual, msg...)` — equality check
-  - `assert.Contains(t, str, substr, msg...)` — substring check
-  - `assert.True(t, condition, msg...)` — boolean assertion
-  - `assert.False(t, condition, msg...)` — boolean assertion
-  - `assert.Empty(t, collection, msg...)` — empty collection
-  - `assert.NotNil(t, obj, msg...)` — not nil check
-  - `assert.Error(t, err, msg...)` — error expected
-- **Rule**: Always use `assert`, never `require`. `require` stops execution immediately; `assert` collects all failures.
+- **test_dir**: `tests/e2e/`
+- **file_pattern**: `*_test.go`
+- **exclude_pattern**: `vendor/`, `node_modules/`
 
-## Tags
+## structure
 
-- **Build tag**: `//go:build e2e` must be the first line of every test file (before package declaration)
-- **Feature tag**: `//go:build feature` used for promoted tests
-- **Format**: Pure Go build tag syntax, no comments after the tag
-
-```go
-//go:build e2e
-
-package e2e
-```
-
-## Result Format
-
-- **Output flags**: `-json -v`
-- **Format type**: `json-stream` (one JSON object per line)
-
-### JSON Stream Fields
-
-| Field | Meaning |
-|-------|---------|
-| `Time` | Timestamp |
-| `Action` | `run`, `output`, `pass`, `fail`, `skip` |
-| `Package` | Full Go module path |
-| `Test` | Test function name |
-| `Elapsed` | Duration in seconds |
-| `Output` | Captured stdout/stderr line |
-
-### TC ID Extraction
-
-Pattern: `TestTC_NNN_Description` -> `TC-NNN`
-Regex: `TC_(\d+)` with separator normalization.
-
-## Import Patterns
-
-Standard imports for e2e tests:
-
-```go
-import (
-    "os/exec"
-    "os"
-    "testing"
-
-    "github.com/stretchr/testify/assert"
-)
-```
-
-- HTTP tests add: `"net/http"`, `"net/http/httptest"`
-- File tests add: `"path/filepath"`
-- All test files import `"testing"`
-
-## Code Style
+- **suite_pattern**: `func TestXxx(t *testing.T)` — top-level test functions with `Test` prefix
+- **case_pattern**: `TestTC_NNN_Description` — zero-padded test case number with description
+- **hook_pattern**: `TestMain(m *testing.M)` — suite-level setup/teardown in `main_test.go`
 
 ### Test Function Naming
 
@@ -152,6 +95,76 @@ Each test function must include a traceability comment:
 ### Shared Infrastructure
 
 `tests/e2e/main_test.go` provides `TestMain` for suite-level setup/teardown. This file is created once and must NOT be overwritten during feature generation.
+
+## assertions
+
+- **style**: assert
+- **library**: `github.com/stretchr/testify/assert` (NOT `require`)
+- **custom_matchers**: none
+
+### Key Functions
+
+- `assert.NoError(t, err, msg...)` — verify no error
+- `assert.Equal(t, expected, actual, msg...)` — equality check
+- `assert.Contains(t, str, substr, msg...)` — substring check
+- `assert.True(t, condition, msg...)` — boolean assertion
+- `assert.False(t, condition, msg...)` — boolean assertion
+- `assert.Empty(t, collection, msg...)` — empty collection
+- `assert.NotNil(t, obj, msg...)` — not nil check
+- `assert.Error(t, err, msg...)` — error expected
+
+**Rule**: Always use `assert`, never `require`. `require` stops execution immediately; `assert` collects all failures.
+
+## Tags
+
+- **Build tag**: `//go:build e2e` must be the first line of every test file (before package declaration)
+- **Feature tag**: `//go:build feature` used for promoted tests
+- **Format**: Pure Go build tag syntax, no comments after the tag
+
+```go
+//go:build e2e
+
+package e2e
+```
+
+## Result Format
+
+- **Output flags**: `-json -v`
+- **Format type**: `json-stream` (one JSON object per line)
+
+### JSON Stream Fields
+
+| Field | Meaning |
+|-------|---------|
+| `Time` | Timestamp |
+| `Action` | `run`, `output`, `pass`, `fail`, `skip` |
+| `Package` | Full Go module path |
+| `Test` | Test function name |
+| `Elapsed` | Duration in seconds |
+| `Output` | Captured stdout/stderr line |
+
+### TC ID Extraction
+
+Pattern: `TestTC_NNN_Description` -> `TC-NNN`
+Regex: `TC_(\d+)` with separator normalization.
+
+## Import Patterns
+
+Standard imports for e2e tests:
+
+```go
+import (
+    "os/exec"
+    "os"
+    "testing"
+
+    "github.com/stretchr/testify/assert"
+)
+```
+
+- HTTP tests add: `"net/http"`, `"net/http/httptest"`
+- File tests add: `"path/filepath"`
+- All test files import `"testing"`
 
 ## Anti-patterns (Forbidden)
 

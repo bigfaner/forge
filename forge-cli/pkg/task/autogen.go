@@ -374,7 +374,7 @@ func GenerateTestTaskMD(def AutoGenTaskDef, ctx BodyContext) ([]byte, error) {
 			}
 			buf.Write(def.StrategyContent)
 		} else {
-			fmt.Fprintf(&buf, "# %s\n\nRead docs/conventions/testing-*.md for test generation strategy.", def.Title)
+			fmt.Fprintf(&buf, "# %s\n\nRead docs/conventions/testing/ for test generation strategy.", def.Title)
 			if def.TestType != "" {
 				fmt.Fprintf(&buf, " Type: %q.", def.TestType)
 			}

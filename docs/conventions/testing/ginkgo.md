@@ -1,70 +1,29 @@
 ---
 title: "Go Ginkgo Testing Convention"
-domains: [testing, go, ginkgo]
 ---
 
 # Go Ginkgo Testing Convention
 
 Convention for generating Go test code using the Ginkgo BDD framework with Gomega matchers.
 
-## Framework
+## framework
 
-- **Name**: Ginkgo v2 + Gomega
-- **File pattern**: `*_test.go`
-- **Package**: `e2e`
-- **Test runner**: `ginkgo` or `go test`
-- **Build tag**: `//go:build e2e` (mandatory on every test file)
+- **name**: Ginkgo v2 + Gomega
+- **version**: ginkgo v2+
+- **language**: Go
+- **runner_command**: `ginkgo -v --json-report=report.json -tags=e2e`
 
-## Assertion
+## discovery
 
-- **Library**: Gomega (`github.com/onsi/gomega`)
-- **Key functions**:
-  - `Expect(actual).Should(Equal(expected))` — equality
-  - `Expect(actual).Should(BeNil())` — nil check
-  - `Expect(err).ShouldNot(HaveOccurred())` — no error
-  - `Expect(str).Should(ContainSubstring(substr))` — substring
-  - `Expect(actual).Should(BeTrue())` — boolean true
-  - `Expect(actual).Should(BeFalse())` — boolean false
-  - `Expect(actual).Should(BeEmpty())` — empty collection
-  - `Expect(actual).ShouldNot(BeNil())` — not nil
-  - `Expect(err).Should(HaveOccurred())` — error expected
-- **Rule**: Always use `Expect` with `Should`/`ShouldNot` matcher chains.
+- **test_dir**: `tests/e2e/`
+- **file_pattern**: `*_test.go`
+- **exclude_pattern**: `vendor/`, `node_modules/`
 
-## Tags
+## structure
 
-- **Build tag**: `//go:build e2e` must be the first line of every test file
-- **Format**: Pure Go build tag syntax
-
-```go
-//go:build e2e
-
-package e2e
-```
-
-## Result Format
-
-- **Output flags**: `-json -v`
-- **Format type**: `json-stream` (same as Go testing — one JSON object per line)
-
-## Import Patterns
-
-Standard imports for Ginkgo e2e tests:
-
-```go
-import (
-    "os/exec"
-    "os"
-    "time"
-
-    . "github.com/onsi/ginkgo/v2"
-    . "github.com/onsi/gomega"
-)
-```
-
-- HTTP tests add: `"net/http"`, `"net/http/httptest"`
-- File tests add: `"path/filepath"`
-
-## Code Style
+- **suite_pattern**: `var _ = Describe("...", func() { ... })` — top-level BDD container
+- **case_pattern**: `It("should ...", func() { ... })` — individual spec within Describe/Context
+- **hook_pattern**: `BeforeEach` / `AfterEach` / `BeforeSuite` / `AfterSuite`
 
 ### Spec Structure
 
@@ -140,6 +99,60 @@ It("should login successfully", Label("TC-001"), func() {
     // Traceability: TC-001 -> PRD User Auth section
 })
 ```
+
+## assertions
+
+- **style**: should
+- **library**: `github.com/onsi/gomega`
+- **custom_matchers**: none
+
+### Key Functions
+
+- `Expect(actual).Should(Equal(expected))` — equality
+- `Expect(actual).Should(BeNil())` — nil check
+- `Expect(err).ShouldNot(HaveOccurred())` — no error
+- `Expect(str).Should(ContainSubstring(substr))` — substring
+- `Expect(actual).Should(BeTrue())` — boolean true
+- `Expect(actual).Should(BeFalse())` — boolean false
+- `Expect(actual).Should(BeEmpty())` — empty collection
+- `Expect(actual).ShouldNot(BeNil())` — not nil
+- `Expect(err).Should(HaveOccurred())` — error expected
+
+**Rule**: Always use `Expect` with `Should`/`ShouldNot` matcher chains.
+
+## Tags
+
+- **Build tag**: `//go:build e2e` must be the first line of every test file
+- **Format**: Pure Go build tag syntax
+
+```go
+//go:build e2e
+
+package e2e
+```
+
+## Result Format
+
+- **Output flags**: `-json -v`
+- **Format type**: `json-stream` (same as Go testing — one JSON object per line)
+
+## Import Patterns
+
+Standard imports for Ginkgo e2e tests:
+
+```go
+import (
+    "os/exec"
+    "os"
+    "time"
+
+    . "github.com/onsi/ginkgo/v2"
+    . "github.com/onsi/gomega"
+)
+```
+
+- HTTP tests add: `"net/http"`, `"net/http/httptest"`
+- File tests add: `"path/filepath"`
 
 ## Anti-patterns (Forbidden)
 

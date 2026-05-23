@@ -1,98 +1,29 @@
 ---
 title: "TypeScript Vitest Testing Convention"
-domains: [testing, typescript, javascript, vitest]
 ---
 
 # TypeScript Vitest Testing Convention
 
 Convention for generating TypeScript/JavaScript test code using the Vitest framework.
 
-## Framework
+## framework
 
-- **Name**: Vitest
-- **File pattern**: `*.test.ts` or `*.spec.ts`
-- **Test runner**: `vitest run`
-- **Config**: `vitest.config.ts` or `vite.config.ts` with test section
-- **TypeScript**: Required (strict mode recommended)
+- **name**: Vitest
+- **version**: vitest 0.34+
+- **language**: TypeScript
+- **runner_command**: `vitest run --reporter=verbose`
 
-## Assertion
+## discovery
 
-- **Library**: Vitest built-in `expect` (compatible with Jest matchers)
-- **Key functions**:
-  - `expect(actual).toBe(expected)` — strict equality
-  - `expect(actual).toEqual(expected)` — deep equality
-  - `expect(actual).toContain(substr)` — substring/item in collection
-  - `expect(actual).toBeNull()` — null check
-  - `expect(actual).toBeDefined()` — defined check
-  - `expect(actual).toBeUndefined()` — undefined check
-  - `expect(actual).toBeTruthy()` — truthy check
-  - `expect(actual).toBeFalsy()` — falsy check
-  - `expect(fn).toThrow(error?)` — exception check
-  - `expect(actual).rejects.toThrow(error?)` — async rejection
-  - `expect(actual).resolves.toBe(expected)` — async resolution
-  - `expect(actual).toHaveLength(n)` — length check
-  - `expect(actual).toMatch(regex)` — regex match
-  - `expect(actual).toMatchSnapshot()` — snapshot match
-- **Rule**: Use built-in `expect`, do not import external assertion libraries.
+- **test_dir**: `tests/e2e/`
+- **file_pattern**: `*.test.ts`, `*.spec.ts`
+- **exclude_pattern**: `node_modules/`, `dist/`
 
-## Tags
+## structure
 
-- **Format**: Vitest `describe`/`it` with tag metadata
-
-```typescript
-describe('@feature', () => {
-  it('should perform action', { tags: ['@feature'] }, () => {
-    // test code
-  })
-})
-```
-
-- **Tag annotation**: Use the `tags` option in `it()` or `describe()` for categorization
-- **CLI filtering**: `vitest run --reporter=verbose --testNamePattern="pattern"` or `vitest run -t "pattern"`
-
-## Result Format
-
-- **Output flags**: `--reporter=verbose` or `--reporter=json`
-- **Format type**: `json-report` (structured JSON output)
-
-### JSON Report Structure
-
-```json
-{
-  "testResults": [
-    {
-      "name": "tests/e2e/feature.test.ts",
-      "status": "passed",
-      "startTime": 1716000000000,
-      "endTime": 1716000001000,
-      "assertionResults": [
-        {
-          "fullName": "Feature > should perform action",
-          "status": "passed",
-          "duration": 100,
-          "failureMessages": []
-        }
-      ]
-    }
-  ]
-}
-```
-
-## Import Patterns
-
-Standard imports for Vitest e2e tests:
-
-```typescript
-import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest'
-import { execSync, exec } from 'child_process'
-import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'fs'
-import { join } from 'path'
-```
-
-- HTTP tests add: `import fetch from 'node-fetch'` or built-in `fetch` (Node 18+)
-- API tests add: `import { setupServer } from 'msw/node'` (mock service worker)
-
-## Code Style
+- **suite_pattern**: `describe('...', () => { ... })` — BDD-style test container
+- **case_pattern**: `it('should ...', () => { ... })` — individual test case within describe
+- **hook_pattern**: `beforeAll` / `afterAll` / `beforeEach` / `afterEach`
 
 ### Test Structure
 
@@ -188,6 +119,88 @@ it('should login with valid credentials', () => {
   // Traceability: TC-001 -> PRD User Auth section
 })
 ```
+
+## assertions
+
+- **style**: expect
+- **library**: Vitest built-in `expect` (compatible with Jest matchers)
+- **custom_matchers**: none
+
+### Key Functions
+
+- `expect(actual).toBe(expected)` — strict equality
+- `expect(actual).toEqual(expected)` — deep equality
+- `expect(actual).toContain(substr)` — substring/item in collection
+- `expect(actual).toBeNull()` — null check
+- `expect(actual).toBeDefined()` — defined check
+- `expect(actual).toBeUndefined()` — undefined check
+- `expect(actual).toBeTruthy()` — truthy check
+- `expect(actual).toBeFalsy()` — falsy check
+- `expect(fn).toThrow(error?)` — exception check
+- `expect(actual).rejects.toThrow(error?)` — async rejection
+- `expect(actual).resolves.toBe(expected)` — async resolution
+- `expect(actual).toHaveLength(n)` — length check
+- `expect(actual).toMatch(regex)` — regex match
+- `expect(actual).toMatchSnapshot()` — snapshot match
+
+**Rule**: Use built-in `expect`, do not import external assertion libraries.
+
+## Tags
+
+- **Format**: Vitest `describe`/`it` with tag metadata
+
+```typescript
+describe('@feature', () => {
+  it('should perform action', { tags: ['@feature'] }, () => {
+    // test code
+  })
+})
+```
+
+- **Tag annotation**: Use the `tags` option in `it()` or `describe()` for categorization
+- **CLI filtering**: `vitest run --reporter=verbose --testNamePattern="pattern"` or `vitest run -t "pattern"`
+
+## Result Format
+
+- **Output flags**: `--reporter=verbose` or `--reporter=json`
+- **Format type**: `json-report` (structured JSON output)
+
+### JSON Report Structure
+
+```json
+{
+  "testResults": [
+    {
+      "name": "tests/e2e/feature.test.ts",
+      "status": "passed",
+      "startTime": 1716000000000,
+      "endTime": 1716000001000,
+      "assertionResults": [
+        {
+          "fullName": "Feature > should perform action",
+          "status": "passed",
+          "duration": 100,
+          "failureMessages": []
+        }
+      ]
+    }
+  ]
+}
+```
+
+## Import Patterns
+
+Standard imports for Vitest e2e tests:
+
+```typescript
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest'
+import { execSync, exec } from 'child_process'
+import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'fs'
+import { join } from 'path'
+```
+
+- HTTP tests add: `import fetch from 'node-fetch'` or built-in `fetch` (Node 18+)
+- API tests add: `import { setupServer } from 'msw/node'` (mock service worker)
 
 ## Anti-patterns (Forbidden)
 

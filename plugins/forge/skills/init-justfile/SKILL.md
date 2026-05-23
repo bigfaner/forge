@@ -293,7 +293,7 @@ Targets:
   just e2e-setup                  -> go mod download
   ... (all standard targets listed with resolved commands)
 
-Convention: docs/conventions/testing-go.md (Go testing package + testify/assert)
+Convention: docs/conventions/testing/go.md (Go testing package + testify/assert)
 Edit justfile to customize commands for your project.
 forge quality-gate will now use `just test` automatically.
 ```
