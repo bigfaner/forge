@@ -1743,3 +1743,128 @@ func TestGetQuickTestTasks_DriftDependsOnVerifyRegression(t *testing.T) {
 	}
 	t.Error("T-quick-doc-drift not found")
 }
+
+// --- Task 5: ResolveFirstTestDep panic and InferType ordering tests ---
+
+func TestResolveFirstTestDep_BreakdownPanicsOnMissingGenJourneys(t *testing.T) {
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Fatal("expected panic when gen-journeys task not found in breakdown mode, but did not panic")
+		}
+		msg := fmt.Sprintf("%v", r)
+		if !strings.Contains(msg, "T-test-gen-journeys") {
+			t.Errorf("panic message should contain T-test-gen-journeys, got %q", msg)
+		}
+	}()
+
+	// Create tasks without gen-journeys — only gen-scripts (old pipeline)
+	tasks := []AutoGenTaskDef{
+		{ID: "T-eval-journey"},
+		{ID: "T-test-gen-contracts"},
+		{ID: "T-test-gen-scripts-cli"},
+		{ID: "T-test-run"},
+	}
+	existing := map[string]Task{
+		"1-gate": {ID: "1.gate"},
+	}
+	ResolveFirstTestDep(tasks, existing, "breakdown")
+}
+
+func TestResolveFirstTestDep_QuickPanicsOnMissingGenJourneys(t *testing.T) {
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Fatal("expected panic when gen-journeys task not found in quick mode, but did not panic")
+		}
+		msg := fmt.Sprintf("%v", r)
+		if !strings.Contains(msg, "T-test-gen-journeys") {
+			t.Errorf("panic message should contain T-test-gen-journeys, got %q", msg)
+		}
+	}()
+
+	// Create tasks without gen-journeys — only drift (old pipeline)
+	tasks := []AutoGenTaskDef{
+		{ID: "T-quick-doc-drift"},
+	}
+	existing := map[string]Task{
+		"1-foo": {ID: "1"},
+	}
+	ResolveFirstTestDep(tasks, existing, "quick")
+}
+
+func TestResolveFirstTestDep_BreakdownWithCleanCode(t *testing.T) {
+	existing := map[string]Task{
+		"1-gate":  {ID: "1.gate"},
+		"1.1-foo": {ID: "1.1"},
+	}
+	tasks := GetBreakdownTestTasks([]string{"cli"}, defaultAuto)
+
+	// Add a clean-code task
+	tasks = append([]AutoGenTaskDef{{ID: "T-clean-code"}}, tasks...)
+
+	ResolveFirstTestDep(tasks, existing, "breakdown")
+
+	cleanIdx := findTaskIndex(tasks, "T-clean-code")
+	if cleanIdx < 0 {
+		t.Fatal("T-clean-code not found")
+	}
+	if tasks[cleanIdx].Dependencies[0] != "1.gate" {
+		t.Errorf("clean-code should depend on highest gate, got %v", tasks[cleanIdx].Dependencies)
+	}
+
+	firstTestIdx := findTaskIndexByPrefix(tasks, "T-test-gen-journeys")
+	if firstTestIdx < 0 {
+		t.Fatal("gen-journeys not found")
+	}
+	if tasks[firstTestIdx].Dependencies[0] != "T-clean-code" {
+		t.Errorf("first test task should depend on clean-code, got %v", tasks[firstTestIdx].Dependencies)
+	}
+}
+
+func TestResolveFirstTestDep_QuickWithCleanCode(t *testing.T) {
+	existing := map[string]Task{
+		"1-foo": {ID: "1"},
+		"2-bar": {ID: "2"},
+	}
+	tasks := GetQuickTestTasks([]string{"cli"}, allEnabledAuto)
+
+	// Add a clean-code task
+	tasks = append([]AutoGenTaskDef{{ID: "T-clean-code"}}, tasks...)
+
+	ResolveFirstTestDep(tasks, existing, "quick")
+
+	cleanIdx := findTaskIndex(tasks, "T-clean-code")
+	if cleanIdx < 0 {
+		t.Fatal("T-clean-code not found")
+	}
+	if tasks[cleanIdx].Dependencies[0] != "2" {
+		t.Errorf("clean-code should depend on max business task, got %v", tasks[cleanIdx].Dependencies)
+	}
+
+	firstTestIdx := findTaskIndexByPrefix(tasks, "T-test-gen-journeys")
+	if firstTestIdx < 0 {
+		t.Fatal("gen-journeys not found")
+	}
+	if tasks[firstTestIdx].Dependencies[0] != "T-clean-code" {
+		t.Errorf("first test task should depend on clean-code, got %v", tasks[firstTestIdx].Dependencies)
+	}
+}
+
+func TestResolveFirstTestDep_EmptyTasks_NoPanic(_ *testing.T) {
+	// Empty tasks should return without panic
+	ResolveFirstTestDep(nil, map[string]Task{"1": {ID: "1"}}, "breakdown")
+	ResolveFirstTestDep(nil, map[string]Task{"1": {ID: "1"}}, "quick")
+}
+
+func TestResolveFirstTestDep_NoDeps_NoPanic(t *testing.T) {
+	// No existing business tasks → return without panic
+	tasks := GetBreakdownTestTasks([]string{"cli"}, defaultAuto)
+	ResolveFirstTestDep(tasks, map[string]Task{}, "breakdown")
+
+	// gen-journeys should have no deps set (no business tasks to depend on)
+	firstTestIdx := findTaskIndexByPrefix(tasks, "T-test-gen-journeys")
+	if firstTestIdx >= 0 && len(tasks[firstTestIdx].Dependencies) != 0 {
+		t.Errorf("gen-journeys should have no deps when no business tasks exist, got %v", tasks[firstTestIdx].Dependencies)
+	}
+}

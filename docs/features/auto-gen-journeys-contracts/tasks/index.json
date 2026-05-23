@@ -69,7 +69,7 @@
         "3",
         "4"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "5-infer-resolve.md",
       "record": "records/5-infer-resolve.md",
       "scope": "backend",

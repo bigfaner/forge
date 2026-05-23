@@ -77,6 +77,9 @@ func TestInferType(t *testing.T) {
 		{"T-test-runa", ""},
 		{"T-quick-verify-regressiona", ""},
 		{"T-quick-doc-drifta", ""},
+
+		// Hard Rule: gen-journeys type suffix with hyphenated types
+		{"T-test-gen-journeys-web-ui", TypeTestGenJourneys},
 	}
 
 	for _, tt := range tests {

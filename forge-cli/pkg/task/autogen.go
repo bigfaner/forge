@@ -623,6 +623,20 @@ func findTaskIndexOrPanic(tasks []AutoGenTaskDef, id string) int {
 	return idx
 }
 
+// findTaskIndexByPrefixOrPanic finds the index of the first task whose ID starts with the given prefix.
+// Panics with a descriptive message (including all task IDs) if not found.
+func findTaskIndexByPrefixOrPanic(tasks []AutoGenTaskDef, prefix string) int {
+	idx := findTaskIndexByPrefix(tasks, prefix)
+	if idx < 0 {
+		var allIDs []string
+		for _, t := range tasks {
+			allIDs = append(allIDs, t.ID)
+		}
+		panic(fmt.Sprintf("findTaskIndexByPrefix: task with prefix %q not found in tasks %v", prefix, allIDs))
+	}
+	return idx
+}
+
 // ResolveFirstTestDep resolves the first test task's dependency.
 // For breakdown: depends on the highest-phase gate, or last summary if no gate.
 // For quick: depends on the max business task ID.
@@ -648,21 +662,12 @@ func ResolveFirstTestDep(tasks []AutoGenTaskDef, existingTasks map[string]Task, 
 		}
 
 		cleanIdx := findTaskIndex(tasks, "T-clean-code")
-		// First test pipeline task is gen-journeys, eval-journey, or gen-scripts (in priority order)
-		firstTestIdx := findTaskIndexByPrefix(tasks, "T-test-gen-journeys")
-		if firstTestIdx < 0 {
-			firstTestIdx = findTaskIndex(tasks, "T-eval-journey")
-		}
-		if firstTestIdx < 0 {
-			firstTestIdx = findTaskIndexByPrefix(tasks, "T-test-gen-scripts")
-		}
+		firstTestIdx := findTaskIndexByPrefixOrPanic(tasks, "T-test-gen-journeys")
 
 		if cleanIdx >= 0 {
 			tasks[cleanIdx].Dependencies = []string{dep}
-			if firstTestIdx >= 0 {
-				tasks[firstTestIdx].Dependencies = []string{"T-clean-code"}
-			}
-		} else if firstTestIdx >= 0 {
+			tasks[firstTestIdx].Dependencies = []string{"T-clean-code"}
+		} else {
 			tasks[firstTestIdx].Dependencies = []string{dep}
 		}
 
@@ -673,14 +678,12 @@ func ResolveFirstTestDep(tasks []AutoGenTaskDef, existingTasks map[string]Task, 
 		}
 
 		cleanIdx := findTaskIndex(tasks, "T-clean-code")
-		firstTestIdx := findTaskIndexByPrefix(tasks, "T-test-gen-journeys")
+		firstTestIdx := findTaskIndexByPrefixOrPanic(tasks, "T-test-gen-journeys")
 
 		if cleanIdx >= 0 {
 			tasks[cleanIdx].Dependencies = []string{dep}
-			if firstTestIdx >= 0 {
-				tasks[firstTestIdx].Dependencies = []string{"T-clean-code"}
-			}
-		} else if firstTestIdx >= 0 {
+			tasks[firstTestIdx].Dependencies = []string{"T-clean-code"}
+		} else {
 			tasks[firstTestIdx].Dependencies = []string{dep}
 		}
 	}
