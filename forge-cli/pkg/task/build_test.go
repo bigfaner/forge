@@ -1184,7 +1184,7 @@ func TestIsTestableType(t *testing.T) {
 		{TypeValidationUx, false},
 		// other
 		{TypeGate, false},
-		{TypeCleanCode, false},
+		{TypeCleanCode, true},
 		{"unknown", false},
 		{"", false},
 	}

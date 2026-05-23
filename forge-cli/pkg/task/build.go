@@ -431,9 +431,9 @@ func isFixTaskID(id string) bool {
 }
 
 // IsTestableType returns true if the given task type has testable runtime behavior.
-// Uses prefix matching: any type starting with "coding." is testable.
+// Covers coding.* prefix and code-quality.simplify (explicit match).
 func IsTestableType(typ string) bool {
-	return strings.HasPrefix(typ, "coding.")
+	return strings.HasPrefix(typ, "coding.") || typ == TypeCleanCode
 }
 
 // needsTestPipeline returns true when any non-auto-gen task has a testable
