@@ -955,7 +955,7 @@ func TestHandleGateFailure_DistinctReasons(t *testing.T) {
 		}
 		t.Run(name, func(t *testing.T) {
 			if os.Getenv("TEST_HANDLE_GATE") == "1" {
-				handleGateFailure(tc.step, "tests/results/fake.txt", tc.fixID, "some error detail")
+				_ = handleGateFailure(tc.step, "tests/results/fake.txt", tc.fixID, "some error detail")
 				return
 			}
 			cmd := exec.Command(os.Args[0], "-test.run=TestHandleGateFailure_DistinctReasons/"+name)

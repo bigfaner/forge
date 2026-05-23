@@ -65,7 +65,7 @@
         "11",
         "12"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "13-unify-error-handling.md",
       "record": "records/13-unify-error-handling.md",
       "scope": "backend",
