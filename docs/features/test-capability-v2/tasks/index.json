@@ -80,7 +80,7 @@
         "2.3",
         "2.9"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2.10-quality-gate.md",
       "record": "records/2.10-quality-gate.md",
       "scope": "all",

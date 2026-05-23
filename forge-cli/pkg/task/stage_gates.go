@@ -196,7 +196,9 @@ func GenerateGateMD(phase PhaseInfo, featureSlug string) ([]byte, error) {
 	buf.WriteString("5. [ ] All existing tests pass\n")
 	buf.WriteString("6. [ ] No deviations from design spec (or deviations are documented as decisions)\n")
 	buf.WriteString("7. [ ] All Integration Specs from `tech-design.md` have corresponding code changes\n")
-	buf.WriteString("8. [ ] All integration test cases pass (if gen-test-cases already ran)\n\n")
+	buf.WriteString("8. [ ] eval-journey passed (if test pipeline ran)\n")
+	buf.WriteString("9. [ ] eval-contract passed (if test pipeline ran)\n")
+	buf.WriteString("10. [ ] confidence rating reviewed — LOW items flagged for manual verification\n\n")
 
 	fmt.Fprintf(&buf, "## Reference Files\n\n")
 	fmt.Fprintf(&buf, "- Design: `docs/features/%s/design/tech-design.md`\n", featureSlug)

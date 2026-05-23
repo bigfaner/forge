@@ -323,6 +323,49 @@ func TestDetectPhases_SortedByPhaseNumber(t *testing.T) {
 	}
 }
 
+// --- Gate Content: Multi-Stage Eval Gate ---
+
+func TestGenerateGateMD_ContainsEvalGateChecklist(t *testing.T) {
+	phase := PhaseInfo{
+		Number:  2,
+		TaskIDs: []string{"2.1", "2.2"},
+	}
+	content, err := GenerateGateMD(phase, "auth-login")
+	if err != nil {
+		t.Fatalf("GenerateGateMD error: %v", err)
+	}
+	s := string(content)
+
+	// The gate checklist should reference the multi-stage eval gate
+	// (eval-journey -> eval-contract -> confidence rating)
+	// NOT the old gen-test-cases reference
+	if strings.Contains(s, "gen-test-cases") {
+		t.Error("gate content should NOT reference old gen-test-cases")
+	}
+	if !strings.Contains(s, "eval-journey") {
+		t.Error("gate content should reference eval-journey")
+	}
+	if !strings.Contains(s, "eval-contract") {
+		t.Error("gate content should reference eval-contract")
+	}
+}
+
+func TestGenerateGateMD_ContainsConfidenceRating(t *testing.T) {
+	phase := PhaseInfo{
+		Number:  2,
+		TaskIDs: []string{"2.1", "2.2"},
+	}
+	content, err := GenerateGateMD(phase, "auth-login")
+	if err != nil {
+		t.Fatalf("GenerateGateMD error: %v", err)
+	}
+	s := string(content)
+
+	if !strings.Contains(s, "confidence") {
+		t.Error("gate content should reference confidence rating")
+	}
+}
+
 func TestDetectPhases_TaskIDsSortedWithinPhase(t *testing.T) {
 	taskIDs := []string{"1.3", "1.1", "1.2"}
 	phases := DetectPhases(taskIDs)
