@@ -19,10 +19,11 @@ domains: [cli, commands, reference, skills]
 | `forge proposal [slug]` | 列出或查看 proposal 详情 | `proposal.go` |
 | `forge lesson [name]` | 列出或查看 lesson 详情 | `lesson.go` |
 | `forge cleanup` | 清理已完成的任务状态 | `cleanup.go` |
-| `forge probe` | HTTP 健康检查（用于 e2e 测试服务器） | `probe.go` |
+| `forge probe` | ~~HTTP 健康检查~~ — 已移除，功能由 `pkg/e2eprobe` 库提供 | _(已移除)_ |
 | `forge quality-gate` | 检查所有任务是否完成，然后运行测试 | `quality_gate.go` |
 | `forge verify-task-done` | 在 git commit 前验证任务完成状态 | `verify_task_done.go` |
 | `forge version` | 打印 CLI 版本号（隐藏命令，不出现在 --help 中） | `version.go` |
+| `forge research [slug]` | 列出或查看 research report 详情 | `research.go` |
 | `forge claude` | 跳过权限检查启动 Claude CLI | `claude.go` |
 
 ## 命令组
@@ -35,7 +36,7 @@ domains: [cli, commands, reference, skills]
 |------|------|--------|
 | `forge task claim` | 认领下一个可用任务 | `claim.go` |
 | `forge task submit` | 提交任务执行结果 | `submit.go` |
-| `forge task status <task-id> [status]` | 查询或更新任务状态 | `status.go` |
+| `forge task status <task-id>` | 查询任务状态（只读） | `status.go` |
 | `forge task query` | 查询任务信息 | `query.go` |
 | `forge task check-deps` | 检查任务依赖关系 | `check_deps.go` |
 | `forge task validate-index [file]` | 验证 index.json 文件 | `validate_index.go` |
@@ -97,6 +98,7 @@ domains: [cli, commands, reference, skills]
 | 命令 | 用途 | 源文件 |
 |------|------|--------|
 | `forge config get <key>` | 获取配置值（纯文本输出） | `config.go` |
+| `forge config set <key> <value>` | 设置配置值（支持 dot-notation 嵌套键） | `config.go` |
 | `forge config init` | 交互式初始化 .forge/config.yaml | `config.go` |
 
 ### forge feature — Feature 管理
