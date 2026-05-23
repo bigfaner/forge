@@ -18,7 +18,7 @@
       "title": "Remove noTest references from skill docs, hooks, and templates",
       "priority": "P1",
       "estimatedTime": "20m",
-      "status": "pending",
+      "status": "completed",
       "file": "2-remove-notest-docs.md",
       "record": "records/2-remove-notest-docs.md",
       "type": "doc"

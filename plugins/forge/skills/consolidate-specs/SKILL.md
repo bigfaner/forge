@@ -332,8 +332,6 @@ Invoke the skill:
 Skill(skill="submit-task")
 ```
 
-Omit `coverage` from record.json -- the noTest flag in index.json auto-sets it.
-
 ## Rules
 
 See `rules/constraints.md` for the complete list of constraints and rules governing this skill.

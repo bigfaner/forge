@@ -107,7 +107,7 @@ Phase 2 uses a two-stage approach: independent discovery first (systematically f
 
 | Type | Points | Examples |
 |------|--------|----------|
-| Type 2: Skip quality gates | 0-80 | `--force` overrides, noTest bypasses, missing justfile silently passes, self-reported metrics |
+| Type 2: Skip quality gates | 0-80 | `--force` overrides, missing justfile silently passes, self-reported metrics |
 | Type 3: Fake eval results | 0-80 | Skip scorer subagent, tamper with scores, general-purpose fallback loses adversarial constraints |
 | Type 1: Skip mandatory interaction | 0-45 | User confirmations are advisory-only HARD-RULE text, no mechanical enforcement |
 | Type 4: Skip required steps | 0-35 | Conditional requirements depend on self-reporting, gates only trigger when prerequisites exist |
