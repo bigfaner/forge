@@ -69,10 +69,6 @@ func goldenBlockedInput() (*Task, *RecordData, string) {
 }
 
 func TestRenderCodingRecord_MatchesFillRecordTemplate(t *testing.T) {
-	// This test verifies that the template-based RenderCodingRecord
-	// produces byte-identical output to the current fillRecordTemplate.
-	// Once the template engine is implemented, this test will pass.
-
 	t.Run("golden input with full fields", func(t *testing.T) {
 		task, rd, startedTime := goldenRecordInput()
 		expected := FillRecordTemplate(task, rd, startedTime)
@@ -162,7 +158,6 @@ func TestRecordTemplateData(t *testing.T) {
 		task := &Task{ID: "1.1", Title: "Test"}
 		rd := &RecordData{Status: "completed", Summary: "Done", TestsPassed: 1, Coverage: 50.0}
 		data := NewRecordTemplateData(task, rd, "2026-05-23 10:00")
-		// completed time is "now" which is after 10:00, so timeSpent should be non-empty
 		assert.NotEmpty(t, data.TimeSpent)
 	})
 }
@@ -203,7 +198,6 @@ func TestTemplateHelperFunctions(t *testing.T) {
 }
 
 func TestFillRecordTemplate_Unchanged(t *testing.T) {
-	// Sanity: FillRecordTemplate still works as before (we're not removing it yet).
 	t.Run("still produces output", func(t *testing.T) {
 		task, rd, startedTime := goldenRecordInput()
 		got := FillRecordTemplate(task, rd, startedTime)
@@ -216,7 +210,6 @@ func TestFillRecordTemplate_Unchanged(t *testing.T) {
 
 // --- Doc record template tests ---
 
-// goldenDocInput returns a task with doc type and fully populated doc fields.
 func goldenDocInput() (*Task, *RecordData, string) {
 	return &Task{
 			ID:    "3",
@@ -241,7 +234,6 @@ func goldenDocInput() (*Task, *RecordData, string) {
 		"2026-05-23 10:00"
 }
 
-// goldenDocEmptyInput returns a doc task with all doc fields empty.
 func goldenDocEmptyInput() (*Task, *RecordData, string) {
 	return &Task{
 			ID:    "5",
@@ -255,7 +247,6 @@ func goldenDocEmptyInput() (*Task, *RecordData, string) {
 		"2026-05-23 10:00"
 }
 
-// goldenDocMixedInput returns a doc task with some fields populated, some empty.
 func goldenDocMixedInput() (*Task, *RecordData, string) {
 	return &Task{
 			ID:    "6",
@@ -277,7 +268,6 @@ func TestRenderDocRecord(t *testing.T) {
 		task, rd, startedTime := goldenDocInput()
 		got := RenderDocRecord(task, rd, startedTime)
 
-		// Shared sections
 		assert.Contains(t, got, "# Task Record: 3 Doc record template")
 		assert.Contains(t, got, "## Summary")
 		assert.Contains(t, got, "Created doc-specific record template")
@@ -292,7 +282,6 @@ func TestRenderDocRecord(t *testing.T) {
 		assert.Contains(t, got, "## Notes")
 		assert.Contains(t, got, "Doc tasks need no test metrics")
 
-		// Doc-specific sections
 		assert.Contains(t, got, "## Document Metrics")
 		assert.Contains(t, got, "5 docs reviewed, 2 updated")
 		assert.Contains(t, got, "## Referenced Documents")
@@ -300,7 +289,6 @@ func TestRenderDocRecord(t *testing.T) {
 		assert.Contains(t, got, "## Review Status")
 		assert.Contains(t, got, "Approved by tech lead")
 
-		// NO test-related sections
 		assert.NotContains(t, got, "## Test Results")
 		assert.NotContains(t, got, "Tests Executed")
 		assert.NotContains(t, got, "Coverage")
@@ -311,25 +299,17 @@ func TestRenderDocRecord(t *testing.T) {
 		got := RenderDocRecord(task, rd, startedTime)
 
 		assert.Contains(t, got, "# Task Record: 5 Write README")
-
-		// Empty fields should show fallbacks
 		assert.Contains(t, got, "## Document Metrics")
 		assert.Contains(t, got, "N/A")
 		assert.Contains(t, got, "## Referenced Documents")
 		assert.Contains(t, got, "无")
 		assert.Contains(t, got, "## Review Status")
 		assert.Contains(t, got, "N/A")
-
-		// Notes fallback
 		assert.Contains(t, got, "## Notes\n无")
-
-		// Shared sections show fallbacks
 		assert.Contains(t, got, "### Files Created\n无")
 		assert.Contains(t, got, "### Files Modified\n无")
 		assert.Contains(t, got, "### Key Decisions\n无")
 		assert.Contains(t, got, "## Acceptance Criteria\n无")
-
-		// Still no test sections
 		assert.NotContains(t, got, "## Test Results")
 		assert.NotContains(t, got, "Tests Executed")
 	})
@@ -339,25 +319,15 @@ func TestRenderDocRecord(t *testing.T) {
 		got := RenderDocRecord(task, rd, startedTime)
 
 		assert.Contains(t, got, "# Task Record: 6 Update API docs")
-
-		// Populated fields
 		assert.Contains(t, got, "## Document Metrics")
 		assert.Contains(t, got, "3 endpoints documented")
 		assert.Contains(t, got, "## Referenced Documents")
 		assert.Contains(t, got, "- docs/architecture.md")
-
-		// Empty ReviewStatus should fallback to N/A
 		assert.Contains(t, got, "## Review Status")
 		assert.Contains(t, got, "N/A")
-
-		// Files created empty
 		assert.Contains(t, got, "### Files Created\n无")
-		// Files modified populated
 		assert.Contains(t, got, "### Files Modified\n- docs/api.md")
-		// Key decisions empty
 		assert.Contains(t, got, "### Key Decisions\n无")
-
-		// Still no test sections
 		assert.NotContains(t, got, "## Test Results")
 	})
 
@@ -446,7 +416,6 @@ func TestRecordTemplateData_DocFields(t *testing.T) {
 
 // --- Test record template tests ---
 
-// goldenTestInput returns a test task with fully populated test-specific fields.
 func goldenTestInput() (*Task, *RecordData, string) {
 	return &Task{
 			ID:    "T-1",
@@ -472,7 +441,6 @@ func goldenTestInput() (*Task, *RecordData, string) {
 		"2026-05-23 10:00"
 }
 
-// goldenTestEmptyInput returns a test task with all test-specific fields empty.
 func goldenTestEmptyInput() (*Task, *RecordData, string) {
 	return &Task{
 			ID:    "T-3",
@@ -486,7 +454,6 @@ func goldenTestEmptyInput() (*Task, *RecordData, string) {
 		"2026-05-23 10:00"
 }
 
-// goldenTestPartialInput returns a test task with some fields populated.
 func goldenTestPartialInput() (*Task, *RecordData, string) {
 	return &Task{
 			ID:    "T-5",
@@ -508,7 +475,6 @@ func TestRenderTestRecord(t *testing.T) {
 		task, rd, startedTime := goldenTestInput()
 		got := RenderTestRecord(task, rd, startedTime)
 
-		// Shared sections present
 		assert.Contains(t, got, "# Task Record: T-1 Generate test cases")
 		assert.Contains(t, got, "## Summary")
 		assert.Contains(t, got, "Generated test cases from acceptance criteria")
@@ -523,7 +489,6 @@ func TestRenderTestRecord(t *testing.T) {
 		assert.Contains(t, got, "## Notes")
 		assert.Contains(t, got, "Auto-generated by test pipeline")
 
-		// Test-specific sections
 		assert.Contains(t, got, "## Cases Generated")
 		assert.Contains(t, got, "15")
 		assert.Contains(t, got, "## Cases Evaluated")
@@ -533,7 +498,6 @@ func TestRenderTestRecord(t *testing.T) {
 		assert.Contains(t, got, "## Test Results")
 		assert.Contains(t, got, "All scripts passed (12/12)")
 
-		// NO coding-specific sections
 		assert.NotContains(t, got, "## Test Results\n- **Tests Executed**")
 		assert.NotContains(t, got, "**Passed**")
 		assert.NotContains(t, got, "**Failed**")
@@ -545,14 +509,10 @@ func TestRenderTestRecord(t *testing.T) {
 		got := RenderTestRecord(task, rd, startedTime)
 
 		assert.Contains(t, got, "# Task Record: T-3 Run tests")
-
-		// Test-specific sections with fallbacks
 		assert.Contains(t, got, "## Cases Generated\nN/A")
 		assert.Contains(t, got, "## Cases Evaluated\nN/A")
 		assert.Contains(t, got, "## Scripts Created\n无")
 		assert.Contains(t, got, "## Test Results\nN/A")
-
-		// Shared fallbacks
 		assert.Contains(t, got, "### Files Created\n无")
 		assert.Contains(t, got, "### Files Modified\n无")
 		assert.Contains(t, got, "### Key Decisions\n无")
@@ -565,16 +525,12 @@ func TestRenderTestRecord(t *testing.T) {
 		got := RenderTestRecord(task, rd, startedTime)
 
 		assert.Contains(t, got, "# Task Record: T-5 Generate and run scripts")
-
-		// Populated fields
 		assert.Contains(t, got, "## Cases Generated")
 		assert.Contains(t, got, "8")
 		assert.Contains(t, got, "## Test Results")
 		assert.Contains(t, got, "7 passed, 1 failed")
 		assert.Contains(t, got, "### Files Created")
 		assert.Contains(t, got, "- tests/journeys/checkout_test.go")
-
-		// Empty fields fallback
 		assert.Contains(t, got, "## Cases Evaluated\nN/A")
 		assert.Contains(t, got, "## Scripts Created\n无")
 	})
@@ -660,5 +616,387 @@ func TestFormatIntWithFallback(t *testing.T) {
 	})
 	t.Run("negative value", func(t *testing.T) {
 		assert.Equal(t, "N/A", formatIntWithFallback(-1))
+	})
+}
+
+// --- Validation record template tests ---
+
+func goldenValidationInput() (*Task, *RecordData, string) {
+	return &Task{
+			ID:    "T-validate-1",
+			Title: "Validate code quality",
+		},
+		&RecordData{
+			Status:        "completed",
+			Summary:       "Code validation passed with minor issues",
+			FilesCreated:  []string{"reports/validation-report.md"},
+			FilesModified: []string{"internal/handler/handler.go"},
+			KeyDecisions:  []string{"Accepted minor warnings as non-blocking"},
+			Coverage:      -1.0,
+			AcceptanceCriteria: []AcceptanceCriterion{
+				{Criterion: "All critical issues resolved", Met: true},
+				{Criterion: "Report generated", Met: true},
+			},
+			Notes:            "Two minor issues deferred to next sprint",
+			ValidationPassed: true,
+			IssuesFound:      []string{"Unused import in handler.go", "Missing error log in middleware"},
+		},
+		"2026-05-23 10:00"
+}
+
+func goldenValidationEmptyInput() (*Task, *RecordData, string) {
+	return &Task{
+			ID:    "T-validate-3",
+			Title: "UX validation",
+		},
+		&RecordData{
+			Status:   "completed",
+			Summary:  "UX review completed",
+			Coverage: -1.0,
+		},
+		"2026-05-23 10:00"
+}
+
+func goldenValidationFailedInput() (*Task, *RecordData, string) {
+	return &Task{
+			ID:    "T-validate-5",
+			Title: "Validate code",
+		},
+		&RecordData{
+			Status:           "completed",
+			Summary:          "Code validation failed",
+			Coverage:         -1.0,
+			ValidationPassed: false,
+			IssuesFound:      []string{"Critical: SQL injection vulnerability", "High: Missing auth check"},
+			FilesModified:    []string{"api/routes.go"},
+		},
+		"2026-05-23 10:00"
+}
+
+func TestRenderValidationRecord(t *testing.T) {
+	t.Run("populated validation fields", func(t *testing.T) {
+		task, rd, startedTime := goldenValidationInput()
+		got := RenderValidationRecord(task, rd, startedTime)
+
+		assert.Contains(t, got, "# Task Record: T-validate-1 Validate code quality")
+		assert.Contains(t, got, "## Summary")
+		assert.Contains(t, got, "Code validation passed with minor issues")
+		assert.Contains(t, got, "### Files Created")
+		assert.Contains(t, got, "- reports/validation-report.md")
+		assert.Contains(t, got, "### Files Modified")
+		assert.Contains(t, got, "- internal/handler/handler.go")
+		assert.Contains(t, got, "### Key Decisions")
+		assert.Contains(t, got, "- Accepted minor warnings as non-blocking")
+		assert.Contains(t, got, "## Acceptance Criteria")
+		assert.Contains(t, got, "- [x] All critical issues resolved")
+		assert.Contains(t, got, "## Notes")
+		assert.Contains(t, got, "Two minor issues deferred to next sprint")
+
+		// Validation-specific sections
+		assert.Contains(t, got, "## Pass/Fail Verdict")
+		assert.Contains(t, got, "**Status**: Passed")
+		assert.Contains(t, got, "## Issues Found")
+		assert.Contains(t, got, "- Unused import in handler.go")
+		assert.Contains(t, got, "- Missing error log in middleware")
+
+		// NO coding test-result sections
+		assert.NotContains(t, got, "## Test Results")
+		assert.NotContains(t, got, "Tests Executed")
+	})
+
+	t.Run("empty fields use fallbacks", func(t *testing.T) {
+		task, rd, startedTime := goldenValidationEmptyInput()
+		got := RenderValidationRecord(task, rd, startedTime)
+
+		assert.Contains(t, got, "# Task Record: T-validate-3 UX validation")
+		assert.Contains(t, got, "## Pass/Fail Verdict")
+		assert.Contains(t, got, "**Status**: Failed") // default when ValidationPassed is false
+		assert.Contains(t, got, "## Issues Found\n无")
+		assert.Contains(t, got, "### Files Created\n无")
+		assert.Contains(t, got, "### Files Modified\n无")
+		assert.Contains(t, got, "### Key Decisions\n无")
+		assert.Contains(t, got, "## Acceptance Criteria\n无")
+		assert.Contains(t, got, "## Notes\n无")
+		assert.NotContains(t, got, "## Test Results")
+	})
+
+	t.Run("failed validation", func(t *testing.T) {
+		task, rd, startedTime := goldenValidationFailedInput()
+		got := RenderValidationRecord(task, rd, startedTime)
+
+		assert.Contains(t, got, "## Pass/Fail Verdict")
+		assert.Contains(t, got, "**Status**: Failed")
+		assert.Contains(t, got, "## Issues Found")
+		assert.Contains(t, got, "- Critical: SQL injection vulnerability")
+		assert.Contains(t, got, "- High: Missing auth check")
+	})
+
+	t.Run("blocked validation task", func(t *testing.T) {
+		task := &Task{ID: "T-validate-7", Title: "Validate code"}
+		rd := &RecordData{
+			Status:           "blocked",
+			Summary:          "Blocked on missing artifact",
+			ValidationPassed: false,
+			IssuesFound:      []string{"Missing build artifact"},
+		}
+		got := RenderValidationRecord(task, rd, "2026-05-23 10:00")
+
+		assert.Contains(t, got, `completed: "N/A"`)
+		assert.Contains(t, got, "## Pass/Fail Verdict")
+		assert.Contains(t, got, "**Status**: Failed")
+		assert.Contains(t, got, "## Issues Found")
+		assert.Contains(t, got, "- Missing build artifact")
+	})
+
+	t.Run("type reclassification in validation record", func(t *testing.T) {
+		task := &Task{ID: "T-validate-9", Title: "Validate code"}
+		rd := &RecordData{
+			Status:           "completed",
+			Summary:          "Validation done",
+			Coverage:         -1.0,
+			ValidationPassed: true,
+			TypeReclassification: &TypeReclassification{
+				OriginalType: "validation.code",
+				ActualType:   "validation.ux",
+				Reason:       "scope was UX-related",
+			},
+		}
+		got := RenderValidationRecord(task, rd, "2026-05-23 10:00")
+
+		assert.Contains(t, got, "## Type Reclassification")
+		assert.Contains(t, got, "- Original: validation.code")
+		assert.Contains(t, got, "- Actual: validation.ux")
+		assert.Contains(t, got, "- Reason: scope was UX-related")
+		assert.Contains(t, got, "## Pass/Fail Verdict")
+		assert.Contains(t, got, "**Status**: Passed")
+	})
+}
+
+func TestRecordTemplateData_ValidationFields(t *testing.T) {
+	t.Run("validation fields populated", func(t *testing.T) {
+		task := &Task{ID: "V-1", Title: "Validation task"}
+		rd := &RecordData{
+			Status:           "completed",
+			Summary:          "Validation work",
+			Coverage:         -1.0,
+			ValidationPassed: true,
+			IssuesFound:      []string{"issue1", "issue2"},
+		}
+		data := NewRecordTemplateData(task, rd, "2026-05-23 10:00")
+		assert.Equal(t, "Passed", data.ValidationPassedFormatted)
+		assert.Equal(t, "- issue1\n- issue2", data.IssuesFoundFormatted)
+	})
+
+	t.Run("validation fields empty use fallbacks", func(t *testing.T) {
+		task := &Task{ID: "V-2", Title: "Validation task"}
+		rd := &RecordData{
+			Status:   "completed",
+			Summary:  "Validation work",
+			Coverage: -1.0,
+		}
+		data := NewRecordTemplateData(task, rd, "2026-05-23 10:00")
+		assert.Equal(t, "Failed", data.ValidationPassedFormatted)
+		assert.Equal(t, "无", data.IssuesFoundFormatted)
+	})
+
+	t.Run("validation failed with issues", func(t *testing.T) {
+		task := &Task{ID: "V-3", Title: "Validation task"}
+		rd := &RecordData{
+			Status:           "completed",
+			Summary:          "Failed validation",
+			Coverage:         -1.0,
+			ValidationPassed: false,
+			IssuesFound:      []string{"critical bug"},
+		}
+		data := NewRecordTemplateData(task, rd, "2026-05-23 10:00")
+		assert.Equal(t, "Failed", data.ValidationPassedFormatted)
+		assert.Equal(t, "- critical bug", data.IssuesFoundFormatted)
+	})
+}
+
+// --- Gate record template tests ---
+
+func goldenGateInput() (*Task, *RecordData, string) {
+	return &Task{
+			ID:    "1.gate",
+			Title: "Quality Gate",
+		},
+		&RecordData{
+			Status:     "completed",
+			Summary:    "All quality checks passed",
+			GatePassed: true,
+			GateChecks: []string{"Compile: passed", "Lint: passed", "Tests: passed (42/42)"},
+			Notes:      "No issues found",
+		},
+		"2026-05-23 10:00"
+}
+
+func goldenGateEmptyInput() (*Task, *RecordData, string) {
+	return &Task{
+			ID:    "2.gate",
+			Title: "Quality Gate",
+		},
+		&RecordData{
+			Status:  "completed",
+			Summary: "Gate check",
+		},
+		"2026-05-23 10:00"
+}
+
+func goldenGateFailedInput() (*Task, *RecordData, string) {
+	return &Task{
+			ID:    "3.gate",
+			Title: "Quality Gate",
+		},
+		&RecordData{
+			Status:     "completed",
+			Summary:    "Quality gate failed on lint errors",
+			GatePassed: false,
+			GateChecks: []string{"Compile: passed", "Lint: failed (3 errors)", "Tests: skipped"},
+			Notes:      "Fix lint errors and re-run",
+		},
+		"2026-05-23 10:00"
+}
+
+func TestRenderGateRecord(t *testing.T) {
+	t.Run("populated gate fields", func(t *testing.T) {
+		task, rd, startedTime := goldenGateInput()
+		got := RenderGateRecord(task, rd, startedTime)
+
+		// Minimal sections: Summary, Gate Checks, Gate Status, Notes
+		assert.Contains(t, got, "# Task Record: 1.gate Quality Gate")
+		assert.Contains(t, got, "## Summary")
+		assert.Contains(t, got, "All quality checks passed")
+		assert.Contains(t, got, "## Gate Checks")
+		assert.Contains(t, got, "- Compile: passed")
+		assert.Contains(t, got, "- Lint: passed")
+		assert.Contains(t, got, "- Tests: passed (42/42)")
+		assert.Contains(t, got, "## Gate Status")
+		assert.Contains(t, got, "**Passed**: Yes")
+		assert.Contains(t, got, "## Notes")
+		assert.Contains(t, got, "No issues found")
+
+		// Gate is minimal: NO Changes, NO Criteria sections
+		assert.NotContains(t, got, "## Changes")
+		assert.NotContains(t, got, "## Acceptance Criteria")
+		assert.NotContains(t, got, "## Test Results")
+		assert.NotContains(t, got, "### Files Created")
+		assert.NotContains(t, got, "### Key Decisions")
+	})
+
+	t.Run("empty fields use fallbacks", func(t *testing.T) {
+		task, rd, startedTime := goldenGateEmptyInput()
+		got := RenderGateRecord(task, rd, startedTime)
+
+		assert.Contains(t, got, "# Task Record: 2.gate Quality Gate")
+		assert.Contains(t, got, "## Gate Checks\n无")
+		assert.Contains(t, got, "## Gate Status")
+		assert.Contains(t, got, "**Passed**: No") // default when GatePassed is false
+		assert.Contains(t, got, "## Notes\n无")
+		assert.NotContains(t, got, "## Changes")
+		assert.NotContains(t, got, "## Acceptance Criteria")
+	})
+
+	t.Run("failed gate", func(t *testing.T) {
+		task, rd, startedTime := goldenGateFailedInput()
+		got := RenderGateRecord(task, rd, startedTime)
+
+		assert.Contains(t, got, "## Gate Status")
+		assert.Contains(t, got, "**Passed**: No")
+		assert.Contains(t, got, "## Gate Checks")
+		assert.Contains(t, got, "- Lint: failed (3 errors)")
+		assert.Contains(t, got, "## Notes")
+		assert.Contains(t, got, "Fix lint errors and re-run")
+		assert.NotContains(t, got, "## Changes")
+	})
+
+	t.Run("blocked gate task", func(t *testing.T) {
+		task := &Task{ID: "4.gate", Title: "Quality Gate"}
+		rd := &RecordData{
+			Status:     "blocked",
+			Summary:    "Gate blocked on dependency",
+			GatePassed: false,
+			GateChecks: []string{"Pending: compile check"},
+		}
+		got := RenderGateRecord(task, rd, "2026-05-23 10:00")
+
+		assert.Contains(t, got, `completed: "N/A"`)
+		assert.Contains(t, got, "## Gate Checks")
+		assert.Contains(t, got, "- Pending: compile check")
+		assert.Contains(t, got, "## Gate Status")
+		assert.Contains(t, got, "**Passed**: No")
+		assert.NotContains(t, got, "## Changes")
+	})
+
+	t.Run("type reclassification in gate record", func(t *testing.T) {
+		task := &Task{ID: "5.gate", Title: "Quality Gate"}
+		rd := &RecordData{
+			Status:     "completed",
+			Summary:    "Gate check done",
+			GatePassed: true,
+			TypeReclassification: &TypeReclassification{
+				OriginalType: "coding.feature",
+				ActualType:   "gate",
+				Reason:       "task was reclassified to gate",
+			},
+		}
+		got := RenderGateRecord(task, rd, "2026-05-23 10:00")
+
+		assert.Contains(t, got, "## Type Reclassification")
+		assert.Contains(t, got, "- Original: coding.feature")
+		assert.Contains(t, got, "- Actual: gate")
+		assert.Contains(t, got, "- Reason: task was reclassified to gate")
+		assert.Contains(t, got, "## Gate Status")
+		assert.Contains(t, got, "**Passed**: Yes")
+	})
+}
+
+func TestRecordTemplateData_GateFields(t *testing.T) {
+	t.Run("gate fields populated", func(t *testing.T) {
+		task := &Task{ID: "1.gate", Title: "Gate task"}
+		rd := &RecordData{
+			Status:     "completed",
+			Summary:    "Gate work",
+			GatePassed: true,
+			GateChecks: []string{"check1", "check2"},
+		}
+		data := NewRecordTemplateData(task, rd, "2026-05-23 10:00")
+		assert.Equal(t, "- check1\n- check2", data.GateChecksFormatted)
+		assert.Equal(t, "Yes", data.GatePassedFormatted)
+	})
+
+	t.Run("gate fields empty use fallbacks", func(t *testing.T) {
+		task := &Task{ID: "2.gate", Title: "Gate task"}
+		rd := &RecordData{
+			Status:  "completed",
+			Summary: "Gate work",
+		}
+		data := NewRecordTemplateData(task, rd, "2026-05-23 10:00")
+		assert.Equal(t, "无", data.GateChecksFormatted)
+		assert.Equal(t, "No", data.GatePassedFormatted)
+	})
+
+	t.Run("gate failed with checks", func(t *testing.T) {
+		task := &Task{ID: "3.gate", Title: "Gate task"}
+		rd := &RecordData{
+			Status:     "completed",
+			Summary:    "Failed gate",
+			GatePassed: false,
+			GateChecks: []string{"lint failed"},
+		}
+		data := NewRecordTemplateData(task, rd, "2026-05-23 10:00")
+		assert.Equal(t, "- lint failed", data.GateChecksFormatted)
+		assert.Equal(t, "No", data.GatePassedFormatted)
+	})
+}
+
+func TestFormatBool(t *testing.T) {
+	t.Run("true condition", func(t *testing.T) {
+		assert.Equal(t, "Passed", FormatBool(true, "Passed", "Failed"))
+		assert.Equal(t, "Yes", FormatBool(true, "Yes", "No"))
+	})
+	t.Run("false condition", func(t *testing.T) {
+		assert.Equal(t, "Failed", FormatBool(false, "Passed", "Failed"))
+		assert.Equal(t, "No", FormatBool(false, "Yes", "No"))
 	})
 }

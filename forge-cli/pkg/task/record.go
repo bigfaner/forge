@@ -41,6 +41,14 @@ type RecordTemplateData struct {
 	CasesEvaluatedFormatted string
 	ScriptsCreatedFormatted string
 	TestResultsFormatted    string
+
+	// Validation fields (used by record-validation.md template)
+	ValidationPassedFormatted string
+	IssuesFoundFormatted      string
+
+	// Gate fields (used by record-gate.md template)
+	GateChecksFormatted string
+	GatePassedFormatted string
 }
 
 // NewRecordTemplateData creates a RecordTemplateData from task, record data, and started time.
@@ -93,6 +101,10 @@ func NewRecordTemplateData(t *Task, rd *RecordData, startedTime string) *RecordT
 		CasesEvaluatedFormatted:     formatIntWithFallback(rd.CasesEvaluated),
 		ScriptsCreatedFormatted:     FormatList(rd.ScriptsCreated),
 		TestResultsFormatted:        formatWithFallback(rd.TestResults, "N/A"),
+		ValidationPassedFormatted:   FormatBool(rd.ValidationPassed, "Passed", "Failed"),
+		IssuesFoundFormatted:        FormatList(rd.IssuesFound),
+		GateChecksFormatted:         FormatList(rd.GateChecks),
+		GatePassedFormatted:         FormatBool(rd.GatePassed, "Yes", "No"),
 	}
 }
 
@@ -145,6 +157,14 @@ func formatIntWithFallback(n int) string {
 		return fmt.Sprintf("%d", n)
 	}
 	return "N/A"
+}
+
+// FormatBool returns trueVal if cond is true, otherwise falseVal.
+func FormatBool(cond bool, trueVal, falseVal string) string {
+	if cond {
+		return trueVal
+	}
+	return falseVal
 }
 
 // FormatCoverage formats coverage value for display.
@@ -218,6 +238,16 @@ func RenderDocRecord(t *Task, rd *RecordData, startedTime string) string {
 // RenderTestRecord renders the test record template with the given data.
 func RenderTestRecord(t *Task, rd *RecordData, startedTime string) string {
 	return renderRecordTemplate("data/record-test.md", t, rd, startedTime)
+}
+
+// RenderValidationRecord renders the validation record template with the given data.
+func RenderValidationRecord(t *Task, rd *RecordData, startedTime string) string {
+	return renderRecordTemplate("data/record-validation.md", t, rd, startedTime)
+}
+
+// RenderGateRecord renders the gate record template with the given data.
+func RenderGateRecord(t *Task, rd *RecordData, startedTime string) string {
+	return renderRecordTemplate("data/record-gate.md", t, rd, startedTime)
 }
 
 // renderRecordTemplate renders a named record template with the given data.

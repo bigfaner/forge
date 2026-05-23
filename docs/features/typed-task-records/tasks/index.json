@@ -64,7 +64,7 @@
       "dependencies": [
         "2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "5-validation-gate-templates.md",
       "record": "records/5-validation-gate-templates.md",
       "scope": "backend",

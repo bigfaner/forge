@@ -375,6 +375,10 @@ func fillRecordTemplate(t *task.Task, rd *task.RecordData, startedTime string) s
 		return task.RenderDocRecord(t, rd, startedTime)
 	case task.CategoryTest:
 		return task.RenderTestRecord(t, rd, startedTime)
+	case task.CategoryValidation:
+		return task.RenderValidationRecord(t, rd, startedTime)
+	case task.CategoryGate:
+		return task.RenderGateRecord(t, rd, startedTime)
 	default:
 		return task.RenderCodingRecord(t, rd, startedTime)
 	}
