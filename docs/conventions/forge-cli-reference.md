@@ -19,7 +19,6 @@ domains: [cli, commands, reference, skills]
 | `forge proposal [slug]` | 列出或查看 proposal 详情 | `proposal.go` |
 | `forge lesson [name]` | 列出或查看 lesson 详情 | `lesson.go` |
 | `forge cleanup` | 清理已完成的任务状态 | `cleanup.go` |
-| `forge probe` | HTTP 健康检查（用于 e2e 测试服务器） | `probe.go` |
 | `forge quality-gate` | 检查所有任务是否完成，然后运行测试 | `quality_gate.go` |
 | `forge verify-task-done` | 在 git commit 前验证任务完成状态 | `verify_task_done.go` |
 | `forge version` | 打印 CLI 版本号（隐藏命令，不出现在 --help 中） | `version.go` |
@@ -35,7 +34,7 @@ domains: [cli, commands, reference, skills]
 |------|------|--------|
 | `forge task claim` | 认领下一个可用任务 | `claim.go` |
 | `forge task submit` | 提交任务执行结果 | `submit.go` |
-| `forge task status <task-id> [status]` | 查询或更新任务状态 | `status.go` |
+| `forge task status <task-id>` | 查询任务状态（只读） | `status.go` |
 | `forge task query` | 查询任务信息 | `query.go` |
 | `forge task check-deps` | 检查任务依赖关系 | `check_deps.go` |
 | `forge task validate-index [file]` | 验证 index.json 文件 | `validate_index.go` |
@@ -45,19 +44,6 @@ domains: [cli, commands, reference, skills]
 | `forge task list-types` | 列出所有支持的任务类型 | `list_types.go` |
 | `forge task reopen <task-id>` | 重新打开已拒绝/跳过的任务（恢复为 pending） | `reopen.go` |
 | `forge task transition <task-id> <status> --reason` | 手动切换任务状态（操作员覆盖） | `transition.go` |
-
-### forge e2e — 端到端测试管理
-
-源文件：`e2e_parent.go`
-
-| 命令 | 用途 | 源文件 |
-|------|------|--------|
-| `forge e2e validate-specs` | 验证生成的 spec 文件是否符合结构规则 | `e2e_validate_specs.go` |
-| `forge e2e run` | 运行 e2e 测试 | `e2e_run.go` |
-| `forge e2e setup` | 安装 e2e 依赖（幂等） | `e2e_setup.go` |
-| `forge e2e verify` | 检查未解决的 VERIFY 标记 | `e2e_verify.go` |
-| `forge e2e compile` | 编译检查 e2e 测试文件 | `e2e_compile.go` |
-| `forge e2e discover` | 列出所有 e2e 测试用例（不运行） | `e2e_discover.go` |
 
 ### forge test — 测试工具
 
@@ -125,8 +111,8 @@ domains: [cli, commands, reference, skills]
 列表命令（`forge feature list`、`forge lesson`、`forge proposal`）的 slug/name 列使用动态宽度：
 
 - **宽度计算**: `clamp(max(30, maxSlugLen + 2), 60)` — 最小 30 字符，最大 60 字符
-- **实现**: `calcSlugColWidth()` 计算宽度，`padRight()` 对齐，`truncateSlug()` 截断超长值
-- **新增列表命令时**必须遵循此模式（常量 `slugColMinWidth` / `slugColMaxWidth` 在 `proposal.go` 中定义）
+- **实现**: `CalcSlugColWidth()` 计算宽度，`PadRight()` 对齐，`TruncateSlug()` 截断超长值
+- **新增列表命令时**必须遵循此模式（常量 `SlugColMinWidth` / `SlugColMaxWidth` 在 `internal/cmd/base/output.go` 中定义）
 
 ## 列表排序约定
 
@@ -138,6 +124,8 @@ domains: [cli, commands, reference, skills]
 
 | 已移除命令 | 原所属组 | 说明 |
 |-----------|---------|------|
+| `forge probe` | 顶层 | 已移除。原为 HTTP 健康检查（用于 e2e 测试服务器） |
+| `forge e2e` (整组) | e2e | 已移除。包含 validate-specs, run, setup, verify, compile, discover 子命令 |
 | `forge test detect` | test | 已移除。通过读取项目文件（package.json / go.mod / Cargo.toml / pyproject.toml）推断测试语言 |
 | `forge test interfaces` | test | 已移除。通过读取项目结构和 `docs/conventions/` 推断接口类型 |
 | `forge test framework` | test | 已移除 |
