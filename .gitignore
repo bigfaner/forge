@@ -7,6 +7,12 @@ cover.outfile
 cover.out
 dep_*.out
 
+# Build artifacts
+cmd.out
+cout.out
+coverage.out
+just.out
+
 # Temporary
 tmp/
 

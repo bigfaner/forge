@@ -90,11 +90,15 @@
       "title": "Add build artifacts to .gitignore",
       "priority": "P0",
       "estimatedTime": "15m",
-      "status": "pending",
+      "dependencies": [
+        "fix-1"
+      ],
+      "status": "blocked",
       "file": "2-gitignore-artifacts.md",
       "record": "records/2-gitignore-artifacts.md",
       "scope": "backend",
-      "type": "coding.cleanup"
+      "type": "coding.cleanup",
+      "blockedReason": "auto-downgrade: testsFailed=3"
     },
     "3-split-forensic": {
       "id": "3",
@@ -195,6 +199,33 @@
       "breaking": true,
       "scope": "backend",
       "type": "coding.refactor"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "Fix: pre-existing test failures in pkg/task",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "fix-2"
+      ],
+      "status": "pending",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "2",
+      "blockedReason": "test failed: 3 failures in pkg/task (TestBuildIndex_MixedFeature_GeneratesBothPipelines, TestBuildIndex_MixedFeature_ReviewDocBeforeTestPipeline, TestBuildIndex_MixedFeature_BreakdownMode_GenJourneysDependsOnReviewDoc)"
+    },
+    "fix-2": {
+      "id": "fix-2",
+      "title": "Fix: pre-existing pkg/task test failures blocking fix-1",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-2.md",
+      "record": "records/fix-2.md",
+      "breaking": true,
+      "sourceTaskID": "fix-1",
+      "type": "fix"
     }
   },
   "statusEnum": [

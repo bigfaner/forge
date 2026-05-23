@@ -331,18 +331,17 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 		// For mixed features (needsEval + needsTest), inject T-review-doc as a
 		// dependency of the first test pipeline task. This ensures review-doc
 		// executes before test generation, so tests are based on reviewed docs.
-		if needsEval && len(testTasks) > 0 {
-			firstTestIdx := findFirstTestTaskIdx(testTasks)
-			if firstTestIdx >= 0 {
-				testTasks[firstTestIdx].Dependencies = append(
-					[]string{"T-review-doc"}, testTasks[firstTestIdx].Dependencies...)
-			}
+		firstTestIdx := findFirstTestTaskIdx(testTasks)
+		if needsEval && firstTestIdx >= 0 {
+			testTasks[firstTestIdx].Dependencies = append(
+				[]string{"T-review-doc"}, testTasks[firstTestIdx].Dependencies...)
 		}
 
-		if len(testTasks) > 0 {
-			firstKey := testTasks[0].Key
-			if t, found := index.ByID(testTasks[0].ID); found {
-				t.Dependencies = testTasks[0].Dependencies
+		// Write the modified first-test-task deps back to the index.
+		if firstTestIdx >= 0 {
+			firstKey := testTasks[firstTestIdx].Key
+			if t, found := index.ByID(testTasks[firstTestIdx].ID); found {
+				t.Dependencies = testTasks[firstTestIdx].Dependencies
 				index.SetTask(firstKey, t)
 			}
 		}
