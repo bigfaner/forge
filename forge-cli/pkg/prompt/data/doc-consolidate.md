@@ -24,4 +24,11 @@ Skill(skill="forge:consolidate-specs")
 
 This extracts business rules and tech specs from feature docs into preview files, detects overlaps with existing knowledge, auto-integrates all CROSS items in non-interactive mode, and commits changes with `[auto-specs]` tag. All-LOCAL items auto-proceed without integration.
 
+## Record Fields
+
+When submitting via `forge:submit-task`, populate these record fields in record.json:
+- **referencedDocs**: list of spec files consolidated
+- **reviewStatus**: consolidation outcome (e.g. "completed")
+- **docMetrics**: consolidation statistics (e.g. "3 rules extracted, 1 overlap found")
+
 Output: `Step 2/2: Consolidating specs... DONE`

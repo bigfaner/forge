@@ -81,4 +81,10 @@ just lint {{SCOPE}}
 | `lint` | Self-fix (max 1 retry). If still failing, evaluate Complex Error Pause Flow — if the error persists after ~3 total attempts, create a fix task. Otherwise, stop and let the dispatcher handle it. |
 | `targeted test` | Fix failing tests, retry |
 
+## Record Fields
+
+When submitting via `forge:submit-task`, populate these record fields in record.json:
+- **testsPassed** / **testsFailed**: number of tests that passed/failed
+- **coverage**: test coverage percentage (e.g. 80.0)
+
 Output: `Step 3/3: Verifying... DONE (coverage: N%)`

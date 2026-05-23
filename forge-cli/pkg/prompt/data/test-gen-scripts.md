@@ -32,4 +32,10 @@ Skill(skill="forge:gen-test-scripts"{{TEST_TYPE_ARG}})
 
 This generates executable e2e test scripts from test cases, using the framework specified by the active profile.
 
+## Record Fields
+
+When submitting via `forge:submit-task`, populate these record fields in record.json:
+- **scriptsCreated**: list of test script files generated
+- **casesGenerated**: number of test cases used as input
+
 Output: `Step 2/2: Generating test scripts... DONE`

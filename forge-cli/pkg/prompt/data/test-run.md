@@ -35,4 +35,10 @@ This executes e2e test scripts and generates a results report. The skill selects
 
 If tests fail, identify failing tests and root cause, apply minimal fix, then re-invoke the skill to confirm (max 3 attempts).
 
+## Record Fields
+
+When submitting via `forge:submit-task`, populate these record fields in record.json:
+- **casesGenerated**: number of test cases executed
+- **scriptsCreated**: list of test script files run
+
 Output: `Step 2/2: Running e2e tests... DONE`

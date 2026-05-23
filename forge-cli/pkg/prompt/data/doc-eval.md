@@ -44,4 +44,11 @@ For each round (max 3):
 
 When revising documents, address only the specific issues identified in the evaluation. Do not refactor or rewrite sections that scored well.
 
+## Record Fields
+
+When submitting via `forge:submit-task`, populate these record fields in record.json:
+- **referencedDocs**: list of documentation files evaluated
+- **reviewStatus**: evaluation outcome (e.g. "passed", "needs-revision")
+- **docMetrics**: evaluation scores and metrics
+
 Output: `Step 2/2: Evaluation complete (round N, score: X/1000)... DONE`

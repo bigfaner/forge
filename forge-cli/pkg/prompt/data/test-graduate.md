@@ -32,4 +32,10 @@ Skill(skill="forge:graduate-tests")
 
 This migrates feature test scripts to the project's regression suite directory. Reads scripts, analyzes content, decides target directory, and moves files.
 
+## Record Fields
+
+When submitting via `forge:submit-task`, populate these record fields in record.json:
+- **scriptsCreated**: list of test scripts graduated to regression suite
+- **casesGenerated**: number of test cases covered by graduated scripts
+
 Output: `Step 2/2: Graduating tests... DONE`

@@ -41,4 +41,10 @@ Perform UX validation checks:
 - If the gap is non-trivial or max attempts reached: document it as a finding, then set status to blocked via `forge task status {{TASK_ID}} blocked`
 - Do NOT force validation to pass — an unmet criterion means validation fails
 
+## Record Fields
+
+When submitting via `forge:submit-task`, populate these record fields in record.json:
+- **validationPassed**: whether all UX validation criteria passed (true/false)
+- **issuesFound**: list of UX issues found during validation
+
 Output: `Step 2/2: Validating UX... DONE`

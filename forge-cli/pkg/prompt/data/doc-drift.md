@@ -24,4 +24,11 @@ Skill(skill="forge:consolidate-specs")
 
 This runs consolidate-specs in drift-only mode in non-interactive mode: it skips extraction and only detects and fixes drift, verifying that existing spec files in `docs/business-rules/` and `docs/conventions/` remain consistent with the current codebase. Drifted rules are updated automatically and committed with `[auto-specs]` tag.
 
+## Record Fields
+
+When submitting via `forge:submit-task`, populate these record fields in record.json:
+- **referencedDocs**: list of spec files checked for drift
+- **reviewStatus**: drift detection outcome (e.g. "no drift", "drift fixed")
+- **docMetrics**: drift statistics (e.g. "2 specs drifted, 2 auto-fixed")
+
 Output: `Step 2/2: Detecting spec drift... DONE`

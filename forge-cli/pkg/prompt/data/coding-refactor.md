@@ -211,4 +211,10 @@ Coverage is informational for refactoring — output the number but do not gate 
 
 Max 3 retries at this step. If still failing after 3 attempts, stop and report the task as blocked with details of the last failure.
 
+## Record Fields
+
+When submitting via `forge:submit-task`, populate these record fields in record.json:
+- **testsPassed** / **testsFailed**: number of tests that passed/failed
+- **coverage**: test coverage percentage (e.g. 80.0)
+
 Output: `Step 4/4: Verifying... DONE (coverage: N%)`

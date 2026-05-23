@@ -36,4 +36,11 @@ Verify your documentation work against these criteria:
 
 If any criterion fails, fix the issue before proceeding.
 
+## Record Fields
+
+When submitting via `forge:submit-task`, populate these record fields in record.json:
+- **referencedDocs**: list of documentation files referenced during the task
+- **reviewStatus**: review outcome (e.g. "completed", "pending-review")
+- **docMetrics**: summary of document changes (e.g. "3 files created, 1 updated")
+
 Output: `Step 3/3: Self-check... DONE`

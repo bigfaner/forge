@@ -1458,6 +1458,226 @@ func TestSynthesize_ScopeMismatch_GeneratesDefaultCommand(t *testing.T) {
 	}
 }
 
+// --- Record Fields hint tests ---
+
+func TestSynthesize_CodingTemplates_ContainRecordFieldHints(t *testing.T) {
+	codingTypes := []struct {
+		typ string
+	}{
+		{task.TypeCodingFeature},
+		{task.TypeCodingEnhancement},
+		{task.TypeCodingCleanup},
+		{task.TypeCodingRefactor},
+		{task.TypeCodingFix},
+	}
+
+	for _, ct := range codingTypes {
+		t.Run(ct.typ, func(t *testing.T) {
+			dir := t.TempDir()
+			taskID := "1.1"
+			tasks := map[string]task.Task{
+				taskID: {
+					ID:     taskID,
+					Title:  "Coding task",
+					Status: "pending",
+					File:   "1.1.md",
+					Record: "records/1.1.md",
+					Type:   ct.typ,
+					Scope:  "backend",
+				},
+			}
+			setupFeatureDir(t, dir, tasks)
+
+			opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: taskID}
+			result, err := Synthesize(opts)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if !strings.Contains(result, "Record Fields") {
+				t.Errorf("%s: synthesized prompt missing 'Record Fields' section", ct.typ)
+			}
+			if !strings.Contains(result, "testsPassed") {
+				t.Errorf("%s: synthesized prompt missing 'testsPassed' field hint", ct.typ)
+			}
+			if !strings.Contains(result, "testsFailed") {
+				t.Errorf("%s: synthesized prompt missing 'testsFailed' field hint", ct.typ)
+			}
+			if !strings.Contains(result, "coverage") {
+				t.Errorf("%s: synthesized prompt missing 'coverage' field hint", ct.typ)
+			}
+		})
+	}
+}
+
+func TestSynthesize_DocTemplates_ContainRecordFieldHints(t *testing.T) {
+	docTypes := []string{
+		task.TypeDoc,
+		task.TypeDocEval,
+		task.TypeDocSummary,
+		task.TypeDocConsolidate,
+		task.TypeDocDrift,
+	}
+
+	for _, typ := range docTypes {
+		t.Run(typ, func(t *testing.T) {
+			dir := t.TempDir()
+			taskID := "1.1"
+			tasks := map[string]task.Task{
+				taskID: {
+					ID:     taskID,
+					Title:  "Doc task",
+					Status: "pending",
+					File:   "1.1.md",
+					Record: "records/1.1.md",
+					Type:   typ,
+				},
+			}
+			setupFeatureDir(t, dir, tasks)
+
+			opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: taskID}
+			result, err := Synthesize(opts)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if !strings.Contains(result, "Record Fields") {
+				t.Errorf("%s: synthesized prompt missing 'Record Fields' section", typ)
+			}
+			if !strings.Contains(result, "referencedDocs") {
+				t.Errorf("%s: synthesized prompt missing 'referencedDocs' field hint", typ)
+			}
+			if !strings.Contains(result, "reviewStatus") {
+				t.Errorf("%s: synthesized prompt missing 'reviewStatus' field hint", typ)
+			}
+			if !strings.Contains(result, "docMetrics") {
+				t.Errorf("%s: synthesized prompt missing 'docMetrics' field hint", typ)
+			}
+		})
+	}
+}
+
+func TestSynthesize_TestTemplates_ContainRecordFieldHints(t *testing.T) {
+	testTypes := []string{
+		task.TypeTestGenCases,
+		task.TypeTestEvalCases,
+		task.TypeTestGenScripts,
+		task.TypeTestRun,
+		task.TypeTestGraduate,
+		task.TypeTestVerifyRegression,
+	}
+
+	for _, typ := range testTypes {
+		t.Run(typ, func(t *testing.T) {
+			dir := t.TempDir()
+			taskID := "1.1"
+			tasks := map[string]task.Task{
+				taskID: {
+					ID:     taskID,
+					Title:  "Test task",
+					Status: "pending",
+					File:   "1.1.md",
+					Record: "records/1.1.md",
+					Type:   typ,
+					Scope:  "backend",
+				},
+			}
+			setupFeatureDir(t, dir, tasks)
+
+			opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: taskID}
+			result, err := Synthesize(opts)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if !strings.Contains(result, "Record Fields") {
+				t.Errorf("%s: synthesized prompt missing 'Record Fields' section", typ)
+			}
+			// Test templates should mention at least one of: casesGenerated, casesEvaluated, scriptsCreated
+			hasTestField := strings.Contains(result, "casesGenerated") ||
+				strings.Contains(result, "casesEvaluated") ||
+				strings.Contains(result, "scriptsCreated")
+			if !hasTestField {
+				t.Errorf("%s: synthesized prompt missing test-specific field hints (casesGenerated/casesEvaluated/scriptsCreated)", typ)
+			}
+		})
+	}
+}
+
+func TestSynthesize_ValidationTemplates_ContainRecordFieldHints(t *testing.T) {
+	valTypes := []string{
+		task.TypeValidationCode,
+		task.TypeValidationUx,
+	}
+
+	for _, typ := range valTypes {
+		t.Run(typ, func(t *testing.T) {
+			dir := t.TempDir()
+			taskID := "1.1"
+			tasks := map[string]task.Task{
+				taskID: {
+					ID:     taskID,
+					Title:  "Validation task",
+					Status: "pending",
+					File:   "1.1.md",
+					Record: "records/1.1.md",
+					Type:   typ,
+					Scope:  "backend",
+				},
+			}
+			setupFeatureDir(t, dir, tasks)
+
+			opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: taskID}
+			result, err := Synthesize(opts)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if !strings.Contains(result, "Record Fields") {
+				t.Errorf("%s: synthesized prompt missing 'Record Fields' section", typ)
+			}
+			if !strings.Contains(result, "validationPassed") {
+				t.Errorf("%s: synthesized prompt missing 'validationPassed' field hint", typ)
+			}
+			if !strings.Contains(result, "issuesFound") {
+				t.Errorf("%s: synthesized prompt missing 'issuesFound' field hint", typ)
+			}
+		})
+	}
+}
+
+func TestSynthesize_GateTemplate_ContainsRecordFieldHints(t *testing.T) {
+	dir := t.TempDir()
+	tasks := map[string]task.Task{
+		"1.gate": {
+			ID:     "1.gate",
+			Title:  "Gate task",
+			Status: "pending",
+			File:   "1.gate.md",
+			Record: "records/1.gate.md",
+			Type:   task.TypeGate,
+			Scope:  "backend",
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "1.gate"}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(result, "Record Fields") {
+		t.Error("gate template: synthesized prompt missing 'Record Fields' section")
+	}
+	if !strings.Contains(result, "gatePassed") {
+		t.Error("gate template: synthesized prompt missing 'gatePassed' field hint")
+	}
+	if !strings.Contains(result, "gateChecks") {
+		t.Error("gate template: synthesized prompt missing 'gateChecks' field hint")
+	}
+}
+
 func TestExtractTestTypeArg(t *testing.T) {
 	tests := []struct {
 		id   string

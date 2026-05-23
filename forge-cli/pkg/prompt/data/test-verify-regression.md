@@ -37,4 +37,10 @@ If tests fail:
 3. Re-run `just test-e2e` to confirm fix
 4. Do NOT start dev server manually
 
+## Record Fields
+
+When submitting via `forge:submit-task`, populate these record fields in record.json:
+- **casesGenerated**: number of regression test cases verified
+- **scriptsCreated**: list of regression test scripts verified
+
 Output: `Step 2/2: Running regression... DONE`

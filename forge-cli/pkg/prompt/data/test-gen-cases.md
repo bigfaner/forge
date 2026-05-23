@@ -32,4 +32,10 @@ Skill(skill="forge:gen-test-cases")
 
 This generates structured test cases from PRD acceptance criteria, classifying by type (UI/API/CLI) with full traceability to PRD requirements.
 
+## Record Fields
+
+When submitting via `forge:submit-task`, populate these record fields in record.json:
+- **casesGenerated**: number of test cases generated
+- **casesEvaluated**: number of test cases evaluated for quality
+
 Output: `Step 2/2: Generating test cases... DONE`

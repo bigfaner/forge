@@ -90,4 +90,10 @@ flowchart TD
     L -->|"pass"| DONE(["DONE"])
 ```
 
+## Record Fields
+
+When submitting via `forge:submit-task`, populate these record fields in record.json:
+- **gatePassed**: whether all gate criteria passed (true/false)
+- **gateChecks**: list of individual gate check results
+
 Output: `Step 2/2: Verifying criteria... DONE`
