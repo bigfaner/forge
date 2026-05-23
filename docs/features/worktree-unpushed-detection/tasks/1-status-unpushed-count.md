@@ -18,20 +18,27 @@ Add an `UNPUSHED` field to the `forge worktree status` output so users can see a
 
 ## Reference Files
 - `docs/proposals/worktree-unpushed-detection/proposal.md` — Source proposal
+- `forge-cli/pkg/git/` — Add `CountUnpushedCommits` helper here
 - `forge-cli/internal/cmd/worktree/worktree.go` — `printWorktreeStatus` (line 464)
-- `forge-cli/pkg/git/` — Git helper package
 
 ## Acceptance Criteria
+- [ ] `CountUnpushedCommits(dir string) (int, error)` added to `forge-cli/pkg/git/` package
+- [ ] Returns `(0, ErrNoUpstream)` when branch has no upstream tracking (`@{u}` fails)
+- [ ] Returns `(count, nil)` where count is the number of unpushed commits
 - [ ] `forge worktree status` displays an `UNPUSHED` field showing commit count (e.g., `UNPUSHED: 3 commits`)
 - [ ] Branches without upstream tracking display `UNPUSHED: no remote`
 - [ ] Fully pushed branches display `UNPUSHED: (none)`
 - [ ] Detection uses `git rev-list --count @{u}..HEAD` inside the worktree directory
 
 ## Hard Rules
+- Helper must live in `pkg/git/`, not `internal/cmd/worktree/` — respects `cmd → internal → pkg` dependency direction
 - Use `git rev-list --count @{u}..HEAD` for detection — exit code != 0 means no upstream tracking
-- Keep the field after `UNCOMMITTED` in the output block to maintain visual consistency
+- Keep the UNPUSHED field after `UNCOMMITTED` in the output block to maintain visual consistency
 
 ## Implementation Notes
-- Add the unpushed check after the existing uncommitted files check in `printWorktreeStatus`
-- Extract a reusable helper (e.g., `countUnpushedCommits(worktreePath string) (int, error)`) so the remove command can reuse it in task 2
-- No upstream tracking → return a sentinel error; caller formats as "no remote"
+- Add `ErrNoUpstream` sentinel error to `pkg/git/` (e.g., `errors.New("no upstream tracking branch")`)
+- `CountUnpushedCommits` uses the existing `Run()` helper in `pkg/git/` to execute the git command
+- In `printWorktreeStatus`, call `CountUnpushedCommits(worktreePath)` and format output based on result:
+  - `ErrNoUpstream` → `"no remote"`
+  - `count == 0` → `"(none)"`
+  - `count > 0` → `"<N> commits"`
