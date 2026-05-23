@@ -1,7 +1,7 @@
 ---
 feature: "typed-task-records"
 created: "2026-05-23"
-status: tasks
+status: completed
 mode: quick
 ---
 
