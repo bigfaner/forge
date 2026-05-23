@@ -1,6 +1,6 @@
 ---
 name: gen-contracts
-description: Generate Contract specifications (six dimensions + semantic descriptors + multi-Outcome + Invariants) from Journey documents and code reconnaissance (Fact Table). Formalizes TUI async Cmd await semantics.
+description: Generate Contract specifications (six dimensions + semantic descriptors + multi-Outcome + Invariants) from Journey documents and code reconnaissance (Fact Table). Formalizes TUI async Cmd await semantics. Risk-driven Outcome density based on Journey risk_level, auto-derived boundary/error Outcomes from surface rules and Fact Table.
 conventions:
   - testing-isolation.md
 ---
@@ -10,6 +10,8 @@ conventions:
 Generate Contract specifications from Journey documents, enriched with code reconnaissance (Fact Table).
 
 **Core principle**: Every Step gets a Contract with six dimensions. gen-contracts uses *semantic descriptors* (natural language) -- precise regex is deferred to gen-test-scripts. This skill is the most technically complex in the pipeline because it bridges narrative Journeys with verifiable Contracts using code reconnaissance.
+
+**Risk-driven density**: Outcome count per Step and total test count per Journey are driven by the Journey's `risk_level` field (set by gen-journeys). Density targets are defined in `rules/risk-density.md`. Boundary/error Outcomes are auto-derived from surface rules' required_outcomes and the project Fact Table.
 
 <HARD-GATE>
 This skill ONLY writes to `tests/<journey>/_contracts/`. It does NOT generate test scripts or execute tests (handled by downstream skills).
@@ -68,7 +70,7 @@ Convention loading is non-blocking. Missing convention files are silently skippe
 ## Process Flow
 
 ```
-0. Resolve language + interfaces -> 1. Read Journeys -> 2. Code Reconnaissance (Fact Table) -> 3. Generate Contracts -> 4. Validate -> 5. Write Output
+0. Resolve language + interfaces -> 1. Read Journeys -> 2. Code Reconnaissance (Fact Table) -> 3. Generate Contracts (risk-driven density + boundary derivation) -> 4. Validate (schema + retry) -> 5. Write Output + Fact Table
 ```
 
 ### Step 1: Read Journey Documents
@@ -76,10 +78,11 @@ Convention loading is non-blocking. Missing convention files are silently skippe
 1. Read `docs/features/<slug>/testing/journeys/manifest.md` to discover all Journey files.
 2. For each Journey listed in the manifest, read the Journey document.
 3. Parse each Journey's structure:
-   - Journey name and Risk level (from frontmatter)
+   - Journey name and Risk level (from frontmatter `risk_level`: High/Medium/Low)
    - Happy path steps (sequence number, user action, expected result)
    - Edge cases (referenced step, precondition, user action, expected result)
    - Journey Invariants (cross-step properties)
+4. Load the project's surface type from `.forge/config.yaml` and read the corresponding surface rule from `gen-journeys/rules/surface-<type>.md` to identify required_outcomes.
 
 <HARD-RULE>
 Every Journey in the manifest MUST be processed. Do not skip Journeys based on Risk level or step count.
@@ -89,9 +92,25 @@ Every Journey in the manifest MUST be processed. Do not skip Journeys based on R
 
 Read source code to extract ground-truth values. Follow the full reconnaissance procedure per `rules/code-reconnaissance.md`, including generic and TUI-specific reconnaissance tables, Fact Table format, and source citation rules.
 
+**Static Fact Table output**: After completing reconnaissance, write the Fact Table to `.forge/fact-table.json` in the project root. Each fact entry has the format:
+
+```json
+{
+  "id": "<FACT_ID>",
+  "subject": "<what this fact describes>",
+  "kind": "<function_signature | output_format | error_code | state_storage | config | hook>",
+  "value": "<extracted value>",
+  "source": "static",
+  "file": "<source file path>",
+  "line": <line number>
+}
+```
+
+All entries use `"source": "static"` to distinguish from runtime facts (added by Run-to-Learn with `"source": "runtime"`).
+
 ### Step 3: Generate Contracts
 
-For each Journey, generate one Contract file per Step.
+For each Journey, generate one Contract file per Step. Apply risk-driven Outcome density per `rules/risk-density.md`.
 
 #### 3.1 Step-to-Contract Mapping
 
@@ -127,27 +146,82 @@ All dimension values use semantic descriptors per `rules/dimension-rules.md`. MU
 
 Each Outcome within a Step MUST have mutually exclusive Preconditions per `rules/dimension-rules.md`. Outcome count checkpoint: steps with > 5 Outcomes trigger a review.
 
-#### 3.5 TUI Async Cmd Await Semantics
+#### 3.5 Risk-Driven Outcome Density
+
+Apply density targets from `rules/risk-density.md` based on the Journey's `risk_level`:
+
+| Risk Level | Outcomes per Step | Total (Journey) |
+|------------|-------------------|-----------------|
+| High       | 3-5               | 13-20           |
+| Medium     | 2-3               | 8-12            |
+| Low        | 1-2               | 4-7             |
+
+**Outcome generation priority** (in order):
+1. Happy path Outcome (always, counts as 1)
+2. Surface-required Outcomes (from surface rule's Required Outcome Reference section)
+3. Fact Table-informed boundary Outcomes (based on code reconnaissance findings, annotated with `source: inferred` + reasoning)
+4. LLM-inferred edge case Outcomes (for High/Medium risk only, annotated with `source: inferred` + reasoning)
+
+<HARD-RULE>
+Surface-required Outcomes MUST be derived for every matching Step. They are not optional. Required Outcomes are defined in the surface rule's "Required Outcome Reference" section:
+- CLI: `not-found` (resource access Steps), `already-exists` (resource creation Steps)
+- API: `unauthorized` (authenticated endpoint Steps)
+- TUI: `timeout` (async Cmd Steps, per rules/tui-async.md)
+- WebUI: `validation-error` (form submission Steps), `session-expired` (session-dependent Steps)
+- Mobile: best-effort, no mandatory Outcomes
+</HARD-RULE>
+
+<HARD-RULE>
+LLM-derived boundary Outcomes MUST be annotated with `source: inferred` and include a reasoning explanation citing Fact Table sources or inference logic.
+</HARD-RULE>
+
+#### 3.6 Density Checkpoint
+
+After generating Outcomes for all Steps in a Journey, output a density checkpoint (format in `rules/risk-density.md`). If actual total is below target, review Steps for missed boundary scenarios. If above target, merge semantically similar Outcomes.
+
+#### 3.7 TUI Async Cmd Await Semantics
 
 For TUI Steps involving async operations, declare `await` semantics per `rules/tui-async.md`, including timeout outcomes for async Cmds.
 
-#### 3.6 State Verification Levels
+#### 3.8 State Verification Levels
 
 Determine state verification level (full/partial/deferred) from Fact Table reconnaissance per `rules/tui-async.md`.
 
-#### 3.7 Journey-Level Invariants
+#### 3.9 Journey-Level Invariants
 
 Every Contract file MUST end with a `## Journey Invariants` section per `rules/tui-async.md`. At least 1 invariant is mandatory.
 
-#### 3.8 Batch Processing
+#### 3.10 Batch Processing
 
 Auto-split into batches when Contracts > 15 or tokens > 50k per `rules/tui-async.md`.
 
-### Step 4: Validate Contracts
+### Step 4: Validate Contracts (Schema Validation + Retry)
 
 After generating all Contracts for a Journey, validate each one per `rules/validation.md`. Apply validation checks and failure handling as defined in the rules file.
 
-### Step 5: Write Output
+**Schema validation** checks (6-dimension structural completeness):
+
+| Check | Rule |
+|-------|------|
+| Mandatory dimensions | Each Outcome has non-empty: Preconditions, Input, Output, State |
+| Semantic descriptor purity | No dimension value contains regex syntax |
+| Outcome name uniqueness | Outcome names within a Step are unique |
+| Preconditions mutual exclusivity | Different Outcomes' Preconditions are distinguishable and non-overlapping |
+| Journey Invariants present | Every Contract file has `## Journey Invariants` section with >= 1 entry |
+| Side-effect default | When Side-effect is omitted or empty, defaults to `none` |
+
+**Retry logic**:
+
+1. If schema validation fails, record the non-compliance items (which Contract, which Outcome, which dimension/check failed)
+2. Automatically regenerate the failed Contracts **once**, injecting the schema errors as feedback into the generation prompt
+3. Re-validate the regenerated Contracts
+4. If validation still fails after retry: **pause the pipeline** and output the non-compliance items for manual correction
+
+<HARD-RULE>
+Schema validation MUST be executed after generation. Validation failure triggers exactly 1 automatic retry with error feedback. If the retry also fails, the pipeline pauses -- it does NOT silently continue with invalid Contracts.
+</HARD-RULE>
+
+### Step 5: Write Output + Fact Table
 
 Write Contract files to `tests/<journey>/_contracts/`.
 
@@ -159,8 +233,10 @@ Write Contract files to `tests/<journey>/_contracts/`.
 
 **Create directories**: Create `tests/<journey>/_contracts/` if it does not exist.
 
+**Static Fact Table**: Write the Fact Table (from Step 2 reconnaissance) to `.forge/fact-table.json` in the project root. All entries have `"source": "static"`. If `.forge/fact-table.json` already exists, merge new entries by `id` (do not delete existing runtime entries).
+
 <HARD-RULE>
-Output path is strictly `tests/<journey>/_contracts/`. No other locations.
+Output path is strictly `tests/<journey>/_contracts/`. No other locations. Static Fact Table must be written to `.forge/fact-table.json`.
 </HARD-RULE>
 
 ## Error Handling
