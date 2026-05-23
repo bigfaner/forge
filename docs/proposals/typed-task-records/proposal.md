@@ -87,14 +87,27 @@ No external dependencies. Internal dependency on existing type system (`pkg/task
 
 ## Scope
 
-### In Scope
+### Phase 1 (Current): Doc Type De-noising
 
-- `RecordData` struct: add optional field groups for doc/test/validation/gate types
-- `forge-cli/internal/cmd/task/data/record-*.md`: 5 Go template files (coding, doc, test, validation, gate)
-- `fillRecordTemplate()`: refactor to `text/template` rendering with type-based template selection
-- `submit-task` SKILL.md: type-specific record.json instructions and validation tiers
-- `forge task submit` validation: type-aware field validation (e.g., `testsPassed` required for coding, optional for doc)
-- Prompt templates: update to inform agents about type-specific record fields
+Minimal change to remove test-related noise from doc task records. No template engine — conditional branches in existing `fillRecordTemplate()`.
+
+- `RecordData` struct: add doc-specific optional fields (`referencedDocs`, `reviewStatus`, `docMetrics`)
+- `fillRecordTemplate()`: add category-based conditional rendering (doc type renders Document Metrics section instead of Test Results)
+- `CategoryForType()` utility function: map task types to categories
+- `validateRecordData()`: type-aware field validation (doc tasks don't require `testsPassed`)
+- `submit-task` SKILL.md: type-specific record.json instructions (doc vs coding)
+- Unit tests for all new logic
+
+### Phase 2 (Future): Template Engine Migration
+
+Introduce `text/template` + per-category template files for test/validation/gate types.
+
+- 5 Go template files (record-coding.md, record-doc.md, record-test.md, record-validation.md, record-gate.md)
+- `fillRecordTemplate()` refactored to template engine rendering
+- Test task records: Cases Generated/Evaluated, Scripts Created sections
+- Validation task records: Pass/Fail Verdict, Issues Found sections
+- Gate task records: minimal gate checks + pass status
+- Prompt templates updated to inform agents about type-specific record fields
 
 ### Out of Scope
 
@@ -107,20 +120,20 @@ No external dependencies. Internal dependency on existing type system (`pkg/task
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|------------|
-| Template files diverge from actual record content over time | M | M | Templates live alongside the code that validates them — easy to keep in sync |
-| Agent fills wrong fields for a type (e.g., testsPassed for doc task) | L | L | Type-aware validation rejects irrelevant fields |
+| Agent fills wrong fields for a type (e.g., testsPassed for doc task) | M | M | SKILL.md conditional instructions + type-aware validation |
 | Backward incompatibility in RecordData serialization | L | H | All new fields are optional; existing fields unchanged |
+| Phase 1 conditional branches become unmaintainable before Phase 2 | L | M | Phase 1 limited to doc vs non-doc split (2 branches only) |
+| `code-quality.simplify` type unclassified | L | L | Phase 1 maps it to coding category (same as coding.*) |
 
-## Success Criteria
+## Success Criteria (Phase 1)
 
 - [ ] Doc task records contain zero test-related sections (no "Test Results", no "Coverage")
 - [ ] Doc task records include Document Metrics, Referenced Documents, Review Status sections
-- [ ] Test task records include Cases Generated/Evaluated, Scripts Created sections
-- [ ] Validation task records include Pass/Fail Verdict, Issues Found sections
-- [ ] Gate task records are minimal: gate checks + pass status only
 - [ ] Coding task records are identical to current format (backward compatible)
-- [ ] `submit-task` SKILL.md has distinct record.json instructions per type category
-- [ ] `forge task submit` validates required fields per type (not one-size-fits-all)
+- [ ] `submit-task` SKILL.md has distinct record.json instructions for doc vs coding
+- [ ] `forge task submit` validates required fields per type category
+- [ ] `CategoryForType()` covers all 21 task types
+- [ ] Unit tests for template rendering per category and type-aware validation
 
 ## Next Steps
 
