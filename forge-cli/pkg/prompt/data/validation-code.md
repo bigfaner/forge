@@ -38,7 +38,7 @@ Perform code validation checks:
 
 **If any criterion fails:**
 - If the gap is trivial (e.g., missing import, typo): fix it inline and re-verify (max 2 attempts)
-- If the gap is non-trivial or max attempts reached: document it as a finding, then set status to blocked via `forge task status {{TASK_ID}} blocked`
+- If the gap is non-trivial or max attempts reached: document it as a finding, then set status to blocked via `forge task transition {{TASK_ID}} blocked --reason "validation gap unresolved"`
 - Do NOT force validation to pass — an unmet criterion means validation fails
 
 Then run the quality gate:

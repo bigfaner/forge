@@ -38,7 +38,7 @@ First, verify the acceptance criteria from the gate task:
 
 **If any criterion fails:**
 - If the gap is trivial (e.g., missing import, typo): fix it inline and re-verify (max 2 attempts)
-- If the gap is non-trivial or max attempts reached: document it as a finding in your output, then set status to blocked via `forge task status {{TASK_ID}} blocked`
+- If the gap is non-trivial or max attempts reached: document it as a finding in your output, then set status to blocked via `forge task transition {{TASK_ID}} blocked --reason "gate check gap unresolved"`
 - Do NOT force the gate to pass — an unmet criterion means the gate fails
 
 Then run the quality gate:
