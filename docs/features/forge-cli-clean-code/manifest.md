@@ -1,7 +1,7 @@
 ---
 feature: "forge-cli-clean-code"
 created: "2026-05-24"
-status: tasks
+status: completed
 mode: quick
 ---
 
