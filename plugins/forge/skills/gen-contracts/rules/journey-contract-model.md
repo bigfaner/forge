@@ -98,7 +98,7 @@ Outcome 是特定场景（成功、错误变体、边界情况）下完整的 Co
 
 ### Parseable Structure Rules
 
-1. **Journey name**: 从文件路径提取：`tests/<journey-name>/_contracts/step-N-*.md`
+1. **Journey name**: 从文件路径提取：`docs/features/<slug>/testing/<journey>/contracts/step-N-*.md`
 2. **Step sequence**: 从文件名提取：`step-<N>-<slug>.md`
 3. **Outcome sections**: `## Outcome "<name>"` 标题声明新 Outcome 块
 4. **Dimension format**: 每行 `- <DimensionName>: <value>`
@@ -107,21 +107,25 @@ Outcome 是特定场景（成功、错误变体、边界情况）下完整的 Co
 ## Directory Convention
 
 ```
-tests/
-  <journey-name>/                     # Journey 目录（kebab-case，永久位置）
-    _contracts/                       # Contract 规范目录
+docs/features/<slug>/testing/
+  <journey-name>/                     # Journey 目录（kebab-case）
+    journey.md                        # Journey 叙述文档
+    contracts/                        # Contract 规范目录
       step-1-<action-slug>.md         # Step 1 的 Contract
       step-2-<action-slug>.md         # Step 2 的 Contract
       step-N-<action-slug>.md
-    <test-file-1>                     # 生成的测试文件（直接在最终位置）
+
+tests/
+  <journey-name>/                     # 生成的测试文件
+    <test-file-1>
     <test-file-2>
 ```
 
 ### Rules
 
-1. **Journey 目录**：以用户工作流命名（kebab-case），是所有相关测试文件的永久位置
-2. **Contract 目录**：`_contracts/` 包含每个 Step 的 Contract 规范文件，命名 `step-<N>-<action-slug>.md`
-3. **测试文件**：由 gen-test-scripts 直接生成到 Journey 目录，遵循项目测试框架命名约定
+1. **Journey 目录**：`docs/features/<slug>/testing/<journey>/` 以用户工作流命名（kebab-case），包含 journey.md 和 contracts/
+2. **Contract 目录**：`testing/<journey>/contracts/` 包含每个 Step 的 Contract 规范文件，命名 `step-<N>-<action-slug>.md`
+3. **测试文件**：由 gen-test-scripts 直接生成到 `tests/<journey>/`，遵循项目测试框架命名约定
 4. **无 staging 区域**：测试直接生成到最终位置，不经过中间目录
 
 ## Tag-Based Promotion
@@ -169,12 +173,16 @@ tests/e2e/
 #### New Structure
 
 ```
-tests/
-  <journey-name>/           # 按用户工作流分组
-    _contracts/
+docs/features/<slug>/testing/
+  <journey-name>/               # 按用户工作流分组
+    journey.md
+    contracts/
       step-1-<action>.md
       step-N-<action>.md
-    <test-files>            # 直接在最终位置
+
+tests/
+  <journey-name>/               # 生成的测试文件
+    <test-files>
 ```
 
 ### Lifecycle Migration: Staging/Graduation -> Tag-Based Promotion

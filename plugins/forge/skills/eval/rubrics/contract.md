@@ -16,7 +16,7 @@ context:
 
 | Document | Required |
 |----------|----------|
-| Contract files (`testing/<journey>/_contracts/step-<N>-<action>.md`) | Yes |
+| Contract files (`testing/<journey>/contracts/step-<N>-<action>.md`) | Yes |
 
 ## Scoring Dimensions
 
@@ -118,7 +118,11 @@ Evaluates whether Journey Invariants hold across all Step Contracts and cross-Co
 When the scorer cannot parse the document (e.g., malformed Contract file):
 1. Retry scoring once with a simplified parsing prompt
 2. If still failing, mark the Contract as `eval-skipped` with confidence `LOW`
-3. Record in eval report: parse failure reason, raw output snippet
+3. Write `testing/<journey>/.eval-status.json`:
+   ```json
+   {"status": "eval-skipped", "confidence": "LOW", "reason": "<parse failure reason>"}
+   ```
+4. Record in eval report: parse failure reason, raw output snippet
 
 When eval fails after all iterations:
 1. Output the final score and per-dimension breakdown

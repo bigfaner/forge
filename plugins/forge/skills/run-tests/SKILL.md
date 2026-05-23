@@ -37,7 +37,7 @@ Check previous stage artifacts. Abort and prompt user if missing:
 | `tests/<journey>/` directory (at least one) | Run `/gen-test-scripts` first |
 
 <PRINCIPLE>
-**Shared infrastructure first.** Before executing any test actions, verify that shared dependencies are complete and functional. Shared file names are defined in the Convention's Framework section. If shared files are missing symbols imported by test files, all tests will fail at the import stage. When inconsistencies are found, go back to `/gen-test-scripts` to fix shared dependencies before running tests.
+**Shared infrastructure first.** Before executing any test actions, verify that shared dependencies are complete and functional. Shared file names are defined in the Convention's `framework` section. If shared files are missing symbols imported by test files, all tests will fail at the import stage. When inconsistencies are found, go back to `/gen-test-scripts` to fix shared dependencies before running tests.
 </PRINCIPLE>
 
 ## Workflow
@@ -48,21 +48,22 @@ Check previous stage artifacts. Abort and prompt user if missing:
 
 ### Step 0: Load Convention Result Format
 
-Scan `docs/conventions/` for files with `domains` containing `testing` and load the **Result Format** section from each matched file.
+Load test framework knowledge from Convention files using a two-level index mechanism.
 
-For each convention file whose frontmatter `domains` includes `testing`, read the file and extract:
-
-1. **format-type**: One of `json-stream`, `json-report`, `text-verbose`
-2. **output-flags**: The flags passed to the test runner (e.g., `-json -v`, `--reporter=json`)
+1. Read `docs/conventions/testing/index.md` — this index file lists all available Conventions with name, description, and applicability conditions.
+2. Based on the project's language/framework context, select the matching Convention from the index.
+3. Load the selected Convention file from `docs/conventions/testing/<convention>.md`.
+4. Extract result format information from the Convention's `structure` section:
+   - **format-type**: One of `json-stream`, `json-report`, `text-verbose`
+   - **output-flags**: The flags passed to the test runner (e.g., `-json -v`, `--reporter=json`)
+5. If `index.md` does not exist, proceed to auto-detection: scan existing test files for framework patterns to determine the format-type.
 
 <HARD-RULE>
-Parsing logic must be driven by Convention Result Format section, not framework name. The format-type determines the parsing strategy; never branch on language or framework identity.
-Convention Result Format only provides `format-type` and `Output flags` for parsing, never for execution.
+Do NOT use `domains` frontmatter filtering. Selection is based on index.md descriptions and project context, with LLM autonomous judgment. Parsing logic must be driven by Convention content, not framework name. The format-type determines the parsing strategy; never branch on language or framework identity.
+Convention only provides `format-type` and `output-flags` for parsing, never for execution.
 </HARD-RULE>
 
-**Convention merge semantics**: When multiple Convention files match, merge at section level. If two files both declare a Result Format section, the later file's values win. Log a note about the overlap for user awareness.
-
-**Fallback -- no Convention found**: If no Convention files exist in `docs/conventions/`, proceed with `text-verbose` as the default format-type. Use generic text-based parsing: scan output lines for PASS/FAIL/SKIP patterns and extract test names from leading markers.
+**Fallback -- no Convention found**: If no Convention files exist in `docs/conventions/testing/`, proceed with `text-verbose` as the default format-type. Use generic text-based parsing: scan output lines for PASS/FAIL/SKIP patterns and extract test names from leading markers.
 
 ### Step 1: Load Config
 
@@ -97,7 +98,7 @@ Resolve template variables in command strings before execution:
 |----------|--------|-------------------|
 | `{slug}` | `forge feature` | **Error** -- abort with message below |
 | `{journey}` | Convention or directory scan | `e2e` |
-| `{test-dir}` | Convention Framework | `tests` |
+| `{test-dir}` | Convention `framework` section | `tests` |
 | `{results-dir}` | `test.execution.results-dir` config | `tests/{journey}/results` |
 
 **Escape rule**: `{{var}}` resolves to literal `{var}`.
@@ -288,7 +289,7 @@ Report: tests/<journey>/results/latest.md
 | Setup command fails | Report error, abort | 0 |
 | Test timeout | Mark as FAIL with timeout reason | 0 |
 | Test file doesn't compile | Report compilation error, skip that file | 0 |
-| Convention file has no Result Format section | Fallback to text-verbose parsing, log a note | 0 |
+| Convention file has no result format info in `structure` section | Fallback to text-verbose parsing, log a note | 0 |
 | Result output missing or empty | Report error with console output, abort report generation | 0 |
 | Teardown command fails | Log error, leave state file for recovery | 0 |
 | Stale state file detected on startup | Execute stored teardown, then proceed | 0 |
@@ -306,3 +307,6 @@ When **>30% of tests fail simultaneously**, do NOT proceed to individual test fi
 | Skill | Usage |
 |-------|-------|
 | `/gen-test-scripts` | Generate executable test scripts |
+| `forge test promote` | Promote passing tests to regression suite `tests/e2e/` |
+
+After all tests pass, prompt the user: "Run `forge test promote <journey>` to promote tests to the e2e regression suite."

@@ -117,7 +117,11 @@ Evaluates whether Journey Invariants hold across all Steps and cross-Step refere
 When the scorer cannot parse the document (e.g., malformed Journey file):
 1. Retry scoring once with a simplified parsing prompt
 2. If still failing, mark the Journey as `eval-skipped` with confidence `LOW`
-3. Record in eval report: parse failure reason, raw output snippet
+3. Write `testing/<journey>/.eval-status.json`:
+   ```json
+   {"status": "eval-skipped", "confidence": "LOW", "reason": "<parse failure reason>"}
+   ```
+4. Record in eval report: parse failure reason, raw output snippet
 
 When eval fails after all iterations:
 1. Output the final score and per-dimension breakdown

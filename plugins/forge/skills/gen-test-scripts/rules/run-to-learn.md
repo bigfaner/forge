@@ -6,7 +6,7 @@ Run-to-Learn generates skeleton tests, runs them to capture runtime behavior, en
 
 R2L is disabled by default. Enable via either:
 
-1. `.forge/config.yaml` field: `run_to_learn: true`
+1. `.forge/config.yaml` field: `enabled: true` under `run_to_learn` block
 2. CLI flag (when invoking gen-test-scripts): `--run-to-learn`
 
 If neither is set, skip R2L entirely and generate tests using static Fact Table data only.
@@ -15,11 +15,12 @@ If neither is set, skip R2L entirely and generate tests using static Fact Table 
 
 ```yaml
 # .forge/config.yaml
-run_to_learn: true                  # enable/disable
-r2l_max_iterations: 3               # hard cap (default: 3)
-r2l_coverage_threshold: 0.80        # exit threshold (default: 0.80)
-r2l_timeout_per_test: "60s"         # per-skeleton timeout (default: 60s)
-r2l_skip_on_env_failure: true       # skip when environment not ready (default: true)
+run_to_learn:
+  enabled: true                     # enable/disable
+  max_iterations: 3                 # hard cap (default: 3)
+  coverage_threshold: 0.80          # exit threshold (default: 0.80)
+  timeout_per_test: "60s"           # per-skeleton timeout (default: 60s)
+  skip_on_env_failure: true         # skip when environment not ready (default: true)
 ```
 
 <HARD-RULE>
@@ -42,7 +43,7 @@ Before entering the R2L loop, verify the execution environment is ready:
    - Proceed with static Fact Table data for test generation.
 
 <HARD-RULE>
-R2L environment readiness is a separate concern from the run-tests env-check (task 2.8). R2L checks only what is needed to run skeleton tests. If `r2l_skip_on_env_failure` is true (default), skip R2L on any failure. If false, abort with actionable error message.
+R2L environment readiness is a separate concern from the run-tests env-check (task 2.8). R2L checks only what is needed to run skeleton tests. If `skip_on_env_failure` is true (default), skip R2L on any failure. If false, abort with actionable error message.
 </HARD-RULE>
 
 ## R2L Loop
@@ -77,7 +78,7 @@ Skeleton tests run in a temporary directory, never in the project's `tests/` dir
 
 #### Timeout Protection
 
-Each skeleton test has a timeout. The timeout value comes from `.forge/config.yaml` `r2l_timeout_per_test` (default: 60s).
+Each skeleton test has a timeout. The timeout value comes from `.forge/config.yaml` `timeout_per_test` (default: 60s).
 
 Apply timeout per the Convention's framework mechanism:
 - Go: `ctx, cancel := context.WithTimeout(context.Background(), timeout)` + pass ctx to subprocess

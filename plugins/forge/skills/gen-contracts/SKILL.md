@@ -12,9 +12,9 @@ Generate Contract specifications from Journey documents, enriched with code reco
 **Risk-driven density**: Outcome count per Step and total test count per Journey are driven by the Journey's `risk_level` field (set by gen-journeys). Density targets are defined in `rules/risk-density.md`. Boundary/error Outcomes are auto-derived from surface rules' required_outcomes and the project Fact Table.
 
 <HARD-GATE>
-This skill ONLY writes to `tests/<journey>/_contracts/`. It does NOT generate test scripts or execute tests (handled by downstream skills).
+This skill ONLY writes to `docs/features/<slug>/testing/<journey>/contracts/`. It does NOT generate test scripts or execute tests (handled by downstream skills).
 
-**FORBIDDEN output paths**: Any path outside `tests/<journey>/_contracts/`. The `_contracts/` directory is the sole output target.
+**FORBIDDEN output paths**: Any path outside `docs/features/<slug>/testing/<journey>/contracts/`. The `contracts/` directory is the sole output target.
 </HARD-GATE>
 
 ## Pipeline Position
@@ -36,14 +36,14 @@ Check previous stage artifacts. Abort and prompt user if missing:
 
 | Artifact | Missing prompt |
 |----------|----------------|
-| `docs/features/<slug>/testing/journeys/manifest.md` | Run `/gen-journeys` first |
-| At least one Journey file in `docs/features/<slug>/testing/journeys/` | Run `/gen-journeys` first |
+| At least one Journey directory under `docs/features/<slug>/testing/` with `journey.md` | Run `/gen-journeys` first |
+| Eval report for all Journeys (`testing/<journey>/.eval-report.md`) | Run `/eval --type journey` first. **Blocker**: do not proceed if any Journey scored below target. |
 
 `<slug>` from `forge feature`.
 
 ## Step 0: Resolve Language and Interfaces
 
-1. Load Convention files from `docs/conventions/` by `domains` frontmatter (match `testing`, `go`, `typescript`, etc.). Extract language from `Framework` section.
+1. Read `docs/conventions/testing/index.md` to discover available Convention files. Select the Convention matching the project's language/framework based on index descriptions and project context. Load the selected Convention from `docs/conventions/testing/<convention>.md`.
 2. Fallback: scan existing source/test files (`go.mod`, `package.json`, `*_test.go`, etc.). Also check subdirectories for monorepo.
 3. On failure: ask user.
 4. **Detect interfaces**: Check `.forge/config.yaml`, `docs/conventions/`, project directory structure, and dependencies for interface types (cli, api, tui, web-ui, mobile).
@@ -60,8 +60,8 @@ Do NOT silently default to any language or interface.
 
 ### Step 1: Read Journey Documents
 
-1. Read `docs/features/<slug>/testing/journeys/manifest.md` to discover all Journey files.
-2. For each Journey listed in the manifest, read the Journey document.
+1. Enumerate subdirectories under `docs/features/<slug>/testing/` — each subdirectory represents one Journey.
+2. For each Journey directory, read `journey.md` to get the Journey document.
 3. Parse each Journey's structure:
    - Journey name and Risk level (from frontmatter `risk_level`: High/Medium/Low)
    - Happy path steps (sequence number, user action, expected result)
@@ -77,21 +77,21 @@ Every Journey in the manifest MUST be processed. Do not skip Journeys based on R
 
 Read source code to extract ground-truth values. Follow the full reconnaissance procedure per `rules/code-reconnaissance.md`, including generic and TUI-specific reconnaissance tables, Fact Table format, and source citation rules.
 
-**Static Fact Table output**: After completing reconnaissance, write the Fact Table to `.forge/fact-table.json` in the project root. Each fact entry has the format:
+**Static Fact Table output**: After completing reconnaissance, write the Fact Table to `.forge/fact-table.json` in the project root. Each fact entry follows the canonical schema (defined in `forge-cli/pkg/facttable/facttable.go`):
 
 ```json
 {
-  "id": "<FACT_ID>",
-  "subject": "<what this fact describes>",
-  "kind": "<function_signature | output_format | error_code | state_storage | config | hook>",
-  "value": "<extracted value>",
+  "fact_id": "<FACT_ID>",
   "source": "static",
-  "file": "<source file path>",
-  "line": <line number>
+  "subject": "<what this fact describes>",
+  "kind": "<signature | output_format | error_code | side_effect | precondition>",
+  "value": "<extracted value or JSON object>",
+  "confidence": "inferred",
+  "updated_at": "<ISO8601 timestamp>"
 }
 ```
 
-All entries use `"source": "static"` to distinguish from runtime facts (added by Run-to-Learn with `"source": "runtime"`).
+All entries use `"source": "static"` to distinguish from runtime facts (added by Run-to-Learn with `"source": "runtime"`). Static entries default to `"confidence": "inferred"` (confirmed at runtime by R2L).
 
 ### Step 3: Generate Contracts
 
@@ -208,7 +208,7 @@ Schema validation MUST be executed after generation. Validation failure triggers
 
 ### Step 5: Write Output + Fact Table
 
-Write Contract files to `tests/<journey>/_contracts/`.
+Write Contract files to `docs/features/<slug>/testing/<journey>/contracts/`.
 
 **File naming**: `step-<N>-<action-slug>.md` where:
 - `<N>` is the 1-based step ordinal
@@ -216,12 +216,12 @@ Write Contract files to `tests/<journey>/_contracts/`.
 
 **Template**: Use `templates/contract.md` for the file structure. Use `templates/outcome-block.md` for each Outcome block.
 
-**Create directories**: Create `tests/<journey>/_contracts/` if it does not exist.
+**Create directories**: Create `docs/features/<slug>/testing/<journey>/contracts/` if it does not exist.
 
-**Static Fact Table**: Write the Fact Table (from Step 2 reconnaissance) to `.forge/fact-table.json` in the project root. All entries have `"source": "static"`. If `.forge/fact-table.json` already exists, merge new entries by `id` (do not delete existing runtime entries).
+**Static Fact Table**: Write the Fact Table (from Step 2 reconnaissance) to `.forge/fact-table.json` in the project root. All entries have `"source": "static"`. If `.forge/fact-table.json` already exists, merge new entries by `fact_id` (do not delete existing runtime entries).
 
 <HARD-RULE>
-Output path is strictly `tests/<journey>/_contracts/`. No other locations. Static Fact Table must be written to `.forge/fact-table.json`.
+Output path is strictly `docs/features/<slug>/testing/<journey>/contracts/`. No other locations. Static Fact Table must be written to `.forge/fact-table.json`.
 </HARD-RULE>
 
 ## Error Handling

@@ -1,7 +1,7 @@
 ---
 feature: "{{FEATURE_SLUG}}"
 journey: "{{JOURNEY_NAME}}"
-risk: "{{RISK_LEVEL}}"
+risk_level: "{{RISK_LEVEL}}"
 sources:
   - docs/features/{{FEATURE_SLUG}}/prd/prd-user-stories.md
   - docs/features/{{FEATURE_SLUG}}/prd/prd-spec.md

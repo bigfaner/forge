@@ -4,7 +4,7 @@ step: {{STEP_NUMBER}}
 step-action: "{{STEP_ACTION}}"
 generated: "{{DATE}}"
 sources:
-  - docs/features/{{FEATURE_SLUG}}/testing/journeys/{{JOURNEY_NAME}}.md
+  - docs/features/{{FEATURE_SLUG}}/testing/{{JOURNEY_NAME}}/journey.md
 ---
 
 # Contract: {{JOURNEY_NAME}} / Step {{STEP_NUMBER}}: {{STEP_ACTION}}

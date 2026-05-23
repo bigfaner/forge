@@ -19,8 +19,11 @@ Fact Table.
 Regardless of the computed ratio, the level is forced to **LOW** when:
 
 - **eval-skipped**: the eval-journey or eval-contract step was skipped
-  (e.g. no rubric configured, user chose to skip)
-- **eval-bypassed**: the user explicitly bypassed the eval gate
+  (e.g. no rubric configured, user chose to skip, parse failure).
+  Detected by the presence of `.eval-status.json` with `"status": "eval-skipped"`
+  in `testing/<journey>/` (for journeys) or `testing/<journey>/contracts/` (for contracts).
+- **eval-bypassed**: the user explicitly bypassed the eval gate.
+  Detected by `.eval-status.json` with `"status": "eval-bypassed"`.
 
 Users may clear eval-skipped markers manually; after clearing, confidence
 is recalculated from the Fact Table coverage ratio.

@@ -175,11 +175,13 @@ High-risk Journeys MUST have edge case count >= happy path step count. If extrac
 
 ## Step 4: Generate Per-Journey Files
 
-For each Journey, generate a Markdown file using `templates/journey.md`.
+For each Journey, generate a directory and Markdown file using `templates/journey.md`.
 
-**Output location**: `docs/features/<slug>/testing/journeys/<journey-name>.md`
+**Output location**: `docs/features/<slug>/testing/<journey-name>/journey.md`
 
-**One Journey = one file**. Output is organized by Journey (user workflow), NOT by interface type (CLI, API, TUI, etc.).
+Create the directory `docs/features/<slug>/testing/<journey-name>/` if it does not exist.
+
+**One Journey = one directory**. Output is organized by Journey (user workflow), NOT by interface type (CLI, API, TUI, etc.).
 
 <HARD-RULE>
 gen-journeys output must be in a format that gen-contracts can directly consume. Each Journey file must contain:
@@ -222,38 +224,19 @@ After generating all Journey files, validate each one:
 
 If validation fails, fix the Journey file before proceeding.
 
-## Step 6: Generate Index
-
-After all Journey files are written, generate a manifest index at `docs/features/<slug>/testing/journeys/manifest.md`:
-
-```yaml
----
-feature: "{{FEATURE_SLUG}}"
-generated: "{{DATE}}"
-journey-count: {{COUNT}}
----
-```
-
-Include a **Journeys Summary** table:
-
-| Journey | Risk | Happy Path Steps | Edge Cases | Source Stories | File |
-|---------|------|-----------------|------------|---------------|------|
-
-This index allows gen-contracts to discover all Journey files.
-
-## Step 7: Review & Commit
+## Step 6: Review & Commit
 
 <HARD-RULE>
 Do NOT commit documents automatically. Present all generated Journey files to the user for review and wait for explicit approval before committing.
 </HARD-RULE>
 
-1. Present all generated Journey files and the manifest to the user
+1. Present all generated Journey files to the user
 2. Wait for the user to review and approve (or request changes)
 3. Only commit after explicit user approval:
 
 ```bash
-git add docs/features/<slug>/testing/journeys/
-git commit -m "docs: generate journeys for <feature-slug>"
+git add docs/features/<slug>/testing/
+git commit -m "docs: generate journey <journey-name> for <feature-slug>"
 ```
 
 ## Related Skills

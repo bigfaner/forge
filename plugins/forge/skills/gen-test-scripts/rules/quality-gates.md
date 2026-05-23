@@ -21,10 +21,10 @@ Before writing, scan existing test files in the module for matching function nam
 
 | Situation | Action |
 |-----------|--------|
-| No Convention files found | Proceed with LLM defaults + Code Reconnaissance. Output hint: "No test Convention files found in `docs/conventions/`. Generation will use LLM defaults. Run `/forge:test-guide` to create one." |
+| No Convention files found | Proceed with LLM defaults + Code Reconnaissance. Output hint: "No test Convention files found in `docs/conventions/testing/`. Generation will use LLM defaults. Run `/forge:test-guide` to create one." |
 | Convention file missing required sections | Proceed with LLM defaults for missing sections. Log warning listing missing sections. |
 | Convention file unreadable | Skip file, log warning with file path and error. |
-| Convention file has no `domains` frontmatter | Skip file, log warning. |
+| Convention file has no required sections (`framework`, `discovery`, `structure`, `assertions`) | Skip file, log warning. |
 | Convention vs Reconnaissance conflict | Convention wins, log conflict for user awareness. |
 | Contract files not found | Abort with prompt to run `/gen-contracts` |
 | Fact Table lookup fails for a descriptor | Keep `// VERIFY:` marker, do not fabricate regex |

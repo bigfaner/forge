@@ -19,26 +19,40 @@ gen-journeys -> gen-contracts -> gen-test-scripts -> run-tests
 Input: Contract specifications (from gen-contracts) + Fact Table (from code reconnaissance).
 Output: Executable test code with `@feature` tags in `tests/<journey>/`.
 
+## Prerequisites
+
+Check previous stage artifacts. Abort and prompt user if missing:
+
+| Artifact | Missing prompt |
+|----------|----------------|
+| At least one Contract file in `docs/features/<slug>/testing/<journey>/contracts/` | Run `/gen-contracts` first |
+| Eval report for all Contracts (`testing/<journey>/.eval-report.md`) | Run `/eval --type contract` first. **Blocker**: do not proceed if any Contract scored below target. |
+
 ## Step 0: Load Convention Files
 
 Load test framework knowledge from Convention files (no Profile/CLI dependency).
 
 ### 0.1 Discover Convention Files
 
-1. Glob `docs/conventions/testing-*.md` in the project root.
-2. Read each file's YAML frontmatter `domains` field.
-3. Keep files whose `domains` contain `testing`.
-4. Skip files with no `domains` frontmatter — output warning: "Convention file `<path>` has no domains frontmatter. Skipping."
-5. Skip files that cannot be read (permissions, encoding) — output warning: "Cannot read Convention file `<path>`: `<error>`. Skipping."
+Load test framework knowledge from Convention files using a two-level index mechanism.
+
+1. Read `docs/conventions/testing/index.md` — this index file lists all available Conventions with name, description, and applicability conditions.
+2. Based on the project's language/framework context, select the matching Convention from the index.
+3. Load the selected Convention file from `docs/conventions/testing/<convention>.md`.
+4. If `index.md` does not exist, proceed to auto-detection (Step 0.2).
+
+<HARD-RULE>
+Do NOT use `domains` frontmatter filtering. Selection is based on index.md descriptions and project context, with LLM autonomous judgment.
+</HARD-RULE>
 
 ### 0.2 Resolve Target Framework
 
 Determine the target framework from the available signals:
 
-1. **Convention file match**: If Convention files exist, their `domains` indicate the framework (e.g., `[testing, go]` = Go testing, `[testing, javascript]` = JS testing).
+1. **Convention file match**: If a Convention was loaded from index.md, use its framework declaration.
 2. **Existing test file scan**: Scan `tests/` for file patterns to confirm the Convention's framework matches the project.
-3. **User specification**: If multiple Convention files match or signals are ambiguous, ask the user which framework to use.
-4. **No Convention found**: Proceed with LLM defaults + Code Reconnaissance (Step 1). Output hint: "No test Convention files found in `docs/conventions/`. Generation will use LLM defaults. Run `/forge:test-guide` to create one."
+3. **User specification**: If signals are ambiguous, ask the user which framework to use.
+4. **No Convention found**: Proceed with LLM defaults + Code Reconnaissance (Step 1). Output hint: "No test Convention files found in `docs/conventions/testing/`. Generation will use LLM defaults. Run `/forge:test-guide` to create one."
 
 <HARD-RULE>
 If no Convention files are found and no framework can be detected from existing test files, ask the user which framework to use. Do NOT silently default.
@@ -46,12 +60,10 @@ If no Convention files are found and no framework can be detected from existing 
 
 ### 0.3 Validate Convention Content
 
-For the loaded Convention file(s), check required sections: `Framework`, `Assertion`, `Tags`, `Result Format`.
+For the loaded Convention file, check required sections: `framework`, `discovery`, `structure`, `assertions`.
 
-- **Missing required section**: Log warning listing missing sections. Proceed with LLM defaults for that section's area. Example: "Convention file `<path>` is missing sections: Assertion, Tags. Using LLM defaults for those sections."
-- **Invalid section content** (e.g., empty Framework name): Treat as missing. Log warning.
-- **Multiple Convention files with overlapping domains**: Merge at section level — last-loaded file's section wins for conflicting sections. Log a note about the overlap for user awareness.
-- **Convention vs Reconnaissance conflict** (detected in Step 1): Convention wins. Log the conflict for user awareness.
+- **Missing required section**: Log warning listing missing sections. Proceed with LLM defaults for that section's area. Example: "Convention file `<path>` is missing sections: discovery, assertions. Using LLM defaults for those sections."
+- **Invalid section content** (e.g., empty framework name): Treat as missing. Log warning.
 
 Use the loaded Convention content for all framework-specific rules in subsequent steps.
 
@@ -168,7 +180,7 @@ Semantic descriptor: "success confirmation containing feature-slug"
 
 **Input discovery** — find the Contract files for the target Journey:
 
-1. Glob `tests/<journey>/_contracts/step-*.md` for the target Journey.
+1. Glob `docs/features/<slug>/testing/<journey>/contracts/step-*.md` for the target Journey.
 2. If no Journey is specified, ask the user which Journey to generate tests for.
 3. Parse each Contract file to extract: Journey name, Step number, Action, Outcomes (Preconditions/Input/Output/State/Side-effect/Invariants).
 
@@ -314,15 +326,19 @@ Before generating, apply the surface type detected in Step 0.5 to constrain the 
 
 ### Output Directory
 
-Tests go directly into `tests/<journey>/`:
+Tests go directly into `tests/<journey>/`. Contract specs are read from `docs/features/<slug>/testing/<journey>/contracts/`:
 
 ```
-tests/
+docs/features/<slug>/testing/
   task-lifecycle/                  <- Journey directory
-    _contracts/                    <- Contract specs (input, from gen-contracts)
+    journey.md                     <- Journey narrative
+    contracts/                     <- Contract specs (input, from gen-contracts)
       step-1-feature-create.md
       step-2-task-claim.md
       step-3-task-submit.md
+
+tests/
+  task-lifecycle/                  <- Generated test scripts
     step1_feature_create_test.go   <- Generated step test
     step2_task_claim_test.go       <- Generated step test (multiple Outcomes)
     step3_task_submit_test.go      <- Generated step test
@@ -378,7 +394,7 @@ All framework-specific rules (test runner, assertion library, imports, HTTP clie
 
 - Use ONLY the framework specified in the Convention file
 - Import paths and naming conventions follow the Convention's conventions
-- Convention sections: Framework, Assertion, Tags, Result Format, Import Patterns, Code Style, Anti-patterns, Helpers
+- Convention sections: framework, discovery, structure, assertions, Import Patterns, Code Style, Anti-patterns, Helpers
 </EXTREMELY-IMPORTANT>
 
 ### Templates (Convention-Driven)
@@ -476,7 +492,7 @@ If all compile attempts fail:
 
 1. Output the compile error to the user with the generated file path
 2. Suggest recovery actions:
-   - (a) Check Convention file for incorrect framework/assertion declarations
+   - (a) Check Convention file for incorrect framework/assertions section declarations
    - (b) Run `/forge:test-guide` to regenerate Convention from project analysis
    - (c) Manually edit the generated test file to fix compilation
 3. Do not auto-delete the generated file — leave it for user inspection
