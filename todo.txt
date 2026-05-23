@@ -206,4 +206,4 @@ internal/cmd/
 153、init-justfile对齐最新的设计：just unit-test单元测试、just test高级测试。另外，根据CLI、TUI等场景生成对应的命令。
 154、为什么生成任务的priority是"high"而不是"P1"？哪一种对AI和人更友好
 155、根据提案内容，临时生成一个专家角色进行深度评审
-156、quick-mode的任务上限更改为15
+156、quick-mode的任务上限更改为15。done
