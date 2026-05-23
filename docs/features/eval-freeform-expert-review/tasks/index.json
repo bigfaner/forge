@@ -34,7 +34,7 @@
       "dependencies": [
         "2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3-extraction-injection.md",
       "record": "records/3-extraction-injection.md",
       "type": "doc"
@@ -47,7 +47,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-expert-persistence.md",
       "record": "records/4-expert-persistence.md",
       "type": "doc"
