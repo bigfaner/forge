@@ -246,7 +246,26 @@ func TestListCmd_ColumnAlignment(t *testing.T) {
 }
 
 func TestListCmd_TitleTruncation(t *testing.T) {
-	t.Run("truncates long title", func(t *testing.T) {
+	t.Run("bug: titles under 50 chars are unnecessarily truncated", func(t *testing.T) {
+		mediumTitle := "Retire gen-test-cases + eval-test-cases skill"
+		tasks := map[string]task.Task{
+			"1": {ID: "1", Title: mediumTitle, Type: "coding.cleanup", Status: "completed"},
+		}
+		_ = setupFullProject(t, SetupOpts{Tasks: tasks})
+
+		output := captureStdout(func() {
+			err := runList(nil, []string{})
+			if err != nil {
+				t.Fatalf("runList returned error: %v", err)
+			}
+		})
+
+		if !strings.Contains(output, mediumTitle) {
+			t.Errorf("title %q should NOT be truncated (under 50 chars), got:\n%s", mediumTitle, output)
+		}
+	})
+
+	t.Run("truncates very long title", func(t *testing.T) {
 		longTitle := "This is a very long task title that should be truncated because it exceeds the maximum column width"
 		tasks := map[string]task.Task{
 			"1": {ID: "1", Title: longTitle, Type: "coding.feature", Status: "pending"},

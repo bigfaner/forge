@@ -27,7 +27,7 @@ Tasks are sorted by ID in natural order: numeric IDs first, then test/gate IDs.`
 	RunE: runList,
 }
 
-const titleMaxWidth = 30
+const titleMaxWidth = 50
 
 func runList(_ *cobra.Command, _ []string) error {
 	projectRoot, err := project.FindProjectRoot()
