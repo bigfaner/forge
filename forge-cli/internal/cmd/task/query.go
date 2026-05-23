@@ -82,7 +82,7 @@ func printVerboseQuery(key string, t *task.Task, featureSlug string, index *task
 	base.PrintField("STATUS", t.Status)
 	base.PrintField("PRIORITY", t.Priority)
 	base.PrintFieldIfNotEmpty("TYPE", t.Type)
-	base.PrintFieldIfNotEmpty("CATEGORY", task.CategoryForType(t.Type))
+	base.PrintFieldIfNotEmpty("TASK_CATEGORY", task.CategoryForType(t.Type))
 	base.PrintFieldIfNotEmpty("SCOPE", t.Scope)
 	if len(t.Dependencies) > 0 {
 		base.PrintField("DEPENDENCIES:", "")

@@ -28,18 +28,16 @@ Post-task completion: create execution record + update task status.
 ## Step 1: Determine Record Format
 
 <HARD-RULE>
-You MUST read the category-specific format file before writing record.json. The format varies by task type — using the wrong format produces invalid records.
+You MUST read the category-specific format file before writing record.json.
 </HARD-RULE>
 
-Run `forge task query <TASK_ID>` to get the `CATEGORY` field, then read the corresponding format file:
+The `TASK_CATEGORY` field is in your task prompt. Use that value to locate the format file:
 
 ```
-data/record-format-{CATEGORY}.md
+data/record-format-{TASK_CATEGORY}.md
 ```
 
-For example, `CATEGORY: doc` → read `data/record-format-doc.md`.
-
-**Fallback:** If `CATEGORY` is empty or missing, treat it as `coding`. Do NOT skip reading a format file.
+**Fallback:** If `TASK_CATEGORY` is empty or missing, treat it as `coding`. Do NOT skip reading a format file.
 
 ## Step 2: Write record.json
 

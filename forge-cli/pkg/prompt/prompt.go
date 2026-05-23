@@ -123,6 +123,10 @@ func renderTemplate(templateFile string, opts SynthesizeOpts, t task.Task) (stri
 	result := string(data)
 	result = strings.ReplaceAll(result, "{{TASK_ID}}", t.ID)
 	result = strings.ReplaceAll(result, "{{TASK_FILE}}", taskFile)
+
+	// Inject TASK_CATEGORY after TASK_FILE line for submit-task skill routing.
+	category := task.CategoryForType(t.Type)
+	result = strings.Replace(result, "TASK_FILE: "+taskFile, "TASK_FILE: "+taskFile+"\nTASK_CATEGORY: "+category, 1)
 	result = strings.ReplaceAll(result, "{{SCOPE}}", scope)
 	result = strings.ReplaceAll(result, "{{FEATURE_SLUG}}", opts.FeatureSlug)
 	result = strings.ReplaceAll(result, "{{PHASE_SUMMARY}}", phaseSummaryLine)
