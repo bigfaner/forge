@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"forge-cli/pkg/feature"
 	indexPkg "forge-cli/pkg/index"
@@ -140,7 +139,7 @@ func doSubmit(projectRoot, featureSlug, indexPath, taskIDArg string) error {
 	targetStatus := rd.Status
 
 	// Validate required and recommended fields
-	validateRecordData(rd)
+	validateRecordData(rd, t.Type)
 
 	// State machine validation: check transition before proceeding
 	if targetStatus == "completed" {
@@ -300,18 +299,24 @@ func readSubmitData(dataPath string) (*task.RecordData, error) {
 }
 
 // validateRecordData checks required and recommended fields in task.RecordData.
-// Hard-required fields (missing = error): summary
-// Auto-downgrade: completed + testsFailed > 0 → blocked (non-overridable)
-// Hard validation for completed tasks:
+// taskType determines which checks apply based on category:
+//   - coding: full validation (test evidence, testsFailed auto-downgrade)
+//   - doc/test/validation/gate: skip test evidence and testsFailed checks
+//
+// Hard-required fields (missing = error): summary (all categories)
+// Auto-downgrade (coding only): completed + testsFailed > 0 → blocked
+// Hard validation for completed coding tasks:
 //   - testsPassed=0 && testsFailed=0 with coverage >= 0
 //   - any acceptanceCriteria with met=false
 //
-// Recommended fields for "completed" status (missing = warning):
+// Recommended fields for "completed" status (missing = warning, all categories):
 //   - keyDecisions, acceptanceCriteria
-func validateRecordData(rd *task.RecordData) {
+func validateRecordData(rd *task.RecordData, taskType string) {
+	isCoding := task.CategoryForType(taskType) == task.CategoryCoding
+
 	var missing []string
 
-	// Hard-required fields
+	// Hard-required fields (all categories)
 	if strings.TrimSpace(rd.Summary) == "" {
 		missing = append(missing, "summary")
 	}
@@ -320,8 +325,8 @@ func validateRecordData(rd *task.RecordData) {
 		base.Exit(base.ErrMissingFields(missing))
 	}
 
-	// Auto-downgrade: completed with test failures → blocked (non-overridable)
-	if rd.Status == "completed" && rd.TestsFailed > 0 {
+	// Auto-downgrade (coding only): completed with test failures → blocked
+	if isCoding && rd.Status == "completed" && rd.TestsFailed > 0 {
 		fmt.Fprintf(os.Stderr, "---\nWARNING: %d test failures detected — auto-downgrading status from 'completed' to 'blocked'\nHINT: Fix test failures, then re-record with status 'completed'\n---\n", rd.TestsFailed)
 		rd.Status = "blocked"
 	}
@@ -330,174 +335,56 @@ func validateRecordData(rd *task.RecordData) {
 		return
 	}
 
-	// Hard validation for completed tasks
-	{
+	// Hard validation for completed tasks (coding only)
+	if isCoding {
 		// Reject completed with no test evidence (unless coverage=-1.0 signals "no tests")
 		if rd.Coverage >= 0 && rd.TestsPassed == 0 && rd.TestsFailed == 0 {
 			base.Exit(base.ErrNoTestEvidence())
 		}
+	}
 
-		// Reject completed with unmet acceptance criteria
-		if len(rd.AcceptanceCriteria) > 0 {
-			var unmet []string
-			for _, ac := range rd.AcceptanceCriteria {
-				if !ac.Met {
-					unmet = append(unmet, ac.Criterion)
-				}
+	// Reject completed with unmet acceptance criteria (all categories)
+	if len(rd.AcceptanceCriteria) > 0 {
+		var unmet []string
+		for _, ac := range rd.AcceptanceCriteria {
+			if !ac.Met {
+				unmet = append(unmet, ac.Criterion)
 			}
-			if len(unmet) > 0 {
-				base.Exit(base.ErrUnmetAcceptanceCriteria(unmet))
-			}
+		}
+		if len(unmet) > 0 {
+			base.Exit(base.ErrUnmetAcceptanceCriteria(unmet))
 		}
 	}
 
-	// Recommended fields for completed tasks
-	var recommended []string
-	if len(rd.KeyDecisions) == 0 {
-		recommended = append(recommended, "keyDecisions")
-	}
-	if len(rd.AcceptanceCriteria) == 0 {
-		recommended = append(recommended, "acceptanceCriteria")
-	}
-	if len(recommended) > 0 {
-		base.WarnMissingFields(recommended)
+	// Recommended fields for completed tasks (coding only)
+	category := task.CategoryForType(taskType)
+	if category == task.CategoryCoding {
+		var recommended []string
+		if len(rd.KeyDecisions) == 0 {
+			recommended = append(recommended, "keyDecisions")
+		}
+		if len(rd.AcceptanceCriteria) == 0 {
+			recommended = append(recommended, "acceptanceCriteria")
+		}
+		if len(recommended) > 0 {
+			base.WarnMissingFields(recommended)
+		}
 	}
 }
 
 func fillRecordTemplate(t *task.Task, rd *task.RecordData, startedTime string) string {
-	status := rd.Status
-	started := startedTime
-	if started == "" {
-		started = time.Now().Format("2006-01-02 15:04")
-	}
-	completed := time.Now().Format("2006-01-02 15:04")
-	if status != "completed" {
-		completed = "N/A"
-	}
-
-	// Calculate time spent
-	timeSpent := ""
-	startedT, err1 := time.Parse("2006-01-02 15:04", started)
-	completedT, err2 := time.Parse("2006-01-02 15:04", completed)
-	if err1 == nil && err2 == nil && completedT.After(startedT) {
-		dur := completedT.Sub(startedT)
-		timeSpent = formatDuration(dur)
-	}
-
-	notes := rd.Notes
-	if notes == "" {
-		notes = "无"
-	}
-
-	var reclassBlock string
-	if rd.TypeReclassification != nil {
-		reclassBlock = fmt.Sprintf(`## Type Reclassification
-- Original: %s
-- Actual: %s
-- Reason: %s
-
-`, rd.TypeReclassification.OriginalType, rd.TypeReclassification.ActualType, rd.TypeReclassification.Reason)
-	}
-
-	return fmt.Sprintf(`---
-status: "%s"
-started: "%s"
-completed: "%s"
-time_spent: "%s"
----
-
-# Task Record: %s %s
-
-## Summary
-%s
-
-%s## Changes
-
-### Files Created
-%s
-
-### Files Modified
-%s
-
-### Key Decisions
-%s
-
-## Test Results
-- **Tests Executed**: %s
-- **Passed**: %d
-- **Failed**: %d
-- **Coverage**: %s
-
-## Acceptance Criteria
-%s
-
-## Notes
-%s
-`,
-		status, started, completed, timeSpent,
-		t.ID, t.Title,
-		rd.Summary,
-		reclassBlock,
-		formatList(rd.FilesCreated),
-		formatList(rd.FilesModified),
-		formatList(rd.KeyDecisions),
-		formatTestsExecuted(rd.Coverage), rd.TestsPassed, rd.TestsFailed, formatCoverage(rd.Coverage),
-		formatCriteria(rd.AcceptanceCriteria),
-		notes,
-	)
-}
-
-func formatCoverage(c float64) string {
-	if c < 0 {
-		return "N/A (task has no tests)"
-	}
-	return fmt.Sprintf("%.1f%%", c)
-}
-
-func formatTestsExecuted(c float64) string {
-	if c < 0 {
-		return "No"
-	}
-	return "Yes"
-}
-
-func formatList(items []string) string {
-	if len(items) == 0 {
-		return "无"
-	}
-	lines := make([]string, len(items))
-	for i, item := range items {
-		lines[i] = "- " + item
-	}
-	return strings.Join(lines, "\n")
-}
-
-func formatDuration(dur time.Duration) string {
-	d := int(dur.Hours())
-	m := int(dur.Minutes()) % 60
-	switch {
-	case d > 0 && m > 0:
-		return fmt.Sprintf("~%dh %dm", d, m)
-	case d > 0:
-		return fmt.Sprintf("~%dh", d)
+	switch task.CategoryForType(t.Type) {
+	case task.CategoryDoc:
+		return task.RenderDocRecord(t, rd, startedTime)
+	case task.CategoryTest:
+		return task.RenderTestRecord(t, rd, startedTime)
+	case task.CategoryValidation:
+		return task.RenderValidationRecord(t, rd, startedTime)
+	case task.CategoryGate:
+		return task.RenderGateRecord(t, rd, startedTime)
 	default:
-		return fmt.Sprintf("~%dm", m)
+		return task.RenderCodingRecord(t, rd, startedTime)
 	}
-}
-
-func formatCriteria(criteria []task.AcceptanceCriterion) string {
-	if len(criteria) == 0 {
-		return "无"
-	}
-	lines := make([]string, len(criteria))
-	for i, c := range criteria {
-		check := "[ ]"
-		if c.Met {
-			check = "[x]"
-		}
-		lines[i] = "- " + check + " " + c.Criterion
-	}
-	return strings.Join(lines, "\n")
 }
 
 // validateQualityGate runs the quality gate based on the task's breaking flag.

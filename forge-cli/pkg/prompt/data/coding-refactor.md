@@ -19,7 +19,7 @@ Before starting, verify all three conditions:
 2. Targeted tests pass — run the project's test command on affected packages/modules. Refactoring on a red test suite is undefined behavior (you can't verify "no behavior change" if the baseline is already broken)
 3. If current branch is main/trunk, output a warning but allow (team conventions vary)
 
-If check 1 or 2 fails, set the task status to blocked via `forge task status {{TASK_ID}} blocked` and output the reason. Do NOT proceed — the dispatcher will handle re-claim after the issue is resolved.
+If check 1 or 2 fails, set the task status to blocked via `forge task transition {{TASK_ID}} blocked --reason "refactor verification failed"` and output the reason. Do NOT proceed — the dispatcher will handle re-claim after the issue is resolved.
 
 ## Workflow (4 Steps)
 
@@ -210,5 +210,11 @@ just lint {{SCOPE}}
 Coverage is informational for refactoring — output the number but do not gate on it. If coverage drops >2%, investigate and report.
 
 Max 3 retries at this step. If still failing after 3 attempts, stop and report the task as blocked with details of the last failure.
+
+## Record Fields
+
+When submitting via `forge:submit-task`, populate these record fields in record.json:
+- **testsPassed** / **testsFailed**: number of tests that passed/failed
+- **coverage**: test coverage percentage (e.g. 80.0)
 
 Output: `Step 4/4: Verifying... DONE (coverage: N%)`

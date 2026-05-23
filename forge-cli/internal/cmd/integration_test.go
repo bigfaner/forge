@@ -742,7 +742,7 @@ func TestValidateRecordData_NonTestableTask(t *testing.T) {
 	}
 
 	out := captureStderr2(func() {
-		taskpkg.ExportValidateRecordData(rd)
+		taskpkg.ExportValidateRecordData(rd, task.TypeDoc)
 	})
 	if strings.Contains(out, "ERROR") {
 		t.Errorf("coverage=-1.0 should pass for non-testable tasks, got: %s", out)

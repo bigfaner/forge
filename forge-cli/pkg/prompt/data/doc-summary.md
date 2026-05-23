@@ -30,4 +30,11 @@ Generate a phase summary document with these 5 sections:
 
 Write the summary to the record file specified in the task.
 
+## Record Fields
+
+When submitting via `forge:submit-task`, populate these record fields in record.json:
+- **referencedDocs**: list of task records read for the summary
+- **reviewStatus**: summary review status
+- **docMetrics**: phase summary statistics (e.g. "5 tasks completed, 3 phases")
+
 Output: `Step 2/2: Generating summary... DONE`

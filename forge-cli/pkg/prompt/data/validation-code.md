@@ -38,7 +38,7 @@ Perform code validation checks:
 
 **If any criterion fails:**
 - If the gap is trivial (e.g., missing import, typo): fix it inline and re-verify (max 2 attempts)
-- If the gap is non-trivial or max attempts reached: document it as a finding, then set status to blocked via `forge task status {{TASK_ID}} blocked`
+- If the gap is non-trivial or max attempts reached: document it as a finding, then set status to blocked via `forge task transition {{TASK_ID}} blocked --reason "validation gap unresolved"`
 - Do NOT force validation to pass — an unmet criterion means validation fails
 
 Then run the quality gate:
@@ -60,5 +60,11 @@ All must pass.
 | `fmt` | **WARNING** (non-blocking) — if `just fmt` produces changes: check if the affected files are ones you modified. If yes, fix the fmt issues. If changes are only in pre-existing files, continue — those are not your responsibility. Log the warning in your output. |
 | `lint` | Self-fix (max 1 retry). If still failing, evaluate Complex Error Pause Flow — if the error persists after ~3 total attempts, create a fix task. Otherwise, stop and let the dispatcher handle it. |
 | `test` | Fix failing tests, retry from compile |
+
+## Record Fields
+
+When submitting via `forge:submit-task`, populate these record fields in record.json:
+- **validationPassed**: whether all validation criteria passed (true/false)
+- **issuesFound**: list of issues found during validation
 
 Output: `Step 2/2: Validating code... DONE`

@@ -32,4 +32,10 @@ Skill(skill="forge:eval", args="--type test-cases")
 
 This evaluates test-cases.md for downstream executability with 100-point scoring, then runs adversarial iterations until the target score is met.
 
+## Record Fields
+
+When submitting via `forge:submit-task`, populate these record fields in record.json:
+- **casesEvaluated**: number of test cases evaluated
+- **scriptsCreated**: list of test script files created
+
 Output: `Step 2/2: Evaluating test cases... DONE`

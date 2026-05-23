@@ -375,6 +375,7 @@ func printTaskDetails(key string, t *task.Task, projectRoot, featureSlug string)
 	_ = key // key is still used internally for routing, but no longer emitted
 	base.PrintField("TASK_ID", t.ID)
 	base.PrintFieldIfNotEmpty("TYPE", t.Type)
+	base.PrintFieldIfNotEmpty("TASK_CATEGORY", task.CategoryForType(t.Type))
 	base.PrintFieldIfNotEmpty("FEATURE", featureSlug)
 	base.PrintField("FILE", filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, t.File)))
 	base.PrintFieldIfNotEmpty("SCOPE", t.Scope)

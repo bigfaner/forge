@@ -47,4 +47,10 @@ Skill(skill="forge:run-e2e-tests")
 
 This executes e2e test scripts and generates a results report. If tests fail, fix the issues and re-invoke the skill until passing (max 3 attempts).
 
+## Record Fields
+
+When submitting via `forge:submit-task`, populate these record fields in record.json:
+- **casesGenerated**: number of test cases generated
+- **scriptsCreated**: list of test script files generated and run
+
 Output: `Step 3/3: Running e2e tests... DONE`

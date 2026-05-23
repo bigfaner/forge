@@ -286,6 +286,25 @@ type RecordData struct {
 	AcceptanceCriteria   []AcceptanceCriterion `json:"acceptanceCriteria"`
 	Notes                string                `json:"notes"`
 	TypeReclassification *TypeReclassification `json:"typeReclassification,omitempty"`
+
+	// Doc fields
+	ReferencedDocs []string `json:"referencedDocs,omitempty"`
+	ReviewStatus   string   `json:"reviewStatus,omitempty"`
+	DocMetrics     string   `json:"docMetrics,omitempty"`
+
+	// Test fields
+	CasesGenerated int      `json:"casesGenerated,omitempty"`
+	CasesEvaluated int      `json:"casesEvaluated,omitempty"`
+	ScriptsCreated []string `json:"scriptsCreated,omitempty"`
+	TestResults    string   `json:"testResults,omitempty"`
+
+	// Validation fields
+	ValidationPassed bool     `json:"validationPassed,omitempty"`
+	IssuesFound      []string `json:"issuesFound,omitempty"`
+
+	// Gate fields
+	GatePassed bool     `json:"gatePassed,omitempty"`
+	GateChecks []string `json:"gateChecks,omitempty"`
 }
 
 // TypeReclassification documents when an executor changes a task's type during execution.
