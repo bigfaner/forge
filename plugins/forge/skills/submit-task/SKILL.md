@@ -31,37 +31,19 @@ Post-task completion: create execution record + update task status.
 You MUST read the category-specific format file before writing record.json. The format varies by task type — using the wrong format produces invalid records.
 </HARD-RULE>
 
-Your task type is set during `forge task claim`. Map it to a category:
+`forge task claim` outputs a `CATEGORY` field. Read the corresponding format file:
 
-| Category | Task Types | Format File |
-|----------|-----------|-------------|
-| coding | `coding.feature`, `coding.enhancement`, `coding.cleanup`, `coding.refactor`, `coding.fix`, `code-quality.simplify` | `data/record-format-coding.md` |
-| doc | `doc`, `doc.eval`, `doc.summary`, `doc.consolidate`, `doc.drift` | `data/record-format-doc.md` |
-| test | `test.gen-cases`, `test.eval-cases`, `test.gen-scripts`, `test.run`, `test.gen-and-run`, `test.graduate`, `test.verify-regression` | `data/record-format-test.md` |
-| validation | `validation.code`, `validation.ux` | `data/record-format-validation.md` |
-| gate | `gate` | `data/record-format-gate.md` |
+```
+data/record-format-{CATEGORY}.md
+```
 
-**Read the format file now.** It contains the JSON example, category-specific fields, and metrics collection rules for your task type.
+For example, `CATEGORY: doc` → read `data/record-format-doc.md`.
 
-**Fallback:** If the task type is empty, unlisted, or you cannot determine the category, treat it as `coding` category and add a `notes` field explaining the fallback. Do NOT skip reading a format file.
+**Fallback:** If `CATEGORY` is empty or missing, treat it as `coding`. Do NOT skip reading a format file.
 
 ## Step 2: Write record.json
 
-Follow the JSON example from your category's format file. All categories share these base fields:
-
-> **IMPORTANT:** The table below shows ONLY shared fields. Your category's format file contains the COMPLETE JSON example with category-specific fields. Do not construct record.json from this table alone.
-
-| Field                  | Type   | Required | Description                                  |
-| ---------------------- | ------ | -------- | -------------------------------------------- |
-| `taskId`               | string | auto     | Task ID (verified against CLI arg, mismatch = hard error) |
-| `status`               | string | auto     | Defaults to `completed`; must be valid enum value |
-| `summary`              | string | **hard** | Implementation summary. Empty = hard error (non-overridable) |
-| `filesCreated`         | array  | optional | List of newly created files                  |
-| `filesModified`        | array  | optional | List of modified files                       |
-| `keyDecisions`         | array  | warning  | Key design decisions. Missing = warning (completed status only) |
-| `acceptanceCriteria`   | array  | warning  | `{criterion, met}` objects. Missing = warning; any `met:false` = hard error (overridable) |
-| `notes`                | string | optional | Optional notes or observations               |
-| `typeReclassification` | object | optional | When executor discovers task type doesn't match actual work |
+Use the **complete JSON example** from your category's format file as the template. Construct record.json following that example — it already includes all required and optional fields for your task type.
 
 ## Type Reclassification
 
@@ -83,12 +65,6 @@ In such cases, process the task according to its **actual type** and include a `
 ```
 
 The reclassification is recorded in the task's execution log for traceability. The original type in `index.json` is **not** changed — only the record documents the discrepancy.
-
-## General Metrics Rules
-
-- `coverage` = `-1.0` is auto-set by CLI for non-`coding.*` type tasks
-- Never fabricate metrics — if a field does not apply to the task category, omit it
-- Do NOT include fields from other categories (e.g., no `testsPassed` in doc records)
 
 ## Usage
 

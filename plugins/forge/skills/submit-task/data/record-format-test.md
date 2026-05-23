@@ -31,12 +31,5 @@ Task types: `test.gen-cases`, `test.eval-cases`, `test.gen-scripts`, `test.run`,
 
 ## Rules
 
-- Use these fields instead of `testsPassed`/`testsFailed`/`coverage`
-- Test tasks are system-generated — records should be concise, focused on pipeline metrics
-
-## Metrics Collection
-
-Collect from the test pipeline:
-- `casesGenerated` / `casesEvaluated` — actual counts from test case generation
-- `scriptsCreated` — list of generated script files
-- `testResults` — summary of test execution outcomes
+- Use these fields instead of `testsPassed`/`testsFailed`/`coverage`.
+- Test tasks are system-generated — records should be concise, focused on pipeline metrics.

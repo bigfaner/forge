@@ -9,6 +9,8 @@ Task types: `gate`
 	"taskId": "20",
 	"status": "completed",
 	"summary": "Quality gate check passed for feature branch",
+	"filesCreated": [],
+	"filesModified": [],
 	"gatePassed": true,
 	"gateChecks": [
 		"All tests passing",
@@ -28,12 +30,6 @@ Task types: `gate`
 
 ## Rules
 
-- Gate tasks produce minimal records — gate checks + overall pass status
-- Do NOT include `filesCreated`, `filesModified`, `testsPassed`, `testsFailed`, `coverage`
-- Do NOT include `acceptanceCriteria` unless the gate explicitly checks against criteria
-
-## Metrics Collection
-
-Collect from gate checks:
-- `gatePassed` — boolean based on overall gate outcome
-- `gateChecks` — list each check and its result
+- Gate tasks produce minimal records — gate checks + overall pass status.
+- Do NOT include `testsPassed`, `testsFailed`, `coverage`.
+- Do NOT include `acceptanceCriteria` unless the gate explicitly checks against criteria.

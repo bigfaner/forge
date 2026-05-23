@@ -27,11 +27,5 @@ Task types: `validation.code`, `validation.ux`
 
 ## Rules
 
-- Produce pass/fail verdicts rather than test metrics
-- Do NOT include `testsPassed`, `testsFailed`, `coverage`
-
-## Metrics Collection
-
-Collect from the validation process:
-- `validationPassed` — boolean based on actual validation outcome
-- `issuesFound` — list specific issues detected
+- Produce pass/fail verdicts rather than test metrics.
+- Do NOT include `testsPassed`, `testsFailed`, `coverage`.

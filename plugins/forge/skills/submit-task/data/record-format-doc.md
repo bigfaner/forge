@@ -33,12 +33,4 @@ Task types: `doc`, `doc.eval`, `doc.summary`, `doc.consolidate`, `doc.drift`
 
 ## Rules
 
-- Do NOT include `testsPassed`, `testsFailed`, or `coverage` — these are auto-set to "no tests" by the CLI
-- Focus on `referencedDocs`, `reviewStatus`, `docMetrics` instead
-
-## Metrics Collection
-
-No test metrics required. Focus on:
-- `referencedDocs` — list documents you read/modified
-- `reviewStatus` — set to "draft", "final", or "reviewed" as appropriate
-- `docMetrics` — describe what was produced (e.g., word count, sections added)
+- Do NOT include `testsPassed`, `testsFailed`, or `coverage` — the CLI auto-sets `coverage` to `-1.0` for non-coding types.
