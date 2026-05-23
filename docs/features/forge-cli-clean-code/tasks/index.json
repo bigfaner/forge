@@ -108,7 +108,7 @@
       "dependencies": [
         "2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3-split-forensic.md",
       "record": "records/3-split-forensic.md",
       "scope": "backend",
