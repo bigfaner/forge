@@ -43,7 +43,7 @@ Check previous stage artifacts. Abort and prompt user if missing:
 ## Workflow
 
 ```
-0. Load Convention → 1. Load Config → 2. Validate Output Flags → 3. Setup (optional) → 4. Pre-check (optional) → 5. Run → 6. Parse Results → 7. Generate Report → 8. Teardown (optional)
+0. Load Convention → 1. Load Config → 2. Validate Output Flags → 3. Setup (optional) → 4. Env Check → 5. Pre-check (optional) → 6. Run → 7. Parse Results → 8. Generate Report → 9. Teardown (optional)
 ```
 
 ### Step 0: Load Convention Result Format
@@ -136,7 +136,40 @@ Ensure results directory exists:
 mkdir -p "${results_dir}"
 ```
 
-### Step 4: Pre-check (Optional)
+### Step 4: Environment Readiness Check
+
+Before running tests, verify the execution environment is ready for the detected surface type.
+
+Read the rule file `rules/env-check.md` for the detection framework, then read the surface-specific rule file to identify which checks to perform:
+
+1. Get the current surface type: `forge config get surface`
+2. Read the surface rule file: `skills/gen-journeys/rules/surface-<type>.md` -- extract the "Environment Readiness Checks" table
+3. Execute each check item from the table
+4. Report results
+
+<HARD-RULE>
+Environment detection failure does NOT auto-fix. Only output diagnostic information and repair suggestions. The user must fix the environment themselves, then re-run.
+</HARD-RULE>
+
+**Mobile exception**: All Mobile checks are best-effort (non-blocking). Missing Maestro CLI does not prevent test generation or block the pipeline.
+
+**When environment is NOT ready** -- abort with diagnostic output:
+
+```
+Environment Readiness: NOT READY (N/M checks passed)
+
+Missing:
+  - [<SURFACE>-<N>] <check description>
+    Suggestion: <repair suggestion>
+
+Fix the issues above, then re-run /run-tests.
+```
+
+Exit code: 1 (retryable). User fixes environment and re-runs.
+
+**When environment IS ready** -- proceed to Step 5.
+
+### Step 5: Pre-check (Optional)
 
 If `test.execution.pre-check` is configured, execute it:
 
@@ -149,7 +182,7 @@ If pre-check fails (non-zero exit), abort and report:
 
 > Pre-check command failed. This usually means test scripts have unresolved markers or missing dependencies. Return to `/gen-test-scripts` to resolve issues.
 
-### Step 5: Run Tests
+### Step 6: Run Tests
 
 Execute the run command:
 
@@ -158,7 +191,7 @@ Execute the run command:
 # Example: "just e2e-test --feature {slug}"
 ```
 
-Capture the full stdout/stderr output for result parsing in Step 6.
+Capture the full stdout/stderr output for result parsing in Step 7.
 
 **Timeout**: If `test.execution.timeout` is configured, wrap execution with a timeout. Default timeout is 600 seconds. On timeout, terminate the process and mark all tests as FAIL(timeout).
 
@@ -170,7 +203,7 @@ Capture the full stdout/stderr output for result parsing in Step 6.
 
 This enables cleanup recovery if the session is interrupted.
 
-### Step 6: Parse Results
+### Step 7: Parse Results
 
 Parse test results based on the **format-type** loaded from Convention in Step 0.
 
@@ -178,7 +211,7 @@ Parse test results based on the **format-type** loaded from Convention in Step 0
 
 For detailed parsing strategies per format-type, see `rules/result-parsing.md`.
 
-### Step 7: Generate Report
+### Step 8: Generate Report
 
 Read the template at `templates/test-report.md`. Fill in:
 - Summary statistics (total/pass/fail/skip per type)
@@ -190,7 +223,7 @@ Read the template at `templates/test-report.md`. Fill in:
 
 Write to: `${results_dir}/latest.md`
 
-### Step 8: Teardown (Optional)
+### Step 9: Teardown (Optional)
 
 <HARD-RULE>
 **Teardown is mandatory when configured**, even if tests fail.
@@ -236,6 +269,8 @@ Report: tests/<journey>/results/latest.md
 | Situation | Action | Retries |
 |-----------|--------|---------|
 | `test.execution.run` not configured | Abort with config example | 0 |
+| Surface type unknown or not configured | Proceed without env check, log warning | 0 |
+| Environment readiness check fails | Abort with diagnostic output (exit code 1, retryable) | 0 |
 | No active feature slug | Abort with `forge feature` prompt | 0 |
 | Output flags mismatch (Convention vs config) | Abort with mismatch details | 0 |
 | Pre-check command fails | Abort, suggest returning to `/gen-test-scripts` | 0 |

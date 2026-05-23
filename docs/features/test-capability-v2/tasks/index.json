@@ -184,7 +184,7 @@
         "1.gate",
         "2.1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2.8-env-readiness.md",
       "record": "records/2.8-env-readiness.md",
       "scope": "all",
