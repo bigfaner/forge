@@ -1,0 +1,52 @@
+{
+  "feature": "remove-notest-references",
+  "proposal": "docs/proposals/remove-notest-references/proposal.md",
+  "created": "2026-05-23",
+  "tasks": {
+    "1-remove-notest-data": {
+      "id": "1",
+      "title": "Remove noTest from index.json and task frontmatter",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "status": "pending",
+      "file": "1-remove-notest-data.md",
+      "record": "records/1-remove-notest-data.md",
+      "type": "doc"
+    },
+    "2-remove-notest-docs": {
+      "id": "2",
+      "title": "Remove noTest references from skill docs, hooks, and templates",
+      "priority": "P1",
+      "estimatedTime": "20m",
+      "status": "pending",
+      "file": "2-remove-notest-docs.md",
+      "record": "records/2-remove-notest-docs.md",
+      "type": "doc"
+    },
+    "3-remove-notest-go-code": {
+      "id": "3",
+      "title": "Remove NoTest struct field from Go test code",
+      "priority": "P1",
+      "estimatedTime": "15m",
+      "status": "pending",
+      "file": "3-remove-notest-go-code.md",
+      "record": "records/3-remove-notest-go-code.md",
+      "scope": "backend",
+      "type": "coding.cleanup"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
