@@ -50,7 +50,7 @@
       "dependencies": [
         "9"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "12-extract-e2e-regression.md",
       "record": "records/12-extract-e2e-regression.md",
       "scope": "backend",
