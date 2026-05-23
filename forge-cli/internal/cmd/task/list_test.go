@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/task"
@@ -262,6 +263,28 @@ func TestListCmd_TitleTruncation(t *testing.T) {
 
 		if !strings.Contains(output, mediumTitle) {
 			t.Errorf("title %q should NOT be truncated (under 50 chars), got:\n%s", mediumTitle, output)
+		}
+	})
+
+	t.Run("bug: CJK title truncation produces valid UTF-8", func(t *testing.T) {
+		tasks := map[string]task.Task{
+			"1": {ID: "1", Title: "autogen.go Quick 模式：替换 gen-and-run 为 gen-journeys + gen-contracts", Type: "coding.feature", Status: "pending"},
+			"2": {ID: "2", Title: "新增 test.gen-journeys 和 test.gen-contracts 的集成测试", Type: "coding.feature", Status: "completed"},
+		}
+		_ = setupFullProject(t, SetupOpts{Tasks: tasks})
+
+		output := captureStdout(func() {
+			err := runList(nil, []string{})
+			if err != nil {
+				t.Fatalf("runList returned error: %v", err)
+			}
+		})
+
+		lines := strings.Split(output, "\n")
+		for i, line := range lines {
+			if !utf8.ValidString(line) {
+				t.Errorf("line %d contains invalid UTF-8: %q", i, line)
+			}
 		}
 	})
 

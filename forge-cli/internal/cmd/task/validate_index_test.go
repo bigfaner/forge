@@ -1772,9 +1772,9 @@ func TestValidator_ValidateTasks_SystemTypeRejectedForBusinessTask(t *testing.T)
 			wantErrors: 0,
 		},
 		{
-			name: "auto-gen T-eval-doc with doc.eval passes",
+			name: "auto-gen T-review-doc with doc.review passes",
 			tasks: map[string]task.Task{
-				"eval": {ID: "T-eval-doc", Title: "Eval", File: "eval.md", Type: "doc.eval"},
+				"eval": {ID: "T-review-doc", Title: "Review", File: "review.md", Type: "doc.review"},
 			},
 			wantErrors: 0,
 		},

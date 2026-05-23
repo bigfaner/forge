@@ -61,7 +61,7 @@ func TestSynthesize_AllTypes(t *testing.T) {
 		task.TypeCodingCleanup,
 		task.TypeCodingRefactor,
 		task.TypeDoc,
-		task.TypeDocEval,
+		task.TypeDocReview,
 		task.TypeDocSummary,
 		task.TypeDocConsolidate,
 		task.TypeDocDrift,
@@ -970,7 +970,7 @@ func TestSynthesize_FrontmatterCoverageOverridesConfig(t *testing.T) {
 func TestSynthesize_NonTestableType_NoCoverageInjection(t *testing.T) {
 	nonTestableTypes := []string{
 		task.TypeDoc,
-		task.TypeDocEval,
+		task.TypeDocReview,
 		task.TypeDocSummary,
 		task.TypeDocConsolidate,
 		task.TypeDocDrift,
@@ -1505,7 +1505,7 @@ func TestSynthesize_CodingTemplates_ContainRecordFieldHints(t *testing.T) {
 func TestSynthesize_DocTemplates_ContainRecordFieldHints(t *testing.T) {
 	docTypes := []string{
 		task.TypeDoc,
-		task.TypeDocEval,
+		task.TypeDocReview,
 		task.TypeDocSummary,
 		task.TypeDocConsolidate,
 		task.TypeDocDrift,

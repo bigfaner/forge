@@ -156,7 +156,11 @@ docs/features/<slug>/
 
 ## Step 7: Write User Stories
 
-Derive user stories from user roles identified in the PRD background. Output to `prd/prd-user-stories.md`.
+**Gate**: If all In Scope items are non-compilable artifacts (`.md`, `.yaml`, `.json` under `docs/`, `skills/`, etc.), skip this step and note that user stories are not needed for doc-only features. User stories serve gen-journeys → test script generation, which requires testable code.
+
+**How to detect**: Examine the In Scope section of the PRD spec. If every listed item targets non-compilable, non-runnable file paths, the feature is doc-only. If any item involves compilable or runnable files (`.go`, `.ts`, `.py`, `.java`, etc.), proceed with user story generation.
+
+When proceeding, derive user stories from user roles identified in the PRD background. Output to `prd/prd-user-stories.md`.
 
 ```
 As a [user role from Background]

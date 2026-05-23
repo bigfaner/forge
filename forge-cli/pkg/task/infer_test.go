@@ -28,8 +28,8 @@ func TestInferType(t *testing.T) {
 		{"fix-2", TypeCodingFix},
 		{"disc-1", TypeCodingFix},
 
-		// Doc evaluation task
-		{"T-eval-doc", TypeDocEval},
+		// Doc review task
+		{"T-review-doc", TypeDocReview},
 
 		// Validation tasks
 		{"T-validate-code", TypeValidationCode},

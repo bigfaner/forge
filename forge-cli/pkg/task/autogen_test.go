@@ -215,17 +215,17 @@ func TestResolveFirstTestDep(t *testing.T) {
 	})
 }
 
-func TestGetDocEvalTask(t *testing.T) {
-	task := GetDocEvalTask()
+func TestGetReviewDocTask(t *testing.T) {
+	task := GetReviewDocTask()
 
-	if task.ID != "T-eval-doc" {
-		t.Errorf("ID = %q, want T-eval-doc", task.ID)
+	if task.ID != "T-review-doc" {
+		t.Errorf("ID = %q, want T-review-doc", task.ID)
 	}
-	if task.Key != "eval-doc" {
-		t.Errorf("Key = %q, want eval-doc", task.Key)
+	if task.Key != "review-doc" {
+		t.Errorf("Key = %q, want review-doc", task.Key)
 	}
-	if task.Type != TypeDocEval {
-		t.Errorf("Type = %q, want %q", task.Type, TypeDocEval)
+	if task.Type != TypeDocReview {
+		t.Errorf("Type = %q, want %q", task.Type, TypeDocReview)
 	}
 	if task.Title == "" {
 		t.Error("Title should not be empty")
@@ -238,15 +238,15 @@ func TestGetDocEvalTask(t *testing.T) {
 	}
 }
 
-func TestResolveDocEvalDep(t *testing.T) {
+func TestResolveReviewDocDep(t *testing.T) {
 	t.Run("sets dependency on last business task", func(t *testing.T) {
 		existing := map[string]Task{
 			"1-doc":              {ID: "1.1", Type: TypeDoc},
 			"2-doc":              {ID: "1.2", Type: TypeDoc},
 			"T-test-gen-scripts": {ID: "T-test-gen-scripts-cli", Type: TypeTestGenScripts},
 		}
-		task := GetDocEvalTask()
-		ResolveDocEvalDep(&task, existing)
+		task := GetReviewDocTask()
+		ResolveReviewDocDep(&task, existing)
 
 		if len(task.Dependencies) != 1 {
 			t.Fatalf("Dependencies = %v, want exactly 1", task.Dependencies)
@@ -258,8 +258,8 @@ func TestResolveDocEvalDep(t *testing.T) {
 
 	t.Run("empty tasks", func(t *testing.T) {
 		existing := map[string]Task{}
-		task := GetDocEvalTask()
-		ResolveDocEvalDep(&task, existing)
+		task := GetReviewDocTask()
+		ResolveReviewDocDep(&task, existing)
 
 		if len(task.Dependencies) != 0 {
 			t.Errorf("Dependencies = %v, want empty for no tasks", task.Dependencies)
@@ -670,7 +670,7 @@ func TestGenerateTestTaskMD_EmbedTemplate_LoadsContent(t *testing.T) {
 		{"eval-contract", TypeEvalContract, "6-dimension rubric"},
 		{"validation-code", TypeValidationCode, "quality gate"},
 		{"validation-ux", TypeValidationUx, "accessibility, usability"},
-		{"doc-eval", TypeDocEval, "8-dimension rubric"},
+		{"doc-review", TypeDocReview, "acceptance criteria"},
 		{"doc-consolidate", TypeDocConsolidate, "CROSS items"},
 		{"doc-drift", TypeDocDrift, "git diff --name-only"},
 		{"clean-code", TypeCleanCode, "Simplify and clean"},
@@ -1117,7 +1117,7 @@ func TestBodyContentPerStrategy(t *testing.T) {
 		}, []string{"feat", "- [ ] AC1: accessible"}},
 
 		// Strategy C: Discovery strategy steps present (git diff, directory scan)
-		{"doc-eval has discovery strategy", TypeDocEval, "", BodyContext{
+		{"doc-review has discovery strategy", TypeDocReview, "", BodyContext{
 			FeatureSlug: "feat", Mode: "breakdown",
 		}, []string{"feat", "breakdown mode"}},
 		{"doc-consolidate has discovery strategy", TypeDocConsolidate, "", BodyContext{

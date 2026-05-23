@@ -44,7 +44,7 @@ const (
 	TypeCodingRefactor       = "coding.refactor"
 	TypeCodingFix            = "coding.fix"
 	TypeDoc                  = "doc"
-	TypeDocEval              = "doc.eval"
+	TypeDocReview            = "doc.review"
 	TypeDocSummary           = "doc.summary"
 	TypeDocConsolidate       = "doc.consolidate"
 	TypeDocDrift             = "doc.drift"
@@ -77,7 +77,7 @@ var TaskTypeRegistry = []TaskTypeInfo{
 	{Name: TypeCodingRefactor, Description: "restructure code without behavior change"},
 	{Name: TypeCodingFix, Description: "fix a bug or issue"},
 	{Name: TypeDoc, Description: "write or update documentation"},
-	{Name: TypeDocEval, Description: "evaluate documentation quality"},
+	{Name: TypeDocReview, Description: "review documentation against acceptance criteria"},
 	{Name: TypeDocSummary, Description: "generate documentation summary"},
 	{Name: TypeDocConsolidate, Description: "consolidate documentation files"},
 	{Name: TypeDocDrift, Description: "detect and fix spec drift against codebase"},
@@ -103,7 +103,7 @@ var ValidTypes = map[string]bool{
 	TypeCodingRefactor:       true,
 	TypeCodingFix:            true,
 	TypeDoc:                  true,
-	TypeDocEval:              true,
+	TypeDocReview:            true,
 	TypeDocSummary:           true,
 	TypeDocConsolidate:       true,
 	TypeDocDrift:             true,
@@ -137,7 +137,7 @@ var SystemTypes = map[string]bool{
 	TypeEvalContract:         true,
 	TypeValidationCode:       true,
 	TypeValidationUx:         true,
-	TypeDocEval:              true,
+	TypeDocReview:            true,
 	TypeDocSummary:           true,
 	TypeCleanCode:            true,
 }

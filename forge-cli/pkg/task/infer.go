@@ -39,8 +39,8 @@ func InferType(id string) string {
 		return TypeCleanCode
 	case strings.HasPrefix(id, "fix-") || strings.HasPrefix(id, "disc-"):
 		return TypeCodingFix
-	case id == "T-eval-doc":
-		return TypeDocEval
+	case id == "T-review-doc":
+		return TypeDocReview
 	default:
 		return ""
 	}

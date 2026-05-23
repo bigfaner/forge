@@ -113,18 +113,62 @@ func CalcSlugColWidth(slugLens []int) int {
 	return width
 }
 
-// TruncateSlug shortens a string to maxLen with ellipsis.
+// TruncateSlug shortens a string to maxLen display width with ellipsis.
+// Truncates at rune boundaries to avoid splitting multi-byte characters.
 func TruncateSlug(s string, maxLen int) string {
-	if len(s) <= maxLen {
+	if DisplayWidth(s) <= maxLen {
 		return s
 	}
-	return s[:maxLen-3] + "..."
+	// Walk runes, accumulate display width, stop before exceeding maxLen-3
+	target := maxLen - 3 // reserve space for "..."
+	w := 0
+	for i, r := range s {
+		rw := runeWidth(r)
+		if w+rw > target {
+			return s[:i] + "..."
+		}
+		w += rw
+	}
+	return s
 }
 
-// PadRight pads a string to exactly n characters with trailing spaces.
+// PadRight pads a string to exactly n display columns with trailing spaces.
 func PadRight(s string, n int) string {
-	if len(s) >= n {
+	dw := DisplayWidth(s)
+	if dw >= n {
 		return s
 	}
-	return s + strings.Repeat(" ", n-len(s))
+	return s + strings.Repeat(" ", n-dw)
+}
+
+// DisplayWidth returns the terminal display width of a string,
+// counting East Asian wide/fullwidth characters as 2 columns.
+func DisplayWidth(s string) int {
+	w := 0
+	for _, r := range s {
+		w += runeWidth(r)
+	}
+	return w
+}
+
+// runeWidth returns 2 for wide runes (CJK, fullwidth, etc.), 1 otherwise.
+func runeWidth(r rune) int {
+	if isWide(r) {
+		return 2
+	}
+	return 1
+}
+
+func isWide(r rune) bool {
+	return (r >= 0x1100 && r <= 0x115F) ||
+		r == 0x2329 || r == 0x232A ||
+		(r >= 0x2E80 && r <= 0xA4CF && r != 0x303F) ||
+		(r >= 0xAC00 && r <= 0xD7A3) ||
+		(r >= 0xF900 && r <= 0xFAFF) ||
+		(r >= 0xFE10 && r <= 0xFE19) ||
+		(r >= 0xFE30 && r <= 0xFE6F) ||
+		(r >= 0xFF01 && r <= 0xFF60) ||
+		(r >= 0xFFE0 && r <= 0xFFE6) ||
+		(r >= 0x20000 && r <= 0x2FFFD) ||
+		(r >= 0x30000 && r <= 0x3FFFD)
 }
