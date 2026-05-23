@@ -1068,6 +1068,136 @@ func TestBodyContentPerStrategy(t *testing.T) {
 	}
 }
 
+func TestGenJourneysTemplateContent(t *testing.T) {
+	data, err := autogenTemplateFS.ReadFile("data/test-gen-journeys.md")
+	if err != nil {
+		t.Fatalf("cannot read test-gen-journeys.md: %v", err)
+	}
+	s := string(data)
+
+	// AC1: uses {{FEATURE_SLUG}} and {{MODE}} placeholders
+	if !strings.Contains(s, "{{FEATURE_SLUG}}") {
+		t.Error("template must contain {{FEATURE_SLUG}} placeholder")
+	}
+	if !strings.Contains(s, "{{MODE}}") {
+		t.Error("template must contain {{MODE}} placeholder")
+	}
+
+	// AC3: contains AUTO_COMMIT conditional instruction
+	if !strings.Contains(s, "AUTO_COMMIT") {
+		t.Error("template must contain AUTO_COMMIT conditional instruction")
+	}
+
+	// AC6: template content guides the AI executor
+	if !strings.Contains(s, "Journey") {
+		t.Error("template must reference Journey generation flow")
+	}
+}
+
+func TestGenContractsTemplateContent(t *testing.T) {
+	data, err := autogenTemplateFS.ReadFile("data/test-gen-contracts.md")
+	if err != nil {
+		t.Fatalf("cannot read test-gen-contracts.md: %v", err)
+	}
+	s := string(data)
+
+	// AC2: uses {{FEATURE_SLUG}} and {{MODE}} placeholders
+	if !strings.Contains(s, "{{FEATURE_SLUG}}") {
+		t.Error("template must contain {{FEATURE_SLUG}} placeholder")
+	}
+	if !strings.Contains(s, "{{MODE}}") {
+		t.Error("template must contain {{MODE}} placeholder")
+	}
+
+	// AC4: contains SKIP_EVAL_GATE conditional instruction
+	if !strings.Contains(s, "SKIP_EVAL_GATE") {
+		t.Error("template must contain SKIP_EVAL_GATE conditional instruction")
+	}
+
+	// AC6: template content guides the AI executor
+	if !strings.Contains(s, "Contract") {
+		t.Error("template must reference Contract generation flow")
+	}
+}
+
+func TestGenJourneysTemplateRendering(t *testing.T) {
+	def := AutoGenTaskDef{
+		ID: "T-test-gen-journeys", Key: "gen-journeys",
+		Title: "Generate Test Journeys", Priority: "P1",
+		EstimatedTime: "20-30min", Type: TypeTestGenJourneys, Scope: "all",
+	}
+	ctx := BodyContext{
+		FeatureSlug: "my-feature",
+		Mode:        "quick",
+		Scope:       []string{"backend", "CLI"},
+	}
+
+	content, err := GenerateTestTaskMD(def, ctx)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	s := string(content)
+
+	// Placeholders resolved
+	if strings.Contains(s, "{{FEATURE_SLUG}}") {
+		t.Error("{{FEATURE_SLUG}} should be resolved")
+	}
+	if strings.Contains(s, "{{MODE}}") {
+		t.Error("{{MODE}} should be resolved")
+	}
+	// Feature slug present in body
+	if !strings.Contains(s, "my-feature") {
+		t.Error("rendered body should contain feature slug")
+	}
+	// Mode present
+	if !strings.Contains(s, "quick") {
+		t.Error("rendered body should contain mode")
+	}
+	// No managed placeholders left
+	for _, ph := range []string{"{{FEATURE_SLUG}}", "{{MODE}}", "{{SCOPE}}", "{{TEST_TYPE}}"} {
+		if strings.Contains(s, ph) {
+			t.Errorf("placeholder %s should be resolved", ph)
+		}
+	}
+}
+
+func TestGenContractsTemplateRendering(t *testing.T) {
+	def := AutoGenTaskDef{
+		ID: "T-test-gen-contracts", Key: "gen-contracts",
+		Title: "Generate Test Contracts", Priority: "P1",
+		EstimatedTime: "30-45min", Type: TypeTestGenContracts, Scope: "all",
+	}
+	ctx := BodyContext{
+		FeatureSlug: "my-feature",
+		Mode:        "breakdown",
+		Scope:       []string{"backend"},
+	}
+
+	content, err := GenerateTestTaskMD(def, ctx)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	s := string(content)
+
+	// Placeholders resolved
+	if strings.Contains(s, "{{FEATURE_SLUG}}") {
+		t.Error("{{FEATURE_SLUG}} should be resolved")
+	}
+	if strings.Contains(s, "{{MODE}}") {
+		t.Error("{{MODE}} should be resolved")
+	}
+	// Feature slug present
+	if !strings.Contains(s, "my-feature") {
+		t.Error("rendered body should contain feature slug")
+	}
+	// No managed placeholders left
+	for _, ph := range []string{"{{FEATURE_SLUG}}", "{{MODE}}", "{{SCOPE}}", "{{TEST_TYPE}}"} {
+		if strings.Contains(s, ph) {
+			t.Errorf("placeholder %s should be resolved", ph)
+		}
+	}
+}
+
 func TestAutogenTypeToFileMapping(t *testing.T) {
 	// Verify all auto-gen types have a mapping entry
 	wantTypes := []string{
