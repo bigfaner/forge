@@ -35,7 +35,7 @@ If the task file contains ## Hard Rules with MUST/MUST NOT directives:
 ### Step 2: Make Improvements
 
 <IMPORTANT>
-Coverage strategy: {{COVERAGE_STRATEGY}} — {{COVERAGE_TARGET}}. No new tests; maintain coverage via existing tests.
+Coverage strategy: maintain existing coverage, no new tests required. {{COVERAGE_STRATEGY}} — {{COVERAGE_TARGET}} applies only if you unexpectedly need to verify existing coverage levels, not as a mandate to write new tests.
 </IMPORTANT>
 
 Apply the cleanup changes described in the task file. This may include:
@@ -49,7 +49,7 @@ Output: `Step 2/3: Improving... DONE`
 
 ### Step 3: Static Checks + Targeted Tests
 
-**Static checks** — execute in strict sequential order, stop at first failure:
+**Static checks** — execute in strict sequential order:
 
 ```bash
 just compile {{SCOPE}}
@@ -64,8 +64,8 @@ just lint {{SCOPE}}
 | Failed step | Action |
 |---|---|
 | `compile` | Fix compilation errors, retry from compile |
-| `fmt` | Stop (auto-fix failed = toolchain issue) |
-| `lint` | Self-fix (max 1 retry), then stop |
+| `fmt` | **WARNING** (non-blocking) — if `just fmt` produces changes: check if the affected files are ones you modified. If yes, fix the fmt issues. If changes are only in pre-existing files (not touched by this cleanup), continue — those are not your responsibility. Log the warning in your output. |
+| `lint` | Self-fix (max 1 retry). If still failing, evaluate Complex Error Pause Flow — if the error persists after ~3 total attempts, create a fix task. Otherwise, stop and let the dispatcher handle it. |
 | `targeted test` | Fix failing tests, retry |
 
 Output: `Step 3/3: Verifying... DONE (coverage: N%)`

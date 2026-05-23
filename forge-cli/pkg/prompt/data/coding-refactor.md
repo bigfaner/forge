@@ -19,7 +19,7 @@ Before starting, verify all three conditions:
 2. Targeted tests pass — run the project's test command on affected packages/modules. Refactoring on a red test suite is undefined behavior (you can't verify "no behavior change" if the baseline is already broken)
 3. If current branch is main/trunk, output a warning but allow (team conventions vary)
 
-If any check fails, stop and report.
+If check 1 or 2 fails, set the task status to blocked via `forge task status {{TASK_ID}} blocked` and output the reason. Do NOT proceed — the dispatcher will handle re-claim after the issue is resolved.
 
 ## Workflow (4 Steps)
 
@@ -119,7 +119,7 @@ Output: `Step 2/4: Impact mapping... DONE (type: <structural|behavioral>, files:
 ### Step 3: Refactor
 
 <IMPORTANT>
-Coverage strategy: {{COVERAGE_STRATEGY}} — {{COVERAGE_TARGET}}. No new tests; do not chase high coverage.
+Coverage strategy: maintain existing coverage, no new tests required. {{COVERAGE_STRATEGY}} — {{COVERAGE_TARGET}} applies only if you need to verify existing coverage levels, not as a mandate to write new tests. Do not chase high coverage.
 Incremental compile strategy: After modifying one file, run `just compile {{SCOPE}}` immediately. If it passes, continue to the next file. If it fails, fix the current file before touching others.
 </IMPORTANT>
 
@@ -188,7 +188,7 @@ Output: `Step 3/4: Refactoring... DONE`
 
 Run the final quality checks:
 
-**Static checks** — execute in strict sequential order, stop at first failure:
+**Static checks** — execute in strict sequential order:
 
 ```bash
 just compile {{SCOPE}}
@@ -203,8 +203,8 @@ just lint {{SCOPE}}
 | Failed step | Action |
 |---|---|
 | `compile` | Grep for remaining old references, fix, retry (max 3 times) |
-| `fmt` | If `just fmt` produces changes: check if the affected files are ones you modified during the refactor. If yes, fix the fmt issues in those files. If the changes are only in pre-existing files (not touched by this refactor), continue — those are not your responsibility. |
-| `lint` | If `just lint` fails: `git stash && just lint {{SCOPE}}` to check pre-existing. New lint errors from refactor must be fixed. Pre-existing ones can be skipped. Max 3 retries. |
+| `fmt` | **WARNING** (non-blocking) — if `just fmt` produces changes: check if the affected files are ones you modified during the refactor. If yes, fix the fmt issues in those files. If the changes are only in pre-existing files (not touched by this refactor), continue — those are not your responsibility. Log the warning in your output. |
+| `lint` | If `just lint` fails: `git stash && just lint {{SCOPE}}` to check pre-existing. New lint errors from refactor must be fixed. Pre-existing ones can be skipped. If still failing after max 3 retries, evaluate Complex Error Pause Flow — if the error persists, create a fix task. Otherwise, stop and let the dispatcher handle it. |
 | `targeted test` | Check IMPACT_DECLARATION for the failing test: **EVOLVE** → update test assertion to match new behavior, then re-run; **PRESERVE** or **not declared** → `BEHAVIOR_CHANGE_DETECTED` + skip; reference updates (import paths, renamed symbols) → fix + retry (max 3 times) |
 
 Coverage is informational for refactoring — output the number but do not gate on it. If coverage drops >2%, investigate and report.

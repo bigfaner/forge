@@ -43,7 +43,7 @@ First, verify the acceptance criteria from the gate task:
 
 Then run the quality gate:
 
-Execute in strict sequential order — stop at first failure:
+Execute in strict sequential order:
 
 ```bash
 just compile {{SCOPE}}
@@ -57,8 +57,8 @@ All must pass.
 | Failed step | Action |
 |---|---|
 | `compile` | Fix compilation errors, retry from compile |
-| `fmt` | Stop (auto-fix failed = toolchain issue) |
-| `lint` | Self-fix (max 1 retry), then stop |
+| `fmt` | **WARNING** (non-blocking) — if `just fmt` produces changes: check if the affected files are ones you modified. If yes, fix the fmt issues. If changes are only in pre-existing files, continue — those are not your responsibility. Log the warning in your output. |
+| `lint` | Self-fix (max 1 retry). If still failing, evaluate Complex Error Pause Flow — if the error persists after ~3 total attempts, create a fix task. Otherwise, stop and let the dispatcher handle it. |
 | `test` | Fix failing tests, retry from compile |
 
 ```mermaid
@@ -74,11 +74,16 @@ flowchart TD
     G -->|"fail"| H["Fix compile errors"]
     H --> D
     G -->|"pass"| I{"fmt?"}
-    I -->|"fail"| STOP2(["STOP: toolchain issue"])
+    I -->|"changes in your files"| I1["Fix fmt issues"]
+    I1 --> J
+    I -->|"changes in pre-existing files"| I2["WARNING, continue"]
+    I2 --> J
     I -->|"pass"| J{"lint?"}
     J -->|"fail"| K["Self-fix (max 1 retry)"]
     K -->|"pass"| L{"test?"}
-    K -->|"fail"| STOP3(["STOP"])
+    K -->|"fail"| K2{"~3 attempts?"}
+    K2 -->|"yes"| STOP3(["Evaluate Complex Error Pause Flow"])
+    K2 -->|"no"| STOP2(["STOP"])
     J -->|"pass"| L
     L -->|"fail"| M["Fix tests, retry from compile"]
     M --> D
