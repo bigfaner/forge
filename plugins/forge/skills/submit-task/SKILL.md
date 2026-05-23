@@ -31,7 +31,7 @@ Post-task completion: create execution record + update task status.
 You MUST read the category-specific format file before writing record.json. The format varies by task type — using the wrong format produces invalid records.
 </HARD-RULE>
 
-`forge task claim` outputs a `CATEGORY` field. Read the corresponding format file:
+The `CATEGORY` field was already output when you claimed this task. Use that value to locate the format file:
 
 ```
 data/record-format-{CATEGORY}.md
