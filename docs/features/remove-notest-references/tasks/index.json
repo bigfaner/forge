@@ -28,7 +28,7 @@
       "title": "Remove NoTest struct field from Go test code",
       "priority": "P1",
       "estimatedTime": "15m",
-      "status": "pending",
+      "status": "completed",
       "file": "3-remove-notest-go-code.md",
       "record": "records/3-remove-notest-go-code.md",
       "scope": "backend",

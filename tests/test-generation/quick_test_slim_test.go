@@ -93,7 +93,6 @@ type quickSlimTaskEntry struct {
 	File          string   `json:"file,omitempty"`
 	Dependencies  []string `json:"dependencies,omitempty"`
 	Scope         string   `json:"scope,omitempty"`
-	NoTest        bool     `json:"noTest,omitempty"`
 	MainSession   bool     `json:"mainSession,omitempty"`
 	EstimatedTime string   `json:"estimatedTime,omitempty"`
 }
