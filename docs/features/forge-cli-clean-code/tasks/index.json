@@ -106,9 +106,10 @@
       "priority": "P1",
       "estimatedTime": "2h",
       "dependencies": [
-        "2"
+        "2",
+        "fix-3"
       ],
-      "status": "completed",
+      "status": "pending",
       "file": "3-split-forensic.md",
       "record": "records/3-split-forensic.md",
       "scope": "backend",
@@ -225,6 +226,18 @@
       "record": "records/fix-2.md",
       "breaking": true,
       "sourceTaskID": "fix-1",
+      "type": "fix"
+    },
+    "fix-3": {
+      "id": "fix-3",
+      "title": "Fix: forensic.go duplicate declarations after split",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-3.md",
+      "record": "records/fix-3.md",
+      "breaking": true,
+      "sourceTaskID": "3",
       "type": "fix"
     }
   },
