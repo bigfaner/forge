@@ -1,7 +1,7 @@
 ---
 feature: "test-capability-v2"
 created: "2026-05-23"
-status: tasks
+status: completed
 ---
 
 # Feature: test-capability-v2
