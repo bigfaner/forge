@@ -124,7 +124,6 @@
       "file": "consolidate-specs.md",
       "record": "records/consolidate-specs.md",
       "scope": "all",
-      "noTest": true,
       "type": "doc-generation.consolidate"
     },
     "eval-test-cases": {
@@ -140,7 +139,6 @@
       "record": "records/eval-test-cases.md",
       "scope": "all",
       "mainSession": true,
-      "noTest": true,
       "type": "test-pipeline.eval-cases"
     },
     "gen-test-cases": {
@@ -155,7 +153,6 @@
       "file": "gen-test-cases.md",
       "record": "records/gen-test-cases.md",
       "scope": "all",
-      "noTest": true,
       "type": "test-pipeline.gen-cases"
     },
     "gen-test-scripts-go-test": {

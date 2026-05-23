@@ -6,7 +6,6 @@ estimated_time: "2h"
 dependencies: []
 type: "documentation"
 mainSession: false
-noTest: true
 ---
 
 # 1: Refactor gen-test-cases SKILL.md into dispatcher

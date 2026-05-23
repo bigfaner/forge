@@ -62,7 +62,6 @@
       "file": "quick-drift-detection.md",
       "record": "records/quick-drift-detection.md",
       "scope": "all",
-      "noTest": true,
       "type": "doc-generation.drift"
     },
     "quick-gen-scripts-go-test": {
@@ -137,7 +136,6 @@
       "file": "quick-test-cases-go-test.md",
       "record": "records/quick-test-cases-go-test.md",
       "scope": "all",
-      "noTest": true,
       "type": "test-pipeline.gen-cases",
       "profile": "go-test"
     },

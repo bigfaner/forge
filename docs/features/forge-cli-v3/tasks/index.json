@@ -312,7 +312,6 @@
       "file": "consolidate-specs.md",
       "record": "records/consolidate-specs.md",
       "scope": "all",
-      "noTest": true,
       "type": "doc-generation.consolidate"
     },
     "eval-test-cases": {
@@ -328,7 +327,6 @@
       "record": "records/eval-test-cases.md",
       "scope": "all",
       "mainSession": true,
-      "noTest": true,
       "type": "test-pipeline.eval-cases"
     },
     "fix-1": {
@@ -341,7 +339,6 @@
       "record": "records/fix-1.md",
       "breaking": true,
       "sourceTaskID": "T-test-1b",
-      "noTest": true,
       "type": "fix"
     },
     "fix-10": {
@@ -459,7 +456,6 @@
       "file": "gen-test-cases.md",
       "record": "records/gen-test-cases.md",
       "scope": "all",
-      "noTest": true,
       "type": "test-pipeline.gen-cases"
     },
     "gen-test-scripts-go-test": {

@@ -8,7 +8,7 @@
       "title": "Remove noTest from index.json and task frontmatter",
       "priority": "P1",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "1-remove-notest-data.md",
       "record": "records/1-remove-notest-data.md",
       "type": "doc"

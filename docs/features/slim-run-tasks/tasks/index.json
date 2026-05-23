@@ -12,7 +12,6 @@
       "file": "1-rewrite-run-tasks.md",
       "record": "records/1-rewrite-run-tasks.md",
       "scope": "backend",
-      "noTest": true,
       "type": "documentation"
     },
     "eval-doc": {
@@ -27,7 +26,6 @@
       "file": "eval-doc.md",
       "record": "records/eval-doc.md",
       "scope": "all",
-      "noTest": true,
       "type": "doc-evaluation"
     }
   },

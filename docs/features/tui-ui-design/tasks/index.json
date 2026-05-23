@@ -196,7 +196,6 @@
       "file": "quick-test-cases-go-test.md",
       "record": "records/quick-test-cases-go-test.md",
       "scope": "all",
-      "noTest": true,
       "type": "test-pipeline.gen-cases",
       "profile": "go-test"
     },
