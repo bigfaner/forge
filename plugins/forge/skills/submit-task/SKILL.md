@@ -37,7 +37,7 @@ The `TASK_CATEGORY` field is in your task prompt. Use that value to locate the f
 data/record-format-{TASK_CATEGORY}.md
 ```
 
-**Fallback:** If `TASK_CATEGORY` is empty or missing, treat it as `coding`. Do NOT skip reading a format file.
+**Fallback:** If `TASK_CATEGORY` is not in your context, run `forge task query <TASK_ID> -v` to retrieve it. Do NOT skip reading a format file.
 
 ## Step 2: Write record.json
 
