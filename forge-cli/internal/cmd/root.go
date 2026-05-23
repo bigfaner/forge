@@ -4,6 +4,7 @@ package cmd
 import (
 	"os"
 
+	factpkg "forge-cli/internal/cmd/fact"
 	featurepkg "forge-cli/internal/cmd/feature"
 	forensicpkg "forge-cli/internal/cmd/forensic"
 	promptpkg "forge-cli/internal/cmd/prompt"
@@ -32,6 +33,7 @@ func Execute() {
 
 func init() {
 	// Initialize subcommand groups
+	factpkg.Register()
 	featurepkg.Register()
 	forensicpkg.Register()
 	promptpkg.Register()
@@ -39,12 +41,13 @@ func init() {
 	testpkg.Register()
 	worktreepkg.Register()
 
-	// Group parents (5)
+	// Group parents (6)
 	rootCmd.AddCommand(taskpkg.Cmd)
 	rootCmd.AddCommand(forensicpkg.Cmd)
 	rootCmd.AddCommand(testpkg.Cmd)
 	rootCmd.AddCommand(promptpkg.Cmd)
 	rootCmd.AddCommand(worktreepkg.Cmd)
+	rootCmd.AddCommand(factpkg.Cmd)
 
 	// Top-level commands
 	rootCmd.AddCommand(cleanupCmd)
