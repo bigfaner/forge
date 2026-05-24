@@ -52,7 +52,7 @@
       "title": "Improve breakdown-tasks SKILL.md Reference Files generation for non-UI tasks",
       "priority": "P1",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "5-breakdown-tasks-ref-files.md",
       "record": "records/5-breakdown-tasks-ref-files.md",
       "type": "doc"

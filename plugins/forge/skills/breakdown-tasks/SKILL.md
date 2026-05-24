@@ -96,6 +96,32 @@ Populate **User Stories** from `prd/prd-user-stories.md` or note "No direct user
 
 **Hard Rules**: fill `{{HARD_RULES}}` only for critical constraints. Leave empty for normal tasks.
 
+#### Reference Files Population (Non-UI Tasks)
+
+For each non-UI business task, populate `## Reference Files` with precise tech-design.md section references using this heuristic strategy:
+
+**Extraction heuristic** (for each task):
+
+1. Extract file paths from the task's `## Affected Files` section
+2. Search tech-design.md for sections that mention those file paths (scan headings and body text)
+3. Also find architecture decision sections whose topic matches the task description keywords
+4. Merge, deduplicate, keep the 2-5 most relevant sections
+
+**Format** (one entry per line):
+
+```
+design/tech-design.md#Section-Title — brief description of what the section defines
+```
+
+**Fallback**: for tasks without clear tech-design.md matches, reference the most relevant architecture overview section.
+
+**Checklist** (verify before finalizing each task):
+- Every generated business task has >=1 design-level Reference File entry
+- Each entry uses section-level precision (not bare file paths without anchors)
+- UI tasks use `rules/ui-placement.md` requirements instead — no overlap
+
+**Note**: This is heuristic guidance for LLM execution, not a deterministic algorithm. The agent performing breakdown-tasks uses judgment to select the most relevant sections.
+
 ### Scope Assignment
 See `rules/scope-assignment.md` for path classification rules. Compute: all frontend → "frontend", all backend → "backend", otherwise → "all". Non-mixed projects always use "all".
 
