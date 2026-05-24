@@ -1,28 +1,27 @@
 ---
 iteration: 3
-total_score: 800
+total_score: 885
 scorer: CTO-Adversarial
 date: 2026-05-24
+previous_iteration: 2
+previous_score: 856
 ---
 
-# Proposal Evaluation Report: Freeform Pre-Revision (Iteration 3)
+# Proposal Evaluation Report: Freeform Pre-Revision — Iteration 3
 
-## Iteration-2 Issues Disposition
+## Revision Delta Analysis
 
-| # | Iteration-2 Issue | Addressed? | How |
-|---|-------------------|-----------|-----|
-| 1 | Single-case evidence (only spec-authority) | **Yes** (carried from iter-1) | Two eval cases, 15 findings, 47% loss rate — unchanged from iter-2 |
-| 2 | No cost-of-delay quantification in urgency | **No** | Still states "2 active proposals affected" without quantifying consequence of delay |
-| 3 | User-facing behavior gap | **Yes** (carried) | Decision 5 "用户可见变化" retained from iter-2 |
-| 4 | Rollback scope contradiction | **Yes** | Scope table now explicitly lists `SKILL.md（rollback 段）` as modified file; note at line 158 confirms rollback change is in scope. Iter-2 criticism no longer applies |
-| 5 | No timeline estimate | **Yes** | Implementation Estimate section added: "约 1 天工作量" with step breakdown |
-| 6 | Industry references surface-level | **Partially** | Each reference now has a full "映射到 Forge" paragraph analyzing the parallel. Deeper than iter-2 but still lacks critical assessment of where the analogies break down |
-| 7 | Criterion 6 baseline methodology unspecified | **Yes** | Criterion 6 now contains a detailed baseline acquisition protocol including known limitations and confound analysis |
-| 8 | Synthetic report "空 rubric" behavior unverified | **Yes** | Decision 4 now includes "空 rubric 兼容性验证" paragraph tracing through Reviser protocol Steps 2 and 3 |
-| 9 | No SKILL.md step-by-step orchestration | **Partially** | Implementation Estimate breaks down P0.5 orchestration into ~40 lines with 4 failure scenarios. Still no pseudocode or flowchart |
-| 10 | "当前行为" degradation target undefined | **Yes** | Line 169 now explicitly defines: "这不是回退到废弃前的'注入 findings'模式，而是回退到无注入的 Scorer 评估" |
-| 11 | Straw-man Option A | **No** | Option A still dismissed with one line: "失去 rubric 标准化质量关卡" |
-| 12 | No NFR criterion in success criteria | **No** | No criterion testing latency, compatibility, or observability |
+Iteration-2 后提案进一步修订，直接回应了 iteration-2 的 7 个 ATTACK 点中的 4 个：
+
+| Iteration-2 Attack | 修订状态 | 评估 |
+|---------------------|---------|------|
+| 1. 偏误检测实现复杂度未估算 | **已修复** — scorer-composition.md 估算从 ~5 行修正为 ~10 行，新增"偏误检测 report template"描述 | 估算已包含偏误检测输出格式 |
+| 2. Borderline 分类未列为风险 | **已修复** — Key Risks 新增"Borderline 分类元认知失败"风险项，Likelihood=Medium, Impact=Medium，含告警逻辑 | 风险项完整 |
+| 3. Pre-Revision edits 与 Scorer ATTACK_POINTS 交互未定义 | **已修复** — Scorer prompt 新增 `conflict-with-pre-revision` 标注策略：以 rubric 标准为准 + 标注冲突供审查 | Scorer 端完整，但 Reviser 端消费语义未定义 |
+| 4. SC #7 partially-accepted 判定标准未定义 | **已修复** — 新增判定标准："修改触及了 finding 指出的原文位置，且修改方向与 finding 的'期望改进方向'字段一致" + partially-accepted 比例超过 accepted 时触发人工抽检 | 判定标准明确且可操作 |
+| 5. Decision 4 标题"最小 protocol 适配"不准确 | **已修复** — 标题改为"受控 protocol 扩展" | 标题与正文一致 |
+| 6. SIGPLAN 因果论证"验证"过度声称 | **已修复** — 新增证伪条件："若后续 eval 的 findings 受损率降至 15% 以下...则维度不匹配前提不成立" | 因果论证可证伪 |
+| 7. 偏误检测 report template 未列入改动文件 | **已修复** — scorer-composition.md 行注明包含"偏误检测 report template" | 改动文件表完整 |
 
 ---
 
@@ -30,242 +29,200 @@ date: 2026-05-24
 
 ### Argument Chain Trace
 
-**Problem -> Solution**: The problem is precisely defined: freeform expert findings lose 47% of information fidelity through Scorer's rubric-mapping bottleneck (2 evals, 15 findings, 7 compromised across three loss paths). The solution inserts a Pre-Revision phase that routes findings directly to Reviser, bypassing Scorer mapping. Causal chain is direct and valid: eliminate intermediary mapping, preserve information fidelity. No logical gap.
+**Problem -> Solution**: 核心因果链在三轮 iteration 中持续强化。Iteration-3 提案新增冲突处理策略（`conflict-with-pre-revision`）闭合了 Pre-Revision edits 与 Scorer 判断之间的逻辑缺口，使因果链从"消除瓶颈"升级为"消除瓶颈 + 处理残余冲突"。Industry Context 的因果论证 + 证伪条件（"若受损率降至 15% 以下则前提不成立"）将整个论证框架从断言升级为可证伪的理论。
 
-**Solution -> Evidence**: Evidence is retrospective (two past eval runs) with no prospective validation. The 47% loss rate from 15 findings is directionally sound but the sample is small. The proposal acknowledges this limitation in criterion 6's confound analysis but does not address it in the problem section itself. The causal claim "direct routing preserves more information than intermediate mapping" is treated as axiomatic rather than empirically validated.
+**Solution -> Evidence**: 证据基础仍为 2 次 eval、15 条 findings——三轮 iteration 均未扩展。但证据的论证深度已达上限：SIGPLAN 因果论证 + 证伪条件 + 冲突处理策略 + 偏误检测实证闭环 + borderline 告警逻辑构成了多层次的自我验证框架。证据薄弱点已被提案自身的"信息性参考"降级和证伪条件所承认。
 
-**Evidence -> Success Criteria**: Criteria 6 and 7 now provide outcome-oriented measures (score comparison, processing rate). The linkage from evidence (47% loss) to criterion 7 (>= 80% processing rate) creates a measurable improvement target. Criterion 6's baseline methodology is now specified with known limitations — this is honest but the confound acknowledged (text length/structure differences) may undermine the comparison's validity.
+**Evidence -> Success Criteria**: SC #6 降级为信息性参考 + 人工审查流程。SC #7 新增 partially-accepted 判定标准 + 人工抽检触发条件。冲突处理策略闭合了 iteration-2 blindspot-3 的"Pre-Revision edits 与 Scorer ATTACK_POINTS 重叠/矛盾"缺口。因果链从 evidence 到 SC 的映射已完整。
 
 **Self-contradiction check**:
-1. **Rollback scope contradiction — RESOLVED**: Iter-2 identified that scope claimed rollback was unchanged while risk mitigation required changing it. Current version (line 140) explicitly lists `SKILL.md（rollback 段）` as modified, with note at line 158. Clean.
-2. **"当前行为" ambiguity — RESOLVED**: Line 169 explicitly defines degradation as "跳过 pre-revision，Scorer 不注入 freeform findings 直接开始 rubric 评分循环" and clarifies this is NOT the old injection mode. Clean.
-3. **Remaining tension**: Decision 1 Option A ("绕过 Scorer") is still dismissed with one line ("失去 rubric 标准化质量关卡"). A sophisticated reader could reasonably ask: "why not add rubric grounding directly to the Reviser's revision logic, removing the need for a separate Scorer?" The proposal does not engage with this counter-argument. This is not a contradiction per se, but a gap in alternatives analysis.
-4. **New observation**: The Implementation Estimate lists ~40 lines for P0.5 orchestration (revised from ~20 in iter-2). But the scope table still lists `SKILL.md` as a single modified row. If P0.5 adds 40 lines AND rollback adds 5 lines, the SKILL.md change is ~45 lines total — non-trivial for a "skill orchestration" file that is presumably carefully structured. The proposal does not discuss whether this insertion point has adequate modularity or whether 45 lines of conditional branching introduces maintenance concerns.
+- **冲突处理策略的 Reviser 端未闭合**：Scorer prompt 定义了 `conflict-with-pre-revision` 标注，但 Reviser 如何处理带有此标注的 attack point 未定义。这引入了新的半开交互语义。
+- **告警阈值缺乏论证**：偏误检测的 30%、borderline 告警的 >10 findings、证伪条件的 15%——三个数值阈值均未提供来源论证。
+- **Implementation Estimate "约 1 天"的累积偏差**：SKILL.md ~40 行 + rollback ~15 行 + scorer-composition ~10 行 + 条件性废弃 ~3 行 = ~68 行代码 + 告警逻辑（未估算）+ 端到端测试。"约 1 天"在 iteration-1 时对应 ~28 行代码，iteration-3 对应 ~68 行代码 + 告警逻辑 + 测试，但总估算未调整。
+- **Phase 0.5 失败时 iteration 预算语义**：三轮 iteration 均指出此问题。"占用 iteration 0（从总预算中扣除）"与降级原则"回退到 Scorer 直接评估模式"组合后产生矛盾——失败时"扣除"的 iteration 是否归还？有条件扣除语义未显式声明。
 
 ### Pre-Score Anchors
 
-1. The proposal has addressed most iter-2 structural issues: rollback scope, degradation clarity, timeline estimate, synthetic report verification.
-2. Core persistent weaknesses: evidence remains retrospective-only, industry benchmarking depth is improved but still not rigorous, some alternatives remain straw-man-adjacent.
-3. The freeform findings have been substantially integrated — particularly INITIAL_SCORE drift (now with explicit mitigation), blindspot of information asymmetry (acknowledged in Decision 2), and degradation path (now precisely defined).
-4. The proposal is approaching a mature state. Remaining gaps are largely about depth rather than structural correctness.
+1. 提案在三轮 iteration 中从 702 分提升到 856 分，iteration-3 进一步修复了 4 个 ATTACK 点。提案接近成熟状态。
+2. Industry Context 因果论证 + 证伪条件是提案最强部分，在整个迭代过程中持续强化。
+3. 冲突处理策略是 iteration-3 的关键新增，闭合了 Pre-Revision edits 与 Scorer 判断的交互缺口，但引入了新的半开交互语义。
+4. 证据基础（15 条 findings）是提案最薄弱环节，但在提案范畴内已无法改善——证据来自已发生的 eval，不能事后增加。
+5. Implementation Estimate 的累积偏差（从 ~28 行到 ~68 行 + 未估算的告警逻辑）是 iteration-3 新浮现的结构性问题。
+6. 告警阈值（30%、>10、15%）缺乏论证来源，三个数值直接影响方案可操作性。
 
 ---
 
-## Phase 2: Rubric Scoring
+## Phase 2: Rubric Scoring with Verification Stance
 
-### 1. Problem Definition (90/110)
+### 1. Problem Definition: 94/110
 
-**Problem stated clearly (37/40)**: The core problem is unambiguous — freeform findings lose information through Scorer mapping. Three loss paths are enumerated with clear semantics. The 47% loss rate adds quantitative precision. The problem boundary is well-defined: it is about information fidelity in the expert-finding-to-revision pipeline, not about eval quality in general. Minor gap: the proposal implies all information loss is unacceptable, but does not discuss whether some loss (e.g., dropping truly low-quality findings) might be acceptable.
+**Problem stated clearly (38/40)**: 核心问题——freeform findings 通过 Scorer 映射层时 47% 信息受损——表述精确。三种损失路径有明确因果机制。Industry Context 因果论证 + 证伪条件将 47% 从孤立数据点升级为可证伪的理论假设的一个观测值。
 
-> Deduction: No discussion of acceptable vs unacceptable loss (-3). Quote: "Scorer 作为中间层有权映射、标记 `[beyond-rubric]`、或忽略 freeform findings，导致信息在传递过程中被压缩或丢失" — implies all loss is problematic without distinguishing cases.
+> Deduction (-2): 15 findings 的小样本仍使 47% 脆弱。提案未承认置信区间。
 
-**Evidence provided (33/40)**: Two concrete eval cases (spec-authority-enforcement, unify-surfaces) with specific findings tracked through the pipeline. The 47% aggregate loss rate provides a quantitative anchor. The lesson document is cited. The cross-case analysis (3/8 beyond-rubric in one, structural vs wording in the other) shows the problem manifests differently, strengthening the structural (not incidental) argument. Deduction: still retrospective-only, 2 data points from 15 findings is directionally valid but not statistically robust.
+**Evidence provided (36/40)**: 两次具体 eval 运行（含具体 finding 名称和计数），根因分析文档引用，具体损失分类统计。"标记稀释效应在 Reviser 修订中未被触及"等描述增强证据质量。
 
-> Deduction: Retrospective-only evidence (-5). No prospective validation or controlled A/B comparison planned.
->
-> Deduction: Small sample (-2). 15 findings from 2 runs — confidence interval on 47% is wide.
+> Deduction (-4): 全部证据来自同一作者的同一管道，无外部验证。证据基础（15 findings）未在三轮 iteration 中扩展。
 
-**Urgency justified (20/30)**: "2 个活跃 proposal 受此影响" and "47% 信息损失率在每个 proposal eval 中复现" provide urgency. But cost of delay remains unquantified: what happens to the 2 active proposals if this is not implemented? Are they blocked? Do they ship with degraded findings? The urgency is asserted rather than demonstrated.
+**Urgency justified (20/30)**: "2 个活跃 proposal 受此影响"和"47% 信息损失率在每个 proposal eval 中复现"建立持续影响。
 
-> Deduction: Cost of delay not quantified (-10). Quote: "2 个活跃 proposal 受此影响" — states existence of impact but not its consequence.
+> Deduction (-10): 仍无明确延迟成本分析——多少个 proposal 会在修复前被评估？累计 finding 损失的期望值是多少？
 
-### 2. Solution Clarity (100/120)
+### 2. Solution Clarity: 108/120
 
-**Approach is concrete (38/40)**: The information flow diagram, six design decisions, file change table, and implementation estimate make the solution fully understandable. A reader can explain back the complete pipeline change. The synthetic eval report approach and empty rubric compatibility verification add specificity.
+**Approach is concrete (39/40)**: 六个 Design Decisions + 信息流图 + Phase 0.5 失败处理表 + 两级 rollback 设计 + 冲突处理策略。读者可精确复述方案。
 
-**User-facing behavior described (38/45)**: Decision 5 lists four concrete user-visible changes. Iteration behavior, report titles, summary line format are all specified. `--iterations 2` warning is described with exact message text. Improvement from iter-2. Remaining gap: no example/mockup of the iteration-0 report format or the final eval report with Pre-Revision section. The user must infer the visual format from prose descriptions.
+> Deduction (-1): 冲突处理策略的 Reviser 端消费语义未定义——Scorer 标注后 Reviser 如何处理？
 
-> Deduction: No output format example (-7). User-visible changes described in prose but no concrete report mockup provided.
+**User-facing behavior described (38/45)**: Iteration-0 报告格式、最终 report summary 增加行、`--iterations 2` 质量退化预期、warning 文案、推荐最低配置、borderline 列出 + skipped 附理由 + 用户可据此判断是否手动干预。
 
-**Technical direction clear (24/35)**: Improved significantly. Decision 4 specifies synthetic eval report construction. Empty rubric compatibility is verified against Reviser protocol Steps 2 and 3. Implementation estimate breaks down work into ~40 + ~5 + ~3 lines. However: (1) the SKILL.md orchestration is described at scope level but no step-by-step flow is provided — the reader must infer the insertion point from context; (2) the ~40 line estimate for P0.5 orchestration includes "4 种失败场景的分支处理" but the branching structure is not described; (3) the baseline snapshot mechanism (Phase 0 原始快照) is mentioned but its format and storage are unspecified.
+> Deduction (-7): 用户对 `conflict-with-pre-revision` 标注的可见性和操作指导未描述。borderline 告警时用户具体应执行什么操作仍缺乏描述。
 
-> Deduction: No step-by-step orchestration flow (-5). Quote: "SKILL.md 编排层构造合成 eval report（iteration: 0 + ATTACK_POINTS + 空 rubric）" — the reader must infer how this fits into the existing SKILL.md linear flow.
->
-> Deduction: Baseline snapshot mechanism unspecified (-3). How is Phase 0 快照 saved? File copy? Git stash? In-memory state?
->
-> Deduction: Branching structure for 4 failure scenarios not described (-3).
+**Technical direction clear (31/35)**: 实现路径明确。Decision 4 的 4 步 protocol 验证追踪 + fallback + 空值兼容性验证使技术方向清晰。
 
-### 3. Industry Benchmarking (82/120)
+> Deduction (-4): 冲突处理策略引入新 Scorer-Reviser 交互模式，但实现仅一行 prompt 指令，未定义 report 中的格式化规范和 Reviser 处理优先级。
 
-**Industry solutions referenced (30/40)**: Significant improvement from iter-2. ACM SIGPLAN meta-reviewer rules, Gerrit +2 mechanism, MT-Bench multi-judge evaluation are cited with dedicated "映射到 Forge" paragraphs that analyze the parallel. Each mapping is substantive: SIGPLAN maps to Scorer-as-meta-reviewer, Gerrit maps to edit/review separation, MT-Bench maps to independent evaluation. The concluding principle ("专家输入不应经过中间映射层才到达修订者") synthesizes the three references. Remaining gap: no critical assessment of where these analogies break down. SIGPLAN's meta-reviewer operates in a human context with accountability; Forge's Scorer is an LLM with no accountability. Gerrit's +2 assumes reviewers have equal expertise; Forge's Scorer and freeform expert have fundamentally different capabilities (rubric grounding vs domain insight). These differences matter for the design and are not analyzed.
+### 3. Industry Benchmarking: 110/120
 
-> Deduction: No analysis of where industry analogies break down (-10). The mappings are one-directional (industry -> Forge) without reverse-critical assessment.
+**Industry solutions referenced (38/40)**: SIGPLAN、Gerrit +2、MT-Bench multi-judge——三个真实实践。类比失效点分析保留。证伪条件新增。
 
-**At least 3 meaningful alternatives (22/30)**: Decision 1 includes four options (A-D). Option D (do nothing) is genuine and well-described with cost accumulation argument. Option C (chosen) is clearly articulated. Option A remains a straw-man: "绕过 Scorer" dismissed with "失去 rubric 标准化质量关卡" — one line, no engagement with the obvious counter-argument (add rubric grounding to Reviser). Option B ("双通道并行") is underspecified: "映射问题未解决且合并逻辑复杂" is conclusory.
+> Deduction (-2): 仍缺乏同行评审方法论的文献引用。
 
-> Deduction: Option A remains straw-man (-5). One-line dismissal without engaging counter-arguments.
->
-> Deduction: Option B underspecified (-3).
+**At least 3 meaningful alternatives (27/30)**: 四个选项 + "do nothing"明确列出。
 
-**Honest trade-off comparison (15/25)**: Improved. Decision 5's `--iterations 2` analysis is honest about the 50% Scorer reduction. The warning mechanism and long-term consideration show genuine trade-off thinking. However, the comparison between Options A-D in Decision 1 is still one-line per option. "C 是一次性结算" is a metaphor, not analysis.
+> Deduction (-3): Options A/B 仍非行业验证方案（如加权聚合、校准评分等）。
 
-> Deduction: One-line trade-offs in Decision 1 (-7). Quote: "选项 D 的维持成本随 proposal 数量累积，C 是一次性结算" — metaphor replaces quantitative comparison.
->
-> Deduction: No quantitative trade-off analysis (-3). What is the expected cost of losing one Scorer cycle in terms of final proposal quality?
+**Honest trade-off comparison (23/25)**: 贸易比较直接且诚实。
 
-**Chosen approach justified against benchmarks (15/25)**: The Industry Context section provides directional justification. The concluding principle synthesizes the three references into a clear design rationale. However, the proposal does not discuss whether any of the cited benchmarks (SIGPLAN, Gerrit, MT-Bench) have empirical evidence supporting the "direct expert input" principle, or whether they operate under different constraints that make the analogy imperfect.
+> Deduction (-2): 仍无正式的加权评分矩阵。
 
-> Deduction: No empirical grounding for industry principle (-7). "专家输入不应经过中间映射层才到达修订者" is stated as principle, not supported by evidence from the cited benchmarks.
->
-> Deduction: No discussion of constraint differences (-3).
+**Chosen approach justified against benchmarks (22/25)**: 三个行业实践均有因果论证段落。证伪条件的引入是 iteration-3 亮点——"若后续 eval 的 findings 受损率降至 15% 以下...则维度不匹配前提不成立"。
 
-### 4. Requirements Completeness (85/110)
+> Deduction (-3): 证伪阈值 15% 的选择缺乏论证——为什么是 15% 而非 20% 或 10%？
 
-**Scenario coverage (34/40)**: Phase 0.5 failure handling table covers 4 failure scenarios with degradation principle. Line 169 precisely defines degradation behavior (distinguishing from old injection mode). Edge cases are well-covered. Remaining gaps: (1) what if findings formatting succeeds but produces syntactically valid but semantically wrong ATTACK_POINTS (e.g., severity field contains narrative text instead of high/medium/low)? (2) What if Pre-reviser partially succeeds — processes 5 of 8 findings, then encounters an issue?
+### 4. Requirements Completeness: 92/110
 
-> Deduction: No handling for semantically malformed ATTACK_POINTS (-3).
->
-> Deduction: No partial-success scenario (-3).
+**Scenario coverage (37/40)**: Happy path + 4 种 Phase 0.5 失败场景 + degradation 路径 + borderline 分类 + 冲突处理策略。Iteration-2 的"Pre-Revision edits 与 Scorer ATTACK_POINTS 重叠/矛盾"已通过 `conflict-with-pre-revision` 标注修复。
 
-**Non-functional requirements (30/40)**: NFR section with three items: latency (~30-60s), compatibility (proposal-only, --iterations 1 skip), security (no new risk). Honest `--iterations 2` analysis in Decision 5. Improvement from iter-2. Remaining gaps: (1) latency estimate is rough ("与单次 Reviser iteration 相当") with no actual measurement data; (2) no observability NFR — how does the user verify pre-revision happened and was effective without reading iteration-0 report internals? (3) `--iterations 2` 50% Scorer reduction is discussed in Decision 5 but not in NFR section — it is a compatibility concern that should appear in both places.
+> Deduction (-3): `conflict-with-pre-revision` 标注的下游处理策略仅定义了 Scorer 端，Reviser 端如何处理带有此标注的 attack point 未定义——若 Reviser 忽略此标注，冲突处理策略仅产生噪音。
 
-> Deduction: Rough latency estimate without measurement (-3).
->
-> Deduction: No observability NFR (-4). How does the user know pre-revision quality without inspecting internal reports?
->
-> Deduction: `--iterations 2` regression not in NFR section (-3).
+**Non-functional requirements (34/40)**: 延迟、兼容性、安全、rollback、偏误检测可观测性、`--iterations 2` 场景、条件性废弃降低单向门风险。
 
-**Constraints & dependencies (21/30)**: Dependencies listed in "不改动的文件" table. Reviser protocol dependency addressed via synthetic report. Deprecation dependency chain (3 files) analyzed in Key Risks and "架构承诺". Improvement from iter-2. Remaining gap: the dependency between baseline snapshot mechanism and rollback logic is mentioned but not traced. The "Phase 0 原始快照" requires a storage mechanism that does not currently exist in SKILL.md — this is a new dependency not listed in constraints.
+> Deduction (-3): 偏误检测告警触发逻辑（"连续 >= 2 次 eval"）的实现位置未指定 (-2)。LLM 输出作为 Reviser 输入的安全面分析仍偏简略 (-1)。
+> Deduction (-3): 告警逻辑的实现位置（SKILL.md 编排层 vs Scorer 内部）和输出格式未指定。
 
-> Deduction: Baseline snapshot storage mechanism unlisted as dependency (-4).
->
-> Deduction: Rollback logic change dependency not traced in constraints section (-5).
+**Constraints & dependencies (21/30)**: 依赖清单完整。type==proposal 约束明确。
 
-### 5. Solution Creativity (60/100)
+> Deduction (-5): ITERATION 变量初始化/递增逻辑仍未显式定义。Phase 0.5 失败时计数器行为仅隐含 (-4)。
 
-**Novelty over industry baseline (25/40)**: The proposal honestly positions itself: "非原创洞察...实现层面的适配是提案的实际贡献". This is commendable self-assessment. The core idea (route findings directly, score blindly) is standard edit/review separation. The implementation adaptations — synthetic eval report to satisfy Reviser protocol, three-tier finding strategy, blind review with explicit information-cost acknowledgment — are pragmatic solutions to Forge-specific constraints. The synthetic eval report is a clever workaround. However, the three-tier finding strategy (fact/structural/subjective) is a fairly obvious classification and not particularly creative.
+### 5. Solution Creativity: 80/100
 
-> Deduction: Core idea is standard pattern (-10).
->
-> Deduction: Three-tier strategy is obvious classification (-5).
+**Novelty over industry baseline (33/40)**: 提案坦诚非原创。标注盲审有了偏误检测实证闭环和冲突处理策略。但核心思想仍是对现有模式的适配。
 
-**Cross-domain inspiration (20/35)**: Three domains cited (academic peer review, code review, LLM evaluation) with substantive mapping paragraphs. The cross-domain connections are more than name-dropping — each includes a "映射到 Forge" analysis. Improvement from iter-2. Remaining gap: the connections are one-directional (what Forge learns from each domain) without reverse analysis (where the analogies break down). No evidence of drawing from domains outside the three listed.
+**Cross-domain inspiration (28/35)**: 三个不同领域 + 类比失效分析。三轮 iteration 未扩展领域范围。
 
-> Deduction: No reverse analysis of analogy limitations (-10).
->
-> Deduction: Only three domains, all from review/evaluation space (-5).
+> Deduction (-7): 领域探索仍限于三个已引用实践。
 
-**Simplicity of insight (15/25)**: The core insight is clean: "route findings directly to Reviser, let Scorer do blind review." However, the cascading implications (baseline drift requiring snapshot mechanism, synthetic report for protocol compatibility, empty rubric handling, degradation path redefinition, iteration budget impact) suggest the simplicity is partially illusory. The proposal now honestly acknowledges most of these complexities, which is good, but the gap between the simplicity of the insight and the complexity of the implementation is notable.
+**Simplicity of insight (19/25)**: 核心洞察简洁。实现复杂度从 iteration-1 的 ~28 行增长到 iteration-3 的 ~68 行 + 告警逻辑，冲突处理策略新增交互语义。
 
-> Deduction: Simplicity undermined by implementation complexity (-10).
+> Deduction (-6): 实现复杂度持续增长（68 行 + 未计入的告警逻辑 + conflict 处理），简洁洞察的实现表面持续扩张。
 
-### 6. Feasibility (82/100)
+### 6. Feasibility: 85/100
 
-**Technical feasibility (35/40)**: Changes are to markdown/prompt files within Forge plugin — technically straightforward. Synthetic eval report approach is validated against Reviser protocol. Empty rubric behavior is traced through protocol steps. Rollback logic change is now in scope. Improvement from iter-2. Remaining gap: the ~40 line P0.5 orchestration estimate includes "格式化 findings、构造合成 eval report、保存 Phase 0 快照、4 种失败场景的分支处理" — this is a non-trivial amount of conditional logic for a skill orchestration file. The estimate may be accurate but no justification for the 40-line figure is provided beyond listing what it includes.
+**Technical feasibility (37/40)**: 所有变更为 markdown/prompt 配置文件。Decision 4 的 4 步 protocol 验证追踪 + fallback + 空值兼容性验证使合成 eval report 可审查。冲突处理策略是合理的 prompt 设计。
 
-> Deduction: ~40 line estimate not justified (-3). Line count alone does not demonstrate feasibility.
->
-> Deduction: Phase 0 快照 storage mechanism unspecified — file copy? variable? (-2).
+> Deduction (-3): 验证仍是论证性的，非实际运行结果。冲突处理策略的有效性未验证。
 
-**Resource & timeline feasibility (25/30)**: Implementation Estimate section provides "约 1 天工作量" with step breakdown. This is a reasonable estimate for 4 file changes + testing. The step breakdown (40 lines + 5 lines + 3 lines + testing) adds specificity. Improvement from iter-2. Remaining gap: the estimate assumes the implementer has deep familiarity with SKILL.md's current structure and the Reviser protocol's input parsing. No onboarding cost is included.
+**Resource & timeline feasibility (25/30)**: ~1 天总工作量。Implementation Estimate 的迭代修正诚实。但告警逻辑（borderline 率异常检测 + attack density 偏差计算 + 告警输出）的实现位置和工作量未在估算中体现。
 
-> Deduction: Assumes expert implementer (-5).
+> Deduction (-5): 告警检测逻辑的实现位置和工作量未计入"约 1 天"估算。
 
-**Dependency readiness (22/30)**: Reviser protocol dependency resolved via synthetic report. Empty rubric behavior verified against protocol Steps 2 and 3. Codebase readiness is not explicitly assessed — the proposal assumes SKILL.md's current structure supports the insertion point without refactoring. The synthetic report format needs real-world validation against the actual Reviser's input parser.
+**Dependency readiness (23/30)**: 现有 Reviser protocol、scorer-composition、SKILL.md 可用。合成 eval report 有 4 步验证追踪。
 
-> Deduction: No codebase readiness assessment (-4).
->
-> Deduction: Synthetic report format needs real-world validation (-4).
+> Deduction (-7): Baseline snapshot 的存储/恢复逻辑未详细描述。合成 report 虽有验证追踪但仍需实际构建验证。冲突处理策略引入新的 Scorer-Reviser 交互依赖。
 
-### 7. Scope Definition (72/80)
+### 7. Scope Definition: 74/80
 
-**In-scope items are concrete (27/30)**: File change table lists 4 rows (3 modified, 1 deprecated) with descriptions. Each row is a concrete deliverable. Rollback logic change is now explicitly included. Implementation Estimate adds line-count specificity. Remaining gap: the Implementation Estimate mentions "端到端测试" as a step but this is not listed in the scope's change table.
+**In-scope items are concrete (28/30)**: 改动文件表列出 4 行。偏误检测 report template 已纳入 scorer-composition.md 的 ~10 行估算。
 
-> Deduction: E2E test not in scope change table (-3).
+> Deduction (-2): `conflict-with-pre-revision` 标注在 report 中的格式化规范未列为独立交付项。Borderline 告警逻辑未列入。
 
-**Out-of-scope explicitly listed (23/25)**: "不改动的文件" table lists 5 files with reasons. "仅影响 proposal 类型" section is clear. "架构承诺" section addresses future extensibility. Clean.
+**Out-of-scope explicitly listed (23/25)**: 不改动文件表 + 架构承诺。冲突处理策略已闭合 iteration-2 的缺口。
 
-**Scope is bounded (22/25)**: Bounded to 4 file changes + 1 test. Implementation Estimate bounds effort to 1 day. However, the ~45 total lines of new/modified code in SKILL.md (40 + 5) plus the new baseline snapshot mechanism suggests the scope has grown from iter-2's estimate. The growth is honestly tracked but the scope is larger than initially presented.
+> Deduction (-2): 冲突处理策略的 Reviser 端处理是否范围内未明确界定。
 
-> Deduction: Scope has grown from iter-2 estimate; baseline snapshot mechanism adds unquantified complexity (-3).
+**Scope is bounded (23/25)**: 4 文件修改 + ~1 天。scorer-composition.md 已修正为 ~10 行。
 
-### 8. Risk Assessment (72/90)
+> Deduction (-2): 总估算"约 1 天"仍可能未包含告警逻辑的实现工作量。
 
-**Risks identified (26/30)**: Six risks with likelihood/impact ratings. The freeform review's key findings (INITIAL_SCORE drift, blind review information loss, deprecation single-door) are all captured. Improvement from iter-2. Remaining gap: the blind review's false-positive risk (Scorer generates redundant attack points for pre-revision changes it cannot distinguish from original defects, wasting reduced iteration budget) is acknowledged in Decision 2 but not listed as a formal risk in Key Risks table.
+### 8. Risk Assessment: 82/90
 
-> Deduction: Blind review false-positive risk not in Key Risks table (-4). Discussed in Decision 2 but not formalized as risk.
+**Risks identified (28/30)**: 7 个风险项 + borderline 元认知失败风险已新增。
 
-**Likelihood + impact rated (23/30)**: Ratings are present and generally reasonable. "废弃 freeform-injection.md 是单向门" rated Low/Medium — the mitigation now acknowledges the 3-file dependency chain, which is more honest than iter-2's "成本极低". However, "INITIAL_SCORE 基线漂移" rated High/Medium seems accurate but the Impact could be argued as High (users losing the ability to rollback to original proposal is a fundamental trust issue). "Reviser 处理 freeform findings 兼容性假设不成立" rated Low/High — the "Low" likelihood is asserted but the proposal itself acknowledges this is an untested assumption (Decision 4's compatibility verification is a paper analysis, not empirical).
+> Deduction (-2): 冲突处理策略引入新的交互模式失败风险（Reviser 忽略 conflict 标注导致冲突攻击点被当作普通攻击点处理），未列为独立风险。
 
-> Deduction: INITIAL_SCORE drift Impact could be High (-3). Losing rollback to original version is a trust-level issue.
->
-> Deduction: Reviser compatibility risk "Low" likelihood is optimistic for an untested assumption (-4).
+**Likelihood + impact rated (26/30)**: 评级整体诚实。INITIAL_SCORE 基线漂移 Likelihood=High 是诚实的。borderline 元认知失败 Likelihood=Medium, Impact=Medium 合理。
 
-**Mitigations are actionable (23/30)**: Improvement from iter-2. "Pre-reviser 机械回应 findings" mitigation now includes both prevention (mandatory quote, explicit deferred instruction) and detection (blind Scorer verification). INITIAL_SCORE drift mitigation is concrete (Phase 0 snapshot, scope includes rollback change). Degradation path is precise. Remaining issues: (1) "盲审 Scorer 独立验证修订质量" for "Pre-revision 修坏 proposal" is purely reactive — the problem has already occurred and iteration budget is already consumed; (2) the "Reviser 处理 freeform findings 兼容性" mitigation ("合成 report 标注 source: freeform，兼容性问题出现时降级跳过 pre-revision") is reasonable but the trigger condition ("兼容性问题出现时") is vague — how is the problem detected?
+> Deduction (-4): "Pre-revision 修坏 proposal" Likelihood=Low 仍可能低估——borderline 分类和冲突处理都依赖 LLM 判断力，增加了误修改的可能性。
 
-> Deduction: Reactive-only mitigation for "修坏 proposal" (-3). No pre-commit validation.
->
-> Deduction: Compatibility problem detection trigger unspecified (-4).
+**Mitigations are actionable (28/30)**: 偏误检测 attack density 检测机制是实证闭环。borderline 告警逻辑可操作。冲突处理策略以 rubric 标准为准。
 
-### 9. Success Criteria (72/80)
+> Deduction (-2): Borderline 告警阈值（"0 borderline / >10 findings"）来源未论证——>10 的阈值是经验值还是配置？偏误检测"偏差超过 30%"的阈值同理缺乏论证。
 
-**Criteria are measurable and testable (50/55)**:
-- Criterion 1 (findings -> ATTACK_POINTS -> Reviser) — testable.
-- Criterion 2 (Scorer prompt no freeform findings) — testable via prompt inspection.
-- Criterion 3 (iteration-0 report written) — testable.
-- Criterion 4 (eval report Pre-Revision section with per-finding status) — testable and specific.
-- Criterion 5 (degradation path unaffected) — testable.
-- Criterion 6 (score comparison) — now includes detailed baseline acquisition protocol with known limitations and confound analysis. This is a significant improvement. The criterion is measurable though the confound (text length/structure differences) may undermine validity.
-- Criterion 7 (high-severity processing rate >= 80%) — measurable and specific.
+### 9. Success Criteria: 76/80
 
-> Deduction: Criterion 6 confound acknowledged but not resolved (-3). Quote: "pre-revision 版本的文本长度和结构可能系统性差异...此混淆因素通过控制同一 proposal 内容来缓解" — "缓解" is not elimination.
->
-> Deduction: No criterion for iteration-0 report quality (-2). What distinguishes a good iteration-0 report from a bad one?
+**Criteria are measurable and testable (52/55)**:
+- SC 1-5: testable, good.
+- SC 6: 已降级为信息性参考 + 定义失败后人工审查流程。方法论缺陷已通过降级修复。
+- SC 7: 新增 partially-accepted 判定标准（"修改触及了 finding 指出的原文位置，且修改方向与 finding 的'期望改进方向'字段一致"）+ partially-accepted 比例超过 accepted 时触发人工抽检。
 
-**Coverage is complete (22/25)**: Criteria cover pipeline mechanics, user-visible outputs, quality metrics, and degradation paths. Gaps: (1) no criterion testing the synthetic eval report's correctness (does Reviser accept it?); (2) no NFR criterion (no latency test, no compatibility test); (3) no criterion for rollback correctness after baseline change.
+> Deduction (-3): 偏误检测 attack density 阈值（偏差 >30%）和 borderline 告警阈值仍未列为 SC——这些是方案的关键质量保障机制，但缺乏 pass/fail 判定。
 
-> Deduction: Missing criterion for synthetic report correctness (-1).
->
-> Deduction: No NFR criterion (-2).
+**Coverage is complete (24/25)**: SC 覆盖所有 in-scope 项。
 
-### 10. Logical Consistency (85/90)
+> Deduction (-1): 冲突处理策略的有效性（冲突标注是否被 Reviser 正确处理）未作为 SC。
 
-**Solution addresses the stated problem (33/35)**: Pre-revision directly addresses information loss by routing findings to Reviser without Scorer intermediation. Three-tier strategy provides a decision framework for different finding types. Causal chain is sound. Minor gap: the proposal does not formally prove that the three-tier strategy preserves more information than Scorer mapping — it assumes this based on the principle that direct routing is superior. The assumption is reasonable but unvalidated.
+### 10. Logical Consistency: 84/90
 
-> Deduction: Unvalidated assumption that three-tier > Scorer mapping (-2).
+**Solution addresses the stated problem (34/35)**: Pre-Revision 直接消除 Scorer 信息瓶颈。偏误检测实证闭环使标注盲审不再是未检测的偏误通道。冲突处理策略闭合了 Pre-Revision edits 与 Scorer 判断的逻辑缺口。
 
-**Scope <-> Solution <-> Success Criteria aligned (27/30)**: Significantly improved from iter-2. The rollback scope contradiction is resolved (rollback change now in scope). Success criteria 6 and 7 provide outcome measures aligned with the solution's goal. Degradation path semantics are consistent. Remaining misalignment: the Implementation Estimate mentions "端到端测试" but this is not reflected in scope change table or success criteria (no criterion tests the full P0.5 -> iteration-1 -> rollback chain end-to-end).
+> Deduction (-1): 偏误检测闭环尚未验证（无实证数据），理论上的偏误风险仍存在。但证伪条件的引入使风险可控。
 
-> Deduction: E2E test mentioned in estimate but not in scope table or criteria (-3).
+**Scope <-> Solution <-> Success Criteria aligned (27/30)**: Iteration-1 的四个不一致已全部修复。Phase 0.5 失败时 iteration 预算分配仍为隐含语义。
 
-**Requirements <-> Solution coherent (25/25)**: Three-tier finding strategy maps to "process all findings" requirement. Synthetic eval report maps to Reviser protocol dependency. Phase 0.5 failure table maps to degradation requirement. NFR section maps to compatibility/security requirements. The decision to include rollback in scope resolves the main coherence gap from iter-2. Clean alignment.
+> Deduction (-3): Phase 0.5 失败时 iteration 预算分配未显式定义。冲突处理策略的 Reviser 端处理未对齐。
+
+**Requirements <-> Solution coherent (23/25)**: "处理"语义明确为"分诊"。合成 eval report 在 Decision 4 详述。冲突处理策略缓解了 Pre-Revision edits 与 Scorer 判断的矛盾。
+
+> Deduction (-2): 冲突处理策略引入新的交互模式但未在 Requirements 中作为显式需求列出。
 
 ---
 
 ## Phase 3: Blindspot Hunt
 
-**[blindspot-1]** The proposal's Industry Context section argues that "专家输入不应经过中间映射层才到达修订者" is a universal principle. But the three cited benchmarks (SIGPLAN, Gerrit, MT-Bench) all operate in contexts where the "expert" is a *human* with accountability and domain expertise. In Forge, the "expert" is an LLM (freeform reviewer) whose "findings" may contain hallucinations, confidently-stated errors, or domain misunderstandings. The proposal's Decision 3 treats all findings equally (three-tier classification) without considering that the freeform expert's error profile may be fundamentally different from a human reviewer's. The SIGPLAN analogy assumes reviewer credibility; Forge's freeform expert has no such guarantee. This is not just a "专家也会犯错" risk (already listed) — it is a structural difference in the information quality of the input that changes the calculus of whether direct routing is appropriate.
+**[blindspot-1]** **冲突处理策略的 Reviser 端消费语义未定义。** Scorer prompt 新增 `conflict-with-pre-revision` 标注指令：当 Scorer 的 rubric 判断与 pre-revision 修改方向矛盾时，以 rubric 标准为准生成 attack point 并标注冲突。但提案未定义：(1) 这个标注在 eval report 中的格式化规范；(2) Reviser 看到带有此标注的 attack point 时的处理优先级——是优先处理（因为涉及 pre-revision 质量问题）还是正常排队；(3) 如果 Reviser 再次修改冲突区域（按 rubric 标准修复），是否会与 pre-reviser 的修改产生"来回摆动"（oscillation）——iteration 2 按 rubric 修复，iteration 3 按 freeform finding 修复，循环往复。
 
-> Quote: "这些实践指向同一设计原则：专家输入不应经过中间映射层才到达修订者" — the principle assumes expert input is high-quality, which is not guaranteed for LLM-generated findings.
+Quote: "当 Scorer 的 rubric 判断与 pre-revision 修改方向矛盾时...以 rubric 标准为准生成 attack point，但在 attack point 中标注 `conflict-with-pre-revision` 供审查" — 仅定义了 Scorer 端行为，Reviser 端和跨 iteration 的行为未定义。
 
-**[blindspot-2]** The proposal discusses `--iterations 2` regression extensively but does not analyze the interaction with `--iterations 1`. Line 145 states "`--iterations 1` 时跳过 pre-revision，行为不变". This means there is a behavior cliff at `--iterations 2`: at 1, no pre-revision (original behavior); at 2, pre-revision consumes the only Scorer cycle. A user incrementing from 1 to 2 iterations to get "one more evaluation" actually gets a fundamentally different pipeline (pre-revision + 1 Scorer cycle instead of 2 Scorer cycles). This behavioral discontinuity is not discussed.
+**[blindspot-2]** **告警阈值缺乏论证来源。** 提案中出现了多个数值阈值但均缺乏论证：(1) 偏误检测的"偏差超过 30%"——30% 的来源是什么？是基于 LLM 评分方差的经验值还是理论推导？(2) borderline 告警的">10 findings"和"0 borderline"——10 的来源是什么？(3) SIGPLAN 证伪条件的"15% 以下"——为什么是 15%？这些阈值直接影响方案的可操作性，但提案将它们作为不证自明的常量处理。如果偏误检测的 30% 阈值过于宽松，偏误检测机制将形同虚设；如果过于严格，正常评分方差会触发误告警。
 
-> Quote: "`--iterations 1` 时跳过 pre-revision，行为不变" — at iterations=2, behavior changes radically, but this cliff is not analyzed.
+Quote: "若标注区域 density 系统性偏高（连续 >= 2 次 eval 中偏差超过 30%），触发'标注偏误告警'" — 30% 阈值未论证。另见："当 borderline 率异常低（如 0 borderline / >10 findings）时触发告警" — >10 未论证。
 
-**[blindspot-3]** The proposal's criterion 6 baseline methodology (run `--iterations 1 --no-freeform` for baseline, then run full pre-revision for comparison) is methodologically sound but operationally impractical. It requires running the eval pipeline twice for every validation, doubling the LLM cost and time. This is fine for a one-time validation but does not provide an ongoing quality metric. The proposal has no mechanism for continuous monitoring of pre-revision effectiveness after the initial validation.
+**[blindspot-3]** **偏误检测的后处理实现位置未指定。** 偏误检测要求"连续 >= 2 次 eval 中偏差超过 30%"。这意味着需要一个跨 eval 运行的持久化状态——存储上一次 eval 的 attack density 数据，与本次比较。但提案未指定：(1) 这个状态存储在哪里（SKILL.md 变量？文件系统？）；(2) 比较逻辑在哪里执行（SKILL.md 编排层？Scorer 内部？）；(3) 告警输出到哪里（eval report？stderr？独立告警文件？）。这不是实现细节——它决定了偏误检测机制是"集成到管道中"还是"依赖人工检查 eval report"。
 
-> Quote: "对同一 proposal 先运行一次 `--iterations 1 --no-freeform`（跳过 freeform review），记录 Scorer 盲审分数作为 baseline" — this is a validation-time-only method, not an ongoing quality gate.
+Quote: "在 eval report 中分别记录标注区域与未标注区域的 attack density，供偏误检测" — "供偏误检测"暗示后续有处理步骤，但处理步骤的实现位置未指定。
 
-**[blindspot-4]** The proposal lists "安全：修改权限与现有 Reviser 一致，无外部输入注入风险" in NFR. But the synthetic eval report is a new artifact type that the Reviser has never processed before. If a finding contains markdown injection (e.g., a quote that contains `-->` or other structural characters), it could corrupt the synthetic report format. This is a low-probability but non-zero security surface that is dismissed without analysis.
+**[blindspot-4]** **Iteration 预算语义在 Phase 0.5 失败时仍不透明。** 三轮 iteration 均指出此问题。提案在 Decision 5 中说"占用 iteration 0（从总预算中扣除）"，降级表格隐含"Scorer 使用完整预算"。但"从总预算中扣除"与"Scorer 使用完整预算"之间存在矛盾——如果从总预算中扣除了 1 次，`--iterations 3` 应该给 Scorer 2 次；但如果 Phase 0.5 失败跳过，"扣除"的那 1 次是否归还？提案的降级原则说"任何 Phase 0.5 异常都回退到 Scorer 直接评估模式"——这是否意味着 `--iterations 3` 在 Phase 0.5 失败时仍给 Scorer 3 次循环？如果如此，"从总预算中扣除"就不是真正的扣除，而是有条件的扣除。这个有条件语义未显式声明。
 
-> Quote: "修改权限与现有 Reviser 一致，无外部输入注入风险" — the synthetic report is a new artifact, not covered by "与现有 Reviser 一致".
+Quote: "占用 iteration 0（从总预算中扣除）" — 与降级原则"任何 Phase 0.5 异常都回退到 Scorer 直接评估模式"组合后，"扣除"是否为有条件扣除未声明。
 
-**[blindspot-5]** The "空 rubric 兼容性验证" in Decision 4 is a paper analysis ("此行为已对照 Reviser protocol 验证"). But Reviser behavior is ultimately determined by the LLM's interpretation of the protocol, not by the protocol's text alone. An LLM receiving a rubric with all dimensions at 0 and "pre-revision: not scored" may behave unpredictably — it could interpret the zeros as actual scores (indicating terrible quality) and enter a more aggressive revision mode, or it could ignore the ATTACK_POINTS and focus on the zeros. The paper analysis assumes deterministic behavior from a non-deterministic system.
+**[blindspot-5]** **Implementation Estimate 的总估算"约 1 天"未包含告警相关实现。** 提案引入了两种告警机制：(1) 偏误检测告警（attack density 偏差 >30%）；(2) borderline 率告警（0 borderline / >10 findings）。两种告警都需要：状态存储、阈值比较、告警输出格式。这些逻辑的实现位置和工作量在 Implementation Estimate 中无对应行。结合 SKILL.md 已从 ~20 行增长到 ~40 行，且 scorer-composition.md 从 ~5 行增长到 ~10 行，告警逻辑可能进一步增加 10-20 行——使总工作量从"约 1 天"偏向"1.5-2 天"。
 
-> Quote: "Reviser 会跳过 rubric-grounded 分数解读，仅执行 ATTACK_POINTS 驱动的编辑" — "会" (will) asserts deterministic behavior from an LLM.
+Quote: Implementation Estimate 总计"约 1 天工作量" — 无告警逻辑的估算行。
 
----
+**[blindspot-6]** **`conflict-with-pre-revision` 可能成为 Scorer 的认知负担。** Scorer 在标注盲审模式下已有复杂的认知任务：区分标注区域与未标注区域、对标注区域检查修订质量、对未标注区域正常评估、记录 attack density。新增 `conflict-with-pre-revision` 标注要求 Scorer 在评估过程中判断"我的 rubric 评估方向是否与 pre-revision 修改方向矛盾"——这是一个元认知判断，要求 Scorer 在评分的同时推理 pre-reviser 的意图。LLM 的元认知能力有限（提案自身在 borderline 分类中已承认），Scorer 可能无法可靠执行此判断，导致冲突标注的 precision/recall 不明。
 
-## Cross-Dimension Coherence Check
-
-The proposal has improved significantly in cross-dimensional coherence since iter-2. The rollback scope contradiction (which affected Scope, Solution Clarity, Risk Assessment, and Logical Consistency) is resolved. The degradation path ambiguity (which affected Solution Clarity and Requirements) is resolved.
-
-The most significant remaining cross-dimensional issue is the **blind review information asymmetry**. Decision 2 acknowledges the information cost ("Scorer 无法区分'原文就有的缺陷'和'pre-revision 引入的新问题'") and frames it as intentional. This affects:
-- **Solution Clarity**: The proposal accurately describes the trade-off but underweights the practical consequence for low-iteration configurations.
-- **Feasibility**: The Scorer's effectiveness as a quality gate is reduced, particularly for `--iterations 2`.
-- **Risk Assessment**: The blind review false-positive risk is discussed in Decision 2 but not formalized in Key Risks.
-
-A secondary cross-dimensional issue is the **E2E test gap**: mentioned in Implementation Estimate but absent from scope table and success criteria, creating a minor alignment gap across Scope Definition, Success Criteria, and Feasibility.
+Quote: "当 Scorer 的 rubric 判断与 pre-revision 修改方向矛盾时...在 attack point 中标注 `conflict-with-pre-revision`" — 要求 Scorer 推理 pre-reviser 的修改意图，但 Scorer 不接触原始 findings，只能通过变更标记推断意图——信息不足支持可靠的意图推理。
 
 ---
 
@@ -273,56 +230,44 @@ A secondary cross-dimensional issue is the **E2E test gap**: mentioned in Implem
 
 | Finding | Disposition |
 |---------|-------------|
-| Scorer 盲审丧失 Pre-Revision 变更上下文 | Addressed in Decision 2 "盲审的信息代价分析"; blindspot-1 extends this by noting the principle assumes expert input quality |
-| Rollback 只能恢复到 pre-revised 版本而非原始版本 | Addressed: Key Risks lists INITIAL_SCORE drift with Phase 0 snapshot mitigation; scope now includes rollback change |
-| 废弃 freeform-injection.md 是单向门，风险评估过于轻率 | Addressed: Key Risks now acknowledges 3-file dependency chain; rated Low/Medium. Improvement from iter-2 but arguably still understated |
-| INITIAL_SCORE 基线漂移导致 rollback 语义失效 | Addressed: Explicit risk with Phase 0 snapshot mitigation; rollback in scope |
-| ATTACK_POINTS 扁平化格式会鼓励表面级修补 | Partially addressed: Three-tier strategy adds processing nuance; format remains flat. The freeform review's suggestion to add "期望改进方向" field was not adopted |
-| Iteration 预算削减的具体影响未被量化 | Partially addressed: `--iterations 2` 50% reduction noted; warning mechanism added; but no quantitative impact analysis |
-| Pre-revision 失败时的 degradation path 定义不够精确 | Addressed: Line 169 precisely defines degradation as Scorer-without-injection mode; 4 failure scenarios table |
-| "处理全部 findings"与"保守修改"之间存在未解决的矛盾 | Addressed: Three-tier strategy (fact/structural/subjective) resolves the tension |
-| 提案缺少 Pre-Revision 在 SKILL.md 中的精确编排描述 | Partially addressed: Implementation Estimate gives ~40 lines scope; Decision 4 describes synthetic report; but no step-by-step flow |
-| 废弃 injection 机制后其他 eval 类型无法复用注入框架 | Addressed: "架构承诺" section acknowledges trade-off with 3-file restoration cost analysis |
-| [beyond-rubric]: LLM expert vs human expert credibility gap (extends blindspot-1) | The industry benchmarks assume human expert credibility; Forge's freeform expert is an LLM without such guarantees. This structural difference is not analyzed |
+| **[high]** 标注盲审退化风险 | **已修复** — 偏误检测机制（attack density 对比 + 30% 阈值 + 告警闭环）使退化方向可检测。Iteration-2 后保持。 |
+| **[high]** severity 标记隐式信息通道 | **已修复** — 同上偏误检测机制。Iteration-2 后保持。 |
+| **[high]** 三层分类依赖 Pre-Reviser 判断但无失败检测 | **已修复** — borderline 分类 + 分类审计章节 + borderline 告警逻辑 + 元认知失败风险项。Iteration-3 新增了 Key Risks 中的独立风险项。 |
+| **[high]** finding 标记为 not actionable 后彻底消失 | **已修复** — 分类审计章节 + iteration-0 报告 + borderline 保留机制。Iteration-2 后保持。 |
+| **[medium]** Rollback 基线语义变更需重新设计 | **已修复** — 两级 rollback 设计，估算修正为 ~15 行。Iteration-2 后保持。 |
+| **[medium]** Iteration 0 计数语义未明确定义 | **部分修复** — Decision 5 明确了 `--iterations 3` 的分解，但 Phase 0.5 失败时的"有条件扣除"语义仍未显式声明。[blindspot-4] |
+| **[medium]** SC #6 baseline 对比缺乏控制变量 | **已修复** — SC #6 降级为信息性参考 + 承认方法论局限 + 定义失败后人工审查。Iteration-2 后保持。 |
 
 ---
 
 ## Summary
 
-| Dimension | Score | Max |
-|-----------|-------|-----|
-| Problem Definition | 90 | 110 |
-| Solution Clarity | 100 | 120 |
-| Industry Benchmarking | 82 | 120 |
-| Requirements Completeness | 85 | 110 |
-| Solution Creativity | 60 | 100 |
-| Feasibility | 82 | 100 |
-| Scope Definition | 72 | 80 |
-| Risk Assessment | 72 | 90 |
-| Success Criteria | 72 | 80 |
-| Logical Consistency | 85 | 90 |
-| **Total** | **800** | **1000** |
+| Dimension | Score | Max | Delta from Iter-2 |
+|-----------|-------|-----|-------------------|
+| Problem Definition | 94 | 110 | +2 |
+| Solution Clarity | 108 | 120 | +3 |
+| Industry Benchmarking | 110 | 120 | +2 |
+| Requirements Completeness | 92 | 110 | +4 |
+| Solution Creativity | 80 | 100 | +2 |
+| Feasibility | 85 | 100 | +3 |
+| Scope Definition | 74 | 80 | +2 |
+| Risk Assessment | 82 | 90 | +4 |
+| Success Criteria | 76 | 80 | +4 |
+| Logical Consistency | 84 | 90 | +3 |
+| **Total** | **885** | **1000** | **+29** |
 
 ---
 
 ## ATTACKS
 
-1. **[Industry Benchmarking]: Industry analogies lack critical reverse-analysis** — "这些实践指向同一设计原则：专家输入不应经过中间映射层才到达修订者" — The principle is derived from human-expert systems (SIGPLAN, Gerrit). Forge's freeform expert is an LLM whose findings may contain hallucinations. The analogy's fundamental assumption (expert credibility) does not hold in the LLM context. Must analyze where the analogies break down and how Forge's constraints differ.
+1. **[Feasibility]**: 告警检测逻辑的实现位置和工作量未计入估算 — "在 eval report 中分别记录标注区域与未标注区域的 attack density，供偏误检测" + "当 borderline 率异常低（如 0 borderline / >10 findings）时触发告警" — Implementation Estimate 中无对应估算行。偏误检测的跨 eval 状态存储、偏差计算、告警输出 + borderline 率统计和告警，可能增加 10-20 行实现，使"约 1 天"估算偏紧。必须在 Implementation Estimate 中增加告警逻辑的估算行。
 
-2. **[Problem Definition]: Cost of delay remains unquantified** — "2 个活跃 proposal 受此影响" — Two proposals are affected, but the consequence of inaction is not stated. Are they blocked? Will they ship with 47% information loss? What is the tangible impact? Must quantify what happens if this is not implemented now.
+2. **[Solution Clarity]**: 冲突处理策略的 Reviser 端消费语义未定义 — "当 Scorer 的 rubric 判断与 pre-revision 修改方向矛盾时...以 rubric 标准为准生成 attack point，但在 attack point 中标注 `conflict-with-pre-revision` 供审查" — 仅定义了 Scorer 端，Reviser 如何处理带有此标注的 attack point、是否优先处理、跨 iteration 是否会 oscillation 均未定义。必须定义 Reviser 端的冲突处理行为和跨 iteration 的防 oscillation 策略。
 
-3. **[Industry Benchmarking]: Option A remains straw-man** — "绕过 Scorer：最大保留专家输入，但失去 rubric 标准化质量关卡" — One-line dismissal. A reasonable counter-argument (add rubric grounding to Reviser directly, eliminating the separate Scorer role) is not engaged with. Must either engage with this argument or explain why it is infeasible.
+3. **[Risk Assessment]**: 多个数值阈值缺乏论证来源 — "偏差超过 30%" + ">10 findings" + "15% 以下" — 这些阈值直接影响方案可操作性但作为不证自明的常量处理。30% 偏误阈值过宽则检测机制形同虚设，过严则误告警。必须为每个阈值提供论证来源（经验数据、理论推导、或明确标注为"初始值待校准"）。
 
-4. **[Solution Creativity]: Core insight is standard pattern, implementation adaptations are pragmatic but not creative** — "非原创洞察...实现层面的适配是提案的实际贡献" — The three-tier finding strategy is an obvious classification; the synthetic eval report is a workaround. Neither represents a creative leap. Must articulate what, if anything, is genuinely novel beyond applying a standard pattern to a new context.
+4. **[Requirements Completeness]**: Phase 0.5 失败时 iteration 预算的"有条件扣除"语义未显式声明 — "占用 iteration 0（从总预算中扣除）" + "任何 Phase 0.5 异常都回退到 Scorer 直接评估模式" — 两条规则组合后，"扣除"是否在失败时归还未声明。`--iterations 3` 在 Phase 0.5 失败时给 Scorer 2 次还是 3 次循环？必须显式定义 Phase 0.5 失败时的 iteration 预算语义。
 
-5. **[Feasibility]: ~40 line P0.5 orchestration estimate is asserted without justification** — "SKILL.md 新增 P0.5 编排（含合成 report 构造、baseline 保存、错误处理）: ~40 行代码" — The line count is stated as fact but no breakdown of the 40 lines is provided. Must show the line allocation or acknowledge this is a rough estimate with uncertainty.
+5. **[Logical Consistency]**: `conflict-with-pre-revision` 要求 Scorer 推理 pre-reviser 意图但信息不足 — Scorer 不接触原始 findings，仅通过变更标记 `<!-- pre-revised: {severity} -->` 和修订后文本推断 pre-reviser 的修改意图。要求 Scorer 判断"rubric 评估方向是否与 pre-revision 修改方向矛盾"是元认知判断，信息不足支持可靠推理。必须在 Scorer prompt 中提供更具体的冲突检测指引（如：当 Scorer 对标注区域的 attack 方向是"删除/回退 pre-revision 的修改"时标记冲突），而非要求 Scorer 推理意图。
 
-6. **[Risk Assessment]: Blind review false-positive risk discussed but not formalized** — Decision 2 acknowledges "Scorer 无法区分'原文就有的缺陷'和'pre-revision 引入的新问题'" but this risk is not in the Key Risks table. The consequence (Scorer generates redundant attack points, consuming already-reduced iteration budget) is significant for `--iterations 2`. Must add as formal risk.
-
-7. **[Success Criteria]: Criterion 6 confound acknowledged but not resolved** — "pre-revision 版本的文本长度和结构可能系统性差异（如新增 Industry Context 段落），Scorer 可能因此给出不同分数。此混淆因素通过控制同一 proposal 内容来缓解" — "缓解" is not elimination. The confound could systematically inflate or deflate the pre-revision score. Must either design the comparison to eliminate the confound or acknowledge the criterion's limited validity.
-
-8. **[Requirements Completeness]: `--iterations 2` behavioral cliff not analyzed** — "`--iterations 1` 时跳过 pre-revision，行为不变" vs `--iterations 2` where pre-revision consumes the only Scorer cycle. The transition from 1 to 2 iterations produces a qualitative pipeline change, not just a quantitative one. Must analyze this discontinuity.
-
-9. **[Solution Clarity]: No output format example for iteration-0 report or final eval report Pre-Revision section** — User-visible changes are described in prose ("Iteration-0 报告标题 'Pre-Revision (Freeform Findings)'，含每条 finding 处理状态及编辑摘要") but no concrete mockup is provided. Must include at least a skeleton format example.
-
-10. **[beyond-rubric]: LLM expert credibility gap undermines industry benchmark analogies** — The Industry Context section's design principle assumes expert findings are high-quality (as in SIGPLAN/Gerrit). Forge's freeform expert is an LLM that may produce hallucinated or confidently-incorrect findings. Direct routing of potentially-flawed LLM output to the Reviser, without the Scorer's filtering function, is a qualitatively different proposition than routing human expert findings. This gap is not acknowledged in the proposal.
+6. **[Scope Definition]**: 告警逻辑未列入改动文件表 — 改动文件表列出 4 行，但偏误检测告警 + borderline 率告警需要 SKILL.md 新增实现逻辑。必须在改动文件表的 SKILL.md 行中注明包含告警检测逻辑，或增加估算行。

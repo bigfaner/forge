@@ -10,6 +10,11 @@ review_history:
     substantive_change: true
     rubric_delta: 235
     attack_points_changed: true
+  - proposal: "docs/proposals/eval-freeform-pre-revision/proposal.md"
+    date: "2026-05-24"
+    substantive_change: true
+    rubric_delta: 183
+    attack_points_changed: true
 deprecated: false
 ---
 
