@@ -86,7 +86,7 @@
       "dependencies": [
         "6"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "15-readme-v3-features.md",
       "record": "records/15-readme-v3-features.md",
       "type": "doc"

@@ -72,6 +72,30 @@ forge --help
 
 ---
 
+## What's New in v3.0.0
+
+> 从 v2.x 升级的用户可快速了解主要变化
+
+**CLI 品牌统一与命令分组** — 二进制从 `task` 重命名为 `forge`，19 个扁平命令重组为 noun-first 分组（task / test / worktree / forensic / prompt / surfaces / fact / config），命令名自解释，`forge --help` 即可发现全部功能。
+
+**Surface 自动检测** — `forge surfaces detect --apply` 自动识别项目类型（Web / TUI / CLI / API），交互式确认后写入 `.forge/config.yaml`。`forge init` 内置 TUI 确认流程，无需手动编辑配置。
+
+**Git Worktree 并行开发** — `forge worktree start/remove/resume/status/push` 全生命周期管理。支持 `-i` 交互选择未完成的 feature、`--source-branch` 指定源分支、shell tab 补全，以及未推送 commit 自动检测阻止删除。
+
+**Journey-Contract 测试模型** — `gen-journeys` → `eval-journey` → `gen-contracts` → `eval-contract` → `gen-test-scripts` → `run-tests` → `forge test promote` 全链路测试生成与评估。`forge test verify` 自动检测契约断裂。
+
+**Two-layer 测试策略** — `just unit-test`（快速、无 `-race`）和 `just test`（完整、含 e2e），分层加速反馈循环。Quality Gate 按分层逐步执行。
+
+**Spec Authority Enforcement** — 任务模板强制加载 `## Reference Files` 作为权威来源，冲突时优先级：Hard Rules > Reference Files > 现有代码。包含规范矛盾自动降级机制。
+
+**Quick 模式增强** — 编码任务上限提升至 15 个，纯文档任务不限制数量。`quick-tasks` 自动链接 `run-tasks` 无需手动触发。`consolidate-specs` 非交互自动集成规范漂移检测。
+
+**Fact Table** — `forge fact list/get/summary` 管理结构化系统事实表，支持按来源（static / runtime / manual）和置信度（confirmed / inferred / assumed）过滤，为测试生成提供上下文。
+
+**动态任务追加** — `forge task add --source-task-id <ID> --block-source` 支持运行时动态创建 fix 任务并自动阻塞源任务，形成完整的错误修复链。
+
+---
+
 ## 命令速查
 
 > 与 `forge --help` 一一对应
