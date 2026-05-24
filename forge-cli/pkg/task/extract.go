@@ -10,7 +10,8 @@ import (
 // extracts the "## Acceptance Criteria" section from each, and returns a map
 // of task name (filename without .md) to raw AC markdown content.
 // Only doc-category tasks are included; non-doc tasks are skipped.
-// Tasks without an AC section are omitted from the map.
+// Tasks without an AC section are included with empty string content so that
+// callers can detect missing AC and emit appropriate warnings.
 func extractDocTaskCriteria(taskDir string) map[string]string {
 	entries, err := os.ReadDir(taskDir)
 	if err != nil {
@@ -52,12 +53,9 @@ func extractDocTaskCriteria(taskDir string) map[string]string {
 			continue
 		}
 
-		// Extract AC section
+		// Extract AC section (empty string if section not found)
 		content := string(data)
-		acContent, ok := extractACSection(content)
-		if !ok {
-			continue
-		}
+		acContent, _ := extractACSection(content)
 
 		taskName := strings.TrimSuffix(entry.Name(), ".md")
 		result[taskName] = acContent
@@ -66,18 +64,37 @@ func extractDocTaskCriteria(taskDir string) map[string]string {
 	return result
 }
 
+// isACHeading returns true if the trimmed line matches a recognized
+// Acceptance Criteria heading. Supports:
+//   - exact: "## Acceptance Criteria"
+//   - case-insensitive: "## Acceptance criteria"
+//   - Chinese alias: "## 验收标准"
+func isACHeading(trimmed string) bool {
+	if strings.HasPrefix(trimmed, "## ") {
+		rest := strings.TrimSpace(trimmed[3:])
+		if strings.EqualFold(rest, "Acceptance Criteria") {
+			return true
+		}
+		if rest == "验收标准" {
+			return true
+		}
+	}
+	return false
+}
+
 // extractACSection extracts the content between "## Acceptance Criteria" and
 // the next "## " heading (or end of file). Returns the content (everything
 // after the heading line, including newlines) and true if found.
 // Respects fenced code blocks: ## inside ``` blocks are not treated as section boundaries.
+// Title matching is tolerant: supports case-insensitive "Acceptance Criteria" and Chinese alias "验收标准".
 func extractACSection(content string) (string, bool) {
 	lines := strings.Split(content, "\n")
 
-	// Find the "## Acceptance Criteria" heading line
+	// Find the AC heading line (case-insensitive + Chinese alias)
 	startIdx := -1
 	for i, line := range lines {
 		trimmed := strings.TrimSpace(line)
-		if trimmed == "## Acceptance Criteria" {
+		if isACHeading(trimmed) {
 			startIdx = i + 1
 			break
 		}

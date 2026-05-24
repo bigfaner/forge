@@ -372,6 +372,8 @@ func renderBody(templateContent string, def AutoGenTaskDef, ctx BodyContext) str
 //
 //	### task-name
 //	<raw AC content>
+//
+// When AC content is empty, displays "> No acceptance criteria defined." as placeholder.
 func serializeDocTaskAC(criteria map[string]string) string {
 	keys := make([]string, 0, len(criteria))
 	for k := range criteria {
@@ -382,6 +384,9 @@ func serializeDocTaskAC(criteria map[string]string) string {
 	var sections []string
 	for _, key := range keys {
 		content := criteria[key]
+		if strings.TrimSpace(content) == "" {
+			content = "> No acceptance criteria defined."
+		}
 		sections = append(sections, "### "+key+"\n"+content)
 	}
 	return strings.Join(sections, "\n\n")
