@@ -1,6 +1,7 @@
 ---
 name: forge-init-config-sync
-status: Approved
+status: Superseded
+superseded-by: unify-surfaces
 date: 2026-05-20
 ---
 
