@@ -8,7 +8,7 @@
       "title": "Enhance forge task list with slug parameter and worktree-aware reading",
       "priority": "P0",
       "estimatedTime": "1-2h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-enhance-task-list.md",
       "record": "records/1-enhance-task-list.md",
       "scope": "backend",
