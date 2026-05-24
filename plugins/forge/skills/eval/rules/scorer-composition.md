@@ -52,9 +52,17 @@ When Phase 0 was executed and produced valid findings, the handling depends on w
 - The Scorer does NOT see freeform findings content — only the `<!-- pre-revised -->` markers in the document itself
 
 **When `FREEFORM_INJECTION = true`** (legacy / fallback mode):
-- Follow the injection rules in `rules/freeform-injection.md`
 - Format the validated findings array into `{{FORMATTED_FINDINGS}}` (one line per finding: `- **[severity]** summary | 原文引用: "quote"`)
-- Wrap in `<injected-freeform-findings>` block with the standard header and instructions
+- Wrap in the following block and append after all existing sections:
+
+```
+<injected-freeform-findings>
+The following findings were extracted from a freeform expert review. Treat each as an attack point. If a finding does not map to any rubric dimension, record it as `[beyond-rubric]: [finding summary]`. If a finding contradicts the rubric, annotate with 「自由评审与 rubric 存在分歧」.
+
+{{FORMATTED_FINDINGS}}
+</injected-freeform-findings>
+```
+
 - If `LOW_HIT_RATE = true`, include the partial extraction annotation and append the complete freeform review narrative
 
 **When `FREEFORM_INJECTION` is not set** (no `--freeform-expert`, or Phase 0 degraded), no freeform block is added — the composed prompt is identical to the standard flow.
