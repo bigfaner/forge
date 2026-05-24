@@ -552,7 +552,7 @@ var runNewSurfaceDetection = runNewSurfaceDetectionImpl
 
 func runNewSurfaceDetectionImpl(projectRoot, configFile string) initAction {
 	// Run TUI confirmation (detection + display + user interaction)
-	surfaces, cancelled := askSurfaceConfirmation(projectRoot)
+	surfaces, sources, cancelled := askSurfaceConfirmation(projectRoot)
 	if cancelled {
 		return initAction{status: "CANCELLED", target: "surfaces", detail: "Ctrl+C"}
 	}
@@ -560,13 +560,14 @@ func runNewSurfaceDetectionImpl(projectRoot, configFile string) initAction {
 		return initAction{status: "SKIPPED", target: "surfaces", detail: "no surfaces detected"}
 	}
 
-	// Write surfaces to config
-	return writeSurfacesToConfig(configFile, surfaces)
+	// Write surfaces to config (source annotations are display-only, not persisted)
+	return writeSurfacesToConfig(configFile, surfaces, sources)
 }
 
 // writeSurfacesToConfig writes surfaces to the config file.
 // Source annotations are NOT persisted — only surface types are written.
-func writeSurfacesToConfig(configFile string, surfaces forgeconfig.SurfacesMap) initAction {
+// Sources are used only for the detail string in the init summary.
+func writeSurfacesToConfig(configFile string, surfaces forgeconfig.SurfacesMap, sources forgeconfig.SourcesMap) initAction {
 	// Read config from the directory containing the config file
 	projectRoot := filepath.Dir(filepath.Dir(configFile))
 	cfg, err := forgeconfig.ReadConfig(projectRoot)
@@ -580,5 +581,5 @@ func writeSurfacesToConfig(configFile string, surfaces forgeconfig.SurfacesMap) 
 		return initAction{status: "FAILED", target: "surfaces", detail: err.Error()}
 	}
 
-	return initAction{status: "CREATED", target: "surfaces", detail: formatSurfacesSummary(surfaces, nil)}
+	return initAction{status: "CREATED", target: "surfaces", detail: formatSurfacesSummary(surfaces, sources)}
 }

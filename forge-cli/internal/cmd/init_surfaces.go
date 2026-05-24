@@ -22,18 +22,24 @@ var surfaceStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#7DCFFF")).Bol
 // sourceStyle styles source annotation text.
 var sourceStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#9ECE6A")).Italic(true)
 
-// askSurfaceConfirmation runs the TUI surface confirmation flow.
+// askSurfaceConfirmation is the function variable for TUI surface confirmation.
+// Variable for testability — huh requires a real TTY, so tests override this.
+var askSurfaceConfirmation = askSurfaceConfirmationImpl
+
+// askSurfaceConfirmationImpl runs the TUI surface confirmation flow.
 // It detects surfaces, displays them, and lets the user confirm/edit.
-// Returns the confirmed SurfacesMap, or nil if cancelled.
-func askSurfaceConfirmation(projectRoot string) (forgeconfig.SurfacesMap, bool) {
+// Returns the confirmed SurfacesMap, SourcesMap, or nil if cancelled.
+func askSurfaceConfirmationImpl(projectRoot string) (forgeconfig.SurfacesMap, forgeconfig.SourcesMap, bool) {
 	result, err := forgeconfig.DetectSurfacesWithConflicts(projectRoot)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "WARNING: surface detection failed: %v\n", err)
-		return manualSurfaceEntry()
+		surfaces, cancelled := manualSurfaceEntry()
+		return surfaces, nil, cancelled
 	}
 
 	if len(result.Surfaces) == 0 {
-		return manualSurfaceEntry()
+		surfaces, cancelled := manualSurfaceEntry()
+		return surfaces, nil, cancelled
 	}
 
 	// Build conflict lookup
@@ -44,9 +50,11 @@ func askSurfaceConfirmation(projectRoot string) (forgeconfig.SurfacesMap, bool) 
 
 	// Display detected surfaces
 	if result.IsScalar {
-		return askScalarConfirmation(result, conflictMap)
+		surfaces, cancelled := askScalarConfirmation(result, conflictMap)
+		return surfaces, result.Sources, cancelled
 	}
-	return askMapConfirmation(result, conflictMap)
+	surfaces, cancelled := askMapConfirmation(result, conflictMap)
+	return surfaces, result.Sources, cancelled
 }
 
 // askScalarConfirmation handles the single-type (scalar) TUI flow.
@@ -218,6 +226,33 @@ func formatSourceAnnotation(source string) string {
 		return fmt.Sprintf("(inferred from %s)", formatInferenceDetail(detail))
 	case "dependency":
 		return fmt.Sprintf("(detected from %s dependency)", detail)
+	default:
+		return fmt.Sprintf("(%s)", source)
+	}
+}
+
+// formatCompactSourceAnnotation converts a source annotation code into a compact string
+// suitable for the init summary display.
+// Input format: "inference:cmd-dir" -> "(inferred:cmd-dir)"
+// Input format: "dependency:cobra" -> "(from cobra)"
+func formatCompactSourceAnnotation(source string) string {
+	if source == "" {
+		return ""
+	}
+
+	parts := strings.SplitN(source, ":", 2)
+	if len(parts) != 2 {
+		return fmt.Sprintf("(%s)", source)
+	}
+
+	category := parts[0]
+	detail := parts[1]
+
+	switch category {
+	case "inference":
+		return fmt.Sprintf("(inferred:%s)", detail)
+	case "dependency":
+		return fmt.Sprintf("(from %s)", detail)
 	default:
 		return fmt.Sprintf("(%s)", source)
 	}
@@ -433,7 +468,8 @@ func sortedPaths(surfaces forgeconfig.SurfacesMap) []string {
 }
 
 // formatSurfacesSummary builds a human-readable summary string for the init output.
-// Shows actual surface types with source annotations instead of opaque "N mappings".
+// Shows actual surface types with compact source annotations instead of opaque "N mappings".
+// Uses compact format: (inferred:cmd-dir), (from cobra) — suitable for single-line summary.
 func formatSurfacesSummary(surfaces forgeconfig.SurfacesMap, sources forgeconfig.SourcesMap) string {
 	if len(surfaces) == 0 {
 		return ""
@@ -443,7 +479,7 @@ func formatSurfacesSummary(surfaces forgeconfig.SurfacesMap, sources forgeconfig
 	if surfaces["."] != "" && len(surfaces) == 1 {
 		detail := surfaces["."]
 		if source := sources["."]; source != "" {
-			detail += " " + formatSourceAnnotation(source)
+			detail += " " + formatCompactSourceAnnotation(source)
 		}
 		return detail
 	}
@@ -454,7 +490,7 @@ func formatSurfacesSummary(surfaces forgeconfig.SurfacesMap, sources forgeconfig
 	for _, p := range paths {
 		entry := fmt.Sprintf("%s=%s", p, surfaces[p])
 		if source, ok := sources[p]; ok && source != "" {
-			entry += " " + formatSourceAnnotation(source)
+			entry += " " + formatCompactSourceAnnotation(source)
 		}
 		parts = append(parts, entry)
 	}

@@ -335,28 +335,25 @@ func TestBuildDisplayLines(t *testing.T) {
 }
 
 // TestFormatSurfacesSummary tests the init summary formatting.
+// AC: compact annotations — (inferred:cmd-dir), (from cobra) — not long-form.
 func TestFormatSurfacesSummary(t *testing.T) {
-	t.Run("scalar form shows type with source", func(t *testing.T) {
+	t.Run("scalar form with inference source shows compact annotation", func(t *testing.T) {
 		surfaces := forgeconfig.SurfacesMap{".": "cli"}
 		sources := forgeconfig.SourcesMap{".": "inference:cmd-dir"}
 		summary := formatSurfacesSummary(surfaces, sources)
-		if !strings.Contains(summary, "cli") {
-			t.Errorf("expected 'cli' in summary, got %q", summary)
-		}
-		if !strings.Contains(summary, "(inferred from cmd/ directory structure)") {
-			t.Errorf("expected source annotation in summary, got %q", summary)
+		expected := "cli (inferred:cmd-dir)"
+		if summary != expected {
+			t.Errorf("expected %q, got %q", expected, summary)
 		}
 	})
 
-	t.Run("scalar form shows type with dependency source", func(t *testing.T) {
+	t.Run("scalar form with dependency source shows compact annotation", func(t *testing.T) {
 		surfaces := forgeconfig.SurfacesMap{".": "cli"}
 		sources := forgeconfig.SourcesMap{".": "dependency:cobra"}
 		summary := formatSurfacesSummary(surfaces, sources)
-		if !strings.Contains(summary, "cli") {
-			t.Errorf("expected 'cli' in summary, got %q", summary)
-		}
-		if !strings.Contains(summary, "(detected from cobra dependency)") {
-			t.Errorf("expected source annotation in summary, got %q", summary)
+		expected := "cli (from cobra)"
+		if summary != expected {
+			t.Errorf("expected %q, got %q", expected, summary)
 		}
 	})
 
@@ -368,7 +365,7 @@ func TestFormatSurfacesSummary(t *testing.T) {
 		}
 	})
 
-	t.Run("map form shows path=type with sources", func(t *testing.T) {
+	t.Run("map form shows path=type with compact inference annotation", func(t *testing.T) {
 		surfaces := forgeconfig.SurfacesMap{
 			"forge-cli/cli": "cli",
 			"forge-cli/api": "api",
@@ -378,11 +375,24 @@ func TestFormatSurfacesSummary(t *testing.T) {
 			"forge-cli/api": "inference:api-dir",
 		}
 		summary := formatSurfacesSummary(surfaces, sources)
-		if !strings.Contains(summary, "forge-cli/cli=cli") {
-			t.Errorf("expected 'forge-cli/cli=cli' in summary, got %q", summary)
+		if !strings.Contains(summary, "forge-cli/cli=cli (inferred:cmd-dir)") {
+			t.Errorf("expected 'forge-cli/cli=cli (inferred:cmd-dir)' in summary, got %q", summary)
 		}
-		if !strings.Contains(summary, "inferred from cmd/ directory structure") {
-			t.Errorf("expected source annotation in summary, got %q", summary)
+		if !strings.Contains(summary, "forge-cli/api=api (inferred:api-dir)") {
+			t.Errorf("expected 'forge-cli/api=api (inferred:api-dir)' in summary, got %q", summary)
+		}
+	})
+
+	t.Run("map form with dependency source shows compact annotation", func(t *testing.T) {
+		surfaces := forgeconfig.SurfacesMap{
+			".": "cli",
+		}
+		sources := forgeconfig.SourcesMap{
+			".": "dependency:cobra",
+		}
+		summary := formatSurfacesSummary(surfaces, sources)
+		if !strings.Contains(summary, "cli (from cobra)") {
+			t.Errorf("expected 'cli (from cobra)' in summary, got %q", summary)
 		}
 	})
 
@@ -661,7 +671,7 @@ func TestWriteSurfacesToConfig(t *testing.T) {
 		}
 
 		// Write surfaces
-		action := writeSurfacesToConfig(configFile, forgeconfig.SurfacesMap{".": "cli"})
+		action := writeSurfacesToConfig(configFile, forgeconfig.SurfacesMap{".": "cli"}, nil)
 		if action.status != "CREATED" {
 			t.Errorf("expected CREATED, got %s: %s", action.status, action.detail)
 		}
@@ -777,6 +787,100 @@ func TestSortedPaths(t *testing.T) {
 }
 
 // TestFormatInferenceDetail tests the inference detail formatter.
+// TestFormatCompactSourceAnnotation tests the compact source annotation for init summary.
+// AC: (inferred:cmd-dir), (from cobra) — compact format for summary display.
+func TestFormatCompactSourceAnnotation(t *testing.T) {
+	tests := []struct {
+		name   string
+		source string
+		want   string
+	}{
+		{"inference cmd-dir", "inference:cmd-dir", "(inferred:cmd-dir)"},
+		{"inference api-dir", "inference:api-dir", "(inferred:api-dir)"},
+		{"inference handler-dir", "inference:handler-dir", "(inferred:handler-dir)"},
+		{"inference bin-field", "inference:bin-field", "(inferred:bin-field)"},
+		{"dependency cobra", "dependency:cobra", "(from cobra)"},
+		{"dependency react", "dependency:react", "(from react)"},
+		{"empty source", "", ""},
+		{"unknown format", "other:something", "(other:something)"},
+		{"no colon", "inference", "(inference)"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := formatCompactSourceAnnotation(tt.source)
+			if got != tt.want {
+				t.Errorf("formatCompactSourceAnnotation(%q) = %q, want %q", tt.source, got, tt.want)
+			}
+		})
+	}
+}
+
+// TestRunNewSurfaceDetectionImplSourcesPropagation tests that Sources
+// flow from askSurfaceConfirmation through to the detail string.
+func TestRunNewSurfaceDetectionImplSourcesPropagation(t *testing.T) {
+	t.Run("sources propagated to detail string", func(t *testing.T) {
+		dir := t.TempDir()
+		forgeDir := filepath.Join(dir, feature.ForgeDir)
+		if err := os.MkdirAll(forgeDir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+
+		configFile := filepath.Join(forgeDir, feature.ForgeConfigFileName)
+		cfg := &forgeconfig.Config{Auto: &forgeconfig.AutoConfig{}}
+		if err := writeConfigFile(configFile, cfg); err != nil {
+			t.Fatal(err)
+		}
+
+		// Mock askSurfaceConfirmation to return surfaces with sources
+		origAsk := askSurfaceConfirmation
+		askSurfaceConfirmation = func(_ string) (forgeconfig.SurfacesMap, forgeconfig.SourcesMap, bool) {
+			return forgeconfig.SurfacesMap{".": "cli"},
+				forgeconfig.SourcesMap{".": "inference:cmd-dir"},
+				false
+		}
+		defer func() { askSurfaceConfirmation = origAsk }()
+
+		action := runNewSurfaceDetectionImpl(dir, configFile)
+		if action.status != "CREATED" {
+			t.Fatalf("expected CREATED, got %s: %s", action.status, action.detail)
+		}
+		if !strings.Contains(action.detail, "cli (inferred:cmd-dir)") {
+			t.Errorf("expected compact source annotation in detail, got %q", action.detail)
+		}
+	})
+
+	t.Run("dependency source propagated to detail string", func(t *testing.T) {
+		dir := t.TempDir()
+		forgeDir := filepath.Join(dir, feature.ForgeDir)
+		if err := os.MkdirAll(forgeDir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+
+		configFile := filepath.Join(forgeDir, feature.ForgeConfigFileName)
+		cfg := &forgeconfig.Config{Auto: &forgeconfig.AutoConfig{}}
+		if err := writeConfigFile(configFile, cfg); err != nil {
+			t.Fatal(err)
+		}
+
+		origAsk := askSurfaceConfirmation
+		askSurfaceConfirmation = func(_ string) (forgeconfig.SurfacesMap, forgeconfig.SourcesMap, bool) {
+			return forgeconfig.SurfacesMap{".": "cli"},
+				forgeconfig.SourcesMap{".": "dependency:cobra"},
+				false
+		}
+		defer func() { askSurfaceConfirmation = origAsk }()
+
+		action := runNewSurfaceDetectionImpl(dir, configFile)
+		if action.status != "CREATED" {
+			t.Fatalf("expected CREATED, got %s: %s", action.status, action.detail)
+		}
+		if !strings.Contains(action.detail, "cli (from cobra)") {
+			t.Errorf("expected compact dependency annotation in detail, got %q", action.detail)
+		}
+	})
+}
+
 func TestFormatInferenceDetail(t *testing.T) {
 	tests := []struct {
 		ruleID string
