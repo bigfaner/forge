@@ -4,6 +4,7 @@ import (
 	"embed"
 	"fmt"
 	"path"
+	"sort"
 	"strings"
 
 	"forge-cli/pkg/forgeconfig"
@@ -53,13 +54,14 @@ func hasUISurface(types []string) bool {
 // It is populated by BuildIndex() and consumed by renderBody() to substitute
 // {{PLACEHOLDER}} tokens in embed template content.
 type BodyContext struct {
-	FeatureSlug        string   // feature slug from opts
-	Mode               string   // "quick" or "breakdown"
-	Scope              []string // in-scope items from proposal/PRD
-	SuccessCriteria    []string // success criteria from proposal/PRD
-	AcceptanceCriteria []string // PRD acceptance criteria (breakdown mode)
-	ProjectType        string   // from .forge/config.yaml
-	SurfaceTypes       []string // deduplicated surface types from config
+	FeatureSlug        string            // feature slug from opts
+	Mode               string            // "quick" or "breakdown"
+	Scope              []string          // in-scope items from proposal/PRD
+	SuccessCriteria    []string          // success criteria from proposal/PRD
+	AcceptanceCriteria []string          // PRD acceptance criteria (breakdown mode)
+	ProjectType        string            // from .forge/config.yaml
+	SurfaceTypes       []string          // deduplicated surface types from config
+	DocTaskCriteria    map[string]string // doc task name -> raw AC markdown (key=filename without .md)
 }
 
 // AutoGenTaskDef defines an auto-generated task definition.
@@ -354,7 +356,35 @@ func renderBody(templateContent string, def AutoGenTaskDef, ctx BodyContext) str
 		s = strings.ReplaceAll(s, "{{ACCEPTANCE_CRITERIA}}", strings.Join(acLines, "\n"))
 	}
 
+	// DOC_TASK_AC — serialize DocTaskCriteria map as markdown sub-sections
+	if len(ctx.DocTaskCriteria) == 0 {
+		s = strings.ReplaceAll(s, "{{DOC_TASK_AC}}", "")
+	} else {
+		s = strings.ReplaceAll(s, "{{DOC_TASK_AC}}", serializeDocTaskAC(ctx.DocTaskCriteria))
+	}
+
 	return s
+}
+
+// serializeDocTaskAC serializes a DocTaskCriteria map into markdown sub-sections.
+// Keys are sorted alphabetically for deterministic output.
+// Format per entry:
+//
+//	### task-name
+//	<raw AC content>
+func serializeDocTaskAC(criteria map[string]string) string {
+	keys := make([]string, 0, len(criteria))
+	for k := range criteria {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	var sections []string
+	for _, key := range keys {
+		content := criteria[key]
+		sections = append(sections, "### "+key+"\n"+content)
+	}
+	return strings.Join(sections, "\n\n")
 }
 
 // removeLineContaining removes the line that contains the target substring.

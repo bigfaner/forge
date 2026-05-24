@@ -1850,3 +1850,102 @@ func TestResolveFirstTestDep_NoDeps_NoPanic(t *testing.T) {
 		t.Errorf("gen-journeys should have no deps when no business tasks exist, got %v", tasks[firstTestIdx].Dependencies)
 	}
 }
+
+// --- {{DOC_TASK_AC}} rendering tests ---
+
+func TestRenderBody_DocTaskAC_Populated(t *testing.T) {
+	template := "Feature: {{FEATURE_SLUG}}\n## Acceptance Criteria Summary\n{{DOC_TASK_AC}}\n## End"
+	ctx := BodyContext{
+		FeatureSlug: "my-feature",
+		DocTaskCriteria: map[string]string{
+			"1-doc": "- [ ] AC 1\n- [ ] AC 2",
+			"2-doc": "- [ ] AC 3",
+		},
+	}
+	def := AutoGenTaskDef{}
+
+	result := renderBody(template, def, ctx)
+
+	if !strings.Contains(result, "### 1-doc") {
+		t.Errorf("should contain ### 1-doc sub-section header, got:\n%s", result)
+	}
+	if !strings.Contains(result, "- [ ] AC 1") {
+		t.Errorf("should contain AC content from 1-doc, got:\n%s", result)
+	}
+	if !strings.Contains(result, "### 2-doc") {
+		t.Errorf("should contain ### 2-doc sub-section header, got:\n%s", result)
+	}
+	if !strings.Contains(result, "- [ ] AC 3") {
+		t.Errorf("should contain AC content from 2-doc, got:\n%s", result)
+	}
+	if strings.Contains(result, "{{DOC_TASK_AC}}") {
+		t.Errorf("placeholder should be resolved, got:\n%s", result)
+	}
+}
+
+func TestRenderBody_DocTaskAC_Empty(t *testing.T) {
+	template := "Feature: {{FEATURE_SLUG}}\n{{DOC_TASK_AC}}\n## End"
+	ctx := BodyContext{
+		FeatureSlug: "my-feature",
+	}
+	def := AutoGenTaskDef{}
+
+	result := renderBody(template, def, ctx)
+
+	// Empty DocTaskCriteria should produce empty string (placeholder removed)
+	if strings.Contains(result, "{{DOC_TASK_AC}}") {
+		t.Errorf("placeholder should be resolved to empty when no criteria, got:\n%s", result)
+	}
+}
+
+func TestRenderBody_DocTaskAC_SortedKeys(t *testing.T) {
+	template := "{{DOC_TASK_AC}}"
+	ctx := BodyContext{
+		FeatureSlug: "feat",
+		DocTaskCriteria: map[string]string{
+			"3-doc": "AC 3 content",
+			"1-doc": "AC 1 content",
+			"2-doc": "AC 2 content",
+		},
+	}
+	def := AutoGenTaskDef{}
+
+	result := renderBody(template, def, ctx)
+
+	// Keys should be sorted (1-doc before 2-doc before 3-doc)
+	idx1 := strings.Index(result, "### 1-doc")
+	idx2 := strings.Index(result, "### 2-doc")
+	idx3 := strings.Index(result, "### 3-doc")
+	if idx1 >= idx2 || idx2 >= idx3 {
+		t.Errorf("keys should be sorted alphabetically, got indices: 1-doc=%d, 2-doc=%d, 3-doc=%d\n%s", idx1, idx2, idx3, result)
+	}
+}
+
+func TestRenderBody_AllPlaceholdersIncludingDocTaskAC(t *testing.T) {
+	template := "Feature: {{FEATURE_SLUG}}\nMode: {{MODE}}\n## Scope\n{{SCOPE}}\n## Other\nInterfaces: {{SURFACES}}\nType: {{TEST_TYPE}}\nAcceptance:\n{{ACCEPTANCE_CRITERIA}}\n{{DOC_TASK_AC}}"
+	ctx := BodyContext{
+		FeatureSlug:        "feat",
+		Mode:               "quick",
+		Scope:              []string{"backend"},
+		SurfaceTypes:       []string{"cli"},
+		AcceptanceCriteria: []string{"AC1"},
+		DocTaskCriteria:    map[string]string{"1-doc": "Doc AC"},
+	}
+	def := AutoGenTaskDef{TestType: "cli"}
+
+	result := renderBody(template, def, ctx)
+
+	allPlaceholders := []string{
+		"{{FEATURE_SLUG}}", "{{MODE}}", "{{SCOPE}}",
+		"{{SURFACES}}", "{{TEST_TYPE}}", "{{ACCEPTANCE_CRITERIA}}",
+		"{{DOC_TASK_AC}}",
+	}
+	for _, ph := range allPlaceholders {
+		if strings.Contains(result, ph) {
+			t.Errorf("placeholder %s not resolved in output", ph)
+		}
+	}
+	if !strings.Contains(result, "### 1-doc") {
+		t.Errorf("should contain DocTaskCriteria sub-section, got:\n%s", result)
+	}
+}
