@@ -218,7 +218,11 @@ for each dep in T.Dependencies:
     "validationPassed": true,
     "issuesFound": ["issue1"],
     "gatePassed": true,
-    "gateChecks": ["lint"]
+    "gateChecks": ["lint"],
+    "score": 850,
+    "findings": ["issue1"],
+    "severity": "major",
+    "passed": true
 }
 ```
 

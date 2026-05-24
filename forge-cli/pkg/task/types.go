@@ -309,6 +309,12 @@ type RecordData struct {
 	// Gate fields
 	GatePassed bool     `json:"gatePassed,omitempty"`
 	GateChecks []string `json:"gateChecks,omitempty"`
+
+	// Eval fields
+	Score    float64  `json:"score,omitempty"`
+	Findings []string `json:"findings,omitempty"`
+	Severity string   `json:"severity,omitempty"`
+	Passed   bool     `json:"passed,omitempty"`
 }
 
 // TypeReclassification documents when an executor changes a task's type during execution.
