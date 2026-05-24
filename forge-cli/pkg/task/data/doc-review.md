@@ -1,12 +1,21 @@
 Review documentation quality for the {{FEATURE_SLUG}} feature ({{MODE}} mode).
 
+## Acceptance Criteria Summary
+
+The following acceptance criteria are pre-extracted from doc tasks. Use these as the review baseline.
+
+{{DOC_TASK_AC}}
+
 ## Discovery Strategy
-Scan these directories for ALL documents created or modified by this feature:
+
+Scan ONLY the following allowlist of directories for target documents:
 - docs/features/{{FEATURE_SLUG}}/ (prd/, design/, testing/, and any subdirectories)
 - docs/proposals/{{FEATURE_SLUG}}/
 
-New documents may have been created by business tasks — list everything found.
+EXCLUDE the following from scanning — do NOT read or process these:
+- tasks/ directory (task definitions are not deliverables)
+- tasks/records/ directory (execution records are not deliverables)
+- manifest.md (build artifact)
+- index.json (build artifact)
 
-For each doc task, read its acceptance criteria from the task .md file.
-Check each deliverable against its AC.
-Report pass/fail per AC item.
+Only .md files under the allowlist directories are target deliverables.

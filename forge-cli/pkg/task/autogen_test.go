@@ -1921,6 +1921,90 @@ func TestRenderBody_DocTaskAC_SortedKeys(t *testing.T) {
 	}
 }
 
+// --- doc-review autogen template content tests (Task 2) ---
+
+func TestDocReviewAutogenTemplate_ContainsDocTaskACPlaceholder(t *testing.T) {
+	data, err := autogenTemplateFS.ReadFile("data/doc-review.md")
+	if err != nil {
+		t.Fatalf("cannot read doc-review.md: %v", err)
+	}
+	s := string(data)
+
+	if !strings.Contains(s, "{{DOC_TASK_AC}}") {
+		t.Error("doc-review autogen template must contain {{DOC_TASK_AC}} placeholder for AC summary injection")
+	}
+}
+
+func TestDocReviewAutogenTemplate_ContainsACSummarySection(t *testing.T) {
+	data, err := autogenTemplateFS.ReadFile("data/doc-review.md")
+	if err != nil {
+		t.Fatalf("cannot read doc-review.md: %v", err)
+	}
+	s := string(data)
+
+	if !strings.Contains(s, "## Acceptance Criteria Summary") {
+		t.Error("doc-review autogen template must contain '## Acceptance Criteria Summary' section header")
+	}
+	if !strings.Contains(s, "pre-extracted") {
+		t.Error("doc-review autogen template should mention that AC is pre-extracted")
+	}
+}
+
+func TestDocReviewAutogenTemplate_AllowlistDiscoveryStrategy(t *testing.T) {
+	data, err := autogenTemplateFS.ReadFile("data/doc-review.md")
+	if err != nil {
+		t.Fatalf("cannot read doc-review.md: %v", err)
+	}
+	s := string(data)
+
+	// Must use allowlist language
+	if !strings.Contains(s, "allowlist") {
+		t.Error("doc-review autogen template Discovery Strategy should use allowlist language")
+	}
+	// Must reference docs/ path
+	if !strings.Contains(s, "docs/features/") {
+		t.Error("doc-review autogen template should reference docs/features/ path")
+	}
+}
+
+func TestDocReviewAutogenTemplate_ExcludesTasksAndRecords(t *testing.T) {
+	data, err := autogenTemplateFS.ReadFile("data/doc-review.md")
+	if err != nil {
+		t.Fatalf("cannot read doc-review.md: %v", err)
+	}
+	s := string(data)
+
+	// Must explicitly exclude tasks/, records/, manifest.md, index.json
+	if !strings.Contains(s, "tasks/") {
+		t.Error("doc-review autogen template should mention tasks/ exclusion")
+	}
+	if !strings.Contains(s, "records/") {
+		t.Error("doc-review autogen template should mention records/ exclusion")
+	}
+	if !strings.Contains(s, "manifest.md") {
+		t.Error("doc-review autogen template should mention manifest.md exclusion")
+	}
+	if !strings.Contains(s, "index.json") {
+		t.Error("doc-review autogen template should mention index.json exclusion")
+	}
+}
+
+func TestDocReviewAutogenTemplate_NoScanTasksDirective(t *testing.T) {
+	data, err := autogenTemplateFS.ReadFile("data/doc-review.md")
+	if err != nil {
+		t.Fatalf("cannot read doc-review.md: %v", err)
+	}
+	s := string(data)
+
+	// Must NOT contain old-style task scanning instructions
+	if strings.Contains(s, "read its acceptance criteria from the task .md file") {
+		t.Error("doc-review autogen template should NOT contain old 'read its acceptance criteria from the task .md file' directive")
+	}
+	if strings.Contains(s, "For each doc task, read its acceptance criteria") {
+		t.Error("doc-review autogen template should NOT contain old 'For each doc task, read its acceptance criteria' directive")
+	}
+}
+
 func TestRenderBody_AllPlaceholdersIncludingDocTaskAC(t *testing.T) {
 	template := "Feature: {{FEATURE_SLUG}}\nMode: {{MODE}}\n## Scope\n{{SCOPE}}\n## Other\nInterfaces: {{SURFACES}}\nType: {{TEST_TYPE}}\nAcceptance:\n{{ACCEPTANCE_CRITERIA}}\n{{DOC_TASK_AC}}"
 	ctx := BodyContext{

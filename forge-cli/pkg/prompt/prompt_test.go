@@ -1666,6 +1666,84 @@ func TestSynthesize_GateTemplate_ContainsRecordFieldHints(t *testing.T) {
 	}
 }
 
+// --- doc-review prompt template content tests (Task 2) ---
+
+func TestDocReviewPromptTemplate_Step1LoadsPreExtractedAC(t *testing.T) {
+	data, err := templateFS.ReadFile("data/doc-review.md")
+	if err != nil {
+		t.Fatalf("cannot read doc-review prompt template: %v", err)
+	}
+	s := string(data)
+
+	if !strings.Contains(s, "Load Pre-extracted AC") {
+		t.Error("doc-review prompt Step 1 should be 'Load Pre-extracted AC'")
+	}
+	if !strings.Contains(s, "pre-extracted") {
+		t.Error("doc-review prompt should reference pre-extracted AC")
+	}
+}
+
+func TestDocReviewPromptTemplate_Step2UsesAllowlistDiscovery(t *testing.T) {
+	data, err := templateFS.ReadFile("data/doc-review.md")
+	if err != nil {
+		t.Fatalf("cannot read doc-review prompt template: %v", err)
+	}
+	s := string(data)
+
+	if !strings.Contains(s, "allowlist") {
+		t.Error("doc-review prompt Step 2 should use allowlist strategy")
+	}
+	if !strings.Contains(s, "docs/features/{{FEATURE_SLUG}}") {
+		t.Error("doc-review prompt Step 2 should reference docs/features/ path")
+	}
+}
+
+func TestDocReviewPromptTemplate_Step3HasDocsOnlyConstraint(t *testing.T) {
+	data, err := templateFS.ReadFile("data/doc-review.md")
+	if err != nil {
+		t.Fatalf("cannot read doc-review prompt template: %v", err)
+	}
+	s := string(data)
+
+	if !strings.Contains(s, "ONLY modify files under the docs/ directory") {
+		t.Error("doc-review prompt Step 3 must contain explicit docs/ modification constraint")
+	}
+	if !strings.Contains(s, "tasks/") || !strings.Contains(s, "records/") {
+		t.Error("doc-review prompt Step 3 should explicitly prohibit modifying tasks/ and records/")
+	}
+}
+
+func TestDocReviewPromptTemplate_NoScanTasksDirective(t *testing.T) {
+	data, err := templateFS.ReadFile("data/doc-review.md")
+	if err != nil {
+		t.Fatalf("cannot read doc-review prompt template: %v", err)
+	}
+	s := string(data)
+
+	if strings.Contains(s, "scan tasks directory") {
+		t.Error("doc-review prompt must NOT contain 'scan tasks directory' directive")
+	}
+	if strings.Contains(s, "Read the task's acceptance criteria from its .md file") {
+		t.Error("doc-review prompt must NOT contain 'Read the task's acceptance criteria from its .md file' directive")
+	}
+	if strings.Contains(s, "scanning the tasks directory") {
+		t.Error("doc-review prompt must NOT contain 'scanning the tasks directory' directive")
+	}
+}
+
+func TestDocReviewPromptTemplate_Step1ExplicitNoScanDirective(t *testing.T) {
+	data, err := templateFS.ReadFile("data/doc-review.md")
+	if err != nil {
+		t.Fatalf("cannot read doc-review prompt template: %v", err)
+	}
+	s := string(data)
+
+	// Step 1 must explicitly say NOT to scan tasks directory
+	if !strings.Contains(s, "Do NOT scan the tasks directory") {
+		t.Error("doc-review prompt Step 1 should explicitly instruct NOT to scan tasks directory")
+	}
+}
+
 func TestExtractTestTypeArg(t *testing.T) {
 	tests := []struct {
 		id   string
