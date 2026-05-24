@@ -12,23 +12,38 @@ import (
 //go:embed data/*.md
 var autogenTemplateFS embed.FS
 
-// autogenTypeToFile maps task type constants to their embed template filenames.
-// Filename convention: type name with '.' replaced by '-' (e.g., test.gen-scripts -> test-gen-scripts.md).
-var autogenTypeToFile = map[string]string{
-	TypeTestGenScripts:       "data/test-gen-scripts.md",
-	TypeTestGenAndRun:        "data/test-gen-and-run.md",
-	TypeTestRun:              "data/test-run.md",
-	TypeTestVerifyRegression: "data/test-verify-regression.md",
-	TypeEvalJourney:          "data/eval-journey.md",
-	TypeEvalContract:         "data/eval-contract.md",
-	TypeTestGenJourneys:      "data/test-gen-journeys.md",
-	TypeTestGenContracts:     "data/test-gen-contracts.md",
-	TypeValidationCode:       "data/validation-code.md",
-	TypeValidationUx:         "data/validation-ux.md",
-	TypeDocReview:            "data/doc-review.md",
-	TypeDocConsolidate:       "data/doc-consolidate.md",
-	TypeDocDrift:             "data/doc-drift.md",
-	TypeCleanCode:            "data/code-quality-simplify.md",
+// autogenTemplatePath derives the embed template filename from a task type constant
+// using the naming convention: "data/" + typeName with '.' replaced by '-' + ".md".
+func autogenTemplatePath(typeName string) string {
+	return "data/" + strings.ReplaceAll(typeName, ".", "-") + ".md"
+}
+
+// ValidateAutogenTemplates checks that all task types used by GenerateTestTaskMD()
+// have a corresponding template file in the autogen embed FS, and that no two types
+// map to the same filename. Types without an autogen template are skipped (they may
+// exist only in the prompt FS).
+// Must be called from the CLI main() startup path, NOT from an init() function.
+func ValidateAutogenTemplates() error {
+	seen := make(map[string]string) // filename -> type name (for collision detection)
+
+	for typeName := range ValidTypes {
+		filename := autogenTemplatePath(typeName)
+		data, err := autogenTemplateFS.ReadFile(filename)
+		if err != nil {
+			// Type has no template in autogen FS — skip (may exist in prompt FS)
+			continue
+		}
+		if len(data) == 0 {
+			return fmt.Errorf("autogen template convention error: type %q maps to %q but file is empty", typeName, filename)
+		}
+
+		if prev, collision := seen[filename]; collision {
+			return fmt.Errorf("autogen template convention error: types %q and %q both map to %q", prev, typeName, filename)
+		}
+		seen[filename] = typeName
+	}
+
+	return nil
 }
 
 // uiInterfaces is the set of interface types that have a visual UI
@@ -411,29 +426,27 @@ func GenerateTestTaskMD(def AutoGenTaskDef, ctx BodyContext) ([]byte, error) {
 	buf.WriteString("---\n\n")
 
 	// Body — try embed template first, fallback to legacy behavior
-	templateFile, hasTemplate := autogenTypeToFile[def.Type]
-	if hasTemplate {
-		data, err := autogenTemplateFS.ReadFile(templateFile)
-		if err == nil {
-			// Template loaded successfully — substitute placeholders and use as body
-			rendered := renderBody(string(data), def, ctx)
-			buf.WriteString(rendered)
+	templateFile := autogenTemplatePath(def.Type)
+	data, err := autogenTemplateFS.ReadFile(templateFile)
+	if err == nil {
+		// Template loaded successfully — substitute placeholders and use as body
+		rendered := renderBody(string(data), def, ctx)
+		buf.WriteString(rendered)
 
-			// Append TestType note if present
-			if def.TestType != "" {
-				fmt.Fprintf(&buf, "\nType: **%s**\n", def.TestType)
-			}
-
-			// Append StrategyContent after template content if present
-			if len(def.StrategyContent) > 0 {
-				buf.WriteString("\n\n")
-				buf.Write(def.StrategyContent)
-			}
-
-			return []byte(buf.String()), nil
+		// Append TestType note if present
+		if def.TestType != "" {
+			fmt.Fprintf(&buf, "\nType: **%s**\n", def.TestType)
 		}
-		// Template file read failed — fall through to legacy behavior
+
+		// Append StrategyContent after template content if present
+		if len(def.StrategyContent) > 0 {
+			buf.WriteString("\n\n")
+			buf.Write(def.StrategyContent)
+		}
+
+		return []byte(buf.String()), nil
 	}
+	// Template file read failed — fall through to legacy behavior
 
 	// Legacy fallback body generation
 	if def.StrategyKind != "" {

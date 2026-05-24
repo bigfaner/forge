@@ -1292,8 +1292,8 @@ func TestGenContractsTemplateRendering(t *testing.T) {
 	}
 }
 
-func TestAutogenTypeToFileMapping(t *testing.T) {
-	// Verify all auto-gen types have a mapping entry
+func TestAutogenTemplateDiscovery(t *testing.T) {
+	// Verify all auto-gen types resolve to a readable template via naming convention
 	wantTypes := []string{
 		TypeTestGenScripts, TypeTestGenAndRun, TypeTestRun,
 		TypeTestVerifyRegression, TypeEvalJourney, TypeEvalContract,
@@ -1302,16 +1302,8 @@ func TestAutogenTypeToFileMapping(t *testing.T) {
 		TypeTestGenJourneys, TypeTestGenContracts,
 	}
 
-	if len(autogenTypeToFile) != len(wantTypes) {
-		t.Errorf("autogenTypeToFile has %d entries, want %d", len(autogenTypeToFile), len(wantTypes))
-	}
-
 	for _, typ := range wantTypes {
-		file, ok := autogenTypeToFile[typ]
-		if !ok {
-			t.Errorf("type %q missing from autogenTypeToFile", typ)
-			continue
-		}
+		file := autogenTemplatePath(typ)
 		// Verify file can be read from embed FS
 		data, err := autogenTemplateFS.ReadFile(file)
 		if err != nil {

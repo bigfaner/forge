@@ -8,7 +8,7 @@
       "title": "Auto-discovery: 替换 prompt.go 和 autogen.go 手写 map + init-time 校验 + clean-code.md 重命名",
       "priority": "P0",
       "estimatedTime": "2h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-auto-discovery.md",
       "record": "records/1-auto-discovery.md",
       "breaking": true,
