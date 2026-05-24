@@ -111,6 +111,152 @@ forge --help
 | `forge task list-types` | 列出所有支持的任务类型 |
 | `forge task query` | 查询任务信息 |
 | `forge task migrate` | 推断并补充 index.json 中的 type 字段 |
+| `forge task check-deps` | 校验任务依赖关系 |
+| `forge task reopen` | 重新激活 rejected/skipped 任务 |
+| `forge task transition` | 手动切换任务状态 |
+| `forge task validate-index` | 校验 index.json 结构 |
+
+### Flags 参考
+
+> 与各子命令 `--help` 输出一一对应
+
+#### task add
+
+| Flag | 用途 |
+|------|------|
+| `--title` | 任务标题（必填） |
+| `--type` | 任务类型（如 coding.feature, doc） |
+| `--priority` | 优先级：P0 / P1 / P2（默认 P1） |
+| `--template` | 模板名（读取 tasks/\_templates/\<name\>.md） |
+| `--description` | 任务描述（Markdown 正文） |
+| `--depends-on` | 逗号分隔的依赖任务 ID |
+| `--id` | 自定义任务 ID（缺省自动生成 disc-N） |
+| `--estimated-time` | 时间估算（如 "1-2h"） |
+| `--source-task-id` | 源任务 ID：自动解析到根祖先，注入 {{SOURCE\_TASK\_ID}} |
+| `--block-source` | 将源任务标记为 blocked |
+| `--breaking` | 标记为 breaking（触发全量测试） |
+| `--var` | 模板变量 key=value（可重复） |
+
+#### task list
+
+| Flag | 用途 |
+|------|------|
+| `--local` | 从主仓库 index.json 读取（忽略 worktree） |
+
+#### task query
+
+| Flag | 用途 |
+|------|------|
+| `-v, --verbose` | 显示全部字段（含关联 fix 链） |
+
+#### task submit
+
+| Flag | 用途 |
+|------|------|
+| `--data` | JSON 数据文件路径 |
+| `--json` | 以 JSON 格式输出结果 |
+| `--quiet` | 最少输出 |
+
+#### task index
+
+| Flag | 用途 |
+|------|------|
+| `--feature` | Feature slug（必填） |
+
+#### task transition
+
+| Flag | 用途 |
+|------|------|
+| `--reason` | 切换原因（必填） |
+
+#### feature
+
+| Flag | 用途 |
+|------|------|
+| `-v, --verbose` | 显示解析来源 |
+
+#### feature complete
+
+| Flag | 用途 |
+|------|------|
+| `--if-done` | 仅当所有任务已完成时执行 |
+
+#### worktree start
+
+| Flag | 用途 |
+|------|------|
+| `-i, --interactive` | 交互式选择 proposal 或 feature |
+| `-b, --source-branch` | 新 worktree 的源分支（默认 HEAD） |
+| `--no-launch` | 创建 worktree 但不启动 claude |
+
+#### worktree remove
+
+| Flag | 用途 |
+|------|------|
+| `--hard` | 删除 worktree + 本地分支 + 清理 |
+| `--force` | 强制删除（需配合 --hard） |
+
+#### init
+
+| Flag | 用途 |
+|------|------|
+| `--project-root` | 项目根目录（默认自动检测） |
+| `--skip-just` | 跳过 just 安装检查 |
+
+#### quality-gate
+
+| Flag | 用途 |
+|------|------|
+| `-v, --verbose` | 提前退出时输出调试信息 |
+
+#### prompt get-by-task-id
+
+| Flag | 用途 |
+|------|------|
+| `--fix-record-missed` | 使用 fix-record-missed 恢复模板 |
+
+#### surfaces
+
+| Flag | 用途 |
+|------|------|
+| `--types` | 输出去重的 surface 类型列表 |
+| `--project-root` | 项目根目录（默认自动检测） |
+
+#### surfaces detect
+
+| Flag | 用途 |
+|------|------|
+| `--apply` | 启用 TUI 确认并写入配置 |
+| `--project-root` | 项目根目录（默认自动检测） |
+
+#### config（全局 flag）
+
+| Flag | 用途 |
+|------|------|
+| `--project-root` | 项目根目录（默认自动检测） |
+
+#### fact list
+
+| Flag | 用途 |
+|------|------|
+| `--source` | 按来源过滤（static / runtime / manual） |
+| `--confidence` | 按置信度过滤（confirmed / inferred / assumed） |
+
+#### forensic search
+
+| Flag | 用途 |
+|------|------|
+| `--keyword` | 按用户消息关键词过滤 |
+| `--last` | 限制结果数量（默认 20） |
+| `--session` | 按 session ID 前缀过滤 |
+| `--skill` | 按调用的 skill 名称过滤 |
+
+#### forensic extract
+
+| Flag | 用途 |
+|------|------|
+| `--slug` | 写入 docs/forensics/\<name\>/evidence/ |
+| `--out` | 写入指定目录 |
 
 ---
 

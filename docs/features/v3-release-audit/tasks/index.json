@@ -166,7 +166,7 @@
       "dependencies": [
         "6"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "7-complete-cli-flags.md",
       "record": "records/7-complete-cli-flags.md",
       "type": "doc"
