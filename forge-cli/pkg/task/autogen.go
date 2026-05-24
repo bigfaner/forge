@@ -294,7 +294,7 @@ func GetQuickTestTasks(capabilities []string, auto forgeconfig.AutoConfig) []Aut
 // Empty fields are handled per spec:
 //   - {{MODE}} with empty Mode: omits the line containing {{MODE}}
 //   - {{SCOPE}} with empty Scope: omits the section (## Scope ... next ## heading)
-//   - {{INTERFACES}} with empty SurfaceTypes: "See .forge/config.yaml"
+//   - {{SURFACES}} with empty SurfaceTypes: "See .forge/config.yaml"
 //   - {{TEST_TYPE}} with empty TestType: omits the line containing {{TEST_TYPE}}
 //   - {{ACCEPTANCE_CRITERIA}} with empty AcceptanceCriteria: "- [ ] All acceptance criteria met"
 func renderBody(templateContent string, def AutoGenTaskDef, ctx BodyContext) string {
@@ -324,15 +324,15 @@ func renderBody(templateContent string, def AutoGenTaskDef, ctx BodyContext) str
 		s = strings.ReplaceAll(s, "{{SCOPE}}", strings.Join(scopeLines, "\n"))
 	}
 
-	// INTERFACES — default when empty
+	// SURFACES — default when empty
 	if len(ctx.SurfaceTypes) == 0 {
-		s = strings.ReplaceAll(s, "{{INTERFACES}}", "See .forge/config.yaml")
+		s = strings.ReplaceAll(s, "{{SURFACES}}", "See .forge/config.yaml")
 	} else {
-		var ifaceLines []string
-		for _, iface := range ctx.SurfaceTypes {
-			ifaceLines = append(ifaceLines, "- "+iface)
+		var surfaceLines []string
+		for _, surface := range ctx.SurfaceTypes {
+			surfaceLines = append(surfaceLines, "- "+surface)
 		}
-		s = strings.ReplaceAll(s, "{{INTERFACES}}", strings.Join(ifaceLines, "\n"))
+		s = strings.ReplaceAll(s, "{{SURFACES}}", strings.Join(surfaceLines, "\n"))
 	}
 
 	// TEST_TYPE — omit line when empty
