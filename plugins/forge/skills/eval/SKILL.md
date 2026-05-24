@@ -46,8 +46,7 @@ Rubrics may optionally declare `context` frontmatter (see `rules/rubric-context.
 flowchart TD
     A([Start]) --> B["1.1 Resolve Type & Load Rubric"]
     B --> PRE["1.4 Pre-Processing"]
-    PRE --> BAK["1.5 Backup DOC_DIR"]
-    BAK --> P0{"type == proposal?"}
+    PRE --> P0{"type == proposal?"}
     P0 -->|"no"| DISPATCH["Expert Dispatch + Iteration Init"]
     P0 -->|"yes"| P0A["Phase 0: Expert Inference"]
     P0A --> P0B{"Expert confirmed?"}
@@ -71,10 +70,7 @@ flowchart TD
     PARSE -->|"yes"| G{"3b. Gate (main session)"}
     PARSE -->|"no"| ERR
     G -->|"score >= target"| E
-    G -->|"score < target, no iterations left"| ROLL{"Final >= Initial?"}
-    ROLL -->|"yes"| E
-    ROLL -->|"no"| RESTORE["Restore from backup"]
-    RESTORE --> E
+    G -->|"score < target, no iterations left"| E
     G -->|"score < target, iterations remaining"| H["4. Revise (subagent)"]
     H --> F
     E --> NEXT["6. Ask next step"]
@@ -130,16 +126,6 @@ Multi-platform: run independent score→gate→revise loops per platform.
 
 Apply type-specific pre-processing per `rules/pre-processing.md` before scoring. All types: if rubric has `context` frontmatter, load filtered context files and concatenate into `CONTEXT_CONTENT`.
 
-### 1.5 Create Backup
-
-After `DOC_DIR` is fully resolved and pre-processing is complete, create a backup of the document directory:
-
-```bash
-cp -r "$DOC_DIR" "${DOC_DIR}.bak"
-```
-
-This backup is used for rollback on failure when revisions degrade the score (see Step 5: Rollback on Failure). If no `DOC_DIR` was resolved (e.g., `harness` type), skip backup creation silently.
-
 ## Phase 0: Freeform Expert Review (proposal only — two-tier sequential approval)
 
 This phase is executed **by default** when the resolved type is `proposal`. The design follows a sequential approval model: domain expert reviews first (Phase 0), then CTO reviews via rubric (Steps 2–4). Domain-specific findings from Phase 0 are injected into the CTO rubric scorer, ensuring the CTO evaluation accounts for issues the rubric alone would miss. For all other types, skip directly to the Expert Dispatch Table. The orchestrator iron laws apply: Phase 0 delegates to subagents via Agent tool, the main session orchestrates.
@@ -194,7 +180,7 @@ Extract structured findings from the freeform review narrative using a `general-
 
 Set `FREEFORM_INJECTION = true` and store the validated findings. The actual injection into the scorer prompt occurs during Step 2.1 per `rules/freeform-injection.md`.
 
-After the final report is generated and rollback decision is resolved (end of Step 5), record the expert's review history per `rules/freeform-expert-persistence.md` quality tracking section, and check auto-deprecation.
+After the final report is generated (end of Step 5), record the expert's review history per `rules/freeform-expert-persistence.md` quality tracking section, and check auto-deprecation.
 
 **Error: Injection ineffective**: If a baseline comparison is available and the injected run shows no substantive change (rubric delta < 15 AND attack points unchanged), annotate the eval report: "自由评审发现未影响 rubric 评分". This does not degrade — the rubric scoring still completed normally.
 
@@ -241,7 +227,7 @@ Score extraction and multi-expert merging per `rules/scorer-composition.md`.
 
 **Parse failure handling**: If the scorer subagent output cannot be parsed (no valid `SCORE: X/SCALE` pattern found in any scorer report), halt the pipeline with a clear error. This is a retryable failure — the agent should re-run eval with different input or debug the scorer prompt. Do NOT crash, do NOT proceed with zero score, do NOT continue with silent default values.
 
-On `ITERATION == 1`: store the merged score as `INITIAL_SCORE` for the Step 5 rollback comparison.
+On `ITERATION == 1`: store the merged score as `INITIAL_SCORE` for the Step 5 score progression comparison.
 
 ## Step 3a: Single-Pass (MAX_ITERATIONS ≤ 1)
 
@@ -280,14 +266,6 @@ After reviser completes: increment iteration counter, return to Step 2.
 ## Step 5: Final Report
 
 Generate report per `rules/report-format.md`: include final score, iteration summary, score progression table, dimension breakdown, and outcome. Apply type-specific additions as defined in the rules file.
-
-**Rollback on failure**: If the final score is below target AND all iterations are exhausted (failure outcome), do NOT auto-rollback. Compare `FINAL_SCORE` against `INITIAL_SCORE` (recorded after the first scoring in Step 2):
-
-- **FINAL_SCORE >= INITIAL_SCORE**: keep revised documents, delete backup: `rm -rf "${DOC_DIR}.bak"`. Report: "Revisions improved score ({{INITIAL_SCORE}} → {{FINAL_SCORE}}). Kept revised version."
-- **FINAL_SCORE < INITIAL_SCORE**: restore original: `rm -rf "$DOC_DIR" && cp -r "${DOC_DIR}.bak" "$DOC_DIR" && rm -rf "${DOC_DIR}.bak"`. Report: "Revisions degraded score ({{INITIAL_SCORE}} → {{FINAL_SCORE}}). Restored original."
-- **No backup exists** (e.g., skipped in Step 1.5): skip silently.
-
-This logic is fully automated (no `AskUserQuestion`) because eval may run inside a subagent where user confirmation is unavailable.
 
 ## Step 6: Next Step
 
