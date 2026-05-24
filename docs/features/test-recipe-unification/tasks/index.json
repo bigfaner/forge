@@ -84,7 +84,7 @@
       "dependencies": [
         "2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "5-cli-commands.md",
       "record": "records/5-cli-commands.md",
       "scope": "backend",

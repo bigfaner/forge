@@ -664,6 +664,38 @@ func TestInitConfigWithWorktree(t *testing.T) {
 	})
 }
 
+func TestAutoBehaviorPrompts_NoE2EReferences(t *testing.T) {
+	t.Run("prompt titles do not reference e2e tests", func(t *testing.T) {
+		defaults := forgeconfig.AutoConfigDefaults()
+		prompts := autoBehaviorPrompts(defaults)
+
+		for _, p := range prompts {
+			lower := strings.ToLower(p.title)
+			if strings.Contains(lower, "e2e") || strings.Contains(lower, "end-to-end") {
+				t.Errorf("prompt title should not reference e2e/end-to-end, got: %q", p.title)
+			}
+			lowerDesc := strings.ToLower(p.desc)
+			if strings.Contains(lowerDesc, "e2e") || strings.Contains(lowerDesc, "end-to-end") {
+				t.Errorf("prompt desc should not reference e2e/end-to-end, got: %q", p.desc)
+			}
+		}
+	})
+
+	t.Run("test prompts reference 'test' not 'e2e-test'", func(t *testing.T) {
+		defaults := forgeconfig.AutoConfigDefaults()
+		prompts := autoBehaviorPrompts(defaults)
+
+		// Find the test-related prompts (first two)
+		testPrompts := prompts[:2]
+		for _, p := range testPrompts {
+			lower := strings.ToLower(p.title)
+			if !strings.Contains(lower, "test") {
+				t.Errorf("test prompt title should contain 'test', got: %q", p.title)
+			}
+		}
+	})
+}
+
 func TestWorktreeConfigRoundTrip(t *testing.T) {
 	t.Run("worktree config round-trips through YAML", func(t *testing.T) {
 		dir := t.TempDir()

@@ -258,14 +258,14 @@ type autoBehaviorPrompt struct {
 func autoBehaviorPrompts(defaults forgeconfig.AutoConfig) []autoBehaviorPrompt {
 	return []autoBehaviorPrompt{
 		{
-			title: fmt.Sprintf("%s: auto-run e2e tests?", hlMode("Quick")),
-			desc:  fmt.Sprintf("Automatically run end-to-end tests during %s (lightweight verification after each task).", hl("quick mode")),
+			title: fmt.Sprintf("%s: auto-run advanced tests?", hlMode("Quick")),
+			desc:  fmt.Sprintf("Automatically run surface-level advanced tests during %s (lightweight verification after each task).", hl("quick mode")),
 			def:   defaults.Test.Quick,
 			set:   func(a *forgeconfig.AutoConfig, v bool) { a.Test.Quick = v },
 		},
 		{
-			title: fmt.Sprintf("%s: auto-run e2e tests?", hlMode("Full")),
-			desc:  fmt.Sprintf("Automatically run end-to-end tests during %s (comprehensive coverage).", hl("full mode")),
+			title: fmt.Sprintf("%s: auto-run advanced tests?", hlMode("Full")),
+			desc:  fmt.Sprintf("Automatically run surface-level advanced tests during %s (comprehensive coverage).", hl("full mode")),
 			def:   defaults.Test.Full,
 			set:   func(a *forgeconfig.AutoConfig, v bool) { a.Test.Full = v },
 		},
