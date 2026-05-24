@@ -31,7 +31,7 @@ If R2L is enabled but environment is not ready (see Environment Check below), sk
 
 Before entering the R2L loop, verify the execution environment is ready:
 
-1. Read the project's surface type from `.forge/config.yaml` (`forge config get surface`).
+1. Read the project's surface type from `.forge/config.yaml` (`forge surfaces`).
 2. Check surface-specific prerequisites:
    - **CLI/TUI**: Binary can be compiled (`go build`, `cargo build`, etc.). Build command derived from Fact Table or Convention.
    - **API**: Service is reachable at the configured base URL. Database (if applicable) is accessible.

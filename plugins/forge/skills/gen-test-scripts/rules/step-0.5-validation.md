@@ -12,7 +12,7 @@ Determine the project's interface surface type to drive per-surface generation s
 Read `.forge/config.yaml` from the project root and extract the `surface` field.
 
 ```bash
-forge config get surface
+forge surfaces
 ```
 
 | Result | Action |

@@ -143,7 +143,7 @@ Before running tests, verify the execution environment is ready for the detected
 
 Read the rule file `rules/env-check.md` for the detection framework, then read the surface-specific rule file to identify which checks to perform:
 
-1. Get the current surface type: `forge config get surface`
+1. Get the current surface type: `forge surfaces`
 2. Read the surface rule file: `skills/gen-journeys/rules/surface-<type>.md` -- extract the "Environment Readiness Checks" table
 3. Execute each check item from the table
 4. Report results

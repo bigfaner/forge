@@ -9,7 +9,7 @@ Before executing tests, verify that the execution environment meets the requirem
 
 ## How It Works
 
-1. Read the current surface type from `forge config get surface`
+1. Read the current surface type from `forge surfaces`
 2. Look up the corresponding surface rule file in `skills/gen-journeys/rules/surface-<type>.md` -- specifically the "Environment Readiness Checks" table
 3. Execute each check item listed for that surface type
 4. Report results: all-pass -> proceed to test execution; any-fail -> output diagnostics and abort
