@@ -1,7 +1,7 @@
 ---
 feature: "v3-release-audit"
 created: "2026-05-24"
-status: tasks
+status: completed
 mode: quick
 ---
 
