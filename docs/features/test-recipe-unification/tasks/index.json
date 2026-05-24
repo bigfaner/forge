@@ -102,7 +102,7 @@
         "4",
         "5"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "6-go-test-alignment.md",
       "record": "records/6-go-test-alignment.md",
       "scope": "backend",

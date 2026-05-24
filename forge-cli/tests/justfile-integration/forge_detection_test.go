@@ -18,7 +18,7 @@ import (
 // Note: The current justfile is a Go-backend project using `cd forge-cli` prefix.
 // Scoped recipes accept a scope parameter but don't dispatch by scope (no case/esac).
 // The project-type recipe has been removed — project type is now read from .forge/config.yaml
-// via `forge probe`. Template recipes (e2e-test, e2e-setup, e2e-verify) are provided by
+// via `forge probe`. Template recipes (test, test-setup, unit-test) are provided by
 // the profile manifest, not baked into the justfile.
 
 // --- TC-FJ-001 to TC-FJ-010: Standard recipes presence ---

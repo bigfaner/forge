@@ -8,7 +8,7 @@ import (
 	"forge-cli/pkg/forgeconfig"
 )
 
-// defaultAuto is the current default (consolidateSpecs quick=true, e2eTest quick=false).
+// defaultAuto is the current default (consolidateSpecs quick=true, test quick=false).
 var defaultAuto = forgeconfig.AutoConfigDefaults()
 
 // allEnabledAuto enables all auto-behaviors for tests that need quick + full tasks.

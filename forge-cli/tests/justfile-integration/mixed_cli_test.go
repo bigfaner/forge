@@ -307,11 +307,12 @@ func TestTC_004_TestRecipeHasJourneyParameter(t *testing.T) {
 		"Expected test recipe with journey parameter in mixed template")
 }
 
-// Traceability: TC-005 -> Story 5 / AC-2 (verify run-tasks uses standard just commands)
+// Traceability: TC-005 -> Story 5 / AC-2 (verify run-tasks delegates test execution to submit gate)
+// Note: run-tasks.md explicitly delegates test execution to the CLI submit gate ("NO running tests directly").
+// This test verifies no hardcoded language-specific test commands appear in the dispatcher.
 func TestTC_005_RunTasksBreakingGateUsesJustUnitTestForVerification(t *testing.T) {
 	content := testkit.ReadProjectFile(t, "../plugins/forge/commands/run-tasks.md")
-	assert.True(t, strings.Contains(content, "just unit-test") || strings.Contains(content, "just test"),
-		"Expected \"just unit-test\" or \"just test\" to appear in run-tasks.md")
+	// run-tasks.md delegates to submit gate — verify no hardcoded test commands
 	assert.False(t, strings.Contains(content, "go test ./..."),
 		"Expected \"go test ./...\" NOT to appear in run-tasks.md")
 	assert.False(t, strings.Contains(content, "npm test"),
@@ -417,11 +418,11 @@ func TestTC_014_GenTestScriptsStep4UsesJustTest(t *testing.T) {
 
 // Traceability: TC-015 -> Spec Section 5.2 (migrated: just build -> just compile per tech-design)
 // Note: error-fixer.md has been removed as a standalone agent. Error fixing is now handled
-// by the execute-task command with fix-task template. Verify the execute-task.md uses just commands.
+// by the execute-task command with fix-task template. Verify execute-task.md delegates verification
+// to submit-task rather than hardcoding language-specific commands.
 func TestTC_015_ErrorFixerUsesJustCompileAndJustUnitTest(t *testing.T) {
 	content := testkit.ReadProjectFile(t, "../plugins/forge/commands/execute-task.md")
-	assert.True(t, strings.Contains(content, "just unit-test") || strings.Contains(content, "just test"),
-		"Expected \"just unit-test\" or \"just test\" to appear in execute-task.md (error fixer verification)")
+	// execute-task delegates to submit-task for verification — verify no hardcoded commands
 	assert.False(t, strings.Contains(content, "go build ./..."),
 		"Expected \"go build ./...\" NOT to appear in execute-task.md")
 	assert.False(t, strings.Contains(content, "go vet ./..."),
@@ -433,11 +434,12 @@ func TestTC_015_ErrorFixerUsesJustCompileAndJustUnitTest(t *testing.T) {
 }
 
 // Traceability: TC-016 -> Spec Section 5.2 (migrated: just build -> just compile per tech-design)
+// Note: execute-task delegates verification to submit-task via "submit-task is mandatory" rule.
 func TestTC_016_ExecuteTaskStep3UsesJustCompileAndJustTest(t *testing.T) {
 	content := testkit.ReadProjectFile(t, "../plugins/forge/commands/execute-task.md")
-	// execute-task.md references just unit-test or just test in Step 3
-	assert.True(t, strings.Contains(content, "just unit-test") || strings.Contains(content, "just test"),
-		"Expected \"just unit-test\" or \"just test\" to appear in execute-task.md Step 3")
+	// execute-task delegates to submit-task for verification
+	assert.True(t, strings.Contains(content, "submit-task"),
+		"Expected \"submit-task\" reference in execute-task.md (verification delegation)")
 }
 
 // Traceability: TC-017 -> Spec Section 5.2

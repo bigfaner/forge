@@ -109,8 +109,8 @@ func TestCheckUnmetDeps_KeyDiffersFromID(t *testing.T) {
 			Feature: "test",
 		}
 		index.SetTasks(map[string]task.Task{
-			"src":           {ID: "src", Dependencies: []string{"T-test-run"}},
-			"run-e2e-tests": {ID: "T-test-run", Status: "completed"},
+			"src":      {ID: "src", Dependencies: []string{"T-test-run"}},
+			"run-test": {ID: "T-test-run", Status: "completed"},
 		})
 		unmet := checkUnmetDeps(index, &task.Task{ID: "src", Dependencies: []string{"T-test-run"}})
 		if len(unmet) != 0 {
@@ -123,8 +123,8 @@ func TestCheckUnmetDeps_KeyDiffersFromID(t *testing.T) {
 			Feature: "test",
 		}
 		index.SetTasks(map[string]task.Task{
-			"src":           {ID: "src", Dependencies: []string{"T-test-run"}},
-			"run-e2e-tests": {ID: "T-test-run", Status: "pending"},
+			"src":      {ID: "src", Dependencies: []string{"T-test-run"}},
+			"run-test": {ID: "T-test-run", Status: "pending"},
 		})
 		unmet := checkUnmetDeps(index, &task.Task{ID: "src", Dependencies: []string{"T-test-run"}})
 		if len(unmet) != 1 || unmet[0] != "T-test-run" {
@@ -137,10 +137,10 @@ func TestCheckUnmetDeps_KeyDiffersFromID(t *testing.T) {
 			Feature: "test",
 		}
 		index.SetTasks(map[string]task.Task{
-			"src":           {ID: "src"},
-			"run-e2e-tests": {ID: "T-test-run", Status: "completed"},
-			"disc-1":        {ID: "disc-1", Status: "completed"},
-			"fix-1":         {ID: "fix-1", Status: "pending"},
+			"src":      {ID: "src"},
+			"run-test": {ID: "T-test-run", Status: "completed"},
+			"disc-1":   {ID: "disc-1", Status: "completed"},
+			"fix-1":    {ID: "fix-1", Status: "pending"},
 		})
 		unmet := checkUnmetDeps(index, &task.Task{ID: "src", Dependencies: []string{"T-test-run", "disc-1", "fix-1"}})
 		if len(unmet) != 1 || unmet[0] != "fix-1" {
@@ -166,8 +166,8 @@ func TestCheckUnmetDeps_KeyDiffersFromID(t *testing.T) {
 			Feature: "test",
 		}
 		index.SetTasks(map[string]task.Task{
-			"src":           {ID: "src"},
-			"run-e2e-tests": {ID: "T-test-run", Status: "skipped"},
+			"src":      {ID: "src"},
+			"run-test": {ID: "T-test-run", Status: "skipped"},
 		})
 		unmet := checkUnmetDeps(index, &task.Task{ID: "src", Dependencies: []string{"T-test-run"}})
 		if len(unmet) != 0 {
