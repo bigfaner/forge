@@ -1,7 +1,7 @@
 ---
 feature: "cli-query-knowledge-in-guide"
 created: "2026-05-24"
-status: tasks
+status: completed
 mode: quick
 ---
 
