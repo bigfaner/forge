@@ -482,6 +482,8 @@ func ensureResultToAction(r just.EnsureResult) initAction {
 
 // runSurfaceConfig runs surface detection and TUI confirmation.
 // Skipped in non-interactive mode or when config doesn't exist.
+// Re-run behavior: when config.yaml already has surfaces configured, prompts
+// the user with Confirm / Re-detect / Edit options.
 func runSurfaceConfig(projectRoot string) initAction {
 	configFile := filepath.Join(projectRoot, feature.ForgeDir, feature.ForgeConfigFileName)
 
@@ -496,8 +498,61 @@ func runSurfaceConfig(projectRoot string) initAction {
 		return initAction{status: "SKIPPED", target: "surfaces", detail: "non-interactive terminal"}
 	}
 
-	// Run TUI confirmation
-	surfaces, cancelled := askSurfaceConfirmation(projectRoot)
+	// Check if surfaces are already configured (re-run behavior)
+	existingCfg, err := forgeconfig.ReadConfig(projectRoot)
+	if err != nil {
+		return initAction{status: "FAILED", target: "surfaces", detail: err.Error()}
+	}
+
+	if existingCfg != nil && len(existingCfg.Surfaces) > 0 {
+		// Re-run flow: ask user what to do
+		return handleRerunSurfaceConfig(projectRoot, configFile, existingCfg)
+	}
+
+	// First-run flow: run detection + TUI confirmation
+	return runNewSurfaceDetection(projectRoot, configFile)
+}
+
+// handleRerunSurfaceConfig handles the re-run flow when surfaces already exist in config.
+func handleRerunSurfaceConfig(projectRoot, configFile string, existingCfg *forgeconfig.Config) initAction {
+	action, cancelled := askRerunPrompt(existingCfg.Surfaces)
+	if cancelled {
+		return initAction{status: "CANCELLED", target: "surfaces", detail: "Ctrl+C"}
+	}
+
+	switch action {
+	case "confirm":
+		// Keep existing surfaces
+		return initAction{status: "SKIPPED", target: "surfaces", detail: "already configured"}
+	case "edit":
+		// Hard Rule: Edit calls the same manualSurfaceEntry function as first-run
+		surfaces, cancelled := manualSurfaceEntry()
+		if cancelled {
+			return initAction{status: "CANCELLED", target: "surfaces", detail: "Ctrl+C"}
+		}
+		if len(surfaces) == 0 {
+			return initAction{status: "SKIPPED", target: "surfaces", detail: "no surfaces entered"}
+		}
+		existingCfg.Surfaces = surfaces
+		if err := writeConfigFile(configFile, existingCfg); err != nil {
+			fmt.Fprintf(os.Stderr, "ERROR: failed to write surfaces: %v\n", err)
+			return initAction{status: "FAILED", target: "surfaces", detail: err.Error()}
+		}
+		return initAction{status: "CREATED", target: "surfaces", detail: formatSurfacesSummary(surfaces, nil)}
+	default:
+		// "redetect" — run full detection + inference pipeline
+		return runNewSurfaceDetection(projectRoot, configFile)
+	}
+}
+
+// runNewSurfaceDetection runs detection and TUI confirmation, then writes results.
+// runNewSurfaceDetection is the function variable for running new surface detection.
+// Variable for testability.
+var runNewSurfaceDetection = runNewSurfaceDetectionImpl
+
+func runNewSurfaceDetectionImpl(projectRoot, configFile string) initAction {
+	// Run TUI confirmation (detection + display + user interaction)
+	surfaces, sources, cancelled := askSurfaceConfirmation(projectRoot)
 	if cancelled {
 		return initAction{status: "CANCELLED", target: "surfaces", detail: "Ctrl+C"}
 	}
@@ -505,12 +560,18 @@ func runSurfaceConfig(projectRoot string) initAction {
 		return initAction{status: "SKIPPED", target: "surfaces", detail: "no surfaces detected"}
 	}
 
-	// Write surfaces to existing config
+	// Write surfaces to config (source annotations are display-only, not persisted)
+	return writeSurfacesToConfig(configFile, surfaces, sources)
+}
+
+// writeSurfacesToConfig writes surfaces to the config file.
+// Source annotations are NOT persisted — only surface types are written.
+// Sources are used only for the detail string in the init summary.
+func writeSurfacesToConfig(configFile string, surfaces forgeconfig.SurfacesMap, sources forgeconfig.SourcesMap) initAction {
+	// Read config from the directory containing the config file
+	projectRoot := filepath.Dir(filepath.Dir(configFile))
 	cfg, err := forgeconfig.ReadConfig(projectRoot)
-	if err != nil {
-		return initAction{status: "FAILED", target: "surfaces", detail: err.Error()}
-	}
-	if cfg == nil {
+	if err != nil || cfg == nil {
 		cfg = &forgeconfig.Config{}
 	}
 
@@ -520,9 +581,5 @@ func runSurfaceConfig(projectRoot string) initAction {
 		return initAction{status: "FAILED", target: "surfaces", detail: err.Error()}
 	}
 
-	// Build detail string
-	if surfaces["."] != "" && len(surfaces) == 1 {
-		return initAction{status: "CREATED", target: "surfaces", detail: surfaces["."]}
-	}
-	return initAction{status: "CREATED", target: "surfaces", detail: fmt.Sprintf("%d mappings", len(surfaces))}
+	return initAction{status: "CREATED", target: "surfaces", detail: formatSurfacesSummary(surfaces, sources)}
 }

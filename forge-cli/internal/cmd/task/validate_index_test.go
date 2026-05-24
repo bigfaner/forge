@@ -1619,7 +1619,6 @@ func TestValidator_QuickMode(t *testing.T) {
 	})
 }
 
-
 // --- System type interception tests ---
 
 func TestValidator_ValidateTasks_SystemTypeRejectedForBusinessTask(t *testing.T) {
