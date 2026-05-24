@@ -21,6 +21,10 @@ inputs:
    - Task files may contain ## Hard Rules with MUST/MUST NOT directives
    - These directives override agent judgment, ## Implementation Notes, and strategy defaults
    - Never substitute, modify, or skip a Hard Rules directive
+8. SPEC AUTHORITY FALLBACK — if the synthesized strategy does not include a Reference Files declaration, you MUST still:
+   - Read the task file's `## Reference Files` section
+   - Treat listed documents as authoritative sources (priority: `## Hard Rules` > `## Reference Files` > existing code)
+   - Output a confirmation: "Fallback: Loaded Reference Files from task file: [list]"
 </EXTREMELY-IMPORTANT>
 
 ## Execution Protocol

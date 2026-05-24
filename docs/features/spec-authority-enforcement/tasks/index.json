@@ -32,7 +32,7 @@
       "title": "Add Reference Files fallback rule to task-executor.md Hard Constraints",
       "priority": "P0",
       "estimatedTime": "20m",
-      "status": "pending",
+      "status": "completed",
       "file": "3-task-executor-fallback.md",
       "record": "records/3-task-executor-fallback.md",
       "type": "doc"
