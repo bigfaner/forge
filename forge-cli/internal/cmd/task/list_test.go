@@ -14,7 +14,7 @@ import (
 
 func TestListCmd_Metadata(t *testing.T) {
 	t.Run("command metadata", func(t *testing.T) {
-		if listCmd.Use != "list" {
+		if listCmd.Use != "list [slug]" {
 			t.Errorf("Use = %q, want %q", listCmd.Use, "list")
 		}
 		if listCmd.Short == "" {
@@ -25,10 +25,18 @@ func TestListCmd_Metadata(t *testing.T) {
 		}
 	})
 
-	t.Run("no args rejected by cobra.NoArgs", func(t *testing.T) {
-		err := listCmd.Args(listCmd, []string{"extra"})
-		if err == nil {
-			t.Error("expected error for extra args, got nil")
+	t.Run("accepts at most one arg", func(t *testing.T) {
+		// 0 args should be accepted
+		if err := listCmd.Args(listCmd, []string{}); err != nil {
+			t.Errorf("expected 0 args to be accepted, got error: %v", err)
+		}
+		// 1 arg (slug) should be accepted
+		if err := listCmd.Args(listCmd, []string{"my-feature"}); err != nil {
+			t.Errorf("expected 1 arg to be accepted, got error: %v", err)
+		}
+		// 2 args should be rejected
+		if err := listCmd.Args(listCmd, []string{"a", "b"}); err == nil {
+			t.Error("expected error for 2 args, got nil")
 		}
 	})
 
@@ -226,8 +234,8 @@ func TestListCmd_ColumnAlignment(t *testing.T) {
 		}
 
 		segments := strings.Split(sepLine, "  ")
-		if len(segments) != 4 {
-			t.Fatalf("expected 4 segments in separator, got %d: %q", len(segments), segments)
+		if len(segments) != 6 {
+			t.Fatalf("expected 6 segments in separator, got %d: %q", len(segments), segments)
 		}
 
 		// ID column must accommodate the longest ID ("1.summary" = 9 chars)
@@ -307,6 +315,129 @@ func TestListCmd_TitleTruncation(t *testing.T) {
 		}
 		if !strings.Contains(output, "...") {
 			t.Errorf("truncated title should end with '...', got:\n%s", output)
+		}
+	})
+}
+
+func TestListCmd_SlugArg(t *testing.T) {
+	t.Run("slug arg shows tasks for specified feature", func(t *testing.T) {
+		// Setup: create a project with feature "target-feat" containing tasks
+		tasks := map[string]task.Task{
+			"1": {ID: "1", Title: "Target task one", Type: "coding.feature", Status: "completed"},
+			"2": {ID: "2", Title: "Target task two", Type: "coding.enhancement", Status: "pending"},
+		}
+		_ = setupFullProject(t, SetupOpts{
+			Tasks:       tasks,
+			FeatureName: "target-feat",
+		})
+
+		output := captureStdout(func() {
+			err := runList(nil, []string{"target-feat"})
+			if err != nil {
+				t.Fatalf("runList returned error: %v", err)
+			}
+		})
+
+		if !strings.Contains(output, "2 found") {
+			t.Errorf("output should contain '2 found', got:\n%s", output)
+		}
+		if !strings.Contains(output, "feature: target-feat") {
+			t.Errorf("output should contain 'feature: target-feat', got:\n%s", output)
+		}
+		if !strings.Contains(output, "Target task one") {
+			t.Errorf("output should contain task title, got:\n%s", output)
+		}
+	})
+
+	t.Run("slug not matching any feature dir returns error", func(t *testing.T) {
+		// Setup: create a project with a different feature
+		_ = setupFullProject(t, SetupOpts{
+			Tasks:       map[string]task.Task{},
+			FeatureName: "existing-feat",
+		})
+
+		err := runList(nil, []string{"nonexistent"})
+		if err == nil {
+			t.Fatal("expected error for nonexistent slug, got nil")
+		}
+		if !strings.Contains(err.Error(), "nonexistent") {
+			t.Errorf("error should mention the slug, got: %v", err)
+		}
+	})
+
+	t.Run("feature exists but no index.json shows no tasks message", func(t *testing.T) {
+		dir := setupFullProject(t, SetupOpts{
+			Tasks:       map[string]task.Task{},
+			FeatureName: "empty-slug",
+		})
+		// Remove the index.json to simulate missing file
+		indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("empty-slug"))
+		if err := os.Remove(indexPath); err != nil {
+			t.Fatalf("failed to remove index.json: %v", err)
+		}
+
+		output := captureStdout(func() {
+			err := runList(nil, []string{"empty-slug"})
+			if err != nil {
+				t.Fatalf("runList returned error: %v", err)
+			}
+		})
+
+		if !strings.Contains(output, "no tasks found") {
+			t.Errorf("output should contain 'no tasks found', got:\n%s", output)
+		}
+		if !strings.Contains(output, "empty-slug") {
+			t.Errorf("output should mention the slug, got:\n%s", output)
+		}
+	})
+
+	t.Run("no args backward compatible", func(t *testing.T) {
+		tasks := map[string]task.Task{
+			"1": {ID: "1", Title: "Backward compat task", Type: "coding.feature", Status: "completed"},
+		}
+		_ = setupFullProject(t, SetupOpts{
+			Tasks:       tasks,
+			FeatureName: "compat-feat",
+		})
+
+		output := captureStdout(func() {
+			err := runList(nil, []string{})
+			if err != nil {
+				t.Fatalf("runList returned error: %v", err)
+			}
+		})
+
+		if !strings.Contains(output, "1 found") {
+			t.Errorf("output should contain '1 found', got:\n%s", output)
+		}
+		if !strings.Contains(output, "feature: compat-feat") {
+			t.Errorf("output should contain 'feature: compat-feat', got:\n%s", output)
+		}
+	})
+}
+
+func TestListCmd_LocalFlag(t *testing.T) {
+	t.Run("--local flag reads from main repo", func(t *testing.T) {
+		tasks := map[string]task.Task{
+			"1": {ID: "1", Title: "Local task", Type: "coding.feature", Status: "completed"},
+		}
+		_ = setupFullProject(t, SetupOpts{
+			Tasks:       tasks,
+			FeatureName: "local-feat",
+		})
+
+		output := captureStdout(func() {
+			err := runList(nil, []string{"local-feat"})
+			if err != nil {
+				t.Fatalf("runList returned error: %v", err)
+			}
+		})
+
+		if !strings.Contains(output, "1 found") {
+			t.Errorf("output should contain '1 found', got:\n%s", output)
+		}
+		if !strings.Contains(output, "Local task") {
+			t.Errorf("output should contain task title, got:\n%s", output)
 		}
 	})
 }

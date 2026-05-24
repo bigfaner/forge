@@ -25,10 +25,7 @@ You are a senior reviewer evaluating the document at {{DOC_DIR}} against the rub
 
 Read the scorer protocol at `experts/protocol/scorer-protocol.md`.
 
-For each expert, compose a scorer prompt by concatenating:
-1. Scorer protocol content (with template variables replaced: `{{DOC_DIR}}`, `{{RUBRIC_PATH}}`, `{{REPORT_PATH}}`, `{{ITERATION}}`, `{{PREVIOUS_REPORT_PATH}}`)
-2. Expert file content (e.g., `experts/scorer/pm.md`)
-3. Context injection (if `CONTEXT_CONTENT` was loaded in Step 1.4 -- see below)
+Compose the scorer prompt by concatenating sections in the order defined in "Order in final composed prompt" below. Template variables in the scorer protocol: `{{DOC_DIR}}`, `{{RUBRIC_PATH}}`, `{{REPORT_PATH}}`, `{{ITERATION}}`, `{{PREVIOUS_REPORT_PATH}}`.
 
 **Context Injection**: If `CONTEXT_CONTENT` was loaded in Step 1.4, append the following section after the expert content in every composed prompt:
 
@@ -42,22 +39,39 @@ The following project reference material is provided for reality-checking the ev
 
 For unmapped types (not in dispatch table), compose a single prompt using the generic inline fallback above plus the scorer protocol (with variables replaced) plus context injection.
 
-# Freeform Findings Injection (Phase 0)
+# Freeform Pre-Revision — Scorer Composition
 
-When Phase 0 was executed and produced valid findings (i.e., `FREEFORM_INJECTION = true` in the eval skill), append the `<injected-freeform-findings>` block **after** all existing sections in the composed scorer prompt.
+When pre-revision was executed (`PRE_REVISION_EXECUTED = true`, set by SKILL.md P0.5g on successful pre-revision), append annotated blind review instructions to the composed scorer prompt. The Scorer does NOT see freeform findings content — only `<!-- pre-revised -->` markers in the document.
 
-Follow the injection rules in `rules/freeform-injection.md`:
-1. Format the validated findings array into `{{FORMATTED_FINDINGS}}` (one line per finding: `- **[severity]** summary | 原文引用: "quote"`)
-2. Wrap in `<injected-freeform-findings>` block with the standard header and instructions
-3. If `LOW_HIT_RATE = true`, include the partial extraction annotation and append the complete freeform review narrative
+When `PRE_REVISION_EXECUTED` is not set (no freeform review, Phase 0 degraded, or non-proposal type), no freeform block is added — the composed prompt is identical to the standard flow.
 
-**Order in final composed prompt** (when freeform injection is active):
+## Annotated Blind Review Instructions
+
+When pre-revision mode is active, append the following instructions to the composed scorer prompt **after** all existing sections:
+
+```
+<annotated-blind-review>
+This document has undergone a Pre-Revision phase. Revised paragraphs are annotated with HTML comment markers `<!-- pre-revised: {severity} -->`.
+
+Annotated blind review rules:
+1. `<!-- pre-revised: {severity} -->` markers indicate paragraphs modified during Pre-Revision. For marked regions: focus on whether the revision introduced new issues or omissions, rather than re-evaluating the original corrected problem.
+2. The severity marker is for attention allocation only; it does not affect scoring criteria.
+3. In the eval report, record attack density separately for annotated and unannotated regions for bias detection. Format:
+
+   **Bias Detection Report**:
+   - Annotated regions: N attack points / X paragraphs = density Y
+   - Unannotated regions: M attack points / Z paragraphs = density W
+   - Ratio (annotated/unannotated): R
+
+4. When the Scorer's rubric judgment contradicts the pre-revision direction (e.g., Scorer believes a paragraph should be deleted but pre-revision just added it), generate the attack point per rubric standards, but tag it with `conflict-with-pre-revision` for review.
+</annotated-blind-review>
+```
+
+**Order in final composed prompt**:
 1. Scorer protocol (with template variables replaced)
 2. Expert file content
 3. `<injected-context>` block (if CONTEXT_CONTENT was loaded)
-4. `<injected-freeform-findings>` block (if FREEFORM_INJECTION = true)
-
-When `FREEFORM_INJECTION` is not set (no `--freeform-expert`, or Phase 0 degraded), no freeform block is added — the composed prompt is identical to the standard flow.
+4. `<annotated-blind-review>` block (if `PRE_REVISION_EXECUTED = true`, pre-revision mode)
 
 # Scorer Agent Inputs
 

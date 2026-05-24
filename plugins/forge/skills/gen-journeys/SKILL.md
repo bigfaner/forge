@@ -17,66 +17,61 @@ This skill only generates Journey narrative documents (per-Journey Markdown file
 
 ## Surface Detection
 
-Before processing PRD sources, detect the project's surface type. Surface determines testing strategy, required Outcomes, and test level emphasis.
+Before processing PRD sources, determine the project's surface type via the `forge surfaces` CLI command. Surface determines testing strategy, required Outcomes, and test level emphasis.
 
-### Detection Process
+### Detection via CLI
 
-1. Read all surface rule files from `rules/surface-*.md` (each file defines detection signals for one surface type)
-2. Scan the project for signals defined in each rule file's "Detection Signals" section
-3. Match detected signals against the detection tables to determine the surface type
+Query the project's configured surface type using `forge surfaces <path>`:
 
-### Signal Matching Table
+```bash
+forge surfaces <path>
+```
 
-| Signal Combination | Surface Type |
-|---------|---------|
-| `main.go` + `cobra.Command` / `urfave/cli` | CLI |
-| `main.go` + `tea.Program` / `tview.Application` | TUI |
-| `package.json` + `React` / `Vue` / `Svelte` + browser DOM entry | WebUI |
-| `AndroidManifest.xml` or `*.xcodeproj` + UI framework dependency | Mobile |
-| `main.go` + `http.Handler` / `gin` / `echo` and no frontend entry | API |
-| `package.json` + `express` / `fastify` / `koa` and no frontend framework | API |
-| `pyproject.toml`/`setup.py` + `pytest`/`unittest` and no frontend entry | API |
-| `pom.xml`/`build.gradle` + `JUnit`/`TestNG` and no frontend entry | API |
-| `Cargo.toml` + `#[cfg(test)]`/`cargo test` and no frontend entry | CLI |
-| `package.json` + `commander` / `yargs` / `oclif` / `inquirer` and no frontend framework | CLI |
-| `package.json` + `blessed` / `ink` / `neo-blessed` and no frontend framework | TUI |
-| `pyproject.toml`/`setup.py` + `click`/`typer`/`argparse` and no frontend entry | CLI |
-| `pyproject.toml`/`setup.py` + `rich`/`textual`/`prompt_toolkit` and no frontend entry | TUI |
-| `Cargo.toml` + `clap`/`structopt`/`gum` and no frontend entry | CLI |
-| `Cargo.toml` + `ratatui`/`cursive` and no frontend entry | TUI |
+**Exit code contract**:
 
-### Detection Outcomes
+| Exit Code | Meaning | Action |
+|-----------|---------|--------|
+| 0 | Surface type found. stdout contains the surface type string (e.g., `web`, `api`, `cli`, `tui`, `mobile`). | Parse stdout to obtain the surface type. Proceed to rule loading. |
+| 1 | No surface configured for the given path. stderr contains an error message with configuration guidance. | **Pause pipeline**. Show the stderr message to the user and ask them to configure surfaces via `forge init`. |
 
-| Outcome | Action |
-|---------|--------|
-| Single surface matched | Proceed with detected surface. Record detection result. |
-| Multiple surfaces matched | **Pause pipeline**. Report all matched signals and candidate surfaces. Ask user to confirm which surface type applies. |
-| No surface matched | **Pause pipeline**. Report all detected signals. Ask user to manually specify the surface type. |
+**Examples**:
 
-### Persist Detection Result
+```bash
+# Single-surface project (scalar form): any path returns the same type
+forge surfaces .
+# stdout: api  (exit 0)
 
-After surface detection succeeds (single match or user confirmation), persist the result:
+# Monorepo with path-level surfaces: query specific path
+forge surfaces frontend/src
+# stdout: web  (exit 0)
 
-1. Write the surface type to `.forge/config.yaml` in the `surface` field (e.g., `surface: cli`)
-2. Record the detection metadata for diagnostic purposes:
-   - `detected_surface`: the surface type string
-   - `matched_signals`: list of signals that triggered the match
-   - `confidence`: high / medium / low
-   - `all_signals`: all signals detected during scanning
+# Path not configured
+forge surfaces unknown-dir
+# stderr: Error: no surface found for path "unknown-dir". Run `forge init` to configure surfaces.  (exit 1)
+```
+
+### Detection Flow
+
+1. Run `forge surfaces .` (or the relevant source path for the feature being tested)
+2. If exit code is 0: parse stdout to get the surface type string
+3. If exit code is 1: pause the pipeline and ask the user to configure surfaces
+4. Load the corresponding rule file from `rules/surface-<type>.md`
+
+**Supported surface types**: `web`, `api`, `cli`, `tui`, `mobile`
+
+### Surface Rule Loading
+
+When generating Journeys, load the detected surface's rule file (`rules/surface-<type>.md`) to inform:
+- Which boundary/error Outcomes must be derived (from "Required Outcome Reference")
+- Test level emphasis ratio (from "Test Strategy Guidance")
+- Risk-level Outcome density targets adjusted by surface-specific guidance
 
 ### Extensibility
 
 New surface types can be added by creating a new `rules/surface-<type>.md` file following the same 4-section structure (Detection Signals, General Testing Principles, Test Strategy Guidance, Required Outcome Reference). No pipeline code changes are needed.
 
-### Surface Rule Loading
-
-When generating Journeys, load the detected surface's rule file to inform:
-- Which boundary/error Outcomes must be derived (from "Required Outcome Reference")
-- Test level emphasis ratio (from "Test Strategy Guidance")
-- Risk-level Outcome density targets adjusted by surface-specific guidance
-
 <HARD-RULE>
-Surface detection must complete before Journey generation begins. If detection is ambiguous or fails, the pipeline must pause and wait for user input. Never proceed with a guessed surface type.
+Surface detection must complete before Journey generation begins. If the `forge surfaces` command returns exit code 1, the pipeline must pause and wait for user input. Never proceed with a guessed surface type. Do NOT scan project files independently for surface detection -- always use `forge surfaces <path>`.
 </HARD-RULE>
 
 ## Prerequisites

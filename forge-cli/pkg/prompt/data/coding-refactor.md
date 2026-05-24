@@ -21,29 +21,71 @@ Before starting, verify all three conditions:
 
 If check 1 or 2 fails, set the task status to blocked via `forge task transition {{TASK_ID}} blocked --reason "refactor verification failed"` and output the reason. Do NOT proceed — the dispatcher will handle re-claim after the issue is resolved.
 
-## Workflow (4 Steps)
+## Workflow (5 Steps)
 
 ### Step 1: Read Task Definition
 
 Check `docs/conventions/` and `docs/business-rules/` for project-specific knowledge relevant to this task.
 Read each file's YAML frontmatter `domains` field to determine relevance.
-Load files whose domains overlap with the task context.
+Load files whose domains match `{{SCOPE}}` or keywords from `{{TASK_FILE}}`.
 If no files match, skip — no matching convention files for this task.
 
 Then read the task file at `{{TASK_FILE}}`.
 
 If `{{PHASE_SUMMARY}}` is non-empty, read that file for key decisions and conventions from the previous phase.
 
-Output: `Step 1/4: Reading task definition... DONE`
+Output: `Step 1/5: Reading task definition... DONE`
 
-<IMPORTANT>
+<CRITICAL>
+## Spec Authority Enforcement
+
+The task file's `## Reference Files` section lists authoritative specification sources.
+You MUST:
+
+1. Load each Reference File listed in `## Reference Files` immediately after reading the task file. For entries with section anchors (e.g., `file.md#Section-Title`), read the full file and focus on the anchored section.
+2. Treat these documents as the authoritative source of truth — when existing code conflicts with specifications in these documents, follow the specifications.
+3. Priority when conflicts arise: task `## Hard Rules` > `## Reference Files` > existing code.
+4. Output a confirmation after loading: "Loaded Reference Files: [list], treating them as authoritative sources."
+
+If `## Reference Files` is empty or missing, output: "Reference Files empty — falling back to existing code and Hard Rules."
+
+Conventions and business-rules loaded in Step 1 are reference guides — they may lag behind current code. Follow them when consistent with Reference Files, but do not treat them as authoritative overrides.
+
+If a Reference File path does not exist: skip it silently and continue with the remaining files.
+
+If a Reference File contains an internal contradiction (§A says X but §B says ¬X), or if multiple Reference Files contradict each other: follow the more specific directive (within a single file) or the more recently updated file (across files). Output "SPEC CONTRADICTION: [description]" and document the choice.
+</CRITICAL>
+
+<CRITICAL>
 If the task file contains ## Hard Rules with MUST/MUST NOT directives:
 - Follow them exactly throughout the entire workflow
 - Hard Rules override your default approach for any step they address
 - Do not rationalize bypassing a Hard Rule based on "I know a better way"
-</IMPORTANT>
+</CRITICAL>
+
+### Step 1.5: Spec-Code Conflict Scan
+
+For each Reference File loaded in Step 1, scan existing code against spec requirements across five dimensions.
+
+Read the code files that implement the requirements described in each Reference File, then output a per-dimension checklist:
+SPEC-CODE SCAN:
+- MUST/SHALL directives: [scanned | N/A] — [findings or "none found"]
+- Architecture decisions: [scanned | N/A] — [findings or "none found"]
+- Data flow patterns: [scanned | N/A] — [findings or "none found"]
+- Interface contracts: [scanned | N/A] — [findings or "none found"]
+- Naming conventions: [scanned | N/A] — [findings or "none found"]
+
+For each finding, output:
+  [spec §section: "key requirement"]: existing code [MATCHES | DIFFERS | NOT YET IMPLEMENTED]
+    - If DIFFERS: describe the specific difference and state "WILL FOLLOW SPEC"
+
+If no Reference Files were loaded: output "SPEC-CODE SCAN: degraded mode — no spec sources, existing code + conventions as guide" and skip the per-dimension checklist.
+
+**Simplified scan**: if Reference Files were loaded but none mention the files or modules being refactored, output "SPEC-CODE SCAN: simplified — target not governed by spec, conventions as guide" and skip the full scan.
 
 ### Step 2: Impact Mapping
+
+Apply SPEC-CODE SCAN results — for any DIFFERS finding, follow spec over existing code. Reference Files from Step 1 are authoritative.
 
 Before writing any code, determine the full scope of changes.
 
@@ -114,7 +156,7 @@ Before writing any code, determine the full scope of changes.
 
    **No tests affected?** Output: `IMPACT_DECLARATION: no tests in scope — all changes are non-behavioral`
 
-Output: `Step 2/4: Impact mapping... DONE (type: <structural|behavioral>, files: N, layers: <list>, dynamic_coupling: <none|found: details>, impact_declaration: <N PRESERVE / N EVOLVE>)`
+Output: `Step 2/5: Impact mapping... DONE (type: <structural|behavioral>, files: N, layers: <list>, dynamic_coupling: <none|found: details>, impact_declaration: <N PRESERVE / N EVOLVE>)`
 
 ### Step 3: Refactor
 
@@ -171,10 +213,6 @@ Replacement order within each file: longest identifier first → shortest last (
 - Run `just compile {{SCOPE}}` to confirm no remaining references
 - If compile fails: grep for old name, fix remaining references, retry
 
-**Why this works:**
-- Every intermediate state compiles and passes tests
-- If context runs out mid-migration, the codebase is valid (aliases still work)
-- Each batch is independently verifiable and rollback-safe
 
 #### Behavioral Refactors
 
@@ -182,9 +220,19 @@ Proceed incrementally — make one change, verify, make the next.
 - After each logical change: `just compile {{SCOPE}}` and run targeted tests on affected packages/modules
 - Max 3 retries per failure. If still failing, stop and report.
 
-Output: `Step 3/4: Refactoring... DONE`
+Output: `Step 3/5: Refactoring... DONE`
 
 ### Step 4: Static Checks + Targeted Tests
+
+<IMPORTANT>
+Before performing other verification checks, validate against each Acceptance Criteria item from the task file:
+- For each AC item, output:
+  [AC-N] PASS/FAIL
+    Evidence: [specific code, test, or artifact that proves compliance]
+    Spec source: [which Reference File section defined this requirement, or "task-defined" if from task file]
+- If any AC item is FAIL, address the failure before proceeding to other checks.
+- If `## Acceptance Criteria` is empty or missing, output: "No AC defined — skipping per-item validation."
+</IMPORTANT>
 
 Run the final quality checks:
 
@@ -217,4 +265,4 @@ When submitting via `forge:submit-task`, populate these record fields in record.
 - **testsPassed** / **testsFailed**: number of tests that passed/failed
 - **coverage**: test coverage percentage (e.g. 80.0)
 
-Output: `Step 4/4: Verifying... DONE (coverage: N%)`
+Output: `Step 4/5: Verifying... DONE (coverage: N%)`

@@ -52,8 +52,8 @@ func TestRootCmd_HelpShowsTenVisibleEntries(t *testing.T) {
 			visibleCount++
 		}
 	}
-	// 6 groups (task, forensic, test, prompt, worktree, fact) + 4 visible top-level (version is hidden) + config + proposal + lesson + init + claude + research = 16 visible
-	if visibleCount != 16 {
+	// 6 groups (task, forensic, test, prompt, worktree, fact) + 4 visible top-level (version is hidden) + config + proposal + lesson + init + claude + research + surfaces = 17 visible
+	if visibleCount != 17 {
 		t.Errorf("expected 16 visible commands, got %d", visibleCount)
 	}
 }
@@ -136,8 +136,8 @@ func TestInit_RegistersCommands(t *testing.T) {
 		}
 	}
 
-	// 6 groups (task, forensic, test, prompt, worktree, fact) + 5 top-level (cleanup, quality-gate, verify-task-done, feature, version) + config + proposal + lesson + init + claude + research = 17
-	if len(explicit) != 17 {
+	// 6 groups (task, forensic, test, prompt, worktree, fact) + 5 top-level (cleanup, quality-gate, verify-task-done, feature, version) + config + proposal + lesson + init + claude + research + surfaces = 18
+	if len(explicit) != 18 {
 		t.Errorf("expected 17 explicit commands, got %d: %v", len(explicit), explicit)
 	}
 }

@@ -91,6 +91,6 @@ When the extraction fails, the system degrades gracefully to the standard rubric
 
 ## Output After Validation
 
-On successful extraction (at least 1 valid finding), the validated findings are passed to the injection mechanism defined in `rules/freeform-injection.md`.
+On successful extraction (at least 1 valid finding), the validated findings are passed to the Pre-Revision phase (P0.5 in SKILL.md) for formatting as ATTACK_POINTS and routing to the Reviser.
 
 On degradation (0 valid findings), the system proceeds with standard rubric evaluation without any freeform-derived attack points.

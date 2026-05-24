@@ -15,15 +15,24 @@ import (
 )
 
 // captureStdout captures stdout during a function execution.
+// Reads from pipe in a goroutine to prevent deadlock when output
+// exceeds the OS pipe buffer size.
 func captureStdout(f func()) string {
 	var buf bytes.Buffer
 	old := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
+
+	done := make(chan struct{})
+	go func() {
+		_, _ = buf.ReadFrom(r)
+		close(done)
+	}()
+
 	f()
 	_ = w.Close()
 	os.Stdout = old
-	_, _ = buf.ReadFrom(r)
+	<-done
 	return buf.String()
 }
 

@@ -1,7 +1,7 @@
 ---
 created: 2026-05-23
 author: faner
-status: Draft
+status: Approved
 ---
 
 # Proposal: 规范权威性强制执行——从模板和任务生成层面防止 Agent 偏离

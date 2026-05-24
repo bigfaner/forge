@@ -38,7 +38,7 @@ If missing, tell user to create it first.
 
 Resolution: explicit `--type` in `<command-args>` → command name `/eval-<type>` → ask user.
 
-Rubrics may optionally declare `context` frontmatter (see `rules/rubric-context.md`). Parsed in Step 1.1, applied in Step 1.4.
+Rubrics may optionally declare `context` frontmatter (see `rules/rubric-context.md`; parsed in Step 1.1).
 
 ## Architecture
 
@@ -46,8 +46,7 @@ Rubrics may optionally declare `context` frontmatter (see `rules/rubric-context.
 flowchart TD
     A([Start]) --> B["1.1 Resolve Type & Load Rubric"]
     B --> PRE["1.4 Pre-Processing"]
-    PRE --> BAK["1.5 Backup DOC_DIR"]
-    BAK --> P0{"type == proposal?"}
+    PRE --> P0{"type == proposal?"}
     P0 -->|"no"| DISPATCH["Expert Dispatch + Iteration Init"]
     P0 -->|"yes"| P0A["Phase 0: Expert Inference"]
     P0A --> P0B{"Expert confirmed?"}
@@ -59,25 +58,40 @@ flowchart TD
     P0E --> P0F{"Valid findings ≥ 1?"}
     P0F -->|"no"| P0G["Degraded: standard rubric"]
     P0G --> DISPATCH
-    P0F -->|"yes"| P0H["Phase 0: Inject findings into scorer"]
-    P0H --> DISPATCH
+    P0F -->|"yes"| BASELINE["P0.5a: BASELINE_SCORE"]
+    BASELINE --> SAVE_SNAP["P0.5b: Save baseline snapshot"]
+    SAVE_SNAP --> FORMAT["P0.5c: Format findings → ATTACK_POINTS"]
+    FORMAT --> FORMAT_OK{"Formatting OK?"}
+    FORMAT_OK -->|"no"| SKIP_PREREV["Skip pre-revision"]
+    SKIP_PREREV --> DISPATCH
+    FORMAT_OK -->|"yes"| SYNTH["P0.5d: Construct synthetic eval report"]
+    SYNTH --> PREREV["P0.5e: Invoke Reviser (iteration 0)"]
+    PREREV --> PREREV_OK{"Reviser OK?"}
+    PREREV_OK -->|"error"| SKIP_PREREV
+    PREREV_OK -->|"empty report"| LOG_EMPTY["Log iteration-0: no changes, degrade"]
+    LOG_EMPTY --> DISPATCH
+    PREREV_OK -->|"valid"| TAG["P0.5f: Insert <!-- pre-revised --> tags"]
+    PREREV_OK -->|"format anomaly"| DISCARD["Discard pre-revision, restore from baseline"]
+    DISCARD --> DISPATCH
+    TAG --> INCR["P0.5g: ITERATION = 1"]
+    INCR --> DISPATCH
     DISPATCH --> C{"MAX_ITERATIONS ≤ 1?"}
     C -->|"yes"| D["2a. Score (subagent)"]
     D --> PARSE_A{"Parse valid?"}
     PARSE_A -->|"yes"| E["5. Final Report"]
     PARSE_A -->|"no"| ERR["Halt with error"]
-    C -->|"no"| F["2b. Score (subagent)"]
+    C -->|"no"| F["2b. Score (subagent, annotated blind review)"]
     F --> PARSE{"Parse valid?"}
     PARSE -->|"yes"| G{"3b. Gate (main session)"}
     PARSE -->|"no"| ERR
     G -->|"score >= target"| E
-    G -->|"score < target, no iterations left"| ROLL{"Final >= Initial?"}
-    ROLL -->|"yes"| E
-    ROLL -->|"no"| RESTORE["Restore from backup"]
-    RESTORE --> E
+    G -->|"score < target, no iterations left"| E
+    G -->|"score < INITIAL_SCORE, rollback unused"| RESTORE["Restore pre-revised checkpoint (max 1)"]
+    RESTORE --> F
     G -->|"score < target, iterations remaining"| H["4. Revise (subagent)"]
     H --> F
-    E --> NEXT["6. Ask next step"]
+    E --> CLEANUP["5.5 Cleanup: strip <!-- pre-revised --> tags"]
+    CLEANUP --> NEXT["6. Ask next step"]
 ```
 
 ## Orchestrator Iron Laws
@@ -130,19 +144,11 @@ Multi-platform: run independent score→gate→revise loops per platform.
 
 Apply type-specific pre-processing per `rules/pre-processing.md` before scoring. All types: if rubric has `context` frontmatter, load filtered context files and concatenate into `CONTEXT_CONTENT`.
 
-### 1.5 Create Backup
-
-After `DOC_DIR` is fully resolved and pre-processing is complete, create a backup of the document directory:
-
-```bash
-cp -r "$DOC_DIR" "${DOC_DIR}.bak"
-```
-
-This backup is used for rollback on failure when revisions degrade the score (see Step 5: Rollback on Failure). If no `DOC_DIR` was resolved (e.g., `harness` type), skip backup creation silently.
+**Residual tag cleanup**: Scan `DOC_DIR` for any residual `<!-- pre-revised: ... -->` HTML comments from prior eval runs. If found, strip them all. This prevents stale annotations from a previous pre-revision from misleading the current Scorer.
 
 ## Phase 0: Freeform Expert Review (proposal only — two-tier sequential approval)
 
-This phase is executed **by default** when the resolved type is `proposal`. The design follows a sequential approval model: domain expert reviews first (Phase 0), then CTO reviews via rubric (Steps 2–4). Domain-specific findings from Phase 0 are injected into the CTO rubric scorer, ensuring the CTO evaluation accounts for issues the rubric alone would miss. For all other types, skip directly to the Expert Dispatch Table. The orchestrator iron laws apply: Phase 0 delegates to subagents via Agent tool, the main session orchestrates.
+This phase is executed **by default** when the resolved type is `proposal`. The design follows a sequential approval model: domain expert reviews first (Phase 0), findings are routed to Reviser for pre-revision (Phase 0.5), then CTO reviews via rubric with annotated blind review (Steps 2–4). For all other types, skip directly to the Expert Dispatch Table. Phase 0 delegates to subagents via Agent tool, the main session orchestrates.
 
 ### P0.1: Expert Reuse Check
 
@@ -186,17 +192,111 @@ Extract structured findings from the freeform review narrative using a `general-
 2. Spawn agent with `model: "sonnet"`, providing the extraction prompt from `experts/freeform/extraction-prompt.md` with `{{FREEFORM_REVIEW}}` replaced by the review content.
 3. The agent returns a JSON array of findings.
 4. Validate the extraction output per `extraction-prompt.md` JSON Validation Rules.
-5. Compute hit rate per `extraction-prompt.md` Hit Rate Estimation. If hit rate < 0.5, set `LOW_HIT_RATE = true`.
+5. Compute hit rate per `extraction-prompt.md` Hit Rate Estimation. Set `HIT_RATE = <computed value>` (used in P0.5c for low-hit-rate annotation).
 6. If 0 valid findings remain after validation, degrade per Phase 0 Degradation Summary table.
 7. If >= 1 valid finding, set `FREEFORM_FINDINGS = <validated JSON array>` and proceed.
 
-### P0.5: Inject Findings into Scorer
+### P0.5: Pre-Revision (Freeform Findings)
 
-Set `FREEFORM_INJECTION = true` and store the validated findings. The actual injection into the scorer prompt occurs during Step 2.1 per `rules/freeform-injection.md`.
+After Phase 0 completes with valid findings and before the Scorer cycle starts, execute a Pre-Revision step that routes freeform findings directly to the existing Reviser via a synthetic eval report. This step runs as iteration 0 (separate from the `MAX_ITERATIONS` budget). The Scorer loop runs iterations 1 through MAX_ITERATIONS.
 
-After the final report is generated and rollback decision is resolved (end of Step 5), record the expert's review history per `rules/freeform-expert-persistence.md` quality tracking section, and check auto-deprecation.
+Pre-Revision is only executed when `MAX_ITERATIONS > 1`. When `--iterations 1`, skip directly to Expert Dispatch (behavior unchanged).
 
-**Error: Injection ineffective**: If a baseline comparison is available and the injected run shows no substantive change (rubric delta < 15 AND attack points unchanged), annotate the eval report: "自由评审发现未影响 rubric 评分". This does not degrade — the rubric scoring still completed normally.
+**`--iterations 2` warning**: When freeform review is active and `MAX_ITERATIONS <= 2`, output: `"Pre-revision consumes 1 iteration, leaving only 1 Scorer cycle. Consider --iterations 3 to ensure the Scorer has a revision opportunity."` This warning does not block execution.
+
+#### P0.5a: BASELINE_SCORE (Informational Metric)
+
+Before pre-revision, obtain an informational baseline score:
+
+1. Spawn a single Scorer subagent (no Reviser, does not consume iteration budget) to evaluate the original proposal.
+2. Record the score as `BASELINE_SCORE`.
+3. This is informational only — it does not act as a gate or consume an iteration.
+4. If the Scorer call fails, set `BASELINE_SCORE = null` and continue. Do not degrade.
+
+#### P0.5b: Save Phase 0 Baseline Snapshot
+
+Save a copy of the current proposal document(s) to `<DOC_DIR>/eval/baseline-snapshot/`. This snapshot captures the pre-revision state for the overall-level rollback (see Two-Level Rollback below).
+
+#### P0.5c: Format Findings as ATTACK_POINTS
+
+Format each finding from `FREEFORM_FINDINGS` into the ATTACK_POINTS structure expected by the Reviser protocol:
+
+```
+- **[severity]** summary | quote: "quote" | improvement: <verb phrase>
+```
+
+Each finding is also classified into one of three triage layers:
+- **Factual correction** (verifiable defect in original text): direct edit.
+- **Structural/architectural suggestion**: edit only when the finding identifies a verifiable internal inconsistency (e.g., two sections make contradictory claims, or a stated constraint is violated by the described architecture); otherwise defer to Scorer cycle. When partially valid (concern is legitimate but proposed solution is not), mark as `partially-accepted`: apply only the non-controversial portion of the edit.
+- **Subjective preference**: mark as "not actionable", no edit, but record in iteration-0 report's "Classification Audit" section with classification rationale and original finding summary.
+
+**Low hit-rate annotation**: If `HIT_RATE` (from P0.4 step 5) is < 0.5, add the following annotation to the iteration-0 report (P0.5d) after the ATTACK_POINTS section: `**Note: Low extraction hit rate. The following contains only partial findings; see the full freeform review narrative at `<DOC_DIR>/eval/freeform-review.md` for context.**`
+
+**Borderline handling**: When a finding does not clearly belong to one layer, the pre-reviser must mark it "borderline" and defer (not silently classify as not actionable). Borderline findings are listed separately in the iteration-0 report for user review.
+
+For error handling, see P0.5 Degradation Summary below.
+
+#### P0.5d: Construct Synthetic Eval Report
+
+Build a synthetic eval report that satisfies the Reviser protocol's (`experts/protocol/reviser-protocol.md`) `EVAL_REPORT_PATH` dependency:
+
+```yaml
+iteration: 0
+title: "Pre-Revision (Freeform Findings)"
+ATTACK_POINTS:
+  - (formatted findings from P0.5c, excluding subjective-preference findings)
+BORDERLINE_FINDINGS:
+  - (findings marked "borderline" in P0.5c triage)
+SKIPPED_FINDINGS:
+  - (subjective-preference findings, marked "not actionable")
+rubric:
+  (all dimensions): N/A
+```
+
+Save to `<DOC_DIR>/eval/iteration-0-report.md`.
+
+This satisfies the Reviser protocol's minimum input format: ATTACK_POINTS-driven revision with rubric data non-participatory (Reviser does not read, compare, or decide based on rubric scores).
+
+#### P0.5e: Invoke Reviser (Iteration 0)
+
+Spawn the existing Reviser as a `general-purpose` agent via the Agent tool with `model: "sonnet"`:
+
+- Inputs: `DOC_DIR`, `EVAL_REPORT_PATH` = iteration-0 report, `ATTACK_POINTS` = formatted findings.
+- The Reviser follows `experts/protocol/reviser-protocol.md` unchanged — no protocol modification.
+- The Reviser performs the three-layer triage (factual → structural → subjective) via the ATTACK_POINTS format.
+
+For error handling, see P0.5 Degradation Summary below.
+
+#### P0.5f: Tag Modified Paragraphs
+
+After the Reviser completes its edits, annotate each modified paragraph with:
+
+```html
+<!-- pre-revised: {severity} -->
+```
+
+Where `{severity}` is the severity of the finding that triggered the edit. These tags:
+- Are HTML comments — invisible in rendered output, visible to Scorer when reading the document.
+- Enable the Scorer's annotated blind review — the Scorer knows **which areas were changed** but not **why** they were changed.
+
+#### P0.5g: Iteration Counter Increment
+
+After successful pre-revision: set `ITERATION = 1` (pre-revision consumed iteration 0). The Scorer loop starts from iteration 1.
+
+Set `PRE_REVISION_EXECUTED = true` — the Scorer uses annotated blind review mode (see `rules/scorer-composition.md`).
+
+After the final report is generated (end of Step 5), record the expert's review history per `rules/freeform-expert-persistence.md` quality tracking section, and check auto-deprecation.
+
+#### P0.5 Degradation Summary
+
+All Phase 0.5 error paths leave `PRE_REVISION_EXECUTED` unset and degrade to standard rubric flow:
+
+| Error Scenario | Degradation Action | User Notification |
+|----------------|-------------------|-------------------|
+| Findings formatting failure | Skip pre-revision, enter Scorer directly | "Pre-revision 格式化失败，已跳过。" |
+| Pre-reviser returns error | Skip, log warning | "Pre-reviser 执行失败，已跳过。" |
+| Empty report produced | Log iteration-0 "no changes", degrade to standard flow | (no notification, standard rubric flow) |
+| Format anomaly (Reviser output file exists but is empty, truncated, or contains no ATTACK_POINTS response) | Discard pre-revision, restore from baseline snapshot | "Pre-revision 产出格式异常，已丢弃。" |
 
 ### Phase 0 Degradation Summary
 
@@ -210,7 +310,8 @@ All Phase 0 error paths converge to the standard rubric flow. No degradation pat
 | Extraction output is empty | Skip to standard rubric flow | "自由评审未产出有效结构化发现，已降级为标准 rubric 流程。" |
 | Extraction JSON invalid (0 valid after filtering) | Skip to standard rubric flow | "提取产出格式异常，已降级为标准 rubric 流程。" |
 | Partial extraction (hit rate < 50%) | Inject valid findings + annotate | "提取命中率低" annotation in eval report + full narrative attached |
-| Injection has no effect on rubric | Continue normally + annotate | "自由评审发现未影响 rubric 评分" in eval report |
+
+For Phase 0.5 (Pre-Revision) error paths, see P0.5 Degradation Summary above.
 
 ## Expert Dispatch Table
 
@@ -218,9 +319,22 @@ Resolve eval type to scorer expert(s) per `rules/scorer-composition.md`.
 
 ## Iteration Initialization
 
-Set `ITERATION = 1`, `MAX_ITERATIONS = resolved value from rubric or CLI`.
+`MAX_ITERATIONS = resolved value from rubric or CLI`. `ITERATION` depends on execution path:
 
-## Step 2: Invoke Scorer Subagent(s)
+| Condition | ITERATION | Scorer loop range |
+|-----------|-----------|-------------------|
+| `type == proposal`, freeform review succeeded, pre-revision completed (P0.5g) | 1 (set by P0.5g, after consuming iteration 0) | 1..MAX_ITERATIONS |
+| All other paths (Phase 0 degraded, pre-revision skipped, non-proposal, `MAX_ITERATIONS <= 1`) | 1 | 1..MAX_ITERATIONS |
+
+## Loop Variables
+
+| Variable | Initial Value | Set By |
+|----------|--------------|--------|
+| `ROLLBACK_USED` | `false` | Loop start (before first Scorer invocation) |
+| `INITIAL_SCORE` | (unset) | Step 2.3 on `ITERATION == 1` |
+| `BASELINE_SCORE` | (unset) | P0.5a (proposal only) |
+
+## Step 2: Invoke Scorer Subagent(s) (flowchart labels: `2a` = single-pass, `2b` = multi-iteration)
 
 ### 2.1 Compose Scorer Prompts
 
@@ -241,7 +355,9 @@ Score extraction and multi-expert merging per `rules/scorer-composition.md`.
 
 **Parse failure handling**: If the scorer subagent output cannot be parsed (no valid `SCORE: X/SCALE` pattern found in any scorer report), halt the pipeline with a clear error. This is a retryable failure — the agent should re-run eval with different input or debug the scorer prompt. Do NOT crash, do NOT proceed with zero score, do NOT continue with silent default values.
 
-On `ITERATION == 1`: store the merged score as `INITIAL_SCORE` for the Step 5 rollback comparison.
+On `ITERATION == 1`: store the merged score as `INITIAL_SCORE` (used in Step 5 report Score Progression table to compute delta from first iteration).
+
+**Baseline drift detection** (proposal only): If `BASELINE_SCORE` is not null and `INITIAL_SCORE < BASELINE_SCORE - 50` (on 1000-point scale), annotate the eval report with "基线漂移告警" for manual review. This does not auto-trigger rollback — rollback is governed by the final score vs. INITIAL_SCORE comparison.
 
 ## Step 3a: Single-Pass (MAX_ITERATIONS ≤ 1)
 
@@ -251,11 +367,12 @@ Skip gate and reviser. Go directly to Step 5.
 
 Use the averaged score (for multi-expert types) or single score (for single-expert types) from Step 2.3.
 
-Iterations remaining = `MAX_ITERATIONS - ITERATION` (current iteration consumed).
+Iterations remaining = `MAX_ITERATIONS - ITERATION` (current iteration consumed). Conditions are evaluated in table order (top to bottom); the rollback condition takes priority over the "iterations remaining" condition.
 
 | Condition | Action |
 |-----------|--------|
 | Score >= target | Go to Step 5 |
+| `type == proposal` AND `PRE_REVISION_EXECUTED == true` AND `Score < INITIAL_SCORE` AND `ROLLBACK_USED == false` | Restore pre-revised checkpoint, set `ROLLBACK_USED = true`, retry from Step 2 |
 | Score < target, ITERATION < MAX_ITERATIONS | Go to Step 4 |
 | Score < target, ITERATION >= MAX_ITERATIONS | Go to Step 5 (report failure) |
 
@@ -281,13 +398,72 @@ After reviser completes: increment iteration counter, return to Step 2.
 
 Generate report per `rules/report-format.md`: include final score, iteration summary, score progression table, dimension breakdown, and outcome. Apply type-specific additions as defined in the rules file.
 
-**Rollback on failure**: If the final score is below target AND all iterations are exhausted (failure outcome), do NOT auto-rollback. Compare `FINAL_SCORE` against `INITIAL_SCORE` (recorded after the first scoring in Step 2):
+### 5.1 Pre-Revision Section (proposal only, when pre-revision executed)
 
-- **FINAL_SCORE >= INITIAL_SCORE**: keep revised documents, delete backup: `rm -rf "${DOC_DIR}.bak"`. Report: "Revisions improved score ({{INITIAL_SCORE}} → {{FINAL_SCORE}}). Kept revised version."
-- **FINAL_SCORE < INITIAL_SCORE**: restore original: `rm -rf "$DOC_DIR" && cp -r "${DOC_DIR}.bak" "$DOC_DIR" && rm -rf "${DOC_DIR}.bak"`. Report: "Revisions degraded score ({{INITIAL_SCORE}} → {{FINAL_SCORE}}). Restored original."
-- **No backup exists** (e.g., skipped in Step 1.5): skip silently.
+When pre-revision was executed (iteration 0), add an independent "Pre-Revision" section to the final eval report:
 
-This logic is fully automated (no `AskUserQuestion`) because eval may run inside a subagent where user confirmation is unavailable.
+```
+### Pre-Revision (Freeform Findings)
+**Findings Triage Summary**: N findings triaged (M accepted, P partially-accepted, D deferred, K skipped)
+
+| Finding | Severity | Status | Edit Summary |
+|---------|----------|--------|-------------|
+| (finding summary) | (severity) | accepted/partially-accepted/deferred/skipped | (brief edit description or classification rationale) |
+
+**Skipped Findings Detail**:
+(For each skipped finding: classification rationale + original finding summary)
+
+**Borderline Findings**:
+(For each borderline finding: original finding summary + defer rationale)
+
+**Classification Audit**:
+(Total findings by triage layer: factual correction / structural suggestion / subjective preference)
+```
+
+High-severity findings triage metrics:
+- Triage rate (accepted + partially-accepted + deferred) >= 80%
+- Accepted + partially-accepted >= 60%
+- When partially-accepted > accepted, annotate for manual spot-check
+
+### 5.2 Baseline Score Comparison (proposal only, when BASELINE_SCORE available)
+
+If `BASELINE_SCORE` was recorded, add to the Score Progression table:
+
+```
+| Baseline (pre-revision) | BASELINE_SCORE | — |
+```
+
+Note: baseline and INITIAL_SCORE are not strict A/B comparison (different document states). Mark as informational.
+
+### 5.3 Baseline Drift Alert (proposal only)
+
+If baseline drift was detected (INITIAL_SCORE < BASELINE_SCORE - 50), include: `"⚠ 基线漂移告警: INITIAL_SCORE (X) 低于 BASELINE_SCORE (Y) 超过 50 分。建议检查 iteration-0 报告中 edits 的具体内容。"`
+
+### 5.4 Iteration-0 Report (proposal only, when pre-revision executed)
+
+The iteration-0 report at `<DOC_DIR>/eval/iteration-0-report.md` (generated in P0.5d) is updated with the Reviser's actual edit results. Report title: "Pre-Revision (Freeform Findings)".
+
+### 5.5 Tag Cleanup
+
+After the final report and rollback decision are complete, strip all `<!-- pre-revised: ... -->` HTML comments from the proposal document(s). This is a one-pass cleanup: search `DOC_DIR` for the pattern and remove all matches. This ensures the final artifact has no residual eval annotations.
+
+### Two-Level Rollback (conceptual overview)
+
+Pre-revision introduces two rollback levels. Operational details are defined inline:
+1. **Inner level** (Scorer loop): see Step 3b rollback row. Restores to post-P0.5 state (pre-revised checkpoint). Max 1 per eval run.
+2. **Outer level** (post-report): see Step 5.6. Restores to pre-P0.5 baseline snapshot. User decides.
+
+No rollback for non-proposal types or when pre-revision was skipped.
+
+### 5.6 Overall Rollback Decision (proposal only, when pre-revision executed)
+
+After the final report is generated (Step 5), if the final score is below `BASELINE_SCORE` (pre-revision did not improve the document), ask the user via `AskUserQuestion`:
+
+> Pre-revision 未能提升文档质量（最终分数 X 低于基线 Y）。是否恢复到 Pre-Revision 前的原始版本？
+
+Options: **Restore baseline** (restore from baseline snapshot, discard all pre-revision edits) or **Keep current** (accept the eval result as-is).
+
+If `BASELINE_SCORE = null`, skip this decision — no baseline to compare against.
 
 ## Step 6: Next Step
 

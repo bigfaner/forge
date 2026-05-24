@@ -48,7 +48,7 @@ Collect all available context before touching any code.
 **Project Knowledge**: Infer relevant domains from bug description, affected files, and scope.
 Check `docs/conventions/` and `docs/business-rules/` for project-specific knowledge relevant to this task.
 Read each file's YAML frontmatter `domains` field to determine relevance.
-Load files whose domains overlap with the task context.
+Load files whose domains match the affected scope or keywords from the bug description.
 If no files match, skip — no matching convention files for this task.
 
 **Gather:**

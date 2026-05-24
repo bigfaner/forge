@@ -45,7 +45,7 @@ domains: [cli, commands, reference, skills, task-list]
 | `forge task list-types` | 列出所有支持的任务类型 | `list_types.go` |
 | `forge task reopen <task-id>` | 重新打开已拒绝/跳过的任务（恢复为 pending） | `reopen.go` |
 | `forge task transition <task-id> <status> --reason` | 手动切换任务状态（操作员覆盖） | `transition.go` |
-| `forge task list` | 列出当前 feature 的所有任务 | `list.go` |
+| `forge task list [slug]` | 列出当前 feature 或指定 feature 的所有任务（支持 `--local` 忽略 worktree） | `list.go` |
 
 ### forge test — 测试工具
 

@@ -98,7 +98,7 @@ Override with `--force`: `forge task submit <id> --data record.json --force`
 | `forge test get run` | Get run strategy |
 | `forge test get justfile` | Get justfile recipes |
 | `forge test get template <file>` | Get a specific template file |
-| `forge test interfaces` | Get project interface types |
+| `forge test interfaces` | Get project surface types (deprecated: use `forge surfaces --types`) |
 | `forge test framework` | Resolve test framework |
 | `forge test promote <journey>` | Promote journey's @feature tags to @regression |
 | `forge test run-journey <name>` | Run a journey in isolated temp directory |

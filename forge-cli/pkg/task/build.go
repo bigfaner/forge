@@ -63,11 +63,14 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 	setFeatureMetadata(index, opts.ProjectRoot, opts.FeatureSlug)
 
 	// 3.5 Build BodyContext from planning-time data (proposal/PRD + config)
-	capabilities, _ := forgeconfig.ReadInterfaces(opts.ProjectRoot)
+	surfaces, _ := forgeconfig.ReadSurfaces(opts.ProjectRoot)
+	// Validate surfaces: log warnings for unknown types, filter them out
+	forgeconfig.ValidateSurfaceTypes(surfaces)
+	capabilities := forgeconfig.SurfaceTypes(surfaces)
 	bodyCtx := extractBodyContext(opts.ProjectRoot, opts.FeatureSlug, mode, capabilities)
 
-	// 4. Profiles and interfaces resolved by caller (task 1.4)
-	// BuildIndex no longer holds Languages/TestInterfaces; caller injects them into generateTestTasks.
+	// 4. Profiles and surfaces resolved by caller (task 1.4)
+	// BuildIndex no longer holds Languages/Surfaces; caller injects them into generateTestTasks.
 
 	// 5. Scan .md files
 	existingKeys := make(map[string]bool) // track which keys come from .md files
@@ -291,7 +294,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 	// 7.5 Generate test pipeline tasks
 	if needsTest && mode != "" {
 		if len(capabilities) == 0 {
-			result.Warnings = append(result.Warnings, "No interfaces configured in .forge/config.yaml. Test pipeline tasks will not be generated. Add an 'interfaces' field to enable:\n  interfaces:\n    - api\n    - cli")
+			return nil, fmt.Errorf("no surfaces configured in .forge/config.yaml. Run `forge init` to configure surfaces")
 		}
 		testTasks := GenerateTestTasks(mode, capabilities, opts.AutoConfig)
 		for _, td := range testTasks {
@@ -394,7 +397,7 @@ func setFeatureMetadata(index *TaskIndex, projectRoot, slug string) {
 	}
 }
 
-// GenerateTestTasks returns test task definitions for the given mode and interfaces.
+// GenerateTestTasks returns test task definitions for the given mode and capabilities.
 // Exported for use by caller (task 1.4).
 func GenerateTestTasks(mode string, capabilities []string, auto forgeconfig.AutoConfig) []AutoGenTaskDef {
 	switch mode {

@@ -62,10 +62,14 @@ eval-journey → eval-contract → confidence rating
 
 After all tasks done, `forge quality-gate` runs as a final safety net (project-wide). It automatically skips docs-only features. On failure, a P0 fix-task is automatically created — run `forge task claim` to pick it up.
 
-### Task-CLI
+### Forge CLI
 
-Task CLI manages task lifecycle. Run `forge -h` or `forge [command] -h` for full reference.
+Run `forge -h` or `forge [command] -h` for full reference.
 
-Key commands for error recovery:
-- `forge task transition <id> <status> --reason "..."` — manually transition a task (unblock, skip, reject)
-- `forge task reopen <id>` — re-activate a rejected/skipped task back to pending
+**Query commands** — use these for ad-hoc lookups when a user mentions a slug:
+- `forge proposal <slug>` — proposal summary (slug, status, created, associated PRD/feature)
+- `forge feature status <slug>` — feature status (phase, task breakdown, artifact scores)
+
+**Task lifecycle** — error recovery:
+- `forge task transition <id> <status> --reason "..."` — manually transition (unblock, skip, reject)
+- `forge task reopen <id>` — re-activate a rejected/skipped task
