@@ -2,6 +2,7 @@ package task
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -16,31 +17,58 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var listLocal bool
+
 var listCmd = &cobra.Command{
-	Use:   "list",
+	Use:   "list [slug]",
 	Short: "List all tasks for the current feature",
 	Long: `List all tasks for the current feature in a table format.
 
 Displays task ID, type, title (truncated), and status.
-Tasks are sorted by ID in natural order: numeric IDs first, then test/gate IDs.`,
-	Args: cobra.NoArgs,
+Tasks are sorted by ID in natural order: numeric IDs first, then test/gate IDs.
+
+When a slug is provided, lists tasks for that specific feature, reading from
+the worktree if one exists for that slug. Use --local to read from the main
+repository's index.json regardless of worktree existence.`,
+	Args: cobra.MaximumNArgs(1),
 	RunE: runList,
+}
+
+func init() {
+	listCmd.Flags().BoolVar(&listLocal, "local", false, "Read from main repo's index.json (ignore worktree)")
 }
 
 const titleMaxWidth = 50
 
-func runList(_ *cobra.Command, _ []string) error {
+func runList(_ *cobra.Command, args []string) error {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
 		base.Exit(base.ErrProjectNotFound())
 	}
 
-	featureSlug, err := feature.RequireFeature(projectRoot)
-	if err != nil {
-		base.Exit(base.ErrFeatureNotSet())
-	}
+	var featureSlug string
+	var indexPath string
 
-	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
+	if len(args) == 1 {
+		// Slug provided: bypass RequireFeature, construct index path directly
+		featureSlug = args[0]
+
+		// Validate: feature directory must exist
+		featureDir := filepath.Join(projectRoot, feature.GetFeatureDir(featureSlug))
+		if _, err := os.Stat(featureDir); os.IsNotExist(err) {
+			return base.ErrFeatureNotFound(featureSlug)
+		}
+
+		indexPath = resolveListIndexPath(projectRoot, featureSlug)
+	} else {
+		// No slug: use existing auto-detection logic
+		featureSlug, err = feature.RequireFeature(projectRoot)
+		if err != nil {
+			base.Exit(base.ErrFeatureNotSet())
+		}
+
+		indexPath = filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
+	}
 
 	index, err := task.LoadIndex(indexPath)
 	if err != nil || index.TaskCount() == 0 {
@@ -115,6 +143,25 @@ func runList(_ *cobra.Command, _ []string) error {
 	}
 
 	return nil
+}
+
+// resolveListIndexPath determines the index.json path for a feature slug.
+// If --local is not set and a worktree exists for the slug, reads from the
+// worktree's copy of index.json; otherwise reads from the main repo.
+func resolveListIndexPath(projectRoot, slug string) string {
+	if !listLocal {
+		// Check if .forge/worktrees/<slug> directory exists (fast path)
+		worktreeDir := filepath.Join(projectRoot, ".forge", "worktrees", slug)
+		if info, err := os.Stat(worktreeDir); err == nil && info.IsDir() {
+			wtIndex := filepath.Join(worktreeDir, feature.GetFeatureIndexFile(slug))
+			if _, err := os.Stat(wtIndex); err == nil {
+				return wtIndex
+			}
+		}
+	}
+
+	// Fallback: main repo's index.json
+	return filepath.Join(projectRoot, feature.GetFeatureIndexFile(slug))
 }
 
 // naturalSortTaskIDs sorts task IDs in natural order:
