@@ -66,7 +66,7 @@
         "1",
         "2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "5-surfaces-detect-command.md",
       "record": "records/5-surfaces-detect-command.md",
       "scope": "backend",
