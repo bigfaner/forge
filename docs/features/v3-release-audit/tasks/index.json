@@ -21,7 +21,7 @@
       "dependencies": [
         "6"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "10-update-pipeline-docs.md",
       "record": "records/10-update-pipeline-docs.md",
       "type": "doc"
