@@ -21,6 +21,20 @@ If `{{PHASE_SUMMARY}}` is non-empty, read that file for key decisions and conven
 Output: `Step 1/2: Reading task definition... DONE`
 
 <IMPORTANT>
+## Spec Authority Enforcement
+
+The task file's `## Reference Files` section lists authoritative specification sources.
+You MUST:
+
+1. Load each Reference File listed in `## Reference Files` immediately after reading the task file.
+2. Treat these documents as the authoritative source of truth — when existing code conflicts with specifications in these documents, follow the specifications.
+3. Priority when conflicts arise: task `## Hard Rules` > `## Reference Files` > existing code structure.
+4. Output a confirmation after loading: "Loaded Reference Files: [list], treating them as authoritative sources."
+
+If `## Reference Files` is empty or missing, output: "Reference Files empty — falling back to existing code structure and Hard Rules."
+</IMPORTANT>
+
+<IMPORTANT>
 If the task file contains ## Hard Rules with MUST/MUST NOT directives:
 - Treat every MUST as a pass/fail criterion — no partial credit
 - Treat every MUST NOT as a red line — violation means validation fails
@@ -28,6 +42,13 @@ If the task file contains ## Hard Rules with MUST/MUST NOT directives:
 </IMPORTANT>
 
 ### Step 2: Validate Code Quality
+
+<IMPORTANT>
+Before performing other verification checks, validate against each Acceptance Criteria item from the task file:
+- For each AC item, output: "[AC-N] PASS/FAIL — [brief reason]"
+- If any AC item is FAIL, address the failure before proceeding to other checks.
+- If `## Acceptance Criteria` is empty or missing, output: "No AC defined — skipping per-item validation."
+</IMPORTANT>
 
 Perform code validation checks:
 

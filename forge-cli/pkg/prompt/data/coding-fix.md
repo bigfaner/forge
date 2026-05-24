@@ -32,6 +32,20 @@ Analyze error messages to understand:
 Output: `Step 1/4: Reading task definition... DONE`
 
 <IMPORTANT>
+## Spec Authority Enforcement
+
+The task file's `## Reference Files` section lists authoritative specification sources.
+You MUST:
+
+1. Load each Reference File listed in `## Reference Files` immediately after reading the task file.
+2. Treat these documents as the authoritative source of truth — when existing code conflicts with specifications in these documents, follow the specifications.
+3. Priority when conflicts arise: task `## Hard Rules` > `## Reference Files` > existing code structure.
+4. Output a confirmation after loading: "Loaded Reference Files: [list], treating them as authoritative sources."
+
+If `## Reference Files` is empty or missing, output: "Reference Files empty — falling back to existing code structure and Hard Rules."
+</IMPORTANT>
+
+<IMPORTANT>
 If the task file contains ## Hard Rules with MUST/MUST NOT directives:
 - Respect file scope restrictions (MUST NOT touch X) even if touching X seems like a cleaner fix — scope restrictions take priority over minimality
 - Respect command restrictions (MUST use X) even if you think Y is equivalent
@@ -61,6 +75,13 @@ For E2E test failures:
 Output: `Step 3/4: Fixing errors... DONE`
 
 ### Step 4: Static Checks + Targeted Tests
+
+<IMPORTANT>
+Before performing other verification checks, validate against each Acceptance Criteria item from the task file:
+- For each AC item, output: "[AC-N] PASS/FAIL — [brief reason]"
+- If any AC item is FAIL, address the failure before proceeding to other checks.
+- If `## Acceptance Criteria` is empty or missing, output: "No AC defined — skipping per-item validation."
+</IMPORTANT>
 
 **Static checks** — execute in strict sequential order:
 

@@ -28,6 +28,20 @@ If `{{PHASE_SUMMARY}}` is non-empty, read that file for key decisions and conven
 Output: `Step 1/3: Reading task definition... DONE`
 
 <IMPORTANT>
+## Spec Authority Enforcement
+
+The task file's `## Reference Files` section lists authoritative specification sources.
+You MUST:
+
+1. Load each Reference File listed in `## Reference Files` immediately after reading the task file.
+2. Treat these documents as the authoritative source of truth — when existing code conflicts with specifications in these documents, follow the specifications.
+3. Priority when conflicts arise: task `## Hard Rules` > `## Reference Files` > existing code structure.
+4. Output a confirmation after loading: "Loaded Reference Files: [list], treating them as authoritative sources."
+
+If `## Reference Files` is empty or missing, output: "Reference Files empty — falling back to existing code structure and Hard Rules."
+</IMPORTANT>
+
+<IMPORTANT>
 If the task file contains ## Hard Rules with MUST/MUST NOT directives:
 - Follow them exactly during the entire TDD cycle
 - Hard Rules override your default approach for any step they address
@@ -53,6 +67,13 @@ REFACTOR → Clean up while keeping tests green
 Output: `Step 2/3: Implementing... DONE (N new tests)`
 
 ### Step 3: Static Checks + Targeted Tests
+
+<IMPORTANT>
+Before performing other verification checks, validate against each Acceptance Criteria item from the task file:
+- For each AC item, output: "[AC-N] PASS/FAIL — [brief reason]"
+- If any AC item is FAIL, address the failure before proceeding to other checks.
+- If `## Acceptance Criteria` is empty or missing, output: "No AC defined — skipping per-item validation."
+</IMPORTANT>
 
 **Static checks** — execute in strict sequential order:
 
