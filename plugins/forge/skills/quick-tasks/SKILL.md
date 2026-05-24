@@ -70,7 +70,7 @@ Enforce maximum 15 coding tasks (`coding.*` type). Doc-type tasks (`doc*` type p
 
 ## Step 2: Derive Tasks
 
-For each In Scope bullet: estimate effort (1-2h), derive acceptance criteria from Success Criteria, classify type (see Step 3 Template Selection), set scope via Scope Inference, fill Reference Files with directory paths from proposal context.
+For each In Scope bullet: estimate effort (1-2h), derive acceptance criteria from Success Criteria, classify type (see Step 3 Template Selection), set scope via Scope Inference, fill Reference Files with section-level references from proposal context.
 
 **Split by functional steps**: multiple independently verifiable steps in one bullet → separate tasks (coding tasks still ≤ 15, doc tasks unlimited).
 
@@ -83,7 +83,7 @@ For each In Scope bullet: estimate effort (1-2h), derive acceptance criteria fro
 1. **Identify relevant proposal sections**: For each task, scan proposal.md and identify 2-5 sections most relevant to that task based on:
    - The task's description and affected files (match keywords, file paths, and technical concepts)
    - Which proposal sections define constraints, decisions, or requirements the task must implement
-2. **Format**: `proposal.md#Section-Title — brief description of what this section defines for the task`
+2. **Format**: `proposal.md#Section-Title` — brief description of what this section defines for the task
    - Section anchors use the exact heading text with spaces replaced by hyphens (e.g., `## Key Risks` → `proposal.md#Key-Risks`)
    - Each entry has a dash explanation noting *why* this section is relevant to the task
 3. **Minimum coverage**: Every coding task must have ≥1 section-level reference (not just `proposal.md` bare path). Doc tasks follow the same standard.
