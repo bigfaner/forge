@@ -78,6 +78,32 @@ For each In Scope bullet: estimate effort (1-2h), derive acceptance criteria fro
 
 **Scope Inference** (from task description semantics): UI/pages/components → `scope: "frontend"`, API/server/database/CLI → `scope: "backend"`, mixed/unclear → `scope: "all"`.
 
+**Reference Files Generation**: For each derived task, generate precise section-level Reference Files instead of bare file paths.
+
+1. **Identify relevant proposal sections**: For each task, scan proposal.md and identify 2-5 sections most relevant to that task based on:
+   - The task's description and affected files (match keywords, file paths, and technical concepts)
+   - Which proposal sections define constraints, decisions, or requirements the task must implement
+2. **Format**: `proposal.md#Section-Title — brief description of what this section defines for the task`
+   - Section anchors use the exact heading text with spaces replaced by hyphens (e.g., `## Key Risks` → `proposal.md#Key-Risks`)
+   - Each entry has a dash explanation noting *why* this section is relevant to the task
+3. **Minimum coverage**: Every coding task must have ≥1 section-level reference (not just `proposal.md` bare path). Doc tasks follow the same standard.
+4. **External documents**: If proposal.md references existing design documents (e.g., files under `docs/lessons/`, `docs/conventions/`, `docs/reference/`) and those files exist on disk, include relevant sections from those documents as additional Reference Files entries.
+5. **Extraction logic**: For each task, the extraction follows these steps:
+   - Read the task's description and affected files list
+   - Match against proposal section headings and their content
+   - Prioritize sections that define requirements, constraints, or success criteria directly related to the task
+   - If a single section covers multiple tasks, reference it from each relevant task (deduplication is per-task, not global)
+
+**Example** — given a task "Add Reference Files loading to coding templates" derived from a proposal:
+```markdown
+## Reference Files
+- `proposal.md#Proposed-Solution` — defines the two-layer enforcement model and template-layer requirements
+- `proposal.md#Requirements-Analysis` — Key Scenarios and Edge Cases for Reference Files behavior
+- `proposal.md#Key-Risks` — risk of agent ignoring IMPORTANT tags and mitigation strategy
+```
+
+Replace the template placeholder `{{REFERENCE_FILES}}` (or the default `- \`docs/proposals/<slug>/proposal.md\` — Source proposal`) with the generated section-level references.
+
 **Priority**: P0 | P1 | P2. Classified by structural role in the proposal:
 - P0: implements the core solution mechanism described in the proposal — without this, the feature doesn't work
 - P1: implements supporting scope items or success criteria that complete the feature

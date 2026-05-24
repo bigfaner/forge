@@ -42,7 +42,7 @@
       "title": "Improve quick-tasks SKILL.md Reference Files generation",
       "priority": "P1",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "4-quick-tasks-ref-files.md",
       "record": "records/4-quick-tasks-ref-files.md",
       "type": "doc"
