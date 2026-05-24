@@ -4,7 +4,12 @@ background: "Senior infrastructure engineer with 10+ years building CLI tools (C
 review_style: "Starts by tracing the data flow end-to-end: from config schema definition through init detection, into CLI query, down to task-generation consumption. Validates schema backward-compatibility and migration paths rigorously. Flags ambiguity in naming conventions, edge cases in prefix matching, and gaps between declared surface types and detection rule coverage. Challenges scope boundaries — what is in-scope vs deferred — to assess integration risk."
 generated_for: "docs/proposals/unify-surfaces/proposal.md"
 created_at: "2026-05-24T00:00:00Z"
-review_history: []
+review_history:
+  - proposal: "docs/proposals/test-recipe-unification/proposal.md"
+    date: "2026-05-24"
+    substantive_change: true
+    rubric_delta: 126
+    attack_points_changed: true
 deprecated: false
 ---
 
