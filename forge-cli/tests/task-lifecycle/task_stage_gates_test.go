@@ -260,7 +260,7 @@ func TestTSG_004_ExcludesTestOnlyPhases(t *testing.T) {
 	tmpRoot, cleanup := stageGateTestDir(t, featureSlug, []string{
 		"1.1.md:" + taskContentWithType("1.1.md", "feature"),
 		"T-test-gen-scripts-cli.md:" + taskContentWithType("T-test-gen-scripts-cli.md", "testTask"),
-		"T-quick-gen-and-run-cli.md:" + taskContentWithType("T-quick-gen-and-run-cli.md", "testTask"),
+		"T-test-run-cli.md:" + taskContentWithType("T-test-run-cli.md", "testTask"),
 	})
 	defer cleanup()
 

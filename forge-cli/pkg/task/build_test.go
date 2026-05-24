@@ -705,9 +705,7 @@ func TestIsTestTaskID(t *testing.T) {
 		{"T-test-runa", true},
 		{"T-test-verify-regression", true},
 		// T-quick-* prefix
-		{"T-quick-gen-and-run-api", true},
 		{"T-quick-verify-regressiona", true},
-		{"T-quick-gen-and-run", true},
 		{"T-quick-verify-regression", true},
 		// T-specs-* prefix
 		{"T-specs-consolidate", true},
@@ -745,7 +743,6 @@ func TestIsAutoGenTaskID(t *testing.T) {
 		// Test pipeline IDs
 		{"T-test-gen-scripts-cli", true},
 		{"T-test-run", true},
-		{"T-quick-gen-and-run-api", true},
 		{"T-quick-verify-regression", true},
 		{"T-specs-consolidate", true},
 		{"T-clean-code", true},
@@ -1459,7 +1456,6 @@ func TestIsTestableType(t *testing.T) {
 		// test.* prefix -> false
 		{TypeTestGenScripts, false},
 		{TypeTestRun, false},
-		{TypeTestGenAndRun, false},
 		// validation.* prefix -> false
 		{TypeValidationCode, false},
 		{TypeValidationUx, false},

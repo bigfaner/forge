@@ -113,6 +113,9 @@ func Synthesize(opts SynthesizeOpts) (string, error) {
 func renderTemplate(templateFile string, opts SynthesizeOpts, t task.Task) (string, error) {
 	data, err := templateFS.ReadFile(templateFile)
 	if err != nil {
+		if strings.Contains(templateFile, "gen-and-run") {
+			return "", fmt.Errorf("test.gen-and-run is deprecated; use staged test pipeline types (test.gen-journeys, test.gen-contracts, test.gen-scripts)")
+		}
 		return "", fmt.Errorf("read template %s: %w", templateFile, err)
 	}
 
@@ -290,18 +293,16 @@ func isLabelWithEmptyValue(line string) bool {
 	return after == ""
 }
 
-// genScriptBases lists the task ID bases that support per-type gen-scripts or gen-and-run.
+// genScriptBases lists the task ID bases that support per-type gen-scripts.
 //
 // Each base corresponds to a specific task ID format in the index:
 //   - "T-test-gen-scripts"     → tasks like "T-test-gen-scripts-api", "T-test-gen-scripts-ui"
-//   - "T-quick-gen-and-run"    → tasks like "T-quick-gen-and-run-cli"
 //
 // The type suffix (the part after the base) determines the --type argument passed
 // to the gen-script command at runtime. Adding a new base here requires that the
 // corresponding task ID format is also recognized by task.ExtractTypeSuffix.
 var genScriptBases = []string{
 	"T-test-gen-scripts",
-	"T-quick-gen-and-run",
 }
 
 // extractTestTypeArg extracts the --type argument from a type-suffixed task ID.

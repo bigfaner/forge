@@ -559,7 +559,7 @@ func TestRenderTestRecord(t *testing.T) {
 			CasesGenerated: 5,
 			TypeReclassification: &TypeReclassification{
 				OriginalType: "test.gen-scripts",
-				ActualType:   "test.gen-and-run",
+				ActualType:   "test.run",
 				Reason:       "scope expanded to include run step",
 			},
 		}
@@ -567,7 +567,7 @@ func TestRenderTestRecord(t *testing.T) {
 
 		assert.Contains(t, got, "## Type Reclassification")
 		assert.Contains(t, got, "- Original: test.gen-scripts")
-		assert.Contains(t, got, "- Actual: test.gen-and-run")
+		assert.Contains(t, got, "- Actual: test.run")
 		assert.Contains(t, got, "- Reason: scope expanded to include run step")
 		assert.NotContains(t, got, "**Coverage**")
 	})

@@ -573,7 +573,6 @@ func TestTypeConstants(t *testing.T) {
 		{TypeTestGenJourneys, "test.gen-journeys"},
 		{TypeTestGenScripts, "test.gen-scripts"},
 		{TypeTestRun, "test.run"},
-		{TypeTestGenAndRun, "test.gen-and-run"},
 		{TypeTestVerifyRegression, "test.verify-regression"},
 		{TypeValidationCode, "validation.code"},
 		{TypeValidationUx, "validation.ux"},
@@ -588,9 +587,9 @@ func TestTypeConstants(t *testing.T) {
 }
 
 func TestSystemTypes(t *testing.T) {
-	t.Run("SystemTypes contains exactly 14 entries", func(t *testing.T) {
-		if len(SystemTypes) != 14 {
-			t.Errorf("SystemTypes has %d entries, want 14", len(SystemTypes))
+	t.Run("SystemTypes contains exactly 13 entries", func(t *testing.T) {
+		if len(SystemTypes) != 13 {
+			t.Errorf("SystemTypes has %d entries, want 13", len(SystemTypes))
 		}
 	})
 
@@ -599,14 +598,14 @@ func TestSystemTypes(t *testing.T) {
 			TypeGate,
 			TypeTestGenContracts, TypeTestGenJourneys,
 			TypeTestGenScripts, TypeTestRun,
-			TypeTestGenAndRun, TypeTestVerifyRegression,
+			TypeTestVerifyRegression,
 			TypeValidationCode, TypeValidationUx,
 			TypeDocReview, TypeDocSummary,
 			TypeCleanCode,
 			TypeEvalJourney, TypeEvalContract,
 		}
-		if len(expected) != 14 {
-			t.Fatalf("test setup error: expected list has %d entries, want 14", len(expected))
+		if len(expected) != 13 {
+			t.Fatalf("test setup error: expected list has %d entries, want 13", len(expected))
 		}
 		for _, typ := range expected {
 			if !SystemTypes[typ] {
@@ -630,7 +629,6 @@ func TestIsSystemType(t *testing.T) {
 			TypeGate,
 			TypeTestGenContracts, TypeTestGenJourneys,
 			TypeTestGenScripts, TypeTestRun,
-			TypeTestGenAndRun, TypeTestVerifyRegression,
 			TypeValidationCode, TypeValidationUx,
 			TypeDocReview, TypeDocSummary,
 			TypeCleanCode,
@@ -690,7 +688,6 @@ func TestValidTypes(t *testing.T) {
 			TypeTestGenJourneys,
 			TypeTestGenScripts,
 			TypeTestRun,
-			TypeTestGenAndRun,
 			TypeTestVerifyRegression,
 			TypeEvalJourney,
 			TypeEvalContract,

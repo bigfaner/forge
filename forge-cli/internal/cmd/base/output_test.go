@@ -9,7 +9,7 @@ import (
 func TestTruncateSlug_CJK(t *testing.T) {
 	t.Run("bug: byte-level truncation splits CJK characters producing invalid UTF-8", func(t *testing.T) {
 		// Chinese title where byte-level cut at position 47 lands mid-character
-		title := "autogen.go Quick 模式：替换 gen-and-run 为 gen-journeys + gen-contracts"
+		title := "autogen.go Quick 模式：替换旧测试类型为 staged pipeline"
 		maxLen := 50
 
 		result := TruncateSlug(title, maxLen)

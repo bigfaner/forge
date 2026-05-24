@@ -1475,12 +1475,12 @@ func TestValidator_QuickMode(t *testing.T) {
 			PriorityEnum: []string{"P0", "P1", "P2"},
 		}
 		index.SetTasks(map[string]task.Task{
-			"task1":                 {ID: "1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1-task.md", Type: "coding.feature"},
-			"task2":                 {ID: "2", Title: "Task 2", Status: "pending", Priority: "P0", Dependencies: []string{"1"}, File: "2-task.md", Type: "coding.feature"},
-			"quick-gen-and-run-cli": {ID: "T-quick-gen-and-run-cli", Title: "Test Cases", Status: "pending", Priority: "P1", Dependencies: []string{"2"}, File: "quick-gen-and-run-cli.md", Type: "test.gen-and-run"},
+			"task1":                {ID: "1", Title: "Task 1", Status: "pending", Priority: "P0", File: "1-task.md", Type: "coding.feature"},
+			"task2":                {ID: "2", Title: "Task 2", Status: "pending", Priority: "P0", Dependencies: []string{"1"}, File: "2-task.md", Type: "coding.feature"},
+			"test-gen-scripts-cli": {ID: "T-test-gen-scripts-cli", Title: "Test Scripts", Status: "pending", Priority: "P1", Dependencies: []string{"2"}, File: "test-gen-scripts-cli.md", Type: "test.gen-scripts"},
 		})
 
-		for _, fname := range []string{"1-task.md", "2-task.md", "quick-gen-and-run-cli.md"} {
+		for _, fname := range []string{"1-task.md", "2-task.md", "test-gen-scripts-cli.md"} {
 			if err := os.WriteFile(filepath.Join(dir, fname), []byte("content"), 0644); err != nil {
 				t.Fatal(err)
 			}
@@ -1619,8 +1619,8 @@ func TestValidator_QuickMode(t *testing.T) {
 	})
 }
 
-func TestValidator_QuickMode_FirstTestTaskPlaceholder(t *testing.T) {
-	t.Run("T-quick-1 with unresolved placeholder", func(t *testing.T) {
+func TestValidator_QuickMode_DeprecatedGenAndRunRejected(t *testing.T) {
+	t.Run("test.gen-and-run type triggers migration error", func(t *testing.T) {
 		dir := t.TempDir()
 		featureSlug := "test-feature"
 
@@ -1629,10 +1629,9 @@ func TestValidator_QuickMode_FirstTestTaskPlaceholder(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		taskFile := filepath.Join(tasksDir, "quick-gen-and-run-cli.md")
+		taskFile := filepath.Join(tasksDir, "gen-and-run-cli.md")
 		content := `---
 id: "T-quick-gen-and-run-cli"
-dependencies: [{{T_QUICK_1_DEP}}]
 ---
 `
 		if err := os.WriteFile(taskFile, []byte(content), 0644); err != nil {
@@ -1641,18 +1640,18 @@ dependencies: [{{T_QUICK_1_DEP}}]
 
 		v := &validator{filePath: filepath.Join(dir, "docs", "features", featureSlug, "tasks", "index.json")}
 		v.validateFilesExist(featureSlug, map[string]task.Task{
-			"quick-gen-and-run-cli": {ID: "T-quick-gen-and-run-cli", File: "quick-gen-and-run-cli.md"},
+			"gen-and-run-cli": {ID: "T-quick-gen-and-run-cli", File: "gen-and-run-cli.md", Type: "test.gen-and-run"},
 		})
 
 		if len(v.errors) != 1 {
-			t.Errorf("expected 1 error for unresolved placeholder, got %d: %v", len(v.errors), v.errors)
+			t.Errorf("expected 1 error for deprecated type, got %d: %v", len(v.errors), v.errors)
 		}
-		if len(v.errors) > 0 && !contains(v.errors[0], "{{T_QUICK_1_DEP}}") {
-			t.Errorf("error should mention placeholder, got: %s", v.errors[0])
+		if len(v.errors) > 0 && !contains(v.errors[0], "test.gen-and-run is deprecated") {
+			t.Errorf("error should mention deprecation, got: %s", v.errors[0])
 		}
 	})
 
-	t.Run("T-quick-1 with resolved placeholder", func(t *testing.T) {
+	t.Run("T-quick-gen-and-run ID prefix triggers migration error", func(t *testing.T) {
 		dir := t.TempDir()
 		featureSlug := "test-feature"
 
@@ -1661,10 +1660,9 @@ dependencies: [{{T_QUICK_1_DEP}}]
 			t.Fatal(err)
 		}
 
-		taskFile := filepath.Join(tasksDir, "quick-gen-and-run-cli.md")
+		taskFile := filepath.Join(tasksDir, "gen-and-run-cli.md")
 		content := `---
 id: "T-quick-gen-and-run-cli"
-dependencies: ["2"]
 ---
 `
 		if err := os.WriteFile(taskFile, []byte(content), 0644); err != nil {
@@ -1673,11 +1671,14 @@ dependencies: ["2"]
 
 		v := &validator{filePath: filepath.Join(dir, "docs", "features", featureSlug, "tasks", "index.json")}
 		v.validateFilesExist(featureSlug, map[string]task.Task{
-			"quick-gen-and-run-cli": {ID: "T-quick-gen-and-run-cli", File: "quick-gen-and-run-cli.md"},
+			"gen-and-run-cli": {ID: "T-quick-gen-and-run-cli", File: "gen-and-run-cli.md", Type: "coding.feature"},
 		})
 
-		if len(v.errors) != 0 {
-			t.Errorf("expected no errors for resolved placeholder, got: %v", v.errors)
+		if len(v.errors) != 1 {
+			t.Errorf("expected 1 error for deprecated ID prefix, got %d: %v", len(v.errors), v.errors)
+		}
+		if len(v.errors) > 0 && !contains(v.errors[0], "test.gen-and-run is deprecated") {
+			t.Errorf("error should mention deprecation, got: %s", v.errors[0])
 		}
 	})
 }
@@ -1700,12 +1701,12 @@ func TestValidator_ValidateTasks_SystemTypeRejectedForBusinessTask(t *testing.T)
 			wantErrContains: []string{"system-reserved type", "gate"},
 		},
 		{
-			name: "business task with test.gen-and-run type rejected",
+			name: "business task with test.gen-scripts type rejected",
 			tasks: map[string]task.Task{
-				"task1": {ID: "1", Title: "Task", File: "1.md", Type: "test.gen-and-run"},
+				"task1": {ID: "1", Title: "Task", File: "1.md", Type: "test.gen-scripts"},
 			},
 			wantErrors:      1,
-			wantErrContains: []string{"system-reserved type", "test.gen-and-run"},
+			wantErrContains: []string{"system-reserved type", "test.gen-scripts"},
 		},
 		{
 			name: "business task with code-quality.simplify type rejected",
@@ -1765,9 +1766,9 @@ func TestValidator_ValidateTasks_SystemTypeRejectedForBusinessTask(t *testing.T)
 			wantErrors: 0,
 		},
 		{
-			name: "auto-gen test task with test.gen-and-run passes",
+			name: "auto-gen test task with test.gen-scripts passes",
 			tasks: map[string]task.Task{
-				"test": {ID: "T-test-gen-scripts-cli", Title: "Test", File: "test.md", Type: "test.gen-and-run"},
+				"test": {ID: "T-test-gen-scripts-cli", Title: "Test", File: "test.md", Type: "test.gen-scripts"},
 			},
 			wantErrors: 0,
 		},

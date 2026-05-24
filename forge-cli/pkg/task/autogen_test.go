@@ -101,13 +101,6 @@ func TestGetQuickTestTasks_SingleType(t *testing.T) {
 		}
 	}
 
-	// No gen-and-run tasks in Quick mode
-	for _, task := range tasks {
-		if task.Type == TypeTestGenAndRun {
-			t.Errorf("Quick mode should not contain gen-and-run tasks, found %q", task.ID)
-		}
-	}
-
 	if tasks[0].Type != TypeTestGenJourneys {
 		t.Errorf("T-test-gen-journeys-cli Type = %q, want %q", tasks[0].Type, TypeTestGenJourneys)
 	}
@@ -663,7 +656,6 @@ func TestGenerateTestTaskMD_EmbedTemplate_LoadsContent(t *testing.T) {
 		wantContains string
 	}{
 		{"gen-scripts", TypeTestGenScripts, "executable test scripts"},
-		{"gen-and-run", TypeTestGenAndRun, "Phase 1"},
 		{"run", TypeTestRun, "staged e2e test scripts"},
 		{"verify-regression", TypeTestVerifyRegression, "just test-e2e"},
 		{"eval-journey", TypeEvalJourney, "6-dimension rubric"},
@@ -1101,9 +1093,6 @@ func TestBodyContentPerStrategy(t *testing.T) {
 		{"gen-scripts has feature context", TypeTestGenScripts, "api", BodyContext{
 			FeatureSlug: "feat",
 		}, []string{"feat", "api"}},
-		{"gen-and-run has feature context", TypeTestGenAndRun, "tui", BodyContext{
-			FeatureSlug: "feat",
-		}, []string{"feat", "tui"}},
 		{"run has feature context", TypeTestRun, "", BodyContext{
 			FeatureSlug: "feat", Scope: []string{"backend"},
 		}, []string{"feat", "- backend"}},
@@ -1295,7 +1284,7 @@ func TestGenContractsTemplateRendering(t *testing.T) {
 func TestAutogenTemplateDiscovery(t *testing.T) {
 	// Verify all auto-gen types resolve to a readable template via naming convention
 	wantTypes := []string{
-		TypeTestGenScripts, TypeTestGenAndRun, TypeTestRun,
+		TypeTestGenScripts, TypeTestRun,
 		TypeTestVerifyRegression, TypeEvalJourney, TypeEvalContract,
 		TypeValidationCode, TypeValidationUx,
 		TypeDocReview, TypeDocConsolidate, TypeDocDrift, TypeCleanCode,
@@ -1589,12 +1578,21 @@ func TestGetBreakdownTestTasks_RegressionStillValid(t *testing.T) {
 
 // --- Quick mode staged across types topology tests (Task 4) ---
 
-func TestGetQuickTestTasks_NoGenAndRun(t *testing.T) {
+func TestGetQuickTestTasks_StagedPipelineTypesOnly(t *testing.T) {
 	tasks := GetQuickTestTasks([]string{"cli", "api"}, allEnabledAuto)
 
+	// Quick mode should only generate test pipeline or doc task types
+	validPrefixes := []string{"test.", "doc.", "code-quality."}
 	for _, task := range tasks {
-		if task.Type == TypeTestGenAndRun {
-			t.Errorf("Quick mode should not generate gen-and-run tasks, found %q (type=%q)", task.ID, task.Type)
+		valid := false
+		for _, prefix := range validPrefixes {
+			if strings.HasPrefix(task.Type, prefix) {
+				valid = true
+				break
+			}
+		}
+		if !valid {
+			t.Errorf("Quick mode generated unexpected task type %q (type=%q)", task.ID, task.Type)
 		}
 	}
 }
