@@ -107,8 +107,8 @@ func TestTemplateType_ValidTypes(t *testing.T) {
 
 	// Verify each extracted type is a known valid type
 	validTypes := map[string]bool{
-		"coding.fix":    true,
-		"coding.cleanup": true,
+		"coding.fix":            true,
+		"coding.cleanup":        true,
 		"code-quality.simplify": true,
 	}
 	for name, typ := range templateTypes {
