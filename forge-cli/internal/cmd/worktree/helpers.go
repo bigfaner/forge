@@ -109,6 +109,7 @@ func init() {
 	startCmd.ValidArgsFunction = worktreeStartCompletion
 	removeCmd.ValidArgsFunction = worktreeRemoveCompletion
 	resumeCmd.ValidArgsFunction = worktreeResumeCompletion
+	pushCmd.ValidArgsFunction = worktreePushCompletion
 }
 
 // ---------------------------------------------------------------------------
@@ -353,6 +354,12 @@ func worktreeRemoveCompletion(_ *cobra.Command, args []string, toComplete string
 // worktreeResumeCompletion returns existing non-main worktree slugs for shell completion.
 // Hard Rule: return empty list on error (never return error to shell).
 func worktreeResumeCompletion(_ *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return worktreeSlugCompletion(args, toComplete)
+}
+
+// worktreePushCompletion returns existing non-main worktree slugs for shell completion.
+// Hard Rule: return empty list on error (never return error to shell).
+func worktreePushCompletion(_ *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	return worktreeSlugCompletion(args, toComplete)
 }
 

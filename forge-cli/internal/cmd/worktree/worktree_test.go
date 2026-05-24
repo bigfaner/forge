@@ -4398,6 +4398,63 @@ func TestWorktreePush_PrintsPushOutput(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// worktree push: slug argument (accepts optional <slug>)
+// ---------------------------------------------------------------------------
+
+func TestWorktreePush_AcceptsSlugArg(t *testing.T) {
+	// bug: forge worktree push <slug> rejected the slug as "unknown command"
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+
+	// Create .forge/worktrees/my-slug/ with .git file to simulate worktree
+	wtDir := filepath.Join(dir, ".forge", "worktrees", "my-slug")
+	if err := os.MkdirAll(wtDir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	// .git file (not directory) marks it as a linked worktree
+	if err := os.WriteFile(filepath.Join(wtDir, ".git"), []byte("gitdir: ../../.git"), 0o644); err != nil {
+		t.Fatalf("write .git: %v", err)
+	}
+
+	origBranchFunc := getCurrentBranchFunc
+	getCurrentBranchFunc = func(_ string) string { return "my-slug" }
+	defer func() { getCurrentBranchFunc = origBranchFunc }()
+
+	origPushFunc := gitPushFunc
+	gitPushFunc = func(_ string) (string, error) { return "", nil }
+	defer func() { gitPushFunc = origPushFunc }()
+
+	buf := new(bytes.Buffer)
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"push", "my-slug"})
+
+	err := Cmd.Execute()
+	if err != nil {
+		t.Fatalf("push with slug should succeed, got: %v", err)
+	}
+}
+
+func TestWorktreePush_SlugNotFound(t *testing.T) {
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+
+	buf := new(bytes.Buffer)
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"push", "nonexistent-worktree"})
+
+	err := Cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for nonexistent worktree slug")
+	}
+	stderr := buf.String()
+	if !strings.Contains(stderr, "Worktree not found") {
+		t.Errorf("error should mention 'Worktree not found', got: %s", stderr)
+	}
+}
+
+// ---------------------------------------------------------------------------
 // worktree status: command registration
 // ---------------------------------------------------------------------------
 
@@ -4878,9 +4935,9 @@ func TestWorktreeListCmd_NoValidArgsFunction(t *testing.T) {
 	}
 }
 
-func TestWorktreePushCmd_NoValidArgsFunction(t *testing.T) {
-	if pushCmd.ValidArgsFunction != nil {
-		t.Error("pushCmd should NOT have a ValidArgsFunction (push takes no slug arg)")
+func TestWorktreePushCmd_HasValidArgsFunction(t *testing.T) {
+	if pushCmd.ValidArgsFunction == nil {
+		t.Error("pushCmd should have a ValidArgsFunction for shell completion of slug arg")
 	}
 }
 
