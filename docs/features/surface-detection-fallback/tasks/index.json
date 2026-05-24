@@ -1,0 +1,101 @@
+{
+  "feature": "surface-detection-fallback",
+  "proposal": "docs/proposals/surface-detection-fallback/proposal.md",
+  "created": "2026-05-24",
+  "tasks": {
+    "1-inference-fallback": {
+      "id": "1",
+      "title": "Add structural inference fallback and Sources map",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "status": "pending",
+      "file": "1-inference-fallback.md",
+      "record": "records/1-inference-fallback.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "2-tui-source-annotations": {
+      "id": "2",
+      "title": "Update TUI confirmation flow with source annotations and re-run prompt",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-tui-source-annotations.md",
+      "record": "records/2-tui-source-annotations.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "3-init-summary-display": {
+      "id": "3",
+      "title": "Improve init summary to show actual detected surface types",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "3-init-summary-display.md",
+      "record": "records/3-init-summary-display.md",
+      "scope": "backend",
+      "type": "coding.enhancement"
+    },
+    "4-yaml-comment-persistence": {
+      "id": "4",
+      "title": "Persist source annotation as YAML comment in config",
+      "priority": "P2",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "4-yaml-comment-persistence.md",
+      "record": "records/4-yaml-comment-persistence.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "5-surfaces-detect-command": {
+      "id": "5",
+      "title": "Add forge surfaces detect subcommand",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1",
+        "2"
+      ],
+      "status": "pending",
+      "file": "5-surfaces-detect-command.md",
+      "record": "records/5-surfaces-detect-command.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "pending",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "scope": "all",
+      "type": "doc.drift"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
