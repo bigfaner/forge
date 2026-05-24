@@ -144,13 +144,13 @@ After cleanup, verify no regressions were introduced.
 Check if the project has a test infrastructure:
 
 ```bash
-just --evaluate 2>/dev/null && grep -q "^test" justfile 2>/dev/null
+just --evaluate 2>/dev/null && grep -q "^unit-test" justfile 2>/dev/null
 ```
 
-**If `just test` is available**: Run it.
+**If `just unit-test` is available**: Run it.
 
 ```bash
-just test
+just unit-test
 ```
 
 If tests fail, the cleanup introduced a regression:
@@ -163,7 +163,7 @@ If tests fail, the cleanup introduced a regression:
 
 Output one of:
 - `Step 3/4: Quality gate... DONE (tests passed)`
-- `Step 3/4: Quality gate... SKIPPED (no just test available)`
+- `Step 3/4: Quality gate... SKIPPED (no just unit-test available)`
 - `Step 3/4: Quality gate... DONE (N regressions reverted)`
 
 ## Step 4: Cleanup Summary

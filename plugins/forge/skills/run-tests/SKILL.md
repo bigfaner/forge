@@ -82,10 +82,10 @@ If `test.execution` or `test.execution.run` is missing, abort with:
 > ```yaml
 > test:
 >   execution:
->     run: "just e2e-test --feature {slug}"   # Required: command template
->     # setup: "just e2e-setup"               # Optional: pre-execution setup
->     # pre-check: "just e2e-verify --feature {slug}"  # Optional: validation before run
->     # teardown: "just e2e-teardown"         # Optional: post-execution cleanup
+>     run: "just test {slug}"               # Required: command template
+>     # setup: "just test-setup"            # Optional: pre-execution setup
+>     # pre-check: "just probe"             # Optional: validation before run
+>     # teardown: "just test-teardown"      # Optional: post-execution cleanup
 >     # results-dir: "tests/{journey}/results"  # Optional: results directory
 >     # timeout: 300                           # Optional: timeout in seconds (default 600)
 > ```
@@ -128,7 +128,7 @@ If `test.execution.setup` is configured, execute it:
 
 ```bash
 # Template: test.execution.setup (after variable resolution)
-# Example: "just e2e-setup"
+# Example: "just test-setup"
 ```
 
 Ensure results directory exists:
@@ -176,7 +176,7 @@ If `test.execution.pre-check` is configured, execute it:
 
 ```bash
 # Template: test.execution.pre-check (after variable resolution)
-# Example: "just e2e-verify --feature {slug}"
+# Example: "just probe"
 ```
 
 If pre-check fails (non-zero exit), abort and report:
@@ -189,7 +189,7 @@ Execute the run command:
 
 ```bash
 # Template: test.execution.run (after variable resolution)
-# Example: "just e2e-test --feature {slug}"
+# Example: "just test {slug}"
 ```
 
 Capture the full stdout/stderr output for result parsing in Step 7.
