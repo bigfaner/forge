@@ -69,3 +69,12 @@ Task CLI manages task lifecycle. Run `forge -h` or `forge [command] -h` for full
 Key commands for error recovery:
 - `forge task transition <id> <status> --reason "..."` — manually transition a task (unblock, skip, reject)
 - `forge task reopen <id>` — re-activate a rejected/skipped task back to pending
+
+### CLI Query Commands
+
+When a user mentions a proposal or feature slug in conversation, use these CLI commands for quick ad-hoc lookups instead of spelunking the file system:
+
+- **`forge proposal <slug>`** — shows proposal summary: slug, status, created date, and associated PRD/feature paths
+- **`forge feature status <slug>`** — shows feature status: current phase, task breakdown by state, and artifact eval scores
+
+These are for interactive queries only. Skills that need structured data should continue using direct file reads (they already know the paths).

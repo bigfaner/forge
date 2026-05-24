@@ -8,7 +8,7 @@
       "title": "Add CLI Query Commands section to guide.md",
       "priority": "P0",
       "estimatedTime": "15m",
-      "status": "pending",
+      "status": "completed",
       "file": "1-add-cli-query-section.md",
       "record": "records/1-add-cli-query-section.md",
       "type": "doc"
