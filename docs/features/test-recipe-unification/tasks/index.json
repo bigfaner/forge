@@ -70,7 +70,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-test-runner.md",
       "record": "records/4-test-runner.md",
       "scope": "backend",

@@ -350,7 +350,27 @@ func TestJourneyIsolation_ParallelExecution_ResultsConsistent(t *testing.T) {
 
 func TestTestingRunJourney_NoTestCommand(t *testing.T) {
 	_ = setupJourneyProjectWithoutConfig(t)
-	// No longer requires test-command in config. Journey execution uses just e2e-test.
+	// No longer requires test-command in config. Journey execution uses just test.
+}
+
+func TestExecuteJourneyInIsolation_UsesJustTest(t *testing.T) {
+	dir := setupJourneyProject(t)
+
+	// Create a justfile with test recipe that accepts a journey parameter
+	justfileContent := "test journey='':\n    @echo test-journey={{journey}}\n"
+	if err := os.WriteFile(filepath.Join(dir, "justfile"), []byte(justfileContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := ResolveJourneyExecutionConfig(dir)
+	result := ExecuteJourneyInIsolation(cfg, "", "my-journey")
+
+	if !result.Passed {
+		t.Errorf("expected pass, got error: %s", result.Error)
+	}
+	if !strings.Contains(result.Output, "test-journey=my-journey") {
+		t.Errorf("expected just test with journey arg output, got: %s", result.Output)
+	}
 }
 
 // --- Test: JourneyExecutionConfig ---
