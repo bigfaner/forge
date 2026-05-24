@@ -15,6 +15,7 @@
 - [Hooks 系统](#hooks-系统)
 - [Manifest 生命周期](#manifest-生命周期)
 - [目录约定](#目录约定)
+- [v3.0.0 子系统](#v3.0.0-子系统)
 
 ---
 
@@ -541,3 +542,61 @@ tests/e2e/
 | `tests/e2e/` (根级) | `forge test promote` | 是 |
 | `records/` | `forge task submit` | 是 |
 | `specs/` | `/consolidate-specs` | 是（用户确认后） |
+
+---
+
+## v3.0.0 子系统
+
+v3.0.0 新增的辅助子系统，扩展了 Forge 的环境感知、知识管理和质量保证能力。
+
+### Surface Detection
+
+项目 surface（api/web/cli/tui/mobile）自动检测机制。`forge surfaces detect` 扫描项目目录结构和依赖文件，识别测试 surface 类型，结果用于 gen-journeys 和 gen-test-scripts 的 profile 路由。实现在 forge CLI (`forge-cli/pkg/forgeconfig/detect_surface.go`)，非 skill 组件。
+
+- 相关规则：[surface-api.md](../../plugins/forge/skills/gen-journeys/rules/surface-api.md) | [surface-web.md](../../plugins/forge/skills/gen-journeys/rules/surface-web.md) | [surface-cli.md](../../plugins/forge/skills/gen-journeys/rules/surface-cli.md) | [surface-tui.md](../../plugins/forge/skills/gen-journeys/rules/surface-tui.md) | [surface-mobile.md](../../plugins/forge/skills/gen-journeys/rules/surface-mobile.md)
+
+### Worktree
+
+Git worktree 隔离开发环境管理。`forge worktree` 命令组提供 start/list/remove/resume/push/status 子命令，支持功能分支的物理隔离——每个 worktree 拥有独立工作目录和分支，避免多任务间的文件冲突。实现在 forge CLI (`forge-cli/internal/cmd/worktree/`)，非 skill 组件。
+
+### Convention
+
+测试框架 Convention 文件生成系统。`/test-guide` 驱动项目测试框架自动检测（文件信号 + 依赖分析），生成 `docs/conventions/testing/<scope>.md` Convention 文件。Convention 文件定义测试发现、结构、断言模式和标签规范，供 gen-test-scripts 和 run-tests 消费，解耦 Forge 与具体测试框架。
+
+- SKILL.md: [test-guide](../../plugins/forge/skills/test-guide/SKILL.md)
+
+### Forensic
+
+Agent 偏差溯源分析。搜索 JSONL 会话历史，提取思维链和工具调用序列，与 SKILL.md 定义的行为规范比对，定位 agent 偏离预期的根因。适用于多 session 重复偏差诊断，不用于单 session 事后分析（使用 `/learn` 替代）。
+
+- SKILL.md: [forensic](../../plugins/forge/skills/forensic/SKILL.md)
+
+### Deep Research
+
+技术/产品深度调研。从主题名到结构化研究报告——自适应多源调查、交叉引用、上下文关联，产出可执行洞察。支持单技术深度分析和多候选方案对比两种模式。纯文档产出，不执行任何代码变更。
+
+- SKILL.md: [deep-research](../../plugins/forge/skills/deep-research/SKILL.md)
+
+### Clean Code
+
+代码质量精炼。在限定 scope（git diff / 指定路径 / 全功能范围）内应用五项精炼原则，仅改变代码表达方式，不改变行为。可附带 Quality Gate（compile + fmt + lint）验证修改安全性。支持 standalone 调用和 pipeline 任务 `T-clean-code-1`。
+
+- SKILL.md: [clean-code](../../plugins/forge/skills/clean-code/SKILL.md)
+
+### Extract Design MD
+
+视觉风格提取。从 web/mobile/tui 应用中自动提取视觉语言，生成 forge 兼容的 `DESIGN.md` 供 `/ui-design` skill 消费。产出设计令牌（颜色、字体、间距）和组件模式，桥接现有产品到 Forge UI 设计流程。
+
+- SKILL.md: [extract-design-md](../../plugins/forge/skills/extract-design-md/SKILL.md)
+
+### Learn
+
+统一知识积累入口。合并 `/record-decision` 和 `/learn-lesson` 的功能，从单一入口捕获决策、经验、惯例和业务规则。核心原则：先写入后审核——立即持久化知识，用户在最终报告中审核和修正。
+
+- SKILL.md: [learn](../../plugins/forge/skills/learn/SKILL.md)
+
+### Test Guide
+
+测试 Convention 文件引导生成。见上方 Convention 子系统。MANUAL-ONLY 技能，用户显式调用时引导完成框架检测、Convention 草稿生成、审核反馈循环和文件写入的完整流程。
+
+- SKILL.md: [test-guide](../../plugins/forge/skills/test-guide/SKILL.md)

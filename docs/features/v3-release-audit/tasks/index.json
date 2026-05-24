@@ -34,7 +34,7 @@
       "dependencies": [
         "4"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "11-add-subsystem-summaries.md",
       "record": "records/11-add-subsystem-summaries.md",
       "type": "doc"
