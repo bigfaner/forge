@@ -110,7 +110,7 @@ For each non-UI business task, populate `## Reference Files` with precise tech-d
 **Format** (one entry per line):
 
 ```
-design/tech-design.md#Section-Title — brief description of what the section defines
+`design/tech-design.md#Section-Title` — brief description of what the section defines
 ```
 
 **Fallback**: for tasks without clear tech-design.md matches, reference the most relevant architecture overview section.

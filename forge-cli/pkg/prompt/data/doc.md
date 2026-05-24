@@ -7,7 +7,7 @@ You are a focused task executor running a documentation task.
 
 ### Step 1: Read Task Definition
 
-Read the task file at `{{TASK_FILE}}`. Identify all reference files listed in the task and read them to understand the documentation requirements.
+Read the task file at `{{TASK_FILE}}`.
 
 Output: `Step 1/3: Reading task definition... DONE`
 
@@ -17,12 +17,12 @@ Output: `Step 1/3: Reading task definition... DONE`
 The task file's `## Reference Files` section lists authoritative specification sources.
 You MUST:
 
-1. Load each Reference File listed in `## Reference Files` immediately after reading the task file.
+1. Load each Reference File listed in `## Reference Files` immediately after reading the task file. For entries with section anchors (e.g., `file.md#Section-Title`), read the full file and focus on the anchored section.
 2. Treat these documents as the authoritative source of truth — when existing code conflicts with specifications in these documents, follow the specifications.
-3. Priority when conflicts arise: task `## Hard Rules` > `## Reference Files` > existing code structure.
+3. Priority when conflicts arise: task `## Hard Rules` > `## Reference Files` > existing code.
 4. Output a confirmation after loading: "Loaded Reference Files: [list], treating them as authoritative sources."
 
-If `## Reference Files` is empty or missing, output: "Reference Files empty — falling back to existing code structure and Hard Rules."
+If `## Reference Files` is empty or missing, output: "Reference Files empty — falling back to existing code and Hard Rules."
 </IMPORTANT>
 
 ### Step 2: Execute Document Work
