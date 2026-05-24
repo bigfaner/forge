@@ -8,7 +8,7 @@
       "title": "Config struct refactor: Surfaces dual-form + remove Interfaces",
       "priority": "P0",
       "estimatedTime": "2h",
-      "status": "in_progress",
+      "status": "completed",
       "file": "1-config-struct.md",
       "record": "records/1-config-struct.md",
       "breaking": true,
@@ -23,7 +23,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2-path-matching.md",
       "record": "records/2-path-matching.md",
       "scope": "backend",
