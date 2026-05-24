@@ -136,7 +136,7 @@ tests/
 |-------|-----|--------|
 | New | `@feature` | 新生成的测试自动注入 |
 | Promoted | `@regression` | `forge test promote <journey>` 升级 |
-| CI selection | -- | `forge test run --tags regression` 或 `--tags feature` |
+| CI selection | -- | Use test framework's native tag filter (e.g., `go test -tags=regression`, `pytest -m regression`) |
 
 标签使用测试框架的原生机制（Go build tag、pytest marker、describe 分组等）。
 
@@ -193,4 +193,4 @@ tests/
 | `forge test stage <journey>` | 自动 `@feature` tag | 无需显式 staging |
 | `forge test graduate <journey>` | `forge test promote <journey>` | 标签从 `@feature` 变为 `@regression` |
 | 文件从 staging 移到 final location | 文件始终在最终位置 | 无文件移动 |
-| CI 运行 final location 的测试 | `forge test run --tags regression` 或 `--tags feature` | 按标签选择 |
+| CI 运行 final location 的测试 | 使用测试框架原生的标签过滤机制（如 `go test -tags=regression`） | 按标签选择 |

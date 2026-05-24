@@ -32,6 +32,8 @@ Check previous stage artifacts. Abort and prompt user if missing:
 
 Load test framework knowledge from Convention files (no Profile/CLI dependency).
 
+Load: `rules/convention-guide.md` — Convention file structure reference, section schema, validation rules, merge semantics, and growth path.
+
 ### 0.1 Discover Convention Files
 
 1. Read `docs/conventions/testing/index.md` -- lists all available Conventions with name, description, and applicability conditions.
@@ -84,6 +86,8 @@ Load `rules/step-1-contract-loading.md` for the complete reconnaissance logic, i
 - Semantic descriptor to regex conversion
 
 ## Step 2: Read Contract Specifications
+
+**Optional -- Run-to-Learn (R2L)**: If R2L is enabled in `.forge/config.yaml`, execute the R2L loop between Step 1 and Step 3. Load: `rules/run-to-learn.md` for the complete R2L mechanism (skeleton test generation, runtime fact enrichment, graceful degradation).
 
 **Input discovery** -- find the Contract files for the target Journey:
 
@@ -182,6 +186,8 @@ For each Contract step, generate test code following the resolved framework's co
 ### 3.0 Surface-Driven Generation Strategy
 
 Apply the surface type detected in Step 0.5 to constrain the generation plan. Load `rules/step-0.5-validation.md` section "Surface-Driven Generation Strategy" for per-surface ratio targets, execution models, and generation constraints (CLI, TUI, WebUI, API, Mobile).
+
+**Test isolation**: Generated tests must follow isolation conventions per `rules/test-isolation.md` (located in the run-tests skill directory, resolve relative to the skills parent directory) — every test must own its environment, no dependency on real project state.
 
 ### Output Directory
 

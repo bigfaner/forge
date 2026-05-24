@@ -179,7 +179,7 @@
       "dependencies": [
         "6"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "8-fix-paths-and-orphans.md",
       "record": "records/8-fix-paths-and-orphans.md",
       "type": "doc"

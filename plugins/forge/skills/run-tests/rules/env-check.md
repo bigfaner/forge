@@ -10,7 +10,7 @@ Before executing tests, verify that the execution environment meets the requirem
 ## How It Works
 
 1. Read the current surface type from `forge surfaces`
-2. Look up the corresponding surface rule file in `skills/gen-journeys/rules/surface-<type>.md` -- specifically the "Environment Readiness Checks" table
+2. Look up the corresponding surface rule file in gen-journeys skill's `rules/surface-<type>.md` (resolve relative to the gen-journeys skill directory) -- specifically the "Environment Readiness Checks" table
 3. Execute each check item listed for that surface type
 4. Report results: all-pass -> proceed to test execution; any-fail -> output diagnostics and abort
 
@@ -101,4 +101,4 @@ This rule file is consumed during the run-tests workflow. The SKILL.md should:
 3. On failure: output diagnostics and abort (exit code 1, retryable)
 4. On success: proceed to test execution
 
-**Extensibility**: New surface types only need to add an "Environment Readiness Checks" table to their surface rule file in `skills/gen-journeys/rules/surface-<type>.md`. This env-check.md defines the detection framework; the surface rule files provide the per-type items.
+**Extensibility**: New surface types only need to add an "Environment Readiness Checks" table to their surface rule file in gen-journeys skill's `rules/surface-<type>.md` (resolve relative to the gen-journeys skill directory). This env-check.md defines the detection framework; the surface rule files provide the per-type items.
