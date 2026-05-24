@@ -21,7 +21,7 @@ Before starting, verify all three conditions:
 
 If check 1 or 2 fails, set the task status to blocked via `forge task transition {{TASK_ID}} blocked --reason "refactor verification failed"` and output the reason. Do NOT proceed — the dispatcher will handle re-claim after the issue is resolved.
 
-## Workflow (4 Steps)
+## Workflow (5 Steps)
 
 ### Step 1: Read Task Definition
 
@@ -34,9 +34,9 @@ Then read the task file at `{{TASK_FILE}}`.
 
 If `{{PHASE_SUMMARY}}` is non-empty, read that file for key decisions and conventions from the previous phase.
 
-Output: `Step 1/4: Reading task definition... DONE`
+Output: `Step 1/5: Reading task definition... DONE`
 
-<IMPORTANT>
+<CRITICAL>
 ## Spec Authority Enforcement
 
 The task file's `## Reference Files` section lists authoritative specification sources.
@@ -48,16 +48,31 @@ You MUST:
 4. Output a confirmation after loading: "Loaded Reference Files: [list], treating them as authoritative sources."
 
 If `## Reference Files` is empty or missing, output: "Reference Files empty — falling back to existing code and Hard Rules."
-</IMPORTANT>
+</CRITICAL>
 
-<IMPORTANT>
+<CRITICAL>
 If the task file contains ## Hard Rules with MUST/MUST NOT directives:
 - Follow them exactly throughout the entire workflow
 - Hard Rules override your default approach for any step they address
 - Do not rationalize bypassing a Hard Rule based on "I know a better way"
-</IMPORTANT>
+</CRITICAL>
+
+### Step 1.5: Spec-Code Conflict Scan
+
+For each Reference File loaded in Step 1, identify statements that prescribe HOW something should be implemented.
+Read the corresponding code files and check: does the existing implementation match the spec's prescription?
+
+Output a structured comparison:
+SPEC-CODE SCAN:
+- [spec statement]: existing code [MATCHES | DIFFERS | NOT YET IMPLEMENTED]
+  - If DIFFERS: describe the specific difference and state "WILL FOLLOW SPEC"
+
+If no Reference Files were loaded: "SPEC-CODE SCAN: skipped — no Reference Files loaded"
+If no conflicts found: "SPEC-CODE SCAN: no conflicts detected"
 
 ### Step 2: Impact Mapping
+
+Recall the Reference Files loaded in Step 1 and the SPEC-CODE SCAN results — if any conflicts were identified, those resolutions take priority over existing code patterns.
 
 Before writing any code, determine the full scope of changes.
 
@@ -128,7 +143,7 @@ Before writing any code, determine the full scope of changes.
 
    **No tests affected?** Output: `IMPACT_DECLARATION: no tests in scope — all changes are non-behavioral`
 
-Output: `Step 2/4: Impact mapping... DONE (type: <structural|behavioral>, files: N, layers: <list>, dynamic_coupling: <none|found: details>, impact_declaration: <N PRESERVE / N EVOLVE>)`
+Output: `Step 2/5: Impact mapping... DONE (type: <structural|behavioral>, files: N, layers: <list>, dynamic_coupling: <none|found: details>, impact_declaration: <N PRESERVE / N EVOLVE>)`
 
 ### Step 3: Refactor
 
@@ -196,13 +211,16 @@ Proceed incrementally — make one change, verify, make the next.
 - After each logical change: `just compile {{SCOPE}}` and run targeted tests on affected packages/modules
 - Max 3 retries per failure. If still failing, stop and report.
 
-Output: `Step 3/4: Refactoring... DONE`
+Output: `Step 3/5: Refactoring... DONE`
 
 ### Step 4: Static Checks + Targeted Tests
 
 <IMPORTANT>
 Before performing other verification checks, validate against each Acceptance Criteria item from the task file:
-- For each AC item, output: "[AC-N] PASS/FAIL — [brief reason]"
+- For each AC item, output:
+  [AC-N] PASS/FAIL
+    Evidence: [specific code, test, or artifact that proves compliance]
+    Spec source: [which Reference File section defined this requirement, or "task-defined" if from task file]
 - If any AC item is FAIL, address the failure before proceeding to other checks.
 - If `## Acceptance Criteria` is empty or missing, output: "No AC defined — skipping per-item validation."
 </IMPORTANT>
@@ -238,4 +256,4 @@ When submitting via `forge:submit-task`, populate these record fields in record.
 - **testsPassed** / **testsFailed**: number of tests that passed/failed
 - **coverage**: test coverage percentage (e.g. 80.0)
 
-Output: `Step 4/4: Verifying... DONE (coverage: N%)`
+Output: `Step 4/5: Verifying... DONE (coverage: N%)`

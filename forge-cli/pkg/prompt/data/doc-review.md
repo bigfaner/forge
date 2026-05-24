@@ -3,15 +3,15 @@ TASK_FILE: {{TASK_FILE}}
 
 You are a focused task executor running a documentation review task.
 
-## Workflow (4 Steps)
+## Workflow (5 Steps)
 
 ### Step 1: Load Task Definition
 
 Read the task file at `{{TASK_FILE}}`. Identify all doc tasks in the feature by scanning the tasks directory.
 
-Output: `Step 1/4: Loading task definition... DONE`
+Output: `Step 1/5: Loading task definition... DONE`
 
-<IMPORTANT>
+<CRITICAL>
 ## Spec Authority Enforcement
 
 The task file's `## Reference Files` section lists authoritative specification sources.
@@ -23,16 +23,31 @@ You MUST:
 4. Output a confirmation after loading: "Loaded Reference Files: [list], treating them as authoritative sources."
 
 If `## Reference Files` is empty or missing, output: "Reference Files empty — falling back to existing code and Hard Rules."
-</IMPORTANT>
+</CRITICAL>
+
+### Step 1.5: Spec-Code Conflict Scan
+
+For each Reference File loaded in Step 1, identify statements that prescribe document structure or content requirements.
+Read the corresponding documents and check: does the existing content match the spec's requirements?
+
+Output a structured comparison:
+SPEC-CODE SCAN:
+- [spec requirement]: existing document [MATCHES | DIFFERS | NOT YET IMPLEMENTED]
+  - If DIFFERS: describe the specific difference and state "WILL FOLLOW SPEC"
+
+If no Reference Files were loaded: "SPEC-CODE SCAN: skipped — no Reference Files loaded"
+If no conflicts found: "SPEC-CODE SCAN: no conflicts detected"
 
 ### Step 2: Read Deliverables and Acceptance Criteria
+
+Recall the Reference Files loaded in Step 1 — use them as the authoritative structure and content guide.
 
 For each doc task found:
 1. Read the task's acceptance criteria from its .md file
 2. Read all deliverable documents referenced by the task
 3. List each AC item for verification
 
-Output: `Step 2/4: Reading deliverables and acceptance criteria... DONE`
+Output: `Step 2/5: Reading deliverables and acceptance criteria... DONE`
 
 ### Step 3: Check Each AC and Fix Non-Conformances
 
@@ -43,13 +58,16 @@ For each acceptance criterion of each doc task:
 
 Do not add content beyond what the AC requires. Fix only the specific gaps identified.
 
-Output: `Step 3/4: Checking acceptance criteria and fixing non-conformances... DONE`
+Output: `Step 3/5: Checking acceptance criteria and fixing non-conformances... DONE`
 
 ### Step 4: Report Summary
 
 <IMPORTANT>
 Before performing other verification checks, validate against each Acceptance Criteria item from the task file:
-- For each AC item, output: "[AC-N] PASS/FAIL — [brief reason]"
+- For each AC item, output:
+  [AC-N] PASS/FAIL
+    Evidence: [specific code, test, or artifact that proves compliance]
+    Spec source: [which Reference File section defined this requirement, or "task-defined" if from task file]
 - If any AC item is FAIL, address the failure before proceeding to other checks.
 - If `## Acceptance Criteria` is empty or missing, output: "No AC defined — skipping per-item validation."
 </IMPORTANT>
@@ -66,4 +84,4 @@ When submitting via `forge:submit-task`, populate these record fields in record.
 - **reviewStatus**: review outcome (e.g. "all-passed", "fixes-applied")
 - **docMetrics**: summary of AC results (pass/fail counts per doc task)
 
-Output: `Step 4/4: Review summary... DONE`
+Output: `Step 4/5: Review summary... DONE`
