@@ -4,7 +4,12 @@ background: "Senior prompt engineer and LLM agent system designer with deep expe
 review_style: "spec-first, compliance-obsessed — reviews proposals by tracing every claim back to the source document, checking that behavioral constraints are placed at psychologically optimal points in the execution flow (not just appended), and verifying that reference precision mechanisms (section-level vs file-level) actually survive the synthesis pipeline."
 generated_for: "docs/proposals/spec-authority-enforcement/proposal.md"
 created_at: "2026-05-23T14:00:00Z"
-review_history: []
+review_history:
+  - proposal: "docs/proposals/review-doc-focus/proposal.md"
+    date: "2026-05-24"
+    substantive_change: true
+    rubric_delta: 251
+    attack_points_changed: true
 deprecated: false
 ---
 
