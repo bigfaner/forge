@@ -1,0 +1,32 @@
+{
+  "feature": "task-list-slug-worktree",
+  "proposal": "docs/proposals/task-list-slug-worktree/proposal.md",
+  "created": "2026-05-24",
+  "tasks": {
+    "1-enhance-task-list": {
+      "id": "1",
+      "title": "Enhance forge task list with slug parameter and worktree-aware reading",
+      "priority": "P0",
+      "estimatedTime": "1-2h",
+      "status": "pending",
+      "file": "1-enhance-task-list.md",
+      "record": "records/1-enhance-task-list.md",
+      "scope": "backend",
+      "type": "coding.enhancement"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
