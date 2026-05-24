@@ -16,11 +16,10 @@ import (
 // These tests verify justfile initialization: template correctness, command presence,
 // error handling, and boundary-marker idempotency.
 
-// The 11 standard command names always present in the generated justfile per Spec 5.1.
-// Template-provided recipes (e2e-test, e2e-setup, e2e-verify, project-type) are
-// injected by the active profile manifest and may not appear in all project types.
+// The standard command names always present in the generated justfile per Spec 5.1.
+// Two-layer test model: unit-test (language-level) + test (surface-level).
 var standardCommands = []string{
-	"compile", "build", "run", "dev", "test",
+	"compile", "build", "run", "dev", "unit-test", "test",
 	"lint", "fmt", "check", "clean",
 	"install", "ci",
 }

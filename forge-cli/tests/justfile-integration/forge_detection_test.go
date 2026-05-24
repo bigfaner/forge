@@ -55,7 +55,7 @@ func TestTC_FJ_001_ProjectTypeRecipeOutputsMixed(t *testing.T) {
 // 10 scoped recipes have scope="" parameter.
 func TestTC_FJ_002_TenScopedRecipesUseScopeParameter(t *testing.T) {
 	section := getStandardSection(t)
-	scopedRecipes := []string{"compile", "build", "run", "dev", "test", "lint", "fmt", "check", "clean", "install"}
+	scopedRecipes := []string{"compile", "build", "run", "dev", "unit-test", "lint", "fmt", "check", "clean", "install"}
 	for _, recipe := range scopedRecipes {
 		pattern := recipe + ` scope=""`
 		assert.True(t, strings.Contains(section, pattern),
@@ -65,8 +65,7 @@ func TestTC_FJ_002_TenScopedRecipesUseScopeParameter(t *testing.T) {
 
 // Traceability: TC-FJ-003 -> AC: unscoped recipes present (no scope parameter)
 // ci recipe present without scope parameter.
-// Note: project-type, e2e-test, e2e-setup, e2e-verify are template-provided and may not
-// appear in the generated justfile for a pure backend project.
+// Note: test, test-setup, probe are unscoped recipes in the two-layer test model.
 func TestTC_FJ_003_UnscopedRecipesPresent(t *testing.T) {
 	section := getStandardSection(t)
 	// ci is always present (unscoped)
@@ -107,22 +106,22 @@ func TestTC_FJ_006_BuildRecipeHasBackendBuildCommand(t *testing.T) {
 		"Expected go build in build recipe")
 }
 
-// Traceability: TC-FJ-007 -> AC: test recipe has correct backend branch
-// test recipe has go test command.
-func TestTC_FJ_007_TestRecipeHasBackendTestCommand(t *testing.T) {
+// Traceability: TC-FJ-007 -> AC: unit-test recipe has correct backend branch
+// unit-test recipe has go test command.
+func TestTC_FJ_007_UnitTestRecipeHasBackendTestCommand(t *testing.T) {
 	section := getStandardSection(t)
-	testIdx := strings.Index(section, `test scope=""`)
-	assert.NotEqual(t, -1, testIdx, "Expected test recipe in section")
-	// The test recipe should contain go test for a Go project
+	testIdx := strings.Index(section, `unit-test scope=""`)
+	assert.NotEqual(t, -1, testIdx, "Expected unit-test recipe in section")
+	// The unit-test recipe should contain go test for a Go project
 	assert.True(t, strings.Contains(section, "go test"),
-		"Expected go test in test recipe")
+		"Expected go test in unit-test recipe")
 }
 
 // Traceability: TC-FJ-008 -> AC: scoped recipes have shebang-based bodies
 // All scoped recipes have shebang-based script bodies with error propagation.
 func TestTC_FJ_008_AllScopedRecipesHaveShebangWithSetEuoPipefail(t *testing.T) {
 	section := getStandardSection(t)
-	scopedRecipes := []string{"compile", "build", "run", "dev", "test", "lint", "fmt", "check", "clean", "install"}
+	scopedRecipes := []string{"compile", "build", "run", "dev", "unit-test", "lint", "fmt", "check", "clean", "install"}
 	for _, recipe := range scopedRecipes {
 		recipeIdx := strings.Index(section, recipe+` scope=""`)
 		assert.NotEqual(t, -1, recipeIdx, "Expected %s recipe", recipe)
@@ -139,7 +138,7 @@ func TestTC_FJ_008_AllScopedRecipesHaveShebangWithSetEuoPipefail(t *testing.T) {
 			}
 		}
 		// Also check for unscoped recipes
-		for _, unscoped := range []string{"ci:", "e2e-test", "e2e-setup", "e2e-verify"} {
+		for _, unscoped := range []string{"ci:", "test journey", "test-setup", "probe"} {
 			idx := strings.Index(recipeToEnd[1:], unscoped)
 			if idx != -1 && idx+1 < nextRecipe {
 				nextRecipe = idx + 1
@@ -154,13 +153,13 @@ func TestTC_FJ_008_AllScopedRecipesHaveShebangWithSetEuoPipefail(t *testing.T) {
 }
 
 // Traceability: TC-FJ-009 -> AC: ci chains standard commands
-// ci recipe chains install, compile, build, test, lint.
-func TestTC_FJ_009_CiRecipeChainsInstallCompileBuildTestLint(t *testing.T) {
+// ci recipe chains install, compile, build, unit-test, lint.
+func TestTC_FJ_009_CiRecipeChainsInstallCompileBuildUnitTestLint(t *testing.T) {
 	section := getStandardSection(t)
 	assert.True(t, strings.Contains(section, "just install"), "Expected \"just install\" in ci")
 	assert.True(t, strings.Contains(section, "just compile"), "Expected \"just compile\" in ci")
 	assert.True(t, strings.Contains(section, "just build"), "Expected \"just build\" in ci")
-	assert.True(t, strings.Contains(section, "just test"), "Expected \"just test\" in ci")
+	assert.True(t, strings.Contains(section, "just unit-test"), "Expected \"just unit-test\" in ci")
 	assert.True(t, strings.Contains(section, "just lint"), "Expected \"just lint\" in ci")
 }
 
