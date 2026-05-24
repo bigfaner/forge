@@ -1,6 +1,6 @@
 ---
 journey: "{{JOURNEY_NAME}}"
-step: {{STEP_NUMBER}}
+step: "{{STEP_NUMBER}}"
 step-action: "{{STEP_ACTION}}"
 generated: "{{DATE}}"
 sources:

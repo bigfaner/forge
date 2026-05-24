@@ -1,86 +1,86 @@
 ---
-created: "<DATE>"
-sessions: [<SESSION_IDS>]
-skillsInvolved: [<SKILL_NAMES>]
-severity: <high|medium|low>
+created: "{{DATE}}"
+sessions: [{{SESSION_IDS}}]
+skillsInvolved: [{{SKILL_NAMES}}]
+severity: "{{SEVERITY}}"
 ---
 
-# <Title>
+# {{TITLE}}
 
 ## Executive Summary
 
-<1-3 sentences: what was investigated, what was found, what should change>
+{{EXECUTIVE_SUMMARY}}
 
 ## Investigation Scope
 
 | Dimension | Value |
 |-----------|-------|
-| Sessions analyzed | <count> |
-| Time range | <earliest> to <latest> |
-| Skills involved | <list> |
-| Trigger | <what prompted this investigation> |
+| Sessions analyzed | {{SESSION_COUNT}} |
+| Time range | {{EARLIEST}} to {{LATEST}} |
+| Skills involved | {{SKILLS_LIST}} |
+| Trigger | {{TRIGGER_DESCRIPTION}} |
 
 ## Timing Overview
 
 | Session | Duration | Tool Time | Idle* | Top Bottleneck |
 |---------|----------|-----------|-------|---------------|
-| <session-id-8ch> | <duration> | <totalToolMs> | <idle> | `<tool>` (<max>s) |
+| {{SESSION_ID}} | {{DURATION}} | {{TOTAL_TOOL_MS}} | {{IDLE}} | `{{TOOL}}` ({{MAX}}s) |
 
 *Idle = session duration minus total tool execution time — indicates thinking/waiting.
 
 | Tool | Calls | Total | Avg | Max |
 |------|-------|-------|-----|-----|
-| `<tool>` | <count> | <total>s | <avg>s | <max>s |
+| `{{TOOL}}` | {{CALL_COUNT}} | {{TOTAL}}s | {{AVG}}s | {{MAX}}s |
 
 ## Findings
 
-### Finding 1: <Title>
+### Finding 1: {{FINDING_TITLE}}
 
-**Category:** `<deviation-category>`
+**Category:** `{{DEVIATION_CATEGORY}}`
 
-**Affected sessions:** <session IDs>
+**Affected sessions:** {{AFFECTED_SESSION_IDS}}
 
 **Symptom:**
-<What was observed — the wrong behavior>
+{{OBSERVED_WRONG_BEHAVIOR}}
 
 **Agent reasoning (from thinking block):**
-> <Exact or paraphrased thinking block content showing the agent's decision>
+> {{AGENT_REASONING}}
 
 **Expected behavior (from skill definition):**
-> <What the skill definition says should happen>
+> {{EXPECTED_BEHAVIOR}}
 
 **Gap:**
-<Why the agent deviated — the root cause>
+{{DEVIATION_ROOT_CAUSE}}
 
 **Causal chain:**
-1. **Symptom:** <observable wrong behavior>
-2. **Direct cause:** <specific action/decision>
-3. **Root cause:** <why the agent made that decision>
+1. **Symptom:** {{OBSERVABLE_WRONG_BEHAVIOR}}
+2. **Direct cause:** {{SPECIFIC_ACTION}}
+3. **Root cause:** {{ROOT_CAUSE}}
 
-### Finding 2: <Title>
+### Finding 2: {{FINDING_TITLE}}
 
 *(repeat structure for each finding)*
 
 ## Cross-Session Patterns
 
-<If multiple sessions show the same deviation, describe the pattern here. Otherwise remove this section.>
+{{CROSS_SESSION_PATTERNS}}
 
 | Pattern | Sessions | Category |
 |---------|----------|----------|
-| <pattern description> | <IDs> | <category> |
+| {{PATTERN_DESCRIPTION}} | {{SESSION_IDS}} | {{CATEGORY}} |
 
 ## Recommendations
 
 | Priority | Action | Target File | Finding |
 |----------|--------|-------------|---------|
-| P0 | <what to change> | `path/to/file` | Finding N |
-| P1 | <what to change> | `path/to/file` | Finding N |
+| P0 | {{WHAT_TO_CHANGE}} | `{{TARGET_FILE}}` | Finding N |
+| P1 | {{WHAT_TO_CHANGE}} | `{{TARGET_FILE}}` | Finding N |
 
 ## Evidence
 
-Evidence files at: `docs/forensics/<slug>/evidence/`
+Evidence files at: `docs/forensics/{{SLUG}}/evidence/`
 
 | File | Source | Size |
 |------|--------|------|
 | evidence.json | Main session | ~XX KB |
-| evidence-subagent-<id>.json | Subagent <type> | ~XX KB |
+| evidence-subagent-{{ID}}.json | Subagent {{SUBAGENT_TYPE}} | ~XX KB |

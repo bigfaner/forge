@@ -1,6 +1,6 @@
 ---
-created: YYYY-MM-DD
-author: "<!-- who proposed this -->"
+created: "{{DATE}}"
+author: "{{AUTHOR}}"
 status: Draft
 ---
 

@@ -1,5 +1,5 @@
 ---
-created: YYYY-MM-DD
+created: "{{DATE}}"
 related: design/tech-design.md
 ---
 

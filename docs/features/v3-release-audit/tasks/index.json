@@ -47,7 +47,7 @@
       "dependencies": [
         "6"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "12-template-consistency.md",
       "record": "records/12-template-consistency.md",
       "type": "doc"

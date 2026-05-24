@@ -6,11 +6,11 @@ Used by `/learn` when writing to `docs/lessons/`.
 
 ```markdown
 ---
-created: "<DATE>"
-tags: [<TAG1>, <TAG2>, ...]
+created: "{{DATE}}"
+tags: [{{TAG_1}}, {{TAG_2}}, ...]
 ---
 
-# <Title>
+# {{TITLE}}
 
 ## Problem
 <!-- Symptom description: what happened? what error? -->
@@ -53,7 +53,7 @@ Select 1-4 tags per entry. If no exact match, pick the closest fit.
 
 ## File Naming
 
-Pattern: `<category-prefix><slug>.md`
+Pattern: `{{CATEGORY_PREFIX}}{{SLUG}}.md`
 
 | Category | Prefix | Example |
 |----------|--------|---------|

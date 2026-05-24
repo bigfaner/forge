@@ -1,5 +1,5 @@
 ---
-created: YYYY-MM-DD
+created: "{{DATE}}"
 source: prd/prd-ui-functions.md
 status: Draft
 ---

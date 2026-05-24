@@ -1,10 +1,10 @@
 ---
-created: YYYY-MM-DD
+created: "{{DATE}}"
 prd: prd/prd-spec.md
 status: Draft
 ---
 
-# Technical Design: <Feature Name>
+# Technical Design: {{FEATURE_NAME}}
 
 ## Overview
 <!-- High-level technical approach -->
