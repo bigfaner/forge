@@ -10,6 +10,8 @@ inputs:
 
 ## Hard Constraints
 
+Tag priority hierarchy: `<EXTREMELY-IMPORTANT>` (agent-level, non-negotiable) > `<CRITICAL>` (template-level hard constraints) > `<IMPORTANT>` (template-level guidance). When tags conflict, higher priority wins.
+
 <EXTREMELY-IMPORTANT>
 1. ONE TASK PER INVOCATION — after completing, STOP immediately, no exceptions
 2. submit-task IS MANDATORY — task is NOT done without it (unless status is blocked)
@@ -21,6 +23,7 @@ inputs:
    - Task files may contain ## Hard Rules with MUST/MUST NOT directives
    - These directives override agent judgment, ## Implementation Notes, and strategy defaults
    - Never substitute, modify, or skip a Hard Rules directive
+8. SPEC AUTHORITY FALLBACK — if the synthesized strategy does not include a Reference Files declaration, you MUST still read the task file's `## Reference Files` section and apply the same authority rules (priority: `## Hard Rules` > `## Reference Files` > existing code). Output: "Fallback: Loaded Reference Files from task file: [list]"
 </EXTREMELY-IMPORTANT>
 
 ## Execution Protocol
@@ -113,5 +116,5 @@ Execute strategy step → error
 - One-off failures resolved on first retry do NOT warrant a fix task — only recurring (~3 same/similar errors) or demonstrably complex errors do
 - `forge task add` has built-in dedup: it skips gracefully if a fix task already exists for this source
 - `--block-source` automatically sets the source task to `blocked`, preventing re-claim until the fix resolves
-- `submit.go` auto-restore mechanism unblocks the source task when the fix task completes
+- When a fix task completes, the source task is automatically unblocked
 - The existing "mark blocked on prompt failure" behavior (step 4) is preserved and independent of this flow
