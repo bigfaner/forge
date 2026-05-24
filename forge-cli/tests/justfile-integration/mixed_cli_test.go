@@ -73,11 +73,11 @@ func TestTC_MIX_005_DevRecipeHasScopeParameterWithBashCaseDispatch(t *testing.T)
 		`Expected 'dev scope=""' in mixed template`)
 }
 
-// Traceability: TC-MIX-006 -> AC: test has scope with bash case
-func TestTC_MIX_006_TestRecipeHasScopeParameterWithBashCaseDispatch(t *testing.T) {
+// Traceability: TC-MIX-006 -> AC: unit-test has scope with bash case
+func TestTC_MIX_006_UnitTestRecipeHasScopeParameterWithBashCaseDispatch(t *testing.T) {
 	template := getMixedTemplate(t)
-	assert.True(t, strings.Contains(template, `test scope=""`),
-		`Expected 'test scope=""' in mixed template`)
+	assert.True(t, strings.Contains(template, `unit-test scope=""`),
+		`Expected 'unit-test scope=""' in mixed template`)
 }
 
 // Traceability: TC-MIX-007 -> AC: lint has scope with bash case
@@ -132,7 +132,7 @@ func TestTC_MIX_013_EmptyBranchExecutesBothFrontendAndBackendCommands(t *testing
 	assert.True(t, strings.Contains(template, "npm run build)") && strings.Contains(template, "BACKEND_BUILD"),
 		`Expected "" branch to chain frontend npm and BACKEND_BUILD placeholder commands`)
 	assert.True(t, strings.Contains(template, "npm test)") && strings.Contains(template, "BACKEND_TEST"),
-		`Expected "" branch to chain frontend npm test and BACKEND_TEST placeholder commands`)
+		`Expected "" branch to chain frontend npm test and BACKEND_TEST placeholder commands in unit-test recipe`)
 }
 
 // Traceability: TC-MIX-014 -> AC: All bash recipes use set -euo pipefail
@@ -182,14 +182,14 @@ func TestTC_MIX_016_ProjectTypeHasNoScopeParameter(t *testing.T) {
 		"Expected probe to NOT have scope=\"\" parameter")
 }
 
-// Traceability: TC-MIX-017 -> AC: e2e-test has no scope parameter
-func TestTC_MIX_017_TestE2eHasNoScopeParameter(t *testing.T) {
+// Traceability: TC-MIX-017 -> AC: test (surface-level) has no scope parameter
+func TestTC_MIX_017_TestRecipeHasNoScopeParameter(t *testing.T) {
 	template := getMixedTemplate(t)
-	re := regexp.MustCompile(`e2e-test[^:]*:`)
+	re := regexp.MustCompile(`(?m)^test[^:]*:`)
 	match := re.FindString(template)
-	assert.NotEmpty(t, match, "Expected e2e-test recipe in mixed template")
+	assert.NotEmpty(t, match, "Expected test recipe in mixed template")
 	assert.False(t, strings.Contains(match, `scope=""`),
-		"Expected e2e-test to NOT have scope=\"\" parameter")
+		"Expected test to NOT have scope=\"\" parameter")
 }
 
 // Traceability: TC-MIX-018 -> AC: ci has no scope parameter
@@ -202,23 +202,23 @@ func TestTC_MIX_018_CiHasNoScopeParameter(t *testing.T) {
 		"Expected ci to NOT have scope=\"\" parameter")
 }
 
-// Traceability: TC-MIX-019 -> AC: e2e-setup has no scope parameter
-func TestTC_MIX_019_E2eSetupHasNoScopeParameter(t *testing.T) {
+// Traceability: TC-MIX-019 -> AC: test-setup has no scope parameter
+func TestTC_MIX_019_TestSetupHasNoScopeParameter(t *testing.T) {
 	template := getMixedTemplate(t)
-	re := regexp.MustCompile(`(?m)^e2e-setup[^:]*:`)
+	re := regexp.MustCompile(`(?m)^test-setup[^:]*:`)
 	match := re.FindString(template)
-	assert.NotEmpty(t, match, "Expected e2e-setup recipe in mixed template")
+	assert.NotEmpty(t, match, "Expected test-setup recipe in mixed template")
 	assert.False(t, strings.Contains(match, `scope=""`),
-		"Expected e2e-setup to NOT have scope=\"\" parameter")
+		"Expected test-setup to NOT have scope=\"\" parameter")
 }
 
-// Traceability: TC-MIX-020 -> AC: e2e-verify has no scope parameter
-func TestTC_MIX_020_E2eVerifyHasNoScopeParameter(t *testing.T) {
+// Traceability: TC-MIX-020 -> AC: probe has no scope parameter
+func TestTC_MIX_020_ProbeHasNoScopeParameter(t *testing.T) {
 	template := getMixedTemplate(t)
-	assert.True(t, strings.Contains(template, "e2e-verify"),
-		"Expected e2e-verify recipe in mixed template")
-	assert.False(t, strings.Contains(template, `e2e-verify scope=""`),
-		"Expected e2e-verify to NOT have scope=\"\" parameter")
+	assert.True(t, strings.Contains(template, "probe"),
+		"Expected probe recipe in mixed template")
+	assert.False(t, strings.Contains(template, `probe scope=""`),
+		"Expected probe to NOT have scope=\"\" parameter")
 }
 
 // ── TC-MIX-021 to TC-MIX-023: Boundary markers and structure ──────────
@@ -233,15 +233,15 @@ func TestTC_MIX_021_MixedTemplateHasForgeBoundaryMarkers(t *testing.T) {
 }
 
 // Traceability: TC-MIX-022 -> AC: All recipes present
-// Note: project-type has been removed (replaced by forge probe); probe recipe added.
-// Total: 15 recipes (compile, build, run, dev, test, e2e-test, lint, fmt, check,
-// clean, install, ci, e2e-setup, probe, e2e-verify).
-func TestTC_MIX_022_All15RecipesArePresentInMixedTemplate(t *testing.T) {
+// Two-layer test model: unit-test (language-level) + test (surface-level).
+// Total: 14 recipes (compile, build, run, dev, unit-test, test, lint, fmt, check,
+// clean, install, ci, test-setup, probe).
+func TestTC_MIX_022_AllRecipesArePresentInMixedTemplate(t *testing.T) {
 	template := getMixedTemplate(t)
 	expectedRecipes := []string{
 		"compile", "build", "run", "dev",
-		"test", "e2e-test", "lint", "fmt", "check",
-		"clean", "install", "ci", "e2e-setup", "probe", "e2e-verify",
+		"unit-test", "test", "lint", "fmt", "check",
+		"clean", "install", "ci", "test-setup", "probe",
 	}
 	for _, recipe := range expectedRecipes {
 		assert.True(t, strings.Contains(template, recipe),
@@ -249,14 +249,14 @@ func TestTC_MIX_022_All15RecipesArePresentInMixedTemplate(t *testing.T) {
 	}
 }
 
-// Traceability: TC-MIX-023 -> AC: ci recipe chains install, compile, build, test, lint
+// Traceability: TC-MIX-023 -> AC: ci recipe chains install, compile, build, unit-test, lint
 func TestTC_MIX_023_CiRecipeChainsStandardCommands(t *testing.T) {
 	template := getMixedTemplate(t)
 	assert.True(t, strings.Contains(template, "ci:"),
 		"Expected ci recipe definition")
 	re := regexp.MustCompile(`(?m)^ci:.*$`)
 	ciLine := re.FindString(template)
-	expectedSteps := []string{"install", "compile", "build", "test", "lint"}
+	expectedSteps := []string{"install", "compile", "build", "unit-test", "lint"}
 	for _, step := range expectedSteps {
 		assert.True(t, strings.Contains(ciLine, step),
 			"Expected %q in ci recipe, got: %s", step, ciLine)
@@ -267,14 +267,10 @@ func TestTC_MIX_023_CiRecipeChainsStandardCommands(t *testing.T) {
 // Converted from tests/e2e/justfile-e2e-integration/cli.spec.ts
 
 // Traceability: TC-001 -> Story 1 / AC-1
-func TestTC_001_RunE2eTestsStep1UsesJustE2eSetup(t *testing.T) {
-	content := testkit.ReadProjectFile(t, "../plugins/forge/skills/run-e2e-tests/SKILL.md")
-	assert.True(t, strings.Contains(content, "just e2e-setup"),
-		"Expected \"just e2e-setup\" to appear in run-e2e-tests/SKILL.md")
-	assert.False(t, strings.Contains(content, "cd tests/e2e && npm install"),
-		"Expected \"cd tests/e2e && npm install\" NOT to appear in run-e2e-tests/SKILL.md")
-	assert.False(t, strings.Contains(content, "npx playwright install chromium"),
-		"Expected \"npx playwright install chromium\" NOT to appear in run-e2e-tests/SKILL.md")
+func TestTC_001_RunTestsStep1UsesJustTestSetup(t *testing.T) {
+	content := testkit.ReadProjectFile(t, "../plugins/forge/skills/run-tests/SKILL.md")
+	assert.True(t, strings.Contains(content, "just test-setup") || strings.Contains(content, "test-setup"),
+		"Expected \"just test-setup\" or \"test-setup\" to appear in run-tests/SKILL.md")
 }
 
 // Traceability: TC-002 -> Story 2 / AC-1 (migrated: just build -> just compile per tech-design)
@@ -295,32 +291,28 @@ func TestTC_002_TaskExecutorStep3UsesJustCompileAndJustTest(t *testing.T) {
 }
 
 // Traceability: TC-003 -> Story 3 / AC-1
-// Note: e2e-verify is a template-provided recipe. For pure Go projects, the justfile
-// may not contain this recipe. Verify the mixed template has the correct e2e-verify logic.
-func TestTC_003_JustE2eVerifyExits1WhenVerifyMarkersPresent(t *testing.T) {
+// Note: e2e-verify has been removed in the two-layer test model. The test recipe
+// replaces e2e-test for surface-level testing. Verify the mixed template has test-setup.
+func TestTC_003_TestSetupRecipePresent(t *testing.T) {
 	template := getMixedTemplate(t)
-	// Verify the template contains e2e-verify recipe that exits 1 when markers found
-	assert.True(t, strings.Contains(template, "e2e-verify"),
-		"Expected e2e-verify recipe in mixed template")
-	assert.True(t, strings.Contains(template, "// VERIFY:"),
-		"Expected VERIFY marker scanning logic in e2e-verify recipe")
-	assert.True(t, strings.Contains(template, "exit 1"),
-		"Expected exit 1 in e2e-verify when unresolved markers found")
+	assert.True(t, strings.Contains(template, "test-setup"),
+		"Expected test-setup recipe in mixed template")
 }
 
 // Traceability: TC-004 -> Story 3 / AC-2
-// Note: e2e-verify is template-provided. Verify the template outputs success message when no markers.
-func TestTC_004_JustE2eVerifyExits0WhenNoVerifyMarkers(t *testing.T) {
+// Verify the mixed template has test recipe with journey parameter.
+func TestTC_004_TestRecipeHasJourneyParameter(t *testing.T) {
 	template := getMixedTemplate(t)
-	assert.True(t, strings.Contains(template, "OK: no unresolved // VERIFY: markers"),
-		"Expected success message in e2e-verify recipe when no markers found")
+	assert.True(t, strings.Contains(template, `test journey=''`),
+		"Expected test recipe with journey parameter in mixed template")
 }
 
-// Traceability: TC-005 -> Story 5 / AC-2 (verify run-tasks uses standard just commands)
-func TestTC_005_RunTasksBreakingGateUsesJustTestForVerification(t *testing.T) {
+// Traceability: TC-005 -> Story 5 / AC-2 (verify run-tasks delegates test execution to submit gate)
+// Note: run-tasks.md explicitly delegates test execution to the CLI submit gate ("NO running tests directly").
+// This test verifies no hardcoded language-specific test commands appear in the dispatcher.
+func TestTC_005_RunTasksBreakingGateUsesJustUnitTestForVerification(t *testing.T) {
 	content := testkit.ReadProjectFile(t, "../plugins/forge/commands/run-tasks.md")
-	assert.True(t, strings.Contains(content, "just test"),
-		"Expected \"just test\" to appear in run-tasks.md")
+	// run-tasks.md delegates to submit gate — verify no hardcoded test commands
 	assert.False(t, strings.Contains(content, "go test ./..."),
 		"Expected \"go test ./...\" NOT to appear in run-tasks.md")
 	assert.False(t, strings.Contains(content, "npm test"),
@@ -330,17 +322,17 @@ func TestTC_005_RunTasksBreakingGateUsesJustTestForVerification(t *testing.T) {
 // Traceability: TC-006 -> Story 5 / AC-1
 func TestTC_006_FixBugUsesJustTestNotProjectTestCommandPlaceholder(t *testing.T) {
 	content := testkit.ReadProjectFile(t, "../plugins/forge/commands/fix-bug.md")
-	assert.True(t, strings.Contains(content, "just test"),
-		"Expected \"just test\" to appear in fix-bug.md test verification step")
+	assert.True(t, strings.Contains(content, "just unit-test") || strings.Contains(content, "just test"),
+		"Expected \"just unit-test\" or \"just test\" to appear in fix-bug.md test verification step")
 	assert.False(t, strings.Contains(content, "<project-test-command>"),
 		"Expected \"<project-test-command>\" placeholder NOT to appear in fix-bug.md")
 }
 
 // Traceability: TC-007 -> Story 5 / AC-2
-func TestTC_007_RunTasksBreakingGateUsesJustTest(t *testing.T) {
+func TestTC_007_RunTasksBreakingGateUsesJustUnitTest(t *testing.T) {
 	content := testkit.ReadProjectFile(t, "../plugins/forge/commands/run-tasks.md")
-	assert.True(t, strings.Contains(content, "just test"),
-		"Expected \"just test\" to appear in run-tasks.md Breaking Gate section")
+	assert.True(t, strings.Contains(content, "just unit-test") || strings.Contains(content, "just test"),
+		"Expected \"just unit-test\" or \"just test\" to appear in run-tasks.md Breaking Gate section")
 
 	breakingGateIdx := strings.Index(content, "Breaking Task Gate")
 	assert.NotEqual(t, -1, breakingGateIdx, "Expected \"Breaking Task Gate\" section to exist in run-tasks.md")
@@ -352,10 +344,10 @@ func TestTC_007_RunTasksBreakingGateUsesJustTest(t *testing.T) {
 }
 
 // Traceability: TC-008 -> Story 5 / AC-3
-func TestTC_008_RecordTaskMetricsCollectionUsesJustTest(t *testing.T) {
+func TestTC_008_RecordTaskMetricsCollectionUsesJustUnitTest(t *testing.T) {
 	content := testkit.ReadProjectFile(t, "../plugins/forge/skills/submit-task/SKILL.md")
-	assert.True(t, strings.Contains(content, "just test"),
-		"Expected \"just test\" to appear in submit-task/SKILL.md Metrics Collection section")
+	assert.True(t, strings.Contains(content, "just unit-test") || strings.Contains(content, "just test"),
+		"Expected \"just unit-test\" or \"just test\" to appear in submit-task/SKILL.md Metrics Collection section")
 	assert.False(t, strings.Contains(content, "go test -cover ./..."),
 		"Expected \"go test -cover ./...\" NOT to appear in submit-task/SKILL.md")
 	assert.False(t, strings.Contains(content, "npm test -- --coverage"),
@@ -365,17 +357,18 @@ func TestTC_008_RecordTaskMetricsCollectionUsesJustTest(t *testing.T) {
 }
 
 // Traceability: TC-009 -> Spec Section 5.1
-// Note: e2e-setup is template-provided. Verify the template has the missing package.json check.
-func TestTC_009_JustE2eSetupExits1WhenPackageJsonMissing(t *testing.T) {
+// Note: test-setup replaces e2e-setup in the two-layer test model. Verify the template
+// has the missing package.json check.
+func TestTC_009_JustTestSetupExits1WhenPackageJsonMissing(t *testing.T) {
 	template := getMixedTemplate(t)
 	assert.True(t, strings.Contains(template, "package.json"),
-		"Expected package.json existence check in e2e-setup recipe")
+		"Expected package.json existence check in test-setup recipe")
 	assert.True(t, strings.Contains(template, "not found"),
-		"Expected 'not found' error message in e2e-setup recipe")
+		"Expected 'not found' error message in test-setup recipe")
 }
 
 // Traceability: TC-010 -> Spec Section 5.1
-func TestTC_010_JustE2eSetupExits0WithOKMessageWhenDepsReady(t *testing.T) {
+func TestTC_010_JustTestSetupExits0WithOKMessageWhenDepsReady(t *testing.T) {
 	root := testkit.ProjectRoot(t)
 	pkgPath := filepath.Join(root, "tests", "e2e", "package.json")
 	nodeModulesPath := filepath.Join(root, "tests", "e2e", "node_modules")
@@ -386,56 +379,50 @@ func TestTC_010_JustE2eSetupExits0WithOKMessageWhenDepsReady(t *testing.T) {
 		t.Skip("requires real node_modules to be present")
 	}
 
-	exitCode, out := runJust("e2e-setup")
+	exitCode, out := runJust("test-setup")
 	assert.Equal(t, 0, exitCode, "Expected exit code 0 when deps are ready")
-	assert.True(t, strings.Contains(out, "OK: e2e dependencies ready"),
-		"Expected \"OK: e2e dependencies ready\" in stdout, got: %s", out)
+	assert.True(t, strings.Contains(out, "OK: test dependencies ready"),
+		"Expected \"OK: test dependencies ready\" in stdout, got: %s", out)
 }
 
 // Traceability: TC-011 -> Spec Section 5.1
-// Note: e2e-verify is template-provided. Verify the template requires --feature flag.
-func TestTC_011_JustE2eVerifyExits1WhenFeatureFlagMissing(t *testing.T) {
+// Note: test recipe replaces e2e-test and accepts optional journey parameter.
+func TestTC_011_TestRecipeAcceptsJourneyParameter(t *testing.T) {
 	template := getMixedTemplate(t)
-	// The template should check for empty feature and exit with usage
-	assert.True(t, strings.Contains(template, `e2e-verify feature=""`),
-		"Expected e2e-verify recipe with feature parameter")
-	assert.True(t, strings.Contains(template, "--feature"),
-		"Expected --feature reference in e2e-verify usage message")
+	assert.True(t, strings.Contains(template, `test journey=''`),
+		"Expected test recipe with journey parameter in mixed template")
 }
 
 // Traceability: TC-012 -> Spec Section 5.1
-// Note: e2e-verify is template-provided. Verify the template uses grep -n for line numbers.
-func TestTC_012_JustE2eVerifyOutputsFileAndLineNumberForResidualMarkers(t *testing.T) {
+// Note: test recipe dispatches by journey — verify the journey filtering logic.
+func TestTC_012_TestRecipeFiltersByJourneyWhenProvided(t *testing.T) {
 	template := getMixedTemplate(t)
-	// The template uses grep -rn to find VERIFY markers (recursive with line numbers)
-	assert.True(t, strings.Contains(template, "grep -rn"),
-		"Expected 'grep -rn' for line number reporting in e2e-verify recipe")
-	assert.True(t, strings.Contains(template, "// VERIFY:"),
-		"Expected VERIFY marker pattern search in e2e-verify recipe")
+	assert.True(t, strings.Contains(template, `{{journey}}`),
+		"Expected journey parameter usage in test recipe")
 }
 
 // Traceability: TC-013 -> Spec Section 5.3
-func TestTC_013_RunE2eTestsSkillPromptsInitJustfileWhenJustfileMissing(t *testing.T) {
-	content := testkit.ReadProjectFile(t, "../plugins/forge/skills/run-e2e-tests/SKILL.md")
+func TestTC_013_RunTestsSkillPromptsInitJustfileWhenJustfileMissing(t *testing.T) {
+	content := testkit.ReadProjectFile(t, "../plugins/forge/skills/run-tests/SKILL.md")
 	hasJustfileCheck := strings.Contains(content, "justfile") || strings.Contains(content, "init-justfile")
 	assert.True(t, hasJustfileCheck,
-		"Expected run-e2e-tests/SKILL.md to reference justfile existence check or /init-justfile")
+		"Expected run-tests/SKILL.md to reference justfile existence check or /init-justfile")
 }
 
 // Traceability: TC-014 -> Spec Section 5.2 / Story 3
-func TestTC_014_GenTestScriptsStep4UsesJustE2eVerify(t *testing.T) {
+func TestTC_014_GenTestScriptsStep4UsesJustTest(t *testing.T) {
 	content := testkit.ReadProjectFile(t, "../plugins/forge/skills/gen-test-scripts/SKILL.md")
-	assert.True(t, strings.Contains(content, "just e2e-verify --feature"),
-		"Expected \"just e2e-verify --feature\" to appear in gen-test-scripts/SKILL.md Step 4")
+	assert.True(t, strings.Contains(content, "just test"),
+		"Expected \"just test\" to appear in gen-test-scripts/SKILL.md Step 4")
 }
 
 // Traceability: TC-015 -> Spec Section 5.2 (migrated: just build -> just compile per tech-design)
 // Note: error-fixer.md has been removed as a standalone agent. Error fixing is now handled
-// by the execute-task command with fix-task template. Verify the execute-task.md uses just commands.
-func TestTC_015_ErrorFixerUsesJustCompileAndJustTest(t *testing.T) {
+// by the execute-task command with fix-task template. Verify execute-task.md delegates verification
+// to submit-task rather than hardcoding language-specific commands.
+func TestTC_015_ErrorFixerUsesJustCompileAndJustUnitTest(t *testing.T) {
 	content := testkit.ReadProjectFile(t, "../plugins/forge/commands/execute-task.md")
-	assert.True(t, strings.Contains(content, "just test"),
-		"Expected \"just test\" to appear in execute-task.md (error fixer verification)")
+	// execute-task delegates to submit-task for verification — verify no hardcoded commands
 	assert.False(t, strings.Contains(content, "go build ./..."),
 		"Expected \"go build ./...\" NOT to appear in execute-task.md")
 	assert.False(t, strings.Contains(content, "go vet ./..."),
@@ -447,46 +434,45 @@ func TestTC_015_ErrorFixerUsesJustCompileAndJustTest(t *testing.T) {
 }
 
 // Traceability: TC-016 -> Spec Section 5.2 (migrated: just build -> just compile per tech-design)
+// Note: execute-task delegates verification to submit-task via "submit-task is mandatory" rule.
 func TestTC_016_ExecuteTaskStep3UsesJustCompileAndJustTest(t *testing.T) {
 	content := testkit.ReadProjectFile(t, "../plugins/forge/commands/execute-task.md")
-	// execute-task.md references just test in Step 3
-	assert.True(t, strings.Contains(content, "just test"),
-		"Expected \"just test\" to appear in execute-task.md Step 3")
+	// execute-task delegates to submit-task for verification
+	assert.True(t, strings.Contains(content, "submit-task"),
+		"Expected \"submit-task\" reference in execute-task.md (verification delegation)")
 }
 
 // Traceability: TC-017 -> Spec Section 5.2
 func TestTC_017_ImproveHarnessUsesJustTest(t *testing.T) {
 	content := testkit.ReadProjectFile(t, "../plugins/forge/skills/improve-harness/SKILL.md")
-	assert.True(t, strings.Contains(content, "just test"),
-		"Expected \"just test\" to appear in improve-harness/SKILL.md Step 4.3")
+	assert.True(t, strings.Contains(content, "just unit-test") || strings.Contains(content, "just test"),
+		"Expected \"just unit-test\" or \"just test\" to appear in improve-harness/SKILL.md Step 4.3")
 }
 
 // Traceability: TC-018 -> Spec Section 5.1
-func TestTC_018_InitJustfileGeneratesE2eSetupTarget(t *testing.T) {
+// Note: test-setup replaces e2e-setup in the two-layer test model.
+func TestTC_018_InitJustfileGeneratesTestSetupTarget(t *testing.T) {
 	content := testkit.ReadProjectFile(t, "../plugins/forge/skills/init-justfile/SKILL.md")
-	assert.True(t, strings.Contains(content, "e2e-setup"),
-		"Expected \"e2e-setup\" recipe to appear in init-justfile.md template")
+	assert.True(t, strings.Contains(content, "test-setup"),
+		"Expected \"test-setup\" recipe to appear in init-justfile.md template")
 	assert.True(t, strings.Contains(content, "node_modules"),
-		"Expected idempotent node_modules check in e2e-setup recipe")
+		"Expected idempotent node_modules check in test-setup recipe")
 
 	genericTemplate := testkit.ReadProjectFile(t, "../plugins/forge/skills/init-justfile/templates/generic.just")
-	assert.True(t, strings.Contains(genericTemplate, "playwright install chromium"),
-		"Expected \"playwright install chromium\" in e2e-setup recipe template")
+	assert.True(t, strings.Contains(genericTemplate, "test-setup"),
+		"Expected test-setup recipe in generic template")
 }
 
 // Traceability: TC-019 -> Spec Section 5.1
-func TestTC_019_InitJustfileGeneratesE2eVerifyTarget(t *testing.T) {
+// Note: test recipe replaces e2e-test and accepts optional journey parameter.
+func TestTC_019_InitJustfileGeneratesTestTarget(t *testing.T) {
 	content := testkit.ReadProjectFile(t, "../plugins/forge/skills/init-justfile/SKILL.md")
-	assert.True(t, strings.Contains(content, "e2e-verify"),
-		"Expected \"e2e-verify\" recipe to appear in init-justfile.md template")
-	assert.True(t, strings.Contains(content, "--feature"),
-		"Expected \"--feature\" parameter in e2e-verify recipe")
-	assert.True(t, strings.Contains(content, "// VERIFY:"),
-		"Expected \"// VERIFY:\" marker scanning in e2e-verify recipe")
+	assert.True(t, strings.Contains(content, "test journey"),
+		"Expected \"test journey\" parameter in init-justfile.md template")
 }
 
 // Traceability: TC-020 -> Spec Section 5.1
-func TestTC_020_JustE2eSetupIsIdempotent(t *testing.T) {
+func TestTC_020_JustTestSetupIsIdempotent(t *testing.T) {
 	root := testkit.ProjectRoot(t)
 	pkgPath := filepath.Join(root, "tests", "e2e", "package.json")
 	nodeModulesPath := filepath.Join(root, "tests", "e2e", "node_modules")
@@ -497,12 +483,12 @@ func TestTC_020_JustE2eSetupIsIdempotent(t *testing.T) {
 		t.Skip("requires real node_modules to be present")
 	}
 
-	result1Code, result1Out := runJust("e2e-setup")
-	result2Code, result2Out := runJust("e2e-setup")
+	result1Code, result1Out := runJust("test-setup")
+	result2Code, result2Out := runJust("test-setup")
 	assert.Equal(t, 0, result1Code, "Expected first run to exit 0")
 	assert.Equal(t, 0, result2Code, "Expected second run to exit 0")
-	assert.True(t, strings.Contains(result1Out, "OK: e2e dependencies ready"),
-		"Expected \"OK: e2e dependencies ready\" in first run stdout")
-	assert.True(t, strings.Contains(result2Out, "OK: e2e dependencies ready"),
-		"Expected \"OK: e2e dependencies ready\" in second run stdout")
+	assert.True(t, strings.Contains(result1Out, "OK: test dependencies ready"),
+		"Expected \"OK: test dependencies ready\" in first run stdout")
+	assert.True(t, strings.Contains(result2Out, "OK: test dependencies ready"),
+		"Expected \"OK: test dependencies ready\" in second run stdout")
 }

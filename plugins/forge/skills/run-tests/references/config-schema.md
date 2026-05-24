@@ -13,10 +13,10 @@ Schema for the `test.execution` node in `.forge/config.yaml`. This config drives
 # .forge/config.yaml
 test:
   execution:
-    run: "just e2e-test --feature {slug}"           # Required
-    setup: "just e2e-setup"                          # Optional
-    pre-check: "just e2e-verify --feature {slug}"    # Optional
-    teardown: "just e2e-teardown"                    # Optional
+    run: "just test {slug}"                          # Required
+    setup: "just test-setup"                         # Optional
+    pre-check: "just probe"                          # Optional
+    teardown: "just test-teardown"                   # Optional
     results-dir: "tests/{journey}/results"            # Optional
     timeout: 300                                      # Optional
 ```
@@ -52,10 +52,10 @@ Variables are resolved in command strings before execution.
 ```yaml
 test:
   execution:
-    run: "just e2e-test --feature {slug}"
-    setup: "just e2e-setup"
-    pre-check: "just e2e-verify --feature {slug}"
-    teardown: "just e2e-teardown"
+    run: "just test {slug}"
+    setup: "just test-setup"
+    pre-check: "just probe"
+    teardown: "just test-teardown"
     results-dir: "tests/e2e/results"
     timeout: 300
 ```

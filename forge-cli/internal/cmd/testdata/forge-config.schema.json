@@ -50,7 +50,7 @@
       "type": "object",
       "description": "Auto-behavior configuration for Forge pipeline. Each mode-scoped field has quick/full sub-keys. Omit the entire block for backward-compatible defaults.",
       "properties": {
-        "e2eTest": {
+        "test": {
           "type": "object",
           "description": "Whether e2e test tasks are generated for each pipeline mode.",
           "properties": {

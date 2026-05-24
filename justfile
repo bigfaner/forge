@@ -39,8 +39,8 @@ dev scope="":
     set -euo pipefail
     cd forge-cli && go run ./cmd/forge
 
-# test: unit + integration tests
-test scope="":
+# unit-test: language-level unit tests
+unit-test scope="":
     #!/usr/bin/env bash
     set -euo pipefail
     if command -v gcc &>/dev/null; then
@@ -48,6 +48,18 @@ test scope="":
     else
         cd forge-cli && CGO_ENABLED=0 go test ./...
     fi
+
+# test: surface-level advanced tests (e2e, integration, etc.)
+test journey='':
+    #!/usr/bin/env bash
+    set -euo pipefail
+    feature_flag=""
+    if [ -n "{{journey}}" ]; then
+        feature_flag="-run TestTC.*$(echo '{{journey}}' | sed 's/.*/\u&/')"
+    fi
+    cd tests && go test -v -tags=e2e -timeout=10m -json $feature_flag ./... \
+      | go-junit-report > results/report.xml 2>/dev/null \
+      || go test -v -tags=e2e -timeout=10m $feature_flag ./...
 
 # lint: static analysis
 lint scope="":
@@ -86,7 +98,7 @@ ci:
     just install
     just compile
     just build
-    just test
+    just unit-test
     just lint
 
 # check-stale-refs: detect old task-cli command references (CI stale reference detection)
@@ -103,62 +115,26 @@ check-stale-refs:
     fi
     echo "OK: no stale task-cli references"
 
-# test-e2e: end-to-end tests (go-test profile)
-[arg("feature", long)]
-test-e2e feature="":
-    #!/usr/bin/env bash
-    set -euo pipefail
-    feature_flag=""
-    if [ -n "{{feature}}" ]; then
-        feature_flag="-run TestTC.*$(echo '{{feature}}' | sed 's/.*/\u&/')"
-    fi
-    cd tests && go test -v -tags=e2e -timeout=10m -json $feature_flag ./... \
-      | go-junit-report > results/report.xml 2>/dev/null \
-      || go test -v -tags=e2e -timeout=10m $feature_flag ./...
-
-# e2e-setup: optional cache warm-up — pre-builds forge binary for faster test startup.
-# E2E tests auto-build via TestMain, so this recipe is NOT required before running tests.
+# test-setup: pre-build forge binary and warm build cache for faster test startup.
+# Tests auto-build via TestMain, so this recipe is NOT required before running tests.
 # Use it to prime the Go build cache and skip the ~2-5s build during your next test run.
-e2e-setup force="":
+test-setup:
     #!/usr/bin/env bash
     set -euo pipefail
-    # Optional: pre-builds forge binary for faster test startup (cache optimization)
+    # Pre-build forge binary for faster test startup (cache optimization)
     cd forge-cli && go build -o bin/forge.exe ./cmd/forge/ && cp bin/forge.exe bin/forge
-    # Optional: pre-compile e2e test packages to warm the build cache
+    # Pre-compile e2e test packages to warm the build cache
     cd tests && go build -tags=e2e ./...
     echo "OK: build cache warmed (optional — tests auto-build via TestMain)"
 
-# e2e-verify: check for unresolved // VERIFY: markers (go-test profile)
-[arg("feature", long)]
-e2e-verify feature="":
+# probe: check if configured services are healthy
+probe path="":
     #!/usr/bin/env bash
     set -euo pipefail
-    if [ -z "{{feature}}" ]; then
-        echo "Usage: just e2e-verify --feature <slug>" >&2
-        exit 1
-    fi
-    search_dir="tests/{{feature}}"
-    if [ ! -d "$search_dir" ]; then
-        search_dir="tests"
-    fi
-    matches=$(grep -rn '// VERIFY:' "$search_dir/" --include='*_test.go' || true)
-    if [ -n "$matches" ]; then
-        count=$(echo "$matches" | wc -l | tr -d ' ')
-        echo "Error: $count unresolved // VERIFY: marker(s) in $search_dir/" >&2
-        echo "$matches" >&2
-        exit 1
-    fi
-    echo "OK: no unresolved // VERIFY: markers in $search_dir/"
+    echo "OK: forge CLI project (no services to probe)"
 
-# e2e-compile: compile-check e2e test files
-e2e-compile:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    cd tests && go build -tags=e2e ./...
-    echo "OK: Go compilation passed"
-
-# e2e-discover: list all e2e test cases without running them
-e2e-discover:
+# test-discover: list all e2e test cases without running them
+test-discover:
     #!/usr/bin/env bash
     set -euo pipefail
     cd tests && go test -tags=e2e -list '.*' ./...

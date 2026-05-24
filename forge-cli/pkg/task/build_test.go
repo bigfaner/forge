@@ -1813,7 +1813,7 @@ func TestBuildIndex_WithSurfaces_ProducesPerTypeTasks(t *testing.T) {
 	}
 
 	// 1 business task + test pipeline tasks (gen-journeys-api, gen-contracts,
-	// gen-test-scripts-api, run-e2e-tests, verify-regression, quick-drift-detection)
+	// gen-test-scripts-api, run-test, verify-regression, quick-drift-detection)
 	total := result.NewCount + result.UpdatedCount
 	if total < 2 {
 		t.Errorf("total = %d (new=%d, updated=%d), want at least 2 (1 biz + test tasks)", total, result.NewCount, result.UpdatedCount)
@@ -1892,7 +1892,7 @@ func TestBuildIndex_ValidationTasksGenerated(t *testing.T) {
 	writeTaskMD(t, tasksDir, "2-gate.md", "2.gate", "Phase 2 Gate", nil)
 
 	auto := forgeconfig.AutoConfig{
-		E2eTest:          forgeconfig.ModeToggle{Full: true},
+		Test:             forgeconfig.ModeToggle{Full: true},
 		Validation:       forgeconfig.ModeToggle{Full: true},
 		ConsolidateSpecs: forgeconfig.ModeToggle{Full: true},
 	}
@@ -1960,7 +1960,7 @@ func TestBuildIndex_ValidationTasksNotGenerated(t *testing.T) {
 
 	// AutoConfig with validation disabled (default)
 	auto := forgeconfig.AutoConfig{
-		E2eTest:          forgeconfig.ModeToggle{Full: true},
+		Test:             forgeconfig.ModeToggle{Full: true},
 		Validation:       forgeconfig.ModeToggle{Full: false},
 		ConsolidateSpecs: forgeconfig.ModeToggle{Full: true},
 	}
@@ -1998,7 +1998,7 @@ func TestBuildIndex_QuickValidationTasks(t *testing.T) {
 	writeTaskMD(t, tasksDir, "1-foo.md", "1", "Foo Task", nil)
 
 	auto := forgeconfig.AutoConfig{
-		E2eTest:          forgeconfig.ModeToggle{Quick: true},
+		Test:             forgeconfig.ModeToggle{Quick: true},
 		Validation:       forgeconfig.ModeToggle{Quick: true},
 		ConsolidateSpecs: forgeconfig.ModeToggle{Quick: true},
 	}

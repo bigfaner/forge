@@ -82,8 +82,8 @@ Suspected location: <file:line or module>
 Confirm the bug is reproducible in the current codebase before writing any tests.
 
 ```bash
-# Run just test to establish baseline
-just test [scope]
+# Run just unit-test to establish baseline
+just unit-test [scope]
 ```
 
 **Reproduction checklist:**
@@ -118,10 +118,10 @@ Test naming convention:
 // e.g. "bug: returns null when input is empty string"
 ```
 
-Run `just test` (pass `[scope]` from `--scope` parameter if specified) — it **must fail** before the fix:
+Run `just unit-test` (pass `[scope]` from `--scope` parameter if specified) — it **must fail** before the fix:
 
 ```bash
-just test [scope]
+just unit-test [scope]
 ```
 
 <HARD-RULE>
@@ -138,12 +138,12 @@ Add an e2e test only when the bug is observable at the API, CLI, or UI surface.
 | API endpoint | `tests/e2e/features/<slug>/api.spec.ts` | fetch |
 | CLI command | `tests/e2e/features/<slug>/cli.spec.ts` | child_process |
 
-Bug fix tests go to the `features/` staging area, same as feature tests. This ensures `just e2e-test --feature <slug>` can discover and run them.
+Bug fix tests go to the `features/` staging area, same as feature tests. This ensures `just test <slug>` can discover and run them.
 
-Run `just e2e-test --feature <slug>` — it **must fail** before the fix:
+Run `just test <slug>` — it **must fail** before the fix:
 
 ```bash
-just e2e-test --feature <slug>
+just test <slug>
 ```
 
 ---
@@ -168,20 +168,20 @@ With failing tests in place, implement the minimal fix.
 Execute the quality gate sequence (pass `[scope]` from `--scope` parameter if specified):
 
 ```
-just compile [scope] → just fmt [scope] → just lint [scope] → just test [scope]
+just compile [scope] → just fmt [scope] → just lint [scope] → just unit-test [scope]
 ```
 
-Strict sequential order. Stop at first failure. On failure: compile → fix & retry; fmt → non-blocking warning; lint → self-fix (1 retry) then blocked; test → fix & retry.
+Strict sequential order. Stop at first failure. On failure: compile → fix & retry; fmt → non-blocking warning; lint → self-fix (1 retry) then blocked; unit-test → fix & retry.
 
-E2E (if written in Step 3b):
+Surface-level tests (if written in Step 3b):
 
 ```bash
-just e2e-test --feature <slug>
+just test <slug>
 ```
 
 **Verification checklist:**
 - [ ] New unit test(s): PASS
-- [ ] New e2e test(s): PASS (if written)
+- [ ] New surface-level test(s): PASS (if written)
 - [ ] Pre-existing tests: no regressions
 - [ ] Build succeeds (if applicable)
 
@@ -385,7 +385,7 @@ Bug Fix Summary
 ───────────────
 Bug:     <description>
 Fix:     <file(s) changed>
-Tests:   <N unit tests added> + <M e2e tests added>
+Tests:   <N unit tests added> + <M surface-level tests added>
 Result:  All tests pass ✓
 Commit:  <commit hash>
 ```
@@ -399,5 +399,5 @@ Commit:  <commit hash>
 | Fixing before writing a failing test | Always write the test first |
 | Test passes before fix | Test doesn't capture the bug — revise it |
 | Fixing more than the bug | Minimal fix only; open a separate task for cleanup |
-| Skipping e2e when the bug is user-facing | Add at least one e2e smoke test |
+| Skipping e2e when the bug is user-facing | Add at least one surface-level smoke test |
 | Committing fix and tests separately | One atomic commit: fix + tests together |

@@ -17,7 +17,7 @@ import (
 
 // Skill/agent/command files that should use `just <verb>` exclusively.
 var skillFiles = []string{
-	"plugins/forge/skills/run-e2e-tests/SKILL.md",
+	"plugins/forge/skills/run-tests/SKILL.md",
 	"plugins/forge/agents/task-executor.md",
 	"plugins/forge/commands/run-tasks.md",
 	"plugins/forge/commands/fix-bug.md",

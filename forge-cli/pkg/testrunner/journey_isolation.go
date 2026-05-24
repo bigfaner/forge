@@ -126,7 +126,7 @@ func CopyFileToWorkDir(projectRoot, workDir, filename string) error {
 	return nil
 }
 
-// ExecuteJourneyInIsolation runs a journey's e2e tests using `just e2e-test`
+// ExecuteJourneyInIsolation runs a journey's tests using `just test <journey>`
 // from the project root with the journey filter.
 // Returns the execution result with output and exit code.
 func ExecuteJourneyInIsolation(cfg *JourneyExecutionConfig, _, journeyName string) JourneyResult {
@@ -135,7 +135,7 @@ func ExecuteJourneyInIsolation(cfg *JourneyExecutionConfig, _, journeyName strin
 		JourneyName: journeyName,
 	}
 
-	cmd := exec.Command("just", "e2e-test", journeyName)
+	cmd := exec.Command("just", "test", journeyName)
 	cmd.Dir = cfg.ProjectRoot
 	cmd.Env = append(os.Environ(), "FORGE_JOURNEY="+journeyName)
 
@@ -150,7 +150,7 @@ func ExecuteJourneyInIsolation(cfg *JourneyExecutionConfig, _, journeyName strin
 		if ok := isErrorType(err, &exitErr); ok {
 			result.ExitCode = exitErr.ExitCode()
 		}
-		result.Error = fmt.Sprintf("just e2e-test %s failed: %v", journeyName, err)
+		result.Error = fmt.Sprintf("just test %s failed: %v", journeyName, err)
 	} else {
 		result.Passed = true
 		result.ExitCode = 0

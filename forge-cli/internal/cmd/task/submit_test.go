@@ -861,14 +861,14 @@ func TestAutoRestoreSourceTask_KeyDiffersFromID(t *testing.T) {
 			Feature: "test",
 		}
 		index.SetTasks(map[string]task.Task{
-			"run-e2e-tests": {ID: "T-test-run", Status: "blocked", Dependencies: []string{"fix-1"}},
-			"fix-1":         {ID: "fix-1", Status: "completed", SourceTaskID: "T-test-run"},
+			"run-test": {ID: "T-test-run", Status: "blocked", Dependencies: []string{"fix-1"}},
+			"fix-1":    {ID: "fix-1", Status: "completed", SourceTaskID: "T-test-run"},
 		})
 
 		autoRestoreSourceTask(index, "T-test-run")
 
-		if index.TasksMap()["run-e2e-tests"].Status != "pending" {
-			t.Errorf("expected pending, got %s", index.TasksMap()["run-e2e-tests"].Status)
+		if index.TasksMap()["run-test"].Status != "pending" {
+			t.Errorf("expected pending, got %s", index.TasksMap()["run-test"].Status)
 		}
 	})
 
@@ -877,13 +877,13 @@ func TestAutoRestoreSourceTask_KeyDiffersFromID(t *testing.T) {
 			Feature: "test",
 		}
 		index.SetTasks(map[string]task.Task{
-			"run-e2e-tests": {ID: "T-test-run", Status: "blocked", Dependencies: []string{"fix-1"}},
-			"fix-1":         {ID: "fix-1", Status: "completed"},
+			"run-test": {ID: "T-test-run", Status: "blocked", Dependencies: []string{"fix-1"}},
+			"fix-1":    {ID: "fix-1", Status: "completed"},
 		})
 
 		autoRestoreSourceTask(index, "nonexistent-id")
-		if index.TasksMap()["run-e2e-tests"].Status != "blocked" {
-			t.Errorf("should stay blocked, got %s", index.TasksMap()["run-e2e-tests"].Status)
+		if index.TasksMap()["run-test"].Status != "blocked" {
+			t.Errorf("should stay blocked, got %s", index.TasksMap()["run-test"].Status)
 		}
 	})
 
@@ -892,15 +892,15 @@ func TestAutoRestoreSourceTask_KeyDiffersFromID(t *testing.T) {
 			Feature: "test",
 		}
 		index.SetTasks(map[string]task.Task{
-			"run-e2e-tests": {ID: "T-test-run", Status: "blocked", Dependencies: []string{"fix-1", "fix-2"}},
-			"fix-1":         {ID: "fix-1", Status: "completed"},
-			"fix-2":         {ID: "fix-2", Status: "pending"},
+			"run-test": {ID: "T-test-run", Status: "blocked", Dependencies: []string{"fix-1", "fix-2"}},
+			"fix-1":    {ID: "fix-1", Status: "completed"},
+			"fix-2":    {ID: "fix-2", Status: "pending"},
 		})
 
 		autoRestoreSourceTask(index, "T-test-run")
 
-		if index.TasksMap()["run-e2e-tests"].Status != "blocked" {
-			t.Errorf("should stay blocked with incomplete deps, got %s", index.TasksMap()["run-e2e-tests"].Status)
+		if index.TasksMap()["run-test"].Status != "blocked" {
+			t.Errorf("should stay blocked with incomplete deps, got %s", index.TasksMap()["run-test"].Status)
 		}
 	})
 
@@ -925,22 +925,22 @@ func TestAutoRestoreSourceTask_KeyDiffersFromID(t *testing.T) {
 			Feature: "test",
 		}
 		index.SetTasks(map[string]task.Task{
-			"run-e2e-tests": {ID: "T-test-run", Status: "blocked", Dependencies: []string{"fix-1"}},
-			"fix-1":         {ID: "fix-1", Status: "completed"},
+			"run-test": {ID: "T-test-run", Status: "blocked", Dependencies: []string{"fix-1"}},
+			"fix-1":    {ID: "fix-1", Status: "completed"},
 		})
 
 		autoRestoreSourceTask(index, "T-test-run")
 
-		_, hasSlugKey := index.TasksMap()["run-e2e-tests"]
+		_, hasSlugKey := index.TasksMap()["run-test"]
 		_, hasIDKey := index.TasksMap()["T-test-run"]
 		if !hasSlugKey {
-			t.Error("slug key 'run-e2e-tests' was lost after restore")
+			t.Error("slug key 'run-test' was lost after restore")
 		}
 		if hasIDKey {
 			t.Error("should not create duplicate entry under ID key 'T-test-run'")
 		}
-		if index.TasksMap()["run-e2e-tests"].Status != "pending" {
-			t.Errorf("expected pending, got %s", index.TasksMap()["run-e2e-tests"].Status)
+		if index.TasksMap()["run-test"].Status != "pending" {
+			t.Errorf("expected pending, got %s", index.TasksMap()["run-test"].Status)
 		}
 	})
 }
@@ -1328,7 +1328,7 @@ func TestSubmit_TieredQualityGate(t *testing.T) {
 
 			dir, _ := os.Getwd()
 			// Create a justfile where test fails — this should cause quality gate failure
-			justfile := "compile:\n\t@true\nfmt:\n\t@true\nlint:\n\t@true\ntest:\n\t@echo \"test fails\" && exit 1\n"
+			justfile := "compile:\n\t@true\nfmt:\n\t@true\nlint:\n\t@true\nunit-test:\n\t@echo \"unit-test fails\" && exit 1\n"
 			_ = os.WriteFile(filepath.Join(dir, "justfile"), []byte(justfile), 0644)
 
 			dataPath := filepath.Join(dir, "record.json")
@@ -1344,10 +1344,10 @@ func TestSubmit_TieredQualityGate(t *testing.T) {
 		output, _ := cmd.CombinedOutput()
 		out := string(output)
 		if !strings.Contains(out, "Quality gate failed") {
-			t.Errorf("breaking task should run full gate including test, got: %s", out)
+			t.Errorf("breaking task should run full gate including unit-test, got: %s", out)
 		}
 		if !strings.Contains(out, "test") {
-			t.Errorf("expected failure at test step for breaking task, got: %s", out)
+			t.Errorf("expected failure at unit-test step for breaking task, got: %s", out)
 		}
 	})
 

@@ -1,0 +1,200 @@
+{
+  "feature": "test-recipe-unification",
+  "proposal": "docs/proposals/test-recipe-unification/proposal.md",
+  "created": "2026-05-24",
+  "tasks": {
+    "1-gate-sequence": {
+      "id": "1",
+      "title": "Restructure gate sequences for two-layer test model",
+      "priority": "P0",
+      "estimatedTime": "1-2h",
+      "dependencies": [
+        "fix-1"
+      ],
+      "status": "completed",
+      "file": "1-gate-sequence.md",
+      "record": "records/1-gate-sequence.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "coding.enhancement",
+      "blockedReason": "test failed: TestValidateQualityGate_FailingTestGate - test justfile missing unit-test recipe, gate skips and passes but should fail"
+    },
+    "10-documentation": {
+      "id": "10",
+      "title": "Update project documentation for new test model",
+      "priority": "P2",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "6",
+        "8",
+        "9"
+      ],
+      "status": "completed",
+      "file": "10-documentation.md",
+      "record": "records/10-documentation.md",
+      "type": "doc"
+    },
+    "2-config-rename": {
+      "id": "2",
+      "title": "Rename config fields and add migration hint",
+      "priority": "P0",
+      "estimatedTime": "1-2h",
+      "status": "completed",
+      "file": "2-config-rename.md",
+      "record": "records/2-config-rename.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "coding.refactor",
+      "blockedReason": "Pre-existing TestValidateQualityGate_FailingTestGate failure from task 1 prevents submit gate. Config changes complete but unsubmitted."
+    },
+    "3-quality-gate": {
+      "id": "3",
+      "title": "Update quality gate steps and failure handling",
+      "priority": "P0",
+      "estimatedTime": "1-2h",
+      "dependencies": [
+        "1",
+        "2"
+      ],
+      "status": "completed",
+      "file": "3-quality-gate.md",
+      "record": "records/3-quality-gate.md",
+      "scope": "backend",
+      "type": "coding.enhancement"
+    },
+    "4-test-runner": {
+      "id": "4",
+      "title": "Update test runner probe chain and journey isolation",
+      "priority": "P0",
+      "estimatedTime": "1-2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "4-test-runner.md",
+      "record": "records/4-test-runner.md",
+      "scope": "backend",
+      "type": "coding.enhancement"
+    },
+    "5-cli-commands": {
+      "id": "5",
+      "title": "Update CLI command text and help messages",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "2"
+      ],
+      "status": "completed",
+      "file": "5-cli-commands.md",
+      "record": "records/5-cli-commands.md",
+      "scope": "backend",
+      "type": "coding.enhancement"
+    },
+    "6-go-test-alignment": {
+      "id": "6",
+      "title": "Align Go tests with new recipe names and config fields",
+      "priority": "P1",
+      "estimatedTime": "1-2h",
+      "dependencies": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "status": "completed",
+      "file": "6-go-test-alignment.md",
+      "record": "records/6-go-test-alignment.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "7-justfile-templates": {
+      "id": "7",
+      "title": "Overhaul justfile templates for two-layer test model",
+      "priority": "P0",
+      "estimatedTime": "1-2h",
+      "status": "completed",
+      "file": "7-justfile-templates.md",
+      "record": "records/7-justfile-templates.md",
+      "scope": "all",
+      "type": "coding.enhancement"
+    },
+    "8-prompt-templates": {
+      "id": "8",
+      "title": "Update prompt templates for new recipe names",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "8-prompt-templates.md",
+      "record": "records/8-prompt-templates.md",
+      "type": "doc"
+    },
+    "9-skill-markdown": {
+      "id": "9",
+      "title": "Update skill and command markdown for new recipe model",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1",
+        "7"
+      ],
+      "status": "completed",
+      "file": "9-skill-markdown.md",
+      "record": "records/9-skill-markdown.md",
+      "type": "doc"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "Fix: TestValidateQualityGate_FailingTestGate fails",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "1"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "scope": "all",
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "9"
+      ],
+      "status": "completed",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "scope": "all",
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

@@ -29,7 +29,7 @@ type ModeToggle struct {
 // When the `auto` block is missing from config, all fields use defaults that match
 // pre-auto-behavior.
 type AutoConfig struct {
-	E2eTest          ModeToggle `yaml:"e2eTest"`
+	Test             ModeToggle `yaml:"test"`
 	ConsolidateSpecs ModeToggle `yaml:"consolidateSpecs"`
 	CleanCode        ModeToggle `yaml:"cleanCode"`
 	Validation       ModeToggle `yaml:"validation"`
@@ -42,11 +42,11 @@ type AutoConfig struct {
 }
 
 // AutoConfigDefaults returns an AutoConfig with backward-compatible defaults:
-// e2eTest: quick=false, full=true; consolidateSpecs: quick=true, full=true;
+// test: quick=false, full=true; consolidateSpecs: quick=true, full=true;
 // cleanCode=false, validation=false, gitPush=false.
 func AutoConfigDefaults() AutoConfig {
 	return AutoConfig{
-		E2eTest:          ModeToggle{Quick: false, Full: true},
+		Test:             ModeToggle{Quick: false, Full: true},
 		ConsolidateSpecs: ModeToggle{Quick: true, Full: true},
 		CleanCode:        ModeToggle{Quick: false, Full: false},
 		Validation:       ModeToggle{Quick: false, Full: false},
@@ -58,7 +58,7 @@ func AutoConfigDefaults() AutoConfig {
 
 // IsZero returns true if the AutoConfig has all zero-value fields.
 func (a AutoConfig) IsZero() bool {
-	return a.E2eTest == ModeToggle{} &&
+	return a.Test == ModeToggle{} &&
 		a.ConsolidateSpecs == ModeToggle{} &&
 		a.CleanCode == ModeToggle{} &&
 		a.Validation == ModeToggle{} &&
@@ -268,7 +268,61 @@ func ReadConfig(projectRoot string) (*Config, error) {
 		cfg.Auto.applyDefaults()
 	}
 
+	// v3.0.x migration: detect old key "e2eTest" and map its value to Test field.
+	// To be removed in v3.1.0 — v3.1.0 will error on old key instead.
+	migrateOldE2eTestKey(data, &cfg)
+
 	return &cfg, nil
+}
+
+// migrateOldE2eTestKey detects the old "auto.e2eTest" key in raw YAML,
+// outputs a migration hint to stderr, and maps the value to the new Test field.
+// This is a v3.0.x transitional helper; remove in v3.1.0.
+func migrateOldE2eTestKey(data []byte, cfg *Config) {
+	if cfg == nil {
+		return
+	}
+	var root yaml.Node
+	if err := yaml.Unmarshal(data, &root); err != nil {
+		return
+	}
+	autoNode := findMappingKey(&root, "auto")
+	if autoNode == nil {
+		return
+	}
+	oldNode := findMappingKey(autoNode, "e2eTest")
+	if oldNode == nil {
+		return
+	}
+
+	fmt.Fprintln(os.Stderr, "config key 'auto.e2eTest' is renamed to 'auto.test' in v3.0.0; please update your config.yaml")
+
+	if cfg.Auto == nil {
+		cfg.Auto = &AutoConfig{}
+	}
+
+	// Parse the old e2eTest block into ModeToggle
+	var mt ModeToggle
+	if oldNode.Kind == yaml.MappingNode {
+		for i := 0; i < len(oldNode.Content); i += 2 {
+			key := oldNode.Content[i].Value
+			val := oldNode.Content[i+1].Value
+			switch key {
+			case "quick":
+				mt.Quick = val == "true"
+			case "full":
+				mt.Full = val == "true"
+			}
+		}
+	}
+	cfg.Auto.Test = mt
+
+	// Re-apply defaults with the raw tracking
+	rawAuto, err := parseAutoRaw(data)
+	if err == nil {
+		cfg.Auto.raw = rawAuto
+	}
+	cfg.Auto.applyDefaults()
 }
 
 // ReadAutoConfig reads the auto config block from .forge/config.yaml.
@@ -286,6 +340,8 @@ func ReadAutoConfig(projectRoot string) (AutoConfig, error) {
 }
 
 // parseAutoRaw parses the raw YAML to detect which auto fields and sub-fields were present.
+// For the old key name "e2eTest" (renamed to "test" in v3.0.0), it maps the value to
+// the new "test" key in the result. Migration hint output is handled by migrateOldE2eTestKey.
 func parseAutoRaw(data []byte) (map[string]map[string]bool, error) {
 	var root yaml.Node
 	if err := yaml.Unmarshal(data, &root); err != nil {
@@ -299,11 +355,30 @@ func parseAutoRaw(data []byte) (map[string]map[string]bool, error) {
 
 	result := make(map[string]map[string]bool)
 
-	modeFields := []string{"e2eTest", "consolidateSpecs", "cleanCode", "validation", "runTasks", "knowledgeSave"}
+	// Detect old key name "e2eTest" and map to "test" (v3.0.x migration, to be removed in v3.1.0)
+	if oldNode := findMappingKey(autoNode, "e2eTest"); oldNode != nil {
+		result["test"] = make(map[string]bool)
+		if oldNode.Kind == yaml.MappingNode {
+			for i := 0; i < len(oldNode.Content); i += 2 {
+				key := oldNode.Content[i].Value
+				if key == "quick" || key == "full" {
+					result["test"][key] = true
+				}
+			}
+		}
+	}
+
+	modeFields := []string{"test", "consolidateSpecs", "cleanCode", "validation", "runTasks", "knowledgeSave"}
 	for _, field := range modeFields {
 		node := findMappingKey(autoNode, field)
 		if node == nil {
 			continue
+		}
+		// Skip "test" if already populated from old "e2eTest" key detection above
+		if field == "test" {
+			if _, exists := result["test"]; exists {
+				continue
+			}
 		}
 		result[field] = make(map[string]bool)
 		if node.Kind == yaml.MappingNode {
@@ -341,7 +416,7 @@ func findMappingKey(node *yaml.Node, key string) *yaml.Node {
 func (a *AutoConfig) applyDefaults() {
 	d := AutoConfigDefaults()
 	if a.raw == nil {
-		a.E2eTest = d.E2eTest
+		a.Test = d.Test
 		a.ConsolidateSpecs = d.ConsolidateSpecs
 		a.CleanCode = d.CleanCode
 		a.RunTasks = d.RunTasks
@@ -349,7 +424,7 @@ func (a *AutoConfig) applyDefaults() {
 		return
 	}
 
-	applyModeDefault(&a.E2eTest, a.raw, "e2eTest", d.E2eTest)
+	applyModeDefault(&a.Test, a.raw, "test", d.Test)
 	applyModeDefault(&a.ConsolidateSpecs, a.raw, "consolidateSpecs", d.ConsolidateSpecs)
 	applyModeDefault(&a.CleanCode, a.raw, "cleanCode", d.CleanCode)
 	applyModeDefault(&a.Validation, a.raw, "validation", d.Validation)
@@ -427,8 +502,8 @@ func GetConfigValue(projectRoot, key string) (string, error) {
 // autoModeField returns the ModeToggle pointer for a given auto field name.
 func autoModeField(a *AutoConfig, field string) *ModeToggle {
 	switch field {
-	case "e2eTest":
-		return &a.E2eTest
+	case "test":
+		return &a.Test
 	case "consolidateSpecs":
 		return &a.ConsolidateSpecs
 	case "cleanCode":

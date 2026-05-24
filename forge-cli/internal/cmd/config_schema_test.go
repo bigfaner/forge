@@ -52,7 +52,7 @@ func TestConfigSchemaAutoBlock(t *testing.T) {
 		t.Fatal("auto missing 'properties' object")
 	}
 	// Verify all expected sub-objects exist with quick/full booleans
-	modeFields := []string{"e2eTest", "consolidateSpecs", "cleanCode"}
+	modeFields := []string{"test", "consolidateSpecs", "cleanCode"}
 	for _, field := range modeFields {
 		fieldObj, ok := autoProps[field].(map[string]any)
 		if !ok {
@@ -110,12 +110,12 @@ func TestConfigSchemaAutoDefaults(t *testing.T) {
 		t.Fatal("auto missing 'properties' object — cannot verify defaults")
 	}
 	// Verify defaults per Hard Rules:
-	// e2eTest.{quick,true; full,true}
+	// test.{quick,true; full,true}
 	// consolidateSpecs.{quick,true; full,true}
-	// cleanCode.{quick,false; full,false}
+	// cleanCode.{quick,false; full:false}
 	// gitPush: false
 	expectedDefaults := map[string]map[string]bool{
-		"e2eTest":          {"quick": true, "full": true},
+		"test":             {"quick": true, "full": true},
 		"consolidateSpecs": {"quick": true, "full": true},
 		"cleanCode":        {"quick": false, "full": false},
 	}
@@ -186,7 +186,7 @@ func TestConfigExampleDocumentsAllAutoFields(t *testing.T) {
 
 	// All 7 fields must appear in the example
 	requiredFields := []string{
-		"e2eTest:",
+		"test:",
 		"consolidateSpecs:",
 		"cleanCode:",
 		"gitPush:",
@@ -201,7 +201,7 @@ func TestConfigExampleDocumentsAllAutoFields(t *testing.T) {
 	}
 	// Verify specific default values appear in the example
 	expectedValues := map[string]bool{
-		"quick: true":    false, // must appear at least once (e2eTest, consolidateSpecs)
+		"quick: true":    false, // must appear at least once (test, consolidateSpecs)
 		"quick: false":   false, // must appear at least once (cleanCode)
 		"full: true":     false, // must appear at least once
 		"full: false":    false, // must appear at least once

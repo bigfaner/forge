@@ -43,7 +43,8 @@ dev scope="":
       *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
     esac
 
-test scope="":
+# unit-test: language-level unit tests
+unit-test scope="":
     #!/usr/bin/env bash
     set -euo pipefail
     case "{{scope}}" in
@@ -53,8 +54,8 @@ test scope="":
       *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
     esac
 
-[arg("feature", long)]
-e2e-test feature="":
+# test: surface-level advanced tests (e2e, integration, etc.)
+test journey='':
     #!/usr/bin/env bash
     set -euo pipefail
     # --- Server Lifecycle (idempotent, per-service) ---
@@ -66,7 +67,7 @@ e2e-test feature="":
             pid_file="$_root/tests/e2e/results/.pid-$svc"
             # Layer 1: tracked process alive?
             if [ -f "$pid_file" ] && kill -0 "$(tr -d '\r' < "$pid_file")" 2>/dev/null; then continue; fi
-            # Layer 2: probe reported this service OK? → skip
+            # Layer 2: probe reported this service OK? -> skip
             echo "$probe_output" | grep -q "FAIL: $svc" || continue
             # Layer 3: start only the failed service
             just run "$svc" > /dev/null 2>&1 &
@@ -83,7 +84,7 @@ e2e-test feature="":
         sleep 1
         for pid_f in "$_root"/tests/e2e/results/.pid-*; do
             if [ -f "$pid_f" ] && ! kill -0 "$(tr -d '\r' < "$pid_f")" 2>/dev/null; then
-                echo "e2e: service process exited immediately ($(basename "$pid_f" | sed 's/.pid-//'))" >&2
+                echo "test: service process exited immediately ($(basename "$pid_f" | sed 's/.pid-//'))" >&2
                 rm -f "$pid_f"
                 exit 1
             fi
@@ -95,18 +96,19 @@ e2e-test feature="":
             sleep 3
         done
         if [ "$ready" = false ]; then
-            echo "e2e: health check failed after 30s" >&2
+            echo "test: health check failed after 30s" >&2
             just probe || true
             exit 1
         fi
     elif echo "$probe_output" | grep -q "OK:"; then
         : # all healthy, skip startup
     else
-        echo "e2e: unexpected probe output: $probe_output" >&2; exit 1
+        echo "test: unexpected probe output: $probe_output" >&2; exit 1
     fi
     # --- Run Tests ---
-    if [ "{{feature}}" != "" ]; then
-        cd tests/e2e && E2E_FEATURE=1 npx playwright test features/{{feature}}/
+    # Dispatch by surface type — adjust the test command below to match your project.
+    if [ "{{journey}}" != "" ]; then
+        cd tests/e2e && E2E_FEATURE=1 npx playwright test features/{{journey}}/
     else
         if [ ! -d tests/e2e/node_modules ]; then npm install --prefix tests/e2e; fi
         cd tests/e2e && npx playwright test
@@ -162,26 +164,21 @@ install scope="":
       *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
     esac
 
-ci: install compile build test lint
+ci: install compile build unit-test lint
 
-e2e-setup force="":
+# test-setup: prepare test environment (install test dependencies, seed data, etc.)
+test-setup:
     #!/usr/bin/env bash
     set -euo pipefail
     if [ ! -f tests/e2e/package.json ]; then
         echo "Error: tests/e2e/package.json not found" >&2
         exit 1
     fi
-    case "{{force}}" in
-      force) npm install --prefix tests/e2e ;;
-      "")
-        if [ ! -d tests/e2e/node_modules ]; then
-            npm install --prefix tests/e2e
-        fi
-        ;;
-      *) echo "[forge] invalid value '{{force}}'; expected 'force' or empty" >&2; exit 1 ;;
-    esac
+    if [ ! -d tests/e2e/node_modules ]; then
+        npm install --prefix tests/e2e
+    fi
     npx --prefix tests/e2e playwright install chromium
-    echo "OK: e2e dependencies ready"
+    echo "OK: test dependencies ready"
 
 # probe: check if configured services are healthy
 probe path="":
@@ -210,36 +207,5 @@ probe path="":
         fi
     done
     [ "$fail" -eq 0 ] || exit 1
-
-[arg("feature", long)]
-e2e-verify feature="":
-    #!/usr/bin/env bash
-    set -euo pipefail
-    if [ -z "{{feature}}" ]; then
-        echo "Usage: just e2e-verify --feature <slug>" >&2
-        exit 1
-    fi
-    if [ ! -d "tests/e2e/features/{{feature}}" ]; then
-        echo "Error: tests/e2e/features/{{feature}}/ not found" >&2
-        exit 1
-    fi
-    matches=$(grep -rn '// VERIFY:' "tests/e2e/features/{{feature}}/" --include='*.spec.ts' || true)
-    if [ -n "$matches" ]; then
-        count=$(echo "$matches" | wc -l | tr -d ' ')
-        echo "Error: $count unresolved // VERIFY: marker(s) in tests/e2e/features/{{feature}}/" >&2
-        echo "" >&2
-        echo "$matches" >&2
-        echo "" >&2
-        echo "Replace each // VERIFY: comment with a real assertion before running tests." >&2
-        exit 1
-    fi
-    echo "OK: no unresolved // VERIFY: markers in tests/e2e/features/{{feature}}/"
-    if [ -f "tests/e2e/helpers.ts" ]; then
-        hmatches=$(grep -n '// VERIFY:\|// TEMPLATE:' "tests/e2e/helpers.ts" || true)
-        if [ -n "$hmatches" ]; then
-            echo "Warning: unresolved markers in tests/e2e/helpers.ts:" >&2
-            echo "$hmatches" >&2
-        fi
-    fi
 
 # --- end forge standard recipes ---

@@ -1,6 +1,8 @@
 package forgeconfig
 
 import (
+	"bytes"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -142,7 +144,7 @@ func TestReadConfig(t *testing.T) {
 	})
 
 	t.Run("auto block parsed with defaults", func(t *testing.T) {
-		dir := setupConfig(t, "auto:\n  e2eTest:\n    quick: false\n  gitPush: true\n")
+		dir := setupConfig(t, "auto:\n  test:\n    quick: false\n  gitPush: true\n")
 		cfg, err := ReadConfig(dir)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -150,11 +152,11 @@ func TestReadConfig(t *testing.T) {
 		if cfg.Auto == nil {
 			t.Fatal("expected Auto non-nil")
 		}
-		if cfg.Auto.E2eTest.Quick {
-			t.Error("E2eTest.Quick should be false (explicitly set)")
+		if cfg.Auto.Test.Quick {
+			t.Error("Test.Quick should be false (explicitly set)")
 		}
-		if !cfg.Auto.E2eTest.Full {
-			t.Error("E2eTest.Full should be true (default applied)")
+		if !cfg.Auto.Test.Full {
+			t.Error("Test.Full should be true (default applied)")
 		}
 		if !cfg.Auto.GitPush {
 			t.Error("GitPush should be true")
@@ -197,10 +199,10 @@ func TestReadAutoConfig(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		// Defaults: e2eTest quick=false/full=true, consolidateSpecs quick=true/full=true,
+		// Defaults: test quick=false/full=true, consolidateSpecs quick=true/full=true,
 		// cleanCode false/false, validation false/false, gitPush false
-		if auto.E2eTest.Quick || !auto.E2eTest.Full {
-			t.Errorf("E2eTest defaults = %+v, want {Quick:false Full:true}", auto.E2eTest)
+		if auto.Test.Quick || !auto.Test.Full {
+			t.Errorf("Test defaults = %+v, want {Quick:false Full:true}", auto.Test)
 		}
 		if !auto.ConsolidateSpecs.Quick || !auto.ConsolidateSpecs.Full {
 			t.Errorf("ConsolidateSpecs defaults = %+v, want {Quick:true Full:true}", auto.ConsolidateSpecs)
@@ -224,7 +226,7 @@ func TestReadAutoConfig(t *testing.T) {
 
 	t.Run("full auto block", func(t *testing.T) {
 		dir := setupConfig(t, `auto:
-  e2eTest:
+  test:
     quick: false
     full: true
   consolidateSpecs:
@@ -245,11 +247,11 @@ func TestReadAutoConfig(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if auto.E2eTest.Quick {
-			t.Error("E2eTest.Quick should be false")
+		if auto.Test.Quick {
+			t.Error("Test.Quick should be false")
 		}
-		if !auto.E2eTest.Full {
-			t.Error("E2eTest.Full should be true")
+		if !auto.Test.Full {
+			t.Error("Test.Full should be true")
 		}
 		if auto.ConsolidateSpecs.Quick {
 			t.Error("ConsolidateSpecs.Quick should be false")
@@ -282,18 +284,18 @@ func TestReadAutoConfig(t *testing.T) {
 
 	t.Run("partial auto block applies defaults", func(t *testing.T) {
 		dir := setupConfig(t, `auto:
-  e2eTest:
+  test:
     quick: false
 `)
 		auto, err := ReadAutoConfig(dir)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if auto.E2eTest.Quick {
-			t.Error("E2eTest.Quick should be false (explicitly set)")
+		if auto.Test.Quick {
+			t.Error("Test.Quick should be false (explicitly set)")
 		}
-		if !auto.E2eTest.Full {
-			t.Error("E2eTest.Full should be true (default)")
+		if !auto.Test.Full {
+			t.Error("Test.Full should be true (default)")
 		}
 		if !auto.ConsolidateSpecs.Quick || !auto.ConsolidateSpecs.Full {
 			t.Errorf("ConsolidateSpecs should default to true/true, got %+v", auto.ConsolidateSpecs)
@@ -312,8 +314,8 @@ func TestReadAutoConfig(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if auto.E2eTest.Quick || !auto.E2eTest.Full {
-			t.Errorf("E2eTest defaults = %+v, want {Quick:false Full:true}", auto.E2eTest)
+		if auto.Test.Quick || !auto.Test.Full {
+			t.Errorf("Test defaults = %+v, want {Quick:false Full:true}", auto.Test)
 		}
 		if !auto.ConsolidateSpecs.Quick || !auto.ConsolidateSpecs.Full {
 			t.Errorf("ConsolidateSpecs defaults = %+v, want {Quick:true Full:true}", auto.ConsolidateSpecs)
@@ -327,7 +329,7 @@ func TestReadAutoConfig(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		// Verify it's a value type — this compiles only if AutoConfig is returned as value
-		_ = auto.E2eTest
+		_ = auto.Test
 	})
 }
 
@@ -568,8 +570,8 @@ func TestValidProjectType(t *testing.T) {
 
 func TestAutoConfigDefaults(t *testing.T) {
 	defaults := AutoConfigDefaults()
-	if defaults.E2eTest.Quick || !defaults.E2eTest.Full {
-		t.Errorf("E2eTest = %+v, want {Quick:false Full:true}", defaults.E2eTest)
+	if defaults.Test.Quick || !defaults.Test.Full {
+		t.Errorf("Test = %+v, want {Quick:false Full:true}", defaults.Test)
 	}
 	if !defaults.ConsolidateSpecs.Quick || !defaults.ConsolidateSpecs.Full {
 		t.Errorf("ConsolidateSpecs = %+v, want {Quick:true Full:true}", defaults.ConsolidateSpecs)
@@ -624,8 +626,8 @@ func TestAutoConfigIsZero(t *testing.T) {
 func TestAutoConfigWithDefaults(t *testing.T) {
 	t.Run("zero returns full defaults", func(t *testing.T) {
 		a := AutoConfig{}.WithDefaults()
-		if a.E2eTest != (ModeToggle{Quick: false, Full: true}) {
-			t.Errorf("E2eTest = %+v, want {Quick:false Full:true}", a.E2eTest)
+		if a.Test != (ModeToggle{Quick: false, Full: true}) {
+			t.Errorf("Test = %+v, want {Quick:false Full:true}", a.Test)
 		}
 	})
 
@@ -637,8 +639,8 @@ func TestAutoConfigWithDefaults(t *testing.T) {
 		if result.CleanCode.Quick != true || result.CleanCode.Full != true {
 			t.Errorf("CleanCode should be preserved as true/true, got %+v", result.CleanCode)
 		}
-		if result.E2eTest != (ModeToggle{}) {
-			t.Errorf("E2eTest should be returned unchanged for partial config, got %+v", result.E2eTest)
+		if result.Test != (ModeToggle{}) {
+			t.Errorf("Test should be returned unchanged for partial config, got %+v", result.Test)
 		}
 	})
 
@@ -972,7 +974,7 @@ func TestWriteConfigAutoBlock(t *testing.T) {
 		dir := t.TempDir()
 		cfg := &Config{
 			Auto: &AutoConfig{
-				E2eTest:          ModeToggle{Quick: false, Full: true},
+				Test:             ModeToggle{Quick: false, Full: true},
 				ConsolidateSpecs: ModeToggle{Quick: true, Full: true},
 				GitPush:          true,
 			},
@@ -1023,12 +1025,12 @@ func TestSetConfigValue(t *testing.T) {
 		}
 	})
 
-	t.Run("auto.e2eTest.full set to true", func(t *testing.T) {
+	t.Run("auto.test.full set to true", func(t *testing.T) {
 		dir := t.TempDir()
-		if err := SetConfigValue(dir, "auto.e2eTest.full", "true"); err != nil {
+		if err := SetConfigValue(dir, "auto.test.full", "true"); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		val, err := GetConfigValue(dir, "auto.e2eTest.full")
+		val, err := GetConfigValue(dir, "auto.test.full")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -1227,5 +1229,64 @@ func TestGetConfigValue_RunTasks(t *testing.T) {
 		if val != "true" {
 			t.Errorf("expected 'true' (default), got %q", val)
 		}
+	})
+}
+
+func TestReadConfig_OldKeyMigration(t *testing.T) {
+	t.Run("old key e2eTest maps to Test field", func(t *testing.T) {
+		dir := setupConfig(t, "auto:\n  e2eTest:\n    quick: true\n    full: false\n")
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.Auto == nil {
+			t.Fatal("expected Auto non-nil")
+		}
+		if !cfg.Auto.Test.Quick {
+			t.Error("Test.Quick should be true (mapped from old e2eTest key)")
+		}
+		if cfg.Auto.Test.Full {
+			t.Error("Test.Full should be false (mapped from old e2eTest key)")
+		}
+	})
+
+	t.Run("only new key test no migration hint", func(t *testing.T) {
+		dir := setupConfig(t, "auto:\n  test:\n    quick: true\n    full: false\n")
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !cfg.Auto.Test.Quick {
+			t.Error("Test.Quick should be true")
+		}
+		if cfg.Auto.Test.Full {
+			t.Error("Test.Full should be false")
+		}
+	})
+
+	t.Run("old key e2eTest outputs migration hint to stderr", func(t *testing.T) {
+		dir := setupConfig(t, "auto:\n  e2eTest:\n    quick: false\n")
+		old := os.Stderr
+		r, w, _ := os.Pipe()
+		os.Stderr = w
+		cfg, err := ReadConfig(dir)
+		_ = w.Close()
+		os.Stderr = old
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		var buf bytes.Buffer
+		_, _ = io.Copy(&buf, r)
+		stderr := buf.String()
+		if !strings.Contains(stderr, "config key 'auto.e2eTest' is renamed to 'auto.test' in v3.0.0") {
+			t.Errorf("expected migration hint in stderr, got: %s", stderr)
+		}
+		if cfg.Auto.Test.Quick {
+			t.Error("Test.Quick should be false (mapped from old key)")
+		}
+		if !cfg.Auto.Test.Full {
+			t.Error("Test.Full should be true (default applied)")
+		}
+		_ = cfg
 	})
 }

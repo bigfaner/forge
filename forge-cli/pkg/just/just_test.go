@@ -106,13 +106,36 @@ func TestResolveScope(t *testing.T) {
 	})
 }
 
-func TestDefaultGateSequence(t *testing.T) {
-	steps := DefaultGateSequence()
+func TestFullGateSequence(t *testing.T) {
+	steps := FullGateSequence()
+	if len(steps) != 6 {
+		t.Fatalf("expected 6 steps, got %d", len(steps))
+	}
+
+	names := []string{"compile", "fmt", "lint", "unit-test", "test", "probe"}
+	optional := []bool{false, true, true, false, false, true}
+	blocking := []bool{true, false, true, true, true, false}
+
+	for i, step := range steps {
+		if step.Name != names[i] {
+			t.Errorf("step %d: expected name %q, got %q", i, names[i], step.Name)
+		}
+		if step.Optional != optional[i] {
+			t.Errorf("step %d: expected optional %v, got %v", i, optional[i], step.Optional)
+		}
+		if step.Blocking != blocking[i] {
+			t.Errorf("step %d: expected blocking %v, got %v", i, blocking[i], step.Blocking)
+		}
+	}
+}
+
+func TestUnitGateSequence(t *testing.T) {
+	steps := UnitGateSequence()
 	if len(steps) != 4 {
 		t.Fatalf("expected 4 steps, got %d", len(steps))
 	}
 
-	names := []string{"compile", "fmt", "lint", "test"}
+	names := []string{"compile", "fmt", "lint", "unit-test"}
 	optional := []bool{false, true, true, false}
 	blocking := []bool{true, false, true, true}
 
@@ -129,8 +152,8 @@ func TestDefaultGateSequence(t *testing.T) {
 	}
 }
 
-func TestLintGateSequence(t *testing.T) {
-	steps := LintGateSequence()
+func TestNonBreakingGateSequence(t *testing.T) {
+	steps := NonBreakingGateSequence()
 	if len(steps) != 3 {
 		t.Fatalf("expected 3 steps, got %d", len(steps))
 	}
@@ -240,7 +263,7 @@ func TestHasRecipe(t *testing.T) {
 
 func TestRunGate(t *testing.T) {
 	t.Run("no justfile returns true", func(t *testing.T) {
-		passed := RunGate(t.TempDir(), "", DefaultGateSequence(), nil)
+		passed := RunGate(t.TempDir(), "", FullGateSequence(), nil)
 		if !passed {
 			t.Error("expected true without justfile")
 		}
@@ -311,16 +334,27 @@ func TestRunGate(t *testing.T) {
 		}
 	})
 
-	t.Run("required missing recipe prints warning and skips", func(t *testing.T) {
+	t.Run("required missing recipe fails with init-justfile hint", func(t *testing.T) {
 		dir := t.TempDir()
 		writeJustfile(t, dir, "compile:\n  echo ok\n")
 		steps := []GateRecipe{
 			{Name: "compile", Optional: false, Blocking: true},
-			{Name: "test", Optional: false, Blocking: true},
+			{Name: "unit-test", Optional: false, Blocking: true},
 		}
-		passed := RunGate(dir, "", steps, nil)
-		if !passed {
-			t.Error("expected true when required recipe is missing (graceful skip)")
+		var failStep string
+		var failOutput string
+		passed := RunGate(dir, "", steps, func(step, output string) {
+			failStep = step
+			failOutput = output
+		})
+		if passed {
+			t.Error("expected false when required recipe is missing (no fallback)")
+		}
+		if failStep != "unit-test" {
+			t.Errorf("expected onFail called with step 'unit-test', got %q", failStep)
+		}
+		if !strings.Contains(failOutput, "init-justfile") {
+			t.Errorf("expected output to mention 'init-justfile', got %q", failOutput)
 		}
 	})
 

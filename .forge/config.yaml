@@ -1,6 +1,6 @@
 version: "1"
 auto:
-  e2eTest:
+  test:
     quick: false
     full: true
   consolidateSpecs:

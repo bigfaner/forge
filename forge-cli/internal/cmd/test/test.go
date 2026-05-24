@@ -31,9 +31,9 @@ Subcommands:
 var testRunJourneyCmd = &cobra.Command{
 	Use:   "run-journey <journey-name>",
 	Short: "Run a single journey in isolated temp directory",
-	Long: `Run a single journey's e2e tests in an isolated temporary directory.
+	Long: `Run a single journey's advanced tests in an isolated temporary directory.
 
-Runs just e2e-test from the project root with the journey name as filter.
+Runs just test from the project root with the journey name as filter.
 The temp directory is cleaned up after execution, regardless of success or failure.
 
 The journey name is used as part of the temp directory path for traceability.

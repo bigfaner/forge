@@ -153,13 +153,37 @@ func TestRunProjectTests(t *testing.T) {
 		_ = out // just verify no panic
 	})
 
-	t.Run("justfile branch", func(t *testing.T) {
+	t.Run("justfile unit-test branch", func(t *testing.T) {
+		dir := t.TempDir()
+		_ = os.WriteFile(filepath.Join(dir, "justfile"), []byte("unit-test:\n    echo just-unit-test-output\n"), 0644)
+		out := captureStderr(func() {
+			RunProjectTests(dir)
+		})
+		if !strings.Contains(out, "just-unit-test-output") {
+			t.Errorf("expected unit-test output, got: %s", out)
+		}
+	})
+
+	t.Run("justfile unit-test preferred over test", func(t *testing.T) {
+		dir := t.TempDir()
+		_ = os.WriteFile(filepath.Join(dir, "justfile"), []byte("unit-test:\n    echo unit-test-hit\ntest:\n    echo test-hit\n"), 0644)
+		out := captureStderr(func() {
+			RunProjectTests(dir)
+		})
+		if !strings.Contains(out, "unit-test-hit") {
+			t.Errorf("expected unit-test to be preferred, got: %s", out)
+		}
+	})
+
+	t.Run("justfile test fallback when no unit-test", func(t *testing.T) {
 		dir := t.TempDir()
 		_ = os.WriteFile(filepath.Join(dir, "justfile"), []byte("test:\n    echo just-test-output\n"), 0644)
 		out := captureStderr(func() {
 			RunProjectTests(dir)
 		})
-		_ = out // just verify no panic
+		if !strings.Contains(out, "just-test-output") {
+			t.Errorf("expected test fallback output, got: %s", out)
+		}
 	})
 
 	t.Run("Makefile branch", func(t *testing.T) {

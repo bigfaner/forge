@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -46,21 +45,15 @@ func hasNpmTestScript(projectRoot string) bool {
 	return ok
 }
 
-// hasMakeTarget checks if a Makefile target exists using dry-run.
-func hasMakeTarget(projectRoot, target string) bool {
-	c := exec.Command("make", "-n", target)
-	c.Dir = projectRoot
-	return c.Run() == nil
-}
-
 // RunProjectTests detects and runs the project's test command.
-// Falls through: just -> make -> go -> npm -> pytest -> warning.
+// Probe chain: just unit-test -> just test -> go test -> npm -> pytest -> warning.
+// Retains fallback mechanism: first matching recipe wins.
 func RunProjectTests(projectRoot string) (string, bool) {
 	switch {
+	case just.HasJustfile(projectRoot) && just.HasRecipe(projectRoot, "unit-test"):
+		return just.RunCapture(projectRoot, "just", "unit-test")
 	case just.HasJustfile(projectRoot) && just.HasRecipe(projectRoot, "test"):
 		return just.RunCapture(projectRoot, "just", "test")
-	case just.FileExists(filepath.Join(projectRoot, "Makefile")) && hasMakeTarget(projectRoot, "test"):
-		return just.RunCapture(projectRoot, "make", "test")
 	case just.FileExists(filepath.Join(projectRoot, "go.mod")):
 		return just.RunCapture(projectRoot, "go", "test", "./...")
 	case just.FileExists(filepath.Join(projectRoot, "package.json")) && hasNpmTestScript(projectRoot):
@@ -68,7 +61,7 @@ func RunProjectTests(projectRoot string) (string, bool) {
 	case just.FileExists(filepath.Join(projectRoot, "pytest.ini")) || just.FileExists(filepath.Join(projectRoot, "pyproject.toml")):
 		return just.RunCapture(projectRoot, "pytest")
 	default:
-		fmt.Println("WARNING: No test command found. Ensure justfile has a 'test' recipe, or add go.mod/package.json/pytest.ini.")
+		fmt.Println("WARNING: No test command found. Ensure justfile has a 'unit-test' recipe, or add go.mod/package.json/pytest.ini.")
 		return "", true
 	}
 }

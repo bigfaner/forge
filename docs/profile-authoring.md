@@ -7,7 +7,7 @@ How to create a new test language strategy for Forge's pluggable test strategy s
 ```
 forge-cli/pkg/testing/languages/<key>/
   generate.md            # gen-test-scripts language strategy
-  run.md                 # run-e2e-tests language strategy
+  run.md                 # run-tests language strategy
   graduate.md            # graduate-tests language strategy
   justfile-recipes       # Justfile recipe bodies for init-justfile
   templates/             # Code templates (spec files, helpers, config)
@@ -20,7 +20,7 @@ forge-cli/pkg/testing/languages/<key>/
 | `generate.md` | AI-readable prompt for test script generation (framework-specific rules) |
 | `run.md` | AI-readable prompt for test execution and result parsing |
 | `graduate.md` | AI-readable prompt for test migration from staging to regression |
-| `justfile-recipes` | Justfile recipe bodies for `e2e-test`, `e2e-setup`, `e2e-verify` |
+| `justfile-recipes` | Justfile recipe bodies for `unit-test`, `test`, `test-setup`, `probe` |
 
 ## Language Key Convention
 
@@ -85,11 +85,12 @@ Each strategy file (`generate.md`, `run.md`, `graduate.md`) is an AI-readable pr
 
 ## Justfile Recipes
 
-Must define three recipes:
+Must define four recipes:
 
-1. **e2e-test** -- Run tests, support `--feature <slug>` for single-feature runs
-2. **e2e-setup** -- Install dependencies (idempotent)
-3. **e2e-verify** -- Check for unresolved `// VERIFY:` markers (use language's file extension)
+1. **unit-test** -- Language-level unit tests (fast, per-task gate)
+2. **test** -- Surface-level advanced tests; optional `journey` parameter for single-journey runs
+3. **test-setup** -- Install dependencies and prepare environment (idempotent)
+4. **probe** -- Service health check
 
 ## Detection Registration
 
@@ -115,4 +116,4 @@ No schema migration, no manifest files, no configuration changes needed.
 
 1. Verify strategy files are non-empty and cover required sections
 2. Run the full pipeline on a real project of the target type
-3. Verify gen-test-scripts -> run-e2e-tests -> graduate-tests chain works
+3. Verify gen-test-scripts -> run-tests -> graduate-tests chain works

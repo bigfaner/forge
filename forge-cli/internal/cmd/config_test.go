@@ -45,7 +45,7 @@ func TestConfigGetCommand(t *testing.T) {
 	})
 
 	t.Run("auto.gitPush returns false when absent", func(t *testing.T) {
-		dir := setupConfig(t, "auto:\n  e2eTest:\n    quick: true\n")
+		dir := setupConfig(t, "auto:\n  test:\n    quick: true\n")
 
 		var stdout bytes.Buffer
 		rootCmd.SetOut(&stdout)

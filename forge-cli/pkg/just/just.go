@@ -17,19 +17,33 @@ type GateRecipe struct {
 	Blocking bool   // if true, failure halts the sequence
 }
 
-// DefaultGateSequence returns the standard quality gate: compile → fmt → lint → test.
-func DefaultGateSequence() []GateRecipe {
+// FullGateSequence returns the full quality gate: compile → fmt → lint → unit-test → test → probe.
+// Used by all-completed hook for complete project validation.
+func FullGateSequence() []GateRecipe {
 	return []GateRecipe{
 		{Name: "compile", Optional: false, Blocking: true},
 		{Name: "fmt", Optional: true, Blocking: false},
 		{Name: "lint", Optional: true, Blocking: true},
+		{Name: "unit-test", Optional: false, Blocking: true},
 		{Name: "test", Optional: false, Blocking: true},
+		{Name: "probe", Optional: true, Blocking: false},
 	}
 }
 
-// LintGateSequence returns compile → fmt → lint (without test).
-// Used by all-completed hook where test runs independently.
-func LintGateSequence() []GateRecipe {
+// UnitGateSequence returns compile → fmt → lint → unit-test.
+// Used by breaking tasks on submit for fast feedback.
+func UnitGateSequence() []GateRecipe {
+	return []GateRecipe{
+		{Name: "compile", Optional: false, Blocking: true},
+		{Name: "fmt", Optional: true, Blocking: false},
+		{Name: "lint", Optional: true, Blocking: true},
+		{Name: "unit-test", Optional: false, Blocking: true},
+	}
+}
+
+// NonBreakingGateSequence returns compile → fmt → lint (without tests).
+// Used by non-breaking tasks on submit.
+func NonBreakingGateSequence() []GateRecipe {
 	return []GateRecipe{
 		{Name: "compile", Optional: false, Blocking: true},
 		{Name: "fmt", Optional: true, Blocking: false},
@@ -46,6 +60,13 @@ func HasJustfile(dir string) bool {
 // HasRecipe checks if a recipe exists in the justfile using dry-run.
 func HasRecipe(dir, recipe string) bool {
 	c := exec.Command("just", "--dry-run", recipe)
+	c.Dir = dir
+	return c.Run() == nil
+}
+
+// hasRecipeWithArg checks if a recipe exists with an argument using dry-run.
+func hasRecipeWithArg(dir, recipe, arg string) bool {
+	c := exec.Command("just", "--dry-run", recipe, arg)
 	c.Dir = dir
 	return c.Run() == nil
 }
@@ -91,12 +112,22 @@ func RunGate(projectRoot, scope string, steps []GateRecipe, onFail func(step, ou
 	resolvedScope := ResolveScope(projectRoot, scope)
 
 	for _, step := range steps {
-		if !HasRecipe(projectRoot, step.Name) {
+		recipeExists := HasRecipe(projectRoot, step.Name)
+		// For scoped recipes, also probe with the resolved scope.
+		if !recipeExists && resolvedScope != "" {
+			recipeExists = hasRecipeWithArg(projectRoot, step.Name, resolvedScope)
+		}
+		if !recipeExists {
 			if step.Optional {
 				continue
 			}
-			fmt.Fprintf(os.Stderr, "WARNING: required recipe %q not found in justfile; skipping quality gate step\n", step.Name)
-			continue
+			// Required recipe missing — no fallback, report error with init-justfile hint.
+			output := fmt.Sprintf("required recipe %q not found in justfile. Run `just init-justfile` to generate standard recipes.", step.Name)
+			fmt.Fprintf(os.Stderr, "ERROR: %s\n", output)
+			if step.Blocking && onFail != nil {
+				onFail(step.Name, output)
+			}
+			return false
 		}
 
 		args := []string{step.Name}

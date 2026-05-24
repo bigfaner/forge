@@ -93,7 +93,7 @@ Execute the skeleton tests in the temporary directory:
 
 ```bash
 # Framework-specific test runner, scoped to temp directory
-just test <skeleton-dir>  # or Convention-specific runner command
+just unit-test <skeleton-dir>  # or Convention-specific runner command
 ```
 
 Capture for each skeleton test:

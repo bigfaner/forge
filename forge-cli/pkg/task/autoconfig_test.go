@@ -8,9 +8,9 @@ import (
 
 // --- AutoConfig gating tests ---
 
-func TestGetBreakdownTestTasks_E2eTestFullFalse(t *testing.T) {
+func TestGetBreakdownTestTasks_TestFullFalse(t *testing.T) {
 	auto := forgeconfig.AutoConfigDefaults()
-	auto.E2eTest.Full = false
+	auto.Test.Full = false
 
 	tasks := GetBreakdownTestTasks([]string{"cli"}, auto)
 
@@ -18,7 +18,7 @@ func TestGetBreakdownTestTasks_E2eTestFullFalse(t *testing.T) {
 	for _, task := range tasks {
 		if task.ID == "T-test-gen-scripts-cli" ||
 			task.ID == "T-test-run" || task.ID == "T-test-verify-regression" {
-			t.Errorf("e2e test task %s should not be generated when e2eTest.full=false", task.ID)
+			t.Errorf("e2e test task %s should not be generated when test.full=false", task.ID)
 		}
 	}
 }
@@ -69,9 +69,9 @@ func TestGetBreakdownTestTasks_CleanCodeFullFalse(t *testing.T) {
 	}
 }
 
-func TestGetQuickTestTasks_E2eTestQuickFalse(t *testing.T) {
+func TestGetQuickTestTasks_TestQuickFalse(t *testing.T) {
 	auto := forgeconfig.AutoConfigDefaults()
-	auto.E2eTest.Quick = false
+	auto.Test.Quick = false
 
 	tasks := GetQuickTestTasks([]string{"cli"}, auto)
 
@@ -82,7 +82,7 @@ func TestGetQuickTestTasks_E2eTestQuickFalse(t *testing.T) {
 			task.ID == "T-test-gen-scripts-cli" ||
 			task.ID == "T-test-run" ||
 			task.ID == "T-test-verify-regression" {
-			t.Errorf("e2e test task %s should not be generated when e2eTest.quick=false", task.ID)
+			t.Errorf("e2e test task %s should not be generated when test.quick=false", task.ID)
 		}
 	}
 }
@@ -156,7 +156,7 @@ func TestGetQuickTestTasks_DefaultsProduceNoE2ETasks(t *testing.T) {
 	auto := forgeconfig.AutoConfigDefaults()
 	tasks := GetQuickTestTasks([]string{"cli"}, auto)
 
-	// Defaults: e2eTest.quick=false, consolidateSpecs.quick=true -> only spec drift task
+	// Defaults: test.quick=false, consolidateSpecs.quick=true -> only spec drift task
 	if len(tasks) != 1 {
 		t.Fatalf("expected 1 quick task (spec drift) with defaults, got %d", len(tasks))
 	}
@@ -187,7 +187,7 @@ func TestGetBreakdownTestTasks_CleanCodeDependsOnVerifyRegression(t *testing.T) 
 func TestGetQuickTestTasks_CleanCodeNoE2e(t *testing.T) {
 	// When e2e tests and consolidate specs are disabled but clean code is enabled
 	auto := forgeconfig.AutoConfigDefaults()
-	auto.E2eTest.Quick = false
+	auto.Test.Quick = false
 	auto.ConsolidateSpecs.Quick = false
 	auto.CleanCode.Quick = true
 
@@ -205,7 +205,7 @@ func TestGetQuickTestTasks_CleanCodeNoE2e(t *testing.T) {
 func TestGetBreakdownTestTasks_NoE2eWithCleanCode(t *testing.T) {
 	// When e2e tests and consolidate specs are disabled but clean code is enabled
 	auto := forgeconfig.AutoConfigDefaults()
-	auto.E2eTest.Full = false
+	auto.Test.Full = false
 	auto.ConsolidateSpecs.Full = false
 	auto.CleanCode.Full = true
 
@@ -223,7 +223,7 @@ func TestGetBreakdownTestTasks_NoE2eWithCleanCode(t *testing.T) {
 func TestGetBreakdownTestTasks_OnlyConsolidateSpecs(t *testing.T) {
 	// When e2e tests are disabled but consolidate specs is enabled
 	auto := forgeconfig.AutoConfigDefaults()
-	auto.E2eTest.Full = false
+	auto.Test.Full = false
 	auto.ConsolidateSpecs.Full = true
 
 	tasks := GetBreakdownTestTasks([]string{"cli"}, auto)
@@ -239,7 +239,7 @@ func TestGetBreakdownTestTasks_OnlyConsolidateSpecs(t *testing.T) {
 
 func TestGetQuickTestTasks_OnlyConsolidateSpecs(t *testing.T) {
 	auto := forgeconfig.AutoConfigDefaults()
-	auto.E2eTest.Quick = false
+	auto.Test.Quick = false
 	auto.ConsolidateSpecs.Quick = true
 
 	tasks := GetQuickTestTasks([]string{"cli"}, auto)
@@ -314,7 +314,7 @@ func TestInferType_TCleanCode1(t *testing.T) {
 
 func TestGetBreakdownTestTasks_AllAutoOff(t *testing.T) {
 	auto := forgeconfig.AutoConfig{
-		E2eTest:          forgeconfig.ModeToggle{Quick: false, Full: false},
+		Test:             forgeconfig.ModeToggle{Quick: false, Full: false},
 		ConsolidateSpecs: forgeconfig.ModeToggle{Quick: false, Full: false},
 		CleanCode:        forgeconfig.ModeToggle{Quick: false, Full: false},
 	}
@@ -327,7 +327,7 @@ func TestGetBreakdownTestTasks_AllAutoOff(t *testing.T) {
 
 func TestGetQuickTestTasks_AllAutoOff(t *testing.T) {
 	auto := forgeconfig.AutoConfig{
-		E2eTest:          forgeconfig.ModeToggle{Quick: false, Full: false},
+		Test:             forgeconfig.ModeToggle{Quick: false, Full: false},
 		ConsolidateSpecs: forgeconfig.ModeToggle{Quick: false, Full: false},
 		CleanCode:        forgeconfig.ModeToggle{Quick: false, Full: false},
 	}
@@ -342,7 +342,7 @@ func TestGetQuickTestTasks_AllAutoOff(t *testing.T) {
 
 func TestGetQuickTestTasks_CleanCodeAndSpecsNoE2e(t *testing.T) {
 	auto := forgeconfig.AutoConfigDefaults()
-	auto.E2eTest.Quick = false
+	auto.Test.Quick = false
 	auto.CleanCode.Quick = true
 	auto.ConsolidateSpecs.Quick = true
 

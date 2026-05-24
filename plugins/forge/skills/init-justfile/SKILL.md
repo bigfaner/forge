@@ -44,27 +44,37 @@ If version < 1.50.0: `cargo install just`
 | `build`        | No       | Full compile and package                                                                          |
 | `run`          | No       | Start the service                                                                                 |
 | `dev`          | No       | Hot-reload development mode                                                                       |
-| `test`         | Yes      | Unit + integration tests                                                                          |
-| `e2e-test`     | No       | E2E tests; `--feature <slug>` for single feature                                                  |
+| `unit-test`    | Yes      | Language-level unit tests (fast feedback, per-task submit gate)                                   |
+| `test`         | No       | Surface-level advanced tests (e2e/integration); optional `journey` parameter for single journey   |
+| `test-setup`   | No       | Install test dependencies and prepare environment (idempotent)                                    |
+| `probe`        | No       | Service health check                                                                              |
 | `lint`         | No       | Static analysis                                                                                   |
 | `fmt`          | No       | Auto-format code                                                                                  |
 | `check`        | No       | lint + compile (CI gate)                                                                          |
 | `clean`        | No       | Remove build artifacts                                                                            |
 | `install`      | No       | Install dependencies (idempotent)                                                                 |
 | `ci`           | No       | Full CI pipeline                                                                                  |
-| `e2e-setup`    | No       | Install e2e dependencies (idempotent)                                                             |
-| `e2e-compile`  | No       | Compile-check e2e tests without running                                                           |
-| `e2e-verify`   | No       | Check for unresolved `// VERIFY:` markers                                                         |
+
+### Recipe Parameter Signatures
+
+| Recipe | Signature | Description |
+|--------|-----------|-------------|
+| `unit-test` | `just unit-test` (no parameters) | Language-level unit tests, no filtering needed |
+| `test` | `just test [journey]` | Optional `journey` parameter: run all advanced tests when omitted; run single journey when provided |
+| `test-setup` | `just test-setup` (no parameters) | Test environment preparation |
+| `probe` | `just probe` (no parameters) | Service health check |
+
+justfile template must define `test` with optional first parameter: `test journey=''`. When `journey` is non-empty, pass it as a filter to the underlying test framework.
 
 ## Process Flow
 
 ```
-0. Load Convention → 1. Detect project type + entry points → 2. Check existing justfile → 3. Generate e2e recipes + assemble and write → 4. Verify and self-correct → 5. Output confirmation
+0. Load Convention → 1. Detect project type + entry points → 2. Check existing justfile → 3. Generate test recipes + assemble and write → 4. Verify and self-correct → 5. Output confirmation
 ```
 
 ### Step 0: Load Convention
 
-Load test framework knowledge from Convention files. This provides the information needed to generate e2e recipes in Step 3.
+Load test framework knowledge from Convention files. This provides the information needed to generate `unit-test` and `test` recipes in Step 3.
 
 1. List files in `docs/conventions/` directory.
 2. For each file with `domains` frontmatter containing `testing`, read the file.
@@ -79,7 +89,7 @@ Load test framework knowledge from Convention files. This provides the informati
 6. Also extract the **Result Format** section for output flags and format type.
 
 <HARD-RULE>
-Do NOT use framework-specific recipe templates. Generate e2e recipes from Convention content and LLM knowledge of the framework. The LLM constructs recipes based on the Convention description, not from hardcoded templates.
+Do NOT use framework-specific recipe templates. Generate `unit-test` and `test` recipes from Convention content and LLM knowledge of the framework. The LLM constructs recipes based on the Convention description, not from hardcoded templates.
 </HARD-RULE>
 
 **If no Convention files found** (cold start):
@@ -115,12 +125,12 @@ ls justfile Justfile 2>/dev/null
 ```
 
 - If `justfile` or `Justfile` already exists:
-  - Check if it already contains `e2e-compile`, `e2e-test`, and `e2e-setup` recipes:
+  - Check if it already contains `unit-test`, `test`, and `test-setup` recipes:
     ```bash
-    just --list 2>/dev/null | grep -E 'e2e-compile|e2e-test|e2e-setup'
+    just --list 2>/dev/null | grep -E 'unit-test|test|test-setup'
     ```
-  - **If all three e2e recipes exist**: Output "justfile already contains e2e recipes (e2e-compile, e2e-test, e2e-setup). Skipping e2e recipe generation." Proceed to Step 4 for verification only.
-  - **If some e2e recipes are missing**: Proceed to Step 3 to append only the missing recipes.
+  - **If all three recipes exist**: Output "justfile already contains test recipes (unit-test, test, test-setup). Skipping test recipe generation." Proceed to Step 4 for verification only.
+  - **If some recipes are missing**: Proceed to Step 3 to append only the missing recipes.
   - Check for boundary markers (`# --- forge standard recipes ---` / `# --- end forge standard recipes ---`).
   - **If boundary markers exist**: proceed to Step 3 (boundary marker merge).
   - **If boundary markers do NOT exist** (user's justfile has no forge markers):
@@ -128,52 +138,65 @@ ls justfile Justfile 2>/dev/null
     - If `--force` flag was NOT provided: prompt the user: "A justfile already exists without forge markers. Overwrite? (y/n)". If user declines, abort without modifying the file.
 - If no justfile exists: proceed to Step 3 (create new file).
 
-### Step 3: Generate e2e Recipes and Assemble Justfile
+### Step 3: Generate Test Recipes and Assemble Justfile
 
-This step generates e2e-compile, e2e-test, and e2e-setup recipes from Convention knowledge and LLM understanding of the detected framework.
+This step generates `unit-test`, `test`, `test-setup`, and `probe` recipes from Convention knowledge and LLM understanding of the detected framework.
 
-#### 3a. Generate e2e recipes from Convention and Config
+#### 3a. Generate test recipes from Convention and Config
 
 Using the Convention Framework, Tags, and Result Format sections loaded in Step 0, plus execution commands from Config:
 
-**e2e-compile recipe**: Generate a recipe that compiles/checks e2e tests without running them. The recipe body is derived from the Convention's test runner and build tag info:
+**unit-test recipe**: Generate a language-level unit test recipe. The recipe body is derived from Convention's test runner and language-specific patterns:
 
-- Convention provides test runner (e.g., `go test`) and build tag (e.g., `//go:build e2e`) -> construct compile-check command (e.g., `go test -c ./tests/e2e/... -tags=e2e -o /dev/null` or `go vet -tags=e2e ./tests/e2e/...`)
-- Convention provides file pattern and test runner (e.g., `vitest run`) -> construct type-check command (e.g., `npx tsc --noEmit` or `vitest run --passWithNoTests --run false`)
+| Language | `unit-test` recipe body |
+| -------- | ----------------------- |
+| Go       | `go test ./...`         |
+| Rust     | `cargo test`            |
+| Python   | `pytest`                |
+| Node     | `npm test`              |
 
-**e2e-test recipe**: Generate a recipe that runs e2e tests. The recipe body is derived from Config `test.execution.run`:
+- If Convention provides a specific test runner and file pattern, construct the appropriate command.
+- The `unit-test` recipe takes no parameters: `just unit-test`.
+
+**test recipe**: Generate a surface-level advanced test recipe. The recipe body is derived from Config `test.execution.run`:
 
 1. Read `.forge/config.yaml` and look for `test.execution.run` field.
 2. If Config provides the execution command (e.g., `go test ./tests/e2e/... -v -tags=e2e -json`), use it as the recipe body.
 3. If Config is missing or `test.execution.run` is absent, fall back to constructing the command from Convention's test runner + Result Format output flags (e.g., `vitest run --reporter=json`).
 4. If both Config and Convention are absent (cold start), prompt the user: "No execution command configured. Add `test.execution.run` to `.forge/config.yaml` or re-run after creating a Convention file."
+5. The `test` recipe must accept an optional `journey` parameter: `test journey=''`. When `journey` is non-empty, pass it as a filter to the underlying test framework.
 
-**e2e-setup recipe**: Generate a recipe that installs e2e test dependencies:
+**test-setup recipe**: Generate a recipe that installs test dependencies and prepares the environment:
 
 - Convention indicates Go -> `go mod download`
 - Convention indicates Node/Vitest -> `npm install` or `npx playwright install`
 - Convention indicates Python -> `pip install -e ".[test]"` or `pip install pytest`
 - Multiple frameworks in mixed project -> combine setup steps
 
-**If no Convention was loaded** (cold start): LLM generates e2e recipes based on file signals detected in Step 1:
+**probe recipe** (optional): Generate a service health check recipe if the project has a dev server or API:
 
-- `go.mod` detected -> generate Go e2e recipes using `go test` with `-tags=e2e`
-- `package.json` detected -> generate Node e2e recipes using `npx vitest run` or appropriate test runner
-- `Cargo.toml` detected -> generate Rust e2e recipes using `cargo test`
-- `pyproject.toml` detected -> generate Python e2e recipes using `pytest`
+- Convention indicates API/HTTP server -> `curl -sf http://localhost:{{port}}/health`
+- Convention indicates CLI only -> skip probe recipe (not applicable)
+
+**If no Convention was loaded** (cold start): LLM generates recipes based on file signals detected in Step 1:
+
+- `go.mod` detected -> generate Go recipes: `unit-test` via `go test ./...`, `test` via `go test ./tests/e2e/... -v -tags=e2e -json`
+- `package.json` detected -> generate Node recipes: `unit-test` via `npm test`, `test` via `npx vitest run`
+- `Cargo.toml` detected -> generate Rust recipes: `unit-test` via `cargo test`, `test` via `cargo test --test integration`
+- `pyproject.toml` detected -> generate Python recipes: `unit-test` via `pytest`, `test` via `pytest tests/e2e/`
 
 The LLM uses conservative strategies for cold start recipes (most common patterns per language).
 
-#### 3b. Generate non-e2e recipes
+#### 3b. Generate non-test recipes
 
-Generate standard project recipes (compile, build, test, run, dev, lint, fmt, check, clean, install, ci) based on detected language and project type from Step 1. The LLM constructs these from its knowledge of common tooling per language:
+Generate standard project recipes (compile, build, run, dev, lint, fmt, check, clean, install, ci) based on detected language and project type from Step 1. The LLM constructs these from its knowledge of common tooling per language:
 
-| Language | compile          | test            | lint                   | fmt               |
-| -------- | ---------------- | --------------- | ---------------------- | ----------------- |
-| Go       | `go vet ./...`   | `go test ./...` | `golangci-lint run ./...` | `gofmt -w .`      |
-| Rust     | `cargo check`    | `cargo test`    | `cargo clippy -- -D warnings` | `cargo fmt` |
-| Python   | `python -m py_compile src/` | `pytest` | `ruff check .` | `ruff format .` |
-| Node     | `npx tsc --noEmit` | `npm test`   | `npx eslint .`         | `npx prettier --write .` |
+| Language | compile          | lint                   | fmt               |
+| -------- | ---------------- | ---------------------- | ----------------- |
+| Go       | `go vet ./...`   | `golangci-lint run ./...` | `gofmt -w .`      |
+| Rust     | `cargo check`    | `cargo clippy -- -D warnings` | `cargo fmt` |
+| Python   | `python -m py_compile src/` | `ruff check .` | `ruff format .` |
+| Node     | `npx tsc --noEmit` | `npx eslint .`         | `npx prettier --write .` |
 
 For **mixed** projects, generate recipes with scope parameter:
 
@@ -207,7 +230,7 @@ For **mixed** projects, replace `FRONTEND_DIR`, `BACKEND_DIR`, and all `BACKEND_
 
 When markers exist (`# --- forge standard recipes ---` / `# --- end forge standard recipes ---`), replace everything between them (inclusive) with the new recipes, preserving user recipes outside. Otherwise write the full template as a new file.
 
-If justfile exists and is missing only some e2e recipes: append only the missing recipes without touching existing content.
+If justfile exists and is missing only some recipes: append only the missing recipes without touching existing content.
 
 ### Step 4: Verify and Self-Correct
 
@@ -221,15 +244,15 @@ Run each recipe with `--dry-run` to verify recipe syntax, variable expansion, an
 just --list
 just --dry-run compile
 just --dry-run build
+just --dry-run unit-test
 just --dry-run test
+just --dry-run test-setup
 just --dry-run run
 just --dry-run dev
 just --dry-run install
 just --dry-run lint
 just --dry-run fmt
 just --dry-run check
-just --dry-run e2e-setup
-just --dry-run e2e-compile
 ```
 
 For mixed projects, also verify `--dry-run compile` and `--dry-run run` with `backend`/`frontend` scope arguments.
@@ -244,9 +267,9 @@ Execute each recipe for real to catch runtime errors. Recipes are classified by 
 | ----------------------------------------------------- | -------------------------- | ----------------------------------------------------------------------------------------- |
 | **Safe** (fast, no side effects)                      | `compile`, `lint`, `check` | Execute directly                                                                          |
 | **Destructive** (modifies files or creates artifacts) | `build`, `fmt`, `clean`    | Execute directly (artifacts can be cleaned; fmt changes are welcome)                      |
-| **Idempotent** (installs dependencies)                | `install`, `e2e-setup`     | Execute directly                                                                          |
+| **Idempotent** (installs dependencies)                | `install`, `test-setup`    | Execute directly                                                                          |
 | **Long-running** (starts servers)                     | `run`, `dev`               | Execute with timeout (10s), kill after timeout -- success = process still alive at timeout |
-| **Expensive** (runs full test suite)                  | `test`, `e2e-test`         | Skip actual execution; verified by `--dry-run` only                                       |
+| **Expensive** (runs full test suite)                  | `unit-test`, `test`        | Skip actual execution; verified by `--dry-run` only                                       |
 
 For long-running recipes (`run`, `dev`): execute via `timeout 10 just <recipe> 2>&1 || true`. A crash before timeout ("missing script", "can't load package") is a runtime failure.
 
@@ -267,10 +290,9 @@ After all recipes have been verified (or corrected):
 Verification results:
   [ok] compile         -> go vet ./... (executed)
   [ok] build           -> go build ./... (executed)
-  [ok] test            -> go test ./... (dry-run only)
-  [ok] e2e-compile     -> go test -c ./tests/e2e/... -tags=e2e -o /dev/null (dry-run only)
-  [ok] e2e-test        -> go test ./tests/e2e/... -v -tags=e2e -json (dry-run only)
-  [ok] e2e-setup       -> go mod download (executed)
+  [ok] unit-test       -> go test ./... (dry-run only)
+  [ok] test            -> go test ./tests/e2e/... -v -tags=e2e -json (dry-run only)
+  [ok] test-setup      -> go mod download (executed)
   [fix] run            -> FIXED: updated entry point (executed, self-corrected)
   [ok] dev             -> go run cmd/server/main.go (executed, 10s timeout)
   [ok] install         -> go mod download (executed)
@@ -286,16 +308,15 @@ Created justfile with standard forge targets (Go project)
 
 Targets:
   just compile                    -> go vet ./...
-  just test                       -> go test ./...
-  just e2e-compile                -> go test -c ./tests/e2e/... -tags=e2e -o /dev/null
-  just e2e-test                   -> go test ./tests/e2e/... -v -tags=e2e -json
-  just e2e-test --feature <slug>  -> feature tests in tests/e2e/features/<slug>/
-  just e2e-setup                  -> go mod download
+  just unit-test                  -> go test ./...
+  just test                       -> go test ./tests/e2e/... -v -tags=e2e -json
+  just test <journey>             -> run single journey's advanced tests
+  just test-setup                 -> go mod download
   ... (all standard targets listed with resolved commands)
 
 Convention: docs/conventions/testing/go.md (Go testing package + testify/assert)
 Edit justfile to customize commands for your project.
-forge quality-gate will now use `just test` automatically.
+forge quality-gate will now use `just unit-test` for per-task gates.
 ```
 
 If no Convention was used:
@@ -312,12 +333,13 @@ Run `/forge:test-guide` to create a Convention file for consistent future genera
 
 ## Notes
 
-- **just >= 1.50.0**: `[arg("feature", long)]` generates `--feature <value>` named option syntax; callers (CI, `forge quality-gate`) must pass the slug: `just e2e-test --feature <slug>`
+- **just >= 1.50.0**: supports `[arg]` named option syntax; `test` recipe uses `test journey=''` positional parameter
 - Makefile migration: preserve original command logic, adjust only format
-- **Convention-driven e2e recipes**: The e2e-compile, e2e-test, and e2e-setup recipes are generated from Convention Framework/Tags/Result Format sections. No hardcoded framework templates. The LLM constructs recipes based on Convention content.
+- **Convention-driven test recipes**: The `unit-test`, `test`, `test-setup`, and `probe` recipes are generated from Convention Framework/Tags/Result Format sections. No hardcoded framework templates. The LLM constructs recipes based on Convention content.
+- **Two-layer model**: `unit-test` is language-level (fast, per-task submit gate); `test` is surface-level (advanced tests, all-completed gate). Forge is surface-agnostic -- it does not distinguish e2e from integration tests, only calls `just test`.
 - **Cold start**: When no Convention files exist, the LLM generates recipes from common patterns for the detected language. These recipes use conservative defaults and may need manual adjustment.
-- **Targets invoked by forge skills**: `compile`, `build`, `test`, `e2e-test`, `install`, `e2e-setup`, `e2e-compile`, `e2e-verify`. The remaining targets (`run`, `dev`, `lint`, `fmt`, `check`, `clean`, `ci`) are for manual use and are not called by any skill.
-- **Idempotency**: `e2e-setup` and `install` are designed to be idempotent (safe to run multiple times). Other recipes (`build`, `compile`, `test`) are not -- they always re-execute.
+- **Targets invoked by forge skills**: `compile`, `build`, `unit-test`, `test`, `install`, `test-setup`, `probe`. The remaining targets (`run`, `dev`, `lint`, `fmt`, `check`, `clean`, `ci`) are for manual use and are not called by any skill.
+- **Idempotency**: `test-setup` and `install` are designed to be idempotent (safe to run multiple times). Other recipes (`build`, `compile`, `unit-test`, `test`) are not -- they always re-execute.
 - **Mixed project scope**: forge skills resolve scope from `forge task claim` output or `process/state.json` and pass it to `just <verb>`. Pass `just compile frontend` or `just compile backend` manually to target a single side outside of a task context.
 
 <EXTREMELY-IMPORTANT>
@@ -325,5 +347,5 @@ Run `/forge:test-guide` to create a Convention file for consistent future genera
 - If an existing justfile lacks forge boundary markers and `--force` is not set, you MUST prompt the user before overwriting. Never silently destroy user customizations.
 - Only the section between `# --- forge standard recipes ---` / `# --- end forge standard recipes ---` markers may be replaced. Recipes outside markers must be preserved verbatim.
 - After writing, you MUST run the verification steps (dry-run + actual execution) and report all results.
-- Do NOT use framework-specific recipe templates. Generate e2e recipes from Convention content and LLM knowledge only.
+- Do NOT use framework-specific recipe templates. Generate test recipes from Convention content and LLM knowledge only.
 </EXTREMELY-IMPORTANT>
