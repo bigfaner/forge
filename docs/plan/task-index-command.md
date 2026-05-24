@@ -161,7 +161,7 @@ Breakdown 模式：
 
 按 profile 展开：
   T-test-2<L>  gen-test-scripts (profile-N)   → L = a,b,c...
-  T-test-3<L>  run-e2e-tests (profile-N)
+  T-test-3<L>  run-tests (profile-N)
   T-test-4<L>  graduate-tests (profile-N)
 ```
 
@@ -170,7 +170,7 @@ Quick 模式：
 按 profile 展开：
   T-quick-1<L>  gen-test-cases (profile-N)    → L = a,b,c...
   T-quick-2<L>  gen-test-scripts (profile-N)
-  T-quick-3<L>  run-e2e-tests (profile-N)
+  T-quick-3<L>  run-tests (profile-N)
   T-quick-4<L>  graduate-tests (profile-N)
 
 共享任务：
@@ -271,7 +271,7 @@ Flags: `--feature` (required), `--no-test`, `--test-profiles`
 - `breakdown-tasks` — 移除 Step 5（手拼 index.json），改为调用 `task index`
 - `quick-tasks` — 同上
 - `gen-test-scripts` — 读策略文件改为 `task profile get <name> --generate`
-- `run-e2e-tests` — 读策略文件改为 `task profile get <name> --run`
+- `run-tests` — 读策略文件改为 `task profile get <name> --run`
 - `graduate-tests` — 读策略文件改为 `task profile get <name> --graduate`
 - `init-justfile` — 读 justfile-recipes 改为 `task profile get <name> --justfile`
 - `tech-design` — profile 选择步骤调整

@@ -217,12 +217,24 @@ Step 3: 写入 + 报告变更
 
 ### 验证序列
 
+Forge 使用三种 Gate Sequence，根据任务类型和触发场景选择：
+
+| Gate Sequence | Steps | 适用场景 |
+|---|---|---|
+| **FullGateSequence** | `compile → fmt → lint → unit-test → test → probe` | all-completed hook（项目级全量验证） |
+| **UnitGateSequence** | `compile → fmt → lint → unit-test` | Breaking 任务 submit gate（快速反馈） |
+| **NonBreakingGateSequence** | `compile → fmt → lint` | Non-breaking 任务 submit gate（仅静态检查） |
+
 ```
-just compile ──→ just fmt ──→ just lint ──→ just test
-     │               │            │             │
-     ↓ fail          ↓ fail       ↓ fail        ↓ fail
-  修复→重试       blocked     自修复→重试     修复→重试
-                  (工具链)     (1次机会)     (从compile重试)
+UnitGateSequence（Breaking 任务 submit）：
+just compile ──→ just fmt ──→ just lint ──→ just unit-test
+     │               │            │               │
+     ↓ fail          ↓ fail       ↓ fail          ↓ fail
+  修复→重试       blocked     自修复→重试      修复→重试
+                  (工具链)     (1次机会)       (从compile重试)
+
+FullGateSequence（all-completed hook）：
+just compile ──→ just fmt ──→ just lint ──→ just unit-test ──→ just test ──→ just probe
 ```
 
 严格顺序执行，任何一步失败则停止，不继续后续步骤。
@@ -246,21 +258,20 @@ scope = "frontend"/"backend"
 
 ## 测试生命周期
 
-三层测试架构，各有独立目的和触发时机：
+两层测试 recipe 模型，解耦语言级单元测试与 surface 级高级测试：
 
 ```
-Unit Tests ──────→ Feature E2E ──────→ Regression Suite
-(per task)         (per feature)        (project-level)
-     ↑                   ↑                     ↑
-Quality Gate        T-test-3              all-completed hook
-强制执行           gen-test-scripts       forge test promote
+unit-test (语言级) ──────→ test (Surface 级)
+(per task submit)          (all-completed hook)
+     ↑                           ↑
+UnitGateSequence          FullGateSequence
+compile→fmt→lint→unit-test  compile→fmt→lint→unit-test→test→probe
 ```
 
 | 层 | 命令 | 范围 | 触发 | 通过标准 |
 |---|---|---|---|---|
-| **Unit** | `just test [scope]` | 任务级 | 每任务 Quality Gate | 全部通过 + 覆盖率 >= 80% |
-| **Feature E2E** | `just e2e-test --feature <slug>` | 功能级 | T-test-3 | Playwright 报告全绿 |
-| **Regression** | `just e2e-test` | 项目级 | all-completed hook | 全部回归用例通过 |
+| **Unit** | `just unit-test [scope]` | 任务级 | Breaking 任务 submit gate | 全部通过 + 覆盖率 >= 80% |
+| **Advanced** | `just test [journey]` | 功能/项目级 | all-completed hook | 全部高级测试通过 |
 
 ### 测试生成管道
 
@@ -331,7 +342,7 @@ gen-journeys ──→ eval-journey ──→ gen-contracts ──→ eval-contr
 - **Breakdown 模式**：基于 `findTaskIndexByPrefix` 的 ID 查找（非硬编码索引）
 - **Quick 模式**：staged across types 策略，所有 profile type 的 gen-journeys 并行执行后汇聚到 gen-contracts
 
-### run-e2e-tests 内部流程
+### run-tests 内部流程
 
 ```
 Setup Environment → Verify Scripts (无占位符) → Run Test Specs
@@ -405,12 +416,8 @@ Hooks 在关键生命周期事件自动触发，确保状态一致性：
 当所有任务完成，Claude 停止响应时作为最终安全网触发：
 
 ```
-1. Quality Gate（项目级，无 scope）：
-   just compile → just fmt → just lint
-2. 项目级测试：
-   just test
-3. E2E 回归：
-   just e2e-setup → just probe → just e2e-test
+1. Quality Gate（FullGateSequence，项目级，无 scope）：
+   just compile → just fmt → just lint → just unit-test → just test → just probe
 ```
 
 任何一步失败都会报告问题。
