@@ -29,8 +29,6 @@ func InferType(id string) string {
 		return TypeValidationCode
 	case id == "T-validate-ux":
 		return TypeValidationUx
-	case id == "T-quick-gen-and-run", typeSuffixedID(id, "T-quick-gen-and-run"):
-		return TypeTestGenAndRun
 	case id == "T-quick-verify-regression":
 		return TypeTestVerifyRegression
 	case id == "T-quick-doc-drift":

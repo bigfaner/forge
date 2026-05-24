@@ -49,6 +49,12 @@ type RecordTemplateData struct {
 	// Gate fields (used by record-gate.md template)
 	GateChecksFormatted string
 	GatePassedFormatted string
+
+	// Eval fields (used by record-eval.md template)
+	ScoreFormatted    string
+	FindingsFormatted string
+	SeverityFormatted string
+	PassedFormatted   string
 }
 
 // NewRecordTemplateData creates a RecordTemplateData from task, record data, and started time.
@@ -105,6 +111,10 @@ func NewRecordTemplateData(t *Task, rd *RecordData, startedTime string) *RecordT
 		IssuesFoundFormatted:        FormatList(rd.IssuesFound),
 		GateChecksFormatted:         FormatList(rd.GateChecks),
 		GatePassedFormatted:         FormatBool(rd.GatePassed, "Yes", "No"),
+		ScoreFormatted:              formatScore(rd.Score),
+		FindingsFormatted:           FormatList(rd.Findings),
+		SeverityFormatted:           formatWithFallback(rd.Severity, "N/A"),
+		PassedFormatted:             FormatBool(rd.Passed, "Yes", "No"),
 	}
 }
 
@@ -165,6 +175,14 @@ func FormatBool(cond bool, trueVal, falseVal string) string {
 		return trueVal
 	}
 	return falseVal
+}
+
+// formatScore formats an eval score for display.
+func formatScore(score float64) string {
+	if score <= 0 {
+		return "N/A"
+	}
+	return fmt.Sprintf("%.0f/1000", score)
 }
 
 // FormatCoverage formats coverage value for display.
@@ -241,6 +259,8 @@ func RenderRecord(t *Task, rd *RecordData, startedTime string) string {
 		return RenderValidationRecord(t, rd, startedTime)
 	case CategoryGate:
 		return RenderGateRecord(t, rd, startedTime)
+	case CategoryEval:
+		return RenderEvalRecord(t, rd, startedTime)
 	default:
 		return RenderCodingRecord(t, rd, startedTime)
 	}
@@ -264,6 +284,11 @@ func RenderValidationRecord(t *Task, rd *RecordData, startedTime string) string 
 // RenderGateRecord renders the gate record template with the given data.
 func RenderGateRecord(t *Task, rd *RecordData, startedTime string) string {
 	return renderRecordTemplate("data/record-gate.md", t, rd, startedTime)
+}
+
+// RenderEvalRecord renders the eval record template with the given data.
+func RenderEvalRecord(t *Task, rd *RecordData, startedTime string) string {
+	return renderRecordTemplate("data/record-eval.md", t, rd, startedTime)
 }
 
 // renderRecordTemplate renders a named record template with the given data.

@@ -1,6 +1,6 @@
-# Freeform Expert Review: Pipeline Integration Stitch
+# Freeform Expert Review: Pipeline Integration Stitch (v2)
 
-**Reviewer**: Test Pipeline Architect
+**Reviewer**: Go Pipeline Integration & Type System Engineer
 **Date**: 2026-05-24
 **Document**: `docs/proposals/pipeline-integration-stitch/proposal.md`
 
@@ -10,113 +10,135 @@
 
 ### Problem Claim
 
-The proposal identifies 14 integration gaps between two previously completed proposals (`review-doc-pipeline` and `auto-gen-journeys-contracts`). Two are P0 (pipeline guaranteed failure), four are P1 (scenario-specific failure), and eight are P2 (maintenance risk). The core claim is that `prompt.go` and `autogen.go` both use hand-written maps for type-to-template-filename mapping, and new types were added to `autogen.go` but not `prompt.go`, causing runtime failures when the pipeline tries to look up prompt templates for `test.gen-journeys`, `test.gen-contracts`, `eval.journey`, and `eval.contract`.
+The proposal identifies a set of integration gaps left by the `auto-gen-journeys-contracts` proposal. These gaps are stratified into three severity tiers: P0 (4 missing prompt templates causing guaranteed pipeline failure in `Synthesize()`), P1 (eval type misclassification into `CategoryCoding`, stale quick-mode matching in `findFirstTestTaskIdx`, dependency injection order coupling in `build.go`), and P2 (comprehensive dead-code removal of `test.gen-and-run` across production code, tests, and documentation). The core thesis is that the type registration system is complete but the execution-layer scaffolding -- prompt templates, category dispatch, record rendering, and validation -- was not updated in lockstep.
 
 ### Core Technical Approach
 
-Three-pronged: (1) replace hand-written maps in `prompt.go` and `autogen.go` with naming-convention-based auto-discovery (`strings.ReplaceAll(typeName, ".", "-") + ".md"`), (2) fix category classification for `eval.*` types and update stale references in data files, (3) remove all vestiges of the deprecated `test.gen-and-run` type.
+Three workstreams executed in dependency order: (1) create 4 prompt template files under `prompt/data/` to resolve P0, (2) add `CategoryEval` with full submit-validation and record-rendering branches plus dependency injection consolidation to resolve P1, and (3) mechanically remove all `test.gen-and-run` references from production code, tests, and active documentation to resolve P2. The auto-discovery mechanism from the prior task (naming convention `strings.ReplaceAll(typeName, ".", "-") + ".md"`) is assumed to handle template-to-type mapping without manual updates.
 
 ### Assumptions
 
-1. The naming convention (`"."` -> `"-"` + `.md`) is universal across all current and future types, with exactly one exception (`code-quality.simplify` -> `clean-code.md` in prompt.go).
-2. Renaming `prompt/data/clean-code.md` to `code-quality-simplify.md` has no external consumers.
-3. The four new prompt template files can be written correctly by referencing the existing autogen.go templates.
-4. Removing `test.gen-and-run` is safe because old index.json files should be migrated, and an explicit error message is sufficient for backward compatibility.
+1. The naming convention auto-discovery (Task 1) has already eliminated the need for hand-written type-to-filename maps in `prompt.go`.
+2. The 4 new prompt templates are execution-phase prompts (agent instructions at runtime), distinct from the autogen planning-phase templates already present in `task/data/`.
+3. `eval.journey` and `eval.contract` are semantically review/assessment tasks (scoring rubrics, spawning subagents), not test-generation tasks, and therefore deserve a dedicated category.
+4. Removing `test.gen-and-run` is safe because the staged pipeline has fully replaced it; old index.json files can be handled by a migration error message.
 
 ---
 
 ## Section 2: Key Risk Identification
 
-### Auto-Discovery Fragility
+### P0 Confirmation: Prompt Templates Are Indeed Missing
 
-风险：The proposal states: "自动发现实现简单：`strings.ReplaceAll(typeName, ".", "-") + ".md"`，加上 embed.FS 的 ReadFile 验证文件存在。唯一 override 是 `clean-code.md`。"
+I verified that `forge-cli/pkg/prompt/data/` contains 19 template files. The files `test-gen-journeys.md`, `test-gen-contracts.md`, `eval-journey.md`, and `eval-contract.md` are absent. Meanwhile, the corresponding types (`TypeTestGenJourneys`, `TypeTestGenContracts`, `TypeEvalJourney`, `TypeEvalContract`) are registered in `ValidTypes` (types.go:111-118). When `Synthesize()` calls `templatePath(t.Type)` and then `templateFS.ReadFile()`, these 4 types will fail at runtime. The P0 claim is accurate.
 
-The auto-discovery mechanism replaces compile-time map key errors with a runtime file-not-found error. Today, if a developer adds a new type constant but forgets the template file, the failure mode shifts from "map lookup returns false" to "embed.FS.ReadFile returns error." Both are runtime failures in `Synthesize()`. The proposal frames this as eliminating an entire bug class, but the actual failure mode is isomorphic: one map was missed, now one file is missed. The real improvement is that the file naming convention is a single source of truth, but the claim that this is a qualitative shift from O(N) to O(1) is overstated. The developer still must create the template file; the map entry was the thing eliminated, not the template file itself.
+### Template Content Quality Gap
 
-问题：The proposal states: "约定已稳定，所有现有类型名仅含 `.` 和字母；重命名 clean-code.md 消除唯一例外". However, `code-quality.simplify` contains a hyphen in its first segment (`code-quality`). The naming convention replaces `.` with `-`, producing `code-quality-simplify.md`. This already works for `autogen.go`. But the proposal also plans to rename `prompt/data/clean-code.md` to `code-quality-simplify.md`. This rename is inside the plugin's embedded FS. If any external tool, script, or documentation references `clean-code.md` by name, this is a silent break. The proposal does not audit for external consumers of this filename.
+风险：The proposal states: "每个模板包含：任务上下文说明、输入格式（从 index.json task configuration 读取）、期望输出格式、质量标准"
 
-### eval.* Category Misclassification
+Looking at the existing prompt templates in `prompt/data/`, the execution-phase pattern is well-established: `test-gen-scripts.md`, `test-run.md`, `test-verify-regression.md` all follow a consistent structure with `TASK_ID`, `TASK_FILE`, `SCOPE` placeholders, a task-constraints section, and a numbered workflow. However, the proposal does not specify the actual content of the 4 new templates. For `test-gen-journeys.md` and `test-gen-contracts.md`, the agent needs to invoke skills (`forge:gen-journeys`, `forge:gen-contracts`) -- the proposal should specify which skills and what the Record Fields section should list. For `eval-journey.md` and `eval-contract.md`, the situation is different: these are `MainSession: true` tasks that spawn subagents. Their prompt templates must instruct the agent to use the eval rubric system, which is architecturally distinct from the standard skill-invocation pattern.
 
-风险：The proposal identifies: "`eval.` 前缀不匹配任何规则，落入 default → CategoryCoding" and plans to add `eval.` prefix to `CategoryTest`.
+问题：The proposal says: "参考现有执行阶段模板结构（code-quality-simplify.md）" in the risk mitigation table. But `code-quality-simplify.md` is a coding-category task with coverage injection and quality gate workflow -- structurally irrelevant to eval tasks. The eval templates need a fundamentally different pattern: load rubric, score artifact, iterate until threshold, write eval report. The proposal should specify the eval-specific template structure explicitly.
 
-Looking at `category.go`, the current logic is prefix-based (`strings.HasPrefix`). Adding `eval.` to `CategoryTest` means `eval.journey` and `eval.contract` would map to `CategoryTest`. But consider `renderTemplate` in `prompt.go` (line 139): it checks `task.IsTestableType(t.Type)` to decide whether to inject coverage targets. `IsTestableType` returns true only for `coding.*` and `TypeCleanCode`. Since `eval.*` would now be `CategoryTest` (not `CategoryCoding`), the coverage injection would correctly be skipped.
+### CategoryEval: Correct but Incomplete Specification
 
-However, the submit-task validation logic uses `CategoryForType` to determine what fields are required. The proposal says eval tasks would be classified as `CategoryTest`, which means they would be expected to provide test-category fields like `casesGenerated`, `scriptsCreated`, etc. But eval tasks evaluate quality (scoring rubrics), they do not generate test cases or scripts. This is a semantic mismatch: `eval.*` tasks are conceptually quality-gate tasks, not test-generation tasks.
+问题：The proposal correctly identifies that `eval.*` types fall into `CategoryCoding` via the default branch in `CategoryForType()` (category.go:30-31). I confirmed this: `CategoryForType("eval.journey")` matches no prefix case and returns `CategoryCoding`. The proposal's solution -- adding `CategoryEval = "eval"` and a `strings.HasPrefix(typ, "eval.")` branch -- is architecturally sound.
 
-问题：The proposal says: "category 影响提交验证和记录渲染" but does not detail what `CategoryTest` requires from eval tasks at submission time. The `record-format-test.md` lists fields like `casesGenerated`, `casesEvaluated`, `scriptsCreated`, `testResults` -- none of which are relevant to `eval.journey` or `eval.contract`. Putting eval tasks into `CategoryTest` may cause submit-task to expect inappropriate fields.
+However, the proposal lists specific implementation items: "submit.go: validateRecordData 为 CategoryEval 添加验证分支（接受 review 字段 summary/findings/severity，拒绝纯测试字段）" and "types.go: RecordData 结构添加 eval 特有字段（evalScore、evalFindings、evalSeverity、evalPassed）". But looking at `RecordData` (types.go:280-312), there are no `evalScore`, `evalFindings`, `evalSeverity`, or `evalPassed` fields. The proposal introduces 4 new struct fields without specifying their JSON tag names, omitempty behavior, or how they interact with existing fields like `Summary` and `Notes`.
 
-### Mixed Feature Dependency Injection Order
+风险：Adding `evalScore`, `evalFindings`, `evalSeverity`, `evalPassed` as new `RecordData` fields creates a field-proliferation pattern. Currently `RecordData` uses category-agnostic fields with category-specific interpretation (e.g., `CasesGenerated` is only meaningful for `CategoryTest`). Adding 4 eval-specific fields to the same flat struct follows this pattern but makes `RecordData` increasingly incoherent. The `RecordTemplateData` struct in `record.go` (lines 15-52) would need corresponding formatting fields, and a new `record-eval.md` Go template would need to be created.
 
-风险：The proposal identifies: "ResolveFirstTestDep 设置依赖后，才 prepend T-review-doc，re-index 幂等性风险"
+### RenderRecord Dispatch Gap
 
-Looking at `build.go` lines 329-347, `ResolveFirstTestDep` is called first (line 329), which sets the first test task's dependency to the highest gate or T-clean-code. Then T-review-doc is prepended (lines 335-338) as a dependency of the first test task. On re-index, `PreserveRuntimeFields` (lines 316-319) preserves existing deps from the previous index. But `ResolveFirstTestDep` (line 329) re-computes deps from scratch on the in-memory `testTasks` slice, not from the preserved index. So the prepended T-review-doc dep from the previous run is on the *index* task, not on the `testTasks` slice. The `testTasks[firstTestIdx].Dependencies` starts fresh.
+问题：The proposal states: "record.go: 新增 record-eval.md Go 模板 + RenderEvalRecord 函数 + RenderRecord switch 添加 CategoryEval case"
 
-This means on re-index: (1) ResolveFirstTestDep sets `testTasks[first].Dependencies = [dep]`, (2) then T-review-doc is prepended: `testTasks[first].Dependencies = ["T-review-doc", dep]`, (3) this is written back to the index. This is idempotent because the testTasks slice is regenerated from scratch each time. The proposal's concern about "re-index idempotency" appears to be a non-issue given the current code structure, because auto-gen tasks are always rebuilt from scratch.
+Looking at `RenderRecord()` (record.go:234-247), the switch dispatches on `CategoryForType(t.Type)`. Currently there is no `CategoryEval` case. Without this case, eval tasks would fall into the `default` branch and use `RenderCodingRecord`, which renders coding-specific fields like `TestsPassed`, `TestsFailed`, and `Coverage`. This is semantically wrong for eval tasks. The proposal correctly identifies this, but the scope entry should also mention updating `RecordTemplateData` to include eval-specific formatted fields and `NewRecordTemplateData` to populate them.
 
-问题：The proposal lists "mixed feature re-index 幂等性：T-review-doc 依赖不丢失" as a success criterion, but the code already handles this correctly by regenerating test tasks fresh on every BuildIndex call. The real risk is not idempotency but the interaction between `ResolveFirstTestDep` and the T-review-doc prepend: if `ResolveFirstTestDep` sets the first test task's dep to `T-clean-code`, and then T-review-doc is prepended, the chain becomes `T-clean-code -> T-review-doc -> first-test-task`. But T-review-doc has no dependency on T-clean-code -- it depends on the last business task. So the first test task would wait for both T-review-doc AND T-clean-code, which is correct. However, if `ResolveFirstTestDep` sets dep to a business gate (not T-clean-code), the chain becomes `gate -> T-review-doc -> first-test-task`, which means the first test task waits for T-review-doc but not the gate directly. T-review-doc depends on the last business task, which may or may not be the gate. This is semantically correct but the proposal does not analyze this chain.
+### findFirstTestTaskIdx: Verified Stale Match
 
-### clean-code.md Rename Side Effects
+问题：The proposal states: "findFirstTestTaskIdx quick-mode 分支匹配废弃类型（build.go:492-494）"
 
-风险：The proposal says: "重命名 `prompt/data/clean-code.md` -> `code-quality-simplify.md`（统一命名约定）"
+I confirmed this. `findFirstTestTaskIdx()` (build.go:485-503) has a quick-mode branch that matches `T-quick-gen-and-run*`. Looking at `GetQuickTestTasks()` (autogen.go:217-306), quick mode now generates `T-test-gen-journeys-<type>` tasks (line 229-231), not `T-quick-gen-and-run*`. The quick-mode branch in `findFirstTestTaskIdx` will never match. The function currently relies on the `return 0` fallback (line 499-500), which works only because `T-test-gen-journeys-<type>` tasks happen to be first in the generated task list. This is fragile: if task ordering changes in `GetQuickTestTasks`, the fallback will return the wrong index.
 
-This file is embedded via `//go:embed data/*.md` in `prompt.go`. Renaming it affects only the binary. However, if the clean-code template content references its own filename or if any documentation references `clean-code.md`, this is a silent break. The proposal does not audit for such references. Additionally, the proposal's success criterion `grep -r "doc.eval" forge-cli/ plugins/` does not cover `clean-code` references that would need updating after the rename.
+风险：The proposal's fix -- "更新为匹配 T-test-gen-journeys 前缀" -- is correct but incomplete. Looking at `GetQuickTestTasks`, the first tasks are `T-test-gen-journeys-<type>`, which already use the prefix `T-test-gen-journeys`. The `findFirstTestTaskIdx` function should use `findTaskIndexByPrefix(tasks, "T-test-gen-journeys")` for quick mode, consistent with how `ResolveFirstTestDep` already uses `findTaskIndexByPrefixOrPanic(tasks, "T-test-gen-journeys")` (autogen.go:678, 694). The proposal should ensure both functions use the same discovery mechanism.
 
-### Backward Compatibility with test.gen-and-run
+### Dependency Injection Consolidation
 
-风险：The proposal states: "旧 index.json 应迁移到新 pipeline" and "明确错误提示，引导用户重新生成"
+问题：The proposal states: "build.go: 将 ResolveFirstTestDep + T-review-doc prepend 合并为单步操作"
 
-Removing `TypeTestGenAndRun` from `ValidTypes` means that any existing index.json containing tasks with `type: "test.gen-and-run"` will fail `validateTasks` in `validate_index.go` (line 139: `!task.ValidTypes[t.Type]`). This will cause `forge task validate-index` to error. But the proposal does not specify what error message should appear, nor does it mention updating `validate_index.go` to provide a migration-aware error message instead of the generic "invalid type" error.
+Looking at the current code in `BuildIndex()` (build.go:326-347), the two-step process is: (1) `ResolveFirstTestDep(testTasks, index.TasksMap(), mode)` sets the first test task's dependencies, then (2) `testTasks[firstTestIdx].Dependencies = append([]string{"T-review-doc"}, testTasks[firstTestIdx].Dependencies...)` prepends T-review-doc. The proposal correctly identifies that this ordering is hard-coded and fragile. The consolidation into a single function is the right approach.
 
-问题：The proposal lists "已有 index.json 引用 `test.gen-and-run` 时给出明确错误而非静默失败" as a non-functional requirement, but does not include any implementation detail about how this error will be differentiated from a generic "invalid type" error. Without a specific migration error path, users will see "invalid type 'test.gen-and-run'" and may not understand that they need to regenerate the index.
+However, the current code has a subtle correctness guarantee: `ResolveFirstTestDep` (autogen.go:658-702) uses `findTaskIndexByPrefixOrPanic(tasks, "T-test-gen-journeys")` which finds the first task matching that prefix. After T-review-doc is prepended, the dependency chain becomes `[T-review-doc, original-dep]`. The merged function must preserve this exact ordering -- T-review-doc must come first because it depends on the last business task, and the original dep (gate or T-clean-code) is a transitive dependency through T-review-doc.
 
-### genScriptBases Dead Code and Test Task ID Extraction
+风险：The merged function must handle the case where `needsEval` is false (no T-review-doc). The current code guards with `if needsEval && firstTestIdx >= 0` (build.go:335). The merged function must accept a `needsEval` parameter or derive it from context. The proposal does not specify the function signature.
 
-风险：The proposal identifies: "`prompt.go` genScriptBases 包含死代码 `T-quick-gen-and-run`" (item 8).
+### gen-and-run Dead Code: Exhaustiveness Concern
 
-Looking at `prompt.go` lines 292-295, `genScriptBases` lists `"T-quick-gen-and-run"`. The `extractTestTypeArg` function uses this to extract `--type` arguments from task IDs. If this entry is removed without also updating the test task generation in Quick mode, any Quick-mode tasks that were previously `T-quick-gen-and-run-cli` format would lose their `--type` argument extraction. But since Quick mode now uses `T-test-gen-scripts-<type>` (staged pipeline), this is indeed dead code. The risk is minimal but the proposal should confirm that no other code path generates `T-quick-gen-and-run-*` task IDs.
+风险：The proposal states: "grep -r 'gen-and-run\|quick-gen-and-run\|T-quick-gen' forge-cli/ plugins/ 返回零结果" as a success criterion.
 
-### isTestTaskID vs IsAutoGenTaskID Coverage Gap
+I found 20 files in `forge-cli/` containing these patterns. The proposal identifies key files (types.go, infer.go, prompt.go, validate_index.go, build.go) but the grep results reveal a wider surface area: `autogen.go`, `autogen_test.go`, `stage_gates_test.go`, `quality_gate_test.go`, `output_test.go`, `list_test.go`, and `docs/OVERVIEW.md`. The proposal says "14 个测试文件中 ~95 处引用" but does not enumerate them. The risk of partial removal is real: if `infer.go:32-33` (the `T-quick-gen-and-run` case) is removed but `types.go:55` (`TypeTestGenAndRun`) is not, the code will not compile because the case references a deleted constant.
 
-问题：The proposal identifies: "`isTestTaskID` 与 `IsAutoGenTaskID` 覆盖范围不一致" (item 10) but does not propose a specific fix.
+问题：The proposal should provide a complete file-by-file checklist with line numbers for the gen-and-run removal. The current "5 files ~15 places" for production code undercounts: `autogen.go` is not listed (it does not directly reference gen-and-run in current code, but tests may), and `prompt.go:297,304` references `T-quick-gen-and-run` in `genScriptBases` which must be removed.
 
-Looking at the code: `isTestTaskID` (build.go line 430) checks prefixes `T-test-`, `T-quick-`, `T-specs-`, `T-clean-`, `T-validate-`, `T-eval-`. `IsAutoGenTaskID` (build.go line 508) calls `isTestTaskID` plus checks `T-review-doc` and gate/summary suffixes. But `isTestTaskID` does NOT check `T-review-doc`, while `IsAutoGenTaskID` does. This means `needsTestPipeline` (which uses `IsAutoGenTaskID` to skip) would correctly skip T-review-doc, but `needsReviewDoc` uses `CategoryForType` directly. The proposal flags this inconsistency but does not specify whether the fix is to add `T-review-doc` to `isTestTaskID` or to leave it as-is and update documentation.
+### validate_index.go Migration Error
 
-### Four New Prompt Templates
+问题：The proposal states: "validate_index.go 对引用 test.gen-and-run 的旧 index.json 返回迁移指引错误信息"
 
-风险：The proposal says: "创建 4 个缺失的 prompt 模板文件：test-gen-journeys.md、test-gen-contracts.md、eval-journey.md、eval-contract.md"
+Looking at `validate_index.go:138-139`, the current validation uses `!task.ValidTypes[t.Type]` which produces the generic error "invalid type 'test.gen-and-run'". The proposal wants a migration-aware error like "Task type 'test.gen-and-run' has been removed. Run `forge task build-index` to regenerate with the new pipeline." This requires adding a specific check before the generic `ValidTypes` check. The proposal correctly identifies this need but does not specify where in the validation order this check should appear.
 
-These are prompt templates for the `Synthesize()` function in `prompt.go`, which generates the agent prompt at runtime. They are distinct from the autogen templates in `autogen.go` which generate .md task files. The proposal says to "参考 autogen.go 中已有的对应模板结构" but these serve different purposes: autogen templates create task description files, while prompt templates create agent execution instructions. Copying the structure of one to build the other could lead to semantically incorrect prompts. The proposal should specify what each of the four prompt templates should contain and how they differ from the autogen templates.
+Additionally, `validate_index.go:224-226` has a `T-quick-gen-and-run-` prefix check in `validateFilesExist` that checks for unresolved template placeholders. This dead-code branch must also be removed. The proposal mentions this location but should confirm that removing it does not affect the validation of staged pipeline tasks.
 
-### Missing Success Criterion for clean-code Rename
+### RecordData Field Design for Eval
 
-问题：The success criteria include: "`grep -r "gen-and-run" forge-cli/ plugins/` 返回零结果" but do not include a corresponding criterion for verifying that `clean-code.md` references (in prompts, tests, or documentation) have been updated to `code-quality-simplify.md`. The rename could leave dangling references that pass compilation but cause confusion.
+风险：The proposal specifies: "types.go: RecordData 结构添加 eval 特有字段（evalScore、evalFindings、evalSeverity、evalPassed）"
 
-### infer.go Stale Entry
+The field names use an `eval` prefix (`evalScore`, `evalFindings`, `evalSeverity`, `evalPassed`). But the existing category-specific fields in `RecordData` do NOT use a category prefix: `CasesGenerated` (not `testCasesGenerated`), `ValidationPassed` (not `validationPassed`), `GatePassed` (not `gatePassed`). The naming convention is inconsistent. Either all category-specific fields should be unprefixed (following the existing pattern) or all should be prefixed (for clarity). The proposal introduces a new convention that contradicts the established pattern.
 
-问题：The proposal lists removing `test.gen-and-run` from `types.go`, `infer.go`, `prompt.go`, `autogen.go` but does not explicitly mention removing the `T-quick-gen-and-run` case from `InferType()` in `infer.go`. Line 32-33: `case id == "T-quick-gen-and-run", typeSuffixedID(id, "T-quick-gen-and-run"): return TypeTestGenAndRun`. Since `TypeTestGenAndRun` constant would be removed, this case would fail to compile. But the proposal should confirm that all references are removed together to avoid partial compilation failures.
+### record-format-test.md Stale References
 
-### Scope Boundary: eval.* in CategoryTest vs New Category
+问题：The proposal states: "record-format-test.md 列出已废弃类型（test.gen-cases/test.eval-cases/test.gen-and-run），缺少新类型"
 
-风险：The proposal proposes adding `eval.` prefix to `CategoryTest`. But eval tasks spawn subagents (MainSession: true in autogen.go lines 109, 123). This means eval tasks run in the main session, unlike most test tasks. Putting them in `CategoryTest` conflates two different execution models. A future refactor that adds category-based session routing could accidentally dispatch eval tasks to a task executor that cannot spawn subagents.
+I verified this. `plugins/forge/skills/submit-task/data/record-format-test.md` line 3 lists: `test.gen-cases`, `test.eval-cases`, `test.gen-scripts`, `test.run`, `test.gen-and-run`, `test.verify-regression`. Of these, `test.gen-cases` and `test.eval-cases` are not even registered in `ValidTypes` -- they appear to be phantom types that were never implemented. The current valid test types are `test.gen-journeys`, `test.gen-contracts`, `test.gen-scripts`, `test.run`, `test.verify-regression`. The proposal should update this file to reflect only the currently valid types.
+
+### Missing record-format-eval.md
+
+风险：The proposal identifies: "缺少 record-format-eval.md：agent 执行 eval 任务时无 JSON 字段参考"
+
+This is a real gap. When the agent executes an eval task (via the `forge:submit-task` skill), it looks up the record format reference document to know what JSON fields to provide. Without `record-format-eval.md`, the agent has no guidance on eval-specific fields. The proposal correctly identifies this as in-scope, but should specify that this document must be placed at `plugins/forge/skills/submit-task/data/record-format-eval.md` (alongside the other record-format files).
+
+### CategoryForType Default Branch Hazard
+
+问题：The proposal does not address the `default` branch in `CategoryForType` (category.go:30-31): `default: return CategoryCoding`. After adding the `eval.` prefix branch, any future type that lacks a matching prefix will still silently fall into `CategoryCoding`. This is how the eval types originally got misclassified. The root cause -- an overly permissive default -- remains unaddressed.
+
+建议：Consider changing the default to return an error or a `CategoryUnknown` sentinel, with callers handling the unknown case explicitly. This prevents future types from being silently misclassified. At minimum, add a log warning in the default branch so that misclassifications are detectable at runtime.
 
 ---
 
 ## Section 3: Improvement Suggestions
 
-建议：Instead of adding `eval.` to `CategoryTest`, consider creating a dedicated `CategoryEval` constant. This avoids semantic contamination of the test category, enables submit-task to use eval-specific validation fields (e.g., `score`, `rubricResults`), and prevents future confusion when category-based routing logic is added. The eval category is architecturally distinct: it performs quality assessment, not test generation or execution.
+建议：The proposal should provide explicit content specifications for the 4 new prompt templates. Based on analysis of existing templates (`test-gen-scripts.md`, `test-run.md`), the test-pipeline templates should follow this structure: (1) `TASK_ID/TASK_FILE/SCOPE/PHASE_SUMMARY` header, (2) task constraints section specifying which skills to invoke, (3) numbered workflow steps, (4) record fields section listing what to populate in `forge:submit-task`. For `test-gen-journeys.md`, the skill is `forge:gen-journeys`; for `test-gen-contracts.md`, the skill is `forge:gen-contracts`. For eval templates, the pattern is different: (1) header, (2) rubric loading instruction, (3) scoring workflow (score, check threshold, iterate), (4) eval-specific record fields. The proposal should specify these patterns rather than deferring to a vague "reference existing templates" instruction.
 
-建议：For the auto-discovery mechanism, add a compile-time or init-time validation that cross-references all type constants in `types.go` against the embedded template FS. A simple `init()` function that iterates `TaskTypeRegistry` and verifies each type has a corresponding template file (using the naming convention) would catch missing templates at startup rather than at runtime. This would make the auto-discovery genuinely safer than the hand-written map.
+建议：The `RecordData` eval field names should follow the established naming convention. Instead of `evalScore`, `evalFindings`, `evalSeverity`, `evalPassed`, consider unprefixed names like `score` (int), `findings` ([]string), `severity` (string), `passed` (bool). This is consistent with how `CasesGenerated`, `ValidationPassed`, and `GatePassed` are named without category prefixes. The JSON tags can use the same unprefixed names since the record format document (`record-format-eval.md`) will clarify which fields apply to which category.
 
-建议：For backward compatibility with `test.gen-and-run`, instead of simply removing it from `ValidTypes`, add a dedicated migration error path in `validate_index.go`. When a task has `type: "test.gen-and-run"`, emit a specific message like "Task type 'test.gen-and-run' has been removed. Run `forge task build-index` to regenerate with the new pipeline." This is more helpful than the generic "invalid type" error and directly addresses the non-functional requirement stated in the proposal.
+建议：For the `findFirstTestTaskIdx` fix, use the same discovery mechanism as `ResolveFirstTestDep`: `findTaskIndexByPrefix(tasks, "T-test-gen-journeys")`. This ensures consistency across both functions. The breakdown-mode branch should also use `findTaskIndex(tasks, "T-test-gen-journeys-")` pattern matching or, better yet, the first task in the test pipeline is always `T-test-gen-journeys-*` regardless of mode. The function could be simplified to: find first task matching `T-test-gen-journeys` prefix (works for both breakdown per-type and quick per-type), then fallback to `T-test-gen-contracts` for modes that don't generate per-type journeys.
 
-建议：The proposal should add an explicit success criterion for the `clean-code.md` rename: something like `grep -r "clean-code.md" forge-cli/ plugins/` returns zero results (excluding the renamed file itself). This ensures no dangling references survive the rename.
+建议：For the dependency injection consolidation, the merged function signature should be: `ResolveFirstTestDeps(tasks []AutoGenTaskDef, existingTasks map[string]Task, mode string, needsEval bool)`. This encapsulates both `ResolveFirstTestDep` and the T-review-doc prepend logic. When `needsEval` is true, the function prepends `T-review-doc` after setting the base dependency. When false, it behaves identically to the current `ResolveFirstTestDep`. This eliminates the ordering coupling in `BuildIndex()`.
 
-建议：The proposal should explicitly list all files that need the `T-quick-gen-and-run` reference removed, including `infer.go` line 32-33, `prompt.go` line 294, and `validate_index.go` lines 224-226. Creating a checklist of all 8+ test files mentioned in item 12 would help prevent partial cleanup.
+建议：For the gen-and-run removal, create a comprehensive checklist grouped by file, specifying exact changes:
 
-建议：For the four new prompt templates, the proposal should specify that these are execution-phase prompts (distinct from the autogen planning-phase templates). Each should follow the existing prompt template pattern: define the agent's goal, provide context placeholders (`{{TASK_ID}}`, `{{TASK_FILE}}`, etc.), and specify the expected output format. The eval templates should explicitly instruct the agent to use the scoring rubric and subagent spawning pattern, since they are MainSession tasks.
+Production code (must compile after each file edit):
+- `types.go`: Remove `TypeTestGenAndRun` constant (line 55), remove from `ValidTypes` (line 114), remove from `SystemTypes` (line 135), remove from `TaskTypeRegistry` (line 88)
+- `infer.go`: Remove case at lines 32-33
+- `prompt.go`: Remove `T-quick-gen-and-run` from `genScriptBases` (line 304)
+- `validate_index.go`: Remove `T-quick-gen-and-run-` prefix check at lines 224-226, add migration-aware error
+- `build.go`: Update `findFirstTestTaskIdx` quick-mode branch (lines 492-494)
+- Delete `prompt/data/test-gen-and-run.md` and `task/data/test-gen-and-run.md`
 
-建议：The mixed feature dependency injection (build.go lines 329-347) should be refactored to compute the final dependency chain in a single pass rather than the current two-step approach (ResolveFirstTestDep then T-review-doc prepend). A `resolveMixedFeatureDeps` function that takes both T-review-doc and test tasks as input and produces the final dependency graph would be more maintainable and easier to reason about than the current sequential mutation pattern.
+This ensures compilation can be verified incrementally.
 
-建议：The `isTestTaskID` function in `build.go` should be updated to include `T-review-doc` for consistency with `IsAutoGenTaskID`. Currently `IsAutoGenTaskID` handles this by checking `isTestTaskID` first then adding `T-review-doc` as a special case. Adding it to `isTestTaskID` (or renaming the function to `isAutoGenID` and consolidating) would eliminate the coverage gap and reduce the chance of future inconsistencies.
+建议：The proposal should add a success criterion verifying that `RenderRecord` dispatches correctly for eval types. Something like: "RenderRecord for a task with type `eval.journey` uses the eval record template (not the coding record template)." This is distinct from the existing criterion about `RenderRecord` using "eval 专用 record 模板" -- it should be explicitly testable by checking that `CategoryForType("eval.journey")` returns `CategoryEval` and that the `RenderRecord` switch includes a `CategoryEval` case.
 
-建议：The proposal should explicitly address the `findFirstTestTaskIdx` function in `build.go` (line 485). Currently it checks for `T-eval-journey` (breakdown) and `T-quick-gen-and-run*` (quick). After removing `test.gen-and-run`, the quick mode fallback (line 494) would never match. The function needs to be updated to look for `T-test-gen-journeys-*` or `T-test-gen-contracts` as the first quick-mode test task instead.
+建议：The proposal should specify that the `clean-code.md` rename (completed in Task 1) means that `prompt/data/` now contains `code-quality-simplify.md` (not `clean-code.md`). This is relevant because the success criteria reference `grep` patterns that should verify the rename was successful. The current proposal mentions the rename in the Innovation Highlights section but does not include a success criterion for it.
+
+建议：For the `record-format-test.md` update, the proposal should specify the exact type list to replace the stale one. The current stale list is: `test.gen-cases`, `test.eval-cases`, `test.gen-scripts`, `test.run`, `test.gen-and-run`, `test.verify-regression`. The correct list should be: `test.gen-journeys`, `test.gen-contracts`, `test.gen-scripts`, `test.run`, `test.verify-regression`. The proposal should also verify that `test.gen-cases` and `test.eval-cases` are not referenced anywhere else in the codebase.
+
+建议：The proposal's success criterion `grep -r "gen-and-run" forge-cli/ plugins/` returning zero results is a strong correctness guarantee. However, it should be qualified to exclude historical documentation (the proposal already identifies "历史 feature/proposal 文档" as out-of-scope). The grep command should specify file type exclusions (e.g., `--exclude-dir=docs/proposals`) or the proposal should explicitly state that historical docs are excluded from the grep check.

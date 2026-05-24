@@ -1,6 +1,9 @@
 package task
 
-import "strings"
+import (
+	"log"
+	"strings"
+)
 
 // Category constants for task type classification.
 const (
@@ -9,10 +12,11 @@ const (
 	CategoryTest       = "test"
 	CategoryValidation = "validation"
 	CategoryGate       = "gate"
+	CategoryEval       = "eval"
 )
 
 // CategoryForType maps a task type string to its category.
-// Returns CategoryCoding for empty or unknown types.
+// Returns CategoryCoding for empty or unknown types, with a log warning for unknowns.
 func CategoryForType(typ string) string {
 	switch {
 	case typ == TypeGate:
@@ -27,7 +31,10 @@ func CategoryForType(typ string) string {
 		return CategoryTest
 	case strings.HasPrefix(typ, "validation."):
 		return CategoryValidation
+	case strings.HasPrefix(typ, "eval."):
+		return CategoryEval
 	default:
+		log.Printf("CategoryForType: unknown type %q, defaulting to coding", typ)
 		return CategoryCoding
 	}
 }

@@ -1,7 +1,10 @@
 package task
 
 import (
+	"bytes"
 	"encoding/json"
+	"log"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,11 +31,13 @@ func TestCategoryForType_AllTypes(t *testing.T) {
 		// Test category (test.* prefix)
 		{"test.gen-scripts", TypeTestGenScripts, CategoryTest},
 		{"test.run", TypeTestRun, CategoryTest},
-		{"test.gen-and-run", TypeTestGenAndRun, CategoryTest},
 		{"test.verify-regression", TypeTestVerifyRegression, CategoryTest},
 		// Validation category (validation.* prefix)
 		{"validation.code", TypeValidationCode, CategoryValidation},
 		{"validation.ux", TypeValidationUx, CategoryValidation},
+		// Eval category (eval.* prefix)
+		{"eval.journey", TypeEvalJourney, CategoryEval},
+		{"eval.contract", TypeEvalContract, CategoryEval},
 		// Gate category (exact match)
 		{"gate", TypeGate, CategoryGate},
 		// code-quality.simplify maps to coding (explicit match)
@@ -52,12 +57,32 @@ func TestCategoryForType_DefaultAndUnknown(t *testing.T) {
 	assert.Equal(t, CategoryCoding, CategoryForType("totally-invalid"), "invalid type defaults to coding")
 }
 
+func TestCategoryForType_UnknownLogsWarning(t *testing.T) {
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer log.SetOutput(os.Stderr)
+
+	result := CategoryForType("unknown.type")
+	assert.Equal(t, CategoryCoding, result)
+	assert.Contains(t, buf.String(), `CategoryForType: unknown type "unknown.type", defaulting to coding`)
+}
+
+func TestCategoryForType_KnownTypeNoWarning(t *testing.T) {
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer log.SetOutput(os.Stderr)
+
+	_ = CategoryForType(TypeEvalJourney)
+	assert.NotContains(t, buf.String(), "CategoryForType: unknown type")
+}
+
 func TestCategoryConstants(t *testing.T) {
 	assert.Equal(t, "coding", CategoryCoding)
 	assert.Equal(t, "doc", CategoryDoc)
 	assert.Equal(t, "test", CategoryTest)
 	assert.Equal(t, "validation", CategoryValidation)
 	assert.Equal(t, "gate", CategoryGate)
+	assert.Equal(t, "eval", CategoryEval)
 }
 
 func TestRecordData_NewFieldsOmitEmpty(t *testing.T) {
@@ -88,6 +113,10 @@ func TestRecordData_NewFieldsOmitEmpty(t *testing.T) {
 	assert.NotContains(t, m, "issuesFound")
 	assert.NotContains(t, m, "gatePassed")
 	assert.NotContains(t, m, "gateChecks")
+	assert.NotContains(t, m, "score")
+	assert.NotContains(t, m, "findings")
+	assert.NotContains(t, m, "severity")
+	assert.NotContains(t, m, "passed")
 }
 
 func TestRecordData_BackwardCompatibility(t *testing.T) {
@@ -147,6 +176,10 @@ func TestRecordData_NewFieldsRoundTrip(t *testing.T) {
 		IssuesFound:      []string{"issue1", "issue2"},
 		GatePassed:       true,
 		GateChecks:       []string{"lint", "compile"},
+		Score:            850,
+		Findings:         []string{"finding1", "finding2"},
+		Severity:         "major",
+		Passed:           true,
 	}
 
 	data, err := json.Marshal(rd)
@@ -167,4 +200,8 @@ func TestRecordData_NewFieldsRoundTrip(t *testing.T) {
 	assert.Equal(t, rd.IssuesFound, rd2.IssuesFound)
 	assert.Equal(t, rd.GatePassed, rd2.GatePassed)
 	assert.Equal(t, rd.GateChecks, rd2.GateChecks)
+	assert.Equal(t, rd.Score, rd2.Score)
+	assert.Equal(t, rd.Findings, rd2.Findings)
+	assert.Equal(t, rd.Severity, rd2.Severity)
+	assert.Equal(t, rd.Passed, rd2.Passed)
 }

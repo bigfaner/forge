@@ -19,27 +19,38 @@ import (
 //go:embed data/*.md
 var templateFS embed.FS
 
-// typeToTemplate maps task type constants to their embed template filenames.
-// Filename convention: type name with '.' replaced by '-' (e.g., coding.feature -> coding-feature.md).
-var typeToTemplate = map[string]string{
-	task.TypeCodingFeature:        "data/coding-feature.md",
-	task.TypeCodingEnhancement:    "data/coding-enhancement.md",
-	task.TypeCodingCleanup:        "data/coding-cleanup.md",
-	task.TypeCodingRefactor:       "data/coding-refactor.md",
-	task.TypeDoc:                  "data/doc.md",
-	task.TypeDocReview:            "data/doc-review.md",
-	task.TypeDocSummary:           "data/doc-summary.md",
-	task.TypeDocConsolidate:       "data/doc-consolidate.md",
-	task.TypeDocDrift:             "data/doc-drift.md",
-	task.TypeTestGenScripts:       "data/test-gen-scripts.md",
-	task.TypeTestRun:              "data/test-run.md",
-	task.TypeTestGenAndRun:        "data/test-gen-and-run.md",
-	task.TypeTestVerifyRegression: "data/test-verify-regression.md",
-	task.TypeCodingFix:            "data/coding-fix.md",
-	task.TypeValidationCode:       "data/validation-code.md",
-	task.TypeValidationUx:         "data/validation-ux.md",
-	task.TypeGate:                 "data/gate.md",
-	task.TypeCleanCode:            "data/clean-code.md",
+// templatePath derives the embed template filename from a task type constant
+// using the naming convention: "data/" + typeName with '.' replaced by '-' + ".md".
+func templatePath(typeName string) string {
+	return "data/" + strings.ReplaceAll(typeName, ".", "-") + ".md"
+}
+
+// ValidatePromptTemplates checks that all task types used by Synthesize()
+// have a corresponding template file in the prompt embed FS, and that no two types
+// map to the same filename. Types without a prompt template are skipped (they may
+// exist only in the autogen FS).
+// Must be called from the CLI main() startup path, NOT from an init() function.
+func ValidatePromptTemplates() error {
+	seen := make(map[string]string) // filename -> type name (for collision detection)
+
+	for typeName := range task.ValidTypes {
+		filename := templatePath(typeName)
+		data, err := templateFS.ReadFile(filename)
+		if err != nil {
+			// Type has no template in prompt FS — skip (may exist in autogen FS)
+			continue
+		}
+		if len(data) == 0 {
+			return fmt.Errorf("template convention error: type %q maps to %q but file is empty", typeName, filename)
+		}
+
+		if prev, collision := seen[filename]; collision {
+			return fmt.Errorf("template convention error: types %q and %q both map to %q", prev, typeName, filename)
+		}
+		seen[filename] = typeName
+	}
+
+	return nil
 }
 
 // SynthesizeOpts holds inputs for prompt synthesis.
@@ -75,12 +86,11 @@ func Synthesize(opts SynthesizeOpts) (string, error) {
 		return "", fmt.Errorf("type field missing for task %s", opts.TaskID)
 	}
 
-	templateFile, ok := typeToTemplate[t.Type]
-	if !ok {
+	if !task.ValidTypes[t.Type] {
 		return "", fmt.Errorf("unknown type: %s", t.Type)
 	}
 
-	return renderTemplate(templateFile, opts, t)
+	return renderTemplate(templatePath(t.Type), opts, t)
 }
 
 // renderTemplate reads the embed template and substitutes placeholders.
@@ -280,18 +290,16 @@ func isLabelWithEmptyValue(line string) bool {
 	return after == ""
 }
 
-// genScriptBases lists the task ID bases that support per-type gen-scripts or gen-and-run.
+// genScriptBases lists the task ID bases that support per-type gen-scripts.
 //
 // Each base corresponds to a specific task ID format in the index:
 //   - "T-test-gen-scripts"     → tasks like "T-test-gen-scripts-api", "T-test-gen-scripts-ui"
-//   - "T-quick-gen-and-run"    → tasks like "T-quick-gen-and-run-cli"
 //
 // The type suffix (the part after the base) determines the --type argument passed
 // to the gen-script command at runtime. Adding a new base here requires that the
 // corresponding task ID format is also recognized by task.ExtractTypeSuffix.
 var genScriptBases = []string{
 	"T-test-gen-scripts",
-	"T-quick-gen-and-run",
 }
 
 // extractTestTypeArg extracts the --type argument from a type-suffixed task ID.

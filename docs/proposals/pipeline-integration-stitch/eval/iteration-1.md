@@ -4,27 +4,38 @@
 **Date**: 2026-05-24
 **Document**: `docs/proposals/pipeline-integration-stitch/proposal.md`
 **Rubric**: `plugins/forge/skills/eval/rubrics/proposal.md`
+**Annotated Blind Review**: Pre-revised regions detected — attack density tracked separately.
 
 ---
 
-## Phase 1: Pre-Score Anchors (Reasoning Audit)
+## Phase 1: Reasoning Audit
 
 ### Problem -> Solution Trace
-The problem is real and well-scoped: 14 integration gaps between two completed proposals. The auto-discovery solution directly addresses the root cause (hand-written maps missed in prompt.go). This is a strong problem-solution fit.
+
+Problem: `auto-gen-journeys-contracts` 提案引入了 staged test pipeline 和 eval 质量门控，但遗漏了 4 类执行层面配套 — P0 (模板文件缺失), P1 (类型分类错误 + 依赖注入引用废弃类型 + 顺序耦合), P2 (废弃代码残留).
+
+Solution: 三管齐下 — 创建 4 个模板文件, 新增 CategoryEval + 加固依赖注入, 清理 gen-and-run 废弃代码.
+
+Trace: P0 maps 1:1 to template creation. P1 maps to CategoryEval + dep hardening. P2 maps to gen-and-run removal. Strong problem-solution fit.
 
 ### Solution -> Evidence Trace
-Evidence is concrete: specific files, functions, and failure modes are cited. However, the evidence is entirely internal — no user reports, no incident data, no quantified impact ("how many features failed?"). For an internal tool proposal, this is acceptable but not exemplary.
+
+Evidence is code-structural: specific file paths, line numbers, function names. No user incident data, no reproduction steps. Acceptable for internal tool but not exemplary.
 
 ### Evidence -> Success Criteria Trace
-Success criteria cover most P0/P1 items but have notable gaps:
-- No criterion for verifying `clean-code.md` rename doesn't break references
-- No criterion for verifying `eval.*` in `CategoryTest` produces correct submit-task behavior
-- No criterion for verifying `test.gen-and-run` removal produces helpful error messages
+
+11 success criteria cover most scope items. Gaps:
+- `record-format-eval.md` creation has no verification criterion
+- `CategoryForType` default branch `log.Printf` has no verification criterion
+- `resolveTestDepsAndInjectReviewDoc` "无顺序耦合" is an architectural property, not testable behavior
 
 ### Self-Contradiction Check
-- The proposal claims to fix `eval.*` categorization but introduces a new semantic mismatch by putting eval tasks into `CategoryTest` (which expects test-generation fields at submit time)
-- Claims "向后兼容" as NFR but does not specify how backward-compatible errors differ from generic errors
-- Claims auto-discovery eliminates the bug class, but the failure mode is isomorphic (missed file vs. missed map entry)
+
+1. **Innovation claim vs. actual fix**: "自动发现机制已消除根因" but `findFirstTestTaskIdx` fix uses `findTaskIndexByPrefix(tasks, "T-test-gen-journeys")` — this is still a hardcoded prefix, not auto-discovery. Minor contradiction.
+
+2. **P1 item 4 priority vs. "Overturned" assumption**: Assumption table says re-index idempotency bug is "Overturned: 当前代码已幂等...风险仅为代码耦合". Yet the item remains P1. The proposal justifies this as "preventive hardening" which is reasonable but the P1 label is slightly inflated.
+
+3. **"机械性清理" framing**: Repeated assertion that P2 is "大部分是机械性清理" but 14 test files with ~95 references is non-trivial. Risk of underestimation.
 
 ---
 
@@ -34,123 +45,141 @@ Success criteria cover most P0/P1 items but have notable gaps:
 
 | Criterion | Score | Justification |
 |-----------|-------|---------------|
-| Problem stated clearly | 38/40 | The 14 integration gaps are enumerated with precise file/function references. Two readers would agree on what's broken. Minor deduction: the distinction between P0/P1/P2 could be more explicit about user-visible impact vs. developer maintenance cost. |
-| Evidence provided | 32/40 | Evidence is entirely code-structural analysis — specific files, functions, failure modes. Strong for an internal tool. However, no user-facing incident data, no frequency estimate ("X features have been blocked"), no reproduction steps. The evidence is developer analysis, not empirical data. |
-| Urgency justified | 28/30 | P0 means "pipeline 必定失败" — urgency is self-evident. Clear statement: "任何使用 Forge 执行 test pipeline 的 feature 都会失败." The cost of delay is obvious. |
+| Problem stated clearly | 38/40 | Six concrete items with P0/P1/P2 prioritization. Each has file paths and line numbers. Minor deduction: "集成缝隙" is metaphorical; the actual gap type (missing adapter-layer artifacts) becomes clear only in Evidence. |
+| Evidence provided | 38/40 | Strong structural evidence: file paths, line numbers, specific failure modes (`ReadFile` fails, `CategoryForType` returns wrong category). P0 has concrete failure chain. Deduction: no reproduction steps or incident frequency data. |
+| Urgency justified | 25/30 | P0 = "pipeline 执行必定失败" — urgency is clear. Cost of delay stated: "任何执行 test pipeline 或 eval gate 的 feature 必定失败". Deduction: no quantification of blast radius (how many features/teams are currently blocked). |
 
-**Subtotal: 98/110**
+**Subtotal: 101/110**
 
 ### 2. Solution Clarity (120 pts)
 
 | Criterion | Score | Justification |
 |-----------|-------|---------------|
-| Approach is concrete | 36/40 | Three-pronged approach is clear. Auto-discovery formula (`strings.ReplaceAll(typeName, ".", "-") + ".md"`) is precise. The override for `clean-code.md` is mentioned. A reader could explain back what will be built. |
-| User-facing behavior described | 35/45 | The proposal describes internal behavior well but user-facing behavior is limited. What does the developer see when a template is missing? What error message appears for old `test.gen-and-run` tasks? The NFR says "明确错误" but never specifies the error content. The success criteria describe verification commands but not the developer experience. |
-| Technical direction clear | 32/35 | Sufficient technical hints: naming convention, embed.FS ReadFile, override map. File-level changes are listed. Missing: no pseudo-code for the auto-discovery function, no mention of `init()` validation, no detail on how `resolveMixedFeatureDeps` would be restructured. |
+| Approach is concrete | 38/40 | Three-pronged approach with specific files, function signatures, content patterns. Template structure described in detail (header/constraints/workflow/record-fields four-part pattern). Deduction: `--target 850` in eval template is an unexplained magic number. |
+| User-facing behavior described | 35/45 | Internal-facing proposal; "user" is a developer/agent. Observable behaviors described: `forge prompt get-by-task-id` returns valid prompts, `forge submit-task` accepts/rejects by category, `RenderRecord` uses eval template. Deduction: no before/after examples for any user-facing command. What exact output change does a developer see? |
+| Technical direction clear | 34/35 | Extremely detailed: Go struct fields with JSON tags, function signatures, file paths with line numbers, removal ordering. Deduction: `resolveTestDepsAndInjectReviewDoc` parameter `mode string` — valid values not specified. |
 
-**Subtotal: 103/120**
+**Subtotal: 107/120**
 
 ### 3. Industry Benchmarking (120 pts)
 
 | Criterion | Score | Justification |
 |-----------|-------|---------------|
-| Industry solutions referenced | 10/40 | No industry solutions, open-source projects, or published patterns are cited. This is entirely self-invented. No reference to how other task pipeline systems (Airflow, Temporal, GitHub Actions) handle type-to-template mapping or integration testing between independently developed modules. |
-| At least 3 meaningful alternatives | 18/30 | Three alternatives are listed: do nothing, manual map completion, auto-discovery + full fix. "Do nothing" is a straw man (P0 = guaranteed failure). "Manual map completion" is the closest to a genuine alternative. No industry-validated solution is included. Missing: init-time validation, code generation from templates, convention-over-configuration frameworks. |
-| Honest trade-off comparison | 15/25 | The comparison table is honest about "变更量较大" for the selected approach. But it understates the risk: auto-discovery replaces one runtime failure mode with another (file-not-found vs. map-miss), and the `eval.*` -> CategoryTest change introduces a new semantic mismatch that the trade-off analysis ignores. |
-| Chosen approach justified | 15/25 | The justification is essentially "it's more thorough." The argument for auto-discovery over manual map completion is reasonable (eliminates bug class) but overstates the benefit — the developer still must create the template file. The proposal does not justify why auto-discovery is better than init-time validation (which would catch missing templates at startup). |
+| Industry solutions referenced | 15/40 | Single analogy: "Airflow 添加新 DAG 类型后需要配套的 executor plugin 和 UI renderer". This is a brief comparison, not a cited solution with product names, open-source projects, or published patterns. No reference to convention-over-configuration frameworks (Rails, Spring), plugin systems (VS Code, JetBrains), or type registration patterns (Airflow operators, Temporal activities). |
+| At least 3 meaningful alternatives | 12/30 | Three alternatives listed: (1) minimal fix, (2) P0+P1 only, (3) P0+P1+P2. These are scope variants of the same approach, not genuinely different architectural strategies. No "do nothing" alternative. No industry-validated alternative (e.g., init-time validation, code generation, schema-based registration). |
+| Honest trade-off comparison | 12/25 | Table pros/cons are thin: "变更最小", "变更量较大（但大部分是机械性清理）". No quantitative comparison. The selected approach's con ("变更量较大") is immediately qualified with a parenthesis that minimizes it. |
+| Chosen approach justified against benchmarks | 8/25 | Justification: "端到端可执行；零僵尸代码；类型系统一致" — these are benefits, not benchmark comparison. No argument for why this approach beats industry patterns or why it adopts/doesn't adopt standard solutions. |
 
-**Subtotal: 58/120**
+**Subtotal: 47/120**
 
 ### 4. Requirements Completeness (110 pts)
 
 | Criterion | Score | Justification |
 |-----------|-------|---------------|
-| Scenario coverage | 32/40 | Happy path (auto-discovery works), edge cases (clean-code override, re-index idempotency), and error scenarios (missing template, old index.json) are identified. Gaps: (1) `eval.*` in CategoryTest — what happens at submit-task validation? The proposal doesn't analyze the submit-time requirements for eval tasks. (2) `findFirstTestTaskIdx` quick-mode fallback references `T-quick-gen-and-run*` which would break after removal — not mentioned as a scenario. |
-| Non-functional requirements | 28/40 | Two NFRs stated: backward compatibility and compile-time safety. Both are vague. "明确错误而非静默失败" — what error? "运行时验证文件存在" — this is the same failure mode as before, just triggered differently. Missing NFRs: performance (auto-discovery adds FS reads), security (template injection via type names), testability (how to verify auto-discovery without creating real template files). |
-| Constraints & dependencies | 25/30 | Clear: upstream proposals must be complete, changes span Go source + plugin data + docs. Good. Missing: no mention of Go version constraints for embed.FS features, no dependency on test infrastructure for verification. |
+| Scenario coverage | 35/40 | Five key scenarios: auto-discovery, eval submit semantics, mixed feature deps, quick-mode matching, gen-and-run removal. Edge cases: mixed submission (review + test fields), old index.json. Error scenarios: migration error for deprecated types. Deduction: no scenario for eval template content mismatch with actual eval skill behavior; no scenario for auto-discovery filename collision. |
+| Non-functional requirements | 28/40 | Three NFRs: backward compatibility (migration error), test coverage (positive/negative/boundary), eval record template. Deduction: no performance consideration (adding CategoryEval branch to render/validate hot paths), no compatibility matrix (which Forge versions' index.json are affected), no observability requirement (eval task logging/monitoring). |
+| Constraints & dependencies | 25/30 | "Task 1 已完成" clearly stated. No external dependencies. Deduction: no Go version constraint mentioned, no dependency on forge distribution model (per CLAUDE.md, plugin files have specific path resolution requirements). |
 
-**Subtotal: 85/110**
+**Subtotal: 88/110**
 
 ### 5. Solution Creativity (100 pts)
 
 | Criterion | Score | Justification |
 |-----------|-------|---------------|
-| Novelty over industry baseline | 25/40 | Auto-discovery via naming convention is a standard pattern (convention over configuration — Rails, Spring, etc.). The proposal applies it competently but does not innovate beyond the baseline. The "O(N) to O(1)" framing is overstated — the developer still creates N files, just not N map entries. |
-| Cross-domain inspiration | 10/35 | No cross-domain inspiration cited. Convention-over-configuration is well-known but not attributed. No borrowing from build systems, package managers, or plugin architectures that face similar registration problems. |
-| Simplicity of insight | 18/25 | The insight is genuinely simple: if naming is deterministic, map entries are redundant. The `strings.ReplaceAll` one-liner is elegant. But the proposal fails to see the equally simple alternative: an `init()` validation loop that checks all registered types against the FS, which would be both simpler and safer. |
+| Novelty over industry baseline | 8/40 | Proposal explicitly states: "Task 1 引入的自动发现机制已消除根因。本次提案聚焦于补全遗漏的执行层面配套". This is a bugfix/completion task — filling gaps in a previously shipped feature. No innovation beyond baseline. |
+| Cross-domain inspiration | 5/35 | Airflow analogy mentioned but not explored. No cross-domain borrowing from build systems, package managers, plugin architectures, or type registration systems. |
+| Simplicity of insight | 18/25 | The P0/P1/P2 triage is clean. The insight that "adapter layer needs to be completed when types are registered" is straightforward. Not a "why didn't I think of that" moment. |
 
-**Subtotal: 53/100**
+**Subtotal: 31/100**
 
 ### 6. Feasibility (100 pts)
 
 | Criterion | Score | Justification |
 |-----------|-------|---------------|
-| Technical feasibility | 35/40 | Highly feasible. `strings.ReplaceAll` + embed.FS ReadFile is trivial. The clean-code rename is straightforward. Removing dead code is mechanical. Risks: (1) the four new prompt templates require understanding the execution-phase semantics, which the proposal under-specifies; (2) removing all `test.gen-and-run` references requires a complete audit that the proposal does not enumerate. |
-| Resource & timeline | 25/30 | "2 coding tasks + doc tasks" is realistic for the scope. The proposal does not overcommit. However, the 4 new prompt templates may require more iteration than estimated, since they serve a different purpose than the autogen templates they reference. |
-| Dependency readiness | 28/30 | Upstream proposals are complete. No external dependencies. The only risk is that the existing codebase may have more references to `test.gen-and-run` than identified (the proposal says "8+ files" without being exhaustive). |
+| Technical feasibility | 38/40 | Highly feasible. Templates reference existing patterns (test-gen-scripts.md, validation-code.md). CategoryEval follows CategoryTest blueprint. Removal is mechanical. Deduction: eval templates reference `validation-code.md` but it's not verified whether that file's pattern actually matches eval semantics. |
+| Resource & timeline feasibility | 26/30 | "3 coding task + 2 doc task, ~6h" seems reasonable but may underestimate P2: 14 test files with ~95 references across ~11 test files requires careful per-file editing, not batch replacement. Risk of 2h+ for P2 test cleanup alone. |
+| Dependency readiness | 28/30 | Task 1 completed. No external deps. Deduction: no mention of whether Task 1 left any residual issues. |
 
-**Subtotal: 88/100**
+**Subtotal: 92/100**
 
 ### 7. Scope Definition (80 pts)
 
 | Criterion | Score | Justification |
 |-----------|-------|---------------|
-| In-scope items are concrete | 26/30 | Three priority tiers with specific file-level changes. Each item is actionable. Good. Minor gap: "更新 isTestTaskID 语义或文档" is ambiguous — which one? The proposal doesn't decide. |
-| Out-of-scope explicitly listed | 22/25 | Four items explicitly out of scope. Clear. Good inclusion of "历史 feature 文件中的 doc.eval 类型" as out of scope with rationale. |
-| Scope is bounded | 20/25 | The scope is well-bounded for the P0/P1 fixes. The P2 cleanup ("彻底移除 test.gen-and-run") is potentially open-ended — the proposal says "8+ 文件" without enumerating them all. The scope item "更新引用废弃类型的测试文件" is vague: which files? |
+| In-scope items are concrete | 29/30 | Each item specifies exact file path, line numbers, and content description. Template patterns are described structurally. Deduction: template content is a pattern reference, not a complete spec — implementer must still make content decisions. |
+| Out-of-scope explicitly listed | 24/25 | Five items with rationale: historical docs (~35 files, ~130 refs — doesn't affect runtime), resolveBreakdownDeps refactor, eval rollback, migration tool, record-format-doc.md doc.eval. Good. Deduction: "~35 文件 ~130 处" is an estimate, not a verified count. |
+| Scope is bounded | 23/25 | 5 tasks, ~6h, well-defined deliverables. P2 test file list is exhaustive (11 files with specific lines). Deduction: "大部分是机械性清理" may understate P2 complexity. |
 
-**Subtotal: 68/80**
+**Subtotal: 76/80**
 
 ### 8. Risk Assessment (90 pts)
 
 | Criterion | Score | Justification |
 |-----------|-------|---------------|
-| Risks identified | 22/30 | Four risks identified. Missing risks: (1) `eval.*` in CategoryTest causing submit-task validation errors — the freeform review identifies this but the proposal's risk table does not; (2) clean-code.md rename breaking external references; (3) `findFirstTestTaskIdx` quick-mode fallback breaking; (4) incomplete removal of `test.gen-and-run` references causing partial compilation failure. |
-| Likelihood + impact rated | 22/30 | Ratings are reasonable. "自动发现遗漏 edge case" rated L/H is honest about low likelihood. However, "移除 gen-and-run 后旧 index.json 报错" rated L/M understates the impact — if a team has active features with old index.json files, this blocks their workflow until they regenerate. |
-| Mitigations are actionable | 20/30 | "运行全量测试验证" is generic. "参考 autogen.go 中已有的对应模板结构" is insufficient guidance for execution-phase templates. "约定已稳定" is not a mitigation — it's an assertion. "明确错误提示，引导用户重新生成" is the most actionable but doesn't specify the error message. |
+| Risks identified | 25/30 | Six risks: template inaccuracy, CategoryEval field mismatch, gen-and-run removal compilation failure, findFirstTestTaskIdx dependency wiring, default branch silent misclassification, eval record template design. Deduction: missing risk of runtime impact on features currently using gen-and-run type; missing risk of `--target 850` hardcoded eval target being wrong. |
+| Likelihood + impact rated | 26/30 | Varied ratings: M/H, L/M, M/H, M/M, L/M, L/L. Honest — not all low/high. Deduction: "gen-and-run 引用移除不完整" rated M may be optimistic given 95 references across 14 files; "4 个新 prompt 模板内容不准确" rated M is reasonable. |
+| Mitigations are actionable | 26/30 | Specific mitigations: reference existing patterns, per-step `go build ./...`, `findTaskIndexByPrefix` reuse. Deduction: "test-gen 模板参考现有 test-gen-scripts.md" is implementation detail, not mitigation — a real mitigation would be "stakeholder review of template content" or "integration test verifying rendered prompt"; "编写单元测试覆盖正向/负向/边界用例" is generic. |
 
-**Subtotal: 64/90**
+**Subtotal: 77/90**
 
 ### 9. Success Criteria (80 pts)
 
 | Criterion | Score | Justification |
 |-----------|-------|---------------|
-| Criteria are measurable and testable | 40/55 | Six criteria, five use `grep` commands (measurable). "所有现有测试通过" is measurable. Gaps: (1) No criterion for `clean-code.md` rename verification — after renaming, no grep checks for dangling `clean-code` references. (2) No criterion for `eval.*` submit-task behavior — does `forge submit-task` accept eval task submissions with appropriate fields? (3) "mixed feature re-index 幂等性：T-review-doc 依赖不丢失" is testable but vague about how to verify. |
-| Coverage is complete | 18/25 | Covers P0 (template mapping), P1 (category, references, re-index), and P2 (gen-and-run removal). Missing: no criterion for P1 item "record-format-doc.md" update verification, no criterion for `validate_index.go` providing migration-aware error messages, no criterion for `findFirstTestTaskIdx` working correctly after `gen-and-run` removal. |
+| Criteria are measurable and testable | 48/55 | 11 checkbox items. Most use grep commands, function return values, or test assertions. Highly measurable. Deduction: "ResolveFirstTestDep + T-review-doc prepend 为单步操作，无顺序耦合" — "无顺序耦合" is an architectural property, not a testable behavior (how do you write a test for "no ordering coupling"?); "所有现有测试通过" is too broad — which test suite? |
+| Coverage is complete | 20/25 | Covers P0 (template existence + Synthesize), P1 (CategoryForType + submit-task + RenderRecord + findFirstTestTaskIdx + dep merge), P2 (grep zero results + migration error + tests pass). Deduction: no criterion for `record-format-eval.md` content correctness; no criterion for `CategoryForType` default branch `log.Printf` warning; no criterion for eval record field rendering accuracy. |
 
-**Subtotal: 58/80**
+**Subtotal: 68/80**
 
 ### 10. Logical Consistency (90 pts)
 
 | Criterion | Score | Justification |
 |-----------|-------|---------------|
-| Solution addresses stated problem | 30/35 | Auto-discovery directly fixes P0 (missing template mappings). Category fix addresses P1 (eval misclassification). Cleanup addresses P2. Strong alignment. Deduction: the category fix introduces a new semantic mismatch (eval tasks in CategoryTest expecting test-generation fields) that partially undermines the stated goal of "类型系统一致性". |
-| Scope <-> Solution <-> Success Criteria aligned | 22/30 | Scope lists clean-code rename, but success criteria don't verify it. Scope lists "更新 isTestTaskID 语义或文档", but no success criterion checks this. Scope lists "validate_index.go: 移除 T-quick-gen-and-run- 前缀检查", but the success criterion only checks grep for "gen-and-run", which is broader but may miss the specific validation logic. |
-| Requirements <-> Solution coherent | 18/25 | Most requirements map to solution items. Gap: NFR "向后兼容" (backward compatibility) maps to "明确错误提示" in the solution, but the solution does not specify what makes this error "backward-compatible" vs. generic. The requirement "编译时安全" (compile-time safety) maps to "运行时验证文件存在" — which is runtime, not compile-time. This is a direct contradiction: the NFR asks for compile-time safety, the solution provides runtime safety. |
+| Solution addresses stated problem | 34/35 | Direct 1:1 mapping: P0 -> templates, P1 -> CategoryEval + dep hardening, P2 -> gen-and-run cleanup. Deduction: findFirstTestTaskIdx fix replaces one hardcoded prefix with another, slightly contradicting "auto-discovery eliminates the root cause" claim. |
+| Scope <-> Solution <-> Success Criteria aligned | 28/30 | Strong alignment. Each scope item has corresponding success criterion. P2 grep criteria cover code removal. Deduction: `record-format-eval.md` in Scope (P1) has no dedicated success criterion; `CategoryForType` default branch `log.Printf` in Scope has no criterion. |
+| Requirements <-> Solution coherent | 23/25 | NFRs map to solution items: backward compat -> validate_index.go migration error, test coverage -> unit tests, eval record template -> record-format-eval.md. Deduction: "Mixed feature 依赖注入" scenario has solution (`resolveTestDepsAndInjectReviewDoc`) but no corresponding NFR (performance/reliability requirement for the merged function). |
 
-**Subtotal: 70/90**
-
-### Cross-Dimension Coherence Check
-
-1. **Problem Definition vs. Success Criteria**: The problem lists 14 items but success criteria cover approximately 8. Items 4 (record-format-doc.md), 9 (validate_index.go), 10 (isTestTaskID gap), 11 (category_test.go), 14 (README/ARCHITECTURE references) have no direct success criterion.
-
-2. **Solution Clarity vs. Feasibility**: The solution claims "2 coding tasks" but the P2 cleanup involves touching 8+ test files, updating multiple documentation files, renaming files, and creating 4 new prompt templates. This may be undercounted.
-
-3. **Risk Assessment vs. Freeform Findings**: The freeform review identified at least 5 additional risks not in the proposal's risk table: CategoryTest/eval semantic mismatch, clean-code rename external references, findFirstTestTaskIdx quick-mode fallback, incomplete gen-and-run reference removal, and execution-phase vs. planning-phase template confusion.
+**Subtotal: 85/90**
 
 ---
 
 ## Phase 3: Blindspot Hunt
 
-### Beyond-Rubric Issues
+### [blindspot] 1: eval template `--target 850` 魔数
+Quote: "Skill(skill="forge:eval", args="--type [journey|contract] --target 850")"
+The value 850 is hardcoded in the template. Different eval tasks may require different target scores. The proposal does not discuss parameterization or explain why 850 is the universal target.
 
-1. **Execution model conflation**: `eval.*` tasks spawn subagents (MainSession: true) while most test tasks do not. Adding `eval.*` to `CategoryTest` without distinguishing this execution model difference creates a latent bug for any future category-based dispatch logic.
+### [blindspot] 2: CategoryEval 与 CategoryReview 语义边界
+The proposal creates CategoryEval but does not clarify whether CategoryReview already exists or what the semantic boundary is between "eval" and "review". If `doc.review` already uses a review category, the distinction between eval and review is an unstated design decision.
 
-2. **`findFirstTestTaskIdx` regression**: `build.go` line ~494 has a quick-mode fallback checking for `T-quick-gen-and-run*`. After removing `test.gen-and-run`, this fallback will never match, potentially causing `findFirstTestTaskIdx` to return -1 or the wrong index for quick-mode tasks. The proposal does not address this.
+### [blindspot] 3: 缺少集成测试 task
+Quote from risk mitigation: "更新后添加集成测试验证 Quick mode 依赖链正确性"
+This promises integration tests but no corresponding task exists in the task breakdown ("3 coding task + 2 doc task"), and no success criterion verifies integration test existence or correctness.
 
-3. **Incomplete removal checklist**: The proposal says "彻底移除 test.gen-and-run" but does not enumerate all files requiring changes. The freeform review identified at least: `types.go` (constant), `infer.go` (InferType switch case, line 32-33), `prompt.go` (genScriptBases, line 294), `autogen.go` (if any), `validate_index.go` (lines 224-226), and 8+ test files. Without an exhaustive list, partial removal is likely.
+### [blindspot] 4: P1 item 3 与 P2 重叠修改
+`findFirstTestTaskIdx` quick-mode fix appears in P1 (`build.go:492-494` -> `findTaskIndexByPrefix(tasks, "T-test-gen-journeys")`) AND P2 (`build.go:484,492-494` -> same location). The proposal does not flag this overlap, creating risk of conflicting changes during implementation.
 
-4. **Template semantic mismatch**: The four new prompt templates are execution-phase prompts (instructions for the agent at runtime) but the proposal says to "参考 autogen.go 中已有的对应模板结构" — autogen templates are planning-phase (generating .md files). Copying structure from one to the other would produce semantically incorrect prompts.
+### [blindspot] 5: 废弃模板删除的向后兼容缺口
+Quote: "NFR: 向后兼容: 旧 index.json 引用 test.gen-and-run 时给出明确迁移错误提示"
+The NFR only addresses `validate_index.go` validation. But deleting `prompt/data/test-gen-and-run.md` means any existing feature with gen-and-run tasks will fail at `Synthesize()` with a file-not-found error, not a migration-aware error. The migration error path only triggers during index validation, not during prompt rendering.
+
+### [blindspot] 6: 测试清理的回归风险
+Quote: "14 个测试文件中 ~95 处引用"
+Removing ~95 test references across 14 files risks accidentally removing shared setup/teardown code or test helpers that are co-located with gen-and-run tests. The proposal does not assess whether any gen-and-run test code contains shared fixtures.
+
+---
+
+## Annotated Region Attack Density
+
+| Region Type | Attack Count | Notes |
+|-------------|-------------|-------|
+| Pre-revised (annotated) | 8 | Focus on whether revision introduced new issues |
+| Unannotated | 14 | Standard adversarial review |
+| **Total** | **22** | |
+
+Pre-revised attacks focused on: template content pattern specificity (medium), CategoryEval field naming coherence (medium), record-eval template missing criterion (medium), gen-and-run removal ordering risk (high), risk table mitigation quality (medium/high), success criteria grep scope (medium), build.go merge function testability (medium), record-format-test.md update scope (medium).
+
+No `conflict-with-pre-revision` tags — all rubric judgments are consistent with pre-revision direction.
 
 ---
 
@@ -158,46 +187,50 @@ Success criteria cover most P0/P1 items but have notable gaps:
 
 | Dimension | Score | Max |
 |-----------|-------|-----|
-| Problem Definition | 98 | 110 |
-| Solution Clarity | 103 | 120 |
-| Industry Benchmarking | 58 | 120 |
-| Requirements Completeness | 85 | 110 |
-| Solution Creativity | 53 | 100 |
-| Feasibility | 88 | 100 |
-| Scope Definition | 68 | 80 |
-| Risk Assessment | 64 | 90 |
-| Success Criteria | 58 | 80 |
-| Logical Consistency | 70 | 90 |
-| **Total** | **745** | **1000** |
+| Problem Definition | 101 | 110 |
+| Solution Clarity | 107 | 120 |
+| Industry Benchmarking | 47 | 120 |
+| Requirements Completeness | 88 | 110 |
+| Solution Creativity | 31 | 100 |
+| Feasibility | 92 | 100 |
+| Scope Definition | 76 | 80 |
+| Risk Assessment | 77 | 90 |
+| Success Criteria | 68 | 80 |
+| Logical Consistency | 85 | 90 |
+| **Total** | **772** | **1000** |
 
 ---
 
 ## ATTACKS
 
-1. [Industry Benchmarking]: No industry solutions or published patterns cited — the comparison table contains only self-invented alternatives with one straw man ("do nothing" with P0 guaranteed failure). Must reference at least one industry-validated approach to convention-over-configuration or type registration systems.
+1. [Industry Benchmarking]: No industry solutions, open-source projects, or published patterns cited — quote: "这是典型的补全遗漏的 adapter 层问题...类比：Airflow 添加新 DAG 类型后需要配套的 executor plugin 和 UI renderer" — this single analogy is insufficient. Must reference at least one concrete industry-validated approach (convention-over-configuration frameworks like Rails/Spring, plugin systems like VS Code extensions, type registration patterns).
 
-2. [Industry Benchmarking]: Trade-off comparison ignores the auto-discovery's isomorphic failure mode — replacing compile-time map errors with runtime file-not-found errors is not a qualitative improvement as claimed. Must acknowledge this and consider init-time validation as an alternative.
+2. [Industry Benchmarking]: Three alternatives are scope variants of the same approach — quote: "| 手动补全模板 + 最小化修复 |...| 仅修 P0+P1，保留 gen-and-run |...| 完整修复 P0+P1+P2 |" — these differ only in scope, not in architectural strategy. Must include genuinely different approaches (e.g., init-time schema validation, code generation from type definitions, migration tool for existing features).
 
-3. [Requirements Completeness]: `eval.*` in CategoryTest creates submit-task validation mismatch — the proposal does not analyze what fields `CategoryTest` expects at submission time for eval tasks. Must specify submit-task requirements for eval tasks or create a dedicated `CategoryEval`.
+3. [Industry Benchmarking]: Trade-off analysis understates selected approach's risk — quote: "变更量较大（但大部分是机械性清理）" — the parenthesis immediately minimizes the con. With 14 test files and ~95 references, this is non-trivial risk that deserves honest weighting.
 
-4. [Requirements Completeness]: NFR "编译时安全" contradicts solution "运行时验证文件存在" — the NFR asks for compile-time safety but the auto-discovery solution provides only runtime validation. Must either change the NFR to "运行时安全" or add init-time/compile-time validation.
+4. [Solution Creativity]: Proposal explicitly admits it's gap-filling, not innovation — quote: "Task 1 引入的自动发现机制已消除根因。本次提案聚焦于补全遗漏的执行层面配套" — no novelty, no cross-domain inspiration. This is a cleanup task framed as a proposal.
 
-5. [Risk Assessment]: Risk table missing 4 risks identified in expert review: clean-code.md rename breaking external references, findFirstTestTaskIdx quick-mode fallback regression, execution-phase vs planning-phase template semantic confusion, and eval/CategoryTest submit-task field mismatch. Must add these to the risk table with mitigations.
+5. [Requirements Completeness]: NFR gap — no performance consideration for CategoryEval branch addition in hot-path functions (`RenderRecord`, `validateRecordData`). No compatibility matrix specifying which Forge versions' index.json files are affected.
 
-6. [Risk Assessment]: Mitigation "参考 autogen.go 中已有的对应模板结构" is misleading — autogen templates are planning-phase while the 4 new templates are execution-phase. Copying autogen structure would produce semantically incorrect prompts. Must specify what each new template should contain.
+6. [Requirements Completeness]: Missing scenario: eval template content must match actual eval skill behavior — quote: "eval 模板参考 validation-code.md（评估 + pass/fail 判定模式，~70 行）" — the proposal does not verify that `validation-code.md`'s pattern is semantically correct for eval tasks, only that it exists.
 
-7. [Success Criteria]: No criterion verifying clean-code.md rename doesn't leave dangling references. Must add `grep -r "clean-code" forge-cli/ plugins/` returning zero results (excluding the renamed file).
+7. [Risk Assessment]: Missing risk: features currently using gen-and-run type will encounter file-not-found error (not migration-aware error) when `prompt/data/test-gen-and-run.md` is deleted. Quote: "向后兼容: 旧 index.json 引用 test.gen-and-run 时给出明确迁移错误提示" — this only covers `validate_index.go`, not the `Synthesize()` code path.
 
-8. [Success Criteria]: No criterion verifying `eval.*` submit-task behavior — CategoryTest may require inappropriate fields (casesGenerated, scriptsCreated) for eval tasks. Must add a criterion for eval task submission acceptance.
+8. [Risk Assessment]: Mitigation "test-gen 模板参考现有 test-gen-scripts.md" is implementation detail, not risk mitigation — quote: "test-gen 模板参考现有 test-gen-scripts.md（skill 委托模式）" — a real mitigation would specify review/validation of template content correctness.
 
-9. [Success Criteria]: No criterion verifying `validate_index.go` provides migration-aware error messages for old `test.gen-and-run` tasks. The NFR requires backward compatibility but no success criterion tests it.
+9. [Success Criteria]: "无顺序耦合" is not testable — quote: "ResolveFirstTestDep + T-review-doc prepend 为单步操作，无顺序耦合" — how do you write a test that verifies "no ordering coupling"? Must replace with concrete behavioral test (e.g., "calling the function with needsEval=false produces identical output to calling with needsEval=true after removing T-review-doc from results").
 
-10. [Logical Consistency]: `eval.*` -> CategoryTest partially undermines the stated goal of "类型系统一致性" — eval tasks are quality gates, not test generators. The solution reintroduces a classification mismatch while claiming to fix one. Must either justify why CategoryTest is semantically correct for eval or create a dedicated category.
+10. [Success Criteria]: Missing criterion for `record-format-eval.md` — this file is in Scope (P1) but no success criterion verifies its existence or content correctness. Must add: "`plugins/forge/skills/submit-task/data/record-format-eval.md` exists and contains score/findings/severity/passed field definitions".
 
-11. [Logical Consistency]: Scope item "更新 isTestTaskID 语义或文档" is undecided — the proposal says "or" without committing to a direction. Must choose: add T-review-doc to isTestTaskID, or rename the function, or update documentation.
+11. [Success Criteria]: Missing criterion for `CategoryForType` default branch `log.Printf` — quote: "default 分支改为返回 CategoryCoding 并通过 log.Printf(...) 记录警告" — no success criterion verifies this warning is emitted for unknown types.
 
-12. [beyond-rubric]: `findFirstTestTaskIdx` in build.go has a quick-mode fallback checking `T-quick-gen-and-run*` which will never match after removal, potentially causing incorrect first-test-task selection for quick-mode pipelines. The proposal does not address this function.
+12. [Logical Consistency]: findFirstTestTaskIdx fix contradicts "auto-discovery eliminates root cause" — quote from Innovation Highlights: "自动发现机制已消除'忘记更新映射'的根因" vs. Scope P1: "替换为 findTaskIndexByPrefix(tasks, 'T-test-gen-journeys')" — replacing one hardcoded prefix with another does not use auto-discovery and retains the same failure mode class.
 
-13. [beyond-rubric]: The four new prompt templates are execution-phase prompts distinct from autogen planning-phase templates. The proposal's instruction to "参考 autogen.go 中已有的对应模板结构" may lead to semantically incorrect templates. Must specify execution-phase template structure requirements.
+13. [blindspot]: `--target 850` in eval template is an unexplained hardcoded value — quote: "Skill(skill='forge:eval', args='--type [journey|contract] --target 850')" — the proposal does not explain why 850 is the target, whether it should be parameterized, or what happens when different eval tasks need different targets.
 
-14. [beyond-rubric]: `genScriptBases` dead code `T-quick-gen-and-run` removal must be coordinated with all other reference removals. The proposal does not enumerate all files needing changes, risking partial compilation failures.
+14. [blindspot]: P1 item 3 and P2 modify the same code location (`build.go:484,492-494`) — the proposal does not flag this overlap, creating implementation conflict risk.
+
+15. [blindspot]: Integration test promised in risk mitigation but absent from task count and success criteria — quote: "更新后添加集成测试验证 Quick mode 依赖链正确性" — no task, no criterion.
+
+16. [blindspot]: Deleting `prompt/data/test-gen-and-run.md` causes `Synthesize()` file-not-found for existing features, bypassing the migration-aware error path in `validate_index.go`.

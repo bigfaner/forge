@@ -633,18 +633,6 @@ func TestSynthesize_GenScripts_WithTypeSuffix(t *testing.T) {
 			wantContains: `Skill(skill="forge:gen-test-scripts" --type tui)`,
 			dontWant:     `{{TEST_TYPE_ARG}}`,
 		},
-		{
-			name:         "T-quick-gen-and-run-cli includes --type cli",
-			taskID:       "T-quick-gen-and-run-cli",
-			wantContains: `Skill(skill="forge:gen-test-scripts" --type cli)`,
-			dontWant:     `{{TEST_TYPE_ARG}}`,
-		},
-		{
-			name:         "T-quick-gen-and-run-web-ui includes --type web-ui",
-			taskID:       "T-quick-gen-and-run-web-ui",
-			wantContains: `Skill(skill="forge:gen-test-scripts" --type web-ui)`,
-			dontWant:     `{{TEST_TYPE_ARG}}`,
-		},
 	}
 
 	for _, tt := range tests {
@@ -690,8 +678,6 @@ func TestSynthesize_GenScripts_NoTypeSuffix(t *testing.T) {
 	}{
 		{"T-test-gen-scripts", "T-test-gen-scripts"},
 		{"T-test-gen-scriptsa", "T-test-gen-scriptsa"},
-		{"T-quick-gen-and-run", "T-quick-gen-and-run"},
-		{"T-quick-gen-and-runa", "T-quick-gen-and-runa"},
 	}
 
 	for _, tt := range tests {
@@ -1751,11 +1737,7 @@ func TestExtractTestTypeArg(t *testing.T) {
 	}{
 		{"T-test-gen-scripts-api", " --type api"},
 		{"T-test-gen-scripts-tui", " --type tui"},
-		{"T-quick-gen-and-run-cli", " --type cli"},
-		{"T-quick-gen-and-run-web-ui", " --type web-ui"},
 		{"T-test-gen-scripts", ""},
-		{"T-test-gen-scripts", ""},
-		{"T-quick-gen-and-run", ""},
 		{"T-test-3-api", ""}, // not a gen-scripts base
 		{"1.1", ""},
 	}

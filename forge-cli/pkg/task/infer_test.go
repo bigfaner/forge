@@ -19,7 +19,6 @@ func TestInferType(t *testing.T) {
 		{"T-test-verify-regression", TypeTestVerifyRegression},
 
 		// Quick test tasks (exact match)
-		{"T-quick-gen-and-run", TypeTestGenAndRun},
 		{"T-quick-verify-regression", TypeTestVerifyRegression},
 		{"T-quick-doc-drift", TypeDocDrift},
 
@@ -43,8 +42,6 @@ func TestInferType(t *testing.T) {
 		{"T-test-gen-journeys-api", TypeTestGenJourneys},
 		{"T-test-gen-journeys-tui", TypeTestGenJourneys},
 		{"T-test-gen-journeys-cli", TypeTestGenJourneys},
-		{"T-quick-gen-and-run-api", TypeTestGenAndRun},
-		{"T-quick-gen-and-run-tui", TypeTestGenAndRun},
 
 		// Gen-contracts exact match
 		{"T-test-gen-contracts", TypeTestGenContracts},
@@ -101,8 +98,6 @@ func TestExtractTypeSuffix(t *testing.T) {
 		{"T-test-gen-scripts-api", "T-test-gen-scripts", "api"},
 		{"T-test-gen-scripts-tui", "T-test-gen-scripts", "tui"},
 		{"T-test-gen-scripts-web-ui", "T-test-gen-scripts", "web-ui"},
-		{"T-quick-gen-and-run-cli", "T-quick-gen-and-run", "cli"},
-		{"T-quick-gen-and-run-api", "T-quick-gen-and-run", "api"},
 		{"T-test-gen-scripts", "T-test-gen-scripts", ""}, // exact match, no type suffix
 		{"T-test-gen-journeys-api", "T-test-gen-journeys", "api"},
 		{"T-test-gen-journeys-tui", "T-test-gen-journeys", "tui"},

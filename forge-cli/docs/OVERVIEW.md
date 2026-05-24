@@ -258,13 +258,12 @@ type Task struct {
 | `gate` | Quality gate between phases |
 | `doc-generation.summary` | Phase summary document generation |
 | `doc-generation.consolidate` | Specification consolidation |
-| `test-pipeline.gen-cases` | Test case generation |
-| `test-pipeline.eval-cases` | Test case evaluation |
-| `test-pipeline.gen-scripts` | Test script generation |
-| `test-pipeline.run` | E2E test execution |
-| `test-pipeline.gen-and-run` | Combined test script generation and execution (quick mode) |
+| `test.gen-journeys` | Generate test journeys from specs |
+| `test.gen-contracts` | Generate test contracts from journeys |
+| `test.gen-scripts` | Generate executable test scripts |
+| `test.run` | E2E test execution |
+| `test.verify-regression` | Regression verification |
 | `test-pipeline.promote` | Tag-based promotion: @feature -> @regression |
-| `test-pipeline.verify-regression` | Regression verification |
 
 ### TaskIndex
 
