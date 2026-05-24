@@ -32,6 +32,10 @@ You MUST:
 4. Output a confirmation after loading: "Loaded Reference Files: [list], treating them as authoritative sources."
 
 If `## Reference Files` is empty or missing, output: "Reference Files empty — falling back to existing code and Hard Rules."
+
+Conventions and business-rules loaded in Step 1 are reference guides — they may lag behind current code. Follow them when consistent with Reference Files, but do not treat them as authoritative overrides.
+
+If a Reference File contains an internal contradiction (§A says X but §B says ¬X): output "SPEC CONTRADICTION: [description]", follow the more specific directive, and document the choice in your output.
 </CRITICAL>
 
 <CRITICAL>
@@ -57,7 +61,7 @@ For each finding, output:
   [spec §section: "key requirement"]: existing code [MATCHES | DIFFERS | NOT YET IMPLEMENTED]
     - If DIFFERS: describe the specific difference and state "WILL FOLLOW SPEC"
 
-If no Reference Files were loaded: use conventions/business-rules loaded in Step 1 as degraded authority and scan against those. Output: "SPEC-CODE SCAN: degraded mode — scanning against conventions only"
+If no Reference Files were loaded: output "SPEC-CODE SCAN: degraded mode — no spec sources, existing code + conventions as guide" and skip the per-dimension checklist.
 
 ### Step 2: Validate UX Quality
 

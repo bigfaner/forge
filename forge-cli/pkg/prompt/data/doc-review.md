@@ -23,6 +23,8 @@ You MUST:
 4. Output a confirmation after loading: "Loaded Reference Files: [list], treating them as authoritative sources."
 
 If `## Reference Files` is empty or missing, output: "Reference Files empty — falling back to existing code and Hard Rules."
+
+If a Reference File contains an internal contradiction (§A says X but §B says ¬X): output "SPEC CONTRADICTION: [description]", follow the more specific directive, and document the choice in your output.
 </CRITICAL>
 
 ### Step 1.5: Spec-Code Conflict Scan
@@ -40,7 +42,7 @@ For each finding, output:
   [spec §section: "key requirement"]: existing document [MATCHES | DIFFERS | NOT YET IMPLEMENTED]
     - If DIFFERS: describe the specific difference and state "WILL FOLLOW SPEC"
 
-If no Reference Files were loaded: "SPEC-CODE SCAN: skipped — no Reference Files loaded"
+If no Reference Files were loaded: output "SPEC-CODE SCAN: skipped — no spec sources loaded" and skip the per-dimension checklist.
 
 ### Step 2: Read Deliverables and Acceptance Criteria
 
