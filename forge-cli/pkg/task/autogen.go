@@ -31,18 +31,18 @@ var autogenTypeToFile = map[string]string{
 	TypeCleanCode:            "data/code-quality-simplify.md",
 }
 
-// uiInterfaces is the set of interface types that have a visual UI
+// uiSurfaceTypes is the set of surface types that have a visual UI
 // and therefore require UX validation.
-var uiInterfaces = map[string]bool{
+var uiSurfaceTypes = map[string]bool{
 	"tui":    true,
 	"web":    true,
 	"mobile": true,
 }
 
-// hasUIInterface returns true if any interface has a visual UI.
-func hasUIInterface(interfaces []string) bool {
-	for _, typ := range interfaces {
-		if uiInterfaces[typ] {
+// hasUISurface returns true if any surface type has a visual UI.
+func hasUISurface(types []string) bool {
+	for _, typ := range types {
+		if uiSurfaceTypes[typ] {
 			return true
 		}
 	}
@@ -59,7 +59,7 @@ type BodyContext struct {
 	SuccessCriteria    []string // success criteria from proposal/PRD
 	AcceptanceCriteria []string // PRD acceptance criteria (breakdown mode)
 	ProjectType        string   // from .forge/config.yaml
-	Interfaces         []string // test interfaces from config
+	SurfaceTypes       []string // deduplicated surface types from config
 }
 
 // AutoGenTaskDef defines an auto-generated task definition.
@@ -81,10 +81,10 @@ type AutoGenTaskDef struct {
 }
 
 // GetBreakdownTestTasks returns test task definitions for breakdown mode.
-// Interfaces are config-driven test types (e.g., "cli", "api"). Empty interfaces returns nil.
+// Capabilities are deduplicated surface types from config (e.g., "cli", "api"). Empty capabilities returns nil.
 // auto controls which task categories are generated.
-func GetBreakdownTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []AutoGenTaskDef {
-	if len(interfaces) == 0 {
+func GetBreakdownTestTasks(capabilities []string, auto forgeconfig.AutoConfig) []AutoGenTaskDef {
+	if len(capabilities) == 0 {
 		return nil
 	}
 
@@ -93,7 +93,7 @@ func GetBreakdownTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []A
 	// Shared tasks (gated by auto.E2eTest.Full)
 	if auto.E2eTest.Full {
 		// Per-type gen-journeys (first in pipeline)
-		for _, typ := range interfaces {
+		for _, typ := range capabilities {
 			tasks = append(tasks, AutoGenTaskDef{
 				Key: "gen-journeys-" + typ, ID: "T-test-gen-journeys-" + typ,
 				Title: fmt.Sprintf("Generate Test Journeys (%s)", typ), Priority: "P1", EstimatedTime: "20-30min",
@@ -124,7 +124,7 @@ func GetBreakdownTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []A
 		})
 
 		// Per-type gen-scripts (interface-only, no language loop)
-		for _, typ := range interfaces {
+		for _, typ := range capabilities {
 			tasks = append(tasks, AutoGenTaskDef{
 				Key: "gen-test-scripts-" + typ, ID: "T-test-gen-scripts-" + typ,
 				Title: fmt.Sprintf("Generate Test Scripts (%s)", typ), Priority: "P1", EstimatedTime: "1-2h",
@@ -156,7 +156,7 @@ func GetBreakdownTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []A
 			Title: "Validate Code Quality", Priority: "P2", EstimatedTime: "15min",
 			Type: TypeValidationCode, Scope: "all", MainSession: false,
 		})
-		if hasUIInterface(interfaces) {
+		if hasUISurface(capabilities) {
 			tasks = append(tasks, AutoGenTaskDef{
 				Key: "validate-ux", ID: "T-validate-ux",
 				Title: "Validate User Experience", Priority: "P2", EstimatedTime: "15min",
@@ -184,13 +184,13 @@ func GetBreakdownTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []A
 	}
 
 	// Set dependency chains
-	resolveBreakdownDeps(tasks, interfaces, auto)
+	resolveBreakdownDeps(tasks, capabilities, auto)
 
 	return tasks
 }
 
 // GetQuickTestTasks returns test task definitions for quick mode.
-// Interfaces are config-driven test types (e.g., "cli", "api"). Empty interfaces returns nil.
+// Capabilities are deduplicated surface types from config (e.g., "cli", "api"). Empty capabilities returns nil.
 // auto controls which task categories are generated.
 //
 // Quick mode uses staged across types topology:
@@ -199,8 +199,8 @@ func GetBreakdownTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []A
 //
 // This replaces the old gen-and-run combined tasks with independent staged tasks,
 // sharing the same task definitions as Breakdown mode (without eval quality gates).
-func GetQuickTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []AutoGenTaskDef {
-	if len(interfaces) == 0 {
+func GetQuickTestTasks(capabilities []string, auto forgeconfig.AutoConfig) []AutoGenTaskDef {
+	if len(capabilities) == 0 {
 		return nil
 	}
 
@@ -209,7 +209,7 @@ func GetQuickTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []AutoG
 	// Staged test pipeline (gated by auto.E2eTest.Quick)
 	if auto.E2eTest.Quick {
 		// Per-type gen-journeys (Stage 1: all parallel)
-		for _, typ := range interfaces {
+		for _, typ := range capabilities {
 			tasks = append(tasks, AutoGenTaskDef{
 				Key: "gen-journeys-" + typ, ID: "T-test-gen-journeys-" + typ,
 				Title: fmt.Sprintf("Generate Test Journeys (%s)", typ), Priority: "P1", EstimatedTime: "20-30min",
@@ -226,7 +226,7 @@ func GetQuickTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []AutoG
 		})
 
 		// Per-type gen-scripts (Stage 3: all parallel, depend on gen-contracts)
-		for _, typ := range interfaces {
+		for _, typ := range capabilities {
 			tasks = append(tasks, AutoGenTaskDef{
 				Key: "gen-test-scripts-" + typ, ID: "T-test-gen-scripts-" + typ,
 				Title: fmt.Sprintf("Generate Test Scripts (%s)", typ), Priority: "P1", EstimatedTime: "1-2h",
@@ -258,7 +258,7 @@ func GetQuickTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []AutoG
 			Title: "Validate Code Quality", Priority: "P2", EstimatedTime: "15min",
 			Type: TypeValidationCode, Scope: "all", MainSession: false,
 		})
-		if hasUIInterface(interfaces) {
+		if hasUISurface(capabilities) {
 			tasks = append(tasks, AutoGenTaskDef{
 				Key: "validate-ux", ID: "T-validate-ux",
 				Title: "Validate User Experience", Priority: "P2", EstimatedTime: "15min",
@@ -285,7 +285,7 @@ func GetQuickTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []AutoG
 		})
 	}
 
-	resolveQuickDeps(tasks, interfaces, auto)
+	resolveQuickDeps(tasks, capabilities, auto)
 
 	return tasks
 }
@@ -294,7 +294,7 @@ func GetQuickTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []AutoG
 // Empty fields are handled per spec:
 //   - {{MODE}} with empty Mode: omits the line containing {{MODE}}
 //   - {{SCOPE}} with empty Scope: omits the section (## Scope ... next ## heading)
-//   - {{INTERFACES}} with empty Interfaces: "See .forge/config.yaml"
+//   - {{SURFACES}} with empty SurfaceTypes: "See .forge/config.yaml"
 //   - {{TEST_TYPE}} with empty TestType: omits the line containing {{TEST_TYPE}}
 //   - {{ACCEPTANCE_CRITERIA}} with empty AcceptanceCriteria: "- [ ] All acceptance criteria met"
 func renderBody(templateContent string, def AutoGenTaskDef, ctx BodyContext) string {
@@ -324,15 +324,15 @@ func renderBody(templateContent string, def AutoGenTaskDef, ctx BodyContext) str
 		s = strings.ReplaceAll(s, "{{SCOPE}}", strings.Join(scopeLines, "\n"))
 	}
 
-	// INTERFACES — default when empty
-	if len(ctx.Interfaces) == 0 {
-		s = strings.ReplaceAll(s, "{{INTERFACES}}", "See .forge/config.yaml")
+	// SURFACES — default when empty
+	if len(ctx.SurfaceTypes) == 0 {
+		s = strings.ReplaceAll(s, "{{SURFACES}}", "See .forge/config.yaml")
 	} else {
-		var ifaceLines []string
-		for _, iface := range ctx.Interfaces {
-			ifaceLines = append(ifaceLines, "- "+iface)
+		var surfaceLines []string
+		for _, surface := range ctx.SurfaceTypes {
+			surfaceLines = append(surfaceLines, "- "+surface)
 		}
-		s = strings.ReplaceAll(s, "{{INTERFACES}}", strings.Join(ifaceLines, "\n"))
+		s = strings.ReplaceAll(s, "{{SURFACES}}", strings.Join(surfaceLines, "\n"))
 	}
 
 	// TEST_TYPE — omit line when empty
@@ -470,7 +470,7 @@ func formatYAMLList(items []string) string {
 }
 
 // resolveBreakdownDeps sets dependency chains for breakdown test tasks.
-func resolveBreakdownDeps(tasks []AutoGenTaskDef, interfaces []string, auto forgeconfig.AutoConfig) {
+func resolveBreakdownDeps(tasks []AutoGenTaskDef, capabilities []string, auto forgeconfig.AutoConfig) {
 	if !auto.E2eTest.Full && !auto.ConsolidateSpecs.Full && !auto.CleanCode.Full && !auto.Validation.Full {
 		return // no tasks to wire
 	}
@@ -485,7 +485,7 @@ func resolveBreakdownDeps(tasks []AutoGenTaskDef, interfaces []string, auto forg
 
 		// eval-journey depends on all gen-journeys tasks
 		var genJourneysDeps []string
-		for _, typ := range interfaces {
+		for _, typ := range capabilities {
 			idx := findTaskIndexOrPanic(tasks, "T-test-gen-journeys-"+typ)
 			genJourneysDeps = append(genJourneysDeps, tasks[idx].ID)
 		}
@@ -498,14 +498,14 @@ func resolveBreakdownDeps(tasks []AutoGenTaskDef, interfaces []string, auto forg
 		tasks[evalContractIdx].Dependencies = []string{tasks[genContractsIdx].ID}
 
 		// gen-scripts depend on eval-contract
-		for _, typ := range interfaces {
+		for _, typ := range capabilities {
 			idx := findTaskIndexOrPanic(tasks, "T-test-gen-scripts-"+typ)
 			tasks[idx].Dependencies = []string{tasks[evalContractIdx].ID}
 		}
 
 		// Run depends on all gen-scripts
 		var genDeps []string
-		for _, typ := range interfaces {
+		for _, typ := range capabilities {
 			idx := findTaskIndexOrPanic(tasks, "T-test-gen-scripts-"+typ)
 			genDeps = append(genDeps, tasks[idx].ID)
 		}
@@ -534,7 +534,7 @@ func resolveBreakdownDeps(tasks []AutoGenTaskDef, interfaces []string, auto forg
 
 // resolveQuickDeps sets dependency chains for quick test tasks using staged across types topology.
 // Pipeline: gen-journeys-per-type (parallel) -> gen-contracts -> gen-scripts-per-type (parallel) -> run -> verify-regression
-func resolveQuickDeps(tasks []AutoGenTaskDef, interfaces []string, auto forgeconfig.AutoConfig) {
+func resolveQuickDeps(tasks []AutoGenTaskDef, capabilities []string, auto forgeconfig.AutoConfig) {
 	if !auto.E2eTest.Quick && !auto.ConsolidateSpecs.Quick && !auto.CleanCode.Quick && !auto.Validation.Quick {
 		return // no tasks to wire
 	}
@@ -546,21 +546,21 @@ func resolveQuickDeps(tasks []AutoGenTaskDef, interfaces []string, auto forgecon
 
 		// gen-contracts depends on all gen-journeys tasks (Stage 2)
 		var genJourneysDeps []string
-		for _, typ := range interfaces {
+		for _, typ := range capabilities {
 			idx := findTaskIndexOrPanic(tasks, "T-test-gen-journeys-"+typ)
 			genJourneysDeps = append(genJourneysDeps, tasks[idx].ID)
 		}
 		tasks[genContractsIdx].Dependencies = genJourneysDeps
 
 		// gen-scripts depend on gen-contracts (Stage 3)
-		for _, typ := range interfaces {
+		for _, typ := range capabilities {
 			idx := findTaskIndexOrPanic(tasks, "T-test-gen-scripts-"+typ)
 			tasks[idx].Dependencies = []string{tasks[genContractsIdx].ID}
 		}
 
 		// run depends on all gen-scripts (Stage 4)
 		var genDeps []string
-		for _, typ := range interfaces {
+		for _, typ := range capabilities {
 			idx := findTaskIndexOrPanic(tasks, "T-test-gen-scripts-"+typ)
 			genDeps = append(genDeps, tasks[idx].ID)
 		}
@@ -644,6 +644,11 @@ func findTaskIndexByPrefixOrPanic(tasks []AutoGenTaskDef, prefix string) int {
 // Returns the updated tasks with first-test-task deps set.
 func ResolveFirstTestDep(tasks []AutoGenTaskDef, existingTasks map[string]Task, mode string) {
 	if len(tasks) == 0 {
+		return
+	}
+
+	// Only resolve when E2E test tasks exist (they have T-test-gen-journeys prefix)
+	if findTaskIndexByPrefix(tasks, "T-test-gen-journeys") < 0 {
 		return
 	}
 

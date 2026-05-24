@@ -61,6 +61,7 @@ func init() {
 	rootCmd.AddCommand(researchCmd)
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(claudeCmd)
+	rootCmd.AddCommand(surfacesCmd)
 
 	// Version is hidden from --help but accessible via `forge version`
 	versionCmd.Hidden = true

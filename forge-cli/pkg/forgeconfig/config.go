@@ -136,6 +136,67 @@ func ReadCoverageConfig(projectRoot string) (CoverageConfig, error) {
 	return result, nil
 }
 
+// SurfacesMap is a map[string]string that supports dual-form YAML serialization.
+// Scalar form: `surfaces: api` → map[string]string{".": "api"}
+// Map form: `surfaces: {frontend: web}` → used as-is
+// Empty map serializes as `surfaces: {}` (no omitempty).
+type SurfacesMap map[string]string
+
+// UnmarshalYAML implements custom YAML unmarshaling for SurfacesMap.
+// Handles three cases:
+//   - scalar string "api" → map[string]string{".": "api"}
+//   - map form {frontend: web} → used as-is
+//   - nil → nil map (distinguished from empty map)
+func (s *SurfacesMap) UnmarshalYAML(value *yaml.Node) error {
+	switch value.Kind {
+	case yaml.ScalarNode:
+		// Scalar form: "api" → {".": "api"}
+		if value.Value == "" || value.Value == "null" || value.Value == "~" {
+			*s = nil
+			return nil
+		}
+		*s = SurfacesMap{".": value.Value}
+		return nil
+
+	case yaml.MappingNode:
+		// Map form: {frontend: web, backend: api}
+		result := make(SurfacesMap, len(value.Content)/2)
+		for i := 0; i < len(value.Content); i += 2 {
+			key := value.Content[i].Value
+			val := value.Content[i+1].Value
+			result[key] = val
+		}
+		*s = result
+		return nil
+
+	case yaml.AliasNode:
+		return s.UnmarshalYAML(value.Alias)
+
+	default:
+		*s = nil
+		return nil
+	}
+}
+
+// MarshalYAML implements custom YAML serialization for SurfacesMap.
+// Single entry with key "." → scalar form.
+// Multiple entries or non-"." key → map form.
+// Nil map → empty map `surfaces: {}`.
+func (s SurfacesMap) MarshalYAML() (interface{}, error) {
+	if s == nil {
+		// Empty surfaces must serialize as `surfaces: {}`, not omitted.
+		return map[string]string{}, nil
+	}
+	if len(s) == 1 {
+		if v, ok := s["."]; ok {
+			// Single scalar form: return the value directly as a scalar
+			return v, nil
+		}
+	}
+	// Map form: return as-is (map[string]string)
+	return map[string]string(s), nil
+}
+
 // Config represents the .forge/config.yaml structure.
 type Config struct {
 	Version       string          `yaml:"version,omitempty"`
@@ -145,7 +206,7 @@ type Config struct {
 	Coverage      *CoverageConfig `yaml:"coverage,omitempty"`
 	TestFramework string          `yaml:"test-framework,omitempty"`
 	Languages     []string        `yaml:"languages,omitempty"`
-	Interfaces    []string        `yaml:"interfaces,omitempty"`
+	Surfaces      SurfacesMap     `yaml:"surfaces"`
 }
 
 // Valid project type values.

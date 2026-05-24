@@ -23,18 +23,23 @@ v3.0.0 正在重新设计测试管线。两个重叠概念在 v3 发布前统一
 
 ## Proposed Solution
 
-用一个统一的 `surfaces` map 字段（path → surface）替代 `interfaces` + `surface` 两个字段。`forge init` 自动检测每个路径的接口类型并写入 `surfaces`，提供独立 CLI 命令 `forge surfaces` 供查询。
+用一个统一的 `surfaces` 字段替代 `interfaces` + `surface` 两个字段。`surfaces` 支持两种形式：单模块项目使用标量形式（`surfaces: api`），多模块项目使用 map 形式（`surfaces: { frontend: web, backend: api }`）。`forge init` 自动检测每个路径的接口类型并写入 `surfaces`，提供独立 CLI 命令 `forge surfaces` 供查询。
 
 ### Innovation Highlights
 
 **路径映射是核心洞察**：init 检测本就是在特定路径发现信号（`frontend/package.json` → web），直接记录路径比丢失路径信息更精确。gen-journeys 通过 `forge surfaces <path>` 一行命令获取 surface 类型，无需独立检测。
 
-**与行业方案的差异化**：Cypress/Turborepo/ESLint 都只解决"路径 → 配置"或"检测 → 配置"的单向问题。Forge 的独特之处在于将**双向数据流**统一到一个 map 中：init 时从代码结构自动推导配置（代码 → config），运行时从配置查询 surface 类型（config → 测试策略）。这个双向闭环消除了大多数工具中"检测结果与配置不一致"的根本原因。
+**与行业方案的差异化**：Cypress/Turborepo/ESLint 都只解决"路径 → 配置"或"检测 → 配置"的单向问题。Forge 的独特之处在于将**双向数据流**统一到一个字段中：init 时从代码结构自动推导配置（代码 → config），运行时从配置查询 surface 类型（config → 测试策略）。`surfaces` 的双态设计（标量/map）让 80%+ 的单模块项目获得最简配置（`surfaces: api`），而 monorepo 使用 map 形式获得路径级精度——两种场景共享同一字段的查询接口，无需用户关心内部差异。
 
 ### Config 结构
 
+`surfaces` 支持两种 YAML 形式，Go 内部统一表示为 `map[string]string`：
+
 ```yaml
-# .forge/config.yaml
+# 标量形式（单模块项目 — 80%+ 用户）
+surfaces: api
+
+# Map 形式（多模块项目 / monorepo）
 surfaces:
   frontend: web
   backend: api
@@ -45,23 +50,26 @@ surfaces:
 
 ```go
 // Config struct 变更
-// 旧: Interfaces []string `yaml:"interfaces"`
-// 新:
+// 删除: Interfaces []string `yaml:"interfaces"`
+// 新增:
 Surfaces map[string]string `yaml:"surfaces"` // 注意：不使用 omitempty
 
-// 兼容读取过渡逻辑（v3.0.0 引入，v3.1.0/v4.0.0 移除）
-// 规则 1：当 Surfaces 不为空时，直接使用 Surfaces，Interfaces 被完全忽略（无论其值）
-// 规则 2：当 Surfaces 为空但旧 Interfaces 不为空时，回退读 Interfaces 并映射旧命名
-//   （非 strict 模式）回退读 + 控制台 deprecation 警告
-//   （strict 模式，即 --strict 标志或 FORGE_STRICT=1 环境变量）跳过回退，直接报错
+// 自定义 UnmarshalYAML：
+//   标量形式 "api" → map[string]string{".": "api"}
+//   Map 形式 {frontend: web} → 原样使用
+// 自定义 MarshalYAML：
+//   单条目 + key=="." → 序列化为标量 "api"
+//   其他 → 序列化为 map
 ```
 
-**为什么不使用 `omitempty`**：空 `surfaces: {}` 如果被 `omitempty` 丢弃，YAML 序列化后字段消失，Go 反序列化得到 nil map。此时 `forge task index` 无法区分"未配置"和"配置为空"，复现提案声称要修复的静默跳过 bug。不使用 `omitempty` 确保空 map 序列化为 `surfaces: {}`，保留显式配置语义。
+**为什么用双态而非统一 map**：单模块项目是绝对多数（80%+），`surfaces: api` 比 `surfaces: {".": "api"}` 直观得多。双态消除了 `"."` 这个不自然的 map key，同时 Go 内部用 `map[string]string` 统一处理，不增加运行时复杂度。
 
+**为什么不使用 `omitempty`**：空 `surfaces` 如果被 `omitempty` 丢弃，YAML 序列化后字段消失，Go 反序列化得到 nil map。此时 `forge task index` 无法区分"未配置"和"配置为空"，复现提案声称要修复的静默跳过 bug。不使用 `omitempty` 确保：空 map（0 entries）序列化为 `surfaces: {}`，保留显式配置语义。
+
+**Map 形式规则**（仅当使用 map 形式时适用）：
 - **键**：相对于项目根目录的路径（无前导 `./`，无尾随 `/`）
 - **值**：单个 surface 类型字符串
 - **同路径多 surface**：拆分子路径（如 `app/pages: web` + `app/api: api`）
-- **单模块项目**：`".": api`
 
 ### 路径规范化与匹配算法
 
@@ -73,7 +81,10 @@ Surfaces map[string]string `yaml:"surfaces"` // 注意：不使用 omitempty
 4. 包含 `..` 的路径视为非法输入，返回错误（不做路径解析，防止安全风险）
 5. 不解析符号链接（按字面路径匹配）
 
-**匹配算法：路径段前缀匹配**（不是字符前缀匹配）：
+**匹配算法**：
+
+- **标量形式**：任意路径查询直接返回该值，无需匹配（单模块项目中所有代码共享同一个 surface 类型）
+- **Map 形式 — 路径段前缀匹配**（不是字符前缀匹配）：
 
 将查询路径和配置键都按 `/` 分割为 segment 数组，然后按 segment 逐段匹配。匹配的 segment 数最多者胜出。
 
@@ -99,25 +110,30 @@ Surfaces map[string]string `yaml:"surfaces"` // 注意：不使用 omitempty
 
 | 命令 | 成功（exit 0） | 未匹配（exit 1） | 输出流 |
 |------|---------------|-----------------|--------|
-| `forge surfaces` | 每行一个 `path=surface` | 不适用（空 map 也返回 0） | stdout |
+| `forge surfaces` | 标量形式输出单个类型（如 `api`）；map 形式每行一个 `path=surface` | 不适用（空也返回 0） | stdout |
 | `forge surfaces <path>` | 单个 surface 类型字符串（无额外格式化） | stderr 输出错误信息（含手动配置提示） | stdout / stderr |
 | `forge surfaces --types` | 空格分隔的去重类型列表 | 不适用 | stdout |
 
 **gen-journeys skill 调用契约**：skill 通过检查退出码区分"成功"和"未找到"——退出码 0 时解析 stdout 获取 surface 类型，退出码 1 时提示用户手动配置 surfaces。
 
 ```bash
-# 查看所有 surface 映射
+# 标量形式：查看/查询
+forge surfaces          # 输出: api (exit 0)
+forge surfaces src      # 输出: api (exit 0, 标量形式任意路径都返回该值)
+forge surfaces --types  # 输出: api
+
+# Map 形式：查看所有映射
 forge surfaces
 # frontend=web
 # backend=api
 # cli=cli
 
-# 按路径查询（gen-journeys 等 skill 调用）
+# Map 形式：按路径查询（gen-journeys 等 skill 调用）
 forge surfaces frontend/src
 # 输出: web (exit 0)
 # 或: Error: no surface found for path "unknown-dir". Run `forge init` to configure surfaces. (exit 1, stderr)
 
-# 列出去重类型列表（调试用）
+# Map 形式：列出去重类型列表（调试用）
 forge surfaces --types
 # web api cli
 ```
@@ -138,15 +154,15 @@ forge surfaces --types
 
 ### Key Scenarios
 
-1. **单接口项目**：`forge init` 检测到 `".": api`，gen-journeys 所有 journey 都用 api 策略
+1. **单接口项目**：`forge init` 检测到项目只有一种 surface 类型，写入标量形式 `surfaces: api`，gen-journeys 所有 journey 都用 api 策略
 2. **monorepo 多接口**：`forge init` 检测到 `frontend: web` + `backend: api`，gen-journeys 通过 `forge surfaces <path>` 查询
 3. **检测失败**：`forge init` 无法确定 surface 类型，提示用户手动输入路径和 surface
 4. **检测多选**：`forge init` 检测到多个候选路径，展示结果供用户确认或编辑
 5. **用户覆盖**：检测正确但用户想添加/删除/修改某个映射，可在确认时编辑
 6. **Next.js 全栈**：用户手动拆分为 `app/pages: web` + `app/api: api`
 7. **信号冲突**：同一个 `package.json` 同时包含 `react`（web 信号）和 `express`（api 信号）
-8. **已有项目过渡**：用户不重新运行 init，旧 `interfaces` 字段仍需被识别
-9. **CI 环境（strict 模式）**：CI 中启用 `FORGE_STRICT=1` 时，若 `surfaces` 不存在或为空，即使 `interfaces` 有值也应报错退出（exit 1），而非静默回退到 `interfaces`
+8. **已有项目升级（单接口自动迁移）**：用户升级 Forge 后首次运行任何命令，检测到 `interfaces: [api]` 但无 `surfaces`，自动转换为标量形式 `surfaces: api` 并写回 config
+9. **已有项目升级（多接口报错引导）**：用户升级 Forge 后首次运行任何命令，检测到 `interfaces: [web, api]` 但无 `surfaces`，无法自动迁移，报错退出引导运行 `forge init`
 10. **空 surfaces**：init 后用户清空了所有 surface 映射，`forge task index` 应明确报告"无 surface 配置"而非静默跳过
 
 ### 信号冲突消歧规则
@@ -173,7 +189,7 @@ forge surfaces --types
 
 ### 未知类型处理策略
 
-`surfaces` map 中的值必须是已知的 surface 类型（`web`/`api`/`cli`/`tui`/`mobile`）。当 `forge task index` 从 surfaces 提取去重类型列表时遇到未知类型：
+`surfaces` 中的值必须是已知的 surface 类型（`web`/`api`/`cli`/`tui`/`mobile`）。当 `forge task index` 从 surfaces 提取去重类型列表时遇到未知类型：
 - **不报错，不中断**：未知类型被忽略，不影响已知类型的正常处理
 - **输出 deprecation 级别日志**：`log.Warn("unknown surface type ignored", "type", "unknown-type", "path", "frontend")`
 - **不传透给下游**：未知类型不出现在 `forge surfaces --types` 的输出中，不生成对应的测试任务
@@ -183,15 +199,12 @@ forge surfaces --types
 ### Non-Functional Requirements
 
 - **检测速度**：init 中的 surface 检测应在 5 秒内完成（文件扫描 + 依赖解析，深度限制 1-10 层保证不会遍历过深）
-- **向后兼容（兼容读取过渡期）**：v3.0.0 引入 `surfaces` 字段的同时，Go 代码增加兼容读取过渡逻辑，遵循以下规则：
-  - **规则 1（surfaces 非空优先）**：当 `surfaces` map 不为空时，直接使用 `surfaces`，`interfaces` 字段被**完全忽略**（无论其值是什么）。即使 `interfaces` 包含 `surfaces` 中不存在的类型，也不合并。
-  - **规则 2（空 surfaces 回退）**：当 `surfaces` 为空但 `interfaces` 不为空时，行为取决于运行模式：
-    - **普通模式**（默认）：回退读取 `interfaces` 字段（同时将旧值映射到新命名：`web-ui` → `web`，`mobile-ui` → `mobile`），并在控制台输出 deprecation 警告（`"interfaces field is deprecated, run forge init to migrate to surfaces"`）。
-    - **strict 模式**（通过 `--strict` 命令行标志或 `FORGE_STRICT=1` 环境变量启用）：跳过回退，直接报错退出（`"surfaces is empty; in strict mode, interfaces fallback is disabled. Run forge init to configure surfaces"`，exit 1）。
-  - strict 模式适用于 CI 环境，确保配置问题被显式暴露而非静默兼容。此过渡逻辑计划在 v3.1.0 或 v4.0.0 中移除。
+- **向后兼容（升级迁移策略）**：v3.0.0 直接删除 `interfaces` 字段，不保留兼容读取逻辑。提供两级升级路径：
+  - **首次运行自动迁移（单接口项目）**：任何 `forge` 命令启动时检测到 config 中存在 `interfaces` 但无 `surfaces`，且 `interfaces` 仅包含单个类型时，自动转换为标量形式并写回 config。例如 `interfaces: [api]` 迁移为 `surfaces: api`，提示：`"migrated interfaces [api] → surfaces: api"`。这是安全的，因为单接口项目的所有代码都在根路径下，标量形式是精确表达。
+  - **明确报错引导（多接口项目或无 interfaces）**：当 `interfaces` 包含多个类型时，无法自动确定路径分配（`[web, api]` 无法推断哪个子目录对应哪个类型），直接报错退出（`"interfaces contains multiple types [web, api]; automatic migration not possible. Run forge init to configure path-level surfaces."`，exit 1）。当 `surfaces` 为空且无 `interfaces` 时，同样报错引导运行 `forge init`。
 - **路径规范化性能**：路径规范化（去除前导/尾随字符、分隔符转换）不应成为性能瓶颈，实现应避免不必要的字符串分配
 - **Windows 兼容性**：所有路径处理必须正确处理 `\` 分隔符，统一转为 `/` 后存储和匹配
-- **YAML 序列化一致性**：`surfaces` 字段的 YAML tag **不使用** `omitempty`（详见 Config struct 声明），避免空 map 被丢弃后复现静默跳过 bug
+- **YAML 序列化一致性**：`surfaces` 字段的 YAML tag **不使用** `omitempty`（详见 Config struct 声明），避免空值被丢弃后复现静默跳过 bug。自定义 MarshalYAML 确保：单条目 `"."` key 序列化为标量，多条目序列化为 map
 
 ### Constraints & Dependencies
 
@@ -210,7 +223,7 @@ forge surfaces --types
 **1. Cypress（v13+）Component Testing**
 - **检测机制**：Cypress 读取项目根目录的 `package.json`，检查 `devDependencies` 中是否包含 `react`/`vue`/`svelte` 等前端框架依赖，自动决定使用哪个组件测试适配器（cypress/react、cypress/vue 等）。
 - **配置方式**：`cypress.config.ts` 中的 `component` 字段。如果检测到前端框架但用户未配置，Cypress 会在首次启动时引导用户完成配置（interactive setup）。
-- **与 Forge 的差异**：Cypress 只检测单个项目根目录，不支持 monorepo 子目录级别的自动检测。Forge 的 `surfaces` map 需要处理 monorepo 多目录场景，这是 Cypress 不涉及的。
+- **与 Forge 的差异**：Cypress 只检测单个项目根目录，不支持 monorepo 子目录级别的自动检测。Forge 的 `surfaces` 字段需要处理 monorepo 多目录场景，这是 Cypress 不涉及的。
 
 **2. Turborepo Pipeline Configuration**
 - **检测机制**：Turborepo 不做自动检测，而是通过 `turbo.json` 的 `pipeline` 配置声明每个 workspace package 的构建和测试任务。依赖关系通过 workspace 内部的 `package.json` 依赖自动推断执行拓扑。
@@ -220,12 +233,12 @@ forge surfaces --types
 **3. ESLint Override by Path（flat config）**
 - **检测机制**：ESLint flat config（`eslint.config.js`）通过 `files` glob 模式匹配文件路径，为不同路径应用不同的 lint 规则集。这是"路径 → 配置"映射的行业验证模式。
 - **配置方式**：`files: ["frontend/**/*.{js,jsx}"]` + 对应规则数组。支持 glob 而非精确路径匹配。
-- **与 Forge 的参考价值**：ESLint 证明了"按路径区分配置策略"是行业成熟模式。Forge 的 `surfaces` map 借鉴了这一思路，但使用精确路径而非 glob（因为 surface 类型在目录级别确定，不需要文件级粒度）。ESLint 的 glob 匹配比 Forge 的路径段前缀匹配更复杂，我们选择更简单的方案以降低实现和调试成本。
+- **与 Forge 的参考价值**：ESLint 证明了"按路径区分配置策略"是行业成熟模式。Forge 的 `surfaces` 字段借鉴了这一思路，但使用精确路径而非 glob（因为 surface 类型在目录级别确定，不需要文件级粒度）。ESLint 的 glob 匹配比 Forge 的路径段前缀匹配更复杂，我们选择更简单的方案以降低实现和调试成本。
 
 **4. Jest Projects Configuration**
 - **检测机制**：Jest 通过 `projects` 字段（数组）为 monorepo 中每个子项目定义独立的测试配置。不自动检测——用户必须手动声明项目列表和配置。
 - **配置方式**：`projects: ["apps/*"]` + 每个项目的 `jest.config.js`。支持 glob 匹配目录。
-- **与 Forge 的差异**：Jest 的 `projects` 是声明式数组，不含类型信息（不区分 web/api）。Forge 的 `surfaces` map 同时编码了路径和类型信息，这是 Forge 特有的需求（因为测试策略依赖 surface 类型）。
+- **与 Forge 的差异**：Jest 的 `projects` 是声明式数组，不含类型信息（不区分 web/api）。Forge 的 `surfaces` 字段同时编码了路径和类型信息，这是 Forge 特有的需求（因为测试策略依赖 surface 类型）。
 
 ### Comparison Table
 
@@ -239,7 +252,7 @@ forge surfaces --types
 | **项目数组 + 独立配置**（类似 Jest projects，每个子项目有独立 surface 配置） | Jest `projects` field | 成熟模式，生态验证充分 | 不含类型信息（Jest 不区分 web/api），需额外抽象层；数组无路径映射能力，gen-journeys 仍需推断 | Rejected: 信息密度不足 |
 | surfaces 数组 | 本 proposal v1 | 简单 | 丢失路径信息，gen-journeys 仍需额外推断 | Rejected: 信息损失 |
 | surfaces map + forge config 查询 | 本 proposal v2 | 统一 | 污染 config 命令，混合关注点 | Rejected: 关注点耦合 |
-| **surfaces map + 独立 forge surfaces 命令** | 本 proposal v3（综合 ESLint 路径配置 + Turborepo workspace 隔离 + Cypress 检测引导思路） | 路径级精度 + 自动检测减少配置 + 关注点分离 | 同路径多 surface 需拆子路径；strict 模式增加 CLI 复杂度 | **Selected: 精确、简洁、职责清晰** |
+| **surfaces 双态（标量/map）+ 独立 forge surfaces 命令** | 本 proposal v4（综合 ESLint 路径配置 + Turborepo workspace 隔离 + Cypress 检测引导思路） | 单模块零学习成本 + 多模块路径级精度 + 关注点分离 | 同路径多 surface 需拆子路径；双态需要自定义 YAML 序列化（约 20-30 行） | **Selected: 精确、简洁、多数场景最优** |
 
 ### Trade-off 深度分析
 
@@ -295,7 +308,7 @@ monorepo/
 
 ### Resource & Timeline
 
-Go 检测逻辑约 150-250 行代码（文件扫描 + 依赖解析），`forge surfaces` 命令约 50-100 行（路径段前缀匹配 + 格式化输出 + 退出码处理），兼容读取过渡逻辑约 30-50 行，加上 TUI 确认界面修改。gen-journeys skill 适配工作量：SKILL.md 指令更新 + rule 文件重命名和内容更新（约 5-8 个文件）。总计可控。
+Go 检测逻辑约 150-250 行代码（文件扫描 + 依赖解析），`forge surfaces` 命令约 50-100 行（路径段前缀匹配 + 格式化输出 + 退出码处理），自定义 YAML 序列化约 20-30 行，加上 TUI 确认界面修改。gen-journeys skill 适配工作量：SKILL.md 指令更新 + rule 文件重命名和内容更新（约 5-8 个文件）。总计可控。
 
 ### Dependency Readiness
 
@@ -311,24 +324,25 @@ Go 检测逻辑约 150-250 行代码（文件扫描 + 依赖解析），`forge s
 | surface 查询应复用 forge config | 用户反馈 | Overturned: 混合关注点增加 config 命令复杂度。独立 `forge surfaces` 命令更清晰 |
 | init 中可以做完整检测 | Assumption Flip | Refined: init 只能做基于硬性规则的简单检测，LLM 驱动的精细检测仍在 gen-journeys 中 |
 | 新字段用 omitempty 是安全的 | Bug Class Analysis | Overturned: `interfaces` 的静默跳过 bug 根因就是 omitempty 导致空值被丢弃。新 `surfaces` 字段必须不使用 omitempty，否则复现同类 bug |
-| 不迁移旧字段是安全的 | Edge Case Analysis | Overturned: 已有项目不重新 init 时旧字段被完全忽略，forge task index 静默停止生成任务。需要兼容读取过渡期 |
+| 不迁移旧字段是安全的 | Edge Case Analysis | Overturned: 已有项目升级后旧字段被完全忽略，forge task index 会明确报错。直接删除旧字段 + 明确报错引导，比保留兼容过渡逻辑更简洁，避免维护两套读取路径 |
 | 字符前缀匹配足够精确 | Boundary Test | Overturned: `frontend` 会错误匹配 `frontend-new`。必须使用路径段前缀匹配 |
 | 检测深度无限制是合理的 | Performance Analysis | Overturned: 无限制遍历在大型 monorepo 中可能挂起或 OOM，与 5 秒检测速度要求矛盾。限制为 1-10 并拒绝 0 值 |
+| 统一用 map 形式对单模块项目友好 | UX Analysis | Overturned: 80%+ 用户被迫使用 `{".": "api"}` 这种不直观的 map key。双态设计（标量/map）让单模块项目获得 `surfaces: api` 的极简体验，而内部用 `map[string]string` 统一处理，不增加运行时复杂度 |
 
 ## Scope
 
 ### In Scope
 
-- config schema 变更：删除 `interfaces` 和 `surface`，新增 `surfaces` map 字段（path → surface）
-- Go Config struct：`Surfaces map[string]string \`yaml:"surfaces"\``（不使用 omitempty），兼容读取过渡逻辑
+- config schema 变更：删除 `interfaces` 和 `surface`，新增 `surfaces` 字段（标量/map 双态）
+- Go Config struct：`Surfaces map[string]string \`yaml:"surfaces"\``（不使用 omitempty）+ 自定义 `UnmarshalYAML`/`MarshalYAML`（标量 ↔ map 双态转换），直接移除 `Interfaces` 字段，新增首次运行自动迁移逻辑（检测旧 `interfaces` → 单接口自动转换为标量 / 多接口报错引导）
 - 命名规范统一：`web-ui` → `web`，`mobile-ui` → `mobile`
 - `forge init` Go 代码：新增 surface 自动检测逻辑（文件扫描 + 依赖解析）+ 信号冲突消歧 + TUI 确认界面
 - `forge surfaces` CLI 命令：独立命令，支持全量查看、路径查询（路径段前缀匹配）、类型列表，退出码契约
-- `forge task index` Go 代码：从读 `interfaces` 改为读 `surfaces`（提取去重 surface 类型列表，含兼容读取过渡 + strict 模式支持）
-- strict 模式：`--strict` 命令行标志或 `FORGE_STRICT=1` 环境变量，跳过 `interfaces` 兼容回退，空 surfaces 直接报错（适用于 CI 环境）
+- `forge task index` Go 代码：从读 `interfaces` 改为读 `surfaces`（提取去重 surface 类型列表，空 surfaces 直接报错退出）
+- strict 模式移除：不再需要 `--strict` 标志或 `FORGE_STRICT=1` 环境变量，因为已无兼容回退逻辑。空 surfaces 直接报错是唯一行为
 - gen-journeys skill 适配（核心消费者，必须同步更新）：
   - 从独立 surface 检测改为调用 `forge surfaces <path>` 查询
-  - SKILL.md 中 `surface` 字段引用更新为 `surfaces` map
+  - SKILL.md 中 `surface` 字段引用更新为 `surfaces` 字段
   - surface rule 文件重命名：`surface-webui.md` → `surface-web.md`，`surface-mobileui.md` → `surface-mobile.md`
   - rule 文件中旧命名值引用更新（`webui` → `web`，`mobileui` → `mobile`）
 - 路径规范化与匹配：路径段前缀匹配实现 + 路径规范化规则
@@ -336,13 +350,12 @@ Go 检测逻辑约 150-250 行代码（文件扫描 + 依赖解析），`forge s
 ### Out of Scope
 
 - 下游 skill 全面适配（gen-contracts, gen-test-scripts, eval-journey, eval-contract, run-tests）— gen-journeys 以外的 skill 可在后续迭代中更新引用，因它们不直接读写 `surfaces` 字段
-- 旧 config 自动迁移工具（`interfaces` → `surfaces` 的一键转换）— 通过兼容读取过渡期解决，无需独立迁移工具
+- 旧 config 自动迁移工具（`interfaces` → `surfaces` 的一键转换）— 用户重新运行 `forge init` 即可生成新配置
 - 文档全面更新（ARCHITECTURE.md, conventions/ 等）— 配合下游 skill 适配一起做
 
 ### 版本计划
 
-- **v3.0.0**：`surfaces` map + 检测 + CLI 命令 + gen-journeys 适配 + 兼容读取过渡逻辑（含 `interfaces` 回退 + strict 模式）
-- **v3.1.0 / v4.0.0**：移除 `interfaces` 兼容读取过渡逻辑，全面切换到 `surfaces`
+- **v3.0.0**：`surfaces` 双态字段 + 检测 + CLI 命令 + gen-journeys 适配，直接删除 `interfaces` 字段（无过渡期）
 
 ## Key Risks
 
@@ -351,26 +364,26 @@ Go 检测逻辑约 150-250 行代码（文件扫描 + 依赖解析），`forge s
 | Go 检测规则无法覆盖边缘项目类型 | M | L | init 确认界面允许用户手动编辑路径和 surface |
 | 同路径多 surface 拆分不直观 | M | H | 文档提供拆分示例（Next.js），init 检测覆盖常见模式。Next.js 等 fullstack 框架常见，impact 调高为 H |
 | gen-journeys 路径匹配与用户预期不一致 | L | M | `forge surfaces <path>` 用路径段前缀匹配（非字符前缀）+ 无匹配时明确报错 |
-| 下游 skill 引用旧字段名导致运行时错误 | M | H | out-of-scope skill 暂时保留对旧字段名的兼容读取，gen-journeys 已纳入 In Scope 同步更新 |
-| **旧 `interfaces` 字段被忽略导致静默信息丢失** | M | H | v3.0.0 引入兼容读取过渡逻辑：surfaces 为空时回退读 interfaces + deprecation 警告；CI 环境通过 `FORGE_STRICT=1` 跳过回退直接报错。确保未重新 init 的项目在普通模式不丢失配置，CI 环境显式暴露配置问题 |
-| **surfaces 空 map 被 omitempty 丢弃复现静默跳过 bug** | H | H | Config struct 的 YAML tag 显式不使用 `omitempty`：`yaml:"surfaces"`。空 map 序列化为 `surfaces: {}` 保留显式语义 |
-| **gen-journeys 新旧字段并存导致同步问题** | M | H | gen-journeys 的 surface 字段引用和 rule 文件重命名已纳入 In Scope，确保 v3.0.0 同步发布。兼容期内新旧字段不冲突（Go 读 surfaces，gen-journeys 通过 CLI 查询 surfaces） |
+| 下游 skill 引用旧字段名导致运行时错误 | M | H | out-of-scope skill 需在后续迭代中更新引用，gen-journeys 已纳入 In Scope 同步更新 |
+| **旧 `interfaces` 字段被删除导致已配置项目需手动迁移** | M | M | 直接删除旧字段，`surfaces` 为空时明确报错引导用户运行 `forge init`。影响范围有限：已配置 `interfaces` 的用户升级后运行一次 init 即可完成迁移 |
+| **surfaces 空值被 omitempty 丢弃复现静默跳过 bug** | H | H | Config struct 的 YAML tag 显式不使用 `omitempty`：`yaml:"surfaces"`。空 map（0 entries）序列化为 `surfaces: {}`，保留显式语义 |
+| **gen-journeys 新旧字段并存导致同步问题** | M | H | gen-journeys 的 surface 字段引用和 rule 文件重命名已纳入 In Scope，确保 v3.0.0 同步发布，新旧字段不并存 |
 
 ## Success Criteria
 
 - [ ] `forge init` 能自动检测至少 3 种 surface 类型（web, api, cli）
-- [ ] 检测结果以 path → surface map 形式在 TUI 中展示，TUI 验收标准如下：
+- [ ] 检测结果在 TUI 中展示：单模块项目显示单个 surface 类型（标量），多模块项目以 path → surface map 形式展示。TUI 验收标准如下：
   - **确认按钮**：存在明确的确认操作（如 "Confirm" 按钮或 Enter 快捷键），确认后将 surfaces 写入 config
-  - **编辑入口**：每个 path=surface 行可通过特定操作（如按 `e` 键或点击行）进入编辑模式，修改路径或 surface 类型
+  - **编辑入口**：多模块项目每个 path=surface 行可通过特定操作（如按 `e` 键或点击行）进入编辑模式，修改路径或 surface 类型
   - **冲突信号标注**：当检测到信号冲突时，该行显示格式为 `path: surface (冲突信号: web + api，已按优先级选择 web)`，冲突类型以高亮或颜色区分
   - **添加/删除**：提供添加新映射（空白行输入）和删除已有映射（选中行后按 `d` 键）的操作入口
-- [ ] `surfaces` 写入 `.forge/config.yaml`，格式为 map（path → surface string），空 map 写入 `surfaces: {}` 而非字段缺失
+- [ ] `surfaces` 写入 `.forge/config.yaml`，单模块项目使用标量形式（`surfaces: api`），多模块项目使用 map 形式（`surfaces: { frontend: web, backend: api }`）。空 map 写入 `surfaces: {}` 而非字段缺失
 - [ ] `forge surfaces` 命令支持全量查看（每行 `path=surface`）、路径查询（路径段前缀匹配，未匹配时 exit 1 + stderr 错误信息）、类型列表
 - [ ] `forge task index` 从 `surfaces` 提取去重类型列表并正确生成对应测试任务
-- [ ] 兼容读取过渡验证：
-  - **规则 1 验证**：当 `surfaces` 非空且 `interfaces` 也非空时，`forge task index` 只使用 `surfaces`，`interfaces` 中的值被完全忽略（验证方法：config 中 `surfaces: {frontend: web}` + `interfaces: [api, cli]`，`forge surfaces --types` 输出仅包含 `web`，不包含 `api` 或 `cli`）
-  - **规则 2 普通模式验证**：当 `surfaces` 为空但 `interfaces` 不为空时，`forge task index` 回退读 `interfaces`（含旧命名映射 `web-ui` → `web`）并输出 deprecation 警告
-  - **规则 2 strict 模式验证**：设置 `FORGE_STRICT=1` 后，当 `surfaces` 为空时，即使 `interfaces` 非空也报错退出（exit 1 + stderr 错误信息）
+- [ ] 空 surfaces 报错验证：当 `surfaces` 为空（未配置、空字符串或空 map）时，`forge task index` 报错退出（exit 1 + stderr 错误信息引导运行 `forge init`）
+- [ ] 双态序列化验证：Go 代码将 `surfaces: api`（标量）反序列化为 `map[string]string{".":"api"}`，序列化时还原为 `surfaces: api`；将 `surfaces: {frontend: web}` 反序列化后序列化仍为 map 形式
+- [ ] `interfaces` 字段完全忽略验证：config 中同时存在 `surfaces: {frontend: web}` 和 `interfaces: [api, cli]` 时，`forge surfaces --types` 输出仅包含 `web`，不包含 `api` 或 `cli`（证明 `interfaces` 被完全忽略而非回退读取）
+- [ ] 自动迁移验证：config 中 `interfaces: [api]` 但无 `surfaces` 时，首次运行自动写入 `surfaces: api`（标量形式），输出迁移提示
 - [ ] 命名规范统一验证：config 中 `web-ui` / `mobile-ui` 值不再出现，Go 代码和 config 使用一致的 `web` / `mobile` 短名称
 - [ ] gen-journeys 通过 `forge surfaces <path>` 查询 surface（检查退出码 0），不再独立检测
 - [ ] gen-journeys rule 文件已重命名（`surface-webui.md` → `surface-web.md`），文件内引用的命名值已更新

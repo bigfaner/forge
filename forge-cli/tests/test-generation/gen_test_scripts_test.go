@@ -366,7 +366,7 @@ func TestTC_008_GenTestScriptsSkillDocumentsTypeFilter(t *testing.T) {
 	// Acceptance: gen-test-scripts accepts --type <capability> argument
 	assert.Regexp(t, `--type`, content, "SKILL.md should document --type argument")
 
-	// Acceptance: Type value matches profile capability names (e.g., tui, web-ui, api, cli)
+	// Acceptance: Type value matches profile capability names (e.g., tui, web, api, cli)
 	assert.Regexp(t, `capability`, content, "SKILL.md should reference profile capabilities for type values")
 
 	// Acceptance: Invalid types produce a clear error

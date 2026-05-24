@@ -790,7 +790,7 @@ func TestRenderBody_SubstitutesAllPlaceholders(t *testing.T) {
 	template := `Feature: {{FEATURE_SLUG}}
 Mode: {{MODE}}
 Scope: {{SCOPE}}
-Interfaces: {{INTERFACES}}
+Interfaces: {{SURFACES}}
 Test Type: {{TEST_TYPE}}
 Acceptance:
 {{ACCEPTANCE_CRITERIA}}`
@@ -799,7 +799,7 @@ Acceptance:
 		FeatureSlug:        "my-feature",
 		Mode:               "quick",
 		Scope:              []string{"backend", "frontend"},
-		Interfaces:         []string{"api", "cli"},
+		SurfaceTypes:       []string{"api", "cli"},
 		AcceptanceCriteria: []string{"AC1: works", "AC2: fast"},
 	}
 	def := AutoGenTaskDef{TestType: "api"}
@@ -816,7 +816,7 @@ Acceptance:
 		t.Errorf("SCOPE not substituted, got:\n%s", result)
 	}
 	if !strings.Contains(result, "- api\n- cli") {
-		t.Errorf("INTERFACES not substituted, got:\n%s", result)
+		t.Errorf("SURFACES not substituted, got:\n%s", result)
 	}
 	if !strings.Contains(result, "Test Type: api") {
 		t.Error("TEST_TYPE not substituted")
@@ -857,7 +857,7 @@ func TestRenderBody_EmptyScope_OmitsSection(t *testing.T) {
 }
 
 func TestRenderBody_EmptyInterfaces_Default(t *testing.T) {
-	template := "Interfaces: {{INTERFACES}}"
+	template := "Interfaces: {{SURFACES}}"
 	ctx := BodyContext{FeatureSlug: "test"}
 	def := AutoGenTaskDef{}
 
@@ -893,13 +893,13 @@ func TestRenderBody_EmptyAcceptanceCriteria_Default(t *testing.T) {
 }
 
 func TestRenderBody_EmptyBodyContext_KnownPlaceholdersResolved(t *testing.T) {
-	template := "Feature: {{FEATURE_SLUG}}\nMode: {{MODE}}\n## Scope\n{{SCOPE}}\n## Other\nInterfaces: {{INTERFACES}}\nType: {{TEST_TYPE}}\nAcceptance:\n{{ACCEPTANCE_CRITERIA}}"
+	template := "Feature: {{FEATURE_SLUG}}\nMode: {{MODE}}\n## Scope\n{{SCOPE}}\n## Other\nInterfaces: {{SURFACES}}\nType: {{TEST_TYPE}}\nAcceptance:\n{{ACCEPTANCE_CRITERIA}}"
 	ctx := BodyContext{}
 	def := AutoGenTaskDef{}
 
 	result := renderBody(template, def, ctx)
 
-	knownPlaceholders := []string{"{{FEATURE_SLUG}}", "{{MODE}}", "{{SCOPE}}", "{{INTERFACES}}", "{{TEST_TYPE}}", "{{ACCEPTANCE_CRITERIA}}"}
+	knownPlaceholders := []string{"{{FEATURE_SLUG}}", "{{MODE}}", "{{SCOPE}}", "{{SURFACES}}", "{{TEST_TYPE}}", "{{ACCEPTANCE_CRITERIA}}"}
 	for _, ph := range knownPlaceholders {
 		if strings.Contains(result, ph) {
 			t.Errorf("placeholder %s not resolved in output:\n%s", ph, result)
@@ -952,7 +952,7 @@ func TestGenerateTestTaskMD_BackwardCompat_EmptyBodyContext(t *testing.T) {
 	// Only check our 6 managed placeholders are resolved
 	managed := []string{
 		"{{FEATURE_SLUG}}", "{{MODE}}", "{{SCOPE}}",
-		"{{INTERFACES}}", "{{TEST_TYPE}}", "{{ACCEPTANCE_CRITERIA}}",
+		"{{SURFACES}}", "{{TEST_TYPE}}", "{{ACCEPTANCE_CRITERIA}}",
 	}
 	for _, ph := range managed {
 		if strings.Contains(s, ph) {
@@ -996,11 +996,11 @@ func TestRenderBody_FeatureSlug(t *testing.T) {
 
 func TestRenderBody_ScopeAndInterfaces(t *testing.T) {
 	t.Run("populated scope and interfaces", func(t *testing.T) {
-		template := "## Feature Context\n- Scope: {{SCOPE}}\n- Test interfaces: {{INTERFACES}}"
+		template := "## Feature Context\n- Scope: {{SCOPE}}\n- Test interfaces: {{SURFACES}}"
 		ctx := BodyContext{
-			FeatureSlug: "feat",
-			Scope:       []string{"backend", "frontend"},
-			Interfaces:  []string{"api", "cli"},
+			FeatureSlug:  "feat",
+			Scope:        []string{"backend", "frontend"},
+			SurfaceTypes: []string{"api", "cli"},
 		}
 		def := AutoGenTaskDef{}
 
@@ -1021,8 +1021,8 @@ func TestRenderBody_ScopeAndInterfaces(t *testing.T) {
 		if strings.Contains(result, "{{SCOPE}}") {
 			t.Error("SCOPE placeholder should be resolved")
 		}
-		if strings.Contains(result, "{{INTERFACES}}") {
-			t.Error("INTERFACES placeholder should be resolved")
+		if strings.Contains(result, "{{SURFACES}}") {
+			t.Error("SURFACES placeholder should be resolved")
 		}
 	})
 }
@@ -1052,7 +1052,7 @@ func TestRenderBody_AcceptanceCriteria(t *testing.T) {
 
 func TestRenderBody_EmptyFields(t *testing.T) {
 	t.Run("all fields empty uses fallbacks", func(t *testing.T) {
-		template := "Feature: {{FEATURE_SLUG}}\nMode: {{MODE}}\n## Scope\n{{SCOPE}}\n## Other\nInterfaces: {{INTERFACES}}\nType: {{TEST_TYPE}}\n{{ACCEPTANCE_CRITERIA}}"
+		template := "Feature: {{FEATURE_SLUG}}\nMode: {{MODE}}\n## Scope\n{{SCOPE}}\n## Other\nInterfaces: {{SURFACES}}\nType: {{TEST_TYPE}}\n{{ACCEPTANCE_CRITERIA}}"
 		ctx := BodyContext{}
 		def := AutoGenTaskDef{}
 
@@ -1079,7 +1079,7 @@ func TestRenderBody_EmptyFields(t *testing.T) {
 			t.Error("Empty acceptance criteria should use fallback")
 		}
 		// No leftover placeholders
-		for _, ph := range []string{"{{FEATURE_SLUG}}", "{{MODE}}", "{{SCOPE}}", "{{INTERFACES}}", "{{TEST_TYPE}}", "{{ACCEPTANCE_CRITERIA}}"} {
+		for _, ph := range []string{"{{FEATURE_SLUG}}", "{{MODE}}", "{{SCOPE}}", "{{SURFACES}}", "{{TEST_TYPE}}", "{{ACCEPTANCE_CRITERIA}}"} {
 			if strings.Contains(result, ph) {
 				t.Errorf("placeholder %s should be resolved", ph)
 			}
@@ -1153,7 +1153,7 @@ func TestBodyContentPerStrategy(t *testing.T) {
 			}
 
 			// Verify no managed placeholders left unresolved
-			for _, ph := range []string{"{{FEATURE_SLUG}}", "{{MODE}}", "{{SCOPE}}", "{{INTERFACES}}", "{{TEST_TYPE}}", "{{ACCEPTANCE_CRITERIA}}"} {
+			for _, ph := range []string{"{{FEATURE_SLUG}}", "{{MODE}}", "{{SCOPE}}", "{{SURFACES}}", "{{TEST_TYPE}}", "{{ACCEPTANCE_CRITERIA}}"} {
 				if strings.Contains(s, ph) {
 					t.Errorf("type %q has unresolved placeholder %s", tt.typ, ph)
 				}
@@ -1746,19 +1746,9 @@ func TestGetQuickTestTasks_DriftDependsOnVerifyRegression(t *testing.T) {
 
 // --- Task 5: ResolveFirstTestDep panic and InferType ordering tests ---
 
-func TestResolveFirstTestDep_BreakdownPanicsOnMissingGenJourneys(t *testing.T) {
-	defer func() {
-		r := recover()
-		if r == nil {
-			t.Fatal("expected panic when gen-journeys task not found in breakdown mode, but did not panic")
-		}
-		msg := fmt.Sprintf("%v", r)
-		if !strings.Contains(msg, "T-test-gen-journeys") {
-			t.Errorf("panic message should contain T-test-gen-journeys, got %q", msg)
-		}
-	}()
-
-	// Create tasks without gen-journeys — only gen-scripts (old pipeline)
+func TestResolveFirstTestDep_BreakdownGracefulOnMissingGenJourneys(_ *testing.T) {
+	// When gen-journeys tasks don't exist (no E2E tasks), ResolveFirstTestDep
+	// should return gracefully without panicking.
 	tasks := []AutoGenTaskDef{
 		{ID: "T-eval-journey"},
 		{ID: "T-test-gen-contracts"},
@@ -1768,28 +1758,20 @@ func TestResolveFirstTestDep_BreakdownPanicsOnMissingGenJourneys(t *testing.T) {
 	existing := map[string]Task{
 		"1-gate": {ID: "1.gate"},
 	}
+	// Should not panic
 	ResolveFirstTestDep(tasks, existing, "breakdown")
 }
 
-func TestResolveFirstTestDep_QuickPanicsOnMissingGenJourneys(t *testing.T) {
-	defer func() {
-		r := recover()
-		if r == nil {
-			t.Fatal("expected panic when gen-journeys task not found in quick mode, but did not panic")
-		}
-		msg := fmt.Sprintf("%v", r)
-		if !strings.Contains(msg, "T-test-gen-journeys") {
-			t.Errorf("panic message should contain T-test-gen-journeys, got %q", msg)
-		}
-	}()
-
-	// Create tasks without gen-journeys — only drift (old pipeline)
+func TestResolveFirstTestDep_QuickGracefulOnMissingGenJourneys(_ *testing.T) {
+	// When gen-journeys tasks don't exist (no E2E tasks), ResolveFirstTestDep
+	// should return gracefully without panicking.
 	tasks := []AutoGenTaskDef{
 		{ID: "T-quick-doc-drift"},
 	}
 	existing := map[string]Task{
 		"1-foo": {ID: "1"},
 	}
+	// Should not panic
 	ResolveFirstTestDep(tasks, existing, "quick")
 }
 

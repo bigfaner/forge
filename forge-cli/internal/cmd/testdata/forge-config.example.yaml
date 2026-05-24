@@ -4,12 +4,18 @@
 
 project-type: fullstack
 
-# System-facing interface types to test.
-# Omit to use the union of all detected languages' default interfaces.
-# Valid values: web-ui, tui, mobile-ui, api, cli
-interfaces:
-  - web-ui
-  - api
+# Surface type mapping for test pipeline and path-based queries.
+# Scalar form (single-module projects):
+#   surfaces: api
+# Map form (multi-module / monorepo):
+#   surfaces:
+#     frontend: web
+#     backend: api
+# Omit to use forge init auto-detection.
+# Valid values: web, mobile, api, cli, tui
+surfaces:
+  frontend: web
+  backend: api
 
 # Override auto-detected languages. Omit to use auto-detection from project file signals.
 # Valid values: go, javascript, mobile, java, rust, python
