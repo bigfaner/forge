@@ -196,8 +196,20 @@ func DetectSurfacesWithConflicts(projectRoot string) (*DetectResult, error) {
 		scanSubdirsWithSources(projectRoot, projectRoot, 0, depth, result, sources, &conflicts)
 	}
 
-	// Collapse to scalar form if only one surface type and one path "."
+	// Collapse to scalar form if only one surface detected.
+	// Non-workspace: normalize subdirectory key to "." for consistent scalar handling.
+	// Workspace: preserve subdirectory path keys.
 	if len(result) == 1 {
+		if !isWorkspace {
+			for k, v := range result {
+				if k != "." {
+					result = SurfacesMap{".": v}
+					if s, ok := sources[k]; ok {
+						sources = SourcesMap{".": s}
+					}
+				}
+			}
+		}
 		return &DetectResult{
 			Surfaces:  result,
 			Conflicts: conflicts,

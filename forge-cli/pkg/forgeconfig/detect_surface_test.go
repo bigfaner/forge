@@ -554,6 +554,26 @@ func TestDetectSurfaces_SingleTypeScalar(t *testing.T) {
 	}
 }
 
+// bug: scalar key not normalized to "." when only subdir has signal
+func TestDetectSurfaces_SubdirOnly_ScalarKeyNormalized(t *testing.T) {
+	dir := t.TempDir()
+	// Root has NO go.mod — only a subdirectory does
+	cliDir := filepath.Join(dir, "my-cli")
+	mkdirAll(t, cliDir)
+	writeGoMod(t, cliDir, []string{"github.com/spf13/cobra v1.10.0"})
+
+	result, err := DetectSurfacesWithConflicts(dir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !result.IsScalar {
+		t.Fatalf("expected IsScalar=true, got false; surfaces=%v", result.Surfaces)
+	}
+	if result.Surfaces["."] != "cli" {
+		t.Errorf("expected surfaces['.']='cli', got surfaces=%v", result.Surfaces)
+	}
+}
+
 func TestDetectSurfaces_MultiTypeMap(t *testing.T) {
 	dir := t.TempDir()
 	writePackageJSONWithWorkspaces(t, dir, []string{"apps/*"})
