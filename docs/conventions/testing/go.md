@@ -212,6 +212,6 @@ func withRetry(t *testing.T, fn func() error, maxAttempts int, interval time.Dur
 Resolve all `// VERIFY:` comments using Fact Table values. Post-generation check:
 
 ```bash
-just e2e-compile
+just unit-test
 grep -rn '// VERIFY:' tests/e2e/ --include='*_test.go'
 ```
