@@ -228,6 +228,6 @@ internal/cmd/
 174、提升forge task submit 执行质量门禁的速度。doing
 175、forge task list要展示breaking、mainSession的值。done
 176、review-doc要忽略的任务文档及其记录文档等过程中，只针对目标文档。done
-177、审计forge plugin:整体架构、task pipeline、测试能力、skill与forge cli之间的契合度等
+177、审计forge plugin:整体架构、task pipeline、测试能力、skill与forge cli之间的契合度等。doing
 178、surfaces是否忽略大小写？还有detect serfaces失败。doing
 179、增加一个skill或自动任务：核心实现是否严格遵循proposal或tech-design.
