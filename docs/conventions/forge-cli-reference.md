@@ -24,6 +24,7 @@ domains: [cli, commands, reference, skills, task-list]
 | `forge version` | 打印 CLI 版本号（隐藏命令，不出现在 --help 中） | `version.go` |
 | `forge research [slug]` | 列出或查看 research report 详情 | `research.go` |
 | `forge claude` | 跳过权限检查启动 Claude CLI | `claude.go` |
+| `forge surfaces [path]` | 扫描项目文件检测 forge 可用的 surface | `surfaces.go` |
 
 ## 命令组
 
@@ -108,6 +109,16 @@ domains: [cli, commands, reference, skills, task-list]
 | `forge forensic search [project-path]` | 在 history.jsonl 中搜索匹配的会话 | `forensic/forensic.go` |
 | `forge forensic extract <session-jsonl-path>` | 从会话记录中提取紧凑证据 | `forensic/forensic.go` |
 | `forge forensic subagents <session-dir-path>` | 列出会话的子 agent 记录 | `forensic/forensic.go` |
+
+### forge fact — 项目事实管理
+
+源文件：`fact/parent.go`
+
+| 命令 | 用途 | 源文件 |
+|------|------|--------|
+| `forge fact get <fact_id>` | 获取指定 fact 的值 | `fact/get.go` |
+| `forge fact list` | 列出所有 fact（支持 `--source` 和 `--confidence` 过滤） | `fact/list.go` |
+| `forge fact summary` | 输出 fact 摘要 | `fact/summary.go` |
 
 ## CLI 表格渲染约定
 
