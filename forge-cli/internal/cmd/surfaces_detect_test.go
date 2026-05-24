@@ -120,9 +120,9 @@ func TestSurfacesDetectStdoutFormat(t *testing.T) {
 		}
 
 		output := strings.TrimSpace(stdout.String())
-		// Format: .=cli (detected:cobra) or .=cli (inferred:cmd-dir)
-		if !strings.Contains(output, "=") {
-			t.Errorf("expected path=type format, got %q", output)
+		// Scalar form: no path prefix, just type + source
+		if strings.Contains(output, "=") {
+			t.Errorf("scalar form should not contain '=', got %q", output)
 		}
 		if !strings.Contains(output, "(detected:") {
 			t.Errorf("expected (detected:<signal>) source annotation, got %q", output)
@@ -158,7 +158,10 @@ func TestSurfacesDetectStdoutFormat(t *testing.T) {
 		}
 
 		output := strings.TrimSpace(stdout.String())
-		// Format: .=cli (inferred:cmd-dir)
+		// Scalar form: just type + source, no ".=" prefix
+		if strings.Contains(output, "=") {
+			t.Errorf("scalar form should not contain '=', got %q", output)
+		}
 		if !strings.Contains(output, "(inferred:") {
 			t.Errorf("expected (inferred:<rule-id>) source annotation, got %q", output)
 		}

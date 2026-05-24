@@ -133,7 +133,10 @@ func printDetectResult(out interface{ Write([]byte) (int, error) }, result *forg
 
 	for _, p := range paths {
 		surfaceType := result.Surfaces[p]
-		line := fmt.Sprintf("%s=%s", p, surfaceType)
+		line := surfaceType
+		if p != "." {
+			line = fmt.Sprintf("%s=%s", p, surfaceType)
+		}
 
 		if source, ok := result.Sources[p]; ok && source != "" {
 			line += fmt.Sprintf(" (%s)", formatDetectSourceAnnotation(source))
