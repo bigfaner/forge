@@ -35,7 +35,7 @@ _Source: feature/forge-cli-v3_
 
 ### BIZ-task-lifecycle-003: System Type Exclusion
 
-**Rule**: Non-auto-generated tasks (`.md` files created by Skills or users) MUST NOT use system-reserved types. System types are: `gate`, `test.gen-cases`, `test.eval-cases`, `test.gen-scripts`, `test.run`, `test.gen-and-run`, `test.verify-regression`, `validation.code`, `validation.ux`, `doc.eval`, `doc.summary`, `code-quality.simplify` (12 total). Auto-generated tasks (identified by `IsAutoGenTaskID()` matching `T-test-*`, `T-quick-*`, `T-specs-*`, `T-clean-*`, `T-validate-*`, `T-eval-*`, `*.gate`, `*.summary` ID patterns) are exempt. Enforcement occurs in both `BuildIndex()` and `validate-index`. Error message includes the specific invalid type and full system type list.
+**Rule**: Non-auto-generated tasks (`.md` files created by Skills or users) MUST NOT use system-reserved types. System types are: `gate`, `test.gen-journeys`, `test.gen-contracts`, `test.gen-scripts`, `test.run`, `test.verify-regression`, `validation.code`, `validation.ux`, `doc.eval`, `doc.summary`, `code-quality.simplify` (11 total). Auto-generated tasks (identified by `IsAutoGenTaskID()` matching `T-test-*`, `T-quick-*`, `T-specs-*`, `T-clean-*`, `T-validate-*`, `T-eval-*`, `*.gate`, `*.summary` ID patterns) are exempt. Enforcement occurs in both `BuildIndex()` and `validate-index`. Error message includes the specific invalid type and full system type list.
 
 **Dual-identity exception**: `doc.consolidate` and `doc.drift` are NOT in SystemTypes — they can be both auto-generated (by `forge task index`) and manually created by Skills for legacy projects.
 

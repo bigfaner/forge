@@ -559,7 +559,7 @@ func TestRenderTestRecord(t *testing.T) {
 			CasesGenerated: 5,
 			TypeReclassification: &TypeReclassification{
 				OriginalType: "test.gen-scripts",
-				ActualType:   "test.gen-and-run",
+				ActualType:   "test.run",
 				Reason:       "scope expanded to include run step",
 			},
 		}
@@ -567,7 +567,7 @@ func TestRenderTestRecord(t *testing.T) {
 
 		assert.Contains(t, got, "## Type Reclassification")
 		assert.Contains(t, got, "- Original: test.gen-scripts")
-		assert.Contains(t, got, "- Actual: test.gen-and-run")
+		assert.Contains(t, got, "- Actual: test.run")
 		assert.Contains(t, got, "- Reason: scope expanded to include run step")
 		assert.NotContains(t, got, "**Coverage**")
 	})
@@ -998,5 +998,117 @@ func TestFormatBool(t *testing.T) {
 	t.Run("false condition", func(t *testing.T) {
 		assert.Equal(t, "Failed", FormatBool(false, "Passed", "Failed"))
 		assert.Equal(t, "No", FormatBool(false, "Yes", "No"))
+	})
+}
+
+// --- Eval record template tests ---
+
+func TestRenderEvalRecord(t *testing.T) {
+	t.Run("eval record with all fields", func(t *testing.T) {
+		task := &Task{
+			ID:    "T-eval-1",
+			Title: "Evaluate journey quality",
+			Type:  TypeEvalJourney,
+		}
+		rd := &RecordData{
+			Status:   "completed",
+			Summary:  "Evaluated journey quality against rubric",
+			Score:    850,
+			Findings: []string{"Missing error handling", "Incomplete coverage"},
+			Severity: "major",
+			Passed:   true,
+			AcceptanceCriteria: []AcceptanceCriterion{
+				{Criterion: "Score >= 850", Met: true},
+			},
+			Notes: "Two findings, both non-blocking",
+		}
+		got := RenderEvalRecord(task, rd, "2026-05-23 10:00")
+
+		assert.Contains(t, got, "T-eval-1")
+		assert.Contains(t, got, "Evaluate journey quality")
+		assert.Contains(t, got, "## Eval Score")
+		assert.Contains(t, got, "850/1000")
+		assert.Contains(t, got, "## Findings")
+		assert.Contains(t, got, "- Missing error handling")
+		assert.Contains(t, got, "- Incomplete coverage")
+		assert.Contains(t, got, "## Severity")
+		assert.Contains(t, got, "major")
+		assert.Contains(t, got, "## Passed")
+		assert.Contains(t, got, "Yes")
+	})
+
+	t.Run("eval record with empty fields uses fallbacks", func(t *testing.T) {
+		task := &Task{
+			ID:    "T-eval-2",
+			Title: "Evaluate contract quality",
+			Type:  TypeEvalContract,
+		}
+		rd := &RecordData{
+			Status:  "completed",
+			Summary: "Eval passed",
+			Score:   900,
+		}
+		got := RenderEvalRecord(task, rd, "2026-05-23 10:00")
+
+		assert.Contains(t, got, "900/1000")
+		assert.Contains(t, got, "无")   // empty findings
+		assert.Contains(t, got, "N/A") // empty severity
+		assert.Contains(t, got, "No")  // passed=false default
+	})
+
+	t.Run("RenderRecord dispatches to eval for eval types", func(t *testing.T) {
+		task := &Task{
+			ID:    "T-eval-3",
+			Title: "Eval journey",
+			Type:  TypeEvalJourney,
+		}
+		rd := &RecordData{
+			Status:   "completed",
+			Summary:  "Evaluated",
+			Score:    750,
+			Severity: "critical",
+		}
+		got := RenderRecord(task, rd, "2026-05-23 10:00")
+
+		// Should use eval template (contains Eval Score section)
+		assert.Contains(t, got, "## Eval Score")
+		assert.Contains(t, got, "750/1000")
+		assert.Contains(t, got, "critical")
+		// Should NOT contain coding-specific sections
+		assert.NotContains(t, got, "## Test Results")
+	})
+}
+
+func TestRecordTemplateData_EvalFields(t *testing.T) {
+	t.Run("eval fields populated", func(t *testing.T) {
+		task := &Task{ID: "T-1", Title: "Eval task"}
+		rd := &RecordData{
+			Status:   "completed",
+			Summary:  "Eval work",
+			Coverage: -1.0,
+			Score:    850,
+			Findings: []string{"issue1"},
+			Severity: "major",
+			Passed:   true,
+		}
+		data := NewRecordTemplateData(task, rd, "2026-05-23 10:00")
+		assert.Equal(t, "850/1000", data.ScoreFormatted)
+		assert.Equal(t, "- issue1", data.FindingsFormatted)
+		assert.Equal(t, "major", data.SeverityFormatted)
+		assert.Equal(t, "Yes", data.PassedFormatted)
+	})
+
+	t.Run("eval fields empty use fallbacks", func(t *testing.T) {
+		task := &Task{ID: "T-2", Title: "Eval task"}
+		rd := &RecordData{
+			Status:   "completed",
+			Summary:  "Eval work",
+			Coverage: -1.0,
+		}
+		data := NewRecordTemplateData(task, rd, "2026-05-23 10:00")
+		assert.Equal(t, "N/A", data.ScoreFormatted)
+		assert.Equal(t, "无", data.FindingsFormatted)
+		assert.Equal(t, "N/A", data.SeverityFormatted)
+		assert.Equal(t, "No", data.PassedFormatted)
 	})
 }

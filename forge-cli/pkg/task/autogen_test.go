@@ -101,13 +101,6 @@ func TestGetQuickTestTasks_SingleType(t *testing.T) {
 		}
 	}
 
-	// No gen-and-run tasks in Quick mode
-	for _, task := range tasks {
-		if task.Type == TypeTestGenAndRun {
-			t.Errorf("Quick mode should not contain gen-and-run tasks, found %q", task.ID)
-		}
-	}
-
 	if tasks[0].Type != TypeTestGenJourneys {
 		t.Errorf("T-test-gen-journeys-cli Type = %q, want %q", tasks[0].Type, TypeTestGenJourneys)
 	}
@@ -663,7 +656,6 @@ func TestGenerateTestTaskMD_EmbedTemplate_LoadsContent(t *testing.T) {
 		wantContains string
 	}{
 		{"gen-scripts", TypeTestGenScripts, "executable test scripts"},
-		{"gen-and-run", TypeTestGenAndRun, "Phase 1"},
 		{"run", TypeTestRun, "staged e2e test scripts"},
 		{"verify-regression", TypeTestVerifyRegression, "just test-e2e"},
 		{"eval-journey", TypeEvalJourney, "6-dimension rubric"},
@@ -1101,9 +1093,6 @@ func TestBodyContentPerStrategy(t *testing.T) {
 		{"gen-scripts has feature context", TypeTestGenScripts, "api", BodyContext{
 			FeatureSlug: "feat",
 		}, []string{"feat", "api"}},
-		{"gen-and-run has feature context", TypeTestGenAndRun, "tui", BodyContext{
-			FeatureSlug: "feat",
-		}, []string{"feat", "tui"}},
 		{"run has feature context", TypeTestRun, "", BodyContext{
 			FeatureSlug: "feat", Scope: []string{"backend"},
 		}, []string{"feat", "- backend"}},
@@ -1292,26 +1281,18 @@ func TestGenContractsTemplateRendering(t *testing.T) {
 	}
 }
 
-func TestAutogenTypeToFileMapping(t *testing.T) {
-	// Verify all auto-gen types have a mapping entry
+func TestAutogenTemplateDiscovery(t *testing.T) {
+	// Verify all auto-gen types resolve to a readable template via naming convention
 	wantTypes := []string{
-		TypeTestGenScripts, TypeTestGenAndRun, TypeTestRun,
+		TypeTestGenScripts, TypeTestRun,
 		TypeTestVerifyRegression, TypeEvalJourney, TypeEvalContract,
 		TypeValidationCode, TypeValidationUx,
 		TypeDocReview, TypeDocConsolidate, TypeDocDrift, TypeCleanCode,
 		TypeTestGenJourneys, TypeTestGenContracts,
 	}
 
-	if len(autogenTypeToFile) != len(wantTypes) {
-		t.Errorf("autogenTypeToFile has %d entries, want %d", len(autogenTypeToFile), len(wantTypes))
-	}
-
 	for _, typ := range wantTypes {
-		file, ok := autogenTypeToFile[typ]
-		if !ok {
-			t.Errorf("type %q missing from autogenTypeToFile", typ)
-			continue
-		}
+		file := autogenTemplatePath(typ)
 		// Verify file can be read from embed FS
 		data, err := autogenTemplateFS.ReadFile(file)
 		if err != nil {
@@ -1597,12 +1578,21 @@ func TestGetBreakdownTestTasks_RegressionStillValid(t *testing.T) {
 
 // --- Quick mode staged across types topology tests (Task 4) ---
 
-func TestGetQuickTestTasks_NoGenAndRun(t *testing.T) {
+func TestGetQuickTestTasks_StagedPipelineTypesOnly(t *testing.T) {
 	tasks := GetQuickTestTasks([]string{"cli", "api"}, allEnabledAuto)
 
+	// Quick mode should only generate test pipeline or doc task types
+	validPrefixes := []string{"test.", "doc.", "code-quality."}
 	for _, task := range tasks {
-		if task.Type == TypeTestGenAndRun {
-			t.Errorf("Quick mode should not generate gen-and-run tasks, found %q (type=%q)", task.ID, task.Type)
+		valid := false
+		for _, prefix := range validPrefixes {
+			if strings.HasPrefix(task.Type, prefix) {
+				valid = true
+				break
+			}
+		}
+		if !valid {
+			t.Errorf("Quick mode generated unexpected task type %q (type=%q)", task.ID, task.Type)
 		}
 	}
 }
@@ -1849,4 +1839,183 @@ func TestResolveFirstTestDep_NoDeps_NoPanic(t *testing.T) {
 	if firstTestIdx >= 0 && len(tasks[firstTestIdx].Dependencies) != 0 {
 		t.Errorf("gen-journeys should have no deps when no business tasks exist, got %v", tasks[firstTestIdx].Dependencies)
 	}
+}
+
+func TestFindFirstTestTaskIdx(t *testing.T) {
+	t.Run("finds gen-journeys in breakdown tasks", func(t *testing.T) {
+		tasks := GetBreakdownTestTasks([]string{"cli"}, defaultAuto)
+		idx := findFirstTestTaskIdx(tasks)
+		if idx < 0 {
+			t.Fatal("expected to find gen-journeys in breakdown tasks")
+		}
+		if !strings.HasPrefix(tasks[idx].ID, "T-test-gen-journeys") {
+			t.Errorf("tasks[%d].ID = %q, want T-test-gen-journeys prefix", idx, tasks[idx].ID)
+		}
+	})
+
+	t.Run("finds gen-journeys in quick tasks", func(t *testing.T) {
+		tasks := GetQuickTestTasks([]string{"cli"}, allEnabledAuto)
+		idx := findFirstTestTaskIdx(tasks)
+		if idx < 0 {
+			t.Fatal("expected to find gen-journeys in quick tasks")
+		}
+		if !strings.HasPrefix(tasks[idx].ID, "T-test-gen-journeys") {
+			t.Errorf("tasks[%d].ID = %q, want T-test-gen-journeys prefix", idx, tasks[idx].ID)
+		}
+	})
+
+	t.Run("returns -1 for empty tasks", func(t *testing.T) {
+		idx := findFirstTestTaskIdx(nil)
+		if idx != -1 {
+			t.Errorf("expected -1 for empty tasks, got %d", idx)
+		}
+	})
+
+	t.Run("returns -1 when no gen-journeys present", func(t *testing.T) {
+		tasks := []AutoGenTaskDef{
+			{ID: "T-quick-doc-drift"},
+			{ID: "T-clean-code"},
+		}
+		idx := findFirstTestTaskIdx(tasks)
+		if idx != -1 {
+			t.Errorf("expected -1 when no gen-journeys present, got %d", idx)
+		}
+	})
+}
+
+func TestResolveTestDepsAndInjectReviewDoc(t *testing.T) {
+	t.Run("quick mode with needsEval=true includes T-review-doc in deps", func(t *testing.T) {
+		testTasks := GetQuickTestTasks([]string{"cli"}, allEnabledAuto)
+		index := NewTaskIndex("test-feature")
+		index.SetTask("1-doc", Task{ID: "1", Type: TypeDoc})
+		index.SetTask("2-feat", Task{ID: "2", Type: TypeCodingFeature})
+
+		resolveTestDepsAndInjectReviewDoc(testTasks, index, "quick", true)
+
+		firstIdx := findFirstTestTaskIdx(testTasks)
+		if firstIdx < 0 {
+			t.Fatal("expected to find first test task")
+		}
+		deps := testTasks[firstIdx].Dependencies
+		if len(deps) == 0 {
+			t.Fatal("expected non-empty deps")
+		}
+		if deps[0] != "T-review-doc" {
+			t.Errorf("first dep = %q, want T-review-doc", deps[0])
+		}
+		// Original dep (from ResolveFirstTestDep) should follow T-review-doc
+		foundOriginalDep := false
+		for _, d := range deps[1:] {
+			if d == "2" {
+				foundOriginalDep = true
+			}
+		}
+		if !foundOriginalDep {
+			t.Errorf("deps after T-review-doc should include original dep '2', got %v", deps)
+		}
+	})
+
+	t.Run("quick mode with needsEval=false excludes T-review-doc", func(t *testing.T) {
+		testTasks := GetQuickTestTasks([]string{"cli"}, allEnabledAuto)
+		index := NewTaskIndex("test-feature")
+		index.SetTask("1-feat", Task{ID: "1", Type: TypeCodingFeature})
+		index.SetTask("2-feat", Task{ID: "2", Type: TypeCodingFeature})
+
+		resolveTestDepsAndInjectReviewDoc(testTasks, index, "quick", false)
+
+		firstIdx := findFirstTestTaskIdx(testTasks)
+		if firstIdx < 0 {
+			t.Fatal("expected to find first test task")
+		}
+		deps := testTasks[firstIdx].Dependencies
+		for _, d := range deps {
+			if d == "T-review-doc" {
+				t.Errorf("deps should NOT include T-review-doc when needsEval=false, got %v", deps)
+			}
+		}
+		// Should still have the original dep from ResolveFirstTestDep
+		if len(deps) == 0 {
+			t.Error("expected at least one dep from ResolveFirstTestDep")
+		}
+		if deps[0] != "2" {
+			t.Errorf("first dep = %q, want 2", deps[0])
+		}
+	})
+
+	t.Run("breakdown mode with needsEval=true includes T-review-doc", func(t *testing.T) {
+		testTasks := GetBreakdownTestTasks([]string{"cli"}, defaultAuto)
+		index := NewTaskIndex("test-feature")
+		index.SetTask("1-doc", Task{ID: "1.1", Type: TypeDoc})
+		index.SetTask("2-feat", Task{ID: "1.2", Type: TypeCodingFeature})
+		index.SetTask("1-gate", Task{ID: "1.gate", Type: TypeGate})
+
+		resolveTestDepsAndInjectReviewDoc(testTasks, index, "breakdown", true)
+
+		firstIdx := findFirstTestTaskIdx(testTasks)
+		if firstIdx < 0 {
+			t.Fatal("expected to find first test task")
+		}
+		deps := testTasks[firstIdx].Dependencies
+		if deps[0] != "T-review-doc" {
+			t.Errorf("first dep = %q, want T-review-doc", deps[0])
+		}
+	})
+
+	t.Run("empty tasks is safe", func(_ *testing.T) {
+		index := NewTaskIndex("test-feature")
+		// Should not panic
+		resolveTestDepsAndInjectReviewDoc(nil, index, "quick", true)
+	})
+
+	t.Run("no gen-journeys tasks panics (delegates to ResolveFirstTestDep)", func(t *testing.T) {
+		defer func() {
+			r := recover()
+			if r == nil {
+				t.Fatal("expected panic when gen-journeys task not found")
+			}
+		}()
+		testTasks := []AutoGenTaskDef{
+			{ID: "T-clean-code"},
+		}
+		index := NewTaskIndex("test-feature")
+		index.SetTask("1-feat", Task{ID: "1", Type: TypeCodingFeature})
+
+		resolveTestDepsAndInjectReviewDoc(testTasks, index, "quick", true)
+	})
+
+	t.Run("needsEval=false output matches ResolveFirstTestDep alone", func(t *testing.T) {
+		// Verify that resolveTestDepsAndInjectReviewDoc(_, _, _, false) produces
+		// the same result as calling ResolveFirstTestDep alone.
+		index := NewTaskIndex("test-feature")
+		index.SetTask("1-feat", Task{ID: "1", Type: TypeCodingFeature})
+		index.SetTask("2-feat", Task{ID: "2", Type: TypeCodingFeature})
+
+		// Path A: new combined function with needsEval=false
+		tasksA := GetQuickTestTasks([]string{"cli"}, allEnabledAuto)
+		resolveTestDepsAndInjectReviewDoc(tasksA, index, "quick", false)
+
+		// Path B: old ResolveFirstTestDep directly
+		tasksB := GetQuickTestTasks([]string{"cli"}, allEnabledAuto)
+		ResolveFirstTestDep(tasksB, index.TasksMap(), "quick")
+
+		firstIdxA := findFirstTestTaskIdx(tasksA)
+		firstIdxB := findFirstTestTaskIdx(tasksB)
+		if firstIdxA != firstIdxB {
+			t.Fatalf("firstIdx mismatch: A=%d, B=%d", firstIdxA, firstIdxB)
+		}
+		if firstIdxA < 0 {
+			t.Fatal("no gen-journeys found")
+		}
+
+		depsA := tasksA[firstIdxA].Dependencies
+		depsB := tasksB[firstIdxB].Dependencies
+		if len(depsA) != len(depsB) {
+			t.Errorf("deps length mismatch: A=%v, B=%v", depsA, depsB)
+		}
+		for i := range depsA {
+			if depsA[i] != depsB[i] {
+				t.Errorf("dep[%d] mismatch: A=%q, B=%q", i, depsA[i], depsB[i])
+			}
+		}
+	})
 }

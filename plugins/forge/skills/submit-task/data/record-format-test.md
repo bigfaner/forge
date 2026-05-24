@@ -1,6 +1,6 @@
 # Record Format: Test Category
 
-Task types: `test.gen-cases`, `test.eval-cases`, `test.gen-scripts`, `test.run`, `test.gen-and-run`, `test.verify-regression`
+Task types: `test.gen-journeys`, `test.gen-contracts`, `test.gen-scripts`, `test.run`, `test.verify-regression`
 
 ## JSON Example
 

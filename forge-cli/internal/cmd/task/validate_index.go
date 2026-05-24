@@ -221,9 +221,6 @@ func (v *validator) validateFilesExist(featureSlug string, tasks map[string]task
 		if strings.HasPrefix(t.ID, "T-test-gen-scripts-") {
 			v.validateFirstTestTaskTemplate(taskFile, t.ID, []string{"{{LAST_BUSINESS_TASK_ID}}", "{{T_TEST_1_DEP}}"})
 		}
-		if strings.HasPrefix(t.ID, "T-quick-gen-and-run-") {
-			v.validateFirstTestTaskTemplate(taskFile, t.ID, []string{"{{T_QUICK_1_DEP}}"})
-		}
 	}
 }
 

@@ -701,9 +701,7 @@ func TestIsTestTaskID(t *testing.T) {
 		{"T-test-runa", true},
 		{"T-test-verify-regression", true},
 		// T-quick-* prefix
-		{"T-quick-gen-and-run-api", true},
 		{"T-quick-verify-regressiona", true},
-		{"T-quick-gen-and-run", true},
 		{"T-quick-verify-regression", true},
 		// T-specs-* prefix
 		{"T-specs-consolidate", true},
@@ -741,7 +739,6 @@ func TestIsAutoGenTaskID(t *testing.T) {
 		// Test pipeline IDs
 		{"T-test-gen-scripts-cli", true},
 		{"T-test-run", true},
-		{"T-quick-gen-and-run-api", true},
 		{"T-quick-verify-regression", true},
 		{"T-specs-consolidate", true},
 		{"T-clean-code", true},
@@ -1375,7 +1372,8 @@ func TestBuildIndex_PureCodeFeature_OnlyTestPipeline(t *testing.T) {
 }
 
 func TestBuildIndex_MixedFeature_BreakdownMode_GenJourneysDependsOnReviewDoc(t *testing.T) {
-	// For breakdown mode mixed features, T-eval-journey should depend on T-review-doc
+	// For breakdown mode mixed features, the first test pipeline task (T-test-gen-journeys)
+	// should depend on T-review-doc, ensuring review-doc executes before test generation.
 	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "breakdown")
 	writeForgeConfig(t, projectRoot)
 
@@ -1408,24 +1406,34 @@ func TestBuildIndex_MixedFeature_BreakdownMode_GenJourneysDependsOnReviewDoc(t *
 		t.Errorf("review-doc ID = %q, want T-review-doc", reviewDoc.ID)
 	}
 
-	// The first test pipeline task (T-eval-journey) should depend on T-review-doc
-	evalJourney, ok := idx.Tasks["eval-journey"]
-	if !ok {
-		// List available keys for debugging
+	// The first test pipeline task should depend on T-review-doc.
+	// findFirstTestTaskIdx now uses findTaskIndexByPrefix("T-test-gen-journeys")
+	// which locates the first staged pipeline task regardless of mode.
+	var firstTestTask *Task
+	var firstTestKey string
+	for key, t := range idx.Tasks {
+		if strings.HasPrefix(t.ID, "T-test-gen-journeys") {
+			copied := t
+			firstTestTask = &copied
+			firstTestKey = key
+			break
+		}
+	}
+	if firstTestTask == nil {
 		var keys []string
 		for k := range idx.Tasks {
 			keys = append(keys, k)
 		}
-		t.Fatalf("eval-journey not in index. Available keys: %v", keys)
+		t.Fatalf("no T-test-gen-journeys task found in index. Available keys: %v", keys)
 	}
 	foundDep := false
-	for _, dep := range evalJourney.Dependencies {
+	for _, dep := range firstTestTask.Dependencies {
 		if dep == "T-review-doc" {
 			foundDep = true
 		}
 	}
 	if !foundDep {
-		t.Errorf("eval-journey deps = %v, should include T-review-doc", evalJourney.Dependencies)
+		t.Errorf("%s deps = %v, should include T-review-doc", firstTestKey, firstTestTask.Dependencies)
 	}
 }
 
@@ -1449,7 +1457,6 @@ func TestIsTestableType(t *testing.T) {
 		// test.* prefix -> false
 		{TypeTestGenScripts, false},
 		{TypeTestRun, false},
-		{TypeTestGenAndRun, false},
 		// validation.* prefix -> false
 		{TypeValidationCode, false},
 		{TypeValidationUx, false},

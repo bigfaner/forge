@@ -276,7 +276,7 @@ func TestListCmd_TitleTruncation(t *testing.T) {
 
 	t.Run("bug: CJK title truncation produces valid UTF-8", func(t *testing.T) {
 		tasks := map[string]task.Task{
-			"1": {ID: "1", Title: "autogen.go Quick 模式：替换 gen-and-run 为 gen-journeys + gen-contracts", Type: "coding.feature", Status: "pending"},
+			"1": {ID: "1", Title: "autogen.go Quick 模式：替换旧测试类型为 staged pipeline", Type: "coding.feature", Status: "pending"},
 			"2": {ID: "2", Title: "新增 test.gen-journeys 和 test.gen-contracts 的集成测试", Type: "coding.feature", Status: "completed"},
 		}
 		_ = setupFullProject(t, SetupOpts{Tasks: tasks})

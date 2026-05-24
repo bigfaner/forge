@@ -1653,3 +1653,131 @@ func TestValidateRecordData_TypeAware(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateRecordData_EvalCategory(t *testing.T) {
+	t.Run("eval type with findings passes validation", func(t *testing.T) {
+		rd := &task.RecordData{
+			Status:   "completed",
+			Summary:  "Eval completed",
+			Findings: []string{"issue1", "issue2"},
+			Severity: "major",
+			Score:    850,
+			Passed:   true,
+		}
+		err := validateRecordData(rd, task.TypeEvalJourney)
+		if err != nil {
+			t.Errorf("eval type with findings should pass, got error: %v", err)
+		}
+	})
+
+	t.Run("eval type with only score passes validation", func(t *testing.T) {
+		rd := &task.RecordData{
+			Status:  "completed",
+			Summary: "Eval completed",
+			Score:   900,
+		}
+		err := validateRecordData(rd, task.TypeEvalJourney)
+		if err != nil {
+			t.Errorf("eval type with score should pass, got error: %v", err)
+		}
+	})
+
+	t.Run("eval type with only severity passes validation", func(t *testing.T) {
+		rd := &task.RecordData{
+			Status:   "completed",
+			Summary:  "Eval completed",
+			Severity: "minor",
+		}
+		err := validateRecordData(rd, task.TypeEvalContract)
+		if err != nil {
+			t.Errorf("eval type with severity should pass, got error: %v", err)
+		}
+	})
+
+	t.Run("eval type rejects pure test fields only", func(t *testing.T) {
+		rd := &task.RecordData{
+			Status:      "completed",
+			Summary:     "Eval done",
+			TestsPassed: 5,
+			Coverage:    80.0,
+		}
+		err := validateRecordData(rd, task.TypeEvalJourney)
+		if err == nil {
+			t.Error("eval type with only test fields should be rejected")
+		}
+		if !strings.Contains(err.Error(), "eval-specific fields") {
+			t.Errorf("expected eval-specific fields error, got: %v", err)
+		}
+	})
+
+	t.Run("eval type rejects empty eval fields", func(t *testing.T) {
+		rd := &task.RecordData{
+			Status:  "completed",
+			Summary: "Eval done",
+		}
+		err := validateRecordData(rd, task.TypeEvalContract)
+		if err == nil {
+			t.Error("eval type with no eval fields should be rejected")
+		}
+	})
+
+	t.Run("eval type not auto-downgraded for testsFailed", func(t *testing.T) {
+		rd := &task.RecordData{
+			Status:      "completed",
+			Summary:     "Eval done",
+			TestsFailed: 2,
+			Findings:    []string{"issue1"},
+			Score:       750,
+		}
+		_ = validateRecordData(rd, task.TypeEvalJourney)
+		if rd.Status != "completed" {
+			t.Errorf("eval type should NOT be auto-downgraded for testsFailed, got %q", rd.Status)
+		}
+	})
+
+	t.Run("eval type missing keyDecisions does NOT warn", func(t *testing.T) {
+		rd := &task.RecordData{
+			Status:   "completed",
+			Summary:  "Eval done",
+			Findings: []string{"issue1"},
+			Score:    800,
+		}
+		old := os.Stderr
+		r, w, _ := os.Pipe()
+		os.Stderr = w
+		_ = validateRecordData(rd, task.TypeEvalJourney)
+		_ = w.Close()
+		os.Stderr = old
+
+		buf := make([]byte, 1024)
+		n, _ := r.Read(buf)
+		output := string(buf[:n])
+
+		if strings.Contains(output, "WARNING") {
+			t.Errorf("eval type should NOT warn about missing recommended fields, got: %s", output)
+		}
+	})
+
+	t.Run("eval type empty summary triggers hard error", func(t *testing.T) {
+		err := validateRecordData(&task.RecordData{
+			Status:   "completed",
+			Summary:  "",
+			Findings: []string{"issue1"},
+			Score:    800,
+		}, task.TypeEvalJourney)
+		if err == nil {
+			t.Error("eval type with empty summary should fail")
+		}
+	})
+
+	t.Run("eval type blocked status skips completed checks", func(t *testing.T) {
+		rd := &task.RecordData{
+			Status:  "blocked",
+			Summary: "Blocked",
+		}
+		err := validateRecordData(rd, task.TypeEvalJourney)
+		if err != nil {
+			t.Errorf("blocked eval should skip completed checks, got: %v", err)
+		}
+	})
+}

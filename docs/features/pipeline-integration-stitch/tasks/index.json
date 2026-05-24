@@ -3,97 +3,72 @@
   "proposal": "docs/proposals/pipeline-integration-stitch/proposal.md",
   "created": "2026-05-24",
   "tasks": {
-    "1-auto-discovery": {
+    "1-prompt-templates-category-eval": {
       "id": "1",
-      "title": "Auto-discovery: 替换 prompt.go 和 autogen.go 手写 map + init-time 校验 + clean-code.md 重命名",
+      "title": "创建 prompt 模板 + CategoryEval + eval record/validation 系统",
       "priority": "P0",
-      "estimatedTime": "2h",
-      "status": "pending",
-      "file": "1-auto-discovery.md",
-      "record": "records/1-auto-discovery.md",
+      "estimatedTime": "3h",
+      "status": "completed",
+      "file": "1-prompt-templates-category-eval.md",
+      "record": "records/1-prompt-templates-category-eval.md",
       "breaking": true,
       "scope": "backend",
-      "type": "coding.refactor"
+      "type": "coding.enhancement"
     },
-    "2-create-prompt-templates": {
+    "2-harden-deps": {
       "id": "2",
-      "title": "创建 4 个缺失的执行阶段 prompt 模板",
-      "priority": "P0",
-      "estimatedTime": "2h",
+      "title": "加固依赖注入：合并 resolveTestDepsAndInjectReviewDoc + 更新 findFirstTestTaskIdx",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
       "dependencies": [
         "1"
       ],
-      "status": "pending",
-      "file": "2-create-prompt-templates.md",
-      "record": "records/2-create-prompt-templates.md",
-      "scope": "backend",
-      "type": "coding.feature"
-    },
-    "3-category-eval": {
-      "id": "3",
-      "title": "新增 CategoryEval + submit-task 验证分支 + category 测试",
-      "priority": "P1",
-      "estimatedTime": "2h",
-      "status": "pending",
-      "file": "3-category-eval.md",
-      "record": "records/3-category-eval.md",
+      "status": "completed",
+      "file": "2-harden-deps.md",
+      "record": "records/2-harden-deps.md",
       "breaking": true,
       "scope": "backend",
       "type": "coding.enhancement"
     },
-    "4-update-record-templates": {
-      "id": "4",
-      "title": "更新 record-format-doc.md 和 record-format-test.md",
-      "priority": "P1",
-      "estimatedTime": "30min",
-      "dependencies": [
-        "3"
-      ],
-      "status": "pending",
-      "file": "4-update-record-templates.md",
-      "record": "records/4-update-record-templates.md",
-      "type": "doc"
-    },
-    "5-harden-deps": {
-      "id": "5",
-      "title": "加固 mixed feature 依赖注入 + 更新 findFirstTestTaskIdx",
-      "priority": "P1",
-      "estimatedTime": "1h",
-      "dependencies": [
-        "1"
-      ],
-      "status": "pending",
-      "file": "5-harden-deps.md",
-      "record": "records/5-harden-deps.md",
-      "scope": "backend",
-      "type": "coding.enhancement"
-    },
-    "6-remove-gen-and-run": {
-      "id": "6",
-      "title": "移除 test.gen-and-run 废弃代码 + 更新 isTestTaskID + 更新测试文件",
+    "3-remove-gen-and-run": {
+      "id": "3",
+      "title": "移除 test.gen-and-run 废弃代码 + 更新测试文件",
       "priority": "P2",
       "estimatedTime": "2h",
       "dependencies": [
         "1",
-        "5"
+        "2"
       ],
-      "status": "pending",
-      "file": "6-remove-gen-and-run.md",
-      "record": "records/6-remove-gen-and-run.md",
+      "status": "completed",
+      "file": "3-remove-gen-and-run.md",
+      "record": "records/3-remove-gen-and-run.md",
       "scope": "backend",
       "type": "coding.cleanup"
     },
-    "7-update-docs": {
-      "id": "7",
-      "title": "更新文档：README、ARCHITECTURE、task-lifecycle",
+    "4-update-record-format-test": {
+      "id": "4",
+      "title": "更新 record-format-test.md：替换废弃类型列表",
+      "priority": "P1",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "4-update-record-format-test.md",
+      "record": "records/4-update-record-format-test.md",
+      "type": "doc"
+    },
+    "5-update-active-docs": {
+      "id": "5",
+      "title": "更新活跃文档：移除 gen-and-run 引用",
       "priority": "P2",
       "estimatedTime": "30min",
       "dependencies": [
-        "6"
+        "3"
       ],
-      "status": "pending",
-      "file": "7-update-docs.md",
-      "record": "records/7-update-docs.md",
+      "status": "completed",
+      "file": "5-update-active-docs.md",
+      "record": "records/5-update-active-docs.md",
       "type": "doc"
     }
   },

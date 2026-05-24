@@ -283,9 +283,10 @@ var readSubmitData = task.ReadSubmitData
 // taskType determines which checks apply based on category:
 //   - coding: full validation (test evidence, testsFailed auto-downgrade)
 //   - doc/test/validation/gate: skip test evidence and testsFailed checks
+//   - eval: accept review fields (summary/findings/severity), reject pure test fields
 //
 // Hard-required fields (missing = error): summary (all categories)
-// Auto-downgrade (coding only): completed + testsFailed > 0 → blocked
+// Auto-downgrade (coding only): completed + testsFailed > 0 -> blocked
 // Hard validation for completed coding tasks:
 //   - testsPassed=0 && testsFailed=0 with coverage >= 0
 //   - any acceptanceCriteria with met=false
@@ -293,7 +294,9 @@ var readSubmitData = task.ReadSubmitData
 // Recommended fields for "completed" status (missing = warning, all categories):
 //   - keyDecisions, acceptanceCriteria
 func validateRecordData(rd *task.RecordData, taskType string) error {
-	isCoding := task.CategoryForType(taskType) == task.CategoryCoding
+	category := task.CategoryForType(taskType)
+	isCoding := category == task.CategoryCoding
+	isEval := category == task.CategoryEval
 
 	var missing []string
 
@@ -306,7 +309,7 @@ func validateRecordData(rd *task.RecordData, taskType string) error {
 		return base.ErrMissingFields(missing)
 	}
 
-	// Auto-downgrade (coding only): completed with test failures → blocked
+	// Auto-downgrade (coding only): completed with test failures -> blocked
 	if isCoding && rd.Status == "completed" && rd.TestsFailed > 0 {
 		fmt.Fprintf(os.Stderr, "---\nWARNING: %d test failures detected — auto-downgrading status from 'completed' to 'blocked'\nHINT: Fix test failures, then re-record with status 'completed'\n---\n", rd.TestsFailed)
 		rd.Status = "blocked"
@@ -324,6 +327,18 @@ func validateRecordData(rd *task.RecordData, taskType string) error {
 		}
 	}
 
+	// Eval validation: reject completed with only pure test fields (testsPassed/coverage)
+	if isEval {
+		hasEvalFields := len(rd.Findings) > 0 || rd.Severity != "" || rd.Score > 0
+		if !hasEvalFields {
+			return base.NewAIError(base.ErrValidation,
+				"eval task submission requires eval-specific fields (findings, severity, or score)",
+				"Eval tasks are review-type tasks and should not use coding test metrics",
+				"Include at least one of: findings, severity, score",
+				`{"findings": ["issue1"], "severity": "major", "score": 850}`)
+		}
+	}
+
 	// Reject completed with unmet acceptance criteria (all categories)
 	if len(rd.AcceptanceCriteria) > 0 {
 		var unmet []string
@@ -338,7 +353,6 @@ func validateRecordData(rd *task.RecordData, taskType string) error {
 	}
 
 	// Recommended fields for completed tasks (coding only)
-	category := task.CategoryForType(taskType)
 	if category == task.CategoryCoding {
 		var recommended []string
 		if len(rd.KeyDecisions) == 0 {
