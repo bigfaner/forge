@@ -206,7 +206,7 @@ Resolve eval type to scorer expert(s) per `rules/scorer-composition.md`.
 
 Set `ITERATION = 1`, `MAX_ITERATIONS = resolved value from rubric or CLI`.
 
-## Step 2: Invoke Scorer Subagent(s)
+## Step 2: Invoke Scorer Subagent(s) (flowchart labels: `2a` = single-pass, `2b` = multi-iteration)
 
 ### 2.1 Compose Scorer Prompts
 
@@ -227,7 +227,7 @@ Score extraction and multi-expert merging per `rules/scorer-composition.md`.
 
 **Parse failure handling**: If the scorer subagent output cannot be parsed (no valid `SCORE: X/SCALE` pattern found in any scorer report), halt the pipeline with a clear error. This is a retryable failure — the agent should re-run eval with different input or debug the scorer prompt. Do NOT crash, do NOT proceed with zero score, do NOT continue with silent default values.
 
-On `ITERATION == 1`: store the merged score as `INITIAL_SCORE` for the Step 5 score progression comparison.
+On `ITERATION == 1`: store the merged score as `INITIAL_SCORE` (used in Step 5 report Score Progression table to compute delta from first iteration).
 
 ## Step 3a: Single-Pass (MAX_ITERATIONS ≤ 1)
 
