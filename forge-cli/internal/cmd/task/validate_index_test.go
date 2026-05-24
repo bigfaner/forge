@@ -1619,69 +1619,6 @@ func TestValidator_QuickMode(t *testing.T) {
 	})
 }
 
-func TestValidator_QuickMode_DeprecatedGenAndRunRejected(t *testing.T) {
-	t.Run("test.gen-and-run type triggers migration error", func(t *testing.T) {
-		dir := t.TempDir()
-		featureSlug := "test-feature"
-
-		tasksDir := filepath.Join(dir, "docs", "features", featureSlug, "tasks")
-		if err := os.MkdirAll(tasksDir, 0755); err != nil {
-			t.Fatal(err)
-		}
-
-		taskFile := filepath.Join(tasksDir, "gen-and-run-cli.md")
-		content := `---
-id: "T-quick-gen-and-run-cli"
----
-`
-		if err := os.WriteFile(taskFile, []byte(content), 0644); err != nil {
-			t.Fatal(err)
-		}
-
-		v := &validator{filePath: filepath.Join(dir, "docs", "features", featureSlug, "tasks", "index.json")}
-		v.validateFilesExist(featureSlug, map[string]task.Task{
-			"gen-and-run-cli": {ID: "T-quick-gen-and-run-cli", File: "gen-and-run-cli.md", Type: "test.gen-and-run"},
-		})
-
-		if len(v.errors) != 1 {
-			t.Errorf("expected 1 error for deprecated type, got %d: %v", len(v.errors), v.errors)
-		}
-		if len(v.errors) > 0 && !contains(v.errors[0], "test.gen-and-run is deprecated") {
-			t.Errorf("error should mention deprecation, got: %s", v.errors[0])
-		}
-	})
-
-	t.Run("T-quick-gen-and-run ID prefix triggers migration error", func(t *testing.T) {
-		dir := t.TempDir()
-		featureSlug := "test-feature"
-
-		tasksDir := filepath.Join(dir, "docs", "features", featureSlug, "tasks")
-		if err := os.MkdirAll(tasksDir, 0755); err != nil {
-			t.Fatal(err)
-		}
-
-		taskFile := filepath.Join(tasksDir, "gen-and-run-cli.md")
-		content := `---
-id: "T-quick-gen-and-run-cli"
----
-`
-		if err := os.WriteFile(taskFile, []byte(content), 0644); err != nil {
-			t.Fatal(err)
-		}
-
-		v := &validator{filePath: filepath.Join(dir, "docs", "features", featureSlug, "tasks", "index.json")}
-		v.validateFilesExist(featureSlug, map[string]task.Task{
-			"gen-and-run-cli": {ID: "T-quick-gen-and-run-cli", File: "gen-and-run-cli.md", Type: "coding.feature"},
-		})
-
-		if len(v.errors) != 1 {
-			t.Errorf("expected 1 error for deprecated ID prefix, got %d: %v", len(v.errors), v.errors)
-		}
-		if len(v.errors) > 0 && !contains(v.errors[0], "test.gen-and-run is deprecated") {
-			t.Errorf("error should mention deprecation, got: %s", v.errors[0])
-		}
-	})
-}
 
 // --- System type interception tests ---
 

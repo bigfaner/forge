@@ -113,9 +113,6 @@ func Synthesize(opts SynthesizeOpts) (string, error) {
 func renderTemplate(templateFile string, opts SynthesizeOpts, t task.Task) (string, error) {
 	data, err := templateFS.ReadFile(templateFile)
 	if err != nil {
-		if strings.Contains(templateFile, "gen-and-run") {
-			return "", fmt.Errorf("test.gen-and-run is deprecated; use staged test pipeline types (test.gen-journeys, test.gen-contracts, test.gen-scripts)")
-		}
 		return "", fmt.Errorf("read template %s: %w", templateFile, err)
 	}
 

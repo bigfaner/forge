@@ -221,10 +221,6 @@ func (v *validator) validateFilesExist(featureSlug string, tasks map[string]task
 		if strings.HasPrefix(t.ID, "T-test-gen-scripts-") {
 			v.validateFirstTestTaskTemplate(taskFile, t.ID, []string{"{{LAST_BUSINESS_TASK_ID}}", "{{T_TEST_1_DEP}}"})
 		}
-		// Migration guard: reject deprecated test.gen-and-run type
-		if t.Type == "test.gen-and-run" || strings.HasPrefix(t.ID, "T-quick-gen-and-run") {
-			v.errors = append(v.errors, fmt.Sprintf("Task '%s': test.gen-and-run is deprecated; use staged test pipeline types (test.gen-journeys, test.gen-contracts, test.gen-scripts)", t.ID))
-		}
 	}
 }
 

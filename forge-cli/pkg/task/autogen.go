@@ -212,8 +212,8 @@ func GetBreakdownTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []A
 //
 //	gen-journeys-per-type (parallel) -> gen-contracts -> gen-scripts-per-type (parallel) -> run -> verify-regression
 //
-// This replaces the old gen-and-run combined tasks with independent staged tasks,
-// sharing the same task definitions as Breakdown mode (without eval quality gates).
+// Each stage is an independent task sharing the same definitions as Breakdown mode
+// (without eval quality gates).
 func GetQuickTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []AutoGenTaskDef {
 	if len(interfaces) == 0 {
 		return nil
