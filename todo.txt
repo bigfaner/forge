@@ -222,3 +222,5 @@ internal/cmd/
 168、调整auto.e2eTest配置项，just test、just unit-test
 169、缝合review-doc-pipeline与auto-gen-journeys-contracts提案的实现，避免任务pipeline断裂。
 170、forge task list --<slug>，查询指定feature的任务，即使任务在worktree中。
+171、forge init 支持配置interfaces或surfaces?
+172、利用forge-cli-clean-code等新feature的任务记录验证与优化submit-task skill根据不同任务生成record.json的能力
