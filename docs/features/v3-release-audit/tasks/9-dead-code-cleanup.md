@@ -22,7 +22,7 @@ mainSession: false
 ### Modify
 | File | Changes |
 |------|---------|
-| `plugins/forge/skills/init-justfile/SKILL.md` | Update template references if templates are removed |
+| `plugins/forge/skills/gen-sitemap/rules/schema.md` | Inlined sitemap-example.json content as `## Full Example` section, removed external file reference |
 
 ### Delete
 | File | Reason |
@@ -30,9 +30,32 @@ mainSession: false
 | `plugins/forge/skills/gen-sitemap/sitemap-example.json` | Unreferenced example file |
 
 ## Acceptance Criteria
-- [ ] `grep -r "sitemap-example" plugins/forge/` 返回 0（排除删除操作本身）
-- [ ] init-justfile 6 个 .just 模板已评估，使用状态已记录
-- [ ] 删除的文件通过 `grep -r` 全仓库确认无引用
+- [x] `grep -r "sitemap-example" plugins/forge/` 返回 0（排除删除操作本身）
+- [x] init-justfile 6 个 .just 模板已评估，使用状态已记录
+- [x] 删除的文件通过 `grep -r` 全仓库确认无引用
+
+## Template Evaluation Results
+
+### sitemap-example.json — DELETED
+
+- Was referenced by `rules/schema.md` line 3: `Read the full example at templates/sitemap-example.json`
+- Action: Inlined the example content into `rules/schema.md` as a `## Full Example` section, then deleted the file
+- Post-deletion grep confirms zero references in `plugins/forge/`
+
+### init-justfile .just templates — RETAINED (all 6)
+
+All 6 templates are actively referenced by integration tests in `forge-cli/tests/justfile-integration/`:
+
+| Template | Referenced By |
+|----------|--------------|
+| `go.just` | `init_justfile_test.go`, `forge_detection_test.go` (4 references) |
+| `node.just` | `init_justfile_test.go`, `forge_detection_test.go` (3 references) |
+| `mixed.just` | `init_justfile_test.go`, `mixed_cli_test.go`, `forge_detection_test.go` (4 references) |
+| `generic.just` | `mixed_cli_test.go` (1 reference) |
+| `python.just` | No test references, but referenced in task records |
+| `rust.just` | No test references, but referenced in task records |
+
+Note: SKILL.md says "Do NOT use framework-specific recipe templates" — the LLM generates recipes at runtime, but the templates still serve as test fixtures. They cannot be deleted without breaking tests.
 
 ## Hard Rules
 - 删除前必须 `grep -r <filename>` 确认全仓库无引用

@@ -192,7 +192,7 @@
       "dependencies": [
         "6"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "9-dead-code-cleanup.md",
       "record": "records/9-dead-code-cleanup.md",
       "type": "doc"
