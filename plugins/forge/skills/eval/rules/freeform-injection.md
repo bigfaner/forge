@@ -9,7 +9,7 @@ restore-path: |
 
 # Freeform Finding Injection Rules
 
-**DEPRECATED**: This injection mechanism is conditionally deprecated when pre-revision mode is active (`FREEFORM_INJECTION = false`). The original injection semantics are preserved below for potential future restoration. When pre-revision mode is active, the Scorer uses annotated blind review instead (see `rules/scorer-composition.md`).
+**DEPRECATED**: This file is no longer referenced by any active file. The legacy injection logic (`FREEFORM_INJECTION = true` path) has been inlined into `rules/scorer-composition.md`. The original injection semantics are preserved below as historical reference.
 
 Rules for injecting extracted freeform review findings into the rubric scorer prompt. This is the bridge between the freeform expert review (Phase 0) and the rubric scoring phase.
 

@@ -25,10 +25,7 @@ You are a senior reviewer evaluating the document at {{DOC_DIR}} against the rub
 
 Read the scorer protocol at `experts/protocol/scorer-protocol.md`.
 
-For each expert, compose a scorer prompt by concatenating:
-1. Scorer protocol content (with template variables replaced: `{{DOC_DIR}}`, `{{RUBRIC_PATH}}`, `{{REPORT_PATH}}`, `{{ITERATION}}`, `{{PREVIOUS_REPORT_PATH}}`)
-2. Expert file content (e.g., `experts/scorer/pm.md`)
-3. Context injection (if `CONTEXT_CONTENT` was loaded in Step 1.4 -- see below)
+Compose the scorer prompt by concatenating sections in the order defined in "Order in final composed prompt" below. Template variables in the scorer protocol: `{{DOC_DIR}}`, `{{RUBRIC_PATH}}`, `{{REPORT_PATH}}`, `{{ITERATION}}`, `{{PREVIOUS_REPORT_PATH}}`.
 
 **Context Injection**: If `CONTEXT_CONTENT` was loaded in Step 1.4, append the following section after the expert content in every composed prompt:
 
@@ -42,42 +39,31 @@ The following project reference material is provided for reality-checking the ev
 
 For unmapped types (not in dispatch table), compose a single prompt using the generic inline fallback above plus the scorer protocol (with variables replaced) plus context injection.
 
-# Freeform Findings Injection (Phase 0) — Conditional
+# Freeform Pre-Revision — Scorer Composition
 
-When Phase 0 was executed and produced valid findings, the handling depends on whether pre-revision mode is active:
+When pre-revision was executed (`PRE_REVISION_EXECUTED = true`, set by SKILL.md P0.5g on successful pre-revision), append annotated blind review instructions to the composed scorer prompt. The Scorer does NOT see freeform findings content — only `<!-- pre-revised -->` markers in the document.
 
-**When `FREEFORM_INJECTION = false`** (pre-revision mode, set by SKILL.md Phase 0.5):
-- Skip the freeform findings injection block entirely
-- Instead, append the annotated blind review instructions below to the composed scorer prompt
-- The Scorer does NOT see freeform findings content — only the `<!-- pre-revised -->` markers in the document itself
+When `PRE_REVISION_EXECUTED` is not set (no freeform review, Phase 0 degraded, or non-proposal type), no freeform block is added — the composed prompt is identical to the standard flow.
 
-**When `FREEFORM_INJECTION = true`** (legacy / fallback mode):
-- Follow the injection rules in `rules/freeform-injection.md`
-- Format the validated findings array into `{{FORMATTED_FINDINGS}}` (one line per finding: `- **[severity]** summary | 原文引用: "quote"`)
-- Wrap in `<injected-freeform-findings>` block with the standard header and instructions
-- If `LOW_HIT_RATE = true`, include the partial extraction annotation and append the complete freeform review narrative
-
-**When `FREEFORM_INJECTION` is not set** (no `--freeform-expert`, or Phase 0 degraded), no freeform block is added — the composed prompt is identical to the standard flow.
-
-## Annotated Blind Review Instructions (when `FREEFORM_INJECTION = false`)
+## Annotated Blind Review Instructions
 
 When pre-revision mode is active, append the following instructions to the composed scorer prompt **after** all existing sections:
 
 ```
 <annotated-blind-review>
-该文档经过 Pre-Revision 阶段修订。修订后的段落标注了 HTML 注释标记 `<!-- pre-revised: {severity} -->`。
+This document has undergone a Pre-Revision phase. Revised paragraphs are annotated with HTML comment markers `<!-- pre-revised: {severity} -->`.
 
-标注盲审规则：
-1. `<!-- pre-revised: {severity} -->` 标记表示该段落经过 Pre-Revision 修改。对标记区域：关注修订是否引入了新问题或遗漏，而非重新评估已修正的原始问题。
-2. severity 标记供注意力分配参考，不影响评分标准。
-3. 在 eval report 中分别记录标注区域与未标注区域的 attack density，供偏误检测。格式：
+Annotated blind review rules:
+1. `<!-- pre-revised: {severity} -->` markers indicate paragraphs modified during Pre-Revision. For marked regions: focus on whether the revision introduced new issues or omissions, rather than re-evaluating the original corrected problem.
+2. The severity marker is for attention allocation only; it does not affect scoring criteria.
+3. In the eval report, record attack density separately for annotated and unannotated regions for bias detection. Format:
 
    **Bias Detection Report**:
    - Annotated regions: N attack points / X paragraphs = density Y
    - Unannotated regions: M attack points / Z paragraphs = density W
    - Ratio (annotated/unannotated): R
 
-4. 当 Scorer 的 rubric 判断与 pre-revision 修改方向矛盾时（如 Scorer 认为某段应删除但 pre-revision 刚添加），以 rubric 标准为准生成 attack point，但在 attack point 中标注 `conflict-with-pre-revision` 供审查。
+4. When the Scorer's rubric judgment contradicts the pre-revision direction (e.g., Scorer believes a paragraph should be deleted but pre-revision just added it), generate the attack point per rubric standards, but tag it with `conflict-with-pre-revision` for review.
 </annotated-blind-review>
 ```
 
@@ -85,8 +71,7 @@ When pre-revision mode is active, append the following instructions to the compo
 1. Scorer protocol (with template variables replaced)
 2. Expert file content
 3. `<injected-context>` block (if CONTEXT_CONTENT was loaded)
-4. `<annotated-blind-review>` block (if `FREEFORM_INJECTION = false`, pre-revision mode)
-5. `<injected-freeform-findings>` block (if `FREEFORM_INJECTION = true`, legacy mode)
+4. `<annotated-blind-review>` block (if `PRE_REVISION_EXECUTED = true`, pre-revision mode)
 
 # Scorer Agent Inputs
 
