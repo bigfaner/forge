@@ -2,8 +2,8 @@
 
 > Claude Code 工作流增强工具集：让 AI 编程从"聊天"变成"工程"
 
-[![Version](https://img.shields.io/badge/Version-2.16.1-blue.svg)](https://github.com/bigfaner/forge)
-[![Go Version](https://img.shields.io/badge/Go-1.26.1+-00ADD8?style=flat&logo=go)](https://golang.org/)
+[![Version](https://img.shields.io/badge/Version-5.6.0-blue.svg)](https://github.com/bigfaner/forge)
+[![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go)](https://golang.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 ---
@@ -12,10 +12,10 @@
 
 | 痛点 | Forge 的解法 |
 |------|-------------|
-| 方向漂移 | `brainstorm → PRD → 设计 → 任务` 结构化流程 |
-| 质量失控 | Quality Gate（compile → fmt → lint → test）+ TDD 工作流 |
-| 上下文丢失 | task-cli 任务追踪 + manifest.md 全链路追溯 |
-| 知识不沉淀 | `/learn-lesson` + `/record-decision` 跨会话积累 |
+| 方向漂移 | `brainstorm -> PRD -> 设计 -> 任务` 结构化流程 |
+| 质量失控 | Quality Gate（compile -> fmt -> lint -> test）+ TDD 工作流 |
+| 上下文丢失 | forge CLI 任务追踪 + manifest.md 全链路追溯 |
+| 知识不沉淀 | `/learn` 跨会话积累决策与经验 |
 
 ---
 
@@ -24,36 +24,41 @@
 ### 完整模式（复杂功能：>2h, >10 任务）
 
 ```
-/brainstorm → /write-prd → /tech-design → /breakdown-tasks → /run-tasks
-     ↓             ↓            ↓ ↘ /ui-design      ↓              ↓
+/brainstorm -> /write-prd -> /tech-design -> /breakdown-tasks -> /run-tasks
+     |             |            |  -> /ui-design      |              |
  proposal.md   prd/*.{3}   design/*.{2}  ui/    tasks + index.json  自动执行
 ```
 
-每阶段产出文档，可选通过 `/eval-*` 系列技能迭代评分至达标（默认可选，非强制）。
+每阶段产出文档，可选通过 `/eval-*` 系列技能迭代评分至达标。
 
 ### 快速模式（小功能：1-2h, 1-10 任务）
 
 ```
-/quick → /brainstorm → /quick-tasks → /run-tasks
+/quick -> /brainstorm -> /quick-tasks -> /run-tasks
 ```
 
 跳过 PRD 和设计，`proposal.md` 直接驱动任务。纯文档 feature 自动跳过测试，生成文档评估任务。
 
 ---
 
-## 快速开始
+## 安装
 
-### 安装
+### 前置要求
+
+- [Go 1.25+](https://golang.org/dl/)
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI
+
+### 安装步骤
 
 ```bash
 # Marketplace 安装（推荐）
 /plugin marketplace add git@github.com:bigfaner/forge.git
 /plugin install forge@forge --scope project
 /init-forge
-task --version
+forge --help
 ```
 
-或本地安装：`git clone` → `/plugin marketplace add .` → `/plugin install forge@forge` → `/init-forge`
+或本地安装：`git clone` -> `/plugin marketplace add .` -> `/plugin install forge@forge` -> `/init-forge`
 
 ### 5 分钟体验
 
@@ -62,12 +67,56 @@ task --version
 /quick
 
 # 完整模式
-/brainstorm → /write-prd → /tech-design → /ui-design → /breakdown-tasks → /run-tasks
+/brainstorm -> /write-prd -> /tech-design -> /ui-design -> /breakdown-tasks -> /run-tasks
 ```
 
 ---
 
-## Skills 一览
+## 命令速查
+
+> 与 `forge --help` 一一对应
+
+| 命令 | 用途 |
+|------|------|
+| `forge init` | 初始化 Forge 项目环境 |
+| `forge config` | 管理项目配置（.forge/config.yaml） |
+| `forge surfaces` | 查询项目 surfaces 配置 |
+| `forge feature` | 设置或显示当前 feature 上下文 |
+| `forge task` | 任务生命周期管理 |
+| `forge test` | 测试工具集（promote / run-journey / verify） |
+| `forge prompt` | 生成 agent 执行提示词 |
+| `forge quality-gate` | 检查所有任务完成，运行回归测试 |
+| `forge fact` | 管理结构化系统事实表 |
+| `forge worktree` | 管理 git worktree 并行开发 |
+| `forge forensic` | 分析会话记录，诊断 agent 偏差 |
+| `forge verify-task-done` | 提交前验证任务完成状态 |
+| `forge cleanup` | 清理已完成任务的状态文件 |
+| `forge lesson` | 列出或查看经验详情 |
+| `forge proposal` | 列出或查看提案详情 |
+| `forge research` | 列出或查看研究报告详情 |
+| `forge claude` | 跳过权限检查启动 Claude CLI |
+| `forge completion` | 生成指定 shell 的自动补全脚本 |
+| `forge help` | 查看任意命令的帮助信息 |
+
+### 常用 task 子命令
+
+| 子命令 | 用途 |
+|--------|------|
+| `forge task add` | 创建新任务 |
+| `forge task list` | 列出当前 feature 所有任务 |
+| `forge task claim` | 认领下一个可用任务 |
+| `forge task submit` | 提交任务执行结果 |
+| `forge task status` | 查询任务状态 |
+| `forge task index` | 从任务 Markdown 重建 index.json |
+| `forge task list-types` | 列出所有支持的任务类型 |
+| `forge task query` | 查询任务信息 |
+| `forge task migrate` | 推断并补充 index.json 中的 type 字段 |
+
+---
+
+## Skills 一览（21 个）
+
+> 计数与 `ls plugins/forge/skills/ | wc -l` 一致
 
 ### 规划
 
@@ -76,7 +125,7 @@ task --version
 | `/brainstorm` | 结构化提案 `proposal.md` |
 | `/write-prd` | PRD 三件套 + `manifest.md` |
 | `/tech-design` | 技术设计文档 |
-| `/ui-design` | UI 规格 + 可选 HTML 原型（5 种内置风格） |
+| `/ui-design` | UI 规格 + 可选 HTML 原型 |
 | `/breakdown-tasks` | 任务文件 + `index.json` + `manifest.md` |
 
 ### 快速模式
@@ -86,25 +135,25 @@ task --version
 | `/quick` | 启动快速模式流程 |
 | `/quick-tasks` | 从提案直接生成任务 |
 
-### 评估（1000 分制，对抗式迭代至达标；`/eval-harness` 例外，使用 100 分制）
+### 评估（1000 分制，对抗式迭代至达标）
 
-`/eval-prd` · `/eval-design` · `/eval-ui` · `/eval-proposal` · `/eval-journey` · `/eval-contract` · `/eval-consistency` · `/eval-harness`
+`/eval-prd` / `/eval-design` / `/eval-ui` / `/eval-proposal` / `/eval-journey` / `/eval-contract` / `/eval-consistency` / `/eval`（通用评估，参数化 rubric）
 
 ### 测试生命周期
 
-`/gen-sitemap` → `/gen-journeys` → `/eval-journey` → `/gen-contracts` → `/eval-contract` → `/gen-test-scripts` → `/run-tests` → `forge test promote` → `/consolidate-specs`
+`/gen-sitemap` -> `/gen-journeys` -> `/eval-journey` -> `/gen-contracts` -> `/eval-contract` -> `/gen-test-scripts` -> `/run-tests` -> `forge test promote` -> `/consolidate-specs`
 
 ### 执行
 
 | Skill | 用途 |
 |-------|------|
-| `/execute-task` | 执行单任务 |
+| `/execute-task` | 执行单任务（TDD + Quality Gate + record） |
 | `/run-tasks` | 自动循环分发 |
 | `/submit-task` | 记录完成（必须） |
 
 ### 辅助
 
-`/fix-bug` · `/git-commit` · `/git-checkout` · `/learn-lesson` · `/record-decision` · `/consolidate-specs` · `/init-justfile` · `/init-forge` · `/gen-sitemap` · `/extract-design-md` · `/forensic` · `/improve-harness`
+`/fix-bug` / `/git-commit` / `/git-checkout` / `/learn` / `/consolidate-specs` / `/init-forge` / `/gen-sitemap` / `/extract-design-md` / `/forensic` / `/deep-research` / `/clean-code` / `/test-guide` / `/simplify-skill`
 
 ---
 
@@ -114,38 +163,93 @@ task --version
 |-------|------|
 | **task-executor** | 执行单个任务（TDD + Quality Gate + record） |
 
-### Eval Experts（评估协议 + 专家角色）
+---
 
-评估通过 protocol + expert 组合执行，不使用独立 agent 定义文件。参见 `agents/experts/`。
+## 任务类型表（21 种 dot-notation 类型）
+
+> 与 `forge task list-types` 一一对应
+
+### coding（5 种）
+
+| 类型 | 用途 |
+|------|------|
+| `coding.feature` | 实现新运行时行为 |
+| `coding.enhancement` | 增强已有行为 |
+| `coding.cleanup` | 移除死代码或修复技术债 |
+| `coding.refactor` | 无行为变更的重构 |
+| `coding.fix` | 修复 bug 或问题 |
+
+### doc（5 种）
+
+| 类型 | 用途 |
+|------|------|
+| `doc` | 编写或更新文档 |
+| `doc.review` | 对照验收标准审查文档 |
+| `doc.summary` | 生成文档摘要 |
+| `doc.consolidate` | 合并文档文件 |
+| `doc.drift` | 检测并修复规范漂移 |
+
+### test（5 种）
+
+| 类型 | 用途 |
+|------|------|
+| `test.gen-journeys` | 从规格生成测试旅程 |
+| `test.gen-contracts` | 从旅程生成测试契约 |
+| `test.gen-scripts` | 生成可执行测试脚本 |
+| `test.run` | 运行测试脚本并收集结果 |
+| `test.verify-regression` | 晋升后验证回归套件 |
+
+### eval（2 种）
+
+| 类型 | 用途 |
+|------|------|
+| `eval.journey` | 评估 Journey 质量（rubric 评分） |
+| `eval.contract` | 评估 Contract 质量（rubric 评分） |
+
+### validation（2 种）
+
+| 类型 | 用途 |
+|------|------|
+| `validation.code` | 验证代码质量和正确性 |
+| `validation.ux` | 验证用户体验质量 |
+
+### 其他（2 种）
+
+| 类型 | 用途 |
+|------|------|
+| `gate` | 阶段退出质量门禁 |
+| `code-quality.simplify` | 简化和清理代码质量 |
 
 ---
 
-## 项目结构
+## 架构
 
 ```
 forge/
-├── plugins/forge/          # Forge plugin
-│   ├── skills/             # 17 个 Skills
-│   ├── commands/           # 17 个 Slash Commands
-│   └── agents/             # 3 个 Subagents
-├── task-cli/               # Go CLI 工具源码
-├── tests/e2e/              # Playwright E2E 回归测试
-├── docs/                   # 项目文档
-└── web/                    # Web 看板（Vite + React）
++-- plugins/forge/           # Forge plugin
+|   +-- skills/              # 21 个 Skills
+|   +-- commands/            # 18 个 Slash Commands
+|   +-- agents/              # 1 个 Subagent (task-executor)
+|   +-- hooks/               # Hooks + guide.md
++-- forge-cli/               # Go CLI 源码 (forge binary)
++-- tests/                   # 回归测试套件
++-- docs/                    # 项目文档
 ```
 
 ```
 docs/features/<slug>/
-├── manifest.md             # Feature 单一入口（自动维护）
-├── prd/                    # /write-prd 产出
-├── design/                 # /tech-design 产出
-├── ui/                     # /ui-design 产出（可选）
-├── testing/                # /gen-journeys + /gen-contracts 产出
-└── tasks/
-    ├── index.json          # 任务定义
-    ├── *.md                # 任务详情
-    └── records/            # 执行记录
++-- manifest.md              # Feature 单一入口（自动维护）
++-- prd/                     # /write-prd 产出
++-- design/                  # /tech-design 产出
++-- ui/                      # /ui-design 产出（可选）
++-- testing/                 # /gen-journeys + /gen-contracts 产出
++-- tasks/
+    +-- index.json           # 任务定义
+    +-- *.md                 # 任务详情
+    +-- records/             # 执行记录
 ```
+
+详细架构参见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。
 
 ---
 
@@ -153,100 +257,11 @@ docs/features/<slug>/
 
 ```bash
 git clone git@github.com:bigfaner/forge.git && cd forge
-cd task-cli && go mod download
+cd forge-cli && go mod download
 go test -race -cover ./...
 ```
 
-提交遵循 [Conventional Commits](https://www.conventionalcommits.org/)，测试覆盖率 >= 80%。
-
----
-
-## Task Types & Pipeline 参考
-
-> 以下内容由 `forge task index` 自动生成，以 CLI 行为为准。
-
-### 13 种任务类型
-
-| Type | 谁生成 | 用途 |
-|------|--------|------|
-| `implementation` | Skill agent | 实现功能代码 |
-| `documentation` | Skill agent | 编写或更新文档 |
-| `doc-evaluation` | `forge task index`（docs-only） | 评估文档质量（T-eval-doc） |
-| `doc-generation.summary` | `forge task index` | 生成阶段摘要（`N.summary`） |
-| `doc-generation.consolidate` | `forge task index` | 合并规格文档（T-test-5） |
-| `test-pipeline.gen-cases` | `forge task index` | 生成测试用例（T-test-1 / T-quick-1） |
-| `test-pipeline.eval-cases` | `forge task index` | 评估测试用例质量（T-test-1b） |
-| `test-pipeline.gen-scripts` | `forge task index` | 生成可执行测试脚本（T-test-2 / T-quick-2） |
-| `test-pipeline.run` | `forge task index` | 运行测试并收集结果（T-test-3 / T-quick-3） |
-| `test-pipeline.graduate` | `forge task index` | 将测试晋升到回归套件（T-test-4 / T-quick-4） |
-| `test-pipeline.verify-regression` | `forge task index` | 验证完整回归套件（T-test-4.5 / T-quick-5） |
-| `fix` | `forge task add` | 修复失败的测试或质量门禁（`fix-*` / `disc-*`） |
-| `gate` | `forge task index` | 阶段退出质量门禁（`N.gate`） |
-
-### Quick Pipeline 责任链（T-quick-1~5）
-
-| ID | 职责 |
-|----|------|
-| T-quick-1 | 从 proposal Success Criteria 生成测试用例文档（无 sitemap、无 eval） |
-| T-quick-2 | 从测试用例生成 e2e 测试脚本 |
-| T-quick-3 | 执行 feature e2e 测试；失败则标记 blocked 并添加 fix task（P0） |
-| T-quick-4 | 将测试脚本晋升到回归套件 `tests/e2e/` |
-| T-quick-5 | 运行完整回归套件；失败则标记 blocked 并添加 fix task（P0） |
-
-依赖链：每个 profile 的 T-quick-1~4 串行，T-quick-5 依赖所有 T-quick-4。
-
-### Full Pipeline 责任链（T-test-1~5）
-
-| ID | 职责 |
-|----|------|
-| T-test-1 | 生成 Journey 文档（先调 `/gen-sitemap` 如果 sitemap.json 缺失，再调 `/gen-journeys`，含 surface 检测） |
-| T-test-1b | 评估 Journey 质量（main session 任务，调用 `/eval-journey`，总分 ≥850 且每维度不低于最低阈值） |
-| T-test-2 | 从 Journey 生成 Contract + 衍生边界 Outcome（调用 `/gen-contracts`，含风险驱动密度） |
-| T-test-2b | 评估 Contract 质量（main session 任务，调用 `/eval-contract`，同样 6 维度 1000 分制门禁） |
-| T-test-3 | 从 Contract + Convention 生成测试脚本（调用 `/gen-test-scripts`，按 surface 差异化策略） |
-| T-test-3b | 执行 feature e2e 测试（调用 `/run-tests`，含环境就绪检测 + 置信度评级）；失败则标记 blocked 并添加 fix task（P0） |
-| T-test-4 | 验证 e2e 通过（检查 `latest.md` + 置信度评级），然后 `forge test promote` 晋升脚本到 `tests/e2e/` |
-| T-test-4.5 | 运行完整回归套件；失败则标记 blocked 并添加 fix task（P0），修复后重跑 |
-| T-test-5 | 提取业务规则和技术规格，用户确认后合并（调用 `/consolidate-specs`） |
-
-依赖链：T-test-1 → T-test-1b → T-test-2 → T-test-2b → T-test-3 → T-test-3b → T-test-4 → T-test-4.5 → T-test-5。
-
-### Fix-task 命令
-
-```bash
-forge task add --template fix-task --title "Fix: <描述>" \
-  --source-task-id <源任务ID> \
-  --block-source \
-  --var SOURCE_FILES="<受影响文件>" \
-  --var TEST_SCRIPT="<失败的测试>" \
-  --var TEST_RESULTS="<结果路径>" \
-  --description "<根因分析>"
-```
-
-| 参数 | 说明 |
-|------|------|
-| `--block-source` | 原子操作：在 fix-task 创建前将源任务设为 blocked |
-| 去重 | `task add` 自动去重：输出 `ACTION: ADDED`（新建）或 `ACTION: SKIPPED`（已有活跃 fix-task） |
-| 自动恢复 | fix-task 完成后，`task record` 自动将源任务恢复为 pending（需所有依赖完成） |
-| 嵌套 | fix-task 本身失败时，`--source-task-id` 指向失败的 fix-task（非原始源），最多 3 层 |
-
-### Profile-suffix 规则
-
-| 场景 | ID 格式 | 示例 |
-|------|---------|------|
-| 单 profile（默认） | 无后缀 | `T-test-2`, `T-quick-1` |
-| 多 profile（2+） | 字母后缀（a, b, c...） | `T-test-2a`, `T-test-2b`, `T-quick-1a` |
-
-后缀规则：第一个 profile 为 `a`，第二个为 `b`，以此类推。共享任务（T-test-1、T-test-1b、T-test-4.5、T-test-5、T-quick-5）无后缀。
-
-### Gate/Summary 自动生成规则
-
-`forge task index` 自动检测阶段（phase）并生成 stage-gate 文件：
-
-- **检测条件**：任务 ID 匹配 `<数字>.<数字>` 格式（如 `1.1`, `2.3`），排除 `T-test-*`、`T-quick-*`、`.summary`、`.gate`
-- **生成条件**：同一 phase 内有 >= 2 个业务任务时，生成 `<N>.summary.md` 和 `<N>.gate.md`
-- **依赖关系**：`N.summary` 依赖 phase N 所有业务任务；`N.gate` 依赖 `N.summary`；下一 phase 的任务依赖 `N.gate`
-- **幂等性**：已存在的文件不会覆盖
+提交遵循 [Conventional Commits](https://www.conventionalcommits.org/)。
 
 ---
 
@@ -255,8 +270,8 @@ forge task add --template fix-task --title "Fix: <描述>" \
 | 文档 | 说明 |
 |------|------|
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 核心架构、工作流管道、Agent 协作、Quality Gate |
-| [task-cli/docs/OVERVIEW.md](task-cli/docs/OVERVIEW.md) | CLI 完整命令参考 |
-| [task-cli/docs/WORKFLOW.md](task-cli/docs/WORKFLOW.md) | 内部流程图解 |
+| [forge-cli/docs/OVERVIEW.md](forge-cli/docs/OVERVIEW.md) | CLI 完整命令参考 |
+| [forge-cli/docs/WORKFLOW.md](forge-cli/docs/WORKFLOW.md) | 内部流程图解 |
 | [docs/official-references/plugin.md](docs/official-references/plugin.md) | 插件系统技术参考 |
 | [docs/official-references/plugin-marketplace.md](docs/official-references/plugin-marketplace.md) | Marketplace 分发指南 |
 | [docs/official-references/hooks.md](docs/official-references/hooks.md) | Hooks 技术参考 |
