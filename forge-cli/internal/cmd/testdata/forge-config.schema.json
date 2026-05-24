@@ -10,20 +10,21 @@
       "description": "Project type for scope resolution.",
       "enum": ["fullstack", "mobile", "library", "mixed"]
     },
-    "interfaces": {
-      "type": "array",
-      "description": "System-facing interface types to test. Omit to use the union of all detected languages' default interfaces.",
-      "items": {
-        "type": "string",
-        "enum": [
-          "web-ui",
-          "tui",
-          "mobile-ui",
-          "api",
-          "cli"
-        ]
-      },
-      "uniqueItems": true
+    "surfaces": {
+      "description": "Surface type mapping. Scalar form (e.g., 'api') for single-module projects; map form (e.g., {frontend: web, backend: api}) for multi-module projects. Omit to use forge init auto-detection.",
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": ["web", "mobile", "api", "cli", "tui"]
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "enum": ["web", "mobile", "api", "cli", "tui"]
+          }
+        }
+      ]
     },
     "languages": {
       "type": "array",

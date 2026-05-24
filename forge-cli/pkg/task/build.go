@@ -69,8 +69,8 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 	capabilities := forgeconfig.SurfaceTypes(surfaces)
 	bodyCtx := extractBodyContext(opts.ProjectRoot, opts.FeatureSlug, mode, capabilities)
 
-	// 4. Profiles and interfaces resolved by caller (task 1.4)
-	// BuildIndex no longer holds Languages/TestInterfaces; caller injects them into generateTestTasks.
+	// 4. Profiles and surfaces resolved by caller (task 1.4)
+	// BuildIndex no longer holds Languages/Surfaces; caller injects them into generateTestTasks.
 
 	// 5. Scan .md files
 	existingKeys := make(map[string]bool) // track which keys come from .md files
@@ -405,7 +405,7 @@ func setFeatureMetadata(index *TaskIndex, projectRoot, slug string) {
 	}
 }
 
-// GenerateTestTasks returns test task definitions for the given mode and interfaces.
+// GenerateTestTasks returns test task definitions for the given mode and capabilities.
 // Exported for use by caller (task 1.4).
 func GenerateTestTasks(mode string, capabilities []string, auto forgeconfig.AutoConfig) []AutoGenTaskDef {
 	switch mode {
