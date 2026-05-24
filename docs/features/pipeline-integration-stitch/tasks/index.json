@@ -8,7 +8,7 @@
       "title": "创建 prompt 模板 + CategoryEval + eval record/validation 系统",
       "priority": "P0",
       "estimatedTime": "3h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-prompt-templates-category-eval.md",
       "record": "records/1-prompt-templates-category-eval.md",
       "breaking": true,
@@ -20,8 +20,10 @@
       "title": "加固依赖注入：合并 resolveTestDepsAndInjectReviewDoc + 更新 findFirstTestTaskIdx",
       "priority": "P1",
       "estimatedTime": "1.5h",
-      "dependencies": ["1"],
-      "status": "pending",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
       "file": "2-harden-deps.md",
       "record": "records/2-harden-deps.md",
       "breaking": true,
@@ -33,8 +35,11 @@
       "title": "移除 test.gen-and-run 废弃代码 + 更新测试文件",
       "priority": "P2",
       "estimatedTime": "2h",
-      "dependencies": ["1", "2"],
-      "status": "pending",
+      "dependencies": [
+        "1",
+        "2"
+      ],
+      "status": "completed",
       "file": "3-remove-gen-and-run.md",
       "record": "records/3-remove-gen-and-run.md",
       "scope": "backend",
@@ -45,8 +50,10 @@
       "title": "更新 record-format-test.md：替换废弃类型列表",
       "priority": "P1",
       "estimatedTime": "15min",
-      "dependencies": ["1"],
-      "status": "pending",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
       "file": "4-update-record-format-test.md",
       "record": "records/4-update-record-format-test.md",
       "type": "doc"
@@ -56,8 +63,10 @@
       "title": "更新活跃文档：移除 gen-and-run 引用",
       "priority": "P2",
       "estimatedTime": "30min",
-      "dependencies": ["3"],
-      "status": "pending",
+      "dependencies": [
+        "3"
+      ],
+      "status": "completed",
       "file": "5-update-active-docs.md",
       "record": "records/5-update-active-docs.md",
       "type": "doc"

@@ -1,7 +1,7 @@
 ---
 created: 2026-05-24
 author: "faner"
-status: Draft
+status: Approved
 ---
 
 # Proposal: Pipeline Integration Stitch — 修复 auto-gen-journeys-contracts 提案遗留的集成缝隙
