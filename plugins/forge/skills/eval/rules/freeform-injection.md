@@ -1,4 +1,15 @@
+---
+status: deprecated
+deprecated-by: eval-freeform-pre-revision
+restore-path: |
+  1. Remove `status: deprecated` frontmatter from this file
+  2. Remove scorer-composition.md conditional branch (FREEFORM_INJECTION = false path)
+  Total: 2 config changes to restore original injection behavior.
+---
+
 # Freeform Finding Injection Rules
+
+**DEPRECATED**: This injection mechanism is conditionally deprecated when pre-revision mode is active (`FREEFORM_INJECTION = false`). The original injection semantics are preserved below for potential future restoration. When pre-revision mode is active, the Scorer uses annotated blind review instead (see `rules/scorer-composition.md`).
 
 Rules for injecting extracted freeform review findings into the rubric scorer prompt. This is the bridge between the freeform expert review (Phase 0) and the rubric scoring phase.
 

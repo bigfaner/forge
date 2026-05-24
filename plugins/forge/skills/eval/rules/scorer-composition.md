@@ -42,22 +42,51 @@ The following project reference material is provided for reality-checking the ev
 
 For unmapped types (not in dispatch table), compose a single prompt using the generic inline fallback above plus the scorer protocol (with variables replaced) plus context injection.
 
-# Freeform Findings Injection (Phase 0)
+# Freeform Findings Injection (Phase 0) — Conditional
 
-When Phase 0 was executed and produced valid findings (i.e., `FREEFORM_INJECTION = true` in the eval skill), append the `<injected-freeform-findings>` block **after** all existing sections in the composed scorer prompt.
+When Phase 0 was executed and produced valid findings, the handling depends on whether pre-revision mode is active:
 
-Follow the injection rules in `rules/freeform-injection.md`:
-1. Format the validated findings array into `{{FORMATTED_FINDINGS}}` (one line per finding: `- **[severity]** summary | 原文引用: "quote"`)
-2. Wrap in `<injected-freeform-findings>` block with the standard header and instructions
-3. If `LOW_HIT_RATE = true`, include the partial extraction annotation and append the complete freeform review narrative
+**When `FREEFORM_INJECTION = false`** (pre-revision mode, set by SKILL.md Phase 0.5):
+- Skip the freeform findings injection block entirely
+- Instead, append the annotated blind review instructions below to the composed scorer prompt
+- The Scorer does NOT see freeform findings content — only the `<!-- pre-revised -->` markers in the document itself
 
-**Order in final composed prompt** (when freeform injection is active):
+**When `FREEFORM_INJECTION = true`** (legacy / fallback mode):
+- Follow the injection rules in `rules/freeform-injection.md`
+- Format the validated findings array into `{{FORMATTED_FINDINGS}}` (one line per finding: `- **[severity]** summary | 原文引用: "quote"`)
+- Wrap in `<injected-freeform-findings>` block with the standard header and instructions
+- If `LOW_HIT_RATE = true`, include the partial extraction annotation and append the complete freeform review narrative
+
+**When `FREEFORM_INJECTION` is not set** (no `--freeform-expert`, or Phase 0 degraded), no freeform block is added — the composed prompt is identical to the standard flow.
+
+## Annotated Blind Review Instructions (when `FREEFORM_INJECTION = false`)
+
+When pre-revision mode is active, append the following instructions to the composed scorer prompt **after** all existing sections:
+
+```
+<annotated-blind-review>
+该文档经过 Pre-Revision 阶段修订。修订后的段落标注了 HTML 注释标记 `<!-- pre-revised: {severity} -->`。
+
+标注盲审规则：
+1. `<!-- pre-revised: {severity} -->` 标记表示该段落经过 Pre-Revision 修改。对标记区域：关注修订是否引入了新问题或遗漏，而非重新评估已修正的原始问题。
+2. severity 标记供注意力分配参考，不影响评分标准。
+3. 在 eval report 中分别记录标注区域与未标注区域的 attack density，供偏误检测。格式：
+
+   **Bias Detection Report**:
+   - Annotated regions: N attack points / X paragraphs = density Y
+   - Unannotated regions: M attack points / Z paragraphs = density W
+   - Ratio (annotated/unannotated): R
+
+4. 当 Scorer 的 rubric 判断与 pre-revision 修改方向矛盾时（如 Scorer 认为某段应删除但 pre-revision 刚添加），以 rubric 标准为准生成 attack point，但在 attack point 中标注 `conflict-with-pre-revision` 供审查。
+</annotated-blind-review>
+```
+
+**Order in final composed prompt**:
 1. Scorer protocol (with template variables replaced)
 2. Expert file content
 3. `<injected-context>` block (if CONTEXT_CONTENT was loaded)
-4. `<injected-freeform-findings>` block (if FREEFORM_INJECTION = true)
-
-When `FREEFORM_INJECTION` is not set (no `--freeform-expert`, or Phase 0 degraded), no freeform block is added — the composed prompt is identical to the standard flow.
+4. `<annotated-blind-review>` block (if `FREEFORM_INJECTION = false`, pre-revision mode)
+5. `<injected-freeform-findings>` block (if `FREEFORM_INJECTION = true`, legacy mode)
 
 # Scorer Agent Inputs
 
