@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"forge-cli/internal/cmd/base"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/proposal"
 
@@ -25,7 +26,7 @@ With a slug argument: shows detailed information for that proposal.`,
 func runProposal(_ *cobra.Command, args []string) error {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		Exit(ErrProjectNotFound())
+		base.Exit(base.ErrProjectNotFound())
 	}
 
 	if len(args) == 0 {
@@ -39,7 +40,7 @@ func runProposal(_ *cobra.Command, args []string) error {
 func runProposalList(projectRoot string) {
 	proposals, err := proposal.Discover(projectRoot)
 	if err != nil {
-		Exit(newErrProposalDiscovery(err))
+		base.Exit(newErrProposalDiscovery(err))
 	}
 
 	if len(proposals) == 0 {
@@ -51,14 +52,14 @@ func runProposalList(projectRoot string) {
 	// via infocmd.Discover.
 
 	// Calculate dynamic slug column width.
-	slugWidth := CalcSlugColWidth(mapProposalsToSlugLens(proposals))
+	slugWidth := base.CalcSlugColWidth(mapProposalsToSlugLens(proposals))
 
-	PrintBlockStart()
-	PrintField("PROPOSALS", fmt.Sprintf("%d found", len(proposals)))
+	base.PrintBlockStart()
+	base.PrintField("PROPOSALS", fmt.Sprintf("%d found", len(proposals)))
 	fmt.Println()
 
 	// Table header
-	fmt.Printf("  %-s %-12s %-10s %-4s %s\n", PadRight("SLUG", slugWidth), "CREATED", "STATUS", "PRD", "FEATURE")
+	fmt.Printf("  %-s %-12s %-10s %-4s %s\n", base.PadRight("SLUG", slugWidth), "CREATED", "STATUS", "PRD", "FEATURE")
 	fmt.Printf("  %-s %-12s %-10s %-4s %s\n",
 		strings.Repeat("-", slugWidth),
 		strings.Repeat("-", 10),
@@ -76,7 +77,7 @@ func runProposalList(projectRoot string) {
 			featureStatus = p.FeatureStatus
 		}
 		fmt.Printf("  %-s %-12s %-10s %-4s %s\n",
-			PadRight(TruncateSlug(p.Slug, slugWidth), slugWidth),
+			base.PadRight(base.TruncateSlug(p.Slug, slugWidth), slugWidth),
 			p.Created,
 			p.Status,
 			prdMark,
@@ -84,13 +85,13 @@ func runProposalList(projectRoot string) {
 	}
 
 	fmt.Println()
-	PrintBlockEnd()
+	base.PrintBlockEnd()
 }
 
 func runProposalDetail(projectRoot, slug string) {
 	p, err := proposal.FindBySlug(projectRoot, slug)
 	if err != nil {
-		Exit(newErrProposalNotFound(slug))
+		base.Exit(newErrProposalNotFound(slug))
 	}
 
 	prdMark := "no"
@@ -102,15 +103,15 @@ func runProposalDetail(projectRoot, slug string) {
 		featureStatus = p.FeatureStatus
 	}
 
-	PrintBlockStart()
-	PrintField("SLUG", p.Slug)
-	PrintField("CREATED", p.Created)
-	PrintField("STATUS", p.Status)
-	PrintFieldIfNotEmpty("AUTHOR", p.Author)
-	PrintField("PRD", prdMark)
-	PrintField("FEATURE", featureStatus)
-	PrintField("FILE", p.FilePath)
-	PrintBlockEnd()
+	base.PrintBlockStart()
+	base.PrintField("SLUG", p.Slug)
+	base.PrintField("CREATED", p.Created)
+	base.PrintField("STATUS", p.Status)
+	base.PrintFieldIfNotEmpty("AUTHOR", p.Author)
+	base.PrintField("PRD", prdMark)
+	base.PrintField("FEATURE", featureStatus)
+	base.PrintField("FILE", p.FilePath)
+	base.PrintBlockEnd()
 }
 
 // mapProposalsToSlugLens extracts slug lengths from proposal list.
@@ -122,9 +123,9 @@ func mapProposalsToSlugLens(proposals []proposal.Proposal) []int {
 	return lens
 }
 
-func newErrProposalDiscovery(err error) *AIError {
-	return NewAIError(
-		ErrNotFound,
+func newErrProposalDiscovery(err error) *base.AIError {
+	return base.NewAIError(
+		base.ErrNotFound,
 		"Failed to discover proposals",
 		err.Error(),
 		"Ensure docs/proposals/ directory exists",
@@ -132,9 +133,9 @@ func newErrProposalDiscovery(err error) *AIError {
 	)
 }
 
-func newErrProposalNotFound(slug string) *AIError {
-	return NewAIError(
-		ErrNotFound,
+func newErrProposalNotFound(slug string) *base.AIError {
+	return base.NewAIError(
+		base.ErrNotFound,
 		fmt.Sprintf("Proposal not found: %s", slug),
 		"No proposal.md found for this slug",
 		"Check slug is correct",

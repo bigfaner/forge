@@ -4,14 +4,40 @@
 // Named export_for_test.go (not export_test.go) so it's compiled into
 // the regular package (not just the test binary). This allows cmd tests
 // to import these symbols via the task package.
+//
+// Functions with substantial logic have been migrated to pkg/task/.
+// Where possible, exports point directly to pkg/task implementations.
+// Remaining exports reference internal functions that depend on the
+// cmd layer (cobra flags, base error types, etc.) and cannot be moved.
 package task
 
 import (
 	"forge-cli/pkg/task"
 )
 
-// Suppress unused import.
+// Suppress unused import — re-exported functions below keep the import alive,
+// but this ensures compile safety even if all re-exports are temporarily removed.
 var _ = task.ValidTypes
+
+// --- Functions migrated to pkg/task/ ---
+// These export aliases point directly to pkg/task implementations.
+
+var (
+	// ExportParseSegment delegates to pkg/task.ParseSegment for ID parsing.
+	ExportParseSegment = task.ParseSegment
+
+	// ExportFillRecordTemplate delegates to pkg/task.RenderRecord for category-based record rendering.
+	ExportFillRecordTemplate = task.RenderRecord
+
+	// ExportReadSubmitData delegates to pkg/task.ReadSubmitData for file/stdin IO.
+	ExportReadSubmitData = task.ReadSubmitData
+
+	// ExportCheckExistingTaskState delegates to pkg/task.CheckExistingTaskState for claim continuation checks.
+	ExportCheckExistingTaskState = task.CheckExistingTaskState
+)
+
+// --- Internal-only functions (cannot migrate due to cmd-layer dependencies) ---
+// These reference functions defined in other files within this package.
 
 // Exported function aliases for cross-package testing (cmd/integration_test.go).
 var (
@@ -25,15 +51,11 @@ var (
 	ExportRunAdd           = runAdd
 	ExportDoReopen         = doReopen
 
-	// Utility functions
-	ExportFillRecordTemplate           = fillRecordTemplate
+	// Utility functions (internal dependencies)
 	ExportSaveIndexAndSignalCompletion = saveIndexAndSignalCompletion
 	ExportValidateRecordData           = validateRecordData
-	ExportReadSubmitData               = readSubmitData
-	ExportCheckExistingTaskState       = checkExistingTaskState
 	ExportPrintTaskDetails             = printTaskDetails
 	ExportValidateQualityGate          = validateQualityGate
-	ExportParseSegment                 = parseSegment
 )
 
 // ExportValidator exposes the validator type for cross-package testing.

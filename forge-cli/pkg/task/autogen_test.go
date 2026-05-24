@@ -1298,7 +1298,7 @@ func TestAutogenTypeToFileMapping(t *testing.T) {
 		TypeTestGenScripts, TypeTestGenAndRun, TypeTestRun,
 		TypeTestVerifyRegression, TypeEvalJourney, TypeEvalContract,
 		TypeValidationCode, TypeValidationUx,
-		TypeDocEval, TypeDocConsolidate, TypeDocDrift, TypeCleanCode,
+		TypeDocReview, TypeDocConsolidate, TypeDocDrift, TypeCleanCode,
 		TypeTestGenJourneys, TypeTestGenContracts,
 	}
 

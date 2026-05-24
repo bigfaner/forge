@@ -44,24 +44,54 @@ type ScanConfig[T any] struct {
 	ParseEntry func(name, path string, content []byte, modTime time.Time) (T, error)
 }
 
-// ParseFrontmatter extracts YAML frontmatter from markdown content.
-// Returns nil with no error if no valid frontmatter is found.
-// Returns an error if YAML parsing fails.
-func ParseFrontmatter(content []byte, target any) error {
+// ExtractFrontmatter extracts raw YAML bytes and body from markdown content.
+// Returns the raw YAML bytes between the --- delimiters and the remaining body.
+// If no valid frontmatter is found, returns nil bytes with no error.
+func ExtractFrontmatter(content []byte) (rawYAML []byte, body []byte, err error) {
 	text := string(content)
 
 	if !strings.HasPrefix(text, "---") {
-		return nil
+		return nil, content, nil
 	}
 	text = text[3:]
 
-	closeIdx := strings.Index(text, "\n---")
-	if closeIdx < 0 {
-		return nil
+	// Require newline or EOF after opening ---
+	if len(text) > 0 && text[0] != '\n' {
+		return nil, content, nil
+	}
+	if len(text) > 0 {
+		text = text[1:]
 	}
 
-	yamlContent := text[:closeIdx]
-	return yaml.Unmarshal([]byte(yamlContent), target)
+	closeIdx := strings.Index(text, "\n---")
+	if closeIdx < 0 {
+		// Check if content ends with --- (no trailing newline)
+		if strings.HasSuffix(strings.TrimSpace(text), "---") {
+			lastIdx := strings.LastIndex(text, "---")
+			raw := []byte(strings.TrimSpace(text[:lastIdx]))
+			return raw, nil, nil
+		}
+		return nil, content, nil
+	}
+
+	rawYAML = []byte(text[:closeIdx])
+	body = []byte(text[closeIdx+4:]) // skip \n---
+	return rawYAML, body, nil
+}
+
+// ParseFrontmatter extracts YAML frontmatter from markdown content
+// and unmarshals it into target.
+// Returns nil with no error if no valid frontmatter is found.
+// Returns an error if YAML parsing fails.
+func ParseFrontmatter(content []byte, target any) error {
+	rawYAML, _, err := ExtractFrontmatter(content)
+	if err != nil {
+		return err
+	}
+	if rawYAML == nil {
+		return nil
+	}
+	return yaml.Unmarshal(rawYAML, target)
 }
 
 // Discover walks the directory defined by ScanConfig and returns all entries

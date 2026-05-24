@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"forge-cli/internal/cmd/base"
 	taskpkg "forge-cli/internal/cmd/task"
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/task"
@@ -66,7 +67,7 @@ func fieldIndex(lines []string, key string) int {
 
 func TestContract_Feature_NoFeature(t *testing.T) {
 	out := captureStdout(func() {
-		PrintBlock("FEATURE", "(none)")
+		base.PrintBlock("FEATURE", "(none)")
 	})
 	lines := parseBlock(t, out)
 	if len(lines) != 1 {
@@ -79,7 +80,7 @@ func TestContract_Feature_NoFeature(t *testing.T) {
 
 func TestContract_Feature_WithFeature(t *testing.T) {
 	out := captureStdout(func() {
-		PrintBlock("FEATURE", "my-feature")
+		base.PrintBlock("FEATURE", "my-feature")
 	})
 	lines := parseBlock(t, out)
 	if !hasField(lines, "FEATURE", "my-feature") {
@@ -284,16 +285,16 @@ func TestContract_Claim_FieldOrder(t *testing.T) {
 
 func TestContract_Add_Success(t *testing.T) {
 	out := captureStdout(func() {
-		PrintBlockStart()
-		PrintField("ACTION", "ADDED")
-		PrintField("KEY", "fix-1")
-		PrintField("TASK_ID", "fix-1")
-		PrintField("TITLE", "Fix bug")
-		PrintField("PRIORITY", "P0")
-		PrintField("STATUS", "pending")
-		PrintField("FILE", "/path/to/tasks/fix-1.md")
-		PrintField("RECORD", "/path/to/tasks/records/fix-1.md")
-		PrintBlockEnd()
+		base.PrintBlockStart()
+		base.PrintField("ACTION", "ADDED")
+		base.PrintField("KEY", "fix-1")
+		base.PrintField("TASK_ID", "fix-1")
+		base.PrintField("TITLE", "Fix bug")
+		base.PrintField("PRIORITY", "P0")
+		base.PrintField("STATUS", "pending")
+		base.PrintField("FILE", "/path/to/tasks/fix-1.md")
+		base.PrintField("RECORD", "/path/to/tasks/records/fix-1.md")
+		base.PrintBlockEnd()
 	})
 	lines := parseBlock(t, out)
 
@@ -309,10 +310,10 @@ func TestContract_Add_Success(t *testing.T) {
 
 func TestContract_Add_Skipped(t *testing.T) {
 	out := captureStdout(func() {
-		PrintBlockStart()
-		PrintField("ACTION", "SKIPPED")
-		PrintField("REASON", "active fix task fix-1 already exists")
-		PrintBlockEnd()
+		base.PrintBlockStart()
+		base.PrintField("ACTION", "SKIPPED")
+		base.PrintField("REASON", "active fix task fix-1 already exists")
+		base.PrintBlockEnd()
 	})
 	lines := parseBlock(t, out)
 
@@ -328,9 +329,9 @@ func TestContract_Add_Skipped(t *testing.T) {
 
 func TestContract_Record_Completed(t *testing.T) {
 	out := captureStdout(func() {
-		PrintBlockStart()
-		PrintField("STATUS", "completed")
-		PrintBlockEnd()
+		base.PrintBlockStart()
+		base.PrintField("STATUS", "completed")
+		base.PrintBlockEnd()
 	})
 	lines := parseBlock(t, out)
 
@@ -348,9 +349,9 @@ func TestContract_Record_Completed(t *testing.T) {
 
 func TestContract_Record_Blocked(t *testing.T) {
 	out := captureStdout(func() {
-		PrintBlockStart()
-		PrintField("STATUS", "blocked")
-		PrintBlockEnd()
+		base.PrintBlockStart()
+		base.PrintField("STATUS", "blocked")
+		base.PrintBlockEnd()
 	})
 	lines := parseBlock(t, out)
 
@@ -367,7 +368,7 @@ func TestContract_Record_Blocked(t *testing.T) {
 
 func TestContract_BlockSeparator_SingleBlock(t *testing.T) {
 	out := captureStdout(func() {
-		PrintBlock("FEATURE", "test")
+		base.PrintBlock("FEATURE", "test")
 	})
 
 	trimmed := strings.TrimSpace(out)
@@ -387,7 +388,7 @@ func TestContract_BlockSeparator_SingleBlock(t *testing.T) {
 func TestContract_BlockSeparator_NoTrailingNewlineInSeparator(t *testing.T) {
 	// Each block must end with "---" on its own line, followed by a newline.
 	out := captureStdout(func() {
-		PrintBlock("KEY", "value")
+		base.PrintBlock("KEY", "value")
 	})
 
 	if !strings.HasSuffix(out, "---\n") {
@@ -399,10 +400,10 @@ func TestContract_BlockSeparator_NoTrailingNewlineInSeparator(t *testing.T) {
 
 func TestContract_Query_Minimal(t *testing.T) {
 	out := captureStdout(func() {
-		PrintBlockStart()
-		PrintField("TASK_ID", "1")
-		PrintField("STATUS", "in_progress")
-		PrintBlockEnd()
+		base.PrintBlockStart()
+		base.PrintField("TASK_ID", "1")
+		base.PrintField("STATUS", "in_progress")
+		base.PrintBlockEnd()
 	})
 	lines := parseBlock(t, out)
 
@@ -423,11 +424,11 @@ func TestContract_Query_Minimal(t *testing.T) {
 
 func TestContract_Query_WithScope(t *testing.T) {
 	out := captureStdout(func() {
-		PrintBlockStart()
-		PrintField("TASK_ID", "1")
-		PrintField("STATUS", "in_progress")
-		PrintFieldIfNotEmpty("SCOPE", "backend")
-		PrintBlockEnd()
+		base.PrintBlockStart()
+		base.PrintField("TASK_ID", "1")
+		base.PrintField("STATUS", "in_progress")
+		base.PrintFieldIfNotEmpty("SCOPE", "backend")
+		base.PrintBlockEnd()
 	})
 	lines := parseBlock(t, out)
 
@@ -438,11 +439,11 @@ func TestContract_Query_WithScope(t *testing.T) {
 
 func TestContract_Query_EmptyScopeOmitted(t *testing.T) {
 	out := captureStdout(func() {
-		PrintBlockStart()
-		PrintField("TASK_ID", "1")
-		PrintField("STATUS", "in_progress")
-		PrintFieldIfNotEmpty("SCOPE", "")
-		PrintBlockEnd()
+		base.PrintBlockStart()
+		base.PrintField("TASK_ID", "1")
+		base.PrintField("STATUS", "in_progress")
+		base.PrintFieldIfNotEmpty("SCOPE", "")
+		base.PrintBlockEnd()
 	})
 	lines := parseBlock(t, out)
 
@@ -453,11 +454,11 @@ func TestContract_Query_EmptyScopeOmitted(t *testing.T) {
 
 func TestContract_Query_BreakingWhenTrue(t *testing.T) {
 	out := captureStdout(func() {
-		PrintBlockStart()
-		PrintField("TASK_ID", "1")
-		PrintField("STATUS", "in_progress")
-		PrintField("BREAKING", "true")
-		PrintBlockEnd()
+		base.PrintBlockStart()
+		base.PrintField("TASK_ID", "1")
+		base.PrintField("STATUS", "in_progress")
+		base.PrintField("BREAKING", "true")
+		base.PrintBlockEnd()
 	})
 	lines := parseBlock(t, out)
 
@@ -468,10 +469,10 @@ func TestContract_Query_BreakingWhenTrue(t *testing.T) {
 
 func TestContract_Query_BreakingOmittedWhenFalse(t *testing.T) {
 	out := captureStdout(func() {
-		PrintBlockStart()
-		PrintField("TASK_ID", "1")
-		PrintField("STATUS", "in_progress")
-		PrintBlockEnd()
+		base.PrintBlockStart()
+		base.PrintField("TASK_ID", "1")
+		base.PrintField("STATUS", "in_progress")
+		base.PrintBlockEnd()
 	})
 	lines := parseBlock(t, out)
 
@@ -484,10 +485,10 @@ func TestContract_Query_BreakingOmittedWhenFalse(t *testing.T) {
 
 func TestContract_Status_QueryMode(t *testing.T) {
 	out := captureStdout(func() {
-		PrintBlockStart()
-		PrintField("TASK_ID", "1")
-		PrintField("STATUS", "in_progress")
-		PrintBlockEnd()
+		base.PrintBlockStart()
+		base.PrintField("TASK_ID", "1")
+		base.PrintField("STATUS", "in_progress")
+		base.PrintBlockEnd()
 	})
 	lines := parseBlock(t, out)
 
@@ -507,10 +508,10 @@ func TestContract_Status_QueryMode(t *testing.T) {
 
 func TestContract_Status_UpdateMode(t *testing.T) {
 	out := captureStdout(func() {
-		PrintBlockStart()
-		PrintField("TASK_ID", "1")
-		PrintField("STATUS", "pending")
-		PrintBlockEnd()
+		base.PrintBlockStart()
+		base.PrintField("TASK_ID", "1")
+		base.PrintField("STATUS", "pending")
+		base.PrintBlockEnd()
 	})
 	lines := parseBlock(t, out)
 

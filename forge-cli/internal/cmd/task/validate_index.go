@@ -101,14 +101,14 @@ func (v *validator) run() error {
 	}
 
 	v.validateTasks(idx.TasksMap())
-	v.validateDependencies(idx.TasksMap())
+	v.validateDependencies(&idx)
 	v.validateCircularDeps(idx.TasksMap())
 	v.validateFilesExist(idx.Feature, idx.TasksMap())
-	v.validateWildcardSelfDeps(idx.TasksMap())
+	v.validateWildcardSelfDeps(&idx)
 	v.validateGateIntegrity(idx.TasksMap())
 	v.validatePhaseOrder(idx.TasksMap())
 	v.validatePhaseSummaries(idx.TasksMap())
-	v.validateLiveness(idx.TasksMap())
+	v.validateLiveness(&idx)
 	if !v.printResults() {
 		return base.NewAIError(base.ErrValidation, "Validation failed", fmt.Sprintf("%d errors found", len(v.errors)), "Fix errors in index.json", "cat "+v.filePath)
 	}
@@ -145,28 +145,15 @@ func (v *validator) validateTasks(tasks map[string]task.Task) {
 	}
 }
 
-func (v *validator) validateDependencies(tasks map[string]task.Task) {
-	taskIDs := make(map[string]bool)
-	for _, t := range tasks {
-		taskIDs[t.ID] = true
-	}
-
-	for key, t := range tasks {
+func (v *validator) validateDependencies(index *task.TaskIndex) {
+	for key, t := range index.TasksMap() {
 		for _, dep := range t.Dependencies {
-			isWildcard := strings.HasSuffix(dep, task.IDSuffixWildcard)
-
+			matches, isWildcard := task.ResolveWildcardDep(index, dep)
 			if isWildcard {
-				prefix := strings.TrimSuffix(dep, task.IDSuffixWildcard) + "."
-				var matches []string
-				for id := range taskIDs {
-					if strings.HasPrefix(id, prefix) && task.IsBusinessTask(id) {
-						matches = append(matches, id)
-					}
-				}
 				if len(matches) == 0 {
 					v.errors = append(v.errors, fmt.Sprintf("Task '%s': wildcard '%s' matches no business tasks", key, dep))
 				}
-			} else if !taskIDs[dep] {
+			} else if _, found := index.ByID(dep); !found {
 				v.errors = append(v.errors, fmt.Sprintf("Task '%s': dependency '%s' not found", key, dep))
 			}
 		}
@@ -257,10 +244,11 @@ func (v *validator) validateFirstTestTaskTemplate(taskFile string, taskID string
 }
 
 // V1: Wildcard self-dependency detection
-func (v *validator) validateWildcardSelfDeps(tasks map[string]task.Task) {
-	for key, t := range tasks {
+func (v *validator) validateWildcardSelfDeps(index *task.TaskIndex) {
+	for key, t := range index.TasksMap() {
 		for _, dep := range t.Dependencies {
-			if !strings.HasSuffix(dep, task.IDSuffixWildcard) {
+			matches, isWildcard := task.ResolveWildcardDep(index, dep)
+			if !isWildcard {
 				continue
 			}
 			prefix := strings.TrimSuffix(dep, task.IDSuffixWildcard) + "."
@@ -268,12 +256,7 @@ func (v *validator) validateWildcardSelfDeps(tasks map[string]task.Task) {
 				continue
 			}
 			// This task's own ID matches the wildcard. Check if other business tasks also match.
-			others := 0
-			for _, other := range tasks {
-				if other.ID != t.ID && strings.HasPrefix(other.ID, prefix) && task.IsBusinessTask(other.ID) {
-					others++
-				}
-			}
+			others := len(matches) - 1 // subtract self
 			if others == 0 {
 				v.errors = append(v.errors, fmt.Sprintf("Task '%s' (%s): wildcard '%s' only matches itself (self-dependency deadlock)", key, t.ID, dep))
 			} else {
@@ -466,8 +449,8 @@ func (v *validator) printResults() bool {
 }
 
 // validateLiveness checks for lifecycle anomalies in blocked tasks.
-func (v *validator) validateLiveness(tasks map[string]task.Task) {
-	for key, t := range tasks {
+func (v *validator) validateLiveness(index *task.TaskIndex) {
+	for key, t := range index.TasksMap() {
 		if t.Status != "blocked" {
 			continue
 		}
@@ -481,32 +464,30 @@ func (v *validator) validateLiveness(tasks map[string]task.Task) {
 		allDepsCompleted := true
 		hasActiveDep := false
 		for _, dep := range t.Dependencies {
-			if strings.HasSuffix(dep, task.IDSuffixWildcard) {
-				prefix := strings.TrimSuffix(dep, task.IDSuffixWildcard)
-				prefixWithDot := prefix + "."
-				for _, other := range tasks {
-					if other.ID == t.ID {
+			matches, isWildcard := task.ResolveWildcardDep(index, dep)
+			if isWildcard {
+				for _, matchID := range matches {
+					if matchID == t.ID {
 						continue
 					}
-					if strings.HasPrefix(other.ID, prefixWithDot) && task.IsBusinessTask(other.ID) {
-						if other.Status != "completed" && other.Status != "skipped" {
-							allDepsCompleted = false
-							if other.Status == "pending" || other.Status == "in_progress" {
-								hasActiveDep = true
-							}
+					other, _ := index.ByID(matchID)
+					if !task.IsDepSatisfied(other.Status) {
+						allDepsCompleted = false
+						if other.Status == "pending" || other.Status == "in_progress" {
+							hasActiveDep = true
 						}
 					}
 				}
 				continue
 			}
-			depTask, found := tasks[dep]
+			depTask, found := index.ByID(dep)
 			if !found {
 				v.errors = append(v.errors,
 					fmt.Sprintf("Task '%s' (%s): blocked on missing dependency '%s'", key, t.ID, dep))
 				allDepsCompleted = false
 				continue
 			}
-			if depTask.Status == "completed" || depTask.Status == "skipped" {
+			if task.IsDepSatisfied(depTask.Status) {
 				continue
 			}
 			allDepsCompleted = false

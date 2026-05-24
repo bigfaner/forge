@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"forge-cli/internal/cmd/base"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -139,7 +138,9 @@ func doSubmit(projectRoot, featureSlug, indexPath, taskIDArg string) error {
 	targetStatus := rd.Status
 
 	// Validate required and recommended fields
-	validateRecordData(rd, t.Type)
+	if err := validateRecordData(rd, t.Type); err != nil {
+		return err
+	}
 
 	// State machine validation: check transition before proceeding
 	if targetStatus == "completed" {
@@ -274,29 +275,9 @@ func autoRestoreSourceTask(index *task.TaskIndex, sourceTaskID string) {
 	fmt.Fprintf(os.Stderr, "AUTO-RESTORE: source task %s restored to pending (all deps completed or skipped)\n", sourceTaskID)
 }
 
-func readSubmitData(dataPath string) (*task.RecordData, error) {
-	var data []byte
-	var err error
-
-	if dataPath != "" {
-		data, err = os.ReadFile(dataPath)
-	} else {
-		stat, _ := os.Stdin.Stat()
-		if stat.Mode()&os.ModeNamedPipe == 0 && stat.Size() == 0 {
-			return nil, fmt.Errorf("no input: provide --data flag or pipe JSON to stdin")
-		}
-		data, err = io.ReadAll(os.Stdin)
-	}
-	if err != nil {
-		return nil, fmt.Errorf("failed to read record data: %w", err)
-	}
-
-	var rd task.RecordData
-	if err := json.Unmarshal(data, &rd); err != nil {
-		return nil, fmt.Errorf("failed to parse JSON: %w", err)
-	}
-	return &rd, nil
-}
+// readSubmitData delegates to pkg/task.ReadSubmitData.
+// Kept as alias for internal callers and tests.
+var readSubmitData = task.ReadSubmitData
 
 // validateRecordData checks required and recommended fields in task.RecordData.
 // taskType determines which checks apply based on category:
@@ -311,7 +292,7 @@ func readSubmitData(dataPath string) (*task.RecordData, error) {
 //
 // Recommended fields for "completed" status (missing = warning, all categories):
 //   - keyDecisions, acceptanceCriteria
-func validateRecordData(rd *task.RecordData, taskType string) {
+func validateRecordData(rd *task.RecordData, taskType string) error {
 	isCoding := task.CategoryForType(taskType) == task.CategoryCoding
 
 	var missing []string
@@ -322,7 +303,7 @@ func validateRecordData(rd *task.RecordData, taskType string) {
 	}
 
 	if len(missing) > 0 {
-		base.Exit(base.ErrMissingFields(missing))
+		return base.ErrMissingFields(missing)
 	}
 
 	// Auto-downgrade (coding only): completed with test failures → blocked
@@ -332,14 +313,14 @@ func validateRecordData(rd *task.RecordData, taskType string) {
 	}
 
 	if rd.Status != "completed" {
-		return
+		return nil
 	}
 
 	// Hard validation for completed tasks (coding only)
 	if isCoding {
 		// Reject completed with no test evidence (unless coverage=-1.0 signals "no tests")
 		if rd.Coverage >= 0 && rd.TestsPassed == 0 && rd.TestsFailed == 0 {
-			base.Exit(base.ErrNoTestEvidence())
+			return base.ErrNoTestEvidence()
 		}
 	}
 
@@ -352,7 +333,7 @@ func validateRecordData(rd *task.RecordData, taskType string) {
 			}
 		}
 		if len(unmet) > 0 {
-			base.Exit(base.ErrUnmetAcceptanceCriteria(unmet))
+			return base.ErrUnmetAcceptanceCriteria(unmet)
 		}
 	}
 
@@ -370,22 +351,13 @@ func validateRecordData(rd *task.RecordData, taskType string) {
 			base.WarnMissingFields(recommended)
 		}
 	}
+
+	return nil
 }
 
-func fillRecordTemplate(t *task.Task, rd *task.RecordData, startedTime string) string {
-	switch task.CategoryForType(t.Type) {
-	case task.CategoryDoc:
-		return task.RenderDocRecord(t, rd, startedTime)
-	case task.CategoryTest:
-		return task.RenderTestRecord(t, rd, startedTime)
-	case task.CategoryValidation:
-		return task.RenderValidationRecord(t, rd, startedTime)
-	case task.CategoryGate:
-		return task.RenderGateRecord(t, rd, startedTime)
-	default:
-		return task.RenderCodingRecord(t, rd, startedTime)
-	}
-}
+// fillRecordTemplate delegates to pkg/task.RenderRecord.
+// Kept as alias for internal callers and tests.
+var fillRecordTemplate = task.RenderRecord
 
 // validateQualityGate runs the quality gate based on the task's breaking flag.
 // breaking=true: full gate (compile -> fmt -> lint -> test).

@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"forge-cli/internal/cmd/base"
 )
 
 func captureStdout(f func()) string {
@@ -33,7 +35,7 @@ func captureStderr2(f func()) string {
 }
 
 func TestPrintBlock(t *testing.T) {
-	out := captureStdout(func() { PrintBlock("KEY", "value") })
+	out := captureStdout(func() { base.PrintBlock("KEY", "value") })
 	if !strings.Contains(out, "---") {
 		t.Errorf("expected separator, got: %s", out)
 	}
@@ -44,7 +46,7 @@ func TestPrintBlock(t *testing.T) {
 
 func TestPrintFields(t *testing.T) {
 	out := captureStdout(func() {
-		PrintFields("K1", "v1", "K2", "v2")
+		base.PrintFields("K1", "v1", "K2", "v2")
 	})
 	if !strings.Contains(out, "K1: v1") || !strings.Contains(out, "K2: v2") {
 		t.Errorf("expected both pairs, got: %s", out)
@@ -57,7 +59,7 @@ func TestPrintFields_PanicsOnOddArgs(t *testing.T) {
 			t.Error("expected panic for odd number of args")
 		}
 	}()
-	PrintFields("K1", "v1", "K2") //nolint:staticcheck // intentionally odd to test panic
+	base.PrintFields("K1", "v1", "K2") //nolint:staticcheck // intentionally odd to test panic
 }
 
 func TestPrintResult(t *testing.T) {
@@ -72,7 +74,7 @@ func TestPrintResult(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			out := captureStdout(func() { PrintResult(tt.status, tt.details) })
+			out := captureStdout(func() { base.PrintResult(tt.status, tt.details) })
 			if !strings.Contains(out, tt.want) {
 				t.Errorf("expected %q, got: %s", tt.want, out)
 			}
@@ -81,7 +83,7 @@ func TestPrintResult(t *testing.T) {
 }
 
 func TestPrintWarning(t *testing.T) {
-	out := captureStdout(func() { PrintWarning("careful") })
+	out := captureStdout(func() { base.PrintWarning("careful") })
 	if !strings.Contains(out, "WARNING: careful") {
 		t.Errorf("expected warning prefix, got: %s", out)
 	}
@@ -103,7 +105,7 @@ func TestDebugf(t *testing.T) {
 }
 
 func TestPrintField(t *testing.T) {
-	out := captureStdout(func() { PrintField("KEY", "val") })
+	out := captureStdout(func() { base.PrintField("KEY", "val") })
 	if !strings.Contains(out, "KEY: val") {
 		t.Errorf("expected KEY: val, got: %s", out)
 	}
@@ -111,13 +113,13 @@ func TestPrintField(t *testing.T) {
 
 func TestPrintFieldIfNotEmpty(t *testing.T) {
 	t.Run("non-empty", func(t *testing.T) {
-		out := captureStdout(func() { PrintFieldIfNotEmpty("K", "v") })
+		out := captureStdout(func() { base.PrintFieldIfNotEmpty("K", "v") })
 		if !strings.Contains(out, "K: v") {
 			t.Errorf("expected output, got: %s", out)
 		}
 	})
 	t.Run("empty", func(t *testing.T) {
-		out := captureStdout(func() { PrintFieldIfNotEmpty("K", "") })
+		out := captureStdout(func() { base.PrintFieldIfNotEmpty("K", "") })
 		if strings.Contains(out, "K:") {
 			t.Errorf("expected no output for empty value, got: %s", out)
 		}
@@ -126,13 +128,13 @@ func TestPrintFieldIfNotEmpty(t *testing.T) {
 
 func TestPrintFieldIfNotEmptySlice(t *testing.T) {
 	t.Run("non-empty", func(t *testing.T) {
-		out := captureStdout(func() { PrintFieldIfNotEmptySlice("K", []string{"a", "b"}) })
+		out := captureStdout(func() { base.PrintFieldIfNotEmptySlice("K", []string{"a", "b"}) })
 		if !strings.Contains(out, "K: a, b") {
 			t.Errorf("expected output, got: %s", out)
 		}
 	})
 	t.Run("empty", func(t *testing.T) {
-		out := captureStdout(func() { PrintFieldIfNotEmptySlice("K", nil) })
+		out := captureStdout(func() { base.PrintFieldIfNotEmptySlice("K", nil) })
 		if strings.Contains(out, "K:") {
 			t.Errorf("expected no output, got: %s", out)
 		}
@@ -140,14 +142,14 @@ func TestPrintFieldIfNotEmptySlice(t *testing.T) {
 }
 
 func TestPrintListItem(t *testing.T) {
-	out := captureStdout(func() { PrintListItem("item") })
+	out := captureStdout(func() { base.PrintListItem("item") })
 	if !strings.HasPrefix(out, "  ") {
 		t.Errorf("expected indented output, got: %s", out)
 	}
 }
 
 func TestPrintSection(t *testing.T) {
-	out := captureStdout(func() { PrintSection("ERRORS") })
+	out := captureStdout(func() { base.PrintSection("ERRORS") })
 	if !strings.Contains(out, "[ERRORS]") {
 		t.Errorf("expected section header, got: %s", out)
 	}

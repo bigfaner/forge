@@ -1224,10 +1224,10 @@ func TestBuildIndex_MixedFeature_GeneratesBothPipelines(t *testing.T) {
 		t.Errorf("review-doc ID = %q, want T-review-doc", reviewDoc.ID)
 	}
 
-	// Test pipeline tasks should also be in the index (at least quick-gen-and-run-cli)
+	// Test pipeline tasks should also be in the index (at least gen-journeys-api)
 	foundTestTask := false
 	for key, t := range idx.Tasks {
-		if strings.HasPrefix(t.ID, "T-quick-gen-and-run") {
+		if strings.HasPrefix(t.ID, "T-test-gen-journeys") {
 			_ = key
 			foundTestTask = true
 			break
@@ -1242,7 +1242,7 @@ func TestBuildIndex_MixedFeature_GeneratesBothPipelines(t *testing.T) {
 }
 
 func TestBuildIndex_MixedFeature_ReviewDocBeforeTestPipeline(t *testing.T) {
-	// For mixed features, T-quick-gen-and-run should depend on T-review-doc
+	// For mixed features, the first test pipeline task should depend on T-review-doc
 	// (review-doc executes before test generation)
 	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "quick")
 	writeForgeConfig(t, projectRoot)
@@ -1277,11 +1277,11 @@ func TestBuildIndex_MixedFeature_ReviewDocBeforeTestPipeline(t *testing.T) {
 	}
 
 	// The first test pipeline task should depend on T-review-doc for mixed features
-	// Find the first quick-gen-and-run task
+	// Find the first test pipeline task (T-test-gen-journeys-*)
 	var firstTestTask *Task
 	var firstTestKey string
 	for key, t := range idx.Tasks {
-		if strings.HasPrefix(t.ID, "T-quick-gen-and-run") {
+		if strings.HasPrefix(t.ID, "T-test-gen-journeys") {
 			copied := t
 			firstTestTask = &copied
 			firstTestKey = key

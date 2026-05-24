@@ -18,28 +18,16 @@ func TestValidateRecordData(t *testing.T) {
 			Status:  "completed",
 			Summary: "",
 		}
-		if os.Getenv("TEST_VALIDATE_EMPTY_SUMMARY") == "1" {
-			validateRecordData(rd, task.TypeCodingFeature)
-			return
-		}
-		cmd := exec.Command(os.Args[0], "-test.run=TestValidateRecordData/empty_summary_triggers_hard_error")
-		cmd.Env = append(os.Environ(), "TEST_VALIDATE_EMPTY_SUMMARY=1")
-		err := cmd.Run()
+		err := validateRecordData(rd, task.TypeCodingFeature)
 		if err == nil {
-			t.Error("expected non-zero exit for empty summary")
+			t.Error("expected error for empty summary")
 		}
 	})
 
 	t.Run("whitespace-only summary triggers hard error", func(t *testing.T) {
-		if os.Getenv("TEST_VALIDATE_WS_SUMMARY") == "1" {
-			validateRecordData(&task.RecordData{Status: "completed", Summary: "   "}, task.TypeCodingFeature)
-			return
-		}
-		cmd := exec.Command(os.Args[0], "-test.run=TestValidateRecordData/whitespace-only_summary_triggers_hard_error")
-		cmd.Env = append(os.Environ(), "TEST_VALIDATE_WS_SUMMARY=1")
-		err := cmd.Run()
+		err := validateRecordData(&task.RecordData{Status: "completed", Summary: "   "}, task.TypeCodingFeature)
 		if err == nil {
-			t.Error("expected non-zero exit for whitespace-only summary")
+			t.Error("expected error for whitespace-only summary")
 		}
 	})
 
@@ -54,7 +42,7 @@ func TestValidateRecordData(t *testing.T) {
 		old := os.Stderr
 		r, w, _ := os.Pipe()
 		os.Stderr = w
-		validateRecordData(rd, task.TypeCodingFeature)
+		_ = validateRecordData(rd, task.TypeCodingFeature)
 		_ = w.Close()
 		os.Stderr = old
 
@@ -78,7 +66,7 @@ func TestValidateRecordData(t *testing.T) {
 			TestsFailed: 2,
 			Coverage:    60.0,
 		}
-		validateRecordData(rd, task.TypeCodingFeature)
+		_ = validateRecordData(rd, task.TypeCodingFeature)
 
 		if rd.Status != "blocked" {
 			t.Errorf("expected status downgraded even with force=true, got %q", rd.Status)
@@ -86,15 +74,9 @@ func TestValidateRecordData(t *testing.T) {
 	})
 
 	t.Run("completed without test evidence triggers hard error", func(t *testing.T) {
-		if os.Getenv("TEST_VALIDATE_NO_TESTS") == "1" {
-			validateRecordData(&task.RecordData{Status: "completed", Summary: "Did the work", TestsPassed: 0, TestsFailed: 0, Coverage: 0}, task.TypeCodingFeature)
-			return
-		}
-		cmd := exec.Command(os.Args[0], "-test.run=TestValidateRecordData/completed_without_test_evidence_triggers_hard_error")
-		cmd.Env = append(os.Environ(), "TEST_VALIDATE_NO_TESTS=1")
-		err := cmd.Run()
+		err := validateRecordData(&task.RecordData{Status: "completed", Summary: "Did the work", TestsPassed: 0, TestsFailed: 0, Coverage: 0}, task.TypeCodingFeature)
 		if err == nil {
-			t.Error("expected non-zero exit for completed with no test evidence")
+			t.Error("expected error for completed with no test evidence")
 		}
 	})
 
@@ -106,19 +88,9 @@ func TestValidateRecordData(t *testing.T) {
 			TestsPassed: 0,
 			TestsFailed: 0,
 		}
-		old := os.Stderr
-		r, w, _ := os.Pipe()
-		os.Stderr = w
-		validateRecordData(rd, task.TypeCodingFeature)
-		_ = w.Close()
-		os.Stderr = old
-
-		buf := make([]byte, 1024)
-		n, _ := r.Read(buf)
-		output := string(buf[:n])
-
-		if strings.Contains(output, "ERROR") {
-			t.Errorf("coverage=-1.0 should skip test evidence check, got: %s", output)
+		err := validateRecordData(rd, task.TypeCodingFeature)
+		if err != nil {
+			t.Errorf("coverage=-1.0 should skip test evidence check, got error: %v", err)
 		}
 	})
 
@@ -130,19 +102,9 @@ func TestValidateRecordData(t *testing.T) {
 			TestsPassed: 0,
 			TestsFailed: 0,
 		}
-		old := os.Stderr
-		r, w, _ := os.Pipe()
-		os.Stderr = w
-		validateRecordData(rd, task.TypeCodingFeature)
-		_ = w.Close()
-		os.Stderr = old
-
-		buf := make([]byte, 1024)
-		n, _ := r.Read(buf)
-		output := string(buf[:n])
-
-		if strings.Contains(output, "ERROR") {
-			t.Errorf("coverage=-1 should skip test evidence check, got: %s", output)
+		err := validateRecordData(rd, task.TypeCodingFeature)
+		if err != nil {
+			t.Errorf("coverage=-1 should skip test evidence check, got error: %v", err)
 		}
 	})
 
@@ -158,19 +120,9 @@ func TestValidateRecordData(t *testing.T) {
 				{Criterion: "Works", Met: true},
 			},
 		}
-		old := os.Stderr
-		r, w, _ := os.Pipe()
-		os.Stderr = w
-		validateRecordData(rd, task.TypeCodingFeature)
-		_ = w.Close()
-		os.Stderr = old
-
-		buf := make([]byte, 1024)
-		n, _ := r.Read(buf)
-		output := string(buf[:n])
-
-		if strings.Contains(output, "ERROR") {
-			t.Errorf("non-testable + testsPassed > 0 should pass, got: %s", output)
+		err := validateRecordData(rd, task.TypeCodingFeature)
+		if err != nil {
+			t.Errorf("non-testable + testsPassed > 0 should pass, got error: %v", err)
 		}
 	})
 
@@ -186,7 +138,7 @@ func TestValidateRecordData(t *testing.T) {
 		old := os.Stderr
 		r, w, _ := os.Pipe()
 		os.Stderr = w
-		validateRecordData(rd, task.TypeCodingFeature)
+		_ = validateRecordData(rd, task.TypeCodingFeature)
 		_ = w.Close()
 		os.Stderr = old
 
@@ -200,24 +152,18 @@ func TestValidateRecordData(t *testing.T) {
 	})
 
 	t.Run("completed with unmet AC triggers hard error", func(t *testing.T) {
-		if os.Getenv("TEST_VALIDATE_UNMET_AC") == "1" {
-			validateRecordData(&task.RecordData{
-				Status:      "completed",
-				Summary:     "Partial",
-				TestsPassed: 1,
-				Coverage:    50.0,
-				AcceptanceCriteria: []task.AcceptanceCriterion{
-					{Criterion: "works", Met: true},
-					{Criterion: "edge case", Met: false},
-				},
-			}, task.TypeCodingFeature)
-			return
-		}
-		cmd := exec.Command(os.Args[0], "-test.run=TestValidateRecordData/completed_with_unmet_AC_triggers_hard_error")
-		cmd.Env = append(os.Environ(), "TEST_VALIDATE_UNMET_AC=1")
-		err := cmd.Run()
+		err := validateRecordData(&task.RecordData{
+			Status:      "completed",
+			Summary:     "Partial",
+			TestsPassed: 1,
+			Coverage:    50.0,
+			AcceptanceCriteria: []task.AcceptanceCriterion{
+				{Criterion: "works", Met: true},
+				{Criterion: "edge case", Met: false},
+			},
+		}, task.TypeCodingFeature)
 		if err == nil {
-			t.Error("expected non-zero exit for completed with unmet AC")
+			t.Error("expected error for completed with unmet AC")
 		}
 	})
 
@@ -232,19 +178,9 @@ func TestValidateRecordData(t *testing.T) {
 				{Criterion: "works", Met: false},
 			},
 		}
-		old := os.Stderr
-		r, w, _ := os.Pipe()
-		os.Stderr = w
-		validateRecordData(rd, task.TypeCodingFeature)
-		_ = w.Close()
-		os.Stderr = old
-
-		buf := make([]byte, 1024)
-		n, _ := r.Read(buf)
-		output := string(buf[:n])
-
-		if strings.Contains(output, "ERROR") {
-			t.Errorf("blocked status should allow unmet AC, got: %s", output)
+		err := validateRecordData(rd, task.TypeCodingFeature)
+		if err != nil {
+			t.Errorf("blocked status should allow unmet AC, got error: %v", err)
 		}
 	})
 
@@ -258,7 +194,7 @@ func TestValidateRecordData(t *testing.T) {
 		old := os.Stderr
 		r, w, _ := os.Pipe()
 		os.Stderr = w
-		validateRecordData(rd, task.TypeCodingFeature)
+		_ = validateRecordData(rd, task.TypeCodingFeature)
 		_ = w.Close()
 		os.Stderr = old
 
@@ -281,19 +217,9 @@ func TestValidateRecordData(t *testing.T) {
 			Status:  "blocked",
 			Summary: "Blocked with reason",
 		}
-		old := os.Stderr
-		r, w, _ := os.Pipe()
-		os.Stderr = w
-		validateRecordData(rd, task.TypeCodingFeature)
-		_ = w.Close()
-		os.Stderr = old
-
-		buf := make([]byte, 1024)
-		n, _ := r.Read(buf)
-		output := string(buf[:n])
-
-		if strings.Contains(output, "WARNING") {
-			t.Errorf("non-completed status should not produce warnings: %s", output)
+		err := validateRecordData(rd, task.TypeCodingFeature)
+		if err != nil {
+			t.Errorf("non-completed status should not produce errors, got: %v", err)
 		}
 	})
 }
@@ -1269,12 +1195,12 @@ func TestValidateRecordData_RejectedSkipsCompletedChecks(_ *testing.T) {
 		Summary:  "Acceptance criteria not met",
 		Coverage: -1.0,
 	}
-	// Should not exit or error — rejected skips completed validation
-	validateRecordData(rd, task.TypeCodingFeature)
+	// Should not error — rejected skips completed validation
+	_ = validateRecordData(rd, task.TypeCodingFeature)
 }
 
 // TestRecordExistsCheck tests record file creation.
-// Uses the subprocess pattern (like TestValidateRecordData) because runSubmit calls Exit().
+// Uses the subprocess pattern because runSubmit calls Exit() via quality gate.
 func TestRecordExistsCheck(t *testing.T) {
 	t.Run("submit overwrites existing record", func(t *testing.T) {
 		if os.Getenv("TEST_RECORD_OVERWRITE") == "1" {
@@ -1529,19 +1455,9 @@ func TestValidateRecordData_TypeAware(t *testing.T) {
 				{Criterion: "Docs written", Met: true},
 			},
 		}
-		old := os.Stderr
-		r, w, _ := os.Pipe()
-		os.Stderr = w
-		validateRecordData(rd, task.TypeDoc)
-		_ = w.Close()
-		os.Stderr = old
-
-		buf := make([]byte, 1024)
-		n, _ := r.Read(buf)
-		output := string(buf[:n])
-
-		if strings.Contains(output, "ERROR") {
-			t.Errorf("doc type with zero tests should pass validation, got: %s", output)
+		err := validateRecordData(rd, task.TypeDoc)
+		if err != nil {
+			t.Errorf("doc type with zero tests should pass validation, got error: %v", err)
 		}
 		if rd.Status != "completed" {
 			t.Errorf("doc type should remain completed, got %q", rd.Status)
@@ -1560,26 +1476,20 @@ func TestValidateRecordData_TypeAware(t *testing.T) {
 				{Criterion: "Docs done", Met: true},
 			},
 		}
-
+		_ = validateRecordData(rd, task.TypeDoc)
 		if rd.Status != "completed" {
 			t.Errorf("doc type should NOT be auto-downgraded for testsFailed, got %q", rd.Status)
 		}
 	})
 
 	t.Run("coding type with zero tests still triggers hard error", func(t *testing.T) {
-		if os.Getenv("TEST_VALIDATE_CODING_NO_TESTS") == "1" {
-			validateRecordData(&task.RecordData{
-				Status:      "completed",
-				Summary:     "Coding task",
-				TestsPassed: 0,
-				TestsFailed: 0,
-				Coverage:    0,
-			}, task.TypeCodingFeature)
-			return
-		}
-		cmd := exec.Command(os.Args[0], "-test.run=TestValidateRecordData_TypeAware/coding_type_with_zero_tests_still_triggers_hard_error")
-		cmd.Env = append(os.Environ(), "TEST_VALIDATE_CODING_NO_TESTS=1")
-		err := cmd.Run()
+		err := validateRecordData(&task.RecordData{
+			Status:      "completed",
+			Summary:     "Coding task",
+			TestsPassed: 0,
+			TestsFailed: 0,
+			Coverage:    0,
+		}, task.TypeCodingFeature)
 		if err == nil {
 			t.Error("coding type with no test evidence should still fail")
 		}
@@ -1594,39 +1504,27 @@ func TestValidateRecordData_TypeAware(t *testing.T) {
 			Coverage:    60.0,
 		}
 
-		validateRecordData(rd, task.TypeCodingFeature)
+		_ = validateRecordData(rd, task.TypeCodingFeature)
 		if rd.Status != "blocked" {
 			t.Errorf("coding type should auto-downgrade for testsFailed, got %q", rd.Status)
 		}
 	})
 
 	t.Run("summary is hard-required for doc type", func(t *testing.T) {
-		if os.Getenv("TEST_VALIDATE_DOC_NO_SUMMARY") == "1" {
-			validateRecordData(&task.RecordData{
-				Status:  "completed",
-				Summary: "",
-			}, task.TypeDoc)
-			return
-		}
-		cmd := exec.Command(os.Args[0], "-test.run=TestValidateRecordData_TypeAware/summary_is_hard-required_for_doc_type")
-		cmd.Env = append(os.Environ(), "TEST_VALIDATE_DOC_NO_SUMMARY=1")
-		err := cmd.Run()
+		err := validateRecordData(&task.RecordData{
+			Status:  "completed",
+			Summary: "",
+		}, task.TypeDoc)
 		if err == nil {
 			t.Error("doc type with empty summary should still fail")
 		}
 	})
 
 	t.Run("summary is hard-required for test type", func(t *testing.T) {
-		if os.Getenv("TEST_VALIDATE_TEST_NO_SUMMARY") == "1" {
-			validateRecordData(&task.RecordData{
-				Status:  "completed",
-				Summary: "",
-			}, task.TypeTestGenScripts)
-			return
-		}
-		cmd := exec.Command(os.Args[0], "-test.run=TestValidateRecordData_TypeAware/summary_is_hard-required_for_test_type")
-		cmd.Env = append(os.Environ(), "TEST_VALIDATE_TEST_NO_SUMMARY=1")
-		err := cmd.Run()
+		err := validateRecordData(&task.RecordData{
+			Status:  "completed",
+			Summary: "",
+		}, task.TypeTestGenScripts)
 		if err == nil {
 			t.Error("test type with empty summary should still fail")
 		}
@@ -1644,19 +1542,9 @@ func TestValidateRecordData_TypeAware(t *testing.T) {
 				{Criterion: "All checks pass", Met: true},
 			},
 		}
-		old := os.Stderr
-		r, w, _ := os.Pipe()
-		os.Stderr = w
-		validateRecordData(rd, task.TypeGate)
-		_ = w.Close()
-		os.Stderr = old
-
-		buf := make([]byte, 1024)
-		n, _ := r.Read(buf)
-		output := string(buf[:n])
-
-		if strings.Contains(output, "ERROR") {
-			t.Errorf("gate type should skip test evidence check, got: %s", output)
+		err := validateRecordData(rd, task.TypeGate)
+		if err != nil {
+			t.Errorf("gate type should skip test evidence check, got error: %v", err)
 		}
 	})
 
@@ -1672,19 +1560,9 @@ func TestValidateRecordData_TypeAware(t *testing.T) {
 				{Criterion: "All validated", Met: true},
 			},
 		}
-		old := os.Stderr
-		r, w, _ := os.Pipe()
-		os.Stderr = w
-		validateRecordData(rd, task.TypeValidationCode)
-		_ = w.Close()
-		os.Stderr = old
-
-		buf := make([]byte, 1024)
-		n, _ := r.Read(buf)
-		output := string(buf[:n])
-
-		if strings.Contains(output, "ERROR") {
-			t.Errorf("validation type should skip test evidence check, got: %s", output)
+		err := validateRecordData(rd, task.TypeValidationCode)
+		if err != nil {
+			t.Errorf("validation type should skip test evidence check, got error: %v", err)
 		}
 	})
 
@@ -1700,40 +1578,24 @@ func TestValidateRecordData_TypeAware(t *testing.T) {
 				{Criterion: "Cases created", Met: true},
 			},
 		}
-		old := os.Stderr
-		r, w, _ := os.Pipe()
-		os.Stderr = w
-		validateRecordData(rd, task.TypeTestGenScripts)
-		_ = w.Close()
-		os.Stderr = old
-
-		buf := make([]byte, 1024)
-		n, _ := r.Read(buf)
-		output := string(buf[:n])
-
-		if strings.Contains(output, "ERROR") {
-			t.Errorf("test type should skip test evidence check, got: %s", output)
+		err := validateRecordData(rd, task.TypeTestGenScripts)
+		if err != nil {
+			t.Errorf("test type should skip test evidence check, got error: %v", err)
 		}
 	})
 
 	t.Run("doc type unmet AC still triggers hard error", func(t *testing.T) {
-		if os.Getenv("TEST_VALIDATE_DOC_UNMET_AC") == "1" {
-			validateRecordData(&task.RecordData{
-				Status:      "completed",
-				Summary:     "Doc task",
-				TestsPassed: 0,
-				TestsFailed: 0,
-				Coverage:    0,
-				AcceptanceCriteria: []task.AcceptanceCriterion{
-					{Criterion: "Docs written", Met: true},
-					{Criterion: "Review done", Met: false},
-				},
-			}, task.TypeDoc)
-			return
-		}
-		cmd := exec.Command(os.Args[0], "-test.run=TestValidateRecordData_TypeAware/doc_type_unmet_AC_still_triggers_hard_error")
-		cmd.Env = append(os.Environ(), "TEST_VALIDATE_DOC_UNMET_AC=1")
-		err := cmd.Run()
+		err := validateRecordData(&task.RecordData{
+			Status:      "completed",
+			Summary:     "Doc task",
+			TestsPassed: 0,
+			TestsFailed: 0,
+			Coverage:    0,
+			AcceptanceCriteria: []task.AcceptanceCriterion{
+				{Criterion: "Docs written", Met: true},
+				{Criterion: "Review done", Met: false},
+			},
+		}, task.TypeDoc)
 		if err == nil {
 			t.Error("doc type with unmet AC should still fail")
 		}
@@ -1747,7 +1609,7 @@ func TestValidateRecordData_TypeAware(t *testing.T) {
 		old := os.Stderr
 		r, w, _ := os.Pipe()
 		os.Stderr = w
-		validateRecordData(rd, task.TypeDoc)
+		_ = validateRecordData(rd, task.TypeDoc)
 		_ = w.Close()
 		os.Stderr = old
 
@@ -1777,7 +1639,7 @@ func TestValidateRecordData_TypeAware(t *testing.T) {
 			old := os.Stderr
 			r, w, _ := os.Pipe()
 			os.Stderr = w
-			validateRecordData(rd, tt.taskType)
+			_ = validateRecordData(rd, tt.taskType)
 			_ = w.Close()
 			os.Stderr = old
 

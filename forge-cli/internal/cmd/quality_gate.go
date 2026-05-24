@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 
+	"forge-cli/internal/cmd/base"
 	"forge-cli/pkg/e2eprobe"
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/just"
@@ -66,14 +67,14 @@ func checkAllCompleted(verbose bool) (*AllCompletedResult, error) {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
 		Debugf(verbose, "project root not found: %v", err)
-		return nil, ErrProjectNotFound()
+		return nil, base.ErrProjectNotFound()
 	}
 	Debugf(verbose, "project root: %s", projectRoot)
 
 	featureSlug, err := feature.GetCurrentFeature(projectRoot)
 	if err != nil {
 		Debugf(verbose, "feature not found: %v", err)
-		return nil, ErrFeatureNotSet()
+		return nil, base.ErrFeatureNotSet()
 	}
 	Debugf(verbose, "feature: %s", featureSlug)
 
@@ -126,7 +127,7 @@ func isDocsOnly(index *task.TaskIndex) bool {
 func runQualityGate(_ *cobra.Command, _ []string) error {
 	result, err := checkAllCompleted(qualityGateVerbose)
 	if err != nil {
-		Exit(err)
+		base.Exit(err)
 	}
 	if result == nil {
 		return nil // not all done is normal, exit silently
@@ -153,6 +154,7 @@ func runQualityGate(_ *cobra.Command, _ []string) error {
 	// Step 1: Quality gate (compile -> fmt -> lint)
 	// Stops at first blocking failure.
 	gateSteps := just.LintGateSequence()
+	var gateBlockErr error
 	just.RunGate(result.ProjectRoot, "", gateSteps, func(step, output string) {
 		fmt.Fprintf(os.Stderr, "ERROR: %s check failed\n", step)
 		errorDocPath := "tests/results/unit-raw-output.txt"
@@ -165,8 +167,11 @@ func runQualityGate(_ *cobra.Command, _ []string) error {
 		if fixErr != nil {
 			fmt.Fprintf(os.Stderr, "WARNING: %v\n", fixErr)
 		}
-		handleGateFailure(step, errorDocPath, fixID, just.ExtractConciseError(output, 5))
+		gateBlockErr = handleGateFailure(step, errorDocPath, fixID, just.ExtractConciseError(output, 5))
 	})
+	if gateBlockErr != nil {
+		os.Exit(0)
+	}
 
 	// Step 2: Project-wide unit/integration tests (with retry-once policy)
 	fmt.Fprintln(os.Stderr, "--- Running project-wide tests ---")
@@ -180,61 +185,75 @@ func runQualityGate(_ *cobra.Command, _ []string) error {
 	if !unitPassed {
 		unitOutput := "" // output already written by runUnitTestStep
 		errorDocPath := "tests/results/unit-raw-output.txt"
-		handleGateFailure("unit-test", errorDocPath, unitFixID, just.ExtractConciseError(unitOutput, 5))
+		if err := handleGateFailure("unit-test", errorDocPath, unitFixID, just.ExtractConciseError(unitOutput, 5)); err != nil {
+			os.Exit(0)
+		}
 	}
 
 	// Step 3: Full e2e regression (promoted scripts in tests/e2e/)
-	if just.HasJustfile(result.ProjectRoot) && just.HasRecipe(result.ProjectRoot, "e2e-test") {
-		e2eReady := true
-		if just.HasRecipe(result.ProjectRoot, "e2e-setup") {
-			fmt.Fprintln(os.Stderr, "--- Ensuring e2e dependencies (just e2e-setup) ---")
-			setupOutput, setupSuccess := just.RunCapture(result.ProjectRoot, "just", "e2e-setup")
-			if !setupSuccess {
-				fmt.Fprintln(os.Stderr, "WARNING: e2e-setup failed; skipping e2e regression")
-				fmt.Fprintln(os.Stderr, "  To retry manually: just e2e-setup && just e2e-test")
-				if setupOutput != "" {
-					if err := testrunner.WriteRegressionRawOutput(result.ProjectRoot, "=== e2e-setup failure ===\n"+setupOutput); err != nil {
-						fmt.Fprintf(os.Stderr, "WARNING: failed to write setup output: %v\n", err)
-					} else {
-						fmt.Fprintln(os.Stderr, "  Setup output saved to tests/e2e/results/raw-output.txt")
-					}
-				}
-				e2eReady = false
-			}
-		}
-		if e2eReady {
-			if !e2eprobe.ProbeServers(result.ProjectRoot, "") {
-				fmt.Fprintln(os.Stderr, "WARNING: e2e server health check failed; skipping e2e regression")
-				fmt.Fprintln(os.Stderr, "  Start dev server and retry: just dev && just e2e-test")
-				e2eReady = false
-			}
-		}
-		if e2eReady {
-			fmt.Fprintln(os.Stderr, "--- Running full e2e regression (just e2e-test) ---")
-			regressionOutput, regSuccess := just.RunCapture(result.ProjectRoot, "just", "e2e-test")
-			if !regSuccess {
-				fmt.Fprintln(os.Stderr, "ERROR: e2e regression failed")
-				errorDocPath := "tests/e2e/results/raw-output.txt"
-				if regressionOutput != "" {
-					if err := testrunner.WriteRegressionRawOutput(result.ProjectRoot, regressionOutput); err != nil {
-						fmt.Fprintf(os.Stderr, "WARNING: failed to write raw-output.txt: %v\n", err)
-					}
-				}
-				fixID, fixErr := addFixTask(result.ProjectRoot, result.FeatureSlug, "e2e-test", regressionOutput, errorDocPath)
-				if fixErr != nil {
-					fmt.Fprintf(os.Stderr, "WARNING: %v\n", fixErr)
-				}
-				handleGateFailure("e2e-test", errorDocPath, fixID, just.ExtractConciseError(regressionOutput, 5))
-			}
-		}
-		return nil
+	if err := runE2ERegression(result.ProjectRoot, result.FeatureSlug); err != nil {
+		os.Exit(0)
 	}
 	return nil
 }
 
-// handleGateFailure prints the hook JSON block reason and exits.
+// runE2ERegression runs the full e2e regression suite when a justfile with
+// an e2e-test recipe is present. Uses early returns instead of nested e2eReady flags.
+// Returns an error when a gate failure is detected, nil otherwise.
+func runE2ERegression(projectRoot, featureSlug string) error {
+	if !just.HasJustfile(projectRoot) || !just.HasRecipe(projectRoot, "e2e-test") {
+		return nil
+	}
+
+	// Optional setup step — skip regression on failure.
+	if just.HasRecipe(projectRoot, "e2e-setup") {
+		fmt.Fprintln(os.Stderr, "--- Ensuring e2e dependencies (just e2e-setup) ---")
+		setupOutput, setupSuccess := just.RunCapture(projectRoot, "just", "e2e-setup")
+		if !setupSuccess {
+			fmt.Fprintln(os.Stderr, "WARNING: e2e-setup failed; skipping e2e regression")
+			fmt.Fprintln(os.Stderr, "  To retry manually: just e2e-setup && just e2e-test")
+			if setupOutput != "" {
+				if err := testrunner.WriteRegressionRawOutput(projectRoot, "=== e2e-setup failure ===\n"+setupOutput); err != nil {
+					fmt.Fprintf(os.Stderr, "WARNING: failed to write setup output: %v\n", err)
+				} else {
+					fmt.Fprintln(os.Stderr, "  Setup output saved to tests/e2e/results/raw-output.txt")
+				}
+			}
+			return nil
+		}
+	}
+
+	// Health check — skip regression if servers aren't ready.
+	if !e2eprobe.ProbeServers(projectRoot, "") {
+		fmt.Fprintln(os.Stderr, "WARNING: e2e server health check failed; skipping e2e regression")
+		fmt.Fprintln(os.Stderr, "  Start dev server and retry: just dev && just e2e-test")
+		return nil
+	}
+
+	// Run the regression suite.
+	fmt.Fprintln(os.Stderr, "--- Running full e2e regression (just e2e-test) ---")
+	regressionOutput, regSuccess := just.RunCapture(projectRoot, "just", "e2e-test")
+	if !regSuccess {
+		fmt.Fprintln(os.Stderr, "ERROR: e2e regression failed")
+		errorDocPath := "tests/e2e/results/raw-output.txt"
+		if regressionOutput != "" {
+			if err := testrunner.WriteRegressionRawOutput(projectRoot, regressionOutput); err != nil {
+				fmt.Fprintf(os.Stderr, "WARNING: failed to write raw-output.txt: %v\n", err)
+			}
+		}
+		fixID, fixErr := addFixTask(projectRoot, featureSlug, "e2e-test", regressionOutput, errorDocPath)
+		if fixErr != nil {
+			fmt.Fprintf(os.Stderr, "WARNING: %v\n", fixErr)
+		}
+		return handleGateFailure("e2e-test", errorDocPath, fixID, just.ExtractConciseError(regressionOutput, 5))
+	}
+	return nil
+}
+
+// handleGateFailure prints the hook JSON block reason and returns an error
+// signalling that the gate blocked. The caller (RunE handler) decides exit behavior.
 // fixID is the ID returned by addFixTask; empty means task creation failed.
-func handleGateFailure(step, errorDocPath, fixID, concise string) {
+func handleGateFailure(step, errorDocPath, fixID, concise string) error {
 	action := "run `forge task add --template fix-task` to create one manually, then `forge task claim`"
 	if fixID != "" {
 		action = "run `forge task claim` to pick it up"
@@ -277,7 +296,7 @@ func handleGateFailure(step, errorDocPath, fixID, concise string) {
 		"decision": "block",
 		"reason":   reason,
 	})
-	os.Exit(0)
+	return fmt.Errorf("quality gate blocked: %s", step)
 }
 
 // runUnitTestStep runs unit tests with a retry-once policy for transient failures.

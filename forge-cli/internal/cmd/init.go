@@ -240,141 +240,113 @@ func hlMode(mode string) string {
 	return hl(mode + " mode")
 }
 
+// autoBehaviorPrompt defines one question in the auto-behavior config flow.
+type autoBehaviorPrompt struct {
+	title string                                       // question shown to user
+	desc  string                                       // description shown below the question
+	def   bool                                         // default value for the confirm prompt
+	set   func(auto *forgeconfig.AutoConfig, val bool) // assigns the answer
+}
+
+// autoBehaviorPrompts is the ordered list of prompts for askAutoBehavior.
+// Each prompt preserves the exact question text and defaults from the original
+// per-block implementation to maintain behavioral equivalence.
+func autoBehaviorPrompts(defaults forgeconfig.AutoConfig) []autoBehaviorPrompt {
+	return []autoBehaviorPrompt{
+		{
+			title: fmt.Sprintf("%s: auto-run e2e tests?", hlMode("Quick")),
+			desc:  fmt.Sprintf("Automatically run end-to-end tests during %s (lightweight verification after each task).", hl("quick mode")),
+			def:   defaults.E2eTest.Quick,
+			set:   func(a *forgeconfig.AutoConfig, v bool) { a.E2eTest.Quick = v },
+		},
+		{
+			title: fmt.Sprintf("%s: auto-run e2e tests?", hlMode("Full")),
+			desc:  fmt.Sprintf("Automatically run end-to-end tests during %s (comprehensive coverage).", hl("full mode")),
+			def:   defaults.E2eTest.Full,
+			set:   func(a *forgeconfig.AutoConfig, v bool) { a.E2eTest.Full = v },
+		},
+		{
+			title: fmt.Sprintf("%s: auto-consolidate specs?", hlMode("Quick")),
+			desc:  fmt.Sprintf("Automatically extract and consolidate specs from code after %s tasks.", hl("quick-mode")),
+			def:   defaults.ConsolidateSpecs.Quick,
+			set:   func(a *forgeconfig.AutoConfig, v bool) { a.ConsolidateSpecs.Quick = v },
+		},
+		{
+			title: fmt.Sprintf("%s: auto-consolidate specs?", hlMode("Full")),
+			desc:  fmt.Sprintf("Automatically extract and consolidate specs from code after %s tasks.", hl("full-mode")),
+			def:   defaults.ConsolidateSpecs.Full,
+			set:   func(a *forgeconfig.AutoConfig, v bool) { a.ConsolidateSpecs.Full = v },
+		},
+		{
+			title: fmt.Sprintf("%s: auto code cleanup?", hlMode("Quick")),
+			desc:  fmt.Sprintf("Automatically simplify and clean code during %s.", hl("quick mode")),
+			def:   defaults.CleanCode.Quick,
+			set:   func(a *forgeconfig.AutoConfig, v bool) { a.CleanCode.Quick = v },
+		},
+		{
+			title: fmt.Sprintf("%s: auto code cleanup?", hlMode("Full")),
+			desc:  fmt.Sprintf("Automatically simplify and clean code during %s.", hl("full mode")),
+			def:   defaults.CleanCode.Full,
+			set:   func(a *forgeconfig.AutoConfig, v bool) { a.CleanCode.Full = v },
+		},
+		{
+			title: fmt.Sprintf("%s: auto validation?", hlMode("Quick")),
+			desc:  fmt.Sprintf("Automatically run validation checks during %s (lightweight quality gates after each task).", hl("quick mode")),
+			def:   defaults.Validation.Quick,
+			set:   func(a *forgeconfig.AutoConfig, v bool) { a.Validation.Quick = v },
+		},
+		{
+			title: fmt.Sprintf("%s: auto validation?", hlMode("Full")),
+			desc:  fmt.Sprintf("Automatically run validation checks during %s (comprehensive quality gates).", hl("full mode")),
+			def:   defaults.Validation.Full,
+			set:   func(a *forgeconfig.AutoConfig, v bool) { a.Validation.Full = v },
+		},
+		{
+			title: fmt.Sprintf("%s: auto-run tasks?", hlMode("Quick")),
+			desc:  fmt.Sprintf("Automatically claim and execute tasks during %s.", hl("quick mode")),
+			def:   defaults.RunTasks.Quick,
+			set:   func(a *forgeconfig.AutoConfig, v bool) { a.RunTasks.Quick = v },
+		},
+		{
+			title: fmt.Sprintf("%s: auto-run tasks?", hlMode("Full")),
+			desc:  fmt.Sprintf("Automatically claim and execute tasks during %s.", hl("full mode")),
+			def:   defaults.RunTasks.Full,
+			set:   func(a *forgeconfig.AutoConfig, v bool) { a.RunTasks.Full = v },
+		},
+		{
+			title: fmt.Sprintf("%s: auto knowledge save?", hlMode("Quick")),
+			desc:  fmt.Sprintf("Automatically save knowledge after %s tasks.", hl("quick mode")),
+			def:   defaults.KnowledgeSave.Quick,
+			set:   func(a *forgeconfig.AutoConfig, v bool) { a.KnowledgeSave.Quick = v },
+		},
+		{
+			title: fmt.Sprintf("%s: auto knowledge save?", hlMode("Full")),
+			desc:  fmt.Sprintf("Automatically save knowledge after %s tasks.", hl("full mode")),
+			def:   defaults.KnowledgeSave.Full,
+			set:   func(a *forgeconfig.AutoConfig, v bool) { a.KnowledgeSave.Full = v },
+		},
+		{
+			title: "Auto git push after all tasks complete?",
+			desc:  "Push to remote automatically when every task in a run finishes successfully.",
+			def:   defaults.GitPush,
+			set:   func(a *forgeconfig.AutoConfig, v bool) { a.GitPush = v },
+		},
+	}
+}
+
 // askAutoBehavior runs the auto-behavior config steps, one question per screen.
 // Returns the config and whether the user cancelled.
 func askAutoBehavior() (*forgeconfig.AutoConfig, bool) {
 	defaults := forgeconfig.AutoConfigDefaults()
 	auto := &forgeconfig.AutoConfig{}
 
-	val, ok := askConfirm(
-		fmt.Sprintf("%s: auto-run e2e tests?", hlMode("Quick")),
-		fmt.Sprintf("Automatically run end-to-end tests during %s (lightweight verification after each task).", hl("quick mode")),
-		defaults.E2eTest.Quick,
-	)
-	if !ok {
-		return nil, true
+	for _, p := range autoBehaviorPrompts(defaults) {
+		val, ok := askConfirm(p.title, p.desc, p.def)
+		if !ok {
+			return nil, true
+		}
+		p.set(auto, val)
 	}
-	auto.E2eTest.Quick = val
-
-	val, ok = askConfirm(
-		fmt.Sprintf("%s: auto-run e2e tests?", hlMode("Full")),
-		fmt.Sprintf("Automatically run end-to-end tests during %s (comprehensive coverage).", hl("full mode")),
-		defaults.E2eTest.Full,
-	)
-	if !ok {
-		return nil, true
-	}
-	auto.E2eTest.Full = val
-
-	val, ok = askConfirm(
-		fmt.Sprintf("%s: auto-consolidate specs?", hlMode("Quick")),
-		fmt.Sprintf("Automatically extract and consolidate specs from code after %s tasks.", hl("quick-mode")),
-		defaults.ConsolidateSpecs.Quick,
-	)
-	if !ok {
-		return nil, true
-	}
-	auto.ConsolidateSpecs.Quick = val
-
-	val, ok = askConfirm(
-		fmt.Sprintf("%s: auto-consolidate specs?", hlMode("Full")),
-		fmt.Sprintf("Automatically extract and consolidate specs from code after %s tasks.", hl("full-mode")),
-		defaults.ConsolidateSpecs.Full,
-	)
-	if !ok {
-		return nil, true
-	}
-	auto.ConsolidateSpecs.Full = val
-
-	val, ok = askConfirm(
-		fmt.Sprintf("%s: auto code cleanup?", hlMode("Quick")),
-		fmt.Sprintf("Automatically simplify and clean code during %s.", hl("quick mode")),
-		defaults.CleanCode.Quick,
-	)
-	if !ok {
-		return nil, true
-	}
-	auto.CleanCode.Quick = val
-
-	val, ok = askConfirm(
-		fmt.Sprintf("%s: auto code cleanup?", hlMode("Full")),
-		fmt.Sprintf("Automatically simplify and clean code during %s.", hl("full mode")),
-		defaults.CleanCode.Full,
-	)
-	if !ok {
-		return nil, true
-	}
-	auto.CleanCode.Full = val
-
-	val, ok = askConfirm(
-		fmt.Sprintf("%s: auto validation?", hlMode("Quick")),
-		fmt.Sprintf("Automatically run validation checks during %s (lightweight quality gates after each task).", hl("quick mode")),
-		defaults.Validation.Quick,
-	)
-	if !ok {
-		return nil, true
-	}
-	auto.Validation.Quick = val
-
-	val, ok = askConfirm(
-		fmt.Sprintf("%s: auto validation?", hlMode("Full")),
-		fmt.Sprintf("Automatically run validation checks during %s (comprehensive quality gates).", hl("full mode")),
-		defaults.Validation.Full,
-	)
-	if !ok {
-		return nil, true
-	}
-	auto.Validation.Full = val
-
-	val, ok = askConfirm(
-		fmt.Sprintf("%s: auto-run tasks?", hlMode("Quick")),
-		fmt.Sprintf("Automatically claim and execute tasks during %s.", hl("quick mode")),
-		defaults.RunTasks.Quick,
-	)
-	if !ok {
-		return nil, true
-	}
-	auto.RunTasks.Quick = val
-
-	val, ok = askConfirm(
-		fmt.Sprintf("%s: auto-run tasks?", hlMode("Full")),
-		fmt.Sprintf("Automatically claim and execute tasks during %s.", hl("full mode")),
-		defaults.RunTasks.Full,
-	)
-	if !ok {
-		return nil, true
-	}
-	auto.RunTasks.Full = val
-
-	val, ok = askConfirm(
-		fmt.Sprintf("%s: auto knowledge save?", hlMode("Quick")),
-		fmt.Sprintf("Automatically save knowledge after %s tasks.", hl("quick mode")),
-		defaults.KnowledgeSave.Quick,
-	)
-	if !ok {
-		return nil, true
-	}
-	auto.KnowledgeSave.Quick = val
-
-	val, ok = askConfirm(
-		fmt.Sprintf("%s: auto knowledge save?", hlMode("Full")),
-		fmt.Sprintf("Automatically save knowledge after %s tasks.", hl("full mode")),
-		defaults.KnowledgeSave.Full,
-	)
-	if !ok {
-		return nil, true
-	}
-	auto.KnowledgeSave.Full = val
-
-	val, ok = askConfirm(
-		"Auto git push after all tasks complete?",
-		"Push to remote automatically when every task in a run finishes successfully.",
-		defaults.GitPush,
-	)
-	if !ok {
-		return nil, true
-	}
-	auto.GitPush = val
 
 	return auto, false
 }

@@ -16,7 +16,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v3"
 )
 
 // --- Shared helpers for task-type-refinement tests ---
@@ -150,20 +149,6 @@ func trHasTaskWithIDPrefix(tasks map[string]interface{}, prefix string) bool {
 		}
 	}
 	return false
-}
-
-func trParseFrontmatter(t *testing.T, path string) map[string]interface{} {
-	t.Helper()
-	data, err := os.ReadFile(path)
-	require.NoError(t, err)
-	content := string(data)
-	start := strings.Index(content, "---")
-	require.True(t, start >= 0, "no frontmatter start in %s", path)
-	end := strings.Index(content[start+3:], "---")
-	require.True(t, end >= 0, "no frontmatter end in %s", path)
-	fm := make(map[string]interface{})
-	require.NoError(t, yaml.Unmarshal([]byte(content[start+3:start+3+end]), fm))
-	return fm
 }
 
 // --- TC-001: forge list-types displays all four new business types ---

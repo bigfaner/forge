@@ -102,7 +102,7 @@ func testDisplayWidth(s string) int {
 		if testIsWide(r) {
 			w += 2
 		} else {
-			w += 1
+			w++
 		}
 	}
 	return w

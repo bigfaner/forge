@@ -124,17 +124,9 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 
 		// Validate dependencies exist
 		for _, dep := range opts.Dependencies {
-			if strings.HasSuffix(dep, IDSuffixWildcard) {
-				prefix := strings.TrimSuffix(dep, IDSuffixWildcard)
-				prefixWithDot := prefix + "."
-				found := false
-				for _, t := range index.tasks {
-					if strings.HasPrefix(t.ID, prefixWithDot) && IsBusinessTask(t.ID) {
-						found = true
-						break
-					}
-				}
-				if !found {
+			matches, isWildcard := ResolveWildcardDep(index, dep)
+			if isWildcard {
+				if len(matches) == 0 {
 					return fmt.Errorf("wildcard dependency %q matches no business tasks", dep)
 				}
 			} else {
@@ -379,26 +371,5 @@ func GetUnmetDependencies(indexPath string, taskID string) ([]string, error) {
 		return nil, fmt.Errorf("task not found: %s", taskID)
 	}
 
-	var unmet []string
-	for _, dep := range foundTask.Dependencies {
-		if strings.HasSuffix(dep, IDSuffixWildcard) {
-			prefix := strings.TrimSuffix(dep, IDSuffixWildcard)
-			prefixWithDot := prefix + "."
-			for _, other := range index.tasks {
-				if other.ID == foundTask.ID {
-					continue
-				}
-				if strings.HasPrefix(other.ID, prefixWithDot) && IsBusinessTask(other.ID) && other.Status != "completed" && other.Status != "skipped" {
-					unmet = append(unmet, other.ID)
-				}
-			}
-			continue
-		}
-		if depTask, exists := index.ByID(dep); !exists {
-			unmet = append(unmet, dep)
-		} else if depTask.Status != "completed" && depTask.Status != "skipped" {
-			unmet = append(unmet, dep)
-		}
-	}
-	return unmet, nil
+	return GetUnmetDeps(index, foundTask.ID, foundTask.Dependencies), nil
 }

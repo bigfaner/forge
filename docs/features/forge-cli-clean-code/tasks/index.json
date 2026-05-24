@@ -1,0 +1,310 @@
+{
+  "feature": "forge-cli-clean-code",
+  "proposal": "docs/proposals/forge-cli-clean-code/proposal.md",
+  "created": "2026-05-24",
+  "tasks": {
+    "1-remove-dead-code": {
+      "id": "1",
+      "title": "Remove dead code from run.go",
+      "priority": "P0",
+      "estimatedTime": "30m",
+      "status": "completed",
+      "file": "1-remove-dead-code.md",
+      "record": "records/1-remove-dead-code.md",
+      "scope": "backend",
+      "type": "coding.cleanup"
+    },
+    "10-refactor-ask-auto-behavior": {
+      "id": "10",
+      "title": "Refactor askAutoBehavior to data-driven loop",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "9"
+      ],
+      "status": "completed",
+      "file": "10-refactor-ask-auto-behavior.md",
+      "record": "records/10-refactor-ask-auto-behavior.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "11-fix-validate-record-data": {
+      "id": "11",
+      "title": "Fix validateRecordData os.Exit to return error",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "9"
+      ],
+      "status": "completed",
+      "file": "11-fix-validate-record-data.md",
+      "record": "records/11-fix-validate-record-data.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "12-extract-e2e-regression": {
+      "id": "12",
+      "title": "Extract runE2ERegression to reduce nesting",
+      "priority": "P2",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "9"
+      ],
+      "status": "completed",
+      "file": "12-extract-e2e-regression.md",
+      "record": "records/12-extract-e2e-regression.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "13-unify-error-handling": {
+      "id": "13",
+      "title": "Unify error handling pattern across commands",
+      "priority": "P2",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "11",
+        "12"
+      ],
+      "status": "completed",
+      "file": "13-unify-error-handling.md",
+      "record": "records/13-unify-error-handling.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "14-testbridge-cleanup": {
+      "id": "14",
+      "title": "Migrate testbridge underlying functions to pkg/task",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "9",
+        "fix-7"
+      ],
+      "status": "completed",
+      "file": "14-testbridge-cleanup.md",
+      "record": "records/14-testbridge-cleanup.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "2-gitignore-artifacts": {
+      "id": "2",
+      "title": "Add build artifacts to .gitignore",
+      "priority": "P0",
+      "estimatedTime": "15m",
+      "dependencies": [
+        "fix-1"
+      ],
+      "status": "completed",
+      "file": "2-gitignore-artifacts.md",
+      "record": "records/2-gitignore-artifacts.md",
+      "scope": "backend",
+      "type": "coding.cleanup",
+      "blockedReason": "auto-downgrade: testsFailed=3"
+    },
+    "3-split-forensic": {
+      "id": "3",
+      "title": "Split forensic.go into functional files",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "2",
+        "fix-3"
+      ],
+      "status": "completed",
+      "file": "3-split-forensic.md",
+      "record": "records/3-split-forensic.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "4-split-worktree": {
+      "id": "4",
+      "title": "Split worktree.go into command files",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "2",
+        "fix-4"
+      ],
+      "status": "completed",
+      "file": "4-split-worktree.md",
+      "record": "records/4-split-worktree.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "5-unify-frontmatter-parser": {
+      "id": "5",
+      "title": "Extend ParseFrontmatter as shared YAML parser",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "4"
+      ],
+      "status": "completed",
+      "file": "5-unify-frontmatter-parser.md",
+      "record": "records/5-unify-frontmatter-parser.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "6-unify-dep-check": {
+      "id": "6",
+      "title": "Unify dependency check logic",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "4",
+        "fix-5"
+      ],
+      "status": "completed",
+      "file": "6-unify-dep-check.md",
+      "record": "records/6-unify-dep-check.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "7-extract-default-run-claude": {
+      "id": "7",
+      "title": "Extract defaultRunClaude to shared location",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "4"
+      ],
+      "status": "completed",
+      "file": "7-extract-default-run-claude.md",
+      "record": "records/7-extract-default-run-claude.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "8-migrate-setfeature": {
+      "id": "8",
+      "title": "Complete SetFeature migration and remove deprecated function",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "4"
+      ],
+      "status": "completed",
+      "file": "8-migrate-setfeature.md",
+      "record": "records/8-migrate-setfeature.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "coding.cleanup"
+    },
+    "9-clean-reexport-layer": {
+      "id": "9",
+      "title": "Clean up re-export layer in errors.go and output.go",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "4",
+        "fix-6"
+      ],
+      "status": "completed",
+      "file": "9-clean-reexport-layer.md",
+      "record": "records/9-clean-reexport-layer.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "Fix: pre-existing test failures in pkg/task",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "fix-2"
+      ],
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "2",
+      "blockedReason": "test failed: 3 failures in pkg/task (TestBuildIndex_MixedFeature_GeneratesBothPipelines, TestBuildIndex_MixedFeature_ReviewDocBeforeTestPipeline, TestBuildIndex_MixedFeature_BreakdownMode_GenJourneysDependsOnReviewDoc)"
+    },
+    "fix-2": {
+      "id": "fix-2",
+      "title": "Fix: pre-existing pkg/task test failures blocking fix-1",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-2.md",
+      "record": "records/fix-2.md",
+      "breaking": true,
+      "sourceTaskID": "fix-1",
+      "type": "fix"
+    },
+    "fix-3": {
+      "id": "fix-3",
+      "title": "Fix: forensic.go duplicate declarations after split",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-3.md",
+      "record": "records/fix-3.md",
+      "breaking": true,
+      "sourceTaskID": "3",
+      "type": "fix"
+    },
+    "fix-4": {
+      "id": "fix-4",
+      "title": "Fix: worktree.go duplicate declarations after split",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-4.md",
+      "record": "records/fix-4.md",
+      "breaking": true,
+      "sourceTaskID": "4",
+      "type": "fix"
+    },
+    "fix-5": {
+      "id": "fix-5",
+      "title": "Fix: type mismatch after dep check consolidation",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-5.md",
+      "record": "records/fix-5.md",
+      "breaking": true,
+      "sourceTaskID": "6",
+      "type": "fix"
+    },
+    "fix-6": {
+      "id": "fix-6",
+      "title": "Fix: test file broken after re-export cleanup",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-6.md",
+      "record": "records/fix-6.md",
+      "breaking": true,
+      "sourceTaskID": "9",
+      "type": "fix"
+    },
+    "fix-7": {
+      "id": "fix-7",
+      "title": "Fix: claimNextTask undefined after testbridge migration",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-7.md",
+      "record": "records/fix-7.md",
+      "breaking": true,
+      "sourceTaskID": "14",
+      "type": "fix"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"forge-cli/internal/cmd/base"
 	taskpkg "forge-cli/internal/cmd/task"
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/task"
@@ -52,7 +53,7 @@ func TestSubmit_RejectsCompletedResubmit(t *testing.T) {
 		*taskpkg.ExportSubmitJSON = false
 		*taskpkg.ExportSubmitQuiet = false
 		if err := taskpkg.ExportRunSubmit(taskpkg.ExportSubmitCmd, []string{"1"}); err != nil {
-			Exit(err)
+			base.Exit(err)
 		}
 		return
 	}

@@ -218,7 +218,7 @@ func TestValidator_ValidateDependencies(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			v := &validator{}
-			v.validateDependencies(tt.tasks)
+			v.validateDependencies(task.NewTestIndex("test", tt.tasks))
 			if len(v.errors) != tt.wantErrors {
 				t.Errorf("validateDependencies() got %d errors, want %d: %v", len(v.errors), tt.wantErrors, v.errors)
 			}
@@ -691,7 +691,7 @@ func TestValidator_ValidateWildcardSelfDeps(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			v := &validator{}
-			v.validateWildcardSelfDeps(tt.tasks)
+			v.validateWildcardSelfDeps(task.NewTestIndex("test", tt.tasks))
 			if len(v.errors) != tt.wantErrors {
 				t.Errorf("errors: got %d, want %d\n%v", len(v.errors), tt.wantErrors, v.errors)
 			}
@@ -1343,7 +1343,7 @@ func TestValidator_ValidateLiveness(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			v := &validator{}
-			v.validateLiveness(tt.tasks)
+			v.validateLiveness(task.NewTestIndex("test", tt.tasks))
 			if len(v.warnings) != tt.wantWarnings {
 				t.Errorf("got %d warnings, want %d: %v", len(v.warnings), tt.wantWarnings, v.warnings)
 			}
@@ -1439,7 +1439,7 @@ func TestValidator_ValidateLiveness_Wildcard(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			v := &validator{}
-			v.validateLiveness(tt.tasks)
+			v.validateLiveness(task.NewTestIndex("test", tt.tasks))
 			if len(v.warnings) != tt.wantWarnings {
 				t.Errorf("got %d warnings, want %d: %v", len(v.warnings), tt.wantWarnings, v.warnings)
 			}
@@ -1828,7 +1828,7 @@ func TestValidator_ValidateLiveness_BlockedWithRejectedDep(t *testing.T) {
 		"blocked-task": {ID: "1.1", Status: "blocked", Dependencies: []string{"1.2"}},
 		"rejected-dep": {ID: "1.2", Status: "rejected"},
 	}
-	v.validateLiveness(tasks)
+	v.validateLiveness(task.NewTestIndex("test", tasks))
 	found := false
 	for _, w := range v.warnings {
 		if strings.Contains(w, "no path to resolution") {
@@ -1846,7 +1846,7 @@ func TestValidator_ValidateLiveness_RejectedTaskNotFlagged(t *testing.T) {
 		"rejected-task": {ID: "1.1", Status: "rejected", Dependencies: []string{"1.2"}},
 		"completed-dep": {ID: "1.2", Status: "completed"},
 	}
-	v.validateLiveness(tasks)
+	v.validateLiveness(task.NewTestIndex("test", tasks))
 	for _, w := range v.warnings {
 		if strings.Contains(w, "1.1") {
 			t.Errorf("rejected task should not be flagged by liveness checks, got: %s", w)
@@ -1861,7 +1861,7 @@ func TestValidator_ValidateLiveness_BlockedOnRejectedViaWildcard(t *testing.T) {
 		"1.1":          {ID: "1.1", Status: "completed"},
 		"1.2":          {ID: "1.2", Status: "rejected"},
 	}
-	v.validateLiveness(tasks)
+	v.validateLiveness(task.NewTestIndex("test", tasks))
 	found := false
 	for _, w := range v.warnings {
 		if strings.Contains(w, "no path to resolution") {
