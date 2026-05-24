@@ -96,7 +96,7 @@
       "title": "Split eval SKILL.md (488→≤350 lines)",
       "priority": "P0",
       "estimatedTime": "1.5h",
-      "status": "pending",
+      "status": "completed",
       "file": "2-split-eval-skill.md",
       "record": "records/2-split-eval-skill.md",
       "type": "doc"
