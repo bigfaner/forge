@@ -1,0 +1,127 @@
+{
+  "feature": "unify-surfaces",
+  "proposal": "docs/proposals/unify-surfaces/proposal.md",
+  "created": "2026-05-24",
+  "tasks": {
+    "1-config-struct": {
+      "id": "1",
+      "title": "Config struct refactor: Surfaces dual-form + remove Interfaces",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "status": "pending",
+      "file": "1-config-struct.md",
+      "record": "records/1-config-struct.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "2-path-matching": {
+      "id": "2",
+      "title": "Path normalization and segment prefix matching",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-path-matching.md",
+      "record": "records/2-path-matching.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "3-surfaces-command": {
+      "id": "3",
+      "title": "forge surfaces CLI command",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1",
+        "2"
+      ],
+      "status": "pending",
+      "file": "3-surfaces-command.md",
+      "record": "records/3-surfaces-command.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "4-task-index-migration": {
+      "id": "4",
+      "title": "forge task index: migrate from Interfaces to Surfaces",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "4-task-index-migration.md",
+      "record": "records/4-task-index-migration.md",
+      "scope": "backend",
+      "type": "coding.enhancement"
+    },
+    "5-init-detection": {
+      "id": "5",
+      "title": "forge init: surface auto-detection logic",
+      "priority": "P0",
+      "estimatedTime": "3h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "5-init-detection.md",
+      "record": "records/5-init-detection.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "6-init-tui": {
+      "id": "6",
+      "title": "forge init: TUI confirmation for surfaces",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "5"
+      ],
+      "status": "pending",
+      "file": "6-init-tui.md",
+      "record": "records/6-init-tui.md",
+      "scope": "backend",
+      "type": "coding.enhancement"
+    },
+    "7-gen-journeys-skill": {
+      "id": "7",
+      "title": "gen-journeys skill adaptation for surfaces",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "3"
+      ],
+      "status": "pending",
+      "file": "7-gen-journeys-skill.md",
+      "record": "records/7-gen-journeys-skill.md",
+      "type": "doc"
+    },
+    "8-supersede-proposal": {
+      "id": "8",
+      "title": "Mark forge-init-config-sync proposal as Superseded",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "pending",
+      "file": "8-supersede-proposal.md",
+      "record": "records/8-supersede-proposal.md",
+      "type": "doc"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
