@@ -1,7 +1,7 @@
 ---
 feature: "pipeline-integration-stitch"
 created: "2026-05-24"
-status: tasks
+status: completed
 mode: quick
 ---
 
