@@ -108,6 +108,20 @@
       "file": "8-supersede-proposal.md",
       "record": "records/8-supersede-proposal.md",
       "type": "doc"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "8"
+      ],
+      "status": "pending",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "scope": "all",
+      "type": "doc.review"
     }
   },
   "statusEnum": [
