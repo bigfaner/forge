@@ -232,3 +232,6 @@ internal/cmd/
 178、surfaces是否忽略大小写？还有detect serfaces失败。done
 179、增加一个skill或自动任务：核心实现是否严格遵循proposal或tech-design.
 180、clean forge cli：重点清理废弃的功能及其测试用例。
+181、检查提案与prd验收标准的矛盾之处，参考lesson: gotcha-proposal-success-criteria-contradiction
+182、审计整个测试pipeline的逻辑连贯性。
+183、补充详细的架构说明、用户使用手册（包含环境配置）。
