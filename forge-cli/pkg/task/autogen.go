@@ -31,18 +31,18 @@ var autogenTypeToFile = map[string]string{
 	TypeCleanCode:            "data/code-quality-simplify.md",
 }
 
-// uiInterfaces is the set of interface types that have a visual UI
+// uiSurfaceTypes is the set of surface types that have a visual UI
 // and therefore require UX validation.
-var uiInterfaces = map[string]bool{
+var uiSurfaceTypes = map[string]bool{
 	"tui":    true,
 	"web":    true,
 	"mobile": true,
 }
 
-// hasUIInterface returns true if any interface has a visual UI.
-func hasUIInterface(interfaces []string) bool {
-	for _, typ := range interfaces {
-		if uiInterfaces[typ] {
+// hasUISurface returns true if any surface type has a visual UI.
+func hasUISurface(types []string) bool {
+	for _, typ := range types {
+		if uiSurfaceTypes[typ] {
 			return true
 		}
 	}
@@ -59,7 +59,7 @@ type BodyContext struct {
 	SuccessCriteria    []string // success criteria from proposal/PRD
 	AcceptanceCriteria []string // PRD acceptance criteria (breakdown mode)
 	ProjectType        string   // from .forge/config.yaml
-	Interfaces         []string // test interfaces from config
+	SurfaceTypes       []string // deduplicated surface types from config
 }
 
 // AutoGenTaskDef defines an auto-generated task definition.
@@ -156,7 +156,7 @@ func GetBreakdownTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []A
 			Title: "Validate Code Quality", Priority: "P2", EstimatedTime: "15min",
 			Type: TypeValidationCode, Scope: "all", MainSession: false,
 		})
-		if hasUIInterface(interfaces) {
+		if hasUISurface(interfaces) {
 			tasks = append(tasks, AutoGenTaskDef{
 				Key: "validate-ux", ID: "T-validate-ux",
 				Title: "Validate User Experience", Priority: "P2", EstimatedTime: "15min",
@@ -258,7 +258,7 @@ func GetQuickTestTasks(interfaces []string, auto forgeconfig.AutoConfig) []AutoG
 			Title: "Validate Code Quality", Priority: "P2", EstimatedTime: "15min",
 			Type: TypeValidationCode, Scope: "all", MainSession: false,
 		})
-		if hasUIInterface(interfaces) {
+		if hasUISurface(interfaces) {
 			tasks = append(tasks, AutoGenTaskDef{
 				Key: "validate-ux", ID: "T-validate-ux",
 				Title: "Validate User Experience", Priority: "P2", EstimatedTime: "15min",
@@ -325,11 +325,11 @@ func renderBody(templateContent string, def AutoGenTaskDef, ctx BodyContext) str
 	}
 
 	// INTERFACES — default when empty
-	if len(ctx.Interfaces) == 0 {
+	if len(ctx.SurfaceTypes) == 0 {
 		s = strings.ReplaceAll(s, "{{INTERFACES}}", "See .forge/config.yaml")
 	} else {
 		var ifaceLines []string
-		for _, iface := range ctx.Interfaces {
+		for _, iface := range ctx.SurfaceTypes {
 			ifaceLines = append(ifaceLines, "- "+iface)
 		}
 		s = strings.ReplaceAll(s, "{{INTERFACES}}", strings.Join(ifaceLines, "\n"))
@@ -644,6 +644,11 @@ func findTaskIndexByPrefixOrPanic(tasks []AutoGenTaskDef, prefix string) int {
 // Returns the updated tasks with first-test-task deps set.
 func ResolveFirstTestDep(tasks []AutoGenTaskDef, existingTasks map[string]Task, mode string) {
 	if len(tasks) == 0 {
+		return
+	}
+
+	// Only resolve when E2E test tasks exist (they have T-test-gen-journeys prefix)
+	if findTaskIndexByPrefix(tasks, "T-test-gen-journeys") < 0 {
 		return
 	}
 

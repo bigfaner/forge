@@ -8,11 +8,11 @@ import (
 
 // extractBodyContext builds a BodyContext by reading planning-time data from
 // the proposal or PRD file. Missing files produce empty fields — this is valid.
-func extractBodyContext(projectRoot, slug, mode string, interfaces []string) BodyContext {
+func extractBodyContext(projectRoot, slug, mode string, surfaceTypes []string) BodyContext {
 	ctx := BodyContext{
-		FeatureSlug: slug,
-		Mode:        mode,
-		Interfaces:  interfaces,
+		FeatureSlug:  slug,
+		Mode:         mode,
+		SurfaceTypes: surfaceTypes,
 	}
 
 	if mode == "" {

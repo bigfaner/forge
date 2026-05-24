@@ -174,8 +174,8 @@ func TestExtractBodyContext(t *testing.T) {
 		if len(ctx.AcceptanceCriteria) != 0 {
 			t.Errorf("AcceptanceCriteria = %v, want empty in quick mode", ctx.AcceptanceCriteria)
 		}
-		if len(ctx.Interfaces) != 2 || ctx.Interfaces[0] != "api" {
-			t.Errorf("Interfaces = %v, want [api, cli]", ctx.Interfaces)
+		if len(ctx.SurfaceTypes) != 2 || ctx.SurfaceTypes[0] != "api" {
+			t.Errorf("SurfaceTypes = %v, want [api, cli]", ctx.SurfaceTypes)
 		}
 	})
 
@@ -242,16 +242,8 @@ func TestBuildIndex_BodyContextPopulatedInGeneratedMD(t *testing.T) {
 	writeTaskMDWithType(t, tasksDir, "1-feat.md", "1", "Feature Task", TypeCodingFeature, nil)
 	// Add a second task to get stage gates
 	writeTaskMDWithType(t, tasksDir, "2-feat.md", "2", "Feature Task 2", TypeCodingFeature, []string{"1"})
-
-	// Create config with interfaces
-	configDir := filepath.Join(projectRoot, ".forge")
-	if err := os.MkdirAll(configDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	configContent := "interfaces:\n  - cli\n"
-	if err := os.WriteFile(filepath.Join(configDir, "config.yaml"), []byte(configContent), 0644); err != nil {
-		t.Fatal(err)
-	}
+	// Create config with surfaces
+	writeForgeConfig(t, projectRoot)
 
 	opts := BuildIndexOpts{
 		FeatureSlug: "test-feature",

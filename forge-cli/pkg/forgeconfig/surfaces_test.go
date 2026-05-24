@@ -183,6 +183,59 @@ func TestSurfaceTypes(t *testing.T) {
 			t.Errorf("expected [api], got %v", result)
 		}
 	})
+
+	t.Run("unknown types are filtered out", func(t *testing.T) {
+		surfaces := map[string]string{
+			"frontend": "web",
+			"backend":  "api",
+			"legacy":   "web-ui",
+			"mobile":   "mobile-ui",
+			"custom":   "unknown-type",
+		}
+		warnings := ValidateSurfaceTypes(surfaces)
+		result := SurfaceTypes(surfaces)
+
+		// Only known types should appear
+		if len(result) != 2 {
+			t.Fatalf("expected 2 known types, got %d: %v", len(result), result)
+		}
+		seen := map[string]bool{}
+		for _, typ := range result {
+			seen[typ] = true
+		}
+		if !seen["web"] || !seen["api"] {
+			t.Errorf("expected web and api, got %v", result)
+		}
+
+		// Unknown types should produce warnings
+		if len(warnings) != 3 {
+			t.Fatalf("expected 3 warnings for unknown types, got %d: %v", len(warnings), warnings)
+		}
+		for _, w := range warnings {
+			if !strings.Contains(w, "unknown surface type") {
+				t.Errorf("warning should mention 'unknown surface type', got: %s", w)
+			}
+		}
+	})
+
+	t.Run("all known types pass without warnings", func(t *testing.T) {
+		surfaces := map[string]string{
+			"a": "web",
+			"b": "mobile",
+			"c": "api",
+			"d": "cli",
+			"e": "tui",
+		}
+		warnings := ValidateSurfaceTypes(surfaces)
+		result := SurfaceTypes(surfaces)
+
+		if len(warnings) != 0 {
+			t.Errorf("expected 0 warnings for all known types, got %d: %v", len(warnings), warnings)
+		}
+		if len(result) != 5 {
+			t.Errorf("expected 5 types, got %d: %v", len(result), result)
+		}
+	})
 }
 
 func TestReadSurfaces(t *testing.T) {

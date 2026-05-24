@@ -64,6 +64,8 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 
 	// 3.5 Build BodyContext from planning-time data (proposal/PRD + config)
 	surfaces, _ := forgeconfig.ReadSurfaces(opts.ProjectRoot)
+	// Validate surfaces: log warnings for unknown types, filter them out
+	forgeconfig.ValidateSurfaceTypes(surfaces)
 	capabilities := forgeconfig.SurfaceTypes(surfaces)
 	bodyCtx := extractBodyContext(opts.ProjectRoot, opts.FeatureSlug, mode, capabilities)
 
@@ -292,7 +294,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 	// 7.5 Generate test pipeline tasks
 	if needsTest && mode != "" {
 		if len(capabilities) == 0 {
-			result.Warnings = append(result.Warnings, "No interfaces configured in .forge/config.yaml. Test pipeline tasks will not be generated. Add an 'interfaces' field to enable:\n  interfaces:\n    - api\n    - cli")
+			return nil, fmt.Errorf("no surfaces configured in .forge/config.yaml. Run `forge init` to configure surfaces")
 		}
 		testTasks := GenerateTestTasks(mode, capabilities, opts.AutoConfig)
 		for _, td := range testTasks {

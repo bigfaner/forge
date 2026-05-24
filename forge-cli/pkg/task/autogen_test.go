@@ -799,7 +799,7 @@ Acceptance:
 		FeatureSlug:        "my-feature",
 		Mode:               "quick",
 		Scope:              []string{"backend", "frontend"},
-		Interfaces:         []string{"api", "cli"},
+		SurfaceTypes:       []string{"api", "cli"},
 		AcceptanceCriteria: []string{"AC1: works", "AC2: fast"},
 	}
 	def := AutoGenTaskDef{TestType: "api"}
@@ -998,9 +998,9 @@ func TestRenderBody_ScopeAndInterfaces(t *testing.T) {
 	t.Run("populated scope and interfaces", func(t *testing.T) {
 		template := "## Feature Context\n- Scope: {{SCOPE}}\n- Test interfaces: {{INTERFACES}}"
 		ctx := BodyContext{
-			FeatureSlug: "feat",
-			Scope:       []string{"backend", "frontend"},
-			Interfaces:  []string{"api", "cli"},
+			FeatureSlug:  "feat",
+			Scope:        []string{"backend", "frontend"},
+			SurfaceTypes: []string{"api", "cli"},
 		}
 		def := AutoGenTaskDef{}
 
@@ -1746,19 +1746,9 @@ func TestGetQuickTestTasks_DriftDependsOnVerifyRegression(t *testing.T) {
 
 // --- Task 5: ResolveFirstTestDep panic and InferType ordering tests ---
 
-func TestResolveFirstTestDep_BreakdownPanicsOnMissingGenJourneys(t *testing.T) {
-	defer func() {
-		r := recover()
-		if r == nil {
-			t.Fatal("expected panic when gen-journeys task not found in breakdown mode, but did not panic")
-		}
-		msg := fmt.Sprintf("%v", r)
-		if !strings.Contains(msg, "T-test-gen-journeys") {
-			t.Errorf("panic message should contain T-test-gen-journeys, got %q", msg)
-		}
-	}()
-
-	// Create tasks without gen-journeys — only gen-scripts (old pipeline)
+func TestResolveFirstTestDep_BreakdownGracefulOnMissingGenJourneys(_ *testing.T) {
+	// When gen-journeys tasks don't exist (no E2E tasks), ResolveFirstTestDep
+	// should return gracefully without panicking.
 	tasks := []AutoGenTaskDef{
 		{ID: "T-eval-journey"},
 		{ID: "T-test-gen-contracts"},
@@ -1768,28 +1758,20 @@ func TestResolveFirstTestDep_BreakdownPanicsOnMissingGenJourneys(t *testing.T) {
 	existing := map[string]Task{
 		"1-gate": {ID: "1.gate"},
 	}
+	// Should not panic
 	ResolveFirstTestDep(tasks, existing, "breakdown")
 }
 
-func TestResolveFirstTestDep_QuickPanicsOnMissingGenJourneys(t *testing.T) {
-	defer func() {
-		r := recover()
-		if r == nil {
-			t.Fatal("expected panic when gen-journeys task not found in quick mode, but did not panic")
-		}
-		msg := fmt.Sprintf("%v", r)
-		if !strings.Contains(msg, "T-test-gen-journeys") {
-			t.Errorf("panic message should contain T-test-gen-journeys, got %q", msg)
-		}
-	}()
-
-	// Create tasks without gen-journeys — only drift (old pipeline)
+func TestResolveFirstTestDep_QuickGracefulOnMissingGenJourneys(_ *testing.T) {
+	// When gen-journeys tasks don't exist (no E2E tasks), ResolveFirstTestDep
+	// should return gracefully without panicking.
 	tasks := []AutoGenTaskDef{
 		{ID: "T-quick-doc-drift"},
 	}
 	existing := map[string]Task{
 		"1-foo": {ID: "1"},
 	}
+	// Should not panic
 	ResolveFirstTestDep(tasks, existing, "quick")
 }
 
