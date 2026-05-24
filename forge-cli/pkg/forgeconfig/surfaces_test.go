@@ -50,6 +50,39 @@ func TestSurfacesMap_UnmarshalYAML(t *testing.T) {
 		}
 	})
 
+	t.Run("bug: uppercase surface type normalized to lowercase (scalar)", func(t *testing.T) {
+		dir := setupConfig(t, "surfaces: CLI\n")
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.Surfaces["."] != "cli" {
+			t.Errorf("expected 'cli' (lowercased), got %q", cfg.Surfaces["."])
+		}
+		warnings := ValidateSurfaceTypes(cfg.Surfaces)
+		if len(warnings) != 0 {
+			t.Errorf("expected no warnings after normalization, got %v", warnings)
+		}
+	})
+
+	t.Run("bug: mixed-case surface type normalized to lowercase (map)", func(t *testing.T) {
+		dir := setupConfig(t, "surfaces:\n  frontend: Web\n  backend: API\n")
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.Surfaces["frontend"] != "web" {
+			t.Errorf("expected 'web' (lowercased), got %q", cfg.Surfaces["frontend"])
+		}
+		if cfg.Surfaces["backend"] != "api" {
+			t.Errorf("expected 'api' (lowercased), got %q", cfg.Surfaces["backend"])
+		}
+		warnings := ValidateSurfaceTypes(cfg.Surfaces)
+		if len(warnings) != 0 {
+			t.Errorf("expected no warnings after normalization, got %v", warnings)
+		}
+	})
+
 	t.Run("absent field is nil", func(t *testing.T) {
 		dir := setupConfig(t, "test-framework: pytest\n")
 		cfg, err := ReadConfig(dir)

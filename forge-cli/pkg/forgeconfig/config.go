@@ -155,7 +155,7 @@ func (s *SurfacesMap) UnmarshalYAML(value *yaml.Node) error {
 			*s = nil
 			return nil
 		}
-		*s = SurfacesMap{".": value.Value}
+		*s = SurfacesMap{".": strings.ToLower(value.Value)}
 		return nil
 
 	case yaml.MappingNode:
@@ -163,7 +163,7 @@ func (s *SurfacesMap) UnmarshalYAML(value *yaml.Node) error {
 		result := make(SurfacesMap, len(value.Content)/2)
 		for i := 0; i < len(value.Content); i += 2 {
 			key := value.Content[i].Value
-			val := value.Content[i+1].Value
+			val := strings.ToLower(value.Content[i+1].Value)
 			result[key] = val
 		}
 		*s = result
