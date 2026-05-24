@@ -43,16 +43,21 @@ If the task file contains ## Hard Rules with MUST/MUST NOT directives:
 
 ### Step 1.5: Spec-Code Conflict Scan
 
-For each Reference File loaded in Step 1, identify prescriptive statements — focus on: MUST/SHALL directives, architecture decisions, data flow patterns, interface contracts, and naming conventions.
-Read the corresponding code files and check: does the existing implementation match the spec's prescription?
+For each Reference File loaded in Step 1, scan existing code against spec requirements across five dimensions.
 
-Output a structured comparison:
+Read the corresponding code files, then output a per-dimension checklist:
 SPEC-CODE SCAN:
-- [spec §section: "key requirement"]: existing code [MATCHES | DIFFERS | NOT YET IMPLEMENTED]
-  - If DIFFERS: describe the specific difference and state "WILL FOLLOW SPEC"
+- MUST/SHALL directives: [scanned | N/A] — [findings or "none found"]
+- Architecture decisions: [scanned | N/A] — [findings or "none found"]
+- Data flow patterns: [scanned | N/A] — [findings or "none found"]
+- Interface contracts: [scanned | N/A] — [findings or "none found"]
+- Naming conventions: [scanned | N/A] — [findings or "none found"]
+
+For each finding, output:
+  [spec §section: "key requirement"]: existing code [MATCHES | DIFFERS | NOT YET IMPLEMENTED]
+    - If DIFFERS: describe the specific difference and state "WILL FOLLOW SPEC"
 
 If no Reference Files were loaded: use conventions/business-rules loaded in Step 1 as degraded authority and scan against those. Output: "SPEC-CODE SCAN: degraded mode — scanning against conventions only"
-If no conflicts found: "SPEC-CODE SCAN: no conflicts detected"
 
 ### Step 2: Validate UX Quality
 

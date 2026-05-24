@@ -27,16 +27,20 @@ If `## Reference Files` is empty or missing, output: "Reference Files empty — 
 
 ### Step 1.5: Spec-Code Conflict Scan
 
-For each Reference File loaded in Step 1, identify prescriptive statements — focus on: required document structure, mandatory sections, naming conventions, and content constraints.
-Read the corresponding documents and check: does the existing content match the spec's requirements?
+For each Reference File loaded in Step 1, scan existing documents against spec requirements across four dimensions.
 
-Output a structured comparison:
+Read the corresponding documents, then output a per-dimension checklist:
 SPEC-CODE SCAN:
-- [spec §section: "key requirement"]: existing document [MATCHES | DIFFERS | NOT YET IMPLEMENTED]
-  - If DIFFERS: describe the specific difference and state "WILL FOLLOW SPEC"
+- Required document structure: [scanned | N/A] — [findings or "none found"]
+- Mandatory sections: [scanned | N/A] — [findings or "none found"]
+- Naming conventions: [scanned | N/A] — [findings or "none found"]
+- Content constraints: [scanned | N/A] — [findings or "none found"]
+
+For each finding, output:
+  [spec §section: "key requirement"]: existing document [MATCHES | DIFFERS | NOT YET IMPLEMENTED]
+    - If DIFFERS: describe the specific difference and state "WILL FOLLOW SPEC"
 
 If no Reference Files were loaded: "SPEC-CODE SCAN: skipped — no Reference Files loaded"
-If no conflicts found: "SPEC-CODE SCAN: no conflicts detected"
 
 ### Step 2: Read Deliverables and Acceptance Criteria
 
