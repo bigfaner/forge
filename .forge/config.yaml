@@ -1,3 +1,4 @@
+version: "1"
 auto:
   e2eTest:
     quick: false
@@ -23,3 +24,4 @@ surfaces:
 worktree:
   source-branch: v3.0.0
   copy-files: []
+surfaces: cli
