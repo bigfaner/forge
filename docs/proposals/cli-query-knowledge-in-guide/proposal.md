@@ -1,7 +1,7 @@
 ---
 name: CLI Query Knowledge in Guide
 slug: cli-query-knowledge-in-guide
-status: Draft
+status: Approved
 created: 2026-05-24
 author: faner
 ---
