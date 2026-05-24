@@ -71,7 +71,7 @@ flowchart TD
     PREREV_OK -->|"empty report"| LOG_EMPTY["Log iteration-0: no changes, degrade"]
     LOG_EMPTY --> DISPATCH
     PREREV_OK -->|"valid"| TAG["P0.5f: Insert <!-- pre-revised --> tags"]
-    PREREV_OK -->|"format anomaly"| DISCARD["Discard pre-revision, restore original"]
+    PREREV_OK -->|"format anomaly"| DISCARD["Discard pre-revision, restore from baseline"]
     DISCARD --> DISPATCH
     TAG --> INCR["P0.5g: ITERATION = 1"]
     INCR --> DISPATCH
@@ -291,7 +291,7 @@ All Phase 0.5 error paths leave `FREEFORM_INJECTION` unset and degrade to standa
 | Findings formatting failure | Skip pre-revision, enter Scorer directly | "Pre-revision 格式化失败，已跳过。" |
 | Pre-reviser returns error | Skip, log warning | "Pre-reviser 执行失败，已跳过。" |
 | Empty report produced | Log iteration-0 "no changes", degrade to standard flow | (no notification, standard rubric flow) |
-| Format anomaly | Discard pre-revision, restore original proposal | "Pre-revision 产出格式异常，已丢弃。" |
+| Format anomaly (Reviser output file exists but is empty, truncated, or contains no ATTACK_POINTS response) | Discard pre-revision, restore from baseline snapshot | "Pre-revision 产出格式异常，已丢弃。" |
 
 ### Phase 0 Degradation Summary
 
@@ -314,11 +314,12 @@ Resolve eval type to scorer expert(s) per `rules/scorer-composition.md`.
 
 ## Iteration Initialization
 
-Set `ITERATION = 0` (pre-revision will consume iteration 0, incrementing to 1 for the Scorer loop). `MAX_ITERATIONS = resolved value from rubric or CLI`.
+`MAX_ITERATIONS = resolved value from rubric or CLI`. `ITERATION` depends on execution path:
 
-When `type == proposal` and freeform review completed successfully: pre-revision occupies iteration 0. After P0.5g completes, `ITERATION` is incremented to 1. The Scorer loop runs from iteration 1 to `MAX_ITERATIONS`.
-
-When pre-revision is skipped (degradation, non-proposal type, or `MAX_ITERATIONS <= 1`): `ITERATION` starts at 1 (behavior unchanged from pre-Phase-0.5).
+| Condition | ITERATION | Scorer loop range |
+|-----------|-----------|-------------------|
+| `type == proposal`, freeform review succeeded, pre-revision completed (P0.5g) | 1 (set by P0.5g, after consuming iteration 0) | 1..MAX_ITERATIONS |
+| All other paths (Phase 0 degraded, pre-revision skipped, non-proposal, `MAX_ITERATIONS <= 1`) | 1 | 1..MAX_ITERATIONS |
 
 ## Step 2: Invoke Scorer Subagent(s) (flowchart labels: `2a` = single-pass, `2b` = multi-iteration)
 
@@ -358,6 +359,7 @@ Iterations remaining = `MAX_ITERATIONS - ITERATION` (current iteration consumed)
 | Condition | Action |
 |-----------|--------|
 | Score >= target | Go to Step 5 |
+| Score < INITIAL_SCORE and `ROLLBACK_USED = false` (proposal only, pre-revision executed) | Restore pre-revised checkpoint, set `ROLLBACK_USED = true`, retry from Step 2 |
 | Score < target, ITERATION < MAX_ITERATIONS | Go to Step 4 |
 | Score < target, ITERATION >= MAX_ITERATIONS | Go to Step 5 (report failure) |
 
@@ -438,7 +440,7 @@ Pre-revision introduces a two-level rollback design:
 
 1. **Scorer loop rollback** (inner level): At the Gate (Step 3b), if the current score is below `INITIAL_SCORE` (degraded) and inner rollback has not been used, restore the document to the pre-revised checkpoint (state after Phase 0.5). Then retry from Step 2 (Scorer re-evaluates). **Max 1 inner rollback per eval run** — prevents infinite loops. After using the rollback, the `ROLLBACK_USED = true` flag prevents reuse.
 
-2. **Overall rollback** (outer level): When the final report is generated and the final score is below `BASELINE_SCORE` (pre-revision failed to improve), restore the document to the Phase 0 baseline snapshot (saved at `<DOC_DIR>/eval/baseline-snapshot/`). This is a **post-hoc restoration**, not an automatic retry — the eval report already reflects the pre-revision attempt, and the user decides whether to accept or discard. The restored document goes to the user's working copy, overwriting the eval-modified version.
+2. **Overall rollback** (outer level): When the final report is generated and the final score is below `BASELINE_SCORE` (pre-revision failed to improve), restore the document to the Phase 0 baseline snapshot (saved at `<DOC_DIR>/eval/baseline-snapshot/`). This is a **post-hoc restoration**, not an automatic retry — the eval report already reflects the pre-revision attempt, and the user decides whether to accept or discard. If `BASELINE_SCORE = null` (P0.5a Scorer call failed), skip overall rollback — there is no baseline to compare against.
 
 **No rollback for non-proposal types or when pre-revision was skipped**: the standard Scorer-Reviser cycle continues as before.
 
