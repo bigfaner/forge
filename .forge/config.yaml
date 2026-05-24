@@ -19,8 +19,7 @@ auto:
   knowledgeSave:
     quick: true
     full: true
-surfaces:
-  ".": cli
 worktree:
   source-branch: v3.0.0
   copy-files: []
+surfaces: cli
