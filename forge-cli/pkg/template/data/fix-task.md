@@ -6,7 +6,7 @@ estimated_time: "30min"
 dependencies: []
 status: pending
 breaking: true
-type: "fix"
+type: "coding.fix"
 ---
 
 # {{TITLE}}

@@ -603,9 +603,9 @@ func TestAddFixTask_TemplateSelection(t *testing.T) {
 		wantType    string
 		wantSnippet string // distinctive text in the generated .md
 	}{
-		{"compile", task.TypeCodingFix, "type: \"fix\""},
-		{"fmt", task.TypeCodingCleanup, "type: \"cleanup\""},
-		{"lint", task.TypeCodingCleanup, "type: \"cleanup\""},
+		{"compile", task.TypeCodingFix, "type: \"coding.fix\""},
+		{"fmt", task.TypeCodingCleanup, "type: \"coding.cleanup\""},
+		{"lint", task.TypeCodingCleanup, "type: \"coding.cleanup\""},
 	}
 	for _, tc := range tests {
 		t.Run(tc.step, func(t *testing.T) {

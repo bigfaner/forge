@@ -6,7 +6,7 @@ estimated_time: "15min"
 dependencies: []
 status: pending
 breaking: true
-type: "cleanup"
+type: "coding.cleanup"
 ---
 
 # {{TITLE}}

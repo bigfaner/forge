@@ -78,3 +78,42 @@ func TestGetDefaults_NotFound(t *testing.T) {
 		t.Fatal("expected error for nonexistent template defaults")
 	}
 }
+
+func TestTemplateType_ValidTypes(t *testing.T) {
+	// Templates must use a type value that exists in ValidTypes.
+	// Historically, fix-task.md used bare "fix" instead of "coding.fix".
+	templateTypes := map[string]string{
+		"fix-task":     "",
+		"cleanup-task": "",
+	}
+	for name := range templateTypes {
+		content, err := Get(name)
+		if err != nil {
+			t.Fatalf("Get(%q) error: %v", name, err)
+		}
+		// Extract type value from frontmatter
+		for _, line := range strings.Split(content, "\n") {
+			line = strings.TrimSpace(line)
+			if strings.HasPrefix(line, "type:") {
+				typ := strings.Trim(strings.TrimSpace(strings.TrimPrefix(line, "type:")), `"`)
+				templateTypes[name] = typ
+				break
+			}
+		}
+		if templateTypes[name] == "" {
+			t.Fatalf("%s template: could not extract type from frontmatter", name)
+		}
+	}
+
+	// Verify each extracted type is a known valid type
+	validTypes := map[string]bool{
+		"coding.fix":    true,
+		"coding.cleanup": true,
+		"code-quality.simplify": true,
+	}
+	for name, typ := range templateTypes {
+		if !validTypes[typ] {
+			t.Errorf("bug: %s template has invalid type %q — not in ValidTypes", name, typ)
+		}
+	}
+}
