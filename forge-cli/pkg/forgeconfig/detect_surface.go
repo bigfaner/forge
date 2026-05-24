@@ -124,6 +124,23 @@ var pyProjectSignals = map[string]string{
 	"argparse": "cli",
 }
 
+// PathConflict records conflict metadata for a single detected path.
+// When multiple signals (e.g., web + api) are detected at the same path,
+// the conflict is auto-resolved by priority but the conflicting signals
+// are preserved for TUI annotation.
+type PathConflict struct {
+	Path        string   // relative path (or "." for root)
+	Resolved    string   // the chosen surface type after priority resolution
+	Conflicting []string // all surface types that conflicted (2+ entries)
+}
+
+// DetectResult holds the output of surface detection, including conflict metadata.
+type DetectResult struct {
+	Surfaces  SurfacesMap    // the resolved surfaces map
+	Conflicts []PathConflict // entries that had signal conflicts
+	IsScalar  bool           // true when single-type project (surfaces has only "." key)
+}
+
 // DetectSurfaces scans a project directory for surface signals and returns a
 // SurfacesMap with detected surface types. For single-type projects the key is "."
 // (scalar form). For monorepo/workspace projects, keys are relative paths.
@@ -135,6 +152,16 @@ var pyProjectSignals = map[string]string{
 //   - Root deps are skipped in workspace mode
 //   - Signal conflicts resolved via priority: web > mobile > api > cli > tui
 func DetectSurfaces(projectRoot string) (SurfacesMap, error) {
+	result, err := DetectSurfacesWithConflicts(projectRoot)
+	if err != nil {
+		return nil, err
+	}
+	return result.Surfaces, nil
+}
+
+// DetectSurfacesWithConflicts scans for surfaces and returns full detection
+// metadata including conflict information for TUI annotation.
+func DetectSurfacesWithConflicts(projectRoot string) (*DetectResult, error) {
 	depth, err := resolveDetectDepth()
 	if err != nil {
 		return nil, err
@@ -142,41 +169,57 @@ func DetectSurfaces(projectRoot string) (SurfacesMap, error) {
 
 	isWorkspace := detectWorkspaceMode(projectRoot)
 	result := make(SurfacesMap)
+	var conflicts []PathConflict
 
 	if isWorkspace {
 		// Skip root deps, scan subdirs
 		scanSubdirs(projectRoot, projectRoot, 0, depth, result)
 	} else {
 		// Scan root for signals
-		if surface := detectSurfaceAtDir(projectRoot); surface != "" {
+		if surface, conflict := detectSurfaceAtDirWithConflicts(projectRoot); surface != "" {
 			result["."] = surface
+			if len(conflict) > 1 {
+				conflicts = append(conflicts, PathConflict{
+					Path: ".", Resolved: surface, Conflicting: conflict,
+				})
+			}
 		}
 		// Also scan subdirs for mixed signals
-		scanSubdirs(projectRoot, projectRoot, 0, depth, result)
+		scanSubdirsWithConflicts(projectRoot, projectRoot, 0, depth, result, &conflicts)
 	}
 
 	// Collapse to scalar form if only one surface type and one path "."
 	if len(result) == 1 {
-		return result, nil
+		return &DetectResult{
+			Surfaces:  result,
+			Conflicts: conflicts,
+			IsScalar:  true,
+		}, nil
 	}
 
 	// If all paths have the same surface type and one of them is ".", collapse
 	// (This handles non-workspace projects that found signals in subdirs too)
 	if _, hasDot := result["."]; hasDot {
-		// Check if all values are the same
 		types := make(map[string]bool)
 		for _, v := range result {
 			types[v] = true
 		}
 		if len(types) == 1 {
-			// Collapse to scalar
 			for _, v := range result {
-				return SurfacesMap{".": v}, nil
+				return &DetectResult{
+					Surfaces:  SurfacesMap{".": v},
+					Conflicts: nil, // collapsed, no conflicts to show
+					IsScalar:  true,
+				}, nil
 			}
 		}
 	}
 
-	return result, nil
+	return &DetectResult{
+		Surfaces:  result,
+		Conflicts: conflicts,
+		IsScalar:  false,
+	}, nil
 }
 
 // resolveDetectDepth reads FORGE_DETECT_DEPTH env var and validates it.
@@ -224,6 +267,12 @@ func detectWorkspaceMode(root string) bool {
 
 // scanSubdirs recursively scans subdirectories for surface signals.
 func scanSubdirs(root, currentDir string, currentDepth, maxDepth int, result SurfacesMap) {
+	scanSubdirsWithConflicts(root, currentDir, currentDepth, maxDepth, result, nil)
+}
+
+// scanSubdirsWithConflicts recursively scans subdirectories for surface signals
+// and records conflict metadata.
+func scanSubdirsWithConflicts(root, currentDir string, currentDepth, maxDepth int, result SurfacesMap, conflicts *[]PathConflict) {
 	if currentDepth >= maxDepth {
 		return
 	}
@@ -247,7 +296,8 @@ func scanSubdirs(root, currentDir string, currentDepth, maxDepth int, result Sur
 		subdirPath := filepath.Join(currentDir, name)
 
 		// Detect surface at this directory
-		if surface := detectSurfaceAtDir(subdirPath); surface != "" {
+		surface, conflict := detectSurfaceAtDirWithConflicts(subdirPath)
+		if surface != "" {
 			// Compute relative path from root
 			rel, err := filepath.Rel(root, subdirPath)
 			if err != nil {
@@ -256,52 +306,67 @@ func scanSubdirs(root, currentDir string, currentDepth, maxDepth int, result Sur
 			// Normalize to forward slashes
 			rel = filepath.ToSlash(rel)
 			result[rel] = surface
+			if len(conflict) > 1 && conflicts != nil {
+				*conflicts = append(*conflicts, PathConflict{
+					Path: rel, Resolved: surface, Conflicting: conflict,
+				})
+			}
 		}
 
 		// Recurse into subdirectories
-		scanSubdirs(root, subdirPath, currentDepth+1, maxDepth, result)
+		scanSubdirsWithConflicts(root, subdirPath, currentDepth+1, maxDepth, result, conflicts)
 	}
 }
 
-// detectSurfaceAtDir detects the surface type at a single directory.
-// Returns the highest-priority surface type found, or "" if none detected.
-func detectSurfaceAtDir(dir string) string {
-	var signals []string
+// detectSurfaceAtDirWithConflicts detects the surface type and returns conflict metadata.
+// Returns the resolved surface type and the list of all conflicting signal types.
+func detectSurfaceAtDirWithConflicts(dir string) (string, []string) {
+	// Collect all unique signal types across all manifest files
+	seen := make(map[string]bool)
+	var allSignals []string
+
+	collect := func(signals []string) {
+		for _, s := range signals {
+			if !seen[s] {
+				seen[s] = true
+				allSignals = append(allSignals, s)
+			}
+		}
+	}
 
 	// Check package.json
-	if s := detectPackageJSON(dir); s != "" {
-		signals = append(signals, s)
-	}
+	collect(detectPackageJSONSignals(dir))
 
 	// Check go.mod
-	if s := detectGoMod(dir); s != "" {
-		signals = append(signals, s)
-	}
+	collect(detectGoModSignals(dir))
 
 	// Check Cargo.toml
-	if s := detectCargoToml(dir); s != "" {
-		signals = append(signals, s)
-	}
+	collect(detectCargoTomlSignals(dir))
 
 	// Check mobile signals (AndroidManifest.xml, *.xcodeproj)
 	if detectMobile(dir) {
-		signals = append(signals, "mobile")
+		if !seen["mobile"] {
+			allSignals = append(allSignals, "mobile")
+		}
 	}
 
 	// Check pyproject.toml
-	if s := detectPyProject(dir); s != "" {
-		signals = append(signals, s)
+	collect(detectPyProjectSignals(dir))
+
+	if len(allSignals) == 0 {
+		return "", nil
 	}
 
-	return resolveConflict(signals)
+	resolved := resolveConflict(allSignals)
+	return resolved, allSignals
 }
 
-// detectPackageJSON reads a package.json and returns the detected surface type.
-func detectPackageJSON(dir string) string {
+// detectPackageJSONSignals reads a package.json and returns all detected surface signal types.
+func detectPackageJSONSignals(dir string) []string {
 	pkgPath := filepath.Join(dir, "package.json")
 	data, err := os.ReadFile(pkgPath)
 	if err != nil {
-		return ""
+		return nil
 	}
 
 	var pkg struct {
@@ -309,7 +374,7 @@ func detectPackageJSON(dir string) string {
 		DevDependencies map[string]interface{} `json:"devDependencies"`
 	}
 	if err := json.Unmarshal(data, &pkg); err != nil {
-		return ""
+		return nil
 	}
 
 	// Merge both dep maps for signal detection
@@ -348,17 +413,18 @@ func detectPackageJSON(dir string) string {
 		}
 	}
 
-	return resolveConflict(signals)
+	return dedupSignals(signals)
 }
 
-// detectGoMod reads a go.mod and returns the detected surface type.
-func detectGoMod(dir string) string {
+// detectGoModSignals reads a go.mod and returns all detected surface signal types.
+func detectGoModSignals(dir string) []string {
 	modPath := filepath.Join(dir, "go.mod")
 	data, err := os.ReadFile(modPath)
 	if err != nil {
-		return ""
+		return nil
 	}
 
+	seen := make(map[string]bool)
 	var signals []string
 	for _, line := range strings.Split(string(data), "\n") {
 		line = strings.TrimSpace(line)
@@ -369,33 +435,40 @@ func detectGoMod(dir string) string {
 
 		for prefix, surface := range goModSignals {
 			if strings.HasPrefix(line, prefix) || strings.Contains(line, " "+prefix) {
-				signals = append(signals, surface)
+				if !seen[surface] {
+					seen[surface] = true
+					signals = append(signals, surface)
+				}
 			}
 		}
 	}
 
-	return resolveConflict(signals)
+	return signals
 }
 
-// detectCargoToml reads a Cargo.toml and returns the detected surface type.
-func detectCargoToml(dir string) string {
+// detectCargoTomlSignals reads a Cargo.toml and returns all detected surface signal types.
+func detectCargoTomlSignals(dir string) []string {
 	tomlPath := filepath.Join(dir, "Cargo.toml")
 	data, err := os.ReadFile(tomlPath)
 	if err != nil {
-		return ""
+		return nil
 	}
 
+	seen := make(map[string]bool)
 	var signals []string
 	content := string(data)
 
 	for dep, surface := range cargoTomlSignals {
 		// Simple prefix match in the dependencies section
 		if strings.Contains(content, dep) {
-			signals = append(signals, surface)
+			if !seen[surface] {
+				seen[surface] = true
+				signals = append(signals, surface)
+			}
 		}
 	}
 
-	return resolveConflict(signals)
+	return signals
 }
 
 // detectMobile checks for mobile project signals (AndroidManifest.xml, *.xcodeproj).
@@ -429,24 +502,41 @@ func detectMobile(dir string) bool {
 	return false
 }
 
-// detectPyProject reads a pyproject.toml and returns the detected surface type.
-func detectPyProject(dir string) string {
+// detectPyProjectSignals reads a pyproject.toml and returns all detected surface signal types.
+func detectPyProjectSignals(dir string) []string {
 	tomlPath := filepath.Join(dir, "pyproject.toml")
 	data, err := os.ReadFile(tomlPath)
 	if err != nil {
-		return ""
+		return nil
 	}
 
+	seen := make(map[string]bool)
 	var signals []string
 	content := string(data)
 
 	for dep, surface := range pyProjectSignals {
 		if strings.Contains(content, dep) {
-			signals = append(signals, surface)
+			if !seen[surface] {
+				seen[surface] = true
+				signals = append(signals, surface)
+			}
 		}
 	}
 
-	return resolveConflict(signals)
+	return signals
+}
+
+// dedupSignals deduplicates a slice of signal types while preserving order.
+func dedupSignals(signals []string) []string {
+	seen := make(map[string]bool)
+	var result []string
+	for _, s := range signals {
+		if !seen[s] {
+			seen[s] = true
+			result = append(result, s)
+		}
+	}
+	return result
 }
 
 // resolveConflict takes a list of detected surface signals and returns the

@@ -86,6 +86,10 @@ func runInit(cmd *cobra.Command, _ []string) error {
 	action = configInitFunc(projectRoot)
 	actions = append(actions, action)
 
+	// Step 6: Surface detection and TUI confirmation
+	action = surfaceConfigFunc(projectRoot)
+	actions = append(actions, action)
+
 	// Print summary report
 	printInitSummary(out, actions)
 
@@ -440,6 +444,10 @@ var ensureJustFunc = just.EnsureJust
 // Variable for testability — huh requires a real TTY, so tests override this.
 var configInitFunc = runConfigInitIfNeeded
 
+// surfaceConfigFunc is the function that runs surface detection and TUI confirmation.
+// Variable for testability — huh requires a real TTY, so tests override this.
+var surfaceConfigFunc = runSurfaceConfig
+
 // ensureJustStep runs the ensure-just flow or skips it based on the flag.
 // Installation failure is non-blocking — init continues with a WARNING.
 func ensureJustStep(skipJust bool, in io.Reader, out io.Writer) initAction {
@@ -470,4 +478,51 @@ func ensureResultToAction(r just.EnsureResult) initAction {
 		target: "just installation",
 		detail: detail,
 	}
+}
+
+// runSurfaceConfig runs surface detection and TUI confirmation.
+// Skipped in non-interactive mode or when config doesn't exist.
+func runSurfaceConfig(projectRoot string) initAction {
+	configFile := filepath.Join(projectRoot, feature.ForgeDir, feature.ForgeConfigFileName)
+
+	// Only run surface config if config file exists (created by step 5)
+	if _, err := os.Stat(configFile); err != nil {
+		return initAction{status: "SKIPPED", target: "surfaces", detail: "no config file"}
+	}
+
+	// Check for interactive terminal
+	fi, _ := os.Stdin.Stat()
+	if fi.Mode()&os.ModeCharDevice == 0 {
+		return initAction{status: "SKIPPED", target: "surfaces", detail: "non-interactive terminal"}
+	}
+
+	// Run TUI confirmation
+	surfaces, cancelled := askSurfaceConfirmation(projectRoot)
+	if cancelled {
+		return initAction{status: "CANCELLED", target: "surfaces", detail: "Ctrl+C"}
+	}
+	if len(surfaces) == 0 {
+		return initAction{status: "SKIPPED", target: "surfaces", detail: "no surfaces detected"}
+	}
+
+	// Write surfaces to existing config
+	cfg, err := forgeconfig.ReadConfig(projectRoot)
+	if err != nil {
+		return initAction{status: "FAILED", target: "surfaces", detail: err.Error()}
+	}
+	if cfg == nil {
+		cfg = &forgeconfig.Config{}
+	}
+
+	cfg.Surfaces = surfaces
+	if err := writeConfigFile(configFile, cfg); err != nil {
+		fmt.Fprintf(os.Stderr, "ERROR: failed to write surfaces: %v\n", err)
+		return initAction{status: "FAILED", target: "surfaces", detail: err.Error()}
+	}
+
+	// Build detail string
+	if surfaces["."] != "" && len(surfaces) == 1 {
+		return initAction{status: "CREATED", target: "surfaces", detail: surfaces["."]}
+	}
+	return initAction{status: "CREATED", target: "surfaces", detail: fmt.Sprintf("%d mappings", len(surfaces))}
 }

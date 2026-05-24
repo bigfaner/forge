@@ -25,11 +25,22 @@ type initTestEnv struct {
 func newInitTestEnv(t *testing.T) *initTestEnv {
 	t.Helper()
 	orig := configInitFunc
+	origSurf := surfaceConfigFunc
 	configInitFunc = testConfigInit
-	t.Cleanup(func() { configInitFunc = orig })
+	surfaceConfigFunc = testSurfaceConfig
+	t.Cleanup(func() {
+		configInitFunc = orig
+		surfaceConfigFunc = origSurf
+	})
 	return &initTestEnv{
 		dir: t.TempDir(),
 	}
+}
+
+// testSurfaceConfig replaces surfaceConfigFunc for testing.
+// Simulates surface detection without requiring a real TTY.
+func testSurfaceConfig(_ string) initAction {
+	return initAction{status: "SKIPPED", target: "surfaces", detail: "test override"}
 }
 
 func (e *initTestEnv) run(extraArgs ...string) error {
@@ -567,6 +578,7 @@ func TestInitConfigWithValidation(t *testing.T) {
 func TestInitConfigWithWorktree(t *testing.T) {
 	t.Run("config includes worktree when provided", func(t *testing.T) {
 		orig := configInitFunc
+		origSurf := surfaceConfigFunc
 		configInitFunc = func(projectRoot string) initAction {
 			configFile := filepath.Join(projectRoot, feature.ForgeDir, feature.ForgeConfigFileName)
 			auto := autoConfigDefaults()
@@ -582,7 +594,11 @@ func TestInitConfigWithWorktree(t *testing.T) {
 			}
 			return initAction{status: "CREATED", target: ".forge/config.yaml", detail: "with worktree"}
 		}
-		defer func() { configInitFunc = orig }()
+		surfaceConfigFunc = testSurfaceConfig
+		defer func() {
+			configInitFunc = orig
+			surfaceConfigFunc = origSurf
+		}()
 
 		env := &initTestEnv{dir: t.TempDir()}
 		err := env.run()
@@ -610,6 +626,7 @@ func TestInitConfigWithWorktree(t *testing.T) {
 
 	t.Run("config omits worktree when both fields empty", func(t *testing.T) {
 		orig := configInitFunc
+		origSurf := surfaceConfigFunc
 		configInitFunc = func(projectRoot string) initAction {
 			configFile := filepath.Join(projectRoot, feature.ForgeDir, feature.ForgeConfigFileName)
 			auto := autoConfigDefaults()
@@ -622,7 +639,11 @@ func TestInitConfigWithWorktree(t *testing.T) {
 			}
 			return initAction{status: "CREATED", target: ".forge/config.yaml", detail: "no worktree"}
 		}
-		defer func() { configInitFunc = orig }()
+		surfaceConfigFunc = testSurfaceConfig
+		defer func() {
+			configInitFunc = orig
+			surfaceConfigFunc = origSurf
+		}()
 
 		env := &initTestEnv{dir: t.TempDir()}
 		err := env.run()
