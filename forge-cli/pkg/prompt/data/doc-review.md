@@ -24,7 +24,9 @@ You MUST:
 
 If `## Reference Files` is empty or missing, output: "Reference Files empty — falling back to existing code and Hard Rules."
 
-If a Reference File contains an internal contradiction (§A says X but §B says ¬X): output "SPEC CONTRADICTION: [description]", follow the more specific directive, and document the choice in your output.
+If a Reference File path does not exist: skip it silently and continue with the remaining files.
+
+If a Reference File contains an internal contradiction (§A says X but §B says ¬X), or if multiple Reference Files contradict each other: follow the more specific directive (within a single file) or the more recently updated file (across files). Output "SPEC CONTRADICTION: [description]" and document the choice.
 </CRITICAL>
 
 ### Step 1.5: Spec-Code Conflict Scan
