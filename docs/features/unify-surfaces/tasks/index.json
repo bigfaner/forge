@@ -104,7 +104,7 @@
       "title": "Mark forge-init-config-sync proposal as Superseded",
       "priority": "P2",
       "estimatedTime": "15min",
-      "status": "pending",
+      "status": "completed",
       "file": "8-supersede-proposal.md",
       "record": "records/8-supersede-proposal.md",
       "type": "doc"
@@ -117,7 +117,7 @@
       "dependencies": [
         "8"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "review-doc.md",
       "record": "records/review-doc.md",
       "scope": "all",
