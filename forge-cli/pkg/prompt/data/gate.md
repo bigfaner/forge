@@ -99,7 +99,7 @@ Execute in strict sequential order:
 just compile {{SCOPE}}
 just fmt {{SCOPE}}
 just lint {{SCOPE}}
-just test {{SCOPE}}
+just unit-test {{SCOPE}}
 ```
 
 All must pass.
@@ -109,7 +109,7 @@ All must pass.
 | `compile` | Fix compilation errors, retry from compile |
 | `fmt` | **WARNING** (non-blocking) — if `just fmt` produces changes: check if the affected files are ones you modified. If yes, fix the fmt issues. If changes are only in pre-existing files, continue — those are not your responsibility. Log the warning in your output. |
 | `lint` | Self-fix (max 1 retry). If still failing, evaluate Complex Error Pause Flow — if the error persists after ~3 total attempts, create a fix task. Otherwise, stop and let the dispatcher handle it. |
-| `test` | Fix failing tests, retry from compile |
+| `unit-test` | Fix failing tests, retry from compile |
 
 ```mermaid
 flowchart TD
@@ -130,7 +130,7 @@ flowchart TD
     I2 --> J
     I -->|"pass"| J{"lint?"}
     J -->|"fail"| K["Self-fix (max 1 retry)"]
-    K -->|"pass"| L{"test?"}
+    K -->|"pass"| L{"unit-test?"}
     K -->|"fail"| K2{"~3 attempts?"}
     K2 -->|"yes"| STOP3(["Evaluate Complex Error Pause Flow"])
     K2 -->|"no"| STOP2(["STOP"])

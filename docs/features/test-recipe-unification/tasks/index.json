@@ -127,7 +127,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "8-prompt-templates.md",
       "record": "records/8-prompt-templates.md",
       "type": "doc"

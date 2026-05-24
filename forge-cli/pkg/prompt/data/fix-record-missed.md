@@ -29,7 +29,7 @@ Execute in strict sequential order — stop at first failure:
 just compile {{SCOPE}}
 just fmt {{SCOPE}}
 just lint {{SCOPE}}
-just test {{SCOPE}}
+just unit-test {{SCOPE}}
 ```
 
 All must pass.
@@ -39,6 +39,6 @@ All must pass.
 | `compile` | Set status to blocked via `forge task transition {{TASK_ID}} blocked --reason "compile failed"`, STOP |
 | `fmt` | Set status to blocked, STOP |
 | `lint` | Set status to blocked, STOP |
-| `test` | Set status to blocked, STOP |
+| `unit-test` | Set status to blocked, STOP |
 
 Output: `Step 1/1: Verifying implementation... DONE`
