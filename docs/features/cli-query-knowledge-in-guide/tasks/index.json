@@ -1,0 +1,45 @@
+{
+  "feature": "cli-query-knowledge-in-guide",
+  "proposal": "docs/proposals/cli-query-knowledge-in-guide/proposal.md",
+  "created": "2026-05-24",
+  "tasks": {
+    "1-add-cli-query-section": {
+      "id": "1",
+      "title": "Add CLI Query Commands section to guide.md",
+      "priority": "P0",
+      "estimatedTime": "15m",
+      "status": "pending",
+      "file": "1-add-cli-query-section.md",
+      "record": "records/1-add-cli-query-section.md",
+      "type": "doc"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "scope": "all",
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
