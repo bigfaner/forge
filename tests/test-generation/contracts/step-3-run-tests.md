@@ -9,7 +9,7 @@ journey: test-generation
 ## Given
 - A forge project with generated test scripts
 - Convention files declaring Result Format (json-stream for Go)
-- justfile with e2e-compile and e2e-test recipes
+- justfile with compile and test recipes
 
 ## When
 - Tests are executed via the Convention-declared execution command

@@ -41,8 +41,8 @@ func setupGoProjectFixture(t *testing.T) (projectRoot string, conventionsDir str
 	// Create a minimal go.mod
 	require.NoError(t, os.WriteFile(filepath.Join(projectRoot, "go.mod"), []byte("module test-project\n\ngo 1.26\n"), 0644))
 
-	// Create justfile with e2e-compile recipe
-	justfileContent := `e2e-compile:
+	// Create justfile with compile recipe
+	justfileContent := `compile:
 	#!/usr/bin/env bash
 	set -euo pipefail
 	go build -tags=e2e ./...
@@ -84,10 +84,10 @@ func forgeGenTestScripts(t *testing.T, projectRoot string, extraArgs ...string) 
 	return string(out), exitCode
 }
 
-// runJustE2eCompile runs "just e2e-compile" in the given project root.
-func runJustE2eCompile(t *testing.T, projectRoot string) (string, int) {
+// runJustCompile runs "just compile" in the given project root.
+func runJustCompile(t *testing.T, projectRoot string) (string, int) {
 	t.Helper()
-	cmd := exec.Command("just", "e2e-compile")
+	cmd := exec.Command("just", "compile")
 	cmd.Dir = projectRoot
 	out, err := cmd.CombinedOutput()
 	exitCode := 0
@@ -168,11 +168,11 @@ domains: [testing, go]
 	require.NoError(t, err)
 	assert.Contains(t, string(content), "ginkgo")
 
-	// Steps 7-8: Verify e2e-compile recipe exists
+	// Steps 7-8: Verify compile recipe exists
 	justfilePath := filepath.Join(projectRoot, "justfile")
 	content, err = os.ReadFile(justfilePath)
 	require.NoError(t, err)
-	assert.Contains(t, string(content), "e2e-compile")
+	assert.Contains(t, string(content), "compile")
 
 	_ = exitCode
 }

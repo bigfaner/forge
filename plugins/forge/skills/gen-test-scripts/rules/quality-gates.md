@@ -28,7 +28,7 @@ Before writing, scan existing test files in the module for matching function nam
 | Convention vs Reconnaissance conflict | Convention wins, log conflict for user awareness. |
 | Contract files not found | Abort with prompt to run `/gen-contracts` |
 | Fact Table lookup fails for a descriptor | Keep `// VERIFY:` marker, do not fabricate regex |
-| `just e2e-compile` recipe missing | Block generation. Output actionable error with recovery instructions. |
+| `just compile` recipe missing | Block generation. Output actionable error with recovery instructions. |
 | Compile gate failed (all retries) | Block task. Output error + file path + recovery actions. Preserve generated files. |
 | No test files generated | Abort with clear diagnostic message |
 | Custom template path not found | Fall back to Convention file patterns with WARNING |

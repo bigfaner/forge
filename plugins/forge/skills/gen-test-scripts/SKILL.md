@@ -460,15 +460,15 @@ For each file that fails validation:
 
 ### 4.1 Prerequisite Check
 
-Verify `just e2e-compile` recipe exists:
+Verify `just compile` recipe exists:
 
 ```bash
-just --list | grep e2e-compile
+just --list | grep compile
 ```
 
 If the recipe is missing:
 - Block generation
-- Output: "Missing justfile `e2e-compile` recipe. Run `/forge:init-justfile` first, or add a recipe manually."
+- Output: "Missing justfile `compile` recipe. Run `/forge:init-justfile` first, or add a recipe manually."
 - Do not proceed with compile check
 
 ### 4.2 Compile and Retry
@@ -476,7 +476,7 @@ If the recipe is missing:
 Run the compile gate:
 
 ```bash
-just e2e-compile
+just compile
 ```
 
 | Result | Action |

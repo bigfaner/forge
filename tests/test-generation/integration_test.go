@@ -85,22 +85,22 @@ func TestIntegration_TC_015_InitJustfileGeneratesRecipesWithoutProfile(t *testin
 	require.NoError(t, os.WriteFile(filepath.Join(projectRoot, "CLAUDE.md"), []byte("# Test\n"), 0644))
 
 	// Simulate init-justfile output: create a justfile with expected recipes
-	justfileContent := `# e2e-setup: verify compilation
-e2e-setup force="":
+	justfileContent := `# test-setup: verify compilation
+test-setup force="":
 	#!/usr/bin/env bash
 	set -euo pipefail
 	go build ./...
 	echo "OK: compilation verified"
 
-# e2e-compile: compile-check e2e test files
-e2e-compile:
+# compile: compile-check test files
+compile:
 	#!/usr/bin/env bash
 	set -euo pipefail
 	go build ./...
 	echo "OK: Go compilation passed"
 
-# e2e-test: run e2e tests
-e2e-test:
+# test: run tests
+test:
 	go test -v -tags=e2e -timeout=10m ./...
 `
 	require.NoError(t, os.WriteFile(filepath.Join(projectRoot, "justfile"), []byte(justfileContent), 0644))
@@ -109,7 +109,7 @@ e2e-test:
 	content, err := os.ReadFile(filepath.Join(projectRoot, "justfile"))
 	require.NoError(t, err)
 
-	recipes := []string{"e2e-compile", "e2e-test", "e2e-setup"}
+	recipes := []string{"compile", "test", "test-setup"}
 	for _, recipe := range recipes {
 		assert.Contains(t, string(content), recipe,
 			"Justfile should contain recipe: %s", recipe)
@@ -246,11 +246,11 @@ domains: [testing, go]
 	require.NoError(t, err)
 	assert.Contains(t, string(content), "json-stream")
 
-	// Verify justfile has e2e-test recipe
+	// Verify justfile has compile recipe
 	justfilePath := filepath.Join(projectRoot, "justfile")
 	justfileContent, err := os.ReadFile(justfilePath)
 	require.NoError(t, err)
-	assert.Contains(t, string(justfileContent), "e2e-compile")
+	assert.Contains(t, string(justfileContent), "compile")
 }
 
 // --- TC-029: End-to-End Flow — Convention Creation Through Test Execution ---
