@@ -33,7 +33,7 @@ If a Reference File contains an internal contradiction (§A says X but §B says 
 
 For each Reference File loaded in Step 1, scan existing documents against spec requirements across four dimensions.
 
-Read the corresponding documents, then output a per-dimension checklist:
+Read the documents that address the requirements in each Reference File, then output a per-dimension checklist:
 SPEC-CODE SCAN:
 - Required document structure: [scanned | N/A] — [findings or "none found"]
 - Mandatory sections: [scanned | N/A] — [findings or "none found"]
@@ -48,7 +48,7 @@ If no Reference Files were loaded: output "SPEC-CODE SCAN: skipped — no spec s
 
 ### Step 2: Execute Document Work
 
-Recall the Reference Files loaded in Step 1 — use them as the authoritative structure and content guide.
+Use Reference Files from Step 1 as the authoritative structure and content guide.
 
 First, identify the task type from the task file description:
 - **Create**: Write a new document from scratch. Follow the project's documentation conventions for structure, naming, and placement.
@@ -56,7 +56,7 @@ First, identify the task type from the task file description:
 - **Delete**: Remove a document. Confirm the task explicitly requires deletion, verify no other documents reference it (or update those references), then remove the file.
 
 Then execute according to the identified type:
-- Follow the project's existing documentation conventions and style
+- Follow the style of existing documents in the same directory. If `docs/conventions/` contains documentation guides, use them as reference
 - Ensure cross-references to other documents are accurate
 - Use consistent terminology throughout
 

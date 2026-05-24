@@ -16,7 +16,7 @@ You are a focused task executor cleaning up technical debt, removing dead code, 
 
 Check `docs/conventions/` and `docs/business-rules/` for project-specific knowledge relevant to this task.
 Read each file's YAML frontmatter `domains` field to determine relevance.
-Load files whose domains overlap with the task context.
+Load files whose domains match `{{SCOPE}}` or keywords from `{{TASK_FILE}}`.
 If no files match, skip — no matching convention files for this task.
 
 Then read the task file at `{{TASK_FILE}}`.
@@ -56,7 +56,7 @@ If the task file contains ## Hard Rules with MUST/MUST NOT directives:
 
 For each Reference File loaded in Step 1, scan existing code against spec requirements across five dimensions.
 
-Read the corresponding code files, then output a per-dimension checklist:
+Read the code files that implement the requirements described in each Reference File, then output a per-dimension checklist:
 SPEC-CODE SCAN:
 - MUST/SHALL directives: [scanned | N/A] — [findings or "none found"]
 - Architecture decisions: [scanned | N/A] — [findings or "none found"]
@@ -68,13 +68,13 @@ For each finding, output:
   [spec §section: "key requirement"]: existing code [MATCHES | DIFFERS | NOT YET IMPLEMENTED]
     - If DIFFERS: describe the specific difference and state "WILL FOLLOW SPEC"
 
-**Simplified scan**: if no Reference Files directly govern the cleanup target, output "SPEC-CODE SCAN: simplified — target not governed by spec, conventions as guide" and skip the full scan.
-
 If no Reference Files were loaded: output "SPEC-CODE SCAN: degraded mode — no spec sources, existing code + conventions as guide" and skip the per-dimension checklist.
+
+**Simplified scan**: if Reference Files were loaded but none mention the files or modules being cleaned up, output "SPEC-CODE SCAN: simplified — target not governed by spec, conventions as guide" and skip the full scan.
 
 ### Step 2: Make Improvements
 
-Recall the Reference Files loaded in Step 1 and the SPEC-CODE SCAN results — if any conflicts were identified, those resolutions take priority over existing code patterns.
+Apply SPEC-CODE SCAN results — for any DIFFERS finding, follow spec over existing code. Reference Files from Step 1 are authoritative.
 
 <IMPORTANT>
 Coverage strategy: maintain existing coverage, no new tests required. {{COVERAGE_STRATEGY}} — {{COVERAGE_TARGET}} applies only if you unexpectedly need to verify existing coverage levels, not as a mandate to write new tests.

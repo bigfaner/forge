@@ -5,7 +5,7 @@ You are a focused task executor running a documentation review task.
 
 ## Workflow (5 Steps)
 
-### Step 1: Load Task Definition
+### Step 1: Read Task Definition
 
 Read the task file at `{{TASK_FILE}}`. Identify all doc tasks in the feature by scanning the tasks directory.
 
@@ -33,7 +33,7 @@ If a Reference File contains an internal contradiction (§A says X but §B says 
 
 For each Reference File loaded in Step 1, scan existing documents against spec requirements across four dimensions.
 
-Read the corresponding documents, then output a per-dimension checklist:
+Read the documents that address the requirements in each Reference File, then output a per-dimension checklist:
 SPEC-CODE SCAN:
 - Required document structure: [scanned | N/A] — [findings or "none found"]
 - Mandatory sections: [scanned | N/A] — [findings or "none found"]
@@ -48,7 +48,7 @@ If no Reference Files were loaded: output "SPEC-CODE SCAN: skipped — no spec s
 
 ### Step 2: Read Deliverables and Acceptance Criteria
 
-Recall the Reference Files loaded in Step 1 — use them as the authoritative structure and content guide.
+Use Reference Files from Step 1 as the authoritative structure and content guide.
 
 For each doc task found:
 1. Read the task's acceptance criteria from its .md file

@@ -27,7 +27,7 @@ If check 1 or 2 fails, set the task status to blocked via `forge task transition
 
 Check `docs/conventions/` and `docs/business-rules/` for project-specific knowledge relevant to this task.
 Read each file's YAML frontmatter `domains` field to determine relevance.
-Load files whose domains overlap with the task context.
+Load files whose domains match `{{SCOPE}}` or keywords from `{{TASK_FILE}}`.
 If no files match, skip — no matching convention files for this task.
 
 Then read the task file at `{{TASK_FILE}}`.
@@ -67,7 +67,7 @@ If the task file contains ## Hard Rules with MUST/MUST NOT directives:
 
 For each Reference File loaded in Step 1, scan existing code against spec requirements across five dimensions.
 
-Read the corresponding code files, then output a per-dimension checklist:
+Read the code files that implement the requirements described in each Reference File, then output a per-dimension checklist:
 SPEC-CODE SCAN:
 - MUST/SHALL directives: [scanned | N/A] — [findings or "none found"]
 - Architecture decisions: [scanned | N/A] — [findings or "none found"]
@@ -79,13 +79,13 @@ For each finding, output:
   [spec §section: "key requirement"]: existing code [MATCHES | DIFFERS | NOT YET IMPLEMENTED]
     - If DIFFERS: describe the specific difference and state "WILL FOLLOW SPEC"
 
-**Simplified scan**: if no Reference Files directly govern the refactor target, output "SPEC-CODE SCAN: simplified — target not governed by spec, conventions as guide" and skip the full scan.
-
 If no Reference Files were loaded: output "SPEC-CODE SCAN: degraded mode — no spec sources, existing code + conventions as guide" and skip the per-dimension checklist.
+
+**Simplified scan**: if Reference Files were loaded but none mention the files or modules being refactored, output "SPEC-CODE SCAN: simplified — target not governed by spec, conventions as guide" and skip the full scan.
 
 ### Step 2: Impact Mapping
 
-Recall the Reference Files loaded in Step 1 and the SPEC-CODE SCAN results — if any conflicts were identified, those resolutions take priority over existing code patterns.
+Apply SPEC-CODE SCAN results — for any DIFFERS finding, follow spec over existing code. Reference Files from Step 1 are authoritative.
 
 Before writing any code, determine the full scope of changes.
 
@@ -213,10 +213,6 @@ Replacement order within each file: longest identifier first → shortest last (
 - Run `just compile {{SCOPE}}` to confirm no remaining references
 - If compile fails: grep for old name, fix remaining references, retry
 
-**Why this works:**
-- Every intermediate state compiles and passes tests
-- If context runs out mid-migration, the codebase is valid (aliases still work)
-- Each batch is independently verifiable and rollback-safe
 
 #### Behavioral Refactors
 
