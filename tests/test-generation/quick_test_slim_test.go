@@ -442,7 +442,6 @@ func TestTC_008_QuickModeMultiProfileLetterSuffixes(t *testing.T) {
 		assert.Equal(t, "test.gen-and-run", task.Type,
 			"%s should have type test.gen-and-run", id)
 	}
-	}
 
 	// Shared tasks T-quick-verify-regression and T-quick-doc-drift should exist
 	for _, id := range []string{"T-quick-verify-regression", "T-quick-doc-drift"} {

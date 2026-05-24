@@ -33,7 +33,7 @@ surfaces:
 auto:
   # Whether e2e test tasks are generated for each pipeline mode.
   # Default: quick=true, full=true (existing behavior — backward compatible)
-  e2eTest:
+  test:
     quick: true
     full: true
 

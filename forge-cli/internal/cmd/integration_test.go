@@ -1350,8 +1350,8 @@ fmt:
 lint:
     echo "lint ok"
 
-test:
-    echo "test ok"
+unit-test:
+    echo "unit-test ok"
 `
 	if err := os.WriteFile(filepath.Join(dir, "justfile"), []byte(justfile), 0644); err != nil {
 		t.Fatal(err)
@@ -1479,8 +1479,8 @@ fmt:
 lint:
     echo "lint ok"
 
-test:
-    echo "test fail" && exit 1
+unit-test:
+    echo "unit-test fail" && exit 1
 `
 	if err := os.WriteFile(filepath.Join(dir, "justfile"), []byte(justfile), 0644); err != nil {
 		t.Fatal(err)
@@ -1527,8 +1527,8 @@ fmt:
 lint:
     echo "lint ok"
 
-test:
-    echo "test ok"
+unit-test:
+    echo "unit-test ok"
 `
 	if err := os.WriteFile(filepath.Join(dir, "justfile"), []byte(justfile), 0644); err != nil {
 		t.Fatal(err)

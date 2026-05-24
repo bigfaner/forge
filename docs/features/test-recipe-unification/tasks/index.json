@@ -8,12 +8,16 @@
       "title": "Restructure gate sequences for two-layer test model",
       "priority": "P0",
       "estimatedTime": "1-2h",
-      "status": "pending",
+      "dependencies": [
+        "fix-1"
+      ],
+      "status": "completed",
       "file": "1-gate-sequence.md",
       "record": "records/1-gate-sequence.md",
       "breaking": true,
       "scope": "backend",
-      "type": "coding.enhancement"
+      "type": "coding.enhancement",
+      "blockedReason": "test failed: TestValidateQualityGate_FailingTestGate - test justfile missing unit-test recipe, gate skips and passes but should fail"
     },
     "10-documentation": {
       "id": "10",
@@ -35,12 +39,13 @@
       "title": "Rename config fields and add migration hint",
       "priority": "P0",
       "estimatedTime": "1-2h",
-      "status": "pending",
+      "status": "completed",
       "file": "2-config-rename.md",
       "record": "records/2-config-rename.md",
       "breaking": true,
       "scope": "backend",
-      "type": "coding.refactor"
+      "type": "coding.refactor",
+      "blockedReason": "Pre-existing TestValidateQualityGate_FailingTestGate failure from task 1 prevents submit gate. Config changes complete but unsubmitted."
     },
     "3-quality-gate": {
       "id": "3",
@@ -51,7 +56,7 @@
         "1",
         "2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3-quality-gate.md",
       "record": "records/3-quality-gate.md",
       "scope": "backend",
@@ -108,7 +113,7 @@
       "title": "Overhaul justfile templates for two-layer test model",
       "priority": "P0",
       "estimatedTime": "1-2h",
-      "status": "pending",
+      "status": "completed",
       "file": "7-justfile-templates.md",
       "record": "records/7-justfile-templates.md",
       "scope": "all",
@@ -140,6 +145,17 @@
       "file": "9-skill-markdown.md",
       "record": "records/9-skill-markdown.md",
       "type": "doc"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "Fix: TestValidateQualityGate_FailingTestGate fails",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "1"
     },
     "quick-drift-detection": {
       "id": "T-quick-doc-drift",

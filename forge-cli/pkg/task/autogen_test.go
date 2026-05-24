@@ -13,14 +13,14 @@ var defaultAuto = forgeconfig.AutoConfigDefaults()
 
 // allEnabledAuto enables all auto-behaviors for tests that need quick + full tasks.
 var allEnabledAuto = forgeconfig.AutoConfig{
-	E2eTest:          forgeconfig.ModeToggle{Quick: true, Full: true},
+	Test:             forgeconfig.ModeToggle{Quick: true, Full: true},
 	ConsolidateSpecs: forgeconfig.ModeToggle{Quick: true, Full: true},
 	CleanCode:        forgeconfig.ModeToggle{Quick: false, Full: false},
 }
 
 // validationAuto enables validation + e2e for testing validate-ux gating.
 var validationAuto = forgeconfig.AutoConfig{
-	E2eTest:    forgeconfig.ModeToggle{Quick: true, Full: true},
+	Test:       forgeconfig.ModeToggle{Quick: true, Full: true},
 	Validation: forgeconfig.ModeToggle{Quick: true, Full: true},
 }
 
@@ -146,7 +146,7 @@ func TestGenerateTestTaskMD(t *testing.T) {
 
 func TestGenerateTestTaskMD_SharedTask(t *testing.T) {
 	def := AutoGenTaskDef{
-		ID: "T-test-run", Key: "run-e2e-tests",
+		ID: "T-test-run", Key: "run-test",
 		Title: "Run e2e Tests", Priority: "P1",
 		EstimatedTime: "30min-1h", Dependencies: []string{},
 		Type: TypeTestRun, Scope: "all",
@@ -738,7 +738,7 @@ func TestGenerateTestTaskMD_TestTypeNotedInBody(t *testing.T) {
 
 func TestGenerateTestTaskMD_FrontmatterUnchanged(t *testing.T) {
 	def := AutoGenTaskDef{
-		ID: "T-test-run", Key: "run-e2e-tests",
+		ID: "T-test-run", Key: "run-test",
 		Title: "Run e2e Tests", Priority: "P1",
 		EstimatedTime: "30min-1h", Dependencies: []string{"dep1"},
 		Type: TypeTestRun, Scope: "all",

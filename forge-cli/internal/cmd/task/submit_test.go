@@ -1328,7 +1328,7 @@ func TestSubmit_TieredQualityGate(t *testing.T) {
 
 			dir, _ := os.Getwd()
 			// Create a justfile where test fails — this should cause quality gate failure
-			justfile := "compile:\n\t@true\nfmt:\n\t@true\nlint:\n\t@true\ntest:\n\t@echo \"test fails\" && exit 1\n"
+			justfile := "compile:\n\t@true\nfmt:\n\t@true\nlint:\n\t@true\nunit-test:\n\t@echo \"unit-test fails\" && exit 1\n"
 			_ = os.WriteFile(filepath.Join(dir, "justfile"), []byte(justfile), 0644)
 
 			dataPath := filepath.Join(dir, "record.json")
@@ -1344,10 +1344,10 @@ func TestSubmit_TieredQualityGate(t *testing.T) {
 		output, _ := cmd.CombinedOutput()
 		out := string(output)
 		if !strings.Contains(out, "Quality gate failed") {
-			t.Errorf("breaking task should run full gate including test, got: %s", out)
+			t.Errorf("breaking task should run full gate including unit-test, got: %s", out)
 		}
 		if !strings.Contains(out, "test") {
-			t.Errorf("expected failure at test step for breaking task, got: %s", out)
+			t.Errorf("expected failure at unit-test step for breaking task, got: %s", out)
 		}
 	})
 

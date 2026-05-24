@@ -39,9 +39,9 @@ var qualityGateCmd = &cobra.Command{
 	Short: "Check if all tasks are done, then run tests",
 	Long: `Checks if every task in the current feature is completed or skipped.
 Exits 0 silently if any task is still pending, in_progress, or blocked (no-op).
-If all done: runs project-wide unit/integration tests, then e2e regression.
+If all done: runs project-wide unit tests, then test regression.
 
-Feature e2e tests are run by T-test-run (run-e2e-tests task), not this hook.
+Feature test scripts are run by T-test-run (run-test task), not this hook.
 This hook is the project health gate: unit tests + regression suite.
 
 Use -v to see why the command exits early (useful for debugging).`,
@@ -113,7 +113,7 @@ func checkAllCompleted(verbose bool) (*AllCompletedResult, error) {
 }
 
 // isDocsOnly returns true if no task has a testable runtime behavior type.
-// Docs-only features change only markdown files — no compile/test/e2e needed.
+// Docs-only features change only markdown files — no compile/test needed.
 // Unlike needsTestPipeline in pkg/task, this checks ALL tasks including auto-generated ones.
 func isDocsOnly(index *task.TaskIndex) bool {
 	for _, t := range index.TasksMap() {
@@ -135,25 +135,25 @@ func runQualityGate(_ *cobra.Command, _ []string) error {
 
 	fmt.Fprintf(os.Stderr, "=== All tasks completed for feature: %s ===\n", result.FeatureSlug)
 
-	// Docs-only features have no code changes — skip compile/test/e2e gates.
+	// Docs-only features have no code changes — skip compile/test gates.
 	if result.DocsOnly {
 		fmt.Fprintln(os.Stderr, "Feature is docs-only — skipping quality gate (no implementation or fix tasks)")
 		os.Exit(0)
 	}
 
-	// Warn if feature e2e scripts exist but haven't been promoted.
+	// Warn if feature test scripts exist but haven't been promoted.
 	e2eScriptsDir := feature.GetE2EStagingDir(result.ProjectRoot, result.FeatureSlug)
 	markerPath := feature.GetE2EGraduatedMarker(result.ProjectRoot, result.FeatureSlug)
 	if just.FileExists(e2eScriptsDir) && !just.FileExists(markerPath) {
 		fmt.Fprintln(os.Stderr,
-			"WARNING: feature e2e scripts exist but haven't been run or promoted.\n"+
-				"  Add T-test-run (run-e2e-tests) to your task index,\n"+
-				"  or run /run-e2e-tests and forge test promote <journey> manually.")
+			"WARNING: feature test scripts exist but haven't been run or promoted.\n"+
+				"  Add T-test-run (run-test) to your task index,\n"+
+				"  or run /run-tests and forge test promote <journey> manually.")
 	}
 
 	// Step 1: Quality gate (compile -> fmt -> lint)
 	// Stops at first blocking failure.
-	gateSteps := just.LintGateSequence()
+	gateSteps := just.NonBreakingGateSequence()
 	var gateBlockErr error
 	just.RunGate(result.ProjectRoot, "", gateSteps, func(step, output string) {
 		fmt.Fprintf(os.Stderr, "ERROR: %s check failed\n", step)
@@ -173,7 +173,7 @@ func runQualityGate(_ *cobra.Command, _ []string) error {
 		os.Exit(0)
 	}
 
-	// Step 2: Project-wide unit/integration tests (with retry-once policy)
+	// Step 2: Project-wide unit tests (with retry-once policy)
 	fmt.Fprintln(os.Stderr, "--- Running project-wide tests ---")
 	unitPassed, unitFixID, unitErr := runUnitTestStep(
 		result.ProjectRoot, result.FeatureSlug,
@@ -190,30 +190,30 @@ func runQualityGate(_ *cobra.Command, _ []string) error {
 		}
 	}
 
-	// Step 3: Full e2e regression (promoted scripts in tests/e2e/)
-	if err := runE2ERegression(result.ProjectRoot, result.FeatureSlug); err != nil {
+	// Step 3: Full test regression (promoted scripts in tests/e2e/)
+	if err := runTestRegression(result.ProjectRoot, result.FeatureSlug); err != nil {
 		os.Exit(0)
 	}
 	return nil
 }
 
-// runE2ERegression runs the full e2e regression suite when a justfile with
-// an e2e-test recipe is present. Uses early returns instead of nested e2eReady flags.
+// runTestRegression runs the full test regression suite when a justfile with
+// a test recipe is present. Uses early returns instead of nested flags.
 // Returns an error when a gate failure is detected, nil otherwise.
-func runE2ERegression(projectRoot, featureSlug string) error {
-	if !just.HasJustfile(projectRoot) || !just.HasRecipe(projectRoot, "e2e-test") {
+func runTestRegression(projectRoot, featureSlug string) error {
+	if !just.HasJustfile(projectRoot) || !just.HasRecipe(projectRoot, "test") {
 		return nil
 	}
 
 	// Optional setup step — skip regression on failure.
-	if just.HasRecipe(projectRoot, "e2e-setup") {
-		fmt.Fprintln(os.Stderr, "--- Ensuring e2e dependencies (just e2e-setup) ---")
-		setupOutput, setupSuccess := just.RunCapture(projectRoot, "just", "e2e-setup")
+	if just.HasRecipe(projectRoot, "test-setup") {
+		fmt.Fprintln(os.Stderr, "--- Ensuring test dependencies (just test-setup) ---")
+		setupOutput, setupSuccess := just.RunCapture(projectRoot, "just", "test-setup")
 		if !setupSuccess {
-			fmt.Fprintln(os.Stderr, "WARNING: e2e-setup failed; skipping e2e regression")
-			fmt.Fprintln(os.Stderr, "  To retry manually: just e2e-setup && just e2e-test")
+			fmt.Fprintln(os.Stderr, "WARNING: test-setup failed; skipping test regression")
+			fmt.Fprintln(os.Stderr, "  To retry manually: just test-setup && just test")
 			if setupOutput != "" {
-				if err := testrunner.WriteRegressionRawOutput(projectRoot, "=== e2e-setup failure ===\n"+setupOutput); err != nil {
+				if err := testrunner.WriteRegressionRawOutput(projectRoot, "=== test-setup failure ===\n"+setupOutput); err != nil {
 					fmt.Fprintf(os.Stderr, "WARNING: failed to write setup output: %v\n", err)
 				} else {
 					fmt.Fprintln(os.Stderr, "  Setup output saved to tests/e2e/results/raw-output.txt")
@@ -225,27 +225,27 @@ func runE2ERegression(projectRoot, featureSlug string) error {
 
 	// Health check — skip regression if servers aren't ready.
 	if !e2eprobe.ProbeServers(projectRoot, "") {
-		fmt.Fprintln(os.Stderr, "WARNING: e2e server health check failed; skipping e2e regression")
-		fmt.Fprintln(os.Stderr, "  Start dev server and retry: just dev && just e2e-test")
+		fmt.Fprintln(os.Stderr, "WARNING: server health check failed; skipping test regression")
+		fmt.Fprintln(os.Stderr, "  Start dev server and retry: just dev && just test")
 		return nil
 	}
 
 	// Run the regression suite.
-	fmt.Fprintln(os.Stderr, "--- Running full e2e regression (just e2e-test) ---")
-	regressionOutput, regSuccess := just.RunCapture(projectRoot, "just", "e2e-test")
+	fmt.Fprintln(os.Stderr, "--- Running full test regression (just test) ---")
+	regressionOutput, regSuccess := just.RunCapture(projectRoot, "just", "test")
 	if !regSuccess {
-		fmt.Fprintln(os.Stderr, "ERROR: e2e regression failed")
+		fmt.Fprintln(os.Stderr, "ERROR: test regression failed")
 		errorDocPath := "tests/e2e/results/raw-output.txt"
 		if regressionOutput != "" {
 			if err := testrunner.WriteRegressionRawOutput(projectRoot, regressionOutput); err != nil {
 				fmt.Fprintf(os.Stderr, "WARNING: failed to write raw-output.txt: %v\n", err)
 			}
 		}
-		fixID, fixErr := addFixTask(projectRoot, featureSlug, "e2e-test", regressionOutput, errorDocPath)
+		fixID, fixErr := addFixTask(projectRoot, featureSlug, "test", regressionOutput, errorDocPath)
 		if fixErr != nil {
 			fmt.Fprintf(os.Stderr, "WARNING: %v\n", fixErr)
 		}
-		return handleGateFailure("e2e-test", errorDocPath, fixID, just.ExtractConciseError(regressionOutput, 5))
+		return handleGateFailure("test", errorDocPath, fixID, just.ExtractConciseError(regressionOutput, 5))
 	}
 	return nil
 }
@@ -262,14 +262,14 @@ func handleGateFailure(step, errorDocPath, fixID, concise string) error {
 	guide := map[string]string{
 		"compile":   "fix compilation errors",
 		"lint":      "fix lint errors",
-		"unit-test": "fix failing tests",
-		"e2e-test":  "fix failing e2e tests",
+		"unit-test": "fix failing unit tests",
+		"test":      "fix failing tests",
 	}
 	label := map[string]string{
 		"compile":   "Project compilation",
 		"lint":      "Lint check",
 		"unit-test": "Unit tests",
-		"e2e-test":  "E2e regression tests",
+		"test":      "Advanced tests",
 	}
 
 	g := guide[step]
@@ -395,7 +395,7 @@ func countFixTasks(index *task.TaskIndex, step string) int {
 // compile/test failures → TypeCodingFix, fmt/lint failures → TypeCodingCleanup.
 func fixTypeFromStep(step string) string {
 	switch step {
-	case "compile", "unit-test", "e2e-test":
+	case "compile", "unit-test", "test":
 		return task.TypeCodingFix
 	case "fmt", "lint":
 		return task.TypeCodingCleanup
@@ -427,9 +427,6 @@ func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) (st
 	sourceFiles := extractSourceFiles(output)
 
 	testScript := "just " + step
-	if step == "unit-test" {
-		testScript = "just test"
-	}
 
 	title := fmt.Sprintf("fix %s: %s failure in quality gate", step, testScript)
 	description := fmt.Sprintf(

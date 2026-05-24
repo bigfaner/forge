@@ -374,13 +374,13 @@ func validateRecordData(rd *task.RecordData, taskType string) error {
 var fillRecordTemplate = task.RenderRecord
 
 // validateQualityGate runs the quality gate based on the task's breaking flag.
-// breaking=true: full gate (compile -> fmt -> lint -> test).
-// breaking=false: static gate (compile -> fmt -> lint), skipping test.
+// breaking=true: unit gate (compile -> fmt -> lint -> unit-test) for fast feedback.
+// breaking=false: non-breaking gate (compile -> fmt -> lint), skipping tests.
 // On failure, exits with base.AIError containing concise error output.
 func validateQualityGate(projectRoot, scope string, breaking bool) {
-	steps := just.LintGateSequence()
+	steps := just.NonBreakingGateSequence()
 	if breaking {
-		steps = just.DefaultGateSequence()
+		steps = just.UnitGateSequence()
 	}
 	just.RunGate(projectRoot, scope, steps, func(step, output string) {
 		concise := just.ExtractConciseError(output, 10)
