@@ -122,6 +122,15 @@ function Install-App {
     Copy-Item -Path $SourcePath -Destination $TempPath -Force
     Move-Item -Path $TempPath -Destination $DestPath -Force
 
+    # Also update the extensionless copy — bash on Windows (Git Bash, MSYS2)
+    # resolves "forge" to the file without .exe suffix. Without this, a stale
+    # extensionless binary from a prior install shadows the new .exe.
+    $NoExtPath = Join-Path $InstallDir "forge"
+    if (Test-Path $NoExtPath) {
+        Copy-Item -Path $SourcePath -Destination $NoExtPath -Force
+        Write-Info "Updated extensionless copy: $NoExtPath"
+    }
+
     Write-Info "Installation complete: $DestPath"
 }
 
