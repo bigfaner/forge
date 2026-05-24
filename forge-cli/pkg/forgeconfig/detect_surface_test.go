@@ -128,7 +128,7 @@ func TestDetectSurfaces_GoMod(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			dir := t.TempDir()
-			writeGoMod(t, dir, "example.com/test", tt.require)
+			writeGoMod(t, dir, tt.require)
 
 			result, err := DetectSurfaces(dir)
 			if err != nil {
@@ -612,6 +612,514 @@ func TestDetectSurfaces_UnknownDepsIgnored(t *testing.T) {
 	}
 }
 
+// --- Structural inference tests ---
+
+func TestInferGoSurface(t *testing.T) {
+	tests := []struct {
+		name       string
+		setupDir   func(t *testing.T, dir string)
+		wantType   string
+		wantSource string
+	}{
+		{
+			name: "cmd subdirectories -> cli",
+			setupDir: func(t *testing.T, dir string) {
+				t.Helper()
+				mkdirAll(t, filepath.Join(dir, "cmd", "myapp"))
+				writeGoMod(t, dir, nil)
+			},
+			wantType:   "cli",
+			wantSource: "inference:cmd-dir",
+		},
+		{
+			name: "api directory -> api",
+			setupDir: func(t *testing.T, dir string) {
+				t.Helper()
+				mkdirAll(t, filepath.Join(dir, "api"))
+				writeGoMod(t, dir, nil)
+			},
+			wantType:   "api",
+			wantSource: "inference:api-dir",
+		},
+		{
+			name: "handler directory -> api",
+			setupDir: func(t *testing.T, dir string) {
+				t.Helper()
+				mkdirAll(t, filepath.Join(dir, "handler"))
+				writeGoMod(t, dir, nil)
+			},
+			wantType:   "api",
+			wantSource: "inference:handler-dir",
+		},
+		{
+			name: "both cmd and api present -> api wins, cli discarded",
+			setupDir: func(t *testing.T, dir string) {
+				t.Helper()
+				mkdirAll(t, filepath.Join(dir, "cmd", "myapp"))
+				mkdirAll(t, filepath.Join(dir, "api"))
+				writeGoMod(t, dir, nil)
+			},
+			wantType:   "api",
+			wantSource: "inference:api-dir",
+		},
+		{
+			name: "both cmd and handler present -> api wins",
+			setupDir: func(t *testing.T, dir string) {
+				t.Helper()
+				mkdirAll(t, filepath.Join(dir, "cmd", "myapp"))
+				mkdirAll(t, filepath.Join(dir, "handler"))
+				writeGoMod(t, dir, nil)
+			},
+			wantType:   "api",
+			wantSource: "inference:handler-dir",
+		},
+		{
+			name: "cmd file (not directory) -> ignored",
+			setupDir: func(t *testing.T, dir string) {
+				t.Helper()
+				writeTestFile(t, dir, "cmd", "#!/bin/sh\necho hello")
+				writeGoMod(t, dir, nil)
+			},
+			wantType:   "",
+			wantSource: "",
+		},
+		{
+			name: "no matching directories -> empty",
+			setupDir: func(t *testing.T, dir string) {
+				t.Helper()
+				mkdirAll(t, filepath.Join(dir, "internal"))
+				mkdirAll(t, filepath.Join(dir, "pkg"))
+				writeGoMod(t, dir, nil)
+			},
+			wantType:   "",
+			wantSource: "",
+		},
+		{
+			name: "no go.mod -> empty",
+			setupDir: func(t *testing.T, dir string) {
+				t.Helper()
+				mkdirAll(t, filepath.Join(dir, "cmd", "myapp"))
+			},
+			wantType:   "",
+			wantSource: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			tt.setupDir(t, dir)
+			gotType, gotSource := inferGoSurface(dir)
+			if gotType != tt.wantType {
+				t.Errorf("inferGoSurface() type = %q, want %q", gotType, tt.wantType)
+			}
+			if gotSource != tt.wantSource {
+				t.Errorf("inferGoSurface() source = %q, want %q", gotSource, tt.wantSource)
+			}
+		})
+	}
+}
+
+func TestInferNodeSurface(t *testing.T) {
+	tests := []struct {
+		name       string
+		setupDir   func(t *testing.T, dir string)
+		wantType   string
+		wantSource string
+	}{
+		{
+			name: "bin field (string form) -> cli",
+			setupDir: func(t *testing.T, dir string) {
+				t.Helper()
+				writePackageJSONWithBin(t, dir, `"./bin/cli.js"`)
+			},
+			wantType:   "cli",
+			wantSource: "inference:bin-field",
+		},
+		{
+			name: "bin field (object form) -> cli",
+			setupDir: func(t *testing.T, dir string) {
+				t.Helper()
+				writePackageJSONWithBin(t, dir, `{"myapp": "./bin/cli.js"}`)
+			},
+			wantType:   "cli",
+			wantSource: "inference:bin-field",
+		},
+		{
+			name: "index.html at root -> web",
+			setupDir: func(t *testing.T, dir string) {
+				t.Helper()
+				writeTestFile(t, dir, "package.json", `{}`)
+				writeTestFile(t, dir, "index.html", "<html></html>")
+			},
+			wantType:   "web",
+			wantSource: "inference:index-html",
+		},
+		{
+			name: "both bin and index.html -> web wins (higher priority)",
+			setupDir: func(t *testing.T, dir string) {
+				t.Helper()
+				writePackageJSONWithBin(t, dir, `"./bin/cli.js"`)
+				writeTestFile(t, dir, "index.html", "<html></html>")
+			},
+			wantType:   "web",
+			wantSource: "inference:index-html",
+		},
+		{
+			name: "index.html in subdir (not root) -> NOT web",
+			setupDir: func(t *testing.T, dir string) {
+				t.Helper()
+				writeTestFile(t, dir, "package.json", `{}`)
+				subDir := filepath.Join(dir, "public")
+				mkdirAll(t, subDir)
+				writeTestFile(t, subDir, "index.html", "<html></html>")
+			},
+			wantType:   "",
+			wantSource: "",
+		},
+		{
+			name: "no package.json -> empty",
+			setupDir: func(t *testing.T, dir string) {
+				t.Helper()
+				writeTestFile(t, dir, "index.html", "<html></html>")
+			},
+			wantType:   "",
+			wantSource: "",
+		},
+		{
+			name: "package.json without bin or index.html -> empty",
+			setupDir: func(t *testing.T, dir string) {
+				t.Helper()
+				writeTestFile(t, dir, "package.json", `{"name": "test"}`)
+			},
+			wantType:   "",
+			wantSource: "",
+		},
+		{
+			name: "malformed package.json -> empty, no crash",
+			setupDir: func(t *testing.T, dir string) {
+				t.Helper()
+				writeTestFile(t, dir, "package.json", `{invalid json`)
+			},
+			wantType:   "",
+			wantSource: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			tt.setupDir(t, dir)
+			gotType, gotSource := inferNodeSurface(dir)
+			if gotType != tt.wantType {
+				t.Errorf("inferNodeSurface() type = %q, want %q", gotType, tt.wantType)
+			}
+			if gotSource != tt.wantSource {
+				t.Errorf("inferNodeSurface() source = %q, want %q", gotSource, tt.wantSource)
+			}
+		})
+	}
+}
+
+func TestInferPythonSurface(t *testing.T) {
+	tests := []struct {
+		name       string
+		setupDir   func(t *testing.T, dir string)
+		wantType   string
+		wantSource string
+	}{
+		{
+			name: "pyproject.toml with [project.scripts] -> cli",
+			setupDir: func(t *testing.T, dir string) {
+				t.Helper()
+				writeTestFile(t, dir, "pyproject.toml", "[project]\nname = \"myapp\"\n\n[project.scripts]\nmyapp = \"myapp.cli:main\"\n")
+			},
+			wantType:   "cli",
+			wantSource: "inference:py-scripts",
+		},
+		{
+			name: "setup.py with entry_points -> cli",
+			setupDir: func(t *testing.T, dir string) {
+				t.Helper()
+				writeTestFile(t, dir, "setup.py", "from setuptools import setup\nsetup(\n    name='myapp',\n    entry_points={\n        'console_scripts': ['myapp=myapp.cli:main'],\n    },\n)\n")
+			},
+			wantType:   "cli",
+			wantSource: "inference:py-scripts",
+		},
+		{
+			name: "app.py at root (no setup.py, no library markers) -> cli",
+			setupDir: func(t *testing.T, dir string) {
+				t.Helper()
+				writeTestFile(t, dir, "app.py", "print('hello')")
+			},
+			wantType:   "cli",
+			wantSource: "inference:py-main",
+		},
+		{
+			name: "main.py at root (no setup.py, no library markers) -> cli",
+			setupDir: func(t *testing.T, dir string) {
+				t.Helper()
+				writeTestFile(t, dir, "main.py", "print('hello')")
+			},
+			wantType:   "cli",
+			wantSource: "inference:py-main",
+		},
+		{
+			name: "app.py with setup.py having matching name -> NOT cli",
+			setupDir: func(t *testing.T, dir string) {
+				t.Helper()
+				dirName := filepath.Base(dir)
+				writeTestFile(t, dir, "app.py", "print('hello')")
+				writeTestFile(t, dir, "setup.py", "from setuptools import setup\nsetup(name='"+dirName+"')\n")
+			},
+			wantType:   "",
+			wantSource: "",
+		},
+		{
+			name: "app.py with [project.packages] in pyproject.toml -> NOT cli",
+			setupDir: func(t *testing.T, dir string) {
+				t.Helper()
+				writeTestFile(t, dir, "app.py", "print('hello')")
+				writeTestFile(t, dir, "pyproject.toml", "[project]\nname = \"mylib\"\n\n[project.packages]\nfind = {}\n")
+			},
+			wantType:   "",
+			wantSource: "",
+		},
+		{
+			name: "app.py with [tool.setuptools.packages.find] -> NOT cli",
+			setupDir: func(t *testing.T, dir string) {
+				t.Helper()
+				writeTestFile(t, dir, "app.py", "print('hello')")
+				writeTestFile(t, dir, "pyproject.toml", "[project]\nname = \"mylib\"\n\n[tool.setuptools.packages.find]\nwhere = [\"src\"]\n")
+			},
+			wantType:   "",
+			wantSource: "",
+		},
+		{
+			name: "app.py with setup.py but name does NOT match -> cli",
+			setupDir: func(t *testing.T, dir string) {
+				t.Helper()
+				writeTestFile(t, dir, "app.py", "print('hello')")
+				writeTestFile(t, dir, "setup.py", "from setuptools import setup\nsetup(name='different-name')\n")
+			},
+			wantType:   "cli",
+			wantSource: "inference:py-main",
+		},
+		{
+			name: "no Python markers -> empty",
+			setupDir: func(t *testing.T, _ string) {
+				t.Helper()
+				// Empty dir, no manifests, no python files
+			},
+			wantType:   "",
+			wantSource: "",
+		},
+		{
+			name: "malformed pyproject.toml -> empty, no crash",
+			setupDir: func(t *testing.T, dir string) {
+				t.Helper()
+				writeTestFile(t, dir, "pyproject.toml", "[this is [broken toml\n")
+			},
+			wantType:   "",
+			wantSource: "",
+		},
+		{
+			name: "malformed setup.py -> empty, no crash",
+			setupDir: func(t *testing.T, dir string) {
+				t.Helper()
+				writeTestFile(t, dir, "setup.py", "this is not valid python {{{{")
+			},
+			wantType:   "",
+			wantSource: "",
+		},
+		{
+			name: "scripts in pyproject.toml takes priority over app.py",
+			setupDir: func(t *testing.T, dir string) {
+				t.Helper()
+				writeTestFile(t, dir, "app.py", "print('hello')")
+				writeTestFile(t, dir, "pyproject.toml", "[project]\nname = \"myapp\"\n\n[project.scripts]\nmyapp = \"myapp.cli:main\"\n")
+			},
+			wantType:   "cli",
+			wantSource: "inference:py-scripts",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			tt.setupDir(t, dir)
+			gotType, gotSource := inferPythonSurface(dir)
+			if gotType != tt.wantType {
+				t.Errorf("inferPythonSurface() type = %q, want %q", gotType, tt.wantType)
+			}
+			if gotSource != tt.wantSource {
+				t.Errorf("inferPythonSurface() source = %q, want %q", gotSource, tt.wantSource)
+			}
+		})
+	}
+}
+
+// --- Priority chain: inference only when dependency signals empty ---
+
+func TestInferencePriorityChain(t *testing.T) {
+	t.Run("dependency signals present -> inference NOT called", func(t *testing.T) {
+		dir := t.TempDir()
+		// cobra dependency -> cli (dependency signal)
+		writeGoMod(t, dir, []string{"github.com/spf13/cobra v1.7.0"})
+		// Structural: cmd/ subdir would also infer cli
+		mkdirAll(t, filepath.Join(dir, "cmd", "myapp"))
+
+		result, err := DetectSurfacesWithConflicts(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if result.Surfaces["."] != "cli" {
+			t.Errorf("expected cli, got %q", result.Surfaces["."])
+		}
+		// Source should be dependency, not inference
+		if result.Sources["."] != "dependency:cobra" {
+			t.Errorf("expected source 'dependency:cobra', got %q", result.Sources["."])
+		}
+	})
+
+	t.Run("dependency signals empty -> inference called", func(t *testing.T) {
+		dir := t.TempDir()
+		// go.mod with no known frameworks
+		writeGoMod(t, dir, nil)
+		// cmd/ subdir -> structural inference
+		mkdirAll(t, filepath.Join(dir, "cmd", "myapp"))
+
+		result, err := DetectSurfacesWithConflicts(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if result.Surfaces["."] != "cli" {
+			t.Errorf("expected cli, got %q", result.Surfaces["."])
+		}
+		if result.Sources["."] != "inference:cmd-dir" {
+			t.Errorf("expected source 'inference:cmd-dir', got %q", result.Sources["."])
+		}
+	})
+
+	t.Run("no signals no inference -> empty result", func(t *testing.T) {
+		dir := t.TempDir()
+		// Empty dir, no manifests
+		result, err := DetectSurfacesWithConflicts(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(result.Surfaces) != 0 {
+			t.Errorf("expected empty surfaces, got %v", result.Surfaces)
+		}
+		if len(result.Sources) != 0 {
+			t.Errorf("expected empty sources, got %v", result.Sources)
+		}
+	})
+}
+
+// --- Sources map population tests ---
+
+func TestSourcesMapPopulation(t *testing.T) {
+	t.Run("dependency detection populates Sources", func(t *testing.T) {
+		dir := t.TempDir()
+		writePackageJSON(t, dir, map[string]string{"react": "^18.0.0"}, nil)
+
+		result, err := DetectSurfacesWithConflicts(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if result.Sources["."] != "dependency:react" {
+			t.Errorf("expected source 'dependency:react', got %q", result.Sources["."])
+		}
+	})
+
+	t.Run("Go dependency detection populates Sources", func(t *testing.T) {
+		dir := t.TempDir()
+		writeGoMod(t, dir, []string{"github.com/spf13/cobra v1.7.0"})
+
+		result, err := DetectSurfacesWithConflicts(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if result.Sources["."] != "dependency:cobra" {
+			t.Errorf("expected source 'dependency:cobra', got %q", result.Sources["."])
+		}
+	})
+
+	t.Run("inference populates Sources", func(t *testing.T) {
+		dir := t.TempDir()
+		writeGoMod(t, dir, nil)
+		mkdirAll(t, filepath.Join(dir, "cmd", "myapp"))
+
+		result, err := DetectSurfacesWithConflicts(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if result.Sources["."] != "inference:cmd-dir" {
+			t.Errorf("expected source 'inference:cmd-dir', got %q", result.Sources["."])
+		}
+	})
+
+	t.Run("Node.js inference populates Sources for bin field", func(t *testing.T) {
+		dir := t.TempDir()
+		writePackageJSONWithBin(t, dir, `"./bin/cli.js"`)
+
+		// Empty deps so dependency signals are empty, inference fires
+		// But wait: package.json with bin also needs no dependency signals
+		result, err := DetectSurfacesWithConflicts(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if result.Surfaces["."] != "cli" {
+			t.Errorf("expected cli, got %q", result.Surfaces["."])
+		}
+		if result.Sources["."] != "inference:bin-field" {
+			t.Errorf("expected source 'inference:bin-field', got %q", result.Sources["."])
+		}
+	})
+}
+
+// --- Filesystem error resilience ---
+
+func TestInferenceFilesystemResilience(t *testing.T) {
+	t.Run("unreadable directory returns empty without panic", func(t *testing.T) {
+		// Test inferGoSurface with a non-existent directory
+		gotType, gotSource := inferGoSurface("/nonexistent/path/that/does/not/exist")
+		if gotType != "" || gotSource != "" {
+			t.Errorf("expected empty result for non-existent dir, got type=%q source=%q", gotType, gotSource)
+		}
+	})
+
+	t.Run("inferNodeSurface on non-existent dir returns empty", func(t *testing.T) {
+		gotType, gotSource := inferNodeSurface("/nonexistent/path/that/does/not/exist")
+		if gotType != "" || gotSource != "" {
+			t.Errorf("expected empty result for non-existent dir, got type=%q source=%q", gotType, gotSource)
+		}
+	})
+
+	t.Run("inferPythonSurface on non-existent dir returns empty", func(t *testing.T) {
+		gotType, gotSource := inferPythonSurface("/nonexistent/path/that/does/not/exist")
+		if gotType != "" || gotSource != "" {
+			t.Errorf("expected empty result for non-existent dir, got type=%q source=%q", gotType, gotSource)
+		}
+	})
+}
+
+// --- Backward compatibility: DetectResult zero-value ---
+
+func TestDetectResultZeroValue(t *testing.T) {
+	var r DetectResult
+	if r.Sources != nil {
+		t.Error("zero-value DetectResult.Sources should be nil for backward compatibility")
+	}
+	if r.Surfaces != nil {
+		t.Error("zero-value DetectResult.Surfaces should be nil")
+	}
+	if r.Conflicts != nil {
+		t.Error("zero-value DetectResult.Conflicts should be nil")
+	}
+}
+
 // --- Helper functions ---
 
 func writePackageJSON(t *testing.T, dir string, deps, devDeps map[string]string) {
@@ -648,9 +1156,9 @@ func writePackageJSONWithWorkspaces(t *testing.T, dir string, workspaces []strin
 	}
 }
 
-func writeGoMod(t *testing.T, dir, module string, require []string) {
+func writeGoMod(t *testing.T, dir string, require []string) {
 	t.Helper()
-	content := "module " + module + "\n\ngo 1.21\n"
+	content := "module example.com/test\n\ngo 1.21\n"
 	if len(require) > 0 {
 		content += "\nrequire (\n"
 		for _, r := range require {
@@ -687,6 +1195,14 @@ func writeAndroidManifest(t *testing.T, dir string) {
 func writeTestFile(t *testing.T, dir, name, content string) {
 	t.Helper()
 	if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func writePackageJSONWithBin(t *testing.T, dir string, binValue string) {
+	t.Helper()
+	content := "{\"name\": \"test\", \"bin\": " + binValue + "}\n"
+	if err := os.WriteFile(filepath.Join(dir, "package.json"), []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
 }

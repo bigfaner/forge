@@ -8,7 +8,7 @@
       "title": "Add structural inference fallback and Sources map",
       "priority": "P0",
       "estimatedTime": "2h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-inference-fallback.md",
       "record": "records/1-inference-fallback.md",
       "breaking": true,
