@@ -323,21 +323,13 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 			}
 		}
 
-		// Resolve first-test-task dependency to the highest business gate.
-		// This MUST run after PreserveRuntimeFields, which otherwise overwrites
-		// the correctly computed deps with stale values from the previous index.
-		ResolveFirstTestDep(testTasks, index.TasksMap(), mode)
-
-		// For mixed features (needsEval + needsTest), inject T-review-doc as a
-		// dependency of the first test pipeline task. This ensures review-doc
-		// executes before test generation, so tests are based on reviewed docs.
-		firstTestIdx := findFirstTestTaskIdx(testTasks)
-		if needsEval && firstTestIdx >= 0 {
-			testTasks[firstTestIdx].Dependencies = append(
-				[]string{"T-review-doc"}, testTasks[firstTestIdx].Dependencies...)
-		}
+		// Resolve first-test-task dependency and inject T-review-doc in a single
+		// atomic operation. This eliminates the ordering coupling that existed
+		// when these were separate steps.
+		resolveTestDepsAndInjectReviewDoc(testTasks, index, mode, needsEval)
 
 		// Write the modified first-test-task deps back to the index.
+		firstTestIdx := findFirstTestTaskIdx(testTasks)
 		if firstTestIdx >= 0 {
 			firstKey := testTasks[firstTestIdx].Key
 			if t, found := index.ByID(testTasks[firstTestIdx].ID); found {
@@ -480,26 +472,40 @@ func needsReviewDoc(tasks map[string]Task) bool {
 }
 
 // findFirstTestTaskIdx returns the index of the first test pipeline task in the
-// generated task list. For breakdown mode this is T-eval-journey; for quick mode
-// this is the first T-quick-gen-and-run task.
+// generated task list. Uses findTaskIndexByPrefix to locate T-test-gen-journeys,
+// which is the stable first task in both breakdown and quick staged pipelines.
 func findFirstTestTaskIdx(tasks []AutoGenTaskDef) int {
-	// Check breakdown mode first (T-eval-journey)
-	for i, t := range tasks {
-		if t.ID == "T-eval-journey" {
-			return i
-		}
+	return findTaskIndexByPrefix(tasks, "T-test-gen-journeys")
+}
+
+// resolveTestDepsAndInjectReviewDoc combines first-test-task dependency resolution
+// and T-review-doc injection into a single atomic operation, eliminating the
+// ordering coupling that existed when these were separate steps.
+// When needsEval is true, T-review-doc is prepended to the first test task's deps
+// (it depends on the last business task; the original dep flows through T-review-doc).
+// When needsEval is false, this behaves identically to ResolveFirstTestDep alone.
+func resolveTestDepsAndInjectReviewDoc(testTasks []AutoGenTaskDef, index *TaskIndex, mode string, needsEval bool) {
+	if len(testTasks) == 0 {
+		return
 	}
-	// Quick mode: T-quick-gen-and-run*
-	for i, t := range tasks {
-		if strings.HasPrefix(t.ID, "T-quick-gen-and-run") {
-			return i
-		}
+
+	// Resolve base dependency (same logic as ResolveFirstTestDep)
+	existingTasks := index.TasksMap()
+	ResolveFirstTestDep(testTasks, existingTasks, mode)
+
+	if !needsEval {
+		return
 	}
-	// Fallback: first task
-	if len(tasks) > 0 {
-		return 0
+
+	// Inject T-review-doc as the first dependency of the first test pipeline task.
+	// T-review-doc depends on the last business task; the original dep is preserved
+	// through T-review-doc's own dependency chain.
+	firstTestIdx := findFirstTestTaskIdx(testTasks)
+	if firstTestIdx < 0 {
+		return
 	}
-	return -1
+	testTasks[firstTestIdx].Dependencies = append(
+		[]string{"T-review-doc"}, testTasks[firstTestIdx].Dependencies...)
 }
 
 // IsAutoGenTaskID returns true for task IDs that are auto-generated

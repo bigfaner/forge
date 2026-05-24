@@ -1860,3 +1860,182 @@ func TestResolveFirstTestDep_NoDeps_NoPanic(t *testing.T) {
 		t.Errorf("gen-journeys should have no deps when no business tasks exist, got %v", tasks[firstTestIdx].Dependencies)
 	}
 }
+
+func TestFindFirstTestTaskIdx(t *testing.T) {
+	t.Run("finds gen-journeys in breakdown tasks", func(t *testing.T) {
+		tasks := GetBreakdownTestTasks([]string{"cli"}, defaultAuto)
+		idx := findFirstTestTaskIdx(tasks)
+		if idx < 0 {
+			t.Fatal("expected to find gen-journeys in breakdown tasks")
+		}
+		if !strings.HasPrefix(tasks[idx].ID, "T-test-gen-journeys") {
+			t.Errorf("tasks[%d].ID = %q, want T-test-gen-journeys prefix", idx, tasks[idx].ID)
+		}
+	})
+
+	t.Run("finds gen-journeys in quick tasks", func(t *testing.T) {
+		tasks := GetQuickTestTasks([]string{"cli"}, allEnabledAuto)
+		idx := findFirstTestTaskIdx(tasks)
+		if idx < 0 {
+			t.Fatal("expected to find gen-journeys in quick tasks")
+		}
+		if !strings.HasPrefix(tasks[idx].ID, "T-test-gen-journeys") {
+			t.Errorf("tasks[%d].ID = %q, want T-test-gen-journeys prefix", idx, tasks[idx].ID)
+		}
+	})
+
+	t.Run("returns -1 for empty tasks", func(t *testing.T) {
+		idx := findFirstTestTaskIdx(nil)
+		if idx != -1 {
+			t.Errorf("expected -1 for empty tasks, got %d", idx)
+		}
+	})
+
+	t.Run("returns -1 when no gen-journeys present", func(t *testing.T) {
+		tasks := []AutoGenTaskDef{
+			{ID: "T-quick-doc-drift"},
+			{ID: "T-clean-code"},
+		}
+		idx := findFirstTestTaskIdx(tasks)
+		if idx != -1 {
+			t.Errorf("expected -1 when no gen-journeys present, got %d", idx)
+		}
+	})
+}
+
+func TestResolveTestDepsAndInjectReviewDoc(t *testing.T) {
+	t.Run("quick mode with needsEval=true includes T-review-doc in deps", func(t *testing.T) {
+		testTasks := GetQuickTestTasks([]string{"cli"}, allEnabledAuto)
+		index := NewTaskIndex("test-feature")
+		index.SetTask("1-doc", Task{ID: "1", Type: TypeDoc})
+		index.SetTask("2-feat", Task{ID: "2", Type: TypeCodingFeature})
+
+		resolveTestDepsAndInjectReviewDoc(testTasks, index, "quick", true)
+
+		firstIdx := findFirstTestTaskIdx(testTasks)
+		if firstIdx < 0 {
+			t.Fatal("expected to find first test task")
+		}
+		deps := testTasks[firstIdx].Dependencies
+		if len(deps) == 0 {
+			t.Fatal("expected non-empty deps")
+		}
+		if deps[0] != "T-review-doc" {
+			t.Errorf("first dep = %q, want T-review-doc", deps[0])
+		}
+		// Original dep (from ResolveFirstTestDep) should follow T-review-doc
+		foundOriginalDep := false
+		for _, d := range deps[1:] {
+			if d == "2" {
+				foundOriginalDep = true
+			}
+		}
+		if !foundOriginalDep {
+			t.Errorf("deps after T-review-doc should include original dep '2', got %v", deps)
+		}
+	})
+
+	t.Run("quick mode with needsEval=false excludes T-review-doc", func(t *testing.T) {
+		testTasks := GetQuickTestTasks([]string{"cli"}, allEnabledAuto)
+		index := NewTaskIndex("test-feature")
+		index.SetTask("1-feat", Task{ID: "1", Type: TypeCodingFeature})
+		index.SetTask("2-feat", Task{ID: "2", Type: TypeCodingFeature})
+
+		resolveTestDepsAndInjectReviewDoc(testTasks, index, "quick", false)
+
+		firstIdx := findFirstTestTaskIdx(testTasks)
+		if firstIdx < 0 {
+			t.Fatal("expected to find first test task")
+		}
+		deps := testTasks[firstIdx].Dependencies
+		for _, d := range deps {
+			if d == "T-review-doc" {
+				t.Errorf("deps should NOT include T-review-doc when needsEval=false, got %v", deps)
+			}
+		}
+		// Should still have the original dep from ResolveFirstTestDep
+		if len(deps) == 0 {
+			t.Error("expected at least one dep from ResolveFirstTestDep")
+		}
+		if deps[0] != "2" {
+			t.Errorf("first dep = %q, want 2", deps[0])
+		}
+	})
+
+	t.Run("breakdown mode with needsEval=true includes T-review-doc", func(t *testing.T) {
+		testTasks := GetBreakdownTestTasks([]string{"cli"}, defaultAuto)
+		index := NewTaskIndex("test-feature")
+		index.SetTask("1-doc", Task{ID: "1.1", Type: TypeDoc})
+		index.SetTask("2-feat", Task{ID: "1.2", Type: TypeCodingFeature})
+		index.SetTask("1-gate", Task{ID: "1.gate", Type: TypeGate})
+
+		resolveTestDepsAndInjectReviewDoc(testTasks, index, "breakdown", true)
+
+		firstIdx := findFirstTestTaskIdx(testTasks)
+		if firstIdx < 0 {
+			t.Fatal("expected to find first test task")
+		}
+		deps := testTasks[firstIdx].Dependencies
+		if deps[0] != "T-review-doc" {
+			t.Errorf("first dep = %q, want T-review-doc", deps[0])
+		}
+	})
+
+	t.Run("empty tasks is safe", func(_ *testing.T) {
+		index := NewTaskIndex("test-feature")
+		// Should not panic
+		resolveTestDepsAndInjectReviewDoc(nil, index, "quick", true)
+	})
+
+	t.Run("no gen-journeys tasks panics (delegates to ResolveFirstTestDep)", func(t *testing.T) {
+		defer func() {
+			r := recover()
+			if r == nil {
+				t.Fatal("expected panic when gen-journeys task not found")
+			}
+		}()
+		testTasks := []AutoGenTaskDef{
+			{ID: "T-clean-code"},
+		}
+		index := NewTaskIndex("test-feature")
+		index.SetTask("1-feat", Task{ID: "1", Type: TypeCodingFeature})
+
+		resolveTestDepsAndInjectReviewDoc(testTasks, index, "quick", true)
+	})
+
+	t.Run("needsEval=false output matches ResolveFirstTestDep alone", func(t *testing.T) {
+		// Verify that resolveTestDepsAndInjectReviewDoc(_, _, _, false) produces
+		// the same result as calling ResolveFirstTestDep alone.
+		index := NewTaskIndex("test-feature")
+		index.SetTask("1-feat", Task{ID: "1", Type: TypeCodingFeature})
+		index.SetTask("2-feat", Task{ID: "2", Type: TypeCodingFeature})
+
+		// Path A: new combined function with needsEval=false
+		tasksA := GetQuickTestTasks([]string{"cli"}, allEnabledAuto)
+		resolveTestDepsAndInjectReviewDoc(tasksA, index, "quick", false)
+
+		// Path B: old ResolveFirstTestDep directly
+		tasksB := GetQuickTestTasks([]string{"cli"}, allEnabledAuto)
+		ResolveFirstTestDep(tasksB, index.TasksMap(), "quick")
+
+		firstIdxA := findFirstTestTaskIdx(tasksA)
+		firstIdxB := findFirstTestTaskIdx(tasksB)
+		if firstIdxA != firstIdxB {
+			t.Fatalf("firstIdx mismatch: A=%d, B=%d", firstIdxA, firstIdxB)
+		}
+		if firstIdxA < 0 {
+			t.Fatal("no gen-journeys found")
+		}
+
+		depsA := tasksA[firstIdxA].Dependencies
+		depsB := tasksB[firstIdxB].Dependencies
+		if len(depsA) != len(depsB) {
+			t.Errorf("deps length mismatch: A=%v, B=%v", depsA, depsB)
+		}
+		for i := range depsA {
+			if depsA[i] != depsB[i] {
+				t.Errorf("dep[%d] mismatch: A=%q, B=%q", i, depsA[i], depsB[i])
+			}
+		}
+	})
+}
