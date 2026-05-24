@@ -73,7 +73,7 @@
       "dependencies": [
         "6"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "14-spec-extraction-and-fixes.md",
       "record": "records/14-spec-extraction-and-fixes.md",
       "type": "doc"
