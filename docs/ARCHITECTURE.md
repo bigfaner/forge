@@ -28,13 +28,13 @@ Forge 由三个核心子系统组成：
 │                                                             │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌───────────┐  │
 │  │  Skills   │  │ Commands │  │  Agents  │  │  Hooks    │  │
-│  │  (22)     │  │  (12)    │  │  (4)     │  │  (5)      │  │
+│  │  (21)     │  │  (18)    │  │  (1)     │  │  (5)      │  │
 │  └────┬─────┘  └────┬─────┘  └────┬─────┘  └─────┬─────┘  │
 │       │              │              │               │        │
 │       └──────────────┴──────┬───────┴───────────────┘        │
 │                             │                                │
 │                    ┌────────▼────────┐                       │
-│                    │   task-cli      │                       │
+│                    │   forge CLI     │                       │
 │                    │   (Go binary)   │                       │
 │                    └─────────────────┘                       │
 └─────────────────────────────────────────────────────────────┘
@@ -46,9 +46,9 @@ Forge 由三个核心子系统组成：
 | **Commands** | `plugins/forge/commands/` | 可直接调用的 slash commands |
 | **Agents** | `plugins/forge/agents/` | 自主执行的 subagent 定义 |
 | **Hooks** | `plugins/forge/hooks/hooks.json` | 生命周期事件的自动触发器 |
-| **task-cli** | `task-cli/` | 任务状态管理 CLI（Go 实现） |
+| **task-cli** | `forge` CLI | 任务状态管理 CLI（Go 实现，独立安装） |
 
-**数据流向**：Skills/Commands → 调用 task-cli 管理状态 → Agents 执行实际开发工作 → Hooks 自动验证和清理。
+**数据流向**：Skills/Commands → 调用 forge CLI 管理状态 → Agents 执行实际开发工作 → Hooks 自动验证和清理。
 
 ---
 
@@ -115,7 +115,7 @@ Forge 由三个核心子系统组成：
 
 ## Agent 架构
 
-4 个专用 Agent，由 dispatcher 或 main session 按需分发：
+1 个专用 Agent，由 dispatcher 或 main session 按需分发：
 
 ### task-executor
 
@@ -406,10 +406,9 @@ Hooks 在关键生命周期事件自动触发，确保状态一致性：
 |------|---------|---------|------|
 | **SessionStart** | 启动/清除/压缩 | `session-start` hook | 加载 forge 上下文 |
 | **SubagentStart** | subagent 启动 | `session-start` hook | 为 subagent 加载上下文 |
-| **PostToolUse** | Edit/Write 工具调用后 | `validate-index.sh` | 自动验证 index.json 格式 |
 | **SessionEnd** | 会话结束 | `forge cleanup` | 清理运行时状态 |
 | **SubagentStop** | subagent 停止 | `forge cleanup` | 清理 subagent 状态 |
-| **Stop** | Claude 停止响应时 | `forge quality-gate` | 全部完成后的最终验证 |
+| **Stop** | Claude 停止响应时 | `forge quality-gate` + `forge feature complete --if-done` | 全部完成后的最终验证 |
 
 ### all-completed Hook
 
@@ -536,7 +535,7 @@ tests/e2e/
 
 | 目录 | 生成方式 | 是否提交 |
 |------|---------|---------|
-| `process/` | task-cli 运行时 | **否**（gitignore） |
+| `process/` | forge CLI 运行时 | **否**（gitignore） |
 | `testing/` | `/gen-journeys` + `/gen-contracts` | 是 |
 | `tests/e2e/features/` | `/gen-test-scripts` | 是 |
 | `tests/e2e/` (根级) | `forge test promote` | 是 |
