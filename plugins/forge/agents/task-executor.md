@@ -116,5 +116,5 @@ Execute strategy step → error
 - One-off failures resolved on first retry do NOT warrant a fix task — only recurring (~3 same/similar errors) or demonstrably complex errors do
 - `forge task add` has built-in dedup: it skips gracefully if a fix task already exists for this source
 - `--block-source` automatically sets the source task to `blocked`, preventing re-claim until the fix resolves
-- `submit.go` auto-restore mechanism unblocks the source task when the fix task completes
+- When a fix task completes, the source task is automatically unblocked
 - The existing "mark blocked on prompt failure" behavior (step 4) is preserved and independent of this flow
