@@ -24,7 +24,7 @@ var listCmd = &cobra.Command{
 	Short: "List all tasks for the current feature",
 	Long: `List all tasks for the current feature in a table format.
 
-Displays task ID, type, title (truncated), and status.
+Displays task ID, type, title (truncated), status, breaking, and mainSession.
 Tasks are sorted by ID in natural order: numeric IDs first, then test/gate IDs.
 
 When a slug is provided, lists tasks for that specific feature, reading from
@@ -92,6 +92,15 @@ func runList(_ *cobra.Command, args []string) error {
 	typeCol := base.DisplayWidth("TYPE")
 	titleCol := base.DisplayWidth("TITLE")
 	statusCol := base.DisplayWidth("STATUS")
+	breakingCol := base.DisplayWidth("BREAKING")
+	mainSessCol := base.DisplayWidth("MAIN_SESS")
+
+	boolStr := func(v bool) string {
+		if v {
+			return "true"
+		}
+		return "false"
+	}
 
 	for _, id := range sortedIDs {
 		t := tasks[id]
@@ -111,22 +120,32 @@ func runList(_ *cobra.Command, args []string) error {
 		if base.DisplayWidth(t.Status) > statusCol {
 			statusCol = base.DisplayWidth(t.Status)
 		}
+		if base.DisplayWidth(boolStr(t.Breaking)) > breakingCol {
+			breakingCol = base.DisplayWidth(boolStr(t.Breaking))
+		}
+		if base.DisplayWidth(boolStr(t.MainSession)) > mainSessCol {
+			mainSessCol = base.DisplayWidth(boolStr(t.MainSession))
+		}
 	}
 
 	// Print column headers
-	fmt.Printf("%s  %s  %s  %s\n",
+	fmt.Printf("%s  %s  %s  %s  %s  %s\n",
 		base.PadRight("ID", idCol),
 		base.PadRight("TYPE", typeCol),
 		base.PadRight("TITLE", titleCol),
 		base.PadRight("STATUS", statusCol),
+		base.PadRight("BREAKING", breakingCol),
+		base.PadRight("MAIN_SESS", mainSessCol),
 	)
 
 	// Print separator
-	sep := fmt.Sprintf("%s  %s  %s  %s",
+	sep := fmt.Sprintf("%s  %s  %s  %s  %s  %s",
 		strings.Repeat("-", idCol),
 		strings.Repeat("-", typeCol),
 		strings.Repeat("-", titleCol),
 		strings.Repeat("-", statusCol),
+		strings.Repeat("-", breakingCol),
+		strings.Repeat("-", mainSessCol),
 	)
 	fmt.Println(sep)
 
@@ -134,11 +153,13 @@ func runList(_ *cobra.Command, args []string) error {
 	for _, id := range sortedIDs {
 		t := tasks[id]
 		title := base.TruncateSlug(t.Title, titleCol)
-		fmt.Printf("%s  %s  %s  %s\n",
+		fmt.Printf("%s  %s  %s  %s  %s  %s\n",
 			base.PadRight(t.ID, idCol),
 			base.PadRight(t.Type, typeCol),
 			base.PadRight(title, titleCol),
 			base.PadRight(t.Status, statusCol),
+			base.PadRight(boolStr(t.Breaking), breakingCol),
+			base.PadRight(boolStr(t.MainSession), mainSessCol),
 		)
 	}
 

@@ -234,8 +234,8 @@ func TestListCmd_ColumnAlignment(t *testing.T) {
 		}
 
 		segments := strings.Split(sepLine, "  ")
-		if len(segments) != 4 {
-			t.Fatalf("expected 4 segments in separator, got %d: %q", len(segments), segments)
+		if len(segments) != 6 {
+			t.Fatalf("expected 6 segments in separator, got %d: %q", len(segments), segments)
 		}
 
 		// ID column must accommodate the longest ID ("1.summary" = 9 chars)
