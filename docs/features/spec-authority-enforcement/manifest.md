@@ -1,7 +1,7 @@
 ---
 feature: "spec-authority-enforcement"
 created: "2026-05-24"
-status: tasks
+status: completed
 mode: quick
 ---
 
