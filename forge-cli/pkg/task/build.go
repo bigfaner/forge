@@ -63,7 +63,8 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 	setFeatureMetadata(index, opts.ProjectRoot, opts.FeatureSlug)
 
 	// 3.5 Build BodyContext from planning-time data (proposal/PRD + config)
-	capabilities, _ := forgeconfig.ReadInterfaces(opts.ProjectRoot)
+	surfaces, _ := forgeconfig.ReadSurfaces(opts.ProjectRoot)
+	capabilities := forgeconfig.SurfaceTypes(surfaces)
 	bodyCtx := extractBodyContext(opts.ProjectRoot, opts.FeatureSlug, mode, capabilities)
 
 	// 4. Profiles and interfaces resolved by caller (task 1.4)

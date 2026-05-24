@@ -95,14 +95,14 @@ func setupBuildEnv(t *testing.T, mode string) (projectRoot, tasksDir, indexPath 
 	return projectRoot, tasksDir, indexPath
 }
 
-// writeForgeConfig creates a .forge/config.yaml with an api interface for test task generation.
+// writeForgeConfig creates a .forge/config.yaml with an api surface for test task generation.
 func writeForgeConfig(t *testing.T, projectRoot string) {
 	t.Helper()
 	forgeDir := filepath.Join(projectRoot, ".forge")
 	if err := os.MkdirAll(forgeDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	configContent := "interfaces:\n  - api\n"
+	configContent := "surfaces: api\n"
 	if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(configContent), 0644); err != nil {
 		t.Fatal(err)
 	}
