@@ -1,0 +1,58 @@
+{
+  "feature": "eval-freeform-pre-revision",
+  "proposal": "docs/proposals/eval-freeform-pre-revision/proposal.md",
+  "created": "2026-05-24",
+  "tasks": {
+    "1-pre-revision-phase": {
+      "id": "1",
+      "title": "Implement Phase 0.5 Pre-Revision in SKILL.md",
+      "priority": "P0",
+      "estimatedTime": "4h",
+      "status": "pending",
+      "file": "1-pre-revision-phase.md",
+      "record": "records/1-pre-revision-phase.md",
+      "type": "doc"
+    },
+    "2-annotated-blind-review": {
+      "id": "2",
+      "title": "Implement Annotated Blind Review in Scorer Composition",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-annotated-blind-review.md",
+      "record": "records/2-annotated-blind-review.md",
+      "type": "doc"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "2"
+      ],
+      "status": "pending",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "scope": "all",
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
