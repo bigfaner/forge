@@ -43,8 +43,8 @@ var surfacePriority = map[string]int{
 	"web":    1,
 	"mobile": 2,
 	"api":    3,
-	"cli":    4,
-	"tui":    5,
+	"tui":    4,
+	"cli":    5,
 }
 
 // packageJSONDeps maps dependency names to their detected surface types.

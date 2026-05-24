@@ -123,6 +123,11 @@ func TestDetectSurfaces_GoMod(t *testing.T) {
 			require:  []string{"github.com/gin-gonic/gin v1.9.0", "github.com/spf13/cobra v1.7.0"},
 			wantType: "api",
 		},
+		{
+			name:     "bubbletea + cobra conflict -> tui (TUI is primary surface)",
+			require:  []string{"github.com/charmbracelet/bubbletea v1.3.0", "github.com/spf13/cobra v1.10.0"},
+			wantType: "tui",
+		},
 	}
 
 	for _, tt := range tests {
@@ -514,9 +519,9 @@ func TestDetectSurfaces_ConflictResolution(t *testing.T) {
 			wantType: "api",
 		},
 		{
-			name:     "cli > tui (commander + blessed)",
+			name:     "tui > cli (blessed + commander)",
 			deps:     map[string]string{"commander": "^11.0.0", "blessed": "^0.1.81"},
-			wantType: "cli",
+			wantType: "tui",
 		},
 	}
 
