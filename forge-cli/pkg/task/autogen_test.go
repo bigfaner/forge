@@ -1841,181 +1841,185 @@ func TestResolveFirstTestDep_NoDeps_NoPanic(t *testing.T) {
 	}
 }
 
-func TestFindFirstTestTaskIdx(t *testing.T) {
-	t.Run("finds gen-journeys in breakdown tasks", func(t *testing.T) {
-		tasks := GetBreakdownTestTasks([]string{"cli"}, defaultAuto)
-		idx := findFirstTestTaskIdx(tasks)
-		if idx < 0 {
-			t.Fatal("expected to find gen-journeys in breakdown tasks")
-		}
-		if !strings.HasPrefix(tasks[idx].ID, "T-test-gen-journeys") {
-			t.Errorf("tasks[%d].ID = %q, want T-test-gen-journeys prefix", idx, tasks[idx].ID)
-		}
-	})
+// --- {{DOC_TASK_AC}} rendering tests ---
 
-	t.Run("finds gen-journeys in quick tasks", func(t *testing.T) {
-		tasks := GetQuickTestTasks([]string{"cli"}, allEnabledAuto)
-		idx := findFirstTestTaskIdx(tasks)
-		if idx < 0 {
-			t.Fatal("expected to find gen-journeys in quick tasks")
-		}
-		if !strings.HasPrefix(tasks[idx].ID, "T-test-gen-journeys") {
-			t.Errorf("tasks[%d].ID = %q, want T-test-gen-journeys prefix", idx, tasks[idx].ID)
-		}
-	})
+func TestRenderBody_DocTaskAC_Populated(t *testing.T) {
+	template := "Feature: {{FEATURE_SLUG}}\n## Acceptance Criteria Summary\n{{DOC_TASK_AC}}\n## End"
+	ctx := BodyContext{
+		FeatureSlug: "my-feature",
+		DocTaskCriteria: map[string]string{
+			"1-doc": "- [ ] AC 1\n- [ ] AC 2",
+			"2-doc": "- [ ] AC 3",
+		},
+	}
+	def := AutoGenTaskDef{}
 
-	t.Run("returns -1 for empty tasks", func(t *testing.T) {
-		idx := findFirstTestTaskIdx(nil)
-		if idx != -1 {
-			t.Errorf("expected -1 for empty tasks, got %d", idx)
-		}
-	})
+	result := renderBody(template, def, ctx)
 
-	t.Run("returns -1 when no gen-journeys present", func(t *testing.T) {
-		tasks := []AutoGenTaskDef{
-			{ID: "T-quick-doc-drift"},
-			{ID: "T-clean-code"},
-		}
-		idx := findFirstTestTaskIdx(tasks)
-		if idx != -1 {
-			t.Errorf("expected -1 when no gen-journeys present, got %d", idx)
-		}
-	})
+	if !strings.Contains(result, "### 1-doc") {
+		t.Errorf("should contain ### 1-doc sub-section header, got:\n%s", result)
+	}
+	if !strings.Contains(result, "- [ ] AC 1") {
+		t.Errorf("should contain AC content from 1-doc, got:\n%s", result)
+	}
+	if !strings.Contains(result, "### 2-doc") {
+		t.Errorf("should contain ### 2-doc sub-section header, got:\n%s", result)
+	}
+	if !strings.Contains(result, "- [ ] AC 3") {
+		t.Errorf("should contain AC content from 2-doc, got:\n%s", result)
+	}
+	if strings.Contains(result, "{{DOC_TASK_AC}}") {
+		t.Errorf("placeholder should be resolved, got:\n%s", result)
+	}
 }
 
-func TestResolveTestDepsAndInjectReviewDoc(t *testing.T) {
-	t.Run("quick mode with needsEval=true includes T-review-doc in deps", func(t *testing.T) {
-		testTasks := GetQuickTestTasks([]string{"cli"}, allEnabledAuto)
-		index := NewTaskIndex("test-feature")
-		index.SetTask("1-doc", Task{ID: "1", Type: TypeDoc})
-		index.SetTask("2-feat", Task{ID: "2", Type: TypeCodingFeature})
+func TestRenderBody_DocTaskAC_Empty(t *testing.T) {
+	template := "Feature: {{FEATURE_SLUG}}\n{{DOC_TASK_AC}}\n## End"
+	ctx := BodyContext{
+		FeatureSlug: "my-feature",
+	}
+	def := AutoGenTaskDef{}
 
-		resolveTestDepsAndInjectReviewDoc(testTasks, index, "quick", true)
+	result := renderBody(template, def, ctx)
 
-		firstIdx := findFirstTestTaskIdx(testTasks)
-		if firstIdx < 0 {
-			t.Fatal("expected to find first test task")
-		}
-		deps := testTasks[firstIdx].Dependencies
-		if len(deps) == 0 {
-			t.Fatal("expected non-empty deps")
-		}
-		if deps[0] != "T-review-doc" {
-			t.Errorf("first dep = %q, want T-review-doc", deps[0])
-		}
-		// Original dep (from ResolveFirstTestDep) should follow T-review-doc
-		foundOriginalDep := false
-		for _, d := range deps[1:] {
-			if d == "2" {
-				foundOriginalDep = true
-			}
-		}
-		if !foundOriginalDep {
-			t.Errorf("deps after T-review-doc should include original dep '2', got %v", deps)
-		}
-	})
+	// Empty DocTaskCriteria should produce empty string (placeholder removed)
+	if strings.Contains(result, "{{DOC_TASK_AC}}") {
+		t.Errorf("placeholder should be resolved to empty when no criteria, got:\n%s", result)
+	}
+}
 
-	t.Run("quick mode with needsEval=false excludes T-review-doc", func(t *testing.T) {
-		testTasks := GetQuickTestTasks([]string{"cli"}, allEnabledAuto)
-		index := NewTaskIndex("test-feature")
-		index.SetTask("1-feat", Task{ID: "1", Type: TypeCodingFeature})
-		index.SetTask("2-feat", Task{ID: "2", Type: TypeCodingFeature})
+func TestRenderBody_DocTaskAC_SortedKeys(t *testing.T) {
+	template := "{{DOC_TASK_AC}}"
+	ctx := BodyContext{
+		FeatureSlug: "feat",
+		DocTaskCriteria: map[string]string{
+			"3-doc": "AC 3 content",
+			"1-doc": "AC 1 content",
+			"2-doc": "AC 2 content",
+		},
+	}
+	def := AutoGenTaskDef{}
 
-		resolveTestDepsAndInjectReviewDoc(testTasks, index, "quick", false)
+	result := renderBody(template, def, ctx)
 
-		firstIdx := findFirstTestTaskIdx(testTasks)
-		if firstIdx < 0 {
-			t.Fatal("expected to find first test task")
+	// Keys should be sorted (1-doc before 2-doc before 3-doc)
+	idx1 := strings.Index(result, "### 1-doc")
+	idx2 := strings.Index(result, "### 2-doc")
+	idx3 := strings.Index(result, "### 3-doc")
+	if idx1 >= idx2 || idx2 >= idx3 {
+		t.Errorf("keys should be sorted alphabetically, got indices: 1-doc=%d, 2-doc=%d, 3-doc=%d\n%s", idx1, idx2, idx3, result)
+	}
+}
+
+// --- doc-review autogen template content tests (Task 2) ---
+
+func TestDocReviewAutogenTemplate_ContainsDocTaskACPlaceholder(t *testing.T) {
+	data, err := autogenTemplateFS.ReadFile("data/doc-review.md")
+	if err != nil {
+		t.Fatalf("cannot read doc-review.md: %v", err)
+	}
+	s := string(data)
+
+	if !strings.Contains(s, "{{DOC_TASK_AC}}") {
+		t.Error("doc-review autogen template must contain {{DOC_TASK_AC}} placeholder for AC summary injection")
+	}
+}
+
+func TestDocReviewAutogenTemplate_ContainsACSummarySection(t *testing.T) {
+	data, err := autogenTemplateFS.ReadFile("data/doc-review.md")
+	if err != nil {
+		t.Fatalf("cannot read doc-review.md: %v", err)
+	}
+	s := string(data)
+
+	if !strings.Contains(s, "## Acceptance Criteria Summary") {
+		t.Error("doc-review autogen template must contain '## Acceptance Criteria Summary' section header")
+	}
+	if !strings.Contains(s, "pre-extracted") {
+		t.Error("doc-review autogen template should mention that AC is pre-extracted")
+	}
+}
+
+func TestDocReviewAutogenTemplate_AllowlistDiscoveryStrategy(t *testing.T) {
+	data, err := autogenTemplateFS.ReadFile("data/doc-review.md")
+	if err != nil {
+		t.Fatalf("cannot read doc-review.md: %v", err)
+	}
+	s := string(data)
+
+	// Must use allowlist language
+	if !strings.Contains(s, "allowlist") {
+		t.Error("doc-review autogen template Discovery Strategy should use allowlist language")
+	}
+	// Must reference docs/ path
+	if !strings.Contains(s, "docs/features/") {
+		t.Error("doc-review autogen template should reference docs/features/ path")
+	}
+}
+
+func TestDocReviewAutogenTemplate_ExcludesTasksAndRecords(t *testing.T) {
+	data, err := autogenTemplateFS.ReadFile("data/doc-review.md")
+	if err != nil {
+		t.Fatalf("cannot read doc-review.md: %v", err)
+	}
+	s := string(data)
+
+	// Must explicitly exclude tasks/, records/, manifest.md, index.json
+	if !strings.Contains(s, "tasks/") {
+		t.Error("doc-review autogen template should mention tasks/ exclusion")
+	}
+	if !strings.Contains(s, "records/") {
+		t.Error("doc-review autogen template should mention records/ exclusion")
+	}
+	if !strings.Contains(s, "manifest.md") {
+		t.Error("doc-review autogen template should mention manifest.md exclusion")
+	}
+	if !strings.Contains(s, "index.json") {
+		t.Error("doc-review autogen template should mention index.json exclusion")
+	}
+}
+
+func TestDocReviewAutogenTemplate_NoScanTasksDirective(t *testing.T) {
+	data, err := autogenTemplateFS.ReadFile("data/doc-review.md")
+	if err != nil {
+		t.Fatalf("cannot read doc-review.md: %v", err)
+	}
+	s := string(data)
+
+	// Must NOT contain old-style task scanning instructions
+	if strings.Contains(s, "read its acceptance criteria from the task .md file") {
+		t.Error("doc-review autogen template should NOT contain old 'read its acceptance criteria from the task .md file' directive")
+	}
+	if strings.Contains(s, "For each doc task, read its acceptance criteria") {
+		t.Error("doc-review autogen template should NOT contain old 'For each doc task, read its acceptance criteria' directive")
+	}
+}
+
+func TestRenderBody_AllPlaceholdersIncludingDocTaskAC(t *testing.T) {
+	template := "Feature: {{FEATURE_SLUG}}\nMode: {{MODE}}\n## Scope\n{{SCOPE}}\n## Other\nInterfaces: {{SURFACES}}\nType: {{TEST_TYPE}}\nAcceptance:\n{{ACCEPTANCE_CRITERIA}}\n{{DOC_TASK_AC}}"
+	ctx := BodyContext{
+		FeatureSlug:        "feat",
+		Mode:               "quick",
+		Scope:              []string{"backend"},
+		SurfaceTypes:       []string{"cli"},
+		AcceptanceCriteria: []string{"AC1"},
+		DocTaskCriteria:    map[string]string{"1-doc": "Doc AC"},
+	}
+	def := AutoGenTaskDef{TestType: "cli"}
+
+	result := renderBody(template, def, ctx)
+
+	allPlaceholders := []string{
+		"{{FEATURE_SLUG}}", "{{MODE}}", "{{SCOPE}}",
+		"{{SURFACES}}", "{{TEST_TYPE}}", "{{ACCEPTANCE_CRITERIA}}",
+		"{{DOC_TASK_AC}}",
+	}
+	for _, ph := range allPlaceholders {
+		if strings.Contains(result, ph) {
+			t.Errorf("placeholder %s not resolved in output", ph)
 		}
-		deps := testTasks[firstIdx].Dependencies
-		for _, d := range deps {
-			if d == "T-review-doc" {
-				t.Errorf("deps should NOT include T-review-doc when needsEval=false, got %v", deps)
-			}
-		}
-		// Should still have the original dep from ResolveFirstTestDep
-		if len(deps) == 0 {
-			t.Error("expected at least one dep from ResolveFirstTestDep")
-		}
-		if deps[0] != "2" {
-			t.Errorf("first dep = %q, want 2", deps[0])
-		}
-	})
-
-	t.Run("breakdown mode with needsEval=true includes T-review-doc", func(t *testing.T) {
-		testTasks := GetBreakdownTestTasks([]string{"cli"}, defaultAuto)
-		index := NewTaskIndex("test-feature")
-		index.SetTask("1-doc", Task{ID: "1.1", Type: TypeDoc})
-		index.SetTask("2-feat", Task{ID: "1.2", Type: TypeCodingFeature})
-		index.SetTask("1-gate", Task{ID: "1.gate", Type: TypeGate})
-
-		resolveTestDepsAndInjectReviewDoc(testTasks, index, "breakdown", true)
-
-		firstIdx := findFirstTestTaskIdx(testTasks)
-		if firstIdx < 0 {
-			t.Fatal("expected to find first test task")
-		}
-		deps := testTasks[firstIdx].Dependencies
-		if deps[0] != "T-review-doc" {
-			t.Errorf("first dep = %q, want T-review-doc", deps[0])
-		}
-	})
-
-	t.Run("empty tasks is safe", func(_ *testing.T) {
-		index := NewTaskIndex("test-feature")
-		// Should not panic
-		resolveTestDepsAndInjectReviewDoc(nil, index, "quick", true)
-	})
-
-	t.Run("no gen-journeys tasks panics (delegates to ResolveFirstTestDep)", func(t *testing.T) {
-		defer func() {
-			r := recover()
-			if r == nil {
-				t.Fatal("expected panic when gen-journeys task not found")
-			}
-		}()
-		testTasks := []AutoGenTaskDef{
-			{ID: "T-clean-code"},
-		}
-		index := NewTaskIndex("test-feature")
-		index.SetTask("1-feat", Task{ID: "1", Type: TypeCodingFeature})
-
-		resolveTestDepsAndInjectReviewDoc(testTasks, index, "quick", true)
-	})
-
-	t.Run("needsEval=false output matches ResolveFirstTestDep alone", func(t *testing.T) {
-		// Verify that resolveTestDepsAndInjectReviewDoc(_, _, _, false) produces
-		// the same result as calling ResolveFirstTestDep alone.
-		index := NewTaskIndex("test-feature")
-		index.SetTask("1-feat", Task{ID: "1", Type: TypeCodingFeature})
-		index.SetTask("2-feat", Task{ID: "2", Type: TypeCodingFeature})
-
-		// Path A: new combined function with needsEval=false
-		tasksA := GetQuickTestTasks([]string{"cli"}, allEnabledAuto)
-		resolveTestDepsAndInjectReviewDoc(tasksA, index, "quick", false)
-
-		// Path B: old ResolveFirstTestDep directly
-		tasksB := GetQuickTestTasks([]string{"cli"}, allEnabledAuto)
-		ResolveFirstTestDep(tasksB, index.TasksMap(), "quick")
-
-		firstIdxA := findFirstTestTaskIdx(tasksA)
-		firstIdxB := findFirstTestTaskIdx(tasksB)
-		if firstIdxA != firstIdxB {
-			t.Fatalf("firstIdx mismatch: A=%d, B=%d", firstIdxA, firstIdxB)
-		}
-		if firstIdxA < 0 {
-			t.Fatal("no gen-journeys found")
-		}
-
-		depsA := tasksA[firstIdxA].Dependencies
-		depsB := tasksB[firstIdxB].Dependencies
-		if len(depsA) != len(depsB) {
-			t.Errorf("deps length mismatch: A=%v, B=%v", depsA, depsB)
-		}
-		for i := range depsA {
-			if depsA[i] != depsB[i] {
-				t.Errorf("dep[%d] mismatch: A=%q, B=%q", i, depsA[i], depsB[i])
-			}
-		}
-	})
+	}
+	if !strings.Contains(result, "### 1-doc") {
+		t.Errorf("should contain DocTaskCriteria sub-section, got:\n%s", result)
+	}
 }

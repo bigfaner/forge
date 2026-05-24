@@ -3,13 +3,13 @@ TASK_FILE: {{TASK_FILE}}
 
 You are a focused task executor running a documentation review task.
 
-## Workflow (5 Steps)
+## Workflow (4 Steps)
 
-### Step 1: Read Task Definition
+### Step 1: Load Pre-extracted AC
 
-Read the task file at `{{TASK_FILE}}`. Identify all doc tasks in the feature by scanning the tasks directory.
+Read the task file at `{{TASK_FILE}}`. The Acceptance Criteria Summary section is pre-extracted from all doc tasks — use it directly as the review baseline. Do NOT scan the tasks directory or read individual task .md files.
 
-Output: `Step 1/5: Loading task definition... DONE`
+Output: `Step 1/4: Loading pre-extracted acceptance criteria... DONE`
 
 <CRITICAL>
 ## Spec Authority Enforcement
@@ -46,27 +46,37 @@ For each finding, output:
 
 If no Reference Files were loaded: output "SPEC-CODE SCAN: skipped — no spec sources loaded" and skip the per-dimension checklist.
 
-### Step 2: Read Deliverables and Acceptance Criteria
+### Step 2: Discover Target Documents
 
 Use Reference Files from Step 1 as the authoritative structure and content guide.
 
-For each doc task found:
-1. Read the task's acceptance criteria from its .md file
-2. Read all deliverable documents referenced by the task
+Discover target documents using an allowlist strategy — only scan the following directories for .md files:
+- docs/features/{{FEATURE_SLUG}}/ and all subdirectories (prd/, design/, testing/, etc.)
+- docs/proposals/{{FEATURE_SLUG}}/
+
+Do NOT scan the tasks/ directory, tasks/records/ directory, or any non-docs paths.
+
+For each target document found:
+1. Read the document content
+2. Cross-reference against the pre-extracted AC from Step 1
 3. List each AC item for verification
 
-Output: `Step 2/5: Reading deliverables and acceptance criteria... DONE`
+Output: `Step 2/4: Discovering target documents and matching AC... DONE`
 
-### Step 3: Check Each AC and Fix Non-Conformances
+### Step 3: Review and Fix
 
-For each acceptance criterion of each doc task:
+For each acceptance criterion from the pre-extracted AC:
 1. Check whether the deliverable meets the AC
 2. If not met: directly modify the document to fix the non-conformance
 3. Record the result (pass or fixed)
 
 Do not add content beyond what the AC requires. Fix only the specific gaps identified.
 
-Output: `Step 3/5: Checking acceptance criteria and fixing non-conformances... DONE`
+<IMPORTANT>
+SCOPE CONSTRAINT: You may ONLY modify files under the docs/ directory. Do NOT modify, create, or delete files in tasks/, tasks/records/, or any other non-docs path. Task definitions and execution records are not deliverables — never edit them.
+</IMPORTANT>
+
+Output: `Step 3/4: Checking acceptance criteria and fixing non-conformances... DONE`
 
 ### Step 4: Report Summary
 
@@ -88,8 +98,8 @@ Produce a summary report:
 ## Record Fields
 
 When submitting via `forge:submit-task`, populate these record fields in record.json:
-- **referencedDocs**: list of documentation files reviewed
+- **referencedDocs**: list of documentation files reviewed (must only contain docs/ paths)
 - **reviewStatus**: review outcome (e.g. "all-passed", "fixes-applied")
 - **docMetrics**: summary of AC results (pass/fail counts per doc task)
 
-Output: `Step 4/5: Review summary... DONE`
+Output: `Step 4/4: Review summary... DONE`

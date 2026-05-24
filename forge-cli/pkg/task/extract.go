@@ -6,6 +6,129 @@ import (
 	"strings"
 )
 
+// extractDocTaskCriteria scans a tasks directory for doc-category task .md files,
+// extracts the "## Acceptance Criteria" section from each, and returns a map
+// of task name (filename without .md) to raw AC markdown content.
+// Only doc-category tasks are included; non-doc tasks are skipped.
+// Tasks without an AC section are included with empty string content so that
+// callers can detect missing AC and emit appropriate warnings.
+func extractDocTaskCriteria(taskDir string) map[string]string {
+	entries, err := os.ReadDir(taskDir)
+	if err != nil {
+		return nil
+	}
+
+	result := make(map[string]string)
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
+			continue
+		}
+		if shouldSkipFile(entry.Name()) {
+			continue
+		}
+
+		// Read file to determine type
+		filePath := filepath.Join(taskDir, entry.Name())
+		data, err := os.ReadFile(filePath)
+		if err != nil {
+			continue
+		}
+
+		// Parse frontmatter to get type
+		fm, _, err := ParseFrontmatter(data)
+		if err != nil || fm.ID == "" {
+			continue
+		}
+
+		// Only process doc-category business tasks
+		taskType := fm.Type
+		if taskType == "" {
+			taskType = InferType(fm.ID)
+		}
+		if CategoryForType(taskType) != CategoryDoc {
+			continue
+		}
+		// Skip system types (doc.review, doc.summary, etc.)
+		if IsSystemType(taskType) {
+			continue
+		}
+
+		// Extract AC section (empty string if section not found)
+		content := string(data)
+		acContent, _ := extractACSection(content)
+
+		taskName := strings.TrimSuffix(entry.Name(), ".md")
+		result[taskName] = acContent
+	}
+
+	return result
+}
+
+// isACHeading returns true if the trimmed line matches a recognized
+// Acceptance Criteria heading. Supports:
+//   - exact: "## Acceptance Criteria"
+//   - case-insensitive: "## Acceptance criteria"
+//   - Chinese alias: "## 验收标准"
+func isACHeading(trimmed string) bool {
+	if strings.HasPrefix(trimmed, "## ") {
+		rest := strings.TrimSpace(trimmed[3:])
+		if strings.EqualFold(rest, "Acceptance Criteria") {
+			return true
+		}
+		if rest == "验收标准" {
+			return true
+		}
+	}
+	return false
+}
+
+// extractACSection extracts the content between "## Acceptance Criteria" and
+// the next "## " heading (or end of file). Returns the content (everything
+// after the heading line, including newlines) and true if found.
+// Respects fenced code blocks: ## inside ``` blocks are not treated as section boundaries.
+// Title matching is tolerant: supports case-insensitive "Acceptance Criteria" and Chinese alias "验收标准".
+func extractACSection(content string) (string, bool) {
+	lines := strings.Split(content, "\n")
+
+	// Find the AC heading line (case-insensitive + Chinese alias)
+	startIdx := -1
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if isACHeading(trimmed) {
+			startIdx = i + 1
+			break
+		}
+	}
+	if startIdx < 0 {
+		return "", false
+	}
+
+	// Collect lines until next ## heading (respecting fenced code blocks)
+	var collected []string
+	inCodeBlock := false
+	for i := startIdx; i < len(lines); i++ {
+		line := lines[i]
+		trimmed := strings.TrimSpace(line)
+
+		// Track fenced code blocks
+		if strings.HasPrefix(trimmed, "```") {
+			inCodeBlock = !inCodeBlock
+			collected = append(collected, line)
+			continue
+		}
+
+		// Stop at next ## heading only if not inside a code block
+		if !inCodeBlock && strings.HasPrefix(trimmed, "## ") {
+			break
+		}
+
+		collected = append(collected, line)
+	}
+
+	result := strings.Join(collected, "\n")
+	return result, true
+}
+
 // extractBodyContext builds a BodyContext by reading planning-time data from
 // the proposal or PRD file. Missing files produce empty fields — this is valid.
 func extractBodyContext(projectRoot, slug, mode string, surfaceTypes []string) BodyContext {
