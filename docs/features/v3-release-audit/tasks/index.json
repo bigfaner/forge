@@ -8,7 +8,7 @@
       "title": "Split gen-test-scripts SKILL.md (527→≤350 lines)",
       "priority": "P0",
       "estimatedTime": "1.5h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-split-gen-test-scripts-skill.md",
       "record": "records/1-split-gen-test-scripts-skill.md",
       "type": "doc"
