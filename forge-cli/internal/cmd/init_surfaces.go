@@ -19,6 +19,9 @@ var conflictStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF8700")).Bo
 // surfaceStyle highlights surface type values.
 var surfaceStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#7DCFFF")).Bold(true)
 
+// sourceStyle styles source annotation text.
+var sourceStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#9ECE6A")).Italic(true)
+
 // askSurfaceConfirmation runs the TUI surface confirmation flow.
 // It detects surfaces, displays them, and lets the user confirm/edit.
 // Returns the confirmed SurfacesMap, or nil if cancelled.
@@ -51,10 +54,20 @@ func askSurfaceConfirmation(projectRoot string) (forgeconfig.SurfacesMap, bool) 
 func askScalarConfirmation(result *forgeconfig.DetectResult, conflictMap map[string]*forgeconfig.PathConflict) (forgeconfig.SurfacesMap, bool) {
 	surfaceType := result.Surfaces["."]
 
-	// Build display description
+	// Build display description with source annotation
 	desc := fmt.Sprintf("Detected surface type: %s", surfaceStyle.Render(surfaceType))
+
+	if source := result.Sources["."]; source != "" {
+		desc += " " + sourceStyle.Render(formatSourceAnnotation(source))
+	}
+
 	if c, ok := conflictMap["."]; ok {
 		desc += "\n" + conflictStyle.Render(formatConflictAnnotation(c))
+	}
+
+	// Add hint text for inferred surfaces
+	if isInferred(result.Sources["."]) {
+		desc += "\n\nThis was inferred from project structure. Edit to correct if needed."
 	}
 
 	confirm := true
@@ -104,10 +117,11 @@ func askScalarConfirmation(result *forgeconfig.DetectResult, conflictMap map[str
 // askMapConfirmation handles the multi-type (map) TUI flow.
 func askMapConfirmation(result *forgeconfig.DetectResult, conflictMap map[string]*forgeconfig.PathConflict) (forgeconfig.SurfacesMap, bool) {
 	surfaces := result.Surfaces
+	sources := result.Sources
 
 	for {
 		// Display current surfaces and ask what to do
-		lines := buildDisplayLines(surfaces, conflictMap)
+		lines := buildDisplayLines(surfaces, conflictMap, sources)
 		desc := strings.Join(lines, "\n")
 
 		action, cancelled := askMapAction(desc)
@@ -141,7 +155,7 @@ func askMapConfirmation(result *forgeconfig.DetectResult, conflictMap map[string
 }
 
 // buildDisplayLines creates the display lines for map-form surfaces.
-func buildDisplayLines(surfaces forgeconfig.SurfacesMap, conflictMap map[string]*forgeconfig.PathConflict) []string {
+func buildDisplayLines(surfaces forgeconfig.SurfacesMap, conflictMap map[string]*forgeconfig.PathConflict, sources forgeconfig.SourcesMap) []string {
 	// Sort paths for consistent display
 	paths := make([]string, 0, len(surfaces))
 	for p := range surfaces {
@@ -151,14 +165,27 @@ func buildDisplayLines(surfaces forgeconfig.SurfacesMap, conflictMap map[string]
 
 	var lines []string
 	lines = append(lines, "Detected surfaces:")
+	hasInferred := false
 	for _, p := range paths {
 		surfaceType := surfaces[p]
-		line := fmt.Sprintf("  %s: %s", p, surfaceStyle.Render(surfaceType))
+		line := fmt.Sprintf("  %s  →  %s", p, surfaceStyle.Render(surfaceType))
+		if source, ok := sources[p]; ok && source != "" {
+			line += " " + sourceStyle.Render(formatSourceAnnotation(source))
+			if isInferred(source) {
+				hasInferred = true
+			}
+		}
 		if c, ok := conflictMap[p]; ok {
 			line += " " + conflictStyle.Render(formatConflictAnnotation(c))
 		}
 		lines = append(lines, line)
 	}
+
+	// Add hint text if any surface was inferred
+	if hasInferred {
+		lines = append(lines, "", "Hint: Inferred entries are based on project structure. Edit to correct if needed.")
+	}
+
 	lines = append(lines, "", "Actions: Confirm / Edit / Add / Delete")
 	return lines
 }
@@ -168,6 +195,59 @@ func buildDisplayLines(surfaces forgeconfig.SurfacesMap, conflictMap map[string]
 func formatConflictAnnotation(c *forgeconfig.PathConflict) string {
 	return fmt.Sprintf("(冲突信号: %s，已按优先级选择 %s)",
 		strings.Join(c.Conflicting, " + "), c.Resolved)
+}
+
+// formatSourceAnnotation converts a source annotation code into a human-readable string.
+// Input format: "inference:cmd-dir" -> "inferred from cmd/ directory structure"
+// Input format: "dependency:cobra" -> "detected from cobra dependency"
+func formatSourceAnnotation(source string) string {
+	if source == "" {
+		return ""
+	}
+
+	parts := strings.SplitN(source, ":", 2)
+	if len(parts) != 2 {
+		return fmt.Sprintf("(%s)", source)
+	}
+
+	category := parts[0]
+	detail := parts[1]
+
+	switch category {
+	case "inference":
+		return fmt.Sprintf("(inferred from %s)", formatInferenceDetail(detail))
+	case "dependency":
+		return fmt.Sprintf("(detected from %s dependency)", detail)
+	default:
+		return fmt.Sprintf("(%s)", source)
+	}
+}
+
+// formatInferenceDetail converts an inference rule ID into a human-readable description.
+func formatInferenceDetail(ruleID string) string {
+	switch ruleID {
+	case "cmd-dir":
+		return "cmd/ directory structure"
+	case "api-dir":
+		return "api/ directory"
+	case "handler-dir":
+		return "handler/ directory"
+	case "bin-field":
+		return "bin field in package.json"
+	case "index-html":
+		return "index.html at project root"
+	case "py-scripts":
+		return "project.scripts or entry_points"
+	case "py-main":
+		return "app.py/main.py at root"
+	default:
+		return ruleID
+	}
+}
+
+// isInferred returns true if the source annotation indicates structural inference.
+func isInferred(source string) bool {
+	return strings.HasPrefix(source, "inference:")
 }
 
 // askMapAction presents the action selection for map-form surfaces.
@@ -304,8 +384,13 @@ func deleteMapEntry(surfaces forgeconfig.SurfacesMap, conflictMap map[string]*fo
 	return surfaces, false
 }
 
-// manualSurfaceEntry is the fallback when detection finds nothing.
-func manualSurfaceEntry() (forgeconfig.SurfacesMap, bool) {
+// manualSurfaceEntry is the function variable for manual surface entry.
+// Variable for testability -- huh requires a real TTY, so tests override this.
+// Hard Rule: the re-run Edit flow must call this same variable -- no separate code path.
+var manualSurfaceEntry = manualSurfaceEntryImpl
+
+// manualSurfaceEntryImpl is the actual implementation of manual surface entry.
+func manualSurfaceEntryImpl() (forgeconfig.SurfacesMap, bool) {
 	var path, surfaceType string
 	form := huh.NewForm(huh.NewGroup(
 		huh.NewInput().
@@ -345,4 +430,77 @@ func sortedPaths(surfaces forgeconfig.SurfacesMap) []string {
 	}
 	sort.Strings(paths)
 	return paths
+}
+
+// formatSurfacesSummary builds a human-readable summary string for the init output.
+// Shows actual surface types with source annotations instead of opaque "N mappings".
+func formatSurfacesSummary(surfaces forgeconfig.SurfacesMap, sources forgeconfig.SourcesMap) string {
+	if len(surfaces) == 0 {
+		return ""
+	}
+
+	// Scalar form: single type
+	if surfaces["."] != "" && len(surfaces) == 1 {
+		detail := surfaces["."]
+		if source := sources["."]; source != "" {
+			detail += " " + formatSourceAnnotation(source)
+		}
+		return detail
+	}
+
+	// Map form: show each path=type
+	paths := sortedPaths(surfaces)
+	parts := make([]string, 0, len(paths))
+	for _, p := range paths {
+		entry := fmt.Sprintf("%s=%s", p, surfaces[p])
+		if source, ok := sources[p]; ok && source != "" {
+			entry += " " + formatSourceAnnotation(source)
+		}
+		parts = append(parts, entry)
+	}
+	return strings.Join(parts, ", ")
+}
+
+// askRerunPrompt is the function variable for the re-run prompt.
+// Variable for testability -- huh requires a real TTY, so tests override this.
+var askRerunPrompt = askRerunPromptImpl
+
+// askRerunPromptImpl presents the user with options when surfaces are already configured.
+// Returns: action ("confirm", "redetect", "edit"), cancelled bool.
+func askRerunPromptImpl(currentSurfaces forgeconfig.SurfacesMap) (string, bool) {
+	// Build summary of current surfaces
+	var summary string
+	if currentSurfaces["."] != "" && len(currentSurfaces) == 1 {
+		summary = currentSurfaces["."]
+	} else {
+		paths := sortedPaths(currentSurfaces)
+		parts := make([]string, 0, len(paths))
+		for _, p := range paths {
+			parts = append(parts, currentSurfaces[p])
+		}
+		summary = strings.Join(parts, ", ")
+	}
+
+	desc := fmt.Sprintf("Surfaces already configured: %s. Re-detect?", summary)
+
+	var action string
+	form := huh.NewForm(huh.NewGroup(
+		huh.NewSelect[string]().
+			Title("Surface configuration").
+			Description(desc).
+			Options(
+				huh.NewOption("Confirm (keep existing)", "confirm"),
+				huh.NewOption("Re-detect", "redetect"),
+				huh.NewOption("Edit (manual entry)", "edit"),
+			).
+			Value(&action),
+	))
+
+	if err := form.Run(); err != nil {
+		if errors.Is(err, huh.ErrUserAborted) {
+			return "", true
+		}
+		return "", true
+	}
+	return action, false
 }
