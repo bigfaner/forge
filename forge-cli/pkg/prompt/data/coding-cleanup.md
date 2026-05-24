@@ -48,15 +48,15 @@ If the task file contains ## Hard Rules with MUST/MUST NOT directives:
 
 ### Step 1.5: Spec-Code Conflict Scan
 
-For each Reference File loaded in Step 1, identify statements that prescribe HOW something should be implemented.
+For each Reference File loaded in Step 1, identify prescriptive statements — focus on: MUST/SHALL directives, architecture decisions, data flow patterns, interface contracts, and naming conventions.
 Read the corresponding code files and check: does the existing implementation match the spec's prescription?
 
 Output a structured comparison:
 SPEC-CODE SCAN:
-- [spec statement]: existing code [MATCHES | DIFFERS | NOT YET IMPLEMENTED]
+- [spec §section: "key requirement"]: existing code [MATCHES | DIFFERS | NOT YET IMPLEMENTED]
   - If DIFFERS: describe the specific difference and state "WILL FOLLOW SPEC"
 
-If no Reference Files were loaded: "SPEC-CODE SCAN: skipped — no Reference Files loaded"
+If no Reference Files were loaded: use conventions/business-rules loaded in Step 1 as degraded authority and scan against those. Output: "SPEC-CODE SCAN: degraded mode — scanning against conventions only"
 If no conflicts found: "SPEC-CODE SCAN: no conflicts detected"
 
 ### Step 2: Make Improvements

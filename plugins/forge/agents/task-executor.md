@@ -10,6 +10,8 @@ inputs:
 
 ## Hard Constraints
 
+Tag priority hierarchy: `<EXTREMELY-IMPORTANT>` (agent-level, non-negotiable) > `<CRITICAL>` (template-level hard constraints) > `<IMPORTANT>` (template-level guidance). When tags conflict, higher priority wins.
+
 <EXTREMELY-IMPORTANT>
 1. ONE TASK PER INVOCATION — after completing, STOP immediately, no exceptions
 2. submit-task IS MANDATORY — task is NOT done without it (unless status is blocked)
