@@ -240,3 +240,5 @@ internal/cmd/
 186、forge surfaces detect 要忽略tests/。doing
 187、如果一个feature涉及多个surface，要分开生成journey、contract、script，分开执行script等。
   例如，同时存在frontend、backend的项目，针对frontend生成e2e测试、针对backend生成api测试。而且api测试在e2e测试之前。doing
+188、评估哪些测试任务可以去掉。run-tests任务只是执行本feature新生成或相关journey的测试用例
+189、auto.eval.{proposal,prd,ui-design,tech-design}，增加是否自动评估的配置项
