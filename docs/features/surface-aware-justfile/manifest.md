@@ -16,6 +16,15 @@ status: tasks
 | User Stories | prd/prd-user-stories.md | 4 个用户故事覆盖配方生成、测试编排、surface-key 迁移、数据模型扩展 |
 | Tech Design | design/tech-design.md | 三线并行迁移：Go 数据模型 + Skill 规则体系 + CLI --json 增强，干净迁移无兼容层 |
 
+## Spec Consolidation
+
+| Spec File | Rules | Integrated To |
+|-----------|-------|---------------|
+| specs/biz-specs.md | 9 rules (6 CROSS, 3 LOCAL) | docs/business-rules/surface-orchestration.md |
+| specs/tech-specs.md | 8 specs (5 CROSS, 3 LOCAL) | docs/conventions/surface-cli.md, docs/conventions/surface-rules.md |
+
+Consolidated on 2026-05-26.
+
 ## Traceability
 
 | PRD Section | Design Section | UI Component | Tasks |
