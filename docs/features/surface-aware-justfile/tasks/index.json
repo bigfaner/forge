@@ -350,7 +350,7 @@
       "dependencies": [
         "T-test-gen-journeys-cli"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "eval-journey.md",
       "record": "records/eval-journey.md",
       "scope": "all",
@@ -365,7 +365,7 @@
       "dependencies": [
         "T-eval-journey"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "gen-contracts.md",
       "record": "records/gen-contracts.md",
       "scope": "all",
