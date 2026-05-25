@@ -35,6 +35,7 @@ var excludedDirs = map[string]bool{
 	"__pycache__":  true,
 	".next":        true,
 	"target":       true,
+	"tests":        true,
 }
 
 // surfacePriority defines the conflict resolution priority order.

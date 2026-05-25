@@ -467,6 +467,11 @@ func TestDetectSurfaces_ExclusionDirs(t *testing.T) {
 	mkdirAll(t, distDir)
 	writePackageJSON(t, distDir, map[string]string{"commander": "^11.0.0"}, nil)
 
+	// tests should be skipped (dedicated to advanced test cases per Forge conventions)
+	testsDir := filepath.Join(dir, "tests", "e2e")
+	mkdirAll(t, testsDir)
+	writePackageJSON(t, testsDir, map[string]string{"react": "^18.0.0"}, nil)
+
 	result, err := DetectSurfaces(dir)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -481,6 +486,7 @@ func TestDetectSurfaces_ExclusionDirList(t *testing.T) {
 	expectedExclusions := []string{
 		"node_modules", ".git", "vendor", "dist",
 		"build", "__pycache__", ".next", "target",
+		"tests",
 	}
 
 	for _, d := range expectedExclusions {
