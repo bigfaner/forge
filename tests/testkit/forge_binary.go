@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sync"
 )
 
@@ -26,7 +27,11 @@ func init() {
 			os.Exit(1)
 		}
 
-		ForgeBinary = filepath.Join(tmpDir, "forge-test")
+		binName := "forge-test"
+		if runtime.GOOS == "windows" {
+			binName = "forge-test.exe"
+		}
+		ForgeBinary = filepath.Join(tmpDir, binName)
 
 		buildCmd := exec.Command("go", "build", "-o", ForgeBinary, "./cmd/forge")
 		buildCmd.Dir = findForgeCLIDir()

@@ -335,7 +335,7 @@
       "dependencies": [
         "T-test-gen-contracts"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "eval-contract.md",
       "record": "records/eval-contract.md",
       "scope": "all",
@@ -394,7 +394,7 @@
       "dependencies": [
         "T-eval-contract"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "gen-test-scripts-cli.md",
       "record": "records/gen-test-scripts-cli.md",
       "scope": "all",
@@ -422,7 +422,7 @@
       "dependencies": [
         "T-test-gen-scripts-cli"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "run-test.md",
       "record": "records/run-test.md",
       "scope": "all",
