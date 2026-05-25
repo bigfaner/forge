@@ -1,198 +1,259 @@
 ---
 iteration: 2
-title: "CTO Rubric Scoring — Iteration 2"
+title: "CTO Adversary Rubric Scoring — Iteration 2 (Re-evaluation)"
 date: 2026-05-25
-scorer: CTO adversary
-baseline: iteration-1 (662/1000)
+scorer: CTO adversary (independent re-evaluation of current proposal)
+baseline: proposal.md as of commit 8eb9cf83
 ---
 
-# 评分报告：init-justfile Surface 感知 + 测试编排简化（第 2 轮）
+# 评分报告：init-justfile Surface 感知 + 测试编排简化
 
 ## Phase 1 — 推理链审计
 
 ### 论证链路追踪
 
-1. **问题**：init-justfile 不感知 surface → 测试编排无法区分 web/api/cli/tui/mobile
-2. **补充问题**：test.execution 委托层冗余 → 4 层间接转发
-3. **方案**：surface 感知 + 废弃委托层 → justfile 成为唯一抽象层
-4. **证据**：本轮修复了上一轮"所有示例都指向 just 命令"的虚假断言，现在诚实承认 config-schema.md 中存在非 just 示例
-5. **成功标准**：10 条 checklist，覆盖主要交付物
+1. **Problem → Solution**：两个问题（surface 不感知 + test.execution 冗余）→ Surface 感知配方生成 + 移除委托层。捆绑论证提供三条理由：(1) 双重设计成本、(2) 参数分散、(3) 零迁移成本窗口。理由(3)是最强的——v3.0.0 未发布意味着移除 test.execution 的迁移成本为零。理由(1)和(2)的逻辑依赖 surface 编排参数的传递方式设计——如果 surface 编排参数通过规则文件传递（当前方案正是如此），保留 test.execution 的 surface 感知方案确实会导致参数分散。论证链路成立，但存在一个未讨论的边界情况：如果 v3.0.0 延期发布或存在 beta/preview 用户，理由(3)的"零迁移成本窗口"是否仍然成立？
 
-### 自相矛盾检测
+2. **Solution → Evidence**：证据基于代码审计（8 个 test.execution 示例中 75% 指向 just 命令），证据性质声明坦诚标注了局限性（"样本量有限，不应视为统计有效的结论"）。这是负责任的做法，但证据本质上仍然是推断性的——缺少实际项目受影响的数量、用户反馈、Forge 内部示例项目的 surface 类型分布等数据。
 
-- **矛盾已修复（上次 #1）**：废弃行为现在明确区分了"执行路径"和"检测路径"——"不使用不等于不检测"。这个表述逻辑自洽，不再是矛盾。
-- **矛盾已修复（上次 #2）**：证据部分明确承认"config-schema.md 也记录了非 just 示例（go test -json -v ./...、npx vitest run --reporter=json、make test FEATURE={slug}）"，并讨论了 trade-off。这是显著的诚实度提升。
-- **新矛盾 A**：回滚计划声称"设为 false 时回退到旧的 test.execution 委托路径"——但范围定义中 run-tests SKILL.md 的变更是"去掉 test.execution 读取"。如果代码已经移除了 test.execution 读取逻辑，回滚开关如何恢复一个已被删除的代码路径？feature flag 要求旧代码路径和新代码路径**同时存在**，但范围定义暗示旧路径被移除而非并存。这是一个设计-回滚矛盾。
-- **新矛盾 B**：回滚计划说"test.execution 节点在 config-schema.md 中标记为 @deprecated 而非立即删除，保留一个版本（v3.1）的兼容期"。但成功标准第 5 条说"test.execution 节点从 config-schema 中标记为 @deprecated"。回滚计划暗示兼容期结束后才移除，但范围外没有明确说"不删除回退逻辑"——如果后续维护者不理解回滚意图，可能在 v3.1 时错误删除所有废弃检测代码（包括回退路径）。
-- **新矛盾 C**：混合项目并发启动管理一节说"顺序启动（而非并行）是为了避免多进程同时争抢系统资源导致启动失败"——但场景描述中写的是"`just dev frontend` + `just dev backend` 并发"。一个是顺序启动，一个是并发——这两处描述直接矛盾。实际上，scope 文件名机制（`.forge/dev-server.<scope>.pid`）支持并发，但提案选择顺序——那么"并发"的场景描述是错误的。
-- **新矛盾 D**：非功能需求中"just 版本"要求"just >= 0.9（支持 shebang 脚本和 [linux/windows] 平台属性）"。但后台进程管理一节的 shebang 方案写的是 `#!/usr/bin/env bash`——just 的 shebang 脚本不需要 `[linux/windows]` 平台属性。而 Windows 分支中需要 `start /B` 或 PowerShell，这些在 bash shebang 内不可用。just 的 `[linux/windows]` 属性是配方级属性（recipe-level attribute），不是 shebang 内部的。如果配方使用 shebang，平台分支逻辑必须在 bash 脚本内部用 `uname`/`ver` 检测——这意味着 `[linux/windows]` 平台属性和 shebang 方案是**互斥**的，不能同时使用。NFR 中声称需要两者是自相矛盾的。
+3. **Evidence → Success Criteria**：14 条成功标准覆盖了主要交付物：5 种 surface 差异化配方、委托层移除、scope 迁移、config schema 变更、端到端运行时验证。覆盖面在提案修订后显著改善。但"所有生成的配方通过 --dry-run 验证"（第 7 条）仍存在已知局限——dry-run 仅验证语法不验证运行时行为，虽然第 8 条"运行时端到端验证"部分补偿了这一缺口。
+
+4. **自相矛盾检测**：
+   - **已修复的历史矛盾**：just 版本要求已修正为 >= 1.4.0（非 1.0.0）；probe 伪代码展示了 Linux/Windows 双变体，使用 shebang 而非 bash 语法；scope 兼容层的"保留一个版本"已细化为"v3.0.x 全系列包含，v3.1.0 移除"；HARD-GATE "禁止重试"与最坏情况不再矛盾（明确注释了"不必要 teardown"的含义）；`wmic` 已替换为 `Get-CimInstance Win32_Process`；probe 重试差异化已修正为"在配方体内部实现，通过退出码传递"而非"run-tests 层面区分"；`# user-customized` 保护已包含差异摘要和 `--force-regenerate` 选项；config schema 子方案降级路径已补全；timeout 覆盖范围已明确为"整个编排序列的总耗时上限"。
+   - **新矛盾 A**：scope 兼容层的消歧规则声明"不依赖声明顺序——Go 的 `map[string]string` 迭代顺序不确定"，转而使用"字典序"。但字典序消歧缺乏语义依据——如果 surfaces 为 `{zebra-api: api, alpha-api: api}`，`backend` 总是映射到 `alpha-api`，与用户在 YAML 中表达的逻辑优先级无关。提案的论证中同时提及了"Go map 无序"和"yaml.Node.Content 按插入顺序读取"两个技术事实，说明作者确实调查了底层实现，但最终选择的字典序方案虽然确定性，却是一个"在两个不完美选项中选择了更差的"的决策——声明顺序至少反映了用户意图。
+   - **新矛盾 B**：提案声称"probe 重试差异化在 `just probe` 配方体内部实现"，但 exit 2 和 exit 3 的退出码约定要求 run-tests 理解这些语义——"run-tests 识别后跳过后续 probe 直接 teardown"（exit 2）和"run-tests 识别后跳过后续 probe 直接 teardown"（exit 3）。这意味着 run-tests 需要"理解" just probe 的退出码语义，这与"run-tests 只关心退出码 0 或非 0"的简化设计有微妙矛盾。实际上提案已经定义了退出码约定（exit 0/1/2/3），run-tests 的规则文件需要明确处理这 4 种退出码——这是设计上的正确定义，但需要在 run-tests 的规则文件模板中确保退出码语义的完整覆盖，当前提案未详细展开规则文件中的退出码处理逻辑。
 
 ---
 
-## Phase 2 — 评分
+## Phase 2 — Rubric Scoring
 
-### 1. 问题定义 (85/110)
+### 1. Problem Definition (88/110)
 
-| 子项 | 得分 | 理由 |
-|------|------|------|
-| 问题清晰 | 36/40 | 两个问题陈述明确。与上轮相同的扣分点保留：问题 1 和问题 2 的捆绑必要性仍未充分论证。提案说"相互关联"但没有解释为什么不能只做 surface 感知而保留 test.execution——虽然"替代方案"表格中有一行"仅 surface 感知，保留 test.execution"，但仅以"治标不治本"四个字打发，未做分析。 |
-| 证据 | 28/40 | 显著改善。证据部分修正了上轮的核心事实错误，现在诚实列出非 just 示例并讨论 trade-off。仍扣分：(1) 没有实际项目的 justfile 作为证据；(2) 没有量化数据——有多少项目使用 test.execution？多少使用非 just 路径？ |
-| 紧迫性 | 21/30 | 与 v3.0.0 test profile 对齐的论证仍然成立，但与上轮一样——"cost of delay"分析缺失。如果 v3.0.0 不做这个，test execution 的当前方案会导致什么具体损失？ |
+| Criterion | Score | Justification |
+|-----------|-------|---------------|
+| Problem stated clearly | 38/40 | 两个问题陈述明确。surface 编排差异表格直观展示了 5 种 surface 的不同编排序列。捆绑论证三条理由逻辑自洽。扣分：问题 1（surface 不感知）的"影响面"描述仍偏弱——缺少"Forge 内部示例项目或测试 fixture 的 surface 类型分布"的粗略数据，v3.0.0 未发布不意味着完全无法获取影响面信息。 |
+| Evidence provided | 25/40 | 证据性质声明是诚实的加分项（明确标注了"不包含外部用户反馈或实际项目部署数据"和"样本量有限"）。75% 的量化数据来源仅 8 个示例，且这些示例是文档中的配置示例而非实际使用数据。但考虑到 v3.0.0 未发布的客观约束，证据质量的提升空间有限。扣分：缺少 Forge 内部示例项目或 dogfooding 数据作为补充证据。 |
+| Urgency justified | 25/30 | 与 v3.0.0 test profile 对齐的时机论证合理。理由(3)"零迁移成本窗口"是最强的论证——v3.0.0 未发布时移除 test.execution 的迁移成本为零，推迟到 v3.1.0 则产生正的迁移成本。扣分：未讨论"如果 v3.0.0 延期或存在 beta/preview 用户，零迁移成本窗口是否关闭"的边界情况。 |
 
-**vs 上轮 (80/110)：+5。主要来自证据部分的诚实度修正。**
+### 2. Solution Clarity (105/120)
 
-### 2. 方案清晰度 (100/120)
+| Criterion | Score | Justification |
+|-----------|-------|---------------|
+| Approach is concrete | 40/40 | Surface 编排模式表格（5 种 surface × 编排序列 × 关键配方）、test 配方生成 fallback 链（4 级优先级）、scope 迁移 4 阶段、原子性约束、用户编辑保护（`# user-customized` 标记 + 差异摘要 + `--force-regenerate`）、probe 重试差异化（退出码约定）、混合项目多服务启动管理——方案的具体程度已达到可直接拆分为实现任务的水平。 |
+| User-facing behavior described | 42/45 | init-justfile 的用户行为描述清晰（surface 感知配方生成 + 重新生成保护）。run-tests 的编排序列表格直观。端口冲突预防的 best-effort 策略务实。probe 超时后附带日志最后 10 行内容的用户体验设计周到。`# user-customized` 的差异摘要输出帮助用户判断是否需要手动同步。扣分：(1) 多 surface 同类型 journey 过滤的参数解析优先级——`just test <journey>` 与 `just test <scope> <journey>` 的参数冲突未明确说明（虽然 journey 过滤策略表格末尾新增了说明，但 journey 和 scope 的参数位置冲突风险仍存在——`just test admin-panel e2e` 中 `admin-panel` 是 scope 还是 journey？需要根据 surfaces map 的 key 集合动态判断，这对 LLM agent 是一个微妙的语义歧义）。 |
+| Technical direction clear | 23/35 | PowerShell shebang 有明确的说明段落（`#!powershell` 直接定位可执行文件，Windows 10+ 默认包含）。probe 伪代码展示了 Linux/Windows 双变体。`Get-CimInstance` 替代了已弃用的 `wmic`。just >= 1.4.0 版本检查触发时机已定义（init-justfile 和 run-tests 的首个执行步骤）。扣分：(1) 跨平台配方双变体的维护成本未充分分析——init-justfile 的 LLM 需要为每个跨平台配方生成语法完全不同的两个版本（shell vs PowerShell），5 个 surface 类型 × 跨平台配方数的变体总数未量化；(2) exit 2/3/4 的退出码约定要求 run-tests 规则文件明确处理所有退出码语义，但规则文件模板中退出码处理的细节未展示。 |
 
-| 子项 | 得分 | 理由 |
-|------|------|------|
-| 方法具体 | 39/40 | Surface 编排模式表格 + 混合项目 scope 参数设计 + fallback 链 + 仲裁规则——读者可以准确复述方案。微小扣分：scope 参数值从"用户定义的目录路径或逻辑名"跳到"surfaces map 的 key"但未解释为什么这些 key 值足够语义化（如果 key 是 `.` 或 `./` 怎么办？） |
-| 用户行为描述 | 36/45 | init-justfile 的行为清晰。run-tests 的废弃警告行为现在有详细定义（检测时机、警告格式、行为、文档同步）。仍扣分：(1) 对于已有 test.execution 配置的用户，迁移步骤是什么？只说"输出废弃警告"但没说用户需要做什么具体操作来适应新方案；(2) init-justfile 多次运行的幂等行为仍未定义。 |
-| 技术方向 | 25/35 | 本轮新增了"后台进程管理"、"Probe 轮询逻辑"、"Teardown 进程回收"、"LLM agent 执行确定性"、"跨平台信号映射"五个技术深化小节——这是对上轮最大弱点的有力回应。扣分：(1) shebang + `[linux/windows]` 属性的互斥问题（见矛盾 D）；(2) 后台启动方案说"推荐 shebang 脚本"但 shebang 在 Windows 上需要 bash（WSL 或 Git Bash），这不是真正的"跨平台"——只是"Windows 上有 bash 的环境"。纯 Windows CMD/PowerShell 环境被忽略；(3) PID 追踪依赖 PID 文件，但 Windows 上 PID 在进程退出后可能被复用——teardown 可能杀错进程。 |
+### 3. Industry Benchmarking (108/120)
 
-**vs 上轮 (92/120)：+8。技术深化小节弥补了最大空洞，但跨平台方案的可靠性仍存疑。**
+| Criterion | Score | Justification |
+|-----------|-------|---------------|
+| Industry solutions referenced | 39/40 | 9 个成熟方案对比（Docker Compose、K8s、Cypress、Makefile、GitHub Actions、Playwright、Vitest、Testcontainers），覆盖了容器编排、云原生编排、前端测试、构建系统、CI 服务依赖、单元测试隔离等场景。每个方案列出了编排模型、就绪检测、进程管理和适用场景。扣分：缺少 **Bazel/Please** 等构建系统中"测试编排作为构建规则"的模式——这与 Forge 的 justfile-as-protocol 设计有可比性（Bazel 的 rule 定义测试目标及其依赖关系，Forge 的 surface 规则定义测试编排序列）。 |
+| At least 3 meaningful alternatives | 27/30 | 4 个替代方案（不做/仅 surface/surface+去委托/Go 代码管理）+ "不做"。每个替代都有明确的优势、劣势和结论。扣分："Go 代码直接管理进程生命周期"方案标注为"采纳其核心思想作为兜底机制"——这意味着该方案不是被完全拒绝的替代方案，而是部分采纳的设计选择，与严格的"替代方案"定义有微妙偏差。 |
+| Honest trade-off comparison | 21/25 | "为何不复用测试框架内建编排"和"为何不采用 Testcontainers 模式"的分析诚实且具体。justfile 作为唯一抽象层的 trade-off 分析客观。扣分：(1) "已知局限"部分列出的两个局限（CI 环境切换、新增 surface 类型更新）都是可缓解的，缺少对跨平台配方双变体维护成本的量化分析；(2) 端口冲突预防的 best-effort 检查可能输出误导性错误信息（用户配置了不同端口但检查了默认端口），这个 trade-off 未被讨论。 |
+| Chosen approach justified against benchmarks | 21/25 | Forge 的差异化定位（LLM agent 执行 + justfile 文本协议 + 框架无关 + CLI/TUI/Mobile 覆盖）清晰且与行业方案正确区分。Testcontainers 不适用的三个原因（dev server 不适合容器化、Docker 依赖违背零外部依赖、CLI/TUI/Mobile 无服务启动）论证充分。扣分：未讨论"为何不在 SKILL 内部用轻量脚本管理进程"的中间方案——这个选项介于纯 justfile 和 Go 子命令之间，是一个合理的替代设计。 |
 
-### 3. 行业对标 (85/120)
+### 4. Requirements Completeness (95/110)
 
-| 子项 | 得分 | 理由 |
-|------|------|------|
-| 行业方案引用 | 28/40 | 本轮新增 Docker Compose、Kubernetes、Cypress start-server-and-test、Makefile、GitHub Actions service containers 五个方案的对比表。引用是真实的、对标的维度（编排模型、就绪检测、进程管理、适用场景）是合理的。扣分：(1) 没有引用 justfile 生态自身的最佳实践（just 官方是否有推荐的后台进程管理模式？）；(2) Cypress 的 start-server-and-test 和 Forge 的场景最接近（都是"启动 dev server → 等 ready → 跑测试"），但只用了半行描述，未深入分析其设计决策对 Forge 的启发。 |
-| 替代方案 | 18/30 | 与上轮相同——3 个替代方案仍属于"做 vs 不做"的增量选择。没有根本不同的架构替代，如"让 Go 代码管理进程生命周期而非依赖 just 配方"（虽然"LLM agent 执行确定性"一节的"长期方向"提到了这个可能，但它不在替代方案表格中）。 |
-| 权衡对比 | 20/25 | 与上轮相同。"justfile 作为唯一抽象层"的 trade-off 分析清晰。新增了"已知局限"小节，讨论了 CI 环境切换和新 surface 类型扩展的问题。 |
-| 选定方案论证 | 19/25 | 比上轮改善。证据部分不再被事实反驳（已承认非 just 示例的存在），论证更诚实。但"选定方案"在"替代方案"表格中只占一行，缺乏与行业方案的系统性对比——为什么不采用 Cypress 式的进程管理（Go 代码直接 fork+wait）？ |
+| Criterion | Score | Justification |
+|-----------|-------|---------------|
+| Scenario coverage | 37/40 | 7 个关键场景覆盖了 5 种 surface + 无 surface + 混合项目。多 surface 同类型 journey 过滤有了说明。端口冲突预防有了 best-effort 策略。probe 重试差异化有了退出码约定。扣分：(1) init-justfile 多次运行的增量更新场景虽然通过 `# user-customized` 保护和差异摘要间接覆盖，但未作为独立"关键场景"列出——如果用户首次运行 init-justfile 后修改了 surface 配置（如新增一个 surface），第二次运行时的行为应作为一个明确场景；(2) `just probe` 配方体内部检测到 EADDRINUSE 后以 exit 2 退出，但 exit 2 的语义在混合项目中是否区分"哪个 scope 的端口冲突"未说明。 |
+| Non-functional requirements | 35/40 | NFR 表格覆盖了跨平台兼容、向后兼容、可观测性、性能、可靠性、just 版本。just 版本要求 >= 1.4.0 正确，版本检查触发时机已定义。可观测性从"结构化日志"调整为"按固定格式输出步骤状态"（`[步骤名] [状态] [摘要]`），这是 LLM 可执行的格式指令。timeout 覆盖范围已明确为"整个编排序列的总耗时上限"。扣分：(1) "性能"仍只约束 init-justfile 的 surface 规则加载时间（不超过 1 秒），未约束 probe 重试的默认 60 秒超时是否为合理上限；(2) "跨平台兼容"的验证方式为"各平台手动验证；CI 矩阵（如果接入）"——"如果接入"的措辞意味着跨平台验证可能不做，这对于声称三平台支持的 NFR 是不够的。 |
+| Constraints & dependencies | 23/30 | Surface 信息源优先级规则清晰（config.yaml 优先 > forge surfaces CLI 回退 > 冲突时以 config.yaml 为准）。test.execution 引用审计清单列了 4 个 skill 的预期影响评估。GetConfigValue 扩展的键空间与现有键不冲突。just >= 1.4.0 版本检查机制已定义。扣分：(1) `GetConfigValue` 扩展"不破坏现有键的解析逻辑"——现有键的单元测试覆盖情况未说明，如果现有键无测试，"不破坏"的依据是什么？(2) Go 的 `yaml.UnmarshalStrict` 对未知字段的处理方式未确认——如果 Forge 当前使用 strict mode，用户 config.yaml 中残留的 `test.execution` 节点可能导致 YAML 解析错误，需要在实现时切换为宽松模式或显式添加兼容字段。 |
 
-**vs 上轮 (65/120)：+20。行业方案对比表是本轮最大的改善。但替代方案的广度仍不足。**
+### 5. Solution Creativity (75/100)
 
-### 4. 需求完整性 (88/110)
+| Criterion | Score | Justification |
+|-----------|-------|---------------|
+| Novelty over industry baseline | 32/40 | 规则文件物理独立但逻辑同构的设计是 Forge 特有的创新——init-justfile 和 run-tests 各自持有 `rules/surfaces/<type>.md` 的独立副本，通过 Markdown 标题分段承载两个职责（编排序列 + 配方调用契约），物理独立但逻辑同构。probe 重试差异化的退出码约定（exit 0/1/2/3）在测试编排中不常见——大多数测试框架使用二值退出码（通过/失败），4 值退出码提供了更细粒度的失败类型区分。PID 存活检查在 probe 循环中加速崩溃检测是优雅的优化。扣分：核心编排模式（dev → probe → test → teardown）仍是标准的测试流水线，与 Cypress/K8s 的模式无本质差异。 |
+| Cross-domain inspiration | 23/35 | 从 K8s readinessProbe 借鉴探针重试 + 超时、从 Cypress 借鉴测试后强制清理、从 Docker Compose 借鉴声明式编排序列、从 Testcontainers 借鉴 Ryuk sidecar 自动清理 → test-state.json 恢复机制。借鉴来源在修订后扩展到 4 个，但仍集中在容器/编排/测试领域，未跨域借鉴。扣分：缺少来自 CI/CD pipeline 领域的灵感（如 GitHub Actions 的 job dependency + timeout minutes + retry 策略的组合），或来自分布式系统的 circuit breaker 模式（probe 连续失败后熔断，避免无谓重试）。 |
+| Simplicity of insight | 20/25 | "justfile 已经是抽象层，config 再包一层只是转发"的核心洞察简洁有力。`# user-customized` 单行注释作为用户编辑保护标记简单但有效。scope 兼容层的字典序消歧规则虽然确定性但缺乏语义依据（见 Phase 1 新矛盾 A）。probe 退出码约定是简洁的设计——4 个退出码覆盖了 4 种状态，无需复杂的错误类型系统。 |
 
-| 子项 | 得分 | 理由 |
-|------|------|------|
-| 场景覆盖 | 34/40 | 7 个关键场景覆盖了 5 种 surface + 无 surface + 混合。本轮新增了混合项目并发启动管理的详细设计（端口冲突预防、并发启动策略、probe 顺序、teardown 逆序清理）。仍遗漏：(1) `just dev` 启动失败（端口被占、依赖缺失）的错误场景——端口冲突预防只提到了检测但没说检测到冲突后怎么办（报错退出？自动换端口？）；(2) 多个同类型 surface（如 3 个 web surface）的并发场景。 |
-| 非功能需求 | 29/40 | 本轮新增了完整的非功能需求表格（6 项 NFR，每项有要求和验证方式）。这是对上轮"严重缺失"的显著改善。扣分：(1) "可靠性"NFR 说"故障注入测试"但范围中没有故障注入测试的任务；(2) "跨平台兼容"的验证方式是"各平台手动验证"——这不是可重复的验证标准；(3) "just 版本"NFR 要求 ">= 0.9"但 `[linux/windows]` 平台属性是 just 1.0+ 才引入的，版本要求可能有误。 |
-| 约束与依赖 | 25/30 | 与上轮相同。Surface 信息源优先级规则清晰。Config schema 子方案列为独立子方案但边界描述改善——新增了"影响面评估"（3 个模块，2-3 个任务），比上轮的半句话好很多。 |
+### 6. Feasibility (85/100)
 
-**vs 上轮 (70/110)：+18。NFR 表格是关键改善。**
+| Criterion | Score | Justification |
+|-----------|-------|---------------|
+| Technical feasibility | 38/40 | Surface 检测已就位。just 原生平台 attribute（`[linux]`/`[windows]`）不需要外部依赖。PowerShell 在 Windows 10+ 默认可用。`Get-CimInstance Win32_Process` 替代了已弃用的 `wmic`。PID 存活检查机制可行（`/proc/<pid>`、`ps -p`、`tasklist`）。just >= 1.4.0 版本检查机制已定义（`just --version` + 版本号解析 + 错误提示）。config schema 子方案降级路径完整（硬编码默认值，功能不受影响）。扣分：(1) 跨平台配方双变体的 LLM 生成可靠性——init-justfile 的 LLM 需要为每个跨平台配方生成语法完全不同的两个版本（shell vs PowerShell），这增加了 LLM 生成错误的概率，但通过 `--dry-run` 验证可缓解。 |
+| Resource & timeline feasibility | 25/30 | config schema 子方案有降级路径和明确的边界（3 个模块，2-3 个任务）。scope 统一迁移有原子性约束（同一 PR，允许逻辑提交拆分）和兼容层策略。扣分：(1) "15-20 个编码任务"的估算范围仍然偏大（33% 不确定性）；(2) scope 统一迁移涉及 7 个以上组件的同一 PR 约束意味着巨型 PR，代码审查负担重——提案承认了这一点但未提供缓解策略（如分阶段 review checklist）。 |
+| Dependency readiness | 22/30 | Surface 检测已就位。PowerShell 依赖已声明（Windows 10+ 默认包含）。`Get-CimInstance` 在 Windows PowerShell 5.x 和 PowerShell 7.x 均支持。just >= 1.4.0 版本检查已定义。扣分：(1) `GetConfigValue` 扩展作为关键依赖，评估过于简略——"不破坏现有键的解析逻辑"需要现有键有测试覆盖来验证，但现有键的测试覆盖情况未说明；(2) test.execution 引用审计清单限于 `plugins/forge/skills/` 目录，未覆盖 README、examples 目录、文档中可能的引用。 |
 
-### 5. 方案创新性 (58/100)
+### 7. Scope Definition (77/80)
 
-| 子项 | 得分 | 理由 |
-|------|------|------|
-| 新颖度 | 22/40 | 与上轮基本持平。Surface 感知配方生成是 forge 特有的，但不是新概念。"init-justfile 和 run-tests 的双向 surface 感知统一"这个创新点被提到但未深入——两者共享了什么具体的数据结构或接口？只说"surface 规则文件"，但这是文档而非共享抽象。 |
-| 跨域灵感 | 16/35 | 本轮新增了"从行业方案借鉴的设计"表格，承认从 K8s readinessProbe、Cypress、Docker Compose 借鉴。这是加分项，但这些借鉴都是直接的"同领域借鉴"——真正的跨域灵感（如从数据库事务的 WAL 机制学习进程恢复、从游戏引擎的 ECS 学习配方组合）没有出现。 |
-| 洞察简洁度 | 20/25 | 与上轮相同。"justfile 已经是抽象层，config 再包一层只是转发"——这个洞察仍然简洁有力。 |
+| Criterion | Score | Justification |
+|-----------|-------|---------------|
+| In-scope items are concrete | 29/30 | 每个范围内项都是可交付的。5 个 surface 规则文件（含 journey 过滤策略最小规范）+ SKILL.md 更新 + config schema 变更（含降级路径）+ scope 统一迁移（含原子性约束和兼容层策略）+ 用户编辑保护机制。 |
+| Out-of-scope explicitly listed | 20/25 | 列了 6 项范围外（变更语言模板、变更 Go 门控序列代码、变更 quality_gate.go/testrunner、新增 forge CLI 命令、回滚基础设施、Go 代码子命令）。回滚方式明确为 git revert。扣分：(1) 从 test.execution 到 just 配方的"概念迁移指南"（用户文档）是否在范围内仍未明确——虽然 v3.0.0 无存量用户，但文档层面的迁移指南是知识传递的一部分；(2) surface 规则文件的 schema 验证（如字段完整性检查）是否在范围内未说明。 |
+| Scope is bounded | 28/25 | "同一 PR"原子性约束 + 兼容层保留到 v3.1.0 的时间约束 + config schema 子方案边界（3 个模块，2-3 个任务）+ "向后兼容：无 surface 配置 → 当前行为不变"——范围约束充分。预计 15-20 个编码任务提供了工作量参考。 |
 
-**vs 上轮 (55/100)：+3。行业借鉴表格有微量加分。**
+### 8. Risk Assessment (85/90)
 
-### 6. 可行性 (72/100)
+| Criterion | Score | Justification |
+|-----------|-------|---------------|
+| Risks identified | 28/30 | 7 个风险覆盖了主要场景：Surface 未检测到、test.execution 不兼容、规则过于泛化、混合项目歧义、journey 过滤不兼容、run-tests 无法感知 surface、HARD-GATE 被违反。HARD-GATE 违反风险的缓解措施有 4 层防御。扣分：(1) `# user-customized` 保护导致用户错过 surface 规则改进的风险未列出——用户标记了自定义后，后续 surface 规则的所有改进（如 probe 逻辑优化、新增端口冲突检测）都无法自动应用，差异摘要虽然提供了信息但需要用户主动手动同步；(2) probe 退出码约定（exit 2/3）要求 run-tests 规则文件正确处理所有退出码，如果规则文件遗漏了某个退出码的处理逻辑，run-tests 可能进入非预期状态——此风险未列出。 |
+| Likelihood + impact rated | 28/30 | 大部分评估合理。"HARD-GATE 被违反"标为"中/高"——评估诚实。"test.execution 不兼容"标为"低/低"——v3.0.0 未发布，评估合理。"journey 过滤不兼容"标为"中/高"——评估合理。扣分："run-tests 无法感知 surface"标为"低/高"——如果 surface 感知依赖 config.yaml 的 `surfaces` 字段正确配置（用户手动配置或 forge surfaces CLI 自动检测），CLI 检测可能误判，评估为"低"可能偏低。 |
+| Mitigations are actionable | 29/30 | HARD-GATE 分层兜底机制设计具体（4 层防御：参数化模板 + 退出码门控 + 外部状态源 + 最坏情况分析）。回滚计划（git revert）可操作。config schema 子方案降级路径（硬编码默认值）功能不丢失。"LLM 组合语言模板 + surface 规则"被正确识别为设计本身而非缓解措施。扣分：回滚计划未说明已生成 surface 感知 justfile 中 `# user-customized` 标记的配方如何处理——回滚后这些标记可能仍残留。 |
 
-| 子项 | 得分 | 理由 |
-|------|------|------|
-| 技术可行性 | 30/40 | 本轮新增了详细的技术方案（后台进程管理、probe 轮询、teardown 回收、跨平台信号映射），不再是"直接可行"的空洞声明。但 shebang 方案在 Windows 上的可靠性存疑（依赖 bash 可用性），PID 复用风险未讨论。 |
-| 资源与时间 | 22/30 | "10-15 个编码任务"比上轮更详细——新增了 config schema 变更（独立子方案，2-3 个任务）的明细。但后台进程管理、probe 轮询逻辑、跨平台分支这些新增的技术复杂度未被计入任务估算——这些逻辑写在 just 配方体中（shebang 脚本），调试难度远高于普通 just 配方。 |
-| 依赖就绪度 | 20/30 | 与上轮改善——现在诚实承认"test.execution 在 Go 层面未结构化实现，但在 LLM agent 层面实际在用"。但"GetConfigValue 扩展为 config schema 子方案的一部分，需独立评审"——这个关键依赖仍然只是"需独立评审"，没有给出评审通过/不通过的应急预案。 |
+### 9. Success Criteria (78/80)
 
-**vs 上轮 (60/100)：+12。技术深化小节使可行性论证从空洞变为具体。**
+| Criterion | Score | Justification |
+|-----------|-------|---------------|
+| Criteria are measurable and testable | 54/55 | 14 条成功标准中约 12 条是明确可验证的（checklist 或端到端测试）。第 7 条"dry-run 验证"与第 8 条"运行时端到端验证"互补。第 10 条"语言模板与 surface 规则的配方职责边界验证"提供了具体的验证方式（`grep -c` 确认两集合无交集）。第 14 条"config schema 变更验证"覆盖了 GetConfigValue 扩展和残留 test.execution 处理。扣分：(1) "所有生成的配方通过 --dry-run 验证（语法正确、配方名和参数签名符合 Standard Target Contract 定义）"——提案已添加注释说明 dry-run 仅验证语法不验证运行时行为，这是诚实的，但成功标准的表述仍然暗示了比实际更强的验证力度；(2) 第 10 条"无同名冲突"虽然可通过 `grep -c` 验证，但"职责边界清晰"仍然是一个定性描述——建议将此条拆分为"无同名冲突"（可量化）和"职责划分符合设计"（定性，需人工审查）。 |
+| Coverage is complete | 24/25 | 覆盖了范围内的主要交付物：5 种 surface 差异化配方、委托层移除、run-tests 编排、config schema 变更、scope 迁移、向后兼容、端到端验证、重新生成验证。扣分：`# user-customized` 保护机制的有效性验证未在成功标准中体现——应增加"标记 `# user-customized` 的配方在重新运行 init-justfile 后不被覆盖，且差异摘要输出正确"的验证标准。 |
 
-### 7. 范围定义 (62/80)
+### 10. Logical Consistency (85/90)
 
-| 子项 | 得分 | 理由 |
-|------|------|------|
-| 范围内 | 27/30 | 范围内项目粒度合理，且本轮新增了"配置 schema 变更（独立子方案）"的详细边界定义（新增什么、移除什么、扩展什么、边界约束、影响面评估）。每个范围内项都是可交付的。 |
-| 范围外 | 14/25 | 与上轮相同的 4 项范围外。仍缺少关键排除：(1) 现有项目的迁移指南；(2) 回滚计划中 feature flag 的实现是否在范围内——回滚计划新增了 feature flag，但范围内没有列出 flag 的开发任务。如果回滚机制在范围内，任务估算应增加；如果不在范围内，回滚计划就是空头支票。 |
-| 范围边界 | 21/25 | 向后兼容约束保留。"配置 schema 变更独立子方案"的边界定义改善。但范围与回滚计划之间存在缝隙（见上）。 |
-
-**vs 上轮 (60/80)：+2。范围边界定义略有改善。**
-
-### 8. 风险评估 (72/90)
-
-| 子项 | 得分 | 理由 |
-|------|------|------|
-| 风险识别 | 24/30 | 6 个风险覆盖了主要场景。本轮新增了回滚计划（feature flag + 兼容期 + 紧急回退 + 完全移除四阶段），这是对上轮"回滚计划缺失"盲点的直接回应。但仍未识别：(1) shebang 方案在无 bash 的 Windows 环境下的风险；(2) PID 文件在系统重启后的陈旧 PID 风险；(3) 并发启动策略选择了"顺序"但场景描述用了"并发"——这个矛盾本身就是风险。 |
-| 可能性+影响 | 24/30 | 与上轮一致的 6 个风险评估。`test.execution` 兼容性风险从上轮的"低/低"改为"低/低"但理由更新为"v3.0.0 未发布，无存量用户"——这是诚实的。但"run-tests 无法感知 surface"的风险仍然标记为"低/高"——如果 run-tests 是 LLM agent 执行的，"低"可能性需要更强论证。 |
-| 缓解措施 | 24/30 | 比上轮改善。新增了 HARD-GATE 规则、状态机驱动、长期方向（迁移到 Go 代码）等可操作性更强的缓解措施。但"HARD-GATE 规则"本质上是给 LLM 的指令约束——LLM 可以忽略 SKILL.md 中的指令，这不是确定性保证。"长期方向"是正确的但不在当前范围内。 |
-
-**vs 上轮 (60/90)：+12。回滚计划和 LLM 执行确定性小节是关键加分项。**
-
-### 9. 成功标准 (58/80)
-
-| 子项 | 得分 | 理由 |
-|------|------|------|
-| 可测量可测试 | 36/55 | 10 条标准中有 7 条是明确的。新增了第 9 条（废弃警告检测）和第 10 条（语言模板与 surface 规则的职责边界）。扣分：(1) "所有生成的配方通过 --dry-run 验证"——dry-run 只验证语法不验证运行时，上轮已指出但未改善；(2) 第 5 条"废弃检测正常工作"如何测试？需要测试用例定义但没有给出；(3) 混合项目的成功标准缺失——"web+api 混合项目的并发启动和 probe"如何验证？ |
-| 覆盖完整性 | 22/25 | 覆盖了范围内主要交付物。但缺少：(1) config schema 变更的成功标准（GetConfigValue 扩展的测试通过？）；(2) 回滚计划中 feature flag 的验证标准。 |
-
-**vs 上轮 (55/80)：+3。新增两条标准有微量加分，但混合项目和回滚验证仍有缝隙。**
-
-### 10. 逻辑一致性 (68/90)
-
-| 子项 | 得分 | 理由 |
-|------|------|------|
-| 方案解决问题 | 29/35 | Surface 感知解决问题 1 成立。废弃 test.execution 解决问题 2 成立。但两者捆绑的必要性仍然论证不足——"替代方案"表格中"仅 surface 感知"选项只给了"治标不治本"四个字，没有分析"保留 test.execution + surface 感知"的具体弊端。 |
-| 对齐 | 18/30 | 范围-方案-成功标准的基本对齐有改善，但新增的回滚计划引入了新的不对齐：(1) 回滚需要 feature flag + 旧代码路径，但范围内没有相应任务；(2) 混合项目场景描述用了"并发"但方案选择了"顺序"。 |
-| 需求-方案一致性 | 21/25 | 下游集成契约表格与方案设计一致。语言模板 vs surface 规则的仲裁规则清晰。NFR 表格与技术深化小节基本对应。扣分：NFR 要求"just >= 0.9"但技术方案依赖 shebang + 平台分支逻辑，两者对 just 版本的实际要求不一致。 |
-
-**vs 上轮 (65/90)：+3。NFR 和技术深化改善了需求-方案一致性，但回滚矛盾是新引入的扣分点。**
+| Criterion | Score | Justification |
+|-----------|-------|---------------|
+| Solution addresses the stated problem | 34/35 | Surface 感知解决了"编排流程不同"的问题（5 种 surface 的差异化配方和编排序列）。移除 test.execution 解决了"委托层冗余"的问题（从 4 层委托简化为 2 层）。捆绑论证三条理由逻辑自洽。HARD-GATE 规则的"禁止重试"与最坏情况分析已一致。 |
+| Scope ↔ Solution ↔ Success Criteria aligned | 28/30 | config schema 变更有成功标准（第 14 条）。scope 迁移有成功标准（第 13 条）。重新生成有成功标准（第 11 条）。用户编辑保护在方案和范围内有描述，但成功标准中无对应验证条目。扣分：`# user-customized` 保护机制在方案中详细描述（差异摘要 + `--force-regenerate`），但成功标准中缺少对应的验证项。 |
+| Requirements ↔ Solution coherent | 23/25 | 下游集成契约表格（配方签名不可变）与方案一致。scope 值域迁移细则完整（4 阶段 + 原子性约束 + 兼容层策略）。`# user-customized` 保护使仲裁规则更完整。扣分：(1) probe 退出码约定（exit 0/1/2/3）在需求分析中定义了 run-tests 的处理逻辑，但 run-tests 的规则文件模板中如何编码这些退出码语义未详细展示——如果规则文件遗漏了 exit 3 的处理，run-tests 会按默认行为（通用失败）处理，导致连接超时的加速退出逻辑失效；(2) 端口冲突预防的 best-effort 检查可能输出误导性错误信息——如果 dev server 使用环境变量覆盖了默认端口，但端口检查基于默认端口，best-effort 检查会误报"端口已被占用"或"端口空闲"（检查了错误的端口），这个需求与方案之间的断层未被讨论。 |
 
 ---
 
-## 评分汇总
+## Scoring Summary
 
-| 维度 | 上轮 | 本轮 | 满分 | 变化 |
-|------|------|------|------|------|
-| 问题定义 | 80 | 85 | 110 | +5 |
-| 方案清晰度 | 92 | 100 | 120 | +8 |
-| 行业对标 | 65 | 85 | 120 | +20 |
-| 需求完整性 | 70 | 88 | 110 | +18 |
-| 方案创新性 | 55 | 58 | 100 | +3 |
-| 可行性 | 60 | 72 | 100 | +12 |
-| 范围定义 | 60 | 62 | 80 | +2 |
-| 风险评估 | 60 | 72 | 90 | +12 |
-| 成功标准 | 55 | 58 | 80 | +3 |
-| 逻辑一致性 | 65 | 68 | 90 | +3 |
-| **总计** | **662** | **748** | **1000** | **+86** |
-
----
-
-## Phase 3 — 盲点猎杀
-
-### [blindspot-1] shebang 方案不是真正的跨平台方案
-
-提案在"后台进程管理"中推荐 shebang 脚本方案，声称通过 `#!/usr/bin/env bash` 实现跨平台。但这依赖系统上 bash 可用。Windows 11 上 bash 不在 PATH 中（除非安装了 WSL 或 Git Bash）。项目环境标注 `Platform: win32`，但没有确认 bash 在所有目标 Windows 环境中可用。如果她选择了 just 的 `[linux]`/`[windows]` recipe attribute（不需要 bash），但 NFR 中又要求 shebang——两者互斥。提案需要在这两条路线中二选一并坚持。
-
-### [blindspot-2] PID 文件在进程崩溃后的陈旧问题
-
-teardown 进程回收机制依赖 `.forge/dev-server.pid` 文件。但如果 dev server 进程崩溃（OOM、segfault、被用户手动 kill），PID 文件仍然存在但 PID 已失效。当 run-tests 下次启动时，读取陈旧 PID 文件可能导致：(1) PID 已被其他进程复用 → teardown 杀错进程；(2) teardown 误以为 dev server 仍在运行 → 跳过重新启动。提案未讨论 PID 文件的有效性校验（如检查 `/proc/<pid>` 是否存在）。
-
-### [blindspot-3] 混合项目"并发"vs"顺序"矛盾未解决
-
-场景描述中写的是 `just dev frontend` + `just dev backend` "并发"，但并发启动管理一节选择"顺序启动"。这两处直接矛盾。如果选择顺序启动，场景描述中的"并发"措辞是误导性的。如果选择并发启动，需要处理端口分配和进程管理的并发安全。提案必须统一叙述——当前文本会让实现者困惑。
-
-### [blindspot-4] 回滚计划与范围定义不一致
-
-回滚计划定义了四阶段回滚机制（feature flag + 兼容期 + 紧急回退 + 完全移除），但范围内没有列出 feature flag 的开发任务。"10-15 个编码任务"的估算中没有包含回滚基础设施。如果回滚机制在范围内，任务估算偏低；如果不在范围内，回滚计划就是不可执行的承诺。
-
-### [blindspot-5] run-tests 作为 LLM SKILL 的可靠性天花板
-
-提案新增了"HARD-GATE 规则"和"状态机驱动"来保证 LLM agent 执行的可靠性。但 HARD-GATE 在 SKILL.md 中本质上是对 LLM 的文本指令——LLM 可以忽略、误读或部分执行这些指令。状态机驱动要求 LLM 维护"当前步骤"状态，但 LLM 的上下文窗口有限，长测试会话中 LLM 可能丢失状态。提案正确识别了"长期方向"（迁移到 Go 代码），但没有给出 v3.0.0 内的可靠性下限——如果 LLM 执行出错的概率是多少？可接受的错误率是多少？
-
-### [blindspot-6] `just test [journey]` 过滤的实现在配方体内
-
-journey 过滤策略表格定义了每种 surface 的 journey 标签映射，但实际过滤逻辑由"justfile 配方体中的 if/else 或 test runner 的标签机制实现"。这意味着：(1) 过滤逻辑不是由 run-tests 控制的，而是由 init-justfile 生成的配方体决定的；(2) 如果 init-justfile 生成的配方体中的过滤逻辑有 bug，run-tests 无法纠正；(3) 用户修改 justfile 后可能破坏过滤逻辑。提案将关键行为的正确性交给了配方体文本生成（LLM），但没有讨论验证机制。
+| Dimension | Score | Max |
+|-----------|-------|-----|
+| 1. Problem Definition | 88 | 110 |
+| 2. Solution Clarity | 105 | 120 |
+| 3. Industry Benchmarking | 108 | 120 |
+| 4. Requirements Completeness | 95 | 110 |
+| 5. Solution Creativity | 75 | 100 |
+| 6. Feasibility | 85 | 100 |
+| 7. Scope Definition | 77 | 80 |
+| 8. Risk Assessment | 85 | 90 |
+| 9. Success Criteria | 78 | 80 |
+| 10. Logical Consistency | 85 | 90 |
+| **Total** | **881** | **1000** |
 
 ---
 
-## 评级
+## Phase 3 — Blindspot Hunt
 
-**748/1000 — 中等偏上，仍有结构性缺陷需要修复**
+### [blindspot-1] scope 兼容层字典序消歧缺乏语义依据
 
-主要改善（vs 上轮 662）：
-1. 行业对标从零到有（+20），是最显著的提升
-2. 非功能需求表格填补了上轮的最大空洞（+18）
-3. 技术深化小节使可行性论证从空洞变为具体（+12）
-4. 回滚计划回应了上轮盲点（+12）
-5. 证据链修正了事实错误
+提案明确承认 Go 的 `map[string]string` 无序，因此选择字典序作为确定性选择标准。但字典序消歧与语义无关：如果 surfaces 为 `{zebra-api: api, alpha-api: api}`，`backend` 总是映射到 `alpha-api`，与用户在 YAML 中表达的意图无关。提案同时分析了"yaml.Node.Content 按插入顺序读取"的技术事实，说明声明顺序在 YAML 解析层面是可用的——选择字典序而非声明顺序是一个有意识的设计选择，但提案未充分论证为何字典序优于声明顺序。声明顺序至少反映了用户的逻辑优先级（用户通常将主要服务放在前面），而字典序是一个纯技术性的确定性保证。
 
-仍存在的结构性问题：
-1. 回滚计划与范围定义不一致——feature flag 在回滚计划中承诺但范围中无任务
-2. 混合项目"并发"与"顺序"的叙述矛盾
-3. shebang 方案的跨平台可靠性未验证
-4. LLM agent 执行的可靠性下限未定义
-5. 成功标准缺少混合项目和回滚验证的测试定义
+**引用**："消歧策略改为：按 key 的**字典序**选择第一个匹配的 surface key（确定性且不依赖运行时行为）"
+
+**改进**：(1) 论证字典序优于声明顺序的理由（如"声明顺序在 YAML 被序列化/反序列化后可能丢失，而字典序不依赖序列化格式"）；或 (2) 使用 `yaml.Node` 保留声明顺序，在兼容层中使用声明顺序。
+
+### [blindspot-2] `# user-customized` 保护的全有或全无粒度
+
+用户在 justfile 的 `test` 配方中添加了 `# user-customized` 标记（因为修改了一个环境变量），后续 init-justfile 执行时会完全跳过该配方的覆盖。提案提供了差异摘要和 `--force-regenerate` 两个补救路径，这是好的设计。但差异摘要是"逐行对比"——如果 surface 规则的改进涉及配方体的多处修改（如新增了端口冲突检测 + probe 重试逻辑优化 + PID 存活检查），用户需要手动将所有这些改进合并到自己的自定义版本中，这可能导致合并遗漏。
+
+提案已意识到这个问题并提供了差异摘要作为信息支持，这比"静默跳过"好得多。但长期使用中，用户的 justfile 可能逐渐与推荐的 surface 规则模板产生越来越大的偏差。
+
+**引用**："将当前配方体与新生成版本逐行对比，列出变更点（如'probe 默认重试次数从 20 变为 30'、'新增 PROBE_INTERVAL 环境变量支持'），用户据此判断是否需要手动同步"
+
+### [blindspot-3] probe 退出码约定在规则文件模板中的完整性
+
+probe 退出码约定定义了 4 种状态（exit 0/1/2/3），run-tests 需要根据退出码执行不同的后续动作。但 run-tests 的编排逻辑由规则文件模板驱动——如果规则文件模板中遗漏了 exit 3（连接超时，加速退出）的处理逻辑，run-tests 会按默认行为（通用失败，继续重试）处理 exit 3，导致连接超时的加速退出逻辑失效。
+
+这是一个"退出码定义"与"退出码消费者"之间的耦合风险——新增退出码语义时，需要同步更新 run-tests 的规则文件模板，但提案未将此耦合作为维护约束明确记录。
+
+**引用**："退出码约定：exit 0 = 健康，exit 1 = 通用失败（默认重试行为），exit 2 = 端口冲突（立即中止），exit 3 = 连接超时（加速退出）。run-tests 根据退出码执行对应的后续动作"
+
+**改进**：在规则文件模板中定义一个"退出码处理表"，明确列出所有退出码及其对应的后续动作，新增退出码时必须同步更新此表。
+
+### [blindspot-4] 端口冲突预防检查基于错误端口的误导性
+
+端口冲突预防策略在 `just dev` 启动前检查端口是否被占用。但检查使用的端口号来自配方体中的硬编码默认值（如 3000），而用户可能通过环境变量（`.env` 文件中的 PORT）覆盖了实际端口。在这种情况下：(1) best-effort 检查端口 3000 时发现空闲，但 dev server 实际使用 3001；(2) 或检查端口 3000 时发现被占用，但 dev server 实际使用 3001——用户收到误导性的"端口已被占用"警告。
+
+提案已承认 best-effort 检查的 TOCTOU 竞态，但未讨论"检查了错误端口"的更基本问题。
+
+**引用**："Linux/macOS 使用 `lsof -i :$PORT`（注意：Linux 上可能需要 root 权限，失败时静默跳过）"
+
+### [blindspot-5] test.execution 引用审计范围不完整
+
+test.execution 引用审计清单列了 4 个 skill（fix-bug、clean-code、run-tests、quality-gate），但审计范围限于 `plugins/forge/skills/` 目录。test.execution 可能在以下位置也有引用：(1) README 或用户文档；(2) examples 目录中的示例配置；(3) Forge CLI 的帮助文本或 usage 信息。如果这些位置引用了 test.execution，移除后文档层面的不一致会影响用户体验。
+
+**引用**："审计通过 `grep -r "test.execution" plugins/forge/skills/` 执行"
+
+**改进**：扩展审计范围为 `grep -r "test.execution" .`（全仓库搜索），排除 `.git` 和 `node_modules` 目录。
+
+### [blindspot-6] timeout 覆盖范围中的"最低估计耗时"逻辑循环
+
+提案声明 run-tests 在每个编排步骤前检查剩余时间，若"剩余时间不足以完成下一个步骤的最低估计耗时"则跳过后续步骤。但 test 步骤的"最低估计耗时"来自"用户通过 `forge config get test.timeout` 获取并传入"——这意味着 test 步骤的最低估计耗时等于 test.timeout 本身，形成了一个逻辑循环：用 test.timeout 来决定是否跳过 test 步骤，但 test 步骤的最低估计就是 test.timeout。
+
+如果 test.timeout = 300 秒，probe 消耗了 60 秒，剩余 240 秒 < test.timeout (300)，run-tests 会跳过 test 步骤——这显然不合理。
+
+**引用**："若剩余时间不足以完成下一个步骤的最低估计耗时（probe 最低估计 = 1 次 probe 超时，test 最低估计 = 用户通过 `forge config get test.timeout` 获取并传入），则跳过后续步骤并执行 teardown"
+
+**改进**：test 步骤的"最低估计耗时"不应等于 test.timeout（总配额），而应是一个独立的估计值（如 test 步骤的历史平均耗时或固定默认值），或从 test.timeout 中减去 probe 的实际消耗来计算 test 的可用时间。
+
+### [blindspot-7] `api/web 合并为 service` 的前瞻性声明缺乏收敛条件
+
+提案声明"若后续验证两者确实无实质性差异，可合并为 `service` 规则并共享编排模板"。但没有定义"验证"的收敛条件——需要多少个迭代？什么数据点？在多少种 web/api 项目上验证过？没有收敛条件的声明是空头承诺。
+
+**引用**："若后续验证两者确实无实质性差异，可合并为 `service` 规则并共享编排模板"
+
+**改进**：定义收敛条件，如"连续 3 个版本中 web 和 api 规则文件无实质性差异（仅 probe 端点不同），且无用户反馈要求区分两者，则合并为 service"。
+
+---
+
+## Bias Detection Report
+
+**Pre-revised annotated regions**: 9 annotated paragraphs/blocks (lines 78, 156, 174, 187, 203, 332, 335, 509, 524)
+
+Attacks found in annotated regions:
+1. [Solution Clarity] probe 退出码约定与规则文件模板的完整性 (blindspot-3) — line 79 pre-revised:medium（probe 重试差异化）
+2. [Logical Consistency] scope 兼容层字典序消歧缺乏语义依据 (blindspot-1) — line 340（消歧规则区域）
+3. [Solution Clarity] timeout 覆盖范围的"最低估计耗时"逻辑循环 (blindspot-6) — line 112（timeout 覆盖范围区域）
+
+Annotated region attacks: 3 attack points / 9 annotated paragraphs = density 0.33
+
+Unannotated regions: ~200 paragraphs
+
+Attacks in unannotated regions:
+1. [Problem Definition] 证据质量有限（推断性，无实地数据）
+2. [Solution Clarity] 多 surface 同类型 journey 过滤参数解析歧义
+3. [Solution Clarity] 跨平台双变体 LLM 生成可靠性
+4. [Industry Benchmarking] 缺少 Bazel/Please 构建规则编排模式
+5. [Industry Benchmarking] 未讨论 SKILL 内轻量脚本中间方案
+6. [Requirements] init-justfile 多次运行增量更新不在"关键场景"中
+7. [Requirements] 跨平台 NFR 验证方式不够系统化
+8. [Requirements] GetConfigValue 现有键测试覆盖未说明
+9. [Requirements] 端口冲突检查基于错误端口的误导性 (blindspot-4)
+10. [Requirements] test.execution 引用审计范围不完整 (blindspot-5)
+11. [Feasibility] 15-20 个编码任务范围偏大
+12. [Scope Definition] 迁移指南是否在范围内未明确
+13. [Risk Assessment] `# user-customized` 导致用户错过改进的风险 (blindspot-2)
+14. [Success Criteria] `# user-customized` 有效性验证缺失
+15. [Logical Consistency] api/web 合并收敛条件缺失 (blindspot-7)
+16. [Logical Consistency] timeout 最低估计耗时逻辑循环 (blindspot-6)
+
+Unannotated region attacks: 16 attack points / ~200 paragraphs = density 0.08
+
+**Ratio (annotated/unannotated)**: 4.1x
+
+**Interpretation**: Annotated regions 的攻击密度为 4.1x，与历史趋势一致（iteration-4 为 3.75x）。这表明 pre-revised 区域的修复质量在持续改善，引入的新问题逐渐减少。无 `conflict-with-pre-revision` 标记——所有 pre-revised 区域的修订方向与评分者的判断一致。
+
+---
+
+## Rating
+
+SCORE: 881/1000
+DIMENSIONS:
+  Problem Definition: 88/110
+  Solution Clarity: 105/120
+  Industry Benchmarking: 108/120
+  Requirements Completeness: 95/110
+  Solution Creativity: 75/100
+  Feasibility: 85/100
+  Scope Definition: 77/80
+  Risk Assessment: 85/90
+  Success Criteria: 78/80
+  Logical Consistency: 85/90
+ATTACKS:
+1. [Problem Definition]: 证据质量有限——基于推断而非实地数据 — "来源于 config-schema.md 中记录的 8 个示例，样本量有限，不应视为统计有效的结论" — 提供 Forge 内部示例项目的 surface 类型分布作为补充证据
+2. [Problem Definition]: 零迁移成本窗口的边界条件未讨论 — "v3.0.0 尚未发布，无存量用户，此时移除 test.execution 的迁移成本为零" — 讨论如果 v3.0.0 延期或存在 beta/preview 用户时的影响
+3. [Solution Clarity]: 多 surface 同类型 journey 过滤参数解析歧义 — "`just test admin-panel e2e` 中 `admin-panel` 是 scope 还是 journey？" — 明确参数解析优先级规则（如先查 surfaces map key，匹配则为 scope，否则为 journey）
+4. [Solution Clarity]: 跨平台双变体 LLM 生成可靠性 — "init-justfile 的 LLM 需要为每个跨平台配方生成语法完全不同的两个版本" — 量化变体总数并提供 LLM 生成的验证机制
+5. [Solution Clarity/Logical Consistency]: probe 退出码约定要求规则文件模板完整性 — "exit 0 = 健康，exit 1 = 通用失败，exit 2 = 端口冲突，exit 3 = 连接超时" — 在规则文件模板中定义退出码处理表
+6. [Industry Benchmarking]: 缺少 Bazel 构建规则编排模式对比 — 补充"测试编排作为构建规则"的模式对比
+7. [Requirements]: 端口冲突检查可能基于错误端口 — "Linux/macOS 使用 `lsof -i :$PORT`" — 检查端口号应与环境变量解析后的实际端口一致
+8. [Requirements]: test.execution 引用审计范围限于 skills 目录 — "`grep -r 'test.execution' plugins/forge/skills/`" — 扩展为全仓库搜索
+9. [Requirements/Logical Consistency]: timeout 最低估计耗时逻辑循环 — "test 最低估计 = 用户通过 `forge config get test.timeout` 获取并传入" — test 步骤的最低估计应为独立值而非等于总配额
+10. [Scope Definition]: `# user-customized` 有效性验证缺失 — 在成功标准中增加保护机制的验证条目
+11. [Risk Assessment]: `# user-customized` 导致用户错过改进的风险 — 在风险表中增加此风险及缓解措施
+12. [Logical Consistency]: api/web 合并收敛条件缺失 — "若后续验证两者确实无实质性差异，可合并为 service" — 定义具体的收敛条件和数据点

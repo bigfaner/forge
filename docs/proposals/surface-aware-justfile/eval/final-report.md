@@ -1,64 +1,78 @@
 # Eval-Proposal Complete
 
-**Final Score**: 810/1000 (target: 900)
+**Final Score**: 907/1000 (target: 900)
 **Iterations Used**: 3/3
-**Pre-Revision**: Executed (10 findings from config-schema-surface-detection expert)
+**Pre-Revision**: Executed (14 findings from surface-aware-dispatcher-orchestrator expert)
 
 ## Score Progression
 
 | Iteration | Score | Delta |
 |-----------|-------|-------|
-| Iteration 1 | 662/1000 | — |
-| Iteration 2 | 748/1000 | +86 |
-| Iteration 3 (final) | 810/1000 | +62 |
+| Baseline (pre-revision) | 846 | — |
+| Iteration 1 | 877 | +31 |
+| Iteration 2 | 881 | +4 |
+| Iteration 3 (final) | 907 | +26 |
 
 ## Dimension Breakdown (final)
 
 | Dimension | Score | Max |
 |-----------|-------|-----|
-| Problem Definition | 88 | 110 |
-| Solution Clarity | 108 | 120 |
-| Industry Benchmarking | 92 | 120 |
-| Requirements Completeness | 90 | 110 |
-| Solution Creativity | 62 | 100 |
-| Feasibility | 76 | 100 |
-| Scope Definition | 70 | 80 |
-| Risk Assessment | 78 | 90 |
-| Success Criteria | 68 | 80 |
-| Logical Consistency | 78 | 90 |
+| Problem Definition | 92 | 110 |
+| Solution Clarity | 110 | 120 |
+| Industry Benchmarking | 110 | 120 |
+| Requirements Completeness | 98 | 110 |
+| Solution Creativity | 78 | 100 |
+| Feasibility | 87 | 100 |
+| Scope Definition | 78 | 80 |
+| Risk Assessment | 87 | 90 |
+| Success Criteria | 80 | 80 |
+| Logical Consistency | 87 | 90 |
 
 ## Pre-Revision (Freeform Findings)
 
-**Expert**: config-schema-surface-detection (reused, relevance 10/10)
-**Findings Triage Summary**: 11 findings triaged (11 accepted, 0 partially-accepted, 0 deferred, 7 skipped as subjective)
+**Expert**: surface-aware-dispatcher-orchestrator (new)
+**Findings Triage Summary**: 14 findings triaged (14 accepted, 0 partially-accepted, 0 deferred, 0 skipped)
 
 | Finding | Severity | Status | Edit Summary |
 |---------|----------|--------|-------------|
-| Step 3a fallback 循环依赖 | high | accepted | 新增 test 配方生成 fallback 链 |
-| 混合项目 scope 映射规则缺失 | high | accepted | 明确 scope 值 = surfaces map key |
-| dev scope 参数未定义 | medium | accepted | 补充 Standard Target Contract |
-| surface 信息源优先级缺失 | medium | accepted | 新增优先级规则 |
-| api/web 编排相同 | low | accepted | 新增统一性说明 |
-| config schema 变更范围被低估 | high | accepted | 升级为独立子方案 |
-| test.execution 废弃行为 | high | accepted | 新增废弃检测和警告 |
-| 编排硬编码为固定配方名 | medium | accepted | 新增 trade-off 分析 |
-| 现有 surface 感知环境检查重叠 | medium | accepted | 新增互补关系说明 |
-| 语言模板 vs surface 规则冲突 | medium | accepted | 新增仲裁规则 |
-| journey 过滤策略未定义 | medium | accepted | 新增最小规范和示例 |
+| 规则文件双重职责边界不清晰 | high | accepted | 明确 Markdown 标题分段（编排序列 + 配方调用契约） |
+| 规则文件物理归属未澄清 | high | accepted | 声明物理独立但逻辑同构 |
+| npm wrapper PID 问题 | high | accepted | 增加端口反查机制 |
+| 调度器同构性声明过度泛化 | medium | accepted | 明确同构仅覆盖流程骨架 |
+| scope 迁移原子提交 review 负荷高 | medium | accepted | 弱化为同一 PR |
+| 兼容层回退行为未定义 | medium | accepted | 回退 scope 为 all |
+| macOS ps 截断 | medium | accepted | 增加 -w 标志 |
+| HARD-GATE 运行时保障 | medium | accepted | 增加 test-state.json 门控 |
+| 后台启动退出码不可靠 | medium | accepted | 三层检测机制 |
+| 多 scope probe 等待叠加 | medium | accepted | 差异化重试退出码 |
+| Go 代码校验未验证 | medium | accepted | 确认 map[string]string 无枚举校验 |
+| Get-CimInstance fallback | low | accepted | 回退 tasklist /V |
+| probe 超时早期反馈 | low | accepted | 增加 probe 进度输出 |
+| probe 顺序进度 | low | accepted | 增加后端就绪提示 |
 
-**Classification Audit**: factual correction (5) / structural suggestion (6) / subjective preference (7)
+**Classification Audit**: factual correction (0) / structural suggestion (14) / subjective preference (0)
 
-## Remaining Weaknesses (from final iteration)
+## Remaining Attacks (Iteration 3)
 
-1. Windows PID 获取方案不可行（start /B 不暴露 PID）
-2. probe 配方 Windows 变体未定义
-3. NFR "故障注入测试"与范围不对齐
-4. surface-orchestration.yaml 缺少 schema 验证
-5. 混合项目 journey 过滤缺少 scope 感知
-6. 问题捆绑必要性论证不足
-7. "采纳核心思想"表述虚夸
-8. dry-run 验证局限性
+1. [Logical Consistency] `just test` 参数签名在契约表格与解析优先级之间不一致
+2. [Solution Creativity] scope 兼容层字典序消歧缺乏语义依据
+3. [Risk Assessment] 退出码处理表强制性缺乏验证机制
+4. [Feasibility] 巨型 PR 代码审查缓解策略缺失
+5. [Feasibility] 跨平台配方双变体数量未量化
+6. [Industry Benchmarking] 缺少 Bazel 对比
+7. [Requirements] test.execution 审计范围限于 skills 目录
+
+## Baseline Score Comparison
+
+| Stage | Score |
+|-------|-------|
+| Baseline (pre-revision) | 846 |
+| Final (iteration 3) | 907 |
+
+Pre-revision improved the document by 61 points over baseline. Net improvement across all iterations: +61 points.
 
 ## Outcome
 
-**Target NOT reached** — 3 iterations exhausted. Score improved 148 points (662 → 810) through pre-revision + 3 scorer-reviser cycles. Remaining gap (90 points) is concentrated in Solution Creativity (62/100) and Feasibility (76/100), primarily due to Windows platform edge cases and the inherent difficulty of LLM-driven orchestration reliability.
+**Target reached** — Final score 907/1000 exceeds target 900 by 7 points.
+
+Weakest dimensions: Solution Creativity (78/100, inherent limitation of standard pipeline patterns) and Feasibility (87/100, large PR scope and cross-platform variant maintenance). These gaps are structural to the proposal's scope rather than fixable through iteration.
