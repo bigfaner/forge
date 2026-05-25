@@ -56,7 +56,7 @@ status: Draft
 | Schema 与数据回归 | config-schema-surface-detection, golden-dataset-regression-architect | 均涉及 schema 迁移、快照测试 |
 | 文档审计 | documentation-implementation-drift-auditor | 文档-代码一致性 |
 
-12 个专家自然归并为 **6 个大领域**，加上未覆盖的潜力领域（如 UI/设计、知识管理、CLI 交互），合理上限为 **8-10 个大领域**。"8-12" 的范围估计基于：现有聚类 6 个 + 预留 2-4 个增长空间。
+12 个专家自然归并为 **6 个大领域**，加上未覆盖的潜力领域（如 UI/设计、知识管理、CLI 交互），上限为 **10 个大领域**（初始 6 个 + 预留 4 个增长空间）。
 
 ### Innovation Highlights
 **分层领域识别**：通过预定义分类表缩小 LLM 的领域推断搜索空间。分类表将"从无限可能的领域名中选一个"简化为"从有限候选项中选一个"，降低了不一致的概率（从 "test infrastructure" vs "testing pipeline" 这类自由发散，收敛为在预定义的"构建与测试基础设施"条目中确认）。但这并非绝对保证——LLM 仍可能将边界模糊的 proposal 映射到不同条目。大多数专家系统要么用固定专家库（无灵活性），要么完全依赖 LLM 自由推断（无一致性）——分层方案在两者之间取得平衡，本质是用有限的选择集换取更高的匹配可靠性。
@@ -74,11 +74,11 @@ status: Draft
 - **可扩展性**：新增领域仅需在 `expert-inference.md` 的分类表中追加一行（约 30 tokens），无需修改其他文件。扩展操作不涉及 schema 变更或代码改动
 - **性能**：两步推理（领域匹配 + 专家生成）在单次 LLM 调用内完成（分类表嵌入 prompt，LLM 先输出领域编号再输出专家定义），不增加 API 调用次数。分类表嵌入增加约 300 tokens 输入成本，相对于现有 expert-inference prompt（约 2000 tokens）增幅 < 15%。推理延迟不增加，因为分类表查询是在同一推理过程中完成的
 - **旧专家隔离**：现有 12 个 proposal-specific 专家文件保留在 `docs/experts/`，通过 `scope` 字段过滤使其不再参与新系统的复用匹配——本质是隐性废弃：文件仍存在但永远不会被新的 domain-level 评估选中。这是刻意选择：旧专家的窄领域关键词会干扰新系统的匹配准确性
-- **分类准确率**：LLM 将 proposal 映射到分类表的准确率应 >= 80%（验证：将 12 个已有 proposal 的领域归属与人工标注对比，LLM 映射结果与人工标注一致的为正确分类）
+- **分类准确率**：LLM 将 proposal 映射到分类表的准确率应 >= 80%（验证：将 11 个唯一 proposal 的领域归属与人工标注对比，LLM 映射结果与人工标注一致的为正确分类）
 
 ### Constraints & Dependencies
 
-- 改动仅限 `experts/freeform/` 目录下的 prompt 文件和 `rules/freeform-expert-persistence.md`
+- 改动仅限 `experts/freeform/` 目录下的 prompt 文件（含 `extraction-prompt.md`）和 `rules/freeform-expert-persistence.md`
 - 不影响 freeform-review-protocol、scorer-composition、reviser-composition
 - 用户确认循环（Accept / Modify / Regenerate）保持不变
 
@@ -110,7 +110,7 @@ status: Draft
 1. **expert-inference.md**：新增两步生成流程（大领域匹配 → 领域内专家生成），需嵌入分类表并与后续匹配逻辑对齐
 2. **expert-template.md**：新增 `scope` 字段，影响所有下游消费专家文件的 prompt
 3. **freeform-expert-persistence.md**：Jaccard 匹配逻辑需区分 `domain-level` 与 `proposal-specific` 专家，避免不同 scope 级别的专家误匹配
-4. **extraction-prompt.md**：从 freeform review 提取 findings 时需感知专家 scope 级别，以正确加权 findings 的适用范围
+4. **extraction-prompt.md**：从 freeform review 提取 findings 时需感知专家 scope 级别，在提取的 JSON 中为每个 finding 标注 `scope` 字段
 
 四个文件的变更存在依赖关系：template 的 schema 变更是 inference 和 persistence 的前提，extraction 依赖 template 的 scope 字段。
 
@@ -148,13 +148,14 @@ status: Draft
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|------------|
 | 分类表初期覆盖不全，部分 proposal 无法匹配 | M | L | 提供 LLM 自由推断降级路径，未匹配时自动降级 || 领域级专家的评审深度不如 proposal-specific 专家 | M | M | 承认 trade-off：领域级专家覆盖面更广但单 proposal 深度可能不足。缓解机制为：(1) 专家 prompt 中注入当前 proposal 全文作为评审焦点，使领域专家在宽泛背景下针对 proposal 的特定问题发力；(2) 用户确认循环（Accept / Modify / Regenerate）作为最终质量保障——若深度不足，用户可通过 Modify 要求专家聚焦特定子领域 |
-| 分类表随时间膨胀难以维护 | L | L | 分类表控制在大领域粒度（8-12 个），不细化到子领域 || 旧 proposal-specific 专家持续参与 Jaccard 匹配产生噪声 | M | M | 匹配逻辑区分 `scope` 字段：domain-level 专家仅与其他 domain-level 专家匹配，proposal-specific 专家仅与同 proposal 匹配。旧专家不会误匹配到新系统 |
+| 分类表随时间膨胀难以维护 | L | L | 分类表控制在大领域粒度，初始 6 个上限 10 个，不细化到子领域 || 旧 proposal-specific 专家意外参与新系统匹配 | L | M | `scope` 字段过滤确保 domain-level 匹配仅匹配 domain-level 专家。若过滤逻辑有 bug，旧专家的窄关键词可能产生噪声 |
 
 ## Success Criteria
 - [ ] 新生成的专家 `domain` 关键词覆盖范围 ≥ 2 个 proposal 的领域交集。计算方式：从同大领域内选取 2 个已有 proposal，提取其 `domain` 关键词集合 K₁ 和 K₂，新专家的关键词集合 K_new 须满足 `|K_new ∩ K₁| / |K₁| ≥ 0.5` 且 `|K_new ∩ K₂| / |K₂| ≥ 0.5`（即新专家至少覆盖每个 proposal 一半以上的领域关键词）。**已知 trade-off**：覆盖面扩大会稀释单 proposal 的评审深度，此 SC 仅衡量覆盖面，深度保障由用户确认循环兜底
 - [ ] 同领域内的第二个 proposal 评估时，复用匹配成功（当前为 0 成功）
-- [ ] `extraction-prompt.md` 正确区分 domain-level 与 proposal-level findings：domain-level 专家产出的 findings 在 freeform review 中被标记为适用范围更广，不因单一 proposal 的上下文被过度窄化（验证：用同一 domain-level 专家评审两个同领域 proposal，两者共享的 findings 比例 ≥ 30%。"共享 findings"判定算法：对两次评审的 findings 列表 F₁ 和 F₂，逐对比较 summary 字段，若两 findings 的 summary 语义等价（由 LLM 判定：将两个 summary 拼接后询问"是否表达同一问题"，回答 yes 则视为共享），则计为 1 个 shared finding。比例 = |shared(F₁, F₂)| / max(|F₁|, |F₂|)）
+- [ ] `extraction-prompt.md` 正确区分 domain-level 与 proposal-specific findings：domain-level 专家产出的 findings 在 freeform review 中被标记为适用范围更广，不因单一 proposal 的上下文被过度窄化（验证：用同一 domain-level 专家评审两个同领域 proposal，两者共享的 findings 比例 ≥ 30%。"共享 findings"判定算法：对两次评审的 findings 列表 F₁ 和 F₂，逐对比较 summary 字段，若两 findings 的 summary 语义等价（由 LLM 判定：将两个 summary 拼接后询问"是否表达同一问题"，回答 yes 则视为共享），则计为 1 个 shared finding。比例 = |shared(F₁, F₂)| / max(|F₁|, |F₂|)）
 - [ ] 专家生成后经用户确认的轮次 ≤ 2（当前经常需要修改以扩大领域范围）
+- [ ] `scope` 字段在复用匹配中正确隔离：使用 12 个现有专家（均为 `proposal-specific`）测试，当评估一个生成 `domain-level` 专家的 proposal 时，复用匹配的候选列表中不包含任何 `proposal-specific` 专家（验证：检查 P0.1 候选列表的 scope 字段值）
 - [ ] 分类表覆盖 ≥ 80% 的已有 proposal（分母为 `docs/experts/` 下已有专家文件对应的唯一 proposal 数量，即当前 11 个；验证：将每个已有 proposal 逐一匹配分类表，统计成功匹配的比例）
 
 ## Next Steps
