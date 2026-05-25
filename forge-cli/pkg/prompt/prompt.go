@@ -106,7 +106,7 @@ func Synthesize(opts SynthesizeOpts) (string, error) {
 //
 //	{{TASK_ID}}         — task ID (e.g. "2.1", "T-test-gen-cases")
 //	{{TASK_FILE}}       — absolute path to the task markdown file
-//	{{SCOPE}}           — task surface key (empty string means cross-surface)
+//	{{SURFACE_KEY}}     — task surface key (empty string means cross-surface)
 //	{{FEATURE_SLUG}}    — feature slug (e.g. "auth-refresh")
 //	{{PHASE_SUMMARY}}   — "PHASE_SUMMARY: <path>" or empty (injected line)
 //	{{TEST_TYPE_ARG}}   — " --type <surfaceType>" or empty (for per-type gen-scripts)
@@ -134,7 +134,7 @@ func renderTemplate(templateFile string, opts SynthesizeOpts, t task.Task) (stri
 	// Inject TASK_CATEGORY after TASK_FILE line for submit-task skill routing.
 	category := task.CategoryForType(t.Type)
 	result = strings.Replace(result, "TASK_FILE: "+taskFile, "TASK_FILE: "+taskFile+"\nTASK_CATEGORY: "+category, 1)
-	result = strings.ReplaceAll(result, "{{SCOPE}}", scope)
+	result = strings.ReplaceAll(result, "{{SURFACE_KEY}}", scope)
 	result = strings.ReplaceAll(result, "{{FEATURE_SLUG}}", opts.FeatureSlug)
 	result = strings.ReplaceAll(result, "{{PHASE_SUMMARY}}", phaseSummaryLine)
 

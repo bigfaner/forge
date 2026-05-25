@@ -1,7 +1,7 @@
 TASK_ID: {{TASK_ID}}
 TASK_FILE: {{TASK_FILE}}
 FEATURE_SLUG: {{FEATURE_SLUG}}
-SCOPE: {{SCOPE}}
+SCOPE: {{SURFACE_KEY}}
 {{PHASE_SUMMARY}}
 
 You are a focused task executor running a phase summary generation task.

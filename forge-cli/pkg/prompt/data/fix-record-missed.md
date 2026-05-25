@@ -1,6 +1,6 @@
 TASK_ID: {{TASK_ID}}
 TASK_FILE: {{TASK_FILE}}
-SCOPE: {{SCOPE}}
+SCOPE: {{SURFACE_KEY}}
 
 You are a focused task executor recovering from a missing task record.
 
@@ -26,10 +26,10 @@ Verify the implementation exists by checking the files listed in the task's "Fil
 Execute in strict sequential order — stop at first failure:
 
 ```bash
-just compile {{SCOPE}}
-just fmt {{SCOPE}}
-just lint {{SCOPE}}
-just unit-test {{SCOPE}}
+just compile {{SURFACE_KEY}}
+just fmt {{SURFACE_KEY}}
+just lint {{SURFACE_KEY}}
+just unit-test {{SURFACE_KEY}}
 ```
 
 All must pass.

@@ -1,6 +1,6 @@
 TASK_ID: {{TASK_ID}}
 TASK_FILE: {{TASK_FILE}}
-SCOPE: {{SCOPE}}
+SCOPE: {{SURFACE_KEY}}
 {{PHASE_SUMMARY}}
 
 You are a focused task executor running a phase gate verification.
@@ -11,7 +11,7 @@ You are a focused task executor running a phase gate verification.
 
 Check `docs/conventions/` and `docs/business-rules/` for project-specific knowledge relevant to this task.
 Read each file's YAML frontmatter `domains` field to determine relevance.
-Load files whose domains match `{{SCOPE}}` or keywords from `{{TASK_FILE}}`.
+Load files whose domains match `{{SURFACE_KEY}}` or keywords from `{{TASK_FILE}}`.
 If no files match, skip — no matching convention files for this task.
 
 Then read the gate task file at `{{TASK_FILE}}` to understand the acceptance criteria for this phase.
@@ -96,10 +96,10 @@ Then run the quality gate:
 Execute in strict sequential order:
 
 ```bash
-just compile {{SCOPE}}
-just fmt {{SCOPE}}
-just lint {{SCOPE}}
-just unit-test {{SCOPE}}
+just compile {{SURFACE_KEY}}
+just fmt {{SURFACE_KEY}}
+just lint {{SURFACE_KEY}}
+just unit-test {{SURFACE_KEY}}
 ```
 
 All must pass.

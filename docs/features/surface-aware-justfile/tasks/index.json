@@ -249,7 +249,7 @@
         "3.3",
         "2.gate"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3.5-template-migration.md",
       "record": "records/3.5-template-migration.md",
       "scope": "all",
