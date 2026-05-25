@@ -12,25 +12,25 @@ sources:
 <!-- gen-contracts: do not edit manually. Regenerate via /gen-contracts. -->
 
 ## Outcome "success"
-- Preconditions: "Go data model migration is completed, task/types.go has been updated"
-- Input: "user inspects task/types.go after implementation"
-- Output: "Scope field replaced by SurfaceKey (string), new SurfaceType (string) field added, GetSurfaceKey() provides backward-compatible access, JSON serialization includes surfaceKey and surfaceType fields"
-- State: "Task struct uses SurfaceKey and SurfaceType, Scope field removed entirely, no backward compatibility layer retained"
+- Preconditions: "task data model has been migrated, task file format uses new surface fields"
+- Input: "user inspects task data format after implementation"
+- Output: "task files use surface-key and surface-type fields instead of the old scope field, data serialization includes both new fields, the old scope field is no longer present"
+- State: "task data model uses surface-key and surface-type exclusively, old scope field removed from all task file formats"
 - Side-effect: "none"
 
 ## Outcome "legacy-scope-detected"
-- Preconditions: "existing task files have scope: frontend or scope: backend in their frontmatter"
-- Input: "user attempts to read the task via forge task status or similar command"
-- Output: "blocking error (exit 2) to prevent silent data loss, stderr message indicates migration required: found N tasks with legacy scope field but no surface-key, run forge breakdown-tasks or forge quick-tasks to regenerate tasks"
+- Preconditions: "existing task files contain the old scope field in their frontmatter"
+- Input: "user attempts to read task information via task status or similar command"
+- Output: "blocking error (exit 2) to prevent silent data loss, error message indicates migration required with count of affected tasks and recovery command to run migration"
 - State: "task read blocked until migration is performed"
 - Side-effect: "none"
 
-## Outcome "migration-via-forge-task-migrate"
+## Outcome "migration-via-task-migrate"
 <!-- source: inferred -->
-<!-- reasoning: Tech design defines forge task migrate subcommand to handle migration from scope to surface-key/surface-type. This is the recovery path from legacy-scope-detected outcome. Journey edge case 2b mentions forge task migrate capability. -->
-- Preconditions: "legacy task files exist with scope field, forge task migrate command is available"
-- Input: "user runs forge task migrate to convert scope to surface-key + surface-type"
-- Output: "forge task migrate scans index.json, maps scope field values via forge surfaces CLI to surface-key + surface-type, updates index.json and frontmatter files in place"
+<!-- reasoning: Tech design defines a task migrate command to handle migration from scope to surface-key/surface-type. This is the recovery path from legacy-scope-detected outcome. -->
+- Preconditions: "legacy task files exist with scope field, task migration command is available"
+- Input: "user runs task migration command to convert scope to surface-key and surface-type"
+- Output: "migration command scans task index, maps scope values to surface-key and surface-type via surface detection, updates task files and index in place"
 - State: "all task files updated with surface-key and surface-type, scope field removed from frontmatter"
 - Side-effect: "index.json and task frontmatter files modified on disk"
 

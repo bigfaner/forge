@@ -27,6 +27,16 @@ sources:
 - State: "no valid background process to track, .forge/test-state.json not updated or reflects failed dev step"
 - Side-effect: "run-tests proceeds to teardown and exits with appropriate exit code (1 for retryable, 2 for blocking)"
 
+## Outcome "dev-startup-timeout"
+<!-- source: inferred -->
+<!-- reasoning: Web/API surface async dev server startup may hang indefinitely (e.g., dependency resolution stall, port binding wait). TUI async rule requires timeout Outcome with await semantics. Dev step has implicit await for background process readiness. -->
+<!-- required_outcomes: tui-timeout -->
+- Preconditions: "dev recipe was executed but the process has not produced output or bound to a port within a reasonable startup timeout period"
+- Input: "run-tests awaits dev server readiness but receives no response within the startup timeout"
+- Output: "timeout error indicating dev server did not become ready within the expected startup period, with the elapsed time and recovery hint (check for dependency issues or port conflicts)"
+- State: "no valid background process confirmed ready, startup may be hung"
+- Side-effect: "run-tests proceeds to teardown to clean up any partially-started process"
+
 ## Journey Invariants
 
 - HARD-GATE: After probe failure, no probe retry or dev restart within the same orchestration cycle
@@ -35,3 +45,4 @@ sources:
 - Exit code semantics are consistent: 0=success, 1=retryable, 2=blocking
 - .forge/test-state.json is always cleaned up regardless of orchestration outcome
 - No orphan processes remain after run-tests completes
+- Step-specific: dev server PID is recorded before any subsequent step proceeds

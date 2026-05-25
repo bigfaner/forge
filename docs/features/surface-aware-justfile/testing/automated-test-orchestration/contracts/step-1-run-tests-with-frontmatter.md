@@ -32,6 +32,16 @@ sources:
 - State: "no surface type determined, run-tests aborted"
 - Side-effect: "process exits with exit code 2 (blocking) when both sources unavailable, or exit code 1 (retryable) when CLI output is malformed"
 
+## Outcome "session-expired-during-detection"
+<!-- source: inferred -->
+<!-- reasoning: Web surface rule mandates session-expired for authenticated flows. run-tests may invoke forge CLI which requires valid project context. If the project configuration was invalidated mid-session (config.yaml deleted or corrupted), surface detection fails with a session-like expiry. -->
+<!-- required_outcomes: web-session-expired -->
+- Preconditions: "project configuration was invalidated after run-tests started (config.yaml deleted, corrupted, or permissions changed)"
+- Input: "run-tests attempts to read surface-type but project context is no longer valid"
+- Output: "error message indicating project context is no longer valid, with recovery hint to verify project configuration and re-initialize if needed"
+- State: "no surface type determined, run-tests aborted"
+- Side-effect: "process exits with exit code 2 (blocking)"
+
 ## Journey Invariants
 
 - HARD-GATE: After probe failure, no probe retry or dev restart within the same orchestration cycle
@@ -40,3 +50,4 @@ sources:
 - Exit code semantics are consistent: 0=success, 1=retryable, 2=blocking
 - .forge/test-state.json is always cleaned up regardless of orchestration outcome
 - No orphan processes remain after run-tests completes
+- Step-specific: surface-type resolution from frontmatter takes priority over forge surfaces CLI fallback

@@ -39,6 +39,16 @@ sources:
 - State: "no orphan process remains, .forge/test-state.json cleaned up"
 - Side-effect: "run-tests exits with exit code 1 (retryable)"
 
+## Outcome "probe-validation-error"
+<!-- source: inferred -->
+<!-- reasoning: Web surface rule mandates validation-error for user-facing flows. Probe configuration may have invalid parameters (malformed URL, incorrect health check path). Although probe is automated, misconfigured probe is analogous to validation error. -->
+<!-- required_outcomes: web-validation-error -->
+- Preconditions: "probe configuration is invalid (malformed health check URL, missing or invalid endpoint path in justfile recipe)"
+- Input: "run-tests executes just probe with an invalid or misconfigured probe recipe"
+- Output: "probe fails immediately with a descriptive error indicating the configuration issue, with recovery hint to check the probe recipe in the justfile"
+- State: "no health check performed, teardown executed"
+- Side-effect: "process exits with exit code 2 (blocking), teardown executed"
+
 ## Journey Invariants
 
 - HARD-GATE: After probe failure, no probe retry or dev restart within the same orchestration cycle
@@ -47,3 +57,4 @@ sources:
 - Exit code semantics are consistent: 0=success, 1=retryable, 2=blocking
 - .forge/test-state.json is always cleaned up regardless of orchestration outcome
 - No orphan processes remain after run-tests completes
+- Step-specific: probe retries are bounded at 3 attempts with 30-second intervals, total timeout 90s

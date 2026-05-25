@@ -12,18 +12,18 @@ sources:
 <!-- gen-contracts: do not edit manually. Regenerate via /gen-contracts. -->
 
 ## Outcome "success"
-- Preconditions: "quality-gate creates a fix-task from a failing test file path, forge surfaces CLI is available"
-- Input: "quality-gate fix-task is created from a failing test file path (e.g., tests/admin-panel/login_test.go)"
-- Output: "fix-task surface-key and surface-type are inferred from the failing file path using forge surfaces CLI longest-prefix-match"
+- Preconditions: "quality-gate creates a fix-task from a failing test file path, surface detection is available"
+- Input: "quality-gate fix-task is created from a failing test file path (e.g., a test file within a configured surface directory)"
+- Output: "fix-task surface-key and surface-type are inferred from the failing file path using surface detection longest-prefix-match"
 - State: "fix-task created with correct surface-key and surface-type matching the failing file's surface"
-- Side-effect: "forge surfaces CLI invoked with the failing file path"
+- Side-effect: "surface detection CLI invoked with the failing file path"
 
 ## Outcome "inference-failure"
 <!-- source: inferred -->
-<!-- reasoning: When forge surfaces CLI fails (not installed, config error) or returns no match for the failing file path, the fix-task must handle both cases gracefully. These are semantically similar: both result in missing surface info on the fix-task. -->
-- Preconditions: "failing test file path does not match any configured surface entry, or forge surfaces CLI fails or is unavailable"
-- Input: "quality-gate creates fix-task but forge surfaces CLI cannot resolve the file path or fails during invocation"
-- Output: "fix-task created with empty or default surface-key and surface-type, error logged to stderr with recovery hint when CLI fails"
+<!-- reasoning: When surface detection fails (not installed, config error) or returns no match for the failing file path, the fix-task must handle both cases gracefully. These are semantically similar: both result in missing surface info on the fix-task. -->
+- Preconditions: "failing test file path does not match any configured surface entry, or surface detection fails or is unavailable"
+- Input: "quality-gate creates fix-task but surface detection cannot resolve the file path or fails during invocation"
+- Output: "fix-task created with empty or default surface-key and surface-type, error logged to stderr with recovery hint when detection fails"
 - State: "fix-task exists but lacks surface-specific routing information, downstream components handle missing surface info"
 - Side-effect: "none"
 

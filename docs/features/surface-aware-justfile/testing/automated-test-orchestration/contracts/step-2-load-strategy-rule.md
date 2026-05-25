@@ -19,18 +19,20 @@ sources:
 - Side-effect: "none"
 
 ## Outcome "rule-file-not-found"
-- Preconditions: "surface type is detected but the corresponding rule file does not exist"
-- Input: "run-tests attempts to load rule file for detected surface type"
-- Output: "error message to stderr: surface type with type value execution strategy rule file not found, supported types: web/api/cli/tui/mobile"
+- Preconditions: "surface type is detected but the corresponding execution strategy rule file does not exist on disk"
+- Input: "run-tests attempts to load the rule file for the detected surface type but the file is missing"
+- Output: "error message to stderr: execution strategy rule file not found for the detected surface type, listing supported types (web/api/cli/tui/mobile)"
 - State: "no execution strategy loaded, run-tests aborted"
 - Side-effect: "process exits with exit code 2 (blocking)"
 
-## Outcome "not-found-surface-type"
-<!-- source: cli-required — surface rule mandates not-found for resource access steps -->
-- Preconditions: "forge surfaces CLI returns no match for the queried path"
-- Input: "run-tests attempts to determine surface type via forge surfaces CLI for a path that matches no configured surface entry"
-- Output: "forge surfaces CLI exits with code 1, stderr contains error message with recovery hint (run forge init to configure surfaces)"
-- State: "surface type unavailable, run-tests reports error and aborts"
+## Outcome "rule-file-malformed"
+<!-- source: inferred -->
+<!-- reasoning: Surface rule file may exist but contain invalid structure (missing orchestration sequence, unknown step names). This is the not-found analog for the rule loading step — resource exists but is unusable. -->
+<!-- required_outcomes: cli-not-found -->
+- Preconditions: "execution strategy rule file exists but has invalid structure (missing required sections, unparseable content, or unknown step definitions)"
+- Input: "run-tests loads the rule file but cannot parse it into a valid execution strategy"
+- Output: "error message to stderr indicating the rule file is malformed with specific parsing failure, recovery hint to check the rule file format or regenerate it"
+- State: "no valid execution strategy loaded, run-tests aborted"
 - Side-effect: "process exits with exit code 2 (blocking)"
 
 ## Journey Invariants

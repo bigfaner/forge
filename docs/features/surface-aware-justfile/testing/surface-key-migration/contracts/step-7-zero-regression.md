@@ -19,10 +19,10 @@ sources:
 - Side-effect: "none"
 
 ## Outcome "dead-code-and-validation"
-- Preconditions: "after migration, dead code from the old scope system remains in the codebase, or user-defined surface-keys contain invalid characters for just recipe names"
+- Preconditions: "after migration, obsolete code from the old scope system remains, or user-defined surface-keys contain invalid characters for recipe names"
 - Input: "user compiles the project or runs init-justfile with surface-keys that have invalid characters"
-- Output: "extractTestTypeArg() and genScriptBases functions are removed, no compilation errors, all callers updated to use the new surface-based APIs. For invalid surface-keys, init-justfile validates and outputs descriptive error with recovery hint"
-- State: "codebase clean of dead code, surface-key validation enforced at recipe generation boundary"
+- Output: "project compiles cleanly with all obsolete scope-related code removed, all callers updated to use surface-based APIs. For invalid surface-keys, init-justfile validates and outputs descriptive error with recovery hint"
+- State: "project clean of dead code, surface-key validation enforced at recipe generation boundary"
 - Side-effect: "none"
 
 ## Journey Invariants

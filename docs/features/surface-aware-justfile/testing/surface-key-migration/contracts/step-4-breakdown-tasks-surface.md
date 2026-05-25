@@ -12,11 +12,11 @@ sources:
 <!-- gen-contracts: do not edit manually. Regenerate via /gen-contracts. -->
 
 ## Outcome "success"
-- Preconditions: "project has configured surfaces in .forge/config.yaml, breakdown-tasks SKILL.md is updated to call forge surfaces --json"
+- Preconditions: "project has configured surfaces in project configuration, breakdown-tasks skill is updated to query surface information"
 - Input: "user runs breakdown-tasks for a project with configured surfaces"
 - Output: "generated task files have surface-key and surface-type in their frontmatter, values match the configured surfaces (e.g., surface-key: admin-panel, surface-type: web)"
-- State: "task files created with correct surface-key and surface-type fields derived from forge surfaces CLI output"
-- Side-effect: "forge surfaces CLI invoked during task generation to resolve surface info per file path"
+- State: "task files created with correct surface-key and surface-type fields derived from surface detection output"
+- Side-effect: "surface detection CLI invoked during task generation to resolve surface info per file path"
 
 ## Outcome "not-found-surface-for-task"
 <!-- source: cli-required — surface rule mandates not-found for resource access steps -->

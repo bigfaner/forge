@@ -25,6 +25,26 @@ sources:
 - State: "tests failed, teardown executed for cleanup, .forge/test-state.json cleaned up"
 - Side-effect: "teardown executed, exit code propagated to caller"
 
+## Outcome "test-validation-error"
+<!-- source: inferred -->
+<!-- reasoning: Web surface rule mandates validation-error. Test recipe may have configuration errors (invalid test command, missing test framework setup). This is the validation-error analog for the test execution step. -->
+<!-- required_outcomes: web-validation-error -->
+- Preconditions: "test recipe configuration is invalid (missing test command, malformed test configuration, or test framework not properly initialized)"
+- Input: "run-tests executes just test but the test recipe itself is misconfigured"
+- Output: "immediate test failure with descriptive error indicating the configuration issue, with recovery hint to check the test recipe and test framework setup"
+- State: "no test execution, teardown executed"
+- Side-effect: "process exits with exit code 2 (blocking), teardown executed"
+
+## Outcome "test-execution-timeout"
+<!-- source: inferred -->
+<!-- reasoning: TUI surface rule mandates timeout Outcome for async operations. Test execution may hang (deadlock, infinite loop in tests). This is the timeout analog for the test execution step. -->
+<!-- required_outcomes: tui-timeout -->
+- Preconditions: "test execution has been running beyond the expected completion time"
+- Input: "run-tests executes just test and the process does not complete within the test timeout period"
+- Output: "timeout error indicating test execution exceeded the expected time limit, with elapsed time and recovery hint (check for deadlocked tests or resource contention)"
+- State: "test process may still be running, teardown executed to clean up"
+- Side-effect: "test process terminated, teardown executed"
+
 ## Journey Invariants
 
 - HARD-GATE: After probe failure, no probe retry or dev restart within the same orchestration cycle
@@ -33,3 +53,4 @@ sources:
 - Exit code semantics are consistent: 0=success, 1=retryable, 2=blocking
 - .forge/test-state.json is always cleaned up regardless of orchestration outcome
 - No orphan processes remain after run-tests completes
+- Step-specific: test execution always follows successful probe (or no-probe surface type), never skipped

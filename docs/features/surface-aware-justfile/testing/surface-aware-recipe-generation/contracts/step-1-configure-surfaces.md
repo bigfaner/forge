@@ -39,3 +39,4 @@ sources:
 - All generated recipes include dual-platform ([linux]/[windows]) variants where applicable
 - cli/tui surfaces never generate run or probe recipes
 - Mixed-project aggregation recipes always list services in dependency order (api before web)
+- Step-specific: surface-type values are restricted to the fixed set (web/api/cli/tui/mobile) at configuration time

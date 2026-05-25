@@ -33,3 +33,4 @@ sources:
 - All generated recipes include dual-platform ([linux]/[windows]) variants where applicable
 - cli/tui surfaces never generate run or probe recipes
 - Mixed-project aggregation recipes always list services in dependency order (api before web)
+- Step-specific: # user-customized marker is preserved across regeneration runs unless --force-regenerate is used

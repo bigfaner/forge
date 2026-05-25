@@ -12,26 +12,26 @@ sources:
 <!-- gen-contracts: do not edit manually. Regenerate via /gen-contracts. -->
 
 ## Outcome "success"
-- Preconditions: "prompt.go has been rewritten, resolveScope() deleted and replaced by direct SurfaceKey reading"
-- Input: "user inspects prompt.go resolveScope() function (now removed)"
-- Output: "resolveScope() no longer exists. renderTemplate() reads SurfaceKey directly from task struct, uses forge surfaces CLI output to determine surface-key dynamically instead of hardcoded projectType matching"
-- State: "prompt.go uses SurfaceKey for template rendering, no scope-related code paths remain"
+- Preconditions: "prompt template variable system has been updated to use surface-aware variable names"
+- Input: "user invokes any prompt-based operation that uses templates with surface variables"
+- Output: "template rendering substitutes surface-key variables with the task's configured surface key value and surface-type-derived arguments, no hardcoded project type references remain"
+- State: "all prompt templates use surface-aware variable names, the old scope-based template resolution path no longer exists"
 - Side-effect: "none"
 
 ## Outcome "cli-execution-failure"
-- Preconditions: "forge surfaces command is not available (CLI not installed or version too old)"
-- Input: "any component that calls forge surfaces attempts to invoke the CLI"
-- Output: "component outputs error to stderr with the CLI output and recovery hint (check forge CLI is installed and version >= required version), exits with exit code 1 (retryable)"
+- Preconditions: "the surface detection CLI command is not available or returns an error"
+- Input: "any component that needs surface information attempts to invoke the CLI"
+- Output: "component outputs error to stderr with the CLI error output and recovery hint (verify CLI is installed and at the required version), exits with exit code 1 (retryable)"
 - State: "no surface-key determined, component falls back or aborts"
 - Side-effect: "none"
 
 ## Outcome "render-template-variable-replaced"
 <!-- source: inferred -->
-<!-- reasoning: Tech design specifies 16 prompt templates must have {{SCOPE}} replaced with {{SURFACE_KEY}}. This is a direct consequence of resolveScope() deletion. Verifying the template rendering still works with new variable names. -->
-- Preconditions: "prompt.go renderTemplate() has been updated with new variable names"
-- Input: "any prompt-based operation that uses templates with the new SURFACE_KEY variable"
-- Output: "renderTemplate() correctly substitutes {{SURFACE_KEY}} with task.SurfaceKey value and {{TEST_TYPE_ARG}} with the surface type derived argument"
-- State: "all 16 prompt templates use SURFACE_KEY variable, no hardcoded frontend/backend references remain in template logic"
+<!-- reasoning: Tech design specifies all prompt templates must have old scope variables replaced with surface-aware variables. This is a direct consequence of the scope resolution rewrite. Verifying template rendering still works with new variable names. -->
+- Preconditions: "template rendering system has been updated with new surface-aware variable names"
+- Input: "any prompt-based operation that uses templates with the new surface key variable"
+- Output: "template rendering correctly substitutes the surface key and surface type derived arguments into all prompt templates"
+- State: "all prompt templates use surface-aware variable names, no hardcoded project type references remain in template logic"
 - Side-effect: "none"
 
 ## Journey Invariants

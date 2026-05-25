@@ -12,8 +12,8 @@ sources:
 <!-- gen-contracts: do not edit manually. Regenerate via /gen-contracts. -->
 
 ## Outcome "success"
-- Preconditions: "source task has surface-key and surface-type fields, forge task add command is updated with new fields in AddTaskOpts"
-- Input: "user runs forge task add with a source task that has surface-key/surface-type"
+- Preconditions: "source task has surface-key and surface-type fields, task add command supports surface field inheritance"
+- Input: "user runs task add with a source task that has surface-key/surface-type"
 - Output: "new task inherits surface-key and surface-type from the source task. When no source task exists and the project has a single surface, the unique surface-type is auto-filled"
 - State: "new task file created with inherited surface-key and surface-type matching the source task"
 - Side-effect: "none"
