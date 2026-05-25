@@ -30,6 +30,30 @@ Trace the argument chain:
 3. **Evidence → Success Criteria**: Do the success criteria actually test what matters? Or do they test easy-to-measure proxies?
 4. **Self-contradiction check**: Does the solution reintroduce what it claims to eliminate? Does scope promise X while implementation delivers Y?
 
+   **SC Consistency Deep-Dive** — for documents containing Success Criteria (SC) and In Scope entries, execute the following structured check:
+
+   a. **Cluster by affected area**: Group SC and In Scope entries by their affected area (file path, directory, or module). Each cluster contains entries that target the same or overlapping code regions.
+
+   b. **Intra-group satisfiability check**: For each cluster, execute bidirectional derivation between every pair of entries (SC↔SC and SC↔InScope):
+      - Assume entry A is satisfied, then derive whether entry B can also be satisfied.
+      - Assume entry B is satisfied, then derive whether entry A can also be satisfied.
+      - If either direction fails, the pair is contradictory.
+      - Mark ambiguous pairs (where logical relationship is unclear) as `ambiguous — requires author clarification`.
+
+   c. **Tag contradictions as attack points**: Every confirmed contradiction becomes an attack point requiring reviser revision. Format:
+      ```
+      CONTRADICTION: SC-N "..." ↔ SC-M "..." (or ↔ InScope-N "...")
+      | Type: mutual-exclusion | direction-clash | resource-contention
+      | Evidence: [bidirectional derivation chain]
+      | Resolution required: [delete one | declare exclusive zone | rewrite as compatible]
+      ```
+
+   d. **Re-check after revision**: If the document is a revision (iteration > 1), re-verify that revised SC entries pass the full clustering + intra-group satisfiability check. Confirm no new contradictions were introduced by the revision.
+
+   **Eval layer differentiation**: This check runs as a safety net independent of any brainstorm-layer checks. Use a broader scanning approach — full-pair scanning is the primary method, with area clustering as an optimization hint rather than a constraint. Optionally use higher temperature (0.7) for reasoning diversity to reduce false-negative overlap with brainstorm-layer checks.
+
+   **Example use case** (gen-and-run contradiction): A proposal SC requires `grep -r "gen-and-run" forge-cli/` to return zero results (removing all references), while an In Scope entry requires preserving the `gen-and-run` migration error message — both target the same directory (`forge-cli/`). Bidirectional derivation: satisfying the grep-zero SC means the migration message cannot exist; preserving the migration message means grep cannot return zero. This is a mutual-exclusion contradiction on the same file path.
+
 Record findings as **pre-score anchors** — independent observations not tied to any rubric dimension. These will be channeled into blindspot attacks later if they identify issues not covered by any dimension.
 
 ### Step 3: Phase 2 — Rubric Scoring with Verification Stance

@@ -83,8 +83,9 @@ context:
 
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| Criteria are measurable and testable | 0-55 | Can you objectively verify each criterion? Could you write a test or checklist? "Works well" is neither measurable nor testable |
+| Criteria are measurable and testable | 0-30 | Can you objectively verify each criterion? Could you write a test or checklist? "Works well" is neither measurable nor testable |
 | Coverage is complete | 0-25 | Do criteria cover all in-scope items? Any gaps? |
+| SC internal consistency | 0-25 | Are SC entries internally satisfiable as a set? Cluster SC and In Scope entries by affected area (file/directory/module). For each cluster, check intra-group bidirectional satisfiability: SC↔SC and SC↔InScope. If satisfying A makes B impossible (or vice versa), that is a contradiction. Flag pairs where the logical relationship is unclear as "ambiguous — requires author clarification". Distinct from D10 which checks SC ↔ Scope/Solution alignment (cross-section); this criterion checks internal logical coherence within the SC set itself |
 
 ### 10. Logical Consistency (90 pts)
 

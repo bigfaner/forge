@@ -86,6 +86,10 @@ Propose in-scope and out-of-scope boundaries. Get explicit user agreement. If to
 
 Save to `docs/proposals/<slug>/proposal.md` using `templates/proposal.md`.
 
+### SC Consistency Check (mandatory)
+
+After writing **Success Criteria** and **In Scope** sections, execute the SC consistency check defined in `rules/sc-consistency.md`. This is a mandatory step — the proposal must not proceed to Quality Standards without it. The check detects logical contradictions within SC entries (SC-to-SC) and between SC and InScope entries (SC-to-InScope) through clustering and bidirectional satisfiability proof. If conflicts are found, present them to the user and resolve before continuing.
+
 ### Quality Standards
 
 | Section | Standard | Red Flag |
