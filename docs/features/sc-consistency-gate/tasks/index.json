@@ -31,7 +31,7 @@
       "title": "Expand scorer-protocol self-contradiction check with clustering + satisfiability",
       "priority": "P0",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "3-expand-scorer-protocol.md",
       "record": "records/3-expand-scorer-protocol.md",
       "type": "doc"
