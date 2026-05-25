@@ -142,7 +142,7 @@
         "1.1",
         "1.gate"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2.3-fix-task-surface.md",
       "record": "records/2.3-fix-task-surface.md",
       "scope": "all",

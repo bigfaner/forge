@@ -1578,6 +1578,169 @@ func TestRunUnitTestStep_RetryOutputInDescription(t *testing.T) {
 	}
 }
 
+func TestInferSurface(t *testing.T) {
+	tests := []struct {
+		name            string
+		configYAML      string // content for .forge/config.yaml
+		sourceFiles     string
+		wantSurfaceKey  string
+		wantSurfaceType string
+	}{
+		{
+			name:            "scalar surface matches file",
+			configYAML:      "surfaces:\n  .: web\n",
+			sourceFiles:     "src/components/App.tsx",
+			wantSurfaceKey:  ".",
+			wantSurfaceType: "web",
+		},
+		{
+			name:            "map surface matches file by prefix",
+			configYAML:      "surfaces:\n  admin-panel: web\n  payment-service: api\n",
+			sourceFiles:     "admin-panel/src/App.tsx",
+			wantSurfaceKey:  "admin-panel",
+			wantSurfaceType: "web",
+		},
+		{
+			name:            "no surfaces configured returns empty",
+			configYAML:      "",
+			sourceFiles:     "src/components/App.tsx",
+			wantSurfaceKey:  "",
+			wantSurfaceType: "",
+		},
+		{
+			name:            "file not matching any surface returns empty",
+			configYAML:      "surfaces:\n  admin-panel: web\n",
+			sourceFiles:     "src/components/App.tsx",
+			wantSurfaceKey:  "",
+			wantSurfaceType: "",
+		},
+		{
+			name:            "empty source files returns empty",
+			configYAML:      "surfaces:\n  .: web\n",
+			sourceFiles:     "",
+			wantSurfaceKey:  "",
+			wantSurfaceType: "",
+		},
+		{
+			name:            "fallback message source files returns empty",
+			configYAML:      "surfaces:\n  .: web\n",
+			sourceFiles:     "See error output for affected files",
+			wantSurfaceKey:  "",
+			wantSurfaceType: "",
+		},
+		{
+			name:            "first file from comma-separated list",
+			configYAML:      "surfaces:\n  backend: api\n",
+			sourceFiles:     "backend/handler.go, frontend/App.tsx",
+			wantSurfaceKey:  "backend",
+			wantSurfaceType: "api",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			projectRoot := t.TempDir()
+			forgeDir := filepath.Join(projectRoot, ".forge")
+			if err := os.MkdirAll(forgeDir, 0755); err != nil {
+				t.Fatal(err)
+			}
+			if tc.configYAML != "" {
+				if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(tc.configYAML), 0644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			gotKey, gotType := inferSurface(projectRoot, tc.sourceFiles)
+			if gotKey != tc.wantSurfaceKey {
+				t.Errorf("surfaceKey = %q, want %q", gotKey, tc.wantSurfaceKey)
+			}
+			if gotType != tc.wantSurfaceType {
+				t.Errorf("surfaceType = %q, want %q", gotType, tc.wantSurfaceType)
+			}
+		})
+	}
+}
+
+func TestAddFixTask_SurfaceInference(t *testing.T) {
+	projectRoot, featureSlug, indexPath := helperSetup(t)
+
+	// Configure surfaces in .forge/config.yaml
+	forgeDir := filepath.Join(projectRoot, ".forge")
+	if err := os.MkdirAll(forgeDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	configContent := "surfaces:\n  admin-panel: web\n  payment-service: api\n"
+	if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(configContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	output := "./admin-panel/src/App.tsx:10: error: undefined variable"
+	taskID, addErr := addFixTask(projectRoot, featureSlug, "compile", output, "tests/results/out.txt")
+	if addErr != nil {
+		t.Fatalf("unexpected error: %v", addErr)
+	}
+	if taskID == "" {
+		t.Fatal("expected non-empty task ID")
+	}
+
+	// Verify surface info in index.json
+	updatedIndex, err := task.LoadIndex(indexPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	addedTask, exists := updatedIndex.ByID(taskID)
+	if !exists {
+		t.Fatalf("task %s not found in index", taskID)
+	}
+	if addedTask.SurfaceKey != "admin-panel" {
+		t.Errorf("SurfaceKey = %q, want %q", addedTask.SurfaceKey, "admin-panel")
+	}
+	if addedTask.SurfaceType != "web" {
+		t.Errorf("SurfaceType = %q, want %q", addedTask.SurfaceType, "web")
+	}
+
+	// Verify surface info in markdown frontmatter
+	mdPath := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug), taskID+".md")
+	data, err := os.ReadFile(mdPath)
+	if err != nil {
+		t.Fatalf("task markdown file not found: %v", err)
+	}
+	content := string(data)
+	if !strings.Contains(content, `surface-key: "admin-panel"`) {
+		t.Errorf("markdown should contain surface-key: %q, got:\n%s", "admin-panel", content[:min(len(content), 500)])
+	}
+	if !strings.Contains(content, `surface-type: "web"`) {
+		t.Errorf("markdown should contain surface-type: %q, got:\n%s", "web", content[:min(len(content), 500)])
+	}
+}
+
+func TestAddFixTask_SurfaceInferenceFallback(t *testing.T) {
+	projectRoot, featureSlug, indexPath := helperSetup(t)
+
+	// No surfaces configured — should create fix-task with empty surface fields
+	taskID, addErr := addFixTask(projectRoot, featureSlug, "compile", "handler.go:10: error", "tests/results/out.txt")
+	if addErr != nil {
+		t.Fatalf("unexpected error: %v", addErr)
+	}
+	if taskID == "" {
+		t.Fatal("expected non-empty task ID")
+	}
+
+	updatedIndex, err := task.LoadIndex(indexPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	addedTask, exists := updatedIndex.ByID(taskID)
+	if !exists {
+		t.Fatalf("task %s not found in index", taskID)
+	}
+	if addedTask.SurfaceKey != "" {
+		t.Errorf("SurfaceKey = %q, want empty (no surfaces configured)", addedTask.SurfaceKey)
+	}
+	if addedTask.SurfaceType != "" {
+		t.Errorf("SurfaceType = %q, want empty (no surfaces configured)", addedTask.SurfaceType)
+	}
+}
+
 func TestRunTestRegression(t *testing.T) {
 	if _, err := exec.LookPath("just"); err != nil {
 		t.Skip("just not installed, skipping")

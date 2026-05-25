@@ -60,7 +60,7 @@ eval-journey → eval-contract → confidence rating
 
 ### All-Completed Hook
 
-After all tasks done, `forge quality-gate` runs as a final safety net (project-wide). It automatically skips docs-only features. On failure, a P0 fix-task is automatically created — run `forge task claim` to pick it up.
+After all tasks done, `forge quality-gate` runs as a final safety net (project-wide). It automatically skips docs-only features. On failure, a P0 fix-task is automatically created with surface-key/surface-type inferred from the failing source files via `forge surfaces --json <path>` — run `forge task claim` to pick it up. If surface inference fails (no surfaces configured, no match), the fix-task is created with empty surface fields and proceeds normally.
 
 ### Forge CLI
 

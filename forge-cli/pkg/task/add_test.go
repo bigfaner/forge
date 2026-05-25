@@ -2080,3 +2080,113 @@ func TestCreateTaskMarkdown_WithTypeInFrontmatter(t *testing.T) {
 		t.Errorf("expected type in frontmatter, got:\n%s", string(data))
 	}
 }
+
+func TestInjectSurfaceFrontmatter(t *testing.T) {
+	tests := []struct {
+		name        string
+		content     string
+		surfaceKey  string
+		surfaceType string
+		wantKey     string // substring that should be present (or absent)
+		wantType    string
+	}{
+		{
+			name:        "replaces empty surface-key and surface-type",
+			content:     "---\nid: \"fix-1\"\nsurface-key: \"\"\nsurface-type: \"\"\n---\n",
+			surfaceKey:  "admin-panel",
+			surfaceType: "web",
+			wantKey:     `surface-key: "admin-panel"`,
+			wantType:    `surface-type: "web"`,
+		},
+		{
+			name:        "replaces only surface-key when surface-type empty",
+			content:     "---\nid: \"fix-1\"\nsurface-key: \"\"\nsurface-type: \"\"\n---\n",
+			surfaceKey:  "backend",
+			surfaceType: "",
+			wantKey:     `surface-key: "backend"`,
+			wantType:    `surface-type: ""`, // unchanged
+		},
+		{
+			name:        "replaces only surface-type when surface-key empty",
+			content:     "---\nid: \"fix-1\"\nsurface-key: \"\"\nsurface-type: \"\"\n---\n",
+			surfaceKey:  "",
+			surfaceType: "api",
+			wantKey:     `surface-key: ""`, // unchanged
+			wantType:    `surface-type: "api"`,
+		},
+		{
+			name:        "no change when both empty and opts empty",
+			content:     "---\nid: \"fix-1\"\nsurface-key: \"\"\nsurface-type: \"\"\n---\n",
+			surfaceKey:  "",
+			surfaceType: "",
+			wantKey:     `surface-key: ""`,
+			wantType:    `surface-type: ""`,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := injectSurfaceFrontmatter(tc.content, tc.surfaceKey, tc.surfaceType)
+			if !strings.Contains(got, tc.wantKey) {
+				t.Errorf("expected content to contain %q, got:\n%s", tc.wantKey, got)
+			}
+			if !strings.Contains(got, tc.wantType) {
+				t.Errorf("expected content to contain %q, got:\n%s", tc.wantType, got)
+			}
+		})
+	}
+}
+
+func TestBuildTaskMarkdown_SurfaceFields(t *testing.T) {
+	tests := []struct {
+		name        string
+		surfaceKey  string
+		surfaceType string
+		wantKey     bool
+		wantType    bool
+	}{
+		{
+			name:        "both fields present",
+			surfaceKey:  "admin-panel",
+			surfaceType: "web",
+			wantKey:     true,
+			wantType:    true,
+		},
+		{
+			name:        "empty fields omitted",
+			surfaceKey:  "",
+			surfaceType: "",
+			wantKey:     false,
+			wantType:    false,
+		},
+		{
+			name:        "only surface-key present",
+			surfaceKey:  "backend",
+			surfaceType: "",
+			wantKey:     true,
+			wantType:    false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := AddTaskOpts{
+				ID:          "test-1",
+				Title:       "Test task",
+				Priority:    "P1",
+				Status:      "pending",
+				SurfaceKey:  tc.surfaceKey,
+				SurfaceType: tc.surfaceType,
+			}
+			got := buildTaskMarkdown(opts)
+			hasKey := strings.Contains(got, "surface-key:")
+			hasType := strings.Contains(got, "surface-type:")
+			if hasKey != tc.wantKey {
+				t.Errorf("surface-key presence = %v, want %v\nGot:\n%s", hasKey, tc.wantKey, got)
+			}
+			if hasType != tc.wantType {
+				t.Errorf("surface-type presence = %v, want %v\nGot:\n%s", hasType, tc.wantType, got)
+			}
+		})
+	}
+}

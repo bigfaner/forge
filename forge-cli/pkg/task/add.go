@@ -245,11 +245,11 @@ func CreateTaskMarkdown(tasksDir string, filename string, opts AddTaskOpts) erro
 	var content string
 
 	if opts.Template != "" {
-		tmpl, err := tmpl.Get(opts.Template)
+		t, err := tmpl.Get(opts.Template)
 		if err != nil {
 			return err
 		}
-		content, err = ApplyVars(tmpl, opts)
+		content, err = ApplyVars(t, opts)
 		if err != nil {
 			return err
 		}
@@ -257,7 +257,26 @@ func CreateTaskMarkdown(tasksDir string, filename string, opts AddTaskOpts) erro
 		content = buildTaskMarkdown(opts)
 	}
 
+	// Inject surface-key/surface-type into frontmatter when non-empty.
+	// Templates may have static empty values; overwrite with inferred values.
+	if opts.SurfaceKey != "" || opts.SurfaceType != "" {
+		content = injectSurfaceFrontmatter(content, opts.SurfaceKey, opts.SurfaceType)
+	}
+
 	return os.WriteFile(filepath.Join(tasksDir, filename), []byte(content), 0644)
+}
+
+// injectSurfaceFrontmatter replaces static surface-key/surface-type values in
+// frontmatter with the provided values. If the fields are absent, they are
+// inserted before the closing "---".
+func injectSurfaceFrontmatter(content, surfaceKey, surfaceType string) string {
+	if surfaceKey != "" {
+		content = strings.Replace(content, `surface-key: ""`, fmt.Sprintf(`surface-key: %q`, surfaceKey), 1)
+	}
+	if surfaceType != "" {
+		content = strings.Replace(content, `surface-type: ""`, fmt.Sprintf(`surface-type: %q`, surfaceType), 1)
+	}
+	return content
 }
 
 // ApplyVars replaces {{KEY}} placeholders in tmpl with values from opts.Vars
@@ -323,6 +342,12 @@ func buildTaskMarkdown(opts AddTaskOpts) string {
 	}
 	if opts.Breaking {
 		buf.WriteString("breaking: true\n")
+	}
+	if opts.SurfaceKey != "" {
+		fmt.Fprintf(&buf, "surface-key: %q\n", opts.SurfaceKey)
+	}
+	if opts.SurfaceType != "" {
+		fmt.Fprintf(&buf, "surface-type: %q\n", opts.SurfaceType)
 	}
 	buf.WriteString("---\n\n")
 

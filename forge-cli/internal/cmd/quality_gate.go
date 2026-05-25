@@ -11,6 +11,7 @@ import (
 	"forge-cli/internal/cmd/base"
 	"forge-cli/pkg/e2eprobe"
 	"forge-cli/pkg/feature"
+	"forge-cli/pkg/forgeconfig"
 	"forge-cli/pkg/just"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/task"
@@ -334,6 +335,34 @@ func runUnitTestStep(projectRoot, featureSlug string, runTest testRunFunc) (bool
 	return false, fixID, fixErr
 }
 
+// inferSurface attempts to determine the surface-key and surface-type for a
+// fix-task by querying forge surfaces with the first extracted source file path.
+// Returns ("", "") on any failure (no surfaces configured, no match, parse error)
+// — the caller falls back to empty values and fix-task creation proceeds unblocked.
+func inferSurface(projectRoot, sourceFiles string) (surfaceKey, surfaceType string) {
+	surfaces, err := forgeconfig.ReadSurfaces(projectRoot)
+	if err != nil || len(surfaces) == 0 {
+		return "", ""
+	}
+
+	// Extract the first source file path from the comma-separated list.
+	// sourceFiles may be "See error output for affected files" when no files found.
+	if sourceFiles == "" || strings.HasPrefix(sourceFiles, "See error") {
+		return "", ""
+	}
+	parts := strings.SplitN(sourceFiles, ",", 2)
+	firstFile := strings.TrimSpace(parts[0])
+	if firstFile == "" {
+		return "", ""
+	}
+
+	match, err := forgeconfig.MatchSurface(surfaces, firstFile)
+	if err != nil {
+		return "", ""
+	}
+	return match.Key, match.Type
+}
+
 // sourceFileRe matches source file paths followed by :line or :line:col patterns.
 var sourceFileRe = regexp.MustCompile(`([\w][\w./-]*\.\w{1,10})(?::\d+){1,2}`)
 
@@ -426,6 +455,11 @@ func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) (st
 
 	sourceFiles := extractSourceFiles(output)
 
+	// Infer surface-key/type from the first extracted source file path.
+	// Falls back to empty strings on any failure (no surfaces, no match, etc.)
+	// so fix-task creation is never blocked by surface inference failure.
+	surfaceKey, surfaceType := inferSurface(projectRoot, sourceFiles)
+
 	testScript := "just " + step
 
 	title := fmt.Sprintf("fix %s: %s failure in quality gate", step, testScript)
@@ -454,6 +488,8 @@ func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) (st
 		Description:   description,
 		Template:      tmplName,
 		Type:          taskType,
+		SurfaceKey:    surfaceKey,
+		SurfaceType:   surfaceType,
 		Vars: map[string]string{
 			"SOURCE_FILES":   sourceFiles,
 			"TEST_SCRIPT":    testScript,
