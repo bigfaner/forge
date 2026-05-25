@@ -1,38 +1,38 @@
 # Surface: tui
 
-## Orchestration Sequence
+## 编排序列
 
-| Step    | Exit 0              | Exit 1                      | Exit 2 | Next  |
-|---------|---------------------|-----------------------------|--------|-------|
-| test    | All tests pass      | At least one test fails     | Env error (retry suggested) | teardown |
-| teardown| Cleanup complete    | Cleanup failed              | --     | end   |
+| 步骤 | 退出码 0 | 退出码 1 | 退出码 2 | 后续动作 |
+|------|---------|---------|---------|---------|
+| test | 测试通过 | 测试失败 | 测试环境异常（需重试） | 进入 teardown |
+| teardown | 清理完成 | 清理失败（残留进程） | — | 结束 |
 
-Notes:
-- **No dev step**: TUI surfaces do not start a persistent service.
-- **No probe step**: No HTTP health check needed for TUI applications.
-- **No aggregate recipe**: TUI surface does not generate a `tui` aggregate recipe.
-- test exit 2: environment error, skill should prompt "Test environment error, suggest retry".
+注意事项：
+- **无 dev 步骤**：TUI surface 不启动持久化服务
+- **无 probe 步骤**：TUI 应用无需 HTTP 健康检查
+- **无聚合配方**：TUI surface 不生成 `tui` 聚合配方
+- test 退出码 2 允许重跑，skill 应提示用户 "测试环境异常，建议重试"
 
-## Recipe Contracts
+## 配方调用契约
 
-| Recipe       | Signature             | Exit 0                  | Exit 1                      |
-|--------------|-----------------------|-------------------------|-----------------------------|
-| tui-test     | `just tui-test`       | All test cases pass     | At least one test fails     |
-| tui-teardown | `just tui-teardown`   | Cleanup complete        | Cleanup failed              |
+| 配方名 | just 签名 | 退出码 0 语义 | 退出码 1 语义 |
+|--------|----------|--------------|--------------|
+| tui-test | `just tui-test` | 所有测试用例通过 | 至少一个测试失败 |
+| tui-teardown | `just tui-teardown` | 清理完成 | 清理失败 |
 
-Implementation constraints:
-- Each recipe MUST support `[linux]` and `[windows]` dual-platform variants.
-- `tui-teardown` MUST pass `just --dry-run` syntax verification.
-- **Do NOT generate** `tui-dev`, `tui-probe`, or `tui` aggregate recipes.
+实现约束：
+- 每个配方必须支持 `[linux]` 和 `[windows]` 双平台变体
+- `tui-teardown` 必须用 `just --dry-run` 验证语法
+- **不生成** `tui-dev`、`tui-probe` 或 `tui` 聚合配方
 
-## Journey Filter Strategy
+## journey 过滤策略
 
-| Journey Tag | Match Rule  | Description                   |
-|-------------|-------------|-------------------------------|
-| `@tui`      | Exact match | TUI surface dedicated journey |
-| Other       | Ignore      | Non-tui journeys not handled  |
+| journey 标签 | 匹配规则 | 说明 |
+|-------------|---------|------|
+| `@tui` | 精确匹配 | tui surface 的专用 journey |
+| 其他 | 忽略 | 非 tui 相关 journey 不由本规则处理 |
 
-## Recipe Template (dual-platform)
+## 配方模板（双平台）
 
 ```just
 # user-customized
@@ -60,4 +60,4 @@ tui-teardown:
     echo "TODO: implement tui-teardown" >&2; exit 1
 ```
 
-**LLM instruction**: Replace the TODO stubs with actual commands derived from the language template and Convention knowledge. The stubs above show the required recipe structure and dual-platform attribute pattern. Do NOT generate `tui-dev`, `tui-probe`, or `tui` aggregate recipes.
+**LLM 指令**：将 TODO 桩替换为从语言模板和 Convention 知识推导出的实际命令。上述桩代码展示了所需的配方结构和双平台属性模式。**不生成** `tui-dev`、`tui-probe` 或 `tui` 聚合配方。
