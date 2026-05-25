@@ -436,7 +436,7 @@
       "dependencies": [
         "T-test-verify-regression"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "validate-code.md",
       "record": "records/validate-code.md",
       "scope": "all",
