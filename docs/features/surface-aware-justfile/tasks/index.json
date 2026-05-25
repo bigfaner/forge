@@ -297,7 +297,7 @@
         "3.5",
         "3.6"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3.summary.md",
       "record": "records/3.summary.md",
       "type": "doc.summary"
