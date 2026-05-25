@@ -53,6 +53,8 @@ When the task context contains `SKIP_EVAL_GATE=true` (injected by Quick mode tas
 
 ## Step 0: Resolve Language and Interfaces
 
+Load: `rules/journey-contract-model.md` — core concepts (Journey, Step, Contract, Outcome), directory conventions, and tag-based promotion model.
+
 1. Read `docs/conventions/testing/index.md` to discover available Convention files. Select the Convention matching the project's language/framework based on index descriptions and project context. Load the selected Convention from `docs/conventions/testing/<convention>.md`.
 2. Fallback: scan existing source/test files (`go.mod`, `package.json`, `*_test.go`, etc.). Also check subdirectories for monorepo.
 3. On failure: ask user.
@@ -77,7 +79,7 @@ Do NOT silently default to any language or interface.
    - Happy path steps (sequence number, user action, expected result)
    - Edge cases (referenced step, precondition, user action, expected result)
    - Journey Invariants (cross-step properties)
-4. Load the project's surface type from `.forge/config.yaml` and read the corresponding surface rule from `gen-journeys/rules/surface-<type>.md` to identify required_outcomes.
+4. Load the project's surface type from `.forge/config.yaml` and read the corresponding surface rule from gen-journeys skill's `rules/surface-<type>.md` (resolve relative to the gen-journeys skill directory) to identify required_outcomes.
 
 <HARD-RULE>
 Every Journey in the manifest MUST be processed. Do not skip Journeys based on Risk level or step count.

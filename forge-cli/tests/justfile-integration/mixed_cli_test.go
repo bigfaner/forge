@@ -442,12 +442,7 @@ func TestTC_016_ExecuteTaskStep3UsesJustCompileAndJustTest(t *testing.T) {
 		"Expected \"submit-task\" reference in execute-task.md (verification delegation)")
 }
 
-// Traceability: TC-017 -> Spec Section 5.2
-func TestTC_017_ImproveHarnessUsesJustTest(t *testing.T) {
-	content := testkit.ReadProjectFile(t, "../plugins/forge/skills/improve-harness/SKILL.md")
-	assert.True(t, strings.Contains(content, "just unit-test") || strings.Contains(content, "just test"),
-		"Expected \"just unit-test\" or \"just test\" to appear in improve-harness/SKILL.md Step 4.3")
-}
+// Traceability: TC-017 -> removed: improve-harness skill no longer exists (replaced by run-tests)
 
 // Traceability: TC-018 -> Spec Section 5.1
 // Note: test-setup replaces e2e-setup in the two-layer test model.

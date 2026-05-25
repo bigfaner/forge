@@ -17,6 +17,8 @@ This skill only generates Journey narrative documents (per-Journey Markdown file
 
 ## Surface Detection
 
+Load: `rules/journey-contract-model.md` — core concepts (Journey, Step, Contract, Outcome), directory conventions, and tag-based promotion model used by downstream skills.
+
 Before processing PRD sources, determine the project's surface type via the `forge surfaces` CLI command. Surface determines testing strategy, required Outcomes, and test level emphasis.
 
 ### Detection via CLI
@@ -58,6 +60,13 @@ forge surfaces unknown-dir
 4. Load the corresponding rule file from `rules/surface-<type>.md`
 
 **Supported surface types**: `web`, `api`, `cli`, `tui`, `mobile`
+
+**Surface rule files** (loaded dynamically based on detected type):
+- `rules/surface-api.md`
+- `rules/surface-cli.md`
+- `rules/surface-mobile.md`
+- `rules/surface-tui.md`
+- `rules/surface-web.md`
 
 ### Surface Rule Loading
 

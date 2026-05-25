@@ -74,6 +74,8 @@ func repoFileExists(t *testing.T, relPath string) bool {
 }
 
 // validateScriptRelPath is the relative path to validate-specs.mjs from repo root.
+// NOTE: templates/ directory removed during profile system v3 refactor; script no longer exists at this path.
+// Tests using skipIfNoValidateScript() will auto-skip.
 const validateScriptRelPath = "plugins/forge/skills/gen-test-scripts/templates/validate-specs.mjs"
 
 // skipIfNoValidateScript skips the test if validate-specs.mjs is not available.
@@ -246,7 +248,9 @@ test('CSS class selector', async ({ page }) => {
 // --- TC-003: ts-morph devDependency in package.json ---
 
 // Traceability: TC-003 -> SC "ts-morph 在 tests/e2e/package.json 中作为 devDependency 存在"
+// NOTE: templates/ directory removed during profile system v3 refactor; package.json no longer exists.
 func TestTC_003_TsMorphDevDependencyInPackageJson(t *testing.T) {
+	t.Skip("templates/package.json removed during profile system v3 refactor; ts-morph now managed per-profile")
 	pkgJsonRelPath := filepath.Join("plugins", "forge", "skills", "gen-test-scripts", "templates", "package.json")
 	content := readRepoFile(t, pkgJsonRelPath)
 

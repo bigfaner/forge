@@ -2,20 +2,20 @@
 
 ```markdown
 ---
-feature: "<slug>"
-generated: "<date>"
+feature: "{{SLUG}}"
+generated: "{{DATE}}"
 status: draft
 ---
 
-# Technical Specifications: <Feature Name>
+# Technical Specifications: {{FEATURE_NAME}}
 
-## <Spec Category>
+## {{SPEC_CATEGORY}}
 
-### TECH-NNN: <Spec Title>
+### TECH-NNN: {{SPEC_TITLE}}
 
-**Requirement**: <concise requirement>
+**Requirement**: {{CONCISE_REQUIREMENT}}
 **Scope**: [CROSS|LOCAL]
-**Source**: <design section reference>
+**Source**: {{DESIGN_SECTION_REFERENCE}}
 
-<Implementation details, examples>
+{{IMPLEMENTATION_DETAILS}}
 ```

@@ -2,21 +2,21 @@
 
 ```markdown
 ---
-feature: "<slug>"
-generated: "<date>"
+feature: "{{SLUG}}"
+generated: "{{DATE}}"
 status: draft
 ---
 
-# Business Rules: <Feature Name>
+# Business Rules: {{FEATURE_NAME}}
 
-## <Rule Category>
+## {{RULE_CATEGORY}}
 
-### BIZ-NNN: <Rule Title>
+### BIZ-NNN: {{RULE_TITLE}}
 
-**Rule**: <concise rule statement>
-**Context**: <why this rule exists>
+**Rule**: {{CONCISE_RULE_STATEMENT}}
+**Context**: {{WHY_THIS_RULE_EXISTS}}
 **Scope**: [CROSS|LOCAL]
-**Source**: <prd section reference>
+**Source**: {{PRD_SECTION_REFERENCE}}
 
-<Additional details, examples, or edge cases>
+{{ADDITIONAL_DETAILS}}
 ```

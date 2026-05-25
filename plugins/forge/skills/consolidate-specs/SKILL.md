@@ -211,53 +211,19 @@ Update `docs/features/<slug>/manifest.md` to reference the integrated specs.
 
 ## Step 9: Detect Drift in Project-Level Specs
 
-Read all project-level spec files and validate each rule against the current codebase:
+Read all project-level spec files, validate each rule against the current codebase, and classify as `current`, `drifted`, or `orphaned`. If no drift is found, skip Steps 10-11 and proceed to Step 12.
 
-1. **Read all spec files**:
-   - `docs/business-rules/*.md` -- all business rule files
-   - `docs/conventions/*.md` -- all technical convention files
+**Drift-only mode**: If no PRD/design files exist, start here and skip Steps 1-8 entirely.
 
-2. **Validate each rule against code**: For each rule in every spec file, search the codebase for the keywords and patterns described in the rule. Compare the rule's stated behavior against the actual code implementation:
-   - Extract key domain terms, function names, file paths, or behavior descriptions from each rule
-   - Search the relevant source files for those terms
-   - Determine whether the rule's description still matches the code's current behavior
-
-3. **Classify each rule**:
-   - `current` -- rule description matches current code behavior
-   - `drifted` -- rule description is partially or fully inconsistent with current code (e.g., renamed function, changed threshold, modified behavior)
-   - `orphaned` -- the code the rule describes no longer exists (e.g., deleted module, removed feature)
-
-4. **Output drift report**: Write a summary of all classifications. If no drift is found (all `current`), skip Steps 10-11 and proceed to Step 12 (vocabulary generation).
-
-### Drift-Only Mode Entry
-
-If running in drift-only mode (no PRD/design files exist), start here at Step 9. Skip Steps 1-8 entirely.
+See `rules/drift-detection.md` for the full detection procedure and classification rules.
 
 ## Step 10: Auto-Fix Drifted Specs
 
-For each rule classified as `drifted` or `orphaned` in Step 9:
+For each `drifted` or `orphaned` rule from Step 9, update or remove the rule entry. Also detect implicit new rules discovered during drift scanning.
 
-1. **Drifted rules**: Update the rule's description/behavior text in-place to match the current code. Preserve the project-global ID (e.g., `BIZ-auth-001`) -- only update the descriptive text, not the ID or structural format.
+Key constraints: project-global IDs are preserved (only descriptive text changes); deleted rules are recorded with ID and reason.
 
-2. **Orphaned rules**: Remove the rule entry from the spec file. Record the deletion for the commit message in Step 11:
-   - Rule ID (e.g., `TECH-api-002`)
-   - Reason for deletion (e.g., "corresponding module `X` removed in commit abc1234")
-
-3. **Detect implicit new rules**: While scanning the code for drift, if you discover new patterns, conventions, or business logic that should be documented at the project level but are not in any spec file:
-   - Extract the candidate rule with `[CROSS]` classification
-   - **Interactive mode**: Present to user for confirmation before appending
-   - **Non-interactive mode**: Auto-append with `[auto-specs]` tag -- include in commit message
-   - Append confirmed rules to the appropriate spec file with a new project-global ID
-
-4. **Re-derive `domains` frontmatter**: When a file's content changes substantially (rules updated, added, or removed), re-derive the `domains` field per `rules/domain-frontmatter.md`. Compare the new domain set against the existing one:
-   - If domains have changed, update the frontmatter in-place
-   - If the updated `domains` cause a new >50% overlap with another file's domains, flag in the commit message and notify the user
-
-### Preservation Rules
-
-- Project-global IDs must never change during auto-fix -- only description and behavior text updates
-- File structure and formatting must remain consistent with the existing spec file conventions
-- Deleted rules must be recorded with ID and reason for traceability in git history
+See `rules/drift-detection.md` for the complete auto-fix procedure and preservation rules.
 
 ## Step 11: Commit Spec Changes
 
@@ -276,53 +242,9 @@ If no changes were made (all rules `current`), skip this step.
 
 ## Step 12: Generate Vocabulary Index
 
-<!-- AUTO-GENERATED -- do not edit manually. Regenerated on every /consolidate-specs run. -->
+Scan all four knowledge directories and produce a vocabulary index for use by `/learn` and auto-extract triggers. This step runs unconditionally.
 
-Scan all four knowledge directories and produce a vocabulary index for use by `/learn` and auto-extract triggers. This step runs unconditionally -- even when knowledge directories are sparse or empty.
-
-### Scan Targets
-
-| Directory | What to extract | Source field |
-|-----------|----------------|--------------|
-| `docs/decisions/*.md` | Type names from decision row table, domain keywords from Decision column text | Table rows |
-| `docs/lessons/*.md` | Tags from YAML frontmatter `tags:` field | `tags` frontmatter |
-| `docs/conventions/*.md` | Domains from YAML frontmatter `domains:` field | `domains` frontmatter |
-| `docs/business-rules/*.md` | Domains from YAML frontmatter `domains:` field | `domains` frontmatter |
-
-### Base Vocabulary
-
-The base 8-category vocabulary is always included, even when no knowledge files exist:
-
-1. **architecture** -- system structure, layering, modules
-2. **interface** -- API contracts, data shapes, serialization
-3. **data-model** -- schema, indexing, soft-delete, data ownership
-4. **dependencies** -- libraries, versions, packages
-5. **error-handling** -- error types, status codes, error propagation
-6. **testing** -- test patterns, coverage, mocking
-7. **security** -- auth, permissions, data protection
-8. **local-dev-deployment** -- dev environment, tooling, deployment
-
-### Aggregation
-
-1. **Types**: Collect unique knowledge types found: `decision`, `lesson`, `convention`, `business-rule`. Report which directories are non-empty vs empty.
-
-2. **Domains**: Aggregate unique domain keywords from all scanned sources (tags from lessons + domains from conventions/business-rules + type-derived keywords from decisions). Merge with the base 8 categories. Deduplicate and normalize (lowercase, sorted).
-
-3. **Counts**: For each type and domain keyword, count how many entries exist across all directories.
-
-### Output Format
-
-Use the output template from `templates/vocabulary-index.md`.
-
-### Idempotency
-
-The vocabulary file is fully regenerated on every `/consolidate-specs` run -- no incremental updates. Previous content is replaced entirely.
-
-### Usage by Other Skills
-
-- `/learn` reads `docs/.vocabulary.md` at runtime to suggest type and domain classifications for user input
-- Auto-extract triggers (in `run-tasks`, `fix-bug`, `write-prd`, `tech-design`) read the vocabulary to classify extracted knowledge
-- Both `/learn` and triggers accept values outside the vocabulary -- it is suggestive, not restrictive
+See `rules/vocabulary-generation.md` for scan targets, base vocabulary, aggregation rules, output format, and usage by other skills.
 
 ## Step 13: Record Task
 

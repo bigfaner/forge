@@ -95,8 +95,8 @@ Type-specific inputs:
 - `ui-*`: add `PRD_PATH` = `docs/features/<slug>/prd/prd-ui-functions.md` (if exists)
 - `consistency`: add `SCOPE` = value from `--scope`
 - `validate-ux`: add `UX_SNAPSHOT_PATH` = path to generated `ux-snapshot.md`
-- `journey`: add `SURFACE_TYPE` = value from `.forge/config.yaml` `surface` field; add `SURFACE_RULE_PATH` = `skills/gen-journeys/rules/surface-<type>.md`
-- `contract`: add `SURFACE_TYPE` = value from `.forge/config.yaml` `surface` field; add `SURFACE_RULE_PATH` = `skills/gen-journeys/rules/surface-<type>.md`
+- `journey`: add `SURFACE_TYPE` = value from `.forge/config.yaml` `surface` field; add `SURFACE_RULE_PATH` = gen-journeys skill's `rules/surface-<type>.md` (resolve relative to the gen-journeys skill directory)
+- `contract`: add `SURFACE_TYPE` = value from `.forge/config.yaml` `surface` field; add `SURFACE_RULE_PATH` = gen-journeys skill's `rules/surface-<type>.md` (resolve relative to the gen-journeys skill directory)
 
 Do NOT pass reviser change summaries to the scorer.
 

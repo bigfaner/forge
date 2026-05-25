@@ -14,7 +14,7 @@ mainSession: false
 {{DESCRIPTION}}
 
 ## Reference Files
-- `docs/proposals/<slug>/proposal.md` — Source proposal
+- `docs/proposals/{{SLUG}}/proposal.md` — Source proposal
 
 ## Affected Files
 

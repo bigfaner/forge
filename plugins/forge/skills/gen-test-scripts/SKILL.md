@@ -32,11 +32,11 @@ Check previous stage artifacts. Abort and prompt user if missing:
 
 Load test framework knowledge from Convention files (no Profile/CLI dependency).
 
+Load: `rules/convention-guide.md` — Convention file structure reference, section schema, validation rules, merge semantics, and growth path.
+
 ### 0.1 Discover Convention Files
 
-Load test framework knowledge from Convention files using a two-level index mechanism.
-
-1. Read `docs/conventions/testing/index.md` — this index file lists all available Conventions with name, description, and applicability conditions.
+1. Read `docs/conventions/testing/index.md` -- lists all available Conventions with name, description, and applicability conditions.
 2. Based on the project's language/framework context, select the matching Convention from the index.
 3. Load the selected Convention file from `docs/conventions/testing/<convention>.md`.
 4. If `index.md` does not exist, proceed to auto-detection (Step 0.2).
@@ -46,8 +46,6 @@ Do NOT use `domains` frontmatter filtering. Selection is based on index.md descr
 </HARD-RULE>
 
 ### 0.2 Resolve Target Framework
-
-Determine the target framework from the available signals:
 
 1. **Convention file match**: If a Convention was loaded from index.md, use its framework declaration.
 2. **Existing test file scan**: Scan `tests/` for file patterns to confirm the Convention's framework matches the project.
@@ -62,7 +60,7 @@ If no Convention files are found and no framework can be detected from existing 
 
 For the loaded Convention file, check required sections: `framework`, `discovery`, `structure`, `assertions`.
 
-- **Missing required section**: Log warning listing missing sections. Proceed with LLM defaults for that section's area. Example: "Convention file `<path>` is missing sections: discovery, assertions. Using LLM defaults for those sections."
+- **Missing required section**: Log warning listing missing sections. Proceed with LLM defaults for that section's area.
 - **Invalid section content** (e.g., empty framework name): Treat as missing. Log warning.
 
 Use the loaded Convention content for all framework-specific rules in subsequent steps.
@@ -71,114 +69,27 @@ Use the loaded Convention content for all framework-specific rules in subsequent
 
 Determine the project's interface surface type to drive per-surface generation strategy.
 
-### 0.5.1 Read Surface Configuration
-
-Read `.forge/config.yaml` from the project root and extract the `surface` field.
-
-```bash
-forge config get surface
-```
-
-| Result | Action |
-|--------|--------|
-| Surface type returned (e.g., `cli`, `tui`, `webui`, `mobile`, `api`) | Use this as the active surface type for generation |
-| No config file or field missing | Proceed to auto-detection (Step 0.5.2) |
-
-### 0.5.2 Auto-Detection Fallback
-
-If `.forge/config.yaml` does not contain a `surface` field, infer the surface type from code reconnaissance signals in Step 1. Use the Verification Method defined in each type file (`types/cli.md`, `types/api.md`, etc.) to probe for interface indicators.
-
-Priority: config value > auto-detection. If auto-detection is ambiguous (multiple types detected), ask the user which surface type to prioritize.
-
-### 0.5.3 Surface Strategy Application
-
-The detected surface type determines the **test ratio strategy** for Step 3 generation:
-
-| Surface Type | Contract : Journey Ratio | Key Generation Constraint |
-|-------------|--------------------------|---------------------------|
-| CLI | ≥ 80% Contract | Subprocess execution model, binary isolation, environment hermeticity |
-| TUI | ≥ 80% Contract | Terminal I/O testing, non-interactive stdin pipe, ANSI sanitization |
-| WebUI | Balanced 50/50 | Convention-defined browser framework, session reuse, network interception |
-| API | Balanced 50/50 | HTTP client testing, status code coverage, content-type verification |
-| Mobile | Best-effort | Maestro YAML skeleton + deep link tests, complex scenarios marked `manual-only` |
-
-**Contract test ratio formula**: `Contract test functions / (Contract test functions + Journey smoke test functions) × 100%`
-
-<HARD-RULE>
-The surface type determines generation strategy — test ratio, execution model, and assertion patterns. Type-specific Golden Rules (from `types/<type>.md`) take precedence over generic generation rules. Convention provides framework implementation details, Surface type provides strategy constraints. These two are orthogonal and merged at generation time.
-</HARD-RULE>
+Load `rules/step-0.5-validation.md` for the complete surface detection and strategy application logic, including:
+- Reading surface configuration from `.forge/config.yaml`
+- Auto-detection fallback from code reconnaissance
+- Surface strategy table (CLI/TUI/WebUI/API/Mobile ratio targets)
+- Surface-driven generation strategy for Step 3.0
 
 ## Step 1: Code Reconnaissance (Build Fact Table)
 
 Read source code to extract ground-truth values for semantic descriptor resolution AND test framework patterns.
 
-### 1.1 Framework Reconnaissance
-
-Scan existing test files for framework-specific patterns to supplement or validate Convention:
-
-| Source | What to extract | Purpose |
-|--------|-----------------|---------|
-| Test file names | File pattern (`*_test.go`, `*.test.ts`) | Confirm Convention's `file-pattern` |
-| Test file imports | Assertion library, test runner imports | Confirm Convention's `Assertion` section |
-| Build tags / markers | Tag syntax (`//go:build e2e`, `@pytest.mark.e2e`) | Confirm Convention's `Tags` section |
-| Test function signatures | Naming pattern, parameter types | Infer naming conventions |
-| Test helper files | Utility patterns, fixture setup | Infer project-specific test patterns |
-
-If no test files exist and no file signals are recognizable, Reconnaissance produces an empty Fact Table for framework columns. This is expected cold-start behavior — proceed with Convention alone, or LLM defaults if no Convention.
-
-### 1.2 Domain Reconnaissance
-
-Extract ground-truth values from application source code for semantic descriptor resolution:
-
-| Source | What to extract |
-|--------|-----------------|
-| CLI entry points | Command names, flag names, output format strings |
-| API handlers | Request/response schemas, status codes |
-| TUI components | Model fields, View output patterns |
-| Config files | Ports, base paths, auth mechanisms |
-| Auth implementation | Login endpoint, token field, header format |
-
-### 1.3 Build Fact Table
-
-Combine all reconnaissance into a single Fact Table with source citations:
-
-```markdown
-## Fact Table
-| Key | Value | Source |
-|-----|-------|--------|
-| CLI_TASK_CLAIM_OUTPUT | claimed task <task_id> | internal/cmd/claim.go:42 |
-| CLI_FEATURE_CREATE_OUTPUT | Feature <slug> created successfully | internal/cmd/feature.go:45 |
-| TEST_FRAMEWORK | go-testing | tests/e2e/step1_test.go (import analysis) |
-| TEST_ASSERTION_LIB | testify/assert | tests/e2e/step1_test.go:3 (import) |
-| TEST_BUILD_TAG | //go:build e2e | tests/e2e/step1_test.go:1 |
-```
-
-<HARD-RULE>
-- Every Fact Table value must cite source file and line number. Unknown sources -> `UNKNOWN`. Do not fabricate.
-- Fact Table values drive semantic descriptor to regex conversion. All `// VERIFY:` markers must be resolved using Fact Table values.
-- When Reconnaissance finds signals that conflict with Convention -> Convention wins, but log the conflict for user awareness.
-</HARD-RULE>
-
-### 1.4 Semantic Descriptor to Regex Conversion
-
-Contract Output dimensions use semantic descriptors (natural language), not regex. This step converts them to precise regex patterns:
-
-1. For each Outcome's Output dimension, look up matching Fact Table entries.
-2. Convert the Fact Table value to a regex pattern:
-   - Placeholder tokens like `<task_id>` become named capture groups: `(?P<task_id>[\w-]+)`
-   - Literal text is regex-escaped.
-3. If no Fact Table match is found, keep the original descriptor as a `// VERIFY:` marker.
-
-Example pipeline:
-```
-Semantic descriptor: "success confirmation containing feature-slug"
-  -> Fact Table lookup: CLI_FEATURE_CREATE_OUTPUT = "Feature my-feature created successfully"
-  -> Generated regex: Feature\s+([\w-]+)\s+created\ successfully
-```
+Load `rules/step-1-contract-loading.md` for the complete reconnaissance logic, including:
+- Framework reconnaissance (test file patterns, imports, build tags)
+- Domain reconnaissance (CLI entry points, API handlers, config values)
+- Fact Table construction with source citations
+- Semantic descriptor to regex conversion
 
 ## Step 2: Read Contract Specifications
 
-**Input discovery** — find the Contract files for the target Journey:
+**Optional -- Run-to-Learn (R2L)**: If R2L is enabled in `.forge/config.yaml`, execute the R2L loop between Step 1 and Step 3. Load: `rules/run-to-learn.md` for the complete R2L mechanism (skeleton test generation, runtime fact enrichment, graceful degradation).
+
+**Input discovery** -- find the Contract files for the target Journey:
 
 1. Glob `docs/features/<slug>/testing/<journey>/contracts/step-*.md` for the target Journey.
 2. If no Journey is specified, ask the user which Journey to generate tests for.
@@ -236,10 +147,8 @@ Reconnaissance Hints in type files are discovery aids only. Information discover
 
 ### 2.5.1 Extract Interface Types from Contracts
 
-Read each Contract file parsed in Step 2 and collect all interface types referenced in Actions and Outcomes:
-
 1. Examine `step-action` fields for interface indicators (CLI commands, HTTP methods, UI interactions, TUI rendering, mobile gestures).
-2. Examine Outcome `Output` dimensions for interface-specific assertions (exit codes → CLI, HTTP status codes → API, element selectors → UI/TUI/Mobile).
+2. Examine Outcome `Output` dimensions for interface-specific assertions (exit codes -> CLI, HTTP status codes -> API, element selectors -> UI/TUI/Mobile).
 3. Record the detected type set (e.g., `{CLI, API}`).
 
 ### 2.5.2 Load Shared Principles
@@ -250,14 +159,14 @@ Always load `types/_shared.md` regardless of detected types. This file defines t
 
 For each interface type in the detected set, load the corresponding type file:
 
-1. Map interface type to filename: `CLI` → `types/cli.md`, `TUI` → `types/tui.md`, `UI` → `types/ui.md`, `Mobile` → `types/mobile.md`, `API` → `types/api.md`.
+1. Map interface type to filename: `CLI` -> `types/cli.md`, `TUI` -> `types/tui.md`, `UI` -> `types/ui.md`, `Mobile` -> `types/mobile.md`, `API` -> `types/api.md`.
 2. Read each matched type file via Read tool.
 3. Extract Golden Rules (generation constraints) and Reconnaissance Hints (discovery aids).
 
 Do NOT load type files for interface types not detected in the Contracts. No speculative bulk loading.
 
 <HARD-RULE>
-`_shared.md` is ALWAYS loaded regardless of detected types. Only type files matching detected interface types are loaded — no speculative bulk loading.
+`_shared.md` is ALWAYS loaded regardless of detected types. Only type files matching detected interface types are loaded -- no speculative bulk loading.
 </HARD-RULE>
 
 ### 2.5.4 Token Budget Warning
@@ -268,7 +177,7 @@ If the detected type set contains more than 3 types, emit:
 WARNING: Detected {N} interface types ({type list}). Loading all type rules may consume significant token budget. Consider splitting the Journey into type-specific sub-Journeys.
 ```
 
-Proceed with generation — the warning is advisory, not blocking.
+Proceed with generation -- the warning is advisory, not blocking.
 
 ## Step 3: Generate Test Code
 
@@ -276,53 +185,9 @@ For each Contract step, generate test code following the resolved framework's co
 
 ### 3.0 Surface-Driven Generation Strategy
 
-Before generating, apply the surface type detected in Step 0.5 to constrain the generation plan:
+Apply the surface type detected in Step 0.5 to constrain the generation plan. Load `rules/step-0.5-validation.md` section "Surface-Driven Generation Strategy" for per-surface ratio targets, execution models, and generation constraints (CLI, TUI, WebUI, API, Mobile).
 
-#### CLI Surface (Contract ≥ 80%)
-
-- **Primary focus**: Contract test functions — one test per Outcome per step
-- **Execution model**: Subprocess execution (binary isolation, environment hermeticity per `types/cli.md`)
-- **Journey smoke tests**: Generate exactly 1 smoke test per Journey (happy path only)
-- **Ratio enforcement**: For N Contract steps with M total Outcomes, generate M Contract test functions + 1 Journey smoke test. This ensures the ratio stays well above 80%.
-- **Binary check**: Verify the binary can be built before generating tests. Auto-detect binary name and build command from Fact Table.
-
-#### TUI Surface (Contract ≥ 80%)
-
-- **Primary focus**: Contract test functions — one test per Outcome per step
-- **Execution model**: Non-interactive stdin pipe with terminal output capture (per `types/tui.md`)
-- **Journey smoke tests**: Generate exactly 1 smoke test per Journey (happy path only)
-- **Ratio enforcement**: Same formula as CLI — M Contract functions + 1 Journey smoke test
-
-#### WebUI Surface (Balanced 50/50)
-
-- **Balanced approach**: Generate Contract tests for each Outcome AND enrich the Journey smoke test with multi-step verification
-- **Execution model**: Convention-defined browser framework (per `types/ui.md`)
-- **Journey smoke tests**: Generate 1 comprehensive smoke test that verifies the happy path AND at least 1 failure path through the Journey
-- **Ratio target**: Approximately equal Contract test functions and Journey smoke test functions
-
-#### API Surface (Balanced 50/50)
-
-- **Balanced approach**: Generate Contract tests for each Outcome AND enrich the Journey smoke test
-- **Execution model**: HTTP client testing (per `types/api.md`)
-- **Journey smoke tests**: Generate 1 comprehensive smoke test that verifies the happy path AND at least 1 error path through the Journey
-- **Ratio target**: Approximately equal Contract test functions and Journey smoke test functions
-
-#### Mobile Surface (Best-Effort)
-
-- **Maestro YAML skeleton**: Generate Maestro YAML flows instead of code-based test functions
-- **Skeleton structure**: Each generated Maestro YAML file MUST contain:
-  1. `appId` declaration (from Fact Table `MOBILE_APP_ID`)
-  2. `onFlowStart: [launchApp]` lifecycle hook
-  3. `onFlowEnd: [killApp]` lifecycle hook
-  4. Navigation flow for the Contract step's happy path
-  5. Deep link test variant when the Contract involves navigation to a specific screen
-- **Deep link tests**: For each Journey step that navigates to a specific screen, generate an additional Maestro YAML that opens the app via URL scheme and asserts the target screen is visible
-- **Complex scenario handling**: If a test case involves gestures not expressible in Maestro (pinch, rotate, multi-finger swipe), or requires physical device capabilities (sensors, camera), mark the test with `manual-only` annotation and skip generation. Add a comment explaining which capability requires manual testing.
-- **Convention reference**: Use Maestro YAML syntax conventions. If no Mobile Convention file exists, use the Maestro reference from `types/mobile.md` as the authoritative syntax guide.
-
-<HARD-RULE>
-**Mobile best-effort**: Do not aim for comprehensive coverage. Generate skeleton flows + deep link tests for core Journeys only. Complex scenarios MUST be marked `manual-only` rather than generating incomplete or fragile tests. Mobile test generation MUST NOT fail the pipeline — any generation issue should result in a skeleton with `manual-only` markers.
-</HARD-RULE>
+**Test isolation**: Generated tests must follow isolation conventions per `rules/test-isolation.md` (located in the run-tests skill directory, resolve relative to the skills parent directory) — every test must own its environment, no dependency on real project state.
 
 ### Output Directory
 
@@ -353,7 +218,7 @@ tests/
 
 All generated test files MUST include `@feature` tags. The tag format and mechanism are defined by the Convention file's **Tags** section. Read and follow the Convention's tag syntax precisely.
 
-If the Convention file does not have a Tags section, ask the user which tag format to use. Common formats for reference only — do NOT auto-select without Convention or user input.
+If the Convention file does not have a Tags section, ask the user which tag format to use. Common formats for reference only -- do NOT auto-select without Convention or user input.
 
 ### Step Test Generation
 
@@ -415,47 +280,21 @@ After generating all test files, run a compile gate to verify generated code cor
 
 Before compile, run lightweight syntax and import checks:
 
-#### (a) Syntax Correctness
-
-Verify each generated test file has valid syntax:
-
-| Framework | Validation Method |
-|-----------|-------------------|
-| Go | `gofmt -e <file>` (exit code 0 = valid syntax) |
-| JavaScript/TypeScript | `node --check <file>` or `tsc --noEmit` |
-| Python | `python -m py_compile <file>` |
-| Maestro YAML | `maestro validate <file>` (if CLI available) or YAML lint |
-
-#### (b) Import Path Resolution
-
-Verify generated imports can be resolved:
-
-| Framework | Validation Method |
-|-----------|-------------------|
-| Go | `go vet ./tests/<journey>/...` (reports unresolved imports) |
-| JavaScript/TypeScript | `tsc --noEmit` or `node -e "require('<import>')"` |
-| Python | `python -c "import <module>"` for each generated import |
-| Maestro YAML | N/A (no import resolution needed) |
+| Framework | Syntax Validation | Import Validation |
+|-----------|-------------------|-------------------|
+| Go | `gofmt -e <file>` | `go vet ./tests/<journey>/...` |
+| JavaScript/TypeScript | `node --check <file>` or `tsc --noEmit` | `tsc --noEmit` or `node -e "require('<import>')"` |
+| Python | `python -m py_compile <file>` | `python -c "import <module>"` per import |
+| Maestro YAML | `maestro validate <file>` or YAML lint | N/A |
 
 #### Validation Failure Handling
 
-For each file that fails validation:
-
-1. **Auto-retry (1 attempt)**: Feed the syntax/import error back to LLM with the generated file content. Regenerate the failing file. Re-validate.
-2. **Retry also fails**: Mark the file as `gen-failed` by adding a header comment:
-   ```
-   // GEN-FAILED: <error summary>
-   // This file was generated but failed validation. Manual review required.
-   ```
-   For Maestro YAML:
-   ```yaml
-   # GEN-FAILED: <error summary>
-   # This file was generated but failed validation. Manual review required.
-   ```
-3. **Skip and continue**: The `gen-failed` file is skipped in subsequent compile/test steps. Other generated files proceed normally.
+1. **Auto-retry (1 attempt)**: Feed error + file content back to LLM. Regenerate. Re-validate.
+2. **Retry also fails**: Mark file as `gen-failed` with header comment: `// GEN-FAILED: <error summary>`.
+3. **Skip and continue**: `gen-failed` file is skipped in subsequent steps. Others proceed normally.
 
 <HARD-RULE>
-**gen-failed files are NOT deleted**. They remain in `tests/<journey>/` for user inspection. The pipeline does NOT block on `gen-failed` files — other tests continue to compile and execute. At most 1 auto-retry per file; do not retry more than once.
+**gen-failed files are NOT deleted**. They remain for user inspection. Pipeline does NOT block on `gen-failed` files. At most 1 auto-retry per file.
 </HARD-RULE>
 
 ### 4.1 Prerequisite Check
@@ -466,52 +305,23 @@ Verify `just compile` recipe exists:
 just --list | grep compile
 ```
 
-If the recipe is missing:
-- Block generation
-- Output: "Missing justfile `compile` recipe. Run `/forge:init-justfile` first, or add a recipe manually."
-- Do not proceed with compile check
+If missing, block generation with: "Missing justfile `compile` recipe. Run `/forge:init-justfile` first, or add a recipe manually."
 
 ### 4.2 Compile and Retry
 
-Run the compile gate:
-
-```bash
-just compile
-```
-
-| Result | Action |
-|--------|--------|
-| Pass | Proceed to post-generation checks (Step 4.3) |
-| Fail (attempt 1) | Feed compile error + generated file content back to LLM. Regenerate the failing file. Retry compile. |
-| Fail (attempt 2) | Feed compile error again. Regenerate with explicit error analysis. Retry compile. |
-| Fail (attempt 3) | Block task. Output error details + recovery guidance. Do NOT delete generated files. |
+Run `just compile`. On failure: retry up to 3 attempts (feed compile error + file content back to LLM, regenerate). After 3 failures: block task, output error details, preserve generated files.
 
 ### 4.3 Recovery on Exhaustion
 
 If all compile attempts fail:
-
-1. Output the compile error to the user with the generated file path
-2. Suggest recovery actions:
-   - (a) Check Convention file for incorrect framework/assertions section declarations
-   - (b) Run `/forge:test-guide` to regenerate Convention from project analysis
-   - (c) Manually edit the generated test file to fix compilation
-3. Do not auto-delete the generated file — leave it for user inspection
+1. Output compile error with generated file path.
+2. Suggest: (a) check Convention for incorrect declarations, (b) run `/forge:test-guide` to regenerate Convention, (c) manually edit.
+3. Do not auto-delete generated files.
 
 ### 4.4 Post-Compile Checks
 
-After compile passes, run these additional checks:
-
-#### VERIFY Marker Check
-
-Scan generated files for unresolved `// VERIFY:` markers:
-```bash
-grep -rn '// VERIFY:' tests/<journey>/
-```
-Resolve any remaining markers using Fact Table values.
-
-#### Antipattern Guard & Duplicate Name Check
-
-See `rules/quality-gates.md` for the forbidden pattern list and duplicate name collision rules.
+- **VERIFY Marker Check**: `grep -rn '// VERIFY:' tests/<journey>/` -- resolve remaining markers using Fact Table.
+- **Antipattern Guard & Duplicate Name Check**: See `rules/quality-gates.md`.
 
 ## Error Handling
 

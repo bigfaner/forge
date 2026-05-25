@@ -157,20 +157,20 @@ Skill 文件（SKILL.md）和 Command 文件（.md）中的路径使用相对于
 - 项目根路径（`plugins/forge/...`）— 分发后路径不存在
 - `${CLAUDE_SKILL_DIR}` 变量 — 使用相对路径替代，保持 SKILL.md 内容自描述
 
-## 6. 两条 Pipeline
+## 6. Pipeline
 
 ### Full Pipeline
 
 ```
-/brainstorm → /write-prd → /ui-design? → /tech-design → /breakdown-tasks → 执行 → /submit-task
+/brainstorm → /write-prd → /ui-design? → /tech-design → /breakdown-tasks → /run-tasks → /submit-task
                   ↓              ↓              ↓
               /eval-prd     /eval-ui      /eval-design
 ```
 
-### Quick Pipeline（1-10 个任务）
+### Quick Pipeline（1-15 个 coding 任务）
 
 ```
-/brainstorm → /quick-tasks → 执行 → /submit-task
+/brainstorm → /quick-tasks → /run-tasks → /submit-task
 ```
 
 ### 测试 Pipeline
@@ -186,3 +186,8 @@ Skill 文件（SKILL.md）和 Command 文件（.md）中的路径使用相对于
 - `/forensic` — 分析历史会话偏差原因
 - `/init-justfile` — 初始化项目 Justfile
 - `/eval` — 通用文档评估（17 种 rubric 类型）
+- `/clean-code` — 代码简化与质量提升
+- `/deep-research` — 技术或产品深度调研
+- `/extract-design-md` — 从应用提取视觉样式生成 DESIGN.md
+- `/gen-sitemap` — 自动生成 Web 应用站点地图
+- `/test-guide` — 测试指南（profile-based）

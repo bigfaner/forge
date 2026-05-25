@@ -1,13 +1,13 @@
 # Decision Entry Template
 
-Used by `/learn` when writing to `docs/decisions/<type>.md`.
+Used by `/learn` when writing to `docs/decisions/{{TYPE}}.md`.
 
 ## Row Format
 
 Append a single table row to the end of the target type file:
 
 ```
-| YYYY-MM-DD | <feature-slug> | <Decision, one sentence> | <Rationale, one sentence> | <source> |
+| {{DATE}} | {{FEATURE_SLUG}} | {{DECISION}} | {{RATIONALE}} | {{SOURCE}} |
 ```
 
 ### Field Constraints
@@ -18,7 +18,7 @@ Append a single table row to the end of the target type file:
 | Feature | slug or `-` | Feature slug, e.g. `feat-log-decisions`; use `-` if unknown |
 | Decision | single sentence | Max 80 characters |
 | Rationale | single sentence | Max 80 characters |
-| Source | file path or `manual` | `<feature-slug>/<file>.md §<Section>` or `manual` |
+| Source | file path or `manual` | `{{FEATURE_SLUG}}/{{FILE}}.md §{{SECTION}}` or `manual` |
 
 ## Manifest Update
 
@@ -30,7 +30,7 @@ After writing the decision row, update `docs/decisions/manifest.md`:
 Recent row format:
 
 ```
-| YYYY-MM-DD | <feature-slug> | <Type Name> | <Decision, one sentence> | <source> |
+| {{DATE}} | {{FEATURE_SLUG}} | {{TYPE_NAME}} | {{DECISION}} | {{SOURCE}} |
 ```
 
 ## Type File Initial State
@@ -38,7 +38,7 @@ Recent row format:
 If the target type file does not exist, create it with:
 
 ```markdown
-# <Type Name> Decisions
+# {{TYPE_NAME}} Decisions
 
 | Date | Feature | Decision | Rationale | Source |
 |------|---------|----------|-----------|--------|

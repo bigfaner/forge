@@ -4,7 +4,7 @@ Write the vocabulary index to `docs/.vocabulary.md`:
 
 ```markdown
 ---
-generated: "<date>"
+generated: "{{DATE}}"
 generator: "consolidate-specs Step 12"
 status: auto-generated
 ---

@@ -23,7 +23,6 @@ var skillFiles = []string{
 	"plugins/forge/commands/fix-bug.md",
 	"plugins/forge/skills/submit-task/SKILL.md",
 	"plugins/forge/commands/execute-task.md",
-	"plugins/forge/skills/improve-harness/SKILL.md",
 }
 
 // Raw toolchain commands that must NOT appear in skill/agent/command files.

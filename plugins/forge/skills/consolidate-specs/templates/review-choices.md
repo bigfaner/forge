@@ -2,16 +2,16 @@
 
 ```markdown
 ---
-feature: "<slug>"
-reviewed: "<date>"
+feature: "{{SLUG}}"
+reviewed: "{{DATE}}"
 ---
 
 # Review Choices
 
 ## Approved for Integration
 
-- BIZ-001 -> docs/business-rules/<domain>.md
-- TECH-001 -> docs/conventions/<topic>.md
+- BIZ-001 -> docs/business-rules/{{DOMAIN}}.md
+- TECH-001 -> docs/conventions/{{TOPIC}}.md
 
 ## Skipped
 

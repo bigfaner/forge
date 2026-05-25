@@ -1,9 +1,9 @@
 ---
-created: YYYY-MM-DD
+created: "{{DATE}}"
 related: design/tech-design.md
 ---
 
-# API Handbook: <Feature Name>
+# API Handbook: {{FEATURE_NAME}}
 
 ## API Overview
 

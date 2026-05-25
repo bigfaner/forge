@@ -6,36 +6,36 @@ Used by `/learn` when writing to `docs/conventions/` or `docs/business-rules/`.
 
 Append to the target file using the project-global ID encoding:
 
-### Convention Entry (docs/conventions/<topic>.md)
+### Convention Entry (docs/conventions/{{TOPIC}}.md)
 
 ```markdown
-### TECH-<topic>-<NNN>: <Spec Title>
+### TECH-{{TOPIC}}-{{NNN}}: {{SPEC_TITLE}}
 
-**Requirement**: <concise requirement>
+**Requirement**: {{CONCISE_REQUIREMENT}}
 **Scope**: [CROSS]
-**Source**: /learn entry <YYYY-MM-DD>
+**Source**: /learn entry {{DATE}}
 
-<Implementation details, examples>
+{{IMPLEMENTATION_DETAILS}}
 ```
 
-### Business-Rule Entry (docs/business-rules/<domain>.md)
+### Business-Rule Entry (docs/business-rules/{{DOMAIN}}.md)
 
 ```markdown
-### BIZ-<domain>-<NNN>: <Rule Title>
+### BIZ-{{DOMAIN}}-{{NNN}}: {{RULE_TITLE}}
 
-**Rule**: <concise rule statement>
-**Context**: <why this rule exists>
+**Rule**: {{CONCISE_RULE_STATEMENT}}
+**Context**: {{WHY_THIS_RULE_EXISTS}}
 **Scope**: [CROSS]
-**Source**: /learn entry <YYYY-MM-DD>
+**Source**: /learn entry {{DATE}}
 
-<Additional details, examples, or edge cases>
+{{ADDITIONAL_DETAILS}}
 ```
 
 ## Project-Global ID Encoding
 
 - **Prefix**: derived from target filename (e.g., `business-rules/auth.md` -> `auth`, `conventions/api.md` -> `api`)
 - **Sequence**: file-internal -- find max existing NNN in the target file + 1
-- **Format**: `BIZ-<domain>-<NNN>` for business rules, `TECH-<topic>-<NNN>` for tech specs
+- **Format**: `BIZ-{{DOMAIN}}-{{NNN}}` for business rules, `TECH-{{TOPIC}}-{{NNN}}` for tech specs
 - **Examples**: `BIZ-auth-001`, `TECH-api-003`
 
 ## New File Frontmatter
@@ -44,8 +44,8 @@ When creating a new file, include YAML frontmatter:
 
 ```yaml
 ---
-title: "<Descriptive Title>"
-domains: [<keyword1>, <keyword2>, ..., <keywordN>]
+title: "{{DESCRIPTIVE_TITLE}}"
+domains: [{{KEYWORD_1}}, {{KEYWORD_2}}, ..., {{KEYWORD_N}}]
 ---
 ```
 

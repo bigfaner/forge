@@ -1,64 +1,64 @@
 ---
-created: "<DATE>"
-topic: "<TOPIC>"
-mode: "<deep-dive|comparison>"
-candidates: [<LIST_FOR_COMPARISON_MODE>]
-dimensions: [<SELECTED_DIMENSIONS>]
+created: "{{DATE}}"
+topic: "{{TOPIC}}"
+mode: "{{MODE}}"
+candidates: [{{CANDIDATES}}]
+dimensions: [{{DIMENSIONS}}]
 ---
 
-# <Topic> Research Report
+# {{TOPIC}} Research Report
 
 ## Overview
 
-<One-line conclusion + core recommendation. The reader should get the key takeaway without reading further.>
+{{ONE_LINE_CONCLUSION}}
 
-**Research mode:** <Deep Dive | Multi-Candidate Comparison>
+**Research mode:** {{RESEARCH_MODE}}
 
-**Key question:** <The question this research set out to answer (from Phase 1 Q3)>
+**Key question:** {{KEY_QUESTION}}
 
 ## Research Background & Objectives
 
-<Why this research was conducted. What decision or understanding it supports. 2-4 sentences.>
+{{RESEARCH_BACKGROUND}}
 
 ### Research Scope
 
 | Dimension | Value |
 |---|---|
-| Topic | <topic> |
-| Mode | <deep-dive / comparison> |
-| Dimensions covered | <list> |
-| Candidates | <comparison mode only: list> |
-| Project adaptation | <yes/no> |
+| Topic | {{TOPIC}} |
+| Mode | {{MODE}} |
+| Dimensions covered | {{DIMENSIONS}} |
+| Candidates | {{CANDIDATES}} |
+| Project adaptation | {{PROJECT_ADAPTATION}} |
 
 ---
 
-## <Deep Dive Mode: Per-Dimension Analysis>
+## {{DEEP_DIVE_SECTION_TITLE}}
 
-### <Dimension Name>
+### {{DIMENSION_NAME}}
 
-<Findings for this dimension. Include specific data points, version numbers, dates.>
+{{DIMENSION_FINDINGS}}
 
 **Sources:**
-- <source title> — <URL>
+- {{SOURCE_TITLE}} — {{SOURCE_URL}}
 
 ---
 
-## <Comparison Mode: Per-Candidate Analysis>
+## {{COMPARISON_SECTION_TITLE}}
 
-### <Candidate 1 Name>
+### {{CANDIDATE_1_NAME}}
 
-#### <Dimension Name>
+#### {{DIMENSION_NAME}}
 
-<Findings for this candidate on this dimension.>
+{{CANDIDATE_FINDINGS}}
 
-#### <Dimension Name>
+#### {{DIMENSION_NAME}}
 
-<Findings...>
+{{CANDIDATE_FINDINGS}}
 
 **Sources:**
-- <source title> — <URL>
+- {{SOURCE_TITLE}} — {{SOURCE_URL}}
 
-### <Candidate 2 Name>
+### {{CANDIDATE_2_NAME}}
 
 *(repeat structure for each candidate)*
 
@@ -68,10 +68,10 @@ dimensions: [<SELECTED_DIMENSIONS>]
 
 *(Comparison mode only. Present all candidates across all dimensions in a single table.)*
 
-| Dimension | <Candidate 1> | <Candidate 2> | <Candidate 3> |
+| Dimension | {{CANDIDATE_1_NAME}} | {{CANDIDATE_2_NAME}} | {{CANDIDATE_3_NAME}} |
 |---|---|---|---|
-| <Dimension 1> | <assessment> | <assessment> | <assessment> |
-| <Dimension 2> | <assessment> | <assessment> | <assessment> |
+| {{DIMENSION_1}} | {{ASSESSMENT}} | {{ASSESSMENT}} | {{ASSESSMENT}} |
+| {{DIMENSION_2}} | {{ASSESSMENT}} | {{ASSESSMENT}} | {{ASSESSMENT}} |
 
 ---
 
@@ -79,38 +79,38 @@ dimensions: [<SELECTED_DIMENSIONS>]
 
 *(Optional — only included when project context analysis was requested.)*
 
-<How this technology/candidate would fit into the current project. Include: existing dependencies that interact, files/modules that would change, migration path specifics.>
+{{PROJECT_ADAPTATION_DETAILS}}
 
 ### Current Stack Impact
 
 | Area | Impact | Details |
 |---|---|---|
-| <dependency/area> | <low/medium/high> | <what changes> |
+| {{DEPENDENCY_AREA}} | {{IMPACT_LEVEL}} | {{IMPACT_DETAILS}} |
 
 ---
 
 ## Risks & Caveats
 
-<Known pitfalls, gotchas, and risks. Be specific — cite concrete issues, not vague warnings.>
+{{RISKS_AND_CAVEATS}}
 
 | Risk | Severity | Mitigation |
 |---|---|---|
-| <specific risk> | <high/medium/low> | <how to address> |
+| {{SPECIFIC_RISK}} | {{RISK_SEVERITY}} | {{MITIGATION}} |
 
 ---
 
 ## Recommendation
 
-<Final recommendation with reasoning. For comparison mode: clear winner with conditions.>
+{{RECOMMENDATION}}
 
-**Confidence level:** <high/medium/low> — <reason for confidence level>
+**Confidence level:** {{CONFIDENCE_LEVEL}} — {{CONFIDENCE_REASON}}
 
 ---
 
 ## Sources
 
-<Full list of all sources cited in the report.>
+{{SOURCES_INTRO}}
 
 | Source | URL | Used for |
 |---|---|---|
-| <title> | <url> | <which section> |
+| {{SOURCE_TITLE}} | {{SOURCE_URL}} | {{SOURCE_SECTION}} |

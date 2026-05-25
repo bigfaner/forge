@@ -194,8 +194,8 @@ ui/prototype/tui/      (multi-platform feature)
 
 | Scenario | Path |
 |----------|------|
-| Single TUI feature | `docs/features/<slug>/ui/prototype/index.html` |
-| Multi-platform feature (web + tui) | `docs/features/<slug>/ui/prototype/tui/index.html` |
+| Single TUI feature | `docs/features/{{SLUG}}/ui/prototype/index.html` |
+| Multi-platform feature (web + tui) | `docs/features/{{SLUG}}/ui/prototype/tui/index.html` |
 
 ### Terminal Window Container
 
@@ -392,6 +392,6 @@ After generating ALL files, perform these checks:
 
 | Scenario | Path |
 |----------|------|
-| Single web or mobile feature | `docs/features/<slug>/ui/prototype/` (multi-file) |
-| Single TUI feature | `docs/features/<slug>/ui/prototype/index.html` (single file) |
-| Multi-platform feature | `docs/features/<slug>/ui/prototype/web/`, `docs/features/<slug>/ui/prototype/tui/` |
+| Single web or mobile feature | `docs/features/{{SLUG}}/ui/prototype/` (multi-file) |
+| Single TUI feature | `docs/features/{{SLUG}}/ui/prototype/index.html` (single file) |
+| Multi-platform feature | `docs/features/{{SLUG}}/ui/prototype/web/`, `docs/features/{{SLUG}}/ui/prototype/tui/` |
