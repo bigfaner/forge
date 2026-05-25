@@ -278,7 +278,7 @@
       "dependencies": [
         "3.summary"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3.gate.md",
       "record": "records/3.gate.md",
       "breaking": true,
