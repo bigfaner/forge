@@ -59,6 +59,6 @@ feature: "Surface-Aware Justfile"
 - Given breakdown-tasks 生成一个涉及 web surface 文件的任务
 - When 查看 index.json
 - Then 任务包含 `surface-key: "admin-panel"` 和 `surface-type: "web"`
-- And 旧任务文件含 `scope: frontend` 时，run-tests 能正确读取并按默认编排策略执行
+- And 旧任务文件含 `scope: frontend` 时，`forge task migrate` 可将其自动迁移为 `surface-key` + `surface-type`，迁移前所有 task 读取命令返回阻塞错误（exit 2）
 - And forge task add 从源任务继承 surface-key 和 surface-type
 - And quality-gate fix-task 从失败文件路径自动推断 surface-key/type

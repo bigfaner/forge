@@ -26,9 +26,9 @@ Forge CLI 层（Go 数据模型 + prompt 合成）+ Forge Plugin 层（Skill 文
 
 ```
 +---------------------------+
-| forge surfaces CLI       |  (已存在，新增 --json)
-|  -- ReadSurfaces()       |
-|  -- MatchSurface(path)   |
+| forge surfaces CLI       |  (已存在: 命令+3模式; 新增: --json flag)
+|  -- ReadSurfaces()       |  (已存在，不变)
+|  -- MatchSurface(path)   |  (需修改: 返回 SurfaceMatch{Key,Type})
 +-------------+-------------+
               | JSON output
               v
@@ -56,41 +56,203 @@ Forge CLI 层（Go 数据模型 + prompt 合成）+ Forge Plugin 层（Skill 文
 
 ### Dependencies
 
-- 内部：`forgeconfig.ReadSurfaces()` + `MatchSurface()`（已存在）
+- 内部：`forgeconfig.ReadSurfaces()`（已存在）+ `MatchSurface()`（需修改签名，见 Interface 1a）
 - 内部：`task` 包所有相关结构体
+- 内部：`internal/cmd/surfaces.go`（需新增 `--json` flag 和 JSON 输出逻辑，见 Interface 1b）
 - 外部：just >= 1.4.0（`[linux]`/`[windows]` recipe attribute）
 - 无新外部依赖
 
+### Phase Component Map
+
+**阶段 1 — 数据模型与查询基础设施（无外部依赖）**：
+
+| 文件 | 变更内容 | 对应 Interface/Model |
+|------|---------|---------------------|
+| `pkg/forgeconfig/match.go` | `MatchSurface()` 签名改为返回 `SurfaceMatch{Key, Type}` | Interface 1a |
+| `internal/cmd/surfaces.go` | 新增 `--json` flag + 三模式 JSON 输出逻辑 | Interface 1b |
+| `task/types.go` | Scope→SurfaceKey，新增 SurfaceType | Model 1, Model 5 |
+| `task/autogen.go` | TestType→SurfaceType，传播链更新 | Model 2 |
+| `task/frontmatter.go` | 新增 SurfaceKey/SurfaceType 字段 | Model 3 |
+| `task/add.go` | 新增 SurfaceKey/SurfaceType 字段 | Model 4 |
+| `prompt.go` | resolveScope() 删除，直接读 SurfaceKey | Model 1 |
+| `task/migrate.go` | 新增 `CheckLegacyScope()` 共享函数 + `forge task migrate` 子命令 | Migration Notes |
+
+**阶段 2 — 上游组件适配（依赖阶段 1）**：
+
+| 文件 | 变更内容 | 对应 Interface/Model |
+|------|---------|---------------------|
+| `skills/breakdown-tasks/SKILL.md` | 任务生成流程新增：调用 `forge surfaces --json <path>` 获取 SurfaceKey+SurfaceType，写入 frontmatter | Interface 1b |
+| `skills/breakdown-tasks/rules/scope-to-surface-key.md` | 新增规则文件：指导 agent 将 scope 枚举值映射为 surface-key（调用 CLI 而非硬编码映射） | Interface 1b |
+| `skills/quick-tasks/SKILL.md` | 同 breakdown-tasks，任务生成时调用 `forge surfaces --json` 填充双字段 | Interface 1b |
+| `task/add.go` | `AddTaskOpts` 新增 SurfaceKey/SurfaceType 字段，从源任务复制到新任务 | Model 4 |
+| `quality-gate` 相关逻辑 | fix-task 流程中调用 `forge surfaces <path> --json` 推断 surface-key，替代原 scope 推断 | Interface 1a, 1b |
+
+**阶段 3 — 下游消费与清理（依赖阶段 2）**：
+
+| 文件 | 变更内容 | 对应 Interface/Model |
+|------|---------|---------------------|
+| `skills/init-justfile/SKILL.md` | 重写：增加 surface 检测流程，按 surface-type 加载对应规则文件生成差异化配方 | Interface 2 |
+| `skills/init-justfile/rules/surfaces/web.md` | 新增：web surface 配方生成规则（完整内容见 Interface 2 示例） | Interface 2 |
+| `skills/init-justfile/rules/surfaces/api.md` | 新增：api surface 配方生成规则 | Interface 2 |
+| `skills/init-justfile/rules/surfaces/cli.md` | 新增：cli surface 配方生成规则（无 dev/probe 步骤） | Interface 2 |
+| `skills/init-justfile/rules/surfaces/tui.md` | 新增：tui surface 配方生成规则（无 dev/probe 步骤） | Interface 2 |
+| `skills/init-justfile/rules/surfaces/mobile.md` | 新增：mobile surface 配方生成规则 | Interface 2 |
+| `skills/run-tests/SKILL.md` | 重写：调度器模式编排，按 surface-type 加载编排规则 | Interface 2 |
+| `skills/run-tests/rules/surfaces/web.md` | 新增：web 编排序列（dev→probe→test→teardown） | Interface 2 |
+| `skills/run-tests/rules/surfaces/api.md` | 新增：api 编排序列 | Interface 2 |
+| `skills/run-tests/rules/surfaces/cli.md` | 新增：cli 编排序列（test→teardown） | Interface 2 |
+| `skills/run-tests/rules/surfaces/tui.md` | 新增：tui 编排序列（test→teardown） | Interface 2 |
+| `skills/run-tests/rules/surfaces/mobile.md` | 新增：mobile 编排序列 | Interface 2 |
+| `skills/*/templates/*.md`（共 16 个 prompt 模板） | `{{SCOPE}}` → `{{SURFACE_KEY}}`，`{{TEST_TYPE}}` → `{{TEST_TYPE_ARG}}` 变量值域同步 | Model 1 |
+
+**Prompt 模板完整清单**（`forge-cli/pkg/prompt/data/`，共 18 个使用 `{{SCOPE}}`，1 个同时使用 `{{TEST_TYPE_ARG}}`）：
+
+| 模板文件 | `{{SCOPE}}` | `{{TEST_TYPE_ARG}}` |
+|---------|:-----------:|:-------------------:|
+| coding-enhancement.md | ✓ | |
+| coding-cleanup.md | ✓ | |
+| code-quality-simplify.md | ✓ | |
+| coding-feature.md | ✓ | |
+| coding-fix.md | ✓ | |
+| coding-refactor.md | ✓ | |
+| doc-summary.md | ✓ | |
+| eval-contract.md | ✓ | |
+| eval-journey.md | ✓ | |
+| gate.md | ✓ | |
+| fix-record-missed.md | ✓ | |
+| test-gen-journeys.md | ✓ | |
+| test-gen-contracts.md | ✓ | |
+| test-gen-scripts.md | ✓ | ✓ |
+| test-verify-regression.md | ✓ | |
+| test-run.md | ✓ | |
+| validation-code.md | ✓ | |
+| validation-ux.md | ✓ | |
+
+**Skill 模板清单**（使用 `{{SCOPE}}`，共 3 个）：
+
+| 模板文件 | 说明 |
+|---------|------|
+| breakdown-tasks/templates/task.md | 任务 frontmatter 模板，`scope: "{{SCOPE}}"` → `surface-key: "{{SURFACE_KEY}}"` |
+| quick-tasks/templates/task.md | 同上 |
+| test-guide/templates/convention-template.md | `domains: [testing, {{SCOPE}}]` → `domains: [testing, {{SURFACE_KEY}}]` |
+
+替换方式：`prompt.go` 的 `renderTemplate()` 中 `{{SCOPE}}` 替换逻辑直接改为 `{{SURFACE_KEY}}`，`{{TEST_TYPE_ARG}}` 保持不变（由 `extractTestTypeArg()` → 直接读 `task.SurfaceType` 生成）。模板文件内容中所有 `{{SCOPE}}` 字面量全局替换为 `{{SURFACE_KEY}}`。
+| `prompt.go` 死代码清理 | 删除 `extractTestTypeArg()`、`genScriptBases()` 等已被 surface 机制替代的辅助函数 | Model 1 |
+
 ## Interfaces
 
-### Interface 1: `forge surfaces <path> --json`
+### Interface 1: `forge surfaces [--json] [path] [--types]`
+
+#### 1a. Go 层 API 变更：`forgeconfig/match.go`
+
+当前 `MatchSurface()` 仅返回 surface-type（map value），不返回 surface-key（map key）。需修改签名以同时返回两者：
 
 ```
-// CLI: 查询文件路径所属 surface，输出 JSON
-// 输入: 文件路径（相对于项目根目录）
-// 输出: JSON array
-[
-  {"surface-key": "admin-panel", "surface-type": "web"}
-]
-// 无匹配时: stdout []，exit 0
-// surfaces 配置缺失时: stderr 错误消息 + 恢复提示，exit 1
+// 现有签名（仅返回 type）:
+func MatchSurface(surfaces map[string]string, query string) (string, error)
+
+// 新签名（返回 key + type）:
+// 定义在 pkg/forgeconfig 包中；消费方：surfaces.go（CLI 输出）、autogen.go（任务生成传播）
+type SurfaceMatch struct {
+    Key   string  // surface-key（map key，如 "admin-panel"）
+    Type  string  // surface-type（map value，如 "web"）
+}
+func MatchSurface(surfaces map[string]string, query string) (SurfaceMatch, error)
 ```
+
+标量形式（单 key "."）时 `Key` 返回 `"."`，调用方按需处理。现有调用方仅 `surfaces.go` 的 `runSurfacesQuery`，需适配新签名从 `SurfaceMatch.Type` 取值。
+
+#### 1b. CLI `--json` flag 规格（`internal/cmd/surfaces.go`）
+
+在现有 cobra command 上注册 `--json` bool flag：
+
+```
+surfacesCmd.Flags().BoolVar(&jsonFlag, "json", false, "output in JSON format")
+```
+
+`--json` flag 与三种子调用模式的组合行为：
+
+| 子调用模式 | 触发条件 | `--json` 输出格式 |
+|-----------|---------|------------------|
+| **列表模式** | 无 path 参数，无 `--types` | `{"surfaces": [{"key": "admin-panel", "type": "web"}, {"key": "payment-service", "type": "api"}]}` |
+| **查询模式** | 有 path 参数 | `[{"key": "admin-panel", "type": "web"}]`；无匹配时 `[]`，exit 0 |
+| **类型模式** | `--types` flag | `{"types": ["api", "web"]}` |
+
+```
+// 列表模式 --json 示例:
+{"surfaces": [{"key": "admin-panel", "type": "web"}, {"key": "payment-service", "type": "api"}]}
+
+// 查询模式 --json 示例（有匹配）:
+[{"key": "admin-panel", "type": "web"}]
+
+// 查询模式 --json 示例（无匹配）:
+[]
+
+// 类型模式 --json 示例:
+{"types": ["api", "web"]}
+
+// surfaces 配置缺失时（所有模式）:
+stderr: {"error": "no surface configured; run `forge init` to configure surfaces"}
+exit 1
+
+// 无 --json 时保持现有文本输出行为不变
+```
+
+**`--json` 模式 stderr 格式覆盖声明**：当 `--json` flag 激活时，所有输出（包括 stdout 和 stderr）统一使用结构化 JSON 格式。这是对 TECH-error-handling-001 规定的 `<context>: <specific-detail>` 纯文本 stderr 格式的**显式例外**。理由：`--json` 的消费者是机器（skill 通过 Bash 工具解析），需要保证 stderr 同样可被 JSON 解析器无歧义消费，避免混合纯文本与 JSON 导致解析失败。`--json` 模式下所有错误路径必须通过 `json.NewEncoder(cmd.ErrOrStderr()).Encode()` 输出 `{"error": "..."}` 格式，不得使用 `fmt.Fprintf(os.Stderr, ...)`。
+
+实现模式：在 `runSurfacesList`/`runSurfacesQuery`/`runSurfacesTypes` 中增加 `if jsonFlag` 分支，使用 `json.NewEncoder(cmd.OutOrStdout()).Encode()` 序列化输出，复用现有逻辑的 match/list 结果。
 
 ### Interface 2: Surface 规则文件格式
 
-```
-// 文件: rules/surfaces/<type>.md
-// 消费者: init-justfile (配方生成) + run-tests (编排序列)
+文件路径：`rules/surfaces/<type>.md`，消费者为 init-justfile（配方生成）和 run-tests（编排序列）。每种 surface 类型对应一个独立规则文件。以下为 `rules/surfaces/web.md` 的完整示例，其余 4 种 surface 类型（api / cli / tui / mobile）参照此模板编写。
+
+```markdown
+# Surface: web
 
 ## 编排序列
-// 步骤名 | 退出码 | 语义 | 后续动作
+
+| 步骤 | 退出码 0 | 退出码 1 | 退出码 2 | 后续动作 |
+|------|---------|---------|---------|---------|
+| dev  | 服务启动成功，等待就绪 | 启动失败（依赖缺失/端口占用） | — | 进入 probe |
+| probe | 健康检查通过 | 健康检查超时（服务未就绪） | — | 进入 test |
+| test | 测试通过 | 测试失败 | 测试环境异常（需重试） | 进入 teardown |
+| teardown | 清理完成 | 清理失败（残留进程） | — | 结束 |
+
+注意事项：
+- dev 失败时**不继续**后续步骤，直接 teardown 并退出
+- probe 最多重试 3 次，间隔 5 秒；3 次均失败视为退出码 1
+- test 退出码 2 允许重跑，skill 应提示用户 "测试环境异常，建议重试"
 
 ## 配方调用契约
-// 配方名 | 参数签名 | 退出码语义
+
+| 配方名 | just 签名 | 退出码 0 语义 | 退出码 1 语义 |
+|--------|----------|--------------|--------------|
+| web-dev | `just web-dev` | 开发服务器就绪，监听端口 | 启动失败，stderr 含错误详情 |
+| web-probe | `just web-probe` | HTTP 健康检查返回 2xx | 连接拒绝或超时 |
+| web-test | `just web-test` | 所有测试用例通过 | 至少一个测试失败 |
+| web-teardown | `just web-teardown` | 进程终止，端口释放 | 进程残留或清理异常 |
+| web | `just web` | 聚合配方：dev→probe→test→teardown 完整流程 | 任一子步骤失败 |
+
+实现约束：
+- 每个配方必须支持 `[linux]` 和 `[windows]` 双平台变体
+- `web` 聚合配方按编排序列顺序调用子配方，遇到非零退出码立即中断
+- `web-teardown` 必须用 `just --dry-run` 验证语法
 
 ## journey 过滤策略
-// journey 标签映射表
+
+| journey 标签 | 匹配规则 | 说明 |
+|-------------|---------|------|
+| `@web` | 精确匹配 | web surface 的专用 journey |
+| `@e2e` | 精确匹配 | 端到端测试，归入 web surface |
+| `@smoke` | 精确匹配 | 冒烟测试，归入 web surface |
+| 其他 | 忽略 | 非 web 相关 journey 不由本规则处理 |
 ```
+
+其余 surface 类型差异点：
+- **api**：dev 步骤启动 API 服务；probe 使用 HTTP `GET /health`；支持 `@api` journey
+- **cli**：无 dev/probe 步骤，仅有 test + teardown；配方名前缀为 `cli-`；无聚合配方
+- **tui**：与 cli 相同模式（无 dev/probe）；支持 `@tui` journey
+- **mobile**：dev 步骤启动模拟器；probe 使用 appium 健康检查；支持 `@mobile` journey
 
 ## Data Models
 
@@ -161,9 +323,33 @@ TaskState {
 
 | 场景 | 行为 | Exit Code |
 |------|------|-----------|
-| `forge surfaces --json` surfaces 配置缺失 | stderr 错误 + 恢复提示 | 1 (retryable) |
+| `forge surfaces --json` surfaces 配置缺失 | stderr JSON 错误 + 恢复提示 | 1 (retryable) |
 | `forge surfaces --json` 路径无匹配 | stdout `[]` + exit 0 | 0 |
-| `build.go` 解析任务 frontmatter 缺 surface-key | 静默赋空值 | 0 |
+| `build.go` 解析任务 frontmatter 缺 surface-key | 记录 warning 日志，赋空值 | 0 |
+| `build.go` 解析旧 frontmatter 含 `scope` 但无 `surface-key` | **阻塞错误**：stderr 输出迁移提示，返回 exit 2 | 2 (blocking) |
+
+### Migration Notes: Scope 字段删除
+
+本设计**不保留 Scope 向后兼容层**，这是经过权衡的显式设计决策。理由：
+
+1. 双字段维护负担高，查询逻辑复杂度随兼容期线性增长
+2. Scope 固定枚举（frontend/backend）与用户自定义 surface-key 语义冲突
+3. 迁移通过阻塞检查强制执行：`build.go` 检测到旧 `scope` 字段时返回 exit 2，用户必须重跑 `breakdown-tasks`/`quick-tasks` 后才能继续操作
+
+**对 PRD Story 4 AC 的影响**：PRD Story 4 中 AC 条目"旧任务文件含 `scope: frontend` 时，run-tests 能正确读取并按默认编排策略执行"将更新为：旧任务文件需通过重新运行 `breakdown-tasks`/`quick-tasks` 获取 `surface-key`/`surface-type` 字段。这是 PRD 层面的需求变更，需在实现前同步更新 PRD。
+
+**迁移验证步骤**（Phase 1 内执行）：迁移检查提取为 `task` 包的共享函数 `CheckLegacyScope(tasks []Task) error`，供所有任务读取路径调用。初始覆盖范围：
+
+| 读取路径 | 入口函数 | 迁移检查调用点 |
+|---------|---------|--------------|
+| `build.go` 加载 `index.json` | `BuildIndex()` | 加载后遍历 tasks 列表 |
+| `forge task list` | `ListTasks()` | 列表前检查 |
+| `forge task show` | `ShowTask()` | 显示前检查单个 task |
+| `forge task add` | `AddTask()` | 添加前检查源 task |
+
+函数行为：扫描含 `scope` 字段但不含 `surface-key` 的任务，若存在此类任务，输出错误信息至 stderr（格式：`migration required: found N tasks with legacy 'scope' field but no 'surface-key' — run 'forge breakdown-tasks' or 'forge quick-tasks' to regenerate tasks`），返回 exit code 2（阻塞错误）。此检查确保升级后不存在数据不一致的任务，防止 run-tests 因缺失 surface-key 而加载错误的编排策略。
+
+**CI 升级影响与缓解**：阻塞式迁移意味着 Forge CLI 升级后、任务重新生成前，所有依赖 task 读取的命令（包括 CI 中的 `forge run-tests`）将返回 exit 2。为缓解 CI 中断，提供 `forge task migrate` 子命令：扫描现有 `index.json`，将 `scope` 字段值通过 `forge surfaces --json <path>` 映射为 `surface-key` + `surface-type`，就地更新 `index.json` 和对应 frontmatter 文件。CI 升级流程：`升级 Forge CLI → forge task migrate → 正常操作`。`forge task migrate` 在 Phase 1 中与数据模型变更同步实现。
 
 **Skill 层**（LLM agent 执行）:
 
@@ -238,6 +424,7 @@ Surface-key 命名约束 `[a-zA-Z0-9_-]` 由 init-justfile 配方生成时强制
 | Story4: Task 新增双字段 | `Task.SurfaceKey` + `Task.SurfaceType` | Data Models |
 | Story4: forge task add 继承 | `AddTaskOpts` 新增 SurfaceKey/SurfaceType | `add.go` 从源任务复制 |
 | Story4: fix-task 推断 | `addFixTask()` 调 `forge surfaces <path> --json` | Interface 1 |
+| Story4: 旧任务 scope 兼容 | **不保留兼容层**，PRD AC 将更新（见 Migration Notes） | Migration Notes |
 
 ## Open Questions
 
