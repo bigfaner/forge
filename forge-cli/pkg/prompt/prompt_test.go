@@ -608,18 +608,21 @@ func TestSynthesize_GenScripts_WithTypeSuffix(t *testing.T) {
 	tests := []struct {
 		name         string
 		taskID       string
+		surfaceType  string
 		wantContains string
 		dontWant     string
 	}{
 		{
-			name:         "T-test-gen-scripts-api includes --type api",
+			name:         "api surface type includes --type api",
 			taskID:       "T-test-gen-scripts-api",
+			surfaceType:  "api",
 			wantContains: `Skill(skill="forge:gen-test-scripts" --type api)`,
 			dontWant:     `{{TEST_TYPE_ARG}}`,
 		},
 		{
-			name:         "T-test-gen-scripts-tui includes --type tui",
+			name:         "tui surface type includes --type tui",
 			taskID:       "T-test-gen-scripts-tui",
+			surfaceType:  "tui",
 			wantContains: `Skill(skill="forge:gen-test-scripts" --type tui)`,
 			dontWant:     `{{TEST_TYPE_ARG}}`,
 		},
@@ -630,12 +633,13 @@ func TestSynthesize_GenScripts_WithTypeSuffix(t *testing.T) {
 			dir := t.TempDir()
 			tasks := map[string]task.Task{
 				tt.taskID: {
-					ID:     tt.taskID,
-					Title:  "Gen scripts typed",
-					Status: "pending",
-					File:   tt.taskID + ".md",
-					Record: "records/" + tt.taskID + ".md",
-					Type:   task.TypeTestGenScripts,
+					ID:          tt.taskID,
+					Title:       "Gen scripts typed",
+					Status:      "pending",
+					File:        tt.taskID + ".md",
+					Record:      "records/" + tt.taskID + ".md",
+					Type:        task.TypeTestGenScripts,
+					SurfaceType: tt.surfaceType,
 				},
 			}
 			setupFeatureDir(t, dir, tasks)
@@ -1292,120 +1296,27 @@ func TestResolveCoverage_CleanupAndRefactor_SkipPercentageDirective(t *testing.T
 	}
 }
 
-// --- Scope resolution fallback tests ---
+// --- extractTestTypeArg tests (SurfaceType-based) ---
 
-func TestResolveScope_MismatchFallsBack(t *testing.T) {
+func TestExtractTestTypeArg(t *testing.T) {
 	tests := []struct {
 		name        string
-		projectType string
-		taskScope   string
-		wantScope   string
+		surfaceType string
+		want        string
 	}{
-		{
-			name:        "backend project with frontend scope falls back to empty",
-			projectType: "backend",
-			taskScope:   "frontend",
-			wantScope:   "",
-		},
-		{
-			name:        "backend project with backend scope keeps scope",
-			projectType: "backend",
-			taskScope:   "backend",
-			wantScope:   "backend",
-		},
-		{
-			name:        "fullstack project with frontend scope keeps scope",
-			projectType: "fullstack",
-			taskScope:   "frontend",
-			wantScope:   "frontend",
-		},
-		{
-			name:        "fullstack project with backend scope keeps scope",
-			projectType: "fullstack",
-			taskScope:   "backend",
-			wantScope:   "backend",
-		},
-		{
-			name:        "no project type keeps scope",
-			projectType: "",
-			taskScope:   "frontend",
-			wantScope:   "frontend",
-		},
-		{
-			name:        "empty scope stays empty",
-			projectType: "backend",
-			taskScope:   "",
-			wantScope:   "",
-		},
-		{
-			name:        "all scope becomes empty",
-			projectType: "backend",
-			taskScope:   "all",
-			wantScope:   "",
-		},
+		{"api surface type", "api", " --type api"},
+		{"tui surface type", "tui", " --type tui"},
+		{"web surface type", "web", " --type web"},
+		{"empty surface type", "", ""},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			dir := t.TempDir()
-			// Create config.yaml if projectType is set
-			if tt.projectType != "" {
-				forgeDir := filepath.Join(dir, ".forge")
-				if err := os.MkdirAll(forgeDir, 0o755); err != nil {
-					t.Fatal(err)
-				}
-				configContent := "project-type: " + tt.projectType + "\n"
-				if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(configContent), 0o644); err != nil {
-					t.Fatal(err)
-				}
-			}
-
-			got := resolveScope(dir, tt.taskScope)
-			if got != tt.wantScope {
-				t.Errorf("resolveScope(%q, %q) = %q, want %q", tt.projectType, tt.taskScope, got, tt.wantScope)
+			got := extractTestTypeArg(tt.surfaceType)
+			if got != tt.want {
+				t.Errorf("extractTestTypeArg(%q) = %q, want %q", tt.surfaceType, got, tt.want)
 			}
 		})
-	}
-}
-
-func TestSynthesize_ScopeMismatch_GeneratesDefaultCommand(t *testing.T) {
-	// Backend project + frontend scope → scope should be empty → no scope suffix on commands
-	dir := t.TempDir()
-	forgeDir := filepath.Join(dir, ".forge")
-	if err := os.MkdirAll(forgeDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	configContent := "project-type: backend\n"
-	if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(configContent), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	tasks := map[string]task.Task{
-		"1.1": {
-			ID:     "1.1",
-			Title:  "Frontend task in backend project",
-			Status: "pending",
-			File:   "1.1.md",
-			Record: "records/1.1.md",
-			Type:   task.TypeCodingFeature,
-		},
-	}
-	setupFeatureDir(t, dir, tasks)
-
-	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "1.1"}
-	result, err := Synthesize(opts)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	// Should not contain "SCOPE: frontend" since it's a mismatch
-	if strings.Contains(result, "SCOPE: frontend") {
-		t.Errorf("result should not contain 'SCOPE: frontend' for mismatched scope, got:\n%s", result)
-	}
-
-	// Should contain default commands without scope suffix
-	if !strings.Contains(result, "just compile") {
-		t.Error("result should contain 'just compile' default command")
 	}
 }
 
@@ -1696,27 +1607,5 @@ func TestDocReviewPromptTemplate_Step1ExplicitNoScanDirective(t *testing.T) {
 	// Step 1 must explicitly say NOT to scan tasks directory
 	if !strings.Contains(s, "Do NOT scan the tasks directory") {
 		t.Error("doc-review prompt Step 1 should explicitly instruct NOT to scan tasks directory")
-	}
-}
-
-func TestExtractTestTypeArg(t *testing.T) {
-	tests := []struct {
-		id   string
-		want string
-	}{
-		{"T-test-gen-scripts-api", " --type api"},
-		{"T-test-gen-scripts-tui", " --type tui"},
-		{"T-test-gen-scripts", ""},
-		{"T-test-3-api", ""}, // not a gen-scripts base
-		{"1.1", ""},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.id, func(t *testing.T) {
-			got := extractTestTypeArg(tt.id)
-			if got != tt.want {
-				t.Errorf("extractTestTypeArg(%q) = %q, want %q", tt.id, got, tt.want)
-			}
-		})
 	}
 }

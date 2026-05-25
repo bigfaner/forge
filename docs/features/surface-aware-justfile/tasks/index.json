@@ -65,7 +65,7 @@
       "dependencies": [
         "1.2a"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "1.4-resolve-scope-delete.md",
       "record": "records/1.4-resolve-scope-delete.md",
       "scope": "all",
