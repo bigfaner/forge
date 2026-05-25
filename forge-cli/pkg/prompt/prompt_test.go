@@ -1296,30 +1296,6 @@ func TestResolveCoverage_CleanupAndRefactor_SkipPercentageDirective(t *testing.T
 	}
 }
 
-// --- extractTestTypeArg tests (SurfaceType-based) ---
-
-func TestExtractTestTypeArg(t *testing.T) {
-	tests := []struct {
-		name        string
-		surfaceType string
-		want        string
-	}{
-		{"api surface type", "api", " --type api"},
-		{"tui surface type", "tui", " --type tui"},
-		{"web surface type", "web", " --type web"},
-		{"empty surface type", "", ""},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := extractTestTypeArg(tt.surfaceType)
-			if got != tt.want {
-				t.Errorf("extractTestTypeArg(%q) = %q, want %q", tt.surfaceType, got, tt.want)
-			}
-		})
-	}
-}
-
 // --- Record Fields hint tests ---
 
 func TestSynthesize_CodingTemplates_ContainRecordFieldHints(t *testing.T) {

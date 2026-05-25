@@ -264,7 +264,7 @@
         "3.5",
         "2.gate"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3.6-dead-code-cleanup.md",
       "record": "records/3.6-dead-code-cleanup.md",
       "scope": "all",

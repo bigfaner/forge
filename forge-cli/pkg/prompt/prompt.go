@@ -138,8 +138,11 @@ func renderTemplate(templateFile string, opts SynthesizeOpts, t task.Task) (stri
 	result = strings.ReplaceAll(result, "{{FEATURE_SLUG}}", opts.FeatureSlug)
 	result = strings.ReplaceAll(result, "{{PHASE_SUMMARY}}", phaseSummaryLine)
 
-	// Extract test type arg from task SurfaceType for per-type gen-scripts tasks.
-	testTypeArg := extractTestTypeArg(t.SurfaceType)
+	// Build --type argument from task SurfaceType for per-type gen-scripts tasks.
+	testTypeArg := ""
+	if t.SurfaceType != "" {
+		testTypeArg = " --type " + t.SurfaceType
+	}
 	result = strings.ReplaceAll(result, "{{TEST_TYPE_ARG}}", testTypeArg)
 
 	// Inject coverage target for testable (coding.*) task types.
@@ -288,15 +291,6 @@ func isLabelWithEmptyValue(line string) bool {
 		return false
 	}
 	return after == ""
-}
-
-// extractTestTypeArg constructs the --type argument from a task's SurfaceType.
-// Returns ` --type <surfaceType>` if surfaceType is non-empty, or empty string otherwise.
-func extractTestTypeArg(surfaceType string) string {
-	if surfaceType != "" {
-		return " --type " + surfaceType
-	}
-	return ""
 }
 
 // resolveCoverage determines the effective coverage strategy and target text
