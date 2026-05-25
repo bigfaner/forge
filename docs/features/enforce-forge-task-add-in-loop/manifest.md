@@ -1,7 +1,7 @@
 ---
 feature: "enforce-forge-task-add-in-loop"
 created: "2026-05-22"
-status: tasks
+status: completed
 mode: quick
 ---
 
