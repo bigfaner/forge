@@ -450,7 +450,7 @@
       "dependencies": [
         "T-test-run"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "verify-regression.md",
       "record": "records/verify-regression.md",
       "scope": "all",
