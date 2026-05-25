@@ -218,7 +218,7 @@
         "2.2",
         "2.gate"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3.3-run-tests-skill.md",
       "record": "records/3.3-run-tests-skill.md",
       "scope": "all",
