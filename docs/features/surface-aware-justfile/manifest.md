@@ -1,7 +1,7 @@
 ---
 feature: "surface-aware-justfile"
 created: "2026-05-25"
-status: prd
+status: design
 ---
 
 # Feature: surface-aware-justfile
@@ -14,6 +14,7 @@ status: prd
 |----------|------|---------|
 | PRD Spec | prd/prd-spec.md | init-justfile surface 感知配方生成 + run-tests 编排简化 + surface-key 统一迁移 + Task 数据模型扩展 |
 | User Stories | prd/prd-user-stories.md | 4 个用户故事覆盖配方生成、测试编排、surface-key 迁移、数据模型扩展 |
+| Tech Design | design/tech-design.md | 三线并行迁移：Go 数据模型 + Skill 规则体系 + CLI --json 增强，干净迁移无兼容层 |
 
 ## Traceability
 
