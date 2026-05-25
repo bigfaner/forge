@@ -233,7 +233,7 @@
         "3.3",
         "2.gate"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3.4-run-tests-rules.md",
       "record": "records/3.4-run-tests-rules.md",
       "scope": "all",
