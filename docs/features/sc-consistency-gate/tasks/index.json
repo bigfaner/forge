@@ -8,7 +8,7 @@
       "title": "Create sc-consistency.md rule file with clustering + satisfiability check",
       "priority": "P0",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-create-sc-consistency-rule.md",
       "record": "records/1-create-sc-consistency-rule.md",
       "type": "doc"
