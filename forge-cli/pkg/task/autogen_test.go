@@ -730,6 +730,58 @@ func TestGenerateTestTaskMD_TestTypeNotedInBody(t *testing.T) {
 	}
 }
 
+// --- Task 1.2b: TaskFromFile propagation tests ---
+
+func TestTaskFromFile_PropagatesSurfaceKeyAndType(t *testing.T) {
+	def := AutoGenTaskDef{
+		ID:            "T-test-gen-scripts-api",
+		Key:           "gen-test-scripts-api",
+		Title:         "Generate Test Scripts (api)",
+		Priority:      "P1",
+		EstimatedTime: "1-2h",
+		Dependencies:  []string{"dep1"},
+		Type:          TypeTestGenScripts,
+		SurfaceKey:    "admin-panel",
+		SurfaceType:   "web",
+		Breaking:      true,
+		MainSession:   true,
+	}
+
+	task := def.TaskFromFile()
+
+	if task.SurfaceKey != "admin-panel" {
+		t.Errorf("Task.SurfaceKey = %q, want %q", task.SurfaceKey, "admin-panel")
+	}
+	if task.SurfaceType != "web" {
+		t.Errorf("Task.SurfaceType = %q, want %q", task.SurfaceType, "web")
+	}
+	if task.ID != "T-test-gen-scripts-api" {
+		t.Errorf("Task.ID = %q, want %q", task.ID, "T-test-gen-scripts-api")
+	}
+	if task.Type != TypeTestGenScripts {
+		t.Errorf("Task.Type = %q, want %q", task.Type, TypeTestGenScripts)
+	}
+}
+
+func TestTaskFromFile_EmptySurfaceFields(t *testing.T) {
+	def := AutoGenTaskDef{
+		ID:       "T-test-run",
+		Key:      "run-test",
+		Title:    "Run e2e Tests",
+		Priority: "P1",
+		Type:     TypeTestRun,
+	}
+
+	task := def.TaskFromFile()
+
+	if task.SurfaceKey != "" {
+		t.Errorf("Task.SurfaceKey = %q, want empty when not set", task.SurfaceKey)
+	}
+	if task.SurfaceType != "" {
+		t.Errorf("Task.SurfaceType = %q, want empty when not set", task.SurfaceType)
+	}
+}
+
 func TestGenerateTestTaskMD_FrontmatterUnchanged(t *testing.T) {
 	def := AutoGenTaskDef{
 		ID: "T-test-run", Key: "run-test",

@@ -37,7 +37,7 @@
       "dependencies": [
         "1.2a"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "1.2b-task-propagation.md",
       "record": "records/1.2b-task-propagation.md",
       "scope": "all",

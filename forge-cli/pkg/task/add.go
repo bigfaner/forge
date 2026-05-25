@@ -151,6 +151,14 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 		fileName := opts.ID + ".md"
 		recordPath := "records/" + opts.ID + ".md"
 
+		// Inherit SurfaceKey/SurfaceType from source task when not explicitly set in opts.
+		if opts.SourceTaskID != "" && opts.SurfaceKey == "" && opts.SurfaceType == "" {
+			if _, srcT, srcErr := FindTask(index, opts.SourceTaskID); srcErr == nil {
+				opts.SurfaceKey = srcT.SurfaceKey
+				opts.SurfaceType = srcT.SurfaceType
+			}
+		}
+
 		// Source handling: dedup -> block -> resolve.
 		// Dedup is a pure read (no mutation), so it must come first.
 		// Block before resolution preserves the fix-chain model.
@@ -205,6 +213,8 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 			File:          fileName,
 			Record:        recordPath,
 			Breaking:      opts.Breaking,
+			SurfaceKey:    opts.SurfaceKey,
+			SurfaceType:   opts.SurfaceType,
 			SourceTaskID:  opts.SourceTaskID,
 			Type:          opts.Type,
 		})
