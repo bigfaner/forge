@@ -380,7 +380,7 @@
         "T-review-doc",
         "T-clean-code"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "gen-journeys-cli.md",
       "record": "records/gen-journeys-cli.md",
       "scope": "all",
