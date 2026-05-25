@@ -1,7 +1,7 @@
 ---
 feature: "sc-consistency-gate"
 created: "2026-05-25"
-status: tasks
+status: completed
 mode: quick
 ---
 
