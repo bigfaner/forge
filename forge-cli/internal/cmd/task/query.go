@@ -50,6 +50,19 @@ func runQuery(_ *cobra.Command, args []string) error {
 		base.Exit(base.ErrFileNotFound(indexPath))
 	}
 
+	// Check for legacy scope fields
+	var allTasks []task.Task
+	for _, t := range index.TasksMap() {
+		allTasks = append(allTasks, t)
+	}
+	if legacyErr := task.CheckLegacyScope(allTasks); legacyErr != nil {
+		scopeErr, ok := legacyErr.(*task.LegacyScopeError)
+		if ok {
+			base.Exit(base.ErrLegacyScope(scopeErr.Count))
+		}
+		base.Exit(legacyErr)
+	}
+
 	key, t, err := task.FindTask(index, taskIDArg)
 	if err != nil {
 		base.Exit(base.ErrTaskNotFound(taskIDArg))

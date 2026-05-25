@@ -2,6 +2,7 @@ package task
 
 import (
 	"fmt"
+	"os"
 
 	"forge-cli/pkg/infocmd"
 
@@ -21,6 +22,7 @@ type FrontmatterData struct {
 	MainSession   bool     `yaml:"mainSession"`
 	Type          string   `yaml:"type"`
 	Coverage      *int     `yaml:"coverage"`
+	Scope         string   `yaml:"scope"`
 }
 
 // ParseFrontmatter extracts YAML frontmatter from a markdown file.
@@ -42,4 +44,21 @@ func ParseFrontmatter(content []byte) (FrontmatterData, []byte, error) {
 	}
 
 	return fm, body, nil
+}
+
+// WriteFrontmatter writes a task .md file with the given frontmatter data and body.
+// It serializes the frontmatter as YAML and prepends it to the body with --- delimiters.
+func WriteFrontmatter(path string, fm FrontmatterData, body []byte) error {
+	var yamlBuf []byte
+	yamlBuf = append(yamlBuf, "---\n"...)
+
+	yamlData, err := yaml.Marshal(fm)
+	if err != nil {
+		return fmt.Errorf("marshal frontmatter: %w", err)
+	}
+	yamlBuf = append(yamlBuf, yamlData...)
+	yamlBuf = append(yamlBuf, "---\n"...)
+	yamlBuf = append(yamlBuf, body...)
+
+	return os.WriteFile(path, yamlBuf, 0644)
 }

@@ -188,6 +188,10 @@ type Task struct {
 	// nil means use the global coverage config default for the task type.
 	// Non-nil (including 0) means the task has an explicit coverage target.
 	Coverage *int `json:"coverage,omitempty"`
+	// Scope is the legacy scope field (deprecated, replaced by SurfaceKey/SurfaceType).
+	// Retained solely for migration detection via CheckLegacyScope.
+	// Loaded from both index.json (json tag) and task frontmatter (yaml tag).
+	Scope string `json:"scope,omitempty" yaml:"scope"`
 }
 
 // TaskIndex represents the index.json structure for a feature.

@@ -97,6 +97,15 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 			return fmt.Errorf("load index: %w", err)
 		}
 
+		// Check for legacy scope fields before proceeding
+		var allTasks []Task
+		for _, t := range index.TasksMap() {
+			allTasks = append(allTasks, t)
+		}
+		if legacyErr := CheckLegacyScope(allTasks); legacyErr != nil {
+			return legacyErr
+		}
+
 		// Defaults
 		if opts.Status == "" {
 			opts.Status = "pending"

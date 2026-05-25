@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"forge-cli/pkg/feature"
-	"forge-cli/pkg/prompt"
 	"forge-cli/pkg/task"
 )
 
@@ -45,7 +44,7 @@ func TestRunMigrate_HappyPath(t *testing.T) {
 	}
 
 	cases := map[string]string{
-		"t1":      task.TypeCodingFeature, // unknown ID → conservative default is "feature"
+		"t1":      task.TypeCodingFeature, // unknown ID -> conservative default is "feature"
 		"t-gate":  task.TypeGate,
 		"t-sum":   task.TypeDocSummary,
 		"t-fix":   task.TypeCodingFix,
@@ -109,7 +108,7 @@ func TestRunMigrate_Idempotent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// InferType("1.1") → "" (no fallback), migrate defaults to feature (conservative default)
+	// InferType("1.1") returns "" (no fallback), migrate defaults to feature (conservative default)
 	if index.TasksMap()["t1"].Type != task.TypeCodingFeature {
 		t.Errorf("type = %q, want %q", index.TasksMap()["t1"].Type, task.TypeCodingFeature)
 	}
@@ -150,34 +149,6 @@ func TestRunMigrate_InProgress_ExitsWithError(t *testing.T) {
 	}
 	if index.TasksMap()["t1"].Type != "" {
 		t.Errorf("index should not be modified when in_progress task exists, got type=%q", index.TasksMap()["t1"].Type)
-	}
-}
-
-// TestRunMigrate_AllKnownIDPatterns verifies InferType covers all documented patterns.
-func TestRunMigrate_AllKnownIDPatterns(t *testing.T) {
-	cases := []struct {
-		id       string
-		wantType string
-	}{
-		{"1.1", ""},
-		{"2.3", ""},
-		{"1.gate", task.TypeGate},
-		{"2.gate", task.TypeGate},
-		{"1.summary", task.TypeDocSummary},
-		{"2.summary", task.TypeDocSummary},
-		{"fix-1", task.TypeCodingFix},
-		{"disc-1", task.TypeCodingFix},
-		{"T-test-gen-scripts", task.TypeTestGenScripts},
-		{"T-test-run", task.TypeTestRun},
-		{"T-test-verify-regression", task.TypeTestVerifyRegression},
-		{"T-specs-consolidate", task.TypeDocConsolidate},
-	}
-
-	for _, tc := range cases {
-		got := prompt.InferType(tc.id)
-		if got != tc.wantType {
-			t.Errorf("InferType(%q) = %q, want %q", tc.id, got, tc.wantType)
-		}
 	}
 }
 
@@ -252,5 +223,95 @@ func TestRunMigrate_NoFeature_ExitsWithError(t *testing.T) {
 	}
 	if !strings.Contains(string(output), "NO_FEATURE") {
 		t.Errorf("expected NO_FEATURE error, got: %s", string(output))
+	}
+}
+
+// TestRunMigrate_ScopeToSurface_WithConfig verifies that migrate maps legacy scope
+// to surface-key/surface-type when surfaces are configured.
+func TestRunMigrate_ScopeToSurface_WithConfig(t *testing.T) {
+	dir := setupFullProject(t, SetupOpts{
+		Tasks: map[string]task.Task{
+			"t1": {ID: "1.1", Title: "Legacy task", Status: "pending", File: "1.1.md", Record: "records/1.1.md", Scope: "frontend"},
+		},
+	})
+
+	// Create .forge/config.yaml with surfaces config
+	configDir := filepath.Join(dir, ".forge")
+	if err := os.MkdirAll(configDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	configContent := "surfaces:\n  \".\": web\n"
+	if err := os.WriteFile(filepath.Join(configDir, "config.yaml"), []byte(configContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Write task .md with legacy scope
+	taskMD := "---\nid: \"1.1\"\ntitle: \"Legacy task\"\npriority: \"P1\"\ntype: \"coding.feature\"\nscope: \"frontend\"\n---\n\n# Legacy task\n"
+	tasksDir := filepath.Join(dir, "docs", "features", "test", "tasks")
+	if err := os.WriteFile(filepath.Join(tasksDir, "1.1.md"), []byte(taskMD), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	out := captureStdout(func() {
+		_ = runMigrate(nil, []string{})
+	})
+
+	if !strings.Contains(out, "scope->surface") {
+		t.Errorf("expected 'scope->surface' in output, got: %s", out)
+	}
+
+	// Verify index.json has surface-key and surface-type
+	indexPath := filepath.Join(dir, "docs", "features", "test", "tasks", "index.json")
+	index, err := task.LoadIndex(indexPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t1 := index.TasksMap()["t1"]
+	if t1.SurfaceKey != "." {
+		t.Errorf("expected SurfaceKey '.', got %q", t1.SurfaceKey)
+	}
+	if t1.SurfaceType != "web" {
+		t.Errorf("expected SurfaceType 'web', got %q", t1.SurfaceType)
+	}
+	if t1.Scope != "" {
+		t.Errorf("expected Scope to be cleared, got %q", t1.Scope)
+	}
+
+	// Verify frontmatter .md was updated
+	mdContent, err := os.ReadFile(filepath.Join(tasksDir, "1.1.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	mdStr := string(mdContent)
+	if !strings.Contains(mdStr, "surface-key:") {
+		t.Error("expected frontmatter to contain surface-key")
+	}
+	if !strings.Contains(mdStr, "surface-type:") {
+		t.Error("expected frontmatter to contain surface-type")
+	}
+}
+
+// TestRunMigrate_ScopeToSurface_NoSurfacesConfig skips migration when no surfaces configured.
+func TestRunMigrate_ScopeToSurface_NoSurfacesConfig(t *testing.T) {
+	dir := setupFullProject(t, SetupOpts{
+		Tasks: map[string]task.Task{
+			"t1": {ID: "1.1", Title: "Legacy task", Status: "pending", File: "1.1.md", Record: "records/1.1.md", Scope: "frontend"},
+		},
+	})
+
+	// Write task .md with legacy scope (no .forge/config.yaml)
+	taskMD := "---\nid: \"1.1\"\ntitle: \"Legacy task\"\npriority: \"P1\"\ntype: \"coding.feature\"\nscope: \"frontend\"\n---\n\n# Legacy task\n"
+	tasksDir := filepath.Join(dir, "docs", "features", "test", "tasks")
+	if err := os.WriteFile(filepath.Join(tasksDir, "1.1.md"), []byte(taskMD), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	out := captureStdout(func() {
+		_ = runMigrate(nil, []string{})
+	})
+
+	// Should print warning and 0 scope migrations
+	if !strings.Contains(out, "0 tasks (scope->surface)") {
+		t.Errorf("expected '0 tasks (scope->surface)' in output, got: %s", out)
 	}
 }

@@ -578,7 +578,7 @@ func TestBuildIndex_SomeDocTasksMissingAC_NoFeatureWarning(t *testing.T) {
 
 	// One doc task WITH AC, one without
 	writeTaskMDWithType(t, tasksDir, "1-doc.md", "1", "Doc Task 1", TypeDoc, nil)
-	content := "---\nid: \"2\"\ntitle: \"Doc Task 2\"\ntype: \"doc\"\npriority: \"P1\"\nestimated_time: \"1h\"\nscope: \"all\"\n---\n\n## Acceptance Criteria\n\n- [ ] AC item\n\n## Other"
+	content := "---\nid: \"2\"\ntitle: \"Doc Task 2\"\ntype: \"doc\"\npriority: \"P1\"\nestimated_time: \"1h\"\nsurface-key: \".\"\nsurface-type: \"web\"\n---\n\n## Acceptance Criteria\n\n- [ ] AC item\n\n## Other"
 	if err := os.WriteFile(filepath.Join(tasksDir, "2-doc.md"), []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -607,8 +607,8 @@ func TestBuildIndex_DocTaskCriteriaKeysMatchDocTasks(t *testing.T) {
 	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "quick")
 
 	// Create doc tasks with AC
-	content1 := "---\nid: \"1\"\ntitle: \"Doc Task 1\"\ntype: \"doc\"\npriority: \"P1\"\nestimated_time: \"1h\"\nscope: \"all\"\n---\n\n## Acceptance Criteria\n\n- [ ] AC 1\n\n## Other"
-	content2 := "---\nid: \"2\"\ntitle: \"Doc Task 2\"\ntype: \"doc\"\npriority: \"P1\"\nestimated_time: \"1h\"\nscope: \"all\"\n---\n\n## Acceptance Criteria\n\n- [ ] AC 2\n\n## Other"
+	content1 := "---\nid: \"1\"\ntitle: \"Doc Task 1\"\ntype: \"doc\"\npriority: \"P1\"\nestimated_time: \"1h\"\nsurface-key: \".\"\nsurface-type: \"web\"\n---\n\n## Acceptance Criteria\n\n- [ ] AC 1\n\n## Other"
+	content2 := "---\nid: \"2\"\ntitle: \"Doc Task 2\"\ntype: \"doc\"\npriority: \"P1\"\nestimated_time: \"1h\"\nsurface-key: \".\"\nsurface-type: \"web\"\n---\n\n## Acceptance Criteria\n\n- [ ] AC 2\n\n## Other"
 	if err := os.WriteFile(filepath.Join(tasksDir, "1-doc.md"), []byte(content1), 0644); err != nil {
 		t.Fatal(err)
 	}
