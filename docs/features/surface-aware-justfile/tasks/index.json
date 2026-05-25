@@ -10,7 +10,7 @@
       "title": "MatchSurface API 增强 + forge surfaces --json",
       "priority": "P1",
       "estimatedTime": "3h",
-      "status": "pending",
+      "status": "completed",
       "file": "1.1-matchsurface-json.md",
       "record": "records/1.1-matchsurface-json.md",
       "breaking": true,
