@@ -23,6 +23,7 @@ Evaluate each row independently. Load ONLY if condition is true. Rule files are 
 | `rules/ui-placement.md` | `ui/ui-design.md` OR `prd/prd-ui-functions.md` exists | 1, 2, 3, 4a |
 | `rules/db-schema.md` | `design/er-diagram.md` exists | 2, 4a |
 | `rules/existing-code-split.md` | Tech-design modifies existing shared code | 4a |
+| `rules/scope-to-surface-key.md` | Always (replaces `rules/scope-assignment.md`) | 4a |
 
 Read applicable files via `rules/<filename>`.
 
@@ -122,8 +123,15 @@ For each non-UI business task, populate `## Reference Files` with precise tech-d
 
 **Note**: This is heuristic guidance for LLM execution, not a deterministic algorithm. The agent performing breakdown-tasks uses judgment to select the most relevant sections.
 
-### Scope Assignment
-See `rules/scope-assignment.md` for path classification rules. Compute: all frontend → "frontend", all backend → "backend", otherwise → "all". Non-mixed projects always use "all".
+### Surface-Key/Type Assignment
+See `rules/scope-to-surface-key.md` for the full resolution procedure. Summary:
+
+1. Collect all affected file paths from the task
+2. For each file, run `forge surfaces --json <file-path>` to get `{key, type}`
+3. Merge results: single surface → use its key+type; mixed/no match → leave both empty
+4. Write `surface-key` and `surface-type` into task frontmatter
+
+If `forge surfaces --json` fails or returns no surfaces configured, set both fields to empty strings and continue. Do NOT block task generation.
 
 ### Priority Assignment
 
