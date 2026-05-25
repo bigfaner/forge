@@ -29,15 +29,15 @@ feature: "Surface-Aware Justfile"
 - Given 任务 frontmatter 包含 `surface-type: web`
 - When run-tests 执行
 - Then 按序列执行 just dev → just probe → just test → just test-teardown
-- And probe 失败时（exit 1/2/3）执行 teardown 后中止，不继续执行 test
-- And probe 失败后禁止重试 probe 或重试 dev（HARD-GATE）
+- And probe 失败时执行 teardown 后中止：exit 1（retryable）或 exit 2（blocking）区分语义
+- And probe 失败后禁止在同一编排周期内重试 probe 或重启 dev（HARD-GATE）
 
 ---
 
 ## Story 3: Surface-key 统一迁移
 
 **As a** Forge 插件开发者
-**I want to** 将 surface-key 值域从固定枚举（frontend/backend）统一迁移为用户自定义 surface-key
+**I want to** 将 surface-key 值域从固定枚举（frontend/backend）统一迁移为用户自定义 surface-key 名称（surface-type 保持 5 种固定类型）
 **So that** 混合项目的所有配方和任务使用一致的标识符，消除硬编码约束
 
 **Acceptance Criteria:**
@@ -59,6 +59,6 @@ feature: "Surface-Aware Justfile"
 - Given breakdown-tasks 生成一个涉及 web surface 文件的任务
 - When 查看 index.json
 - Then 任务包含 `surface-key: "admin-panel"` 和 `surface-type: "web"`
-- And 旧任务的 scope 字段通过 GetSurfaceKey() 兼容访问
+- And 旧任务文件含 `scope: frontend` 时，run-tests 能正确读取并按默认编排策略执行
 - And forge task add 从源任务继承 surface-key 和 surface-type
 - And quality-gate fix-task 从失败文件路径自动推断 surface-key/type
