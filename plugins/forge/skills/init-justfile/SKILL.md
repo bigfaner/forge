@@ -1,6 +1,6 @@
 ---
 name: init-justfile
-description: Scaffold a Justfile with standard forge targets for the current project.
+description: Scaffold a Justfile with standard forge targets for the current project, with surface-aware recipe generation.
 allowed-tools: Bash Read Write Edit
 disable-model-invocation: true
 argument-hint: '[--type frontend|backend|mixed] [--force]'
@@ -10,7 +10,7 @@ argument-hint: '[--type frontend|backend|mixed] [--force]'
 
 MANUAL-ONLY. Do NOT auto-invoke — only when user explicitly asks to `/init-justfile`.
 
-Generate a Justfile with standard forge targets as an abstraction layer for test/build commands.
+Generate a Justfile with standard forge targets as an abstraction layer for test/build commands. When surfaces are configured, generate surface-aware recipes (dev/probe/test/teardown) differentiated by surface type.
 
 ## Prerequisites
 
@@ -24,7 +24,7 @@ Generate a Justfile with standard forge targets as an abstraction layer for test
 | Cargo (universal) | `cargo install just`                     |
 
 ```bash
-just --version  # requires >= 1.50.0 (supports [arg] named option syntax)
+just --version  # requires >= 1.50.0 (supports [arg] named option syntax + [linux]/[windows] attributes)
 ```
 
 If version < 1.50.0: `cargo install just`
@@ -38,16 +38,13 @@ If version < 1.50.0: `cargo install just`
 
 ## Standard Target Contract
 
+### Language-Level Targets (always present)
+
 | Target         | Required | Purpose                                                                                           |
 | -------------- | -------- | ------------------------------------------------------------------------------------------------- |
 | `compile`      | No       | Type-check and transpile for fast feedback                                                        |
 | `build`        | No       | Full compile and package                                                                          |
-| `run`          | No       | Start the service                                                                                 |
-| `dev`          | No       | Hot-reload development mode                                                                       |
 | `unit-test`    | Yes      | Language-level unit tests (fast feedback, per-task submit gate)                                   |
-| `test`         | No       | Surface-level advanced tests (e2e/integration); optional `journey` parameter for single journey   |
-| `test-setup`   | No       | Install test dependencies and prepare environment (idempotent)                                    |
-| `probe`        | No       | Service health check                                                                              |
 | `lint`         | No       | Static analysis                                                                                   |
 | `fmt`          | No       | Auto-format code                                                                                  |
 | `check`        | No       | lint + compile (CI gate)                                                                          |
@@ -55,26 +52,43 @@ If version < 1.50.0: `cargo install just`
 | `install`      | No       | Install dependencies (idempotent)                                                                 |
 | `ci`           | No       | Full CI pipeline                                                                                  |
 
+### Surface-Level Targets (when surfaces configured)
+
+| Target                | Required | Purpose                                                              |
+| --------------------- | -------- | -------------------------------------------------------------------- |
+| `<key>-dev`           | No*      | Start dev server for surface (web/api/mobile only)                   |
+| `<key>-probe`         | No*      | Health check for surface (web/api/mobile only)                       |
+| `<key>-test`          | Yes      | Surface-level advanced tests (e2e/integration)                       |
+| `<key>-teardown`      | Yes      | Stop services and cleanup                                            |
+| `<key>`               | No*      | Aggregate: dev->probe->test->teardown (web/api/mobile only)          |
+
+*CLI/TUI surfaces do NOT generate dev, probe, or aggregate recipes.
+
+Each surface recipe MUST support `[linux]` and `[windows]` dual-platform variants.
+
 ### Recipe Parameter Signatures
 
 | Recipe | Signature | Description |
 |--------|-----------|-------------|
 | `unit-test` | `just unit-test` (no parameters) | Language-level unit tests, no filtering needed |
-| `test` | `just test [journey]` | Optional `journey` parameter: run all advanced tests when omitted; run single journey when provided |
-| `test-setup` | `just test-setup` (no parameters) | Test environment preparation |
-| `probe` | `just probe` (no parameters) | Service health check |
-
-justfile template must define `test` with optional first parameter: `test journey=''`. When `journey` is non-empty, pass it as a filter to the underlying test framework.
+| `<key>-test` | `just <key>-test` (no parameters) | Surface-level advanced tests |
+| `<key>-probe` | `just <key>-probe` (no parameters) | Surface health check |
 
 ## Process Flow
 
 ```
-0. Load Convention → 1. Detect project type + entry points → 2. Check existing justfile → 3. Generate test recipes + assemble and write → 4. Verify and self-correct → 5. Output confirmation
+0. Load Convention
+   -> 1. Detect project type + entry points
+   -> 1s. Detect surfaces
+   -> 2. Check existing justfile
+   -> 3. Generate recipes (language + surface) + assemble
+   -> 4. Verify and self-correct
+   -> 5. Output confirmation
 ```
 
 ### Step 0: Load Convention
 
-Load test framework knowledge from Convention files. This provides the information needed to generate `unit-test` and `test` recipes in Step 3.
+Load test framework knowledge from Convention files. This provides the information needed to generate `unit-test` and surface-level test recipes in Step 3.
 
 1. List files in `docs/conventions/` directory.
 2. For each file with `domains` frontmatter containing `testing`, read the file.
@@ -89,12 +103,12 @@ Load test framework knowledge from Convention files. This provides the informati
 6. Also extract the **Result Format** section for output flags and format type.
 
 <HARD-RULE>
-Do NOT use framework-specific recipe templates. Generate `unit-test` and `test` recipes from Convention content and LLM knowledge of the framework. The LLM constructs recipes based on the Convention description, not from hardcoded templates.
+Do NOT use framework-specific recipe templates. Generate `unit-test` and surface-level test recipes from Convention content and LLM knowledge of the framework. The LLM constructs recipes based on the Convention description, not from hardcoded templates.
 </HARD-RULE>
 
 **If no Convention files found** (cold start):
 - Proceed to Step 1 for file signal detection.
-- LLM will generate e2e recipes from common patterns for the detected language/framework.
+- LLM will generate recipes from common patterns for the detected language/framework.
 - Output hint: "No test Convention files found in docs/conventions/. Recipes will use LLM defaults. Run `/forge:test-guide` to create a Convention file."
 
 ### Step 1: Detect Project Type and Entry Points
@@ -118,6 +132,36 @@ Detect project type and entry points per `rules/project-detection.md`. This cove
 - Backend entry point detection (`BACKEND_ENTRY`)
 - Frontend run script detection (`FRONTEND_RUN_SCRIPT`)
 
+### Step 1s: Detect Surfaces
+
+<HARD-RULE>
+Surface-key naming MUST match `[a-zA-Z0-9_-]+`. If a surface-key contains invalid characters, emit an error and abort — do NOT generate recipes for that surface.
+</HARD-RULE>
+
+Detect surfaces configured in the project:
+
+```bash
+forge surfaces --json 2>/dev/null
+```
+
+**Outcome A — Surfaces configured** (JSON output is non-empty, not `[]`, not `{"error":"..."}`):
+
+Parse the JSON to extract surface entries. Each entry has `key` and `type` fields:
+
+```json
+{"surfaces": [{"key": "admin-panel", "type": "web"}, {"key": "payment-api", "type": "api"}]}
+```
+
+For each surface entry:
+1. **Validate surface-key**: Check that `key` matches `[a-zA-Z0-9_-]+`. If not, emit error: `Error: invalid surface-key "<key>": must match [a-zA-Z0-9_-]+` and skip this surface.
+2. **Load surface rule file**: Read `rules/surfaces/<type>.md` relative to this SKILL.md's directory. If the file does not exist for the given type, emit warning: `Warning: no rule file for surface type "<type>" — skipping surface "<key>"` and skip this surface.
+
+Collect the validated surfaces as `SURFACES_LIST`.
+
+**Outcome B — No surfaces configured** (output is `[]`, or `{"error":"..."}`, or command fails):
+
+No surfaces detected. Skip surface recipe generation entirely. The justfile will contain only language-level targets — identical to the behavior before surface-aware support. This ensures **zero regression** for projects without surface configuration.
+
 ### Step 2: Check Existing Justfile
 
 ```bash
@@ -125,11 +169,11 @@ ls justfile Justfile 2>/dev/null
 ```
 
 - If `justfile` or `Justfile` already exists:
-  - Check if it already contains `unit-test`, `test`, and `test-setup` recipes:
+  - Check if it already contains `unit-test`, `<key>-test`, and `<key>-teardown` recipes:
     ```bash
-    just --list 2>/dev/null | grep -E 'unit-test|test|test-setup'
+    just --list 2>/dev/null | grep -E 'unit-test|<key>-test|<key>-teardown'
     ```
-  - **If all three recipes exist**: Output "justfile already contains test recipes (unit-test, test, test-setup). Skipping test recipe generation." Proceed to Step 4 for verification only.
+  - **If all expected recipes exist**: Output "justfile already contains required recipes. Skipping recipe generation." Proceed to Step 4 for verification only.
   - **If some recipes are missing**: Proceed to Step 3 to append only the missing recipes.
   - Check for boundary markers (`# --- forge standard recipes ---` / `# --- end forge standard recipes ---`).
   - **If boundary markers exist**: proceed to Step 3 (boundary marker merge).
@@ -138,15 +182,19 @@ ls justfile Justfile 2>/dev/null
     - If `--force` flag was NOT provided: prompt the user: "A justfile already exists without forge markers. Overwrite? (y/n)". If user declines, abort without modifying the file.
 - If no justfile exists: proceed to Step 3 (create new file).
 
-### Step 3: Generate Test Recipes and Assemble Justfile
+<HARD-RULE>
+If an existing justfile lacks forge boundary markers and `--force` is not set, you MUST prompt the user before overwriting. Never silently destroy user customizations.
+</HARD-RULE>
 
-This step generates `unit-test`, `test`, `test-setup`, and `probe` recipes from Convention knowledge and LLM understanding of the detected framework.
+### Step 3: Generate Recipes and Assemble Justfile
 
-#### 3a. Generate test recipes from Convention and Config
+This step generates language-level recipes (from language templates + Convention knowledge) and surface-level recipes (from surface rule files).
 
-Using the Convention Framework, Tags, and Result Format sections loaded in Step 0, plus execution commands from Config:
+#### 3a. Generate language-level recipes
 
-**unit-test recipe**: Generate a language-level unit test recipe. The recipe body is derived from Convention's test runner and language-specific patterns:
+Generate `unit-test`, `compile`, `build`, `lint`, `fmt`, `check`, `clean`, `install`, `ci` recipes from Convention knowledge and LLM understanding of the detected language/framework.
+
+**unit-test recipe**: Generate a language-level unit test recipe:
 
 | Language | `unit-test` recipe body |
 | -------- | ----------------------- |
@@ -158,79 +206,128 @@ Using the Convention Framework, Tags, and Result Format sections loaded in Step 
 - If Convention provides a specific test runner and file pattern, construct the appropriate command.
 - The `unit-test` recipe takes no parameters: `just unit-test`.
 
-**test recipe**: Generate a surface-level advanced test recipe. The recipe body is derived from Config `test.execution.run`:
+**Other language-level recipes** (compile, build, lint, fmt, check, clean, install, ci): Generate based on detected language per Step 1. The LLM constructs these from its knowledge of common tooling per language.
 
-1. Read `.forge/config.yaml` and look for `test.execution.run` field.
-2. If Config provides the execution command (e.g., `go test ./tests/e2e/... -v -tags=e2e -json`), use it as the recipe body.
-3. If Config is missing or `test.execution.run` is absent, fall back to constructing the command from Convention's test runner + Result Format output flags (e.g., `vitest run --reporter=json`).
-4. If both Config and Convention are absent (cold start), prompt the user: "No execution command configured. Add `test.execution.run` to `.forge/config.yaml` or re-run after creating a Convention file."
-5. The `test` recipe must accept an optional `journey` parameter: `test journey=''`. When `journey` is non-empty, pass it as a filter to the underlying test framework.
+#### 3b. Generate surface-level recipes
 
-**test-setup recipe**: Generate a recipe that installs test dependencies and prepares the environment:
+For each surface in `SURFACES_LIST` (collected in Step 1s):
 
-- Convention indicates Go -> `go mod download`
-- Convention indicates Node/Vitest -> `npm install` or `npx playwright install`
-- Convention indicates Python -> `pip install -e ".[test]"` or `pip install pytest`
-- Multiple frameworks in mixed project -> combine setup steps
+1. Read the surface rule file loaded in Step 1s (`rules/surfaces/<type>.md`).
+2. From the rule file, extract:
+   - **Orchestration sequence**: which steps apply (dev/probe/test/teardown).
+   - **Recipe contracts**: recipe names, signatures, exit codes.
+   - **Journey filter strategy**: which journey tags belong to this surface.
+3. Generate recipes for each step defined in the orchestration sequence.
 
-**probe recipe** (optional): Generate a service health check recipe if the project has a dev server or API:
+**Recipe naming**:
+- **Single surface project** (only one surface in `SURFACES_LIST`): use `<type>-<verb>` naming (e.g., `web-dev`, `web-test`). The surface-key IS the type.
+- **Mixed project** (multiple surfaces): use `<surface-key>-<verb>` naming (e.g., `admin-panel-dev`, `payment-api-test`). This distinguishes recipes between surfaces.
 
-- Convention indicates API/HTTP server -> `curl -sf http://localhost:{{port}}/health`
-- Convention indicates CLI only -> skip probe recipe (not applicable)
-
-**If no Convention was loaded** (cold start): LLM generates recipes based on file signals detected in Step 1:
-
-- `go.mod` detected -> generate Go recipes: `unit-test` via `go test ./...`, `test` via `go test ./tests/e2e/... -v -tags=e2e -json`
-- `package.json` detected -> generate Node recipes: `unit-test` via `npm test`, `test` via `npx vitest run`
-- `Cargo.toml` detected -> generate Rust recipes: `unit-test` via `cargo test`, `test` via `cargo test --test integration`
-- `pyproject.toml` detected -> generate Python recipes: `unit-test` via `pytest`, `test` via `pytest tests/e2e/`
-
-The LLM uses conservative strategies for cold start recipes (most common patterns per language).
-
-#### 3b. Generate non-test recipes
-
-Generate standard project recipes (compile, build, run, dev, lint, fmt, check, clean, install, ci) based on detected language and project type from Step 1. The LLM constructs these from its knowledge of common tooling per language:
-
-| Language | compile          | lint                   | fmt               |
-| -------- | ---------------- | ---------------------- | ----------------- |
-| Go       | `go vet ./...`   | `golangci-lint run ./...` | `gofmt -w .`      |
-| Rust     | `cargo check`    | `cargo clippy -- -D warnings` | `cargo fmt` |
-| Python   | `python -m py_compile src/` | `ruff check .` | `ruff format .` |
-| Node     | `npx tsc --noEmit` | `npx eslint .`         | `npx prettier --write .` |
-
-For **mixed** projects, generate recipes with scope parameter:
+**Dual-platform variants**: Each recipe MUST have `[linux]` and `[windows]` attribute variants:
 
 ```just
-compile scope="":
+# user-customized
+web-dev:
     #!/usr/bin/env bash
-    if [ -n "{{ scope }}" ]; then
-        case "{{ scope }}" in
-            backend)  {{ BACKEND_COMPILE }} ;;
-            frontend) {{ FRONTEND_COMPILE }} ;;
-            *)        {{ BACKEND_COMPILE }} && {{ FRONTEND_COMPILE }} ;;
-        esac
-    else
-        {{ BACKEND_COMPILE }} && {{ FRONTEND_COMPILE }}
+    set -euo pipefail
+    # Linux-specific dev command
+
+# user-customized
+web-dev:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # Windows-specific dev command
+```
+
+<HARD-RULE>
+Every surface recipe MUST include `# user-customized` comment above the `[linux]` variant. This marks the recipe as user-customizable. Recipes with `# user-customized` markers in an existing justfile MUST NOT be overwritten during re-generation.
+</HARD-RULE>
+
+**Surface types without dev/probe** (cli, tui):
+- Do NOT generate `<key>-dev` or `<key>-probe` recipes.
+- Do NOT generate `<key>` aggregate recipe.
+- Generate only `<key>-test` and `<key>-teardown`.
+
+**Aggregate recipes** (web, api, mobile):
+- Generate `<key>` aggregate recipe that calls sub-recipes in orchestration order.
+- On any sub-step failure, run teardown and exit with the failure code:
+
+```just
+web:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    just web-dev && just web-probe && just web-test; rc=$?; just web-teardown; exit $rc
+```
+
+**Recipe content generation**: The LLM fills in recipe bodies based on:
+1. **Language template** (from Step 1): determines the underlying command (e.g., `go run`, `npm run dev`, `cargo run`).
+2. **Convention knowledge** (from Step 0): provides framework-specific test runners and patterns.
+3. **Surface rule file**: provides the orchestration sequence and exit code semantics.
+
+The LLM synthesizes these three sources to produce concrete recipe bodies. For example, a web surface in a Go project would generate:
+
+```just
+web-dev:
+    go run ./cmd/server/main.go
+
+web-probe:
+    curl -sf http://localhost:8080/health
+
+web-test:
+    go test ./tests/e2e/... -v -tags=e2e -json
+
+web-teardown:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -f tests/e2e/results/.pid-server ]; then
+        kill "$(tr -d '\r' < tests/e2e/results/.pid-server)" 2>/dev/null || true
+        rm -f tests/e2e/results/.pid-server
     fi
 ```
 
-#### 3c. Placeholder substitution
-
-For **single-language** projects:
-
-| Placeholder    | Scope       | Replaced with                      |
-| -------------- | ----------- | ---------------------------------- |
-| `ENTRY_POINT`  | Go/Rust     | `BACKEND_ENTRY` from Step 1b       |
-| `DEV_COMMAND`  | Python only | Dev server command from Step 1b    |
-| `ENTRY_SCRIPT` | Node only   | `FRONTEND_RUN_SCRIPT` from Step 1c |
-
-For **mixed** projects, replace `FRONTEND_DIR`, `BACKEND_DIR`, and all `BACKEND_*`/`FRONTEND_*` placeholders.
-
-#### 3d. Boundary marker merge
+#### 3c. Boundary marker merge
 
 When markers exist (`# --- forge standard recipes ---` / `# --- end forge standard recipes ---`), replace everything between them (inclusive) with the new recipes, preserving user recipes outside. Otherwise write the full template as a new file.
 
+<HARD-RULE>
+Only the section between `# --- forge standard recipes ---` / `# --- end forge standard recipes ---` markers may be replaced. Recipes outside markers MUST be preserved verbatim.
+</HARD-RULE>
+
 If justfile exists and is missing only some recipes: append only the missing recipes without touching existing content.
+
+**User-customized protection**: Before replacing or removing any recipe, check if it has a `# user-customized` comment marker. If it does, preserve the existing recipe body unchanged — do NOT overwrite it with the generated version.
+
+#### 3d. Recipe organization
+
+Organize the justfile in this order:
+
+```
+# --- forge standard recipes ---
+
+[group: language]
+compile:
+build:
+install:
+clean:
+ci:
+
+[group: language-test]
+unit-test:
+lint:
+fmt:
+check:
+
+[group: <surface-key>]
+<key>-dev:          (if applicable)
+<key>-probe:        (if applicable)
+<key>-test:
+<key>-teardown:
+<key>:              (aggregate, if applicable)
+
+... (repeat for each surface)
+
+# --- end forge standard recipes ---
+```
 
 ### Step 4: Verify and Self-Correct
 
@@ -245,17 +342,20 @@ just --list
 just --dry-run compile
 just --dry-run build
 just --dry-run unit-test
-just --dry-run test
-just --dry-run test-setup
-just --dry-run run
-just --dry-run dev
-just --dry-run install
 just --dry-run lint
 just --dry-run fmt
 just --dry-run check
+just --dry-run install
 ```
 
-For mixed projects, also verify `--dry-run compile` and `--dry-run run` with `backend`/`frontend` scope arguments.
+For surface recipes, verify each generated recipe:
+
+```bash
+just --dry-run <key>-dev       # (if applicable)
+just --dry-run <key>-probe     # (if applicable)
+just --dry-run <key>-test
+just --dry-run <key>-teardown
+```
 
 Fix any syntax failures before proceeding to Phase 2.
 
@@ -267,11 +367,11 @@ Execute each recipe for real to catch runtime errors. Recipes are classified by 
 | ----------------------------------------------------- | -------------------------- | ----------------------------------------------------------------------------------------- |
 | **Safe** (fast, no side effects)                      | `compile`, `lint`, `check` | Execute directly                                                                          |
 | **Destructive** (modifies files or creates artifacts) | `build`, `fmt`, `clean`    | Execute directly (artifacts can be cleaned; fmt changes are welcome)                      |
-| **Idempotent** (installs dependencies)                | `install`, `test-setup`    | Execute directly                                                                          |
-| **Long-running** (starts servers)                     | `run`, `dev`               | Execute with timeout (10s), kill after timeout -- success = process still alive at timeout |
-| **Expensive** (runs full test suite)                  | `unit-test`, `test`        | Skip actual execution; verified by `--dry-run` only                                       |
+| **Idempotent** (installs dependencies)                | `install`                  | Execute directly                                                                          |
+| **Long-running** (starts servers)                     | `<key>-dev`                | Execute with timeout (10s), kill after timeout -- success = process still alive at timeout |
+| **Expensive** (runs full test suite)                  | `unit-test`, `<key>-test`  | Skip actual execution; verified by `--dry-run` only                                       |
 
-For long-running recipes (`run`, `dev`): execute via `timeout 10 just <recipe> 2>&1 || true`. A crash before timeout ("missing script", "can't load package") is a runtime failure.
+For long-running recipes (`<key>-dev`): execute via `timeout 10 just <key>-dev 2>&1 || true`. A crash before timeout ("missing script", "can't load package") is a runtime failure.
 
 #### 4c. Self-correction rules
 
@@ -289,19 +389,48 @@ After all recipes have been verified (or corrected):
 ```
 Verification results:
   [ok] compile         -> go vet ./... (executed)
-  [ok] build           -> go build ./... (executed)
   [ok] unit-test       -> go test ./... (dry-run only)
-  [ok] test            -> go test ./tests/e2e/... -v -tags=e2e -json (dry-run only)
-  [ok] test-setup      -> go mod download (executed)
-  [fix] run            -> FIXED: updated entry point (executed, self-corrected)
-  [ok] dev             -> go run cmd/server/main.go (executed, 10s timeout)
-  [ok] install         -> go mod download (executed)
+  [ok] web-dev         -> go run ./cmd/server/main.go (executed, 10s timeout)
+  [ok] web-probe       -> curl -sf http://localhost:8080/health (executed)
+  [ok] web-test        -> go test ./tests/e2e/... -v -tags=e2e (dry-run only)
+  [ok] web-teardown    -> bash cleanup script (executed)
   [fix] lint           -> golangci-lint not found, replaced with go vet (executed, self-corrected)
 
-2 issues auto-corrected. Edit justfile to customize further.
+1 issue auto-corrected. Edit justfile to customize further.
 ```
 
 ### Step 5: Output Confirmation
+
+**With surfaces configured:**
+
+```
+Created justfile with surface-aware forge targets (Go project)
+
+Surfaces:
+  admin-panel (web): web-dev, web-probe, web-test, web-teardown, web
+  payment-api (api): api-dev, api-probe, api-test, api-teardown, api
+
+Language targets:
+  just compile        -> go vet ./...
+  just unit-test      -> go test ./...
+  just lint           -> golangci-lint run ./...
+  ... (all language targets listed)
+
+Surface targets:
+  just web-dev        -> go run ./cmd/server/main.go
+  just web-probe      -> curl -sf http://localhost:8080/health
+  just web-test       -> go test ./tests/e2e/... -v -tags=e2e -json
+  just web-teardown   -> (cleanup script)
+  just web            -> aggregate: dev->probe->test->teardown
+  ... (repeat for each surface)
+
+Convention: docs/conventions/testing/go.md (Go testing package + testify/assert)
+Edit justfile to customize commands for your project.
+Recipes marked `# user-customized` will be preserved on re-generation.
+forge quality-gate will now use `just unit-test` for per-task gates.
+```
+
+**Without surfaces (zero-regression path):**
 
 ```
 Created justfile with standard forge targets (Go project)
@@ -309,43 +438,40 @@ Created justfile with standard forge targets (Go project)
 Targets:
   just compile                    -> go vet ./...
   just unit-test                  -> go test ./...
-  just test                       -> go test ./tests/e2e/... -v -tags=e2e -json
-  just test <journey>             -> run single journey's advanced tests
-  just test-setup                 -> go mod download
+  just lint                       -> golangci-lint run ./...
   ... (all standard targets listed with resolved commands)
 
 Convention: docs/conventions/testing/go.md (Go testing package + testify/assert)
 Edit justfile to customize commands for your project.
-forge quality-gate will now use `just unit-test` for per-task gates.
+Run `/forge:init-justfile` again after configuring surfaces in .forge/config.yaml to add surface-aware recipes.
 ```
 
 If no Convention was used:
 
 ```
-Created justfile with standard forge targets (Go project)
-
-Targets:
-  ... (all standard targets listed with resolved commands)
-
 No Convention file found. Recipes generated from LLM defaults.
 Run `/forge:test-guide` to create a Convention file for consistent future generation.
 ```
 
 ## Notes
 
-- **just >= 1.50.0**: supports `[arg]` named option syntax; `test` recipe uses `test journey=''` positional parameter
-- Makefile migration: preserve original command logic, adjust only format
-- **Convention-driven test recipes**: The `unit-test`, `test`, `test-setup`, and `probe` recipes are generated from Convention Framework/Tags/Result Format sections. No hardcoded framework templates. The LLM constructs recipes based on Convention content.
-- **Two-layer model**: `unit-test` is language-level (fast, per-task submit gate); `test` is surface-level (advanced tests, all-completed gate). Forge is surface-agnostic -- it does not distinguish e2e from integration tests, only calls `just test`.
+- **just >= 1.50.0**: supports `[arg]` named option syntax and `[linux]`/`[windows]` platform attributes; surface recipes use dual-platform variants.
+- **Surface-aware recipes**: When `.forge/config.yaml` defines surfaces, the justfile gains per-surface dev/probe/test/teardown recipes with `[linux]`/`[windows]` dual-platform variants. Without surfaces, the justfile is identical to the pre-surface-aware version.
+- **Zero regression**: Projects without surface configuration receive exactly the same justfile as before this feature. No new recipes, no changed behavior.
+- **Convention-driven test recipes**: Recipes are generated from Convention content + surface rule files + LLM knowledge. No hardcoded framework templates.
+- **Two-layer model**: `unit-test` is language-level (fast, per-task submit gate); `<key>-test` is surface-level (advanced tests). Forge is surface-agnostic -- it calls `just <key>-test` based on task surface-key.
+- **User-customized protection**: Recipes marked with `# user-customized` are never overwritten during re-generation. This allows users to customize surface recipes without fear of losing changes.
+- **Mixed project naming**: When multiple surfaces exist, recipes use the surface-key as prefix (e.g., `admin-panel-dev`, `payment-api-test`) to avoid collisions. Single-surface projects use the surface-type as prefix (e.g., `web-dev`).
+- **Targets invoked by forge skills**: `compile`, `unit-test`, `<key>-test`, `<key>-teardown`, `install`. The remaining targets are for manual use.
 - **Cold start**: When no Convention files exist, the LLM generates recipes from common patterns for the detected language. These recipes use conservative defaults and may need manual adjustment.
-- **Targets invoked by forge skills**: `compile`, `build`, `unit-test`, `test`, `install`, `test-setup`, `probe`. The remaining targets (`run`, `dev`, `lint`, `fmt`, `check`, `clean`, `ci`) are for manual use and are not called by any skill.
-- **Idempotency**: `test-setup` and `install` are designed to be idempotent (safe to run multiple times). Other recipes (`build`, `compile`, `unit-test`, `test`) are not -- they always re-execute.
-- **Mixed project scope**: forge skills resolve scope from `forge task claim` output or `process/state.json` and pass it to `just <verb>`. Pass `just compile frontend` or `just compile backend` manually to target a single side outside of a task context.
 
 <EXTREMELY-IMPORTANT>
 - MANUAL-ONLY. Do NOT auto-invoke this skill from other skills or agents. Only invoke when user explicitly runs `/init-justfile`.
 - If an existing justfile lacks forge boundary markers and `--force` is not set, you MUST prompt the user before overwriting. Never silently destroy user customizations.
 - Only the section between `# --- forge standard recipes ---` / `# --- end forge standard recipes ---` markers may be replaced. Recipes outside markers must be preserved verbatim.
 - After writing, you MUST run the verification steps (dry-run + actual execution) and report all results.
-- Do NOT use framework-specific recipe templates. Generate test recipes from Convention content and LLM knowledge only.
+- Do NOT use framework-specific recipe templates. Generate test recipes from Convention content, surface rule files, and LLM knowledge only.
+- Surface-key MUST match `[a-zA-Z0-9_-]+`. Abort on invalid keys — never generate recipes for invalid surface names.
+- CLI/TUI surfaces MUST NOT generate dev, probe, or aggregate recipes.
+- `# user-customized` marked recipes MUST be preserved during re-generation.
 </EXTREMELY-IMPORTANT>

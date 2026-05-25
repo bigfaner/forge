@@ -187,7 +187,7 @@
         "2.2",
         "2.gate"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3.1-init-justfile-skill.md",
       "record": "records/3.1-init-justfile-skill.md",
       "scope": "all",
