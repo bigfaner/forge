@@ -84,7 +84,6 @@ func TestSynthesize_AllTypes(t *testing.T) {
 					File:   "1.1-impl.md",
 					Record: "records/1.1-impl.md",
 					Type:   typ,
-					Scope:  "backend",
 				},
 			}
 			setupFeatureDir(t, dir, tasks)
@@ -212,7 +211,6 @@ func TestSynthesize_FeatureTemplate_HasTDDWorkflow(t *testing.T) {
 			File:   "1.1.md",
 			Record: "records/1.1.md",
 			Type:   task.TypeCodingFeature,
-			Scope:  "backend",
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -240,7 +238,6 @@ func TestSynthesize_EnhancementTemplate_HasTDDWorkflow(t *testing.T) {
 			File:   "1.1.md",
 			Record: "records/1.1.md",
 			Type:   task.TypeCodingEnhancement,
-			Scope:  "backend",
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -265,7 +262,6 @@ func TestSynthesize_CleanupTemplate_NoTDD(t *testing.T) {
 			File:   "1.1.md",
 			Record: "records/1.1.md",
 			Type:   task.TypeCodingCleanup,
-			Scope:  "backend",
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -293,7 +289,6 @@ func TestSynthesize_RefactorTemplate_NoTDD(t *testing.T) {
 			File:   "1.1.md",
 			Record: "records/1.1.md",
 			Type:   task.TypeCodingRefactor,
-			Scope:  "backend",
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -324,7 +319,6 @@ func TestSynthesize_EmptyPhaseSummary_NoResidual(t *testing.T) {
 			File:   "1.1-impl.md",
 			Record: "records/1.1-impl.md",
 			Type:   task.TypeCodingFeature,
-			Scope:  "backend",
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -367,7 +361,6 @@ func TestSynthesize_NonEmptyPhaseSummary_Preserved(t *testing.T) {
 			File:   "1.1-impl.md",
 			Record: "records/1.1-impl.md",
 			Type:   task.TypeCodingFeature,
-			Scope:  "backend",
 		},
 		"2.1-impl": {
 			ID:     "2.1",
@@ -376,7 +369,6 @@ func TestSynthesize_NonEmptyPhaseSummary_Preserved(t *testing.T) {
 			File:   "2.1-impl.md",
 			Record: "records/2.1-impl.md",
 			Type:   task.TypeCodingFeature,
-			Scope:  "backend",
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -419,7 +411,6 @@ func TestSynthesize_EmptyScope_NoTrailingSpace(t *testing.T) {
 			File:   "1.1-impl.md",
 			Record: "records/1.1-impl.md",
 			Type:   task.TypeCodingFeature,
-			Scope:  "", // empty scope
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -594,7 +585,6 @@ func TestSynthesize_CleanCodeTemplate_InvokesSkill(t *testing.T) {
 			File:   "T-clean-code-1.md",
 			Record: "records/T-clean-code-1.md",
 			Type:   task.TypeCleanCode,
-			Scope:  "backend",
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -646,7 +636,6 @@ func TestSynthesize_GenScripts_WithTypeSuffix(t *testing.T) {
 					File:   tt.taskID + ".md",
 					Record: "records/" + tt.taskID + ".md",
 					Type:   task.TypeTestGenScripts,
-					Scope:  "backend",
 				},
 			}
 			setupFeatureDir(t, dir, tasks)
@@ -691,7 +680,6 @@ func TestSynthesize_GenScripts_NoTypeSuffix(t *testing.T) {
 					File:   tt.taskID + ".md",
 					Record: "records/" + tt.taskID + ".md",
 					Type:   task.TypeTestGenScripts,
-					Scope:  "backend",
 				},
 			}
 			setupFeatureDir(t, dir, tasks)
@@ -728,7 +716,6 @@ func TestSynthesize_ConsolidateTemplate_NonInteractive(t *testing.T) {
 			File:   "T-specs-consolidate.md",
 			Record: "records/T-specs-consolidate.md",
 			Type:   task.TypeDocConsolidate,
-			Scope:  "backend",
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -765,7 +752,6 @@ func TestSynthesize_DriftTemplate_NonInteractive(t *testing.T) {
 			File:   "T-quick-doc-drift.md",
 			Record: "records/T-quick-doc-drift.md",
 			Type:   task.TypeDocDrift,
-			Scope:  "backend",
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -818,7 +804,6 @@ func TestSynthesize_CodingTemplates_ContainCodingPrinciples(t *testing.T) {
 					File:   "1.1.md",
 					Record: "records/1.1.md",
 					Type:   ct.typeVal,
-					Scope:  "backend",
 				},
 			}
 			setupFeatureDir(t, dir, tasks)
@@ -851,7 +836,6 @@ func TestSynthesize_CodingFeature_DefaultCoverageTarget(t *testing.T) {
 			File:   "1.1.md",
 			Record: "records/1.1.md",
 			Type:   task.TypeCodingFeature,
-			Scope:  "backend",
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -879,7 +863,6 @@ func TestSynthesize_CodingFix_DefaultCoverageTarget(t *testing.T) {
 			File:   "fix-1.md",
 			Record: "records/fix-1.md",
 			Type:   task.TypeCodingFix,
-			Scope:  "backend",
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -907,7 +890,6 @@ func TestSynthesize_CodingRefactor_MaintainStrategy(t *testing.T) {
 			File:   "1.1.md",
 			Record: "records/1.1.md",
 			Type:   task.TypeCodingRefactor,
-			Scope:  "backend",
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -936,7 +918,6 @@ func TestSynthesize_FrontmatterCoverageOverridesConfig(t *testing.T) {
 			File:     "1.1.md",
 			Record:   "records/1.1.md",
 			Type:     task.TypeCodingFeature,
-			Scope:    "backend",
 			Coverage: &coverage90,
 		},
 	}
@@ -978,7 +959,6 @@ func TestSynthesize_NonTestableType_NoCoverageInjection(t *testing.T) {
 					File:   "1.1.md",
 					Record: "records/1.1.md",
 					Type:   typ,
-					Scope:  "backend",
 				},
 			}
 			setupFeatureDir(t, dir, tasks)
@@ -1022,7 +1002,6 @@ func TestSynthesize_ConfigCoverageOverridesDefault(t *testing.T) {
 			File:   "1.1.md",
 			Record: "records/1.1.md",
 			Type:   task.TypeCodingFeature,
-			Scope:  "backend",
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -1051,7 +1030,6 @@ func TestSynthesize_CodingFeature_CoverageDirectiveActionable(t *testing.T) {
 			File:   "1.1.md",
 			Record: "records/1.1.md",
 			Type:   task.TypeCodingFeature,
-			Scope:  "backend",
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -1077,7 +1055,6 @@ func TestSynthesize_CodingEnhancement_CoverageDirectiveActionable(t *testing.T) 
 			File:   "1.1.md",
 			Record: "records/1.1.md",
 			Type:   task.TypeCodingEnhancement,
-			Scope:  "backend",
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -1103,7 +1080,6 @@ func TestSynthesize_CodingFix_CoverageDirectiveActionable(t *testing.T) {
 			File:   "fix-1.md",
 			Record: "records/fix-1.md",
 			Type:   task.TypeCodingFix,
-			Scope:  "backend",
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -1132,7 +1108,6 @@ func TestSynthesize_CodingRefactor_CoverageDirectiveActionable(t *testing.T) {
 			File:   "1.1.md",
 			Record: "records/1.1.md",
 			Type:   task.TypeCodingRefactor,
-			Scope:  "backend",
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -1161,7 +1136,6 @@ func TestSynthesize_CodingCleanup_CoverageDirectiveActionable(t *testing.T) {
 			File:   "1.1.md",
 			Record: "records/1.1.md",
 			Type:   task.TypeCodingCleanup,
-			Scope:  "backend",
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -1414,7 +1388,6 @@ func TestSynthesize_ScopeMismatch_GeneratesDefaultCommand(t *testing.T) {
 			File:   "1.1.md",
 			Record: "records/1.1.md",
 			Type:   task.TypeCodingFeature,
-			Scope:  "frontend",
 		},
 	}
 	setupFeatureDir(t, dir, tasks)
@@ -1461,7 +1434,6 @@ func TestSynthesize_CodingTemplates_ContainRecordFieldHints(t *testing.T) {
 					File:   "1.1.md",
 					Record: "records/1.1.md",
 					Type:   ct.typ,
-					Scope:  "backend",
 				},
 			}
 			setupFeatureDir(t, dir, tasks)
@@ -1553,7 +1525,6 @@ func TestSynthesize_TestTemplates_ContainRecordFieldHints(t *testing.T) {
 					File:   "1.1.md",
 					Record: "records/1.1.md",
 					Type:   typ,
-					Scope:  "backend",
 				},
 			}
 			setupFeatureDir(t, dir, tasks)
@@ -1596,7 +1567,6 @@ func TestSynthesize_ValidationTemplates_ContainRecordFieldHints(t *testing.T) {
 					File:   "1.1.md",
 					Record: "records/1.1.md",
 					Type:   typ,
-					Scope:  "backend",
 				},
 			}
 			setupFeatureDir(t, dir, tasks)
@@ -1630,7 +1600,6 @@ func TestSynthesize_GateTemplate_ContainsRecordFieldHints(t *testing.T) {
 			File:   "1.gate.md",
 			Record: "records/1.gate.md",
 			Type:   task.TypeGate,
-			Scope:  "backend",
 		},
 	}
 	setupFeatureDir(t, dir, tasks)

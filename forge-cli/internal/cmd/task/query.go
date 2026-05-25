@@ -69,7 +69,8 @@ func printDefaultQuery(t *task.Task) {
 	base.PrintField("STATUS", t.Status)
 	base.PrintFieldIfNotEmpty("TYPE", t.Type)
 	base.PrintFieldIfNotEmpty("TASK_CATEGORY", task.CategoryForType(t.Type))
-	base.PrintFieldIfNotEmpty("SCOPE", t.Scope)
+	base.PrintFieldIfNotEmpty("SURFACE_KEY", t.SurfaceKey)
+	base.PrintFieldIfNotEmpty("SURFACE_TYPE", t.SurfaceType)
 	if t.Breaking {
 		base.PrintField("BREAKING", "true")
 	}
@@ -85,7 +86,8 @@ func printVerboseQuery(key string, t *task.Task, featureSlug string, index *task
 	base.PrintField("PRIORITY", t.Priority)
 	base.PrintFieldIfNotEmpty("TYPE", t.Type)
 	base.PrintFieldIfNotEmpty("TASK_CATEGORY", task.CategoryForType(t.Type))
-	base.PrintFieldIfNotEmpty("SCOPE", t.Scope)
+	base.PrintFieldIfNotEmpty("SURFACE_KEY", t.SurfaceKey)
+	base.PrintFieldIfNotEmpty("SURFACE_TYPE", t.SurfaceType)
 	if len(t.Dependencies) > 0 {
 		base.PrintField("DEPENDENCIES:", "")
 		for _, dep := range t.Dependencies {

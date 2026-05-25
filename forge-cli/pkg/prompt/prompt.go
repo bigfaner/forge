@@ -118,7 +118,7 @@ func renderTemplate(templateFile string, opts SynthesizeOpts, t task.Task) (stri
 
 	taskFile := filepath.Join(opts.ProjectRoot, feature.GetTaskFile(opts.FeatureSlug, t.File))
 
-	scope := resolveScope(opts.ProjectRoot, t.Scope)
+	scope := "" // TODO: resolve scope from SurfaceKey (task 1.2b)
 
 	phaseSummaryPath := PhaseDetect(opts.ProjectRoot, opts.FeatureSlug, opts.TaskID)
 

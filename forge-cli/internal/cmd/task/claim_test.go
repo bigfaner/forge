@@ -784,7 +784,7 @@ func TestExecuteClaim_ScopePropagatedToState(t *testing.T) {
 	}
 	index.SetTasks(map[string]task.Task{
 		"t1": {ID: "1.1", Title: "Frontend task", Status: "pending", Priority: "P0",
-			File: "1.1.md", Record: "records/1.1.md", Scope: "frontend"},
+			File: "1.1.md", Record: "records/1.1.md", SurfaceKey: "frontend"},
 	})
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)
@@ -803,8 +803,8 @@ func TestExecuteClaim_ScopePropagatedToState(t *testing.T) {
 	}
 
 	// Scope must be in the returned task
-	if result.Task.Scope != "frontend" {
-		t.Errorf("Task.Scope = %q, want %q", result.Task.Scope, "frontend")
+	if result.Task.SurfaceKey != "frontend" {
+		t.Errorf("Task.Scope = %q, want %q", result.Task.SurfaceKey, "frontend")
 	}
 
 	// Scope must be persisted to process/state.json
@@ -813,8 +813,8 @@ func TestExecuteClaim_ScopePropagatedToState(t *testing.T) {
 	if err != nil || state == nil {
 		t.Fatalf("failed to load state: %v", err)
 	}
-	if state.Scope != "frontend" {
-		t.Errorf("state.Scope = %q, want %q", state.Scope, "frontend")
+	if state.SurfaceKey != "frontend" {
+		t.Errorf("state.SurfaceKey = %q, want %q", state.SurfaceKey, "frontend")
 	}
 }
 
@@ -852,14 +852,14 @@ func TestExecuteClaim_ScopeEmptyWhenNotSet(t *testing.T) {
 		t.Fatalf("executeClaim() error = %v", err)
 	}
 
-	if result.Task.Scope != "" {
-		t.Errorf("Task.Scope = %q, want empty string for task without scope", result.Task.Scope)
+	if result.Task.SurfaceKey != "" {
+		t.Errorf("Task.Scope = %q, want empty string for task without scope", result.Task.SurfaceKey)
 	}
 
 	statePath := feature.GetTaskStatePath(dir, "test-feature")
 	state, _ := task.LoadState(statePath)
-	if state != nil && state.Scope != "" {
-		t.Errorf("state.Scope = %q, want empty for task without scope", state.Scope)
+	if state != nil && state.SurfaceKey != "" {
+		t.Errorf("state.SurfaceKey = %q, want empty for task without scope", state.SurfaceKey)
 	}
 }
 
@@ -905,13 +905,13 @@ func TestPrintTaskDetails_ScopeInOutput(t *testing.T) {
 	t.Run("scope present", func(t *testing.T) {
 		tk := &task.Task{
 			ID: "1.1", Title: "T", Priority: "P0", Status: "pending",
-			File: "1.1.md", Record: "records/1.1.md", Scope: "backend",
+			File: "1.1.md", Record: "records/1.1.md", SurfaceKey: "backend",
 		}
 		out := captureStdout(func() {
 			printTaskDetails("t1", tk, dir, "feat")
 		})
-		if !strings.Contains(out, "SCOPE: backend") {
-			t.Errorf("expected SCOPE: backend in output, got: %s", out)
+		if !strings.Contains(out, "SURFACE_KEY: backend") {
+			t.Errorf("expected SURFACE_KEY: backend in output, got: %s", out)
 		}
 		if !strings.Contains(out, "FEATURE: feat") {
 			t.Errorf("expected FEATURE: feat in output, got: %s", out)

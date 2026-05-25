@@ -29,6 +29,8 @@ type AddTaskOpts struct {
 	BlockSource   bool              // Block source task before resolution (preserves fix-chain model)
 	IDPrefix      string            // Auto-generate ID as prefix-N; empty defaults to "disc"
 	Type          string            // Task type (e.g. TypeCodingFix, TypeCodingCleanup). Empty = no type set.
+	SurfaceKey    string            // Surface key inherited from source task
+	SurfaceType   string            // Surface type inherited from source task
 }
 
 // terminalStatuses are task statuses that indicate the task is done.

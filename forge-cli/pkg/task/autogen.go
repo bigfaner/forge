@@ -88,10 +88,10 @@ type AutoGenTaskDef struct {
 	EstimatedTime   string
 	Dependencies    []string
 	Type            string
-	Scope           string
 	MainSession     bool
 	Breaking        bool
-	TestType        string // per-type interface (e.g., "api", "tui", "cli"); empty for non-per-type tasks
+	SurfaceKey      string // user-defined surface identifier
+	SurfaceType     string // surface type (e.g., "api", "tui", "cli"); empty for non-per-type tasks
 	FileName        string // .md filename (derived from key)
 	StrategyKind    string // "generate", "run" or "" for generic
 	StrategyContent []byte // resolved by caller from convention files
@@ -114,7 +114,7 @@ func GetBreakdownTestTasks(capabilities []string, auto forgeconfig.AutoConfig) [
 			tasks = append(tasks, AutoGenTaskDef{
 				Key: "gen-journeys-" + typ, ID: "T-test-gen-journeys-" + typ,
 				Title: fmt.Sprintf("Generate Test Journeys (%s)", typ), Priority: "P1", EstimatedTime: "20-30min",
-				Type: TypeTestGenJourneys, Scope: "all", TestType: typ,
+				Type: TypeTestGenJourneys, SurfaceType: typ,
 				StrategyKind: "interface",
 			})
 		}
@@ -123,21 +123,21 @@ func GetBreakdownTestTasks(capabilities []string, auto forgeconfig.AutoConfig) [
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "eval-journey", ID: "T-eval-journey",
 			Title: "Evaluate Journey Quality", Priority: "P1", EstimatedTime: "20-30min",
-			Type: TypeEvalJourney, Scope: "all", MainSession: true,
+			Type: TypeEvalJourney, MainSession: true,
 		})
 
 		// Gen Contracts (after eval-journey, before eval-contract)
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "gen-contracts", ID: "T-test-gen-contracts",
 			Title: "Generate Test Contracts", Priority: "P1", EstimatedTime: "30-45min",
-			Type: TypeTestGenContracts, Scope: "all",
+			Type: TypeTestGenContracts,
 		})
 
 		// Eval Contracts (after gen-contracts, before gen-test-scripts)
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "eval-contract", ID: "T-eval-contract",
 			Title: "Evaluate Contract Quality", Priority: "P1", EstimatedTime: "20-30min",
-			Type: TypeEvalContract, Scope: "all", MainSession: true,
+			Type: TypeEvalContract, MainSession: true,
 		})
 
 		// Per-type gen-scripts (interface-only, no language loop)
@@ -145,7 +145,7 @@ func GetBreakdownTestTasks(capabilities []string, auto forgeconfig.AutoConfig) [
 			tasks = append(tasks, AutoGenTaskDef{
 				Key: "gen-test-scripts-" + typ, ID: "T-test-gen-scripts-" + typ,
 				Title: fmt.Sprintf("Generate Test Scripts (%s)", typ), Priority: "P1", EstimatedTime: "1-2h",
-				Type: TypeTestGenScripts, Scope: "all", TestType: typ,
+				Type: TypeTestGenScripts, SurfaceType: typ,
 				StrategyKind: "generate",
 			})
 		}
@@ -154,7 +154,7 @@ func GetBreakdownTestTasks(capabilities []string, auto forgeconfig.AutoConfig) [
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "run-test", ID: "T-test-run",
 			Title: "Run e2e Tests", Priority: "P1", EstimatedTime: "30min-1h",
-			Type: TypeTestRun, Scope: "all",
+			Type:         TypeTestRun,
 			StrategyKind: "run",
 		})
 
@@ -162,7 +162,7 @@ func GetBreakdownTestTasks(capabilities []string, auto forgeconfig.AutoConfig) [
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "verify-regression", ID: "T-test-verify-regression",
 			Title: "Verify Full E2E Regression", Priority: "P1", EstimatedTime: "15-30min",
-			Type: TypeTestVerifyRegression, Scope: "all",
+			Type: TypeTestVerifyRegression,
 		})
 	}
 
@@ -171,13 +171,13 @@ func GetBreakdownTestTasks(capabilities []string, auto forgeconfig.AutoConfig) [
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "validate-code", ID: "T-validate-code",
 			Title: "Validate Code Quality", Priority: "P2", EstimatedTime: "15min",
-			Type: TypeValidationCode, Scope: "all", MainSession: false,
+			Type: TypeValidationCode, MainSession: false,
 		})
 		if hasUISurface(capabilities) {
 			tasks = append(tasks, AutoGenTaskDef{
 				Key: "validate-ux", ID: "T-validate-ux",
 				Title: "Validate User Experience", Priority: "P2", EstimatedTime: "15min",
-				Type: TypeValidationUx, Scope: "all", MainSession: true,
+				Type: TypeValidationUx, MainSession: true,
 			})
 		}
 	}
@@ -187,7 +187,7 @@ func GetBreakdownTestTasks(capabilities []string, auto forgeconfig.AutoConfig) [
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "consolidate-specs", ID: "T-specs-consolidate",
 			Title: "Consolidate Specs", Priority: "P2", EstimatedTime: "20min",
-			Type: TypeDocConsolidate, Scope: "all",
+			Type: TypeDocConsolidate,
 		})
 	}
 
@@ -196,7 +196,7 @@ func GetBreakdownTestTasks(capabilities []string, auto forgeconfig.AutoConfig) [
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "clean-code", ID: "T-clean-code",
 			Title: "Simplify and Clean Code", Priority: "P2", EstimatedTime: "20min",
-			Type: TypeCleanCode, Scope: "all",
+			Type: TypeCleanCode,
 		})
 	}
 
@@ -230,7 +230,7 @@ func GetQuickTestTasks(capabilities []string, auto forgeconfig.AutoConfig) []Aut
 			tasks = append(tasks, AutoGenTaskDef{
 				Key: "gen-journeys-" + typ, ID: "T-test-gen-journeys-" + typ,
 				Title: fmt.Sprintf("Generate Test Journeys (%s)", typ), Priority: "P1", EstimatedTime: "20-30min",
-				Type: TypeTestGenJourneys, Scope: "all", TestType: typ,
+				Type: TypeTestGenJourneys, SurfaceType: typ,
 				StrategyKind: "interface",
 			})
 		}
@@ -239,7 +239,7 @@ func GetQuickTestTasks(capabilities []string, auto forgeconfig.AutoConfig) []Aut
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "gen-contracts", ID: "T-test-gen-contracts",
 			Title: "Generate Test Contracts", Priority: "P1", EstimatedTime: "30-45min",
-			Type: TypeTestGenContracts, Scope: "all",
+			Type: TypeTestGenContracts,
 		})
 
 		// Per-type gen-scripts (Stage 3: all parallel, depend on gen-contracts)
@@ -247,7 +247,7 @@ func GetQuickTestTasks(capabilities []string, auto forgeconfig.AutoConfig) []Aut
 			tasks = append(tasks, AutoGenTaskDef{
 				Key: "gen-test-scripts-" + typ, ID: "T-test-gen-scripts-" + typ,
 				Title: fmt.Sprintf("Generate Test Scripts (%s)", typ), Priority: "P1", EstimatedTime: "1-2h",
-				Type: TypeTestGenScripts, Scope: "all", TestType: typ,
+				Type: TypeTestGenScripts, SurfaceType: typ,
 				StrategyKind: "generate",
 			})
 		}
@@ -256,7 +256,7 @@ func GetQuickTestTasks(capabilities []string, auto forgeconfig.AutoConfig) []Aut
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "run-test", ID: "T-test-run",
 			Title: "Run e2e Tests", Priority: "P1", EstimatedTime: "30min-1h",
-			Type: TypeTestRun, Scope: "all",
+			Type:         TypeTestRun,
 			StrategyKind: "run",
 		})
 
@@ -264,7 +264,7 @@ func GetQuickTestTasks(capabilities []string, auto forgeconfig.AutoConfig) []Aut
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "verify-regression", ID: "T-test-verify-regression",
 			Title: "Verify Full E2E Regression", Priority: "P1", EstimatedTime: "15-30min",
-			Type: TypeTestVerifyRegression, Scope: "all",
+			Type: TypeTestVerifyRegression,
 		})
 	}
 
@@ -273,13 +273,13 @@ func GetQuickTestTasks(capabilities []string, auto forgeconfig.AutoConfig) []Aut
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "validate-code", ID: "T-validate-code",
 			Title: "Validate Code Quality", Priority: "P2", EstimatedTime: "15min",
-			Type: TypeValidationCode, Scope: "all", MainSession: false,
+			Type: TypeValidationCode, MainSession: false,
 		})
 		if hasUISurface(capabilities) {
 			tasks = append(tasks, AutoGenTaskDef{
 				Key: "validate-ux", ID: "T-validate-ux",
 				Title: "Validate User Experience", Priority: "P2", EstimatedTime: "15min",
-				Type: TypeValidationUx, Scope: "all", MainSession: true,
+				Type: TypeValidationUx, MainSession: true,
 			})
 		}
 	}
@@ -289,7 +289,7 @@ func GetQuickTestTasks(capabilities []string, auto forgeconfig.AutoConfig) []Aut
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "quick-drift-detection", ID: "T-quick-doc-drift",
 			Title: "Detect Spec Drift", Priority: "P2", EstimatedTime: "15min",
-			Type: TypeDocDrift, Scope: "all",
+			Type: TypeDocDrift,
 		})
 	}
 
@@ -298,7 +298,7 @@ func GetQuickTestTasks(capabilities []string, auto forgeconfig.AutoConfig) []Aut
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "quick-clean-code", ID: "T-clean-code",
 			Title: "Simplify and Clean Code", Priority: "P2", EstimatedTime: "20min",
-			Type: TypeCleanCode, Scope: "all",
+			Type: TypeCleanCode,
 		})
 	}
 
@@ -353,7 +353,7 @@ func renderBody(templateContent string, def AutoGenTaskDef, ctx BodyContext) str
 	}
 
 	// TEST_TYPE — omit line when empty
-	testType := def.TestType
+	testType := def.SurfaceType
 	if testType == "" {
 		s = removeLineContaining(s, "{{TEST_TYPE}}")
 	} else {
@@ -454,7 +454,8 @@ func GenerateTestTaskMD(def AutoGenTaskDef, ctx BodyContext) ([]byte, error) {
 	fmt.Fprintf(&buf, "estimated_time: %q\n", def.EstimatedTime)
 	fmt.Fprintf(&buf, "dependencies: %v\n", formatYAMLList(def.Dependencies))
 	fmt.Fprintf(&buf, "type: %q\n", def.Type)
-	fmt.Fprintf(&buf, "scope: %q\n", def.Scope)
+	fmt.Fprintf(&buf, "surface-key: %q\n", def.SurfaceKey)
+	fmt.Fprintf(&buf, "surface-type: %q\n", def.SurfaceType)
 	if def.MainSession {
 		buf.WriteString("mainSession: true\n")
 	}
@@ -469,8 +470,8 @@ func GenerateTestTaskMD(def AutoGenTaskDef, ctx BodyContext) ([]byte, error) {
 		buf.WriteString(rendered)
 
 		// Append TestType note if present
-		if def.TestType != "" {
-			fmt.Fprintf(&buf, "\nType: **%s**\n", def.TestType)
+		if def.SurfaceType != "" {
+			fmt.Fprintf(&buf, "\nType: **%s**\n", def.SurfaceType)
 		}
 
 		// Append StrategyContent after template content if present
@@ -487,14 +488,14 @@ func GenerateTestTaskMD(def AutoGenTaskDef, ctx BodyContext) ([]byte, error) {
 	if def.StrategyKind != "" {
 		if len(def.StrategyContent) > 0 {
 			fmt.Fprintf(&buf, "# %s\n\n", def.Title)
-			if def.TestType != "" {
-				fmt.Fprintf(&buf, "Type: **%s**\n\n", def.TestType)
+			if def.SurfaceType != "" {
+				fmt.Fprintf(&buf, "Type: **%s**\n\n", def.SurfaceType)
 			}
 			buf.Write(def.StrategyContent)
 		} else {
 			fmt.Fprintf(&buf, "# %s\n\nRead docs/conventions/testing/ for test generation strategy.", def.Title)
-			if def.TestType != "" {
-				fmt.Fprintf(&buf, " Type: %q.", def.TestType)
+			if def.SurfaceType != "" {
+				fmt.Fprintf(&buf, " Type: %q.", def.SurfaceType)
 			}
 			buf.WriteString("\n")
 		}
@@ -838,7 +839,8 @@ func (d AutoGenTaskDef) TaskFromFile() Task {
 		File:          fileName,
 		Record:        path.Join("records", fileName),
 		Breaking:      d.Breaking,
-		Scope:         d.Scope,
+		SurfaceKey:    d.SurfaceKey,
+		SurfaceType:   d.SurfaceType,
 		MainSession:   d.MainSession,
 		Type:          d.Type,
 	}
@@ -854,7 +856,6 @@ func GetReviewDocTask() AutoGenTaskDef {
 		Priority:      "P1",
 		EstimatedTime: "30min",
 		Type:          TypeDocReview,
-		Scope:         "all",
 	}
 }
 

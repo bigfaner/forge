@@ -154,7 +154,7 @@ func doSubmit(projectRoot, featureSlug, indexPath, taskIDArg string) error {
 	// Tiered model: breaking tasks run full gate (compile+fmt+lint+test),
 	// non-breaking coding tasks run static gate (compile+fmt+lint).
 	if targetStatus == "completed" && task.IsTestableType(t.Type) {
-		validateQualityGate(projectRoot, t.Scope, t.Breaking)
+		validateQualityGate(projectRoot, "", t.Breaking) // TODO: use SurfaceKey (task 1.2b)
 	}
 
 	// After validateRecordData, rd.Status may have been auto-downgraded (completed -> blocked)

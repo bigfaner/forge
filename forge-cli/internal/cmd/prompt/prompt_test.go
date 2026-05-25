@@ -124,7 +124,6 @@ func TestRunPrompt_Success(t *testing.T) {
 			File:   "1.1.md",
 			Record: "records/1.1.md",
 			Type:   task.TypeCodingFeature,
-			Scope:  "backend",
 		},
 	})
 
@@ -150,7 +149,6 @@ func TestRunPrompt_FixRecordMissed(t *testing.T) {
 			File:   "1.1.md",
 			Record: "records/1.1.md",
 			Type:   task.TypeCodingFeature,
-			Scope:  "backend",
 		},
 	})
 

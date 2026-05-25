@@ -15,7 +15,8 @@ type FrontmatterData struct {
 	Priority      string   `yaml:"priority"`
 	EstimatedTime string   `yaml:"estimated_time"`
 	Dependencies  []string `yaml:"dependencies"`
-	Scope         string   `yaml:"scope"`
+	SurfaceKey    string   `yaml:"surface-key"`
+	SurfaceType   string   `yaml:"surface-type"`
 	Breaking      bool     `yaml:"breaking"`
 	MainSession   bool     `yaml:"mainSession"`
 	Type          string   `yaml:"type"`

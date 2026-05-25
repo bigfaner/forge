@@ -22,7 +22,7 @@
       "title": "Task struct 字段迁移 — 共享构件更新",
       "priority": "P1",
       "estimatedTime": "2h",
-      "status": "pending",
+      "status": "completed",
       "file": "1.2a-task-struct-shared.md",
       "record": "records/1.2a-task-struct-shared.md",
       "breaking": true,

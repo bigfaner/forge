@@ -165,10 +165,12 @@ type Task struct {
 	File          string   `json:"file"`
 	Record        string   `json:"record"`
 	Breaking      bool     `json:"breaking,omitempty"`
-	// Scope indicates the task's domain: "frontend", "backend", or "all".
-	// Default is "all" (enforced by consumers, not a Go zero value).
-	// Omitempty allows existing index.json files without scope to remain valid.
-	Scope string `json:"scope,omitempty"`
+	// SurfaceKey is the user-defined surface identifier (e.g. "admin-panel").
+	// Empty value means cross-surface (no specific surface).
+	SurfaceKey string `json:"surface-key,omitempty"`
+	// SurfaceType is the surface type enumeration (e.g. "web", "api", "cli").
+	// Empty value means unknown or not yet resolved.
+	SurfaceType string `json:"surface-type,omitempty"`
 	// SourceTaskID records which task spawned this task (e.g. fix-task -> source task).
 	// Empty for original tasks. Used by record auto-restore to unblock source when all deps complete.
 	SourceTaskID string `json:"sourceTaskID,omitempty"`
@@ -264,8 +266,10 @@ type TaskState struct { //nolint:revive // intentional naming for API clarity
 	Record        string   `json:"record"`
 	StartedTime   string   `json:"startedTime"`
 	Breaking      bool     `json:"breaking,omitempty"`
-	// Scope mirrors Task.Scope for the claimed task.
-	Scope string `json:"scope,omitempty"`
+	// SurfaceKey mirrors Task.SurfaceKey for the claimed task.
+	SurfaceKey string `json:"surface-key,omitempty"`
+	// SurfaceType mirrors Task.SurfaceType for the claimed task.
+	SurfaceType string `json:"surface-type,omitempty"`
 	// MainSession mirrors Task.MainSession for the claimed task.
 	MainSession bool `json:"mainSession,omitempty"`
 	// Type mirrors Task.Type for the claimed task (same pattern as MainSession).
