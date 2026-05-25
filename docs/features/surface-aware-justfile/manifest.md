@@ -1,7 +1,7 @@
 ---
 feature: "surface-aware-justfile"
 created: "2026-05-25"
-status: tasks
+status: completed
 ---
 
 # Feature: surface-aware-justfile
