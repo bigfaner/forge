@@ -10,15 +10,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// KnownSurfaceTypes lists all valid surface type values.
+// KnownSurfaceTypes re-exports the canonical set from forgeconfig.
 // Unknown types are filtered from --types output and silently ignored in listings.
-var KnownSurfaceTypes = map[string]bool{
-	"web":    true,
-	"api":    true,
-	"cli":    true,
-	"tui":    true,
-	"mobile": true,
-}
+var KnownSurfaceTypes = forgeconfig.KnownSurfaceTypes
 
 var surfacesTypesFlag bool
 var surfacesJSONFlag bool

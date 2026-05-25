@@ -307,7 +307,7 @@
       "title": "Simplify and Clean Code",
       "priority": "P2",
       "estimatedTime": "20min",
-      "status": "pending",
+      "status": "completed",
       "file": "clean-code.md",
       "record": "records/clean-code.md",
       "scope": "all",

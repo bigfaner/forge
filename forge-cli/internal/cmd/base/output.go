@@ -84,7 +84,7 @@ func PrintListItem(item string) {
 // Debugf prints a debug line to stderr if verbose is true.
 func Debugf(verbose bool, format string, args ...any) {
 	if verbose {
-		fmt.Fprintf(os.Stderr, "[debug] "+format+"\n", args)
+		fmt.Fprintf(os.Stderr, "[debug] "+format+"\n", args...)
 	}
 }
 
