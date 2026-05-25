@@ -244,9 +244,9 @@ type Task struct {
     SourceTaskID  string   `json:"sourceTaskID,omitempty"`  // ID of the task that spawned this task (e.g. fix-task -> source)
     MainSession   bool     `json:"mainSession,omitempty"`   // Task must run in main session (not dispatched to task-executor)
     Type          string   `json:"type,omitempty"`          // Task execution type; required after migration
-    Profile       string   `json:"profile,omitempty"`       // Test profile name (e.g. "web-playwright"); set by task index for per-profile test tasks
     BlockedReason string   `json:"blockedReason,omitempty"` // Why this task entered blocked state; written by run-tasks when task prompt fails
-    Coverage      *int     `json:"coverage,omitempty"`       // Per-task coverage override from frontmatter; nil = use global default
+    Coverage      *int     `json:"coverage,omitempty"`      // Per-task coverage override from frontmatter; nil = use global default
+    Scope         string   `json:"scope,omitempty"`         // Legacy scope field (deprecated, retained for migration detection)
 }
 ```
 

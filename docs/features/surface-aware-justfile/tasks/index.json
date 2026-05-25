@@ -79,11 +79,12 @@
       "dependencies": [
         "1.summary"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "1.gate.md",
       "record": "records/1.gate.md",
       "breaking": true,
-      "type": "gate"
+      "type": "gate",
+      "blockedReason": "1.2b still pending, gate cannot proceed"
     },
     "1.summary": {
       "id": "1.summary",
