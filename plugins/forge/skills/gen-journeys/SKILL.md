@@ -19,11 +19,11 @@ This skill only generates Journey narrative documents (per-Journey Markdown file
 
 Load: `rules/journey-contract-model.md` — core concepts (Journey, Step, Contract, Outcome), directory conventions, and tag-based promotion model used by downstream skills.
 
-Before processing PRD sources, determine the project's surface type via the `forge surfaces` CLI command. Surface determines testing strategy, required Outcomes, and test level emphasis.
+Before processing PRD sources, determine the project's configured surface types via the `forge surfaces` CLI command. Surface determines testing strategy, required Outcomes, and test level emphasis.
 
 ### Detection via CLI
 
-Query the project's configured surface type using `forge surfaces <path>`:
+Query the project's configured surface types using `forge surfaces <path>`:
 
 ```bash
 forge surfaces <path>
@@ -33,7 +33,7 @@ forge surfaces <path>
 
 | Exit Code | Meaning | Action |
 |-----------|---------|--------|
-| 0 | Surface type found. stdout contains the surface type string (e.g., `web`, `api`, `cli`, `tui`, `mobile`). | Parse stdout to obtain the surface type. Proceed to rule loading. |
+| 0 | Surface types found. stdout contains one surface type per line (e.g., `web`, `api`). For monorepo configs, each configured surface appears on its own line. | Parse stdout to collect all surface type strings. Proceed to rule loading. |
 | 1 | No surface configured for the given path. stderr contains an error message with configuration guidance. | **Pause pipeline**. Show the stderr message to the user and ask them to configure surfaces via `forge init`. |
 
 **Examples**:
@@ -42,6 +42,13 @@ forge surfaces <path>
 # Single-surface project (scalar form): any path returns the same type
 forge surfaces .
 # stdout: api  (exit 0)
+
+# Multi-surface project: all configured surfaces are listed
+forge surfaces .
+# stdout:
+# web
+# api
+# (exit 0)
 
 # Monorepo with path-level surfaces: query specific path
 forge surfaces frontend/src
@@ -55,33 +62,82 @@ forge surfaces unknown-dir
 ### Detection Flow
 
 1. Run `forge surfaces .` (or the relevant source path for the feature being tested)
-2. If exit code is 0: parse stdout to get the surface type string
+2. If exit code is 0: parse stdout to collect all surface type strings (one per line)
 3. If exit code is 1: pause the pipeline and ask the user to configure surfaces
-4. Load the corresponding rule file from `rules/surface-<type>.md`
+4. Load the corresponding rule files for each detected surface type
 
 **Supported surface types**: `web`, `api`, `cli`, `tui`, `mobile`
 
-**Surface rule files** (loaded dynamically based on detected type):
+**Surface rule files** (loaded dynamically based on detected types):
 - `rules/surface-api.md`
 - `rules/surface-cli.md`
 - `rules/surface-mobile.md`
 - `rules/surface-tui.md`
 - `rules/surface-web.md`
 
-### Surface Rule Loading
-
-When generating Journeys, load the detected surface's rule file (`rules/surface-<type>.md`) to inform:
-- Which boundary/error Outcomes must be derived (from "Required Outcome Reference")
-- Test level emphasis ratio (from "Test Strategy Guidance")
-- Risk-level Outcome density targets adjusted by surface-specific guidance
-
-### Extensibility
-
-New surface types can be added by creating a new `rules/surface-<type>.md` file following the same 4-section structure (Detection Signals, General Testing Principles, Test Strategy Guidance, Required Outcome Reference). No pipeline code changes are needed.
-
 <HARD-RULE>
 Surface detection must complete before Journey generation begins. If the `forge surfaces` command returns exit code 1, the pipeline must pause and wait for user input. Never proceed with a guessed surface type. Do NOT scan project files independently for surface detection -- always use `forge surfaces <path>`.
 </HARD-RULE>
+
+## Multi-Surface Rules Loading
+
+When the project has multiple configured surface types (e.g., `web` + `api`), load ALL detected surface rule files to inform Journey generation. gen-journeys is a narrative extraction skill — surface rules serve as reference guidance for downstream stages, not as primary input. Loading multiple rule files does not significantly increase context noise.
+
+### Loading Strategy
+
+1. After surface detection, load `rules/surface-<type>.md` for each detected surface type
+2. Organize rule loading by surface type — load each rule file sequentially
+3. Collect the union of:
+   - Required Outcomes from each surface's "Required Outcome Reference" section
+   - Test level emphasis ratios from each surface's "Test Strategy Guidance" section
+   - Risk-level Outcome density targets adjusted by each surface's guidance
+
+### Per-Surface Rule Application
+
+When generating Journeys, apply the following per-surface guidance:
+
+#### API Surface
+
+- Mandatory error outcomes: HTTP status code boundaries (4xx client errors, 5xx server errors)
+- Test level emphasis: integration-heavy ratio (test strategy guidance from `rules/surface-api.md`)
+- Edge case focus: authentication failures, rate limiting, payload validation
+
+#### Web Surface
+
+- Mandatory outcomes: page load states, navigation transitions, form validation feedback
+- Test level emphasis: e2e-heavy ratio (test strategy guidance from `rules/surface-web.md`)
+- Edge case focus: browser compatibility, responsive layout breaks, client-side validation
+
+#### CLI Surface
+
+- Mandatory outcomes: exit codes, stdout/stderr output, signal handling
+- Test level emphasis: unit-heavy ratio (test strategy guidance from `rules/surface-cli.md`)
+- Edge case focus: invalid flags, missing arguments, pipe failures
+
+#### TUI Surface
+
+- Mandatory outcomes: rendering states, keyboard navigation, screen transitions
+- Test level emphasis: integration-heavy ratio (test strategy guidance from `rules/surface-tui.md`)
+- Edge case focus: terminal resize, key binding conflicts, rendering artifacts
+
+#### Mobile Surface
+
+- Mandatory outcomes: screen transitions, gesture responses, offline/online state
+- Test level emphasis: e2e-heavy ratio (test strategy guidance from `rules/surface-mobile.md`)
+- Edge case focus: network interruptions, app lifecycle events, permission denials
+
+### Journey Surface Coverage
+
+Each Journey must declare which surface types it covers in its frontmatter `surface_types` field. This enables downstream skills (gen-contracts, gen-test-scripts) to generate surface-appropriate Contracts and test scripts.
+
+**Coverage rules**:
+- A Journey covering a cross-surface user workflow (e.g., "user submits form via web, backend API processes it") must list all involved surface types
+- A Journey limited to a single surface's interaction lists only that surface type
+- The union of all Journeys' `surface_types` must cover every configured surface type — no surface may be left uncovered
+
+### Extensibility
+
+New surface types can be added by creating a new `rules/surface-<type>.md` file following the same 4-section structure (Detection Signals, General Testing Principles, Test Strategy Guidance, Required Outcome Reference). No pipeline code changes are needed. Add the corresponding subsection above following the same format.
 
 ## Prerequisites
 
@@ -234,14 +290,27 @@ For each Journey, generate a directory and Markdown file using `templates/journe
 
 Create the directory `docs/features/<slug>/testing/<journey-name>/` if it does not exist.
 
-**Proposal Mode quality annotation**: When generating smoke-level Journeys (Key Scenarios absent from proposal.md), add `quality: low` to the Journey file's frontmatter:
+**Proposal Mode quality annotation**: When generating smoke-level Journeys (Key Scenarios absent from proposal.md), add `quality: low` to the Journey file's frontmatter.
+
+**Surface type annotation**: Every Journey file MUST include a `surface_types` field in its frontmatter listing the surface types this Journey covers (e.g., `[web, api]`). This field is derived from the detected surface types and the workflow's scope:
 
 ```yaml
 ---
-name: <journey-name>
-quality: low
+feature: "{{FEATURE_SLUG}}"
+journey: "{{JOURNEY_NAME}}"
+risk_level: "{{RISK_LEVEL}}"
+surface_types: ["web", "api"]
+sources:
+  - docs/features/{{FEATURE_SLUG}}/prd/prd-user-stories.md
+  - docs/features/{{FEATURE_SLUG}}/prd/prd-spec.md
+generated: "{{DATE}}"
 ---
 ```
+
+**Determining surface_types per Journey**:
+- If the Journey covers a cross-surface workflow (e.g., user interacts via web frontend and backend API processes the request), list all involved surface types
+- If the Journey is scoped to a single surface's interaction, list only that surface type
+- When uncertain, err on the side of listing more surface types rather than fewer — downstream skills will generate surface-specific Contracts regardless
 
 **One Journey = one directory**. Output is organized by Journey (user workflow), NOT by interface type (CLI, API, TUI, etc.).
 
@@ -249,6 +318,7 @@ quality: low
 gen-journeys output must be in a format that gen-contracts can directly consume. Each Journey file must contain:
 - Journey name (in heading and frontmatter)
 - Risk level (in frontmatter and body)
+- Surface types (in frontmatter `surface_types` field) — list of covered surface types
 - Step sequence with numbered steps, each containing:
   - User action (what the user does)
   - Expected result (what the system produces)
@@ -276,6 +346,7 @@ After generating all Journey files, validate each one:
 |-------|------|
 | Name present | Journey has a non-empty name in heading and frontmatter |
 | Risk level valid | Risk is one of: High, Medium, Low |
+| Surface types present | Journey has a non-empty `surface_types` array in frontmatter, listing valid surface type strings |
 | Happy path steps | At least 1 happy path step exists |
 | Edge case steps | At least 1 edge case exists |
 | High-risk density | For High-risk Journeys: edge case count >= happy path step count |
@@ -283,6 +354,7 @@ After generating all Journey files, validate each one:
 | User action | Every step has a User Action description |
 | Expected result | Every step has an Expected Result description |
 | PRD traceability | Every Journey traces back to specific PRD user story IDs or proposal section references |
+| Surface coverage complete | The union of all Journeys' `surface_types` includes every configured surface type. No surface may be left uncovered |
 
 If validation fails, fix the Journey file before proceeding.
 
