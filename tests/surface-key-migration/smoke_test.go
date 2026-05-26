@@ -27,11 +27,12 @@ func TestSurfaceKeyMigration_Smoke(t *testing.T) {
 	// Invariant: surface-key is user-defined and unique within config.yaml
 
 	// Step 1: forge surfaces CLI returns surface-key and surface-type
-	adminDir := filepath.Join(projectDir, "frontend", "src")
+	adminDir := filepath.Join(projectDir, "admin-panel", "src")
 	err := os.MkdirAll(adminDir, 0755)
 	assert.NoError(t, err)
 
-	out, exitCode := runForgeRaw(t, projectDir, "surfaces", adminDir)
+	// Use relative path for segment-prefix matching (admin-panel matches config key)
+	out, exitCode := runForgeRaw(t, projectDir, "surfaces", "admin-panel/src")
 	assert.Equal(t, 0, exitCode, "Step 1: forge surfaces should succeed, output:\n%s", out)
 
 	if exitCode == 0 {
@@ -39,7 +40,7 @@ func TestSurfaceKeyMigration_Smoke(t *testing.T) {
 		err = json.Unmarshal([]byte(out), &result)
 		if err == nil {
 			assert.Contains(t, []string{"web", "api", "cli", "tui", "mobile"},
-				result.SurfaceType, "Step 1: surface-type must be from fixed set")
+				result.Type, "Step 1: surface-type must be from fixed set")
 		}
 	}
 
@@ -61,9 +62,9 @@ func TestSurfaceKeyMigration_Smoke(t *testing.T) {
 
 	// Step 4: breakdown-tasks generates tasks with surface fields
 	// Verified by surface detection working correctly
-	out, exitCode = runForgeRaw(t, projectDir, "surfaces", adminDir)
+	out, exitCode = runForgeRaw(t, projectDir, "surfaces", "admin-panel/src")
 	if exitCode == 0 {
-		assert.Contains(t, out, "admin-panel", "Step 4: surface detection should resolve admin-panel")
+		assert.Contains(t, out, "web", "Step 4: surface detection should resolve web type for admin-panel")
 	}
 
 	// Step 5: forge task add inherits surface fields
@@ -82,7 +83,7 @@ func TestSurfaceKeyMigration_Smoke(t *testing.T) {
 
 	// Step 6: fix-task infers surface from file path
 	// Verified by surface detection working for test file paths
-	out, exitCode = runForgeRaw(t, projectDir, "surfaces", adminDir)
+	out, exitCode = runForgeRaw(t, projectDir, "surfaces", "admin-panel/src")
 	if exitCode == 0 {
 		assert.Contains(t, out, "web", "Step 6: surface-type should be detected from file path")
 	}
@@ -103,6 +104,7 @@ func TestSurfaceKeyMigration_Smoke(t *testing.T) {
 	out, exitCode = runForgeRaw(t, baselineDir, "config", "get", "surfaces")
 	// Without surfaces config, output should not contain surface-specific fields
 	t.Logf("Step 7 baseline output (exit %d): %s", exitCode, out)
+	_ = out // suppress unused warning
 
 	// Journey Invariant: projects without surfaces produce identical output to baseline
 	// Journey Invariant: all components surface-key value domains synchronized

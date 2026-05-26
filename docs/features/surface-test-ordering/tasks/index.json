@@ -232,7 +232,7 @@
       "dependencies": [
         "fix-9"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "fix-8.md",
       "record": "records/fix-8.md",
       "breaking": true,
@@ -247,7 +247,7 @@
       "dependencies": [
         "fix-10"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "fix-9.md",
       "record": "records/fix-9.md",
       "breaking": true,

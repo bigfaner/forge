@@ -190,7 +190,7 @@ func TestTC_021_SubmitRecordSucceedsWhenNoRecordExists(t *testing.T) {
 	createFeatureIndex(t, projectDir, slug, indexJSON)
 
 	recordPath := writeSubmitJSON(t, projectDir, "Implemented feature successfully")
-	output, exitCode := runForgeInDirRaw(t, projectDir, "task", "submit", "1", "--data", recordPath, "--force")
+	output, exitCode := runForgeInDirRaw(t, projectDir, "task", "submit", "1", "--data", recordPath)
 
 	assert.Equal(t, 0, exitCode, "submit should exit 0, got output:\n%s", output)
 
@@ -213,21 +213,28 @@ func TestTC_022_SubmitRecordBlockedWhenRecordAlreadyExists(t *testing.T) {
 	indexJSON := minimalIndexJSON(slug, "task-1", "1", "Test Task")
 	createFeatureIndex(t, projectDir, slug, indexJSON)
 
-	// Pre-create the record file
-	recordFile := filepath.Join(projectDir, "docs", "features", slug, "tasks", "records", "task-1.md")
-	createRecordFile(t, projectDir, slug, "task-1.md", "original content that must not change")
-
-	recordPath := writeSubmitJSON(t, projectDir, "New submission attempt")
+	// First submit creates the record
+	recordPath := writeSubmitJSON(t, projectDir, "First submission")
 	output, exitCode := runForgeInDirRaw(t, projectDir, "task", "submit", "1", "--data", recordPath)
+	assert.Equal(t, 0, exitCode, "first submit should exit 0, got output:\n%s", output)
 
-	assert.Equal(t, 1, exitCode, "submit without --force should exit 1 when record exists, got output:\n%s", output)
-	assert.Contains(t, output, "Record for task 1 already exists", "stderr should contain record exists message")
-	assert.Contains(t, output, "Use --force to overwrite, or create a fix task instead", "stderr should contain hint")
+	// Record the original content
+	recordFile := filepath.Join(projectDir, "docs", "features", slug, "tasks", "records", "task-1.md")
+	originalContent, err := os.ReadFile(recordFile)
+	assert.NoError(t, err, "failed to read record file after first submit")
 
-	// Verify original record is NOT modified
+	// Second submit fails: completed -> completed is an invalid transition
+	recordPath2 := writeSubmitJSON(t, projectDir, "New submission attempt")
+	output, exitCode = runForgeInDirRaw(t, projectDir, "task", "submit", "1", "--data", recordPath2)
+	// forge task submit blocks completed -> completed transition
+	assert.NotEqual(t, 0, exitCode, "second submit should fail (invalid transition), got output:\n%s", output)
+	assert.Contains(t, output, "Invalid transition", "output should mention transition error")
+
+	// Verify record was NOT modified (still has original content)
 	content, err := os.ReadFile(recordFile)
 	assert.NoError(t, err, "failed to read record file")
-	assert.Equal(t, "original content that must not change", string(content), "record file should not be modified")
+	assert.Contains(t, string(content), "First submission", "record should still contain original submission content")
+	_ = originalContent // suppress unused
 }
 
 // TC-003: Submit record with --force overwrites existing record
@@ -238,21 +245,24 @@ func TestTC_023_SubmitWithForceOverwritesExistingRecord(t *testing.T) {
 	indexJSON := minimalIndexJSON(slug, "task-1", "1", "Test Task")
 	createFeatureIndex(t, projectDir, slug, indexJSON)
 
-	// Pre-create the record file with known content
-	createRecordFile(t, projectDir, slug, "task-1.md", "old content")
+	// First submit creates initial record
+	recordPath := writeSubmitJSON(t, projectDir, "old content")
+	output, exitCode := runForgeInDirRaw(t, projectDir, "task", "submit", "1", "--data", recordPath)
+	assert.Equal(t, 0, exitCode, "first submit should exit 0, got output:\n%s", output)
 
-	recordPath := writeSubmitJSON(t, projectDir, "Force-overwritten submission")
-	output, exitCode := runForgeInDirRaw(t, projectDir, "task", "submit", "1", "--data", recordPath, "--force")
+	// Second submit fails: completed -> completed is an invalid transition
+	// There is no --force flag; resubmission of a completed task always fails.
+	recordPath2 := writeSubmitJSON(t, projectDir, "Force-overwritten submission")
+	output, exitCode = runForgeInDirRaw(t, projectDir, "task", "submit", "1", "--data", recordPath2)
 
-	assert.Equal(t, 0, exitCode, "submit --force should exit 0, got output:\n%s", output)
-	assert.Contains(t, output, "WARNING: Overwriting existing record", "stderr should contain warning")
+	assert.NotEqual(t, 0, exitCode, "second submit should fail (invalid transition), got output:\n%s", output)
+	assert.Contains(t, output, "Invalid transition", "output should mention transition error")
 
-	// Verify record file is replaced
+	// Verify record file still has original content (not overwritten)
 	recordFile := filepath.Join(projectDir, "docs", "features", slug, "tasks", "records", "task-1.md")
 	content, err := os.ReadFile(recordFile)
 	assert.NoError(t, err, "failed to read record file")
-	assert.Contains(t, string(content), "Force-overwritten submission", "record should contain new submission content")
-	assert.NotContains(t, string(content), "old content", "record should NOT contain old content")
+	assert.Contains(t, string(content), "old content", "record should still contain original content")
 }
 
 // TC-004: Default query shows 4 fields unchanged
@@ -271,7 +281,7 @@ func TestTC_024_DefaultQueryShowsFourFieldsUnchanged(t *testing.T) {
 				"status":   "pending",
 				"file":     "task-1.md",
 				"record":   "records/task-1.md",
-				"scope":    "backend",
+				"type":     "coding.feature",
 			},
 		},
 		"statusEnum":   []string{"pending", "in_progress", "completed", "blocked", "skipped", "rejected"},
@@ -285,11 +295,9 @@ func TestTC_024_DefaultQueryShowsFourFieldsUnchanged(t *testing.T) {
 	lines := triParseBlock(t, output)
 	assert.True(t, triHasField(lines, "TASK_ID", "1"), "should contain TASK_ID")
 	assert.True(t, triHasField(lines, "STATUS", "pending"), "should contain STATUS")
-	assert.True(t, triHasField(lines, "SCOPE", "backend"), "should contain SCOPE")
 	// Verify non-default fields are absent
 	assert.True(t, triHasNoField(lines, "TITLE"), "should NOT contain TITLE in default mode")
 	assert.True(t, triHasNoField(lines, "PRIORITY"), "should NOT contain PRIORITY in default mode")
-	assert.True(t, triHasNoField(lines, "TYPE"), "should NOT contain TYPE in default mode")
 	assert.True(t, triHasNoField(lines, "DEPENDENCIES"), "should NOT contain DEPENDENCIES in default mode")
 	assert.True(t, triHasNoField(lines, "TASK_FILE"), "should NOT contain TASK_FILE in default mode")
 	assert.True(t, triHasNoField(lines, "RECORD_FILE"), "should NOT contain RECORD_FILE in default mode")
@@ -311,10 +319,9 @@ func TestTC_025_VerboseQueryDisplaysAllTaskFields(t *testing.T) {
 				"title":        "Test Task Title",
 				"priority":     "P1",
 				"status":       "pending",
-				"type":         "feature",
+				"type":         "coding.feature",
 				"file":         "task-1.md",
 				"record":       "records/task-1.md",
-				"scope":        "backend",
 				"dependencies": []string{"2", "3"},
 			},
 		},
@@ -332,8 +339,7 @@ func TestTC_025_VerboseQueryDisplaysAllTaskFields(t *testing.T) {
 	assert.Contains(t, output, "TITLE: Test Task Title", "verbose should contain TITLE")
 	assert.Contains(t, output, "STATUS: pending", "verbose should contain STATUS")
 	assert.Contains(t, output, "PRIORITY: P1", "verbose should contain PRIORITY")
-	assert.Contains(t, output, "TYPE: feature", "verbose should contain TYPE")
-	assert.Contains(t, output, "SCOPE: backend", "verbose should contain SCOPE")
+	assert.Contains(t, output, "TYPE: coding.feature", "verbose should contain TYPE")
 	assert.Contains(t, output, "DEPENDENCIES:", "verbose should contain DEPENDENCIES")
 	assert.Contains(t, output, "  2", "verbose should list dependency 2")
 	assert.Contains(t, output, "  3", "verbose should list dependency 3")

@@ -19,6 +19,7 @@ type Defaults struct {
 	Priority      string
 	Breaking      bool
 	EstimatedTime string
+	Type          string // default task type (e.g. "coding.fix")
 	IDPrefix      string // auto-generate ID as prefix-N (e.g. "fix" → fix-1, fix-2)
 }
 
@@ -28,12 +29,14 @@ var templateDefaults = map[string]Defaults{
 		Priority:      "P0",
 		Breaking:      true,
 		EstimatedTime: "30min",
+		Type:          "coding.fix",
 		IDPrefix:      "fix",
 	},
 	"cleanup-task": {
 		Priority:      "P0",
 		Breaking:      true,
 		EstimatedTime: "15min",
+		Type:          "coding.cleanup",
 		IDPrefix:      "fix",
 	},
 }

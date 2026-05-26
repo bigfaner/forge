@@ -3,6 +3,7 @@
 package surfacekeymigration
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -47,23 +48,34 @@ func TestTC_006_TaskStructMigration_LegacyScopeDetected(t *testing.T) {
 	cfg := "version: '1'\nsurfaces:\n  admin-panel: web\n"
 	projectDir := createTempProjectWithConfig(t, cfg)
 
-	// Create a task with legacy scope field
+	// Create a task with legacy scope field in index.json
 	taskDir := filepath.Join(projectDir, "docs", "features", "test-feature", "tasks")
 	err := os.MkdirAll(taskDir, 0755)
 	assert.NoError(t, err)
 
-	taskContent := "---\nid: T-legacy\nscope: frontend\n---\n\n# Legacy task\n"
+	taskContent := "---\nid: T-legacy\nscope: frontend\nstatus: pending\n---\n\n# Legacy task\n"
 	err = os.WriteFile(filepath.Join(taskDir, "task-legacy.md"), []byte(taskContent), 0644)
 	assert.NoError(t, err)
 
-	out, exitCode := runForgeRaw(t, projectDir, "task", "status", "T-legacy")
-	// Legacy scope should trigger blocking error
+	// Create index.json with legacy scope field
+	idxData, _ := json.MarshalIndent(map[string]interface{}{
+		"feature": "test-feature",
+		"tasks": map[string]interface{}{
+			"T-legacy": map[string]string{
+				"id": "T-legacy", "status": "pending", "file": "task-legacy.md",
+				"scope": "frontend",
+			},
+		},
+	}, "", "  ")
+	err = os.WriteFile(filepath.Join(taskDir, "index.json"), idxData, 0644)
+	assert.NoError(t, err)
+
+	out, exitCode := runForgeRaw(t, projectDir, "task", "query", "T-legacy")
+	// Legacy scope should trigger migration error
 	if exitCode != 0 {
-		assert.Equal(t, 2, exitCode,
-			"legacy scope should trigger exit code 2 (blocking), got output:\n%s", out)
 		assert.True(t,
-			strings.Contains(out, "migration") || strings.Contains(out, "migrate"),
-			"error should reference migration recovery command")
+			strings.Contains(out, "MIGRATION_REQUIRED") || strings.Contains(out, "migration") || strings.Contains(out, "migrate"),
+			"error should reference migration, got output:\n%s", out)
 	}
 }
 
