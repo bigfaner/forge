@@ -1,0 +1,199 @@
+{
+  "feature": "pipeline-spec-code-alignment",
+  "proposal": "docs/proposals/pipeline-spec-code-alignment/proposal.md",
+  "created": "2026-05-27",
+  "tasks": {
+    "1-config-infer-cleanup": {
+      "id": "1",
+      "title": "Clean up config.go dead code and infer.go missing cases",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "1-config-infer-cleanup.md",
+      "record": "records/1-config-infer-cleanup.md",
+      "type": "coding.cleanup"
+    },
+    "10-submit-task-path": {
+      "id": "10",
+      "title": "Fix submit-task record format path resolution",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "9"
+      ],
+      "status": "pending",
+      "file": "10-submit-task-path.md",
+      "record": "records/10-submit-task-path.md",
+      "type": "doc"
+    },
+    "11-architecture-conventions": {
+      "id": "11",
+      "title": "Fix architecture and conventions docs",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "10"
+      ],
+      "status": "pending",
+      "file": "11-architecture-conventions.md",
+      "record": "records/11-architecture-conventions.md",
+      "type": "doc"
+    },
+    "12-templates-guidance": {
+      "id": "12",
+      "title": "Complete templates and guidance docs",
+      "priority": "P2",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "11"
+      ],
+      "status": "pending",
+      "file": "12-templates-guidance.md",
+      "record": "records/12-templates-guidance.md",
+      "type": "doc"
+    },
+    "2-quality-gate-template-fix": {
+      "id": "2",
+      "title": "Fix quality_gate.go and template.go for cleanup-task and fix-task",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-quality-gate-template-fix.md",
+      "record": "records/2-quality-gate-template-fix.md",
+      "type": "coding.enhancement"
+    },
+    "3-submit-build-legacy-scope": {
+      "id": "3",
+      "title": "Fix submit.go scope hardcode and build.go legacy Scope field",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "2"
+      ],
+      "status": "pending",
+      "file": "3-submit-build-legacy-scope.md",
+      "record": "records/3-submit-build-legacy-scope.md",
+      "type": "coding.fix"
+    },
+    "4-validtypes-surface-suffix": {
+      "id": "4",
+      "title": "Add surface-suffixed type variants to ValidTypes",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "3"
+      ],
+      "status": "pending",
+      "file": "4-validtypes-surface-suffix.md",
+      "record": "records/4-validtypes-surface-suffix.md",
+      "type": "coding.enhancement"
+    },
+    "5-prompt-template-fixes": {
+      "id": "5",
+      "title": "Fix prompt template references (test-run.md and SCOPE labels)",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "4"
+      ],
+      "status": "pending",
+      "file": "5-prompt-template-fixes.md",
+      "record": "records/5-prompt-template-fixes.md",
+      "type": "coding.enhancement"
+    },
+    "6-ghost-fields-cleanup": {
+      "id": "6",
+      "title": "Clean up ghost fields and stale references in skill docs",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "5"
+      ],
+      "status": "pending",
+      "file": "6-ghost-fields-cleanup.md",
+      "record": "records/6-ghost-fields-cleanup.md",
+      "type": "doc"
+    },
+    "7-surface-type-consistency": {
+      "id": "7",
+      "title": "Fix surface and type consistency in docs",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "6"
+      ],
+      "status": "pending",
+      "file": "7-surface-type-consistency.md",
+      "record": "records/7-surface-type-consistency.md",
+      "type": "doc"
+    },
+    "8-dispatcher-pipeline-logic": {
+      "id": "8",
+      "title": "Fix dispatcher and pipeline logic in docs",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "7"
+      ],
+      "status": "pending",
+      "file": "8-dispatcher-pipeline-logic.md",
+      "record": "records/8-dispatcher-pipeline-logic.md",
+      "type": "doc"
+    },
+    "9-fix-task-template-vars": {
+      "id": "9",
+      "title": "Add fix-task template variables to all creation points",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "8"
+      ],
+      "status": "pending",
+      "file": "9-fix-task-template-vars.md",
+      "record": "records/9-fix-task-template-vars.md",
+      "type": "doc"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "pending",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "scope": "all",
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "9"
+      ],
+      "status": "pending",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "scope": "all",
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
