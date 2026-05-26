@@ -164,7 +164,7 @@ Surface-required Outcomes MUST be derived for every matching Step. They are not 
 - CLI: `not-found` (resource access Steps), `already-exists` (resource creation Steps)
 - API: `unauthorized` (authenticated endpoint Steps)
 - TUI: `timeout` (async Cmd Steps, per rules/tui-async.md)
-- WebUI: `validation-error` (form submission Steps), `session-expired` (session-dependent Steps)
+- Web: `validation-error` (form submission Steps), `session-expired` (session-dependent Steps)
 - Mobile: best-effort, no mandatory Outcomes
 </HARD-RULE>
 

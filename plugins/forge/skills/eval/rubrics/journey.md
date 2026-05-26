@@ -90,9 +90,9 @@ Evaluates whether the Journey follows the surface type's `required_outcomes` rul
 
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| Mandatory derived Outcomes from surface `required_outcomes` are present | 0-60 | Check the surface type's `required_outcomes` rules. For CLI: `not-found` + `already-exists` must be considered. For WebUI: `validation-error` + `session-expired`. For API: `unauthorized` per authenticated endpoint. Score 0 if mandatory Outcomes are completely absent. |
-| Test strategy proportions match surface guidance | 0-50 | CLI/TUI: Contract 80% / Journey 20%. WebUI/API: balanced 50/50. Mobile: Journey skeleton + deep link focus. Verify that Outcome density and depth reflect these proportions. |
-| Surface-specific environment and execution assumptions are realistic | 0-40 | CLI: subprocess isolation, exit code checks. TUI: terminal I/O, timeout handling. WebUI: browser interaction, async operations. API: HTTP methods, auth headers. Mobile: Maestro YAML, deep links. Unrealistic assumptions (e.g., asserting DOM structure for CLI) indicate poor surface adaptation. |
+| Mandatory derived Outcomes from surface `required_outcomes` are present | 0-60 | Check the surface type's `required_outcomes` rules. For CLI: `not-found` + `already-exists` must be considered. For Web: `validation-error` + `session-expired`. For API: `unauthorized` per authenticated endpoint. Score 0 if mandatory Outcomes are completely absent. |
+| Test strategy proportions match surface guidance | 0-50 | CLI/TUI: Contract 80% / Journey 20%. Web/API: balanced 50/50. Mobile: Journey skeleton + deep link focus. Verify that Outcome density and depth reflect these proportions. |
+| Surface-specific environment and execution assumptions are realistic | 0-40 | CLI: subprocess isolation, exit code checks. TUI: terminal I/O, timeout handling. Web: browser interaction, async operations. API: HTTP methods, auth headers. Mobile: Maestro YAML, deep links. Unrealistic assumptions (e.g., asserting DOM structure for CLI) indicate poor surface adaptation. |
 
 ### 6. Internal Consistency (一致性) — 150 pts
 
@@ -108,7 +108,7 @@ Evaluates whether Journey Invariants hold across all Steps and cross-Step refere
 
 - **Missing required field/section**: 0 pts for the affected dimension
 - **Hallucinated unclassified claim**: -30 pts per instance (Fact Alignment)
-- **Surface type violation** (e.g., WebUI assertions in CLI Journey): -25 pts per instance (Surface Fitness)
+- **Surface type violation** (e.g., Web assertions in CLI Journey): -25 pts per instance (Surface Fitness)
 - **Invariant violation**: -40 pts per violation (Internal Consistency)
 - **Precondition overlap across Outcomes**: -20 pts per ambiguous pair (Precondition Exclusivity)
 

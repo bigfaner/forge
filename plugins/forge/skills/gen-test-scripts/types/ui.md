@@ -169,7 +169,7 @@ Beyond the shared antipattern guards in `_shared.md` (Sleep-Based Waits, Hardcod
 
 ## Test Ratio Constraint
 
-WebUI surface targets a **balanced 50/50** ratio between Contract tests and Journey smoke tests.
+Web surface targets a **balanced 50/50** ratio between Contract tests and Journey smoke tests.
 
 - **Formula**: `Contract test functions / (Contract test functions + Journey smoke test functions) × 100%`
 - **Target**: Approximately 50% Contract tests, 50% Journey smoke tests

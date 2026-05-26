@@ -82,7 +82,7 @@ Determine the project's interface surface type to drive per-surface generation s
 Load `rules/step-0.5-validation.md` for the complete surface detection and strategy application logic, including:
 - Reading surface configuration from `.forge/config.yaml`
 - Auto-detection fallback from code reconnaissance
-- Surface strategy table (CLI/TUI/WebUI/API/Mobile ratio targets)
+- Surface strategy table (CLI/TUI/Web/API/Mobile ratio targets)
 - Surface-driven generation strategy for Step 3.0
 
 ## Test Type Terminology
@@ -209,7 +209,7 @@ For each Contract step, generate test code following the resolved framework's co
 
 ### 3.0 Surface-Driven Generation Strategy
 
-Apply the surface type detected in Step 0.5 to constrain the generation plan. Load `rules/step-0.5-validation.md` section "Surface-Driven Generation Strategy" for per-surface ratio targets, execution models, and generation constraints (CLI, TUI, WebUI, API, Mobile).
+Apply the surface type detected in Step 0.5 to constrain the generation plan. Load `rules/step-0.5-validation.md` section "Surface-Driven Generation Strategy" for per-surface ratio targets, execution models, and generation constraints (CLI, TUI, Web, API, Mobile).
 
 **Test isolation**: Generated tests must follow isolation conventions per `rules/test-isolation.md` (located in the run-tests skill directory, resolve relative to the skills parent directory) — every test must own its environment, no dependency on real project state.
 

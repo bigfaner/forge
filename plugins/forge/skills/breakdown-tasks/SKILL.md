@@ -195,6 +195,21 @@ forge task validate-index docs/features/<slug>/tasks/index.json
 ## Step 7: Update Manifest
 Read `templates/manifest-update-tasks.md`. Fill 5-column traceability (PRD Section | Design Section | UI Component | Placement | Tasks; "---" for N/A). Advance status to `tasks`.
 
+## Step 8: Commit Planning Artifacts
+
+Only execute if Step 6 validation passed. If validation failed, fix issues first.
+
+<HARD-RULE>
+Stage only planning artifact paths — never use `git add -A` or `git add .`.
+</HARD-RULE>
+
+```bash
+git add docs/features/<slug>/tasks/*.md docs/features/<slug>/tasks/index.json docs/features/<slug>/manifest.md docs/features/<slug>/prd/ docs/features/<slug>/design/ docs/features/<slug>/ui/
+git commit -m "docs(<slug>): add breakdown-tasks planning artifacts"
+```
+
+Other uncommitted changes remain unstaged.
+
 ## Output Checklist
 - [ ] `tasks/phase-inventory.json` written
 - [ ] Task files follow naming conventions
@@ -209,3 +224,4 @@ Read `templates/manifest-update-tasks.md`. Fill 5-column traceability (PRD Secti
 - [ ] User Stories populated
 - [ ] Test tasks match interface config
 - [ ] `manifest.md` updated with traceability + `status: tasks`
+- [ ] Planning artifacts committed (task .md files, index.json, manifest.md)

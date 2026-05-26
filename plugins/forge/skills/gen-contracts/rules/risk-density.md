@@ -53,7 +53,7 @@ gen-contracts reads the surface type's required_outcomes from the corresponding 
 | CLI     | `rules/surface-cli.md` | `not-found`, `already-exists` |
 | API     | `rules/surface-api.md` | `unauthorized` (for authenticated endpoints) |
 | TUI     | `rules/surface-tui.md` | `timeout` (for async Cmds) |
-| WebUI   | `rules/surface-webui.md` | `validation-error`, `session-expired` |
+| Web   | `rules/surface-web.md` | `validation-error`, `session-expired` |
 | Mobile  | `rules/surface-mobile.md` | (best-effort, no mandatory Outcomes) |
 
 ### Derivation Rules
@@ -63,7 +63,7 @@ gen-contracts reads the surface type's required_outcomes from the corresponding 
    - CLI: every Step that accesses a resource -> add `not-found`; every Step that creates a resource -> add `already-exists`
    - API: every Step targeting an authenticated endpoint -> add `unauthorized`
    - TUI: every Step with async Cmd -> add `timeout` (per `rules/tui-async.md`)
-   - WebUI: every Step with form submission -> add `validation-error`; every Step with session-dependent state -> add `session-expired`
+   - Web: every Step with form submission -> add `validation-error`; every Step with session-dependent state -> add `session-expired`
 3. Required Outcomes count toward the density target but do NOT count against it (i.e., they are minimum guarantees, not maximum limits)
 
 ## Inferred Boundary Outcome Annotation

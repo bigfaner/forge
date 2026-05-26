@@ -35,7 +35,7 @@ Before entering the R2L loop, verify the execution environment is ready:
 2. Check surface-specific prerequisites:
    - **CLI/TUI**: Binary can be compiled (`go build`, `cargo build`, etc.). Build command derived from Fact Table or Convention.
    - **API**: Service is reachable at the configured base URL. Database (if applicable) is accessible.
-   - **WebUI**: Dev server is running and responds to health check.
+   - **Web**: Dev server is running and responds to health check.
    - **Mobile**: N/A -- Mobile skeleton tests are Maestro YAML and do not execute code.
 3. If any prerequisite fails:
    - Log: "R2L environment not ready: <specific missing prerequisite>. Skipping Run-to-Learn."
