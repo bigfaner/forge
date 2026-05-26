@@ -26,43 +26,9 @@ docs/
 - **Documents** table: lists all document paths and auto-generated summaries
 - **Tasks** table: task ID, title, status, and file path for each task
 - **Status** (feature-level): prd → design → tasks → in-progress → completed
-  - Not to be confused with task-level statuses in index.json: pending, in_progress, completed, blocked, skipped, rejected
+  - Not to be confused with task-level statuses in index.json: pending, in_progress, completed, blocked, suspended, skipped, rejected
 
-## Execution Rules
-
-### Quality Gate Protocol
-
-All task-executing workflows MUST pass the quality gate before recording completion. Tasks with a `doc*` type prefix skip the quality gate; only `coding.*` type prefix tasks are gated.
-
-### Eval Quality Gate (Test Pipeline)
-
-The test pipeline has a multi-stage eval gate that validates test artifact quality:
-
-```
-eval-journey → eval-contract → confidence rating
-     ↓               ↓                ↓
-  pass/fail       pass/fail      informational (never blocks)
-```
-
-**Serial dependency**: if eval-journey fails, do NOT run eval-contract. If eval-contract fails, do NOT run gen-test-scripts. Confidence rating is informational — LOW marks tests for REVIEW but does NOT block the pipeline.
-
-**Commands**: `/eval-journey`, `/eval-contract` (each uses the eval skill with type-specific rubrics).
-
-**Pass/fail**: determined by rubric score thresholds, NOT hardcoded in code. Default target score is defined in each rubric's frontmatter.
-
-**Report**: after all eval stages complete, results are aggregated into a unified quality report covering:
-- eval-journey score and pass/fail
-- eval-contract score and pass/fail
-- confidence distribution (HIGH/MEDIUM/LOW counts)
-- REVIEW-marked tests requiring manual verification
-
-**Relationship with BIZ-quality-gate-001**: both gates run serially and independently. BIZ-quality-gate-001 (compile → fmt → lint → test → e2e) validates source code quality during development. The eval gate validates test artifact quality during the test generation phase. The intersection point: BIZ-quality-gate-001's e2e results feed into the Fact Table as runtime facts, which influence the confidence rating.
-
-### All-Completed Hook
-
-After all tasks done, `forge quality-gate` runs as a final safety net (project-wide). It automatically skips docs-only features. On failure, a P0 fix-task is automatically created with surface-key/surface-type inferred from the failing source files via `forge surfaces --json <path>` — run `forge task claim` to pick it up. If surface inference fails (no surfaces configured, no match), the fix-task is created with empty surface fields and proceeds normally.
-
-### Forge CLI
+## Forge CLI
 
 Run `forge -h` or `forge [command] -h` for full reference.
 
@@ -73,3 +39,8 @@ Run `forge -h` or `forge [command] -h` for full reference.
 **Task lifecycle** — error recovery:
 - `forge task transition <id> <status> --reason "..."` — manually transition (unblock, skip, reject)
 - `forge task reopen <id>` — re-activate a rejected/skipped task
+
+## Terminology
+
+- **Surface**: a testable system entry point managed by Forge (e.g. a web app, an API server, a CLI binary). Each Surface is identified by a user-defined **Surface Key** (alphanumeric + `-_`) configured in `.forge/config.yaml`.
+- **Surface Type**: the kind of surface — one of `web`, `api`, `cli`, `tui`, `mobile`. Determines the orchestration strategy for build/dev/test (e.g. `web`/`api` require probe + teardown; `cli`/`tui` use build → dev → test). Auto-detected via `forge surfaces detect`.
