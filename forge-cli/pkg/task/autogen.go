@@ -270,6 +270,8 @@ func GetQuickTestTasks(surfaces map[string]string, executionOrder []string, auto
 	var tasks []AutoGenTaskDef
 
 	// Staged test pipeline (gated by auto.Test.Quick)
+	// Quick mode: gen-journeys → run-tests(serial) → verify-regression
+	// (no gen-contracts or gen-scripts in Quick mode)
 	if auto.Test.Quick {
 		// Single gen-journeys task covering all configured surfaces (Stage 1)
 		tasks = append(tasks, AutoGenTaskDef{
@@ -279,24 +281,7 @@ func GetQuickTestTasks(surfaces map[string]string, executionOrder []string, auto
 			StrategyKind: "interface",
 		})
 
-		// Gen Contracts (Stage 2: depends on all gen-journeys)
-		tasks = append(tasks, AutoGenTaskDef{
-			Key: "gen-contracts", ID: "T-test-gen-contracts",
-			Title: "Generate Test Contracts", Priority: "P1", EstimatedTime: "30-45min",
-			Type: TypeTestGenContracts,
-		})
-
-		// Per-type gen-scripts (Stage 3: all parallel, depend on gen-contracts)
-		for _, typ := range surfaceTypes {
-			tasks = append(tasks, AutoGenTaskDef{
-				Key: "gen-test-scripts-" + typ, ID: "T-test-gen-scripts-" + typ,
-				Title: fmt.Sprintf("Generate Test Scripts (%s)", typ), Priority: "P1", EstimatedTime: "1-2h",
-				Type: TypeTestGenScripts, SurfaceType: typ,
-				StrategyKind: "generate",
-			})
-		}
-
-		// Per-surface-key run-test tasks (serial chain, Stage 4)
+		// Per-surface-key run-test tasks (serial chain, Stage 2)
 		if singleSurface {
 			// Single surface: degenerate to no suffix T-test-run
 			tasks = append(tasks, AutoGenTaskDef{
@@ -320,7 +305,7 @@ func GetQuickTestTasks(surfaces map[string]string, executionOrder []string, auto
 			}
 		}
 
-		// Shared verify-regression (Stage 5: depends on last run-test)
+		// Shared verify-regression (Stage 3: depends on last run-test)
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "verify-regression", ID: "T-test-verify-regression",
 			Title: "Verify Full E2E Regression", Priority: "P1", EstimatedTime: "15-30min",
@@ -637,29 +622,20 @@ func resolveBreakdownDeps(tasks []AutoGenTaskDef, surfaceTypes []string, surface
 // For multi-surface projects: T-test-gen-journeys is the direct upstream of all T-test-run-{key} tasks.
 // T-test-run-{key} tasks form a serial chain ordered by executionOrder.
 // T-test-verify-regression depends on the last run-test in the chain.
-func resolveQuickDeps(tasks []AutoGenTaskDef, surfaceTypes []string, surfaces map[string]string, executionOrder []string, auto forgeconfig.AutoConfig) {
+func resolveQuickDeps(tasks []AutoGenTaskDef, _ []string, surfaces map[string]string, executionOrder []string, auto forgeconfig.AutoConfig) {
 	if !auto.Test.Quick && !auto.ConsolidateSpecs.Quick && !auto.CleanCode.Quick && !auto.Validation.Quick {
 		return // no tasks to wire
 	}
 
 	if auto.Test.Quick {
-		genContractsIdx := findTaskIndexOrPanic(tasks, "T-test-gen-contracts")
 		verifyIdx := findTaskIndexOrPanic(tasks, "T-test-verify-regression")
 
-		// gen-contracts depends on single gen-journeys task (Stage 2)
-		genJourneysIdx := findTaskIndexOrPanic(tasks, "T-test-gen-journeys")
-		tasks[genContractsIdx].Dependencies = []string{tasks[genJourneysIdx].ID}
+		// Wire run-test task(s): first run-test depends on gen-journeys
+		// (no gen-contracts/gen-scripts in Quick mode)
+		// Serial chain: T-test-run-{key1} -> T-test-run-{key2} -> ...
+		lastRunID := wireQuickRunTestChain(tasks, surfaces, executionOrder)
 
-		// gen-scripts depend on gen-contracts (Stage 3)
-		for _, typ := range surfaceTypes {
-			idx := findTaskIndexOrPanic(tasks, "T-test-gen-scripts-"+typ)
-			tasks[idx].Dependencies = []string{tasks[genContractsIdx].ID}
-		}
-
-		// Wire run-test task(s) and get the ID of the last one in the chain
-		lastRunID := wireRunTestChain(tasks, surfaceTypes, surfaces, executionOrder)
-
-		// verify-regression depends on last run-test (Stage 5)
+		// verify-regression depends on last run-test (Stage 3)
 		tasks[verifyIdx].Dependencies = []string{lastRunID}
 	}
 
@@ -682,7 +658,7 @@ func resolveQuickDeps(tasks []AutoGenTaskDef, surfaceTypes []string, surfaces ma
 	// T-clean-code depends on last business task (resolved by caller via ResolveFirstTestDep)
 }
 
-// wireRunTestChain wires the run-test task(s) dependency chain.
+// wireRunTestChain wires the run-test task(s) dependency chain for Breakdown mode.
 // For single-surface projects: T-test-run depends on all gen-scripts.
 // For multi-surface projects: first T-test-run-{key} depends on all gen-scripts,
 // subsequent T-test-run-{key} tasks form a serial chain.
@@ -717,6 +693,43 @@ func wireRunTestChain(tasks []AutoGenTaskDef, surfaceTypes []string, surfaces ma
 				genDeps = append(genDeps, tasks[idx].ID)
 			}
 			tasks[runIdx].Dependencies = genDeps
+		} else {
+			// Subsequent run-test depends on previous run-test (serial chain)
+			tasks[runIdx].Dependencies = []string{prevRunID}
+		}
+		prevRunID = runID
+	}
+
+	return prevRunID
+}
+
+// wireQuickRunTestChain wires the run-test task(s) dependency chain for Quick mode.
+// Quick mode skips gen-contracts and gen-scripts: first run-test depends on gen-journeys.
+// For single-surface projects: T-test-run depends on gen-journeys.
+// For multi-surface projects: first T-test-run-{key} depends on gen-journeys,
+// subsequent T-test-run-{key} tasks form a serial chain.
+// Returns the ID of the last run-test task in the chain.
+func wireQuickRunTestChain(tasks []AutoGenTaskDef, surfaces map[string]string, executionOrder []string) string {
+	genJourneysID := "T-test-gen-journeys"
+	singleSurface := isSingleSurface(surfaces)
+
+	if singleSurface {
+		// Single surface: T-test-run depends on gen-journeys
+		runIdx := findTaskIndexOrPanic(tasks, "T-test-run")
+		tasks[runIdx].Dependencies = []string{genJourneysID}
+		return tasks[runIdx].ID
+	}
+
+	// Multi-surface: serial chain
+	// First run-test depends on gen-journeys, subsequent ones depend on previous
+	var prevRunID string
+	for i, key := range executionOrder {
+		runID := "T-test-run-" + key
+		runIdx := findTaskIndexOrPanic(tasks, runID)
+
+		if i == 0 {
+			// First run-test depends on gen-journeys
+			tasks[runIdx].Dependencies = []string{genJourneysID}
 		} else {
 			// Subsequent run-test depends on previous run-test (serial chain)
 			tasks[runIdx].Dependencies = []string{prevRunID}

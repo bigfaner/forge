@@ -65,7 +65,7 @@
         "2",
         "4"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "5-update-dependency-resolution.md",
       "record": "records/5-update-dependency-resolution.md",
       "surface-type": "cli",
