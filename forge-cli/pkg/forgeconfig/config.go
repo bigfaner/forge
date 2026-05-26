@@ -160,9 +160,15 @@ func (s *SurfacesMap) UnmarshalYAML(value *yaml.Node) error {
 
 	case yaml.MappingNode:
 		// Map form: {frontend: web, backend: api}
+		// Normalize keys (spaces/special chars -> hyphens, uppercase -> lowercase)
+		// The "." key is the scalar-form marker and must be preserved as-is.
 		result := make(SurfacesMap, len(value.Content)/2)
 		for i := 0; i < len(value.Content); i += 2 {
-			key := value.Content[i].Value
+			raw := value.Content[i].Value
+			key := raw
+			if raw != "." {
+				key = normalizeSurfaceKeyValue(raw)
+			}
 			val := strings.ToLower(value.Content[i+1].Value)
 			result[key] = val
 		}
@@ -199,14 +205,15 @@ func (s SurfacesMap) MarshalYAML() (interface{}, error) {
 
 // Config represents the .forge/config.yaml structure.
 type Config struct {
-	Version       string          `yaml:"version,omitempty"`
-	ProjectType   string          `yaml:"project-type,omitempty"`
-	Auto          *AutoConfig     `yaml:"auto,omitempty"`
-	Worktree      *WorktreeConfig `yaml:"worktree,omitempty"`
-	Coverage      *CoverageConfig `yaml:"coverage,omitempty"`
-	TestFramework string          `yaml:"test-framework,omitempty"`
-	Languages     []string        `yaml:"languages,omitempty"`
-	Surfaces      SurfacesMap     `yaml:"surfaces"`
+	Version        string          `yaml:"version,omitempty"`
+	ProjectType    string          `yaml:"project-type,omitempty"`
+	Auto           *AutoConfig     `yaml:"auto,omitempty"`
+	Worktree       *WorktreeConfig `yaml:"worktree,omitempty"`
+	Coverage       *CoverageConfig `yaml:"coverage,omitempty"`
+	TestFramework  string          `yaml:"test-framework,omitempty"`
+	Languages      []string        `yaml:"languages,omitempty"`
+	Surfaces       SurfacesMap     `yaml:"surfaces"`
+	ExecutionOrder []string        `yaml:"execution-order,omitempty"`
 }
 
 // Valid project type values.
@@ -271,6 +278,11 @@ func ReadConfig(projectRoot string) (*Config, error) {
 	// v3.0.x migration: detect old key "e2eTest" and map its value to Test field.
 	// To be removed in v3.1.0 — v3.1.0 will error on old key instead.
 	migrateOldE2eTestKey(data, &cfg)
+
+	// Validate surface keys and execution-order at config load time (fail fast)
+	if err := validateSurfacesConfig(&cfg); err != nil {
+		return nil, err
+	}
 
 	return &cfg, nil
 }
@@ -806,6 +818,30 @@ func writeConfig(projectRoot string, cfg *Config) error {
 
 	if err := os.WriteFile(path, out, 0o644); err != nil {
 		return fmt.Errorf("write config: %w", err)
+	}
+
+	return nil
+}
+
+// validateSurfacesConfig runs all surface-related validations at config load time.
+// This ensures fail-fast behavior: errors are caught immediately rather than at build time.
+// Validations:
+//   - Surface-key format: keys must match [a-z][a-z0-9-]* after normalization
+//   - Execution-order references: each key must exist in surfaces map
+//   - Same-type conflict: multiple surfaces with the same type require explicit execution-order
+func validateSurfacesConfig(cfg *Config) error {
+	if len(cfg.Surfaces) == 0 {
+		return nil
+	}
+
+	// Validate surface-key format (after normalization in UnmarshalYAML)
+	if err := ValidateSurfaceKeys(cfg.Surfaces); err != nil {
+		return fmt.Errorf("config validation: %w", err)
+	}
+
+	// Validate execution-order references and same-type conflicts
+	if err := ValidateExecutionOrder(cfg.Surfaces, cfg.ExecutionOrder); err != nil {
+		return fmt.Errorf("config validation: %w", err)
 	}
 
 	return nil

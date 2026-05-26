@@ -18,8 +18,8 @@ import (
 func TestTC_041_ExecuteDev_BackgroundStart(t *testing.T) {
 	projectDir := createProjectWithTask(t, "web")
 
-	out, exitCode := runForgeRaw(t, projectDir, "run-tests")
-	t.Logf("run-tests dev step output (exit %d): %s", exitCode, out)
+	out, exitCode := runForgeRaw(t, projectDir, "test", "run-journey", "test-journey")
+	t.Logf("test run-journey dev step output (exit %d): %s", exitCode, out)
 	// Success: dev server started, PID recorded
 }
 
@@ -29,7 +29,7 @@ func TestTC_042_ExecuteDev_DevFailure(t *testing.T) {
 	// Create project with web surface but no dev server capability
 	projectDir := createProjectWithTask(t, "web")
 
-	out, exitCode := runForgeRaw(t, projectDir, "run-tests")
+	out, exitCode := runForgeRaw(t, projectDir, "test", "run-journey", "test-journey")
 	if exitCode != 0 {
 		// Dev failure should trigger teardown
 		assert.True(t,
@@ -43,7 +43,7 @@ func TestTC_042_ExecuteDev_DevFailure(t *testing.T) {
 func TestTC_043_ExecuteDev_StartupTimeout(t *testing.T) {
 	projectDir := createProjectWithTask(t, "web")
 
-	out, exitCode := runForgeRaw(t, projectDir, "run-tests")
+	out, exitCode := runForgeRaw(t, projectDir, "test", "run-journey", "test-journey")
 	if exitCode != 0 && strings.Contains(out, "timeout") {
 		assert.True(t,
 			outputContainsRecoveryHint(out),

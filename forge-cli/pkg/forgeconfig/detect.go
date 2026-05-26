@@ -3,6 +3,7 @@ package forgeconfig
 import (
 	"fmt"
 	"log/slog"
+	"sort"
 )
 
 // KnownSurfaceTypes is the set of valid surface type values.
@@ -44,7 +45,18 @@ func SurfaceTypes(surfaces map[string]string) []string {
 			types = append(types, typ)
 		}
 	}
+	sort.Strings(types)
 	return types
+}
+
+// ReadExecutionOrder reads the execution-order field from .forge/config.yaml.
+// Returns nil (no error) when execution-order is not configured or empty.
+func ReadExecutionOrder(projectRoot string) ([]string, error) {
+	cfg, err := ReadConfig(projectRoot)
+	if err != nil || cfg == nil {
+		return nil, nil
+	}
+	return cfg.ExecutionOrder, nil
 }
 
 // ValidateSurfaceTypes checks surfaces for unknown type values and logs warnings.

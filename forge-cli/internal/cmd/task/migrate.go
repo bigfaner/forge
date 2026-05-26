@@ -83,7 +83,7 @@ func runMigrate(_ *cobra.Command, _ []string) error {
 // inferTypeForTask returns the inferred type for a task, using the task's
 // existing type if already set and non-empty, otherwise using InferType.
 func inferTypeForTask(t task.Task) string {
-	inferred := task.InferType(t.ID)
+	inferred := task.InferType(t.ID, nil)
 	if inferred == "" {
 		inferred = task.TypeCodingFeature
 	}

@@ -18,8 +18,8 @@ import (
 func TestTC_044_ExecuteProbe_Success(t *testing.T) {
 	projectDir := createProjectWithTask(t, "web")
 
-	out, exitCode := runForgeRaw(t, projectDir, "run-tests")
-	t.Logf("run-tests probe step output (exit %d): %s", exitCode, out)
+	out, exitCode := runForgeRaw(t, projectDir, "test", "run-journey", "test-journey")
+	t.Logf("test run-journey probe step output (exit %d): %s", exitCode, out)
 }
 
 // Traceability: TC-045 -> Contract automated-test-orchestration/step-4 Outcome "probe-retryable-failure"
@@ -27,7 +27,7 @@ func TestTC_044_ExecuteProbe_Success(t *testing.T) {
 func TestTC_045_ExecuteProbe_RetryableFailure(t *testing.T) {
 	projectDir := createProjectWithTask(t, "web")
 
-	out, exitCode := runForgeRaw(t, projectDir, "run-tests")
+	out, exitCode := runForgeRaw(t, projectDir, "test", "run-journey", "test-journey")
 	if exitCode == 1 {
 		// Retryable failure: teardown executed, HARD-GATE enforced
 		assert.True(t,
@@ -41,7 +41,7 @@ func TestTC_045_ExecuteProbe_RetryableFailure(t *testing.T) {
 func TestTC_046_ExecuteProbe_BlockingFailure(t *testing.T) {
 	projectDir := createProjectWithTask(t, "web")
 
-	out, exitCode := runForgeRaw(t, projectDir, "run-tests")
+	out, exitCode := runForgeRaw(t, projectDir, "test", "run-journey", "test-journey")
 	if exitCode == 2 {
 		// Blocking failure: teardown executed, HARD-GATE enforced
 		t.Logf("probe blocking failure output: %s", out)
@@ -53,7 +53,7 @@ func TestTC_046_ExecuteProbe_BlockingFailure(t *testing.T) {
 func TestTC_047_ExecuteProbe_DevCrashDuringProbe(t *testing.T) {
 	projectDir := createProjectWithTask(t, "web")
 
-	out, exitCode := runForgeRaw(t, projectDir, "run-tests")
+	out, exitCode := runForgeRaw(t, projectDir, "test", "run-journey", "test-journey")
 	// Dev crash during probe: retries exhaust, teardown skips missing PID
 	t.Logf("dev crash during probe output (exit %d): %s", exitCode, out)
 }
@@ -63,7 +63,7 @@ func TestTC_047_ExecuteProbe_DevCrashDuringProbe(t *testing.T) {
 func TestTC_048_ExecuteProbe_ValidationError(t *testing.T) {
 	projectDir := createProjectWithTask(t, "web")
 
-	out, exitCode := runForgeRaw(t, projectDir, "run-tests")
+	out, exitCode := runForgeRaw(t, projectDir, "test", "run-journey", "test-journey")
 	if exitCode == 2 && strings.Contains(out, "configuration") {
 		assert.True(t,
 			outputContainsRecoveryHint(out),

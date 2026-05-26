@@ -24,8 +24,22 @@ var validationAuto = forgeconfig.AutoConfig{
 	Validation: forgeconfig.ModeToggle{Quick: true, Full: true},
 }
 
+// scalarSurface creates a single-surface (scalar form) surfaces map for tests.
+func scalarSurface(typ string) map[string]string {
+	return map[string]string{".": typ}
+}
+
+// multiSurface creates a multi-surface map from alternating key-type pairs.
+func multiSurface(keyTypes ...string) map[string]string {
+	m := make(map[string]string, len(keyTypes)/2)
+	for i := 0; i+1 < len(keyTypes); i += 2 {
+		m[keyTypes[i]] = keyTypes[i+1]
+	}
+	return m
+}
+
 func TestGetBreakdownTestTasks_EmptyInterfaces(t *testing.T) {
-	tasks := GetBreakdownTestTasks(nil, defaultAuto)
+	tasks := GetBreakdownTestTasks(nil, nil, defaultAuto)
 
 	if len(tasks) != 0 {
 		t.Fatalf("expected 0 tasks with empty interfaces, got %d", len(tasks))
@@ -33,14 +47,14 @@ func TestGetBreakdownTestTasks_EmptyInterfaces(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_SingleType(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]string{"cli"}, defaultAuto)
+	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto)
 
-	// gen-journeys-cli + eval-journey + gen-contracts + eval-contract + gen-scripts-cli + run + verify-regression + consolidate = 8
+	// gen-journeys + eval-journey + gen-contracts + eval-contract + gen-scripts-cli + run + verify-regression + consolidate = 8
 	if len(tasks) != 8 {
 		t.Fatalf("expected 8 tasks, got %d", len(tasks))
 	}
 
-	wantIDs := []string{"T-test-gen-journeys-cli", "T-eval-journey", "T-test-gen-contracts", "T-eval-contract", "T-test-gen-scripts-cli", "T-test-run", "T-test-verify-regression", "T-specs-consolidate"}
+	wantIDs := []string{"T-test-gen-journeys", "T-eval-journey", "T-test-gen-contracts", "T-eval-contract", "T-test-gen-scripts-cli", "T-test-run", "T-test-verify-regression", "T-specs-consolidate"}
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
 			t.Errorf("tasks[%d].ID = %q, want %q", i, tasks[i].ID, want)
@@ -48,8 +62,8 @@ func TestGetBreakdownTestTasks_SingleType(t *testing.T) {
 	}
 
 	// Dependency chain: eval-journey -> gen-journeys, gen-contracts -> eval-journey, eval-contract -> gen-contracts, gen-scripts -> eval-contract, run -> gen-scripts, verify -> run, consolidate -> verify
-	if tasks[1].Dependencies[0] != "T-test-gen-journeys-cli" {
-		t.Errorf("eval-journey should depend on gen-journeys-cli, got %v", tasks[1].Dependencies)
+	if tasks[1].Dependencies[0] != "T-test-gen-journeys" {
+		t.Errorf("eval-journey should depend on gen-journeys, got %v", tasks[1].Dependencies)
 	}
 	if tasks[2].Dependencies[0] != "T-eval-journey" {
 		t.Errorf("gen-contracts should depend on eval-journey, got %v", tasks[2].Dependencies)
@@ -72,7 +86,7 @@ func TestGetBreakdownTestTasks_SingleType(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_EmptyInterfaces(t *testing.T) {
-	tasks := GetQuickTestTasks(nil, allEnabledAuto)
+	tasks := GetQuickTestTasks(nil, nil, allEnabledAuto)
 
 	if len(tasks) != 0 {
 		t.Fatalf("expected 0 tasks with empty interfaces, got %d", len(tasks))
@@ -80,17 +94,15 @@ func TestGetQuickTestTasks_EmptyInterfaces(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_SingleType(t *testing.T) {
-	tasks := GetQuickTestTasks([]string{"cli"}, allEnabledAuto)
+	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, allEnabledAuto)
 
-	// gen-journeys-cli + gen-contracts + gen-scripts-cli + run + verify-regression + drift = 6
-	if len(tasks) != 6 {
-		t.Fatalf("expected 6 tasks, got %d", len(tasks))
+	// gen-journeys + run + verify-regression + drift = 4
+	if len(tasks) != 4 {
+		t.Fatalf("expected 4 tasks, got %d", len(tasks))
 	}
 
 	wantIDs := []string{
-		"T-test-gen-journeys-cli",
-		"T-test-gen-contracts",
-		"T-test-gen-scripts-cli",
+		"T-test-gen-journeys",
 		"T-test-run",
 		"T-test-verify-regression",
 		"T-quick-doc-drift",
@@ -102,14 +114,11 @@ func TestGetQuickTestTasks_SingleType(t *testing.T) {
 	}
 
 	if tasks[0].Type != TypeTestGenJourneys {
-		t.Errorf("T-test-gen-journeys-cli Type = %q, want %q", tasks[0].Type, TypeTestGenJourneys)
-	}
-	if tasks[1].Type != TypeTestGenContracts {
-		t.Errorf("T-test-gen-contracts Type = %q, want %q", tasks[1].Type, TypeTestGenContracts)
+		t.Errorf("T-test-gen-journeys Type = %q, want %q", tasks[0].Type, TypeTestGenJourneys)
 	}
 
-	if tasks[5].Type != TypeDocDrift {
-		t.Errorf("T-quick-doc-drift Type = %q, want %q", tasks[5].Type, TypeDocDrift)
+	if tasks[3].Type != TypeDocDrift {
+		t.Errorf("T-quick-doc-drift Type = %q, want %q", tasks[3].Type, TypeDocDrift)
 	}
 }
 
@@ -167,7 +176,7 @@ func TestResolveFirstTestDep(t *testing.T) {
 			"2-gate":  {ID: "2.gate"},
 			"1.1-foo": {ID: "1.1"},
 		}
-		tasks := GetBreakdownTestTasks([]string{"cli"}, defaultAuto)
+		tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto)
 		ResolveFirstTestDep(tasks, existing, "breakdown")
 		if tasks[0].Dependencies[0] != "2.gate" {
 			t.Errorf("first test task should depend on highest gate, got %v", tasks[0].Dependencies)
@@ -184,7 +193,7 @@ func TestResolveFirstTestDep(t *testing.T) {
 			"2.1-bar": {ID: "2.1"},
 			"3.1-baz": {ID: "3.1"},
 		}
-		tasks := GetBreakdownTestTasks([]string{"cli"}, defaultAuto)
+		tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto)
 		ResolveFirstTestDep(tasks, existing, "breakdown")
 		if tasks[0].Dependencies[0] != "3.1" {
 			t.Errorf("first test task should depend on last business task (3.1) when it's in a higher phase than highest gate (2.gate), got %v", tasks[0].Dependencies)
@@ -197,7 +206,7 @@ func TestResolveFirstTestDep(t *testing.T) {
 			"2-bar": {ID: "2"},
 			"3-baz": {ID: "3"},
 		}
-		tasks := GetQuickTestTasks([]string{"cli"}, allEnabledAuto)
+		tasks := GetQuickTestTasks(scalarSurface("cli"), nil, allEnabledAuto)
 		ResolveFirstTestDep(tasks, existing, "quick")
 		if tasks[0].Dependencies[0] != "3" {
 			t.Errorf("first quick test task should depend on max business task, got %v", tasks[0].Dependencies)
@@ -255,20 +264,20 @@ func TestResolveReviewDocDep(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_PerType_TwoTypes(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]string{"tui", "api"}, defaultAuto)
+	tasks := GetBreakdownTestTasks(multiSurface("tui", "tui", "api", "api"), []string{"api", "tui"}, defaultAuto)
 
-	// 2 gen-journeys + eval-journey + gen-contracts + eval-contract + 2 gen-scripts(tui,api) + run + verify-regression + consolidate = 10
+	// gen-journeys + eval-journey + gen-contracts + eval-contract + 2 gen-scripts(tui,api) + 2 run-test(api,tui) + verify-regression + consolidate = 10
 	if len(tasks) != 10 {
 		t.Fatalf("expected 10 tasks, got %d", len(tasks))
 	}
 
 	wantIDs := []string{
-		"T-test-gen-journeys-tui", "T-test-gen-journeys-api",
+		"T-test-gen-journeys",
 		"T-eval-journey",
 		"T-test-gen-contracts",
 		"T-eval-contract",
-		"T-test-gen-scripts-tui", "T-test-gen-scripts-api",
-		"T-test-run",
+		"T-test-gen-scripts-api", "T-test-gen-scripts-tui",
+		"T-test-run-api", "T-test-run-tui",
 		"T-test-verify-regression", "T-specs-consolidate",
 	}
 	for i, want := range wantIDs {
@@ -277,78 +286,81 @@ func TestGetBreakdownTestTasks_PerType_TwoTypes(t *testing.T) {
 		}
 	}
 
-	// gen-journeys keys include type suffix
-	if tasks[0].Key != "gen-journeys-tui" {
-		t.Errorf("tasks[0].Key = %q, want gen-journeys-tui", tasks[0].Key)
-	}
-	if tasks[1].Key != "gen-journeys-api" {
-		t.Errorf("tasks[1].Key = %q, want gen-journeys-api", tasks[1].Key)
+	// gen-journeys key has no type suffix (single task)
+	if tasks[0].Key != "gen-journeys" {
+		t.Errorf("tasks[0].Key = %q, want gen-journeys", tasks[0].Key)
 	}
 
-	// gen-scripts keys include type suffix
+	// gen-scripts keys include type suffix (sorted alphabetically)
+	if tasks[4].Key != "gen-test-scripts-api" {
+		t.Errorf("tasks[4].Key = %q, want gen-test-scripts-api", tasks[4].Key)
+	}
 	if tasks[5].Key != "gen-test-scripts-tui" {
 		t.Errorf("tasks[5].Key = %q, want gen-test-scripts-tui", tasks[5].Key)
 	}
-	if tasks[6].Key != "gen-test-scripts-api" {
-		t.Errorf("tasks[6].Key = %q, want gen-test-scripts-api", tasks[6].Key)
+
+	// SurfaceType empty for single gen-journeys task
+	if tasks[0].SurfaceType != "" {
+		t.Errorf("tasks[0].SurfaceType = %q, want empty (single gen-journeys)", tasks[0].SurfaceType)
 	}
 
-	// TestType field set for gen-journeys
-	if tasks[0].SurfaceType != "tui" {
-		t.Errorf("tasks[0].SurfaceType = %q, want tui", tasks[0].SurfaceType)
+	// TestType field set for gen-scripts (sorted alphabetically)
+	if tasks[4].SurfaceType != "api" {
+		t.Errorf("tasks[4].SurfaceType = %q, want api", tasks[4].SurfaceType)
 	}
-	if tasks[1].SurfaceType != "api" {
-		t.Errorf("tasks[1].SurfaceType = %q, want api", tasks[1].SurfaceType)
-	}
-
-	// TestType field set for gen-scripts
 	if tasks[5].SurfaceType != "tui" {
 		t.Errorf("tasks[5].SurfaceType = %q, want tui", tasks[5].SurfaceType)
 	}
-	if tasks[6].SurfaceType != "api" {
-		t.Errorf("tasks[6].SurfaceType = %q, want api", tasks[6].SurfaceType)
+
+	// run-test tasks have surface-key and surface-type set
+	if tasks[6].SurfaceKey != "api" {
+		t.Errorf("tasks[6].SurfaceKey = %q, want api", tasks[6].SurfaceKey)
+	}
+	if tasks[7].SurfaceKey != "tui" {
+		t.Errorf("tasks[7].SurfaceKey = %q, want tui", tasks[7].SurfaceKey)
 	}
 
-	// eval-journey depends on ALL gen-journeys tasks
-	if len(tasks[2].Dependencies) != 2 {
-		t.Fatalf("T-eval-journey should depend on 2 gen-journeys tasks, got %v", tasks[2].Dependencies)
+	// eval-journey depends on single gen-journeys task
+	if len(tasks[1].Dependencies) != 1 {
+		t.Fatalf("T-eval-journey should depend on 1 gen-journeys task, got %v", tasks[1].Dependencies)
 	}
-	depSet := make(map[string]bool)
-	for _, d := range tasks[2].Dependencies {
-		depSet[d] = true
-	}
-	if !depSet["T-test-gen-journeys-tui"] || !depSet["T-test-gen-journeys-api"] {
-		t.Errorf("T-eval-journey deps should include both gen-journeys, got %v", tasks[2].Dependencies)
+	if tasks[1].Dependencies[0] != "T-test-gen-journeys" {
+		t.Errorf("T-eval-journey deps should be T-test-gen-journeys, got %v", tasks[1].Dependencies)
 	}
 
-	// T-test-run depends on ALL per-type gen-scripts tasks
-	if len(tasks[7].Dependencies) != 2 {
-		t.Fatalf("T-test-run should depend on 2 gen tasks, got %v", tasks[7].Dependencies)
+	// T-test-run-api (first in chain) depends on ALL per-type gen-scripts tasks
+	if len(tasks[6].Dependencies) != 2 {
+		t.Fatalf("T-test-run-api should depend on 2 gen tasks, got %v", tasks[6].Dependencies)
 	}
 	depSet2 := make(map[string]bool)
-	for _, d := range tasks[7].Dependencies {
+	for _, d := range tasks[6].Dependencies {
 		depSet2[d] = true
 	}
 	if !depSet2["T-test-gen-scripts-tui"] || !depSet2["T-test-gen-scripts-api"] {
-		t.Errorf("T-test-run deps should include T-test-gen-scripts-tui and T-test-gen-scripts-api, got %v", tasks[7].Dependencies)
+		t.Errorf("T-test-run-api deps should include both gen-scripts, got %v", tasks[6].Dependencies)
 	}
 
-	// T-test-verify-regression depends on T-test-run
-	if tasks[8].Dependencies[0] != "T-test-run" {
-		t.Errorf("verify-regression should depend on run, got %v", tasks[8].Dependencies)
+	// T-test-run-tui (second in chain) depends on T-test-run-api (serial)
+	if len(tasks[7].Dependencies) != 1 || tasks[7].Dependencies[0] != "T-test-run-api" {
+		t.Errorf("T-test-run-tui should depend on T-test-run-api (serial), got %v", tasks[7].Dependencies)
+	}
+
+	// T-test-verify-regression depends on last run-test (T-test-run-tui)
+	if tasks[8].Dependencies[0] != "T-test-run-tui" {
+		t.Errorf("verify-regression should depend on T-test-run-tui (chain tail), got %v", tasks[8].Dependencies)
 	}
 }
 
 func TestGetBreakdownTestTasks_PerType_SingleType(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]string{"api"}, defaultAuto)
+	tasks := GetBreakdownTestTasks(scalarSurface("api"), nil, defaultAuto)
 
-	// gen-journeys-api + eval-journey + gen-contracts + eval-contract + gen-scripts-api + run + verify-regression + consolidate = 8
+	// gen-journeys + eval-journey + gen-contracts + eval-contract + gen-scripts-api + run + verify-regression + consolidate = 8
 	if len(tasks) != 8 {
 		t.Fatalf("expected 8 tasks, got %d", len(tasks))
 	}
 
 	wantIDs := []string{
-		"T-test-gen-journeys-api",
+		"T-test-gen-journeys",
 		"T-eval-journey",
 		"T-test-gen-contracts",
 		"T-eval-contract",
@@ -367,27 +379,43 @@ func TestGetBreakdownTestTasks_PerType_SingleType(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_PerType_ThreeTypes(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]string{"tui", "api", "cli"}, defaultAuto)
+	tasks := GetBreakdownTestTasks(multiSurface("tui", "tui", "api", "api", "cli", "cli"), []string{"api", "tui", "cli"}, defaultAuto)
 
-	// 3 gen-journeys + eval-journey + gen-contracts + eval-contract + 3 gen-scripts + run + verify-regression + consolidate = 12
+	// gen-journeys + eval-journey + gen-contracts + eval-contract + 3 gen-scripts + 3 run-tests + verify-regression + consolidate = 12
 	if len(tasks) != 12 {
 		t.Fatalf("expected 12 tasks, got %d", len(tasks))
 	}
 
-	// T-test-run depends on all 3 gen tasks
-	runIdx := findTaskIndex(tasks, "T-test-run")
-	if runIdx < 0 {
-		t.Fatalf("T-test-run not found in tasks")
+	// T-test-run-api (first in chain) depends on all 3 gen tasks
+	runAPIIdx := findTaskIndex(tasks, "T-test-run-api")
+	if runAPIIdx < 0 {
+		t.Fatalf("T-test-run-api not found in tasks")
 	}
-	if len(tasks[runIdx].Dependencies) != 3 {
-		t.Fatalf("T-test-run should depend on 3 gen tasks, got %v", tasks[runIdx].Dependencies)
+	if len(tasks[runAPIIdx].Dependencies) != 3 {
+		t.Fatalf("T-test-run-api should depend on 3 gen tasks, got %v", tasks[runAPIIdx].Dependencies)
 	}
 	depSet := make(map[string]bool)
-	for _, d := range tasks[runIdx].Dependencies {
+	for _, d := range tasks[runAPIIdx].Dependencies {
 		depSet[d] = true
 	}
 	if !depSet["T-test-gen-scripts-tui"] || !depSet["T-test-gen-scripts-api"] || !depSet["T-test-gen-scripts-cli"] {
-		t.Errorf("T-test-run missing expected deps, got %v", tasks[runIdx].Dependencies)
+		t.Errorf("T-test-run-api missing expected deps, got %v", tasks[runAPIIdx].Dependencies)
+	}
+
+	// Serial chain: api -> tui -> cli
+	runTUIIdx := findTaskIndex(tasks, "T-test-run-tui")
+	if len(tasks[runTUIIdx].Dependencies) != 1 || tasks[runTUIIdx].Dependencies[0] != "T-test-run-api" {
+		t.Errorf("T-test-run-tui should depend on T-test-run-api, got %v", tasks[runTUIIdx].Dependencies)
+	}
+	runCLIIdx := findTaskIndex(tasks, "T-test-run-cli")
+	if len(tasks[runCLIIdx].Dependencies) != 1 || tasks[runCLIIdx].Dependencies[0] != "T-test-run-tui" {
+		t.Errorf("T-test-run-cli should depend on T-test-run-tui, got %v", tasks[runCLIIdx].Dependencies)
+	}
+
+	// Verify-regression depends on last run-test (cli)
+	verifyIdx := findTaskIndex(tasks, "T-test-verify-regression")
+	if tasks[verifyIdx].Dependencies[0] != "T-test-run-cli" {
+		t.Errorf("verify-regression should depend on T-test-run-cli (chain tail), got %v", tasks[verifyIdx].Dependencies)
 	}
 }
 
@@ -416,77 +444,61 @@ func TestGenerateTestTaskMD_WithTestType(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_PerType_TwoTypes(t *testing.T) {
-	tasks := GetQuickTestTasks([]string{"tui", "api"}, allEnabledAuto)
+	tasks := GetQuickTestTasks(multiSurface("tui", "tui", "api", "api"), []string{"api", "tui"}, allEnabledAuto)
 
-	// 2 gen-journeys + gen-contracts + 2 gen-scripts + run + verify-regression + drift = 8
-	if len(tasks) != 8 {
-		t.Fatalf("expected 8 tasks, got %d", len(tasks))
-	}
-
-	wantIDs := []string{
-		"T-test-gen-journeys-tui", "T-test-gen-journeys-api",
-		"T-test-gen-contracts",
-		"T-test-gen-scripts-tui", "T-test-gen-scripts-api",
-		"T-test-run",
-		"T-test-verify-regression",
-		"T-quick-doc-drift",
-	}
-	for i, want := range wantIDs {
-		if tasks[i].ID != want {
-			t.Errorf("tasks[%d].ID = %q, want %q", i, tasks[i].ID, want)
-		}
+	// gen-journeys + 2 run-tests(api,tui) + verify-regression + drift = 5
+	if len(tasks) != 5 {
+		t.Fatalf("expected 5 tasks, got %d", len(tasks))
 	}
 
-	// Keys include type suffix
-	if tasks[0].Key != "gen-journeys-tui" {
-		t.Errorf("tasks[0].Key = %q, want gen-journeys-tui", tasks[0].Key)
-	}
-	if tasks[1].Key != "gen-journeys-api" {
-		t.Errorf("tasks[1].Key = %q, want gen-journeys-api", tasks[1].Key)
+	// Fixed-position tasks (before map-iteration-dependent ones)
+	if tasks[0].ID != "T-test-gen-journeys" {
+		t.Errorf("tasks[0].ID = %q, want T-test-gen-journeys", tasks[0].ID)
 	}
 
-	// TestType field set for gen-journeys
-	if tasks[0].SurfaceType != "tui" {
-		t.Errorf("tasks[0].SurfaceType = %q, want tui", tasks[0].SurfaceType)
-	}
-	if tasks[1].SurfaceType != "api" {
-		t.Errorf("tasks[1].SurfaceType = %q, want api", tasks[1].SurfaceType)
+	// Map-iteration-dependent tasks: run-tests use byID lookups
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
 	}
 
-	// TestType field set for gen-scripts
-	if tasks[3].SurfaceType != "tui" {
-		t.Errorf("tasks[3].SurfaceType = %q, want tui", tasks[3].SurfaceType)
+	// Both run-test tasks exist with correct SurfaceKey
+	if _, ok := byID["T-test-run-api"]; !ok {
+		t.Error("missing T-test-run-api task")
 	}
-	if tasks[4].SurfaceType != "api" {
-		t.Errorf("tasks[4].SurfaceType = %q, want api", tasks[4].SurfaceType)
+	if _, ok := byID["T-test-run-tui"]; !ok {
+		t.Error("missing T-test-run-tui task")
 	}
 
-	// gen-contracts depends on ALL gen-journeys tasks
-	gcIdx := findTaskIndexOrPanic(tasks, "T-test-gen-contracts")
-	if len(tasks[gcIdx].Dependencies) != 2 {
-		t.Fatalf("gen-contracts should depend on 2 gen-journeys, got %v", tasks[gcIdx].Dependencies)
+	// verify-regression and drift at fixed positions
+	if tasks[3].ID != "T-test-verify-regression" {
+		t.Errorf("tasks[3].ID = %q, want T-test-verify-regression", tasks[3].ID)
 	}
-	depSet := make(map[string]bool)
-	for _, d := range tasks[gcIdx].Dependencies {
-		depSet[d] = true
+	if tasks[4].ID != "T-quick-doc-drift" {
+		t.Errorf("tasks[4].ID = %q, want T-quick-doc-drift", tasks[4].ID)
 	}
-	if !depSet["T-test-gen-journeys-tui"] || !depSet["T-test-gen-journeys-api"] {
-		t.Errorf("gen-contracts deps should include both gen-journeys, got %v", tasks[gcIdx].Dependencies)
+
+	// gen-journeys key has no type suffix (single task)
+	if tasks[0].Key != "gen-journeys" {
+		t.Errorf("tasks[0].Key = %q, want gen-journeys", tasks[0].Key)
+	}
+
+	// SurfaceType empty for single gen-journeys task
+	if tasks[0].SurfaceType != "" {
+		t.Errorf("tasks[0].SurfaceType = %q, want empty (single gen-journeys)", tasks[0].SurfaceType)
 	}
 }
 
 func TestGetQuickTestTasks_PerType_SingleType(t *testing.T) {
-	tasks := GetQuickTestTasks([]string{"api"}, allEnabledAuto)
+	tasks := GetQuickTestTasks(scalarSurface("api"), nil, allEnabledAuto)
 
-	// gen-journeys-api + gen-contracts + gen-scripts-api + run + verify-regression + drift = 6
-	if len(tasks) != 6 {
-		t.Fatalf("expected 6 tasks, got %d", len(tasks))
+	// gen-journeys + run + verify-regression + drift = 4
+	if len(tasks) != 4 {
+		t.Fatalf("expected 4 tasks, got %d", len(tasks))
 	}
 
 	wantIDs := []string{
-		"T-test-gen-journeys-api",
-		"T-test-gen-contracts",
-		"T-test-gen-scripts-api",
+		"T-test-gen-journeys",
 		"T-test-run",
 		"T-test-verify-regression",
 		"T-quick-doc-drift",
@@ -498,58 +510,48 @@ func TestGetQuickTestTasks_PerType_SingleType(t *testing.T) {
 	}
 
 	if tasks[0].Type != TypeTestGenJourneys {
-		t.Errorf("T-test-gen-journeys-api Type = %q, want %q", tasks[0].Type, TypeTestGenJourneys)
-	}
-	if tasks[1].Type != TypeTestGenContracts {
-		t.Errorf("T-test-gen-contracts Type = %q, want %q", tasks[1].Type, TypeTestGenContracts)
+		t.Errorf("T-test-gen-journeys Type = %q, want %q", tasks[0].Type, TypeTestGenJourneys)
 	}
 
-	// gen-contracts depends on gen-journeys-api
-	gcIdx := findTaskIndexOrPanic(tasks, "T-test-gen-contracts")
-	if len(tasks[gcIdx].Dependencies) != 1 || tasks[gcIdx].Dependencies[0] != "T-test-gen-journeys-api" {
-		t.Errorf("gen-contracts should depend on T-test-gen-journeys-api, got %v", tasks[gcIdx].Dependencies)
+	// T-test-run depends on gen-journeys (direct, no gen-contracts/gen-scripts in Quick)
+	runIdx := findTaskIndexOrPanic(tasks, "T-test-run")
+	if len(tasks[runIdx].Dependencies) != 1 || tasks[runIdx].Dependencies[0] != "T-test-gen-journeys" {
+		t.Errorf("T-test-run should depend on T-test-gen-journeys, got %v", tasks[runIdx].Dependencies)
 	}
 }
 
 func TestGetQuickTestTasks_PerType_ThreeTypes(t *testing.T) {
-	tasks := GetQuickTestTasks([]string{"tui", "api", "cli"}, allEnabledAuto)
+	tasks := GetQuickTestTasks(multiSurface("tui", "tui", "api", "api", "cli", "cli"), []string{"api", "tui", "cli"}, allEnabledAuto)
 
-	// 3 gen-journeys + gen-contracts + 3 gen-scripts + run + verify-regression + drift = 10
-	if len(tasks) != 10 {
-		t.Fatalf("expected 10 tasks, got %d", len(tasks))
-	}
-
-	// gen-contracts depends on all 3 gen-journeys
-	gcIdx := findTaskIndexOrPanic(tasks, "T-test-gen-contracts")
-	if len(tasks[gcIdx].Dependencies) != 3 {
-		t.Fatalf("gen-contracts should depend on 3 gen-journeys, got %v", tasks[gcIdx].Dependencies)
-	}
-	depSet := make(map[string]bool)
-	for _, d := range tasks[gcIdx].Dependencies {
-		depSet[d] = true
-	}
-	if !depSet["T-test-gen-journeys-tui"] || !depSet["T-test-gen-journeys-api"] || !depSet["T-test-gen-journeys-cli"] {
-		t.Errorf("gen-contracts missing expected deps, got %v", tasks[gcIdx].Dependencies)
+	// gen-journeys + 3 run-tests + verify-regression + drift = 6
+	if len(tasks) != 6 {
+		t.Fatalf("expected 6 tasks, got %d", len(tasks))
 	}
 
-	// run depends on all 3 gen-scripts
-	runIdx := findTaskIndexOrPanic(tasks, "T-test-run")
-	if len(tasks[runIdx].Dependencies) != 3 {
-		t.Fatalf("run should depend on 3 gen-scripts, got %v", tasks[runIdx].Dependencies)
+	// T-test-run-api (first in chain) depends on gen-journeys (not gen-scripts)
+	runAPIIdx := findTaskIndexOrPanic(tasks, "T-test-run-api")
+	if len(tasks[runAPIIdx].Dependencies) != 1 {
+		t.Fatalf("T-test-run-api should depend on 1 gen-journeys, got %v", tasks[runAPIIdx].Dependencies)
 	}
-	runDepSet := make(map[string]bool)
-	for _, d := range tasks[runIdx].Dependencies {
-		runDepSet[d] = true
+	if tasks[runAPIIdx].Dependencies[0] != "T-test-gen-journeys" {
+		t.Errorf("T-test-run-api should depend on T-test-gen-journeys, got %v", tasks[runAPIIdx].Dependencies)
 	}
-	if !runDepSet["T-test-gen-scripts-tui"] || !runDepSet["T-test-gen-scripts-api"] || !runDepSet["T-test-gen-scripts-cli"] {
-		t.Errorf("run missing expected deps, got %v", tasks[runIdx].Dependencies)
+
+	// Serial chain: api -> tui -> cli
+	runTUIIdx := findTaskIndexOrPanic(tasks, "T-test-run-tui")
+	if len(tasks[runTUIIdx].Dependencies) != 1 || tasks[runTUIIdx].Dependencies[0] != "T-test-run-api" {
+		t.Errorf("T-test-run-tui should depend on T-test-run-api, got %v", tasks[runTUIIdx].Dependencies)
+	}
+	runCLIIdx := findTaskIndexOrPanic(tasks, "T-test-run-cli")
+	if len(tasks[runCLIIdx].Dependencies) != 1 || tasks[runCLIIdx].Dependencies[0] != "T-test-run-tui" {
+		t.Errorf("T-test-run-cli should depend on T-test-run-tui, got %v", tasks[runCLIIdx].Dependencies)
 	}
 }
 
 // --- validate-ux should only be generated when interfaces include UI types ---
 
 func TestGetBreakdownTestTasks_ValidateUx_SkippedForCLIOnly(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]string{"cli"}, validationAuto)
+	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, validationAuto)
 
 	for _, task := range tasks {
 		if task.ID == "T-validate-ux" {
@@ -559,7 +561,7 @@ func TestGetBreakdownTestTasks_ValidateUx_SkippedForCLIOnly(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_ValidateUx_SkippedForCLIOnly(t *testing.T) {
-	tasks := GetQuickTestTasks([]string{"cli"}, validationAuto)
+	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, validationAuto)
 
 	for _, task := range tasks {
 		if task.ID == "T-validate-ux" {
@@ -569,7 +571,7 @@ func TestGetQuickTestTasks_ValidateUx_SkippedForCLIOnly(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_ValidateUx_SkippedForAPIOnly(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]string{"api"}, validationAuto)
+	tasks := GetBreakdownTestTasks(scalarSurface("api"), nil, validationAuto)
 
 	for _, task := range tasks {
 		if task.ID == "T-validate-ux" {
@@ -579,7 +581,7 @@ func TestGetBreakdownTestTasks_ValidateUx_SkippedForAPIOnly(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_ValidateUx_IncludedForTUI(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]string{"tui"}, validationAuto)
+	tasks := GetBreakdownTestTasks(scalarSurface("tui"), nil, validationAuto)
 
 	found := false
 	for _, task := range tasks {
@@ -594,7 +596,7 @@ func TestGetBreakdownTestTasks_ValidateUx_IncludedForTUI(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_ValidateUx_IncludedForMixed(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]string{"cli", "tui"}, validationAuto)
+	tasks := GetBreakdownTestTasks(multiSurface("cli", "cli", "tui", "tui"), []string{"tui", "cli"}, validationAuto)
 
 	found := false
 	for _, task := range tasks {
@@ -609,7 +611,7 @@ func TestGetBreakdownTestTasks_ValidateUx_IncludedForMixed(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_ValidateUx_CodeStillGenerated(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]string{"cli"}, validationAuto)
+	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, validationAuto)
 
 	found := false
 	for _, task := range tasks {
@@ -624,7 +626,7 @@ func TestGetBreakdownTestTasks_ValidateUx_CodeStillGenerated(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_DefaultAuto_IncludesSpecDrift(t *testing.T) {
-	tasks := GetQuickTestTasks([]string{"cli"}, defaultAuto)
+	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, defaultAuto)
 
 	if len(tasks) != 1 {
 		t.Fatalf("expected 1 task (spec drift only), got %d", len(tasks))
@@ -1357,46 +1359,30 @@ func TestAutogenTemplateDiscovery(t *testing.T) {
 // --- Tests for gen-journeys/gen-contracts in Breakdown mode (Task 3) ---
 
 func TestGetBreakdownTestTasks_GenJourneysPerType(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]string{"tui", "api"}, defaultAuto)
+	tasks := GetBreakdownTestTasks(multiSurface("tui", "tui", "api", "api"), []string{"api", "tui"}, defaultAuto)
 
-	foundTUI := false
-	foundAPI := false
+	foundGenJourneys := false
 	for _, task := range tasks {
-		if task.ID == "T-test-gen-journeys-tui" {
-			foundTUI = true
+		if task.ID == "T-test-gen-journeys" {
+			foundGenJourneys = true
 			if task.Type != TypeTestGenJourneys {
-				t.Errorf("gen-journeys-tui Type = %q, want %q", task.Type, TypeTestGenJourneys)
+				t.Errorf("gen-journeys Type = %q, want %q", task.Type, TypeTestGenJourneys)
 			}
-			if task.SurfaceType != "tui" {
-				t.Errorf("gen-journeys-tui TestType = %q, want tui", task.SurfaceType)
+			if task.SurfaceType != "" {
+				t.Errorf("gen-journeys TestType = %q, want empty (single task)", task.SurfaceType)
 			}
 			if task.StrategyKind != "interface" {
-				t.Errorf("gen-journeys-tui StrategyKind = %q, want interface", task.StrategyKind)
-			}
-		}
-		if task.ID == "T-test-gen-journeys-api" {
-			foundAPI = true
-			if task.Type != TypeTestGenJourneys {
-				t.Errorf("gen-journeys-api Type = %q, want %q", task.Type, TypeTestGenJourneys)
-			}
-			if task.SurfaceType != "api" {
-				t.Errorf("gen-journeys-api TestType = %q, want api", task.SurfaceType)
-			}
-			if task.StrategyKind != "interface" {
-				t.Errorf("gen-journeys-api StrategyKind = %q, want interface", task.StrategyKind)
+				t.Errorf("gen-journeys StrategyKind = %q, want interface", task.StrategyKind)
 			}
 		}
 	}
-	if !foundTUI {
-		t.Error("missing T-test-gen-journeys-tui task")
-	}
-	if !foundAPI {
-		t.Error("missing T-test-gen-journeys-api task")
+	if !foundGenJourneys {
+		t.Error("missing T-test-gen-journeys task")
 	}
 }
 
 func TestGetBreakdownTestTasks_GenContracts(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]string{"cli"}, defaultAuto)
+	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto)
 
 	found := false
 	for _, task := range tasks {
@@ -1413,10 +1399,10 @@ func TestGetBreakdownTestTasks_GenContracts(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_NewOrdering(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]string{"cli"}, defaultAuto)
+	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto)
 
 	wantOrder := []string{
-		"T-test-gen-journeys-cli",
+		"T-test-gen-journeys",
 		"T-eval-journey",
 		"T-test-gen-contracts",
 		"T-eval-contract",
@@ -1434,32 +1420,25 @@ func TestGetBreakdownTestTasks_NewOrdering(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_FullDependencyChain(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]string{"cli", "api"}, defaultAuto)
+	tasks := GetBreakdownTestTasks(multiSurface("cli", "cli", "api", "api"), []string{"api", "cli"}, defaultAuto)
 
 	byID := make(map[string]AutoGenTaskDef)
 	for _, t := range tasks {
 		byID[t.ID] = t
 	}
 
-	// gen-journeys tasks have no deps (pipeline entry points)
-	if len(byID["T-test-gen-journeys-cli"].Dependencies) != 0 {
-		t.Errorf("gen-journeys-cli should have no deps, got %v", byID["T-test-gen-journeys-cli"].Dependencies)
-	}
-	if len(byID["T-test-gen-journeys-api"].Dependencies) != 0 {
-		t.Errorf("gen-journeys-api should have no deps, got %v", byID["T-test-gen-journeys-api"].Dependencies)
+	// gen-journeys task has no deps (pipeline entry point)
+	if len(byID["T-test-gen-journeys"].Dependencies) != 0 {
+		t.Errorf("gen-journeys should have no deps, got %v", byID["T-test-gen-journeys"].Dependencies)
 	}
 
-	// eval-journey depends on all gen-journeys
+	// eval-journey depends on single gen-journeys
 	evalJourneyDeps := byID["T-eval-journey"].Dependencies
-	if len(evalJourneyDeps) != 2 {
-		t.Fatalf("eval-journey should depend on 2 gen-journeys, got %v", evalJourneyDeps)
+	if len(evalJourneyDeps) != 1 {
+		t.Fatalf("eval-journey should depend on 1 gen-journeys, got %v", evalJourneyDeps)
 	}
-	depSet := make(map[string]bool)
-	for _, d := range evalJourneyDeps {
-		depSet[d] = true
-	}
-	if !depSet["T-test-gen-journeys-cli"] || !depSet["T-test-gen-journeys-api"] {
-		t.Errorf("eval-journey deps should include both gen-journeys, got %v", evalJourneyDeps)
+	if evalJourneyDeps[0] != "T-test-gen-journeys" {
+		t.Errorf("eval-journey deps should be T-test-gen-journeys, got %v", evalJourneyDeps)
 	}
 
 	// gen-contracts depends on eval-journey
@@ -1480,22 +1459,27 @@ func TestGetBreakdownTestTasks_FullDependencyChain(t *testing.T) {
 		t.Errorf("gen-scripts-api should depend on eval-contract, got %v", byID["T-test-gen-scripts-api"].Dependencies)
 	}
 
-	// run depends on all gen-scripts
-	runDeps := byID["T-test-run"].Dependencies
-	if len(runDeps) != 2 {
-		t.Fatalf("run should depend on 2 gen-scripts, got %v", runDeps)
+	// T-test-run-api (first in chain) depends on all gen-scripts
+	runAPIDeps := byID["T-test-run-api"].Dependencies
+	if len(runAPIDeps) != 2 {
+		t.Fatalf("T-test-run-api should depend on 2 gen-scripts, got %v", runAPIDeps)
 	}
 	runDepSet := make(map[string]bool)
-	for _, d := range runDeps {
+	for _, d := range runAPIDeps {
 		runDepSet[d] = true
 	}
 	if !runDepSet["T-test-gen-scripts-cli"] || !runDepSet["T-test-gen-scripts-api"] {
-		t.Errorf("run deps should include both gen-scripts, got %v", runDeps)
+		t.Errorf("T-test-run-api deps should include both gen-scripts, got %v", runAPIDeps)
 	}
 
-	// verify-regression depends on run
-	if len(byID["T-test-verify-regression"].Dependencies) != 1 || byID["T-test-verify-regression"].Dependencies[0] != "T-test-run" {
-		t.Errorf("verify-regression should depend on run, got %v", byID["T-test-verify-regression"].Dependencies)
+	// Serial chain: T-test-run-cli depends on T-test-run-api
+	if len(byID["T-test-run-cli"].Dependencies) != 1 || byID["T-test-run-cli"].Dependencies[0] != "T-test-run-api" {
+		t.Errorf("T-test-run-cli should depend on T-test-run-api (serial), got %v", byID["T-test-run-cli"].Dependencies)
+	}
+
+	// verify-regression depends on last run-test (T-test-run-cli)
+	if len(byID["T-test-verify-regression"].Dependencies) != 1 || byID["T-test-verify-regression"].Dependencies[0] != "T-test-run-cli" {
+		t.Errorf("verify-regression should depend on T-test-run-cli (chain tail), got %v", byID["T-test-verify-regression"].Dependencies)
 	}
 }
 
@@ -1540,10 +1524,10 @@ func TestFindTaskIndexOrPanic_ReturnsIndexWhenFound(t *testing.T) {
 
 func TestGetBreakdownTestTasks_GenJourneysUsesEmbedTemplate(t *testing.T) {
 	def := AutoGenTaskDef{
-		ID: "T-test-gen-journeys-cli", Key: "gen-journeys-cli",
-		Title: "Generate Test Journeys (cli)", Priority: "P1",
+		ID: "T-test-gen-journeys", Key: "gen-journeys",
+		Title: "Generate Test Journeys", Priority: "P1",
 		EstimatedTime: "20-30min", Type: TypeTestGenJourneys,
-		SurfaceType: "cli", StrategyKind: "interface",
+		StrategyKind: "interface",
 	}
 	ctx := BodyContext{
 		FeatureSlug: "test-feature",
@@ -1593,7 +1577,7 @@ func TestGetBreakdownTestTasks_GenContractsUsesEmbedTemplate(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_NoHardcodedIndices(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]string{"cli"}, defaultAuto)
+	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto)
 
 	idSet := make(map[string]bool)
 	for _, t := range tasks {
@@ -1610,7 +1594,7 @@ func TestGetBreakdownTestTasks_NoHardcodedIndices(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_RegressionStillValid(t *testing.T) {
-	tasks := GetBreakdownTestTasks([]string{"cli"}, defaultAuto)
+	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto)
 
 	byID := make(map[string]AutoGenTaskDef)
 	for _, t := range tasks {
@@ -1628,7 +1612,7 @@ func TestGetBreakdownTestTasks_RegressionStillValid(t *testing.T) {
 // --- Quick mode staged across types topology tests (Task 4) ---
 
 func TestGetQuickTestTasks_StagedPipelineTypesOnly(t *testing.T) {
-	tasks := GetQuickTestTasks([]string{"cli", "api"}, allEnabledAuto)
+	tasks := GetQuickTestTasks(multiSurface("cli", "cli", "api", "api"), []string{"api", "cli"}, allEnabledAuto)
 
 	// Quick mode should only generate test pipeline or doc task types
 	validPrefixes := []string{"test.", "doc.", "code-quality."}
@@ -1647,113 +1631,73 @@ func TestGetQuickTestTasks_StagedPipelineTypesOnly(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_StagedAcrossTypesDependencyChain(t *testing.T) {
-	tasks := GetQuickTestTasks([]string{"cli", "api"}, allEnabledAuto)
+	tasks := GetQuickTestTasks(multiSurface("cli", "cli", "api", "api"), []string{"api", "cli"}, allEnabledAuto)
 
 	byID := make(map[string]AutoGenTaskDef)
 	for _, t := range tasks {
 		byID[t.ID] = t
 	}
 
-	// Stage 1: gen-journeys have no deps (pipeline entry points)
-	if len(byID["T-test-gen-journeys-cli"].Dependencies) != 0 {
-		t.Errorf("gen-journeys-cli should have no deps, got %v", byID["T-test-gen-journeys-cli"].Dependencies)
-	}
-	if len(byID["T-test-gen-journeys-api"].Dependencies) != 0 {
-		t.Errorf("gen-journeys-api should have no deps, got %v", byID["T-test-gen-journeys-api"].Dependencies)
+	// Stage 1: gen-journeys has no deps (pipeline entry point)
+	if len(byID["T-test-gen-journeys"].Dependencies) != 0 {
+		t.Errorf("gen-journeys should have no deps, got %v", byID["T-test-gen-journeys"].Dependencies)
 	}
 
-	// Stage 2: gen-contracts depends on all gen-journeys
-	gcDeps := byID["T-test-gen-contracts"].Dependencies
-	if len(gcDeps) != 2 {
-		t.Fatalf("gen-contracts should depend on 2 gen-journeys, got %v", gcDeps)
+	// Stage 2: first run-test depends on gen-journeys (no gen-contracts/gen-scripts in Quick mode)
+	runAPIDeps := byID["T-test-run-api"].Dependencies
+	if len(runAPIDeps) != 1 {
+		t.Fatalf("T-test-run-api should depend on 1 gen-journeys, got %v", runAPIDeps)
 	}
-	gcDepSet := make(map[string]bool)
-	for _, d := range gcDeps {
-		gcDepSet[d] = true
-	}
-	if !gcDepSet["T-test-gen-journeys-cli"] || !gcDepSet["T-test-gen-journeys-api"] {
-		t.Errorf("gen-contracts deps should include both gen-journeys, got %v", gcDeps)
+	if runAPIDeps[0] != "T-test-gen-journeys" {
+		t.Errorf("T-test-run-api deps should be T-test-gen-journeys, got %v", runAPIDeps)
 	}
 
-	// Stage 3: gen-scripts depend on gen-contracts
-	if len(byID["T-test-gen-scripts-cli"].Dependencies) != 1 || byID["T-test-gen-scripts-cli"].Dependencies[0] != "T-test-gen-contracts" {
-		t.Errorf("gen-scripts-cli should depend on gen-contracts, got %v", byID["T-test-gen-scripts-cli"].Dependencies)
-	}
-	if len(byID["T-test-gen-scripts-api"].Dependencies) != 1 || byID["T-test-gen-scripts-api"].Dependencies[0] != "T-test-gen-contracts" {
-		t.Errorf("gen-scripts-api should depend on gen-contracts, got %v", byID["T-test-gen-scripts-api"].Dependencies)
+	// Serial chain: T-test-run-cli depends on T-test-run-api
+	if len(byID["T-test-run-cli"].Dependencies) != 1 || byID["T-test-run-cli"].Dependencies[0] != "T-test-run-api" {
+		t.Errorf("T-test-run-cli should depend on T-test-run-api (serial), got %v", byID["T-test-run-cli"].Dependencies)
 	}
 
-	// Stage 4: run depends on all gen-scripts
-	runDeps := byID["T-test-run"].Dependencies
-	if len(runDeps) != 2 {
-		t.Fatalf("run should depend on 2 gen-scripts, got %v", runDeps)
-	}
-	runDepSet := make(map[string]bool)
-	for _, d := range runDeps {
-		runDepSet[d] = true
-	}
-	if !runDepSet["T-test-gen-scripts-cli"] || !runDepSet["T-test-gen-scripts-api"] {
-		t.Errorf("run deps should include both gen-scripts, got %v", runDeps)
-	}
-
-	// Stage 5: verify-regression depends on run
-	if len(byID["T-test-verify-regression"].Dependencies) != 1 || byID["T-test-verify-regression"].Dependencies[0] != "T-test-run" {
-		t.Errorf("verify-regression should depend on run, got %v", byID["T-test-verify-regression"].Dependencies)
+	// Stage 3: verify-regression depends on last run-test (T-test-run-cli)
+	if len(byID["T-test-verify-regression"].Dependencies) != 1 || byID["T-test-verify-regression"].Dependencies[0] != "T-test-run-cli" {
+		t.Errorf("verify-regression should depend on T-test-run-cli (chain tail), got %v", byID["T-test-verify-regression"].Dependencies)
 	}
 }
-
 func TestGetQuickTestTasks_GenJourneysPerType(t *testing.T) {
-	tasks := GetQuickTestTasks([]string{"tui", "api"}, allEnabledAuto)
+	tasks := GetQuickTestTasks(multiSurface("tui", "tui", "api", "api"), []string{"api", "tui"}, allEnabledAuto)
 
-	foundTUI := false
-	foundAPI := false
+	foundGenJourneys := false
 	for _, task := range tasks {
-		if task.ID == "T-test-gen-journeys-tui" {
-			foundTUI = true
+		if task.ID == "T-test-gen-journeys" {
+			foundGenJourneys = true
 			if task.Type != TypeTestGenJourneys {
-				t.Errorf("gen-journeys-tui Type = %q, want %q", task.Type, TypeTestGenJourneys)
+				t.Errorf("gen-journeys Type = %q, want %q", task.Type, TypeTestGenJourneys)
 			}
-			if task.SurfaceType != "tui" {
-				t.Errorf("gen-journeys-tui TestType = %q, want tui", task.SurfaceType)
-			}
-		}
-		if task.ID == "T-test-gen-journeys-api" {
-			foundAPI = true
-			if task.Type != TypeTestGenJourneys {
-				t.Errorf("gen-journeys-api Type = %q, want %q", task.Type, TypeTestGenJourneys)
-			}
-			if task.SurfaceType != "api" {
-				t.Errorf("gen-journeys-api TestType = %q, want api", task.SurfaceType)
+			if task.SurfaceType != "" {
+				t.Errorf("gen-journeys TestType = %q, want empty (single task)", task.SurfaceType)
 			}
 		}
 	}
-	if !foundTUI {
-		t.Error("missing T-test-gen-journeys-tui task in Quick mode")
-	}
-	if !foundAPI {
-		t.Error("missing T-test-gen-journeys-api task in Quick mode")
+	if !foundGenJourneys {
+		t.Error("missing T-test-gen-journeys task in Quick mode")
 	}
 }
 
-func TestGetQuickTestTasks_GenContracts(t *testing.T) {
-	tasks := GetQuickTestTasks([]string{"cli"}, allEnabledAuto)
+func TestGetQuickTestTasks_NoGenContractsOrScripts(t *testing.T) {
+	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, allEnabledAuto)
 
-	found := false
+	// Quick mode should NOT generate gen-contracts or gen-scripts
 	for _, task := range tasks {
 		if task.ID == "T-test-gen-contracts" {
-			found = true
-			if task.Type != TypeTestGenContracts {
-				t.Errorf("gen-contracts Type = %q, want %q", task.Type, TypeTestGenContracts)
-			}
+			t.Error("Quick mode should not generate T-test-gen-contracts")
 		}
-	}
-	if !found {
-		t.Error("missing T-test-gen-contracts task in Quick mode")
+		if strings.HasPrefix(task.ID, "T-test-gen-scripts-") {
+			t.Errorf("Quick mode should not generate %q", task.ID)
+		}
 	}
 }
 
 func TestGetQuickTestTasks_NoHardcodedIndices(t *testing.T) {
-	tasks := GetQuickTestTasks([]string{"cli"}, allEnabledAuto)
+	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, allEnabledAuto)
 
 	idSet := make(map[string]bool)
 	for _, t := range tasks {
@@ -1770,7 +1714,7 @@ func TestGetQuickTestTasks_NoHardcodedIndices(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_DriftDependsOnVerifyRegression(t *testing.T) {
-	tasks := GetQuickTestTasks([]string{"cli"}, allEnabledAuto)
+	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, allEnabledAuto)
 
 	for _, task := range tasks {
 		if task.ID == "T-quick-doc-drift" {
@@ -1819,7 +1763,7 @@ func TestResolveFirstTestDep_BreakdownWithCleanCode(t *testing.T) {
 		"1-gate":  {ID: "1.gate"},
 		"1.1-foo": {ID: "1.1"},
 	}
-	tasks := GetBreakdownTestTasks([]string{"cli"}, defaultAuto)
+	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto)
 
 	// Add a clean-code task
 	tasks = append([]AutoGenTaskDef{{ID: "T-clean-code"}}, tasks...)
@@ -1848,7 +1792,7 @@ func TestResolveFirstTestDep_QuickWithCleanCode(t *testing.T) {
 		"1-foo": {ID: "1"},
 		"2-bar": {ID: "2"},
 	}
-	tasks := GetQuickTestTasks([]string{"cli"}, allEnabledAuto)
+	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, allEnabledAuto)
 
 	// Add a clean-code task
 	tasks = append([]AutoGenTaskDef{{ID: "T-clean-code"}}, tasks...)
@@ -1880,7 +1824,7 @@ func TestResolveFirstTestDep_EmptyTasks_NoPanic(_ *testing.T) {
 
 func TestResolveFirstTestDep_NoDeps_NoPanic(t *testing.T) {
 	// No existing business tasks → return without panic
-	tasks := GetBreakdownTestTasks([]string{"cli"}, defaultAuto)
+	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto)
 	ResolveFirstTestDep(tasks, map[string]Task{}, "breakdown")
 
 	// gen-journeys should have no deps set (no business tasks to depend on)
@@ -2070,5 +2014,416 @@ func TestRenderBody_AllPlaceholdersIncludingDocTaskAC(t *testing.T) {
 	}
 	if !strings.Contains(result, "### 1-doc") {
 		t.Errorf("should contain DocTaskCriteria sub-section, got:\n%s", result)
+	}
+}
+
+// --- Task 4: Split run-tests into per-surface-key serial tasks ---
+
+// AC1: surfaces { frontend: web, backend: api } with no execution-order:
+// ResolveExecutionOrder defaults to api < web, so backend runs before frontend.
+func TestGetBreakdownTestTasks_DefaultExecutionOrder_BackendBeforeFrontend(t *testing.T) {
+	surfaces := multiSurface("backend", "api", "frontend", "web")
+	resolved, err := forgeconfig.ResolveExecutionOrder(surfaces, nil)
+	if err != nil {
+		t.Fatalf("ResolveExecutionOrder: %v", err)
+	}
+
+	tasks := GetBreakdownTestTasks(surfaces, resolved, defaultAuto)
+
+	backendIdx := findTaskIndex(tasks, "T-test-run-backend")
+	frontendIdx := findTaskIndex(tasks, "T-test-run-frontend")
+	if backendIdx < 0 {
+		t.Fatal("T-test-run-backend not found")
+	}
+	if frontendIdx < 0 {
+		t.Fatal("T-test-run-frontend not found")
+	}
+
+	// Backend (api) must come before frontend (web) in task list
+	if backendIdx >= frontendIdx {
+		t.Errorf("T-test-run-backend (idx=%d) should come before T-test-run-frontend (idx=%d)", backendIdx, frontendIdx)
+	}
+
+	// Verify serial chain: frontend depends on backend
+	if len(tasks[frontendIdx].Dependencies) != 1 || tasks[frontendIdx].Dependencies[0] != "T-test-run-backend" {
+		t.Errorf("T-test-run-frontend should depend on T-test-run-backend (serial chain), got %v", tasks[frontendIdx].Dependencies)
+	}
+}
+
+// AC2: Failure propagation - serial dependency chain means frontend is blocked when backend fails.
+func TestGetBreakdownTestTasks_SerialChain_BlockedOnUpstreamFailure(t *testing.T) {
+	surfaces := multiSurface("backend", "api", "frontend", "web")
+	resolved, _ := forgeconfig.ResolveExecutionOrder(surfaces, nil)
+
+	tasks := GetBreakdownTestTasks(surfaces, resolved, defaultAuto)
+
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+
+	backendDeps := byID["T-test-run-backend"].Dependencies
+	frontendDeps := byID["T-test-run-frontend"].Dependencies
+
+	if len(backendDeps) == 0 {
+		t.Error("T-test-run-backend should have dependencies (on gen-scripts)")
+	}
+
+	if len(frontendDeps) != 1 || frontendDeps[0] != "T-test-run-backend" {
+		t.Errorf("T-test-run-frontend should depend only on T-test-run-backend, got %v", frontendDeps)
+	}
+}
+
+// AC3: Single surface project degenerates to no-suffix T-test-run
+func TestGetBreakdownTestTasks_SingleSurfaceDegeneration(t *testing.T) {
+	tasks := GetBreakdownTestTasks(scalarSurface("api"), nil, defaultAuto)
+
+	for _, task := range tasks {
+		if strings.HasPrefix(task.ID, "T-test-run-") {
+			t.Errorf("single surface should not generate suffixed run-test, got %q", task.ID)
+		}
+	}
+
+	runIdx := findTaskIndex(tasks, "T-test-run")
+	if runIdx < 0 {
+		t.Fatal("single surface should generate T-test-run (no suffix)")
+	}
+
+	if tasks[runIdx].Key != "run-test" {
+		t.Errorf("single surface run-test Key = %q, want run-test", tasks[runIdx].Key)
+	}
+}
+
+// AC4: Quick mode - T-test-gen-journeys is upstream of T-test-run-*
+func TestGetQuickTestTasks_GenJourneysUpstreamOfRunTests(t *testing.T) {
+	surfaces := multiSurface("backend", "api", "frontend", "web")
+	resolved, _ := forgeconfig.ResolveExecutionOrder(surfaces, nil)
+
+	tasks := GetQuickTestTasks(surfaces, resolved, allEnabledAuto)
+
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+
+	genJourneys, ok := byID["T-test-gen-journeys"]
+	if !ok {
+		t.Fatal("T-test-gen-journeys not found")
+	}
+
+	if len(genJourneys.Dependencies) != 0 {
+		t.Errorf("gen-journeys should have no deps (pipeline entry), got %v", genJourneys.Dependencies)
+	}
+
+	firstRun := byID["T-test-run-backend"]
+	if !dependsTransitively(tasks, firstRun, "T-test-gen-journeys") {
+		t.Errorf("T-test-run-backend should transitively depend on T-test-gen-journeys")
+	}
+}
+
+// dependsTransitively checks if a task transitively depends on targetID.
+func dependsTransitively(tasks []AutoGenTaskDef, task AutoGenTaskDef, targetID string) bool {
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+
+	visited := make(map[string]bool)
+	var dfs func(id string) bool
+	dfs = func(id string) bool {
+		if id == targetID {
+			return true
+		}
+		if visited[id] {
+			return false
+		}
+		visited[id] = true
+		t, ok := byID[id]
+		if !ok {
+			return false
+		}
+		for _, dep := range t.Dependencies {
+			if dfs(dep) {
+				return true
+			}
+		}
+		return false
+	}
+	return dfs(task.ID)
+}
+
+// AC5: T-test-verify-regression depends on last run-test in execution order
+func TestGetBreakdownTestTasks_VerifyRegressionDependsOnChainTail(t *testing.T) {
+	surfaces := multiSurface("backend", "api", "frontend", "web", "mobile-app", "tui")
+	resolved, _ := forgeconfig.ResolveExecutionOrder(surfaces, nil)
+
+	tasks := GetBreakdownTestTasks(surfaces, resolved, defaultAuto)
+
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+
+	// Last in execution order: api < web < tui
+	lastRunID := "T-test-run-mobile-app"
+
+	verifyDeps := byID["T-test-verify-regression"].Dependencies
+	if len(verifyDeps) != 1 || verifyDeps[0] != lastRunID {
+		t.Errorf("verify-regression should depend on %q (chain tail), got %v", lastRunID, verifyDeps)
+	}
+}
+
+// AC5 variant for Quick mode
+func TestGetQuickTestTasks_VerifyRegressionDependsOnChainTail(t *testing.T) {
+	surfaces := multiSurface("backend", "api", "frontend", "web", "mobile-app", "tui")
+	resolved, _ := forgeconfig.ResolveExecutionOrder(surfaces, nil)
+
+	tasks := GetQuickTestTasks(surfaces, resolved, allEnabledAuto)
+
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+
+	lastRunID := "T-test-run-mobile-app"
+
+	verifyDeps := byID["T-test-verify-regression"].Dependencies
+	if len(verifyDeps) != 1 || verifyDeps[0] != lastRunID {
+		t.Errorf("verify-regression should depend on %q (chain tail), got %v", lastRunID, verifyDeps)
+	}
+}
+
+// Verify key != type scenario correctly populates SurfaceKey and SurfaceType
+func TestGetBreakdownTestTasks_KeyNotType_SetsSurfaceFields(t *testing.T) {
+	surfaces := multiSurface("admin-panel", "web", "payment-service", "api")
+	resolved, _ := forgeconfig.ResolveExecutionOrder(surfaces, nil)
+
+	tasks := GetBreakdownTestTasks(surfaces, resolved, defaultAuto)
+
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+
+	psTask, ok := byID["T-test-run-payment-service"]
+	if !ok {
+		t.Fatal("T-test-run-payment-service not found")
+	}
+	if psTask.SurfaceKey != "payment-service" {
+		t.Errorf("SurfaceKey = %q, want payment-service", psTask.SurfaceKey)
+	}
+	if psTask.SurfaceType != "api" {
+		t.Errorf("SurfaceType = %q, want api", psTask.SurfaceType)
+	}
+
+	apTask, ok := byID["T-test-run-admin-panel"]
+	if !ok {
+		t.Fatal("T-test-run-admin-panel not found")
+	}
+	if apTask.SurfaceKey != "admin-panel" {
+		t.Errorf("SurfaceKey = %q, want admin-panel", apTask.SurfaceKey)
+	}
+	if apTask.SurfaceType != "web" {
+		t.Errorf("SurfaceType = %q, want web", apTask.SurfaceType)
+	}
+}
+
+// Verify explicit execution-order overrides default type-based ordering
+func TestGetBreakdownTestTasks_ExplicitExecutionOrder(t *testing.T) {
+	surfaces := multiSurface("backend", "api", "frontend", "web")
+	execOrder := []string{"frontend", "backend"}
+
+	tasks := GetBreakdownTestTasks(surfaces, execOrder, defaultAuto)
+
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+
+	frontendDeps := byID["T-test-run-frontend"].Dependencies
+	foundGenScriptDep := false
+	for _, dep := range frontendDeps {
+		if strings.HasPrefix(dep, "T-test-gen-scripts-") {
+			foundGenScriptDep = true
+			break
+		}
+	}
+	if !foundGenScriptDep {
+		t.Errorf("T-test-run-frontend (first in chain) should depend on gen-scripts, got %v", frontendDeps)
+	}
+
+	backendDeps := byID["T-test-run-backend"].Dependencies
+	if len(backendDeps) != 1 || backendDeps[0] != "T-test-run-frontend" {
+		t.Errorf("T-test-run-backend should depend on T-test-run-frontend (serial), got %v", backendDeps)
+	}
+
+	verifyDeps := byID["T-test-verify-regression"].Dependencies
+	if len(verifyDeps) != 1 || verifyDeps[0] != "T-test-run-backend" {
+		t.Errorf("verify-regression should depend on T-test-run-backend, got %v", verifyDeps)
+	}
+}
+
+// --- Task 5: Dependency resolution chain tests ---
+
+// AC1: Breakdown mode: gen-journeys -> gen-contracts -> gen-scripts-* -> run-test-{keys} -> verify-regression
+func TestGetBreakdownTestTasks_AC1_FullDAG(t *testing.T) {
+	surfaces := multiSurface("auth-service", "api", "admin", "web", "cli", "cli")
+	resolved, _ := forgeconfig.ResolveExecutionOrder(surfaces, nil)
+
+	tasks := GetBreakdownTestTasks(surfaces, resolved, defaultAuto)
+
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+
+	// gen-journeys -> gen-contracts (via eval-journey)
+	if byID["T-test-gen-contracts"].Dependencies[0] != "T-eval-journey" {
+		t.Errorf("gen-contracts should depend on eval-journey, got %v", byID["T-test-gen-contracts"].Dependencies)
+	}
+
+	// gen-scripts depend on eval-contract
+	for _, typ := range []string{"api", "web", "cli"} {
+		gsID := "T-test-gen-scripts-" + typ
+		if byID[gsID].Dependencies[0] != "T-eval-contract" {
+			t.Errorf("%s should depend on eval-contract, got %v", gsID, byID[gsID].Dependencies)
+		}
+	}
+
+	// run-test chain: first depends on all gen-scripts
+	firstRunID := "T-test-run-auth-service"
+	firstRunDeps := byID[firstRunID].Dependencies
+	if len(firstRunDeps) != 3 {
+		t.Fatalf("%s should depend on 3 gen-scripts, got %v", firstRunID, firstRunDeps)
+	}
+
+	// verify-regression depends on last run-test (chain tail)
+	verifyDeps := byID["T-test-verify-regression"].Dependencies
+	lastRunID := "T-test-run-cli"
+	if len(verifyDeps) != 1 || verifyDeps[0] != lastRunID {
+		t.Errorf("verify-regression should depend on %q, got %v", lastRunID, verifyDeps)
+	}
+}
+
+// AC2: Quick mode: gen-journeys -> run-test-{keys} -> verify-regression (no gen-contracts/gen-scripts)
+func TestGetQuickTestTasks_AC2_DirectDependencyChain(t *testing.T) {
+	surfaces := multiSurface("auth-service", "api", "admin", "web", "cli", "cli")
+	resolved, _ := forgeconfig.ResolveExecutionOrder(surfaces, nil)
+
+	tasks := GetQuickTestTasks(surfaces, resolved, allEnabledAuto)
+
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+
+	// No gen-contracts or gen-scripts should exist
+	if _, ok := byID["T-test-gen-contracts"]; ok {
+		t.Error("Quick mode should not contain T-test-gen-contracts")
+	}
+	for _, typ := range []string{"api", "web", "cli"} {
+		gsID := "T-test-gen-scripts-" + typ
+		if _, ok := byID[gsID]; ok {
+			t.Errorf("Quick mode should not contain %q", gsID)
+		}
+	}
+
+	// First run-test depends directly on gen-journeys
+	firstRunID := "T-test-run-auth-service"
+	firstRunDeps := byID[firstRunID].Dependencies
+	if len(firstRunDeps) != 1 || firstRunDeps[0] != "T-test-gen-journeys" {
+		t.Errorf("%s should depend on T-test-gen-journeys, got %v", firstRunID, firstRunDeps)
+	}
+
+	// verify-regression depends on last run-test (chain tail)
+	verifyDeps := byID["T-test-verify-regression"].Dependencies
+	lastRunID := "T-test-run-cli"
+	if len(verifyDeps) != 1 || verifyDeps[0] != lastRunID {
+		t.Errorf("verify-regression should depend on %q, got %v", lastRunID, verifyDeps)
+	}
+}
+
+// AC3: verify-regression depends ONLY on the last run-test in execution order
+func TestVerifyRegressionDependsOnlyOnLastRunTest(t *testing.T) {
+	t.Run("breakdown mode", func(t *testing.T) {
+		surfaces := multiSurface("backend", "api", "frontend", "web")
+		resolved, _ := forgeconfig.ResolveExecutionOrder(surfaces, nil)
+
+		tasks := GetBreakdownTestTasks(surfaces, resolved, defaultAuto)
+		byID := make(map[string]AutoGenTaskDef)
+		for _, t := range tasks {
+			byID[t.ID] = t
+		}
+
+		// Last in execution order is frontend (web comes after api)
+		lastRunID := "T-test-run-frontend"
+		verifyDeps := byID["T-test-verify-regression"].Dependencies
+		if len(verifyDeps) != 1 {
+			t.Fatalf("verify-regression should depend on exactly 1 task, got %v", verifyDeps)
+		}
+		if verifyDeps[0] != lastRunID {
+			t.Errorf("verify-regression should depend on %q (last in chain), got %q", lastRunID, verifyDeps[0])
+		}
+	})
+
+	t.Run("quick mode", func(t *testing.T) {
+		surfaces := multiSurface("backend", "api", "frontend", "web")
+		resolved, _ := forgeconfig.ResolveExecutionOrder(surfaces, nil)
+
+		tasks := GetQuickTestTasks(surfaces, resolved, allEnabledAuto)
+		byID := make(map[string]AutoGenTaskDef)
+		for _, t := range tasks {
+			byID[t.ID] = t
+		}
+
+		lastRunID := "T-test-run-frontend"
+		verifyDeps := byID["T-test-verify-regression"].Dependencies
+		if len(verifyDeps) != 1 {
+			t.Fatalf("verify-regression should depend on exactly 1 task, got %v", verifyDeps)
+		}
+		if verifyDeps[0] != lastRunID {
+			t.Errorf("verify-regression should depend on %q (last in chain), got %q", lastRunID, verifyDeps[0])
+		}
+	})
+}
+
+// Quick mode single surface: run depends directly on gen-journeys
+func TestGetQuickTestTasks_SingleSurface_RunDependsOnGenJourneys(t *testing.T) {
+	tasks := GetQuickTestTasks(scalarSurface("api"), nil, allEnabledAuto)
+
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+
+	runDeps := byID["T-test-run"].Dependencies
+	if len(runDeps) != 1 || runDeps[0] != "T-test-gen-journeys" {
+		t.Errorf("T-test-run should depend on T-test-gen-journeys (direct), got %v", runDeps)
+	}
+}
+
+// Quick mode multi-surface: full serial chain from gen-journeys
+func TestGetQuickTestTasks_MultiSurface_FullSerialChain(t *testing.T) {
+	surfaces := multiSurface("backend", "api", "frontend", "web", "mobile-app", "tui")
+	resolved, _ := forgeconfig.ResolveExecutionOrder(surfaces, nil)
+
+	tasks := GetQuickTestTasks(surfaces, resolved, allEnabledAuto)
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+
+	// Verify serial chain: gen-journeys -> backend -> frontend -> mobile-app -> verify-regression
+	if byID["T-test-run-backend"].Dependencies[0] != "T-test-gen-journeys" {
+		t.Errorf("T-test-run-backend should depend on gen-journeys, got %v", byID["T-test-run-backend"].Dependencies)
+	}
+	if byID["T-test-run-frontend"].Dependencies[0] != "T-test-run-backend" {
+		t.Errorf("T-test-run-frontend should depend on T-test-run-backend, got %v", byID["T-test-run-frontend"].Dependencies)
+	}
+	if byID["T-test-run-mobile-app"].Dependencies[0] != "T-test-run-frontend" {
+		t.Errorf("T-test-run-mobile-app should depend on T-test-run-frontend, got %v", byID["T-test-run-mobile-app"].Dependencies)
+	}
+	if byID["T-test-verify-regression"].Dependencies[0] != "T-test-run-mobile-app" {
+		t.Errorf("verify-regression should depend on T-test-run-mobile-app, got %v", byID["T-test-verify-regression"].Dependencies)
 	}
 }

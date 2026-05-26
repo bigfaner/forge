@@ -23,9 +23,9 @@ func TestTC_017_FixTask_SurfaceInferredFromPath(t *testing.T) {
 	out, exitCode := runForgeRaw(t, projectDir, "surfaces", projectDir+"/frontend/src")
 	if exitCode == 0 {
 		result := parseSurfaceOutput(t, out)
-		assert.Equal(t, "admin-panel", result.SurfaceKey,
+		assert.Equal(t, "admin-panel", result.Key,
 			"fix-task should infer surface-key from file path")
-		assert.Equal(t, "web", result.SurfaceType,
+		assert.Equal(t, "web", result.Type,
 			"fix-task should infer surface-type from file path")
 	}
 }

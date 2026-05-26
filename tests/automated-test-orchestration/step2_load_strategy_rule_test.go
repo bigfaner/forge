@@ -19,9 +19,9 @@ func TestTC_038_LoadStrategyRule_Success(t *testing.T) {
 	projectDir := createProjectWithTask(t, "web")
 
 	// Verify the surface-type is correctly set in the task
-	out, exitCode := runForgeRaw(t, projectDir, "run-tests")
-	t.Logf("run-tests rule loading output (exit %d): %s", exitCode, out)
-	// Success if run-tests proceeds past surface detection
+	out, exitCode := runForgeRaw(t, projectDir, "test", "run-journey", "test-journey")
+	t.Logf("test run-journey rule loading output (exit %d): %s", exitCode, out)
+	// Success if test run-journey proceeds past surface detection
 }
 
 // Traceability: TC-039 -> Contract automated-test-orchestration/step-2 Outcome "rule-file-not-found"
@@ -30,7 +30,7 @@ func TestTC_039_LoadStrategyRule_RuleFileNotFound(t *testing.T) {
 	// Use a valid but potentially unsupported surface type
 	projectDir := createProjectWithTask(t, "mobile")
 
-	out, exitCode := runForgeRaw(t, projectDir, "run-tests")
+	out, exitCode := runForgeRaw(t, projectDir, "test", "run-journey", "test-journey")
 	if exitCode != 0 {
 		assert.True(t,
 			strings.Contains(out, "rule") || strings.Contains(out, "not found") ||
@@ -46,6 +46,6 @@ func TestTC_040_LoadStrategyRule_RuleFileMalformed(t *testing.T) {
 
 	// This test verifies behavior when rule file exists but is malformed
 	// In practice, this would require tampering with the rule file
-	out, exitCode := runForgeRaw(t, projectDir, "run-tests")
-	t.Logf("run-tests malformed rule output (exit %d): %s", exitCode, out)
+	out, exitCode := runForgeRaw(t, projectDir, "test", "run-journey", "test-journey")
+	t.Logf("test run-journey malformed rule output (exit %d): %s", exitCode, out)
 }

@@ -183,6 +183,9 @@ func executeAdd(cmd *cobra.Command) (*AddResult, error) {
 			if !cmd.Flags().Changed("id") && defs.IDPrefix != "" {
 				opts.IDPrefix = defs.IDPrefix
 			}
+			if !cmd.Flags().Changed("type") && defs.Type != "" {
+				opts.Type = defs.Type
+			}
 		}
 	}
 

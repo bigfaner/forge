@@ -3,87 +3,110 @@ package task
 import "testing"
 
 func TestInferType(t *testing.T) {
+	// Surfaces map used for T-test-run-{key} prefix matching tests.
+	multiSurfaces := map[string]string{
+		"backend":  "api",
+		"frontend": "web",
+	}
+	singleSurface := map[string]string{
+		".": "api",
+	}
+
 	tests := []struct {
-		id   string
-		want string
+		id       string
+		surfaces map[string]string
+		want     string
 	}{
 		// Summary and gate
-		{"1.summary", TypeDocSummary},
-		{"2.summary", TypeDocSummary},
-		{"1.gate", TypeGate},
-		{"2.gate", TypeGate},
+		{"1.summary", nil, TypeDocSummary},
+		{"2.summary", nil, TypeDocSummary},
+		{"1.gate", nil, TypeGate},
+		{"2.gate", nil, TypeGate},
 
-		// Breakdown test tasks (exact match)
-		{"T-test-gen-scripts", TypeTestGenScripts},
-		{"T-test-run", TypeTestRun},
-		{"T-test-verify-regression", TypeTestVerifyRegression},
+		// Breakdown test tasks (exact match, nil surfaces)
+		{"T-test-gen-scripts", nil, TypeTestGenScripts},
+		{"T-test-run", nil, TypeTestRun},
+		{"T-test-verify-regression", nil, TypeTestVerifyRegression},
 
 		// Quick test tasks (exact match)
-		{"T-quick-verify-regression", TypeTestVerifyRegression},
-		{"T-quick-doc-drift", TypeDocDrift},
+		{"T-quick-verify-regression", nil, TypeTestVerifyRegression},
+		{"T-quick-doc-drift", nil, TypeDocDrift},
 
 		// Fix tasks
-		{"fix-1", TypeCodingFix},
-		{"fix-2", TypeCodingFix},
-		{"disc-1", TypeCodingFix},
+		{"fix-1", nil, TypeCodingFix},
+		{"fix-2", nil, TypeCodingFix},
+		{"disc-1", nil, TypeCodingFix},
 
 		// Doc review task
-		{"T-review-doc", TypeDocReview},
+		{"T-review-doc", nil, TypeDocReview},
 
 		// Validation tasks
-		{"T-validate-code", TypeValidationCode},
-		{"T-validate-ux", TypeValidationUx},
+		{"T-validate-code", nil, TypeValidationCode},
+		{"T-validate-ux", nil, TypeValidationUx},
 
 		// Type-suffixed test tasks (per-type split, no profile letter)
-		{"T-test-gen-scripts-api", TypeTestGenScripts},
-		{"T-test-gen-scripts-tui", TypeTestGenScripts},
-		{"T-test-gen-scripts-cli", TypeTestGenScripts},
-		{"T-test-gen-scripts-web-ui", TypeTestGenScripts},
-		{"T-test-gen-journeys-api", TypeTestGenJourneys},
-		{"T-test-gen-journeys-tui", TypeTestGenJourneys},
-		{"T-test-gen-journeys-cli", TypeTestGenJourneys},
+		{"T-test-gen-scripts-api", nil, TypeTestGenScripts},
+		{"T-test-gen-scripts-tui", nil, TypeTestGenScripts},
+		{"T-test-gen-scripts-cli", nil, TypeTestGenScripts},
+		{"T-test-gen-scripts-web-ui", nil, TypeTestGenScripts},
+		{"T-test-gen-journeys-api", nil, TypeTestGenJourneys},
+		{"T-test-gen-journeys-tui", nil, TypeTestGenJourneys},
+		{"T-test-gen-journeys-cli", nil, TypeTestGenJourneys},
 
 		// Gen-contracts exact match
-		{"T-test-gen-contracts", TypeTestGenContracts},
-		{"T-test-gen-journeys", TypeTestGenJourneys},
+		{"T-test-gen-contracts", nil, TypeTestGenContracts},
+		{"T-test-gen-journeys", nil, TypeTestGenJourneys},
 
 		// Type suffix on tasks that don't support it should NOT match
-		{"T-test-verify-regression-api", ""},
-		{"T-specs-consolidate-api", ""},
-		{"T-test-run-api", ""},
-		{"T-quick-verify-regression-api", ""},
+		{"T-test-verify-regression-api", nil, ""},
+		{"T-specs-consolidate-api", nil, ""},
+
+		// T-test-run-api without surfaces map: no prefix matching, falls through
+		{"T-test-run-api", nil, ""},
+		{"T-quick-verify-regression-api", nil, ""},
 
 		// Unknown IDs return empty string
-		{"1.1", ""},
-		{"2.3", ""},
-		{"", ""},
-		{"random-task", ""},
+		{"1.1", nil, ""},
+		{"2.3", nil, ""},
+		{"", nil, ""},
+		{"random-task", nil, ""},
 
 		// New business types are explicit — not inferred from patterns
-		{"feature", ""},
-		{"enhancement", ""},
-		{"cleanup", ""},
-		{"refactor", ""},
+		{"feature", nil, ""},
+		{"enhancement", nil, ""},
+		{"cleanup", nil, ""},
+		{"refactor", nil, ""},
 
 		// Other IDs
-		{"T-specs-consolidate", TypeDocConsolidate},
-		{"T-clean-code", TypeCleanCode},
+		{"T-specs-consolidate", nil, TypeDocConsolidate},
+		{"T-clean-code", nil, TypeCleanCode},
 
 		// Old profile-suffixed IDs no longer match
-		{"T-test-gen-scriptsa", ""},
-		{"T-test-runa", ""},
-		{"T-quick-verify-regressiona", ""},
-		{"T-quick-doc-drifta", ""},
+		{"T-test-gen-scriptsa", nil, ""},
+		{"T-test-runa", nil, ""},
+		{"T-quick-verify-regressiona", nil, ""},
+		{"T-quick-doc-drifta", nil, ""},
 
 		// Hard Rule: gen-journeys type suffix with hyphenated types
-		{"T-test-gen-journeys-web-ui", TypeTestGenJourneys},
+		{"T-test-gen-journeys-web-ui", nil, TypeTestGenJourneys},
+
+		// Surface-key prefix matching: known key -> TypeTestRun
+		{"T-test-run-backend", multiSurfaces, TypeTestRun},
+		{"T-test-run-frontend", multiSurfaces, TypeTestRun},
+
+		// Surface-key prefix matching: unknown key -> fallback (no match)
+		{"T-test-run-unknown", multiSurfaces, ""},
+		{"T-test-run-api", multiSurfaces, ""}, // "api" is a type, not a key in multiSurfaces
+
+		// Single surface project: T-test-run (no suffix) still works
+		{"T-test-run", singleSurface, TypeTestRun},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.id, func(t *testing.T) {
-			got := InferType(tt.id)
+			got := InferType(tt.id, tt.surfaces)
 			if got != tt.want {
-				t.Errorf("InferType(%q) = %q, want %q", tt.id, got, tt.want)
+				t.Errorf("InferType(%q, %v) = %q, want %q", tt.id, tt.surfaces, got, tt.want)
 			}
 		})
 	}

@@ -87,19 +87,22 @@ func stringsJoin(elems []string, sep string) string {
 	return result
 }
 
-// surfaceResult represents the expected JSON output from forge surfaces.
+// surfaceResult represents a single entry in the JSON array output from forge surfaces.
 type surfaceResult struct {
-	SurfaceKey  string `json:"surface-key"`
-	SurfaceType string `json:"surface-type"`
+	Key string `json:"key"`
+	Type string `json:"type"`
 }
 
-// parseSurfaceOutput attempts to parse forge surfaces CLI output as JSON.
+// parseSurfaceOutput attempts to parse forge surfaces CLI output as a JSON array.
 func parseSurfaceOutput(t *testing.T, output string) surfaceResult {
 	t.Helper()
-	var result surfaceResult
-	err := json.Unmarshal([]byte(output), &result)
+	var results []surfaceResult
+	err := json.Unmarshal([]byte(output), &results)
 	assert.NoError(t, err, "failed to parse surface output as JSON: %s", output)
-	return result
+	if len(results) > 0 {
+		return results[0]
+	}
+	return surfaceResult{}
 }
 
 // createFeatureWithTasks creates a feature directory structure with tasks.

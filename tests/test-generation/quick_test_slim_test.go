@@ -121,7 +121,7 @@ func quickSlimSetupProject(t *testing.T, slug string, testProfiles []string, tes
 		for _, p := range testProfiles {
 			profileLines += "  - " + p + "\n"
 		}
-		profileLines += "auto:\n  e2eTest:\n    quick: true\n    full: true\n  consolidateSpecs:\n    quick: true\n    full: true\n"
+		profileLines += "surfaces:\n  backend: api\n  frontend: cli\nauto:\n  test:\n    quick: true\n    full: true\n  consolidateSpecs:\n    quick: true\n    full: true\n"
 		require.NoError(t, os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(profileLines), 0644))
 	}
 
@@ -150,7 +150,7 @@ func quickSlimReadIndex(t *testing.T, dir, slug string) quickSlimIndex {
 func quickSlimAddBusinessTask(t *testing.T, dir, slug string) {
 	t.Helper()
 	tasksDir := filepath.Join(dir, "docs", "features", slug, "tasks")
-	taskMD := "---\nid: \"1\"\ntitle: \"Implement feature\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"coding.feature\"\nscope: \"all\"\n---\n\n# Implement feature\n"
+	taskMD := "---\nid: \"1\"\ntitle: \"Implement feature\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"coding.feature\"\nsurface-key: \"\"\nsurface-type: \"api\"\n---\n\n# Implement feature\n"
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "1-implement.md"), []byte(taskMD), 0644))
 }
 
@@ -355,9 +355,9 @@ func TestTC_007_BreakdownModeUnchangedByQuickMerge(t *testing.T) {
 	forgeDir := filepath.Join(dir, ".forge")
 	require.NoError(t, os.MkdirAll(forgeDir, 0755))
 	require.NoError(t, os.WriteFile(filepath.Join(forgeDir, "config.yaml"),
-		[]byte("languages:\n  - go\n"), 0644))
+		[]byte("surfaces:\n  backend: api\n  frontend: cli\n"), 0644))
 
-	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"coding.feature\"\nscope: \"all\"\n---\n\n# Task One\n"
+	taskMD := "---\nid: \"1\"\ntitle: \"Task One\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"coding.feature\"\nsurface-key: \"\"\nsurface-type: \"api\"\n---\n\n# Task One\n"
 	require.NoError(t, os.WriteFile(filepath.Join(tasksDir, "1-task-one.md"), []byte(taskMD), 0644))
 
 	bin := testkit.ForgeBinary

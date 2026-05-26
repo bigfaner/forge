@@ -18,7 +18,7 @@ import (
 func TestTC_056_AlternativeSurface_CliTuiSuccess(t *testing.T) {
 	projectDir := createProjectWithTask(t, "cli")
 
-	out, exitCode := runForgeRaw(t, projectDir, "run-tests")
+	out, exitCode := runForgeRaw(t, projectDir, "test", "run-journey", "test-journey")
 	t.Logf("CLI surface orchestration output (exit %d): %s", exitCode, out)
 	// CLI/TUI: no probe step, no teardown step
 	// Dev is a build/compile step, not a background server
@@ -29,7 +29,7 @@ func TestTC_056_AlternativeSurface_CliTuiSuccess(t *testing.T) {
 func TestTC_057_AlternativeSurface_MobileSuccess(t *testing.T) {
 	projectDir := createProjectWithTask(t, "mobile")
 
-	out, exitCode := runForgeRaw(t, projectDir, "run-tests")
+	out, exitCode := runForgeRaw(t, projectDir, "test", "run-journey", "test-journey")
 	t.Logf("Mobile surface orchestration output (exit %d): %s", exitCode, out)
 	// Mobile: test-setup prepares emulator, teardown cleans up emulator + processes
 }
@@ -39,7 +39,7 @@ func TestTC_057_AlternativeSurface_MobileSuccess(t *testing.T) {
 func TestTC_058_AlternativeSurface_Failure(t *testing.T) {
 	projectDir := createProjectWithTask(t, "cli")
 
-	out, exitCode := runForgeRaw(t, projectDir, "run-tests")
+	out, exitCode := runForgeRaw(t, projectDir, "test", "run-journey", "test-journey")
 	if exitCode != 0 {
 		// Build failure: exit code 1 (retryable) or 2 (blocking)
 		assert.True(t,

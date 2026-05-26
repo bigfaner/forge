@@ -31,12 +31,11 @@ func TestForgeCmd_TC_006_BackwardCompatIgnoresLegacyConfig(t *testing.T) {
 
 	legacyConfig := `languages:
   - go
-interfaces:
-  - cli
+surfaces: cli
 test-framework: go-testing
 project-type: backend
 auto:
-  e2eTest:
+  test:
     quick: false
     full: true
 worktree:
