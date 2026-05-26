@@ -340,7 +340,6 @@ func TestTaskIndexJSONRoundTrip_AllFields(t *testing.T) {
 		tasks:        map[string]Task{"t1": {ID: "1.1", Title: "Task", Status: "pending"}},
 		StatusEnum:   []string{"pending", "completed"},
 		PriorityEnum: []string{"P0", "P1"},
-		E2ERound:     3,
 	}
 
 	data, err := json.Marshal(original)
@@ -351,10 +350,6 @@ func TestTaskIndexJSONRoundTrip_AllFields(t *testing.T) {
 	// Verify raw JSON contains "tasks" key (two-struct pattern must emit it)
 	if !strings.Contains(string(data), `"tasks"`) {
 		t.Errorf("JSON output missing \"tasks\" key: %s", data)
-	}
-	// Verify E2ERound appears in raw output
-	if !strings.Contains(string(data), `"e2eRound"`) {
-		t.Errorf("JSON output missing \"e2eRound\" key: %s", data)
 	}
 
 	var loaded TaskIndex
@@ -367,7 +362,6 @@ func TestTaskIndexJSONRoundTrip_AllFields(t *testing.T) {
 	assertField(t, "Design", loaded.Design, original.Design)
 	assertField(t, "Created", loaded.Created, original.Created)
 	assertField(t, "Status", loaded.Status, original.Status)
-	assertField(t, "E2ERound", loaded.E2ERound, original.E2ERound)
 	if loaded.TaskCount() != original.TaskCount() {
 		t.Errorf("TaskCount = %d, want %d", loaded.TaskCount(), original.TaskCount())
 	}
@@ -404,7 +398,7 @@ func TestTaskIndexUnmarshal_EmptyTasks(t *testing.T) {
 	})
 }
 
-func assertField(t *testing.T, name string, got, want interface{}) {
+func assertField(t *testing.T, name string, got, want any) {
 	t.Helper()
 	if got != want {
 		t.Errorf("%s = %v, want %v", name, got, want)
@@ -793,6 +787,51 @@ func TestTaskTypeRegistry(t *testing.T) {
 			seen[entry.Name] = true
 		}
 	})
+}
+
+func TestTestTypeTitle(t *testing.T) {
+	tests := []struct {
+		surfaceType string
+		want        string
+	}{
+		{"cli", "CLI Functional Test"},
+		{"tui", "Terminal Functional Test"},
+		{"api", "API Functional Test"},
+		{"web", "Web E2E Test"},
+		{"mobile", "Mobile E2E Test"},
+		{"unknown", "Functional Test"},
+		{"", "Functional Test"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.surfaceType, func(t *testing.T) {
+			got := TestTypeTitle(tt.surfaceType)
+			if got != tt.want {
+				t.Errorf("TestTypeTitle(%q) = %q, want %q", tt.surfaceType, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGenSurfaceTestType(t *testing.T) {
+	tests := []struct {
+		baseType string
+		surface  string
+		want     string
+	}{
+		{"test.gen-scripts", "cli", "test.gen-scripts.cli"},
+		{"test.run", "api", "test.run.api"},
+		{"test.verify-regression", "web", "test.verify-regression.web"},
+		{"test.gen-scripts", "", "test.gen-scripts"},
+		{"test.run", "", "test.run"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.baseType+"+"+tt.surface, func(t *testing.T) {
+			got := GenSurfaceTestType(tt.baseType, tt.surface)
+			if got != tt.want {
+				t.Errorf("GenSurfaceTestType(%q, %q) = %q, want %q", tt.baseType, tt.surface, got, tt.want)
+			}
+		})
+	}
 }
 
 func TestRecordDataJSONRoundTrip(t *testing.T) {

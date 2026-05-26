@@ -9,6 +9,8 @@ Framework-agnostic principles that apply to **all** interface types (CLI, TUI, U
 
 **Layer model**: `_shared.md` (abstract principles) → type file Golden Rules (type-specific constraints) → Convention (framework implementation).
 
+**Test type terminology**: Each surface maps to a specific test type name. Refer to `docs/reference/test-type-model.md` for the authoritative mapping. The generic "e2e" label is NOT used as a blanket term -- "e2e" applies only to Web and Mobile surfaces.
+
 ## Principle: Isolation
 
 Each test must execute in an isolated environment that does not depend on or interfere with other tests, the host system, or external state.

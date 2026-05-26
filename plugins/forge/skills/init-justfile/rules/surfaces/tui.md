@@ -1,5 +1,7 @@
 # Surface: tui
 
+> **测试类型参考**：TUI surface 的测试类型为 **终端功能测试（Terminal Functional Test）**，通过子进程 + stdin pipe 验证终端渲染输出 + 交互响应序列。详见 [测试类型模型](../../../../../docs/reference/test-type-model.md)。
+
 ## 编排序列
 
 | 步骤 | 退出码 0 | 退出码 1 | 退出码 2 | 后续动作 |
@@ -17,7 +19,7 @@
 
 | 配方名 | just 签名 | 退出码 0 语义 | 退出码 1 语义 |
 |--------|----------|--------------|--------------|
-| tui-test | `just tui-test` | 所有测试用例通过 | 至少一个测试失败 |
+| tui-test | `just tui-test` | 所有终端功能测试通过 | 至少一个测试失败 |
 | tui-teardown | `just tui-teardown` | 清理完成 | 清理失败 |
 
 实现约束：
@@ -35,6 +37,7 @@
 ## 配方模板（双平台）
 
 ```just
+# Run terminal functional tests
 # user-customized
 tui-test:
     #!/usr/bin/env bash
@@ -47,6 +50,10 @@ tui-test:
     set -euo pipefail
     echo "TODO: implement tui-test" >&2; exit 1
 
+# DEPRECATED: removed after v3.2.0 — use tui-test instead
+alias test-e2e := tui-test
+
+# Clean up TUI test artifacts
 # user-customized
 tui-teardown:
     #!/usr/bin/env bash

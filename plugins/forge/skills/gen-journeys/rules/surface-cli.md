@@ -2,6 +2,8 @@
 
 CLI surface 适用于以命令行方式交互的应用程序。测试重点是 exit code、stdout/stderr 输出、参数校验和 subprocess 隔离。
 
+**Test type**: CLI 功能测试 (CLI Functional Test). Test type definition and classification criteria: see `docs/reference/test-type-model.md`. Generated test code MUST use `@cli-functional` tags, NOT `@e2e`.
+
 ## Detection Signals
 
 | Signal | File Pattern | Dependency Pattern | Exclusion |
@@ -41,7 +43,7 @@ CLI surface 适用于以命令行方式交互的应用程序。测试重点是 e
 
 **Test Level Emphasis**: Contract 80% / Journey smoke 20%
 
-CLI tests are inherently subprocess-based -- each invocation starts a new process with clean state. This makes Contract-level testing (individual command behavior) highly reliable and cost-effective. Journey smoke tests validate the end-to-end user workflow but are slower and less isolatable.
+CLI tests are inherently subprocess-based -- each invocation starts a new process with clean state. This makes Contract-level testing (individual command behavior) highly reliable and cost-effective. Journey smoke tests validate the complete user workflow but are slower and less isolatable.
 
 **Execution Model**: Subprocess
 
