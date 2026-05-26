@@ -1,6 +1,6 @@
 ---
 name: execute-task
-description: Execute single task via claim, dispatch, and verify.
+description: Execute single task via claim, dispatch, and verify orchestrator.
 allowed-tools: Bash Read Agent TaskOutput Skill
 ---
 

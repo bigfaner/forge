@@ -34,7 +34,7 @@
       "dependencies": [
         "10"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "11-architecture-conventions.md",
       "record": "records/11-architecture-conventions.md",
       "type": "doc"

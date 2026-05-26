@@ -159,7 +159,7 @@ If tests fail, the cleanup introduced a regression:
 3. Re-run tests to confirm the revert fixes the issue
 4. Continue to summary with a note about the reverted changes
 
-**If `just test` is not available**: Skip the quality gate.
+**If `just unit-test` is not available**: Skip the quality gate.
 
 Output one of:
 - `Step 3/4: Quality gate... DONE (tests passed)`

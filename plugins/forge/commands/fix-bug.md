@@ -138,12 +138,12 @@ Add an e2e test only when the bug is observable at the API, CLI, or UI surface.
 | API endpoint | `tests/e2e/features/<slug>/api.spec.ts` | fetch |
 | CLI command | `tests/e2e/features/<slug>/cli.spec.ts` | child_process |
 
-Bug fix tests go to the `features/` staging area, same as feature tests. This ensures `just test <slug>` can discover and run them.
+Bug fix tests go to the `features/` staging area, same as feature tests.
 
-Run `just test <slug>` — it **must fail** before the fix:
+Run `just test` — it **must fail** before the fix:
 
 ```bash
-just test <slug>
+just test
 ```
 
 ---
@@ -176,7 +176,7 @@ Strict sequential order. Stop at first failure. On failure: compile → fix & re
 Surface-level tests (if written in Step 3b):
 
 ```bash
-just test <slug>
+just test
 ```
 
 **Verification checklist:**
