@@ -72,6 +72,22 @@ func TestGetDefaults_FixTask(t *testing.T) {
 	}
 }
 
+func TestGetDefaults_CleanupTask(t *testing.T) {
+	defs, err := GetDefaults("coding.cleanup")
+	if err != nil {
+		t.Fatalf("GetDefaults(coding.cleanup) error: %v", err)
+	}
+	if defs.Priority != "P0" {
+		t.Errorf("Priority = %q, want P0", defs.Priority)
+	}
+	if defs.Breaking {
+		t.Error("Breaking = true, want false (cleanup tasks are non-breaking)")
+	}
+	if defs.EstimatedTime != "15min" {
+		t.Errorf("EstimatedTime = %q, want 15min", defs.EstimatedTime)
+	}
+}
+
 func TestGetDefaults_NotFound(t *testing.T) {
 	_, err := GetDefaults("nonexistent")
 	if err == nil {

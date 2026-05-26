@@ -2,7 +2,7 @@
 id: "{{ID}}"
 title: "{{TITLE}}"
 priority: "P0"
-estimated_time: "30min"
+estimated_time: "{{ESTIMATED_TIME}}"
 dependencies: []
 status: pending
 breaking: true

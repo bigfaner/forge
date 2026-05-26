@@ -836,7 +836,7 @@ Examples:
 
 **Type-based template defaults (auto-discovered):**
 - `coding.fix`: Priority=P0, Breaking=true, EstimatedTime=30min, IDPrefix=fix
-- `coding.cleanup`: Priority=P0, Breaking=true, EstimatedTime=15min, IDPrefix=fix
+- `coding.cleanup`: Priority=P0, Breaking=false, EstimatedTime=15min, IDPrefix=fix
 - Defaults are applied unless the corresponding flag is explicitly set
 
 ## 13. Fix-Task Lifecycle

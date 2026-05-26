@@ -60,7 +60,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2-quality-gate-template-fix.md",
       "record": "records/2-quality-gate-template-fix.md",
       "type": "coding.enhancement"
