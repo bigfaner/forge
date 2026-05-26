@@ -163,7 +163,7 @@ All Affected Files non-compilable → `templates/task-doc.md`. Any compilable/ru
 ### 4b. Test Tasks (auto-generated)
 **Do NOT create manually.** CLI handles test pipeline tasks (T-test-*), expansion, fix-tasks. Fix-task override:
 ```bash
-forge task add --template fix-task --title "Fix: <desc>" --source-task-id <TASK_ID> --block-source --var SOURCE_FILES="<paths>" --var TEST_SCRIPT="<test>" --var TEST_RESULTS="<results>" --description "<cause>"
+forge task add --type coding.fix --title "Fix: <desc>" --source-task-id <TASK_ID> --block-source --var SOURCE_FILES="<paths>" --var TEST_SCRIPT="<test>" --var TEST_RESULTS="<results>" --description "<cause>"
 ```
 
 ## Step 5: Generate index.json

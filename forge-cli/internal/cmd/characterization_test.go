@@ -104,8 +104,11 @@ func TestAdd_BlockSource_CurrentBehavior_AllowsCompletedToBlocked(t *testing.T) 
 		*taskpkg.ExportAddDependsOn = ""
 		*taskpkg.ExportAddEstimatedTime = ""
 		*taskpkg.ExportAddDescription = "Fix something"
-		*taskpkg.ExportAddTemplate = ""
-		*taskpkg.ExportAddVars = nil
+		*taskpkg.ExportAddVars = []string{
+			"SOURCE_FILES=a.go",
+			"TEST_SCRIPT=just test",
+			"TEST_RESULTS=results.txt",
+		}
 		*taskpkg.ExportAddSourceTaskID = "1"
 		*taskpkg.ExportAddBlockSource = true
 		*taskpkg.ExportAddType = task.TypeCodingFix
