@@ -107,7 +107,6 @@ forge --help
 | `forge surfaces` | 查询项目 surfaces 配置 |
 | `forge feature` | 设置或显示当前 feature 上下文 |
 | `forge task` | 任务生命周期管理 |
-| `forge test` | 测试工具集（promote / run-journey / verify） |
 | `forge prompt` | 生成 agent 执行提示词 |
 | `forge quality-gate` | 检查所有任务完成，运行回归测试 |
 | `forge fact` | 管理结构化系统事实表 |
