@@ -44,3 +44,4 @@ Run `forge -h` or `forge [command] -h` for full reference.
 
 - **Surface**: a testable system entry point managed by Forge (e.g. a web app, an API server, a CLI binary). Each Surface is identified by a user-defined **Surface Key** (alphanumeric + `-_`) configured in `.forge/config.yaml`.
 - **Surface Type**: the kind of surface — one of `web`, `api`, `cli`, `tui`, `mobile`. Determines the orchestration strategy for build/dev/test (e.g. `web`/`api` require probe + teardown; `cli`/`tui` use build → dev → test). Auto-detected via `forge surfaces detect`.
+- **Test Type**: the test classification derived from Surface Type. Each surface maps to a specific test type (e.g. `cli` → CLI Functional Test, `api` → API Functional Test, `web` → Web E2E Test). "e2e" is used exclusively for Web/Mobile surfaces. See [test-type-model.md](../../docs/reference/test-type-model.md) for the full mapping and classification rules.
