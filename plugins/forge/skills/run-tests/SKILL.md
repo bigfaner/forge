@@ -63,8 +63,10 @@ Read the current task file (from `forge task status` or known task path). Extrac
 **Source 2 (fallback): `forge surfaces` CLI**
 
 ```bash
-forge surfaces --json <task-file-path>
+forge surfaces --json <source-directory-path>
 ```
+
+Use the task's source file directory path (not the task file path). `forge surfaces --json` expects source directory paths and uses segment prefix matching. If the task specifies source files, use their parent directory. If no source files are known, use the project root (`.`).
 
 Parse JSON response to extract the `type` field.
 
@@ -119,7 +121,7 @@ When environment IS ready -- proceed to Step 4.
 
 ### Step 4: Execute Orchestration Sequence
 
-Execute the sequence defined in the loaded rule file's "编排序列" table.
+Execute the sequence defined in the loaded rule file's "Orchestration Sequence" table.
 
 **State file**: Before starting the sequence, write teardown state to `.forge/test-state.json`:
 
@@ -162,7 +164,7 @@ When dev returns non-zero:
 **Test failure:**
 
 - Exit code 1: Execute teardown, exit 1
-- Exit code 2: Execute teardown, suggest retry ("测试环境异常，建议重试"), exit 2
+- Exit code 2: Execute teardown, suggest retry ("Test environment error, suggest retry"), exit 2
 
 **Teardown execution:**
 
@@ -184,7 +186,7 @@ Follow the same failure handling rules for test and teardown as 4a.
 
 ### Step 5: Parse Results
 
-Parse test results based on the Convention loaded in Step 0 (if applicable) or auto-detected format.
+Parse test results based on the Convention loaded in Step 0 (if applicable) or auto-detected format. Note: Step 0 is Stale State Recovery; Convention is loaded from `docs/conventions/testing/<convention>.md` discovered during the gen-test-scripts pipeline (not during run-tests).
 
 Read `rules/result-parsing.md` for parsing strategies.
 

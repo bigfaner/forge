@@ -1,6 +1,6 @@
 ---
 name: execute-task
-description: Execute single task with focused TDD workflow.
+description: Execute single task via claim, dispatch, and verify.
 allowed-tools: Bash Read Agent TaskOutput Skill
 ---
 
@@ -34,8 +34,12 @@ If `MAIN_SESSION == "true"`:
 1. Read the task file at the FILE path extracted from claim output and find the `## Main Session Instructions` section.
 2. Follow the instructions exactly — the task document specifies what skill to invoke, how to check outcome, and how to record the result.
 3. The dispatcher does NOT hardcode skill names or record logic — it delegates to the task document.
-4. If the task file lacks a `## Main Session Instructions` section, mark the task blocked and report: "MAIN_SESSION task missing Main Session Instructions section — task document is incomplete".
-5. After execution, verify the record file exists via `forge task status <TASK_ID>`. If STATUS is not `"completed"`, spawn fix task (same as Step 2 verify logic).
+4. If the task file lacks a `## Main Session Instructions` section, create a fix task to block it:
+   ```bash
+   forge task add --type coding.fix --title "Fix: MAIN_SESSION missing instructions" --source-task-id <TASK_ID> --block-source --description "MAIN_SESSION task missing Main Session Instructions section"
+   ```
+   Then skip to Step 3 (STOP).
+5. After execution, verify the record file exists via `forge task status <TASK_ID>`. If STATUS is not `"completed"`, spawn fix task using `--block-source` (same as Step 2b verify logic).
 6. Skip to Step 3 (STOP).
 
 Else:
@@ -65,17 +69,18 @@ forge task status <TASK_ID>
 ```
 
 - **STATUS == `"completed"`**: proceed to Step 3 (STOP).
-- **STATUS != `"completed"`**: task was auto-downgraded (e.g. test failures).
-  Spawn fix task using `--block-source` to atomically block the source:
+- **STATUS == `"blocked"`** (auto-downgraded): create fix task using `--block-source`:
   ```bash
   forge task add --type coding.fix --title "Fix: <failure>" \
     --source-task-id <TASK_ID> \
     --block-source \
-    --description "<reason>"
+    --description "Task <TASK_ID> was auto-downgraded to blocked — test failures or record issues"
   ```
   `forge task add` automatically deduplicates — check output:
   - `ACTION: ADDED` → new fix task created
   - `ACTION: SKIPPED` → active fix task already exists
+  Proceed to Step 3 (STOP).
+- **STATUS == `"in_progress"`** (record missing): proceed to 2c.
 
 ### 2c. Record-Missing Recovery
 
@@ -103,7 +108,11 @@ After Step 2, you MUST stop immediately.
 - Continuing with any additional work
 </PROHIBITIONS>
 
-Output your final summary and STOP.
+Output your final summary in this format and STOP:
+
+```
+Task <TASK_ID>: <status> | <one-line summary of what was accomplished or why it failed>
+```
 </HARD-RULE>
 
 ## Error Handling
@@ -111,8 +120,8 @@ Output your final summary and STOP.
 | Situation | Action |
 |-----------|--------|
 | No available task | Stop, report |
-| Agent timeout | Mark blocked, stop |
-| Record missing | Dispatch `Agent(prompt="Fix record for task <TASK_ID>")` — subagent calls `forge prompt get-by-task-id --fix-record-missed` internally |
+| Agent timeout | Create fix task to block the timed-out task, then stop: `forge task add --type coding.fix --title "Fix: agent timeout" --source-task-id <TASK_ID> --block-source --description "Agent timed out after 30 minutes"` |
+| Record missing | Dispatch `Agent(subagent_type="forge:task-executor", prompt="Fix record for task <TASK_ID>")` — subagent calls `forge prompt get-by-task-id --fix-record-missed` internally |
 | Main session task fails | Follow error handling in task document's `### Error Handling` section; if missing, `forge task add --type coding.fix --title "Fix: main session task failed" --block-source --source-task-id <TASK_ID>` |
 
 ## Rules

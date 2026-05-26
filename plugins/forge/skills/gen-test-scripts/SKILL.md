@@ -28,6 +28,16 @@ Check previous stage artifacts. Abort and prompt user if missing:
 | At least one Contract file in `docs/features/<slug>/testing/<journey>/contracts/` | Run `/gen-contracts` first |
 | Eval report for all Contracts (`testing/<journey>/.eval-report.md`) | Run `/eval --type contract` first. **Blocker**: do not proceed if any Contract scored below target. |
 
+### SKIP_EVAL_GATE Mode
+
+When the task context contains `SKIP_EVAL_GATE=true` (injected by Quick mode task templates), the eval report prerequisite is **conditionally waived**:
+
+- **Skip**: eval-contract report check (`testing/<journey>/.eval-report.md`) is bypassed entirely
+- **Proceed directly**: move to Step 0 (Load Convention Files) and Step 1 (Code Reconnaissance) without eval verification
+- **Mark output**: every test file generated under SKIP_EVAL_GATE MUST include a header comment: `// SKIP_EVAL_GATE: generated without eval-contract verification. Review with extra scrutiny.`
+
+**When SKIP_EVAL_GATE is NOT set** (Breakdown mode or manual `/gen-test-scripts` invocation): the eval report Blocker remains mandatory. Behavior is unchanged.
+
 ## Step 0: Load Convention Files
 
 Load test framework knowledge from Convention files (no Profile/CLI dependency).

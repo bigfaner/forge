@@ -138,7 +138,7 @@
       "dependencies": [
         "7"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "8-dispatcher-pipeline-logic.md",
       "record": "records/8-dispatcher-pipeline-logic.md",
       "type": "doc"
