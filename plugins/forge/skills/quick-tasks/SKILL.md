@@ -108,7 +108,7 @@ If `forge surfaces --json` fails or returns no surfaces configured, set both fie
 - `proposal.md#Key-Risks` — risk of agent ignoring IMPORTANT tags and mitigation strategy
 ```
 
-Replace the template placeholder `{{REFERENCE_FILES}}` (or the default `- \`docs/proposals/<slug>/proposal.md\` — Source proposal`) with the generated section-level references.
+Replace the default Reference Files section content (`- \`docs/proposals/<slug>/proposal.md\` — Source proposal`) with the generated section-level references. This is a content replacement instruction — there is no `{{REFERENCE_FILES}}` token in the template; the agent edits the `## Reference Files` section directly.
 
 **Priority**: P0 | P1 | P2. Classified by structural role in the proposal:
 - P0: implements the core solution mechanism described in the proposal — without this, the feature doesn't work
@@ -118,6 +118,28 @@ Replace the template placeholder `{{REFERENCE_FILES}}` (or the default `- \`docs
 ## Step 3: Create Task Files
 
 Read the appropriate template (see Template Selection below) for the task content structure. Create one task file per derived task in `docs/features/<slug>/tasks/`.
+
+### Task Template Placeholders
+
+Both `templates/task.md` and `templates/task-doc.md` use the following placeholders. The agent replaces each with a value derived from the proposal context:
+
+| Placeholder | Value Source |
+|-------------|-------------|
+| `{{ID}}` | Sequential integer (e.g., `1`, `2`) |
+| `{{TITLE}}` | Derived from the In Scope bullet — concise imperative title |
+| `{{PRIORITY}}` | P0 / P1 / P2 (see Priority below) |
+| `{{ESTIMATED_TIME}}` | Effort estimate (e.g., `"1h"`, `"2h"`) |
+| `{{DEPENDENCIES}}` | Comma-separated task IDs (e.g., `[1]` or `[1, 2]`); empty `[]` for first task |
+| `{{SLUG}}` | Feature slug (from proposal directory name) |
+| `{{DESCRIPTION}}` | Task description from Problem + Solution context |
+| `{{ACCEPTANCE_CRITERIA}}` | Derived from Success Criteria as `- [ ]` checklist items |
+| `{{HARD_RULES}}` | Critical constraints only; leave empty for normal tasks |
+| `{{NOTES}}` | Implementation notes from Key Risks |
+| `{{SURFACE_KEY}}` | Surface key from inference (coding tasks only; see Surface-Key/Type Inference below) |
+| `{{SURFACE_TYPE}}` | Surface type from inference (coding tasks only) |
+| `{{NEW_FILES}}` | New files to create (doc tasks only) |
+| `{{MODIFIED_FILES}}` | Files to modify (doc tasks only) |
+| `{{DELETED_FILES}}` | Files to delete (doc tasks only) |
 
 <HARD-RULE>
 Naming & ID conventions:
@@ -198,7 +220,7 @@ After all business task `.md` files (Step 3) are written, run:
 forge task index --feature <slug>
 ```
 
-This auto-generates stage-gate files, test task `.md` files, and `index.json` (runs validation automatically). Existing files are preserved on re-run.
+This auto-generates test task `.md` files (based on `surfaces` in `.forge/config.yaml`) and `index.json` (runs validation automatically). Existing files are preserved on re-run. Quick mode uses simple integer IDs — no stage-gate files are generated.
 
 ## Step 6: Create Manifest
 

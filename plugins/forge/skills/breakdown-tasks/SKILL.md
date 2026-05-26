@@ -211,7 +211,7 @@ git commit -m "docs(<slug>): add breakdown-tasks planning artifacts"
 Other uncommitted changes remain unstaged.
 
 ## Output Checklist
-- [ ] `tasks/phase-inventory.json` written
+- [ ] `tasks/phase-inventory.json` written (only if `rules/phase-detection.md` was loaded; skip for artifact-driven fallback)
 - [ ] Task files follow naming conventions
 - [ ] `index.json` valid, `forge task validate-index` passes
 - [ ] Stage-gate files auto-generated

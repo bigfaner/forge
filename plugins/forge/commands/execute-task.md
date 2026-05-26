@@ -8,6 +8,8 @@ allowed-tools: Bash Read Agent TaskOutput Skill
 
 Execute a single task. MAIN_SESSION tasks execute in main session; all others dispatch to forge:task-executor subagent (which calls `forge prompt get-by-task-id` internally).
 
+> **Note**: This is a manual entry point for executing a single task. The automated pipeline (`/run-tasks`) uses its own dispatch loop and does not invoke `/execute-task`.
+
 ## Step 1: Claim Task
 
 ```bash

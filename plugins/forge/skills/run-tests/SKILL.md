@@ -83,7 +83,7 @@ Recovery options:
   3. Run '/init-justfile' to configure surfaces for this project
 ```
 
-Exit with code 2 (blocking error, per BIZ-error-reporting-001).
+Exit with code 2 (blocking error, per BIZ-error-reporting-001 in `docs/business-rules/error-reporting.md`).
 
 ### Step 2: Load Orchestration Rules
 
@@ -227,7 +227,7 @@ Report: tests/<journey>/results/latest.md
 
 ## Exit Codes
 
-Per BIZ-error-reporting-001:
+Per BIZ-error-reporting-001 (defined in `docs/business-rules/error-reporting.md`):
 
 | Exit Code | Meaning | Example Scenarios |
 |-----------|---------|-------------------|
