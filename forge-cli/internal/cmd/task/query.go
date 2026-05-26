@@ -50,6 +50,19 @@ func runQuery(_ *cobra.Command, args []string) error {
 		base.Exit(base.ErrFileNotFound(indexPath))
 	}
 
+	// Check for legacy scope fields
+	var allTasks []task.Task
+	for _, t := range index.TasksMap() {
+		allTasks = append(allTasks, t)
+	}
+	if legacyErr := task.CheckLegacyScope(allTasks); legacyErr != nil {
+		scopeErr, ok := legacyErr.(*task.LegacyScopeError)
+		if ok {
+			base.Exit(base.ErrLegacyScope(scopeErr.Count))
+		}
+		base.Exit(legacyErr)
+	}
+
 	key, t, err := task.FindTask(index, taskIDArg)
 	if err != nil {
 		base.Exit(base.ErrTaskNotFound(taskIDArg))
@@ -69,7 +82,8 @@ func printDefaultQuery(t *task.Task) {
 	base.PrintField("STATUS", t.Status)
 	base.PrintFieldIfNotEmpty("TYPE", t.Type)
 	base.PrintFieldIfNotEmpty("TASK_CATEGORY", task.CategoryForType(t.Type))
-	base.PrintFieldIfNotEmpty("SCOPE", t.Scope)
+	base.PrintFieldIfNotEmpty("SURFACE_KEY", t.SurfaceKey)
+	base.PrintFieldIfNotEmpty("SURFACE_TYPE", t.SurfaceType)
 	if t.Breaking {
 		base.PrintField("BREAKING", "true")
 	}
@@ -85,7 +99,8 @@ func printVerboseQuery(key string, t *task.Task, featureSlug string, index *task
 	base.PrintField("PRIORITY", t.Priority)
 	base.PrintFieldIfNotEmpty("TYPE", t.Type)
 	base.PrintFieldIfNotEmpty("TASK_CATEGORY", task.CategoryForType(t.Type))
-	base.PrintFieldIfNotEmpty("SCOPE", t.Scope)
+	base.PrintFieldIfNotEmpty("SURFACE_KEY", t.SurfaceKey)
+	base.PrintFieldIfNotEmpty("SURFACE_TYPE", t.SurfaceType)
 	if len(t.Dependencies) > 0 {
 		base.PrintField("DEPENDENCIES:", "")
 		for _, dep := range t.Dependencies {

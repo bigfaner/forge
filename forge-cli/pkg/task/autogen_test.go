@@ -111,9 +111,6 @@ func TestGetQuickTestTasks_SingleType(t *testing.T) {
 	if tasks[5].Type != TypeDocDrift {
 		t.Errorf("T-quick-doc-drift Type = %q, want %q", tasks[5].Type, TypeDocDrift)
 	}
-	if tasks[5].Scope != "all" {
-		t.Errorf("T-quick-doc-drift Scope = %q, want %q", tasks[5].Scope, "all")
-	}
 }
 
 func TestGenerateTestTaskMD(t *testing.T) {
@@ -121,8 +118,8 @@ func TestGenerateTestTaskMD(t *testing.T) {
 		ID: "T-test-gen-scripts-api", Key: "gen-test-scripts-api",
 		Title: "Generate Test Scripts (api)", Priority: "P1",
 		EstimatedTime: "1-2h", Dependencies: []string{},
-		Type: TypeTestGenScripts, Scope: "all",
-		TestType: "api", StrategyKind: "generate",
+		Type:        TypeTestGenScripts,
+		SurfaceType: "api", StrategyKind: "generate",
 	}
 
 	content, err := GenerateTestTaskMD(def, BodyContext{})
@@ -149,7 +146,7 @@ func TestGenerateTestTaskMD_SharedTask(t *testing.T) {
 		ID: "T-test-run", Key: "run-test",
 		Title: "Run e2e Tests", Priority: "P1",
 		EstimatedTime: "30min-1h", Dependencies: []string{},
-		Type: TypeTestRun, Scope: "all",
+		Type: TypeTestRun,
 	}
 
 	content, err := GenerateTestTaskMD(def, BodyContext{})
@@ -222,9 +219,6 @@ func TestGetReviewDocTask(t *testing.T) {
 	}
 	if task.Title == "" {
 		t.Error("Title should not be empty")
-	}
-	if task.Scope == "" {
-		t.Error("Scope should not be empty")
 	}
 	if len(task.Dependencies) != 0 {
 		t.Errorf("Dependencies should be empty (resolved later), got %v", task.Dependencies)
@@ -300,19 +294,19 @@ func TestGetBreakdownTestTasks_PerType_TwoTypes(t *testing.T) {
 	}
 
 	// TestType field set for gen-journeys
-	if tasks[0].TestType != "tui" {
-		t.Errorf("tasks[0].TestType = %q, want tui", tasks[0].TestType)
+	if tasks[0].SurfaceType != "tui" {
+		t.Errorf("tasks[0].SurfaceType = %q, want tui", tasks[0].SurfaceType)
 	}
-	if tasks[1].TestType != "api" {
-		t.Errorf("tasks[1].TestType = %q, want api", tasks[1].TestType)
+	if tasks[1].SurfaceType != "api" {
+		t.Errorf("tasks[1].SurfaceType = %q, want api", tasks[1].SurfaceType)
 	}
 
 	// TestType field set for gen-scripts
-	if tasks[5].TestType != "tui" {
-		t.Errorf("tasks[5].TestType = %q, want tui", tasks[5].TestType)
+	if tasks[5].SurfaceType != "tui" {
+		t.Errorf("tasks[5].SurfaceType = %q, want tui", tasks[5].SurfaceType)
 	}
-	if tasks[6].TestType != "api" {
-		t.Errorf("tasks[6].TestType = %q, want api", tasks[6].TestType)
+	if tasks[6].SurfaceType != "api" {
+		t.Errorf("tasks[6].SurfaceType = %q, want api", tasks[6].SurfaceType)
 	}
 
 	// eval-journey depends on ALL gen-journeys tasks
@@ -402,8 +396,8 @@ func TestGenerateTestTaskMD_WithTestType(t *testing.T) {
 		ID: "T-test-gen-scripts-api", Key: "gen-test-scripts-api",
 		Title: "Generate Test Scripts (api)", Priority: "P1",
 		EstimatedTime: "1-2h", Dependencies: []string{},
-		Type: TypeTestGenScripts, Scope: "all",
-		TestType: "api", StrategyKind: "generate",
+		Type:        TypeTestGenScripts,
+		SurfaceType: "api", StrategyKind: "generate",
 	}
 
 	content, err := GenerateTestTaskMD(def, BodyContext{})
@@ -452,19 +446,19 @@ func TestGetQuickTestTasks_PerType_TwoTypes(t *testing.T) {
 	}
 
 	// TestType field set for gen-journeys
-	if tasks[0].TestType != "tui" {
-		t.Errorf("tasks[0].TestType = %q, want tui", tasks[0].TestType)
+	if tasks[0].SurfaceType != "tui" {
+		t.Errorf("tasks[0].SurfaceType = %q, want tui", tasks[0].SurfaceType)
 	}
-	if tasks[1].TestType != "api" {
-		t.Errorf("tasks[1].TestType = %q, want api", tasks[1].TestType)
+	if tasks[1].SurfaceType != "api" {
+		t.Errorf("tasks[1].SurfaceType = %q, want api", tasks[1].SurfaceType)
 	}
 
 	// TestType field set for gen-scripts
-	if tasks[3].TestType != "tui" {
-		t.Errorf("tasks[3].TestType = %q, want tui", tasks[3].TestType)
+	if tasks[3].SurfaceType != "tui" {
+		t.Errorf("tasks[3].SurfaceType = %q, want tui", tasks[3].SurfaceType)
 	}
-	if tasks[4].TestType != "api" {
-		t.Errorf("tasks[4].TestType = %q, want api", tasks[4].TestType)
+	if tasks[4].SurfaceType != "api" {
+		t.Errorf("tasks[4].SurfaceType = %q, want api", tasks[4].SurfaceType)
 	}
 
 	// gen-contracts depends on ALL gen-journeys tasks
@@ -673,7 +667,7 @@ func TestGenerateTestTaskMD_EmbedTemplate_LoadsContent(t *testing.T) {
 			def := AutoGenTaskDef{
 				ID: "T-test", Key: "test",
 				Title: "Test Task", Priority: "P1",
-				EstimatedTime: "1h", Type: tt.typ, Scope: "all",
+				EstimatedTime: "1h", Type: tt.typ,
 			}
 
 			content, err := GenerateTestTaskMD(def, BodyContext{})
@@ -693,7 +687,7 @@ func TestGenerateTestTaskMD_StrategyContentAppendedAfterTemplate(t *testing.T) {
 	def := AutoGenTaskDef{
 		ID: "T-test-gen-scripts-api", Key: "gen-test-scripts-api",
 		Title: "Generate Test Scripts (api)", Priority: "P1",
-		EstimatedTime: "1-2h", Type: TypeTestGenScripts, Scope: "all",
+		EstimatedTime: "1-2h", Type: TypeTestGenScripts,
 		StrategyKind:    "generate",
 		StrategyContent: []byte("# Custom Strategy\n\nUse this strategy."),
 	}
@@ -721,8 +715,8 @@ func TestGenerateTestTaskMD_TestTypeNotedInBody(t *testing.T) {
 	def := AutoGenTaskDef{
 		ID: "T-test-gen-scripts-api", Key: "gen-test-scripts-api",
 		Title: "Generate Test Scripts (api)", Priority: "P1",
-		EstimatedTime: "1-2h", Type: TypeTestGenScripts, Scope: "all",
-		TestType: "api",
+		EstimatedTime: "1-2h", Type: TypeTestGenScripts,
+		SurfaceType: "api",
 	}
 
 	content, err := GenerateTestTaskMD(def, BodyContext{})
@@ -736,12 +730,64 @@ func TestGenerateTestTaskMD_TestTypeNotedInBody(t *testing.T) {
 	}
 }
 
+// --- Task 1.2b: TaskFromFile propagation tests ---
+
+func TestTaskFromFile_PropagatesSurfaceKeyAndType(t *testing.T) {
+	def := AutoGenTaskDef{
+		ID:            "T-test-gen-scripts-api",
+		Key:           "gen-test-scripts-api",
+		Title:         "Generate Test Scripts (api)",
+		Priority:      "P1",
+		EstimatedTime: "1-2h",
+		Dependencies:  []string{"dep1"},
+		Type:          TypeTestGenScripts,
+		SurfaceKey:    "admin-panel",
+		SurfaceType:   "web",
+		Breaking:      true,
+		MainSession:   true,
+	}
+
+	task := def.TaskFromFile()
+
+	if task.SurfaceKey != "admin-panel" {
+		t.Errorf("Task.SurfaceKey = %q, want %q", task.SurfaceKey, "admin-panel")
+	}
+	if task.SurfaceType != "web" {
+		t.Errorf("Task.SurfaceType = %q, want %q", task.SurfaceType, "web")
+	}
+	if task.ID != "T-test-gen-scripts-api" {
+		t.Errorf("Task.ID = %q, want %q", task.ID, "T-test-gen-scripts-api")
+	}
+	if task.Type != TypeTestGenScripts {
+		t.Errorf("Task.Type = %q, want %q", task.Type, TypeTestGenScripts)
+	}
+}
+
+func TestTaskFromFile_EmptySurfaceFields(t *testing.T) {
+	def := AutoGenTaskDef{
+		ID:       "T-test-run",
+		Key:      "run-test",
+		Title:    "Run e2e Tests",
+		Priority: "P1",
+		Type:     TypeTestRun,
+	}
+
+	task := def.TaskFromFile()
+
+	if task.SurfaceKey != "" {
+		t.Errorf("Task.SurfaceKey = %q, want empty when not set", task.SurfaceKey)
+	}
+	if task.SurfaceType != "" {
+		t.Errorf("Task.SurfaceType = %q, want empty when not set", task.SurfaceType)
+	}
+}
+
 func TestGenerateTestTaskMD_FrontmatterUnchanged(t *testing.T) {
 	def := AutoGenTaskDef{
 		ID: "T-test-run", Key: "run-test",
 		Title: "Run e2e Tests", Priority: "P1",
 		EstimatedTime: "30min-1h", Dependencies: []string{"dep1"},
-		Type: TypeTestRun, Scope: "all",
+		Type:        TypeTestRun,
 		MainSession: true,
 	}
 
@@ -768,8 +814,11 @@ func TestGenerateTestTaskMD_FrontmatterUnchanged(t *testing.T) {
 	if !strings.Contains(s, `type: "test.run"`) {
 		t.Error("missing type in frontmatter")
 	}
-	if !strings.Contains(s, `scope: "all"`) {
-		t.Error("missing scope in frontmatter")
+	if !strings.Contains(s, `surface-key: ""`) {
+		t.Error("missing surface-key in frontmatter")
+	}
+	if !strings.Contains(s, `surface-type: ""`) {
+		t.Error("missing surface-type in frontmatter")
 	}
 	if !strings.Contains(s, "mainSession: true") {
 		t.Error("missing mainSession in frontmatter")
@@ -794,7 +843,7 @@ Acceptance:
 		SurfaceTypes:       []string{"api", "cli"},
 		AcceptanceCriteria: []string{"AC1: works", "AC2: fast"},
 	}
-	def := AutoGenTaskDef{TestType: "api"}
+	def := AutoGenTaskDef{SurfaceType: "api"}
 
 	result := renderBody(template, def, ctx)
 
@@ -903,8 +952,8 @@ func TestGenerateTestTaskMD_WithBodyContext(t *testing.T) {
 	def := AutoGenTaskDef{
 		ID: "T-test-gen-scripts-api", Key: "gen-test-scripts-api",
 		Title: "Generate Test Scripts (api)", Priority: "P1",
-		EstimatedTime: "1-2h", Type: TypeTestGenScripts, Scope: "all",
-		TestType: "api",
+		EstimatedTime: "1-2h", Type: TypeTestGenScripts,
+		SurfaceType: "api",
 	}
 	ctx := BodyContext{
 		FeatureSlug: "my-feature",
@@ -931,7 +980,7 @@ func TestGenerateTestTaskMD_BackwardCompat_EmptyBodyContext(t *testing.T) {
 	def := AutoGenTaskDef{
 		ID: "T-test-gen-scripts-api", Key: "gen-test-scripts-api",
 		Title: "Generate Test Scripts (api)", Priority: "P1",
-		EstimatedTime: "1-2h", Type: TypeTestGenScripts, Scope: "all",
+		EstimatedTime: "1-2h", Type: TypeTestGenScripts,
 	}
 
 	// Passing empty BodyContext should produce same output as before
@@ -1125,8 +1174,8 @@ func TestBodyContentPerStrategy(t *testing.T) {
 			def := AutoGenTaskDef{
 				ID: "T-test", Key: "test",
 				Title: "Test Task", Priority: "P1",
-				EstimatedTime: "1h", Type: tt.typ, Scope: "all",
-				TestType: tt.testType,
+				EstimatedTime: "1h", Type: tt.typ,
+				SurfaceType: tt.testType,
 			}
 
 			content, err := GenerateTestTaskMD(def, tt.ctx)
@@ -1207,7 +1256,7 @@ func TestGenJourneysTemplateRendering(t *testing.T) {
 	def := AutoGenTaskDef{
 		ID: "T-test-gen-journeys", Key: "gen-journeys",
 		Title: "Generate Test Journeys", Priority: "P1",
-		EstimatedTime: "20-30min", Type: TypeTestGenJourneys, Scope: "all",
+		EstimatedTime: "20-30min", Type: TypeTestGenJourneys,
 	}
 	ctx := BodyContext{
 		FeatureSlug: "my-feature",
@@ -1248,7 +1297,7 @@ func TestGenContractsTemplateRendering(t *testing.T) {
 	def := AutoGenTaskDef{
 		ID: "T-test-gen-contracts", Key: "gen-contracts",
 		Title: "Generate Test Contracts", Priority: "P1",
-		EstimatedTime: "30-45min", Type: TypeTestGenContracts, Scope: "all",
+		EstimatedTime: "30-45min", Type: TypeTestGenContracts,
 	}
 	ctx := BodyContext{
 		FeatureSlug: "my-feature",
@@ -1318,8 +1367,8 @@ func TestGetBreakdownTestTasks_GenJourneysPerType(t *testing.T) {
 			if task.Type != TypeTestGenJourneys {
 				t.Errorf("gen-journeys-tui Type = %q, want %q", task.Type, TypeTestGenJourneys)
 			}
-			if task.TestType != "tui" {
-				t.Errorf("gen-journeys-tui TestType = %q, want tui", task.TestType)
+			if task.SurfaceType != "tui" {
+				t.Errorf("gen-journeys-tui TestType = %q, want tui", task.SurfaceType)
 			}
 			if task.StrategyKind != "interface" {
 				t.Errorf("gen-journeys-tui StrategyKind = %q, want interface", task.StrategyKind)
@@ -1330,8 +1379,8 @@ func TestGetBreakdownTestTasks_GenJourneysPerType(t *testing.T) {
 			if task.Type != TypeTestGenJourneys {
 				t.Errorf("gen-journeys-api Type = %q, want %q", task.Type, TypeTestGenJourneys)
 			}
-			if task.TestType != "api" {
-				t.Errorf("gen-journeys-api TestType = %q, want api", task.TestType)
+			if task.SurfaceType != "api" {
+				t.Errorf("gen-journeys-api TestType = %q, want api", task.SurfaceType)
 			}
 			if task.StrategyKind != "interface" {
 				t.Errorf("gen-journeys-api StrategyKind = %q, want interface", task.StrategyKind)
@@ -1493,8 +1542,8 @@ func TestGetBreakdownTestTasks_GenJourneysUsesEmbedTemplate(t *testing.T) {
 	def := AutoGenTaskDef{
 		ID: "T-test-gen-journeys-cli", Key: "gen-journeys-cli",
 		Title: "Generate Test Journeys (cli)", Priority: "P1",
-		EstimatedTime: "20-30min", Type: TypeTestGenJourneys, Scope: "all",
-		TestType: "cli", StrategyKind: "interface",
+		EstimatedTime: "20-30min", Type: TypeTestGenJourneys,
+		SurfaceType: "cli", StrategyKind: "interface",
 	}
 	ctx := BodyContext{
 		FeatureSlug: "test-feature",
@@ -1522,7 +1571,7 @@ func TestGetBreakdownTestTasks_GenContractsUsesEmbedTemplate(t *testing.T) {
 	def := AutoGenTaskDef{
 		ID: "T-test-gen-contracts", Key: "gen-contracts",
 		Title: "Generate Test Contracts", Priority: "P1",
-		EstimatedTime: "30-45min", Type: TypeTestGenContracts, Scope: "all",
+		EstimatedTime: "30-45min", Type: TypeTestGenContracts,
 	}
 	ctx := BodyContext{
 		FeatureSlug: "test-feature",
@@ -1664,8 +1713,8 @@ func TestGetQuickTestTasks_GenJourneysPerType(t *testing.T) {
 			if task.Type != TypeTestGenJourneys {
 				t.Errorf("gen-journeys-tui Type = %q, want %q", task.Type, TypeTestGenJourneys)
 			}
-			if task.TestType != "tui" {
-				t.Errorf("gen-journeys-tui TestType = %q, want tui", task.TestType)
+			if task.SurfaceType != "tui" {
+				t.Errorf("gen-journeys-tui TestType = %q, want tui", task.SurfaceType)
 			}
 		}
 		if task.ID == "T-test-gen-journeys-api" {
@@ -1673,8 +1722,8 @@ func TestGetQuickTestTasks_GenJourneysPerType(t *testing.T) {
 			if task.Type != TypeTestGenJourneys {
 				t.Errorf("gen-journeys-api Type = %q, want %q", task.Type, TypeTestGenJourneys)
 			}
-			if task.TestType != "api" {
-				t.Errorf("gen-journeys-api TestType = %q, want api", task.TestType)
+			if task.SurfaceType != "api" {
+				t.Errorf("gen-journeys-api TestType = %q, want api", task.SurfaceType)
 			}
 		}
 	}
@@ -2005,7 +2054,7 @@ func TestRenderBody_AllPlaceholdersIncludingDocTaskAC(t *testing.T) {
 		AcceptanceCriteria: []string{"AC1"},
 		DocTaskCriteria:    map[string]string{"1-doc": "Doc AC"},
 	}
-	def := AutoGenTaskDef{TestType: "cli"}
+	def := AutoGenTaskDef{SurfaceType: "cli"}
 
 	result := renderBody(template, def, ctx)
 

@@ -162,11 +162,34 @@ func TestTaskStateJSONRoundTrip(t *testing.T) {
 }
 
 func TestTaskScopeSerialization(t *testing.T) {
-	t.Run("scope field serializes when set", func(t *testing.T) {
+	t.Run("surface-key field serializes when set", func(t *testing.T) {
+		task := Task{
+			ID:          "1.1",
+			Title:       "Frontend Task",
+			SurfaceKey:  "admin-panel",
+			SurfaceType: "web",
+			Status:      "pending",
+			File:        "tasks/1.1.md",
+		}
+
+		data, err := json.Marshal(task)
+		if err != nil {
+			t.Fatalf("json.Marshal failed: %v", err)
+		}
+
+		got := string(data)
+		if !strings.Contains(got, `"surface-key":"admin-panel"`) {
+			t.Errorf("JSON = %s, want to contain %q", got, `"surface-key":"admin-panel"`)
+		}
+		if !strings.Contains(got, `"surface-type":"web"`) {
+			t.Errorf("JSON = %s, want to contain %q", got, `"surface-type":"web"`)
+		}
+	})
+
+	t.Run("surface fields omitted when empty", func(t *testing.T) {
 		task := Task{
 			ID:     "1.1",
-			Title:  "Frontend Task",
-			Scope:  "frontend",
+			Title:  "Task Without Surface",
 			Status: "pending",
 			File:   "tasks/1.1.md",
 		}
@@ -177,64 +200,54 @@ func TestTaskScopeSerialization(t *testing.T) {
 		}
 
 		got := string(data)
-		if !strings.Contains(got, `"scope":"frontend"`) {
-			t.Errorf("JSON = %s, want to contain %q", got, `"scope":"frontend"`)
+		if strings.Contains(got, `"surface-key"`) {
+			t.Errorf("JSON = %s, should NOT contain surface-key field when empty", got)
+		}
+		if strings.Contains(got, `"surface-type"`) {
+			t.Errorf("JSON = %s, should NOT contain surface-type field when empty", got)
 		}
 	})
 
-	t.Run("scope field omitted when empty", func(t *testing.T) {
-		task := Task{
-			ID:     "1.1",
-			Title:  "Task Without Scope",
-			Scope:  "",
-			Status: "pending",
-			File:   "tasks/1.1.md",
-		}
-
-		data, err := json.Marshal(task)
-		if err != nil {
-			t.Fatalf("json.Marshal failed: %v", err)
-		}
-
-		got := string(data)
-		if strings.Contains(got, `"scope"`) {
-			t.Errorf("JSON = %s, should NOT contain scope field when empty", got)
-		}
-	})
-
-	t.Run("scope field deserializes from JSON", func(t *testing.T) {
-		jsonStr := `{"id":"1.1","title":"Backend Task","scope":"backend","status":"pending","file":"tasks/1.1.md"}`
+	t.Run("surface fields deserialize from JSON", func(t *testing.T) {
+		jsonStr := `{"id":"1.1","title":"Backend Task","surface-key":"payment-service","surface-type":"api","status":"pending","file":"tasks/1.1.md"}`
 
 		var task Task
 		if err := json.Unmarshal([]byte(jsonStr), &task); err != nil {
 			t.Fatalf("json.Unmarshal failed: %v", err)
 		}
 
-		if task.Scope != "backend" {
-			t.Errorf("Scope = %q, want %q", task.Scope, "backend")
+		if task.SurfaceKey != "payment-service" {
+			t.Errorf("SurfaceKey = %q, want %q", task.SurfaceKey, "payment-service")
+		}
+		if task.SurfaceType != "api" {
+			t.Errorf("SurfaceType = %q, want %q", task.SurfaceType, "api")
 		}
 	})
 
-	t.Run("scope field defaults to empty when missing in JSON", func(t *testing.T) {
-		jsonStr := `{"id":"1.1","title":"No Scope Task","status":"pending","file":"tasks/1.1.md"}`
+	t.Run("surface fields default to empty when missing in JSON", func(t *testing.T) {
+		jsonStr := `{"id":"1.1","title":"No Surface Task","status":"pending","file":"tasks/1.1.md"}`
 
 		var task Task
 		if err := json.Unmarshal([]byte(jsonStr), &task); err != nil {
 			t.Fatalf("json.Unmarshal failed: %v", err)
 		}
 
-		if task.Scope != "" {
-			t.Errorf("Scope = %q, want empty string when missing", task.Scope)
+		if task.SurfaceKey != "" {
+			t.Errorf("SurfaceKey = %q, want empty string when missing", task.SurfaceKey)
+		}
+		if task.SurfaceType != "" {
+			t.Errorf("SurfaceType = %q, want empty string when missing", task.SurfaceType)
 		}
 	})
 
-	t.Run("scope roundtrip preserves value", func(t *testing.T) {
+	t.Run("surface fields roundtrip preserves value", func(t *testing.T) {
 		task := Task{
-			ID:     "2.3",
-			Title:  "Mixed Task",
-			Scope:  "all",
-			Status: "pending",
-			File:   "tasks/2.3.md",
+			ID:          "2.3",
+			Title:       "Mixed Task",
+			SurfaceKey:  "admin-panel",
+			SurfaceType: "web",
+			Status:      "pending",
+			File:        "tasks/2.3.md",
 		}
 
 		data, err := json.Marshal(task)
@@ -247,19 +260,23 @@ func TestTaskScopeSerialization(t *testing.T) {
 			t.Fatalf("json.Unmarshal failed: %v", err)
 		}
 
-		if unmarshaled.Scope != task.Scope {
-			t.Errorf("Scope roundtrip = %q, want %q", unmarshaled.Scope, task.Scope)
+		if unmarshaled.SurfaceKey != task.SurfaceKey {
+			t.Errorf("SurfaceKey roundtrip = %q, want %q", unmarshaled.SurfaceKey, task.SurfaceKey)
+		}
+		if unmarshaled.SurfaceType != task.SurfaceType {
+			t.Errorf("SurfaceType roundtrip = %q, want %q", unmarshaled.SurfaceType, task.SurfaceType)
 		}
 	})
 }
 
 func TestTaskStateScopeSerialization(t *testing.T) {
-	t.Run("TaskState scope serializes when set", func(t *testing.T) {
+	t.Run("TaskState surface fields serialize when set", func(t *testing.T) {
 		state := &TaskState{
 			TaskID:      "1.1",
 			Key:         "task1",
 			Title:       "Frontend Task",
-			Scope:       "frontend",
+			SurfaceKey:  "admin-panel",
+			SurfaceType: "web",
 			StartedTime: "2024-01-01 10:00",
 		}
 
@@ -269,17 +286,19 @@ func TestTaskStateScopeSerialization(t *testing.T) {
 		}
 
 		got := string(data)
-		if !strings.Contains(got, `"scope":"frontend"`) {
-			t.Errorf("JSON = %s, want to contain %q", got, `"scope":"frontend"`)
+		if !strings.Contains(got, `"surface-key":"admin-panel"`) {
+			t.Errorf("JSON = %s, want to contain %q", got, `"surface-key":"admin-panel"`)
+		}
+		if !strings.Contains(got, `"surface-type":"web"`) {
+			t.Errorf("JSON = %s, want to contain %q", got, `"surface-type":"web"`)
 		}
 	})
 
-	t.Run("TaskState scope omitted when empty", func(t *testing.T) {
+	t.Run("TaskState surface fields omitted when empty", func(t *testing.T) {
 		state := &TaskState{
 			TaskID:      "1.1",
 			Key:         "task1",
 			Title:       "Task",
-			Scope:       "",
 			StartedTime: "2024-01-01 10:00",
 		}
 
@@ -289,21 +308,24 @@ func TestTaskStateScopeSerialization(t *testing.T) {
 		}
 
 		got := string(data)
-		if strings.Contains(got, `"scope"`) {
-			t.Errorf("JSON = %s, should NOT contain scope field when empty", got)
+		if strings.Contains(got, `"surface-key"`) {
+			t.Errorf("JSON = %s, should NOT contain surface-key field when empty", got)
 		}
 	})
 
-	t.Run("TaskState scope deserializes from JSON", func(t *testing.T) {
-		jsonStr := `{"task_id":"1.1","key":"task1","title":"Backend Task","scope":"backend","startedTime":"2024-01-01 10:00"}`
+	t.Run("TaskState surface fields deserialize from JSON", func(t *testing.T) {
+		jsonStr := `{"task_id":"1.1","key":"task1","title":"Backend Task","surface-key":"payment-service","surface-type":"api","startedTime":"2024-01-01 10:00"}`
 
 		var state TaskState
 		if err := json.Unmarshal([]byte(jsonStr), &state); err != nil {
 			t.Fatalf("json.Unmarshal failed: %v", err)
 		}
 
-		if state.Scope != "backend" {
-			t.Errorf("Scope = %q, want %q", state.Scope, "backend")
+		if state.SurfaceKey != "payment-service" {
+			t.Errorf("SurfaceKey = %q, want %q", state.SurfaceKey, "payment-service")
+		}
+		if state.SurfaceType != "api" {
+			t.Errorf("SurfaceType = %q, want %q", state.SurfaceType, "api")
 		}
 	})
 }

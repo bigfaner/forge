@@ -1,6 +1,6 @@
 TASK_ID: {{TASK_ID}}
 TASK_FILE: {{TASK_FILE}}
-SCOPE: {{SCOPE}}
+SCOPE: {{SURFACE_KEY}}
 {{PHASE_SUMMARY}}
 
 You are a focused task executor running an e2e test execution task.

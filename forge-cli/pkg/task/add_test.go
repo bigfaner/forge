@@ -1934,6 +1934,131 @@ func TestBuildTaskMarkdown_OmitsTypeWhenEmpty(t *testing.T) {
 	}
 }
 
+// --- Task 1.2b: SurfaceKey/SurfaceType propagation in AddTask ---
+
+func TestAddTask_SurfaceFields_PropagatedFromOpts(t *testing.T) {
+	indexPath := newTestIndex(t)
+
+	id, err := AddTask(indexPath, AddTaskOpts{
+		Title:       "Fix web login",
+		Priority:    "P0",
+		SurfaceKey:  "admin-panel",
+		SurfaceType: "web",
+	})
+	if err != nil {
+		t.Fatalf("AddTask failed: %v", err)
+	}
+
+	index, err := LoadIndex(indexPath)
+	if err != nil {
+		t.Fatalf("LoadIndex failed: %v", err)
+	}
+	task := index.tasks[id]
+	if task.SurfaceKey != "admin-panel" {
+		t.Errorf("SurfaceKey = %q, want %q", task.SurfaceKey, "admin-panel")
+	}
+	if task.SurfaceType != "web" {
+		t.Errorf("SurfaceType = %q, want %q", task.SurfaceType, "web")
+	}
+}
+
+func TestAddTask_SurfaceFields_EmptyWhenNotSet(t *testing.T) {
+	indexPath := newTestIndex(t)
+
+	id, err := AddTask(indexPath, AddTaskOpts{
+		Title:    "Untyped task",
+		Priority: "P1",
+	})
+	if err != nil {
+		t.Fatalf("AddTask failed: %v", err)
+	}
+
+	index, err := LoadIndex(indexPath)
+	if err != nil {
+		t.Fatalf("LoadIndex failed: %v", err)
+	}
+	task := index.tasks[id]
+	if task.SurfaceKey != "" {
+		t.Errorf("SurfaceKey = %q, want empty", task.SurfaceKey)
+	}
+	if task.SurfaceType != "" {
+		t.Errorf("SurfaceType = %q, want empty", task.SurfaceType)
+	}
+}
+
+func TestAddTask_SurfaceFields_InheritedFromSource(t *testing.T) {
+	indexPath := newTestIndex(t)
+
+	// Set surface fields on the source task
+	index, _ := LoadIndex(indexPath)
+	src := index.tasks["1.1-init"]
+	src.SurfaceKey = "admin-panel"
+	src.SurfaceType = "web"
+	index.tasks["1.1-init"] = src
+	if err := SaveIndex(indexPath, index); err != nil {
+		t.Fatalf("SaveIndex failed: %v", err)
+	}
+
+	id, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix for surface task",
+		Priority:     "P0",
+		SourceTaskID: "1.1",
+	})
+	if err != nil {
+		t.Fatalf("AddTask failed: %v", err)
+	}
+
+	index, err = LoadIndex(indexPath)
+	if err != nil {
+		t.Fatalf("LoadIndex failed: %v", err)
+	}
+	task := index.tasks[id]
+	if task.SurfaceKey != "admin-panel" {
+		t.Errorf("SurfaceKey = %q, want %q (inherited from source)", task.SurfaceKey, "admin-panel")
+	}
+	if task.SurfaceType != "web" {
+		t.Errorf("SurfaceType = %q, want %q (inherited from source)", task.SurfaceType, "web")
+	}
+}
+
+func TestAddTask_SurfaceFields_OptsOverrideSource(t *testing.T) {
+	indexPath := newTestIndex(t)
+
+	// Source has surface fields
+	index, _ := LoadIndex(indexPath)
+	src := index.tasks["1.1-init"]
+	src.SurfaceKey = "admin-panel"
+	src.SurfaceType = "web"
+	index.tasks["1.1-init"] = src
+	if err := SaveIndex(indexPath, index); err != nil {
+		t.Fatalf("SaveIndex failed: %v", err)
+	}
+
+	// Explicit opts values should override source inheritance
+	id, err := AddTask(indexPath, AddTaskOpts{
+		Title:        "Fix with explicit surface",
+		Priority:     "P0",
+		SourceTaskID: "1.1",
+		SurfaceKey:   "payment-service",
+		SurfaceType:  "api",
+	})
+	if err != nil {
+		t.Fatalf("AddTask failed: %v", err)
+	}
+
+	index, err = LoadIndex(indexPath)
+	if err != nil {
+		t.Fatalf("LoadIndex failed: %v", err)
+	}
+	task := index.tasks[id]
+	if task.SurfaceKey != "payment-service" {
+		t.Errorf("SurfaceKey = %q, want %q (explicit opts should override)", task.SurfaceKey, "payment-service")
+	}
+	if task.SurfaceType != "api" {
+		t.Errorf("SurfaceType = %q, want %q (explicit opts should override)", task.SurfaceType, "api")
+	}
+}
+
 func TestCreateTaskMarkdown_WithTypeInFrontmatter(t *testing.T) {
 	dir := t.TempDir()
 	opts := AddTaskOpts{
@@ -1953,5 +2078,115 @@ func TestCreateTaskMarkdown_WithTypeInFrontmatter(t *testing.T) {
 	}
 	if !strings.Contains(string(data), `type: "coding.refactor"`) {
 		t.Errorf("expected type in frontmatter, got:\n%s", string(data))
+	}
+}
+
+func TestInjectSurfaceFrontmatter(t *testing.T) {
+	tests := []struct {
+		name        string
+		content     string
+		surfaceKey  string
+		surfaceType string
+		wantKey     string // substring that should be present (or absent)
+		wantType    string
+	}{
+		{
+			name:        "replaces empty surface-key and surface-type",
+			content:     "---\nid: \"fix-1\"\nsurface-key: \"\"\nsurface-type: \"\"\n---\n",
+			surfaceKey:  "admin-panel",
+			surfaceType: "web",
+			wantKey:     `surface-key: "admin-panel"`,
+			wantType:    `surface-type: "web"`,
+		},
+		{
+			name:        "replaces only surface-key when surface-type empty",
+			content:     "---\nid: \"fix-1\"\nsurface-key: \"\"\nsurface-type: \"\"\n---\n",
+			surfaceKey:  "backend",
+			surfaceType: "",
+			wantKey:     `surface-key: "backend"`,
+			wantType:    `surface-type: ""`, // unchanged
+		},
+		{
+			name:        "replaces only surface-type when surface-key empty",
+			content:     "---\nid: \"fix-1\"\nsurface-key: \"\"\nsurface-type: \"\"\n---\n",
+			surfaceKey:  "",
+			surfaceType: "api",
+			wantKey:     `surface-key: ""`, // unchanged
+			wantType:    `surface-type: "api"`,
+		},
+		{
+			name:        "no change when both empty and opts empty",
+			content:     "---\nid: \"fix-1\"\nsurface-key: \"\"\nsurface-type: \"\"\n---\n",
+			surfaceKey:  "",
+			surfaceType: "",
+			wantKey:     `surface-key: ""`,
+			wantType:    `surface-type: ""`,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := injectSurfaceFrontmatter(tc.content, tc.surfaceKey, tc.surfaceType)
+			if !strings.Contains(got, tc.wantKey) {
+				t.Errorf("expected content to contain %q, got:\n%s", tc.wantKey, got)
+			}
+			if !strings.Contains(got, tc.wantType) {
+				t.Errorf("expected content to contain %q, got:\n%s", tc.wantType, got)
+			}
+		})
+	}
+}
+
+func TestBuildTaskMarkdown_SurfaceFields(t *testing.T) {
+	tests := []struct {
+		name        string
+		surfaceKey  string
+		surfaceType string
+		wantKey     bool
+		wantType    bool
+	}{
+		{
+			name:        "both fields present",
+			surfaceKey:  "admin-panel",
+			surfaceType: "web",
+			wantKey:     true,
+			wantType:    true,
+		},
+		{
+			name:        "empty fields omitted",
+			surfaceKey:  "",
+			surfaceType: "",
+			wantKey:     false,
+			wantType:    false,
+		},
+		{
+			name:        "only surface-key present",
+			surfaceKey:  "backend",
+			surfaceType: "",
+			wantKey:     true,
+			wantType:    false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := AddTaskOpts{
+				ID:          "test-1",
+				Title:       "Test task",
+				Priority:    "P1",
+				Status:      "pending",
+				SurfaceKey:  tc.surfaceKey,
+				SurfaceType: tc.surfaceType,
+			}
+			got := buildTaskMarkdown(opts)
+			hasKey := strings.Contains(got, "surface-key:")
+			hasType := strings.Contains(got, "surface-type:")
+			if hasKey != tc.wantKey {
+				t.Errorf("surface-key presence = %v, want %v\nGot:\n%s", hasKey, tc.wantKey, got)
+			}
+			if hasType != tc.wantType {
+				t.Errorf("surface-type presence = %v, want %v\nGot:\n%s", hasType, tc.wantType, got)
+			}
+		})
 	}
 }

@@ -29,6 +29,8 @@ type AddTaskOpts struct {
 	BlockSource   bool              // Block source task before resolution (preserves fix-chain model)
 	IDPrefix      string            // Auto-generate ID as prefix-N; empty defaults to "disc"
 	Type          string            // Task type (e.g. TypeCodingFix, TypeCodingCleanup). Empty = no type set.
+	SurfaceKey    string            // Surface key inherited from source task
+	SurfaceType   string            // Surface type inherited from source task
 }
 
 // terminalStatuses are task statuses that indicate the task is done.
@@ -95,6 +97,15 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 			return fmt.Errorf("load index: %w", err)
 		}
 
+		// Check for legacy scope fields before proceeding
+		var allTasks []Task
+		for _, t := range index.TasksMap() {
+			allTasks = append(allTasks, t)
+		}
+		if legacyErr := CheckLegacyScope(allTasks); legacyErr != nil {
+			return legacyErr
+		}
+
 		// Defaults
 		if opts.Status == "" {
 			opts.Status = "pending"
@@ -139,6 +150,14 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 		// Derive file and record paths
 		fileName := opts.ID + ".md"
 		recordPath := "records/" + opts.ID + ".md"
+
+		// Inherit SurfaceKey/SurfaceType from source task when not explicitly set in opts.
+		if opts.SourceTaskID != "" && opts.SurfaceKey == "" && opts.SurfaceType == "" {
+			if _, srcT, srcErr := FindTask(index, opts.SourceTaskID); srcErr == nil {
+				opts.SurfaceKey = srcT.SurfaceKey
+				opts.SurfaceType = srcT.SurfaceType
+			}
+		}
 
 		// Source handling: dedup -> block -> resolve.
 		// Dedup is a pure read (no mutation), so it must come first.
@@ -194,6 +213,8 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 			File:          fileName,
 			Record:        recordPath,
 			Breaking:      opts.Breaking,
+			SurfaceKey:    opts.SurfaceKey,
+			SurfaceType:   opts.SurfaceType,
 			SourceTaskID:  opts.SourceTaskID,
 			Type:          opts.Type,
 		})
@@ -224,11 +245,11 @@ func CreateTaskMarkdown(tasksDir string, filename string, opts AddTaskOpts) erro
 	var content string
 
 	if opts.Template != "" {
-		tmpl, err := tmpl.Get(opts.Template)
+		t, err := tmpl.Get(opts.Template)
 		if err != nil {
 			return err
 		}
-		content, err = ApplyVars(tmpl, opts)
+		content, err = ApplyVars(t, opts)
 		if err != nil {
 			return err
 		}
@@ -236,7 +257,26 @@ func CreateTaskMarkdown(tasksDir string, filename string, opts AddTaskOpts) erro
 		content = buildTaskMarkdown(opts)
 	}
 
+	// Inject surface-key/surface-type into frontmatter when non-empty.
+	// Templates may have static empty values; overwrite with inferred values.
+	if opts.SurfaceKey != "" || opts.SurfaceType != "" {
+		content = injectSurfaceFrontmatter(content, opts.SurfaceKey, opts.SurfaceType)
+	}
+
 	return os.WriteFile(filepath.Join(tasksDir, filename), []byte(content), 0644)
+}
+
+// injectSurfaceFrontmatter replaces static surface-key/surface-type values in
+// frontmatter with the provided values. If the fields are absent, they are
+// inserted before the closing "---".
+func injectSurfaceFrontmatter(content, surfaceKey, surfaceType string) string {
+	if surfaceKey != "" {
+		content = strings.Replace(content, `surface-key: ""`, fmt.Sprintf(`surface-key: %q`, surfaceKey), 1)
+	}
+	if surfaceType != "" {
+		content = strings.Replace(content, `surface-type: ""`, fmt.Sprintf(`surface-type: %q`, surfaceType), 1)
+	}
+	return content
 }
 
 // ApplyVars replaces {{KEY}} placeholders in tmpl with values from opts.Vars
@@ -302,6 +342,12 @@ func buildTaskMarkdown(opts AddTaskOpts) string {
 	}
 	if opts.Breaking {
 		buf.WriteString("breaking: true\n")
+	}
+	if opts.SurfaceKey != "" {
+		fmt.Fprintf(&buf, "surface-key: %q\n", opts.SurfaceKey)
+	}
+	if opts.SurfaceType != "" {
+		fmt.Fprintf(&buf, "surface-type: %q\n", opts.SurfaceType)
 	}
 	buf.WriteString("---\n\n")
 

@@ -70,13 +70,13 @@ Enforce maximum 15 coding tasks (`coding.*` type). Doc-type tasks (`doc*` type p
 
 ## Step 2: Derive Tasks
 
-For each In Scope bullet: estimate effort (1-2h), derive acceptance criteria from Success Criteria, classify type (see Step 3 Template Selection), set scope via Scope Inference, fill Reference Files with section-level references from proposal context.
+For each In Scope bullet: estimate effort (1-2h), derive acceptance criteria from Success Criteria, classify type (see Step 3 Template Selection), resolve surface-key/surface-type via Surface-Key/Type Inference, fill Reference Files with section-level references from proposal context.
 
 **Split by functional steps**: multiple independently verifiable steps in one bullet → separate tasks (coding tasks still ≤ 15, doc tasks unlimited).
 
 **Dependencies**: linear chain unless parallel work implied. Simple integer IDs: `1`, `2`, `3`.
 
-**Scope Inference** (from task description semantics): UI/pages/components → `scope: "frontend"`, API/server/database/CLI → `scope: "backend"`, mixed/unclear → `scope: "all"`.
+**Surface-Key/Type Inference**: For each task, query `forge surfaces --json <file-path>` on the task's affected files to resolve `surface-key` and `surface-type`. Merge results: single surface → use its key+type; mixed or no match → leave both empty. If `forge surfaces --json` fails or returns no surfaces configured, set both fields to empty strings and continue.
 
 **Reference Files Generation**: For each derived task, generate precise section-level Reference Files instead of bare file paths.
 

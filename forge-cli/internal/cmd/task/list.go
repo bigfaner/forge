@@ -76,6 +76,19 @@ func runList(_ *cobra.Command, args []string) error {
 		return nil
 	}
 
+	// Check for legacy scope fields
+	var allTasks []task.Task
+	for _, t := range index.TasksMap() {
+		allTasks = append(allTasks, t)
+	}
+	if legacyErr := task.CheckLegacyScope(allTasks); legacyErr != nil {
+		scopeErr, ok := legacyErr.(*task.LegacyScopeError)
+		if ok {
+			base.Exit(base.ErrLegacyScope(scopeErr.Count))
+		}
+		return legacyErr
+	}
+
 	// Collect and sort task IDs
 	tasks := index.TasksMap()
 	ids := make([]string, 0, len(tasks))

@@ -751,14 +751,7 @@ func getWorktreeKeyValue(projectRoot, key string) (string, bool, error) {
 
 // joinSlice joins slice values with newline for plain-text output.
 func joinSlice(vals []string) string {
-	result := ""
-	for i, v := range vals {
-		if i > 0 {
-			result += "\n"
-		}
-		result += v
-	}
-	return result
+	return strings.Join(vals, "\n")
 }
 
 // getCoverageKeyValue handles dot-notation keys for the coverage config block.

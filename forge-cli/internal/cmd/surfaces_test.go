@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -364,6 +365,244 @@ func TestSurfacesEdgeCases(t *testing.T) {
 
 		if !strings.Contains(stderr.String(), "'..'") {
 			t.Errorf("error should mention '..', got: %s", stderr.String())
+		}
+	})
+}
+
+// resetSurfacesJSONFlag resets both --types and --json flags.
+func resetSurfacesJSONFlag(t *testing.T) {
+	t.Helper()
+	surfacesTypesFlag = false
+	surfacesJSONFlag = false
+}
+
+// TestSurfacesJSONList tests `forge surfaces --json` (list mode).
+func TestSurfacesJSONList(t *testing.T) {
+	resetSurfacesJSONFlag(t)
+
+	t.Run("map form outputs surfaces JSON array", func(t *testing.T) {
+		resetSurfacesJSONFlag(t)
+		dir := surfacesTestHelper(t, "surfaces:\n  admin-panel: web\n  payment-service: api\n")
+
+		var stdout bytes.Buffer
+		rootCmd.SetOut(&stdout)
+		rootCmd.SetErr(os.Stderr)
+		rootCmd.SetArgs([]string{"surfaces", "--json", "--project-root", dir})
+
+		err := rootCmd.Execute()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		var result map[string]interface{}
+		if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+			t.Fatalf("invalid JSON: %v, output: %s", err, stdout.String())
+		}
+
+		surfaces, ok := result["surfaces"].([]interface{})
+		if !ok {
+			t.Fatalf("expected 'surfaces' array, got: %v", result)
+		}
+		if len(surfaces) != 2 {
+			t.Fatalf("expected 2 surfaces, got %d", len(surfaces))
+		}
+	})
+
+	t.Run("scalar form outputs single surface with dot key", func(t *testing.T) {
+		resetSurfacesJSONFlag(t)
+		dir := surfacesTestHelper(t, "surfaces: web\n")
+
+		var stdout bytes.Buffer
+		rootCmd.SetOut(&stdout)
+		rootCmd.SetErr(os.Stderr)
+		rootCmd.SetArgs([]string{"surfaces", "--json", "--project-root", dir})
+
+		err := rootCmd.Execute()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		var result map[string]interface{}
+		if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+			t.Fatalf("invalid JSON: %v, output: %s", err, stdout.String())
+		}
+
+		surfaces, ok := result["surfaces"].([]interface{})
+		if !ok {
+			t.Fatalf("expected 'surfaces' array, got: %v", result)
+		}
+		if len(surfaces) != 1 {
+			t.Fatalf("expected 1 surface, got %d", len(surfaces))
+		}
+		entry, ok := surfaces[0].(map[string]interface{})
+		if !ok {
+			t.Fatalf("expected map entry, got: %v", surfaces[0])
+		}
+		if entry["key"] != "." || entry["type"] != "web" {
+			t.Errorf("expected {key: '.', type: 'web'}, got: %v", entry)
+		}
+	})
+}
+
+// TestSurfacesJSONQuery tests `forge surfaces <path> --json` (query mode).
+func TestSurfacesJSONQuery(t *testing.T) {
+	resetSurfacesJSONFlag(t)
+
+	t.Run("matching path outputs JSON array", func(t *testing.T) {
+		resetSurfacesJSONFlag(t)
+		dir := surfacesTestHelper(t, "surfaces:\n  admin-panel: web\n  payment-service: api\n")
+
+		var stdout bytes.Buffer
+		rootCmd.SetOut(&stdout)
+		rootCmd.SetErr(os.Stderr)
+		rootCmd.SetArgs([]string{"surfaces", "admin-panel/src/App.tsx", "--json", "--project-root", dir})
+
+		err := rootCmd.Execute()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		var result []map[string]interface{}
+		if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+			t.Fatalf("invalid JSON: %v, output: %s", err, stdout.String())
+		}
+		if len(result) != 1 {
+			t.Fatalf("expected 1 match, got %d", len(result))
+		}
+		if result[0]["key"] != "admin-panel" || result[0]["type"] != "web" {
+			t.Errorf("expected {key: 'admin-panel', type: 'web'}, got: %v", result[0])
+		}
+	})
+
+	t.Run("no match outputs empty JSON array exit 0", func(t *testing.T) {
+		resetSurfacesJSONFlag(t)
+		dir := surfacesTestHelper(t, "surfaces:\n  admin-panel: web\n")
+
+		var stdout bytes.Buffer
+		rootCmd.SetOut(&stdout)
+		rootCmd.SetErr(os.Stderr)
+		rootCmd.SetArgs([]string{"surfaces", "unknown-dir/file.go", "--json", "--project-root", dir})
+
+		err := rootCmd.Execute()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		output := strings.TrimSpace(stdout.String())
+		if output != "[]" {
+			t.Errorf("expected '[]', got %q", output)
+		}
+	})
+
+	t.Run("scalar form query returns dot key", func(t *testing.T) {
+		resetSurfacesJSONFlag(t)
+		dir := surfacesTestHelper(t, "surfaces: api\n")
+
+		var stdout bytes.Buffer
+		rootCmd.SetOut(&stdout)
+		rootCmd.SetErr(os.Stderr)
+		rootCmd.SetArgs([]string{"surfaces", "src/main.go", "--json", "--project-root", dir})
+
+		err := rootCmd.Execute()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		var result []map[string]interface{}
+		if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+			t.Fatalf("invalid JSON: %v, output: %s", err, stdout.String())
+		}
+		if len(result) != 1 {
+			t.Fatalf("expected 1 match, got %d", len(result))
+		}
+		if result[0]["key"] != "." || result[0]["type"] != "api" {
+			t.Errorf("expected {key: '.', type: 'api'}, got: %v", result[0])
+		}
+	})
+}
+
+// TestSurfacesJSONTypes tests `forge surfaces --types --json`.
+func TestSurfacesJSONTypes(t *testing.T) {
+	resetSurfacesJSONFlag(t)
+
+	t.Run("outputs types as JSON object", func(t *testing.T) {
+		resetSurfacesJSONFlag(t)
+		dir := surfacesTestHelper(t, "surfaces:\n  admin-panel: web\n  payment-service: api\n  cli-tool: cli\n  shared: web\n")
+
+		var stdout bytes.Buffer
+		rootCmd.SetOut(&stdout)
+		rootCmd.SetErr(os.Stderr)
+		rootCmd.SetArgs([]string{"surfaces", "--types", "--json", "--project-root", dir})
+
+		err := rootCmd.Execute()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		var result map[string]interface{}
+		if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+			t.Fatalf("invalid JSON: %v, output: %s", err, stdout.String())
+		}
+
+		types, ok := result["types"].([]interface{})
+		if !ok {
+			t.Fatalf("expected 'types' array, got: %v", result)
+		}
+		// Should be deduplicated: api, cli, web (sorted)
+		if len(types) != 3 {
+			t.Fatalf("expected 3 types, got %d: %v", len(types), types)
+		}
+	})
+}
+
+// TestSurfacesJSONError tests `--json` error output on missing config.
+func TestSurfacesJSONError(t *testing.T) {
+	resetSurfacesJSONFlag(t)
+
+	t.Run("missing surfaces config outputs JSON error to stderr exit 1", func(t *testing.T) {
+		resetSurfacesJSONFlag(t)
+		dir := surfacesTestHelper(t, "{}\n")
+
+		var stdout, stderr bytes.Buffer
+		rootCmd.SetOut(&stdout)
+		rootCmd.SetErr(&stderr)
+		rootCmd.SetArgs([]string{"surfaces", "--json", "--project-root", dir})
+
+		err := rootCmd.Execute()
+		if err == nil {
+			t.Fatal("expected error for missing surfaces config with --json")
+		}
+
+		// stderr should be valid JSON with error field
+		var errResult map[string]interface{}
+		if unmarshalErr := json.Unmarshal(stderr.Bytes(), &errResult); unmarshalErr != nil {
+			t.Fatalf("stderr should be valid JSON, got: %q, unmarshal error: %v", stderr.String(), unmarshalErr)
+		}
+		if _, ok := errResult["error"]; !ok {
+			t.Errorf("expected 'error' field in JSON stderr, got: %v", errResult)
+		}
+	})
+
+	t.Run("query on empty surfaces outputs JSON error to stderr exit 1", func(t *testing.T) {
+		resetSurfacesJSONFlag(t)
+		dir := surfacesTestHelper(t, "surfaces: {}\n")
+
+		var stdout, stderr bytes.Buffer
+		rootCmd.SetOut(&stdout)
+		rootCmd.SetErr(&stderr)
+		rootCmd.SetArgs([]string{"surfaces", "frontend/src", "--json", "--project-root", dir})
+
+		err := rootCmd.Execute()
+		if err == nil {
+			t.Fatal("expected error for query on empty surfaces with --json")
+		}
+
+		var errResult map[string]interface{}
+		if unmarshalErr := json.Unmarshal(stderr.Bytes(), &errResult); unmarshalErr != nil {
+			t.Fatalf("stderr should be valid JSON, got: %q", stderr.String())
+		}
+		if _, ok := errResult["error"]; !ok {
+			t.Errorf("expected 'error' field in JSON stderr, got: %v", errResult)
 		}
 	})
 }

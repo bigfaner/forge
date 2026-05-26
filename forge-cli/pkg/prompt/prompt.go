@@ -106,10 +106,10 @@ func Synthesize(opts SynthesizeOpts) (string, error) {
 //
 //	{{TASK_ID}}         — task ID (e.g. "2.1", "T-test-gen-cases")
 //	{{TASK_FILE}}       — absolute path to the task markdown file
-//	{{SCOPE}}           — task scope (empty string when "all" or unspecified)
+//	{{SURFACE_KEY}}     — task surface key (empty string means cross-surface)
 //	{{FEATURE_SLUG}}    — feature slug (e.g. "auth-refresh")
 //	{{PHASE_SUMMARY}}   — "PHASE_SUMMARY: <path>" or empty (injected line)
-//	{{TEST_TYPE_ARG}}   — " --type <capability>" or empty (for per-type gen-scripts)
+//	{{TEST_TYPE_ARG}}   — " --type <surfaceType>" or empty (for per-type gen-scripts)
 func renderTemplate(templateFile string, opts SynthesizeOpts, t task.Task) (string, error) {
 	data, err := templateFS.ReadFile(templateFile)
 	if err != nil {
@@ -118,7 +118,7 @@ func renderTemplate(templateFile string, opts SynthesizeOpts, t task.Task) (stri
 
 	taskFile := filepath.Join(opts.ProjectRoot, feature.GetTaskFile(opts.FeatureSlug, t.File))
 
-	scope := resolveScope(opts.ProjectRoot, t.Scope)
+	scope := t.SurfaceKey
 
 	phaseSummaryPath := PhaseDetect(opts.ProjectRoot, opts.FeatureSlug, opts.TaskID)
 
@@ -134,12 +134,15 @@ func renderTemplate(templateFile string, opts SynthesizeOpts, t task.Task) (stri
 	// Inject TASK_CATEGORY after TASK_FILE line for submit-task skill routing.
 	category := task.CategoryForType(t.Type)
 	result = strings.Replace(result, "TASK_FILE: "+taskFile, "TASK_FILE: "+taskFile+"\nTASK_CATEGORY: "+category, 1)
-	result = strings.ReplaceAll(result, "{{SCOPE}}", scope)
+	result = strings.ReplaceAll(result, "{{SURFACE_KEY}}", scope)
 	result = strings.ReplaceAll(result, "{{FEATURE_SLUG}}", opts.FeatureSlug)
 	result = strings.ReplaceAll(result, "{{PHASE_SUMMARY}}", phaseSummaryLine)
 
-	// Extract type suffix from task ID for per-type gen-scripts tasks.
-	testTypeArg := extractTestTypeArg(t.ID)
+	// Build --type argument from task SurfaceType for per-type gen-scripts tasks.
+	testTypeArg := ""
+	if t.SurfaceType != "" {
+		testTypeArg = " --type " + t.SurfaceType
+	}
 	result = strings.ReplaceAll(result, "{{TEST_TYPE_ARG}}", testTypeArg)
 
 	// Inject coverage target for testable (coding.*) task types.
@@ -290,30 +293,6 @@ func isLabelWithEmptyValue(line string) bool {
 	return after == ""
 }
 
-// genScriptBases lists the task ID bases that support per-type gen-scripts.
-//
-// Each base corresponds to a specific task ID format in the index:
-//   - "T-test-gen-scripts"     → tasks like "T-test-gen-scripts-api", "T-test-gen-scripts-ui"
-//
-// The type suffix (the part after the base) determines the --type argument passed
-// to the gen-script command at runtime. Adding a new base here requires that the
-// corresponding task ID format is also recognized by task.ExtractTypeSuffix.
-var genScriptBases = []string{
-	"T-test-gen-scripts",
-}
-
-// extractTestTypeArg extracts the --type argument from a type-suffixed task ID.
-// Returns ` --type <capability>` if a type suffix is found, or empty string otherwise.
-func extractTestTypeArg(id string) string {
-	for _, base := range genScriptBases {
-		suffix := task.ExtractTypeSuffix(id, base)
-		if suffix != "" {
-			return " --type " + suffix
-		}
-	}
-	return ""
-}
-
 // resolveCoverage determines the effective coverage strategy and target text
 // for a given task. Priority: task frontmatter coverage > config per-type > built-in default.
 // Returns (strategy, targetText) where strategy is "percentage" or "maintain",
@@ -353,46 +332,4 @@ func resolveCoverage(projectRoot string, t task.Task) (string, string) {
 	default:
 		return "", ""
 	}
-}
-
-// resolveScope determines the effective scope for template rendering.
-// When the project is single-scope (e.g. project-type "backend") and the task
-// scope doesn't match (e.g. scope "frontend"), the scope is cleared to prevent
-// generating invalid commands like "just compile frontend" on a backend-only project.
-// For multi-scope projects (fullstack, mixed) or when no project-type is configured,
-// the task scope is preserved as-is.
-func resolveScope(projectRoot, taskScope string) string {
-	// Empty or "all" scope is always cleared.
-	if taskScope == "" || taskScope == "all" {
-		return ""
-	}
-
-	// Read project-type from config.
-	cfg, err := forgeconfig.ReadConfig(projectRoot)
-	if err != nil || cfg == nil {
-		// No config file or read error: preserve scope as-is.
-		return taskScope
-	}
-
-	projectType := cfg.ProjectType
-	if projectType == "" {
-		// No project-type configured: preserve scope as-is.
-		return taskScope
-	}
-
-	// Single-scope project types: if the task scope doesn't match the project type,
-	// fall back to empty (no scope) so commands like "just compile" are generated
-	// without a scope suffix that would fail.
-	switch projectType {
-	case "backend":
-		if taskScope != "backend" {
-			return ""
-		}
-	case "frontend":
-		if taskScope != "frontend" {
-			return ""
-		}
-	}
-
-	return taskScope
 }

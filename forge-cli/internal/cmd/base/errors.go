@@ -33,6 +33,8 @@ const (
 	ErrEvalParseFailure ErrorCode = "EVAL_PARSE_FAILURE"
 	// ErrContractUnverifiable indicates a contract cannot be verified.
 	ErrContractUnverifiable ErrorCode = "CONTRACT_UNVERIFIABLE"
+	// ErrMigrationRequired indicates a blocking migration is needed before proceeding.
+	ErrMigrationRequired ErrorCode = "MIGRATION_REQUIRED"
 )
 
 // AIError represents a structured error with AI-friendly context.
@@ -54,7 +56,7 @@ func (e *AIError) Error() string {
 // Retryable errors (transient failures, not found) return 1.
 func (e *AIError) ExitCode() int {
 	switch e.Code {
-	case ErrInvalidTransition, ErrInvalidPath, ErrContractUnverifiable:
+	case ErrInvalidTransition, ErrInvalidPath, ErrContractUnverifiable, ErrMigrationRequired:
 		return 2
 	default:
 		return 1
@@ -391,5 +393,16 @@ func ErrSourceBranchNotFound(branch string) *AIError {
 		"The specified source branch does not exist locally",
 		"Verify the branch exists locally or fetch from remote",
 		"git fetch origin && forge worktree start <slug>",
+	)
+}
+
+// ErrLegacyScope creates a blocking error for tasks with legacy 'scope' field.
+func ErrLegacyScope(count int) *AIError {
+	return NewAIError(
+		ErrMigrationRequired,
+		fmt.Sprintf("Migration required: found %d tasks with legacy 'scope' field but no 'surface-key'", count),
+		fmt.Sprintf("%d tasks still use the deprecated 'scope' field instead of 'surface-key'/'surface-type'", count),
+		"Run 'forge task migrate' to auto-migrate, or 'forge breakdown-tasks'/'forge quick-tasks' to regenerate tasks",
+		"forge task migrate",
 	)
 }

@@ -312,22 +312,12 @@ func askMapAction(desc string) (string, bool) {
 
 // editMapEntry lets the user select and edit a single entry.
 func editMapEntry(surfaces forgeconfig.SurfacesMap, conflictMap map[string]*forgeconfig.PathConflict) (forgeconfig.SurfacesMap, bool) {
-	// Select which entry to edit
-	paths := sortedPaths(surfaces)
-	opts := make([]huh.Option[string], len(paths))
-	for i, p := range paths {
-		opts[i] = huh.NewOption(fmt.Sprintf("%s: %s", p, surfaces[p]), p)
+	selected, ok := selectSurfaceEntry("Select entry to edit", surfaces)
+	if !ok {
+		return surfaces, false
 	}
-
-	var selected string
-	selectForm := huh.NewForm(huh.NewGroup(
-		huh.NewSelect[string]().
-			Title("Select entry to edit").
-			Options(opts...).
-			Value(&selected),
-	))
-	if err := selectForm.Run(); err != nil {
-		return surfaces, !errors.Is(err, huh.ErrUserAborted)
+	if selected == "" {
+		return surfaces, true // cancelled
 	}
 
 	// Edit the selected entry
@@ -397,6 +387,22 @@ func addMapEntry(surfaces forgeconfig.SurfacesMap) (forgeconfig.SurfacesMap, boo
 
 // deleteMapEntry lets the user select and delete an entry.
 func deleteMapEntry(surfaces forgeconfig.SurfacesMap, conflictMap map[string]*forgeconfig.PathConflict) (forgeconfig.SurfacesMap, bool) {
+	selected, ok := selectSurfaceEntry("Select entry to delete", surfaces)
+	if !ok {
+		return surfaces, false
+	}
+	if selected == "" {
+		return surfaces, true // cancelled
+	}
+
+	delete(surfaces, selected)
+	delete(conflictMap, selected)
+	return surfaces, false
+}
+
+// selectSurfaceEntry shows a TUI select for a surface entry and returns the selected path.
+// Returns ("", true) on cancel, (path, false) on selection.
+func selectSurfaceEntry(title string, surfaces forgeconfig.SurfacesMap) (string, bool) {
 	paths := sortedPaths(surfaces)
 	opts := make([]huh.Option[string], len(paths))
 	for i, p := range paths {
@@ -404,19 +410,16 @@ func deleteMapEntry(surfaces forgeconfig.SurfacesMap, conflictMap map[string]*fo
 	}
 
 	var selected string
-	selectForm := huh.NewForm(huh.NewGroup(
+	form := huh.NewForm(huh.NewGroup(
 		huh.NewSelect[string]().
-			Title("Select entry to delete").
+			Title(title).
 			Options(opts...).
 			Value(&selected),
 	))
-	if err := selectForm.Run(); err != nil {
-		return surfaces, !errors.Is(err, huh.ErrUserAborted)
+	if err := form.Run(); err != nil {
+		return "", errors.Is(err, huh.ErrUserAborted)
 	}
-
-	delete(surfaces, selected)
-	delete(conflictMap, selected)
-	return surfaces, false
+	return selected, false
 }
 
 // manualSurfaceEntry is the function variable for manual surface entry.

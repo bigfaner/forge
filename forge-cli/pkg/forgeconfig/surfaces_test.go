@@ -363,8 +363,11 @@ func TestMatchSurface(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if got != "api" {
-			t.Errorf("expected 'api', got %q", got)
+		if got.Type != "api" {
+			t.Errorf("expected Type='api', got %q", got.Type)
+		}
+		if got.Key != "." {
+			t.Errorf("expected Key='.', got %q", got.Key)
 		}
 	})
 
@@ -374,8 +377,11 @@ func TestMatchSurface(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if got != "web" {
-			t.Errorf("expected 'web', got %q", got)
+		if got.Type != "web" {
+			t.Errorf("expected Type='web', got %q", got.Type)
+		}
+		if got.Key != "." {
+			t.Errorf("expected Key='.', got %q", got.Key)
 		}
 	})
 
@@ -389,12 +395,15 @@ func TestMatchSurface(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if got != "api" {
-			t.Errorf("expected 'api' (2 segments beat 1), got %q", got)
+		if got.Type != "api" {
+			t.Errorf("expected Type='api' (2 segments beat 1), got %q", got.Type)
+		}
+		if got.Key != "frontend/api" {
+			t.Errorf("expected Key='frontend/api', got %q", got.Key)
 		}
 	})
 
-	t.Run("exact match returns value", func(t *testing.T) {
+	t.Run("exact match returns value and key", func(t *testing.T) {
 		surfaces := map[string]string{
 			"frontend": "web",
 			"backend":  "api",
@@ -403,12 +412,15 @@ func TestMatchSurface(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if got != "web" {
-			t.Errorf("expected 'web', got %q", got)
+		if got.Type != "web" {
+			t.Errorf("expected Type='web', got %q", got.Type)
+		}
+		if got.Key != "frontend" {
+			t.Errorf("expected Key='frontend', got %q", got.Key)
 		}
 	})
 
-	t.Run("partial segment match returns value", func(t *testing.T) {
+	t.Run("partial segment match returns value and key", func(t *testing.T) {
 		surfaces := map[string]string{
 			"frontend": "web",
 		}
@@ -416,8 +428,11 @@ func TestMatchSurface(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if got != "web" {
-			t.Errorf("expected 'web', got %q", got)
+		if got.Type != "web" {
+			t.Errorf("expected Type='web', got %q", got.Type)
+		}
+		if got.Key != "frontend" {
+			t.Errorf("expected Key='frontend', got %q", got.Key)
 		}
 	})
 
@@ -473,8 +488,11 @@ func TestMatchSurface(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if got != "api" {
-			t.Errorf("expected 'api', got %q", got)
+		if got.Type != "api" {
+			t.Errorf("expected Type='api', got %q", got.Type)
+		}
+		if got.Key != "frontend/api" {
+			t.Errorf("expected Key='frontend/api', got %q", got.Key)
 		}
 	})
 
@@ -486,8 +504,11 @@ func TestMatchSurface(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if got != "api" {
-			t.Errorf("expected 'api', got %q", got)
+		if got.Type != "api" {
+			t.Errorf("expected Type='api', got %q", got.Type)
+		}
+		if got.Key != "frontend/api" {
+			t.Errorf("expected Key='frontend/api', got %q", got.Key)
 		}
 	})
 
@@ -498,6 +519,23 @@ func TestMatchSurface(t *testing.T) {
 		_, err := MatchSurface(surfaces, "../etc/passwd")
 		if err == nil {
 			t.Error("expected error for path with '..'")
+		}
+	})
+
+	t.Run("map form returns correct key for admin-panel", func(t *testing.T) {
+		surfaces := map[string]string{
+			"admin-panel":     "web",
+			"payment-service": "api",
+		}
+		got, err := MatchSurface(surfaces, "admin-panel/src/components/App.tsx")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if got.Key != "admin-panel" {
+			t.Errorf("expected Key='admin-panel', got %q", got.Key)
+		}
+		if got.Type != "web" {
+			t.Errorf("expected Type='web', got %q", got.Type)
 		}
 	})
 }

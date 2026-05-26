@@ -1,0 +1,229 @@
+{
+  "facts": [
+    {
+      "fact_id": "CLI_COMMAND_SURFACES",
+      "source": "static",
+      "subject": "forge surfaces CLI command signature and modes",
+      "kind": "signature",
+      "value": "forge surfaces [--json] [path] [--types]",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "CLI_SURFACES_JSON_LIST_MODE",
+      "source": "static",
+      "subject": "forge surfaces --json list mode output format",
+      "kind": "output_format",
+      "value": "{\"surfaces\": [{\"key\": \"<surface-key>\", \"type\": \"<surface-type>\"}]}",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "CLI_SURFACES_JSON_QUERY_MODE",
+      "source": "static",
+      "subject": "forge surfaces --json query mode output format",
+      "kind": "output_format",
+      "value": "[{\"key\": \"<surface-key>\", \"type\": \"<surface-type>\"}]; no match returns []",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "CLI_SURFACES_JSON_TYPES_MODE",
+      "source": "static",
+      "subject": "forge surfaces --json --types output format",
+      "kind": "output_format",
+      "value": "{\"types\": [\"<type1>\", \"<type2>\"]}",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "CLI_SURFACES_JSON_ERROR",
+      "source": "static",
+      "subject": "forge surfaces --json error format when surfaces not configured",
+      "kind": "output_format",
+      "value": "stderr: {\"error\": \"no surface configured; run `forge init` to configure surfaces\"}; exit 1",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "TASK_STRUCT_SURFACE_KEY",
+      "source": "static",
+      "subject": "Task struct SurfaceKey field",
+      "kind": "signature",
+      "value": "SurfaceKey string; JSON tag: surface-key,omitempty",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "TASK_STRUCT_SURFACE_TYPE",
+      "source": "static",
+      "subject": "Task struct SurfaceType field",
+      "kind": "signature",
+      "value": "SurfaceType string; JSON tag: surface-type,omitempty",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "TASK_STRUCT_SCOPE_REMOVED",
+      "source": "static",
+      "subject": "Task struct Scope field removal",
+      "kind": "signature",
+      "value": "Scope field deleted, no backward compatibility layer",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "SURFACE_TYPES_FIXED_SET",
+      "source": "static",
+      "subject": "Fixed set of surface types",
+      "kind": "precondition",
+      "value": "web, api, cli, tui, mobile",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "SURFACE_KEY_VALIDATION_PATTERN",
+      "source": "static",
+      "subject": "Surface-key character validation pattern",
+      "kind": "precondition",
+      "value": "alphanumeric, dash, underscore only: [a-zA-Z0-9_-]",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "JUST_MINIMUM_VERSION",
+      "source": "static",
+      "subject": "Minimum just binary version requirement",
+      "kind": "precondition",
+      "value": ">= 1.4.0",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "PROBE_RETRY_CONFIG",
+      "source": "static",
+      "subject": "Probe retry configuration for web/api surfaces",
+      "kind": "signature",
+      "value": "max 3 retries, 30-second intervals, total timeout 90s",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "PROBE_LOG_FORMAT",
+      "source": "static",
+      "subject": "Probe retry log format",
+      "kind": "output_format",
+      "value": "[probe] [retry <current>/<max>] <url> -- <reason>",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "EXIT_CODE_SEMANTICS",
+      "source": "static",
+      "subject": "Exit code semantics for run-tests orchestration",
+      "kind": "error_code",
+      "value": "0=success, 1=retryable, 2=blocking",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "TEST_STATE_FILE",
+      "source": "static",
+      "subject": "Test state file path and purpose",
+      "kind": "side_effect",
+      "value": ".forge/test-state.json; tracks PID of background processes; cleaned up on teardown",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "WEB_ORCHESTRATION_SEQUENCE",
+      "source": "static",
+      "subject": "Web/api surface orchestration sequence",
+      "kind": "signature",
+      "value": "dev (background) -> probe -> test -> teardown",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "CLI_ORCHESTRATION_SEQUENCE",
+      "source": "static",
+      "subject": "CLI/TUI surface orchestration sequence",
+      "kind": "signature",
+      "value": "build -> dev -> test (no probe, no teardown)",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "MOBILE_ORCHESTRATION_SEQUENCE",
+      "source": "static",
+      "subject": "Mobile surface orchestration sequence",
+      "kind": "signature",
+      "value": "test-setup -> dev -> test -> teardown",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "USER_CUSTOMIZED_PROTECTION",
+      "source": "static",
+      "subject": "User-customized recipe protection mechanism",
+      "kind": "precondition",
+      "value": "recipes marked with # user-customized comment are preserved unless --force-regenerate flag is passed",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "PROMPT_TEMPLATE_COUNT",
+      "source": "static",
+      "subject": "Number of prompt templates requiring variable update",
+      "kind": "signature",
+      "value": "18 templates with {{SCOPE}} -> {{SURFACE_KEY}}, 1 template with {{TEST_TYPE_ARG}}, 3 skill templates",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "MIGRATION_CHECK_FUNCTION",
+      "source": "static",
+      "subject": "Legacy scope migration check function",
+      "kind": "signature",
+      "value": "CheckLegacyScope(tasks []Task) error; scans for scope field without surface-key, returns blocking error",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "SURFACE_RULE_FILES_INIT_JUSTFILE",
+      "source": "static",
+      "subject": "Surface rule files for init-justfile",
+      "kind": "signature",
+      "value": "skills/init-justfile/rules/surfaces/{web,api,cli,tui,mobile}.md",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "SURFACE_RULE_FILES_RUN_TESTS",
+      "source": "static",
+      "subject": "Surface rule files for run-tests",
+      "kind": "signature",
+      "value": "skills/run-tests/rules/surfaces/{web,api,cli,tui,mobile}.md",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "DEAD_CODE_FUNCTIONS",
+      "source": "static",
+      "subject": "Dead code functions to be removed after migration",
+      "kind": "signature",
+      "value": "extractTestTypeArg(), genScriptBases() in prompt.go",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "CONFIG_SURFACES_FIELD",
+      "source": "static",
+      "subject": "Config.yaml surfaces field format",
+      "kind": "precondition",
+      "value": "map<string, string> mapping surface-key to surface-type, e.g., {admin-panel: web}",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    }
+  ]
+}

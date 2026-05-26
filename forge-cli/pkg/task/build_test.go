@@ -30,7 +30,7 @@ func writeTaskMD(t *testing.T, dir, filename, id, title string, deps []string) {
 	}
 	content := "---\nid: " + `"` + id + `"` + "\ntitle: " + `"` + title + `"` +
 		"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: " + `"` + taskType + `"` +
-		"\n" + depLine + "scope: \"all\"\n---\n\n# " + title + "\n"
+		"\n" + depLine + "surface-key: \".\"\nsurface-type: \"web\"\n---\n\n# " + title + "\n"
 	if err := os.WriteFile(filepath.Join(dir, filename), []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -53,7 +53,7 @@ func writeTaskMDWithType(t *testing.T, dir, filename, id, title, taskType string
 	}
 	content := "---\nid: " + `"` + id + `"` + "\ntitle: " + `"` + title + `"` +
 		"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: " + `"` + taskType + `"` +
-		"\n" + depLine + "scope: \"all\"\n---\n\n# " + title + "\n"
+		"\n" + depLine + "surface-key: \".\"\nsurface-type: \"web\"\n---\n\n# " + title + "\n"
 	if err := os.WriteFile(filepath.Join(dir, filename), []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -500,7 +500,7 @@ func TestBuildIndex_TypeInference(t *testing.T) {
 	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "")
 
 	// Task with explicit type
-	content := "---\nid: \"1\"\ntitle: \"Feature\"\npriority: \"P1\"\ntype: \"coding.feature\"\nscope: \"all\"\n---\n\n# Feature\n"
+	content := "---\nid: \"1\"\ntitle: \"Feature\"\npriority: \"P1\"\ntype: \"coding.feature\"\nsurface-key: \".\"\nsurface-type: \"web\"\n---\n\n# Feature\n"
 	if err := os.WriteFile(filepath.Join(tasksDir, "1-gate.md"), []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -1482,7 +1482,7 @@ func TestBuildIndex_MissingTypeHardError(t *testing.T) {
 
 	// Write a task .md without type field (and InferType returns "" for plain numeric IDs)
 	// Must use raw content since writeTaskMD now auto-sets type.
-	content := "---\nid: \"1\"\ntitle: \"Foo Task\"\npriority: \"P1\"\nestimated_time: \"1h\"\nscope: \"all\"\n---\n\n# Foo Task\n"
+	content := "---\nid: \"1\"\ntitle: \"Foo Task\"\npriority: \"P1\"\nestimated_time: \"1h\"\nsurface-key: \".\"\nsurface-type: \"web\"\n---\n\n# Foo Task\n"
 	if err := os.WriteFile(filepath.Join(tasksDir, "1-foo.md"), []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -1584,7 +1584,7 @@ func TestBuildIndex_SystemTypeAllowedForAutoGenTask(t *testing.T) {
 
 	// Auto-gen task ID using system type should pass
 	// Write a gate file (auto-gen ID pattern: *.gate)
-	gateContent := "---\nid: \"1.gate\"\ntitle: \"Phase 1 Gate\"\npriority: \"P0\"\ntype: \"gate\"\nscope: \"all\"\n---\n\n# Gate\n"
+	gateContent := "---\nid: \"1.gate\"\ntitle: \"Phase 1 Gate\"\npriority: \"P0\"\ntype: \"gate\"\nsurface-key: \".\"\nsurface-type: \"web\"\n---\n\n# Gate\n"
 	if err := os.WriteFile(filepath.Join(tasksDir, "1-gate.md"), []byte(gateContent), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -1746,7 +1746,7 @@ func TestBuildIndex_MissingTypeAllowedForAutoGenTasks(t *testing.T) {
 	writeTaskMDWithType(t, tasksDir, "1-feat.md", "1.1", "Feature Task", TypeCodingFeature, nil)
 
 	// Write a gate file without type in frontmatter - should be OK since InferType handles it
-	gateContent := "---\nid: \"1.gate\"\ntitle: \"Phase 1 Gate\"\npriority: \"P0\"\nestimated_time: \"1h\"\nscope: \"all\"\n---\n\n# Gate\n"
+	gateContent := "---\nid: \"1.gate\"\ntitle: \"Phase 1 Gate\"\npriority: \"P0\"\nestimated_time: \"1h\"\nsurface-key: \".\"\nsurface-type: \"web\"\n---\n\n# Gate\n"
 	if err := os.WriteFile(filepath.Join(tasksDir, "1.gate.md"), []byte(gateContent), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -2046,7 +2046,7 @@ func TestBuildIndex_CoverageFieldPropagation(t *testing.T) {
 		projectRoot, tasksDir, indexPath := setupBuildEnv(t, "")
 
 		// Write task with coverage: 95
-		content := "---\nid: \"1\"\ntitle: \"Covered Task\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"coding.feature\"\nscope: \"all\"\ncoverage: 95\n---\n\n# Task\n"
+		content := "---\nid: \"1\"\ntitle: \"Covered Task\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"coding.feature\"\nsurface-key: \".\"\nsurface-type: \"web\"\ncoverage: 95\n---\n\n# Task\n"
 		if err := os.WriteFile(filepath.Join(tasksDir, "1-foo.md"), []byte(content), 0644); err != nil {
 			t.Fatal(err)
 		}
@@ -2104,7 +2104,7 @@ func TestBuildIndex_CoverageFieldPropagation(t *testing.T) {
 	t.Run("coverage preserved across rebuild", func(t *testing.T) {
 		projectRoot, tasksDir, indexPath := setupBuildEnv(t, "")
 
-		content := "---\nid: \"1\"\ntitle: \"Covered Task\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"coding.feature\"\nscope: \"all\"\ncoverage: 90\n---\n\n# Task\n"
+		content := "---\nid: \"1\"\ntitle: \"Covered Task\"\npriority: \"P1\"\nestimated_time: \"1h\"\ntype: \"coding.feature\"\nsurface-key: \".\"\nsurface-type: \"web\"\ncoverage: 90\n---\n\n# Task\n"
 		if err := os.WriteFile(filepath.Join(tasksDir, "1-foo.md"), []byte(content), 0644); err != nil {
 			t.Fatal(err)
 		}

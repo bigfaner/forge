@@ -180,8 +180,8 @@ func DetectSurfacesWithConflicts(projectRoot string) (*DetectResult, error) {
 	var conflicts []PathConflict
 
 	if isWorkspace {
-		// Skip root deps, scan subdirs
-		scanSubdirs(projectRoot, projectRoot, 0, depth, result)
+		// Skip root deps, scan subdirs (sources not tracked in workspace mode)
+		scanSubdirsWithSources(projectRoot, projectRoot, 0, depth, result, nil, nil)
 	} else {
 		// Scan root for signals
 		if surface, source, conflict := detectSurfaceAtDirWithSources(projectRoot); surface != "" {
@@ -290,61 +290,9 @@ func detectWorkspaceMode(root string) bool {
 	return pkg.Workspaces != nil
 }
 
-// scanSubdirs recursively scans subdirectories for surface signals.
-func scanSubdirs(root, currentDir string, currentDepth, maxDepth int, result SurfacesMap) {
-	scanSubdirsWithConflicts(root, currentDir, currentDepth, maxDepth, result, nil)
-}
-
-// scanSubdirsWithConflicts recursively scans subdirectories for surface signals
-// and records conflict metadata.
-func scanSubdirsWithConflicts(root, currentDir string, currentDepth, maxDepth int, result SurfacesMap, conflicts *[]PathConflict) {
-	if currentDepth >= maxDepth {
-		return
-	}
-
-	entries, err := os.ReadDir(currentDir)
-	if err != nil {
-		return
-	}
-
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
-		}
-		name := entry.Name()
-
-		// Skip excluded directories
-		if isExcludedDir(name) {
-			continue
-		}
-
-		subdirPath := filepath.Join(currentDir, name)
-
-		// Detect surface at this directory
-		surface, conflict := detectSurfaceAtDirWithConflicts(subdirPath)
-		if surface != "" {
-			// Compute relative path from root
-			rel, err := filepath.Rel(root, subdirPath)
-			if err != nil {
-				continue
-			}
-			// Normalize to forward slashes
-			rel = filepath.ToSlash(rel)
-			result[rel] = surface
-			if len(conflict) > 1 && conflicts != nil {
-				*conflicts = append(*conflicts, PathConflict{
-					Path: rel, Resolved: surface, Conflicting: conflict,
-				})
-			}
-		}
-
-		// Recurse into subdirectories
-		scanSubdirsWithConflicts(root, subdirPath, currentDepth+1, maxDepth, result, conflicts)
-	}
-}
-
 // scanSubdirsWithSources recursively scans subdirectories for surface signals
 // and records both surface types and source annotations.
+// When sources is nil, source tracking is skipped (used by workspace mode).
 func scanSubdirsWithSources(root, currentDir string, currentDepth, maxDepth int, result SurfacesMap, sources SourcesMap, conflicts *[]PathConflict) {
 	if currentDepth >= maxDepth {
 		return
@@ -375,7 +323,9 @@ func scanSubdirsWithSources(root, currentDir string, currentDepth, maxDepth int,
 			}
 			rel = filepath.ToSlash(rel)
 			result[rel] = surface
-			sources[rel] = source
+			if sources != nil {
+				sources[rel] = source
+			}
 			if len(conflict) > 1 && conflicts != nil {
 				*conflicts = append(*conflicts, PathConflict{
 					Path: rel, Resolved: surface, Conflicting: conflict,
@@ -385,13 +335,6 @@ func scanSubdirsWithSources(root, currentDir string, currentDepth, maxDepth int,
 
 		scanSubdirsWithSources(root, subdirPath, currentDepth+1, maxDepth, result, sources, conflicts)
 	}
-}
-
-// detectSurfaceAtDirWithConflicts detects the surface type and returns conflict metadata.
-// Returns the resolved surface type and the list of all conflicting signal types.
-func detectSurfaceAtDirWithConflicts(dir string) (string, []string) {
-	surface, _, conflict := detectSurfaceAtDirWithSources(dir)
-	return surface, conflict
 }
 
 // detectSurfaceAtDirWithSources detects the surface type, source annotation, and conflict metadata.
@@ -703,16 +646,13 @@ func detectMobile(dir string) bool {
 		return true
 	}
 
-	// Check for *.xcodeproj directories
+	// Check for *.xcodeproj entries (files or directories)
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return false
 	}
 	for _, entry := range entries {
-		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".xcodeproj") {
-			return true
-		}
-		if entry.IsDir() && strings.HasSuffix(entry.Name(), ".xcodeproj") {
+		if strings.HasSuffix(entry.Name(), ".xcodeproj") {
 			return true
 		}
 	}

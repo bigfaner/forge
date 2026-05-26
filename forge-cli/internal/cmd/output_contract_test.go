@@ -98,7 +98,8 @@ func TestContract_Claim_NewTask(t *testing.T) {
 		ID: "1.1", Title: "Do stuff", Priority: "P0", Status: "pending",
 		File: "1.1.md", Record: "records/1.1.md",
 		Breaking: true, MainSession: true,
-		Type: "coding.feature", Scope: "backend",
+		Type:         "coding.feature",
+		SurfaceKey:   "backend",
 		Dependencies: []string{"1.0"}, EstimatedTime: "30min",
 	}
 
@@ -120,8 +121,8 @@ func TestContract_Claim_NewTask(t *testing.T) {
 	if !hasField(lines, "TYPE", "coding.feature") {
 		t.Errorf("expected TYPE: coding.feature")
 	}
-	if !hasField(lines, "SCOPE", "backend") {
-		t.Errorf("expected SCOPE: backend")
+	if !hasField(lines, "SURFACE_KEY", "backend") {
+		t.Errorf("expected SURFACE_KEY: backend")
 	}
 	if !hasField(lines, "MAIN_SESSION", "true") {
 		t.Errorf("expected MAIN_SESSION: true")
@@ -176,8 +177,9 @@ func TestContract_Claim_Continue(t *testing.T) {
 
 	tk := &task.Task{
 		ID: "1.1", Title: "Resume me", Priority: "P0", Status: "in_progress",
-		File: "1.1.md", Record: "records/1.1.md", Scope: "backend",
-		Breaking: true, MainSession: true,
+		File: "1.1.md", Record: "records/1.1.md",
+		SurfaceKey: "backend",
+		Breaking:   true, MainSession: true,
 	}
 	state := &task.TaskState{
 		Key: "task1", TaskID: "1.1", StartedTime: "2025-01-01T00:00:00Z",
@@ -200,8 +202,8 @@ func TestContract_Claim_Continue(t *testing.T) {
 	if !hasField(lines, "FILE", "") {
 		t.Errorf("expected FILE field")
 	}
-	if !hasField(lines, "SCOPE", "backend") {
-		t.Errorf("expected SCOPE: backend")
+	if !hasField(lines, "SURFACE_KEY", "backend") {
+		t.Errorf("expected SURFACE_KEY: backend")
 	}
 	// BREAKING must NOT appear (removed from claim output)
 	if !hasNoField(lines, "BREAKING") {
@@ -228,8 +230,9 @@ func TestContract_Claim_FieldOrder(t *testing.T) {
 	tk := &task.Task{
 		ID: "1.1", Title: "T", Priority: "P0", Status: "pending",
 		File: "1.1.md", Record: "records/1.1.md",
-		Breaking: true, MainSession: true, Scope: "backend",
-		Type: "coding.feature",
+		Breaking: true, MainSession: true,
+		Type:       "coding.feature",
+		SurfaceKey: "backend",
 	}
 
 	out := captureStdout(func() {
@@ -246,10 +249,10 @@ func TestContract_Claim_FieldOrder(t *testing.T) {
 	typeIdx := fieldIndex(lines, "TYPE")
 	featureIdx := fieldIndex(lines, "FEATURE")
 	fileIdx := fieldIndex(lines, "FILE")
-	scopeIdx := fieldIndex(lines, "SCOPE")
+	surfaceIdx := fieldIndex(lines, "SURFACE_KEY")
 	mainIdx := fieldIndex(lines, "MAIN_SESSION")
 
-	if taskIDIdx == -1 || typeIdx == -1 || featureIdx == -1 || fileIdx == -1 || scopeIdx == -1 || mainIdx == -1 {
+	if taskIDIdx == -1 || typeIdx == -1 || featureIdx == -1 || fileIdx == -1 || surfaceIdx == -1 || mainIdx == -1 {
 		t.Fatalf("missing expected fields, got: %v", lines)
 	}
 
@@ -263,11 +266,11 @@ func TestContract_Claim_FieldOrder(t *testing.T) {
 	if featureIdx >= fileIdx {
 		t.Errorf("FEATURE (%d) should come before FILE (%d)", featureIdx, fileIdx)
 	}
-	if fileIdx >= scopeIdx {
-		t.Errorf("FILE (%d) should come before SCOPE (%d)", fileIdx, scopeIdx)
+	if fileIdx >= surfaceIdx {
+		t.Errorf("FILE (%d) should come before SURFACE_KEY (%d)", fileIdx, surfaceIdx)
 	}
-	if scopeIdx >= mainIdx {
-		t.Errorf("SCOPE (%d) should come before MAIN_SESSION (%d)", scopeIdx, mainIdx)
+	if surfaceIdx >= mainIdx {
+		t.Errorf("SURFACE_KEY (%d) should come before MAIN_SESSION (%d)", surfaceIdx, mainIdx)
 	}
 
 	// BREAKING must NOT appear (removed from claim output)
@@ -427,13 +430,13 @@ func TestContract_Query_WithScope(t *testing.T) {
 		base.PrintBlockStart()
 		base.PrintField("TASK_ID", "1")
 		base.PrintField("STATUS", "in_progress")
-		base.PrintFieldIfNotEmpty("SCOPE", "backend")
+		base.PrintFieldIfNotEmpty("SURFACE_KEY", "backend")
 		base.PrintBlockEnd()
 	})
 	lines := parseBlock(t, out)
 
-	if !hasField(lines, "SCOPE", "backend") {
-		t.Errorf("expected SCOPE: backend")
+	if !hasField(lines, "SURFACE_KEY", "backend") {
+		t.Errorf("expected SURFACE_KEY: backend")
 	}
 }
 

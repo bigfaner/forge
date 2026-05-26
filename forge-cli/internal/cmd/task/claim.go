@@ -141,7 +141,8 @@ func executeClaim() (*ClaimResult, error) {
 		Record:        t.Record,
 		StartedTime:   time.Now().Format("2006-01-02 15:04"),
 		Breaking:      t.Breaking,
-		Scope:         t.Scope,
+		SurfaceKey:    t.SurfaceKey,
+		SurfaceType:   t.SurfaceType,
 		MainSession:   t.MainSession,
 		Type:          t.Type,
 	}
@@ -277,7 +278,8 @@ func printTaskDetails(key string, t *task.Task, projectRoot, featureSlug string)
 	base.PrintFieldIfNotEmpty("TASK_CATEGORY", task.CategoryForType(t.Type))
 	base.PrintFieldIfNotEmpty("FEATURE", featureSlug)
 	base.PrintField("FILE", filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, t.File)))
-	base.PrintFieldIfNotEmpty("SCOPE", t.Scope)
+	base.PrintFieldIfNotEmpty("SURFACE_KEY", t.SurfaceKey)
+	base.PrintFieldIfNotEmpty("SURFACE_TYPE", t.SurfaceType)
 	if t.MainSession {
 		base.PrintField("MAIN_SESSION", "true")
 	}

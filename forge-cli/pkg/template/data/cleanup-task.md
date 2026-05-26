@@ -7,6 +7,8 @@ dependencies: []
 status: pending
 breaking: true
 type: "coding.cleanup"
+surface-key: ""
+surface-type: ""
 ---
 
 # {{TITLE}}
@@ -19,6 +21,16 @@ type: "coding.cleanup"
 
 - Source: {{SOURCE_FILES}}
 - Tool output: {{TEST_RESULTS}}
+
+## Surface Inference
+
+This cleanup-task was created by the quality-gate hook. If `surface-key` and `surface-type` above are empty, infer them at execution time:
+
+1. Parse `{{SOURCE_FILES}}` to extract the first file path (comma-separated).
+2. Run `forge surfaces --json <file-path>` to resolve surface-key/type.
+3. Use the resolved surface-type to load the appropriate `rules/surfaces/<type>.md` for test orchestration guidance.
+
+If `forge surfaces --json` fails (no surfaces configured, command not found), proceed without surface information — this does not block the cleanup.
 
 ## Cleanup Guidelines
 

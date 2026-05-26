@@ -125,10 +125,12 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 			File:          entry.Name(),
 			Record:        path.Join("records", entry.Name()),
 			Breaking:      fm.Breaking,
-			Scope:         fm.Scope,
+			SurfaceKey:    fm.SurfaceKey,
+			SurfaceType:   fm.SurfaceType,
 			MainSession:   fm.MainSession,
 			Type:          taskType,
 			Coverage:      fm.Coverage,
+			Scope:         fm.Scope,
 		}
 
 		// Merge with existing
@@ -287,10 +289,12 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 				File:          entry.Name(),
 				Record:        path.Join("records", entry.Name()),
 				Breaking:      fm.Breaking,
-				Scope:         fm.Scope,
+				SurfaceKey:    fm.SurfaceKey,
+				SurfaceType:   fm.SurfaceType,
 				MainSession:   fm.MainSession,
 				Type:          taskType,
 				Coverage:      fm.Coverage,
+				Scope:         fm.Scope,
 			}
 			// Preserve runtime state if task already exists in index
 			if existing, found := index.ByID(fm.ID); found {
@@ -404,6 +408,15 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 		if !bytes.Equal(normalized, content) {
 			_ = os.WriteFile(filePath, normalized, 0644)
 		}
+	}
+
+	// 8.5 Check for legacy scope fields that require migration
+	var allTasks []Task
+	for _, t := range index.TasksMap() {
+		allTasks = append(allTasks, t)
+	}
+	if err := CheckLegacyScope(allTasks); err != nil {
+		return nil, err
 	}
 
 	// 9. Save index

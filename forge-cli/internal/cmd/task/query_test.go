@@ -157,7 +157,7 @@ func TestQuery_VerboseNoRelatedFixes(t *testing.T) {
 func TestQuery_VerboseWithScope(t *testing.T) {
 	resetQueryFlags()
 	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
-		"t1": {ID: "1", Title: "Scoped task", Status: "pending", Priority: "P1", Type: "coding.feature", File: "1.md", Record: "records/1.md", Scope: "backend"},
+		"t1": {ID: "1", Title: "Scoped task", Status: "pending", Priority: "P1", Type: "coding.feature", File: "1.md", Record: "records/1.md", SurfaceKey: "backend"},
 	}})
 
 	Cmd.SetArgs([]string{"query", "1", "-v"})
@@ -165,8 +165,8 @@ func TestQuery_VerboseWithScope(t *testing.T) {
 		_ = Cmd.Execute()
 	})
 
-	if !strings.Contains(output, "SCOPE: backend") {
-		t.Errorf("expected SCOPE in verbose output, got:\n%s", output)
+	if !strings.Contains(output, "SURFACE_KEY: backend") {
+		t.Errorf("expected SURFACE_KEY in verbose output, got:\n%s", output)
 	}
 }
 
@@ -182,8 +182,8 @@ func TestQuery_VerboseEmptyScope(t *testing.T) {
 	})
 
 	for _, line := range strings.Split(output, "\n") {
-		if strings.HasPrefix(line, "SCOPE:") {
-			t.Errorf("SCOPE should not appear when empty, got:\n%s", output)
+		if strings.HasPrefix(line, "SURFACE_KEY:") {
+			t.Errorf("SURFACE_KEY should not appear when empty, got:\n%s", output)
 			break
 		}
 	}
@@ -192,7 +192,7 @@ func TestQuery_VerboseEmptyScope(t *testing.T) {
 func TestQuery_DefaultOutputWithScope(t *testing.T) {
 	resetQueryFlags()
 	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
-		"t1": {ID: "1", Title: "Scoped", Status: "pending", File: "1.md", Record: "records/1.md", Scope: "backend"},
+		"t1": {ID: "1", Title: "Scoped", Status: "pending", File: "1.md", Record: "records/1.md", SurfaceKey: "backend"},
 	}})
 
 	Cmd.SetArgs([]string{"query", "1"})
@@ -200,8 +200,8 @@ func TestQuery_DefaultOutputWithScope(t *testing.T) {
 		_ = Cmd.Execute()
 	})
 
-	if !strings.Contains(output, "SCOPE: backend") {
-		t.Errorf("expected SCOPE in default output when set, got:\n%s", output)
+	if !strings.Contains(output, "SURFACE_KEY: backend") {
+		t.Errorf("expected SURFACE_KEY in default output when set, got:\n%s", output)
 	}
 }
 

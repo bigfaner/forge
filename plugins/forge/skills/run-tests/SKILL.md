@@ -1,20 +1,21 @@
 ---
 name: run-tests
-description: Execute test scripts and generate a results report. Pure executor: reads commands from .forge/config.yaml test.execution node. Convention-driven result parsing.
+description: Execute test orchestration based on surface type. Dispatcher mode: detect surface-type -> load orchestration rules -> execute just recipe sequence.
 ---
 
 # Run Tests
 
-Execute test scripts and generate a test results report.
+Surface-aware test orchestration. Detects the project's surface type, loads the corresponding orchestration rules, and executes the just recipe sequence.
 
-**Core principle**: A pure executor that reads execution commands from `.forge/config.yaml` and runs them. Does three things: execute configured commands, parse results, generate report.
+**Core principle**: A dispatcher that detects surface type, loads orchestration rules, and executes just recipes in sequence. Does NOT read `test.execution` from config.yaml.
 
 <HARD-GATE>
-This skill only executes configured test commands and reports results. Forbidden:
+This skill follows the surface-based orchestration sequence. Forbidden:
 - Modifying test script content
 - Skipping failed tests (must report faithfully)
 - "Fixing" tests during execution to make them pass
-- Using any hardcoded command names -- all commands come from config
+- Retrying probe or restarting dev after probe failure in the same orchestration cycle
+- Reading `test.execution` from `.forge/config.yaml` (removed capability)
 </HARD-GATE>
 
 ## When to Use
@@ -33,227 +34,171 @@ Check previous stage artifacts. Abort and prompt user if missing:
 
 | Artifact | Missing prompt |
 |----------|----------------|
-| `.forge/config.yaml` with `test.execution.run` | See "Missing config" error below |
+| `justfile` with surface-specific recipes | Run `/init-justfile` first |
 | `tests/<journey>/` directory (at least one) | Run `/gen-test-scripts` first |
-
-<PRINCIPLE>
-**Shared infrastructure first.** Before executing any test actions, verify that shared dependencies are complete and functional. Shared file names are defined in the Convention's `framework` section. If shared files are missing symbols imported by test files, all tests will fail at the import stage. When inconsistencies are found, go back to `/gen-test-scripts` to fix shared dependencies before running tests.
-</PRINCIPLE>
 
 ## Workflow
 
 ```
-0. Load Convention → 1. Load Config → 2. Validate Output Flags → 3. Setup (optional) → 4. Env Check → 5. Pre-check (optional) → 6. Run → 7. Parse Results → 8. Generate Report → 9. Teardown (optional)
+0. Stale State Recovery -> 1. Detect Surface -> 2. Load Orchestration Rules -> 3. Env Check -> 4. Execute Sequence -> 5. Parse Results -> 6. Generate Report
 ```
 
-### Step 0: Load Convention Result Format
+### Step 0: Stale State Recovery
 
-Load test framework knowledge from Convention files using a two-level index mechanism.
+Check for `.forge/test-state.json`. If it exists from a previous interrupted session:
 
-1. Read `docs/conventions/testing/index.md` — this index file lists all available Conventions with name, description, and applicability conditions.
-2. Based on the project's language/framework context, select the matching Convention from the index.
-3. Load the selected Convention file from `docs/conventions/testing/<convention>.md`.
-4. Extract result format information from the Convention's `structure` section:
-   - **format-type**: One of `json-stream`, `json-report`, `text-verbose`
-   - **output-flags**: The flags passed to the test runner (e.g., `-json -v`, `--reporter=json`)
-5. If `index.md` does not exist, proceed to auto-detection: scan existing test files for framework patterns to determine the format-type.
+1. Read the stored teardown command
+2. Execute it
+3. Delete the state file
+4. Proceed to Step 1
+
+### Step 1: Detect Surface
+
+Obtain `surface-type` from two sources in priority order:
+
+**Source 1 (preferred): Task frontmatter**
+
+Read the current task file (from `forge task status` or known task path). Extract `surface-type` from YAML frontmatter.
+
+**Source 2 (fallback): `forge surfaces` CLI**
+
+```bash
+forge surfaces --json <task-file-path>
+```
+
+Parse JSON response to extract the `type` field.
+
+**When both sources fail** (surface info unavailable):
+
+Output to stderr:
+
+```
+surface-type detection failed: unable to determine surface type from task frontmatter or 'forge surfaces' CLI.
+
+Recovery options:
+  1. Ensure the task file contains 'surface-type' in its frontmatter
+  2. Run 'forge surfaces' to verify surface configuration
+  3. Run '/init-justfile' to configure surfaces for this project
+```
+
+Exit with code 2 (blocking error, per BIZ-error-reporting-001).
+
+### Step 2: Load Orchestration Rules
+
+Based on the detected `surface-type`, load the corresponding rule file:
+
+| surface-type | Rule file |
+|-------------|-----------|
+| web | `rules/surfaces/web.md` |
+| api | `rules/surfaces/api.md` |
+| cli | `rules/surfaces/cli.md` |
+| tui | `rules/surfaces/tui.md` |
+| mobile | `rules/surfaces/mobile.md` |
+
+If the rule file does not exist for the detected surface-type, output to stderr:
+
+```
+unsupported surface-type '<type>': no orchestration rules found at rules/surfaces/<type>.md
+
+Supported types: web, api, cli, tui, mobile
+```
+
+Exit with code 2 (blocking error).
+
+### Step 3: Environment Readiness Check
+
+Read the rule file `rules/env-check.md` for the detection framework. Execute the environment checks defined for the detected surface type.
 
 <HARD-RULE>
-Do NOT use `domains` frontmatter filtering. Selection is based on index.md descriptions and project context, with LLM autonomous judgment. Parsing logic must be driven by Convention content, not framework name. The format-type determines the parsing strategy; never branch on language or framework identity.
-Convention only provides `format-type` and `output-flags` for parsing, never for execution.
+Environment detection failure does NOT auto-fix. Only output diagnostic information and repair suggestions.
 </HARD-RULE>
 
-**Fallback -- no Convention found**: If no Convention files exist in `docs/conventions/testing/`, proceed with `text-verbose` as the default format-type. Use generic text-based parsing: scan output lines for PASS/FAIL/SKIP patterns and extract test names from leading markers.
+When environment is NOT ready -- abort with diagnostic output (exit code 1, retryable).
 
-### Step 1: Load Config
+When environment IS ready -- proceed to Step 4.
 
-Read test execution configuration from `.forge/config.yaml`:
+### Step 4: Execute Orchestration Sequence
 
-```bash
-forge config get test.execution
-```
+Execute the sequence defined in the loaded rule file's "编排序列" table.
 
-**Required field**: `test.execution.run` -- the command template to execute tests.
-
-If `test.execution` or `test.execution.run` is missing, abort with:
-
-> **Missing test execution config.** Add the following to `.forge/config.yaml`:
->
-> ```yaml
-> test:
->   execution:
->     run: "just test {slug}"               # Required: command template
->     # setup: "just test-setup"            # Optional: pre-execution setup
->     # pre-check: "just probe"             # Optional: validation before run
->     # teardown: "just test-teardown"      # Optional: post-execution cleanup
->     # results-dir: "tests/{journey}/results"  # Optional: results directory
->     # timeout: 300                           # Optional: timeout in seconds (default 600)
-> ```
-
-### Template Variables
-
-Resolve template variables in command strings before execution:
-
-| Variable | Source | Default if missing |
-|----------|--------|-------------------|
-| `{slug}` | `forge feature` | **Error** -- abort with message below |
-| `{journey}` | Convention or directory scan | `e2e` |
-| `{test-dir}` | Convention `framework` section | `tests` |
-| `{results-dir}` | `test.execution.results-dir` config | `tests/{journey}/results` |
-
-**Escape rule**: `{{var}}` resolves to literal `{var}`.
-
-**Variable resolution order**:
-1. Replace `{{` with a temporary sentinel (preserves literal braces)
-2. Replace `{slug}`, `{journey}`, `{test-dir}`, `{results-dir}` with resolved values
-3. Replace sentinel back to `{`
-
-**Missing slug** error:
-
-> **No active feature slug.** Run `forge feature <slug>` to set the active feature, then retry.
-
-### Step 2: Validate Output Flags
-
-Before executing any commands, verify consistency between Convention and config:
-
-1. Read Convention Result Format's `format-type` and `output-flags`
-2. Check `test.execution.run` command for presence of expected output flags
-3. If flags are required by format-type but missing from run command, abort:
-
-> Convention declares format-type `json-stream` which requires output flags like `-json`, but `test.execution.run` does not include these flags. Either add the flags to your run command in config, or change Convention's format-type to `text-verbose`.
-
-### Step 3: Setup (Optional)
-
-If `test.execution.setup` is configured, execute it:
-
-```bash
-# Template: test.execution.setup (after variable resolution)
-# Example: "just test-setup"
-```
-
-Ensure results directory exists:
-
-```bash
-mkdir -p "${results_dir}"
-```
-
-### Step 4: Environment Readiness Check
-
-Before running tests, verify the execution environment is ready for the detected surface type.
-
-Read the rule file `rules/env-check.md` for the detection framework, then read the surface-specific rule file to identify which checks to perform:
-
-1. Get the current surface type: `forge surfaces`
-2. Read the surface rule file from the gen-journeys skill: `rules/surface-<type>.md` (resolve relative to the gen-journeys skill directory) -- extract the "Environment Readiness Checks" table
-3. Execute each check item from the table
-4. Report results
-
-<HARD-RULE>
-Environment detection failure does NOT auto-fix. Only output diagnostic information and repair suggestions. The user must fix the environment themselves, then re-run.
-</HARD-RULE>
-
-**Mobile exception**: All Mobile checks are best-effort (non-blocking). Missing Maestro CLI does not prevent test generation or block the pipeline.
-
-**When environment is NOT ready** -- abort with diagnostic output:
-
-```
-Environment Readiness: NOT READY (N/M checks passed)
-
-Missing:
-  - [<SURFACE>-<N>] <check description>
-    Suggestion: <repair suggestion>
-
-Fix the issues above, then re-run /run-tests.
-```
-
-Exit code: 1 (retryable). User fixes environment and re-runs.
-
-**When environment IS ready** -- proceed to Step 5.
-
-### Step 5: Pre-check (Optional)
-
-If `test.execution.pre-check` is configured, execute it:
-
-```bash
-# Template: test.execution.pre-check (after variable resolution)
-# Example: "just probe"
-```
-
-If pre-check fails (non-zero exit), abort and report:
-
-> Pre-check command failed. This usually means test scripts have unresolved markers or missing dependencies. Return to `/gen-test-scripts` to resolve issues.
-
-### Step 6: Run Tests
-
-Execute the run command:
-
-```bash
-# Template: test.execution.run (after variable resolution)
-# Example: "just test {slug}"
-```
-
-Capture the full stdout/stderr output for result parsing in Step 7.
-
-**Timeout**: If `test.execution.timeout` is configured, wrap execution with a timeout. Default timeout is 600 seconds. On timeout, terminate the process and mark all tests as FAIL(timeout).
-
-**State file**: Before execution, write teardown state to `.forge/test-state.json`:
+**State file**: Before starting the sequence, write teardown state to `.forge/test-state.json`:
 
 ```json
-{"teardown": "<resolved teardown command>", "timestamp": "<ISO8601>"}
+{"teardown": "<teardown-recipe>", "timestamp": "<ISO8601>"}
 ```
 
-This enables cleanup recovery if the session is interrupted.
+#### 4a. Web/API/Mobile Sequence (full lifecycle)
 
-### Step 7: Parse Results
+Execute steps in order: dev -> probe -> test -> teardown (mobile adds test-setup before dev).
 
-Parse test results based on the **format-type** loaded from Convention in Step 0.
+**For each step:**
 
-**Guard**: Before parsing, verify result output exists and is valid. If result output is missing or empty: report the error with the test runner's console output as evidence, and abort report generation. Do NOT attempt to parse missing/malformed output.
+1. Execute the just recipe
+2. Check exit code
+3. Follow the rule file's failure handling instructions for that exit code
 
-For detailed parsing strategies per format-type, see `rules/result-parsing.md`.
+**Probe HARD-GATE** (web, api, mobile only):
 
-### Step 8: Generate Report
+<HARD-GATE>
+After probe fails (all retries exhausted):
+- Execute teardown immediately
+- Exit with probe's exit code
+- Do NOT retry probe or restart dev in this orchestration cycle
+</HARD-GATE>
+
+**Probe retry logic** (web, api, mobile only):
+
+When probe returns non-zero:
+- Retry up to 3 times with 5-second intervals
+- If all 3 retries fail, treat as probe failure (exit code 1)
+- If any retry succeeds (exit 0), proceed to test
+
+**Dev failure** (web, api, mobile only):
+
+When dev returns non-zero:
+- Execute teardown immediately
+- Exit with dev's exit code
+
+**Test failure:**
+
+- Exit code 1: Execute teardown, exit 1
+- Exit code 2: Execute teardown, suggest retry ("测试环境异常，建议重试"), exit 2
+
+**Teardown execution:**
+
+<HARD-RULE>
+Teardown is mandatory. Execute teardown even when a previous step fails.
+</HARD-RULE>
+
+After successful teardown, delete `.forge/test-state.json`.
+
+If teardown fails, log the error and leave `.forge/test-state.json` for recovery on next run.
+
+#### 4b. CLI/TUI Sequence (simplified)
+
+Execute: test -> teardown.
+
+No dev, probe, or probe retry logic applies.
+
+Follow the same failure handling rules for test and teardown as 4a.
+
+### Step 5: Parse Results
+
+Parse test results based on the Convention loaded in Step 0 (if applicable) or auto-detected format.
+
+Read `rules/result-parsing.md` for parsing strategies.
+
+**Guard**: Before parsing, verify result output exists and is valid. If result output is missing or empty: report the error with the test runner's console output as evidence, and abort report generation.
+
+### Step 6: Generate Report
 
 Read the template at `templates/test-report.md`. Fill in:
 - Summary statistics (total/pass/fail/skip per type)
 - Per-test-case results with evidence
 - Failed test details with error messages
-- Screenshot paths (for UI tests only)
-- Confidence rating section (see below)
-
-**Confidence Rating**: Read `rules/confidence.md` for rating rules. Compute the confidence rating:
-
-1. Collect all unique outcome subjects from Contract files
-2. Run `forge fact summary` to get Fact Table statistics
-3. Compute `confirmed_fact_ratio` = outcomes covered by runtime+confirmed facts / total outcomes
-4. Determine level (HIGH/MEDIUM/LOW) per thresholds in `rules/confidence.md`
-5. Check eval_skipped / eval_bypassed flags — either forces LOW
-6. Annotate each test file header with `// confidence: <LEVEL>` (or language-appropriate comment syntax)
-7. Add confidence distribution + VERIFY/REVIEW mark statistics to the report
-
-**Screenshots**: Use `glob ${results_dir}/**/*.png` to discover screenshots. When available, use the `mcp__zai-mcp-server__analyze_image` tool to examine screenshots and add diagnostic notes. Include screenshots section only when screenshot files are found.
+- Confidence rating (read `rules/confidence.md`)
 
 Write to: `${results_dir}/latest.md`
-
-### Step 9: Teardown (Optional)
-
-<HARD-RULE>
-**Teardown is mandatory when configured**, even if tests fail.
-</HARD-RULE>
-
-If `test.execution.teardown` is configured, execute it:
-
-```bash
-# Template: test.execution.teardown (after variable resolution)
-```
-
-After successful teardown, delete the state file:
-
-```bash
-rm -f .forge/test-state.json
-```
-
-**Stale state recovery**: On skill startup, check for `.forge/test-state.json`. If it exists from a previous interrupted session, execute the stored teardown command before proceeding with the current run.
 
 ## Output
 
@@ -261,9 +206,10 @@ After completion, report to the user:
 
 ```
 Test Results: X/Y passed (Z failed)
+Surface: <surface-type>
+Sequence: <executed steps>
 
 Failed tests:
-- TC-NNN: {failure reason}
 - TC-NNN: {failure reason}
 
 Report: tests/<journey>/results/latest.md
@@ -273,30 +219,38 @@ If all tests pass:
 
 ```
 Test Results: X/X passed
+Surface: <surface-type>
 Report: tests/<journey>/results/latest.md
 ```
 
+## Exit Codes
+
+Per BIZ-error-reporting-001:
+
+| Exit Code | Meaning | Example Scenarios |
+|-----------|---------|-------------------|
+| 0 | Success | All tests passed |
+| 1 | Retryable failure | Test failure, probe timeout, dev startup failure |
+| 2 | Blocking error | Surface detection failed, unsupported surface-type, legacy migration required |
+
 ## Error Handling
 
-| Situation | Action | Retries |
-|-----------|--------|---------|
-| `test.execution.run` not configured | Abort with config example | 0 |
-| Surface type unknown or not configured | Proceed without env check, log warning | 0 |
-| Environment readiness check fails | Abort with diagnostic output (exit code 1, retryable) | 0 |
-| No active feature slug | Abort with `forge feature` prompt | 0 |
-| Output flags mismatch (Convention vs config) | Abort with mismatch details | 0 |
-| Pre-check command fails | Abort, suggest returning to `/gen-test-scripts` | 0 |
-| Setup command fails | Report error, abort | 0 |
-| Test timeout | Mark as FAIL with timeout reason | 0 |
-| Test file doesn't compile | Report compilation error, skip that file | 0 |
-| Convention file has no result format info in `structure` section | Fallback to text-verbose parsing, log a note | 0 |
-| Result output missing or empty | Report error with console output, abort report generation | 0 |
-| Teardown command fails | Log error, leave state file for recovery | 0 |
-| Stale state file detected on startup | Execute stored teardown, then proceed | 0 |
+| Situation | Action | Exit Code |
+|-----------|--------|-----------|
+| Surface info unavailable (both sources fail) | stderr error with recovery hint | 2 |
+| Unsupported surface-type | stderr error listing supported types | 2 |
+| Environment readiness check fails | Abort with diagnostic output | 1 |
+| Dev recipe fails | Execute teardown, exit with dev's code | 1 |
+| Probe fails (all retries) | Execute teardown, exit 1 (HARD-GATE) | 1 |
+| Test recipe fails | Execute teardown, exit 1 | 1 |
+| Test recipe returns exit 2 | Execute teardown, suggest retry, exit 2 | 2 |
+| Teardown recipe fails | Log error, leave state file for recovery | step's code |
+| Result output missing/empty | Report error, abort report generation | 1 |
+| Stale state file detected | Execute stored teardown, then proceed | 0 |
 
 ## Failure Diagnosis
 
-When tests fail, follow the diagnostic flow in `rules/failure-diagnosis.md`. Key gate:
+When tests fail, follow the diagnostic flow in `rules/failure-diagnosis.md`.
 
 <HARD-RULE>
 When **>30% of tests fail simultaneously**, do NOT proceed to individual test fix tasks. Run app health diagnostics first.
@@ -307,6 +261,7 @@ When **>30% of tests fail simultaneously**, do NOT proceed to individual test fi
 | Skill | Usage |
 |-------|-------|
 | `/gen-test-scripts` | Generate executable test scripts |
+| `/init-justfile` | Generate surface-specific justfile recipes |
 | `forge test promote` | Promote passing tests to regression suite `tests/e2e/` |
 
 After all tests pass, prompt the user: "Run `forge test promote <journey>` to promote tests to the e2e regression suite."

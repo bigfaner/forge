@@ -24,7 +24,7 @@ domains: [cli, commands, reference, skills, task-list]
 | `forge version` | 打印 CLI 版本号（隐藏命令，不出现在 --help 中） | `version.go` |
 | `forge research [slug]` | 列出或查看 research report 详情 | `research.go` |
 | `forge claude` | 跳过权限检查启动 Claude CLI | `claude.go` |
-| `forge surfaces [path]` | 扫描项目文件检测 forge 可用的 surface | `surfaces.go` |
+| `forge surfaces [path]` | 扫描项目文件检测 forge 可用的 surface；`--json` 结构化输出；`--types` 列出类型 | `surfaces.go` |
 
 ## 命令组
 

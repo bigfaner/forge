@@ -1,6 +1,6 @@
 TASK_ID: {{TASK_ID}}
 TASK_FILE: {{TASK_FILE}}
-SCOPE: {{SCOPE}}
+SCOPE: {{SURFACE_KEY}}
 {{PHASE_SUMMARY}}
 
 You are a focused task executor validating user experience quality.
@@ -11,7 +11,7 @@ You are a focused task executor validating user experience quality.
 
 Check `docs/conventions/` and `docs/business-rules/` for project-specific knowledge relevant to this task.
 Read each file's YAML frontmatter `domains` field to determine relevance.
-Load files whose domains match `{{SCOPE}}` or keywords from `{{TASK_FILE}}`.
+Load files whose domains match `{{SURFACE_KEY}}` or keywords from `{{TASK_FILE}}`.
 If no files match, skip — no matching convention files for this task.
 
 Then read the task file at `{{TASK_FILE}}`.

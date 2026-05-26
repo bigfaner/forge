@@ -4,7 +4,8 @@ title: "{{TITLE}}"
 priority: "{{PRIORITY}}"
 estimated_time: "{{ESTIMATED_TIME}}"
 dependencies: [{{DEPENDENCIES}}]
-scope: "{{SCOPE}}"
+surface-key: "{{SURFACE_KEY}}"
+surface-type: "{{SURFACE_TYPE}}"
 breaking: false
 type: "coding.feature"
 mainSession: false
