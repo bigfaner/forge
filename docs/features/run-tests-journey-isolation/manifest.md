@@ -1,7 +1,7 @@
 ---
 feature: "run-tests-journey-isolation"
 created: "2026-05-27"
-status: tasks
+status: completed
 mode: quick
 ---
 
