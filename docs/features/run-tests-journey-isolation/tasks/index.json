@@ -18,7 +18,7 @@
       "title": "Remove verify-regression from auto-generated task pipeline",
       "priority": "P1",
       "estimatedTime": "1-2h",
-      "status": "pending",
+      "status": "completed",
       "file": "2-remove-verify-regression.md",
       "record": "records/2-remove-verify-regression.md",
       "breaking": true,
