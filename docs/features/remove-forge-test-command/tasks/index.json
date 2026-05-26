@@ -8,7 +8,7 @@
       "title": "Delete forge test CLI commands and Go dependencies",
       "priority": "P0",
       "estimatedTime": "1.5h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-remove-forge-test-cli.md",
       "record": "records/1-remove-forge-test-cli.md",
       "type": "coding.cleanup"
