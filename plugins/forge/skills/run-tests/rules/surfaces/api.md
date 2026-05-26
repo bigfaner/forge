@@ -1,6 +1,8 @@
-# Surface: api — Run-Tests Orchestration
+# Surface: api — API 功能测试编排
 
-本规则文件定义 run-tests skill 对 api surface 的编排序列。消费方为 SKILL.md 调度器。
+本规则文件定义 run-tests skill 对 api surface 的 API 功能测试编排序列。消费方为 SKILL.md 调度器。
+
+测试类型术语定义参见 `docs/reference/test-type-model.md`。
 
 ## 编排序列
 
@@ -8,7 +10,7 @@
 |------|----------|---------|---------|---------|---------|
 | dev | `just api-dev` | API 服务启动成功，等待就绪 | 启动失败（依赖缺失/端口占用） | — | 进入 probe |
 | probe | `just api-probe` | 健康检查通过（GET /healthz 返回 2xx） | 健康检查超时（服务未就绪） | — | 进入 test |
-| test | `just api-test` | 测试通过 | 测试失败 | 测试环境异常（需重试） | 进入 teardown |
+| test | `just api-test` | API 功能测试通过 | API 功能测试失败 | 测试环境异常（需重试） | 进入 teardown |
 | teardown | `just api-teardown` | 清理完成 | 清理失败（残留进程） | — | 结束 |
 
 ## Probe 重试策略
@@ -43,6 +45,10 @@ probe 最终失败后：
 ### teardown 失败
 
 teardown 失败时记录错误，保留 `.forge/test-state.json` 用于恢复。以当前步骤的退出码退出。
+
+## Suite 名称
+
+测试报告 suite 名称使用 `api-functional/<journey-name>` 格式。
 
 ## Journey 过滤
 
