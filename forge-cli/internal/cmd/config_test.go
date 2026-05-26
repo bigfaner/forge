@@ -11,6 +11,261 @@ import (
 	"forge-cli/pkg/forgeconfig"
 )
 
+// TestDetectModeFromPath tests the mode detection logic independently of CLI wiring.
+func TestDetectModeFromPath(t *testing.T) {
+	// setupProject creates a fake project structure with features dir.
+	// Returns projectRoot and optionally creates proposal.md in a feature dir.
+	setupProject := func(t *testing.T, slug string, withProposal bool) (projectRoot string) {
+		t.Helper()
+		projectRoot = t.TempDir()
+		if slug == "" {
+			return projectRoot
+		}
+		featureDir := filepath.Join(projectRoot, "docs", "features", slug)
+		if err := os.MkdirAll(featureDir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if withProposal {
+			proposalPath := filepath.Join(featureDir, "proposal.md")
+			if err := os.WriteFile(proposalPath, []byte("---\ntitle: test\n---\nbody"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}
+		return projectRoot
+	}
+
+	t.Run("returns quick when cwd in feature dir with proposal.md", func(t *testing.T) {
+		projectRoot := setupProject(t, "my-feature", true)
+		cwd := filepath.Join(projectRoot, "docs", "features", "my-feature", "tasks")
+
+		mode := detectModeFromPath(cwd, projectRoot)
+		if mode != "quick" {
+			t.Errorf("expected 'quick', got %q", mode)
+		}
+	})
+
+	t.Run("returns full when cwd in feature dir without proposal.md", func(t *testing.T) {
+		projectRoot := setupProject(t, "my-feature", false)
+		cwd := filepath.Join(projectRoot, "docs", "features", "my-feature", "tasks")
+
+		mode := detectModeFromPath(cwd, projectRoot)
+		if mode != "full" {
+			t.Errorf("expected 'full', got %q", mode)
+		}
+	})
+
+	t.Run("returns none when cwd outside any feature dir", func(t *testing.T) {
+		projectRoot := setupProject(t, "my-feature", true)
+		cwd := filepath.Join(projectRoot, "src", "pkg")
+
+		mode := detectModeFromPath(cwd, projectRoot)
+		if mode != "none" {
+			t.Errorf("expected 'none', got %q", mode)
+		}
+	})
+
+	t.Run("returns quick when cwd is exactly the feature dir", func(t *testing.T) {
+		projectRoot := setupProject(t, "test-slug", true)
+		cwd := filepath.Join(projectRoot, "docs", "features", "test-slug")
+
+		mode := detectModeFromPath(cwd, projectRoot)
+		if mode != "quick" {
+			t.Errorf("expected 'quick', got %q", mode)
+		}
+	})
+
+	t.Run("returns full when cwd is exactly the feature dir without proposal", func(t *testing.T) {
+		projectRoot := setupProject(t, "test-slug", false)
+		cwd := filepath.Join(projectRoot, "docs", "features", "test-slug")
+
+		mode := detectModeFromPath(cwd, projectRoot)
+		if mode != "full" {
+			t.Errorf("expected 'full', got %q", mode)
+		}
+	})
+
+	t.Run("handles Windows backslash path separators", func(t *testing.T) {
+		projectRoot := setupProject(t, "my-feature", true)
+		// Simulate Windows backslash path
+		cwd := projectRoot + `\docs\features\my-feature\tasks`
+		cwd = filepath.FromSlash(cwd) // normalize for the platform
+
+		mode := detectModeFromPath(cwd, projectRoot)
+		if mode != "quick" {
+			t.Errorf("expected 'quick', got %q", mode)
+		}
+	})
+
+	t.Run("handles symlink via EvalSymlinks", func(t *testing.T) {
+		projectRoot := setupProject(t, "symlinked", true)
+		featureDir := filepath.Join(projectRoot, "docs", "features", "symlinked")
+
+		// Create a symlink to the feature dir
+		linkDir := filepath.Join(projectRoot, "link-to-feature")
+		if err := os.Symlink(featureDir, linkDir); err != nil {
+			t.Skip("symlinks not supported on this platform")
+		}
+
+		cwd := filepath.Join(linkDir, "tasks")
+		mode := detectModeFromPath(cwd, projectRoot)
+		if mode != "quick" {
+			t.Errorf("expected 'quick', got %q", mode)
+		}
+	})
+
+	t.Run("returns none when projectRoot is empty", func(t *testing.T) {
+		cwd := "/some/random/path"
+		mode := detectModeFromPath(cwd, "")
+		if mode != "none" {
+			t.Errorf("expected 'none', got %q", mode)
+		}
+	})
+
+	t.Run("uses last slug when multiple features dirs in path", func(t *testing.T) {
+		projectRoot := t.TempDir()
+		// Create two feature dirs, with proposal only in the second
+		slug1 := "first-feature"
+		slug2 := "second-feature"
+		for _, slug := range []string{slug1, slug2} {
+			dir := filepath.Join(projectRoot, "docs", "features", slug)
+			if err := os.MkdirAll(dir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+		}
+		// Only second-feature has proposal.md
+		proposalPath := filepath.Join(projectRoot, "docs", "features", slug2, "proposal.md")
+		if err := os.WriteFile(proposalPath, []byte("---\ntitle: test\n---\nbody"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		// cwd is inside second-feature
+		cwd := filepath.Join(projectRoot, "docs", "features", slug2, "tasks")
+		if err := os.MkdirAll(cwd, 0o755); err != nil {
+			t.Fatal(err)
+		}
+
+		mode := detectModeFromPath(cwd, projectRoot)
+		if mode != "quick" {
+			t.Errorf("expected 'quick', got %q", mode)
+		}
+	})
+}
+
+// TestConfigGetModeCommand tests the CLI wiring for "forge config get mode".
+func TestConfigGetModeCommand(t *testing.T) {
+	setupModeProject := func(t *testing.T, slug string, withProposal bool) (projectRoot string, cwd string) {
+		t.Helper()
+		projectRoot = t.TempDir()
+		// Create minimal config so config file exists
+		forgeDir := filepath.Join(projectRoot, feature.ForgeDir)
+		if err := os.MkdirAll(forgeDir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		configContent := "version: \"1\"\n"
+		if err := os.WriteFile(filepath.Join(forgeDir, feature.ForgeConfigFileName), []byte(configContent), 0o644); err != nil {
+			t.Fatal(err)
+		}
+
+		if slug != "" {
+			featureDir := filepath.Join(projectRoot, "docs", "features", slug)
+			if err := os.MkdirAll(featureDir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if withProposal {
+				proposalPath := filepath.Join(featureDir, "proposal.md")
+				if err := os.WriteFile(proposalPath, []byte("---\ntitle: test\n---\nbody"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			cwd = filepath.Join(featureDir, "tasks")
+			if err := os.MkdirAll(cwd, 0o755); err != nil {
+				t.Fatal(err)
+			}
+		} else {
+			cwd = filepath.Join(projectRoot, "src")
+			if err := os.MkdirAll(cwd, 0o755); err != nil {
+				t.Fatal(err)
+			}
+		}
+		return projectRoot, cwd
+	}
+
+	t.Run("returns quick via CLI", func(t *testing.T) {
+		projectRoot, cwd := setupModeProject(t, "my-feature", true)
+
+		// Save and restore cwd
+		origDir, _ := os.Getwd()
+		if err := os.Chdir(cwd); err != nil {
+			t.Fatal(err)
+		}
+		defer func() { _ = os.Chdir(origDir) }()
+
+		var stdout bytes.Buffer
+		rootCmd.SetOut(&stdout)
+		rootCmd.SetErr(os.Stderr)
+		rootCmd.SetArgs([]string{"config", "get", "mode", "--project-root", projectRoot})
+
+		err := rootCmd.Execute()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		output := strings.TrimSpace(stdout.String())
+		if output != "quick" {
+			t.Errorf("expected 'quick', got %q", output)
+		}
+	})
+
+	t.Run("returns full via CLI", func(t *testing.T) {
+		projectRoot, cwd := setupModeProject(t, "my-feature", false)
+
+		origDir, _ := os.Getwd()
+		if err := os.Chdir(cwd); err != nil {
+			t.Fatal(err)
+		}
+		defer func() { _ = os.Chdir(origDir) }()
+
+		var stdout bytes.Buffer
+		rootCmd.SetOut(&stdout)
+		rootCmd.SetErr(os.Stderr)
+		rootCmd.SetArgs([]string{"config", "get", "mode", "--project-root", projectRoot})
+
+		err := rootCmd.Execute()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		output := strings.TrimSpace(stdout.String())
+		if output != "full" {
+			t.Errorf("expected 'full', got %q", output)
+		}
+	})
+
+	t.Run("returns none via CLI", func(t *testing.T) {
+		projectRoot, cwd := setupModeProject(t, "", false)
+
+		origDir, _ := os.Getwd()
+		if err := os.Chdir(cwd); err != nil {
+			t.Fatal(err)
+		}
+		defer func() { _ = os.Chdir(origDir) }()
+
+		var stdout bytes.Buffer
+		rootCmd.SetOut(&stdout)
+		rootCmd.SetErr(os.Stderr)
+		rootCmd.SetArgs([]string{"config", "get", "mode", "--project-root", projectRoot})
+
+		err := rootCmd.Execute()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		output := strings.TrimSpace(stdout.String())
+		if output != "none" {
+			t.Errorf("expected 'none', got %q", output)
+		}
+	})
+}
+
 func TestConfigGetCommand(t *testing.T) {
 	setupConfig := func(t *testing.T, content string) string {
 		t.Helper()
