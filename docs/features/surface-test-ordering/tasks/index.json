@@ -217,7 +217,7 @@
       "dependencies": [
         "fix-8"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "fix-7.md",
       "record": "records/fix-7.md",
       "breaking": true,
