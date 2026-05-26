@@ -185,12 +185,12 @@ tests/
     <test-files>
 ```
 
-### Lifecycle Migration: Staging/Graduation -> Tag-Based Promotion
+### Tag-Based Promotion
 
-| 旧流程 | 新流程 | Migration Step |
-|--------|--------|---------------|
-| 测试生成到 `tests/e2e/` | 测试直接生成到 `tests/<journey>/` | 无 staging 目录 |
-| `forge test stage <journey>` | 自动 `@feature` tag | 无需显式 staging |
-| `forge test graduate <journey>` | `/run-tests` (tag promotion) | 标签从 `@feature` 变为 `@regression` |
-| 文件从 staging 移到 final location | 文件始终在最终位置 | 无文件移动 |
-| CI 运行 final location 的测试 | 使用测试框架原生的标签过滤机制（如 `go test -tags=regression`） | 按标签选择 |
+| 流程 | 说明 |
+|------|------|
+| 测试直接生成到 `tests/<journey>/` | 无 staging 目录 |
+| 自动 `@feature` tag | 无需显式 staging |
+| `/run-tests` (tag promotion) | 标签从 `@feature` 变为 `@regression` |
+| 文件始终在最终位置 | 无文件移动 |
+| 使用测试框架原生的标签过滤机制（如 `go test -tags=regression`） | 按标签选择 |
