@@ -828,7 +828,7 @@ func ResolveFirstTestDep(tasks []AutoGenTaskDef, existingTasks map[string]Task, 
 		return
 	}
 
-	// Only resolve when E2E test tasks exist (they have T-test-gen-journeys prefix)
+	// Only resolve when surface test tasks exist (they have T-test-gen-journeys prefix)
 	if findTaskIndexByPrefix(tasks, "T-test-gen-journeys") < 0 {
 		return
 	}

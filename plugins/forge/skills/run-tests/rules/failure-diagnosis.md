@@ -1,13 +1,13 @@
 ---
 name: failure-diagnosis
-description: Diagnostic flow for e2e test failures, including app health gate and general failure analysis
+description: Diagnostic flow for surface test failures, including app health gate and general failure analysis
 ---
 
 # Failure Diagnosis
 
 ## App Health First Gate
 
-When tests fail, the first step is determining whether the **app itself is healthy**. E2E test error signals cannot distinguish "test wrote wrong selector" from "app crashed and renders nothing" -- both produce "element not found".
+When tests fail, the first step is determining whether the **app itself is healthy**. Surface test error signals cannot distinguish "test wrote wrong selector" from "app crashed and renders nothing" -- both produce "element not found".
 
 <HARD-RULE>
 When **>30% of tests fail simultaneously**, do NOT proceed to individual test fix tasks. Run app health diagnostics first. Batch failures almost always indicate an app-level problem, not per-test issues.
@@ -40,7 +40,7 @@ When tests fail, do not stop at the first visible error message. Follow these ru
 
 2. **Ask the contradiction question** -- "Why does this test fail when other tests with the same pattern pass?" If many tests use the same setup and pass, the failure is specific to this test's setup, not a platform issue.
 
-3. **Verify backend health** -- after code changes, the backend must be rebuilt AND restarted before re-running e2e. Check:
+3. **Verify backend health** -- after code changes, the backend must be rebuilt AND restarted before re-running surface tests. Check:
    - Did the health check (`just probe`) actually pass?
    - Are there backend logs showing the failed requests?
    - Did a rate limit or connection reset occur during setup?

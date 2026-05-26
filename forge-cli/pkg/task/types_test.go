@@ -404,7 +404,7 @@ func TestTaskIndexUnmarshal_EmptyTasks(t *testing.T) {
 	})
 }
 
-func assertField(t *testing.T, name string, got, want interface{}) {
+func assertField(t *testing.T, name string, got, want any) {
 	t.Helper()
 	if got != want {
 		t.Errorf("%s = %v, want %v", name, got, want)

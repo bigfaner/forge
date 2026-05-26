@@ -43,7 +43,7 @@ CLI surface 适用于以命令行方式交互的应用程序。测试重点是 e
 
 **Test Level Emphasis**: Contract 80% / Journey smoke 20%
 
-CLI tests are inherently subprocess-based -- each invocation starts a new process with clean state. This makes Contract-level testing (individual command behavior) highly reliable and cost-effective. Journey smoke tests validate the end-to-end user workflow but are slower and less isolatable.
+CLI tests are inherently subprocess-based -- each invocation starts a new process with clean state. This makes Contract-level testing (individual command behavior) highly reliable and cost-effective. Journey smoke tests validate the complete user workflow but are slower and less isolatable.
 
 **Execution Model**: Subprocess
 
