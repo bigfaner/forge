@@ -73,7 +73,7 @@
       "dependencies": [
         "2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3-submit-build-legacy-scope.md",
       "record": "records/3-submit-build-legacy-scope.md",
       "type": "coding.fix"
