@@ -205,7 +205,6 @@ type TaskIndex struct {
     StatusEnum   []string        `json:"statusEnum,omitempty"`
     PriorityEnum []string        `json:"priorityEnum,omitempty"`
     TestCommand  string          `json:"testCommand,omitempty"`
-    E2ERound     int             `json:"e2eRound,omitempty"` // current fix-e2e round (0 = no failures yet)
 }
 ```
 

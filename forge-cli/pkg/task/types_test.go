@@ -340,7 +340,6 @@ func TestTaskIndexJSONRoundTrip_AllFields(t *testing.T) {
 		tasks:        map[string]Task{"t1": {ID: "1.1", Title: "Task", Status: "pending"}},
 		StatusEnum:   []string{"pending", "completed"},
 		PriorityEnum: []string{"P0", "P1"},
-		E2ERound:     3,
 	}
 
 	data, err := json.Marshal(original)
@@ -351,10 +350,6 @@ func TestTaskIndexJSONRoundTrip_AllFields(t *testing.T) {
 	// Verify raw JSON contains "tasks" key (two-struct pattern must emit it)
 	if !strings.Contains(string(data), `"tasks"`) {
 		t.Errorf("JSON output missing \"tasks\" key: %s", data)
-	}
-	// Verify E2ERound appears in raw output
-	if !strings.Contains(string(data), `"e2eRound"`) {
-		t.Errorf("JSON output missing \"e2eRound\" key: %s", data)
 	}
 
 	var loaded TaskIndex
@@ -367,7 +362,6 @@ func TestTaskIndexJSONRoundTrip_AllFields(t *testing.T) {
 	assertField(t, "Design", loaded.Design, original.Design)
 	assertField(t, "Created", loaded.Created, original.Created)
 	assertField(t, "Status", loaded.Status, original.Status)
-	assertField(t, "E2ERound", loaded.E2ERound, original.E2ERound)
 	if loaded.TaskCount() != original.TaskCount() {
 		t.Errorf("TaskCount = %d, want %d", loaded.TaskCount(), original.TaskCount())
 	}
