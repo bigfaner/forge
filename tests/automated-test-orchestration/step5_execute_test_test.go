@@ -18,8 +18,8 @@ import (
 func TestTC_049_ExecuteTest_Success(t *testing.T) {
 	projectDir := createProjectWithTask(t, "web")
 
-	out, exitCode := runForgeRaw(t, projectDir, "run-tests")
-	t.Logf("run-tests test step output (exit %d): %s", exitCode, out)
+	out, exitCode := runForgeRaw(t, projectDir, "test", "run-journey", "test-journey")
+	t.Logf("test run-journey test step output (exit %d): %s", exitCode, out)
 }
 
 // Traceability: TC-050 -> Contract automated-test-orchestration/step-5 Outcome "test-failure"
@@ -27,7 +27,7 @@ func TestTC_049_ExecuteTest_Success(t *testing.T) {
 func TestTC_050_ExecuteTest_Failure(t *testing.T) {
 	projectDir := createProjectWithTask(t, "web")
 
-	_, exitCode := runForgeRaw(t, projectDir, "run-tests")
+	_, exitCode := runForgeRaw(t, projectDir, "test", "run-journey", "test-journey")
 	if exitCode != 0 {
 		// Test failure: teardown executed, exit code is 1 (retryable) or 2 (blocking)
 		assert.True(t,
@@ -41,7 +41,7 @@ func TestTC_050_ExecuteTest_Failure(t *testing.T) {
 func TestTC_051_ExecuteTest_ValidationError(t *testing.T) {
 	projectDir := createProjectWithTask(t, "web")
 
-	out, exitCode := runForgeRaw(t, projectDir, "run-tests")
+	out, exitCode := runForgeRaw(t, projectDir, "test", "run-journey", "test-journey")
 	if exitCode == 2 {
 		t.Logf("test validation error output: %s", out)
 	}
@@ -52,7 +52,7 @@ func TestTC_051_ExecuteTest_ValidationError(t *testing.T) {
 func TestTC_052_ExecuteTest_Timeout(t *testing.T) {
 	projectDir := createProjectWithTask(t, "web")
 
-	out, exitCode := runForgeRaw(t, projectDir, "run-tests")
+	out, exitCode := runForgeRaw(t, projectDir, "test", "run-journey", "test-journey")
 	if exitCode != 0 && strings.Contains(out, "timeout") {
 		assert.True(t,
 			outputContainsRecoveryHint(out),

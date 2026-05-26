@@ -20,9 +20,9 @@ import (
 func TestAutomatedTestOrchestration_Smoke(t *testing.T) {
 	projectDir := createProjectWithTask(t, "web")
 
-	// Step 1: run-tests reads surface-type from frontmatter
-	out, exitCode := runForgeRaw(t, projectDir, "run-tests")
-	t.Logf("run-tests smoke output (exit %d): %s", exitCode, out)
+	// Step 1: test run-journey reads surface-type from frontmatter
+	out, exitCode := runForgeRaw(t, projectDir, "test", "run-journey", "test-journey")
+	t.Logf("test run-journey smoke output (exit %d): %s", exitCode, out)
 
 	// Invariant: exit code semantics: 0=success, 1=retryable, 2=blocking
 	assert.True(t,
@@ -33,7 +33,7 @@ func TestAutomatedTestOrchestration_Smoke(t *testing.T) {
 	statePath := filepath.Join(projectDir, ".forge", "test-state.json")
 	if _, err := os.Stat(statePath); err == nil {
 		// State file may still exist with completed status
-		t.Log("test-state.json exists after run-tests -- checking if finalized")
+		t.Log("test-state.json exists after test run-journey -- checking if finalized")
 	}
 
 	// Invariant: no orphan processes remain (verified by teardown)

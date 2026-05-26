@@ -19,10 +19,10 @@ import (
 func TestTC_053_Teardown_Success(t *testing.T) {
 	projectDir := createProjectWithTask(t, "web")
 
-	out, exitCode := runForgeRaw(t, projectDir, "run-tests")
-	t.Logf("run-tests teardown output (exit %d): %s", exitCode, out)
+	out, exitCode := runForgeRaw(t, projectDir, "test", "run-journey", "test-journey")
+	t.Logf("test run-journey teardown output (exit %d): %s", exitCode, out)
 
-	// After run-tests completes, test-state.json should be cleaned up
+	// After test run-journey completes, test-state.json should be cleaned up
 	statePath := filepath.Join(projectDir, ".forge", "test-state.json")
 	_, err := os.Stat(statePath)
 	// File should not exist after successful teardown
@@ -36,7 +36,7 @@ func TestTC_053_Teardown_Success(t *testing.T) {
 func TestTC_054_Teardown_KillFailure(t *testing.T) {
 	projectDir := createProjectWithTask(t, "web")
 
-	out, exitCode := runForgeRaw(t, projectDir, "run-tests")
+	out, exitCode := runForgeRaw(t, projectDir, "test", "run-journey", "test-journey")
 	t.Logf("teardown kill failure output (exit %d): %s", exitCode, out)
 	// Teardown should be idempotent: PID not existing is not an error
 }
@@ -53,7 +53,7 @@ func TestTC_055_Teardown_StaleStateCleanup(t *testing.T) {
 		[]byte(stateContent), 0644)
 	assert.NoError(t, err)
 
-	out, exitCode := runForgeRaw(t, projectDir, "run-tests")
+	out, exitCode := runForgeRaw(t, projectDir, "test", "run-journey", "test-journey")
 	t.Logf("stale state cleanup output (exit %d): %s", exitCode, out)
 	// Stale state should be detected and cleaned up
 }
