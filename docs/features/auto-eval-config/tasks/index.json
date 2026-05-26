@@ -50,7 +50,7 @@
         "2",
         "3"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-unit-tests.md",
       "record": "records/4-unit-tests.md",
       "type": "coding.feature"
