@@ -124,12 +124,13 @@ For each non-UI business task, populate `## Reference Files` with precise tech-d
 **Note**: This is heuristic guidance for LLM execution, not a deterministic algorithm. The agent performing breakdown-tasks uses judgment to select the most relevant sections.
 
 ### Surface-Key/Type Assignment
-See `rules/scope-to-surface-key.md` for the full resolution procedure. Summary:
+See `rules/scope-to-surface-key.md` for the full resolution procedure. Uses a two-layer strategy:
 
-1. Collect all affected file paths from the task
-2. For each file, run `forge surfaces --json <file-path>` to get `{key, type}`
-3. Merge results: single surface → use its key+type; mixed/no match → leave both empty
-4. Write `surface-key` and `surface-type` into task frontmatter
+1. **Project-level shortcut** (single-surface projects): Run `forge surfaces --json` once with no file argument. If the result is a single surface (array length 1), all tasks share that surface-key and surface-type. **Skip per-file `forge surfaces` calls entirely** — this eliminates N*M redundant CLI invocations. Set both fields on every task.
+
+2. **File-level query** (multi-surface projects): For each task, examine affected file paths. Use path prefix matching against known surface directories first. Only call `forge surfaces --json <file-path>` for files whose path prefix is ambiguous across surfaces. Merge results: single surface → use its key+type; mixed/no match → leave both empty.
+
+3. Write `surface-key` and `surface-type` into task frontmatter.
 
 If `forge surfaces --json` fails or returns no surfaces configured, set both fields to empty strings and continue. Do NOT block task generation.
 

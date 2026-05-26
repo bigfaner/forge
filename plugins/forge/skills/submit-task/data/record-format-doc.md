@@ -1,6 +1,6 @@
 # Record Format: Doc Category
 
-Task types: `doc`, `doc.eval`, `doc.summary`, `doc.consolidate`, `doc.drift`
+Task types: `doc`, `doc.review`, `doc.summary`, `doc.consolidate`, `doc.drift`
 
 ## JSON Example
 

@@ -76,7 +76,13 @@ For each In Scope bullet: estimate effort (1-2h), derive acceptance criteria fro
 
 **Dependencies**: linear chain unless parallel work implied. Simple integer IDs: `1`, `2`, `3`.
 
-**Surface-Key/Type Inference**: For each task, query `forge surfaces --json <file-path>` on the task's affected files to resolve `surface-key` and `surface-type`. Merge results: single surface → use its key+type; mixed or no match → leave both empty. If `forge surfaces --json` fails or returns no surfaces configured, set both fields to empty strings and continue.
+**Surface-Key/Type Inference**: Use the two-layer resolution strategy:
+
+1. **Project-level shortcut** (single-surface projects): Run `forge surfaces --json` once with no file argument. If the result is a single surface (array length 1), all tasks share that surface-key and surface-type. **Skip per-file `forge surfaces` calls entirely** — this eliminates N*M redundant CLI invocations. Set `surface-key` and `surface-type` on every task to the single surface's values.
+
+2. **File-level query** (multi-surface projects): For each task, examine the affected file paths. Use path prefix matching against known surface directories first (from the project-level result). Only call `forge surfaces --json <file-path>` for files whose path prefix is ambiguous across surfaces. Merge results: single surface → use its key+type; mixed or no match → leave both empty.
+
+If `forge surfaces --json` fails or returns no surfaces configured, set both fields to empty strings and continue.
 
 **Reference Files Generation**: For each derived task, generate precise section-level Reference Files instead of bare file paths.
 

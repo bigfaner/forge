@@ -125,7 +125,7 @@
       "dependencies": [
         "6"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "7-surface-type-consistency.md",
       "record": "records/7-surface-type-consistency.md",
       "type": "doc"
