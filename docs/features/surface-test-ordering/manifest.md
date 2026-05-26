@@ -1,7 +1,7 @@
 ---
 feature: "surface-test-ordering"
 created: "2026-05-26"
-status: tasks
+status: completed
 mode: quick
 ---
 
