@@ -1,7 +1,7 @@
 ---
 feature: "auto-eval-config"
 created: "2026-05-26"
-status: tasks
+status: completed
 mode: quick
 ---
 
