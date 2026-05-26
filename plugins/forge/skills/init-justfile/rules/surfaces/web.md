@@ -36,7 +36,7 @@
 | journey 标签 | 匹配规则 | 说明 |
 |-------------|---------|------|
 | `@web` | 精确匹配 | web surface 的专用 journey |
-| `@e2e` | 精确匹配 | 端到端测试，归入 web surface |
+| `@web-e2e` | 精确匹配 | Web 端到端测试，归入 web surface |
 | `@smoke` | 精确匹配 | 冒烟测试，归入 web surface |
 | 其他 | 忽略 | 非 web 相关 journey 不由本规则处理 |
 

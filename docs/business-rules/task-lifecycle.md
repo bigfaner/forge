@@ -39,5 +39,7 @@ _Source: feature/forge-cli-v3_
 
 **Dual-identity exception**: `doc.consolidate` and `doc.drift` are NOT in SystemTypes — they can be both auto-generated (by `forge task index`) and manually created by Skills for legacy projects.
 
+测试类型命名遵循 Surface → Test Type 映射，权威定义参见 `docs/reference/test-type-model.md`。
+
 **Context**: Prevents Skills from accidentally assigning pipeline-managed types to business tasks, which would cause scheduling anomalies (wrong stage-gate routing, test pipeline misdetection). The blacklist approach avoids maintenance burden since system types form a stable closed set while business types grow.
 **Source**: feature/system-type-exclusion
