@@ -264,5 +264,5 @@ See `rules/constraints.md` for the complete list of constraints and rules govern
 |-------|-------------|
 | `/write-prd` | Upstream: source of business rules |
 | `/tech-design` | Upstream: source of technical specs |
-| `forge test promote` | Predecessor: T-test-4 before this T-specs-1 |
+| `/run-tests` | Predecessor: T-test-4 before this T-specs-1 |
 | `/submit-task` | Downstream: records task completion |

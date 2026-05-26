@@ -82,7 +82,7 @@ forge --help
 
 **Git Worktree 并行开发** — `forge worktree start/remove/resume/status/push` 全生命周期管理。支持 `-i` 交互选择未完成的 feature、`--source-branch` 指定源分支、shell tab 补全，以及未推送 commit 自动检测阻止删除。
 
-**Journey-Contract 测试模型** — `gen-journeys` → `eval-journey` → `gen-contracts` → `eval-contract` → `gen-test-scripts` → `run-tests` → `forge test promote` 全链路测试生成与评估。`forge test verify` 自动检测契约断裂。
+**Journey-Contract 测试模型** — `gen-journeys` → `eval-journey` → `gen-contracts` → `eval-contract` → `gen-test-scripts` → `run-tests` 全链路测试生成与评估。标签晋升（`@feature` → `@regression`）由 `run-tests` skill 在流程中自动处理。
 
 **Two-layer 测试策略** — `just unit-test`（快速、无 `-race`）和 `just test`（完整、含 e2e），分层加速反馈循环。Quality Gate 按分层逐步执行。
 
@@ -311,7 +311,7 @@ forge --help
 
 ### 测试生命周期
 
-`/gen-sitemap` -> `/gen-journeys` -> `/eval-journey` -> `/gen-contracts` -> `/eval-contract` -> `/gen-test-scripts` -> `/run-tests` -> `forge test promote` -> `/consolidate-specs`
+`/gen-sitemap` -> `/gen-journeys` -> `/eval-journey` -> `/gen-contracts` -> `/eval-contract` -> `/gen-test-scripts` -> `/run-tests` -> `/consolidate-specs`
 
 ### 执行
 

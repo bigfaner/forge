@@ -21,7 +21,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2-clean-doc-references.md",
       "record": "records/2-clean-doc-references.md",
       "type": "doc"

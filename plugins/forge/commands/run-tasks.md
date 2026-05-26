@@ -116,7 +116,7 @@ Return to Step 1.
 
 After loop ends, print: "All tasks completed. T-test-run and T-test-verify-regression handle e2e verification and regression automatically."
 
-If index lacks T-test-run, suggest: "Run `/run-tests` then `forge test promote <journey>`."
+If index lacks T-test-run, suggest: "Run `/run-tests` to run and promote tests."
 
 Do NOT run e2e tests from the dispatcher.
 

@@ -262,6 +262,5 @@ When **>30% of tests fail simultaneously**, do NOT proceed to individual test fi
 |-------|-------|
 | `/gen-test-scripts` | Generate executable test scripts |
 | `/init-justfile` | Generate surface-specific justfile recipes |
-| `forge test promote` | Promote passing tests to regression suite `tests/e2e/` |
 
-After all tests pass, prompt the user: "Run `forge test promote <journey>` to promote tests to the e2e regression suite."
+After all tests pass, tag promotion (`@feature` → `@regression`) is handled automatically by the `/run-tests` skill.

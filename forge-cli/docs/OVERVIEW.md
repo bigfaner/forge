@@ -80,29 +80,12 @@ Override with `--force`: `forge task submit <id> --data record.json --force`
 | `forge verify-task-done` | PreToolUse (git commit) | Verify task completion status, block commits for incomplete tasks |
 | `forge cleanup` | Stop | Clean up state files for completed, blocked, or rejected tasks |
 | `forge quality-gate` | Stop hook | Check if all tasks are completed, and if so, automatically run tests |
-| `forge test` | Test resolution | Resolve active test language/framework from config or project structure |
 | `forge task index` | Index generation | Build or rebuild index.json from .md files with test task generation |
 | `forge prompt get-by-task-id <id>` | Prompt synthesis | Generate agent prompt for a task based on its type; `--fix-record-missed` for recovery |
 | `forge forensic` | Session analysis | Search/extract past session transcripts for deviation analysis |
 | `forge task migrate` | Data migration | Infer type fields for all tasks in index.json |
 | `forge e2e validate-specs` | Spec validation | AST validation against generated Playwright spec files |
 | `forge version` | Version info | Print CLI version |
-
-**`forge test` subcommands:**
-
-| Command | Description |
-|---------|-------------|
-| `forge test` | Resolve active language(s): reads `.forge/config.yaml`, falls back to file-signal detection |
-| `forge test detect` | Run detection only (ignores existing config) |
-| `forge test get generate` | Get generate strategy |
-| `forge test get run` | Get run strategy |
-| `forge test get justfile` | Get justfile recipes |
-| `forge test get template <file>` | Get a specific template file |
-| `forge test interfaces` | Get project surface types (deprecated: use `forge surfaces --types`) |
-| `forge test framework` | Resolve test framework |
-| `forge test promote <journey>` | Promote journey's @feature tags to @regression |
-| `forge test run-journey <name>` | Run a journey in isolated temp directory |
-| `forge test verify` | Detect contract breakage against current code |
 
 **Profile detection signals:**
 
@@ -137,9 +120,8 @@ Override with `--force`: `forge task submit <id> --data record.json --force`
 - If `tests/e2e/features/<feature>/` exists but no graduation marker, hook prints a WARNING to guide migration
 
 **e2e test script graduation model:**
-- Promotion is done via `forge test promote <journey>` — runs tests first, then replaces @feature with @regression
+- Promotion is done via `/run-tests` — after tests pass, `@feature` tags are replaced with `@regression`
 - Tag-based lifecycle: `@feature` (newly generated) -> `@regression` (verified, promoted)
-- CI selects via `forge test run --tags regression` or `--tags feature`
 - Source scripts at `tests/e2e/features/<feature>/` are reorganized into `tests/e2e/<target>/` after graduation
 
 **Test command auto-detection order (project-level):**
