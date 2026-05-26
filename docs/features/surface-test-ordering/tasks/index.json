@@ -110,6 +110,33 @@
       "surface-type": "cli",
       "sourceTaskID": "4"
     },
+    "fix-10": {
+      "id": "fix-10",
+      "title": "Fix: task-type-system config fixtures",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "fix-11"
+      ],
+      "status": "completed",
+      "file": "fix-10.md",
+      "record": "records/fix-10.md",
+      "breaking": true,
+      "sourceTaskID": "fix-9",
+      "type": "coding.fix"
+    },
+    "fix-11": {
+      "id": "fix-11",
+      "title": "Fix: automated-test-orchestration run-tests removal",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-11.md",
+      "record": "records/fix-11.md",
+      "breaking": true,
+      "sourceTaskID": "fix-10",
+      "type": "coding.fix"
+    },
     "fix-2": {
       "id": "fix-2",
       "title": "Fix: TestSurfacesTypes and TestSurfacesJSONTypes fail with empty output",
@@ -122,6 +149,110 @@
       "surface-type": "cli",
       "sourceTaskID": "4",
       "blockedReason": "unit-test failed: TestSurfacesTypes and TestSurfacesJSONTypes still fail with empty output"
+    },
+    "fix-3": {
+      "id": "fix-3",
+      "title": "fix test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "fix-4"
+      ],
+      "status": "completed",
+      "file": "fix-3.md",
+      "record": "records/fix-3.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.fix"
+    },
+    "fix-4": {
+      "id": "fix-4",
+      "title": "Fix: quick_test_slim old architecture assertions",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "fix-5"
+      ],
+      "status": "pending",
+      "file": "fix-4.md",
+      "record": "records/fix-4.md",
+      "breaking": true,
+      "sourceTaskID": "fix-3",
+      "type": "coding.fix"
+    },
+    "fix-5": {
+      "id": "fix-5",
+      "title": "Fix: surface-aware-recipe-generation config fixtures",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "fix-6",
+        "fix-7"
+      ],
+      "status": "pending",
+      "file": "fix-5.md",
+      "record": "records/fix-5.md",
+      "breaking": true,
+      "sourceTaskID": "fix-4",
+      "type": "coding.fix"
+    },
+    "fix-6": {
+      "id": "fix-6",
+      "title": "Fix: remaining test suites config fixtures",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "rejected",
+      "file": "fix-6.md",
+      "record": "records/fix-6.md",
+      "breaking": true,
+      "sourceTaskID": "fix-5",
+      "type": "coding.fix"
+    },
+    "fix-7": {
+      "id": "fix-7",
+      "title": "Fix: surface-key-migration config fixtures",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "fix-8"
+      ],
+      "status": "pending",
+      "file": "fix-7.md",
+      "record": "records/fix-7.md",
+      "breaking": true,
+      "sourceTaskID": "fix-5",
+      "type": "coding.fix"
+    },
+    "fix-8": {
+      "id": "fix-8",
+      "title": "Fix: quality-gate config fixtures",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "fix-9"
+      ],
+      "status": "pending",
+      "file": "fix-8.md",
+      "record": "records/fix-8.md",
+      "breaking": true,
+      "sourceTaskID": "fix-7",
+      "type": "coding.fix"
+    },
+    "fix-9": {
+      "id": "fix-9",
+      "title": "Fix: task-lifecycle config fixtures",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "fix-10"
+      ],
+      "status": "pending",
+      "file": "fix-9.md",
+      "record": "records/fix-9.md",
+      "breaking": true,
+      "sourceTaskID": "fix-8",
+      "type": "coding.fix"
     },
     "quick-drift-detection": {
       "id": "T-quick-doc-drift",
