@@ -400,8 +400,8 @@ func TestSynthesize_NonEmptyPhaseSummary_Preserved(t *testing.T) {
 }
 
 func TestSynthesize_EmptyScope_NoTrailingSpace(t *testing.T) {
-	// When scope is "" or "all", the SCOPE variable is empty.
-	// Check that "SCOPE: " (with trailing space) is cleaned up.
+	// When scope is "" or "all", the SURFACE_KEY variable is empty.
+	// Check that "SURFACE_KEY: " (with trailing space) is cleaned up.
 	dir := t.TempDir()
 	tasks := map[string]task.Task{
 		"1.1-impl": {
@@ -1570,6 +1570,115 @@ func TestDocReviewPromptTemplate_NoScanTasksDirective(t *testing.T) {
 	}
 	if strings.Contains(s, "scanning the tasks directory") {
 		t.Error("doc-review prompt must NOT contain 'scanning the tasks directory' directive")
+	}
+}
+
+// --- Task 5: test-run.md skill reference fix ---
+
+func TestTestRunTemplate_ReferencesRunTests(t *testing.T) {
+	data, err := templateFS.ReadFile("data/test-run.md")
+	if err != nil {
+		t.Fatalf("cannot read test-run prompt template: %v", err)
+	}
+	s := string(data)
+
+	// Must reference the actual skill name: forge:run-tests
+	if !strings.Contains(s, `Skill(skill="forge:run-tests")`) {
+		t.Error("test-run.md must reference forge:run-tests skill")
+	}
+
+	// Must NOT reference the non-existent skill: forge:run-e2e-tests
+	if strings.Contains(s, "run-e2e-tests") {
+		t.Error("test-run.md must NOT reference non-existent forge:run-e2e-tests skill")
+	}
+}
+
+// --- Task 5: SCOPE label rename to SURFACE_KEY ---
+
+func TestAllTemplates_NoScopeLabel(t *testing.T) {
+	entries, err := templateFS.ReadDir("data")
+	if err != nil {
+		t.Fatalf("cannot read template directory: %v", err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		if !strings.HasSuffix(name, ".md") {
+			continue
+		}
+
+		t.Run(name, func(t *testing.T) {
+			data, err := templateFS.ReadFile("data/" + name)
+			if err != nil {
+				t.Fatalf("cannot read template %s: %v", name, err)
+			}
+			s := string(data)
+
+			// No template should have "SCOPE: {{SURFACE_KEY}}" label
+			if strings.Contains(s, "SCOPE: {{SURFACE_KEY}}") {
+				t.Errorf("template %s still uses deprecated SCOPE: label (should be SURFACE_KEY:)", name)
+			}
+		})
+	}
+}
+
+func TestAllTemplates_UseSurfaceKeyLabel(t *testing.T) {
+	entries, err := templateFS.ReadDir("data")
+	if err != nil {
+		t.Fatalf("cannot read template directory: %v", err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		if !strings.HasSuffix(name, ".md") {
+			continue
+		}
+
+		t.Run(name, func(t *testing.T) {
+			data, err := templateFS.ReadFile("data/" + name)
+			if err != nil {
+				t.Fatalf("cannot read template %s: %v", name, err)
+			}
+			s := string(data)
+
+			// Templates that use {{SURFACE_KEY}} should use SURFACE_KEY: label
+			if strings.Contains(s, "{{SURFACE_KEY}}") && !strings.Contains(s, "SURFACE_KEY: {{SURFACE_KEY}}") {
+				t.Errorf("template %s uses {{SURFACE_KEY}} but not with SURFACE_KEY: label", name)
+			}
+		})
+	}
+}
+
+func TestSynthesize_TestRunTemplate_InvokesRunTests(t *testing.T) {
+	dir := t.TempDir()
+	tasks := map[string]task.Task{
+		"T-test-run": {
+			ID:     "T-test-run",
+			Title:  "Run tests",
+			Status: "pending",
+			File:   "T-test-run.md",
+			Record: "records/T-test-run.md",
+			Type:   task.TypeTestRun,
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "T-test-run"}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(result, `Skill(skill="forge:run-tests")`) {
+		t.Error("test-run synthesized prompt should invoke forge:run-tests skill")
+	}
+	if strings.Contains(result, "run-e2e-tests") {
+		t.Error("test-run synthesized prompt must NOT reference forge:run-e2e-tests")
 	}
 }
 

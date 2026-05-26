@@ -235,7 +235,7 @@ func InferType(id string) string {
 // cleanTemplateOutput removes residual artifacts left when template variables
 // are substituted with empty strings:
 //
-//  1. Lines that are only a label with an empty value (e.g. "SCOPE: " or "PROFILE: ")
+//  1. Lines that are only a label with an empty value (e.g. "SURFACE_KEY: " or "PROFILE: ")
 //     are removed entirely.
 //  2. Lines containing conditional sentences with empty backticks
 //     (e.g. "If “ is non-empty, ...") are removed entirely.
@@ -275,7 +275,7 @@ func cleanTemplateOutput(s string) string {
 	return result
 }
 
-// isLabelWithEmptyValue detects lines like "SCOPE:" or "PROFILE: " or "PHASE_SUMMARY:"
+// isLabelWithEmptyValue detects lines like "SURFACE_KEY:" or "PROFILE: " or "PHASE_SUMMARY:"
 // where the label is followed by a colon and optional whitespace but no actual value.
 func isLabelWithEmptyValue(line string) bool {
 	if line == "" {

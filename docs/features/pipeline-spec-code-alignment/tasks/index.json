@@ -99,7 +99,7 @@
       "dependencies": [
         "4"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "5-prompt-template-fixes.md",
       "record": "records/5-prompt-template-fixes.md",
       "type": "coding.enhancement"

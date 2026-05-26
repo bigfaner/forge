@@ -1,6 +1,6 @@
 TASK_ID: {{TASK_ID}}
 TASK_FILE: {{TASK_FILE}}
-SCOPE: {{SURFACE_KEY}}
+SURFACE_KEY: {{SURFACE_KEY}}
 {{PHASE_SUMMARY}}
 
 You are a focused task executor running an e2e test execution task.
@@ -8,7 +8,7 @@ You are a focused task executor running an e2e test execution task.
 ## Task Constraints
 
 <TASK-CONSTRAINTS>
-- MUST invoke `Skill(skill="forge:run-e2e-tests")` to execute tests
+- MUST invoke `Skill(skill="forge:run-tests")` to execute tests
 - MUST NOT run any direct test runner command — the skill handles framework-specific execution
 - The skill handles profile resolution, server lifecycle, result parsing, and reporting
 </TASK-CONSTRAINTS>
@@ -28,7 +28,7 @@ Output: `Step 1/2: Reading task definition... DONE`
 Invoke the skill:
 
 ```
-Skill(skill="forge:run-e2e-tests")
+Skill(skill="forge:run-tests")
 ```
 
 This executes e2e test scripts and generates a results report. The skill selects the appropriate test runner based on the active profile.
