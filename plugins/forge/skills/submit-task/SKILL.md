@@ -99,4 +99,4 @@ The original type in `index.json` is **not** changed.
 ## Recovery (when `forge task submit` fails)
 
 1. Fix `record.json` and re-run `forge task submit <TASK_ID> --data <path>`
-2. If stuck: `forge task add --template fix-task --title "Fix: submit failed" --source-task-id <TASK_ID> --block-source --description "Submit failed: <error>"`
+2. If stuck: `forge task add --type coding.fix --title "Fix: submit failed" --source-task-id <TASK_ID> --block-source --description "Submit failed: <error>"`
