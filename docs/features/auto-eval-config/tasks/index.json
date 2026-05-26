@@ -65,7 +65,7 @@
         "2",
         "3"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "5-skill-config-check.md",
       "record": "records/5-skill-config-check.md",
       "type": "doc"
@@ -78,8 +78,8 @@
       "status": "pending",
       "file": "quick-drift-detection.md",
       "record": "records/quick-drift-detection.md",
-      "scope": "all",
-      "type": "doc.drift"
+      "type": "doc.drift",
+      "scope": "all"
     },
     "review-doc": {
       "id": "T-review-doc",
@@ -92,8 +92,8 @@
       "status": "pending",
       "file": "review-doc.md",
       "record": "records/review-doc.md",
-      "scope": "all",
-      "type": "doc.review"
+      "type": "doc.review",
+      "scope": "all"
     }
   },
   "statusEnum": [

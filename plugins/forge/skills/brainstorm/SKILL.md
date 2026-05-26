@@ -114,10 +114,33 @@ git commit -m "docs: add proposal for <feature-slug>"
 
 ## Step 7: Adversarial Eval Prompt
 
-After committing, ask via `AskUserQuestion`:
+<EXTREMELY-IMPORTANT>
+Eval auto-run check — do NOT use AskUserQuestion when config enables auto-run.
 
-> Run `/eval-proposal` for adversarial evaluation? (default: 900 points / 3 rounds)
+Run the following config check sequence via Bash tool:
 
-- **Yes** → invoke `/eval-proposal` via `Skill` tool
-- **Custom** → invoke `/eval-proposal --target X --iterations Y` via `Skill` tool
-- **No** → proceed to `/write-prd`
+```bash
+# Eval auto-run check (proposal)
+MODE=$(forge config get mode 2>/dev/null)
+if [ $? -ne 0 ]; then
+  echo "FALLBACK_ASK"
+else
+  EVAL_ENABLED=$(forge config get auto.eval.proposal.$MODE 2>/dev/null)
+  if [ "$EVAL_ENABLED" = "true" ]; then
+    echo "AUTO_RUN"
+  elif [ "$EVAL_ENABLED" = "false" ]; then
+    echo "SKIP"
+  else
+    echo "FALLBACK_ASK"
+  fi
+fi
+```
+
+Based on the output:
+- **AUTO_RUN** → invoke `/eval-proposal` via `Skill` tool (default: 900 points / 3 rounds)
+- **SKIP** → skip eval, output "eval-proposal 已通过配置跳过", proceed to `/write-prd`
+- **FALLBACK_ASK** → ask via `AskUserQuestion`: "Run `/eval-proposal` for adversarial evaluation? (default: 900 points / 3 rounds)"
+  - **Yes** → invoke `/eval-proposal` via `Skill` tool
+  - **Custom** → invoke `/eval-proposal --target X --iterations Y` via `Skill` tool
+  - **No** → proceed to `/write-prd`
+</EXTREMELY-IMPORTANT>

@@ -167,13 +167,36 @@ Update `manifest.md` using `templates/manifest-update-design.md`:
 
 ## Step 10: Adversarial Eval Prompt
 
-After committing, use `AskUserQuestion` to ask:
+<EXTREMELY-IMPORTANT>
+Eval auto-run check — do NOT use AskUserQuestion when config enables auto-run.
 
-> Run `/eval-design` for adversarial evaluation? (default: 900 points / 3 rounds)
+Run the following config check sequence via Bash tool:
 
-- **Yes** → invoke `/eval-design` via `Skill` tool
-- **Custom** → invoke `/eval-design --target X --iterations Y` via `Skill` tool
-- **No** → proceed to `/breakdown-tasks`
+```bash
+# Eval auto-run check (techDesign)
+MODE=$(forge config get mode 2>/dev/null)
+if [ $? -ne 0 ]; then
+  echo "FALLBACK_ASK"
+else
+  EVAL_ENABLED=$(forge config get auto.eval.techDesign.$MODE 2>/dev/null)
+  if [ "$EVAL_ENABLED" = "true" ]; then
+    echo "AUTO_RUN"
+  elif [ "$EVAL_ENABLED" = "false" ]; then
+    echo "SKIP"
+  else
+    echo "FALLBACK_ASK"
+  fi
+fi
+```
+
+Based on the output:
+- **AUTO_RUN** → invoke `/eval-design` via `Skill` tool (default: 900 points / 3 rounds)
+- **SKIP** → skip eval, output "eval-design 已通过配置跳过", proceed to `/breakdown-tasks`
+- **FALLBACK_ASK** → ask via `AskUserQuestion`: "Run `/eval-design` for adversarial evaluation? (default: 900 points / 3 rounds)"
+  - **Yes** → invoke `/eval-design` via `Skill` tool
+  - **Custom** → invoke `/eval-design --target X --iterations Y` via `Skill` tool
+  - **No** → proceed to `/breakdown-tasks`
+</EXTREMELY-IMPORTANT>
 
 ## Step 11: Auto-Extract Knowledge
 

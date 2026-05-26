@@ -212,13 +212,36 @@ git commit -m "docs: add PRD for <slug>"
 
 ## Step 11: Adversarial Eval Prompt
 
-After committing, use `AskUserQuestion` to ask:
+<EXTREMELY-IMPORTANT>
+Eval auto-run check — do NOT use AskUserQuestion when config enables auto-run.
 
-> Run `/eval-prd` for adversarial evaluation? (default: 900 points / 3 rounds)
+Run the following config check sequence via Bash tool:
 
-- **Yes** → invoke `/eval-prd` via `Skill` tool
-- **Custom** → invoke `/eval-prd --target X --iterations Y` via `Skill` tool
-- **No** → proceed to `/ui-design` (if PRD has UI functions) or `/tech-design`
+```bash
+# Eval auto-run check (prd)
+MODE=$(forge config get mode 2>/dev/null)
+if [ $? -ne 0 ]; then
+  echo "FALLBACK_ASK"
+else
+  EVAL_ENABLED=$(forge config get auto.eval.prd.$MODE 2>/dev/null)
+  if [ "$EVAL_ENABLED" = "true" ]; then
+    echo "AUTO_RUN"
+  elif [ "$EVAL_ENABLED" = "false" ]; then
+    echo "SKIP"
+  else
+    echo "FALLBACK_ASK"
+  fi
+fi
+```
+
+Based on the output:
+- **AUTO_RUN** → invoke `/eval-prd` via `Skill` tool (default: 900 points / 3 rounds)
+- **SKIP** → skip eval, output "eval-prd 已通过配置跳过", proceed to `/ui-design` (if PRD has UI functions) or `/tech-design`
+- **FALLBACK_ASK** → ask via `AskUserQuestion`: "Run `/eval-prd` for adversarial evaluation? (default: 900 points / 3 rounds)"
+  - **Yes** → invoke `/eval-prd` via `Skill` tool
+  - **Custom** → invoke `/eval-prd --target X --iterations Y` via `Skill` tool
+  - **No** → proceed to `/ui-design` (if PRD has UI functions) or `/tech-design`
+</EXTREMELY-IMPORTANT>
 
 ## Step 12: Knowledge Review
 
