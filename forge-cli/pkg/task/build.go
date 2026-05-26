@@ -113,7 +113,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 		// Build task from frontmatter
 		taskType := fm.Type
 		if taskType == "" {
-			taskType = InferType(fm.ID)
+			taskType = InferType(fm.ID, surfaces)
 		}
 
 		newTask := Task{
@@ -278,7 +278,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 			existingKeys[key] = true
 			taskType := fm.Type
 			if taskType == "" {
-				taskType = InferType(fm.ID)
+				taskType = InferType(fm.ID, surfaces)
 			}
 			newTask := Task{
 				ID:            fm.ID,

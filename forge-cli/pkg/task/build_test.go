@@ -24,7 +24,7 @@ func writeTaskMD(t *testing.T, dir, filename, id, title string, deps []string) {
 	}
 	// InferType for business IDs returns "", so we must set type explicitly.
 	// Auto-gen IDs (gates, summaries, test tasks) get their type from InferType.
-	taskType := InferType(id)
+	taskType := InferType(id, nil)
 	if taskType == "" {
 		taskType = TypeCodingFeature
 	}

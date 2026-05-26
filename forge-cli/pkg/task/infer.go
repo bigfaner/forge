@@ -7,7 +7,13 @@ import "strings"
 //
 // Handles type-suffixed IDs from per-type test pipeline split:
 // T-test-gen-scripts-api, T-test-gen-scripts-cli (type suffix)
-func InferType(id string) string {
+//
+// The surfaces map is used to resolve T-test-run-{surface-key} IDs:
+// the suffix after "T-test-run-" is looked up as a surface-key in the map.
+// If the key exists, the ID is recognized as TypeTestRun.
+// If the key does not exist, the ID falls through to exact-match logic.
+// A nil surfaces map disables surface-key prefix matching entirely.
+func InferType(id string, surfaces map[string]string) string {
 	switch {
 	case strings.HasSuffix(id, IDSuffixSummary):
 		return TypeDocSummary
@@ -20,6 +26,8 @@ func InferType(id string) string {
 	case id == "T-test-gen-scripts", typeSuffixedID(id, "T-test-gen-scripts"):
 		return TypeTestGenScripts
 	case id == "T-test-run":
+		return TypeTestRun
+	case testRunSurfaceKeyMatch(id, surfaces):
 		return TypeTestRun
 	case id == "T-test-verify-regression":
 		return TypeTestVerifyRegression
@@ -42,6 +50,21 @@ func InferType(id string) string {
 	default:
 		return ""
 	}
+}
+
+// testRunSurfaceKeyMatch checks if id matches "T-test-run-" + a known surface-key.
+// Returns true if the suffix after "T-test-run-" is a key in the surfaces map.
+func testRunSurfaceKeyMatch(id string, surfaces map[string]string) bool {
+	const prefix = "T-test-run-"
+	if !strings.HasPrefix(id, prefix) {
+		return false
+	}
+	suffix := id[len(prefix):]
+	if suffix == "" {
+		return false
+	}
+	_, ok := surfaces[suffix]
+	return ok
 }
 
 // typeSuffixedID checks if id matches the pattern "base" + "-" + type.

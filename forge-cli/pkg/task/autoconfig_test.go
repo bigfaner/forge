@@ -290,21 +290,21 @@ func TestGetQuickTestTasks_SpecsDependsOnVerifyRegression(t *testing.T) {
 // --- InferType tests for new IDs ---
 
 func TestInferType_TSpecs1(t *testing.T) {
-	got := InferType("T-specs-consolidate")
+	got := InferType("T-specs-consolidate", nil)
 	if got != TypeDocConsolidate {
 		t.Errorf("InferType(T-specs-consolidate) = %q, want %q", got, TypeDocConsolidate)
 	}
 }
 
 func TestInferType_TQuickSpecs1(t *testing.T) {
-	got := InferType("T-quick-doc-drift")
+	got := InferType("T-quick-doc-drift", nil)
 	if got != TypeDocDrift {
 		t.Errorf("InferType(T-quick-doc-drift) = %q, want %q", got, TypeDocDrift)
 	}
 }
 
 func TestInferType_TCleanCode1(t *testing.T) {
-	got := InferType("T-clean-code")
+	got := InferType("T-clean-code", nil)
 	if got != TypeCleanCode {
 		t.Errorf("InferType(T-clean-code) = %q, want %q", got, TypeCleanCode)
 	}

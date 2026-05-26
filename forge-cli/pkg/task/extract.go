@@ -43,7 +43,7 @@ func extractDocTaskCriteria(taskDir string) map[string]string {
 		// Only process doc-category business tasks
 		taskType := fm.Type
 		if taskType == "" {
-			taskType = InferType(fm.ID)
+			taskType = InferType(fm.ID, nil)
 		}
 		if CategoryForType(taskType) != CategoryDoc {
 			continue

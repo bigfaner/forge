@@ -227,9 +227,9 @@ func phaseOf(id string) int {
 }
 
 // InferType infers the task type from the task ID.
-// Delegates to task.InferType. Kept for backward compatibility.
+// Delegates to task.InferType with nil surfaces. Kept for backward compatibility.
 func InferType(id string) string {
-	return task.InferType(id)
+	return task.InferType(id, nil)
 }
 
 // cleanTemplateOutput removes residual artifacts left when template variables
