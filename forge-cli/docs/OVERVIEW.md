@@ -309,7 +309,7 @@ forge task claim              # Claim the next task
 forge task submit 1.1         # Generate task record
 forge task submit 1.1 --force # Generate task record (skip validation)
 forge task add --title "Fix: ..." --priority P0 --breaking  # Add a new task dynamically
-forge task add --template fix-task --title "Fix ..." --source-task-id 1.1 --block-source  # Add fix-task, block source
+forge task add --type coding.fix --title "Fix ..." --source-task-id 1.1 --block-source  # Add fix-task, block source
 forge task add --title "..." --var KEY=VALUE  # Add task with template variables
 forge task status 1.1         # Query task status
 forge task status 1.1 done    # Update status
