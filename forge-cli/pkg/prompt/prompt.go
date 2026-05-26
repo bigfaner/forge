@@ -86,7 +86,7 @@ func Synthesize(opts SynthesizeOpts) (string, error) {
 		return "", fmt.Errorf("type field missing for task %s", opts.TaskID)
 	}
 
-	if !task.ValidTypes[t.Type] {
+	if !task.IsValidType(t.Type) {
 		return "", fmt.Errorf("unknown type: %s", t.Type)
 	}
 

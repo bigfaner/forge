@@ -86,7 +86,7 @@
       "dependencies": [
         "3"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-validtypes-surface-suffix.md",
       "record": "records/4-validtypes-surface-suffix.md",
       "type": "coding.enhancement"

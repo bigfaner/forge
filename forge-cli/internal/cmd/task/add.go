@@ -133,7 +133,7 @@ func executeAdd(cmd *cobra.Command) (*AddResult, error) {
 	}
 
 	// Validate type
-	if addType != "" && !task.ValidTypes[addType] {
+	if addType != "" && !task.IsValidType(addType) {
 		return nil, base.ErrNoInput(fmt.Sprintf("invalid type %q. Run 'forge list-types' to see valid types", addType))
 	}
 
