@@ -75,7 +75,7 @@
       "title": "Detect Spec Drift",
       "priority": "P2",
       "estimatedTime": "15min",
-      "status": "pending",
+      "status": "completed",
       "file": "quick-drift-detection.md",
       "record": "records/quick-drift-detection.md",
       "type": "doc.drift",
@@ -89,7 +89,7 @@
       "dependencies": [
         "5"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "review-doc.md",
       "record": "records/review-doc.md",
       "type": "doc.review",
