@@ -23,7 +23,8 @@ forge task claim
 - `TASK_ID` (e.g., "2.1")
 - `FILE` (e.g., full absolute path to task file)
 - `MAIN_SESSION` (e.g., "true" or absent)
-- `SCOPE` (e.g., "frontend", "backend", or "all" — defaults to "all" if absent)
+- `SURFACE_KEY` (e.g., "admin-panel" or "" — defaults to "" if absent)
+- `SURFACE_TYPE` (e.g., "web", "cli", "api" or "" — defaults to "" if absent)
 - `FEATURE` (e.g., "my-feature" — feature slug from claim output)
 
 ## Step 1.5: Main Session Routing

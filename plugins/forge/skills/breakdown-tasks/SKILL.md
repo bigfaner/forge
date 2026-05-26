@@ -170,7 +170,7 @@ forge task add --type coding.fix --title "Fix: <desc>" --source-task-id <TASK_ID
 ```bash
 forge task index --feature <slug>
 ```
-Scans `.md`, auto-generates stage-gates + test tasks (based on `interfaces` in `.forge/config.yaml`), produces `index.json`, validates.
+Scans `.md`, auto-generates stage-gates + test tasks (based on `surfaces` in `.forge/config.yaml`), produces `index.json`, validates.
 
 ## Step 6: Validate
 ```bash

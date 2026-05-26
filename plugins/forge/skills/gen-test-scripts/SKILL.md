@@ -280,11 +280,7 @@ All framework-specific rules (test runner, assertion library, imports, HTTP clie
 
 Convention files contain all framework-specific patterns (imports, assertion syntax, helpers, anti-patterns). Use the Convention's Code Style and Helpers sections as the template for generated code.
 
-If the project has a custom template directory configured (`.forge/config.yaml` `test-template-dir`), load templates from that path. Otherwise, use the Convention file content as the authoritative template source.
-
-<HARD-RULE>
-**Template override**: If `test-template-dir` is set in config, load templates from that directory. Otherwise, use Convention file patterns as the template source.
-</HARD-RULE>
+Use the Convention file content as the authoritative template source for all framework-specific patterns.
 
 ## Step 4: Compile Gate
 
