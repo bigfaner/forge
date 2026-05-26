@@ -151,7 +151,7 @@
       "dependencies": [
         "8"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "9-fix-task-template-vars.md",
       "record": "records/9-fix-task-template-vars.md",
       "type": "doc"

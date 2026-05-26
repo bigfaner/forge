@@ -128,6 +128,20 @@ Naming & ID conventions:
 
 For each task, fill from proposal context: Description (Problem + Solution), Acceptance Criteria (Success Criteria), Implementation Notes (Key Risks). Fill Hard Rules only for critical constraints (specific recipes, hidden env deps, scope restrictions). Set `breaking: true` for tasks modifying shared interfaces/models/APIs.
 
+### Breaking Task Integration Test Impact Assessment
+
+When setting `breaking: true` on a task, the task description MUST include an integration test impact assessment. This ensures fix-tasks are grouped correctly by test suite (directory) rather than by problem type.
+
+**Assessment format** (add to `## Implementation Notes`):
+```
+### Integration Test Impact
+- Affected test suite(s): <test directory paths>
+- Expected fixture changes: <which test fixtures need updating>
+- Risk level: low/medium/high
+```
+
+**Grouping rule**: fix-tasks for failures in the same test directory are merged into a single fix-task. Same directory = same task.
+
 ### Type Assignment
 
 Every task receives a `type` field in its frontmatter. The type controls quality-gate routing.

@@ -61,13 +61,16 @@ If `MAIN_SESSION == "true"`:
 2. Follow instructions exactly (task document specifies skill, outcome, record logic).
 3. If section missing: report error, create fix task to block it, then continue to Step 3:
    ```bash
-   forge task add --type coding.fix --title "Fix: MAIN_SESSION missing instructions" --source-task-id <TASK_ID> --block-source --description "MAIN_SESSION task missing Main Session Instructions section"
+   forge task add --type coding.fix --title "Fix: MAIN_SESSION missing instructions" --source-task-id <TASK_ID> --block-source --var SOURCE_FILES="<affected-files>" --var TEST_SCRIPT="<test-path>" --var TEST_RESULTS="<test-output>" --description "MAIN_SESSION task missing Main Session Instructions section"
    ```
 4. After execution, verify via `forge task status <TASK_ID>`. If STATUS != "completed", create fix task using `--block-source`:
    ```bash
    forge task add --type coding.fix --title "Fix: MAIN_SESSION task failed" \
      --source-task-id <TASK_ID> \
      --block-source \
+     --var SOURCE_FILES="<affected-files>" \
+     --var TEST_SCRIPT="<test-path>" \
+     --var TEST_RESULTS="<test-output>" \
      --description "Main session task <TASK_ID> failed — verify output and fix issues"
    ```
    `forge task add` automatically deduplicates — check output:
@@ -88,6 +91,9 @@ Else: proceed to Step 2.
   forge task add --type coding.fix --title "Fix: <failure>" \
     --source-task-id <TASK_ID> \
     --block-source \
+    --var SOURCE_FILES="<affected-files>" \
+    --var TEST_SCRIPT="<test-path>" \
+    --var TEST_RESULTS="<test-output>" \
     --description "Dispatched task <TASK_ID> was auto-downgraded to blocked — test failures or record issues"
   ```
   `forge task add` automatically deduplicates — check output:
@@ -107,10 +113,10 @@ Return to Step 1.
 | Situation | Action |
 |-----------|--------|
 | No available task | End loop, print summary (see format below) |
-| Agent timeout | Create fix task to block the timed-out task, increment `consecutive_failures`, continue loop: `forge task add --type coding.fix --title "Fix: agent timeout" --source-task-id <TASK_ID> --block-source --description "Agent timed out after 30 minutes"` |
+| Agent timeout | Create fix task to block the timed-out task, increment `consecutive_failures`, continue loop: `forge task add --type coding.fix --title "Fix: agent timeout" --source-task-id <TASK_ID> --block-source --var SOURCE_FILES="<affected-files>" --var TEST_SCRIPT="<test-path>" --var TEST_RESULTS="<test-output>" --description "Agent timed out after 30 minutes"` |
 | Record missing | Dispatch fix-record subagent (2c) |
 | 3 consecutive failures | STOP |
-| Main session fails | Follow task doc's error section; if missing, `forge task add --type coding.fix --title "Fix: main session task failed" --source-task-id <TASK_ID> --block-source --description "Main session task failed"` then continue |
+| Main session fails | Follow task doc's error section; if missing, `forge task add --type coding.fix --title "Fix: main session task failed" --source-task-id <TASK_ID> --block-source --var SOURCE_FILES="<affected-files>" --var TEST_SCRIPT="<test-path>" --var TEST_RESULTS="<test-output>" --description "Main session task failed"` then continue |
 
 ### Summary Format
 

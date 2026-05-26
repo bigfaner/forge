@@ -36,7 +36,7 @@ If `MAIN_SESSION == "true"`:
 3. The dispatcher does NOT hardcode skill names or record logic — it delegates to the task document.
 4. If the task file lacks a `## Main Session Instructions` section, create a fix task to block it:
    ```bash
-   forge task add --type coding.fix --title "Fix: MAIN_SESSION missing instructions" --source-task-id <TASK_ID> --block-source --description "MAIN_SESSION task missing Main Session Instructions section"
+   forge task add --type coding.fix --title "Fix: MAIN_SESSION missing instructions" --source-task-id <TASK_ID> --block-source --var SOURCE_FILES="<affected-files>" --var TEST_SCRIPT="<test-path>" --var TEST_RESULTS="<test-output>" --description "MAIN_SESSION task missing Main Session Instructions section"
    ```
    Then skip to Step 3 (STOP).
 5. After execution, verify the record file exists via `forge task status <TASK_ID>`. If STATUS is not `"completed"`, spawn fix task using `--block-source` (same as Step 2b verify logic).
@@ -74,6 +74,9 @@ forge task status <TASK_ID>
   forge task add --type coding.fix --title "Fix: <failure>" \
     --source-task-id <TASK_ID> \
     --block-source \
+    --var SOURCE_FILES="<affected-files>" \
+    --var TEST_SCRIPT="<test-path>" \
+    --var TEST_RESULTS="<test-output>" \
     --description "Task <TASK_ID> was auto-downgraded to blocked — test failures or record issues"
   ```
   `forge task add` automatically deduplicates — check output:
@@ -120,9 +123,9 @@ Task <TASK_ID>: <status> | <one-line summary of what was accomplished or why it 
 | Situation | Action |
 |-----------|--------|
 | No available task | Stop, report |
-| Agent timeout | Create fix task to block the timed-out task, then stop: `forge task add --type coding.fix --title "Fix: agent timeout" --source-task-id <TASK_ID> --block-source --description "Agent timed out after 30 minutes"` |
+| Agent timeout | Create fix task to block the timed-out task, then stop: `forge task add --type coding.fix --title "Fix: agent timeout" --source-task-id <TASK_ID> --block-source --var SOURCE_FILES="<affected-files>" --var TEST_SCRIPT="<test-path>" --var TEST_RESULTS="<test-output>" --description "Agent timed out after 30 minutes"` |
 | Record missing | Dispatch `Agent(subagent_type="forge:task-executor", prompt="Fix record for task <TASK_ID>")` — subagent calls `forge prompt get-by-task-id --fix-record-missed` internally |
-| Main session task fails | Follow error handling in task document's `### Error Handling` section; if missing, `forge task add --type coding.fix --title "Fix: main session task failed" --block-source --source-task-id <TASK_ID>` |
+| Main session task fails | Follow error handling in task document's `### Error Handling` section; if missing, `forge task add --type coding.fix --title "Fix: main session task failed" --block-source --source-task-id <TASK_ID> --var SOURCE_FILES="<affected-files>" --var TEST_SCRIPT="<test-path>" --var TEST_RESULTS="<test-output>" --description "Main session task failed"` |
 
 ## Rules
 
