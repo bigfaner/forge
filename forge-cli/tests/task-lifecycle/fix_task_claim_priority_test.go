@@ -242,7 +242,7 @@ func TestTC_003_FixTaskClaimedBeforeBusinessTaskWhenBothEligible(t *testing.T) {
 			ID: "fix-1", Title: "Fix Task 1", Priority: "P0",
 			Status: "pending", File: "fix-1.md", Record: "",
 			Dependencies: []string{"3"},
-			Type:         "fix", SourceTaskID: "3",
+			Type:         "coding.fix", SourceTaskID: "3",
 		},
 		"4": {
 			ID: "4", Title: "Task 4", Priority: "P0",

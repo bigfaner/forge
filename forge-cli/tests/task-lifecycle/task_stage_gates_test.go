@@ -30,9 +30,11 @@ func stageGateTestDir(t *testing.T, featureSlug string, taskFiles []string) (str
 	featureTasksDir := filepath.Join(tmpRoot, "docs", "features", featureSlug, "tasks")
 	require.NoError(t, os.MkdirAll(featureTasksDir, 0755))
 
-	// Create .forge dir with config
+	// Create .forge dir with config.yaml so FindProjectRoot recognizes tmpRoot
+	// as a forge project root.
 	forgeDir := filepath.Join(tmpRoot, ".forge")
 	require.NoError(t, os.MkdirAll(forgeDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte("surfaces: cli\n"), 0644))
 
 	for _, tf := range taskFiles {
 		parts := strings.SplitN(tf, ":", 2)
@@ -554,7 +556,7 @@ func TestTSG_011_GeneratedTasksInIndexJsonWithCorrectType(t *testing.T) {
 	// Verify 1.summary entry
 	summary1, ok := tasks["1.summary"].(map[string]interface{})
 	require.True(t, ok, "1.summary should exist in tasks")
-	assert.Equal(t, "doc-generation.summary", summary1["type"])
+	assert.Equal(t, "doc.summary", summary1["type"])
 
 	// Verify 1.gate entry
 	gate1, ok := tasks["1.gate"].(map[string]interface{})
@@ -564,7 +566,7 @@ func TestTSG_011_GeneratedTasksInIndexJsonWithCorrectType(t *testing.T) {
 	// Verify 2.summary entry
 	summary2, ok := tasks["2.summary"].(map[string]interface{})
 	require.True(t, ok, "2.summary should exist in tasks")
-	assert.Equal(t, "doc-generation.summary", summary2["type"])
+	assert.Equal(t, "doc.summary", summary2["type"])
 
 	// Verify 2.gate entry
 	gate2, ok := tasks["2.gate"].(map[string]interface{})
@@ -802,6 +804,7 @@ func TestTSG_019_RejectsPathTraversalInTaskIDs(t *testing.T) {
 	require.NoError(t, os.MkdirAll(tasksDir, 0755))
 	forgeDir := filepath.Join(tmpRoot, ".forge")
 	require.NoError(t, os.MkdirAll(forgeDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte("surfaces: cli\n"), 0644))
 
 	// Create task files with path-traversal-like patterns
 	pathTraversalContent := `---
@@ -866,6 +869,7 @@ func TestTSG_020_GenerationCompletesWithinTimeBudget(t *testing.T) {
 	require.NoError(t, os.MkdirAll(tasksDir, 0755))
 	forgeDir := filepath.Join(tmpRoot, ".forge")
 	require.NoError(t, os.MkdirAll(forgeDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte("surfaces: cli\n"), 0644))
 
 	// Create 100 tasks across 20 phases (5 tasks per phase)
 	var taskFiles []string
