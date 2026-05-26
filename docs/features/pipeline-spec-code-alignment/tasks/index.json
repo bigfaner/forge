@@ -8,7 +8,7 @@
       "title": "Clean up config.go dead code and infer.go missing cases",
       "priority": "P0",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-config-infer-cleanup.md",
       "record": "records/1-config-infer-cleanup.md",
       "type": "coding.cleanup"
@@ -164,8 +164,8 @@
       "status": "pending",
       "file": "quick-drift-detection.md",
       "record": "records/quick-drift-detection.md",
-      "scope": "all",
-      "type": "doc.drift"
+      "type": "doc.drift",
+      "scope": "all"
     },
     "review-doc": {
       "id": "T-review-doc",
@@ -178,8 +178,8 @@
       "status": "pending",
       "file": "review-doc.md",
       "record": "records/review-doc.md",
-      "scope": "all",
-      "type": "doc.review"
+      "type": "doc.review",
+      "scope": "all"
     }
   },
   "statusEnum": [

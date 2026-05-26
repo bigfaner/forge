@@ -825,7 +825,6 @@ func TestCoverageConfigDefaults(t *testing.T) {
 		{"coding.fix", "percentage", 60, false},
 		{"coding.refactor", "maintain", 0, true},
 		{"coding.cleanup", "maintain", 0, true},
-		{"coding.clean", "maintain", 0, true},
 	}
 
 	for _, tt := range tests {
