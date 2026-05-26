@@ -1,5 +1,7 @@
 # Surface: mobile
 
+> **测试类型参考**：Mobile surface 的测试类型为 **移动端端到端测试（Mobile E2E Test）**，通过 Maestro YAML / 设备自动化验证 UI 元素可见性 + 用户操作响应 + 屏幕 ID 变更。详见 [测试类型模型](../../../../../docs/reference/test-type-model.md)。
+
 ## 编排序列
 
 | 步骤 | 退出码 0 | 退出码 1 | 退出码 2 | 后续动作 |
@@ -23,7 +25,7 @@
 | mobile-test-setup | `just mobile-test-setup` | 模拟器就绪，测试环境准备完成 | 模拟器启动失败，stderr 含错误详情 |
 | mobile-dev | `just mobile-dev` | 模拟器运行，应用部署就绪 | 启动失败，stderr 含错误详情 |
 | mobile-probe | `just mobile-probe` | Appium 健康检查通过 | Appium 无响应 |
-| mobile-test | `just mobile-test` | 所有测试用例通过 | 至少一个测试失败 |
+| mobile-test | `just mobile-test` | 所有移动端端到端测试通过 | 至少一个测试失败 |
 | mobile-teardown | `just mobile-teardown` | 模拟器停止，进程清理完成 | 残留模拟器或清理异常 |
 | mobile | `just mobile` | 聚合配方：test-setup→dev→probe→test→teardown 完整流程 | 任一子步骤失败 |
 
@@ -42,6 +44,7 @@
 ## 配方模板（双平台）
 
 ```just
+# Prepare emulator and test environment for mobile tests
 # user-customized
 mobile-test-setup:
     #!/usr/bin/env bash
@@ -54,6 +57,7 @@ mobile-test-setup:
     set -euo pipefail
     echo "TODO: implement mobile-test-setup (prepare emulator)" >&2; exit 1
 
+# Start emulator and deploy app
 # user-customized
 mobile-dev:
     #!/usr/bin/env bash
@@ -66,6 +70,7 @@ mobile-dev:
     set -euo pipefail
     echo "TODO: implement mobile-dev (start emulator + deploy app)" >&2; exit 1
 
+# Health check for Appium
 # user-customized
 mobile-probe:
     #!/usr/bin/env bash
@@ -78,6 +83,7 @@ mobile-probe:
     set -euo pipefail
     echo "TODO: implement mobile-probe (Appium health check)" >&2; exit 1
 
+# Run Mobile E2E tests
 # user-customized
 mobile-test:
     #!/usr/bin/env bash
@@ -90,6 +96,10 @@ mobile-test:
     set -euo pipefail
     echo "TODO: implement mobile-test" >&2; exit 1
 
+# DEPRECATED: removed after v3.2.0 — use mobile-test instead
+alias test-e2e := mobile-test
+
+# Clean up mobile test artifacts
 # user-customized
 mobile-teardown:
     #!/usr/bin/env bash

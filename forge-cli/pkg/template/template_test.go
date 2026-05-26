@@ -12,20 +12,20 @@ func TestList(t *testing.T) {
 	}
 	found := false
 	for _, n := range names {
-		if n == "fix-task" {
+		if n == "coding.fix" {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Errorf("List() missing fix-task, got %v", names)
+		t.Errorf("List() missing coding.fix, got %v", names)
 	}
 }
 
 func TestGet_FixTask(t *testing.T) {
-	content, err := Get("fix-task")
+	content, err := Get("coding.fix")
 	if err != nil {
-		t.Fatalf("Get(fix-task) error: %v", err)
+		t.Fatalf("Get(coding.fix) error: %v", err)
 	}
 	checks := []string{
 		"{{ID}}",
@@ -44,7 +44,7 @@ func TestGet_FixTask(t *testing.T) {
 	}
 	for _, want := range checks {
 		if !strings.Contains(content, want) {
-			t.Errorf("fix-task template missing %q", want)
+			t.Errorf("coding.fix template missing %q", want)
 		}
 	}
 }
@@ -57,9 +57,9 @@ func TestGet_NotFound(t *testing.T) {
 }
 
 func TestGetDefaults_FixTask(t *testing.T) {
-	defs, err := GetDefaults("fix-task")
+	defs, err := GetDefaults("coding.fix")
 	if err != nil {
-		t.Fatalf("GetDefaults(fix-task) error: %v", err)
+		t.Fatalf("GetDefaults(coding.fix) error: %v", err)
 	}
 	if defs.Priority != "P0" {
 		t.Errorf("Priority = %q, want P0", defs.Priority)
@@ -83,8 +83,8 @@ func TestTemplateType_ValidTypes(t *testing.T) {
 	// Templates must use a type value that exists in ValidTypes.
 	// Historically, fix-task.md used bare "fix" instead of "coding.fix".
 	templateTypes := map[string]string{
-		"fix-task":     "",
-		"cleanup-task": "",
+		"coding.fix":     "",
+		"coding.cleanup": "",
 	}
 	for name := range templateTypes {
 		content, err := Get(name)

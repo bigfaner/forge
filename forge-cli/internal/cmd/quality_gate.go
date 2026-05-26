@@ -255,7 +255,7 @@ func runTestRegression(projectRoot, featureSlug string) error {
 // signalling that the gate blocked. The caller (RunE handler) decides exit behavior.
 // fixID is the ID returned by addFixTask; empty means task creation failed.
 func handleGateFailure(step, errorDocPath, fixID, concise string) error {
-	action := "run `forge task add --template fix-task` to create one manually, then `forge task claim`"
+	action := "run `forge task add --type coding.fix` to create one manually, then `forge task claim`"
 	if fixID != "" {
 		action = "run `forge task claim` to pick it up"
 	}
@@ -475,10 +475,6 @@ func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) (st
 	// SourceTaskID is deliberately empty (project-wide gate has no source task).
 	// Vars["SOURCE_TASK_ID"] is "N/A (project-wide gate)" for template rendering.
 	taskType := fixTypeFromStep(step)
-	tmplName := "fix-task"
-	if taskType == task.TypeCodingCleanup {
-		tmplName = "cleanup-task"
-	}
 
 	opts := task.AddTaskOpts{
 		Title:         title,
@@ -486,7 +482,7 @@ func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) (st
 		EstimatedTime: "30min",
 		Breaking:      true,
 		Description:   description,
-		Template:      tmplName,
+		Template:      taskType,
 		Type:          taskType,
 		SurfaceKey:    surfaceKey,
 		SurfaceType:   surfaceType,

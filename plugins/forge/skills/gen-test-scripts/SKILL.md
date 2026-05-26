@@ -1,6 +1,6 @@
 ---
 name: gen-test-scripts
-description: Generate executable test scripts from Contract specifications. Journey-driven: generates test code with @feature tags directly into tests/<journey>/.
+description: Generate executable test scripts from Contract specifications. Journey-driven: generates test code with @feature tags directly into tests/<journey>/. Test type naming follows Surface → Test Type mapping (see docs/reference/test-type-model.md).
 ---
 
 # Gen Test Scripts
@@ -74,6 +74,20 @@ Load `rules/step-0.5-validation.md` for the complete surface detection and strat
 - Auto-detection fallback from code reconnaissance
 - Surface strategy table (CLI/TUI/WebUI/API/Mobile ratio targets)
 - Surface-driven generation strategy for Step 3.0
+
+## Test Type Terminology
+
+Test type names follow the Surface → Test Type mapping defined in `docs/reference/test-type-model.md`:
+
+| Surface | Test Type | Tag |
+|---------|-----------|-----|
+| `cli` | CLI 功能测试 (CLI Functional Test) | `@cli-functional` |
+| `tui` | 终端功能测试 (Terminal Functional Test) | `@tui-functional` |
+| `api` | API 功能测试 (API Functional Test) | `@api-functional` |
+| `web` | Web 端到端测试 (Web E2E Test) | `@web-e2e` |
+| `mobile` | 移动端端到端测试 (Mobile E2E Test) | `@mobile-e2e` |
+
+Generated test code comments and `@feature` tags MUST use these surface-specific test type names, NOT the generic "e2e" label. The "e2e" term is reserved exclusively for Web and Mobile surfaces.
 
 ## Step 1: Code Reconnaissance (Build Fact Table)
 
@@ -207,7 +221,7 @@ tests/
     step1_feature_create_test.go   <- Generated step test
     step2_task_claim_test.go       <- Generated step test (multiple Outcomes)
     step3_task_submit_test.go      <- Generated step test
-    task_lifecycle_smoke_test.go   <- Journey smoke test (happy path E2E)
+    task_lifecycle_smoke_test.go   <- Journey smoke test (happy path, full Journey sequence)
 ```
 
 <HARD-RULE>

@@ -1,7 +1,7 @@
 ---
 created: "2026-05-26"
 author: "fanhuifeng"
-status: Draft
+status: Approved
 ---
 
 # Proposal: Surface-Specific Test Type Model（Surface 测试类型模型）

@@ -8,6 +8,8 @@ conventions:
 
 Type-specific Steps for **CLI** (command-line binary) test script generation. Loaded by the dispatcher when interface detection identifies CLI-type test cases.
 
+**Test type**: CLI 功能测试 (CLI Functional Test). See `docs/reference/test-type-model.md` for the authoritative definition. Generated test code MUST use `@cli-functional` tags, NOT `@e2e`.
+
 ## Classification Indicators
 
 Classify test cases as **CLI** when they involve any of:

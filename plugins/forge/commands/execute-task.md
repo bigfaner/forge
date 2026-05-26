@@ -67,7 +67,7 @@ forge task status <TASK_ID>
 - **STATUS != `"completed"`**: task was auto-downgraded (e.g. test failures).
   Spawn fix task using `--block-source` to atomically block the source:
   ```bash
-  forge task add --template fix-task --title "Fix: <failure>" \
+  forge task add --type coding.fix --title "Fix: <failure>" \
     --source-task-id <TASK_ID> \
     --block-source \
     --description "<reason>"
@@ -112,7 +112,7 @@ Output your final summary and STOP.
 | No available task | Stop, report |
 | Agent timeout | Mark blocked, stop |
 | Record missing | Dispatch `Agent(prompt="Fix record for task <TASK_ID>")` — subagent calls `forge prompt get-by-task-id --fix-record-missed` internally |
-| Main session task fails | Follow error handling in task document's `### Error Handling` section; if missing, `forge task add --template fix-task --title "Fix: main session task failed" --block-source --source-task-id <TASK_ID>` |
+| Main session task fails | Follow error handling in task document's `### Error Handling` section; if missing, `forge task add --type coding.fix --title "Fix: main session task failed" --block-source --source-task-id <TASK_ID>` |
 
 ## Rules
 

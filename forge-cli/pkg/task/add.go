@@ -23,7 +23,7 @@ type AddTaskOpts struct {
 	Breaking      bool              // Optional
 	Description   string            // Optional, becomes markdown body
 	Status        string            // Default pending if empty
-	Template      string            // Template name (e.g. "fix-task")
+	Template      string            // Template name matching filename without .md (e.g. "coding.fix")
 	Vars          map[string]string // Variable substitutions for template placeholders
 	SourceTaskID  string            // Source task ID: auto-injects {{SOURCE_TASK_ID}} and adds this task as source dependency
 	BlockSource   bool              // Block source task before resolution (preserves fix-chain model)

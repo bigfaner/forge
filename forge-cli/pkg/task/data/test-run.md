@@ -1,4 +1,4 @@
-Execute staged e2e test scripts for the {{FEATURE_SLUG}} feature.
+Execute staged test scripts for the {{FEATURE_SLUG}} feature.
 
 ## Feature Context
 - Scope: {{SCOPE}}

@@ -15,8 +15,20 @@ var autogenTemplateFS embed.FS
 
 // autogenTemplatePath derives the embed template filename from a task type constant
 // using the naming convention: "data/" + typeName with '.' replaced by '-' + ".md".
+// For surface-specific types (e.g. "test.gen-scripts.cli"), strips the last segment
+// to find the base type template (e.g. "test.gen-scripts" -> "data/test-gen-scripts.md").
 func autogenTemplatePath(typeName string) string {
-	return "data/" + strings.ReplaceAll(typeName, ".", "-") + ".md"
+	// Try exact match first
+	path := "data/" + strings.ReplaceAll(typeName, ".", "-") + ".md"
+	if _, err := autogenTemplateFS.ReadFile(path); err == nil {
+		return path
+	}
+	// For surface-specific types, strip last segment and try base type
+	if idx := strings.LastIndex(typeName, "."); idx >= 0 {
+		base := typeName[:idx]
+		return "data/" + strings.ReplaceAll(base, ".", "-") + ".md"
+	}
+	return path
 }
 
 // ValidateAutogenTemplates checks that all task types used by GenerateTestTaskMD()
@@ -113,6 +125,11 @@ func isSingleSurface(surfaces map[string]string) bool {
 	return false
 }
 
+// runTestTitle generates the title for a run-test task based on surface type.
+func runTestTitle(surfaceType string) string {
+	return fmt.Sprintf("Run %ss", TestTypeTitle(surfaceType))
+}
+
 // GetBreakdownTestTasks returns test task definitions for breakdown mode.
 // surfaces is the surfaces map from config (e.g., {".": "api"} or {"backend": "api", "frontend": "web"}).
 // executionOrder is the resolved execution order of surface keys (may be nil for single-surface).
@@ -166,8 +183,8 @@ func GetBreakdownTestTasks(surfaces map[string]string, executionOrder []string, 
 		for _, typ := range surfaceTypes {
 			tasks = append(tasks, AutoGenTaskDef{
 				Key: "gen-test-scripts-" + typ, ID: "T-test-gen-scripts-" + typ,
-				Title: fmt.Sprintf("Generate Test Scripts (%s)", typ), Priority: "P1", EstimatedTime: "1-2h",
-				Type: TypeTestGenScripts, SurfaceType: typ,
+				Title: fmt.Sprintf("Generate %s Scripts", TestTypeTitle(typ)), Priority: "P1", EstimatedTime: "1-2h",
+				Type: GenSurfaceTestType(TypeTestGenScripts, typ), SurfaceType: typ,
 				StrategyKind: "generate",
 			})
 		}
@@ -175,11 +192,14 @@ func GetBreakdownTestTasks(surfaces map[string]string, executionOrder []string, 
 		// Per-surface-key run-test tasks (serial chain)
 		if singleSurface {
 			// Single surface: degenerate to no suffix T-test-run
+			// Use surface type for type name (single surface: key is ".")
+			singleType := surfaceTypes[0]
 			tasks = append(tasks, AutoGenTaskDef{
 				Key: "run-test", ID: "T-test-run",
-				Title: "Run e2e Tests", Priority: "P1", EstimatedTime: "30min-1h",
-				Type:         TypeTestRun,
+				Title: runTestTitle(singleType), Priority: "P1", EstimatedTime: "30min-1h",
+				Type:         GenSurfaceTestType(TypeTestRun, singleType),
 				StrategyKind: "run",
+				SurfaceType:  singleType,
 			})
 		} else {
 			// Multi-surface: generate T-test-run-{surface-key} per surface key in execution order
@@ -187,8 +207,8 @@ func GetBreakdownTestTasks(surfaces map[string]string, executionOrder []string, 
 				surfaceType := surfaces[key]
 				tasks = append(tasks, AutoGenTaskDef{
 					Key: "run-test-" + key, ID: "T-test-run-" + key,
-					Title: fmt.Sprintf("Run e2e Tests (%s)", key), Priority: "P1", EstimatedTime: "30min-1h",
-					Type:         TypeTestRun,
+					Title: runTestTitle(surfaceType), Priority: "P1", EstimatedTime: "30min-1h",
+					Type:         GenSurfaceTestType(TypeTestRun, key),
 					SurfaceKey:   key,
 					SurfaceType:  surfaceType,
 					StrategyKind: "run",
@@ -197,10 +217,14 @@ func GetBreakdownTestTasks(surfaces map[string]string, executionOrder []string, 
 		}
 
 		// Shared verify-regression
+		verifyRegressionType := TypeTestVerifyRegression
+		if singleSurface {
+			verifyRegressionType = GenSurfaceTestType(TypeTestVerifyRegression, surfaceTypes[0])
+		}
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "verify-regression", ID: "T-test-verify-regression",
-			Title: "Verify Full E2E Regression", Priority: "P1", EstimatedTime: "15-30min",
-			Type: TypeTestVerifyRegression,
+			Title: "Verify Full Regression", Priority: "P1", EstimatedTime: "15-30min",
+			Type: verifyRegressionType,
 		})
 	}
 
@@ -284,11 +308,13 @@ func GetQuickTestTasks(surfaces map[string]string, executionOrder []string, auto
 		// Per-surface-key run-test tasks (serial chain, Stage 2)
 		if singleSurface {
 			// Single surface: degenerate to no suffix T-test-run
+			singleType := surfaceTypes[0]
 			tasks = append(tasks, AutoGenTaskDef{
 				Key: "run-test", ID: "T-test-run",
-				Title: "Run e2e Tests", Priority: "P1", EstimatedTime: "30min-1h",
-				Type:         TypeTestRun,
+				Title: runTestTitle(singleType), Priority: "P1", EstimatedTime: "30min-1h",
+				Type:         GenSurfaceTestType(TypeTestRun, singleType),
 				StrategyKind: "run",
+				SurfaceType:  singleType,
 			})
 		} else {
 			// Multi-surface: generate T-test-run-{surface-key} per surface key in execution order
@@ -296,8 +322,8 @@ func GetQuickTestTasks(surfaces map[string]string, executionOrder []string, auto
 				surfaceType := surfaces[key]
 				tasks = append(tasks, AutoGenTaskDef{
 					Key: "run-test-" + key, ID: "T-test-run-" + key,
-					Title: fmt.Sprintf("Run e2e Tests (%s)", key), Priority: "P1", EstimatedTime: "30min-1h",
-					Type:         TypeTestRun,
+					Title: runTestTitle(surfaceType), Priority: "P1", EstimatedTime: "30min-1h",
+					Type:         GenSurfaceTestType(TypeTestRun, key),
 					SurfaceKey:   key,
 					SurfaceType:  surfaceType,
 					StrategyKind: "run",
@@ -306,10 +332,14 @@ func GetQuickTestTasks(surfaces map[string]string, executionOrder []string, auto
 		}
 
 		// Shared verify-regression (Stage 3: depends on last run-test)
+		verifyRegressionType := TypeTestVerifyRegression
+		if singleSurface {
+			verifyRegressionType = GenSurfaceTestType(TypeTestVerifyRegression, surfaceTypes[0])
+		}
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "verify-regression", ID: "T-test-verify-regression",
-			Title: "Verify Full E2E Regression", Priority: "P1", EstimatedTime: "15-30min",
-			Type: TypeTestVerifyRegression,
+			Title: "Verify Full Regression", Priority: "P1", EstimatedTime: "15-30min",
+			Type: verifyRegressionType,
 		})
 	}
 
@@ -798,7 +828,7 @@ func ResolveFirstTestDep(tasks []AutoGenTaskDef, existingTasks map[string]Task, 
 		return
 	}
 
-	// Only resolve when E2E test tasks exist (they have T-test-gen-journeys prefix)
+	// Only resolve when surface test tasks exist (they have T-test-gen-journeys prefix)
 	if findTaskIndexByPrefix(tasks, "T-test-gen-journeys") < 0 {
 		return
 	}

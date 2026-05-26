@@ -117,7 +117,6 @@ var (
 	ExportAddEstimatedTime = &addEstimatedTime
 	ExportAddBreaking      = &addBreaking
 	ExportAddDescription   = &addDescription
-	ExportAddTemplate      = &addTemplate
 	ExportAddVars          = &addVars
 	ExportAddSourceTaskID  = &addSourceTaskID
 	ExportAddBlockSource   = &addBlockSource

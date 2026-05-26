@@ -938,7 +938,7 @@ func TestHandleGateFailure_DistinctReasons(t *testing.T) {
 		wantContains  string
 		wantFixAction string
 		wantClaim     bool   // expect "task claim" in output
-		wantManual    bool   // expect "task add --template fix-task" in output
+		wantManual    bool   // expect "task add --type coding.fix" in output
 		wantFixMsg    string // expect this fix task message
 	}{
 		{"compile", "fix-1", "Project compilation failed in quality-gate hook", "fix compilation errors", true, false, "Fix task fix-1 added (P0, breaking)"},
@@ -972,7 +972,7 @@ func TestHandleGateFailure_DistinctReasons(t *testing.T) {
 			if tc.wantClaim && !strings.Contains(got, "task claim") {
 				t.Errorf("reason for step %q should contain 'task claim'", tc.step)
 			}
-			if tc.wantManual && !strings.Contains(got, "task add --template fix-task") {
+			if tc.wantManual && !strings.Contains(got, "task add --type coding.fix") {
 				t.Errorf("reason for step %q (no fixID) should contain manual add instruction", tc.step)
 			}
 			if !strings.Contains(got, tc.wantFixMsg) {

@@ -148,9 +148,8 @@ forge --help
 | Flag | 用途 |
 |------|------|
 | `--title` | 任务标题（必填） |
-| `--type` | 任务类型（如 coding.feature, doc） |
+| `--type` | 任务类型（如 coding.feature, doc）；若匹配内置模板则自动加载模板默认值 |
 | `--priority` | 优先级：P0 / P1 / P2（默认 P1） |
-| `--template` | 模板名（读取 tasks/\_templates/\<name\>.md） |
 | `--description` | 任务描述（Markdown 正文） |
 | `--depends-on` | 逗号分隔的依赖任务 ID |
 | `--id` | 自定义任务 ID（缺省自动生成 disc-N） |
