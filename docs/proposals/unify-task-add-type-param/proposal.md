@@ -60,6 +60,44 @@ Most CLI tools use a single `--type` or `--kind` flag to classify and template i
 | Keep `--template` hidden, add `--type` lookup | Backward compat | Old scripts still work | Two code paths to maintain | Rejected: adds complexity without benefit |
 | **Rename files, remove `--template`** | Industry standard (single type flag) | Clean mental model, one flag does both | Breaking change | **Selected: v3.0.0 allows breaking changes** |
 
+## Impact Analysis
+
+### Affected Forge Plugin Components (必须修改)
+
+所有引用 `--template fix-task` 或 `--template cleanup-task` 的 plugin 文件都需要更新为 `--type coding.fix` / `--type coding.cleanup`。
+
+| 组件 | 类型 | 文件 | 说明 |
+|------|------|------|------|
+| task-executor | Agent | `plugins/forge/agents/task-executor.md:106` | 错误处理中创建 fix task 的命令模板 |
+| execute-task | Command | `plugins/forge/commands/execute-task.md:70,115` | 任务失败时的 fix task 创建指令 |
+| run-tasks | Command | `plugins/forge/commands/run-tasks.md:64,68,88,113` | 调度器中多处 fix task 创建指令 |
+| breakdown-tasks | Skill | `plugins/forge/skills/breakdown-tasks/SKILL.md:166` | 动态添加 fix task 的命令示例 |
+| quick-tasks | Skill | `plugins/forge/skills/quick-tasks/SKILL.md:171` | 动态添加 fix task 的命令示例 |
+| submit-task | Skill | `plugins/forge/skills/submit-task/SKILL.md:102` | 提交失败时的 fix task 创建 |
+
+### Affected Go Source Code (必须修改)
+
+| 文件 | 说明 |
+|------|------|
+| `forge-cli/pkg/template/template.go` | defaults map 的 key 需从 `fix-task`/`cleanup-task` 改为 `coding.fix`/`coding.cleanup`；模板文件重命名 |
+| `forge-cli/internal/cmd/quality_gate.go` | `addFixTask()` 中使用 template 名称创建 fix task，需改为 type 值 |
+| `forge-cli/internal/cmd/task/add_cmd.go` | 移除 `--template` flag，`--type` 增加 template 自动发现逻辑 |
+| `forge-cli/internal/cmd/task/add_cmd_test.go` | 测试用例中 `--template` 改为 `--type` |
+
+### Affected Documentation (建议更新)
+
+| 文件 | 说明 |
+|------|------|
+| `forge-cli/docs/WORKFLOW.md` | 多处引用 `--template fix-task` 和 template 名称，需全面更新 |
+| `forge-cli/docs/OVERVIEW.md:312` | 示例命令使用 `--template fix-task` |
+| `README.md:154` | CLI 参数表列出 `--template` flag |
+
+### Not Affected (无需修改)
+
+以下引用 `--template` 的文件使用的是 `task profile get --template <file>`（testing profile 的模板查看功能），与本次变更无关：
+- `docs/features/*/tasks/quick-test-cases-go-test.md`（约 20+ 文件）
+- `docs/features/*/tasks/quick-gen-scripts-go-test.md`（约 20+ 文件）
+
 ## Feasibility Assessment
 
 ### Technical Feasibility
@@ -90,7 +128,9 @@ No external dependencies. Self-contained change.
 - Update `template.go` defaults map keys to use type values
 - Update `--type` to auto-discover matching template file
 - Update `quality_gate.go` internal caller to use type values
-- Update all related tests
+- Update `add_cmd_test.go` test cases
+- Update 6 plugin components (1 agent, 2 commands, 3 skills) 中所有 `--template fix-task` 引用
+- Update `WORKFLOW.md`, `OVERVIEW.md`, `README.md` 中的文档描述
 
 ### Out of Scope
 
