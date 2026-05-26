@@ -1,5 +1,7 @@
 # Surface: api
 
+> **测试类型参考**：API surface 的测试类型为 **API 功能测试（API Functional Test）**，通过 HTTP 客户端验证 HTTP 状态码 + 响应体 JSON + 响应 Header。详见 [测试类型模型](../../../../../docs/reference/test-type-model.md)。
+
 ## 编排序列
 
 | 步骤 | 退出码 0 | 退出码 1 | 退出码 2 | 后续动作 |
@@ -20,7 +22,7 @@
 |--------|----------|--------------|--------------|
 | api-dev | `just api-dev` | API 服务器就绪，监听端口 | 启动失败，stderr 含错误详情 |
 | api-probe | `just api-probe` | HTTP GET /healthz 返回 2xx | 连接拒绝或超时 |
-| api-test | `just api-test` | 所有测试用例通过 | 至少一个测试失败 |
+| api-test | `just api-test` | 所有 API 功能测试通过 | 至少一个测试失败 |
 | api-teardown | `just api-teardown` | 进程终止，端口释放 | 进程残留或清理异常 |
 | api | `just api` | 聚合配方：dev→probe→test→teardown 完整流程 | 任一子步骤失败 |
 
@@ -39,6 +41,7 @@
 ## 配方模板（双平台）
 
 ```just
+# Start API development server
 # user-customized
 api-dev:
     #!/usr/bin/env bash
@@ -51,6 +54,7 @@ api-dev:
     set -euo pipefail
     echo "TODO: implement api-dev (start API server)" >&2; exit 1
 
+# Health check for API server
 # user-customized
 api-probe:
     #!/usr/bin/env bash
@@ -63,6 +67,7 @@ api-probe:
     set -euo pipefail
     echo "TODO: implement api-probe (HTTP GET /healthz)" >&2; exit 1
 
+# Run API functional tests
 # user-customized
 api-test:
     #!/usr/bin/env bash
@@ -75,6 +80,10 @@ api-test:
     set -euo pipefail
     echo "TODO: implement api-test" >&2; exit 1
 
+# DEPRECATED: removed after v3.2.0 — use api-test instead
+alias test-e2e := api-test
+
+# Clean up API test artifacts
 # user-customized
 api-teardown:
     #!/usr/bin/env bash

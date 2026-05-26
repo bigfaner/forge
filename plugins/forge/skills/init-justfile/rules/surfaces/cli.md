@@ -1,5 +1,7 @@
 # Surface: cli
 
+> **测试类型参考**：CLI surface 的测试类型为 **CLI 功能测试（CLI Functional Test）**，通过子进程执行验证进程退出码 + stdout/stderr 输出。详见 [测试类型模型](../../../../../docs/reference/test-type-model.md)。
+
 ## 编排序列
 
 | 步骤 | 退出码 0 | 退出码 1 | 退出码 2 | 后续动作 |
@@ -17,7 +19,7 @@
 
 | 配方名 | just 签名 | 退出码 0 语义 | 退出码 1 语义 |
 |--------|----------|--------------|--------------|
-| cli-test | `just cli-test` | 所有测试用例通过 | 至少一个测试失败 |
+| cli-test | `just cli-test` | 所有 CLI 功能测试通过 | 至少一个测试失败 |
 | cli-teardown | `just cli-teardown` | 清理完成 | 清理失败 |
 
 实现约束：
@@ -35,6 +37,7 @@
 ## 配方模板（双平台）
 
 ```just
+# Run CLI functional tests
 # user-customized
 cli-test:
     #!/usr/bin/env bash
@@ -47,6 +50,10 @@ cli-test:
     set -euo pipefail
     echo "TODO: implement cli-test" >&2; exit 1
 
+# DEPRECATED: removed after v3.2.0 — use cli-test instead
+alias test-e2e := cli-test
+
+# Clean up CLI test artifacts
 # user-customized
 cli-teardown:
     #!/usr/bin/env bash
