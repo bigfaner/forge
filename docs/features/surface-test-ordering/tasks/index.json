@@ -1,0 +1,164 @@
+{
+  "feature": "surface-test-ordering",
+  "proposal": "docs/proposals/surface-test-ordering/proposal.md",
+  "created": "2026-05-26",
+  "tasks": {
+    "1-add-execution-order-config": {
+      "id": "1",
+      "title": "Add execution-order config with surface-key validation",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "status": "completed",
+      "file": "1-add-execution-order-config.md",
+      "record": "records/1-add-execution-order-config.md",
+      "surface-type": "cli",
+      "type": "coding.feature"
+    },
+    "2-merge-gen-journeys-single-task": {
+      "id": "2",
+      "title": "Merge gen-journeys to single task",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "status": "completed",
+      "file": "2-merge-gen-journeys-single-task.md",
+      "record": "records/2-merge-gen-journeys-single-task.md",
+      "surface-type": "cli",
+      "type": "coding.feature"
+    },
+    "3-update-infer-type-prefix-match": {
+      "id": "3",
+      "title": "Update InferType for prefix matching",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "3-update-infer-type-prefix-match.md",
+      "record": "records/3-update-infer-type-prefix-match.md",
+      "surface-type": "cli",
+      "type": "coding.enhancement"
+    },
+    "4-split-run-tests-per-surface-key": {
+      "id": "4",
+      "title": "Split run-tests into per-surface-key serial tasks",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1",
+        "fix-1",
+        "fix-2"
+      ],
+      "status": "pending",
+      "file": "4-split-run-tests-per-surface-key.md",
+      "record": "records/4-split-run-tests-per-surface-key.md",
+      "breaking": true,
+      "surface-type": "cli",
+      "type": "coding.feature"
+    },
+    "5-update-dependency-resolution": {
+      "id": "5",
+      "title": "Update dependency resolution chains",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "2",
+        "4"
+      ],
+      "status": "pending",
+      "file": "5-update-dependency-resolution.md",
+      "record": "records/5-update-dependency-resolution.md",
+      "surface-type": "cli",
+      "type": "coding.enhancement"
+    },
+    "6-add-buildindex-migration": {
+      "id": "6",
+      "title": "Add BuildIndex migration for existing fix-tasks",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "4"
+      ],
+      "status": "pending",
+      "file": "6-add-buildindex-migration.md",
+      "record": "records/6-add-buildindex-migration.md",
+      "surface-type": "cli",
+      "type": "coding.enhancement"
+    },
+    "7-update-gen-journeys-skill": {
+      "id": "7",
+      "title": "Update gen-journeys SKILL.md for multi-surface support",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "2"
+      ],
+      "status": "pending",
+      "file": "7-update-gen-journeys-skill.md",
+      "record": "records/7-update-gen-journeys-skill.md",
+      "type": "doc"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "Fix: task 4 signature change not propagated to test callers",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "surface-type": "cli",
+      "sourceTaskID": "4"
+    },
+    "fix-2": {
+      "id": "fix-2",
+      "title": "Fix: TestSurfacesTypes and TestSurfacesJSONTypes fail with empty output",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-2.md",
+      "record": "records/fix-2.md",
+      "breaking": true,
+      "surface-type": "cli",
+      "sourceTaskID": "4",
+      "blockedReason": "unit-test failed: TestSurfacesTypes and TestSurfacesJSONTypes still fail with empty output"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "pending",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "7"
+      ],
+      "status": "pending",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

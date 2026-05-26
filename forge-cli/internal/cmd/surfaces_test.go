@@ -166,7 +166,7 @@ func TestSurfacesTypes(t *testing.T) {
 	resetSurfacesFlag(t)
 
 	t.Run("returns space-separated deduplicated types", func(t *testing.T) {
-		dir := surfacesTestHelper(t, "surfaces:\n  frontend: web\n  backend: api\n  cli: cli\n  shared: web\n")
+		dir := surfacesTestHelper(t, "surfaces:\n  frontend: web\n  backend: api\n  cli: cli\n  shared: web\nexecution-order:\n  - frontend\n  - backend\n  - cli\n  - shared\n")
 
 		var stdout bytes.Buffer
 		rootCmd.SetOut(&stdout)
@@ -527,7 +527,7 @@ func TestSurfacesJSONTypes(t *testing.T) {
 
 	t.Run("outputs types as JSON object", func(t *testing.T) {
 		resetSurfacesJSONFlag(t)
-		dir := surfacesTestHelper(t, "surfaces:\n  admin-panel: web\n  payment-service: api\n  cli-tool: cli\n  shared: web\n")
+		dir := surfacesTestHelper(t, "surfaces:\n  admin-panel: web\n  payment-service: api\n  cli-tool: cli\n  shared: web\nexecution-order:\n  - admin-panel\n  - payment-service\n  - cli-tool\n  - shared\n")
 
 		var stdout bytes.Buffer
 		rootCmd.SetOut(&stdout)

@@ -67,6 +67,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 	// Validate surfaces: log warnings for unknown types, filter them out
 	forgeconfig.ValidateSurfaceTypes(surfaces)
 	capabilities := forgeconfig.SurfaceTypes(surfaces)
+	executionOrder, _ := forgeconfig.ReadExecutionOrder(opts.ProjectRoot)
 	bodyCtx := extractBodyContext(opts.ProjectRoot, opts.FeatureSlug, mode, capabilities)
 
 	// 4. Profiles and surfaces resolved by caller (task 1.4)
@@ -345,7 +346,8 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 		if len(capabilities) == 0 {
 			return nil, fmt.Errorf("no surfaces configured in .forge/config.yaml. Run `forge init` to configure surfaces")
 		}
-		testTasks := GenerateTestTasks(mode, capabilities, opts.AutoConfig)
+		resolvedExecOrder, _ := forgeconfig.ResolveExecutionOrder(surfaces, executionOrder)
+		testTasks := GenerateTestTasks(mode, surfaces, resolvedExecOrder, opts.AutoConfig)
 		for _, td := range testTasks {
 			ttKey := td.Key
 			existingKeys[ttKey] = true
@@ -455,14 +457,14 @@ func setFeatureMetadata(index *TaskIndex, projectRoot, slug string) {
 	}
 }
 
-// GenerateTestTasks returns test task definitions for the given mode and capabilities.
+// GenerateTestTasks returns test task definitions for the given mode, surfaces, and execution order.
 // Exported for use by caller (task 1.4).
-func GenerateTestTasks(mode string, capabilities []string, auto forgeconfig.AutoConfig) []AutoGenTaskDef {
+func GenerateTestTasks(mode string, surfaces map[string]string, executionOrder []string, auto forgeconfig.AutoConfig) []AutoGenTaskDef {
 	switch mode {
 	case "breakdown":
-		return GetBreakdownTestTasks(capabilities, auto)
+		return GetBreakdownTestTasks(surfaces, executionOrder, auto)
 	case "quick":
-		return GetQuickTestTasks(capabilities, auto)
+		return GetQuickTestTasks(surfaces, executionOrder, auto)
 	default:
 		return nil
 	}
