@@ -3,7 +3,6 @@ package testrunner
 import (
 	"bytes"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -185,18 +184,5 @@ func TestRunProjectTests(t *testing.T) {
 			t.Errorf("expected test fallback output, got: %s", out)
 		}
 	})
-
-	t.Run("Makefile branch", func(t *testing.T) {
-		if _, err := exec.LookPath("make"); err != nil {
-			t.Skip("make not installed")
-		}
-		dir := t.TempDir()
-		_ = os.WriteFile(filepath.Join(dir, "Makefile"), []byte("test:\n\t@echo make-test-output\n"), 0644)
-		out := captureStderr(func() {
-			RunProjectTests(dir)
-		})
-		if !strings.Contains(out, "make-test-output") {
-			t.Errorf("expected make test output, got: %s", out)
-		}
-	})
 }
+

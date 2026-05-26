@@ -161,9 +161,14 @@ func (s *SurfacesMap) UnmarshalYAML(value *yaml.Node) error {
 	case yaml.MappingNode:
 		// Map form: {frontend: web, backend: api}
 		// Normalize keys (spaces/special chars -> hyphens, uppercase -> lowercase)
+		// The "." key is the scalar-form marker and must be preserved as-is.
 		result := make(SurfacesMap, len(value.Content)/2)
 		for i := 0; i < len(value.Content); i += 2 {
-			key := normalizeSurfaceKeyValue(value.Content[i].Value)
+			raw := value.Content[i].Value
+			key := raw
+			if raw != "." {
+				key = normalizeSurfaceKeyValue(raw)
+			}
 			val := strings.ToLower(value.Content[i+1].Value)
 			result[key] = val
 		}
