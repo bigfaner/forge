@@ -49,7 +49,7 @@
         "fix-1",
         "fix-2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-split-run-tests-per-surface-key.md",
       "record": "records/4-split-run-tests-per-surface-key.md",
       "breaking": true,
