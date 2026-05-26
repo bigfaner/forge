@@ -1073,8 +1073,8 @@ func TestSetConfigValue(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected error for unknown key")
 		}
-		if !strings.Contains(err.Error(), "unknown config key") {
-			t.Errorf("expected 'unknown config key' in error, got %v", err)
+		if !strings.Contains(err.Error(), "not found") && !strings.Contains(err.Error(), "unknown config key") {
+			t.Errorf("expected 'not found' in error, got %v", err)
 		}
 	})
 
@@ -1100,17 +1100,14 @@ func TestSetConfigValue(t *testing.T) {
 		}
 	})
 
-	t.Run("auto.cleanCode set both quick and full", func(t *testing.T) {
+	t.Run("auto.cleanCode set rejected as ModeToggle", func(t *testing.T) {
 		dir := t.TempDir()
-		if err := SetConfigValue(dir, "auto.cleanCode", "true"); err != nil {
-			t.Fatalf("unexpected error: %v", err)
+		err := SetConfigValue(dir, "auto.cleanCode", "true")
+		if err == nil {
+			t.Fatal("expected error for ModeToggle direct set")
 		}
-		val, err := GetConfigValue(dir, "auto.cleanCode")
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if val != "quick:true full:true" {
-			t.Errorf("expected 'quick:true full:true', got %q", val)
+		if !strings.Contains(err.Error(), "cannot set ModeToggle directly") {
+			t.Errorf("expected cannot set ModeToggle directly in error, got %v", err)
 		}
 	})
 
@@ -1288,5 +1285,207 @@ func TestReadConfig_OldKeyMigration(t *testing.T) {
 			t.Error("Test.Full should be true (default applied)")
 		}
 		_ = cfg
+	})
+}
+
+func TestGetConfigValue_EvalConfig(t *testing.T) {
+	t.Run("auto.eval.proposal returns quick:true full:true (default)", func(t *testing.T) {
+		dir := t.TempDir()
+		val, err := GetConfigValue(dir, "auto.eval.proposal")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "quick:true full:true" {
+			t.Errorf("expected 'quick:true full:true', got %q", val)
+		}
+	})
+
+	t.Run("auto.eval.proposal.quick returns true (4-level depth)", func(t *testing.T) {
+		dir := t.TempDir()
+		val, err := GetConfigValue(dir, "auto.eval.proposal.quick")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "true" {
+			t.Errorf("expected 'true', got %q", val)
+		}
+	})
+
+	t.Run("auto.eval returns eval sub-field summary", func(t *testing.T) {
+		dir := t.TempDir()
+		val, err := GetConfigValue(dir, "auto.eval")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		for _, field := range []string{"proposal:", "prd:", "uiDesign:", "techDesign:"} {
+			if !strings.Contains(val, field) {
+				t.Errorf("expected field %q in output, got %q", field, val)
+			}
+		}
+	})
+
+	t.Run("auto returns mixed type summary", func(t *testing.T) {
+		dir := t.TempDir()
+		val, err := GetConfigValue(dir, "auto")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		for _, field := range []string{"runTasks:", "gitPush:", "eval:"} {
+			if !strings.Contains(val, field) {
+				t.Errorf("expected field %q in output, got %q", field, val)
+			}
+		}
+	})
+
+	t.Run("auto.eval.proposal.quick.extra returns errKeyNotFound", func(t *testing.T) {
+		dir := t.TempDir()
+		_, err := GetConfigValue(dir, "auto.eval.proposal.quick.extra")
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound, got %v", err)
+		}
+	})
+
+	t.Run("auto.nonexistent returns errKeyNotFound", func(t *testing.T) {
+		dir := t.TempDir()
+		_, err := GetConfigValue(dir, "auto.nonexistent")
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound, got %v", err)
+		}
+	})
+}
+
+func TestSetConfigValue_EvalConfig(t *testing.T) {
+	t.Run("auto.eval rejected as non-leaf", func(t *testing.T) {
+		dir := t.TempDir()
+		err := SetConfigValue(dir, "auto.eval", "true")
+		if err == nil {
+			t.Fatal("expected error for non-leaf set")
+		}
+		if !strings.Contains(err.Error(), "cannot set non-leaf key") {
+			t.Errorf("expected 'cannot set non-leaf key' in error, got %v", err)
+		}
+	})
+
+	t.Run("auto.eval.proposal rejected as ModeToggle", func(t *testing.T) {
+		dir := t.TempDir()
+		err := SetConfigValue(dir, "auto.eval.proposal", "true")
+		if err == nil {
+			t.Fatal("expected error for ModeToggle direct set")
+		}
+		if !strings.Contains(err.Error(), "cannot set ModeToggle directly") {
+			t.Errorf("expected 'cannot set ModeToggle directly' in error, got %v", err)
+		}
+	})
+
+	t.Run("auto.eval.prd.full true writes nested config", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := SetConfigValue(dir, "auto.eval.prd.full", "true"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		val, err := GetConfigValue(dir, "auto.eval.prd.full")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "true" {
+			t.Errorf("expected 'true', got %q", val)
+		}
+	})
+}
+
+func TestGetConfigValue_InlineMap(t *testing.T) {
+	t.Run("coverage.coding.feature returns default (inline tag)", func(t *testing.T) {
+		dir := t.TempDir()
+		val, err := GetConfigValue(dir, "coverage.coding.feature")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "80" {
+			t.Errorf("expected '80', got %q", val)
+		}
+	})
+
+	t.Run("coverage.coding.feature with explicit config", func(t *testing.T) {
+		dir := setupConfig(t, "coverage:\n  coding.feature:\n    type: percentage\n    percentage: 90\n")
+		val, err := GetConfigValue(dir, "coverage.coding.feature")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "90" {
+			t.Errorf("expected '90', got %q", val)
+		}
+	})
+}
+
+func TestGetConfigValue_WorktreeRegression(t *testing.T) {
+	t.Run("worktree.source-branch returns value", func(t *testing.T) {
+		dir := setupConfig(t, "worktree:\n  source-branch: develop\n")
+		val, err := GetConfigValue(dir, "worktree.source-branch")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "develop" {
+			t.Errorf("expected 'develop', got %q", val)
+		}
+	})
+}
+
+func TestParseAutoRaw_EvalConfig(t *testing.T) {
+	t.Run("eval sub-fields tracked with flat-path keys", func(t *testing.T) {
+		dir := setupConfig(t, "auto:\n  eval:\n    proposal:\n      quick: false\n    prd:\n      quick: true\n      full: false\n  test:\n    quick: true\n")
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg == nil || cfg.Auto == nil {
+			t.Fatal("expected non-nil config")
+		}
+
+		if cfg.Auto.Eval.Proposal.Quick {
+			t.Error("Eval.Proposal.Quick should be false (explicitly set)")
+		}
+		if !cfg.Auto.Eval.Proposal.Full {
+			t.Error("Eval.Proposal.Full should be true (default applied)")
+		}
+		if !cfg.Auto.Eval.Prd.Quick {
+			t.Error("Eval.Prd.Quick should be true")
+		}
+		if cfg.Auto.Eval.Prd.Full {
+			t.Error("Eval.Prd.Full should be false")
+		}
+		if !cfg.Auto.Eval.UiDesign.Quick || !cfg.Auto.Eval.UiDesign.Full {
+			t.Errorf("Eval.UiDesign should default to true/true, got %+v", cfg.Auto.Eval.UiDesign)
+		}
+		if cfg.Auto.Eval.TechDesign.Quick || cfg.Auto.Eval.TechDesign.Full {
+			t.Errorf("Eval.TechDesign should default to false/false, got %+v", cfg.Auto.Eval.TechDesign)
+		}
+	})
+}
+
+func TestParseAutoRaw_ExistingFields_Regression(t *testing.T) {
+	t.Run("existing auto fields still tracked correctly", func(t *testing.T) {
+		dir := setupConfig(t, "auto:\n  test:\n    quick: false\n  consolidateSpecs:\n    quick: true\n    full: false\n  gitPush: true\n")
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg == nil || cfg.Auto == nil {
+			t.Fatal("expected non-nil config")
+		}
+
+		if cfg.Auto.Test.Quick {
+			t.Error("Test.Quick should be false")
+		}
+		if !cfg.Auto.Test.Full {
+			t.Error("Test.Full should be true (default)")
+		}
+		if !cfg.Auto.ConsolidateSpecs.Quick {
+			t.Error("ConsolidateSpecs.Quick should be true")
+		}
+		if cfg.Auto.ConsolidateSpecs.Full {
+			t.Error("ConsolidateSpecs.Full should be false")
+		}
+		if !cfg.Auto.GitPush {
+			t.Error("GitPush should be true")
+		}
 	})
 }

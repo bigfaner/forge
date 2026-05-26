@@ -401,7 +401,7 @@ func TestConfigSetCommand(t *testing.T) {
 		}
 	})
 
-	t.Run("set auto.cleanCode true then get returns combined format", func(t *testing.T) {
+	t.Run("set auto.cleanCode rejected as ModeToggle", func(t *testing.T) {
 		dir := t.TempDir()
 
 		var stdout bytes.Buffer
@@ -409,22 +409,11 @@ func TestConfigSetCommand(t *testing.T) {
 		rootCmd.SetErr(os.Stderr)
 		rootCmd.SetArgs([]string{"config", "set", "auto.cleanCode", "true", "--project-root", dir})
 		err := rootCmd.Execute()
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
+		if err == nil {
+			t.Fatal("expected error for ModeToggle direct set")
 		}
-
-		// Verify via get
-		var getStdout bytes.Buffer
-		rootCmd.SetOut(&getStdout)
-		rootCmd.SetArgs([]string{"config", "get", "auto.cleanCode", "--project-root", dir})
-		err = rootCmd.Execute()
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-
-		output := strings.TrimSpace(getStdout.String())
-		if output != "quick:true full:true" {
-			t.Errorf("expected 'quick:true full:true', got %q", output)
+		if !strings.Contains(err.Error(), "cannot set ModeToggle directly") {
+			t.Errorf("expected cannot set ModeToggle directly in error, got %v", err)
 		}
 	})
 

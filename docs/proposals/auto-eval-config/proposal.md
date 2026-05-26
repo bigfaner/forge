@@ -1,7 +1,7 @@
 ---
 created: 2026-05-26
 author: "faner"
-status: Draft
+status: Approved
 ---
 
 # Proposal: Auto-Eval Configuration with Generic Config Key Resolution
