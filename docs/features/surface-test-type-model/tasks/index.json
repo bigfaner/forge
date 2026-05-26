@@ -34,7 +34,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3-update-gen-scripts-journeys.md",
       "record": "records/3-update-gen-scripts-journeys.md",
       "type": "doc"

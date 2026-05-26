@@ -9,6 +9,8 @@ conventions:
 
 Type-specific generation instructions for **UI** (browser DOM interaction) test scripts. Loaded by the dispatcher after interface detection.
 
+**Test type**: Web 端到端测试 (Web E2E Test). See `docs/reference/test-type-model.md` for the authoritative definition. Generated test code MUST use `@web-e2e` tags. This is one of the two surfaces where "e2e" terminology is correct (the other being Mobile).
+
 This file defines two zones:
 
 - **Golden Rules**: Framework-agnostic constraints that govern all UI test generation. These rules are mandatory and cannot be overridden by Convention files.
