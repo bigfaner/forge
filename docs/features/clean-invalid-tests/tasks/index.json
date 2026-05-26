@@ -1,0 +1,111 @@
+{
+  "feature": "clean-invalid-tests",
+  "proposal": "docs/proposals/clean-invalid-tests/proposal.md",
+  "created": "2026-05-26",
+  "tasks": {
+    "1-clean-forge-cli-skip-tests": {
+      "id": "1",
+      "title": "Clean forge-cli/tests/ skip and dead tests",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "1-clean-forge-cli-skip-tests.md",
+      "record": "records/1-clean-forge-cli-skip-tests.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.cleanup"
+    },
+    "2-clean-forge-cli-artifacts": {
+      "id": "2",
+      "title": "Clean forge-cli/tests/ empty artifacts and dead helpers",
+      "priority": "P1",
+      "estimatedTime": "45m",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-clean-forge-cli-artifacts.md",
+      "record": "records/2-clean-forge-cli-artifacts.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.cleanup"
+    },
+    "3-clean-tests-static-duplicates": {
+      "id": "3",
+      "title": "Clean tests/ static-file grep and duplicate tests",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "3-clean-tests-static-duplicates.md",
+      "record": "records/3-clean-tests-static-duplicates.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.cleanup"
+    },
+    "4-clean-tests-invalid-tui": {
+      "id": "4",
+      "title": "Clean tests/ invalid tests and tui-ui-design directory",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "4-clean-tests-invalid-tui.md",
+      "record": "records/4-clean-tests-invalid-tui.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.cleanup"
+    },
+    "5-extend-tc004-scope": {
+      "id": "5",
+      "title": "Extend TC-004 contract to cover forge-cli/tests/",
+      "priority": "P2",
+      "estimatedTime": "15m",
+      "dependencies": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "status": "pending",
+      "file": "5-extend-tc004-scope.md",
+      "record": "records/5-extend-tc004-scope.md",
+      "type": "doc"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "pending",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "5"
+      ],
+      "status": "pending",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
