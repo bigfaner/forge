@@ -144,7 +144,7 @@ func TestGetBreakdownTestTasks_DefaultsMatchOldBehavior(t *testing.T) {
 		t.Fatalf("expected 8 tasks with defaults, got %d", len(tasks))
 	}
 
-	wantIDs := []string{"T-test-gen-journeys-cli", "T-eval-journey", "T-test-gen-contracts", "T-eval-contract", "T-test-gen-scripts-cli", "T-test-run", "T-test-verify-regression", "T-specs-consolidate"}
+	wantIDs := []string{"T-test-gen-journeys", "T-eval-journey", "T-test-gen-contracts", "T-eval-contract", "T-test-gen-scripts-cli", "T-test-run", "T-test-verify-regression", "T-specs-consolidate"}
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
 			t.Errorf("tasks[%d].ID = %q, want %q", i, tasks[i].ID, want)

@@ -1812,19 +1812,19 @@ func TestBuildIndex_WithSurfaces_ProducesPerTypeTasks(t *testing.T) {
 		t.Fatalf("BuildIndex: %v", err)
 	}
 
-	// 1 business task + test pipeline tasks (gen-journeys-api, gen-contracts,
+	// 1 business task + test pipeline tasks (gen-journeys, gen-contracts,
 	// gen-test-scripts-api, run-test, verify-regression, quick-drift-detection)
 	total := result.NewCount + result.UpdatedCount
 	if total < 2 {
 		t.Errorf("total = %d (new=%d, updated=%d), want at least 2 (1 biz + test tasks)", total, result.NewCount, result.UpdatedCount)
 	}
 
-	// Verify per-type gen-journeys task exists
+	// Verify single gen-journeys task exists (covers all surfaces)
 	data, _ := os.ReadFile(indexPath)
 	var idx taskIndexJSON
 	_ = json.Unmarshal(data, &idx)
-	if _, ok := idx.Tasks["gen-journeys-api"]; !ok {
-		t.Error("gen-journeys-api not in index")
+	if _, ok := idx.Tasks["gen-journeys"]; !ok {
+		t.Error("gen-journeys not in index")
 	}
 }
 func TestBuildIndex_DeterministicOutput(t *testing.T) {

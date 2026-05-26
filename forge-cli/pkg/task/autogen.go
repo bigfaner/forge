@@ -109,15 +109,13 @@ func GetBreakdownTestTasks(capabilities []string, auto forgeconfig.AutoConfig) [
 
 	// Shared tasks (gated by auto.Test.Full)
 	if auto.Test.Full {
-		// Per-type gen-journeys (first in pipeline)
-		for _, typ := range capabilities {
-			tasks = append(tasks, AutoGenTaskDef{
-				Key: "gen-journeys-" + typ, ID: "T-test-gen-journeys-" + typ,
-				Title: fmt.Sprintf("Generate Test Journeys (%s)", typ), Priority: "P1", EstimatedTime: "20-30min",
-				Type: TypeTestGenJourneys, SurfaceType: typ,
-				StrategyKind: "interface",
-			})
-		}
+		// Single gen-journeys task covering all configured surfaces
+		tasks = append(tasks, AutoGenTaskDef{
+			Key: "gen-journeys", ID: "T-test-gen-journeys",
+			Title: "Generate Test Journeys", Priority: "P1", EstimatedTime: "20-30min",
+			Type:         TypeTestGenJourneys,
+			StrategyKind: "interface",
+		})
 
 		// Eval Journeys (after gen-journeys, before gen-contracts)
 		tasks = append(tasks, AutoGenTaskDef{
@@ -225,15 +223,13 @@ func GetQuickTestTasks(capabilities []string, auto forgeconfig.AutoConfig) []Aut
 
 	// Staged test pipeline (gated by auto.Test.Quick)
 	if auto.Test.Quick {
-		// Per-type gen-journeys (Stage 1: all parallel)
-		for _, typ := range capabilities {
-			tasks = append(tasks, AutoGenTaskDef{
-				Key: "gen-journeys-" + typ, ID: "T-test-gen-journeys-" + typ,
-				Title: fmt.Sprintf("Generate Test Journeys (%s)", typ), Priority: "P1", EstimatedTime: "20-30min",
-				Type: TypeTestGenJourneys, SurfaceType: typ,
-				StrategyKind: "interface",
-			})
-		}
+		// Single gen-journeys task covering all configured surfaces (Stage 1)
+		tasks = append(tasks, AutoGenTaskDef{
+			Key: "gen-journeys", ID: "T-test-gen-journeys",
+			Title: "Generate Test Journeys", Priority: "P1", EstimatedTime: "20-30min",
+			Type:         TypeTestGenJourneys,
+			StrategyKind: "interface",
+		})
 
 		// Gen Contracts (Stage 2: depends on all gen-journeys)
 		tasks = append(tasks, AutoGenTaskDef{
@@ -525,20 +521,16 @@ func resolveBreakdownDeps(tasks []AutoGenTaskDef, capabilities []string, auto fo
 	}
 
 	if auto.Test.Full {
-		// Pipeline: gen-journeys-per-type -> eval-journey -> gen-contracts -> eval-contract -> gen-scripts-per-type -> run -> verify-regression
+		// Pipeline: gen-journeys -> eval-journey -> gen-contracts -> eval-contract -> gen-scripts-per-type -> run -> verify-regression
 		evalJourneyIdx := findTaskIndexOrPanic(tasks, "T-eval-journey")
 		genContractsIdx := findTaskIndexOrPanic(tasks, "T-test-gen-contracts")
 		evalContractIdx := findTaskIndexOrPanic(tasks, "T-eval-contract")
 		runIdx := findTaskIndexOrPanic(tasks, "T-test-run")
 		verifyIdx := findTaskIndexOrPanic(tasks, "T-test-verify-regression")
 
-		// eval-journey depends on all gen-journeys tasks
-		var genJourneysDeps []string
-		for _, typ := range capabilities {
-			idx := findTaskIndexOrPanic(tasks, "T-test-gen-journeys-"+typ)
-			genJourneysDeps = append(genJourneysDeps, tasks[idx].ID)
-		}
-		tasks[evalJourneyIdx].Dependencies = genJourneysDeps
+		// eval-journey depends on single gen-journeys task
+		genJourneysIdx := findTaskIndexOrPanic(tasks, "T-test-gen-journeys")
+		tasks[evalJourneyIdx].Dependencies = []string{tasks[genJourneysIdx].ID}
 
 		// gen-contracts depends on eval-journey
 		tasks[genContractsIdx].Dependencies = []string{tasks[evalJourneyIdx].ID}
@@ -593,13 +585,9 @@ func resolveQuickDeps(tasks []AutoGenTaskDef, capabilities []string, auto forgec
 		runIdx := findTaskIndexOrPanic(tasks, "T-test-run")
 		verifyIdx := findTaskIndexOrPanic(tasks, "T-test-verify-regression")
 
-		// gen-contracts depends on all gen-journeys tasks (Stage 2)
-		var genJourneysDeps []string
-		for _, typ := range capabilities {
-			idx := findTaskIndexOrPanic(tasks, "T-test-gen-journeys-"+typ)
-			genJourneysDeps = append(genJourneysDeps, tasks[idx].ID)
-		}
-		tasks[genContractsIdx].Dependencies = genJourneysDeps
+		// gen-contracts depends on single gen-journeys task (Stage 2)
+		genJourneysIdx := findTaskIndexOrPanic(tasks, "T-test-gen-journeys")
+		tasks[genContractsIdx].Dependencies = []string{tasks[genJourneysIdx].ID}
 
 		// gen-scripts depend on gen-contracts (Stage 3)
 		for _, typ := range capabilities {
