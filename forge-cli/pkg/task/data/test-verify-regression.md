@@ -1,7 +1,7 @@
-Run full e2e regression suite to verify no regressions after the {{FEATURE_SLUG}} feature.
+Run full regression suite to verify no regressions after the {{FEATURE_SLUG}} feature.
 
 ## Feature Context
 - Scope: {{SCOPE}}
 
-Use `just test-e2e` to run the promoted regression suite.
+Use `just test` to run the promoted regression suite.
 If failures occur, fix source code or test selectors — do NOT start dev server manually.

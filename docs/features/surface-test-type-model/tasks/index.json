@@ -73,7 +73,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "6-update-task-type-naming.md",
       "record": "records/6-update-task-type-naming.md",
       "breaking": true,

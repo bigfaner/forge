@@ -795,6 +795,51 @@ func TestTaskTypeRegistry(t *testing.T) {
 	})
 }
 
+func TestTestTypeTitle(t *testing.T) {
+	tests := []struct {
+		surfaceType string
+		want        string
+	}{
+		{"cli", "CLI Functional Test"},
+		{"tui", "Terminal Functional Test"},
+		{"api", "API Functional Test"},
+		{"web", "Web E2E Test"},
+		{"mobile", "Mobile E2E Test"},
+		{"unknown", "Functional Test"},
+		{"", "Functional Test"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.surfaceType, func(t *testing.T) {
+			got := TestTypeTitle(tt.surfaceType)
+			if got != tt.want {
+				t.Errorf("TestTypeTitle(%q) = %q, want %q", tt.surfaceType, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGenSurfaceTestType(t *testing.T) {
+	tests := []struct {
+		baseType string
+		surface  string
+		want     string
+	}{
+		{"test.gen-scripts", "cli", "test.gen-scripts.cli"},
+		{"test.run", "api", "test.run.api"},
+		{"test.verify-regression", "web", "test.verify-regression.web"},
+		{"test.gen-scripts", "", "test.gen-scripts"},
+		{"test.run", "", "test.run"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.baseType+"+"+tt.surface, func(t *testing.T) {
+			got := GenSurfaceTestType(tt.baseType, tt.surface)
+			if got != tt.want {
+				t.Errorf("GenSurfaceTestType(%q, %q) = %q, want %q", tt.baseType, tt.surface, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestRecordDataJSONRoundTrip(t *testing.T) {
 	rd := &RecordData{
 		Status:        "completed",

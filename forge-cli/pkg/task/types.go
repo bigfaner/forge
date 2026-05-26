@@ -140,8 +140,48 @@ var SystemTypes = map[string]bool{
 
 // IsSystemType returns true if the given type is an auto-generated system type.
 // Business types and dual-identity types (doc.consolidate, doc.drift) return false.
+// Surface-specific variants (e.g. "test.gen-scripts.cli") are also recognized
+// by checking if the type with the last segment stripped matches a system type.
 func IsSystemType(typ string) bool {
-	return SystemTypes[typ]
+	if SystemTypes[typ] {
+		return true
+	}
+	// Check surface-specific variants: strip last ".xxx" segment and check base type
+	if idx := strings.LastIndex(typ, "."); idx >= 0 {
+		base := typ[:idx]
+		return SystemTypes[base]
+	}
+	return false
+}
+
+// TestTypeTitle returns the human-readable test type name for a given surface type.
+// Maps surface types to test type names per docs/reference/test-type-model.md.
+// Returns "Functional Test" as fallback for unknown or empty surface types.
+func TestTypeTitle(surfaceType string) string {
+	switch surfaceType {
+	case "cli":
+		return "CLI Functional Test"
+	case "tui":
+		return "Terminal Functional Test"
+	case "api":
+		return "API Functional Test"
+	case "web":
+		return "Web E2E Test"
+	case "mobile":
+		return "Mobile E2E Test"
+	default:
+		return "Functional Test"
+	}
+}
+
+// GenSurfaceTestType generates a surface-specific test type name by appending
+// the surface segment to the base type. Returns the base type unchanged when
+// surface is empty.
+func GenSurfaceTestType(baseType, surface string) string {
+	if surface == "" {
+		return baseType
+	}
+	return baseType + "." + surface
 }
 
 // FormatSystemTypes returns a comma-separated list of all system type names for error messages.

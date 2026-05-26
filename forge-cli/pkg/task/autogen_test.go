@@ -127,7 +127,7 @@ func TestGenerateTestTaskMD(t *testing.T) {
 		ID: "T-test-gen-scripts-api", Key: "gen-test-scripts-api",
 		Title: "Generate Test Scripts (api)", Priority: "P1",
 		EstimatedTime: "1-2h", Dependencies: []string{},
-		Type:        TypeTestGenScripts,
+		Type:        GenSurfaceTestType(TypeTestGenScripts, "api"),
 		SurfaceType: "api", StrategyKind: "generate",
 	}
 
@@ -141,7 +141,7 @@ func TestGenerateTestTaskMD(t *testing.T) {
 	if !strings.Contains(s, `id: "T-test-gen-scripts-api"`) {
 		t.Error("missing id in frontmatter")
 	}
-	if !strings.Contains(s, `type: "test.gen-scripts"`) {
+	if !strings.Contains(s, `type: "test.gen-scripts.api"`) {
 		t.Error("missing type in frontmatter")
 	}
 	// Body now loaded from embed template, should contain strategy-based content
@@ -424,7 +424,7 @@ func TestGenerateTestTaskMD_WithTestType(t *testing.T) {
 		ID: "T-test-gen-scripts-api", Key: "gen-test-scripts-api",
 		Title: "Generate Test Scripts (api)", Priority: "P1",
 		EstimatedTime: "1-2h", Dependencies: []string{},
-		Type:        TypeTestGenScripts,
+		Type:        GenSurfaceTestType(TypeTestGenScripts, "api"),
 		SurfaceType: "api", StrategyKind: "generate",
 	}
 
@@ -652,8 +652,8 @@ func TestGenerateTestTaskMD_EmbedTemplate_LoadsContent(t *testing.T) {
 		wantContains string
 	}{
 		{"gen-scripts", TypeTestGenScripts, "executable test scripts"},
-		{"run", TypeTestRun, "staged e2e test scripts"},
-		{"verify-regression", TypeTestVerifyRegression, "just test-e2e"},
+		{"run", TypeTestRun, "staged test scripts"},
+		{"verify-regression", TypeTestVerifyRegression, "just test"},
 		{"eval-journey", TypeEvalJourney, "6-dimension rubric"},
 		{"eval-contract", TypeEvalContract, "6-dimension rubric"},
 		{"validation-code", TypeValidationCode, "quality gate"},
