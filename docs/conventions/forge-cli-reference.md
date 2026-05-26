@@ -134,6 +134,9 @@ domains: [cli, commands, reference, skills, task-list]
 | `forge test interfaces` | test | 已移除。通过读取项目结构和 `docs/conventions/` 推断接口类型 |
 | `forge test framework` | test | 已移除 |
 | `forge test get` | test | 已移除 |
+| `forge test promote` | test | 已移除。标签晋升由 `/run-tests` skill 直接处理 |
+| `forge test run-journey` | test | 已移除。skill 层直接调用 `just test` |
+| `forge test verify` | test | 已移除。contract 验证已集成到 skill 层 |
 | `forge probe` | 顶层 | 已移除。e2e 探测功能集成到 `quality-gate` 中 |
 | `forge e2e validate-specs` | e2e | 已移除。整个 `forge e2e` 命令组不再存在 |
 | `forge e2e run` | e2e | 已移除。使用 `/run-tests` 替代 |
