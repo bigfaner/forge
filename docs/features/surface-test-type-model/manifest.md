@@ -1,7 +1,7 @@
 ---
 feature: "surface-test-type-model"
 created: "2026-05-26"
-status: tasks
+status: completed
 mode: quick
 ---
 
