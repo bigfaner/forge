@@ -283,7 +283,7 @@ compile→fmt→lint→unit-test  compile→fmt→lint→unit-test→test→prob
 ```
 gen-journeys ──→ eval-journey ──→ gen-contracts ──→ eval-contract ──→ gen-scripts ──→ run ──→ verify
      │                │                  │                  │               │            │
-     │                │                  │                  │               │            └─ forge test promote
+     │                │                  │                  │               │            └─ /run-tests (tag promotion)
      │                │                  │                  │               └─ /run-tests
      │                │                  │                  └─ /eval-contract（6 维度门禁）
      │                │                  └─ /gen-contracts（6 维度合约 + 边界衍生）
@@ -301,7 +301,7 @@ gen-journeys ──→ eval-journey ──→ gen-contracts ──→ eval-contr
 | T-test-eval-contract | `/eval-contract` | 评分报告 | 是 |
 | T-test-gen-scripts | `/gen-test-scripts` | `tests/<journey>/*` | 是 |
 | T-test-run | `/run-tests` | `results/latest.md` | 是 |
-| T-test-promote | `forge test promote` | `tests/<surface-key>/`（回归测试） | 是 |
+| T-test-promote | `/run-tests` (tag promotion) |  `tests/<surface-key>/`（回归测试） | 是 |
 
 前置任务：`/gen-sitemap`（生成 `sitemap.json` 页面元素映射）。
 
@@ -527,7 +527,7 @@ tests/<surface-key>/
 ├── features/<slug>/         # 功能级测试（staging）
 │   ├── *.spec.ts            #   测试脚本
 │   └── results/             #   执行结果
-└── <module>/                # 回归测试（forge test promote 迁移）
+└── <module>/                # 回归测试（通过 /run-tests 标签晋升）
     └── *.spec.ts            #   按功能模块组织
 ```
 
@@ -540,7 +540,7 @@ tests/<surface-key>/
 | `process/` | forge CLI 运行时 | **否**（gitignore） |
 | `testing/` | `/gen-journeys` + `/gen-contracts` | 是 |
 | `tests/<surface-key>/features/` | `/gen-test-scripts` | 是 |
-| `tests/<surface-key>/` (根级) | `forge test promote` | 是 |
+| `tests/<surface-key>/` (根级) | `/run-tests` (tag promotion) | 是 |
 | `records/` | `forge task submit` | 是 |
 | `specs/` | `/consolidate-specs` | 是（用户确认后） |
 

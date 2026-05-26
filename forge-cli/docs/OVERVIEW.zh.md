@@ -87,9 +87,8 @@ Override with `--force`: `forge task submit <id> --data record.json --force`
 - 若 `tests/e2e/features/<feature>/` 存在但无毕业标记，hook 打印 WARNING 引导迁移
 
 **e2e 测试标签晋升模型：**
-- 晋升通过 `forge test promote <journey>` 命令完成——先运行测试，通过后替换 @feature 为 @regression
+- 晋升通过 `/run-tests` 完成——测试通过后自动替换 `@feature` 为 `@regression`
 - 标签生命周期：`@feature`（新生成，验证中）-> `@regression`（已验证，回归测试）
-- CI 通过 `forge test run --tags regression` 或 `--tags feature` 选择测试集
 
 **测试命令自动检测顺序（项目级）：**
 1. `index.json` 中的 `testCommand` 字段（显式配置）

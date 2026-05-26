@@ -7,7 +7,6 @@ import (
 	forensicpkg "forge-cli/internal/cmd/forensic"
 	promptpkg "forge-cli/internal/cmd/prompt"
 	taskpkg "forge-cli/internal/cmd/task"
-	testpkg "forge-cli/internal/cmd/test"
 )
 
 func TestRootCmd_Structure(t *testing.T) {
@@ -26,7 +25,7 @@ func TestRootCmd_Structure(t *testing.T) {
 	}
 
 	// 5 group parents
-	expectedGroups := []string{"task", "forensic", "test", "prompt", "worktree"}
+	expectedGroups := []string{"task", "forensic", "prompt", "worktree", "fact"}
 	for _, expected := range expectedGroups {
 		if !commandNames[expected] {
 			t.Errorf("missing group parent: %s (have: %v)", expected, commandNames)
@@ -52,8 +51,8 @@ func TestRootCmd_HelpShowsTenVisibleEntries(t *testing.T) {
 			visibleCount++
 		}
 	}
-	// 6 groups (task, forensic, test, prompt, worktree, fact) + 4 visible top-level (version is hidden) + config + proposal + lesson + init + claude + research + surfaces = 17 visible
-	if visibleCount != 17 {
+	// 5 groups (task, forensic, prompt, worktree, fact) + 4 visible top-level (version is hidden) + config + proposal + lesson + init + claude + research + surfaces = 16 visible
+	if visibleCount != 16 {
 		t.Errorf("expected 16 visible commands, got %d", visibleCount)
 	}
 }
@@ -104,13 +103,6 @@ func TestRootCmd_ForensicGroupHasSubcommands(t *testing.T) {
 	}
 }
 
-func TestRootCmd_TestGroupHasSubcommands(t *testing.T) {
-	subcommands := testpkg.Cmd.Commands()
-	if len(subcommands) == 0 {
-		t.Error("test group should have subcommands")
-	}
-}
-
 func TestExecute_NoArgs(t *testing.T) {
 	// Execute with --help should not error
 	buf := new(bytes.Buffer)
@@ -136,8 +128,8 @@ func TestInit_RegistersCommands(t *testing.T) {
 		}
 	}
 
-	// 6 groups (task, forensic, test, prompt, worktree, fact) + 5 top-level (cleanup, quality-gate, verify-task-done, feature, version) + config + proposal + lesson + init + claude + research + surfaces = 18
-	if len(explicit) != 18 {
+	// 5 groups (task, forensic, prompt, worktree, fact) + 5 top-level (cleanup, quality-gate, verify-task-done, feature, version) + config + proposal + lesson + init + claude + research + surfaces = 17
+	if len(explicit) != 17 {
 		t.Errorf("expected 17 explicit commands, got %d: %v", len(explicit), explicit)
 	}
 }

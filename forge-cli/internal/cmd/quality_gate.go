@@ -149,7 +149,7 @@ func runQualityGate(_ *cobra.Command, _ []string) error {
 		fmt.Fprintln(os.Stderr,
 			"WARNING: feature test scripts exist but haven't been run or promoted.\n"+
 				"  Add T-test-run (run-test) to your task index,\n"+
-				"  or run /run-tests and forge test promote <journey> manually.")
+				"  or run /run-tests to promote and run test scripts manually.")
 	}
 
 	// Step 1: Quality gate (compile -> fmt -> lint)

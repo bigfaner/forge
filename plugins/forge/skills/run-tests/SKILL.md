@@ -262,10 +262,5 @@ When **>30% of tests fail simultaneously**, do NOT proceed to individual test fi
 |-------|-------|
 | `/gen-test-scripts` | Generate executable test scripts |
 | `/init-justfile` | Generate surface-specific justfile recipes |
-| `forge test promote` | Promote passing tests to regression suite (`tests/web-e2e/` or `tests/mobile-e2e/` for E2E surfaces; `tests/cli-functional/` etc. for functional surfaces) |
 
-After all tests pass, prompt the user: "Run `forge test promote <journey>` to promote tests to the regression suite."
-
-## 测试类型术语
-
-本文档使用 Surface-specific 测试类型名称（如 "CLI 功能测试"、"Web 端到端测试"），定义参见概念参考文档 `docs/reference/test-type-model.md`。
+After all tests pass, tag promotion (`@feature` → `@regression`) is handled automatically by the `/run-tests` skill.
