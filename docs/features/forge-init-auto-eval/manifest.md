@@ -1,7 +1,7 @@
 ---
 feature: "forge-init-auto-eval"
 created: "2026-05-28"
-status: tasks
+status: completed
 mode: quick
 ---
 
