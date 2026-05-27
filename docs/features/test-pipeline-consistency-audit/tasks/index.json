@@ -64,7 +64,7 @@
       "dependencies": [
         "1a"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "1b-flatten-test-dir.md",
       "record": "records/1b-flatten-test-dir.md",
       "surface-key": ".",
