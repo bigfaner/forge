@@ -8,13 +8,17 @@
       "title": "重命名 E2E 常量为 surface-neutral 名称并扁平化 tests/ 目录",
       "priority": "P0",
       "estimatedTime": "2h",
-      "status": "pending",
+      "dependencies": [
+        "disc-1"
+      ],
+      "status": "blocked",
       "file": "1-rename-constants-paths.md",
       "record": "records/1-rename-constants-paths.md",
       "breaking": true,
       "surface-key": ".",
       "surface-type": "cli",
-      "type": "coding.refactor"
+      "type": "coding.refactor",
+      "blockedReason": "unit-test failed: TestDetectModeFromPath (Windows backslash and symlink cases) in forge-cli/internal/cmd/config_test.go — pre-existing failures unrelated to task 1's E2E constant rename scope"
     },
     "10-fix-architecture-md": {
       "id": "10",
@@ -142,7 +146,7 @@
       "title": "更新 gen-contracts 和 gen-test-scripts Skill 文档术语",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "7-update-gen-scripts-docs.md",
       "record": "records/7-update-gen-scripts-docs.md",
       "type": "doc"
@@ -152,7 +156,7 @@
       "title": "修正 quick-tasks 执行顺序和术语",
       "priority": "P1",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "8-fix-quick-tasks-order.md",
       "record": "records/8-fix-quick-tasks-order.md",
       "type": "doc"
@@ -166,6 +170,16 @@
       "file": "9-update-other-skill-docs.md",
       "record": "records/9-update-other-skill-docs.md",
       "type": "doc"
+    },
+    "disc-1": {
+      "id": "disc-1",
+      "title": "Fix: pre-existing TestDetectModeFromPath failure",
+      "priority": "P1",
+      "status": "pending",
+      "file": "disc-1.md",
+      "record": "records/disc-1.md",
+      "sourceTaskID": "1",
+      "type": "coding.fix"
     },
     "quick-drift-detection": {
       "id": "T-quick-doc-drift",
