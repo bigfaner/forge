@@ -8,31 +8,48 @@ status: Draft
 
 ## Problem
 
-Forge 的模板渲染依赖 `strings.ReplaceAll` 做占位符替换，无法表达条件逻辑。所有条件化行为（空值省略、字段注入）都靠脆弱的后处理函数实现——`cleanTemplateOutput()` 删除空标签行和条件句，`injectSurfaceFrontmatter()` 替换硬编码的空值字段。随着条件化需求增长（complexity 分支、surface 差异化），这些后处理 hack 将持续膨胀。
+Forge 的模板渲染在三个包中各自使用 `strings.ReplaceAll` 做占位符替换，无法表达条件逻辑。所有条件化行为都靠脆弱的后处理函数实现。此外，部分模板仍使用过时的 `scope` 概念（已迁移到 `surface-key`/`surface-type`），且同一目录下的模板 frontmatter 规范不统一。
 
 ### Evidence
 
-| 后处理函数 | 位置 | 依赖的脆弱假设 |
-|-----------|------|--------------|
-| `cleanTemplateOutput()` | `pkg/prompt/prompt.go` | 按行匹配 `If \`\` is non-empty` 文本、`KEY:` 格式标签、`just ` 前缀命令 |
-| `injectSurfaceFrontmatter()` | `pkg/task/add.go` | 模板必须硬编码 `surface-key: ""`，然后靠字符串替换覆盖 |
-| 标记注释方案（计划中） | `task-pipeline-precision` | 用 `<!-- IF NOT_LOW -->...<!-- END_IF -->` HTML 注释包裹条件段落，由后处理删除 |
+**三套独立的渲染+后处理机制**：
 
-`cleanTemplateOutput()` 的 `isLabelWithEmptyValue()` 检测器甚至对标签名有空格限制（`strings.Contains(before, " ")` → 返回 false），这在未来添加新占位符时可能意外跳过清理。
+| 渲染引擎 | 位置 | 后处理函数 | 模板数 | 过时概念 |
+|---------|------|-----------|--------|---------|
+| `renderTemplate()` | `pkg/prompt/prompt.go` | `cleanTemplateOutput()` | 22 | — |
+| `ApplyVars()` | `pkg/template/template.go` | `injectSurfaceFrontmatter()` | 2 | `surface-key: ""` 硬编码 |
+| `renderBody()` | `pkg/task/autogen.go` | `removeLineContaining()`, `removeSection()` | 12 | `{{SCOPE}}` 占位符 |
+
+**过时概念残留**：
+
+| 过时概念 | 当前替代 | 残留位置 |
+|---------|---------|---------|
+| `{{SCOPE}}` 占位符 | `surface-key`/`surface-type` | `pkg/task/data/` 中 4 个模板：doc-consolidate, test-gen-contracts, test-gen-journeys, test-run |
+| `BodyContext.Scope` 字段 | `SurfaceKey`/`SurfaceType` | `pkg/task/autogen.go` |
+
+**frontmatter 不一致**：`pkg/task/data/` 中 `record-*.md`（6 个）有 YAML frontmatter，其余 12 个模板没有。`pkg/prompt/data/` 中 4 个 doc 模板缺少 `SURFACE_KEY` header 声明。
+
+**后处理函数脆弱假设**：
+- `cleanTemplateOutput()` 的 `isLabelWithEmptyValue()` 对标签名有空格限制（`strings.Contains(before, " ")` → false）
+- `removeSection()` 通过 `## Heading` 前缀匹配删除段落，模板内容变更可能破坏匹配
+- `injectSurfaceFrontmatter()` 要求模板硬编码 `surface-key: ""`，然后用 `strings.Replace` 覆盖
 
 ### Urgency
 
-`task-pipeline-precision` 提案已批准，需要在 prompt 模板中实现 complexity 条件分支。如果不引入模板引擎，将叠加第三层后处理 hack（标记注释）。现在迁移可以一次性清理技术债务，而非在三个后处理层之上继续堆叠。
+`task-pipeline-precision` 提案已批准，需要在 prompt 模板中实现 complexity 条件分支。如果不引入模板引擎，将叠加第三层后处理 hack（标记注释）。同时 `pkg/task/autogen.go` 的 `renderBody()` 仍使用过时的 `{{SCOPE}}` 概念，与已迁移到 `surface-key`/`surface-type` 的系统其余部分不一致。现在迁移可以一次性统一三个渲染引擎、清理过时概念、建立可扩展的条件化基础设施。
 
 ## Proposed Solution
 
-将 `pkg/prompt` 和 `pkg/template` 的渲染引擎统一替换为 Go 标准库 `text/template`。两个包已共享 `embed.FS` + `//go:embed` 模式，迁移路径清晰。
+将三个包的渲染引擎统一替换为 Go 标准库 `text/template`，同时清理过时概念、统一 frontmatter 规范。
 
 **核心变更**：
-1. 占位符语法从 `{{X}}` 迁移到 `{{.X}}`（Go `text/template` 的 struct 字段访问语法）
-2. 条件段落用 `{{if .Field}}...{{end}}` 声明
-3. 移除 `cleanTemplateOutput()` 和 `injectSurfaceFrontmatter()` 的字符串匹配逻辑
-4. Surface 推断失败时任务创建硬性报错
+1. 三个包的渲染引擎统一迁移到 `text/template`：`pkg/prompt`（22 模板）、`pkg/template`（2 模板）、`pkg/task/autogen`（12 模板）
+2. 占位符语法从 `{{X}}` 迁移到 `{{.X}}`
+3. 条件段落用 `{{if .Field}}...{{end}}` 声明
+4. 移除三套后处理函数（`cleanTemplateOutput` 条件逻辑、`injectSurfaceFrontmatter`、`removeLineContaining`/`removeSection`）
+5. `{{SCOPE}}` 替换为 `{{.SurfaceKey}}`/`{{.SurfaceType}}`，`BodyContext.Scope` 字段重命名
+6. Surface 推断失败时任务创建硬性报错
+7. 统一 frontmatter 规范：明确 autogen 模板为 body-only（frontmatter 由 Go 代码生成），record 模板自带 frontmatter
 
 ### Innovation Highlights
 
@@ -91,13 +108,14 @@ Go 生态中 `text/template` 是模板渲染的标准选择。Helm、Hugo、gore
 
 ### Resource & Timeline
 
-- 24 个模板文件的占位符语法迁移：机械性，约 1 小时
-- `prompt.go` 重构：移除 `cleanTemplateOutput()` 中的条件删除逻辑，改为 `text/template` 渲染：约 2 小时
+- 36 个模板文件的占位符语法迁移（22 prompt + 2 task creation + 12 autogen）：机械性，约 2 小时
+- `prompt.go` 重构：移除 `cleanTemplateOutput()` 条件逻辑，改为 `text/template` 渲染：约 2 小时
 - `template.go` 重构：移除 `ApplyVars()` 和 `injectSurfaceFrontmatter()`，改为 `text/template`：约 1 小时
-- Surface 硬性约束：修改 `quality_gate.go` 的 `addSingleFixTask()` 报错逻辑：约 0.5 小时
+- `autogen.go` 重构：移除 `renderBody()` + `removeLineContaining()`/`removeSection()`，改为 `text/template`：约 2 小时
+- Surface 硬性约束 + `{{SCOPE}}` 清理 + `BodyContext` 字段重命名：约 1 小时
 - 测试：golden-file 对比确保渲染等价：约 2 小时
 
-总计约 6-8 个 coding task，适合 quick mode。
+总计约 10-12 个 coding task，适合 quick mode。
 
 ### Dependency Readiness
 
@@ -115,6 +133,7 @@ Go 生态中 `text/template` 是模板渲染的标准选择。Helm、Hugo、gore
 
 ### In Scope
 
+**pkg/prompt（Prompt 渲染层）**：
 - `pkg/prompt/prompt.go` 重构：`renderTemplate()` 从 `strings.ReplaceAll` 迁移到 `text/template.Execute()`
 - `pkg/prompt/data/` 下 22 个模板文件占位符语法迁移（`{{X}}` → `{{.X}}`）
 - 移除 `cleanTemplateOutput()` 中的条件删除逻辑（空标签行、空 backtick 条件句、`just` 命令尾部空白）。函数保留但仅做空白行塌陷
@@ -122,20 +141,39 @@ Go 生态中 `text/template` 是模板渲染的标准选择。Helm、Hugo、gore
   - `{{if .PhaseSummary}}...{{end}}` 替换 `If {{PHASE_SUMMARY}} is non-empty` 模式
   - `{{if .CoverageStrategy}}...{{end}}` 替换 coverage IMPORTANT 块
   - `{{if .SurfaceKey}}...{{end}}` 替换空 surface 标签删除
+- 4 个 doc 模板（doc-consolidate, doc-drift, doc, doc-review）补齐 `SURFACE_KEY` header 声明
+- `task-pipeline-precision` 的 complexity 条件分支改用 `{{if}}` 实现，替代标记注释方案
+- 模板数据 struct 定义：`promptTemplateData`
+
+**pkg/template（任务创建层）**：
 - `pkg/template/template.go` 重构：`ApplyVars()` 替换为 `text/template.Execute()`
-- `pkg/template/data/` 下 2 个模板文件占位符语法迁移
+- `pkg/template/data/` 下 2 个模板文件（coding.fix, coding.cleanup）占位符语法迁移
 - 移除 `pkg/task/add.go` 的 `injectSurfaceFrontmatter()`——surface 值直接由模板渲染
 - 模板条件化：surface 有值时渲染字段 + 省略 Surface Inference 段落
+- 模板数据 struct 定义：`taskTemplateData`
+
+**pkg/task/autogen（自动生成任务层）**：
+- `pkg/task/autogen.go` 重构：`renderBody()` 从 `strings.ReplaceAll` 迁移到 `text/template.Execute()`
+- `pkg/task/data/` 下 12 个非 record 模板占位符语法迁移（`{{X}}` → `{{.X}}`）
+- `{{SCOPE}}` 替换为 `{{.Scope}}` 或等效的 surface 概念字段
+- `BodyContext.Scope` 字段重命名或替换为与当前概念对齐的字段名
+- 移除 `removeLineContaining()` 和 `removeSection()` 后处理函数，条件逻辑改用 `{{if}}`
+- 模板数据 struct 定义：`autogenTemplateData`
+
+**Surface 硬性约束**：
 - `quality_gate.go` 的 `addSingleFixTask()` 中 `inferSurface()` 失败时返回错误（硬性失败）
-- `task-pipeline-precision` 的 complexity 条件分支改用 `{{if}}` 实现，替代标记注释方案
-- 模板数据 struct 定义：`promptTemplateData`（pkg/prompt）和 `taskTemplateData`（pkg/template）
+
+**Frontmatter 规范统一**：
+- 明确 autogen 模板（`pkg/task/data/` 非 record 文件）为 body-only 设计——frontmatter 由 `GenerateTestTaskMD()` Go 代码生成，模板仅含 body 内容
+- 在 autogen 模板文件头部添加注释说明此约定（如 `<!-- body-only: frontmatter generated by GenerateTestTaskMD() -->`）
 
 ### Out of Scope
 
 - 模板内容精简（属于 `slim-task-prompt-templates` 提案）
 - 任务文档模板（`plugins/forge/skills/*/templates/`）——由 LLM agent 渲染
 - `task-executor.md` agent 定义修改
-- Record 模板（`pkg/task/data/`）——已使用 `text/template`
+- Record 模板（`pkg/task/data/record-*.md`）——已使用 `text/template`
+- Skill、command 定义文件的 `scope` 引用清理——按 prose 用法不影响功能，优先级低于模板层
 - 新增模板文件或合并/拆分现有模板
 - `prompt-template-audit` 提案中的其他优化建议（如双重提交、Hard Rules 命名）
 
@@ -143,28 +181,35 @@ Go 生态中 `text/template` 是模板渲染的标准选择。Helm、Hugo、gore
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|------------|
-| 占位符迁移遗漏导致模板渲染时出现 `{{.UnknownField}}` 错误 | M | H | 启动时 `ValidatePromptTemplates()` 扩展为对所有模板执行 `template.Parse()` + 检查所有字段引用，编译期而非运行期捕获遗漏 |
+| 占位符迁移遗漏导致模板渲染时出现 `{{.UnknownField}}` 错误 | M | H | 启动时 `ValidatePromptTemplates()` 和 `ValidateAutogenTemplates()` 扩展为对所有模板执行 `template.Parse()` + 检查所有字段引用，编译期而非运行期捕获遗漏 |
 | `text/template` 对 nil 指针解引用 panic | L | H | 模板数据 struct 使用值类型（string）而非指针；所有字段零值为空字符串（在模板中 `{{if .Field}}` 对空字符串为 false），无需 nil 检查 |
 | Surface 硬性失败阻塞无 surfaces 配置的项目 | M | H | 错误信息包含 `forge surfaces detect` 命令指引；在 `forge init` 中增加 surface 配置步骤 |
 | 迁移后 prompt 输出与当前行为有细微差异（空白行、格式） | M | L | Golden-file 测试对比迁移前后输出，允许空白行差异但要求内容等价 |
 | `task-pipeline-precision` 的 complexity 分支实现需要同步调整 | M | M | 本提案与 `task-pipeline-precision` 共同实施，complexity 条件直接用 `{{if}}` 实现 |
+| `BodyContext.Scope` 重命名影响 `BuildIndex()` 调用链 | M | M | `Scope` 仅在 `autogen.go` 内部消费，调用链为 `BuildIndex()` → `renderBody()`，影响面可控 |
+| 36 个模板批量迁移可能引入格式错误（`text/template` 要求 `{{}}` 严格配对） | M | M | 迁移后每个模板执行 `template.Parse()` 验证语法，配合 golden-file 测试确保内容正确 |
 
 ## Success Criteria
 
 - [ ] `pkg/prompt` 的 `renderTemplate()` 使用 `text/template.Execute()` 渲染，不再使用 `strings.ReplaceAll`
 - [ ] `pkg/template` 的 `CreateTaskMarkdown()` 使用 `text/template.Execute()` 渲染，不再使用 `ApplyVars()` 和 `injectSurfaceFrontmatter()`
+- [ ] `pkg/task/autogen.go` 的 `renderBody()` 使用 `text/template.Execute()` 渲染，不再使用 `strings.ReplaceAll`
 - [ ] `cleanTemplateOutput()` 仅保留空白行塌陷逻辑，移除所有条件删除逻辑（空标签行、空 backtick 条件句）
-- [ ] 22 个 prompt 模板文件中无 `{{PLACEHOLDER}}` 格式（全部为 `{{.Placeholder}}` 格式）
+- [ ] `removeLineContaining()` 和 `removeSection()` 从 `autogen.go` 中移除，条件逻辑由模板 `{{if}}` 块处理
+- [ ] 36 个模板文件中无 `{{PLACEHOLDER}}` 格式（全部为 `{{.Placeholder}}` 格式）
+- [ ] `pkg/task/data/` 中无 `{{SCOPE}}` 残留
+- [ ] `BodyContext` struct 中无 `Scope` 字段（已替换为当前概念对齐的字段名）
 - [ ] `{{if .PhaseSummary}}` 条件块正确渲染：有值时注入段落，无值时段落消失
 - [ ] `{{if .CoverageStrategy}}` 条件块正确渲染：testable 类型渲染 coverage 指令，non-testable 类型无 coverage 段落
 - [ ] Surface 推断失败时 `addSingleFixTask()` 返回错误而非创建空 surface 的任务文件
 - [ ] `forge prompt get-by-task-id` 输出与迁移前功能等价（golden-file 对比，允许空白行差异）
-- [ ] `ValidatePromptTemplates()` 在启动时对所有模板执行 `template.Parse()`，确保无语法错误
+- [ ] `ValidatePromptTemplates()` 和 `ValidateAutogenTemplates()` 在启动时对所有模板执行 `template.Parse()`，确保无语法错误
+- [ ] 4 个 doc 类型 prompt 模板（doc-consolidate, doc-drift, doc, doc-review）补齐 `SURFACE_KEY` header 声明
 
 ```
 consistency_check_result:
   status: pass
-  pairs_checked: 15
+  pairs_checked: 21
   conflicts_found: 0
 ```
 
