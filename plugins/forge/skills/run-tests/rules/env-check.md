@@ -40,7 +40,7 @@ The following sections define the detection items for each built-in surface type
 | 3 | Stdin pipe works | Spawn a test subprocess with stdin piped, verify it accepts input without error | Yes | Verify no terminal-exclusive mode is required for basic input |
 | 4 | No GUI dependency | Verify the TUI does not require X11/Wayland/display server (check env vars or process dependencies) | No | Set `TERM=dumb` or use headless terminal if GUI deps are present |
 
-### WebUI
+### Web
 
 | # | Check | How to Verify | Blocking | Repair Suggestion |
 |---|-------|--------------|----------|-------------------|

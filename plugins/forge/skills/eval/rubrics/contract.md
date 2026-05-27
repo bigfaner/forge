@@ -90,8 +90,8 @@ Evaluates whether the Contract follows the surface type's `required_outcomes` ru
 
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| Mandatory derived Outcomes from surface `required_outcomes` are present | 0-60 | Check the surface type's `required_outcomes` rules. For CLI: `not-found` + `already-exists` must be considered. For WebUI: `validation-error` + `session-expired`. For API: `unauthorized` per authenticated endpoint. Score 0 if mandatory Outcomes are completely absent. |
-| Dimension descriptions use surface-appropriate language | 0-50 | CLI: subprocess commands, exit codes, stdout/stderr. TUI: keyboard input, view descriptions, await semantics. WebUI: user interactions, page elements, async operations. API: HTTP methods, status codes, request/response bodies. Mobile: tap gestures, screen navigation, deep links. Using inappropriate surface language (e.g., DOM selectors in CLI) indicates poor adaptation. |
+| Mandatory derived Outcomes from surface `required_outcomes` are present | 0-60 | Check the surface type's `required_outcomes` rules. For CLI: `not-found` + `already-exists` must be considered. For Web: `validation-error` + `session-expired`. For API: `unauthorized` per authenticated endpoint. Score 0 if mandatory Outcomes are completely absent. |
+| Dimension descriptions use surface-appropriate language | 0-50 | CLI: subprocess commands, exit codes, stdout/stderr. TUI: keyboard input, view descriptions, await semantics. Web: user interactions, page elements, async operations. API: HTTP methods, status codes, request/response bodies. Mobile: tap gestures, screen navigation, deep links. Using inappropriate surface language (e.g., DOM selectors in CLI) indicates poor adaptation. |
 | TUI async Contracts include timeout Outcomes with await semantics | 0-40 | For TUI surface: any Contract with async Cmds must include a timeout Outcome with proper `await <N>ms` semantics, and the timeout Outcome must report the timed-out Cmd name. Missing timeout Outcomes for async steps is a critical failure for TUI. Non-TUI surfaces should score full points here. |
 
 ### 6. Internal Consistency (一致性) -- 150 pts
@@ -108,7 +108,7 @@ Evaluates whether Journey Invariants hold across all Step Contracts and cross-Co
 
 - **Missing mandatory dimension in any Outcome**: 0 pts for Completeness
 - **Hallucinated unclassified claim**: -30 pts per instance (Fact Alignment)
-- **Surface type violation** (e.g., WebUI selectors in CLI Contract): -25 pts per instance (Surface Fitness)
+- **Surface type violation** (e.g., Web selectors in CLI Contract): -25 pts per instance (Surface Fitness)
 - **Invariant violation in any Contract**: -40 pts per violation (Internal Consistency)
 - **Precondition overlap across Outcomes**: -20 pts per ambiguous pair (Precondition Exclusivity)
 - **Missing `## Journey Invariants` section**: 0 pts for Completeness Journey Invariants criterion

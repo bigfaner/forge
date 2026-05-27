@@ -6,7 +6,7 @@
 
 ## UI Element Mapping
 
-When `<HAS_UI>` or `<UI_ONLY>` conditions apply, add these rows to the Element Mapping table in Step 2:
+When this rule is loaded (i.e., `ui/ui-design.md` OR `prd/prd-ui-functions.md` exists), add these rows to the Element Mapping table in Step 2:
 
 | Design Element | Source | Task Type |
 |---|---|---|

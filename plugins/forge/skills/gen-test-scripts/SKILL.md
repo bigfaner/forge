@@ -28,6 +28,16 @@ Check previous stage artifacts. Abort and prompt user if missing:
 | At least one Contract file in `docs/features/<slug>/testing/<journey>/contracts/` | Run `/gen-contracts` first |
 | Eval report for all Contracts (`testing/<journey>/.eval-report.md`) | Run `/eval --type contract` first. **Blocker**: do not proceed if any Contract scored below target. |
 
+### SKIP_EVAL_GATE Mode
+
+When the task context contains `SKIP_EVAL_GATE=true` (injected by Quick mode task templates), the eval report prerequisite is **conditionally waived**:
+
+- **Skip**: eval-contract report check (`testing/<journey>/.eval-report.md`) is bypassed entirely
+- **Proceed directly**: move to Step 0 (Load Convention Files) and Step 1 (Code Reconnaissance) without eval verification
+- **Mark output**: every test file generated under SKIP_EVAL_GATE MUST include a header comment: `// SKIP_EVAL_GATE: generated without eval-contract verification. Review with extra scrutiny.`
+
+**When SKIP_EVAL_GATE is NOT set** (Breakdown mode or manual `/gen-test-scripts` invocation): the eval report Blocker remains mandatory. Behavior is unchanged.
+
 ## Step 0: Load Convention Files
 
 Load test framework knowledge from Convention files (no Profile/CLI dependency).
@@ -72,7 +82,7 @@ Determine the project's interface surface type to drive per-surface generation s
 Load `rules/step-0.5-validation.md` for the complete surface detection and strategy application logic, including:
 - Reading surface configuration from `.forge/config.yaml`
 - Auto-detection fallback from code reconnaissance
-- Surface strategy table (CLI/TUI/WebUI/API/Mobile ratio targets)
+- Surface strategy table (CLI/TUI/Web/API/Mobile ratio targets)
 - Surface-driven generation strategy for Step 3.0
 
 ## Test Type Terminology
@@ -199,7 +209,7 @@ For each Contract step, generate test code following the resolved framework's co
 
 ### 3.0 Surface-Driven Generation Strategy
 
-Apply the surface type detected in Step 0.5 to constrain the generation plan. Load `rules/step-0.5-validation.md` section "Surface-Driven Generation Strategy" for per-surface ratio targets, execution models, and generation constraints (CLI, TUI, WebUI, API, Mobile).
+Apply the surface type detected in Step 0.5 to constrain the generation plan. Load `rules/step-0.5-validation.md` section "Surface-Driven Generation Strategy" for per-surface ratio targets, execution models, and generation constraints (CLI, TUI, Web, API, Mobile).
 
 **Test isolation**: Generated tests must follow isolation conventions per `rules/test-isolation.md` (located in the run-tests skill directory, resolve relative to the skills parent directory) — every test must own its environment, no dependency on real project state.
 
@@ -280,11 +290,7 @@ All framework-specific rules (test runner, assertion library, imports, HTTP clie
 
 Convention files contain all framework-specific patterns (imports, assertion syntax, helpers, anti-patterns). Use the Convention's Code Style and Helpers sections as the template for generated code.
 
-If the project has a custom template directory configured (`.forge/config.yaml` `test-template-dir`), load templates from that path. Otherwise, use the Convention file content as the authoritative template source.
-
-<HARD-RULE>
-**Template override**: If `test-template-dir` is set in config, load templates from that directory. Otherwise, use Convention file patterns as the template source.
-</HARD-RULE>
+Use the Convention file content as the authoritative template source for all framework-specific patterns.
 
 ## Step 4: Compile Gate
 

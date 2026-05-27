@@ -436,6 +436,125 @@ func TestExtractSourceFiles(t *testing.T) {
 	}
 }
 
+func TestGroupFilesByDir(t *testing.T) {
+	tests := []struct {
+		name  string
+		files string
+		want  int // number of groups (0 = nil returned, meaning single group or no files)
+	}{
+		{
+			name:  "empty returns nil",
+			files: "",
+			want:  0,
+		},
+		{
+			name:  "fallback message returns nil",
+			files: "See error output for affected files",
+			want:  0,
+		},
+		{
+			name:  "single file returns nil",
+			files: "pkg/handler.go",
+			want:  0,
+		},
+		{
+			name:  "two files same directory returns nil",
+			files: "pkg/handler.go, pkg/service.go",
+			want:  0,
+		},
+		{
+			name:  "two files different directories returns two groups",
+			files: "pkg/handler.go, internal/service.go",
+			want:  2,
+		},
+		{
+			name:  "three files two directories returns two groups",
+			files: "pkg/handler.go, pkg/service.go, internal/main.go",
+			want:  2,
+		},
+		{
+			name:  "three files three directories returns three groups",
+			files: "a/handler.go, b/service.go, c/main.go",
+			want:  3,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			groups := groupFilesByDir(tc.files)
+			if tc.want == 0 {
+				if groups != nil {
+					t.Errorf("expected nil, got %v", groups)
+				}
+			} else {
+				if len(groups) != tc.want {
+					t.Errorf("expected %d groups, got %d: %v", tc.want, len(groups), groups)
+				}
+			}
+		})
+	}
+}
+
+func TestAddFixTask_MultiDirCreatesMultipleTasks(t *testing.T) {
+	projectRoot, featureSlug, indexPath := helperSetup(t)
+
+	// Simulate compile error with files in two different directories
+	output := "pkg/handler.go:10: error\ninternal/service.go:20: error"
+	taskID, addErr := addFixTask(projectRoot, featureSlug, "compile", output, "tests/results/out.txt")
+	if addErr != nil {
+		t.Fatalf("unexpected error: %v", addErr)
+	}
+	if taskID == "" {
+		t.Fatal("expected non-empty task ID")
+	}
+
+	// Should have created 2 tasks (one per directory)
+	updatedIndex, err := task.LoadIndex(indexPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Count tasks with "fix compile:" prefix
+	fixCount := 0
+	for _, t := range updatedIndex.TasksMap() {
+		if strings.HasPrefix(t.Title, "fix compile:") {
+			fixCount++
+		}
+	}
+	if fixCount != 2 {
+		t.Errorf("expected 2 fix tasks (one per directory), got %d", fixCount)
+	}
+}
+
+func TestAddFixTask_SingleDirCreatesOneTask(t *testing.T) {
+	projectRoot, featureSlug, indexPath := helperSetup(t)
+
+	// Simulate compile error with files in the same directory
+	output := "pkg/handler.go:10: error\npkg/service.go:20: error"
+	taskID, addErr := addFixTask(projectRoot, featureSlug, "compile", output, "tests/results/out.txt")
+	if addErr != nil {
+		t.Fatalf("unexpected error: %v", addErr)
+	}
+	if taskID == "" {
+		t.Fatal("expected non-empty task ID")
+	}
+
+	// Should have created 1 task
+	updatedIndex, err := task.LoadIndex(indexPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fixCount := 0
+	for _, t := range updatedIndex.TasksMap() {
+		if strings.HasPrefix(t.Title, "fix compile:") {
+			fixCount++
+		}
+	}
+	if fixCount != 1 {
+		t.Errorf("expected 1 fix task (same directory), got %d", fixCount)
+	}
+}
+
 // helperSetup creates a minimal feature with a completed task for addFixTask tests.
 func helperSetup(t *testing.T) (projectRoot, featureSlug, indexPath string) {
 	t.Helper()
@@ -592,6 +711,79 @@ func TestAddFixTask_TypeFromStep(t *testing.T) {
 			}
 			if addedTask.Type != tc.wantType {
 				t.Errorf("type for step %q = %q, want %q", tc.step, addedTask.Type, tc.wantType)
+			}
+		})
+	}
+}
+
+func TestAddFixTask_CleanupTaskNonBreaking(t *testing.T) {
+	// Cleanup tasks (fmt/lint) should use Breaking=false and EstimatedTime="15min"
+	tests := []struct {
+		step string
+	}{
+		{"fmt"},
+		{"lint"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.step, func(t *testing.T) {
+			projectRoot, featureSlug, indexPath := helperSetup(t)
+			taskID, addErr := addFixTask(projectRoot, featureSlug, tc.step, "handler.go:10: fail", "tests/results/fake.txt")
+			if addErr != nil {
+				t.Fatalf("unexpected error: %v", addErr)
+			}
+			if taskID == "" {
+				t.Fatal("expected non-empty task ID")
+			}
+			updatedIndex, err := task.LoadIndex(indexPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			addedTask, exists := updatedIndex.ByID(taskID)
+			if !exists {
+				t.Fatalf("task %s not found in index", taskID)
+			}
+			if addedTask.Breaking {
+				t.Errorf("cleanup task for step %q: Breaking=true, want false", tc.step)
+			}
+			if addedTask.EstimatedTime != "15min" {
+				t.Errorf("cleanup task for step %q: EstimatedTime=%q, want 15min", tc.step, addedTask.EstimatedTime)
+			}
+		})
+	}
+}
+
+func TestAddFixTask_FixTaskBreakingWithEstimatedTime(t *testing.T) {
+	// Fix tasks (compile/test/unit-test) should use Breaking=true and EstimatedTime="30min"
+	tests := []struct {
+		step string
+	}{
+		{"compile"},
+		{"unit-test"},
+		{"test"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.step, func(t *testing.T) {
+			projectRoot, featureSlug, indexPath := helperSetup(t)
+			taskID, addErr := addFixTask(projectRoot, featureSlug, tc.step, "handler.go:10: fail", "tests/results/fake.txt")
+			if addErr != nil {
+				t.Fatalf("unexpected error: %v", addErr)
+			}
+			if taskID == "" {
+				t.Fatal("expected non-empty task ID")
+			}
+			updatedIndex, err := task.LoadIndex(indexPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			addedTask, exists := updatedIndex.ByID(taskID)
+			if !exists {
+				t.Fatalf("task %s not found in index", taskID)
+			}
+			if !addedTask.Breaking {
+				t.Errorf("fix task for step %q: Breaking=false, want true", tc.step)
+			}
+			if addedTask.EstimatedTime != "30min" {
+				t.Errorf("fix task for step %q: EstimatedTime=%q, want 30min", tc.step, addedTask.EstimatedTime)
 			}
 		})
 	}
@@ -935,18 +1127,19 @@ func TestHandleGateFailure_DistinctReasons(t *testing.T) {
 	tests := []struct {
 		step          string
 		fixID         string
+		breaking      bool
 		wantContains  string
 		wantFixAction string
 		wantClaim     bool   // expect "task claim" in output
 		wantManual    bool   // expect "task add --type coding.fix" in output
 		wantFixMsg    string // expect this fix task message
 	}{
-		{"compile", "fix-1", "Project compilation failed in quality-gate hook", "fix compilation errors", true, false, "Fix task fix-1 added (P0, breaking)"},
-		{"lint", "fix-2", "Lint check failed in quality-gate hook", "fix lint errors", true, false, "Fix task fix-2 added (P0, breaking)"},
-		{"unit-test", "fix-3", "Unit tests failed in quality-gate hook", "fix failing unit tests", true, false, "Fix task fix-3 added (P0, breaking)"},
-		{"test", "fix-4", "Advanced tests failed in quality-gate hook", "fix failing tests", true, false, "Fix task fix-4 added (P0, breaking)"},
-		{"unknown-step", "fix-5", "Unknown-step check failed in quality-gate hook", "fix the issue", true, false, "Fix task fix-5 added (P0, breaking)"},
-		{"compile", "", "Project compilation failed in quality-gate hook", "fix compilation errors", false, true, "Failed to add fix task automatically"},
+		{"compile", "fix-1", true, "Project compilation failed in quality-gate hook", "fix compilation errors", true, false, "Fix task fix-1 added (P0, breaking=true)"},
+		{"lint", "fix-2", false, "Lint check failed in quality-gate hook", "fix lint errors", true, false, "Fix task fix-2 added (P0, breaking=false)"},
+		{"unit-test", "fix-3", true, "Unit tests failed in quality-gate hook", "fix failing unit tests", true, false, "Fix task fix-3 added (P0, breaking=true)"},
+		{"test", "fix-4", true, "Advanced tests failed in quality-gate hook", "fix failing tests", true, false, "Fix task fix-4 added (P0, breaking=true)"},
+		{"unknown-step", "fix-5", true, "Unknown-step check failed in quality-gate hook", "fix the issue", true, false, "Fix task fix-5 added (P0, breaking=true)"},
+		{"compile", "", true, "Project compilation failed in quality-gate hook", "fix compilation errors", false, true, "Failed to add fix task automatically"},
 	}
 	for _, tc := range tests {
 		name := tc.step
@@ -955,7 +1148,7 @@ func TestHandleGateFailure_DistinctReasons(t *testing.T) {
 		}
 		t.Run(name, func(t *testing.T) {
 			if os.Getenv("TEST_HANDLE_GATE") == "1" {
-				_ = handleGateFailure(tc.step, "tests/results/fake.txt", tc.fixID, "some error detail")
+				_ = handleGateFailure(tc.step, "tests/results/fake.txt", tc.fixID, "some error detail", tc.breaking)
 				return
 			}
 			cmd := exec.Command(os.Args[0], "-test.run=TestHandleGateFailure_DistinctReasons/"+name)
@@ -1632,6 +1825,20 @@ func TestInferSurface(t *testing.T) {
 			name:            "first file from comma-separated list",
 			configYAML:      "surfaces:\n  backend: api\n",
 			sourceFiles:     "backend/handler.go, frontend/App.tsx",
+			wantSurfaceKey:  "backend",
+			wantSurfaceType: "api",
+		},
+		{
+			name:            "second file matches when first does not",
+			configYAML:      "surfaces:\n  admin-panel: web\n  payment-service: api\n",
+			sourceFiles:     "src/unknown.go, admin-panel/src/App.tsx",
+			wantSurfaceKey:  "admin-panel",
+			wantSurfaceType: "web",
+		},
+		{
+			name:            "third file matches when first two do not",
+			configYAML:      "surfaces:\n  backend: api\n  frontend: web\n",
+			sourceFiles:     "readme.go, docs.go, backend/handler.go",
 			wantSurfaceKey:  "backend",
 			wantSurfaceType: "api",
 		},

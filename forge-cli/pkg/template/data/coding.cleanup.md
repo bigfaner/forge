@@ -2,10 +2,10 @@
 id: "{{ID}}"
 title: "{{TITLE}}"
 priority: "P0"
-estimated_time: "15min"
+estimated_time: "{{ESTIMATED_TIME}}"
 dependencies: []
 status: pending
-breaking: true
+breaking: false
 type: "coding.cleanup"
 surface-key: ""
 surface-type: ""

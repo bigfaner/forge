@@ -6,6 +6,9 @@ estimated_time: "{{ESTIMATED_TIME}}"
 dependencies: [{{DEPENDENCIES}}]
 type: "doc"
 mainSession: false
+# Note: surface-key and surface-type fields are intentionally absent from doc tasks.
+# Doc tasks produce non-compilable output (markdown, specs, templates) and do not
+# interact with the quality gate or test pipeline, so surface routing is unnecessary.
 ---
 
 # {{ID}}: {{TITLE}}

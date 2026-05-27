@@ -93,6 +93,20 @@ One task file per design element. Set `breaking: true` if modifying shared inter
 
 IF `rules/existing-code-split.md` loaded, apply split for shared-code modifications. IF `rules/db-schema.md` loaded, apply schema task rules. IF `rules/ui-placement.md` loaded, apply UI Reference File Requirements.
 
+### Breaking Task Integration Test Impact Assessment
+
+When setting `breaking: true` on a task, the task description MUST include an integration test impact assessment. This ensures fix-tasks are grouped correctly by test suite (directory) rather than by problem type.
+
+**Assessment format** (add to `## Implementation Notes`):
+```
+### Integration Test Impact
+- Affected test suite(s): <test directory paths>
+- Expected fixture changes: <which test fixtures need updating>
+- Risk level: low/medium/high
+```
+
+**Grouping rule**: fix-tasks for failures in the same test directory are merged into a single fix-task. Same directory = same task.
+
 Populate **User Stories** from `prd/prd-user-stories.md` or note "No direct user story mapping."
 
 **Hard Rules**: fill `{{HARD_RULES}}` only for critical constraints. Leave empty for normal tasks.
@@ -124,12 +138,13 @@ For each non-UI business task, populate `## Reference Files` with precise tech-d
 **Note**: This is heuristic guidance for LLM execution, not a deterministic algorithm. The agent performing breakdown-tasks uses judgment to select the most relevant sections.
 
 ### Surface-Key/Type Assignment
-See `rules/scope-to-surface-key.md` for the full resolution procedure. Summary:
+See `rules/scope-to-surface-key.md` for the full resolution procedure. Uses a two-layer strategy:
 
-1. Collect all affected file paths from the task
-2. For each file, run `forge surfaces --json <file-path>` to get `{key, type}`
-3. Merge results: single surface → use its key+type; mixed/no match → leave both empty
-4. Write `surface-key` and `surface-type` into task frontmatter
+1. **Project-level shortcut** (single-surface projects): Run `forge surfaces --json` once with no file argument. If the result is a single surface (array length 1), all tasks share that surface-key and surface-type. **Skip per-file `forge surfaces` calls entirely** — this eliminates N*M redundant CLI invocations. Set both fields on every task.
+
+2. **File-level query** (multi-surface projects): For each task, examine affected file paths. Use path prefix matching against known surface directories first. Only call `forge surfaces --json <file-path>` for files whose path prefix is ambiguous across surfaces. Merge results: single surface → use its key+type; mixed/no match → leave both empty.
+
+3. Write `surface-key` and `surface-type` into task frontmatter.
 
 If `forge surfaces --json` fails or returns no surfaces configured, set both fields to empty strings and continue. Do NOT block task generation.
 
@@ -170,7 +185,7 @@ forge task add --type coding.fix --title "Fix: <desc>" --source-task-id <TASK_ID
 ```bash
 forge task index --feature <slug>
 ```
-Scans `.md`, auto-generates stage-gates + test tasks (based on `interfaces` in `.forge/config.yaml`), produces `index.json`, validates.
+Scans `.md`, auto-generates stage-gates + test tasks (based on `surfaces` in `.forge/config.yaml`), produces `index.json`, validates.
 
 ## Step 6: Validate
 ```bash
@@ -180,8 +195,23 @@ forge task validate-index docs/features/<slug>/tasks/index.json
 ## Step 7: Update Manifest
 Read `templates/manifest-update-tasks.md`. Fill 5-column traceability (PRD Section | Design Section | UI Component | Placement | Tasks; "---" for N/A). Advance status to `tasks`.
 
+## Step 8: Commit Planning Artifacts
+
+Only execute if Step 6 validation passed. If validation failed, fix issues first.
+
+<HARD-RULE>
+Stage only planning artifact paths — never use `git add -A` or `git add .`.
+</HARD-RULE>
+
+```bash
+git add docs/features/<slug>/tasks/*.md docs/features/<slug>/tasks/index.json docs/features/<slug>/manifest.md docs/features/<slug>/prd/ docs/features/<slug>/design/ docs/features/<slug>/ui/
+git commit -m "docs(<slug>): add breakdown-tasks planning artifacts"
+```
+
+Other uncommitted changes remain unstaged.
+
 ## Output Checklist
-- [ ] `tasks/phase-inventory.json` written
+- [ ] `tasks/phase-inventory.json` written (only if `rules/phase-detection.md` was loaded; skip for artifact-driven fallback)
 - [ ] Task files follow naming conventions
 - [ ] `index.json` valid, `forge task validate-index` passes
 - [ ] Stage-gate files auto-generated
@@ -194,3 +224,4 @@ Read `templates/manifest-update-tasks.md`. Fill 5-column traceability (PRD Secti
 - [ ] User Stories populated
 - [ ] Test tasks match interface config
 - [ ] `manifest.md` updated with traceability + `status: tasks`
+- [ ] Planning artifacts committed (task .md files, index.json, manifest.md)

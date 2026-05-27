@@ -834,6 +834,63 @@ func TestGenSurfaceTestType(t *testing.T) {
 	}
 }
 
+func TestIsValidType(t *testing.T) {
+	t.Run("exact match returns true for all ValidTypes", func(t *testing.T) {
+		for typ := range ValidTypes {
+			if !IsValidType(typ) {
+				t.Errorf("IsValidType(%q) = false, want true (exact match)", typ)
+			}
+		}
+	})
+
+	t.Run("surface-suffixed variants pass validation", func(t *testing.T) {
+		surfaceVariants := []string{
+			"test.gen-scripts.cli",
+			"test.gen-scripts.api",
+			"test.gen-scripts.web",
+			"test.run.cli",
+			"test.run.api",
+			"test.verify-regression.web",
+			"test.verify-regression.cli",
+		}
+		for _, typ := range surfaceVariants {
+			if !IsValidType(typ) {
+				t.Errorf("IsValidType(%q) = false, want true (surface variant)", typ)
+			}
+		}
+	})
+
+	t.Run("non-generated types with suffix still rejected", func(t *testing.T) {
+		// coding.feature.cli is NOT a valid surface variant — coding types don't get surface-suffixed
+		if IsValidType("coding.feature.cli") {
+			t.Error("IsValidType('coding.feature.cli') = true, want false")
+		}
+	})
+
+	t.Run("unknown types rejected", func(t *testing.T) {
+		if IsValidType("unknown-type") {
+			t.Error("IsValidType('unknown-type') = true, want false")
+		}
+		if IsValidType("") {
+			t.Error("IsValidType('') = true, want false")
+		}
+		if !IsValidType("test.gen-scripts") {
+			t.Error("IsValidType('test.gen-scripts') = false, want true (exact match)")
+		}
+	})
+
+	t.Run("only system types support surface suffix", func(t *testing.T) {
+		// doc.review.cli — doc.review IS a system type, so this should pass
+		if !IsValidType("doc.review.cli") {
+			t.Error("IsValidType('doc.review.cli') = false, want true")
+		}
+		// gate.cli — gate IS a system type, so this should pass
+		if !IsValidType("gate.cli") {
+			t.Error("IsValidType('gate.cli') = false, want true")
+		}
+	})
+}
+
 func TestRecordDataJSONRoundTrip(t *testing.T) {
 	rd := &RecordData{
 		Status:        "completed",

@@ -293,6 +293,7 @@ func ApplyVars(tmpl string, opts AddTaskOpts) (string, error) {
 		"PRIORITY":       opts.Priority,
 		"DESCRIPTION":    opts.Description,
 		"SOURCE_TASK_ID": opts.SourceTaskID,
+		"ESTIMATED_TIME": opts.EstimatedTime,
 	}
 	for key, val := range opts.Vars {
 		vars[key] = val

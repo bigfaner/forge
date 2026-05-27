@@ -134,7 +134,6 @@ func CoverageConfigDefaults() CoverageConfig {
 			"coding.fix":         {Type: "percentage", Percentage: &fix},
 			"coding.refactor":    {Type: "maintain"},
 			"coding.cleanup":     {Type: "maintain"},
-			"coding.clean":       {Type: "maintain"},
 		},
 	}
 }

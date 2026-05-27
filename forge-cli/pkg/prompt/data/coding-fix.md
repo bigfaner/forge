@@ -1,6 +1,6 @@
 TASK_ID: {{TASK_ID}}
 TASK_FILE: {{TASK_FILE}}
-SCOPE: {{SURFACE_KEY}}
+SURFACE_KEY: {{SURFACE_KEY}}
 {{PHASE_SUMMARY}}
 
 You are an elite error fixer specialized in diagnosing and resolving compilation errors, test failures, and verification issues.

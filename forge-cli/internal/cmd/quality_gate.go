@@ -169,7 +169,7 @@ func runQualityGate(_ *cobra.Command, _ []string) error {
 		if fixErr != nil {
 			fmt.Fprintf(os.Stderr, "WARNING: %v\n", fixErr)
 		}
-		gateBlockErr = handleGateFailure(step, errorDocPath, fixID, just.ExtractConciseError(output, 5))
+		gateBlockErr = handleGateFailure(step, errorDocPath, fixID, just.ExtractConciseError(output, 5), fixTypeFromStep(step) == task.TypeCodingFix)
 	})
 	if gateBlockErr != nil {
 		os.Exit(0)
@@ -187,7 +187,7 @@ func runQualityGate(_ *cobra.Command, _ []string) error {
 	if !unitPassed {
 		unitOutput := "" // output already written by runUnitTestStep
 		errorDocPath := "tests/results/unit-raw-output.txt"
-		if err := handleGateFailure("unit-test", errorDocPath, unitFixID, just.ExtractConciseError(unitOutput, 5)); err != nil {
+		if err := handleGateFailure("unit-test", errorDocPath, unitFixID, just.ExtractConciseError(unitOutput, 5), true); err != nil {
 			os.Exit(0)
 		}
 	}
@@ -265,7 +265,7 @@ func runTestRegressionLegacy(projectRoot, featureSlug string) error {
 		if fixErr != nil {
 			fmt.Fprintf(os.Stderr, "WARNING: %v\n", fixErr)
 		}
-		return handleGateFailure("test", errorDocPath, fixID, just.ExtractConciseError(regressionOutput, 5))
+		return handleGateFailure("test", errorDocPath, fixID, just.ExtractConciseError(regressionOutput, 5), true)
 	}
 	return nil
 }
@@ -424,7 +424,8 @@ func probeWithRetry(projectRoot, probeRecipe string, maxRetries int, interval ti
 // handleGateFailure prints the hook JSON block reason and returns an error
 // signalling that the gate blocked. The caller (RunE handler) decides exit behavior.
 // fixID is the ID returned by addFixTask; empty means task creation failed.
-func handleGateFailure(step, errorDocPath, fixID, concise string) error {
+// breaking indicates whether the fix task blocks downstream tasks.
+func handleGateFailure(step, errorDocPath, fixID, concise string, breaking bool) error {
 	action := "run `forge task add --type coding.fix` to create one manually, then `forge task claim`"
 	if fixID != "" {
 		action = "run `forge task claim` to pick it up"
@@ -454,7 +455,7 @@ func handleGateFailure(step, errorDocPath, fixID, concise string) error {
 
 	var fixMsg string
 	if fixID != "" {
-		fixMsg = fmt.Sprintf("Fix task %s added (P0, breaking)", fixID)
+		fixMsg = fmt.Sprintf("Fix task %s added (P0, breaking=%v)", fixID, breaking)
 	} else {
 		fixMsg = "Failed to add fix task automatically"
 	}
@@ -506,31 +507,42 @@ func runUnitTestStep(projectRoot, featureSlug string, runTest testRunFunc) (bool
 }
 
 // inferSurface attempts to determine the surface-key and surface-type for a
-// fix-task by querying forge surfaces with the first extracted source file path.
+// fix-task by querying forge surfaces with all extracted source file paths.
 // Returns ("", "") on any failure (no surfaces configured, no match, parse error)
 // — the caller falls back to empty values and fix-task creation proceeds unblocked.
+// Uses all source files (not just the first) to correctly handle multi-surface projects
+// where different files may belong to different surfaces.
 func inferSurface(projectRoot, sourceFiles string) (surfaceKey, surfaceType string) {
 	surfaces, err := forgeconfig.ReadSurfaces(projectRoot)
 	if err != nil || len(surfaces) == 0 {
 		return "", ""
 	}
 
-	// Extract the first source file path from the comma-separated list.
+	// Parse all source file paths from the comma-separated list.
 	// sourceFiles may be "See error output for affected files" when no files found.
 	if sourceFiles == "" || strings.HasPrefix(sourceFiles, "See error") {
 		return "", ""
 	}
-	parts := strings.SplitN(sourceFiles, ",", 2)
-	firstFile := strings.TrimSpace(parts[0])
-	if firstFile == "" {
+
+	var files []string
+	for _, part := range strings.Split(sourceFiles, ",") {
+		f := strings.TrimSpace(part)
+		if f != "" {
+			files = append(files, f)
+		}
+	}
+	if len(files) == 0 {
 		return "", ""
 	}
 
-	match, err := forgeconfig.MatchSurface(surfaces, firstFile)
-	if err != nil {
-		return "", ""
+	// Try each file until one matches a configured surface.
+	for _, file := range files {
+		match, err := forgeconfig.MatchSurface(surfaces, file)
+		if err == nil {
+			return match.Key, match.Type
+		}
 	}
-	return match.Key, match.Type
+	return "", ""
 }
 
 // sourceFileRe matches source file paths followed by :line or :line:col patterns.
@@ -603,11 +615,73 @@ func fixTypeFromStep(step string) string {
 	}
 }
 
-// addFixTask creates a fix task using the same internal API as `forge task add`.
+// addFixTask creates fix tasks grouped by test suite (directory) using the same
+// internal API as `forge task add`. Source files are extracted from the output and
+// grouped by directory. Each directory group becomes a separate fix-task, enabling
+// parallel execution and bounded scope. Returns the first task ID on success.
+// Returns ("", error) on failure: template not found, task add failure, markdown creation failure, or cap exceeded.
+func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) (string, error) {
+	sourceFiles := extractSourceFiles(output)
+
+	// Group source files by directory for parallel execution.
+	groups := groupFilesByDir(sourceFiles)
+
+	// If no meaningful groups (e.g. "See error output" fallback), create a single task.
+	if len(groups) == 0 {
+		return addSingleFixTask(projectRoot, featureSlug, step, sourceFiles, output, errorDocPath)
+	}
+
+	// One task per directory group.
+	var firstID string
+	for _, group := range groups {
+		id, err := addSingleFixTask(projectRoot, featureSlug, step, group, output, errorDocPath)
+		if err != nil {
+			// If a group fails (e.g. cap reached), return the error.
+			// Already-created tasks remain in the index.
+			return firstID, err
+		}
+		if firstID == "" {
+			firstID = id
+		}
+	}
+	return firstID, nil
+}
+
+// groupFilesByDir splits comma-separated source files into groups by directory.
+// Files in the same directory stay in one group. Returns nil if files is empty
+// or the fallback message.
+func groupFilesByDir(files string) []string {
+	if files == "" || strings.HasPrefix(files, "See error") {
+		return nil
+	}
+
+	dirMap := make(map[string][]string)
+	for _, f := range strings.Split(files, ",") {
+		f = strings.TrimSpace(f)
+		if f == "" {
+			continue
+		}
+		dir := filepath.Dir(f)
+		dirMap[dir] = append(dirMap[dir], f)
+	}
+
+	if len(dirMap) <= 1 {
+		// All files in one directory (or no files) — single group.
+		return nil
+	}
+
+	var groups []string
+	for _, dirFiles := range dirMap {
+		groups = append(groups, strings.Join(dirFiles, ", "))
+	}
+	return groups
+}
+
+// addSingleFixTask creates a single fix task using the same internal API as `forge task add`.
 // Mirrors executeAdd() from add.go: template defaults -> AddTask -> CreateTaskMarkdown -> EnsureForgeState.
 // Returns (taskID, nil) on success.
 // Returns ("", error) on failure: template not found, task add failure, markdown creation failure, or cap exceeded.
-func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) (string, error) {
+func addSingleFixTask(projectRoot, featureSlug, step, sourceFiles, output, errorDocPath string) (string, error) {
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
 
 	// Check cap before creating a new fix-task.
@@ -622,8 +696,6 @@ func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) (st
 			return "", ErrMaxFixTasks
 		}
 	}
-
-	sourceFiles := extractSourceFiles(output)
 
 	// Infer surface-key/type from the first extracted source file path.
 	// Falls back to empty strings on any failure (no surfaces, no match, etc.)
@@ -640,17 +712,27 @@ func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) (st
 		testScript, errorDocPath, just.ExtractConciseError(output, 10),
 	)
 
-	// Build opts — Priority/Breaking/EstimatedTime intentionally hardcoded
-	// (not read from template defaults) since this is a programmatic caller.
+	// Build opts — Priority/Breaking/EstimatedTime sourced from template defaults
+	// when available (dual-source truth: opts is authoritative, template provides defaults).
 	// SourceTaskID is deliberately empty (project-wide gate has no source task).
 	// Vars["SOURCE_TASK_ID"] is "N/A (project-wide gate)" for template rendering.
 	taskType := fixTypeFromStep(step)
 
+	// Derive Breaking and EstimatedTime from template defaults (dual-source truth).
+	// For coding.cleanup (fmt/lint failures): Breaking=false, EstimatedTime="15min".
+	// For coding.fix (compile/test failures): Breaking=true, EstimatedTime="30min".
+	breaking := true
+	estimatedTime := "30min"
+	if defs, err := tmpl.GetDefaults(taskType); err == nil {
+		breaking = defs.Breaking
+		estimatedTime = defs.EstimatedTime
+	}
+
 	opts := task.AddTaskOpts{
 		Title:         title,
 		Priority:      "P0",
-		EstimatedTime: "30min",
-		Breaking:      true,
+		EstimatedTime: estimatedTime,
+		Breaking:      breaking,
 		Description:   description,
 		Template:      taskType,
 		Type:          taskType,
@@ -688,6 +770,6 @@ func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) (st
 		fmt.Fprintf(os.Stderr, "WARNING: failed to update .forge/state.json: %v\n", err)
 	}
 
-	fmt.Fprintf(os.Stderr, "Fix task %s added (P0, breaking)\n", id)
+	fmt.Fprintf(os.Stderr, "Fix task %s added (P0, breaking=%v)\n", id, breaking)
 	return id, nil
 }

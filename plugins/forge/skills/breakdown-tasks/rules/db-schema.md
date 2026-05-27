@@ -31,9 +31,9 @@ Determine the `breaking` field based on the operation type:
 
 Mixed scenarios (some ALTER, some CREATE): set `breaking: true` on tasks that ALTER existing tables, `breaking: false` on tasks that only CREATE new tables.
 
-### Scope Assignment
+### Surface-Key/Type Assignment
 
-All schema tasks use `scope: "backend"`.
+All schema tasks typically resolve to `surface-type: "api"` or `"cli"` depending on the project. Use `forge surfaces --json <migration-file-path>` to determine the correct `surface-key` and `surface-type`. If no surfaces are configured, set both fields to empty strings.
 
 ### Dependency Rule
 
@@ -44,6 +44,6 @@ Schema tasks depend on interface tasks (if any), since the migration may need ty
 This rule file depends on the following sections in the skeleton SKILL.md:
 
 - **Step 2: Map -> Tasks** — Element Mapping table (adds DB schema row)
-- **Step 4a: Create Task Files** — task file creation, breaking classification, scope assignment
+- **Step 4a: Create Task Files** — task file creation, breaking classification, surface-key/type assignment
 
 If either of these sections changes in the skeleton, verify that the schema task rules in this file remain consistent.

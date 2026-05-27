@@ -88,5 +88,3 @@ auto:
 #     type: maintain
 #   coding.cleanup:
 #     type: maintain
-#   coding.clean:
-#     type: maintain

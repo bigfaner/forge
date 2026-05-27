@@ -35,7 +35,7 @@ var templateDefaults = map[string]Defaults{
 	},
 	"coding.cleanup": {
 		Priority:      "P0",
-		Breaking:      true,
+		Breaking:      false,
 		EstimatedTime: "15min",
 		Type:          "coding.cleanup",
 		IDPrefix:      "fix",

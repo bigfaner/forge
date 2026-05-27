@@ -118,6 +118,28 @@ var ValidTypes = map[string]bool{
 	TypeCleanCode:            true,
 }
 
+// IsValidType checks whether a task type string is valid.
+// Returns true for:
+//   - Exact matches in ValidTypes (base types like "test.gen-scripts")
+//   - Surface-suffixed variants of system types (e.g. "test.gen-scripts.cli")
+//
+// Surface-suffixed types follow the pattern {base-type}.{surface-key} where
+// the base type (with the last dot-segment stripped) is a known system type.
+// Non-generated types (coding.*, doc without subtype) do NOT accept surface
+// suffixes — this preserves strict validation for user-authored task types.
+func IsValidType(typ string) bool {
+	if ValidTypes[typ] {
+		return true
+	}
+	// Surface-suffixed variant: strip last segment and check if base is a system type.
+	// Only system types (auto-generated) can have surface suffixes.
+	if idx := strings.LastIndex(typ, "."); idx >= 0 {
+		base := typ[:idx]
+		return SystemTypes[base]
+	}
+	return false
+}
+
 // SystemTypes is the set of auto-generated system task types (13 total).
 // These types are created by the forge pipeline, not by users.
 // Dual-identity types (doc.consolidate, doc.drift) are excluded because

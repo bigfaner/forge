@@ -43,6 +43,10 @@ func InferType(id string, surfaces map[string]string) string {
 		return TypeDocDrift
 	case id == "T-clean-code":
 		return TypeCleanCode
+	case id == "T-eval-journey":
+		return TypeEvalJourney
+	case id == "T-eval-contract":
+		return TypeEvalContract
 	case strings.HasPrefix(id, "fix-") || strings.HasPrefix(id, "disc-"):
 		return TypeCodingFix
 	case id == "T-review-doc":
