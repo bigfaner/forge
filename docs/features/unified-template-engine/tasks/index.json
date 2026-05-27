@@ -8,7 +8,7 @@
       "title": "定义 promptTemplateData 并迁移 renderTemplate 到 text/template",
       "priority": "P0",
       "estimatedTime": "2h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-prompt-render-engine.md",
       "record": "records/1-prompt-render-engine.md",
       "breaking": true,

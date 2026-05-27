@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"text/template"
 
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/forgeconfig"
@@ -18,6 +19,38 @@ import (
 
 //go:embed data/*.md
 var templateFS embed.FS
+
+// promptTemplateData holds all fields exposed to prompt templates via text/template.
+// All fields are value types (string); zero values are empty strings.
+// In templates, {{if .Field}} evaluates to false for empty strings, requiring no nil checks.
+type promptTemplateData struct {
+	TaskID           string // task ID (e.g. "2.1", "T-test-gen-cases")
+	TaskFile         string // absolute path to the task markdown file
+	TaskCategory     string // task category (fix/cleanup/doc/test etc.), empty string omits the category paragraph
+	FeatureSlug      string // feature slug (e.g. "auth-refresh")
+	PhaseSummary     string // phase summary text, empty string omits the entire paragraph
+	CoverageStrategy string // coverage strategy: "percentage"/"maintain"/empty
+	CoverageTarget   string // coverage target value (e.g. "Achieve 80% test coverage")
+	TestTypeArg      string // test type argument (e.g. " --type api"), empty for no type
+	SurfaceKey       string // surface key, empty string omits surface label line
+	SurfaceType      string // surface type
+	Complexity       string // task complexity: low/medium/high (defaults to "medium")
+}
+
+// placeholderReplacer maps legacy {{PLACEHOLDER}} syntax to dot-notation {{.Placeholder}}
+// for text/template compatibility. This bridge allows the engine to use text/template
+// while template files still use the old {{X}} format (Task 2 migrates the files).
+var placeholderReplacer = strings.NewReplacer(
+	"{{TASK_ID}}", "{{.TaskID}}",
+	"{{TASK_FILE}}", "{{.TaskFile}}",
+	"{{SURFACE_KEY}}", "{{.SurfaceKey}}",
+	"{{FEATURE_SLUG}}", "{{.FeatureSlug}}",
+	"{{PHASE_SUMMARY}}", "{{.PhaseSummary}}",
+	"{{TEST_TYPE_ARG}}", "{{.TestTypeArg}}",
+	"{{COVERAGE_STRATEGY}}", "{{.CoverageStrategy}}",
+	"{{COVERAGE_TARGET}}", "{{.CoverageTarget}}",
+	"{{COMPLEXITY}}", "{{.Complexity}}",
+)
 
 // templatePath derives the embed template filename from a task type constant
 // using the naming convention: "data/" + typeName with '.' replaced by '-' + ".md".
@@ -93,24 +126,23 @@ func Synthesize(opts SynthesizeOpts) (string, error) {
 	return renderTemplate(templatePath(t.Type), opts, t)
 }
 
-// renderTemplate reads the embed template and substitutes placeholders.
+// renderTemplate reads the embed template and renders it using text/template.
 //
-// WARNING: Placeholder substitution uses strings.ReplaceAll with no escaping
-// mechanism. Template content must not contain bare placeholder strings like
-// {{TASK_ID}}, {{TASK_FILE}}, etc., or they will be silently replaced at
-// runtime. This includes code examples, documentation snippets, or any text
-// that coincidentally matches the {{...}} pattern. If literal {{...}} is ever
-// needed in a template, an escaping mechanism must be implemented first.
+// Legacy {{PLACEHOLDER}} syntax in template files is bridge-converted to {{.Placeholder}}
+// dot-notation before parsing. Task 2 migrates the template files permanently.
 //
-// Available placeholders (all use {{NAME}} syntax):
+// Available template fields (accessed as {{.FieldName}} after migration):
 //
-//	{{TASK_ID}}         — task ID (e.g. "2.1", "T-test-gen-cases")
-//	{{TASK_FILE}}       — absolute path to the task markdown file
-//	{{SURFACE_KEY}}     — task surface key (empty string means cross-surface)
-//	{{FEATURE_SLUG}}    — feature slug (e.g. "auth-refresh")
-//	{{PHASE_SUMMARY}}   — "PHASE_SUMMARY: <path>" or empty (injected line)
-//	{{TEST_TYPE_ARG}}   — " --type <surfaceType>" or empty (for per-type gen-scripts)
-//	{{COMPLEXITY}}      — task complexity level ("low", "medium", or "high"; defaults to "medium")
+//	{{.TaskID}}           — task ID (e.g. "2.1", "T-test-gen-cases")
+//	{{.TaskFile}}         — absolute path to the task markdown file
+//	{{.TaskCategory}}     — task category for submit-task routing (fix/cleanup/doc/test etc.)
+//	{{.SurfaceKey}}       — task surface key (empty string means cross-surface)
+//	{{.FeatureSlug}}      — feature slug (e.g. "auth-refresh")
+//	{{.PhaseSummary}}     — "PHASE_SUMMARY: <path>" or empty (injected line)
+//	{{.TestTypeArg}}      — " --type <surfaceType>" or empty (for per-type gen-scripts)
+//	{{.CoverageStrategy}} — coverage strategy text, empty for non-testable types
+//	{{.CoverageTarget}}   — coverage target instruction text
+//	{{.Complexity}}       — task complexity level ("low", "medium", or "high")
 func renderTemplate(templateFile string, opts SynthesizeOpts, t task.Task) (string, error) {
 	data, err := templateFS.ReadFile(templateFile)
 	if err != nil {
@@ -119,49 +151,69 @@ func renderTemplate(templateFile string, opts SynthesizeOpts, t task.Task) (stri
 
 	taskFile := filepath.Join(opts.ProjectRoot, feature.GetTaskFile(opts.FeatureSlug, t.File))
 
-	scope := t.SurfaceKey
-
 	phaseSummaryPath := PhaseDetect(opts.ProjectRoot, opts.FeatureSlug, opts.TaskID)
-
 	phaseSummaryLine := ""
 	if phaseSummaryPath != "" {
 		phaseSummaryLine = "PHASE_SUMMARY: " + phaseSummaryPath
 	}
-
-	result := string(data)
-	result = strings.ReplaceAll(result, "{{TASK_ID}}", t.ID)
-	result = strings.ReplaceAll(result, "{{TASK_FILE}}", taskFile)
-
-	// Inject TASK_CATEGORY after TASK_FILE line for submit-task skill routing.
-	category := task.CategoryForType(t.Type)
-	result = strings.Replace(result, "TASK_FILE: "+taskFile, "TASK_FILE: "+taskFile+"\nTASK_CATEGORY: "+category, 1)
-	result = strings.ReplaceAll(result, "{{SURFACE_KEY}}", scope)
-	result = strings.ReplaceAll(result, "{{FEATURE_SLUG}}", opts.FeatureSlug)
-	result = strings.ReplaceAll(result, "{{PHASE_SUMMARY}}", phaseSummaryLine)
 
 	// Build --type argument from task SurfaceType for per-type gen-scripts tasks.
 	testTypeArg := ""
 	if t.SurfaceType != "" {
 		testTypeArg = " --type " + t.SurfaceType
 	}
-	result = strings.ReplaceAll(result, "{{TEST_TYPE_ARG}}", testTypeArg)
 
 	// Inject coverage target for testable (coding.*) task types.
-	// Non-testable types get empty strings; cleanTemplateOutput removes the empty labels.
 	coverageStrategy := ""
 	coverageTarget := ""
 	if task.IsTestableType(t.Type) {
 		coverageStrategy, coverageTarget = resolveCoverage(opts.ProjectRoot, t)
 	}
-	result = strings.ReplaceAll(result, "{{COVERAGE_STRATEGY}}", coverageStrategy)
-	result = strings.ReplaceAll(result, "{{COVERAGE_TARGET}}", coverageTarget)
 
 	// Inject complexity field (defaults to "medium" when empty for backward compatibility).
 	complexity := t.Complexity
 	if complexity == "" {
 		complexity = "medium"
 	}
-	result = strings.ReplaceAll(result, "{{COMPLEXITY}}", complexity)
+
+	// Build template data struct. TaskCategory is set here (migrated from the old
+	// strings.Replace injection that appended TASK_CATEGORY after TASK_FILE line).
+	category := task.CategoryForType(t.Type)
+
+	td := promptTemplateData{
+		TaskID:           t.ID,
+		TaskFile:         taskFile,
+		TaskCategory:     category,
+		FeatureSlug:      opts.FeatureSlug,
+		PhaseSummary:     phaseSummaryLine,
+		CoverageStrategy: coverageStrategy,
+		CoverageTarget:   coverageTarget,
+		TestTypeArg:      testTypeArg,
+		SurfaceKey:       t.SurfaceKey,
+		SurfaceType:      t.SurfaceType,
+		Complexity:       complexity,
+	}
+
+	// Bridge-convert legacy {{PLACEHOLDER}} to dot-notation {{.Placeholder}}
+	// for text/template compatibility. Task 2 permanently migrates the template files.
+	converted := placeholderReplacer.Replace(string(data))
+
+	tmpl, err := template.New(templateFile).Option("missingkey=error").Parse(converted)
+	if err != nil {
+		return "", fmt.Errorf("parse template %s: %w", templateFile, err)
+	}
+
+	var buf strings.Builder
+	if err := tmpl.Execute(&buf, td); err != nil {
+		return "", fmt.Errorf("execute template %s: %w", templateFile, err)
+	}
+
+	// Transitional: inject TASK_CATEGORY line after TASK_FILE line for submit-task routing.
+	// Task 2 will add {{.TaskCategory}} to template files, making this post-processing unnecessary.
+	result := buf.String()
+	if td.TaskCategory != "" {
+		result = strings.Replace(result, "TASK_FILE: "+td.TaskFile, "TASK_FILE: "+td.TaskFile+"\nTASK_CATEGORY: "+td.TaskCategory, 1)
+	}
 
 	result = cleanTemplateOutput(result, complexity)
 
