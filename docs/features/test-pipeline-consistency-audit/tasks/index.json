@@ -129,13 +129,14 @@
         "3",
         "4"
       ],
-      "status": "pending",
+      "status": "blocked",
       "file": "5-rename-build-tags.md",
       "record": "records/5-rename-build-tags.md",
       "breaking": true,
       "surface-key": ".",
       "surface-type": "cli",
-      "type": "coding.refactor"
+      "type": "coding.refactor",
+      "blockedReason": "refactor verification failed: git status is not clean (modified: docs/features/test-pipeline-consistency-audit/tasks/index.json, forge-cli/internal/cmd/quality_gate.go, plus untracked docs from previous tasks). Clean starting state required for safe refactoring rollback."
     },
     "6-update-template-terminology": {
       "id": "6",

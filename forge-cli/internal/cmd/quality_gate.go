@@ -143,9 +143,9 @@ func runQualityGate(_ *cobra.Command, _ []string) error {
 		os.Exit(0)
 	}
 
-	// Warn if feature test scripts exist but haven't been promoted.
-	// NOTE: staging/graduation directories removed in v3.0.0 — this check
-	// is retained as a no-op placeholder for future test-run validation.
+	// NOTE: The legacy promotion model was removed in v3.0.0 in favor of
+	// tag-based test promotion. No pre-run validation is needed here —
+	// runTestRegression handles the full lifecycle per surface type.
 	_ = result.ProjectRoot
 	_ = result.FeatureSlug
 
@@ -188,7 +188,7 @@ func runQualityGate(_ *cobra.Command, _ []string) error {
 		}
 	}
 
-	// Step 3: Full test regression (promoted scripts in tests/)
+	// Step 3: Full test regression (test scripts in tests/)
 	if err := runTestRegression(result.ProjectRoot, result.FeatureSlug); err != nil {
 		os.Exit(0)
 	}
@@ -268,7 +268,8 @@ func runTestRegressionLegacy(projectRoot, featureSlug string) error {
 
 // runTestRegressionSurface orchestrates per-surface-type lifecycle sequences.
 // For each unique surface type, runs the appropriate sequence:
-//   - web/api/mobile: dev → probe → test → teardown (full lifecycle)
+//   - web/api: dev → probe → test → teardown (full lifecycle)
+//   - mobile: dev → probe → test-setup → test → teardown (full lifecycle with mobile setup)
 //   - cli/tui: test → teardown (simplified)
 //
 // Surfaces of the same type share a single lifecycle (dev/probe run once per type).
@@ -322,7 +323,8 @@ func resolveRecipe(projectRoot, surfaceType, genericRecipe string) string {
 }
 
 // runSurfaceLifecycle executes the per-surface lifecycle sequence.
-// For web/api/mobile: dev → probe → test → teardown
+// For web/api: dev → probe → test → teardown
+// For mobile: dev → probe → mobile-test-setup → test → teardown
 // For cli/tui: test → teardown
 // Teardown always executes (via defer-like pattern).
 func runSurfaceLifecycle(projectRoot, surfaceType string) lifecycleResult {
@@ -349,6 +351,20 @@ func runSurfaceLifecycle(projectRoot, surfaceType string) lifecycleResult {
 			fmt.Fprintln(os.Stderr, "  ERROR: probe failed after retries")
 			runTeardown(projectRoot, surfaceType)
 			return lifecycleResult{success: false, output: "probe failed: server not responding after 3 retries"}
+		}
+	}
+
+	// Phase 2b: Mobile test setup (mobile surfaces only)
+	if surfaceType == "mobile" {
+		setupRecipe := resolveRecipe(projectRoot, surfaceType, "test-setup")
+		if setupRecipe != "" {
+			fmt.Fprintf(os.Stderr, "  Running mobile test setup (just %s)...\n", setupRecipe)
+			output, success := just.RunCapture(projectRoot, "just", setupRecipe)
+			if !success {
+				fmt.Fprintf(os.Stderr, "  ERROR: mobile-test-setup failed (just %s)\n", setupRecipe)
+				runTeardown(projectRoot, surfaceType)
+				return lifecycleResult{success: false, output: output}
+			}
 		}
 	}
 
