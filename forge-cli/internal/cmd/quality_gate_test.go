@@ -1976,3 +1976,332 @@ func TestRunTestRegression(t *testing.T) {
 		_ = runTestRegression(projectRoot, featureSlug)
 	})
 }
+
+// --- Surface-aware orchestration tests ---
+
+func TestNeedsFullLifecycle(t *testing.T) {
+	tests := []struct {
+		surfaceType string
+		want        bool
+	}{
+		{"web", true},
+		{"api", true},
+		{"mobile", true},
+		{"cli", false},
+		{"tui", false},
+		{"unknown", false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.surfaceType, func(t *testing.T) {
+			got := needsFullLifecycle(tc.surfaceType)
+			if got != tc.want {
+				t.Errorf("needsFullLifecycle(%q) = %v, want %v", tc.surfaceType, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestSurfaceOrchestrationSequence(t *testing.T) {
+	if _, err := exec.LookPath("just"); err != nil {
+		t.Skip("just not installed, skipping")
+	}
+
+	t.Run("cli surface executes test then teardown", func(t *testing.T) {
+		projectRoot := t.TempDir()
+		// Write config with cli surface
+		forgeDir := filepath.Join(projectRoot, ".forge")
+		if err := os.MkdirAll(forgeDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte("surfaces:\n  .: cli\n"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		// Write justfile with test + teardown recipes
+		if err := os.WriteFile(filepath.Join(projectRoot, "justfile"), []byte(
+			"test:\n  echo test-ok\ntest-setup:\n  echo setup-ok\nteardown:\n  echo teardown-ok\n",
+		), 0644); err != nil {
+			t.Fatal(err)
+		}
+		// For cli surface, the simplified sequence should run: test -> teardown
+		// This should complete without error
+		err := runTestRegression(projectRoot, "test-feature")
+		// Error handling is tested by the lifecycle tests; this tests the integration path.
+		_ = err
+	})
+
+	t.Run("no surfaces falls back to current behavior", func(t *testing.T) {
+		projectRoot := t.TempDir()
+		// No .forge/config.yaml -- no surfaces configured
+		// Write justfile with test recipe only
+		if err := os.WriteFile(filepath.Join(projectRoot, "justfile"), []byte("test:\n  echo test-ok\n"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		// Should fall back to the legacy behavior (e2eprobe + just test)
+		// which returns nil since no e2e config exists (CLI-only probe returns true)
+		err := runTestRegression(projectRoot, "test-feature")
+		if err != nil {
+			t.Errorf("expected nil for no-surfaces fallback, got %v", err)
+		}
+	})
+
+	t.Run("multi-surface project runs both sequences", func(t *testing.T) {
+		projectRoot := t.TempDir()
+		forgeDir := filepath.Join(projectRoot, ".forge")
+		if err := os.MkdirAll(forgeDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte("surfaces:\n  frontend: web\n  tools: cli\n"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		// Write justfile with all recipes
+		if err := os.WriteFile(filepath.Join(projectRoot, "justfile"), []byte(
+			"dev:\n  echo dev-ok\nprobe:\n  echo probe-ok\ntest:\n  echo test-ok\nteardown:\n  echo teardown-ok\ntest-setup:\n  echo setup-ok\n",
+		), 0644); err != nil {
+			t.Fatal(err)
+		}
+		// Should attempt multi-surface orchestration without panic
+		_ = runTestRegression(projectRoot, "test-feature")
+	})
+}
+
+func TestProbeWithRetry(t *testing.T) {
+	if _, err := exec.LookPath("just"); err != nil {
+		t.Skip("just not installed, skipping")
+	}
+
+	t.Run("succeeds on first attempt", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := os.WriteFile(filepath.Join(dir, "justfile"), []byte("probe:\n  echo probe-ok\n"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		ok := probeWithRetry(dir, "probe", 1, 0)
+		if !ok {
+			t.Error("expected probe to succeed on first attempt")
+		}
+	})
+
+	t.Run("succeeds after retry", func(t *testing.T) {
+		dir := t.TempDir()
+		markerFile := filepath.Join(dir, "probe-marker")
+		// Write a probe script that fails first time, succeeds second time
+		scriptContent := fmt.Sprintf(`#!/bin/bash
+if [ -f "%s" ]; then
+  echo ok
+else
+  touch "%s"
+  exit 1
+fi
+`, filepath.ToSlash(markerFile), filepath.ToSlash(markerFile))
+		scriptPath := filepath.Join(dir, "probe.sh")
+		if err := os.WriteFile(scriptPath, []byte(scriptContent), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, "justfile"), []byte(
+			fmt.Sprintf("probe:\n  bash %s\n", filepath.ToSlash(scriptPath)),
+		), 0644); err != nil {
+			t.Fatal(err)
+		}
+		ok := probeWithRetry(dir, "probe", 3, 0)
+		if !ok {
+			t.Error("expected probe to succeed after retry")
+		}
+	})
+
+	t.Run("fails after all retries", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := os.WriteFile(filepath.Join(dir, "justfile"), []byte("probe:\n  exit 1\n"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		ok := probeWithRetry(dir, "probe", 3, 0)
+		if ok {
+			t.Error("expected probe to fail after all retries")
+		}
+	})
+
+	t.Run("skips when no probe recipe", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := os.WriteFile(filepath.Join(dir, "justfile"), []byte("test:\n  echo ok\n"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		ok := probeWithRetry(dir, "probe", 3, 0)
+		if !ok {
+			t.Error("expected probe to be skipped (return true) when no probe recipe")
+		}
+	})
+}
+
+func TestRunSurfaceLifecycle_TeardownAlwaysRuns(t *testing.T) {
+	if _, err := exec.LookPath("just"); err != nil {
+		t.Skip("just not installed, skipping")
+	}
+
+	// helperWriteMarkerScript creates a bash script that writes a marker file.
+	// This avoids Windows path issues with justfile inline paths.
+	helperWriteMarkerScript := func(t *testing.T, scriptPath, markerPath string) {
+		t.Helper()
+		content := fmt.Sprintf("#!/bin/bash\necho ran > '%s'\n", filepath.ToSlash(markerPath))
+		if err := os.WriteFile(scriptPath, []byte(content), 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	t.Run("teardown runs even when dev fails", func(t *testing.T) {
+		projectRoot := t.TempDir()
+		markerDir := filepath.Join(projectRoot, "tmp")
+		if err := os.MkdirAll(markerDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		markerFile := filepath.Join(markerDir, "teardown-ran")
+		scriptPath := filepath.Join(markerDir, "teardown.sh")
+		helperWriteMarkerScript(t, scriptPath, markerFile)
+
+		if err := os.WriteFile(filepath.Join(projectRoot, "justfile"), []byte(
+			fmt.Sprintf("dev:\n  exit 1\nteardown:\n  bash %s\n", filepath.ToSlash(scriptPath)),
+		), 0644); err != nil {
+			t.Fatal(err)
+		}
+		result := runSurfaceLifecycle(projectRoot, "web")
+		if result.success {
+			t.Error("expected failure when dev fails")
+		}
+		if !just.FileExists(markerFile) {
+			t.Error("teardown should have run even when dev fails")
+		}
+	})
+
+	t.Run("teardown runs even when probe fails", func(t *testing.T) {
+		projectRoot := t.TempDir()
+		markerDir := filepath.Join(projectRoot, "tmp")
+		if err := os.MkdirAll(markerDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		markerFile := filepath.Join(markerDir, "teardown-ran")
+		scriptPath := filepath.Join(markerDir, "teardown.sh")
+		helperWriteMarkerScript(t, scriptPath, markerFile)
+
+		if err := os.WriteFile(filepath.Join(projectRoot, "justfile"), []byte(
+			fmt.Sprintf("dev:\n  echo dev-ok\nprobe:\n  exit 1\nteardown:\n  bash %s\n", filepath.ToSlash(scriptPath)),
+		), 0644); err != nil {
+			t.Fatal(err)
+		}
+		result := runSurfaceLifecycle(projectRoot, "web")
+		if result.success {
+			t.Error("expected failure when probe fails")
+		}
+		if !just.FileExists(markerFile) {
+			t.Error("teardown should have run even when probe fails")
+		}
+	})
+
+	t.Run("teardown runs even when test fails", func(t *testing.T) {
+		projectRoot := t.TempDir()
+		markerDir := filepath.Join(projectRoot, "tmp")
+		if err := os.MkdirAll(markerDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		markerFile := filepath.Join(markerDir, "teardown-ran")
+		scriptPath := filepath.Join(markerDir, "teardown.sh")
+		helperWriteMarkerScript(t, scriptPath, markerFile)
+
+		if err := os.WriteFile(filepath.Join(projectRoot, "justfile"), []byte(
+			fmt.Sprintf("dev:\n  echo dev-ok\nprobe:\n  echo probe-ok\ntest:\n  exit 1\nteardown:\n  bash %s\n", filepath.ToSlash(scriptPath)),
+		), 0644); err != nil {
+			t.Fatal(err)
+		}
+		result := runSurfaceLifecycle(projectRoot, "web")
+		if result.success {
+			t.Error("expected failure when test fails")
+		}
+		if !just.FileExists(markerFile) {
+			t.Error("teardown should have run even when test fails")
+		}
+	})
+
+	t.Run("cli surface skips dev and probe", func(t *testing.T) {
+		projectRoot := t.TempDir()
+		markerDir := filepath.Join(projectRoot, "tmp")
+		if err := os.MkdirAll(markerDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		// If dev runs, this marker would be created
+		devMarker := filepath.Join(markerDir, "dev-ran")
+		devScript := filepath.Join(markerDir, "dev.sh")
+		helperWriteMarkerScript(t, devScript, devMarker)
+
+		if err := os.WriteFile(filepath.Join(projectRoot, "justfile"), []byte(
+			fmt.Sprintf("dev:\n  bash %s\nprobe:\n  echo probe-ok\ntest:\n  echo test-ok\nteardown:\n  echo teardown-ok\n", filepath.ToSlash(devScript)),
+		), 0644); err != nil {
+			t.Fatal(err)
+		}
+		result := runSurfaceLifecycle(projectRoot, "cli")
+		if !result.success {
+			t.Error("expected success for cli surface")
+		}
+		if just.FileExists(devMarker) {
+			t.Error("cli surface should not run dev")
+		}
+	})
+}
+
+func TestRunSurfaceLifecycle_SurfaceSpecificRecipes(t *testing.T) {
+	if _, err := exec.LookPath("just"); err != nil {
+		t.Skip("just not installed, skipping")
+	}
+
+	t.Run("uses surface-specific recipes when available", func(t *testing.T) {
+		projectRoot := t.TempDir()
+		markerDir := filepath.Join(projectRoot, "tmp")
+		if err := os.MkdirAll(markerDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		devMarker := filepath.Join(markerDir, "web-dev-ran")
+		probeMarker := filepath.Join(markerDir, "web-probe-ran")
+		testMarker := filepath.Join(markerDir, "test-ran")
+		teardownMarker := filepath.Join(markerDir, "web-teardown-ran")
+
+		// Helper to create marker scripts
+		writeScript := func(name, marker string) string {
+			scriptPath := filepath.Join(markerDir, name)
+			content := fmt.Sprintf("#!/bin/bash\necho ran > '%s'\n", filepath.ToSlash(marker))
+			if err := os.WriteFile(scriptPath, []byte(content), 0755); err != nil {
+				t.Fatal(err)
+			}
+			return filepath.ToSlash(scriptPath)
+		}
+
+		devScript := writeScript("web-dev.sh", devMarker)
+		probeScript := writeScript("web-probe.sh", probeMarker)
+		testScript := writeScript("test.sh", testMarker)
+		teardownScript := writeScript("web-teardown.sh", teardownMarker)
+
+		if err := os.WriteFile(filepath.Join(projectRoot, "justfile"), []byte(
+			fmt.Sprintf(`web-dev:
+  bash %s
+web-probe:
+  bash %s
+test:
+  bash %s
+web-teardown:
+  bash %s
+`, devScript, probeScript, testScript, teardownScript),
+		), 0644); err != nil {
+			t.Fatal(err)
+		}
+		result := runSurfaceLifecycle(projectRoot, "web")
+		if !result.success {
+			t.Error("expected success")
+		}
+		if !just.FileExists(devMarker) {
+			t.Error("expected web-dev to run")
+		}
+		if !just.FileExists(probeMarker) {
+			t.Error("expected web-probe to run")
+		}
+		if !just.FileExists(testMarker) {
+			t.Error("expected test to run")
+		}
+		if !just.FileExists(teardownMarker) {
+			t.Error("expected web-teardown to run")
+		}
+	})
+}

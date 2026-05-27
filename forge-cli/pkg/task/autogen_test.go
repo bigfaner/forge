@@ -49,19 +49,19 @@ func TestGetBreakdownTestTasks_EmptyInterfaces(t *testing.T) {
 func TestGetBreakdownTestTasks_SingleType(t *testing.T) {
 	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto)
 
-	// gen-journeys + eval-journey + gen-contracts + eval-contract + gen-scripts-cli + run + verify-regression + consolidate = 8
-	if len(tasks) != 8 {
-		t.Fatalf("expected 8 tasks, got %d", len(tasks))
+	// gen-journeys + eval-journey + gen-contracts + eval-contract + gen-scripts-cli + run + consolidate = 7
+	if len(tasks) != 7 {
+		t.Fatalf("expected 7 tasks, got %d", len(tasks))
 	}
 
-	wantIDs := []string{"T-test-gen-journeys", "T-eval-journey", "T-test-gen-contracts", "T-eval-contract", "T-test-gen-scripts-cli", "T-test-run", "T-test-verify-regression", "T-specs-consolidate"}
+	wantIDs := []string{"T-test-gen-journeys", "T-eval-journey", "T-test-gen-contracts", "T-eval-contract", "T-test-gen-scripts-cli", "T-test-run", "T-specs-consolidate"}
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
 			t.Errorf("tasks[%d].ID = %q, want %q", i, tasks[i].ID, want)
 		}
 	}
 
-	// Dependency chain: eval-journey -> gen-journeys, gen-contracts -> eval-journey, eval-contract -> gen-contracts, gen-scripts -> eval-contract, run -> gen-scripts, verify -> run, consolidate -> verify
+	// Dependency chain: eval-journey -> gen-journeys, gen-contracts -> eval-journey, eval-contract -> gen-contracts, gen-scripts -> eval-contract, run -> gen-scripts, consolidate -> run
 	if tasks[1].Dependencies[0] != "T-test-gen-journeys" {
 		t.Errorf("eval-journey should depend on gen-journeys, got %v", tasks[1].Dependencies)
 	}
@@ -78,10 +78,7 @@ func TestGetBreakdownTestTasks_SingleType(t *testing.T) {
 		t.Errorf("run should depend on gen-scripts-cli, got %v", tasks[5].Dependencies)
 	}
 	if tasks[6].Dependencies[0] != "T-test-run" {
-		t.Errorf("verify-regression should depend on run, got %v", tasks[6].Dependencies)
-	}
-	if tasks[7].Dependencies[0] != "T-test-verify-regression" {
-		t.Errorf("consolidate should depend on verify-regression, got %v", tasks[7].Dependencies)
+		t.Errorf("consolidate should depend on run, got %v", tasks[6].Dependencies)
 	}
 }
 
@@ -96,15 +93,14 @@ func TestGetQuickTestTasks_EmptyInterfaces(t *testing.T) {
 func TestGetQuickTestTasks_SingleType(t *testing.T) {
 	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, allEnabledAuto)
 
-	// gen-journeys + run + verify-regression + drift = 4
-	if len(tasks) != 4 {
-		t.Fatalf("expected 4 tasks, got %d", len(tasks))
+	// gen-journeys + run + drift = 3
+	if len(tasks) != 3 {
+		t.Fatalf("expected 3 tasks, got %d", len(tasks))
 	}
 
 	wantIDs := []string{
 		"T-test-gen-journeys",
 		"T-test-run",
-		"T-test-verify-regression",
 		"T-quick-doc-drift",
 	}
 	for i, want := range wantIDs {
@@ -117,8 +113,8 @@ func TestGetQuickTestTasks_SingleType(t *testing.T) {
 		t.Errorf("T-test-gen-journeys Type = %q, want %q", tasks[0].Type, TypeTestGenJourneys)
 	}
 
-	if tasks[3].Type != TypeDocDrift {
-		t.Errorf("T-quick-doc-drift Type = %q, want %q", tasks[3].Type, TypeDocDrift)
+	if tasks[2].Type != TypeDocDrift {
+		t.Errorf("T-quick-doc-drift Type = %q, want %q", tasks[2].Type, TypeDocDrift)
 	}
 }
 
@@ -266,9 +262,9 @@ func TestResolveReviewDocDep(t *testing.T) {
 func TestGetBreakdownTestTasks_PerType_TwoTypes(t *testing.T) {
 	tasks := GetBreakdownTestTasks(multiSurface("tui", "tui", "api", "api"), []string{"api", "tui"}, defaultAuto)
 
-	// gen-journeys + eval-journey + gen-contracts + eval-contract + 2 gen-scripts(tui,api) + 2 run-test(api,tui) + verify-regression + consolidate = 10
-	if len(tasks) != 10 {
-		t.Fatalf("expected 10 tasks, got %d", len(tasks))
+	// gen-journeys + eval-journey + gen-contracts + eval-contract + 2 gen-scripts(tui,api) + 2 run-test(api,tui) + consolidate = 9
+	if len(tasks) != 9 {
+		t.Fatalf("expected 9 tasks, got %d", len(tasks))
 	}
 
 	wantIDs := []string{
@@ -278,7 +274,7 @@ func TestGetBreakdownTestTasks_PerType_TwoTypes(t *testing.T) {
 		"T-eval-contract",
 		"T-test-gen-scripts-api", "T-test-gen-scripts-tui",
 		"T-test-run-api", "T-test-run-tui",
-		"T-test-verify-regression", "T-specs-consolidate",
+		"T-specs-consolidate",
 	}
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
@@ -345,18 +341,18 @@ func TestGetBreakdownTestTasks_PerType_TwoTypes(t *testing.T) {
 		t.Errorf("T-test-run-tui should depend on T-test-run-api (serial), got %v", tasks[7].Dependencies)
 	}
 
-	// T-test-verify-regression depends on last run-test (T-test-run-tui)
+	// T-specs-consolidate depends on last run-test (T-test-run-tui)
 	if tasks[8].Dependencies[0] != "T-test-run-tui" {
-		t.Errorf("verify-regression should depend on T-test-run-tui (chain tail), got %v", tasks[8].Dependencies)
+		t.Errorf("consolidate should depend on T-test-run-tui (chain tail), got %v", tasks[8].Dependencies)
 	}
 }
 
 func TestGetBreakdownTestTasks_PerType_SingleType(t *testing.T) {
 	tasks := GetBreakdownTestTasks(scalarSurface("api"), nil, defaultAuto)
 
-	// gen-journeys + eval-journey + gen-contracts + eval-contract + gen-scripts-api + run + verify-regression + consolidate = 8
-	if len(tasks) != 8 {
-		t.Fatalf("expected 8 tasks, got %d", len(tasks))
+	// gen-journeys + eval-journey + gen-contracts + eval-contract + gen-scripts-api + run + consolidate = 7
+	if len(tasks) != 7 {
+		t.Fatalf("expected 7 tasks, got %d", len(tasks))
 	}
 
 	wantIDs := []string{
@@ -365,7 +361,7 @@ func TestGetBreakdownTestTasks_PerType_SingleType(t *testing.T) {
 		"T-test-gen-contracts",
 		"T-eval-contract",
 		"T-test-gen-scripts-api",
-		"T-test-run", "T-test-verify-regression", "T-specs-consolidate",
+		"T-test-run", "T-specs-consolidate",
 	}
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
@@ -381,9 +377,9 @@ func TestGetBreakdownTestTasks_PerType_SingleType(t *testing.T) {
 func TestGetBreakdownTestTasks_PerType_ThreeTypes(t *testing.T) {
 	tasks := GetBreakdownTestTasks(multiSurface("tui", "tui", "api", "api", "cli", "cli"), []string{"api", "tui", "cli"}, defaultAuto)
 
-	// gen-journeys + eval-journey + gen-contracts + eval-contract + 3 gen-scripts + 3 run-tests + verify-regression + consolidate = 12
-	if len(tasks) != 12 {
-		t.Fatalf("expected 12 tasks, got %d", len(tasks))
+	// gen-journeys + eval-journey + gen-contracts + eval-contract + 3 gen-scripts + 3 run-tests + consolidate = 11
+	if len(tasks) != 11 {
+		t.Fatalf("expected 11 tasks, got %d", len(tasks))
 	}
 
 	// T-test-run-api (first in chain) depends on all 3 gen tasks
@@ -412,10 +408,13 @@ func TestGetBreakdownTestTasks_PerType_ThreeTypes(t *testing.T) {
 		t.Errorf("T-test-run-cli should depend on T-test-run-tui, got %v", tasks[runCLIIdx].Dependencies)
 	}
 
-	// Verify-regression depends on last run-test (cli)
-	verifyIdx := findTaskIndex(tasks, "T-test-verify-regression")
-	if tasks[verifyIdx].Dependencies[0] != "T-test-run-cli" {
-		t.Errorf("verify-regression should depend on T-test-run-cli (chain tail), got %v", tasks[verifyIdx].Dependencies)
+	// Consolidate-specs depends on last run-test (cli)
+	consolidateIdx := findTaskIndex(tasks, "T-specs-consolidate")
+	if consolidateIdx < 0 {
+		t.Fatalf("T-specs-consolidate not found in tasks")
+	}
+	if tasks[consolidateIdx].Dependencies[0] != "T-test-run-cli" {
+		t.Errorf("consolidate-specs should depend on T-test-run-cli (chain tail), got %v", tasks[consolidateIdx].Dependencies)
 	}
 }
 
@@ -446,9 +445,9 @@ func TestGenerateTestTaskMD_WithTestType(t *testing.T) {
 func TestGetQuickTestTasks_PerType_TwoTypes(t *testing.T) {
 	tasks := GetQuickTestTasks(multiSurface("tui", "tui", "api", "api"), []string{"api", "tui"}, allEnabledAuto)
 
-	// gen-journeys + 2 run-tests(api,tui) + verify-regression + drift = 5
-	if len(tasks) != 5 {
-		t.Fatalf("expected 5 tasks, got %d", len(tasks))
+	// gen-journeys + 2 run-tests(api,tui) + drift = 4
+	if len(tasks) != 4 {
+		t.Fatalf("expected 4 tasks, got %d", len(tasks))
 	}
 
 	// Fixed-position tasks (before map-iteration-dependent ones)
@@ -470,12 +469,9 @@ func TestGetQuickTestTasks_PerType_TwoTypes(t *testing.T) {
 		t.Error("missing T-test-run-tui task")
 	}
 
-	// verify-regression and drift at fixed positions
-	if tasks[3].ID != "T-test-verify-regression" {
-		t.Errorf("tasks[3].ID = %q, want T-test-verify-regression", tasks[3].ID)
-	}
-	if tasks[4].ID != "T-quick-doc-drift" {
-		t.Errorf("tasks[4].ID = %q, want T-quick-doc-drift", tasks[4].ID)
+	// drift at fixed position
+	if tasks[3].ID != "T-quick-doc-drift" {
+		t.Errorf("tasks[3].ID = %q, want T-quick-doc-drift", tasks[3].ID)
 	}
 
 	// gen-journeys key has no type suffix (single task)
@@ -492,15 +488,14 @@ func TestGetQuickTestTasks_PerType_TwoTypes(t *testing.T) {
 func TestGetQuickTestTasks_PerType_SingleType(t *testing.T) {
 	tasks := GetQuickTestTasks(scalarSurface("api"), nil, allEnabledAuto)
 
-	// gen-journeys + run + verify-regression + drift = 4
-	if len(tasks) != 4 {
-		t.Fatalf("expected 4 tasks, got %d", len(tasks))
+	// gen-journeys + run + drift = 3
+	if len(tasks) != 3 {
+		t.Fatalf("expected 3 tasks, got %d", len(tasks))
 	}
 
 	wantIDs := []string{
 		"T-test-gen-journeys",
 		"T-test-run",
-		"T-test-verify-regression",
 		"T-quick-doc-drift",
 	}
 	for i, want := range wantIDs {
@@ -523,9 +518,9 @@ func TestGetQuickTestTasks_PerType_SingleType(t *testing.T) {
 func TestGetQuickTestTasks_PerType_ThreeTypes(t *testing.T) {
 	tasks := GetQuickTestTasks(multiSurface("tui", "tui", "api", "api", "cli", "cli"), []string{"api", "tui", "cli"}, allEnabledAuto)
 
-	// gen-journeys + 3 run-tests + verify-regression + drift = 6
-	if len(tasks) != 6 {
-		t.Fatalf("expected 6 tasks, got %d", len(tasks))
+	// gen-journeys + 3 run-tests + drift = 5
+	if len(tasks) != 5 {
+		t.Fatalf("expected 5 tasks, got %d", len(tasks))
 	}
 
 	// T-test-run-api (first in chain) depends on gen-journeys (not gen-scripts)
@@ -1408,7 +1403,6 @@ func TestGetBreakdownTestTasks_NewOrdering(t *testing.T) {
 		"T-eval-contract",
 		"T-test-gen-scripts-cli",
 		"T-test-run",
-		"T-test-verify-regression",
 		"T-specs-consolidate",
 	}
 
@@ -1477,9 +1471,9 @@ func TestGetBreakdownTestTasks_FullDependencyChain(t *testing.T) {
 		t.Errorf("T-test-run-cli should depend on T-test-run-api (serial), got %v", byID["T-test-run-cli"].Dependencies)
 	}
 
-	// verify-regression depends on last run-test (T-test-run-cli)
-	if len(byID["T-test-verify-regression"].Dependencies) != 1 || byID["T-test-verify-regression"].Dependencies[0] != "T-test-run-cli" {
-		t.Errorf("verify-regression should depend on T-test-run-cli (chain tail), got %v", byID["T-test-verify-regression"].Dependencies)
+	// consolidate-specs depends on last run-test (T-test-run-cli)
+	if len(byID["T-specs-consolidate"].Dependencies) != 1 || byID["T-specs-consolidate"].Dependencies[0] != "T-test-run-cli" {
+		t.Errorf("consolidate-specs should depend on T-test-run-cli (chain tail), got %v", byID["T-specs-consolidate"].Dependencies)
 	}
 }
 
@@ -1601,8 +1595,13 @@ func TestGetBreakdownTestTasks_RegressionStillValid(t *testing.T) {
 		byID[t.ID] = t
 	}
 
-	if byID["T-test-verify-regression"].Dependencies[0] != "T-test-run" {
-		t.Errorf("verify-regression should still depend on run, got %v", byID["T-test-verify-regression"].Dependencies)
+	// verify-regression task no longer exists
+	if _, exists := byID["T-test-verify-regression"]; exists {
+		t.Error("T-test-verify-regression should not exist in the task list")
+	}
+	// consolidate-specs depends on last run-test instead
+	if byID["T-specs-consolidate"].Dependencies[0] != "T-test-run" {
+		t.Errorf("consolidate-specs should depend on run, got %v", byID["T-specs-consolidate"].Dependencies)
 	}
 	if byID["T-test-run"].Dependencies[0] != "T-test-gen-scripts-cli" {
 		t.Errorf("run should still depend on gen-scripts-cli, got %v", byID["T-test-run"].Dependencies)
@@ -1657,9 +1656,9 @@ func TestGetQuickTestTasks_StagedAcrossTypesDependencyChain(t *testing.T) {
 		t.Errorf("T-test-run-cli should depend on T-test-run-api (serial), got %v", byID["T-test-run-cli"].Dependencies)
 	}
 
-	// Stage 3: verify-regression depends on last run-test (T-test-run-cli)
-	if len(byID["T-test-verify-regression"].Dependencies) != 1 || byID["T-test-verify-regression"].Dependencies[0] != "T-test-run-cli" {
-		t.Errorf("verify-regression should depend on T-test-run-cli (chain tail), got %v", byID["T-test-verify-regression"].Dependencies)
+	// Drift depends on last run-test (T-test-run-cli)
+	if len(byID["T-quick-doc-drift"].Dependencies) != 1 || byID["T-quick-doc-drift"].Dependencies[0] != "T-test-run-cli" {
+		t.Errorf("drift should depend on T-test-run-cli (chain tail), got %v", byID["T-quick-doc-drift"].Dependencies)
 	}
 }
 func TestGetQuickTestTasks_GenJourneysPerType(t *testing.T) {
@@ -1713,13 +1712,13 @@ func TestGetQuickTestTasks_NoHardcodedIndices(t *testing.T) {
 	}
 }
 
-func TestGetQuickTestTasks_DriftDependsOnVerifyRegression(t *testing.T) {
+func TestGetQuickTestTasks_DriftDependsOnLastRunTest(t *testing.T) {
 	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, allEnabledAuto)
 
 	for _, task := range tasks {
 		if task.ID == "T-quick-doc-drift" {
-			if len(task.Dependencies) != 1 || task.Dependencies[0] != "T-test-verify-regression" {
-				t.Errorf("T-quick-doc-drift should depend on T-test-verify-regression, got %v", task.Dependencies)
+			if len(task.Dependencies) != 1 || task.Dependencies[0] != "T-test-run" {
+				t.Errorf("T-quick-doc-drift should depend on T-test-run, got %v", task.Dependencies)
 			}
 			return
 		}
@@ -2152,8 +2151,8 @@ func dependsTransitively(tasks []AutoGenTaskDef, task AutoGenTaskDef, targetID s
 	return dfs(task.ID)
 }
 
-// AC5: T-test-verify-regression depends on last run-test in execution order
-func TestGetBreakdownTestTasks_VerifyRegressionDependsOnChainTail(t *testing.T) {
+// Consolidate-specs depends on last run-test in execution order (was verify-regression, now removed)
+func TestGetBreakdownTestTasks_ConsolidateDependsOnChainTail(t *testing.T) {
 	surfaces := multiSurface("backend", "api", "frontend", "web", "mobile-app", "tui")
 	resolved, _ := forgeconfig.ResolveExecutionOrder(surfaces, nil)
 
@@ -2167,14 +2166,14 @@ func TestGetBreakdownTestTasks_VerifyRegressionDependsOnChainTail(t *testing.T) 
 	// Last in execution order: api < web < tui
 	lastRunID := "T-test-run-mobile-app"
 
-	verifyDeps := byID["T-test-verify-regression"].Dependencies
-	if len(verifyDeps) != 1 || verifyDeps[0] != lastRunID {
-		t.Errorf("verify-regression should depend on %q (chain tail), got %v", lastRunID, verifyDeps)
+	consolidateDeps := byID["T-specs-consolidate"].Dependencies
+	if len(consolidateDeps) != 1 || consolidateDeps[0] != lastRunID {
+		t.Errorf("consolidate-specs should depend on %q (chain tail), got %v", lastRunID, consolidateDeps)
 	}
 }
 
-// AC5 variant for Quick mode
-func TestGetQuickTestTasks_VerifyRegressionDependsOnChainTail(t *testing.T) {
+// Quick mode variant: drift depends on last run-test in chain
+func TestGetQuickTestTasks_DriftDependsOnChainTail(t *testing.T) {
 	surfaces := multiSurface("backend", "api", "frontend", "web", "mobile-app", "tui")
 	resolved, _ := forgeconfig.ResolveExecutionOrder(surfaces, nil)
 
@@ -2187,9 +2186,9 @@ func TestGetQuickTestTasks_VerifyRegressionDependsOnChainTail(t *testing.T) {
 
 	lastRunID := "T-test-run-mobile-app"
 
-	verifyDeps := byID["T-test-verify-regression"].Dependencies
-	if len(verifyDeps) != 1 || verifyDeps[0] != lastRunID {
-		t.Errorf("verify-regression should depend on %q (chain tail), got %v", lastRunID, verifyDeps)
+	driftDeps := byID["T-quick-doc-drift"].Dependencies
+	if len(driftDeps) != 1 || driftDeps[0] != lastRunID {
+		t.Errorf("drift should depend on %q (chain tail), got %v", lastRunID, driftDeps)
 	}
 }
 
@@ -2257,15 +2256,15 @@ func TestGetBreakdownTestTasks_ExplicitExecutionOrder(t *testing.T) {
 		t.Errorf("T-test-run-backend should depend on T-test-run-frontend (serial), got %v", backendDeps)
 	}
 
-	verifyDeps := byID["T-test-verify-regression"].Dependencies
-	if len(verifyDeps) != 1 || verifyDeps[0] != "T-test-run-backend" {
-		t.Errorf("verify-regression should depend on T-test-run-backend, got %v", verifyDeps)
+	consolidateDeps := byID["T-specs-consolidate"].Dependencies
+	if len(consolidateDeps) != 1 || consolidateDeps[0] != "T-test-run-backend" {
+		t.Errorf("consolidate-specs should depend on T-test-run-backend, got %v", consolidateDeps)
 	}
 }
 
 // --- Task 5: Dependency resolution chain tests ---
 
-// AC1: Breakdown mode: gen-journeys -> gen-contracts -> gen-scripts-* -> run-test-{keys} -> verify-regression
+// AC1: Breakdown mode: gen-journeys -> gen-contracts -> gen-scripts-* -> run-test-{keys}
 func TestGetBreakdownTestTasks_AC1_FullDAG(t *testing.T) {
 	surfaces := multiSurface("auth-service", "api", "admin", "web", "cli", "cli")
 	resolved, _ := forgeconfig.ResolveExecutionOrder(surfaces, nil)
@@ -2297,15 +2296,15 @@ func TestGetBreakdownTestTasks_AC1_FullDAG(t *testing.T) {
 		t.Fatalf("%s should depend on 3 gen-scripts, got %v", firstRunID, firstRunDeps)
 	}
 
-	// verify-regression depends on last run-test (chain tail)
-	verifyDeps := byID["T-test-verify-regression"].Dependencies
+	// consolidate-specs depends on last run-test (chain tail)
+	consolidateDeps := byID["T-specs-consolidate"].Dependencies
 	lastRunID := "T-test-run-cli"
-	if len(verifyDeps) != 1 || verifyDeps[0] != lastRunID {
-		t.Errorf("verify-regression should depend on %q, got %v", lastRunID, verifyDeps)
+	if len(consolidateDeps) != 1 || consolidateDeps[0] != lastRunID {
+		t.Errorf("consolidate-specs should depend on %q, got %v", lastRunID, consolidateDeps)
 	}
 }
 
-// AC2: Quick mode: gen-journeys -> run-test-{keys} -> verify-regression (no gen-contracts/gen-scripts)
+// AC2: Quick mode: gen-journeys -> run-test-{keys} (no gen-contracts/gen-scripts)
 func TestGetQuickTestTasks_AC2_DirectDependencyChain(t *testing.T) {
 	surfaces := multiSurface("auth-service", "api", "admin", "web", "cli", "cli")
 	resolved, _ := forgeconfig.ResolveExecutionOrder(surfaces, nil)
@@ -2335,16 +2334,16 @@ func TestGetQuickTestTasks_AC2_DirectDependencyChain(t *testing.T) {
 		t.Errorf("%s should depend on T-test-gen-journeys, got %v", firstRunID, firstRunDeps)
 	}
 
-	// verify-regression depends on last run-test (chain tail)
-	verifyDeps := byID["T-test-verify-regression"].Dependencies
+	// drift depends on last run-test (chain tail)
+	driftDeps := byID["T-quick-doc-drift"].Dependencies
 	lastRunID := "T-test-run-cli"
-	if len(verifyDeps) != 1 || verifyDeps[0] != lastRunID {
-		t.Errorf("verify-regression should depend on %q, got %v", lastRunID, verifyDeps)
+	if len(driftDeps) != 1 || driftDeps[0] != lastRunID {
+		t.Errorf("drift should depend on %q, got %v", lastRunID, driftDeps)
 	}
 }
 
-// AC3: verify-regression depends ONLY on the last run-test in execution order
-func TestVerifyRegressionDependsOnlyOnLastRunTest(t *testing.T) {
+// AC3: downstream tasks depend ONLY on the last run-test in execution order
+func TestDownstreamDependsOnlyOnLastRunTest(t *testing.T) {
 	t.Run("breakdown mode", func(t *testing.T) {
 		surfaces := multiSurface("backend", "api", "frontend", "web")
 		resolved, _ := forgeconfig.ResolveExecutionOrder(surfaces, nil)
@@ -2357,12 +2356,12 @@ func TestVerifyRegressionDependsOnlyOnLastRunTest(t *testing.T) {
 
 		// Last in execution order is frontend (web comes after api)
 		lastRunID := "T-test-run-frontend"
-		verifyDeps := byID["T-test-verify-regression"].Dependencies
-		if len(verifyDeps) != 1 {
-			t.Fatalf("verify-regression should depend on exactly 1 task, got %v", verifyDeps)
+		consolidateDeps := byID["T-specs-consolidate"].Dependencies
+		if len(consolidateDeps) != 1 {
+			t.Fatalf("consolidate-specs should depend on exactly 1 task, got %v", consolidateDeps)
 		}
-		if verifyDeps[0] != lastRunID {
-			t.Errorf("verify-regression should depend on %q (last in chain), got %q", lastRunID, verifyDeps[0])
+		if consolidateDeps[0] != lastRunID {
+			t.Errorf("consolidate-specs should depend on %q (last in chain), got %q", lastRunID, consolidateDeps[0])
 		}
 	})
 
@@ -2377,12 +2376,12 @@ func TestVerifyRegressionDependsOnlyOnLastRunTest(t *testing.T) {
 		}
 
 		lastRunID := "T-test-run-frontend"
-		verifyDeps := byID["T-test-verify-regression"].Dependencies
-		if len(verifyDeps) != 1 {
-			t.Fatalf("verify-regression should depend on exactly 1 task, got %v", verifyDeps)
+		driftDeps := byID["T-quick-doc-drift"].Dependencies
+		if len(driftDeps) != 1 {
+			t.Fatalf("drift should depend on exactly 1 task, got %v", driftDeps)
 		}
-		if verifyDeps[0] != lastRunID {
-			t.Errorf("verify-regression should depend on %q (last in chain), got %q", lastRunID, verifyDeps[0])
+		if driftDeps[0] != lastRunID {
+			t.Errorf("drift should depend on %q (last in chain), got %q", lastRunID, driftDeps[0])
 		}
 	})
 }
@@ -2413,7 +2412,7 @@ func TestGetQuickTestTasks_MultiSurface_FullSerialChain(t *testing.T) {
 		byID[t.ID] = t
 	}
 
-	// Verify serial chain: gen-journeys -> backend -> frontend -> mobile-app -> verify-regression
+	// Verify serial chain: gen-journeys -> backend -> frontend -> mobile-app -> drift
 	if byID["T-test-run-backend"].Dependencies[0] != "T-test-gen-journeys" {
 		t.Errorf("T-test-run-backend should depend on gen-journeys, got %v", byID["T-test-run-backend"].Dependencies)
 	}
@@ -2423,7 +2422,7 @@ func TestGetQuickTestTasks_MultiSurface_FullSerialChain(t *testing.T) {
 	if byID["T-test-run-mobile-app"].Dependencies[0] != "T-test-run-frontend" {
 		t.Errorf("T-test-run-mobile-app should depend on T-test-run-frontend, got %v", byID["T-test-run-mobile-app"].Dependencies)
 	}
-	if byID["T-test-verify-regression"].Dependencies[0] != "T-test-run-mobile-app" {
-		t.Errorf("verify-regression should depend on T-test-run-mobile-app, got %v", byID["T-test-verify-regression"].Dependencies)
+	if byID["T-quick-doc-drift"].Dependencies[0] != "T-test-run-mobile-app" {
+		t.Errorf("drift should depend on T-test-run-mobile-app, got %v", byID["T-quick-doc-drift"].Dependencies)
 	}
 }

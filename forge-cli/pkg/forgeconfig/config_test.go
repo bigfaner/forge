@@ -2,9 +2,11 @@ package forgeconfig
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -1072,8 +1074,8 @@ func TestSetConfigValue(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected error for unknown key")
 		}
-		if !strings.Contains(err.Error(), "unknown config key") {
-			t.Errorf("expected 'unknown config key' in error, got %v", err)
+		if !strings.Contains(err.Error(), "not found") && !strings.Contains(err.Error(), "unknown config key") {
+			t.Errorf("expected 'not found' in error, got %v", err)
 		}
 	})
 
@@ -1099,17 +1101,14 @@ func TestSetConfigValue(t *testing.T) {
 		}
 	})
 
-	t.Run("auto.cleanCode set both quick and full", func(t *testing.T) {
+	t.Run("auto.cleanCode set rejected as ModeToggle", func(t *testing.T) {
 		dir := t.TempDir()
-		if err := SetConfigValue(dir, "auto.cleanCode", "true"); err != nil {
-			t.Fatalf("unexpected error: %v", err)
+		err := SetConfigValue(dir, "auto.cleanCode", "true")
+		if err == nil {
+			t.Fatal("expected error for ModeToggle direct set")
 		}
-		val, err := GetConfigValue(dir, "auto.cleanCode")
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if val != "quick:true full:true" {
-			t.Errorf("expected 'quick:true full:true', got %q", val)
+		if !strings.Contains(err.Error(), "cannot set ModeToggle directly") {
+			t.Errorf("expected cannot set ModeToggle directly in error, got %v", err)
 		}
 	})
 
@@ -1288,4 +1287,921 @@ func TestReadConfig_OldKeyMigration(t *testing.T) {
 		}
 		_ = cfg
 	})
+}
+
+func TestGetConfigValue_EvalConfig(t *testing.T) {
+	t.Run("auto.eval.proposal returns quick:true full:true (default)", func(t *testing.T) {
+		dir := t.TempDir()
+		val, err := GetConfigValue(dir, "auto.eval.proposal")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "quick:true full:true" {
+			t.Errorf("expected 'quick:true full:true', got %q", val)
+		}
+	})
+
+	t.Run("auto.eval.proposal.quick returns true (4-level depth)", func(t *testing.T) {
+		dir := t.TempDir()
+		val, err := GetConfigValue(dir, "auto.eval.proposal.quick")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "true" {
+			t.Errorf("expected 'true', got %q", val)
+		}
+	})
+
+	t.Run("auto.eval returns eval sub-field summary", func(t *testing.T) {
+		dir := t.TempDir()
+		val, err := GetConfigValue(dir, "auto.eval")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		for _, field := range []string{"proposal:", "prd:", "uiDesign:", "techDesign:"} {
+			if !strings.Contains(val, field) {
+				t.Errorf("expected field %q in output, got %q", field, val)
+			}
+		}
+	})
+
+	t.Run("auto returns mixed type summary", func(t *testing.T) {
+		dir := t.TempDir()
+		val, err := GetConfigValue(dir, "auto")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		for _, field := range []string{"runTasks:", "gitPush:", "eval:"} {
+			if !strings.Contains(val, field) {
+				t.Errorf("expected field %q in output, got %q", field, val)
+			}
+		}
+	})
+
+	t.Run("auto.eval.proposal.quick.extra returns errKeyNotFound", func(t *testing.T) {
+		dir := t.TempDir()
+		_, err := GetConfigValue(dir, "auto.eval.proposal.quick.extra")
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound, got %v", err)
+		}
+	})
+
+	t.Run("auto.nonexistent returns errKeyNotFound", func(t *testing.T) {
+		dir := t.TempDir()
+		_, err := GetConfigValue(dir, "auto.nonexistent")
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound, got %v", err)
+		}
+	})
+}
+
+func TestSetConfigValue_EvalConfig(t *testing.T) {
+	t.Run("auto.eval rejected as non-leaf", func(t *testing.T) {
+		dir := t.TempDir()
+		err := SetConfigValue(dir, "auto.eval", "true")
+		if err == nil {
+			t.Fatal("expected error for non-leaf set")
+		}
+		if !strings.Contains(err.Error(), "cannot set non-leaf key") {
+			t.Errorf("expected 'cannot set non-leaf key' in error, got %v", err)
+		}
+	})
+
+	t.Run("auto.eval.proposal rejected as ModeToggle", func(t *testing.T) {
+		dir := t.TempDir()
+		err := SetConfigValue(dir, "auto.eval.proposal", "true")
+		if err == nil {
+			t.Fatal("expected error for ModeToggle direct set")
+		}
+		if !strings.Contains(err.Error(), "cannot set ModeToggle directly") {
+			t.Errorf("expected 'cannot set ModeToggle directly' in error, got %v", err)
+		}
+	})
+
+	t.Run("auto.eval.prd.full true writes nested config", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := SetConfigValue(dir, "auto.eval.prd.full", "true"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		val, err := GetConfigValue(dir, "auto.eval.prd.full")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "true" {
+			t.Errorf("expected 'true', got %q", val)
+		}
+	})
+}
+
+func TestGetConfigValue_InlineMap(t *testing.T) {
+	t.Run("coverage.coding.feature returns default (inline tag)", func(t *testing.T) {
+		dir := t.TempDir()
+		val, err := GetConfigValue(dir, "coverage.coding.feature")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "80" {
+			t.Errorf("expected '80', got %q", val)
+		}
+	})
+
+	t.Run("coverage.coding.feature with explicit config", func(t *testing.T) {
+		dir := setupConfig(t, "coverage:\n  coding.feature:\n    type: percentage\n    percentage: 90\n")
+		val, err := GetConfigValue(dir, "coverage.coding.feature")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "90" {
+			t.Errorf("expected '90', got %q", val)
+		}
+	})
+}
+
+func TestGetConfigValue_WorktreeRegression(t *testing.T) {
+	t.Run("worktree.source-branch returns value", func(t *testing.T) {
+		dir := setupConfig(t, "worktree:\n  source-branch: develop\n")
+		val, err := GetConfigValue(dir, "worktree.source-branch")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "develop" {
+			t.Errorf("expected 'develop', got %q", val)
+		}
+	})
+}
+
+func TestParseAutoRaw_EvalConfig(t *testing.T) {
+	t.Run("eval sub-fields tracked with flat-path keys", func(t *testing.T) {
+		dir := setupConfig(t, "auto:\n  eval:\n    proposal:\n      quick: false\n    prd:\n      quick: true\n      full: false\n  test:\n    quick: true\n")
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg == nil || cfg.Auto == nil {
+			t.Fatal("expected non-nil config")
+		}
+
+		if cfg.Auto.Eval.Proposal.Quick {
+			t.Error("Eval.Proposal.Quick should be false (explicitly set)")
+		}
+		if !cfg.Auto.Eval.Proposal.Full {
+			t.Error("Eval.Proposal.Full should be true (default applied)")
+		}
+		if !cfg.Auto.Eval.Prd.Quick {
+			t.Error("Eval.Prd.Quick should be true")
+		}
+		if cfg.Auto.Eval.Prd.Full {
+			t.Error("Eval.Prd.Full should be false")
+		}
+		if !cfg.Auto.Eval.UiDesign.Quick || !cfg.Auto.Eval.UiDesign.Full {
+			t.Errorf("Eval.UiDesign should default to true/true, got %+v", cfg.Auto.Eval.UiDesign)
+		}
+		if cfg.Auto.Eval.TechDesign.Quick || cfg.Auto.Eval.TechDesign.Full {
+			t.Errorf("Eval.TechDesign should default to false/false, got %+v", cfg.Auto.Eval.TechDesign)
+		}
+	})
+}
+
+func TestParseAutoRaw_ExistingFields_Regression(t *testing.T) {
+	t.Run("existing auto fields still tracked correctly", func(t *testing.T) {
+		dir := setupConfig(t, "auto:\n  test:\n    quick: false\n  consolidateSpecs:\n    quick: true\n    full: false\n  gitPush: true\n")
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg == nil || cfg.Auto == nil {
+			t.Fatal("expected non-nil config")
+		}
+
+		if cfg.Auto.Test.Quick {
+			t.Error("Test.Quick should be false")
+		}
+		if !cfg.Auto.Test.Full {
+			t.Error("Test.Full should be true (default)")
+		}
+		if !cfg.Auto.ConsolidateSpecs.Quick {
+			t.Error("ConsolidateSpecs.Quick should be true")
+		}
+		if cfg.Auto.ConsolidateSpecs.Full {
+			t.Error("ConsolidateSpecs.Full should be false")
+		}
+		if !cfg.Auto.GitPush {
+			t.Error("GitPush should be true")
+		}
+	})
+}
+
+// TestGetStructValueByPath tests the reflect-based getByPath at various depths and edge cases.
+func TestGetStructValueByPath(t *testing.T) {
+	t.Run("three-level path auto.eval.proposal", func(t *testing.T) {
+		dir := t.TempDir()
+		val, err := GetConfigValue(dir, "auto.eval.proposal")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "quick:true full:true" {
+			t.Errorf("expected 'quick:true full:true', got %q", val)
+		}
+	})
+
+	t.Run("four-level path auto.eval.proposal.quick", func(t *testing.T) {
+		dir := t.TempDir()
+		val, err := GetConfigValue(dir, "auto.eval.proposal.quick")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "true" {
+			t.Errorf("expected 'true', got %q", val)
+		}
+	})
+
+	t.Run("four-level path auto.eval.proposal.full", func(t *testing.T) {
+		dir := t.TempDir()
+		val, err := GetConfigValue(dir, "auto.eval.proposal.full")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "true" {
+			t.Errorf("expected 'true', got %q", val)
+		}
+	})
+
+	t.Run("intermediate node get auto.eval returns summary", func(t *testing.T) {
+		dir := t.TempDir()
+		val, err := GetConfigValue(dir, "auto.eval")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		// Should contain all four eval sub-fields
+		for _, field := range []string{"proposal:", "prd:", "uiDesign:", "techDesign:"} {
+			if !strings.Contains(val, field) {
+				t.Errorf("expected field %q in output, got %q", field, val)
+			}
+		}
+	})
+
+	t.Run("nil pointer field returns errKeyNotFound", func(t *testing.T) {
+		// Config with nil worktree — accessing worktree.source-branch should return errKeyNotFound
+		dir := t.TempDir()
+		_, err := GetConfigValue(dir, "worktree.source-branch")
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound for nil pointer, got %v", err)
+		}
+	})
+
+	t.Run("nonexistent field returns errKeyNotFound", func(t *testing.T) {
+		dir := t.TempDir()
+		_, err := GetConfigValue(dir, "auto.nonexistent")
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound, got %v", err)
+		}
+	})
+
+	t.Run("path beyond leaf returns errKeyNotFound", func(t *testing.T) {
+		dir := t.TempDir()
+		_, err := GetConfigValue(dir, "auto.eval.proposal.quick.extra")
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound, got %v", err)
+		}
+	})
+
+	t.Run("single-level key test-framework returns value", func(t *testing.T) {
+		dir := setupConfig(t, "test-framework: jest\n")
+		val, err := GetConfigValue(dir, "test-framework")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "jest" {
+			t.Errorf("expected 'jest', got %q", val)
+		}
+	})
+
+	t.Run("two-level path auto.gitPush returns bool", func(t *testing.T) {
+		dir := setupConfig(t, "auto:\n  gitPush: true\n")
+		val, err := GetConfigValue(dir, "auto.gitPush")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "true" {
+			t.Errorf("expected 'true', got %q", val)
+		}
+	})
+}
+
+// TestSetStructValueByPath tests the reflect-based setByPath for various scenarios.
+func TestSetStructValueByPath(t *testing.T) {
+	t.Run("multi-level path set auto.eval.prd.full true", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := SetConfigValue(dir, "auto.eval.prd.full", "true"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		val, err := GetConfigValue(dir, "auto.eval.prd.full")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "true" {
+			t.Errorf("expected 'true', got %q", val)
+		}
+	})
+
+	t.Run("ModeToggle direct set rejected", func(t *testing.T) {
+		dir := t.TempDir()
+		err := SetConfigValue(dir, "auto.eval.proposal", "true")
+		if err == nil {
+			t.Fatal("expected error for ModeToggle direct set")
+		}
+		if !strings.Contains(err.Error(), "cannot set ModeToggle directly") {
+			t.Errorf("expected 'cannot set ModeToggle directly' in error, got %v", err)
+		}
+	})
+
+	t.Run("non-leaf set rejected", func(t *testing.T) {
+		dir := t.TempDir()
+		err := SetConfigValue(dir, "auto.eval", "true")
+		if err == nil {
+			t.Fatal("expected error for non-leaf set")
+		}
+		if !strings.Contains(err.Error(), "cannot set non-leaf key") {
+			t.Errorf("expected 'cannot set non-leaf key' in error, got %v", err)
+		}
+	})
+
+	t.Run("nil pointer auto-initialized for worktree.source-branch", func(t *testing.T) {
+		dir := t.TempDir()
+		// No config file exists, but set should auto-create the worktree block
+		if err := SetConfigValue(dir, "worktree.source-branch", "develop"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		val, err := GetConfigValue(dir, "worktree.source-branch")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "develop" {
+			t.Errorf("expected 'develop', got %q", val)
+		}
+	})
+
+	t.Run("set auto.cleanCode.quick to false", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := SetConfigValue(dir, "auto.cleanCode.quick", "false"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		val, err := GetConfigValue(dir, "auto.cleanCode.quick")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "false" {
+			t.Errorf("expected 'false', got %q", val)
+		}
+	})
+
+	t.Run("set auto.eval.uiDesign.quick to true (flip default)", func(t *testing.T) {
+		dir := t.TempDir()
+		// First set it to true (non-default for prd), then verify
+		if err := SetConfigValue(dir, "auto.eval.prd.quick", "true"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		val, err := GetConfigValue(dir, "auto.eval.prd.quick")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "true" {
+			t.Errorf("expected 'true', got %q", val)
+		}
+	})
+
+	t.Run("invalid bool value returns descriptive error", func(t *testing.T) {
+		dir := t.TempDir()
+		err := SetConfigValue(dir, "auto.gitPush", "maybe")
+		if err == nil {
+			t.Fatal("expected error for invalid bool value")
+		}
+		if !strings.Contains(err.Error(), "invalid value") {
+			t.Errorf("expected 'invalid value' in error, got %v", err)
+		}
+		if !strings.Contains(err.Error(), "maybe") {
+			t.Errorf("expected value 'maybe' in error, got %v", err)
+		}
+	})
+
+	t.Run("nonexistent key returns error", func(t *testing.T) {
+		dir := t.TempDir()
+		err := SetConfigValue(dir, "auto.nonexistent", "true")
+		if err == nil {
+			t.Fatal("expected error for nonexistent key")
+		}
+		if !strings.Contains(err.Error(), "not found") && !strings.Contains(err.Error(), "unknown") {
+			t.Errorf("expected 'not found' or 'unknown' in error, got %v", err)
+		}
+	})
+}
+
+// TestGetConfigValue_SurfacesMap_Fallback tests that SurfacesMap scalar and map
+// forms fall back correctly via the reflect → hardcode fallback path.
+func TestGetConfigValue_SurfacesMap_Fallback(t *testing.T) {
+	t.Run("scalar surfaces form (single string) is not retrievable by key path", func(t *testing.T) {
+		// surfaces: api → SurfacesMap{".": "api"}
+		// Attempting getByPath on SurfacesMap hits errUnsupportedType
+		dir := setupConfig(t, "surfaces: api\n")
+		// surfaces itself is a map — reflect can handle it as map summary
+		// but individual sub-keys like "surfaces.." would be unusual
+		// The main point: reading a config with scalar surfaces should not error
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.Surfaces == nil {
+			t.Fatal("expected Surfaces non-nil")
+		}
+		if v, ok := cfg.Surfaces["."]; !ok || v != "api" {
+			t.Errorf("expected Surfaces['.'] = 'api', got %v", cfg.Surfaces)
+		}
+	})
+
+	t.Run("map surfaces form parses correctly", func(t *testing.T) {
+		dir := setupConfig(t, "surfaces:\n  frontend: web\n  backend: api\n")
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(cfg.Surfaces) != 2 {
+			t.Errorf("expected 2 surfaces, got %d", len(cfg.Surfaces))
+		}
+		if cfg.Surfaces["frontend"] != "web" {
+			t.Errorf("expected frontend=web, got %s", cfg.Surfaces["frontend"])
+		}
+		if cfg.Surfaces["backend"] != "api" {
+			t.Errorf("expected backend=api, got %s", cfg.Surfaces["backend"])
+		}
+	})
+
+	t.Run("SurfacesMap custom unmarshaler returns errUnsupportedType for reflect routing", func(t *testing.T) {
+		// This test validates that getByPath returns errUnsupportedType when
+		// encountering a SurfacesMap field (implements yaml.Unmarshaler).
+		dir := setupConfig(t, "surfaces: api\n")
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		// Directly test the reflect routing on the SurfacesMap field
+		surfacesField := reflect.ValueOf(cfg).Elem().FieldByName("Surfaces")
+		if !surfacesField.IsValid() {
+			t.Fatal("Surfaces field not found on Config struct")
+		}
+		_, err = formatValue(derefPointer(surfacesField))
+		if err != errUnsupportedType {
+			t.Errorf("expected errUnsupportedType for SurfacesMap, got %v", err)
+		}
+	})
+}
+
+// TestGetByPath_DirectByPathTests tests the internal getByPath function directly.
+func TestGetByPath_DirectByPathTests(t *testing.T) {
+	t.Run("get by empty segments returns errKeyNotFound", func(t *testing.T) {
+		cfg := &Config{}
+		_, err := getByPath(reflect.ValueOf(cfg).Elem(), []string{})
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound for empty segments, got %v", err)
+		}
+	})
+
+	t.Run("get by single segment top-level key", func(t *testing.T) {
+		cfg := &Config{Version: "2"}
+		val, err := getByPath(reflect.ValueOf(cfg).Elem(), []string{"version"})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "2" {
+			t.Errorf("expected '2', got %q", val)
+		}
+	})
+}
+
+// TestDetectPipelineMode tests mode detection at the forgeconfig API level.
+// The actual detectModeFromPath is in internal/cmd, but the API behavior
+// is testable through GetConfigValue for config-based keys.
+func TestDetectPipelineMode(t *testing.T) {
+	// These tests validate mode-related config behavior:
+	// The actual mode detection (quick/full/none) is tested in
+	// internal/cmd/config_test.go::TestDetectModeFromPath.
+	// Here we test that the config system supports the mode-based eval keys.
+
+	t.Run("auto.eval.proposal.quick default enables quick mode eval", func(t *testing.T) {
+		dir := t.TempDir()
+		val, err := GetConfigValue(dir, "auto.eval.proposal.quick")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "true" {
+			t.Errorf("expected 'true' (quick mode enabled by default), got %q", val)
+		}
+	})
+
+	t.Run("auto.eval.prd.quick default disables quick mode eval", func(t *testing.T) {
+		dir := t.TempDir()
+		val, err := GetConfigValue(dir, "auto.eval.prd.quick")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "false" {
+			t.Errorf("expected 'false' (quick mode disabled by default), got %q", val)
+		}
+	})
+
+	t.Run("auto.eval.prd.full default disables full mode eval", func(t *testing.T) {
+		dir := t.TempDir()
+		val, err := GetConfigValue(dir, "auto.eval.prd.full")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "false" {
+			t.Errorf("expected 'false' (full mode disabled by default), got %q", val)
+		}
+	})
+
+	t.Run("auto.eval.uiDesign.quick default enables quick mode eval", func(t *testing.T) {
+		dir := t.TempDir()
+		val, err := GetConfigValue(dir, "auto.eval.uiDesign.quick")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "true" {
+			t.Errorf("expected 'true', got %q", val)
+		}
+	})
+
+	t.Run("auto.eval.techDesign.full default disables full mode eval", func(t *testing.T) {
+		dir := t.TempDir()
+		val, err := GetConfigValue(dir, "auto.eval.techDesign.full")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "false" {
+			t.Errorf("expected 'false', got %q", val)
+		}
+	})
+}
+
+// TestParseAutoRaw_FlatPathTracking verifies the raw map flat-path key structure.
+func TestParseAutoRaw_FlatPathTracking(t *testing.T) {
+	t.Run("raw map contains eval.proposal flat-path key", func(t *testing.T) {
+		yaml := []byte("auto:\n  eval:\n    proposal:\n      quick: true\n")
+		raw, err := parseAutoRaw(yaml)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		fieldRaw, exists := raw["eval.proposal"]
+		if !exists {
+			t.Fatal("expected 'eval.proposal' key in raw map")
+		}
+		if !fieldRaw["quick"] {
+			t.Error("expected quick=true in eval.proposal raw")
+		}
+	})
+
+	t.Run("raw map tracks multiple eval sub-fields", func(t *testing.T) {
+		yaml := []byte("auto:\n  eval:\n    proposal:\n      quick: false\n    prd:\n      full: true\n")
+		raw, err := parseAutoRaw(yaml)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		proposalRaw, exists := raw["eval.proposal"]
+		if !exists {
+			t.Fatal("expected 'eval.proposal' in raw map")
+		}
+		if !proposalRaw["quick"] {
+			t.Error("expected quick tracked for eval.proposal")
+		}
+
+		prdRaw, exists := raw["eval.prd"]
+		if !exists {
+			t.Fatal("expected 'eval.prd' in raw map")
+		}
+		if !prdRaw["full"] {
+			t.Error("expected full tracked for eval.prd")
+		}
+	})
+
+	t.Run("applyDefaults only fills missing sub-keys", func(t *testing.T) {
+		dir := setupConfig(t, "auto:\n  eval:\n    proposal:\n      quick: false\n")
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		// quick was explicitly set to false — should remain false
+		if cfg.Auto.Eval.Proposal.Quick {
+			t.Error("Eval.Proposal.Quick should be false (explicitly set)")
+		}
+		// full was not set — should get default (true)
+		if !cfg.Auto.Eval.Proposal.Full {
+			t.Error("Eval.Proposal.Full should be true (default applied)")
+		}
+	})
+}
+
+// TestGetConfigValue_EvalExplicitConfig tests eval config with explicit YAML values.
+func TestGetConfigValue_EvalExplicitConfig(t *testing.T) {
+	t.Run("explicit eval config overrides defaults", func(t *testing.T) {
+		dir := setupConfig(t, `auto:
+  eval:
+    proposal:
+      quick: false
+      full: false
+    prd:
+      quick: true
+      full: true
+    uiDesign:
+      quick: false
+    techDesign:
+      full: true
+`)
+		tests := []struct {
+			key      string
+			expected string
+		}{
+			{"auto.eval.proposal", "quick:false full:false"},
+			{"auto.eval.prd", "quick:true full:true"},
+			{"auto.eval.uiDesign", "quick:false full:true"},   // quick explicit false, full defaults to true
+			{"auto.eval.techDesign", "quick:false full:true"}, // quick defaults false, full explicit true
+		}
+		for _, tt := range tests {
+			t.Run(tt.key, func(t *testing.T) {
+				val, err := GetConfigValue(dir, tt.key)
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if val != tt.expected {
+					t.Errorf("key %q: expected %q, got %q", tt.key, tt.expected, val)
+				}
+			})
+		}
+	})
+}
+
+// TestGetConfigValue_AutoSummary verifies the auto block summary includes eval fields.
+func TestGetConfigValue_AutoSummary(t *testing.T) {
+	t.Run("auto summary includes all expected fields", func(t *testing.T) {
+		dir := t.TempDir()
+		val, err := GetConfigValue(dir, "auto")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		// Check ModeToggle fields
+		for _, field := range []string{"runTasks:", "consolidateSpecs:", "cleanCode:", "validation:", "knowledgeSave:"} {
+			if !strings.Contains(val, field) {
+				t.Errorf("expected field %q in auto summary, got:\n%s", field, val)
+			}
+		}
+
+		// Check bool field
+		if !strings.Contains(val, "gitPush:") {
+			t.Errorf("expected 'gitPush:' in auto summary, got:\n%s", val)
+		}
+
+		// Check nested struct
+		if !strings.Contains(val, "eval:") {
+			t.Errorf("expected 'eval:' in auto summary, got:\n%s", val)
+		}
+
+		// Check eval sub-fields appear (indented under eval)
+		for _, field := range []string{"proposal:", "prd:", "uiDesign:", "techDesign:"} {
+			if !strings.Contains(val, field) {
+				t.Errorf("expected eval sub-field %q in auto summary, got:\n%s", field, val)
+			}
+		}
+	})
+}
+
+func TestEvalConfigDefaults(t *testing.T) {
+	t.Run("eval defaults match proposal spec", func(t *testing.T) {
+		defaults := AutoConfigDefaults()
+
+		// proposal: quick=true, full=true
+		if !defaults.Eval.Proposal.Quick || !defaults.Eval.Proposal.Full {
+			t.Errorf("Eval.Proposal = %+v, want {Quick:true Full:true}", defaults.Eval.Proposal)
+		}
+		// prd: quick=false, full=false
+		if defaults.Eval.Prd.Quick || defaults.Eval.Prd.Full {
+			t.Errorf("Eval.Prd = %+v, want {Quick:false Full:false}", defaults.Eval.Prd)
+		}
+		// uiDesign: quick=true, full=true
+		if !defaults.Eval.UiDesign.Quick || !defaults.Eval.UiDesign.Full {
+			t.Errorf("Eval.UiDesign = %+v, want {Quick:true Full:true}", defaults.Eval.UiDesign)
+		}
+		// techDesign: quick=false, full=false
+		if defaults.Eval.TechDesign.Quick || defaults.Eval.TechDesign.Full {
+			t.Errorf("Eval.TechDesign = %+v, want {Quick:false Full:false}", defaults.Eval.TechDesign)
+		}
+	})
+}
+
+func TestAutoConfigIsZero_IncludesEval(t *testing.T) {
+	t.Run("zero EvalConfig counts as zero", func(t *testing.T) {
+		a := AutoConfig{}
+		if !a.IsZero() {
+			t.Error("expected zero AutoConfig to be zero")
+		}
+	})
+
+	t.Run("non-zero Eval makes AutoConfig non-zero", func(t *testing.T) {
+		a := AutoConfig{Eval: EvalConfig{Proposal: ModeToggle{Quick: true}}}
+		if a.IsZero() {
+			t.Error("expected AutoConfig with Eval set to be non-zero")
+		}
+	})
+}
+
+func TestSetConfigValue_EvalPersistence(t *testing.T) {
+	t.Run("set auto.eval.techDesign.quick persists across read", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := SetConfigValue(dir, "auto.eval.techDesign.quick", "true"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		// Read back from file
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.Auto == nil {
+			t.Fatal("expected Auto non-nil")
+		}
+		if !cfg.Auto.Eval.TechDesign.Quick {
+			t.Error("Eval.TechDesign.Quick should be true after set")
+		}
+		// Full should be default (false)
+		if cfg.Auto.Eval.TechDesign.Full {
+			t.Error("Eval.TechDesign.Full should be false (default)")
+		}
+	})
+
+	t.Run("set auto.eval.prd.full true after false default", func(t *testing.T) {
+		dir := t.TempDir()
+		// Default for prd.full is false, set to true
+		if err := SetConfigValue(dir, "auto.eval.prd.full", "true"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		val, err := GetConfigValue(dir, "auto.eval.prd.full")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "true" {
+			t.Errorf("expected 'true', got %q", val)
+		}
+	})
+}
+
+func TestParseAutoRaw_EvalRegressionWithExistingFields(t *testing.T) {
+	t.Run("eval and existing fields coexist in raw tracking", func(t *testing.T) {
+		dir := setupConfig(t, `auto:
+  test:
+    quick: false
+  consolidateSpecs:
+    quick: true
+    full: false
+  gitPush: true
+  eval:
+    proposal:
+      quick: false
+    prd:
+      full: true
+`)
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		// Existing fields
+		if cfg.Auto.Test.Quick {
+			t.Error("Test.Quick should be false")
+		}
+		if !cfg.Auto.Test.Full {
+			t.Error("Test.Full should be true (default)")
+		}
+		if !cfg.Auto.ConsolidateSpecs.Quick {
+			t.Error("ConsolidateSpecs.Quick should be true")
+		}
+		if cfg.Auto.ConsolidateSpecs.Full {
+			t.Error("ConsolidateSpecs.Full should be false")
+		}
+		if !cfg.Auto.GitPush {
+			t.Error("GitPush should be true")
+		}
+
+		// Eval fields
+		if cfg.Auto.Eval.Proposal.Quick {
+			t.Error("Eval.Proposal.Quick should be false (explicit)")
+		}
+		if !cfg.Auto.Eval.Proposal.Full {
+			t.Error("Eval.Proposal.Full should be true (default)")
+		}
+		if cfg.Auto.Eval.Prd.Quick {
+			t.Error("Eval.Prd.Quick should be false (default)")
+		}
+		if !cfg.Auto.Eval.Prd.Full {
+			t.Error("Eval.Prd.Full should be true (explicit)")
+		}
+	})
+}
+
+// TestFormatValue_EdgeCases tests formatValue edge cases for coverage.
+func TestFormatValue_EdgeCases(t *testing.T) {
+	t.Run("formatValue on nil SurfacesMap returns errUnsupportedType", func(t *testing.T) {
+		var s SurfacesMap
+		_, err := formatValue(reflect.ValueOf(s))
+		if err != errUnsupportedType {
+			t.Errorf("expected errUnsupportedType for nil SurfacesMap, got %v", err)
+		}
+	})
+
+	t.Run("formatValue on non-nil SurfacesMap returns errUnsupportedType", func(t *testing.T) {
+		s := SurfacesMap{".": "api"}
+		_, err := formatValue(reflect.ValueOf(s))
+		if err != errUnsupportedType {
+			t.Errorf("expected errUnsupportedType for non-nil SurfacesMap, got %v", err)
+		}
+	})
+
+	t.Run("formatValue on int returns string", func(t *testing.T) {
+		v := reflect.ValueOf(42)
+		result, err := formatValue(v)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if result != "42" {
+			t.Errorf("expected '42', got %q", result)
+		}
+	})
+
+	t.Run("formatValue on bool returns string", func(t *testing.T) {
+		v := reflect.ValueOf(true)
+		result, err := formatValue(v)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if result != "true" {
+			t.Errorf("expected 'true', got %q", result)
+		}
+	})
+
+	t.Run("formatValue on string returns string", func(t *testing.T) {
+		v := reflect.ValueOf("hello")
+		result, err := formatValue(v)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if result != "hello" {
+			t.Errorf("expected 'hello', got %q", result)
+		}
+	})
+
+	t.Run("formatValue on string slice returns newline-joined", func(t *testing.T) {
+		v := reflect.ValueOf([]string{"a", "b", "c"})
+		result, err := formatValue(v)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if result != "a\nb\nc" {
+			t.Errorf("expected 'a\\nb\\nc', got %q", result)
+		}
+	})
+
+	t.Run("formatValue on invalid Value returns errKeyNotFound", func(t *testing.T) {
+		var v reflect.Value
+		_, err := formatValue(v)
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound for invalid Value, got %v", err)
+		}
+	})
+}
+
+// TestGetConfigValue_EvalFullRoundtrip tests set-get roundtrip for all eval fields.
+func TestGetConfigValue_EvalFullRoundtrip(t *testing.T) {
+	evalKeys := []struct {
+		key        string
+		defaultVal string
+	}{
+		{"auto.eval.proposal.quick", "true"},
+		{"auto.eval.proposal.full", "true"},
+		{"auto.eval.prd.quick", "false"},
+		{"auto.eval.prd.full", "false"},
+		{"auto.eval.uiDesign.quick", "true"},
+		{"auto.eval.uiDesign.full", "true"},
+		{"auto.eval.techDesign.quick", "false"},
+		{"auto.eval.techDesign.full", "false"},
+	}
+
+	for _, tt := range evalKeys {
+		t.Run(fmt.Sprintf("default for %s is %s", tt.key, tt.defaultVal), func(t *testing.T) {
+			dir := t.TempDir()
+			val, err := GetConfigValue(dir, tt.key)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if val != tt.defaultVal {
+				t.Errorf("expected %q, got %q", tt.defaultVal, val)
+			}
+		})
+	}
 }

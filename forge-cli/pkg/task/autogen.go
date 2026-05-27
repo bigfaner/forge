@@ -215,17 +215,6 @@ func GetBreakdownTestTasks(surfaces map[string]string, executionOrder []string, 
 				})
 			}
 		}
-
-		// Shared verify-regression
-		verifyRegressionType := TypeTestVerifyRegression
-		if singleSurface {
-			verifyRegressionType = GenSurfaceTestType(TypeTestVerifyRegression, surfaceTypes[0])
-		}
-		tasks = append(tasks, AutoGenTaskDef{
-			Key: "verify-regression", ID: "T-test-verify-regression",
-			Title: "Verify Full Regression", Priority: "P1", EstimatedTime: "15-30min",
-			Type: verifyRegressionType,
-		})
 	}
 
 	// Validation tasks (gated by auto.Validation.Full)
@@ -275,7 +264,7 @@ func GetBreakdownTestTasks(surfaces map[string]string, executionOrder []string, 
 //
 // Quick mode uses staged across types topology:
 //
-//	gen-journeys (single) -> run-test-{key1} -> run-test-{key2} -> ... -> verify-regression
+//	gen-journeys (single) -> run-test-{key1} -> run-test-{key2} -> ...
 //
 // This replaces the old gen-and-run combined tasks with independent staged tasks,
 // sharing the same task definitions as Breakdown mode (without eval quality gates).
@@ -294,7 +283,7 @@ func GetQuickTestTasks(surfaces map[string]string, executionOrder []string, auto
 	var tasks []AutoGenTaskDef
 
 	// Staged test pipeline (gated by auto.Test.Quick)
-	// Quick mode: gen-journeys → run-tests(serial) → verify-regression
+	// Quick mode: gen-journeys -> run-tests(serial)
 	// (no gen-contracts or gen-scripts in Quick mode)
 	if auto.Test.Quick {
 		// Single gen-journeys task covering all configured surfaces (Stage 1)
@@ -330,19 +319,7 @@ func GetQuickTestTasks(surfaces map[string]string, executionOrder []string, auto
 				})
 			}
 		}
-
-		// Shared verify-regression (Stage 3: depends on last run-test)
-		verifyRegressionType := TypeTestVerifyRegression
-		if singleSurface {
-			verifyRegressionType = GenSurfaceTestType(TypeTestVerifyRegression, surfaceTypes[0])
-		}
-		tasks = append(tasks, AutoGenTaskDef{
-			Key: "verify-regression", ID: "T-test-verify-regression",
-			Title: "Verify Full Regression", Priority: "P1", EstimatedTime: "15-30min",
-			Type: verifyRegressionType,
-		})
 	}
-
 	// Validation tasks (gated by auto.Validation.Quick)
 	if auto.Validation.Quick {
 		tasks = append(tasks, AutoGenTaskDef{
@@ -594,19 +571,17 @@ func formatYAMLList(items []string) string {
 }
 
 // resolveBreakdownDeps sets dependency chains for breakdown test tasks.
-// For multi-surface projects, run-test tasks form a serial chain ordered by executionOrder.
-// T-test-verify-regression depends on the last run-test in the chain.
 func resolveBreakdownDeps(tasks []AutoGenTaskDef, surfaceTypes []string, surfaces map[string]string, executionOrder []string, auto forgeconfig.AutoConfig) {
 	if !auto.Test.Full && !auto.ConsolidateSpecs.Full && !auto.CleanCode.Full && !auto.Validation.Full {
 		return // no tasks to wire
 	}
 
+	var lastRunID string
 	if auto.Test.Full {
-		// Pipeline: gen-journeys -> eval-journey -> gen-contracts -> eval-contract -> gen-scripts-per-type -> run-test(s) -> verify-regression
+		// Pipeline: gen-journeys -> eval-journey -> gen-contracts -> eval-contract -> gen-scripts-per-type -> run-test(s)
 		evalJourneyIdx := findTaskIndexOrPanic(tasks, "T-eval-journey")
 		genContractsIdx := findTaskIndexOrPanic(tasks, "T-test-gen-contracts")
 		evalContractIdx := findTaskIndexOrPanic(tasks, "T-eval-contract")
-		verifyIdx := findTaskIndexOrPanic(tasks, "T-test-verify-regression")
 
 		// eval-journey depends on single gen-journeys task
 		genJourneysIdx := findTaskIndexOrPanic(tasks, "T-test-gen-journeys")
@@ -625,22 +600,19 @@ func resolveBreakdownDeps(tasks []AutoGenTaskDef, surfaceTypes []string, surface
 		}
 
 		// Wire run-test task(s)
-		lastRunID := wireRunTestChain(tasks, surfaceTypes, surfaces, executionOrder)
-
-		// Verify-regression depends on last run-test in chain
-		tasks[verifyIdx].Dependencies = []string{lastRunID}
+		lastRunID = wireRunTestChain(tasks, surfaceTypes, surfaces, executionOrder)
 	}
-	// T-validate-code depends on T-test-verify-regression (if e2e tasks exist)
+	// T-validate-code depends on last run-test (if e2e tasks exist)
 	validateIdx := findTaskIndex(tasks, "T-validate-code")
-	if validateIdx >= 0 && auto.Test.Full {
-		tasks[validateIdx].Dependencies = []string{"T-test-verify-regression"}
+	if validateIdx >= 0 && auto.Test.Full && lastRunID != "" {
+		tasks[validateIdx].Dependencies = []string{lastRunID}
 	}
 
-	// T-specs-consolidate depends on T-test-verify-regression (if e2e tasks exist) or nothing
+	// T-specs-consolidate depends on last run-test (if e2e tasks exist) or nothing
 	if auto.ConsolidateSpecs.Full {
 		specsIdx := findTaskIndex(tasks, "T-specs-consolidate")
-		if specsIdx >= 0 && auto.Test.Full {
-			tasks[specsIdx].Dependencies = []string{"T-test-verify-regression"}
+		if specsIdx >= 0 && auto.Test.Full && lastRunID != "" {
+			tasks[specsIdx].Dependencies = []string{lastRunID}
 		}
 	}
 
@@ -651,37 +623,33 @@ func resolveBreakdownDeps(tasks []AutoGenTaskDef, surfaceTypes []string, surface
 // resolveQuickDeps sets dependency chains for quick test tasks using staged across types topology.
 // For multi-surface projects: T-test-gen-journeys is the direct upstream of all T-test-run-{key} tasks.
 // T-test-run-{key} tasks form a serial chain ordered by executionOrder.
-// T-test-verify-regression depends on the last run-test in the chain.
+// Downstream tasks (drift, validation) depend on the last run-test in the chain.
 func resolveQuickDeps(tasks []AutoGenTaskDef, _ []string, surfaces map[string]string, executionOrder []string, auto forgeconfig.AutoConfig) {
 	if !auto.Test.Quick && !auto.ConsolidateSpecs.Quick && !auto.CleanCode.Quick && !auto.Validation.Quick {
 		return // no tasks to wire
 	}
 
+	var lastRunID string
 	if auto.Test.Quick {
-		verifyIdx := findTaskIndexOrPanic(tasks, "T-test-verify-regression")
-
 		// Wire run-test task(s): first run-test depends on gen-journeys
 		// (no gen-contracts/gen-scripts in Quick mode)
 		// Serial chain: T-test-run-{key1} -> T-test-run-{key2} -> ...
-		lastRunID := wireQuickRunTestChain(tasks, surfaces, executionOrder)
-
-		// verify-regression depends on last run-test (Stage 3)
-		tasks[verifyIdx].Dependencies = []string{lastRunID}
+		lastRunID = wireQuickRunTestChain(tasks, surfaces, executionOrder)
 	}
 
-	// T-validate-code depends on T-test-verify-regression (if e2e tasks exist) or nothing
+	// T-validate-code depends on last run-test (if e2e tasks exist) or nothing
 	if auto.Validation.Quick {
 		validateIdx := findTaskIndex(tasks, "T-validate-code")
-		if validateIdx >= 0 && auto.Test.Quick {
-			tasks[validateIdx].Dependencies = []string{"T-test-verify-regression"}
+		if validateIdx >= 0 && auto.Test.Quick && lastRunID != "" {
+			tasks[validateIdx].Dependencies = []string{lastRunID}
 		}
 	}
 
-	// T-quick-doc-drift depends on T-test-verify-regression (if e2e tasks exist) or nothing
+	// T-quick-doc-drift depends on last run-test (if e2e tasks exist) or nothing
 	if auto.ConsolidateSpecs.Quick {
 		idx := findTaskIndex(tasks, "T-quick-doc-drift")
-		if idx >= 0 && auto.Test.Quick {
-			tasks[idx].Dependencies = []string{"T-test-verify-regression"}
+		if idx >= 0 && auto.Test.Quick && lastRunID != "" {
+			tasks[idx].Dependencies = []string{lastRunID}
 		}
 	}
 

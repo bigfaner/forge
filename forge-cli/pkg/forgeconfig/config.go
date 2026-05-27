@@ -1,12 +1,15 @@
 // Package forgeconfig provides types and functions for reading/writing
 // the .forge/config.yaml file. This package extracts only the retained
 // config types from the legacy profile package: auto and worktree blocks.
+//
+//nolint:govet // reflect.Ptr inline warnings are toolchain version mismatches, not code issues
 package forgeconfig
 
 import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -25,6 +28,17 @@ type ModeToggle struct {
 	Full  bool `yaml:"full"`
 }
 
+// EvalConfig controls which eval skills auto-run after document generation.
+// Each field is a ModeToggle controlling quick/full pipeline behavior.
+//
+//nolint:revive // UiDesign matches YAML key convention (camelCase)
+type EvalConfig struct {
+	Proposal   ModeToggle `yaml:"proposal"`
+	Prd        ModeToggle `yaml:"prd"`
+	UiDesign   ModeToggle `yaml:"uiDesign"`
+	TechDesign ModeToggle `yaml:"techDesign"`
+}
+
 // AutoConfig controls which auto-generated tasks are produced by `forge task index`.
 // When the `auto` block is missing from config, all fields use defaults that match
 // pre-auto-behavior.
@@ -36,6 +50,7 @@ type AutoConfig struct {
 	RunTasks         ModeToggle `yaml:"runTasks"`
 	GitPush          bool       `yaml:"gitPush"`
 	KnowledgeSave    ModeToggle `yaml:"knowledgeSave"`
+	Eval             EvalConfig `yaml:"eval"`
 	// raw tracks which sub-fields were explicitly present in the YAML.
 	// Used by applyDefaults to distinguish "false" from "missing".
 	raw map[string]map[string]bool
@@ -53,6 +68,12 @@ func AutoConfigDefaults() AutoConfig {
 		RunTasks:         ModeToggle{Quick: true, Full: false},
 		GitPush:          false,
 		KnowledgeSave:    ModeToggle{Quick: true, Full: false},
+		Eval: EvalConfig{
+			Proposal:   ModeToggle{Quick: true, Full: true},
+			Prd:        ModeToggle{Quick: false, Full: false},
+			UiDesign:   ModeToggle{Quick: true, Full: true},
+			TechDesign: ModeToggle{Quick: false, Full: false},
+		},
 	}
 }
 
@@ -64,7 +85,8 @@ func (a AutoConfig) IsZero() bool {
 		a.Validation == ModeToggle{} &&
 		a.RunTasks == ModeToggle{} &&
 		!a.GitPush &&
-		a.KnowledgeSave == ModeToggle{}
+		a.KnowledgeSave == ModeToggle{} &&
+		a.Eval == EvalConfig{}
 }
 
 // WithDefaults returns an AutoConfig with defaults applied for any zero-value fields.
@@ -353,6 +375,7 @@ func ReadAutoConfig(projectRoot string) (AutoConfig, error) {
 // parseAutoRaw parses the raw YAML to detect which auto fields and sub-fields were present.
 // For the old key name "e2eTest" (renamed to "test" in v3.0.0), it maps the value to
 // the new "test" key in the result. Migration hint output is handled by migrateOldE2eTestKey.
+// Uses recursive scanning to support arbitrary nesting (e.g. "eval.proposal").
 func parseAutoRaw(data []byte) (map[string]map[string]bool, error) {
 	var root yaml.Node
 	if err := yaml.Unmarshal(data, &root); err != nil {
@@ -379,30 +402,63 @@ func parseAutoRaw(data []byte) (map[string]map[string]bool, error) {
 		}
 	}
 
-	modeFields := []string{"test", "consolidateSpecs", "cleanCode", "validation", "runTasks", "knowledgeSave"}
-	for _, field := range modeFields {
-		node := findMappingKey(autoNode, field)
-		if node == nil {
+	// Recursive scan of auto block
+	scanMappingNode(autoNode, "", result)
+
+	return result, nil
+}
+
+// scanMappingNode recursively scans a YAML mapping node for ModeToggle-like
+// sub-fields (quick/full), building flat-path keys.
+func scanMappingNode(node *yaml.Node, prefix string, result map[string]map[string]bool) {
+	if node.Kind != yaml.MappingNode {
+		return
+	}
+	for i := 0; i < len(node.Content); i += 2 {
+		key := node.Content[i].Value
+		// Skip old e2eTest key (already handled above)
+		if key == "e2eTest" {
 			continue
 		}
-		// Skip "test" if already populated from old "e2eTest" key detection above
-		if field == "test" {
-			if _, exists := result["test"]; exists {
-				continue
-			}
+		valNode := node.Content[i+1]
+		flatKey := key
+		if prefix != "" {
+			flatKey = prefix + "." + key
 		}
-		result[field] = make(map[string]bool)
-		if node.Kind == yaml.MappingNode {
-			for i := 0; i < len(node.Content); i += 2 {
-				key := node.Content[i].Value
-				if key == "quick" || key == "full" {
-					result[field][key] = true
+
+		if valNode.Kind == yaml.MappingNode {
+			// Check if this is a ModeToggle node (has quick/full sub-keys)
+			if isModeToggleNode(valNode) {
+				if _, exists := result[flatKey]; !exists {
+					result[flatKey] = make(map[string]bool)
 				}
+				for j := 0; j < len(valNode.Content); j += 2 {
+					subKey := valNode.Content[j].Value
+					if subKey == "quick" || subKey == "full" {
+						result[flatKey][subKey] = true
+					}
+				}
+			} else {
+				// Recurse into nested struct (e.g. "eval")
+				scanMappingNode(valNode, flatKey, result)
 			}
 		}
 	}
+}
 
-	return result, nil
+// isModeToggleNode checks if a YAML mapping node looks like a ModeToggle
+// (has "quick" and/or "full" keys).
+func isModeToggleNode(node *yaml.Node) bool {
+	if node.Kind != yaml.MappingNode {
+		return false
+	}
+	for i := 0; i < len(node.Content); i += 2 {
+		key := node.Content[i].Value
+		if key == "quick" || key == "full" {
+			return true
+		}
+	}
+	return false
 }
 
 // findMappingKey finds a mapping node value by key within a YAML node tree.
@@ -430,8 +486,10 @@ func (a *AutoConfig) applyDefaults() {
 		a.Test = d.Test
 		a.ConsolidateSpecs = d.ConsolidateSpecs
 		a.CleanCode = d.CleanCode
+		a.Validation = d.Validation
 		a.RunTasks = d.RunTasks
 		a.KnowledgeSave = d.KnowledgeSave
+		a.Eval = d.Eval
 		return
 	}
 
@@ -441,6 +499,12 @@ func (a *AutoConfig) applyDefaults() {
 	applyModeDefault(&a.Validation, a.raw, "validation", d.Validation)
 	applyModeDefault(&a.RunTasks, a.raw, "runTasks", d.RunTasks)
 	applyModeDefault(&a.KnowledgeSave, a.raw, "knowledgeSave", d.KnowledgeSave)
+
+	// Eval sub-fields
+	applyModeDefault(&a.Eval.Proposal, a.raw, "eval.proposal", d.Eval.Proposal)
+	applyModeDefault(&a.Eval.Prd, a.raw, "eval.prd", d.Eval.Prd)
+	applyModeDefault(&a.Eval.UiDesign, a.raw, "eval.uiDesign", d.Eval.UiDesign)
+	applyModeDefault(&a.Eval.TechDesign, a.raw, "eval.techDesign", d.Eval.TechDesign)
 }
 
 // applyModeDefault sets default values for a ModeToggle field using per-mode defaults.
@@ -462,102 +526,547 @@ func applyModeDefault(mt *ModeToggle, raw map[string]map[string]bool, field stri
 // errKeyNotFound is returned when a config key does not exist or has a zero value.
 var errKeyNotFound = fmt.Errorf("config key not found")
 
+// errUnsupportedType is returned when a config field implements yaml.Unmarshaler
+// and the generic reflect router cannot handle it (e.g. SurfacesMap).
+var errUnsupportedType = fmt.Errorf("unsupported type for reflect routing")
+
 // GetConfigValue returns the value for a given key from .forge/config.yaml.
 // For scalar values, returns the raw string; for arrays, joins with newline.
-// Supports dot-notation for nested keys (e.g. "auto.gitPush", "worktree.source-branch", "coverage.coding.feature").
-// Also supports top-level keys: "test-framework".
+// Supports arbitrary-depth dot-notation for nested keys via reflection.
 // Returns empty string and errKeyNotFound if the key doesn't exist or has zero value.
 func GetConfigValue(projectRoot, key string) (string, error) {
-	// Handle dot-notation auto keys
-	if val, ok, err := getAutoKeyValue(projectRoot, key); ok || err != nil {
-		if err != nil {
-			return "", err
-		}
-		return val, nil
+	cfg, err := ReadConfig(projectRoot)
+	if err != nil {
+		return "", err
+	}
+	if cfg == nil {
+		cfg = &Config{}
 	}
 
-	// Handle dot-notation worktree keys
-	if val, ok, err := getWorktreeKeyValue(projectRoot, key); ok || err != nil {
-		if err != nil {
-			return "", err
-		}
-		return val, nil
+	// Ensure Auto block has defaults applied for auto.* key lookups
+	if strings.HasPrefix(key, "auto") && cfg.Auto == nil {
+		cfg.Auto = &AutoConfig{}
+		cfg.Auto.applyDefaults()
 	}
 
-	// Handle coverage.* keys
-	if val, ok, err := getCoverageKeyValue(projectRoot, key); ok || err != nil {
-		if err != nil {
-			return "", err
-		}
-		return val, nil
-	}
-
-	// Handle top-level scalar keys
-	if key == "test-framework" {
-		cfg, err := ReadConfig(projectRoot)
-		if err != nil {
-			return "", err
-		}
-		if cfg == nil {
+	// Try reflect-based routing first
+	val, err := getByPath(reflect.ValueOf(cfg).Elem(), strings.Split(key, "."))
+	if err == nil {
+		if val == "" {
 			return "", errKeyNotFound
 		}
-		if cfg.TestFramework == "" {
-			return "", errKeyNotFound
+		return val, nil
+	}
+	if err != errUnsupportedType && err != errKeyNotFound {
+		return "", err
+	}
+
+	// Fallback: coverage keys (inline map + custom SurfacesMap type)
+	if strings.HasPrefix(key, "coverage.") {
+		if val, ok, err := getCoverageKeyValue(projectRoot, key); ok || err != nil {
+			if err != nil {
+				return "", err
+			}
+			return val, nil
 		}
-		return cfg.TestFramework, nil
 	}
 
 	return "", errKeyNotFound
 }
 
-// autoModeField returns the ModeToggle pointer for a given auto field name.
-func autoModeField(a *AutoConfig, field string) *ModeToggle {
-	switch field {
-	case "test":
-		return &a.Test
-	case "consolidateSpecs":
-		return &a.ConsolidateSpecs
-	case "cleanCode":
-		return &a.CleanCode
-	case "validation":
-		return &a.Validation
-	case "runTasks":
-		return &a.RunTasks
-	case "knowledgeSave":
-		return &a.KnowledgeSave
+// getByPath traverses a reflect.Value by path segments, returning the formatted value.
+func getByPath(v reflect.Value, segments []string) (string, error) {
+	var err error
+	for i, seg := range segments {
+		v, err = navigateToSegment(v, seg)
+		if err == errKeyNotFound {
+			// Try inline map with dot-joined remaining segments
+			v2 := derefPointer(v)
+			if v2.IsValid() && v2.Kind() == reflect.Struct {
+				if inlineField, ok := findInlineMapField(v2); ok {
+					mapVal := derefPointer(inlineField)
+					if mapVal.IsValid() && mapVal.Kind() == reflect.Map {
+						dotKey := strings.Join(segments[i:], ".")
+						entry := mapVal.MapIndex(reflect.ValueOf(dotKey))
+						if entry.IsValid() {
+							return formatValue(derefPointer(entry))
+						}
+					}
+				}
+			}
+			return "", err
+		}
+		if err != nil {
+			return "", err
+		}
+
+		// Reached the target segment
+		if i == len(segments)-1 {
+			return formatValue(v)
+		}
+
+		// More segments to go — check if current value is navigable
+		if isLeafType(v) {
+			return "", errKeyNotFound
+		}
+		// Continue descending
 	}
-	return nil
+	return "", errKeyNotFound
+}
+
+// navigateToSegment resolves one path segment within the given reflect.Value.
+func navigateToSegment(v reflect.Value, seg string) (reflect.Value, error) {
+	// Dereference pointers
+	v = derefPointer(v)
+	if !v.IsValid() {
+		return reflect.Value{}, errKeyNotFound
+	}
+
+	kind := v.Kind()
+
+	switch kind {
+	case reflect.Struct:
+		field, found := findFieldByYAMLTag(v, seg)
+		if !found {
+			// Check for yaml:",inline" map fields
+			if inlineField, ok := findInlineMapField(v); ok {
+				mapVal := derefPointer(inlineField)
+				if mapVal.IsValid() && mapVal.Kind() == reflect.Map {
+					entry := mapVal.MapIndex(reflect.ValueOf(seg))
+					if entry.IsValid() {
+						return derefPointer(entry), nil
+					}
+				}
+			}
+			return reflect.Value{}, errKeyNotFound
+		}
+		return derefPointer(field), nil
+
+	case reflect.Map:
+		keyVal := reflect.ValueOf(seg)
+		entry := v.MapIndex(keyVal)
+		if !entry.IsValid() {
+			return reflect.Value{}, errKeyNotFound
+		}
+		return derefPointer(entry), nil
+
+	default:
+		return reflect.Value{}, errKeyNotFound
+	}
+}
+
+// findFieldByYAMLTag finds a struct field matching the segment by YAML tag (priority)
+// or Go field name.
+func findFieldByYAMLTag(v reflect.Value, seg string) (reflect.Value, bool) {
+	t := v.Type()
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		if !field.IsExported() {
+			continue
+		}
+		tag := field.Tag.Get("yaml")
+		tagName := parseYAMLTagName(tag, field.Name)
+		if tagName == seg {
+			return v.Field(i), true
+		}
+	}
+	return reflect.Value{}, false
+}
+
+// parseYAMLTagName extracts the YAML key name from a yaml tag.
+// Priority: yaml:"name" → name; yaml:",inline" → "" (skip); no tag → GoFieldName.
+// Returns empty string for ",inline" and "omitempty" only tags.
+func parseYAMLTagName(tag, goName string) string {
+	if tag == "" {
+		return goName
+	}
+	// Split by comma: first part is name, rest are options
+	parts := strings.Split(tag, ",")
+	name := parts[0]
+	if name == "" {
+		// ",inline" or ",omitempty" — not a key match target
+		return ""
+	}
+	return name
+}
+
+// findInlineMapField finds a struct field tagged with yaml:",inline" that is a map type.
+func findInlineMapField(v reflect.Value) (reflect.Value, bool) {
+	t := v.Type()
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		if !field.IsExported() {
+			continue
+		}
+		tag := field.Tag.Get("yaml")
+		if strings.Contains(tag, ",inline") {
+			return v.Field(i), true
+		}
+	}
+	return reflect.Value{}, false
+}
+
+// derefPointer dereferences a pointer, returning the zero Value if nil.
+func derefPointer(v reflect.Value) reflect.Value {
+	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
+		if v.IsNil() {
+			return reflect.Value{}
+		}
+		v = v.Elem()
+	}
+	return v
+}
+
+// isLeafType returns true if the value cannot be further navigated.
+func isLeafType(v reflect.Value) bool {
+	if !v.IsValid() {
+		return true
+	}
+	kind := v.Kind()
+	switch kind {
+	case reflect.Struct, reflect.Map:
+		return false
+	default:
+		return true
+	}
+}
+
+// formatValue formats a reflect.Value for CLI output.
+// For leaf types, returns the scalar value.
+// For non-leaf types (struct, map), returns a multi-line summary.
+func formatValue(v reflect.Value) (string, error) {
+	if !v.IsValid() {
+		return "", errKeyNotFound
+	}
+
+	// Check for custom YAML types that reflect routing cannot handle
+	if implementsYAMLUnmarshaler(v) {
+		return "", errUnsupportedType
+	}
+
+	kind := v.Kind()
+
+	switch kind {
+	case reflect.Bool:
+		return strconv.FormatBool(v.Bool()), nil
+	case reflect.String:
+		return v.String(), nil
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return strconv.FormatInt(v.Int(), 10), nil
+	case reflect.Slice:
+		if v.Type().Elem().Kind() == reflect.String {
+			slice := make([]string, v.Len())
+			for i := 0; i < v.Len(); i++ {
+				slice[i] = v.Index(i).String()
+			}
+			return joinSlice(slice), nil
+		}
+		return "", errUnsupportedType
+	case reflect.Struct:
+		if isModeToggle(v.Type()) {
+			q := v.FieldByName("Quick").Bool()
+			f := v.FieldByName("Full").Bool()
+			return fmt.Sprintf("quick:%v full:%v", q, f), nil
+		}
+		return formatStructSummary(v, "")
+	case reflect.Map:
+		return formatMapSummary(v, "")
+	default:
+		return "", errUnsupportedType
+	}
+}
+
+// implementsYAMLUnmarshaler checks if the value's type implements yaml.Unmarshaler.
+//
+//nolint:govet // reflect.PtrTo inline warning is a toolchain version mismatch, not a code issue
+func implementsYAMLUnmarshaler(v reflect.Value) bool {
+	t := v.Type()
+	ptr := reflect.PointerTo(t)
+	return ptr.Implements(reflect.TypeOf((*yaml.Unmarshaler)(nil)).Elem())
+}
+
+// formatStructSummary formats a struct's exported fields as a multi-line summary.
+func formatStructSummary(v reflect.Value, indent string) (string, error) {
+	var lines []string
+	t := v.Type()
+
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		if !field.IsExported() {
+			continue
+		}
+		// Skip unexported internal fields (like 'raw')
+		tag := field.Tag.Get("yaml")
+		if tag == "" && field.Name == "raw" {
+			continue
+		}
+		if strings.Contains(tag, ",inline") {
+			continue
+		}
+
+		fieldName := parseYAMLTagName(tag, field.Name)
+		if fieldName == "" {
+			continue
+		}
+
+		fv := derefPointer(v.Field(i))
+		if !fv.IsValid() {
+			continue
+		}
+
+		line, err := formatFieldLine(fieldName, fv, indent)
+		if err != nil {
+			continue
+		}
+		lines = append(lines, line)
+	}
+
+	if len(lines) == 0 {
+		return "", errKeyNotFound
+	}
+	return strings.Join(lines, "\n"), nil
+}
+
+// formatMapSummary formats a map's entries as a multi-line summary.
+func formatMapSummary(v reflect.Value, indent string) (string, error) {
+	var lines []string
+	iter := v.MapRange()
+	for iter.Next() {
+		key := iter.Key().String()
+		entry := derefPointer(iter.Value())
+		if !entry.IsValid() {
+			continue
+		}
+		line, err := formatFieldLine(key, entry, indent)
+		if err != nil {
+			continue
+		}
+		lines = append(lines, line)
+	}
+	if len(lines) == 0 {
+		return "", errKeyNotFound
+	}
+	return strings.Join(lines, "\n"), nil
+}
+
+// formatFieldLine formats a single field for summary output.
+func formatFieldLine(name string, v reflect.Value, indent string) (string, error) {
+	kind := v.Kind()
+	switch kind {
+	case reflect.Struct:
+		if isModeToggle(v.Type()) {
+			// ModeToggle → "name: quick:X full:Y"
+			q := v.FieldByName("Quick").Bool()
+			f := v.FieldByName("Full").Bool()
+			return fmt.Sprintf("%s%s: quick:%v full:%v", indent, name, q, f), nil
+		}
+		// Nested struct → "name:\n" + recursive lines with +2 indent
+		sub, err := formatStructSummary(v, indent+"  ")
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("%s%s:\n%s", indent, name, sub), nil
+	case reflect.Bool:
+		return fmt.Sprintf("%s%s: %v", indent, name, v.Bool()), nil
+	case reflect.String:
+		return fmt.Sprintf("%s%s: %s", indent, name, v.String()), nil
+	case reflect.Map:
+		sub, err := formatMapSummary(v, indent+"  ")
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("%s%s:\n%s", indent, name, sub), nil
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return fmt.Sprintf("%s%s: %d", indent, name, v.Int()), nil
+	default:
+		return "", errUnsupportedType
+	}
+}
+
+// isModeToggle checks if a type is ModeToggle.
+func isModeToggle(t reflect.Type) bool {
+	return t.Name() == "ModeToggle" && t.Kind() == reflect.Struct &&
+		t.NumField() == 2
 }
 
 // SetConfigValue sets a config value for a given dot-notation key in .forge/config.yaml.
-// Supported key patterns:
-//   - auto.{field}            (sets both quick and full of a ModeToggle)
-//   - auto.{field}.quick      (sets quick field of a ModeToggle)
-//   - auto.{field}.full       (sets full field of a ModeToggle)
-//   - auto.gitPush            (sets bool)
-//   - worktree.source-branch  (sets string)
-//   - test-framework          (sets string)
-//   - coverage.{task-type}    (sets coverage strategy)
-//
-// Returns an error for unknown keys or invalid values.
+// Supports arbitrary-depth keys via reflection.
+// Returns an error for unknown keys, invalid values, non-leaf sets, or ModeToggle direct sets.
 func SetConfigValue(projectRoot, key, value string) error {
-	switch {
-	case strings.HasPrefix(key, "auto."):
-		return setAutoConfigValue(projectRoot, key, value)
-	case strings.HasPrefix(key, "worktree."):
-		return setWorktreeConfigValue(projectRoot, key, value)
-	case key == "test-framework":
-		cfg, err := readOrCreateConfig(projectRoot)
-		if err != nil {
-			return err
-		}
-		cfg.TestFramework = value
-		return writeConfig(projectRoot, cfg)
-	case strings.HasPrefix(key, "coverage."):
-		return setCoverageConfigValue(projectRoot, key, value)
-	default:
-		return fmt.Errorf("unknown config key: %s", key)
+	cfg, err := readOrCreateConfig(projectRoot)
+	if err != nil {
+		return err
 	}
+
+	segments := strings.Split(key, ".")
+	err = setByPath(reflect.ValueOf(cfg).Elem(), segments, value, key)
+	if err == errUnsupportedType || err == errKeyNotFound {
+		// Fallback to coverage set for inline map types with dot-containing keys
+		if strings.HasPrefix(key, "coverage.") {
+			return setCoverageConfigValue(projectRoot, key, value)
+		}
+		if err == errUnsupportedType {
+			return fmt.Errorf("unknown config key: %s", key)
+		}
+		return fmt.Errorf("config key %q not found", key)
+	}
+	if err != nil {
+		return err
+	}
+	return writeConfig(projectRoot, cfg)
+}
+
+// setByPath traverses a reflect.Value by segments and sets the leaf value.
+func setByPath(v reflect.Value, segments []string, value string, fullKey string) error {
+	for i, seg := range segments {
+		v = ensureAddressable(v)
+
+		// Dereference pointers, initializing nil pointers as needed
+		for v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				newVal := reflect.New(v.Type().Elem())
+				v.Set(newVal)
+			}
+			v = v.Elem()
+		}
+
+		if v.Kind() == reflect.Struct { //nolint:gocritic // ifElseChain
+			field, found := findSettableField(v, seg)
+			if !found {
+				// Check for inline map - try joining remaining segments as dot-separated key
+				if inlineField, ok := findInlineMapField(v); ok {
+					mapVal := ensureAddressable(inlineField)
+					for mapVal.Kind() == reflect.Ptr {
+						if mapVal.IsNil() {
+							newVal := reflect.New(mapVal.Type().Elem())
+							mapVal.Set(newVal)
+						}
+						mapVal = mapVal.Elem()
+					}
+					if mapVal.Kind() == reflect.Map {
+						if mapVal.IsNil() {
+							mapVal.Set(reflect.MakeMap(mapVal.Type()))
+						}
+						if i == len(segments)-1 {
+							return fmt.Errorf("cannot set non-leaf key, use %s.<field>", fullKey)
+						}
+						// Join remaining segments as a single dot-separated key for inline maps
+						dotKey := strings.Join(segments[i:], ".")
+						return setMapEntry(mapVal, []string{dotKey}, value, fullKey)
+					}
+				}
+				return fmt.Errorf("config key %q not found", fullKey)
+			}
+
+			// Last segment - set the value
+			if i == len(segments)-1 {
+				return setFieldValue(field, value, fullKey)
+			}
+
+			// Intermediate segment - allow descending into ModeToggle
+			if isLeafType(field) && !isModeToggle(field.Type()) {
+				return fmt.Errorf("cannot set non-leaf key, use %s.<field>", fullKey)
+			}
+			v = field
+		} else if v.Kind() == reflect.Map {
+			if i == len(segments)-1 {
+				return fmt.Errorf("cannot set non-leaf key, use %s.<field>", fullKey)
+			}
+			return setMapEntry(v, segments[i+1:], value, fullKey)
+		} else {
+			return errKeyNotFound
+		}
+	}
+	return fmt.Errorf("cannot set non-leaf key, use %s.<field>", fullKey)
+}
+
+// ensureAddressable returns an addressable reflect.Value.
+func ensureAddressable(v reflect.Value) reflect.Value {
+	if v.CanAddr() {
+		return v
+	}
+	// For non-addressable values (from reflect.ValueOf), try to get a pointer
+	return v
+}
+
+// findSettableField finds a struct field matching the segment and returns a settable Value.
+func findSettableField(v reflect.Value, seg string) (reflect.Value, bool) {
+	t := v.Type()
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		if !field.IsExported() {
+			continue
+		}
+		tag := field.Tag.Get("yaml")
+		tagName := parseYAMLTagName(tag, field.Name)
+		if tagName == seg {
+			fv := v.Field(i)
+			// For pointer fields, initialize nil and dereference
+			if fv.Kind() == reflect.Ptr && fv.IsNil() {
+				newVal := reflect.New(fv.Type().Elem())
+				fv.Set(newVal)
+			}
+			if fv.Kind() == reflect.Ptr {
+				fv = fv.Elem()
+			}
+			return fv, true
+		}
+	}
+	return reflect.Value{}, false
+}
+
+// setFieldValue sets a leaf field's value from a string.
+func setFieldValue(field reflect.Value, value string, fullKey string) error {
+	if isModeToggle(field.Type()) {
+		return fmt.Errorf("cannot set ModeToggle directly, use %s.quick or %s.full", fullKey, fullKey)
+	}
+
+	switch field.Kind() {
+	case reflect.Bool:
+		b, err := strconv.ParseBool(value)
+		if err != nil {
+			return fmt.Errorf("invalid value %q for bool field %s: expected true or false", value, fullKey)
+		}
+		field.SetBool(b)
+		return nil
+	case reflect.String:
+		field.SetString(value)
+		return nil
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		n, err := strconv.Atoi(value)
+		if err != nil {
+			return fmt.Errorf("invalid value %q for int field %s: expected integer", value, fullKey)
+		}
+		field.SetInt(int64(n))
+		return nil
+	default:
+		return fmt.Errorf("cannot set non-leaf key, use %s.<field>", fullKey)
+	}
+}
+
+// setMapEntry sets a value in a map for the given remaining segments.
+func setMapEntry(mapVal reflect.Value, segments []string, value string, fullKey string) error {
+	if len(segments) != 1 {
+		return errUnsupportedType
+	}
+	key := segments[0]
+
+	// For CoverageConfig.ByType: value is a percentage number
+	pct, err := strconv.Atoi(value)
+	if err != nil {
+		return fmt.Errorf("invalid coverage value for %s: %s (expected percentage number)", fullKey, value)
+	}
+
+	strategyType := reflect.TypeOf(CoverageStrategy{})
+	strategyVal := reflect.New(strategyType).Elem()
+	strategyVal.FieldByName("Type").SetString("percentage")
+	pctField := strategyVal.FieldByName("Percentage")
+	pctVal := reflect.New(pctField.Type().Elem())
+	pctVal.Elem().SetInt(int64(pct))
+	strategyVal.FieldByName("Percentage").Set(pctVal)
+
+	mapVal.SetMapIndex(reflect.ValueOf(key), strategyVal)
+	return nil
 }
 
 // readOrCreateConfig reads config or returns an empty Config if file doesn't exist.
@@ -573,82 +1082,6 @@ func readOrCreateConfig(projectRoot string) (*Config, error) {
 		cfg.Auto = &AutoConfig{}
 	}
 	return cfg, nil
-}
-
-// setAutoConfigValue sets a value in the auto config block by dot-notation key.
-func setAutoConfigValue(projectRoot, key, value string) error {
-	cfg, err := readOrCreateConfig(projectRoot)
-	if err != nil {
-		return err
-	}
-
-	// auto.gitPush
-	if key == "auto.gitPush" {
-		b, err := strconv.ParseBool(value)
-		if err != nil {
-			return fmt.Errorf("invalid bool value for %s: %s", key, value)
-		}
-		cfg.Auto.GitPush = b
-		return writeConfig(projectRoot, cfg)
-	}
-
-	// auto.{field} or auto.{field}.{subfield}
-	rest := strings.TrimPrefix(key, "auto.")
-	parts := strings.SplitN(rest, ".", 2)
-
-	field := parts[0]
-	mt := autoModeField(cfg.Auto, field)
-	if mt == nil {
-		return fmt.Errorf("unknown config key: %s", key)
-	}
-
-	if len(parts) == 1 {
-		// auto.{field} — set both quick and full to the same bool value
-		b, err := strconv.ParseBool(value)
-		if err != nil {
-			return fmt.Errorf("invalid bool value for %s: %s", key, value)
-		}
-		mt.Quick = b
-		mt.Full = b
-		return writeConfig(projectRoot, cfg)
-	}
-
-	// auto.{field}.{subfield}
-	subfield := parts[1]
-	b, err := strconv.ParseBool(value)
-	if err != nil {
-		return fmt.Errorf("invalid bool value for %s: %s", key, value)
-	}
-	switch subfield {
-	case "quick":
-		mt.Quick = b
-	case "full":
-		mt.Full = b
-	default:
-		return fmt.Errorf("unknown config key: %s", key)
-	}
-
-	return writeConfig(projectRoot, cfg)
-}
-
-// setWorktreeConfigValue sets a value in the worktree config block by dot-notation key.
-func setWorktreeConfigValue(projectRoot, key, value string) error {
-	cfg, err := readOrCreateConfig(projectRoot)
-	if err != nil {
-		return err
-	}
-
-	switch key {
-	case "worktree.source-branch":
-		if cfg.Worktree == nil {
-			cfg.Worktree = &WorktreeConfig{}
-		}
-		cfg.Worktree.SourceBranch = value
-	default:
-		return fmt.Errorf("unknown config key: %s", key)
-	}
-
-	return writeConfig(projectRoot, cfg)
 }
 
 // setCoverageConfigValue sets a coverage strategy.
@@ -667,7 +1100,6 @@ func setCoverageConfigValue(projectRoot, key, value string) error {
 		cfg.Coverage = &CoverageConfig{ByType: make(map[string]CoverageStrategy)}
 	}
 
-	// Parse value: either "maintain" or a percentage number
 	pct, err := strconv.Atoi(value)
 	if err != nil {
 		return fmt.Errorf("invalid coverage value for %s: %s (expected percentage number)", key, value)
@@ -679,85 +1111,6 @@ func setCoverageConfigValue(projectRoot, key, value string) error {
 	}
 
 	return writeConfig(projectRoot, cfg)
-}
-
-// getAutoKeyValue handles dot-notation keys for the auto config block.
-func getAutoKeyValue(projectRoot, key string) (string, bool, error) {
-	// auto.gitPush is a simple bool
-	if key == "auto.gitPush" {
-		auto, err := ReadAutoConfig(projectRoot)
-		if err != nil {
-			return "", true, err
-		}
-		return strconv.FormatBool(auto.GitPush), true, nil
-	}
-
-	// auto.{field} or auto.{field}.{subfield}
-	rest, ok := strings.CutPrefix(key, "auto.")
-	if !ok {
-		return "", false, nil
-	}
-
-	var field, subfield string
-	if idx := strings.Index(rest, "."); idx >= 0 {
-		field = rest[:idx]
-		subfield = rest[idx+1:]
-	} else {
-		field = rest
-	}
-
-	auto, err := ReadAutoConfig(projectRoot)
-	if err != nil {
-		return "", true, err
-	}
-
-	mt := autoModeField(&auto, field)
-	if mt == nil {
-		return "", false, nil
-	}
-
-	if subfield == "" {
-		return fmt.Sprintf("quick:%v full:%v", mt.Quick, mt.Full), true, nil
-	}
-
-	switch subfield {
-	case "quick":
-		return strconv.FormatBool(mt.Quick), true, nil
-	case "full":
-		return strconv.FormatBool(mt.Full), true, nil
-	}
-
-	return "", false, nil
-}
-
-// getWorktreeKeyValue handles dot-notation keys for the worktree config block.
-func getWorktreeKeyValue(projectRoot, key string) (string, bool, error) {
-	if key != "worktree.source-branch" && key != "worktree.copy-files" {
-		return "", false, nil
-	}
-
-	cfg, err := ReadConfig(projectRoot)
-	if err != nil {
-		return "", true, err
-	}
-	if cfg == nil || cfg.Worktree == nil {
-		return "", true, errKeyNotFound
-	}
-
-	switch key {
-	case "worktree.source-branch":
-		if cfg.Worktree.SourceBranch == "" {
-			return "", true, errKeyNotFound
-		}
-		return cfg.Worktree.SourceBranch, true, nil
-	case "worktree.copy-files":
-		if len(cfg.Worktree.CopyFiles) == 0 {
-			return "", true, errKeyNotFound
-		}
-		return joinSlice(cfg.Worktree.CopyFiles), true, nil
-	}
-
-	return "", true, errKeyNotFound
 }
 
 // joinSlice joins slice values with newline for plain-text output.
