@@ -45,7 +45,7 @@ test-setup:
 probe path="":
     #!/usr/bin/env bash
     set -euo pipefail
-    config="tests/e2e/config.yaml"
+    config="tests/config.yaml"
     if [ ! -f "$config" ]; then
         echo "OK: no config.yaml (CLI-only project)"
         exit 0

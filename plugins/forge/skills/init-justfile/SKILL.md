@@ -97,7 +97,7 @@ Load test framework knowledge from Convention files. This provides the informati
    - Framework name (e.g., "Go testing package + testify/assert", "Vitest", "Ginkgo v2 + Gomega")
    - File pattern (e.g., `*_test.go`, `*.test.ts`)
    - Test runner (e.g., `go test`, `vitest run`, `ginkgo`)
-   - Build tag / marker (e.g., `//go:build e2e`)
+   - Build tag / marker (e.g., `//go:build <surface>-<type>`)
    - Result format output flags (e.g., `-json -v`, `--reporter=json`)
 5. Also extract the **Tags** section for build-tag/marker syntax.
 6. Also extract the **Result Format** section for output flags and format type.
@@ -274,14 +274,14 @@ web-probe:
     curl -sf http://localhost:8080/health
 
 web-test:
-    go test ./tests/e2e/... -v -tags=e2e -json
+    go test ./tests/... -v -tags=web-e2e -json
 
 web-teardown:
     #!/usr/bin/env bash
     set -euo pipefail
-    if [ -f tests/e2e/results/.pid-server ]; then
-        kill "$(tr -d '\r' < tests/e2e/results/.pid-server)" 2>/dev/null || true
-        rm -f tests/e2e/results/.pid-server
+    if [ -f tests/results/.pid-server ]; then
+        kill "$(tr -d '\r' < tests/results/.pid-server)" 2>/dev/null || true
+        rm -f tests/results/.pid-server
     fi
 ```
 
@@ -392,7 +392,7 @@ Verification results:
   [ok] unit-test       -> go test ./... (dry-run only)
   [ok] web-dev         -> go run ./cmd/server/main.go (executed, 10s timeout)
   [ok] web-probe       -> curl -sf http://localhost:8080/health (executed)
-  [ok] web-test        -> go test ./tests/e2e/... -v -tags=e2e (dry-run only)
+  [ok] web-test        -> go test ./tests/... -v -tags=web-e2e (dry-run only)
   [ok] web-teardown    -> bash cleanup script (executed)
   [fix] lint           -> golangci-lint not found, replaced with go vet (executed, self-corrected)
 
@@ -419,7 +419,7 @@ Language targets:
 Surface targets:
   just web-dev        -> go run ./cmd/server/main.go
   just web-probe      -> curl -sf http://localhost:8080/health
-  just web-test       -> go test ./tests/e2e/... -v -tags=e2e -json
+  just web-test       -> go test ./tests/... -v -tags=web-e2e -json
   just web-teardown   -> (cleanup script)
   just web            -> aggregate: dev->probe->test->teardown
   ... (repeat for each surface)

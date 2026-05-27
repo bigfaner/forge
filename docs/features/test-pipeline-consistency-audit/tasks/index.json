@@ -166,7 +166,7 @@
       "title": "更新其他 Skill/Command 文档中的旧术语和路径",
       "priority": "P1",
       "estimatedTime": "2h",
-      "status": "pending",
+      "status": "completed",
       "file": "9-update-other-skill-docs.md",
       "record": "records/9-update-other-skill-docs.md",
       "type": "doc"

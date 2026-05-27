@@ -134,11 +134,11 @@ Add an e2e test only when the bug is observable at the API, CLI, or UI surface.
 
 | Bug surface | Test location | Runner |
 |-------------|--------------|--------|
-| UI behavior | `tests/e2e/features/<slug>/ui.spec.ts` | Playwright |
-| API endpoint | `tests/e2e/features/<slug>/api.spec.ts` | fetch |
-| CLI command | `tests/e2e/features/<slug>/cli.spec.ts` | child_process |
+| UI behavior | `tests/<journey>/ui.spec.ts` | Playwright |
+| API endpoint | `tests/<journey>/api.spec.ts` | fetch |
+| CLI command | `tests/<journey>/cli.spec.ts` | child_process |
 
-Bug fix tests go to the `features/` staging area, same as feature tests.
+Bug fix tests go to the journey directory corresponding to the affected surface.
 
 Run `just test` — it **must fail** before the fix:
 

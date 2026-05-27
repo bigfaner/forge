@@ -40,11 +40,11 @@ After installation, re-run this command.
 
 Before executing the workflow, resolve configuration sources:
 
-1. Check if `tests/e2e/config.yaml` exists
-2. **If not found**: read the template at `templates/e2e-config.yaml`, write it to `tests/e2e/config.yaml`, then **abort and prompt the user**:
+1. Check if `tests/config.yaml` exists
+2. **If not found**: read the template at `templates/test-config.yaml`, write it to `tests/config.yaml`, then **abort and prompt the user**:
 
 ```
-Created tests/e2e/config.yaml (template). Please fill in values for your environment and re-run.
+Created tests/config.yaml (template). Please fill in values for your environment and re-run.
   baseUrl: actual application URL
   apiBaseUrl: actual backend API URL
   username/password: test account credentials (if app requires auth)

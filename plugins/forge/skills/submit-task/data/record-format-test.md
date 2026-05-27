@@ -1,6 +1,6 @@
 # Record Format: Test Category
 
-Task types: `test.gen-journeys`, `test.gen-contracts`, `test.gen-scripts`, `test.run`, `test.verify-regression`
+Task types: `test.gen-journeys`, `test.gen-contracts`, `test.gen-scripts`, `test.run`
 
 ## JSON Example
 
@@ -9,11 +9,11 @@ Task types: `test.gen-journeys`, `test.gen-contracts`, `test.gen-scripts`, `test
   "taskId": "12",
   "status": "completed",
   "summary": "Generated test cases for login flow",
-  "filesCreated": ["tests/e2e/login/login-flow.spec.ts"],
+  "filesCreated": ["tests/login/login-flow.spec.ts"],
   "filesModified": [],
   "casesGenerated": 8,
   "casesEvaluated": 8,
-  "scriptsCreated": ["tests/e2e/login/login-flow.spec.ts"],
+  "scriptsCreated": ["tests/login/login-flow.spec.ts"],
   "testResults": "8 cases generated, 8 passed evaluation criteria",
   "acceptanceCriteria": [{ "criterion": "All login scenarios covered", "met": true }],
   "notes": "Auto-generated via test pipeline"

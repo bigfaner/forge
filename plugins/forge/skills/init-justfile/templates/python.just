@@ -21,9 +21,9 @@ test journey='':
     #!/usr/bin/env bash
     set -euo pipefail
     # --- Server Lifecycle (idempotent) ---
-    mkdir -p tests/e2e/results
+    mkdir -p tests/results
     _root="$(pwd)"
-    _pid_file="$_root/tests/e2e/results/.pid-server"
+    _pid_file="$_root/tests/results/.pid-server"
     should_start=false
     # Layer 1: tracked process alive?
     if [ -f "$_pid_file" ] && kill -0 "$(tr -d '\r' < "$_pid_file")" 2>/dev/null; then
@@ -47,7 +47,7 @@ test journey='':
             exit 1
         fi
     fi
-    if [ -f tests/e2e/config.yaml ]; then
+    if [ -f tests/config.yaml ]; then
         ready=false
         for i in {1..10}; do
             if just probe > /dev/null 2>&1; then ready=true; break; fi
@@ -62,10 +62,10 @@ test journey='':
     # --- Run Tests ---
     # Dispatch by surface type — adjust the test command below to match your project.
     if [ "{{journey}}" != "" ]; then
-        cd tests/e2e && E2E_FEATURE=1 npx playwright test features/{{journey}}/
+        cd tests && E2E_FEATURE=1 npx playwright test features/{{journey}}/
     else
-        if [ ! -d tests/e2e/node_modules ]; then npm install --prefix tests/e2e; fi
-        cd tests/e2e && npx playwright test
+        if [ ! -d tests/node_modules ]; then npm install --prefix tests; fi
+        cd tests && npx playwright test
     fi
 
 lint:
@@ -89,21 +89,21 @@ ci: install compile build unit-test lint
 test-setup:
     #!/usr/bin/env bash
     set -euo pipefail
-    if [ ! -f tests/e2e/package.json ]; then
-        echo "Error: tests/e2e/package.json not found" >&2
+    if [ ! -f tests/package.json ]; then
+        echo "Error: tests/package.json not found" >&2
         exit 1
     fi
-    if [ ! -d tests/e2e/node_modules ]; then
-        npm install --prefix tests/e2e
+    if [ ! -d tests/node_modules ]; then
+        npm install --prefix tests
     fi
-    npx --prefix tests/e2e playwright install chromium
+    npx --prefix tests playwright install chromium
     echo "OK: test dependencies ready"
 
 # probe: check if configured services are healthy
 probe path="":
     #!/usr/bin/env bash
     set -euo pipefail
-    config="tests/e2e/config.yaml"
+    config="tests/config.yaml"
     if [ ! -f "$config" ]; then
         echo "OK: no config.yaml (CLI-only project)"
         exit 0

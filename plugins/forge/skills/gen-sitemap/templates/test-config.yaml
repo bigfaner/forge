@@ -1,4 +1,4 @@
-# E2E Test Environment Configuration
+# Test Environment Configuration
 # Adjust values to match your local/dev environment
 # IMPORTANT: add config.yaml to .gitignore to prevent credential leaks
 

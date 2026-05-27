@@ -59,12 +59,12 @@ test journey='':
     #!/usr/bin/env bash
     set -euo pipefail
     # --- Server Lifecycle (idempotent, per-service) ---
-    mkdir -p tests/e2e/results
+    mkdir -p tests/results
     _root="$(pwd)"
     probe_output=$(just probe 2>&1) || true
     if echo "$probe_output" | grep -q "FAIL:"; then
         for svc in frontend backend; do
-            pid_file="$_root/tests/e2e/results/.pid-$svc"
+            pid_file="$_root/tests/results/.pid-$svc"
             # Layer 1: tracked process alive?
             if [ -f "$pid_file" ] && kill -0 "$(tr -d '\r' < "$pid_file")" 2>/dev/null; then continue; fi
             # Layer 2: probe reported this service OK? -> skip
@@ -75,14 +75,14 @@ test journey='':
         done
         # trap: cleanup on exit, interrupt, terminate
         _cleanup() {
-            for f in "$_root"/tests/e2e/results/.pid-*; do
+            for f in "$_root"/tests/results/.pid-*; do
                 [ -f "$f" ] && { kill "$(tr -d '\r' < "$f")" 2>/dev/null || true; rm -f "$f"; }
             done
         }
         trap _cleanup EXIT INT TERM
         # Early crash detection: check if any started service died immediately
         sleep 1
-        for pid_f in "$_root"/tests/e2e/results/.pid-*; do
+        for pid_f in "$_root"/tests/results/.pid-*; do
             if [ -f "$pid_f" ] && ! kill -0 "$(tr -d '\r' < "$pid_f")" 2>/dev/null; then
                 echo "test: service process exited immediately ($(basename "$pid_f" | sed 's/.pid-//'))" >&2
                 rm -f "$pid_f"
@@ -108,10 +108,10 @@ test journey='':
     # --- Run Tests ---
     # Dispatch by surface type — adjust the test command below to match your project.
     if [ "{{journey}}" != "" ]; then
-        cd tests/e2e && E2E_FEATURE=1 npx playwright test features/{{journey}}/
+        cd tests && E2E_FEATURE=1 npx playwright test features/{{journey}}/
     else
-        if [ ! -d tests/e2e/node_modules ]; then npm install --prefix tests/e2e; fi
-        cd tests/e2e && npx playwright test
+        if [ ! -d tests/node_modules ]; then npm install --prefix tests; fi
+        cd tests && npx playwright test
     fi
 
 lint scope="":
@@ -170,21 +170,21 @@ ci: install compile build unit-test lint
 test-setup:
     #!/usr/bin/env bash
     set -euo pipefail
-    if [ ! -f tests/e2e/package.json ]; then
-        echo "Error: tests/e2e/package.json not found" >&2
+    if [ ! -f tests/package.json ]; then
+        echo "Error: tests/package.json not found" >&2
         exit 1
     fi
-    if [ ! -d tests/e2e/node_modules ]; then
-        npm install --prefix tests/e2e
+    if [ ! -d tests/node_modules ]; then
+        npm install --prefix tests
     fi
-    npx --prefix tests/e2e playwright install chromium
+    npx --prefix tests playwright install chromium
     echo "OK: test dependencies ready"
 
 # probe: check if configured services are healthy
 probe path="":
     #!/usr/bin/env bash
     set -euo pipefail
-    config="tests/e2e/config.yaml"
+    config="tests/config.yaml"
     if [ ! -f "$config" ]; then
         echo "OK: no config.yaml (CLI-only project)"
         exit 0
