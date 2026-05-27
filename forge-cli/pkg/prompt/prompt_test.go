@@ -1508,7 +1508,7 @@ func TestSynthesize_GateTemplate_ContainsRecordFieldHints(t *testing.T) {
 // --- doc-review prompt template content tests (Task 2) ---
 
 func TestDocReviewPromptTemplate_Step1LoadsPreExtractedAC(t *testing.T) {
-	data, err := templateFS.ReadFile("data/doc-review.md")
+	data, err := templateFS.ReadFile("templates/doc-review.md")
 	if err != nil {
 		t.Fatalf("cannot read doc-review prompt template: %v", err)
 	}
@@ -1523,7 +1523,7 @@ func TestDocReviewPromptTemplate_Step1LoadsPreExtractedAC(t *testing.T) {
 }
 
 func TestDocReviewPromptTemplate_Step2UsesAllowlistDiscovery(t *testing.T) {
-	data, err := templateFS.ReadFile("data/doc-review.md")
+	data, err := templateFS.ReadFile("templates/doc-review.md")
 	if err != nil {
 		t.Fatalf("cannot read doc-review prompt template: %v", err)
 	}
@@ -1538,7 +1538,7 @@ func TestDocReviewPromptTemplate_Step2UsesAllowlistDiscovery(t *testing.T) {
 }
 
 func TestDocReviewPromptTemplate_Step3HasDocsOnlyConstraint(t *testing.T) {
-	data, err := templateFS.ReadFile("data/doc-review.md")
+	data, err := templateFS.ReadFile("templates/doc-review.md")
 	if err != nil {
 		t.Fatalf("cannot read doc-review prompt template: %v", err)
 	}
@@ -1553,7 +1553,7 @@ func TestDocReviewPromptTemplate_Step3HasDocsOnlyConstraint(t *testing.T) {
 }
 
 func TestDocReviewPromptTemplate_NoScanTasksDirective(t *testing.T) {
-	data, err := templateFS.ReadFile("data/doc-review.md")
+	data, err := templateFS.ReadFile("templates/doc-review.md")
 	if err != nil {
 		t.Fatalf("cannot read doc-review prompt template: %v", err)
 	}
@@ -1573,7 +1573,7 @@ func TestDocReviewPromptTemplate_NoScanTasksDirective(t *testing.T) {
 // --- Task 5: test-run.md skill reference fix ---
 
 func TestTestRunTemplate_ReferencesRunTests(t *testing.T) {
-	data, err := templateFS.ReadFile("data/test-run.md")
+	data, err := templateFS.ReadFile("templates/test-run.md")
 	if err != nil {
 		t.Fatalf("cannot read test-run prompt template: %v", err)
 	}
@@ -1593,7 +1593,7 @@ func TestTestRunTemplate_ReferencesRunTests(t *testing.T) {
 // --- Task 5: SCOPE label rename to SURFACE_KEY ---
 
 func TestAllTemplates_NoScopeLabel(t *testing.T) {
-	entries, err := templateFS.ReadDir("data")
+	entries, err := templateFS.ReadDir("templates")
 	if err != nil {
 		t.Fatalf("cannot read template directory: %v", err)
 	}
@@ -1608,7 +1608,7 @@ func TestAllTemplates_NoScopeLabel(t *testing.T) {
 		}
 
 		t.Run(name, func(t *testing.T) {
-			data, err := templateFS.ReadFile("data/" + name)
+			data, err := templateFS.ReadFile("templates/" + name)
 			if err != nil {
 				t.Fatalf("cannot read template %s: %v", name, err)
 			}
@@ -1623,7 +1623,7 @@ func TestAllTemplates_NoScopeLabel(t *testing.T) {
 }
 
 func TestAllTemplates_UseSurfaceKeyLabel(t *testing.T) {
-	entries, err := templateFS.ReadDir("data")
+	entries, err := templateFS.ReadDir("templates")
 	if err != nil {
 		t.Fatalf("cannot read template directory: %v", err)
 	}
@@ -1638,7 +1638,7 @@ func TestAllTemplates_UseSurfaceKeyLabel(t *testing.T) {
 		}
 
 		t.Run(name, func(t *testing.T) {
-			data, err := templateFS.ReadFile("data/" + name)
+			data, err := templateFS.ReadFile("templates/" + name)
 			if err != nil {
 				t.Fatalf("cannot read template %s: %v", name, err)
 			}
@@ -1680,7 +1680,7 @@ func TestSynthesize_TestRunTemplate_InvokesRunTests(t *testing.T) {
 }
 
 func TestDocReviewPromptTemplate_Step1ExplicitNoScanDirective(t *testing.T) {
-	data, err := templateFS.ReadFile("data/doc-review.md")
+	data, err := templateFS.ReadFile("templates/doc-review.md")
 	if err != nil {
 		t.Fatalf("cannot read doc-review prompt template: %v", err)
 	}

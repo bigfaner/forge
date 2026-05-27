@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	indexPkg "forge-cli/pkg/index"
-	tmpl "forge-cli/pkg/template"
 )
 
 // AddTaskOpts holds options for adding a new task.
@@ -252,7 +251,7 @@ func CreateTaskMarkdown(tasksDir string, filename string, opts AddTaskOpts) erro
 		testResults := opts.Vars["TEST_RESULTS"]
 		scopeDescription := opts.Vars["SCOPE_DESCRIPTION"]
 
-		data := tmpl.TaskTemplateData{
+		data := TemplateData{
 			ID:               opts.ID,
 			Title:            opts.Title,
 			Priority:         opts.Priority,
@@ -268,7 +267,7 @@ func CreateTaskMarkdown(tasksDir string, filename string, opts AddTaskOpts) erro
 		}
 
 		var err error
-		content, err = tmpl.Execute(opts.Template, data)
+		content, err = ExecuteTaskTemplate(opts.Template, data)
 		if err != nil {
 			return err
 		}

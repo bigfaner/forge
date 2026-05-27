@@ -13,23 +13,23 @@ import (
 	"forge-cli/pkg/forgeconfig"
 )
 
-//go:embed data/*.md
+//go:embed templates/*.md
 var autogenTemplateFS embed.FS
 
 // autogenTemplatePath derives the embed template filename from a task type constant
-// using the naming convention: "data/" + typeName with '.' replaced by '-' + ".md".
+// using the naming convention: "templates/" + typeName with '.' replaced by '-' + ".md".
 // For surface-specific types (e.g. "test.gen-scripts.cli"), strips the last segment
-// to find the base type template (e.g. "test.gen-scripts" -> "data/test-gen-scripts.md").
+// to find the base type template (e.g. "test.gen-scripts" -> "templates/test-gen-scripts.md").
 func autogenTemplatePath(typeName string) string {
 	// Try exact match first
-	path := "data/" + strings.ReplaceAll(typeName, ".", "-") + ".md"
+	path := "templates/" + strings.ReplaceAll(typeName, ".", "-") + ".md"
 	if _, err := autogenTemplateFS.ReadFile(path); err == nil {
 		return path
 	}
 	// For surface-specific types, strip last segment and try base type
 	if idx := strings.LastIndex(typeName, "."); idx >= 0 {
 		base := typeName[:idx]
-		return "data/" + strings.ReplaceAll(base, ".", "-") + ".md"
+		return "templates/" + strings.ReplaceAll(base, ".", "-") + ".md"
 	}
 	return path
 }

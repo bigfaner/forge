@@ -1,14 +1,14 @@
-package template
+package task
 
 import (
 	"strings"
 	"testing"
 )
 
-func TestList(t *testing.T) {
-	names := List()
+func TestListTaskTemplates(t *testing.T) {
+	names := ListTaskTemplates()
 	if len(names) == 0 {
-		t.Fatal("List() returned no templates")
+		t.Fatal("ListTaskTemplates() returned no templates")
 	}
 	found := false
 	for _, n := range names {
@@ -18,14 +18,14 @@ func TestList(t *testing.T) {
 		}
 	}
 	if !found {
-		t.Errorf("List() missing coding.fix, got %v", names)
+		t.Errorf("ListTaskTemplates() missing coding.fix, got %v", names)
 	}
 }
 
-func TestGet_FixTask(t *testing.T) {
-	content, err := Get("coding.fix")
+func TestGetTaskTemplate_FixTask(t *testing.T) {
+	content, err := GetTaskTemplate("coding.fix")
 	if err != nil {
-		t.Fatalf("Get(coding.fix) error: %v", err)
+		t.Fatalf("GetTaskTemplate(coding.fix) error: %v", err)
 	}
 	checks := []string{
 		"{{.ID}}",
@@ -49,17 +49,17 @@ func TestGet_FixTask(t *testing.T) {
 	}
 }
 
-func TestGet_NotFound(t *testing.T) {
-	_, err := Get("nonexistent")
+func TestGetTaskTemplate_NotFound(t *testing.T) {
+	_, err := GetTaskTemplate("nonexistent")
 	if err == nil {
 		t.Fatal("expected error for nonexistent template")
 	}
 }
 
-func TestGetDefaults_FixTask(t *testing.T) {
-	defs, err := GetDefaults("coding.fix")
+func TestGetTaskTemplateDefaults_FixTask(t *testing.T) {
+	defs, err := GetTaskTemplateDefaults("coding.fix")
 	if err != nil {
-		t.Fatalf("GetDefaults(coding.fix) error: %v", err)
+		t.Fatalf("GetTaskTemplateDefaults(coding.fix) error: %v", err)
 	}
 	if defs.Priority != "P0" {
 		t.Errorf("Priority = %q, want P0", defs.Priority)
@@ -72,10 +72,10 @@ func TestGetDefaults_FixTask(t *testing.T) {
 	}
 }
 
-func TestGetDefaults_CleanupTask(t *testing.T) {
-	defs, err := GetDefaults("coding.cleanup")
+func TestGetTaskTemplateDefaults_CleanupTask(t *testing.T) {
+	defs, err := GetTaskTemplateDefaults("coding.cleanup")
 	if err != nil {
-		t.Fatalf("GetDefaults(coding.cleanup) error: %v", err)
+		t.Fatalf("GetTaskTemplateDefaults(coding.cleanup) error: %v", err)
 	}
 	if defs.Priority != "P0" {
 		t.Errorf("Priority = %q, want P0", defs.Priority)
@@ -88,45 +88,45 @@ func TestGetDefaults_CleanupTask(t *testing.T) {
 	}
 }
 
-func TestGetDefaults_NotFound(t *testing.T) {
-	_, err := GetDefaults("nonexistent")
+func TestGetTaskTemplateDefaults_NotFound(t *testing.T) {
+	_, err := GetTaskTemplateDefaults("nonexistent")
 	if err == nil {
 		t.Fatal("expected error for nonexistent template defaults")
 	}
 }
 
-func TestGetDefaults_IndependentOfGet(t *testing.T) {
+func TestGetTaskTemplateDefaults_IndependentOfGet(t *testing.T) {
 	// bug: GetDefaults was gated behind Get in add.go — when Get failed
 	// (e.g. embedded file missing), defaults like IDPrefix were silently skipped.
 	// This test documents that the two functions must be independent.
 	for _, name := range []string{"coding.fix", "coding.cleanup"} {
-		defs, defsErr := GetDefaults(name)
+		defs, defsErr := GetTaskTemplateDefaults(name)
 		if defsErr != nil {
-			t.Fatalf("GetDefaults(%q) failed: %v", name, defsErr)
+			t.Fatalf("GetTaskTemplateDefaults(%q) failed: %v", name, defsErr)
 		}
 		if defs.IDPrefix == "" {
-			t.Errorf("GetDefaults(%q): IDPrefix is empty, defaults should always have a prefix", name)
+			t.Errorf("GetTaskTemplateDefaults(%q): IDPrefix is empty, defaults should always have a prefix", name)
 		}
 		if defs.Priority == "" {
-			t.Errorf("GetDefaults(%q): Priority is empty", name)
+			t.Errorf("GetTaskTemplateDefaults(%q): Priority is empty", name)
 		}
 	}
 	// Verify Get fails for a name that has no embedded file,
 	// while GetDefaults still works for real types (independence)
-	_, getErr := Get("nonexistent.type")
+	_, getErr := GetTaskTemplate("nonexistent.type")
 	if getErr == nil {
-		t.Fatal("Get(nonexistent.type) should fail")
+		t.Fatal("GetTaskTemplate(nonexistent.type) should fail")
 	}
-	defs, defsErr := GetDefaults("coding.fix")
+	defs, defsErr := GetTaskTemplateDefaults("coding.fix")
 	if defsErr != nil {
-		t.Fatalf("GetDefaults(coding.fix) should succeed even though Get(nonexistent) fails: %v", defsErr)
+		t.Fatalf("GetTaskTemplateDefaults(coding.fix) should succeed even though Get(nonexistent) fails: %v", defsErr)
 	}
 	if defs.IDPrefix != "fix" {
 		t.Errorf("IDPrefix = %q, want fix", defs.IDPrefix)
 	}
 }
 
-func TestTemplateType_ValidTypes(t *testing.T) {
+func TestTaskTemplateType_ValidTypes(t *testing.T) {
 	// Templates must use a type value that exists in ValidTypes.
 	// Historically, fix-task.md used bare "fix" instead of "coding.fix".
 	templateTypes := map[string]string{
@@ -134,9 +134,9 @@ func TestTemplateType_ValidTypes(t *testing.T) {
 		"coding.cleanup": "",
 	}
 	for name := range templateTypes {
-		content, err := Get(name)
+		content, err := GetTaskTemplate(name)
 		if err != nil {
-			t.Fatalf("Get(%q) error: %v", name, err)
+			t.Fatalf("GetTaskTemplate(%q) error: %v", name, err)
 		}
 		// Extract type value from frontmatter
 		for _, line := range strings.Split(content, "\n") {

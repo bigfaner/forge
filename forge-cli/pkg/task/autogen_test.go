@@ -1181,7 +1181,7 @@ func TestBodyContentPerStrategy(t *testing.T) {
 }
 
 func TestGenJourneysTemplateContent(t *testing.T) {
-	data, err := autogenTemplateFS.ReadFile("data/test-gen-journeys.md")
+	data, err := autogenTemplateFS.ReadFile("templates/test-gen-journeys.md")
 	if err != nil {
 		t.Fatalf("cannot read test-gen-journeys.md: %v", err)
 	}
@@ -1207,7 +1207,7 @@ func TestGenJourneysTemplateContent(t *testing.T) {
 }
 
 func TestGenContractsTemplateContent(t *testing.T) {
-	data, err := autogenTemplateFS.ReadFile("data/test-gen-contracts.md")
+	data, err := autogenTemplateFS.ReadFile("templates/test-gen-contracts.md")
 	if err != nil {
 		t.Fatalf("cannot read test-gen-contracts.md: %v", err)
 	}
@@ -1886,7 +1886,7 @@ func TestRenderBody_DocTaskAC_SortedKeys(t *testing.T) {
 // --- doc-review autogen template content tests (Task 2) ---
 
 func TestDocReviewAutogenTemplate_ContainsDocTaskACPlaceholder(t *testing.T) {
-	data, err := autogenTemplateFS.ReadFile("data/doc-review.md")
+	data, err := autogenTemplateFS.ReadFile("templates/doc-review.md")
 	if err != nil {
 		t.Fatalf("cannot read doc-review.md: %v", err)
 	}
@@ -1898,7 +1898,7 @@ func TestDocReviewAutogenTemplate_ContainsDocTaskACPlaceholder(t *testing.T) {
 }
 
 func TestDocReviewAutogenTemplate_ContainsACSummarySection(t *testing.T) {
-	data, err := autogenTemplateFS.ReadFile("data/doc-review.md")
+	data, err := autogenTemplateFS.ReadFile("templates/doc-review.md")
 	if err != nil {
 		t.Fatalf("cannot read doc-review.md: %v", err)
 	}
@@ -1913,7 +1913,7 @@ func TestDocReviewAutogenTemplate_ContainsACSummarySection(t *testing.T) {
 }
 
 func TestDocReviewAutogenTemplate_AllowlistDiscoveryStrategy(t *testing.T) {
-	data, err := autogenTemplateFS.ReadFile("data/doc-review.md")
+	data, err := autogenTemplateFS.ReadFile("templates/doc-review.md")
 	if err != nil {
 		t.Fatalf("cannot read doc-review.md: %v", err)
 	}
@@ -1930,7 +1930,7 @@ func TestDocReviewAutogenTemplate_AllowlistDiscoveryStrategy(t *testing.T) {
 }
 
 func TestDocReviewAutogenTemplate_ExcludesTasksAndRecords(t *testing.T) {
-	data, err := autogenTemplateFS.ReadFile("data/doc-review.md")
+	data, err := autogenTemplateFS.ReadFile("templates/doc-review.md")
 	if err != nil {
 		t.Fatalf("cannot read doc-review.md: %v", err)
 	}
@@ -1952,7 +1952,7 @@ func TestDocReviewAutogenTemplate_ExcludesTasksAndRecords(t *testing.T) {
 }
 
 func TestDocReviewAutogenTemplate_NoScanTasksDirective(t *testing.T) {
-	data, err := autogenTemplateFS.ReadFile("data/doc-review.md")
+	data, err := autogenTemplateFS.ReadFile("templates/doc-review.md")
 	if err != nil {
 		t.Fatalf("cannot read doc-review.md: %v", err)
 	}

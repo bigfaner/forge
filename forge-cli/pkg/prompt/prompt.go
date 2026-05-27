@@ -20,7 +20,7 @@ import (
 	"forge-cli/pkg/task"
 )
 
-//go:embed data/*.md
+//go:embed templates/*.md
 var templateFS embed.FS
 
 // promptTemplateData holds all fields exposed to prompt templates via text/template.
@@ -56,9 +56,9 @@ var placeholderReplacer = strings.NewReplacer(
 )
 
 // templatePath derives the embed template filename from a task type constant
-// using the naming convention: "data/" + typeName with '.' replaced by '-' + ".md".
+// using the naming convention: "templates/" + typeName with '.' replaced by '-' + ".md".
 func templatePath(typeName string) string {
-	return "data/" + strings.ReplaceAll(typeName, ".", "-") + ".md"
+	return "templates/" + strings.ReplaceAll(typeName, ".", "-") + ".md"
 }
 
 // ValidatePromptTemplates checks that all task types used by Synthesize()
@@ -145,7 +145,7 @@ func Synthesize(opts SynthesizeOpts) (string, error) {
 
 	// fix-record-missed overrides normal type routing.
 	if opts.FixRecordMissed {
-		return renderTemplate("data/fix-record-missed.md", opts, t)
+		return renderTemplate("templates/fix-record-missed.md", opts, t)
 	}
 
 	if t.Type == "" {
