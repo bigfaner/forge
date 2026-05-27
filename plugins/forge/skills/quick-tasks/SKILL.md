@@ -1,11 +1,11 @@
 ---
 name: quick-tasks
-description: Use for features (1-15 coding tasks, doc tasks unlimited) to generate tasks directly from proposal. No PRD or design needed.
+description: Use for features (coding tasks and doc tasks unlimited) to generate tasks directly from proposal. No PRD or design needed.
 ---
 
 # Quick Tasks
 
-Generate executable tasks directly from a proposal document. For features (1-15 coding tasks, doc-type tasks unlimited) that don't need PRD or tech design.
+Generate executable tasks directly from a proposal document. For features (coding tasks and doc-type tasks unlimited) that don't need PRD or tech design.
 
 ## Prerequisites
 
@@ -14,7 +14,7 @@ Generate executable tasks directly from a proposal document. For features (1-15 
 | `docs/proposals/<slug>/proposal.md` | `/brainstorm` or `/quick` |
 
 <HARD-GATE>
-Maximum 15 coding tasks (`coding.*` type). Doc-type tasks (`doc*` type prefix) are unlimited. If the proposal requires >15 coding tasks, STOP and recommend the full pipeline: `/write-prd` → `/tech-design` → `/breakdown-tasks`.
+Maximum 6 Acceptance Criteria per task. If a task has >6 AC, its scope is too large — split further by functional boundary. No overall task count cap; task volume is bounded by proposal scope and the AC max rule.
 </HARD-GATE>
 
 ## Docs-Only Fast Path
@@ -60,19 +60,36 @@ Determine the feature slug from the proposal directory name. Read `docs/proposal
 
 - **Problem** → task context and motivation
 - **Proposed Solution** → task scope and boundaries
-- **Scope > In Scope** → one task per bullet (split if >2h, merge if <30min)
+- **Scope > In Scope** → one task per bullet (split if not independently verifiable, merge if independently verifiable together)
 - **Success Criteria** → acceptance criteria for each task
 - **Key Risks** → implementation notes and risk mitigations
 
 <HARD-RULE>
-Enforce maximum 15 coding tasks (`coding.*` type). Doc-type tasks (`doc*` type prefix) are unlimited. If the In Scope section implies >15 coding tasks, STOP and recommend the full pipeline (`/write-prd` → `/tech-design` → `/breakdown-tasks`).
+Enforce maximum 6 AC per task. If a task naturally has >6 AC, split by functional boundary. No overall task count cap.
 </HARD-RULE>
 
 ## Step 2: Derive Tasks
 
 For each In Scope bullet: estimate effort (1-2h), derive acceptance criteria from Success Criteria, classify type (see Step 3 Template Selection), resolve surface-key/surface-type via Surface-Key/Type Inference, fill Reference Files with section-level references from proposal context.
 
-**Split by functional steps**: multiple independently verifiable steps in one bullet → separate tasks (coding tasks still ≤ 15, doc tasks unlimited).
+**Split by functional steps**: multiple independently verifiable steps in one bullet → separate tasks.
+
+**Split Rules** (applied in order of priority):
+
+1. **Independently verifiable standard**: A bullet maps to one task if all its outcomes can be verified together in a single review pass. If outcomes require separate verification contexts (different files, different test suites, different reviewers), split into separate tasks.
+2. **Multi-verb detection**: Task descriptions with connectors linking independent actions (e.g., "rename + flatten + confirm", "extract + migrate + validate") should be split by functional boundary. Each verb phrase becomes a separate task if it targets a different concern.
+3. **AC ceiling**: If a single bullet produces >6 Acceptance Criteria, the scope is too large — split further by functional boundary until each task has ≤6 AC.
+
+**Complexity判定** (assigned at task generation time):
+
+Default heuristic based on static metrics:
+- **low**: AC ≤ 3 AND no Hard Rules AND Reference Files ≤ 1
+- **high**: AC > 6 OR has Hard Rules
+- **medium**: everything else
+
+LLM judgment override: 如果静态指标与认知判断冲突（如 AC≤3 但涉及多文件架构变更），LLM 可根据认知判断覆盖默认 complexity 等级。Override 时须在 task Implementation Notes 中记录理由。
+
+Set the `complexity` field in task frontmatter accordingly.
 
 **Dependencies**: linear chain unless parallel work implied. Simple integer IDs: `1`, `2`, `3`.
 
@@ -84,31 +101,29 @@ For each In Scope bullet: estimate effort (1-2h), derive acceptance criteria fro
 
 If `forge surfaces --json` fails or returns no surfaces configured, set both fields to empty strings and continue.
 
-**Reference Files Generation**: For each derived task, generate precise section-level Reference Files instead of bare file paths.
+**Reference Files Generation**: For each derived task, generate inline precise Reference Files instead of proposal section pointers.
 
-1. **Identify relevant proposal sections**: For each task, scan proposal.md and identify 2-5 sections most relevant to that task based on:
-   - The task's description and affected files (match keywords, file paths, and technical concepts)
-   - Which proposal sections define constraints, decisions, or requirements the task must implement
-2. **Format**: `proposal.md#Section-Title` — brief description of what this section defines for the task
-   - Section anchors use the exact heading text with spaces replaced by hyphens (e.g., `## Key Risks` → `proposal.md#Key-Risks`)
-   - Each entry has a dash explanation noting *why* this section is relevant to the task
-3. **Minimum coverage**: Every coding task must have ≥1 section-level reference (not just `proposal.md` bare path). Doc tasks follow the same standard.
-4. **External documents**: If proposal.md references existing design documents (e.g., files under `docs/lessons/`, `docs/conventions/`, `docs/reference/`) and those files exist on disk, include relevant sections from those documents as additional Reference Files entries.
-5. **Extraction logic**: For each task, the extraction follows these steps:
-   - Read the task's description and affected files list
-   - Match against proposal section headings and their content
-   - Prioritize sections that define requirements, constraints, or success criteria directly related to the task
-   - If a single section covers multiple tasks, reference it from each relevant task (deduplication is per-task, not global)
+1. **Inline format**: Each Reference File entry specifies a concrete file path and the specific change or requirement relevant to this task:
+   ```
+   - <file-path>: <specific change description or requirement excerpt>
+   ```
+   Example: `- quality_gate.go: tests/e2e/results/raw-output.txt 路径需替换为 GetTestResultsDir()`
+2. **Source traceability**: Each inline entry should include a source trace in parentheses indicating where in the proposal this requirement originates:
+   ```
+   - <file-path>: <specific change description> (source: proposal.md#Section-Title)
+   ```
+3. **Maximum 5 entries per task**: Keep Reference Files concise. Each entry should be 1-2 lines.
+4. **Coverage**: Every coding task must have ≥1 inline reference. Doc tasks follow the same standard.
+5. **External documents**: If the task requires reading existing design documents (e.g., files under `docs/lessons/`, `docs/conventions/`, `docs/reference/`), include them as additional inline entries with the specific section or requirement needed.
 
-**Example** — given a task "Add Reference Files loading to coding templates" derived from a proposal:
+**Example** — given a task "Add complexity field to prompt.go renderTemplate":
 ```markdown
 ## Reference Files
-- `proposal.md#Proposed-Solution` — defines the two-layer enforcement model and template-layer requirements
-- `proposal.md#Requirements-Analysis` — Key Scenarios and Edge Cases for Reference Files behavior
-- `proposal.md#Key-Risks` — risk of agent ignoring IMPORTANT tags and mitigation strategy
+- forge-cli/pkg/prompt/prompt.go: renderTemplate() 需新增 {{COMPLEXITY}} 占位符替换 (source: proposal.md#Constraints-&-Dependencies)
+- forge-cli/pkg/prompt/data/coding-enhancement.md: Step 1.5 段落用 <!-- IF NOT_LOW --> 标记包裹 (source: proposal.md#Proposed-Solution)
 ```
 
-Replace the default Reference Files section content (`- \`docs/proposals/<slug>/proposal.md\` — Source proposal`) with the generated section-level references. This is a content replacement instruction — there is no `{{REFERENCE_FILES}}` token in the template; the agent edits the `## Reference Files` section directly.
+Replace the default Reference Files section content (`- \`docs/proposals/<slug>/proposal.md\` — Source proposal`) with the generated inline references. This is a content replacement instruction — there is no `{{REFERENCE_FILES}}` token in the template; the agent edits the `## Reference Files` section directly.
 
 **Priority**: P0 | P1 | P2. Classified by structural role in the proposal:
 - P0: implements the core solution mechanism described in the proposal — without this, the feature doesn't work
@@ -255,7 +270,7 @@ Other uncommitted changes remain unstaged.
 
 ## Output Checklist
 
-- [ ] `docs/features/<slug>/tasks/` contains ≤15 coding task files + any number of doc task files
+- [ ] `docs/features/<slug>/tasks/` contains task files with ≤6 AC each (coding + doc tasks unlimited)
 - [ ] `index.json` valid per schema, `forge task validate-index` passes
 - [ ] No stage-gate files expected (quick mode uses simple integer IDs, no `<phase>.<sub>` structure)
 - [ ] Every Success Criterion covered by ≥1 task

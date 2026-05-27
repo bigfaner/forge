@@ -3,6 +3,7 @@ id: "{{ID}}"
 title: "{{TITLE}}"
 priority: "{{PRIORITY}}"
 estimated_time: "{{ESTIMATED_TIME}}"
+complexity: "medium"
 dependencies: [{{DEPENDENCIES}}]
 surface-key: "{{SURFACE_KEY}}"
 surface-type: "{{SURFACE_TYPE}}"
