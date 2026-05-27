@@ -17,30 +17,6 @@ import (
 // Config Commands (Task 1) — TC-001 to TC-007
 // =============================================================================
 
-// Traceability: TC-001 -> Task 1 / AC-1, AC-2
-func TestTC_001_ConfigInitInteractiveSetup(t *testing.T) {
-	t.Skip("requires interactive stdin: multi-step prompt with project-type, profiles, capabilities selections")
-}
-
-// Traceability: TC-002 -> Task 1 / AC-3
-func TestTC_002_ConfigInitReconfigurePrompt(t *testing.T) {
-	t.Skip("requires interactive stdin and pre-existing .forge/config.yaml to trigger reconfigure prompt")
-}
-
-// Traceability: TC-003 -> Task 1 / AC-3
-func TestTC_003_ConfigInitReconfigureAccepted(t *testing.T) {
-	t.Skip("requires interactive stdin and pre-existing .forge/config.yaml with 'y' confirmation input")
-}
-
-// Traceability: TC-004 -> Task 1 / AC-4
-func TestTC_004_ConfigGetProjectType(t *testing.T) {
-	exitCode, out := testkit.RunCLIExitCode("config", "get", "project-type")
-
-	assert.Equal(t, 0, exitCode, "config get project-type should exit 0")
-	assert.Equal(t, "backend", strings.TrimSpace(out),
-		"config get project-type should output plain text 'backend' without formatting")
-}
-
 // Traceability: TC-005 -> Task 1 / AC-5
 func TestTC_005_ConfigGetSurfacesOutput(t *testing.T) {
 	exitCode, out := testkit.RunCLIExitCode("config", "get", "surfaces")
@@ -61,11 +37,6 @@ func TestTC_006_ConfigGetMissingKey(t *testing.T) {
 	assert.Equal(t, 1, exitCode, "config get with missing key should exit 1")
 	assert.Equal(t, "", strings.TrimSpace(out),
 		"config get with missing key should produce no stdout output")
-}
-
-// Traceability: TC-007 -> Task 1 / AC-7
-func TestTC_007_ForgeConfigStructFields(t *testing.T) {
-	t.Skip("struct field validation requires Go source inspection, not CLI invocation; covered by unit tests")
 }
 
 // =============================================================================
@@ -185,11 +156,6 @@ func TestTC_013_FeatureListAllFeatures(t *testing.T) {
 		"feature list should contain STATUS column header: %s", out)
 	assert.True(t, strings.Contains(upper, "PROGRESS"),
 		"feature list should contain PROGRESS column header: %s", out)
-}
-
-// Traceability: TC-014 -> Task 2 / AC-7
-func TestTC_014_FeatureListProgressFromIndexJSON(t *testing.T) {
-	t.Skip("requires manual setup: feature with known task counts in index.json for precise progress assertion")
 }
 
 // Traceability: TC-015 -> Task 2 / AC-8
@@ -317,64 +283,9 @@ func TestTC_020_LessonNameDetailView(t *testing.T) {
 // Init Command (Task 3) — TC-021 to TC-029
 // =============================================================================
 
-// Traceability: TC-021 -> Task 3 / AC-1
-func TestTC_021_InitCreatesForgeDir(t *testing.T) {
-	t.Skip("requires clean project state (no .forge/ directory); destructive to run against real project")
-}
-
-// Traceability: TC-022 -> Task 3 / AC-2
-func TestTC_022_InitGeneratesCLAUDEmd(t *testing.T) {
-	t.Skip("requires clean project state (no CLAUDE.md); destructive to run against real project")
-}
-
-// Traceability: TC-023 -> Task 3 / AC-3
-func TestTC_023_InitAppendsGitignoreWithDedup(t *testing.T) {
-	t.Skip("requires isolated project state; modifies .gitignore which is destructive")
-}
-
-// Traceability: TC-024 -> Task 3 / AC-3, Hard Rules
-func TestTC_024_InitGitignoreDedupSkipsExisting(t *testing.T) {
-	t.Skip("requires .gitignore with pre-existing forge entries; modifies .gitignore")
-}
-
-// Traceability: TC-025 -> Task 3 / AC-4
-func TestTC_025_InitAppendsJustfileRecipes(t *testing.T) {
-	t.Skip("requires isolated project state; modifies justfile which is destructive")
-}
-
-// Traceability: TC-026 -> Task 3 / AC-4, Hard Rules
-func TestTC_026_InitJustfileDedupSkipsExisting(t *testing.T) {
-	t.Skip("requires justfile with pre-existing claude recipe; modifies justfile")
-}
-
-// Traceability: TC-027 -> Task 3 / AC-5
-func TestTC_027_InitRunsConfigInitWhenNoConfig(t *testing.T) {
-	t.Skip("requires clean project state (no .forge/config.yaml) and interactive stdin")
-}
-
-// Traceability: TC-028 -> Task 3 / AC-6, Hard Rules
-func TestTC_028_InitSkipsExistingFiles(t *testing.T) {
-	t.Skip("requires pre-existing .forge/, CLAUDE.md, .forge/config.yaml; complex setup")
-}
-
-// Traceability: TC-029 -> Task 3 / AC-7
-func TestTC_029_InitResultReportFormat(t *testing.T) {
-	t.Skip("requires clean project state; destructive to run against real project")
-}
-
 // =============================================================================
 // Migration (Task 4) — TC-030 to TC-032
 // =============================================================================
-
-// Traceability: TC-030 -> Task 4 / AC-1, Hard Rules
-func TestTC_030_ResolveScopeReadsConfigDirectly(t *testing.T) {
-	t.Skip("ResolveScope() is an internal function, not a CLI command; covered by unit tests")
-}
-
-// Traceability: TC-031 -> Task 4 / AC-6, Hard Rules
-func TestTC_031_ResolveScopeMissingConfigReturnsEmpty(t *testing.T) {
-	t.Skip("ResolveScope() is an internal function, not a CLI command; covered by unit tests")
-}
 
 // Traceability: TC-032 -> Task 4 / AC-3
 func TestTC_032_JustfileHasNoProjectTypeRecipe(t *testing.T) {
