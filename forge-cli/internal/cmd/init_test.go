@@ -192,7 +192,6 @@ func TestInitCommand(t *testing.T) {
 			"docs/features/*/tasks/index.json.lock",
 			"docs/features/*/testing/results/",
 			"tests/results/",
-			"tests/e2e/results/",
 		}
 		for _, line := range expected {
 			if !strings.Contains(content, line) {

@@ -217,7 +217,7 @@ func runTestRegression(projectRoot, featureSlug string) error {
 				if err := testrunner.WriteRegressionRawOutput(projectRoot, "=== test-setup failure ===\n"+setupOutput); err != nil {
 					fmt.Fprintf(os.Stderr, "WARNING: failed to write setup output: %v\n", err)
 				} else {
-					fmt.Fprintln(os.Stderr, "  Setup output saved to tests/e2e/results/raw-output.txt")
+					fmt.Fprintln(os.Stderr, "  Setup output saved to tests/results/raw-output.txt")
 				}
 			}
 			return nil
@@ -236,7 +236,7 @@ func runTestRegression(projectRoot, featureSlug string) error {
 	regressionOutput, regSuccess := just.RunCapture(projectRoot, "just", "test")
 	if !regSuccess {
 		fmt.Fprintln(os.Stderr, "ERROR: test regression failed")
-		errorDocPath := "tests/e2e/results/raw-output.txt"
+		errorDocPath := "tests/results/raw-output.txt"
 		if regressionOutput != "" {
 			if err := testrunner.WriteRegressionRawOutput(projectRoot, regressionOutput); err != nil {
 				fmt.Fprintf(os.Stderr, "WARNING: failed to write raw-output.txt: %v\n", err)
