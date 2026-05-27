@@ -141,7 +141,7 @@
       "dependencies": [
         "8"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "9-scope-concept-cleanup.md",
       "record": "records/9-scope-concept-cleanup.md",
       "surface-key": ".",

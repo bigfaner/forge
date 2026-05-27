@@ -25,7 +25,9 @@ type FrontmatterData struct {
 	// Complexity is the task complexity level: "low", "medium", or "high".
 	// Empty value defaults to "medium" at runtime.
 	Complexity string `yaml:"complexity,omitempty"`
-	Scope      string `yaml:"scope"`
+	// Deprecated: Scope is the legacy scope field replaced by SurfaceKey/SurfaceType.
+	// Retained solely for migration detection via CheckLegacyScope. Do not use in new code.
+	Scope string `yaml:"scope"`
 }
 
 // ParseFrontmatter extracts YAML frontmatter from a markdown file.

@@ -21,7 +21,7 @@ When the thresholds are met, split the task into two sub-tasks by dependency lay
 
 - **Sub-ID**: `<seq>.<sub>a`
 - **`breaking: true`** — always, because the shared artifact's contract changes
-- **Surface**: resolve `surface-key` and `surface-type` via `forge surfaces --json` on affected files (see `rules/scope-to-surface-key.md`)
+- **Surface**: resolve `surface-key` and `surface-type` via `forge surfaces --json` on affected files (see Step 4a Surface-Key/Type Assignment)
 - **Content**: Apply changes to the shared artifact, reconcile ALL downstream consumers so existing code compiles and tests pass. No new business logic — only signature changes + stubs/adapters.
 - **Dependencies**: same as the original unsplit task
 
@@ -29,7 +29,7 @@ When the thresholds are met, split the task into two sub-tasks by dependency lay
 
 - **Sub-ID**: `<seq>.<sub>b`
 - **`breaking`**: determined by the feature's own changes (not the shared artifact update)
-- **Surface**: resolve `surface-key` and `surface-type` via `forge surfaces --json` on new/modified feature files (see `rules/scope-to-surface-key.md`)
+- **Surface**: resolve `surface-key` and `surface-type` via `forge surfaces --json` on new/modified feature files (see Step 4a Surface-Key/Type Assignment)
 - **Content**: Implement the actual feature logic using the updated shared artifact. Standard acceptance criteria from the design.
 - **Dependencies**: depends on `<seq>.<sub>a`
 
