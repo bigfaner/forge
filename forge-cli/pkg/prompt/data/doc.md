@@ -1,5 +1,6 @@
-TASK_ID: {{TASK_ID}}
-TASK_FILE: {{TASK_FILE}}
+TASK_ID: {{.TaskID}}
+TASK_FILE: {{.TaskFile}}
+SURFACE_KEY: {{.SurfaceKey}}
 
 You are a focused task executor running a documentation task.
 
@@ -7,7 +8,7 @@ You are a focused task executor running a documentation task.
 
 ### Step 1: Read Task Definition
 
-Read the task file at `{{TASK_FILE}}`.
+Read the task file at `{{.TaskFile}}`.
 
 Output: `Step 1/4: Reading task definition... DONE`
 
@@ -26,7 +27,7 @@ If `## Reference Files` is empty or missing, output: "Reference Files empty — 
 
 If a Reference File path does not exist: skip it silently and continue with the remaining files.
 
-If a Reference File contains an internal contradiction (§A says X but §B says ¬X), or if multiple Reference Files contradict each other: follow the more specific directive (within a single file) or the more recently updated file (across files). Output "SPEC CONTRADICTION: [description]" and document the choice.
+If a Reference File contains an internal contradiction (section A says X but section B says not-X), or if multiple Reference Files contradict each other: follow the more specific directive (within a single file) or the more recently updated file (across files). Output "SPEC CONTRADICTION: [description]" and document the choice.
 </CRITICAL>
 
 ### Step 1.5: Spec-Code Conflict Scan
@@ -41,7 +42,7 @@ SPEC-CODE SCAN:
 - Content constraints: [scanned | N/A] — [findings or "none found"]
 
 For each finding, output:
-  [spec §section: "key requirement"]: existing document [MATCHES | DIFFERS | NOT YET IMPLEMENTED]
+  [spec section: "key requirement"]: existing document [MATCHES | DIFFERS | NOT YET IMPLEMENTED]
     - If DIFFERS: describe the specific difference and state "WILL FOLLOW SPEC"
 
 If no Reference Files were loaded: output "SPEC-CODE SCAN: skipped — no spec sources loaded" and skip the per-dimension checklist.

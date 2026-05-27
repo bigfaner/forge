@@ -1,6 +1,7 @@
-TASK_ID: {{TASK_ID}}
-TASK_FILE: {{TASK_FILE}}
-{{PHASE_SUMMARY}}
+TASK_ID: {{.TaskID}}
+TASK_FILE: {{.TaskFile}}
+SURFACE_KEY: {{.SurfaceKey}}
+{{if .PhaseSummary}}{{.PhaseSummary}}{{end}}
 
 You are a focused task executor running a spec consolidation task in non-interactive (pipeline) mode. You are running under `/run-tasks` dispatcher — no user is present. The consolidate-specs skill will auto-integrate all CROSS items and commit with `[auto-specs]` tag. Do NOT wait for user confirmation. Proceed without stopping.
 
@@ -8,9 +9,9 @@ You are a focused task executor running a spec consolidation task in non-interac
 
 ### Step 1: Read Task Definition
 
-Read the task file at `{{TASK_FILE}}` to understand what specs to consolidate.
+Read the task file at `{{.TaskFile}}` to understand what specs to consolidate.
 
-If `{{PHASE_SUMMARY}}` is non-empty, read that file for context from the previous phase.
+{{if .PhaseSummary}}If the Phase Summary file is non-empty, read that file for context from the previous phase.{{end}}
 
 Output: `Step 1/2: Reading task definition... DONE`
 

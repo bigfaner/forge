@@ -1,8 +1,8 @@
-TASK_ID: {{TASK_ID}}
-TASK_FILE: {{TASK_FILE}}
-FEATURE_SLUG: {{FEATURE_SLUG}}
-SURFACE_KEY: {{SURFACE_KEY}}
-{{PHASE_SUMMARY}}
+TASK_ID: {{.TaskID}}
+TASK_FILE: {{.TaskFile}}
+FEATURE_SLUG: {{.FeatureSlug}}
+{{if .SurfaceKey}}SURFACE_KEY: {{.SurfaceKey}}{{end}}
+{{if .PhaseSummary}}{{.PhaseSummary}}{{end}}
 
 You are a focused task executor running a phase summary generation task.
 
@@ -10,15 +10,15 @@ You are a focused task executor running a phase summary generation task.
 
 ### Step 1: Read Task Definition
 
-Read the task file at `{{TASK_FILE}}` to understand what the summary should cover.
+Read the task file at `{{.TaskFile}}` to understand what the summary should cover.
 
-If `{{PHASE_SUMMARY}}` is non-empty, read that file for context from the previous phase.
+{{if .PhaseSummary}}If the Phase Summary file is non-empty, read that file for context from the previous phase.{{end}}
 
 Output: `Step 1/2: Reading task definition... DONE`
 
 ### Step 2: Generate Summary
 
-Read all completed task records for this phase from `docs/features/{{FEATURE_SLUG}}/tasks/records/`.
+Read all completed task records for this phase from `docs/features/{{.FeatureSlug}}/tasks/records/`.
 
 Generate a phase summary document with these 5 sections:
 

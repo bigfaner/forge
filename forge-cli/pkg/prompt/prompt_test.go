@@ -1532,7 +1532,7 @@ func TestDocReviewPromptTemplate_Step2UsesAllowlistDiscovery(t *testing.T) {
 	if !strings.Contains(s, "allowlist") {
 		t.Error("doc-review prompt Step 2 should use allowlist strategy")
 	}
-	if !strings.Contains(s, "docs/features/{{FEATURE_SLUG}}") {
+	if !strings.Contains(s, "docs/features/{{.FeatureSlug}}") {
 		t.Error("doc-review prompt Step 2 should reference docs/features/ path")
 	}
 }
@@ -1614,8 +1614,8 @@ func TestAllTemplates_NoScopeLabel(t *testing.T) {
 			}
 			s := string(data)
 
-			// No template should have "SCOPE: {{SURFACE_KEY}}" label
-			if strings.Contains(s, "SCOPE: {{SURFACE_KEY}}") {
+			// No template should have "SCOPE: {{.SurfaceKey}}" label
+			if strings.Contains(s, "SCOPE: {{.SurfaceKey}}") {
 				t.Errorf("template %s still uses deprecated SCOPE: label (should be SURFACE_KEY:)", name)
 			}
 		})
@@ -1644,9 +1644,9 @@ func TestAllTemplates_UseSurfaceKeyLabel(t *testing.T) {
 			}
 			s := string(data)
 
-			// Templates that use {{SURFACE_KEY}} should use SURFACE_KEY: label
-			if strings.Contains(s, "{{SURFACE_KEY}}") && !strings.Contains(s, "SURFACE_KEY: {{SURFACE_KEY}}") {
-				t.Errorf("template %s uses {{SURFACE_KEY}} but not with SURFACE_KEY: label", name)
+			// Templates that use {{.SurfaceKey}} should use SURFACE_KEY: label
+			if strings.Contains(s, "{{.SurfaceKey}}") && !strings.Contains(s, "SURFACE_KEY: {{.SurfaceKey}}") {
+				t.Errorf("template %s uses {{.SurfaceKey}} but not with SURFACE_KEY: label", name)
 			}
 		})
 	}

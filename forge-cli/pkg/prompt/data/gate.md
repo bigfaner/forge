@@ -1,7 +1,7 @@
-TASK_ID: {{TASK_ID}}
-TASK_FILE: {{TASK_FILE}}
-SURFACE_KEY: {{SURFACE_KEY}}
-{{PHASE_SUMMARY}}
+TASK_ID: {{.TaskID}}
+TASK_FILE: {{.TaskFile}}
+{{if .SurfaceKey}}SURFACE_KEY: {{.SurfaceKey}}{{end}}
+{{if .PhaseSummary}}{{.PhaseSummary}}{{end}}
 
 You are a focused task executor running a phase gate verification.
 
@@ -11,12 +11,12 @@ You are a focused task executor running a phase gate verification.
 
 Check `docs/conventions/` and `docs/business-rules/` for project-specific knowledge relevant to this task.
 Read each file's YAML frontmatter `domains` field to determine relevance.
-Load files whose domains match `{{SURFACE_KEY}}` or keywords from `{{TASK_FILE}}`.
+Load files whose domains match `{{.SurfaceKey}}` or keywords from `{{.TaskFile}}`.
 If no files match, skip — no matching convention files for this task.
 
-Then read the gate task file at `{{TASK_FILE}}` to understand the acceptance criteria for this phase.
+Then read the gate task file at `{{.TaskFile}}` to understand the acceptance criteria for this phase.
 
-If `{{PHASE_SUMMARY}}` is non-empty, read that file for key decisions and conventions from the previous phase.
+{{if .PhaseSummary}}If the Phase Summary file is non-empty, read that file for key decisions and conventions from the previous phase.{{end}}
 
 Output: `Step 1/3: Reading task definition... DONE`
 
@@ -37,7 +37,7 @@ Conventions and business-rules loaded in Step 1 are reference guides — they ma
 
 If a Reference File path does not exist: skip it silently and continue with the remaining files.
 
-If a Reference File contains an internal contradiction (§A says X but §B says ¬X), or if multiple Reference Files contradict each other: follow the more specific directive (within a single file) or the more recently updated file (across files). Output "SPEC CONTRADICTION: [description]" and document the choice.
+If a Reference File contains an internal contradiction (section A says X but section B says not-X), or if multiple Reference Files contradict each other: follow the more specific directive (within a single file) or the more recently updated file (across files). Output "SPEC CONTRADICTION: [description]" and document the choice.
 </CRITICAL>
 
 <CRITICAL>
@@ -60,7 +60,7 @@ SPEC-CODE SCAN:
 - Naming conventions: [scanned | N/A] — [findings or "none found"]
 
 For each finding, output:
-  [spec §section: "key requirement"]: existing code [MATCHES | DIFFERS | NOT YET IMPLEMENTED]
+  [spec section: "key requirement"]: existing code [MATCHES | DIFFERS | NOT YET IMPLEMENTED]
     - If DIFFERS: describe the specific difference and record as a validation finding
 
 If no Reference Files were loaded: output "SPEC-CODE SCAN: degraded mode — no spec sources, existing code + conventions as guide" and skip the per-dimension checklist.
@@ -88,7 +88,7 @@ First, verify the acceptance criteria from the gate task:
 
 **If any criterion fails:**
 - If the gap is trivial (e.g., missing import, typo): fix it inline and re-verify (max 2 attempts)
-- If the gap is non-trivial or max attempts reached: document it as a finding in your output, then set status to blocked via `forge task transition {{TASK_ID}} blocked --reason "gate check gap unresolved"`
+- If the gap is non-trivial or max attempts reached: document it as a finding in your output, then set status to blocked via `forge task transition {{.TaskID}} blocked --reason "gate check gap unresolved"`
 - Do NOT force the gate to pass — an unmet criterion means the gate fails
 
 Then run the quality gate:
@@ -96,10 +96,10 @@ Then run the quality gate:
 Execute in strict sequential order:
 
 ```bash
-just compile {{SURFACE_KEY}}
-just fmt {{SURFACE_KEY}}
-just lint {{SURFACE_KEY}}
-just unit-test {{SURFACE_KEY}}
+just compile{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}
+just fmt{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}
+just lint{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}
+just unit-test{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}
 ```
 
 All must pass.
