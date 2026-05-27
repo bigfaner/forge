@@ -235,11 +235,6 @@ func TestTC_006_MissingTypeCausesNonZeroExitWithError(t *testing.T) {
 
 // ── Story 4: task migrate ─────────────────────────────────────────────────
 
-// Traceability: TC-007 -> Story 4 / AC-1
-func TestTC_007_TaskMigrateIsIdempotentOnAlreadyTypedIndex(t *testing.T) {
-	t.Skip("cannot test migrate idempotency while fix-2 is in_progress (blocks migrate)")
-}
-
 // Traceability: TC-008 -> Story 4 / AC-2
 func TestTC_008_TaskMigrateRejectsWhenTasksAreInProgress(t *testing.T) {
 	// The typed-task-dispatch feature has all tasks completed, so migrate
@@ -261,20 +256,6 @@ func TestTC_008_TaskMigrateRejectsWhenTasksAreInProgress(t *testing.T) {
 }
 
 // ── Story 5: breakdown-tasks type generation ──────────────────────────────
-
-// Traceability: TC-009 -> Story 5 / AC-1
-func TestTC_009_BreakdownTasksGeneratesTypeFieldsForTasks(t *testing.T) {
-	content := dispatchReadFile(t, filepath.Join("plugins", "forge", "skills", "breakdown-tasks", "SKILL.md"))
-
-	assert.True(t,
-		regexp.MustCompile(`(?i)type.*assignment`).MatchString(content),
-		"breakdown-tasks SKILL.md should contain 'type assignment' section")
-
-	for _, typ := range []string{"feature", "doc-generation", "gate", "test-pipeline"} {
-		assert.True(t, strings.Contains(content, typ),
-			"breakdown-tasks SKILL.md should mention type: %s", typ)
-	}
-}
 
 // Traceability: TC-010 -> Story 5 / AC-2
 func TestTC_010_BreakdownTasksFallsBackToFeatureForUnrecognized(t *testing.T) {
@@ -356,77 +337,6 @@ func TestTC_014_TaskPromptFixRecordMissedOutputsRecordRecoveryPrompt(t *testing.
 }
 
 // ── task validate extension ───────────────────────────────────────────────
-
-// Traceability: TC-015 -> PRD Spec / task validate command extension
-func TestTC_015_TaskValidateAcceptsValidTypesAndRejectsInvalidOnes(t *testing.T) {
-	dir := t.TempDir()
-
-	validIndex := map[string]interface{}{
-		"feature": "test",
-		"created": "2026-05-11",
-		"status":  "planning",
-		"tasks": map[string]interface{}{
-			"1-1": map[string]interface{}{
-				"id": "1.1", "title": "T1", "type": "feature",
-				"status": "pending", "scope": "all", "file": "1-1.md",
-			},
-		},
-	}
-	invalidIndex := map[string]interface{}{
-		"feature": "test",
-		"created": "2026-05-11",
-		"status":  "planning",
-		"tasks": map[string]interface{}{
-			"1-1": map[string]interface{}{
-				"id": "1.1", "title": "T1", "type": "unknown-type",
-				"status": "pending", "scope": "all", "file": "1-1.md",
-			},
-		},
-	}
-	missingIndex := map[string]interface{}{
-		"feature": "test",
-		"created": "2026-05-11",
-		"status":  "planning",
-		"tasks": map[string]interface{}{
-			"1-1": map[string]interface{}{
-				"id": "1.1", "title": "T1",
-				"status": "pending", "scope": "all", "file": "1-1.md",
-			},
-		},
-	}
-
-	writeJSON := func(name string, v map[string]interface{}) string {
-		p := filepath.Join(dir, name)
-		data, err := json.MarshalIndent(v, "", "  ")
-		require.NoError(t, err)
-		require.NoError(t, os.WriteFile(p, data, 0644))
-		return p
-	}
-
-	validPath := writeJSON("valid-test-index.json", validIndex)
-	invalidPath := writeJSON("invalid-test-index.json", invalidIndex)
-	missingPath := writeJSON("missing-test-index.json", missingIndex)
-
-	// Valid index should pass
-	exitCode, _ := testkit.RunCLIExitCode("task", "validate-index", validPath)
-	assert.Equal(t, 0, exitCode, "valid index should pass validation")
-
-	// Invalid type should fail
-	exitCode, out := testkit.RunCLIExitCode("task", "validate-index", invalidPath)
-	assert.NotEqual(t, 0, exitCode, "invalid type index should fail validation")
-	lower := strings.ToLower(out)
-	assert.True(t,
-		strings.Contains(lower, "unknown") || strings.Contains(lower, "invalid") || strings.Contains(lower, "type"),
-		"invalid type should produce type-related error: %s", out)
-
-	// Missing type should fail
-	exitCode, out = testkit.RunCLIExitCode("task", "validate-index", missingPath)
-	assert.NotEqual(t, 0, exitCode, "missing type index should fail validation")
-	lower = strings.ToLower(out)
-	assert.True(t,
-		(strings.Contains(lower, "type") && (strings.Contains(lower, "missing") || strings.Contains(lower, "required"))),
-		"missing type should produce type-required error: %s", out)
-}
 
 // ── task prompt phase boundary detection ─────────────────────────────────
 

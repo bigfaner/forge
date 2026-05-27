@@ -11,16 +11,6 @@ import (
 
 // --- Task Submit (TC-008 to TC-011) ---
 
-// Traceability: TC-008 -> Story 3 / AC-1
-func TestTC_008_SubmitTaskSuccessUpdatesStatusAndCreatesRecord(t *testing.T) {
-	t.Skip("requires manual setup: task in in_progress state with valid test data")
-}
-
-// Traceability: TC-009 -> Story 3 / AC-2
-func TestTC_009_SubmitTaskAlreadyTerminalStateReturnsError(t *testing.T) {
-	t.Skip("requires manual setup: task in terminal state (completed/blocked/rejected)")
-}
-
 // Traceability: TC-010 -> Story 3 / AC-3
 func TestTC_010_SubmitTaskMissingResultFlagReturnsError(t *testing.T) {
 	// Submit requires --data or stdin input. Without either, the command
@@ -37,9 +27,4 @@ func TestTC_010_SubmitTaskMissingResultFlagReturnsError(t *testing.T) {
 	assert.Equal(t, 1, exitCode, "submit without data should exit 1")
 	// Verify some error output was produced
 	assert.True(t, len(out) > 0, "submit failure should produce output")
-}
-
-// Traceability: TC-011 -> Story 3 / AC-4
-func TestTC_011_ConcurrentSubmitHandlesLockContention(t *testing.T) {
-	t.Skip("requires manual setup: task in in_progress state + concurrent process simulation")
 }

@@ -37,8 +37,3 @@ func TestTC_006_GetPromptNonexistentTaskIDReturnsError(t *testing.T) {
 	assert.True(t, strings.Contains(lower, "not found"),
 		"output should contain 'not found' error: %s", out)
 }
-
-// Traceability: TC-007 -> Story 2 / AC-3
-func TestTC_007_GetPromptMissingOrInvalidTypeReturnsError(t *testing.T) {
-	t.Skip("requires manual setup: task with missing/invalid type in index.json")
-}

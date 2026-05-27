@@ -45,7 +45,6 @@ var gitignoreEntries = []string{
 	"docs/features/*/tasks/index.json.lock",
 	"docs/features/*/testing/results/",
 	"tests/results/",
-	"tests/e2e/results/",
 }
 
 // initAction records a single action taken during init.

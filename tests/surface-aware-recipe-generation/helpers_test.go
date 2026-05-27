@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	testkit "forge-tests/testkit"
@@ -76,19 +75,4 @@ func runForgeRaw(t *testing.T, dir string, args ...string) (string, int) {
 		}
 	}
 	return string(out), exitCode
-}
-
-// readJustfile reads the justfile content from the project directory.
-func readJustfile(t *testing.T, projectDir string) string {
-	t.Helper()
-	content, err := os.ReadFile(filepath.Join(projectDir, "justfile"))
-	if err != nil {
-		return ""
-	}
-	return string(content)
-}
-
-// recipeExists checks if a recipe name exists in the justfile content.
-func recipeExists(justfileContent, recipeName string) bool {
-	return strings.Contains(justfileContent, recipeName+":")
 }

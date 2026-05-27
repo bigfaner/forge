@@ -42,4 +42,3 @@ docs/features/*/tasks/index.json.lock
 .forge/test-state.json
 .forge/worktrees/
 docs/features/*/testing/results/
-tests/e2e/results/

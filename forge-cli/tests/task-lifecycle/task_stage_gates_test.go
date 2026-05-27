@@ -647,11 +647,6 @@ func TestTSG_013_PrintsNoQualificationMessage(t *testing.T) {
 // errors gracefully. Template rendering failure requires binary modification
 // which is better suited for unit tests.
 
-// Traceability: TC-014 -> Proposal "CLI Output Behavior" - "Template rendering failure"
-func TestTSG_014_ExitsWithErrorOnTemplateRenderFailure(t *testing.T) {
-	t.Skip("requires binary modification to corrupt embedded template - unit test scenario")
-}
-
 // --- TC-015: Quick mode generates stage-gates identically to full mode ---
 
 // Traceability: TC-015 -> Proposal Key Scenario "Quick mode", Success Criteria #7

@@ -15,7 +15,7 @@ Convention for generating Go test code using the standard `testing` package with
 
 ## discovery
 
-- **test_dir**: `tests/e2e/`
+- **test_dir**: `forge-cli/tests/` (forge-cli e2e tests), `tests/` (project-level e2e tests per feature)
 - **file_pattern**: `*_test.go`
 - **exclude_pattern**: `vendor/`, `node_modules/`
 
@@ -94,7 +94,7 @@ Each test function must include a traceability comment:
 
 ### Shared Infrastructure
 
-`tests/e2e/main_test.go` provides `TestMain` for suite-level setup/teardown. This file is created once and must NOT be overwritten during feature generation.
+Each test directory (e.g., `forge-cli/tests/<suite>/`, `tests/<suite>/`) provides its own `main_test.go` with `TestMain` for suite-level setup/teardown. This file is created once and must NOT be overwritten during feature generation.
 
 ## assertions
 
@@ -213,5 +213,5 @@ Resolve all `// VERIFY:` comments using Fact Table values. Post-generation check
 
 ```bash
 just unit-test
-grep -rn '// VERIFY:' tests/e2e/ --include='*_test.go'
+grep -rn '// VERIFY:' forge-cli/tests/ tests/ --include='*_test.go'
 ```

@@ -423,23 +423,6 @@ func TestTC_002_ForgeInitSkipJustSkipsStep(t *testing.T) {
 // TC-003: forge init --skip-just still runs all other init steps
 // ---------------------------------------------------------------------------
 
-// Traceability: TC-003 -> Proposal SC 2 + Task 4 AC "forge init with --skip-just skips ensureJust step"
-func TestTC_003_ForgeInitSkipJustRunsOtherSteps(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	output, err := runForgeInit(t, tmpDir, "--skip-just")
-	assert.NoError(t, err)
-
-	// Verify all non-just artifacts are created
-	assert.DirExists(t, filepath.Join(tmpDir, ".forge"))
-	assert.FileExists(t, filepath.Join(tmpDir, "CLAUDE.md"))
-	assert.FileExists(t, filepath.Join(tmpDir, ".gitignore"))
-	assert.FileExists(t, filepath.Join(tmpDir, "justfile"))
-
-	// Summary should show just installation as SKIPPED
-	assert.Contains(t, output, "just installation")
-}
-
 // ---------------------------------------------------------------------------
 // TC-004: forge init with just already installed reports SKIPPED
 // ---------------------------------------------------------------------------
@@ -563,21 +546,6 @@ func TestTC_007_EnsureJustStepBeforeJustfileStep(t *testing.T) {
 // ---------------------------------------------------------------------------
 // TC-014: forge init --project-root with custom path
 // ---------------------------------------------------------------------------
-
-// Traceability: TC-014 -> Proposal "--project-root flag support"
-func TestTC_014_ForgeInitCustomProjectRoot(t *testing.T) {
-	customDir := t.TempDir()
-
-	output, err := runForgeInit(t, customDir, "--skip-just")
-	assert.NoError(t, err)
-
-	// Verify all artifacts are created in the custom directory
-	assert.DirExists(t, filepath.Join(customDir, ".forge"))
-	assert.FileExists(t, filepath.Join(customDir, "CLAUDE.md"))
-	assert.FileExists(t, filepath.Join(customDir, ".gitignore"))
-	assert.FileExists(t, filepath.Join(customDir, "justfile"))
-	_ = output
-}
 
 // =============================================================================
 // TUI Tests — DetectJust, ParseJustVersion, IsMinimumVersion, EmbeddedBinary

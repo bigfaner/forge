@@ -1268,7 +1268,7 @@ func TestWriteRegressionRawOutput(t *testing.T) {
 		t.Fatalf("testrunner.WriteRegressionRawOutput() error = %v", err)
 	}
 
-	path := filepath.Join(dir, "tests", "e2e", "results", "raw-output.txt")
+	path := filepath.Join(dir, "tests", "results", "raw-output.txt")
 	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("expected file at %s, got error: %v", path, err)
@@ -1284,8 +1284,8 @@ func TestWriteRegressionRawOutput_CreatesDir(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(dir, "tests", "e2e", "results")); os.IsNotExist(err) {
-		t.Error("tests/e2e/results/ directory should have been created")
+	if _, err := os.Stat(filepath.Join(dir, "tests", "results")); os.IsNotExist(err) {
+		t.Error("tests/results/ directory should have been created")
 	}
 }
 
@@ -1554,7 +1554,7 @@ func TestWriteUnitTestRawOutput_MkdirAllError(t *testing.T) {
 
 func TestWriteRegressionRawOutput_MkdirAllError(t *testing.T) {
 	dir := t.TempDir()
-	// Create a file where tests/e2e/results/ should be, so MkdirAll fails
+	// Create a file where tests/results/ should be, so MkdirAll fails
 	testsDir := filepath.Join(dir, "tests")
 	_ = os.WriteFile(testsDir, []byte("blocker"), 0644)
 

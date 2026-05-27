@@ -913,7 +913,7 @@ func TestAddFixTask_TitleContainsStep(t *testing.T) {
 func TestAddFixTask_DescriptionContainsErrorDoc(t *testing.T) {
 	projectRoot, featureSlug, _ := helperSetup(t)
 
-	errorDoc := "tests/e2e/results/raw-output.txt"
+	errorDoc := "tests/results/raw-output.txt"
 	taskID, addErr := addFixTask(projectRoot, featureSlug, "test", "test.spec.ts:5: fail", errorDoc)
 	if addErr != nil {
 		t.Fatalf("unexpected error: %v", addErr)

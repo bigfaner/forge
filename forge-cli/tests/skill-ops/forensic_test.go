@@ -29,16 +29,6 @@ func TestTC_023_ForensicSearchScansHistoryAndReturnsSessions(t *testing.T) {
 	}
 }
 
-// Traceability: TC-024 -> Story 7 / AC-2
-func TestTC_024_ForensicExtractOutputsEvidenceSummary(t *testing.T) {
-	t.Skip("requires manual setup: valid session JSONL file path")
-}
-
-// Traceability: TC-025 -> Story 7 / AC-3
-func TestTC_025_ForensicSubagentsListsTranscripts(t *testing.T) {
-	t.Skip("requires manual setup: session directory with subagent transcripts")
-}
-
 // Traceability: TC-026 -> Story 7 / AC-4
 func TestTC_026_ForensicExtractNonexistentPathReturnsError(t *testing.T) {
 	exitCode, out := testkit.RunCLIExitCode("forensic", "extract", "/nonexistent/path.jsonl")
