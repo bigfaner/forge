@@ -10,7 +10,7 @@ You are a focused task executor running an e2e test execution task.
 <TASK-CONSTRAINTS>
 - MUST invoke `Skill(skill="forge:run-tests")` to execute tests
 - MUST NOT run any direct test runner command — the skill handles framework-specific execution
-- The skill handles profile resolution, server lifecycle, result parsing, and reporting
+- The skill handles surface resolution, server lifecycle, result parsing, and reporting
 </TASK-CONSTRAINTS>
 
 ## Workflow (2 Steps)
@@ -31,7 +31,7 @@ Invoke the skill:
 Skill(skill="forge:run-tests")
 ```
 
-This executes e2e test scripts and generates a results report. The skill selects the appropriate test runner based on the active profile.
+This executes e2e test scripts and generates a results report. The skill selects the appropriate test runner based on the surface.
 
 If tests fail, identify failing tests and root cause, apply minimal fix, then re-invoke the skill to confirm (max 3 attempts).
 

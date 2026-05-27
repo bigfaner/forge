@@ -129,7 +129,7 @@
         "3",
         "4"
       ],
-      "status": "blocked",
+      "status": "in_progress",
       "file": "5-rename-build-tags.md",
       "record": "records/5-rename-build-tags.md",
       "breaking": true,
@@ -146,7 +146,7 @@
       "dependencies": [
         "4"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "6-update-template-terminology.md",
       "record": "records/6-update-template-terminology.md",
       "surface-key": ".",
