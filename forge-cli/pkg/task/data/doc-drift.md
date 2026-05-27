@@ -1,3 +1,17 @@
+---
+type: doc.drift
+category: doc
+variables:
+  - TaskID
+  - TaskType
+  - FeatureSlug
+  - Mode
+  - SurfaceKey
+  - SurfaceType
+  - SurfaceTypes
+  - AcceptanceCriteria
+  - DocTaskCriteria
+---
 Detect spec drift between existing project specs and current code for the {{.FeatureSlug}} feature.
 
 ## Discovery Strategy

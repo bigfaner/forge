@@ -292,6 +292,8 @@ func RenderEvalRecord(t *Task, rd *RecordData, startedTime string) string {
 }
 
 // renderRecordTemplate renders a named record template with the given data.
+// Metadata frontmatter is stripped before parsing; the output frontmatter
+// (status, started, etc.) remains in the template body and is rendered by Go template.
 func renderRecordTemplate(templateName string, t *Task, rd *RecordData, startedTime string) string {
 	data, err := recordTemplateFS.ReadFile(templateName)
 	if err != nil {
@@ -299,7 +301,10 @@ func renderRecordTemplate(templateName string, t *Task, rd *RecordData, startedT
 		return fmt.Sprintf("ERROR: template %s not found: %v", templateName, err)
 	}
 
-	tmpl, err := template.New("record").Funcs(recordFuncMap).Parse(string(data))
+	// Strip metadata frontmatter before parsing (metadata is not part of rendered output)
+	content := stripAutogenMetadata(string(data))
+
+	tmpl, err := template.New("record").Funcs(recordFuncMap).Parse(content)
 	if err != nil {
 		return fmt.Sprintf("ERROR: parse template %s: %v", templateName, err)
 	}

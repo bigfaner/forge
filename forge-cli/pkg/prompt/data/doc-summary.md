@@ -1,3 +1,14 @@
+---
+type: doc.summary
+category: doc
+variables:
+  - TaskID
+  - TaskFile
+  - FeatureSlug
+  - PhaseSummary
+  - SurfaceKey
+  - SurfaceType
+---
 TASK_ID: {{.TaskID}}
 TASK_FILE: {{.TaskFile}}
 FEATURE_SLUG: {{.FeatureSlug}}

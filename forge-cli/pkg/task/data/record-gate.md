@@ -1,4 +1,20 @@
 ---
+type: record
+category: record
+variables:
+  - Status
+  - Started
+  - Completed
+  - TimeSpent
+  - TaskID
+  - TaskTitle
+  - Summary
+  - TypeReclassification
+  - GateChecksFormatted
+  - GatePassedFormatted
+  - Notes
+---
+---
 status: "{{.Status}}"
 started: "{{.Started}}"
 completed: "{{.Completed}}"

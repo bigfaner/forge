@@ -1,3 +1,15 @@
+---
+type: test.gen-scripts
+category: test
+variables:
+  - TaskID
+  - TaskFile
+  - FeatureSlug
+  - PhaseSummary
+  - TestTypeArg
+  - SurfaceKey
+  - SurfaceType
+---
 TASK_ID: {{.TaskID}}
 TASK_FILE: {{.TaskFile}}
 {{if .SurfaceKey}}SURFACE_KEY: {{.SurfaceKey}}{{end}}

@@ -1,3 +1,17 @@
+---
+type: test.run
+category: test
+variables:
+  - TaskID
+  - TaskType
+  - FeatureSlug
+  - Mode
+  - SurfaceKey
+  - SurfaceType
+  - SurfaceTypes
+  - AcceptanceCriteria
+  - DocTaskCriteria
+---
 Execute staged test scripts for the {{.FeatureSlug}} feature.
 
 ## Feature Context

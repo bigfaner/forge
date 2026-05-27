@@ -13,6 +13,8 @@ import (
 	"strings"
 	"text/template"
 
+	"reflect"
+
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/forgeconfig"
 	"forge-cli/pkg/task"
@@ -64,9 +66,16 @@ func templatePath(typeName string) string {
 // map to the same filename. It also validates that each template can be executed
 // against a zero-value promptTemplateData using missingkey=error, catching field
 // misspellings at startup.
+//
+// When a template contains metadata frontmatter (type, category, variables fields),
+// the metadata is stripped before parsing. The variables field is cross-validated
+// against promptTemplateData using reflection — each declared variable must have
+// a matching exported field on the struct.
+//
 // Must be called from the CLI main() startup path, NOT from an init() function.
 func ValidatePromptTemplates() error {
 	seen := make(map[string]string) // filename -> type name (for collision detection)
+	structType := reflect.TypeOf(promptTemplateData{})
 
 	for typeName := range task.ValidTypes {
 		filename := templatePath(typeName)
@@ -84,9 +93,20 @@ func ValidatePromptTemplates() error {
 		}
 		seen[filename] = typeName
 
+		// Strip metadata frontmatter before validation
+		content := string(data)
+		body, meta := parseMetadataFrontmatter(content)
+
+		// Cross-validate metadata variables against struct fields
+		if meta != nil {
+			if err := validateMetadataVariables(meta, structType); err != nil {
+				return fmt.Errorf("template validation error: %s: %w", filename, err)
+			}
+		}
+
 		// Validate that the template executes without errors against a zero-value struct.
 		// missingkey=error catches any field name misspelled in the template.
-		converted := placeholderReplacer.Replace(string(data))
+		converted := placeholderReplacer.Replace(body)
 		tmpl, err := template.New(filename).Option("missingkey=error").Parse(converted)
 		if err != nil {
 			return fmt.Errorf("template validation error: parse %s: %w", typeName, err)
@@ -210,6 +230,9 @@ func renderTemplate(templateFile string, opts SynthesizeOpts, t task.Task) (stri
 	// Bridge-convert legacy {{PLACEHOLDER}} to dot-notation {{.Placeholder}}
 	// for text/template compatibility. Task 2 permanently migrates the template files.
 	converted := placeholderReplacer.Replace(string(data))
+
+	// Strip metadata frontmatter before parsing (metadata is not part of rendered output)
+	converted = stripMetadataFrontmatter(converted)
 
 	tmpl, err := template.New(templateFile).Option("missingkey=error").Parse(converted)
 	if err != nil {

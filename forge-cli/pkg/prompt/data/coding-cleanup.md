@@ -1,3 +1,19 @@
+---
+type: coding.cleanup
+category: coding
+variables:
+  - TaskID
+  - TaskFile
+  - TaskCategory
+  - FeatureSlug
+  - PhaseSummary
+  - CoverageStrategy
+  - CoverageTarget
+  - TestTypeArg
+  - SurfaceKey
+  - SurfaceType
+  - Complexity
+---
 TASK_ID: {{.TaskID}}
 TASK_FILE: {{.TaskFile}}
 {{if .SurfaceKey}}SURFACE_KEY: {{.SurfaceKey}}{{end}}

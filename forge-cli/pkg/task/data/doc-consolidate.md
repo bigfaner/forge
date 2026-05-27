@@ -1,3 +1,17 @@
+---
+type: doc.consolidate
+category: doc
+variables:
+  - TaskID
+  - TaskType
+  - FeatureSlug
+  - Mode
+  - SurfaceKey
+  - SurfaceType
+  - SurfaceTypes
+  - AcceptanceCriteria
+  - DocTaskCriteria
+---
 Extract and consolidate business rules and tech specs from the {{.FeatureSlug}} feature.
 
 ## Feature Context

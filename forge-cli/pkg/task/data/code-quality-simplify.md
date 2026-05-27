@@ -1,3 +1,17 @@
+---
+type: code-quality.simplify
+category: coding
+variables:
+  - TaskID
+  - TaskType
+  - FeatureSlug
+  - Mode
+  - SurfaceKey
+  - SurfaceType
+  - SurfaceTypes
+  - AcceptanceCriteria
+  - DocTaskCriteria
+---
 Simplify and clean up code for the {{.FeatureSlug}} feature.
 
 ## Discovery Strategy

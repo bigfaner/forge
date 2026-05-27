@@ -1,3 +1,14 @@
+---
+type: doc.review
+category: doc
+variables:
+  - TaskID
+  - TaskFile
+  - FeatureSlug
+  - PhaseSummary
+  - SurfaceKey
+  - SurfaceType
+---
 TASK_ID: {{.TaskID}}
 TASK_FILE: {{.TaskFile}}
 SURFACE_KEY: {{.SurfaceKey}}

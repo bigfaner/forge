@@ -1,4 +1,21 @@
 ---
+type: coding.fix
+category: coding
+variables:
+  - ID
+  - Title
+  - Priority
+  - EstimatedTime
+  - Description
+  - SourceTaskID
+  - SurfaceKey
+  - SurfaceType
+  - SourceFiles
+  - TestScript
+  - TestResults
+  - ScopeDescription
+---
+---
 id: "{{.ID}}"
 title: "{{.Title}}"
 priority: "P0"

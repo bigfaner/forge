@@ -1,3 +1,17 @@
+---
+type: validation.ux
+category: validation
+variables:
+  - TaskID
+  - TaskType
+  - FeatureSlug
+  - Mode
+  - SurfaceKey
+  - SurfaceType
+  - SurfaceTypes
+  - AcceptanceCriteria
+  - DocTaskCriteria
+---
 Validate user experience for the {{.FeatureSlug}} feature.
 
 ## Validation Criteria

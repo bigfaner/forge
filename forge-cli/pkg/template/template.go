@@ -80,13 +80,17 @@ func GetDefaults(name string) (Defaults, error) {
 
 // Execute renders the named template with the given data using text/template.
 // It uses missingkey=error to catch typos at render time.
+// Metadata frontmatter is stripped before parsing.
 func Execute(name string, data TaskTemplateData) (string, error) {
 	raw, err := Get(name)
 	if err != nil {
 		return "", err
 	}
 
-	tmpl, err := template.New(name).Option("missingkey=error").Parse(raw)
+	// Strip metadata frontmatter before parsing (metadata is not part of rendered output)
+	body := stripTaskTemplateMetadata(raw)
+
+	tmpl, err := template.New(name).Option("missingkey=error").Parse(body)
 	if err != nil {
 		return "", fmt.Errorf("parse template %q: %w", name, err)
 	}
@@ -113,4 +117,33 @@ func List() []string {
 	}
 	sort.Strings(names)
 	return names
+}
+
+// stripTaskTemplateMetadata removes metadata frontmatter from template content.
+// If no metadata frontmatter is found (no leading ---), returns the original content.
+func stripTaskTemplateMetadata(content string) string {
+	trimmed := strings.TrimLeft(content, " \t\n")
+	if !strings.HasPrefix(trimmed, "---") {
+		return content
+	}
+
+	afterOpen := trimmed[3:]
+	if len(afterOpen) > 0 && afterOpen[0] == '\n' {
+		afterOpen = afterOpen[1:]
+	} else if len(afterOpen) > 1 && afterOpen[0] == '\r' && afterOpen[1] == '\n' {
+		afterOpen = afterOpen[2:]
+	}
+
+	closeIdx := strings.Index(afterOpen, "\n---")
+	if closeIdx < 0 {
+		return content
+	}
+
+	remaining := afterOpen[closeIdx+4:]
+	if len(remaining) > 0 && remaining[0] == '\n' {
+		remaining = remaining[1:]
+	} else if len(remaining) > 1 && remaining[0] == '\r' && remaining[1] == '\n' {
+		remaining = remaining[2:]
+	}
+	return remaining
 }

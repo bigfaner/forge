@@ -5,6 +5,7 @@ import (
 	"embed"
 	"fmt"
 	"path"
+	"reflect"
 	"sort"
 	"strings"
 	"text/template"
@@ -37,10 +38,15 @@ func autogenTemplatePath(typeName string) string {
 // have a corresponding template file in the autogen embed FS, that no two types
 // map to the same filename, and that each template parses as valid text/template
 // and executes without error against a zero-value autogenTemplateData struct.
+//
+// When a template contains metadata frontmatter, it is stripped before parsing
+// and the variables field is cross-validated against autogenTemplateData using reflection.
+//
 // Types without an autogen template are skipped (they may exist only in the prompt FS).
 // Must be called from the CLI main() startup path, NOT from an init() function.
 func ValidateAutogenTemplates() error {
 	seen := make(map[string]string) // filename -> type name (for collision detection)
+	structType := reflect.TypeOf(autogenTemplateData{})
 
 	for typeName := range ValidTypes {
 		filename := autogenTemplatePath(typeName)
@@ -58,8 +64,19 @@ func ValidateAutogenTemplates() error {
 		}
 		seen[filename] = typeName
 
+		// Strip metadata frontmatter before validation
+		content := string(data)
+		body, meta := parseAutogenMetadata(content)
+
+		// Cross-validate metadata variables against struct fields
+		if meta != nil {
+			if err := validateAutogenVariables(meta, structType); err != nil {
+				return fmt.Errorf("autogen template validation error: %s: %w", filename, err)
+			}
+		}
+
 		// Validate template syntax and execution with missingkey=error
-		tmpl, err := template.New(filename).Option("missingkey=error").Parse(string(data))
+		tmpl, err := template.New(filename).Option("missingkey=error").Parse(body)
 		if err != nil {
 			return fmt.Errorf("autogen template parse error for %q: %w", filename, err)
 		}
@@ -388,8 +405,12 @@ func GetQuickTestTasks(surfaces map[string]string, executionOrder []string, auto
 
 // renderBody renders the template content using text/template with autogenTemplateData.
 // The template data is pre-formatted by buildAutogenTemplateData before reaching this function.
+// Metadata frontmatter is stripped before parsing.
 func renderBody(templateContent string, data autogenTemplateData) (string, error) {
-	tmpl, err := template.New("autogen").Option("missingkey=error").Parse(templateContent)
+	// Strip metadata frontmatter before parsing (metadata is not part of rendered output)
+	body := stripAutogenMetadata(templateContent)
+
+	tmpl, err := template.New("autogen").Option("missingkey=error").Parse(body)
 	if err != nil {
 		return "", fmt.Errorf("autogen template parse error: %w", err)
 	}
@@ -996,4 +1017,90 @@ func isAutoGenForDep(id string) bool {
 		return true
 	}
 	return false
+}
+
+// --- Metadata frontmatter support ---
+
+// autogenMetadata holds parsed metadata frontmatter from autogen templates.
+type autogenMetadata struct {
+	Type      string
+	Category  string
+	Variables []string
+}
+
+// parseAutogenMetadata extracts metadata from between the first pair of ---
+// markers in a template file. Returns the body and parsed metadata.
+// If no frontmatter is found, returns the original content with nil metadata.
+func parseAutogenMetadata(content string) (body string, meta *autogenMetadata) {
+	trimmed := strings.TrimLeft(content, " \t\n")
+	if !strings.HasPrefix(trimmed, "---") {
+		return content, nil
+	}
+
+	afterOpen := trimmed[3:]
+	if len(afterOpen) > 0 && afterOpen[0] == '\n' {
+		afterOpen = afterOpen[1:]
+	} else if len(afterOpen) > 1 && afterOpen[0] == '\r' && afterOpen[1] == '\n' {
+		afterOpen = afterOpen[2:]
+	}
+
+	closeIdx := strings.Index(afterOpen, "\n---")
+	if closeIdx < 0 {
+		return content, nil
+	}
+
+	frontmatter := afterOpen[:closeIdx]
+	remaining := afterOpen[closeIdx+4:]
+	if len(remaining) > 0 && remaining[0] == '\n' {
+		remaining = remaining[1:]
+	} else if len(remaining) > 1 && remaining[0] == '\r' && remaining[1] == '\n' {
+		remaining = remaining[2:]
+	}
+
+	meta = &autogenMetadata{}
+	for _, line := range strings.Split(frontmatter, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		switch {
+		case strings.HasPrefix(line, "type:"):
+			meta.Type = strings.Trim(strings.TrimSpace(strings.TrimPrefix(line, "type:")), "\"")
+		case strings.HasPrefix(line, "category:"):
+			meta.Category = strings.Trim(strings.TrimSpace(strings.TrimPrefix(line, "category:")), "\"")
+		case strings.HasPrefix(line, "- ") && meta.Variables != nil:
+			varName := strings.Trim(strings.TrimSpace(strings.TrimPrefix(line, "- ")), "\"")
+			meta.Variables = append(meta.Variables, varName)
+		case strings.HasPrefix(line, "variables:"):
+			meta.Variables = []string{}
+		}
+	}
+
+	return remaining, meta
+}
+
+// stripAutogenMetadata removes metadata frontmatter from template content.
+func stripAutogenMetadata(content string) string {
+	body, _ := parseAutogenMetadata(content)
+	return body
+}
+
+// validateAutogenVariables checks that each variable declared in metadata
+// exists as an exported field on the autogenTemplateData struct.
+func validateAutogenVariables(meta *autogenMetadata, structType reflect.Type) error {
+	if meta == nil || len(meta.Variables) == 0 {
+		return nil
+	}
+
+	var mismatches []string
+	for _, varName := range meta.Variables {
+		if _, ok := structType.FieldByName(varName); !ok {
+			mismatches = append(mismatches, varName)
+		}
+	}
+
+	if len(mismatches) > 0 {
+		return fmt.Errorf("metadata variables not found in %s struct: %s", structType.Name(), strings.Join(mismatches, ", "))
+	}
+	return nil
 }
