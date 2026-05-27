@@ -54,9 +54,7 @@ Extract structured findings from the freeform review narrative using a `general-
 
 After Phase 0 completes with valid findings and before the Scorer cycle starts, execute a Pre-Revision step that routes freeform findings directly to the existing Reviser via a synthetic eval report. This step runs as iteration 0 (separate from the `MAX_ITERATIONS` budget). The Scorer loop runs iterations 1 through MAX_ITERATIONS.
 
-Pre-Revision is only executed when `MAX_ITERATIONS > 1`. When `--iterations 1`, skip directly to Expert Dispatch (behavior unchanged).
-
-**`--iterations 2` warning**: When freeform review is active and `MAX_ITERATIONS <= 2`, output: `"Pre-revision consumes 1 iteration, leaving only 1 Scorer cycle. Consider --iterations 3 to ensure the Scorer has a revision opportunity."` This warning does not block execution.
+P0.5 executes when P0.4 produces ≥ 1 valid finding, regardless of `MAX_ITERATIONS`. All degradation paths (P0.1–P0.4 failure or P0.5 error) converge to the standard rubric flow.
 
 ### P0.5a: BASELINE_SCORE (Informational Metric)
 
@@ -84,7 +82,7 @@ Each finding is also classified into one of three triage layers:
 - **Structural/architectural suggestion**: edit only when the finding identifies a verifiable internal inconsistency (e.g., two sections make contradictory claims, or a stated constraint is violated by the described architecture); otherwise defer to Scorer cycle. When partially valid (concern is legitimate but proposed solution is not), mark as `partially-accepted`: apply only the non-controversial portion of the edit.
 - **Subjective preference**: mark as "not actionable", no edit, but record in iteration-0 report's "Classification Audit" section with classification rationale and original finding summary.
 
-**Low hit-rate annotation**: If `HIT_RATE` (from P0.4 step 5) is < 0.5, add the following annotation to the iteration-0 report (P0.5d) after the ATTACK_POINTS section: `**Note: Low extraction hit rate. The following contains only partial findings; see the full freeform review narrative at `<DOC_DIR>/eval/freeform-review.md` for context.**`
+**Low hit-rate annotation**: If `HIT_RATE` (from P0.4 step 5) is < 0.5, add the following annotation to the iteration-0 report (P0.5d) after the ATTACK_POINTS section: `**Note: Low extraction hit rate. The following contains only partial findings; see the full freeform review narrative at <DOC_DIR>/eval/freeform-review.md for context.**`
 
 **Borderline handling**: When a finding does not clearly belong to one layer, the pre-reviser must mark it "borderline" and defer (not silently classify as not actionable). Borderline findings are listed separately in the iteration-0 report for user review.
 
@@ -117,7 +115,7 @@ Spawn the existing Reviser as a `general-purpose` agent via the Agent tool with 
 
 - Inputs: `DOC_DIR`, `EVAL_REPORT_PATH` = iteration-0 report, `ATTACK_POINTS` = formatted findings.
 - The Reviser follows `experts/protocol/reviser-protocol.md` unchanged — no protocol modification.
-- The Reviser performs the three-layer triage (factual → structural → subjective) via the ATTACK_POINTS format.
+- The Reviser applies the triage results from P0.5c and performs edits per the ATTACK_POINTS format.
 
 For error handling, see P0.5 Degradation Summary below.
 

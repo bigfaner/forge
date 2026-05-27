@@ -67,9 +67,9 @@ flowchart TD
     SYNTH --> PREREV["P0.5e: Invoke Reviser (iteration 0)"]
     PREREV --> PREREV_OK{"Reviser OK?"}
     PREREV_OK -->|"error"| SKIP_PREREV
-    PREREV_OK -->|"empty report"| LOG_EMPTY["Log iteration-0: no changes, degrade"]
+    PREREV_OK -->|"empty report"| LOG_EMPTY["Log iteration 0: no changes, degrade"]
     LOG_EMPTY --> DISPATCH
-    PREREV_OK -->|"valid"| TAG["P0.5f: Insert <!-- pre-revised --> tags"]
+    PREREV_OK -->|"valid"| TAG["P0.5f: Insert <!-- pre-revised: {severity} --> tags"]
     PREREV_OK -->|"format anomaly"| DISCARD["Discard pre-revision, restore from baseline"]
     DISCARD --> DISPATCH
     TAG --> INCR["P0.5g: ITERATION = 1"]
@@ -79,13 +79,13 @@ flowchart TD
     D --> PARSE_A{"Parse valid?"}
     PARSE_A -->|"yes"| E["5. Final Report"]
     PARSE_A -->|"no"| ERR["Halt with error"]
-    C -->|"no"| F["2b. Score (subagent, annotated blind review)"]
+    C -->|"no"| F["2b. Score (subagent)"]
     F --> PARSE{"Parse valid?"}
     PARSE -->|"yes"| G{"3b. Gate (main session)"}
     PARSE -->|"no"| ERR
     G -->|"score >= target"| E
     G -->|"score < target, no iterations left"| E
-    G -->|"score < INITIAL_SCORE, rollback unused"| RESTORE["Restore pre-revised checkpoint (max 1)"]
+    G -->|"proposal + pre-revised, score < INITIAL_SCORE, rollback unused"| RESTORE["Restore pre-revised checkpoint (proposal only, max 1)"]
     RESTORE --> F
     G -->|"score < target, iterations remaining"| H["4. Revise (subagent)"]
     H --> F
@@ -157,9 +157,10 @@ Execute when the resolved type is `proposal`. For all other types, skip directly
 Phase 0 sets these variables consumed by later steps:
 - `EXPERT_PROFILE` — from P0.1 reuse or P0.2 generation
 - `FREEFORM_FINDINGS` — validated JSON array from P0.4
-- `BASELINE_SCORE` — informational metric from P0.5a (proposal only)
+- `HIT_RATE` — extraction hit rate from P0.4
+- `BASELINE_SCORE` — informational metric from P0.5a
 - `PRE_REVISION_EXECUTED` — set to `true` after P0.5g
-- `ITERATION` — set to `1` by P0.5g (pre-revision consumed iteration 0)
+- `ITERATION` — set to `1` by P0.5g (pre-revision ran as iteration 0)
 
 ## Expert Dispatch Table
 
@@ -171,8 +172,8 @@ Resolve eval type to scorer expert(s) per `rules/scorer-composition.md`.
 
 | Condition | ITERATION | Scorer loop range |
 |-----------|-----------|-------------------|
-| `type == proposal`, freeform review succeeded, pre-revision completed (P0.5g) | 1 (set by P0.5g, after consuming iteration 0) | 1..MAX_ITERATIONS |
-| All other paths (Phase 0 degraded, pre-revision skipped, non-proposal, `MAX_ITERATIONS <= 1`) | 1 | 1..MAX_ITERATIONS |
+| `type == proposal`, freeform review succeeded, pre-revision completed (P0.5g) | 1 (set by P0.5g, pre-revision ran as iteration 0) | 1..MAX_ITERATIONS |
+| All other paths (Phase 0 degraded, P0.5 degraded/empty, non-proposal) | 1 | 1..MAX_ITERATIONS |
 
 ## Loop Variables
 
@@ -180,13 +181,12 @@ Resolve eval type to scorer expert(s) per `rules/scorer-composition.md`.
 |----------|--------------|--------|
 | `ROLLBACK_USED` | `false` | Loop start (before first Scorer invocation) |
 | `INITIAL_SCORE` | (unset) | Step 2.3 on `ITERATION == 1` |
-| `BASELINE_SCORE` | (unset) | P0.5a (proposal only) |
 
 ## Step 2: Invoke Scorer Subagent(s) (flowchart labels: `2a` = single-pass, `2b` = multi-iteration)
 
 ### 2.1 Compose Scorer Prompts
 
-Compose scorer prompts per `rules/scorer-composition.md`: read scorer protocol, resolve expert(s) from dispatch table, concatenate protocol + expert + context injection.
+Compose scorer prompts per `rules/scorer-composition.md`: read scorer protocol, resolve expert(s) from dispatch table, concatenate protocol + expert + context injection + annotated blind review (if `PRE_REVISION_EXECUTED`).
 
 ### 2.2 Spawn Scorer Agents
 

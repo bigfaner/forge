@@ -39,15 +39,20 @@ The following project reference material is provided for reality-checking the ev
 
 For unmapped types (not in dispatch table), compose a single prompt using the generic inline fallback above plus the scorer protocol (with variables replaced) plus context injection.
 
-# Freeform Pre-Revision — Scorer Composition
+# Scorer Composition — Freeform Integration
 
-When pre-revision was executed (`PRE_REVISION_EXECUTED = true`, set by SKILL.md P0.5g on successful pre-revision), append annotated blind review instructions to the composed scorer prompt. The Scorer does NOT see freeform findings content — only `<!-- pre-revised -->` markers in the document.
+Proposal type two-path dispatch:
 
-When `PRE_REVISION_EXECUTED` is not set (no freeform review, Phase 0 degraded, or non-proposal type), no freeform block is added — the composed prompt is identical to the standard flow.
+| Condition | Scorer Behavior |
+|-----------|----------------|
+| `PRE_REVISION_EXECUTED = true` | Annotated blind review (see below) |
+| Unset (Phase 0 degraded / non-proposal) | Standard rubric flow, no freeform block |
 
-## Annotated Blind Review Instructions
+## Annotated Blind Review (pre-revision executed)
 
-When pre-revision mode is active, append the following instructions to the composed scorer prompt **after** all existing sections:
+When pre-revision was executed (`PRE_REVISION_EXECUTED = true`), append annotated blind review instructions. The Scorer sees `<!-- pre-revised: {severity} -->` markers but not freeform findings content.
+
+Append to the composed prompt:
 
 ```
 <annotated-blind-review>
@@ -70,8 +75,8 @@ Annotated blind review rules:
 **Order in final composed prompt**:
 1. Scorer protocol (with template variables replaced)
 2. Expert file content
-3. `<injected-context>` block (if CONTEXT_CONTENT was loaded)
-4. `<annotated-blind-review>` block (if `PRE_REVISION_EXECUTED = true`, pre-revision mode)
+3. `<injected-context>` block (if `CONTEXT_CONTENT` loaded)
+4. `<annotated-blind-review>` block (if `PRE_REVISION_EXECUTED = true`)
 
 # Scorer Agent Inputs
 
