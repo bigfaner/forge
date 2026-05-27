@@ -1,16 +1,16 @@
-Review documentation quality for the {{FEATURE_SLUG}} feature ({{MODE}} mode).
+Review documentation quality for the {{.FeatureSlug}} feature ({{.Mode}} mode).
 
 ## Acceptance Criteria Summary
 
 The following acceptance criteria are pre-extracted from doc tasks. Use these as the review baseline.
 
-{{DOC_TASK_AC}}
+{{.DocTaskCriteria}}
 
 ## Discovery Strategy
 
 Scan ONLY the following allowlist of directories for target documents:
-- docs/features/{{FEATURE_SLUG}}/ (prd/, design/, testing/, and any subdirectories)
-- docs/proposals/{{FEATURE_SLUG}}/
+- docs/features/{{.FeatureSlug}}/ (prd/, design/, testing/, and any subdirectories)
+- docs/proposals/{{.FeatureSlug}}/
 
 EXCLUDE the following from scanning — do NOT read or process these:
 - tasks/ directory (task definitions are not deliverables)

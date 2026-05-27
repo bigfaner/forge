@@ -1,9 +1,10 @@
-Generate test Contract specifications for the {{FEATURE_SLUG}} feature.
-Mode: {{MODE}}
+Generate test Contract specifications for the {{.FeatureSlug}} feature.{{if .Mode}}
+Mode: {{.Mode}}{{end}}
+{{if .SurfaceKey}}
 
 ## Scope
 
-{{SCOPE}}
+{{.SurfaceKey}}{{end}}
 
 ## Discovery Strategy
 
@@ -26,11 +27,11 @@ When this task runs in Quick mode as an automated pipeline task, SKIP_EVAL_GATE=
 Follow the `/gen-contracts` skill process flow:
 
 1. **Resolve Language & Interfaces**: Detect project language and interface types from config
-2. **Read Journeys**: Enumerate Journey directories under `docs/features/{{FEATURE_SLUG}}/testing/` and read each `journey.md`
+2. **Read Journeys**: Enumerate Journey directories under `docs/features/{{.FeatureSlug}}/testing/` and read each `journey.md`
 3. **Code Reconnaissance**: Build the Fact Table by reading source code per the reconnaissance rules
 4. **Generate Contracts**: For each Journey, generate one Contract file per Step with six-dimension declarations (Preconditions, Input, Output, State, Side-effect, Invariants). Apply risk-driven Outcome density.
 5. **Validate Contracts**: Schema validation for structural completeness. Retry once on failure.
-6. **Write Output**: Write Contract files to `docs/features/{{FEATURE_SLUG}}/testing/<journey>/contracts/` and Fact Table to `.forge/fact-table.json`
+6. **Write Output**: Write Contract files to `docs/features/{{.FeatureSlug}}/testing/<journey>/contracts/` and Fact Table to `.forge/fact-table.json`
 
 ## Acceptance Criteria
 

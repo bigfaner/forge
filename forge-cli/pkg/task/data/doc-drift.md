@@ -1,4 +1,4 @@
-Detect spec drift between existing project specs and current code for the {{FEATURE_SLUG}} feature.
+Detect spec drift between existing project specs and current code for the {{.FeatureSlug}} feature.
 
 ## Discovery Strategy
 1. Run `git diff --name-only main...HEAD` to identify files changed by this feature

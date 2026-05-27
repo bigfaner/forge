@@ -1,7 +1,7 @@
-Validate code quality for the {{FEATURE_SLUG}} feature.
+Validate code quality for the {{.FeatureSlug}} feature.
 
 ## Validation Criteria
-{{ACCEPTANCE_CRITERIA}}
+{{.AcceptanceCriteria}}
 
 ## Additional Checks
 - Check docs/conventions/ for project-specific quality standards (read each file's `domains` frontmatter to determine relevance)

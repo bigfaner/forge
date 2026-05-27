@@ -68,7 +68,7 @@
       "title": "迁移 pkg/task/autogen 渲染引擎并清理 scope",
       "priority": "P0",
       "estimatedTime": "2h",
-      "status": "pending",
+      "status": "completed",
       "file": "5-autogen-render-engine.md",
       "record": "records/5-autogen-render-engine.md",
       "breaking": true,

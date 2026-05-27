@@ -858,125 +858,117 @@ func TestGenerateTestTaskMD_FrontmatterUnchanged(t *testing.T) {
 	}
 }
 
-// --- BodyContext and renderBody tests ---
+// --- autogenTemplateData and renderBody tests ---
 
 func TestRenderBody_SubstitutesAllPlaceholders(t *testing.T) {
-	template := `Feature: {{FEATURE_SLUG}}
-Mode: {{MODE}}
-Scope: {{SCOPE}}
-Interfaces: {{SURFACES}}
-Test Type: {{TEST_TYPE}}
-Acceptance:
-{{ACCEPTANCE_CRITERIA}}`
+	tmpl := "Feature: {{.FeatureSlug}}{{if .Mode}}\nMode: {{.Mode}}{{end}}\nInterfaces: {{.SurfaceTypes}}{{if .SurfaceType}}\nTest Type: {{.SurfaceType}}{{end}}\nAcceptance:\n{{.AcceptanceCriteria}}"
 
-	ctx := BodyContext{
+	data := autogenTemplateData{
 		FeatureSlug:        "my-feature",
 		Mode:               "quick",
-		Scope:              []string{"backend", "frontend"},
-		SurfaceTypes:       []string{"api", "cli"},
-		AcceptanceCriteria: []string{"AC1: works", "AC2: fast"},
+		SurfaceTypes:       "- api\n- cli",
+		SurfaceType:        "api",
+		AcceptanceCriteria: "- [ ] AC1: works\n- [ ] AC2: fast",
 	}
-	def := AutoGenTaskDef{SurfaceType: "api"}
 
-	result := renderBody(template, def, ctx)
+	result, err := renderBody(tmpl, data)
+	if err != nil {
+		t.Fatalf("renderBody error: %v", err)
+	}
 
 	if !strings.Contains(result, "Feature: my-feature") {
-		t.Error("FEATURE_SLUG not substituted")
+		t.Error("FeatureSlug not substituted")
 	}
 	if !strings.Contains(result, "Mode: quick") {
-		t.Error("MODE not substituted")
+		t.Error("Mode not substituted")
 	}
-	if !strings.Contains(result, "- backend\n- frontend") {
-		t.Errorf("SCOPE not substituted, got:\n%s", result)
-	}
-	if !strings.Contains(result, "- api\n- cli") {
-		t.Errorf("SURFACES not substituted, got:\n%s", result)
+	if !strings.Contains(result, "- api") {
+		t.Errorf("SurfaceTypes not substituted, got:\n%s", result)
 	}
 	if !strings.Contains(result, "Test Type: api") {
-		t.Error("TEST_TYPE not substituted")
+		t.Error("SurfaceType not substituted")
 	}
 	if !strings.Contains(result, "- [ ] AC1: works") {
-		t.Errorf("ACCEPTANCE_CRITERIA not substituted, got:\n%s", result)
+		t.Errorf("AcceptanceCriteria not substituted, got:\n%s", result)
 	}
 }
 
 func TestRenderBody_EmptyMode_OmitsLine(t *testing.T) {
-	template := "Feature: {{FEATURE_SLUG}}\nMode: {{MODE}}\nDone"
-	ctx := BodyContext{FeatureSlug: "test"}
-	def := AutoGenTaskDef{}
+	tmpl := "Feature: {{.FeatureSlug}}{{if .Mode}}\nMode: {{.Mode}}{{end}}\nDone"
+	data := autogenTemplateData{FeatureSlug: "test"}
 
-	result := renderBody(template, def, ctx)
+	result, err := renderBody(tmpl, data)
+	if err != nil {
+		t.Fatalf("renderBody error: %v", err)
+	}
 
 	if strings.Contains(result, "Mode:") {
 		t.Errorf("Mode line should be omitted when empty, got:\n%s", result)
 	}
 	if !strings.Contains(result, "Feature: test") {
-		t.Error("FEATURE_SLUG should still be present")
+		t.Error("FeatureSlug should still be present")
 	}
 }
 
-func TestRenderBody_EmptyScope_OmitsSection(t *testing.T) {
-	template := "Start\n## Scope\n{{SCOPE}}\n## End"
-	ctx := BodyContext{FeatureSlug: "test"}
-	def := AutoGenTaskDef{}
+func TestRenderBody_EmptySurfaceType_OmitsLine(t *testing.T) {
+	tmpl := "Feature: {{.FeatureSlug}}{{if .SurfaceType}}\nType: {{.SurfaceType}}{{end}}\nDone"
+	data := autogenTemplateData{FeatureSlug: "test"}
 
-	result := renderBody(template, def, ctx)
-
-	if strings.Contains(result, "## Scope") {
-		t.Errorf("Scope section should be omitted when empty, got:\n%s", result)
+	result, err := renderBody(tmpl, data)
+	if err != nil {
+		t.Fatalf("renderBody error: %v", err)
 	}
-	if !strings.Contains(result, "## End") {
-		t.Error("Content after scope section should remain")
-	}
-}
-
-func TestRenderBody_EmptyInterfaces_Default(t *testing.T) {
-	template := "Interfaces: {{SURFACES}}"
-	ctx := BodyContext{FeatureSlug: "test"}
-	def := AutoGenTaskDef{}
-
-	result := renderBody(template, def, ctx)
-
-	if !strings.Contains(result, "See .forge/config.yaml") {
-		t.Errorf("Empty interfaces should default to 'See .forge/config.yaml', got:\n%s", result)
-	}
-}
-
-func TestRenderBody_EmptyTestType_OmitsLine(t *testing.T) {
-	template := "Feature: {{FEATURE_SLUG}}\nType: {{TEST_TYPE}}\nDone"
-	ctx := BodyContext{FeatureSlug: "test"}
-	def := AutoGenTaskDef{}
-
-	result := renderBody(template, def, ctx)
 
 	if strings.Contains(result, "Type:") {
-		t.Errorf("TestType line should be omitted when empty, got:\n%s", result)
+		t.Errorf("SurfaceType line should be omitted when empty, got:\n%s", result)
 	}
 }
 
-func TestRenderBody_EmptyAcceptanceCriteria_Default(t *testing.T) {
-	template := "Acceptance:\n{{ACCEPTANCE_CRITERIA}}"
-	ctx := BodyContext{FeatureSlug: "test"}
-	def := AutoGenTaskDef{}
+func TestRenderBody_DefaultAcceptanceCriteria(t *testing.T) {
+	tmpl := "Acceptance:\n{{.AcceptanceCriteria}}"
+	data := autogenTemplateData{AcceptanceCriteria: "- [ ] All acceptance criteria met"}
 
-	result := renderBody(template, def, ctx)
+	result, err := renderBody(tmpl, data)
+	if err != nil {
+		t.Fatalf("renderBody error: %v", err)
+	}
 
 	if !strings.Contains(result, "- [ ] All acceptance criteria met") {
-		t.Errorf("Empty acceptance criteria should default, got:\n%s", result)
+		t.Errorf("default acceptance criteria not rendered, got:\n%s", result)
 	}
 }
 
-func TestRenderBody_EmptyBodyContext_KnownPlaceholdersResolved(t *testing.T) {
-	template := "Feature: {{FEATURE_SLUG}}\nMode: {{MODE}}\n## Scope\n{{SCOPE}}\n## Other\nInterfaces: {{SURFACES}}\nType: {{TEST_TYPE}}\nAcceptance:\n{{ACCEPTANCE_CRITERIA}}"
-	ctx := BodyContext{}
-	def := AutoGenTaskDef{}
+func TestRenderBody_DefaultSurfaceTypes(t *testing.T) {
+	tmpl := "Interfaces: {{.SurfaceTypes}}"
+	data := autogenTemplateData{SurfaceTypes: "See .forge/config.yaml"}
 
-	result := renderBody(template, def, ctx)
+	result, err := renderBody(tmpl, data)
+	if err != nil {
+		t.Fatalf("renderBody error: %v", err)
+	}
 
-	knownPlaceholders := []string{"{{FEATURE_SLUG}}", "{{MODE}}", "{{SCOPE}}", "{{SURFACES}}", "{{TEST_TYPE}}", "{{ACCEPTANCE_CRITERIA}}"}
-	for _, ph := range knownPlaceholders {
+	if !strings.Contains(result, "See .forge/config.yaml") {
+		t.Errorf("default SurfaceTypes not rendered, got:\n%s", result)
+	}
+}
+
+func TestRenderBody_NoTemplateMarkersLeft(t *testing.T) {
+	tmpl := "Feature: {{.FeatureSlug}}{{if .Mode}}\nMode: {{.Mode}}{{end}}{{if .SurfaceKey}}\nScope: {{.SurfaceKey}}{{end}}\nInterfaces: {{.SurfaceTypes}}{{if .SurfaceType}}\nType: {{.SurfaceType}}{{end}}\n{{.AcceptanceCriteria}}"
+	data := autogenTemplateData{
+		FeatureSlug:        "",
+		AcceptanceCriteria: "- [ ] All acceptance criteria met",
+		SurfaceTypes:       "See .forge/config.yaml",
+	}
+
+	result, err := renderBody(tmpl, data)
+	if err != nil {
+		t.Fatalf("renderBody error: %v", err)
+	}
+
+	templateMarkers := []string{"{{.FeatureSlug}}", "{{.Mode}}", "{{.SurfaceKey}}", "{{.SurfaceTypes}}", "{{.SurfaceType}}", "{{.AcceptanceCriteria}}"}
+	for _, ph := range templateMarkers {
 		if strings.Contains(result, ph) {
-			t.Errorf("placeholder %s not resolved in output:\n%s", ph, result)
+			t.Errorf("template marker %s not resolved in output:\n%s", ph, result)
 		}
 	}
 }
@@ -999,11 +991,9 @@ func TestGenerateTestTaskMD_WithBodyContext(t *testing.T) {
 	}
 
 	s := string(content)
-	// Frontmatter still works
 	if !strings.Contains(s, `id: "T-test-gen-scripts-api"`) {
 		t.Error("missing id in frontmatter")
 	}
-	// Template body loaded (placeholder substitution applied)
 	if !strings.Contains(s, "executable test scripts") {
 		t.Error("body should contain template content")
 	}
@@ -1016,29 +1006,27 @@ func TestGenerateTestTaskMD_BackwardCompat_EmptyBodyContext(t *testing.T) {
 		EstimatedTime: "1-2h", Type: TypeTestGenScripts,
 	}
 
-	// Passing empty BodyContext should produce same output as before
 	content, err := GenerateTestTaskMD(def, BodyContext{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
 	s := string(content)
-	// Only check our 6 managed placeholders are resolved
 	managed := []string{
 		"{{FEATURE_SLUG}}", "{{MODE}}", "{{SCOPE}}",
 		"{{SURFACES}}", "{{TEST_TYPE}}", "{{ACCEPTANCE_CRITERIA}}",
+		"{{.FeatureSlug}}", "{{.Mode}}", "{{.SurfaceKey}}",
+		"{{.SurfaceTypes}}", "{{.SurfaceType}}", "{{.AcceptanceCriteria}}",
 	}
 	for _, ph := range managed {
 		if strings.Contains(s, ph) {
-			t.Errorf("managed placeholder %s should be resolved", ph)
+			t.Errorf("placeholder %s should be resolved", ph)
 		}
 	}
 	if !strings.Contains(s, `id: "T-test-gen-scripts-api"`) {
 		t.Error("frontmatter should be intact")
 	}
 }
-
-// --- Focused body content verification tests ---
 
 func TestRenderBody_FeatureSlug(t *testing.T) {
 	tests := []struct {
@@ -1052,148 +1040,108 @@ func TestRenderBody_FeatureSlug(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			template := "Feature: {{FEATURE_SLUG}} is ready."
-			ctx := BodyContext{FeatureSlug: tt.featureSlug}
-			def := AutoGenTaskDef{}
+			tmpl := "Feature: {{.FeatureSlug}} is ready."
+			data := autogenTemplateData{FeatureSlug: tt.featureSlug}
 
-			result := renderBody(template, def, ctx)
+			result, err := renderBody(tmpl, data)
+			if err != nil {
+				t.Fatalf("renderBody error: %v", err)
+			}
 
 			if !strings.Contains(result, tt.want) {
 				t.Errorf("expected %q in result, got: %s", tt.want, result)
 			}
-			if strings.Contains(result, "{{FEATURE_SLUG}}") {
-				t.Error("FEATURE_SLUG placeholder should be resolved")
+			if strings.Contains(result, "{{.FeatureSlug}}") {
+				t.Error("FeatureSlug placeholder should be resolved")
 			}
 		})
 	}
 }
 
-func TestRenderBody_ScopeAndInterfaces(t *testing.T) {
-	t.Run("populated scope and interfaces", func(t *testing.T) {
-		template := "## Feature Context\n- Scope: {{SCOPE}}\n- Test interfaces: {{SURFACES}}"
-		ctx := BodyContext{
-			FeatureSlug:  "feat",
-			Scope:        []string{"backend", "frontend"},
-			SurfaceTypes: []string{"api", "cli"},
-		}
-		def := AutoGenTaskDef{}
-
-		result := renderBody(template, def, ctx)
-
-		if !strings.Contains(result, "- backend") {
-			t.Error("scope item 'backend' should be present")
-		}
-		if !strings.Contains(result, "- frontend") {
-			t.Error("scope item 'frontend' should be present")
-		}
-		if !strings.Contains(result, "- api") {
-			t.Error("interface 'api' should be present")
-		}
-		if !strings.Contains(result, "- cli") {
-			t.Error("interface 'cli' should be present")
-		}
-		if strings.Contains(result, "{{SCOPE}}") {
-			t.Error("SCOPE placeholder should be resolved")
-		}
-		if strings.Contains(result, "{{SURFACES}}") {
-			t.Error("SURFACES placeholder should be resolved")
-		}
-	})
-}
-
 func TestRenderBody_AcceptanceCriteria(t *testing.T) {
 	t.Run("criteria filled as checklist", func(t *testing.T) {
-		template := "## Validation Criteria\n{{ACCEPTANCE_CRITERIA}}\n## End"
-		ctx := BodyContext{
+		tmpl := "## Validation Criteria\n{{.AcceptanceCriteria}}\n## End"
+		data := autogenTemplateData{
 			FeatureSlug:        "feat",
-			AcceptanceCriteria: []string{"AC1: Login works", "AC2: Logout works"},
+			AcceptanceCriteria: "- [ ] AC1: Login works\n- [ ] AC2: Logout works",
 		}
-		def := AutoGenTaskDef{}
 
-		result := renderBody(template, def, ctx)
+		result, err := renderBody(tmpl, data)
+		if err != nil {
+			t.Fatalf("renderBody error: %v", err)
+		}
 
 		if !strings.Contains(result, "- [ ] AC1: Login works") {
-			t.Error("first AC should be filled as unchecked checklist item")
+			t.Error("first AC should be present")
 		}
 		if !strings.Contains(result, "- [ ] AC2: Logout works") {
-			t.Error("second AC should be filled as unchecked checklist item")
-		}
-		if strings.Contains(result, "{{ACCEPTANCE_CRITERIA}}") {
-			t.Error("ACCEPTANCE_CRITERIA placeholder should be resolved")
+			t.Error("second AC should be present")
 		}
 	})
 }
 
 func TestRenderBody_EmptyFields(t *testing.T) {
 	t.Run("all fields empty uses fallbacks", func(t *testing.T) {
-		template := "Feature: {{FEATURE_SLUG}}\nMode: {{MODE}}\n## Scope\n{{SCOPE}}\n## Other\nInterfaces: {{SURFACES}}\nType: {{TEST_TYPE}}\n{{ACCEPTANCE_CRITERIA}}"
-		ctx := BodyContext{}
-		def := AutoGenTaskDef{}
+		tmpl := "Feature: {{.FeatureSlug}}{{if .Mode}}\nMode: {{.Mode}}{{end}}{{if .SurfaceKey}}\n## Scope\n{{.SurfaceKey}}{{end}}\n## Other\nInterfaces: {{.SurfaceTypes}}{{if .SurfaceType}}\nType: {{.SurfaceType}}{{end}}\n{{.AcceptanceCriteria}}"
+		data := autogenTemplateData{
+			AcceptanceCriteria: "- [ ] All acceptance criteria met",
+			SurfaceTypes:       "See .forge/config.yaml",
+		}
 
-		result := renderBody(template, def, ctx)
+		result, err := renderBody(tmpl, data)
+		if err != nil {
+			t.Fatalf("renderBody error: %v", err)
+		}
 
-		// Mode line omitted
 		if strings.Contains(result, "Mode:") {
 			t.Error("Mode line should be omitted when empty")
 		}
-		// Scope section omitted
 		if strings.Contains(result, "## Scope") {
 			t.Error("Scope section should be omitted when empty")
 		}
-		// Interfaces fallback
 		if !strings.Contains(result, "See .forge/config.yaml") {
-			t.Error("Empty interfaces should use fallback")
+			t.Error("Empty SurfaceTypes should use fallback")
 		}
-		// TestType line omitted
 		if strings.Contains(result, "Type:") {
-			t.Error("TestType line should be omitted when empty")
+			t.Error("SurfaceType line should be omitted when empty")
 		}
-		// AcceptanceCriteria fallback
 		if !strings.Contains(result, "- [ ] All acceptance criteria met") {
-			t.Error("Empty acceptance criteria should use fallback")
+			t.Error("Empty AcceptanceCriteria should use fallback")
 		}
-		// No leftover placeholders
-		for _, ph := range []string{"{{FEATURE_SLUG}}", "{{MODE}}", "{{SCOPE}}", "{{SURFACES}}", "{{TEST_TYPE}}", "{{ACCEPTANCE_CRITERIA}}"} {
+		for _, ph := range []string{"{{.FeatureSlug}}", "{{.Mode}}", "{{.SurfaceKey}}", "{{.SurfaceTypes}}", "{{.SurfaceType}}", "{{.AcceptanceCriteria}}"} {
 			if strings.Contains(result, ph) {
-				t.Errorf("placeholder %s should be resolved", ph)
+				t.Errorf("template marker %s should be resolved", ph)
 			}
 		}
 	})
 }
 
-// TestBodyContentPerStrategy verifies each task type gets correct body content
-// with a populated BodyContext, grouped by strategy (A/B/C).
 func TestBodyContentPerStrategy(t *testing.T) {
 	tests := []struct {
 		name         string
 		typ          string
-		testType     string // per-type interface suffix (e.g., "api")
+		testType     string
 		ctx          BodyContext
 		wantContains []string
 	}{
-		// Strategy A: Feature context (slug + scope + interfaces injected)
 		{"gen-scripts has feature context", TypeTestGenScripts, "api", BodyContext{
 			FeatureSlug: "feat",
 		}, []string{"feat", "api"}},
 		{"run has feature context", TypeTestRun, "", BodyContext{
-			FeatureSlug: "feat", Scope: []string{"backend"},
-		}, []string{"feat", "- backend"}},
-
-		// Strategy B: Acceptance criteria pre-filled as validation checklist
+			FeatureSlug: "feat",
+		}, []string{"feat"}},
 		{"validation-code has criteria", TypeValidationCode, "", BodyContext{
 			FeatureSlug: "feat", AcceptanceCriteria: []string{"AC1: works", "AC2: fast"},
 		}, []string{"feat", "- [ ] AC1: works", "- [ ] AC2: fast"}},
 		{"validation-ux has criteria", TypeValidationUx, "", BodyContext{
 			FeatureSlug: "feat", AcceptanceCriteria: []string{"AC1: accessible"},
 		}, []string{"feat", "- [ ] AC1: accessible"}},
-
-		// Strategy C: Discovery strategy steps present (git diff, directory scan)
 		{"doc-review has discovery strategy", TypeDocReview, "", BodyContext{
 			FeatureSlug: "feat", Mode: "breakdown",
 		}, []string{"feat", "breakdown mode"}},
 		{"doc-consolidate has discovery strategy", TypeDocConsolidate, "", BodyContext{
-			FeatureSlug: "feat", Scope: []string{"backend"},
-		}, []string{"feat", "- backend", "Discovery Strategy"}},
+			FeatureSlug: "feat",
+		}, []string{"feat", "Discovery Strategy"}},
 		{"doc-drift has git diff strategy", TypeDocDrift, "", BodyContext{
 			FeatureSlug: "feat",
 		}, []string{"feat", "git diff"}},
@@ -1223,10 +1171,9 @@ func TestBodyContentPerStrategy(t *testing.T) {
 				}
 			}
 
-			// Verify no managed placeholders left unresolved
 			for _, ph := range []string{"{{FEATURE_SLUG}}", "{{MODE}}", "{{SCOPE}}", "{{SURFACES}}", "{{TEST_TYPE}}", "{{ACCEPTANCE_CRITERIA}}"} {
 				if strings.Contains(s, ph) {
-					t.Errorf("type %q has unresolved placeholder %s", tt.typ, ph)
+					t.Errorf("type %q has unresolved old-style placeholder %s", tt.typ, ph)
 				}
 			}
 		})
@@ -1240,12 +1187,12 @@ func TestGenJourneysTemplateContent(t *testing.T) {
 	}
 	s := string(data)
 
-	// AC1: uses {{FEATURE_SLUG}} and {{MODE}} placeholders
-	if !strings.Contains(s, "{{FEATURE_SLUG}}") {
-		t.Error("template must contain {{FEATURE_SLUG}} placeholder")
+	// AC1: uses {{.FeatureSlug}} and {{.Mode}} placeholders
+	if !strings.Contains(s, "{{.FeatureSlug}}") {
+		t.Error("template must contain {{.FeatureSlug}} placeholder")
 	}
-	if !strings.Contains(s, "{{MODE}}") {
-		t.Error("template must contain {{MODE}} placeholder")
+	if !strings.Contains(s, "{{.Mode}}") {
+		t.Error("template must contain {{.Mode}} placeholder")
 	}
 
 	// AC3: contains AUTO_COMMIT conditional instruction
@@ -1266,12 +1213,12 @@ func TestGenContractsTemplateContent(t *testing.T) {
 	}
 	s := string(data)
 
-	// AC2: uses {{FEATURE_SLUG}} and {{MODE}} placeholders
-	if !strings.Contains(s, "{{FEATURE_SLUG}}") {
-		t.Error("template must contain {{FEATURE_SLUG}} placeholder")
+	// AC2: uses {{.FeatureSlug}} and {{.Mode}} placeholders
+	if !strings.Contains(s, "{{.FeatureSlug}}") {
+		t.Error("template must contain {{.FeatureSlug}} placeholder")
 	}
-	if !strings.Contains(s, "{{MODE}}") {
-		t.Error("template must contain {{MODE}} placeholder")
+	if !strings.Contains(s, "{{.Mode}}") {
+		t.Error("template must contain {{.Mode}} placeholder")
 	}
 
 	// AC4: contains SKIP_EVAL_GATE conditional instruction
@@ -1294,7 +1241,6 @@ func TestGenJourneysTemplateRendering(t *testing.T) {
 	ctx := BodyContext{
 		FeatureSlug: "my-feature",
 		Mode:        "quick",
-		Scope:       []string{"backend", "CLI"},
 	}
 
 	content, err := GenerateTestTaskMD(def, ctx)
@@ -1304,11 +1250,11 @@ func TestGenJourneysTemplateRendering(t *testing.T) {
 	s := string(content)
 
 	// Placeholders resolved
-	if strings.Contains(s, "{{FEATURE_SLUG}}") {
-		t.Error("{{FEATURE_SLUG}} should be resolved")
+	if strings.Contains(s, "{{.FeatureSlug}}") {
+		t.Error("{{.FeatureSlug}} should be resolved")
 	}
-	if strings.Contains(s, "{{MODE}}") {
-		t.Error("{{MODE}} should be resolved")
+	if strings.Contains(s, "{{.Mode}}") {
+		t.Error("{{.Mode}} should be resolved")
 	}
 	// Feature slug present in body
 	if !strings.Contains(s, "my-feature") {
@@ -1318,8 +1264,8 @@ func TestGenJourneysTemplateRendering(t *testing.T) {
 	if !strings.Contains(s, "quick") {
 		t.Error("rendered body should contain mode")
 	}
-	// No managed placeholders left
-	for _, ph := range []string{"{{FEATURE_SLUG}}", "{{MODE}}", "{{SCOPE}}", "{{TEST_TYPE}}"} {
+	// No old-style or new-style placeholders left
+	for _, ph := range []string{"{{FEATURE_SLUG}}", "{{MODE}}", "{{SCOPE}}", "{{TEST_TYPE}}", "{{.SurfaceKey}}"} {
 		if strings.Contains(s, ph) {
 			t.Errorf("placeholder %s should be resolved", ph)
 		}
@@ -1335,7 +1281,6 @@ func TestGenContractsTemplateRendering(t *testing.T) {
 	ctx := BodyContext{
 		FeatureSlug: "my-feature",
 		Mode:        "breakdown",
-		Scope:       []string{"backend"},
 	}
 
 	content, err := GenerateTestTaskMD(def, ctx)
@@ -1345,18 +1290,18 @@ func TestGenContractsTemplateRendering(t *testing.T) {
 	s := string(content)
 
 	// Placeholders resolved
-	if strings.Contains(s, "{{FEATURE_SLUG}}") {
-		t.Error("{{FEATURE_SLUG}} should be resolved")
+	if strings.Contains(s, "{{.FeatureSlug}}") {
+		t.Error("{{.FeatureSlug}} should be resolved")
 	}
-	if strings.Contains(s, "{{MODE}}") {
-		t.Error("{{MODE}} should be resolved")
+	if strings.Contains(s, "{{.Mode}}") {
+		t.Error("{{.Mode}} should be resolved")
 	}
 	// Feature slug present
 	if !strings.Contains(s, "my-feature") {
 		t.Error("rendered body should contain feature slug")
 	}
-	// No managed placeholders left
-	for _, ph := range []string{"{{FEATURE_SLUG}}", "{{MODE}}", "{{SCOPE}}", "{{TEST_TYPE}}"} {
+	// No old-style or new-style placeholders left
+	for _, ph := range []string{"{{FEATURE_SLUG}}", "{{MODE}}", "{{SCOPE}}", "{{TEST_TYPE}}", "{{.SurfaceKey}}"} {
 		if strings.Contains(s, ph) {
 			t.Errorf("placeholder %s should be resolved", ph)
 		}
@@ -1871,17 +1816,16 @@ func TestResolveFirstTestDep_NoDeps_NoPanic(t *testing.T) {
 // --- {{DOC_TASK_AC}} rendering tests ---
 
 func TestRenderBody_DocTaskAC_Populated(t *testing.T) {
-	template := "Feature: {{FEATURE_SLUG}}\n## Acceptance Criteria Summary\n{{DOC_TASK_AC}}\n## End"
-	ctx := BodyContext{
-		FeatureSlug: "my-feature",
-		DocTaskCriteria: map[string]string{
-			"1-doc": "- [ ] AC 1\n- [ ] AC 2",
-			"2-doc": "- [ ] AC 3",
-		},
+	tmpl := "Feature: {{.FeatureSlug}}\n## Acceptance Criteria Summary\n{{.DocTaskCriteria}}\n## End"
+	data := autogenTemplateData{
+		FeatureSlug:     "my-feature",
+		DocTaskCriteria: "### 1-doc\n- [ ] AC 1\n- [ ] AC 2\n\n### 2-doc\n- [ ] AC 3",
 	}
-	def := AutoGenTaskDef{}
 
-	result := renderBody(template, def, ctx)
+	result, err := renderBody(tmpl, data)
+	if err != nil {
+		t.Fatalf("renderBody error: %v", err)
+	}
 
 	if !strings.Contains(result, "### 1-doc") {
 		t.Errorf("should contain ### 1-doc sub-section header, got:\n%s", result)
@@ -1895,39 +1839,40 @@ func TestRenderBody_DocTaskAC_Populated(t *testing.T) {
 	if !strings.Contains(result, "- [ ] AC 3") {
 		t.Errorf("should contain AC content from 2-doc, got:\n%s", result)
 	}
-	if strings.Contains(result, "{{DOC_TASK_AC}}") {
+	if strings.Contains(result, "{{.DocTaskCriteria}}") {
 		t.Errorf("placeholder should be resolved, got:\n%s", result)
 	}
 }
 
 func TestRenderBody_DocTaskAC_Empty(t *testing.T) {
-	template := "Feature: {{FEATURE_SLUG}}\n{{DOC_TASK_AC}}\n## End"
-	ctx := BodyContext{
-		FeatureSlug: "my-feature",
+	tmpl := "Feature: {{.FeatureSlug}}\n{{.DocTaskCriteria}}\n## End"
+	data := autogenTemplateData{
+		FeatureSlug:     "my-feature",
+		DocTaskCriteria: "",
 	}
-	def := AutoGenTaskDef{}
 
-	result := renderBody(template, def, ctx)
+	result, err := renderBody(tmpl, data)
+	if err != nil {
+		t.Fatalf("renderBody error: %v", err)
+	}
 
-	// Empty DocTaskCriteria should produce empty string (placeholder removed)
-	if strings.Contains(result, "{{DOC_TASK_AC}}") {
+	// Empty DocTaskCriteria should produce empty string
+	if strings.Contains(result, "{{.DocTaskCriteria}}") {
 		t.Errorf("placeholder should be resolved to empty when no criteria, got:\n%s", result)
 	}
 }
 
 func TestRenderBody_DocTaskAC_SortedKeys(t *testing.T) {
-	template := "{{DOC_TASK_AC}}"
-	ctx := BodyContext{
-		FeatureSlug: "feat",
-		DocTaskCriteria: map[string]string{
-			"3-doc": "AC 3 content",
-			"1-doc": "AC 1 content",
-			"2-doc": "AC 2 content",
-		},
+	tmpl := "{{.DocTaskCriteria}}"
+	data := autogenTemplateData{
+		FeatureSlug:     "feat",
+		DocTaskCriteria: "### 1-doc\nAC 1 content\n\n### 2-doc\nAC 2 content\n\n### 3-doc\nAC 3 content",
 	}
-	def := AutoGenTaskDef{}
 
-	result := renderBody(template, def, ctx)
+	result, err := renderBody(tmpl, data)
+	if err != nil {
+		t.Fatalf("renderBody error: %v", err)
+	}
 
 	// Keys should be sorted (1-doc before 2-doc before 3-doc)
 	idx1 := strings.Index(result, "### 1-doc")
@@ -1947,8 +1892,8 @@ func TestDocReviewAutogenTemplate_ContainsDocTaskACPlaceholder(t *testing.T) {
 	}
 	s := string(data)
 
-	if !strings.Contains(s, "{{DOC_TASK_AC}}") {
-		t.Error("doc-review autogen template must contain {{DOC_TASK_AC}} placeholder for AC summary injection")
+	if !strings.Contains(s, "{{.DocTaskCriteria}}") {
+		t.Error("doc-review autogen template must contain {{.DocTaskCriteria}} placeholder for AC summary injection")
 	}
 }
 
@@ -2023,27 +1968,29 @@ func TestDocReviewAutogenTemplate_NoScanTasksDirective(t *testing.T) {
 }
 
 func TestRenderBody_AllPlaceholdersIncludingDocTaskAC(t *testing.T) {
-	template := "Feature: {{FEATURE_SLUG}}\nMode: {{MODE}}\n## Scope\n{{SCOPE}}\n## Other\nInterfaces: {{SURFACES}}\nType: {{TEST_TYPE}}\nAcceptance:\n{{ACCEPTANCE_CRITERIA}}\n{{DOC_TASK_AC}}"
-	ctx := BodyContext{
+	tmpl := "Feature: {{.FeatureSlug}}{{if .Mode}}\nMode: {{.Mode}}{{end}}{{if .SurfaceKey}}\n## Scope\n{{.SurfaceKey}}{{end}}\n## Other\nInterfaces: {{.SurfaceTypes}}{{if .SurfaceType}}\nType: {{.SurfaceType}}{{end}}\n{{.AcceptanceCriteria}}\n{{.DocTaskCriteria}}"
+	data := autogenTemplateData{
 		FeatureSlug:        "feat",
 		Mode:               "quick",
-		Scope:              []string{"backend"},
-		SurfaceTypes:       []string{"cli"},
-		AcceptanceCriteria: []string{"AC1"},
-		DocTaskCriteria:    map[string]string{"1-doc": "Doc AC"},
+		SurfaceTypes:       "- cli",
+		SurfaceType:        "cli",
+		AcceptanceCriteria: "- [ ] AC1",
+		DocTaskCriteria:    "### 1-doc\nDoc AC",
 	}
-	def := AutoGenTaskDef{SurfaceType: "cli"}
 
-	result := renderBody(template, def, ctx)
-
-	allPlaceholders := []string{
-		"{{FEATURE_SLUG}}", "{{MODE}}", "{{SCOPE}}",
-		"{{SURFACES}}", "{{TEST_TYPE}}", "{{ACCEPTANCE_CRITERIA}}",
-		"{{DOC_TASK_AC}}",
+	result, err := renderBody(tmpl, data)
+	if err != nil {
+		t.Fatalf("renderBody error: %v", err)
 	}
-	for _, ph := range allPlaceholders {
+
+	allMarkers := []string{
+		"{{.FeatureSlug}}", "{{.Mode}}", "{{.SurfaceKey}}",
+		"{{.SurfaceTypes}}", "{{.SurfaceType}}", "{{.AcceptanceCriteria}}",
+		"{{.DocTaskCriteria}}",
+	}
+	for _, ph := range allMarkers {
 		if strings.Contains(result, ph) {
-			t.Errorf("placeholder %s not resolved in output", ph)
+			t.Errorf("template marker %s not resolved in output", ph)
 		}
 	}
 	if !strings.Contains(result, "### 1-doc") {

@@ -1,11 +1,13 @@
 package task
 
 import (
+	"bytes"
 	"embed"
 	"fmt"
 	"path"
 	"sort"
 	"strings"
+	"text/template"
 
 	"forge-cli/pkg/forgeconfig"
 )
@@ -32,9 +34,10 @@ func autogenTemplatePath(typeName string) string {
 }
 
 // ValidateAutogenTemplates checks that all task types used by GenerateTestTaskMD()
-// have a corresponding template file in the autogen embed FS, and that no two types
-// map to the same filename. Types without an autogen template are skipped (they may
-// exist only in the prompt FS).
+// have a corresponding template file in the autogen embed FS, that no two types
+// map to the same filename, and that each template parses as valid text/template
+// and executes without error against a zero-value autogenTemplateData struct.
+// Types without an autogen template are skipped (they may exist only in the prompt FS).
 // Must be called from the CLI main() startup path, NOT from an init() function.
 func ValidateAutogenTemplates() error {
 	seen := make(map[string]string) // filename -> type name (for collision detection)
@@ -54,6 +57,16 @@ func ValidateAutogenTemplates() error {
 			return fmt.Errorf("autogen template convention error: types %q and %q both map to %q", prev, typeName, filename)
 		}
 		seen[filename] = typeName
+
+		// Validate template syntax and execution with missingkey=error
+		tmpl, err := template.New(filename).Option("missingkey=error").Parse(string(data))
+		if err != nil {
+			return fmt.Errorf("autogen template parse error for %q: %w", filename, err)
+		}
+		var buf bytes.Buffer
+		if err := tmpl.Execute(&buf, autogenTemplateData{}); err != nil {
+			return fmt.Errorf("autogen template execute error for %q with zero-value data: %w", filename, err)
+		}
 	}
 
 	return nil
@@ -79,16 +92,30 @@ func hasUISurface(types []string) bool {
 
 // BodyContext carries planning-time data from BuildIndex() to template rendering.
 // It is populated by BuildIndex() and consumed by renderBody() to substitute
-// {{PLACEHOLDER}} tokens in embed template content.
+// template fields in embed template content.
 type BodyContext struct {
 	FeatureSlug        string            // feature slug from opts
 	Mode               string            // "quick" or "breakdown"
-	Scope              []string          // in-scope items from proposal/PRD
 	SuccessCriteria    []string          // success criteria from proposal/PRD
 	AcceptanceCriteria []string          // PRD acceptance criteria (breakdown mode)
 	ProjectType        string            // from .forge/config.yaml
 	SurfaceTypes       []string          // deduplicated surface types from config
 	DocTaskCriteria    map[string]string // doc task name -> raw AC markdown (key=filename without .md)
+}
+
+// autogenTemplateData is the data model for text/template rendering of autogen body templates.
+// All fields are pre-formatted strings — the caller is responsible for serializing
+// slice/map fields before passing them to the template engine.
+type autogenTemplateData struct {
+	TaskID             string // task ID
+	TaskType           string // task type identifier (e.g., "test.gen-contracts")
+	FeatureSlug        string // feature identifier for template references
+	Mode               string // generation mode; empty string omits Mode line
+	SurfaceKey         string // surface key for inline replacement and conditional sections
+	SurfaceType        string // surface type; empty string omits TestType line
+	SurfaceTypes       string // pre-formatted multi-surface type string (newline-separated "- type" items); empty defaults to "See .forge/config.yaml"
+	AcceptanceCriteria string // pre-formatted acceptance criteria text; empty defaults to "- [ ] All acceptance criteria met"
+	DocTaskCriteria    string // pre-formatted doc task criteria text; empty omits the section
 }
 
 // AutoGenTaskDef defines an auto-generated task definition.
@@ -359,78 +386,77 @@ func GetQuickTestTasks(surfaces map[string]string, executionOrder []string, auto
 	return tasks
 }
 
-// renderBody substitutes {{PLACEHOLDER}} tokens in templateContent with BodyContext fields.
-// Empty fields are handled per spec:
-//   - {{MODE}} with empty Mode: omits the line containing {{MODE}}
-//   - {{SCOPE}} with empty Scope: omits the section (## Scope ... next ## heading)
-//   - {{SURFACES}} with empty SurfaceTypes: "See .forge/config.yaml"
-//   - {{TEST_TYPE}} with empty TestType: omits the line containing {{TEST_TYPE}}
-//   - {{ACCEPTANCE_CRITERIA}} with empty AcceptanceCriteria: "- [ ] All acceptance criteria met"
-func renderBody(templateContent string, def AutoGenTaskDef, ctx BodyContext) string {
-	s := templateContent
-
-	// FEATURE_SLUG — always substituted (required field)
-	s = strings.ReplaceAll(s, "{{FEATURE_SLUG}}", ctx.FeatureSlug)
-
-	// MODE — omit line when empty
-	modeLine := ctx.Mode
-	if modeLine == "" {
-		s = removeLineContaining(s, "{{MODE}}")
-	} else {
-		s = strings.ReplaceAll(s, "{{MODE}}", modeLine)
+// renderBody renders the template content using text/template with autogenTemplateData.
+// The template data is pre-formatted by buildAutogenTemplateData before reaching this function.
+func renderBody(templateContent string, data autogenTemplateData) (string, error) {
+	tmpl, err := template.New("autogen").Option("missingkey=error").Parse(templateContent)
+	if err != nil {
+		return "", fmt.Errorf("autogen template parse error: %w", err)
 	}
 
-	// SCOPE — omit section when empty
-	if len(ctx.Scope) == 0 {
-		s = removeSection(s, "Scope")
-		// If no ## Scope heading was found, remove any residual placeholder
-		s = strings.ReplaceAll(s, "{{SCOPE}}", "")
-	} else {
-		var scopeLines []string
-		for _, item := range ctx.Scope {
-			scopeLines = append(scopeLines, "- "+item)
-		}
-		s = strings.ReplaceAll(s, "{{SCOPE}}", strings.Join(scopeLines, "\n"))
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return "", fmt.Errorf("autogen template execute error: %w", err)
 	}
 
-	// SURFACES — default when empty
-	if len(ctx.SurfaceTypes) == 0 {
-		s = strings.ReplaceAll(s, "{{SURFACES}}", "See .forge/config.yaml")
-	} else {
-		var surfaceLines []string
-		for _, surface := range ctx.SurfaceTypes {
-			surfaceLines = append(surfaceLines, "- "+surface)
-		}
-		s = strings.ReplaceAll(s, "{{SURFACES}}", strings.Join(surfaceLines, "\n"))
+	return buf.String(), nil
+}
+
+// formatSurfaceTypes formats a slice of surface types as newline-separated "- type" items.
+// Returns empty string when the slice is empty.
+func formatSurfaceTypes(types []string) string {
+	if len(types) == 0 {
+		return ""
+	}
+	var lines []string
+	for _, t := range types {
+		lines = append(lines, "- "+t)
+	}
+	return strings.Join(lines, "\n")
+}
+
+// formatAcceptanceCriteria formats a slice of acceptance criteria as newline-separated
+// unchecked checklist items. Returns empty string when the slice is empty.
+func formatAcceptanceCriteria(criteria []string) string {
+	if len(criteria) == 0 {
+		return ""
+	}
+	var lines []string
+	for _, ac := range criteria {
+		lines = append(lines, "- [ ] "+ac)
+	}
+	return strings.Join(lines, "\n")
+}
+
+// buildAutogenTemplateData constructs the template data from a BodyContext and AutoGenTaskDef.
+// Pre-formats all fields so the template engine only does simple field substitution.
+func buildAutogenTemplateData(def AutoGenTaskDef, ctx BodyContext) autogenTemplateData {
+	surfaceTypesStr := formatSurfaceTypes(ctx.SurfaceTypes)
+	if surfaceTypesStr == "" {
+		surfaceTypesStr = "See .forge/config.yaml"
 	}
 
-	// TEST_TYPE — omit line when empty
-	testType := def.SurfaceType
-	if testType == "" {
-		s = removeLineContaining(s, "{{TEST_TYPE}}")
-	} else {
-		s = strings.ReplaceAll(s, "{{TEST_TYPE}}", testType)
+	acStr := formatAcceptanceCriteria(ctx.AcceptanceCriteria)
+	if acStr == "" {
+		acStr = "- [ ] All acceptance criteria met"
 	}
 
-	// ACCEPTANCE_CRITERIA — default when empty
-	if len(ctx.AcceptanceCriteria) == 0 {
-		s = strings.ReplaceAll(s, "{{ACCEPTANCE_CRITERIA}}", "- [ ] All acceptance criteria met")
-	} else {
-		var acLines []string
-		for _, ac := range ctx.AcceptanceCriteria {
-			acLines = append(acLines, "- [ ] "+ac)
-		}
-		s = strings.ReplaceAll(s, "{{ACCEPTANCE_CRITERIA}}", strings.Join(acLines, "\n"))
+	docTaskACStr := ""
+	if len(ctx.DocTaskCriteria) > 0 {
+		docTaskACStr = serializeDocTaskAC(ctx.DocTaskCriteria)
 	}
 
-	// DOC_TASK_AC — serialize DocTaskCriteria map as markdown sub-sections
-	if len(ctx.DocTaskCriteria) == 0 {
-		s = strings.ReplaceAll(s, "{{DOC_TASK_AC}}", "")
-	} else {
-		s = strings.ReplaceAll(s, "{{DOC_TASK_AC}}", serializeDocTaskAC(ctx.DocTaskCriteria))
+	return autogenTemplateData{
+		TaskID:             def.ID,
+		TaskType:           def.Type,
+		FeatureSlug:        ctx.FeatureSlug,
+		Mode:               ctx.Mode,
+		SurfaceKey:         def.SurfaceKey,
+		SurfaceType:        def.SurfaceType,
+		SurfaceTypes:       surfaceTypesStr,
+		AcceptanceCriteria: acStr,
+		DocTaskCriteria:    docTaskACStr,
 	}
-
-	return s
 }
 
 // serializeDocTaskAC serializes a DocTaskCriteria map into markdown sub-sections.
@@ -459,41 +485,6 @@ func serializeDocTaskAC(criteria map[string]string) string {
 	return strings.Join(sections, "\n\n")
 }
 
-// removeLineContaining removes the line that contains the target substring.
-func removeLineContaining(s, target string) string {
-	lines := strings.Split(s, "\n")
-	var kept []string
-	for _, line := range lines {
-		if !strings.Contains(line, target) {
-			kept = append(kept, line)
-		}
-	}
-	return strings.Join(kept, "\n")
-}
-
-// removeSection removes a ## heading section by title,
-// from the ## heading line up to (but not including) the next ## heading or end of string.
-func removeSection(s, headingTitle string) string {
-	lines := strings.Split(s, "\n")
-	var result []string
-	skip := false
-
-	for _, line := range lines {
-		if strings.HasPrefix(line, "## "+headingTitle) {
-			skip = true
-			continue
-		}
-		if skip && strings.HasPrefix(line, "## ") {
-			skip = false
-		}
-		if !skip {
-			result = append(result, line)
-		}
-	}
-
-	return strings.Join(result, "\n")
-}
-
 // GenerateTestTaskMD generates the .md file content for a test task.
 func GenerateTestTaskMD(def AutoGenTaskDef, ctx BodyContext) ([]byte, error) {
 	var buf strings.Builder
@@ -515,10 +506,14 @@ func GenerateTestTaskMD(def AutoGenTaskDef, ctx BodyContext) ([]byte, error) {
 
 	// Body — try embed template first, fallback to legacy behavior
 	templateFile := autogenTemplatePath(def.Type)
-	data, err := autogenTemplateFS.ReadFile(templateFile)
+	tmplData, err := autogenTemplateFS.ReadFile(templateFile)
 	if err == nil {
-		// Template loaded successfully — substitute placeholders and use as body
-		rendered := renderBody(string(data), def, ctx)
+		// Template loaded successfully — render with text/template engine
+		tplData := buildAutogenTemplateData(def, ctx)
+		rendered, renderErr := renderBody(string(tmplData), tplData)
+		if renderErr != nil {
+			return nil, fmt.Errorf("rendering template %s: %w", templateFile, renderErr)
+		}
 		buf.WriteString(rendered)
 
 		// Append TestType note if present

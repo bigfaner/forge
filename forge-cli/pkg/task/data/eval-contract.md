@@ -1,4 +1,4 @@
-Evaluate Contract quality for the {{FEATURE_SLUG}} feature using the 6-dimension rubric (1000-point scale).
+Evaluate Contract quality for the {{.FeatureSlug}} feature using the 6-dimension rubric (1000-point scale).
 
 ## Discovery Strategy
 Scan `tests/<journey>/_contracts/` for all Contract files per Journey.

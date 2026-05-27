@@ -1,7 +1,7 @@
-Evaluate Journey quality for the {{FEATURE_SLUG}} feature using the 6-dimension rubric (1000-point scale).
+Evaluate Journey quality for the {{.FeatureSlug}} feature using the 6-dimension rubric (1000-point scale).
 
 ## Discovery Strategy
-Scan `docs/features/{{FEATURE_SLUG}}/testing/journeys/` for all Journey files listed in `manifest.md`.
+Scan `docs/features/{{.FeatureSlug}}/testing/journeys/` for all Journey files listed in `manifest.md`.
 
 For each Journey:
 1. Run `/eval --type journey` using the journey rubric (`eval/rubrics/journey.md`)
