@@ -329,6 +329,30 @@ func autoBehaviorPrompts(defaults forgeconfig.AutoConfig) []autoBehaviorPrompt {
 			set:   func(a *forgeconfig.AutoConfig, v bool) { a.KnowledgeSave.Full = v },
 		},
 		{
+			title: "Auto-evaluate proposals?",
+			desc:  "Automatically run proposal evaluation after generation.",
+			def:   defaults.Eval.Proposal,
+			set:   func(a *forgeconfig.AutoConfig, v bool) { a.Eval.Proposal = v },
+		},
+		{
+			title: "Auto-evaluate PRD documents?",
+			desc:  "Automatically run PRD evaluation after generation.",
+			def:   defaults.Eval.Prd,
+			set:   func(a *forgeconfig.AutoConfig, v bool) { a.Eval.Prd = v },
+		},
+		{
+			title: "Auto-evaluate UI designs?",
+			desc:  "Automatically run UI design evaluation after generation.",
+			def:   defaults.Eval.UiDesign,
+			set:   func(a *forgeconfig.AutoConfig, v bool) { a.Eval.UiDesign = v },
+		},
+		{
+			title: "Auto-evaluate tech designs?",
+			desc:  "Automatically run tech design evaluation after generation.",
+			def:   defaults.Eval.TechDesign,
+			set:   func(a *forgeconfig.AutoConfig, v bool) { a.Eval.TechDesign = v },
+		},
+		{
 			title: "Auto git push after all tasks complete?",
 			desc:  "Push to remote automatically when every task in a run finishes successfully.",
 			def:   defaults.GitPush,
