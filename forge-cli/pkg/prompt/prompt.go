@@ -6,6 +6,7 @@ package prompt
 import (
 	"embed"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -60,8 +61,9 @@ func templatePath(typeName string) string {
 
 // ValidatePromptTemplates checks that all task types used by Synthesize()
 // have a corresponding template file in the prompt embed FS, and that no two types
-// map to the same filename. Types without a prompt template are skipped (they may
-// exist only in the autogen FS).
+// map to the same filename. It also validates that each template can be executed
+// against a zero-value promptTemplateData using missingkey=error, catching field
+// misspellings at startup.
 // Must be called from the CLI main() startup path, NOT from an init() function.
 func ValidatePromptTemplates() error {
 	seen := make(map[string]string) // filename -> type name (for collision detection)
@@ -81,6 +83,17 @@ func ValidatePromptTemplates() error {
 			return fmt.Errorf("template convention error: types %q and %q both map to %q", prev, typeName, filename)
 		}
 		seen[filename] = typeName
+
+		// Validate that the template executes without errors against a zero-value struct.
+		// missingkey=error catches any field name misspelled in the template.
+		converted := placeholderReplacer.Replace(string(data))
+		tmpl, err := template.New(filename).Option("missingkey=error").Parse(converted)
+		if err != nil {
+			return fmt.Errorf("template validation error: parse %s: %w", typeName, err)
+		}
+		if err := tmpl.Execute(io.Discard, promptTemplateData{}); err != nil {
+			return fmt.Errorf("template validation error: execute %s with zero-value data: %w", typeName, err)
+		}
 	}
 
 	return nil
@@ -215,7 +228,7 @@ func renderTemplate(templateFile string, opts SynthesizeOpts, t task.Task) (stri
 		result = strings.Replace(result, "TASK_FILE: "+td.TaskFile, "TASK_FILE: "+td.TaskFile+"\nTASK_CATEGORY: "+td.TaskCategory, 1)
 	}
 
-	result = cleanTemplateOutput(result, complexity)
+	result = collapseBlankLines(result)
 
 	return result, nil
 }
@@ -292,90 +305,14 @@ func InferType(id string) string {
 	return task.InferType(id, nil)
 }
 
-// cleanTemplateOutput removes residual artifacts left when template variables
-// are substituted with empty strings:
-//
-//  1. Lines that are only a label with an empty value (e.g. "SURFACE_KEY: " or "PROFILE: ")
-//     are removed entirely.
-//  2. Lines containing conditional sentences with empty backticks
-//     (e.g. "If “ is non-empty, ...") are removed entirely.
-//  3. Trailing whitespace on "just <cmd> " lines is stripped.
-//  4. Collapsed consecutive blank lines are reduced to a single blank line.
-//  5. Conditional paragraphs wrapped in <!-- IF NOT_LOW -->...<!-- END_IF --> markers
-//     are removed when complexity is "low". This allows templates to include sections
-//     (e.g., Step 1.5 spec-code scan) that are conditionally omitted for low-complexity tasks.
-//     The marker format is: <!-- IF NOT_LOW --> before the paragraph and <!-- END_IF --> after it.
-func cleanTemplateOutput(s string, complexity string) string {
-	// Process conditional paragraph blocks first, before line-level cleanup.
-	// This handles <!-- IF NOT_LOW -->...<!-- END_IF --> markers.
-	if complexity == "low" {
-		for {
-			start := strings.Index(s, "<!-- IF NOT_LOW -->")
-			if start == -1 {
-				break
-			}
-			end := strings.Index(s, "<!-- END_IF -->")
-			if end == -1 {
-				break
-			}
-			// Remove the entire block from start marker to end of END_IF marker
-			s = s[:start] + s[end+len("<!-- END_IF -->"):]
-		}
-	} else {
-		// For non-low complexity, just strip the markers themselves (keep content)
-		s = strings.ReplaceAll(s, "<!-- IF NOT_LOW -->", "")
-		s = strings.ReplaceAll(s, "<!-- END_IF -->", "")
+// collapseBlankLines reduces runs of 3+ consecutive newlines to exactly 2 newlines.
+// This handles residual blank lines left when multiple {{if}} blocks in templates
+// all evaluate to empty, leaving consecutive empty lines at the same position.
+func collapseBlankLines(s string) string {
+	for strings.Contains(s, "\n\n\n") {
+		s = strings.ReplaceAll(s, "\n\n\n", "\n\n")
 	}
-
-	lines := strings.Split(s, "\n")
-	var out []string
-
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-
-		// Remove conditional sentences referencing empty backticks.
-		if strings.Contains(trimmed, "If `` is non-empty") {
-			continue
-		}
-
-		// Remove label-only lines with empty values: "KEY:" or "KEY: " (no value after colon).
-		if isLabelWithEmptyValue(trimmed) {
-			continue
-		}
-
-		// Strip trailing whitespace on "just" command lines.
-		if strings.HasPrefix(trimmed, "just ") && strings.HasSuffix(line, " ") {
-			line = strings.TrimRight(line, " \t")
-		}
-
-		out = append(out, line)
-	}
-
-	// Collapse consecutive blank lines (3+ newlines → 2 newlines).
-	result := strings.Join(out, "\n")
-	for strings.Contains(result, "\n\n\n") {
-		result = strings.ReplaceAll(result, "\n\n\n", "\n\n")
-	}
-
-	return result
-}
-
-// isLabelWithEmptyValue detects lines like "SURFACE_KEY:" or "PROFILE: " or "PHASE_SUMMARY:"
-// where the label is followed by a colon and optional whitespace but no actual value.
-func isLabelWithEmptyValue(line string) bool {
-	if line == "" {
-		return false
-	}
-	before, after, found := strings.Cut(line, ":")
-	if !found {
-		return false
-	}
-	before = strings.TrimSpace(before)
-	after = strings.TrimSpace(after)
-	if before == "" || strings.Contains(before, " ") {
-		return false
-	}
-	return after == ""
+	return s
 }
 
 // resolveCoverage determines the effective coverage strategy and target text

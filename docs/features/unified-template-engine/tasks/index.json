@@ -41,7 +41,7 @@
       "dependencies": [
         "2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3-clean-template-output.md",
       "record": "records/3-clean-template-output.md",
       "surface-key": ".",
